@@ -1,41 +1,43 @@
 # Tasks · P-d-durable
 
-Spec `draft`. Chưa PLAN, chưa Gate. Thứ tự: điều kiện trước (D0) → **P-d1** (T1–T12) → **P-d2** (T13–T20). Mỗi task: một commit `[HUB-FR-xxx]`, diff ≈ ≤ 400 dòng. Cột `Đọc`: đúng các mục cần. `Rủi ro`: `docs/WORKFLOW.md` "Chính sách model" (RLS/tenant, quyền, khoá/transaction, audit ⇒ cao ⇒ Opus).
+Spec `draft`. Readiness lần 1 NOT READY → đã áp trả lời người dùng 2026-10-17 ([`spec-decisions.md`](spec-decisions.md) "Trả lời readiness lần 1"). Chưa PLAN, chưa Gate. Thứ tự: điều kiện trước (D0) → **P-d1** (T1–T12, gồm T6a múi giờ tenant) → **P-d2** (T13–T20, gồm T18a công tắc tool). Mỗi task: một commit `[HUB-FR-xxx]` / `[ADM-FR-xx]`, diff ≈ ≤ 400 dòng. Cột `Đọc`: đúng các mục cần; "plan §…" = **mục do `plan.md` cung cấp** (backend-lead đặt tên mục ở T1/T13; agent đọc đúng mục đó, chưa có plan thì chưa chạy task). `Rủi ro`: `docs/WORKFLOW.md` "Chính sách model" (RLS/tenant, quyền, khoá/transaction, audit ⇒ cao ⇒ Opus).
 
 ## Điều kiện trước
 | # | Việc | Ai | Trạng thái |
 |---|---|---|---|
-| D0a | ADR-0017 Accepted (spike Redis thật + tải 10.000 run staging) | người dùng / GĐ0 0.3, 0.10 | [ ] |
+| D0a | ADR-0017 Accepted (spike Redis thật + tải 10.000 run staging) — điều kiện Gate P-d1 | người dùng / GĐ0 0.3, 0.10 | [ ] |
 | D0b | Đóng mốc dọn-seed (CR-081) | điều phối | [ ] |
-| D0c | Mockup/artboard panel stage + nhãn chat (D13) | người dùng / frontend-lead | [ ] |
+| D0c | Mockup/artboard panel stage + nhãn chat + màn tenant (múi giờ, tab "Tool quy trình") (D13) — **frontend-lead tự dựng trong T2/T14, duyệt ở Gate** (readiness câu 4) | frontend-lead | [ ] |
 
-## Lát P-d1 (CR-083…086)
+## Lát P-d1 (CR-083…086 + CR-084 bổ sung múi giờ)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| T1 | PLAN BE P-d1: bảng ánh xạ mã lỗi (Q1, Q2), máy trạng thái `waiting_timer`/`retry`, DDL 0036, khoá/tx vòng quét, contract chi tiết | backend-lead | cao | `spec §2–§5`, `spec-decisions.md` | `docs/specs/P-d-durable/plan.md` | D0b | — | [ ] |
-| T2 | PLAN FE P-d1: panel stage (Chờ tới ngày, nhắc/chuyển cấp, thời hạn), input `date`, nhãn chat, i18n | frontend-lead | thường | `spec §6`, mockup D0c | `docs/specs/P-d-durable/plan-frontend.md` | T1, D0c | — | [ ] |
-| T3 | qc: test-plan + sửa test khoá ([spec-ac §2](spec-ac.md)) + test mới AC-H39…H43, H46 | qc | cao | `spec-ac.md`, plan §… | `tests/acceptance/P-d/**`, test khoá P-a/P-b/P-b2/P-c/P-c2 | T1, T2 | `bun run test:lock:verify` | [ ] |
-| T4 | spec-readiness → Gate GĐ1 (ADR-0017 Accepted) | spec-readiness | — | spec, plan, readiness | `readiness.md`, `docs/specs/P-d-gate.md` | T3, D0a | — | [ ] |
-| T5 | Contract P-d1: enum thêm cuối, hằng, schema `wait_until`/`after.review`/`ttl_days`/input `date`, view | backend-lead | cao | plan §contract | `packages/contracts/src/{chat,hub-admin}/**` | T4 | `bun test packages/contracts` | [ ] |
-| T6 | DDL `0036_pd1_durable.sql` + `schema/hub-processes.ts` (`process_timers` RLS + FK kép, cột mới, nới CHECK, DROP NOT NULL) | backend-lead | cao | plan §DB, `spec §4` | `packages/db/{migrations-hub,src/schema}` | T5 | `bun run db:migrate && bun run test:int` | [ ] |
-| T7 | Thử lại: phân loại lỗi + `retry_count` + hẹn giờ `retry` + `retry_exhausted` + chặn `side_effect` (stage-driver, team-member, sweeps `interrupted`) | backend-lead | cao | `spec §2.1`, plan | `apps/hub-api/src/modules/processes/runs/{stage-driver,team-member,team-exec,sweeps}.ts`, `core/process-state.rules.ts` | T6 | `bun run test:int` | [ ] |
-| T8 | Hẹn giờ: vòng `fireTimers` trong `sweepOnce` (scope system, lọc tenant tường minh) + executor `wait_until` + `waiting_timer` + trần không đếm + huỷ hẹn khi huỷ/quay lại | backend-lead | cao | `spec §2.2, §5` | `runs/{sweeps,launcher,start-inputs,timers.*}.ts`, `gates/back.effects.ts` | T7 | `bun run test:int` | [ ] |
-| T9 | Nhắc lặp + chuyển cấp (vòng nhắc, assignee `escalated`, notice, audit, forward theo Group) | backend-lead | cao | `spec §2.3, §5` | `notify/{reminder,inbox.repo}.ts`, `gates/forward*` | T6 | `bun run test:int` | [ ] |
-| T10 | `ttl_days` (def CRUD + snapshot + `expireRuns` bỏ qua null) | backend-lead | thường | `spec §2.4` | `defs/**`, `runs/{start-inputs,sweeps}.ts` | T6 | `bun run test:int` | [ ] |
-| T11 | FE P-d1: admin-web panel stage + form quy trình; chat-web nhãn + input `date` | frontend-lead | thường | `plan-frontend` | `apps/admin-web/src/features/processes`, `apps/chat-web/src/features/processes` | T5 | `bunx playwright test e2e/P-d` | [ ] |
+| T1 | PLAN BE P-d1: `classifyJobError` (PD-R01), máy trạng thái `waiting_timer`/`retry`, team retry (PD-R08), DDL hub 0036 + admin 0011, khoá/tx vòng quét (PD-R11), tính `due_at` theo múi giờ tenant (TZ-R04), contract chi tiết (gồm tenant `timezone`) | backend-lead | cao | `spec §2–§5`, `spec-tz-tools §1`, `spec-decisions.md` | `docs/specs/P-d-durable/plan.md` | D0b | — | [ ] |
+| T2 | PLAN FE P-d1 + **mockup** (D0c): panel stage (Chờ tới ngày + dòng múi giờ, nhắc/chuyển cấp, thời hạn), input `date`, nhãn chat, ô "Múi giờ" ở `TenantInfoForm`, i18n VI/EN, trạng thái tải/rỗng/lỗi, role e2e | frontend-lead | thường | `spec §6`, `spec-tz-tools §1` (UI), plan §contract | `docs/specs/P-d-durable/plan-frontend.md` + mockup artifact | T1 | — | [ ] |
+| T3 | qc: test-plan + sửa test khoá ([spec-ac §2](spec-ac.md)) + test mới AC-H39…H43, H46, AC-A14 | qc | cao | `spec-ac.md`, plan §… (mục test/DDL do plan.md cung cấp) | `tests/acceptance/P-d/**`, test khoá P-a/P-b/P-b2/P-c/P-c2/M1 | T1, T2 | `bun run test:lock:verify` | [ ] |
+| T4 | spec-readiness lần 2 → Gate P-d1 (ADR-0017 Accepted) | spec-readiness | — | diff spec, plan, plan-frontend, test-plan, readiness #1–#26 còn mở | `readiness.md`, `docs/specs/P-d-gate.md` | T3, D0a | — | [ ] |
+| T5 | Contract P-d1: enum thêm cuối, hằng, schema `wait_until`/`after.review`/`ttl_days`/input `date`, view, `ExecutorRef` | backend-lead | cao | plan §contract (do plan.md cung cấp), `spec §3` | `packages/contracts/src/{chat,hub-admin}/**` | T4 | `bun test packages/contracts` | [ ] |
+| T6 | DDL `0036_pd1_durable.sql` + `schema/hub-processes.ts` (`process_timers` RLS ENABLE + FK kép, cột mới, nới CHECK gồm audit, DROP NOT NULL) | backend-lead | cao | plan §DB (do plan.md cung cấp), `spec §4` | `packages/db/{migrations-hub,src/schema}` | T5 | `bun run db:migrate && bun run test:int` | [ ] |
+| T6a | **Múi giờ tenant** [ADM-FR-72]: migration admin `0011_pd1_tenant_timezone.sql` + `schema/admin.ts` (`tenants.timezone`), contract `tenants.ts` (+ `timezone`, kiểm IANA), admin-api `modules/tenants` (create/PATCH, audit, `config_changed`), `modules/transfer` (export/import `timezone`) | backend-lead | cao | `spec-tz-tools §1`, plan §… | `packages/db/{migrations,src/schema/admin.ts}`, `packages/contracts/src/tenants.ts`, `apps/admin-api/src/modules/{tenants,transfer}` | T4 | `bun run db:migrate && bun run test:int` | [ ] |
+| T7 | Thử lại: `classifyJobError` + `retry_count` + hẹn giờ `retry` + `retry_exhausted` + chặn `side_effect` (PD-R05) (stage-driver, team-member, sweeps `interrupted`) | backend-lead | cao | `spec §2.1`, plan §… | `apps/hub-api/src/modules/processes/runs/{stage-driver,team-member,team-exec,team-runner,sweeps}.ts`, `core/process-state.rules.ts` | T6 | `bun run test:int` | [ ] |
+| T8 | Hẹn giờ: vòng `fireTimers` trong `sweepOnce` (scope system, khoá run → stage → timer, lọc tenant tường minh) + executor `wait_until` (múi giờ tenant) + `waiting_timer` + trần không đếm + huỷ hẹn khi huỷ/quay lại + `timer_invalid` vào `FORCE_USE_CURRENT` | backend-lead | cao | `spec §2.2, §5`, `spec-tz-tools TZ-R04` | `runs/{sweeps,launcher,start-inputs,executor-ref,timers.*}.ts`, `gates/back.effects.ts`, `core/task.rules.ts` | T7, T6a | `bun run test:int` | [ ] |
+| T9 | Nhắc lặp + chuyển cấp (vòng nhắc, assignee `escalated`, notice, audit, forward theo Group) | backend-lead | cao | `spec §2.3, §5` | `notify/{reminder,inbox.repo,notify.rules}.ts`, `asks/{asks.service,asks.repo,ask.rules}.ts` (forward), `core/task.rules.ts` | T6 | `bun run test:int` | [ ] |
+| T10 | `ttl_days` (def CRUD + snapshot + `expireRuns` bỏ qua null + export/import) | backend-lead | thường | `spec §2.4` | `defs/**`, `runs/{start-inputs,sweeps}.ts` | T6 | `bun run test:int` | [ ] |
+| T11 | FE P-d1: admin-web panel stage + form quy trình + ô "Múi giờ" chi tiết tenant; chat-web nhãn + input `date` | frontend-lead | thường | `plan-frontend` | `apps/admin-web/src/features/{processes,tenants}`, `apps/chat-web/src/features/processes` | T5, T6a | `bunx playwright test e2e/P-d` | [ ] |
 | T12 | `done:pd1` + review + security review (chuyển cấp, vòng hẹn giờ, regression `scanDue`) + UAT + hồi quy `done:pa/pb/pb2/pc/pc2` | backend-lead, reviewer, qc-uat | cao | `spec-ac.md` | `tools/scripts/src/done-pd1.ts` | T7–T11 | `bun run done:pd1` | [ ] |
 
-## Lát P-d2 (CR-087)
+## Lát P-d2 (CR-087 + bổ sung công tắc tool)
 | # | Task | Agent | Rủi ro | Đọc | File | Phụ thuộc | Lệnh xong | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| T13 | PLAN BE P-d2: gọi tool nội bộ qua bộ điều phối `/mcp` bằng danh tính người bắt đầu, catalog tool cho editor, nhánh trong join bước, DDL 0037 | backend-lead | cao | `spec-d2.md`, ADR-0018/0022 | `plan.md` (mục P-d2) | T12 | — | [ ] |
-| T14 | PLAN FE P-d2: "Gọi tool", map tham số, "Rẽ nhánh", mũi tên nét đứt, nhãn "Bỏ qua" | frontend-lead | thường | `spec-d2 §6` | `plan-frontend.md` (mục P-d2) | T13 | — | [ ] |
-| T15 | qc: test AC-H44, H45 (+ enum contracts) | qc | cao | `spec-ac.md` | `tests/acceptance/P-d/**` | T13, T14 | `bun run test:lock:verify` | [ ] |
-| T16 | spec-readiness P-d2 (spec đổi sau lần READY) | spec-readiness | — | `spec-d2.md` | `readiness.md` | T15 | — | [ ] |
-| T17 | Contract + DDL 0037 (enum `tool`/`skipped`/`tool_failed`, luật def, `after.branch`) | backend-lead | cao | plan P-d2 | `packages/contracts/**`, `packages/db/**` | T16 | `bun test packages/contracts && bun run db:migrate` | [ ] |
-| T18 | Executor `tool` + output `fields`/.md + audit + chặn gọi lại `side_effect` | backend-lead | cao | `spec-d2 §2, §5` | `runs/tool-exec.ts` (mới), `defs/def.rules.ts`, `mcp/**` (gọi nội bộ) | T17 | `bun run test:int` | [ ] |
+| T13 | PLAN BE P-d2: gọi tool nội bộ qua bộ điều phối `/mcp` bằng danh tính người bắt đầu, công tắc tool theo tenant (bảng admin + kiểm lúc lưu/chạy), catalog tool cho editor, nhánh trong join bước, DDL hub 0037 + admin 0012 | backend-lead | cao | `spec-d2.md`, `spec-tz-tools §2`, ADR-0022 | `plan.md` (mục P-d2) | T12 | — | [ ] |
+| T14 | PLAN FE P-d2 + mockup: "Gọi tool" (chỉ tool khả dụng, trạng thái rỗng), map tham số, "Rẽ nhánh", mũi tên nét đứt, nhãn "Bỏ qua", tab "Tool quy trình" ở chi tiết tenant | frontend-lead | thường | `spec-d2 §6`, `spec-tz-tools §2` (UI) | `plan-frontend.md` (mục P-d2) | T13 | — | [ ] |
+| T15 | qc: test AC-H44, H45, H47, AC-A15 (+ enum contracts) | qc | cao | `spec-ac.md`, plan §… (mục P-d2 do plan.md cung cấp) | `tests/acceptance/P-d/**` | T13, T14 | `bun run test:lock:verify` | [ ] |
+| T16 | spec-readiness P-d2 (spec đổi sau lần READY) → Gate P-d2 (ADR-0022 Accepted **hoặc** dùng cách gọi workflow hiện có) | spec-readiness | — | `spec-d2.md`, `spec-tz-tools §2` | `readiness.md` | T15 | — | [ ] |
+| T17 | Contract + DDL 0037 (enum `tool`/`skipped`/`tool_failed`, luật def, `after.branch`, CHECK audit/thread) | backend-lead | cao | plan §… (P-d2) | `packages/contracts/**`, `packages/db/**` | T16 | `bun test packages/contracts && bun run db:migrate` | [ ] |
+| T18a | **Công tắc tool** [ADM-FR-73]: migration admin `0012_pd2_tenant_workflow_tools.sql` (RLS như 0004) + `schema/admin.ts`, contract, admin-api `GET/PUT/DELETE /admin/tenants/:id/workflow-tools` + audit + `config_changed` | backend-lead | cao | `spec-tz-tools §2` (TT-R01…R03) | `packages/db/{migrations,src/schema/admin.ts}`, `packages/contracts/src/**`, `apps/admin-api/src/modules/tenants` (hoặc module mới `workflow-tools`, plan chốt) | T16 | `bun run db:migrate && bun run test:int` | [ ] |
+| T18 | Executor `tool` + kiểm công tắc lúc lưu (`PROCESS_REF_INVALID`) và lúc chạy (`tool_failed`) + catalog tool editor + output `fields`/.md + audit + `runs`/`run_steps`/`usage_logs` + chặn gọi lại `side_effect` | backend-lead | cao | `spec-d2 §2, §5`, `spec-tz-tools TT-R04…R08` | `runs/tool-exec.ts` (mới), `defs/def.rules.ts`, `mcp/**` (gọi nội bộ) | T17, T18a | `bun run test:int` | [ ] |
 | T19 | Rẽ nhánh trong join bước + `skipped` + thread/audit + quay lại qua bước `skipped` | backend-lead | cao | `spec-d2 §3` | `runs/step-persist.ts`, `core/step.rules.ts`, `gates/back.effects.ts` | T17 | `bun run test:int` | [ ] |
-| T20 | FE P-d2 + `done:pd2` + review + security review (tool) + UAT + hồi quy | frontend-lead, backend-lead, reviewer, qc-uat | cao | `spec-ac.md` | `apps/{admin,chat}-web/src/features/processes`, `tools/scripts/src/done-pd2.ts` | T18, T19 | `bun run done:pd2` | [ ] |
+| T20 | FE P-d2 (panel stage + tab "Tool quy trình" ở `features/tenants`) + `done:pd2` + review + security review (tool + công tắc tenant) + UAT + hồi quy | frontend-lead, backend-lead, reviewer, qc-uat | cao | `spec-ac.md`, `plan-frontend` (P-d2) | `apps/{admin,chat}-web/src/features/{processes,tenants}`, `tools/scripts/src/done-pd2.ts` | T18, T19 | `bun run done:pd2` | [ ] |
 
 ## Docs
 | # | Task | Agent | Trạng thái |

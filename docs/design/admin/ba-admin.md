@@ -92,6 +92,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-FR-61 | Khoá tenant thì mọi user trong tenant bị khoá và thu hồi refresh token. Mở khoá thì khôi phục trạng thái trước đó của từng user | **MUST** |
 | ADM-FR-62 | CRUD group trong tenant: key, tên (vi/en), mô tả. Thêm/bớt thành viên, hỗ trợ dán danh sách username để thêm hàng loạt. Không lồng group | **MUST** |
 | ADM-FR-63 | Username duy nhất trong tenant (hai tenant có thể cùng có `an`) | **MUST** |
+| ADM-FR-72 | **Múi giờ tenant** ([CR-084](../../CHANGE-REQUESTS.md) bổ sung 2026-10-17): cột `timezone` (tên IANA, mặc định `Asia/Ho_Chi_Minh`), kiểm theo danh sách IANA chuẩn của runtime (`Intl.supportedValuesOf('timeZone')`); `platform_admin` đặt khi tạo và sửa ở tab Thông tin của chi tiết tenant (có `version`, audit). Agent Hub dùng để tính giờ hẹn của stage "Chờ tới ngày" (HUB-FR-144), đọc lúc lưu hẹn. `tenant_admin` chỉ thấy chỉ-đọc trong editor quy trình. Spec: `P-d-durable/spec-tz-tools.md` §1 | **MUST** (GĐ1 · P-d1) |
 
 ### 5.3 Catalog workflow
 
@@ -103,6 +104,7 @@ Nguồn chân lý cho danh tính, phân quyền và cấu hình của nền tả
 | ADM-FR-13 | Không được xoá hoặc tắt workflow đang được command hoặc agent dùng. Hộp xác nhận liệt kê nơi đang dùng (đọc `hub.agent_workflows`) | **MUST** |
 | ADM-FR-14 | Workflow **chưa gắn** vào command hay agent nào là hợp lệ. Danh sách có nhãn "Chưa gắn" và bộ lọc tương ứng | **MUST** |
 | ADM-FR-15 | Cột "Đang được dùng bởi" liệt kê cả command (Admin) và agent (Agent Hub) | **MUST** |
+| ADM-FR-73 | **Công tắc tool quy trình theo tenant** ([CR-087](../../CHANGE-REQUESTS.md) bổ sung 2026-10-17): bảng `tenant_workflow_tools` lưu workflow nào được bật làm tool cho stage "Gọi tool" (HUB-FR-146) của tenant nào. `platform_admin` bật/tắt ở **tab "Tool quy trình"** của chi tiết tenant (mỗi workflow một công tắc, nhãn tác dụng phụ, nhãn "Workflow đang tắt"); audit mỗi lần bật/tắt. Tool khả dụng cho tenant = workflow bật ∧ công tắc bật (không cần agent grant). Ngoại lệ có chủ đích của ADM-BR-13 cho riêng stage "Gọi tool". Spec: `P-d-durable/spec-tz-tools.md` §2 | **MUST** (GĐ1 · P-d2) |
 
 ### 5.4 Command
 
@@ -174,7 +176,7 @@ Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); adm
 | ADM-BR-10 | ~~Mỗi command phải thuộc ít nhất một feature.~~ **[Đổi theo CR-055, 2026-10-09]** Command **được phép chưa gắn feature** (khi đó không ai dùng được). Feature `core` luôn tồn tại, được entitlement cho mọi tenant, không xoá được |
 | ADM-BR-11 | User dùng được `/cmd` ⇔ cmd thuộc feature F ∧ F đang bật (hoặc `beta` và user thuộc `beta-testers`) ∧ F được entitlement cho tenant của user ∧ F được cấp cho user hoặc cho một group user thuộc về |
 | ADM-BR-12 | Thu hồi entitlement của tenant thì các grant bên trong mất hiệu lực nhưng vẫn giữ lại, cấp lại entitlement thì grant có hiệu lực trở lại |
-| ADM-BR-13 | Workflow không có quyền riêng. Quyền nằm ở nơi dùng nó: command (qua feature) hoặc agent (qua agent grant ở Hub) |
+| ADM-BR-13 | Workflow không có quyền riêng. Quyền nằm ở nơi dùng nó: command (qua feature) hoặc agent (qua agent grant ở Hub). **[CR-087]** Stage "Gọi tool" của quy trình: quyền theo công tắc tenant (ADM-FR-73) + quyền chạy quy trình của người bắt đầu |
 | ADM-BR-14 | Tenant không tự tạo command, workflow hay secret. Mọi tenant dùng chung catalog, key Dify và API key |
 
 ## 7. Mô hình dữ liệu (schema `admin`)
@@ -183,7 +185,8 @@ Dữ liệu ở schema `hub` (Hub sở hữu, BA-H §6.10 HUB-FR-104…117); adm
 
 | Bảng | Trường chính |
 |---|---|
-| `tenants` | id, key (mã công ty, unique), name, active, max_concurrent_sub (null = không giới hạn), settings (jsonb), created_at, version |
+| `tenants` | id, key (mã công ty, unique), name, active, max_concurrent_sub (null = không giới hạn), settings (jsonb), **timezone** (IANA, mặc định `Asia/Ho_Chi_Minh` — CR-084, ADM-FR-72), created_at, version |
+| `tenant_workflow_tools` | **[CR-087, ADM-FR-73]** workflow_id, tenant_id, granted_by, granted_at, revoked_at · PK (workflow_id, tenant_id); RLS như `feature_entitlements`; Hub chỉ đọc |
 | `users` | id, tenant_id, username, password_hash, display_name, role (`platform_admin` \| `tenant_admin` \| `member`), locale (vi\|en), active, must_change_password, failed_logins, locked_until, version, created_at, updated_at · unique (tenant_id, username) |
 | `user_totp` · `user_backup_codes` | 2FA (M4, quyết định plan-cd D1; thay `users.totp_secret`): `user_totp` (tenant_id, user_id unique, secret mã hoá AES-256-GCM cùng `SECRET_MASTER_KEY`, trạng thái chờ/đã bật); `user_backup_codes` (user_id, code_hash HMAC-SHA256 có pepper, used_at). Hub không đọc (`REVOKE hub_ro`) |
 | `refresh_tokens` | id, user_id, token_hash, expires_at, revoked_at, created_at, user_agent |
@@ -216,7 +219,7 @@ users 1─* refresh_tokens
 | Nhóm | Endpoint | Ai gọi |
 |---|---|---|
 | Auth | `POST /auth/login` (tenant, username, password) · `POST /auth/refresh` · `POST /auth/logout` · `POST /auth/change-password` · `POST /auth/totp/*` | Mọi client |
-| Tenant | `GET/POST /admin/tenants` · `PATCH /admin/tenants/:id` · `POST /admin/tenants/:id/lock` | platform_admin |
+| Tenant | `GET/POST /admin/tenants` · `PATCH /admin/tenants/:id` (gồm `timezone`) · `POST /admin/tenants/:id/lock` · `GET /admin/tenants/:id/workflow-tools` · `PUT/DELETE /admin/tenants/:id/workflow-tools/:workflow_id` (CR-087) | platform_admin |
 | User | `GET/POST /admin/users` · `PATCH /admin/users/:id` · `POST /admin/users/:id/reset-password` · `GET /admin/users/:id/effective-access` | platform_admin, tenant_admin (trong tenant) |
 | Group | `GET/POST /admin/groups` · `PATCH/DELETE /admin/groups/:id` · `POST/DELETE /admin/groups/:id/members` | platform_admin, tenant_admin |
 | Catalog | `GET/POST /admin/workflows` · `PATCH/DELETE /admin/workflows/:id` · `GET /admin/workflows/:id/usages` | platform_admin |
@@ -238,7 +241,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 | Features | Bảng feature với trạng thái, số command, số tenant được entitlement. Editor gồm command bên trong và tab Cấp quyền |
 | Commands | Bảng command. Form gồm chọn workflow, input map, feature, khu Test ở bên phải, tab "Ai dùng được" |
 | Workflows | Bảng catalog với nhãn "Chưa gắn". Form có trình sửa input schema (mô tả bắt buộc). Cột "Đang được dùng bởi" (command, agent) |
-| Tenants | Danh sách tenant, số user, feature và agent được entitlement, quota, giới hạn slot subscription. Khoá tenant |
+| Tenants | Danh sách tenant, số user, feature và agent được entitlement, quota, giới hạn slot subscription. Khoá tenant. Chi tiết: tab Thông tin có "Múi giờ" (ADM-FR-72); tab "Tool quy trình" (ADM-FR-73) |
 | Users | Bảng user (lọc theo role/trạng thái/group). Tạo user, reset mật khẩu, khoá/mở. Tab "Quyền hiệu lực" |
 | Groups | Thành viên, feature được cấp, agent được cấp |
 | Phân quyền | Ma trận feature × group, công cụ Kiểm tra quyền |
@@ -305,6 +308,12 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 
 > **AC-A13 · Workflow chưa gắn**
 > When builder khai báo workflow `report-tax` mà không tạo command hay gắn agent nào, Then lưu được, workflow có nhãn "Chưa gắn", và không user nào thấy hay chạy được nó.
+
+> **AC-A14 · Múi giờ tenant (CR-084, ADM-FR-72)**
+> Given tenant `acme` mặc định `Asia/Ho_Chi_Minh`, When platform admin đổi múi giờ sang `Europe/Berlin`, Then lưu được, có audit trước/sau, và stage "Chờ tới ngày" lưu hẹn **sau** thời điểm đó tính theo giờ Berlin (hẹn đã lưu trước không đổi). Given giá trị không phải tên IANA chuẩn (vd `Asia/Saigon`, `Mars/Base`), Then bị từ chối (422). Given tenant admin, Then không sửa được (403).
+
+> **AC-A15 · Công tắc tool quy trình theo tenant (CR-087, ADM-FR-73)**
+> Given workflow `xuat-hoa-don` được bật cho `acme` và chưa bật cho `beta`, Then editor quy trình của `acme` chọn được nó làm stage "Gọi tool", của `beta` thì không (lưu ⇒ 422). When platform admin tắt công tắc của `acme` trong lúc một run đang chờ tới stage đó, Then tới lượt gọi run dừng ở "Cần người quyết" (`tool_failed`), workflow không bị gọi; mỗi lần bật/tắt có audit.
 
 ## 12. Ngoài phạm vi & câu hỏi mở
 

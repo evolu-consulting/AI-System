@@ -59,3 +59,5 @@ Phạm vi: 6/6 file spec, CLAUDE.md, WORKFLOW, BA §6.10 / BR-12, 25, 26, 38, 41
 4. Mockup: frontend-lead tự dựng trong T2 và duyệt ở Gate, hay người dùng cung cấp?
 
 Lần chạy 2: chỉ kiểm diff thư mục spec cùng plan/plan-frontend/test-plan mới và các mục #1–#26 còn mở.
+
+> 2026-10-17 · Đã áp trả lời người dùng, chờ T1–T3 rồi readiness lần 2.
