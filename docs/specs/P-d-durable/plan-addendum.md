@@ -1,0 +1,156 @@
+# Plan phụ lục · Bổ sung sau readiness lần 2 (backend-lead) — G1–G7, #37, #46, #47
+
+Phần của [`plan.md`](plan.md) (plan.md/plan-frontend.md sát trần ⇒ mọi phần thêm ở đây). Nối [plan-contract](plan-contract.md), [plan-domain](plan-domain.md), [plan-d2](plan-d2.md), [readiness lần 2](readiness.md). Mục này **thắng** chỗ khác khi lệch (ghi rõ dòng nào bị thay). Đối chiếu code `platform/gd0` 2026-10-17.
+
+## A1. G1 — `ProcessToolItemSchema.params[]` (thay khối `params` ở plan-contract §6)
+File `packages/contracts/src/hub-admin/process-tools.ts` (mới, `hub-admin/processes.ts` thêm `export * from "./process-tools"`; file này chỉ `import type` từ `./processes` ⇒ không vòng import lúc chạy).
+```ts
+import { INPUT_DESC_MAX, INPUT_NAME_RE, INPUT_SCHEMA_MAX, InputTypeSchema, SELECT_OPTION_MAX, SELECT_OPTIONS_MAX } from "../common";
+export const ProcessToolParamSchema = z.strictObject({
+  name: z.string().regex(INPUT_NAME_RE),
+  type: InputTypeSchema,                                                    // = WorkflowInput.type
+  required: z.boolean(),
+  description: z.string().max(INPUT_DESC_MAX).optional(),                   // ≤ 400 — workflows.input_schema[].description
+  options: z.array(z.string().min(1).max(SELECT_OPTION_MAX)).max(SELECT_OPTIONS_MAX).optional(), // ≤ 50 — chỉ type "select"
+});
+export type ProcessToolParam = z.infer<typeof ProcessToolParamSchema>;
+export const ProcessToolItemSchema = z.strictObject({
+  key: ProcessKeySchema, name: z.string().min(1).max(128), description: z.string().max(400),
+  side_effect: z.boolean(),
+  params: z.array(ProcessToolParamSchema).max(INPUT_SCHEMA_MAX),           // 50, KHÔNG phải TOOL_ARGS_MAX
+});
+export type ProcessToolItem = z.infer<typeof ProcessToolItemSchema>;
+```
+- Nguồn (`tool-catalog.repo`): `workflows.input_schema` (đã qua `WorkflowInputSchema` khi lưu) — chép `description` nguyên văn; `options` chỉ khi `type = "select"`, vắng ở kiểu khác. Thứ tự `params` = thứ tự `input_schema`.
+- Sửa so với plan-contract §6: `params.max(TOOL_ARGS_MAX)` ⇒ `max(INPUT_SCHEMA_MAX)` (workflow catalog cho tới 50 input; 20 là trần **args của stage**, kiểm ở `toolStageIssues` ⇒ `TOOL_INVALID`). Giữ 20 sẽ làm hỏng cả response `/process-editor/context` khi một workflow có > 20 input. `name` dùng `INPUT_NAME_RE` (= regex khoá `args`).
+
+## A2. G2 — hàm thuần contract cho FE validate live
+Cùng file `hub-admin/process-tools.ts`. Điều kiện **giống hệt** luật domain (plan-d2 §4); khác ở hình dạng vào (snake_case, bản nháp FE). `processDefStageIssues` **không** gọi hai hàm này (tránh vòng import với `process-steps.ts`); FE gộp: `[...processDefStageIssues(stages, {inputs}), ...toolStageIssues(stages, inputs, tools), ...branchStageIssues(stages)]`. Mỗi hàm cắt ≤ 20 issue, thứ tự `i` tăng, trong stage theo thứ tự bảng dưới.
+```ts
+import type { ArgSource, BranchRule } from "./processes";               // z.infer của ArgSourceSchema / BranchRuleSchema
+import { type ProcessDefIssue, resolveSteps, type StepStageShape } from "./process-steps";
+type FieldDraft = { key: string; type: string; required: boolean };
+export type ToolStageDraft = StepStageShape & {
+  executor: { kind: string; tool_key?: string; args?: Readonly<Record<string, ArgSource>> };
+  answerer?: { kind: string }; sources?: readonly unknown[]; must_know?: readonly unknown[]; autofix?: unknown | null;
+  output?: { fields?: readonly FieldDraft[] };
+};
+export type ToolCatalogShape = Pick<ProcessToolItem, "key" | "side_effect" | "params">;
+/** Chỉ xét stage `executor.kind === "tool"`. `tool_key ∉ tools` ⇒ KHÔNG issue (server trả 422 PROCESS_REF_INVALID
+ *  path `stages.<i>.executor.tool_key`, FE hiện trạng thái catalog). */
+export function toolStageIssues(stages: readonly ToolStageDraft[], inputs: readonly { key: string; type: string }[],
+  tools: ReadonlyMap<string, ToolCatalogShape>): ProcessDefIssue[];
+export type BranchStageDraft = StepStageShape & {
+  output?: { fields?: readonly FieldDraft[] };
+  after: StepStageShape["after"] & { branch?: readonly Partial<BranchRule>[] };
+};
+export function branchStageIssues(stages: readonly BranchStageDraft[]): ProcessDefIssue[];
+```
+**Path theo lỗi** (domain `waitStageIssues`/`toolStageIssues`/`branchStageIssues` trả **cùng** path — thay "Path `stages.<i>.executor`" ở plan-domain §4.6 và plan-d2 §4):
+
+| Luật | Điều kiện | Path |
+|---|---|---|
+| `WAIT_INVALID` | `after.kind ≠ auto` | `stages.<i>.after` |
+| ″ | nguồn input không có / không `date`; nguồn field: `stage_key` không ở bước nhỏ hơn / field không có / không `date` | `stages.<i>.executor.from` |
+| ″ | `offset_days` ∉ −365…365 (bản nháp chưa qua zod) | `stages.<i>.executor.offset_days` |
+| ″ | `time` không khớp `WAIT_TIME_RE` (bản nháp) | `stages.<i>.executor.time` |
+| ″ | `real_action` / sources / must_know / autofix | `stages.<i>.executor` |
+| `TOOL_INVALID` | > 20 args; tool có param `file`; sources/must_know/autofix; `answerer.kind ≠ starter` | `stages.<i>.executor` |
+| ″ | tên arg ∉ `params`; nguồn input không có; nguồn field: bước không nhỏ hơn / field không khai | `stages.<i>.executor.args.<name>` (tên arg) |
+| ″ | thiếu param `required` | `stages.<i>.executor.args.<name>` (tên param thiếu) |
+| `TOOL_SIDE_EFFECT` | `side_effect ∧ ¬real_action` | `stages.<i>.real_action` |
+| `BRANCH_INVALID` | > 10 luật; stage không đứng một mình trong bước | `stages.<i>.after.branch` |
+| ″ (luật `j`, một issue/luật, dừng ở ô đầu sai theo thứ tự) | field ∉ `output.fields` | `stages.<i>.after.branch.<j>.field` |
+| ″ | `op` ∉ `BRANCH_OPS` hoặc `lt/le/gt/ge` với trường `string` | `stages.<i>.after.branch.<j>.op` |
+| ″ | value khác kiểu trường (`date`: ISO + ngày lịch thật) | `stages.<i>.after.branch.<j>.value` |
+| ″ | `goto_step ≤ step` / `≥ số bước` / đích có `real_action` ∧ stage `after ≠ review` | `stages.<i>.after.branch.<j>.goto_step` |
+
+Đồng bộ contract ↔ domain: test `P/adapters/defs/def-rules-parity.test.ts` (lớp 3) chạy cùng bộ def mẫu (≥ 1 ca mỗi hàng bảng) qua hàm contract và hàm domain (sau mapper) ⇒ `toEqual` (path + rule). qc: PD-U60 ca `after:"review"` ⇒ `stages.<i>.after`; PD-U61 ⇒ `.executor.from`; PD2-U02 ca `side_effect` ⇒ `stages.<i>.real_action`; PD-I35 `paths` ∋ path tương ứng từng ca.
+
+## A3. G3 — trường Hub ép / bỏ qua (xác nhận plan-contract §3, plan-d2 §3)
+| Trường | `wait_until` (`ensureWaitStage`) | `tool` (`ensureToolStage`) |
+|---|---|---|
+| `output.template`/`required_sections` | ép `"# {name}\n\n## Bàn giao\n"` / `["Bàn giao"]` | ép `"# {name}\n\n## Kết quả\n\n## Bàn giao\n"` / `["Kết quả","Bàn giao"]` |
+| `output.fields` | ép `[]` | **giữ** (dùng bởi `filterToolFields`, rẽ nhánh) |
+| `output.filename` | giữ | giữ |
+| `answerer` | ép `{kind:"starter"}` | ép `{kind:"starter"}` |
+| `token_budget` | ép `null` | ép `null` |
+| `timeout_s` | bỏ qua (lưu mặc định) | **giữ** — là timeout gọi tool (`toolInvoker.call({timeoutS})`) |
+| `instruction` | giữ, không dùng | giữ, không dùng |
+| sources / must_know / autofix | không ép — có ⇒ `WAIT_INVALID` | ép `[]`/`[]`/`null` khi lưu (sau khi đã kiểm `TOOL_INVALID` trên body gửi lên) |
+Ép chạy **sau** luật def, giá trị gửi lên bị ghi đè không báo lỗi; response trả giá trị đã ép. FE ẩn các ô bị ép; với `tool` vẫn hiện `fields`, `filename`, `timeout_s`.
+
+## A4. G4–G7 — làm rõ view/notice (bổ sung plan-contract §2, §8)
+- **G4** Notice `escalated`: `task_id` = id `review_task` được chuyển cấp (không null); `stage_name` = tên stage của task; `process_name` như cũ. FE mở task theo `task_id` như `review_requested`.
+- **G5** `StageView`: (a) `next_retry_at` và `wait` **loại trừ nhau** — mỗi stage tối đa một hẹn mở (`timers.stageTimerKind`), `retry` ⇒ chỉ `next_retry_at`, `wait_until` ⇒ chỉ `wait`; (b) `retry_count` **luôn có** trong mọi `StageView` Hub trả từ P-d1 (int 0–3 = `effectiveRetryCount`), gồm `queued`/`running` sau khi hẹn retry đã bắn (vd lần chạy lại thứ 2 ⇒ 2) và 0 khi chưa thử lại / sang attempt-round mới; `.optional()` chỉ để FE mock cũ không vỡ. `last_error_code` có khi `retry_count > 0` (mã lỗi lần gần nhất), vắng khi 0.
+- **G6** `expires_at` nằm ở `ProcessRunSummarySchema` ⇒ có ở danh sách run **và** `ProcessRunFullViewSchema` (kế thừa `extend`). Hub luôn đặt (`null` = không hết hạn). `ProcessRunTaskViewSchema` (người ngoài phòng) **không** có.
+- **G7** `open_tasks[].escalated_group` chỉ ở full view (người trong phòng, người bắt đầu chưa rời, admin — HUB-BR-25); `null` khi không chuyển cấp. `my_tasks[].escalated`/`remind_count` có ở **cả hai** view (task của chính người xem; task view vẫn không có `wait`/`retry`/`group`). `ProcessDef.tenant_id` (sẵn có, `hub-admin/processes.ts:235`): `null` = def **mẫu** (không thêm stage `tool` — D2-06, editor context `tools: []`).
+
+## A5. #46 — `teamResumePlan` (`P/domain/runs/team-retry.rules.ts`, T7s/T7)
+```ts
+export type TeamRunStatus = "running" | "waiting_answer" | "done" | "limit" | "failed" | "cancelled"; // domain/types.ts
+/** Cách vào lại team_run mới nhất của (stage, attempt) khi launcher chạy stage team. Thuần, không đổi đầu vào. */
+export function teamResumePlan(cur: { status: TeamRunStatus; segmentStartedAt: Date | null; cursor: number } | null):
+  "resume_answer" | "resume_retry" | "new";
+```
+| Đầu vào | Kết quả | Adapter `ensureTeamRun` (`adapters/runs/team-run.repo.ts`) |
+|---|---|---|
+| `status = "waiting_answer"` (mọi `segmentStartedAt`) | `resume_answer` | như cũ: `status='running'`, `segment_started_at=now`, trả `{resume:true, cursor}` |
+| `status = "running"` ∧ `segmentStartedAt = null` ∧ ¬(`cursor < 0`) | `resume_retry` | `segment_started_at=now`, cursor/plan/calls giữ, trả `{resume:true, retry:true, cursor}` ⇒ lần gọi đầu `noCountFirst` (plan §4.3) |
+| `null`; `running` ∧ `segmentStartedAt ≠ null`; `running` ∧ `cursor < 0`; `done/limit/failed/cancelled` | `new` | giữ hành vi cũ: hàng `running` sẵn có ⇒ dùng lại id, `resume:false`; không có/đã kết thúc ⇒ INSERT mới (bộ đếm 0) |
+`cursor < 0` không xảy ra sau `pauseForRetry` (ép `max(cursor,0)`) ⇒ coi là dữ liệu hỏng ⇒ `new`. Điều kiện viết `cursor < 0` nên đầu vào thiếu `cursor` (test cũ) vẫn ra như bảng. qc: PD-U93…U97 thêm `cursor: 0` vào đầu vào; thêm ô `{running, null, cursor:-1}` ⇒ `new`.
+
+## A6. #37 — import contract trong file dời vào `domain/` (ADR-0023: lớp 1 không import `@ai/contracts`)
+**Khai lại** (mapper test plan-domain §6 khẳng định bằng hằng contract; thêm vào bảng §6):
+| Nơi | Thêm | Khẳng định mapper test |
+|---|---|---|
+| `domain/types.ts` | `TaskKind = "review"\|"ask"\|"decision"` · `TaskStatus = "open"\|"closed"` · `TeamRunStatus` (A5) | `AssertEqual` với `TASK_KINDS`/`TASK_STATUSES`/`TEAM_RUN_STATUSES` |
+| `domain/limits.ts` | `REDO_MAX = 3` · `ASKS_MAX = 3` · `FORWARD_CHAIN_MAX = 3` | `toEqual` hằng contract `chat/processes.ts:17–19` |
+| `domain/tasks/decision.rules.ts` | `DECISION_OPTION_ORDER: readonly DecisionOption[] = ["add_attempt","use_current","cancel"]` · `AUTOFIX_REASONS: ReadonlySet<DecisionReason>` = {`autofix_check_failed`,`sandbox_unavailable`,`apply_conflict`,`apply_failed`} · `isAutofixReason(r)` · `FORCE_USE_CURRENT` · `decisionOptionsFor` · `decisionAssignees` | `DECISION_OPTION_ORDER` `toEqual([...DECISION_OPTIONS])` (**giữ thứ tự** — UI dùng); `∀ r ∈ DECISION_REASONS: domain.isAutofixReason(r) === runs/autofix.rules.isAutofixReason(r)` |
+
+**Từng file** (import hiện tại → thay bằng):
+| File cũ → đích (task) | Import hiện tại | Thay bằng |
+|---|---|---|
+| `core/process-state.rules.ts` → `domain/runs/run-state.rules.ts` (T7s) | `ASKS_MAX, REDO_MAX, DecisionOption, DecisionReason, ProcessRunStatus, StageRunStatus` từ `@ai/contracts/chat` | hằng ⇐ `../limits`; kiểu ⇐ `../types` |
+| `core/step.rules.ts` → `domain/runs/step.rules.ts` (T8s) | `ProcessRunStatus, StageRunStatus` (type) | `../types` |
+| `core/run-access.rules.ts` → `domain/runs/run-access.rules.ts` (T8s, **toàn file**, 67 dòng) | `DecisionReason` (type) | `../types` |
+| `core/task.rules.ts` → `domain/tasks/decision.rules.ts` (T8s: `FORCE_USE_CURRENT`, `decisionOptionsFor`, `decisionAssignees`) | `DecisionOption, DecisionReason` (type) · `DECISION_OPTIONS` · `autofixDecisionOptions, isAutofixReason` (`../runs/autofix.rules`) · `REVIEW_GROUP_REASONS` (`./run-access.rules`) | `../types` · `DECISION_OPTION_ORDER` (cùng file) · `isAutofixReason` + nhánh autofix ⇒ `["add_attempt","cancel"]` (cùng file) · `../runs/run-access.rules` |
+| `core/task.rules.ts` → `domain/tasks/task-access.rules.ts` (T9s: `canAct`, `TaskFacts`) | `ProcessRunStatus, TaskKind, TaskStatus, DecisionReason` (type) · `isTerminal` (`./process-state.rules`) · `canDecide, RunFacts, Viewer` (`./run-access.rules`) | `../types` · `../runs/run-state.rules` · `../runs/run-access.rules` |
+| `core/task.rules.ts` (còn lại) | `askExcerpt` + `TASK_EXCERPT_MAX` | **giữ ở `core/task.rules.ts`** (ngoài phạm vi P-d, Luật 4 — không dời) |
+| `gates/back.rules.ts` → `domain/gates/back.rules.ts` (T8s) | `StageRunStatus` (type) | `../types` |
+| `notify/notify.rules.ts` → `domain/notify/remind.rules.ts` (T9s) | `TaskStatus` (type) | `../types` |
+| `asks/ask.rules.ts` → `domain/asks/forward.rules.ts` (T9s) | `FORWARD_CHAIN_MAX` · `TaskKind, TaskStatus` (type) | `../limits` · `../types` |
+| `runs/autofix.rules.ts` | `@ai/contracts/{chat,hub,hub-admin}` | **không dời, không sửa** (P-c; vẫn export `isAutofixReason`/`autofixDecisionOptions` cho test khoá P-c/P-c2 — parity test ở bảng trên) |
+
+**Người gọi đổi đường dẫn** (chỉ dòng import, cùng task dời; không shim): run-state ⇐ `asks.service`, `gates.{effects,service}`, `runs/{apply-driver,apply-settle,launcher,stage-driver,step-persist,team-runner,view.service}`, `runs/autofix-hub.test` · step ⇐ `gates/{back.effects,gates.effects,gates.service}`, `runs/{launcher,launcher-session,launcher-step,resolve-apply,step-persist,sweeps,stage-driver,view-steps}` · run-access ⇐ `asks.service`, `core/task-view`, `gates.service`, `runs/{start.service,view.service}`, **`modules/attachments/autofix-files.rules.ts`** (`import type { RunAccess }` — khác module, chỉ kiểu từ lớp 1; reviewer xác nhận ADR-0023) · decision ⇐ `gates.service`, `runs/{sweeps,team-runner,view-steps}` (`askExcerpt` của `team-runner` vẫn từ `core/task.rules`) · task-access ⇐ `core/task-view` · back ⇐ `gates/back.effects` · remind ⇐ `notify/notifier` (+ use case nhắc) · forward ⇐ `asks.service`. Unit test cạnh file dời theo: `core/task.rules.test.ts` ⇒ `domain/tasks/decision.rules.test.ts`, `gates/back.rules.test.ts` ⇒ `domain/gates/back.rules.test.ts`.
+Test khoá qc sửa đường dẫn (bổ sung plan-domain §7): T8q thêm `P-a/step0/rules/run-access.test.ts` (⇒ `domain/runs/run-access.rules.ts`); `P-c/rules/autofix-rules.test.ts:21`, `P-c2/rules/_rules2.ts:25` (`loadCoreTask` ⇒ `domain/tasks/decision.rules.ts` cho `decisionOptionsFor`); `P-a/step0/rules/task.test.ts` tách nạp 3 nơi (`canAct` ⇒ task-access, `decisionAssignees` ⇒ decision, `askExcerpt` ⇒ `core/task.rules.ts` giữ).
+
+## A7. #47 — trả lời câu hỏi qc (test-plan §10, test-plan-d2 §câu hỏi)
+| # | Quyết định | So với mặc định qc |
+|---|---|---|
+| Q4 | `createHubUow(db: Db, deps: { clock: Clock; publish: (events: readonly OutboxEvent[]) => Promise<void> }): UnitOfWork` — `publish` **bắt buộc**; mount truyền `makeOutboxPublisher(processDeps)` (`adapters/outbox.ts`). Gọi đúng một lần sau COMMIT với sự kiện của lần thử thành công; rollback/ném ⇒ không gọi; chạy lại 40P01/40001 ⇒ bỏ gom lần hỏng. `bindTx(tx, tenantId)` trả `{ repos, events(): readonly OutboxEvent[] }` (người gọi tự phát) | **xác nhận** (`deps.publish` giả ghi mảng) |
+| Q6 | `interrupted` **thắng**: `interrupted ⇒ "interrupted"`; ngược lại `code = "TIMEOUT" ⇒ "job_timeout"`; còn lại `"agent_failed"` | khác: có quy tắc ⇒ qc nên thêm 1 ô `{code:"TIMEOUT", interrupted:true} ⇒ "interrupted"` |
+| Q9 | `round` và `attempt` bắt đầu **1** (DEFAULT 1 — 0019:189, 0024:21). Lần retry đầu: `retry:<sr>:1:1:1`. `n` = số hẹn `retry` của **stage** (mọi attempt/round) + 1 ⇒ không reset khi sang attempt mới (vd `retry:<sr>:1:2:4`) | **xác nhận** mẫu `^retry:<sr>:\d+:\d+:<n>$`; có thể khẳng định chặt `:1:1:` cho lần đầu |
+| Q10 | `SweepResult` (`core/handles.ts`) += `timers: number` = số hẹn được đặt `fired_at` trong lượt (`requeue` + `finish_wait`; không đếm `drop`/lỗi) | **xác nhận**: int vẫn kiểm trạng thái DB (sweeper toàn cục, bẫy X2b2) |
+| Q-D2-1 | Nguyên văn dưới. Dòng bảng theo thứ tự khai báo `output.fields` (`filterToolFields` dựng record đúng thứ tự); số `String(v)` (thô, `25000000`); chuỗi: ký tự gạch đứng ⇒ thêm `\` phía trước, xuống dòng ⇒ dấu cách; khối fields `JSON.stringify(fields)` không thụt; không có trường ⇒ không dòng bảng và câu `Đã gọi tool; trường: (không có)`. Hàm thuần **không** cắt `clipHandoff` (≤ 20 key × 32 ký tự luôn < 200 token) | **xác nhận** |
+| Q-D2-2 | `connectFailed: true` **chỉ** khi `fetch` ném lỗi **lập kết nối** (mã `ECONNREFUSED`/`ConnectionRefused`/`FailedToOpenSocket`/`ENOTFOUND`/`EAI_AGAIN`) — yêu cầu chưa tới Dify. Server đã nhận kết nối rồi đóng socket (trước/sau đọc body) ⇒ **đã gửi** (`sent: true`) — an toàn: tool `side_effect` không tự gọi lại | **khác** mặc định "có": fake đóng socket ⇒ `sent:true`; ca "trước khi gửi" dùng `baseUrl` trỏ cổng đóng (`127.0.0.1:<cổng trống>`) |
+| Q-D2-3 | Stage ở bước bị nhảy chỉ có thể `pending` ⇒ không có hẹn mở; `cancelTimers(skipped)` vẫn gọi (phòng thủ, idempotent, 0 hàng) | **xác nhận** (PD2-I33 chỉ kiểm 0 hẹn mở) |
+
+`toolOutputMd("Xuất HĐ", {tong_tien: 25000000, ma_kh: "KH1"})` (Q-D2-1, = PD2-U09) trả đúng:
+````text
+# Xuất HĐ
+
+## Kết quả
+| Trường | Giá trị |
+|---|---|
+| tong_tien | 25000000 |
+| ma_kh | KH1 |
+
+## Bàn giao
+Đã gọi tool; trường: tong_tien, ma_kh
+
+```fields
+{"tong_tien":25000000,"ma_kh":"KH1"}
+```
+````
+(kết thúc bằng một `\n` sau dấu ```` ``` ```` đóng; giữa các khối đúng một dòng trống như trên).

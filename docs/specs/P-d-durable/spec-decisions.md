@@ -78,7 +78,7 @@ Người dùng trả lời 4 câu của [`readiness.md`](readiness.md) "Lần 1"
 | 20 | Thứ tự ưu tiên trạng thái run | PD-R15 |
 | 21 | `remind_count` khi không cấu hình; trễ ≤ 1 chu kỳ | PD-R18 |
 | 22 | Test khoá bổ sung | spec-ac §2 |
-| 23 | Import/export `ttl_days` (+ `timezone` tenant) | PD-R24, spec-tz-tools §1 |
+| 23 | `ttl_days` import/export: không áp (code chưa có, D-PD13); `timezone` tenant vẫn export/import | PD-R24, spec-tz-tools §1 |
 | 24 | Regex `time`, câu .md nguyên văn | PD-R13, PD-R15 |
 | 25 | Sửa tham chiếu `gates/forward*` | tasks T9 |
 | 26 | Ghi `usage_logs`/`runs` cho tool ngoài job | PD2-R09 |
@@ -94,6 +94,28 @@ Người dùng trả lời 4 câu của [`readiness.md`](readiness.md) "Lần 1"
 | B5 | Hub đọc công tắc + `enabled` **trực tiếp DB lúc gọi** (không cache) | tránh cửa sổ 5 s của ADM-NFR-02 khi tắt khẩn |
 | B6 | Export/import yaml (ADM-FR-54): tenant thêm `timezone`; công tắc tool **không** export ở GĐ1 | giữ phạm vi nhỏ; dễ thêm sau |
 | B7 | Đổi `timezone` không tính lại hẹn giờ đã lưu (đã chốt `due_at` UTC) | câu 2 "đọc lúc lưu hẹn giờ" |
+
+## Quyết định từ PLAN + readiness lần 2 (Luật 2b, 2026-10-17)
+Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [plan-frontend.md §0](plan-frontend.md). Ghi lại để spec không lệch plan.
+| # | Quyết định | Chỗ spec |
+|---|---|---|
+| D-PD02 | `retry_count` reset ngầm: lưu `retry_attempt/retry_round`; hiệu lực khi khớp `(attempt, round)`, khác ⇒ 0 | PD-R06, spec §4 |
+| D-PD04 | `add_attempt` của `retry_exhausted`/`timer_invalid` **giữ `attempt`** (như `ask_limit`); `tool_failed` ⇒ như `agent_failed` (attempt+1) | PD-R04, PD-R14 |
+| D-PD07 | `process_timers.timezone` lưu IANA lúc lưu hẹn `wait_until` (hiển thị + câu .md không đọc lại tenant) | spec §4 |
+| D-PD09 | Hẹn `due_at ≤ now` vẫn ghi hàng hẹn, bắn ở lượt quét kế (≤ 3 s) | PD-R14 |
+| D-PD10 | Thêm vòng nhắc production `startProcessReminder` (300 s) — hiện `remindOnce` không có vòng thật | PD-R18 |
+| D-PD11 | Editor đọc múi giờ (P-d2: tool khả dụng) qua `GET /process-editor/context` | spec-tz-tools §1 |
+| D-PD13 | Không có export/import def trong code ⇒ bỏ vế đó của PD-R24 | PD-R24 |
+| D2-05 | `template_invalid` ở stage `tool` ⇒ `needs_decision` ngay (tự làm lại = gọi tool lần nữa) | PD2-R06 |
+| D2-06 | Quy trình **mẫu** (tenant null) không chứa stage `tool` ⇒ 422 `PROCESS_REF_INVALID` `ref:"tool"` | PD2-R01 |
+| D2-07 | Tham số workflow kiểu `file` ⇒ 422 `TOOL_INVALID` (GĐ1 không truyền file) | PD2-R02 |
+| D2-08 | "Bước liền trước có hiệu lực" = bước gần nhất không toàn `skipped` | PD2-R12 |
+| Retry team | `lead_plan` có plan ⇒ chạy tiếp từ `cursor`; chưa có plan ⇒ gọi lại lead, không đếm `calls`. `parallel_merge` ⇒ gọi lại cả lượt, không đếm `calls` (tốn token — báo ở Gate) | PD-R08 |
+| FD1–FD11 | UI giữ pattern cũ, không thư viện/component shadcn mới; panel `wait_until` theo mẫu `apply` (`StageWait.tsx`); validate live bằng `processDefStageIssues` (contract); `waiting_timer` = "Đang chờ hẹn", chấm vòng rỗng + icon (không chỉ màu); ngày hẹn theo `wait.timezone` lúc lưu; nhãn nút quyết theo lý do (`retry_exhausted` "Thử lại ngay", `timer_invalid` "Tính lại ngày hẹn"/"Bỏ chờ, đi tiếp"); domain web hai bản admin/chat có test khớp contract; quy trình mẫu dùng được "Chờ tới ngày", ẩn "Gọi tool" | spec §6 |
+| VALIDATION_ERROR | **400** (contract `common.ts:210`) thay 422 cho input `date` sai, `timezone` sai, ngưỡng `escalate`/`remind_every_h` sai | PD-R13/R23, TZ-R02, AC-H41, AC-A14 |
+| Audit công tắc | `entity:"workflow"`, `action:"grant"/"revoke"`, `tenant_id`, before/after `{on}` (không thêm enum audit) | TT-R03, AC-A15 |
+
+**Báo người dùng ở Gate (không hỏi):** vòng nhắc production bật lần đầu nhắc ngay các task cũ quá hạn; retry `parallel_merge` gọi lại cả lượt nên tốn token.
 
 ## Quyết định trong lúc làm (Luật 2, sau Gate)
 - (chưa có)

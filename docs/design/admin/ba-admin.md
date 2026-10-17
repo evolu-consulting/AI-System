@@ -310,7 +310,7 @@ Mọi `PATCH` gửi kèm `version`; lệch thì trả `409 Conflict`. Endpoint `
 > When builder khai báo workflow `report-tax` mà không tạo command hay gắn agent nào, Then lưu được, workflow có nhãn "Chưa gắn", và không user nào thấy hay chạy được nó.
 
 > **AC-A14 · Múi giờ tenant (CR-084, ADM-FR-72)**
-> Given tenant `acme` mặc định `Asia/Ho_Chi_Minh`, When platform admin đổi múi giờ sang `Europe/Berlin`, Then lưu được, có audit trước/sau, và stage "Chờ tới ngày" lưu hẹn **sau** thời điểm đó tính theo giờ Berlin (hẹn đã lưu trước không đổi). Given giá trị không phải tên IANA chuẩn (vd `Asia/Saigon`, `Mars/Base`), Then bị từ chối (422). Given tenant admin, Then không sửa được (403).
+> Given tenant `acme` mặc định `Asia/Ho_Chi_Minh`, When platform admin đổi múi giờ sang `Europe/Berlin`, Then lưu được, có audit trước/sau, và stage "Chờ tới ngày" lưu hẹn **sau** thời điểm đó tính theo giờ Berlin (hẹn đã lưu trước không đổi). Given giá trị không phải tên IANA chuẩn (vd `Asia/Saigon`, `Mars/Base`), Then bị từ chối (400 `VALIDATION_ERROR`). Given tenant admin, Then không sửa được (403).
 
 > **AC-A15 · Công tắc tool quy trình theo tenant (CR-087, ADM-FR-73)**
 > Given workflow `xuat-hoa-don` được bật cho `acme` và chưa bật cho `beta`, Then editor quy trình của `acme` chọn được nó làm stage "Gọi tool", của `beta` thì không (lưu ⇒ 422). When platform admin tắt công tắc của `acme` trong lúc một run đang chờ tới stage đó, Then tới lượt gọi run dừng ở "Cần người quyết" (`tool_failed`), workflow không bị gọi; mỗi lần bật/tắt có audit.

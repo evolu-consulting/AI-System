@@ -20,7 +20,7 @@ Quy ước như [test-plan §4](test-plan.md): nạp `loadDomain("<rel>")` = `P/
 | PD-U60 | ″ | `after:"review"`; `realAction:true`; `hasSources`; `hasMustKnow`; `hasAutofix` | mỗi ca `[{path:"stages.<i>.executor",rule:"WAIT_INVALID"}]` |
 | PD-U61 | ″ nguồn | input không có / input `text`; field: stage cùng bước / bước lớn hơn / field không có / field `number` | `WAIT_INVALID` |
 | PD-U67 | `defs/escalate-def.rules` `escalateStageIssues` | escalate null; `{afterH:24,groupId:G2}` review G1 | `[]`; `[]` |
-| PD-U68 | ″ | `groupId = reviewGroupId`; `afterH` 3 / 2161; escalate ở stage `after:"auto"` | `[{path:"stages.<i>.after.escalate",rule:"ESCALATE_INVALID"}]` |
+| PD-U68 | ″ | `groupId = reviewGroupId`; escalate ở stage `after:"auto"`; (đối chứng) `afterH` 3 / 2161 | `[{path:"stages.<i>.after.escalate",rule:"ESCALATE_INVALID"}]` cho hai ca đầu; `afterH` sai **không** thuộc luật này (zod 400, PD-C04/PD-I47) ⇒ `[]` |
 | PD-U69 | `escalateGroupRefs` | 2 stage có escalate | `[{path:"stages.0.after.escalate.group_id",groupId}, …]` |
 | PD-U72 | `defs/ttl.rules` `ttlOnCreate` | undefined, null, 30 | 7, null, 30 |
 | PD-U73 | `ttlOnUpdate` | `(undefined, 30)`, `(null, 30)`, `(10, null)` | 30, null, 10 |
@@ -38,3 +38,8 @@ Quy ước như [test-plan §4](test-plan.md): nạp `loadDomain("<rel>")` = `P/
 | PD-U90 | `tasks/decision.rules` `decisionOptionsFor` | `(false,"timer_invalid")`, `(false,"retry_exhausted")`, `(true,"retry_exhausted")` | `[add_attempt,use_current,cancel]`; `[add_attempt,cancel]`; cả 3 |
 | PD-U91 | `FORCE_USE_CURRENT` | — | có `timer_invalid`; không `retry_exhausted` |
 | PD-U92 | hồi quy autofix | như PC-R10 (`P-c/rules/autofix-rules.test.ts:108`) | không đổi |
+| PD-U93 | `runs/team-retry.rules` `teamResumePlan` (đầu vào `cur: {status, segmentStartedAt} \| null`; trả `"resume_answer" \| "resume_retry" \| "new"` — chữ ký theo plan §4.3, backend-lead xác nhận ở T7s) | `null` (chưa có team-run) | `"new"` |
+| PD-U94 | ″ | `{status:"running", segmentStartedAt:null}` (đã `pauseForRetry`) | `"resume_retry"` |
+| PD-U95 | ″ | `{status:"waiting_answer", segmentStartedAt:null}` và `{…, segmentStartedAt:N}` | `"resume_answer"` cả hai (ưu tiên hơn nhánh retry) |
+| PD-U96 | ″ | `{status:"running", segmentStartedAt:N}` (đang chạy dở, không do retry) | `"new"` |
+| PD-U97 | ″ | `it.each` `done`, `limit`, `failed`, `cancelled` × `segmentStartedAt` ∈ {null, N}; gọi 2 lần cùng đầu vào; đối tượng đầu vào không bị đổi | `"new"` (8 ô); kết quả như nhau; thuần |
