@@ -1,6 +1,6 @@
 # ADR-0017 · Engine quy trình chạy bền cho flow nghiệp vụ dài ngày
 
-Trạng thái: **Proposed — đề xuất phương án (a) theo kết quả spike 2026-10-17** · Liên quan: ADR-0013, docs/platform/spike-engine.md, `spikes/engine/engine.spike.test.ts`
+Trạng thái: **Accepted (2026-10-17, người dùng chốt) — phương án (a), điều kiện: sửa TECH-DEBT #190 ở P-d T9** · Liên quan: ADR-0013, docs/platform/spike-engine.md, `spikes/engine/engine.spike.test.ts`
 
 ## Bối cảnh
 Process engine (P-a, P-b, P-b2) được thiết kế cho chuỗi agent tạo tài liệu: run hết hạn sau 7 ngày, nhắc task một lần, mỗi stage ra một file. Flow nghiệp vụ (duyệt hợp đồng, nhắc thanh toán) cần sống nhiều tháng, hẹn giờ theo ngày, rẽ nhánh, gọi tool, không chạy trùng.
@@ -42,9 +42,10 @@ Nhận xét staging: tải 10× không làm vòng nền chậm theo cấp số (
 
 Nhận xét: nền chạy bền **đã đúng** ở những chỗ khó (vòng nền đọc DB nên an toàn khi khởi động lại, start không trùng, snapshot theo version, tải 1.000 task ổn). Các bài đỏ là **thiếu tính năng cho flow dài ngày**, không phải lỗi mất dữ liệu.
 
-## Quyết định (đề xuất)
-Chọn **(a) mở rộng engine hiện có**. Chưa cần Temporal/Restate. Việc cần làm ở GĐ1:
-1. **Chính sách thử lại theo loại lỗi:** lỗi tạm (mạng, timeout, provider bận) tự thử lại có backoff tới `attempt_limit`; chỉ lỗi nghiệp vụ mới chuyển `needs_decision` (bài 1).
+## Quyết định
+Chọn **(a) mở rộng engine hiện có** (người dùng chốt Accepted 2026-10-17 sau staging). Chưa cần Temporal/Restate. Việc cần làm ở GĐ1 (spec `P-d-durable`):
+0. **Điều kiện:** sửa nhắc trùng khi nhiều Hub (TECH-DEBT #190) ở P-d T9 — `dueTasks` khoá hàng (`FOR UPDATE SKIP LOCKED`), `markReminded` kiểm `rowCount`, int test hai Hub nhắc song song ⇒ đúng N lượt; chưa xong thì không chạy HA hai node.
+1. **Chính sách thử lại theo loại lỗi:** lỗi tạm (mạng, timeout, provider bận) tự thử lại có backoff (30 s / 2 ph / 8 ph, đếm bằng `retry_count` riêng, tối đa 3 — spec D3, không dùng `attempt_limit`); chỉ lỗi nghiệp vụ mới chuyển `needs_decision` (bài 1).
 2. **Bảng hẹn giờ** (`due_at`, `fired_at`, khoá idempotency) + executor `wait_until` (bài 3b).
 3. **Nhắc lặp và chuyển cấp** trong định nghĩa bước duyệt: nhắc mỗi N giờ, quá M giờ chuyển nhóm khác (bài 4).
 4. **`expires_at` không bắt buộc** cho flow nghiệp vụ; giữ 7 ngày cho chuỗi tài liệu cũ (bài 4b).

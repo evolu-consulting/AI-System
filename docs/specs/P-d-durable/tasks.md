@@ -11,7 +11,7 @@ Spec `draft`. Đã có PLAN (`plan*.md`, `plan-frontend*.md`, `test-plan*.md`, `
 ## Điều kiện trước
 | # | Việc | Ai | Trạng thái |
 |---|---|---|---|
-| D0a | ADR-0017 Accepted (spike Redis thật + tải 10.000 run staging) — điều kiện Gate P-d1 | người dùng / GĐ0 0.3, 0.10 | [ ] |
+| D0a | ADR-0017 Accepted (spike Redis thật + tải 10.000 run staging) — điều kiện Gate P-d1 | người dùng / GĐ0 0.3, 0.10 | [x] 2026-10-17 (điều kiện #190 ⇒ T9) |
 | D0b | Đóng mốc dọn-seed (CR-081) | điều phối | [ ] |
 | D0c | Mockup/artboard panel stage + nhãn chat + màn tenant (múi giờ, tab "Tool quy trình") (D13) — **frontend-lead tự dựng trong T2/T14, duyệt ở Gate** (readiness câu 4) | frontend-lead | [ ] |
 

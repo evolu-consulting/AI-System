@@ -8,7 +8,7 @@ design:
   - docs/CHANGE-REQUESTS.md#CR-083 · #CR-084 · #CR-085 · #CR-086 · #CR-087 (Intake GĐ1 platform 2026-10-17)
   - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-143…147, sửa HUB-FR-105/107/109/115), HUB-BR-41…43, sửa HUB-BR-12/25/26/38, §8 (`process_timers`), §11 AC-H39…H47
   - docs/design/admin/ba-admin.md §5.2 ADM-FR-72 (múi giờ tenant), §5.3 ADM-FR-73 (công tắc tool), §11 AC-A14, AC-A15 · spec-tz-tools.md
-  - docs/adr/0017-durable-process-engine.md (Proposed — **phải Accepted trước Gate**) · 0018 (P-d2, tool gói) · 0022 (P-d2, tool Dify)
+  - docs/adr/0017-durable-process-engine.md (**Accepted** 2026-10-17) · 0018 (P-d2, tool gói) · 0022 (P-d2, tool Dify)
   - docs/CHANGE-REQUESTS.md#CR-088…#CR-091 · docs/adr/0023-clean-architecture.md (Accepted) — bốn lớp: spec-ca.md
   - spike: docs/platform/spike-engine.md · spikes/engine/engine.spike.test.ts
   - nền: P-process-engine · P-b-sources · P-b2-canvas · P-c-autofix · P-c2-pr
@@ -160,7 +160,7 @@ Mockup `mockup/01–04` (duyệt ở Gate). Không thêm node kiểu mới. **C�
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Ghi chú |
 |---|---|
-| ADR-0017 **Accepted** | Điều kiện Gate P-d1 (D1); thiếu Redis thật + tải 10.000 run staging. Mâu thuẫn ADR-0017:32 "thử lại tới `attempt_limit`" ↔ D3: giữ D3, sửa ADR khi Accepted |
+| ADR-0017 **Accepted** | Xong 2026-10-17 (staging 10.000 run); ADR đã theo D3. Điều kiện: sửa #190 ở T9 |
 | ADR-0022 Accepted **hoặc** cách gọi workflow hiện có của `/mcp` | Điều kiện Gate P-d2 (T16); không cần ADR-0018 (readiness #18) |
 | Mốc dọn-seed (CR-081) đóng | Trước P-d1 (D14) |
 | Giả lập | đồng hồ giả qua port `Clock` ([spec-ca §4](spec-ca.md)); `fake-cli` `#fake:` thêm ca lỗi tạm theo lượt |
@@ -173,7 +173,7 @@ AC-H39…H47 + test khoá bị ảnh hưởng: [`spec-ac.md`](spec-ac.md). Lện
 D1…D15: [`spec-decisions.md`](spec-decisions.md).
 
 ### Câu hỏi mở
-Không còn; ADR-0017 = chờ staging ([`spec-decisions.md`](spec-decisions.md)).
+Không còn; ADR-0017 Accepted ([`spec-decisions.md`](spec-decisions.md)).
 
 ### Quyết định từ PLAN + readiness lần 2 (Luật 2b, 2026-10-17)
 D-PD02/04/07/09/10/11/13 (plan.md), D2-05…08 (plan-d2.md), retry team, FD1–FD11 (plan-frontend.md §0): [`spec-decisions.md`](spec-decisions.md) "Quyết định từ PLAN".
