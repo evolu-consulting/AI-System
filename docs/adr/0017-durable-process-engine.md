@@ -25,6 +25,8 @@ Môi trường: Windows, PostgreSQL 16.15 portable, fakeredis 2.40 (Redis giả 
 | 5 | Sửa template khi run đang chạy | **Đạt** | Run giữ `def_version` 1 và snapshot 2 stage, chạy hết theo bản cũ |
 | 6 | Tải: 1.000 task chờ duyệt | **Đạt** | Nhắc đủ 1.000 trong 11 lượt (lô 100), p95 một lượt 537 ms, `sweepOnce` 24 ms |
 
+**Bài tải mở rộng (`spikes/engine/load.spike.test.ts`, local, N=1.000, 2026-10-17):** nhắc 1.000 task trong 11 lượt (p95 362 ms/lượt); `sweepOnce` với 2.000 run đang chạy 27 ms; hết hạn 2.000 run trong 21 lượt (p95 1,6 s/lượt). **Hai Hub nhắc song song: ĐỎ — nhắc trùng** (1.800 lượt, 3.600 notice thay vì 1.000 / 2.000) do `dueTasks` không khoá hàng và `markReminded` không kiểm số dòng (TECH-DEBT #190; sửa ở P-d T9 trước khi bật HA hai node). Bản N=10.000 trên Redis thật chạy ở staging (người dùng chọn chờ staging).
+
 Nhận xét: nền chạy bền **đã đúng** ở những chỗ khó (vòng nền đọc DB nên an toàn khi khởi động lại, start không trùng, snapshot theo version, tải 1.000 task ổn). Các bài đỏ là **thiếu tính năng cho flow dài ngày**, không phải lỗi mất dữ liệu.
 
 ## Quyết định (đề xuất)

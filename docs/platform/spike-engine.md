@@ -62,3 +62,9 @@ bun --env-file=.env.local --config=bunfig.int.toml test --timeout 300000 spikes/
 - Đạt: không chạy trùng, nhắc an toàn qua khởi động lại, giữ snapshot khi đổi version, 1.000 task nhắc trong 11 lượt (p95 537 ms/lượt).
 - Đỏ: job lỗi không tự thử lại (chuyển `needs_decision`), chưa có hẹn ngày / tool / rẽ nhánh, chỉ nhắc một lần, run hết hạn sau 7 ngày.
 - Đề xuất: phương án (a), mở rộng engine hiện có.
+
+## Staging (ADR-0017, người dùng chọn chờ staging)
+
+`deploy/staging/`: project Docker riêng `evostaging` trên máy chủ 149.202.83.5 (Postgres 16 + Redis 7 thật, không mở cổng, giới hạn CPU/RAM), runner chạy `engine.spike.test.ts` và `load.spike.test.ts` với `LOAD_N=10000`, lấy báo cáo về `.data/staging-<giờ>/` rồi `down -v`. Xem trước: `powershell -File deploy\staging\run-spike.ps1 -DryRun`. Chạy thật cần người dùng duyệt từng lần (việc ra ngoài).
+
+Bài tải local N=1.000 (2026-10-17): xem ADR-0017 — phát hiện nhắc trùng khi 2 Hub (TECH-DEBT #190).
