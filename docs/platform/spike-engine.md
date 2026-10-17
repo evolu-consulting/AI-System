@@ -47,7 +47,18 @@ Thời hạn: 2 tuần. Kết quả: báo cáo pass/fail từng bài + đề xu�
 
 Quy tắc chọn: chọn phương án ít công vận hành hơn **trong số các phương án qua cả sáu bài**.
 
-## Chạy spike ở đâu
+## Chạy spike
 
-Thư mục `spikes/engine/` (sẽ tạo khi bắt đầu chạy), ngoài `tests/acceptance/**` để không đụng khoá test. Dùng
-`processLoops:false` và seam `d.now` như các test P-a/P-b hiện có.
+`spikes/engine/engine.spike.test.ts`, ngoài `tests/acceptance/**` (không đụng khoá test, bị `bun test` bỏ qua):
+
+```
+scripts\dev-db.ps1 -Wait
+bun --env-file=.env.local --config=bunfig.int.toml test --timeout 300000 spikes/engine/engine.spike.test.ts
+```
+
+## Kết quả (2026-10-17)
+
+4 đạt (2, 3a, 5, 6), 4 đỏ (1, 3b, 4, 4b). Chi tiết và đề xuất: ADR-0017. Tóm tắt:
+- Đạt: không chạy trùng, nhắc an toàn qua khởi động lại, giữ snapshot khi đổi version, 1.000 task nhắc trong 11 lượt (p95 537 ms/lượt).
+- Đỏ: job lỗi không tự thử lại (chuyển `needs_decision`), chưa có hẹn ngày / tool / rẽ nhánh, chỉ nhắc một lần, run hết hạn sau 7 ngày.
+- Đề xuất: phương án (a), mở rộng engine hiện có.
