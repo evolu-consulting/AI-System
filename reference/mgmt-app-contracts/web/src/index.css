@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* The CKS app's palette (cks-demo/index.html, from the AI-System admin-web kit): cool grey-violet ground, white cards,
+   one indigo for action, amber for "soon", red for "late"; status colours differ in lightness, not hue alone.
+   Two themes: light (the default) below, dark further down — chosen in the account menu, or "Theo máy" to follow
+   the device (html[data-theme], see app/theme.ts). Utilities read these variables at run time, so a theme only redefines them. */
+@theme static {
+  --font-sans: "Roboto", "Segoe UI", system-ui, sans-serif;
+  /* numbers (money, quantities, serials) keep the body font, with equal-width digits so columns line up: a typewriter
+     face made "91.500.000 đ" look out of place next to the text */
+  --font-mono: "Roboto", "Segoe UI", system-ui, sans-serif;
+
+  --color-ground: #f4f4f9;
+  --color-panel: #ffffff;
+  --color-sunk: #f6f6fa;
+  --color-bubble: #f1f1f7;
+  --color-rule: #e5e5ec;
+  --color-rule-soft: #efeff4;
+  --color-field: #d4d4dc;
+  --color-ink: #0f1020;
+  --color-ink-2: #45465a;
+  --color-dim: #6b6c80;
+  --color-pill: #1e1b4b;
+
+  --color-act: #4f46e5;
+  --color-act-hover: #4338ca;
+  --color-act-soft: #eef2ff;
+  --color-act-line: #c7d2fe;
+  /* text on a filled action colour (white here, the dark ground in the dark theme) */
+  --color-on-act: #ffffff;
+
+  --color-ok: #05603f;
+  --color-ok-bg: #e3f4ec;
+  --color-soon: #8a4306;
+  --color-soon-bg: #fdf0df;
+  --color-soon-line: #f5cf9a;
+  --color-late: #9b1c1c;
+  --color-late-bg: #fde8e8;
+  --color-late-line: #f6b8b8;
+  --color-idle-bg: #f1f1f4;
+  --color-new-bg: #f0f2ff;
+
+  --color-scroll: #c9c9d6;
+  --color-scroll-hover: #a3a3b8;
+}
+
+/* Dark: the CKS app's dark set. Same names, so every page follows without a dark: variant on each class. */
+@layer theme {
+  :root[data-theme="dark"] {
+    --color-ground: #0e0f1c; --color-panel: #17182a; --color-sunk: #1d1f33; --color-bubble: #202238;
+    --color-rule: #2a2c44; --color-rule-soft: #23253b; --color-field: #3a3c58;
+    --color-ink: #ececf4; --color-ink-2: #c3c5d6; --color-dim: #a1a3b8; --color-pill: #c7d2fe;
+    --color-act: #818cf8; --color-act-hover: #a5b4fc; --color-act-soft: #24264a; --color-act-line: #4b4f8f;
+    --color-on-act: #0e0f1c;
+    --color-ok: #6ee7a8; --color-ok-bg: #0f2e20; --color-soon: #fbbf24; --color-soon-bg: #352608;
+    --color-soon-line: #6b4d12; --color-late: #fca5a5; --color-late-bg: #3b1515; --color-late-line: #7a2e2e;
+    --color-idle-bg: #24253a; --color-new-bg: #1c1e3a;
+    --color-scroll: #34364f; --color-scroll-hover: #4a4d6c;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-ground: #0e0f1c; --color-panel: #17182a; --color-sunk: #1d1f33; --color-bubble: #202238;
+      --color-rule: #2a2c44; --color-rule-soft: #23253b; --color-field: #3a3c58;
+      --color-ink: #ececf4; --color-ink-2: #c3c5d6; --color-dim: #a1a3b8; --color-pill: #c7d2fe;
+      --color-act: #818cf8; --color-act-hover: #a5b4fc; --color-act-soft: #24264a; --color-act-line: #4b4f8f;
+      --color-on-act: #0e0f1c;
+      --color-ok: #6ee7a8; --color-ok-bg: #0f2e20; --color-soon: #fbbf24; --color-soon-bg: #352608;
+      --color-soon-line: #6b4d12; --color-late: #fca5a5; --color-late-bg: #3b1515; --color-late-line: #7a2e2e;
+      --color-idle-bg: #24253a; --color-new-bg: #1c1e3a;
+      --color-scroll: #34364f; --color-scroll-hover: #4a4d6c;
+      color-scheme: dark;
+    }
+  }
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.55;          /* room for marks above and below: "Thực phẩm › Gia vị" */
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+/* Scrollbars: a thin rounded thumb on a clear track, fainter until the pointer is over it. */
+* { scrollbar-width: thin; scrollbar-color: var(--color-scroll) transparent; }
+*:hover { scrollbar-color: var(--color-scroll-hover) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-scroll); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-scroll-hover); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+.tnum, .font-mono { font-variant-numeric: tabular-nums; }
+
+@layer components {
+  .field {
+    height: 2.5rem; width: 100%; padding: 0 0.75rem;
+    border: 1px solid var(--color-field); border-radius: 8px; background: var(--color-panel);
+    font-size: 14px; color: var(--color-ink);
+  }
+  .field:focus { outline: 2px solid var(--color-act); outline-offset: -1px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    height: 2.5rem; padding: 0 1rem; border-radius: 8px;
+    font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-sm { height: 2.25rem; padding: 0 0.75rem; font-size: 13px; }
+  .btn-primary { background: var(--color-act); color: var(--color-on-act); }
+  .btn-primary:hover:not(:disabled) { background: var(--color-act-hover); }
+  /* Outlined in the action colour: "+ Thêm báo giá", "Đã trả", "Gia hạn cả nhóm" on a card. */
+  .btn-outline { border: 1.5px solid var(--color-act); background: var(--color-panel); color: var(--color-act); }
+  .btn-outline:hover:not(:disabled) { background: var(--color-act-soft); }
+  .btn-quiet { border: 1px solid var(--color-field); background: var(--color-panel); color: var(--color-ink); font-weight: 500; }
+  .btn-quiet:hover:not(:disabled) { background: var(--color-sunk); }
+
+  /* Filter chips: indigo-tinted when on (as in the CKS app), outlined otherwise (Tất cả · Thực phẩm · …). */
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.25rem; height: 2.25rem; padding: 0 0.9rem;
+    border: 1px solid var(--color-field); border-radius: 999px; background: var(--color-panel);
+    font-size: 13px; color: var(--color-ink); cursor: pointer; white-space: nowrap;
+  }
+  .chip:hover { background: var(--color-sunk); }
+  .chip[aria-pressed="true"] { background: var(--color-act-soft); border-color: transparent; color: var(--color-act); font-weight: 600; }
+  .chip-dashed { border-style: dashed; color: var(--color-dim); }
+
+  .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 0.5rem; border-radius: 6px;
+    font-size: 12px; background: var(--color-act-soft); color: var(--color-act); white-space: nowrap; }
+  .tag-grey { background: var(--color-idle-bg); color: var(--color-ink-2); }
+}
+
+@layer base {
+  :focus-visible { outline: 2px solid var(--color-act); outline-offset: 2px; }
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.rise { animation: rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* The login/onboarding showcase panel: a soft brand tint (indigo → violet → pink), its own value in each theme. */
+.auth-show { background: linear-gradient(140deg, #eef2ff 0%, #f0eafc 55%, #fdeef6 100%); }
+:root[data-theme="dark"] .auth-show { background: linear-gradient(140deg, #1a1b31 0%, #211e40 55%, #2b2140 100%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .auth-show { background: linear-gradient(140deg, #1a1b31 0%, #211e40 55%, #2b2140 100%); }
+}
+
+dialog.sheet {
+  margin: auto; width: min(560px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem);
+  border: 1px solid var(--color-rule); border-radius: 12px; background: var(--color-panel); color: var(--color-ink);
+  padding: 0; box-shadow: 0 24px 64px rgba(20, 20, 60, 0.22);
+}
+dialog.sheet::backdrop { background: rgba(14, 15, 28, 0.45); backdrop-filter: blur(2px); }
+
+/* The assistant's typing dots */
+@keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+.dots span { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 999px;
+  background: currentColor; animation: blink 1.2s infinite; }
+.dots span:nth-child(2) { animation-delay: 0.15s; }
+.dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

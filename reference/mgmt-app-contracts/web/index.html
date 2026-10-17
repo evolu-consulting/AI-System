@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sổ Hợp Tác</title>
+    <meta name="color-scheme" content="light dark" />
+    <!-- light unless a person chose dark or "follow the device" (app/theme.ts); set before the first paint -->
+    <script>var t = "light"; try { t = localStorage.getItem("theme") || "light"; } catch (e) {} if (t !== "auto") document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

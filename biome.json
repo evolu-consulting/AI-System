@@ -12,6 +12,7 @@
       "!**/migrations/meta",
       "!**/migrations-dev/meta",
       "!docs",
+      "!reference",
       "!**/components/ui",
       "!**/routeTree.gen.ts"
     ]

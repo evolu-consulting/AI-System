@@ -17,3 +17,11 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0012 | KnowledgeHub làm RAG ngoài — Hub làm proxy (CR-062) | Proposed (trình Gate K1) |
 | 0013 | Canvas quy trình admin-web: `@xyflow/react` (CR-063) | Accepted (Gate P-b2, 2026-10-12) |
 | 0014 | Công cụ code-graph (graphify/gitnexus) chạy như chương trình trên Runtime (CR-066) | Proposed (trình Gate K2) |
+| 0015 | FileBox — lưu file ngoài (driver Storage `filebox`) | Accepted (Gate FB1, 2026-10-15) |
+| 0016 | Postgres là nguồn chuẩn cho dữ liệu giao dịch của gói | Proposed (Gate GĐ0 platform) |
+| 0017 | Engine quy trình chạy bền cho flow nghiệp vụ dài ngày | Proposed (chờ spike) |
+| 0018 | Một nguồn định danh, SSO theo tenant | Proposed (Gate GĐ0 platform) |
+| 0019 | AI runtime: CLI subscription, đổi API key bằng cấu hình | Proposed (Gate GĐ0 platform) |
+| 0020 | Hạ tầng production | Proposed (Gate GĐ0 platform) |
+| 0021 | Một dịch vụ tri thức thay hai RAG | Proposed (Gate GĐ0 platform) |
+| 0022 | Hybrid tạm: Dify là công cụ AI do Hub gọi | Proposed (Gate GĐ0 platform) |
