@@ -18,3 +18,7 @@
 
 ## Gate lại
 P-process-engine (D18), K1-knowledgehub (CR-070 §2), P-c-autofix, P-c2-pr — đều ghi "Cập nhật CR-081 · Gate lại"; đạt lại khi test khoá xanh với cờ fixture.
+
+## Đóng mốc (2026-10-17, phiên chính)
+
+Kiểm lại trên `evolu-platform` (DB dev seed tối giản, không còn `process_defs` mẫu, `HUB_SEED_FIXTURES` không đặt): `P-a` + `K1` 516/517, `P-a/step0` + `K1 seed` + `P-c` + `P-c2` 295/295. Ca đỏ duy nhất P1-82 (`thread.int`) chập chờn 1/3 lần, không liên quan seed ⇒ TECH-DEBT #192. Test int khoá **không cần** cờ fixture (tự tạo def); e2e P-a đã đặt cờ trong `e2e/P-a/_pa-stack.ts`. Bốn spec Gate lại (P-process-engine, K1, P-c-autofix, P-c2-pr) coi như đạt lại. **Mốc dọn-seed: ĐÓNG.**
