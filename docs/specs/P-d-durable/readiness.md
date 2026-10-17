@@ -6,9 +6,35 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-17 | NOT READY (lần 2) | 4 (1 là điều kiện Gate ADR-0017) | 10 | 8 | Đã có plan/plan-frontend/test-plan/mockup; đóng #1,#3,#6,#8–#12,#14,#15,#17,#19–#21,#24,#25,#27–#32. Còn: lệch spec↔plan (400/422, run_steps 'tool', vị trí step.rules/T18s, ngưỡng escalate, audit grant/revoke, quyết định plan chưa vào spec), ADR-0023 khi dời file import contract, e2e lệch nhãn FE, G1–G7, teamResumePlan, T10 rủi ro. Mọi mục (a) sửa theo mặc định (Luật 2b); hỏi người dùng 1 câu (ADR-0017). |
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 2 · 2026-10-17 · NOT READY
+
+Phạm vi: diff 8c0b473..5cfae09 thư mục spec + plan, plan-contract, plan-db, plan-domain, plan-d2, plan-frontend(-d2,-i18n), mockup 01–04, test-plan(-rules,-int,-d2,-e2e), ADR-0023; đối chiếu `common.ts:210`, `audit.ts`, `mcp.repo.ts:75`, CHECK audit hub 0029/0030, import của `ask/notify/back/step/task/run-access/autofix.rules.ts`. Trần: spec 24923/25600 · plan 30708/30720 · plan-frontend 25541/25600 · test-plan 30571/30720 (đạt, sát).
+
+#### Chặn
+| # | Vấn đề | Mặc định |
+|---|---|---|
+| 33 | `VALIDATION_ERROR` 422 (spec/BA) ↔ 400 (contract) | 400, sửa spec/BA |
+| 34 | side_effect: type 'workflow' ↔ 'tool'; cột `retry_since/retry_attempt/retry_round` chưa vào spec | theo D-PD03/D2-03 |
+| 35 | file đích task lệch (step.rules, run-status, T7s, task-access, thiếu T18s, chia T7/T8/T18) | theo plan-domain §7 / plan-d2 §8–9 |
+| 36 | ADR-0017 Proposed (điều kiện Gate) | hỏi người dùng |
+
+#### Cao
+37 import contract trong file dời vào domain (run-access, autofix, `FORWARD_CHAIN_MAX`, `DECISION_OPTIONS`) · 38 e2e lệch nhãn FE · 39 G1–G7 (contract FE cần) · 40 PD-R23 ngưỡng ⇒ 400 · 41 audit `workflow` + `grant`/`revoke` · 42 quyết định plan chưa vào spec · 43 retry team `lead_plan`/`parallel_merge` · 44 spec-ac §2 ⇒ trỏ test-plan §6 (+K30) · 45 T10 → rủi ro cao · 46 chữ ký `teamResumePlan`
+
+#### Thấp
+47 câu Q4/Q6/Q9/Q10/Q-D2-1…3 của qc · 48 Lệnh xong T5/T11/T12/T20 (+`test:all`) · 49 trạng thái cũ · 50 "nếu backend-lead thấy cần" · 51 ép `answerer`/`timeout_s` · 52 câu PD-R02 · 53 trần sát (sửa vào phụ lục) · 54 FE Q1–Q4
+
+#### Câu hỏi người dùng
+1. ADR-0017: chờ staging (mặc định) hay Accept dựa trên spike local + PD-P01/P02?
+
+Báo người dùng ở Gate (không hỏi): vòng nhắc production bật lần đầu sẽ nhắc ngay các task cũ quá hạn; retry `parallel_merge` gọi lại cả lượt (tốn token).
+
+Lần chạy 3: chỉ diff sau khi docs-architect / backend-lead / qc áp #33–#54 (a).
 
 ### Lần 1 · 2026-10-17 · NOT READY
 
