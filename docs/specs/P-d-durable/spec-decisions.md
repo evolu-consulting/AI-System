@@ -122,3 +122,4 @@ Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [pla
 
 ## Trả lời readiness lần 2 · 2026-10-17
 - **ADR-0017 (điều kiện Gate P-d1):** người dùng chọn **chờ staging** — Accepted chỉ sau spike trên Redis thật + bài tải 10.000 run trên staging. Dựng staging/deploy là việc ra ngoài, hỏi người dùng trước. Câu hỏi mở về ADR-0017 ở spec §9 coi như đã trả lời.
+- **Mockup (D13):** người dùng **duyệt** mockup/01–04 ngày 2026-10-17 (điều kiện Gate số 2 đạt).
