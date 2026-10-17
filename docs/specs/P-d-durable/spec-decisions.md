@@ -119,3 +119,6 @@ Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [pla
 
 ## Quyết định trong lúc làm (Luật 2, sau Gate)
 - (chưa có)
+
+## Trả lời readiness lần 2 · 2026-10-17
+- **ADR-0017 (điều kiện Gate P-d1):** người dùng chọn **chờ staging** — Accepted chỉ sau spike trên Redis thật + bài tải 10.000 run trên staging. Dựng staging/deploy là việc ra ngoài, hỏi người dùng trước. Câu hỏi mở về ADR-0017 ở spec §9 coi như đã trả lời.

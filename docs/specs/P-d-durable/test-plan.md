@@ -147,7 +147,7 @@ Nguyên tắc: giữ **ý định** ca cũ; ca "lỗi ⇒ quyết ngay" dùng l�
 | K27 | `P-a/pf1/rules/gate.test.ts:7-15` | dựa vào `tryLoad` trả `{}` cho 2 module **không tồn tại** (`runs/start.rules.ts`, `runs/runs.rules.ts`) | dùng `loadAnyOf([...])` (§7) | T3a |
 | K28 | `M1/db-rls.int.test.ts:241-265` · `M2/db-rls.int.test.ts:276-297` · `M3/db-rls.int.test.ts:290-311` | bảng RLS admin 13 ⇒ 14 (`tenant_workflow_tools`, P-d2) | thêm tên vào danh sách, sửa "13" ⇒ "14" trong tên ca | T18a |
 | K29 | `P-a/_support/modules.ts:1-30` | luật `tryLoad` | §7 | T3a |
-K30 (`P-a/step0/rules/run-access.test.ts`): [addendum](test-plan-addendum.md).
+K30 (T8s dời toàn file `run-access.rules.ts`), PD-C13 (parity), rà A6: [addendum](test-plan-addendum.md).
 **Đã kiểm, KHÔNG sửa** (spec-ac §2 liệt kê nhưng không vỡ): `contracts-pb2.test.ts:116-119, 135, 149, 173` (so tiền tố / không phải enum) · `contracts-pc.test.ts:81, 259` (tiền tố) · `contracts-pa.test.ts:172-173` (tiền tố) · R-S18 `process-state.test.ts:239` (D-PD01: thử lại không qua `transition`) · `P-b/pfs3/rules/sources.rules.test.ts` (không so `INPUT_TYPES`; `M2/rules/contracts.test.ts:136` là `INPUT_TYPES` workflow, khác hằng) · `P-a/pf1/start.int.test.ts` (P1-07 giữ; ca `waiting_timer`/`ttl null` viết mới ở PD-I30, PD-I50) · `M1/tenants.int.test.ts`, `M1/rules/contracts.test.ts` (parse bằng `TenantSchema` contract) · `M4/rules/audit-snapshot.rules.test.ts:11` (dto không có `timezone` ⇒ vẫn đúng; ca mới PD-I83) · `M4/**` transfer (`timezone` optional) · `X2a/rules/__fixtures__/chat-exports-c1.json` (snapshot C1, không export quy trình) · `P-c/db.int`, `P-c2/db.int`, `P-b/pfs1/sources-db.int` (CHECK kiểm bằng `includes`) · `P-a/step0/{migration,rls}.int` · R-N02, P3-04, P3-06 (nhắc cũ giữ). Tất cả chạy lại ở VERIFY.
 
 ## 7. `tryLoad` báo rõ khi module vắng (T3a)
@@ -175,9 +175,9 @@ Fixture SQL: theo "Bẫy đã gặp" CONVENTIONS §2 (`sql.json`, ép kiểu, kh
 ## 9. Số test dự kiến
 | Loại | P-d1 | P-d2 | Tổng |
 |---|---|---|---|
-| Luật lớp 1 (mã ca; mỗi mã 1–10 `it`/`it.each`) | 68 | 19 | 87 (≈ 205 `it` + 162 ô bảng lỗi) |
-| Contract + mapper rà + kiến trúc | 15 | 6 + PD-A04 | 22 |
-| Int | 78 | 41 | 119 |
+| Luật lớp 1 (mã ca; mỗi mã 1–10 `it`/`it.each`) | 71 | 19 | 90 (≈ 205 `it` + 162 ô bảng lỗi) |
+| Contract + mapper rà + kiến trúc | 16 | 6 + PD-A04 | 23 |
+| Int | 78 | 42 | 120 |
 | Tải (`perf`) | 3 | — | 3 |
 | E2E | 8 | 5 | 13 |
 | Test khoá sửa (mục K) | 27 (K01–K30 trừ K08 giữ, K15, K28) | 2 (K15, K28) | 29 |
@@ -187,13 +187,13 @@ Fixture SQL: theo "Bẫy đã gặp" CONVENTIONS §2 (`sql.json`, ép kiểu, kh
 |---|---|---|---|
 | Q1 | docs-architect | `VALIDATION_ERROR` = 400 (AC-H41, AC-A14, PD-R13, TZ-R02) | test theo **400** |
 | Q2 | backend-lead + docs-architect | Dời `core/step.rules.ts`: plan-domain §7 (T8s ⇒ `domain/runs/step.rules.ts`, toàn file) ↔ tasks T19s + spec-ca §5 (`domain/runs/step-join.rules.ts`); spec-ca §2 ghi `runs/run-status.rules.ts` ↔ plan-domain `statusForRun` ở `runs/step.rules.ts` | theo plan-domain (T8s, `runs/step.rules.ts`) |
-| Q3 | backend-lead | Chữ ký `teamResumePlan(cur)` (`team-retry.rules.ts`) chưa vào plan-domain | PD-U93…U97 ([test-plan-rules](test-plan-rules.md)) |
-| Q4 | backend-lead | Seam quan sát outbox cho test UoW (PD-I75…I77): `createHubUow(db, deps)` nhận `sink`/`publish` giả? | `deps.publish` giả ghi mảng; thiếu ⇒ quan sát qua Redis/NOTIFY như M3 sentinel |
+| Q3 | backend-lead | **Đã trả lời** (plan-addendum A5) | PD-U93…U98 ([rules](test-plan-rules.md)) |
+| Q4 | backend-lead | **Đã trả lời** (A7): `createHubUow(db,{clock,publish})`, `publish` bắt buộc | PD-I75…I77 dùng `publish` giả ghi mảng |
 | Q5 | docs-architect | PD-R23: `after_h` sai ⇒ 400 `VALIDATION_ERROR` (zod) | `ESCALATE_INVALID` 422 chỉ khi trùng Group duyệt / `escalate` ở stage `auto` (PD-U68, PD-I47) |
-| Q6 | backend-lead | `legacyFailReason({code:"TIMEOUT", interrupted:true})` thứ tự ưu tiên | không test ô này |
+| Q6 | backend-lead | **Đã trả lời** (A7): `interrupted` thắng `TIMEOUT` | PD-U04b ([rules](test-plan-rules.md)) |
 | Q8 | docs-architect | spec-ac §2 liệt kê sai/thiếu test khoá: thiếu P1-28b, TM-07, TM-09…TM-15, `gate.test.ts`, M1/M2/M3 db-rls; thừa `contracts-pb2`, `contracts-pc`, `sources.rules`, `start.int`, `M1 tenants` | cập nhật spec-ac §2 theo §6 trên |
-| Q9 | backend-lead | Giá trị khởi đầu `round`/`attempt` trong khoá `retry:<sr>:<round>:<attempt>:<n>` | int kiểm mẫu `^retry:<sr>:\d+:\d+:<n>$` + `n` tăng 1,2,3 |
-| Q10 | backend-lead | `sweepOnce` có trả số hẹn đã bắn (`{timers:n}`)? | int kiểm trạng thái DB, không kiểm giá trị trả |
+| Q9 | backend-lead | **Đã trả lời** (A7): `round`/`attempt` bắt đầu 1; `n` đếm theo stage, không reset | PD-I01 `retry:<sr>:1:1:1`, `n` 2, 3; PD-I02 `n` 4 |
+| Q10 | backend-lead | **Đã trả lời** (A7): `SweepResult.timers` | PD-I01, PD-I60 kiểm thêm `timers`; DB vẫn kiểm chính |
 
 ## 11. Kết quả "đỏ đúng lý do"
 Chưa chạy (bước này chỉ viết test-plan). Ghi `<đỏ đúng>/<tổng>` mỗi file ở đây trước LOCK.

@@ -17,8 +17,9 @@ Quy ước như [test-plan §4](test-plan.md): nạp `loadDomain("<rel>")` = `P/
 | PD-U52 | `waitedText`, `WAIT_SKIP_TEXT`, `waitOutputMd` | `(2026-11-17T02:00Z, "Asia/Ho_Chi_Minh")`; `waitOutputMd("Chờ hạn", line)` | `"Đã chờ tới 2026-11-17 09:00 (Asia/Ho_Chi_Minh)."`; `"Bỏ chờ theo quyết định."`; `"# Chờ hạn\n\n<line>\n\n## Bàn giao\n<line>\n"` |
 | PD-U53 | tính tất định | `localToUtc` gọi lại sau khi đổi `Date.now` giả (không dùng) | cùng kết quả (CA-R05) |
 | PD-U59 | `defs/wait-def.rules` `waitStageIssues` | stage `wait_until` hợp lệ (from input `han` date; from field step nhỏ hơn) | `[]` |
-| PD-U60 | ″ | `after:"review"`; `realAction:true`; `hasSources`; `hasMustKnow`; `hasAutofix` | mỗi ca `[{path:"stages.<i>.executor",rule:"WAIT_INVALID"}]` |
-| PD-U61 | ″ nguồn | input không có / input `text`; field: stage cùng bước / bước lớn hơn / field không có / field `number` | `WAIT_INVALID` |
+| PD-U60 | ″ | `after:"review"`; `realAction:true`; `hasSources`; `hasMustKnow`; `hasAutofix` (path theo plan-addendum A2) | `[{path:"stages.<i>.after",rule:"WAIT_INVALID"}]` cho ca `after:"review"`; `[{path:"stages.<i>.executor",…}]` cho 4 ca còn lại |
+| PD-U61 | ″ nguồn | input không có / input `text`; field: stage cùng bước / bước lớn hơn / field không có / field `number` | `WAIT_INVALID`, path `stages.<i>.executor.from` (6 ca) |
+| PD-U61b | ″ bản nháp chưa qua zod (A2) | `offsetDays` 366 / −366; `time` `"24:00"` / `"9:00"` | `WAIT_INVALID`, path `stages.<i>.executor.offset_days` (2 ca) / `stages.<i>.executor.time` (2 ca) |
 | PD-U67 | `defs/escalate-def.rules` `escalateStageIssues` | escalate null; `{afterH:24,groupId:G2}` review G1 | `[]`; `[]` |
 | PD-U68 | ″ | `groupId = reviewGroupId`; escalate ở stage `after:"auto"`; (đối chứng) `afterH` 3 / 2161 | `[{path:"stages.<i>.after.escalate",rule:"ESCALATE_INVALID"}]` cho hai ca đầu; `afterH` sai **không** thuộc luật này (zod 400, PD-C04/PD-I47) ⇒ `[]` |
 | PD-U69 | `escalateGroupRefs` | 2 stage có escalate | `[{path:"stages.0.after.escalate.group_id",groupId}, …]` |
@@ -38,8 +39,10 @@ Quy ước như [test-plan §4](test-plan.md): nạp `loadDomain("<rel>")` = `P/
 | PD-U90 | `tasks/decision.rules` `decisionOptionsFor` | `(false,"timer_invalid")`, `(false,"retry_exhausted")`, `(true,"retry_exhausted")` | `[add_attempt,use_current,cancel]`; `[add_attempt,cancel]`; cả 3 |
 | PD-U91 | `FORCE_USE_CURRENT` | — | có `timer_invalid`; không `retry_exhausted` |
 | PD-U92 | hồi quy autofix | như PC-R10 (`P-c/rules/autofix-rules.test.ts:108`) | không đổi |
-| PD-U93 | `runs/team-retry.rules` `teamResumePlan` (đầu vào `cur: {status, segmentStartedAt} \| null`; trả `"resume_answer" \| "resume_retry" \| "new"` — chữ ký theo plan §4.3, backend-lead xác nhận ở T7s) | `null` (chưa có team-run) | `"new"` |
-| PD-U94 | ″ | `{status:"running", segmentStartedAt:null}` (đã `pauseForRetry`) | `"resume_retry"` |
-| PD-U95 | ″ | `{status:"waiting_answer", segmentStartedAt:null}` và `{…, segmentStartedAt:N}` | `"resume_answer"` cả hai (ưu tiên hơn nhánh retry) |
-| PD-U96 | ″ | `{status:"running", segmentStartedAt:N}` (đang chạy dở, không do retry) | `"new"` |
-| PD-U97 | ″ | `it.each` `done`, `limit`, `failed`, `cancelled` × `segmentStartedAt` ∈ {null, N}; gọi 2 lần cùng đầu vào; đối tượng đầu vào không bị đổi | `"new"` (8 ô); kết quả như nhau; thuần |
+| PD-U93 | `runs/team-retry.rules` `teamResumePlan` (đầu vào `cur: {status, segmentStartedAt, cursor} \| null`; trả `"resume_answer" \| "resume_retry" \| "new"` — chữ ký + luật theo plan-addendum A5; `TeamRunStatus` ở `domain/types.ts`) | `null` (chưa có team-run) | `"new"` |
+| PD-U94 | ″ | `{status:"running", segmentStartedAt:null, cursor:0}` (đã `pauseForRetry`) | `"resume_retry"` |
+| PD-U95 | ″ | `{status:"waiting_answer", segmentStartedAt:null, cursor:0}` và `{…, segmentStartedAt:N, cursor:0}` | `"resume_answer"` cả hai (ưu tiên hơn nhánh retry) |
+| PD-U96 | ″ | `{status:"running", segmentStartedAt:N, cursor:0}` (đang chạy dở, không do retry) | `"new"` |
+| PD-U97 | ″ | `it.each` `done`, `limit`, `failed`, `cancelled` × `segmentStartedAt` ∈ {null, N} (`cursor:0`); gọi 2 lần cùng đầu vào; đối tượng đầu vào không bị đổi | `"new"` (8 ô); kết quả như nhau; thuần |
+| PD-U98 | ″ (A5: `cursor < 0` = dữ liệu hỏng) | `{status:"running", segmentStartedAt:null, cursor:-1}`; đối chứng `cursor:0` | `"new"`; `"resume_retry"` |
+| PD-U04b | `runs/job-error.rules` `legacyFailReason` (Q6, A7: `interrupted` thắng) | `{code:"TIMEOUT",interrupted:true}`; `{code:"TIMEOUT",interrupted:false}`; `{code:null,interrupted:true}` | `interrupted`; `job_timeout`; `interrupted` |

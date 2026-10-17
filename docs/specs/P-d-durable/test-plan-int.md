@@ -5,8 +5,8 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 ## 1. Thử lại — `d1/retry.int.test.ts` (AC-H39, AC-H40 · HUB-FR-143 · HUB-BR-41)
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
-| PD-I01 | `pd-retry`: A start; job s0 `rt.fail(j,"UPSTREAM_ERROR","lỗi")` (reason null) ⇒ `sweep` tại T0+29 s ⇒ `advance` tới T0+30 s ⇒ `sweep` ⇒ job mới fail ⇒ T+120 s ⇒ fail ⇒ T+480 s ⇒ `jobDone` | sau lỗi 1: stage s0 `waiting_timer`, `retry_count` 1, `last_error_code` `UPSTREAM_ERROR`, `current_run_id` NULL, run `running`, 1 hàng hẹn `kind=retry` `due_at`=T0+30 s, khoá khớp `^retry:<sr>:\d+:\d+:1$`, `timezone` NULL; T0+29 s: 0 job mới; mỗi lần bắn: `fired_at` đặt, đúng 1 job mới, `attempt` = 1, `round` giữ; khoá `n` = 2, 3; view `stages[0].retry_count` 1→2→3, `next_retry_at` = `due_at` hẹn mở; sau `jobDone`: s0 `done`, s1 có job, 4 `hub.runs` cho s0 (3 failed + 1 finished) |
-| PD-I02 | như I01 nhưng lỗi lần 4 | run + stage `needs_decision` lý do `retry_exhausted`; decision options `["add_attempt","cancel"]` (không output); A `decide add_attempt` ⇒ job mới **ngay** (không cần `sweep`, 0 hẹn mới), `retry_count` 0, `last_error_code` NULL, `attempt` giữ 1 |
+| PD-I01 | `pd-retry`: A start; job s0 `rt.fail(j,"UPSTREAM_ERROR","lỗi")` (reason null) ⇒ `sweep` tại T0+29 s ⇒ `advance` tới T0+30 s ⇒ `sweep` ⇒ job mới fail ⇒ T+120 s ⇒ fail ⇒ T+480 s ⇒ `jobDone` | sau lỗi 1: stage s0 `waiting_timer`, `retry_count` 1, `last_error_code` `UPSTREAM_ERROR`, `current_run_id` NULL, run `running`, 1 hàng hẹn `kind=retry` `due_at`=T0+30 s, khoá `retry:<sr>:1:1:1` đúng (Q9: `round`/`attempt` bắt đầu 1; `n` đếm theo stage, không reset khi sang attempt/round mới), `timezone` NULL; `sweepOnce()` trả `timers` = 0 tại T0+29 s, 1 mỗi lần bắn (Q10; DB vẫn là kiểm chính); T0+29 s: 0 job mới; mỗi lần bắn: `fired_at` đặt, đúng 1 job mới, `attempt` = 1, `round` giữ; khoá `n` = 2, 3; view `stages[0].retry_count` 1→2→3, `next_retry_at` = `due_at` hẹn mở; sau `jobDone`: s0 `done`, s1 có job, 4 `hub.runs` cho s0 (3 failed + 1 finished) |
+| PD-I02 | như I01 nhưng lỗi lần 4 | run + stage `needs_decision` lý do `retry_exhausted`; decision options `["add_attempt","cancel"]` (không output); A `decide add_attempt` ⇒ job mới **ngay** (không cần `sweep`, 0 hẹn mới), `retry_count` 0, `last_error_code` NULL, `attempt` giữ 1; lỗi tạm kế tiếp ⇒ hẹn mới có `n` = 4 (Q9: `n` không reset; chỉ kiểm hậu tố `:4`) |
 | PD-I03 | `pd-retry`: hub.runs của job s0 `finished` 90 s trước (SQL như P1-28) ⇒ `sweep` | không `needs_decision`; stage `waiting_timer`, `last_error_code` `INTERRUPTED`, hẹn `retry` +30 s; bắn ⇒ job mới cùng attempt |
 | PD-I04 | `TIMEOUT` reason `timeout` status `timed_out` × 4 (backoff đủ) | lần 1–3 hẹn retry; lần 4 `retry_exhausted` (không `job_timeout`) |
 | PD-I05 | `pd-par-wait` biến thể 2 agent song song bước 1: cả hai hub.runs chết ⇒ `sweep` × 4 vòng (advance đủ) | 2 hẹn mỗi vòng (mỗi stage 1); cuối: 2 decision `retry_exhausted`, `view.decision.stage_idx` = decision cũ nhất (thay PI-14 cũ) |
@@ -43,7 +43,7 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 | PD-I32 | 5 `running` (SQL) + run thật đang `waiting_timer` tới hạn ⇒ `sweep` | run tỉnh dậy, s2 có job (không bị trần) |
 | PD-I33 | `pd-par-wait` bước 1: `wait_until` + agent song song | khi agent `running` ⇒ run `running`; agent `done` ⇒ run `waiting_timer`; stage backoff `retry` + stage khác `waiting_review` ⇒ run `running` (readiness #20) |
 | PD-I34 | `pd-wait-input`: start với `inputs:[{key:"han",type:"date",value:"2026-02-30"}]` / `"2026-2-3"` / `"2026-02-28"` | 400 `VALIDATION_ERROR` `issues[0].path = ["inputs",0,"value"]`, 0 run / 400 (zod) / 201 |
-| PD-I35 | `POST /process-defs` stage `wait_until` với `after.kind="review"`; `real_action:true`; nguồn field ở cùng bước; input `text` | 422 `PROCESS_DEF_INVALID`, `details.rules` ∋ `WAIT_INVALID`, `paths` ∋ `stages.1.executor` |
+| PD-I35 | `POST /process-defs` stage `wait_until` với `after.kind="review"`; `real_action:true`; nguồn field ở cùng bước; input `text` | 422 `PROCESS_DEF_INVALID`, `details.rules` ∋ `WAIT_INVALID`, `paths` ∋ path từng ca theo plan-addendum A2: `after:"review"` ⇒ `stages.1.after`; `real_action:true` ⇒ `stages.1.executor`; nguồn field cùng bước ⇒ `stages.1.executor.from`; input `text` ⇒ `stages.1.executor.from` (mỗi ca một request, `paths` chứa đúng path của ca đó) |
 | PD-I36 | lưu def `wait_until` hợp lệ có `output.template` tuỳ ý, `answerer`, `token_budget` | `GET` def: `required_sections=["Bàn giao"]`, template `"# {name}\n\n## Bàn giao\n"`, `fields=[]`, `answerer={kind:"starter"}`, `token_budget=null` |
 | PD-I37 | `cancel-timers.int`: run `waiting_timer` ⇒ A huỷ run; advance qua hạn, `sweep` | hẹn `cancelled_at` đặt (cùng tx huỷ), `fired_at` NULL, 0 output s1 |
 | PD-I38 | hẹn `retry` mở ⇒ Adm huỷ run; `sweep` sau hạn | `cancelled_at`; 0 job mới; run `cancelled` không hồi sinh |
@@ -76,7 +76,7 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 Fixture `two-tenant.ts`: acme và beta **đối xứng** — mỗi tenant 1 run hẹn `retry` tới hạn, 1 run `wait_until` tới hạn, 1 task review tới hạn nhắc lặp, 1 task tới hạn chuyển cấp (Group cùng tenant). Khuôn regression `scanDue` P-c2 (D1): mọi vòng nền chạy **một lượt chung** cho cả hai tenant.
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
-| PD-I60 | cả 8 hàng tới hạn cùng lúc ⇒ 1 `sweep` + 1 `remind` | mỗi hẹn: `fired_at` đặt, stage/run/output/job thuộc **đúng** tenant hàng (đếm theo `tenant_id`: acme 2 bắn, beta 2 bắn); notice/assignee/audit của mỗi task có `tenant_id` = task; 0 hàng `tenant_id` lệch giữa `process_timers`↔`process_runs`↔`stage_runs`↔`process_outputs`↔`hub.runs` (truy vấn chéo) |
+| PD-I60 | cả 8 hàng tới hạn cùng lúc ⇒ 1 `sweep` + 1 `remind` | mỗi hẹn: `fired_at` đặt, stage/run/output/job thuộc **đúng** tenant hàng (đếm theo `tenant_id`: acme 2 bắn, beta 2 bắn; `SweepResult.timers` = 4, Q10); notice/assignee/audit của mỗi task có `tenant_id` = task; 0 hàng `tenant_id` lệch giữa `process_timers`↔`process_runs`↔`stage_runs`↔`process_outputs`↔`hub.runs` (truy vấn chéo) |
 | PD-I61 | chỉ beta tới hạn (acme +1 h) | acme: 0 thay đổi (`updated_at`, `fired_at`, notice) |
 | PD-I62 | hẹn acme + beta cùng `due_at`, `stage_run_id` khác tenant; `sweep` song song 2 hub | mỗi hẹn 1 lần, đúng tenant |
 | PD-I63 | owner chèn task acme có `escalate_group_id` = Group beta ⇒ `remind` | không assignee; audit `escalate_skipped` (S2) |
@@ -90,13 +90,13 @@ Fixture `two-tenant.ts`: acme và beta **đối xứng** — mỗi tenant 1 run 
 | PD-I71 | `process_timers` CHECK | `kind='cron'` ⇒ 23514; `wait_until` không `timezone` ⇒ 23514; `retry` có `timezone` ⇒ 23514; `fired_at`+`cancelled_at` cùng có ⇒ 23514; trùng `idempotency_key` ⇒ 23505 |
 | PD-I72 | metadata | `relrowsecurity` true, `relforcerowsecurity` false; policy `process_timers_hub_rw`; GRANT `hub_rw` SELECT/INSERT/UPDATE, không DELETE; index `process_timers_due_idx` (partial), `_run_idx`, `_stage_idx`, `process_runs_expiring_idx`, `review_tasks_remind_due_idx`, `review_tasks_escalate_idx`; `process_runs_expires_idx` không còn |
 
-## 7. UnitOfWork dưới RLS — `d1/uow.int.test.ts` (T6b/T6c · CA-R06 · K1/K2) — nạp `loadAdapter("hub-uow.ts")` `createHubUow`
+## 7. UnitOfWork dưới RLS — `d1/uow.int.test.ts` (T6b/T6c · CA-R06 · K1/K2) — nạp `loadAdapter("hub-uow.ts")` `createHubUow(db, {clock, publish})` (Q4: `publish` bắt buộc; test truyền `publish` giả ghi mảng `published`, gọi đúng 1 lần sau COMMIT; rollback/ném ⇒ 0 lần; 40P01/40001 chạy lại ⇒ chỉ sự kiện của lần thành công)
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
 | PD-I73 | `uow.tenant({tenantId:beta,userId:an}, r => r.runs.lock(runAcme))`; `r.timers.lockById(timerAcme)` | null / không hàng (RLS + lọc tenant) |
 | PD-I74 | `uow.system(beta, r => r.timers.cancelForRun(runAcme,"all", now))` | 0 hàng acme đổi |
-| PD-I75 | `uow.system(acme, r => { r.outbox.emit({kind:"kick",runId}); throw })` | không sự kiện phát (rollback) — seam Q4 |
-| PD-I76 | `uow.system(acme, …emit…)` thành công | sự kiện phát đúng 1 lần, **sau** COMMIT (listener thấy hàng đã ghi) |
+| PD-I75 | `uow.system(acme, r => { r.outbox.emit({kind:"kick",runId}); throw })` | `published` rỗng (rollback) — seam Q4; thêm: 40P01 giả lần 1 rồi ok ⇒ `published` chỉ có sự kiện lần 2 |
+| PD-I76 | `uow.system(acme, …emit…)` thành công | `publish` giả gọi đúng 1 lần với `[{kind:"kick",runId}]`, **sau** COMMIT (trong callback, `c.sql` đọc thấy hàng đã ghi) |
 | PD-I77 | `r.tenantId` trong `uow.system(acme)` | = acme; repo không nhận tham số tenant từ caller (kiểm chữ ký: `cancelForRun.length` không có tham số tenant) |
 | PD-I78 | 2 tx song song cùng run (`uow.system`) bắn 1 hẹn | 1 lần (khoá run → timer) |
 

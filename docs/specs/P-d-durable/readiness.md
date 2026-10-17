@@ -30,7 +30,7 @@ Phạm vi: diff 8c0b473..5cfae09 thư mục spec + plan, plan-contract, plan-db,
 47 câu Q4/Q6/Q9/Q10/Q-D2-1…3 của qc · 48 Lệnh xong T5/T11/T12/T20 (+`test:all`) · 49 trạng thái cũ · 50 "nếu backend-lead thấy cần" · 51 ép `answerer`/`timeout_s` · 52 câu PD-R02 · 53 trần sát (sửa vào phụ lục) · 54 FE Q1–Q4
 
 #### Câu hỏi người dùng
-1. ADR-0017: chờ staging (mặc định) hay Accept dựa trên spike local + PD-P01/P02?
+1. ADR-0017: chờ staging (mặc định) hay Accept dựa trên spike local + PD-P01/P02? → **Người dùng trả lời 2026-10-17: chờ staging.** Gate P-d1 chỉ khi ADR-0017 Accepted sau spike Redis thật + tải 10.000 run trên staging (dựng staging, deploy là việc ra ngoài — hỏi người dùng trước).
 
 Báo người dùng ở Gate (không hỏi): vòng nhắc production bật lần đầu sẽ nhắc ngay các task cũ quá hạn; retry `parallel_merge` gọi lại cả lượt (tốn token).
 

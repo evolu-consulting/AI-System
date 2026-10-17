@@ -2,14 +2,14 @@
 
 Nguồn: [spec-d2](spec-d2.md) §2–§6 · [spec-tz-tools §2](spec-tz-tools.md) TT-R01…R08 · [plan-d2](plan-d2.md) §1–§8 · [plan-contract §6–§7](plan-contract.md) · [plan-db §3–§4](plan-db.md) · BA AC-H44, H45, H47, AC-A15. Viết **sau** `done:pd1` (T12) và trước T17 (Gate P-d2, T16). Quy ước, persona, lệnh: [test-plan §1–§2](test-plan.md).
 
-**Dify giả do qc dựng** (`P-d/_support/fake-dify.ts`, trong `tests/**`): `Bun.serve` cổng 0, `POST /v1/workflows/run` trả kịch bản theo từng ca (JSON `outputs.<output_field>` = chuỗi JSON kết quả; HTTP 4xx/5xx/408/429; treo quá `timeout_s`; đóng kết nối trước khi nhận = "trước khi gửi"), đếm lời gọi + lưu `user`, `inputs` mỗi lời gọi. Workflow fixture (`admin.workflows`, owner SQL) trỏ `base_url` tới server này: `W` = `xuat-hoa-don` (không `side_effect`, input `tong_tien` number required, `ma_kh` text), `WS` = `ghi-so` (`side_effect`), `WF` = có tham số kiểu `file`, `WOFF` = `enabled=false`. Công tắc bật bằng API admin (AC-A15) hoặc owner SQL `admin.tenant_workflow_tools` cho ca Hub.
+**Dify giả do qc dựng** (`P-d/_support/fake-dify.ts`, trong `tests/**`): `Bun.serve` cổng 0, `POST /v1/workflows/run` trả kịch bản theo từng ca (JSON `outputs.<output_field>` = chuỗi JSON kết quả; HTTP 4xx/5xx/408/429; treo quá `timeout_s`; đóng socket sau khi nhận kết nối = **đã gửi** `sent:true`, Q-D2-2; "trước khi gửi" = `baseUrl` trỏ cổng đóng `127.0.0.1:<cổng trống>`), đếm lời gọi + lưu `user`, `inputs` mỗi lời gọi. Workflow fixture (`admin.workflows`, owner SQL) trỏ `base_url` tới server này: `W` = `xuat-hoa-don` (không `side_effect`, input `tong_tien` number required, `ma_kh` text), `WS` = `ghi-so` (`side_effect`), `WF` = có tham số kiểu `file`, `WOFF` = `enabled=false`. Công tắc bật bằng API admin (AC-A15) hoặc owner SQL `admin.tenant_workflow_tools` cho ca Hub.
 
 ## 1. Luật lớp 1 P-d2 — `tests/acceptance/P-d/rules/d2/*.test.ts` (plan-d2 §4)
 | Ca | File · hàm | Dữ liệu | Kỳ vọng |
 |---|---|---|---|
 | PD2-U01 | `defs/tool-def.rules` `toolStageIssues` | stage tool `W`, args `tong_tien←{from:"field",stageKey:s0,field:"tong_tien"}` (s0 ở bước nhỏ hơn), `ma_kh←{from:"const",value:"KH1"}` | `[]` |
-| PD2-U02 | ″ | 21 args; thiếu `tong_tien` (required); tên `xyz` ∉ params; tool `WF` (param `file`); nguồn input không có; field cùng bước / bước lớn hơn / field không khai; stage có sources / must_know / autofix | mỗi ca `TOOL_INVALID`, path `stages.<i>.executor` hoặc `.executor.args.<name>` |
-| PD2-U03 | ″ | tool `WS` (`sideEffect`) ở stage `realAction:false` | `TOOL_SIDE_EFFECT` |
+| PD2-U02 | ″ | 21 args; thiếu `tong_tien` (required); tên `xyz` ∉ params; tool `WF` (param `file`); nguồn input không có; field cùng bước / bước lớn hơn / field không khai; stage có sources / must_know / autofix | mỗi ca `TOOL_INVALID`; path (plan-addendum A2): `stages.<i>.executor` cho 21 args / tool `WF` / sources / must_know / autofix / `answerer.kind≠starter`; `stages.<i>.executor.args.<name>` cho thiếu required (tên param thiếu), tên `xyz` ∉ params, nguồn input không có, field cùng bước / bước lớn hơn / không khai |
+| PD2-U03 | ″ | tool `WS` (`sideEffect`) ở stage `realAction:false` | `[{path:"stages.<i>.real_action",rule:"TOOL_SIDE_EFFECT"}]` |
 | PD2-U04 | `tools/tool-run.rules` `buildToolArgs` | input `han`, field s0 `{tong_tien:25000000}`, const `true` | `{ok:true, values:{…}}` đúng kiểu |
 | PD2-U05 | ″ | nguồn field của stage `null` (skipped/không output); field vắng; input vắng | `{ok:false, missing:"<tên tham số>"}` |
 | PD2-U06 | `classifyToolError` | `{code:"UPSTREAM_ERROR",sent:false}`, `{TIMEOUT,sent:false}`; sent:true với http null / 500 / 503 / 408 / 429 / 400 / 403; `NOT_CONFIGURED`; `INVALID_ARGS`; reason `invalid_output`; code lạ | T,T; T,T,T,T,T,N,N; N; N; N; N |
@@ -46,12 +46,13 @@ Nguồn: [spec-d2](spec-d2.md) §2–§6 · [spec-tz-tools §2](spec-tz-tools.md
 | PD2-I03 | kết quả 65.537 byte | `tool_failed` |
 | PD2-I04 | `WS` (side effect) ở stage `real_action` sau gate Đạt; fake trả 500 **sau khi nhận** | `tool_failed`, Dify 1 lần, 0 hẹn `retry`; `run_steps` có trace `confirmation:"gate_review"` |
 | PD2-I05 | `W` (không side effect): fake 503 lần 1, ok lần 2 | hẹn `retry` +30 s; bắn ⇒ gọi lần 2 ⇒ `done`; `retry_count` 1 |
-| PD2-I06 | `WS`: đóng kết nối trước khi nhận (lỗi trước gửi) ×1 rồi ok | thử lại (PD2-R05), tổng 1 lời gọi tới được handler |
+| PD2-I06 | `WS`: `base_url` trỏ cổng đóng (connection refused ⇒ `connectFailed`, lỗi trước gửi) ×1, rồi đổi `base_url` sang fake ok | thử lại (PD2-R05), tổng 1 lời gọi tới được handler |
+| PD2-I06b | `WS`: fake nhận kết nối rồi đóng socket (trước/sau đọc body) | `sent:true` ⇒ `tool_failed` (an toàn, không gọi lại), Dify 1 lần, 0 hẹn `retry` (Q-D2-2) |
 | PD2-I07 | fake 400 / 403 | `tool_failed` ngay |
 | PD2-I08 | fake treo > `timeout_s` (`W`) ×4 | 3 hẹn retry, rồi `retry_exhausted` |
 | PD2-I09 | nguồn field của s0 không có (s0 output thiếu `tong_tien`) | `tool_failed`, 0 lời gọi |
-| PD2-I10 | lưu def: `WS` ở stage không `real_action` | 422 `PROCESS_DEF_INVALID` `rules ∋ TOOL_SIDE_EFFECT` |
-| PD2-I11 | lưu def: thiếu tham số required; args 21 (zod) | 422 `TOOL_INVALID`; 400 `VALIDATION_ERROR` |
+| PD2-I10 | lưu def: `WS` ở stage không `real_action` | 422 `PROCESS_DEF_INVALID` `rules ∋ TOOL_SIDE_EFFECT`, `paths ∋ stages.<i>.real_action` |
+| PD2-I11 | lưu def: thiếu tham số required; args 21 (zod) | 422 `TOOL_INVALID` `paths ∋ stages.<i>.executor.args.<tên param thiếu>`; 400 `VALIDATION_ERROR` |
 | PD2-I12 | lưu def: `tool_key` không tồn tại; `WOFF`; `W` chưa bật cho beta (def beta); def mẫu (`tenant_id` null) chứa tool | 422 `PROCESS_REF_INVALID {path:"stages.<i>.executor.tool_key", ref:"tool"}` cả 4 (thông điệp như nhau) |
 | PD2-I13 | lưu def stage tool có template/answerer tuỳ ý | `GET` def: `required_sections=["Kết quả","Bàn giao"]`, template `"# {name}\n\n## Kết quả\n\n## Bàn giao\n"`, `answerer={kind:"starter"}`, `sources=[]`, `must_know=[]`, `autofix=null`, `token_budget=null`, `timeout_s` giữ |
 | PD2-I14 | `decide use_current` khi `tool_failed` không output / `add_attempt` | 409 `NO_OUTPUT` / attempt+1, gọi lại 1 lần |
@@ -108,8 +109,8 @@ K15 (`contracts-pa.test.ts:175` `ROOM_PROCESS_KINDS`, T17) · K28 (`M1/M2/M3 db-
 ## 6. Câu hỏi P-d2 (mặc định)
 | # | Gửi | Nội dung | Mặc định |
 |---|---|---|---|
-| Q-D2-1 | backend-lead | `toolOutputMd`: thứ tự dòng bảng + định dạng số (`25000000` hay `25 000 000`), JSON khối `fields` có thụt lề? | theo thứ tự khai báo `output.fields`, số thô, `JSON.stringify(fields)` không thụt |
-| Q-D2-2 | backend-lead | Cờ `connectFailed` (D2-09) — fake Dify đóng socket trước khi đọc body có tính "trước khi gửi"? | có |
+| Q-D2-1 | backend-lead | **Đã trả lời** (plan-addendum A7): thứ tự khai báo `output.fields`, số `String(v)`, `JSON.stringify(fields)` không thụt, `\|` thoát `\`, xuống dòng ⇒ dấu cách; không cắt `clipHandoff` | PD2-U09 khớp nguyên văn ví dụ A7 (kết thúc một `\n`); thêm ô: không trường ⇒ không dòng bảng + `Đã gọi tool; trường: (không có)`; chuỗi chứa `\|` và xuống dòng |
+| Q-D2-2 | backend-lead | **Đã trả lời — khác mặc định**: `connectFailed` chỉ khi lỗi lập kết nối (ECONNREFUSED/ConnectionRefused/FailedToOpenSocket/ENOTFOUND/EAI_AGAIN); server đóng socket ⇒ `sent:true` | PD2-I06 (cổng đóng ⇒ thử lại), PD2-I06b (đóng socket ⇒ `tool_failed`) |
 | Q-D2-3 | backend-lead | Stage ở bước bị nhảy chỉ có thể `pending` (chưa chạy) ⇒ khi nào còn hẹn mở để huỷ? | PD2-I33 chỉ kiểm "0 hẹn mở sau nhảy"; huỷ hẹn phủ ở `stagesToCancelOnBack`/PD-I37 |
 | Q-D2-4 | docs-architect | spec-d2 PD2-R09 ghi `run_steps.type='workflow'` ↔ plan-d2 D2-03 `type='tool'` | test theo plan (`'tool'`); PD-R05 probe gồm cả hai |
 | Q-D2-5 | docs-architect | TT-R03 audit `workflow_tool.enable/disable` ↔ plan `workflow`/`grant`/`revoke` | theo plan (Q3 plan §10) |
