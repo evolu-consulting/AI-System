@@ -8,14 +8,14 @@ Mục tiêu: chốt quyết định nền và chứng minh engine chạy bền *
 |---|---|---|---|
 | 0.1 | Thu hồi OpenAI key bị lộ trong `auto-pilot/services/dwc/app/core/config.py` | Key cũ vô hiệu (người dùng làm trên dashboard OpenAI) | Chờ người dùng |
 | 0.2 | ADR-0016 Postgres là nguồn chuẩn | Proposed → duyệt ở Gate GĐ0 | Bản nháp xong |
-| 0.3 | ADR-0017 Engine chạy bền (spike) | Kết luận từ spike | Bản nháp xong; spike chưa chạy |
+| 0.3 | ADR-0017 Engine chạy bền (spike) | Kết luận từ spike | Spike chạy 2026-10-17, kết quả trong ADR-0017 (4 đạt / 4 đỏ; đề xuất phương án (a)); còn thiếu Redis thật + tải 10.000 run để chốt Accepted. Việc GĐ1 đã ra spec [`P-d-durable`](../specs/P-d-durable/spec.md) (CR-083…087, `draft`) |
 | 0.4 | ADR-0018 Một nguồn định danh + SSO | Proposed | Bản nháp xong |
 | 0.5 | ADR-0019 AI provider: CLI subscription, đổi API key bằng cấu hình | Proposed | Bản nháp xong |
 | 0.6 | ADR-0020 Hạ tầng production | Proposed | Bản nháp xong |
 | 0.7 | ADR-0021 Dịch vụ tri thức | Proposed | Bản nháp xong |
 | 0.8 | ADR-0022 Hybrid Dify tạm | Proposed | Bản nháp xong |
 | 0.9 | Bổ sung ADR-0015 FileBox: kho file chung cho mọi gói, org theo tenant, secret, sweeper, sao lưu; ghi repo và người sở hữu FileBox | Mục "Bổ sung (Platform)" | Chưa làm |
-| 0.10 | Spike engine: 6 bài thử lỗi ([`spike-engine.md`](spike-engine.md)) | Báo cáo pass/fail + đề xuất | Plan xong; chưa chạy |
+| 0.10 | Spike engine: 6 bài thử lỗi ([`spike-engine.md`](spike-engine.md)) | Báo cáo pass/fail + đề xuất | Đã chạy 2026-10-17 (`spikes/engine/engine.spike.test.ts`, fakeredis, chỉ phương án (a)): 4 đạt / 4 đỏ, kết quả trong ADR-0017. Còn thiếu: chạy lại trên Redis thật + bài tải 10.000 run trên staging |
 | 0.11 | Đo hai RAG (mgmt-app, KnowledgeHub) bằng bộ câu hỏi tiếng Việt có đáp án | Bảng điểm | Chưa làm |
 | 0.12 | Liệt kê app Dify đang dùng; gửi Dify câu hỏi giấy phép multi-tenant | Danh sách + email (người dùng gửi) | Chưa làm |
 | 0.13 | Staging local chạy đủ stack + giám sát nền | `docker compose` + log/metric tập trung | Chưa làm |

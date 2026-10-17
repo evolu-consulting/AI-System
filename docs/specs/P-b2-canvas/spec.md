@@ -38,7 +38,7 @@ owner: backend-lead + frontend-lead + qc
 | Sửa code / nhánh `ai/<run>/<step>` / `apply_mode` | P-c (CR-061/065) |
 | Nạp nguồn vào KH | K2 (CR-066) |
 | Lưu toạ độ nút, dagre/elk, canvas ở chat-web/studio-web, chỉnh canvas trong trang Run | ADR-0013 #3, #5 |
-| Stage lồng/rẽ nhánh theo điều kiện, vòng lặp tự do ngoài "quay lại bước" | ngoài CR-063 |
+| Stage lồng/rẽ nhánh theo điều kiện, vòng lặp tự do ngoài "quay lại bước" | ngoài CR-063 · **[CR-087, 2026-10-17] rẽ nhánh tới theo `output.fields` chuyển vào [P-d2](../P-d-durable/spec-d2.md)** (vẫn không vòng lặp tự do) |
 | Editor ①②③ còn lại: Nhóm agent ở Forge, tab Usage, luật tự duyệt HUB-FR-108, Import/Export JSON, KPI danh sách | **Q1**: CR-063 không liệt kê ⇒ KHÔNG làm; mốc riêng (P-b3) |
 | HUB-FR-114 (Bàn giao cho trưởng nhóm) | Ngoài P-b2 |
 | Admin Run view (trang xem run phía admin) | **Không đổi ở P-b2**; chỉ chat-web Run page đổi |

@@ -1,0 +1,171 @@
+---
+id: P-d-durable
+title: P-d · Engine quy trình chạy bền cho flow nghiệp vụ dài ngày (thử lại, hẹn giờ, nhắc lặp/chuyển cấp, thời hạn tuỳ chọn, stage tool, rẽ nhánh)
+milestone: GĐ1 platform · engine chạy bền (lát P-d1 = CR-083…086, lát P-d2 = CR-087)
+status: draft            # chờ spec-readiness; Gate GĐ1 cần ADR-0017 Accepted
+requirements: [HUB-FR-143, HUB-FR-144, HUB-FR-145, HUB-FR-146, HUB-FR-147, HUB-FR-105, HUB-FR-107, HUB-FR-109, HUB-FR-115, HUB-BR-41, HUB-BR-42, HUB-BR-43, HUB-BR-12, HUB-BR-25, HUB-BR-26, HUB-BR-38, AC-H39, AC-H40, AC-H41, AC-H42, AC-H43, AC-H44, AC-H45, AC-H46]
+design:
+  - docs/CHANGE-REQUESTS.md#CR-083 · #CR-084 · #CR-085 · #CR-086 · #CR-087 (Intake Đầy đủ GĐ1 platform, chốt 15 mặc định 2026-10-17)
+  - docs/design/agent-hub/ba-agent-hub.md §6.10 (HUB-FR-143…147, sửa HUB-FR-105/107/109/115), HUB-BR-41…43, sửa HUB-BR-12/25/26/38, §8 (`process_timers`), §11 AC-H39…H46
+  - docs/adr/0017-durable-process-engine.md (Proposed — **phải Accepted trước Gate**) · docs/adr/0018-single-identity-sso.md (P-d2, tool gói) · docs/adr/0022-dify-hybrid-transitional.md (P-d2, tool Dify)
+  - spike: docs/platform/spike-engine.md · spikes/engine/engine.spike.test.ts (bài 1, 3b, 4, 4b đỏ)
+  - nền: P-process-engine · P-b-sources · P-b2-canvas · P-c-autofix · P-c2-pr · spec-decisions.md · spec-d2.md · spec-ac.md
+  - UI: CHƯA có mockup/artboard — **cần trước Gate** (§6)
+owner: backend-lead + frontend-lead + qc
+---
+
+# P-d · Engine quy trình chạy bền
+
+Mở rộng engine hiện có (ADR-0017 (a)). Hai lát tuần tự: **P-d1** (CR-083…086) rồi **P-d2** (CR-087, chi tiết ở [`spec-d2.md`](spec-d2.md)). Quyết định đã chốt: [`spec-decisions.md`](spec-decisions.md) (D1…D15). AC + test khoá: [`spec-ac.md`](spec-ac.md).
+
+## 1. Phạm vi
+
+### 1.1 Làm
+| Lát | Nhóm | Nội dung | Mã |
+|---|---|---|---|
+| P-d1 | Thử lại | Phân loại lỗi tạm / nghiệp vụ; tự chạy lại lỗi tạm ≤ 3 lần, backoff 30 s → 2' → 8'; `retry_count` riêng; hết lượt ⇒ `retry_exhausted` | HUB-FR-143, HUB-BR-41, CR-083 |
+| P-d1 | Hẹn giờ | Bảng `hub.process_timers` + vòng quét; executor `wait_until`; trạng thái `waiting_timer` (run + stage); không tính trần 5 run/tenant | HUB-FR-144, HUB-BR-42, HUB-FR-105, CR-084 |
+| P-d1 | Nhắc + chuyển cấp | `after.review` + nhắc mỗi N giờ (≥ 4, ≤ 10 lần) + chuyển cấp thêm Group sau M giờ (1 lần/task) | HUB-FR-145, HUB-BR-43, HUB-FR-107, CR-085 |
+| P-d1 | Thời hạn | `process_defs.ttl_days` (nullable, def cũ = 7), chốt vào snapshot; `expires_at` nullable | HUB-FR-115, CR-086 |
+| P-d2 | Stage tool | Executor `tool` gọi tool Hub `/mcp` bằng quyền người bắt đầu; output `fields` + .md do Hub sinh | HUB-FR-146, HUB-BR-12, HUB-FR-109, CR-087 |
+| P-d2 | Rẽ nhánh | `after.branch` trên `output.fields`; nhảy tới, bước bị nhảy ⇒ `skipped` | HUB-FR-147, HUB-BR-38(e), CR-087 |
+| cả hai | UI tối thiểu | Panel stage trong canvas hiện có (admin-web); nhãn trạng thái mới ở chat-web | ADM-FR-71 (mở rộng), CHAT-AC-59 |
+| cả hai | Test khoá | qc sửa test khoá bị ảnh hưởng ([`spec-ac.md`](spec-ac.md) §2) + viết AC mới | — |
+
+### 1.2 Không làm
+| Hạng mục | Lý do / khi nào |
+|---|---|
+| Temporal/Restate | ADR-0017 chọn (a) |
+| Node kiểu mới trên canvas, canvas đầy đủ | GĐ3 (D13) |
+| Múi giờ cấu hình theo tenant ở Admin (cột mới `admin.tenants`) | Q3: GĐ1 dùng hằng `Asia/Ho_Chi_Minh` |
+| Rẽ nhánh lùi / vòng lặp tự do / LLM quyết nhánh | D12 (quay lại vẫn `back_to_steps`) |
+| Tool ngoài Hub `/mcp` (URL tuỳ ý, HTTP thô) | D10 |
+| Lịch/webhook bắt đầu run; tự duyệt theo luật (HUB-FR-108); đổi executor `apply` | ngoài CR-083…087 |
+
+## 2. Nghiệp vụ P-d1 (PD-R)
+BA là nguồn sự thật; bảng dưới chỉ cụ thể hoá. Hằng ghi ở §3.
+
+### 2.1 Thử lại theo loại lỗi (CR-083)
+| Luật | Điều kiện chính xác | Nguồn |
+|---|---|---|
+| PD-R01 | **Lỗi tạm** = job stage kết thúc với mã `TIMEOUT` · `UPSTREAM_ERROR` · lỗi mạng (Hub↔Runtime/provider, map về `UPSTREAM_ERROR`) · 429/provider bận (`ALL_PROVIDERS_EXHAUSTED` khi `provider_state` = `busy`/`cooldown`, lý do job `provider_busy`/`tenant_slots`) · lý do job `timeout`/`upstream`/`crash`/`orphaned` · `interrupted` (vòng quét D11 hoặc `aborted` không do huỷ run). Bảng ánh xạ đầy đủ backend-lead chốt ở plan (Q2) | D2, HUB-BR-41 |
+| PD-R02 | **Lỗi nghiệp vụ** = `template_invalid`, quota hết (`quota`, `hard_block`, `provider_state` `logged_out`/`error`), `NOT_CONFIGURED`, `credential`, `refused`, `invalid_payload`, `permission_lost`, `user_inactive`, `team_*`, `stage_tokens`, `run_tokens`, `autofix_check_failed`, `sandbox_unavailable`, `apply_conflict`, `apply_failed`, `source_unresolvable`. **Mã không rõ / `INTERNAL_ERROR` ⇒ nghiệp vụ** (không thử lại) | D2 |
+| PD-R03 | Lỗi tạm và `retry_count < STAGE_RETRY_MAX` (3) và job **chưa gửi** tool `side_effect` ⇒ trong 1 tx: `retry_count+1`, `last_error_code`, stage `waiting_timer`, tạo hẹn giờ `kind=retry` `due_at = now + RETRY_BACKOFF_S[retry_count-1]` (30/120/480 s). Run giữ `running` (vẫn tính trần — Q7). Hẹn giờ bắn ⇒ stage `queued` ⇒ `kick` (job mới, cùng `attempt`, cùng `round`, cùng phiên bản/nguồn đã ghim; quyền + trạng thái người bắt đầu kiểm lại như mọi lần chạy stage) | D3, HUB-BR-41/27 |
+| PD-R04 | Hết lượt (lỗi tạm thứ 4) ⇒ stage + run `needs_decision` lý do **`retry_exhausted`**. Lựa chọn: `add_attempt` = `retry_count := 0`, chạy lại **ngay** · `use_current` theo luật sẵn có (`decisionOptionsFor`: chỉ khi stage có output hiện hành) · `cancel`. Người quyết như `agent_failed` hiện nay | D3 |
+| PD-R05 | Job đã gửi ≥ 1 tool `side_effect` (bước `workflow` có `side_effect` trong `run_steps` của job, đã gửi đi) rồi lỗi tạm ⇒ **không thử lại**: `needs_decision` với lý do cũ (`job_timeout`/`agent_failed`/`interrupted`) | D3, HUB-BR-20 |
+| PD-R06 | `retry_count` về 0 khi: stage sang `attempt` mới (Chưa đạt + góp ý), sang `round` mới (quay lại bước), `add_attempt` của `retry_exhausted`. `attempt`/`attempt_limit` **không** đổi nghĩa (làm lại do góp ý) | D3 |
+| PD-R07 | Áp cho **mọi** def, cả def cũ và snapshot run đang chạy (không cờ bật/tắt) | D4 |
+| PD-R08 | Stage `team`: lỗi tạm của **job thành viên** thử lại ở mức thành viên trong cùng team-run, dùng chung `retry_count` của `stage_runs`; lần gọi lại không tính `max_calls`, thời gian chờ backoff không tính `max_active_s` (Q1 — mặc định đề xuất) | Q1 |
+| PD-R09 | Executor `apply` (P-c2) không đổi. Executor `wait_until` không có job ⇒ không áp. Executor `tool` (P-d2): [spec-d2 §2](spec-d2.md) | — |
+
+### 2.2 Hẹn giờ + `wait_until` (CR-084)
+| Luật | Điều kiện chính xác | Nguồn |
+|---|---|---|
+| PD-R10 | `process_timers` một hàng = một lần hẹn: `kind` ∈ `wait_until` \| `retry`; `idempotency_key` duy nhất = `<kind>:<stage_run_id>:<round>:<attempt>[:<retry_count>]`. Tạo trong cùng tx với việc chuyển stage sang `waiting_timer` | D7, HUB-BR-42 |
+| PD-R11 | **Vòng quét** (trong `sweepOnce` sẵn có, cùng chu kỳ): scope `system` chọn ≤ 100 hàng `fired_at IS NULL AND cancelled_at IS NULL AND due_at ≤ now` theo `due_at`; mỗi hàng xử lý trong tx riêng: khoá `FOR UPDATE SKIP LOCKED` **theo `id` và `tenant_id`**, kiểm lại chưa bắn, đặt `fired_at`, áp hiệu ứng — **mọi truy vấn trong tx lọc `tenant_id` tường minh** (bài học `scanDue` P-c2 D1 `c5e9b6b8`); `kick`/sự kiện sau COMMIT. Hai instance cùng quét ⇒ một lần bắn | HUB-BR-42 |
+| PD-R12 | Run huỷ / hết hạn / kết thúc, hoặc quay lại bước ≤ bước của stage có hẹn ⇒ đặt `cancelled_at` cho hẹn giờ chưa bắn của các stage bị ảnh hưởng (cùng tx) | HUB-BR-42 |
+| PD-R13 | **Executor `wait_until`**: ngày gốc lấy từ (a) input run `key` có kiểu **`date`** (thêm cuối `INPUT_TYPES` của process), hoặc (b) `output.fields.<field>` (kiểu `date`, `YYYY-MM-DD`) của output hiện hành của stage `stage_key` ở **bước trước**. `due_at` = ngày gốc + `offset_days` (−365…365) lúc `time` (`HH:MM`, mặc định `09:00`, Q4) theo múi giờ `PROCESS_TZ_DEFAULT = Asia/Ho_Chi_Minh` (Q3) | D7 |
+| PD-R14 | Vào stage `wait_until`: thiếu/sai ngày, hoặc `due_at` > `expires_at` (khi có), hoặc `due_at` > now + 730 ngày ⇒ `needs_decision` lý do **`timer_invalid`** (thêm cuối). Lựa chọn: `add_attempt` = tính lại ngày (dùng khi stage nguồn đã được làm lại) · `use_current` = bỏ chờ, đi tiếp · `cancel`. `due_at ≤ now` ⇒ coi như tới hạn ngay | D7 |
+| PD-R15 | Đang chờ: stage `waiting_timer`; run `waiting_timer` khi mọi stage chưa xong của bước hiện tại đều `waiting_timer` loại `wait_until`, ngược lại trạng thái run tính như hiện nay. Tới hạn ⇒ Hub ghi output .md ngắn ("Đã chờ tới …", có `## Bàn giao`) như mọi stage (P-R03), stage `done`, join bước như P-b2 | D6, D7 |
+| PD-R16 | Trần 5 run/tenant (`countActive`) **không đếm** `waiting_timer`; `running`, `waiting_review`, `waiting_answer`, `needs_decision` vẫn đếm. Run tỉnh dậy từ `waiting_timer` **không** bị chặn bởi trần (đã được nhận lúc bắt đầu) | D6, HUB-FR-105 |
+| PD-R17 | Lưu def: stage `wait_until` phải `after.kind='auto'`, `real_action=false`, không `sources`/`must_know`/`autofix`; nguồn ngày hợp lệ (input `date` tồn tại / stage ở bước trước có field `date`) — sai ⇒ 422 luật **`WAIT_INVALID`** | D7 |
+
+### 2.3 Nhắc lặp + chuyển cấp (CR-085)
+| Luật | Điều kiện chính xác | Nguồn |
+|---|---|---|
+| PD-R18 | `after.review` thêm `remind_every_h` (4…168, mặc định `null`) và `escalate` (`{after_h: 4…2160, group_id}` \| `null`). Cả hai `null` ⇒ hành vi cũ: nhắc **1 lần** sau `REMIND_AFTER_H` = 24 h (R-N02, P3-04 giữ nguyên) | D9 |
+| PD-R19 | Khi tạo `review_task` (kind `review`): chép `remind_every_h`, `escalate_at = created + after_h`, `escalate_group_id` từ **snapshot** (sửa def không ảnh hưởng). Có `remind_every_h` ⇒ `remind_at = created + N`; mỗi lần nhắc `remind_count+1`, `remind_at += N`; dừng khi `remind_count = REMIND_MAX` (10) hoặc task đóng | D9 |
+| PD-R20 | Chuyển cấp chạy trong **vòng nhắc sẵn có** (đọc `review_tasks`, không dùng `process_timers`): task `open`, `escalated_at IS NULL`, `escalate_at ≤ now` ⇒ trong 1 tx (lọc `tenant_id` tường minh): kiểm Group đích còn tồn tại **và cùng tenant** ⇒ thêm `review_task_assignees` (`group_id`, `via='escalated'` — thêm cuối), đặt `escalated_at`, audit (actor hệ thống, task, Group cũ → thêm Group mới), notice **`escalated`** (thêm cuối `NOTICE_KINDS`) + DM hệ thống "Quy trình" cho thành viên Group mới. Group không hợp lệ lúc đó ⇒ không thêm, `escalated_at` vẫn đặt, audit `escalate_skipped` | D8, HUB-BR-43 |
+| PD-R21 | Sau chuyển cấp: thành viên **cả hai** Group quyết được (người đầu tiên khoá — như cũ); nhắc tiếp tới mọi assignee. "Chuyển tay" (forward) chỉ tới thành viên **cùng Group mà người chuyển đang được gán** (Group cũ hoặc Group chuyển cấp); `FORWARD_OUT_OF_GROUP` như cũ. Không bao giờ tự Đạt/Chưa đạt | D8, P-R07 |
+| PD-R22 | Chỉ áp `kind=review`; task `ask`/`decision` giữ hành vi nhắc cũ. Người Group chuyển cấp ngoài phòng xem theo HUB-BR-25 (grant gắn task, audit `view`) | D8, HUB-BR-25 |
+| PD-R23 | Lưu def: `escalate.group_id` = `after.review.group_id` hoặc Group không thuộc tenant ⇒ 422 luật **`ESCALATE_INVALID`** (Group tenant khác: như `PROCESS_REF_INVALID` hiện có, không lộ tồn tại) | D8 |
+
+### 2.4 Thời hạn tuỳ chọn (CR-086)
+| Luật | Điều kiện chính xác | Nguồn |
+|---|---|---|
+| PD-R24 | `process_defs.ttl_days` smallint nullable (1…365); tạo def vắng trường ⇒ 7; PATCH vắng ⇒ giữ; `null` = không hết hạn. Hàng cũ = 7 (DEFAULT của migration) | D5 |
+| PD-R25 | Bắt đầu run: snapshot thêm `ttl_days`; `expires_at = started_at + ttl_days` hoặc `NULL`. Vòng hết hạn chỉ xét `expires_at IS NOT NULL` | D5 |
+
+## 3. Contract P-d1 (backend-lead chốt chi tiết ở plan)
+**Luật chung:** chỉ **thêm**; giá trị enum mới **thêm ở cuối mảng**; trường mới trong view/jsonb là optional. Các enum sau bị đổi bởi cả hai lát:
+
+| Hằng | P-d1 thêm cuối | P-d2 thêm cuối |
+|---|---|---|
+| `EXECUTOR_KINDS` (`chat/processes.ts`) | `wait_until` | `tool` |
+| `STAGE_RUN_STATUSES` | `waiting_timer` | `skipped` |
+| `PROCESS_RUN_STATUSES` | `waiting_timer` (cũng vào `PROCESS_RUN_ACTIVE`; đếm trần dùng tập riêng, PD-R16) | — |
+| `DECISION_REASONS` | `retry_exhausted`, `timer_invalid` | `tool_failed` |
+| `NOTICE_KINDS` | `escalated` | — |
+| `PROCESS_DEF_RULES` (`hub-admin/process-steps.ts`) | `WAIT_INVALID`, `ESCALATE_INVALID` | `TOOL_INVALID`, `TOOL_SIDE_EFFECT`, `BRANCH_INVALID` |
+| `INPUT_TYPES` (`hub-admin/sources.ts`) | `date` | — |
+| `ASSIGNEE_VIA_VALUES` (`packages/db`) | `escalated` | — |
+
+**Hằng mới:** `STAGE_RETRY_MAX=3` · `RETRY_BACKOFF_S=[30,120,480]` · `REMIND_EVERY_H={min:4,max:168}` · `REMIND_MAX=10` · `ESCALATE_AFTER_H={min:4,max:2160}` · `PROCESS_TTL_DAYS={min:1,max:365,default:7}` (`PROCESS_RUN_TTL_DAYS` giữ = 7) · `WAIT_OFFSET_DAYS={min:-365,max:365}` · `WAIT_HORIZON_DAYS=730` · `PROCESS_TZ_DEFAULT='Asia/Ho_Chi_Minh'` · `TIMER_SWEEP_BATCH=100`.
+
+| Chỗ | Thay đổi P-d1 |
+|---|---|
+| `ProcessStageDefSchema.executor` | + `{kind:'wait_until', from: {kind:'input', key} \| {kind:'field', stage_key, field}, offset_days, time?}` |
+| `after` biến thể `review` | + `remind_every_h: int \| null` (default null) · `escalate: {after_h, group_id} \| null` (default null) |
+| Def (create/update/copy, `ProcessDef`) | + `ttl_days: int \| null` (vắng khi tạo ⇒ 7) |
+| `StageView` | + `retry_count` · `next_retry_at?` · `last_error_code?` · `due_at?` (wait) |
+| `ProcessRunSummary` / full view | + `expires_at: string \| null` nếu backend-lead thấy cần hiện; trạng thái `waiting_timer` |
+| Task view / inbox | + `escalated: boolean` · `remind_count?` (không lộ cho người ngoài phòng gì hơn HUB-BR-25) |
+| `RunDecision` | lý do mới dùng 3 lựa chọn sẵn có (không thêm option) |
+
+Sự kiện: `process.updated` mang trạng thái mới; không event SSE mới. Lỗi HTTP: **không mã mới** — luật def ⇒ 422 `PROCESS_DEF_INVALID` + `rules[]` (cơ chế P-b2); input `date` sai lúc bắt đầu ⇒ 422 `VALIDATION_ERROR` path `inputs.<i>.value`.
+
+## 4. Dữ liệu P-d1
+Migration mới viết tay, idempotent (mẫu 0024/0025), số kế tiếp lúc làm (hiện cao nhất `0035_dlc_workflows.sql` ⇒ dự kiến `0036_pd1_durable.sql`). **Chỉ thêm cột/bảng, DROP NOT NULL, và dựng lại CHECK để nới giá trị enum** (như 0024 dựng lại `review_tasks_reason_ck`). Drizzle: `schema/hub-processes.ts`.
+
+| Bảng | Thay đổi | Ràng buộc |
+|---|---|---|
+| `process_defs` | + `ttl_days smallint NULL DEFAULT 7` | CHECK `ttl_days IS NULL OR 1…365` |
+| `process_runs` | `expires_at` DROP NOT NULL | CHECK status nới `waiting_timer` |
+| `stage_runs` | + `retry_count smallint NN 0` · `last_error_code text NULL` | CHECK `0 ≤ retry_count ≤ 3`; status nới `waiting_timer` |
+| `review_tasks` | + `remind_count smallint NN 0` · `remind_every_h smallint NULL` · `escalate_at timestamptz NULL` · `escalate_group_id uuid NULL` · `escalated_at timestamptz NULL` | CHECK `remind_count ≤ 10`, `remind_every_h` 4…168; reason nới `retry_exhausted`, `timer_invalid` |
+| `review_task_assignees` | CHECK `via` nới `escalated` | — |
+| `process_notices` | CHECK kind nới `escalated` (nếu có CHECK) | — |
+| **`process_timers` (mới)** | `id` · `tenant_id` NN · `process_run_id` NN · `stage_run_id` NN · `kind` text NN · `due_at` timestamptz NN · `fired_at` · `cancelled_at` · `idempotency_key` text NN · `created_at` | CHECK `kind IN ('wait_until','retry')`; UNIQUE `idempotency_key`; **FK kép** `(process_run_id, tenant_id)` → `process_runs(id, tenant_id)` và `(stage_run_id, tenant_id)` → `stage_runs(id, tenant_id)` ON DELETE CASCADE (thiếu UNIQUE `(id, tenant_id)` ở bảng đích ⇒ thêm); index một phần `(due_at) WHERE fired_at IS NULL AND cancelled_at IS NULL`; index `(process_run_id)` |
+
+RLS `process_timers`: ENABLE (+ FORCE như bảng `hub` cùng loại); policy `process_timers_hub_rw` theo tenant như `stage_runs`; GRANT `SELECT, INSERT, UPDATE` cho `hub_rw` (không DELETE). Vòng quét đọc ở scope `system` (như sweeps hiện có). Seed: không đổi.
+
+## 5. Bảo mật (hard stop tenant — security review bắt buộc)
+| # | Rủi ro | Hàng rào |
+|---|---|---|
+| S1 | Vòng hẹn giờ scope `system` đổi nhầm dữ liệu tenant khác | PD-R11: lọc `tenant_id` tường minh mọi truy vấn trong tx; khoá theo `(id, tenant_id)`; test 2 tenant cùng tới hạn (AC-H46). **Nhắc lại regression cross-tenant `scanDue` P-c2** (D1 `c5e9b6b8`): mọi vòng nền mới phải có test cách ly tương đương |
+| S2 | Chuyển cấp cấp quyền cho Group sai tenant / lộ phòng | PD-R20/R23: kiểm Group cùng tenant lúc lưu **và** lúc chuyển; grant gắn task (HUB-BR-25); audit; security review riêng |
+| S3 | Thử lại gọi trùng hành động thật | PD-R05: job đã gửi `side_effect` không thử lại |
+| S4 | Hẹn giờ bắn trùng / mất khi khởi động lại | UNIQUE `idempotency_key` + `fired_at` trong cùng tx + `SKIP LOCKED`; DB là nguồn (spike bài 3a) |
+| S5 | P-d2: tool chạy vượt quyền | [spec-d2 §5](spec-d2.md) |
+
+## 6. UI (frontend-lead)
+**Cần mockup/artboard trước Gate** (D13). Không thêm node kiểu mới; canvas đầy đủ ở GĐ3.
+
+| Màn | Thay đổi P-d1 | Ghi chú |
+|---|---|---|
+| admin-web canvas → panel stage | Executor "Chờ tới ngày" (nguồn ngày: input/trường stage trước, ± ngày, giờ); khối gate thêm "Nhắc mỗi … giờ", "Chuyển cấp sau … giờ tới Group …"; form quy trình thêm "Thời hạn run (ngày)" + "Không hết hạn" | lỗi luật inline theo `rules[]` (`WAIT_INVALID`, `ESCALATE_INVALID`) |
+| admin-web input def · chat-web form `!key` | kiểu `date` (`<input type=date>`) | — |
+| chat-web StageStrip / Run / Inbox | nhãn: "Chờ tới {ngày}", "Đang thử lại ({n}/3)", "Cần người quyết · Hết lượt thử lại" / "· Ngày hẹn không hợp lệ", "Đang chờ hẹn", "Đã chuyển cấp" | câu chữ VI/EN + role e2e chốt ở PLAN-FE |
+
+## 7. Phụ thuộc & giả lập
+| Phụ thuộc | Ghi chú |
+|---|---|
+| ADR-0017 **Accepted** | Điều kiện Gate GĐ1 (D1); còn thiếu Redis thật + tải 10.000 run trên staging |
+| Mốc dọn-seed (CR-081) đóng | Bắt đầu P-d1 sau khi đóng (D14) |
+| Giả lập | đồng hồ giả `AppDeps.now` (`core/clock.ts`); `fake-cli` `#fake:` thêm ca lỗi tạm theo lượt. Env mới: không |
+
+## 8. Tiêu chí nghiệm thu
+AC-H39…H46 + test khoá bị ảnh hưởng (việc của qc): [`spec-ac.md`](spec-ac.md). Lệnh xong: `done:pd1`, `done:pd2` + chạy lại `done:pa/pb/pb2/pc/pc2`.
+
+## 9. Quyết định
+### Trước Gate (đã chốt với người dùng — 2026-10-17)
+D1…D15: [`spec-decisions.md`](spec-decisions.md).
+
+### Câu hỏi mở
+Q1…Q7 (mặc định đề xuất, chờ spec-readiness xác nhận) + cụ thể hoá A1…A12: [`spec-decisions.md`](spec-decisions.md) "Câu hỏi mở".
+
+### Trong lúc làm (agent tự quyết theo Luật 2)
+- (chưa có)
+
+## 10. Tranh chấp test
+- (không)
