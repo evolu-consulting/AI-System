@@ -27,6 +27,19 @@ Môi trường: Windows, PostgreSQL 16.15 portable, fakeredis 2.40 (Redis giả 
 
 **Bài tải mở rộng (`spikes/engine/load.spike.test.ts`, local, N=1.000, 2026-10-17):** nhắc 1.000 task trong 11 lượt (p95 362 ms/lượt); `sweepOnce` với 2.000 run đang chạy 27 ms; hết hạn 2.000 run trong 21 lượt (p95 1,6 s/lượt). **Hai Hub nhắc song song: ĐỎ — nhắc trùng** (1.800 lượt, 3.600 notice thay vì 1.000 / 2.000) do `dueTasks` không khoá hàng và `markReminded` không kiểm số dòng (TECH-DEBT #190; sửa ở P-d T9 trước khi bật HA hai node). Bản N=10.000 trên Redis thật chạy ở staging (người dùng chọn chờ staging).
 
+**Staging (2026-10-17 16:43–16:57 UTC, máy chủ 149.202.83.5, project riêng `evostaging`, Postgres 16 + Redis 7 thật, pg 2 CPU/2 GB, runner 2 CPU/3 GB, commit 011512d; báo cáo `.data/staging-20261017-2342/`, đã `down -v`):**
+
+| Bài | Kết quả |
+|---|---|
+| 8 bài spike engine trên Redis thật | 4 đạt / 4 đỏ, **giống hệt local** ⇒ kết quả fakeredis đúng |
+| Tạo 10.000 run chờ duyệt | 17,6 s |
+| Nhắc 10.000 task (1 Hub) | **Đạt**: 101 lượt (lô 100), p50 748 ms, p95 1,09 s/lượt, tổng 77,5 s; 20.000 notice |
+| Hai Hub nhắc song song | **Đỏ — nhắc trùng 83 %**: 9.500 + 8.800 = 18.300 lượt, 36.600 notice (đúng lỗi TECH-DEBT #190, xác nhận trên Redis thật) |
+| `sweepOnce` với 20.000 run đang chạy | **Đạt**: 19,8 ms |
+| Hết hạn 20.000 run | **Đạt** (đủ 20.000): 201 lượt, p95 2,99 s/lượt, tổng 7 phút 05 s |
+
+Nhận xét staging: tải 10× không làm vòng nền chậm theo cấp số (nhắc p95 ~1 s/lô 100, sweep vẫn ~20 ms); không mất run, không kẹt. Điểm yếu duy nhất là **chạy nhiều Hub** (#190) — lỗi khoá hàng, sửa trong (a) bằng `FOR UPDATE SKIP LOCKED` + kiểm `rowCount` ở `markReminded`, không phải lý do chuyển (b). Hết hạn lô 100 mất ~2–3 s/lượt: chấp nhận cho vòng nền; nếu cần nhanh hơn thì tăng lô hoặc cập nhật theo tập (ghi khi build T7).
+
 Nhận xét: nền chạy bền **đã đúng** ở những chỗ khó (vòng nền đọc DB nên an toàn khi khởi động lại, start không trùng, snapshot theo version, tải 1.000 task ổn). Các bài đỏ là **thiếu tính năng cho flow dài ngày**, không phải lỗi mất dữ liệu.
 
 ## Quyết định (đề xuất)
@@ -42,4 +55,4 @@ Xem lại phương án (b) nếu: bài tải 10.000 run trên staging không đ�
 ## Hệ quả
 - Được: một engine cho cả chuỗi tài liệu cũ và flow nghiệp vụ mới; không thêm hệ thống phải vận hành.
 - Mất: đổi mô hình cốt lõi của engine; cần test hồi quy toàn bộ P-a/P-b/P-c.
-- Còn thiếu để chốt Accepted: chạy lại spike trên Redis thật (không phải fakeredis) và bài tải 10.000 run trên staging.
+- ~~Còn thiếu để chốt Accepted: chạy lại spike trên Redis thật và bài tải 10.000 run trên staging~~ — đã chạy 2026-10-17 (bảng Staging ở trên). Điều kiện kèm khi Accepted: sửa #190 (nhắc trùng nhiều Hub) ở P-d T9 có int test hai Hub, trước khi chạy HA hai node.
