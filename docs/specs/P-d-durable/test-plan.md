@@ -189,7 +189,7 @@ Fixture SQL: theo "Bẫy đã gặp" CONVENTIONS §2 (`sql.json`, ép kiểu, kh
 | Q2 | backend-lead + docs-architect | Dời `core/step.rules.ts`: plan-domain §7 (T8s ⇒ `domain/runs/step.rules.ts`, toàn file) ↔ tasks T19s + spec-ca §5 (`domain/runs/step-join.rules.ts`); spec-ca §2 ghi `runs/run-status.rules.ts` ↔ plan-domain `statusForRun` ở `runs/step.rules.ts` | theo plan-domain (T8s, `runs/step.rules.ts`) |
 | Q3 | backend-lead | **Đã trả lời** (plan-addendum A5) | PD-U93…U98 ([rules](test-plan-rules.md)) |
 | Q4 | backend-lead | **Đã trả lời** (A7): `createHubUow(db,{clock,publish})`, `publish` bắt buộc | PD-I75…I77 dùng `publish` giả ghi mảng |
-| Q5 | docs-architect | PD-R23: `after_h` sai ⇒ 400 `VALIDATION_ERROR` (zod) | `ESCALATE_INVALID` 422 chỉ khi trùng Group duyệt / `escalate` ở stage `auto` (PD-U68, PD-I47) |
+| Q5 | docs-architect | PD-R23: `after_h` sai, `escalate` ở stage `auto` qua API ⇒ 400 `VALIDATION_ERROR` (zod, `after.auto` strict) | `ESCALATE_INVALID` 422 chỉ khi trùng Group duyệt (PD-I47a); luật domain/contract báo thêm `afterH` sai và `escalate` ở `auto` (bản nháp FE, PD-U68) |
 | Q6 | backend-lead | **Đã trả lời** (A7): `interrupted` thắng `TIMEOUT` | PD-U04b ([rules](test-plan-rules.md)) |
 | Q8 | docs-architect | spec-ac §2 liệt kê sai/thiếu test khoá: thiếu P1-28b, TM-07, TM-09…TM-15, `gate.test.ts`, M1/M2/M3 db-rls; thừa `contracts-pb2`, `contracts-pc`, `sources.rules`, `start.int`, `M1 tenants` | cập nhật spec-ac §2 theo §6 trên |
 | Q9 | backend-lead | **Đã trả lời** (A7): `round`/`attempt` bắt đầu 1; `n` đếm theo stage, không reset | PD-I01 `retry:<sr>:1:1:1`, `n` 2, 3; PD-I02 `n` 4 |

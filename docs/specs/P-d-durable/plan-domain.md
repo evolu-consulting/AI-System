@@ -65,6 +65,7 @@ export function classifyJobError(code: string | null, reason: string | null): Jo
 /** Lý do needs_decision "cũ" (A3) khi KHÔNG thử lại: TIMEOUT ⇒ job_timeout; interrupted ⇒ interrupted; còn lại agent_failed. */
 export function legacyFailReason(f: { code: string | null; interrupted: boolean }): "job_timeout" | "agent_failed" | "interrupted";
 ```
+→ thay bởi plan-addendum A7 Q6: thứ tự TIMEOUT/`interrupted` (`interrupted` thắng).
 Bảng đầy đủ (qc phủ mọi ô; `—` = null). Cột = `reason`; hàng = `code`. **T** = tạm, **N** = nghiệp vụ:
 
 | code \ reason | — | timeout · upstream · crash · orphaned · provider_busy · tenant_slots | quota · provider_unavailable · cancelled · invalid_payload · invalid_output · sandbox · credential · refused · attachment · container | lạ |
@@ -109,6 +110,7 @@ export function statusForRun(s: StageRunStatus, timerKind: TimerKind | null): St
 ### 4.5 `domain/runs/active-cap.rules.ts` (PD-R16)
 `export const CAP_COUNTED: readonly ProcessRunStatus[]` (4 trạng thái) · `countsTowardCap(s): boolean` · `isActive(s): boolean` (5 trạng thái, gồm `waiting_timer`).
 ### 4.6 `domain/defs/wait-def.rules.ts` (PD-R17)
+→ thay bởi plan-addendum A2 (path WAIT_INVALID).
 ```ts
 /** WAIT_INVALID: after≠auto | realAction | hasSources | hasMustKnow | hasAutofix | nguồn input không có/không type date |
  *  nguồn field: stage_key không có ở bước NHỎ HƠN hoặc field không có/không type date. Path `stages.<i>.executor`. */
@@ -203,6 +205,7 @@ export function escalateAction(p: { groupId: string; groupExists: boolean; group
 `AssertEqual` đặt ở `P/adapters/assert-equal.ts` (lớp 3, dùng lại cho module khác).
 
 ## 7. Tách file cũ P-d1 (task `Ns`, không đổi hành vi; `Nq` qc sửa đường dẫn + lock cùng lúc)
+→ thay bởi plan-addendum A6 (import contract trong file dời, người gọi đổi đường dẫn).
 | Task | File cũ → đích | Phần | qc sửa (test khoá, qc xác nhận lại bằng grep) |
 |---|---|---|---|
 | T7s | `core/process-state.rules.ts` → `domain/runs/run-state.rules.ts` | **toàn file** (một máy trạng thái; enum ⇒ `domain/types`) | `P-a/step0/rules/process-state.test.ts` (R-S18…), mọi `tryLoad("…core/process-state.rules")` |

@@ -82,7 +82,7 @@ BA là nguồn sự thật; bảng chỉ cụ thể hoá. Hằng: §3.
 | PD-R20 | Chuyển cấp chạy trong **vòng nhắc sẵn có** (đọc `review_tasks`, không dùng `process_timers`): task `open`, `escalated_at IS NULL`, `escalate_at ≤ now` ⇒ trong 1 tx (lọc `tenant_id` tường minh): kiểm Group đích còn tồn tại **và cùng tenant** ⇒ thêm `review_task_assignees` (`group_id`, `via='escalated'` — thêm cuối), đặt `escalated_at`, audit (actor hệ thống, task, Group cũ → thêm Group mới), notice **`escalated`** (thêm cuối `NOTICE_KINDS`) + DM hệ thống "Quy trình" cho thành viên Group mới. Group không hợp lệ lúc đó ⇒ không thêm, `escalated_at` vẫn đặt, audit `escalate_skipped` | D8, HUB-BR-43 |
 | PD-R21 | Sau chuyển cấp: thành viên **cả hai** Group quyết được (người đầu tiên khoá — như cũ); nhắc tiếp tới mọi assignee. "Chuyển tay" (forward) chỉ tới thành viên **cùng Group mà người chuyển đang được gán** (Group cũ hoặc Group chuyển cấp); `FORWARD_OUT_OF_GROUP` như cũ. Không bao giờ tự Đạt/Chưa đạt | D8, P-R07 |
 | PD-R22 | Chỉ áp `kind=review`; task `ask`/`decision` giữ hành vi nhắc cũ. Người Group chuyển cấp ngoài phòng xem theo HUB-BR-25 (grant gắn task, audit `view`) | D8, HUB-BR-25 |
-| PD-R23 | Lưu def (readiness #13): Group `escalate.group_id` không tồn tại / khác tenant ⇒ 422 **`PROCESS_REF_INVALID`** (không lộ tồn tại); ngưỡng sai (`after_h` ngoài 4…2160, `remind_every_h` ngoài 4…168) ⇒ 400 `VALIDATION_ERROR` (hình dạng, #40); `escalate.group_id` = `after.review.group_id`, hoặc `escalate` ở stage `auto` ⇒ 422 `PROCESS_DEF_INVALID` luật **`ESCALATE_INVALID`** | D8 |
+| PD-R23 | Lưu def (readiness #13): Group `escalate.group_id` không tồn tại / khác tenant ⇒ 422 **`PROCESS_REF_INVALID`** (không lộ tồn tại); ngưỡng sai (`after_h` ngoài 4…2160, `remind_every_h` ngoài 4…168) ⇒ 400 `VALIDATION_ERROR` (hình dạng, #40); `escalate.group_id` = `after.review.group_id` ⇒ 422 `PROCESS_DEF_INVALID` luật **`ESCALATE_INVALID`**; `escalate` ở `auto` ⇒ 400 `VALIDATION_ERROR` qua API (contract `after.auto` strict); luật còn bắt ở bản nháp FE | D8 |
 
 ### 2.4 Thời hạn tuỳ chọn (CR-086)
 | Luật | Điều kiện chính xác | Nguồn |
@@ -173,7 +173,7 @@ AC-H39…H47 + test khoá bị ảnh hưởng: [`spec-ac.md`](spec-ac.md). Lện
 D1…D15: [`spec-decisions.md`](spec-decisions.md).
 
 ### Câu hỏi mở
-Còn một: ADR-0017 chờ staging (mặc định) hay Accept dựa trên spike local (readiness lần 2 câu 1). Còn lại đã chốt ([`spec-decisions.md`](spec-decisions.md)).
+Không còn; ADR-0017 = chờ staging ([`spec-decisions.md`](spec-decisions.md)).
 
 ### Quyết định từ PLAN + readiness lần 2 (Luật 2b, 2026-10-17)
 D-PD02/04/07/09/10/11/13 (plan.md), D2-05…08 (plan-d2.md), retry team, FD1–FD11 (plan-frontend.md §0): [`spec-decisions.md`](spec-decisions.md) "Quyết định từ PLAN".

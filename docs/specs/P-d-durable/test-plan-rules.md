@@ -21,7 +21,7 @@ Quy ước như [test-plan §4](test-plan.md): nạp `loadDomain("<rel>")` = `P/
 | PD-U61 | ″ nguồn | input không có / input `text`; field: stage cùng bước / bước lớn hơn / field không có / field `number` | `WAIT_INVALID`, path `stages.<i>.executor.from` (6 ca) |
 | PD-U61b | ″ bản nháp chưa qua zod (A2) | `offsetDays` 366 / −366; `time` `"24:00"` / `"9:00"` | `WAIT_INVALID`, path `stages.<i>.executor.offset_days` (2 ca) / `stages.<i>.executor.time` (2 ca) |
 | PD-U67 | `defs/escalate-def.rules` `escalateStageIssues` | escalate null; `{afterH:24,groupId:G2}` review G1 | `[]`; `[]` |
-| PD-U68 | ″ | `groupId = reviewGroupId`; escalate ở stage `after:"auto"`; (đối chứng) `afterH` 3 / 2161 | `[{path:"stages.<i>.after.escalate",rule:"ESCALATE_INVALID"}]` cho hai ca đầu; `afterH` sai **không** thuộc luật này (zod 400, PD-C04/PD-I47) ⇒ `[]` |
+| PD-U68 | ″ | `groupId = reviewGroupId`; escalate ở stage `after:"auto"`; `afterH` 3; `afterH` 2161 | cả bốn ca `[{path:"stages.<i>.after.escalate",rule:"ESCALATE_INVALID"}]` (plan-domain:119). `escalate` ở `auto` là luật domain/contract (bản nháp FE); qua API: `afterH` sai và `escalate` ở `auto` ⇒ 400 (PD-C04, PD-I47b/e) |
 | PD-U69 | `escalateGroupRefs` | 2 stage có escalate | `[{path:"stages.0.after.escalate.group_id",groupId}, …]` |
 | PD-U72 | `defs/ttl.rules` `ttlOnCreate` | undefined, null, 30 | 7, null, 30 |
 | PD-U73 | `ttlOnUpdate` | `(undefined, 30)`, `(null, 30)`, `(10, null)` | 30, null, 10 |

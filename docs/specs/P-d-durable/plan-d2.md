@@ -28,6 +28,7 @@ Phần của [`plan.md`](plan.md) (mục "P-d2" mà `tasks.md` T13 trỏ tới).
 File cũ chỉ lời gọi: `runs/launcher.ts` (nhánh `tool`), `runs/executor-ref.ts` (ref tool = key/tên workflow), `runs/view-steps.ts` (`tool_key`, `skipped`), `defs/def.rules.ts` + `defs.service.ts`, `modules/runs/run-process.ts` (`StageExecutor` + `{kind:"tool"; workflowId}`), `dify/dify.client.ts` (cờ D2-09), `mcp/mcp.repo.ts` (`ToolStepStart.agentId: string | null`).
 
 ## 3. Luồng stage `tool`
+→ thay bởi plan-addendum A2 (`toolStageIssues`/`branchStageIssues`), plan-addendum A3 (trường Hub ép).
 **Lưu def** (`defs.service`, tx tenant): `toolStageIssues` ⇒ `TOOL_INVALID`/`TOOL_SIDE_EFFECT`; `branchStageIssues` ⇒ `BRANCH_INVALID`; ref: `tool_key ∉ toolCatalog.available(tenantId)` (workflow `enabled` ∧ công tắc `revoked_at IS NULL` cho tenant def, đọc DB) hoặc def mẫu ⇒ 422 `PROCESS_REF_INVALID {path:"stages.<i>.executor.tool_key", ref:"tool"}` (không lộ tồn tại). Ép (`ensureToolStage`): `required_sections=["Kết quả","Bàn giao"]`, `template = "# {name}\n\n## Kết quả\n\n## Bàn giao\n"`, `answerer={kind:"starter"}`, `sources=[]`, `must_know=[]`, `autofix=null`, `token_budget=null`; `timeout_s` giữ.
 **Chạy** (launcher `plan()`, tx scope user người bắt đầu, run đã khoá; `starterUsable` ⇒ `user_inactive` như cũ; grant chạy quy trình (HUB-BR-27) như cũ ⇒ `permission_lost`): `if (kind==="tool") return launchToolStage(...)` ⇒ `prepareProcess` executor tool ⇒ `createRunTx` ⇒ stage `running`, `current_run_id` ⇒ sau COMMIT `runs.launch(…, {driver: toolDriver})`.
 `toolDriver` ⇒ `runToolStageTx(ctx, uow, link)`:
@@ -42,6 +43,7 @@ File cũ chỉ lời gọi: `runs/launcher.ts` (nhánh `tool`), `runs/executor-r
 **Catalog editor**: `GET /process-editor/context` trả thêm `tools = listTools(tenantId)` = workflow `enabled` ∧ công tắc bật (TT-R04), map `ProcessToolItemSchema` (tham số từ `workflows.input_schema`). Mẫu (tenant null) ⇒ `tools: []`.
 
 ## 4. Chữ ký luật P-d2 (qc test trước; kiểu domain tự khai)
+→ thay bởi plan-addendum A2, A3 khi lệch.
 ```ts
 // domain/defs/tool-def.rules.ts
 export type ToolDefShape = { key: string; sideEffect: boolean; params: readonly { name: string; type: string; required: boolean }[] };

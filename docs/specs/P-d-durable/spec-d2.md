@@ -40,7 +40,7 @@ Enum thêm cuối: [spec §3](spec.md) (`EXECUTOR_KINDS`+`tool`, `STAGE_RUN_STAT
 | Hằng | `TOOL_ARGS_MAX=20` · `TOOL_RESULT_MAX_BYTES=65536` · `BRANCH_RULES_MAX=10` · `BRANCH_OPS` |
 | `StageView` | trạng thái `skipped`; + `tool_key?` |
 | `ProcessRunFullView` | không thêm `branch_events`: đọc từ `HistoryItem.kind=branch` |
-| Catalog tool cho editor | endpoint Hub đọc danh sách tool **khả dụng cho tenant người gọi** (TT-R04: tên, key, mô tả, tham số, `side_effect`) — backend-lead chốt đường dẫn |
+| Catalog tool cho editor | theo D-PD11: `GET /process-editor/context` trả danh sách tool **khả dụng cho tenant người gọi** (TT-R04: tên, key, mô tả, tham số, `side_effect`) |
 | Admin (ADM-FR-73) | `GET/PUT/DELETE /admin/tenants/:id/workflow-tools[/:workflow_id]` — [TT-R03](spec-tz-tools.md) |
 
 ## 5. Dữ liệu + bảo mật

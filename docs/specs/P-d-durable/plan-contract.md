@@ -77,6 +77,7 @@ escalate: z.strictObject({
 - Tạo (`POST /process-defs`) vắng `ttl_days` ⇒ 7; sửa (`PUT /process-defs/:id`, toàn bộ body + `version`) vắng ⇒ **giữ** giá trị hiện có; `copy` chép `ttl_days` của nguồn. Không có export/import def trong code (grep `transfer.ts`, `defs.routes.ts`) ⇒ phần export/import của PD-R24 **N/A** (plan §10 #23).
 - `PROCESS_DEF_RULES` (`hub-admin/process-steps.ts`) += `"WAIT_INVALID"`, `"ESCALATE_INVALID"` (cuối, 16). `PROCESS_REF_KINDS` không đổi ở P-d1 (Group chuyển cấp dùng `ref:"group"`, path `stages.<i>.after.escalate.group_id`).
 - `processDefStageIssues` (contract, thuần, FE dùng) gọi thêm `waitStageIssues(stages, inputs)` + `escalateStageIssues(stages)` — **cùng điều kiện** với luật domain [plan-domain §4.6–4.7]; path: `stages.<i>.executor` (WAIT_INVALID nguồn/after/real_action/sources/must_know/autofix), `stages.<i>.after.escalate` (ESCALATE_INVALID). Chữ ký mở rộng: `processDefStageIssues(stages, ctx?: { inputs?: readonly {key:string; type:string}[] })` — vắng `ctx` ⇒ bỏ kiểm nguồn input (giữ test khoá cũ).
+→ thay bởi plan-addendum A2: path WAIT_INVALID phía contract.
 - Hub **ép** khi lưu (`ensureWaitStage`, như `ensureHandoff`): `output = {filename: giữ, template: "# {name}\n\n## Bàn giao\n", required_sections:["Bàn giao"], fields:[]}`, `answerer={kind:"starter"}`, `token_budget=null`, `timeout_s` = mặc định (bỏ qua).
 
 ## 4. Endpoint mới P-d1 — ngữ cảnh editor (Hub)
@@ -138,6 +139,7 @@ export const ProcessToolItemSchema = z.strictObject({
     required: z.boolean() })).max(TOOL_ARGS_MAX),
 });
 ```
+→ thay bởi plan-addendum A1: khối `params` ở trên (trần, `description`, `options`); plan-addendum A2: `toolStageIssues`/`branchStageIssues`.
 `params.type` = kiểu input workflow catalog (`WorkflowInput`); tham số `file` ⇒ tool **không** chọn được trong stage (GĐ1 không truyền file) — `TOOL_INVALID` khi lưu, và catalog vẫn liệt kê để FE hiện "không hỗ trợ".
 
 **Admin · công tắc tool (T18a)** — `packages/contracts/src/workflow-tools.ts` (mới, export ở `index.ts`). Chỉ `platform_admin` (tenant_admin ⇒ 403).

@@ -148,18 +148,18 @@ Lớp 3 (map contract → domain): chat `shared/lib/stage-label.ts` (`stageLabel
 ## 14. Contract còn thiếu cho FE (backend-lead bổ sung — FE không tự sửa)
 | # | Cần | Vì sao | Mặc định FE nếu chưa có |
 |---|---|---|---|
-| G1 | `ProcessToolItemSchema.params[]` thêm `description?: string` và `options?: string[]` (kiểu `select`) | map tham số cần mô tả (`SchemaEditor` bắt buộc mô tả) + chọn hằng từ danh sách | `const` = ô chữ tự do |
-| G2 | Xuất hàm thuần cho FE live-validate P-d2: `toolStageIssues(stages, tools)`, `branchStageIssues(stages)` (cùng luật domain) + **path cụ thể**: `WAIT_INVALID` → `stages.i.executor.from` / `.offset_days` / `.after`…; `BRANCH_INVALID` → `stages.i.after.branch.j.{field,op,value,goto_step}`; `TOOL_INVALID` → `stages.i.executor.args.<name>` | câu lỗi đúng ô thay vì một câu chung | một câu chung cho mỗi mã luật (§6 i18n) |
-| G3 | Xác nhận Hub **bỏ qua** `output`/`answerer`/`token_budget`/`timeout_s` FE gửi cho stage `wait_until`/`tool` (`ensureWaitStage`/`ensureToolStage`) — hoặc nới schema để vắng | FE gửi giá trị hợp lệ mặc định (§2) | gửi mặc định |
-| G4 | Notice `escalated` phải có `task_id` (để mở `TaskPanel`) | DM "Quy trình" | thẻ chỉ có tiêu đề + liên kết |
-| G5 | `StageView.next_retry_at` và `wait` **loại trừ nhau**; `retry_count` hiệu lực cũng có khi stage đã `queued`/`running` sau backoff | `describeStageWait` | như §5 |
-| G6 | `expires_at` có cả ở full view (`started_at` đã có) | câu hết hạn động (Q3) | `end.expiredGeneric` |
-| G7 | `OpenTask.escalated_group` + `TaskDetail.escalated` trả cả cho người ở phòng; def mẫu nhận `tenant_id === null` để FE biết scope (FD11) | thẻ kiểm trong thread | chỉ hiện ở trang Run |
+| G1 | `params[]` thêm `description?`, `options?` → plan-addendum A1 | map tham số | `const` = ô chữ |
+| G2 | Hàm thuần live-validate P-d2 + path cụ thể → plan-addendum A2 | câu lỗi đúng ô | một câu chung (§6 i18n) |
+| G3 | Hub bỏ qua `output`/`answerer`/`token_budget`/`timeout_s` stage `wait_until`/`tool` → plan-addendum A3 | `ensureWaitStage`/`ensureToolStage` | gửi mặc định (§2) |
+| G4 | Notice `escalated` có `task_id` → plan-addendum A4 | DM "Quy trình" | thẻ chỉ tiêu đề |
+| G5 | `next_retry_at` ⊥ `wait`, `retry_count` hiệu lực → plan-addendum A4 | `describeStageWait` | như §5 |
+| G6 | `expires_at` ở full view → plan-addendum A4 | câu hết hạn (Q3) | `end.expiredGeneric` |
+| G7 | `escalated_group`/`escalated`, `tenant_id === null` (FD11) → plan-addendum A4 | thẻ kiểm | chỉ trang Run |
 
 ## 15. Câu hỏi mở (kèm mặc định — dùng nếu không trả lời)
 | # | Câu hỏi | Mặc định |
 |---|---|---|
-| Q1 | Ô "Múi giờ" có thêm ở **Tạo tenant** (TZ-R03 nói đặt khi tạo) hay chỉ ở Thông tin? | Có thêm ở cả hai (§3) |
+| Q1 | Ô "Múi giờ" có thêm ở **Tạo tenant** (TZ-R03 nói đặt khi tạo) hay chỉ ở Thông tin? | Áp mặc định (Luật 2b): cả hai (§3) |
 | Q2 | Nhãn nút quyết riêng cho `retry_exhausted`/`timer_invalid` (FD8) có chấp nhận (khác nhãn chung "Thêm 1 lần làm lại")? | Chấp nhận |
-| Q3 | Câu "Lượt chạy hết hạn (7 ngày …)" là hằng 7: đổi thành `{{days}}` từ `expires_at − started_at` | Đổi (7 ngày ⇒ chữ như cũ, e2e cũ không vỡ) |
-| Q4 | Mockup là HTML tĩnh tự chứa (không `.dc.html` + `support.js`); sau Gate có chuyển thành artboard `docs/design/**/canvas`? | Chỉ khi người dùng yêu cầu |
+| Q3 | Câu "Lượt chạy hết hạn (7 ngày …)" là hằng 7: đổi thành `{{days}}` từ `expires_at − started_at` | Áp mặc định (Luật 2b): đổi (7 ngày ⇒ chữ như cũ) |
+| Q4 | Mockup là HTML tĩnh tự chứa (không `.dc.html` + `support.js`); sau Gate có chuyển thành artboard `docs/design/**/canvas`? | Áp mặc định (Luật 2b): chỉ khi người dùng yêu cầu |

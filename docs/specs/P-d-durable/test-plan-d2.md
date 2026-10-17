@@ -34,7 +34,7 @@ Nguồn: [spec-d2](spec-d2.md) §2–§6 · [spec-tz-tools §2](spec-tz-tools.md
 | PD2-C02 | hằng `TOOL_ARGS_MAX=20`, `TOOL_RESULT_MAX_BYTES=65536`, `BRANCH_RULES_MAX=10`, `BRANCH_OPS`; domain `limits.ts` bằng contract |
 | PD2-C03 | executor `tool` nhận args 3 loại nguồn; 21 args lỗi; tên tham số sai regex lỗi; `after.branch` mặc định `[]` ở cả `review` và `auto`; 11 luật lỗi; `op:"in"` lỗi |
 | PD2-C04 | `RoomProcessPartSchema` `branch {process_run_id, stage_idx, to_step, rule}`; `rule` 0/11 lỗi |
-| PD2-C05 | `TenantWorkflowToolSchema`, `…ListSchema` (≤ 200), `TenantWorkflowToolPutSchema` strict `{}` (thừa trường ⇒ lỗi); `ProcessToolItemSchema`, `ProcessEditorContextSchema.tools` optional |
+| PD2-C05 | `TenantWorkflowToolSchema`, `…ListSchema` (≤ 200), `TenantWorkflowToolPutSchema` strict `{}` (thừa trường ⇒ lỗi); `ProcessToolItemSchema`, `ProcessEditorContextSchema.tools` optional; `params`: 50 ok, 51 lỗi; `options` chỉ khi `type="select"`, kiểu khác thì vắng (có ⇒ lỗi); `description` 400 ký tự ok, 401 lỗi |
 | PD2-C06 | test khớp kiểu admin `workflow-tools.mapper.test.ts` (backend-lead, T18a) — qc rà như PD-C12 |
 
 ## 3. Int P-d2 — `tests/acceptance/P-d/d2/*.int.test.ts`
@@ -46,7 +46,7 @@ Nguồn: [spec-d2](spec-d2.md) §2–§6 · [spec-tz-tools §2](spec-tz-tools.md
 | PD2-I03 | kết quả 65.537 byte | `tool_failed` |
 | PD2-I04 | `WS` (side effect) ở stage `real_action` sau gate Đạt; fake trả 500 **sau khi nhận** | `tool_failed`, Dify 1 lần, 0 hẹn `retry`; `run_steps` có trace `confirmation:"gate_review"` |
 | PD2-I05 | `W` (không side effect): fake 503 lần 1, ok lần 2 | hẹn `retry` +30 s; bắn ⇒ gọi lần 2 ⇒ `done`; `retry_count` 1 |
-| PD2-I06 | `WS`: `base_url` trỏ cổng đóng (connection refused ⇒ `connectFailed`, lỗi trước gửi) ×1, rồi đổi `base_url` sang fake ok | thử lại (PD2-R05), tổng 1 lời gọi tới được handler |
+| PD2-I06 | `WS`: `base_url` cố định trên cổng P giữ trước (bind rồi đóng); lần 1 chưa có server (ECONNREFUSED ⇒ `connectFailed`, lỗi trước gửi); dựng fake trên P **trước** khi hẹn `retry` bắn (Hub đọc `base_url` từ cache catalog, không đổi `base_url`) | thử lại (PD2-R05), tổng 1 lời gọi tới được handler |
 | PD2-I06b | `WS`: fake nhận kết nối rồi đóng socket (trước/sau đọc body) | `sent:true` ⇒ `tool_failed` (an toàn, không gọi lại), Dify 1 lần, 0 hẹn `retry` (Q-D2-2) |
 | PD2-I07 | fake 400 / 403 | `tool_failed` ngay |
 | PD2-I08 | fake treo > `timeout_s` (`W`) ×4 | 3 hẹn retry, rồi `retry_exhausted` |
@@ -112,5 +112,5 @@ K15 (`contracts-pa.test.ts:175` `ROOM_PROCESS_KINDS`, T17) · K28 (`M1/M2/M3 db-
 | Q-D2-1 | backend-lead | **Đã trả lời** (plan-addendum A7): thứ tự khai báo `output.fields`, số `String(v)`, `JSON.stringify(fields)` không thụt, `\|` thoát `\`, xuống dòng ⇒ dấu cách; không cắt `clipHandoff` | PD2-U09 khớp nguyên văn ví dụ A7 (kết thúc một `\n`); thêm ô: không trường ⇒ không dòng bảng + `Đã gọi tool; trường: (không có)`; chuỗi chứa `\|` và xuống dòng |
 | Q-D2-2 | backend-lead | **Đã trả lời — khác mặc định**: `connectFailed` chỉ khi lỗi lập kết nối (ECONNREFUSED/ConnectionRefused/FailedToOpenSocket/ENOTFOUND/EAI_AGAIN); server đóng socket ⇒ `sent:true` | PD2-I06 (cổng đóng ⇒ thử lại), PD2-I06b (đóng socket ⇒ `tool_failed`) |
 | Q-D2-3 | backend-lead | Stage ở bước bị nhảy chỉ có thể `pending` (chưa chạy) ⇒ khi nào còn hẹn mở để huỷ? | PD2-I33 chỉ kiểm "0 hẹn mở sau nhảy"; huỷ hẹn phủ ở `stagesToCancelOnBack`/PD-I37 |
-| Q-D2-4 | docs-architect | spec-d2 PD2-R09 ghi `run_steps.type='workflow'` ↔ plan-d2 D2-03 `type='tool'` | test theo plan (`'tool'`); PD-R05 probe gồm cả hai |
-| Q-D2-5 | docs-architect | TT-R03 audit `workflow_tool.enable/disable` ↔ plan `workflow`/`grant`/`revoke` | theo plan (Q3 plan §10) |
+| Q-D2-4 | docs-architect | spec-d2 PD2-R09 ghi `run_steps.type='workflow'` ↔ plan-d2 D2-03 `type='tool'` | **Đã khớp spec (PD2-R09 `'tool'`)**; test theo `'tool'`; PD-R05 probe gồm cả hai |
+| Q-D2-5 | docs-architect | TT-R03 audit `workflow_tool.enable/disable` ↔ plan `workflow`/`grant`/`revoke` | **Đã khớp spec (TT-R03 `grant`/`revoke`)**; theo plan (Q3 plan §10) |

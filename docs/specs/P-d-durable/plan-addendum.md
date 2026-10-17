@@ -154,3 +154,26 @@ Test khoá qc sửa đường dẫn (bổ sung plan-domain §7): T8q thêm `P-a/
 ```
 ````
 (kết thúc bằng một `\n` sau dấu ```` ``` ```` đóng; giữa các khối đúng một dòng trống như trên).
+
+## A8. Bổ sung readiness lần 3 (#58, #57, #64, #65)
+
+### A2 bổ sung — #58 path WAIT phía contract
+| Điểm | Quyết định |
+|---|---|
+| `waitStageIssues` (contract) | Hàm thuần trong `packages/contracts`, được `processDefStageIssues(stages, {inputs})` gọi (plan-contract §3) cho stage `kind = wait`. Trả `issues` có `path` **đúng bảng A2** (giống `waitStageIssues` của domain): `stages.<i>.after` · `stages.<i>.executor.from` · `stages.<i>.executor.offset_days` · `stages.<i>.executor.time` · mọi lỗi WAIT còn lại ⇒ `stages.<i>.executor`. Thay path WAIT ở plan-contract:79 |
+| Test parity PD-C13 | So `processDefStageIssues(stages, {inputs})` (contract) với `waitStageIssues` (domain) trên **mọi hàng WAIT** của bảng A2: cùng `code` + cùng `path`. Không đi qua hàm kiểm tool/branch |
+| `contracts-pd1` | Mỗi path WAIT của A2 có **1 ca** riêng (5 ca: `after`, `executor.from`, `executor.offset_days`, `executor.time`, `executor`) |
+
+### #57 — `ESCALATE_INVALID` (xác nhận plan-domain:119)
+Hàm domain `escalateIssues` và hàm contract cho FE kiểm bản nháp cùng trả `ESCALATE_INVALID` khi:
+1. `escalate` trùng Group duyệt (Group nhận leo thang = Group duyệt);
+2. `escalate` ở stage có `after.kind = auto`;
+3. `afterH ∉ 4…2160` (giờ).
+
+Qua API (`POST/PUT` process-def): ngưỡng `afterH` sai và `escalate` ở stage `auto` đều **400 `VALIDATION_ERROR`** do zod kiểm trước (contract `after.auto` strict, không có khoá `escalate`) — không bao giờ tới hàm domain/422. Chỉ trùng Group duyệt (1) mới tới domain (422 `ESCALATE_INVALID`). PD-U68 theo plan-domain:119 (readiness #57): hàm thuần domain/contract báo `ESCALATE_INVALID` cho `afterH` 3 và 2161 (FE kiểm bản nháp); qua API vẫn 400 do zod chặn trước.
+
+### A7 bổ sung — ghi chú cho qc
+| # | Ghi chú |
+|---|---|
+| #64 PD2-I06 | Hub đọc `base_url` của workflow từ cache `config.catalog()` (`mcp.service.ts:185,258`) ⇒ ca "cổng đóng rồi ok" **giữ `base_url` cố định** trên cổng P đã giữ trước. Lần 1 chưa có server ở P (ECONNREFUSED ⇒ `connectFailed`); **dựng fake trên P trước** khi hẹn retry bắn. Không đổi `base_url` giữa chừng (cache không thấy) |
+| #65 PD-I75 | Ép 40P01 ở UoW: callback lần đầu ném `Object.assign(new Error("deadlock"), { code: "40P01" })`, lần sau chạy bình thường. Mẫu: `packages/db/src/hub-rls.int.test.ts:162`; mã retry: `RETRYABLE` ở `hub-scope.ts:21` |
