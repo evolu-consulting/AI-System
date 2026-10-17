@@ -105,7 +105,7 @@ Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luậ
 
 ### 3. Cổng merge vào `main` (session chính, lần lượt từng nhánh)
 1. Chủ nhánh **rebase lên `main` mới nhất** và tự gỡ conflict.
-2. Chạy **toàn bộ** (không chỉ test của feature): `bun run check` · `typecheck` · `bun test` · `test:lock:verify` · int + e2e của mốc. Kết quả phải là của **bản đã ghép** (`main` + nhánh).
+2. Chạy **toàn bộ** (không chỉ test của feature): `bun run test:all` (= `check` · `typecheck` · `bun test` · `test:int` · `test:lock:verify` · pytest agent-runtime · mọi cấu hình e2e dưới `e2e/**`; CR-092). Kết quả phải là của **bản đã ghép** (`main` + nhánh). Nhánh có thay đổi code mà không kèm test (unit + int; e2e nếu chạm UI/luồng người dùng) → không merge (CLAUDE.md Luật 4b).
 3. `reviewer` đọc diff của nhánh, đối chiếu spec.
 4. Xanh → merge (`--no-ff`, commit merge ghi feature + mã yêu cầu) → báo các session khác rebase. Một lần chỉ merge một nhánh.
 5. Lỡ làm `main` đỏ → **revert ngay commit merge** đó, nhánh sửa rồi xin merge lại. Không để `main` đỏ chờ sửa.

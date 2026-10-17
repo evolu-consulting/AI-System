@@ -55,6 +55,12 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 - Format/lint **chỉ file thay đổi**. Không refactor ngoài phạm vi task; thấy nợ → `docs/TECH-DEBT.md`.
 - Ngoại lệ (CR-089, ADR-0023): khi task sửa logic trong một module chưa theo Clean Architecture, được tách phần chạm tới sang `domain/`/`application/`/`adapters/` trong cùng task; qc sửa đường dẫn test khoá trong cùng task.
 
+## Luật 4b — Mọi thay đổi code có test chạy lại được (CR-092)
+- Tính năng mới hoặc sửa code (kể cả sửa lỗi nhỏ ngoài mốc) **phải kèm test** trong cùng task/commit: unit (luật thuần) + int (API/DB/RLS) cho phần đổi. Không có test → chưa xong.
+- Thay đổi chạm **UI hoặc luồng người dùng** (gồm API mà màn hình dùng) **phải thêm hoặc sửa e2e** Playwright; cấu hình e2e mới đặt dưới `e2e/**/playwright*.config.ts` để `test:all` tự nhận.
+- Sửa lỗi: viết test tái hiện lỗi (đỏ) trước, rồi sửa cho xanh.
+- Bộ hồi quy chạy lại bằng **một lệnh** `bun run test:all` (cần stack local: `scripts/dev-db.ps1 -Wait`); báo xong một mốc/nhánh phải ghi kết quả lệnh này. Test của mốc đã Gate vẫn theo khoá test (Luật 3).
+
 ## Luật 5 — Truy vết
 - Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.
 - Xong task: tick `tasks.md`, cập nhật `docs/STATE.md`. Đổi cấu trúc → `docs-architect` cập nhật CODEMAP/TRACE.
