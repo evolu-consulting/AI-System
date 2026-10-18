@@ -184,4 +184,4 @@ D-PD02/04/07/09/10/11/13 (plan.md), D2-05…08 (plan-d2.md), retry team, FD1–F
 - (chưa có)
 
 ## 10. Tranh chấp test
-- 2026-10-18 (backend-lead, T5) · `tests/acceptance/P-d/rules/contracts-pd1-issues.test.ts:55` (PD-C15 "vắng ctx ⇒ bỏ kiểm nguồn input"): `issuesOf(stages, rule, ctx: unknown = { inputs: DRAFT_INPUTS })` — gọi `issuesOf(..., undefined)` thì JS dùng **giá trị mặc định**, nên hàm nhận `{inputs: DRAFT_INPUTS}` y hệt ca dòng 36 (cùng đầu vào, kỳ vọng `[from]`) mà lại kỳ vọng `[]` ⇒ không code nào xanh cả hai. Đề xuất qc: gọi thẳng `fn(ha, "processDefStageIssues")([inp("khong-co")])` (không đối số thứ 2) hoặc cho `issuesOf` nhận `ctx` qua cờ riêng. Contract đã làm đúng plan-contract §3 (vắng `ctx` ⇒ bỏ kiểm nguồn input — có unit test `process-steps-pd1.test.ts`).
+- 2026-10-18 T5 · PD-C15 `contracts-pd1-issues.test.ts:55` — chi tiết `test-plan-addendum.md` §4.

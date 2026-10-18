@@ -72,3 +72,7 @@ Quy ước đo (CR-093): PD-P12 kiểm "không postThread trong vòng" bằng `r
 - TC16: PD-P15 không tính `set_config` — ngân sách 6 câu ghi ở plan-addendum A10.
 - TC17: PD-P12 đo bằng `run_end.posted_at` NULL — §2; test khoá `P-a/pf1/thread.int:490` gọi `postThread` tường minh nên vẫn xanh.
 - TC18: PD-P15 đo lô 10/99, hết hạn tính chênh so với lượt rỗng — §2.
+
+## 4. Tranh chấp test trong BUILD (spec §10 trỏ về đây — spec.md sát trần)
+
+- 2026-10-18 (backend-lead, T5) · `tests/acceptance/P-d/rules/contracts-pd1-issues.test.ts:55` (PD-C15 "vắng ctx ⇒ bỏ kiểm nguồn input"): `issuesOf(stages, rule, ctx: unknown = { inputs: DRAFT_INPUTS })` — gọi `issuesOf(..., undefined)` thì JS dùng **giá trị mặc định**, nên hàm nhận `{inputs: DRAFT_INPUTS}` y hệt ca dòng 36 (cùng đầu vào, kỳ vọng `[from]`) mà lại kỳ vọng `[]` ⇒ không code nào xanh cả hai. Đề xuất qc: gọi thẳng `fn(ha, "processDefStageIssues")([inp("khong-co")])` (không đối số thứ 2) hoặc cho `issuesOf` nhận `ctx` qua cờ riêng. Contract đã làm đúng plan-contract §3 (vắng `ctx` ⇒ bỏ kiểm nguồn input — có unit test `process-steps-pd1.test.ts`).
