@@ -61,6 +61,13 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 - Sửa lỗi: viết test tái hiện lỗi (đỏ) trước, rồi sửa cho xanh.
 - Bộ hồi quy chạy lại bằng **một lệnh** `bun run test:all` (cần stack local: `scripts/dev-db.ps1 -Wait`); báo xong một mốc/nhánh phải ghi kết quả lệnh này. Test của mốc đã Gate vẫn theo khoá test (Luật 3).
 
+## Luật 4c — Hiệu năng là yêu cầu, không phải tối ưu sau (người dùng yêu cầu 2026-10-18, CR-093)
+- **Chậm mà không phải chờ AI = lỗi của mình.** Đường nóng (API, vòng nền, xử lý lô) phải nhanh và đúng cùng lúc; không đổi tính đúng đắn lấy tốc độ, không đổi tốc độ lấy "an toàn" mà không nói rõ.
+- **Thiết kế theo tập:** không truy vấn/transaction từng hàng trong vòng lặp; mỗi lô số câu SQL cố định (không phụ thuộc số hàng), lọc `= any(array)` qua index, khoá `FOR UPDATE SKIP LOCKED` khi nhiều instance; một pipeline Redis mỗi lô; không gọi mạng/đăng tin trong vòng lặp hàng.
+- **Kế hoạch truy vấn không phụ thuộc thống kê bảng** (sau chèn hàng loạt thống kê cũ): tránh join `unnest` để lọc bảng lớn; câu SQL văn bản cố định (dữ liệu lô qua một tham số JSON) để mỗi kết nối chỉ chuẩn bị một lần.
+- **Có số đo:** đường nóng mới/sửa phải có ngưỡng đo được (vd lô 100 p95 ≤ 50 ms, tổng 10.000 hàng) + test `*.perf.int.test.ts`; test đếm số câu SQL mỗi lô khi là vòng lô. Báo số thật (trước → sau), không làm tròn; chưa đạt thì nói chưa đạt và vì sao.
+- **Test cũng phải nhanh:** chỉ chạy test của phần đang sửa khi làm; bộ đầy đủ khi đóng task/mốc. Không chạy lại cả bộ để "chắc ăn"; thấy test chậm thì đo (file chậm nhất, reset/migrate DB, tuần tự) rồi sửa hạ tầng test.
+
 ## Luật 5 — Truy vết
 - Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.
 - Xong task: tick `tasks.md`, cập nhật `docs/STATE.md`. Đổi cấu trúc → `docs-architect` cập nhật CODEMAP/TRACE.
