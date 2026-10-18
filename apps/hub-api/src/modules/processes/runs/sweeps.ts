@@ -117,18 +117,8 @@ function scanDue(tx: Tx, cutoff: Date): Promise<DueRow[]> {
 
 /** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */
 async function resolveTimeouts(d: ProcessDeps): Promise<number> {
-  const cutoff = new Date(d.now().getTime() - RESOLVE_STALE_MS).toISOString();
-  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ id: string }>(sql`select r.id from hub.process_runs r
-      where r.status = 'running' and r.pinned_sources is null
-        and coalesce(jsonb_array_length(r.snapshot->'sources'), 0) > 0
-        and not exists (select 1 from hub.jobs j
-          where j.type = 'source.resolve' and j.payload->>'process_run_id' = r.id::text
-            and ((j.status = 'queued' and j.created_at > ${cutoff}::timestamptz)
-              or (j.status = 'running'
-                and coalesce(j.heartbeat_at, j.started_at, j.created_at) > ${cutoff}::timestamptz)))
-      order by r.updated_at limit ${BATCH}`),
-  );
+  const cutoff = new Date(d.now().getTime() - RESOLVE_STALE_MS);
+  const rows = await withHubScope(d.db, SYSTEM, (tx) => resolveCands(tx, cutoff));
   let n = 0;
   for (const { id } of rows) if (await markUnresolvable(d, id)) n++;
   return n;
@@ -217,13 +207,7 @@ async function toDecision(
 
 /** K4 · stage `queued` mồ côi (chưa có `hub.runs` đang chạy) ⇒ `kick` lại (idempotent ở launcher). */
 async function requeueOrphans(d: ProcessDeps): Promise<number> {
-  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ process_run_id: string }>(sql`
-      select s.process_run_id from hub.stage_runs s
-      where s.status = 'queued'
-        and not exists (select 1 from hub.runs r where r.stage_run_id = s.id and r.status = 'running')
-      order by s.updated_at limit ${BATCH}`),
-  );
+  const rows = await withHubScope(d.db, SYSTEM, (tx) => orphanCands(tx));
   let n = 0;
   for (const { process_run_id } of rows) {
     try {
@@ -286,3 +270,34 @@ const reviewGroupOf = (h: Head, idx: number): string | null => {
 
 const isActive = (s: ProcessRunStatus): boolean =>
   (PROCESS_RUN_ACTIVE as readonly string[]).includes(s);
+
+/** Ứng viên `resolveTimeouts` (chỉ đọc). */
+function resolveCands(tx: Tx, cutoff: Date) {
+  const cut = cutoff.toISOString();
+  return tx.execute<{ id: string }>(sql`select r.id from hub.process_runs r
+    where r.status = 'running' and r.pinned_sources is null
+      and coalesce(jsonb_array_length(r.snapshot->'sources'), 0) > 0
+      and not exists (select 1 from hub.jobs j
+        where j.type = 'source.resolve' and j.payload->>'process_run_id' = r.id::text
+          and ((j.status = 'queued' and j.created_at > ${cut}::timestamptz)
+            or (j.status = 'running'
+              and coalesce(j.heartbeat_at, j.started_at, j.created_at) > ${cut}::timestamptz)))
+    order by r.updated_at limit ${BATCH}`);
+}
+
+/** Ứng viên `requeueOrphans` (chỉ đọc). */
+function orphanCands(tx: Tx) {
+  return tx.execute<{ process_run_id: string }>(sql`
+    select s.process_run_id from hub.stage_runs s
+    where s.status = 'queued'
+      and not exists (select 1 from hub.runs r where r.stage_run_id = s.id and r.status = 'running')
+    order by s.updated_at limit ${BATCH}`);
+}
+
+/** CR-093 · làm nóng: chạy các câu QUÉT chỉ đọc của `sweepOnce` một lần trên kết nối của `tx` (bỏ kết quả). */
+export async function warmSweepQueries(tx: Tx): Promise<void> {
+  const epoch = new Date(0);
+  await scanDue(tx, epoch);
+  await resolveCands(tx, epoch);
+  await orphanCands(tx);
+}

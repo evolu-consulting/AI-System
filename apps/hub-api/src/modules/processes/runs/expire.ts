@@ -135,11 +135,22 @@ async function insertRunEnds(tx: Tx, runs: readonly Claimed[]): Promise<void> {
       };
     });
   if (rows.length === 0) return;
-  await tx.execute(sql`
+  await runEndStatement(tx, JSON.stringify(rows));
+}
+
+/** Câu chèn `run_end` (văn bản cố định, dùng chung cho làm nóng pool). */
+function runEndStatement(tx: Tx, json: string) {
+  return tx.execute(sql`
     insert into hub.process_thread_events
       (id, tenant_id, process_run_id, room_id, kind, placement, meta, content, created_at)
     select (e.v->>'id')::uuid, (e.v->>'tenant_id')::uuid, (e.v->>'process_run_id')::uuid, (e.v->>'room_id')::uuid,
       e.v->>'kind', 'flow', e.v->'meta', e.v->>'content', clock_timestamp()
-    from jsonb_array_elements(${JSON.stringify(rows)}::jsonb) with ordinality as e(v, ord)
+    from jsonb_array_elements(${json}::jsonb) with ordinality as e(v, ord)
     order by e.ord`);
+}
+
+/** Làm nóng: câu khoá (lô 0, không khoá/ghi hàng nào) + câu chèn `run_end` lô rỗng trên kết nối của `tx`. */
+export async function warmExpire(tx: Tx): Promise<void> {
+  await claimExpired(tx, new Date(0), 0);
+  await runEndStatement(tx, "[]");
 }

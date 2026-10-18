@@ -22,6 +22,7 @@ import { applyResolveReport } from "./runs/resolve-apply";
 import { roomStart } from "./runs/room-start";
 import { processRunsRoutes } from "./runs/runs.routes";
 import { startProcessSweeper, sweepOnce } from "./runs/sweeps";
+import { warmBackgroundPool } from "./runs/warm-pool";
 import { usageRoutes } from "./usage/usage.routes";
 
 /** Gốc route quy trình cần JWT (`app.ts` gắn `requireAuth`; `/me/*` đã có ở X2a). */
@@ -87,6 +88,8 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     kick: (runId) => d.launcher.kick(runId),
     khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
   });
+  // CR-093 · làm nóng pool cho câu lô vòng nền (chạy nền, không chặn mount; cả khi test tắt vòng — handles dùng chung pool).
+  void warmBackgroundPool(d);
   if (m.processLoops !== false) {
     poster.start(m.signal);
     khWriter?.start(m.signal);

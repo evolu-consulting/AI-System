@@ -5,6 +5,8 @@ import postgres from "postgres";
 
 export type Db = {
   db: PostgresJsDatabase;
+  /** Số kết nối tối đa của pool (CR-093: làm nóng pool vòng nền mở đúng chừng này kết nối). */
+  max: number;
   close(): Promise<void>;
   /** `pg_notify` trên một kết nối của pool, NGOÀI mọi transaction (gọi sau commit, TECH-DEBT #13). */
   notify(channel: string, payload: string): Promise<void>;
@@ -16,9 +18,11 @@ export type Db = {
 };
 
 export function createDb(url: string, opts: { max?: number } = {}): Db {
-  const sql = postgres(url, { max: opts.max ?? 10, onnotice: () => {} });
+  const max = opts.max ?? 10;
+  const sql = postgres(url, { max, onnotice: () => {} });
   return {
     db: drizzle(sql),
+    max,
     close: () => sql.end(),
     notify: async (channel, payload) => {
       await sql.notify(channel, payload);

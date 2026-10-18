@@ -118,23 +118,35 @@ export async function writeNotices(
       payload: n.row.payload,
     })),
   );
-  const before = await tx.execute<{ tenant_id: string; user_id: string; n: number | string }>(sql`
-    with x as (
-      select * from jsonb_to_recordset(${json}::jsonb)
-        as x(id uuid, tenant_id uuid, user_id uuid, process_run_id uuid, task_id uuid, payload jsonb)
-    ), ins as (
-      insert into hub.process_notices (id, tenant_id, user_id, kind, process_run_id, task_id, payload, created_at)
-      select id, tenant_id, user_id, ${kind}, process_run_id, task_id, payload, ${createdAt.toISOString()}::timestamptz
-      from x
-    )
-    select n.tenant_id, n.user_id, count(*)::int as n from hub.process_notices n
-    where n.user_id = any(array(select distinct user_id from x))
-      and n.tenant_id = any(array(select distinct tenant_id from x)) and n.read_at is null
-    group by n.tenant_id, n.user_id`);
+  const before = await noticeStatement(tx, kind, json, createdAt.toISOString());
   const unread = new Map(before.map((r) => [unreadKey(r.tenant_id, r.user_id), Number(r.n)]));
   for (const n of inserted) {
     const k = unreadKey(n.tenantId, n.userId);
     unread.set(k, (unread.get(k) ?? 0) + 1);
   }
   return { inserted, unread };
+}
+
+type UnreadRow = { tenant_id: string; user_id: string; n: number | string };
+
+/** Câu chèn notice + đếm chưa đọc (văn bản cố định, dùng chung cho `writeNotices` và làm nóng pool). */
+function noticeStatement(tx: Tx, kind: NoticeKind, json: string, createdAt: string) {
+  return tx.execute<UnreadRow>(sql`
+    with x as (
+      select * from jsonb_to_recordset(${json}::jsonb)
+        as x(id uuid, tenant_id uuid, user_id uuid, process_run_id uuid, task_id uuid, payload jsonb)
+    ), ins as (
+      insert into hub.process_notices (id, tenant_id, user_id, kind, process_run_id, task_id, payload, created_at)
+      select id, tenant_id, user_id, ${kind}, process_run_id, task_id, payload, ${createdAt}::timestamptz
+      from x
+    )
+    select n.tenant_id, n.user_id, count(*)::int as n from hub.process_notices n
+    where n.user_id = any(array(select distinct user_id from x))
+      and n.tenant_id = any(array(select distinct tenant_id from x)) and n.read_at is null
+    group by n.tenant_id, n.user_id`);
+}
+
+/** Làm nóng: chạy câu chèn notice với lô rỗng (không ghi hàng nào) trên kết nối của `tx`. */
+export async function warmNotices(tx: Tx): Promise<void> {
+  await noticeStatement(tx, "reminder", "[]", new Date(0).toISOString());
 }
