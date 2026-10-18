@@ -139,7 +139,7 @@ const X2A_POLICY_TABLES = [
   ...Array(2).fill("room_messages"),
   ...Array(3).fill("room_flow_reads"),
 ];
-/** P-a (0019): 6 bảng run 1 policy T; process_defs 4 (đọc + ghi system); notices 3; outbox 3. */
+/** P-a (0019): 6 bảng run 1 policy T; process_defs 4 (đọc + ghi system); notices 3; outbox 3; P-d1 (0036) process_timers 1. */
 const PA_POLICY_TABLES = [
   ...["process_runs", "stage_runs", "team_runs", "process_outputs", "review_tasks"],
   "review_task_assignees",
@@ -152,7 +152,23 @@ const PA_POLICY_TABLES = [
   "autofix_results",
   // P-c2 (0032): kết quả Áp — 1 policy T (UPDATE theo cột, C6).
   "autofix_applies",
+  // P-d1 (0036): hẹn giờ bền — 1 policy T (readiness #89).
+  "process_timers",
 ];
+/** Bảng RLS thêm sau H1 ngoài P-a (danh sách cũ chưa cập nhật — sửa cùng T6 P-d1): P-b 0021 (sources, source_job_reads),
+ * X2b2 0023 (attachments thêm policy room_member_select), H4b-1 0028 (secrets), K1 0029 (kh_jobs, kh_stage_usage,
+ * kh_writes) — mỗi cái 1 policy hub_rw. `runs_agent_runtime_select` (0022) kiểm riêng ở RUNTIME_POLICIES. */
+const LATER_POLICY_TABLES = [
+  "sources",
+  "source_job_reads",
+  "attachments",
+  "secrets",
+  "kh_jobs",
+  "kh_stage_usage",
+  "kh_writes",
+];
+/** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
+const RUNTIME_POLICIES = [{ t: "runs", roles: "agent_runtime" }];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
@@ -173,8 +189,10 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
   });
 
   test("WRK-FR-24 · agent_runtime không đọc bảng hội thoại / admin.*", async () => {
-    for (const t of TABLES)
+    // `runs`: 0022 cấp SELECT (id, status) + policy hàng `running` cho agent_runtime (WRK-FR-27) — cột khác vẫn 42501.
+    for (const t of TABLES.filter((x) => x !== "runs"))
       expect(await code(rt.unsafe(`select count(*) from hub.${t}`))).toBe("42501");
+    expect(await code(rt`select tenant_id from hub.runs`)).toBe("42501");
     expect(await code(rt`select count(*) from admin.users`)).toBe("42501");
   });
 
@@ -184,10 +202,17 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       left join pg_policy p on p.polrelid = c.oid
       where n.nspname = 'hub' and c.relrowsecurity order by 1`;
-    expect([...rows]).toEqual(
-      [...TABLES, "tool_confirmations", "attachments", ...X2A_POLICY_TABLES, ...PA_POLICY_TABLES]
-        .sort()
-        .map((t) => ({ t, roles: "hub_rw" })),
+    const hubRw = [
+      ...TABLES,
+      "tool_confirmations",
+      "attachments",
+      ...X2A_POLICY_TABLES,
+      ...PA_POLICY_TABLES,
+      ...LATER_POLICY_TABLES,
+    ].map((t) => ({ t, roles: "hub_rw" }));
+    const key = (r: { t: string; roles: string }) => `${r.t}|${r.roles}`;
+    expect([...rows].sort((a, b) => key(a).localeCompare(key(b)))).toEqual(
+      [...hubRw, ...RUNTIME_POLICIES].sort((a, b) => key(a).localeCompare(key(b))),
     );
   });
 });

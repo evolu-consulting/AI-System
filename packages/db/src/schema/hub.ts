@@ -16,7 +16,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { EXT_AUDIT_ACTIONS, EXT_AUDIT_ENTITIES } from "./hub-kh";
 import { MODELS_AUDIT_ENTITIES, type ModelProfileStep } from "./hub-models";
-import { PA_AUDIT_ACTIONS, PA_AUDIT_ENTITIES, processRunCols } from "./hub-processes";
+import {
+  PA_AUDIT_ACTIONS,
+  PA_AUDIT_ENTITIES,
+  PD_AUDIT_ACTIONS,
+  processRunCols,
+} from "./hub-processes";
 import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -51,7 +56,7 @@ export const AGENT_RUNTIME_VALUES = [
   "dify-workflow",
   "dify-agent",
 ] as const;
-// H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028), K1 (0029), H4b-2 (0030): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
+// H4a (0010), CR-054 (0018), P-a (0019), H4b-1 (0028), K1 (0029), H4b-2 (0030), P-d1 (0036): khớp CHECK `hub_audit_log_action_check`/`_entity_check`.
 export const HUB_AUDIT_ACTION_VALUES = [
   "grant",
   "revoke",
@@ -63,6 +68,7 @@ export const HUB_AUDIT_ACTION_VALUES = [
   "disable",
   ...PA_AUDIT_ACTIONS,
   ...EXT_AUDIT_ACTIONS,
+  ...PD_AUDIT_ACTIONS,
 ] as const;
 export const HUB_AUDIT_ENTITY_VALUES = [
   "agent_grant",

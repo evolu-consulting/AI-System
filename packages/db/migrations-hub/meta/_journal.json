@@ -253,6 +253,13 @@
       "when": 1794096000000,
       "tag": "0035_dlc_workflows",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794182400000,
+      "tag": "0036_pd1_durable",
+      "breakpoints": true
     }
   ]
 }

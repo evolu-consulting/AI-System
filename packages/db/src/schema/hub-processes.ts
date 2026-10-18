@@ -15,6 +15,7 @@ import {
   TASK_STATUSES,
   TEAM_MODES,
   TEAM_RUN_STATUSES,
+  TIMER_KINDS,
 } from "@ai/contracts/chat";
 import { sql } from "drizzle-orm";
 import {
@@ -42,7 +43,8 @@ export const TEAM_STOP_REASON_VALUES = [
   "member_failed",
   "cancelled",
 ] as const;
-export const ASSIGNEE_VIA_VALUES = ["initial", "forward"] as const;
+/** P-d1 (0036) + `escalated` (PD-R20). */
+export const ASSIGNEE_VIA_VALUES = ["initial", "forward", "escalated"] as const;
 export const THREAD_EVENT_OUTCOME_VALUES = ["posted", "skipped"] as const;
 export const THREAD_PLACEMENT_VALUES = ["main", "flow"] as const;
 /** audit P-a (0019 `hub_audit_log_action_check`/`_entity_check`) — trải vào `HUB_AUDIT_*_VALUES` (hub.ts). */
@@ -57,6 +59,8 @@ export const PA_AUDIT_ACTIONS = [
   "copy",
   "authorize_real_action",
 ] as const;
+/** audit P-d1 (0036 `hub_audit_log_action_check`) — trải vào `HUB_AUDIT_ACTION_VALUES` (hub.ts). P-d2 (0037) nối thêm. */
+export const PD_AUDIT_ACTIONS = ["escalate", "escalate_skipped"] as const;
 export const PA_AUDIT_ENTITIES = [
   "process_def",
   "process_run",
@@ -130,6 +134,8 @@ export const processDefs = hub.table("process_defs", {
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
   deletedAt: ts("deleted_at"),
+  /** P-d1 (0036) · 1..365 ngày; NULL = run không hết hạn (PD-R24). */
+  ttlDays: smallint("ttl_days").default(7),
 });
 
 // ── Run (RLS T; không DELETE) ──
@@ -158,7 +164,8 @@ export const processRuns = hub.table("process_runs", {
   backLimit: smallint("back_limit").notNull().default(3),
   decision: jsonb("decision").$type<Record<string, unknown>>(),
   tokensTotal: integer("tokens_total").notNull().default(0),
-  expiresAt: ts("expires_at").notNull(),
+  /** P-d1 (0036) · NULL khi def `ttl_days` NULL. */
+  expiresAt: ts("expires_at"),
   cancelledBy: uuid("cancelled_by"),
   startedAt: ts("started_at").notNull().defaultNow(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
@@ -189,6 +196,14 @@ export const stageRuns = hub.table("stage_runs", {
   round: smallint("round").notNull().default(1),
   /** P-b2 · đích quay lại đang chờ quyết (`needs_decision(back_limit)`). */
   backToStep: smallint("back_to_step"),
+  /** P-d1 (0036) · số lần thử lại 0..3; chỉ hiệu lực khi `retryAttempt`/`retryRound` = `attempt`/`round` (plan §4.2). */
+  retryCount: smallint("retry_count").notNull().default(0),
+  retryAttempt: smallint("retry_attempt"),
+  retryRound: smallint("retry_round"),
+  /** PD-R05 · mốc cửa sổ "đã gửi side_effect". */
+  retrySince: ts("retry_since"),
+  /** ≤ 64 ký tự (CHECK). */
+  lastErrorCode: text("last_error_code"),
 });
 
 export const teamRuns = hub.table("team_runs", {
@@ -255,6 +270,15 @@ export const reviewTasks = hub.table("review_tasks", {
   decidedBy: uuid("decided_by"),
   decidedAt: ts("decided_at"),
   createdAt: createdAt(),
+  /** P-d1 (0036) · nhắc lặp + chuyển cấp, chép từ snapshot lúc tạo task review (PD-R19); chỉ `kind = review` (CHECK). */
+  remindCount: smallint("remind_count").notNull().default(0),
+  /** 4..168 giờ; NULL = không nhắc lặp. */
+  remindEveryH: smallint("remind_every_h"),
+  /** NULL ⇔ `escalateGroupId` NULL (CHECK). */
+  escalateAt: ts("escalate_at"),
+  /** admin.groups — không FK chéo schema; kiểm cùng tenant ở luật (S2). */
+  escalateGroupId: uuid("escalate_group_id"),
+  escalatedAt: ts("escalated_at"),
 });
 
 /** Grant xem/làm task: đúng một trong `userId`/`groupId` (CHECK). */
@@ -315,5 +339,23 @@ export const processBackEvents = hub.table("process_back_events", {
   roundAfter: smallint("round_after").notNull(),
   feedback: text("feedback").notNull(),
   decidedBy: uuid("decided_by").notNull(),
+  createdAt: createdAt(),
+});
+
+/** P-d1 (0036) · hẹn giờ bền (`wait_until` | `retry`): RLS T (ENABLE không FORCE), FK kép `(…, tenant_id)` tới run/stage
+ * CASCADE; hub_rw SELECT/INSERT/UPDATE (không DELETE — huỷ = `cancelledAt`). `timezone` khác NULL ⇔ `kind = wait_until`. */
+export const processTimers = hub.table("process_timers", {
+  id: id(),
+  tenantId: tenantId(),
+  processRunId: uuid("process_run_id").notNull(),
+  stageRunId: uuid("stage_run_id").notNull(),
+  kind: text("kind", { enum: TIMER_KINDS }).notNull(),
+  dueAt: ts("due_at").notNull(),
+  /** IANA đọc lúc lưu hẹn (TZ-R04), ≤ 64 ký tự. */
+  timezone: text("timezone"),
+  firedAt: ts("fired_at"),
+  cancelledAt: ts("cancelled_at"),
+  /** UNIQUE, 1..200 ký tự. */
+  idempotencyKey: text("idempotency_key").notNull(),
   createdAt: createdAt(),
 });
