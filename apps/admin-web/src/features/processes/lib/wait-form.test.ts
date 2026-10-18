@@ -1,9 +1,17 @@
 // ADM-FR-71 · HUB-FR-143/144/115 · P-d1 T11b: test hàm thuần form "Chờ tới ngày", nhắc/chuyển cấp, ttl_days, nhãn trạng thái giai đoạn.
 import { describe, expect, test } from "bun:test";
 import type { StageView } from "@ai/contracts/chat";
-import { type DefDraft, emptyDraft, emptyStage, toDraft, toInput, validateDraft } from "./def-form";
+import {
+  type DefDraft,
+  emptyDraft,
+  emptyStage,
+  toDraft,
+  toInput,
+  validateDraft,
+  withLiveErrors,
+} from "./def-form";
 import { serverErrors } from "./errors";
-import { stageLabel } from "./stage-label";
+import { runBadgeStatus, stageLabel } from "./stage-label";
 import { TEAM_SECTION_KEY, type TeamSections, WAIT_PATCH } from "./wait-form";
 
 const A = "11111111-1111-4111-8111-111111111111";
@@ -206,5 +214,55 @@ describe("stageLabel", () => {
       text: "process.common.status.done|{}",
       tone: "none",
     });
+  });
+});
+
+describe("withLiveErrors (UAT B1/B2: hiện ngay, không đợi Lưu)", () => {
+  const team = (mode: string): TeamSections =>
+    new Map([[T, { mode, memberSections: [["Khác"], ["Mục khác"]] }]]);
+  const withTeam = (): DefDraft => {
+    const d = waitDraft();
+    Object.assign(d.stages[0] as DefDraft["stages"][0], { executor: `team:${T}` });
+    return d;
+  };
+  test("B1: TEAM_SECTION_UNOWNED live theo ctx.teams; sửa xong thì mất, lỗi khác giữ nguyên", () => {
+    const d = withTeam();
+    const live = withLiveErrors(d, {}, team("sequential"));
+    expect(live["stages.0.output.required_sections"]).toBe(TEAM_SECTION_KEY);
+    expect(withLiveErrors(d, live, team("lead_plan"))).toEqual({});
+    expect(withLiveErrors(d, { name: "x" }, undefined)).toEqual({ name: "x" });
+  });
+  test("B2: ttl_days ngoài 1…365 báo ngay, hợp lệ thì tắt", () => {
+    const d = waitDraft();
+    expect(withLiveErrors({ ...d, ttl: "400" }, {}).ttl_days).toBe("process.admin.editor.err.ttl");
+    expect(
+      withLiveErrors({ ...d, ttl: "30" }, { ttl_days: "process.admin.editor.err.ttl" }),
+    ).toEqual({});
+  });
+});
+
+describe("runBadgeStatus (UAT B5/D6)", () => {
+  const st = (o: Partial<StageView>) =>
+    ({ status: "pending", retry_count: 0, ...o }) as Pick<
+      StageView,
+      "status" | "retry_count" | "next_retry_at" | "wait"
+    >;
+  test("waiting_timer + đang thử lại ⇒ running; có wait ⇒ giữ; trạng thái khác giữ", () => {
+    const retry = st({
+      status: "waiting_timer",
+      retry_count: 2,
+      next_retry_at: "2026-12-14T10:42:00Z",
+    });
+    const wait = st({
+      status: "waiting_timer",
+      wait: { due_at: "2026-12-14T02:00:00Z", timezone: "UTC" },
+    });
+    expect(runBadgeStatus("waiting_timer", [retry])).toBe("running");
+    expect(runBadgeStatus("waiting_timer", [wait])).toBe("waiting_timer");
+    expect(runBadgeStatus("waiting_timer", [retry, wait])).toBe("waiting_timer");
+    expect(runBadgeStatus("waiting_timer", [st({ status: "waiting_timer" })])).toBe(
+      "waiting_timer",
+    );
+    expect(runBadgeStatus("waiting_review", [retry])).toBe("waiting_review");
   });
 });

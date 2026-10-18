@@ -23,6 +23,7 @@ import { RunProgress } from "../components/run/RunProgress";
 import { RunStatusBadge } from "../components/run/RunStatusBadge";
 import { UsageTab } from "../components/usage/UsageTab";
 import { useProcessTenant } from "../hooks/use-process-tenant";
+import { runBadgeStatus } from "../lib/stage-label";
 
 export type ProcessRunPageProps = { processId: string; runId: string };
 
@@ -51,7 +52,7 @@ function RunBody({ runId }: { runId: string }) {
         description={`${run.started_by.display_name} · ${formatClock(run.started_at)}`}
         actions={
           <>
-            <RunStatusBadge status={run.status} />
+            <RunStatusBadge status={runBadgeStatus(run.status, run.stages)} />
             <Button variant="outline" asChild>
               <Link to="/processes">{t("process.admin.run.back")}</Link>
             </Button>

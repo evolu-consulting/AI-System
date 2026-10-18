@@ -14,6 +14,7 @@ import { backTrail, stageItems } from "../../run-block/lib/block-view";
 import { OutputView } from "../../shared/components/OutputView";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskPanel } from "../../shared/components/TaskPanel";
+import { TaskWaitingNote } from "../../shared/components/TaskWaitingNote";
 import {
   groupBySteps,
   groupRound,
@@ -66,6 +67,11 @@ function FullProgress({ view }: { view: ProcessRunFullView }) {
           ))}
         </>
       )}
+      {view.open_tasks
+        .filter((o) => o.escalated_group && !view.my_tasks.some((m) => m.id === o.id))
+        .map((o) => (
+          <TaskWaitingNote key={o.id} open={o} />
+        ))}
       <BackTimeline events={view.back_events ?? []} stages={view.stages} />
       {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}
     </div>

@@ -29,7 +29,7 @@ import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
-import { toDraft } from "../lib/def-form";
+import { toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
 
 export type ProcessEditorPageProps = { processId?: string };
@@ -97,6 +97,8 @@ function Editor({ processId }: ProcessEditorPageProps) {
     d,
     teams: refs.teamSections,
   });
+  const errors = withLiveErrors(d.draft, d.errors, refs.teamSections);
+  const dv = { ...d, errors };
   const def = q.data;
   const readOnly = !!def?.is_template && !tenant.isPlatform;
   if (!hubConfigured()) return <HubNotConfigured />;
@@ -116,7 +118,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
       {readOnly && processId ? <TemplateBanner id={processId} tenantId={tenant.tenantId} /> : null}
       <DefInfoCard
         draft={d.draft}
-        errors={d.errors}
+        errors={errors}
         readOnly={readOnly}
         refs={refs}
         patch={d.patch}
@@ -130,7 +132,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
         patch={d.patch}
       />
       <InputsCard draft={d.draft} errors={d.errors} readOnly={readOnly} patch={d.patch} />
-      <StagesCard d={d} readOnly={readOnly} refs={refs} />
+      <StagesCard d={dv} readOnly={readOnly} refs={refs} />
       <LimitsCard ttl={d.draft.ttl} noExpiry={d.draft.noExpiry} />
       {readOnly ? null : (
         <ProcessSaveBar

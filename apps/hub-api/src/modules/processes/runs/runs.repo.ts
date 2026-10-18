@@ -309,12 +309,29 @@ type OpenTaskRow = {
   group_id: string | null;
   group_name: string | null;
   assignees: { id: string; display_name: string }[];
+  esc_group_id: string | null;
+  esc_group_name: string | null;
 };
+
+/** Hàng SQL → `OpenTask`; `escalated_group` (P-d1 · A4 G7) chỉ có khi task đã chuyển cấp (assignee `via='escalated'`). */
+export function toOpenTask(t: OpenTaskRow): OpenTask {
+  return {
+    id: t.id,
+    kind: t.kind,
+    stage_idx: Number(t.stage_idx),
+    assignees: (t.assignees ?? []).slice(0, 20),
+    group: t.group_id ? { id: t.group_id, name: t.group_name ?? t.group_id } : null,
+    ...(t.esc_group_id && {
+      escalated_group: { id: t.esc_group_id, name: t.esc_group_name ?? t.esc_group_id },
+    }),
+  };
+}
 
 /** WaitingNote (`open_tasks`): task mở của run + assignee user + group (≤ 10, một truy vấn gộp). */
 export async function openTaskViews(tx: Tx, runId: string, tenantId: string): Promise<OpenTask[]> {
   const rows = await tx.execute<OpenTaskRow>(sql`
     select t.id, t.kind, s.stage_idx, t.assignee_group_id as group_id, g.name->>'vi' as group_name,
+      esc.group_id as esc_group_id, esc.name as esc_group_name,
       coalesce((select jsonb_agg(jsonb_build_object('id', u.id, 'display_name',
           coalesce(u.display_name, u.username)) order by a.created_at)
         from hub.review_task_assignees a join admin.users u on u.id = a.user_id and u.tenant_id = a.tenant_id
@@ -322,15 +339,14 @@ export async function openTaskViews(tx: Tx, runId: string, tenantId: string): Pr
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     left join admin.groups g on g.id = t.assignee_group_id and g.tenant_id = t.tenant_id
+    left join lateral (select a.group_id, eg.name->>'vi' as name
+        from hub.review_task_assignees a
+        left join admin.groups eg on eg.id = a.group_id and eg.tenant_id = a.tenant_id
+        where a.task_id = t.id and a.tenant_id = t.tenant_id and a.via = 'escalated' and a.group_id is not null
+        limit 1) esc on true
     where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'open'
     order by t.created_at limit 10`);
-  return rows.map((t) => ({
-    id: t.id,
-    kind: t.kind,
-    stage_idx: Number(t.stage_idx),
-    assignees: (t.assignees ?? []).slice(0, 20),
-    group: t.group_id ? { id: t.group_id, name: t.group_name ?? t.group_id } : null,
-  }));
+  return rows.map(toOpenTask);
 }
 
 /** Id task mà người xem là assignee (user hoặc thành viên group), theo thứ tự tạo (≤ 20). */

@@ -47,6 +47,7 @@ import {
   remindFromDef,
   remindToDef,
   stageShape,
+  TEAM_SECTION_KEY,
   type TeamSections,
   validateWaitPart,
   waitFromDef,
@@ -274,6 +275,28 @@ export function validateSteps(
     if (key) e[backPathToField(issue.path)] = key;
     else addCrossIssue(issue, e);
   }
+}
+
+/**
+ * Lỗi hiện NGAY khi sửa (không đợi Lưu): `ttl_days` ngoài 1…365 và `TEAM_SECTION_UNOWNED` (contract
+ * `processDefStageIssues` + `ctx.teams`). Gộp đè lên lỗi đã có: hai loại này luôn theo bản nháp hiện tại.
+ */
+export function withLiveErrors(
+  d: DefDraft,
+  errors: DraftErrors,
+  teams?: TeamSections,
+): DraftErrors {
+  const out: DraftErrors = {};
+  for (const [k, v] of Object.entries(errors)) {
+    if (v !== TEAM_SECTION_KEY && !(k === "ttl_days" && v === ttlIssueKey())) out[k] = v;
+  }
+  if (ttlIssue(d.ttl, d.noExpiry)) out.ttl_days = ttlIssueKey();
+  if (teams) {
+    const eff = d.stages.map((s) => normalizeWait(normalizeApply(s)));
+    for (const i of processDefStageIssues(eff.map(stageShape), { teams }))
+      if (i.rule === "TEAM_SECTION_UNOWNED") out[i.path] = TEAM_SECTION_KEY;
+  }
+  return out;
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */

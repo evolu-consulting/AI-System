@@ -118,7 +118,9 @@ export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: Task
       aria-label={t("process.run.review.region", { stage: task.stage_name })}
       className="flex flex-col gap-2 rounded-xl border border-warning-solid/40 bg-card p-3"
     >
-      <p className="text-sm font-medium">{t("process.run.review.title", { agent })}</p>
+      <p className="text-sm font-medium">
+        {t("process.run.review.title", { agent: agent || task.stage_name })}
+      </p>
       {task.escalated ? <EscalatedNote group={escalatedGroupOf(view, task.id)} /> : null}
       {autofix && <AutofixResult view={autofix} load={fetchAttachmentContent} />}
       <ApplyGateLine autofix={autofix} />
