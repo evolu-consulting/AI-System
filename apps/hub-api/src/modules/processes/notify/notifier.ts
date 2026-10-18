@@ -9,12 +9,10 @@ import type { FinishedRun, ProcessNotifier } from "../core/ports";
 import { noticeRecipients } from "../domain/notify/remind.rules";
 import { unreadKey, writeNotices } from "./batch.repo";
 import {
-  groupMemberIds,
   type InsertedNotice,
   insertNotices,
   loadNoticeTask,
   loadRunForNotice,
-  taskAssigneeUserIds,
   unreadByUser,
 } from "./inbox.repo";
 
@@ -63,32 +61,28 @@ async function noticeEvents(
     a.tenantId,
     a.inserted.map((n) => n.userId),
   );
-  return a.inserted.flatMap((n) =>
+  return noticeEventsOf(a.inserted, a.kind, a.meta, unread);
+}
+
+function noticeEventsOf(
+  inserted: readonly InsertedNotice[],
+  kind: NoticeKind,
+  meta: NoticeMeta,
+  unread: Map<string, number>,
+): UserEvent[] {
+  return inserted.flatMap((n) =>
     processNotice(n.userId, {
-      notice: buildNotice(n, a.kind, a.meta),
+      notice: buildNotice(n, kind, meta),
       unread: unread.get(n.userId) ?? 1,
     }),
   );
 }
 
-async function assignees(
-  tx: Tx,
-  tenantId: string,
-  taskId: string,
-  groupId: string | null,
-): Promise<{ userIds: string[]; groupMemberIds: string[] }> {
-  // T19-perf · hai câu đọc độc lập gửi liền (pipeline, một round-trip).
-  const [userIds, members] = await Promise.all([
-    taskAssigneeUserIds(tx, tenantId, taskId),
-    groupId ? groupMemberIds(tx, tenantId, groupId) : [],
-  ]);
-  return { userIds, groupMemberIds: members };
-}
-
+// T19-perf vòng 2 · `loadNoticeTask` trả luôn người nhận (assignee ∪ thành viên group) trong CÙNG câu.
 async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
   const t = await loadNoticeTask(tx, taskId);
   if (!t) return [];
-  const recipients = noticeRecipients(await assignees(tx, t.tenantId, taskId, t.groupId));
+  const recipients = noticeRecipients(t);
   if (recipients.length === 0) return [];
   const meta: NoticeMeta = {
     processRunId: t.processRunId,
@@ -97,33 +91,36 @@ async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
     stageName: t.stageName,
   };
   const kind = OPEN_NOTICE[t.kind];
-  const inserted = await insertNotices(tx, {
-    tenantId: t.tenantId,
-    kind,
-    processRunId: t.processRunId,
-    taskId,
-    payload: { process_name: t.processName, stage_name: t.stageName },
-    userIds: recipients,
-  });
+  // INSERT ∥ đếm chưa đọc gửi liền (pipeline; câu đếm chạy SAU câu chèn cùng tx ⇒ đã tính notice mới).
+  const [inserted, unread] = await Promise.all([
+    insertNotices(tx, {
+      tenantId: t.tenantId,
+      kind,
+      processRunId: t.processRunId,
+      taskId,
+      payload: { process_name: t.processName, stage_name: t.stageName },
+      userIds: recipients,
+    }),
+    unreadByUser(tx, t.tenantId, recipients),
+  ]);
   return [
     ...reviewTaskCreated(recipients, {
       task_id: taskId,
       kind: t.kind,
       process_run_id: t.processRunId,
     }),
-    ...(await noticeEvents(tx, { tenantId: t.tenantId, inserted, kind, meta })),
+    ...noticeEventsOf(inserted, kind, meta, unread),
   ];
 }
 
 async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
   const t = await loadNoticeTask(tx, taskId);
   if (!t) return [];
-  const facts = await assignees(tx, t.tenantId, taskId, t.groupId);
-  const all = noticeRecipients(facts);
+  const all = noticeRecipients(t);
   const result: TaskResult = t.result ?? "pass";
   const events: UserEvent[] = [...reviewTaskClosed(all, { id: taskId, result })];
   // Không tự báo cho người vừa thao tác (decidedBy).
-  const noticed = noticeRecipients(facts, t.decidedBy ?? undefined);
+  const noticed = noticeRecipients(t, t.decidedBy ?? undefined);
   if (noticed.length > 0) {
     const meta: NoticeMeta = {
       processRunId: t.processRunId,
@@ -144,13 +141,7 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
       }),
       unreadByUser(tx, t.tenantId, noticed),
     ]);
-    for (const n of inserted)
-      events.push(
-        ...processNotice(n.userId, {
-          notice: buildNotice(n, "task_closed", meta),
-          unread: unread.get(n.userId) ?? 1,
-        }),
-      );
+    events.push(...noticeEventsOf(inserted, "task_closed", meta, unread));
   }
   return events;
 }

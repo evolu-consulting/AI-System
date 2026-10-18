@@ -88,27 +88,49 @@ function confirmReply(p: CreateRunInput): { agree: boolean; tag: ConfirmTag } {
   return { agree: isAgreeReply(m.content), tag };
 }
 
-/** Flow có sẵn (404 / 409 `FLOW_BUSY`) hoặc flow mới. */
-async function prepareFlow(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
+/**
+ * T19-perf vòng 2 · câu đã GỬI (pipeline) nhưng xét kết quả sau: gắn `catch` rỗng để lỗi của câu sau không thành
+ * "unhandled" khi câu trước đã quyết lỗi (người gọi vẫn `await` đúng promise này theo thứ tự).
+ */
+function sent<T>(q: Promise<T>): Promise<T> {
+  q.catch(() => {});
+  return q;
+}
+
+/** Kiểm đã gửi: `check()` xét kết quả theo thứ tự (lỗi của câu trước thắng, như chạy tuần tự). */
+type Check = () => Promise<void>;
+
+/** Flow có sẵn (404 / 409 `FLOW_BUSY`) hoặc flow mới — gửi câu ngay, trả hàm xét kết quả. */
+function sendFlow(tx: Tx, o: repo.Owner, p: CreateRunInput): Check {
   const r = p.run;
   if (!p.req.flow_id) {
     const title = deriveTitle(p.req.content);
-    await repo.insertFlow(tx, o, { id: r.flowId, conversationId: r.conversationId, title });
-    return;
+    const ins = sent(
+      repo.insertFlow(tx, o, { id: r.flowId, conversationId: r.conversationId, title }),
+    );
+    return () => ins;
   }
-  const ok = await repo.touchFlow(tx, o, { conversationId: r.conversationId, flowId: r.flowId });
-  if (!ok) throw appError("NOT_FOUND");
-  if (await repo.flowRunning(tx, r.flowId)) throw appError("FLOW_BUSY");
+  const touched = sent(
+    repo.touchFlow(tx, o, { conversationId: r.conversationId, flowId: r.flowId }),
+  );
+  const busy = sent(repo.flowRunning(tx, r.flowId));
+  return async () => {
+    if (!(await touched)) throw appError("NOT_FOUND");
+    if (await busy) throw appError("FLOW_BUSY");
+  };
 }
 
 /** R16/R17 · dưới khoá user nên số đếm ổn định; 429 log `info run-limit` (không nội dung tin, plan-errors §3). */
-async function assertUnderLimit(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
+function sendLimit(tx: Tx, o: repo.Owner, p: CreateRunInput): Check {
   const limit = p.maxConcurrentRuns;
-  if (limit === undefined || p.process) return;
-  const running = await repo.countRunning(tx, o);
-  if (!overLimit(running, limit)) return;
-  p.log.info("run-limit", { tenant_id: o.tenantId, user_id: o.userId, running, limit });
-  throw tooManyRuns();
+  if (limit === undefined || p.process) return async () => {};
+  const count = sent(repo.countRunning(tx, o));
+  return async () => {
+    const running = await count;
+    if (!overLimit(running, limit)) return;
+    p.log.info("run-limit", { tenant_id: o.tenantId, user_id: o.userId, running, limit });
+    throw tooManyRuns();
+  };
 }
 
 const processCols = (x?: ProcessRunInput): Partial<repo.RunInsert> =>
@@ -124,11 +146,7 @@ const runKind = (p: CreateRunInput): RunKind =>
 async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
   const r = p.run;
   if (p.room) return [];
-  if (p.process) {
-    const ids = p.process.files.map((f) => f.id);
-    if (ids.length > 0) await repo.setRunFiles(tx, r.id, ids);
-    return p.process.files;
-  }
+  if (p.process) return p.process.files; // `runs.attachment_ids` đã gửi cùng lô ở `sendRunWrites`
   const files = await bindRunFiles(tx, o, {
     ids: p.req.attachment_ids,
     newFlow: !p.req.flow_id,
@@ -151,13 +169,55 @@ async function attachFiles(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<Ru
  * Trả tập file của run (H2c-R14, `RunContext.files`).
  */
 export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<RunFile[]> {
+  await sendRunWrites(tx, o, p);
+  const files = await attachFiles(tx, o, p);
   const r = p.run;
-  await repo.lockUserRuns(tx, o);
+  if (p.req.flow_id) {
+    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, ...confirmReply(p) });
+  }
+  const pre = p.process?.preconfirm;
+  if (pre) await preconfirm(tx, o, { flowId: r.flowId, runId: r.id, ...pre });
+  return files;
+}
+
+/**
+ * T19-perf vòng 2 · khoá advisory → hội thoại → flow → đếm → INSERT run → INSERT tin GỬI LIỀN (pipeline, cùng tx ⇒ server
+ * chạy đúng thứ tự gửi ⇒ thứ tự khoá §5.1 giữ nguyên, khoá advisory vẫn câu đầu), rồi xét kết quả THEO THỨ TỰ: 404 hội
+ * thoại → 404/409 flow → 429 → lỗi INSERT (vd 23505 do người gọi đổi `FLOW_BUSY`). Câu sau một kiểm hỏng vẫn chạy nhưng
+ * cùng ROLLBACK (không hàng nào còn lại — như tuần tự). ~6 round-trip ⇒ 1.
+ */
+async function sendRunWrites(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
+  const r = p.run;
+  const lock = sent(repo.lockUserRuns(tx, o));
   const bg = p.room ? "room" : p.process ? "process" : undefined;
-  if (!(await repo.touchConversation(tx, o, r.conversationId, bg))) throw appError("NOT_FOUND");
-  await prepareFlow(tx, o, p);
-  await assertUnderLimit(tx, o, p);
-  await repo.insertRun(tx, o, {
+  const conv = sent(repo.touchConversation(tx, o, r.conversationId, bg));
+  const flow = sendFlow(tx, o, p);
+  const limit = sendLimit(tx, o, p);
+  const run = sent(insertRunOf(tx, o, p));
+  const msg = sent(
+    repo.insertMessage(tx, o, {
+      id: r.userMessageId,
+      conversationId: r.conversationId,
+      flowId: r.flowId,
+      role: "user",
+      content: p.req.content,
+      runId: r.id,
+    }),
+  );
+  const fileIds = p.room ? [] : (p.process?.files.map((f) => f.id) ?? []);
+  const setFiles = fileIds.length > 0 ? sent(repo.setRunFiles(tx, r.id, fileIds)) : undefined;
+  await lock;
+  if (!(await conv)) throw appError("NOT_FOUND");
+  await flow();
+  await limit();
+  await run;
+  await msg;
+  await setFiles;
+}
+
+function insertRunOf(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<Date> {
+  const r = p.run;
+  return repo.insertRun(tx, o, {
     id: r.id,
     conversationId: r.conversationId,
     flowId: r.flowId,
@@ -169,19 +229,4 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
     ...kindCols(p),
     ...processCols(p.process),
   });
-  await repo.insertMessage(tx, o, {
-    id: r.userMessageId,
-    conversationId: r.conversationId,
-    flowId: r.flowId,
-    role: "user",
-    content: p.req.content,
-    runId: r.id,
-  });
-  const files = await attachFiles(tx, o, p);
-  if (p.req.flow_id) {
-    await decideConfirmations(tx, o, { flowId: r.flowId, runId: r.id, ...confirmReply(p) });
-  }
-  const pre = p.process?.preconfirm;
-  if (pre) await preconfirm(tx, o, { flowId: r.flowId, runId: r.id, ...pre });
-  return files;
 }

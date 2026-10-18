@@ -140,22 +140,28 @@ function sameAgentInStep(c: StagePromptInput, agentId: string): boolean {
 
 const NO_AGENT = { sameAgentInStep: false, lastWriterIsSelf: false, sessionExists: false };
 
+/** T19-perf vòng 2 · ba câu đọc độc lập (tiếp sau trả lời / người ghi cuối / phiên CLI) gửi liền — một round-trip. */
 async function sessionCtx(
   tx: Tx,
   c: StagePromptInput,
   snap: ConfigSnapshot | null,
 ): Promise<SessionCtx> {
-  const continuing = await isContinuing(tx, c);
   const rerun = Number(c.stage.attempt) > 1 || Number(c.stage.round) > 1;
-  if (c.def.executor.kind !== "agent") return { ...NO_AGENT, executor: "team", rerun, continuing };
+  if (c.def.executor.kind !== "agent")
+    return { ...NO_AGENT, executor: "team", rerun, continuing: await isContinuing(tx, c) };
   const agentId = c.def.executor.agent_id;
+  const [continuing, lastSelf, session] = await Promise.all([
+    isContinuing(tx, c),
+    lastWriterIsSelf(tx, c, agentId),
+    sessionExists(tx, c, { agentId, provider: providerOf(snap, agentId) }),
+  ]);
   return {
     executor: "agent",
     rerun,
     continuing,
     sameAgentInStep: sameAgentInStep(c, agentId),
-    lastWriterIsSelf: await lastWriterIsSelf(tx, c, agentId),
-    sessionExists: await sessionExists(tx, c, { agentId, provider: providerOf(snap, agentId) }),
+    lastWriterIsSelf: lastSelf,
+    sessionExists: session,
   };
 }
 
@@ -168,13 +174,20 @@ export async function stagePrompt(
   c: StagePromptInput,
   snap: ConfigSnapshot | null,
 ): Promise<StagePrompt> {
+  const fb = c.stage.feedback?.trim() ?? "";
+  // T19-perf vòng 2 · không góp ý ⇒ chắc chắn prompt đầy đủ ⇒ Bàn giao (chỉ đọc) gửi cùng lô đọc phiên (số câu không đổi).
+  const early = fb.length === 0 ? handoffItems(tx, c) : null;
+  early?.catch(() => {});
   const ctx = await sessionCtx(tx, c, snap);
   const plan = sessionPlan(ctx);
-  if (plan.clearSession && c.def.executor.kind === "agent")
-    await tx.execute(sql`delete from hub.cli_sessions where conversation_id = ${c.head.conversation_id}
-      and agent_id = ${c.def.executor.agent_id} and tenant_id = ${c.tenantId}`);
-  const fb = c.stage.feedback?.trim() ?? "";
+  // Xoá phiên ∥ khối tự-sửa gửi liền; xoá vẫn SAU các câu đọc phiên (cùng tx, đúng thứ tự gửi).
+  const clear =
+    plan.clearSession && c.def.executor.kind === "agent"
+      ? clearSession(tx, c, c.def.executor.agent_id)
+      : null;
+  clear?.catch(() => {});
   const retry = await autofixRetry(tx, c);
+  await clear;
   if (plan.resume && !ctx.continuing && fb.length > 0) {
     const delta = deltaPrompt(fb, c.stage.redo_sections);
     return {
@@ -187,7 +200,7 @@ ${retry}`
     };
   }
   const extra: string[] = [];
-  const ho = handoffBlock(await handoffItems(tx, c));
+  const ho = handoffBlock(await (early ?? handoffItems(tx, c)));
   if (ho) extra.push(ho);
   if (retry) extra.push(retry);
   const tail = ctx.continuing && ctx.executor === "agent" ? await askHistory(tx, c) : null;
@@ -195,6 +208,12 @@ ${retry}`
   const workspace = c.def.autofix ? autofixWorkspaceBlock(c.def.autofix) : null; // P-c1 · §6.4
   const content = promptOf(c.def, c.head, c.stage.feedback, { extra, tail, khSummary, workspace });
   return { content, useSession: plan.useSession };
+}
+
+/** `clearSession` ⇒ xoá `cli_sessions` (hội thoại nền, agent). Hàm async ⇒ promise thật, câu chỉ chạy MỘT lần. */
+async function clearSession(tx: Tx, c: StagePromptInput, agentId: string): Promise<void> {
+  await tx.execute(sql`delete from hub.cli_sessions where conversation_id = ${c.head.conversation_id}
+      and agent_id = ${agentId} and tenant_id = ${c.tenantId}`);
 }
 
 /** P-c1 · PC-R10 · stage tự-sửa làm lại sau `autofix_check_failed` ⇒ khối "Lần kiểm trước không đạt"; khác ⇒ null. */

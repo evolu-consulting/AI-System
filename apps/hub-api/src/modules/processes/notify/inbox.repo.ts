@@ -136,8 +136,18 @@ export type NoticeTask = {
   result: TaskResult | null;
   processName: string;
   stageName: string | null;
+  /** User assignee (distinct, khác null) của task. */
+  userIds: string[];
+  /** Thành viên hiện tại của group được giao (plan §11; `admin.group_members` đọc được qua hub_ro). */
+  groupMemberIds: string[];
 };
 
+const idsOf = (x: unknown): string[] => (Array.isArray(x) ? x.map(String) : []);
+
+/**
+ * Task + người nhận thông báo (assignee ∪ thành viên group) — T19-perf vòng 2: MỘT câu (văn bản cố định, 2 mảng con lọc
+ * `tenant_id` của task), thay 1 câu task + 2 câu người nhận (1 round-trip thay 2).
+ */
 export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask | null> {
   const [r] = await tx.execute<{
     tenant_id: string;
@@ -148,10 +158,16 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     result: TaskResult | null;
     process_name: string | null;
     stage_name: string | null;
+    user_ids: unknown;
+    member_ids: unknown;
   }>(sql`
     select t.tenant_id, t.process_run_id, t.kind, t.assignee_group_id as group_id, t.decided_by, t.result,
       pr.snapshot->>'name' as process_name,
-      pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name
+      pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
+      array(select distinct a.user_id from hub.review_task_assignees a
+        where a.task_id = t.id and a.tenant_id = t.tenant_id and a.user_id is not null) as user_ids,
+      array(select gm.user_id from admin.group_members gm
+        where gm.group_id = t.assignee_group_id and gm.tenant_id = t.tenant_id) as member_ids
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
@@ -166,6 +182,8 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     result: r.result,
     processName: r.process_name ?? "",
     stageName: r.stage_name,
+    userIds: idsOf(r.user_ids),
+    groupMemberIds: idsOf(r.member_ids),
   };
 }
 
@@ -183,24 +201,6 @@ export async function loadRunForNotice(
   return r
     ? { tenantId: r.tenant_id, startedBy: r.started_by, processName: r.process_name ?? "" }
     : null;
-}
-
-export async function taskAssigneeUserIds(
-  tx: Tx,
-  tenantId: string,
-  taskId: string,
-): Promise<string[]> {
-  const rows = await tx.execute<{ user_id: string }>(sql`
-    select distinct user_id from hub.review_task_assignees
-    where task_id = ${taskId} and tenant_id = ${tenantId} and user_id is not null`);
-  return rows.map((r) => r.user_id);
-}
-
-/** Thành viên hiện tại của group (plan §11: một truy vấn; `admin.group_members` đọc được qua hub_ro). */
-export async function groupMemberIds(tx: Tx, tenantId: string, groupId: string): Promise<string[]> {
-  const rows = await tx.execute<{ user_id: string }>(sql`
-    select user_id from admin.group_members where group_id = ${groupId} and tenant_id = ${tenantId}`);
-  return rows.map((r) => r.user_id);
 }
 
 export type InsertedNotice = { userId: string; id: string; createdAt: Date };
