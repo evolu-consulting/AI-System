@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import postgres from "postgres";
 import { describeError, runMigrations } from "./migrate";
-import { testDbName, testEnvFile, withDatabase } from "./test-db";
+import { dropTrashDbs, testDbName, testEnvFile, withDatabase } from "./test-db";
 
 const ENV_FILE = ".env.local";
 
@@ -36,10 +36,27 @@ async function create(tag: string): Promise<void> {
   console.log(`db:test:create OK: ${name} (main +${r.main}, dev +${r.dev}); env: ${out}`);
 }
 
+/** Tạo DB rỗng (không migrate, không ghi env) cho mỗi tag nếu thiếu — dùng bởi `test:int:par` trước khi chia worker. */
+async function ensure(tags: string[]): Promise<void> {
+  const names = tags.map(testDbName);
+  await onMaintenance(async (sql) => {
+    for (const name of names) {
+      const [row] = await sql`select 1 as one from pg_database where datname = ${name}`;
+      if (!row) await sql.unsafe(`CREATE DATABASE "${name}"`);
+    }
+  });
+  console.log(`db:test:ensure OK: ${names.join(", ")}`);
+}
+
 async function drop(tag: string): Promise<void> {
   const name = testDbName(tag);
   await onMaintenance(async (sql) => {
     await sql.unsafe(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+    // Template của `cloneMigratedTestDb` (`<stem>_<key>_tpl_test`); lỡ trúng template tag khác chỉ tốn một lần dựng lại.
+    const stem = name.slice(0, -"_test".length).replaceAll("_", "\\_");
+    const tpls = await sql<{ n: string }[]>`select datname as n from pg_database
+      where datname like ${`${stem}\\_%\\_tpl\\_test`}`;
+    for (const { n } of tpls) await sql.unsafe(`DROP DATABASE IF EXISTS "${n}" WITH (FORCE)`);
   });
   const envFile = `.env.test-${tag}.local`;
   if (existsSync(envFile)) rmSync(envFile);
@@ -47,11 +64,18 @@ async function drop(tag: string): Promise<void> {
 }
 
 if (import.meta.main) {
-  const [cmd, tag = ""] = process.argv.slice(2);
+  const [cmd, tag = "", ...more] = process.argv.slice(2);
   try {
     if (cmd === "create") await create(tag);
     else if (cmd === "drop") await drop(tag);
-    else throw new Error("dùng: test-db-cli.ts create|drop <tag>");
+    else if (cmd === "ensure") await ensure([tag, ...more]);
+    else if (cmd === "gc") {
+      const t0 = performance.now();
+      const n = await dropTrashDbs(baseUrl());
+      console.log(
+        `db:test:gc OK: xoá ${n} DB rác (${((performance.now() - t0) / 1000).toFixed(1)} s)`,
+      );
+    } else throw new Error("dùng: test-db-cli.ts create|drop <tag> | ensure <tag>… | gc");
   } catch (err) {
     console.error(`db:test:${cmd ?? "?"} lỗi: ${describeError(err)}`);
     process.exit(1);

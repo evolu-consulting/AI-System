@@ -4,8 +4,8 @@
 // chỉ cần DB (D1/D2) xanh ngay ở T2.
 import { expect } from "bun:test";
 import { API_ERRORS, type ErrorCode, ErrorResponseSchema } from "@ai/contracts";
-import { createDb, type Db, runMigrations } from "@ai/db";
-import { resetTestDb } from "@ai/db/test-db";
+import { createDb, type Db } from "@ai/db";
+import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import postgres from "postgres";
 import { insertFixture, makeHashes, PW, SEED_PW } from "../M1/_data";
 import {
@@ -124,8 +124,8 @@ const hashes = () => {
 
 export async function createM2Env(opts: EnvOpts = {}): Promise<M2Env> {
   const h = await hashes();
-  await resetTestDb(OWNER_URL);
-  await runMigrations({ url: OWNER_URL, appEnv: "development" });
+  // Bản sao template Admin đã migrate (appEnv test ≡ development) thay reset + migrate lại.
+  await cloneMigratedTestDb(OWNER_URL, { key: "admin", migrate: migrateAdminTest });
   const owner = postgres(OWNER_URL, { max: 6, onnotice: () => {} });
   const masterKeyB64 = opts.masterKeyB64 ?? newMasterKeyB64();
   let catalog: CatalogParts | undefined = opts.catalog;

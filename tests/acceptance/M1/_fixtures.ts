@@ -4,8 +4,8 @@
 import { expect } from "bun:test";
 import { createHash, generateKeyPairSync } from "node:crypto";
 import { API_ERRORS, type ErrorCode, ErrorResponseSchema } from "@ai/contracts";
-import { createDb, type Db, runMigrations } from "@ai/db";
-import { resetTestDb } from "@ai/db/test-db";
+import { createDb, type Db } from "@ai/db";
+import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import { decodeJwt, decodeProtectedHeader, importPKCS8, SignJWT } from "jose";
 import postgres from "postgres";
 import { type Hashes, insertFixture, makeHashes, PW, SEED_PW, truncateAll } from "./_data";
@@ -211,8 +211,8 @@ const hashes = () => {
 export async function createEnv(opts: { fixture?: boolean } = {}): Promise<Env> {
   const withFixture = opts.fixture ?? true;
   const h = await hashes();
-  await resetTestDb(OWNER_URL);
-  await runMigrations({ url: OWNER_URL, appEnv: "development" });
+  // Bản sao template Admin đã migrate (appEnv test ≡ development) thay reset + migrate lại.
+  await cloneMigratedTestDb(OWNER_URL, { key: "admin", migrate: migrateAdminTest });
   const owner = postgres(OWNER_URL, { max: 4, onnotice: () => {} });
   const seed = async () => {
     const s = await loadSeed();

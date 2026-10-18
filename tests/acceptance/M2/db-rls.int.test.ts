@@ -2,8 +2,7 @@
 // (test-plan D2; M2-AC01 phần DB, M2-AC02). Truy vấn trực tiếp bằng role admin_api / hub_ro, không qua app.
 // Chỉ cần DB đã migrate (xanh ở T2): không seed, không app, không giải mã bằng code sản phẩm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { runMigrations } from "@ai/db";
-import { resetTestDb } from "@ai/db/test-db";
+import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import postgres from "postgres";
 import { newMasterKeyB64, openIndependent, sealIndependent } from "./_crypto";
 import { ALL_CATALOG, ID, LEAK_1, leakForms, seedCatalog } from "./_data";
@@ -56,8 +55,7 @@ async function sqlstate(run: () => Promise<unknown>): Promise<string | null> {
 }
 
 beforeAll(async () => {
-  await resetTestDb(OWNER_URL);
-  await runMigrations({ url: OWNER_URL, appEnv: "development" });
+  await cloneMigratedTestDb(OWNER_URL, { key: "admin", migrate: migrateAdminTest });
   owner = postgres(OWNER_URL, { max: 2, onnotice: () => {} });
   api = postgres(ADMIN_API_URL, { max: 1, onnotice: () => {} });
   await owner`insert into admin.tenants (id, key, name) values

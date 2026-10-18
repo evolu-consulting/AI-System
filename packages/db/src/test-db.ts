@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { HUB_TABLE } from "./migrate-hub";
 
+export {
+  type CloneOpts,
+  cloneMigratedTestDb,
+  dropTrashDbs,
+  migrateAdminTest,
+  migrateFullTest,
+  migrationsHash,
+  templateDbName,
+} from "./test-db-template";
+
 export async function resetTestDb(url: string | undefined): Promise<void> {
   if (!url) throw new Error("TEST_DATABASE_URL chưa đặt");
   const name = decodeURIComponent(new URL(url).pathname.replace(/^\//, ""));

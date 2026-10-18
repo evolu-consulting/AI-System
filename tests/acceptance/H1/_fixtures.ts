@@ -2,9 +2,7 @@
 // khoá JWT EdDSA sinh trong test, hub-api thật (`createApp`) sau `Bun.serve` cổng 0. Không chứa `it(...)`.
 // Dùng chung cho QW-A1 (`auth`, `isolation`) và QW-A2. Fixture không giữ trạng thái chung giữa ca (CONVENTIONS §2 bẫy).
 import { CHAT_API_ERRORS, type ChatErrorCode, ErrorResponseSchema } from "@ai/contracts/chat";
-import { runMigrations } from "@ai/db";
-import { runHubMigrations } from "@ai/db/migrate-hub";
-import { resetTestDb, withDatabase } from "@ai/db/test-db";
+import { cloneMigratedTestDb, migrateFullTest, withDatabase } from "@ai/db/test-db";
 import { exportSPKI, generateKeyPair, SignJWT } from "jose";
 import postgres from "postgres";
 import { type AppDeps, createApp } from "../../../apps/hub-api/src/app";
@@ -44,20 +42,12 @@ export const AGENT_RT_URL =
   ENV.agentRt ?? withCreds(OWNER_URL, "agent_runtime", "agent_runtime_dev_pw");
 export const REDIS_TEST_URL = ENV.redis ?? "redis://localhost:6379/15";
 
-/** Tạo DB nếu thiếu (như `migrate-hub.int.test.ts`), xoá schema, migrate Admin + Hub (`appEnv: test`). */
+/**
+ * DB sạch đã migrate Admin + Hub (`appEnv: test`): bản sao từ template (dựng một lần, dựng lại khi migration đổi) thay cho
+ * reset + chạy lại ~50 migration (~1,7 s/lần). Tạo DB nếu thiếu; ngắt mọi kết nối đang mở tới DB này.
+ */
 export async function prepareDb(): Promise<void> {
-  if (!ENV.hubTest) {
-    const m = postgres(withDatabase(OWNER_URL, "postgres"), { max: 1, onnotice: () => {} });
-    try {
-      const [row] = await m`select 1 as one from pg_database where datname = ${DB_NAME}`;
-      if (!row) await m.unsafe(`CREATE DATABASE "${DB_NAME}"`);
-    } finally {
-      await m.end();
-    }
-  }
-  await resetTestDb(OWNER_URL);
-  await runMigrations({ url: OWNER_URL, appEnv: "test" });
-  await runHubMigrations({ url: OWNER_URL, appEnv: "test" });
+  await cloneMigratedTestDb(OWNER_URL, { key: "full", migrate: migrateFullTest });
 }
 
 export const ownerSql = (): Sql => postgres(OWNER_URL, { max: 2, onnotice: () => {} });

@@ -3,8 +3,7 @@
 // Chỉ cần DB đã migrate (xanh ở T2): không app. Dữ liệu dựng một lần bằng owner (beforeAll); mọi ghi của test nằm trong
 // transaction luôn rollback nên không `it` nào ảnh hưởng `it` khác.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { runMigrations } from "@ai/db";
-import { resetTestDb } from "@ai/db/test-db";
+import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import postgres from "postgres";
 import { ADMIN_API_URL, OWNER_URL } from "../M1/_fixtures";
 
@@ -69,8 +68,7 @@ const count = async (tx: Tx, table: string) =>
   ).n;
 
 beforeAll(async () => {
-  await resetTestDb(OWNER_URL);
-  await runMigrations({ url: OWNER_URL, appEnv: "development" });
+  await cloneMigratedTestDb(OWNER_URL, { key: "admin", migrate: migrateAdminTest });
   owner = postgres(OWNER_URL, { max: 2, onnotice: () => {} });
   api = postgres(ADMIN_API_URL, { max: 1, onnotice: () => {} });
   await owner`insert into admin.tenants (id, key, name) values (${T1}, 'acme', 'Acme'), (${T2}, 'globex', 'Globex')`;
