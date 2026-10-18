@@ -40,7 +40,7 @@ function fail(step: string, err: unknown): never {
 }
 
 async function openDb(env: Env): Promise<Db> {
-  const db = connectDb(env.HUB_DATABASE_URL);
+  const db = connectDb(env.HUB_DATABASE_URL, 10, { spread: true });
   try {
     await pingDb(db);
     return db;
