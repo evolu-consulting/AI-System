@@ -33,11 +33,6 @@ const INTERRUPT_GRACE_MS = 60_000;
  */
 export const PROCESS_SWEEP_EVERY_MS = 3_000;
 
-const activeList = sql`(${sql.join(
-  PROCESS_RUN_ACTIVE.map((s) => sql`${s}`),
-  sql`, `,
-)})`;
-
 type SnapStage = {
   step?: number;
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
