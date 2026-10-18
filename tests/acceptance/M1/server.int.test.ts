@@ -24,7 +24,8 @@ afterAll(async () => {
 });
 
 type Proc = ReturnType<typeof Bun.spawn>;
-type Spawned = { proc: Proc; output: () => Promise<string> };
+/** `ready`: true khi log `listening`, false khi tiến trình thoát trước đó (chờ theo tín hiệu, không poll). */
+type Spawned = { proc: Proc; output: () => Promise<string>; ready: Promise<boolean> };
 
 function baseEnv(over: Record<string, string | undefined> = {}): Record<string, string> {
   const merged: Record<string, string | undefined> = {
@@ -48,18 +49,40 @@ function spawnServer(over: Record<string, string | undefined> = {}): Spawned {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const out = new Response(proc.stdout as ReadableStream).text();
-  const err = new Response(proc.stderr as ReadableStream).text();
-  return { proc, output: async () => `${await out}${await err}` };
+  let text = "";
+  let onReady: (v: boolean) => void = () => {};
+  const ready = new Promise<boolean>((r) => {
+    onReady = r;
+  });
+  const drain = async (s: ReadableStream<Uint8Array>) => {
+    for await (const c of s) {
+      text += new TextDecoder().decode(c);
+      if (text.includes('"msg":"listening"')) onReady(true);
+    }
+  };
+  const done = Promise.all([
+    drain(proc.stdout as ReadableStream),
+    drain(proc.stderr as ReadableStream),
+  ]);
+  void proc.exited.then(() => onReady(false));
+  return {
+    proc,
+    ready,
+    output: async () => {
+      await done;
+      return text;
+    },
+  };
 }
 
-async function waitHealthy(): Promise<void> {
-  const deadline = Date.now() + DEADLINE_MS;
-  while (Date.now() < deadline) {
-    if ((await fetch(`${BASE}/health`).catch(() => null))?.status === 200) return;
-    await Bun.sleep(100);
+/** Chờ log `listening` (hoặc tiến trình thoát ⇒ lỗi ngay kèm log); hạn chót chỉ là lưới an toàn. */
+async function waitHealthy(p: Spawned): Promise<void> {
+  const timer = new Promise<boolean>((r) => setTimeout(() => r(false), DEADLINE_MS));
+  if (!(await Promise.race([p.ready, timer]))) {
+    if (p.proc.exitCode === null) p.proc.kill();
+    throw new Error(`admin-api không lắng nghe /health: ${(await p.output()).slice(0, 500)}`);
   }
-  throw new Error("admin-api không lắng nghe /health trong hạn chót");
+  expect((await fetch(`${BASE}/health`)).status).toBe(200);
 }
 
 /** Chờ tiến trình tự thoát; hết hạn thì kill và trả null. */
@@ -88,7 +111,7 @@ describe("ADM-FR-01 · server chạy thật", () => {
   it("ADM-FR-01 · M1-R01 · /health 200; đăng nhập thật qua HTTP rồi GET /auth/me bằng token → 200", async () => {
     const p = spawnServer();
     try {
-      await waitHealthy();
+      await waitHealthy(p);
       const login = await fetch(`${BASE}/auth/login`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -150,7 +173,7 @@ describe("ADM-NFR-01 · log và CORS", () => {
     const p = spawnServer();
     const secrets: string[] = [];
     try {
-      await waitHealthy();
+      await waitHealthy(p);
       const json = { "content-type": "application/json" };
       const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
         fetch(`${BASE}${path}`, {
@@ -195,7 +218,7 @@ describe("ADM-NFR-01 · log và CORS", () => {
   it("ADM-FR-01 · spec §3 · CORS: preflight cho phép Content-Type, Authorization, X-Client, X-Request-Id + credentials; origin lạ bị từ chối", async () => {
     const p = spawnServer();
     try {
-      await waitHealthy();
+      await waitHealthy(p);
       const pre = (origin: string) =>
         fetch(`${BASE}/auth/login`, {
           method: "OPTIONS",

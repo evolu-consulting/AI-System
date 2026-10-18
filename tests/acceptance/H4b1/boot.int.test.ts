@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
-import { HUB_API_URL, type Keys, makeKeys, REDIS_TEST_URL, waitFor } from "../H1/_fixtures";
+import { HUB_API_URL, type Keys, makeKeys, REDIS_TEST_URL } from "../H1/_fixtures";
 import { setupH3b } from "../H3b/_h3b";
 import { KEY_B64, type Sql } from "./_h4b1";
 
@@ -120,19 +120,24 @@ describe("A115 · khoá hợp lệ [AC-H4b1-06 · hồi quy]", () => {
       stderr: "pipe",
     });
     let out = "";
-    void (async () => {
-      for await (const c of proc.stderr) out += new TextDecoder().decode(c);
-    })();
-    void (async () => {
-      for await (const c of proc.stdout) out += new TextDecoder().decode(c);
-    })();
+    // Chờ theo tín hiệu: log `listening` ⇒ true, tiến trình thoát trước ⇒ false; 20 s chỉ là lưới an toàn.
+    let onReady: (v: boolean) => void = () => {};
+    const ready = new Promise<boolean>((r) => {
+      onReady = r;
+    });
+    const drain = async (s: ReadableStream<Uint8Array>) => {
+      for await (const c of s) {
+        out += new TextDecoder().decode(c);
+        if (out.includes('"msg":"listening"')) onReady(true);
+      }
+    };
+    void drain(proc.stderr);
+    void drain(proc.stdout);
+    void proc.exited.then(() => onReady(false));
     try {
-      const st = await waitFor(
-        () => health(p),
-        (s) => s === 200,
-        20_000,
-      );
-      expect(st).toBe(200);
+      const up = await Promise.race([ready, Bun.sleep(20_000).then(() => false)]);
+      if (!up) throw new Error(`hub-api không lên: ${out.slice(0, 500)}`);
+      expect(await health(p)).toBe(200);
       expect(out).not.toContain(good);
     } finally {
       proc.kill();
