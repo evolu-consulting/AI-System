@@ -32,6 +32,7 @@ import {
   startDify,
   WF,
 } from "../H2a/_h2a";
+import { hubActivity } from "../P-d/d1/_count";
 import { captureLogs, routingError, runsRunning, settleRuns, setupH2b, startHubH2b } from "./_h2b";
 
 const REPO = resolve(import.meta.dir, "../../..");
@@ -80,7 +81,21 @@ const runIdOf = (r: Res) => r.headers.get("x-run-id") ?? "";
 async function hold(who: UserKey = "lan", content = "Việc giữ chỗ"): Promise<Res> {
   const r = await post(who, content);
   expect(r.status).toBe(200);
+  await jobWritten(runIdOf(r));
   return r;
+}
+/** Tín hiệu (Luật 4c): POST chat trả 200 (SSE) TRƯỚC khi Orchestrator `enqueueJob` chạy nền (B8) — chờ tới khi job của run
+ *  đã ghi, mỗi lần Hub gửi một câu SQL (`hubActivity`) thì kiểm lại; không sleep/poll. Dùng trước mọi `counts(before)`. */
+async function jobWritten(runId: string): Promise<void> {
+  const act = hubActivity(hub as never);
+  for (;;) {
+    const n = act.tick();
+    const [r] = await sql<
+      { n: number }[]
+    >`select count(*)::int as n from hub.jobs where run_id = ${runId}`;
+    if ((r?.n ?? 0) > 0) return;
+    await act.after(n);
+  }
 }
 /** Kết thúc run bằng câu trả lời Orchestrator rồi chờ DB hết `running`. */
 async function finishRun(runId: string): Promise<void> {
