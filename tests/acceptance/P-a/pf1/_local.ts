@@ -269,6 +269,8 @@ export type Pf1Opts = PaOpts & {
   loops?: boolean;
   /** không seed PF1 (ca tự dựng). */
   noSeed?: boolean;
+  /** T15 P-d2: deps Hub thêm (vd `secretMasterKey`, `difyTimeoutMaxS`) cho ca stage `tool`. */
+  extraDeps?: Record<string, unknown>;
 };
 export type CtxPf1 = CtxPa;
 
@@ -298,6 +300,7 @@ async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, o: Pf1Opts): Pr
       handles = h;
     },
   };
+  if (o.extraDeps) Object.assign(deps, o.extraDeps);
   if (!o.loops) deps.processLoops = false;
   if (o.fakeLauncher)
     deps.stageLauncher = {

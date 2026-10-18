@@ -4,7 +4,9 @@ Nguồn: [spec-d2](spec-d2.md) §2–§6 · [spec-tz-tools §2](spec-tz-tools.md
 
 **Dify giả do qc dựng** (`P-d/_support/fake-dify.ts`, trong `tests/**`): `Bun.serve` cổng 0, `POST /v1/workflows/run` trả kịch bản theo từng ca (JSON `outputs.<output_field>` = chuỗi JSON kết quả; HTTP 4xx/5xx/408/429; treo quá `timeout_s`; đóng socket sau khi nhận kết nối = **đã gửi** `sent:true`, Q-D2-2; "trước khi gửi" = `baseUrl` trỏ cổng đóng `127.0.0.1:<cổng trống>`), đếm lời gọi + lưu `user`, `inputs` mỗi lời gọi. Workflow fixture (`admin.workflows`, owner SQL) trỏ `base_url` tới server này: `W` = `xuat-hoa-don` (không `side_effect`, input `tong_tien` number required, `ma_kh` text), `WS` = `ghi-so` (`side_effect`), `WF` = có tham số kiểu `file`, `WOFF` = `enabled=false`. Công tắc bật bằng API admin (AC-A15) hoặc owner SQL `admin.tenant_workflow_tools` cho ca Hub.
 
-## 1. Luật lớp 1 P-d2 — `tests/acceptance/P-d/rules/d2/*.test.ts` (plan-d2 §4)
+**Cổng lớp ổn định (T15, người dùng yêu cầu 2026-10-18):** test P-d2 KHÔNG nạp theo đường dẫn file bên trong. `P-d/_support/modules.ts` có `loadLayer("domain"|"application", tên, task)` / `layerFn(…)` nạp barrel `P/domain/index.ts`, `P/application/index.ts` (backend thêm ở **T17**); barrel vắng ⇒ "chưa có cổng lớp: … (T17)", export vắng ⇒ "chưa có tính năng: <tên> (<task>)". Admin: `adminToolsFn` nạp `apps/admin-api/src/modules/workflow-tools/domain/index.ts` (T18a). Luật lưu def (U01–U03, U10–U11) kiểm qua hàm contract `toolStageIssues`/`branchStageIssues` (`@ai/contracts/hub-admin`, hình bản nháp A2); domain ≡ contract nhờ `def-rules-parity.test.ts` (backend). Test P-d1 (`domainFn(rel, …)`) dời sang `loadLayer` sau, không bắt buộc ở P-d2. Harness: `Pf1Opts.extraDeps` (P-a `_local.ts`) để Hub int có `secretMasterKey`/`difyTimeoutMaxS` như H2a.
+
+## 1. Luật lớp 1 P-d2 — `tests/acceptance/P-d/rules/d2/{tool,branch,def-issues}.test.ts` (plan-d2 §4)
 | Ca | File · hàm | Dữ liệu | Kỳ vọng |
 |---|---|---|---|
 | PD2-U01 | `defs/tool-def.rules` `toolStageIssues` | stage tool `W`, args `tong_tien←{from:"field",stageKey:s0,field:"tong_tien"}` (s0 ở bước nhỏ hơn), `ma_kh←{from:"const",value:"KH1"}` | `[]` |
@@ -101,6 +103,28 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 |---|---|
 | PD2-I50 | CHECK nới: `stage_runs.status='skipped'`, `review_tasks.reason='tool_failed'`, audit `tool_call`/`branch`, `process_thread_events.kind='branch'` (placement `flow`), `room_messages.process_kind='branch'` (sender `process`) chèn được; giá trị cũ giữ; lạ ⇒ 23514; migrate 2 lần không lỗi |
 
+### 3.6 Use case `runToolStage` với cổng giả (S2/S9/S10/S12, D2-13) — `rules/d2/run-tool-stage.test.ts` (không DB)
+| Ca | Kỳ vọng |
+|---|---|
+| ok | 1 lời gọi `{tenantId: run, userId: startedBy, hubRunId, args}`; `settleOk(fields)` + `audit`; mọi `uow.system(tenantId)` = tenant của run (S9) |
+| S10 | nhật ký trước `invoke` = đúng `[tx, loadCall]` (đọc quyền/công tắc là bước CUỐI trước gọi); `canRun=false` ⇒ `permission_lost`, `usable=false` ⇒ `user_inactive`, 0 lời gọi |
+| S2/S9 | `switchOn=false` / `wfEnabled=false` ⇒ `tool_failed`, 0 lời gọi; nguồn field `null` ⇒ `tool_failed` (PD2-I09) |
+| S12 | 65.536 byte ⇒ settle; 65.537 byte ⇒ `tool_failed`; 32.770 ký tự `đ` (> 64 KB byte, < 64 K ký tự) ⇒ `tool_failed`; không JSON / sai kiểu ⇒ `template_invalid` |
+| D2-13 | 503 đã gửi (không side effect) ⇒ `markWaiting(retryCount 1)` rồi hẹn `retry` +30 s khoá `retry:<sr>:1:1:1` (y như `handleJobFailure`); side effect + 500 đã gửi ⇒ `tool_failed` 0 hẹn; 3 lượt ⇒ `retry_exhausted`; `handleToolFailure` + `handleJobFailure` ở cổng application |
+
+### 3.7 Hiệu năng (Luật 4c, plan-d2 §9) — `perf/d2.perf.int.test.ts` (`bun run test:perf`)
+| Ca | Đo | Ngưỡng |
+|---|---|---|
+| PD2-P01 | PUT def 30 stage / 10 tool × 20 | p95 ≤ 50 ms; số câu có tool − không tool = **1** |
+| PD2-P02 | 200 workflow × 50 tenant (10.000 hàng công tắc), `GET /process-editor/context` × 30 | p95 ≤ 20 ms; **2** câu |
+| PD2-P03 | đếm câu từ kết quả job s0 tới `settled()` (launch + tool-driver), 1 vs 20 tham số (`W20`) | bằng nhau; p95 phần Hub ≤ 60 ms (Dify giả trả ngay) |
+| PD2-P04 | đếm câu của lời gọi Đạt + `settled()`: nhảy 1 vs 18 bước (def 21 bước) | bằng nhau; khớp − không khớp = **4**; p95 ≤ 30 ms |
+
+### Đỏ đúng lý do (T15, 2026-10-18, trước T17)
+- `bun test tests/acceptance/P-d/rules`: 309 pass / 52 fail — 52 đều là ca P-d2 mới; lý do: "chưa có cổng lớp: …/domain|application/index.ts (T17)", "chưa có cổng lớp: …/workflow-tools/domain/index.ts (T18a)", "chưa có tính năng: contract workflow-tools … (T17)", hoặc `expect` enum/schema contract chưa nối. P-d1 rules: 0 đỏ.
+- `bun run test:int:par` 4 file int mới: 0 pass / 20 fail, 6,7 s — 100 % "chưa có tính năng: công tắc tool … (T18a)" (`needD2`/`needSwitch`, trước mọi fixture). Perf: 5 fail cùng lý do, 4 s.
+- Chờ: tool-driver/nhánh bằng `handles.settled()`; kết quả job agent (Runtime → stream) vẫn qua `waitStageStatus` (ngoại lệ đã ghi ở test-plan-addendum §4).
+
 ## 4. Test khoá sửa ở P-d2
 K15 (`contracts-pa.test.ts:175` `ROOM_PROCESS_KINDS`, T17) · K28 (`M1/M2/M3 db-rls` 13 ⇒ 14 bảng, T18a) · K16–K18 đã đổi sang tiền tố ở T5 nên không sửa lại. T18s/T19s: grep 0 test khoá nạp `mcp.service`, `apply-settle`, `step-persist` theo đường dẫn ⇒ không Nq (kiểm lại bằng grep lúc T18s/T19s).
 
@@ -114,3 +138,7 @@ K15 (`contracts-pa.test.ts:175` `ROOM_PROCESS_KINDS`, T17) · K28 (`M1/M2/M3 db-
 | Q-D2-3 | backend-lead | Stage ở bước bị nhảy chỉ có thể `pending` (chưa chạy) ⇒ khi nào còn hẹn mở để huỷ? | PD2-I33 chỉ kiểm "0 hẹn mở sau nhảy"; huỷ hẹn phủ ở `stagesToCancelOnBack`/PD-I37 |
 | Q-D2-4 | docs-architect | spec-d2 PD2-R09 ghi `run_steps.type='workflow'` ↔ plan-d2 D2-03 `type='tool'` | **Đã khớp spec (PD2-R09 `'tool'`)**; test theo `'tool'`; PD-R05 probe gồm cả hai |
 | Q-D2-5 | docs-architect | TT-R03 audit `workflow_tool.enable/disable` ↔ plan `workflow`/`grant`/`revoke` | **Đã khớp spec (TT-R03 `grant`/`revoke`)**; theo plan (Q3 plan §10) |
+| Tranh chấp T15-1 | backend-lead | Hình `StageShape` domain cho `toolStageIssues`/`branchStageIssues` chưa chốt (plan-d2-rules chỉ ghi `StageShape & {…}`) | Test luật lưu def qua hàm **contract** (A2, snake_case); domain phủ bằng `def-rules-parity.test.ts` |
+| Tranh chấp T15-2 | backend-lead | `runToolStage(d, link)`: hình `link` chưa ghi | `{ runId, stageRunId, hubRunId, tenantId }`; repo giả có `runs`, `tools`, `retry`, `timers`, `sideEffect` như `TxRepos` |
+| Tranh chấp T15-3 | backend-lead | Dify giả: đọc `outputs.<output_field>`; fixture `output_field='result'` | Hub đọc `output_field` của catalog (như `/mcp`) |
+| Tranh chấp T15-4 | qc | PD2-I06/I06b (cổng đóng / đóng socket), I13–I16, I22, I27, I35–I37, I47, I50 chưa viết ở T15 (hết giờ) | Viết ở T18-2/T19 trước khi Gate code; fake Dify cần chế độ đóng socket thật |
