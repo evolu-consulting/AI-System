@@ -1,0 +1,2 @@
+ALTER TABLE "admin"."tenants" ADD COLUMN "timezone" text DEFAULT 'Asia/Ho_Chi_Minh' NOT NULL;--> statement-breakpoint
+ALTER TABLE "admin"."tenants" ADD CONSTRAINT "tenants_timezone_check" CHECK (char_length("admin"."tenants"."timezone") BETWEEN 1 AND 64);

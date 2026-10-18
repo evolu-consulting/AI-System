@@ -27,6 +27,26 @@ export const MaxConcurrentSubSchema = z
   .max(MAX_CONCURRENT_SUB_MAX)
   .nullable();
 
+/** ADM-FR-72 · TZ-R01 · múi giờ tenant mặc định (= DEFAULT cột `admin.tenants.timezone`, migration 0011). */
+export const TENANT_TZ_DEFAULT = "Asia/Ho_Chi_Minh";
+
+let tzSet: ReadonlySet<string> | null = null;
+/**
+ * TZ-R02: tên IANA chuẩn có trong `Intl.supportedValuesOf("timeZone")` (alias như `Asia/Saigon` ⇒ false; phân biệt
+ * hoa/thường). Server (Bun/JSC) là nguồn đúng — KHÔNG dùng ở schema response (danh sách của trình duyệt có thể khác).
+ */
+export function isSupportedTimeZone(tz: string): boolean {
+  tzSet ??= new Set(Intl.supportedValuesOf("timeZone"));
+  return tzSet.has(tz);
+}
+/** Response: chỉ kiểm độ dài (= CHECK DB 1…64). `abort` ⇒ input sai độ dài chỉ ra một issue (không thêm `custom`). */
+export const TimezoneSchema = z.string().min(1, { abort: true }).max(64, { abort: true });
+/** Request (create/PATCH tenant, import): thêm kiểm danh sách IANA. Sai ⇒ 400 `VALIDATION_ERROR` path `timezone`. */
+export const TimezoneInputSchema = TimezoneSchema.refine(
+  isSupportedTimeZone,
+  "unsupported time zone",
+);
+
 const tenantShape = {
   id: UuidSchema,
   key: TenantKeySchema,
@@ -40,6 +60,8 @@ const tenantShape = {
   version: VersionSchema,
   /** Username người ghi gần nhất; null = seed / không thấy qua RLS (M4-R17). */
   updated_by: UpdatedBySchema,
+  /** ADM-FR-72: tên IANA (TZ-R01). */
+  timezone: TimezoneSchema,
 };
 const statusMatchesActive = (t: { active: boolean; status: string }) =>
   (t.status === "locked") === !t.active;
@@ -72,6 +94,8 @@ export const TenantCreateRequestSchema = z.strictObject({
   key: TenantKeySchema,
   name: TenantNameSchema,
   max_concurrent_sub: MaxConcurrentSubSchema.default(null),
+  /** TZ-R03: vắng ⇒ mặc định. */
+  timezone: TimezoneInputSchema.default(TENANT_TZ_DEFAULT),
   first_admin: z.strictObject({
     username: UsernameSchema,
     display_name: DisplayNameSchema,
@@ -93,5 +117,6 @@ export const TenantUpdateRequestSchema = z.strictObject({
   version: VersionSchema,
   name: TenantNameSchema.optional(),
   max_concurrent_sub: MaxConcurrentSubSchema.optional(),
+  timezone: TimezoneInputSchema.optional(),
 });
 export type TenantUpdateRequest = z.infer<typeof TenantUpdateRequestSchema>;

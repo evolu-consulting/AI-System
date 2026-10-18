@@ -58,7 +58,7 @@ const COLS: Record<TransferType, SQL> = {
   features: sql`f.key, f.name, f.description, coalesce(f.icon, 'package') as icon, f.status,
     coalesce((select json_agg(c.name) from admin.feature_commands fc join admin.commands c on c.id = fc.command_id
       where fc.feature_id = f.id), '[]'::json) as commands`,
-  tenants: sql`t.key, t.name, t.max_concurrent_sub,
+  tenants: sql`t.key, t.name, t.max_concurrent_sub, t.timezone,
     coalesce((select json_agg(f.key) from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
       where e.tenant_id = t.id and e.revoked_at is null), '[]'::json) as entitlements,
     coalesce((select json_agg(json_build_object('feature', f.key, 'max_runs', q.max_runs,

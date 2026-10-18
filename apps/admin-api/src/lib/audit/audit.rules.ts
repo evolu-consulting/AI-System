@@ -6,7 +6,7 @@ type Dto = Readonly<Record<string, unknown>>;
 
 /** Allowlist `before/after` theo entity (snake_case như DTO). `user.totp_enabled` thêm ở plan-cd (tuỳ có trong DTO). */
 export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>> = {
-  tenant: ["key", "name", "active", "max_concurrent_sub", "version"],
+  tenant: ["key", "name", "active", "max_concurrent_sub", "version", "timezone"],
   user: [
     "username",
     "display_name",

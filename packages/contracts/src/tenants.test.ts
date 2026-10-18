@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  isSupportedTimeZone,
+  TENANT_TZ_DEFAULT,
   TenantCreateRequestSchema,
   TenantCreateResponseSchema,
   TenantDetailSchema,
@@ -81,6 +83,29 @@ describe("ADM-FR-60 · TenantCreateRequestSchema", () => {
     expect(TenantCreateResponseSchema.safeParse({ ...res, temp_password: "short" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("ADM-FR-72 · múi giờ tenant (TZ-R01…R03)", () => {
+  test("tạo: vắng ⇒ TENANT_TZ_DEFAULT; tên IANA giữ; alias/sai hoa thường/rỗng ⇒ một issue path timezone", () => {
+    expect(TenantCreateRequestSchema.parse(create).timezone).toBe(TENANT_TZ_DEFAULT);
+    expect(TenantCreateRequestSchema.parse({ ...create, timezone: "UTC" }).timezone).toBe("UTC");
+    for (const tz of ["Asia/Saigon", "europe/berlin", "", "x".repeat(65)]) {
+      const r = TenantCreateRequestSchema.safeParse({ ...create, timezone: tz });
+      expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(["timezone"]);
+    }
+  });
+
+  test("PATCH timezone tuỳ chọn; response bắt buộc timezone, chỉ kiểm độ dài", () => {
+    expect(TenantUpdateRequestSchema.safeParse({ version: 1 }).success).toBe(true);
+    expect(TenantUpdateRequestSchema.safeParse({ version: 1, timezone: "Mars/Base" }).success).toBe(
+      false,
+    );
+    const { timezone: _tz, ...noTz } = tenant;
+    expect(TenantSchema.safeParse(noTz).success).toBe(false);
+    expect(TenantSchema.safeParse({ ...tenant, timezone: "Asia/Saigon" }).success).toBe(true);
+    expect(isSupportedTimeZone("Asia/Ho_Chi_Minh")).toBe(true);
+    expect(isSupportedTimeZone("Asia/Saigon")).toBe(false);
   });
 });
 

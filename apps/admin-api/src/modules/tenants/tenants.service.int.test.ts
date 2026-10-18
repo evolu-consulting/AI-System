@@ -17,10 +17,11 @@ const PLATFORM = { kind: "platform" } as const;
 const OPS_T = "01900000-0000-7000-8000-0000000d0001";
 const OPS_U = "01900000-0000-7000-8000-0000000d0002";
 const as = (scope: DbScope) => ({ ctx, scope, actor: { userId: OPS_U } });
-const input = (key: string, username = "boss") => ({
+const input = (key: string, username = "boss", timezone = "Asia/Ho_Chi_Minh") => ({
   key,
   name: key,
   max_concurrent_sub: null,
+  timezone,
   first_admin: { username, display_name: "Boss", email: `boss@${key}.test`, locale: "vi" as const },
 });
 const count = async () =>
@@ -90,5 +91,42 @@ describe("ADM-FR-61 · lock/unlock, ADM-FR-60 · version", () => {
     expect(await code(updateTenant(as(PLATFORM), r.tenant.id, { version: 9, name: "x" }))).toBe(
       "VERSION_CONFLICT",
     );
+  });
+});
+
+describe("ADM-FR-72 · múi giờ tenant (TZ-R01, TZ-R03)", () => {
+  const tzOf = async (id: string) =>
+    (await owner`select timezone from admin.tenants where id = ${id}`)[0]?.timezone;
+
+  test("ADM-FR-72 · TZ-R01 · hàng chèn không có timezone ⇒ DEFAULT Asia/Ho_Chi_Minh; CHECK 1…64", async () => {
+    expect(await tzOf(OPS_T)).toBe("Asia/Ho_Chi_Minh");
+    const bad = (tz: string) =>
+      owner`update admin.tenants set timezone = ${tz} where id = ${OPS_T}`.then(
+        () => "ok",
+        (e: { code?: string }) => e.code,
+      );
+    expect([await bad(""), await bad("x".repeat(65))]).toEqual(["23514", "23514"]);
+  });
+
+  test("ADM-FR-72 · TZ-R03 · tạo với Europe/Berlin; PATCH đổi ⇒ version+1, audit before/after timezone; trùng ⇒ không đổi", async () => {
+    const r = await createTenant(as(PLATFORM), input("acme", "boss", "Europe/Berlin"));
+    expect([r.tenant.timezone, await tzOf(r.tenant.id)]).toEqual([
+      "Europe/Berlin",
+      "Europe/Berlin",
+    ]);
+    const same = await updateTenant(as(PLATFORM), r.tenant.id, {
+      version: 1,
+      timezone: "Europe/Berlin",
+    });
+    expect(same.version).toBe(1);
+    const t = await updateTenant(as(PLATFORM), r.tenant.id, { version: 1, timezone: "Asia/Tokyo" });
+    expect([t.version, t.timezone, await tzOf(r.tenant.id)]).toEqual([
+      2,
+      "Asia/Tokyo",
+      "Asia/Tokyo",
+    ]);
+    const [a] = await owner`select before->>'timezone' as b, after->>'timezone' as a
+      from admin.audit_log where entity = 'tenant' and action = 'update' and entity_id = ${r.tenant.id}`;
+    expect(a).toEqual({ b: "Europe/Berlin", a: "Asia/Tokyo" });
   });
 });

@@ -89,6 +89,21 @@ describe("ADM-FR-54 · transfer.plan", () => {
     expect(m.quotas.map((q) => q.feature)).toEqual([null, "f-a"]);
   });
 
+  test("ADM-FR-72 · TZ-R05 · file vắng timezone ⇒ giữ DB (unchanged); có timezone khác ⇒ update", () => {
+    const db = { ...acme, timezone: "Europe/Berlin" };
+    const s = { ...snap, tenants: [db] };
+    expect(mergeTenant(db, acme).timezone).toBe("Europe/Berlin");
+    expect(planImport(file({ tenants: [acme] }), s).summary).toEqual({
+      added: 0,
+      updated: 0,
+      unchanged: 1,
+    });
+    const p = planImport(file({ tenants: [{ ...acme, timezone: "Asia/Tokyo" }] }), s);
+    expect(p.items.map((i) => [i.op, (i.after as TenantEl).timezone])).toEqual([
+      ["update", "Asia/Tokyo"],
+    ]);
+  });
+
   test("tenant chỉ bớt entitlement/quota → unchanged (chỉ thêm, không xoá)", () => {
     const p = planImport(file({ tenants: [{ ...acme, entitlements: [], quotas: [] }] }), snap);
     expect(p.summary).toEqual({ added: 0, updated: 0, unchanged: 1 });

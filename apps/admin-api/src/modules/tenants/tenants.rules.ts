@@ -21,11 +21,15 @@ export function tenantStatus(t: { active: boolean }): "active" | "locked" {
 
 /** PATCH: chỉ trường gửi lên và khác giá trị hiện tại mới tính là đổi (không đổi → không tăng version). */
 export function changedTenantFields(
-  current: { name: string; maxConcurrentSub: number | null },
-  patch: { name?: string; max_concurrent_sub?: number | null },
-): { name?: string; maxConcurrentSub?: number | null } {
-  const out: { name?: string; maxConcurrentSub?: number | null } = {};
+  current: { name: string; maxConcurrentSub: number | null; timezone: string },
+  patch: { name?: string; max_concurrent_sub?: number | null; timezone?: string },
+): { name?: string; maxConcurrentSub?: number | null; timezone?: string } {
+  const out: { name?: string; maxConcurrentSub?: number | null; timezone?: string } = {};
   if (patch.name !== undefined && patch.name !== current.name) out.name = patch.name;
+  // ADM-FR-72 · TZ-R03: đã qua `TimezoneInputSchema` ở biên (tên IANA chuẩn).
+  if (patch.timezone !== undefined && patch.timezone !== current.timezone) {
+    out.timezone = patch.timezone;
+  }
   if (
     patch.max_concurrent_sub !== undefined &&
     patch.max_concurrent_sub !== current.maxConcurrentSub

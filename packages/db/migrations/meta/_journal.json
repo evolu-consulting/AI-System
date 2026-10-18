@@ -78,6 +78,13 @@
       "when": 1791472783270,
       "tag": "0010_cr052_user_locale_en",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792292789177,
+      "tag": "0011_pd1_tenant_timezone",
+      "breakpoints": true
     }
   ]
 }

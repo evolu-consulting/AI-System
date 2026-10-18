@@ -28,7 +28,7 @@ import { FeatureDescSchema, FeatureIconSchema, FeatureNameSchema } from "./featu
 import { GroupDescriptionSchema, GroupKeySchema, GroupNameSchema } from "./groups";
 import { MoneyLimitSchema, QUOTA_MAX_ITEMS, QUOTA_MAX_RUNS, QUOTA_MAX_TOKENS } from "./quotas";
 import { SecretValueSchema } from "./secrets";
-import { MaxConcurrentSubSchema } from "./tenants";
+import { MaxConcurrentSubSchema, TimezoneInputSchema } from "./tenants";
 import {
   BaseUrlSchema,
   InputSchemaSchema,
@@ -132,6 +132,8 @@ export const TenantElSchema = z.strictObject({
   key: TenantKeySchema,
   name: TenantNameSchema,
   max_concurrent_sub: MaxConcurrentSubSchema,
+  /** ADM-FR-72 · TZ-R05: vắng (file cũ) ⇒ giữ giá trị hiện có. Export luôn ghi. */
+  timezone: TimezoneInputSchema.optional(),
   entitlements: uniqueArray(CatalogKeySchema, TRANSFER_LIMITS.features),
   quotas: z.array(QuotaEntrySchema).max(QUOTA_MAX_ITEMS),
 });

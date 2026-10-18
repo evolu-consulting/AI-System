@@ -449,6 +449,7 @@ const firstAdmin = (key: string) => ({
   key,
   name: key,
   max_concurrent_sub: null,
+  timezone: "Asia/Ho_Chi_Minh",
   first_admin: {
     username: "boss",
     display_name: "Boss",

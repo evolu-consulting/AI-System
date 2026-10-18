@@ -50,6 +50,8 @@ async function writeTenants(w: WriteCtx, xs: It<TenantEl>[]): Promise<void> {
       .set({
         name: x.after.name,
         maxConcurrentSub: x.after.max_concurrent_sub,
+        // TZ-R05: `after` đã gộp giá trị DB khi file vắng (mergeTenant) ⇒ undefined = không ghi cột.
+        ...(x.after.timezone === undefined ? {} : { timezone: x.after.timezone }),
         updatedBy: w.actorId,
         ...bump(tenants.version),
       })

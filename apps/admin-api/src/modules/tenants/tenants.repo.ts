@@ -10,6 +10,8 @@ export type TenantRow = {
   name: string;
   active: boolean;
   maxConcurrentSub: number | null;
+  /** ADM-FR-72: tên IANA (TZ-R01). */
+  timezone: string;
   userCount: number;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +31,7 @@ const rowCols = {
   name: tenants.name,
   active: tenants.active,
   maxConcurrentSub: tenants.maxConcurrentSub,
+  timezone: tenants.timezone,
   userCount,
   createdAt: tenants.createdAt,
   updatedAt: tenants.updatedAt,
@@ -88,7 +91,13 @@ export async function tenantStats(tx: Tx, tenantId: string) {
 
 export async function insertTenant(
   tx: Tx,
-  t: { key: string; name: string; maxConcurrentSub: number | null; updatedBy: string },
+  t: {
+    key: string;
+    name: string;
+    maxConcurrentSub: number | null;
+    timezone: string;
+    updatedBy: string;
+  },
 ): Promise<string> {
   const id = Bun.randomUUIDv7();
   await tx.insert(tenants).values({ id, ...t });
@@ -99,7 +108,7 @@ export async function insertTenant(
 export async function updateTenant(
   tx: Tx,
   id: string,
-  set: { name?: string; maxConcurrentSub?: number | null; active?: boolean },
+  set: { name?: string; maxConcurrentSub?: number | null; timezone?: string; active?: boolean },
   by: string,
 ): Promise<void> {
   await tx

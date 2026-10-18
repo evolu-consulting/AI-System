@@ -49,6 +49,7 @@ export function toTenant(t: TenantRow): Tenant {
     updated_at: t.updatedAt.toISOString(),
     version: t.version,
     updated_by: t.updatedBy,
+    timezone: t.timezone,
   };
 }
 
@@ -116,7 +117,12 @@ export async function createTenant(
   const hash = await hashPassword(tempPassword);
   const by = c.actor.userId;
   return configWrite(c, "tenant.save", async (tx, ch) => {
-    const t = { key: input.key, name: input.name, maxConcurrentSub: input.max_concurrent_sub };
+    const t = {
+      key: input.key,
+      name: input.name,
+      maxConcurrentSub: input.max_concurrent_sub,
+      timezone: input.timezone,
+    };
     const id = await tx
       .transaction((sp) => repo.insertTenant(sp, { ...t, updatedBy: by }))
       .catch((err) => {

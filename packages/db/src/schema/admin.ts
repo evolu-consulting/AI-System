@@ -50,9 +50,12 @@ export const tenants = admin.table(
     version: versionCol(),
     ...audit(),
     updatedBy: updatedBy(),
+    /** ADM-FR-72 · TZ-R01 (P-d1, 0011): tên IANA; kiểm danh sách ở contract, DB chỉ chặn độ dài. */
+    timezone: text("timezone").notNull().default("Asia/Ho_Chi_Minh"),
   },
   (t) => [
     uniqueIndex("tenants_key_uq").on(t.key),
+    check("tenants_timezone_check", sql`char_length(${t.timezone}) BETWEEN 1 AND 64`),
     check("tenants_key_check", sql`${t.key} ~ '^[a-z0-9-]{2,32}$'`),
     check("tenants_name_check", sql`char_length(${t.name}) BETWEEN 1 AND 128`),
     check(

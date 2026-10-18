@@ -60,12 +60,15 @@ export const normQuota = (q: QuotaEntry): QuotaEntry => ({
 });
 export const quotaScope = (q: { feature: string | null }): string => q.feature ?? "";
 
-/** Hiệu lực sau import: entitlement hợp (chỉ thêm), quota upsert theo feature (dòng ngoài file giữ nguyên). */
+/** Hiệu lực sau import: entitlement hợp (chỉ thêm), quota upsert theo feature (dòng ngoài file giữ nguyên);
+ * `timezone` vắng trong file ⇒ giữ giá trị DB (TZ-R05, ADM-FR-72). */
 export function mergeTenant(db: TenantEl, f: TenantEl): TenantEl {
   const quotas = new Map(db.quotas.map((q) => [quotaScope(q), normQuota(q)]));
   for (const q of f.quotas) quotas.set(quotaScope(q), normQuota(q));
+  const timezone = f.timezone ?? db.timezone;
   return {
     ...f,
+    ...(timezone === undefined ? {} : { timezone }),
     entitlements: [...new Set([...db.entitlements, ...f.entitlements])],
     quotas: [...quotas.values()],
   };

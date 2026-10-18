@@ -33,6 +33,7 @@ export const tenant: Tenant = {
   updated_at: T1,
   version: 2,
   updated_by: null,
+  timezone: "Asia/Ho_Chi_Minh",
 };
 
 export const user: User = {
