@@ -22,6 +22,7 @@ export function InputsForm({ request }: { request: InputsRequest }) {
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <form
           className="flex flex-col gap-4"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             void f.submit();

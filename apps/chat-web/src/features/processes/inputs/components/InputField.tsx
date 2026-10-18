@@ -107,8 +107,10 @@ function TypedControl(p: Props & { type: "date" | "number"; bad: FieldError; msg
   return (
     <>
       <input
-        type={p.type}
-        step={p.type === "number" ? "any" : undefined}
+        // `number` dùng ô chữ + bàn phím số: ô `type=number` trả "" khi gõ sai (bong bóng gốc, mất câu i18n — UAT B-D2-1).
+        type={p.type === "number" ? "text" : p.type}
+        inputMode={p.type === "number" ? "decimal" : undefined}
+        data-input-type={p.type}
         className={SELECT_CLASS}
         aria-label={p.def.label}
         value={p.value.value}

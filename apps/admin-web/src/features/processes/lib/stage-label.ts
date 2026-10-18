@@ -26,6 +26,15 @@ export function runBadgeStatus(
   return retrying ? "running" : status;
 }
 
+/** Cùng luật `runBadgeStatus` nhưng cho danh sách (`ProcessRunSummary`, không có stages): chỉ có `retry_at` ⇒ `running`. */
+export function runSummaryBadgeStatus(r: {
+  status: ProcessRunStatus;
+  wait_until?: string | null;
+  retry_at?: string | null;
+}): ProcessRunStatus {
+  return r.status === "waiting_timer" && !r.wait_until && r.retry_at ? "running" : r.status;
+}
+
 /** `viewerTz`: múi giờ máy người xem (giờ thử lại kế tiếp); `lang`: định dạng ngày. */
 export function stageLabel(
   s: Pick<StageView, "status" | "retry_count" | "next_retry_at" | "wait">,

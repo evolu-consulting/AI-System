@@ -11,6 +11,7 @@ import type {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { backTrail, stageItems } from "../../run-block/lib/block-view";
+import { EscalatedNote } from "../../shared/components/EscalatedNote";
 import { OutputView } from "../../shared/components/OutputView";
 import { StageStrip } from "../../shared/components/StageStrip";
 import { TaskPanel } from "../../shared/components/TaskPanel";
@@ -70,7 +71,13 @@ function FullProgress({ view }: { view: ProcessRunFullView }) {
       {view.open_tasks
         .filter((o) => o.escalated_group && !view.my_tasks.some((m) => m.id === o.id))
         .map((o) => (
-          <TaskWaitingNote key={o.id} open={o} />
+          <div key={o.id} className="flex flex-col gap-2">
+            <EscalatedNote
+              group={o.escalated_group?.name}
+              hours={view.history.find((h) => h.kind === "escalate" && h.task_id === o.id)?.after_h}
+            />
+            <TaskWaitingNote open={o} />
+          </div>
         ))}
       <BackTimeline events={view.back_events ?? []} stages={view.stages} />
       {decision && <TaskPanel key={decision.id} runId={view.id} task={decision} view={view} />}

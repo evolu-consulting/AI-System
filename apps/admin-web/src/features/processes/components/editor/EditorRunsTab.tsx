@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock } from "@/lib/format";
 import { useTenantRuns } from "../../hooks/use-run-data";
 import { runStageNote } from "../../lib/run-stage-note";
+import { runSummaryBadgeStatus } from "../../lib/stage-label";
 import { RunStatusBadge } from "../run/RunStatusBadge";
 
 type Props = { processKey: string; tenantId: string | undefined };
@@ -46,7 +47,11 @@ export function EditorRunsTab({ processKey, tenantId }: Props) {
       ),
     },
     { id: "starter", header: L("starter"), cell: (r) => r.started_by.display_name },
-    { id: "status", header: L("status"), cell: (r) => <RunStatusBadge status={r.status} /> },
+    {
+      id: "status",
+      header: L("status"),
+      cell: (r) => <RunStatusBadge status={runSummaryBadgeStatus(r)} />,
+    },
     {
       id: "stage",
       header: L("stage"),
