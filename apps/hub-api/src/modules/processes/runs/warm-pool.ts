@@ -6,6 +6,7 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { safeErrorFields } from "../../../lib/errors";
 import { warmReviewTasks } from "../adapters/notify/review-tasks.repo";
+import { warmTimerSweep } from "../adapters/timers/timer-sweep";
 import type { ProcessBgDeps } from "../core/ports";
 import { warmNotices } from "../notify/batch.repo";
 import { warmExpire } from "./expire";
@@ -32,6 +33,7 @@ export async function warmBackgroundPool(d: ProcessBgDeps): Promise<void> {
       await warmNotices(tx);
       await warmExpire(tx);
       await warmSweepQueries(tx);
+      await warmTimerSweep(tx);
     });
   try {
     await Promise.all(Array.from({ length: n }, one));

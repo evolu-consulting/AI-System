@@ -45,3 +45,8 @@ function dueTimers(tx: Tx, now: Date, limit = TIMER_SWEEP_BATCH): Promise<DueTim
     order by due_at limit ${limit}
     for update skip locked`);
 }
+
+/** CR-093 · làm nóng pool: cùng văn bản câu quét hẹn giờ, limit 0 (không khoá, không đọc hàng nào). */
+export async function warmTimerSweep(tx: Tx): Promise<void> {
+  await dueTimers(tx, new Date(0), 0);
+}
