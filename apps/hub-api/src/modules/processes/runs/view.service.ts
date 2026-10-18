@@ -15,6 +15,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
 import type { ConfigCache } from "../../config/config.service";
+import { runTimesOf, withRunTimes } from "../adapters/runs/run-list.repo";
 import { processError } from "../core/errors";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import {
@@ -200,16 +201,17 @@ export class ViewService {
   }
 
   async #full({ tx, v, r, snap, myIds }: ViewCtx): Promise<ProcessRunView> {
-    const [stages, open, my, hist, back] = await Promise.all([
+    const [stages, open, my, hist, back, times] = await Promise.all([
       stageViews(tx, r, snap),
       repo.openTaskViews(tx, r.id, r.tenant_id),
       loadTaskDetails(tx, v, myIds),
       repo.loadHistory(tx, r.id, r.tenant_id),
       backFields(tx, r),
+      runTimesOf(tx, r.tenant_id, [r.id]), // D2-45
     ]);
     const facts = factsOf(r);
     return {
-      ...repo.toSummary(r),
+      ...withRunTimes(repo.toSummary(r), times),
       access: "full",
       input: r.input,
       stages,

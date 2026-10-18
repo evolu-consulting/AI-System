@@ -23,6 +23,7 @@ import {
 } from "../../rooms/messages/messages.service";
 import { messageEvents } from "../../rooms/room-events";
 import { toRoomMessage } from "../../rooms/rooms.map";
+import { runTimesOf, withRunTimes } from "../adapters/runs/run-list.repo";
 import type { Bang } from "../core/bang.rules";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -250,10 +251,10 @@ export class StartService {
   async list(u: AuthUser, q: ProcessRunListQuery, tenantIdQ?: string) {
     const tenantId = this.#listTenant(u, q, tenantIdQ);
     const scope = { kind: "user" as const, userId: u.userId, tenantId };
-    const rows = await withHubScope(this.d.db, scope, async (tx) => {
+    const [rows, times] = await withHubScope(this.d.db, scope, async (tx) => {
       if (q.room_id && !(await repo.isRoomMember(tx, tenantId, q.room_id, u.userId)))
         throw appError("NOT_FOUND");
-      return repo.listRuns(tx, {
+      const rs = await repo.listRuns(tx, {
         tenantId,
         ...(q.scope === "mine" && { startedBy: u.userId }),
         ...(q.room_id && { roomId: q.room_id }),
@@ -263,11 +264,14 @@ export class StartService {
         limit: q.limit,
         ...(q.cursor && { after: repo.decodeCursor(q.cursor) }),
       });
+      // D2-45 · PD2-P05 · một câu theo tập cho cả trang (không câu theo run).
+      const ids = rs.slice(0, q.limit).map((r) => r.id);
+      return [rs, await runTimesOf(tx, tenantId, ids)] as const;
     });
     const page = rows.slice(0, q.limit);
     const last = rows.length > q.limit ? page[page.length - 1] : undefined;
     return {
-      items: page.map(repo.toSummary),
+      items: page.map((r) => withRunTimes(repo.toSummary(r), times)),
       next_cursor: last ? repo.encodeCursor([last.started_at, last.id]) : null,
     };
   }
