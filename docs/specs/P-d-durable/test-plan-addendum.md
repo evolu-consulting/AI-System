@@ -34,11 +34,11 @@ Ghi chú: `_rules2.ts:25` chỉ đổi đích loader; `loadAutofix` ở dòng 23
 |---|---|---|---|
 | PD-P10 | nhắc 2 Hub song song, 250 task tới hạn | int | đúng 250 lượt nhắc, notice = 250 × người nhận (không trùng — #190) |
 | PD-P11 | một lượt vòng nhắc với 250 task tới hạn | int | một lượt nhắc đủ 250 (xả nhiều lô — A9) |
-| PD-P12 | hết hạn 250 run (đồng hồ giả +ttl) | int | 250 `expired`, task `closed/expired`, mỗi run đúng một sự kiện `run_end`; không gọi `postThread` trong vòng (đếm qua stub) |
-| PD-P13 | lô nhắc 100 | perf (`test:perf`) | p95 ≤ 50 ms qua 20 lô; 10.000 task ≤ 6 s |
-| PD-P14 | lô hết hạn 100 | perf | p95 ≤ 50 ms qua 20 lô; 20.000 run ≤ 12 s |
-| PD-P15 | đếm truy vấn mỗi lô | int | nhắc ≤ 6 câu SQL/lô, hết hạn ≤ 6 câu/lô, không phụ thuộc số hàng (bọc `tx.execute` đếm) |
-Đồng hồ giả (`d.now`), không chờ thời gian thật. Bài 10.000 chỉ trong `test:perf`, không trong `test:int`.
+| PD-P12 | hết hạn 250 run (đồng hồ giả +ttl) | int | 250 `expired`, task `closed/expired`, mỗi run đúng một sự kiện `run_end`; không gọi `postThread` trong vòng: `run_end.posted_at` còn NULL (`processLoops:false`, không có seam stub — TC17) |
+| PD-P13 | lô nhắc 100 | perf (lệnh perf P-d) | p95 ≤ 50 ms đo **cả lời gọi** `remindOnce` (gồm phát Redis) qua 20 lần; 10.000 task ≤ 6 s = tổng lời gọi liên tiếp tới khi trả 0 (A10, #82) |
+| PD-P14 | lô hết hạn 100 | perf | p95 ≤ 50 ms đo **cả lời gọi** `sweepOnce` (gồm Redis + các phần quét khác) qua 20 lần; 20.000 run ≤ 12 s = tổng lời gọi liên tiếp tới khi trả 0 |
+| PD-P15 | đếm truy vấn mỗi lô | int | nhắc ≤ 6 câu SQL/lô, hết hạn ≤ 6 câu/lô, không phụ thuộc số hàng; đo lô 10 và 99 (lô 100 kéo thêm lô rỗng sau A9), hết hạn tính phần chênh so với lượt rỗng (TC18); không tính `set_config` (TC16, ngân sách A10) |
+Đồng hồ giả (`d.now`), không chờ thời gian thật. Bài 10.000 chỉ trong lệnh perf (`PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test tests/acceptance/P-d/perf/`, #83), không trong `test:int`.
 ## 3. Kết quả T3 + T3a (qc, 2026-10-18) — "đỏ đúng lý do" trước code (thay test-plan §11)
 **T3a:** `P-a/_support/modules.ts` `tryLoad` nghiêm (file vắng ⇒ Proxy ném `module vắng: <rel>`; file có mà lỗi ⇒ ném lại kèm `cause`) + `loadAnyOf` (K29); `P-a/pf1/rules/gate.test.ts` dùng `loadAnyOf` (K27); helper mới `P-d/_support/modules.ts` (`loadDomain/loadUsecase/loadAdapter`), tự kiểm `P-d/rules/_support.test.ts` (6 xanh). Bộ unit `tests/acceptance` không đổi (1461 pass / 9 fail sẵn #191). Test khoá trỏ file dời: như test-plan §7 + **K30** (T8s, `run-access`); T18s/T19s 0 test nạp. Lưu ý thêm: `packages/db/src/hub-rls.int.test.ts` (không thuộc lock) liệt kê bảng RLS ⇒ backend-lead thêm `process_timers` ở T6.
 **T3** (`bun test` + `bun run test:int` trên DB riêng qc1…qc4): 420 ca (unit 321 · int 99) + perf 7; **8 xanh** (6 tự kiểm helper, ô đếm lưới PD-U01, PD-C15 "hợp lệ ⇒ []" — giữ luật sau code), còn lại đỏ đúng lý do; 0 lỗi cú pháp/`TypeError`/`PostgresError` ở fixture.
@@ -52,3 +52,23 @@ Ghi chú: `_rules2.ts:25` chỉ đổi đích loader; `loadAutofix` ở dòng 23
 | Perf PD-P01…P03, P13, P14 (`test:perf`) | `perf/{timers,remind,background}` | P01–P03 `needPdSchema`; P13 p95 441 ms, 10k sau 24,9 s chỉ 3.000; P14 p95 1.676 ms, 20k sau 48,5 s chỉ 2.700 |
 Quy ước đo (CR-093): PD-P12 kiểm "không postThread trong vòng" bằng `run_end.posted_at` còn NULL (`processLoops:false`, không có seam stub); PD-P15 đếm qua `debug` của pool postgres.js Hub (`d1/_count.ts`), không tính BEGIN/COMMIT/SAVEPOINT, `set_config('app.scope')`, `pg_type`; hết hạn tính phần chênh so với lượt rỗng; lô 10 và 99 (lô đúng 100 kéo thêm lô rỗng sau A9). Perf: lô = một lời gọi với đúng 100 hàng tới hạn, 20 lô; tải lớn dừng ở trần 4× ngân sách.
 **Tranh chấp / cần backend-lead chốt** (test đang theo mặc định ghi bên phải): (1) PD-I28 hậu tố khoá `:2` (test-plan-int) ↔ A7 Q9 (`n` đếm hẹn cùng kind) ⇒ test khẳng định `:1`; (2) def `pd-wait-field` cần `ttl_days:30` (ttl 7 ⇒ hạn 2026-11-17 quá `expires_at` ⇒ `timer_invalid`) — test-plan §2 thiếu; (3) PD-I42 audit không có cột `details` ⇒ chấp nhận `summary`/`after`, actor NULL; (4) PD-I39b plan §6 cho hai thứ tự ⇒ khẳng định "huỷ XOR bắn"; (5) PD-I39d/PD-P01 250/1.000 job một user — nếu launcher áp trần `maxConcurrentRuns` theo user sẽ thiếu job; (6) PD-I05 hai decision mở cùng run; (7) PD-I09 `permission_lost` không kiểm `retry_count`; (8) PD-U34 input `date` required vắng ⇒ `[]` (hành vi cũ IN-03), PD-U35 suy hành vi cũ từ contract; (9) `FORCE_USE_CURRENT`/`AUTOFIX_REASONS` Set hay mảng (test nhận cả hai); (10) A8 viết `escalateIssues` ↔ plan-domain `escalateStageIssues` (test theo plan-domain); (11) `processDefStageIssues` vắng `ctx`: test chỉ bỏ kiểm nguồn input, nguồn field vẫn kiểm; (12) `ProcessEditorContextSchema` nạp từ `@ai/contracts/hub-admin`; (13) UoW repo: `runs.lock`, `timers.lockById` trả null, `timers.markFired(id, now)`, `cancelForRun(runId,"all",now)`; (14) PD-P03 test-plan §9 "≤ 100/lượt" lỗi thời sau A9 ⇒ chỉ log; (15) PD-A01 gọi depcruise qua bin (`tools/scripts/src/depcruise.ts`), không qua API `cruise`; (16) PD-P15 có tính `set_config` hay không (A10 chưa nói) ⇒ không tính.
+
+**Mặc định đã áp (readiness lần 5, Luật 2b, 2026-10-18)** — test hiện tại đã theo đúng, không sửa `tests/**`:
+- TC1: PD-I28 khoá hậu tố `:1` (PD-R10) — đã sửa test-plan-int §3.
+- TC2: `pd-wait-field` có `ttl_days: 30` — đã ghi fixture ở test-plan-int §3.
+- TC3: PD-I42 audit `summary {from_group,to_group}`, `actor_id` NULL — test-plan-int §4, plan-addendum A11.
+- TC4: PD-I39b "huỷ XOR bắn" — test-plan-int §3, plan-addendum A11 (hàng thêm cho plan §6).
+- TC5: PD-I39d/PD-P01 không trần job theo user (`maxConcurrentRuns` vắng ⇒ không trần, `app.ts:109`); `startPd` không đặt.
+- TC6: PD-I05 cho phép hai decision mở cùng run, `view.decision` = cũ nhất (P-b2 PI-14, K05).
+- TC7: PD-I09 `permission_lost` không kiểm `retry_count` — test-plan-int §1.
+- TC8: PD-U34 `date` required vắng ⇒ `[]` (`start-inputs.ts` `shapeValid` chỉ kiểm giá trị gửi lên); PD-U35 theo hành vi cũ.
+- TC9: `FORCE_USE_CURRENT`/`AUTOFIX_REASONS` là `ReadonlySet` (`core/task.rules.ts:51`).
+- TC10: tên `escalateStageIssues` (= #74, đã sửa A8).
+- TC11: `processDefStageIssues` vắng `ctx` ⇒ bỏ kiểm nguồn input, vẫn kiểm nguồn field (plan-contract:79) — không phải tranh chấp.
+- TC12: `ProcessEditorContextSchema` từ `@ai/contracts/hub-admin` (`hub-admin/processes.ts`) — plan-addendum A11.
+- TC13: repo UoW `runs.lock(runId)`, `timers.lockById(id)` ⇒ `null`, `timers.markFired(id, now)`, `timers.cancelForRun(runId, "all", now)` — plan-addendum A11.
+- TC14: PD-P03 chỉ log ms/lượt (A9: một lượt xả nhiều lô) — test-plan-int §9.
+- TC15: PD-A01 gọi `tools/scripts/src/depcruise.ts` (= `bun run depcruise`).
+- TC16: PD-P15 không tính `set_config` — ngân sách 6 câu ghi ở plan-addendum A10.
+- TC17: PD-P12 đo bằng `run_end.posted_at` NULL — §2; test khoá `P-a/pf1/thread.int:490` gọi `postThread` tường minh nên vẫn xanh.
+- TC18: PD-P15 đo lô 10/99, hết hạn tính chênh so với lượt rỗng — §2.

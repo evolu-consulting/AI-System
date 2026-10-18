@@ -10,7 +10,7 @@ Phần của [`spec.md`](spec.md). Áp [ADR-0023](../../adr/0023-clean-architect
 | CA-R03 | Lớp 1–2 không import `@ai/contracts`/`@ai/db`/`zod` (kể cả `import type`). Hằng nghiệp vụ (`STAGE_RETRY_MAX`, `RETRY_BACKOFF_S`, `REMIND_MAX`, `WAIT_HORIZON_DAYS`, `TOOL_ARGS_MAX`, `BRANCH_RULES_MAX`, `FORWARD_CHAIN_MAX`…) **giữ trong contract** (FE, validate) **và** khai lại ở `P/domain/limits.ts` (file dời vào domain không được import contract, readiness #37); `DECISION_OPTION_ORDER` ở `P/domain/tasks/decision.rules.ts` (plan-addendum A6, không phải `DECISION_OPTIONS`); `P/adapters/processes.mapper.test.ts` khẳng định bằng nhau |
 | CA-R04 | Enum dùng chung (trạng thái stage/run, lý do quyết định, executor kind, luật def): domain khai union chuỗi riêng; mapper test khẳng định union domain = (hoặc ⊆, khi domain chỉ cần một phần) mảng contract |
 | CA-R05 | Domain không đọc giờ/DB/id: use case lấy `now` từ `Clock`, id từ `IdGen`, truyền giá trị vào hàm domain. Múi giờ: hàm domain nhận chuỗi IANA + ngày gốc, tính bằng `Intl.DateTimeFormat` (built-in) |
-| CA-R06 | Vòng nền: runner lớp 4 (`startProcessSweeper`, `lib/loop.ts`) → adapter đọc ứng viên scope `system` không khoá → mỗi hàng gọi use case trong `UnitOfWork.system(tenantId, …)`; repo trong scope `system` nhận `tenantId` **bắt buộc ở chữ ký** (PD-R11, S1) |
+| CA-R06 | Vòng nền: runner lớp 4 (`startProcessSweeper`, `lib/loop.ts`) → adapter đọc ứng viên scope `system` không khoá → mỗi hàng gọi use case trong `UnitOfWork.system(tenantId, …)`; repo trong scope `system` nhận `tenantId` **bắt buộc ở chữ ký** (PD-R11, S1). **Ngoại lệ CR-093 (readiness #81):** vòng nền **theo tập** (nhắc, chuyển cấp, hết hạn run) chạy một tx mỗi lô trong `UnitOfWork.systemBatch(fn)`; repo lô nhận/trả hàng mang `tenant_id`, mọi join/insert khớp `tenant_id` của hàng nguồn, khoá theo `(id, tenant_id)` — chi tiết [plan-addendum A11](plan-addendum.md) |
 | CA-R07 | `kick`, `process.updated`, notice, DM hệ thống: use case gọi port `Notifier`/`StageKicker` — adapter phát **sau COMMIT** |
 | CA-R08 | Lỗi luật def mới (`WAIT_INVALID`, `ESCALATE_INVALID`, `TOOL_INVALID`, `TOOL_SIDE_EFFECT`, `BRANCH_INVALID`): domain trả danh sách vi phạm (union chuỗi); adapter map ⇒ 422 `PROCESS_DEF_INVALID` + `rules[]`; `PROCESS_REF_INVALID` do adapter quyết sau khi repo tra tham chiếu |
 | CA-R09 | Phép đo không thuộc ECMAScript (cỡ byte kết quả tool — `TextEncoder`) làm ở adapter, truyền số vào domain |
@@ -51,7 +51,7 @@ Lớp 4: `P/processes.mount.ts` nối port → adapter; vòng hẹn giờ + vòn
 ## 4. Port (`P/application/ports.ts` + port theo nhóm)
 | Port | Dùng bởi | Adapter |
 |---|---|---|
-| `UnitOfWork` — `tenant(tenantId, fn)` / `system(tenantId, fn)`; `fn` nhận các repo đã gắn tx, **không** nhận `Tx` | mọi use case | `adapters/hub-uow.ts` bằng `withHubScope` (T6b; security review T6c) |
+| `UnitOfWork` — `tenant(tenantId, fn)` / `system(tenantId, fn)` / `systemBatch(fn)` (chỉ vòng nền theo tập, CR-093, plan-addendum A11); `fn` nhận các repo đã gắn tx, **không** nhận `Tx` | mọi use case | `adapters/hub-uow.ts` bằng `withHubScope` (T6b; security review T6c) |
 | `Clock` (`now(): Date`), `IdGen` | mọi use case | `systemClock` / `AppDeps.now`; `crypto.randomUUID`. `core/clock.ts` cũ dùng lại kiểu `Clock` này |
 | `Notifier`, `StageKicker` | thử lại, hẹn giờ, chuyển cấp, nhánh | NOTIFY/Redis + `kick` sẵn có, gọi sau COMMIT |
 | `Logger` | vòng nền | logger app |
@@ -86,5 +86,5 @@ Lớp 4: `P/processes.mount.ts` nối port → adapter; vòng hẹn giờ + vòn
 - **Python**: P-d chỉ thêm ca `#fake:` cho `fake-cli` (công cụ test) — ngoài lộ trình chuyển.
 
 ## 7. Bảo mật và kiểm
-- **T6c security review `UnitOfWork`** (hard stop tenant): scope `tenant` ⇒ `withHubScope(tenantId)`; scope `system` chỉ cho vòng nền, repo bắt buộc `tenantId`; không lộ `Tx` lên lớp 2; Notifier sau COMMIT; test 2 tenant (AC-H46) chạy qua use case thật.
+- **T6c security review `UnitOfWork`** (hard stop tenant): scope `tenant` ⇒ `withHubScope(tenantId)`; scope `system` chỉ cho vòng nền, repo bắt buộc `tenantId`; `systemBatch` (CR-093) chỉ vòng nền theo tập gọi, K3 lô (join/insert theo `tenant_id` hàng nguồn, khoá `(id, tenant_id)`) — plan-addendum A11; không lộ `Tx` lên lớp 2; Notifier sau COMMIT; test 2 tenant (AC-H46) chạy qua use case thật.
 - Lệnh kiểm mỗi task có file lớp 1–2: `bun run depcruise` (0 vi phạm `ca-*`), test lớp 1 chạy không DB, `adapters/processes.mapper.test.ts` xanh.

@@ -125,3 +125,11 @@ Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [pla
 - **ADR-0017 Accepted (2026-10-17, người dùng chốt sau staging N=10.000, Redis thật):** phương án (a); điều kiện sửa TECH-DEBT #190 (nhắc trùng nhiều Hub) ở T9 kèm int test hai Hub. ADR đã sửa câu `attempt_limit` theo D3. Điều kiện Gate D0a đóng.
 - **Mockup (D13):** người dùng **duyệt** mockup/01–04 ngày 2026-10-17 (điều kiện Gate số 2 đạt).
 - **CR-093 (2026-10-17, người dùng chốt):** vòng nền nhắc/hết hạn xử lý theo tập; NFR lô 100 p95 ≤ 50 ms, 10.000 nhắc ≤ 6 s, 20.000 hết hạn ≤ 12 s ⇒ `plan-addendum` A10, `test-plan-addendum` §2 (PD-P10…P15), T9/T10.
+
+## Trả lời readiness lần 5 (Luật 2b, 2026-10-17)
+Không hỏi người dùng: mọi mục có mặc định (CR-093 người dùng chốt, mới hơn spec-ca). Đã áp:
+- **#81 (Cao):** port `UnitOfWork.systemBatch(fn)` chỉ cho vòng nền theo tập; repo lô mang `tenant_id` (`claimDueReminders`, `markRemindedMany`, `claimDueEscalations`, `NoticeWriter.insertMany`, `RunRepo.claimExpired`, `Notifier.runsFinished(ids)` không `Tx`); K3 lô; test 2 tenant qua use case thật (AC-H46); T6c review cả `systemBatch` ⇒ plan-addendum A11, A10, spec-ca CA-R06/§4/§7, tasks T6b/T6c.
+- **#82 (Cao):** NFR đo cả lời gọi `remindOnce`/`sweepOnce` (gồm Redis, các phần quét khác); 10.000/20.000 = tổng lời gọi liên tiếp tới khi xả hết ⇒ plan-addendum A10, test-plan-addendum §2.
+- **#83:** CR-093 đưa lệnh perf P-d `PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test tests/acceptance/P-d/perf/` vào **Lệnh xong T9/T10** — ngoại lệ của câu CLAUDE.md "`test:perf` không thuộc Lệnh xong" (CLAUDE.md không sửa) ⇒ tasks T9/T10, A10.
+- **#84** index `unread` dùng `process_notices_unread_idx` (0019), không DDL ⇒ A10, plan-db §5 · **#85** cột Đọc T9/T10 thêm A9–A11 · **#86** ADR-0017 "T7" ⇒ "T10" · **#87** `remindOnce` = một lượt xả nhiều lô, trả tổng ⇒ A9 · **#88** chuyển cấp theo tập; lịch nhắc tính bằng luật lớp 1 rồi `update … from unnest` ⇒ A10 · **#89** T6 thêm `process_timers` vào `packages/db/src/hub-rls.int.test.ts` (cột File) · #74 sửa A8.
+- **TC1–TC18:** mặc định ghi ở test-plan-addendum §3; test-plan-int sửa TC1, TC2 (fixture), TC3, TC4, TC7, TC14. Không sửa `tests/**`.

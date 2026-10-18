@@ -132,6 +132,7 @@ GRANT: `ALTER DEFAULT PRIVILEGES` của 0000 (admin_rw SELECT/INSERT/UPDATE/DELE
 | Đếm trần | `process_runs_active_idx` (0019) | predicate = `PROCESS_RUN_CAP_COUNTED` |
 | Nhắc (cũ + lặp) | `review_tasks_remind_due_idx` | `LIMIT 100` |
 | Chuyển cấp | `review_tasks_escalate_idx` | `LIMIT 100` |
+| `unread` theo lô (CR-093, plan-addendum A10) | `process_notices_unread_idx (user_id) WHERE read_at IS NULL` (0019, sẵn có) | không thêm DDL (readiness #84) |
 | "Đã gửi side_effect" | `runs_process_run_idx` + `run_steps (run_id)` sẵn có | ≤ 4 run × vài bước |
 | Công tắc tool (Hub) | PK `(workflow_id, tenant_id)` | đọc trực tiếp, không cache (B5) |
 

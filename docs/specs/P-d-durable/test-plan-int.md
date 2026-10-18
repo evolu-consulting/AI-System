@@ -13,7 +13,7 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 | PD-I06 | `pd-real` tới stage 2 (`real_action`, Đạt gate); SQL chèn `hub.run_steps(type='tool', workflow_id=ghi-so, status='ok')` cho hub.run hiện tại; `rt.fail TIMEOUT` | `needs_decision` **`job_timeout`**; 0 hàng hẹn `retry`; `count(run_steps type in ('tool','workflow') of stage)` = 1 (tool gọi đúng 1 lần) |
 | PD-I07 | như I06, `run_steps.status='skipped'` | thử lại (hẹn retry) |
 | PD-I08 | như I06, workflow `side_effect=false` | thử lại |
-| PD-I09 | lỗi nghiệp vụ, mỗi ca 1 run: `NOT_CONFIGURED`+`credential`; `UPSTREAM_ERROR`+`refused`; `ALL_PROVIDERS_EXHAUSTED`+`quota`; `INTERNAL_ERROR` reason null ("mã lạ" ⇒ nghiệp vụ, A2); output thiếu `## Tổng tiền` (`MD_MISSING`) ; thu hồi grant A trước khi bắn hẹn retry (mất quyền) | `needs_decision` ngay: `agent_failed` × 4 ca đầu, `template_invalid` (luật P-a giữ), `permission_lost`; `retry_count` 0; 0 hẹn `retry` |
+| PD-I09 | lỗi nghiệp vụ, mỗi ca 1 run: `NOT_CONFIGURED`+`credential`; `UPSTREAM_ERROR`+`refused`; `ALL_PROVIDERS_EXHAUSTED`+`quota`; `INTERNAL_ERROR` reason null ("mã lạ" ⇒ nghiệp vụ, A2); output thiếu `## Tổng tiền` (`MD_MISSING`) ; thu hồi grant A trước khi bắn hẹn retry (mất quyền) | `needs_decision` ngay: `agent_failed` × 4 ca đầu, `template_invalid` (luật P-a giữ), `permission_lost`; `retry_count` 0 (trừ `permission_lost`, TC7); 0 hẹn `retry` |
 
 ## 2. Thử lại stage team — `d1/team-retry.int.test.ts` (AC-H39 · PD-R08 · Q1, plan §4.3)
 | Ca | Bước | Kỳ vọng |
@@ -26,6 +26,9 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 | PD-I15 | m2 `NOT_CONFIGURED`+`credential` | `needs_decision` ngay (TM-08), `retry_count` 0 |
 
 ## 3. Hẹn giờ `wait_until` — `d1/wait.int.test.ts`, `d1/cap.int.test.ts`, `d1/cancel-timers.int.test.ts`, `d1/race.int.test.ts` (AC-H41 · HUB-FR-144 · HUB-BR-42 · TZ-R04)
+
+Fixture (TC2, thêm test-plan §2): `pd-wait-field` có `ttl_days: 30`; chỉ PD-I26 (b) dùng ttl 7.
+
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
 | PD-I20 | acme (mặc định HCM), clock 2026-11-01; `pd-wait-field`: s0 `jobDone` output fields `{ngay_het_han:"2026-11-20"}` | stage s1 `waiting_timer` + `started_at`; run `waiting_timer`; 0 `hub.runs`/job cho s1; hẹn `wait_until` `due_at` = `2026-11-17T02:00:00Z`, `timezone` `Asia/Ho_Chi_Minh`, khoá `^wait_until:<sr>:\d+:\d+:1$`; view `stages[1].wait = {due_at:"2026-11-17T02:00:00.000Z", timezone:"Asia/Ho_Chi_Minh"}`; executor ref `{kind:"wait_until",key:"wait_until",name:{vi:"Chờ tới ngày",en:"Wait until date"}}` |
@@ -36,7 +39,7 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 | PD-I25 | trước hạn 1 phút `sweep` × 2 | không đổi gì |
 | PD-I26 | `timer_invalid`, mỗi ca 1 run: (a) fields không có `ngay_het_han`; (b) def ttl 7, ngày +30 ngày (quá `expires_at`); (c) def `ttl_days:null`, ngày now+800 ngày | run + stage `needs_decision` `timer_invalid`; 0 hẹn; options `["add_attempt","use_current","cancel"]` |
 | PD-I27 | (a) ⇒ A `decide use_current` | s1 `done`, output .md `"# <tên s1>\n\nBỏ chờ theo quyết định.\n\n## Bàn giao\nBỏ chờ theo quyết định.\n"`; s2 job; người quyết = như `agent_failed` (A, Adm ⇒ 200; B ⇒ 403/404 như P-a) |
-| PD-I28 | (a) ⇒ Adm `decide add_attempt` sau khi sửa output s0 (SQL thêm field) | s1 tính lại ngày ⇒ 1 hẹn `wait_until` mới, khoá hậu tố `:2` (đếm dưới khoá run, attempt giữ), không 23505 (readiness #9) |
+| PD-I28 | (a) ⇒ Adm `decide add_attempt` sau khi sửa output s0 (SQL thêm field) | s1 tính lại ngày ⇒ 1 hẹn `wait_until` mới, khoá hậu tố `:1` (PD-R10, TC1; đếm dưới khoá run, attempt giữ), không 23505 (readiness #9) |
 | PD-I29 | fields `ngay_het_han` = ngày hôm qua (dueAt ≤ now) | hàng hẹn vẫn ghi; `sweep` kế ⇒ s1 `done` (D-PD09) |
 | PD-I30 | `cap.int`: SQL 4 run `running` + 1 `waiting_timer` acme ⇒ A start | 201 |
 | PD-I31 | 5 `running` + 1 `waiting_timer` ⇒ A start | 429 + `Retry-After` như P1-07 |
@@ -47,14 +50,14 @@ Hạ tầng: `P-d/_support/pd.ts` — `startPd(o)` = `startPf1({ now: clk.now, .
 | PD-I36 | lưu def `wait_until` hợp lệ có `output.template` tuỳ ý, `answerer`, `token_budget` | `GET` def: `required_sections=["Bàn giao"]`, template `"# {name}\n\n## Bàn giao\n"`, `fields=[]`, `answerer={kind:"starter"}`, `token_budget=null`, `timeout_s` = mặc định 600 (`STAGE_TIMEOUT_S.default`; gửi 1800 ⇒ vẫn 600; plan-addendum A3) |
 | PD-I37 | `cancel-timers.int`: run `waiting_timer` ⇒ A huỷ run; advance qua hạn, `sweep` | hẹn `cancelled_at` đặt (cùng tx huỷ), `fired_at` NULL, 0 output s1 |
 | PD-I38 | hẹn `retry` mở ⇒ Adm huỷ run; `sweep` sau hạn | `cancelled_at`; 0 job mới; run `cancelled` không hồi sinh |
-| PD-I39 | `race.int`: (a) `sweep` ∥ `POST cancel` cùng lúc trên hẹn tới hạn (×10 lặp); (b) quay lại bước ∥ bắn `wait_until`; (c) job lỗi muộn khi stage đã `waiting_timer` | (a) hoặc `cancelled_at` hoặc (`fired_at` + stage `queued` rồi `cancelled`) — không bao giờ cả hai, run cuối `cancelled`; (b) hẹn huỷ, 0 output; (c) không đổi stage, không hẹn thứ hai (plan §6) |
+| PD-I39 | `race.int`: (a) `sweep` ∥ `POST cancel` cùng lúc trên hẹn tới hạn (×10 lặp); (b) quay lại bước ∥ bắn `wait_until`; (c) job lỗi muộn khi stage đã `waiting_timer` | (a) hoặc `cancelled_at` hoặc (`fired_at` + stage `queued` rồi `cancelled`) — không bao giờ cả hai, run cuối `cancelled`; (b) huỷ XOR bắn (TC4, A11); (c) không đổi stage, không hẹn thứ hai (plan §6) |
 
 ## 4. Nhắc lặp + chuyển cấp — `d1/remind.int.test.ts` (AC-H42 · HUB-FR-145 · HUB-BR-43/25/26)
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
 | PD-I40 | `pd-remind`: s0 xong ⇒ task review G1 tạo lúc T0 | `review_tasks`: `remind_every_h` 4, `remind_at` T0+4 h, `remind_count` 0, `escalate_at` T0+24 h, `escalate_group_id` G2, `escalated_at` NULL |
 | PD-I41 | `remind` tại T0+3 h59; T0+4 h; T0+8 h; … tới T0+44 h | T0+3h59: 0 notice; mỗi mốc 4 h: đúng 1 notice `reminder`/assignee (B, T; sau T0+24 h thêm H); `remind_count` 1…10; sau 10 lần (T0+40 h) ⇒ T0+44 h không notice; task vẫn `open`, run `waiting_review` |
-| PD-I42 | `remind` tại T0+24 h (và lặp lại lần 2) | `review_task_assignees` thêm 1 hàng `group_id` G2, `via='escalated'`, `tenant_id` acme; `escalated_at` = T0+24 h; notice `escalated` cho H (payload `process_name`, `stage_name`); DM hệ thống "Quy trình" cho H; audit `escalate` entity `review_task`, actor hệ thống, `details {from_group:G1,to_group:G2}`; lần 2: không thêm assignee/audit/notice |
+| PD-I42 | `remind` tại T0+24 h (và lặp lại lần 2) | `review_task_assignees` thêm 1 hàng `group_id` G2, `via='escalated'`, `tenant_id` acme; `escalated_at` = T0+24 h; notice `escalated` cho H (payload `process_name`, `stage_name`); DM hệ thống "Quy trình" cho H; audit `escalate` entity `review_task`, `actor_id` NULL, `summary {from_group:G1,to_group:G2}` (TC3); lần 2: không thêm assignee/audit/notice |
 | PD-I43 | sau I42: B `review pass` | 200, task `closed`; ca song song: H `review pass` (run khác) ⇒ 200 |
 | PD-I44 | sau I42, không ai duyệt, advance T0+100 h, `remind`/`sweep` | task vẫn `open` (không tự Đạt/Chưa đạt) |
 | PD-I45 | H (ngoài phòng) `GET /process-runs/:id` | `access:"task"`, không `inputs`/history; audit `view` (HUB-BR-25); `TaskDetail.escalated:true`, `remind_count` |
@@ -117,5 +120,5 @@ Fixture `two-tenant.ts`: acme và beta **đối xứng** — mỗi tenant 1 run 
 |---|---|---|
 | PD-P01 | 1.000 hẹn `retry` tới hạn (500 acme + 500 beta, SQL fixture run/stage `waiting_timer`) ⇒ `sweep` lặp tới hết | mỗi lượt ≤ 100 (`TIMER_SWEEP_BATCH`), 10 lượt; 1.000 `fired_at`, 1.000 job, 0 trùng; báo ms/lượt p50/p95 |
 | PD-P02 | như P01 với 2 hub quét song song | 1.000 bắn đúng 1 lần |
-| PD-P03 | 1.000 task review `remind_every_h:4` tới hạn ⇒ `remind` lặp | ≤ 100/lượt; 1.000 `remind_count`=1; notice đúng số assignee; báo ms/lượt |
+| PD-P03 | 1.000 task review `remind_every_h:4` tới hạn ⇒ `remind` lặp | một lượt xả nhiều lô, log (A9, TC14); 1.000 `remind_count`=1; notice đúng số assignee; báo ms/lượt |
 Ca chức năng nhỏ (thuộc Lệnh xong): PD-I24/I62 (song song) + **PD-I39d** trong `race.int`: 250 hẹn `retry` tới hạn, 2 hub quét song song ⇒ 3 lượt mỗi hub ⇒ 250 `fired_at`, 250 job, 0 trùng.

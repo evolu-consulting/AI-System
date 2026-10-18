@@ -38,7 +38,7 @@ Môi trường: Windows, PostgreSQL 16.15 portable, fakeredis 2.40 (Redis giả 
 | `sweepOnce` với 20.000 run đang chạy | **Đạt**: 19,8 ms |
 | Hết hạn 20.000 run | **Đạt** (đủ 20.000): 201 lượt, p95 2,99 s/lượt, tổng 7 phút 05 s |
 
-Nhận xét staging: tải 10× không làm vòng nền chậm theo cấp số (nhắc p95 ~1 s/lô 100, sweep vẫn ~20 ms); không mất run, không kẹt. Điểm yếu duy nhất là **chạy nhiều Hub** (#190) — lỗi khoá hàng, sửa trong (a) bằng `FOR UPDATE SKIP LOCKED` + kiểm `rowCount` ở `markReminded`, không phải lý do chuyển (b). Hết hạn lô 100 mất ~2–3 s/lượt: chấp nhận cho vòng nền; nếu cần nhanh hơn thì tăng lô hoặc cập nhật theo tập (ghi khi build T7).
+Nhận xét staging: tải 10× không làm vòng nền chậm theo cấp số (nhắc p95 ~1 s/lô 100, sweep vẫn ~20 ms); không mất run, không kẹt. Điểm yếu duy nhất là **chạy nhiều Hub** (#190) — lỗi khoá hàng, sửa trong (a) bằng `FOR UPDATE SKIP LOCKED` + kiểm `rowCount` ở `markReminded`, không phải lý do chuyển (b). Hết hạn lô 100 mất ~2–3 s/lượt: chấp nhận cho vòng nền; nếu cần nhanh hơn thì tăng lô hoặc cập nhật theo tập (ghi khi build T10 — đã chốt cập nhật theo tập, CR-093, plan-addendum A10).
 
 Nhận xét: nền chạy bền **đã đúng** ở những chỗ khó (vòng nền đọc DB nên an toàn khi khởi động lại, start không trùng, snapshot theo version, tải 1.000 task ổn). Các bài đỏ là **thiếu tính năng cho flow dài ngày**, không phải lỗi mất dữ liệu.
 
