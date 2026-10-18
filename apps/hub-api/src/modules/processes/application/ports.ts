@@ -125,8 +125,11 @@ export type ClaimedReminder = {
   remindEveryH: number | null;
   remindCount: number;
 };
-/** `more`: còn hàng tới hạn ngoài lô ⇒ lượt xả chạy tiếp (không mở tx rỗng để biết đã hết). */
-export type ReminderBatch = { tasks: ClaimedReminder[]; more: boolean };
+/**
+ * `more`: còn hàng tới hạn ngoài lô ⇒ lượt xả chạy tiếp (không mở tx rỗng để biết đã hết). `claimed`: số task đã khoá kể
+ * cả task bị bỏ vì run đang bị tx khác giữ (T12 #1) — điều kiện "lô đầy" dùng số này để không dừng xả sớm.
+ */
+export type ReminderBatch = { tasks: ClaimedReminder[]; claimed: number; more: boolean };
 /** Mốc nhắc kế (lớp 1 `nextRemind`; nhắc cũ giữ nguyên `remindAt`/`remindCount`). */
 export type ReminderMark = {
   taskId: string;
@@ -146,7 +149,8 @@ export type ClaimedEscalation = {
   stageName: string | null;
   memberIds: string[];
 };
-export type EscalationBatch = { tasks: ClaimedEscalation[]; more: boolean };
+/** Như `ReminderBatch`: `claimed` gồm task bị bỏ vì run đang bị giữ. */
+export type EscalationBatch = { tasks: ClaimedEscalation[]; claimed: number; more: boolean };
 export type EscalatedAssigneeRow = { tenantId: string; taskId: string; groupId: string };
 export type EscalateAuditRow = {
   tenantId: string;

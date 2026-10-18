@@ -2,6 +2,13 @@
 // chuyển cấp (chỉ `systemBatch`). Mỗi hàm = MỘT câu SQL văn bản cố định; dữ liệu lô qua MỘT tham số JSON
 // (`jsonb_to_recordset`) — không `unnest`-join bảng lớn, không lặp theo hàng. Khoá `FOR UPDATE SKIP LOCKED` theo
 // `(id, tenant_id)`; mọi join/insert khớp `tenant_id` của hàng nguồn. Chỉ làm việc DB; người gọi phát sự kiện SAU COMMIT.
+// Review T12 #1 (khoá đồng thời với cổng duyệt `lockRun` FOR UPDATE → `closeTask`): câu claim khoá task (`c0`, SKIP LOCKED)
+// rồi run cha (`r`: `id = any(array(…))` theo PK, khớp `tenant_id`, FOR KEY SHARE SKIP LOCKED) và CHỈ trả/ghi task có run
+// giữ được; task có run đang bị tx khác giữ bị bỏ (khoá task nhả lúc COMMIT, lô sau nhận). Không deadlock: lô không bao giờ
+// CHỜ khoá nào — task và run đều SKIP LOCKED, các câu sau (FK `process_notices` → run, FK assignee → task) chỉ chạm hàng
+// đã giữ ⇒ lô không thể nằm trong chu trình chờ; người duyệt chờ task tối đa một lô. `claimed` = số task đã khoá (kể cả bị
+// bỏ) để điều kiện "lô đầy" không dừng xả sớm. Không join run trước `limit` (join theo thống kê cũ chạy cho MỌI hàng tới hạn
+// ⇒ PD-P13 10.000 task 4,2 s → 5,6–10,7 s).
 // Dời nguyên từ `notify/batch.repo.ts` (T9) + thêm nhắc lặp / chuyển cấp.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -25,7 +32,8 @@ const remindDue = (alias: string, now: Date) => sql`${sql.raw(alias)}.status = '
   and ${sql.raw(alias)}.remind_at <= ${iso(now)}::timestamptz`;
 
 type ReminderRow = {
-  id: string;
+  claimed: number | string;
+  id: string | null;
   tenant_id: string;
   process_run_id: string;
   group_id: string | null;
@@ -50,7 +58,7 @@ type ReminderRow = {
  */
 export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promise<ReminderBatch> {
   const q = sql`
-    with c as (
+    with c0 as (
       select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, t.assignee_group_id, t.remind_at, t.reminded_at,
         t.remind_every_h, t.remind_count, t.escalate_group_id, t.escalated_at
       from hub.review_tasks t
@@ -58,8 +66,14 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
       order by t.remind_at asc, t.id asc
       limit ${limit}
       for update of t skip locked
+    ), r as (
+      select pr.id, pr.tenant_id from hub.process_runs pr
+      where pr.id = any(array(select process_run_id from c0)) and pr.tenant_id = any(array(select tenant_id from c0))
+      for key share skip locked
+    ), c as (
+      select c0.* from c0 join r on r.id = c0.process_run_id and r.tenant_id = c0.tenant_id
     )
-    select c.id, c.tenant_id, c.process_run_id, c.assignee_group_id as group_id, c.remind_at, c.reminded_at,
+    select n.claimed, c.id, c.tenant_id, c.process_run_id, c.assignee_group_id as group_id, c.remind_at, c.reminded_at,
       c.remind_every_h::int as remind_every_h, c.remind_count::int as remind_count,
       pr.snapshot->>'name' as process_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
@@ -70,11 +84,14 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
           case when c.escalated_at is not null then c.escalate_group_id end])) as member_ids,
       exists (select 1 from hub.review_tasks t2
         where ${remindDue("t2", now)} and not exists (select 1 from c where c.id = t2.id)) as more
-    from c
+    from (select count(*)::int as claimed from c0) n
+    left join c on true
     left join hub.stage_runs s on s.id = c.stage_run_id and s.tenant_id = c.tenant_id
     left join hub.process_runs pr on pr.id = c.process_run_id and pr.tenant_id = c.tenant_id
     order by c.remind_at asc, c.id asc`;
-  const rows = await tx.execute<ReminderRow>(q);
+  const all = await tx.execute<ReminderRow>(q);
+  // Luôn ≥ 1 hàng (`claimed`); hàng `id` null = không còn task nào sau khi bỏ task có run đang bị giữ.
+  const rows = all.filter((r): r is ReminderRow & { id: string } => r.id !== null);
   const tasks: ClaimedReminder[] = rows.map((r) => ({
     taskId: r.id,
     tenantId: r.tenant_id,
@@ -89,7 +106,7 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
     remindEveryH: r.remind_every_h === null ? null : Number(r.remind_every_h),
     remindCount: Number(r.remind_count),
   }));
-  return { tasks, more: rows[0]?.more === true };
+  return { tasks, claimed: Number(all[0]?.claimed ?? 0), more: all[0]?.more === true };
 }
 
 /**
@@ -126,7 +143,8 @@ export async function markRemindedMany(
 }
 
 type EscalationRow = {
-  id: string;
+  claimed: number | string;
+  id: string | null;
   tenant_id: string;
   process_run_id: string;
   from_group_id: string | null;
@@ -147,21 +165,27 @@ export async function claimDueEscalations(
   now: Date,
   limit: number,
 ): Promise<EscalationBatch> {
-  const rows = await tx.execute<EscalationRow>(sql`
-    with c as (
-      select t.id, t.tenant_id from hub.review_tasks t
+  const all = await tx.execute<EscalationRow>(sql`
+    with c0 as (
+      select t.id, t.tenant_id, t.process_run_id from hub.review_tasks t
       where t.status = 'open' and t.escalated_at is null and t.escalate_at is not null
         and t.escalate_at <= ${iso(now)}::timestamptz and t.kind = 'review'
       order by t.escalate_at asc, t.id asc
       limit ${limit}
       for update of t skip locked
+    ), r as (
+      select pr.id, pr.tenant_id from hub.process_runs pr
+      where pr.id = any(array(select process_run_id from c0)) and pr.tenant_id = any(array(select tenant_id from c0))
+      for key share skip locked
+    ), c as (
+      select c0.id, c0.tenant_id from c0 join r on r.id = c0.process_run_id and r.tenant_id = c0.tenant_id
     ), u as (
       update hub.review_tasks t set escalated_at = ${iso(now)}::timestamptz
       from c where t.id = c.id and t.tenant_id = c.tenant_id
       returning t.id, t.tenant_id, t.process_run_id, t.stage_run_id, t.assignee_group_id, t.escalate_group_id,
         t.escalate_at
     )
-    select u.id, u.tenant_id, u.process_run_id, u.assignee_group_id as from_group_id,
+    select n.claimed, u.id, u.tenant_id, u.process_run_id, u.assignee_group_id as from_group_id,
       u.escalate_group_id as to_group_id, g.tenant_id as group_tenant_id,
       pr.snapshot->>'name' as process_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
@@ -171,11 +195,13 @@ export async function claimDueEscalations(
         where t2.status = 'open' and t2.escalated_at is null and t2.escalate_at is not null
           and t2.escalate_at <= ${iso(now)}::timestamptz and t2.kind = 'review'
           and not exists (select 1 from c where c.id = t2.id)) as more
-    from u
+    from (select count(*)::int as claimed from c0) n
+    left join u on true
     left join admin.groups g on g.id = u.escalate_group_id and g.tenant_id = u.tenant_id
     left join hub.stage_runs s on s.id = u.stage_run_id and s.tenant_id = u.tenant_id
     left join hub.process_runs pr on pr.id = u.process_run_id and pr.tenant_id = u.tenant_id
     order by u.escalate_at asc, u.id asc`);
+  const rows = all.filter((r): r is EscalationRow & { id: string } => r.id !== null);
   const tasks: ClaimedEscalation[] = rows.map((r) => ({
     taskId: r.id,
     tenantId: r.tenant_id,
@@ -187,7 +213,7 @@ export async function claimDueEscalations(
     stageName: r.stage_name,
     memberIds: r.member_ids ?? [],
   }));
-  return { tasks, more: rows[0]?.more === true };
+  return { tasks, claimed: Number(all[0]?.claimed ?? 0), more: all[0]?.more === true };
 }
 
 /** MỘT câu nhiều hàng: assignee Group `via='escalated'`; `tenant_id` = task nguồn, Group phải cùng tenant (K3/K4). */

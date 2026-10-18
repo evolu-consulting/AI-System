@@ -39,7 +39,7 @@ describe("A11 · systemBatch", () => {
       return { reminders, expired, inserted: notices.inserted.length };
     });
     expect(out).toEqual({
-      reminders: { tasks: [], more: false },
+      reminders: { tasks: [], claimed: 0, more: false },
       expired: { runs: [], more: false },
       inserted: 0,
     });

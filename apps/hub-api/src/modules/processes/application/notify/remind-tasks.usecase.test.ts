@@ -56,7 +56,7 @@ function fake(reminders: ClaimedReminder[], escalations: ClaimedEscalation[]) {
     reviewTasks: {
       claimDueReminders: async () => {
         calls.push("claim");
-        return { tasks: reminders, more: false };
+        return { tasks: reminders, claimed: reminders.length, more: false };
       },
       markRemindedMany: async (rows: readonly ReminderMark[]) => {
         calls.push("mark");
@@ -64,7 +64,7 @@ function fake(reminders: ClaimedReminder[], escalations: ClaimedEscalation[]) {
       },
       claimDueEscalations: async () => {
         calls.push("esc");
-        return { tasks: escalations, more: false };
+        return { tasks: escalations, claimed: escalations.length, more: false };
       },
       addEscalatedGroups: async (rows: readonly EscalatedAssigneeRow[]) => {
         calls.push("add");
@@ -124,6 +124,23 @@ describe("remindTasks (A10 · ≤ 3 câu nhắc / lô)", () => {
       [B, "u1"],
       [B, "u2"],
     ]);
+  });
+
+  it("HUB-FR-145 · T12 #1 · lô khoá đủ 100 nhưng bỏ task có run đang bị giữ (99 trả về) ⇒ vẫn xả lô kế", async () => {
+    const f = fake([], []);
+    const batches = [
+      { tasks: Array.from({ length: 99 }, (_, i) => rem(`t${i}`)), claimed: 100, more: true },
+      { tasks: [rem("held")], claimed: 1, more: false },
+    ];
+    const sysUow = {
+      systemBatch: (fn: (x: BatchRepos) => Promise<unknown>) =>
+        f.sysUow.systemBatch((r) => {
+          const rt = { ...r.reviewTasks, claimDueReminders: async () => batches.shift() };
+          return fn({ ...r, reviewTasks: rt } as BatchRepos);
+        }),
+    } as unknown as SystemUow;
+    expect(await remindTasks({ sysUow, now: () => NOW, elapsedMs: () => 0 })).toBe(100);
+    expect(batches).toEqual([]);
   });
 
   it("HUB-FR-145 · PD-R18 · lặp đã đủ 10 lần ⇒ không nhắc", async () => {

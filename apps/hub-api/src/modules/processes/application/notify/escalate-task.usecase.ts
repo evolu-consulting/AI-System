@@ -16,8 +16,10 @@ export async function escalateBatch(
   now: Date,
   limit: number,
 ): Promise<{ n: number; more: boolean }> {
-  const { tasks, more } = await r.reviewTasks.claimDueEscalations(limit, now);
-  if (tasks.length === 0) return { n: 0, more: false };
+  const { tasks, claimed, more } = await r.reviewTasks.claimDueEscalations(limit, now);
+  // Lô đầy tính theo số đã khoá (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm.
+  const full = more && claimed >= limit;
+  if (tasks.length === 0) return { n: 0, more: full };
   const add: EscalatedAssigneeRow[] = [];
   const audits: EscalateAuditRow[] = [];
   const notices: NoticeMetaRow[] = [];
@@ -36,7 +38,7 @@ export async function escalateBatch(
   if (add.length > 0) await r.reviewTasks.addEscalatedGroups(add);
   await r.reviewTasks.auditEscalations(audits);
   if (notices.length > 0) await r.notices.notifyMany("escalated", notices);
-  return { n: add.length, more: more && tasks.length >= limit };
+  return { n: add.length, more: full };
 }
 
 function auditOf(t: ClaimedEscalation, action: EscalateAuditRow["action"]): EscalateAuditRow {

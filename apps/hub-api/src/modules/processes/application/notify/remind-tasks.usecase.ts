@@ -32,14 +32,15 @@ async function remindBatch(
   now: Date,
   limit: number,
 ): Promise<{ n: number; more: boolean }> {
-  const { tasks, more } = await r.reviewTasks.claimDueReminders(limit, now);
+  const { tasks, claimed, more } = await r.reviewTasks.claimDueReminders(limit, now);
   const due = tasks.filter((t) => dueReminder({ ...t, status: "open" }, now));
   if (due.length > 0) {
     await r.reviewTasks.markRemindedMany(due.map(markOf), now);
     await r.notices.notifyMany("reminder", due.flatMap(noticeRows));
   }
   const esc = await escalateBatch(r, now, limit);
-  return { n: due.length, more: (more && tasks.length >= limit) || esc.more };
+  // Lô đầy tính theo `claimed` (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm.
+  return { n: due.length, more: (more && claimed >= limit) || esc.more };
 }
 
 /** Lặp ⇒ `nextRemind`; cũ ⇒ giữ `remindAt`/`remindCount` (chỉ đặt `reminded_at`). */
