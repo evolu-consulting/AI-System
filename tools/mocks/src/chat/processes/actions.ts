@@ -1,6 +1,6 @@
 // HUB-FR-106…111 · CR-056 · hành động mock trên run/task (dùng chung cho seed, route, `/__mock/process`). Luật rút gọn
 // theo plan-contract §3 — đủ cho FE dựng giao diện; luật thật ở `modules/processes` (PF1–PF3).
-import type { DecisionOption, DecisionReason, OutputRef } from "@ai/contracts/chat";
+import type { DecisionOption, DecisionReason, ExecutorRef, OutputRef } from "@ai/contracts/chat";
 import { DECISION_OPTIONS } from "@ai/contracts/chat";
 import { genId, PA_FIX, PERSONA } from "./fixtures";
 import { ASK_LIMIT, type MockRun, type MockTask, type ProcessState, userRef } from "./state";
@@ -56,7 +56,7 @@ export function addOutput(s: ProcessState, r: MockRun): OutputRef {
 }
 
 /** Nhóm: 1 bước plan + 3 thành viên (fixture usage `done`). */
-function steps(kind: "agent" | "team" | "apply") {
+function steps(kind: ExecutorRef["kind"]) {
   const one = (role: "agent" | "plan" | "member", key: string, member: string | null) => ({
     role,
     member_key: member,
@@ -65,7 +65,8 @@ function steps(kind: "agent" | "team" | "apply") {
     ms: 1200,
     tokens: 900,
   });
-  if (kind === "apply") return []; // P-c2 · stage Áp: Hub tự chạy, không bước agent.
+  // P-c2 · stage Áp / P-d1 · stage `wait_until`: Hub tự chạy, không bước agent.
+  if (kind === "apply" || kind === "wait_until") return [];
   if (kind === "agent") return [one("agent", "hd-read", null)];
   return [
     one("plan", "lead", null),

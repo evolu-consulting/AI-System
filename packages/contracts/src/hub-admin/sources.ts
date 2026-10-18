@@ -59,7 +59,8 @@ export const DEF_INPUTS_MAX = 10;
 export const INPUT_LABEL_MAX = 80;
 export const INPUT_OPTIONS_MAX = 20;
 export const INPUT_OPTION_LEN = 200;
-export const INPUT_TYPES = ["text", "select", "file", "source_ref"] as const;
+/** P-d1 thêm `date` (cuối) — nguồn ngày của stage `wait_until` (PD-R13). */
+export const INPUT_TYPES = ["text", "select", "file", "source_ref", "date"] as const;
 
 /** HUB-FR-124 · khai báo đầu vào quy trình; `options` chỉ cho `select`. */
 export const ProcessInputDefSchema = z
@@ -94,6 +95,12 @@ export const ProcessInputValueSchema = z.discriminatedUnion("type", [
     key: SourceKeySchema,
     source_key: SourceKeySchema,
     branch: BranchSchema,
+  }),
+  /** P-d1 · chỉ hình dạng ở zod; ngày lịch thật kiểm ở luật domain lúc bắt đầu ⇒ 400 `inputs.<i>.value`. */
+  z.strictObject({
+    type: z.literal("date"),
+    key: SourceKeySchema,
+    value: z.string().min(1).max(10),
   }),
 ]);
 export type ProcessInputValue = z.infer<typeof ProcessInputValueSchema>;

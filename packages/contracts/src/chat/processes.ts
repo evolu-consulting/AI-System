@@ -49,12 +49,16 @@ export const PROCESS_RUN_STATUSES = [
   "cancelled",
   "failed",
   "expired",
+  // P-d1 · PD-R15 · run chờ hẹn giờ `wait_until`.
+  "waiting_timer",
 ] as const;
+/** Run "chưa kết thúc". Đếm trần 5 run/tenant dùng `PROCESS_RUN_CAP_COUNTED` (PD-R16), KHÔNG dùng tập này. */
 export const PROCESS_RUN_ACTIVE = [
   "running",
   "waiting_review",
   "waiting_answer",
   "needs_decision",
+  "waiting_timer",
 ] as const;
 export const STAGE_RUN_STATUSES = [
   "pending",
@@ -66,6 +70,8 @@ export const STAGE_RUN_STATUSES = [
   "done",
   "cancelled",
   "failed",
+  // P-d1 · PD-R03/R15 · chờ hẹn giờ (`retry` backoff hoặc `wait_until`).
+  "waiting_timer",
 ] as const;
 /** Mặc định `sequential` (spike, U3). */
 export const TEAM_MODES = ["sequential", "lead_plan", "parallel_merge"] as const;
@@ -112,6 +118,9 @@ export const DECISION_REASONS = [
   // P-c2 · PC2-R08 · stage Áp.
   "apply_conflict",
   "apply_failed",
+  // P-d1 · PD-R04 hết lượt thử lại · PD-R14 hẹn giờ không hợp lệ.
+  "retry_exhausted",
+  "timer_invalid",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
@@ -121,10 +130,13 @@ export const NOTICE_KINDS = [
   "reminder",
   "task_closed",
   "run_finished",
+  // P-d1 · PD-R20 · task duyệt được chuyển cấp thêm Group.
+  "escalated",
 ] as const;
 export const ORIGIN_KINDS = ["room", "conversation", "admin"] as const;
 export const STAGE_AFTER_KINDS = ["review", "auto"] as const;
-export const EXECUTOR_KINDS = ["agent", "team", "apply"] as const;
+/** P-d1 thêm `wait_until` (cuối); P-d2 sẽ nối `tool`. */
+export const EXECUTOR_KINDS = ["agent", "team", "apply", "wait_until"] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 
 export type ProcessRunStatus = (typeof PROCESS_RUN_STATUSES)[number];
@@ -174,3 +186,50 @@ export const HANDOFF_TOKENS_MAX = 200;
 export const HANDOFF_CHARS_PER_TOKEN = 4;
 export const ProcessStepSchema = z.number().int().min(0).max(PROCESS_STEP_MAX);
 export type ProcessStep = z.infer<typeof ProcessStepSchema>;
+
+// ── P-d1 · engine chạy bền [HUB-FR-143…145][HUB-FR-115] (plan-contract §1) ──────────────────────────────────────────
+// Lớp 1 (`P/domain/limits.ts`) KHÔNG import các hằng này mà khai lại; parity ở test PD-C10.
+/** PD-R16 · trạng thái run TÍNH trần 5 run/tenant (= PROCESS_RUN_ACTIVE trước P-d; khớp predicate `process_runs_active_idx`). */
+export const PROCESS_RUN_CAP_COUNTED = [
+  "running",
+  "waiting_review",
+  "waiting_answer",
+  "needs_decision",
+] as const;
+export const STAGE_RETRY_MAX = 3;
+/** Backoff giây theo lần thử lại thứ 1/2/3 (PD-R03). */
+export const RETRY_BACKOFF_S = [30, 120, 480] as const;
+export const REMIND_EVERY_H = { min: 4, max: 168 } as const;
+export const REMIND_MAX = 10;
+export const ESCALATE_AFTER_H = { min: 4, max: 2160 } as const;
+/** `PROCESS_RUN_TTL_DAYS` giữ = 7 (= `default`). */
+export const PROCESS_TTL_DAYS = { min: 1, max: 365, default: 7 } as const;
+export const WAIT_OFFSET_DAYS = { min: -365, max: 365 } as const;
+export const WAIT_HORIZON_DAYS = 730;
+export const WAIT_TIME_DEFAULT = "09:00";
+export const WAIT_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+export const TIMER_KINDS = ["wait_until", "retry"] as const;
+export const TIMER_SWEEP_BATCH = 100;
+export type TimerKind = (typeof TIMER_KINDS)[number];
+
+/** Ngày lịch có thật dạng `YYYY-MM-DD` (2026-02-30 ⇒ false). Thuần — FE dùng chung. */
+export function isIsoCalendarDate(s: string): boolean {
+  if (!ISO_DATE_RE.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number) as [number, number, number];
+  const t = new Date(0);
+  t.setUTCFullYear(y, m - 1, d); // không dùng Date.UTC: năm 0–99 bị đổi thành 19xx
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+export const IsoCalendarDateSchema = z
+  .string()
+  .regex(ISO_DATE_RE)
+  .refine(isIsoCalendarDate, "invalid calendar date");
+export const WaitTimeSchema = z.string().regex(WAIT_TIME_RE);
+/** `null` = run không hết hạn (PD-R24). */
+export const TtlDaysSchema = z
+  .number()
+  .int()
+  .min(PROCESS_TTL_DAYS.min)
+  .max(PROCESS_TTL_DAYS.max)
+  .nullable();

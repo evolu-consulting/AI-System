@@ -2,6 +2,7 @@
 // run export lại từ `chat/processes*` (một nguồn; Evolu Control xem run/token qua endpoint chat §3).
 import { z } from "zod";
 import {
+  ESCALATE_AFTER_H,
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
   PROCESS_LIST_LIMIT,
@@ -11,9 +12,14 @@ import {
   PROCESS_STEP_MAX,
   ProcessKeySchema,
   ProcessStepSchema,
+  REMIND_EVERY_H,
   STAGE_KEY_RE,
   STAGE_TIMEOUT_S,
   TeamModeSchema,
+  TtlDaysSchema,
+  WAIT_OFFSET_DAYS,
+  WAIT_TIME_DEFAULT,
+  WaitTimeSchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
@@ -115,6 +121,28 @@ export const StageAutofixSchema = z.strictObject({
 });
 export type StageAutofix = z.infer<typeof StageAutofixSchema>;
 
+/** P-d1 · nguồn ngày của `wait_until`: input run kiểu `date` hoặc field `date` của output stage ở bước nhỏ hơn. */
+export const WaitFromSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("input"), key: SourceKeySchema }),
+  z.strictObject({
+    kind: z.literal("field"),
+    stage_key: z.string().regex(STAGE_KEY_RE),
+    field: z.string().regex(FIELD_KEY_RE),
+  }),
+]);
+export type WaitFrom = z.infer<typeof WaitFromSchema>;
+export const WaitUntilExecutorSchema = z.strictObject({
+  kind: z.literal("wait_until"),
+  from: WaitFromSchema,
+  offset_days: z.number().int().min(WAIT_OFFSET_DAYS.min).max(WAIT_OFFSET_DAYS.max),
+  time: WaitTimeSchema.default(WAIT_TIME_DEFAULT),
+});
+export const StageEscalateSchema = z.strictObject({
+  after_h: z.number().int().min(ESCALATE_AFTER_H.min).max(ESCALATE_AFTER_H.max),
+  group_id: UuidSchema,
+});
+export type StageEscalate = z.infer<typeof StageEscalateSchema>;
+
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
@@ -125,6 +153,8 @@ export const ProcessStageDefSchema = z.strictObject({
     z.strictObject({ kind: z.literal("team"), team_id: UuidSchema }),
     /** P-c2 · PC2-R01 · stage "Áp bản sửa" — Hub tự chạy (luật `APPLY_*` ở `applyStageIssues`). */
     z.strictObject({ kind: z.literal("apply") }),
+    /** P-d1 · PD-R13 · chờ tới ngày gốc (input `date` / field `date` của stage bước trước) + `offset_days` lúc `time`. */
+    WaitUntilExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({
@@ -150,6 +180,16 @@ export const ProcessStageDefSchema = z.strictObject({
       group_id: UuidSchema.nullable(),
       /** P-b2 · bước được phép quay lại khi Chưa đạt (< bước của stage, không trùng — luật `BACK_TARGET_INVALID`). */
       back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).default([]),
+      /** P-d1 · PD-R18 · nhắc lặp mỗi N giờ; `null` = nhắc 1 lần sau 24 h như cũ. */
+      remind_every_h: z
+        .number()
+        .int()
+        .min(REMIND_EVERY_H.min)
+        .max(REMIND_EVERY_H.max)
+        .nullable()
+        .default(null),
+      /** P-d1 · PD-R18/R20 · chuyển cấp thêm Group sau `after_h` giờ (1 lần/task). */
+      escalate: StageEscalateSchema.nullable().default(null),
     }),
     z.strictObject({ kind: z.literal("auto") }),
   ]),
@@ -178,8 +218,14 @@ export type ProcessStageDef = Omit<StageDefParsed, "after" | "autofix"> & {
   /** P-c1 · vắng ở snapshot cũ (trước P-c); đọc dùng `?? null`. */
   autofix?: StageAutofix | null;
   after:
-    | (Omit<Extract<StageAfterParsed, { kind: "review" }>, "back_to_steps"> & {
+    | (Omit<
+        Extract<StageAfterParsed, { kind: "review" }>,
+        "back_to_steps" | "remind_every_h" | "escalate"
+      > & {
         back_to_steps?: number[];
+        /** P-d1 · vắng ở snapshot cũ; đọc dùng `?? null`. */
+        remind_every_h?: number | null;
+        escalate?: StageEscalate | null;
       })
     | Extract<StageAfterParsed, { kind: "auto" }>;
 };
@@ -200,6 +246,8 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   enabled: z.boolean(),
   sources: z.array(SourceKeySchema).max(DEF_SOURCES_MAX).default([]),
   inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).default([]),
+  /** P-d1 · PD-R24 · vắng = "không gửi" (tạo ⇒ 7, sửa ⇒ giữ); `null` = không hết hạn. */
+  ttl_days: TtlDaysSchema.optional(),
 });
 
 /** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
@@ -221,7 +269,7 @@ export function processDefSourcePaths(d: {
 
 /** Hình dạng + luật chéo stage (R-K08) + tham chiếu nguồn (R-C15). */
 export const ProcessDefInputSchema = ProcessDefInputBaseSchema.superRefine((d, ctx) => {
-  for (const it of processDefStageIssues(d.stages)) {
+  for (const it of processDefStageIssues(d.stages, { inputs: d.inputs })) {
     ctx.addIssue({ code: "custom", path: it.path.split("."), message: it.rule });
   }
   for (const p of processDefSourcePaths(d)) {
@@ -238,6 +286,8 @@ export const ProcessDefSchema = ProcessDefInputBaseSchema.extend({
   version: z.number().int().min(1),
   created_at: IsoDateTime,
   updated_at: IsoDateTime,
+  /** P-d1 · response luôn có (`null` = không hết hạn). */
+  ttl_days: TtlDaysSchema,
 });
 export type ProcessDef = WithStageDefs<z.infer<typeof ProcessDefSchema>>;
 
@@ -318,3 +368,14 @@ export const AgentTeamSchema = z.strictObject({
 export type AgentTeam = z.infer<typeof AgentTeamSchema>;
 export const AgentTeamListResponseSchema = z.strictObject({ items: z.array(AgentTeamSchema) });
 export type AgentTeamListResponse = z.infer<typeof AgentTeamListResponseSchema>;
+
+// ── P-d1 · ngữ cảnh editor quy trình (plan-contract §4) — `GET /process-editor/context?tenant_id=` ─────────────────
+export const ProcessEditorContextQuerySchema = z.strictObject({ tenant_id: UuidSchema.optional() });
+export type ProcessEditorContextQuery = z.infer<typeof ProcessEditorContextQuerySchema>;
+export const ProcessEditorContextSchema = z.strictObject({
+  /** Múi giờ tenant; def mẫu (tenant null) ⇒ `TENANT_TZ_DEFAULT`. */
+  timezone: z.string().min(1).max(64),
+  /** P-d2 (`ProcessToolItemSchema`, T17) thay `unknown`; P-d1 không trả. */
+  tools: z.array(z.unknown()).max(200).optional(),
+});
+export type ProcessEditorContext = z.infer<typeof ProcessEditorContextSchema>;

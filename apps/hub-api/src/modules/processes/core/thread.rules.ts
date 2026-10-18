@@ -53,6 +53,9 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
     en: "the fix conflicts with the new code",
   },
   apply_failed: { vi: "áp bản sửa không thành công", en: "applying the fix failed" },
+  // P-d1 · PD-R04 / PD-R14.
+  retry_exhausted: { vi: "đã thử lại hết số lần", en: "retry limit reached" },
+  timer_invalid: { vi: "ngày hẹn không hợp lệ", en: "scheduled date is invalid" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

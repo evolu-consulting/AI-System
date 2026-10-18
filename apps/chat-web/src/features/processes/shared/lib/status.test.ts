@@ -10,12 +10,13 @@ describe("status", () => {
       expect(runStatusKey(s)).toBe(`process.common.status.${s}`);
     }
   });
-  test("active = bốn trạng thái chưa kết thúc", () => {
+  test("active = năm trạng thái chưa kết thúc (P-d1 thêm waiting_timer)", () => {
     expect(PROCESS_RUN_STATUSES.filter(isActiveRun)).toEqual([
       "running",
       "waiting_review",
       "waiting_answer",
       "needs_decision",
+      "waiting_timer",
     ]);
   });
 });

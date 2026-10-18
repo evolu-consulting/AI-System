@@ -19,6 +19,7 @@ const ACTION_KEY: Record<ProcessRunStatus, string> = {
   cancelled: "process.run.action.detail",
   failed: "process.run.action.detail",
   expired: "process.run.action.detail",
+  waiting_timer: "process.run.action.view", // P-d1 · chờ hẹn: chỉ xem
 };
 
 function lineOf(run: ProcessRunSummary, t: ReturnType<typeof useTranslation>["t"]): string | null {

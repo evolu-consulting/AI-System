@@ -22,6 +22,8 @@ import {
   ProcessKeySchema,
   ProcessRunStatusSchema,
   ProcessStepSchema,
+  REMIND_MAX,
+  STAGE_RETRY_MAX,
   StageAfterSchema,
   StageIdxSchema,
   StageKeySchema,
@@ -51,6 +53,8 @@ const Int0 = z.number().int().min(0);
 const Int1 = z.number().int().min(1);
 const NameSchema = z.string().min(1).max(PROCESS_NAME_MAX);
 const AgentNameSchema = z.string().min(1).max(100);
+/** `{id, name}` của Group (giữ đúng hình cũ của `OpenTask.group`). */
+const GroupRefSchema = z.strictObject({ id: UuidSchema, name: z.string().min(1).max(100) });
 
 export const UserRefSchema = z.strictObject({
   id: UuidSchema,
@@ -110,6 +114,8 @@ export const ProcessRunSummarySchema = z.strictObject({
   /** P-b2 · bước hiện tại (nguồn thật; `current_stage_idx` = stage nhỏ nhất của bước). */
   current_step: ProcessStepSchema,
   step_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  /** P-d1 · PD-R25 · `null` = không hết hạn; Hub luôn đặt (optional chỉ để mock FE cũ không vỡ — A4 G6). */
+  expires_at: IsoDateTime.nullable().optional(),
 });
 export type ProcessRunSummary = z.infer<typeof ProcessRunSummarySchema>;
 
@@ -139,12 +145,21 @@ export const StageViewSchema = z.strictObject({
   autofix: AutofixStageViewSchema.optional(),
   /** P-c2 · chỉ stage Áp (executor `apply`) đã có hàng `autofix_applies`. */
   apply: ApplyStageViewSchema.optional(),
+  /** P-d1 · số lần thử lại HIỆU LỰC 0…3 (Hub luôn trả — A4 G5); optional cho mock FE cũ. */
+  retry_count: z.number().int().min(0).max(STAGE_RETRY_MAX).optional(),
+  /** P-d1 · hẹn `retry` chưa bắn; loại trừ với `wait`. */
+  next_retry_at: IsoDateTime.optional(),
+  /** P-d1 · mã lỗi lần gần nhất, chỉ khi `retry_count > 0`. */
+  last_error_code: z.string().min(1).max(64).optional(),
+  /** P-d1 · hẹn `wait_until` chưa huỷ + múi giờ lúc lưu hẹn. */
+  wait: z.strictObject({ due_at: IsoDateTime, timezone: z.string().min(1).max(64) }).optional(),
 });
 export type StageView = z.infer<typeof StageViewSchema>;
 
 export const HistoryItemSchema = z.strictObject({
   at: IsoDateTime,
-  kind: z.enum(["review", "ask", "decision", "forward", "cancel", "expire"]),
+  // P-d1 thêm `escalate` (cuối).
+  kind: z.enum(["review", "ask", "decision", "forward", "cancel", "expire", "escalate"]),
   task_id: UuidSchema.nullable(),
   stage_idx: StageIdxSchema,
   actor: UserRefSchema.nullable(),
@@ -156,6 +171,8 @@ export const HistoryItemSchema = z.strictObject({
   to: UserRefSchema.optional(),
   /** P-b2 · review `fail` có quay lại. */
   to_step: ProcessStepSchema.optional(),
+  /** P-d1 · chỉ `escalate`: Group nhận chuyển cấp. */
+  group: GroupRefSchema.optional(),
 });
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
 
@@ -188,6 +205,9 @@ export const TaskDetailSchema = z.strictObject({
   /** P-b2 · chỉ review MỞ của stage có `back_to_steps` ≠ []. */
   back_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).optional(),
   back_rounds_left: Int0.optional(),
+  /** P-d1 · chỉ task `review`: đã chuyển cấp / số lần đã nhắc lặp. */
+  escalated: z.boolean().optional(),
+  remind_count: z.number().int().min(0).max(REMIND_MAX).optional(),
 });
 export type TaskDetail = z.infer<typeof TaskDetailSchema>;
 
@@ -197,7 +217,9 @@ export const OpenTaskSchema = z.strictObject({
   kind: TaskKindSchema,
   stage_idx: StageIdxSchema,
   assignees: z.array(UserRefSchema).max(TASK_ASSIGNEES_MAX),
-  group: z.strictObject({ id: UuidSchema, name: z.string().min(1).max(100) }).nullable(),
+  group: GroupRefSchema.nullable(),
+  /** P-d1 · Group chuyển cấp (assignee `via='escalated'`); `null` khi chưa chuyển — chỉ full view (A4 G7). */
+  escalated_group: GroupRefSchema.nullable().optional(),
 });
 export type OpenTask = z.infer<typeof OpenTaskSchema>;
 

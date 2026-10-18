@@ -12,6 +12,7 @@ const TONES: Record<ProcessRunStatus, StatusTone> = {
   cancelled: "neutral",
   failed: "danger",
   expired: "neutral",
+  waiting_timer: "info", // P-d1 · plan-frontend FD6/FD9
 };
 
 export const statusTone = (s: ProcessRunStatus): StatusTone => TONES[s];

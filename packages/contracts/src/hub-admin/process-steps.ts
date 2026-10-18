@@ -1,9 +1,12 @@
 // HUB-FR-104 · HUB-BR-38 · HUB-FR-118 · HUB-FR-136 · P-b2 (plan §1.2): hàm THUẦN về bước của def + cắt Bàn giao — dùng
 // chung server (superRefine, `validateProcessDef`, seed) và admin-web (editor canvas). Không import zod/schema (tránh vòng).
 import {
+  ESCALATE_AFTER_H,
   HANDOFF_CHARS_PER_TOKEN,
   HANDOFF_TOKENS_MAX,
   PROCESS_STEP_STAGES_MAX,
+  WAIT_OFFSET_DAYS,
+  WAIT_TIME_RE,
 } from "../chat/processes";
 
 export const PROCESS_DEF_RULES = [
@@ -22,6 +25,9 @@ export const PROCESS_DEF_RULES = [
   "APPLY_NO_AUTOFIX",
   "APPLY_MAX",
   "APPLY_FIELDS",
+  // P-d1 · PD-R17 stage `wait_until` (`waitStageIssues`) · PD-R23 chuyển cấp (`escalateStageIssues`).
+  "WAIT_INVALID",
+  "ESCALATE_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
@@ -113,9 +119,20 @@ function realAndBackIssues(stages: readonly StepStageShape[], out: Bucket[]): vo
   });
 }
 
-/** Vi phạm luật chéo stage (plan §1.2): i tăng; trong stage key → step → real_action → back; cắt ≤ 20. */
+/** Hình stage mà `processDefStageIssues` nhận (def đã parse, snapshot cũ, bản nháp FE). */
+export type ProcessDefStageDraft = StepStageShape &
+  Partial<Omit<ApplyStageShape, keyof StepStageShape>> &
+  Partial<Omit<WaitStageShape, keyof StepStageShape>> & { after: EscalateStageShape["after"] };
+/** P-d1 · ngữ cảnh def: vắng `inputs` ⇒ bỏ kiểm nguồn input của `wait_until` (giữ test khoá cũ). */
+export type ProcessDefIssueCtx = { inputs?: readonly DefInputShape[] };
+
+/**
+ * Vi phạm luật chéo stage (plan §1.2): i tăng; trong stage key → step → real_action → back; rồi tự-sửa, Áp,
+ * `wait_until`, chuyển cấp (P-d1, plan-contract §3); cắt ≤ 20.
+ */
 export function processDefStageIssues(
-  stages: readonly (StepStageShape & Partial<Omit<ApplyStageShape, keyof StepStageShape>>)[],
+  stages: readonly ProcessDefStageDraft[],
+  ctx?: ProcessDefIssueCtx,
 ): ProcessDefIssue[] {
   const out: Bucket[] = stages.map(() => ({ key: [], step: [], real: [], back: [] }));
   const seen = new Set<string>();
@@ -128,7 +145,13 @@ export function processDefStageIssues(
   // Chữ ký cũ (P-a) không có `executor`/`autofix` ⇒ coi như stage thường.
   const shaped = stages.map((s) => ({ ...s, executor: s.executor ?? { kind: "agent" } }));
   const auto = autofixStageIssues(shaped);
-  return [...base, ...auto, ...applyStageIssues(shaped)].slice(0, ISSUES_MAX);
+  return [
+    ...base,
+    ...auto,
+    ...applyStageIssues(shaped),
+    ...waitStageIssues(shaped, ctx?.inputs),
+    ...escalateStageIssues(stages),
+  ].slice(0, ISSUES_MAX);
 }
 
 /** P-c1 · hình tối thiểu cho luật stage tự-sửa. */
@@ -185,6 +208,95 @@ export function applyStageIssues(stages: readonly ApplyStageShape[]): ProcessDef
     seen += 1;
     if (seen > 1) out.push({ path: `stages.${i}.executor`, rule: "APPLY_MAX" });
     if (applyFieldsSet(s)) out.push({ path: `stages.${i}`, rule: "APPLY_FIELDS" });
+  });
+  return out;
+}
+
+// ── P-d1 · luật def `wait_until` + chuyển cấp (FE validate live; CÙNG điều kiện + path với luật domain — A2, A8) ──
+/** Input khai báo của def (chỉ cần `key` + `type`). */
+export type DefInputShape = { key: string; type: string };
+type WaitFromDraft = { kind: string; key?: string; stage_key?: string; field?: string };
+/** Hình tối thiểu cho luật `wait_until` (bản nháp: `offset_days`/`time` chưa qua zod). */
+export type WaitStageShape = StepStageShape & {
+  executor: { kind: string; from?: WaitFromDraft; offset_days?: unknown; time?: unknown };
+  sources?: readonly unknown[];
+  must_know?: readonly unknown[];
+  autofix?: unknown;
+  output?: { fields?: readonly { key: string; type: string }[] };
+};
+/** Hình tối thiểu cho luật chuyển cấp. */
+export type EscalateStageShape = StepStageShape & {
+  after: StepStageShape["after"] & {
+    group_id?: string | null;
+    escalate?: { after_h: number; group_id: string } | null;
+  };
+};
+
+/** Nguồn ngày hợp lệ: input `date` đã khai (bỏ qua khi `inputs` vắng) / field `date` của stage ở bước NHỎ HƠN. */
+function waitFromValid(
+  stages: readonly WaitStageShape[],
+  steps: readonly number[],
+  i: number,
+  inputs: readonly DefInputShape[] | undefined,
+): boolean {
+  const from = stages[i]?.executor.from;
+  if (from?.kind === "input")
+    return inputs === undefined || inputs.some((d) => d.key === from.key && d.type === "date");
+  if (from?.kind !== "field") return false;
+  const j = stages.findIndex((p) => p.key === from.stage_key);
+  if (j < 0 || (steps[j] as number) >= (steps[i] as number)) return false;
+  const f = stages[j]?.output?.fields?.find((x) => x.key === from.field);
+  return f?.type === "date";
+}
+
+const offsetValid = (v: unknown): boolean =>
+  Number.isInteger(v) &&
+  (v as number) >= WAIT_OFFSET_DAYS.min &&
+  (v as number) <= WAIT_OFFSET_DAYS.max;
+const timeValid = (v: unknown): boolean =>
+  v === undefined || (typeof v === "string" && WAIT_TIME_RE.test(v));
+/** real_action / sources / must_know / autofix ⇒ một issue `stages.<i>.executor`. */
+const waitExtraSet = (s: WaitStageShape): boolean =>
+  s.real_action ||
+  (s.sources?.length ?? 0) > 0 ||
+  (s.must_know?.length ?? 0) > 0 ||
+  (s.autofix ?? null) !== null;
+
+/**
+ * PD-R17 · WAIT_INVALID cho stage `executor.kind = wait_until`; thứ tự trong stage + path theo bảng plan-addendum A2:
+ * `after` → `executor.from` → `executor.offset_days` → `executor.time` → `executor`.
+ */
+export function waitStageIssues(
+  stages: readonly WaitStageShape[],
+  inputs?: readonly DefInputShape[],
+): ProcessDefIssue[] {
+  const steps = resolveSteps(stages);
+  const out: ProcessDefIssue[] = [];
+  const add = (path: string) => out.push({ path, rule: "WAIT_INVALID" });
+  stages.forEach((s, i) => {
+    if (s.executor.kind !== "wait_until") return;
+    if (s.after.kind !== "auto") add(`stages.${i}.after`);
+    if (!waitFromValid(stages, steps, i, inputs)) add(`stages.${i}.executor.from`);
+    if (!offsetValid(s.executor.offset_days)) add(`stages.${i}.executor.offset_days`);
+    if (!timeValid(s.executor.time)) add(`stages.${i}.executor.time`);
+    if (waitExtraSet(s)) add(`stages.${i}.executor`);
+  });
+  return out;
+}
+
+/**
+ * PD-R23 · ESCALATE_INVALID: `escalate ≠ null` ∧ (after ≠ review | Group chuyển cấp = Group duyệt |
+ * `after_h ∉ 4…2160`) — path `stages.<i>.after.escalate`. Group tồn tại/cùng tenant xét ở server (PROCESS_REF_INVALID).
+ */
+export function escalateStageIssues(stages: readonly EscalateStageShape[]): ProcessDefIssue[] {
+  const out: ProcessDefIssue[] = [];
+  stages.forEach((s, i) => {
+    const e = s.after.escalate ?? null;
+    if (e === null) return;
+    const h = e.after_h;
+    const badH = !Number.isInteger(h) || h < ESCALATE_AFTER_H.min || h > ESCALATE_AFTER_H.max;
+    if (s.after.kind !== "review" || e.group_id === s.after.group_id || badH)
+      out.push({ path: `stages.${i}.after.escalate`, rule: "ESCALATE_INVALID" });
   });
   return out;
 }

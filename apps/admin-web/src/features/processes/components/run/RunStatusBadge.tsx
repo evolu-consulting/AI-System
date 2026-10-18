@@ -12,6 +12,7 @@ const TONE: Record<ProcessRunStatus, StatusTone> = {
   cancelled: "off",
   failed: "err",
   expired: "off",
+  waiting_timer: "info", // P-d1 · plan-frontend FD9
 };
 
 export function RunStatusBadge({ status }: { status: ProcessRunStatus }) {
