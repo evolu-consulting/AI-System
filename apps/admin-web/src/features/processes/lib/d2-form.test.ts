@@ -142,6 +142,9 @@ describe("tool-form", () => {
     });
     expect(toolToDef(b).args.b).toEqual({ from: "const", value: false });
   });
+});
+
+describe("tool-form · đổi tool, chuẩn hoá", () => {
   test("đổi tool giữ tham số trùng tên + kiểu (D2-35)", () => {
     const a = CATALOG[0] as ProcessToolItem;
     const b = CATALOG[1] as ProcessToolItem;
@@ -287,6 +290,9 @@ describe("validate live (hàm contract)", () => {
     const e = branchErrors([a, st("b", 0), st("c", 1)]);
     expect(e["stages.0.after.branch"]).toBe("process.admin.editor.stage.branch.err.BRANCH_INVALID");
   });
+});
+
+describe("validate live · tool (hàm contract)", () => {
   test("tool: tác dụng phụ không real ⇒ TOOL_SIDE_EFFECT; nguồn sai ⇒ TOOL_INVALID; tool mất ⇒ ref", () => {
     const tool = setArg({ key: "ghi-so", args: {} }, "ma_kh", { from: "const", value: "A" });
     const s = st("t", 1, { executor: "tool", tool });

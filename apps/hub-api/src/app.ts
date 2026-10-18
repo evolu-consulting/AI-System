@@ -329,6 +329,22 @@ function requestContext(config?: ConfigCache): MiddlewareHandler<AppVars> {
   };
 }
 
+const corsOf = (cfg: AppConfig): MiddlewareHandler =>
+  cors({
+    origin: cfg.corsOrigins,
+    credentials: true,
+    allowHeaders: ALLOW_HEADERS,
+    exposeHeaders: [
+      REQUEST_ID_HEADER,
+      RUN_ID_HEADER,
+      FLOW_ID_HEADER,
+      MESSAGE_ID_HEADER,
+      RETRY_AFTER_HEADER,
+      PROCESS_RUN_ID_HEADER,
+      "Content-Disposition",
+    ],
+  });
+
 export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   const app = new Hono<AppVars>();
   const config = deps.db
@@ -342,22 +358,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   app.use(requestContext(config));
   app.use(closeUnreadBody());
   app.use(keepBlobBody());
-  app.use(
-    cors({
-      origin: cfg.corsOrigins,
-      credentials: true,
-      allowHeaders: ALLOW_HEADERS,
-      exposeHeaders: [
-        REQUEST_ID_HEADER,
-        RUN_ID_HEADER,
-        FLOW_ID_HEADER,
-        MESSAGE_ID_HEADER,
-        RETRY_AFTER_HEADER,
-        PROCESS_RUN_ID_HEADER,
-        "Content-Disposition",
-      ],
-    }),
-  );
+  app.use(corsOf(cfg));
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   const kh = mountProtected(app, deps, config);

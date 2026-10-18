@@ -83,23 +83,27 @@ export function pd1Steps(o: { bun: string; platform: string; nodeDir: string | n
       ],
     },
     { title: "bun run test:perf:pd", argv: [bun, "run", "test:perf:pd"] },
-    {
-      title: "playwright P-d",
-      // Có nodeDir ⇒ gọi thẳng node.exe + CLI Playwright: `bun x` dưới `bun run` vẫn chọn shim `node` giả của Bun
-      // (nạp config .ts lỗi) dù PATH đã thêm nodeDir.
-      argv: o.nodeDir
-        ? [
-            `${o.nodeDir}${o.platform === "win32" ? "\\node.exe" : "/node"}`,
-            "node_modules/@playwright/test/cli.js",
-            "test",
-            "-c",
-            "e2e/P-d/playwright.pd.config.ts",
-          ]
-        : [bun, "x", "playwright", "test", "-c", "e2e/P-d/playwright.pd.config.ts"],
-      ...(o.nodeDir ? { nodeDir: o.nodeDir } : {}),
-    },
+    playwrightStep(o),
     { title: "bun run test:lock:verify", argv: [bun, "run", "test:lock:verify"] },
   ];
+}
+
+function playwrightStep(o: { bun: string; platform: string; nodeDir: string | null }): PdStep {
+  return {
+    title: "playwright P-d",
+    // Có nodeDir ⇒ gọi thẳng node.exe + CLI Playwright: `bun x` dưới `bun run` vẫn chọn shim `node` giả của Bun
+    // (nạp config .ts lỗi) dù PATH đã thêm nodeDir.
+    argv: o.nodeDir
+      ? [
+          `${o.nodeDir}${o.platform === "win32" ? "\\node.exe" : "/node"}`,
+          "node_modules/@playwright/test/cli.js",
+          "test",
+          "-c",
+          "e2e/P-d/playwright.pd.config.ts",
+        ]
+      : [o.bun, "x", "playwright", "test", "-c", "e2e/P-d/playwright.pd.config.ts"],
+    ...(o.nodeDir ? { nodeDir: o.nodeDir } : {}),
+  };
 }
 
 const fmt = (ms: number): string =>

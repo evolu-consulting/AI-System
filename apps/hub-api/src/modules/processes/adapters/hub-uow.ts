@@ -55,9 +55,10 @@ function txRepos(
   tx: Tx,
   tenantId: string,
   outbox: Outbox,
-  notifier: RunFinishedNotifier = createNotifier(),
-  tools?: ToolRepoFactory,
+  opts: { notifier?: RunFinishedNotifier; tools?: ToolRepoFactory } = {},
 ): TxRepos {
+  const notifier = opts.notifier ?? createNotifier();
+  const { tools } = opts;
   return {
     tenantId,
     runs: runRepo(tx, tenantId),
@@ -134,13 +135,13 @@ export function createHubUow(db: Db, deps: HubUowDeps): UnitOfWork {
       assertTenantId(who.tenantId);
       return run(
         { kind: "user", tenantId: who.tenantId, userId: who.userId },
-        (tx, o) => txRepos(tx, who.tenantId, o, deps.notifier, deps.tools),
+        (tx, o) => txRepos(tx, who.tenantId, o, deps),
         fn,
       );
     },
     system: async (tenantId, fn) => {
       assertTenantId(tenantId);
-      const make = (tx: Tx, o: Outbox) => txRepos(tx, tenantId, o, deps.notifier, deps.tools);
+      const make = (tx: Tx, o: Outbox) => txRepos(tx, tenantId, o, deps);
       return run({ kind: "system" }, make, fn);
     },
     systemBatch: (fn) => run({ kind: "system" }, (tx, o) => batchRepos(tx, o, deps.notifier), fn),

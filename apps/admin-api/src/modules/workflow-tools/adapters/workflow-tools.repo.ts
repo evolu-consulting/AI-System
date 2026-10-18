@@ -31,34 +31,36 @@ async function lockOne(tx: Tx, k: SwitchKey): Promise<ToolTarget | null> {
   return { ...rest, cur: one(rows) };
 }
 
+function listTools(tx: Tx, tenantId: string, limit: number): Promise<ToolView[]> {
+  const on = and(
+    eq(twt.workflowId, workflows.id),
+    eq(twt.tenantId, tenantId),
+    isNull(twt.revokedAt),
+  );
+  return tx
+    .select({
+      workflowId: workflows.id,
+      key: workflows.key,
+      name: workflows.name,
+      sideEffect: workflows.sideEffect,
+      enabled: workflows.enabled,
+      on: sql<boolean>`${twt.workflowId} is not null`,
+      grantedAt: twt.grantedAt,
+      grantedBy: usernameOf(twt.grantedBy),
+    })
+    .from(workflows)
+    .leftJoin(twt, on)
+    .orderBy(asc(workflows.key))
+    .limit(limit);
+}
+
 export function workflowToolsRepo(tx: Tx): WorkflowToolsRepo {
   return {
     async tenantExists(tenantId) {
       const [r] = await tx.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, tenantId));
       return !!r;
     },
-    async list(tenantId, limit): Promise<ToolView[]> {
-      const on = and(
-        eq(twt.workflowId, workflows.id),
-        eq(twt.tenantId, tenantId),
-        isNull(twt.revokedAt),
-      );
-      return tx
-        .select({
-          workflowId: workflows.id,
-          key: workflows.key,
-          name: workflows.name,
-          sideEffect: workflows.sideEffect,
-          enabled: workflows.enabled,
-          on: sql<boolean>`${twt.workflowId} is not null`,
-          grantedAt: twt.grantedAt,
-          grantedBy: usernameOf(twt.grantedBy),
-        })
-        .from(workflows)
-        .leftJoin(twt, on)
-        .orderBy(asc(workflows.key))
-        .limit(limit);
-    },
+    list: (tenantId, limit) => listTools(tx, tenantId, limit),
     lockOne: (k) => lockOne(tx, k),
     async insert(k, actorId) {
       const rows = await tx

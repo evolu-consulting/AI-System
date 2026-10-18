@@ -227,84 +227,97 @@ async function insertAudit(tx: Tx, tenantId: string, x: ToolCallAudit): Promise<
       ${x.toolKey.slice(0, 200)}, ${JSON.stringify(summary)}::jsonb)`);
 }
 
-export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps): ToolStageRepo {
-  /** Hàng stage đã khoá ở `lockRunning` (dùng lại trong `settleOk`/`decide`, không đọc lại). */
-  let locked: StageRowIdx | null = null;
-  let head: RunHead | null = null;
-  const emit = (runId: string, events: readonly unknown[], kick: boolean) => {
-    if (events.length > 0) outbox.emit({ kind: "user_events", events });
-    outbox.emit({ kind: "post_thread", runId });
-    if (kick) outbox.emit({ kind: "kick", runId });
+/** Bối cảnh bất biến của repo + hàng stage/đầu run đã khoá ở `lockRunning` (dùng lại, không đọc lại). */
+type Cx = { tx: Tx; tenantId: string; outbox: Outbox; d: Deps };
+type Lock = { locked: StageRowIdx | null; head: RunHead | null };
+type SettleIn = Parameters<ToolStageRepo["settleOk"]>[0];
+type DecideIn = Parameters<ToolStageRepo["decide"]>[0];
+
+function emit(outbox: Outbox, runId: string, events: readonly unknown[], kick: boolean): void {
+  if (events.length > 0) outbox.emit({ kind: "user_events", events });
+  outbox.emit({ kind: "post_thread", runId });
+  if (kick) outbox.emit({ kind: "kick", runId });
+}
+
+async function emitRetried({ tx, tenantId, outbox }: Cx, s: Lock, runId: string): Promise<void> {
+  const idx = s.locked?.stage_idx;
+  const h = idx === undefined ? null : await headOf(tx, runId);
+  if (!h || idx === undefined) return;
+  const recipients = await core.runRecipients(tx, runId, tenantId);
+  const step = stepsOfSnap(h.snapshot)[idx] ?? idx;
+  const st = { id: runId, status: h.status as ProcessRunStatus, stageIdx: idx, step };
+  outbox.emit({ kind: "user_events", events: processUpdated(recipients, st) });
+}
+
+async function settleOk(c: Cx, s: Lock, x: SettleIn): Promise<void> {
+  const { tx, tenantId, outbox, d } = c;
+  // T18-perf: đầu run đọc CÙNG câu khoá stage (run đã khoá ở `runs.lock` ⇒ ảnh mới nhất), không đọc lại.
+  const h = s.head ?? (await headOf(tx, x.runId));
+  const stage = s.locked;
+  const def = stage && h?.snapshot.stages[stage.stage_idx];
+  if (!h || !stage || !def) return;
+  const ev = { kind: "stage_output", templateOk: true } as const;
+  const t = transition(stateOf(h, stage, def), ev);
+  if (!t.ok) return;
+  const result = { kind: "output" as const, text: x.md };
+  const apply = {
+    runId: x.runId,
+    stageRunId: x.stageRunId,
+    hubRunId: x.hubRunId,
+    jobId: null,
+    result,
+    tokens: 0,
   };
+  const ctx = {
+    x: apply,
+    head: h,
+    stage,
+    def,
+    idx: stage.stage_idx,
+    ev,
+    next: t.next,
+    list: t.effects,
+  };
+  // Không blob/hàng attachment (`outputAttachment` bỏ stage `tool` — không job): .md tool nhỏ, inline như stage Áp.
+  const res = await effects({ ...d, storage: undefined }, tx, ctx);
+  const st = res.step;
+  if (st) {
+    const recipients = await core.runRecipients(tx, x.runId, tenantId);
+    const u = { id: x.runId, status: st.status, stageIdx: st.stageIdx, step: st.step };
+    res.events.push(...processUpdated(recipients, u));
+  }
+  emit(outbox, x.runId, res.events, res.kick);
+}
+
+async function decide({ tx, tenantId, outbox, d }: Cx, s: Lock, x: DecideIn): Promise<void> {
+  const idx = s.locked?.stage_idx;
+  if (idx === undefined) return;
+  const p = { runId: x.runId, tenantId, idx, stageRunId: x.stageRunId, reason: x.reason };
+  const events = await toDecision(d, tx, p);
+  const recipients = await core.runRecipients(tx, x.runId, tenantId);
+  const st = { id: x.runId, status: "needs_decision" as const, stageIdx: idx };
+  events.push(...processUpdated(recipients, st));
+  emit(outbox, x.runId, events, false);
+}
+
+export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps): ToolStageRepo {
+  const c: Cx = { tx, tenantId, outbox, d };
+  const s: Lock = { locked: null, head: null };
   return {
     async loadCall(runId, stageRunId, hubRunId): Promise<ToolCallLoad | null> {
       const row = await loadCallRow(tx, { tenantId, runId, stageRunId, hubRunId });
       return row ? toLoad(row) : null;
     },
     audit: (x) => insertAudit(tx, tenantId, x),
-    async retried(runId) {
-      const idx = locked?.stage_idx;
-      const h = idx === undefined ? null : await headOf(tx, runId);
-      if (!h || idx === undefined) return;
-      const recipients = await core.runRecipients(tx, runId, tenantId);
-      const step = stepsOfSnap(h.snapshot)[idx] ?? idx;
-      const st = { id: runId, status: h.status as ProcessRunStatus, stageIdx: idx, step };
-      outbox.emit({ kind: "user_events", events: processUpdated(recipients, st) });
-    },
+    retried: (runId) => emitRetried(c, s, runId),
     async lockRunning(stageRunId, hubRunId) {
       const row = await lockStageWithHead(tx, tenantId, stageRunId);
       const ok = row?.status === "running" && row.current_run_id === hubRunId;
-      locked = ok ? row : null;
-      head = ok ? row.head : null;
-      return locked !== null;
+      s.locked = ok ? row : null;
+      s.head = ok ? row.head : null;
+      return s.locked !== null;
     },
-    async settleOk(x) {
-      // T18-perf: đầu run đọc CÙNG câu khoá stage (run đã khoá ở `runs.lock` ⇒ ảnh mới nhất), không đọc lại.
-      const h = head ?? (await headOf(tx, x.runId));
-      const stage = locked;
-      const def = stage && h?.snapshot.stages[stage.stage_idx];
-      if (!h || !stage || !def) return;
-      const ev = { kind: "stage_output", templateOk: true } as const;
-      const t = transition(stateOf(h, stage, def), ev);
-      if (!t.ok) return;
-      const result = { kind: "output" as const, text: x.md };
-      const apply = {
-        runId: x.runId,
-        stageRunId: x.stageRunId,
-        hubRunId: x.hubRunId,
-        jobId: null,
-        result,
-        tokens: 0,
-      };
-      const ctx = {
-        x: apply,
-        head: h,
-        stage,
-        def,
-        idx: stage.stage_idx,
-        ev,
-        next: t.next,
-        list: t.effects,
-      };
-      // Không blob/hàng attachment (`outputAttachment` bỏ stage `tool` — không job): .md tool nhỏ, inline như stage Áp.
-      const res = await effects({ ...d, storage: undefined }, tx, ctx);
-      const st = res.step;
-      if (st) {
-        const recipients = await core.runRecipients(tx, x.runId, tenantId);
-        const s = { id: x.runId, status: st.status, stageIdx: st.stageIdx, step: st.step };
-        res.events.push(...processUpdated(recipients, s));
-      }
-      emit(x.runId, res.events, res.kick);
-    },
-    async decide(x) {
-      const idx = locked?.stage_idx;
-      if (idx === undefined) return;
-      const p = { runId: x.runId, tenantId, idx, stageRunId: x.stageRunId, reason: x.reason };
-      const events = await toDecision(d, tx, p);
-      const recipients = await core.runRecipients(tx, x.runId, tenantId);
-      const st = { id: x.runId, status: "needs_decision" as const, stageIdx: idx };
-      events.push(...processUpdated(recipients, st));
-      emit(x.runId, events, false);
-    },
+    settleOk: (x) => settleOk(c, s, x),
+    decide: (x) => decide(c, s, x),
   };
 }

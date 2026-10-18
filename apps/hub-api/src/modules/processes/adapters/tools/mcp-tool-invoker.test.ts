@@ -71,6 +71,9 @@ describe("mcpToolInvoker", () => {
     expect(await mcpToolInvoker({ invoker, config }).call(bad)).toEqual(want);
     expect(n).toBe(0);
   });
+});
+
+describe("mcpToolInvoker · kết quả lỗi", () => {
   it("HUB-FR-146 · toCallResult: TIMEOUT/UPSTREAM_ERROR theo câu lỗi; NOT_CONFIGURED ⇒ sent=false", () => {
     expect(toCallResult(toolError("TIMEOUT"))).toMatchObject({ code: "TIMEOUT", sent: true });
     expect(toCallResult(toolError("NOT_CONFIGURED"))).toMatchObject({ sent: false });

@@ -21,16 +21,16 @@ function fake(load: StepJoinLoad | null, fields: Record<string, string | number>
       return idxs.map((i) => `sr${i}`);
     },
     cancelTimers: async (runId, ids) => void calls.push(["cancelTimers", runId, ids]),
+    // (tham số `now` bỏ qua — nhật ký chỉ ghi runId + ids)
     branchEvent: async (runId, e) => void calls.push(["branchEvent", runId, e]),
   };
-  return { r: { steps }, calls };
+  return { r: { steps, clock: { now: () => new Date(0) } }, calls };
 }
 const join = (
   step: number,
   steps: number[],
   st: StageRunStatus[],
-  kinds: (string | undefined)[] = [],
-  branches: BranchRule[][] = [],
+  { kinds = [], branches = [] }: { kinds?: (string | undefined)[]; branches?: BranchRule[][] } = {},
 ): StepJoinLoad => ({
   step,
   steps,
@@ -41,7 +41,9 @@ const join = (
 const RULE: BranchRule = { field: "tong_tien", op: "gt", value: 20_000_000, gotoStep: 3 };
 /** Def 5 bước (0…4), s1 ở bước 1 rẽ nhánh `RULE`; bước 1 vừa xong. */
 const BR = () =>
-  join(1, [0, 1, 2, 3, 4], ["done", "done", "pending", "pending", "pending"], [], [[], [RULE]]);
+  join(1, [0, 1, 2, 3, 4], ["done", "done", "pending", "pending", "pending"], {
+    branches: [[], [RULE]],
+  });
 
 describe("HUB-FR-106 · T19s · settleStep (use case)", () => {
   it("không thấy run ⇒ null, không ghi", async () => {
@@ -70,10 +72,12 @@ describe("HUB-FR-106 · T19s · settleStep (use case)", () => {
     expect(f.calls).toEqual([["finish", "r1", 1]]);
   });
   it("PD-R15 · chờ hẹn retry ⇒ running; chờ wait_until ⇒ waiting_timer", async () => {
-    const retry = fake(join(0, [0, 0], ["waiting_timer", "done"], ["agent", "agent"]));
+    const retry = fake(join(0, [0, 0], ["waiting_timer", "done"], { kinds: ["agent", "agent"] }));
     expect((await settleStep(retry.r, "r1"))?.status).toBe("running");
     expect(retry.calls).toEqual([["setStatus", "r1", "running", 0]]);
-    const wait = fake(join(0, [0, 0], ["waiting_timer", "done"], ["wait_until", "agent"]));
+    const wait = fake(
+      join(0, [0, 0], ["waiting_timer", "done"], { kinds: ["wait_until", "agent"] }),
+    );
     expect(await settleStep(wait.r, "r1")).toEqual({
       kind: "wait",
       status: "waiting_timer",
@@ -117,7 +121,9 @@ describe("HUB-FR-147 · T19 · PD2-R13/R14 · rẽ nhánh trong join bước", (
   });
   it("đích không có thật (snapshot hỏng) ⇒ bỏ nhánh, đi bước kế", async () => {
     const f = fake(
-      join(1, [0, 1, 2], ["done", "done", "pending"], [], [[], [{ ...RULE, gotoStep: 9 }]]),
+      join(1, [0, 1, 2], ["done", "done", "pending"], {
+        branches: [[], [{ ...RULE, gotoStep: 9 }]],
+      }),
       { tong_tien: 25_000_000 },
     );
     expect((await settleStep(f.r, "r1"))?.step).toBe(2);

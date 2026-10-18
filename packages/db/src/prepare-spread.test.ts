@@ -60,7 +60,9 @@ describe("CR-093 · T19-perf vòng 3 · prepare-spread", () => {
     expect(signatureOf("q", [true])).not.toBe(signatureOf("q", ["t"]));
     expect(signatureOf("q", [1])).toBe(signatureOf("q", ["1"]));
   });
+});
 
+describe("CR-093 · T19-perf vòng 3 · prepare-spread · lỗi", () => {
   test("describe lỗi ⇒ onError, câu khác vẫn phát, kết nối vẫn trả", async () => {
     const f = fakePool("bad $1");
     const errs: unknown[] = [];

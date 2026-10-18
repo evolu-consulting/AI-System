@@ -4,7 +4,7 @@
 import type { RoomProcessPart } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { StepRepo } from "../../application/ports";
+import type { BranchEvent, StepRepo } from "../../application/ports";
 import { THREAD_LOCALE } from "../../core/thread";
 import { threadContent } from "../../core/thread.rules";
 import { timerRepo } from "../timers/timers.repo";
@@ -15,45 +15,42 @@ type Fields = Record<string, string | number>;
 const isFields = (v: unknown): v is Fields =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-export function branchWrites(tx: Tx, tenantId: string): BranchWrites {
-  return {
-    async currentFields(runId, stageIdx) {
-      const [r] = await tx.execute<{ fields: unknown }>(sql`select o.fields from hub.stage_runs s
+async function currentFields(tx: Tx, tenantId: string, runId: string, stageIdx: number) {
+  const [r] = await tx.execute<{ fields: unknown }>(sql`select o.fields from hub.stage_runs s
         join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
         where s.process_run_id = ${runId} and s.tenant_id = ${tenantId} and s.stage_idx = ${stageIdx}`);
-      return isFields(r?.fields) ? r.fields : null;
-    },
-    async skipStages(runId, idxs) {
-      // Q-D2-3 · chỉ stage chưa chạy (`pending`/`queued`) ⇒ `skipped`; mảng rỗng vẫn MỘT câu (số câu cố định).
-      const rows = await tx.execute<{ id: string }>(sql`update hub.stage_runs
+  return isFields(r?.fields) ? r.fields : null;
+}
+
+async function skipStages(tx: Tx, tenantId: string, runId: string, idxs: readonly number[]) {
+  // Q-D2-3 · chỉ stage chưa chạy (`pending`/`queued`) ⇒ `skipped`; mảng rỗng vẫn MỘT câu (số câu cố định).
+  const rows = await tx.execute<{ id: string }>(sql`update hub.stage_runs
         set status = 'skipped', finished_at = now(), updated_at = now()
         where process_run_id = ${runId} and tenant_id = ${tenantId}
           and stage_idx = any(array(select jsonb_array_elements_text(${JSON.stringify(idxs)}::jsonb)::int))
           and status in ('pending', 'queued')
         returning id`);
-      return [...rows].map((r) => r.id);
-    },
-    async cancelTimers(runId, stageRunIds) {
-      await timerRepo(tx, tenantId).cancelForRun(runId, stageRunIds, new Date());
-    },
-    async branchEvent(runId, e) {
-      const meta = {
-        kind: "branch",
-        process_run_id: runId,
-        stage_idx: e.stageIdx,
-        to_step: e.toStep,
-        rule: e.rule,
-      } satisfies RoomProcessPart;
-      const content = threadContent(meta, THREAD_LOCALE, { process: "" });
-      const summary = {
-        run_id: runId,
-        stage_idx: e.stageIdx,
-        from_step: e.fromStep,
-        to_step: e.toStep,
-        rule: e.rule,
-      };
-      // PD2-R14 · audit actor hệ thống (actor_id NULL) + sự kiện thread (chỉ run bắt đầu từ phòng) — MỘT câu.
-      await tx.execute(sql`with a as (
+  return [...rows].map((r) => r.id);
+}
+
+async function branchEvent(tx: Tx, tenantId: string, runId: string, e: BranchEvent) {
+  const meta = {
+    kind: "branch",
+    process_run_id: runId,
+    stage_idx: e.stageIdx,
+    to_step: e.toStep,
+    rule: e.rule,
+  } satisfies RoomProcessPart;
+  const content = threadContent(meta, THREAD_LOCALE, { process: "" });
+  const summary = {
+    run_id: runId,
+    stage_idx: e.stageIdx,
+    from_step: e.fromStep,
+    to_step: e.toStep,
+    rule: e.rule,
+  };
+  // PD2-R14 · audit actor hệ thống (actor_id NULL) + sự kiện thread (chỉ run bắt đầu từ phòng) — MỘT câu.
+  await tx.execute(sql`with a as (
           insert into hub.audit_log (tenant_id, actor_id, actor_role, action, entity, entity_id, entity_name, summary)
           select r.tenant_id, null, null, 'branch', 'process_run', r.id,
             left(coalesce(r.snapshot->>'name', ''), 200), ${JSON.stringify(summary)}::jsonb
@@ -66,6 +63,15 @@ export function branchWrites(tx: Tx, tenantId: string): BranchWrites {
         from hub.process_runs r
         where r.id = ${runId} and r.tenant_id = ${tenantId}
           and r.origin_kind = 'room' and r.origin_room_id is not null`);
+}
+
+export function branchWrites(tx: Tx, tenantId: string): BranchWrites {
+  return {
+    currentFields: (runId, stageIdx) => currentFields(tx, tenantId, runId, stageIdx),
+    skipStages: (runId, idxs) => skipStages(tx, tenantId, runId, idxs),
+    async cancelTimers(runId, stageRunIds, now) {
+      await timerRepo(tx, tenantId).cancelForRun(runId, stageRunIds, now);
     },
+    branchEvent: (runId, e) => branchEvent(tx, tenantId, runId, e),
   };
 }

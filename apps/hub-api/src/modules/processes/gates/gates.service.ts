@@ -141,6 +141,25 @@ const updatedOf = (run: Locked, status: ProcessRunStatus, step: StepOutcome | nu
 const vrole = (r: AuthUser["role"]): Viewer["role"] =>
   r === "platform_admin" || r === "tenant_admin" ? r : "member";
 
+type LoadedTask = Awaited<ReturnType<typeof g.loadTask>>;
+
+/** Task phải có, cùng tenant (trừ platform_admin), người quyết thuộc Group duyệt/chuyển cấp, đúng loại, phản hồi hợp lệ. */
+function assertMayDecide(
+  task: LoadedTask,
+  { v, groupIds }: Req,
+  b: ReviewDecisionRequest,
+): asserts task is NonNullable<LoadedTask> {
+  if (!task) throw notFound();
+  if (v.role !== "platform_admin" && v.tenantId !== task.tenant_id) throw notFound();
+  const users = new Set(task.user_ids ?? []);
+  const inGroup = (id: string | null) => id !== null && groupIds.has(id);
+  // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
+  if (!users.has(v.userId) && !inGroup(task.assignee_group_id) && !inGroup(task.escalated_group_id))
+    throw notFound();
+  if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
+  if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
+}
+
 export class GateService {
   private readonly view: ViewService;
   constructor(private readonly d: ProcessDeps) {
@@ -175,19 +194,7 @@ export class GateService {
   ): Promise<Outcome<TaskDetail>> {
     const { v, groupIds } = req;
     const task = await g.loadTask(tx, taskId);
-    if (!task) throw notFound();
-    if (v.role !== "platform_admin" && v.tenantId !== task.tenant_id) throw notFound();
-    const users = new Set(task.user_ids ?? []);
-    const inGroup = (id: string | null) => id !== null && groupIds.has(id);
-    // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
-    if (
-      !users.has(v.userId) &&
-      !inGroup(task.assignee_group_id) &&
-      !inGroup(task.escalated_group_id)
-    )
-      throw notFound();
-    if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
-    if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
+    assertMayDecide(task, req, b);
     const idx = task.stage_idx;
     // T19-perf · pipeline: khoá run (§10, câu ĐẦU) + 2 câu đọc gửi liền một round-trip; Postgres chạy tuần tự trên cùng
     // kết nối ⇒ hai câu đọc chạy SAU khi đã giữ khoá run. Run không thấy ⇒ 404, kết quả đọc bỏ.

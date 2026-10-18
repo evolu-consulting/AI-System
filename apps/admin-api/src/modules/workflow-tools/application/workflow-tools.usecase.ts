@@ -42,10 +42,8 @@ async function unchanged(r: WorkflowToolsRepo, k: SwitchKey): Promise<ToolView> 
 
 function write(
   r: WorkflowToolsRepo,
-  k: SwitchKey,
   t: ToolTarget,
-  actorId: string,
-  want: ToggleWant,
+  { k, actorId, want }: { k: SwitchKey; actorId: string; want: ToggleWant },
 ) {
   const change = toggleChange(t.cur, want);
   if (change === "insert") return { change, row: r.insert(k, actorId) };
@@ -64,7 +62,7 @@ export function toggleTool(
   return tx.write(async (r, sink) => {
     const t = await r.lockOne(k);
     if (!t) throw new ToolNotFoundError();
-    const w = write(r, k, t, actorId, want);
+    const w = write(r, t, { k, actorId, want });
     const row = await w.row;
     if (w.change === "none") return view(t, t.cur, isOnAfter(t.cur, "none"));
     if (!row) return unchanged(r, k); // đua INSERT: hàng do giao dịch khác vừa ghi ⇒ đọc lại, không audit

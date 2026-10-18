@@ -112,7 +112,16 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
       });
   });
   const uids = stages.map((s) => s.uid);
-  const back: LayoutEdge[] = stages.flatMap((s) =>
+  return {
+    nodes,
+    edges: [...forwardEdges(cols, uids), ...backEdges(stages), ...branchEdges(stages, steps)],
+    steps,
+  };
+}
+
+/** Cạnh "Chưa đạt" quay lại: stage `review` → header của bước đích `backTo` (< bước hiện tại). */
+const backEdges = (stages: readonly LayoutStage[]): LayoutEdge[] =>
+  stages.flatMap((s) =>
     s.after === "review"
       ? s.backTo
           .filter((t) => t < s.step && t >= 0)
@@ -124,12 +133,6 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
           }))
       : [],
   );
-  return {
-    nodes,
-    edges: [...forwardEdges(cols, uids), ...back, ...branchEdges(stages, steps)],
-    steps,
-  };
-}
 
 /** Bước đích khi thả node có góc trái `x`: cột gần nhất; vượt quá cuối nửa cột ⇒ `steps` (bước mới). */
 export function stepFromDropX(x: number, steps: number): number {

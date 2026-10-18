@@ -112,6 +112,13 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
+  mountRoutes(app, d);
+  const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
+  startBackground({ m, bg, poster, khWriter, drain });
+  return { roomSender: roomStart(d), conversationStart: d.start };
+}
+
+function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps): void {
   for (const r of [
     processRunsRoutes,
     gatesRoutes,
@@ -121,9 +128,6 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     defsRoutes,
   ])
     app.route("/", r(d));
-  const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
-  startBackground({ m, bg, poster, khWriter, drain });
-  return { roomSender: roomStart(d), conversationStart: d.start };
 }
 
 /** P-d2 · D2-12/S11 · driver stage `tool` giữ cổng scope system trong closure; launcher chỉ nhận factory. */

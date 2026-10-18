@@ -133,7 +133,7 @@ export type StepRepo = {
   /** T19 · 1 câu theo tập: stage `idxs` còn `pending`/`queued` ⇒ `skipped` + `finished_at`; trả id stage vừa nhảy. */
   skipStages(runId: string, idxs: readonly number[]): Promise<string[]>;
   /** T19 · 1 câu theo tập: huỷ hẹn mở của các stage vừa nhảy (Q-D2-3: phòng thủ, thường 0 hàng). */
-  cancelTimers(runId: string, stageRunIds: readonly string[]): Promise<void>;
+  cancelTimers(runId: string, stageRunIds: readonly string[], now: Date): Promise<void>;
   /** T19 · 1 câu: audit `branch` + sự kiện thread `branch` (chỉ run bắt đầu từ phòng); đăng bởi poster SAU COMMIT. */
   branchEvent(runId: string, e: BranchEvent): Promise<void>;
 };

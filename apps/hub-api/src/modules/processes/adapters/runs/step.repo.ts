@@ -78,5 +78,5 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
 
 /** D2-16 · vỏ `settleStep` cho nơi gọi đang giữ `Tx` (chữ ký cũ `(tx, runId, tenantId)`). */
 export function settleStepTx(tx: Tx, runId: string, tenantId: string): Promise<StepOutcome | null> {
-  return settleStep({ steps: stepRepo(tx, tenantId) }, runId);
+  return settleStep({ steps: stepRepo(tx, tenantId), clock: { now: () => new Date() } }, runId);
 }

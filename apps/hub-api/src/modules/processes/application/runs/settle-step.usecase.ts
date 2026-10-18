@@ -14,7 +14,7 @@ import {
   stepJoin,
 } from "../../domain/runs/step.rules";
 import type { ProcessRunStatus } from "../../domain/types";
-import type { StepJoinLoad, StepRepo } from "../ports";
+import type { Clock, StepJoinLoad, StepRepo } from "../ports";
 
 /** Kết quả sau ghi: `process_runs.status/current_step/current_stage_idx` mới. */
 export type StepOutcome = {
@@ -23,7 +23,7 @@ export type StepOutcome = {
   step: number;
   stageIdx: number;
 };
-export type StepRepos = { steps: StepRepo };
+export type StepRepos = { steps: StepRepo; clock: Clock };
 
 /** PD2-R13 · bước đích nếu stage đứng một mình của `step` có luật rẽ nhánh khớp; ngược lại `null` (đi bước kế). */
 async function branchTarget(
@@ -50,7 +50,7 @@ async function takeBranch(r: StepRepos, runId: string, load: StepJoinLoad): Prom
   const ids = await r.steps.skipStages(runId, skippedStages(load.steps, load.step, b.gotoStep));
   // T19-perf · hai câu ghi độc lập gửi liền (pipeline); Postgres chạy theo thứ tự gửi ⇒ khoá hẹn vẫn trước (plan-d2 §8).
   await Promise.all([
-    r.steps.cancelTimers(runId, ids),
+    r.steps.cancelTimers(runId, ids, r.clock.now()),
     r.steps.branchEvent(runId, {
       stageIdx: b.stageIdx,
       fromStep: load.step,

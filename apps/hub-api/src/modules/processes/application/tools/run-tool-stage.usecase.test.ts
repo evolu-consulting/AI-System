@@ -46,8 +46,7 @@ type FakeOpts = {
   realAction?: boolean;
   inputSchemaOk?: boolean;
 };
-function fakeDeps(o: FakeOpts) {
-  const ev: Ev[] = [];
+function loadOf(o: FakeOpts) {
   const state = {
     retryCount: o.retryCount ?? 0,
     retryAttempt: o.retryCount ? 1 : null,
@@ -55,7 +54,7 @@ function fakeDeps(o: FakeOpts) {
     attempt: 1,
     round: 1,
   };
-  const load = {
+  return {
     stageName: "T",
     toolKey: "k",
     workflowId: "w",
@@ -75,6 +74,10 @@ function fakeDeps(o: FakeOpts) {
     wfEnabled: true,
     state,
   };
+}
+function fakeDeps(o: FakeOpts) {
+  const ev: Ev[] = [];
+  const load = loadOf(o);
   const r = {
     runs: { lock: async () => ev.push("lockRun") > 0 },
     tools: {

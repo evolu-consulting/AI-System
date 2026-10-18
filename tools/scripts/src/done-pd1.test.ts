@@ -49,7 +49,9 @@ describe("HUB-FR-143 · done:pd1", () => {
     expect(prependPath("A", "B;C", ";")).toBe("A;B;C");
     expect(prependPath("A", undefined, ";")).toBe("A");
   });
+});
 
+describe("HUB-FR-143 · done:pd1 · bước + tổng kết", () => {
   it("pd1Steps: đúng 7 bước theo thứ tự, typecheck Windows bỏ agent-runtime, nodeDir chỉ ở e2e", () => {
     const s = pd1Steps({ bun: "bun", platform: "win32", nodeDir: "N" });
     expect(s).toHaveLength(7);
