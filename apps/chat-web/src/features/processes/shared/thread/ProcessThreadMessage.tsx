@@ -29,6 +29,10 @@ const ForwardMessage = lazy(() =>
   import("../../ask/components/ForwardMessage").then((m) => ({ default: m.ForwardMessage })),
 );
 
+const BranchMessage = lazy(() =>
+  import("./BranchMessage").then((m) => ({ default: m.BranchMessage })),
+);
+
 type Props = { message: RoomMessage; roomId: string; myId: string };
 
 function Switch({ message, roomId, myId }: Props) {
@@ -47,6 +51,8 @@ function Switch({ message, roomId, myId }: Props) {
       return <TaskResultMessage {...common} part={part} />;
     case "forward":
       return <ForwardMessage {...common} part={part} />;
+    case "branch":
+      return <BranchMessage message={message} part={part} />;
     case "run_end":
       return <RunEndMessage {...common} part={part} />;
     default:

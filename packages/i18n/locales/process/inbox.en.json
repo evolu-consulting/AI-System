@@ -28,7 +28,9 @@
     "expand": "View & handle",
     "openRun": "Open run page",
     "resolvedByYou": "You · {{result}}",
-    "escalated": "{{process}} · {{stage}} was escalated to your group"
+    "escalated": "{{process}} · {{stage}} was escalated to your group",
+    "escalatedTo": "Escalated to the group {{group}} because nobody has reviewed it.",
+    "escalatedToH": "Escalated to the group {{group}} because nobody reviewed it after {{hours}} hours."
   },
   "run": {
     "tab": {
@@ -54,7 +56,8 @@
       "forward": "{{actor}} asked {{to}}",
       "cancel": "{{actor}} cancelled the run",
       "expire": "The run expired",
-      "escalate": "The system escalated to group {{group}}"
+      "escalate": "The system escalated to group {{group}}",
+      "branch": "Branch: going to step {{step}} (rule {{rule}})"
     }
   }
 }

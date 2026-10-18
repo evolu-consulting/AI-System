@@ -19,6 +19,20 @@ export type StepListProps = {
   onRemove: (uid: string) => void;
 };
 
+/** P-d2 · đường bàn phím/đọc màn hình của cạnh rẽ nhánh: "Rẽ nhánh: luật n tới bước m". */
+function BranchLines({ v }: { v: StageView }) {
+  const { t } = useTranslation();
+  const lines = v.branch.flatMap((g, k) => (g === null ? [] : [{ n: k + 1, step: g + 1 }]));
+  if (lines.length === 0) return null;
+  return (
+    <ul className="mt-1 space-y-0.5 pl-2 text-caption text-muted-foreground">
+      {lines.map((l) => (
+        <li key={l.n}>{t("process.admin.canvas.list.branch", l)}</li>
+      ))}
+    </ul>
+  );
+}
+
 const Row = memo(
   function Row({ v, p }: { v: StageView; p: StepListProps }) {
     return (
@@ -42,6 +56,7 @@ const Row = memo(
         >
           <StageBody v={v} />
         </button>
+        <BranchLines v={v} />
       </li>
     );
   },

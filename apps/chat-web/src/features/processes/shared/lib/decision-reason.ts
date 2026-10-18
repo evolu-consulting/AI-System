@@ -24,6 +24,7 @@ export const reasonHintKey = (r: DecisionReason): string | null =>
   r === "sandbox_unavailable" ||
   r === "apply_conflict" ||
   r === "retry_exhausted" ||
+  r === "tool_failed" ||
   r === "timer_invalid"
     ? `process.common.${r}_hint`
     : null;

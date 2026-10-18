@@ -8,50 +8,28 @@ import {
   PROCESS_STAGES_MAX,
   type ProcessDef,
   type ProcessDefInput,
-  type ProcessStageDef,
+  type ProcessToolItem,
   processDefStageIssues,
   resolveSteps,
-  STAGE_TIMEOUT_S,
 } from "@ai/contracts/hub-admin";
 import { ttlIssueKey } from "../domain/error-keys";
 import { PROCESS_TTL_DAYS } from "../domain/limits";
 import { ttlFromValue, ttlIssue, ttlToValue } from "../domain/ttl-rules";
-import { APPLY_RULE_ERR, applyCrossErrors, executorToDef, normalizeApply } from "./apply-form";
-import {
-  AUTOFIX_RULE_ERR,
-  autofixToDef,
-  autofixToDraft,
-  emptyAutofix,
-  validateAutofixPart,
-} from "./autofix-form";
-import {
-  type InputDraft,
-  inputsToDef,
-  inputsToDraft,
-  mustKnowToDef,
-  mustKnowToDraft,
-  stageSourcesToDef,
-  stageSourcesToDraft,
-  validateSourcesPart,
-} from "./sources-form";
+import { APPLY_RULE_ERR, applyCrossErrors, normalizeApply } from "./apply-form";
+import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";
+import { carryErrors, d2LiveErrors, toolSubmitErrors } from "./d2-validate";
+import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from "./sources-form";
+import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
 import { budgetOk, P, validateStage } from "./stage-validate";
+import { normalizeTool } from "./tool-form";
 import {
   addCrossIssue,
-  emptyEscalate,
-  emptyWait,
-  escalateFromDef,
-  escalateToDef,
-  isWait,
   normalizeWait,
-  remindFromDef,
-  remindToDef,
   stageShape,
   TEAM_SECTION_KEY,
   type TeamSections,
   validateWaitPart,
-  waitFromDef,
-  waitToDef,
 } from "./wait-form";
 
 export type {
@@ -65,40 +43,7 @@ export type {
 
 import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
 
-export { slugKey };
-
-let seq = 0;
-const nextUid = (): string => `s${++seq}`;
-
-export function emptyStage(step = 0): StageDraft {
-  return {
-    uid: nextUid(),
-    keyAuto: true,
-    key: "",
-    name: "",
-    executor: "",
-    instruction: "",
-    filename: "",
-    template: "",
-    sections: [],
-    fields: [],
-    after: "auto",
-    step,
-    backTo: [],
-    groupId: "",
-    real: false,
-    answerer: "starter",
-    answererId: "",
-    timeout: String(STAGE_TIMEOUT_S.default),
-    budget: "",
-    sources: [],
-    mustKnow: "",
-    autofix: emptyAutofix(),
-    wait: emptyWait(),
-    remind: "",
-    escalate: emptyEscalate(),
-  };
-}
+export { emptyStage, slugKey };
 
 export const emptyDraft = (): DefDraft => ({
   key: "",
@@ -114,49 +59,6 @@ export const emptyDraft = (): DefDraft => ({
   ttl: String(PROCESS_TTL_DAYS.default),
   noExpiry: false,
 });
-
-const num = (v: number | null): string => (v === null ? "" : String(v));
-
-const executorOf = (ex: ProcessStageDef["executor"]): string =>
-  ex.kind === "agent"
-    ? `agent:${ex.agent_id}`
-    : ex.kind === "team"
-      ? `team:${ex.team_id}`
-      : ex.kind === "wait_until"
-        ? "wait_until"
-        : "apply";
-
-function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
-  const a = s.answerer;
-  const rv = s.after.kind === "review" ? s.after : null;
-  return {
-    uid: nextUid(),
-    keyAuto: false,
-    key: s.key,
-    name: s.name,
-    executor: executorOf(s.executor),
-    wait: s.executor.kind === "wait_until" ? waitFromDef(s.executor) : emptyWait(),
-    remind: remindFromDef(rv?.remind_every_h),
-    escalate: escalateFromDef(rv?.escalate),
-    instruction: s.instruction,
-    filename: s.output.filename,
-    template: s.output.template,
-    sections: [...s.output.required_sections],
-    fields: s.output.fields.map((f) => ({ ...f })),
-    after: s.after.kind,
-    step,
-    backTo: s.after.kind === "review" ? [...(s.after.back_to_steps ?? [])] : [],
-    groupId: s.after.kind === "review" ? (s.after.group_id ?? "") : "",
-    real: s.real_action,
-    answerer: a.kind,
-    answererId: a.kind === "group" ? a.group_id : a.kind === "user" ? a.user_id : "",
-    timeout: String(s.timeout_s),
-    budget: num(s.token_budget),
-    sources: stageSourcesToDraft(s.sources),
-    mustKnow: mustKnowToDraft(s.must_know),
-    autofix: autofixToDraft(s.autofix),
-  };
-}
 
 export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
   const steps = resolveSteps(d.stages);
@@ -179,47 +81,6 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
 function ttlDraft(d: { ttl_days?: number | null }): Pick<DefDraft, "ttl" | "noExpiry"> {
   const t = ttlFromValue(d.ttl_days === undefined ? PROCESS_TTL_DAYS.default : d.ttl_days);
   return { ttl: t.text, noExpiry: t.noExpiry };
-}
-
-const intOrNull = (s: string): number | null => (s.trim() === "" ? null : Number(s.trim()));
-
-function stageToInput(draft: StageDraft): ProcessStageDef {
-  const s = normalizeWait(normalizeApply(draft));
-  return {
-    key: s.key,
-    name: s.name.trim(),
-    step: s.step,
-    executor: isWait(s) ? waitToDef(s.wait) : executorToDef(s.executor),
-    instruction: s.instruction,
-    output: {
-      filename: s.filename,
-      template: s.template,
-      required_sections: s.sections,
-      fields: s.fields,
-    },
-    after:
-      s.after === "review"
-        ? {
-            kind: "review",
-            group_id: s.groupId || null,
-            back_to_steps: s.backTo,
-            remind_every_h: remindToDef(s),
-            escalate: escalateToDef(s),
-          }
-        : { kind: "auto" },
-    real_action: s.real,
-    answerer:
-      s.answerer === "group"
-        ? { kind: "group", group_id: s.answererId }
-        : s.answerer === "user"
-          ? { kind: "user", user_id: s.answererId }
-          : { kind: "starter" },
-    timeout_s: Number(s.timeout),
-    token_budget: intOrNull(s.budget),
-    sources: stageSourcesToDef(s.sources),
-    must_know: mustKnowToDef(s.mustKnow),
-    autofix: autofixToDef(s.autofix),
-  };
 }
 
 /** Bản nháp (đã qua `validateDraft`) → body gửi Hub. */
@@ -285,9 +146,10 @@ export function withLiveErrors(
   d: DefDraft,
   errors: DraftErrors,
   teams?: TeamSections,
+  tools?: readonly ProcessToolItem[],
 ): DraftErrors {
   const out: DraftErrors = {};
-  for (const [k, v] of Object.entries(errors)) {
+  for (const [k, v] of Object.entries(carryErrors(errors, d.stages, tools))) {
     if (v !== TEAM_SECTION_KEY && !(k === "ttl_days" && v === ttlIssueKey())) out[k] = v;
   }
   if (ttlIssue(d.ttl, d.noExpiry)) out.ttl_days = ttlIssueKey();
@@ -296,7 +158,7 @@ export function withLiveErrors(
     for (const i of processDefStageIssues(eff.map(stageShape), { teams }))
       if (i.rule === "TEAM_SECTION_UNOWNED") out[i.path] = TEAM_SECTION_KEY;
   }
-  return out;
+  return { ...out, ...d2LiveErrors(d.stages, d.inputs, tools) };
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */
@@ -304,6 +166,7 @@ export function validateDraft(
   d: DefDraft,
   forEnable = d.enabled,
   teams?: TeamSections,
+  tools?: readonly ProcessToolItem[],
 ): DraftErrors {
   const e: DraftErrors = {};
   if (ttlIssue(d.ttl, d.noExpiry)) e.ttl_days = ttlIssueKey();
@@ -315,17 +178,17 @@ export function validateDraft(
   if (!budgetOk(d.budget)) e.token_budget = `${P}budget`;
   if (d.stages.length < 1 || d.stages.length > PROCESS_STAGES_MAX) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
-    validateStage(normalizeWait(s), i, d.stages, e);
+    validateStage(normalizeTool(normalizeWait(s)), i, d.stages, e);
     if (forEnable && s.after === "review" && s.groupId === "")
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
-  const eff = d.stages.map((s) => normalizeWait(normalizeApply(s)));
+  const eff = d.stages.map((s) => normalizeTool(normalizeWait(normalizeApply(s))));
   validateWaitPart(eff, d.inputs, e);
   validateSteps(eff, e, { inputs: d.inputs, teams });
   validateSourcesPart({ ...d, stages: eff }, e);
   validateAutofixPart(eff, e);
-  Object.assign(e, applyCrossErrors(d.stages));
-  return e;
+  Object.assign(e, applyCrossErrors(d.stages), d2LiveErrors(d.stages, d.inputs, tools));
+  return { ...toolSubmitErrors(d.stages, tools), ...e };
 }
 
 /** Chỉ số giai đoạn nhắc tới trong các path lỗi (để mở accordion). */

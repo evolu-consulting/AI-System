@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { DATE_INPUT_INVALID_KEY } from "../../domain/date-input";
+import { NUMBER_INPUT_INVALID_KEY } from "../../domain/number-input";
 import type { FieldError, FieldValue } from "../lib/inputs-rules";
 import { type ChipsState, SELECT_CLASS, SourceRefField } from "./SourceRefField";
 
@@ -48,7 +49,11 @@ function Control(p: Props) {
       <SourceRefField
         def={def}
         value={value}
-        error={error === "tooLong" || error === "dateInvalid" ? undefined : error}
+        error={
+          error === "tooLong" || error === "dateInvalid" || error === "numberInvalid"
+            ? undefined
+            : error
+        }
         chips={p.chips}
         disabled={p.disabled}
         onSource={p.onSource}
@@ -75,26 +80,10 @@ function Control(p: Props) {
     );
   }
   if (def.type === "file") return <FileControl {...p} />;
-  if (def.type === "date") {
-    return (
-      <>
-        <input
-          type="date"
-          className={SELECT_CLASS}
-          aria-label={def.label}
-          value={value.value}
-          disabled={p.disabled}
-          aria-invalid={error ? true : undefined}
-          onChange={(e) => p.onChange({ value: e.target.value })}
-        />
-        {error === "dateInvalid" && (
-          <p role="alert" className="text-caption text-destructive">
-            {t(DATE_INPUT_INVALID_KEY)}
-          </p>
-        )}
-      </>
-    );
-  }
+  if (def.type === "number")
+    return <TypedControl {...p} type="number" bad="numberInvalid" msg={NUMBER_INPUT_INVALID_KEY} />;
+  if (def.type === "date")
+    return <TypedControl {...p} type="date" bad="dateInvalid" msg={DATE_INPUT_INVALID_KEY} />;
   return (
     <>
       <Textarea
@@ -107,6 +96,30 @@ function Control(p: Props) {
       />
       {error === "tooLong" && (
         <p className="text-caption text-destructive">{t("process.inputs.err.text.tooLong")}</p>
+      )}
+    </>
+  );
+}
+
+/** Ô `date` / `number` của trình duyệt: giá trị chuỗi, lỗi `bad` ⇒ câu `msg` dưới ô. */
+function TypedControl(p: Props & { type: "date" | "number"; bad: FieldError; msg: string }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <input
+        type={p.type}
+        step={p.type === "number" ? "any" : undefined}
+        className={SELECT_CLASS}
+        aria-label={p.def.label}
+        value={p.value.value}
+        disabled={p.disabled}
+        aria-invalid={p.error ? true : undefined}
+        onChange={(e) => p.onChange({ value: e.target.value })}
+      />
+      {p.error === p.bad && (
+        <p role="alert" className="text-caption text-destructive">
+          {t(p.msg)}
+        </p>
       )}
     </>
   );

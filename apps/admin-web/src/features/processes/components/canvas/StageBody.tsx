@@ -1,6 +1,6 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1): nội dung thẻ một giai đoạn — dùng chung cho nút canvas và dòng StepList.
 // Tên truy cập của nút cha bắt đầu bằng "Giai đoạn n: <tên>" (e2e dùng regex); phần sau là executor/gate/huy hiệu.
-import { CircleAlert, Clock, ShieldCheck, Zap } from "lucide-react";
+import { CircleAlert, Clock, GitBranch, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { StageView } from "./stage-view";
@@ -46,6 +46,30 @@ export function StageBody({ v }: { v: StageView }) {
             <Badge variant="info">
               <Clock aria-hidden />
               {t("process.admin.canvas.node.wait")}
+            </Badge>
+          </>
+        ) : null}
+        {v.tool ? (
+          <>
+            {" "}
+            <Badge variant="info">
+              <Wrench aria-hidden />
+              {t("process.admin.canvas.node.tool")}
+            </Badge>
+          </>
+        ) : null}
+        {v.sideEffect ? (
+          <>
+            {" "}
+            <Badge variant="warn">{t("process.admin.canvas.node.sideEffect")}</Badge>
+          </>
+        ) : null}
+        {v.branch.length > 0 ? (
+          <>
+            {" "}
+            <Badge variant="info">
+              <GitBranch aria-hidden />
+              {t("process.admin.canvas.node.branch", { count: v.branch.length })}
             </Badge>
           </>
         ) : null}

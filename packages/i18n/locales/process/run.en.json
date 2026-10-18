@@ -82,7 +82,8 @@
     "backLimitNote": "No go-backs left (max {{max}}). Submitting sends this to the decider.",
     "backInvalid": "You can't go back to that step anymore. Refreshed.",
     "escalated": "Escalated",
-    "escalatedNote": "This review was escalated to the group {{group}} because nobody has reviewed it. The original group can still review."
+    "escalatedNote": "This review was escalated to the group {{group}} because nobody has reviewed it. The original group can still review.",
+    "escalatedNoteH": "This review was escalated to the group {{group}} because nobody reviewed it after {{hours}} hours. The original group can still review."
   },
   "decision": {
     "region": "Needs a decision",

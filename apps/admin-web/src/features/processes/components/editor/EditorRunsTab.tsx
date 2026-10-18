@@ -7,9 +7,25 @@ import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock } from "@/lib/format";
 import { useTenantRuns } from "../../hooks/use-run-data";
+import { runStageNote } from "../../lib/run-stage-note";
 import { RunStatusBadge } from "../run/RunStatusBadge";
 
 type Props = { processKey: string; tenantId: string | undefined };
+
+/** "2/5" + ghi chú hẹn giờ (chờ tới ngày / thử lại lúc) — UAT P-d1 B5. */
+function StageCell({ run }: { run: ProcessRunSummary }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language === "vi" ? "vi" : "en";
+  const note = runStageNote(run, Intl.DateTimeFormat().resolvedOptions().timeZone, lang);
+  return (
+    <span className="block">
+      {run.current_stage_idx + 1}/{run.stage_count}
+      {note ? (
+        <span className="block text-caption text-muted-foreground">{t(note.key, note.params)}</span>
+      ) : null}
+    </span>
+  );
+}
 
 export function EditorRunsTab({ processKey, tenantId }: Props) {
   const { t } = useTranslation();
@@ -34,7 +50,7 @@ export function EditorRunsTab({ processKey, tenantId }: Props) {
     {
       id: "stage",
       header: L("stage"),
-      cell: (r) => `${r.current_stage_idx + 1}/${r.stage_count}`,
+      cell: (r) => <StageCell run={r} />,
     },
     { id: "started", header: L("started"), cell: (r) => formatClock(r.started_at) },
   ];

@@ -28,7 +28,9 @@
     "expand": "Xem & xử lý",
     "openRun": "Mở trang lượt chạy",
     "resolvedByYou": "Bạn · {{result}}",
-    "escalated": "Việc ở {{process}} · {{stage}} đã chuyển cấp tới nhóm của bạn"
+    "escalated": "Việc ở {{process}} · {{stage}} đã chuyển cấp tới nhóm của bạn",
+    "escalatedTo": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai kiểm.",
+    "escalatedToH": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai kiểm sau {{hours}} giờ."
   },
   "run": {
     "tab": {
@@ -54,7 +56,8 @@
       "forward": "{{actor}} nhờ {{to}}",
       "cancel": "{{actor}} huỷ lượt chạy",
       "expire": "Lượt chạy hết hạn",
-      "escalate": "Hệ thống chuyển cấp tới nhóm {{group}}"
+      "escalate": "Hệ thống chuyển cấp tới nhóm {{group}}",
+      "branch": "Rẽ nhánh: tới bước {{step}} (luật {{rule}})"
     }
   }
 }

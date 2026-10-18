@@ -7,6 +7,18 @@ import type { InputDraft, StageSourceDraft } from "./sources-form";
 export type WaitDraft = { source: string; offset: string; time: string };
 export type EscalateDraft = { on: boolean; afterH: string; groupId: string };
 
+/** P-d2 · nguồn một tham số tool: `from` rỗng = chưa chọn; `value` = giá trị cố định | khoá input | `<stage_key>:<field>`. */
+export type ArgDraft = {
+  from: "" | "const" | "input" | "field";
+  value: string;
+  /** Kiểu JS của giá trị cố định khi gửi (`number`/`boolean` theo kiểu tham số). */
+  kind: "string" | "number" | "boolean";
+};
+/** P-d2 · khối "Gọi tool": `key` rỗng = chưa chọn tool; `args` theo tên tham số. */
+export type ToolDraft = { key: string; args: Record<string, ArgDraft> };
+/** P-d2 · một luật rẽ nhánh; `goto` đếm bước từ 1 như UI (`goto_step = goto - 1`), null = chưa chọn. */
+export type BranchDraft = { field: string; op: string; value: string; goto: number | null };
+
 export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
 export type StageDraft = {
   /** Khoá React cục bộ (không gửi đi). */
@@ -45,6 +57,10 @@ export type StageDraft = {
   remind: string;
   /** P-d1 · "Chuyển cấp nếu chưa ai kiểm" (tắt ⇒ `escalate: null`, giữ giá trị đã nhập). */
   escalate: EscalateDraft;
+  /** P-d2 · khối "Gọi tool" (chỉ có nghĩa khi `executor = tool`). */
+  tool: ToolDraft;
+  /** P-d2 · luật rẽ nhánh (`after.branch`, cả review lẫn auto); mặc định `[]`. */
+  branch: BranchDraft[];
 };
 export type DefDraft = {
   key: string;

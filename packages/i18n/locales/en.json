@@ -560,6 +560,7 @@
       "agents": "Agents",
       "quota": "Quota",
       "users": "Users",
+      "workflowTools": "Process tools",
       "unavailableBody": "This section will be available in a later release."
     },
     "agents": {
@@ -618,6 +619,34 @@
       "pickFeature": "Choose a feature",
       "noFeatureLeft": "Every feature already has a quota",
       "cell": "{field} · {scope}"
+    },
+    "tools": {
+      "title": "Process tools",
+      "desc": "A workflow you enable here can be called by this company's processes at a “Call tool” stage.",
+      "search": "Search tools",
+      "col": {
+        "name": "Name",
+        "key": "Key",
+        "note": "Note",
+        "grantedBy": "Enabled by",
+        "on": "Enabled for company"
+      },
+      "sideEffect": "Side effects",
+      "workflowOff": "Workflow is off",
+      "workflowOffTip": "The workflow is off system-wide, so the tool can't be used even though it's enabled for this company.",
+      "grantedBy": "{name} · {date}",
+      "switchAria": "Enable tool {name}",
+      "empty": "There are no workflows in the catalog. Create one under Workflows, then enable it for this company here.",
+      "openWorkflows": "Open Workflows",
+      "noMatch": "No tool matches.",
+      "offTitle": "Turn off tool {name}?",
+      "offBody": "Runs waiting to call this tool will stop at “Needs a decision”.",
+      "offConfirm": "Turn off tool",
+      "toast": {
+        "on": "Enabled tool {name} for {tenant}",
+        "off": "Turned off tool {name} for {tenant}",
+        "gone": "This workflow is no longer in the catalog. The list was reloaded."
+      }
     },
     "timezone": {
       "change": "Change time zone",

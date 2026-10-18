@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: lưu quy trình — validate client, POST (mới) / PUT kèm `version` (409 ⇒ ConflictDialog),
 // lỗi Hub theo `paths` gắn vào ô và mở giai đoạn lỗi (plan-frontend-admin §1 "Validate").
-import type { ProcessDef, ProcessDefInput } from "@ai/contracts/hub-admin";
+import type { ProcessDef, ProcessDefInput, ProcessToolItem } from "@ai/contracts/hub-admin";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,8 @@ type Args = {
   d: DraftState;
   /** P-d1 · nhóm agent đã tải (mục từng thành viên) ⇒ luật `TEAM_SECTION_UNOWNED`; vắng ⇒ để Hub kiểm. */
   teams?: TeamSections;
+  /** P-d2 · catalog tool (kiểm TOOL_INVALID theo tham số); vắng ⇒ để Hub kiểm. */
+  tools?: readonly ProcessToolItem[];
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
@@ -52,7 +54,7 @@ function useRedirectAfterCreate(createdId: string | null, dirty: boolean) {
   }, [createdId, dirty, navigate]);
 }
 
-export function useDefSave({ id, tenantId, version, setVersion, d, teams }: Args) {
+export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools }: Args) {
   const { t } = useTranslation();
   const invalidate = useInvalidateDefs();
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function useDefSave({ id, tenantId, version, setVersion, d, teams }: Args
     },
   });
   const submit = async () => {
-    const errors = validateDraft(d.draftRef.current, undefined, teams);
+    const errors = validateDraft(d.draftRef.current, undefined, teams, tools);
     d.showErrors(errors);
     if (Object.keys(errors).length > 0) return;
     const body = toInput(d.draftRef.current);

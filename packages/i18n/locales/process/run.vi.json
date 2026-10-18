@@ -82,7 +82,8 @@
     "backLimitNote": "Đã hết {{max}} lần quay lại. Gửi sẽ chuyển cho người quyết.",
     "backInvalid": "Không quay lại được bước này nữa. Đã cập nhật.",
     "escalated": "Đã chuyển cấp",
-    "escalatedNote": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai kiểm. Nhóm kiểm ban đầu vẫn kiểm được."
+    "escalatedNote": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai kiểm. Nhóm kiểm ban đầu vẫn kiểm được.",
+    "escalatedNoteH": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai kiểm sau {{hours}} giờ. Nhóm kiểm ban đầu vẫn kiểm được."
   },
   "decision": {
     "region": "Cần người quyết",

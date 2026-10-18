@@ -17,13 +17,42 @@ export type LayoutNode =
   | { id: string; kind: "stage"; x: number; y: number; step: number; index: number }
   | { id: string; kind: "stepHeader"; x: number; y: number; step: number; full: boolean }
   | { id: string; kind: "join"; x: number; y: number; step: number; count: number };
-export type LayoutEdge = { id: string; source: string; target: string; kind: "forward" | "back" };
+export type LayoutEdge = {
+  id: string;
+  source: string;
+  target: string;
+  kind: "forward" | "back" | "branch";
+  /** P-d2 · chỉ cạnh `branch`: số thứ tự luật (đếm từ 1). */
+  rule?: number;
+};
 export type Layout = { nodes: LayoutNode[]; edges: LayoutEdge[]; steps: number };
 
 export const headerId = (step: number): string => `h${step}`;
 export const joinId = (step: number): string => `j${step}`;
 
-type LayoutStage = Pick<Stepped, "uid" | "step" | "backTo" | "after">;
+/** `branch`: bước đích (0-based) của từng luật rẽ nhánh; null = chưa chọn. */
+type LayoutStage = Pick<Stepped, "uid" | "step" | "backTo" | "after"> & {
+  branch?: readonly (number | null)[];
+};
+
+/** P-d2 · cạnh nét đứt từ giai đoạn tới tiêu đề bước đích, một cạnh mỗi luật hợp lệ (đích > bước nguồn, có thật). */
+function branchEdges(stages: readonly LayoutStage[], steps: number): LayoutEdge[] {
+  return stages.flatMap((s) =>
+    (s.branch ?? []).flatMap((g, k) =>
+      g !== null && g > s.step && g < steps
+        ? [
+            {
+              id: `${s.uid}>${headerId(g)}#${k}`,
+              source: s.uid,
+              target: headerId(g),
+              kind: "branch" as const,
+              rule: k + 1,
+            },
+          ]
+        : [],
+    ),
+  );
+}
 
 function forwardEdges(cols: number[][], uids: string[]): LayoutEdge[] {
   const edges: LayoutEdge[] = [];
@@ -95,7 +124,11 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
           }))
       : [],
   );
-  return { nodes, edges: [...forwardEdges(cols, uids), ...back], steps };
+  return {
+    nodes,
+    edges: [...forwardEdges(cols, uids), ...back, ...branchEdges(stages, steps)],
+    steps,
+  };
 }
 
 /** Bước đích khi thả node có góc trái `x`: cột gần nhất; vượt quá cuối nửa cột ⇒ `steps` (bước mới). */

@@ -1,5 +1,6 @@
 {
   "title": "{{name}} · !{{key}}",
+  "branch": "Rẽ nhánh: tới bước {{step}} (luật {{rule}})",
   "block": {
     "startedBy": "{{name}} khởi chạy",
     "startedByMe": "Bạn khởi chạy",

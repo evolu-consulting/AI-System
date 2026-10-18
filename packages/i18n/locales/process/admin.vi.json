@@ -74,7 +74,8 @@
       "kind": {
         "agent": "Agent",
         "team": "Nhóm agent",
-        "wait": "Chờ tới ngày"
+        "wait": "Chờ tới ngày",
+        "tool": "Gọi tool"
       },
       "instruction": "Hướng dẫn",
       "filename": "Tên tệp kết quả",
@@ -147,6 +148,82 @@
           "WAIT_INVALID": "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước."
         }
       },
+      "tool": {
+        "title": "Gọi tool",
+        "hint": "Gọi một workflow của công ty bằng quyền của người bắt đầu, không dùng agent. Kết quả được lọc theo các trường bạn khai báo ở mục Kết quả.",
+        "pick": "Tool",
+        "pickPh": "Chọn tool…",
+        "option": "{{name}} · {{key}}",
+        "loading": "Đang tải tool…",
+        "loadError": "Không tải được danh sách tool.",
+        "empty": "Chưa có tool nào được bật cho công ty — liên hệ quản trị nền tảng",
+        "template": "Quy trình mẫu không chọn được “Gọi tool”. Chép mẫu về công ty để chọn tool.",
+        "sideEffect": "Tác dụng phụ",
+        "sideEffectNote": "Tool này tạo tác dụng thật. Giai đoạn cần bật “Hành động thật”, và mọi giai đoạn ở bước trước phải có người kiểm.",
+        "argSource": "Nguồn của tham số {{name}}",
+        "argValue": "Giá trị của tham số {{name}}",
+        "from": {
+          "const": "Giá trị cố định",
+          "input": "Thông tin đầu vào",
+          "field": "Kết quả giai đoạn trước"
+        },
+        "argPh": "Chọn nguồn…",
+        "fieldOpt": "Giai đoạn {{n}} · {{field}}",
+        "inputOpt": "{{key}} · {{label}}",
+        "required": "bắt buộc",
+        "paramType": {
+          "text": "Chữ",
+          "paragraph": "Đoạn văn",
+          "select": "Chọn",
+          "number": "Số",
+          "boolean": "Đúng/Sai",
+          "file": "Tệp"
+        },
+        "bool": {
+          "true": "Có",
+          "false": "Không"
+        },
+        "fileUnsupported": "Tham số tệp chưa dùng được trong quy trình, nên tool này chưa chọn được.",
+        "err": {
+          "pick": "Chọn một tool.",
+          "argRequired": "Chọn nguồn cho tham số này.",
+          "TOOL_INVALID": "Tool chưa khai báo đủ: điền mọi tham số bắt buộc từ nguồn có thật (tối đa 20 tham số, không dùng tham số tệp).",
+          "TOOL_SIDE_EFFECT": "Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật “Hành động thật”.",
+          "ref": "Tool này chưa được bật cho công ty hoặc không còn."
+        }
+      },
+      "branch": {
+        "title": "Rẽ nhánh",
+        "hint": "Luật đầu tiên khớp được dùng. Không khớp luật nào thì sang bước kế. Giai đoạn bị nhảy qua hiện là “Bỏ qua”.",
+        "field": "Nếu trường",
+        "op": "Phép so sánh",
+        "value": "Giá trị",
+        "goto": "Thì tới bước",
+        "gotoPh": "Chọn bước…",
+        "gotoOpt": "Bước {{n}}",
+        "add": "Thêm luật rẽ nhánh",
+        "remove": "Xoá luật {{n}}",
+        "delete": "Xoá",
+        "ops": {
+          "eq": "bằng",
+          "ne": "khác",
+          "lt": "nhỏ hơn",
+          "le": "nhỏ hơn hoặc bằng",
+          "gt": "lớn hơn",
+          "ge": "lớn hơn hoặc bằng"
+        },
+        "locked": "Chỉ giai đoạn đứng một mình trong bước mới rẽ nhánh được.",
+        "noFields": "Khai báo trường có cấu trúc ở mục Kết quả trước.",
+        "max": "Tối đa 10 luật.",
+        "err": {
+          "field": "Luật {{n}}: chọn trường của giai đoạn này.",
+          "op": "Luật {{n}}: phép so sánh này chỉ dùng cho trường Số hoặc Ngày.",
+          "value": "Luật {{n}}: nhập giá trị đúng kiểu của trường.",
+          "goto": "Luật {{n}}: chọn bước đích, phải đứng sau giai đoạn này.",
+          "real": "Bước đích có Hành động thật nên giai đoạn này phải do người duyệt (Sau giai đoạn = Duyệt bởi Group).",
+          "BRANCH_INVALID": "Luật rẽ nhánh chưa hợp lệ: kiểm tra trường, phép so sánh, giá trị và bước đích."
+        }
+      },
       "remindEvery": "Nhắc mỗi (giờ)",
       "remindHint": "Để trống = nhắc một lần sau 24 giờ. Nhắc tối đa 10 lần.",
       "escalate": "Chuyển cấp nếu chưa ai kiểm",
@@ -165,6 +242,8 @@
     "readonly": "Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.",
     "runs": {
       "empty": "Chưa có lượt chạy nào",
+      "waitUntil": "Chờ tới {{date}}",
+      "retryAt": "Thử lại lúc {{time}}",
       "col": {
         "run": "Lượt",
         "starter": "Người bắt đầu",
@@ -211,7 +290,8 @@
         "select": "Chọn",
         "file": "Tệp",
         "source_ref": "Nguồn + nhánh",
-        "date": "Ngày"
+        "date": "Ngày",
+        "number": "Số"
       },
       "required": "Bắt buộc",
       "options": "Lựa chọn (mỗi dòng một giá trị)",
@@ -352,10 +432,18 @@
       "gateReview": "Có người kiểm",
       "gateAuto": "Tự động",
       "error": "Có lỗi",
-      "wait": "Chờ tới ngày"
+      "wait": "Chờ tới ngày",
+      "tool": "Gọi tool",
+      "sideEffect": "Tác dụng phụ",
+      "branch_one": "Rẽ nhánh · {{count}} luật",
+      "branch_other": "Rẽ nhánh · {{count}} luật"
     },
     "edge": {
-      "back": "Quay lại"
+      "back": "Quay lại",
+      "branch": "Rẽ nhánh · luật {{n}}"
+    },
+    "list": {
+      "branch": "Rẽ nhánh: luật {{n}} tới bước {{step}}"
     },
     "empty": "Chưa có giai đoạn. Thêm giai đoạn đầu tiên.",
     "loading": "Đang tải canvas…",

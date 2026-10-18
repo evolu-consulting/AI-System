@@ -74,7 +74,8 @@
       "kind": {
         "agent": "Agent",
         "team": "Agent team",
-        "wait": "Wait until date"
+        "wait": "Wait until date",
+        "tool": "Call tool"
       },
       "instruction": "Instructions",
       "filename": "Output file name",
@@ -147,6 +148,82 @@
           "WAIT_INVALID": "The date source isn't valid. Pick a Date input field or a Date field from a stage in an earlier step."
         }
       },
+      "tool": {
+        "title": "Call tool",
+        "hint": "Calls one of the company's workflows with the starter's permissions, without an agent. The result is filtered by the fields you declare under Output.",
+        "pick": "Tool",
+        "pickPh": "Choose a tool…",
+        "option": "{{name}} · {{key}}",
+        "loading": "Loading tools…",
+        "loadError": "Couldn't load the tool list.",
+        "empty": "No tool is enabled for your company yet — contact the platform admin",
+        "template": "Templates can't use “Call tool”. Copy the template to your company to pick a tool.",
+        "sideEffect": "Side effects",
+        "sideEffectNote": "This tool has real effects. The stage needs “Real action” on, and every stage in the previous step needs a reviewer.",
+        "argSource": "Source of parameter {{name}}",
+        "argValue": "Value of parameter {{name}}",
+        "from": {
+          "const": "Fixed value",
+          "input": "Input",
+          "field": "Output of an earlier stage"
+        },
+        "argPh": "Choose a source…",
+        "fieldOpt": "Stage {{n}} · {{field}}",
+        "inputOpt": "{{key}} · {{label}}",
+        "required": "required",
+        "paramType": {
+          "text": "Text",
+          "paragraph": "Paragraph",
+          "select": "Choice",
+          "number": "Number",
+          "boolean": "True/False",
+          "file": "File"
+        },
+        "bool": {
+          "true": "Yes",
+          "false": "No"
+        },
+        "fileUnsupported": "File parameters can't be used in processes yet, so this tool can't be picked.",
+        "err": {
+          "pick": "Choose a tool.",
+          "argRequired": "Choose a source for this parameter.",
+          "TOOL_INVALID": "The tool isn't fully set up: fill every required parameter from a real source (up to 20 parameters, no file parameters).",
+          "TOOL_SIDE_EFFECT": "A tool with side effects can only be used when the stage has “Real action” on.",
+          "ref": "This tool isn't enabled for your company or no longer exists."
+        }
+      },
+      "branch": {
+        "title": "Branch",
+        "hint": "The first matching rule wins. If none match, the run goes to the next step. Skipped stages show as “Skipped”.",
+        "field": "If field",
+        "op": "Comparison",
+        "value": "Value",
+        "goto": "Then go to step",
+        "gotoPh": "Choose a step…",
+        "gotoOpt": "Step {{n}}",
+        "add": "Add a branch rule",
+        "remove": "Remove rule {{n}}",
+        "delete": "Remove",
+        "ops": {
+          "eq": "equals",
+          "ne": "is not",
+          "lt": "is less than",
+          "le": "is at most",
+          "gt": "is greater than",
+          "ge": "is at least"
+        },
+        "locked": "Only a stage that is alone in its step can branch.",
+        "noFields": "Declare structured fields under Output first.",
+        "max": "Up to 10 rules.",
+        "err": {
+          "field": "Rule {{n}}: choose a field of this stage.",
+          "op": "Rule {{n}}: this comparison only works for Number or Date fields.",
+          "value": "Rule {{n}}: enter a value of the field's type.",
+          "goto": "Rule {{n}}: pick a target step that comes after this stage.",
+          "real": "The target step has a Real action stage, so this stage must be reviewed (After the stage = Reviewed by a group).",
+          "BRANCH_INVALID": "A branch rule isn't valid: check the field, comparison, value and target step."
+        }
+      },
       "remindEvery": "Remind every (hours)",
       "remindHint": "Leave empty = one reminder after 24 hours. Up to 10 reminders.",
       "escalate": "Escalate if nobody has reviewed",
@@ -165,6 +242,8 @@
     "readonly": "This is a template (read-only). Copy it to edit.",
     "runs": {
       "empty": "No runs yet",
+      "waitUntil": "Waiting until {{date}}",
+      "retryAt": "Retrying at {{time}}",
       "col": {
         "run": "Run",
         "starter": "Started by",
@@ -211,7 +290,8 @@
         "select": "Choice",
         "file": "File",
         "source_ref": "Source + branch",
-        "date": "Date"
+        "date": "Date",
+        "number": "Number"
       },
       "required": "Required",
       "options": "Options (one per line)",
@@ -352,10 +432,18 @@
       "gateReview": "Reviewed by a person",
       "gateAuto": "Automatic",
       "error": "Has errors",
-      "wait": "Wait until date"
+      "wait": "Wait until date",
+      "tool": "Call tool",
+      "sideEffect": "Side effects",
+      "branch_one": "Branch · {{count}} rule",
+      "branch_other": "Branch · {{count}} rules"
     },
     "edge": {
-      "back": "Go back"
+      "back": "Go back",
+      "branch": "Branch · rule {{n}}"
+    },
+    "list": {
+      "branch": "Branch: rule {{n}} to step {{step}}"
     },
     "empty": "No stages yet. Add the first stage.",
     "loading": "Loading canvas…",

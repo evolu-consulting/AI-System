@@ -30,6 +30,12 @@ function escalatedGroupOf(view: TaskCardProps["view"], taskId: string): string |
   return view.open_tasks.find((o) => o.id === taskId)?.escalated_group?.name;
 }
 
+/** P-d2 · số giờ chờ trước khi chuyển cấp của task, từ dòng `escalate` trong `history` (view `task` không có `history`). */
+function escalatedHoursOf(view: TaskCardProps["view"], taskId: string): number | undefined {
+  if (view?.access !== "full") return undefined;
+  return view.history.find((h) => h.kind === "escalate" && h.task_id === taskId)?.after_h;
+}
+
 function reworksLeft(view: TaskCardProps["view"], stageIdx: number): number {
   if (view?.access !== "full") return 0;
   const s = (view as ProcessRunFullView).stages[stageIdx];
@@ -121,7 +127,12 @@ export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: Task
       <p className="text-sm font-medium">
         {t("process.run.review.title", { agent: agent || task.stage_name })}
       </p>
-      {task.escalated ? <EscalatedNote group={escalatedGroupOf(view, task.id)} /> : null}
+      {task.escalated ? (
+        <EscalatedNote
+          group={escalatedGroupOf(view, task.id)}
+          hours={escalatedHoursOf(view, task.id)}
+        />
+      ) : null}
       {autofix && <AutofixResult view={autofix} load={fetchAttachmentContent} />}
       <ApplyGateLine autofix={autofix} />
       {!inlineFail ? (

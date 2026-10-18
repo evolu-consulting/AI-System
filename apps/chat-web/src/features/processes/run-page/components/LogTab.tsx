@@ -25,6 +25,7 @@ export function LogTab({ view }: { view: ProcessRunFullView }) {
             {t(lineKey(h.kind), {
               actor: h.actor?.display_name ?? "—",
               to: h.to?.display_name ?? "—",
+              group: h.group?.name ?? "—",
               result: h.result ? t(`process.common.result.${h.result}`) : "",
             })}
           </span>

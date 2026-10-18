@@ -27,7 +27,7 @@ export function TextField(
     onChange: (v: string) => void;
     multiline?: boolean;
     rows?: number;
-    type?: "text" | "number" | "time";
+    type?: "text" | "number" | "time" | "date";
     disabled?: boolean;
     /** Id phần tử mô tả thêm (nối vào `aria-describedby`). */
     describedBy?: string;
@@ -95,7 +95,7 @@ export function TextField(
   );
 }
 
-export type Option = { value: string; label: string };
+export type Option = { value: string; label: string; disabled?: boolean };
 
 /** Select Radix: `value=""` ⇒ hiện placeholder. Mục hiện giá trị không còn trong danh sách do nơi gọi thêm vào `options`. */
 export function SelectField(
@@ -123,7 +123,7 @@ export function SelectField(
           </SelectTrigger>
           <SelectContent>
             {p.options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
+              <SelectItem key={o.value} value={o.value} disabled={o.disabled}>
                 {o.label}
               </SelectItem>
             ))}

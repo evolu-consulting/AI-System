@@ -13,6 +13,7 @@ import {
   gitChips,
   type InputValues,
   serverDateErrors,
+  serverNumberErrors,
   submitErrorKey,
   toRequestInputs,
 } from "../lib/inputs-rules";
@@ -20,7 +21,8 @@ import {
 /** 400 `VALIDATION_ERROR` với issue path `inputs.<i>.value` trỏ tới trường `date` ⇒ khoá trường bị từ chối. */
 function datedByServer(sent: Parameters<typeof serverDateErrors>[0], err: unknown): string[] {
   if (!(err instanceof ApiError) || err.code !== "VALIDATION_ERROR") return [];
-  return serverDateErrors(sent, issuePaths(err.details));
+  const paths = issuePaths(err.details);
+  return [...serverDateErrors(sent, paths), ...serverNumberErrors(sent, paths)];
 }
 
 /** `details.issues[].path` (mảng) → "a.b.c". */
@@ -116,7 +118,8 @@ export function useInputsForm(req: InputsRequest) {
   const errors = fieldErrors(defs, values);
   /** Lỗi hiển thị: luật client + `date` bị server từ chối (không chặn gửi lại sau khi sửa ô). */
   const shown: Record<string, FieldError> = { ...errors };
-  for (const k of serverDate) shown[k] ??= "dateInvalid";
+  for (const k of serverDate)
+    shown[k] ??= defs.find((d) => d.key === k)?.type === "number" ? "numberInvalid" : "dateInvalid";
 
   const patch = useCallback((key: string, p: Partial<FieldValue>) => {
     setServerDate((s) => s.filter((k) => k !== key));

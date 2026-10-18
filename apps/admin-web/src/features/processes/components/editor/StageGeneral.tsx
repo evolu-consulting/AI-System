@@ -2,9 +2,20 @@
 import { useTranslation } from "react-i18next";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { APPLY_EXECUTOR, APPLY_PATCH, applyKeyOnly, isApply } from "../../lib/apply-form";
+import type { StageDraft } from "../../lib/draft-types";
+import { isTool, TOOL_EXECUTOR, TOOL_PATCH } from "../../lib/tool-form";
 import { isWait, WAIT_EXECUTOR, WAIT_PATCH } from "../../lib/wait-form";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
+
+const PATCH_OF: Record<string, Partial<StageDraft>> = {
+  [APPLY_EXECUTOR]: APPLY_PATCH,
+  [WAIT_EXECUTOR]: WAIT_PATCH,
+  [TOOL_EXECUTOR]: TOOL_PATCH,
+};
+/** Lỗi `executor` đã hiện ở khối riêng (Áp bản sửa / Gọi tool) ⇒ không in lại dưới ô "Người thực hiện". */
+const ownedElsewhere = (k: string | undefined): boolean =>
+  applyKeyOnly(k) || k?.startsWith("process.admin.editor.stage.tool.err.") === true;
 
 function useStageError(p: StageFormProps) {
   const { t } = useTranslation();
@@ -24,6 +35,7 @@ export function StageGeneral(p: StageFormProps) {
       ...refs.teams,
       { value: APPLY_EXECUTOR, label: t("process.admin.apply.kind") },
       { value: WAIT_EXECUTOR, label: t("process.admin.editor.stage.kind.wait") },
+      { value: TOOL_EXECUTOR, label: t("process.admin.editor.stage.kind.tool") },
     ],
     stage.executor,
     t("process.admin.editor.gone"),
@@ -54,15 +66,11 @@ export function StageGeneral(p: StageFormProps) {
         label={t("process.admin.editor.stage.executor")}
         value={stage.executor}
         readOnly={readOnly}
-        error={applyKeyOnly(p.errors[`stages.${p.index}.executor`]) ? undefined : e("executor")}
+        error={ownedElsewhere(p.errors[`stages.${p.index}.executor`]) ? undefined : e("executor")}
         options={executors}
-        onChange={(v) =>
-          onChange(
-            v === APPLY_EXECUTOR ? APPLY_PATCH : v === WAIT_EXECUTOR ? WAIT_PATCH : { executor: v },
-          )
-        }
+        onChange={(v) => onChange(PATCH_OF[v] ?? { executor: v })}
       />
-      {isApply(stage) || isWait(stage) ? null : (
+      {isApply(stage) || isWait(stage) || isTool(stage) ? null : (
         <TextField
           id={`${stage.uid}-instr`}
           label={t("process.admin.editor.stage.instruction")}
@@ -93,7 +101,7 @@ export function StageLimits(p: StageFormProps) {
         readOnly={readOnly}
         onChange={(v) => onChange({ timeout: v })}
       />
-      {isApply(stage) ? null : (
+      {isApply(stage) || isTool(stage) ? null : (
         <TextField
           id={`${stage.uid}-budget`}
           label={t("process.admin.editor.stage.budget")}

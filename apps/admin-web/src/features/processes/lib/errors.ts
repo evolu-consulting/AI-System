@@ -52,6 +52,7 @@ export function serverRules(err: unknown): string[] {
 
 const STAGE_SOURCE_PATH = /^stages\.\d+\.sources\.\d+\.source_key$/;
 const AUTOFIX_SOURCE_PATH = /^stages\.\d+\.autofix\.source_key$/;
+const TOOL_REF_PATH = /^stages\.\d+\.executor\.tool_key$/;
 
 /** Khoá câu lỗi cho một path của `PROCESS_*_INVALID`: nguồn giai đoạn ngoài danh sách (P-b) có câu riêng, còn lại theo mã. */
 export function pathErrorKey(code: string, path: string): string {
@@ -59,6 +60,8 @@ export function pathErrorKey(code: string, path: string): string {
     return "process.admin.editor.stageSources.notInDef";
   if (code === "PROCESS_REF_INVALID" && AUTOFIX_SOURCE_PATH.test(path))
     return "process.admin.autofix.err.sourceKind";
+  if (code === "PROCESS_REF_INVALID" && TOOL_REF_PATH.test(path))
+    return "process.admin.editor.stage.tool.err.ref";
   return `process.admin.apiError.${code}`;
 }
 

@@ -20,6 +20,7 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
       <HiddenHandle type="target" position={Position.Left} />
       <HiddenHandle type="source" position={Position.Right} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
+      <HiddenHandle id="branch" type="source" position={Position.Bottom} />
       <button
         type="button"
         data-stage-uid={v.uid}

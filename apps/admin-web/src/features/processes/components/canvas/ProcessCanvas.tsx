@@ -4,8 +4,6 @@ import "@xyflow/react/dist/base.css";
 import {
   Background,
   Controls,
-  type Edge,
-  MarkerType,
   type Node,
   type NodeChange,
   ReactFlow,
@@ -26,14 +24,16 @@ import {
 } from "../../lib/canvas-layout";
 import { countAtStep } from "../../lib/step-ops";
 import { BackEdge } from "./BackEdge";
+import { BranchEdge } from "./BranchEdge";
 import { BlockedStepCtx, type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
+import { toEdge } from "./canvas-edges";
 import { JoinNode } from "./JoinNode";
 import { StageNode } from "./StageNode";
 import { StepHeaderNode } from "./StepHeaderNode";
 import type { StageView } from "./stage-view";
 
 const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode };
-const edgeTypes = { back: BackEdge };
+const edgeTypes = { back: BackEdge, branch: BranchEdge };
 // UAT L3: không thu dưới 0.65 (chữ ≥ ~9 px); nhiều bước thì neo về mép trái và để người dùng kéo ngang (pan).
 const FIT_MIN_ZOOM = 0.65;
 const FIT = { padding: 0.1, maxZoom: 1, minZoom: FIT_MIN_ZOOM } as const;
@@ -76,23 +76,6 @@ function toNode(
   const data =
     n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
   return { ...base, data, draggable: false };
-}
-
-function toEdge(e: Lay["edges"][number]): Edge {
-  const ends = { id: e.id, source: e.source, target: e.target, focusable: false };
-  if (e.kind === "back")
-    return {
-      ...ends,
-      type: "back",
-      sourceHandle: "back",
-      targetHandle: "back-in",
-      markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-warning)" },
-    };
-  return {
-    ...ends,
-    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-muted-foreground)" },
-    style: { stroke: "var(--color-muted-foreground)" },
-  };
 }
 
 function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {

@@ -1,5 +1,6 @@
 {
   "title": "{{name}} · !{{key}}",
+  "branch": "Branch: going to step {{step}} (rule {{rule}})",
   "block": {
     "startedBy": "Started by {{name}}",
     "startedByMe": "You started it",

@@ -1,4 +1,5 @@
 // ADM-FR-66 · CR-056 · P-a F5: danh sách chọn của editor — agent đã bật, nhóm agent, Group, người dùng của tenant đang xem.
+import type { ProcessToolItem } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { useAgentSettings, useAgentUserOptions } from "@/features/agents/api";
 import { useGroupOptions } from "@/features/groups/api";
@@ -7,6 +8,7 @@ import { pickLocalized } from "@/lib/localized";
 import { useAgentTeams } from "../api";
 import type { Option } from "../components/editor/Fields";
 import type { TeamSections } from "../lib/wait-form";
+import { useProcessTools } from "./use-process-tools";
 
 export type EditorRefs = {
   agents: Option[];
@@ -17,6 +19,8 @@ export type EditorRefs = {
   sources: SourceOption[];
   /** P-d1 · team_id → chế độ + mục từng thành viên, cho luật `TEAM_SECTION_UNOWNED` (`processDefStageIssues` ctx.teams). */
   teamSections: TeamSections;
+  /** P-d2 · catalog tool khả dụng (undefined = chưa nạp ⇒ bỏ kiểm theo catalog). */
+  tools: readonly ProcessToolItem[] | undefined;
   /** Có danh sách nào còn đang tải. */
   loading: boolean;
 };
@@ -35,7 +39,9 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
   const groups = useGroupOptions(tenantId, enabled);
   const users = useAgentUserOptions(tenantId, enabled);
   const sources = useSourceOptions(tenantId, enabled);
+  const { tools } = useProcessTools();
   return {
+    tools,
     agents: (settings.data?.agents ?? [])
       .filter((a) => a.entitled && a.enabled)
       .map((a) => ({ value: `agent:${a.agent.id}`, label: a.agent.name[lang] })),

@@ -96,8 +96,9 @@ function Editor({ processId }: ProcessEditorPageProps) {
     setVersion,
     d,
     teams: refs.teamSections,
+    tools: refs.tools,
   });
-  const errors = withLiveErrors(d.draft, d.errors, refs.teamSections);
+  const errors = withLiveErrors(d.draft, d.errors, refs.teamSections, refs.tools);
   const dv = { ...d, errors };
   const def = q.data;
   const readOnly = !!def?.is_template && !tenant.isPlatform;

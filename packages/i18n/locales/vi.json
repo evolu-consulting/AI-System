@@ -560,6 +560,7 @@
       "agents": "Agent",
       "quota": "Quota",
       "users": "Users",
+      "workflowTools": "Tool quy trình",
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },
     "agents": {
@@ -618,6 +619,34 @@
       "pickFeature": "Chọn feature",
       "noFeatureLeft": "Mọi feature đã có quota",
       "cell": "{field} · {scope}"
+    },
+    "tools": {
+      "title": "Tool quy trình",
+      "desc": "Bật workflow nào thì quy trình của công ty này gọi được workflow đó ở giai đoạn “Gọi tool”.",
+      "search": "Tìm tool",
+      "col": {
+        "name": "Tên",
+        "key": "Ký hiệu",
+        "note": "Ghi chú",
+        "grantedBy": "Bật bởi",
+        "on": "Bật cho công ty"
+      },
+      "sideEffect": "Tác dụng phụ",
+      "workflowOff": "Workflow đang tắt",
+      "workflowOffTip": "Workflow đang tắt toàn hệ thống nên tool chưa dùng được dù đã bật cho công ty.",
+      "grantedBy": "{name} · {date}",
+      "switchAria": "Bật tool {name}",
+      "empty": "Chưa có workflow nào trong catalog. Tạo workflow ở mục Workflows, rồi bật cho công ty ở đây.",
+      "openWorkflows": "Mở Workflows",
+      "noMatch": "Không có tool nào khớp.",
+      "offTitle": "Tắt tool {name}?",
+      "offBody": "Lượt chạy đang chờ gọi tool này sẽ dừng ở “Cần người quyết”.",
+      "offConfirm": "Tắt tool",
+      "toast": {
+        "on": "Đã bật tool {name} cho {tenant}",
+        "off": "Đã tắt tool {name} cho {tenant}",
+        "gone": "Workflow này không còn trong catalog. Đã tải lại danh sách."
+      }
     },
     "timezone": {
       "change": "Đổi múi giờ",

@@ -40,6 +40,9 @@
     "generic": "Không bắt đầu được quy trình. Thử lại sau.",
     "date": {
       "invalid": "Chọn một ngày hợp lệ."
+    },
+    "number": {
+      "invalid": "Nhập một số hợp lệ."
     }
   },
   "ask": {

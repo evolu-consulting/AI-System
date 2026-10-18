@@ -1,7 +1,7 @@
 // ADM-FR-60, ADM-FR-61 · /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá), tab Thông tin/Feature/Agent/Quota/Users.
 import type { TenantDetail } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -28,7 +28,10 @@ import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
-export type TenantTab = "info" | "features" | "agents" | "quota" | "users";
+export type TenantTab = "info" | "features" | "agents" | "workflow-tools" | "quota" | "users";
+
+/** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
+const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
 
 function Header({
   tenant,
@@ -140,6 +143,7 @@ export function TenantDetailPage() {
           <TabsTrigger value="info">{t("tenants.tab.info")}</TabsTrigger>
           <TabsTrigger value="features">{t("tenants.tab.features")}</TabsTrigger>
           <TabsTrigger value="agents">{t("tenants.tab.agents")}</TabsTrigger>
+          <TabsTrigger value="workflow-tools">{t("tenants.tab.workflowTools")}</TabsTrigger>
           <TabsTrigger value="quota">{t("tenants.tab.quota")}</TabsTrigger>
           <TabsTrigger value="users">{t("tenants.tab.users")}</TabsTrigger>
         </TabsList>
@@ -157,6 +161,11 @@ export function TenantDetailPage() {
         </TabsContent>
         <TabsContent value="agents" className="pt-4">
           <UnavailableTab body="tenants.agents.unavailable" />
+        </TabsContent>
+        <TabsContent value="workflow-tools" className="pt-4">
+          <Suspense fallback={<LoadingState />}>
+            <TenantToolsTab tenant={tenant} />
+          </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">
           <TenantQuotaTab

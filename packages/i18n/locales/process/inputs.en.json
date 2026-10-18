@@ -40,6 +40,9 @@
     "generic": "Could not start the process. Try again later.",
     "date": {
       "invalid": "Choose a valid date."
+    },
+    "number": {
+      "invalid": "Enter a valid number."
     }
   },
   "ask": {

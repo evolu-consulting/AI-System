@@ -33,6 +33,16 @@ export const NoticeCard = memo(function NoticeCard({ notice, autoExpand }: Props
       className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3"
     >
       <h3 className="text-sm font-semibold">{title}</h3>
+      {notice.kind === "escalated" && notice.group ? (
+        <p className="text-caption text-secondary-foreground">
+          {notice.after_h === undefined
+            ? t("process.inbox.notice.escalatedTo", { group: notice.group.name })
+            : t("process.inbox.notice.escalatedToH", {
+                group: notice.group.name,
+                hours: notice.after_h,
+              })}
+        </p>
+      ) : null}
       {openTask ? (
         open ? (
           <TaskPanel runId={openTask.process_run.id} task={openTask.task} onResolved={setDone} />
