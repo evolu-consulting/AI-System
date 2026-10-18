@@ -68,3 +68,52 @@ Phạm vi: `git diff 75ec598..HEAD` (nhánh `platform/gd0`, 72 commit), trọng 
 
 ## Rubric
 1 ✓ · 2 ✗ (#1 khoá đồng thời; #4–#6 cần xác minh) · 3 ✓ (SAFE; #7 Minor) · 4 ✓ · 5 ✓ có ghi chú (#2, #3, #9 Minor) · 6 ✓ (hub-api 517/0 fail; không chạy `test:lock:verify` theo brief) · 7 ✓ có ghi chú (#8, #10, #11) · 8 ✓ (đọc mẫu: i18n qua `t()`, `role=alert`; chưa kiểm hết UI) · 9 ✓ (mã FR ở comment đầu module và commit)
+
+## Vòng 2
+
+## Kết luận: APPROVED · Spec: P-d-durable (P-d1) · Vòng: 2
+
+Phạm vi: chỉ diff `ae6d290` (#1), `ac9485b` (#2, #4, #6, #8, #9), `a90286a` (TECH-DEBT #196–199 cho #3, #7, #10, #11; #5 giữ theo PD-R19) + mục lỗi vòng 1.
+**Bảo mật / cách ly tenant: SAFE** — không có đường đọc/ghi chéo tenant mới.
+
+### Lệnh đã chạy
+- `bun --env-file=.env.local --config=bunfig.int.toml test … adapters/notify/review-tasks.lock-order.int.test.ts` → 1 pass · 0 fail (1.64 s).
+- `bun run check:fn` → đỏ 7 vi phạm, **không file nào thuộc 3 commit sửa** (`runs/launcher-step.ts:34`, `runs/launcher.ts:207`,
+  `contracts/.../process-steps-pd1.test.ts:38`, `db/src/hub-pd1.int.test.ts:91,173`, `tools/scripts/src/test-int-par{,.test}.ts`) ⇒ có từ trước, ngoài phạm vi vòng 2.
+- Perf: không chạy lại; dùng số đo máy yên của tác giả — PD-P13 p95 35 → 46 ms (≤ 50, còn 4 ms biên), 10.000 task 4,2 → 5,1 s (trong NFR).
+
+### Đối chiếu lỗi vòng 1
+| # | Trạng thái | Ghi chú |
+|---|---|---|
+| 1 | **Đã sửa** | Xem "Lập luận deadlock" dưới. |
+| 2 | Đã sửa | Comment `timer-sweep.ts:1-5` đúng thực tế (khoá nhả trước khi bắn; đúng nhờ kiểm lại trong `fireTimer`). |
+| 3, 7, 10, 11 | Ghi nợ | TECH-DEBT #196, #197, #198, #199 — đủ vị trí và cách xử lý. |
+| 4 | Đã sửa (còn Minor R2-2, R2-3) | `postponeFailed` lùi `due_at` ⇒ hẹn lỗi rời đầu `limit 100`. |
+| 5 | Giữ theo quyết định | `spec-decisions.md` ghi "Review T12 #5" khớp PD-R19 (đuổi kịp, trần 10). Chấp nhận. |
+| 6 | Đã sửa | `tenant-tz.repo.ts` `isValidTimeZone` ⇒ mặc định + warn chỉ `tenantId`; unit test 3 ca. |
+| 8 | Đã sửa | `tz-format` dời `apps/admin-web/src/lib/`; test dời theo. |
+| 9 | Đã sửa | `lockById` trả `timezone` cùng câu `FOR UPDATE`; bỏ `timezoneOf`. |
+
+### Lập luận deadlock (#1) — đạt
+Lô nhắc/chuyển cấp không có câu nào CHỜ khoá:
+- `c0` khoá task `FOR UPDATE SKIP LOCKED`; `r` khoá run `FOR KEY SHARE SKIP LOCKED` (`review-tasks.repo.ts:61-76`, `169-182`). FOR KEY SHARE xung đột với `lockRun` FOR UPDATE ⇒ bỏ qua, không chờ. Với FOR NO KEY UPDATE (update thường) thì tương thích ⇒ cũng không chờ.
+- Các câu sau chỉ chạm hàng đã giữ:
+  - FK `process_notices_run_fk` → run đã có KEY SHARE của chính tx;
+  - `process_notices_task_fk` và `review_task_assignees_task_fk` → task đã FOR UPDATE;
+  - `markRemindedMany` / `u` update chỉ hàng trong `c` (không đổi cột khoá ⇒ không kiểm FK);
+  - `hub.audit_log` không có FK; `admin.users` / `admin.groups` / `stage_runs` chỉ đọc không khoá.
+- Phía duyệt (`lockRun` → `closeTask`) hoặc `claimExpired` có thể chờ task tối đa một lô, nhưng lô không chờ ai ⇒ không có chu trình.
+- **Tenant:** `r` lọc `id = any(…) and tenant_id = any(…)`. Tích chéo chỉ là tập trên, vì `id` duy nhất. `c` join lại theo cặp `(id, tenant_id)` ⇒ đúng.
+- **Test:** `review-tasks.lock-order.int.test.ts` đặt `lock_timeout = 200ms` ⇒ nếu B chờ khoá thì ném 55P03. Test chứng minh "bỏ qua, không chờ" cho cả claim và câu chèn notice (FK run R2), rồi lô kế nhận T. Hợp lệ.
+- **Drain:** `claimed` = `count(c0)` gồm task bị bỏ; `more` = còn hàng tới hạn ngoài `c` (gồm task bị bỏ). Dừng khi lô < limit, hoặc theo ngân sách `DRAIN_BUDGET_MS = 60_000` (`remind-tasks.usecase.ts:13,25`) ⇒ không lặp vô hạn (xem R2-1).
+
+### Lỗi còn lại (chỉ Minor)
+| # | Mức | Nhóm | file:dòng | Vấn đề | Cách sửa đề xuất | Giao cho |
+|---|---|---|---|---|---|---|
+| R2-1 | Minor | 5 Hiệu năng | `remind-tasks.usecase.ts:21-26,43`; `escalate-task.usecase.ts:19-22`; `review-tasks.repo.ts:86-87,197-198` | Khi ≥ 100 task đầu hàng (`order by remind_at, id`) đều thuộc run đang bị giữ: mỗi lô khoá lại đúng 100 task đó và bỏ hết. Khi đó `claimed = 100`, `more = true` ⇒ lặp tx liên tục (không tiến) tới khi run nhả hoặc hết 60 s. Task phía sau cũng đói trong lượt đó. Không vô hạn. Chỉ xảy ra nếu một run có ≥ 100 task tới hạn và bị giữ lâu. **Cần xác minh**: có tx nào giữ `lockRun` lâu (qua lời gọi AI/mạng) không — `grep -n "lockRun\|lock(runId" apps/hub-api/src/modules/processes/runs/*.ts` rồi xem tx có `await` mạng bên trong. | Nếu lô trả 0 task mà `claimed ≥ limit` thì dừng lượt (`more = false`), để lượt 300 s sau thử lại; kèm unit test. | backend |
+| R2-2 | Minor | 2 Nghiệp vụ | `domain/timers/timer.rules.ts:31-37`; `adapters/timers/timer-sweep.ts:44-59` | Comment ghi "tự nhân đôi" nhưng sai. Sau lần lùi đầu, `due_at` mới ≈ lúc bắn lại ⇒ `late` ≈ chu kỳ quét (vài giây) ⇒ trễ luôn kẹp 1 phút (không tăng dần). Đúng chức năng (hẹn lỗi rời đầu hàng), nhưng mô tả sai. Ngoài ra, `postponeFailed` (đọc + update, tx riêng) chỉ có unit test luật lớp 1, không có int test (Luật 4b). | Sửa comment (backoff cố định 1 phút), hoặc thêm cột đếm lần nếu muốn tăng dần; thêm int test tái hiện #4 vòng 1 (100 hẹn lỗi + 1 hẹn hợp lệ ⇒ hẹn hợp lệ bắn ở lượt kế). | backend |
+| R2-3 | Minor | 2 Nghiệp vụ | `timer-sweep.ts:53` ↔ `adapters/timers/stage-timer.repo.ts:89` | Lùi `due_at` ghi đè mốc gốc. Hẹn `wait_until` lỗi một lần rồi bắn được sẽ in `waitedText(dueAt)` theo giờ đã lùi, không phải giờ người dùng cấu hình. **Cần xác minh**: cho `finishWait` ném một lần với hẹn `wait_until`, rồi bắn lại ⇒ so văn bản output với `due_at` gốc. | Thêm cột `next_try_at` (hoặc lùi bằng cột riêng) để giữ `due_at` gốc; hoặc chấp nhận và ghi vào spec-decisions. | backend |
+| R2-4 | Minor | 6 Test | `review-tasks.lock-order.int.test.ts:63-90` | Lô B trong test không gọi `markRemindedMany` / `addEscalatedGroups` / `auditEscalations` dưới `lock_timeout`. Lập luận đọc code cho thấy các câu này chỉ chạm hàng đã giữ, nhưng test chưa phủ. | Gọi thêm 3 câu đó trong `batchB` (hoặc gọi thẳng `remindBatch` qua `systemBatch` có `lock_timeout`). | qc |
+
+### Rubric (vòng 2)
+1 ✓ · 2 ✓ (#1 đã sửa; R2-1..3 Minor) · 3 ✓ SAFE · 4 ✓ · 5 ✓ (PD-P13 46 ms ≤ 50, 10k 5,1 s; R2-1 Minor) · 6 ✓ (lock-order 1/0; R2-4 Minor) · 7 ✓ (check:fn đỏ có từ trước, không thuộc file sửa) · 8 ✓ (#8) · 9 ✓ (HUB-FR-145/144 trong commit và test)
