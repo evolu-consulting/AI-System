@@ -14,6 +14,7 @@ export type HookOp =
   | "grant.batch"
   | "grant.matrix"
   | "entitlement.save"
+  | "workflow_tool.save"
   | "tenant.save"
   | "user.save"
   | "secret.save"

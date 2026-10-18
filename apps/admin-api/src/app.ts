@@ -31,6 +31,7 @@ import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { exportRoutes, importRoutes } from "./modules/transfer/transfer.routes";
 import { usageRoutes } from "./modules/usage/usage.routes";
 import { usersRoutes } from "./modules/users/users.routes";
+import { mountWorkflowTools } from "./modules/workflow-tools/workflow-tools.mount";
 import { workflowsRoutes } from "./modules/workflows/workflows.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
@@ -81,6 +82,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/quota-banner", quotaBannerRoutes(qctx));
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
+  mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));

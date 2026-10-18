@@ -36,6 +36,7 @@ export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>> = {
     "enabled",
     "side_effect",
     "version",
+    "on", // ADM-FR-73 · TT-R03: công tắc tool theo tenant (before/after `{on}`)
   ],
   command: [
     "name",

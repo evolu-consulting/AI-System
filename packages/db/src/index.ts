@@ -29,6 +29,7 @@ export {
   refreshTokens,
   secrets,
   tenants,
+  tenantWorkflowTools,
   users,
   workflows,
 } from "./schema/admin";

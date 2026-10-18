@@ -26,4 +26,5 @@ export * from "./transfer";
 export * from "./usage";
 export * from "./users";
 export * from "./version-conflict";
+export * from "./workflow-tools";
 export * from "./workflows";
