@@ -1,4 +1,4 @@
-// AC-H45 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §3.3 PD2-I30…I37 (I35–I37: T15b) (plan-d2 §7, D2-08, Q-D2-3): rẽ nhánh qua Hub thật. Def 5 bước
+﻿// AC-H45 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §3.3 PD2-I30…I37 (I35–I37: T15b) (plan-d2 §7, D2-08, Q-D2-3): rẽ nhánh qua Hub thật. Def 5 bước
 // (0…4): s1 bước 1 (agent, fields tong_tien, review G1, branch gt 20000000 ⇒ goto 3). Đi tắt: stage bước bị nhảy `skipped`,
 // quay lại xuyên qua `skipped` ⇒ `pending`, `round` không tăng. Thiếu 0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -47,7 +47,12 @@ async function branchDef(o: { s3RealAction?: boolean } = {}): Promise<string> {
         fields: FIELDS,
         after: { kind: "review", group_id: G1, back_to_steps: [0], branch: [RULE] },
       }),
-      agentStage({ key: "s2", step: 2 }),
+      // REAL_ACTION: bước liền trước stage real_action phải là review (s2 sẽ bị nhảy qua, luật lưu def vẫn xét tĩnh).
+      agentStage({
+        key: "s2",
+        step: 2,
+        ...(o.s3RealAction && { after: { kind: "review", group_id: G1, back_to_steps: [] } }),
+      }),
       agentStage({
         key: "s3",
         step: 3,
@@ -62,7 +67,8 @@ async function branchDef(o: { s3RealAction?: boolean } = {}): Promise<string> {
 /** Tới review s1 với `tong_tien`; trả {runId, taskId}. */
 async function toReview(key: string, tong: number): Promise<{ runId: string; taskId: string }> {
   const runId = await startRun(c, key);
-  await jobDone(c, await nextStageJob(c, runId));
+  await jobDone(c, await nextStageJob(c, runId), mdOut());
+  await waitStageStatus(c.sql, runId, 0, "done"); // job s0 còn `queued` tới khi Hub nhận kết quả ⇒ chờ tín hiệu xong, kẻo lấy lại job s0
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: tong }));
   await waitStageStatus(c.sql, runId, 1, "waiting_review");
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
@@ -101,7 +107,7 @@ describe("AC-H45 · rẽ nhánh khi khớp / không khớp", () => {
     const au = await auditsOf(c.sql, "branch", runId);
     expect(au).toHaveLength(1);
     expect(au[0]?.actor_id ?? null).toBeNull();
-    expect(au[0]?.details).toMatchObject({ from_step: 1, to_step: 3, rule: 1 });
+    expect(au[0]?.summary).toMatchObject({ from_step: 1, to_step: 3, rule: 1 });
     expect((await openTimers(c.sql, runId)).length).toBe(0); // PD2-I33
   }, 30_000);
   it("AC-H45 · PD2-I31 · 1000 + Đạt ⇒ s2 chạy tuần tự, 0 audit branch", async () => {
@@ -119,12 +125,13 @@ describe("AC-H45 · stage skipped = xong; bước trước có hiệu lực (T15
     await needD2(c);
     const { runId, taskId } = await toReview(await branchDef(), 25_000_000);
     await pass(taskId);
-    await jobDone(c, await nextStageJob(c, runId));
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped"); // fail nhanh khi chưa có rẽ nhánh (T19)
+    await jobDone(c, await nextStageJob(c, runId), mdOut());
     await waitStageStatus(c.sql, runId, 3, "waiting_review");
     const [t3] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
       and kind = 'review' and status = 'open' order by created_at desc limit 1`;
     await pass(t3?.id as string);
-    await jobDone(c, await nextStageJob(c, runId));
+    await jobDone(c, await nextStageJob(c, runId), mdOut());
     await waitStatus(c.sql, runId, "done");
     expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped");
   }, 30_000);
@@ -172,8 +179,9 @@ describe("AC-H45 · quay lại xuyên qua stage skipped [PB2-R07, D2-08]", () =>
     const key = await branchDef();
     const { runId, taskId } = await toReview(key, 25_000_000);
     await pass(taskId);
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped"); // fail nhanh khi chưa có rẽ nhánh (T19)
     const roundBefore = (await stageOf(c.sql, runId, 2))?.round;
-    await jobDone(c, await nextStageJob(c, runId));
+    await jobDone(c, await nextStageJob(c, runId), mdOut());
     await waitStageStatus(c.sql, runId, 3, "waiting_review");
     const [t3] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
       and kind = 'review' and status = 'open' order by created_at desc limit 1`;
@@ -207,14 +215,12 @@ describe("AC-H45 · quay lại xuyên qua stage skipped [PB2-R07, D2-08]", () =>
           branch: [{ ...RULE, goto_step: goto }],
         },
       });
-    const base = [
-      agentStage({ key: "s0", step: 0 }),
-      agentStage({ key: "s3", step: 2 }),
-      agentStage({ key: "s4", step: 3 }),
-    ];
+    const s0 = agentStage({ key: "s0", step: 0 });
+    const tail = [agentStage({ key: "s3", step: 2 }), agentStage({ key: "s4", step: 3 })];
+    // stage phải xếp theo bước tăng dần (STEP_ORDER) ⇒ s1 đứng trước đuôi.
     for (const r of [
-      await bad([...base, s1(1)]),
-      await bad([...base, s1(3), agentStage({ key: "p", step: 1 })]),
+      await bad([s0, s1(1), ...tail]),
+      await bad([s0, s1(3), agentStage({ key: "p", step: 1 }), ...tail]),
     ]) {
       expect({ status: r.status, rules: r.json?.error?.details?.rules }).toEqual({
         status: 422,

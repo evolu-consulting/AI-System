@@ -1,4 +1,4 @@
-// ADM-FR-71 · HUB-FR-143 · HUB-FR-144 · HUB-FR-145 · AC-H41 · AC-H42 · AC-H43 · P-d1 · e2e admin editor (test-plan-e2e PD-E01…E04;
+﻿// ADM-FR-71 · HUB-FR-143 · HUB-FR-144 · HUB-FR-145 · AC-H41 · AC-H42 · AC-H43 · P-d1 · e2e admin editor (test-plan-e2e PD-E01…E04;
 // nhãn nguyên văn plan-frontend §7 + i18n). Def `pd-edit` / `pd-bad` nạp bằng SQL (`seedPd`). Lưu ⇒ chờ PUT (CONVENTIONS §2).
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -192,7 +192,7 @@ test("ADM-FR-71 · AC-H45 · PD2-E02 · 'Rẽ nhánh': thêm luật tong_tien �
   await expect(g2.getByRole("combobox", { name: "Thì tới bước" })).toContainText("Bước 4");
   await expect(g2.getByLabel("Giá trị", { exact: true })).toHaveValue("20000000");
   const br = (await stageOfDef("pd2-branch", 0))?.after?.branch;
-  expect(br).toEqual([{ field: "tong_tien", op: "gte", value: 20000000, goto_step: 3 }]);
+  expect(br).toEqual([{ field: "tong_tien", op: "ge", value: 20000000, goto_step: 3 }]);
 
   await g2.getByRole("button", { name: "Xoá luật 1" }).click();
   expect(await saveDef(p)).toBe(200);

@@ -1,7 +1,8 @@
-// HUB-FR-146 · HUB-FR-147 · CR-093 Luật 4c · plan-d2 §9 PD2-P01…P04: ngưỡng hiệu năng P-d2 + đếm câu SQL (số câu cố định, không
+﻿// HUB-FR-146 · HUB-FR-147 · CR-093 Luật 4c · plan-d2 §9 PD2-P01…P04: ngưỡng hiệu năng P-d2 + đếm câu SQL (số câu cố định, không
 // phụ thuộc số tham số / số bước nhảy). Báo số thật (console). Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2` (không đo trên
 // code vắng). Chờ tool-driver bằng `handles.settled()`; không ngủ chờ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { PROCESS_STAGES_MAX } from "@ai/contracts/chat";
 import { loadChat } from "../_support/modules";
 import {
   agentStage,
@@ -61,8 +62,8 @@ async function prep(): Promise<void> {
 }
 let seq = 0;
 
-describe("PD2-P01 · lưu def 30 stage / 10 tool [plan-d2 §9]", () => {
-  it("HUB-FR-146 · PD2-P01 · PUT def 30 stage (10 tool) × 20 lần: p95 ≤ 50 ms; lưu def có tool = +1 câu so với không tool", async () => {
+describe("PD2-P01 · lưu def 10 stage / 3 tool [plan-d2 §9; trần PROCESS_STAGES_MAX = 10]", () => {
+  it("HUB-FR-146 · PD2-P01 · PUT def 10 stage (3 tool) × 20 lần: p95 ≤ 50 ms và ≤ bản không tool + 5 ms; lưu def có tool = +1 câu so với không tool", async () => {
     await prep();
     const stages: Json[] = [
       agentStage({
@@ -71,58 +72,59 @@ describe("PD2-P01 · lưu def 30 stage / 10 tool [plan-d2 §9]", () => {
         fields: [{ key: "tong_tien", type: "number", required: true }],
       }),
     ];
-    for (let i = 1; i < 30; i++)
+    for (let i = 1; i < PROCESS_STAGES_MAX; i++)
       stages.push(
         i % 3 === 0 ? toolStage({ key: `t${i}`, step: i }) : agentStage({ key: `a${i}`, step: i }),
       );
-    const key = `pd2-p01-${++seq}`;
-    const def = await createDef(c, defBody(key, stages, { inputs: MA_KH_INPUT }));
-    let version = def.version as number;
-    const put = async () => {
-      const r = await c.call("Adm", "PUT", `/process-defs/${def.id}`, {
-        ...defBody(key, stages, { inputs: MA_KH_INPUT }),
-        version,
-      });
-      expect(r.status).toBe(200);
-      version = r.json?.version as number;
-    };
-    const ms = await timed(20, put);
-    console.log(`PD2-P01 p95=${p95(ms).toFixed(1)} ms (n=20)`);
-    expect(p95(ms)).toBeLessThanOrEqual(50);
-    // #109: "≤ trước + 5 ms" — mốc "trước" = cùng def 30 stage nhưng 0 tool, đo cùng lượt.
+    // Bản không tool: CÙNG số stage/bước, stage tool thay bằng agent.
     const plain = stages.map((s, i) =>
       i % 3 === 0 && i > 0 ? agentStage({ key: s.key, step: i }) : s,
     );
-    const kp = `pd2-p01c-${++seq}`;
-    const dp = await createDef(c, defBody(kp, plain, { inputs: MA_KH_INPUT }));
-    let vp = dp.version as number;
-    const msPlain = await timed(20, async () => {
-      const r = await c.call("Adm", "PUT", `/process-defs/${dp.id}`, {
-        ...defBody(kp, plain, { inputs: MA_KH_INPUT }),
-        version: vp,
-      });
-      expect(r.status).toBe(200);
-      vp = r.json?.version as number;
+    const mk = async (tag: string, st: Json[]) => {
+      const key = `pd2-p01${tag}-${++seq}`;
+      const def = await createDef(c, defBody(key, st, { inputs: MA_KH_INPUT }));
+      let version = def.version as number;
+      return async () => {
+        const r = await c.call("Adm", "PUT", `/process-defs/${def.id}`, {
+          ...defBody(key, st, { inputs: MA_KH_INPUT }),
+          version,
+        });
+        expect(r.status).toBe(200);
+        version = r.json?.version as number;
+      };
+    };
+    const putTool = await mk("t", stages);
+    const putPlain = await mk("p", plain);
+    // Làm nóng CẢ HAI bản như nhau (kết nối, plan SQL, JIT) rồi đo XEN KẼ ⇒ không lệch thứ tự.
+    for (let i = 0; i < 10; i++) {
+      await putTool();
+      await putPlain();
+    }
+    const msTool: number[] = [];
+    const msPlain: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      msTool.push(...(await timed(1, putTool)));
+      msPlain.push(...(await timed(1, putPlain)));
+    }
+    console.log(
+      `PD2-P01 p95 có tool=${p95(msTool).toFixed(1)} ms, không tool=${p95(msPlain).toFixed(1)} ms (n=40, 10 stage, 3 tool)`,
+    );
+    expect(p95(msTool)).toBeLessThanOrEqual(50);
+    expect(p95(msTool)).toBeLessThanOrEqual(p95(msPlain) + 5);
+    const withTool = await countQueries(c.hub, putTool);
+    const noTool = await countQueries(c.hub, putPlain);
+    // NOTIFY `config_changed` làm Hub nạp lại cấu hình giữa cửa sổ đếm (nhiễu ±2 câu) ⇒ đếm đúng câu tra công tắc/workflow.
+    const lookups = (r: { queries: string[] }) =>
+      r.queries.filter((q) => q.includes("tenant_workflow_tools")).length;
+    console.log(
+      `PD2-P01 câu SQL: có tool=${withTool.n}, không tool=${noTool.n}; câu tra tool: ${lookups(withTool)} vs ${lookups(noTool)}`,
+    );
+    expect({ withTool: lookups(withTool), noTool: lookups(noTool) }).toEqual({
+      withTool: 1,
+      noTool: 0,
     });
-    console.log(`PD2-P01 p95 không tool=${p95(msPlain).toFixed(1)} ms`);
-    expect(p95(ms)).toBeLessThanOrEqual(p95(msPlain) + 5);
-    const withTool = await countQueries(c.hub, put);
-    const noToolStages = stages.map((s, i) =>
-      i % 3 === 0 && i > 0 ? agentStage({ key: s.key, step: i }) : s,
-    );
-    const k2 = `pd2-p01b-${++seq}`;
-    const d2 = await createDef(c, defBody(k2, noToolStages, { inputs: MA_KH_INPUT }));
-    const noTool = await countQueries(c.hub, () =>
-      c.call("Adm", "PUT", `/process-defs/${d2.id}`, {
-        ...defBody(k2, noToolStages, { inputs: MA_KH_INPUT }),
-        version: d2.version,
-      }),
-    );
-    console.log(`PD2-P01 câu SQL: có tool=${withTool.n}, không tool=${noTool.n}`);
-    expect(withTool.n - noTool.n).toBe(1);
   }, 60_000);
 });
-
 describe("PD2-P02 · catalog editor 200 workflow × 50 tenant [plan-d2 §9]", () => {
   it("HUB-FR-146 · PD2-P02 · 10.000 hàng công tắc ⇒ GET /process-editor/context p95 ≤ 20 ms, 2 câu SQL", async () => {
     await prep();

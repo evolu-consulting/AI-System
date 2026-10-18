@@ -1,4 +1,4 @@
-// AC-H44 · HUB-FR-146 · PD2-R05 · Q-D2-2 · plan-d2 §4 bước 4 `failed` · test-plan-d2 §3.1 PD2-I06/I06b (T15b): lỗi mạng của stage
+﻿// AC-H44 · HUB-FR-146 · PD2-R05 · Q-D2-2 · plan-d2 §4 bước 4 `failed` · test-plan-d2 §3.1 PD2-I06/I06b (T15b): lỗi mạng của stage
 // tool `WS` (side_effect, stage real_action sau gate Đạt). Dify giả MỨC SOCKET (`startNetDify`): cổng giữ trước còn đóng ⇒
 // ECONNREFUSED = lỗi TRƯỚC gửi ⇒ hẹn `retry`; server nhận kết nối rồi đóng socket = ĐÃ GỬI ⇒ `tool_failed`, không gọi lại.
 // Hẹn bắn bằng đồng hồ giả + `sweepOnce`; chờ tool-driver bằng `handles.settled()`. Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2`.
@@ -77,7 +77,7 @@ async function runWs(): Promise<string> {
       { inputs: MA_KH_INPUT },
     ),
   );
-  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", value: "KH1" }] });
+  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
   await waitStageStatus(c.sql, runId, 0, "waiting_review");
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}

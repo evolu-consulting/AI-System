@@ -104,8 +104,8 @@ describe("AC-H44 · chạy stage tool", () => {
     expect({ type: st?.type, agent: st?.agent_id ?? null }).toEqual({ type: "tool", agent: null });
     const [au] = await c.sql<
       Json[]
-    >`select details::text as d from hub.audit_log where action = 'tool_call'
-      and details::text like ${`%${runId}%`}`;
+    >`select to_jsonb(a)::text as d from hub.audit_log a where a.action = 'tool_call'
+      and (a.entity_id = ${runId} or to_jsonb(a)::text like ${`%${runId}%`})`;
     expect(au?.d).toBeDefined();
     expect(au?.d).not.toContain("25000000");
     expect(au?.d).not.toContain("HD-1");
@@ -227,6 +227,7 @@ describe("AC-H44 · stage tool có after.review (readiness #101, PD2-R08/R12)", 
       inputs: [{ type: "text", key: "ma-kh", text: "KH1" }],
     });
     await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
+    await waitStageStatus(c.sql, runId, 0, "done"); // tín hiệu s0 xong trước `settled` (như `runTool`)
     await settled(c);
     return runId;
   }
@@ -274,7 +275,7 @@ describe("AC-H44 · stage tool có after.review (readiness #101, PD2-R08/R12)", 
 describe("AC-H44 · plan-addendum A3 · Hub ép trường stage tool (ensureToolStage)", () => {
   it("AC-H44 · PD2-I13 · lưu def tool có template/required_sections/token_budget tuỳ ý ⇒ GET def trả giá trị đã ép, timeout_s giữ", async () => {
     await prep();
-    const t = toolStage({ timeout_s: 45 });
+    const t = toolStage({ timeout_s: 90 });
     const stage = {
       ...t,
       output: { ...(t.output as Json), template: "## Tuỳ ý\n", required_sections: ["Tuỳ ý"] },
@@ -304,7 +305,7 @@ describe("AC-H44 · plan-addendum A3 · Hub ép trường stage tool (ensureTool
       must_know: [],
       autofix: null,
       token_budget: null,
-      timeout_s: 45,
+      timeout_s: 90,
     });
   }, 30_000);
 });

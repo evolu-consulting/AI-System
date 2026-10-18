@@ -1,4 +1,4 @@
-// AC-H47 · HUB-FR-146 · TT-R04…R08 · plan-d2 §10 S2/S9/S10 (hard stop) · test-plan-d2 §3.2 PD2-I20…I27 + I15 (I15/I22/I27: T15b): công tắc tool theo tenant +
+﻿// AC-H47 · HUB-FR-146 · TT-R04…R08 · plan-d2 §10 S2/S9/S10 (hard stop) · test-plan-d2 §3.2 PD2-I20…I27 + I15 (I15/I22/I27: T15b): công tắc tool theo tenant +
 // cách ly 2 tenant. `hub_ro` policy `USING (true)` ⇒ lọc `tenant_id = run.tenant_id` tường minh là rào DUY NHẤT: bật ở beta,
 // chạy ở acme ⇒ `tool_failed`, Dify 0 lời gọi. Kiểm `canRun` NGAY trước gọi (S10). Chờ tool-driver bằng `handles.settled()`.
 // Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2` ("chưa có tính năng: … (T17|T18a)").
@@ -56,7 +56,7 @@ async function toolDef(tool_key: string = WF.W.key, role: "Adm" = "Adm"): Promis
 }
 /** Chạy tới khi s0 xong (tool-driver đã xử lý xong s1 — tín hiệu `settled`). */
 async function runToTool(key: string, beforeS0Done?: () => Promise<void>): Promise<string> {
-  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", value: "KH1" }] });
+  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   const job = await nextStageJob(c, runId);
   await beforeS0Done?.();
   await jobDone(c, job, mdOut({ tong_tien: 25_000_000 }));
@@ -76,15 +76,27 @@ describe("AC-H47 · catalog + lưu def theo tenant [TT-R04]", () => {
     await setSwitch(c.sql, "W", ACME, true);
     const a = await c.call("Adm", "GET", "/process-editor/context");
     expect(((a.json?.tools ?? []) as { key: string }[]).map((t) => t.key)).toEqual([WF.W.key]);
-    const b = await c.call("D", "GET", "/process-editor/context");
+    const b = await c.call("Db", "GET", "/process-editor/context");
     expect(b.json?.tools ?? []).toEqual([]);
     const res = await c.call(
-      "D",
+      "Db",
       "POST",
       "/process-defs",
-      defBody("pd2-beta", [agentStage({ key: "s0", step: 0, fields: FIELDS }), toolStage()], {
-        inputs: MA_KH_INPUT,
-      }),
+      // Chỉ stage tool (args const): agent của acme không tồn tại ở beta sẽ báo `ref: agent` trước, che lỗi cần kiểm.
+      defBody(
+        "pd2-beta",
+        [
+          toolStage({
+            key: "s0",
+            step: 0,
+            args: {
+              tong_tien: { from: "const", value: 25_000_000 },
+              ma_kh: { from: "const", value: "KH1" },
+            },
+          }),
+        ],
+        { inputs: MA_KH_INPUT },
+      ),
     );
     expect({
       status: res.status,
@@ -146,7 +158,7 @@ describe("AC-H47 · S10 · quyền chạy kiểm ngay trước gọi [PD2-R03, L
     await setSwitch(c.sql, "W", ACME, true);
     const key = await toolDef();
     const runId = await runToTool(key, async () => {
-      await c.sql`update hub.process_defs set run_group_ids = ${c.sql.array([WF.WOFF.id])} where key = ${key}`;
+      await c.sql`update hub.process_defs set run_group_ids = ${c.sql.array([WF.WOFF.id])}::uuid[] where key = ${key}`;
     });
     expect((await decisionOf(c.sql, runId))?.reason).toBe("permission_lost");
     expect(c.dify.calls).toHaveLength(0);
@@ -180,7 +192,7 @@ describe("AC-H47 · TT-R07 · công tắc đọc lại mỗi lần gọi, không
     });
     c.dify.script([{ kind: "hold", until, result: { so_hd: "HD-1" } }]);
     const runId = await startRun(c, key, {
-      inputs: [{ type: "text", key: "ma-kh", value: "KH1" }],
+      inputs: [{ type: "text", key: "ma-kh", text: "KH1" }],
     });
     await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
     await waitStageStatus(c.sql, runId, 0, "done");

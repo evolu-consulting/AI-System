@@ -1,4 +1,4 @@
-# Test plan · P-d2 (T15) · stage `tool` + công tắc tool theo tenant + rẽ nhánh (phụ lục của [test-plan.md](test-plan.md))
+﻿# Test plan · P-d2 (T15) · stage `tool` + công tắc tool theo tenant + rẽ nhánh (phụ lục của [test-plan.md](test-plan.md))
 
 Nguồn: spec-d2, spec-tz-tools §2, plan-d2/contract/db, AC-H44/H45/H47, A15. Quy ước: [test-plan §1–§2](test-plan.md).
 
@@ -118,7 +118,7 @@ ok · S10 (nhật ký trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `p
 ### 3.7 Hiệu năng (Luật 4c, plan-d2 §9) — `perf/d2.perf.int.test.ts` (`bun run test:perf`)
 | Ca | Đo | Ngưỡng |
 |---|---|---|
-| PD2-P01 | PUT def 30 stage / 10 tool × 20 | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms (**#109**); số câu có tool − không tool = **1** |
+| PD2-P01 | PUT def 10 stage / 3 tool × 20, xen kẽ | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms (**#109**); số câu có tool − không tool = **1** |
 | PD2-P02 | 200 workflow × 50 tenant (10.000 hàng công tắc), `GET /process-editor/context` × 30 | p95 ≤ 20 ms; **2** câu |
 | PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; (câu − mốc agent cùng cửa sổ) ≤ **14** (#109); p95 ≤ 60 ms |
 | PD2-P04 | đếm câu của POST Đạt + `settled()`: nhảy 1 vs 18 bước (def 21 bước); mốc = def **không** `branch` (#97, D2-33) | bằng nhau; khớp − mốc = **4**; không khớp − mốc = **1** (`fields`); p95 ≤ 30 ms (đúng khoảng đo) |

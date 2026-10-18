@@ -1,4 +1,4 @@
-/// <reference lib="dom" />
+﻿/// <reference lib="dom" />
 // HUB-FR-143 · HUB-FR-144 · HUB-FR-145 · ADM-FR-71 · ADM-FR-72 · P-d1 · e2e helper (test-plan-e2e §1; nhãn NGUYÊN VĂN plan-frontend §7
 // + i18n). Stack = stack P-b2 (Hub THẬT + Runtime giả P-a + admin-web + chat-web). Trạng thái chờ hẹn/thử lại/chuyển cấp dựng bằng
 // SQL (stage `waiting_timer` + hàng `process_timers`; ĐỒNG HỒ KHÔNG chạy — không ngủ chờ, không cần sweepOnce). Bảng 0036 vắng ⇒
@@ -217,9 +217,10 @@ export async function needPd2(): Promise<void> {
     throw new Error("chưa có tính năng: stage_runs.status skipped (migration 0037, T17)");
 }
 
+const PD2_E2E_SECRET = "a5d2e2e0-0000-4000-8000-000000000001";
 const PARAMS = [
-  { name: "tong_tien", type: "number", required: true, label: "Tổng tiền" },
-  { name: "ma_kh", type: "text", required: false, label: "Mã KH" },
+  { name: "tong_tien", type: "number", required: true, description: "Tổng tiền" },
+  { name: "ma_kh", type: "text", required: false, description: "Mã KH" },
 ];
 /** Workflow catalog (owner SQL) + công tắc: acme bật W, WS, WF; globex bật `globexOn`. Idempotent. */
 export async function seedPd2Tools(globexOn: (keyof typeof PD2_E2E)[] = []): Promise<void> {
@@ -228,13 +229,22 @@ export async function seedPd2Tools(globexOn: (keyof typeof PD2_E2E)[] = []): Pro
     const rows = [
       [PD2_E2E.W, false, true, PARAMS],
       [PD2_E2E.WS, true, true, PARAMS],
-      [PD2_E2E.WF, false, true, [{ name: "tep", type: "file", required: true, label: "Tệp" }]],
+      [
+        PD2_E2E.WF,
+        false,
+        true,
+        [{ name: "tep", type: "file", required: true, description: "Tệp" }],
+      ],
       [PD2_E2E.WOFF, false, false, PARAMS],
     ] as const;
+    // `secret_id` NOT NULL + FK (0003): secret giả (không bao giờ giải mã — e2e không gọi Dify).
+    await sql`insert into admin.secrets (id, name, ciphertext, iv, key_version, last4) values
+      (${PD2_E2E_SECRET}, 'PD2_E2E_KEY', ${Buffer.alloc(32, 7)}, ${Buffer.alloc(12, 3)}, 1, 'e2e1')
+      on conflict (id) do nothing`;
     for (const [wf, side, enabled, params] of rows)
       await sql`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id, input_schema,
           output_field, enabled, side_effect)
-        values (${wf.id}, ${wf.key}, ${wf.name}, 'Workflow e2e P-d2.', 'workflow', 'http://127.0.0.1:9', null,
+        values (${wf.id}, ${wf.key}, ${wf.name}, 'Workflow e2e thử nghiệm P-d2.', 'workflow', 'http://127.0.0.1:9/v1', ${PD2_E2E_SECRET},
           ${sql.json(params as never)}, 'result', ${enabled}, ${side})
         on conflict (id) do update set enabled = excluded.enabled, side_effect = excluded.side_effect,
           input_schema = excluded.input_schema, name = excluded.name`;

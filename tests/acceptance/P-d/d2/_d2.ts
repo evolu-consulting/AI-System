@@ -1,4 +1,4 @@
-// HUB-FR-146/147 · ADM-FR-73 · AC-H44/H45/H47 · test-plan-d2 đầu file + §3: hạ tầng int P-d2 — Dify giả (`Bun.serve` cổng 0,
+﻿// HUB-FR-146/147 · ADM-FR-73 · AC-H44/H45/H47 · test-plan-d2 đầu file + §3: hạ tầng int P-d2 — Dify giả (`Bun.serve` cổng 0,
 // kịch bản từng lời gọi, đếm + lưu `user`/`inputs`), workflow catalog fixture (owner SQL, secret mã hoá như H2a), công tắc
 // tool (owner SQL), điều kiện tiền đề `needD2` (đỏ NGAY khi thiếu 0037/0012 hoặc contract P-d2 — Luật 4c). Chờ việc nền bằng
 // `handles.settled()` (DrainTracker) + `*Once`, không ngủ chờ. Không chứa `it(...)`.
@@ -24,7 +24,7 @@ const P20 = Array.from({ length: 20 }, (_, i) => ({
   name: `p${i}`,
   type: "number",
   required: false,
-  label: `P${i}`,
+  description: `Tham số P${i}`,
 }));
 
 // ---------- Dify giả ----------
@@ -53,8 +53,16 @@ export function startFakeDify(): FakeDify {
       w.ok();
     }
   };
-  const out = (text: string) =>
-    Response.json({ data: { status: "succeeded", outputs: { result: text } } });
+  /** Pipeline `/mcp` (D2-02) gọi `response_mode:"streaming"` ⇒ SSE `workflow_finished` như H2a (`dify-mock`). */
+  const out = (text: string) => {
+    const ev = {
+      event: "workflow_finished",
+      data: { status: "succeeded", outputs: { result: text } },
+    };
+    return new Response(`event: workflow_finished\ndata: ${JSON.stringify(ev)}\n\n`, {
+      headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
+    });
+  };
   const server = Bun.serve({
     port: 0,
     async fetch(req) {
@@ -72,7 +80,7 @@ export function startFakeDify(): FakeDify {
     },
   });
   return {
-    baseUrl: `http://127.0.0.1:${server.port}`,
+    baseUrl: `http://127.0.0.1:${server.port}/v1`,
     calls,
     script: (r) => {
       queue = [...r];
@@ -124,9 +132,10 @@ export function startNetDify(port: number): NetDify {
   let queue: NetMode[] = [];
   let n = 0;
   const socks = new Set<Socket>();
-  const okBody = JSON.stringify({
+  const okBody = `event: workflow_finished\ndata: ${JSON.stringify({
+    event: "workflow_finished",
     data: { status: "succeeded", outputs: { result: JSON.stringify({ so_hd: "HD-1" }) } },
-  });
+  })}\n\n`;
   const server = createServer((sock) => {
     socks.add(sock);
     sock.on("close", () => socks.delete(sock));
@@ -140,13 +149,13 @@ export function startNetDify(port: number): NetDify {
       if (!requestComplete(buf)) return;
       if (m === "close_after_body") return void sock.destroy();
       sock.end(
-        `HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: ${Buffer.byteLength(okBody)}\r\nconnection: close\r\n\r\n${okBody}`,
+        `HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ncontent-length: ${Buffer.byteLength(okBody)}\r\nconnection: close\r\n\r\n${okBody}`,
       );
     });
   });
   return {
     port,
-    baseUrl: `http://127.0.0.1:${port}`,
+    baseUrl: `http://127.0.0.1:${port}/v1`,
     calls: () => n,
     modes: (m) => {
       queue = [...m];
@@ -185,7 +194,8 @@ export type CtxD2 = CtxPd & { dify: FakeDify };
 export async function startD2(opts: { processRunsPerTenant?: number } = {}): Promise<CtxD2> {
   const dify = startFakeDify();
   const c = await startPd({
-    ...(opts.processRunsPerTenant && { processRunsPerTenant: opts.processRunsPerTenant }),
+    // Run dang dở (đợi duyệt/quyết định) tích luỹ qua các ca ⇒ trần mặc định 429 `TOO_MANY_PROCESS_RUNS` (Tranh chấp T17b-2).
+    processRunsPerTenant: opts.processRunsPerTenant ?? 200,
     extraDeps: { secretMasterKey: TEST_MASTER_KEY_B64, difyTimeoutMaxS: 300 },
   });
   return { ...c, dify, stop: async () => (await c.stop(), await dify.stop()) };
@@ -194,8 +204,8 @@ export async function startD2(opts: { processRunsPerTenant?: number } = {}): Pro
 export async function insertWorkflows(sql: Sql, baseUrl: string): Promise<void> {
   const key = parseMasterKey(TEST_MASTER_KEY_B64);
   const inputs = [
-    { name: "tong_tien", type: "number", required: true, label: "Tổng tiền" },
-    { name: "ma_kh", type: "text", required: false, label: "Mã KH" },
+    { name: "tong_tien", type: "number", required: true, description: "Tổng tiền" },
+    { name: "ma_kh", type: "text", required: false, description: "Mã KH" },
   ];
   for (const [i, w] of Object.values(WF).entries()) {
     const s = encryptSecret(key, SEC(i), `app-${w.key}`);
@@ -241,8 +251,8 @@ export function toolStage(o: Json = {}): Json {
     instruction: "",
     output: {
       filename: `${o.key ?? "s1"}.md`,
-      template: "",
-      required_sections: [],
+      template: "x", // contract min 1; Hub ép lại (plan-addendum A3)
+      required_sections: ["x"],
       fields: o.fields ?? [
         { key: "so_hd", type: "string", required: true },
         { key: "tong_tien", type: "number", required: false },
@@ -251,7 +261,7 @@ export function toolStage(o: Json = {}): Json {
     after: o.after ?? { kind: "auto" },
     real_action: o.real_action ?? false,
     answerer: { kind: "starter" },
-    timeout_s: o.timeout_s ?? 30,
+    timeout_s: o.timeout_s ?? 60,
     token_budget: null,
   };
 }
@@ -265,6 +275,6 @@ export async function settled(c: CtxPd): Promise<void> {
 }
 /** Đếm audit theo action của run. */
 export async function auditsOf(sql: Sql, action: string, runId: string): Promise<Json[]> {
-  return sql<Json[]>`select * from hub.audit_log where action = ${action}
-    and (entity_id = ${runId} or details::text like ${`%${runId}%`}) order by created_at`;
+  return sql<Json[]>`select a.* from hub.audit_log a where a.action = ${action}
+    and (a.entity_id = ${runId} or to_jsonb(a)::text like ${`%${runId}%`}) order by a.seq`;
 }
