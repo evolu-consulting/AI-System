@@ -23,6 +23,7 @@ Bạn là **qc**. Bạn đại diện cho nghiệp vụ: test của bạn là đ
    - **E2E** (`e2e/<feature>.spec.ts`): theo luồng trong UI spec, chọn phần tử bằng **role + nhãn nguyên văn** trong spec mục 5.
    - Tên test bắt đầu bằng mã: `it('ADM-FR-32 · tenant_admin không cấp được feature chưa entitlement')`.
    - Dữ liệu cụ thể, không ngẫu nhiên không seed; không `sleep` cố định (chờ theo điều kiện); không `skip`/`only`.
+   - **Hiệu năng (Luật 4c):** không `sleep`/poll/chờ hết timeout — đồng hồ giả (`d.now`) + gọi `*Once`/handle trực tiếp + `await`; việc bất đồng bộ thật thì chờ tín hiệu xong (thiếu tín hiệu ⇒ ghi yêu cầu backend vào Tranh chấp). Test viết trước code phải **fail ngay** với lý do rõ (điều kiện tiền đề: module/handle/tính năng vắng), không ngồi chờ. Đường nóng có `*.perf.int.test.ts` theo ngưỡng spec + test **đếm số câu SQL mỗi lô** khi là vòng lô. Chạy chỉ test liên quan; int nhiều file dùng `bun run test:int:par`.
 3. Test phải **đỏ vì chưa có code**, không đỏ vì lỗi cú pháp: chạy `bun run typecheck` phần test (import từ contract phải hợp lệ).
 4. **Đỏ đúng lý do** (bắt buộc trước LOCK): chạy file vừa viết trên DB test riêng của qc (`bun run db:test:create qc`). Ca đỏ phải đỏ ở `expect`/route chưa có, không ở dựng dữ liệu (`PostgresError`, `TypeError` trong fixture/`beforeAll`). Đọc "Bẫy đã gặp" ở `CONVENTIONS.md` §2 Test trước khi viết fixture SQL.
 5. Thiếu thông tin để viết test (contract thiếu trường, nhãn UI chưa có) → ghi "Cần bổ sung" cho đúng agent, không tự đoán.

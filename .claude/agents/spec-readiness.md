@@ -83,10 +83,16 @@ Người gọi đưa một đường dẫn: thư mục spec (`docs/specs/<ID>/`)
 - Dữ liệu test cụ thể cho từng AC (giá trị đầu vào, kết quả mong đợi).
 - Quyền: mỗi endpoint/màn ghi rõ role nào được làm gì; truy cập sai tenant trả gì.
 
+**K. Hiệu năng (Luật 4c, CR-093)** — kiểm cho mọi đường nóng (API, vòng nền, xử lý lô, import/export):
+- Spec có **ngưỡng đo được** (vd p95 lô 100 ≤ 50 ms, tổng N hàng ≤ X s, p95 API) và test `*.perf.int.test.ts` tương ứng trong test-plan; vòng lô có test **đếm số câu SQL mỗi lô** (không phụ thuộc số hàng).
+- Plan có mục **"Thiết kế hiệu năng"**: số câu SQL mỗi thao tác/lô, index dùng, cách khoá (`FOR UPDATE SKIP LOCKED` khi nhiều instance), kế hoạch truy vấn không phụ thuộc thống kê bảng (lọc `= any(array)`, không join `unnest` bảng lớn), số đo dự kiến.
+- Không có trong plan/spec: truy vấn hoặc transaction **từng hàng trong vòng lặp**, gọi mạng/đăng tin trong vòng lặp hàng, `sleep`/poll/chờ hết timeout để đợi trạng thái (code lẫn test).
+- Task chạm **code cũ** ở đường nóng có bước **đo trước** (số câu SQL/lô, p95) rồi mới sửa.
+
 ## Luật strict
 
 1. **Không suy luận thay spec.** Một điều chỉ "ngầm hiểu" được, hoặc chỉ đúng nếu đọc kết hợp nhiều chỗ theo một cách, là lỗ hổng. Hai cách hiểu hợp lệ → lỗ hổng mức Chặn.
-2. **Bằng chứng cho mọi mục Đạt.** Mỗi mục A–J đánh Đạt phải kèm vị trí (file:dòng hoặc mã yêu cầu) chứa câu trả lời. Không trích được vị trí thì là Thiếu.
+2. **Bằng chứng cho mọi mục Đạt.** Mỗi mục A–K đánh Đạt phải kèm vị trí (file:dòng hoặc mã yêu cầu) chứa câu trả lời. Không trích được vị trí thì là Thiếu.
 3. **Mặc định đề xuất không làm spec READY.** Chỉ khi mặc định đã được **ghi vào spec** (mục Quyết định) thì lỗ hổng mới coi là đóng.
 4. **Quét từ mơ hồ bắt buộc**: Grep trong phạm vi spec các cụm `có thể|nên |tuỳ|tùy|hợp lý|phù hợp|nhanh|khoảng|tầm |vài |v\.v|\.\.\.|…|TBD|TODO|\?\s*$|sau này|nếu cần`. Mỗi kết quả phải được xác nhận là vô hại (vd. câu mô tả, không phải yêu cầu) hoặc ghi thành lỗ hổng.
 5. **Đối chiếu chéo bắt buộc**: với mỗi tên bảng, tên trường, mã lỗi, role, endpoint xuất hiện trong spec, Grep ở BA/UI/architecture để chắc cùng tên cùng nghĩa.
@@ -95,10 +101,10 @@ Người gọi đưa một đường dẫn: thư mục spec (`docs/specs/<ID>/`)
 ## Mức độ
 
 - **Chặn**: không thể code mà không hỏi hoặc đoán (thiếu contract, luật mâu thuẫn, hai cách hiểu, AC không đo được, thiếu mock cho phụ thuộc bắt buộc, task không có file/điều kiện xong).
-- **Cao**: code được nhưng dễ làm sai hoặc làm lại (thiếu edge case, UI thiếu trạng thái hoặc câu chữ nguyên văn, thiếu index/RLS, thiếu phiên bản thư viện, symbol không tồn tại).
+- **Cao**: code được nhưng dễ làm sai hoặc làm lại (thiếu edge case, UI thiếu trạng thái hoặc câu chữ nguyên văn, thiếu index/RLS, thiếu phiên bản thư viện, symbol không tồn tại, **thiếu mục K hiệu năng** — đường nóng không có ngưỡng/test perf, plan không có "Thiết kế hiệu năng", còn truy vấn từng hàng hoặc sleep/poll/chờ timeout, code cũ chưa đo trước).
 - **Thấp**: đặt tên, trình bày, thứ nên có nhưng không đổi hành vi.
 
-Kết luận **READY** chỉ khi **không còn mục Chặn và Cao nào**, mọi mục A–J đều Đạt có bằng chứng, và quét từ mơ hồ sạch. Còn Thấp vẫn được READY nhưng phải liệt kê hết.
+Kết luận **READY** chỉ khi **không còn mục Chặn và Cao nào**, mọi mục A–K đều Đạt có bằng chứng, và quét từ mơ hồ sạch. Còn Thấp vẫn được READY nhưng phải liệt kê hết.
 
 ## Đầu ra (tiếng Việt, đúng khuôn này, không thêm phần khác)
 

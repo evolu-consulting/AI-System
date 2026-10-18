@@ -85,6 +85,8 @@ Bước 9 sửa review: commit sửa phải chạy lại `lock-order`/`concurren
 Bước 7–9: mỗi task một lần gọi agent, model theo cột `Rủi ro` (mục "Chính sách model").
 **Kiểm lớp (ADR-0023, CR-088/089):** mỗi task BE/FE có file trong `domain/`/`application/` chạy `bun run depcruise` cho file đổi (luật `ca-*`); task Python chạy `uv run lint-imports && uv run python scripts/check_layers.py`. Reviewer kiểm thêm: lớp 1–2 không có giá trị không tất định ngoài port `Clock`/`IdGen`, mapper có test khớp kiểu, file cũ chỉ tách phần chạm tới (`CONVENTIONS.md` §10). **Module mẫu Clean Architecture** (`hub-api/processes`, CR-090): port `UnitOfWork` (tx/RLS/scope `system`) phải qua **security review** riêng trước khi module khác dùng làm khuôn — hard stop cách ly tenant.
 
+**Hiệu năng ở mọi cổng (Luật 4c, người dùng 2026-10-18):** bước 2 plan BE có mục "Thiết kế hiệu năng" (số câu SQL/lô, index, khoá, kế hoạch không phụ thuộc thống kê, ngưỡng); bước 3 qc viết `*.perf.int.test.ts` + test đếm câu SQL cho đường nóng, test trước code phải **fail ngay** (điều kiện tiền đề), không chờ timeout; bước 4 spec-readiness coi thiếu mục K hiệu năng là **Cao** (chưa READY); bước 7 task chạm code cũ ở đường nóng đo trước rồi sửa, báo số trước → sau; bước 9 reviewer chặn truy vấn từng hàng / sleep / poll (Blocker) và thiếu số đo perf (Major). Khi làm chỉ chạy test liên quan; int nhiều file dùng `bun run test:int:par`; bộ đầy đủ khi đóng task/mốc.
+
 ## Làm song song nhiều session (CR-059)
 
 Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luật 5). Mốc lớn chia cho **nhiều session** (vd P-a) → làm theo mục này. Mục tiêu: `main` luôn xanh, mỗi session sửa phần riêng, merge đúng mà không cần nhớ lịch sử chat.
