@@ -58,6 +58,14 @@ Chi phí chủ yếu do context dài bị đọc lại mỗi lượt (M0–M3: ~
    - **Không chạy bộ test đầy đủ khi có agent đang BUILD** — lượt đầy đủ (`test:int:par` toàn bộ, `test:all`) chỉ khi đóng task/lát/mốc, một lượt, máy rảnh. Trong lúc build chỉ chạy test của phần đang sửa.
    - **Brief trích sẵn**: điều phối dán vào lời giao việc đúng đoạn cần (chữ ký hàm, bảng file đích, hàng test-plan, quyết định liên quan) thay vì bảo agent tự đọc cả spec/plan; agent chỉ mở thêm file code cần sửa.
    - **Model theo rủi ro, thiên về nhanh**: task thường (FE, docs, dời file không đổi hành vi có test khoá phủ, qc sửa đường dẫn/khoá, readiness chỉ diff) dùng `model: sonnet`; Opus chỉ cho task chạm cách ly tenant/RLS, khoá/transaction, quyền, auth/secret.
+   - **Brief phải chặn việc vô ích ngay từ đầu (nguyên tắc sống còn, người dùng 2026-10-18)** — mọi lời giao việc có đủ 6 mục, thiếu mục nào điều phối không được gửi:
+     1. **Phạm vi**: làm gì / KHÔNG làm gì (task sau làm gì thì nêu tên để agent không lấn sang).
+     2. **Xong khi**: lệnh kiểm cụ thể, mỗi lệnh chạy một lần; không chạy lại cả bộ.
+     3. **Được phép đỏ**: danh sách ca/file sẽ còn đỏ vì phụ thuộc task sau (vd "cần vòng hẹn giờ T8"), ca chập chờn đã biết (TECH-DEBT #192…) — agent liệt kê, KHÔNG đuổi theo.
+     4. **Điểm dừng**: test đỏ không do code mình sửa (đỏ sẵn/chập chờn/môi trường) ⇒ chạy lại riêng **một** lần, vẫn vậy thì ghi vào báo cáo và đi tiếp; vướng quá 2 lần thử cùng một lỗi ⇒ dừng, commit phần đúng, báo "Blocked" kèm lỗi.
+     5. **Giới hạn thời gian** theo cỡ việc (Haiku ≤ 5 phút, Sonnet ≤ 15 phút, Opus ≤ 30 phút); hết giờ ⇒ commit phần đúng + báo việc dở.
+     6. **Báo cáo**: khuôn ngắn (≤ 20 dòng): file, test trước → sau, ca còn đỏ + lý do, quyết định, tranh chấp.
+     Task lớn (nhiều lớp, nhiều luồng) ⇒ điều phối **chia trước** theo model: luật thuần có test khoá (Sonnet) ∥ phần khoá/transaction/tenant (Opus) ∥ việc cơ học (Haiku), không giao một agent Opus ôm cả.
    - **Song song khi file không giao nhau**; mỗi agent stage đúng file của mình theo đường dẫn; `tests/.lock` ghi lại ở commit cuối của đợt.
 
 ### Đo token mỗi mốc
