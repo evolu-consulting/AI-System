@@ -15,6 +15,7 @@ import { firstIdxOfStep } from "../core/step.rules";
 import { decisionAssignees, decisionOptionsFor } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import { advanceApply } from "./apply-driver";
+import { expireRuns } from "./expire";
 import { stepsOfSnap } from "./step-persist";
 import { toDecision as trToDecision } from "./team-runner";
 
@@ -167,51 +168,6 @@ async function markUnresolvable(d: ProcessDeps, runId: string): Promise<boolean>
   return true;
 }
 
-/** BR-26 · run hết hạn (`expires_at ≤ now`): đóng task `expired`, `run_end`, không tự duyệt. */
-async function expireRuns(d: ProcessDeps): Promise<number> {
-  const now = d.now();
-  const rows = await withHubScope(d.db, SYSTEM, (tx) =>
-    tx.execute<{ id: string }>(sql`select id from hub.process_runs
-      where status in ${activeList} and expires_at <= ${now.toISOString()}::timestamptz
-      order by expires_at limit ${BATCH}`),
-  );
-  let n = 0;
-  for (const { id } of rows) if (await endRun(d, id, "expired", now)) n++;
-  return n;
-}
-
-/** Đóng một run về trạng thái kết thúc (`expired`): tx system, tin thread + sự kiện sau COMMIT. */
-async function endRun(
-  d: ProcessDeps,
-  runId: string,
-  status: "expired",
-  now: Date,
-): Promise<boolean> {
-  const events = await withHubScope(d.db, SYSTEM, async (tx): Promise<UserEvent[] | null> => {
-    const run = await core.lockRun(tx, tenantOf(await head(tx, runId)), runId);
-    if (!run || !isActive(run.status as ProcessRunStatus)) return null;
-    await tx.execute(sql`update hub.process_runs set status = ${status}, finished_at = ${now.toISOString()}::timestamptz,
-        updated_at = ${now.toISOString()}::timestamptz where id = ${runId}`);
-    await tx.execute(sql`update hub.stage_runs set status = 'cancelled', updated_at = ${now.toISOString()}::timestamptz
-      where process_run_id = ${runId} and status in ('pending','queued','running','waiting_review','waiting_answer','needs_decision')`);
-    await tx.execute(sql`update hub.review_tasks set status = 'closed', result = ${status},
-        decided_at = ${now.toISOString()}::timestamptz where process_run_id = ${runId} and status = 'open'`);
-    await enqueueThread(tx, {
-      runId,
-      roomId: "",
-      kind: "run_end",
-      process_run_id: runId,
-      status,
-      actor: null,
-    });
-    return d.notifier.runFinished(tx, runId);
-  });
-  if (events === null) return false;
-  await publishUserEvents(d.redis, events, d.log);
-  await d.postThread(runId).catch(() => {});
-  return true;
-}
-
 /** needs_decision với lý do; mở task `decision` (người bắt đầu; group chỉ khi `redo_limit`). */
 async function toDecision(
   d: ProcessDeps,
@@ -292,7 +248,6 @@ async function head(tx: Tx, runId: string): Promise<(Head & { id: string }) | nu
     from hub.process_runs where id = ${runId}`);
   return r ?? null;
 }
-const tenantOf = (h: { tenant_id: string } | null): string => h?.tenant_id ?? "";
 
 async function stageRow(
   tx: Tx,

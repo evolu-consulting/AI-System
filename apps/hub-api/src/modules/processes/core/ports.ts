@@ -48,7 +48,12 @@ export type ProcessNotifier = {
   taskOpened(tx: Tx, taskId: string): Promise<UserEvent[]>;
   taskClosed(tx: Tx, taskId: string): Promise<UserEvent[]>;
   runFinished(tx: Tx, runId: string): Promise<UserEvent[]>;
+  /** CR-093 · bản lô cho vòng hết hạn: một câu chèn notice `run_finished` + một câu unread cho cả lô (A10, #90). */
+  runsFinished(tx: Tx, runs: readonly FinishedRun[]): Promise<UserEvent[]>;
 };
+
+/** Run vừa kết thúc trong lô (hàng nguồn mang `tenant_id` — K3 lô, A11). */
+export type FinishedRun = { id: string; tenantId: string; startedBy: string; processName: string };
 
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };
 
@@ -56,6 +61,7 @@ export const NOOP_NOTIFIER: ProcessNotifier = {
   taskOpened: async () => [],
   taskClosed: async () => [],
   runFinished: async () => [],
+  runsFinished: async () => [],
 };
 
 /**

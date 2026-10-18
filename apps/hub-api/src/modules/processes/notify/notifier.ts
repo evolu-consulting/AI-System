@@ -5,7 +5,8 @@ import type { NoticeKind, ProcessNotice, TaskKind, TaskResult } from "@ai/contra
 import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
 import { processNotice, reviewTaskClosed, reviewTaskCreated } from "../core/events";
-import type { ProcessNotifier } from "../core/ports";
+import type { FinishedRun, ProcessNotifier } from "../core/ports";
+import { insertNoticeRows, unreadByTenantUser, unreadKey } from "./batch.repo";
 import {
   groupMemberIds,
   type InsertedNotice,
@@ -163,6 +164,38 @@ async function onRunFinished(tx: Tx, runId: string): Promise<UserEvent[]> {
   return noticeEvents(tx, { tenantId: r.tenantId, inserted, kind: "run_finished", meta });
 }
 
+/** CR-093 · bản lô của `onRunFinished`: 2 câu SQL cho cả lô, không phụ thuộc số run. */
+async function onRunsFinished(tx: Tx, runs: readonly FinishedRun[]): Promise<UserEvent[]> {
+  const inserted = await insertNoticeRows(
+    tx,
+    "run_finished",
+    runs.map((r) => ({
+      tenantId: r.tenantId,
+      userId: r.startedBy,
+      processRunId: r.id,
+      taskId: null,
+      payload: { process_name: r.processName, stage_name: null },
+    })),
+  );
+  const unread = await unreadByTenantUser(tx, inserted);
+  return inserted.flatMap((n) =>
+    processNotice(n.userId, {
+      notice: buildNotice(n, "run_finished", {
+        processRunId: n.row.processRunId,
+        taskId: null,
+        processName: String(n.row.payload.process_name ?? ""),
+        stageName: null,
+      }),
+      unread: unread.get(unreadKey(n.tenantId, n.userId)) ?? 1,
+    }),
+  );
+}
+
 export function createNotifier(): ProcessNotifier {
-  return { taskOpened: onTaskOpened, taskClosed: onTaskClosed, runFinished: onRunFinished };
+  return {
+    taskOpened: onTaskOpened,
+    taskClosed: onTaskClosed,
+    runFinished: onRunFinished,
+    runsFinished: onRunsFinished,
+  };
 }

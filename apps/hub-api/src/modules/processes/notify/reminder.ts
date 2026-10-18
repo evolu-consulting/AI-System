@@ -1,62 +1,70 @@
-// HUB-FR-112 · AC-H32 · HUB-BR-26 · PF3 · nhắc task mở sau `REMIND_AFTER_H` (plan §4 hàng nhắc, plan-contract §7.1
-// `remindOnce`). Scope `system` (vòng nền mọi tenant); chèn notice `reminder` + đặt `reminded_at` (đúng 1 lần) rồi phát
-// `process.notice` SAU COMMIT. Đồng hồ = seam `d.now` (SQL so với tham số, không `now()`). Vòng 5 phút ở `processes.mount`.
+// HUB-FR-112 · AC-H32 · HUB-BR-26 · PF3 · CR-093 · plan-addendum A9/A10 · TECH-DEBT #190 · nhắc task mở sau `REMIND_AFTER_H`.
+// THEO TẬP: mỗi lô 100 task trong MỘT tx `system` = 3 câu SQL cố định (khoá + đặt `reminded_at` + người nhận, chèn notice,
+// unread) — không lặp truy vấn từng task. `FOR UPDATE SKIP LOCKED` ⇒ nhiều Hub nhắc song song không trùng (#190).
+// `remindOnce` = MỘT lượt xả: lặp lô tới khi lô < 100 hoặc hết ngân sách 60 s (A9); sự kiện phát SAU COMMIT mỗi lô, một
+// pipeline Redis. Đồng hồ = seam `d.now` (SQL so với tham số, không `now()`).
 import { withHubScope } from "@ai/db/hub-scope";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import { processNotice } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import {
-  dueTasks,
-  groupMemberIds,
-  insertNotices,
-  markReminded,
-  taskAssigneeUserIds,
-  unreadByUser,
-} from "./inbox.repo";
+  claimDueReminders,
+  insertNoticeRows,
+  type NoticeRow,
+  unreadByTenantUser,
+  unreadKey,
+} from "./batch.repo";
 import { buildNotice } from "./notifier";
 import { noticeRecipients } from "./notify.rules";
 
-/** plan §11: mỗi vòng ≤ 100 hàng. */
+/** plan §11: mỗi lô ≤ 100 hàng. */
 const REMINDER_BATCH = 100;
+/** A9: một lượt xả tối đa 60 s rồi nhường lượt sau. */
+const DRAIN_BUDGET_MS = 60_000;
 
-/**
- * Một lượt nhắc: trả số task vừa nhắc. `processLoops:false` ⇒ test gọi qua `ProcessHandles.remindOnce`. Gom sự kiện trong
- * tx, phát sau COMMIT (retry 40P01 không phát đôi — tx chỉ làm việc DB).
- */
+/** Một lượt nhắc: trả tổng số task vừa nhắc (mọi lô). `processLoops:false` ⇒ test gọi qua `ProcessHandles.remindOnce`. */
 export async function remindOnce(d: ProcessDeps): Promise<number> {
+  const t0 = performance.now();
+  let total = 0;
+  for (;;) {
+    const n = await remindBatch(d, REMINDER_BATCH);
+    total += n;
+    if (n < REMINDER_BATCH || performance.now() - t0 >= DRAIN_BUDGET_MS) return total;
+  }
+}
+
+async function remindBatch(d: ProcessDeps, limit: number): Promise<number> {
   const now = d.now();
   const { count, events } = await withHubScope(d.db, { kind: "system" }, async (tx) => {
-    const due = await dueTasks(tx, now, REMINDER_BATCH);
-    const evs: UserEvent[] = [];
+    const due = await claimDueReminders(tx, now, limit);
+    if (due.length === 0) return { count: 0, events: [] as UserEvent[] };
+    const rows: NoticeRow[] = [];
     for (const t of due) {
-      const userIds = await taskAssigneeUserIds(tx, t.tenantId, t.taskId);
-      const members = t.groupId ? await groupMemberIds(tx, t.tenantId, t.groupId) : [];
-      const recipients = noticeRecipients({ userIds, groupMemberIds: members });
-      await markReminded(tx, t.taskId, now);
-      if (recipients.length === 0) continue;
-      const inserted = await insertNotices(tx, {
-        tenantId: t.tenantId,
-        kind: "reminder",
-        processRunId: t.processRunId,
-        taskId: t.taskId,
-        payload: { process_name: t.processName, stage_name: t.stageName },
-        userIds: recipients,
-      });
-      const unread = await unreadByUser(tx, t.tenantId, recipients);
-      const meta = {
-        processRunId: t.processRunId,
-        taskId: t.taskId,
-        processName: t.processName,
-        stageName: t.stageName,
-      };
-      for (const n of inserted)
-        evs.push(
-          ...processNotice(n.userId, {
-            notice: buildNotice(n, "reminder", meta),
-            unread: unread.get(n.userId) ?? 1,
-          }),
-        );
+      for (const userId of noticeRecipients(t))
+        rows.push({
+          tenantId: t.tenantId,
+          userId,
+          processRunId: t.processRunId,
+          taskId: t.taskId,
+          payload: { process_name: t.processName, stage_name: t.stageName },
+        });
     }
+    const inserted = await insertNoticeRows(tx, "reminder", rows);
+    const unread = await unreadByTenantUser(tx, inserted);
+    const byTask = new Map(due.map((t) => [t.taskId, t]));
+    const evs = inserted.flatMap((n) => {
+      const t = byTask.get(n.row.taskId ?? "");
+      if (!t) return [];
+      return processNotice(n.userId, {
+        notice: buildNotice(n, "reminder", {
+          processRunId: t.processRunId,
+          taskId: t.taskId,
+          processName: t.processName,
+          stageName: t.stageName,
+        }),
+        unread: unread.get(unreadKey(n.tenantId, n.userId)) ?? 1,
+      });
+    });
     return { count: due.length, events: evs };
   });
   await publishUserEvents(d.redis, events, d.log);
