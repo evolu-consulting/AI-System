@@ -178,8 +178,14 @@ export class GateService {
     if (!task) throw notFound();
     if (v.role !== "platform_admin" && v.tenantId !== task.tenant_id) throw notFound();
     const users = await g.assigneeUserIds(tx, taskId, task.tenant_id);
-    const grp = task.assignee_group_id;
-    if (!users.has(v.userId) && !(grp !== null && groupIds.has(grp))) throw notFound();
+    const inGroup = (id: string | null) => id !== null && groupIds.has(id);
+    // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
+    if (
+      !users.has(v.userId) &&
+      !inGroup(task.assignee_group_id) &&
+      !inGroup(task.escalated_group_id)
+    )
+      throw notFound();
     if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
     if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
     const run = await core.lockRun(tx, task.tenant_id, task.process_run_id);

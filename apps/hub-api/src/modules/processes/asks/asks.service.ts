@@ -54,7 +54,8 @@ export class AsksService {
 
   /** Người gọi có là assignee của task (user hoặc thành viên group ban đầu)? Ngoài ra ⇒ 404 (không lộ). */
   #isAssignee(g: repo.TaskGrants, viewer: ViewerCtx): boolean {
-    return g.userIds.has(viewer.userId) || (g.groupId !== null && viewer.groupIds.has(g.groupId));
+    const inGroup = (id: string | null) => id !== null && viewer.groupIds.has(id);
+    return g.userIds.has(viewer.userId) || inGroup(g.groupId) || inGroup(g.escalatedGroupId);
   }
 
   #audit(
@@ -237,6 +238,10 @@ export class AsksService {
       forwards: grants.forwards,
       groupId: grants.groupId,
       assigneeIds: grants.userIds,
+      // PD-R21 · sau chuyển cấp: chỉ chuyển trong Group người chuyển đang được gán (chưa chuyển cấp ⇒ hành vi cũ).
+      ...(grants.escalatedGroupId
+        ? { escalatedGroupId: grants.escalatedGroupId, byGroupIds: viewer.groupIds }
+        : {}),
     };
     const check = forwardCheck(t, to, user.userId);
     if (check !== "ok") throw processError(check);

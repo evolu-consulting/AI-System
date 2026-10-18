@@ -9,6 +9,7 @@ import {
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
+import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
 import { normSection, sectionMap } from "../runs/template.rules";
 import { ensureWaitStage } from "./wait-stage.rules";
 
@@ -45,7 +46,15 @@ function stageRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
     return { path: `${p}.answerer.group_id`, ref: "group" };
   if (s.answerer.kind === "user" && !refs.userIds.has(s.answerer.user_id))
     return { path: `${p}.answerer.user_id`, ref: "user" };
-  return null;
+  return escalateRefMiss(s, i, refs);
+}
+
+/** PD-R23 · Group chuyển cấp phải thuộc tenant của def (`refs.groupIds`) — không lộ tồn tại (cùng thông điệp REF_INVALID). */
+function escalateRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
+  const esc = s.after.kind === "review" ? (s.after.escalate ?? null) : null;
+  const shape = { escalate: esc ? { afterH: esc.after_h, groupId: esc.group_id } : null };
+  const miss = escalateGroupRefs([shape]).find((r) => !refs.groupIds.has(r.groupId));
+  return miss ? { path: `stages.${i}.after.escalate.group_id`, ref: "group" } : null;
 }
 
 /** `run_group_ids` ngoài tenant cũng là REF_INVALID (ref "group"), xét sau stage. */

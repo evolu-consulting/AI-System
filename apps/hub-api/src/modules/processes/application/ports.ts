@@ -121,12 +121,53 @@ export type ClaimedReminder = {
   stageName: string | null;
   userIds: string[];
   groupMemberIds: string[];
+  remindAt: Date;
+  remindedAt: Date | null;
+  remindEveryH: number | null;
+  remindCount: number;
 };
 /** `more`: còn hàng tới hạn ngoài lô ⇒ lượt xả chạy tiếp (không mở tx rỗng để biết đã hết). */
 export type ReminderBatch = { tasks: ClaimedReminder[]; more: boolean };
+/** Mốc nhắc kế (lớp 1 `nextRemind`; nhắc cũ giữ nguyên `remindAt`/`remindCount`). */
+export type ReminderMark = {
+  taskId: string;
+  tenantId: string;
+  remindAt: Date;
+  remindCount: number;
+};
+export type ClaimedEscalation = {
+  taskId: string;
+  tenantId: string;
+  processRunId: string;
+  fromGroupId: string | null;
+  toGroupId: string;
+  /** Tenant của Group đích khi tìm thấy CÙNG tenant task; null = không tồn tại / khác tenant (K4). */
+  groupTenantId: string | null;
+  processName: string;
+  stageName: string | null;
+  memberIds: string[];
+};
+export type EscalationBatch = { tasks: ClaimedEscalation[]; more: boolean };
+export type EscalatedAssigneeRow = { tenantId: string; taskId: string; groupId: string };
+export type EscalateAuditRow = {
+  tenantId: string;
+  taskId: string;
+  action: "escalate" | "escalate_skipped";
+  entityName: string;
+  fromGroupId: string | null;
+  toGroupId: string;
+};
 export type ReviewTaskBatchRepo = {
-  /** MỘT câu: khoá task mở tới hạn (SKIP LOCKED), đặt `reminded_at`, trả kèm tên + người nhận. */
+  /** MỘT câu: khoá task mở tới hạn nhắc (SKIP LOCKED), trả kèm tên + người nhận (mọi Group assignee). */
   claimDueReminders(limit: number, now: Date): Promise<ReminderBatch>;
+  /** MỘT câu: `reminded_at = now` + mốc kế theo hàng (`jsonb_to_recordset`, khớp `(id, tenant_id)`). */
+  markRemindedMany(rows: readonly ReminderMark[], now: Date): Promise<void>;
+  /** MỘT câu claim-update: khoá task tới hạn chuyển cấp (SKIP LOCKED), đặt `escalated_at`. */
+  claimDueEscalations(limit: number, now: Date): Promise<EscalationBatch>;
+  /** MỘT câu nhiều hàng: assignee Group `via='escalated'` (Group cùng tenant hàng nguồn). */
+  addEscalatedGroups(rows: readonly EscalatedAssigneeRow[]): Promise<void>;
+  /** MỘT câu nhiều hàng: audit `escalate` / `escalate_skipped`. */
+  auditEscalations(rows: readonly EscalateAuditRow[]): Promise<void>;
 };
 export type NoticeRow = {
   tenantId: string;
@@ -148,7 +189,11 @@ export type NoticeBatchWriter = {
     kind: NoticeKind,
     rows: readonly NoticeRow[],
   ): Promise<{ inserted: InsertedNoticeRow[]; unread: Map<string, number> }>;
+  /** MỘT câu (như `insertMany`) + sự kiện `process.notice` vào outbox (phát SAU COMMIT); trả số notice chèn thật. */
+  notifyMany(kind: NoticeKind, rows: readonly NoticeMetaRow[]): Promise<number>;
 };
+/** Hàng notice kèm tên quy trình/bước cho sự kiện `process.notice`. */
+export type NoticeMetaRow = NoticeRow & { processName: string; stageName: string | null };
 export type FinishedRun = { id: string; tenantId: string; startedBy: string; processName: string };
 export type ExpiredRun = FinishedRun & { originKind: string; roomId: string | null };
 export type RunBatchRepo = {

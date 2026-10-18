@@ -41,6 +41,8 @@ export type TaskGrants = {
   groupId: string | null;
   /** Số lần đã chuyển. */
   forwards: number;
+  /** PD-R21 · Group chuyển cấp (assignee `via='escalated'`); null = chưa chuyển cấp. */
+  escalatedGroupId: string | null;
 };
 
 export async function taskGrants(
@@ -54,12 +56,17 @@ export async function taskGrants(
     .where(and(eq(reviewTasks.id, taskId), eq(reviewTasks.tenantId, tenantId)));
   if (!t) return null;
   const rows = await tx
-    .select({ userId: reviewTaskAssignees.userId, via: reviewTaskAssignees.via })
+    .select({
+      userId: reviewTaskAssignees.userId,
+      groupId: reviewTaskAssignees.groupId,
+      via: reviewTaskAssignees.via,
+    })
     .from(reviewTaskAssignees)
     .where(and(eq(reviewTaskAssignees.taskId, taskId), eq(reviewTaskAssignees.tenantId, tenantId)));
   const userIds = new Set(rows.flatMap((r) => (r.userId ? [r.userId] : [])));
   const forwards = rows.filter((r) => r.via === "forward").length;
-  return { status: t.status, userIds, groupId: t.groupId, forwards };
+  const escalatedGroupId = rows.find((r) => r.via === "escalated" && r.groupId)?.groupId ?? null;
+  return { status: t.status, userIds, groupId: t.groupId, forwards, escalatedGroupId };
 }
 
 /** Trả lời đầu thắng ⇒ stage `queued`, run `running` (PF1 `kick` chạy tiếp). */

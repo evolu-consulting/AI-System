@@ -18,7 +18,7 @@ import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
-import { remindOnce } from "./notify/reminder";
+import { remindOnce, startProcessReminder } from "./notify/reminder";
 import { conversationStart } from "./runs/conversation-start";
 import { createStageLauncher } from "./runs/launcher";
 import { applyResolveReport } from "./runs/resolve-apply";
@@ -119,6 +119,8 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     // B2 · PF1: vòng nền `sweepOnce` thật (mở PR stage Áp, interrupted, resolveTimeouts, requeueOrphans). Khi
     // `processLoops:false` (test), bỏ qua — test gọi qua `onProcessHandles.sweepOnce`.
     startProcessSweeper(bg, { signal: m.signal });
+    // D-PD10 · plan §5 · vòng nhắc + chuyển cấp 300 s (theo tập, `systemBatch`).
+    startProcessReminder(bg, { signal: m.signal });
   }
   return { roomSender: roomStart(d), conversationStart: d.start };
 }

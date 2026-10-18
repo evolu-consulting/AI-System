@@ -17,9 +17,11 @@ import type {
 } from "../application/ports";
 import type { ProcessNotifier } from "../core/ports";
 import { DomainError } from "../domain/errors";
-import { claimDueReminders, writeNotices } from "../notify/batch.repo";
+import { writeNotices } from "../notify/batch.repo";
 import { createNotifier } from "../notify/notifier";
 import { claimExpired, insertRunEnds } from "../runs/expire";
+import { notifyMany } from "./notify/notice-batch";
+import * as rt from "./notify/review-tasks.repo";
 import { retryRepo } from "./runs/retry.repo";
 import { runRepo } from "./runs/run.repo";
 import { sideEffectProbe } from "./runs/side-effect.repo";
@@ -67,8 +69,17 @@ function txRepos(
 function batchRepos(tx: Tx, outbox: Outbox, notifier: HubUowDeps["notifier"]): BatchRepos {
   const n = notifier ?? createNotifier();
   return {
-    reviewTasks: { claimDueReminders: (limit, now) => claimDueReminders(tx, now, limit) },
-    notices: { insertMany: (kind, rows) => writeNotices(tx, kind, rows) },
+    reviewTasks: {
+      claimDueReminders: (limit, now) => rt.claimDueReminders(tx, now, limit),
+      markRemindedMany: (rows, now) => rt.markRemindedMany(tx, now, rows),
+      claimDueEscalations: (limit, now) => rt.claimDueEscalations(tx, now, limit),
+      addEscalatedGroups: (rows) => rt.addEscalatedGroups(tx, rows),
+      auditEscalations: (rows) => rt.auditEscalations(tx, rows),
+    },
+    notices: {
+      insertMany: (kind, rows) => writeNotices(tx, kind, rows),
+      notifyMany: (kind, rows) => notifyMany(tx, outbox, kind, rows),
+    },
     runs: { claimExpired: (limit, now) => claimExpired(tx, now, limit) },
     threads: { insertRunEnds: (runs) => insertRunEnds(tx, runs) },
     notifier: {

@@ -11,6 +11,8 @@ import {
 } from "@ai/db/schema/hub-processes";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { FanoutRow } from "../../rooms/room-events";
+import { REMIND_AFTER_H } from "../domain/limits";
+import { reviewTaskTiming } from "../domain/notify/remind.rules";
 
 export type RunHead = typeof processRuns.$inferSelect;
 
@@ -71,7 +73,9 @@ export type NewTask = {
 /** Mở task + grant (plan-step0 §1: PF1 `open_review/open_ask/open_decision`). Trả id task. */
 export async function insertTask(tx: Tx, t: NewTask): Promise<string> {
   const id = crypto.randomUUID();
+  const timing = t.kind === "review" ? await reviewTimingOf(tx, t) : null;
   await tx.insert(reviewTasks).values({
+    ...(timing ?? {}),
     id,
     tenantId: t.tenantId,
     processRunId: t.runId,
@@ -83,7 +87,7 @@ export async function insertTask(tx: Tx, t: NewTask): Promise<string> {
     excerpt: t.excerpt ?? null,
     reason: t.reason ?? null,
     assigneeGroupId: t.groupId,
-    remindAt: t.remindAt,
+    remindAt: timing?.remindAt ?? t.remindAt,
   });
   const grant = { tenantId: t.tenantId, taskId: id, via: "initial" as const, depth: 0 };
   const rows = [
@@ -92,6 +96,30 @@ export async function insertTask(tx: Tx, t: NewTask): Promise<string> {
   ];
   if (rows.length > 0) await tx.insert(reviewTaskAssignees).values(rows);
   return id;
+}
+
+type AfterCfg = {
+  remind_every_h?: number | null;
+  escalate?: { after_h: number; group_id: string } | null;
+};
+
+/**
+ * PD-R19 · task review chép cấu hình nhắc/chuyển cấp từ SNAPSHOT stage của run (sửa def sau không ảnh hưởng). Mốc tạo =
+ * `remindAt − REMIND_AFTER_H` (mọi nơi gọi truyền `now + 24 h` theo đồng hồ seam). Một câu tra PK `stage_runs` + `process_runs`.
+ */
+async function reviewTimingOf(tx: Tx, t: NewTask): Promise<ReturnType<typeof reviewTaskTiming>> {
+  const [row] = await tx.execute<{ after: AfterCfg | string | null }>(sql`
+    select pr.snapshot->'stages'->(s.stage_idx::int)->'after' as after
+    from hub.stage_runs s
+    join hub.process_runs pr on pr.id = s.process_run_id and pr.tenant_id = s.tenant_id
+    where s.id = ${t.stageRunId} and s.tenant_id = ${t.tenantId}`);
+  const raw = row?.after ?? null;
+  const after: AfterCfg = (typeof raw === "string" ? JSON.parse(raw) : raw) ?? {};
+  const esc = after.escalate ?? null;
+  return reviewTaskTiming(new Date(t.remindAt.getTime() - REMIND_AFTER_H * 3_600_000), {
+    remindEveryH: after.remind_every_h ?? null,
+    escalate: esc ? { afterH: esc.after_h, groupId: esc.group_id } : null,
+  });
 }
 
 export type CloseTask = {

@@ -47,6 +47,8 @@ export function toTaskDetail(
     canAct: boolean;
     /** P-b2 · review MỞ của stage có `back_to_steps` ≠ [] (HUB-FR-118). */
     back?: { steps: number[]; roundsLeft: number };
+    /** P-d1 · PD-R18/R20 · chỉ task review: đã chuyển cấp + số lần đã nhắc. */
+    remind?: { escalated: boolean; remindCount: number };
   },
 ): TaskDetail {
   const decision = row.kind === "decision";
@@ -79,6 +81,7 @@ export function toTaskDetail(
     can_act: x.canAct,
     created_at: row.createdAt.toISOString(),
     ...(x.back && { back_steps: x.back.steps, back_rounds_left: x.back.roundsLeft }),
+    ...(x.remind && { escalated: x.remind.escalated, remind_count: x.remind.remindCount }),
   };
 }
 
@@ -113,11 +116,13 @@ type TaskSql = {
   back_steps: number[] | null;
   back_rounds: number;
   back_limit: number;
+  remind_count: number;
 };
 type GrantSql = {
   task_id: string;
   user_id: string | null;
-  via: "initial" | "forward";
+  group_id: string | null;
+  via: "initial" | "forward" | "escalated";
   from_user_id: string | null;
   note: string | null;
   created_at: Ts;
@@ -130,6 +135,7 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id' as review_group_id,
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
+      t.remind_count::int as remind_count,
       pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'back_to_steps' as back_steps,
       case when pr.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
@@ -149,7 +155,7 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
 
 async function grantRows(tx: Tx, v: ViewerCtx, ids: readonly string[]) {
   const grants = await tx.execute<GrantSql>(sql`
-    select a.task_id, a.user_id, a.via, a.from_user_id, a.note, a.created_at
+    select a.task_id, a.user_id, a.group_id, a.via, a.from_user_id, a.note, a.created_at
     from hub.review_task_assignees a
     where a.task_id = any(${`{${ids.join(",")}}`}::uuid[]) and a.tenant_id = ${v.tenantId}
     order by a.created_at, a.id`);
@@ -186,9 +192,13 @@ const outputOf = (r: TaskSql): OutputRef | null =>
 
 function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string, UserRef>) {
   const userIds = new Set(mine.flatMap((g) => (g.user_id ? [g.user_id] : [])));
+  // PD-R21 · Group chuyển cấp (assignee `via='escalated'`) cũng quyết được.
+  const escalatedGroupId = mine.find((g) => g.via === "escalated" && g.group_id)?.group_id ?? null;
+  const extraGroupIds = escalatedGroupId ? [escalatedGroupId] : [];
   const facts = { kind: r.kind, status: r.status, reason: r.reason, userIds, groupId: r.group_id };
-  const task = { ...facts, reviewGroupId: r.review_group_id };
-  const assignee = userIds.has(v.userId) || (r.group_id !== null && v.groupIds.has(r.group_id));
+  const task = { ...facts, reviewGroupId: r.review_group_id, extraGroupIds };
+  const inGroup = (g: string | null) => g !== null && v.groupIds.has(g);
+  const assignee = userIds.has(v.userId) || inGroup(r.group_id) || inGroup(escalatedGroupId);
   const run = { tenantId: r.tenant_id, startedBy: r.started_by, originRoom: r.origin_room };
   const forwards = mine
     .filter((g) => g.via === "forward" && g.from_user_id && g.user_id)
@@ -207,6 +217,9 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
     stageName: r.stage_name ?? `#${Number(r.stage_idx) + 1}`,
     canAct: canAct(v, task, { ...run, taskAssignee: assignee, status: r.run_status }),
     back: backOf(r),
+    ...(r.kind === "review" && {
+      remind: { escalated: escalatedGroupId !== null, remindCount: Number(r.remind_count ?? 0) },
+    }),
   });
 }
 

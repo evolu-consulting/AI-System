@@ -22,14 +22,21 @@ export type GateTask = {
   kind: TaskKind;
   status: TaskStatus;
   assignee_group_id: string | null;
+  /** PD-R21 · Group chuyển cấp (assignee `via='escalated'`) — thành viên cũng quyết được. */
+  escalated_group_id: string | null;
   reason: DecisionReason | null;
 };
+
+/** PD-R21 · Group `via='escalated'` của task (khớp `tenant_id` task; index `review_task_assignees` theo task). */
+const escalatedGroup = sql`(select a.group_id from hub.review_task_assignees a
+  where a.task_id = t.id and a.tenant_id = t.tenant_id and a.via = 'escalated' and a.group_id is not null
+  limit 1) as escalated_group_id`;
 
 /** Task + stage_idx (không khoá — service khoá `process_runs` FOR UPDATE sau). null = không thấy (RLS/tenant). */
 export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null> {
   const [r] = await tx.execute<GateTask>(sql`
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
-      t.assignee_group_id, t.reason
+      t.assignee_group_id, ${escalatedGroup}, t.reason
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     where t.id = ${taskId}`);
@@ -46,7 +53,7 @@ export async function openDecisionTask(
   const byStage = stageIdx === undefined ? sql`` : sql` and s.stage_idx = ${stageIdx}`;
   const [r] = await tx.execute<GateTask>(sql`
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
-      t.assignee_group_id, t.reason
+      t.assignee_group_id, ${escalatedGroup}, t.reason
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.kind = 'decision'

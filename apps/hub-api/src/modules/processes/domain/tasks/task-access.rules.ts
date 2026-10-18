@@ -14,6 +14,8 @@ export type TaskFacts = {
   groupId: string | null;
   /** Group duyệt của stage (quyết `redo_limit`). */
   reviewGroupId: string | null;
+  /** PD-R21 · Group thêm (chuyển cấp, `via='escalated'`) — thành viên cũng quyết được. Vắng ⇒ hành vi cũ. */
+  extraGroupIds?: readonly string[];
 };
 
 export function canAct(
@@ -28,5 +30,6 @@ export function canAct(
     // Lý do vắng (dữ liệu hỏng) ⇒ chỉ người bắt đầu/admin: `interrupted` không mở quyền group.
     return canDecide(v, { ...r, reason: t.reason ?? "interrupted", reviewGroupMember });
   }
-  return t.userIds.has(v.userId) || (t.groupId !== null && v.groupIds.has(t.groupId));
+  if (t.userIds.has(v.userId) || (t.groupId !== null && v.groupIds.has(t.groupId))) return true;
+  return (t.extraGroupIds ?? []).some((g) => v.groupIds.has(g));
 }
