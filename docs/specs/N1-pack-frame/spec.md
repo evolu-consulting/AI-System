@@ -28,7 +28,7 @@ Nguồn: [intake-hd](../../platform/intake-hd.md) lát N1, câu 11/13/14. Gói �
 ## 2. Nghiệp vụ
 | Mã | Điều kiện chính xác | Nguồn |
 |---|---|---|
-| PK-FR-01 | Mỗi gói một **schema Postgres riêng**, tên = khoá gói `^[a-z][a-z0-9_]{1,30}$`, cấm trùng `public`, `admin`, `hub`, `drizzle`. Khoá gói khai một chỗ (hằng trong contract), dùng cho schema, role, mã quyền, `org` không dùng | intake N1 |
+| PK-FR-01 | Mỗi gói một **schema Postgres riêng**, tên = khoá gói `^[a-z][a-z0-9_]{1,20}$` (D-05), cấm trùng `public`, `admin`, `hub`, `drizzle`, `packs`, `information_schema`, tiền tố `pg_`. Khoá gói khai một chỗ (hằng trong contract), dùng cho schema, role, mã quyền, `org` không dùng | intake N1 |
 | PK-FR-02 | **Mọi bảng** của gói: `tenant_id uuid NOT NULL`; `ENABLE` + `FORCE ROW LEVEL SECURITY`; policy `FOR ALL TO <role gói>` `USING`/`WITH CHECK` `tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid` — khuôn `hub.process_timers` (`packages/db/migrations-hub/0036_pd1_durable.sql:92-146`). Bảng cha có `UNIQUE (id, tenant_id)`; mọi FK giữa bảng gói là **FK kép** `(x_id, tenant_id) REFERENCES cha (id, tenant_id)` (0036:113-116). Thiếu `app.tenant_id` ⇒ 0 hàng (không lỗi lộ) | ADR-0016 §1, 0036 |
 | PK-FR-03 | **Role DB của gói** `<khoá>_rw`: `NOBYPASSRLS`, không `SUPERUSER`/`CREATEROLE`; quyền chỉ trên schema của gói (`USAGE` + DML bảng cần); **không** quyền trên `admin`, `hub`. Role chủ migration riêng (không dùng role chạy app). Việc nền chạy hệ thống (không có tenant, vd vòng nhắc HD4) đặt `app.tenant_id` từng tenant hoặc lọc `tenant_id` tường minh — khuôn `UnitOfWork` system ([P-d spec-ca §7](../P-d-durable/spec-ca.md)) | ADR-0016 |
 | PK-FR-04 | **Migration riêng của gói**: thư mục riêng (vd `packages/db/migrations-<khoá>/`), đánh số từ `0001`, idempotent (`IF NOT EXISTS`, `pg_policies`); `bun run db:migrate` chạy cả gói; test int DB clone mẫu (`test:int:par`) có schema gói | CLAUDE.md lệnh |
@@ -41,10 +41,10 @@ Nguồn: [intake-hd](../../platform/intake-hd.md) lát N1, câu 11/13/14. Gói �
 | PK-BR-01 | **Giao tiếp nội bộ** ([D-03](spec-decisions.md)): trên đường nóng **không** gọi HTTP đồng bộ giữa app nội bộ (hub-api ↔ admin-api…); đọc dữ liệu app khác qua **role DB chỉ-đọc** (vd quyền/Group từ `admin`), sự kiện qua NOTIFY/Redis (`config_changed`). Ngoại lệ chỉ dịch vụ ngoài (FileBox, AI) | D-03 |
 
 ## 3. Contract
-<!-- backend-lead: hằng khoá gói, mã quyền, mã lỗi (`DOCX_UNREADABLE`, `PACK_FORBIDDEN` 403, `PACK_DISABLED` 403), route Admin catalog quyền gói -->
+Chi tiết từng trường: [plan §2](plan.md). Tóm tắt: `packages/contracts/src/packs.ts` — `PACK_KEY_RE` `^[a-z][a-z0-9_]{1,20}$` (D-05), `PACK_ACTIONS`, `PACK_ROLE_ACTIONS`, `packFeatureKey`/`packGroupKey`; lỗi `PACK_DISABLED` 403, `PACK_FORBIDDEN` 403, `PACK_NOT_FOUND` 404, `DOCX_UNREADABLE` 422, `DOCX_BUSY` 503, file sai tenant ⇒ `NOT_FOUND` 404. Admin: `GET/PUT/DELETE /api/v1/tenants/:tenant_id/packs[/:pack_key]`. Hub: `/pack/<k>/…`, `GET /pack/<k>/me` ⇒ `{pack, enabled, actions}`.
 
 ## 4. Dữ liệu
-<!-- backend-lead: DDL khuôn (role, schema, policy, outbox), migration admin cho catalog mã quyền gói, nơi đặt DB (Q2) -->
+[plan §3](plan.md): cùng database (D-04); `migrations-packs/` (schema `packs`, `packs.install`, `packs.secure_table`) + `migrations-pack-<k>/`; role `<k>_rw` (D-06); bảng khung `<k>.files`, `<k>.index_outbox`; 3 hàng `admin.features` mỗi gói (D-05) do `packs.install` ghi — không migration Admin mới.
 
 ## 5. UI
 N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin sẵn có (Q6). App `contracts-web` (D-02) dựng ở lát UI đầu (HD5).
@@ -85,13 +85,15 @@ N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin 
 | # | Câu | Mặc định đề xuất |
 |---|---|---|
 | Q1 | Nơi đặt backend gói | **Đã chốt** = D-01 (module hub-api) |
-| Q2 | Schema gói nằm database nào? | Cùng database với Hub (module trong hub-api, D-01; schema + role riêng); plan chốt |
-| Q8 | Quyền Group đọc từ `admin` thế nào khi không gọi HTTP (D-03)? | Role chỉ-đọc trên bảng quyền `admin` + cache trong hub-api, xoá cache theo NOTIFY `config_changed` (khuôn M3); khác DB ⇒ plan nêu cách |
-| Q3 | Thư viện DOCX → text | Thư viện JS thuần (vd `mammoth`) ⇒ ADR thêm thư viện, trình Gate; không gọi LibreOffice/dịch vụ ngoài |
-| Q4 | `org` theo tenant có áp cho đính kèm Hub/phòng? | Không — chỉ file gói; Hub giữ ADR-0015 D5 tới mốc hardening riêng |
-| Q5 | Bật gói theo tenant bằng gì? | Feature/entitlement sẵn có của Admin (M2), mã `pack.<khoá>` |
-| Q6 | Mã quyền gói vào catalog nào ở Admin? | Dùng lại bảng feature + `feature_grants` (M3, `packages/db/src/schema/permissions.ts`) nếu đủ; không đủ ⇒ bảng mới, plan nêu lý do; không màn mới |
-| Q7 | PB-R04 (Hub không trích chữ DOCX) có mâu thuẫn N1? | Không mâu thuẫn ADR Accepted: N1 chuyển trong module gói, luồng Hub không đổi; ghi để readiness xác nhận |
+| Q2 | Schema gói nằm database nào? | **Đã chốt** D-04 (cùng database) |
+| Q8 | Quyền Group đọc từ `admin` thế nào khi không gọi HTTP (D-03)? | **Đã chốt** D-04 (`ConfigCache` + `hub_ro` sẵn có) |
+| Q3 | Thư viện DOCX → text | **Mở tới Gate** — D-10, ADR-0024 Proposed (`fflate` + `saxes`); người dùng duyệt |
+| Q4 | `org` theo tenant có áp cho đính kèm Hub/phòng? | **Đã chốt** D-07 (chỉ file gói) |
+| Q5 | Bật gói theo tenant bằng gì? | **Đã chốt** D-05 (entitlement 3 feature gói, route admin-api `packs`) |
+| Q6 | Mã quyền gói vào catalog nào ở Admin? | **Đã chốt** D-05 (`features` + `feature_grants`, không bảng/màn mới) |
+| Q7 | PB-R04 (Hub không trích chữ DOCX) có mâu thuẫn N1? | **Đã chốt** D-08 (không mâu thuẫn) |
+| Q9 | Grant **user lẻ** cho feature gói: Admin hiện cho phép (`feature_grants_subject_check`) | Mặc định: hub-api **bỏ qua** grant user lẻ với mã gói (không đổi contract M3). Chặn hẳn ở admin-api = thêm mã lỗi vào contract grants đã khoá ⇒ cần người dùng duyệt |
+| Q10 | Vòng nền quét chéo tenant theo lô (HD4 nhắc) dưới FORCE RLS không nhánh `system` | Mặc định: N1 chỉ có `system(tenantId)`; HD4 plan thêm role `<k>_job` NOBYPASSRLS với policy riêng cho bảng cần quét (không nới policy khuôn) |
 
 ## 10. Quyết định
 [`spec-decisions.md`](spec-decisions.md) — D-01…D-03 (người dùng 2026-10-18).
