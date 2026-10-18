@@ -49,6 +49,8 @@ test("CHAT-AC-59 · AC-H41 · PD-E07 · run chờ tới 17/11/2026 (HCM) ⇒ d�
       strip(u.A).getByRole("listitem").filter({ hasText: "Chờ tới 17/11/2026" }),
     ).toBeVisible();
     await expect(u.A.getByText("Đang chờ hẹn").first()).toBeVisible();
+    // Dòng trạng thái (`StatusLine`) nằm ở khung luồng trong phòng (`ProcessFlowContent`), không ở trang /runs/:id.
+    await u.A.goto(`/rooms/${room.id}?flow=${r.runId}`);
     await expect(
       u.A.getByRole("status").filter({
         hasText: /Chờ tới 17\/11\/2026 09:00 · Giai đoạn \d+\/\d+ · /,
