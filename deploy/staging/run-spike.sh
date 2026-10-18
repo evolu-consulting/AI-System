@@ -13,7 +13,7 @@ bun run keys:dev >/out/setup.log 2>&1 && bun run db:setup >>/out/setup.log 2>&1 
 {
   echo "commit: $(cat /app/VERSION 2>/dev/null || echo '?')"
   echo "redis: $(bun -e "const r=new (require('ioredis'))('redis://redis:6379');console.log((await r.info('server')).match(/redis_version:(\S+)/)?.[1]);r.disconnect()" 2>/dev/null)"
-  echo "nproc: $(nproc) · mem: $(free -m | awk '/Mem:/{print $2}') MB"
+  echo "nproc: $(nproc) · mem: $(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) MB"
 } > /out/env.txt
 
 bun --env-file=.env.local --config=bunfig.int.toml test --timeout 600000 spikes/engine/engine.spike.test.ts \
@@ -22,5 +22,9 @@ echo "engine-spike exit $?" >> /out/env.txt
 bun --env-file=.env.local --config=bunfig.int.toml test --timeout 7200000 spikes/engine/load.spike.test.ts \
   > /out/load-spike.log 2>&1
 echo "load-spike exit $?" >> /out/env.txt
-grep -E '^\((pass|fail)\)|spike1|spike6|spikeLoad| pass$| fail$' /out/engine-spike.log /out/load-spike.log > /out/summary.txt
+# CR-093 · bài hiệu năng P-d (PD-P01…P15) trên Linux, máy rảnh, Redis thật
+PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 1800000 tests/acceptance/P-d/perf/ \
+  > /out/perf-pd.log 2>&1
+echo "perf-pd exit $?" >> /out/env.txt
+grep -E '^\((pass|fail)\)|spike1|spike6|spikeLoad|PD-P[0-9]+ | pass$| fail$' /out/engine-spike.log /out/load-spike.log /out/perf-pd.log > /out/summary.txt
 cat /out/env.txt /out/summary.txt
