@@ -10,6 +10,7 @@ import type {
 import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
 import { bindTx } from "../adapters/hub-uow";
+import { writeApplyOutput } from "../adapters/runs/hub-settle";
 import { resetRetry } from "../adapters/runs/retry.repo";
 import { cancelTimers } from "../application/timers/cancel-timers.usecase";
 import * as core from "../core/core.repo";
@@ -19,7 +20,6 @@ import { enqueueThread } from "../core/thread";
 import type { RunState } from "../domain/runs/run-state.rules";
 import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
 import { WAIT_SKIP_TEXT, waitOutputMd } from "../domain/timers/due-at.rules";
-import { writeApplyOutput } from "../runs/apply-settle";
 import {
   persistStage,
   type StageWrite,

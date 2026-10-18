@@ -13,9 +13,10 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
+import { type ApplySettle, settleApply } from "../adapters/runs/hub-settle";
 import type { ProcessDeps } from "../core/ports";
 import { type ApplyPlanResult, applyOutputMd, applyPlan } from "./apply.rules";
-import { type ApplySettle, type ApplyStage, loadHead, settleApply } from "./apply-settle";
+import { type ApplyStage, loadHead } from "./apply-settle";
 import type { Head, SnapStage } from "./launcher-prompt";
 import { auditRealAction, realActionPre } from "./launcher-step";
 

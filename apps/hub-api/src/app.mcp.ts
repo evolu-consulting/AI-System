@@ -10,6 +10,7 @@ import { CredentialService, loadMasterKey } from "./modules/dify/credential.serv
 import { DifyClient } from "./modules/dify/dify.client";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { KhQueryService } from "./modules/kh/kh.query.service";
+import { DifyWorkflowInvoker } from "./modules/mcp/adapters/workflow-invoker";
 import { confirmationGate } from "./modules/mcp/confirm.service";
 import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
@@ -54,15 +55,21 @@ export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
     masterKey: loadMasterKey(d.secretMasterKey),
     log: d.log,
   });
-  const svc = new McpService({
+  const invoker = new DifyWorkflowInvoker({
     db: d.db,
     config: d.config,
     credentials,
     dify: new DifyClient(),
     difyTimeoutMaxS,
     log: d.log,
-    sideEffect: confirmationGate({ db: d.db, log: d.log }),
     storage: d.attachments?.storage ?? null,
+  });
+  const svc = new McpService({
+    db: d.db,
+    config: d.config,
+    log: d.log,
+    invoker,
+    sideEffect: confirmationGate({ db: d.db, log: d.log }),
     kh: d.kh && new KhQueryService({ db: d.db, rt: d.kh, log: d.log }),
   });
   app.route("/mcp", mcpRoutes(svc, { requestTimeoutS: difyTimeoutMaxS + MCP_IDLE_MARGIN_S }));

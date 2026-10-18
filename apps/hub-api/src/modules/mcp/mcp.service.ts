@@ -1,26 +1,19 @@
 // HUB-FR-50, HUB-FR-95, WRK-FR-13 · H2a-R18–R20 · P4, P7, P11, P12 · MCP server `/mcp` (plan §6): xác thực token job
 // (`hashJobToken` → job `agent.cli` `running`), JSON-RPC `initialize`/`server/discover`/`ping`/`tools/list`/`tools/call`.
-// `tools/call` gọi Dify gom (bỏ `delta`, lấy kết quả cuối) với timeout `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)`,
-// ghi bước `tool` (inputs che secret rồi cắt) + usage `billing=dify`. Không bao giờ log token/app-key/tham số.
+// `tools/call` kiểm tham số + file + cổng `side_effect` rồi gọi `WorkflowInvoker` (`adapters/workflow-invoker.ts`, T18s:
+// Dify gom trong hạn tool, bước `tool`, usage). Không bao giờ log token/app-key/tham số.
 // H2c (B8, P12, R23): `tools/list` theo `payload.attachments` (`hasFiles`); `tools/call` input `file` → `fileArg` → xác nhận
 // `side_effect` (không đổi) → upload Dify (`mcp-files.ts`) → gọi workflow.
 import { AgentCliJobSchema, type JobAttachment } from "@ai/contracts/hub";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
-import { safeErrorFields } from "../../lib/errors";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
-import { AttachmentContentMissing, type UploadTrace } from "../attachments/attachment-dify";
-import type { AttachmentStorage } from "../attachments/storage";
-import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
-import { tenantKeyOf } from "../config/catalog.rules";
+import type { CatalogWorkflow } from "../commands/catalog.types";
 import { agentWorkflowIds } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import { type CredentialService, isCredentialError } from "../dify/credential.service";
-import type { DifyClient, DifyRunOutcome } from "../dify/dify.client";
-import { difyUser, maskInputs } from "../dify/dify.rules";
-import { recordDifyUsage } from "../dify/dify.usage";
 import { type KhJobCtx, type KhQueryService, khJobCtx } from "../kh/kh.query.service";
+import type { ToolArgs, WorkflowInvoker } from "./adapters/workflow-invoker";
 import * as repo from "./mcp.repo";
 import {
   discoverResult,
@@ -37,18 +30,9 @@ import {
   toolCallParams,
   toolError,
   toolsListResult,
-  toolText,
-  toolTimeoutS,
   validateToolArgs,
 } from "./mcp.rules";
-import { refuseSideEffect, type StepCode, stepCodeOf } from "./mcp-call";
-import {
-  notAttached,
-  resolveToolFiles,
-  type ToolFile,
-  type ToolUploadResult,
-  uploadToolFiles,
-} from "./mcp-files";
+import { notAttached, resolveToolFiles } from "./mcp-files";
 
 /** Ngữ cảnh của token (plan §6 Auth). `tools` = `payload.mcp.tools`. */
 export type McpContext = {
@@ -71,38 +55,26 @@ export type McpContext = {
  */
 export type SideEffectGate = (ctx: McpContext, wf: CatalogWorkflow) => Promise<ToolResult | null>;
 
+/** Mặc định khi không nối cổng: tool `side_effect` không chạy (không có xác nhận ⇒ không gọi Dify). */
+export function refuseSideEffect(log: Logger): SideEffectGate {
+  return async (ctx, wf) => {
+    log.warn("tool-side-effect-unconfirmed", { run_id: ctx.runId, workflow_id: wf.id });
+    return toolError("NOT_CONFIGURED");
+  };
+}
+
 export type McpServiceDeps = {
   db: Db;
   config: ConfigCache;
-  credentials: CredentialService;
-  dify: DifyClient;
-  /** = `HUB_DIFY_TIMEOUT_MAX_S`. */
-  difyTimeoutMaxS: number;
   log: Logger;
+  /** Pipeline gọi Dify (key → bước `tool` → Dify gom → usage); một bản dùng chung, dựng ở `app.mcp.ts`. */
+  invoker: WorkflowInvoker;
   sideEffect?: SideEffectGate;
-  /** H2c · kho file (`AppDeps.attachments.storage`); vắng/null ⇒ tool có file ném `AttachmentContentMissing` (-32603). */
-  storage?: Pick<AttachmentStorage, "blob"> | null;
-  /** Test: `fetch` cho Dify `/files/upload`. */
-  fetch?: typeof fetch;
   kh?: KhQueryService;
 };
 
-type ToolArgs = {
-  inputs: Record<string, WorkflowInputValue>;
-  query: string | null;
-  files: readonly ToolFile[];
-};
-/** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`; H2c: `upload` + lỗi upload). */
-type StepTrace = { confirmation?: "consumed"; upload?: UploadTrace } & Record<string, unknown>;
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
 type ToolCall = { ctx: McpContext; wf: CatalogWorkflow; signal?: AbortSignal };
-type Invoke = {
-  args: ToolArgs;
-  trace: StepTrace;
-  apiKey: string;
-  stepId: string;
-  inputs: Record<string, string>;
-};
 
 export class McpService {
   constructor(private readonly d: McpServiceDeps) {}
@@ -199,188 +171,9 @@ export class McpService {
     const files = resolveToolFiles(wf, valid.inputs, ctx.files);
     if (!files.ok) return notAttached();
     const args: ToolArgs = { inputs: valid.inputs, query: valid.query, files: files.files };
-    if (!wf.sideEffect) return this.#runTool(call, args, {});
+    if (!wf.sideEffect) return this.d.invoker.run(call, args, {});
     const gated = await (this.d.sideEffect ?? refuseSideEffect(this.d.log))(ctx, wf);
     // Qua cổng = đã tiêu thụ xác nhận (R22) → trace `consumed` trên bước `tool`; gọi Dify đúng một lần, không retry.
-    return gated ?? this.#runTool(call, args, { confirmation: "consumed" });
-  }
-
-  /** Lấy key → bước `tool` `running` → Dify gom → kết thúc bước + usage. `trace` gộp vào `detail` của bước. */
-  async #runTool(call: ToolCall, args: ToolArgs, trace: StepTrace): Promise<ToolResult> {
-    const { ctx, wf } = call;
-    const stepId = crypto.randomUUID();
-    let apiKey: string;
-    try {
-      apiKey = await this.d.credentials.apiKey(wf.id);
-    } catch (err) {
-      if (!isCredentialError(err)) throw err;
-      const inputs = maskInputs(args.inputs, "");
-      await this.#startStep(ctx, wf, stepId, inputs);
-      const detail = { ...trace, inputs, code: "NOT_CONFIGURED" as const };
-      await this.#guarded(ctx, stepId, inputs, () => this.#finishStep(ctx, stepId, detail));
-      return toolError("NOT_CONFIGURED");
-    }
-    const inputs = maskInputs(args.inputs, apiKey);
-    await this.#startStep(ctx, wf, stepId, inputs);
-    const o: Invoke = { args, trace, apiKey, stepId, inputs };
-    return this.#guarded(ctx, stepId, inputs, () => this.#invoke(call, o));
-  }
-
-  /** REVIEW 1 Hub #3: ngoại lệ sau khi mở bước → đóng bước `failed INTERNAL_ERROR` (best-effort) rồi ném tiếp (-32603). */
-  async #guarded<T>(
-    ctx: McpContext,
-    stepId: string,
-    inputs: Record<string, string>,
-    fn: () => Promise<T>,
-  ): Promise<T> {
-    try {
-      return await fn();
-    } catch (err) {
-      await this.#finishStep(ctx, stepId, { inputs, code: "INTERNAL_ERROR" }).catch((e) =>
-        this.d.log.warn("tool-step-close-failed", { run_id: ctx.runId, ...safeErrorFields(e) }),
-      );
-      throw err;
-    }
-  }
-
-  /** Dify gom trong hạn tool, nghe thêm kết nối `/mcp` (đóng → abort + stop, bước `CANCELLED`). */
-  async #invoke(call: ToolCall, o: Invoke): Promise<ToolResult> {
-    const { ctx, wf } = call;
-    const tenantKey = tenantKeyOf(await this.d.config.catalog(), ctx.tenantId);
-    const timeout = AbortSignal.timeout((await this.#timeoutS(ctx)) * 1000);
-    const signal = call.signal ? AbortSignal.any([timeout, call.signal]) : timeout;
-    const user = difyUser(tenantKey, ctx.userId);
-    const up = await this.#upload(call, o, user, signal);
-    if (up.kind !== "ok") return this.#uploadFailed(ctx, o, up, timeout.aborted);
-    const trace: StepTrace = { ...o.trace, ...(up.upload && { upload: up.upload }) };
-    const req = {
-      appType: wf.appType,
-      baseUrl: wf.baseUrl,
-      apiKey: o.apiKey,
-      inputs: up.inputs,
-      query: o.args.query,
-      user,
-      conversationId: null,
-      outputField: wf.outputField,
-    };
-    const out = await this.d.dify.runStreaming(req, signal, () => {});
-    const code = stepCodeOf(out, timeout.aborted);
-    const upstream = out.kind === "failed" ? out.detail : null;
-    const detail = { ...trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
-    await this.#finishStep(ctx, o.stepId, detail);
-    await this.#usage(ctx, o.stepId, out);
-    if (out.kind === "finished") return toolText(out.text);
-    // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
-    return toolError(code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR");
-  }
-
-  /** H2c P14: file của tool → Dify `/files/upload` (key + `user` như lời gọi workflow); không file ⇒ `ok` ngay. */
-  async #upload(
-    call: ToolCall,
-    o: Invoke,
-    user: string,
-    signal: AbortSignal,
-  ): Promise<ToolUploadResult> {
-    const { ctx, wf } = call;
-    if (o.args.files.length === 0) return { kind: "ok", inputs: o.args.inputs, upload: null };
-    const deps = {
-      storage: this.d.storage ?? null,
-      db: this.d.db,
-      fetch: this.d.fetch,
-      log: this.d.log,
-    };
-    const x = {
-      tenantId: ctx.tenantId,
-      workflowId: wf.id,
-      target: { baseUrl: wf.baseUrl, apiKey: o.apiKey, user },
-    };
-    try {
-      return await uploadToolFiles(deps, x, o.args, signal);
-    } catch (err) {
-      if (err instanceof AttachmentContentMissing)
-        this.d.log.error("attachment-content-missing", { attachment_id: err.attachmentId });
-      throw err;
-    }
-  }
-
-  /** Upload lỗi/huỷ → đóng bước `failed` (trace `upload`), 0 lời gọi workflow (plan-errors §3). */
-  async #uploadFailed(
-    ctx: McpContext,
-    o: Invoke,
-    up: Exclude<ToolUploadResult, { kind: "ok" }>,
-    timedOut: boolean,
-  ): Promise<ToolResult> {
-    const code = up.kind === "failed" ? up.code : timedOut ? "TIMEOUT" : "CANCELLED";
-    const failed = up.kind === "failed" ? up.trace : { upload: up.upload };
-    await this.#finishStep(ctx, o.stepId, { ...o.trace, ...failed, inputs: o.inputs, code });
-    if (up.kind === "failed") return up.result;
-    // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
-    return toolError(code === "TIMEOUT" ? "TIMEOUT" : "UPSTREAM_ERROR");
-  }
-
-  /** R20: `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` theo cấu hình Hub hiện hành. */
-  async #timeoutS(ctx: McpContext): Promise<number> {
-    const max = this.d.difyTimeoutMaxS;
-    const agent = (await this.d.config.snapshot()).agents.find((a) => a.id === ctx.agentId);
-    return toolTimeoutS(agent?.timeoutS ?? max, max);
-  }
-
-  #startStep(
-    ctx: McpContext,
-    wf: CatalogWorkflow,
-    stepId: string,
-    inputs: Record<string, string>,
-  ): Promise<number> {
-    return withHubScope(this.d.db, { kind: "system" }, (tx) =>
-      repo.insertToolStep(tx, {
-        id: stepId,
-        tenantId: ctx.tenantId,
-        userId: ctx.userId,
-        runId: ctx.runId,
-        agentId: ctx.agentId,
-        workflowId: wf.id,
-        detail: { inputs },
-      }),
-    );
-  }
-
-  #finishStep(
-    ctx: McpContext,
-    stepId: string,
-    detail: StepTrace & {
-      inputs: Record<string, string>;
-      code: StepCode | null;
-      upstream?: string;
-    },
-  ): Promise<void> {
-    const status = detail.code ? "failed" : "ok";
-    return withHubScope(this.d.db, { kind: "system" }, (tx) =>
-      repo.finishToolStep(tx, {
-        id: stepId,
-        runId: ctx.runId,
-        tenantId: ctx.tenantId,
-        status,
-        detail,
-      }),
-    );
-  }
-
-  /** R15: một dòng `billing=dify` mỗi lời gọi Dify đã tới được Dify (có `task_id` hoặc xong), `feature_id` NULL. */
-  async #usage(ctx: McpContext, stepId: string, out: DifyRunOutcome): Promise<void> {
-    if (out.kind !== "finished" && !out.taskId) return;
-    try {
-      await recordDifyUsage(this.d.db, {
-        tenantId: ctx.tenantId,
-        runId: ctx.runId,
-        stepId,
-        userId: ctx.userId,
-        featureId: null,
-        agentId: ctx.agentId,
-        usage: out.usage,
-        latencyMs: out.ms,
-      });
-    } catch (err) {
-      this.d.log.warn("tool-usage-failed", { run_id: ctx.runId, ...safeErrorFields(err) });
-    }
+    return gated ?? this.d.invoker.run(call, args, { confirmation: "consumed" });
   }
 }

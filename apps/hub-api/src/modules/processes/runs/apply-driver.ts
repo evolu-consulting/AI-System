@@ -15,6 +15,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
+import { type ApplySettle, type SettleOut, settleApply } from "../adapters/runs/hub-settle";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import { isTerminal } from "../domain/runs/run-state.rules";
@@ -27,14 +28,11 @@ import {
   prTitle,
 } from "./apply.rules";
 import {
-  type ApplySettle,
   type ApplyStage,
   credentialIdOf,
   fixContext,
   type LoadedHead,
   loadHead,
-  type SettleOut,
-  settleApply,
 } from "./apply-settle";
 import { type GithubEndpoint, type OpenPrResult, openPullRequest } from "./github-client";
 import { stageRowById } from "./step-persist";
