@@ -6,6 +6,7 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-18 | READY (P-d2 lần 2, vòng cuối, T16) | 0 | 0 (4 Cao mới đóng bằng D2-43…D2-47) | 5 | Diff 31bea54..69f6df2. #97–#102 và Thấp #103–#111 đóng. Mới (từ T15c): #112 nhãn E01 ↔ i18n `argValue`; #113 input `number` đụng test khoá `contracts-pd1:86` + thiếu luật start/FE; #114 tên trường wait/retry `ProcessRunSummary` + không ca giá trị; #115 notice chuyển cấp D2-34 thiếu tên trường + không ca — đều ghi mặc định vào `spec-decisions` (D2-43…47). Điều kiện trước T17: qc áp phần test của D2-43/44/45/47. Không hỏi người dùng. |
 | 2026-10-18 | NOT READY (P-d2 lần 1, T16) | 0 | 6 | 9 | Vòng 1/2 (WORKFLOW Kỷ luật token #5). Cao: #97 PD2-P04 "khớp − không khớp = 4" ↔ plan §7 (đọc `fields` cả hai ca); #98 thiếu đo trước + perf trong Lệnh xong; #99 T17 thiếu barrel lớp; #100 kiểu nguồn ↔ kiểu tham số tool; #101 stage `tool` `after.review` bị settle thẳng `done`; #102 e2e PD2-E01…E05 chưa có/chưa giao. Đều có mặc định ⇒ docs-architect áp ngay, vòng 2 chỉ diff. Điều kiện Gate: ADR-0022 Proposed + D2-02 dùng pipeline `/mcp` hiện có (đạt), T20 gồm S1–S12 (đạt), PD2-P01…P04 có ngưỡng + test (đạt, sửa #97). Không hỏi người dùng. |
 | 2026-10-18 | READY (lần 7) | 0 (+điều kiện Gate ngoài spec) | 0 | 11 | Diff d91d2d9. Đóng #90 (notice `run_finished` chèn trong tx `systemBatch`, Redis sau COMMIT; A10 ↔ A11 khớp; hết hạn 5 câu so với lượt rỗng ≤ 6 = PD-P15), #92 (`test:perf:pd` thêm ở T9), #93, #94. Mới: #95, #96 (Thấp). Còn Thấp: 71, 73, 75–80, 91, 95, 96. Không hỏi người dùng. |
 | 2026-10-18 | NOT READY (lần 6) | 0 | 1 | 12 | Diff 70bd139. Đóng #81 (A11 `systemBatch`, CA-R06/§4/§7, T6b/T6c), #82, #83–#89, #74, TC1–18. Cao mới do chính bản sửa: #90 `Notifier.runsFinished(ids)` — A11 xếp vào "repo lô gắn tx" ↔ A10 "adapter gom vào outbox xả sau COMMIT" (notice `run_finished` ghi trong hay ngoài tx). Thấp còn: 71, 73, 75–80 + mới 91–94. Không hỏi người dùng. `check:size` không có vi phạm ở docs; trần không đổi. |
@@ -16,6 +17,30 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 2 (P-d2) · 2026-10-18 · READY (vòng cuối)
+
+Phạm vi: `git diff 31bea54..69f6df2` (a02a9d1 áp mặc định #97–#111; 69f6df2 T15c) — 7 file docs P-d2 + test/e2e đổi; đối chiếu `hub-admin/sources.ts:63-104`, `chat/processes-entities.ts:102,159-176,366`, `hub-admin/processes.ts:140`, `plan-frontend-i18n §4:119-126`, mockup 03 D4, `contracts-pd1.test.ts:86`. Chạy `bun test tests/acceptance/P-d/rules/d2`: 0 pass / 56 fail, 100 % "chưa có cổng lớp … (T17/T18a)" / "chưa có tính năng" — đỏ đúng lý do. Kích thước (byte, trần L): spec-d2 10646/12288 · plan-d2 18429/18432 · plan-frontend-d2 15050/15360 · test-plan-d2 18406/18432 — đạt.
+
+Đóng: #97 (plan-d2 §9 + D2-33 + `d2.perf:289`) · #98 (tasks T18s/T18-1/T19s/T17b "Đo trước" + perf trong Lệnh xong, D2-31; `bunfig.perf.toml` có) · #99 (T17 File barrel + enum, Lệnh xong `contracts-pd2` + depcruise) · #100 (D2-29, plan-d2-rules §2, `inputTypes`, U02b/U04/I17) · #101 (D2-30, plan-d2 §3–§4/§7, I18 review/auto) · #102 (T15c, `e2e/P-d/*.pd.ts` E01…E05) · #103 · #104 (cả 4 file dưới trần) · #105 (D2-24…28, 35…41) · #106 · #107 · #108 · #109 (I02 int `tool.int:139`, I43 `:105`, I45 `:142`, P01 `:108`, P03 `:226`) · #110 · #111.
+
+| # | Mức | Mục | Vị trí | Vấn đề | Mặc định (đã ghi) |
+|---|---|---|---|---|---|
+| 112 | Cao | E, I | `admin-stage.pd.ts:144` ↔ plan-frontend-i18n:120 | T15c-1 đặt nhãn mới "Trường của tham số {name}" trong khi i18n đã có `…tool.argValue` "Giá trị của tham số {{name}}" cho chính ô này (mục `fieldOpt`) ⇒ hai nhãn | D2-43: giữ i18n; qc sửa E01 |
+| 113 | Cao | B, D, F | T15c-2a ↔ `sources.ts:63`, `contracts-pd1.test.ts:86` (khoá `toEqual` 5 kiểu) | Thêm `number` vào `INPUT_TYPES` làm đỏ test khoá P-d1; chưa có luật giá trị lúc start, ánh xạ kiểu input → `sourceType` (select/source_ref/file), UI admin/chat | D2-44 |
+| 114 | Cao | B, F | T15c-2b, `d2.perf:328` (`/^(wait\|retry)/`) | Tên + nghĩa trường `ProcessRunSummary` chưa chốt (FE T20 cần); không ca nào kiểm giá trị (chỉ P05 đếm câu) | D2-45 + PD2-I52 |
+| 115 | Cao | B, F | D2-34, tasks T15c "notice chuyển cấp" (grep test = 0) | Notice/History chuyển cấp chưa có tên trường; ca T15c hứa nhưng chưa viết | D2-47 + PD2-I51 |
+| 116 | Thấp | L | plan-d2 §12 | Ký tự TAB thay `` `t `` ("stage <TAB>ool"), mất backtick `/mcp`; sửa đủ +6 B ⇒ 18435 > 18432 ⇒ bỏ đồng thời "(canRun chỉ stage tool; …)" (đã ở D2-24…28) | docs-architect |
+| 117 | Thấp | I | plan-d2 §9 P05 "≤ trước + 5 ms" ↔ `d2.perf:337` "≤ không hẹn + 5 ms"; tên ca "1 vs 50" ↔ code 0 vs 50 | Lệch mốc so sánh | Theo test; "đo trước" vẫn ghi "Quyết định trong lúc làm" |
+| 118 | Thấp | H | tasks T15c `[ ]` (69f6df2 xong); Đọc T17/T17b/T20 chỉ tới D2-34 | Tick T15c; Đọc += D2-43…47 | docs-architect |
+| 119 | Thấp | F | `tool.int:162` ghi "Tranh chấp T15c-1" (đúng là T15c-2); `workflow-tools.int:93` và `:105` cùng mã PD2-I43 | Mã truy vết | qc cùng lượt #112 |
+| 120 | Thấp | L | plan-addendum A1–A3 chưa nhập plan-contract §6 (từ #105) | Một nguồn | Khi chạm tiếp |
+
+Tranh chấp T15c: T15c-1 **không** chấp (#112); T15c-2 chấp + chốt chi tiết (D2-44, D2-45); T15c-3 chấp (D2-46, chỉ dữ liệu test).
+
+Checklist (chỉ phần diff): A Đạt (spec-d2 §1) · B Đạt sau D2-44/45/47 · C Đạt (không DDL mới; payload jsonb) · D Đạt (D2-29/30/44) · E Đạt (D2-43; i18n §4) · F Đạt sau PD2-I51/I52 + E01 · G Đạt · H2 Đạt (T15c có qc) · H Đạt (#118 Thấp) · I Đạt (#117 Thấp) · J Đạt · K Đạt (plan-d2 §9 P01–P05, tasks "Đo trước", D2-47 không thêm câu vòng chuyển cấp; grep `sleep`/`setTimeout` chờ trạng thái ở test d2 = 0) · L Đạt (4 file dưới trần; #116, #120 Thấp).
+
+Điều kiện trước T17 (không phải câu hỏi): qc sửa E01 (#112), mã #119, thêm PD2-I51/I52 (đỏ "chưa có tính năng (T17/T17b)"); khoá `contracts-pd1:86` sửa trong T17 (D2-44). Quét từ mơ hồ trên diff: "tuỳ ý"/"tuỳ chọn" mô tả, `…` khoảng mã — vô hại. Câu hỏi người dùng: không.
 
 ### Lần 1 (P-d2) · 2026-10-18 · NOT READY
 
