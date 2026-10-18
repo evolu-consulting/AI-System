@@ -18,6 +18,7 @@ import { appError } from "../../../lib/errors";
 import { parseWith } from "../../../lib/http";
 import { clipEntityName, dbHubAudit, type HubAuditRow } from "../../../lib/hub-audit";
 import type { UserEvent } from "../../../lib/user-stream";
+import { settleStepTx } from "../adapters/runs/step.repo";
 import { closeTask, lockRun, type RunHead } from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -26,7 +27,7 @@ import { enqueueThread } from "../core/thread";
 import { type ForwardTarget, type ForwardTask, forwardCheck } from "../domain/asks/forward.rules";
 import type { Viewer } from "../domain/runs/run-access.rules";
 import { isTerminal } from "../domain/runs/run-state.rules";
-import { settleStep, stageRowById } from "../runs/step-persist";
+import { stageRowById } from "../runs/step-persist";
 import * as repo from "./asks.repo";
 
 /** Kết quả một thao tác: TaskDetail trả client, sự kiện phát SAU COMMIT, run cần `kick` (chỉ answer thắng). */
@@ -169,7 +170,7 @@ export class AsksService {
     if (isTerminal(run.status) || stage?.status !== "waiting_answer")
       throw processError("PROCESS_RUN_STATE");
     await repo.resumeStage(tx, { tenantId, runId: head.runId, stageRunId: head.stageRunId, at });
-    await settleStep(tx, head.runId, tenantId);
+    await settleStepTx(tx, head.runId, tenantId);
   }
 
   // ── POST /review-tasks/:id/answer (HUB-FR-110) ──

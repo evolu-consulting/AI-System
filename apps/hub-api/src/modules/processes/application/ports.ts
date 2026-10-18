@@ -98,6 +98,29 @@ export type TeamRunRepo = {
   /** Quyết định (không thử lại): chốt `active_ms`, `failed`/`member_failed` + `finished_at`. */
   markFailed(teamRunId: string, now: Date): Promise<void>;
 };
+/** P-d2 T19s · trạng thái join bước đọc trong tx đã khoá `process_runs` (plan-d2 §3, §7). */
+export type StepJoinLoad = {
+  step: number;
+  /** Bước của từng stage theo snapshot (`resolveSteps`, def cũ không `step` ⇒ mỗi stage một bước). */
+  steps: readonly number[];
+  statuses: ReadonlyMap<number, StageRunStatus>;
+  /** `executor.kind` của từng stage theo snapshot (PD-R15: suy loại hẹn). */
+  executorKinds: readonly (string | undefined)[];
+};
+/** P-d2 T19s · D2-16 · ghi join bước; mọi câu lọc `(process_run_id|id, tenant_id)`. Gọi trong tx đã khoá run. */
+export type StepRepo = {
+  /** 2 câu: đầu run (`current_step`, snapshot) + trạng thái mọi stage. `null` ⇒ không thấy run. */
+  loadJoin(runId: string): Promise<StepJoinLoad | null>;
+  /** 2 câu: stage `idxs` ⇒ `queued`; run `running`, `current_step = step`, `current_stage_idx = first`. */
+  queueStep(
+    runId: string,
+    q: { idxs: readonly number[]; step: number; first: number },
+  ): Promise<void>;
+  /** 1 câu: run `done` + `finished_at`, `current_stage_idx = first`. */
+  finish(runId: string, first: number): Promise<void>;
+  /** 1 câu: trạng thái run tổng hợp của bước + `current_stage_idx = first`. */
+  setStatus(runId: string, status: ProcessRunStatus, first: number): Promise<void>;
+};
 export type TxRepos = {
   readonly tenantId: string;
   runs: RunRepo;

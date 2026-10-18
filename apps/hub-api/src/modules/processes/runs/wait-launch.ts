@@ -1,11 +1,12 @@
 // HUB-FR-144 · AC-H41 · PD-R13/R14/R15 · plan §4.6 (Vào) · nối use case `enterWait` vào `launcher.plan()` (tx scope user người
-// bắt đầu, run ĐÃ khoá — K2: `tenantId` từ hàng run đã khoá). `waiting` ⇒ trạng thái run theo bước (`settleStep`, PD-R15)
+// bắt đầu, run ĐÃ khoá — K2: `tenantId` từ hàng run đã khoá). `waiting` ⇒ trạng thái run theo bước (`settleStepTx`, PD-R15)
 // + `process_updated`; `invalid` ⇒ `needs_decision{timer_invalid}` qua `toDecision` cũ (người quyết như `agent_failed`).
 // Kick tiếp + đăng thread do `kickOnce` làm SAU COMMIT (kết quả `events`). Không tạo `hub.runs`/job.
 
 import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
 import { bindTx } from "../adapters/hub-uow";
+import { settleStepTx } from "../adapters/runs/step.repo";
 import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
 import { waitRepo } from "../adapters/timers/wait.repo";
 import { enterWait } from "../application/timers/enter-wait.usecase";
@@ -13,7 +14,6 @@ import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import type { WaitUntilSnap } from "./launcher-prompt";
-import { settleStep } from "./step-persist";
 import { toDecision } from "./team-runner";
 
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
@@ -62,7 +62,7 @@ export async function launchWaitStage(
     );
     return { kind: "events", events };
   }
-  const step = await settleStep(tx, w.runId, w.tenantId);
+  const step = await settleStepTx(tx, w.runId, w.tenantId);
   if (!step) return { kind: "events", events: [] };
   const run = { id: w.runId, status: step.status, stageIdx: step.stageIdx, step: step.step };
   return { kind: "events", events: processUpdated(recipients, run) };
