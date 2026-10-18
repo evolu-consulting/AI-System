@@ -1,6 +1,6 @@
 # Plan · P-d2 backend — stage `tool` + công tắc tool theo tenant + rẽ nhánh
 
-Phần P-d2 của [`plan.md`](plan.md). Nối [spec-d2](spec-d2.md), [spec-tz-tools §2](spec-tz-tools.md), [spec-ca §3, §5–§6](spec-ca.md). Contract: [plan-contract §6](plan-contract.md), hàm contract + path lỗi: [plan-addendum A2](plan-addendum.md), trường ép: A3; DDL: [plan-db §3–§4](plan-db.md). Quyết định: **chỉ ở** [`spec-decisions.md`](spec-decisions.md) mục "P-d2" (D2-01…D2-18, D2-24…D2-39).
+Phần P-d2 của [`plan.md`](plan.md). Nối [spec-d2](spec-d2.md), [spec-tz-tools §2](spec-tz-tools.md), [spec-ca §3, §5–§6](spec-ca.md). Contract: [plan-contract §6](plan-contract.md), hàm contract + path lỗi: [plan-addendum A2](plan-addendum.md), trường ép: A3; DDL: [plan-db §3–§4](plan-db.md). Quyết định: [`spec-decisions.md`](spec-decisions.md) mục "P-d2" (D2-01…D2-18, D2-24…D2-39).
 ## 0. Lệch so với code P-d1 (T13; L1–L4, L8, L9, L11, L12 đã thành D2-11…D2-13 và §2–§4, §10)
 | # | Code P-d1 thật (bản đầu giả định khác) | Sửa |
 |---|---|---|
@@ -139,4 +139,4 @@ Không vòng hàng (fields nguồn một câu `stage_key = any`); không gọi m
 Thứ tự: T15c (qc, trước Gate) → T17 → T17b ∥ T18a ∥ T18s → T18-1 → T18-2 → T19s → T19 → T20. **Đo trước khi sửa** (số câu + p95, ghi vào hàng task ở "Quyết định trong lúc làm"): T18s một lời gọi `/mcp` (H2a); T18-1 PD2-P01; T19s POST Đạt + `settled()` def 5 bước không `branch`; T17b PD2-P05 (D2-31).
 
 ## 12. Câu hỏi mở
-Q-T13-1…5 (canRun chỉ stage 	ool; ngưỡng P01…P04; catalog limit 200; giữ 4 câu/lời gọi /mcp; ADR-0022 Proposed ⇒ dùng pipeline /mcp) đã chuyển thành D2-24…D2-28 ở [spec-decisions.md](spec-decisions.md).
+Q-T13-1…5 (canRun chỉ stage `tool`; ngưỡng P01…P04; catalog limit 200; giữ 4 câu/lời gọi `/mcp`; ADR-0022 Proposed ⇒ dùng pipeline `/mcp`) đã chuyển thành D2-24…D2-28 ở [spec-decisions.md](spec-decisions.md).
