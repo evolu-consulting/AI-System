@@ -1,6 +1,6 @@
 // AC-H39 · PD-R08 · Q1 · PD-I10…PD-I15 (test-plan-int §2, plan §4.3, plan-addendum A5): thành viên nhóm lỗi tạm ⇒ stage
 // `waiting_timer`, `team_runs` giữ `running` + cursor, đồng hồ hoạt động dừng; bắn ⇒ chạy lại từ thành viên lỗi, lượt gọi
-// lại không đếm `calls`; cạn lượt ⇒ `retry_exhausted`; lỗi nghiệp vụ ⇒ quyết ngay. Def PF1 `p-team`/`p-lead`/`p-pm` đã seed.
+// lại không đếm `calls`; cạn lượt ⇒ `retry_exhausted`; lỗi nghiệp vụ ⇒ quyết ngay. Def PF1 `p-team`/`p-lead` đã seed; parallel_merge dùng def P-d `pd-retry-pm` (template khớp 2 thành viên).
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import {
   type CtxPd,
@@ -21,7 +21,15 @@ import {
   sweepN,
   waitStatus,
 } from "../_support/pd";
-import { failJob, fireAndTake, fireOpen, retryTimers, settle, teamRunsOf } from "./_retry";
+import {
+  ensurePmDef,
+  failJob,
+  fireAndTake,
+  fireOpen,
+  retryTimers,
+  settle,
+  teamRunsOf,
+} from "./_retry";
 
 let c: CtxPd;
 beforeAll(async () => {
@@ -169,7 +177,7 @@ describe("PD-I13…I15 · lead_plan, parallel_merge, lỗi nghiệp vụ [AC-H39
 
   it("AC-H39 · PD-I14 · parallel_merge: m2 lỗi tạm ⇒ bắn gọi lại MỌI thành viên của lượt (m1, m2); lượt gọi lại không đếm calls ⇒ gate", async () => {
     needPdSchema(c.pd);
-    const runId = await startRun(c, DEFS.pm.key);
+    const runId = await startRun(c, await ensurePmDef(c));
     const js = [await nextStageJob(c, runId), await nextStageJob(c, runId)];
     expect(js.map(who).sort()).toEqual([P1.agM1, P1.agM2].sort());
     const m1 = js.find((j) => who(j) === P1.agM1) as Job;

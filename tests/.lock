@@ -721,7 +721,7 @@ af8b2d12de386420f62b542e22b31d35ed37e022814c2d90262c9c6271a98483  tests/acceptan
 2f291b2a4c7a139d0a67ac89b9d913a1d93d62db58213728ce3ae1a2293d37aa  tests/acceptance/P-d/d1/_count.ts
 e3d56610603df20af01acada42b847fc3a8e129335f58d09b6c8605ca1cf8710  tests/acceptance/P-d/d1/_load.ts
 b194322ecf9b5734193e5d3455180bd5ba54b7300c0f8b9bf0cc8987797a5bf9  tests/acceptance/P-d/d1/_remind.ts
-7571a4f0fce85c0aebe2180660d07e7db288cbbed6e399750c63d8b91c00b0c9  tests/acceptance/P-d/d1/_retry.ts
+ab97ee1f63ff99835ce15358f25148434901cb838efe2b7d774355905a4549d0  tests/acceptance/P-d/d1/_retry.ts
 2a328285b420ffff1c09b901c9c30a44da2ac571bb646cbd2608d7ec5ad2859e  tests/acceptance/P-d/d1/_wait.ts
 6aa8af598568f807f79fa4e02577ac97a619d4e9121b64fed351898c3b83b525  tests/acceptance/P-d/d1/batch-queries.int.test.ts
 4988fb862a70a19a9253c2af56313ea974d6acce524bf487d61d04df69bdf4d2  tests/acceptance/P-d/d1/cancel-timers.int.test.ts
@@ -735,7 +735,7 @@ b194322ecf9b5734193e5d3455180bd5ba54b7300c0f8b9bf0cc8987797a5bf9  tests/acceptan
 9b9959d3023d2895bcf6a421ebf6813a4d5fef4dd6b930fde0a1d88228dab98f  tests/acceptance/P-d/d1/remind-load.int.test.ts
 2d4ce92220c34af37ab2865272e6552dc640f0f35a4c5432ed5169d795165783  tests/acceptance/P-d/d1/remind.int.test.ts
 ad65b3dff5f0627f47b7f68504cea8faec744d0de53e06ddbf5333684bb2bf16  tests/acceptance/P-d/d1/retry.int.test.ts
-d5f12534ff4f51e594e2c7412ef85032990149ed698e5785ecd6083feabbbe81  tests/acceptance/P-d/d1/team-retry.int.test.ts
+e7472722d063d2f5aac292dc86aa1572e8f3514845992752c94979d0dca8e36d  tests/acceptance/P-d/d1/team-retry.int.test.ts
 dd7923866703dd7475de7e79960499022d4dc7abd60c7e6dfe60a691e3062c56  tests/acceptance/P-d/d1/ttl.int.test.ts
 461f063f7bbc6a2c4b471edf2f91d0468fbdbc498eb215d1a9dd8f515d6ceca1  tests/acceptance/P-d/d1/uow.int.test.ts
 faa112108196786a83987fcaae4191a89f7cb5dd5e6ac0ba1b5d917e6d396830  tests/acceptance/P-d/d1/wait-def.int.test.ts

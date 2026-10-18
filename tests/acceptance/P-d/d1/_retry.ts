@@ -5,6 +5,8 @@ import { expect } from "bun:test";
 import {
   type CtxPd,
   createDef,
+  DEFS,
+  defBody,
   type Job,
   type Json,
   nextStageJob,
@@ -31,6 +33,27 @@ export async function ensureDef(c: CtxPd, name: "retry" | "par2"): Promise<strin
     s.add(body.key);
   }
   return body.key as string;
+}
+
+/**
+ * Def `parallel_merge` cho P-d: nhóm `pm-team` có 2 thành viên (m1 → Phần A, m2 → Phần B) nên template/required_sections
+ * chỉ gồm Phần A, Phần B (mục không ai phụ trách = lỗi cấu hình ⇒ 422). Không đụng fixture P-a `p-pm` (template 3 mục).
+ */
+export async function ensurePmDef(c: CtxPd): Promise<string> {
+  const key = "pd-retry-pm";
+  const s = made.get(c) ?? new Set<string>();
+  made.set(c, s);
+  if (!s.has(key)) {
+    const st = DEFS.pm.stages[0] as Json;
+    const output = {
+      ...st.output,
+      template: "## Phần A\n\n## Phần B\n",
+      required_sections: ["Phần A", "Phần B"],
+    };
+    await createDef(c, defBody(key, [{ ...st, output }]));
+    s.add(key);
+  }
+  return key;
 }
 
 // ---------- workflow `side_effect` cho PD-I06…I08 (D-PD03) ----------
