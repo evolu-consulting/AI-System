@@ -35,6 +35,13 @@ Model chọn theo **việc**, không theo agent. Dòng `model:` trong file agent
 | `docs-architect` Việc 1, 3 | Sonnet (mặc định) | Cần hiểu BA để nhóm FR |
 | `docs-architect` Việc 2 (đồng bộ CODEMAP/TRACE/STATE) | Haiku — truyền `model: haiku` | Việc cơ học; câu chữ kém thì quay lại Sonnet |
 | Phiên chính (điều phối) | Opus | Chỉ điều phối — không tự đọc/viết tài liệu lớn, giao agent |
+**Nguyên tắc việc đơn giản → Sonnet / Haiku (người dùng 2026-10-18):** Opus chỉ cho việc **rủi ro cao** (danh sách trên) hoặc cần phán đoán khó (readiness đầy đủ, review bảo mật, PLAN). Mọi việc khác giao model nhanh hơn:
+| Việc | Model |
+|---|---|
+| Cơ học, không cần hiểu nghiệp vụ: chạy lại script/test và báo số, `test:lock:write`/`verify`, sửa đường dẫn import sau khi dời file, đổi tên, format/lint, kiểm trần kích thước, đếm/grep, cập nhật STATE/CODEMAP/TRACE, tick `tasks.md`, dọn DB/tag | **Haiku** — `model: haiku` |
+| Đơn giản nhưng cần hiểu code: dời file không đổi hành vi có test khoá phủ, qc sửa test theo bảng đã chốt, CRUD/FE theo contract, docs theo mặc định đã chốt, readiness chỉ diff nhỏ, sửa lỗi Thấp/Trung không chạm tenant/khoá | **Sonnet** — `model: sonnet` |
+| Rủi ro cao (tenant/RLS, quyền, auth/secret, khoá/transaction, quota/audit, migration đổi dữ liệu) hoặc phán đoán khó | Opus |
+Haiku làm hỏng (sai, thiếu, câu chữ kém) ⇒ giao lại Sonnet, không giao lại Haiku. Brief cho Haiku/Sonnet phải trích sẵn đủ thông tin (bảng việc, đường dẫn, lệnh) — không bảo tự đọc spec/plan.
 
 ### Kỷ luật token (bắt buộc cho điều phối và mọi agent)
 
