@@ -12,9 +12,9 @@ import type { UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
-import type { RunState } from "../core/process-state.rules";
 import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import { enqueueThread } from "../core/thread";
+import type { RunState } from "../domain/runs/run-state.rules";
 import {
   persistStage,
   type StageWrite,

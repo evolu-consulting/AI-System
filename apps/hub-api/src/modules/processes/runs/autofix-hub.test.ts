@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import type { JobAutofix } from "@ai/contracts/hub";
 import type { AgentConfig, ProfileConfig } from "../../config/config.rules";
 import { buildJobPayload, type PayloadInput } from "../../runner/runner.rules";
-import { type RunState, transition } from "../core/process-state.rules";
+import { type RunState, transition } from "../domain/runs/run-state.rules";
 import { autofixRetryBlock, autofixWorkspaceBlock } from "./autofix.rules";
 import { toAutofixView } from "./view-autofix";
 

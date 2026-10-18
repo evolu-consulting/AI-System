@@ -17,7 +17,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
-import { isTerminal } from "../core/process-state.rules";
+import { isTerminal } from "../domain/runs/run-state.rules";
 import {
   type ApplyOutputInput,
   applyOutcome,

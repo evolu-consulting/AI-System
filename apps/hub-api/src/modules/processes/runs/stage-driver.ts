@@ -2,21 +2,26 @@
 // trạng thái (plan §3.2) → hiệu ứng (`team-runner.effects`) trong tx quy trình TRƯỚC, `writer.finish` SAU (D11), rồi `kick`
 // stage kế. Idempotent theo `stage_runs.current_run_id`. Nhóm ⇒ `team-runner.runTeamStage`.
 import type { DecisionReason, ProcessRunStatus } from "@ai/contracts/chat";
-import type { AgentResult, TokenUsage } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
-import { type JobOutcome, runJob } from "../../runner/job/job-agent-runner";
+import { runJob } from "../../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { RunOutcome } from "../../runs/sse/sse-writer";
+import { type AgentOut, agentOutOf } from "../adapters/runs/job-result";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
-import { budgetHit, totalTokens } from "../core/limits.rules";
+import { budgetHit } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
-import { isTerminal, type RunEvent, type RunState, transition } from "../core/process-state.rules";
 import { stageGateStatus, stepCountOf } from "../core/step.rules";
+import {
+  isTerminal,
+  type RunEvent,
+  type RunState,
+  transition,
+} from "../domain/runs/run-state.rules";
 import { autofixDecision, stageJobExtras } from "./autofix.repo";
 import { commitOutputBlob } from "./output-attachment";
 import { defaultSourceBudget } from "./sources.rules";
@@ -41,31 +46,6 @@ import {
 import { checkTemplate } from "./template.rules";
 
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
-type Usage = { cache_read_tokens?: number; cache_write_tokens?: number } & TokenUsage;
-
-export const tokensOf = (u: TokenUsage): number =>
-  totalTokens({
-    input: u.input_tokens,
-    output: u.output_tokens,
-    cacheRead: (u as Usage).cache_read_tokens ?? null,
-    cacheWrite: (u as Usage).cache_write_tokens ?? null,
-  });
-
-function resultOf(o: JobOutcome): StageResult {
-  // D11 · `aborted` = AbortSignal (huỷ run stage `/runs/:id/cancel` hoặc tắt instance), không phải lỗi agent ⇒ interrupted.
-  if (o.kind === "aborted") return { kind: "limit", reason: "interrupted" };
-  if (o.kind === "failed")
-    return { kind: "failed", reason: o.code === "TIMEOUT" ? "job_timeout" : "agent_failed" };
-  const r = o.output.kind === "agent_result" ? (o.output.result as AgentResult) : null;
-  if (!r) return { kind: "failed", reason: "agent_failed" };
-  if (r.status === "need_input")
-    return { kind: "need_input", question: r.question, choices: r.choices ?? [] };
-  return {
-    kind: "output",
-    text: r.text,
-    ...(o.kind === "result" && o.sourceReads ? { sourceReads: o.sourceReads } : {}),
-  };
-}
 
 /** P-b2 R12 · tuỳ chọn job stage: `useSession=false` ⇒ `payload.use_session=false` (vắng ⇒ true như cũ). */
 export type StageDriverOpts = { useSession?: boolean };
@@ -168,13 +148,6 @@ async function linkOf(d: Deps, hubRunId: string): Promise<Link | null> {
 const jobExtras = (d: Deps, link: Link) =>
   withHubScope(d.db, { kind: "system" }, (tx) => stageJobExtras(tx, link));
 
-type AgentOut = {
-  result: StageResult;
-  usage: number;
-  jobId: string | null;
-  jobReason: string | null;
-};
-
 /** N4 · một job vai `agent`; `detail` mang `process_run_id/stage_run_id/role` cho usage (PF4). */
 async function runAgent(
   d: Deps,
@@ -216,12 +189,7 @@ async function runAgent(
     ctx.writer.signal,
     ctx.log,
   );
-  return {
-    result: resultOf(o),
-    usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
-    jobId: o.kind === "aborted" ? null : o.jobId || null,
-    jobReason: o.kind === "failed" ? (o.reason ?? o.code) : null,
-  };
+  return agentOutOf(o);
 }
 
 /** D11 · tx quy trình → ghi blob SAU COMMIT → phát sự kiện/thread. Trả `true` nếu cần `kick`. */

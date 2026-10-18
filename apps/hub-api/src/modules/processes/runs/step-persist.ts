@@ -6,8 +6,8 @@ import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { enqueueKhSummary } from "../../kh/kh.writes.repo";
-import type { RunState } from "../core/process-state.rules";
 import { firstIdxOfStep, runStatusOf, stageIdxsOfStep, stepJoin } from "../core/step.rules";
+import type { RunState } from "../domain/runs/run-state.rules";
 
 /** Kết quả sau ghi: `process_runs.status/current_step/current_stage_idx` mới. */
 export type StepOutcome = {

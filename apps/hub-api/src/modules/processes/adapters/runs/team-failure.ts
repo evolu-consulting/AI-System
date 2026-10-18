@@ -1,0 +1,65 @@
+// HUB-FR-114 · N4 · D7 · PB-R17 · T7s · adapter: xử lý job thành viên nhóm lỗi — mã job ⇒ lý do thành viên, lý do dừng
+// stage nhóm (`stopFail`), cộng bộ đếm sau mỗi lần gọi (`bump`). Tách khỏi `team-exec`/`team-member`; không log nội dung.
+import type { AgentResult } from "@ai/contracts/hub";
+import type { JobOutcome } from "../../../runner/job/job-agent-runner";
+import { addCall } from "../../runs/team-counters";
+import type { TeamDeps } from "../../runs/team-load";
+import type { StageResult } from "../../runs/team-runner";
+import { markFailed } from "./team-run.repo";
+
+/** Lý do thành viên lỗi (PB-R17); `not_configured` tách khỏi `agent_failed` (TM-08, gỡ mâu thuẫn readiness #1). */
+export type MemberFailReason = "agent_failed" | "job_timeout" | "not_configured";
+
+/** Kết quả chuẩn hoá một lần gọi thành viên. */
+export type MemberOutcome =
+  | { kind: "output"; text: string }
+  | { kind: "need_input"; question: string; choices: string[] }
+  | { kind: "failed"; reason: MemberFailReason };
+
+export type MemberResult = { outcome: MemberOutcome; usage: number; jobId: string | null };
+
+/** Kết quả stage nhóm trả cho `stage-driver`. */
+export type TeamOut = { result: StageResult; usage: number; jobId: string | null };
+
+/** Phần của ngữ cảnh stage nhóm mà `stopFail`/`bump` cần (cấu trúc con của `Ctx` ở `team-exec`). */
+export type TeamTally = {
+  d: TeamDeps;
+  teamRunId: string;
+  usage: number;
+  lastJobId: string | null;
+};
+
+/** Mã job lỗi → reason thành viên (PB-R17): TIMEOUT⇒job_timeout, NOT_CONFIGURED⇒not_configured, còn lại⇒agent_failed. */
+export function reasonOfCode(code: string): MemberFailReason {
+  if (code === "TIMEOUT") return "job_timeout";
+  if (code === "NOT_CONFIGURED") return "not_configured";
+  return "agent_failed";
+}
+
+export function outcomeOf(o: JobOutcome): MemberOutcome {
+  if (o.kind === "aborted") return { kind: "failed", reason: "agent_failed" };
+  if (o.kind === "failed") return { kind: "failed", reason: reasonOfCode(o.code) };
+  const r = o.output.kind === "agent_result" ? (o.output.result as AgentResult) : null;
+  if (!r) return { kind: "failed", reason: "agent_failed" };
+  if (r.status === "need_input")
+    return { kind: "need_input", question: r.question, choices: r.choices ?? [] };
+  return { kind: "output", text: r.text };
+}
+
+/** Cộng token/job của lần gọi vào tổng stage + `calls` của team_run. */
+export async function bump(st: TeamTally, res: MemberResult): Promise<void> {
+  st.usage += res.usage;
+  if (res.jobId) st.lastJobId = res.jobId;
+  await addCall(st.d, st.teamRunId, res.usage);
+}
+
+export async function stopFail(st: TeamTally, res: MemberResult): Promise<TeamOut> {
+  // StageResult.reason là `DecisionReason` ⇒ chỉ `agent_failed`/`job_timeout` (hub.runs thành viên giữ mã thật qua
+  // closeMemberRun). `not_configured` của member ⇒ decision `agent_failed` (TM-06/08).
+  const reason =
+    res.outcome.kind === "failed" && res.outcome.reason === "job_timeout"
+      ? "job_timeout"
+      : "agent_failed";
+  await markFailed(st.d, st.teamRunId);
+  return { result: { kind: "failed", reason }, usage: st.usage, jobId: st.lastJobId };
+}

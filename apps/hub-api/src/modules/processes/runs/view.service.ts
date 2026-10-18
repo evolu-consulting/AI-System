@@ -16,7 +16,6 @@ import type { Db } from "../../../lib/db";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
 import type { ConfigCache } from "../../config/config.service";
 import { processError } from "../core/errors";
-import { isTerminal } from "../core/process-state.rules";
 import {
   canCancel,
   canDecide,
@@ -26,6 +25,7 @@ import {
   type Viewer,
 } from "../core/run-access.rules";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
+import { isTerminal } from "../domain/runs/run-state.rules";
 import * as repo from "./runs.repo";
 import { applyViews, withApply } from "./view-apply";
 import { autofixViews, onlyMyReviewStages, withAutofix } from "./view-autofix";

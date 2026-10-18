@@ -8,8 +8,8 @@ import type {
   TaskStatus,
 } from "@ai/contracts/chat";
 import { DECISION_OPTIONS, TASK_EXCERPT_MAX } from "@ai/contracts/chat";
+import { isTerminal } from "../domain/runs/run-state.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
-import { isTerminal } from "./process-state.rules";
 import { canDecide, REVIEW_GROUP_REASONS, type RunFacts, type Viewer } from "./run-access.rules";
 
 export type TaskFacts = {

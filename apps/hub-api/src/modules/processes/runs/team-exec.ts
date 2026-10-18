@@ -8,6 +8,8 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import type { RunContext } from "../../runs/runs.service";
+import { bump, type MemberResult, stopFail, type TeamOut } from "../adapters/runs/team-failure";
+import { ensureTeamRun } from "../adapters/runs/team-run.repo";
 import { teamDraftFiles } from "./output-attachment";
 import {
   assembleSections,
@@ -19,13 +21,10 @@ import {
   type TeamMember,
 } from "./team.rules";
 import {
-  addCall,
-  ensureTeamRun,
   hashSame,
   initialDraft,
   limitReason,
   markDone,
-  markFailed,
   markLimit,
   markWaiting,
   savePlan as saveTeamPlan,
@@ -37,10 +36,9 @@ import {
   type TeamHead,
   type TeamMemberRow,
 } from "./team-load";
-import { type MemberCall, type MemberResult, runMember } from "./team-member";
-import type { Link, StageResult } from "./team-runner";
+import { type MemberCall, runMember } from "./team-member";
+import type { Link } from "./team-runner";
 
-type TeamOut = { result: StageResult; usage: number; jobId: string | null };
 type Head = {
   tenant_id: string;
   started_by: string;
@@ -329,12 +327,6 @@ const leadLike = (agentId: string): TeamMemberRow => ({
 const checkLimit = (st: Ctx): Promise<DecisionReason | null> =>
   limitReason(st.d, st.teamRunId, st.team.limits);
 
-async function bump(st: Ctx, res: MemberResult): Promise<void> {
-  st.usage += res.usage;
-  if (res.jobId) st.lastJobId = res.jobId;
-  await addCall(st.d, st.teamRunId, res.usage);
-}
-
 /** hash bản ghép; trùng 2 lần liền ⇒ no_change. */
 async function hashStep(st: Ctx): Promise<number> {
   const h = createHash("sha256")
@@ -346,17 +338,6 @@ async function hashStep(st: Ctx): Promise<number> {
 async function stopLimit(st: Ctx, reason: DecisionReason): Promise<TeamOut> {
   await markLimit(st.d, st.teamRunId, reason);
   return limitOut(st, reason);
-}
-
-async function stopFail(st: Ctx, res: MemberResult): Promise<TeamOut> {
-  // StageResult.reason là `DecisionReason` ⇒ chỉ `agent_failed`/`job_timeout` (hub.runs thành viên giữ mã thật qua
-  // closeMemberRun). `not_configured` của member ⇒ decision `agent_failed` (TM-06/08).
-  const reason =
-    res.outcome.kind === "failed" && res.outcome.reason === "job_timeout"
-      ? "job_timeout"
-      : "agent_failed";
-  await markFailed(st.d, st.teamRunId);
-  return { result: { kind: "failed", reason }, usage: st.usage, jobId: st.lastJobId };
 }
 
 /** `cursor` = index thành viên đã hỏi ⇒ resume chạy tiếp đúng từ đó (sequential). */

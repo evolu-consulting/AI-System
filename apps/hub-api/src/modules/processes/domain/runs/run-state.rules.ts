@@ -1,13 +1,8 @@
 // HUB-FR-106 · HUB-FR-107 · HUB-FR-110 · HUB-FR-115 · AC-H28 · máy trạng thái process_run + stage hiện tại (plan §3.1–3.2,
 // plan-contract §7). Thuần: trả trạng thái kế + hiệu ứng (người gọi thực thi trong tx, thứ tự khoá plan §10).
-import {
-  ASKS_MAX,
-  type DecisionOption,
-  type DecisionReason,
-  type ProcessRunStatus,
-  REDO_MAX,
-  type StageRunStatus,
-} from "@ai/contracts/chat";
+// HUB-FR-143 · CA-R03/R04 · ADR-0023 · lớp 1: hằng ⇐ `../limits`, kiểu ⇐ `../types` (không import contract).
+import { ASKS_MAX, REDO_MAX } from "../limits";
+import type { DecisionOption, DecisionReason, ProcessRunStatus, StageRunStatus } from "../types";
 
 export type RunEvent =
   | { kind: "stage_output"; templateOk: boolean }

@@ -59,6 +59,15 @@ describe("CA-R03 · domain/limits = hằng contract", () => {
   }
 });
 
+describe("T7s · domain/runs/run-state.rules dùng trần domain = trần contract", () => {
+  it("HUB-FR-143 · REDO_MAX/ASKS_MAX domain khớp contract (luật tính lần thử + hỏi lại)", () => {
+    expect({ REDO_MAX: limits.REDO_MAX, ASKS_MAX: limits.ASKS_MAX }).toEqual({
+      REDO_MAX: chat.REDO_MAX,
+      ASKS_MAX: chat.ASKS_MAX,
+    });
+  });
+});
+
 describe("CONVENTIONS §5 · DOMAIN_ERROR_MAP ⇒ mã contract + HTTP", () => {
   const cases: [ProcessDomainError, string, number][] = [
     ["RUN_STATE", "PROCESS_RUN_STATE", 409],

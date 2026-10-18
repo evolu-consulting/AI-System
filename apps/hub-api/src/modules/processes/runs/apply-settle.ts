@@ -9,8 +9,8 @@ import type { UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
-import type { RunState } from "../core/process-state.rules";
 import { enqueueThread } from "../core/thread";
+import type { RunState } from "../domain/runs/run-state.rules";
 import { persistStage } from "./step-persist";
 import { headOf, type RunHead, type SnapStage, toDecision } from "./team-runner";
 

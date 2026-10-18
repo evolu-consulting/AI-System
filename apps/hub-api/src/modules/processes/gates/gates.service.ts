@@ -21,7 +21,6 @@ import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
-import { isTerminal, transition } from "../core/process-state.rules";
 import {
   canCancel,
   canDecide,
@@ -32,6 +31,7 @@ import {
 import { pickDecisionStage } from "../core/step.rules";
 import { decisionOptionsFor } from "../core/task.rules";
 import { loadTaskDetails } from "../core/task-view";
+import { isTerminal, transition } from "../domain/runs/run-state.rules";
 import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
