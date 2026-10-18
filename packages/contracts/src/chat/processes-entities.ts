@@ -5,6 +5,7 @@ import { StageKnowledgeSchema } from "../hub-admin/kh";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
 import {
   BACK_EVENTS_MAX,
+  BRANCH_RULES_MAX,
   DecisionOptionSchema,
   DecisionReasonSchema,
   EXECUTOR_KINDS,
@@ -163,8 +164,8 @@ export type StageView = z.infer<typeof StageViewSchema>;
 
 export const HistoryItemSchema = z.strictObject({
   at: IsoDateTime,
-  // P-d1 thêm `escalate` (cuối).
-  kind: z.enum(["review", "ask", "decision", "forward", "cancel", "expire", "escalate"]),
+  // P-d1 thêm `escalate` (cuối). P-d2 thêm `branch` (cuối; `to_step` + `rule`, actor null = hệ thống).
+  kind: z.enum(["review", "ask", "decision", "forward", "cancel", "expire", "escalate", "branch"]),
   task_id: UuidSchema.nullable(),
   stage_idx: StageIdxSchema,
   actor: UserRefSchema.nullable(),
@@ -180,6 +181,8 @@ export const HistoryItemSchema = z.strictObject({
   group: GroupRefSchema.optional(),
   /** P-d2 · D2-47 · chỉ `escalate`: số giờ chờ trước khi chuyển cấp (`after.escalate.after_h` của snapshot). */
   after_h: Int1.optional(),
+  /** P-d2 · PD2-R14 · chỉ `branch`: số thứ tự luật khớp (1-based); bước đích ở `to_step`. */
+  rule: z.number().int().min(1).max(BRANCH_RULES_MAX).optional(),
 });
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
 

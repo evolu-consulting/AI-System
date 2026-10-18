@@ -6,15 +6,34 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { StepRepo } from "../../application/ports";
 import { type StepOutcome, settleStep } from "../../application/runs/settle-step.usecase";
+import type { BranchRule } from "../../domain/branch/branch-def.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
+import { branchWrites } from "./branch.repo";
 
+type SnapRule = { field: string; op: BranchRule["op"]; value: string | number; goto_step: number };
 type StepHead = {
   current_step: number;
-  snapshot: { stages?: { step?: number; executor?: { kind: string } }[] } | null;
+  snapshot: {
+    stages?: { step?: number; executor?: { kind: string }; after?: { branch?: SnapRule[] } }[];
+  } | null;
 };
+
+/** Snapshot `after.branch` (snake_case contract) ⇒ luật domain; vắng/hỏng ⇒ `[]`. */
+const branchesOf = (stages: NonNullable<StepHead["snapshot"]>["stages"] & {}): BranchRule[][] =>
+  stages.map((s) =>
+    Array.isArray(s?.after?.branch)
+      ? s.after.branch.map((r) => ({
+          field: r.field,
+          op: r.op,
+          value: r.value,
+          gotoStep: r.goto_step,
+        }))
+      : [],
+  );
 
 export function stepRepo(tx: Tx, tenantId: string): StepRepo {
   return {
+    ...branchWrites(tx, tenantId),
     async loadJoin(runId) {
       const [h] = await tx.execute<StepHead>(sql`select current_step, snapshot from hub.process_runs
     where id = ${runId} and tenant_id = ${tenantId}`);
@@ -30,6 +49,7 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
         steps: resolveSteps(stages),
         statuses: new Map(rows.map((r) => [Number(r.stage_idx), r.status] as const)),
         executorKinds: stages.map((s) => s?.executor?.kind),
+        branches: branchesOf(stages),
       };
     },
     async queueStep(runId, q) {

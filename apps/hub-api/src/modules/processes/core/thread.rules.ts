@@ -113,12 +113,12 @@ function line(e: RoomProcessPart, l: ThreadLocale, n: Names): string {
       );
     case "run_end":
       return `${n.process} · ${END[e.status][l]}`;
-    // P-d2 · PD2-R13 · bước hiển thị 1-based như StageStrip.
+    // P-d2 · PD2-R14 · "Rẽ nhánh: tới bước {X} (luật {n})" — X 1-based như StageStrip, n đếm từ 1 (= i18n `thread.branch`).
     case "branch":
       return t(
         l,
-        `${n.process}: rẽ nhánh sang bước ${e.to_step + 1}`,
-        `${n.process}: branched to step ${e.to_step + 1}`,
+        `Rẽ nhánh: tới bước ${e.to_step + 1} (luật ${e.rule})`,
+        `Branched: to step ${e.to_step + 1} (rule ${e.rule})`,
       );
   }
 }

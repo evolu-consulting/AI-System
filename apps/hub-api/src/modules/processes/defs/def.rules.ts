@@ -10,6 +10,7 @@ import {
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
+import { branchStageIssues } from "../domain/branch/branch-def.rules";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
 import { type TeamSectionsInfo, teamSectionIssues } from "../domain/defs/team-sections.rules";
 import {
@@ -111,6 +112,21 @@ function toolIssuesOf(d: ProcessDefInput, refs: DefRefs): ToolIssueRow[] {
 }
 type ToolIssueRow = { path: string; rule: ProcessDefRule };
 
+/** PD2-R10…R12 · `branchStageIssues` (domain) chỉ khi def có `after.branch` (mapper contract → domain). */
+function branchIssuesOf(d: ProcessDefInput): ToolIssueRow[] {
+  if (!d.stages.some((s) => (s.after.branch ?? []).length > 0)) return [];
+  const steps = resolveSteps(d.stages);
+  return branchStageIssues(
+    d.stages.map((s, i) => ({
+      step: steps[i] as number,
+      realAction: s.real_action,
+      afterKind: s.after.kind,
+      fields: s.output.fields ?? [],
+      branch: (s.after.branch ?? []).map((r) => ({ ...r, gotoStep: r.goto_step })),
+    })),
+  );
+}
+
 /** A3 · stage `tool`: Hub ép template/mục/answerer/token_budget/sources/must_know/autofix; giữ `fields`, `timeout_s`. */
 export function ensureToolStage<S extends Stage>(s: S): S {
   if (s.executor.kind !== "tool") return s;
@@ -145,6 +161,7 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
       refs.teams ?? new Map(),
     ),
     ...toolIssuesOf(d, refs),
+    ...branchIssuesOf(d),
   ].slice(0, 20);
   if (invalid.length)
     return {

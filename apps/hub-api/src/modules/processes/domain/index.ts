@@ -1,6 +1,8 @@
 // HUB-FR-146 · HUB-FR-147 · P-d2 T17 · cổng lớp 1 ổn định (test-plan-d2 §0): CHỈ re-export, không logic. Test nạp
 // `P/domain/index.ts` thay vì đường dẫn file bên trong; file mới của lớp 1 (T18/T19) thêm một dòng ở đây.
 export * from "./asks/forward.rules";
+export * from "./branch/branch.rules";
+export * from "./branch/branch-def.rules";
 export * from "./defs/escalate-def.rules";
 export * from "./defs/team-sections.rules";
 export * from "./defs/tool-def.rules";

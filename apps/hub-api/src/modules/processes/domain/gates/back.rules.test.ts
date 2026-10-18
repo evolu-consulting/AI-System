@@ -29,6 +29,23 @@ describe("back.rules [HUB-FR-118]", () => {
       { idx: 1, status: "pending", round: 2, feedback: null },
     ]);
   });
+  it("P-d2 · PD2-R15 · quay lại xuyên qua stage skipped ⇒ pending, round giữ; stage đã chạy sau nó ⇒ round + 1", () => {
+    const got = backResetPlan({
+      steps: [0, 1, 2, 3],
+      target: 1,
+      feedback: "f",
+      stages: [
+        { idx: 1, status: "done", round: 1 },
+        { idx: 2, status: "skipped", round: 1 },
+        { idx: 3, status: "waiting_review", round: 1 },
+      ],
+    });
+    expect(got).toEqual([
+      { idx: 1, status: "queued", round: 2, feedback: "f" },
+      { idx: 2, status: "pending", round: 1, feedback: null },
+      { idx: 3, status: "pending", round: 2, feedback: null },
+    ]);
+  });
   it("add_attempt chỉ nâng back_limit khi < 100 (CHECK process_runs_back_ck)", () => {
     expect(canRaiseBackLimit(3)).toBe(true);
     expect(canRaiseBackLimit(99)).toBe(true);

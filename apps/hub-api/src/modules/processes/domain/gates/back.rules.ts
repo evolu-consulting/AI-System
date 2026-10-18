@@ -43,7 +43,8 @@ export type BackReset = {
 
 /**
  * D7 · reset khi quay lại bước `target`: stage bước = target ⇒ `queued` + góp ý; bước > target ⇒ `pending`, góp ý null;
- * `round + 1` chỉ cho stage đã từng chạy (status ≠ `pending`). Stage bước < target không có phần tử. Trả theo idx tăng dần.
+ * `round + 1` chỉ cho stage đã từng chạy (status ∉ {`pending`, `skipped`}). Stage bước < target không có phần tử. Trả theo
+ * idx tăng dần. P-d2 · PD2-R15 · stage `skipped` ở bước > target ⇒ `pending` như mọi bước sau đích.
  */
 export function backResetPlan(p: {
   steps: readonly number[];
@@ -56,7 +57,8 @@ export function backResetPlan(p: {
     .flatMap((s): BackReset[] => {
       const step = p.steps[s.idx];
       if (step === undefined || step < p.target) return [];
-      const round = s.status === "pending" ? s.round : s.round + 1;
+      // P-d2 · PD2-R15 · stage `skipped` (bị nhảy qua, chưa từng chạy ở vòng này) ⇒ như `pending`: không tăng `round`.
+      const round = s.status === "pending" || s.status === "skipped" ? s.round : s.round + 1;
       return step === p.target
         ? [{ idx: s.idx, status: "queued", round, feedback: p.feedback }]
         : [{ idx: s.idx, status: "pending", round, feedback: null }];

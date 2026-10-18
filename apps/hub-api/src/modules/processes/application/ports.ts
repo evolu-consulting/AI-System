@@ -1,6 +1,7 @@
 // HUB-FR-143…145 · CA-R05…R07 · spec-ca §4 · plan §3 · plan-addendum A7 Q4, A11: port lớp 2 của `processes` — CHỈ kiểu,
 // chỉ import `domain/`. Không type nào chứa `Tx` (K1): repo đã gắn tx + `tenantId` của UoW. Sự kiện gom qua `Outbox`,
 // adapter phát SAU COMMIT đúng một lần. Repo port theo nhóm (retry, side effect, team, review task…) thêm ở T7–T9.
+import type { BranchRule } from "../domain/branch/branch-def.rules";
 import type { RetryState } from "../domain/runs/retry.rules";
 import type {
   NoticeKind,
@@ -106,7 +107,11 @@ export type StepJoinLoad = {
   statuses: ReadonlyMap<number, StageRunStatus>;
   /** `executor.kind` của từng stage theo snapshot (PD-R15: suy loại hẹn). */
   executorKinds: readonly (string | undefined)[];
+  /** P-d2 T19 · `after.branch` của từng stage theo snapshot (đã map `goto_step` ⇒ `gotoStep`; vắng ⇒ `[]`). */
+  branches: readonly (readonly BranchRule[])[];
 };
+/** P-d2 T19 · PD2-R14 · sự kiện rẽ nhánh (thread `branch` + audit `branch` actor hệ thống). `rule` đếm từ 1. */
+export type BranchEvent = { stageIdx: number; fromStep: number; toStep: number; rule: number };
 /** P-d2 T19s · D2-16 · ghi join bước; mọi câu lọc `(process_run_id|id, tenant_id)`. Gọi trong tx đã khoá run. */
 export type StepRepo = {
   /** 2 câu: đầu run (`current_step`, snapshot) + trạng thái mọi stage. `null` ⇒ không thấy run. */
@@ -120,6 +125,17 @@ export type StepRepo = {
   finish(runId: string, first: number): Promise<void>;
   /** 1 câu: trạng thái run tổng hợp của bước + `current_stage_idx = first`. */
   setStatus(runId: string, status: ProcessRunStatus, first: number): Promise<void>;
+  /** T19 · 1 câu: `fields` của output hiện hành của stage (không phải object / không output ⇒ `null`). */
+  currentFields(
+    runId: string,
+    stageIdx: number,
+  ): Promise<Readonly<Record<string, string | number>> | null>;
+  /** T19 · 1 câu theo tập: stage `idxs` còn `pending`/`queued` ⇒ `skipped` + `finished_at`; trả id stage vừa nhảy. */
+  skipStages(runId: string, idxs: readonly number[]): Promise<string[]>;
+  /** T19 · 1 câu theo tập: huỷ hẹn mở của các stage vừa nhảy (Q-D2-3: phòng thủ, thường 0 hàng). */
+  cancelTimers(runId: string, stageRunIds: readonly string[]): Promise<void>;
+  /** T19 · 1 câu: audit `branch` + sự kiện thread `branch` (chỉ run bắt đầu từ phòng); đăng bởi poster SAU COMMIT. */
+  branchEvent(runId: string, e: BranchEvent): Promise<void>;
 };
 export type TxRepos = {
   readonly tenantId: string;

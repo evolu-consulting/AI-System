@@ -9,7 +9,8 @@ import type { RunFile } from "../../attachments/run-files.rules";
 import { agentWorkflowIds } from "../../config/config.rules";
 import type { ProcessRunInput } from "../../runs/create-run";
 import type { ProcessDeps } from "../core/ports";
-import { priorStageIdxs, realActionStepCheck, stageIdxsOfStep } from "../domain/runs/step.rules";
+import { effectivePrevStep } from "../domain/branch/branch.rules";
+import { priorStageIdxs, realActionStepCheck } from "../domain/runs/step.rules";
 import type { SnapStage } from "./launcher-prompt";
 import { runScopedFileIds } from "./output-attachment";
 import { stepsOfSnap } from "./step-persist";
@@ -26,7 +27,7 @@ const idList = (xs: readonly number[]) =>
     sql`, `,
   );
 
-/** Trạng thái + người Đạt của các stage ở bước k−1 (đầu vào `realActionStepCheck`). */
+/** Bước + trạng thái + người Đạt của các stage `prevIdxs` (đầu vào `effectivePrevStep` + `realActionStepCheck`). */
 async function prevStepFacts(
   tx: Tx,
   p: { runId: string; tenantId: string; stages: readonly SnapStage[] },
@@ -42,10 +43,12 @@ async function prevStepFacts(
     from hub.stage_runs where process_run_id = ${p.runId} and tenant_id = ${p.tenantId}
       and stage_idx in (${idList(prevIdxs)})`);
   const byIdx = new Map(rows.map((r) => [Number(r.stage_idx), r] as const));
+  const steps = stepsOfSnap({ stages: p.stages });
   return prevIdxs.map((i) => {
     const r = byIdx.get(i);
     const after: "review" | "auto" = p.stages[i]?.after.kind === "review" ? "review" : "auto";
     return {
+      step: steps[i] ?? i,
       after,
       status: r?.status ?? ("pending" as StageRunStatus),
       passedBy: r?.passed_by ?? null,
@@ -76,9 +79,13 @@ export async function realActionPre(
   const steps = stepsOfSnap({ stages: p.stages });
   const step = steps[p.idx] ?? 0;
   if (step === 0) return null;
-  const prevIdxs = stageIdxsOfStep(steps, step - 1);
-  if (prevIdxs.length === 0) return null;
-  const check = realActionStepCheck(await prevStepFacts(tx, p, prevIdxs));
+  // P-d2 · D2-08 · bước liền trước CÓ HIỆU LỰC (bỏ bước toàn `skipped`): MỘT câu đọc mọi stage bước trước, chọn trong bộ nhớ.
+  const facts = await prevStepFacts(tx, p, priorStageIdxs(steps, p.idx));
+  const byStep = new Map<number, StageRunStatus[]>();
+  for (const f of facts) byStep.set(f.step, [...(byStep.get(f.step) ?? []), f.status]);
+  const prev = effectivePrevStep(byStep, step);
+  if (prev === null) return null;
+  const check = realActionStepCheck(facts.filter((f) => f.step === prev));
   if (!check.ok) return null;
   // Stage Áp (apply): không agent ⇒ không preconfirm workflow; actor = người Đạt cổng tự-sửa.
   if (p.def.executor.kind !== "agent") return { preconfirm: undefined, passedBy: check.passedBy };
