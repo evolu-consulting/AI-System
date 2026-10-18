@@ -1,0 +1,35 @@
+{"id":"M-01-admin-quy-trinh-p-d1","title":"chụp mockup 01-admin-quy-trinh-p-d1","ok":true,"note":"","shots":[]}
+{"id":"M-02-admin-tenant","title":"chụp mockup 02-admin-tenant","ok":true,"note":"","shots":[]}
+{"id":"M-03-chat-trang-thai","title":"chụp mockup 03-chat-trang-thai","ok":true,"note":"","shots":[]}
+{"id":"F1a","title":"xem tab Thông tin, ô Múi giờ chỉ đọc","ok":true,"note":"giá trị: Asia/Ho_Chi_Minh (UTC+07:00)","shots":[]}
+{"id":"F1b","title":"mở bộ chọn múi giờ, gõ 'ber'","ok":true,"note":"2 option sau khi gõ 'ber'","shots":[]}
+{"id":"F1c","title":"chọn Europe/Berlin ⇒ thanh lưu dính đáy; Lưu 200; tải lại giữ","ok":true,"note":"","shots":[]}
+{"id":"F1d","title":"múi giờ lạ (API 400) ⇒ alert","ok":true,"note":"(giả lập: page.route trả 400, không có đường UI chọn múi giờ lạ)","shots":[]}
+{"id":"F1e","title":"empty-search 'KHÔNG KHỚP'","ok":true,"note":"","shots":[]}
+{"id":"F2a","title":"mở def pd-edit, chụp canvas gốc","ok":true,"note":"","shots":[]}
+{"id":"F2b","title":"đổi stage 'Chờ hạn' ⇒ Chờ tới ngày: nguồn/chênh lệch/giờ","ok":true,"note":"Theo múi giờ công ty: Asia/Ho_Chi_Minh (UTC+07:00). Ngày hẹn được chốt lúc lượt chạy vào giai đoạn này; đổi múi giờ công ty sau đó không tính lại.","shots":[]}
+{"id":"F2c","title":"Lưu ⇒ 200; huy hiệu 'Chờ tới ngày' trên canvas","ok":true,"note":"","shots":[]}
+{"id":"F2d","title":"gate Duyệt: nhắc 4h + chuyển cấp 24h tới Giám đốc; lưu; tải lại giữ","ok":true,"note":"","shots":[]}
+{"id":"F2e","title":"lỗi live: nhắc 2 giờ (ngoài 4–168), chuyển cấp 1 giờ","ok":true,"note":"có câu 'Từ 4 đến 168 giờ'","shots":[]}
+{"id":"F2f","title":"ttl_days: 30 rồi 'Không hết hạn'","ok":true,"note":"","shots":[]}
+{"id":"F2g","title":"ttl_days: 0 / 400 ⇒ lỗi inline","ok":true,"note":"Lưu với 400: không gửi PUT (chặn ở client); câu lỗi 1–365: true","shots":[]}
+{"id":"F2h","title":"WAIT_INVALID: nguồn ngày cùng bước (pd-bad)","ok":true,"note":"Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước.","shots":[]}
+{"id":"F2i","title":"TEAM_SECTION_UNOWNED: team sequential, mục bắt buộc không ai phụ trách","ok":false,"note":"lỗi live KHÔNG hiện; sau Lưu: không gửi PUT; hiện sau Lưu: 1","shots":["FAIL-F2i.png"]}
+{"id":"F4a","title":"danh sách Lượt chạy của def hoa-don-t: ô tiến độ","ok":true,"note":"Chờ tới: false · Đang thử lại: false","shots":[]}
+{"id":"F4b","title":"trang run: wait","ok":true,"note":"Bỏ qua điều hướng Tổng quan CHỨC NĂNG Agents Quy trình Nguồn TRUY CẬP Users Groups Phân quyền HỆ THỐNG Chi phí & quota Nhật ký B Binh Le tenant_admin · acme Quy trình Acme Corp B Lượt chạy · Hoá đơn T Lan Tran · 16:23 Đang chờ hẹn Về danh sách Tiến độ Token Nhật ký Huỷ lượt chạy Tiến độ G","shots":[]}
+{"id":"F4c","title":"trang run: retry","ok":true,"note":"Bỏ qua điều hướng Tổng quan CHỨC NĂNG Agents Quy trình Nguồn TRUY CẬP Users Groups Phân quyền HỆ THỐNG Chi phí & quota Nhật ký B Binh Le tenant_admin · acme Quy trình Acme Corp B Lượt chạy · Hoá đơn T Lan Tran · 16:23 Đang chờ hẹn Về danh sách Tiến độ Token Nhật ký Huỷ lượt chạy Tiến độ G","shots":[]}
+{"id":"F3a1","title":"form có ô ngày type=date nhãn 'Hạn'","ok":true,"note":"","shots":[]}
+{"id":"F3a2","title":"ô ngày bỏ trống rồi 'Bắt đầu quy trình' (mockup: không chặn gửi) ⇒ run tới Cần người quyết","ok":true,"note":"form không chặn khi trống (đúng mockup D3); run vào 'Cần người quyết'","shots":[]}
+{"id":"F3a3","title":"ngày không có thật (30/02): trình duyệt từ chối ⇒ value rỗng","ok":true,"note":"value sau khi gán '2026-02-30' = '' (giới hạn giả lập: Chromium chặn, không đi tới server)","shots":[]}
+{"id":"F3a4","title":"ngày hợp lệ (+2 ngày) ⇒ POST /process-runs, vào Chờ tới","ok":true,"note":"status 201 run 7e9cc8a1-0cde-4532-ac2b-d6517468d02d","shots":[]}
+{"id":"F3a5","title":"dải 'Chờ tới …', huy hiệu 'Đang chờ hẹn', dòng trạng thái","ok":true,"note":"status: Chờ tới 17/10/2026 09:00 · Giai đoạn 1/2 · Chờ hạn","shots":[]}
+{"id":"F3a6","title":"bắn hẹn: due_at = quá khứ ⇒ stage chạy tiếp (đợi bằng tín hiệu DB, không ngủ)","ok":true,"note":"[{\"stage_idx\":0,\"status\":\"done\"},{\"stage_idx\":1,\"status\":\"done\"}]","shots":[]}
+{"id":"F3b1","title":"ngày +40 > ttl 7 ngày ⇒ thẻ 'Cần người quyết' timer_invalid","ok":true,"note":"","shots":[]}
+{"id":"F3c1","title":"run retry_count=2 ⇒ 'Đang thử lại (2/3)' trên dải + dòng trạng thái","ok":false,"note":"\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed |  | Locator: getByRole('status').filter({ hasText: /Đang thử lại/ }).first() | Expected: visible | Timeout: 15000ms | Error: element(s) not found","shots":["FAIL-F3c1.png"]}
+{"id":"F3c2","title":"retry_exhausted ⇒ thẻ quyết 3 nút","ok":true,"note":"Quy trình dừng ở giai đoạn Đọc hoá đơn Đã thử lại tối đa 3 lần mà vẫn lỗi. Lỗi tạm thời (mất kết nối, quá thời gian…) vẫn chưa hết. Thử lại ngay, hoặc huỷ lượt chạy. Thử lại ngay Dùng bản hiện có Huỷ lượt chạy","shots":[]}
+{"id":"F3c3","title":"timer_invalid ⇒ thẻ quyết","ok":true,"note":"Quy trình dừng ở giai đoạn Đọc hoá đơn Ngày hẹn không hợp lệ hoặc đã quá hạn lượt chạy. Thiếu ngày, ngày sai, xa quá 730 ngày hoặc sau ngày hết hạn của lượt chạy. Chọn tính lại ngày hẹn, bỏ chờ để đi tiếp, hoặc huỷ. Tính lại ngày hẹn Bỏ chờ, đi tiếp Huỷ lượt chạy","shots":[]}
+{"id":"F3c4","title":"bấm 'Thử lại ngay' ⇒ run rời needs_decision","ok":true,"note":"status mới = running","shots":[]}
+{"id":"F3d1","title":"H (nhóm Giám đốc): Inbox thẻ 'Đã chuyển cấp tới nhóm của bạn'","ok":true,"note":"","shots":[]}
+{"id":"F3d2","title":"A (người khởi tạo): trang run có 'Đã chuyển cấp' + dòng chờ","ok":true,"note":"Đã chuyển cấp: false; 'Đang chờ nhóm': false","shots":[]}
+{"id":"F3d3","title":"H bấm 'Đạt' trên thẻ kiểm ⇒ quyết được","ok":true,"note":"review_task.status = closed","shots":[]}
+{"id":"F3-seam","title":"seam hẹn giờ","ok":false,"note":"NOTE/BLOCKED: F3a6 dùng vòng nền thật + đẩy due_at về quá khứ (stack e2e không lộ handle sweepOnce/đồng hồ giả cho trình duyệt)","shots":[]}
