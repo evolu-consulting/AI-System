@@ -89,6 +89,27 @@ export async function applyBack(
     firstIdx: first,
     raiseLimit: p.raiseLimit,
   });
+  await recordBack(tx, { p, run, steps, plan });
+  const step: StepOutcome = {
+    kind: "next_step",
+    status: "running",
+    step: p.target,
+    stageIdx: first,
+  };
+  return { step, cancel: { tenantId: run.tenantId, runIds, teamRunIds } };
+}
+
+/** Ghi `process_back_events` (vòng sau = max(2, round các stage xếp hàng lại)). */
+async function recordBack(
+  tx: Gx["tx"],
+  o: {
+    p: BackApply;
+    run: BackApply["run"];
+    steps: ReturnType<typeof stepsOfSnap>;
+    plan: ReturnType<typeof backResetPlan>;
+  },
+): Promise<void> {
+  const { p, run, steps, plan } = o;
   const rounds = plan.filter((r) => r.status === "queued").map((r) => r.round);
   await g.insertBackEvent(tx, {
     tenantId: run.tenantId,
@@ -101,13 +122,6 @@ export async function applyBack(
     feedback: p.feedback,
     decidedBy: p.decidedBy,
   });
-  const step: StepOutcome = {
-    kind: "next_step",
-    status: "running",
-    step: p.target,
-    stageIdx: first,
-  };
-  return { step, cancel: { tenantId: run.tenantId, runIds, teamRunIds } };
 }
 
 type FromReview = {

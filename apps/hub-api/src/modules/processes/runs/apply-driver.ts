@@ -312,10 +312,9 @@ async function openPr(d: Deps, plan: ProviderPlan): Promise<OpenPrResult> {
 async function applyProviderResult(
   d: Deps,
   tx: Tx,
-  plan: ProviderPlan,
-  row: ApplyRow,
-  result: OpenPrResult,
+  p: { plan: ProviderPlan; row: ApplyRow; result: OpenPrResult },
 ): Promise<SettleOut | null> {
+  const { plan, row, result } = p;
   const runId = plan.head.id;
   const head0 = await loadHead(tx, runId);
   if (!head0 || !(await core.lockRun(tx, plan.tenantId, runId))) {
@@ -385,7 +384,7 @@ export async function advanceApply(
     if (dec.kind === "settled") return void (await publish(d, p.runId, dec));
     const result = await openPr(d, dec.plan);
     const out = await withHubScope(d.db, SYSTEM, (tx) =>
-      applyProviderResult(d, tx, dec.plan, dec.row, result),
+      applyProviderResult(d, tx, { plan: dec.plan, row: dec.row, result }),
     );
     if (out) await publish(d, p.runId, out);
   } catch (err) {

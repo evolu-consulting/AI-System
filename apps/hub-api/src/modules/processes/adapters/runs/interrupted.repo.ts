@@ -69,8 +69,7 @@ type OpenArgs = { runId: string; stageRunId: string };
 async function openTx(
   d: ProcessDeps,
   tx: Tx,
-  p: OpenArgs,
-  now: Date,
+  p: OpenArgs & { now: Date },
   decide: InterruptDecider,
 ): Promise<UserEvent[] | null> {
   const h = await head(tx, p.runId);
@@ -85,7 +84,7 @@ async function openTx(
   const agent = h.snapshot.stages[idx]?.executor?.kind === "agent";
   const reason = agent ? await decide(bindTx(tx, h.tenant_id).repos) : "interrupted";
   if (reason === null) return [];
-  return openDecision(d, tx, { h, run, stage, idx, reason }, now);
+  return openDecision(d, tx, { h, run, stage, idx, reason }, p.now);
 }
 
 type DecisionArgs = {
@@ -138,7 +137,8 @@ async function openDecision(
 /** Dựng các cổng của use case từ deps nền: SQL bọc ở trên, phát sự kiện Redis + đăng thread. */
 export function interruptedPorts(d: ProcessDeps): InterruptedPorts<UserEvent[]> {
   return {
-    open: (p, now, decide) => withHubScope(d.db, SYSTEM, (tx) => openTx(d, tx, p, now, decide)),
+    open: (p, now, decide) =>
+      withHubScope(d.db, SYSTEM, (tx) => openTx(d, tx, { ...p, now }, decide)),
     publish: (events) => publishUserEvents(d.redis, events, d.log),
     postThread: (runId) => d.postThread(runId),
   };

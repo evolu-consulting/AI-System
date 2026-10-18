@@ -26,6 +26,34 @@ const idList = (xs: readonly number[]) =>
     sql`, `,
   );
 
+/** Trạng thái + người Đạt của các stage ở bước k−1 (đầu vào `realActionStepCheck`). */
+async function prevStepFacts(
+  tx: Tx,
+  p: { runId: string; tenantId: string; stages: readonly SnapStage[] },
+  prevIdxs: readonly number[],
+) {
+  const rows = await tx.execute<{
+    stage_idx: number;
+    status: StageRunStatus;
+    passed_by: string | null;
+    passed_at: string | null;
+  }>(sql`select stage_idx, status, passed_by,
+      to_char(passed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as passed_at
+    from hub.stage_runs where process_run_id = ${p.runId} and tenant_id = ${p.tenantId}
+      and stage_idx in (${idList(prevIdxs)})`);
+  const byIdx = new Map(rows.map((r) => [Number(r.stage_idx), r] as const));
+  return prevIdxs.map((i) => {
+    const r = byIdx.get(i);
+    const after: "review" | "auto" = p.stages[i]?.after.kind === "review" ? "review" : "auto";
+    return {
+      after,
+      status: r?.status ?? ("pending" as StageRunStatus),
+      passedBy: r?.passed_by ?? null,
+      passedAt: r?.passed_at ?? null,
+    };
+  });
+}
+
 /**
  * D4 · HUB-BR-38(b) · stage `real_action` (agent) ở bước k > 0: `realActionStepCheck(stage bước k−1)` đạt ⇒ cho phép,
  * actor = người Đạt muộn nhất; Hub chèn sẵn xác nhận cho mọi workflow `side_effect` của agent (nếu có). Def cũ (mỗi stage
@@ -50,27 +78,7 @@ export async function realActionPre(
   if (step === 0) return null;
   const prevIdxs = stageIdxsOfStep(steps, step - 1);
   if (prevIdxs.length === 0) return null;
-  const rows = await tx.execute<{
-    stage_idx: number;
-    status: StageRunStatus;
-    passed_by: string | null;
-    passed_at: string | null;
-  }>(sql`select stage_idx, status, passed_by,
-      to_char(passed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as passed_at
-    from hub.stage_runs where process_run_id = ${p.runId} and tenant_id = ${p.tenantId}
-      and stage_idx in (${idList(prevIdxs)})`);
-  const byIdx = new Map(rows.map((r) => [Number(r.stage_idx), r] as const));
-  const prev = prevIdxs.map((i) => {
-    const r = byIdx.get(i);
-    const after: "review" | "auto" = p.stages[i]?.after.kind === "review" ? "review" : "auto";
-    return {
-      after,
-      status: r?.status ?? ("pending" as StageRunStatus),
-      passedBy: r?.passed_by ?? null,
-      passedAt: r?.passed_at ?? null,
-    };
-  });
-  const check = realActionStepCheck(prev);
+  const check = realActionStepCheck(await prevStepFacts(tx, p, prevIdxs));
   if (!check.ok) return null;
   // Stage Áp (apply): không agent ⇒ không preconfirm workflow; actor = người Đạt cổng tự-sửa.
   if (p.def.executor.kind !== "agent") return { preconfirm: undefined, passedBy: check.passedBy };

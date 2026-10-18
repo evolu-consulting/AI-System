@@ -60,7 +60,9 @@ describe("enterWait [HUB-FR-144][AC-H41]", () => {
       },
     ]);
   });
+});
 
+describe("enterWait · múi giờ + hạn đã qua [TZ-R04][D-PD09]", () => {
   it("TZ-R04 · tenant Europe/Berlin + nguồn input ⇒ 07:00Z (CEST)", async () => {
     const { r, log } = fakeRepos("2026-04-01", null, "Europe/Berlin");
     const out = await enterWait(r, {
@@ -73,6 +75,14 @@ describe("enterWait [HUB-FR-144][AC-H41]", () => {
     expect(log.src).toEqual([{ kind: "input", key: "han" }]);
   });
 
+  it("D-PD09 · hạn đã qua ⇒ vẫn ghi hẹn (tới hạn ngay)", async () => {
+    const { r, log } = fakeRepos("2026-10-31", null);
+    expect(await enterWait(r, IN)).toMatchObject({ kind: "waiting" });
+    expect(log.timers[0]?.dueAt.toISOString()).toBe("2026-10-28T02:00:00.000Z");
+  });
+});
+
+describe("enterWait · ngày không hợp lệ ⇒ invalid [PD-R14]", () => {
   it("PD-R14 · stage nguồn không có trong snapshot ⇒ missing, không đọc DB, không ghi", async () => {
     const { r, log } = fakeRepos("2026-11-20", null);
     const out = await enterWait(r, { ...IN, stageKeys: ["khac"] });
@@ -84,11 +94,5 @@ describe("enterWait [HUB-FR-144][AC-H41]", () => {
     const { r, log } = fakeRepos("2026-11-20", new Date("2026-11-08T03:00:00Z"));
     expect(await enterWait(r, IN)).toEqual({ kind: "invalid", why: "after_expiry" });
     expect({ waiting: log.waiting, timers: log.timers }).toEqual({ waiting: [], timers: [] });
-  });
-
-  it("D-PD09 · hạn đã qua ⇒ vẫn ghi hẹn (tới hạn ngay)", async () => {
-    const { r, log } = fakeRepos("2026-10-31", null);
-    expect(await enterWait(r, IN)).toMatchObject({ kind: "waiting" });
-    expect(log.timers[0]?.dueAt.toISOString()).toBe("2026-10-28T02:00:00.000Z");
   });
 });

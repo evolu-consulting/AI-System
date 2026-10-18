@@ -92,7 +92,15 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
   const all = await tx.execute<ReminderRow>(q);
   // Luôn ≥ 1 hàng (`claimed`); hàng `id` null = không còn task nào sau khi bỏ task có run đang bị giữ.
   const rows = all.filter((r): r is ReminderRow & { id: string } => r.id !== null);
-  const tasks: ClaimedReminder[] = rows.map((r) => ({
+  return {
+    tasks: rows.map(toReminder),
+    claimed: Number(all[0]?.claimed ?? 0),
+    more: all[0]?.more === true,
+  };
+}
+
+function toReminder(r: ReminderRow & { id: string }): ClaimedReminder {
+  return {
     taskId: r.id,
     tenantId: r.tenant_id,
     processRunId: r.process_run_id,
@@ -105,8 +113,7 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
     remindedAt: date(r.reminded_at),
     remindEveryH: r.remind_every_h === null ? null : Number(r.remind_every_h),
     remindCount: Number(r.remind_count),
-  }));
-  return { tasks, claimed: Number(all[0]?.claimed ?? 0), more: all[0]?.more === true };
+  };
 }
 
 /**
@@ -202,7 +209,15 @@ export async function claimDueEscalations(
     left join hub.process_runs pr on pr.id = u.process_run_id and pr.tenant_id = u.tenant_id
     order by u.escalate_at asc, u.id asc`);
   const rows = all.filter((r): r is EscalationRow & { id: string } => r.id !== null);
-  const tasks: ClaimedEscalation[] = rows.map((r) => ({
+  return {
+    tasks: rows.map(toEscalation),
+    claimed: Number(all[0]?.claimed ?? 0),
+    more: all[0]?.more === true,
+  };
+}
+
+function toEscalation(r: EscalationRow & { id: string }): ClaimedEscalation {
+  return {
     taskId: r.id,
     tenantId: r.tenant_id,
     processRunId: r.process_run_id,
@@ -212,8 +227,7 @@ export async function claimDueEscalations(
     processName: r.process_name ?? "",
     stageName: r.stage_name,
     memberIds: r.member_ids ?? [],
-  }));
-  return { tasks, claimed: Number(all[0]?.claimed ?? 0), more: all[0]?.more === true };
+  };
 }
 
 /** MỘT câu nhiều hàng: assignee Group `via='escalated'`; `tenant_id` = task nguồn, Group phải cùng tenant (K3/K4). */

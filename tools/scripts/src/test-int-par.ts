@@ -58,9 +58,9 @@ async function runChunk(
   slot: string,
   k: number,
   files: string[],
-  env: Record<string, string>,
-  root: string,
+  opts: { env: Record<string, string>; root: string },
 ) {
+  const { env, root } = opts;
   const name = `${slot}-${k}`;
   const junit = join(DATA, `int-junit-${name}.xml`);
   const t0 = performance.now();
@@ -90,7 +90,7 @@ async function worker(
   const t0 = performance.now();
   for (let k = 0; queue.length; k++) {
     const files = ctx.n === 1 ? queue.splice(0) : takeChunk(queue, ctx.timings, ctx.n);
-    runs.push(await runChunk(slot, k, files, ctx.env, root));
+    runs.push(await runChunk(slot, k, files, { env: ctx.env, root }));
   }
   const nf = runs.reduce((a, r) => a + r.files, 0);
   const ok = runs.every((r) => r.code === 0);
@@ -174,7 +174,8 @@ async function main(): Promise<number> {
     await Promise.all(slots.map((s, i) => worker(s, queue, { timings, n, env: envOf(i) }, root)))
   ).flat();
   // Tuần tự sau cùng, trên ô đầu (đã rảnh): không đụng DB chung của phiên khác đang chạy test:int.
-  if (serial.length) runs.push(await runChunk(`${slots[0]}-serial`, 0, serial, envOf(0), root));
+  if (serial.length)
+    runs.push(await runChunk(`${slots[0]}-serial`, 0, serial, { env: envOf(0), root }));
   lease.release();
   // DB rác (đích cũ khi test đổi schema) xoá theo loạt khi đủ 32 cái: DROP DATABASE ép checkpoint (~0,3–2 s mỗi cái).
   await dbCli(root, ["gc", "32"]).catch((e) => console.error(String(e)));

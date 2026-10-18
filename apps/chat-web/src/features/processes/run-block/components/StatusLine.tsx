@@ -35,11 +35,11 @@ function openWaitName(
 /** Dòng `waiting_timer` (hẹn sớm nhất) và `running` (kể cả đang thử lại). */
 function timerOrRunningLine(
   view: ProcessRunFullView,
-  t: ReturnType<typeof useTranslation>["t"],
-  i18n: { language: string },
-  n: number,
-  total: number,
+  tr: { t: ReturnType<typeof useTranslation>["t"]; i18n: { language: string } },
+  pos: { n: number; total: number },
 ): string {
+  const { t, i18n } = tr;
+  const { n, total } = pos;
   const cur = currentStage(view);
   const stage = cur?.name ?? "";
   if (view.status === "waiting_timer") {
@@ -71,7 +71,7 @@ function lineOf(
   switch (view.status) {
     case "waiting_timer":
     case "running":
-      return timerOrRunningLine(view, t, i18n, n, total);
+      return timerOrRunningLine(view, { t, i18n }, { n, total });
     case "waiting_review":
       return hasMyOpen(view, "review")
         ? t("process.run.line.reviewMe")

@@ -66,15 +66,7 @@ export async function claimExpired(
   limit: number,
 ): Promise<{ runs: Claimed[]; more: boolean }> {
   const at = now.toISOString();
-  const rows = await tx.execute<{
-    id: string;
-    tenant_id: string;
-    started_by: string;
-    origin_kind: string;
-    origin_room_id: string | null;
-    name: string | null;
-    more: boolean;
-  }>(sql`
+  const rows = await tx.execute<ClaimedRow>(sql`
     with c as (
       select id, tenant_id from hub.process_runs
       where status = any(${textArray(PROCESS_RUN_ACTIVE)}::text[]) and expires_at <= ${at}::timestamptz
@@ -106,16 +98,27 @@ export async function claimExpired(
       where p.status = any(${textArray(PROCESS_RUN_ACTIVE)}::text[]) and p.expires_at <= ${at}::timestamptz
         and not exists (select 1 from c where c.id = p.id)) as more
     from r`);
-  const runs = rows.map((r) => ({
-    id: r.id,
-    tenantId: r.tenant_id,
-    startedBy: r.started_by,
-    processName: r.name ?? "",
-    originKind: r.origin_kind,
-    roomId: r.origin_room_id,
-  }));
-  return { runs, more: rows[0]?.more === true };
+  return { runs: rows.map(toClaimed), more: rows[0]?.more === true };
 }
+
+type ClaimedRow = {
+  id: string;
+  tenant_id: string;
+  started_by: string;
+  origin_kind: string;
+  origin_room_id: string | null;
+  name: string | null;
+  more: boolean;
+};
+
+const toClaimed = (r: ClaimedRow): Claimed => ({
+  id: r.id,
+  tenantId: r.tenant_id,
+  startedBy: r.started_by,
+  processName: r.name ?? "",
+  originKind: r.origin_kind,
+  roomId: r.origin_room_id,
+});
 
 /**
  * MỘT câu cố định (`jsonb_to_recordset`, văn bản SQL không đổi theo số hàng): sự kiện thread `run_end` cho run bắt đầu

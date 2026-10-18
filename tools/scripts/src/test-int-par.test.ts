@@ -75,7 +75,9 @@ describe("ADM-NFR-06 · test:int:par · chọn file, cờ", () => {
       "tests/acceptance/P-d/d1/uow.int.test.ts",
     ]);
   });
+});
 
+describe("ADM-NFR-06 · test:int:par · tham số dòng lệnh", () => {
   it("parseIntArgs: mặc định min(6, cores/2), --workers=N, ngoài 1..8 → ném; tiền tố còn lại là bộ lọc", () => {
     expect(defaultWorkers(12)).toBe(6);
     expect(defaultWorkers(4)).toBe(2);

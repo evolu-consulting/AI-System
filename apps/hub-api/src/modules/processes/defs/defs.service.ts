@@ -191,13 +191,12 @@ export class DefsService {
       const cur = await this.#lock(tx, u, { s, id, version });
       await this.#check(tx, cur.tenant_id, input);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
-      const row = await repo.updateDef(
-        tx,
+      const row = await repo.updateDef(tx, {
         id,
-        withHandoff(input),
-        ttlOnUpdate(input.ttl_days, cur.ttl_days),
-        u.userId,
-      );
+        input: withHandoff(input),
+        ttlDays: ttlOnUpdate(input.ttl_days, cur.ttl_days),
+        actorId: u.userId,
+      });
       const a = {
         action: "update" as const,
         row,

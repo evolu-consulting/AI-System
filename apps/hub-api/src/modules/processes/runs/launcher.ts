@@ -241,7 +241,17 @@ async function launchStage(
     throw err;
   }
   const files = await d.runs.createRunTx(tx, prepared);
-  await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${prepared.run.id},
+  await markStageRunning(tx, { u, c, runId: prepared.run.id, real });
+  return { kind: "launch", prepared, files, useSession: sp.useSession };
+}
+
+/** Đánh dấu stage `running` (gắn hub run) + audit `authorize_real_action` khi có cổng hành động thật. */
+async function markStageRunning(
+  tx: Tx,
+  o: { u: AuthUser; c: LaunchCtx; runId: string; real: Awaited<ReturnType<typeof realActionPre>> },
+): Promise<void> {
+  const { u, c, real } = o;
+  await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${o.runId},
       started_at = coalesce(started_at, now()), updated_at = now(), ${markLaunched}
     where id = ${c.stage.id}`);
   if (real && c.def.executor.kind === "agent")
@@ -253,7 +263,6 @@ async function launchStage(
       agentId: c.def.executor.agent_id,
       pre: real,
     });
-  return { kind: "launch", prepared, files, useSession: sp.useSession };
 }
 
 /**

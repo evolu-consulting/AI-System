@@ -100,13 +100,23 @@ export async function settleApply(
     });
     return { events, kick: false };
   }
+  return settleDone(d, tx, { runId, tenantId, stageRunId: p.stage.id, outputId });
+}
+
+/** `done`: stage done + join bước (finish ⇒ run done + `run_end`); trả sự kiện + cần `kick`. */
+async function settleDone(
+  d: Deps,
+  tx: Tx,
+  p: { runId: string; tenantId: string; stageRunId: string; outputId: string },
+): Promise<SettleOut> {
+  const { runId, tenantId } = p;
   const step = await persistStage(tx, {
     runId,
     tenantId,
-    stageRunId: p.stage.id,
+    stageRunId: p.stageRunId,
     next: DONE_NEXT,
     done: true,
-    outputId,
+    outputId: p.outputId,
   });
   const recipients = await core.runRecipients(tx, runId, tenantId);
   const events: UserEvent[] = step

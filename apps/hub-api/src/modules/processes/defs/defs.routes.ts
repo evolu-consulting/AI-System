@@ -41,6 +41,24 @@ export function defsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
     return c.json(await svc.get(scopeOf(c.var.user, q.tenant_id), parseIdParam(c)));
   });
+  writeRoutes(r, svc);
+  // P-d1 · TZ-R04 · AC-H46 · plan-contract §4: tenant_admin luôn tenant mình (bỏ qua `?tenant_id`, không đọc tenant khác);
+  // platform_admin `?tenant_id` = tenant đó, vắng = mẫu (mặc định). Role khác ⇒ 403 (middleware).
+  r.get("/process-editor/context", async (c) => {
+    const q = parseAdminQuery(c, ProcessEditorContextQuerySchema);
+    const u = c.var.user;
+    const tenantId = u.role === "tenant_admin" ? u.tenantId : (q.tenant_id ?? null);
+    return c.json(await svc.editorContext(tenantId));
+  });
+  r.get("/agent-teams", async (c) => {
+    const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
+    return c.json(await svc.teams(scopeOf(c.var.user, q.tenant_id)));
+  });
+  return r;
+}
+
+/** Route ghi: tạo / sao chép / sửa / xoá / chạy thử quy trình. */
+function writeRoutes(r: Hono<AuthVars>, svc: DefsService): void {
   r.post("/process-defs", async (c) => {
     const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
     const b = await parseJson(c, ProcessDefInputBaseSchema);
@@ -70,17 +88,4 @@ export function defsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const b = await parseJson(c, RunProcessDefRequestSchema);
     return c.json(await svc.run(c.var.user, scopeOf(c.var.user, q.tenant_id), id, b.input), 201);
   });
-  // P-d1 · TZ-R04 · AC-H46 · plan-contract §4: tenant_admin luôn tenant mình (bỏ qua `?tenant_id`, không đọc tenant khác);
-  // platform_admin `?tenant_id` = tenant đó, vắng = mẫu (mặc định). Role khác ⇒ 403 (middleware).
-  r.get("/process-editor/context", async (c) => {
-    const q = parseAdminQuery(c, ProcessEditorContextQuerySchema);
-    const u = c.var.user;
-    const tenantId = u.role === "tenant_admin" ? u.tenantId : (q.tenant_id ?? null);
-    return c.json(await svc.editorContext(tenantId));
-  });
-  r.get("/agent-teams", async (c) => {
-    const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
-    return c.json(await svc.teams(scopeOf(c.var.user, q.tenant_id)));
-  });
-  return r;
 }

@@ -9,27 +9,31 @@ import { fireTimer } from "./fire-timer.usecase";
 const NOW = new Date("2026-11-17T02:00:00Z");
 const C = { id: "t1", runId: "r1", stageRunId: "s1" };
 
-function fake(o: {
+type FakeOpts = {
   run?: string | null;
   stage?: StageRunStatus | null;
   timer?: Partial<Timer> | null;
-}) {
+};
+
+const timerOf = (t: Partial<Timer> | null | undefined): (Timer & { timezone: string }) | null =>
+  t === null
+    ? null
+    : {
+        id: "t1",
+        tenantId: "x",
+        runId: "r1",
+        stageRunId: "s1",
+        kind: "retry",
+        dueAt: NOW,
+        firedAt: null,
+        cancelledAt: null,
+        timezone: "Asia/Ho_Chi_Minh",
+        ...t,
+      };
+
+function fake(o: FakeOpts) {
   const log: string[] = [];
-  const timer: (Timer & { timezone: string }) | null =
-    o.timer === null
-      ? null
-      : {
-          id: "t1",
-          tenantId: "x",
-          runId: "r1",
-          stageRunId: "s1",
-          kind: "retry",
-          dueAt: NOW,
-          firedAt: null,
-          cancelledAt: null,
-          timezone: "Asia/Ho_Chi_Minh",
-          ...o.timer,
-        };
+  const timer = timerOf(o.timer);
   const r = {
     runs: {
       lock: async () => {

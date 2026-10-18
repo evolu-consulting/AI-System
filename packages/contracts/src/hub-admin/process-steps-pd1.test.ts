@@ -62,6 +62,9 @@ describe("waitStageIssues", () => {
       "stages.0.executor",
     ]);
   });
+});
+
+describe("waitStageIssues · stage khác + nguồn field", () => {
   test("stage không phải wait_until ⇒ bỏ qua; nguồn field ở bước sau ⇒ from", () => {
     const agent = {
       key: "doc",

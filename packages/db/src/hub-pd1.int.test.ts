@@ -119,7 +119,9 @@ describe("HUB-FR-143 · 0036 process_timers (hub_api, RLS T)", () => {
       await code(withHubScope(db, A, (tx) => tx.update(processTimers).set({ tenantId: T2 }))),
     ).toBe("42501");
   });
+});
 
+describe("AC-H46 · 0036 process_timers FK kép (tenant)", () => {
   test("AC-H46 · FK kép: hàng mang tenant T2 trỏ run/stage của T1 ⇒ 23503 (kể cả scope system)", async () => {
     const a = fix.a as Fix;
     const b = fix.b as Fix;
@@ -137,7 +139,9 @@ describe("HUB-FR-143 · 0036 process_timers (hub_api, RLS T)", () => {
       ),
     ).toBe("23503");
   });
+});
 
+describe("S4 · 0036 process_timers không DELETE", () => {
   test("S4 · không DELETE (42501); huỷ = cancelled_at; xoá run (owner) CASCADE hẹn", async () => {
     const a = fix.a as Fix;
     expect(await code(withHubScope(db, A, (tx) => tx.delete(processTimers)))).toBe("42501");
@@ -191,7 +195,9 @@ describe("HUB-FR-115 · HUB-FR-144 · 0036 cột mới (Drizzle, hub_api)", () =
     });
     expect(got).toEqual({ ttl: 7, retry: 0, err: null, exp: null });
   });
+});
 
+describe("HUB-FR-145 · 0036 review_tasks + audit (Drizzle, hub_api)", () => {
   test("review_tasks: remind_count mặc định 0; escalate_at thiếu group ⇒ 23514; ask có remind_every_h ⇒ 23514", async () => {
     const a = fix.a as Fix;
     const [t] = await owner<{ id: string; remind_count: number }[]>`insert into hub.review_tasks

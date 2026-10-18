@@ -103,24 +103,35 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   ])
     app.route("/", r(d));
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
+  startBackground({ m, bg, poster, khWriter, drain });
+  return { roomSender: roomStart(d), conversationStart: d.start };
+}
+
+/** Handles cho test + làm nóng pool + (khi bật) các vòng nền. */
+function startBackground(o: {
+  m: ProcessMountDeps;
+  bg: ProcessBgDeps;
+  poster: ThreadPoster;
+  khWriter: KhWriter | undefined;
+  drain: DrainTracker;
+}): void {
+  const { m, bg, poster, khWriter, drain } = o;
   m.onProcessHandles?.({
     sweepOnce: () => sweepOnce(bg),
     remindOnce: () => remindOnce(bg),
     postThreadOnce: () => poster.postThreadOnce(),
-    kick: (runId) => d.launcher.kick(runId),
+    kick: (runId) => bg.launcher.kick(runId),
     khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
     settled: () => drain.settled(),
   });
   // CR-093 · làm nóng pool cho câu lô vòng nền (chạy nền, không chặn mount; cả khi test tắt vòng — handles dùng chung pool).
   void warmBackgroundPool(bg);
-  if (m.processLoops !== false) {
-    poster.start(m.signal);
-    khWriter?.start(m.signal);
-    // B2 · PF1: vòng nền `sweepOnce` thật (mở PR stage Áp, interrupted, resolveTimeouts, requeueOrphans). Khi
-    // `processLoops:false` (test), bỏ qua — test gọi qua `onProcessHandles.sweepOnce`.
-    startProcessSweeper(bg, { signal: m.signal });
-    // D-PD10 · plan §5 · vòng nhắc + chuyển cấp 300 s (theo tập, `systemBatch`).
-    startProcessReminder(bg, { signal: m.signal });
-  }
-  return { roomSender: roomStart(d), conversationStart: d.start };
+  if (m.processLoops === false) return;
+  poster.start(m.signal);
+  khWriter?.start(m.signal);
+  // B2 · PF1: vòng nền `sweepOnce` thật (mở PR stage Áp, interrupted, resolveTimeouts, requeueOrphans). Khi
+  // `processLoops:false` (test), bỏ qua — test gọi qua `onProcessHandles.sweepOnce`.
+  startProcessSweeper(bg, { signal: m.signal });
+  // D-PD10 · plan §5 · vòng nhắc + chuyển cấp 300 s (theo tập, `systemBatch`).
+  startProcessReminder(bg, { signal: m.signal });
 }

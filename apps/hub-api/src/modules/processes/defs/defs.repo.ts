@@ -137,12 +137,10 @@ export async function insertDef(tx: Tx, w: DefWrite): Promise<DefRow> {
 
 export async function updateDef(
   tx: Tx,
-  id: string,
-  input: ProcessDefInput,
-  ttlDays: number | null,
-  actorId: string,
+  w: { id: string; input: ProcessDefInput; ttlDays: number | null; actorId: string },
 ): Promise<DefRow> {
-  const d = input;
+  const { id, ttlDays, actorId } = w;
+  const d = w.input;
   const [r] =
     await tx.execute<DefRow>(sql`with up as (update hub.process_defs set key = ${d.key}, name = ${d.name},
       description = ${d.description}, input_hint = ${d.input_hint}, run_group_ids = ${pgUuids(d.run_group_ids)},
