@@ -94,7 +94,7 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
     keyOf: ld.keys,
     priorFiles: ctx.files,
     signal: ctx.writer.signal,
-    draft: await initialDraft(d, stage, members),
+    draft: await initialDraft(d, stage, members, tr.resume ? tr.id : null),
     callIdx: 0,
     usage: 0,
     lastJobId: null,
@@ -374,10 +374,11 @@ async function pauseAsk(
 }
 
 async function finishOutput(st: Ctx): Promise<TeamOut> {
-  // D7/P1-31 · lead_plan: mục `required_sections` kế hoạch KHÔNG giao ⇒ không thiếu (lấp "—" để output đủ mục).
-  if (st.team.mode === "lead_plan")
-    for (const s of st.def.output.required_sections)
-      if ((st.draft.get(s) ?? "").trim() === "") st.draft.set(s, "—");
+  // D7/P1-31 · mục `required_sections` không ai giao (lead_plan; hoặc không thành viên nào phụ trách) ⇒ lấp "—".
+  const owned = new Set(st.members.flatMap((m) => m.sections));
+  for (const s of st.def.output.required_sections)
+    if ((st.draft.get(s) ?? "").trim() === "" && (st.team.mode === "lead_plan" || !owned.has(s)))
+      st.draft.set(s, "—");
   const text = renderDoc(st.def.output.template, st.draft);
   const sections: Record<string, string> = {};
   const summaries: Record<string, string> = {};

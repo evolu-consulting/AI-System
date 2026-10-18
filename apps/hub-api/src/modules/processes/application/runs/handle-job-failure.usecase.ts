@@ -78,6 +78,6 @@ export async function handleTeamJobFailure(
 ): Promise<RetryDecision> {
   const dec = await handleJobFailure(r, f, now);
   if (dec.kind === "retry") await r.team.pauseForRetry(team.teamRunId, team.cursor, now);
-  else await r.team.markFailed(team.teamRunId);
+  else await r.team.markFailed(team.teamRunId, now);
   return dec;
 }

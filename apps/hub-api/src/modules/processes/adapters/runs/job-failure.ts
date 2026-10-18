@@ -58,7 +58,7 @@ async function teamFailureGate(tx: Tx, p: FailureGateIn, now: Date): Promise<Gat
   if (p.result.kind !== "failed" || !p.team) return null;
   const { repos } = bindTx(tx, p.tenantId);
   if (!p.job) {
-    await repos.team.markFailed(p.team.teamRunId);
+    await repos.team.markFailed(p.team.teamRunId, now);
     return null;
   }
   const f = { runId: p.runId, stageRunId: p.stageRunId, ...p.job };

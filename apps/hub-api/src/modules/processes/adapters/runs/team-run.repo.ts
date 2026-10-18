@@ -42,6 +42,7 @@ export async function ensureTeamRun(
     mode: string;
   },
 ): Promise<EnsuredRun> {
+  const at = d.now().toISOString(); // Clock — cùng đồng hồ với limitReason (không dùng now() SQL)
   return withHubScope(d.db, { kind: "system" }, async (tx) => {
     const [cur] = await tx.execute<CurRow>(sql`select id, status, cursor, segment_started_at, plan
       from hub.team_runs where stage_run_id = ${p.stageId} and attempt = ${p.attempt}
@@ -58,8 +59,8 @@ export async function ensureTeamRun(
     if (cur && how !== "new") {
       const seg =
         how === "resume_answer"
-          ? sql`status = 'running', segment_started_at = now()`
-          : sql`segment_started_at = ${d.now().toISOString()}::timestamptz`;
+          ? sql`status = 'running', segment_started_at = ${at}::timestamptz`
+          : sql`segment_started_at = ${at}::timestamptz`;
       await tx.execute(sql`update hub.team_runs set ${seg} where id = ${cur.id}`);
       const retry = how === "resume_retry";
       return {
@@ -76,15 +77,38 @@ export async function ensureTeamRun(
     await tx.execute(sql`insert into hub.team_runs (id, tenant_id, stage_run_id, process_run_id, attempt,
         team_id, mode, status, segment_started_at)
       values (${id}, ${p.tenantId}, ${p.stageId}, ${p.procRunId}, ${p.attempt}, ${p.teamId},
-        ${p.mode}, 'running', now())`);
+        ${p.mode}, 'running', ${at}::timestamptz)`);
     return { id, resume: false, retry: false, cursor: 0, plan: null };
   });
 }
 
+/**
+ * #195 · đầu ra các thành viên (không phải lead `plan`) đã xong của team_run, theo thứ tự hoàn tất — MỘT câu (join
+ * jobs→runs→run_steps), để dựng lại bản nháp gộp khi vào lại stage nhóm. Lượt hỏi (`need_input`) bị loại.
+ */
+export async function doneMemberOutputs(
+  tx: Tx,
+  teamRunId: string,
+): Promise<{ agent_id: string; text: string }[]> {
+  const rows = await tx.execute<{
+    agent_id: string;
+    text: string;
+  }>(sql`select j.agent_id::text as agent_id,
+      j.result->'result'->>'text' as text
+    from hub.jobs j
+    join hub.runs r on r.id = j.run_id
+    join hub.run_steps rs on rs.id = j.step_id
+    where r.team_run_id = ${teamRunId} and j.status = 'succeeded' and j.result->>'kind' = 'agent_result'
+      and coalesce(j.result->'result'->>'status', 'done') <> 'need_input'
+      and coalesce(rs.detail->>'role', 'member') <> 'plan' and j.agent_id is not null
+    order by j.finished_at, j.created_at`);
+  return [...rows].filter((o) => typeof o.text === "string");
+}
+
 /** Chốt thời gian chạy của đoạn hiện tại vào `active_ms` (dùng khi đóng/tạm dừng run nhóm). */
-export async function flushActive(tx: Tx, teamRunId: string): Promise<void> {
+export async function flushActive(tx: Tx, teamRunId: string, now: Date): Promise<void> {
   await tx.execute(sql`update hub.team_runs set active_ms = active_ms + case when segment_started_at is null
-      then 0 else greatest(0, (extract(epoch from (now() - segment_started_at)) * 1000)::int) end,
+      then 0 else greatest(0, floor(extract(epoch from (${now.toISOString()}::timestamptz - segment_started_at)) * 1000))::int end,
       segment_started_at = null where id = ${teamRunId}`);
 }
 
@@ -95,7 +119,7 @@ export async function endRun(
   set: ReturnType<typeof sql>,
 ): Promise<void> {
   await withHubScope(d.db, { kind: "system" }, async (tx) => {
-    await flushActive(tx, teamRunId);
+    await flushActive(tx, teamRunId, d.now());
     await tx.execute(
       sql`update hub.team_runs set ${set}, finished_at = now() where id = ${teamRunId}`,
     );
@@ -103,15 +127,19 @@ export async function endRun(
 }
 
 /** Một câu: chốt `active_ms` + `failed`/`member_failed` + `finished_at` (chỉ hàng còn `running`). */
-const failSql = (teamRunId: string, tenant: ReturnType<typeof sql>) => sql`update hub.team_runs
+const failSql = (
+  teamRunId: string,
+  tenant: ReturnType<typeof sql>,
+  now: Date,
+) => sql`update hub.team_runs
   set active_ms = active_ms + case when segment_started_at is null then 0
-      else greatest(0, (extract(epoch from (now() - segment_started_at)) * 1000)::int) end,
+      else greatest(0, floor(extract(epoch from (${now.toISOString()}::timestamptz - segment_started_at)) * 1000))::int end,
     segment_started_at = null, status = 'failed', stop_reason = 'member_failed', finished_at = now()
   where id = ${teamRunId} and status = 'running'${tenant}`;
 
 /** T7b · run nhóm mồ côi (tx quy trình bỏ vì run đã kết thúc/đua): đóng `failed` như trước (trong tx người gọi). */
-export async function failTeamRunTx(tx: Tx, teamRunId: string): Promise<void> {
-  await tx.execute(failSql(teamRunId, sql``));
+export async function failTeamRunTx(tx: Tx, teamRunId: string, now = new Date()): Promise<void> {
+  await tx.execute(failSql(teamRunId, sql``, now));
 }
 
 /** T7b · `TeamRunRepo` gắn tx + `tenantId` (mọi câu lọc `(id, tenant_id)`); người gọi đã khoá run → stage. */
@@ -125,8 +153,8 @@ export function teamRunRepo(tx: Tx, tenantId: string): TeamRunRepo {
         segment_started_at = null, cursor = ${Math.max(cursor, 0)}
         where id = ${teamRunId} and tenant_id = ${tenantId} and status = 'running'`);
     },
-    async markFailed(teamRunId) {
-      await tx.execute(failSql(teamRunId, sql` and tenant_id = ${tenantId}`));
+    async markFailed(teamRunId, now) {
+      await tx.execute(failSql(teamRunId, sql` and tenant_id = ${tenantId}`, now));
     },
   };
 }

@@ -4,29 +4,43 @@ import type { DecisionReason } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import { endRun, flushActive } from "../adapters/runs/team-run.repo";
+import { doneMemberOutputs, endRun, flushActive } from "../adapters/runs/team-run.repo";
 import { type TeamLimits, teamLimitHit } from "../core/limits.rules";
 import { assembleSections } from "./team.rules";
 import type { TeamDeps, TeamMemberRow } from "./team-load";
 
-/** Nháp ban đầu: attempt 1 rỗng; làm lại ⇒ các mục đã chốt của output trước. */
+/**
+ * Nháp ban đầu: attempt 1 rỗng; làm lại ⇒ các mục đã chốt của output trước. Vào lại (esumeTeamRunId: trả lời / thử
+ * lại, #195) ⇒ chồng thêm đầu ra các thành viên đã xong của CHÍNH team_run (một câu) để không mất mục trước cursor.
+ */
 export async function initialDraft(
   d: TeamDeps,
   stage: { attempt: number; current_output_id: string | null },
   members: TeamMemberRow[],
+  resumeTeamRunId: string | null = null,
 ): Promise<Map<string, string>> {
-  if (stage.attempt <= 1 || !stage.current_output_id) return new Map();
-  const [o] = await withHubScope(d.db, { kind: "system" }, (tx) =>
-    tx.execute<{ content: string }>(
-      sql`select content from hub.process_outputs where id = ${stage.current_output_id}`,
-    ),
+  let draft = new Map<string, string>();
+  if (stage.attempt > 1 && stage.current_output_id) {
+    const [o] = await withHubScope(d.db, { kind: "system" }, (tx) =>
+      tx.execute<{ content: string }>(
+        sql`select content from hub.process_outputs where id = ${stage.current_output_id}`,
+      ),
+    );
+    if (o)
+      draft = assembleSections(
+        new Map(),
+        o.content,
+        members.flatMap((m) => m.sections),
+      ).next;
+  }
+  if (!resumeTeamRunId) return draft;
+  const done = await withHubScope(d.db, { kind: "system" }, (tx) =>
+    doneMemberOutputs(tx, resumeTeamRunId),
   );
-  if (!o) return new Map();
-  return assembleSections(
-    new Map(),
-    o.content,
-    members.flatMap((m) => m.sections),
-  ).next;
+  const sectionsOf = new Map(members.map((m) => [m.agent_id, m.sections]));
+  for (const o of done)
+    draft = assembleSections(draft, o.text, sectionsOf.get(o.agent_id) ?? []).next;
+  return draft;
 }
 
 export type Counters = {
@@ -49,6 +63,7 @@ export async function createTeamRun(
     attempt: number;
     teamId: string;
     mode: string;
+    now: Date; // Clock — segment_started_at cùng đồng hồ với limitReason
   },
 ): Promise<string> {
   const [cur] = await tx.execute<{ id: string }>(sql`select id from hub.team_runs
@@ -59,7 +74,7 @@ export async function createTeamRun(
   await tx.execute(sql`insert into hub.team_runs (id, tenant_id, stage_run_id, process_run_id, attempt,
       team_id, mode, status, segment_started_at)
     values (${id}, ${p.tenantId}, ${p.stageRunId}, ${p.procRunId}, ${p.attempt}, ${p.teamId},
-      ${p.mode}, 'running', now())`);
+      ${p.mode}, 'running', ${p.now.toISOString()}::timestamptz)`);
   return id;
 }
 
@@ -128,7 +143,7 @@ export const markDone = (d: TeamDeps, teamRunId: string): Promise<void> =>
 
 export async function markWaiting(d: TeamDeps, teamRunId: string, cursor: number): Promise<void> {
   await withHubScope(d.db, { kind: "system" }, async (tx) => {
-    await flushActive(tx, teamRunId);
+    await flushActive(tx, teamRunId, d.now());
     await tx.execute(sql`update hub.team_runs set status = 'waiting_answer', cursor = ${cursor}
       where id = ${teamRunId}`);
   });

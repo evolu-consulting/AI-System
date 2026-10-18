@@ -300,6 +300,7 @@ async function teamRunFor(
     attempt: Number(p.attempt),
     teamId: p.def.executor.team_id,
     mode: ready.team.mode,
+    now: d.now(),
   });
   return { ok: true, teamRunId };
 }

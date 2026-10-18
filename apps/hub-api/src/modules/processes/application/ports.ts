@@ -96,7 +96,7 @@ export type TeamRunRepo = {
   /** Thử lại: giữ `running` + `plan`, chốt `active_ms` tới `now` (Clock), `segment_started_at = NULL`, `cursor = max(cursor,0)`. */
   pauseForRetry(teamRunId: string, cursor: number, now: Date): Promise<void>;
   /** Quyết định (không thử lại): chốt `active_ms`, `failed`/`member_failed` + `finished_at`. */
-  markFailed(teamRunId: string): Promise<void>;
+  markFailed(teamRunId: string, now: Date): Promise<void>;
 };
 export type TxRepos = {
   readonly tenantId: string;
