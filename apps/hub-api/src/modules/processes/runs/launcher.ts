@@ -94,11 +94,14 @@ async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promis
 
 /** D10 · một lượt kick của run (idempotent, khoá `process_runs` FOR UPDATE trước). `false` ⇒ không còn gì để làm. */
 async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Promise<boolean> {
-  const sysHead = await withHubScope(d.db, { kind: "system" }, (tx) => headOf(tx, runId));
-  if (!sysHead || isTerminal(sysHead.status as ProcessRunStatus)) return false;
   // P-R10 · kiểm lại quyền mỗi stage trên cấu hình MỚI NHẤT đã COMMIT (không chờ timer poll nền): thu hồi grant bump
   // `hub_config_version` ⇒ `poll` nạp lại ⇒ `prepareProcess` thấy mất grant (P1-24). Lỗi poll không chặn kick.
-  await d.config.poll().catch(() => {});
+  // T19-perf · đọc đầu run (scope system) ∥ poll cấu hình — độc lập, kết nối riêng; cả hai xong TRƯỚC tx khoá run.
+  const [sysHead] = await Promise.all([
+    withHubScope(d.db, { kind: "system" }, (tx) => headOf(tx, runId)),
+    d.config.poll().catch(() => {}),
+  ]);
+  if (!sysHead || isTerminal(sysHead.status as ProcessRunStatus)) return false;
   const u: AuthUser = { userId: sysHead.started_by, tenantId: sysHead.tenant_id, role: "member" };
   const result = await withHubScope(d.db, { kind: "user", ...u }, (tx) => plan(d, tx, u, runId));
   if (result.kind === "events") {
@@ -140,9 +143,9 @@ async function nextQueued(
 
 /** Trong tx scope user người bắt đầu: khoá run, chọn stage queued của bước, kiểm quyền, tạo `hub.runs`. */
 async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promise<KickResult> {
-  const run = await core.lockRun(tx, u.tenantId, runId);
+  // T19-perf · khoá run (câu ĐẦU, §10) + đọc đầu run gửi liền (pipeline): câu đọc chạy sau khoá, cùng ảnh.
+  const [run, head] = await Promise.all([core.lockRun(tx, u.tenantId, runId), headOf(tx, runId)]);
   if (!run || isTerminal(run.status as ProcessRunStatus)) return { kind: "skip" };
-  const head = await headOf(tx, runId);
   if (!head) return { kind: "skip" };
   const next = await nextQueued(tx, runId, head, Number(run.currentStep));
   if (!next) return { kind: "skip" };
@@ -227,23 +230,31 @@ async function launchStage(
   u: AuthUser,
   c: LaunchCtx,
 ): Promise<KickResult> {
-  const priorOut = await priorFiles(tx, {
-    tenantId: u.tenantId,
-    runId: c.runId,
-    idx: c.idx,
-    stages: c.head.snapshot.stages,
-  });
-  const real = await realActionPre(d, tx, {
-    ...c,
-    tenantId: u.tenantId,
-    stages: c.head.snapshot.stages,
-  });
+  const stages = c.head.snapshot.stages;
+  // T19-perf · ba nhánh đọc độc lập (file bước trước / cổng hành động thật / prompt + phiên CLI) chạy xen kẽ trên cùng tx:
+  // postgres.js pipeline các câu ⇒ tổng round-trip = nhánh dài nhất thay vì cộng dồn. Không nhánh nào đọc thứ nhánh khác ghi.
+  const [priorOut, real, sp] = await Promise.all([
+    priorFiles(tx, { tenantId: u.tenantId, runId: c.runId, idx: c.idx, stages }),
+    realActionPre(d, tx, { ...c, tenantId: u.tenantId, stages }),
+    d.config
+      .snapshot()
+      .catch(() => null)
+      .then((snap) =>
+        stagePrompt(
+          tx,
+          {
+            tenantId: u.tenantId,
+            runId: c.runId,
+            idx: c.idx,
+            head: c.head,
+            stage: c.stage,
+            def: c.def,
+          },
+          snap,
+        ),
+      ),
+  ]);
   const p = processStageOf(c, priorOut, real?.preconfirm);
-  const sp = await stagePrompt(
-    tx,
-    { tenantId: u.tenantId, runId: c.runId, idx: c.idx, head: c.head, stage: c.stage, def: c.def },
-    await d.config.snapshot().catch(() => null),
-  );
   const req: SendMessageRequest = { content: sp.content };
   let prepared: Prepared;
   try {

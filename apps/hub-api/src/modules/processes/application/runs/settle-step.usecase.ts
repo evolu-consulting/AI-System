@@ -48,13 +48,16 @@ async function takeBranch(r: StepRepos, runId: string, load: StepJoinLoad): Prom
   const b = await branchTarget(r, runId, load);
   if (!b) return null;
   const ids = await r.steps.skipStages(runId, skippedStages(load.steps, load.step, b.gotoStep));
-  await r.steps.cancelTimers(runId, ids);
-  await r.steps.branchEvent(runId, {
-    stageIdx: b.stageIdx,
-    fromStep: load.step,
-    toStep: b.gotoStep,
-    rule: b.rule,
-  });
+  // T19-perf · hai câu ghi độc lập gửi liền (pipeline); Postgres chạy theo thứ tự gửi ⇒ khoá hẹn vẫn trước (plan-d2 §8).
+  await Promise.all([
+    r.steps.cancelTimers(runId, ids),
+    r.steps.branchEvent(runId, {
+      stageIdx: b.stageIdx,
+      fromStep: load.step,
+      toStep: b.gotoStep,
+      rule: b.rule,
+    }),
+  ]);
   return b.gotoStep;
 }
 

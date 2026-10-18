@@ -77,8 +77,11 @@ async function assignees(
   taskId: string,
   groupId: string | null,
 ): Promise<{ userIds: string[]; groupMemberIds: string[] }> {
-  const userIds = await taskAssigneeUserIds(tx, tenantId, taskId);
-  const members = groupId ? await groupMemberIds(tx, tenantId, groupId) : [];
+  // T19-perf · hai câu đọc độc lập gửi liền (pipeline, một round-trip).
+  const [userIds, members] = await Promise.all([
+    taskAssigneeUserIds(tx, tenantId, taskId),
+    groupId ? groupMemberIds(tx, tenantId, groupId) : [],
+  ]);
   return { userIds, groupMemberIds: members };
 }
 
@@ -129,22 +132,25 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
       stageName: t.stageName,
       result,
     };
-    const inserted = await insertNotices(tx, {
-      tenantId: t.tenantId,
-      kind: "task_closed",
-      processRunId: t.processRunId,
-      taskId,
-      payload: { process_name: t.processName, stage_name: t.stageName, result },
-      userIds: noticed,
-    });
-    events.push(
-      ...(await noticeEvents(tx, {
+    // T19-perf · INSERT ∥ đếm chưa đọc gửi liền (pipeline): câu đếm chạy SAU câu chèn trên cùng tx ⇒ đã tính notice mới.
+    const [inserted, unread] = await Promise.all([
+      insertNotices(tx, {
         tenantId: t.tenantId,
-        inserted,
         kind: "task_closed",
-        meta,
-      })),
-    );
+        processRunId: t.processRunId,
+        taskId,
+        payload: { process_name: t.processName, stage_name: t.stageName, result },
+        userIds: noticed,
+      }),
+      unreadByUser(tx, t.tenantId, noticed),
+    ]);
+    for (const n of inserted)
+      events.push(
+        ...processNotice(n.userId, {
+          notice: buildNotice(n, "task_closed", meta),
+          unread: unread.get(n.userId) ?? 1,
+        }),
+      );
   }
   return events;
 }

@@ -128,15 +128,31 @@ type GrantSql = {
   created_at: Ts;
 };
 
+type StageSnap = {
+  name?: string | null;
+  after?: { group_id?: string | null; back_to_steps?: number[] | null } | null;
+} | null;
+
+/** T19-perf · `snapshot` (jsonb lớn, TOAST) chỉ trích MỘT lần — stage của task; tên/nhóm duyệt/bước quay lại tách ở JS
+ *  (trước: 3 lần `snapshot->…` ⇒ giải nén snapshot 3 lần mỗi hàng). */
+const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
+  const st: StageSnap = typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage;
+  const back = st?.after?.back_to_steps;
+  return {
+    ...r,
+    stage_name: st?.name ?? null,
+    review_group_id: st?.after?.group_id ?? null,
+    back_steps: Array.isArray(back) ? back : null,
+  };
+};
+
 async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<TaskSql[]> {
-  return tx.execute<TaskSql>(sql`
+  const rows = await tx.execute<TaskSql & { stage: StageSnap | string }>(sql`
     select t.id, t.kind, t.status, s.stage_idx, t.question, t.choices, t.excerpt, t.reason, t.result, t.created_at,
       t.assignee_group_id as group_id, s.current_output_id is not null as has_output,
-      pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
-      pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id' as review_group_id,
+      pr.snapshot->'stages'->(s.stage_idx::int) as stage,
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
       t.remind_count::int as remind_count,
-      pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'back_to_steps' as back_steps,
       case when pr.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
         when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${v.userId}
@@ -151,6 +167,7 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
     left join hub.process_outputs o on o.id = t.output_id and o.tenant_id = t.tenant_id
     where t.id = any(${`{${ids.join(",")}}`}::uuid[]) and t.tenant_id = ${v.tenantId}
     order by t.created_at, t.id`);
+  return [...rows].map(withStage);
 }
 
 async function grantRows(tx: Tx, v: ViewerCtx, ids: readonly string[]) {
@@ -230,8 +247,11 @@ export async function loadTaskDetails(
   taskIds: readonly string[],
 ): Promise<TaskDetail[]> {
   if (taskIds.length === 0) return [];
-  const rows = await taskRows(tx, v, taskIds);
-  const { grants, names } = await grantRows(tx, v, taskIds);
+  // T19-perf · task ∥ grant gửi liền (pipeline); tên người dùng theo grant đi sau.
+  const [rows, { grants, names }] = await Promise.all([
+    taskRows(tx, v, taskIds),
+    grantRows(tx, v, taskIds),
+  ]);
   return rows.map((r) =>
     detailOf(
       v,

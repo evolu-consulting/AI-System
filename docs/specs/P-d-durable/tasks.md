@@ -144,6 +144,21 @@ Spec `draft`. Đã có PLAN (`plan*.md`, `plan-frontend*.md`, `test-plan*.md`, `
 - 2026-10-18 (backend-lead, **T19**): contract `HistoryItemSchema.kind += "branch"` (cuối) + `rule?: int 1…10` (cuối, optional); `history.repo` thêm nhánh `union all` từ audit `branch` (vẫn MỘT câu, index `(entity, entity_id, seq)`). FE (T20): mục Nhật ký `kind=branch`, `actor=null`, `to_step` (0-based ⇒ hiển thị +1), `rule`.
 - 2026-10-18 (backend-lead, **T19**): `back.rules.backResetPlan` — `skipped` như `pending` (không tăng `round`); `launcher-step.realActionPre` D2-08: MỘT câu đọc mọi stage bước trước (`priorStageIdxs`, thay vì chỉ bước k−1) rồi `effectivePrevStep` trong bộ nhớ — số câu không đổi.
 - 2026-10-18 (backend-lead, **T19**): **đo PD2-P04** (bản sao scratch sửa T19-3/T19-4, cùng ô DB, def 5 bước ×5 lượt xen kẽ): **trước** mốc 50 / khớp 50 / không khớp 50–52 (chưa có nhánh), p95 khớp 39,7 ms → **sau** mốc 50, khớp 54 (+4), không khớp 51 (+1); nhảy 1 bước (def 10, goto 3) = nhảy 7 bước (goto 9) = 54; p95 khớp 39,8 ms (= trước; > 30 ms của plan từ trước T19 — cửa sổ gồm launch stage kế, không do nhánh).
+- 2026-10-18 (backend-lead, **T19-perf**, Tranh chấp T19-4): log từng câu cửa sổ PD2-P04 (POST Đạt → `settled()`, def 5 bước, bản nháp scratch + EXPLAIN ANALYZE câu > 0,8 ms; bảng DB nhỏ ⇒ mọi câu thực thi < 0,7 ms, thời gian = round-trip). **Gốc chậm:** Drizzle gọi `client.unsafe` mà postgres.js mặc định `prepare:false` ⇒ mỗi câu có tham số đi **2 round-trip** (Parse/Describe rồi Bind/Execute), lập kế hoạch lại mỗi lần, không pipeline được. Sửa: `packages/db` `preparing()` bọc client (cả `begin`/`savepoint`) ⇒ câu chuẩn bị có tên mỗi kết nối (Admin + Hub; văn bản SQL không đổi ⇒ đếm câu không đổi) + pipeline câu độc lập bằng `Promise.all` trong cùng tx (thứ tự gửi = thứ tự chạy ⇒ khoá run → stage → task/hẹn giữ nguyên) + `loadTask` gộp assignee (−1 câu) + `TaskDetail` trích `snapshot` một lần (trước 3 lần ⇒ giải nén TOAST 3 lần, câu 2–5,6 ms) + sau COMMIT: tin thread ∥ kick, đầu run ∥ poll cấu hình.
+
+  | Nhóm (thứ tự trong cửa sổ) | câu | ms trước → sau (trung vị, máy dev) |
+  |---|---|---|
+  | Kiểm quyền + khoá run (task+assignee, lockRun, recipients, stage) | 5 → 4 | 3,1 → 1,4 |
+  | Đóng task + tên người quyết | 2 | 1,3 → 0,7 |
+  | Tin thread kết quả ∥ notice `task_closed` (đích thread, task, assignee, nhóm, chèn, chưa đọc) | 6 | 3,6 → 2,3 |
+  | Đạt + settle stage (passed_by, superseded, done, kh, loadJoin 2) | 7 | 3,5 → 2,6 |
+  | Nhánh + xếp bước đích (fields, skipped, hẹn, audit+thread, queued, run) | 6 | 3,3 → 2,6 |
+  | decision mở + `TaskDetail` trả về (4 câu) | 4 | 3,5–7,0 → 1,5–3,0 |
+  | Sau COMMIT: outbox thread (tx), đầu run (tx), poll `config_meta` 2 | 4 + 2 | 3,5 → 1,5 (song song) |
+  | Launch stage kế (khoá, đầu run, queued, người bắt đầu, file trước, phiên CLI, tạo flow/run/tin, running) | 20 | 15,5 → 12,5 |
+  | **Tổng** (đếm của test) | 49 → **48** (mốc 45 → 44; khớp +4, không khớp +1 giữ) | trung vị ~41 → **~28** |
+
+  **Kết quả PD2-P04** (p95 n=10 = lượt chậm nhất): trước 74,6 / 47,8 → sau 38,5 / 39,8 / 41,0 / 50,3 / 38,8 ms ⇒ **CHƯA ĐẠT 30 ms** (trung vị đạt, đuôi do giật Windows/GC 5–20 ms một lượt + lượt đầu mỗi kết nối phải chuẩn bị câu). **Sàn:** ~45 round-trip tuần tự bắt buộc (tx quyết ~22 với khoá + kiểm quyền + audit + thông báo; launch ~19; sau COMMIT ~3) × 0,4–0,5 ms (loopback Windows) ≈ 20–23 ms trung vị. Còn giảm được (chưa làm, cần chạm `RunService` dùng chung chat): pipeline `createRunTx` (advisory + 5 ghi ⇒ −3 ms), `stagePrompt` đọc tuần tự (−2 ms), gộp đọc notice một câu (−1 ms). Đề nghị người dùng chọn: (a) làm tiếp 3 việc trên + đo trên staging Linux như PD-P13/P14, hoặc (b) chốt ngưỡng P04 theo trung vị/p90 (p95 n=10 = max). PD2-I53/I54 + PD2-U30 (side_effect ⇒ `tool_failed`) đỏ cả ở HEAD trước sửa — không thuộc T19-perf.
 
 ## Tranh chấp test
 - **T17-1** `tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts` PD2-C01: `PROCESS_DEF_RULES.slice(16)` mong `[TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]`, nhưng P-d1 đã nối `TEAM_SECTION_UNOWNED` ở vị trí 16 (17 phần tử trước P-d2; plan-contract §6 "(cuối, 19)" viết trước khi có nó). Enum chỉ nối cuối ⇒ đúng là `slice(17)` (tổng 20). Đề nghị qc sửa thành `slice(17)`.

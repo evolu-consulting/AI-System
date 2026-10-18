@@ -177,7 +177,7 @@ export class GateService {
     const task = await g.loadTask(tx, taskId);
     if (!task) throw notFound();
     if (v.role !== "platform_admin" && v.tenantId !== task.tenant_id) throw notFound();
-    const users = await g.assigneeUserIds(tx, taskId, task.tenant_id);
+    const users = new Set(task.user_ids ?? []);
     const inGroup = (id: string | null) => id !== null && groupIds.has(id);
     // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
     if (
@@ -188,32 +188,43 @@ export class GateService {
       throw notFound();
     if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
     if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
-    const run = await core.lockRun(tx, task.tenant_id, task.process_run_id);
-    if (!run) throw notFound();
-    const recipients = await core.runRecipients(tx, run.id, run.tenantId);
     const idx = task.stage_idx;
+    // T19-perf · pipeline: khoá run (§10, câu ĐẦU) + 2 câu đọc gửi liền một round-trip; Postgres chạy tuần tự trên cùng
+    // kết nối ⇒ hai câu đọc chạy SAU khi đã giữ khoá run. Run không thấy ⇒ 404, kết quả đọc bỏ.
+    const [run, recipients, s] = await Promise.all([
+      core.lockRun(tx, task.tenant_id, task.process_run_id),
+      core.runRecipients(tx, task.process_run_id, task.tenant_id),
+      stageRowOf(tx, task.process_run_id, idx),
+    ]);
+    if (!run) throw notFound();
     assertBackDecision(run, idx, b); // P-b2 · 422 BACK_TARGET_INVALID trước khi đóng task
-    const s = await stageRowOf(tx, run.id, idx);
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
       result: b.result,
     });
-    const closed = await core.closeTask(tx, taskId, {
-      result: b.result,
-      at: this.d.now(),
-      decidedBy: v.userId,
-      feedback: b.feedback ?? null,
-      sections: b.sections ?? null,
-    });
+    const [closed, ref] = await Promise.all([
+      core.closeTask(tx, taskId, {
+        result: b.result,
+        at: this.d.now(),
+        decidedBy: v.userId,
+        feedback: b.feedback ?? null,
+        sections: b.sections ?? null,
+      }),
+      g.actorRef(tx, v.userId, run.tenantId), // đọc tên người quyết — gửi liền sau UPDATE (pipeline)
+    ]);
     if (!closed) throw processError("REVIEW_TASK_CLOSED");
     if (!t.ok) throw processError(t.code);
-    const ref = await g.actorRef(tx, v.userId, run.tenantId);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const gx: Gx = { d: this.d, tx };
     const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, b);
-    await refreshDecision(gx, run); // D9 · decision mở cũ nhất (Chưa đạt chạm `back_limit` vừa ghi decision mới nhất)
+    // D9 · decision mở cũ nhất (Chưa đạt chạm `back_limit` vừa ghi decision mới nhất) ∥ đọc thẻ task trả về: độc lập
+    // (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.
+    const [, details] = await Promise.all([
+      refreshDecision(gx, run),
+      loadTaskDetails(tx, { ...v, groupIds }, [taskId]),
+    ]);
     events.push(...processUpdated(recipients, updatedOf(run, status, step)));
-    const detail = (await loadTaskDetails(tx, { ...v, groupIds }, [taskId]))[0];
+    const detail = details[0];
     if (!detail) throw notFound();
     return { body: detail, events, kick, runId: run.id, cancel };
   }
@@ -356,7 +367,11 @@ export class GateService {
         }),
       );
     await publishUserEvents(this.d.redis, out.events, this.d.log);
-    await this.d.postThread(out.runId).catch(() => {});
-    if (out.kick) await this.d.launcher.kick(out.runId);
+    // T19-perf · đăng tin thread ∥ kick (kết nối riêng): đăng idempotent theo id sự kiện, mỗi poster đi theo `created_at`
+    // ⇒ thứ tự tin giữ nguyên; sự kiện người dùng của gate đã phát TRƯỚC (kick có thể phát sự kiện mới hơn).
+    await Promise.all([
+      this.d.postThread(out.runId).catch(() => {}),
+      out.kick ? this.d.launcher.kick(out.runId) : undefined,
+    ]);
   }
 }

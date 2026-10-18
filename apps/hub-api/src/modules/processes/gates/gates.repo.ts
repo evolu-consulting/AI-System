@@ -25,6 +25,8 @@ export type GateTask = {
   /** PD-R21 · Group chuyển cấp (assignee `via='escalated'`) — thành viên cũng quyết được. */
   escalated_group_id: string | null;
   reason: DecisionReason | null;
+  /** T19-perf · user assignee (= `assigneeUserIds`) đọc cùng câu `loadTask` — bớt một round-trip ở đường Đạt. */
+  user_ids?: string[] | null;
 };
 
 /** PD-R21 · Group `via='escalated'` của task (khớp `tenant_id` task; index `review_task_assignees` theo task). */
@@ -36,7 +38,9 @@ const escalatedGroup = sql`(select a.group_id from hub.review_task_assignees a
 export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null> {
   const [r] = await tx.execute<GateTask>(sql`
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
-      t.assignee_group_id, ${escalatedGroup}, t.reason
+      t.assignee_group_id, ${escalatedGroup}, t.reason,
+      array(select a.user_id from hub.review_task_assignees a where a.task_id = t.id and a.tenant_id = t.tenant_id
+        and a.user_id is not null)::text[] as user_ids
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     where t.id = ${taskId}`);

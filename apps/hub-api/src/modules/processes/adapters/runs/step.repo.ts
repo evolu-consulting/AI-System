@@ -35,14 +35,14 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
   return {
     ...branchWrites(tx, tenantId),
     async loadJoin(runId) {
-      const [h] = await tx.execute<StepHead>(sql`select current_step, snapshot from hub.process_runs
-    where id = ${runId} and tenant_id = ${tenantId}`);
+      // T19-perf · hai câu đọc độc lập gửi liền (pipeline postgres.js, một round-trip); run đã khoá ⇒ cùng ảnh.
+      const [[h], rows] = await Promise.all([
+        tx.execute<StepHead>(sql`select current_step, snapshot from hub.process_runs
+    where id = ${runId} and tenant_id = ${tenantId}`),
+        tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`select stage_idx,
+    status from hub.stage_runs where process_run_id = ${runId} and tenant_id = ${tenantId}`),
+      ]);
       if (!h) return null;
-      const rows = await tx.execute<{
-        stage_idx: number;
-        status: StageRunStatus;
-      }>(sql`select stage_idx,
-    status from hub.stage_runs where process_run_id = ${runId} and tenant_id = ${tenantId}`);
       const stages = h.snapshot?.stages ?? [];
       return {
         step: Number(h.current_step),
@@ -57,10 +57,13 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
         q.idxs.map((i) => sql`${i}`),
         sql`, `,
       );
-      await tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
-    where process_run_id = ${runId} and tenant_id = ${tenantId} and stage_idx in (${ids})`);
-      await tx.execute(sql`update hub.process_runs set status = 'running', current_step = ${q.step},
-    current_stage_idx = ${q.first}, updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);
+      // Pipeline: hai UPDATE độc lập gửi liền theo thứ tự (stage rồi run — run đã khoá FOR UPDATE từ trước, §10).
+      await Promise.all([
+        tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
+    where process_run_id = ${runId} and tenant_id = ${tenantId} and stage_idx in (${ids})`),
+        tx.execute(sql`update hub.process_runs set status = 'running', current_step = ${q.step},
+    current_stage_idx = ${q.first}, updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`),
+      ]);
     },
     async finish(runId, first) {
       await tx.execute(sql`update hub.process_runs set status = 'done', current_stage_idx = ${first},

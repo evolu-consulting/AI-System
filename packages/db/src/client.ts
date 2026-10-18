@@ -1,4 +1,4 @@
-// ADM-NFR-06, ADM-FR-53 · kết nối Postgres (postgres.js + Drizzle, ADR-0003) + `notify` cho `config_changed` (M3).
+﻿// ADM-NFR-06, ADM-FR-53 · kết nối Postgres (postgres.js + Drizzle, ADR-0003) + `notify` cho `config_changed` (M3).
 // ADM-FR-41 · M4: `listen` (LISTEN `quota_threshold`, plan M4 §5.2).
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -17,11 +17,39 @@ export type Db = {
   listen(channel: string, onPayload: (payload: string) => void): Promise<() => Promise<void>>;
 };
 
+type Unsafe = (q: string, args?: unknown[], o?: Record<string, unknown>) => unknown;
+type Scoped = (...a: unknown[]) => unknown;
+
+/**
+ * CR-093 Luật 4c · T19-perf · Drizzle gọi `client.unsafe(text, params)` mà postgres.js mặc định `prepare: false` cho
+ * `unsafe` ⇒ MỖI câu có tham số đi 2 round-trip (Parse/Describe chờ kiểu rồi mới Bind/Execute), lập kế hoạch lại mỗi lần
+ * và chặn pipeline (`describeFirst`). Bọc client (cả `begin`/`savepoint` lồng nhau) để `unsafe` dùng câu chuẩn bị có tên:
+ * mỗi kết nối chuẩn bị một lần theo văn bản + kiểu (postgres.js tự lưu, tự thử lại khi kế hoạch cũ đổi kiểu kết quả), sau
+ * đó 1 round-trip/câu và câu độc lập gửi liền được. Câu không tham số vẫn đi giao thức simple như cũ. Không đổi văn bản
+ * SQL ⇒ đếm câu (debug) không đổi. `$client.options` vẫn là của pool gốc (hook debug của test đếm câu).
+ */
+export function preparing<T extends object>(s: T): T {
+  return new Proxy(s, {
+    get(t, k) {
+      const v = Reflect.get(t, k) as unknown;
+      if (k === "unsafe")
+        return (q: string, args?: unknown[], o?: Record<string, unknown>) =>
+          (v as Unsafe).call(t, q, args, { prepare: true, ...o });
+      if (k === "begin" || k === "savepoint")
+        return (...a: unknown[]) => {
+          const fn = a.pop() as (tx: object) => unknown;
+          return (v as Scoped).call(t, ...a, (tx: object) => fn(preparing(tx)));
+        };
+      return v;
+    },
+  });
+}
+
 export function createDb(url: string, opts: { max?: number } = {}): Db {
   const max = opts.max ?? 10;
   const sql = postgres(url, { max, onnotice: () => {} });
   return {
-    db: drizzle(sql),
+    db: drizzle(preparing(sql)),
     max,
     close: () => sql.end(),
     notify: async (channel, payload) => {
