@@ -282,7 +282,7 @@ describe("PI · trượt/Đạt độc lập trong bước [AC-PB2-03]", () => {
       where action = 'authorize_real_action' and entity_id = ${s.runId}`;
     expect(audit.map((a) => a.actor_id)).toEqual([PA.T.id]);
   }, 40_000);
-  it("HUB-FR-106 · PI-14 · sweeps: bước 1 có 2 hub.runs chết ⇒ 2 decision interrupted (mỗi stage một); view.decision = cái cũ nhất", async () => {
+  it("HUB-FR-106 · PI-14 · sweeps: bước 1 có 2 hub.runs chết ⇒ 2 timer retry (mỗi stage một), run vẫn running, 0 decision (D4/CR-083)", async () => {
     needPb2(c.pb2);
     const { runId } = await parToStep1(c);
     const j1 = await jobOfStage(c, runId, 1);
@@ -293,14 +293,20 @@ describe("PI · trượt/Đạt độc lập trong bước [AC-PB2-03]", () => {
           lease_until = null where id = ${j.runId}`;
     }
     await sweep(c);
-    await waitStatus(c.sql, runId, "needs_decision");
-    const ds = await c.sql<Json[]>`select t.reason, sr.stage_idx from hub.review_tasks t
-      join hub.stage_runs sr on sr.id = t.stage_run_id
-      where t.process_run_id = ${runId} and t.kind = 'decision' and t.status = 'open' order by t.created_at, t.id`;
-    expect(ds.map((d) => d.reason)).toEqual(["interrupted", "interrupted"]);
-    expect(ds.map((d) => d.stage_idx).sort()).toEqual([1, 2]);
-    const v = await viewOf(c, "A", runId);
-    expect(v.json?.decision?.stage_idx).toBe(ds[0]?.stage_idx);
+    const timers = await waitFor(
+      () => c.sql<Json[]>`select sr.stage_idx from hub.process_timers t
+        join hub.stage_runs sr on sr.id = t.stage_run_id
+        where t.process_run_id = ${runId} and t.kind = 'retry' and t.cancelled_at is null order by sr.stage_idx`,
+      (v) => (v?.length ?? 0) >= 2,
+      8_000,
+    );
+    expect(timers?.map((t) => t.stage_idx)).toEqual([1, 2]);
+    expect((await c.sql`select status from hub.process_runs where id = ${runId}`)[0]?.status).toBe(
+      "running",
+    );
+    const ds = await c.sql<Json[]>`select 1 from hub.review_tasks
+      where process_run_id = ${runId} and kind = 'decision' and status = 'open'`;
+    expect(ds.length).toBe(0);
   }, 40_000);
 });
 

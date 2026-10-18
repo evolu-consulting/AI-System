@@ -287,7 +287,7 @@ describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, h�
     needSchema(c.ready);
     const s = await startInRoom(c, { key: SINGLE_DEF.key });
     const jobs = await serve(c, s.runId, async (j) => {
-      await upstream(j);
+      await c.rt.fail(j, "UPSTREAM_ERROR", "agent lỗi", "refused");
     });
     await waitStatus(c.sql, s.runId, "needs_decision", 10_000);
     expect((await decisionOf(s.runId))?.reason).toBe("agent_failed");

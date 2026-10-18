@@ -225,21 +225,39 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
     }, 40_000);
   });
 
-  it("HUB-FR-115 · P1-25 · §2.1: timeout_s=60, runtime failed{TIMEOUT} ⇒ needs_decision job_timeout", async () => {
+  /** D4/CR-083: lỗi tạm ⇒ stage `waiting_timer` (retry 1), run vẫn `running`, 0 decision. */
+  const expectRetrying = async (runId: string, code: string) => {
+    const row = await waitFor(
+      () => c.sql<Json[]>`select status, retry_count, last_error_code from hub.stage_runs
+        where process_run_id = ${runId} and stage_idx = 0`,
+      (v) => v?.[0]?.status === "waiting_timer",
+      8_000,
+    );
+    expect(row?.[0]).toMatchObject({
+      status: "waiting_timer",
+      retry_count: 1,
+      last_error_code: code,
+    });
+    expect((await c.sql`select status from hub.process_runs where id = ${runId}`)[0]?.status).toBe(
+      "running",
+    );
+    expect(await decisionOf(runId)).toBeFalsy();
+  };
+
+  it("HUB-FR-115 · P1-25 · §2.1: timeout_s=60, runtime failed{TIMEOUT} ⇒ stage waiting_timer (retry 1, TIMEOUT), 0 decision", async () => {
     needSchema(c.ready);
     const s = await startInRoom(c, { key: DEF_TIMEOUT.key });
     const j = await nextStageJob(c, s.runId);
     expect(j.payload.timeout_s).toBe(60);
     await c.rt.fail(j, "TIMEOUT", "quá thời gian", null, "timed_out");
-    await waitStatus(c.sql, s.runId, "needs_decision");
-    expect((await decisionOf(s.runId))?.reason).toBe("job_timeout");
+    await expectRetrying(s.runId, "TIMEOUT");
   }, 30_000);
 
   it("HUB-BR-26 · P1-26 · runtime failed ⇒ needs_decision agent_failed; không chạy stage kế", async () => {
     needSchema(c.ready);
     const s = await startInRoom(c, { key: DEFS.auto.key });
     const j = await nextStageJob(c, s.runId);
-    await c.rt.fail(j, "UPSTREAM_ERROR", "agent lỗi");
+    await c.rt.fail(j, "UPSTREAM_ERROR", "agent lỗi", "refused");
     await waitStatus(c.sql, s.runId, "needs_decision");
     expect((await decisionOf(s.runId))?.reason).toBe("agent_failed");
     expect(await noStageJob(c, s.runId)).toBe(true);
@@ -277,7 +295,7 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
   });
 
   describe("P1-28 · D11 interrupted", () => {
-    it("HUB-FR-106 · P1-28 · stage running, hub.runs kết thúc > 60 s (SQL) + sweepOnce ⇒ needs_decision interrupted", async () => {
+    it("HUB-FR-106 · P1-28 · stage running, hub.runs kết thúc > 60 s (SQL) + sweepOnce ⇒ stage waiting_timer (retry 1, INTERRUPTED), 0 decision", async () => {
       needSchema(c.ready);
       const s = await startInRoom(c, { key: DEFS.auto.key });
       const j = await nextStageJob(c, s.runId);
@@ -287,18 +305,16 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
       expect((await stageRow(c.sql, s.runId, 0)).status).toBe("running");
       const r = await sweep(c);
       expect(r.interrupted).toBeGreaterThanOrEqual(1);
-      await waitStatus(c.sql, s.runId, "needs_decision");
-      expect((await decisionOf(s.runId))?.reason).toBe("interrupted");
+      await expectRetrying(s.runId, "INTERRUPTED");
     }, 30_000);
 
-    it("HUB-FR-106 · P1-28 · `POST /runs/:stage/cancel` ⇒ needs_decision interrupted", async () => {
+    it("HUB-FR-106 · P1-28 · `POST /runs/:stage/cancel` (không phải huỷ run) ⇒ stage waiting_timer (retry 1, INTERRUPTED), 0 decision", async () => {
       needSchema(c.ready);
       const s = await startInRoom(c, { key: DEFS.auto.key });
       const j = await nextStageJob(c, s.runId);
       const res = await c.call("A", "POST", `/runs/${j.runId}/cancel`, {});
       expect(res.status).toBeLessThan(300);
-      await waitStatus(c.sql, s.runId, "needs_decision");
-      expect((await decisionOf(s.runId))?.reason).toBe("interrupted");
+      await expectRetrying(s.runId, "INTERRUPTED");
     }, 30_000);
   });
 
