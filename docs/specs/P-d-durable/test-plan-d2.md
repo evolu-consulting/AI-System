@@ -101,10 +101,10 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 | PD2-I46 | RLS: `admin_rw` scope tenant beta `select admin.tenant_workflow_tools` | 0 hàng acme; scope platform thấy hết; `hub_ro` SELECT được; `hub_ro` INSERT ⇒ 42501 |
 | PD2-I47 | DB: PK `(workflow_id, tenant_id)` trùng ⇒ 23505; xoá workflow ⇒ cascade; xoá user `granted_by` ⇒ NULL; index `tenant_workflow_tools_tenant_active_idx`; migrate 2 lần idempotent | đúng |
 
-### 3.4b Notice chuyển cấp, RunSummary (D2-45/47) — `d2/escalate-notice`, `d2/run-summary.int.test.ts`
+### 3.4b Notice chuyển cấp, RunSummary (D2-45/47) — `d2/escalate-notice`, `d2/run-summary`
 | Ca | Kỳ vọng |
 |---|---|
-| PD2-I51 | chuyển cấp ⇒ notice (payload + inbox) có `group` + `after_h`; history `escalate` có `after_h` |
+| PD2-I51 | notice (payload + inbox) có `group` + `after_h`; history `escalate` có `after_h` |
 | PD2-I52 | `wait_until`/`retry_at` = `due_at` mở sớm nhất; bắn/huỷ/không hẹn ⇒ `null` (list + chi tiết) |
 
 ### 3.5 DB hub 0037 — `d2/db.int.test.ts`

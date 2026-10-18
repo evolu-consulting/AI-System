@@ -10,9 +10,9 @@
 ## Điều kiện trước T17
 | # | Điều kiện | Trạng thái |
 |---|---|---|
-| G1 | qc: nhãn E01 theo i18n `…tool.argValue` (D2-43), sửa mã truy vết `tool.int:162`, PD2-I43 trùng mã (#119) | Chờ |
-| G2 | qc: PD2-I51 (notice chuyển cấp `group`/`after_h`, D2-47), PD2-I52 (`wait_until`/`retry_at`, D2-45) — đỏ đúng lý do | Chờ |
-| G3 | docs: #116 plan-d2 §12, #118 tasks (tick T15c, thêm D2-43…47 vào mục Đọc) | Chờ |
+| G1 | qc: nhãn E01 theo i18n `…tool.argValue` (D2-43), sửa mã truy vết `tool.int:162`, PD2-I43 trùng mã (#119) | Xong 5562ddc |
+| G2 | qc: PD2-I51 (notice chuyển cấp `group`/`after_h`, D2-47), PD2-I52 (`wait_until`/`retry_at`, D2-45) — đỏ đúng lý do | Xong 5562ddc (đỏ ở `expect`, thiếu trường) |
+| G3 | docs: #116 plan-d2 §12, #118 tasks (tick T15c, thêm D2-43…47 vào mục Đọc) | Xong 0c579a2 |
 
 ## Ràng buộc trong BUILD (báo lại ở T20)
 - Luật 4c: hot path tập hợp; T17b đo trước rồi mới chọn cách; PD2-P01…P05 xanh ở `PERF=1`.
