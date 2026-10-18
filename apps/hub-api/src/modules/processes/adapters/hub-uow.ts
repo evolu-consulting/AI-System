@@ -10,10 +10,13 @@ import type {
   Clock,
   Outbox,
   OutboxEvent,
+  SystemUow,
+  TenantUow,
   TxRepos,
   UnitOfWork,
 } from "../application/ports";
 import type { ProcessNotifier } from "../core/ports";
+import { DomainError } from "../domain/errors";
 import { claimDueReminders, writeNotices } from "../notify/batch.repo";
 import { createNotifier } from "../notify/notifier";
 import { claimExpired, insertRunEnds } from "../runs/expire";
@@ -93,13 +96,35 @@ export function createHubUow(db: Db, deps: HubUowDeps): UnitOfWork {
     return out;
   }
   return {
-    tenant: (who, fn) =>
-      run(
+    tenant: async (who, fn) => {
+      assertTenantId(who.tenantId);
+      return run(
         { kind: "user", tenantId: who.tenantId, userId: who.userId },
         (tx, o) => txRepos(tx, who.tenantId, o),
         fn,
-      ),
-    system: (tenantId, fn) => run({ kind: "system" }, (tx, o) => txRepos(tx, tenantId, o), fn),
+      );
+    },
+    system: async (tenantId, fn) => {
+      assertTenantId(tenantId);
+      return run({ kind: "system" }, (tx, o) => txRepos(tx, tenantId, o), fn);
+    },
     systemBatch: (fn) => run({ kind: "system" }, (tx, o) => batchRepos(tx, o, deps.notifier), fn),
   };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** T6c · tenant rỗng/sai dạng ⇒ lỗi domain TRƯỚC khi mở tx (không để Postgres ném 22P02 giữa tx). */
+function assertTenantId(tenantId: unknown): void {
+  if (typeof tenantId !== "string" || !UUID.test(tenantId)) throw new DomainError("TENANT_INVALID");
+}
+
+/** T6c · object riêng CHỈ có `tenant` (route/use case HTTP): ép kiểu cũng không tới được `system`/`systemBatch`. */
+export function tenantOnly(u: UnitOfWork): TenantUow {
+  return { tenant: u.tenant };
+}
+
+/** T6c · object riêng CHỈ có `system`/`systemBatch` (vòng nền + handles qua `ProcessBgDeps`). */
+export function systemOnly(u: UnitOfWork): SystemUow {
+  return { system: u.system, systemBatch: u.systemBatch };
 }

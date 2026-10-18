@@ -66,6 +66,7 @@ describe("CONVENTIONS §5 · DOMAIN_ERROR_MAP ⇒ mã contract + HTTP", () => {
     ["TIMER_STATE", "PROCESS_RUN_STATE", 409],
     ["REF_INVALID", "PROCESS_REF_INVALID", 422],
     ["DEF_INVALID", "PROCESS_DEF_INVALID", 422],
+    ["TENANT_INVALID", "PROCESS_NOT_FOUND", 404],
   ];
   it("HUB-FR-143 · đủ mã, đúng code/status, giữ details", () => {
     expect(Object.keys(DOMAIN_ERROR_MAP).sort()).toEqual(cases.map(([c]) => c).sort());

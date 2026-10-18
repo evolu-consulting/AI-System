@@ -8,7 +8,7 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { publishUserEvents } from "../../../lib/user-stream";
-import type { FinishedRun, ProcessDeps } from "../core/ports";
+import type { FinishedRun, ProcessBgDeps, ProcessDeps } from "../core/ports";
 import { THREAD_LOCALE } from "../core/thread";
 import { threadContent } from "../core/thread.rules";
 
@@ -30,7 +30,7 @@ const textArray = (xs: readonly string[]): string => `{${xs.map((x) => `"${x}"`)
 type Claimed = FinishedRun & { originKind: string; roomId: string | null };
 
 /** Một lượt hết hạn: lặp lô tới khi hết run quá hạn (cờ `more`), lô < 100 hoặc hết ngân sách; trả tổng run `expired`. */
-export async function expireRuns(d: ProcessDeps): Promise<number> {
+export async function expireRuns(d: ProcessBgDeps): Promise<number> {
   const t0 = performance.now();
   let total = 0;
   for (;;) {
@@ -56,7 +56,9 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
  * MỘT câu (CTE ghi dữ liệu): khoá run active quá hạn (cũ trước), đặt `expired` + `finished_at`, huỷ stage còn mở, đóng task
  * mở (`expired`), trả hàng nguồn kèm `tenant_id`. Stage/task lọc theo `process_run_id = any(array(select id from r))`
  * (index `*_run_*`, không join theo thống kê — sau chèn hàng loạt thống kê cũ làm planner chọn nested loop 100 × N).
- * Tenant: FK kép `(process_run_id, tenant_id)` bảo đảm hàng con cùng tenant run nguồn, thêm `tenant_id` tường minh (K3 lô).
+ * Tenant (K3 lô, T6c): bảo đảm nằm ở schema — `process_runs.id` là PK (duy nhất toàn bảng) + FK kép
+ * `(process_run_id, tenant_id) → process_runs(id, tenant_id)` ⇒ hàng con khớp `process_run_id` thì chắc chắn cùng tenant run
+ * nguồn. `tenant_id = any(…)` chỉ là lọc thừa cho index/RLS, KHÔNG khớp từng cặp (run, tenant) — đừng dựa vào nó.
  */
 export async function claimExpired(
   tx: Tx,

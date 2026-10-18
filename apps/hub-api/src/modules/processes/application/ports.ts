@@ -105,11 +105,20 @@ export type BatchRepos = {
   outbox: Outbox;
 };
 
-export type UnitOfWork = {
+/**
+ * T6c · cổng cho đường request (route, use case HTTP): CHỈ scope user (RLS). Route/use case HTTP không bao giờ nhận
+ * `SystemUow` (test `uow-boundary.test.ts`). `tenantId` không phải uuid ⇒ `DomainError("TENANT_INVALID")` trước khi mở tx.
+ */
+export type TenantUow = {
   /** Request người dùng: `withHubScope({kind:"user", tenantId, userId})` (RLS) + repo lọc `tenantId`. */
   tenant<T>(who: { tenantId: string; userId: string }, fn: (r: TxRepos) => Promise<T>): Promise<T>;
+};
+/** T6c · cổng CHỈ cho vòng nền + handles (`ProcessBgDeps.sysUow`): scope `system` bỏ qua RLS. */
+export type SystemUow = {
   /** Vòng nền theo hàng: scope `system`; repo gắn `tenantId`, MỌI câu lọc `tenant_id` tường minh (CA-R06). */
   system<T>(tenantId: string, fn: (r: TxRepos) => Promise<T>): Promise<T>;
   /** CHỈ vòng nền theo tập (nhắc, chuyển cấp, hết hạn — CR-093, A11): một tx scope `system` mỗi lô. */
   systemBatch<T>(fn: (r: BatchRepos) => Promise<T>): Promise<T>;
 };
+/** Adapter `createHubUow` dựng đủ cả hai; mount tách thành hai object riêng (`tenantOnly`/`systemOnly`). */
+export type UnitOfWork = TenantUow & SystemUow;

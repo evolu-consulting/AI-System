@@ -6,12 +6,12 @@ import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
-import { createHubUow } from "./adapters/hub-uow";
+import { createHubUow, systemOnly, tenantOnly } from "./adapters/hub-uow";
 import { makeOutboxPublisher } from "./adapters/outbox";
 import { asksRoutes } from "./asks/asks.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
-import type { ProcessDeps, ProcessStartPort, StageLauncher } from "./core/ports";
+import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from "./core/ports";
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
@@ -71,13 +71,15 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     postThread,
     launcher: { kick: (runId) => d.launcher.kick(runId) },
   });
+  // T6c · tách cổng: route/use case HTTP chỉ thấy `tenant`; vòng nền + handles nhận `sysUow` (object riêng, không lộ qua `d`).
+  const uow = createHubUow(m.db, { clock: { now }, publish, notifier });
   const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
     now,
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
     notifier,
     postThread,
-    uow: createHubUow(m.db, { clock: { now }, publish, notifier }),
+    uow: tenantOnly(uow),
     ctx: { clock: { now }, ids: { newId: () => crypto.randomUUID() }, log: m.log },
   };
   // Launcher thật nhận `ProcessDeps` (RunService/runner) để tạo `hub.runs` stage; test có thể thay `stageLauncher` giả.
@@ -95,21 +97,22 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     defsRoutes,
   ])
     app.route("/", r(d));
+  const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   m.onProcessHandles?.({
-    sweepOnce: () => sweepOnce(d),
-    remindOnce: () => remindOnce(d),
+    sweepOnce: () => sweepOnce(bg),
+    remindOnce: () => remindOnce(bg),
     postThreadOnce: () => poster.postThreadOnce(),
     kick: (runId) => d.launcher.kick(runId),
     khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
   });
   // CR-093 · làm nóng pool cho câu lô vòng nền (chạy nền, không chặn mount; cả khi test tắt vòng — handles dùng chung pool).
-  void warmBackgroundPool(d);
+  void warmBackgroundPool(bg);
   if (m.processLoops !== false) {
     poster.start(m.signal);
     khWriter?.start(m.signal);
     // B2 · PF1: vòng nền `sweepOnce` thật (mở PR stage Áp, interrupted, resolveTimeouts, requeueOrphans). Khi
     // `processLoops:false` (test), bỏ qua — test gọi qua `onProcessHandles.sweepOnce`.
-    startProcessSweeper(d, { signal: m.signal });
+    startProcessSweeper(bg, { signal: m.signal });
   }
   return { roomSender: roomStart(d), conversationStart: d.start };
 }

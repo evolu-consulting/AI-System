@@ -49,12 +49,14 @@ export function timerRepo(tx: Tx, tenantId: string): TimerRepo {
     },
     async cancelForRun(runId, stageRunIds, now) {
       const all = stageRunIds === "all";
-      const ids = all ? "{}" : `{${stageRunIds.join(",")}}`;
+      // T6c · mảng uuid là MỘT tham số JSON (không ghép chuỗi literal mảng) — văn bản câu cố định.
+      const ids = JSON.stringify(all ? [] : stageRunIds);
       const rows = await tx.execute(sql`
         update hub.process_timers set cancelled_at = ${now.toISOString()}::timestamptz
         where tenant_id = ${tenantId} and process_run_id = ${runId}
           and fired_at is null and cancelled_at is null
-          and (${all}::boolean or stage_run_id = any(${ids}::uuid[]))
+          and (${all}::boolean or stage_run_id = any(array(
+            select jsonb_array_elements_text(${ids}::jsonb)::uuid)))
         returning 1`);
       return rows.length;
     },

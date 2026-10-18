@@ -32,6 +32,8 @@ export const DOMAIN_ERROR_MAP: Record<ProcessDomainError, ErrorTarget> = {
   TIMER_STATE: { block: "process", code: "PROCESS_RUN_STATE" },
   REF_INVALID: { block: "def", code: "PROCESS_REF_INVALID" },
   DEF_INVALID: { block: "def", code: "PROCESS_DEF_INVALID" },
+  // T6c · tenant sai dạng: không lộ gì hơn "không thấy".
+  TENANT_INVALID: { block: "process", code: "PROCESS_NOT_FOUND" },
 };
 
 export function domainErrorToApp(e: DomainError): AppError {

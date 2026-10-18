@@ -5,7 +5,9 @@ export type ProcessDomainError =
   | "RUN_STATE"
   | "NO_OUTPUT"
   | "REF_INVALID"
-  | "DEF_INVALID";
+  | "DEF_INVALID"
+  /** T6c · `tenantId` vào UoW không phải uuid (chặn trước khi mở tx). */
+  | "TENANT_INVALID";
 
 export class DomainError extends Error {
   constructor(

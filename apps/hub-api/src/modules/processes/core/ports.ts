@@ -13,7 +13,7 @@ import type { KhRuntime } from "../../kh/kh.mount";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
 import type { HubSecretReader } from "../../secrets/secrets.use";
-import type { AppCtx, UnitOfWork } from "../application/ports";
+import type { AppCtx, SystemUow, TenantUow } from "../application/ports";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";
 
@@ -85,8 +85,11 @@ export type ProcessDeps = {
   postThread(runId: string): Promise<number>;
   /** Cổng bắt đầu run (PF1) — B3 dùng cho "Chạy" từ admin; mount dựng từ `conversationStart`. */
   start: ProcessStartPort;
-  /** P-d · CA-R06 · cổng giao dịch bốn lớp (`adapters/hub-uow.ts`) + đồng hồ/id/log cho use case — mount dựng. */
-  uow: UnitOfWork;
+  /**
+   * P-d · CA-R06 · cổng giao dịch bốn lớp (`adapters/hub-uow.ts`) + đồng hồ/id/log cho use case — mount dựng. T6c: CHỈ
+   * `tenant` (route nhận `ProcessDeps`); `system`/`systemBatch` ở `ProcessBgDeps.sysUow` của vòng nền.
+   */
+  uow: TenantUow;
   ctx: AppCtx;
   /**
    * CR-056 · HUB-FR-115 · kho nội dung file (nối từ `AppDeps.attachments.storage`): `writeOutput` ghi blob output stage
@@ -101,3 +104,9 @@ export type ProcessDeps = {
   /** P-c2 · HUB-FR-129 · đọc khoá nguồn (`source_credential`) cho `openPullRequest`. Vắng ⇒ không mở PR (fail-closed). */
   secrets?: Pick<HubSecretReader, "useSecret">;
 };
+
+/**
+ * T6c · phụ thuộc của vòng nền + `ProcessHandles` (sweep, nhắc, hết hạn, làm nóng pool): thêm cổng scope `system`. Route
+ * và use case HTTP KHÔNG nhận kiểu này (test `uow-boundary.test.ts` chặn `SystemUow`/`ProcessBgDeps`/`.system(`).
+ */
+export type ProcessBgDeps = ProcessDeps & { sysUow: SystemUow };

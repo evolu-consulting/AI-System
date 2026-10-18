@@ -10,7 +10,7 @@ import { startLoop } from "../../../lib/loop";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { SweepResult } from "../core/handles";
-import type { ProcessDeps } from "../core/ports";
+import type { ProcessBgDeps, ProcessDeps } from "../core/ports";
 import { firstIdxOfStep } from "../core/step.rules";
 import { decisionAssignees, decisionOptionsFor } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
@@ -48,7 +48,7 @@ type DueRow = StageCand & { interrupted: boolean; apply_ready: boolean };
  * `advanceApplies` (B7 làm P1-82/P2-11 flaky do ghì pool + quét đôi khi nhiều sweep chạy song song). Phần xử lý mỗi ứng
  * viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
  */
-export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
+export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
   const expired = await expireRuns(d);
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
@@ -79,7 +79,7 @@ export async function sweepOnce(d: ProcessDeps): Promise<SweepResult> {
  * Mount gọi khi `processLoops !== false`; `signal` abort ⇒ dừng. Lỗi một lượt chỉ log (`process-sweep-failed`).
  */
 export function startProcessSweeper(
-  d: ProcessDeps,
+  d: ProcessBgDeps,
   o: { everyMs?: number; signal?: AbortSignal } = {},
 ): void {
   startLoop({
@@ -97,7 +97,7 @@ export function startProcessSweeper(
  * - `apply_ready` (P-c2 · C14/C27): có job `source.apply` đã kết thúc (hoặc đã báo cáo hàng) ⇒ `advanceApply`
  *   (mở PR / "Cần người quyết"; job kết thúc mà không hàng ⇒ failed+provider_error).
  */
-function scanDue(tx: Tx, cutoff: Date): Promise<DueRow[]> {
+function scanDue(tx: Tx, cutoff: Date, limit = BATCH): Promise<DueRow[]> {
   const cut = sql`${cutoff.toISOString()}::timestamptz`;
   // Tập job Áp "đã xong" (quét `jobs`/`autofix_applies` MỘT lần, băm) ⇒ LEFT JOIN để suy `apply_ready` thay vì EXISTS
   // tương quan trong SELECT (EXISTS-trong-SELECT ép subplan quét `jobs` MỖI hàng stage ⇒ N×M khi nhiều stage `running`).
@@ -112,7 +112,7 @@ function scanDue(tx: Tx, cutoff: Date): Promise<DueRow[]> {
     left join hub.runs r on r.id = s.current_run_id
     left join ${applyReady} ja on ja.step_id = s.id and ja.tenant_id = s.tenant_id
     where s.status = 'running' and (${interrupted} or ja.step_id is not null)
-    order by s.updated_at limit ${BATCH}`);
+    order by s.updated_at limit ${limit}`);
 }
 
 /** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */
@@ -272,7 +272,7 @@ const isActive = (s: ProcessRunStatus): boolean =>
   (PROCESS_RUN_ACTIVE as readonly string[]).includes(s);
 
 /** Ứng viên `resolveTimeouts` (chỉ đọc). */
-function resolveCands(tx: Tx, cutoff: Date) {
+function resolveCands(tx: Tx, cutoff: Date, limit = BATCH) {
   const cut = cutoff.toISOString();
   return tx.execute<{ id: string }>(sql`select r.id from hub.process_runs r
     where r.status = 'running' and r.pinned_sources is null
@@ -282,22 +282,25 @@ function resolveCands(tx: Tx, cutoff: Date) {
           and ((j.status = 'queued' and j.created_at > ${cut}::timestamptz)
             or (j.status = 'running'
               and coalesce(j.heartbeat_at, j.started_at, j.created_at) > ${cut}::timestamptz)))
-    order by r.updated_at limit ${BATCH}`);
+    order by r.updated_at limit ${limit}`);
 }
 
 /** Ứng viên `requeueOrphans` (chỉ đọc). */
-function orphanCands(tx: Tx) {
+function orphanCands(tx: Tx, limit = BATCH) {
   return tx.execute<{ process_run_id: string }>(sql`
     select s.process_run_id from hub.stage_runs s
     where s.status = 'queued'
       and not exists (select 1 from hub.runs r where r.stage_run_id = s.id and r.status = 'running')
-    order by s.updated_at limit ${BATCH}`);
+    order by s.updated_at limit ${limit}`);
 }
 
-/** CR-093 · làm nóng: chạy các câu QUÉT chỉ đọc của `sweepOnce` một lần trên kết nối của `tx` (bỏ kết quả). */
+/**
+ * CR-093 · làm nóng: chạy các câu QUÉT chỉ đọc của `sweepOnce` một lần trên kết nối của `tx` với `limit 0` (T6c): `limit`
+ * là tham số ⇒ cùng văn bản câu (câu chuẩn bị dùng lại), không đọc hàng nào.
+ */
 export async function warmSweepQueries(tx: Tx): Promise<void> {
   const epoch = new Date(0);
-  await scanDue(tx, epoch);
-  await resolveCands(tx, epoch);
-  await orphanCands(tx);
+  await scanDue(tx, epoch, 0);
+  await resolveCands(tx, epoch, 0);
+  await orphanCands(tx, 0);
 }

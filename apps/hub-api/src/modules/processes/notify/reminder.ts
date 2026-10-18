@@ -6,7 +6,7 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import { processNotice } from "../core/events";
-import type { ProcessDeps } from "../core/ports";
+import type { ProcessBgDeps, ProcessDeps } from "../core/ports";
 import { claimDueReminders, type NoticeRow, unreadKey, writeNotices } from "./batch.repo";
 import { buildNotice } from "./notifier";
 import { noticeRecipients } from "./notify.rules";
@@ -17,7 +17,7 @@ const REMINDER_BATCH = 100;
 const DRAIN_BUDGET_MS = 60_000;
 
 /** Một lượt nhắc: trả tổng số task vừa nhắc (mọi lô). `processLoops:false` ⇒ test gọi qua `ProcessHandles.remindOnce`. */
-export async function remindOnce(d: ProcessDeps): Promise<number> {
+export async function remindOnce(d: ProcessBgDeps): Promise<number> {
   const t0 = performance.now();
   let total = 0;
   for (;;) {
