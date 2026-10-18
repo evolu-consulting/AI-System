@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
 import { RefPicker } from "@/components/shared/RefPicker";
-import { useSourceOptions } from "@/features/sources/api";
+import { useSourceOptions } from "../../hooks/use-source-options";
 import type { DefDraft, DraftErrors } from "../../lib/def-form";
 import { canDropSource, firstStageUsing } from "../../lib/sources-form";
 
