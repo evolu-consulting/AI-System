@@ -47,6 +47,11 @@ Chi phí chủ yếu do context dài bị đọc lại mỗi lượt (M0–M3: ~
 5. **Trần kích thước tài liệu mốc** (M3: spec+plan+test-plan ≈ 345 KB, gấp 4 lần BA+UI): `spec.md` ≤ 25 KB · `plan.md` ≤ 30 KB · `plan-frontend.md` ≤ 25 KB · `test-plan.md` ≤ 30 KB, viết dạng bảng (FR/AC · file · dữ liệu · kỳ vọng), không văn xuôi, không chép lại BA/contract — trỏ mục. Vượt trần → tách phụ lục `<file>-<chủ đề>.md` mà task nào cần thì trỏ tới. Kiểm bằng `wc -c` trước khi trình readiness (1 KB = 1024 byte).
 6. **Cột `Đọc` trong `tasks.md`**: mỗi task ghi đúng các mục cần đọc (vd `plan §5.2`, `spec §3 GroupDto`, `test-plan §4 hàng R07–R10`). Agent BUILD chỉ đọc các mục đó + bàn giao; điều phối truyền bàn giao, không bảo agent "đọc spec".
 7. Phiên chính: hết mỗi mốc (hoặc sau Gate / sau BUILD) → `/handoff` rồi `/clear`; đầu phiên mới hook tự chèn `STATE.md`.
+8. **Điều phối nhanh (người dùng 2026-10-18):**
+   - **Không chạy bộ test đầy đủ khi có agent đang BUILD** — lượt đầy đủ (`test:int:par` toàn bộ, `test:all`) chỉ khi đóng task/lát/mốc, một lượt, máy rảnh. Trong lúc build chỉ chạy test của phần đang sửa.
+   - **Brief trích sẵn**: điều phối dán vào lời giao việc đúng đoạn cần (chữ ký hàm, bảng file đích, hàng test-plan, quyết định liên quan) thay vì bảo agent tự đọc cả spec/plan; agent chỉ mở thêm file code cần sửa.
+   - **Model theo rủi ro, thiên về nhanh**: task thường (FE, docs, dời file không đổi hành vi có test khoá phủ, qc sửa đường dẫn/khoá, readiness chỉ diff) dùng `model: sonnet`; Opus chỉ cho task chạm cách ly tenant/RLS, khoá/transaction, quyền, auth/secret.
+   - **Song song khi file không giao nhau**; mỗi agent stage đúng file của mình theo đường dẫn; `tests/.lock` ghi lại ở commit cuối của đợt.
 
 ### Đo token mỗi mốc
 
