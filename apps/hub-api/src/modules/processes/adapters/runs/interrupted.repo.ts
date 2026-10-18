@@ -17,7 +17,6 @@ import { decisionAssignees, decisionOptionsFor } from "../../core/task.rules";
 import { enqueueThread } from "../../core/thread";
 import type { DecisionReason } from "../../domain/types";
 import { bindTx } from "../hub-uow";
-import { hubRunCancelled } from "./job-failure";
 
 type SnapStage = {
   step?: number;
@@ -82,10 +81,8 @@ async function openTx(
   const stage = await stageById(tx, { runId: p.runId, tenantId: h.tenant_id, id: p.stageRunId });
   if (stage?.status !== "running") return null;
   const idx = Number(stage.stage_idx);
-  // PD-R01 · lần chạy bị người dùng huỷ (`hub.runs` `cancelled`) không phải lỗi tạm ⇒ `interrupted` cũ.
-  const agent =
-    h.snapshot.stages[idx]?.executor?.kind === "agent" &&
-    !(await hubRunCancelled(tx, h.tenant_id, stage.current_run_id));
+  // D4 · job `aborted`/hub run huỷ mà run quy trình còn hoạt động (đã kiểm ở trên) ⇒ lỗi tạm, qua `decide`.
+  const agent = h.snapshot.stages[idx]?.executor?.kind === "agent";
   const reason = agent ? await decide(bindTx(tx, h.tenant_id).repos) : "interrupted";
   if (reason === null) return [];
   return openDecision(d, tx, { h, run, stage, idx, reason }, now);

@@ -2,7 +2,6 @@
 // stage-driver (code cũ đang trong tx, run ĐÃ khoá) — repo dựng bằng `bindTx` với `tenantId` của hàng run đã khoá.
 // Chỉ stage `agent` (đơn) ở T7a; stage nhóm thử lại ở T7b, stage Áp không áp (PD-R09).
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
 import { handleJobFailure } from "../../application/runs/handle-job-failure.usecase";
 import { bindTx } from "../hub-uow";
 import type { JobFail } from "./job-result";
@@ -19,21 +18,6 @@ export type FailureGateIn = {
   result: ResultKind;
   job?: JobFail | null;
 };
-
-/**
- * PD-R01 · `aborted` do người dùng huỷ lần chạy stage (`POST /runs/:id/cancel` ⇒ `hub.runs.status = 'cancelled'`) KHÔNG
- * phải lỗi tạm ⇒ giữ `interrupted` cũ; còn lại (tắt instance, run chết) ⇒ tạm. Lọc `tenant_id` của run đã khoá.
- */
-export async function hubRunCancelled(
-  tx: Tx,
-  tenantId: string,
-  hubRunId: string | null,
-): Promise<boolean> {
-  if (!hubRunId) return false;
-  const [r] = await tx.execute<{ status: string }>(sql`select status from hub.runs
-    where id = ${hubRunId} and tenant_id = ${tenantId}`);
-  return r?.status === "cancelled";
-}
 
 /** Job lỗi (`failed`) hoặc bị ngắt (`limit{interrupted}` từ `aborted`) của stage agent có thông tin job thô. */
 function eligible(p: FailureGateIn): p is FailureGateIn & { job: JobFail } {
@@ -53,7 +37,7 @@ export async function agentFailureGate(
   now: Date,
 ): Promise<"retry" | "retry_exhausted" | null> {
   if (!eligible(p)) return null;
-  if (p.job.interrupted && (await hubRunCancelled(tx, p.tenantId, p.hubRunId))) return null;
+  // D4 · `aborted` (kể cả huỷ hub run) mà run quy trình chưa bị huỷ ⇒ lỗi tạm; run huỷ/kết thúc đã bị `lockAndLoad` loại.
   const { repos } = bindTx(tx, p.tenantId);
   const dec = await handleJobFailure(
     repos,
