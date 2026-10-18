@@ -753,6 +753,7 @@ b88d17ffebd7d66ad292e53d85f6253f972cfca5e0be090e773e4cc6c4e083e8  tests/acceptan
 7cdd9e83a1cd8036662a6ea40c9af194d94887ea06ed2eac5fa8639b8c0a692f  tests/acceptance/P-d/d2/escalate-notice.int.test.ts
 9329338c2a090157a4b77bb5df9c93aeecee3467e1a77e1531327ba91a4d2525  tests/acceptance/P-d/d2/run-summary.int.test.ts
 845e2f487ff247fd28074811b0226dffe0b2aea74c612bf0cdbdf1b0b0243280  tests/acceptance/P-d/d2/tool-net.int.test.ts
+ffb5b86aebc2b63d8c21053f67c2afa4671eb82b002d069d2e0c4467d0e98441  tests/acceptance/P-d/d2/tool-recheck.int.test.ts
 9d877382071888a6f50b8442833173a52f4c5a3efa7ad0e8f9c64704c6a7d7ce  tests/acceptance/P-d/d2/tool-switch.int.test.ts
 2cd4467f2adcb085f558c6753a952dcf9bbfb19c43ec12fe8ebedb1e7a09294f  tests/acceptance/P-d/d2/tool.int.test.ts
 df5bf2adf5839297dfa3ed71606207edd71995e9355977d19d2974f6f9c532da  tests/acceptance/P-d/perf/background.perf.int.test.ts
@@ -768,6 +769,7 @@ b16cd03a8b16c495b2a239d751cbca54ff0e60d9a2c91864f578d5f3452df189  tests/acceptan
 52f6854d397b9cf14292480f1e684ee3956b22a19700e56d1e24b1c4b4274f67  tests/acceptance/P-d/rules/d2/branch.test.ts
 65f11f3f7cc78f0fe971397f5d3c168e5b598ca9f83f7d809cea1a56b6ef3706  tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts
 f369228eade6fdfc566a24f0dfb35d7a9f6ebc2af9003f9c0d7c56cd80aa0b7b  tests/acceptance/P-d/rules/d2/def-issues.test.ts
+967fb29ff80891576d9d463857a9304a1b6a2b8f9b2117a9ce3affcb3216b556  tests/acceptance/P-d/rules/d2/run-tool-stage-recheck.test.ts
 6428781000d3a94fb478e08d40bf3ac289cf94d577cb0a33f001e0d3228302f6  tests/acceptance/P-d/rules/d2/run-tool-stage.test.ts
 230a68058e80dfecf5174ae536b14c5ba591be94c52be814484fdd90b117130f  tests/acceptance/P-d/rules/d2/tool.test.ts
 c6020f8f9ca3e26713b4ff6d0ed71ff50069ee948892c5439ba9c7c452bf6996  tests/acceptance/P-d/rules/decision.test.ts

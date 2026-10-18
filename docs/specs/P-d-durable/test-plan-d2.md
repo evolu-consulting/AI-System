@@ -1,10 +1,10 @@
 ﻿# Test plan · P-d2 (T15) · stage `tool` + công tắc tool theo tenant + rẽ nhánh (phụ lục của [test-plan.md](test-plan.md))
 
-Nguồn: spec-d2, spec-tz-tools §2, plan-d2/contract/db, AC-H44/H45/H47, A15. Quy ước: [test-plan §1–§2](test-plan.md).
+Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: [test-plan §1–§2](test-plan.md).
 
-**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản (JSON `outputs.<output_field>`; HTTP lỗi; treo; socket đóng = `sent:true`; cổng đóng = chưa gửi), đếm lời gọi, lưu `user`/`inputs`. Fixture: `W` `xuat-hoa-don` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
+**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản (JSON; HTTP lỗi; treo; socket đóng = `sent`; cổng đóng = chưa), đếm lời gọi. Fixture: `W` `xuat-hoa-don` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
 
-**Cổng lớp:** test nạp `loadLayer(layer, tên, task)` qua barrel `P/{domain,application}/index.ts` (T17); vắng ⇒ "chưa có tính năng: <tên> (<task>)". Luật lưu def (U01–U03, U10–U11) qua hàm contract.
+**Cổng lớp:** test nạp `loadLayer(layer, tên, task)` qua barrel `P/{domain,application}/index.ts`; vắng ⇒ "chưa có tính năng". Luật lưu def (U01–U03, U10–U11) qua hàm contract.
 
 ## 1. Luật lớp 1 P-d2 — `tests/acceptance/P-d/rules/d2/{tool,branch,def-issues}.test.ts` (plan-d2 §4)
 | Ca | File · hàm | Dữ liệu | Kỳ vọng |
@@ -95,17 +95,20 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 | PD2-I41 | `PUT …/W` | 200 `on:true`, `granted_by`=padmin; audit `entity:"workflow"`, `action:"grant"`, `tenant_id` acme, `entity_id` W, before `{on:false}` after `{on:true}`; NOTIFY `config_changed {entity:"workflow", tenant_id: acme}` |
 | PD2-I42 | `PUT` lần 2 | 200 không đổi, 0 audit mới, 0 NOTIFY |
 | PD2-I43 | `DELETE …/W`; `PUT` lại | `on:false`, `revoked_at` đặt, audit `revoke`; `PUT`: `revoked_at` NULL, `granted_by` mới, audit `grant` |
-| PD2-I48 | `DELETE` lần 2 (**#109**) | 200, 0 audit, `revoked_at` giữ |
+| PD2-I48 | `DELETE` lần 2 | 200, 0 audit, `revoked_at` giữ |
 | PD2-I44 | `tadmin` GET/PUT/DELETE | 403 |
 | PD2-I45 | tenant không tồn tại (GET/PUT/DELETE, **#109**) / workflow không tồn tại; body PUT có trường thừa | 404 `NOT_FOUND`; 400 |
 | PD2-I46 | RLS: `admin_rw` scope tenant beta `select admin.tenant_workflow_tools` | 0 hàng acme; scope platform thấy hết; `hub_ro` SELECT được; `hub_ro` INSERT ⇒ 42501 |
-| PD2-I47 | DB: PK `(workflow_id, tenant_id)` trùng ⇒ 23505; xoá workflow ⇒ cascade; xoá user `granted_by` ⇒ NULL; index `tenant_workflow_tools_tenant_active_idx`; migrate 2 lần idempotent | đúng |
+| PD2-I47 | DB: PK `(workflow_id, tenant_id)` trùng ⇒ 23505; xoá workflow ⇒ cascade; xoá user `granted_by` ⇒ NULL; index `tenant_workflow_tools_tenant_active_idx`; migrate 2 lần | đúng |
 
 ### 3.4b Notice chuyển cấp, RunSummary (D2-45/47) — `d2/escalate-notice`, `d2/run-summary`
 | Ca | Kỳ vọng |
 |---|---|
 | PD2-I51 | notice (payload + inbox) có `group` + `after_h`; history `escalate` có `after_h` |
 | PD2-I52 | `wait_until`/`retry_at` = `due_at` mở sớm nhất; bắn/huỷ/không hẹn ⇒ `null` (list + chi tiết) |
+| PD2-I53 | `d2/tool-recheck`: `side_effect` bật sau lưu def, stage không `real_action` (M1) | `tool_failed`, Dify 0 gọi |
+| PD2-I54 | cùng file: `input_schema` hỏng sau lưu (m1) | như I53 |
+| PD2-U30 | `rules/d2/run-tool-stage-recheck`: `sideEffect ∧ ¬realAction` (M1) | như I53 |
 
 ### 3.5 DB hub 0037 — `d2/db.int.test.ts`
 | Ca | Kỳ vọng |
@@ -113,14 +116,14 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 | PD2-I50 | CHECK nới: `stage_runs.status='skipped'`, `review_tasks.reason='tool_failed'`, audit `tool_call`/`branch`, `process_thread_events.kind='branch'`, `room_messages.process_kind='branch'`; giá trị cũ giữ; lạ ⇒ 23514 |
 
 ### 3.6 Use case `runToolStage` với cổng giả (S2/S9/S10/S12, D2-13) — `rules/d2/run-tool-stage.test.ts` (không DB)
-ok · S10 (nhật ký trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `permission_lost`/`user_inactive`, 0 lời gọi) · S2/S9 (công tắc/workflow tắt, nguồn field `null` ⇒ `tool_failed`) · S12 (65.536 byte ok; 65.537 byte, 32.770 ký tự `đ` ⇒ `tool_failed`; sai kiểu ⇒ `template_invalid`) · D2-13 (503 đã gửi ⇒ hẹn `retry` +30 s; side effect + 500 ⇒ `tool_failed` 0 hẹn; 3 lượt ⇒ `retry_exhausted`).
+ok · S10 (trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `permission_lost`/`user_inactive`) · S2/S9 (tắt, field `null` ⇒ `tool_failed`) · S12 (65.536 byte ok; 65.537 ⇒ `tool_failed`; sai kiểu ⇒ `template_invalid`) · D2-13 (503 đã gửi ⇒ `retry` +30 s; side effect + 500 ⇒ `tool_failed`; 3 lượt ⇒ `retry_exhausted`).
 
 ### 3.7 Hiệu năng (Luật 4c, plan-d2 §9) — `perf/d2.perf.int.test.ts` (`bun run test:perf`)
 | Ca | Đo | Ngưỡng |
 |---|---|---|
-| PD2-P01 | PUT def 10 stage / 3 tool × 20, xen kẽ | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms (**#109**); số câu có tool − không tool = **1** |
+| PD2-P01 | PUT def 10 stage / 3 tool × 20, xen kẽ | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms ; số câu có tool − không tool = **1** |
 | PD2-P02 | 200 workflow × 50 tenant (10.000 hàng công tắc), `GET /process-editor/context` × 30 | p95 ≤ 20 ms; **2** câu |
-| PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; câu của riêng tool-driver (từ `loadCall` tới hết tx2, T18-perf-1) ≤ **14** (#109, không so mốc agent: cửa sổ khác nhau); p95 ≤ 60 ms đo từ câu `loadCall` tới `settled()` |
+| PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; câu của riêng tool-driver (`loadCall` tới hết tx2) ≤ **14** (#109); p95 ≤ 60 ms đo từ `loadCall` tới `settled()` |
 | PD2-P04 | đếm câu của POST Đạt + `settled()`: nhảy 1 vs 7 bước (def 10 bước); mốc = def **không** `branch` (#97, D2-33) | bằng nhau; khớp − mốc = **4**; không khớp − mốc = **1** (`fields`); p95 ≤ 30 ms (đúng khoảng đo) |
 | PD2-P05 | T17b (D2-32): `GET /process-runs?limit=50` (Adm), 50 run không hẹn vs có hẹn mở (SQL) | số câu bằng nhau; p95 ≤ 40 ms và ≤ không hẹn + 5 ms; thiếu wait/retry ⇒ đỏ ngay |
 
