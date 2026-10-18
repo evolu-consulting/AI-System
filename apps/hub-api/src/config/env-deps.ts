@@ -1,4 +1,6 @@
 // HUB-NFR-04 · H2a plan §8 · env đã kiểm → phần `AppDeps` lấy từ env (tách khỏi `server.ts` để test được, REVIEW 1 Hub #1, #10).
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { AppDeps } from "../app";
 import type { Logger } from "../lib/logger";
 import { type AttachEnv, parseAttachEnv } from "../modules/attachments/attach-env.rules";
@@ -61,5 +63,6 @@ export function attachEnvOf(
     log.warn("attachments_disabled", { reason: "HUB_ATTACH_DRIVER/HUB_ATTACH_DIR missing" });
     return null;
   }
-  return parseAttachEnv(env, platform);
+  // `HUB_ATTACH_DIR` trống ở dev/test ⇒ thư mục tạm cố định của OS (production vẫn bắt buộc tuyệt đối).
+  return parseAttachEnv(env, platform, join(tmpdir(), "ai-hub-attachments"));
 }

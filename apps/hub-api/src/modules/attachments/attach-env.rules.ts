@@ -3,6 +3,7 @@
 import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 
 export type AttachEnvInput = {
+  APP_ENV?: string;
   HUB_ATTACH_DRIVER?: string;
   HUB_ATTACH_DIR?: string;
   HUB_ATTACH_TENANT_MAX_BYTES?: string;
@@ -71,7 +72,14 @@ function commonLimits(e: AttachEnvInput): { tenantMaxBytes: number; sweepS: numb
   return { tenantMaxBytes, sweepS };
 }
 
-function requireDir(dir: string | undefined, platform: NodeJS.Platform): string {
+/** `dir` trống + development/test + có `devDir` ⇒ dùng `devDir` (thư mục tạm dev); production/khác ⇒ bắt buộc tuyệt đối. */
+function requireDir(
+  dir: string | undefined,
+  platform: NodeJS.Platform,
+  appEnv: string | undefined,
+  devDir: string | undefined,
+): string {
+  if (!dir && devDir && (appEnv === "development" || appEnv === "test")) return devDir;
   if (!dir || !isAbsoluteFor(dir, platform))
     throw new Error("HUB_ATTACH_DIR phải là đường dẫn tuyệt đối");
   return dir;
@@ -110,9 +118,14 @@ function parseFilebox(e: AttachEnvInput): FileboxAttachEnv {
 }
 
 /** driver `local` (dir tuyệt đối) hoặc `filebox` (FILEBOX_URL https/loopback + org); driver lạ ⇒ ném. */
-export function parseAttachEnv(e: AttachEnvInput, platform: NodeJS.Platform): AttachEnv {
+export function parseAttachEnv(
+  e: AttachEnvInput,
+  platform: NodeJS.Platform,
+  devDir?: string,
+): AttachEnv {
   if (e.HUB_ATTACH_DRIVER === "filebox") return parseFilebox(e);
   if (e.HUB_ATTACH_DRIVER !== "local")
     throw new Error("HUB_ATTACH_DRIVER không hợp lệ (driver hỗ trợ: local, filebox)");
-  return { driver: "local", dir: requireDir(e.HUB_ATTACH_DIR, platform), ...commonLimits(e) };
+  const dir = requireDir(e.HUB_ATTACH_DIR, platform, e.APP_ENV, devDir);
+  return { driver: "local", dir, ...commonLimits(e) };
 }
