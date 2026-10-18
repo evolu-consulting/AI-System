@@ -24,6 +24,7 @@ import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
+import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
 import {
   autofixSourceKindMiss,
   copyFromTemplate,
@@ -168,6 +169,7 @@ export class DefsService {
         tenantId: s.tenantId,
         input: withHandoff(input),
         sourceTemplateId: null,
+        ttlDays: ttlOnCreate(input.ttl_days),
         actorId: u.userId,
       });
       return {
@@ -189,7 +191,13 @@ export class DefsService {
       const cur = await this.#lock(tx, u, { s, id, version });
       await this.#check(tx, cur.tenant_id, input);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
-      const row = await repo.updateDef(tx, id, withHandoff(input), u.userId);
+      const row = await repo.updateDef(
+        tx,
+        id,
+        withHandoff(input),
+        ttlOnUpdate(input.ttl_days, cur.ttl_days),
+        u.userId,
+      );
       const a = {
         action: "update" as const,
         row,
@@ -226,6 +234,7 @@ export class DefsService {
         tenantId,
         input,
         sourceTemplateId: tpl.id,
+        ttlDays: ttlOnCreate(tpl.ttl_days),
         actorId: u.userId,
       });
       return {

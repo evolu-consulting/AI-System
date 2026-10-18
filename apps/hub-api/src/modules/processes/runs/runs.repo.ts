@@ -30,11 +30,12 @@ export type StartDefRow = {
   token_budget: number | null;
   sources: string[];
   inputs: ProcessInputDef[];
+  ttl_days: number | null;
 };
 
 const DEF_COLS = sql`d.id, d.key, d.name, d.version, d.enabled, (d.deleted_at is not null) as deleted,
   d.run_group_ids, d.stages, d.token_budget, coalesce(d.sources, '[]'::jsonb) as sources,
-  coalesce(d.inputs, '[]'::jsonb) as inputs`;
+  coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days`;
 
 export async function findDefByKey(
   tx: Tx,
@@ -71,7 +72,7 @@ export type CatalogRow = {
 export async function catalogDefs(tx: Tx, tenantId: string): Promise<CatalogRow[]> {
   return tx.execute<CatalogRow>(sql`select d.key, d.name, d.description, d.input_hint,
       jsonb_array_length(d.stages)::int as stage_count, d.run_group_ids,
-      coalesce(d.inputs, '[]'::jsonb) as inputs
+      coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days
     from hub.process_defs d
     where d.tenant_id = ${tenantId} and d.enabled = true and d.deleted_at is null
     order by d.name asc, d.key asc limit 200`);

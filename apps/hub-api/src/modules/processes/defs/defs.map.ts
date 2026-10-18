@@ -3,7 +3,6 @@ import {
   type AgentTeam,
   HUB_ADMIN_PROCESS_ERRORS,
   type HubAdminProcessErrorCode,
-  PROCESS_TTL_DAYS,
   type ProcessDef,
   type ProcessDefInput,
   type ProcessDefListItem,
@@ -59,8 +58,7 @@ export function toProcessDef(r: DefRow): ProcessDef {
     version: r.version,
     created_at: r.created_at,
     updated_at: r.updated_at,
-    // P-d1 · cột `process_defs.ttl_days` có ở 0036 (T6); đọc thật ở T10. Tới lúc đó mọi def = mặc định 7 (hành vi cũ).
-    ttl_days: PROCESS_TTL_DAYS.default,
+    ttl_days: r.ttl_days,
   };
 }
 

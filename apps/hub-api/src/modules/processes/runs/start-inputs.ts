@@ -1,7 +1,7 @@
 // P-b · PF-S3 · HUB-FR-124 · C19/PB-R18 · validate `inputs` lúc start + dựng `snapshot.sources` (resolve). Tách khỏi
 // `start.service.ts`/`runs.repo.ts` cho giới hạn 400 dòng. Scope người bắt đầu (RLS lọc tenant). [HUB-FR-124]
 
-import { PROCESS_RUN_TTL_DAYS, TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S } from "@ai/contracts/chat";
+import { TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S } from "@ai/contracts/chat";
 import type {
   ProcessInputDef,
   ProcessInputValue,
@@ -17,7 +17,8 @@ import { validationError } from "../../../lib/http";
 import type { KhRuntime } from "../../kh/kh.mount";
 import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
 import { processError } from "../core/errors";
-import { expiresAt, isCalendarDate, shapeValid } from "../domain/runs/start-inputs.rules";
+import { expiresAt } from "../domain/defs/ttl.rules";
+import { isCalendarDate, shapeValid } from "../domain/runs/start-inputs.rules";
 import type { StartDefRow } from "./runs.repo";
 import * as repo from "./runs.repo";
 import { allowlistUnion } from "./sources.rules";
@@ -47,6 +48,7 @@ export async function createRun(
     throw processError("TOO_MANY_PROCESS_RUNS", undefined, {
       "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
     });
+  const startedAt = cfg.now();
   const runId = crypto.randomUUID();
   const flowId = crypto.randomUUID();
   await insertRun(tx, {
@@ -57,7 +59,8 @@ export async function createRun(
     def: p.def,
     startedBy: u.userId,
     input: p.input,
-    expiresAt: expiresAt(cfg.now(), PROCESS_RUN_TTL_DAYS),
+    expiresAt: expiresAt(startedAt, p.def.ttl_days),
+    startedAt,
     sources,
     inputs,
     pinnedSources: sources.length > 0 ? null : [],
@@ -89,7 +92,9 @@ export type NewRun = {
   originRoomId: string | null;
   originConversationId: string | null;
   input: string;
-  expiresAt: Date;
+  /** PD-R25 · `expires_at = startedAt + ttl_days`; null ⇒ không hết hạn. */
+  expiresAt: Date | null;
+  startedAt: Date;
   /** P-b · nguồn def-level (resolve); rỗng ⇒ không nguồn. */
   sources: SnapshotSource[];
   /** P-b · đầu vào run. */
@@ -116,6 +121,7 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
     name: n.def.name,
     stages,
     token_budget: n.def.token_budget,
+    ttl_days: n.def.ttl_days,
     run_group_ids: n.def.run_group_ids,
     sources: n.sources,
     ...(n.kh ? { kh: n.kh } : {}),
@@ -123,11 +129,11 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
   const pinned =
     n.pinnedSources === null ? sql`null` : sql`${JSON.stringify(n.pinnedSources)}::jsonb`;
   await tx.execute(sql`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by,
-      origin_kind, origin_room_id, origin_conversation_id, input, conversation_id, flow_id, expires_at,
+      origin_kind, origin_room_id, origin_conversation_id, input, conversation_id, flow_id, started_at, expires_at,
       pinned_sources, sources_pinned_at, inputs)
     values (${n.id}, ${n.tenantId}, ${n.def.id}, ${n.def.version}, ${JSON.stringify(snapshot)}::jsonb, ${n.startedBy},
       ${n.originKind}, ${n.originRoomId}, ${n.originConversationId}, ${n.input}, ${n.convId}, ${n.flowId},
-      ${n.expiresAt.toISOString()}::timestamptz, ${pinned},
+      ${n.startedAt.toISOString()}::timestamptz, ${n.expiresAt?.toISOString() ?? null}::timestamptz, ${pinned},
       ${n.pinnedSources === null ? sql`null` : sql`now()`}, ${JSON.stringify(n.inputs)}::jsonb)`);
   const steps = resolveSteps(stages as readonly { step?: number }[]);
   const rows = sql.join(
