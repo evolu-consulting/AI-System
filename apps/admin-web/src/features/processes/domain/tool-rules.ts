@@ -90,6 +90,16 @@ export function missingRequiredArgs(
   return tool.params.filter((p) => p.required && !has(p.name)).map((p) => p.name);
 }
 
+/** P-b2 REAL_ACTION · bật được "Hành động thật" ở stage `i` không: bước ≥ 1 và mọi stage của bước liền trước là review. */
+export function realActionAllowed(
+  stages: readonly { step: number; after: string }[],
+  i: number,
+): boolean {
+  const step = stages[i]?.step ?? 0;
+  if (step < 1) return false;
+  return stages.filter((s) => s.step === step - 1).every((s) => s.after === "review");
+}
+
 /** Số tham số khai báo vượt trần ⇒ tool không dùng được (lỗi hiện ở `executor`). */
 export const tooManyParams = (tool: Pick<ToolShape, "params">): boolean =>
   tool.params.length > TOOL_ARGS_LIMIT;

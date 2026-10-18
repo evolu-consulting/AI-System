@@ -14,6 +14,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import { ttlIssueKey } from "../domain/error-keys";
 import { PROCESS_TTL_DAYS } from "../domain/limits";
+import { realActionAllowed } from "../domain/tool-rules";
 import { ttlFromValue, ttlIssue, ttlToValue } from "../domain/ttl-rules";
 import { APPLY_RULE_ERR, applyCrossErrors, normalizeApply } from "./apply-form";
 import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";
@@ -101,11 +102,8 @@ export function toInput(d: DefDraft): ProcessDefInput {
 }
 
 /** Giai đoạn `i` có được bật "Hành động thật"? Bước ≥ 1 và MỌI giai đoạn của bước liền trước có người kiểm (PB2-R03). */
-export function canRealAction(stages: readonly StageDraft[], i: number): boolean {
-  const step = stages[i]?.step ?? 0;
-  if (step < 1) return false;
-  return stages.filter((s) => s.step === step - 1).every((s) => s.after === "review");
-}
+export const canRealAction = (stages: readonly StageDraft[], i: number): boolean =>
+  realActionAllowed(stages, i);
 
 export const STEP_ERR: Record<string, string> = {
   STEP_TOO_WIDE: "process.admin.canvas.err.stepFull",

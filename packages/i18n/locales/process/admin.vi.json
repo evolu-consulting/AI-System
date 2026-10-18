@@ -189,6 +189,7 @@
           "argRequired": "Chọn nguồn cho tham số này.",
           "TOOL_INVALID": "Tool chưa khai báo đủ: điền mọi tham số bắt buộc từ nguồn có thật (tối đa 20 tham số, không dùng tham số tệp).",
           "TOOL_SIDE_EFFECT": "Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật “Hành động thật”.",
+          "sideEffectLocked": "Tool có tác dụng phụ cần “Hành động thật”, nhưng giai đoạn này không bật được: mọi giai đoạn ở bước trước phải có người kiểm.",
           "ref": "Tool này chưa được bật cho công ty hoặc không còn."
         }
       },

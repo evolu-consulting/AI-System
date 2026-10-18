@@ -29,6 +29,10 @@ Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: test-pla
 | PD2-U17 | `runs/step.rules` | `stepJoin`/`runStatusOf` với `skipped` | `skipped` = xong |
 | PD2-U18 | `gates/back.rules` `backResetPlan` | quay lại bước 1 khi bước 2 `skipped` | stage `skipped` ⇒ `pending`, `round` không tăng |
 | PD2-U20 | admin `workflow-tools/domain/toggle.rules.ts` `toggleChange` | `(null,on)`, `({revokedAt:X},on)`, `({revokedAt:null},on)`, `({revokedAt:null},off)`, `({revokedAt:X},off)`, `(null,off)` | insert, reactivate, none, revoke, none, none |
+| PD2-U21 | `rules/d2/tool-real-step.test.ts` · contract `processDefStageIssues` + BE `validateProcessDef` (#204, D2-49) | stage tool `real_action` ở bước 0 (W và WS) | `REAL_ACTION` `stages.0.real_action`; BE `PROCESS_DEF_INVALID` |
+| PD2-U22 | ″ | s0 `auto` → s1 tool WS `real_action` | `REAL_ACTION` `stages.1.real_action` |
+| PD2-U23 | ″ | s0 `review` → s1 tool (W / WS) `real_action` | không `REAL_ACTION`; `toolStageIssues` `[]`; BE `{ok:true}` |
+| PD2-U24 | ″ + `toolStageIssues` | WS ở bước 0 `real:false`; rồi `real:true` | đúng `[TOOL_SIDE_EFFECT stages.0.real_action]`, không `TOOL_INVALID`; bật ⇒ chỉ `REAL_ACTION` (không bật được) |
 
 ## 2. Contract P-d2 — `rules/d2/contracts-pd2.test.ts`
 | Ca | Kỳ vọng |
@@ -64,6 +68,9 @@ Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: test-pla
 | PD2-I16 | `/mcp` hồi quy (T18s tách `WorkflowInvoker`) | test `/mcp` khoá (H2a, X1) xanh; agent gọi `WS` vẫn qua cổng xác nhận |
 | PD2-I56 | R-1 · `d2/tool-real-action.int`: s0 review G1 → s1 tool `WS` `real_action` → s2; B Đạt | Dify 1 lần; đúng 1 audit `authorize_real_action` actor B, entity `process_run`, summary `{agent_id:null,workflow_ids:[]}` (như Áp) |
 | PD2-I57 | như I56, snapshot run đổi `after` s0 ⇒ auto (không có người Đạt hợp lệ; D2-49) | Dify 0 lần; `tool_failed`; 0 audit |
+| PD2-I60 | #204 · `d2/tool-real-step.int`: POST def tool `real_action` ở bước 0 (W, WS); PUT def hợp lệ thành như vậy | 422 `PROCESS_DEF_INVALID` `rules ∋ REAL_ACTION`, `paths ∋ stages.0.real_action` (cả POST lẫn PUT) |
+| PD2-I61 | cùng file: s0 `auto` → s1 tool WS `real_action` | 422 như trên, `paths ∋ stages.1.real_action` |
+| PD2-I62 | cùng file: s0 `review` (G1) → s1 tool WS `real_action` | POST 201 (`real_action` true), PUT 200 |
 
 ### 3.2 Công tắc tool + cách ly (AC-H47 · TT-R04…R08 · hard stop) — `d2/tool-switch.int.test.ts`
 | Ca | Bước | Kỳ vọng |
@@ -138,6 +145,9 @@ K15 (`contracts-pa.test.ts:175`, T17) · K28 (`M1/M2/M3 db-rls` 13 ⇒ 14 bảng
 
 ## 5. E2E P-d2 (T15c) — [test-plan-e2e](test-plan-e2e.md) PD2-E01…E05; config P-d sẵn có
 `admin-stage.pd.ts` E01 (Gọi tool), E02 (Rẽ nhánh), E05 (`globex`); `admin-tenant.pd.ts` E03; `chat-labels.pd.ts` E04. Seed `_pd-support.ts`; ca gọi `needPd2()` đầu. `-g PD2-E`.
+- **PD2-E06** (#204) `admin-real-step.pd.ts`: def `pd2-tool`, stage "Đọc hồ sơ" (bước 0) ⇒ "Gọi tool" + "Ghi sổ · ghi-so" ⇒ `switch "Hành động thật"` disabled + câu **"Tool có tác dụng phụ cần “Hành động thật”, nhưng giai đoạn này không bật được: mọi giai đoạn ở bước trước phải có người kiểm."**; câu `TOOL_SIDE_EFFECT` cũ 0 lần. Không Lưu.
+- Unit FE (không khoá) `apps/admin-web/src/features/processes/lib/d2-real-step.test.ts`: `d2LiveErrors` WS bước 0 / sau `auto` ⇒ `TOOL_ERR.sideEffectLocked` (`process.admin.editor.stage.tool.err.sideEffectLocked`); sau `review` `real:false` ⇒ `TOOL_ERR.sideEffect`; `domain/tool-rules` `realActionAllowed(stages:{step,after}[], i)` bước 0 false / sau auto false / bước trước toàn review true.
+- Đỏ đúng lý do (2026-10-18, trước FE #204): U21–U24 xanh, I60–I62 xanh (luật đã có); unit FE 5/6 đỏ ở expect (`sideEffectLocked` undefined, `realActionAllowed` không phải hàm); E06 đỏ tới khi FE sửa.
 
 ## 6. Tranh chấp / câu hỏi
 Q-D2-1…5, T15-1…4, T15b-1…3, T15c-1 ⇒ spec-decisions D2-40, D2-41, D2-43; R-1 ⇒ D2-49.

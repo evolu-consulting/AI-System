@@ -189,6 +189,7 @@
           "argRequired": "Choose a source for this parameter.",
           "TOOL_INVALID": "The tool isn't fully set up: fill every required parameter from a real source (up to 20 parameters, no file parameters).",
           "TOOL_SIDE_EFFECT": "A tool with side effects can only be used when the stage has “Real action” on.",
+          "sideEffectLocked": "A tool with side effects needs “Real action”, which this stage can't turn on: every stage in the previous step must have a reviewer.",
           "ref": "This tool isn't enabled for your company or no longer exists."
         }
       },

@@ -296,7 +296,7 @@ describe("validate live · tool (hàm contract)", () => {
   test("tool: tác dụng phụ không real ⇒ TOOL_SIDE_EFFECT; nguồn sai ⇒ TOOL_INVALID; tool mất ⇒ ref", () => {
     const tool = setArg({ key: "ghi-so", args: {} }, "ma_kh", { from: "const", value: "A" });
     const s = st("t", 1, { executor: "tool", tool });
-    const e = toolErrors([st("p", 0), s], [], CATALOG);
+    const e = toolErrors([st("p", 0, { after: "review" }), s], [], CATALOG);
     expect(e["stages.1.real_action"]).toBe("process.admin.editor.stage.tool.err.TOOL_SIDE_EFFECT");
     const bad = setArg({ key: "xuat-hd", args: {} }, "tong_tien", {
       from: "const",

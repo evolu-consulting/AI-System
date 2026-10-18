@@ -10,6 +10,7 @@ import {
   toolStageIssues,
 } from "@ai/contracts/hub-admin";
 import { targetHasReal } from "../domain/branch-rules";
+import { realActionAllowed } from "../domain/tool-rules";
 import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
 import type { InputDraft } from "./sources-form";
@@ -21,6 +22,8 @@ const B = "process.admin.editor.stage.branch.err.";
 export const TOOL_ERR = {
   invalid: `${T}TOOL_INVALID`,
   sideEffect: `${T}TOOL_SIDE_EFFECT`,
+  /** #204 · D2-50 · side_effect ở stage KHÔNG bật được real (bước 0 / bước trước có auto) — không gợi ý bật công tắc đang khoá. */
+  sideEffectLocked: `${T}sideEffectLocked`,
   ref: `${T}ref`,
   argRequired: `${T}argRequired`,
   pick: `${T}pick`,
@@ -92,6 +95,12 @@ function unfilled(stages: readonly StageDraft[], path: string): boolean {
   return s !== undefined && isTool(s) && !hasArg(s.tool, m?.[2] ?? "");
 }
 
+/** Path `stages.i.real_action`: công tắc khoá (REAL_ACTION) ⇒ câu "không bật được", còn lại ⇒ "bật Hành động thật". */
+function sideEffectKey(stages: readonly StageDraft[], path: string): string {
+  const i = Number(path.split(".")[1]);
+  return realActionAllowed(stages, i) ? TOOL_ERR.sideEffect : TOOL_ERR.sideEffectLocked;
+}
+
 /** Lỗi gọi tool hiện NGAY khi sửa (kể cả tham số bắt buộc còn trống);  `tools` vắng (catalog chưa nạp) ⇒ bỏ kiểm theo catalog. */
 export function toolErrors(
   stages: readonly StageDraft[],
@@ -106,7 +115,7 @@ export function toolErrors(
     toolMap(tools),
   );
   for (const i of issues) {
-    if (i.rule === "TOOL_SIDE_EFFECT") e[i.path] ??= TOOL_ERR.sideEffect;
+    if (i.rule === "TOOL_SIDE_EFFECT") e[i.path] ??= sideEffectKey(stages, i.path);
     else if (i.rule === "TOOL_INVALID")
       e[i.path] ??= unfilled(stages, i.path) ? TOOL_ERR.argRequired : TOOL_ERR.invalid;
   }

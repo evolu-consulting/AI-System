@@ -107,6 +107,7 @@ e80da141b41719e6e2164c538016b714db832b4f865f4456660c49c9add969ef  e2e/P-c2/chat/
 7698742686506f975fc3bf130b10abbf27be91d5002d466dee135d3e753bec7d  e2e/P-c2/chat/result.pc2.ts
 c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playwright.pc2.config.ts
 4f89a10a6cd056cef5663a3cb9ff9836acfb0bec20a0653b9ec146808e93d224  e2e/P-d/_pd-support.ts
+6185f49c2a535255e3b28843ff8bf25edef127edb2f2625260f53b502bf46e3c  e2e/P-d/admin-real-step.pd.ts
 62e2091f245fa5263476ad2ad658de7b7be9752c14eef9e21cae4cf8b84d44b8  e2e/P-d/admin-stage.pd.ts
 6d0d0a657d77e39c2cc2802e698c78cf80dc5a6ab7e8332b3a8409f42ed8d1a1  e2e/P-d/admin-tenant.pd.ts
 ea143e8c08ca83e4c59cefa90e1cbd0b3a9b0ed70bff4dcb1da881f5573ff0ca  e2e/P-d/admin-uat-fixes.pd.ts
@@ -756,6 +757,7 @@ b88d17ffebd7d66ad292e53d85f6253f972cfca5e0be090e773e4cc6c4e083e8  tests/acceptan
 9329338c2a090157a4b77bb5df9c93aeecee3467e1a77e1531327ba91a4d2525  tests/acceptance/P-d/d2/run-summary.int.test.ts
 845e2f487ff247fd28074811b0226dffe0b2aea74c612bf0cdbdf1b0b0243280  tests/acceptance/P-d/d2/tool-net.int.test.ts
 80a4d00bf3c8ecee49d5d0e423eb6ea51207490904ce1f4ba8ff1f26ea8262bf  tests/acceptance/P-d/d2/tool-real-action.int.test.ts
+9e2b6af81b1fc09fd85d277004a23b648b47339addec657bc5e1fc8d5f54541e  tests/acceptance/P-d/d2/tool-real-step.int.test.ts
 ffb5b86aebc2b63d8c21053f67c2afa4671eb82b002d069d2e0c4467d0e98441  tests/acceptance/P-d/d2/tool-recheck.int.test.ts
 9d877382071888a6f50b8442833173a52f4c5a3efa7ad0e8f9c64704c6a7d7ce  tests/acceptance/P-d/d2/tool-switch.int.test.ts
 2cd4467f2adcb085f558c6753a952dcf9bbfb19c43ec12fe8ebedb1e7a09294f  tests/acceptance/P-d/d2/tool.int.test.ts
@@ -774,6 +776,7 @@ b16cd03a8b16c495b2a239d751cbca54ff0e60d9a2c91864f578d5f3452df189  tests/acceptan
 f369228eade6fdfc566a24f0dfb35d7a9f6ebc2af9003f9c0d7c56cd80aa0b7b  tests/acceptance/P-d/rules/d2/def-issues.test.ts
 967fb29ff80891576d9d463857a9304a1b6a2b8f9b2117a9ce3affcb3216b556  tests/acceptance/P-d/rules/d2/run-tool-stage-recheck.test.ts
 6428781000d3a94fb478e08d40bf3ac289cf94d577cb0a33f001e0d3228302f6  tests/acceptance/P-d/rules/d2/run-tool-stage.test.ts
+40f7ebd10e98ac9919a3389b118b47ad23f647f624e380d2445fdf2b7ef1501e  tests/acceptance/P-d/rules/d2/tool-real-step.test.ts
 230a68058e80dfecf5174ae536b14c5ba591be94c52be814484fdd90b117130f  tests/acceptance/P-d/rules/d2/tool.test.ts
 c6020f8f9ca3e26713b4ff6d0ed71ff50069ee948892c5439ba9c7c452bf6996  tests/acceptance/P-d/rules/decision.test.ts
 60968e76e5b189cc489ad467adcae7a72ef05b32703e858c28791527a2287502  tests/acceptance/P-d/rules/domain-contract.test.ts
