@@ -169,3 +169,19 @@ Phạm vi: `git diff 8300aa1..HEAD -- apps packages tools` (212 file) đối chi
 Chưa kiểm bằng mắt khớp mockup 02/03/04 (dựa e2e PD2-E01…E05 của phiên chính).
 
 **Rubric:** 1 ✗ (R-1) · 2 ✓ (m-3) · 3 ✓ (security riêng, sửa đúng) · 4 ✓ (0037 idempotent, 0012 RLS + index) · 5 ✓ (câu theo tập, số đo P01/P03/P04/P05 có trong tasks.md; P04 p95 chờ staging) · 6 ✓ (450/0) · 7 ✗ (R-2, m-1, m-2) · 8 ✓ · 9 ✓
+
+
+## Review chung P-d2 — vòng 2 · Kết luận: APPROVED · Vòng: 2
+Phạm vi: `git diff ad92305..HEAD -- apps packages tools` (3996ec6, a525062, 8e8b3e1, c54a891). Lệnh: `bun test` (processes hub, workflow-tools admin, done-pd1, prepare-spread) → 152 pass / 0 fail · `bun run check:fn` → OK (R-2 hết) · `bun run depcruise` → 3 lỗi `no-cross-module-repo` có từ trước 8300aa1 (không mới). Không chạy int/e2e (phiên chính đang chạy `done:pd2`).
+
+| # | Vòng 1 | Vòng 2 | Kiểm |
+|---|---|---|---|
+| R-1 | Major | Đã sửa | `launchTool`: `realActionPre` chạy TRƯỚC `launchToolStage` (tức trước khi tạo `hub.runs`); `real_action` ∧ null ⇒ `lostPermission(tool_failed)` — không gọi Dify, không audit. Có người Đạt ⇒ `markStageRunning` ghi `authorize_real_action` (agent_id null) cùng tx với UPDATE `running`; agent giữ nguyên, Áp vẫn ở `apply-launch`. Stage tool không `real_action` ⇒ `real` null ⇒ không đổi hành vi. Test 8e8b3e1 (I56/I57) tái hiện |
+| R-2 | Major | Đã sửa | Tách hàm thuần cơ học: `tool-stage.repo.ts` (closure → hàm module + `Cx`/`Lock`), `branch.repo.ts`, `gates.service.ts#assertMayDecide`, `hub-uow.txRepos(opts)`, `mountRoutes`; SQL, thứ tự khoá (run → stage → timer; khoá run vẫn câu đầu), số câu không đổi. `check:fn` OK |
+| m-1 | Minor | Đã sửa | `client.ts` không còn mojibake |
+| m-2 | Minor | Đã sửa | `MonotonicClock.monotonicMs` cấp ở `processes.mount.ts`; use case chỉ trừ hai mốc (fallback `now()`) |
+| m-3 | Minor | Đã sửa | `settleOk` trả boolean; `false` ⇒ log + `decide(tool_failed)`, không kẹt `running`; có test; cổng cũ trả `void` vẫn coi là ghi (`!== false`) |
+| m-4 | Minor | Chưa | `review-tasks.repo.ts` không đổi (tên group notice `escalated` cố định `vi`); không chặn, ghi vào tồn đọng/tự quyết |
+| m-5 | Minor | Đã sửa | `cancelTimers(…, now)` nhận `now` từ `settleStep` (`clock.now()`) |
+
+Lỗi mới: không. Lưu ý (không phải lỗi): tool `real_action` ở bước 0 luôn `tool_failed` (không có bước trước) — khớp D2-49, nên chặn từ lúc xuất bản def nếu chưa có.
