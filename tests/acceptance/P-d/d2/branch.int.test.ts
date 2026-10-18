@@ -13,8 +13,8 @@ import {
   jobDone,
   mdOut,
   nextStageJob,
-  noStageJob,
   openTimers,
+  PA_FIX,
   runRow,
   stageOf,
   startRun,
@@ -65,8 +65,12 @@ async function branchDef(o: { s3RealAction?: boolean } = {}): Promise<string> {
   return key;
 }
 /** Tới review s1 với `tong_tien`; trả {runId, taskId}. */
-async function toReview(key: string, tong: number): Promise<{ runId: string; taskId: string }> {
-  const runId = await startRun(c, key);
+async function toReview(
+  key: string,
+  tong: number,
+  origin?: Json,
+): Promise<{ runId: string; taskId: string }> {
+  const runId = await startRun(c, key, { origin });
   await jobDone(c, await nextStageJob(c, runId), mdOut());
   await waitStageStatus(c, runId, 0, "done"); // job s0 còn `queued` tới khi Hub nhận kết quả ⇒ chờ tín hiệu xong, kẻo lấy lại job s0
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: tong }));
@@ -84,7 +88,11 @@ const pass = async (taskId: string) => {
 describe("AC-H45 · rẽ nhánh khi khớp / không khớp", () => {
   it("AC-H45 · PD2-I30 · 25000000 + Đạt ⇒ s2 skipped (finished_at), current_step 3, s3 có job, thread 'Rẽ nhánh: tới bước 4 (luật 1)', audit branch {1→3, luật 1}", async () => {
     await needD2(c);
-    const { runId, taskId } = await toReview(await branchDef(), 25_000_000);
+    // T19-1: tin thread cần phòng (`room_id` NOT NULL) ⇒ run bắt đầu từ phòng (như test thread P-a), không `origin none`.
+    const { runId, taskId } = await toReview(await branchDef(), 25_000_000, {
+      kind: "room",
+      room_id: PA_FIX.room,
+    });
     await pass(taskId);
     const s2 = await stageOf(c.sql, runId, 2);
     expect({ status: s2?.status, finished: s2?.finished_at != null }).toEqual({
@@ -197,7 +205,10 @@ describe("AC-H45 · quay lại xuyên qua stage skipped [PB2-R07, D2-08]", () =>
       status: "pending",
       round: roundBefore,
     });
-    expect(await noStageJob(c, runId)).toBe(false);
+    // T19-2: job s1 chạy lại do runner tạo SAU `settled()` ⇒ chờ tín hiệu job tới, không đọc ngay.
+    expect((await nextStageJob(c, runId)).runId).toBe(
+      (await stageOf(c.sql, runId, 1))?.current_run_id,
+    );
   }, 30_000);
   it("AC-H45 · PD2-I34 · lưu def goto_step = step / stage rẽ nhánh trong bước song song ⇒ 422 BRANCH_INVALID", async () => {
     await needD2(c);

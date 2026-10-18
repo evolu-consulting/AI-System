@@ -2,7 +2,7 @@
 
 Nguồn: spec-d2, spec-tz-tools §2, plan-d2/contract/db, AC-H44/H45/H47, A15. Quy ước: [test-plan §1–§2](test-plan.md).
 
-**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản từng ca (JSON `outputs.<output_field>`; HTTP lỗi; treo; đóng socket = `sent:true`; cổng đóng = chưa gửi), đếm lời gọi, lưu `user`/`inputs`. Fixture: `W` `xuat-hoa-don` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
+**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản (JSON `outputs.<output_field>`; HTTP lỗi; treo; socket đóng = `sent:true`; cổng đóng = chưa gửi), đếm lời gọi, lưu `user`/`inputs`. Fixture: `W` `xuat-hoa-don` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
 
 **Cổng lớp:** test nạp `loadLayer(layer, tên, task)` qua barrel `P/{domain,application}/index.ts` (T17); vắng ⇒ "chưa có tính năng: <tên> (<task>)". Luật lưu def (U01–U03, U10–U11) qua hàm contract.
 
@@ -43,7 +43,7 @@ Nguồn: spec-d2, spec-tz-tools §2, plan-d2/contract/db, AC-H44/H45/H47, A15. Q
 ### 3.1 Stage `tool` (AC-H44 · HUB-FR-146 · HUB-BR-12 · HUB-FR-109) — `d2/tool.int.test.ts`
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
-| PD2-I01 | acme bật `W`; s0 agent (`tong_tien`) → s1 tool `W` (`tong_tien←field s0`, `ma_kh←input`) → s2; fake trả `{so_hd,tong_tien}` | 1 lời gọi; `user` = `difyUser(tenantKeyOf(catalog, acme), lan)` (S1); `inputs` `{tong_tien:25000000, ma_kh:"KH1"}`; 0 job agent s1; `run_steps type='tool'` `agent_id` NULL; `usage_logs`; `process_outputs.fields`; .md = `toolOutputMd`; audit `tool_call` không chứa giá trị; s2 có job |
+| PD2-I01 | acme bật `W`; s0 agent (`tong_tien`) → s1 tool `W` (`tong_tien←field s0`, `ma_kh←input`) → s2; fake trả `{so_hd,tong_tien}` | 1 lời gọi; `user` = `difyUser(tenantKeyOf(catalog, acme), lan)` (S1); `inputs` `{tong_tien:25000000, ma_kh:"KH1"}`; 0 job agent s1; `run_steps type='tool'` `agent_id` NULL; `usage_logs`; `outputs.fields`; .md = `toolOutputMd`; audit `tool_call` không chứa giá trị; s2 có job |
 | PD2-I02 | fake trả `tong_tien:"abc"` / không JSON / mảng (**int**, AC-H44) | `needs_decision` `template_invalid` **ngay** (D2-05), Dify 1 lần |
 | PD2-I03 | kết quả 65.537 byte | `tool_failed` |
 | PD2-I04 | `WS` (side effect) ở stage `real_action` sau gate Đạt; fake trả 500 **sau khi nhận** | `tool_failed`, Dify 1 lần, 0 hẹn `retry`; `run_steps` có trace `confirmation:"gate_review"` |
@@ -79,7 +79,7 @@ Nguồn: spec-d2, spec-tz-tools §2, plan-d2/contract/db, AC-H44/H45/H47, A15. Q
 Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `after.review` G1, `branch:[{field:"tong_tien",op:"gt",value:20000000,goto_step:3}]`), s2 ở step 2 (có `wait_until` + hẹn để kiểm huỷ), s3 step 3, s4 step 4.
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
-| PD2-I30 | s1 `tong_tien` 25000000 ⇒ B Đạt | s2 `skipped` (`finished_at`); `current_step` 3; s3 có job; tin thread **"Rẽ nhánh: tới bước 4 (luật 1)"** (part `branch {stage_idx:1,to_step:3,rule:1}`); audit `branch` (actor hệ thống, `{from_step:1,to_step:3,rule:1}`); 0 job s2 |
+| PD2-I30 | run từ phòng (thread cần `room_id`); s1 `tong_tien` 25000000 ⇒ B Đạt | s2 `skipped` (`finished_at`); `current_step` 3; s3 có job; tin thread **"Rẽ nhánh: tới bước 4 (luật 1)"** (part `branch {stage_idx:1,to_step:3,rule:1}`); audit `branch` (actor hệ thống, `{from_step:1,to_step:3,rule:1}`); 0 job s2 |
 | PD2-I31 | `tong_tien` 1000 | s2 chạy (tuần tự), 0 audit `branch` |
 | PD2-I32 | sau I30, quay lại `back_to_steps` 1 | s2 `skipped` ⇒ `pending`, `round` s2 không tăng; s1 chạy lại; lần sau 1000 ⇒ đi s2 |
 | PD2-I33 | sau I30 | 0 hàng `process_timers` mở cho stage `skipped` (PD2-R13; hẹn chỉ có ở stage đã vào chạy — Q-D2-3) |
@@ -121,7 +121,7 @@ ok · S10 (nhật ký trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `p
 | PD2-P01 | PUT def 10 stage / 3 tool × 20, xen kẽ | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms (**#109**); số câu có tool − không tool = **1** |
 | PD2-P02 | 200 workflow × 50 tenant (10.000 hàng công tắc), `GET /process-editor/context` × 30 | p95 ≤ 20 ms; **2** câu |
 | PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; câu của riêng tool-driver (từ `loadCall` tới hết tx2, T18-perf-1) ≤ **14** (#109, không so mốc agent: cửa sổ khác nhau); p95 ≤ 60 ms đo từ câu `loadCall` tới `settled()` |
-| PD2-P04 | đếm câu của POST Đạt + `settled()`: nhảy 1 vs 18 bước (def 21 bước); mốc = def **không** `branch` (#97, D2-33) | bằng nhau; khớp − mốc = **4**; không khớp − mốc = **1** (`fields`); p95 ≤ 30 ms (đúng khoảng đo) |
+| PD2-P04 | đếm câu của POST Đạt + `settled()`: nhảy 1 vs 7 bước (def 10 bước); mốc = def **không** `branch` (#97, D2-33) | bằng nhau; khớp − mốc = **4**; không khớp − mốc = **1** (`fields`); p95 ≤ 30 ms (đúng khoảng đo) |
 | PD2-P05 | T17b (D2-32): `GET /process-runs?limit=50` (Adm), 50 run không hẹn vs có hẹn mở (SQL) | số câu bằng nhau; p95 ≤ 40 ms và ≤ không hẹn + 5 ms; thiếu wait/retry ⇒ đỏ ngay |
 
 ### Đỏ đúng lý do (T15 → T15c, 2026-10-18, trước T17)
@@ -139,4 +139,3 @@ Q-D2-1…5, T15-1…4, T15b-1…3, T15c-1 ⇒ [spec-decisions](spec-decisions.md
 | # | Gửi | Nội dung | Mặc định (đã áp trong test) |
 |---|---|---|---|
 | T15c-2 | backend-lead | (a) `INPUT_TYPES` quy trình không có `number` mà D2-29 cần; (b) tên trường wait/retry của `ProcessRunSummary` (T17b) | (a) thêm `number`, giá trị `{type:"number",key,value:"<chuỗi số>"}` (I17); (b) P05 nhận khoá bắt đầu `wait`/`retry` |
-| T15c-3 | qc | E02 cần stage đứng một mình ở bước 0; E05 dùng `globex`/`hoa` làm "beta" | Seed riêng `pd2-branch`, `pd2-globex` |

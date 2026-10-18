@@ -336,12 +336,12 @@ export async function createDef(c: CtxPf1, body: Json, r: Role = "Adm"): Promise
 export async function startRun(
   c: CtxPf1,
   key: string,
-  o: { role?: Role; inputs?: Json[]; input?: string } = {},
+  o: { role?: Role; inputs?: Json[]; input?: string; origin?: Json } = {},
 ): Promise<string> {
   const res = await c.call(o.role ?? "A", "POST", "/process-runs", {
     process_key: key,
     input: o.input ?? "HS-01",
-    origin: { kind: "none" },
+    origin: o.origin ?? { kind: "none" },
     ...(o.inputs ? { inputs: o.inputs } : {}),
   });
   expect({ status: res.status, code: res.json?.error?.code ?? null }).toEqual({

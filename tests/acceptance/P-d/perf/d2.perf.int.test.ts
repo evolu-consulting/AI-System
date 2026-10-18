@@ -232,7 +232,7 @@ async function branchPass(
   goto: number,
   tong = 25_000_000,
   withBranch = true,
-): Promise<{ n: number; ms: number }> {
+): Promise<{ n: number; ms: number; post: number }> {
   const key = `pd2-p04-${++seq}`;
   const stages: Json[] = [];
   for (let i = 0; i < steps; i++)
@@ -255,30 +255,46 @@ async function branchPass(
     );
   await createDef(c, defBody(key, stages));
   const runId = await startRun(c, key);
-  await jobDone(c, await nextStageJob(c, runId));
+  await jobDone(c, await nextStageJob(c, runId), mdOut()); // T19-4: s0 cần output hợp lệ + chờ `done` kẻo lấy lại job s0
+  await waitStageStatus(c, runId, 0, "done");
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: tong }));
   await waitStageStatus(c, runId, 1, "waiting_review");
+  await settled(c); // việc nền của job s1 (đóng run, tin, thông báo) xong HẲN trước cửa sổ đo — kẻo chen vào đếm
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
     and kind = 'review' and status = 'open' limit 1`;
   const t0 = performance.now();
+  let post = 0;
   const q = await countQueries(c.hub, async () => {
     const r = await c.call("B", "POST", `/review-tasks/${t?.id}/decision`, { result: "pass" });
+    post = performance.now() - t0;
     expect(r.status).toBe(200);
     await settled(c);
   });
-  return { n: q.n, ms: performance.now() - t0 };
+  // Nhiễu nền (như P05): đọc trạng thái job của stream run chen vào cửa sổ ±1 câu ⇒ không đếm `hub.jobs`.
+  const n = q.queries.filter((s) => !s.includes('from "hub"."jobs"')).length;
+  return { n, ms: performance.now() - t0, post };
 }
 
-describe("PD2-P04 · nhánh +4 câu dù nhảy 1 hay 18 bước [plan-d2 §9, readiness #97]", () => {
-  it("HUB-FR-147 · PD2-P04 · nhảy 1 bước vs 18 bước ⇒ số câu SQL bằng nhau; join p95 ≤ 30 ms", async () => {
+describe("PD2-P04 · nhánh +4 câu dù nhảy 1 hay 7 bước [plan-d2 §9, readiness #97]", () => {
+  it("HUB-FR-147 · PD2-P04 · nhảy 1 bước vs 7 bước ⇒ số câu SQL bằng nhau; join p95 ≤ 30 ms", async () => {
     await prep();
-    const skip1 = await branchPass(21, 3);
-    const skip18 = await branchPass(21, 20);
-    console.log(`PD2-P04 câu SQL nhảy 1=${skip1.n}, nhảy 18=${skip18.n}`);
-    expect(skip18.n).toBe(skip1.n);
+    // T19-3: def tối đa `PROCESS_STAGES_MAX` = 10 bước ⇒ nhảy 1 (goto 3) vs nhảy 7 (goto 9).
+    await branchPass(10, 3); // làm nóng: lượt đầu của tiến trình có thêm câu khởi tạo (cache lần đầu), không do nhánh
+    const skip1 = await branchPass(10, 3);
+    const skip7 = await branchPass(10, 9);
+    console.log(`PD2-P04 câu SQL nhảy 1=${skip1.n}, nhảy 7=${skip7.n}`);
+    expect(skip7.n).toBe(skip1.n);
     const ms: number[] = [];
-    for (let i = 0; i < 10; i++) ms.push((await branchPass(5, 3)).ms);
-    console.log(`PD2-P04 p95=${p95(ms).toFixed(1)} ms (n=10)`);
+    const post: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const r = await branchPass(5, 3);
+      ms.push(r.ms);
+      post.push(r.post);
+    }
+    // Khoảng đo theo plan-d2 §9 = POST Đạt + `settled()`; in thêm riêng POST (join + nhánh) để chẩn đoán, không khẳng định.
+    console.log(
+      `PD2-P04 p95=${p95(ms).toFixed(1)} ms (n=10; riêng POST ${p95(post).toFixed(1)} ms)`,
+    );
     expect(p95(ms)).toBeLessThanOrEqual(30);
   }, 120_000);
   it("HUB-FR-147 · PD2-P04 · mốc = def KHÔNG branch: khớp = mốc + 4 câu; không khớp = mốc + 1 (đọc `fields` để đánh giá, #97)", async () => {
