@@ -89,6 +89,8 @@ Người gọi đưa một đường dẫn: thư mục spec (`docs/specs/<ID>/`)
 - Không có trong plan/spec: truy vấn hoặc transaction **từng hàng trong vòng lặp**, gọi mạng/đăng tin trong vòng lặp hàng, `sleep`/poll/chờ hết timeout để đợi trạng thái (code lẫn test).
 - Task chạm **code cũ** ở đường nóng có bước **đo trước** (số câu SQL/lô, p95) rồi mới sửa.
 
+**L. Gọn và một nguồn (WORKFLOW "Kỷ luật token" mục 5, từ P-d2)** — trần theo nội dung: spec ≤ 12 KB, plan ≤ 18 KB, plan-frontend ≤ 15 KB, test-plan ≤ 18 KB; đủ mục bắt buộc (phạm vi, contract, DDL/RLS, khoá, hiệu năng, bảng AC/test, quyết định); quyết định chỉ ghi ở `spec-decisions.md` (nơi khác trỏ mã); không có `*-addendum.md` sửa đổi. Vượt trần mà không phải vì nội dung bắt buộc ⇒ **Thấp** (ghi "cắt văn xuôi/lặp"); thiếu mục bắt buộc ⇒ Chặn/Cao như các mục A–K. **Không bao giờ hạ chất lượng để vừa trần.**
+
 ## Luật strict
 
 1. **Không suy luận thay spec.** Một điều chỉ "ngầm hiểu" được, hoặc chỉ đúng nếu đọc kết hợp nhiều chỗ theo một cách, là lỗ hổng. Hai cách hiểu hợp lệ → lỗ hổng mức Chặn.
