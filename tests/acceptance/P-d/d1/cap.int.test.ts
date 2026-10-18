@@ -69,7 +69,7 @@ describe("PD-I30…I32 · trần run/tenant với waiting_timer [AC-H41][PD-R16]
     await fill(5, 0);
     c.clk.set(new Date("2026-11-17T02:00:01Z"));
     await sweepN(c, 1);
-    await waitStageStatus(c.sql, runId, 1, "done");
+    await waitStageStatus(c.sql, runId, 1, "done", 0);
     expect((await timersOf(c.sql, runId))[0]?.fired_at).not.toBeNull();
     await jobOfStage(c, runId, 2);
   }, 60_000);

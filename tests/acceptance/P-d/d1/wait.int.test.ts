@@ -210,7 +210,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
     expect(ts0.map((t) => [t.kind, t.stage_run_id])).toEqual([["wait_until", sr]]);
     expect(new Date(ts0[0]?.due_at).toISOString()).toBe("2026-10-28T02:00:00.000Z");
     await sweepN(c, 1);
-    await waitStageStatus(c.sql, runId, 1, "done");
+    await waitStageStatus(c.sql, runId, 1, "done", 0);
     expect((await timersOf(c.sql, runId))[0]?.fired_at).not.toBeNull();
     await jobOfStage(c, runId, 2);
   }, 60_000);

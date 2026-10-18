@@ -37,7 +37,7 @@ describe("PD-I23 · khởi động lại [AC-H41][HUB-FR-144]", () => {
     h2 = await secondHub(c, { now: c.clk.now });
     c.clk.set(new Date("2026-11-17T02:00:00Z"));
     await sweepOn(h2);
-    await waitStageStatus(c.sql, runId, 1, "done");
+    await waitStageStatus(c.sql, runId, 1, "done", 0);
     const line = "Đã chờ tới 2026-11-17 09:00 (Asia/Ho_Chi_Minh).";
     const outs = await stageOutputs(c.sql, runId, 1);
     expect(outs.map((o) => o.content)).toEqual([waitMd("Chờ hạn", line)]);

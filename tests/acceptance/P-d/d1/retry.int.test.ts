@@ -166,7 +166,7 @@ describe("PD-I01…I05 · lỗi tạm ⇒ thử lại [AC-H39 · HUB-FR-143 · H
     await interruptJob(c, job);
     const t0 = c.clk.now().getTime();
     await sweepN(c);
-    const st = await waitStageStatus(c.sql, runId, 0, "waiting_timer");
+    const st = await waitStageStatus(c.sql, runId, 0, "waiting_timer", 0); // sau sweep đã await ⇒ đo một lần
     const t1 = c.clk.now().getTime();
     expect(st).toMatchObject({ retry_count: 1, last_error_code: "INTERRUPTED", attempt: 1 });
     expect(await decisionOf(c.sql, runId)).toBeUndefined();
@@ -198,15 +198,15 @@ describe("PD-I01…I05 · lỗi tạm ⇒ thử lại [AC-H39 · HUB-FR-143 · H
       await interruptJob(c, jb);
       await sweepN(c);
       if (round === 4) break;
-      await waitStageStatus(c.sql, runId, 1, "waiting_timer");
-      await waitStageStatus(c.sql, runId, 2, "waiting_timer");
+      await waitStageStatus(c.sql, runId, 1, "waiting_timer", 0);
+      await waitStageStatus(c.sql, runId, 2, "waiting_timer", 0);
       const open = await openRetry(c.sql, runId);
       expect({ round, open: open.length }).toEqual({ round, open: 2 });
       expect(new Set(open.map((t) => t.stage_run_id)).size).toBe(2);
       c.clk.set(new Date(Math.max(...open.map((t) => ms(t.due_at))) + 50));
       await sweepN(c);
     }
-    await waitStatus(c.sql, runId, "needs_decision");
+    await waitStatus(c.sql, runId, "needs_decision", 0);
     const ds = await waitForDecisions(runId, 2);
     expect(ds.map((d) => d.reason)).toEqual(["retry_exhausted", "retry_exhausted"]);
     expect(await retryTimers(c.sql, runId)).toHaveLength(6);

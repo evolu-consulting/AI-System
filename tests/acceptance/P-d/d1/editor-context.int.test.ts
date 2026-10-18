@@ -8,6 +8,7 @@ import {
   createDef,
   type Json,
   needPdSchema,
+  needWaitUntil,
   openTimers,
   PD_DEFS,
   startPd,
@@ -67,6 +68,7 @@ describe("AC-H46 · HUB-FR-144 · ngữ cảnh editor (múi giờ tenant)", () =
 describe("AC-A14 · ADM-FR-72 · Hub dùng múi giờ tenant khi tạo hẹn", () => {
   it("AC-A14 · PD-I87 · sửa acme sang Europe/Berlin ⇒ hẹn wait_until MỚI theo Berlin (07:00Z), hẹn cũ giữ 02:00Z Asia/Ho_Chi_Minh", async () => {
     needPdSchema(c.pd);
+    await needWaitUntil(c);
     await setTz(T.acme, "Asia/Ho_Chi_Minh");
     c.clk.set(new Date("2026-03-25T00:00:00.000Z"));
     await createDef(c, PD_DEFS.waitInput());

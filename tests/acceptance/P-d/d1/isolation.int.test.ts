@@ -157,13 +157,9 @@ describe("AC-H46 · vòng nền hai tenant (K3)", () => {
       });
       for (const side of [s.acme, s.beta]) {
         expect(await hubRunTenants(side.retry.runId)).toEqual([side.tid]);
-        const more = await waitFor(
-          () => hubRunTenants(side.retry.runId),
-          (v) => v.length > 1,
-          1_500,
-        );
+        const more = await hubRunTenants(side.retry.runId); // sweep đã await ⇒ đo một lần (không ngủ chờ job thừa)
         expect({ tid: side.tid, jobs: more.length }).toEqual({ tid: side.tid, jobs: 1 });
-        await waitStageStatus(c.sql, side.wait.runId, 0, "done");
+        await waitStageStatus(c.sql, side.wait.runId, 0, "done", 0);
         const [o] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.process_outputs
           where process_run_id = ${side.wait.runId} and stage_idx = 0`;
         expect({ tid: side.tid, outputs: o?.n }).toEqual({ tid: side.tid, outputs: 1 });

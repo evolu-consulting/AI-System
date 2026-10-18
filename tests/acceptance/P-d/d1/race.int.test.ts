@@ -82,7 +82,7 @@ describe("PD-I24 · 2 hub cùng bắn một hẹn wait_until [AC-H41][S4]", () =
     const other = await hub2();
     c.clk.set(new Date("2026-11-17T02:00:00Z"));
     for (let i = 0; i < 3; i++) await Promise.all([sweepN(c, 1), sweepOn(other)]);
-    await waitStageStatus(c.sql, runId, 1, "done");
+    await waitStageStatus(c.sql, runId, 1, "done", 0);
     const ts = await timersOf(c.sql, runId);
     expect(ts.filter((t) => t.fired_at !== null).length).toBe(1);
     expect((await stageOutputs(c.sql, runId, 1)).length).toBe(1);
@@ -164,7 +164,7 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
     const ts = await waitFor(
       () => timersOf(c.sql, runId),
       (v) => v.length > 1,
-      1_500,
+      300, // sự kiện muộn: chưa có tín hiệu "đã tiêu thụ" ⇒ cửa sổ ngắn (test-plan-addendum §4)
     );
     expect((ts as Json[]).length).toBe(1);
     const after = await waitStageStatus(c.sql, runId, 0, "waiting_timer");
@@ -194,7 +194,11 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
     const st = await waitFor(
       () => fireStats(c.sql, stageRunIds),
       (s) => s.jobs >= 250,
-      30_000,
+      30_000, // lưới an toàn
+      (s) =>
+        s.fired === 0
+          ? "sweepOnce không bắn hẹn retry nào — chưa có tính năng: bắn hẹn retry theo lô (T9)"
+          : null,
     );
     expect(st).toEqual({ fired: 250, open: 0, jobs: 250, dupJobs: 0, noJob: 0 });
     // Q10: tổng `SweepResult.timers` của mọi lượt = số hẹn được bắn (mỗi lượt ≤ TIMER_SWEEP_BATCH = 100).

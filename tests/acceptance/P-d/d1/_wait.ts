@@ -10,8 +10,10 @@ import {
   type Json,
   jobDone,
   mdOut,
+  needWaitUntil,
   nextStageJob,
   PD_DEFS,
+  runRow,
   type Sql,
   startRun,
   T,
@@ -61,6 +63,7 @@ export async function startWait(
   c: CtxPd,
   o: { fields?: Json; def?: Json; at?: Date } = {},
 ): Promise<{ runId: string; job: Job }> {
+  await needWaitUntil(c); // thiếu T8 ⇒ đỏ ngay (không treo chờ stage waiting_timer)
   await settle(c.sql);
   c.clk.set(o.at ?? T_START);
   const def = o.def ?? WAIT_DEF();
@@ -82,18 +85,22 @@ export async function stageId(sql: Sql, runId: string, idx: number): Promise<str
 /** Chờ job `queued` của stage `idx` rồi claim (đỏ ở expect nếu Hub không tạo). */
 export async function jobOfStage(c: CtxPd, runId: string, idx: number, ms = 8_000): Promise<Job> {
   const row = await waitFor(
-    async () =>
-      (
-        await c.sql<{ run_id: string }[]>`select j.run_id from hub.jobs j
+    async () => {
+      const [j] = await c.sql<{ run_id: string }[]>`select j.run_id from hub.jobs j
           join hub.runs r on r.id = j.run_id join hub.stage_runs s on s.id = r.stage_run_id
           where r.process_run_id = ${runId} and s.stage_idx = ${idx} and j.status = 'queued'
-          order by j.created_at limit 1`
-      )[0],
-    (v) => v !== undefined,
+          order by j.created_at limit 1`;
+      return { job: j, run: j ? null : ((await runRow(c.sql, runId))?.status as string) };
+    },
+    (v) => v.job !== undefined,
     ms,
+    (v) =>
+      v.run && ["cancelled", "failed", "expired", "done"].includes(v.run)
+        ? `run ở "${v.run}" và stage ${idx} không có job queued — job không bao giờ tới`
+        : null,
   );
-  expect({ stage: idx, queuedJob: row !== undefined }).toEqual({ stage: idx, queuedJob: true });
-  return c.rt.next((row as { run_id: string }).run_id);
+  expect({ stage: idx, queuedJob: row.job !== undefined }).toEqual({ stage: idx, queuedJob: true });
+  return c.rt.next((row.job as { run_id: string }).run_id);
 }
 
 /** Số `hub.runs` của stage `idx` (mọi round). */

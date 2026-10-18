@@ -4,11 +4,129 @@
 // `POST /process-defs` (đúng luật lưu + ép) ⇒ trước code đỏ ở `expect(201)`. Chèn bảng/cột 0036 CHỈ sau `needPdSchema`.
 // Không chứa `it(...)`. jsonb qua `sql.json` (CONVENTIONS §2 bẫy).
 import { expect } from "bun:test";
-import { type Json, PA, PA_FIX, type Role, type Sql, T, waitFor } from "../../P-a/_support/pa";
-import { type CtxPf1, handles, P1, type Pf1Opts, startPf1 } from "../../P-a/pf1/_local";
+import { type Json, PA, PA_FIX, type Role, type Sql, T } from "../../P-a/_support/pa";
+import {
+  type CtxPf1,
+  handles,
+  type Job,
+  P1,
+  type Pf1Opts,
+  runRow as runRowOf,
+  startPf1,
+} from "../../P-a/pf1/_local";
 
 export * from "../../P-a/pf1/_local";
-export { type Json, PA, PA_FIX, type Role, type Sql, T, waitFor };
+export { type Json, PA, PA_FIX, type Role, type Sql, T };
+
+// ---------- chờ nhanh, thất bại nhanh (CLAUDE.md Luật 4c) ----------
+// Không chờ hết giờ: đo trạng thái ngay, chỉ lặp ngắn (10 ms) ở CHỖ DUY NHẤT còn một bước bất đồng bộ thật
+// (Runtime XADD kết quả job → Hub tiêu thụ stream; Hub chưa có tín hiệu "đã xử lý xong" — xem
+// test-plan-addendum §4). Gặp trạng thái cuối SAI (`bad`) hoặc thiếu tính năng thì ném lỗi NGAY.
+// `timeoutMs` chỉ là lưới an toàn cho lỗi treo.
+const POLL_MS = 10;
+/** Lỗi "chưa có tính năng" — đỏ ngay với lý do rõ (không đợi timeout). */
+export function noFeature(what: string, task: string, detail = ""): never {
+  throw new Error(`chưa có tính năng: ${what} (${task})${detail ? ` — ${detail}` : ""}`);
+}
+/** Lặp tới khi `ok(v)`; `bad(v)` trả chuỗi ⇒ ném lỗi ngay (trạng thái cuối sai, không đợi nữa). */
+export async function waitFor<V>(
+  fn: () => Promise<V>,
+  ok: (v: V) => boolean,
+  timeoutMs: number,
+  bad?: (v: V) => string | null,
+): Promise<V> {
+  const end = Date.now() + timeoutMs;
+  let v = await fn();
+  for (;;) {
+    if (ok(v)) return v;
+    const why = bad?.(v);
+    if (why) throw new Error(why);
+    if (Date.now() >= end) return v;
+    await new Promise((r) => setTimeout(r, POLL_MS));
+    v = await fn();
+  }
+}
+const RUN_DEAD = new Set(["cancelled", "failed", "expired", "done", "needs_decision"]);
+/** Process run đã ở trạng thái cuối/dừng ⇒ không còn job mới tự đến. */
+const runDead = (sql: Sql, runId: string) => async (): Promise<string | null> => {
+  const st = (await runRowOf(sql, runId))?.status as string | undefined;
+  return st !== undefined && RUN_DEAD.has(st) ? st : null;
+};
+/** Job `queued` kế của process run rồi claim; run đã dừng mà không có job ⇒ đỏ ngay. */
+export async function nextStageJob(c: CtxPf1, processRunId: string, ms = 8_000): Promise<Job> {
+  const dead = runDead(c.sql, processRunId);
+  const row = await waitFor(
+    async () =>
+      (
+        await c.sql<
+          { run_id: string; dead?: string | null }[]
+        >`select j.run_id from hub.jobs j join hub.runs r on r.id = j.run_id
+          where r.process_run_id = ${processRunId} and j.status = 'queued' order by j.created_at limit 1`
+      )[0] ?? { run_id: "", dead: await dead() },
+    (v) => v.run_id !== "",
+    ms,
+    (v) => (v.dead ? `run ở "${v.dead}" và không có job queued (job kế không bao giờ tới)` : null),
+  );
+  expect({ queuedJob: row.run_id !== "" }).toEqual({ queuedJob: true });
+  return c.rt.next(row.run_id);
+}
+/** Không có job `queued` NGAY SAU lời gọi đã `await` (sweep/API đồng bộ) — không ngủ chờ. */
+export async function noStageJob(c: CtxPf1, processRunId: string, _ms = 0): Promise<boolean> {
+  const [r] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.jobs j
+    join hub.runs r on r.id = j.run_id where r.process_run_id = ${processRunId} and j.status = 'queued'`;
+  return (r?.n ?? 0) === 0;
+}
+/** Chờ trạng thái process run; run đã ở trạng thái cuối khác ⇒ đỏ ngay. */
+export async function waitStatus(sql: Sql, id: string, status: string, ms = 8_000): Promise<Json> {
+  const r = await waitFor(
+    () => runRowOf(sql, id),
+    (v) => v?.status === status,
+    ms,
+    (v) =>
+      v?.status && RUN_DEAD.has(v.status) && v.status !== status
+        ? `run ở "${v.status}", không còn chuyển sang "${status}" — chưa có tính năng tương ứng`
+        : null,
+  );
+  expect(r?.status).toBe(status);
+  return r;
+}
+
+// ---------- điều kiện tiền đề (đỏ ngay khi thiếu tính năng) ----------
+const probed = new WeakMap<object, Promise<void>>();
+/** Stage `wait_until` (T8): luật lưu def phải từ chối nguồn input kiểu text bằng 422 `WAIT_INVALID`. Chưa có ⇒ Hub lưu
+ *  def như stage agent thường (có job, không bao giờ `waiting_timer`) nên mọi ca chờ sẽ treo tới hết giờ. */
+export function needWaitUntil(c: CtxPf1): Promise<void> {
+  let p = probed.get(c);
+  if (!p) {
+    p = (async () => {
+      const key = "pd-probe-wait-invalid";
+      const body = {
+        key,
+        name: "Dò wait_until",
+        description: "Dò điều kiện tiền đề P-d.",
+        input_hint: "x",
+        run_group_ids: [],
+        stages: [waitStage({ key: "cho", step: 0, from: { kind: "input", key: "han" } })],
+        token_budget: null,
+        enabled: true,
+        inputs: [{ key: "han", type: "text", label: "Hạn", required: true }],
+      };
+      const res = await c.call("Adm", "POST", "/process-defs", body);
+      const rules = (res.json?.error?.details?.rules ?? []) as string[];
+      if (res.status === 422 && rules.includes("WAIT_INVALID")) return;
+      if (res.status === 201) {
+        await c.sql`delete from hub.process_defs where key = ${key}`.catch(() => undefined);
+      }
+      noFeature(
+        "stage wait_until",
+        "T8",
+        `POST /process-defs nguồn input text ⇒ ${res.status}, đòi 422 WAIT_INVALID`,
+      );
+    })();
+    probed.set(c, p);
+  }
+  return p;
+}
 
 // ---------- id cố định (dải `a5d1…`) ----------
 const x = (n: number) => `a5d10000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -272,7 +390,18 @@ export async function stageOf(sql: Sql, runId: string, idx: number): Promise<Jso
       and stage_idx = ${idx} order by round desc, attempt desc limit 1`
   )[0];
 }
-/** Chờ stage `idx` của run tới `status` (trả hàng). */
+const STAGE_DEAD = new Set(["failed", "cancelled", "expired", "needs_decision"]);
+/** Trạng thái stage mà từ đó KHÔNG còn tự chuyển sang `want` (đỏ ngay, không đợi). */
+function wrongStage(idx: number, want: string, cur: string | undefined): string | null {
+  if (cur === undefined || cur === want) return null;
+  const dead = STAGE_DEAD.has(cur);
+  const skipped =
+    want === "waiting_timer" && ["done", "waiting_review", "waiting_answer"].includes(cur);
+  return dead || skipped
+    ? `stage ${idx} ở "${cur}", không còn chuyển sang "${want}" — chưa có tính năng tương ứng (T8 chờ hẹn / T9 retry)`
+    : null;
+}
+/** Chờ stage `idx` của run tới `status` (trả hàng). `ms = 0` ⇒ chỉ đo một lần (sau lời gọi đã `await`). */
 export async function waitStageStatus(
   sql: Sql,
   runId: string,
@@ -284,6 +413,7 @@ export async function waitStageStatus(
     () => stageOf(sql, runId, idx),
     (v) => v?.status === status,
     ms,
+    (v) => wrongStage(idx, status, v?.status),
   );
   expect({ stage: idx, status: r?.status }).toEqual({ stage: idx, status });
   return r as Json;
