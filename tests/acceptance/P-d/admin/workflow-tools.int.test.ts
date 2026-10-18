@@ -204,7 +204,7 @@ describe("AC-A15 · PD2-I47 · DB 0012 tenant_workflow_tools (T15b)", () => {
     await env.owner`delete from admin.users where id = ${U2}`;
     const [g] = await env.owner<Obj[]>`select granted_by from admin.tenant_workflow_tools
       where tenant_id = ${A} and workflow_id = ${W.id}`;
-    expect(g?.granted_by ?? "vắng hàng").toBeNull();
+    expect(g ? g.granted_by : "vắng hàng").toBeNull();
     await env.owner`delete from admin.workflows where id = ${W2}`;
     const [n] = await env.owner<Obj[]>`select count(*)::int as n from admin.tenant_workflow_tools
       where workflow_id = ${W2}`;

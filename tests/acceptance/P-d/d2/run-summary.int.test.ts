@@ -82,7 +82,7 @@ describe("AC-H41 · D2-45 · RunSummary.wait_until / retry_at", () => {
       retry_at: typeof v.retry_at === "string" ? new Date(v.retry_at).toISOString() : v.retry_at,
     });
 
-    const list = await c.call("Adm", "GET", "/process-runs?limit=50");
+    const list = await c.call("Adm", "GET", "/process-runs?scope=tenant&limit=50");
     expect(list.status).toBe(200);
     const items = (list.json?.items ?? []) as Json[];
     for (const [name, id] of Object.entries(runs)) {

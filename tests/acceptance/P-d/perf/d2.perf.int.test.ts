@@ -32,7 +32,7 @@ import {
 
 let c: CtxD2;
 beforeAll(async () => {
-  c = await startD2();
+  c = await startD2({ processRunsPerTenant: 200 });
 }, 60_000);
 afterAll(async () => {
   await c?.stop();
@@ -131,7 +131,7 @@ describe("PD2-P02 · catalog editor 200 workflow × 50 tenant [plan-d2 §9]", ()
     >`select secret_id from admin.workflows where id = ${WF.W.id}`;
     await c.sql`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id, input_schema,
         output_field, enabled)
-      select gen_random_uuid(), 'p02-wf-' || g, 'WF ' || g, '', 'workflow', ${c.dify.baseUrl}, ${sec?.secret_id ?? null},
+      select gen_random_uuid(), 'p02-wf-' || g, 'WF ' || g, 'Workflow phục vụ đo hiệu năng P02', 'workflow', ${c.dify.baseUrl}, ${sec?.secret_id ?? null},
         '[]'::jsonb, 'result', true from generate_series(1, 196) g`;
     await c.sql`insert into admin.tenants (id, key, name)
       select gen_random_uuid(), 'p02-t-' || g, name from admin.tenants, generate_series(1, 48) g where id = ${ACME}`;
@@ -312,7 +312,7 @@ async function listPage(n: number, withTimers: boolean): Promise<{ q: number; ms
       from hub.process_runs r join hub.stage_runs s on s.process_run_id = r.id and s.stage_idx = 0
       where r.id = any(${ids}::uuid[])`;
   const get = async () => {
-    const r = await c.call("Adm", "GET", "/process-runs?limit=50");
+    const r = await c.call("Adm", "GET", "/process-runs?scope=tenant&limit=50");
     expect(r.status).toBe(200);
   };
   await get();

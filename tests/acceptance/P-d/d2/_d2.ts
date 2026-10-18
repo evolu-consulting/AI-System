@@ -182,9 +182,10 @@ export async function needD2(c: CtxPd): Promise<void> {
 // ---------- dựng ----------
 export type CtxD2 = CtxPd & { dify: FakeDify };
 /** `startPd` + Dify giả + deps Hub đủ để giải mã secret workflow (như H2a). */
-export async function startD2(): Promise<CtxD2> {
+export async function startD2(opts: { processRunsPerTenant?: number } = {}): Promise<CtxD2> {
   const dify = startFakeDify();
   const c = await startPd({
+    ...(opts.processRunsPerTenant && { processRunsPerTenant: opts.processRunsPerTenant }),
     extraDeps: { secretMasterKey: TEST_MASTER_KEY_B64, difyTimeoutMaxS: 300 },
   });
   return { ...c, dify, stop: async () => (await c.stop(), await dify.stop()) };
@@ -203,7 +204,7 @@ export async function insertWorkflows(sql: Sql, baseUrl: string): Promise<void> 
       on conflict do nothing`;
     await sql`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id,
         input_schema, output_field, enabled, side_effect) values
-      (${w.id}, ${w.key}, ${`Tool ${w.key}`}, 'Workflow thử P-d2.', 'workflow', ${baseUrl}, ${SEC(i)},
+      (${w.id}, ${w.key}, ${`Tool ${w.key}`}, 'Workflow thử nghiệm cho P-d2.', 'workflow', ${baseUrl}, ${SEC(i)},
        ${sql.json((w.key === "tham-so-20" ? P20 : inputs) as never)}, 'result', ${w.enabled}, ${w.side})
       on conflict (id) do nothing`;
   }
