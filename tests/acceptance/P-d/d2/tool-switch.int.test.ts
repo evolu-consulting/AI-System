@@ -60,7 +60,7 @@ async function runToTool(key: string, beforeS0Done?: () => Promise<void>): Promi
   const job = await nextStageJob(c, runId);
   await beforeS0Done?.();
   await jobDone(c, job, mdOut({ tong_tien: 25_000_000 }));
-  await waitStageStatus(c.sql, runId, 0, "done");
+  await waitStageStatus(c, runId, 0, "done");
   await settled(c);
   return runId;
 }
@@ -195,7 +195,7 @@ describe("AC-H47 · TT-R07 · công tắc đọc lại mỗi lần gọi, không
       inputs: [{ type: "text", key: "ma-kh", text: "KH1" }],
     });
     await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
-    await waitStageStatus(c.sql, runId, 0, "done");
+    await waitStageStatus(c, runId, 0, "done");
     try {
       await c.dify.arrived(1, () => settled(c));
       await setSwitch(c.sql, "W", ACME, false);
@@ -204,7 +204,7 @@ describe("AC-H47 · TT-R07 · công tắc đọc lại mỗi lần gọi, không
     }
     await settled(c);
     expect(c.dify.calls).toHaveLength(1);
-    await waitStageStatus(c.sql, runId, 1, "done", 0);
+    await waitStageStatus(c, runId, 1, "done", 0);
     expect(await decisionOf(c.sql, runId)).toBeUndefined();
   }, 30_000);
 });

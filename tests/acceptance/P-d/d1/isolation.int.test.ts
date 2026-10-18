@@ -1,4 +1,4 @@
-// AC-H46 · HUB-FR-144/145 · S1/S2 · K3/K7 · test-plan-int §6 (PD-I60…PD-I66): cách ly tenant ở vòng hẹn giờ/nhắc/chuyển cấp
+﻿// AC-H46 · HUB-FR-144/145 · S1/S2 · K3/K7 · test-plan-int §6 (PD-I60…PD-I66): cách ly tenant ở vòng hẹn giờ/nhắc/chuyển cấp
 // (hai tenant đối xứng, MỘT lượt chung — khuôn regression `scanDue` P-c2 D1), RLS `hub_rw` + FK kép + GRANT `process_timers`.
 // Fixture 0036 chỉ chèn sau `needPdSchema` ⇒ trước code mọi ca đỏ ở đó. PD-I67 ở `editor-context.int.test.ts`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -85,7 +85,7 @@ async function expectSideApplied(s: Side): Promise<void> {
     ...tag,
     jobs: [s.tid],
   });
-  await waitStageStatus(c.sql, s.wait.runId, 0, "done");
+  await waitStageStatus(c, s.wait.runId, 0, "done");
   const outs = await c.sql<Json[]>`select tenant_id from hub.process_outputs
     where process_run_id = ${s.wait.runId} and stage_idx = 0`;
   expect({ ...tag, outs: outs.map((o) => o.tenant_id) }).toEqual({ ...tag, outs: [s.tid] });
@@ -159,7 +159,7 @@ describe("AC-H46 · vòng nền hai tenant (K3)", () => {
         expect(await hubRunTenants(side.retry.runId)).toEqual([side.tid]);
         const more = await hubRunTenants(side.retry.runId); // sweep đã await ⇒ đo một lần (không ngủ chờ job thừa)
         expect({ tid: side.tid, jobs: more.length }).toEqual({ tid: side.tid, jobs: 1 });
-        await waitStageStatus(c.sql, side.wait.runId, 0, "done", 0);
+        await waitStageStatus(c, side.wait.runId, 0, "done", 0);
         const [o] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.process_outputs
           where process_run_id = ${side.wait.runId} and stage_idx = 0`;
         expect({ tid: side.tid, outputs: o?.n }).toEqual({ tid: side.tid, outputs: 1 });

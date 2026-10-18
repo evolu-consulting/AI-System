@@ -1,4 +1,4 @@
-// AC-H41 · AC-H39 · HUB-FR-143/144 · HUB-BR-42 · plan §5–§6 (đua) · test-plan-int §3 PD-I24, PD-I39 (a)(b)(c), §9 PD-I39d:
+﻿// AC-H41 · AC-H39 · HUB-FR-143/144 · HUB-BR-42 · plan §5–§6 (đua) · test-plan-int §3 PD-I24, PD-I39 (a)(b)(c), §9 PD-I39d:
 // 2 hub quét song song bắn một hẹn đúng 1 lần (S4); bắn ∥ huỷ run; bắn `wait_until` ∥ quay lại bước; job lỗi muộn khi stage
 // đã `waiting_timer`; 250 hẹn `retry` tới hạn (fixture SQL) với 2 hub × 3 lượt ⇒ 250 bắn, 250 job, 0 trùng.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
@@ -70,7 +70,7 @@ async function toRetryWait(): Promise<{ runId: string; job: Json }> {
   const runId = await startRun(c, "pd-retry");
   const job = await nextStageJob(c, runId);
   await c.rt.fail(job, "UPSTREAM_ERROR" as never, "lỗi tạm");
-  await waitStageStatus(c.sql, runId, 0, "waiting_timer");
+  await waitStageStatus(c, runId, 0, "waiting_timer");
   return { runId, job };
 }
 
@@ -78,11 +78,11 @@ describe("PD-I24 · 2 hub cùng bắn một hẹn wait_until [AC-H41][S4]", () =
   it("AC-H41 · PD-I24 · tới hạn; Promise.all(sweep hub1, sweep hub2) × 3 ⇒ đúng 1 fired_at, 1 output s1, 1 job s2", async () => {
     needPdSchema(c.pd);
     const { runId } = await startWait(c, { fields: { ngay_het_han: "2026-11-20" } });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     const other = await hub2();
     c.clk.set(new Date("2026-11-17T02:00:00Z"));
     for (let i = 0; i < 3; i++) await Promise.all([sweepN(c, 1), sweepOn(other)]);
-    await waitStageStatus(c.sql, runId, 1, "done", 0);
+    await waitStageStatus(c, runId, 1, "done", 0);
     const ts = await timersOf(c.sql, runId);
     expect(ts.filter((t) => t.fired_at !== null).length).toBe(1);
     expect((await stageOutputs(c.sql, runId, 1)).length).toBe(1);
@@ -111,7 +111,7 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
       );
       expect({ k, run: (await runRow(c.sql, runId)).status }).toEqual({ k, run: "cancelled" });
       if (t.fired_at !== null)
-        expect({ k, s0: (await waitStageStatus(c.sql, runId, 0, "cancelled")).status }).toEqual({
+        expect({ k, s0: (await waitStageStatus(c, runId, 0, "cancelled")).status }).toEqual({
           k,
           s0: "cancelled",
         });
@@ -134,10 +134,10 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
       ttl_days: 30,
     };
     const { runId } = await startWait(c, { fields: { ngay_het_han: "2026-11-20" }, def });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     const sr = await stageId(c.sql, runId, 1);
     await jobDone(c, await jobOfStage(c, runId, 2), mdOut());
-    await waitStageStatus(c.sql, runId, 2, "waiting_review");
+    await waitStageStatus(c, runId, 2, "waiting_review");
     const task = await openTask(c.sql, runId, "review");
     c.clk.set(new Date("2026-11-17T02:00:00Z"));
     const [rv] = await Promise.all([
@@ -159,7 +159,7 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
   it("AC-H39 · PD-I39c · job lỗi muộn (sự kiện failed lần 2) khi stage đã waiting_timer ⇒ stage giữ, không hẹn thứ hai", async () => {
     needPdSchema(c.pd);
     const { runId, job } = await toRetryWait();
-    const before = await waitStageStatus(c.sql, runId, 0, "waiting_timer");
+    const before = await waitStageStatus(c, runId, 0, "waiting_timer");
     await c.rt.fail(job as never, "UPSTREAM_ERROR" as never, "lỗi muộn");
     const ts = await waitFor(
       () => timersOf(c.sql, runId),
@@ -167,7 +167,7 @@ describe("PD-I39 · đua quanh hẹn [AC-H41][plan §6]", () => {
       300, // sự kiện muộn: chưa có tín hiệu "đã tiêu thụ" ⇒ cửa sổ ngắn (test-plan-addendum §4)
     );
     expect((ts as Json[]).length).toBe(1);
-    const after = await waitStageStatus(c.sql, runId, 0, "waiting_timer");
+    const after = await waitStageStatus(c, runId, 0, "waiting_timer");
     expect({ n: after.retry_count, code: after.last_error_code }).toEqual({
       n: before.retry_count,
       code: before.last_error_code,

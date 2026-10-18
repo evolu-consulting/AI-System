@@ -1,4 +1,4 @@
-// AC-H41 · HUB-FR-105 · HUB-BR-42 · PD-R16 · test-plan-int §3 PD-I30…I32: trần 5 run/tenant chỉ đếm
+﻿// AC-H41 · HUB-FR-105 · HUB-BR-42 · PD-R16 · test-plan-int §3 PD-I30…I32: trần 5 run/tenant chỉ đếm
 // `PROCESS_RUN_CAP_COUNTED` (không tính `waiting_timer`); run tỉnh dậy từ hẹn không qua trần. Mẫu P1-07 (`insertRun`, 429 +
 // `Retry-After`). Chèn run `waiting_timer` CHỈ sau `needPdSchema` (CHECK 0036).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -65,11 +65,11 @@ describe("PD-I30…I32 · trần run/tenant với waiting_timer [AC-H41][PD-R16]
   it("AC-H41 · PD-I32 · run thật waiting_timer tới hạn + 5 running (SQL) ⇒ `sweep` ⇒ run tỉnh dậy, s2 có job (không bị trần)", async () => {
     needPdSchema(c.pd);
     const { runId } = await startWait(c, { fields: { ngay_het_han: "2026-11-20" } });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     await fill(5, 0);
     c.clk.set(new Date("2026-11-17T02:00:01Z"));
     await sweepN(c, 1);
-    await waitStageStatus(c.sql, runId, 1, "done", 0);
+    await waitStageStatus(c, runId, 1, "done", 0);
     expect((await timersOf(c.sql, runId))[0]?.fired_at).not.toBeNull();
     await jobOfStage(c, runId, 2);
   }, 60_000);

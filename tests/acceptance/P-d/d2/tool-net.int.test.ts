@@ -79,7 +79,7 @@ async function runWs(): Promise<string> {
   );
   const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
-  await waitStageStatus(c.sql, runId, 0, "waiting_review");
+  await waitStageStatus(c, runId, 0, "waiting_review");
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
     and kind = 'review' and status = 'open' order by created_at desc limit 1`;
   const res = await c.call("B", "POST", `/review-tasks/${t?.id}/decision`, { result: "pass" });
@@ -107,7 +107,7 @@ describe("AC-H44 · PD2-R05 · lỗi mạng của stage tool side_effect", () =>
     await sweepN(c, 1);
     await settled(c);
     expect(net.calls() - before).toBe(1);
-    await waitStageStatus(c.sql, runId, 1, "done", 0);
+    await waitStageStatus(c, runId, 1, "done", 0);
   }, 30_000);
   for (const mode of ["close_before_body", "close_after_body"] as const) {
     it(`AC-H44 · PD2-I06b · fake nhận kết nối rồi đóng socket (${mode}) ⇒ sent:true ⇒ tool_failed, Dify 1 lần, 0 hẹn retry`, async () => {

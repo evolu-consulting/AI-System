@@ -1,4 +1,4 @@
-// AC-H41 · HUB-FR-144 · HUB-BR-42 · TZ-R04 · test-plan-int §3 PD-I20…I22, PD-I25…I29, PD-I33: stage `wait_until` vào
+﻿// AC-H41 · HUB-FR-144 · HUB-BR-42 · TZ-R04 · test-plan-int §3 PD-I20…I22, PD-I25…I29, PD-I33: stage `wait_until` vào
 // chờ (hẹn + múi giờ tenant lúc lưu), chưa tới hạn không đổi, `timer_invalid` + quyết, hạn đã qua, bước song song.
 // PD-I23 (khởi động lại) ở `wait-restart.int`, PD-I24 ở `race.int`, PD-I34…I36 ở `wait-def.int`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -55,7 +55,7 @@ async function toInvalid(fields?: Json, def?: Json): Promise<string> {
   const { runId } = await startWait(c, { fields, def });
   const run = await waitStatus(c.sql, runId, "needs_decision");
   expect(run.decision?.reason).toBe("timer_invalid");
-  await waitStageStatus(c.sql, runId, 1, "needs_decision");
+  await waitStageStatus(c, runId, 1, "needs_decision");
   return runId;
 }
 
@@ -63,7 +63,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
   it("AC-H41 · PD-I20 · fields 2026-11-20 ⇒ stage + run waiting_timer, 0 job s1, hẹn 2026-11-17T02:00Z HCM, view wait + executor", async () => {
     needPdSchema(c.pd);
     const { runId } = await startWait(c, { fields: FIELDS });
-    const s1 = await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    const s1 = await waitStageStatus(c, runId, 1, "waiting_timer");
     expect(s1.started_at).not.toBeNull();
     await waitStatus(c.sql, runId, "waiting_timer");
     expect(await hubRunsOfStage(c.sql, runId, 1)).toBe(0);
@@ -96,7 +96,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
       ];
       for (const [day, due] of cases) {
         const { runId } = await startWait(c, { fields: { ngay_het_han: day }, at });
-        await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+        await waitStageStatus(c, runId, 1, "waiting_timer");
         const ts = await timersOf(c.sql, runId);
         expect({ day, n: ts.length, tz: ts[0]?.timezone }).toEqual({
           day,
@@ -113,7 +113,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
   it("TZ-R04 · PD-I22 · sau khi vào chờ, đổi timezone acme = Europe/Berlin ⇒ due_at + timezone hẹn giữ nguyên", async () => {
     needPdSchema(c.pd);
     const { runId } = await startWait(c, { fields: FIELDS });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     const before = (await timersOf(c.sql, runId))[0];
     await setTz(c.sql, "Europe/Berlin");
     try {
@@ -135,12 +135,12 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
   it("AC-H41 · PD-I25 · trước hạn 1 phút `sweep` × 2 ⇒ không đổi gì (hẹn mở, stage waiting_timer, 0 output s1)", async () => {
     needPdSchema(c.pd);
     const { runId } = await startWait(c, { fields: FIELDS });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     c.clk.set(new Date(new Date(DUE).getTime() - 60_000));
     await sweepN(c, 2);
     const ts = await timersOf(c.sql, runId);
     expect(ts.map((t) => [t.fired_at, t.cancelled_at])).toEqual([[null, null]]);
-    expect((await waitStageStatus(c.sql, runId, 1, "waiting_timer")).status).toBe("waiting_timer");
+    expect((await waitStageStatus(c, runId, 1, "waiting_timer")).status).toBe("waiting_timer");
     expect((await runRow(c.sql, runId)).status).toBe("waiting_timer");
     expect((await stageOutputs(c.sql, runId, 1)).length).toBe(0);
     expect(await hubRunsOfStage(c.sql, runId, 2)).toBe(0);
@@ -171,7 +171,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
     expect([403, 404]).toContain(b.status);
     const a = await decide(c, "A", runId, "use_current");
     expect(a.status).toBe(200);
-    await waitStageStatus(c.sql, runId, 1, "done");
+    await waitStageStatus(c, runId, 1, "done");
     const outs = await stageOutputs(c.sql, runId, 1);
     expect(outs.map((o) => o.content)).toEqual([waitMd(NAME_WAIT, "Bỏ chờ theo quyết định.")]);
     await jobOfStage(c, runId, 2);
@@ -188,7 +188,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
       status: 200,
       code: null,
     });
-    await waitStageStatus(c.sql, runId, 1, "waiting_timer");
+    await waitStageStatus(c, runId, 1, "waiting_timer");
     const sr = await stageId(c.sql, runId, 1);
     const ts = await timersOf(c.sql, runId);
     expect(ts.length).toBe(1);
@@ -210,7 +210,7 @@ describe("PD-I20…I29 · stage wait_until [AC-H41][HUB-FR-144]", () => {
     expect(ts0.map((t) => [t.kind, t.stage_run_id])).toEqual([["wait_until", sr]]);
     expect(new Date(ts0[0]?.due_at).toISOString()).toBe("2026-10-28T02:00:00.000Z");
     await sweepN(c, 1);
-    await waitStageStatus(c.sql, runId, 1, "done", 0);
+    await waitStageStatus(c, runId, 1, "done", 0);
     expect((await timersOf(c.sql, runId))[0]?.fired_at).not.toBeNull();
     await jobOfStage(c, runId, 2);
   }, 60_000);
@@ -220,11 +220,11 @@ describe("PD-I33 · bước song song wait_until + agent [AC-H41][readiness #20]
   it("AC-H41 · PD-I33 · agent running ⇒ run running; agent done ⇒ run waiting_timer; backoff retry + waiting_review ⇒ run running", async () => {
     needPdSchema(c.pd);
     const par = await startWait(c, { fields: FIELDS, def: { ...PD_DEFS.parWait(), ttl_days: 30 } });
-    await waitStageStatus(c.sql, par.runId, 1, "waiting_timer");
+    await waitStageStatus(c, par.runId, 1, "waiting_timer");
     const song = await jobOfStage(c, par.runId, 2);
     expect((await runRow(c.sql, par.runId)).status).toBe("running");
     await jobDone(c, song, mdOut());
-    await waitStageStatus(c.sql, par.runId, 2, "done");
+    await waitStageStatus(c, par.runId, 2, "done");
     await waitStatus(c.sql, par.runId, "waiting_timer");
 
     await settle(c.sql);
@@ -243,9 +243,9 @@ describe("PD-I33 · bước song song wait_until + agent [AC-H41][readiness #20]
     const jd = await jobOfStage(c, runId, 1);
     const js = await jobOfStage(c, runId, 2);
     await c.rt.fail(js, "UPSTREAM_ERROR" as never, "lỗi tạm");
-    await waitStageStatus(c.sql, runId, 2, "waiting_timer");
+    await waitStageStatus(c, runId, 2, "waiting_timer");
     await jobDone(c, jd, mdOut());
-    await waitStageStatus(c.sql, runId, 1, "waiting_review");
+    await waitStageStatus(c, runId, 1, "waiting_review");
     expect((await runRow(c.sql, runId)).status).toBe("running");
   }, 90_000);
 });

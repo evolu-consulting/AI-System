@@ -1,4 +1,4 @@
-// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §3.1 PD2-I01, I03, I10…I14 (I13/I14: T15b): stage `tool` qua Hub thật + Dify giả. Gọi bằng người
+﻿// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §3.1 PD2-I01, I03, I10…I14 (I13/I14: T15b): stage `tool` qua Hub thật + Dify giả. Gọi bằng người
 // bắt đầu, `fields` lưu, .md có `## Kết quả` + `## Bàn giao`; 64 KB ⇒ tool_failed; lưu def sai ⇒ 422. Chờ tool-driver bằng
 // `handles.settled()`. Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -72,7 +72,7 @@ async function runTool(): Promise<string> {
   );
   const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
-  await waitStageStatus(c.sql, runId, 0, "done");
+  await waitStageStatus(c, runId, 0, "done");
   await settled(c);
   return runId;
 }
@@ -92,7 +92,7 @@ describe("AC-H44 · chạy stage tool", () => {
     const runId = await runTool();
     expect(c.dify.calls).toHaveLength(1);
     expect(c.dify.calls[0]?.inputs).toEqual({ tong_tien: 25_000_000, ma_kh: "KH1" });
-    const s1 = await waitStageStatus(c.sql, runId, 1, "done", 0);
+    const s1 = await waitStageStatus(c, runId, 1, "done", 0);
     const [out] = await c.sql<
       Json[]
     >`select fields from hub.process_outputs where stage_run_id = ${s1.id}`;
@@ -131,7 +131,7 @@ describe("AC-H44 · chạy stage tool", () => {
     expect((await decide(c, "A", runId, "add_attempt")).status).toBe(200);
     await settled(c);
     expect(c.dify.calls).toHaveLength(2);
-    const s1 = await waitStageStatus(c.sql, runId, 1, "done", 0);
+    const s1 = await waitStageStatus(c, runId, 1, "done", 0);
     expect(s1.attempt).toBe(att + 1);
   }, 30_000);
 });
@@ -190,7 +190,7 @@ describe("AC-H44 · input kiểu number tới tool là số JS (readiness #100, 
       ],
     });
     await settled(c);
-    await waitStageStatus(c.sql, runId, 0, "done");
+    await waitStageStatus(c, runId, 0, "done");
     expect(c.dify.calls).toHaveLength(1);
     const got = c.dify.calls[0]?.inputs as Json;
     expect({ tong_tien: typeof got.tong_tien, v: got.tong_tien, ma_kh: got.ma_kh }).toEqual({
@@ -227,7 +227,7 @@ describe("AC-H44 · stage tool có after.review (readiness #101, PD2-R08/R12)", 
       inputs: [{ type: "text", key: "ma-kh", text: "KH1" }],
     });
     await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
-    await waitStageStatus(c.sql, runId, 0, "done"); // tín hiệu s0 xong trước `settled` (như `runTool`)
+    await waitStageStatus(c, runId, 0, "done"); // tín hiệu s0 xong trước `settled` (như `runTool`)
     await settled(c);
     return runId;
   }
@@ -240,7 +240,7 @@ describe("AC-H44 · stage tool có after.review (readiness #101, PD2-R08/R12)", 
       back_to_steps: [],
       branch: [RULE],
     });
-    const s1 = await waitStageStatus(c.sql, runId, 1, "waiting_review", 0);
+    const s1 = await waitStageStatus(c, runId, 1, "waiting_review", 0);
     expect(s1.status).toBe("waiting_review");
     const tasks = await c.sql<
       Json[]

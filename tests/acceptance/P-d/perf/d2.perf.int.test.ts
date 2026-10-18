@@ -1,4 +1,4 @@
-﻿// HUB-FR-146 · HUB-FR-147 · CR-093 Luật 4c · plan-d2 §9 PD2-P01…P04: ngưỡng hiệu năng P-d2 + đếm câu SQL (số câu cố định, không
+// HUB-FR-146 · HUB-FR-147 · CR-093 Luật 4c · plan-d2 §9 PD2-P01…P04: ngưỡng hiệu năng P-d2 + đếm câu SQL (số câu cố định, không
 // phụ thuộc số tham số / số bước nhảy). Báo số thật (console). Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2` (không đo trên
 // code vắng). Chờ tool-driver bằng `handles.settled()`; không ngủ chờ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -154,8 +154,20 @@ describe("PD2-P02 · catalog editor 200 workflow × 50 tenant [plan-d2 §9]", ()
   }, 120_000);
 });
 
-/** Def s0 agent → s1 tool `tool_key` với `args`; chạy tới s0 xong; đếm câu SQL từ kết quả job s0 tới khi tool-driver xong. */
-async function toolRun(tool_key: string, args?: Json): Promise<{ n: number; ms: number }> {
+/** Câu của riêng tool-driver (plan-d2 §9 "chỉ tx của driver"): từ câu `loadCall` (`executor.tool_key`) tới hết tx2
+ *  (settle output + kh + join + đóng run) — trước câu đọc mô tả run cho thông báo `run_end` (`select "tenant_id",
+ *  "origin_kind", …`, việc của Hub sau tx, kể cả với stage agent). Không gồm settle s0, launch, kết thúc run. */
+function driverQueries(qs: string[]): number {
+  const from = qs.findIndex((q) => q.includes("->>'tool_key'"));
+  expect({ loadCall: from >= 0 }).toEqual({ loadCall: true });
+  const rest = qs.slice(from);
+  const to = rest.findIndex((q) => q.startsWith('select "tenant_id", "origin_kind"'));
+  return to < 0 ? rest.length : to;
+} /** Def s0 agent → s1 tool `tool_key` với `args`; chạy tới s0 xong; đếm câu SQL từ kết quả job s0 tới khi tool-driver xong. */
+async function toolRun(
+  tool_key: string,
+  args?: Json,
+): Promise<{ n: number; driver: number; ms: number; queries: string[] }> {
   const key = `pd2-p03-${++seq}`;
   await createDef(
     c,
@@ -175,43 +187,23 @@ async function toolRun(tool_key: string, args?: Json): Promise<{ n: number; ms: 
   const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   const job = await nextStageJob(c, runId);
   // #110: đếm từ TRƯỚC khi s0 xong (launch stage tool có thể chạy ngay sau job) tới `settled()` ⇒ số câu không dao động.
-  const t0 = performance.now();
+  // p95 (T18-perf-1): phần của tool-driver = từ câu `loadCall` tới `settled()` (tx1 + invoker + tx2 + kết thúc run), không
+  // gồm stream → settle s0 → launch s1 (việc Hub, không phải tool). `waitStageStatus` đã đợi `settled()`; mốc cuối ngay sau.
+  let end = 0;
   const q = await countQueries(c.hub, async () => {
     await jobDone(c, job, mdOut({ tong_tien: 25_000_000 }));
-    await waitStageStatus(c.sql, runId, 0, "done");
+    await waitStageStatus(c, runId, 0, "done");
     await settled(c);
+    end = performance.now();
   });
-  const ms = performance.now() - t0;
-  await waitStageStatus(c.sql, runId, 1, "done", 0);
-  return { n: q.n, ms };
-}
-
-/** Mốc cho PD2-P03: cùng cửa sổ đếm nhưng s1 là stage agent (có launch job, không tool-driver). */
-async function agentRun(): Promise<number> {
-  const key = `pd2-p03a-${++seq}`;
-  await createDef(
-    c,
-    defBody(key, [
-      agentStage({
-        key: "s0",
-        step: 0,
-        fields: [{ key: "tong_tien", type: "number", required: true }],
-      }),
-      agentStage({ key: "s1", step: 1 }),
-    ]),
-  );
-  const runId = await startRun(c, key);
-  const job = await nextStageJob(c, runId);
-  const q = await countQueries(c.hub, async () => {
-    await jobDone(c, job, mdOut({ tong_tien: 25_000_000 }));
-    await waitStageStatus(c.sql, runId, 0, "done");
-    await settled(c);
-  });
-  return q.n;
+  const load = q.queries.findIndex((s) => s.includes("->>'tool_key'"));
+  const ms = end - (q.at[load] ?? end);
+  await waitStageStatus(c, runId, 1, "done", 0);
+  return { n: q.n, driver: driverQueries(q.queries), ms, queries: q.queries };
 }
 
 describe("PD2-P03 · một stage tool — số câu cố định [plan-d2 §9]", () => {
-  it("HUB-FR-146 · PD2-P03 · 1 tham số vs 20 tham số ⇒ số câu SQL bằng nhau (≤ 14 ngoài launch); phần Hub p95 ≤ 60 ms", async () => {
+  it("HUB-FR-146 · PD2-P03 · 1 tham số vs 20 tham số ⇒ số câu SQL bằng nhau (driver ≤ 14 ngoài launch); s0 done → settled() p95 ≤ 60 ms", async () => {
     await prep();
     const one = await toolRun(WF.W20.key, {
       p0: { from: "field", stage_key: "s0", field: "tong_tien" },
@@ -220,12 +212,13 @@ describe("PD2-P03 · một stage tool — số câu cố định [plan-d2 §9]",
     for (let i = 0; i < 20; i++)
       args20[`p${i}`] = { from: "field", stage_key: "s0", field: "tong_tien" };
     const twenty = await toolRun(WF.W20.key, args20);
-    console.log(`PD2-P03 câu SQL 1 tham số=${one.n}, 20 tham số=${twenty.n}`);
+    console.log(
+      `PD2-P03 câu SQL cả cửa sổ: 1 tham số=${one.n}, 20 tham số=${twenty.n}; câu của driver tool: ${one.driver} vs ${twenty.driver}`,
+    );
     expect(twenty.n).toBe(one.n);
-    // #109: ≤ 14 câu NGOÀI launch (plan-d2 §9) — mốc = cùng cửa sổ với s1 là stage agent (job s0 + launch + join).
-    const agentBase = await agentRun();
-    console.log(`PD2-P03 mốc agent=${agentBase}; tool(1 tham số) − mốc = ${one.n - agentBase}`);
-    expect(one.n - agentBase).toBeLessThanOrEqual(14);
+    expect(twenty.driver).toBe(one.driver);
+    // T18-perf-1: ≤ 14 câu NGOÀI launch (plan-d2 §9) = chỉ câu của driver tool (không so với mốc agent: cửa sổ khác nhau).
+    expect(one.driver).toBeLessThanOrEqual(14);
     const ms: number[] = [];
     for (let i = 0; i < 10; i++) ms.push((await toolRun(WF.W.key)).ms);
     console.log(`PD2-P03 p95=${p95(ms).toFixed(1)} ms (n=10, Dify giả trả ngay)`);
@@ -264,7 +257,7 @@ async function branchPass(
   const runId = await startRun(c, key);
   await jobDone(c, await nextStageJob(c, runId));
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: tong }));
-  await waitStageStatus(c.sql, runId, 1, "waiting_review");
+  await waitStageStatus(c, runId, 1, "waiting_review");
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
     and kind = 'review' and status = 'open' limit 1`;
   const t0 = performance.now();
@@ -319,7 +312,9 @@ async function listPage(n: number, withTimers: boolean): Promise<{ q: number; ms
   };
   await get();
   const ms = await timed(20, get);
-  return { q: (await countQueries(c.hub, get)).n, ms };
+  // Nhiễu nền: đọc trạng thái job của run vừa tạo (stream run, không thuộc lời gọi GET) chen vào cửa sổ đếm ±1 câu.
+  const cq = await countQueries(c.hub, get);
+  return { q: cq.queries.filter((s) => !s.includes('from "hub"."jobs"')).length, ms };
 }
 
 describe("PD2-P05 · danh sách run: wait/retry theo tập [plan-d2 §9, D2-32]", () => {

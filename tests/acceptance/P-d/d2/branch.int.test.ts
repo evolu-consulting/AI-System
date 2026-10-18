@@ -68,9 +68,9 @@ async function branchDef(o: { s3RealAction?: boolean } = {}): Promise<string> {
 async function toReview(key: string, tong: number): Promise<{ runId: string; taskId: string }> {
   const runId = await startRun(c, key);
   await jobDone(c, await nextStageJob(c, runId), mdOut());
-  await waitStageStatus(c.sql, runId, 0, "done"); // job s0 còn `queued` tới khi Hub nhận kết quả ⇒ chờ tín hiệu xong, kẻo lấy lại job s0
+  await waitStageStatus(c, runId, 0, "done"); // job s0 còn `queued` tới khi Hub nhận kết quả ⇒ chờ tín hiệu xong, kẻo lấy lại job s0
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: tong }));
-  await waitStageStatus(c.sql, runId, 1, "waiting_review");
+  await waitStageStatus(c, runId, 1, "waiting_review");
   const [t] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
     and kind = 'review' and status = 'open' order by created_at desc limit 1`;
   return { runId, taskId: t?.id as string };
@@ -127,7 +127,7 @@ describe("AC-H45 · stage skipped = xong; bước trước có hiệu lực (T15
     await pass(taskId);
     expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped"); // fail nhanh khi chưa có rẽ nhánh (T19)
     await jobDone(c, await nextStageJob(c, runId), mdOut());
-    await waitStageStatus(c.sql, runId, 3, "waiting_review");
+    await waitStageStatus(c, runId, 3, "waiting_review");
     const [t3] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
       and kind = 'review' and status = 'open' order by created_at desc limit 1`;
     await pass(t3?.id as string);
@@ -182,7 +182,7 @@ describe("AC-H45 · quay lại xuyên qua stage skipped [PB2-R07, D2-08]", () =>
     expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped"); // fail nhanh khi chưa có rẽ nhánh (T19)
     const roundBefore = (await stageOf(c.sql, runId, 2))?.round;
     await jobDone(c, await nextStageJob(c, runId), mdOut());
-    await waitStageStatus(c.sql, runId, 3, "waiting_review");
+    await waitStageStatus(c, runId, 3, "waiting_review");
     const [t3] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
       and kind = 'review' and status = 'open' order by created_at desc limit 1`;
     const res = await c.call("B", "POST", `/review-tasks/${t3?.id}/decision`, {

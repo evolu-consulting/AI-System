@@ -1,4 +1,4 @@
-// AC-H39 · AC-H40 · HUB-FR-143 · HUB-BR-41 · PD-I01…PD-I09 (test-plan-int §1): lỗi tạm ⇒ hẹn `retry` 30/120/480 s (khoá
+﻿// AC-H39 · AC-H40 · HUB-FR-143 · HUB-BR-41 · PD-I01…PD-I09 (test-plan-int §1): lỗi tạm ⇒ hẹn `retry` 30/120/480 s (khoá
 // `retry:<sr>:<round>:<attempt>:<n>` — A7 Q9; `SweepResult.timers` — A7 Q10), cạn lượt ⇒ `retry_exhausted`; `interrupted` thử lại;
 // đã gửi `side_effect` (D-PD03) ⇒ quyết ngay; lỗi nghiệp vụ / template / mất quyền ⇒ quyết ngay. Trước code: đỏ ở `needPdSchema`.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
@@ -124,7 +124,7 @@ describe("PD-I01…I05 · lỗi tạm ⇒ thử lại [AC-H39 · HUB-FR-143 · H
       expect({ attempt: s?.attempt, round: s?.round }).toEqual({ attempt: 1, round: 1 });
     }
     await jobDone(c, job, mdOut());
-    await waitStageStatus(c.sql, runId, 0, "done");
+    await waitStageStatus(c, runId, 0, "done");
     await nextStageJob(c, runId); // s1 có job
     const hr = await hubRunsOfStage(c.sql, sr.id);
     expect(hr.map((r) => r.status)).toEqual(["failed", "failed", "failed", "finished"]);
@@ -166,7 +166,7 @@ describe("PD-I01…I05 · lỗi tạm ⇒ thử lại [AC-H39 · HUB-FR-143 · H
     await interruptJob(c, job);
     const t0 = c.clk.now().getTime();
     await sweepN(c);
-    const st = await waitStageStatus(c.sql, runId, 0, "waiting_timer", 0); // sau sweep đã await ⇒ đo một lần
+    const st = await waitStageStatus(c, runId, 0, "waiting_timer", 0); // sau sweep đã await ⇒ đo một lần
     const t1 = c.clk.now().getTime();
     expect(st).toMatchObject({ retry_count: 1, last_error_code: "INTERRUPTED", attempt: 1 });
     expect(await decisionOf(c.sql, runId)).toBeUndefined();
@@ -198,8 +198,8 @@ describe("PD-I01…I05 · lỗi tạm ⇒ thử lại [AC-H39 · HUB-FR-143 · H
       await interruptJob(c, jb);
       await sweepN(c);
       if (round === 4) break;
-      await waitStageStatus(c.sql, runId, 1, "waiting_timer", 0);
-      await waitStageStatus(c.sql, runId, 2, "waiting_timer", 0);
+      await waitStageStatus(c, runId, 1, "waiting_timer", 0);
+      await waitStageStatus(c, runId, 2, "waiting_timer", 0);
       const open = await openRetry(c.sql, runId);
       expect({ round, open: open.length }).toEqual({ round, open: 2 });
       expect(new Set(open.map((t) => t.stage_run_id)).size).toBe(2);

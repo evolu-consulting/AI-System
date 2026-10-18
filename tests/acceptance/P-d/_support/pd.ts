@@ -14,6 +14,7 @@ import {
   runRow as runRowOf,
   startPf1,
 } from "../../P-a/pf1/_local";
+import { hubActivity } from "../d1/_count";
 
 export * from "../../P-a/pf1/_local";
 export { type Json, PA, PA_FIX, type Role, type Sql, T };
@@ -401,20 +402,42 @@ function wrongStage(idx: number, want: string, cur: string | undefined): string 
     ? `stage ${idx} ở "${cur}", không còn chuyển sang "${want}" — chưa có tính năng tương ứng (T8 chờ hẹn / T9 retry)`
     : null;
 }
-/** Chờ stage `idx` của run tới `status` (trả hàng). `ms = 0` ⇒ chỉ đo một lần (sau lời gọi đã `await`). */
+/**
+ * Chờ stage `idx` của run tới `status` (trả hàng) — chờ TÍN HIỆU, không poll/ngủ (Luật 4c): đọc ngay; chưa tới thì đợi
+ * Hub gửi câu SQL kế (`hubActivity` — mỗi bước của driver ghi DB) rồi đợi `handles.settled()` HOẶC câu kế (lượt commit
+ * cuối; không đợi `settled()` đơn thuần vì lời gọi tool đang giữ làm nó treo) và đọc lại. `ms` chỉ là lưới an toàn cho
+ * lỗi treo; `ms = 0` ⇒ chỉ đo một lần (sau lời gọi đã `await`).
+ */
 export async function waitStageStatus(
-  sql: Sql,
+  c: CtxPf1,
   runId: string,
   idx: number,
   status: string,
   ms = 8_000,
 ) {
-  const r = await waitFor(
-    () => stageOf(sql, runId, idx),
-    (v) => v?.status === status,
-    ms,
-    (v) => wrongStage(idx, status, v?.status),
-  );
+  const act = hubActivity(c.hub);
+  const end = Date.now() + ms;
+  let seen = act.tick();
+  let r = await stageOf(c.sql, runId, idx);
+  while (ms > 0 && r?.status !== status) {
+    const why = wrongStage(idx, status, r?.status);
+    if (why) throw new Error(why);
+    const left = end - Date.now();
+    if (left <= 0) break;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const guard = new Promise<void>((res) => {
+      timer = setTimeout(res, left); // lưới an toàn, không phải cơ chế chờ
+    });
+    try {
+      await Promise.race([act.after(seen), guard]);
+      seen = act.tick();
+      await Promise.race([handles(c).settled(), act.after(seen), guard]);
+    } finally {
+      clearTimeout(timer);
+    }
+    seen = act.tick();
+    r = await stageOf(c.sql, runId, idx);
+  }
   expect({ stage: idx, status: r?.status }).toEqual({ stage: idx, status });
   return r as Json;
 }

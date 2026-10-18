@@ -120,7 +120,7 @@ ok · S10 (nhật ký trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `p
 |---|---|---|
 | PD2-P01 | PUT def 10 stage / 3 tool × 20, xen kẽ | p95 ≤ 50 ms và ≤ p95 cùng def 0 tool + 5 ms (**#109**); số câu có tool − không tool = **1** |
 | PD2-P02 | 200 workflow × 50 tenant (10.000 hàng công tắc), `GET /process-editor/context` × 30 | p95 ≤ 20 ms; **2** câu |
-| PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; (câu − mốc agent cùng cửa sổ) ≤ **14** (#109); p95 ≤ 60 ms |
+| PD2-P03 | đếm câu từ trước `jobDone` s0 tới `settled()` (#110), 1 vs 20 tham số (`W20`) | bằng nhau; câu của riêng tool-driver (từ `loadCall` tới hết tx2, T18-perf-1) ≤ **14** (#109, không so mốc agent: cửa sổ khác nhau); p95 ≤ 60 ms đo từ câu `loadCall` tới `settled()` |
 | PD2-P04 | đếm câu của POST Đạt + `settled()`: nhảy 1 vs 18 bước (def 21 bước); mốc = def **không** `branch` (#97, D2-33) | bằng nhau; khớp − mốc = **4**; không khớp − mốc = **1** (`fields`); p95 ≤ 30 ms (đúng khoảng đo) |
 | PD2-P05 | T17b (D2-32): `GET /process-runs?limit=50` (Adm), 50 run không hẹn vs có hẹn mở (SQL) | số câu bằng nhau; p95 ≤ 40 ms và ≤ không hẹn + 5 ms; thiếu wait/retry ⇒ đỏ ngay |
 
