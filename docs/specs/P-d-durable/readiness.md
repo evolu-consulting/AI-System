@@ -6,6 +6,7 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-18 | NOT READY (P-d2 lần 1, T16) | 0 | 6 | 9 | Vòng 1/2 (WORKFLOW Kỷ luật token #5). Cao: #97 PD2-P04 "khớp − không khớp = 4" ↔ plan §7 (đọc `fields` cả hai ca); #98 thiếu đo trước + perf trong Lệnh xong; #99 T17 thiếu barrel lớp; #100 kiểu nguồn ↔ kiểu tham số tool; #101 stage `tool` `after.review` bị settle thẳng `done`; #102 e2e PD2-E01…E05 chưa có/chưa giao. Đều có mặc định ⇒ docs-architect áp ngay, vòng 2 chỉ diff. Điều kiện Gate: ADR-0022 Proposed + D2-02 dùng pipeline `/mcp` hiện có (đạt), T20 gồm S1–S12 (đạt), PD2-P01…P04 có ngưỡng + test (đạt, sửa #97). Không hỏi người dùng. |
 | 2026-10-18 | READY (lần 7) | 0 (+điều kiện Gate ngoài spec) | 0 | 11 | Diff d91d2d9. Đóng #90 (notice `run_finished` chèn trong tx `systemBatch`, Redis sau COMMIT; A10 ↔ A11 khớp; hết hạn 5 câu so với lượt rỗng ≤ 6 = PD-P15), #92 (`test:perf:pd` thêm ở T9), #93, #94. Mới: #95, #96 (Thấp). Còn Thấp: 71, 73, 75–80, 91, 95, 96. Không hỏi người dùng. |
 | 2026-10-18 | NOT READY (lần 6) | 0 | 1 | 12 | Diff 70bd139. Đóng #81 (A11 `systemBatch`, CA-R06/§4/§7, T6b/T6c), #82, #83–#89, #74, TC1–18. Cao mới do chính bản sửa: #90 `Notifier.runsFinished(ids)` — A11 xếp vào "repo lô gắn tx" ↔ A10 "adapter gom vào outbox xả sau COMMIT" (notice `run_finished` ghi trong hay ngoài tx). Thấp còn: 71, 73, 75–80 + mới 91–94. Không hỏi người dùng. `check:size` không có vi phạm ở docs; trần không đổi. |
 | 2026-10-18 | NOT READY (lần 5) | 0 | 2 | 34 | Diff 75ec598..3efb39f (ADR-0017 Accepted, CR-081 đóng, mockup duyệt, A9/A10, test-plan-addendum §2–§3, test T3/T3a). Cao: #81 A10 một tx hệ thống/lô nhiều tenant ↔ spec-ca CA-R06/K1 (UoW theo tenant, mỗi hàng); #82 NFR "đo riêng phần DB" ↔ PD-P13/P14 đo cả lời gọi. 18 tranh chấp qc đều Thấp, có mặc định. Không hỏi người dùng (Luật 2b). Điều kiện Gate ngoài spec đã đủ (D0a–D0c). |
@@ -15,6 +16,56 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 1 (P-d2) · 2026-10-18 · NOT READY
+
+Phạm vi: `spec-d2.md`, `spec-tz-tools.md` §2, `plan-d2.md`, `plan-d2-rules.md` (T13 2fe1d77), `plan-frontend-d2.md` (T14 15652e5), `test-plan-d2.md` (T15/T15b), `spec-decisions.md` "P-d2" (D2-01…D2-23), `spec-ac.md` AC-H44/H45/H47/A15, `tasks.md` T13–T20, `mockup/04`, mục được trỏ (`plan-contract` §2/§6–§8, `plan-addendum` A1–A4, `plan-db` §3–§4, `test-plan-e2e` PD2-E01…E05); test `rules/d2/*`, `d2/*.int`, `perf/d2.perf.int`, `admin/workflow-tools.int`, `_support/modules.ts`; code: `mcp/mcp.service.ts`, `mcp/mcp.rules.ts` (`validateToolArgs`), `runs/apply-settle.ts`, `core/handles.ts`, `adapters/drain.ts`, `defs/{def.rules,teams.repo}.ts`, `application/ports.ts`, contracts `chat/processes-entities.ts`, `common.ts`, ADR-0022. Mã: HUB-FR-146/147, ADM-FR-73, HUB-BR-12/20/27/38, AC-H44/H45/H47/A15. Kích thước (trần L): spec-d2 10600/12288 · plan-d2 18413/18432 · plan-frontend-d2 15421/15360 · test-plan-d2 23290/18432.
+
+#### Cao (đóng trước T17 — docs-architect áp mặc định cùng lượt, vòng 2 chỉ diff)
+| # | Mục | Vị trí | Vấn đề | Mặc định |
+|---|---|---|---|---|
+| 97 | K | plan-d2:114 ↔ `perf/d2.perf.int.test.ts:236-241`, test-plan-d2:121 | Ca thứ 2 PD2-P04 so "khớp − **không khớp** = 4", nhưng plan §7 phải đọc `currentFields` để đánh giá ⇒ ca không khớp cũng trả câu `fields` ⇒ hiệu đúng là 3; code đúng plan sẽ đỏ. Ngoài ra "join p95 ≤ 30 ms" (plan) ↔ test đo cả `POST decision` Đạt + `settled()` | Plan §9 + test: "khớp − def không `branch` = +4; không khớp − def không `branch` = +1 (`fields`)"; qc sửa ca 2 dùng def không `branch` làm mốc. Ngưỡng 30 ms áp cho đúng khoảng test đo (POST Đạt + `settled()`); sửa chữ plan §9 |
+| 98 | K | tasks T18s/T18/T19s/T19 Lệnh xong; plan-d2:111, :151 | Đường nóng cũ bị chạm (pipeline `/mcp`, lưu def, `settleStep`/join) — chỉ PD2-P01 có "đo trước ở T18-1"; T18s/T19s không có bước đo trước; không task nào chạy `d2.perf.int` (CLAUDE.md: `test:perf` ngoài Lệnh xong; tiền lệ P-d1 #92 thêm vào Lệnh xong) | T18s: ghi số câu + p95 của một lời gọi `/mcp` (H2a) trước/sau tách. T18-1: đo PD2-P01 (bản không tool) trước khi sửa. T19s: đo số câu + p95 POST Đạt + `settled()` def 5 bước không `branch` trước khi dời. Ghi "Quyết định trong lúc làm". Lệnh xong: T18-1 += `bun run test:perf tests/acceptance/P-d/perf/d2.perf.int.test.ts -t "PD2-P0[12]"`, T18-2 += `-t PD2-P03`, T19 += `-t PD2-P04` |
+| 99 | H, H2 | tasks T17 (File, Lệnh xong) ↔ test-plan-d2:7, `_support/modules.ts:36-57`, plan-d2 §5 | Test P-d2 nạp barrel `P/domain/index.ts`, `P/application/index.ts` "thêm ở T17" + domain `StageRunStatus`/`DecisionReason`/`ExecutorKind` thêm ở T17, nhưng File T17 chỉ `packages/contracts/**`, `packages/db/**`; plan-d2 §2 không có barrel (Glob: chưa tồn tại) | T17 File += `P/domain/index.ts`, `P/application/index.ts` (chỉ re-export, không logic) + file kiểu domain enum; Lệnh xong += `bun test tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts && bun run depcruise`; ca U còn đỏ "chưa có tính năng (T18/T19)" là đúng |
+| 100 | D, J | PD2-R02; plan-d2:41 (`inputs: Map<string,string>`); plan-frontend-d2:11 (const `value: string`); `mcp.rules.ts:141-170` | `/mcp` (`validateToolArgs`) đòi `number` là số JS, `select` ∈ `options`; nguồn `input` là chuỗi, const từ FE là chuỗi; `toolStageIssues` không kiểm kiểu nguồn ↔ kiểu tham số ⇒ def lưu được rồi chạy ra `INVALID_ARGS` ⇒ `tool_failed`. Không ghi đổi kiểu hay chặn lúc lưu (hai cách hiểu) | Lưu def: `TOOL_INVALID` path `stages.<i>.executor.args.<name>` khi nguồn không hợp kiểu — ma trận chung với FE `paramCompatible`: `number` ← input/field `number` hoặc const số; `boolean` ← const boolean; `select` ← const ∈ `options` hoặc input/field chuỗi; `text`/`paragraph` ← mọi nguồn (số/ngày `String()`). Chạy: `buildToolArgs` đổi input kiểu `number` sang `Number` (ToolCallLoad mang kiểu input). FE gửi const đúng kiểu param. qc thêm ca PD2-U02/U04 |
+| 101 | D | PD2-R08 (`after` review/auto), PD2-R12; plan-d2:48, :73; `runs/apply-settle.ts:69-104` | `settleOk` = "output + stage done + join"; `settleApply` (đích tách T18s) chỉ có `done`/`decision` ⇒ stage `tool` có `after.review` (bắt buộc khi rẽ nhánh tới đích `real_action`) bỏ qua gate. Mọi test dùng `toolStage` mặc định `auto` (`_d2.ts:250`) | `settleOk` sau khi ghi output đi cùng đường hậu-output của stage agent: `review` ⇒ `waiting_review` + review task (nhắc/chuyển cấp P-d1 áp như agent), nhánh đánh giá khi Đạt; `auto` ⇒ `done` + join. qc thêm ca int "tool `review` ⇒ `waiting_review`; Đạt ⇒ rẽ nhánh". PD2-P03 giữ đo `auto` |
+| 102 | F, H | test-plan-e2e:20-24 ↔ `e2e/P-d/*.pd.ts` (grep PD2/"Gọi tool" = 0); tasks T15 File, T20 Agent | PD2-E01…E05 chưa viết; T15 chỉ `tests/acceptance/P-d/**`, T20 không có qc ⇒ không ai viết e2e trước code (Luật 3, 4b; `e2e/**` khoá sau Gate) | Thêm **T15c** (qc, trước Gate/T17): PD2-E01…E05 vào `e2e/P-d/{admin-stage,admin-tenant,chat-labels}.pd.ts`, đỏ đúng lý do; kèm các ca của #100, #101, #109 |
+
+#### Thấp (sửa khi BUILD hoặc cùng lượt áp Cao)
+103 tasks T15 còn `[ ]` dù test-plan-d2:123-126 ghi T15/T15b xong ⇒ tick · 104 L trần: plan-frontend-d2 15421 > 15360, test-plan-d2 23290 > 18432 ⇒ cắt văn xuôi/lặp (mục "Đỏ đúng lý do" lịch sử, tranh chấp đã xử lý ⇒ một dòng); plan-d2 18413 sát trần · 105 L một nguồn: Q-T13-1…5 (plan-d2 §12), Q-T14-1…4 (plan-frontend-d2 §15), Q-D2-*/Tranh chấp T15 (test-plan-d2 §6) là quyết định ngoài `spec-decisions` ⇒ chép thành D2-24… ở "P-d2", nơi khác trỏ mã; P-d2 vẫn dựa phụ lục sửa đổi `plan-addendum` A1/A2/A3/A7 (plan-contract:142 "thay bởi") ⇒ khi chạm tiếp, nhập A1–A3 vào plan-contract §6 (không chặn: tasks:3 "plan-addendum thắng" rõ thứ tự) · 106 A1 `tool-catalog.repo` ↔ plan-d2 §2 `tool-switch.repo.ts` ⇒ theo plan-d2 (mới hơn, khớp File T18) · 107 plan-d2 §10 S1 + PD2-I01 `tenantKey(...)` ⇒ symbol thật `tenantKeyOf(catalog, tenantId)` (`config/catalog.rules.ts:288`) · 108 PD2-R03 "Timeout = `timeout_s`" ⇒ trỏ D2-17 (`min(timeout_s, HUB_DIFY_TIMEOUT_MAX_S)`) · 109 test thiếu so với test-plan: PD2-I02 chỉ ở unit (`run-tool-stage.test.ts:183`, AC-H44 ghi int); I43 "DELETE lần 2 không đổi", I45 "tenant không tồn tại ⇒ 404", PD2-P01 "≤ trước + 5 ms", PD2-P03 "≤ 14 câu" chưa assert ⇒ qc thêm ở T15c · 110 PD2-P03 bắt đầu đếm sau `waitStageStatus(s0 done)` — launch stage tool có thể đã chạy trước ⇒ số câu dao động ⇒ đếm từ trước `jobDone` s0 (hoặc chỉ tx tool-driver, khớp "ngoài launch") · 111 Lệnh xong T18a/T18/T19s/T19 dùng `bun run test:int` cả bộ ⇒ `bun run test:int:par <thư mục liên quan>` (Luật 4c), bộ đầy đủ ở T20.
+
+#### Hai mục P-d1 người dùng có thể dời vào T17 (không tính là lỗ hổng P-d2)
+- **Notice chuyển cấp (mockup 03 D4):** `ProcessNoticeSchema` (`chat/processes-entities.ts:366`) chưa có tên Group/số giờ; `HistoryItem.kind` đã có `escalate` + `group` (:162, :175) nhưng chưa có giờ. `hub.process_notices.payload jsonb` có sẵn ⇒ không DDL, không đổi thứ tự enum. **T17 nhận được** phần contract (trường optional thêm cuối); cần thêm vào File T17 chỗ ghi payload ở notifier Hub + mapper view + ca test qc (T15c); hiển thị chat ở T20.
+- **`ProcessRunSummary` wait/retry (danh sách run admin):** schema (:102-119) chưa có. **T17 nhận được** phần contract (optional). Phần Hub là đường nóng mới (danh sách run): một câu theo tập cho cả trang (`process_timers`/`stage_runs` lọc `= any(ids)`), test đếm câu + ngưỡng p95 + đo trước (mục K) ⇒ nên đặt ở T18-1 hoặc task nhỏ T17b, không nhồi vào T17 (rủi ro vượt 400 dòng).
+
+#### Mâu thuẫn
+- plan-d2 §9 PD2-P04 ↔ test PD2-P04 ca 2 (#97) · `plan-addendum` A1 ↔ plan-d2 §2 tên repo (#106) · spec PD2-R03 ↔ D2-17 (#108).
+
+#### Câu hỏi người dùng
+Không có (mọi mục có mặc định; không mục nào thuộc kinh doanh/bảo mật/chi phí/phạm vi mới).
+
+#### Checklist
+| Mục | Kết quả | Bằng chứng |
+|---|---|---|
+| A Phạm vi | Đạt | spec-d2 §1 "Không làm"; spec-tz-tools §2 |
+| B Contract | Đạt | plan-contract §6–§8, plan-addendum A1/A2; workflow-tools route/lỗi plan-contract:146-160 |
+| C Dữ liệu | Đạt | plan-db §3 (0037 CHECK), §4 (0012 DDL/RLS/FK/index); TT-R01/R02 |
+| D Nghiệp vụ | Thiếu | #100, #101; còn lại PD2-R01…R15, plan-d2 §4, §7 |
+| E UI | Đạt | plan-frontend-d2 §10–§13, mockup 04 E1–E4, i18n §4 |
+| F Kiểm chứng | Thiếu | #102, #109 |
+| G Phụ thuộc | Đạt | Dify giả `_d2.ts` + `tool-net` (test-plan-d2:5); ADR-0022 Proposed ⇒ D2-02 |
+| H2 Vai trò | Thiếu | #99 (barrel), #102 (e2e) |
+| H Task | Thiếu | #98, #99, #102; Rủi ro T17–T20 `cao` đúng |
+| I Nhất quán | Mâu thuẫn | #97, #106, #108 |
+| J Độ chính xác | Đạt (trừ #107) | plan-d2-rules §1 chữ ký; plan-d2 §2 file |
+| K Hiệu năng | Thiếu | #97, #98; plan-d2 §9 có số câu/index/ngưỡng; không vòng hàng/sleep (grep test d2 = 0) |
+| L Gọn, một nguồn | Thấp | #104, #105 |
+
+Điều kiện Gate: ADR-0022 **Proposed** (`docs/adr/0022…:3`), mặc định = pipeline `/mcp` hiện có (D2-02, plan-d2 Q-T13-5) — đạt theo T16. Security T20: Đọc gồm `plan-d2 §10 (S1–S12)`; S1/S5 ⇒ PD2-I01, S2/S9 ⇒ I21/I23/I24 + `run-tool-stage`, S4 ⇒ I04/I10, S6 ⇒ I15, S7 ⇒ I44/I46, S8 ⇒ chạy lại H2a/X1, S10 ⇒ I26, S11 ⇒ `uow-boundary.test`, S12 ⇒ `run-tool-stage` S12; S3 chỉ review — đạt. PD2-P01…P04: plan-d2 §9 + test-plan-d2 §3.7 + `perf/d2.perf.int.test.ts` — đạt sau khi sửa #97.
+
+Quét từ mơ hồ: 30 kết quả (dấu `…` trong khoảng mã, `≈` ước lượng dòng, "dự kiến" tên migration đã chốt ở plan-db, "tuỳ ý"/"tuỳ chọn" là mô tả) — vô hại; không lỗ hổng mới.
+
+Chưa kiểm: mockup 02 (C1–C5) và `plan-frontend-i18n` §4 chỉ đối chiếu nhãn e2e; nội dung `tool.int`/`branch.int`/`tool-switch.int` đọc theo mã ca, không chạy test.
 
 ### Lần 7 · 2026-10-18 · READY
 
