@@ -44,6 +44,13 @@ export type DecisionReason =
   | "apply_failed"
   | "retry_exhausted"
   | "timer_invalid"; // P-d2 + "tool_failed"
+export type TeamRunStatus =
+  | "running"
+  | "waiting_answer"
+  | "done"
+  | "limit"
+  | "failed"
+  | "cancelled";
 export type DecisionOption = "add_attempt" | "use_current" | "cancel";
 export type ExecutorKind = "agent" | "team" | "apply" | "wait_until"; // P-d2 + "tool"
 export type TimerKind = "wait_until" | "retry";

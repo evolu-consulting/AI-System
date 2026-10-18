@@ -9,6 +9,7 @@ import {
   type NOTICE_KINDS,
   PROCESS_RUN_STATUSES,
   type STAGE_RUN_STATUSES,
+  type TEAM_RUN_STATUSES,
   TIMER_KINDS,
 } from "@ai/contracts/chat";
 import type { INPUT_TYPES } from "@ai/contracts/hub-admin";
@@ -22,6 +23,7 @@ import type {
   NoticeKind,
   ProcessRunStatus,
   StageRunStatus,
+  TeamRunStatus,
   TimerKind,
 } from "../domain/types";
 import type { AssertEqual } from "./assert-equal";
@@ -36,7 +38,8 @@ const _types: [
   AssertEqual<TimerKind, (typeof TIMER_KINDS)[number]>,
   AssertEqual<InputType, (typeof INPUT_TYPES)[number]>,
   AssertEqual<NoticeKind, (typeof NOTICE_KINDS)[number]>,
-] = [true, true, true, true, true, true, true, true];
+  AssertEqual<TeamRunStatus, (typeof TEAM_RUN_STATUSES)[number]>,
+] = [true, true, true, true, true, true, true, true, true];
 
 describe("CA-R04 · union domain = mảng contract", () => {
   it("HUB-FR-143 · kiểu khớp lúc typecheck và giá trị DB thu hẹp đúng", () => {
