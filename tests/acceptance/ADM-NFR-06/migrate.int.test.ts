@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { runMigrations } from "@ai/db";
 import postgres from "postgres";
 import { resetTestDb } from "../../../packages/db/src/test-db";
@@ -9,6 +10,12 @@ if (!URL) {
   throw new Error("TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev` rồi `bun run test:int`");
 }
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
+/** Số migration main hiện có = số entry journal (đọc lúc chạy), không khoá theo số file (CR-093 · tranh chấp T6a). */
+const MAIN_COUNT = (
+  JSON.parse(
+    readFileSync(`${import.meta.dir}/../../../packages/db/migrations/meta/_journal.json`, "utf8"),
+  ) as { entries: unknown[] }
+).entries.length;
 afterAll(async () => {
   await sql.end();
 });
@@ -50,7 +57,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
   it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 19 bảng admin.* (M4)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
-    expect(r).toEqual({ main: 11, dev: 3 });
+    expect(r).toEqual({ main: MAIN_COUNT, dev: 3 });
     expect(await tablesIn(["admin", "hub"])).toEqual([
       ...ADMIN_TABLES,
       "hub.agent_grants",
@@ -144,13 +151,13 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
     expect([await count("__drizzle_migrations"), await count("__drizzle_migrations_dev")]).toEqual(
       before,
     );
-    expect(before).toEqual([11, 3]);
+    expect(before).toEqual([MAIN_COUNT, 3]);
   });
 
   it("ADM-NFR-06 · M0-AC03 · role đã có sẵn (DB reset nhưng role ở mức cluster) vẫn migrate được", async () => {
     await resetTestDb(URL);
     await expect(runMigrations({ url: URL, appEnv: "test" })).resolves.toEqual({
-      main: 11,
+      main: MAIN_COUNT,
       dev: 3,
     });
   });
@@ -170,7 +177,7 @@ describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
   it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 19 bảng admin.* (M4), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 11, dev: 0 });
+    expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     const ns = await sql<{ nspname: string }[]>`
       select nspname from pg_namespace where nspname in ('admin', 'hub') order by 1`;
     expect(ns.map((n) => n.nspname)).toEqual(["admin", "hub"]);

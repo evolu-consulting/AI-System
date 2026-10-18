@@ -214,7 +214,7 @@ f1c74f00b2c4700a15b95cf946bc7bd0d58e1a1a4f9fc4ec9a049e657ec19fc9  tests/acceptan
 adea9edad1da42c433a021e262e5a996b3546d52fe792bbd2d4b3d285c4fcee8  tests/acceptance/ADM-NFR-06/ci-workflow.test.ts
 ab65fdffde1320c63a6c73576944c52ce7759d7f713b6576d8de47ea0190abb3  tests/acceptance/ADM-NFR-06/health.test.ts
 b91631853eb52d1f994195017a9fa636dc2e1bb06ab2c061e21efc29414f8827  tests/acceptance/ADM-NFR-06/i18n-check.test.ts
-6c6b3ad3ec67b4c1b272ae43eaea2ce4aa87ce79dc944ccae2a755f96cd21463  tests/acceptance/ADM-NFR-06/migrate.int.test.ts
+3fc48dbc45563c8051eb6d55d602bad25a1a8ffeaa3558cb00dfd1010d50b7e1  tests/acceptance/ADM-NFR-06/migrate.int.test.ts
 13cb496231635f577008e06bb73176a29516831b9848164f289982bd0e200b45  tests/acceptance/ADM-NFR-06/mocks.test.ts
 9df0613678417c7360562d30555d564150ef941c613bb14bd4bef362182d2468  tests/acceptance/ADM-NFR-06/server.int.test.ts
 8d1fbb3687a6ee5b38e45e2f1b19778a6f84bda6310a795bf50d568456fa8e97  tests/acceptance/ADM-NFR-06/test-lock.test.ts
@@ -253,7 +253,7 @@ d21b78e405967c9ecf05f4bcd81248925c836a508b390d0c12a4c8a9093cfe73  tests/acceptan
 28f4affff8ae4e7893e2731b27aac75dd1869c53ff84ff168aecfe1ee9092b38  tests/acceptance/H1/auth.int.test.ts
 8fea8089c7511a17adeae693ed736bc6154c7df3af6fd58415f01002b7fc035d  tests/acceptance/H1/cancel.int.test.ts
 be2f8ad04502c7283f16b109bc07232b114c01341deb2ff9b02a65e80c80d975  tests/acceptance/H1/concurrency.int.test.ts
-20700f7c3c516d4f67a1e72c8f5fbaf1a3dcf35ad6e815ed08e0b2f2ddd2c2d2  tests/acceptance/H1/db.int.test.ts
+e2de4d47463b04058819c09b982377f221ba0498f68b12bdaf58245cf827b668  tests/acceptance/H1/db.int.test.ts
 601e47249361fffb6b18401f8e8a554780febfe40926837690911157b8beaf6c  tests/acceptance/H1/isolation.int.test.ts
 5704402b3db11b6397956d83f4a0b58b3b0b6eedfe0723a46cbe8d6bc0a24411  tests/acceptance/H1/lease.int.test.ts
 e23b4684485c1df04ba9f13882b97d2345cbae3a4bfc265cbfc513bc44a5bcbe  tests/acceptance/H1/log.int.test.ts
@@ -462,7 +462,7 @@ e56bd948975491f6f140b08b098373a0a605e348b4b497ab25cdba4c1172ea7b  tests/acceptan
 a7f3f82b944200561d0f7d75ea0b373836eb9a00f41d4398d3e3bead9a0b78ee  tests/acceptance/M1/auth-refresh.int.test.ts
 e7d208302c2d5d4d61999ffd0335832778a9c7bf32e46dc64f42dedc84e2f790  tests/acceptance/M1/db-guard.int.test.ts
 80708df3ed5ad8a4ad1c624258a79eb02c90a710068f12263f148b9b9ae5e82b  tests/acceptance/M1/db-rls.int.test.ts
-932ce22bb28868690553eeb8c9fa3817791a646abeb6e93a17757079ed42386d  tests/acceptance/M1/db-schema.int.test.ts
+26d8072eb8251c34619e3f417d4affb6d1f1e4870476cfd4d4453f59724f2858  tests/acceptance/M1/db-schema.int.test.ts
 ebf8501285a9546253b8769f3f8f7b40170a83f6920b5f0282e2935d503b773e  tests/acceptance/M1/error-codes.int.test.ts
 3adaf48e2b90e35ad0d043f7fb359a199b7e2c07ab68969115961f24662fd8a6  tests/acceptance/M1/i18n-labels.test.ts
 26bd440a16e7340e11531daba15bc239403c32a6160d03ab90f3b1a47c38b092  tests/acceptance/M1/middleware.int.test.ts
@@ -484,7 +484,7 @@ d844b5231e126ab2319a6afddca05bc7263083998fd8a2475eb39ca42e011f29  tests/acceptan
 e3f1c3b8da5ea2dc76f2ba9176ba0911ff31dd4c1b1f97e20fb73616ec5957a5  tests/acceptance/M2/commands.int.test.ts
 82c3f5df22ac5bb1bed18c97110eef8b6d4d628a287994442777b04ff1ac08d5  tests/acceptance/M2/concurrency.int.test.ts
 15d34f9fb5c812edbc6196d8a1239ba52295ce4ab04287070b73e22b41e8cd8d  tests/acceptance/M2/db-rls.int.test.ts
-1d000627fe0e88979e2e0131198bb94cc52395d0a0e152ca06902b8661ac69f8  tests/acceptance/M2/db-schema.int.test.ts
+7e86b9ecea2a3a4d434b8c3130517d6bffce5489506817412c03e531a942465f  tests/acceptance/M2/db-schema.int.test.ts
 281ad8c128efa6ae60421e3189c6be1aa82a15d068dfb2198954ed880c6e49a6  tests/acceptance/M2/error-codes.int.test.ts
 a0f1853aadf7894bd864b5c824450ecbe0dea8bd310c71ed874588b70c1c2da7  tests/acceptance/M2/features.int.test.ts
 9bcc59e0ec6b72cbd027d083ff1e3eb7231c1629103d6e940b83e303d3a8e207  tests/acceptance/M2/forbidden.int.test.ts
@@ -507,7 +507,7 @@ decfd21449de994c03c04b8ddba822b41cd3802305e6e215010ce7d9a5f2cd19  tests/acceptan
 931619b29a242a7099ee13d5b4870b5a3df991dd6c8986ea5445df1fe5e81450  tests/acceptance/M3/concurrency.int.test.ts
 6b5561a28bbe96b1583c3e2cf9cd0bd329b7019846c73d5ade74a090b77db0e1  tests/acceptance/M3/conflict.int.test.ts
 4c2272a6c30e7c70de71941ea831e78982833402498ce99ac1e67e6151fb064c  tests/acceptance/M3/db-rls.int.test.ts
-fde9773742141f7facf68f8c11dad83b68edd4a766dd79b3d6d30fc4d187dc1f  tests/acceptance/M3/db-schema.int.test.ts
+9d39459ae196cc9547ed77bc27178f0789d5629e20a4df17a9d463a07ce5e115  tests/acceptance/M3/db-schema.int.test.ts
 c338fc90e889990f82d99685aa20811eea50c43b359bc0805ad3e1fac2fd1105  tests/acceptance/M3/effective-access.int.test.ts
 d4833850f46684713ca1c984fff9f1a7748523d5fd26207f45a07e2b4861e952  tests/acceptance/M3/error-codes.int.test.ts
 6d6d101f3ae54d65671a87532ea79abd54802ad88f305839a2cf397b4a9d8967  tests/acceptance/M3/forbidden.int.test.ts

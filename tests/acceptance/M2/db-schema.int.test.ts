@@ -13,6 +13,12 @@ const URL = process.env.TEST_DATABASE_URL;
 if (!URL)
   throw new Error("TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev` rồi `bun run test:int`");
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
+/** Số migration main hiện có = số entry journal (đọc lúc chạy), không khoá theo số file (CR-093 · tranh chấp T6a). */
+const MAIN_COUNT = (
+  JSON.parse(
+    readFileSync(`${import.meta.dir}/../../../packages/db/migrations/meta/_journal.json`, "utf8"),
+  ) as { entries: unknown[] }
+).entries.length;
 const ROOT = join(import.meta.dir, "../../..");
 
 const id = (n: number) => `01900000-0000-7000-8000-0000000002${String(n).padStart(2, "0")}`;
@@ -140,8 +146,8 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration M2", () => {
-  it("ADM-NFR-06 · spec M2 §4 · development: {main: 11, dev:3}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 11, dev: 3 });
+  it("ADM-NFR-06 · spec M2 §4 · development: {main: <journal>, dev:3}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: MAIN_COUNT, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
@@ -459,10 +465,10 @@ describe("ADM-NFR-06 · bất biến M1 và hub-stub", () => {
 });
 
 describe("ADM-NFR-06 · migration production M2", () => {
-  it("ADM-NFR-06 · spec M2 §4 · production: {main: 11, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M2 §4 · production: {main: <journal>, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 11, dev: 0 });
+    expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual(ADMIN19);
   });
 });

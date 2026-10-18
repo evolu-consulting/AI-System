@@ -1,6 +1,7 @@
 // ADM-NFR-06, ADM-FR-63, ADM-BR-05 · schema admin, ràng buộc, chỉ mục, migration (test-plan D2).
 // Chỉ dùng owner + resetTestDb + runMigrations: không seed, không app, không import _fixtures.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
@@ -9,6 +10,12 @@ const URL = process.env.TEST_DATABASE_URL;
 if (!URL)
   throw new Error("TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev` rồi `bun run test:int`");
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
+/** Số migration main hiện có = số entry journal (đọc lúc chạy), không khoá theo số file (CR-093 · tranh chấp T6a). */
+const MAIN_COUNT = (
+  JSON.parse(
+    readFileSync(`${import.meta.dir}/../../../packages/db/migrations/meta/_journal.json`, "utf8"),
+  ) as { entries: unknown[] }
+).entries.length;
 
 const T1 = "01900000-0000-7000-8000-000000000001";
 const T2 = "01900000-0000-7000-8000-000000000002";
@@ -66,8 +73,8 @@ afterAll(async () => {
 });
 
 describe("ADM-NFR-06 · migration development", () => {
-  it("ADM-NFR-06 · spec §4 · development: {main: 11, dev:3}; lần 2 {0,0}", () => {
-    expect(firstRun).toEqual({ main: 11, dev: 3 });
+  it("ADM-NFR-06 · spec §4 · development: {main: <journal>, dev:3}; lần 2 {0,0}", () => {
+    expect(firstRun).toEqual({ main: MAIN_COUNT, dev: 3 });
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
@@ -281,10 +288,10 @@ describe("ADM-NFR-01 · ràng buộc refresh_tokens và features", () => {
 });
 
 describe("ADM-NFR-06 · migration production", () => {
-  it("ADM-NFR-06 · spec §4 · production: {main: 11, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · spec §4 · production: {main: <journal>, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
-    expect(r).toEqual({ main: 11, dev: 0 });
+    expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
       "admin.audit_log",
       "admin.command_names",
