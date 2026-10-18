@@ -12,3 +12,13 @@ export const ACTIVE_CAP_STATUSES: readonly ProcessRunStatus[] = [
 ];
 
 export const isActive = (s: ProcessRunStatus): boolean => ACTIVE_CAP_STATUSES.includes(s);
+
+/** PD-R16 (HUB-FR-105): trạng thái tính vào trần 5 run/tenant — KHÔNG gồm `waiting_timer`. */
+export const CAP_COUNTED: readonly ProcessRunStatus[] = [
+  "running",
+  "waiting_review",
+  "waiting_answer",
+  "needs_decision",
+];
+
+export const countsTowardCap = (s: ProcessRunStatus): boolean => CAP_COUNTED.includes(s);
