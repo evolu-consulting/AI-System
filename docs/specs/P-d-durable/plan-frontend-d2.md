@@ -1,9 +1,9 @@
 # P-d-durable · plan frontend P-d2 (T14 · T20) — Gọi tool, Rẽ nhánh, tab Tool quy trình [HUB-FR-146, 147][ADM-FR-73]
 
-Phần của [`plan-frontend.md`](plan-frontend.md) (§0 quyết định FD, §5 domain, §6 mã lỗi, §14–§15; số mục §10–§13 giữ nguyên để trỏ). Spec: [`spec-d2.md`](spec-d2.md) §6, [`spec-tz-tools.md`](spec-tz-tools.md) §2 · contract: [`plan-contract.md`](plan-contract.md) §4, §6 (`ArgSource`, `BranchRule`, `ProcessToolItem`) · backend: [`plan-d2.md`](plan-d2.md) §4, §7 · câu chữ: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) §4 · mockup `04` (E1–E4), `02` (C1–C5). Quyết định FE: `spec-decisions.md` D2-19…D2-23. **Rà lần 2 (T14, 2026-10-18)** theo code P-d1 thật; **BUILD:** T17 + T18a xong, FE ở T20. Mockup đã duyệt thắng plan-d2 khi lệch (xem §10 "Lệch").
+Phần của [`plan-frontend.md`](plan-frontend.md) (§0 quyết định FD, §5 domain, §6 mã lỗi, §14–§15; số mục §10–§13 giữ nguyên để trỏ). Spec: [`spec-d2.md`](spec-d2.md) §6, [`spec-tz-tools.md`](spec-tz-tools.md) §2 · contract: [`plan-contract.md`](plan-contract.md) §4, §6 (`ArgSource`, `BranchRule`, `ProcessToolItem`) · backend: [`plan-d2.md`](plan-d2.md) §4, §7 · câu chữ: [`plan-frontend-i18n.md`](plan-frontend-i18n.md) §4 · mockup `04` (E1–E4), `02` (C1–C5). Quyết định FE: `spec-decisions.md` D2-19…D2-23. **BUILD:** T17 + T18a xong, FE ở T20. Mockup đã duyệt thắng plan-d2 khi lệch (xem §10 "Lệch").
 
 ## 10. Admin · panel "Gọi tool" + "Rẽ nhánh" + canvas (mockup 04)
-**Điều kiện code (P-d1 thật, `apps/admin-web/src/features/processes`):** `StageDraft.executor` là chuỗi `agent:<id>|team:<id>|apply|wait_until`; kiểu đặc biệt tách khỏi form chung bằng `isWait`/`isApply` trong `StageForm` (nhánh loại trừ). `def-form.ts` 336/400 dòng, `StageOutput.tsx` 206 và `ProcessCanvas.tsx` 209 (đã quá 200) ⇒ **không thêm dòng vào ba file này**; logic mới vào file mới, file cũ chỉ thêm lời gọi.
+**Code thật (`apps/admin-web/src/features/processes`):** `StageDraft.executor` là chuỗi `agent:<id>|team:<id>|apply|wait_until`; kiểu đặc biệt tách khỏi form chung bằng `isWait`/`isApply` trong `StageForm` (nhánh loại trừ). `def-form.ts` 336/400 dòng, `StageOutput.tsx` 206 và `ProcessCanvas.tsx` 209 (đã quá 200) ⇒ **không thêm dòng vào ba file này**; logic mới vào file mới, file cũ chỉ thêm lời gọi.
 
 **Draft + hàm thuần (file mới `lib/`)**
 | File | Nội dung |
@@ -11,7 +11,7 @@ Phần của [`plan-frontend.md`](plan-frontend.md) (§0 quyết định FD, §5
 | `draft-types.ts` (+≈8 dòng) | `StageDraft.tool: ToolDraft = { key: string; args: Record<string, { from: "const"\|"input"\|"field"; value: string }> }`; `StageDraft.branch: BranchDraft[] = { field; op; value; goto: number\|null }`; `emptyTool()`, `emptyBranch()` |
 | `tool-form.ts` | `TOOL_EXECUTOR="tool"`, `isTool`, `TOOL_PATCH` (`after` giữ tuỳ chọn), `normalizeTool(s)` (khuôn `normalizeWait`: ép `answerer:starter`, `sources:[]`, `mustKnow:""`, `autofix` rỗng, `budget:""`, `template/sections` ép `["Kết quả","Bàn giao"]`; giữ `fields`, `filename`, `timeout`; bỏ `args` không còn trong tool), `toolToExecutor`/`executorToTool`, `toolIssues(tool, def, stageFields, step)` live (cùng luật `plan-d2-rules`) |
 | `branch-form.ts` | `branchToRules`/`rulesToBranch` (UI đếm bước từ 1 ⇒ `goto_step = goto-1`), `branchIssues`, `branchErrorAt(errors,i)` (path server `stages.i.after.branch.j.*`) |
-| `domain/tool-rules.ts`, `domain/branch-rules.ts` | `paramCompatible(paramType, fieldType)`, `missingRequiredArgs`, `isFileParam`; `opsForType`, `branchRuleIssues`, `isStandalone(stages,i)`, `branchEdges(stages)` — thuần `{key,type}` như `wait-rules.ts`; mã lỗi vào `domain/error-keys.ts` (`TOOL_INVALID`, `TOOL_SIDE_EFFECT`, `BRANCH_INVALID`, ref tool) |
+| `domain/tool-rules.ts`, `domain/branch-rules.ts` | `paramCompatible(sourceType, paramType)` ([rules §2](plan-d2-rules.md), cùng ma trận BE, D2-29; const gửi đúng kiểu param, kiểu `number` dùng `type=number`), `missingRequiredArgs`, `isFileParam`; `opsForType`, `branchRuleIssues`, `isStandalone(stages,i)`, `branchEdges(stages)` — thuần `{key,type}` như `wait-rules.ts`; mã lỗi vào `domain/error-keys.ts` (`TOOL_INVALID`, `TOOL_SIDE_EFFECT`, `BRANCH_INVALID`, ref tool) |
 | `def-form.ts` | chỉ thêm: `normalizeTool` ở nơi gọi `normalizeWait`; chuyển `executor`/`after.branch` hai chiều gọi sang `tool-form`/`branch-form`; `validateStage` (`stage-validate.ts`, 54 dòng) gọi `toolIssues`/`branchIssues` |
 
 **Dữ liệu catalog (D2-20):** không route mới. `api.ts` đã có `useProcessEditorContext` (`GET /process-editor/context`, `tools` hiện là `unknown` — T17 đổi sang `ProcessToolItem`); hook mới `hooks/use-process-tools.ts` bọc cùng query (cùng khoá cache với `use-process-timezone` ⇒ một request) trả `{ tools, isPending, isError, refetch, isTemplate }`. Tenant `undefined` (mẫu) ⇒ `tools=[]` và `isTemplate`.
@@ -67,10 +67,5 @@ Lỗi: bảng §6 + khoá §4 file i18n (`TOOL_INVALID`, `TOOL_SIDE_EFFECT`, `BR
 | Render | `ToolArgRow`/`BranchRuleRow` `memo`; `StageView` thêm trường ⇒ `sameView` đủ (không dựng lại canvas khi gõ); danh sách tool ≤ 200 dòng ⇒ `Select` Radix, bảng tenant không virtualize (≤ 200) |
 | Mạng | Catalog tool = `process-editor/context` (một request, cache chung); tab tenant chỉ fetch khi mở tab; công tắc không optimistic (chờ server rồi invalidate) |
 
-## 15. Câu hỏi mở (đều có mặc định — không hỏi người dùng)
-| # | Câu hỏi | Mặc định |
-|---|---|---|
-| Q-T14-1 | Chọn tool xong, đổi sang tool khác có giữ `args` trùng tên? | Giữ tham số trùng tên + kiểu tương thích, bỏ phần còn lại (không báo) |
-| Q-T14-2 | Đổi/xoá/chèn bước làm `goto` của luật lệch | Không tự remap (như `backTo`); lỗi live `branch.err.goto` buộc người dùng chọn lại |
-| Q-T14-3 | Chat-web vượt 146 KB sau khi thêm | Dừng task chat, lazy namespace i18n, báo; không nâng ngân sách |
-| Q-T14-4 | Trang Run admin: stage tool hiện "Làm bởi" | Tên tool (theo mockup E4), không "Hub" |
+## 15. Câu hỏi mở
+Q-T14-1…4 (giữ args trùng tên+kiểu khi đổi tool; không tự remap `goto` — lỗi live `branch.err.goto`; chat-web ≥ 146 KB ⇒ dừng + lazy i18n; Run admin hiện tên tool) đã thành D2-35…D2-38 ở [`spec-decisions.md`](spec-decisions.md).

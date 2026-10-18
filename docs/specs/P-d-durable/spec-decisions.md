@@ -139,6 +139,27 @@ D2-05…D2-08 ở bảng trên; audit công tắc (D2-04) = dòng "Audit công t
 | D2-21 | FE bundle: chat-web 141/150 KB ⇒ P-d2 chat ≤ +1 KB, `BranchMessage` lazy, đo `check:bundle` trước/sau, ≥ 146 KB ⇒ dừng + lazy namespace i18n; admin lazy `StageTool` + `TenantToolsTab` | Luật 4c, plan-frontend-d2 §14 |
 | D2-22 | FE: file đã > 200 dòng (`StageOutput` 206, `ProcessCanvas` 209) không tăng; tách `OutputFields.tsx`, `canvas-edges.ts` trong T20 (CONVENTIONS, ngoại lệ Luật 4) | plan-frontend-d2 §10 |
 | D2-23 | Mockup 04 E1/E4 thắng plan-d2 khi lệch: executor của stage tool hiển thị **tên tool**; "Bỏ qua" chat dùng sẵn `process.common.stage.skipped` + `describeStageWait` (không thêm UI mới) | stop condition T14 |
+| D2-24 | Kiểm `canRun` (HUB-BR-27) lúc kick chỉ áp stage `tool`; agent giữ như cũ (đổi = phạm vi mới) (Q-T13-1) | PD2-R03 |
+| D2-25 | Ngưỡng PD2-P01…P04 như plan-d2 §9; đo trước lệch > 20 % ⇒ ghi "Quyết định trong lúc làm" (Q-T13-2) | Luật 4c |
+| D2-26 | Catalog editor > 200 workflow ⇒ `limit 200` (Q-T13-3) | TT-R04 |
+| D2-27 | Giữ 4 câu/lời gọi của pipeline `/mcp` (T18s không đổi hành vi); gộp tx ⇒ `TECH-DEBT` (Q-T13-4) | D2-02 |
+| D2-28 | ADR-0022 còn Proposed ⇒ dùng `WorkflowInvoker` trong tiến trình = pipeline `/mcp` (T16) (Q-T13-5) | D2-02 |
+| D2-35 | FE: đổi tool giữ `args` trùng tên + kiểu tương thích, bỏ phần còn lại (Q-T14-1) | plan-frontend-d2 §10 |
+| D2-36 | FE: đổi/xoá/chèn bước không tự remap `goto` (như `backTo`); lỗi live `branch.err.goto` (Q-T14-2) | plan-frontend-d2 §10 |
+| D2-37 | FE: chat-web ≥ 146 KB sau khi thêm ⇒ dừng task chat, lazy namespace i18n, báo; không nâng ngân sách (Q-T14-3) | D2-21 |
+| D2-38 | FE: trang Run admin hiện "Làm bởi" = tên tool (mockup E4), không "Hub" (Q-T14-4) | D2-23 |
+
+### Trả lời readiness lần 1 (P-d2) · 2026-10-18 (áp mặc định, người dùng không có câu hỏi)
+Nguồn: [readiness.md](readiness.md) "Lần 1 (P-d2)" #97–#111. Test thuộc qc (`test-plan-d2.md`, `tests/**`) ghi ở cột "qc".
+| # | Mặc định đã áp | Chỗ | qc |
+|---|---|---|---|
+| D2-29 (#100) | `paramCompatible(sourceType, paramType)` dùng chung BE/FE; lưu def sai kiểu ⇒ `TOOL_INVALID` path `stages.<i>.executor.args.<name>`; chạy: input kiểu `number` ⇒ `Number` (`ToolCallLoad.inputTypes`, `buildToolArgs` thêm tham số thứ 4 tuỳ chọn). Cài đặt: hàm cùng bảng ở BE `tool-def.rules.ts` và FE `domain/tool-rules.ts` (lớp 1 không import contracts, ADR-0023), không export từ contracts | plan-d2-rules §2, plan-d2 §3–§4, plan-frontend-d2 §10 | PD2-U02/U04, vector bảng chung |
+| D2-30 (#101) | `settleOk` của stage `tool` đi chung đường hậu-output của agent: `after.review` ⇒ `waiting_review` + review task (nhắc/chuyển cấp P-d1), Đạt ⇒ nhánh; `auto` ⇒ `done` + join | plan-d2 §3–§4, §7 | int "tool `review`"; PD2-P03 giữ `auto` |
+| D2-31 (#98) | Đo trước khi sửa: T18s (`/mcp` H2a), T18-1 (PD2-P01), T19s (POST Đạt + `settled()`); ghi vào "Quyết định trong lúc làm". Lệnh xong thêm `PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test …d2.perf.int.test.ts -t PD2-P0x` (T18-1 P01/P02, T18-2 P03, T19 P04, T17b P05) | plan-d2 §11, tasks | — |
+| D2-32 | `ProcessRunSummary` wait/retry là đường nóng mới ⇒ task **T17b**: 1 câu theo tập mỗi trang, test đếm câu, **PD2-P05** (trang 50 run: số câu hằng; p95 ≤ 40 ms và ≤ trước + 5 ms), đo trước | plan-d2 §9, §11, tasks T17b | thêm PD2-P05 vào test-plan-d2 |
+| D2-33 (#97) | PD2-P04: khớp = def không `branch` +4; không khớp = +1 (`fields`); ngưỡng 30 ms áp khoảng đo (POST Đạt + `settled()`) | plan-d2 §9 | ca 2 dùng def không `branch` làm mốc |
+| D2-34 | Notice chuyển cấp (tên Group, số giờ, `HistoryItem` kind `escalate`): trường optional thêm cuối, không DDL (`process_notices.payload` jsonb); T17 thêm file Hub notifier/mapper; chat ở T20 | tasks T17 | ca notice ở T15c |
+| D2-39 | Sửa tài liệu: #99 T17 File += barrel `P/{domain,application}/index.ts` + enum domain; #102 T15c; #103 tick T15/T15b; #104 cắt chữ (plan-frontend-d2 15050 B, plan-d2 18429 B); #105 Q-* thành D2-24…28, 35…38; #106 theo plan-d2 (`tool-switch.repo`, plan-addendum A1 lỗi thời — không sửa file addendum); #107 `tenantKeyOf(catalog, tenantId)`; #108 PD2-R03 "Timeout" ⇒ D2-17; #111 Lệnh xong nhắm đúng thư mục (`test:int:par`). Chưa nhập A1–A3 vào plan-contract §6 (không chặn; tasks:3 đã nêu thứ tự). Không áp mặc định nào đổi phạm vi đã duyệt | các file P-d2 | #109, #110, PD2-I01 (`tenantKeyOf`), Q-D2-*/tranh chấp T15 (test-plan-d2 §6, qc đang giữ file): chép thành D2-xx sau khi qc xong; test-plan-d2 23290 B > 18432 ⇒ qc cắt |
 
 ## Quyết định trong lúc làm (Luật 2, sau Gate)
 - (chưa có)
