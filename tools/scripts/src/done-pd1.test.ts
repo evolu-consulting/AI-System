@@ -59,6 +59,10 @@ describe("HUB-FR-143 · done:pd1", () => {
       ["P-d", "P-a", "P-b", "P-b2", "P-c", "P-c2"].map((d) => `tests/acceptance/${d}`),
     );
     expect(s.filter((x) => x.nodeDir).map((x) => x.title)).toEqual(["playwright P-d"]);
+    expect(s.find((x) => x.nodeDir)?.argv.slice(0, 2)).toEqual([
+      "N\\node.exe",
+      "node_modules/@playwright/test/cli.js",
+    ]);
     expect(pd1Steps({ bun: "bun", platform: "linux", nodeDir: null })[0]?.argv).toEqual([
       "bun",
       "run",
