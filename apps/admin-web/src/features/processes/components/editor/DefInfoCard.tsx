@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import type { DefDraft, DraftErrors } from "../../lib/def-form";
+import { DefTtlField } from "./DefTtlField";
 import { TextField } from "./Fields";
 
 type Props = {
@@ -106,6 +107,7 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch }: Props) {
         readOnly={readOnly}
         onChange={(v) => patch({ budget: v })}
       />
+      <DefTtlField draft={draft} error={e("ttl_days")} readOnly={readOnly} patch={patch} />
       <div className="flex items-center gap-2">
         <Switch
           id="pd-enabled"

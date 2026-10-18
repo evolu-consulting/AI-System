@@ -237,7 +237,8 @@
         "max": "At most 10 items.",
         "tooLong": "Each item can be at most 200 characters."
       },
-      "ttl": "From 1 to 365 days, or choose No expiry."
+      "ttl": "From 1 to 365 days, or choose No expiry.",
+      "TEAM_SECTION_UNOWNED": "A required section has no team member in charge. Edit the team's sections or remove it from the output."
     },
     "ttl": "Run time limit (days)",
     "ttlHint": "A run not finished within this many days expires. Runs already in progress aren't affected when you edit.",

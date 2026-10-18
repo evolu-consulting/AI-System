@@ -6,6 +6,7 @@ import { type SourceOption, useSourceOptions } from "@/features/sources/api";
 import { pickLocalized } from "@/lib/localized";
 import { useAgentTeams } from "../api";
 import type { Option } from "../components/editor/Fields";
+import type { TeamSections } from "../lib/wait-form";
 
 export type EditorRefs = {
   agents: Option[];
@@ -14,6 +15,8 @@ export type EditorRefs = {
   users: Option[];
   /** Nguồn của công ty (kind để dựng nhãn ô "Nguồn" của Tự sửa mã). */
   sources: SourceOption[];
+  /** P-d1 · team_id → chế độ + mục từng thành viên, cho luật `TEAM_SECTION_UNOWNED` (`processDefStageIssues` ctx.teams). */
+  teamSections: TeamSections;
   /** Có danh sách nào còn đang tải. */
   loading: boolean;
 };
@@ -40,6 +43,12 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
     groups: (groups.data ?? []).map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
     users: (users.data ?? []).map((u) => ({ value: u.id, label: u.name || u.username })),
     sources: sources.data ?? [],
+    teamSections: new Map(
+      (teams.data?.items ?? []).map((x) => [
+        x.id,
+        { mode: x.mode, memberSections: x.members.map((m) => m.sections) },
+      ]),
+    ),
     loading: settings.isPending || teams.isPending || groups.isPending || users.isPending,
   };
 }

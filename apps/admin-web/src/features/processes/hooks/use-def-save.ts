@@ -9,6 +9,7 @@ import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { toDraft, toInput, validateDraft } from "../lib/def-form";
 import { errorCode, processErrorSpec, serverErrors, serverPaths, serverRules } from "../lib/errors";
+import type { TeamSections } from "../lib/wait-form";
 import type { DraftState } from "./use-draft";
 
 type Args = {
@@ -18,6 +19,8 @@ type Args = {
   version: number;
   setVersion: (v: number) => void;
   d: DraftState;
+  /** P-d1 · nhóm agent đã tải (mục từng thành viên) ⇒ luật `TEAM_SECTION_UNOWNED`; vắng ⇒ để Hub kiểm. */
+  teams?: TeamSections;
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
@@ -49,7 +52,7 @@ function useRedirectAfterCreate(createdId: string | null, dirty: boolean) {
   }, [createdId, dirty, navigate]);
 }
 
-export function useDefSave({ id, tenantId, version, setVersion, d }: Args) {
+export function useDefSave({ id, tenantId, version, setVersion, d, teams }: Args) {
   const { t } = useTranslation();
   const invalidate = useInvalidateDefs();
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -74,7 +77,7 @@ export function useDefSave({ id, tenantId, version, setVersion, d }: Args) {
     },
   });
   const submit = async () => {
-    const errors = validateDraft(d.draftRef.current);
+    const errors = validateDraft(d.draftRef.current, undefined, teams);
     d.showErrors(errors);
     if (Object.keys(errors).length > 0) return;
     const body = toInput(d.draftRef.current);

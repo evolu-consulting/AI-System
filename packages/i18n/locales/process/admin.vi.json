@@ -237,7 +237,8 @@
         "max": "Tối đa 10 mục.",
         "tooLong": "Mỗi mục tối đa 200 ký tự."
       },
-      "ttl": "Từ 1 đến 365 ngày, hoặc chọn Không hết hạn."
+      "ttl": "Từ 1 đến 365 ngày, hoặc chọn Không hết hạn.",
+      "TEAM_SECTION_UNOWNED": "Có mục bắt buộc mà không thành viên nào của nhóm phụ trách. Sửa mục của nhóm hoặc bỏ mục này khỏi kết quả."
     },
     "ttl": "Thời hạn lượt chạy (ngày)",
     "ttlHint": "Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.",

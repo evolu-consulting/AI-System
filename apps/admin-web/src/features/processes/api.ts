@@ -7,6 +7,7 @@ import type {
   ProcessDef,
   ProcessDefInput,
   ProcessDefListResponse,
+  ProcessEditorContext,
   ProcessRunListResponse,
   ProcessRunSummary,
   ProcessRunUsage,
@@ -144,6 +145,17 @@ export function useAgentTeams(tenantId: string | undefined, enabled: boolean) {
     staleTime: 30_000,
     queryFn: () =>
       api<AgentTeamListResponse>(url("/agent-teams"), { query: { tenant_id: tenantId } }),
+  });
+}
+
+/** P-d1 · `GET /process-editor/context` — múi giờ công ty cho khối "Chờ tới ngày" (tenant vắng ⇒ quy trình mẫu). */
+export function useProcessEditorContext(tenantId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["process", "editor-context", tenantId ?? ""] as const,
+    enabled: enabled && hubConfigured(),
+    staleTime: 60_000,
+    queryFn: () =>
+      api<ProcessEditorContext>(url("/process-editor/context"), { query: { tenant_id: tenantId } }),
   });
 }
 

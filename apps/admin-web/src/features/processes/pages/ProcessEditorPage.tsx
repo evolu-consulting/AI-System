@@ -89,7 +89,14 @@ function Editor({ processId }: ProcessEditorPageProps) {
   const d = useDraft();
   const { tenant, q, version, setVersion } = useLoadedDef(processId, d);
   const refs = useEditorRefs(tenant.tenantId, tenant.ready);
-  const save = useDefSave({ id: processId, tenantId: tenant.tenantId, version, setVersion, d });
+  const save = useDefSave({
+    id: processId,
+    tenantId: tenant.tenantId,
+    version,
+    setVersion,
+    d,
+    teams: refs.teamSections,
+  });
   const def = q.data;
   const readOnly = !!def?.is_template && !tenant.isPlatform;
   if (!hubConfigured()) return <HubNotConfigured />;
@@ -124,7 +131,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
       />
       <InputsCard draft={d.draft} errors={d.errors} readOnly={readOnly} patch={d.patch} />
       <StagesCard d={d} readOnly={readOnly} refs={refs} />
-      <LimitsCard />
+      <LimitsCard ttl={d.draft.ttl} noExpiry={d.draft.noExpiry} />
       {readOnly ? null : (
         <ProcessSaveBar
           dirty={d.dirty}

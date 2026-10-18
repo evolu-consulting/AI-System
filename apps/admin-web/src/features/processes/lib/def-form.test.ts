@@ -96,6 +96,8 @@ describe("chuyển đổi nháp ↔ input", () => {
       kind: "review",
       group_id: G,
       back_to_steps: [],
+      remind_every_h: null,
+      escalate: null,
     });
     expect(input.token_budget).toBeNull();
   });
@@ -149,7 +151,13 @@ describe("P-b2 · bước", () => {
     });
     expect(input.stages.map((s) => s.step)).toEqual([0, 1]);
     expect(input.stages[0]?.after).toEqual({ kind: "auto" });
-    expect(input.stages[1]?.after).toEqual({ kind: "review", group_id: G, back_to_steps: [0] });
+    expect(input.stages[1]?.after).toEqual({
+      kind: "review",
+      group_id: G,
+      back_to_steps: [0],
+      remind_every_h: null,
+      escalate: null,
+    });
     const old = { ...input, stages: input.stages.map(({ step: _s, ...x }) => x) };
     expect(toDraft(old).stages.map((s) => s.step)).toEqual([0, 1]);
     expect(toDraft(input).stages[1]?.backTo).toEqual([0]);

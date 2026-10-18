@@ -4,7 +4,7 @@
 import type { ProcessStageDef } from "@ai/contracts/hub-admin";
 import { type ApplyStageShape, applyStageIssues } from "@ai/contracts/hub-admin";
 import { emptyAutofix } from "./autofix-form";
-import type { StageDraft } from "./def-form";
+import type { StageDraft } from "./draft-types";
 
 type Errors = Record<string, string>;
 

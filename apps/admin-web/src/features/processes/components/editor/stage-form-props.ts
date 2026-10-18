@@ -1,6 +1,7 @@
 // ADM-FR-66 · ADM-FR-71 · P-b2: props chung của các phần form giai đoạn (tách từ StageForm — TECH-DEBT #136).
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
+import type { InputDraft } from "../../lib/sources-form";
 
 export type StageFormProps = {
   stage: StageDraft;
@@ -8,6 +9,8 @@ export type StageFormProps = {
   all: StageDraft[];
   /** Nguồn khai báo ở quy trình (P-b). */
   defSources: readonly string[];
+  /** P-d1 · input khai báo của quy trình (nguồn ngày của "Chờ tới ngày"). */
+  defInputs?: readonly InputDraft[];
   errors: DraftErrors;
   readOnly: boolean;
   refs: EditorRefs;

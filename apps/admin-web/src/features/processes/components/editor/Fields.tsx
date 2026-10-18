@@ -27,7 +27,10 @@ export function TextField(
     onChange: (v: string) => void;
     multiline?: boolean;
     rows?: number;
-    type?: "text" | "number";
+    type?: "text" | "number" | "time";
+    disabled?: boolean;
+    /** Id phần tử mô tả thêm (nối vào `aria-describedby`). */
+    describedBy?: string;
     prefix?: string;
     mono?: boolean;
     placeholder?: string;
@@ -62,6 +65,10 @@ export function TextField(
         const input = (
           <Input
             {...c}
+            aria-describedby={
+              [c["aria-describedby"], p.describedBy].filter(Boolean).join(" ") || undefined
+            }
+            disabled={p.disabled}
             type={p.type ?? "text"}
             placeholder={p.placeholder}
             value={p.value}

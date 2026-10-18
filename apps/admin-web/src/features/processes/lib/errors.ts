@@ -3,6 +3,7 @@ import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/hub-admin";
 import { describeError, type MessageSpec } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { backPathToField, STEP_ERR } from "./def-form";
+import { crossRuleKey } from "./wait-form";
 
 const KNOWN = new Set([
   "PROCESS_NOT_FOUND",
@@ -69,7 +70,11 @@ export function serverErrors(
 ): Record<string, string> {
   const out: Record<string, string> = {};
   paths.forEach((p, i) => {
-    const byRule = code === "PROCESS_DEF_INVALID" ? STEP_ERR[rules[i] ?? ""] : undefined;
+    const rule = rules[i] ?? "";
+    const byRule =
+      code === "PROCESS_DEF_INVALID"
+        ? (STEP_ERR[rule] ?? crossRuleKey(rule) ?? undefined)
+        : undefined;
     if (byRule) out[backPathToField(p)] = byRule;
     else out[p] ??= pathErrorKey(code, p);
   });

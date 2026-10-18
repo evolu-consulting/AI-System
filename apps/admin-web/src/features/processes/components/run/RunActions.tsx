@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { decisionOptionKey } from "../../domain/decision-option";
 import { useAttachmentLoader } from "../../hooks/use-attachment-loader";
 import { useRunAction } from "../../hooks/use-run-data";
 import { applyOf } from "../../lib/apply-view";
@@ -62,6 +63,8 @@ const HINTED = new Set<string>([
   "autofix_check_failed",
   "sandbox_unavailable",
   "apply_conflict",
+  "retry_exhausted",
+  "timer_invalid",
 ]);
 
 function ReasonBody({
@@ -143,10 +146,13 @@ export function RunActions({ run, tenantId }: Props) {
                   <Button
                     key={o}
                     variant={o === "cancel" ? "outline" : "default"}
-                    disabled={act.isPending || (o === "use_current" && !hasOutput)}
+                    disabled={
+                      act.isPending ||
+                      (o === "use_current" && !hasOutput && d.reason !== "timer_invalid")
+                    }
                     onClick={() => decide(o)}
                   >
-                    {t(`process.common.option.${o}`)}
+                    {t(decisionOptionKey(d.reason, o))}
                   </Button>
                 ))}
               </div>

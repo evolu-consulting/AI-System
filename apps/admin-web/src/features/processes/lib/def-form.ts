@@ -1,8 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: mô hình form của editor quy trình (bản nháp ↔ `ProcessDefInput`) và validate client khớp
 // contract (plan-frontend-admin §2). Hàm thuần: không React, không gọi API.
 import {
-  FIELD_KEY_RE,
-  OUTPUT_FILENAME_RE,
   PROCESS_DESC_MAX,
   PROCESS_KEY_RE,
   PROCESS_NAME_MAX,
@@ -13,24 +11,14 @@ import {
   type ProcessStageDef,
   processDefStageIssues,
   resolveSteps,
-  STAGE_FIELDS_MAX,
-  STAGE_INSTRUCTION_MAX,
-  STAGE_KEY_RE,
-  STAGE_SECTIONS_MAX,
-  STAGE_TEMPLATE_MAX,
   STAGE_TIMEOUT_S,
-  STAGE_TOKEN_BUDGET,
 } from "@ai/contracts/hub-admin";
-import {
-  APPLY_RULE_ERR,
-  applyCrossErrors,
-  executorToDef,
-  isApply,
-  normalizeApply,
-} from "./apply-form";
+import { ttlIssueKey } from "../domain/error-keys";
+import { PROCESS_TTL_DAYS } from "../domain/limits";
+import { ttlFromValue, ttlIssue, ttlToValue } from "../domain/ttl-rules";
+import { APPLY_RULE_ERR, applyCrossErrors, executorToDef, normalizeApply } from "./apply-form";
 import {
   AUTOFIX_RULE_ERR,
-  type AutofixDraft,
   autofixToDef,
   autofixToDraft,
   emptyAutofix,
@@ -42,61 +30,39 @@ import {
   inputsToDraft,
   mustKnowToDef,
   mustKnowToDraft,
-  type StageSourceDraft,
   stageSourcesToDef,
   stageSourcesToDraft,
   validateSourcesPart,
 } from "./sources-form";
 import { slugKey } from "./stage-key";
+import { budgetOk, P, validateStage } from "./stage-validate";
+import {
+  addCrossIssue,
+  emptyEscalate,
+  emptyWait,
+  escalateFromDef,
+  escalateToDef,
+  isWait,
+  normalizeWait,
+  remindFromDef,
+  remindToDef,
+  stageShape,
+  type TeamSections,
+  validateWaitPart,
+  waitFromDef,
+  waitToDef,
+} from "./wait-form";
 
-export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
-export type StageDraft = {
-  /** Khoá React cục bộ (không gửi đi). */
-  uid: string;
-  /** Mã giai đoạn còn tự sinh từ tên (người dùng chưa sửa tay). */
-  keyAuto: boolean;
-  key: string;
-  name: string;
-  /** `agent:<id>` | `team:<id>` | "" (chưa chọn). */
-  executor: string;
-  instruction: string;
-  filename: string;
-  template: string;
-  sections: string[];
-  fields: FieldDraft[];
-  after: "review" | "auto";
-  /** P-b2 · bước 0-based (UI hiển thị `step+1`); mảng stage luôn không giảm theo `step`, liên tục từ 0. */
-  step: number;
-  /** P-b2 · bước được phép quay lại khi Chưa đạt (< `step`); chỉ có nghĩa khi `after = review`. */
-  backTo: number[];
-  groupId: string;
-  real: boolean;
-  answerer: "starter" | "group" | "user";
-  answererId: string;
-  timeout: string;
-  budget: string;
-  /** Nguồn dùng + allowlist (textarea) — `sources-form`. */
-  sources: StageSourceDraft[];
-  /** `must_know`, mỗi dòng một mục. */
-  mustKnow: string;
-  /** P-c1 · khối "Tự sửa mã" (tắt ⇒ `autofix: null`, giữ giá trị đã nhập). */
-  autofix: AutofixDraft;
-};
-export type DefDraft = {
-  key: string;
-  name: string;
-  description: string;
-  hint: string;
-  groupIds: string[];
-  budget: string;
-  enabled: boolean;
-  stages: StageDraft[];
-  /** Khoá nguồn của quy trình (≤ 20). */
-  sources: string[];
-  inputs: InputDraft[];
-};
-/** path (`stages.0.output.filename`) → khoá i18n của câu lỗi. */
-export type DraftErrors = Record<string, string>;
+export type {
+  DefDraft,
+  DraftErrors,
+  EscalateDraft,
+  FieldDraft,
+  StageDraft,
+  WaitDraft,
+} from "./draft-types";
+
+import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
 
 export { slugKey };
 
@@ -127,6 +93,9 @@ export function emptyStage(step = 0): StageDraft {
     sources: [],
     mustKnow: "",
     autofix: emptyAutofix(),
+    wait: emptyWait(),
+    remind: "",
+    escalate: emptyEscalate(),
   };
 }
 
@@ -141,23 +110,33 @@ export const emptyDraft = (): DefDraft => ({
   stages: [emptyStage()],
   sources: [],
   inputs: [],
+  ttl: String(PROCESS_TTL_DAYS.default),
+  noExpiry: false,
 });
 
 const num = (v: number | null): string => (v === null ? "" : String(v));
 
+const executorOf = (ex: ProcessStageDef["executor"]): string =>
+  ex.kind === "agent"
+    ? `agent:${ex.agent_id}`
+    : ex.kind === "team"
+      ? `team:${ex.team_id}`
+      : ex.kind === "wait_until"
+        ? "wait_until"
+        : "apply";
+
 function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
   const a = s.answerer;
+  const rv = s.after.kind === "review" ? s.after : null;
   return {
     uid: nextUid(),
     keyAuto: false,
     key: s.key,
     name: s.name,
-    executor:
-      s.executor.kind === "agent"
-        ? `agent:${s.executor.agent_id}`
-        : s.executor.kind === "team"
-          ? `team:${s.executor.team_id}`
-          : "apply",
+    executor: executorOf(s.executor),
+    wait: s.executor.kind === "wait_until" ? waitFromDef(s.executor) : emptyWait(),
+    remind: remindFromDef(rv?.remind_every_h),
+    escalate: escalateFromDef(rv?.escalate),
     instruction: s.instruction,
     filename: s.output.filename,
     template: s.output.template,
@@ -191,18 +170,25 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
     stages: d.stages.map((s, i) => stageToDraft(s, steps[i] as number)),
     sources: [...d.sources],
     inputs: inputsToDraft(d.inputs),
+    ...ttlDraft(d),
   };
+}
+
+/** `ttl_days` vắng (bản nháp/def cũ) ⇒ mặc định 7; `null` ⇒ "Không hết hạn". */
+function ttlDraft(d: { ttl_days?: number | null }): Pick<DefDraft, "ttl" | "noExpiry"> {
+  const t = ttlFromValue(d.ttl_days === undefined ? PROCESS_TTL_DAYS.default : d.ttl_days);
+  return { ttl: t.text, noExpiry: t.noExpiry };
 }
 
 const intOrNull = (s: string): number | null => (s.trim() === "" ? null : Number(s.trim()));
 
 function stageToInput(draft: StageDraft): ProcessStageDef {
-  const s = normalizeApply(draft);
+  const s = normalizeWait(normalizeApply(draft));
   return {
     key: s.key,
     name: s.name.trim(),
     step: s.step,
-    executor: executorToDef(s.executor),
+    executor: isWait(s) ? waitToDef(s.wait) : executorToDef(s.executor),
     instruction: s.instruction,
     output: {
       filename: s.filename,
@@ -212,7 +198,13 @@ function stageToInput(draft: StageDraft): ProcessStageDef {
     },
     after:
       s.after === "review"
-        ? { kind: "review", group_id: s.groupId || null, back_to_steps: s.backTo }
+        ? {
+            kind: "review",
+            group_id: s.groupId || null,
+            back_to_steps: s.backTo,
+            remind_every_h: remindToDef(s),
+            escalate: escalateToDef(s),
+          }
         : { kind: "auto" },
     real_action: s.real,
     answerer:
@@ -242,6 +234,7 @@ export function toInput(d: DefDraft): ProcessDefInput {
     enabled: d.enabled,
     sources: d.sources,
     inputs: inputsToDef(d.inputs),
+    ttl_days: ttlToValue(d.ttl, d.noExpiry),
   };
 }
 
@@ -250,42 +243,6 @@ export function canRealAction(stages: readonly StageDraft[], i: number): boolean
   const step = stages[i]?.step ?? 0;
   if (step < 1) return false;
   return stages.filter((s) => s.step === step - 1).every((s) => s.after === "review");
-}
-
-const P = "process.admin.validate.";
-const inRange = (s: string, min: number, max: number): boolean => {
-  const n = Number(s);
-  return s.trim() !== "" && Number.isInteger(n) && n >= min && n <= max;
-};
-const budgetOk = (s: string): boolean =>
-  s.trim() === "" || inRange(s, STAGE_TOKEN_BUDGET.min, STAGE_TOKEN_BUDGET.max);
-
-function validateOutput(s: StageDraft, at: (f: string) => string, e: DraftErrors) {
-  if (!OUTPUT_FILENAME_RE.test(s.filename)) e[at("output.filename")] = `${P}fileName`;
-  if (s.template.length < 1 || s.template.length > STAGE_TEMPLATE_MAX)
-    e[at("output.template")] = s.template.length < 1 ? `${P}templateRequired` : `${P}tooLong`;
-  if (s.sections.length < 1 || s.sections.length > STAGE_SECTIONS_MAX)
-    e[at("output.required_sections")] = `${P}sectionRequired`;
-  if (s.fields.length > STAGE_FIELDS_MAX) e[at("output.fields")] = `${P}tooMany`;
-  s.fields.forEach((f, j) => {
-    if (!FIELD_KEY_RE.test(f.key)) e[at(`output.fields.${j}.key`)] = `${P}fieldKey`;
-  });
-}
-
-function validateStage(s: StageDraft, i: number, all: readonly StageDraft[], e: DraftErrors) {
-  const at = (f: string) => `stages.${i}.${f}`;
-  if (s.name.trim() === "" || s.name.trim().length > PROCESS_NAME_MAX)
-    e[at("name")] = `${P}nameRequired`;
-  if (!STAGE_KEY_RE.test(s.key)) e[at("key")] = `${P}stageKey`;
-  else if (all.some((o, j) => j < i && o.key === s.key)) e[at("key")] = `${P}stageKeyDup`;
-  if (s.executor === "") e[at("executor")] = `${P}executor`;
-  if (!isApply(s) && s.instruction.length > STAGE_INSTRUCTION_MAX)
-    e[at("instruction")] = `${P}tooLong`;
-  validateOutput(s, at, e);
-  if (s.answerer !== "starter" && s.answererId === "") e[at("answerer")] = `${P}answerer`;
-  if (!inRange(s.timeout, STAGE_TIMEOUT_S.min, STAGE_TIMEOUT_S.max))
-    e[at("timeout_s")] = `${P}timeout`;
-  if (!isApply(s) && !budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
 }
 
 export const STEP_ERR: Record<string, string> = {
@@ -303,22 +260,30 @@ export const backPathToField = (path: string): string =>
   path.replace(/\.after\.back_to_steps\.\d+$/, ".after.back_to_steps");
 
 /** Luật chéo stage về bước (dùng chung với server: `processDefStageIssues`) → lỗi theo ô. */
-export function validateSteps(stages: readonly StageDraft[], e: DraftErrors): void {
-  const shape = stages.map((s) => ({
-    key: s.key,
-    step: s.step,
-    real_action: s.real,
-    after: { kind: s.after, back_to_steps: s.after === "review" ? s.backTo : [] },
-  }));
-  for (const issue of processDefStageIssues(shape)) {
+export function validateSteps(
+  stages: readonly StageDraft[],
+  e: DraftErrors,
+  ctx?: { inputs?: readonly InputDraft[]; teams?: TeamSections },
+): void {
+  const inputs = ctx?.inputs?.map((i) => ({ key: i.key, type: i.type }));
+  for (const issue of processDefStageIssues(stages.map(stageShape), {
+    inputs,
+    teams: ctx?.teams,
+  })) {
     const key = STEP_ERR[issue.rule];
     if (key) e[backPathToField(issue.path)] = key;
+    else addCrossIssue(issue, e);
   }
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */
-export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
+export function validateDraft(
+  d: DefDraft,
+  forEnable = d.enabled,
+  teams?: TeamSections,
+): DraftErrors {
   const e: DraftErrors = {};
+  if (ttlIssue(d.ttl, d.noExpiry)) e.ttl_days = ttlIssueKey();
   if (d.name.trim() === "" || d.name.trim().length > PROCESS_NAME_MAX) e.name = `${P}nameRequired`;
   if (!PROCESS_KEY_RE.test(d.key)) e.key = `${P}keyFormat`;
   if (d.description.length > PROCESS_DESC_MAX) e.description = `${P}tooLong`;
@@ -327,12 +292,13 @@ export function validateDraft(d: DefDraft, forEnable = d.enabled): DraftErrors {
   if (!budgetOk(d.budget)) e.token_budget = `${P}budget`;
   if (d.stages.length < 1 || d.stages.length > PROCESS_STAGES_MAX) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
-    validateStage(s, i, d.stages, e);
+    validateStage(normalizeWait(s), i, d.stages, e);
     if (forEnable && s.after === "review" && s.groupId === "")
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
-  const eff = d.stages.map(normalizeApply);
-  validateSteps(eff, e);
+  const eff = d.stages.map((s) => normalizeWait(normalizeApply(s)));
+  validateWaitPart(eff, d.inputs, e);
+  validateSteps(eff, e, { inputs: d.inputs, teams });
   validateSourcesPart({ ...d, stages: eff }, e);
   validateAutofixPart(eff, e);
   Object.assign(e, applyCrossErrors(d.stages));
@@ -367,6 +333,7 @@ export function defToInput(d: ProcessDef): ProcessDefInput {
     enabled: d.enabled,
     sources: d.sources,
     inputs: d.inputs,
+    ttl_days: d.ttl_days,
   };
 }
 

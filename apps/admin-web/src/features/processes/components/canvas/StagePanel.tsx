@@ -24,6 +24,7 @@ export function StagePanel({ d, w, readOnly, refs }: Props) {
           index={index}
           all={w.stages}
           defSources={d.draft.sources}
+          defInputs={d.draft.inputs}
           errors={d.errors}
           readOnly={readOnly}
           refs={refs}

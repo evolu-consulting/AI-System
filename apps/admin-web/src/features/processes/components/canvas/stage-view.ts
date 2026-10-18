@@ -17,6 +17,8 @@ export type StageView = {
   autofix: boolean;
   /** P-c2 · stage "Áp bản sửa" (huy hiệu). */
   apply: boolean;
+  /** P-d1 · stage "Chờ tới ngày" (huy hiệu). */
+  wait: boolean;
   hasError: boolean;
 };
 
@@ -40,6 +42,7 @@ export function stageViews(
     backTo: s.backTo,
     autofix: s.autofix.on,
     apply: s.executor === "apply",
+    wait: s.executor === "wait_until",
     hasError: hasStageError(errors, i),
   }));
 }
@@ -55,5 +58,6 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.real === b.real &&
   a.autofix === b.autofix &&
   a.apply === b.apply &&
+  a.wait === b.wait &&
   a.hasError === b.hasError &&
   a.backTo.join() === b.backTo.join();
