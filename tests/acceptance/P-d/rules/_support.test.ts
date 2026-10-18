@@ -4,7 +4,7 @@ import { describe, expect, it } from "bun:test";
 import { absentModule, loadAnyOf, loadDomain, PROC, tryLoad } from "../_support/modules";
 
 const NONE = `${PROC}/domain/__khong-co__.rules.ts`;
-const REAL = `${PROC}/core/process-state.rules.ts`; // P-a, có sẵn tới T7s (dời) — dùng làm module có thật
+const REAL = `${PROC}/domain/runs/run-state.rules.ts`; // đã dời từ core/ ở T7s — dùng làm module có thật
 const STEP = `${PROC}/core/step.rules.ts`;
 
 describe("T3a · tryLoad báo rõ khi module vắng [test-plan §7]", () => {

@@ -1,7 +1,9 @@
-// HUB-FR-106 · HUB-FR-107 · HUB-FR-110 · AC-H28 · R-S01…R-S20 — `transition`, `isTerminal` (core/process-state.rules.ts,
+// HUB-FR-106 · HUB-FR-107 · HUB-FR-110 · AC-H28 · R-S01…R-S20 — `transition`, `isTerminal` (domain/runs/run-state.rules.ts,
 // plan §3.1–3.2, plan-contract §7). Hiệu ứng so như TẬP (sắp xếp) — thứ tự không thuộc contract.
 import { describe, expect, it } from "bun:test";
-import { fn, type Loose, loadCoreRules } from "../../_support/modules";
+import { fn, type Loose, tryLoad } from "../../_support/modules";
+
+const RUN_STATE = "apps/hub-api/src/modules/processes/domain/runs/run-state.rules.ts";
 
 const ACTIVE = ["running", "waiting_review", "waiting_answer", "needs_decision"] as const;
 const TERMINAL = ["done", "cancelled", "failed", "expired"] as const;
@@ -49,7 +51,7 @@ function st(
     decisionReason: o.reason ?? null,
   };
 }
-const tr = async () => fn(await loadCoreRules("process-state"), "transition");
+const tr = async () => fn(await tryLoad(RUN_STATE), "transition");
 const fx = (r: Loose) => [...(r.effects ?? [])].sort();
 const sorted = (xs: string[]) => [...xs].sort();
 
@@ -254,7 +256,7 @@ describe("R-S · máy trạng thái run [plan §3.1]", () => {
       expect(f(st({ status: s }), { kind: "decide", option: "add_attempt" })).toEqual(bad);
   });
   it("HUB-FR-106 · R-S20 · isTerminal đúng 4 trạng thái kết thúc", async () => {
-    const f = fn(await loadCoreRules("process-state"), "isTerminal");
+    const f = fn(await tryLoad(RUN_STATE), "isTerminal");
     for (const s of TERMINAL) expect(f(s)).toBe(true);
     for (const s of ACTIVE) expect(f(s)).toBe(false);
   });
