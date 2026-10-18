@@ -76,8 +76,8 @@ describe("ADM-NFR-06 · test:int:par · chọn file, cờ", () => {
     ]);
   });
 
-  it("parseIntArgs: mặc định min(4, cores/2), --workers=N, ngoài 1..8 → ném; tiền tố còn lại là bộ lọc", () => {
-    expect(defaultWorkers(12)).toBe(4);
+  it("parseIntArgs: mặc định min(6, cores/2), --workers=N, ngoài 1..8 → ném; tiền tố còn lại là bộ lọc", () => {
+    expect(defaultWorkers(12)).toBe(6);
     expect(defaultWorkers(4)).toBe(2);
     expect(defaultWorkers(1)).toBe(1);
     expect(parseIntArgs(["--workers=3", "tests\\acceptance\\P-a"], 12)).toEqual({

@@ -11,6 +11,27 @@ const HUB_DIR = fileURLToPath(new URL("../migrations-hub", import.meta.url));
 const HUB_DEV_DIR = fileURLToPath(new URL("../migrations-hub-dev", import.meta.url));
 export const HUB_TABLE = "__drizzle_migrations_hub";
 export const HUB_DEV_TABLE = "__drizzle_migrations_hub_dev";
+/**
+ * Khoá advisory toàn cụm quanh mỗi lần migrate: migration có `CREATE/ALTER ROLE` (đối tượng của cụm, không của DB) nên hai
+ * tiến trình migrate song song (kể cả trên hai DB khác nhau, vd worker `test:int:par`) lỗi XX000 `tuple concurrently updated`.
+ */
+export const MIGRATE_LOCK = 7_316_204_612;
+
+/**
+ * Chạy `fn` khi giữ MIGRATE_LOCK. Advisory lock chỉ có hiệu lực trong một database nên khoá giữ trên DB `postgres` (chung cả
+ * cụm). Không nối được DB `postgres` (vd dịch vụ quản lý không cho) ⇒ chạy không khoá như trước.
+ */
+export async function withMigrateLock<T>(url: string, fn: () => Promise<T>): Promise<T> {
+  const u = new URL(url);
+  u.pathname = "/postgres";
+  const lock = postgres(u.toString(), { max: 1, onnotice: () => {} });
+  try {
+    await lock`select pg_advisory_lock(${MIGRATE_LOCK})`.catch(() => undefined);
+    return await fn();
+  } finally {
+    await lock.end();
+  }
+}
 
 type Sql = ReturnType<typeof postgres>;
 
@@ -28,6 +49,13 @@ async function applied(sql: Sql, table: typeof HUB_TABLE | typeof HUB_DEV_TABLE)
 
 /** Trả số migration **vừa áp** lần này: `hub` (mọi môi trường), `hubDev` (chỉ khác production). */
 export async function runHubMigrations(opts: {
+  url: string;
+  appEnv: AppEnv;
+}): Promise<{ hub: number; hubDev: number }> {
+  return withMigrateLock(opts.url, () => migrateHub(opts));
+}
+
+async function migrateHub(opts: {
   url: string;
   appEnv: AppEnv;
 }): Promise<{ hub: number; hubDev: number }> {

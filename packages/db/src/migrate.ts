@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { type AppEnv, loadDbEnv } from "./env";
-import { runHubMigrations } from "./migrate-hub";
+import { runHubMigrations, withMigrateLock } from "./migrate-hub";
 
 const MAIN_DIR = fileURLToPath(new URL("../migrations", import.meta.url));
 const DEV_DIR = fileURLToPath(new URL("../migrations-dev", import.meta.url));
@@ -28,6 +28,14 @@ async function applied(sql: Sql, table: typeof MAIN_TABLE | typeof DEV_TABLE): P
 
 /** Trả số migration **vừa áp** trong lần gọi này: `main` (mọi môi trường), `dev` (chỉ khác production). */
 export async function runMigrations(opts: {
+  url: string;
+  appEnv: AppEnv;
+}): Promise<{ main: number; dev: number }> {
+  // Khoá migrate toàn cụm: migration có ALTER ROLE (xem MIGRATE_LOCK ở migrate-hub.ts).
+  return withMigrateLock(opts.url, () => migrateMain(opts));
+}
+
+async function migrateMain(opts: {
   url: string;
   appEnv: AppEnv;
 }): Promise<{ main: number; dev: number }> {

@@ -11,7 +11,7 @@ export type IntOpts = { workers: number; filters: string[] };
 export const MAX_WORKERS = 8;
 
 export function defaultWorkers(cores: number): number {
-  return Math.max(1, Math.min(4, Math.floor(cores / 2)));
+  return Math.max(1, Math.min(6, Math.floor(cores / 2)));
 }
 
 /** `--workers=N` (1..MAX_WORKERS), còn lại là tiền tố đường dẫn để lọc (vd `tests/acceptance/P-a`). */
