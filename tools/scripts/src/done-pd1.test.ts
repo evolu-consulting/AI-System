@@ -1,6 +1,13 @@
 // P-d1 · HUB-FR-143 · luật dựng bước `done:pd1`.
 import { describe, expect, it } from "bun:test";
-import { pd1Steps, prependPath, resolveNodeDir, summarize } from "./done-pd1.rules";
+import {
+  isRealNode,
+  parseDepcruise,
+  pd1Steps,
+  prependPath,
+  resolveNodeDir,
+  summarize,
+} from "./done-pd1.rules";
 
 describe("HUB-FR-143 · done:pd1", () => {
   it("resolveNodeDir: node có trên PATH -> null; thiếu -> thư mục mặc định nếu tồn tại; override thắng", () => {
@@ -9,6 +16,33 @@ describe("HUB-FR-143 · done:pd1", () => {
     expect(resolveNodeDir({ nodeOnPath: false, exists: () => false })).toBeNull();
     expect(resolveNodeDir({ nodeOnPath: false, exists: yes })).toContain("node-22");
     expect(resolveNodeDir({ override: "D:\\n", nodeOnPath: true, exists: yes })).toBe("D:\\n");
+  });
+
+  it("isRealNode: shim bun-node hoặc trỏ tới bun.exe không phải Node", () => {
+    expect(isRealNode("C:\\Temp\\bun-node-abc123\\node.exe")).toBe(false);
+    expect(isRealNode("C:\\TEMP\\BUN-NODE-1\\node.exe")).toBe(false);
+    expect(isRealNode("C:\\x\\node.exe", "C:\\Users\\a\\.bun\\bin\\bun.exe")).toBe(false);
+    expect(isRealNode(null)).toBe(false);
+    expect(
+      isRealNode("C:\\Program Files\\nodejs\\node.exe", "C:\\Program Files\\nodejs\\node.exe"),
+    ).toBe(true);
+  });
+
+  it("parseDepcruise: chỉ đếm ca-* riêng, tổng gồm cả vi phạm cũ", () => {
+    const out = [
+      "  error no-cross-module-repo: a.ts → ",
+      "b.ts",
+      "  error no-circular: a.ts → ",
+      "      b.ts →",
+      "  error component-no-fetch: c.tsx → ",
+      "x 3 dependency violations (3 errors, 0 warnings). 10 modules",
+    ].join("\n");
+    expect(parseDepcruise(out)).toEqual({ total: 3, ca: 0 });
+    expect(parseDepcruise(`${out}\n  error ca-domain-no-adapters: d.ts → e.ts`)).toEqual({
+      total: 4,
+      ca: 1,
+    });
+    expect(parseDepcruise("")).toEqual({ total: 0, ca: 0 });
   });
 
   it("prependPath đặt thư mục đầu", () => {

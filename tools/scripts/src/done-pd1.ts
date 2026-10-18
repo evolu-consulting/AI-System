@@ -2,12 +2,14 @@
 // Chạy tuần tự, KHÔNG dừng ở bước đỏ; cuối in tổng kết. `--list` chỉ in các bước. int/e2e dùng DB test: không chạy song song bộ khác.
 // Playwright cần Node: nếu `node` không có trên PATH, đặt thư mục Node (env `PLAYWRIGHT_NODE_DIR`, mặc định node-22 trong tools) đầu PATH, chỉ cho bước e2e.
 
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  isRealNode,
   type PdResult,
   type PdStep,
+  parseDepcruise,
   pd1Steps,
   prependPath,
   resolveNodeDir,
@@ -24,9 +26,26 @@ function stepEnv(step: PdStep): Record<string, string | undefined> {
   return env;
 }
 
+function runDepcruise(step: PdStep, t0: number): PdResult {
+  const p = Bun.spawnSync(step.argv, {
+    cwd: REPO,
+    env: stepEnv(step),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const out = p.stdout.toString() + p.stderr.toString();
+  console.log(out.trim());
+  const { total, ca } = parseDepcruise(out);
+  console.log(`depcruise: tổng ${total} vi phạm, ca-*: ${ca}`);
+  // Không đọc được kết quả (mã ≠ 0 mà không có dòng vi phạm) vẫn coi là đỏ.
+  const unreadable = p.exitCode !== 0 && total === 0;
+  return { title: step.title, code: ca === 0 && !unreadable ? 0 : 1, ms: performance.now() - t0 };
+}
+
 function run(step: PdStep): PdResult {
   console.log(`\n▶ ${step.title}`);
   const t0 = performance.now();
+  if (step.kind === "depcruise") return runDepcruise(step, t0);
   const p = Bun.spawnSync(step.argv, {
     cwd: REPO,
     env: stepEnv(step),
@@ -36,10 +55,20 @@ function run(step: PdStep): PdResult {
   return { title: step.title, code: p.exitCode ?? 1, ms: performance.now() - t0 };
 }
 
+function detectRealNode(): boolean {
+  const p = Bun.which("node");
+  if (!p) return false;
+  let resolved = p;
+  try {
+    resolved = realpathSync(p);
+  } catch {}
+  return isRealNode(p, resolved);
+}
+
 export function buildSteps(env: Record<string, string | undefined> = process.env): PdStep[] {
   const nodeDir = resolveNodeDir({
     override: env.PLAYWRIGHT_NODE_DIR,
-    nodeOnPath: Bun.which("node") !== null,
+    nodeOnPath: detectRealNode(),
     exists: existsSync,
   });
   return pd1Steps({ bun: process.execPath, platform: process.platform, nodeDir });

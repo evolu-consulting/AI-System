@@ -6,10 +6,30 @@ export type PdStep = {
   argv: string[];
   /** Thư mục Node cần đặt đầu PATH (chỉ bước e2e), nếu có. */
   nodeDir?: string;
+  /** "depcruise": xanh khi 0 vi phạm `ca-*` (bỏ qua vi phạm cũ ngoài ca-*). */
+  kind?: "depcruise";
 };
 export type PdResult = { title: string; code: number; ms: number };
 
 export const DEFAULT_NODE_DIR = "F:\\workspace\\tools\\node-22\\node-v22.23.3-win-x64";
+
+/** `node` tìm được có phải Node thật không: shim của bun (`bun-node-*`, hoặc trỏ tới bun.exe) không tính. */
+export function isRealNode(nodePath: string | null | undefined, resolvedExe?: string): boolean {
+  if (!nodePath) return false;
+  if (/bun-node/i.test(nodePath)) return false;
+  return !/(^|[\\/])bun(\.exe)?$/i.test(resolvedExe ?? "");
+}
+
+/** Đếm vi phạm depcruise (`--output-type err`): tổng và riêng luật `ca-*`. */
+export function parseDepcruise(out: string): { total: number; ca: number } {
+  let total = 0;
+  let ca = 0;
+  for (const m of out.matchAll(/^\s*(?:error|warn|info)\s+([\w.-]+):/gm)) {
+    total++;
+    if (m[1]?.startsWith("ca-")) ca++;
+  }
+  return { total, ca };
+}
 
 /** Thư mục Node đặt đầu PATH cho e2e: null khi `node` đã có trên PATH hoặc thư mục không tồn tại. */
 export function resolveNodeDir(o: {
@@ -36,7 +56,11 @@ export function pd1Steps(o: { bun: string; platform: string; nodeDir: string | n
       : [bun, "run", "typecheck"];
   return [
     { title: "typecheck", argv: typecheck },
-    { title: "depcruise --all (0 vi phạm ca-*)", argv: [bun, "run", "depcruise", "--all"] },
+    {
+      title: "depcruise --all (0 vi phạm ca-*)",
+      argv: [bun, "run", "depcruise", "--all"],
+      kind: "depcruise",
+    },
     {
       title: "bun test (hub-api, admin-web, chat-web, contracts, P-d/rules)",
       argv: [
