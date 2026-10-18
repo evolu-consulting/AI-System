@@ -23,3 +23,5 @@
 - Review T20 phải kiểm 2 tự quyết T18-1 (d8663e0): (a) bỏ transaction read-only repeatable-read ở đọc editor context (PD2-P02) — 2 câu không cùng snapshot có gây sai hiển thị không; (b) stage tool đọc đích gọi thẳng `admin.workflows` (không qua cache catalog lọc input schema hợp lệ) — tool có schema hỏng vẫn chạy được không, có cần chặn.
 - **PD2-P04 p95 chờ đo staging Linux** (người dùng 2026-10-18): giữ ngưỡng 30 ms; Windows n=40 đã làm nóng pool: p50 ~26 ms, p95 ~43 ms sau 3 vòng tối ưu (2846c49, fb8ac3a, fd53f88; sàn ước tính 20–23 ms). `run-spike.sh` chạy cả `perf/` nên đo cùng lượt staging với P-d1. Trên staging vẫn > 30 ms ⇒ thiết kế lại (launch stage kế ngoài tx quyết định). `done:pd2` bước perf đỏ ở P04 là đã biết.
 - Perf P-d1 p95 vẫn chờ đo staging (người dùng chạy `run-spike.ps1`).
+
+**Đóng 2026-10-18:** P-d2 đóng — done:pd2 10/11 (perf PD2-P04 + PD-P13/P14 chờ staging), review APPROVED, security SAFE, UAT ĐẠT CÓ ĐIỀU KIỆN; xem [ket-luan-pd2.md](P-d-durable/ket-luan-pd2.md).
