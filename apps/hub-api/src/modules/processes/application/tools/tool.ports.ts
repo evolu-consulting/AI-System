@@ -55,7 +55,10 @@ export type ToolStageRepo = {
   retried?(runId: string): Promise<void>;
   /** Sau `runs.lock`: `for update` stage còn `running ∧ current_run_id = hubRunId`; false ⇒ bỏ (đua). */
   lockRunning(stageRunId: string, hubRunId: string): Promise<boolean>;
-  /** Output (.md + fields) rồi đường hậu-output như agent (D2-30); kick/thread/sự kiện vào outbox. */
+  /**
+   * Output (.md + fields) rồi đường hậu-output như agent (D2-30); kick/thread/sự kiện vào outbox. `false` ⇒ máy trạng thái
+   * không nhận output (không ghi gì) — người gọi quyết `tool_failed` (review m-3, không để stage kẹt `running`).
+   */
   settleOk(
     x: {
       runId: string;
@@ -65,7 +68,7 @@ export type ToolStageRepo = {
       fields: Record<string, string | number>;
     },
     now: Date,
-  ): Promise<void>;
+  ): Promise<boolean>;
   /** needs_decision(reason) + task + thread (như `toDecision`); sự kiện vào outbox. */
   decide(
     x: { runId: string; stageRunId: string; reason: ToolDecisionReason },

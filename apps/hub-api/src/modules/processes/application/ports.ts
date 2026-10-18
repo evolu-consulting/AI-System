@@ -13,6 +13,11 @@ import type {
 import type { ToolStageRepo } from "./tools/tool.ports";
 
 export type Clock = { now(): Date };
+/**
+ * Đồng hồ đo thời lượng (ms) — adapter cấp `monotonicMs` (`performance.now`); lớp 2 chỉ trừ hai mốc. Vắng (cổng giả chỉ có
+ * `now`) ⇒ đo bằng `now()`.
+ */
+export type MonotonicClock = Clock & { monotonicMs?(): number };
 export type IdGen = { newId(): string };
 export type Logger = {
   warn(m: string, f?: Record<string, unknown>): void;

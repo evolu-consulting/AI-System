@@ -140,7 +140,8 @@ function toolDriverOf(
   return toolDriverFactory({
     uow: systemOnly(uow),
     invoker: mcpToolInvoker({ invoker: m.workflowInvoker, config: m.config }),
-    clock: { now },
+    // m-2 · đồng hồ đơn điệu ở lớp ráp (adapter), không ở use case.
+    clock: { now, monotonicMs: () => performance.now() },
     log: m.log,
     drain,
   });

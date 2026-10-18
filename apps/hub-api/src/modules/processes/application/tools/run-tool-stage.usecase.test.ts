@@ -45,6 +45,8 @@ type FakeOpts = {
   retryCount?: number;
   realAction?: boolean;
   inputSchemaOk?: boolean;
+  /** m-3 · `settleOk` trả false (máy trạng thái từ chối output). */
+  settleRejected?: boolean;
 };
 function loadOf(o: FakeOpts) {
   const state = {
@@ -85,7 +87,7 @@ function fakeDeps(o: FakeOpts) {
       lockRunning: async () => ev.push("lockRunning") > 0,
       audit: async (x: { status: string; code: string | null }) =>
         void ev.push(`audit:${x.status}:${x.code}`),
-      settleOk: async () => void ev.push("ok"),
+      settleOk: async () => ev.push("ok") > 0 && o.settleRejected !== true,
       decide: async (x: { reason: string }) => void ev.push(`decide:${x.reason}`),
       retried: async () => void ev.push("retried"),
     },
@@ -101,7 +103,8 @@ function fakeDeps(o: FakeOpts) {
   const d = {
     uow: { system: async <T>(_t: string, fn: (x: never) => Promise<T>) => fn(r as never) },
     invoker: { call: async () => o.res },
-    clock: { now: () => new Date("2026-11-20T01:00:00.000Z") },
+    clock: { now: () => new Date("2026-11-20T01:00:00.000Z"), monotonicMs: () => 0 },
+    log: { warn: (m: string) => void ev.push(`warn:${m}`), error: () => {} },
   };
   return { d: d as never, ev };
 }
@@ -142,6 +145,19 @@ describe("runToolStage · T18-2 lỗi/thử lại/audit [PD2-R05, PD2-R09, D2-13
     const { d, ev } = fakeDeps({ sideEffect: false, res: { kind: "ok", text: '{"so":7}' } });
     expect(await runToolStage(d, link)).toMatchObject({ kind: "ok", fields: { so: 7 } });
     expect(ev).toEqual(["audit:ok:null", "lockRun", "lockRunning", "ok"]);
+  });
+  it("HUB-FR-146 · review m-3 · settleOk bị máy trạng thái từ chối ⇒ log + tool_failed (không kẹt running)", async () => {
+    const res = { kind: "ok", text: '{"so":7}' };
+    const { d, ev } = fakeDeps({ sideEffect: false, res, settleRejected: true });
+    expect(await runToolStage(d, link)).toEqual({ kind: "decide", reason: "tool_failed" });
+    expect(ev).toEqual([
+      "audit:ok:null",
+      "lockRun",
+      "lockRunning",
+      "ok",
+      "warn:process-tool-output-rejected",
+      "decide:tool_failed",
+    ]);
   });
 });
 

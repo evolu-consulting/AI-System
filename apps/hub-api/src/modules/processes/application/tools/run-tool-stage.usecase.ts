@@ -12,7 +12,7 @@ import {
 } from "../../domain/tools/tool-output.rules";
 import type { ToolFailure } from "../../domain/tools/tool-run.rules";
 import { buildToolArgs } from "../../domain/tools/tool-run.rules";
-import type { Clock, TxRepos } from "../ports";
+import type { Logger, MonotonicClock, TxRepos } from "../ports";
 import { handleToolFailure } from "./handle-tool-failure.usecase";
 import type {
   ToolCallAudit,
@@ -26,8 +26,13 @@ export type ToolLink = { runId: string; stageRunId: string; hubRunId: string; te
 export type RunToolDeps = {
   uow: { system<T>(tenantId: string, fn: (r: TxRepos) => Promise<T>): Promise<T> };
   invoker: ToolInvoker;
-  clock: Clock;
+  /** m-2 · `monotonicMs` do adapter cấp (đo `ms` của audit `tool_call`). */
+  clock: MonotonicClock;
+  /** Vắng (cổng giả) ⇒ không log; quyết định m-3 vẫn chạy. */
+  log?: Logger;
 };
+/** m-2 · mốc đo thời lượng qua cổng `Clock` (không Web API ở lớp 2). */
+const mark = (c: MonotonicClock): number => (c.monotonicMs ? c.monotonicMs() : c.now().getTime());
 type Settle =
   | { kind: "ok"; md: string; fields: Record<string, string | number> }
   | { kind: "decide"; reason: ToolDecisionReason }
@@ -78,19 +83,27 @@ export function settleOf(
 const toolReason = (reason: string): ToolDecisionReason =>
   reason === "retry_exhausted" ? "retry_exhausted" : "tool_failed";
 
+type ApplyIn = { link: ToolLink; s: Settle; c: Called | null; now: Date; log: Logger | undefined };
+
+/**
+ * m-3 · máy trạng thái từ chối output (`settleOk` false — stage đã khoá `running` của hub run này nhưng run/stage lệch) ⇒
+ * log + `tool_failed` (như mạng an toàn `failStuckRun` của stage agent: không để stage kẹt `running` gắn hub run đã đóng).
+ */
+async function settleOkOrFail(r: TxRepos, x: ApplyIn, s: Extract<Settle, { kind: "ok" }>) {
+  const at = { runId: x.link.runId, stageRunId: x.link.stageRunId };
+  const ok = { ...at, hubRunId: x.link.hubRunId, md: s.md, fields: s.fields };
+  // `=== false`: cổng cũ trả `void` = đã ghi.
+  if ((await r.tools.settleOk(ok, x.now)) !== false) return s;
+  x.log?.warn("process-tool-output-rejected", { ...at, hub_run_id: x.link.hubRunId });
+  await r.tools.decide({ ...at, reason: "tool_failed" }, x.now);
+  return { kind: "decide", reason: "tool_failed" } as const;
+}
+
 /** Ghi kết quả vào stage đã khoá (tx2). */
-async function apply(
-  r: TxRepos,
-  link: ToolLink,
-  s: Settle,
-  c: Called | null,
-  now: Date,
-): Promise<ToolStageOutcome> {
+async function apply(r: TxRepos, x: ApplyIn): Promise<ToolStageOutcome> {
+  const { link, s, c, now } = x;
   const at = { runId: link.runId, stageRunId: link.stageRunId };
-  if (s.kind === "ok") {
-    await r.tools.settleOk({ ...at, hubRunId: link.hubRunId, md: s.md, fields: s.fields }, now);
-    return s;
-  }
+  if (s.kind === "ok") return settleOkOrFail(r, x, s);
   if (s.kind === "decide" || !c) {
     const reason = s.kind === "decide" ? s.reason : "tool_failed";
     await r.tools.decide({ ...at, reason }, now);
@@ -120,7 +133,7 @@ async function settle(
     if (!(await r.runs.lock(link.runId))) return { kind: "skip" } as const;
     if (!(await r.tools.lockRunning(link.stageRunId, link.hubRunId)))
       return { kind: "skip" } as const;
-    return apply(r, link, s, c, now);
+    return apply(r, { link, s, c, now, log: d.log });
   });
 }
 
@@ -133,7 +146,7 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
   if (pre) return settle(d, link, { kind: "decide", reason: pre }, null);
   const built = buildToolArgs(l.args, l.inputs, l.fields, l.inputTypes);
   if (!built.ok) return settle(d, link, { kind: "decide", reason: "tool_failed" }, null);
-  const t0 = performance.now();
+  const t0 = mark(d.clock);
   const res = await d.invoker.call({
     tenantId: link.tenantId,
     userId: l.startedBy,
@@ -148,7 +161,7 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
     startedBy: l.startedBy,
     status: res.kind === "ok" ? ("ok" as const) : ("failed" as const),
     code: res.kind === "ok" ? null : res.code,
-    ms: Math.round(performance.now() - t0),
+    ms: Math.round(mark(d.clock) - t0),
   };
   return settle(d, link, settleOf(l, res), { audit, load: l });
 }

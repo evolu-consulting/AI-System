@@ -73,9 +73,11 @@ export async function realActionPre(
     stages: readonly SnapStage[];
   },
 ): Promise<RealPre | null> {
-  // D4 · C50 · "Hành động thật" ở stage `agent` (chèn xác nhận) HOẶC stage `apply` (Hub tự chạy, không agent — C32).
+  // D4 · C50 · "Hành động thật" ở stage `agent` (chèn xác nhận), stage `apply` (Hub tự chạy, không agent — C32) HOẶC stage
+  // `tool` (P-d2 R-1 · D2-49: Hub gọi tool, không agent).
   if (!p.def.real_action) return null;
-  if (p.def.executor.kind !== "agent" && p.def.executor.kind !== "apply") return null;
+  const kind = p.def.executor.kind;
+  if (kind !== "agent" && kind !== "apply" && kind !== "tool") return null;
   const steps = stepsOfSnap({ stages: p.stages });
   const step = steps[p.idx] ?? 0;
   if (step === 0) return null;
@@ -87,7 +89,7 @@ export async function realActionPre(
   if (prev === null) return null;
   const check = realActionStepCheck(facts.filter((f) => f.step === prev));
   if (!check.ok) return null;
-  // Stage Áp (apply): không agent ⇒ không preconfirm workflow; actor = người Đạt cổng tự-sửa.
+  // Stage Áp (apply) / tool: không agent ⇒ không preconfirm workflow; actor = người Đạt cổng bước trước.
   if (p.def.executor.kind !== "agent") return { preconfirm: undefined, passedBy: check.passedBy };
   const agentId = p.def.executor.agent_id;
   const catalog = await d.config.catalog();
@@ -106,7 +108,7 @@ export async function auditRealAction(
     runId: string;
     actorId: string;
     name: string;
-    /** C32 · stage Áp ⇒ null (không agent). */
+    /** C32 · stage Áp / tool (D2-49) ⇒ null (không agent). */
     agentId: string | null;
     pre: RealPre;
   },

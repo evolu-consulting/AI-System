@@ -193,17 +193,28 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
   return { ...(await launchStage(d, tx, u, ctx)), more };
 }
 
-/** P-d2 · stage `tool`: thiếu `toolDriver` ⇒ quyết `tool_failed` (m2, không tạo `hub.runs`); có ⇒ `launchToolStage`. */
+/**
+ * P-d2 · stage `tool`: thiếu `toolDriver` ⇒ quyết `tool_failed` (m2, không tạo `hub.runs`). R-1 · D2-49 · `real_action` ⇒
+ * `realActionPre` (người Đạt bước trước); null ⇒ `tool_failed` (không gọi tool, không audit); có ⇒ audit
+ * `authorize_real_action` (agent_id null như Áp) cùng tx lúc đánh dấu `running` → `launchToolStage`.
+ */
 async function launchTool(d: LauncherDeps, tx: Tx, u: AuthUser, c: LaunchCtx): Promise<KickResult> {
   const { runId, stage, def } = c;
   if (def.executor.kind !== "tool") return { kind: "skip" };
-  if (driverKindOf(true, d.toolDriver !== undefined) === "missing") {
-    const p = { runId, tenantId: u.tenantId, idx: c.idx, stageRunId: stage.id };
-    return lostPermission(d, tx, { ...p, reason: "tool_failed" });
-  }
+  const failed = () =>
+    lostPermission(d, tx, {
+      runId,
+      tenantId: u.tenantId,
+      idx: c.idx,
+      stageRunId: stage.id,
+      reason: "tool_failed",
+    });
+  if (driverKindOf(true, d.toolDriver !== undefined) === "missing") return failed();
+  const stages = c.head.snapshot.stages;
+  const real = await realActionPre(d, tx, { ...c, tenantId: u.tenantId, stages });
+  if (def.real_action && !real) return failed();
   const t = { runId, stageId: stage.id, toolKey: def.executor.tool_key, name: def.name };
-  const markRunning = (hubRunId: string) =>
-    markStageRunning(tx, { u, c, runId: hubRunId, real: null });
+  const markRunning = (hubRunId: string) => markStageRunning(tx, { u, c, runId: hubRunId, real });
   const conversationId = c.head.conversation_id;
   return launchToolStage(d, tx, u, { ...t, conversationId, markRunning });
 }
@@ -293,15 +304,18 @@ async function markStageRunning(
   await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${o.runId},
       started_at = coalesce(started_at, now()), updated_at = now(), ${markLaunched}
     where id = ${c.stage.id}`);
-  if (real && c.def.executor.kind === "agent")
-    await auditRealAction(tx, {
-      tenantId: u.tenantId,
-      runId: c.runId,
-      actorId: real.passedBy,
-      name: c.def.name,
-      agentId: c.def.executor.agent_id,
-      pre: real,
-    });
+  if (!real) return;
+  const ex = c.def.executor;
+  if (ex.kind !== "agent" && ex.kind !== "tool") return;
+  // R-1 · D2-49 · stage tool: không agent ⇒ agent_id null (như Áp, C32).
+  await auditRealAction(tx, {
+    tenantId: u.tenantId,
+    runId: c.runId,
+    actorId: real.passedBy,
+    name: c.def.name,
+    agentId: ex.kind === "agent" ? ex.agent_id : null,
+    pre: real,
+  });
 }
 
 /**

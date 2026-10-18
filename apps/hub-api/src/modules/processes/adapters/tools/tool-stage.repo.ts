@@ -249,16 +249,17 @@ async function emitRetried({ tx, tenantId, outbox }: Cx, s: Lock, runId: string)
   outbox.emit({ kind: "user_events", events: processUpdated(recipients, st) });
 }
 
-async function settleOk(c: Cx, s: Lock, x: SettleIn): Promise<void> {
+/** `false` ⇒ không ghi gì (máy trạng thái từ chối output / thiếu đầu run) — use case quyết `tool_failed` (m-3). */
+async function settleOk(c: Cx, s: Lock, x: SettleIn): Promise<boolean> {
   const { tx, tenantId, outbox, d } = c;
   // T18-perf: đầu run đọc CÙNG câu khoá stage (run đã khoá ở `runs.lock` ⇒ ảnh mới nhất), không đọc lại.
   const h = s.head ?? (await headOf(tx, x.runId));
   const stage = s.locked;
   const def = stage && h?.snapshot.stages[stage.stage_idx];
-  if (!h || !stage || !def) return;
+  if (!h || !stage || !def) return false;
   const ev = { kind: "stage_output", templateOk: true } as const;
   const t = transition(stateOf(h, stage, def), ev);
-  if (!t.ok) return;
+  if (!t.ok) return false;
   const result = { kind: "output" as const, text: x.md };
   const apply = {
     runId: x.runId,
@@ -287,6 +288,7 @@ async function settleOk(c: Cx, s: Lock, x: SettleIn): Promise<void> {
     res.events.push(...processUpdated(recipients, u));
   }
   emit(outbox, x.runId, res.events, res.kick);
+  return true;
 }
 
 async function decide({ tx, tenantId, outbox, d }: Cx, s: Lock, x: DecideIn): Promise<void> {

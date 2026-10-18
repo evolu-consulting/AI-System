@@ -5,7 +5,7 @@ import { safeErrorFields } from "../../../../lib/errors";
 import type { Logger } from "../../../../lib/logger";
 import type { RunContext, RunDriver } from "../../../runs/runs.service";
 import type { RunOutcome } from "../../../runs/sse/sse-writer";
-import type { Clock, SystemUow } from "../../application/ports";
+import type { MonotonicClock, SystemUow } from "../../application/ports";
 import {
   runToolStage,
   type ToolLink,
@@ -16,7 +16,7 @@ import type { ToolInvoker } from "../../application/tools/tool.ports";
 export type ToolDriverDeps = {
   uow: Pick<SystemUow, "system">;
   invoker: ToolInvoker;
-  clock: Clock;
+  clock: MonotonicClock;
   log: Logger;
   drain?: { run<T>(fn: () => Promise<T>): Promise<T> };
 };
