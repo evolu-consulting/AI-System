@@ -1,7 +1,8 @@
 // HUB-FR-113 · U1 · T5 · T9 · T10 · đăng outbox `process_thread_events` thành tin phòng `sender_type='process'` (plan-thread
-// §1, §3). Mỗi sự kiện một tx `system`: definer khoá `rooms` → sự kiện → chèn tin (`id = event.id`, idempotent) →
-// `room_fanout_sys` cùng tx ⇒ phát `room.message` + `room.unread` SAU COMMIT. Không khoá `process_runs` ⇒ không chu trình
-// với tx start (rooms → process_runs) hay tx cổng (process_runs → sự kiện). Phòng xoá ⇒ `skipped`, run chạy tiếp (T10).
+// §1, §3). Mỗi sự kiện một tx `system`: khoá run `FOR SHARE` (RA-01, plan §6: run → room) → definer khoá `rooms` → sự
+// kiện → chèn tin (`id = event.id`, idempotent; FK `process_run_id` đã có khoá run) → `room_fanout_sys` cùng tx ⇒ phát
+// `room.message` + `room.unread` SAU COMMIT. Cùng thứ tự với tx quy trình/cổng (run → … → rooms qua FK sự kiện); tx start
+// (rooms → chèn run mới) không đụng run đã commit. Phòng xoá ⇒ `skipped`, run chạy tiếp (T10).
 import type { RoomProcessPart } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -38,6 +39,8 @@ async function eventsOf(tx: Tx, eventId: string, p: repo.PostedEvent): Promise<U
 }
 
 async function postTx(tx: Tx, eventId: string): Promise<Posted> {
+  // RA-01 · plan §6 · run trước rooms (FK `room_messages.process_run_id` khoá run sau rooms ⇒ chu trình với tx quy trình).
+  await repo.lockEventRun(tx, eventId);
   const p = await repo.postProcessMessage(tx, eventId);
   if (!p.posted) return { posted: false, events: [] };
   return { posted: true, events: await eventsOf(tx, eventId, p) };

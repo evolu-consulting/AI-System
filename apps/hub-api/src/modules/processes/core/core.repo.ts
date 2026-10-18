@@ -196,6 +196,19 @@ export type PostedEvent = {
   createdAt: Date | null;
 };
 
+/**
+ * HUB-FR-143 · plan §6 · RA-01 · khoá run của sự kiện `FOR SHARE` TRƯỚC definer: chèn `room_messages` có FK
+ * `process_run_id` ⇒ lấy `FOR KEY SHARE` trên `process_runs` SAU khi definer đã khoá `rooms` (thứ tự room → run, ngược
+ * tx quy trình run → … → rooms qua FK của `process_thread_events`) ⇒ 40P01. `FOR SHARE` xung đột với `FOR UPDATE` /
+ * `NO KEY UPDATE` ⇒ poster chờ tx quy trình đang giữ run commit hẳn rồi mới khoá `rooms` (run → room → sự kiện).
+ * Một câu, không vòng hàng; sự kiện/run không thấy ⇒ không khoá gì (definer tự xử lý `not found`/`skipped`).
+ */
+export async function lockEventRun(tx: Tx, eventId: string): Promise<void> {
+  await tx.execute(sql`select 1 from hub.process_runs r
+    join hub.process_thread_events e on e.process_run_id = r.id and e.tenant_id = r.tenant_id
+    where e.id = ${eventId}::uuid for share of r`);
+}
+
 /** Definer `hub.room_post_process_message` (khoá rooms → sự kiện → room_messages; idempotent `id = event.id`). */
 export async function postProcessMessage(tx: Tx, eventId: string): Promise<PostedEvent> {
   const [row] = await tx.execute<{
