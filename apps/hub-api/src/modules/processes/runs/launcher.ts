@@ -235,7 +235,8 @@ async function launchStage(
   }
   const files = await d.runs.createRunTx(tx, prepared);
   await tx.execute(sql`update hub.stage_runs set status = 'running', current_run_id = ${prepared.run.id},
-      started_at = coalesce(started_at, now()), updated_at = now() where id = ${c.stage.id}`);
+      started_at = coalesce(started_at, now()), updated_at = now(), ${markLaunched}
+    where id = ${c.stage.id}`);
   if (real && c.def.executor.kind === "agent")
     await auditRealAction(tx, {
       tenantId: u.tenantId,
@@ -247,6 +248,17 @@ async function launchStage(
     });
   return { kind: "launch", prepared, files, useSession: sp.useSession };
 }
+
+/**
+ * T7 · D-PD02 · `markLaunched`: chuẩn hoá bộ đếm thử lại mỗi lần chạy stage — (attempt, round) đổi ⇒ `retry_count = 0` +
+ * `retry_since` mới (đầu cửa sổ side_effect PD-R05). Mốc cắt ms như `hub.runs.started_at` (cùng tx ⇒ `started_at ≥ mốc`).
+ */
+const markLaunched = sql`retry_since = case
+      when retry_since is null or retry_attempt is distinct from attempt or retry_round is distinct from round
+      then date_trunc('milliseconds', now()) else retry_since end,
+    retry_count = case when retry_attempt is distinct from attempt or retry_round is distinct from round
+      then 0 else retry_count end,
+    retry_attempt = attempt, retry_round = round`;
 
 /** P-R10 · người bắt đầu còn dùng được: `admin.users.active` ∧ ¬`locked_by_tenant` ∧ `admin.tenants.active` (đọc tươi). */
 async function starterUsable(tx: Tx, u: AuthUser): Promise<boolean> {

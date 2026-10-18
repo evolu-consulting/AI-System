@@ -93,6 +93,8 @@ export type ApplyInput = {
   tokens: number;
   /** P-c1 · PC-R10 · `hub.jobs.error_reason` khi job lỗi (vd `container`); vắng ⇒ không biết. */
   jobReason?: string | null;
+  /** T7 · lỗi job thô của stage agent (PD-R01); vắng/null ⇒ không thử lại (luồng cũ). */
+  job?: { code: string | null; reason: string | null; interrupted: boolean } | null;
 };
 export type Ctx = {
   x: ApplyInput;

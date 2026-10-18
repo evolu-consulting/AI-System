@@ -60,5 +60,20 @@ export function timerRepo(tx: Tx, tenantId: string): TimerRepo {
         returning 1`);
       return rows.length;
     },
+    async countByStageKind(stageRunId, kind) {
+      const [r] = await tx.execute<{ n: number }>(sql`
+        select count(*)::int as n from hub.process_timers
+        where tenant_id = ${tenantId} and stage_run_id = ${stageRunId} and kind = ${kind}`);
+      return Number(r?.n ?? 0);
+    },
+    async insert(t) {
+      // T7 · FK kép (run/stage, tenant) ⇒ hàng tenant khác bị chặn ở DB; khoá trùng (chạy lại) ⇒ bỏ qua.
+      await tx.execute(sql`
+        insert into hub.process_timers (tenant_id, process_run_id, stage_run_id, kind, due_at, timezone,
+          idempotency_key)
+        values (${tenantId}, ${t.runId}, ${t.stageRunId}, ${t.kind}, ${t.dueAt.toISOString()}::timestamptz,
+          ${t.timezone}, ${t.key})
+        on conflict (idempotency_key) do nothing`);
+    },
   };
 }

@@ -10,6 +10,7 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import { runJob } from "../../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { RunOutcome } from "../../runs/sse/sse-writer";
+import { agentFailureGate } from "../adapters/runs/job-failure";
 import { type AgentOut, agentOutOf } from "../adapters/runs/job-result";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
@@ -60,42 +61,65 @@ async function drive(
   ctx: RunContext,
   o: StageDriverOpts,
 ): Promise<void> {
+  const got = await receive(d, ctx, o).catch((err: unknown) => ({ err }));
+  if (got && "err" in got) return track(d, () => onDriveError(d, ctx, got.err));
+  if (!got) return void ctx.writer.abort();
+  // T7 · Luật 4c · `handles.settled()`: đếm từ lúc đã nhận kết quả job tới khi xong tx + `finish` + `kick` (kể cả lỗi).
+  await track(d, () =>
+    settleOutcome(d, launcher, ctx, got).catch((err) => onDriveError(d, ctx, err)),
+  );
+}
+
+type Received = { at: { runId: string; stageRunId: string }; out: AgentOut };
+
+/** Chờ kết quả job (agent đơn / nhóm) của stage; `null` ⇒ `hub.runs` không gắn stage quy trình. */
+async function receive(d: Deps, ctx: RunContext, o: StageDriverOpts): Promise<Received | null> {
+  const link = await linkOf(d, ctx.writer.run.id);
+  if (!link?.process_run_id || !link.stage_run_id) return null;
+  const out: AgentOut = ctx.direct
+    ? await runAgent(d, ctx, link, o)
+    : { ...(await runTeamStage(d, ctx, link)), jobReason: null, job: null };
+  return { at: { runId: link.process_run_id, stageRunId: link.stage_run_id }, out };
+}
+
+/** Bộ đếm `drain` của mount (vắng ⇒ chạy thẳng). */
+const track = <T>(d: Deps, fn: () => Promise<T>): Promise<T> => (d.drain ? d.drain.run(fn) : fn());
+
+async function settleOutcome(
+  d: Deps,
+  launcher: StageLauncher,
+  ctx: RunContext,
+  { at, out }: Received,
+): Promise<void> {
+  const { result } = out;
+  // D11/P1-37 · `need_input` ⇒ đóng `hub.runs` TRƯỚC khi commit `waiting_answer` (người đọc không thấy cửa sổ
+  // `running`); output/failed giữ thứ tự D11 (tx quy trình trước, `finish` sau) rồi `kick` stage kế.
+  const needInput = result.kind === "need_input";
+  if (needInput) await finish(ctx, result);
+  const kick = await apply(d, {
+    ...at,
+    hubRunId: ctx.writer.run.id,
+    jobId: out.jobId,
+    result,
+    tokens: out.usage,
+    jobReason: out.jobReason,
+    job: out.job,
+  });
+  if (!needInput) await finish(ctx, result);
+  if (kick) await launcher.kick(at.runId);
+}
+
+/**
+ * #134 · mạng an toàn: lỗi bất ngờ trong drive (sau khi đã sửa closeMemberRun) KHÔNG được để `process_runs` kẹt
+ * `running` ⇒ chuyển `needs_decision(agent_failed)`. Không ném tiếp (tránh unhandledRejection — TM-11).
+ */
+async function onDriveError(d: Deps, ctx: RunContext, err: unknown): Promise<void> {
   const log = ctx.log.child({ run_id: ctx.writer.run.id });
-  try {
-    const link = await linkOf(d, ctx.writer.run.id);
-    if (!link?.process_run_id || !link.stage_run_id) return void ctx.writer.abort();
-    const {
-      result,
-      usage,
-      jobId,
-      jobReason = null,
-    } = ctx.direct
-      ? await runAgent(d, ctx, link, o)
-      : { ...(await runTeamStage(d, ctx, link)), jobReason: null };
-    // D11/P1-37 · `need_input` ⇒ đóng `hub.runs` TRƯỚC khi commit `waiting_answer` (người đọc không thấy cửa sổ
-    // `running`); output/failed giữ thứ tự D11 (tx quy trình trước, `finish` sau) rồi `kick` stage kế.
-    const needInput = result.kind === "need_input";
-    if (needInput) await finish(ctx, result);
-    const kick = await apply(d, {
-      runId: link.process_run_id,
-      stageRunId: link.stage_run_id,
-      hubRunId: ctx.writer.run.id,
-      jobId,
-      result,
-      tokens: usage,
-      jobReason,
-    });
-    if (!needInput) await finish(ctx, result);
-    if (kick) await launcher.kick(link.process_run_id);
-  } catch (err) {
-    log.error("process-stage-failed", safeErrorFields(err));
-    if (!ctx.writer.done) ctx.writer.abort();
-    // #134 · mạng an toàn: lỗi bất ngờ trong drive (sau khi đã sửa closeMemberRun) KHÔNG được để `process_runs` kẹt
-    // `running` ⇒ chuyển `needs_decision(agent_failed)`. Không ném tiếp (tránh unhandledRejection — TM-11).
-    await failStuckRun(d, ctx.writer.run.id).catch((e) =>
-      log.error("process-stuck-decision-failed", safeErrorFields(e)),
-    );
-  }
+  log.error("process-stage-failed", safeErrorFields(err));
+  if (!ctx.writer.done) ctx.writer.abort();
+  await failStuckRun(d, ctx.writer.run.id).catch((e) =>
+    log.error("process-stuck-decision-failed", safeErrorFields(e)),
+  );
 }
 
 /** #134 · nếu run quy trình còn `running` (stage-driver ném trước khi apply) ⇒ `toDecision(agent_failed)` (không kẹt). */
@@ -161,6 +185,7 @@ async function runAgent(
       usage: 0,
       jobId: null,
       jobReason: null,
+      job: null,
     };
   const timeoutS = await stageTimeout(d, link);
   const extras = await jobExtras(d, link);
@@ -216,7 +241,13 @@ async function runApplyTx(d: Deps, x: ApplyInput): Promise<Applied | null> {
     const idx = stage.stage_idx;
     await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}
       where id = ${x.runId}`);
-    const ev = await eventFor(tx, x, { head, def, srcCtx });
+    // T7 · D-PD01 · lỗi job tạm ⇒ hẹn `retry` TRƯỚC `eventFor` (không qua `transition`); cạn lượt ⇒ `retry_exhausted`.
+    const fx = { ...x, tenantId: head.tenant_id, executor: def.executor.kind };
+    const gate = await agentFailureGate(tx, fx, d.now());
+    if (gate === "retry") return retried(tx, x, head, idx);
+    const ev: RunEvent = gate
+      ? { kind: "limit", reason: gate }
+      : await eventFor(tx, x, { head, def, srcCtx });
     const t = transition(buildState(head, stage, def), ev);
     if (!t.ok) return null;
     // PB-R11 · audit nguồn đã đọc (append-only) khi stage ra output — độc lập template_ok.
@@ -242,6 +273,15 @@ async function runApplyTx(d: Deps, x: ApplyInput): Promise<Applied | null> {
       );
     return res;
   });
+}
+
+/** T7 · đã hẹn `retry`: stage `waiting_timer` (tính như `queued` ⇒ run giữ trạng thái, Q7); chỉ báo `process_updated`. */
+async function retried(tx: Tx, x: ApplyInput, head: RunHead, idx: number): Promise<Applied> {
+  const recipients = await core.runRecipients(tx, x.runId, head.tenant_id);
+  const step = stepsOfSnap(head.snapshot)[idx] ?? idx;
+  const status = head.status as ProcessRunStatus;
+  const events = processUpdated(recipients, { id: x.runId, status, stageIdx: idx, step });
+  return { events, kick: false, pending: [], step: null };
 }
 
 /**

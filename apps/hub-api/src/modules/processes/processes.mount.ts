@@ -6,6 +6,7 @@ import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
+import { DrainTracker } from "./adapters/drain";
 import { createHubUow, systemOnly, tenantOnly } from "./adapters/hub-uow";
 import { makeOutboxPublisher } from "./adapters/outbox";
 import { asksRoutes } from "./asks/asks.routes";
@@ -73,9 +74,12 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   });
   // T6c · tách cổng: route/use case HTTP chỉ thấy `tenant`; vòng nền + handles nhận `sysUow` (object riêng, không lộ qua `d`).
   const uow = createHubUow(m.db, { clock: { now }, publish, notifier });
+  // T7 · Luật 4c · `handles.settled()`: đếm việc stage-driver đang xử lý kết quả job.
+  const drain = new DrainTracker();
   const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
     now,
+    drain,
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
     notifier,
     postThread,
@@ -104,6 +108,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     postThreadOnce: () => poster.postThreadOnce(),
     kick: (runId) => d.launcher.kick(runId),
     khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
+    settled: () => drain.settled(),
   });
   // CR-093 · làm nóng pool cho câu lô vòng nền (chạy nền, không chặn mount; cả khi test tắt vòng — handles dùng chung pool).
   void warmBackgroundPool(bg);

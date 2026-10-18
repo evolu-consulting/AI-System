@@ -9,6 +9,7 @@ import type {
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
+import { resetRetry } from "../adapters/runs/retry.repo";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -225,6 +226,8 @@ export async function decideEffects(
       stageRunId: sid, // D6 · chỉ task của stage được quyết
     });
   }
+  // PD-R04 · `add_attempt` của `retry_exhausted`: bộ đếm thử lại về 0 (giữ `attempt`, D-PD04).
+  if (effects.includes("reset_retry")) await resetRetry(tx, run.tenantId, sid);
   const step = await persistStage(tx, {
     runId: run.id,
     tenantId: run.tenantId,

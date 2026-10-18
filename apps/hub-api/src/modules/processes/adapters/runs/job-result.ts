@@ -31,13 +31,25 @@ export function resultOf(o: JobOutcome): StageResult {
   };
 }
 
-/** Kết quả một job agent của stage: `StageResult` + token + id job + mã lỗi job (cho quyết định tự-sửa). */
+/** T7 · PD-R01 · lỗi job thô cho `handleJobFailure` (mã + lý do contract ⇒ chuỗi; `interrupted` = `aborted`). */
+export type JobFail = { code: string | null; reason: string | null; interrupted: boolean };
+
+/** Kết quả một job agent của stage: `StageResult` + token + id job + mã lỗi job (cho quyết định tự-sửa/thử lại). */
 export type AgentOut = {
   result: StageResult;
   usage: number;
   jobId: string | null;
   jobReason: string | null;
+  /** T7 · vắng/null ⇒ không qua thử lại (stage nhóm — T7b; output không đọc được ⇒ `agent_failed` như cũ). */
+  job: JobFail | null;
 };
+
+/** T7 · `failed` ⇒ {code, reason}; `aborted` ⇒ interrupted (tạm); còn lại null. */
+export function jobFailOf(o: JobOutcome): JobFail | null {
+  if (o.kind === "aborted") return { code: null, reason: null, interrupted: true };
+  if (o.kind === "failed") return { code: o.code, reason: o.reason ?? null, interrupted: false };
+  return null;
+}
 
 /** `JobOutcome` ⇒ `AgentOut`: `aborted` ⇒ 0 token/không job; `failed` ⇒ giữ `reason ?? code` làm `jobReason`. */
 export const agentOutOf = (o: JobOutcome): AgentOut => ({
@@ -45,4 +57,5 @@ export const agentOutOf = (o: JobOutcome): AgentOut => ({
   usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
   jobId: o.kind === "aborted" ? null : o.jobId || null,
   jobReason: o.kind === "failed" ? (o.reason ?? o.code) : null,
+  job: jobFailOf(o),
 });

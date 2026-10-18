@@ -103,6 +103,8 @@ export type ProcessDeps = {
   github?: { apiUrl: string; webHost: string };
   /** P-c2 · HUB-FR-129 · đọc khoá nguồn (`source_credential`) cho `openPullRequest`. Vắng ⇒ không mở PR (fail-closed). */
   secrets?: Pick<HubSecretReader, "useSecret">;
+  /** T7 · Luật 4c · bộ đếm việc stage-driver đang xử lý kết quả job (`handles.settled`, `adapters/drain.ts`). */
+  drain?: { run<T>(fn: () => Promise<T>): Promise<T> };
 };
 
 /**

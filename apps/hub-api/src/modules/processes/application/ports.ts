@@ -1,7 +1,8 @@
 // HUB-FR-143…145 · CA-R05…R07 · spec-ca §4 · plan §3 · plan-addendum A7 Q4, A11: port lớp 2 của `processes` — CHỈ kiểu,
 // chỉ import `domain/`. Không type nào chứa `Tx` (K1): repo đã gắn tx + `tenantId` của UoW. Sự kiện gom qua `Outbox`,
 // adapter phát SAU COMMIT đúng một lần. Repo port theo nhóm (retry, side effect, team, review task…) thêm ở T7–T9.
-import type { NoticeKind, ProcessRunStatus, Timer } from "../domain/types";
+import type { RetryState } from "../domain/runs/retry.rules";
+import type { NoticeKind, ProcessRunStatus, Timer, TimerKind } from "../domain/types";
 
 export type Clock = { now(): Date };
 export type IdGen = { newId(): string };
@@ -37,11 +38,40 @@ export type TimerRepo = {
   markFired(id: string, now: Date): Promise<boolean>;
   /** Huỷ hẹn mở của run (mọi stage hoặc các stage chỉ định); trả số hẹn vừa huỷ. */
   cancelForRun(runId: string, stageRunIds: readonly string[] | "all", now: Date): Promise<number>;
+  /** T7 · số hẹn loại `kind` của stage (mọi attempt/round, cả đã bắn/huỷ) — `n` của khoá idempotency (A7 Q9). */
+  countByStageKind(stageRunId: string, kind: TimerKind): Promise<number>;
+  /** T7 · ghi hẹn mới (khoá trùng ⇒ không ghi, idempotent). Gọi SAU khi đã khoá run + ghi stage (thứ tự khoá plan §6). */
+  insert(t: NewTimer): Promise<void>;
 };
+export type NewTimer = {
+  runId: string;
+  stageRunId: string;
+  kind: TimerKind;
+  dueAt: Date;
+  key: string;
+  /** IANA cho `wait_until` (D-PD07); `retry` ⇒ null. */
+  timezone: string | null;
+};
+/** T7 · bộ đếm thử lại của `stage_runs` (PD-R03/R06) — mọi câu lọc `(id, tenant_id)`. */
+export type RetryRepo = {
+  /** `null` ⇒ không thấy stage (tenant khác / đã xoá). */
+  loadRetryState(stageRunId: string): Promise<RetryState | null>;
+  /** Stage ⇒ `waiting_timer`, `current_run_id = NULL`, ghi bộ đếm + mã lỗi cuối (một câu). */
+  markWaiting(
+    stageRunId: string,
+    w: { retryCount: number; attempt: number; round: number; lastErrorCode: string; now: Date },
+  ): Promise<void>;
+  /** PD-R04 · effect `reset_retry`: `retry_count = 0`, `last_error_code = NULL` (giữ `retry_since`). */
+  resetRetry(stageRunId: string): Promise<void>;
+};
+/** T7 · K6 · D-PD03: job của stage đã gửi tool `side_effect` từ đầu attempt/round hiện tại? */
+export type SideEffectProbe = { sent(stageRunId: string): Promise<boolean> };
 export type TxRepos = {
   readonly tenantId: string;
   runs: RunRepo;
   timers: TimerRepo;
+  retry: RetryRepo;
+  sideEffect: SideEffectProbe;
   outbox: Outbox;
   kicker: StageKicker;
   notifier: Notifier;

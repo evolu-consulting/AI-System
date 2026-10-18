@@ -65,7 +65,8 @@ export function runStatusOf(
 ): ProcessRunStatus | "step_done" {
   const has = (s: StageRunStatus) => stepStatuses.includes(s);
   if (has("needs_decision")) return "needs_decision";
-  if (has("pending") || has("queued") || has("running")) return "running";
+  // T7 · Q7 · stage chờ hẹn `retry` (`waiting_timer`) tính như `queued` ⇒ run `running`.
+  if (has("pending") || has("queued") || has("running") || has("waiting_timer")) return "running";
   if (has("waiting_answer")) return "waiting_answer";
   if (has("waiting_review")) return "waiting_review";
   if (stepStatuses.length > 0 && stepStatuses.every((s) => s === "done")) return "step_done";

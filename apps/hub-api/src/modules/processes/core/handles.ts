@@ -10,4 +10,9 @@ export type ProcessHandles = {
   kick(runId: string): Promise<void>;
   /** K1 · G2 · một lô bộ gửi Tóm tắt; số hàng đã xử lý (0 khi không có KH runtime). */
   khWriteOnce(): Promise<number>;
+  /**
+   * T7 · Luật 4c · resolve khi stage-driver đã xử lý xong mọi kết quả job Hub ĐÃ nhận (tx quy trình + đóng `hub.runs` +
+   * `kick` stage kế). Không đợi job còn đang chờ Runtime. Test gọi sau khi sự kiện job đã tới Hub (không thay việc đọc stream).
+   */
+  settled(): Promise<void>;
 };

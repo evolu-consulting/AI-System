@@ -20,7 +20,9 @@ import { DomainError } from "../domain/errors";
 import { claimDueReminders, writeNotices } from "../notify/batch.repo";
 import { createNotifier } from "../notify/notifier";
 import { claimExpired, insertRunEnds } from "../runs/expire";
+import { retryRepo } from "./runs/retry.repo";
 import { runRepo } from "./runs/run.repo";
+import { sideEffectProbe } from "./runs/side-effect.repo";
 import { timerRepo } from "./timers/timers.repo";
 
 export type HubUowDeps = {
@@ -42,6 +44,8 @@ function txRepos(tx: Tx, tenantId: string, outbox: Outbox): TxRepos {
     tenantId,
     runs: runRepo(tx, tenantId),
     timers: timerRepo(tx, tenantId),
+    retry: retryRepo(tx, tenantId),
+    sideEffect: sideEffectProbe(tx, tenantId),
     outbox,
     kicker: { kick: (runId) => outbox.emit({ kind: "kick", runId }) },
     notifier: {
