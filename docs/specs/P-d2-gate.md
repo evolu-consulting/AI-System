@@ -20,4 +20,5 @@
 - `paramCompatible` hai bản (BE/FE theo ADR-0023) phải có test đối chiếu.
 - Thêm `number` vào `INPUT_TYPES` (D2-44) sửa test khoá `contracts-pd1.test.ts:86` ở T17.
 - UAT T20 kiểm lại B3 (khung luồng kẹt skeleton) và 2 chỗ contract dời từ P-d1.
+- Review T20 phải kiểm 2 tự quyết T18-1 (d8663e0): (a) bỏ transaction read-only repeatable-read ở đọc editor context (PD2-P02) — 2 câu không cùng snapshot có gây sai hiển thị không; (b) stage tool đọc đích gọi thẳng `admin.workflows` (không qua cache catalog lọc input schema hợp lệ) — tool có schema hỏng vẫn chạy được không, có cần chặn.
 - Perf P-d1 p95 vẫn chờ đo staging (người dùng chạy `run-spike.ps1`).
