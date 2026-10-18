@@ -6,6 +6,8 @@ import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
+import { createHubUow } from "./adapters/hub-uow";
+import { makeOutboxPublisher } from "./adapters/outbox";
 import { asksRoutes } from "./asks/asks.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
@@ -49,7 +51,7 @@ export type ProcessSeams = {
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,
-  "now" | "runsPerTenant" | "launcher" | "notifier" | "postThread" | "start"
+  "now" | "runsPerTenant" | "launcher" | "notifier" | "postThread" | "start" | "uow" | "ctx"
 > &
   ProcessSeams;
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
@@ -59,12 +61,24 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const poster = new ThreadPoster(m);
   // K1 · HUB-FR-133 · bộ gửi `kh_writes` (cùng `KhRuntime` với `kh-query`); vắng KH ⇒ không chạy.
   const khWriter = m.kh && new KhWriter({ db: m.db, rt: m.kh, log: m.log });
+  const now = clockOf(m.now);
+  const notifier = createNotifier();
+  const postThread = (runId: string) => poster.post(runId);
+  // P-d · CA-R06/R07 · UoW bốn lớp: outbox phát SAU COMMIT qua Redis/launcher/ThreadPoster (launcher dựng sau ⇒ gọi trễ).
+  const publish = makeOutboxPublisher({
+    redis: m.redis,
+    log: m.log,
+    postThread,
+    launcher: { kick: (runId) => d.launcher.kick(runId) },
+  });
   const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
-    now: clockOf(m.now),
+    now,
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
-    notifier: createNotifier(),
-    postThread: (runId) => poster.post(runId),
+    notifier,
+    postThread,
+    uow: createHubUow(m.db, { clock: { now }, publish, notifier }),
+    ctx: { clock: { now }, ids: { newId: () => crypto.randomUUID() }, log: m.log },
   };
   // Launcher thật nhận `ProcessDeps` (RunService/runner) để tạo `hub.runs` stage; test có thể thay `stageLauncher` giả.
   const launcher = m.stageLauncher ?? createStageLauncher(base);

@@ -58,7 +58,7 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
  * (index `*_run_*`, không join theo thống kê — sau chèn hàng loạt thống kê cũ làm planner chọn nested loop 100 × N).
  * Tenant: FK kép `(process_run_id, tenant_id)` bảo đảm hàng con cùng tenant run nguồn, thêm `tenant_id` tường minh (K3 lô).
  */
-async function claimExpired(
+export async function claimExpired(
   tx: Tx,
   now: Date,
   limit: number,
@@ -114,7 +114,7 @@ async function claimExpired(
  * MỘT câu cố định (`jsonb_to_recordset`, văn bản SQL không đổi theo số hàng): sự kiện thread `run_end` cho run bắt đầu
  * từ phòng (như `enqueueThread`, không RETURNING). `created_at = clock_timestamp()` theo thứ tự lô (`ordinality`).
  */
-async function insertRunEnds(tx: Tx, runs: readonly Claimed[]): Promise<void> {
+export async function insertRunEnds(tx: Tx, runs: readonly Claimed[]): Promise<void> {
   const rows = runs
     .filter((r) => r.originKind === "room" && r.roomId)
     .map((r) => {

@@ -13,6 +13,7 @@ import type { KhRuntime } from "../../kh/kh.mount";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunService } from "../../runs/runs.service";
 import type { HubSecretReader } from "../../secrets/secrets.use";
+import type { AppCtx, UnitOfWork } from "../application/ports";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";
 
@@ -84,6 +85,9 @@ export type ProcessDeps = {
   postThread(runId: string): Promise<number>;
   /** Cổng bắt đầu run (PF1) — B3 dùng cho "Chạy" từ admin; mount dựng từ `conversationStart`. */
   start: ProcessStartPort;
+  /** P-d · CA-R06 · cổng giao dịch bốn lớp (`adapters/hub-uow.ts`) + đồng hồ/id/log cho use case — mount dựng. */
+  uow: UnitOfWork;
+  ctx: AppCtx;
   /**
    * CR-056 · HUB-FR-115 · kho nội dung file (nối từ `AppDeps.attachments.storage`): `writeOutput` ghi blob output stage
    * vào đây (H2c-R05, `.part` → commit sau COMMIT tx) để stage kế tải được. Vắng ⇒ KHÔNG tạo hàng attachment output.

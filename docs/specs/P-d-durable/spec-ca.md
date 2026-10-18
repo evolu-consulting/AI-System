@@ -51,7 +51,7 @@ Lớp 4: `P/processes.mount.ts` nối port → adapter; vòng hẹn giờ + vòn
 ## 4. Port (`P/application/ports.ts` + port theo nhóm)
 | Port | Dùng bởi | Adapter |
 |---|---|---|
-| `UnitOfWork` — `tenant(tenantId, fn)` / `system(tenantId, fn)` / `systemBatch(fn)` (chỉ vòng nền theo tập, CR-093, plan-addendum A11); `fn` nhận các repo đã gắn tx, **không** nhận `Tx` | mọi use case | `adapters/hub-uow.ts` bằng `withHubScope` (T6b; security review T6c) |
+| `UnitOfWork` — `tenant({tenantId, userId}, fn)` (readiness #91, plan §3) / `system(tenantId, fn)` / `systemBatch(fn)` (chỉ vòng nền theo tập, CR-093, plan-addendum A11); `fn` nhận các repo đã gắn tx, **không** nhận `Tx` | mọi use case | `adapters/hub-uow.ts` bằng `withHubScope` (T6b; security review T6c) |
 | `Clock` (`now(): Date`), `IdGen` | mọi use case | `systemClock` / `AppDeps.now`; `crypto.randomUUID`. `core/clock.ts` cũ dùng lại kiểu `Clock` này |
 | `Notifier`, `StageKicker` | thử lại, hẹn giờ, chuyển cấp, nhánh | NOTIFY/Redis + `kick` sẵn có, gọi sau COMMIT |
 | `Logger` | vòng nền | logger app |
