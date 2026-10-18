@@ -27,6 +27,7 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 ## Kiến trúc & quyết định
 | File | Nội dung |
 |---|---|
+| `platform/` | Evolu Platform: `README.md` (quyết định đã chốt), `intake-hd.md` (phạm vi GĐ1: lõi N1–N7 ∥ app mẫu HD1–HD10, CR-094), `GD0-plan.md`, `spike-engine.md` |
 | `adr/` | Architecture Decision Records (`0001-stack.md`…; danh sách: `adr/README.md`; kiến trúc code: `0023-clean-architecture.md`) |
 | `PRODUCTION-NOTES.md` | Quyết định nhỏ, "đã thử & bỏ vì…", bẫy |
 | `TECH-DEBT.md` | Nợ kỹ thuật ghi lại thay vì sửa lan |

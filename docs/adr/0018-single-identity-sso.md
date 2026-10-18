@@ -1,6 +1,6 @@
 # ADR-0018 · Một nguồn định danh cho mọi gói, SSO theo tenant
 
-Trạng thái: **Proposed** · Ngày: 2026-10-17
+Trạng thái: **Accepted** (2026-10-18, người dùng chốt, CR-094) · Ngày: 2026-10-17
 
 ## Bối cảnh
 mgmt-app tự đăng nhập (session cookie, scrypt, Google sign-in) và tự quản tổ chức (owner/editor/viewer, chuỗi quản lý). AI-System có admin-api phát JWT EdDSA, tenant, group, TOTP. Hai nơi quản người dùng sẽ lệch nhau.

@@ -2,7 +2,7 @@
 id: P-d-durable
 title: P-d · Engine quy trình chạy bền cho flow nghiệp vụ dài ngày (thử lại, hẹn giờ, nhắc lặp/chuyển cấp, thời hạn tuỳ chọn, stage tool, rẽ nhánh)
 milestone: GĐ1 platform · engine chạy bền (lát P-d1 = CR-083…086, lát P-d2 = CR-087)
-status: draft            # đã có PLAN + mockup; readiness lần 2 NOT READY → đã áp mặc định (Luật 2b); chờ lần 3 + Gate
+status: done             # P-d1 + P-d2 đóng 2026-10-18 (ket-luan-pd1.md, ket-luan-pd2.md); perf PD2-P04, PD-P13/P14 chờ đo staging
 requirements: [HUB-FR-143, HUB-FR-144, HUB-FR-145, HUB-FR-146, HUB-FR-147, HUB-FR-105, HUB-FR-107, HUB-FR-109, HUB-FR-115, HUB-BR-41, HUB-BR-42, HUB-BR-43, HUB-BR-12, HUB-BR-25, HUB-BR-26, HUB-BR-38, ADM-FR-71, ADM-FR-72, ADM-FR-73, CHAT-AC-59, AC-H39, AC-H40, AC-H41, AC-H42, AC-H43, AC-H44, AC-H45, AC-H46, AC-H47, AC-A14, AC-A15]
 design:
   - docs/CHANGE-REQUESTS.md#CR-083 · #CR-084 · #CR-085 · #CR-086 · #CR-087 (Intake GĐ1 platform 2026-10-17)

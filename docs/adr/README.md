@@ -18,11 +18,11 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0013 | Canvas quy trình admin-web: `@xyflow/react` (CR-063) | Accepted (Gate P-b2, 2026-10-12) |
 | 0014 | Công cụ code-graph (graphify/gitnexus) chạy như chương trình trên Runtime (CR-066) | Proposed (trình Gate K2) |
 | 0015 | FileBox — lưu file ngoài (driver Storage `filebox`) | Accepted (Gate FB1, 2026-10-15) |
-| 0016 | Postgres là nguồn chuẩn cho dữ liệu giao dịch của gói | Proposed (Gate GĐ0 platform) |
+| 0016 | Postgres là nguồn chuẩn cho dữ liệu giao dịch của gói | Accepted (2026-10-18, CR-094) |
 | 0017 | Engine quy trình chạy bền cho flow nghiệp vụ dài ngày | Accepted (2026-10-17; (a), điều kiện sửa #190 ở P-d T9) |
-| 0018 | Một nguồn định danh, SSO theo tenant | Proposed (Gate GĐ0 platform) |
+| 0018 | Một nguồn định danh, SSO theo tenant | Accepted (2026-10-18, CR-094) |
 | 0019 | AI runtime: CLI subscription, đổi API key bằng cấu hình | Proposed (Gate GĐ0 platform) |
 | 0020 | Hạ tầng production | Proposed (Gate GĐ0 platform) |
-| 0021 | Một dịch vụ tri thức thay hai RAG | Proposed (Gate GĐ0 platform) |
+| 0021 | Một dịch vụ tri thức thay hai RAG | Accepted (2026-10-18, CR-094; lịch kéo lên GĐ1 lát N4) |
 | 0022 | Hybrid tạm: Dify là công cụ AI do Hub gọi | Proposed (Gate GĐ0 platform) |
 | 0023 | Clean Architecture bốn lớp, lớp 1–2 chỉ dùng thư viện có sẵn; chuyển dần theo module (CR-088…091) | Accepted (người dùng, 2026-10-17) |

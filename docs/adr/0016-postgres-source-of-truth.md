@@ -1,6 +1,6 @@
 # ADR-0016 · Postgres là nguồn chuẩn cho dữ liệu giao dịch của gói
 
-Trạng thái: **Proposed** (trình Gate GĐ0) · Ngày: 2026-10-17 · Liên quan: docs/platform, ADR-0015, ADR-0021
+Trạng thái: **Accepted** (2026-10-18, người dùng chốt, CR-094) · Ngày: 2026-10-17 · Liên quan: docs/platform, ADR-0015, ADR-0021
 
 ## Bối cảnh
 mgmt-app (Sổ Hợp Tác) lưu hợp đồng, nghĩa vụ thanh toán, người dùng, tổ chức và audit trong **OpenSearch** (`api/app/store/opensearch.py`), thêm Neo4j cho graph. OpenSearch không có transaction và nhất quán chậm; nghĩa vụ thanh toán và audit cần nhất quán ngay. AI-System dùng Postgres có RLS theo tenant.
