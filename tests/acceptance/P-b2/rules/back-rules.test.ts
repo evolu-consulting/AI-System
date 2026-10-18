@@ -1,5 +1,5 @@
 // HUB-FR-118 · HUB-BR-38(d) · AC-PB2-06/07 · test-plan-cases §3.1 `back-rules` (RB-01…RB-11): hàm thuần
-// `processes/gates/back.rules.ts` (plan §2, D7, D8). Module vắng ⇒ đỏ ở `fn(...)`.
+// `processes/domain/gates/back.rules.ts` (plan §2, D7, D8). Module vắng ⇒ đỏ ở `fn(...)`.
 import { describe, expect, it } from "bun:test";
 import { fn, loadBackRules } from "../_support/_modules";
 

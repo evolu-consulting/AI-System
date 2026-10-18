@@ -18,7 +18,7 @@ import {
 const m = await loadAutofix();
 const chat = await loadChat();
 const hub = await loadHub();
-const loadCoreTask = (): Promise<Loose> => loadProcRules("core/task.rules.ts");
+const loadCoreTask = (): Promise<Loose> => loadProcRules("domain/tasks/decision.rules.ts");
 const KEY_RE: RegExp = chat.STAGE_KEY_RE;
 
 describe("H01–H04 · nhánh, công cụ, allowlist, phần job", () => {

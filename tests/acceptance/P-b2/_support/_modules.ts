@@ -5,11 +5,11 @@ import { fn, type Loose, loadChat, loadHubAdmin, loadProcRules } from "../../P-a
 
 export { fn, type Loose, loadChat, loadHubAdmin };
 
-/** `core/step.rules.ts` (T5a): `stageIdxsOfStep`, `stepCountOf`, `firstIdxOfStep`, `priorStageIdxs`, `stageGateStatus`,
+/** `domain/runs/step.rules.ts` (T5a; chuyển T8s): `stageIdxsOfStep`, `stepCountOf`, `firstIdxOfStep`, `priorStageIdxs`, `stageGateStatus`,
  * `runStatusOf`, `stepJoin`, `pickDecisionStage`, `realActionStepCheck`. */
-export const loadStepRules = (): Promise<Loose> => loadProcRules("core/step.rules.ts");
-/** `gates/back.rules.ts` (T6): `backDecisionCheck`, `backAllowed`, `backRoundsLeft`, `backResetPlan`. */
-export const loadBackRules = (): Promise<Loose> => loadProcRules("gates/back.rules.ts");
+export const loadStepRules = (): Promise<Loose> => loadProcRules("domain/runs/step.rules.ts");
+/** `domain/gates/back.rules.ts` (T6; chuyển T8s): `backDecisionCheck`, `backAllowed`, `backRoundsLeft`, `backResetPlan`. */
+export const loadBackRules = (): Promise<Loose> => loadProcRules("domain/gates/back.rules.ts");
 /** `runs/handoff.rules.ts` (T7): `handoffBlock`. */
 export const loadHandoffRules = (): Promise<Loose> => loadProcRules("runs/handoff.rules.ts");
 /** `runs/session.rules.ts` (T7): `sessionPlan`, `deltaPrompt`, `SESSION_RESUME_MAX_AGE_S`. */

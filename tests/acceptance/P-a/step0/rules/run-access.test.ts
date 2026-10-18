@@ -1,7 +1,7 @@
 // HUB-BR-25 · HUB-FR-105 · M1 · M5 · U5 · R-A01…R-A09 — `runAccess`, `canCancel`, `canDecide`, `canRun`, `canReadThread`
-// (core/run-access.rules.ts, plan §5, plan-contract §7).
+// (domain/runs/run-access.rules.ts, plan §5, plan-contract §7).
 import { describe, expect, it } from "bun:test";
-import { fn, loadCoreRules } from "../../_support/modules";
+import { fn, tryLoad } from "../../_support/modules";
 
 const ACME = "a1000000-0000-4000-8000-000000000001";
 const BETA = "a1000000-0000-4000-8000-000000000002";
@@ -18,7 +18,8 @@ const facts = (
   originRoom: o.originRoom ?? "member",
   taskAssignee: o.taskAssignee ?? false,
 });
-const R = async (name: string) => fn(await loadCoreRules("run-access"), name);
+const R = async (name: string) =>
+  fn(await tryLoad("apps/hub-api/src/modules/processes/domain/runs/run-access.rules.ts"), name);
 const REASONS = [
   "redo_limit",
   "ask_limit",

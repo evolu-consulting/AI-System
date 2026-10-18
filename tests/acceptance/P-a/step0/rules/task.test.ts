@@ -1,7 +1,7 @@
 // HUB-FR-107 · HUB-FR-110 · HUB-FR-111 · M5 · C4 · R-TK01…R-TK05 — `canAct`, `askExcerpt`, `decisionAssignees`
-// (core/task.rules.ts, plan-contract §7, plan-step0 §1).
+// (core/task.rules.ts; decisionAssignees: domain/tasks/decision.rules.ts, plan-contract §7, plan-step0 §1).
 import { describe, expect, it } from "bun:test";
-import { fn, loadCoreRules } from "../../_support/modules";
+import { fn, loadCoreRules, tryLoad } from "../../_support/modules";
 
 const ACME = "a1000000-0000-4000-8000-000000000001";
 const BETA = "a1000000-0000-4000-8000-000000000002";
@@ -41,6 +41,8 @@ const run = (status = "waiting_review") => ({
   status,
 });
 const T = async (name: string) => fn(await loadCoreRules("task"), name);
+const DEC = async (name: string) =>
+  fn(await tryLoad("apps/hub-api/src/modules/processes/domain/tasks/decision.rules.ts"), name);
 
 describe("R-TK · task dùng chung [plan-step0 §1]", () => {
   it("HUB-FR-107 · R-TK01 · review open: user trong userIds / thuộc group ⇒ true; ngoài cả hai ⇒ false; người đã chuyển ⇒ true", async () => {
@@ -84,7 +86,7 @@ describe("R-TK · task dùng chung [plan-step0 §1]", () => {
     expect(out.length).toBeGreaterThanOrEqual(999);
   });
   it("HUB-FR-115 · R-TK05 · decisionAssignees: group chỉ khi redo_limit; không tenant_admin", async () => {
-    const f = await T("decisionAssignees");
+    const f = await DEC("decisionAssignees");
     expect(f("redo_limit", A, G)).toEqual({ userIds: [A], groupId: G });
     expect(f("redo_limit", A, null)).toEqual({ userIds: [A], groupId: null });
     for (const r of ["team_calls", "ask_limit", "permission_lost"])

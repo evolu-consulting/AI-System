@@ -22,7 +22,7 @@ export {
 export const loadApply = (): Promise<Loose> => loadProcRules("runs/apply.rules.ts");
 /** P-c1 `autofix.rules.ts` (`autofixDecisionOptions` mở rộng — plan §4). */
 export const loadAutofix = (): Promise<Loose> => loadProcRules("runs/autofix.rules.ts");
-export const loadCoreTask = (): Promise<Loose> => loadProcRules("core/task.rules.ts");
+export const loadCoreTask = (): Promise<Loose> => loadProcRules("domain/tasks/decision.rules.ts");
 
 export const X = (n: number) => `c2c20000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const RUN = X(1);

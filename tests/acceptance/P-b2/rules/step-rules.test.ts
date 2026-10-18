@@ -1,5 +1,5 @@
 // HUB-FR-106 · HUB-BR-38(a,b) · AC-PB2-01/02/05 · test-plan-cases §3.1 `step-rules` (RS-01…RS-14): hàm thuần
-// `processes/core/step.rules.ts` (plan §2, D1/D2/D9). Module vắng ⇒ đỏ ở `fn(...)`.
+// `processes/domain/runs/step.rules.ts` (plan §2, D1/D2/D9). Module vắng ⇒ đỏ ở `fn(...)`.
 import { describe, expect, it } from "bun:test";
 import { fn, loadStepRules } from "../_support/_modules";
 
