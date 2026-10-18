@@ -76,3 +76,26 @@ describe("hub-api env — KnowledgeHub", () => {
     );
   });
 });
+
+describe("TECH-DEBT #193 · chuỗi rỗng = vắng", () => {
+  test("biến tuỳ chọn để trống ⇒ mặc định/undefined", () => {
+    const env = loadEnv({
+      ...base,
+      HUB_PORT: "",
+      HUB_INTERNAL_TOKEN: "",
+      HUB_ATTACH_DIR: "",
+      HUB_PROCESS_ENGINE: "  ",
+      LOG_LEVEL: "",
+    });
+    expect(env.HUB_PORT).toBe(4000);
+    expect(env.HUB_INTERNAL_TOKEN).toBeUndefined();
+    expect(env.HUB_ATTACH_DIR).toBeUndefined();
+    expect(env.HUB_PROCESS_ENGINE).toBe("off");
+    expect(env.LOG_LEVEL).toBe("info");
+  });
+
+  test("biến bắt buộc để trống ⇒ lỗi nêu đúng tên biến", () => {
+    expect(() => loadEnv({ ...base, HUB_DATABASE_URL: "" })).toThrow(/HUB_DATABASE_URL/);
+    expect(() => loadEnv({ ...base, REDIS_URL: " " })).toThrow(/REDIS_URL/);
+  });
+});

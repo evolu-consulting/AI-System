@@ -1,6 +1,7 @@
 // HUB-NFR-04 · env của hub-api (plan H1 §7), validate bằng zod. Lỗi chỉ nêu tên biến, không in giá trị.
 import { hostname } from "node:os";
 import { isAbsolute } from "node:path";
+import { dropEmptyEnv } from "@ai/contracts";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 
@@ -95,13 +96,6 @@ export type Env = z.infer<typeof EnvSchema>;
 /** Mặc định `HUB_PUBLIC_INTERNAL_URL` khi `APP_ENV` = development/test (Hub cùng máy Runtime). */
 export const DEV_PUBLIC_INTERNAL_URL = "http://localhost:4000";
 
-/** Chuỗi rỗng (`HUB_INSTANCE_ID=` trong .env.example) coi như vắng để nhận mặc định. */
-function dropEmpty(source: Record<string, string | undefined>): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(source)) if (v !== undefined && v !== "") out[k] = v;
-  return out;
-}
-
 function withDevDefaults(env: Env): Env {
   if (env.HUB_PUBLIC_INTERNAL_URL !== undefined || env.APP_ENV === "production") return env;
   return { ...env, HUB_PUBLIC_INTERNAL_URL: DEV_PUBLIC_INTERNAL_URL };
@@ -126,7 +120,7 @@ export function khConfigOf(
 
 /** Ném Error liệt kê tên biến sai; không bao giờ in giá trị (có thể là secret). */
 export function loadEnv(source: Record<string, string | undefined>): Env {
-  const r = EnvSchema.safeParse(dropEmpty(source));
+  const r = EnvSchema.safeParse(dropEmptyEnv(source));
   if (r.success) return withDevDefaults(r.data);
   const names = [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "?")))];
   throw new Error(`Env không hợp lệ: ${names.join(", ")}`);

@@ -1,4 +1,5 @@
 // ADM-NFR-06, ADM-NFR-07, ADM-NFR-01, ADM-FR-50, ADM-FR-23 · env của admin-api (spec M0 §7, M1 §7, M2 §4). Lỗi chỉ nêu tên biến.
+import { dropEmptyEnv } from "@ai/contracts";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 
@@ -40,7 +41,7 @@ export type Env = z.infer<typeof EnvSchema>;
 
 /** Ném Error liệt kê tên biến sai; không bao giờ in giá trị (có thể là secret). */
 export function loadEnv(source: Record<string, string | undefined>): Env {
-  const r = EnvSchema.safeParse(source);
+  const r = EnvSchema.safeParse(dropEmptyEnv(source)); // "" ⇒ vắng (#193)
   if (r.success) return r.data;
   const names = [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "?")))];
   throw new Error(`Env không hợp lệ: ${names.join(", ")}`);

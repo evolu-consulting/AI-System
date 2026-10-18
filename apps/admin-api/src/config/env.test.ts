@@ -54,3 +54,25 @@ describe("ADM-NFR-06 · loadEnv", () => {
     );
   });
 });
+
+describe("TECH-DEBT #193 · chuỗi rỗng = vắng", () => {
+  test("biến tuỳ chọn để trống ⇒ nhận mặc định/undefined", () => {
+    const env = loadEnv({
+      ...OK,
+      ADMIN_WEB_URL: "",
+      HUB_INTERNAL_TOKEN: "",
+      ADMIN_HUB_URL: "  ",
+      SMTP_URL: "",
+      MAIL_FROM: "",
+    });
+    expect(env.ADMIN_WEB_URL).toBe("http://localhost:3000");
+    expect(env.HUB_INTERNAL_TOKEN).toBeUndefined();
+    expect(env.ADMIN_HUB_URL).toBeUndefined();
+    expect(env.SMTP_URL).toBeUndefined();
+  });
+
+  test("biến bắt buộc để trống ⇒ lỗi nêu đúng tên biến", () => {
+    expect(() => loadEnv({ ...OK, JWT_KID: "" })).toThrow(/JWT_KID/);
+    expect(() => loadEnv({ ...OK, PORT: "   " })).toThrow(/PORT/);
+  });
+});
