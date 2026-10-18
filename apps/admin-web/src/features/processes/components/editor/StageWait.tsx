@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { waitIssueKey } from "../../domain/error-keys";
+import { ruleErrorKey, waitIssueKey } from "../../domain/error-keys";
 import {
   type DateSource,
   dateSources,
@@ -27,6 +27,11 @@ function sourceLabel(t: Translate, s: DateSource): string {
     : t(`${K}fromField`, { n: s.n, stage: s.stageName, field: s.field });
 }
 
+/** Đã chọn nhưng sai (cùng bước, không phải ngày) ⇒ WAIT_INVALID; "Chọn nguồn ngày." chỉ cho chưa chọn (lúc Lưu). */
+function sourceIssueKey(issue: "required" | "invalid" | undefined): string | undefined {
+  return issue === "invalid" ? (ruleErrorKey("WAIT_INVALID") ?? undefined) : undefined;
+}
+
 export function StageWait(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, all, errors, readOnly, onChange } = p;
@@ -39,15 +44,19 @@ export function StageWait(p: StageFormProps) {
   const live = waitIssues(w, sources);
   const at = (f: string) => errors[`stages.${index}.executor.${f}`];
   const key = (k: string | undefined) => (k ? t(k) : undefined);
-  const fromErr =
-    waitErrorAt(errors, index) ??
-    (live.source === "invalid" && w.source !== "" ? waitIssueKey("source") : undefined);
+  const fromErr = waitErrorAt(errors, index) ?? sourceIssueKey(live.source);
   const offsetErr = live.offset ? waitIssueKey("offset") : at("offset_days");
   const timeErr = live.time ? waitIssueKey("time") : at("time");
+  // Nguồn còn tồn tại nhưng không hợp lệ (cùng bước / sau bước này) vẫn hiện nhãn thật; chỉ nguồn đã mất mới "đã tắt".
+  const existing = useMemo(
+    () => dateSources(p.defInputs ?? [], all, Number.POSITIVE_INFINITY),
+    [p.defInputs, all],
+  ).find((s) => sourceValue(s) === w.source);
+  const tr = (k: string, o?: Record<string, unknown>) => t(k, o);
   const options = withCurrent(
-    sources.map((s) => ({ value: sourceValue(s), label: sourceLabel((k, o) => t(k, o), s) })),
+    sources.map((s) => ({ value: sourceValue(s), label: sourceLabel(tr, s) })),
     w.source,
-    t("process.admin.editor.gone"),
+    existing ? sourceLabel(tr, existing) : t("process.admin.editor.gone"),
   );
   const tzId = `${stage.uid}-wait-tz`;
   const sourceText = options.find((o) => o.value === w.source)?.label ?? "";

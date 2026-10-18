@@ -33,6 +33,7 @@ export function TenantTimezoneField({ id, value, error, onChange }: Props) {
       label={t("tenants.field.timezone")}
       description={t("tenants.field.timezoneHint")}
       error={error}
+      alert
     >
       {(p) => (
         <div className="flex gap-2">
