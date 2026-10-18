@@ -17,7 +17,7 @@ import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";
 import { persistStage, type StepOutcome, stageDoneOf } from "./step-persist";
-import { outputSteps, outputStepsSingle } from "./team-load";
+import { stageOutputSteps } from "./team-load";
 import { checkTemplate } from "./template.rules";
 
 export type Deps = Omit<ProcessDeps, "launcher" | "start">;
@@ -192,19 +192,23 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
   const refs = c.srcCtx ? stageRefsCheck(c.srcCtx, text, reads) : { ok: true as const };
   const ok = chk.ok && refs.ok;
   const missing = refs.ok ? chk.missing : [...chk.missing, "## Nguồn tham chiếu"];
-  const [v] = await tx.execute<{ v: number }>(sql`select coalesce(max(version), 0) + 1 as v
-    from hub.process_outputs where stage_run_id = ${c.x.stageRunId}`);
-  const version = Number(v?.v ?? 1);
   const id = crypto.randomUUID();
   const att = await outputAttachment(d, tx, c, text);
-  await tx.execute(sql`insert into hub.process_outputs (id, tenant_id, process_run_id, stage_run_id, stage_idx,
-      version, attempt, content, sections, fields, summaries, template_ok, template_missing, attachment_id, round)
-    values (${id}, ${c.head.tenant_id}, ${c.x.runId}, ${c.x.stageRunId}, ${c.idx}, ${version},
+  // T18-perf: `version` = max+1 trong CÙNG câu INSERT (stage đã khoá FOR UPDATE ⇒ không đua).
+  const [v] = await tx.execute<{
+    version: number;
+  }>(sql`insert into hub.process_outputs (id, tenant_id,
+      process_run_id, stage_run_id, stage_idx, version, attempt, content, sections, fields, summaries, template_ok,
+      template_missing, attachment_id, round)
+    values (${id}, ${c.head.tenant_id}, ${c.x.runId}, ${c.x.stageRunId}, ${c.idx},
+      (select coalesce(max(version), 0) + 1 from hub.process_outputs where stage_run_id = ${c.x.stageRunId}),
       ${Number(c.stage.attempt)}, ${text}, ${r.sections ? JSON.stringify(r.sections) : null}::jsonb,
       ${chk.fields ? JSON.stringify(chk.fields) : null}::jsonb,
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
       ${ok}, ${missingArray(missing)}, ${att?.id ?? null},
-      (select round from hub.stage_runs where id = ${c.x.stageRunId}))`);
+      (select round from hub.stage_runs where id = ${c.x.stageRunId}))
+    returning version`);
+  const version = Number(v?.version ?? 1);
   if (missing.length > 0)
     await tx.execute(sql`update hub.stage_runs set feedback = ${refsFeedback(missing, refs.ok, c.srcCtx, { text, reads })}
       where id = ${c.x.stageRunId}`);
@@ -321,18 +325,13 @@ async function threadOutput(
     },
     after: c.def.after.kind,
     review_task_id: reviewTaskId,
-    // D6a · nhóm ⇒ bước thành viên theo team-run; agent đơn ⇒ run_steps của chính lần chạy stage.
-    steps:
-      c.def.executor.kind === "team"
-        ? await outputSteps(tx, {
-            stageRunId: c.x.stageRunId,
-            tenantId: c.head.tenant_id,
-            attempt: Number(c.stage.attempt),
-          })
-        : await outputStepsSingle(tx, {
-            hubRunId: c.x.hubRunId,
-            tenantId: c.head.tenant_id,
-          }),
+    steps: await stageOutputSteps(tx, {
+      kind: String(c.def.executor.kind),
+      stageRunId: c.x.stageRunId,
+      hubRunId: c.x.hubRunId,
+      tenantId: c.head.tenant_id,
+      attempt: Number(c.stage.attempt),
+    }),
   });
 }
 

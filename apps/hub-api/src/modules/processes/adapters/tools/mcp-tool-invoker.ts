@@ -70,6 +70,8 @@ export function mcpToolInvoker(d: { invoker?: WorkflowInvoker; config: ConfigCac
         runId: c.hubRunId,
         agentId: null,
         timeoutS: c.timeoutS,
+        // hub run riêng của stage tool: chỉ driver này ghi `run_steps` ⇒ không cần khoá advisory (T18-perf).
+        ownRun: true,
       };
       const args = { inputs: c.args, query: null, files: [] };
       const trace = { confirmation: "gate_review" as const };

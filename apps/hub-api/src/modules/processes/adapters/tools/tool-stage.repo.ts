@@ -164,6 +164,46 @@ function stateOf(head: RunHead, stage: StageRowIdx, def: SnapStage): RunState {
   };
 }
 
+type LockedRow = StageRowIdx & { head: RunHead };
+type LockRaw = Omit<StageRowIdx, "stage_idx"> & {
+  stage_idx: number | string;
+  r_tenant_id: string;
+  r_started_by: string;
+  r_status: string;
+  r_current_stage_idx: number;
+  r_input: string;
+  r_snapshot: RunHead["snapshot"];
+};
+
+/**
+ * MỘT câu (T18-perf): `for update of s` hàng stage + đầu run (`headOf`) cùng lúc. Gọi SAU `runs.lock` (thứ tự khoá run →
+ * stage giữ nguyên; run đã khoá nên đầu run đọc ở đây là bản mới nhất).
+ */
+async function lockStageWithHead(
+  tx: Tx,
+  tenantId: string,
+  stageRunId: string,
+): Promise<LockedRow | null> {
+  const [s] = await tx.execute<LockRaw>(sql`select s.id, s.stage_idx, s.status, s.attempt,
+      s.attempt_limit, s.asks_count, s.ask_limit, s.current_output_id, s.current_run_id,
+      r.tenant_id as r_tenant_id, r.started_by as r_started_by, r.status as r_status,
+      r.current_stage_idx as r_current_stage_idx, r.input as r_input, r.snapshot as r_snapshot
+    from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
+    where s.id = ${stageRunId} and s.tenant_id = ${tenantId} for update of s`);
+  if (!s) return null;
+  const { r_tenant_id, r_started_by, r_status, r_current_stage_idx, r_input, r_snapshot, ...st } =
+    s;
+  const head: RunHead = {
+    tenant_id: r_tenant_id,
+    started_by: r_started_by,
+    status: r_status,
+    current_stage_idx: r_current_stage_idx,
+    input: r_input,
+    snapshot: r_snapshot,
+  };
+  return { ...st, stage_idx: Number(st.stage_idx), head };
+}
+
 /** PD2-R09 · audit `tool_call` — actor = người bắt đầu (gọi bằng danh tính họ, S1); `summary` chỉ id/mã/thời gian. */
 async function insertAudit(tx: Tx, tenantId: string, x: ToolCallAudit): Promise<void> {
   const summary = {
@@ -184,6 +224,7 @@ async function insertAudit(tx: Tx, tenantId: string, x: ToolCallAudit): Promise<
 export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps): ToolStageRepo {
   /** Hàng stage đã khoá ở `lockRunning` (dùng lại trong `settleOk`/`decide`, không đọc lại). */
   let locked: StageRowIdx | null = null;
+  let head: RunHead | null = null;
   const emit = (runId: string, events: readonly unknown[], kick: boolean) => {
     if (events.length > 0) outbox.emit({ kind: "user_events", events });
     outbox.emit({ kind: "post_thread", runId });
@@ -205,18 +246,15 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
       outbox.emit({ kind: "user_events", events: processUpdated(recipients, st) });
     },
     async lockRunning(stageRunId, hubRunId) {
-      const [s] =
-        await tx.execute<StageRowIdx>(sql`select id, stage_idx, status, attempt, attempt_limit,
-          asks_count, ask_limit, current_output_id, current_run_id from hub.stage_runs
-        where id = ${stageRunId} and tenant_id = ${tenantId} for update`);
-      locked =
-        s && s.status === "running" && s.current_run_id === hubRunId
-          ? { ...s, stage_idx: Number(s.stage_idx) }
-          : null;
+      const row = await lockStageWithHead(tx, tenantId, stageRunId);
+      const ok = row?.status === "running" && row.current_run_id === hubRunId;
+      locked = ok ? row : null;
+      head = ok ? row.head : null;
       return locked !== null;
     },
     async settleOk(x) {
-      const h = await headOf(tx, x.runId);
+      // T18-perf: đầu run đọc CÙNG câu khoá stage (run đã khoá ở `runs.lock` ⇒ ảnh mới nhất), không đọc lại.
+      const h = head ?? (await headOf(tx, x.runId));
       const stage = locked;
       const def = stage && h?.snapshot.stages[stage.stage_idx];
       if (!h || !stage || !def) return;

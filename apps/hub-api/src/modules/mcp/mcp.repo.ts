@@ -4,6 +4,7 @@ import type { Tx } from "@ai/db";
 import { runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
 import { insertStep } from "../../lib/run-steps";
+import { type DifyUsageRow, difyUsageSelect } from "../dify/dify.usage";
 
 export type TokenJob = {
   id: string;
@@ -67,30 +68,53 @@ export type ToolStepStart = {
   workflowId: string;
   /** `{inputs: maskInputs(...)}` — đã che secret rồi cắt (R20). */
   detail: Record<string, unknown>;
+  /** false ⇒ bỏ khoá advisory (run chỉ người gọi ghi bước — stage `tool`); mặc định true. */
+  lock?: boolean;
 };
 
 /** Bước `tool` `running` (P11: `seq` do DB cấp; P12: không phát SSE). */
 export function insertToolStep(tx: Tx, s: ToolStepStart): Promise<number> {
-  return insertStep(tx, {
-    ...s,
-    type: "tool",
-    providerKey: null,
-    jobId: null,
-    labelKey: "step.tool",
-    status: "running",
-  });
+  const { lock, ...step } = s;
+  return insertStep(
+    tx,
+    {
+      ...step,
+      type: "tool",
+      providerKey: null,
+      jobId: null,
+      labelKey: "step.tool",
+      status: "running",
+    },
+    { lock: lock !== false },
+  );
 }
 
-export async function finishToolStep(
+type FinishStep = {
+  id: string;
+  runId: string;
+  tenantId: string;
+  status: "ok" | "failed";
+  detail: Record<string, unknown>;
+};
+
+/**
+ * T18-perf · R15: đóng bước `tool` + một dòng usage `billing=dify` trong MỘT câu (văn bản cố định). CTE `update` luôn
+ * chạy (Postgres chạy hết CTE ghi dù không tham chiếu); `log_dify_usage` lỗi ⇒ cả câu lỗi, người gọi đóng bước riêng.
+ */
+export async function finishToolStepWithUsage(
   tx: Tx,
-  p: {
-    id: string;
-    runId: string;
-    tenantId: string;
-    status: "ok" | "failed";
-    detail: Record<string, unknown>;
-  },
+  p: FinishStep,
+  u: DifyUsageRow,
 ): Promise<void> {
+  await tx.execute(sql`with s as (update hub.run_steps
+      set status = ${p.status}, detail = ${JSON.stringify(p.detail)}::jsonb,
+        finished_at = date_trunc('milliseconds', now())
+      where id = ${p.id}::uuid and run_id = ${p.runId}::uuid and tenant_id = ${p.tenantId}::uuid
+        and status = 'running')
+    ${difyUsageSelect(u)}`);
+}
+
+export async function finishToolStep(tx: Tx, p: FinishStep): Promise<void> {
   await tx
     .update(runSteps)
     .set({

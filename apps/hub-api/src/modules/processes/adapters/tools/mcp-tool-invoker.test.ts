@@ -37,7 +37,14 @@ describe("mcpToolInvoker", () => {
     expect(r).toEqual({ kind: "ok", text: "{}" });
     expect(seen).toEqual([
       {
-        ctx: { tenantId: "t1", userId: "u1", runId: "r1", agentId: null, timeoutS: 45 },
+        ctx: {
+          tenantId: "t1",
+          userId: "u1",
+          runId: "r1",
+          agentId: null,
+          timeoutS: 45,
+          ownRun: true,
+        },
         wf: "http://dify/v1",
         a: { inputs: { tong_tien: 1 }, query: null, files: [] },
         t: { confirmation: "gate_review" },

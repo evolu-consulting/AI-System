@@ -1,7 +1,8 @@
 // HUB-FR-50, HUB-FR-95, HUB-FR-146 · H2a-R20, R22 · H2c P14 · P-d2 D2-02/D2-27 (T18s, tách từ `mcp.service.ts`, không đổi
 // hành vi): pipeline gọi một workflow Dify của `tools/call` — lấy key → bước `tool` `running` → (upload file) → Dify gom
-// trong hạn `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` → kết thúc bước + usage `billing=dify`. 4 câu/lời gọi (D2-27),
-// mỗi câu tx ngắn riêng; không giữ tx trong lúc gọi mạng. Không bao giờ log token/app-key/tham số.
+// trong hạn `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` → kết thúc bước + usage `billing=dify` (một câu, T18-perf).
+// Mỗi câu tx ngắn riêng; không giữ tx trong lúc gọi mạng. Không bao giờ log token/app-key/tham số. Số câu: `/mcp` 5 (key 2,
+// khoá+mở bước 2, đóng bước+usage 1); stage `tool` (`ownRun`) 4 (D2-27/D2-28).
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
@@ -14,7 +15,6 @@ import type { ConfigCache } from "../../config/config.service";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser, maskInputs } from "../../dify/dify.rules";
-import { recordDifyUsage } from "../../dify/dify.usage";
 import * as repo from "../mcp.repo";
 import { type ToolResult, toolError, toolText, toolTimeoutS } from "../mcp.rules";
 import { type StepCode, stepCodeOf } from "../mcp-call";
@@ -30,6 +30,11 @@ export type InvokeCaller = {
   runId: string;
   agentId: string | null;
   timeoutS?: number;
+  /**
+   * T18-perf · run chỉ người gọi này ghi `run_steps` (hub run của stage `tool`) ⇒ bỏ khoá advisory khi mở bước (`seq`
+   * vẫn đúng nhờ thử lại 23505). Vắng ⇒ khoá như `/mcp` (bước xen với vòng Orchestrator).
+   */
+  ownRun?: boolean;
 };
 export type ToolArgs = {
   inputs: Record<string, WorkflowInputValue>;
@@ -164,8 +169,7 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     const code = stepCodeOf(out, timeout.aborted);
     const upstream = out.kind === "failed" ? out.detail : null;
     const detail = { ...trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
-    await this.#finishStep(ctx, o.stepId, detail);
-    await this.#usage(ctx, o.stepId, out);
+    await this.#finishWithUsage(ctx, o.stepId, detail, out);
     if (out.kind === "finished") return toolText(out.text);
     const mapped = code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR";
     o.onFail?.(failureOf(out, code === "CANCELLED" ? code : mapped));
@@ -242,8 +246,42 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
         agentId: ctx.agentId,
         workflowId: wf.id,
         detail: { inputs },
+        lock: ctx.ownRun !== true,
       }),
     );
+  }
+
+  /**
+   * T18-perf · đóng bước + usage `billing=dify` (R15) MỘT câu (CTE `update` + `log_dify_usage`, văn bản cố định). Câu gộp
+   * lỗi ⇒ đóng bước riêng rồi cảnh báo usage như trước (lỗi usage không làm hỏng bước).
+   */
+  async #finishWithUsage(
+    ctx: InvokeCaller,
+    stepId: string,
+    detail: FinishDetail,
+    out: DifyRunOutcome,
+  ): Promise<void> {
+    if (out.kind !== "finished" && !out.taskId) return this.#finishStep(ctx, stepId, detail);
+    const status = detail.code ? "failed" : "ok";
+    const step = { id: stepId, runId: ctx.runId, tenantId: ctx.tenantId, status, detail } as const;
+    const usage = {
+      tenantId: ctx.tenantId,
+      runId: ctx.runId,
+      stepId,
+      userId: ctx.userId,
+      featureId: null,
+      agentId: ctx.agentId,
+      usage: out.usage,
+      latencyMs: out.ms,
+    };
+    try {
+      await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+        repo.finishToolStepWithUsage(tx, step, usage),
+      );
+    } catch (err) {
+      this.d.log.warn("tool-usage-failed", { run_id: ctx.runId, ...safeErrorFields(err) });
+      await this.#finishStep(ctx, stepId, detail);
+    }
   }
 
   #finishStep(ctx: InvokeCaller, stepId: string, detail: FinishDetail): Promise<void> {
@@ -257,25 +295,6 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
         detail,
       }),
     );
-  }
-
-  /** R15: một dòng `billing=dify` mỗi lời gọi Dify đã tới được Dify (có `task_id` hoặc xong), `feature_id` NULL. */
-  async #usage(ctx: InvokeCaller, stepId: string, out: DifyRunOutcome): Promise<void> {
-    if (out.kind !== "finished" && !out.taskId) return;
-    try {
-      await recordDifyUsage(this.d.db, {
-        tenantId: ctx.tenantId,
-        runId: ctx.runId,
-        stepId,
-        userId: ctx.userId,
-        featureId: null,
-        agentId: ctx.agentId,
-        usage: out.usage,
-        latencyMs: out.ms,
-      });
-    } catch (err) {
-      this.d.log.warn("tool-usage-failed", { run_id: ctx.runId, ...safeErrorFields(err) });
-    }
   }
 }
 

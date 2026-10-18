@@ -40,10 +40,16 @@ function seqConflict(err: unknown): boolean {
  * `max(seq)+1` thấy dòng của transaction trước đã COMMIT; 23505 (người ghi không qua hàm này) → thử lại trong savepoint.
  * Trả `seq` đã cấp.
  */
-export async function insertStep(tx: Tx, s: NewRunStep): Promise<number> {
-  await tx.execute(
-    sql`select pg_advisory_xact_lock(hashtextextended(${`hub.run_steps:${s.runId}`}, 0))`,
-  );
+export async function insertStep(
+  tx: Tx,
+  s: NewRunStep,
+  opts: { lock: boolean } = { lock: true },
+): Promise<number> {
+  // `lock:false` (T18-perf): run chỉ người gọi ghi bước (hub run stage `tool`) ⇒ không tranh chấp; đua lạ vẫn an toàn nhờ 23505.
+  if (opts.lock)
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`hub.run_steps:${s.runId}`}, 0))`,
+    );
   for (let attempt = 0; ; attempt++) {
     try {
       return await tx.transaction((sp) => insertOnce(sp, s));

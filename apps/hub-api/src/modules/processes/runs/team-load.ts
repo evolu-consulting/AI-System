@@ -142,6 +142,19 @@ export async function outputStepsSingle(
   return [...rows].map(mapStep);
 }
 
+/**
+ * D6a · bước của thẻ output: nhóm ⇒ bước thành viên theo team-run; agent đơn ⇒ `run_steps` của chính lần chạy stage.
+ * Stage `tool` (T18-perf): hub run chỉ có bước `tool` `agent_id` NULL mà `outputStepsSingle` bỏ ⇒ luôn rỗng, không đọc.
+ */
+export function stageOutputSteps(
+  tx: Tx,
+  p: { kind: string; stageRunId: string; hubRunId: string; tenantId: string; attempt: number },
+): Promise<OutputStep[]> {
+  if (p.kind === "tool") return Promise.resolve([]);
+  if (p.kind === "team") return outputSteps(tx, p);
+  return outputStepsSingle(tx, p);
+}
+
 /** Entitlement nhóm của tenant chưa thu hồi. */
 export async function teamEntitled(tx: Tx, teamId: string, tenantId: string): Promise<boolean> {
   const [r] = await tx.execute<{ n: number }>(sql`select 1 as n from hub.agent_team_entitlements

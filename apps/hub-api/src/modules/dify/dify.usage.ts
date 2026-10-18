@@ -2,7 +2,7 @@
 // `hub.log_dify_usage` (SECURITY DEFINER, EXECUTE `hub_rw` — `hub_api` không INSERT `usage_logs`, khoá H1 A51).
 // Hàm cố định `billing='dify'`, `provider_key='dify'`, `model=NULL`. Gọi trong transaction của người gọi hoặc thẳng `db`.
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../lib/db";
 import type { DifyUsage } from "./dify.rules";
 
@@ -26,10 +26,15 @@ const money = (n: number): string => (Number.isFinite(n) && n > 0 ? String(n) : 
 
 /** `select hub.log_dify_usage(...)` — `exec` là transaction đang mở (`Tx`) hoặc `db.db`. */
 export async function logDifyUsage(exec: Pick<Tx, "execute">, r: DifyUsageRow): Promise<void> {
-  await exec.execute(sql`select hub.log_dify_usage(${r.tenantId}::uuid, ${r.runId}::uuid,
+  await exec.execute(difyUsageSelect(r));
+}
+
+/** Câu `select hub.log_dify_usage(...)` (văn bản cố định) — ghép sau một CTE ghi được (T18-perf: đóng bước + usage). */
+export function difyUsageSelect(r: DifyUsageRow): SQL {
+  return sql`select hub.log_dify_usage(${r.tenantId}::uuid, ${r.runId}::uuid,
     ${r.stepId}::uuid, ${r.userId}::uuid, ${r.featureId}::uuid, ${r.agentId}::uuid,
     ${int(r.usage.input_tokens)}::int, ${int(r.usage.output_tokens)}::int,
-    ${money(r.usage.cost_usd)}::numeric, ${int(r.latencyMs)}::int)`);
+    ${money(r.usage.cost_usd)}::numeric, ${int(r.latencyMs)}::int)`;
 }
 
 /** Ghi ngoài transaction (vd sau khi stream Dify kết thúc). */
