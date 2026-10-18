@@ -1,7 +1,8 @@
 // HUB-FR-106 · HUB-FR-113 · N3 · tay cầm cho test gọi một lượt vòng nền khi `processLoops:false` (plan-contract §7.1).
 // Nhận qua `AppDeps.onProcessHandles`. Chủ: `sweepOnce` PF1 (`runs/sweeps.ts`), `remindOnce` PF3 (`notify/reminder.ts`),
 // `postThreadOnce` B0 (`core/thread-poster.ts`), `kick` = `StageLauncher.kick`, `khWriteOnce` K1 (`kh/kh.writer.ts`, G2).
-export type SweepResult = { queued: number; interrupted: number; expired: number };
+/** `timers` (T8b · A7 Q10): số hẹn đã bắn trong lượt (≤ `TIMER_SWEEP_BATCH`). */
+export type SweepResult = { queued: number; interrupted: number; expired: number; timers: number };
 
 export type ProcessHandles = {
   sweepOnce(): Promise<SweepResult>;

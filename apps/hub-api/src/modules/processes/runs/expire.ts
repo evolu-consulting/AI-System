@@ -54,7 +54,7 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
 
 /**
  * MỘT câu (CTE ghi dữ liệu): khoá run active quá hạn (cũ trước), đặt `expired` + `finished_at`, huỷ stage còn mở, đóng task
- * mở (`expired`), trả hàng nguồn kèm `tenant_id`. Stage/task lọc theo `process_run_id = any(array(select id from r))`
+ * mở (`expired`), huỷ hẹn chưa bắn (PD-R12, T8b), trả hàng nguồn kèm `tenant_id`. Stage/task lọc theo `process_run_id = any(array(select id from r))`
  * (index `*_run_*`, không join theo thống kê — sau chèn hàng loạt thống kê cũ làm planner chọn nested loop 100 × N).
  * Tenant (K3 lô, T6c): bảo đảm nằm ở schema — `process_runs.id` là PK (duy nhất toàn bảng) + FK kép
  * `(process_run_id, tenant_id) → process_runs(id, tenant_id)` ⇒ hàng con khớp `process_run_id` thì chắc chắn cùng tenant run
@@ -95,6 +95,11 @@ export async function claimExpired(
       update hub.review_tasks set status = 'closed', result = 'expired', decided_at = ${at}::timestamptz
       where process_run_id = any(array(select id from r)) and tenant_id = any(array(select tenant_id from r))
         and status = 'open'
+      returning 1
+    ), tm as (
+      update hub.process_timers set cancelled_at = ${at}::timestamptz
+      where process_run_id = any(array(select id from r)) and tenant_id = any(array(select tenant_id from r))
+        and fired_at is null and cancelled_at is null
       returning 1
     )
     select r.*, exists (select 1 from hub.process_runs p

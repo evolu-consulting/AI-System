@@ -24,6 +24,7 @@ import { retryRepo } from "./runs/retry.repo";
 import { runRepo } from "./runs/run.repo";
 import { sideEffectProbe } from "./runs/side-effect.repo";
 import { teamRunRepo } from "./runs/team-run.repo";
+import { type RunFinishedNotifier, stageTimerRepo } from "./timers/stage-timer.repo";
 import { timerRepo } from "./timers/timers.repo";
 
 export type HubUowDeps = {
@@ -31,8 +32,8 @@ export type HubUowDeps = {
   clock: Clock;
   /** Phát sự kiện SAU COMMIT (mount: `makeOutboxPublisher`). Lỗi phát không rollback (đã COMMIT). */
   publish: (events: readonly OutboxEvent[]) => Promise<void>;
-  /** Vắng ⇒ `createNotifier()` (notice `run_finished` theo lô). */
-  notifier?: Pick<ProcessNotifier, "runsFinished">;
+  /** Vắng ⇒ `createNotifier()` (notice `run_finished` theo lô; một run khi bắn `wait_until` kết thúc run — T8b). */
+  notifier?: Pick<ProcessNotifier, "runsFinished" | "runFinished">;
 };
 
 function collector(): { outbox: Outbox; events: OutboxEvent[] } {
@@ -40,11 +41,17 @@ function collector(): { outbox: Outbox; events: OutboxEvent[] } {
   return { outbox: { emit: (e) => void events.push(e) }, events };
 }
 
-function txRepos(tx: Tx, tenantId: string, outbox: Outbox): TxRepos {
+function txRepos(
+  tx: Tx,
+  tenantId: string,
+  outbox: Outbox,
+  notifier: RunFinishedNotifier = createNotifier(),
+): TxRepos {
   return {
     tenantId,
     runs: runRepo(tx, tenantId),
     timers: timerRepo(tx, tenantId),
+    stageTimers: stageTimerRepo(tx, tenantId, outbox, notifier),
     retry: retryRepo(tx, tenantId),
     sideEffect: sideEffectProbe(tx, tenantId),
     team: teamRunRepo(tx, tenantId),
@@ -106,13 +113,13 @@ export function createHubUow(db: Db, deps: HubUowDeps): UnitOfWork {
       assertTenantId(who.tenantId);
       return run(
         { kind: "user", tenantId: who.tenantId, userId: who.userId },
-        (tx, o) => txRepos(tx, who.tenantId, o),
+        (tx, o) => txRepos(tx, who.tenantId, o, deps.notifier),
         fn,
       );
     },
     system: async (tenantId, fn) => {
       assertTenantId(tenantId);
-      return run({ kind: "system" }, (tx, o) => txRepos(tx, tenantId, o), fn);
+      return run({ kind: "system" }, (tx, o) => txRepos(tx, tenantId, o, deps.notifier), fn);
     },
     systemBatch: (fn) => run({ kind: "system" }, (tx, o) => batchRepos(tx, o, deps.notifier), fn),
   };

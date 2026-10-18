@@ -2,7 +2,13 @@
 // chỉ import `domain/`. Không type nào chứa `Tx` (K1): repo đã gắn tx + `tenantId` của UoW. Sự kiện gom qua `Outbox`,
 // adapter phát SAU COMMIT đúng một lần. Repo port theo nhóm (retry, side effect, team, review task…) thêm ở T7–T9.
 import type { RetryState } from "../domain/runs/retry.rules";
-import type { NoticeKind, ProcessRunStatus, Timer, TimerKind } from "../domain/types";
+import type {
+  NoticeKind,
+  ProcessRunStatus,
+  StageRunStatus,
+  Timer,
+  TimerKind,
+} from "../domain/types";
 
 export type Clock = { now(): Date };
 export type IdGen = { newId(): string };
@@ -52,6 +58,25 @@ export type NewTimer = {
   /** IANA cho `wait_until` (D-PD07); `retry` ⇒ null. */
   timezone: string | null;
 };
+/** T8b · stage của hẹn đã khoá (`for update`, SAU run, TRƯỚC timer — plan §6). */
+export type TimerStage = { id: string; status: StageRunStatus };
+/**
+ * T8b · PD-R11/R15 · hiệu ứng bắn hẹn lên stage; mọi câu lọc `(id, process_run_id, tenant_id)`. Sự kiện/kick vào outbox
+ * (phát SAU COMMIT). Gọi trong tx đã khoá run. `finishWait` cũng là seam cho `enter-wait` (T8a) khi `due_at ≤ now`.
+ */
+export type StageTimerRepo = {
+  lockStage(runId: string, stageRunId: string): Promise<TimerStage | null>;
+  /** `retry` tới hạn: stage `queued`, `current_run_id = NULL` (cùng attempt) + `process_updated`. */
+  requeue(runId: string, stageRunId: string, now: Date): Promise<void>;
+  /** `wait_until` tới hạn: ghi .md "Đã chờ tới …" + stage `done` + join bước (P-b2); kick/thread/sự kiện vào outbox. */
+  finishWait(
+    runId: string,
+    stageRunId: string,
+    w: { dueAt: Date; timezone: string },
+  ): Promise<void>;
+  /** IANA đã chốt trên hàng hẹn (`wait_until`); `null` ⇒ không có (retry). */
+  timezoneOf(timerId: string): Promise<string | null>;
+};
 /** T7 · bộ đếm thử lại của `stage_runs` (PD-R03/R06) — mọi câu lọc `(id, tenant_id)`. */
 export type RetryRepo = {
   /** `null` ⇒ không thấy stage (tenant khác / đã xoá). */
@@ -77,6 +102,7 @@ export type TxRepos = {
   readonly tenantId: string;
   runs: RunRepo;
   timers: TimerRepo;
+  stageTimers: StageTimerRepo;
   retry: RetryRepo;
   sideEffect: SideEffectProbe;
   team: TeamRunRepo;

@@ -4,6 +4,8 @@
 // chạy mọi stage `queued` của bước X. Không log nội dung.
 import type { ReviewDecisionRequest } from "@ai/contracts/chat";
 import type { UserEvent } from "../../../lib/user-stream";
+import { bindTx } from "../adapters/hub-uow";
+import { cancelTimers } from "../application/timers/cancel-timers.usecase";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import {
@@ -76,6 +78,10 @@ export async function applyBack(
     const id = idOf.get(r.idx);
     if (id) await g.resetStage(tx, id, { ...r, tenantId: run.tenantId });
   }
+  // PD-R12 · stage bị reset (bước ≥ đích) ⇒ huỷ hẹn mở; cùng tx, run đã khoá, stage đã ghi (run → stage → timer).
+  const byStep = stages.map((s) => ({ stageRunId: s.id, step: steps[s.idx] ?? s.idx }));
+  const scope = { kind: "back", stages: byStep, toStep: p.target } as const;
+  await cancelTimers(bindTx(tx, run.tenantId).repos, run.id, scope, now);
   const first = firstIdxOfStep(steps, p.target);
   await g.setRunBack(tx, run.id, {
     tenantId: run.tenantId,

@@ -8,6 +8,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import { startLoop } from "../../../lib/loop";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import { head, interruptedPorts } from "../adapters/runs/interrupted.repo";
+import { fireDueTimers } from "../adapters/timers/timer-sweep";
 import { sweepInterrupted } from "../application/runs/sweep-interrupted.usecase";
 import * as core from "../core/core.repo";
 import type { SweepResult } from "../core/handles";
@@ -43,6 +44,7 @@ type DueRow = StageCand & { interrupted: boolean; apply_ready: boolean };
  * viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
  */
 export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
+  const timers = await fireDueTimers(d);
   const expired = await expireRuns(d);
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
@@ -66,7 +68,7 @@ export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
         }),
       );
   const queued = await requeueOrphans(d);
-  return { queued, interrupted, expired };
+  return { queued, interrupted, expired, timers };
 }
 
 /**

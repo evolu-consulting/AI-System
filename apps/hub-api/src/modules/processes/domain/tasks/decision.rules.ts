@@ -37,6 +37,7 @@ export const FORCE_USE_CURRENT: ReadonlySet<DecisionReason> = new Set<DecisionRe
   "team_no_change",
   "permission_lost",
   "user_inactive",
+  "timer_invalid", // PD-R14 · bỏ chờ luôn có (Hub ghi .md "Bỏ chờ theo quyết định")
 ]);
 
 /** Lựa chọn của task `decision` (team-runner, sweeps, view D9 dùng chung). */

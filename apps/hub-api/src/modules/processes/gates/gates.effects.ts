@@ -9,7 +9,9 @@ import type {
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
+import { bindTx } from "../adapters/hub-uow";
 import { resetRetry } from "../adapters/runs/retry.repo";
+import { cancelTimers } from "../application/timers/cancel-timers.usecase";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -251,6 +253,8 @@ export async function cancelEnd(
   const now = d.now();
   await g.cancelStageRuns(tx, run.id, run.tenantId);
   await g.cancelStages(tx, run.id, run.tenantId);
+  // PD-R12 · cùng tx, run đã khoá, stage đã ghi (run → stage → timer): hẹn mở không còn bắn được.
+  await cancelTimers(bindTx(tx, run.tenantId).repos, run.id, { kind: "all" }, now);
   await g.closeOpenTasks(tx, {
     runId: run.id,
     tenantId: run.tenantId,

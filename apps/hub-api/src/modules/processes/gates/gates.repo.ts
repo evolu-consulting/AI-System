@@ -186,7 +186,8 @@ export async function setRunStatus(
 export async function cancelStages(tx: Tx, runId: string, tenantId: string): Promise<void> {
   await tx.execute(sql`update hub.stage_runs set status = 'cancelled', updated_at = now()
     where process_run_id = ${runId} and tenant_id = ${tenantId}
-      and status in ('pending','queued','running','waiting_review','waiting_answer','needs_decision')`);
+      and status in ('pending','queued','running','waiting_review','waiting_answer','needs_decision',
+        'waiting_timer')`);
 }
 
 /**
