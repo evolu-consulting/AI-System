@@ -6,6 +6,7 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-18 | READY (lần 7) | 0 (+điều kiện Gate ngoài spec) | 0 | 11 | Diff d91d2d9. Đóng #90 (notice `run_finished` chèn trong tx `systemBatch`, Redis sau COMMIT; A10 ↔ A11 khớp; hết hạn 5 câu so với lượt rỗng ≤ 6 = PD-P15), #92 (`test:perf:pd` thêm ở T9), #93, #94. Mới: #95, #96 (Thấp). Còn Thấp: 71, 73, 75–80, 91, 95, 96. Không hỏi người dùng. |
 | 2026-10-18 | NOT READY (lần 6) | 0 | 1 | 12 | Diff 70bd139. Đóng #81 (A11 `systemBatch`, CA-R06/§4/§7, T6b/T6c), #82, #83–#89, #74, TC1–18. Cao mới do chính bản sửa: #90 `Notifier.runsFinished(ids)` — A11 xếp vào "repo lô gắn tx" ↔ A10 "adapter gom vào outbox xả sau COMMIT" (notice `run_finished` ghi trong hay ngoài tx). Thấp còn: 71, 73, 75–80 + mới 91–94. Không hỏi người dùng. `check:size` không có vi phạm ở docs; trần không đổi. |
 | 2026-10-18 | NOT READY (lần 5) | 0 | 2 | 34 | Diff 75ec598..3efb39f (ADR-0017 Accepted, CR-081 đóng, mockup duyệt, A9/A10, test-plan-addendum §2–§3, test T3/T3a). Cao: #81 A10 một tx hệ thống/lô nhiều tenant ↔ spec-ca CA-R06/K1 (UoW theo tenant, mỗi hàng); #82 NFR "đo riêng phần DB" ↔ PD-P13/P14 đo cả lời gọi. 18 tranh chấp qc đều Thấp, có mặc định. Không hỏi người dùng (Luật 2b). Điều kiện Gate ngoài spec đã đủ (D0a–D0c). |
 | 2026-10-17 | READY (lần 4) | 0 (+điều kiện Gate ADR-0017 — chờ staging) | 0 | 9 | Đóng #54–#70, #72; #55–#58 đã đóng. Còn Thấp: #71, #73, #74–#80 (sửa khi BUILD, T4 chạy lại readiness chỉ diff). Không hỏi người dùng. Gate P-d1 chờ điều kiện ngoài spec (ADR-0017 staging, mockup, security review T6c/T12/T20, CR-081). |
@@ -14,6 +15,30 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 7 · 2026-10-18 · READY
+
+Phạm vi: `git show d91d2d9 -- plan-addendum.md tasks.md spec-decisions.md` + lỗ hổng mở của "### Lần 6"; đối chiếu test-plan-addendum §2 (PD-P14/P15), TC16/TC18, `package.json`. Kích thước sau diff: plan-addendum 29737 · tasks 19816 · spec-decisions 17765 (file này không có trần ở lần 5/6; spec/plan/test-plan không đổi trong diff nên giữ trần cũ).
+
+Đóng:
+- **#90** — A10 (hết hạn): `Notifier.runsFinished(ids)` gắn tx `systemBatch`, chèn `run_finished` trong tx bằng một câu `insert hub.process_notices … select` theo `(id, tenant_id)` + một câu `unread`, rồi `outbox.emit({kind:"user_events"})`, Redis chỉ sau COMMIT. A11 bảng "Repo lô" ghi cùng nghĩa ("không `Tx`; gắn tx `systemBatch`, notice chèn trong tx, Redis sau COMMIT — #90"). Hai chỗ hết mâu thuẫn; khớp code hiện có (`notifier.ts` chèn trong tx) + "Không đổi hành vi". Ngân sách: hết hạn = 5 câu so với lượt rỗng ≤ 6, khớp test-plan-addendum PD-P15 (hết hạn ≤ 6, tính chênh so với lượt rỗng, TC18). Nhắc vẫn 6 (A10:191), cộng lại đúng sau khi đổi thứ tự.
+- **#94** — A10 nhắc: khoá → nạp người nhận (1 câu) → luật lớp 1 (`remind.rules`, `noticeRecipients`) → `markRemindedMany` → `insertMany` → `unread`; không còn dùng dữ liệu trước khi nạp. Số câu không đổi (6).
+- **#92** — Lệnh xong T9/T10 = `bun run test:perf:pd`; script thêm ở T9 (chấp nhận theo yêu cầu). Ghi ở spec-decisions (dòng "Trả lời readiness lần 6").
+- **#93** — T12 cột Đọc có `plan-addendum A11`.
+- **#91** — đã ghi mặc định ở spec-decisions (`tenant({tenantId, userId}, fn)` theo plan §3 + PD-I73) nhưng spec-ca §4:54 chưa sửa chữ; giữ Thấp (sửa khi BUILD).
+
+#### Thấp mới
+95 `spec-decisions.md` dòng cuối: bullet "Trả lời readiness lần 6" dính liền cuối dòng bullet TC1–TC18 (thiếu xuống dòng, do file không có newline cuối) ⇒ tách thành dòng riêng · 96 T9 cột File không liệt kê `package.json` (script `test:perf:pd`), và T10 dùng `test:perf:pd` nhưng chỉ phụ thuộc T6b, không phụ thuộc T9 ⇒ thêm `package.json` vào File T9, thêm T9 vào Phụ thuộc T10 (hoặc đặt script ở T6b).
+Còn mở (Thấp): 71, 73, 75–80, 91.
+
+#### Mâu thuẫn mới
+Không có. Quét từ mơ hồ trên phần diff: không cụm mơ hồ mới.
+
+#### Câu hỏi người dùng
+Không có.
+
+#### Điều kiện Gate (ngoài spec)
+Như lần 5/6 (security review T6c gồm `systemBatch`, T12, T20 trong BUILD).
 
 ### Lần 6 · 2026-10-18 · NOT READY
 
