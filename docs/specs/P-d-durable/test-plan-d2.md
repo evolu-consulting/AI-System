@@ -1,10 +1,10 @@
 ﻿# Test plan · P-d2 (T15) · stage `tool` + công tắc tool theo tenant + rẽ nhánh (phụ lục của [test-plan.md](test-plan.md))
 
-Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: [test-plan §1–§2](test-plan.md).
+Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: test-plan §1–§2.
 
-**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản (JSON; HTTP lỗi; treo; socket đóng = `sent`; cổng đóng = chưa), đếm lời gọi. Fixture: `W` `xuat-hoa-don` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
+**Dify giả** (`d2/_d2.ts`): `Bun.serve` cổng 0, `POST /v1/workflows/run` theo kịch bản (JSON; HTTP lỗi; treo; socket đóng = `sent`; cổng đóng = chưa), đếm lời gọi. Fixture: `W` (`tong_tien` number required, `ma_kh` text), `WS` side effect, `WF` tham số `file`, `WOFF` tắt, `W20`.
 
-**Cổng lớp:** test nạp `loadLayer(layer, tên, task)` qua barrel `P/{domain,application}/index.ts`; vắng ⇒ "chưa có tính năng". Luật lưu def (U01–U03, U10–U11) qua hàm contract.
+**Cổng lớp:** `loadLayer(layer, tên, task)` qua barrel `P/{domain,application}/index.ts`; vắng ⇒ "chưa có tính năng". Luật lưu def (U01–U03, U10–U11) qua hàm contract.
 
 ## 1. Luật lớp 1 P-d2 — `tests/acceptance/P-d/rules/d2/{tool,branch,def-issues}.test.ts` (plan-d2 §4)
 | Ca | File · hàm | Dữ liệu | Kỳ vọng |
@@ -50,30 +50,32 @@ Nguồn: spec-d2, spec-tz-tools §2, plan-d2, AC-H44/45/47. Quy ước: [test-pl
 | PD2-I05 | `W` (không side effect): fake 503 lần 1, ok lần 2 | hẹn `retry` +30 s; bắn ⇒ gọi lần 2 ⇒ `done`; `retry_count` 1 |
 | PD2-I06 | `WS`: `base_url` trên cổng giữ trước (bind rồi đóng): lần 1 chưa có server (ECONNREFUSED ⇒ lỗi trước gửi); dựng fake trên cổng đó **trước** khi hẹn `retry` bắn | thử lại (PD2-R05), tổng 1 lời gọi tới handler |
 | PD2-I06b | `WS`: fake nhận kết nối rồi đóng socket (trước/sau đọc body) | `sent:true` ⇒ `tool_failed` (an toàn, không gọi lại), Dify 1 lần, 0 hẹn `retry` (Q-D2-2) |
-| PD2-I07 | fake 400 / 403 | `tool_failed` ngay |
+| PD2-I07 | fake 400 / 403 | `tool_failed` |
 | PD2-I08 | fake treo > `timeout_s` (`W`) ×4 | 3 hẹn retry, rồi `retry_exhausted` |
-| PD2-I09 | nguồn field của s0 không có (s0 output thiếu `tong_tien`) | `tool_failed`, 0 lời gọi |
+| PD2-I09 | output s0 thiếu `tong_tien` (nguồn field) | `tool_failed`, 0 gọi |
 | PD2-I10 | lưu def: `WS` ở stage không `real_action` | 422 `PROCESS_DEF_INVALID` `rules ∋ TOOL_SIDE_EFFECT`, `paths ∋ stages.<i>.real_action` |
 | PD2-I11 | lưu def: thiếu tham số required; args 21 (zod) | 422 `TOOL_INVALID` `paths ∋ stages.<i>.executor.args.<tên param thiếu>`; 400 `VALIDATION_ERROR` |
 | PD2-I12 | lưu def: `tool_key` không tồn tại; `WOFF`; `W` chưa bật cho beta (def beta); def mẫu (`tenant_id` null) chứa tool | 422 `PROCESS_REF_INVALID {path:"stages.<i>.executor.tool_key", ref:"tool"}` cả 4 (thông điệp như nhau) |
-| PD2-I13 | lưu def stage tool có template/token_budget tuỳ ý (T15b-1) | `GET`: `required_sections=["Kết quả","Bàn giao"]`, template `"# {name}\n\n## Kết quả\n\n## Bàn giao\n"`, `answerer={kind:"starter"}`, `sources=[]`, `must_know=[]`, `autofix=null`, `token_budget=null`, `timeout_s` giữ |
+| PD2-I13 | lưu def stage tool có template/token_budget tuỳ ý (T15b-1) | `GET`: `required_sections=["Kết quả","Bàn giao"]`, template `"# {name}\n\n## Kết quả\n\n## Bàn giao\n"`, `answerer=starter`, `sources=[]`, `must_know=[]`, `autofix=null`, `token_budget=null`, `timeout_s` giữ |
 | PD2-I14 | `decide use_current` khi `tool_failed` không output / `add_attempt` | 409 `NO_OUTPUT` / attempt+1, gọi lại 1 lần |
 | PD2-I15 | `GET /process-editor/context` acme / beta / mẫu | `tools` = [W] / [] / [] (TT-R04; `WOFF` không có) |
 | PD2-I17 | **#100** input `so-tien` kiểu `number` = `"25000000"` → tool `tong_tien←input` | Dify nhận `inputs.tong_tien === 25000000` (typeof number), `ma_kh` chuỗi; `INPUT_TYPES` thiếu `number` ⇒ đỏ "chưa có tính năng" (T15c-2) |
 | PD2-I18 | **#101** s0 agent → s1 tool `after.review` (G1, `branch gt 20000000⇒3`) → s2 → s3; biến thể `auto` | review: s1 `waiting_review` + 1 review task mở, 0 job s2; B Đạt ⇒ s1 `done`, s2 `skipped`, `current_step` 3, s3 có job, Dify 1 lần. auto: s1 `done` + join, 0 task, s2 có job |
 | PD2-I16 | `/mcp` hồi quy (T18s tách `WorkflowInvoker`) | test `/mcp` khoá (H2a, X1) xanh; agent gọi `WS` vẫn qua cổng xác nhận |
+| PD2-I56 | R-1 · `d2/tool-real-action.int`: s0 review G1 → s1 tool `WS` `real_action` → s2; B Đạt | Dify 1 lần; đúng 1 audit `authorize_real_action` actor B, entity `process_run`, summary `{agent_id:null,workflow_ids:[]}` (như Áp) |
+| PD2-I57 | như I56, snapshot run đổi `after` s0 ⇒ auto (không có người Đạt hợp lệ; D2-49) | Dify 0 lần; `tool_failed`; 0 audit |
 
 ### 3.2 Công tắc tool + cách ly (AC-H47 · TT-R04…R08 · hard stop) — `d2/tool-switch.int.test.ts`
 | Ca | Bước | Kỳ vọng |
 |---|---|---|
-| PD2-I20 | `W` bật acme, chưa bật beta | editor acme thấy `W`; beta không; beta lưu def dùng `W` ⇒ 422 `PROCESS_REF_INVALID` |
+| PD2-I20 | `W` bật acme, chưa bật beta | acme thấy `W`; beta không, lưu def dùng `W` ⇒ 422 `PROCESS_REF_INVALID` |
 | PD2-I21 | run acme đang ở s0 (trước stage tool) ⇒ `padmin` `DELETE …/workflow-tools/W` cho acme ⇒ s0 xong | s1 `needs_decision` `tool_failed`; Dify 0 lời gọi |
-| PD2-I22 | như I21 nhưng tắt trong lúc s1 đang backoff `retry` | bắn hẹn ⇒ `tool_failed`, 0 lời gọi mới |
-| PD2-I23 | sau I21: bật `W` cho **beta** | run acme mới vẫn `tool_failed` (công tắc đọc theo `run.tenant_id`) |
+| PD2-I22 | như I21, tắt lúc s1 đang backoff `retry` | bắn hẹn ⇒ `tool_failed`, 0 lời gọi mới |
+| PD2-I23 | sau I21: bật `W` cho **beta** | run acme mới vẫn `tool_failed` (đọc theo `run.tenant_id`) |
 | PD2-I24 | `admin.workflows.enabled=false` cho `W` khi run chờ | `tool_failed` |
-| PD2-I25 | người bắt đầu không có agent grant nào, thuộc Group được chạy quy trình | chạy được, Dify 1 lời gọi |
-| PD2-I26 | thu hồi Group chạy quy trình của A / khoá A trước stage tool | `permission_lost` / `user_inactive`, 0 lời gọi |
-| PD2-I27 | lời gọi đang bay khi tắt công tắc (fake giữ 1 s) | lời gọi hoàn tất, stage `done` (TT-R07: không huỷ lời gọi đã gửi) |
+| PD2-I25 | người bắt đầu không có agent grant, thuộc Group chạy quy trình | chạy được, Dify 1 gọi |
+| PD2-I26 | thu hồi Group chạy quy trình của A / khoá A trước stage tool | `permission_lost` / `user_inactive`, 0 gọi |
+| PD2-I27 | tắt công tắc khi lời gọi đang bay (fake giữ 1 s) | gọi hoàn tất, stage `done` (TT-R07) |
 
 ### 3.3 Rẽ nhánh (AC-H45 · HUB-FR-147 · HUB-BR-38(e)) — `d2/branch.int.test.ts`
 Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `after.review` G1, `branch:[{field:"tong_tien",op:"gt",value:20000000,goto_step:3}]`), s2 ở step 2 (có `wait_until` + hẹn để kiểm huỷ), s3 step 3, s4 step 4.
@@ -81,7 +83,7 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 |---|---|---|
 | PD2-I30 | run từ phòng (thread cần `room_id`); s1 `tong_tien` 25000000 ⇒ B Đạt | s2 `skipped` (`finished_at`); `current_step` 3; s3 có job; tin thread **"Rẽ nhánh: tới bước 4 (luật 1)"** (part `branch {stage_idx:1,to_step:3,rule:1}`); audit `branch` (actor hệ thống, `{from_step:1,to_step:3,rule:1}`); 0 job s2 |
 | PD2-I31 | `tong_tien` 1000 | s2 chạy (tuần tự), 0 audit `branch` |
-| PD2-I32 | sau I30, quay lại `back_to_steps` 1 | s2 `skipped` ⇒ `pending`, `round` s2 không tăng; s1 chạy lại; lần sau 1000 ⇒ đi s2 |
+| PD2-I32 | sau I30, quay lại `back_to_steps` 1 | s2 `skipped` ⇒ `pending`, `round` không tăng; s1 chạy lại; lần sau 1000 ⇒ đi s2 |
 | PD2-I33 | sau I30 | 0 hàng `process_timers` mở cho stage `skipped` (PD2-R13; hẹn chỉ có ở stage đã vào chạy — Q-D2-3) |
 | PD2-I34 | lưu def: `goto_step` 1 (= step); stage rẽ nhánh trong bước song song; đích `real_action` với `after.kind=auto` | 422 `BRANCH_INVALID` |
 | PD2-I35 | run kết thúc khi s2 `skipped`, s3/s4 done | run `done` (skipped = xong) |
@@ -93,11 +95,11 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 |---|---|---|
 | PD2-I40 | `padmin` `GET /admin/tenants/:acme/workflow-tools` | mọi workflow catalog sắp theo `key`, mỗi dòng `{workflow_id,key,name,side_effect,enabled,on:false,granted_at:null,granted_by:null}` |
 | PD2-I41 | `PUT …/W` | 200 `on:true`, `granted_by`=padmin; audit `entity:"workflow"`, `action:"grant"`, `tenant_id` acme, `entity_id` W, before `{on:false}` after `{on:true}`; NOTIFY `config_changed {entity:"workflow", tenant_id: acme}` |
-| PD2-I42 | `PUT` lần 2 | 200 không đổi, 0 audit mới, 0 NOTIFY |
+| PD2-I42 | `PUT` lần 2 | 200 không đổi, 0 audit, 0 NOTIFY |
 | PD2-I43 | `DELETE …/W`; `PUT` lại | `on:false`, `revoked_at` đặt, audit `revoke`; `PUT`: `revoked_at` NULL, `granted_by` mới, audit `grant` |
 | PD2-I48 | `DELETE` lần 2 | 200, 0 audit, `revoked_at` giữ |
 | PD2-I44 | `tadmin` GET/PUT/DELETE | 403 |
-| PD2-I45 | tenant không tồn tại (GET/PUT/DELETE, **#109**) / workflow không tồn tại; body PUT có trường thừa | 404 `NOT_FOUND`; 400 |
+| PD2-I45 | tenant/workflow không tồn tại (**#109**); body PUT thừa trường | 404 `NOT_FOUND`; 400 |
 | PD2-I46 | RLS: `admin_rw` scope tenant beta `select admin.tenant_workflow_tools` | 0 hàng acme; scope platform thấy hết; `hub_ro` SELECT được; `hub_ro` INSERT ⇒ 42501 |
 | PD2-I47 | DB: PK `(workflow_id, tenant_id)` trùng ⇒ 23505; xoá workflow ⇒ cascade; xoá user `granted_by` ⇒ NULL; index `tenant_workflow_tools_tenant_active_idx`; migrate 2 lần | đúng |
 
@@ -113,7 +115,7 @@ Def 5 bước (step 0…4): s1 ở step 1 (agent, fields `tong_tien` number, `af
 ### 3.5 DB hub 0037 — `d2/db.int.test.ts`
 | Ca | Kỳ vọng |
 |---|---|
-| PD2-I50 | CHECK nới: `stage_runs.status='skipped'`, `review_tasks.reason='tool_failed'`, audit `tool_call`/`branch`, `process_thread_events.kind='branch'`, `room_messages.process_kind='branch'`; giá trị cũ giữ; lạ ⇒ 23514 |
+| PD2-I50 | CHECK nới: `stage_runs.status='skipped'`, `review_tasks.reason='tool_failed'`, audit `tool_call`/`branch`, `process_thread_events`/`room_messages` kind `branch`; giá trị cũ giữ; lạ ⇒ 23514 |
 
 ### 3.6 Use case `runToolStage` với cổng giả (S2/S9/S10/S12, D2-13) — `rules/d2/run-tool-stage.test.ts` (không DB)
 ok · S10 (trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `permission_lost`/`user_inactive`) · S2/S9 (tắt, field `null` ⇒ `tool_failed`) · S12 (65.536 byte ok; 65.537 ⇒ `tool_failed`; sai kiểu ⇒ `template_invalid`) · D2-13 (503 đã gửi ⇒ `retry` +30 s; side effect + 500 ⇒ `tool_failed`; 3 lượt ⇒ `retry_exhausted`).
@@ -128,17 +130,17 @@ ok · S10 (trước `invoke` = `[tx, loadCall]`; mất quyền ⇒ `permission_l
 | PD2-P05 | T17b (D2-32): `GET /process-runs?limit=50` (Adm), 50 run không hẹn vs có hẹn mở (SQL) | số câu bằng nhau; p95 ≤ 40 ms và ≤ không hẹn + 5 ms; thiếu wait/retry ⇒ đỏ ngay |
 
 ### Đỏ đúng lý do (T15 → T15c, 2026-10-18, trước T17)
-- T15/T15b: rules 309 / 52 fail; int d2 0/33; perf 5 fail — "chưa có cổng lớp / chưa có tính năng"; P-d1 0 đỏ.
-- T15c: rules 56 fail (+4: `paramCompatible`, `buildToolArgs` ×2, `toolStageIssues`); int d2 + I02×3, I17, I18×2; e2e `-g PD2-E` 5/5 đỏ ở `needPd2`.
-- Gate G1–G2: + I51, I52 đỏ ở `expect` (thiếu `group`/`after_h`/`wait_until`/`retry_at`); e2e E01 nhãn D2-43.
+- T15/T15b: rules 309 / 52 fail; int d2 0/33; perf 5 fail — "chưa có cổng lớp / tính năng"; P-d1 0 đỏ.
+- T15c: rules 56 fail; int d2 + I02×3, I17, I18×2; e2e `-g PD2-E` 5/5 đỏ ở `needPd2`.
+- Gate G1–G2: + I51, I52 đỏ ở `expect`; e2e E01 nhãn D2-43. Review R-1: I56 (0 audit thay vì 1), I57 (Dify 1 lần thay vì 0).
 ## 4. Test khoá sửa ở P-d2
-K15 (`contracts-pa.test.ts:175`, T17) · K28 (`M1/M2/M3 db-rls` 13 ⇒ 14 bảng, T18a). T18s/T19s: không có test khoá nạp theo đường dẫn.
+K15 (`contracts-pa.test.ts:175`, T17) · K28 (`M1/M2/M3 db-rls` 13 ⇒ 14 bảng, T18a).
 
 ## 5. E2E P-d2 (T15c) — [test-plan-e2e](test-plan-e2e.md) PD2-E01…E05; config P-d sẵn có
-`admin-stage.pd.ts` E01 (Gọi tool), E02 (Rẽ nhánh), E05 (`globex`); `admin-tenant.pd.ts` E03; `chat-labels.pd.ts` E04. Seed `_pd-support.ts`; mọi ca gọi `needPd2()` đầu. Chạy `-g PD2-E`.
+`admin-stage.pd.ts` E01 (Gọi tool), E02 (Rẽ nhánh), E05 (`globex`); `admin-tenant.pd.ts` E03; `chat-labels.pd.ts` E04. Seed `_pd-support.ts`; ca gọi `needPd2()` đầu. `-g PD2-E`.
 
 ## 6. Tranh chấp / câu hỏi
-Q-D2-1…5, T15-1…4, T15b-1…3, T15c-1 ⇒ [spec-decisions](spec-decisions.md) D2-40, D2-41, D2-43.
+Q-D2-1…5, T15-1…4, T15b-1…3, T15c-1 ⇒ spec-decisions D2-40, D2-41, D2-43; R-1 ⇒ D2-49.
 | # | Gửi | Nội dung | Mặc định (đã áp trong test) |
 |---|---|---|---|
 | T15c-2 | backend-lead | (a) `INPUT_TYPES` quy trình không có `number` mà D2-29 cần; (b) tên trường wait/retry của `ProcessRunSummary` (T17b) | (a) thêm `number`, giá trị `{type:"number",key,value:"<chuỗi số>"}` (I17); (b) P05 nhận khoá bắt đầu `wait`/`retry` |
