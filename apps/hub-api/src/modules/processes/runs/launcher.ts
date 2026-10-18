@@ -28,6 +28,7 @@ import { stepsOfSnap } from "./step-persist";
 import { createTeamRun } from "./team-counters";
 import { teamReady } from "./team-load";
 import { toDecision } from "./team-runner";
+import { launchWaitStage } from "./wait-launch";
 
 export type LauncherDeps = Omit<ProcessDeps, "launcher" | "start">;
 
@@ -155,6 +156,12 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     runId,
   });
   if (!team.ok) return { ...(await lost("permission_lost")), more };
+  // P-d1 · PD-R13 · stage `wait_until`: Hub tự chờ (hẹn giờ), KHÔNG tạo `hub.runs`/agent.
+  if (def.executor.kind === "wait_until") {
+    const stageKeys = head.snapshot.stages.map((s) => s.key);
+    const w = { runId, tenantId: u.tenantId, idx, stage, exec: def.executor, stageKeys };
+    return { ...(await launchWaitStage(d, tx, w)), more };
+  }
   // P-c2 · PC2-R03 · stage Áp: nhánh riêng (audit + applyPlan + job/không-job), KHÔNG tạo `hub.runs`/agent.
   if (def.executor.kind === "apply") {
     const r = await launchApplyStage(d, tx, {

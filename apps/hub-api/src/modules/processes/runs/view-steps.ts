@@ -29,7 +29,8 @@ export type SnapStage = {
   executor:
     | { kind: "agent"; agent_id: string }
     | { kind: "team"; team_id: string }
-    | { kind: "apply" };
+    | { kind: "apply" }
+    | { kind: "wait_until" };
   after: { kind: "review"; group_id: string | null; back_to_steps?: number[] } | { kind: "auto" };
   real_action: boolean;
   autofix?: { source_key: string } | null; // P-c1 · stage tự-sửa (view gắn `autofix` — view-autofix.ts)
@@ -53,6 +54,9 @@ type RunKey = { id: string; tenant_id: string };
 
 export const iso = (c: string) =>
   sql.raw(`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
+/** Mốc hẹn (`due_at` chốt theo phút, PD-R13) dạng `toISOString()` — cùng chuỗi với `Date` của contract/FE. */
+const isoMs = (c: string) =>
+  sql.raw(`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`);
 export const toOutputRef = (o: OutputRow): OutputRef => ({
   id: o.id,
   version: Number(o.version),
@@ -78,7 +82,46 @@ type StageRunRow = {
   passed_by: string | null;
   passed_by_name: string | null;
   passed_at: string | null;
+  retry_count: number | null;
+  last_error_code: string | null;
 };
+
+type TimerViewRow = { stage_idx: number; kind: string; due_at: string; timezone: string | null };
+type StageTimerFields = Pick<
+  StageView,
+  "retry_count" | "next_retry_at" | "last_error_code" | "wait"
+>;
+
+/** P-d1 · HUB-FR-143/144 · hẹn MỞ (chưa bắn, chưa huỷ) mới nhất mỗi (stage, loại) của run — MỘT câu (index `process_timers_run_idx`). */
+async function openTimersOf(tx: Tx, r: RunKey): Promise<Map<string, TimerViewRow>> {
+  const rows = await tx.execute<TimerViewRow>(sql`
+    select s.stage_idx, t.kind, ${isoMs("t.due_at")} as due_at, t.timezone
+    from hub.process_timers t join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+    where t.process_run_id = ${r.id} and t.tenant_id = ${r.tenant_id}
+      and t.fired_at is null and t.cancelled_at is null
+    order by t.created_at`);
+  return new Map(rows.map((t) => [`${Number(t.stage_idx)}:${t.kind}`, t] as const));
+}
+
+/** `retry_count` luôn trả; `last_error_code` chỉ khi đã thử lại; `next_retry_at` XOR `wait` theo hẹn mở của stage. */
+function timerFields(
+  i: number,
+  sr: StageRunRow,
+  timers: ReadonlyMap<string, TimerViewRow>,
+): StageTimerFields {
+  const retryCount = Number(sr.retry_count ?? 0);
+  const retry = timers.get(`${i}:retry`);
+  const wait = timers.get(`${i}:wait_until`);
+  return {
+    retry_count: retryCount,
+    ...(retryCount > 0 && sr.last_error_code ? { last_error_code: sr.last_error_code } : {}),
+    ...(wait?.timezone
+      ? { wait: { due_at: wait.due_at, timezone: wait.timezone } }
+      : retry
+        ? { next_retry_at: retry.due_at }
+        : {}),
+  };
+}
 
 /** `after.back_to_steps` của stage (snapshot cũ không có ⇒ []). */
 export const backStepsOf = (s: SnapStage | undefined): number[] =>
@@ -87,7 +130,8 @@ export const backStepsOf = (s: SnapStage | undefined): number[] =>
 export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageView[]> {
   const srs = await tx.execute<StageRunRow>(sql`
     select s.stage_idx, s.status, s.attempt, s.attempt_limit, s.asks_count, s.ask_limit, s.round, s.current_output_id,
-      s.passed_by, pu.display_name as passed_by_name, ${iso("s.passed_at")} as passed_at
+      s.passed_by, pu.display_name as passed_by_name, ${iso("s.passed_at")} as passed_at,
+      s.retry_count, s.last_error_code
     from hub.stage_runs s left join admin.users pu on pu.id = s.passed_by and pu.tenant_id = s.tenant_id
     where s.process_run_id = ${r.id} and s.tenant_id = ${r.tenant_id} order by s.stage_idx`);
   const outs = await tx.execute<OutputRow>(sql`
@@ -99,6 +143,7 @@ export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageVi
   );
   const steps = resolveSteps(snap.stages);
   const knowledgeOf = await stageKnowledge(tx, r, snap.kh); // K1 · HUB-FR-134
+  const timers = await openTimersOf(tx, r); // P-d1 · wait / next_retry_at
   return srs.map((sr): StageView => {
     const i = Number(sr.stage_idx);
     const def = snap.stages[i];
@@ -128,6 +173,7 @@ export async function stageViews(tx: Tx, r: RunKey, snap: Snap): Promise<StageVi
       round: Number(sr.round),
       back_to_steps: backStepsOf(def),
       ...(knowledge ? { knowledge } : {}),
+      ...timerFields(i, sr, timers),
     };
   });
 }

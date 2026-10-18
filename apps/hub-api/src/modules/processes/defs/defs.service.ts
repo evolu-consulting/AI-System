@@ -1,6 +1,8 @@
 // ADM-FR-65 · ADM-FR-66 · ADM-FR-67 · HUB-FR-104 · HUB-FR-114 · nghiệp vụ `/process-defs*` + `GET /agent-teams` (plan-contract §6).
 // Ghi qua `withConfigWrite` (D17: scope system, khoá `config_meta` trước ⇒ key không race, version 409, audit, NOTIFY);
 // đọc: tx system read only. Phạm vi tenant (`DefScope`) chốt một lần ở route; mọi câu repo lọc theo nó.
+
+import { TENANT_TZ_DEFAULT } from "@ai/contracts";
 import type {
   AgentTeamListResponse,
   CopyProcessDefRequest,
@@ -8,6 +10,7 @@ import type {
   ProcessDefInput,
   ProcessDefListQuery,
   ProcessDefListResponse,
+  ProcessEditorContext,
   ProcessRunSummary,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -18,6 +21,7 @@ import { validationError } from "../../../lib/http";
 import { dbHubAudit } from "../../../lib/hub-audit";
 import { sourceError } from "../../sources/sources.errors";
 import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
+import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import {
@@ -94,6 +98,12 @@ export class DefsService {
       if (!r) throw appError("NOT_FOUND");
       return toProcessDef(r);
     });
+  }
+
+  /** P-d1 · TZ-R04 · AC-H46 · ngữ cảnh editor: múi giờ tenant (`null` = phạm vi mẫu ⇒ `TENANT_TZ_DEFAULT`). */
+  editorContext(tenantId: string | null): Promise<ProcessEditorContext> {
+    if (tenantId === null) return Promise.resolve({ timezone: TENANT_TZ_DEFAULT });
+    return this.#read(async (tx) => ({ timezone: await tenantTzRepo(tx, tenantId).read() }));
   }
 
   teams(s: Scope): Promise<AgentTeamListResponse> {

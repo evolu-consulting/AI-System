@@ -18,6 +18,8 @@ import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import type { RunState } from "../domain/runs/run-state.rules";
 import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
+import { WAIT_SKIP_TEXT, waitOutputMd } from "../domain/timers/due-at.rules";
+import { writeApplyOutput } from "../runs/apply-settle";
 import {
   persistStage,
   type StageWrite,
@@ -230,16 +232,37 @@ export async function decideEffects(
   }
   // PD-R04 · `add_attempt` của `retry_exhausted`: bộ đếm thử lại về 0 (giữ `attempt`, D-PD04).
   if (effects.includes("reset_retry")) await resetRetry(tx, run.tenantId, sid);
+  // PD-R14 · `use_current` của `timer_invalid`: Hub ghi .md "Bỏ chờ theo quyết định." (có `## Bàn giao`) rồi advance.
+  const outputId = effects.includes("write_wait_skip")
+    ? await writeWaitSkip(tx, { run, idx, stageRunId: sid, attempt: next.stage.attempt })
+    : undefined;
   const step = await persistStage(tx, {
     runId: run.id,
     tenantId: run.tenantId,
     stageRunId: sid,
     next,
     done: stageDoneOf(effects),
+    outputId,
   });
   if (effects.includes("open_review")) events.push(...(await openReview(gx, run, sid, idx)));
   if (step?.kind === "finish") events.push(...(await finish(gx, run, ref, "done")));
   return { events, step };
+}
+
+/** PD-R14 · output .md Hub sinh khi bỏ chờ (`waitOutputMd`, content inline như stage Áp); trả id để ghim. */
+function writeWaitSkip(
+  tx: Tx,
+  p: { run: Locked; idx: number; stageRunId: string; attempt: number },
+): Promise<string> {
+  const name = (snapOf(p.run).stages[p.idx] as { name?: string } | undefined)?.name ?? "";
+  return writeApplyOutput(tx, {
+    tenantId: p.run.tenantId,
+    runId: p.run.id,
+    stageRunId: p.stageRunId,
+    stageIdx: p.idx,
+    attempt: p.attempt,
+    md: waitOutputMd(name, WAIT_SKIP_TEXT),
+  });
 }
 
 /** `end` (huỷ): huỷ `hub.runs` stage, đóng mọi stage + task còn mở, run `cancelled`, run_end + notifier. */

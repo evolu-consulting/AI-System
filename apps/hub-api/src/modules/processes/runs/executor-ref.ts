@@ -9,7 +9,8 @@ import { sql } from "drizzle-orm";
 export type Executor =
   | { kind: "agent"; agent_id: string }
   | { kind: "team"; team_id: string }
-  | { kind: "apply" };
+  | { kind: "apply" }
+  | { kind: "wait_until" };
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
@@ -17,7 +18,7 @@ const NAME_MAX = 100; // = AgentNameSchema (contracts)
 const clip = (s: string): string => (s.length > NAME_MAX ? s.slice(0, NAME_MAX) : s);
 /** P-c2 · C19 · stage Áp không có agent/team ⇒ khoá cố định `apply`. */
 export const idOf = (e: Executor): string =>
-  e.kind === "agent" ? e.agent_id : e.kind === "team" ? e.team_id : "apply";
+  e.kind === "agent" ? e.agent_id : e.kind === "team" ? e.team_id : e.kind;
 
 /** P-c2 · C19 · ExecutorRef cố định của stage Áp (Hub tự chạy, không catalog). */
 export const APPLY_EXECUTOR_REF: ExecutorRef = {
@@ -25,6 +26,19 @@ export const APPLY_EXECUTOR_REF: ExecutorRef = {
   key: "apply",
   name: { vi: "Áp bản sửa", en: "Apply the fix" },
 };
+/** P-d1 · PD-R13 · ExecutorRef cố định của stage `wait_until` (Hub tự chờ, không catalog). */
+export const WAIT_UNTIL_EXECUTOR_REF: ExecutorRef = {
+  kind: "wait_until",
+  key: "wait_until",
+  name: { vi: "Chờ tới ngày", en: "Wait until date" },
+};
+/** ExecutorRef cố định của stage Hub tự chạy; agent/team ⇒ null (tra catalog). */
+const fixedRef = (e: Executor): ExecutorRef | null =>
+  e.kind === "apply"
+    ? APPLY_EXECUTOR_REF
+    : e.kind === "wait_until"
+      ? WAIT_UNTIL_EXECUTOR_REF
+      : null;
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 
 /** ExecutorRef từ hàng catalog (vi/en → key → id); key giữ id như cũ để FE khớp. */
@@ -43,7 +57,7 @@ const teamNames = (tx: Tx, ids: readonly string[]) =>
 
 /** Một executor (ghi tin thread cho một stage). */
 export async function executorRefOf(tx: Tx, e: Executor): Promise<ExecutorRef> {
-  if (e.kind === "apply") return APPLY_EXECUTOR_REF;
+  if (e.kind === "apply" || e.kind === "wait_until") return fixedRef(e) as ExecutorRef;
   const id = idOf(e);
   const [r] = e.kind === "agent" ? await agentNames(tx, [id]) : await teamNames(tx, [id]);
   return refOf(e.kind, id, r);
@@ -57,8 +71,7 @@ export async function resolveExecutors(
 ): Promise<Map<string, ExecutorRef>> {
   const map = new Map<string, ExecutorRef>();
   for (const e of execs)
-    if (!map.has(idOf(e)))
-      map.set(idOf(e), e.kind === "apply" ? APPLY_EXECUTOR_REF : refOf(e.kind, idOf(e)));
+    if (!map.has(idOf(e))) map.set(idOf(e), fixedRef(e) ?? refOf(e.kind, idOf(e)));
   const agentIds = [...new Set(execs.filter((e) => e.kind === "agent").map(idOf))];
   const teamIds = [...new Set(execs.filter((e) => e.kind === "team").map(idOf))];
   if (agentIds.length)

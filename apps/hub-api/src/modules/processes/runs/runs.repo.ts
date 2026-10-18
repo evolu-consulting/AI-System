@@ -12,7 +12,7 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../../lib/errors";
 import { levenshtein } from "../../commands/suggest.rules";
-import { ACTIVE_CAP_STATUSES } from "../domain/runs/active-cap.rules";
+import { CAP_COUNTED } from "../domain/runs/active-cap.rules";
 
 type Json = Record<string, unknown>;
 const iso = (c: SQL) => sql`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
@@ -77,7 +77,7 @@ export async function catalogDefs(tx: Tx, tenantId: string): Promise<CatalogRow[
     order by d.name asc, d.key asc limit 200`);
 }
 
-/** §4 · đếm run đang chạy của tenant (`process_runs_active_idx`) — gọi dưới advisory lock. */
+/** §4 · PD-R16 · đếm run tính trần (`CAP_COUNTED`, không gồm `waiting_timer`; `process_runs_active_idx`) — dưới advisory lock. */
 export async function countActive(tx: Tx, tenantId: string): Promise<number> {
   const [r] = await tx.execute<{ n: number }>(sql`select count(*)::int as n from hub.process_runs
     where tenant_id = ${tenantId} and status in ${activeList()}`);
@@ -86,7 +86,7 @@ export async function countActive(tx: Tx, tenantId: string): Promise<number> {
 
 const activeList = () =>
   sql`(${sql.join(
-    ACTIVE_CAP_STATUSES.map((s) => sql`${s}`),
+    CAP_COUNTED.map((s) => sql`${s}`),
     sql`, `,
   )})`;
 

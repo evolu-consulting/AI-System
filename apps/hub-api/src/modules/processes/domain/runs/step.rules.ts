@@ -1,6 +1,6 @@
 // HUB-FR-106 · HUB-BR-38(a,b) · AC-PB2-01/02/05 · lớp bước song song (P-b2 plan §2, D1/D2/D9). Thuần: `transition()` vẫn
 // là máy trạng thái MỘT stage; lớp này gộp nhiều stage cùng `step` (join, trạng thái run tổng hợp, chọn decision).
-import type { ProcessRunStatus, StageRunStatus } from "../types";
+import type { ProcessRunStatus, StageRunStatus, TimerKind } from "../types";
 
 const TERMINAL_RUN: ReadonlySet<ProcessRunStatus> = new Set([
   "done",
@@ -53,22 +53,31 @@ export function stageGateStatus(run: ProcessRunStatus, stage: StageRunStatus): P
       return stage;
     case "done":
       return "done";
+    // T8 · plan-domain §4.4 · stage chờ hẹn: không nhận sự kiện job/cổng (chỉ `cancel`/`expire` — "active").
+    case "waiting_timer":
+      return "waiting_timer";
     default:
       return "cancelled";
   }
 }
 
-/** D2 · trạng thái run tổng hợp của bước: needs_decision > running > waiting_answer > waiting_review; mọi stage done ⇒
- * `step_done` (người gọi join). Danh sách rỗng ⇒ `running`. */
+/** PD-R15 (readiness #20) · stage đang backoff `retry` tính như `queued` cho trạng thái run; chờ `wait_until` giữ nguyên. */
+export function statusForRun(s: StageRunStatus, timerKind: TimerKind | null): StageRunStatus {
+  return s === "waiting_timer" && timerKind !== "wait_until" ? "queued" : s;
+}
+
+/** D2 · PD-R15 · trạng thái run tổng hợp của bước: needs_decision > running > waiting_answer > waiting_review >
+ * waiting_timer; mọi stage done ⇒ `step_done` (người gọi join). Danh sách rỗng ⇒ `running`. Người gọi map qua
+ * `statusForRun` trước (stage backoff `retry` ⇒ `queued`). */
 export function runStatusOf(
   stepStatuses: readonly StageRunStatus[],
 ): ProcessRunStatus | "step_done" {
   const has = (s: StageRunStatus) => stepStatuses.includes(s);
   if (has("needs_decision")) return "needs_decision";
-  // T7 · Q7 · stage chờ hẹn `retry` (`waiting_timer`) tính như `queued` ⇒ run `running`.
-  if (has("pending") || has("queued") || has("running") || has("waiting_timer")) return "running";
+  if (has("pending") || has("queued") || has("running")) return "running";
   if (has("waiting_answer")) return "waiting_answer";
   if (has("waiting_review")) return "waiting_review";
+  if (has("waiting_timer")) return "waiting_timer";
   if (stepStatuses.length > 0 && stepStatuses.every((s) => s === "done")) return "step_done";
   return "running";
 }

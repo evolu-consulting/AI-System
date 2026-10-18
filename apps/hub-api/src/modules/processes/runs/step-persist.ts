@@ -7,7 +7,13 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { enqueueKhSummary } from "../../kh/kh.writes.repo";
 import type { RunState } from "../domain/runs/run-state.rules";
-import { firstIdxOfStep, runStatusOf, stageIdxsOfStep, stepJoin } from "../domain/runs/step.rules";
+import {
+  firstIdxOfStep,
+  runStatusOf,
+  stageIdxsOfStep,
+  statusForRun,
+  stepJoin,
+} from "../domain/runs/step.rules";
 
 /** Kết quả sau ghi: `process_runs.status/current_step/current_stage_idx` mới. */
 export type StepOutcome = {
@@ -80,7 +86,10 @@ export async function persistStage(tx: Tx, w: StageWrite): Promise<StepOutcome |
   return settleStep(tx, w.runId, w.tenantId);
 }
 
-type StepHead = { current_step: number; snapshot: { stages?: { step?: number }[] } | null };
+type StepHead = {
+  current_step: number;
+  snapshot: { stages?: { step?: number; executor?: { kind: string } }[] } | null;
+};
 
 /**
  * Join bước hiện tại trên trạng thái SAU ghi (D2/D4): mọi stage done ⇒ bước kế `queued` (hoặc run `done`); còn lại ⇒
@@ -107,7 +116,12 @@ export async function settleStep(
       finished_at = now(), updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);
     return { kind: "finish", status: "done", step, stageIdx: first };
   }
-  const agg = runStatusOf(stageIdxsOfStep(steps, step).map((i) => statuses.get(i) ?? "pending"));
+  // PD-R15 · loại hẹn suy từ executor (stage `wait_until` không bao giờ thử lại; stage khác không hẹn `wait_until`).
+  const kindOf = (i: number) =>
+    h.snapshot?.stages?.[i]?.executor?.kind === "wait_until" ? "wait_until" : "retry";
+  const agg = runStatusOf(
+    stageIdxsOfStep(steps, step).map((i) => statusForRun(statuses.get(i) ?? "pending", kindOf(i))),
+  );
   const status: ProcessRunStatus = agg === "step_done" ? "running" : agg;
   await tx.execute(sql`update hub.process_runs set status = ${status}, current_stage_idx = ${first},
     updated_at = now() where id = ${runId} and tenant_id = ${tenantId}`);

@@ -35,6 +35,7 @@ export const PROCESS_PROTECTED_PREFIXES = [
   "/review-tasks",
   "/process-defs",
   "/agent-teams",
+  "/process-editor", // P-d1 · `GET /process-editor/context` (plan-contract §4)
 ] as const;
 
 /** Seam test (plan-contract §7.1): vắng ⇒ hành vi chạy thật. */

@@ -16,6 +16,14 @@ import { sql } from "drizzle-orm";
 import { buildManifest, type ManifestItem } from "./sources.rules";
 import type { ResolveSource } from "./stage-sources";
 
+/** P-d1 · PD-R13 · executor `wait_until` trong snapshot (contract `WaitUntilExecutorSchema`; `time` đã có mặc định khi lưu). */
+export type WaitUntilSnap = {
+  kind: "wait_until";
+  from: { kind: "input"; key: string } | { kind: "field"; stage_key: string; field: string };
+  offset_days: number;
+  time?: string;
+};
+
 export type SnapStage = {
   key: string;
   name: string;
@@ -23,7 +31,8 @@ export type SnapStage = {
   executor:
     | { kind: "agent"; agent_id: string }
     | { kind: "team"; team_id: string }
-    | { kind: "apply" };
+    | { kind: "apply" }
+    | WaitUntilSnap;
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

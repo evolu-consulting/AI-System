@@ -10,6 +10,7 @@ import {
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
 import { normSection, sectionMap } from "../runs/template.rules";
+import { ensureWaitStage } from "./wait-stage.rules";
 
 export type DefRefs = {
   agentIds: ReadonlySet<string>;
@@ -54,8 +55,9 @@ function runGroupMiss(d: ProcessDefInput, refs: DefRefs): RefMiss | null {
 }
 
 export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck {
-  // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract).
-  const invalid = processDefStageIssues(d.stages);
+  // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract). P-d1 · PD-R17 · `inputs` bật luật nguồn input
+  // của `waitStageIssues` (WAIT_INVALID).
+  const invalid = processDefStageIssues(d.stages, { inputs: d.inputs ?? [] });
   if (invalid.length)
     return {
       ok: false,
@@ -155,10 +157,10 @@ export function ensureHandoff<S extends HandoffShape>(s: S): S {
   };
 }
 
-/** `ensureHandoff` cho mọi stage của def (gọi ở `defs.service` create/update/copy SAU validate). */
+/** `ensureHandoff` + ép stage `wait_until` (PD-R17) cho mọi stage của def (`defs.service` create/update/copy SAU validate). */
 export const withHandoff = (d: ProcessDefInput): ProcessDefInput => ({
   ...d,
-  stages: d.stages.map((s) => ensureHandoff(s)),
+  stages: d.stages.map((s) => ensureWaitStage(ensureHandoff(s))),
 });
 
 /** Trang danh sách: khoá `(updated_at, id)` của phần tử cuối trang trước. */

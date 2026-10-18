@@ -17,7 +17,7 @@ import { validationError } from "../../../lib/http";
 import type { KhRuntime } from "../../kh/kh.mount";
 import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
 import { processError } from "../core/errors";
-import { expiresAt, shapeValid } from "../domain/runs/start-inputs.rules";
+import { expiresAt, isCalendarDate, shapeValid } from "../domain/runs/start-inputs.rules";
 import type { StartDefRow } from "./runs.repo";
 import * as repo from "./runs.repo";
 import { allowlistUnion } from "./sources.rules";
@@ -198,8 +198,13 @@ export async function validateRunInputs(
   inputs: ProcessInputValue[],
 ): Promise<void> {
   const byKey = new Map(defInputs.map((d) => [d.key, d]));
-  for (const v of inputs) {
+  for (const [i, v] of inputs.entries()) {
     if (!shapeValid(byKey.get(v.key), v)) throw badInput();
+    // PD-R13 · input `date`: `YYYY-MM-DD` + ngày lịch có thật — sai ⇒ 400 path `inputs.<i>.value`.
+    if (v.type === "date" && !isCalendarDate(v.value))
+      throw validationError([
+        { path: ["inputs", i, "value"], code: "custom", message: "invalid date" },
+      ]);
     if (v.type === "source_ref") {
       const row = await sourceByKey(tx, u.tenantId, v.source_key);
       if (row?.kind !== "git_remote") throw badInput();
