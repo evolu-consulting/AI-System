@@ -663,7 +663,7 @@ a65bb33c80c2ac5153983d4f2ddaa9087a71a137efedc5683fdc65881cceaf9e  tests/acceptan
 cf66a8901442c16660ebe707ec6415e30ac6ea45066526785ec8c32e2d68b8ae  tests/acceptance/P-b/pfs3/start-resolve.int.test.ts
 152cce81e2bf44005647123ec2ee586188daea8d3bda1af32f34a2e50a1f2b75  tests/acceptance/P-b/pfs4/_local.ts
 0ab45d3ed3133cee7f704faa11ad0fbda447a027bd44db4e39540951a55c447c  tests/acceptance/P-b/pfs4/ids.int.test.ts
-05cc7b27939139b0aaa3684ca34480016961dc2d3c42d8d8111050e59f5743cc  tests/acceptance/P-b/pfs4/team-fix.int.test.ts
+ad95053d6b9091702c09af6b9d315d259436bf277da8a2384908bb16401a31f4  tests/acceptance/P-b/pfs4/team-fix.int.test.ts
 2d95b5e236ed478553fb5dbce90b0bb0c5ec99244bfb6f356be94c3584662b5a  tests/acceptance/P-b2/_support/_modules.ts
 10a55343f96ffe68203087ee45cfe2db08a89528ba3251b3d38dc314751fdee9  tests/acceptance/P-b2/_support/pb2.ts
 008a6e07a26be80bdb0c7cf25bdb985ae59e7bc0cdd7a18998a7fbbdee3ae800  tests/acceptance/P-b2/_support/stages.ts

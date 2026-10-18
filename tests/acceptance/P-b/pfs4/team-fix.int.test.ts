@@ -72,6 +72,7 @@ const failOnly = (agentId: string, how: (j: Job) => Promise<void>) => async (j: 
   return true;
 };
 const upstream = (j: Job) => c.rt.fail(j, "UPSTREAM_ERROR", "agent lỗi");
+const refused = (j: Job) => c.rt.fail(j, "UPSTREAM_ERROR", "agent lỗi", "refused");
 const timeout = (j: Job) => c.rt.fail(j, "TIMEOUT", "quá hạn", null, "timed_out");
 const notConfigured = (j: Job) =>
   c.rt.fail(j, "NOT_CONFIGURED", "agent chưa cấu hình", "credential");
@@ -189,22 +190,35 @@ describe("TM-06…09 · #134 job thành viên fail ⇒ mã lỗi hợp lệ, nee
     expect(ERROR_CODES_7).toContain(hr?.error_code);
   }
 
-  it("PB-R17 · TM-06 · #134 m2 fail UPSTREAM_ERROR ⇒ hub.runs m2 failed/UPSTREAM_ERROR + message/hint; needs_decision; không còn running; m3 không khởi động", async () => {
+  /** Lỗi tạm (HUB-FR-143, T7): thành viên thử lại ở cấp thành viên ⇒ stage waiting_timer, run running, hẹn retry, chưa quyết định. */
+  async function expectMemberRetry(runId: string, hubRunId: string, code: string) {
+    const hr = await hubRunOf(c.sql, hubRunId);
+    expect({ status: hr?.status, code: hr?.error_code }).toEqual({ status: "failed", code });
+    expect(String(hr?.error_message ?? "").length).toBeGreaterThan(0);
+    expect(String(hr?.error_hint ?? "").length).toBeGreaterThan(0);
+    expect(ERROR_CODES_7).toContain(hr?.error_code);
+    const [st] = await c.sql<Json[]>`select status from hub.stage_runs
+      where process_run_id = ${runId} and stage_idx = 1`;
+    expect(st?.status).toBe("waiting_timer");
+    expect((await runRow(c.sql, runId))?.status).toBe("running");
+    expect(await decisionOf(runId)).toBeNull();
+    const [tm] = await c.sql<Json[]>`select count(*)::int as n from hub.process_timers
+      where process_run_id = ${runId} and kind = 'retry' and fired_at is null and cancelled_at is null`;
+    expect(tm?.n).toBeGreaterThanOrEqual(1);
+  }
+
+  it("PB-R17 · TM-06 · #134 m2 fail UPSTREAM_ERROR (lỗi tạm) ⇒ hub.runs m2 failed/UPSTREAM_ERROR + message/hint; stage waiting_timer; run running; m3 chưa chạy; chưa needs_decision", async () => {
     needSchema(c.ready);
     const r = await failCase(P1.agM2, upstream);
-    await expectRunFailed(r.runId, r.failedRunId, "UPSTREAM_ERROR");
+    await expectMemberRetry(r.runId, r.failedRunId, "UPSTREAM_ERROR");
     expect(r.jobs.map(memberKey).filter((k) => k !== "hd-read")).not.toContain("m3");
-    const [st] = await c.sql<Json[]>`select status from hub.stage_runs
-      where process_run_id = ${r.runId} and stage_idx = 1`;
-    expect(["failed", "needs_decision"]).toContain(st?.status);
-    expect(["agent_failed", "job_timeout"]).toContain((await decisionOf(r.runId))?.reason);
   }, 40_000);
 
-  it("PB-R17 · TM-07 · #134 m2 quá hạn (job TIMEOUT) ⇒ hub.runs m2 error_code TIMEOUT, needs_decision job_timeout", async () => {
+  it("PB-R17 · TM-07 · #134 m2 quá hạn (job TIMEOUT, lỗi tạm) ⇒ như TM-06 với mã TIMEOUT", async () => {
     needSchema(c.ready);
     const r = await failCase(P1.agM2, timeout);
-    await expectRunFailed(r.runId, r.failedRunId, "TIMEOUT");
-    expect((await decisionOf(r.runId))?.reason).toBe("job_timeout");
+    await expectMemberRetry(r.runId, r.failedRunId, "TIMEOUT");
+    expect(r.jobs.map(memberKey).filter((k) => k !== "hd-read")).not.toContain("m3");
   }, 40_000);
 
   it("PB-R17 · TM-08 · #134 m2 báo NOT_CONFIGURED (agent chưa cấu hình) ⇒ hub.runs m2 error_code NOT_CONFIGURED, needs_decision", async () => {
@@ -213,10 +227,10 @@ describe("TM-06…09 · #134 job thành viên fail ⇒ mã lỗi hợp lệ, nee
     await expectRunFailed(r.runId, r.failedRunId, "NOT_CONFIGURED");
   }, 40_000);
 
-  it("PB-R17 · TM-09 · #134 m1 (thành viên đầu) fail ⇒ như TM-06; m2, m3 không khởi động", async () => {
+  it("PB-R17 · TM-09 · #134 m1 (thành viên đầu) lỗi tạm ⇒ như TM-06; m2, m3 chưa chạy", async () => {
     needSchema(c.ready);
     const r = await failCase(P1.agM1, upstream);
-    await expectRunFailed(r.runId, r.failedRunId, "UPSTREAM_ERROR");
+    await expectMemberRetry(r.runId, r.failedRunId, "UPSTREAM_ERROR");
     const keys = r.jobs.map((j) => j.payload.agent.id);
     expect(keys).not.toContain(P1.agM2);
     expect(keys).not.toContain(P1.agM3);
@@ -226,7 +240,7 @@ describe("TM-06…09 · #134 job thành viên fail ⇒ mã lỗi hợp lệ, nee
 describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, hồi quy [PB-R17]", () => {
   it("PB-R17 · TM-10 · #134 sau ca fail: không hub.runs nào vi phạm (error_code ↔ status failed/cancelled) và mọi error_code ∈ 7 mã", async () => {
     needSchema(c.ready);
-    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, upstream));
+    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, refused));
     expect(await stuckRunning(c.sql, r.runId)).toBe(0);
     expect(await badRuns(c.sql)).toBe(0);
     const runs = await stageHubRuns(c.sql, r.runId);
@@ -240,7 +254,7 @@ describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, h�
   it("PB-R17 · TM-11 · #134 handler không ném (không unhandledRejection) và run khác sau đó chạy tới waiting_review", async () => {
     needSchema(c.ready);
     const before = rejections.length;
-    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, upstream));
+    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, refused));
     expect(await stuckRunning(c.sql, r.runId)).toBe(0);
     await waitStatus(c.sql, r.runId, "needs_decision", 10_000);
     await c.call("A", "POST", `/process-runs/${r.runId}/cancel`, {});
@@ -251,7 +265,7 @@ describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, h�
 
   it("PB-R17 · TM-12 · #134 parallel_merge m1 ok, m2 fail ⇒ stage needs_decision, output m1 chưa công bố (không process_outputs stage 1)", async () => {
     needSchema(c.ready);
-    const r = await runTeam(D4.pm.key, failOnly(P1.agM2, upstream));
+    const r = await runTeam(D4.pm.key, failOnly(P1.agM2, refused));
     expect(await stuckRunning(c.sql, r.runId)).toBe(0);
     await waitStatus(c.sql, r.runId, "needs_decision", 10_000);
     expect((await outputs(c.sql, r.runId)).filter((o) => o.stage_idx === 1)).toHaveLength(0);
@@ -260,7 +274,7 @@ describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, h�
 
   it("PB-R17 · TM-13 · #134 sau fail, decide add_attempt (runtime nay ok) ⇒ chạy lại stage nhóm tới waiting_review", async () => {
     needSchema(c.ready);
-    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, upstream));
+    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, refused));
     await waitStatus(c.sql, r.runId, "needs_decision", 10_000);
     const d = await c.call("A", "POST", `/process-runs/${r.runId}/decide`, {
       option: "add_attempt",
@@ -275,7 +289,7 @@ describe("TM-10…15 · #134 bất biến, handler không ném, retry/cancel, h�
 
   it("PB-R17 · TM-14 · #134 sau fail, decide cancel ⇒ process run cancelled; bất biến mã lỗi giữ", async () => {
     needSchema(c.ready);
-    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, upstream));
+    const r = await runTeam(D4.seq.key, failOnly(P1.agM2, refused));
     await waitStatus(c.sql, r.runId, "needs_decision", 10_000);
     const d = await c.call("A", "POST", `/process-runs/${r.runId}/decide`, { option: "cancel" });
     expect(d.status).toBe(200);
