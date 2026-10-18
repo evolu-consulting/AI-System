@@ -116,6 +116,9 @@ export const ProcessRunSummarySchema = z.strictObject({
   step_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
   /** P-d1 · PD-R25 · `null` = không hết hạn; Hub luôn đặt (optional chỉ để mock FE cũ không vỡ — A4 G6). */
   expires_at: IsoDateTime.nullable().optional(),
+  /** P-d2 · D2-45 · `due_at` sớm nhất của hẹn `wait_until` / `retry` còn mở của run; không có ⇒ `null` (Hub: T17b). */
+  wait_until: IsoDateTime.nullable().optional(),
+  retry_at: IsoDateTime.nullable().optional(),
 });
 export type ProcessRunSummary = z.infer<typeof ProcessRunSummarySchema>;
 
@@ -153,6 +156,8 @@ export const StageViewSchema = z.strictObject({
   last_error_code: z.string().min(1).max(64).optional(),
   /** P-d1 · hẹn `wait_until` chưa huỷ + múi giờ lúc lưu hẹn. */
   wait: z.strictObject({ due_at: IsoDateTime, timezone: z.string().min(1).max(64) }).optional(),
+  /** P-d2 · chỉ stage `tool`: key tool trong catalog. */
+  tool_key: ProcessKeySchema.optional(),
 });
 export type StageView = z.infer<typeof StageViewSchema>;
 
@@ -173,6 +178,8 @@ export const HistoryItemSchema = z.strictObject({
   to_step: ProcessStepSchema.optional(),
   /** P-d1 · chỉ `escalate`: Group nhận chuyển cấp. */
   group: GroupRefSchema.optional(),
+  /** P-d2 · D2-47 · chỉ `escalate`: số giờ chờ trước khi chuyển cấp (`after.escalate.after_h` của snapshot). */
+  after_h: Int1.optional(),
 });
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
 
@@ -373,5 +380,8 @@ export const ProcessNoticeSchema = z.strictObject({
   result: TaskResultSchema.optional(),
   created_at: IsoDateTime,
   read: z.boolean(),
+  /** P-d2 · D2-47 · chỉ `escalated`: Group nhận chuyển cấp + số giờ chờ (payload ghi cùng câu chèn notice). */
+  group: GroupRefSchema.optional(),
+  after_h: Int1.optional(),
 });
 export type ProcessNotice = z.infer<typeof ProcessNoticeSchema>;

@@ -66,8 +66,11 @@ export function statusForRun(s: StageRunStatus, timerKind: TimerKind | null): St
   return s === "waiting_timer" && timerKind !== "wait_until" ? "queued" : s;
 }
 
+/** P-d2 (plan-d2-rules §1) · stage `skipped` (bị nhảy qua khi rẽ nhánh) tính như `done` cho join/trạng thái run. */
+const isStageDone = (s: StageRunStatus | undefined): boolean => s === "done" || s === "skipped";
+
 /** D2 · PD-R15 · trạng thái run tổng hợp của bước: needs_decision > running > waiting_answer > waiting_review >
- * waiting_timer; mọi stage done ⇒ `step_done` (người gọi join). Danh sách rỗng ⇒ `running`. Người gọi map qua
+ * waiting_timer; mọi stage done/skipped ⇒ `step_done` (người gọi join). Danh sách rỗng ⇒ `running`. Người gọi map qua
  * `statusForRun` trước (stage backoff `retry` ⇒ `queued`). */
 export function runStatusOf(
   stepStatuses: readonly StageRunStatus[],
@@ -78,7 +81,7 @@ export function runStatusOf(
   if (has("waiting_answer")) return "waiting_answer";
   if (has("waiting_review")) return "waiting_review";
   if (has("waiting_timer")) return "waiting_timer";
-  if (stepStatuses.length > 0 && stepStatuses.every((s) => s === "done")) return "step_done";
+  if (stepStatuses.length > 0 && stepStatuses.every(isStageDone)) return "step_done";
   return "running";
 }
 
@@ -94,7 +97,7 @@ export function stepJoin(p: {
   statuses: ReadonlyMap<number, StageRunStatus>;
 }): Join {
   const idxs = stageIdxsOfStep(p.steps, p.step);
-  if (idxs.length === 0 || !idxs.every((i) => p.statuses.get(i) === "done"))
+  if (idxs.length === 0 || !idxs.every((i) => isStageDone(p.statuses.get(i))))
     return { kind: "wait" };
   const next = p.step + 1;
   if (next >= stepCountOf(p.steps)) return { kind: "finish" };

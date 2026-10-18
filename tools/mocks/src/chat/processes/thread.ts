@@ -18,6 +18,8 @@ function text(p: RoomProcessPart, name: string): string {
       return `${p.from.display_name} nhờ ${p.to.display_name}`;
     case "run_end":
       return `Quy trình ${name} kết thúc: ${p.status}`;
+    case "branch": // P-d2 · PD2-R13
+      return `Rẽ nhánh sang bước ${p.to_step + 1}`;
   }
 }
 

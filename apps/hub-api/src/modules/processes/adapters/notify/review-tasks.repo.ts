@@ -160,6 +160,8 @@ type EscalationRow = {
   process_name: string | null;
   stage_name: string | null;
   member_ids: string[] | null;
+  group_name: string | null;
+  after_h: number | string | null;
   more: boolean;
 };
 
@@ -193,7 +195,8 @@ export async function claimDueEscalations(
         t.escalate_at
     )
     select n.claimed, u.id, u.tenant_id, u.process_run_id, u.assignee_group_id as from_group_id,
-      u.escalate_group_id as to_group_id, g.tenant_id as group_tenant_id,
+      u.escalate_group_id as to_group_id, g.tenant_id as group_tenant_id, g.name->>'vi' as group_name,
+      pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'escalate'->>'after_h' as after_h,
       pr.snapshot->>'name' as process_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
       array(select gm.user_id::text from admin.group_members gm
@@ -227,6 +230,8 @@ function toEscalation(r: EscalationRow & { id: string }): ClaimedEscalation {
     processName: r.process_name ?? "",
     stageName: r.stage_name,
     memberIds: r.member_ids ?? [],
+    groupName: r.group_name,
+    afterH: r.after_h === null || !Number.isInteger(Number(r.after_h)) ? null : Number(r.after_h),
   };
 }
 

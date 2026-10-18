@@ -1,0 +1,26 @@
+// HUB-FR-146 · HUB-FR-147 · P-d2 T17 · cổng lớp 1 ổn định (test-plan-d2 §0): CHỈ re-export, không logic. Test nạp
+// `P/domain/index.ts` thay vì đường dẫn file bên trong; file mới của lớp 1 (T18/T19) thêm một dòng ở đây.
+export * from "./asks/forward.rules";
+export * from "./defs/escalate-def.rules";
+export * from "./defs/team-sections.rules";
+export * from "./defs/ttl.rules";
+export * from "./defs/wait-def.rules";
+export * from "./errors";
+export * from "./gates/back.rules";
+export * from "./limits";
+export * from "./notify/escalate.rules";
+export * from "./notify/remind.rules";
+export * from "./runs/active-cap.rules";
+export * from "./runs/job-error.rules";
+export * from "./runs/retry.rules";
+export * from "./runs/run-access.rules";
+export * from "./runs/run-state.rules";
+export * from "./runs/start-inputs.rules";
+export * from "./runs/step.rules";
+export * from "./runs/team-retry.rules";
+export * from "./tasks/decision.rules";
+export * from "./tasks/task-access.rules";
+export * from "./timers/due-at.rules";
+export * from "./timers/timer.rules";
+export * from "./timers/timer-key.rules";
+export * from "./types";

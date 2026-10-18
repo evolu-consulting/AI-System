@@ -59,8 +59,8 @@ export const PA_AUDIT_ACTIONS = [
   "copy",
   "authorize_real_action",
 ] as const;
-/** audit P-d1 (0036 `hub_audit_log_action_check`) — trải vào `HUB_AUDIT_ACTION_VALUES` (hub.ts). P-d2 (0037) nối thêm. */
-export const PD_AUDIT_ACTIONS = ["escalate", "escalate_skipped"] as const;
+/** audit P-d1 (0036 `hub_audit_log_action_check`) — trải vào `HUB_AUDIT_ACTION_VALUES` (hub.ts). P-d2 (0037) + `tool_call`, `branch`. */
+export const PD_AUDIT_ACTIONS = ["escalate", "escalate_skipped", "tool_call", "branch"] as const;
 export const PA_AUDIT_ENTITIES = [
   "process_def",
   "process_run",

@@ -72,6 +72,8 @@ export const STAGE_RUN_STATUSES = [
   "failed",
   // P-d1 · PD-R03/R15 · chờ hẹn giờ (`retry` backoff hoặc `wait_until`).
   "waiting_timer",
+  // P-d2 · PD2-R13 · stage bị nhảy qua khi rẽ nhánh (= xong cho join).
+  "skipped",
 ] as const;
 /** Mặc định `sequential` (spike, U3). */
 export const TEAM_MODES = ["sequential", "lead_plan", "parallel_merge"] as const;
@@ -121,6 +123,8 @@ export const DECISION_REASONS = [
   // P-d1 · PD-R04 hết lượt thử lại · PD-R14 hẹn giờ không hợp lệ.
   "retry_exhausted",
   "timer_invalid",
+  // P-d2 · PD2-R05 · gọi tool lỗi nghiệp vụ / lỗi tạm sau khi đã gửi tool `side_effect`.
+  "tool_failed",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
@@ -135,8 +139,8 @@ export const NOTICE_KINDS = [
 ] as const;
 export const ORIGIN_KINDS = ["room", "conversation", "admin"] as const;
 export const STAGE_AFTER_KINDS = ["review", "auto"] as const;
-/** P-d1 thêm `wait_until` (cuối); P-d2 sẽ nối `tool`. */
-export const EXECUTOR_KINDS = ["agent", "team", "apply", "wait_until"] as const;
+/** P-d1 thêm `wait_until` (cuối); P-d2 nối `tool`. */
+export const EXECUTOR_KINDS = ["agent", "team", "apply", "wait_until", "tool"] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 
 export type ProcessRunStatus = (typeof PROCESS_RUN_STATUSES)[number];
@@ -233,3 +237,12 @@ export const TtlDaysSchema = z
   .min(PROCESS_TTL_DAYS.min)
   .max(PROCESS_TTL_DAYS.max)
   .nullable();
+
+// ── P-d2 · tool + rẽ nhánh [HUB-FR-146][HUB-FR-147] (plan-contract §6) ─────────────────────────────────────────────────
+/** Trần số tham số `args` của stage `tool` (khác trần `params` của catalog = `INPUT_SCHEMA_MAX`). */
+export const TOOL_ARGS_MAX = 20;
+/** Trần byte kết quả tool (kiểm trên byte trước `JSON.parse` — D2-17). */
+export const TOOL_RESULT_MAX_BYTES = 65_536;
+export const BRANCH_RULES_MAX = 10;
+export const BRANCH_OPS = ["eq", "ne", "lt", "le", "gt", "ge"] as const;
+export type BranchOp = (typeof BRANCH_OPS)[number];

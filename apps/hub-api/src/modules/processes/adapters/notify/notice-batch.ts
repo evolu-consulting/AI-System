@@ -25,6 +25,8 @@ export async function notifyMany(
         taskId: m.taskId,
         processName: m.processName,
         stageName: m.stageName,
+        ...(m.group && { group: m.group }),
+        ...(m.afterH !== undefined && { afterH: m.afterH }),
       }),
       unread: unread.get(unreadKey(n.tenantId, n.userId)) ?? 1,
     });

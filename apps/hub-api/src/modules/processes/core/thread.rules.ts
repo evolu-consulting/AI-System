@@ -56,6 +56,8 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
   // P-d1 · PD-R04 / PD-R14.
   retry_exhausted: { vi: "đã thử lại hết số lần", en: "retry limit reached" },
   timer_invalid: { vi: "ngày hẹn không hợp lệ", en: "scheduled date is invalid" },
+  // P-d2 · PD2-R05.
+  tool_failed: { vi: "gọi tool không thành công", en: "tool call failed" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);
@@ -111,6 +113,13 @@ function line(e: RoomProcessPart, l: ThreadLocale, n: Names): string {
       );
     case "run_end":
       return `${n.process} · ${END[e.status][l]}`;
+    // P-d2 · PD2-R13 · bước hiển thị 1-based như StageStrip.
+    case "branch":
+      return t(
+        l,
+        `${n.process}: rẽ nhánh sang bước ${e.to_step + 1}`,
+        `${n.process}: branched to step ${e.to_step + 1}`,
+      );
   }
 }
 

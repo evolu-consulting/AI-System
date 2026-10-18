@@ -136,6 +136,21 @@ function toNotice(r: NoticeRow): ProcessNotice {
     ...(result ? { result } : {}),
     created_at: toDate(r.created_at).toISOString(),
     read: r.read_at !== null,
+    ...escalateFields(p),
+  };
+}
+
+/** D2-47 · notice `escalated`: `group` + `after_h` từ payload (notice cũ không có ⇒ vắng). */
+function escalateFields(p: Record<string, unknown>): Pick<ProcessNotice, "group" | "after_h"> {
+  const g = p.group as { id?: unknown; name?: unknown } | null | undefined;
+  const afterH = p.after_h;
+  return {
+    ...(typeof g?.id === "string" && {
+      group: { id: g.id, name: typeof g.name === "string" && g.name ? g.name : g.id },
+    }),
+    ...(typeof afterH === "number" &&
+      Number.isInteger(afterH) &&
+      afterH >= 1 && { after_h: afterH }),
   };
 }
 

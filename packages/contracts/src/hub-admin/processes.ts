@@ -25,6 +25,13 @@ import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
+  AfterBranchSchema,
+  type BranchRule,
+  FIELD_KEY_RE,
+  ProcessToolItemSchema,
+  ToolExecutorSchema,
+} from "./process-tools";
+import {
   BranchSchema,
   DEF_INPUTS_MAX,
   DEF_SOURCES_MAX,
@@ -54,6 +61,7 @@ export {
 } from "../chat/processes-entities";
 export * from "./autofix";
 export * from "./process-steps";
+export * from "./process-tools";
 export * from "./sources";
 
 export const HUB_ADMIN_PROCESS_ERRORS = {
@@ -65,7 +73,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
 } as const;
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
 export const PROCESS_DEF_PATHS_MAX = 20;
-export const PROCESS_REF_KINDS = ["agent", "team", "group", "user", "source"] as const;
+export const PROCESS_REF_KINDS = ["agent", "team", "group", "user", "source", "tool"] as const;
 /** `PROCESS_DEF_INVALID` / `PROCESS_DEF_INCOMPLETE`; path dạng `stages.<i>.<trường>`; `rules` (P-b2) cùng chỉ số `paths`. */
 export const ProcessDefPathsDetailsSchema = z.strictObject({
   paths: z.array(z.string().min(1)).max(PROCESS_DEF_PATHS_MAX),
@@ -82,7 +90,6 @@ export const STAGE_SECTIONS_MAX = 20;
 export const STAGE_FIELDS_MAX = 20;
 export const STAGE_TOKEN_BUDGET = { min: 1_000, max: 5_000_000 } as const;
 export const OUTPUT_FILENAME_RE = /^[a-z0-9._-]{1,76}\.md$/;
-export const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,31}$/;
 export { STAGE_KEY_RE }; // khai báo ở chat/processes (một nguồn, TD #150)
 
 const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
@@ -155,6 +162,8 @@ export const ProcessStageDefSchema = z.strictObject({
     z.strictObject({ kind: z.literal("apply") }),
     /** P-d1 · PD-R13 · chờ tới ngày gốc (input `date` / field `date` của stage bước trước) + `offset_days` lúc `time`. */
     WaitUntilExecutorSchema,
+    /** P-d2 · PD2-R01 · gọi tool (workflow catalog) — luật `toolStageIssues`. */
+    ToolExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({
@@ -190,8 +199,10 @@ export const ProcessStageDefSchema = z.strictObject({
         .default(null),
       /** P-d1 · PD-R18/R20 · chuyển cấp thêm Group sau `after_h` giờ (1 lần/task). */
       escalate: StageEscalateSchema.nullable().default(null),
+      /** P-d2 · PD2-R12 · rẽ nhánh sau Đạt (luật `branchStageIssues`). */
+      branch: AfterBranchSchema,
     }),
-    z.strictObject({ kind: z.literal("auto") }),
+    z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),
   real_action: z.boolean(),
   answerer: z.discriminatedUnion("kind", [
@@ -220,14 +231,16 @@ export type ProcessStageDef = Omit<StageDefParsed, "after" | "autofix"> & {
   after:
     | (Omit<
         Extract<StageAfterParsed, { kind: "review" }>,
-        "back_to_steps" | "remind_every_h" | "escalate"
+        "back_to_steps" | "remind_every_h" | "escalate" | "branch"
       > & {
         back_to_steps?: number[];
         /** P-d1 · vắng ở snapshot cũ; đọc dùng `?? null`. */
         remind_every_h?: number | null;
         escalate?: StageEscalate | null;
+        /** P-d2 · vắng ở snapshot cũ; đọc dùng `?? []`. */
+        branch?: BranchRule[];
       })
-    | Extract<StageAfterParsed, { kind: "auto" }>;
+    | { kind: "auto"; branch?: BranchRule[] };
 };
 /** Thay `stages` của kiểu suy từ zod bằng `ProcessStageDef` (back_to_steps optional). */
 type WithStageDefs<T extends { stages: unknown }> = Omit<T, "stages"> & {
@@ -375,7 +388,7 @@ export type ProcessEditorContextQuery = z.infer<typeof ProcessEditorContextQuery
 export const ProcessEditorContextSchema = z.strictObject({
   /** Múi giờ tenant; def mẫu (tenant null) ⇒ `TENANT_TZ_DEFAULT`. */
   timezone: z.string().min(1).max(64),
-  /** P-d2 (`ProcessToolItemSchema`, T17) thay `unknown`; P-d1 không trả. */
-  tools: z.array(z.unknown()).max(200).optional(),
+  /** P-d2 · catalog tool khả dụng của tenant (def mẫu ⇒ `[]`, A4 G7); ≤ 200 (D2-26). */
+  tools: z.array(ProcessToolItemSchema).max(200).optional(),
 });
 export type ProcessEditorContext = z.infer<typeof ProcessEditorContextSchema>;

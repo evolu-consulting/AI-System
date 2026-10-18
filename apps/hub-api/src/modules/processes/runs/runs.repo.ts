@@ -1,12 +1,7 @@
 // HUB-FR-105 · HUB-FR-113 · PF1 · SQL bắt đầu + liệt kê run (plan §2.1, §4, §10; plan-contract §3). Chạy trong
 // `withHubScope({kind:"user"})` của người bắt đầu/người xem; mọi câu lọc `tenant_id` tường minh, RLS T là lưới.
 // Khoá bắt đầu (§10): rooms (tin gọi) → advisory `process:<tenant>` → process_runs. Không log nội dung.
-import type {
-  HistoryItem,
-  OpenTask,
-  ProcessRunStatus,
-  ProcessRunSummary,
-} from "@ai/contracts/chat";
+import type { OpenTask, ProcessRunStatus, ProcessRunSummary } from "@ai/contracts/chat";
 import { type ProcessInputDef, stepGroups } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
@@ -270,37 +265,8 @@ export function decodeCursor(raw: string): [string, string] {
 }
 
 // ── view (GET /process-runs/:id) — plan-contract §2 ──
-type HistoryRow = {
-  task_id: string;
-  kind: HistoryItem["kind"];
-  stage_idx: number;
-  result: HistoryItem["result"] | null;
-  feedback: string | null;
-  decided_by: string | null;
-  actor_name: string | null;
-  decided_at: string | null;
-};
-
-/** `history` full view: task review/decision đã đóng, theo thời gian (≤ 200); `ask`/`forward` ở thread (plan-thread §2). */
-export async function loadHistory(tx: Tx, runId: string, tenantId: string): Promise<HistoryItem[]> {
-  const rows = await tx.execute<HistoryRow>(sql`
-    select t.id as task_id, t.kind, s.stage_idx, t.result, t.feedback, t.decided_by,
-      u.display_name as actor_name, ${iso(sql`t.decided_at`)} as decided_at
-    from hub.review_tasks t
-    join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
-    left join admin.users u on u.id = t.decided_by and u.tenant_id = t.tenant_id
-    where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'closed'
-      and t.kind in ('review', 'decision')
-    order by t.decided_at nulls last, t.created_at limit 200`);
-  return rows.map((h) => ({
-    at: h.decided_at ?? new Date(0).toISOString(),
-    kind: h.kind,
-    task_id: h.task_id,
-    stage_idx: Number(h.stage_idx),
-    actor: h.decided_by ? { id: h.decided_by, display_name: h.actor_name ?? h.decided_by } : null,
-    ...(h.result && { result: h.result, ...(h.feedback && { feedback: h.feedback }) }),
-  }));
-}
+// D2-47 · `loadHistory` (thêm mục `escalate`) dời sang `history.repo.ts` (trần 400 dòng); giữ lối gọi `repo.loadHistory`.
+export { loadHistory } from "./history.repo";
 
 type OpenTaskRow = {
   id: string;

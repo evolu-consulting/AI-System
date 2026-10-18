@@ -53,14 +53,24 @@ function auditOf(t: ClaimedEscalation, action: EscalateAuditRow["action"]): Esca
   };
 }
 
+/** D2-47 · payload `escalated` thêm `group` + `after_h` — ghi trong CÙNG câu chèn notice (không thêm câu SQL). */
 function noticeRows(t: ClaimedEscalation): NoticeMetaRow[] {
+  const group = { id: t.toGroupId, name: t.groupName || t.toGroupId };
+  const afterH = t.afterH != null && t.afterH >= 1 ? t.afterH : undefined;
   return [...new Set(t.memberIds)].map((userId) => ({
     tenantId: t.tenantId,
     userId,
     processRunId: t.processRunId,
     taskId: t.taskId,
-    payload: { process_name: t.processName, stage_name: t.stageName },
+    payload: {
+      process_name: t.processName,
+      stage_name: t.stageName,
+      group,
+      ...(afterH !== undefined && { after_h: afterH }),
+    },
     processName: t.processName,
     stageName: t.stageName,
+    group,
+    ...(afterH !== undefined && { afterH }),
   }));
 }

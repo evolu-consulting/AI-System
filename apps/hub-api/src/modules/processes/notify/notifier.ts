@@ -31,6 +31,9 @@ export type NoticeMeta = {
   processName: string;
   stageName: string | null;
   result?: TaskResult | null;
+  /** P-d2 · D2-47 · chỉ `escalated`. */
+  group?: { id: string; name: string };
+  afterH?: number;
 };
 
 /** Dựng `ProcessNotice` cho sự kiện `process.notice` (dùng lại ở `remindOnce`). Không chứa nội dung output/câu hỏi. */
@@ -45,6 +48,8 @@ export function buildNotice(n: InsertedNotice, kind: NoticeKind, m: NoticeMeta):
     ...(m.result ? { result: m.result } : {}),
     created_at: n.createdAt.toISOString(),
     read: false,
+    ...(m.group && { group: m.group }),
+    ...(m.afterH !== undefined && { after_h: m.afterH }),
   };
 }
 

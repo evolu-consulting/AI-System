@@ -21,9 +21,13 @@ export function isCalendarDate(s: string): boolean {
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
 }
 
+/** D2-44 · input `number`: chuỗi (đã cắt khoảng trắng) đổi ra số hữu hạn. */
+export const isNumberText = (s: unknown): boolean =>
+  typeof s === "string" && s.trim() !== "" && Number.isFinite(Number(s.trim()));
+
 export type InputValue = { key: string; type: string; value?: string };
 
-/** Lỗi hình dạng từng input lúc start (thiếu required không phải lỗi — IN-03). `date`: value ISO + ngày thật. */
+/** Lỗi hình dạng từng input lúc start (thiếu required không phải lỗi — IN-03). `date`: value ISO + ngày thật; `number`: số hữu hạn. */
 export function startInputIssues(
   defs: readonly { key: string; type: string; required: boolean; options?: readonly string[] }[],
   values: readonly InputValue[],
@@ -45,6 +49,7 @@ export function startInputIssues(
     }
     if (v.type === "date" && !(typeof v.value === "string" && isCalendarDate(v.value)))
       out.push({ index, path: "value" });
+    else if (v.type === "number" && !isNumberText(v.value)) out.push({ index, path: "value" });
   }
   return out;
 }

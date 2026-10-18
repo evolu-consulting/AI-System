@@ -20,7 +20,8 @@ export type StageRunStatus =
   | "done"
   | "cancelled"
   | "failed"
-  | "waiting_timer"; // P-d2 (T17) + "skipped"
+  | "waiting_timer"
+  | "skipped"; // P-d2 · stage bị nhảy qua khi rẽ nhánh (= xong cho join)
 export type DecisionReason =
   | "redo_limit"
   | "ask_limit"
@@ -43,7 +44,8 @@ export type DecisionReason =
   | "apply_conflict"
   | "apply_failed"
   | "retry_exhausted"
-  | "timer_invalid"; // P-d2 + "tool_failed"
+  | "timer_invalid"
+  | "tool_failed"; // P-d2
 export type TeamRunStatus =
   | "running"
   | "waiting_answer"
@@ -54,9 +56,9 @@ export type TeamRunStatus =
 export type TaskKind = "review" | "ask" | "decision";
 export type TaskStatus = "open" | "closed";
 export type DecisionOption = "add_attempt" | "use_current" | "cancel";
-export type ExecutorKind = "agent" | "team" | "apply" | "wait_until"; // P-d2 + "tool"
+export type ExecutorKind = "agent" | "team" | "apply" | "wait_until" | "tool"; // P-d2 + "tool"
 export type TimerKind = "wait_until" | "retry";
-export type InputType = "text" | "select" | "file" | "source_ref" | "date";
+export type InputType = "text" | "select" | "file" | "source_ref" | "date" | "number"; // D2-44
 export type NoticeKind =
   | "review_requested"
   | "ask_requested"

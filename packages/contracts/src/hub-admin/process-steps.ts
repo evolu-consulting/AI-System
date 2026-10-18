@@ -30,6 +30,10 @@ export const PROCESS_DEF_RULES = [
   "ESCALATE_INVALID",
   // HUB-FR-143 · D7 · stage team sequential/parallel_merge: mục bắt buộc không thành viên nào phụ trách.
   "TEAM_SECTION_UNOWNED",
+  // P-d2 · PD2-R01/R02 stage `tool` (`toolStageIssues`) · PD2-R12 rẽ nhánh (`branchStageIssues`) — `process-tools.ts`.
+  "TOOL_INVALID",
+  "TOOL_SIDE_EFFECT",
+  "BRANCH_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };

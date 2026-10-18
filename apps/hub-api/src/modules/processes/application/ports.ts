@@ -148,6 +148,9 @@ export type ClaimedEscalation = {
   processName: string;
   stageName: string | null;
   memberIds: string[];
+  /** P-d2 · D2-47 · tên Group đích (`name.vi`) + `after.escalate.after_h` của snapshot — vào payload notice `escalated`. */
+  groupName?: string | null;
+  afterH?: number | null;
 };
 /** Như `ReminderBatch`: `claimed` gồm task bị bỏ vì run đang bị giữ. */
 export type EscalationBatch = { tasks: ClaimedEscalation[]; claimed: number; more: boolean };
@@ -196,7 +199,13 @@ export type NoticeBatchWriter = {
   notifyMany(kind: NoticeKind, rows: readonly NoticeMetaRow[]): Promise<number>;
 };
 /** Hàng notice kèm tên quy trình/bước cho sự kiện `process.notice`. */
-export type NoticeMetaRow = NoticeRow & { processName: string; stageName: string | null };
+export type NoticeMetaRow = NoticeRow & {
+  processName: string;
+  stageName: string | null;
+  /** P-d2 · D2-47 · chỉ notice `escalated`. */
+  group?: { id: string; name: string };
+  afterH?: number;
+};
 export type FinishedRun = { id: string; tenantId: string; startedBy: string; processName: string };
 export type ExpiredRun = FinishedRun & { originKind: string; roomId: string | null };
 export type RunBatchRepo = {

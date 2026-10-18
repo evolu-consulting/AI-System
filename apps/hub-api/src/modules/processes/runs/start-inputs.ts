@@ -18,7 +18,7 @@ import type { KhRuntime } from "../../kh/kh.mount";
 import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
 import { processError } from "../core/errors";
 import { expiresAt } from "../domain/defs/ttl.rules";
-import { isCalendarDate, shapeValid } from "../domain/runs/start-inputs.rules";
+import { isCalendarDate, isNumberText, shapeValid } from "../domain/runs/start-inputs.rules";
 import type { StartDefRow } from "./runs.repo";
 import * as repo from "./runs.repo";
 import { allowlistUnion } from "./sources.rules";
@@ -196,6 +196,14 @@ async function ownsUpload(
 const badInput = () =>
   validationError([{ path: ["inputs"], code: "custom", message: "invalid input" }]);
 
+/** PD-R13 · `date`: `YYYY-MM-DD` + ngày lịch có thật; D2-44 · `number`: số hữu hạn sau khi cắt khoảng trắng — sai ⇒ 400
+ * path `inputs.<i>.value`. Hợp lệ / kiểu khác ⇒ null. */
+function valueIssue(v: ProcessInputValue): string | null {
+  if (v.type === "date" && !isCalendarDate(v.value)) return "invalid date";
+  if (v.type === "number" && !isNumberText(v.value)) return "invalid number";
+  return null;
+}
+
 /** C19 · key∈def.inputs, type khớp, select∈options, source_ref=git_remote cùng tenant, file thuộc người bắt đầu. */
 export async function validateRunInputs(
   tx: Tx,
@@ -206,11 +214,9 @@ export async function validateRunInputs(
   const byKey = new Map(defInputs.map((d) => [d.key, d]));
   for (const [i, v] of inputs.entries()) {
     if (!shapeValid(byKey.get(v.key), v)) throw badInput();
-    // PD-R13 · input `date`: `YYYY-MM-DD` + ngày lịch có thật — sai ⇒ 400 path `inputs.<i>.value`.
-    if (v.type === "date" && !isCalendarDate(v.value))
-      throw validationError([
-        { path: ["inputs", i, "value"], code: "custom", message: "invalid date" },
-      ]);
+    const bad = valueIssue(v);
+    if (bad)
+      throw validationError([{ path: ["inputs", i, "value"], code: "custom", message: bad }]);
     if (v.type === "source_ref") {
       const row = await sourceByKey(tx, u.tenantId, v.source_key);
       if (row?.kind !== "git_remote") throw badInput();

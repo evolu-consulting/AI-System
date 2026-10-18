@@ -4,6 +4,7 @@ import { z } from "zod";
 import { UuidSchema } from "../common";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
 import {
+  BRANCH_RULES_MAX,
   DecisionOptionSchema,
   DecisionReasonSchema,
   FEEDBACK_MAX,
@@ -34,6 +35,8 @@ export const ROOM_PROCESS_KINDS = [
   "task_result",
   "forward",
   "run_end",
+  // P-d2 · PD2-R13 · stage rẽ nhánh sang bước `to_step` theo luật `rule` (1-based).
+  "branch",
 ] as const;
 export type RoomProcessKind = (typeof ROOM_PROCESS_KINDS)[number];
 /** `content` tóm tắt của tin `process` (preview + dự phòng). */
@@ -125,6 +128,13 @@ export const RoomProcessPartSchema = z.discriminatedUnion("kind", [
     ...run,
     status: z.enum(ROOM_PROCESS_END_STATUSES),
     actor: UserRefSchema.nullable(),
+  }),
+  z.strictObject({
+    kind: z.literal("branch"),
+    ...run,
+    stage_idx: StageIdxSchema,
+    to_step: ProcessStepSchema,
+    rule: z.number().int().min(1).max(BRANCH_RULES_MAX),
   }),
 ]);
 export type RoomProcessPart = z.infer<typeof RoomProcessPartSchema>;
