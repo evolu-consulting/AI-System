@@ -66,12 +66,20 @@ export type RetryRepo = {
 };
 /** T7 · K6 · D-PD03: job của stage đã gửi tool `side_effect` từ đầu attempt/round hiện tại? */
 export type SideEffectProbe = { sent(stageRunId: string): Promise<boolean> };
+/** T7b · PD-R08 · hàng `hub.team_runs` của stage nhóm (lọc `(id, tenant_id)`); gọi SAU khi đã ghi/khoá stage (plan §6). */
+export type TeamRunRepo = {
+  /** Thử lại: giữ `running` + `plan`, chốt `active_ms` tới `now` (Clock), `segment_started_at = NULL`, `cursor = max(cursor,0)`. */
+  pauseForRetry(teamRunId: string, cursor: number, now: Date): Promise<void>;
+  /** Quyết định (không thử lại): chốt `active_ms`, `failed`/`member_failed` + `finished_at`. */
+  markFailed(teamRunId: string): Promise<void>;
+};
 export type TxRepos = {
   readonly tenantId: string;
   runs: RunRepo;
   timers: TimerRepo;
   retry: RetryRepo;
   sideEffect: SideEffectProbe;
+  team: TeamRunRepo;
   outbox: Outbox;
   kicker: StageKicker;
   notifier: Notifier;

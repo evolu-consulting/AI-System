@@ -19,10 +19,11 @@ const ERROR_CODE_MAX = 64;
 
 export function retryRepo(tx: Tx, tenantId: string): RetryRepo {
   return {
+    // T7b · `for update`: khoá stage ngay sau run (thứ tự run → stage → timer → team_runs, plan §6) — không thêm câu SQL.
     async loadRetryState(stageRunId) {
       const [r] = await tx.execute<Row>(sql`
         select retry_count, retry_attempt, retry_round, attempt, round from hub.stage_runs
-        where id = ${stageRunId} and tenant_id = ${tenantId}`);
+        where id = ${stageRunId} and tenant_id = ${tenantId} for update`);
       if (!r) return null;
       return {
         retryCount: Number(r.retry_count),

@@ -104,10 +104,10 @@ export async function limitReason(
   return hit ? LIMIT_REASON[hit] : null;
 }
 
-/** `tokens` tính từ usage_logs (readCounters) nên chỉ cộng `calls`; `usage` giữ cho chữ ký (không ghi đè cột). */
-export async function addCall(d: TeamDeps, teamRunId: string, _usage: number): Promise<void> {
+/** `tokens` tính từ usage_logs (readCounters) nên chỉ cộng `calls` (`n` lượt — parallel một câu cho cả lượt, T7b). */
+export async function addCall(d: TeamDeps, teamRunId: string, n: number): Promise<void> {
   await withHubScope(d.db, { kind: "system" }, (tx) =>
-    tx.execute(sql`update hub.team_runs set calls = calls + 1 where id = ${teamRunId}`),
+    tx.execute(sql`update hub.team_runs set calls = calls + ${n} where id = ${teamRunId}`),
   );
 }
 

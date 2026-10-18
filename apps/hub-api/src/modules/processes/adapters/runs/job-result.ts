@@ -42,6 +42,8 @@ export type AgentOut = {
   jobReason: string | null;
   /** T7 · vắng/null ⇒ không qua thử lại (stage nhóm — T7b; output không đọc được ⇒ `agent_failed` như cũ). */
   job: JobFail | null;
+  /** T7b · stage nhóm lỗi: team_run + chỉ số thành viên lỗi (cho `handleTeamJobFailure`); agent đơn ⇒ vắng. */
+  team?: { teamRunId: string; cursor: number } | null;
 };
 
 /** T7 · `failed` ⇒ {code, reason}; `aborted` ⇒ interrupted (tạm); còn lại null. */

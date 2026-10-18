@@ -16,6 +16,9 @@ export type JobFailure = {
 };
 
 export type FailureRepos = Pick<TxRepos, "retry" | "sideEffect" | "timers">;
+export type TeamFailureRepos = FailureRepos & Pick<TxRepos, "team">;
+/** T7b · team_run của stage nhóm + chỉ số thành viên lỗi trong danh sách đang chạy (lead lỗi ⇒ `-1`). */
+export type TeamRef = { teamRunId: string; cursor: number };
 
 /** Mã ghi vào `last_error_code` khi không có mã job (ngắt giữa chừng). */
 const INTERRUPTED_CODE = "INTERRUPTED";
@@ -59,5 +62,22 @@ export async function handleJobFailure(
     }),
     timezone: null,
   });
+  return dec;
+}
+
+/**
+ * T7b · PD-R08 · Q1 · thành viên nhóm lỗi: CÙNG `decideRetry` + bộ đếm `stage_runs.retry_count` + khoá idempotency theo
+ * `stage_run_id`. `retry` ⇒ thêm `team.pauseForRetry` (team_run giữ `running`, dừng đồng hồ bằng `now` của Clock);
+ * `decide` ⇒ `team.markFailed` — cả hai trong tx người gọi, SAU khi đã ghi stage/hẹn (thứ tự khoá run → stage → timer → team).
+ */
+export async function handleTeamJobFailure(
+  r: TeamFailureRepos,
+  f: JobFailure,
+  team: TeamRef,
+  now: Date,
+): Promise<RetryDecision> {
+  const dec = await handleJobFailure(r, f, now);
+  if (dec.kind === "retry") await r.team.pauseForRetry(team.teamRunId, team.cursor, now);
+  else await r.team.markFailed(team.teamRunId);
   return dec;
 }

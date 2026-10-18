@@ -95,6 +95,7 @@ export type ApplyInput = {
   jobReason?: string | null;
   /** T7 · lỗi job thô của stage agent (PD-R01); vắng/null ⇒ không thử lại (luồng cũ). */
   job?: { code: string | null; reason: string | null; interrupted: boolean } | null;
+  team?: { teamRunId: string; cursor: number } | null; // T7b · thành viên nhóm lỗi (cursor)
 };
 export type Ctx = {
   x: ApplyInput;

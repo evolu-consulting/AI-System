@@ -10,7 +10,7 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import { runJob } from "../../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { RunOutcome } from "../../runs/sse/sse-writer";
-import { agentFailureGate } from "../adapters/runs/job-failure";
+import { agentFailureGate, releaseTeamRun } from "../adapters/runs/job-failure";
 import { type AgentOut, agentOutOf } from "../adapters/runs/job-result";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
@@ -78,7 +78,7 @@ async function receive(d: Deps, ctx: RunContext, o: StageDriverOpts): Promise<Re
   if (!link?.process_run_id || !link.stage_run_id) return null;
   const out: AgentOut = ctx.direct
     ? await runAgent(d, ctx, link, o)
-    : { ...(await runTeamStage(d, ctx, link)), jobReason: null, job: null };
+    : { jobReason: null, job: null, ...(await runTeamStage(d, ctx, link)) };
   return { at: { runId: link.process_run_id, stageRunId: link.stage_run_id }, out };
 }
 
@@ -104,6 +104,7 @@ async function settleOutcome(
     tokens: out.usage,
     jobReason: out.jobReason,
     job: out.job,
+    team: out.team ?? null,
   });
   if (!needInput) await finish(ctx, result);
   if (kick) await launcher.kick(at.runId);
@@ -236,7 +237,7 @@ type Loaded = { head: RunHead; stage: StageRowIdx; def: SnapStage; srcCtx: Stage
 async function runApplyTx(d: Deps, x: ApplyInput): Promise<Applied | null> {
   return withHubScope(d.db, { kind: "system" }, async (tx) => {
     const l = await lockAndLoad(tx, x);
-    if (!l) return null;
+    if (!l) return releaseTeamRun(tx, x);
     const { head, stage, def, srcCtx } = l;
     const idx = stage.stage_idx;
     await tx.execute(sql`update hub.process_runs set tokens_total = tokens_total + ${x.tokens}

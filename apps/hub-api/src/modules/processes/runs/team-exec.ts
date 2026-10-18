@@ -8,8 +8,14 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import type { RunContext } from "../../runs/runs.service";
-import { bump, type MemberResult, stopFail, type TeamOut } from "../adapters/runs/team-failure";
-import { ensureTeamRun } from "../adapters/runs/team-run.repo";
+import {
+  bump,
+  countCalls,
+  type MemberResult,
+  stopFail,
+  type TeamOut,
+} from "../adapters/runs/team-failure";
+import { type EnsuredRun, ensureTeamRun, type SavedStep } from "../adapters/runs/team-run.repo";
 import { teamDraftFiles } from "./output-attachment";
 import {
   assembleSections,
@@ -92,10 +98,12 @@ export async function runTeamStage(d: Deps, ctx: RunContext, link: Link): Promis
     callIdx: 0,
     usage: 0,
     lastJobId: null,
+    noCount: tr.retry ? 1 : 0, // T7b · PD-R08 · lượt gọi lại sau thử lại không đếm `calls`
   };
-  // HUB-FR-110 · resume: team_run `waiting_answer` ⇒ sequential chạy tiếp từ `cursor` (bỏ thành viên đã xong). Chỉ sequential.
-  if (team.mode === "lead_plan") return runLeadPlan(st);
+  // HUB-FR-110 · resume: `waiting_answer` / thử lại (T7b) ⇒ sequential chạy tiếp từ `cursor` (bỏ thành viên đã xong).
+  if (team.mode === "lead_plan") return runLeadPlan(st, tr);
   const toRun = redoSubset(st, members); // D8 · làm lại chọn lọc (attempt>1)
+  if (tr.retry && team.mode === "parallel_merge") st.noCount = toRun.length; // T7b · gọi lại CẢ lượt
   if (team.mode === "parallel_merge") return runParallel(st, toRun);
   return runSequential(st, toRun, false, tr.resume ? tr.cursor : 0);
 }
@@ -117,6 +125,7 @@ type Ctx = {
   callIdx: number;
   usage: number;
   lastJobId: string | null;
+  noCount: number;
 };
 
 const fail = (reason: "agent_failed" | "job_timeout"): TeamOut => ({
@@ -171,9 +180,11 @@ async function runSequential(
   return await finishOutput(st);
 }
 
-async function runLeadPlan(st: Ctx): Promise<TeamOut> {
+async function runLeadPlan(st: Ctx, tr: EnsuredRun): Promise<TeamOut> {
   const leadId = st.team.lead_agent_id;
-  if (!leadId) return runSequential(st, st.members, true);
+  if (!leadId) return runSequential(st, st.members, true, tr.retry ? tr.cursor : 0);
+  // T7b · thử lại sau khi đã có kế hoạch ⇒ chạy tiếp theo kế hoạch đã lưu từ `cursor` (không gọi lại lead).
+  if (tr.retry && tr.plan) return runSequential(st, planSeq(st, tr.plan), false, tr.cursor);
   const hit = await checkLimit(st);
   if (hit) return await stopLimit(st, hit);
   const leadStep: Step = {
@@ -183,7 +194,7 @@ async function runLeadPlan(st: Ctx): Promise<TeamOut> {
     fallback: false,
   };
   const lead = await callOne(st, leadStep);
-  if (lead.outcome.kind === "failed") return await stopFail(st, lead);
+  if (lead.outcome.kind === "failed") return stopFail(st, lead, -1);
   if (lead.outcome.kind === "need_input")
     return await pauseAsk(st, [{ role: "Trưởng nhóm", q: lead.outcome.question }], st.callIdx);
   const asTeam: TeamMember[] = st.members.map((m) => ({
@@ -193,9 +204,13 @@ async function runLeadPlan(st: Ctx): Promise<TeamOut> {
   const plan = parseLeadPlan(lead.outcome.text, asTeam, st.team.limits.max_plan_steps);
   if (!plan.ok) return runSequential(st, st.members, true);
   await savePlan(st, plan.steps);
+  return runSequential(st, planSeq(st, plan.steps), false);
+}
+
+/** Bước kế hoạch ⇒ thành viên theo thứ tự (bỏ khoá lạ) — cùng cách dựng khi chạy lần đầu và khi thử lại. */
+function planSeq(st: Ctx, steps: readonly SavedStep[]): TeamMemberRow[] {
   const byKey = new Map(st.members.map((m) => [st.keyOf.get(m.agent_id) ?? m.agent_id, m]));
-  const seq = plan.steps.map((s) => byKey.get(s.member)).filter((m): m is TeamMemberRow => !!m);
-  return runSequential(st, seq, false);
+  return steps.map((s) => byKey.get(s.member)).filter((m): m is TeamMemberRow => !!m);
 }
 
 /** D8 · thành viên chạy lượt này: attempt 1 ⇒ cả nhóm; attempt>1 ⇒ lọc theo `redo_sections`/`feedback` (`redoMembers`). */
@@ -217,13 +232,15 @@ async function runParallel(st: Ctx, members: TeamMemberRow[]): Promise<TeamOut> 
   const hit = await checkLimit(st);
   if (hit) return await stopLimit(st, hit);
   const files = await draftFiles(st, 1);
+  await countCalls(st, members.length);
   const calls = await Promise.all(
     members.map((m) => runMember(st.d, mkCall(st, seqStep(st, m, false), files))),
   );
   st.callIdx += calls.length;
-  for (const r of calls) await bump(st, r);
-  const fails = calls.find((r) => r.outcome.kind === "failed");
-  if (fails?.outcome.kind === "failed") return await stopFail(st, fails);
+  for (const r of calls) bump(st, r);
+  const failAt = calls.findIndex((r) => r.outcome.kind === "failed");
+  const fails = calls[failAt];
+  if (fails) return stopFail(st, fails, failAt);
   const asks = members
     .map((m, i) => ({ m, r: calls[i] }))
     .filter((x) => x.r?.outcome.kind === "need_input");
@@ -247,9 +264,10 @@ type Step = { m: TeamMemberRow; role: "member" | "plan"; prompt: string; fallbac
 
 async function callOne(st: Ctx, step: Step): Promise<MemberResult> {
   const files = await draftFiles(st, st.callIdx + 1);
+  await countCalls(st, 1);
   const res = await runMember(st.d, mkCall(st, step, files));
   st.callIdx += 1;
-  await bump(st, res);
+  bump(st, res);
   return res;
 }
 
@@ -284,7 +302,7 @@ async function applyMember(
   res: MemberResult,
   cursor: number,
 ): Promise<TeamOut | null> {
-  if (res.outcome.kind === "failed") return await stopFail(st, res);
+  if (res.outcome.kind === "failed") return stopFail(st, res, cursor);
   if (res.outcome.kind === "need_input")
     return await pauseAsk(st, [{ role: m.role, q: res.outcome.question }], cursor);
   mergeInto(st, m, res.outcome.text);

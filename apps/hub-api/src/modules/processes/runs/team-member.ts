@@ -6,7 +6,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import { runJob } from "../../runner/job/job-agent-runner";
 import { runErrorText } from "../../runs/run-errors";
-import { tokensOf } from "../adapters/runs/job-result";
+import { jobFailOf, tokensOf } from "../adapters/runs/job-result";
 import { type MemberOutcome, type MemberResult, outcomeOf } from "../adapters/runs/team-failure";
 import { mapTeamError } from "./sources.rules";
 import type { TeamDeps as Deps } from "./team-load";
@@ -41,6 +41,8 @@ const process = (m: MemberCall) => ({
   files: m.files,
 });
 
+const NOT_CONFIGURED: MemberOutcome = { kind: "failed", reason: "not_configured" };
+
 /** Tạo run nền thành viên + chạy job + đóng run. */
 export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
   const prep = {
@@ -54,10 +56,9 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
   try {
     prepared = await d.runs.prepareProcess(m.u, prep, { skipGrant: true });
   } catch {
-    return { outcome: { kind: "failed", reason: "not_configured" }, usage: 0, jobId: null };
+    return { outcome: NOT_CONFIGURED, usage: 0, jobId: null, job: null };
   }
-  if (!prepared.direct)
-    return { outcome: { kind: "failed", reason: "not_configured" }, usage: 0, jobId: null };
+  if (!prepared.direct) return { outcome: NOT_CONFIGURED, usage: 0, jobId: null, job: null };
   await withHubScope(d.db, { kind: "user", ...m.u }, (tx) => d.runs.createRunTx(tx, prepared));
   const task = {
     run: prepared.run,
@@ -78,6 +79,8 @@ export async function runMember(d: Deps, m: MemberCall): Promise<MemberResult> {
     outcome,
     usage: o.kind === "aborted" ? 0 : tokensOf(o.usage),
     jobId: o.kind === "aborted" ? null : o.jobId || null,
+    // T7b · lỗi job thô chỉ khi thành viên lỗi (output không đọc được ⇒ `agent_failed`, không thử lại — như agent đơn).
+    job: outcome.kind === "failed" ? jobFailOf(o) : null,
   };
 }
 
