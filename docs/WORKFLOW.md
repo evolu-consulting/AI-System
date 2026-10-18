@@ -88,12 +88,13 @@ Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **I
 2. song song:
    backend-lead     contract (zod) + DB + ngân sách hiệu năng + ADR nếu cần    → plan.md (BE)
    frontend-lead    lấp chỗ trống UI, câu chữ, role/nhãn cho e2e + ADR nếu cần   → plan.md (FE)
-3. qc               test-plan.md + viết acceptance/e2e/test luật BR dựa trên contract + spec (đỏ là đúng)
+3. qc               test-plan.md (mọi task) + viết test TRƯỚC code chỉ cho task rủi ro cao (đỏ là đúng; xem "Test trước theo rủi ro")
 4. spec-readiness   READY? — không: điều phối gom câu hỏi hỏi người dùng MỘT lượt, quay lại 1–3
 5. ★ GATE           người dùng duyệt gói: spec · contract · UI · ADR · test-plan · tasks
 6. qc               ghi tests/.lock (checksum test đã duyệt)
 7. song song, mỗi agent một git worktree:
-   backend-lead ∥ frontend-lead   code theo tasks.md tới khi test của QC xanh + unit test của mình
+   backend-lead ∥ frontend-lead   task cao: code tới khi test của QC xanh + unit test của mình
+                                  task thường: code + test (unit/int/e2e theo Luật 4b) cùng task → qc đọc nhanh diff test, ghi lock
    (mốc lớn / nhiều session: Bước 0 + nhánh theo feature, xem "Làm song song nhiều session")
 8. qc               chạy toàn bộ, báo độ phủ theo FR; test sai → mục Tranh chấp
 9. reviewer         review; Blocker/Major → trả agent code sửa (tối đa 2 vòng/task)
@@ -145,6 +146,7 @@ Nhánh · task đã xong · file đã sửa ngoài cột `File` (nếu có, kèm
 
 ## Luật khoá test
 
+- **Test trước theo rủi ro (người dùng 2026-10-18):** cột `Rủi ro` của `tasks.md` quyết. **Cao** = RLS/tenant, quyền, auth/secrets, khoá/transaction/NOTIFY, đường nóng có ngưỡng perf, contract ⇒ qc viết test trước code, khoá ở Gate. **Thường** (UI, mapper, nhãn/i18n, sửa nhỏ, tách file) ⇒ agent code viết test cùng task vào file test **mới** (không sửa file đã khoá; cần sửa ⇒ Tranh chấp test), qc (Haiku/Sonnet) đọc nhanh diff test — kiểm bám spec/AC, không test theo lỗi của code, đỏ được khi bỏ code — rồi `test:lock:write`. Lý do giữ test trước ở task cao: người viết code tự viết test dễ khớp luôn lỗi của mình.
 - **Trước khi khoá — "đỏ đúng lý do"** (M3: 8 tranh chấp, 7 là test sai, chủ yếu lỗi dựng dữ liệu): qc chạy mọi file test mới trên code hiện tại (DB test riêng của qc). Mỗi ca đỏ phải đỏ ở `expect`/404/route chưa có — **không** được đỏ ở phần dựng dữ liệu (`PostgresError`, `TypeError` trong fixture/`beforeAll`, seed). Ca dựng dữ liệu lỗi → sửa trước khi `test:lock:write`. Ghi kết quả (số ca đỏ đúng lý do / tổng) vào `test-plan.md`.
 - Sau Gate, `tests/acceptance/**` và `e2e/**` bị khoá bằng `tests/.lock` (sha256 từng file). Chỉ `qc` được cập nhật lock.
 - `bun run test:lock:verify` chạy trong CI và trước khi báo xong; checksum lệch → đỏ.

@@ -15,7 +15,8 @@ Bạn là **qc**. Bạn đại diện cho nghiệp vụ: test của bạn là đ
 ## Được sửa
 `tests/**`, `e2e/**`, `tests/.lock`, `docs/specs/*/test-plan.md`, mục 10 "Tranh chấp test" của spec. **Không** sửa code sản phẩm.
 
-## Chế độ WRITE (trước code)
+## Chế độ WRITE (trước code — chỉ task rủi ro **cao**)
+Task rủi ro cao (RLS/tenant, quyền, auth/secrets, khoá/transaction, đường nóng có ngưỡng perf, contract): viết test trước như dưới. Task **thường**: không viết trước; agent code tự viết test cùng task, qc chạy chế độ **REVIEW-TEST** (đọc nhanh diff test: bám spec/AC, không khớp theo lỗi của code, đỏ được khi bỏ code, không sleep/poll) rồi `test:lock:write` — `docs/WORKFLOW.md` "Test trước theo rủi ro".
 1. `test-plan.md`: mỗi FR/BR/AC trong phạm vi → ít nhất một test; ghi loại, file, dữ liệu, kỳ vọng. Mọi FR **MUST** phải có test.
 2. Viết test:
    - **Acceptance** (`tests/acceptance/<FR>/`): gọi API theo contract qua app thật + DB test (seed riêng), kiểm cả nhánh lỗi (role sai, tenant sai → 404, 409 version, validate).
