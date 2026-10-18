@@ -39,10 +39,22 @@ afterAll(async () => {
   await c?.stop();
 });
 
-const p95 = (xs: number[]) => {
+const pct = (xs: number[], q: number) => {
   const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.floor(0.95 * s.length))] ?? 0;
+  return s[Math.min(s.length - 1, Math.floor(q * s.length))] ?? 0;
 };
+const p95 = (xs: number[]) => pct(xs, 0.95);
+/** "p50/p90/p95 ms (n=…)" để in. */
+const dist = (xs: number[]) =>
+  `p50=${pct(xs, 0.5).toFixed(1)} p90=${pct(xs, 0.9).toFixed(1)} p95=${p95(xs).toFixed(1)} ms (n=${xs.length})`;
+/** Cỡ mẫu đo (D2-48): p95 trên n < 20 = lượt chậm nhất; n ≥ 40 ⇒ p95 là lượt chậm thứ hai. */
+const N_MEASURE = 40;
+/** Số lượt làm nóng = số kết nối của pool Hub (`options.max` của postgres.js) + 2 (D2-48): pool dùng xoay vòng, mỗi
+ *  kết nối phải chuẩn bị xong câu (prepared statement) trước cửa sổ đo; đọc số từ pool thật, không gõ cứng. */
+function warmRounds(): number {
+  const max = ((c.hub.db as Json)?.db?.$client as Json)?.options?.max;
+  return (typeof max === "number" && max > 0 ? max : 10) + 2;
+}
 async function timed(n: number, fn: (i: number) => Promise<void>): Promise<number[]> {
   const ms: number[] = [];
   for (let i = 0; i < n; i++) {
@@ -96,19 +108,17 @@ describe("PD2-P01 · lưu def 10 stage / 3 tool [plan-d2 §9; trần PROCESS_STA
     const putTool = await mk("t", stages);
     const putPlain = await mk("p", plain);
     // Làm nóng CẢ HAI bản như nhau (kết nối, plan SQL, JIT) rồi đo XEN KẼ ⇒ không lệch thứ tự.
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < warmRounds(); i++) {
       await putTool();
       await putPlain();
     }
     const msTool: number[] = [];
     const msPlain: number[] = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < N_MEASURE; i++) {
       msTool.push(...(await timed(1, putTool)));
       msPlain.push(...(await timed(1, putPlain)));
     }
-    console.log(
-      `PD2-P01 p95 có tool=${p95(msTool).toFixed(1)} ms, không tool=${p95(msPlain).toFixed(1)} ms (n=40, 10 stage, 3 tool)`,
-    );
+    console.log(`PD2-P01 có tool ${dist(msTool)}; không tool ${dist(msPlain)} (10 stage, 3 tool)`);
     expect(p95(msTool)).toBeLessThanOrEqual(50);
     expect(p95(msTool)).toBeLessThanOrEqual(p95(msPlain) + 5);
     const withTool = await countQueries(c.hub, putTool);
@@ -145,10 +155,10 @@ describe("PD2-P02 · catalog editor 200 workflow × 50 tenant [plan-d2 §9]", ()
       const r = await c.call("Adm", "GET", "/process-editor/context");
       expect(r.status).toBe(200);
     };
-    await get();
-    const ms = await timed(30, get);
+    for (let i = 0; i < warmRounds(); i++) await get();
+    const ms = await timed(N_MEASURE, get);
     const q = await countQueries(c.hub, get);
-    console.log(`PD2-P02 p95=${p95(ms).toFixed(1)} ms câu SQL=${q.n}`);
+    console.log(`PD2-P02 ${dist(ms)} câu SQL=${q.n}`);
     expect(p95(ms)).toBeLessThanOrEqual(20);
     expect(q.n).toBe(2);
   }, 120_000);
@@ -220,8 +230,9 @@ describe("PD2-P03 · một stage tool — số câu cố định [plan-d2 §9]",
     // T18-perf-1: ≤ 14 câu NGOÀI launch (plan-d2 §9) = chỉ câu của driver tool (không so với mốc agent: cửa sổ khác nhau).
     expect(one.driver).toBeLessThanOrEqual(14);
     const ms: number[] = [];
-    for (let i = 0; i < 10; i++) ms.push((await toolRun(WF.W.key)).ms);
-    console.log(`PD2-P03 p95=${p95(ms).toFixed(1)} ms (n=10, Dify giả trả ngay)`);
+    for (let i = 0; i < warmRounds(); i++) await toolRun(WF.W.key); // làm nóng đủ pool (D2-48)
+    for (let i = 0; i < N_MEASURE; i++) ms.push((await toolRun(WF.W.key)).ms);
+    console.log(`PD2-P03 ${dist(ms)} (Dify giả trả ngay)`);
     expect(p95(ms)).toBeLessThanOrEqual(60);
   }, 120_000);
 });
@@ -279,22 +290,22 @@ describe("PD2-P04 · nhánh +4 câu dù nhảy 1 hay 7 bước [plan-d2 §9, rea
   it("HUB-FR-147 · PD2-P04 · nhảy 1 bước vs 7 bước ⇒ số câu SQL bằng nhau; join p95 ≤ 30 ms", async () => {
     await prep();
     // T19-3: def tối đa `PROCESS_STAGES_MAX` = 10 bước ⇒ nhảy 1 (goto 3) vs nhảy 7 (goto 9).
-    await branchPass(10, 3); // làm nóng: lượt đầu của tiến trình có thêm câu khởi tạo (cache lần đầu), không do nhánh
+    // Làm nóng ≥ số kết nối pool + 2 lượt (D2-48): lượt đầu của tiến trình có thêm câu khởi tạo, và mỗi kết nối pool phải
+    // chuẩn bị xong câu lần đầu (xoay vòng) — không do nhánh.
+    for (let i = 0; i < warmRounds(); i++) await branchPass(5, 3);
     const skip1 = await branchPass(10, 3);
     const skip7 = await branchPass(10, 9);
     console.log(`PD2-P04 câu SQL nhảy 1=${skip1.n}, nhảy 7=${skip7.n}`);
     expect(skip7.n).toBe(skip1.n);
     const ms: number[] = [];
     const post: number[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < N_MEASURE; i++) {
       const r = await branchPass(5, 3);
       ms.push(r.ms);
       post.push(r.post);
     }
     // Khoảng đo theo plan-d2 §9 = POST Đạt + `settled()`; in thêm riêng POST (join + nhánh) để chẩn đoán, không khẳng định.
-    console.log(
-      `PD2-P04 p95=${p95(ms).toFixed(1)} ms (n=10; riêng POST ${p95(post).toFixed(1)} ms)`,
-    );
+    console.log(`PD2-P04 ${dist(ms)}; riêng POST ${dist(post)}`);
     expect(p95(ms)).toBeLessThanOrEqual(30);
   }, 120_000);
   it("HUB-FR-147 · PD2-P04 · mốc = def KHÔNG branch: khớp = mốc + 4 câu; không khớp = mốc + 1 (đọc `fields` để đánh giá, #97)", async () => {
@@ -326,8 +337,8 @@ async function listPage(n: number, withTimers: boolean): Promise<{ q: number; ms
     const r = await c.call("Adm", "GET", "/process-runs?scope=tenant&limit=50");
     expect(r.status).toBe(200);
   };
-  await get();
-  const ms = await timed(20, get);
+  for (let i = 0; i < warmRounds(); i++) await get();
+  const ms = await timed(N_MEASURE, get);
   // Nhiễu nền: đọc trạng thái job của run vừa tạo (stream run, không thuộc lời gọi GET) chen vào cửa sổ đếm ±1 câu.
   const cq = await countQueries(c.hub, get);
   return { q: cq.queries.filter((s) => !s.includes('from "hub"."jobs"')).length, ms };
@@ -343,7 +354,7 @@ describe("PD2-P05 · danh sách run: wait/retry theo tập [plan-d2 §9, D2-32]"
     const one = await listPage(50, false);
     const full = await listPage(50, true);
     console.log(
-      `PD2-P05 câu SQL không hẹn=${one.q}, 50 hẹn=${full.q}; p95=${p95(full.ms).toFixed(1)} ms (mốc ${p95(one.ms).toFixed(1)})`,
+      `PD2-P05 câu SQL không hẹn=${one.q}, 50 hẹn=${full.q}; ${dist(full.ms)} (mốc p95=${p95(one.ms).toFixed(1)})`,
     );
     expect(full.q).toBe(one.q);
     expect(p95(full.ms)).toBeLessThanOrEqual(40);
