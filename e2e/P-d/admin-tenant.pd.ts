@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { TENANT_ID } from "../../tests/acceptance/M1/_data";
 import { viStorageState } from "../support/locale-vi";
-import { adminLogin, withSql } from "./_pd-support";
+import { adminLogin, clearAcmeSwitch, PD2_E2E, seedPd2Tools, withSql } from "./_pd-support";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e (playwright.pd.config đặt)
 const ADMIN = process.env.PA_ADMIN_URL ?? "http://localhost:5305";
@@ -89,4 +89,47 @@ test("ADM-FR-72 · AC-A14 · PD-E05 · API trả 400 (múi giờ lạ) ⇒ alert
       .getByRole("alert")
       .filter({ hasText: "Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách." }),
   ).toBeVisible();
+});
+
+test("ADM-FR-73 · AC-A15 · PD2-E03 · padmin tab 'Tool quy trình': bật 'Xuất HĐ' không hỏi (toast), tắt hỏi xác nhận; workflow tắt có huy hiệu", async ({
+  page: p,
+}) => {
+  await seedPd2Tools(); // tiền đề thiếu ⇒ ném "chưa có tính năng" NGAY
+  await clearAcmeSwitch();
+  await platformLogin(p);
+  await p.goto(`/tenants/${TENANT_ID.acme}`);
+  await p.getByRole("tab", { name: "Tool quy trình" }).click();
+  const tbl = p.getByRole("table", { name: "Tool quy trình" });
+  const sw = tbl.getByRole("switch", { name: `Bật tool ${PD2_E2E.W.name}` });
+  await expect(sw).not.toBeChecked();
+  await expect(tbl.getByRole("row").filter({ hasText: PD2_E2E.WOFF.name })).toContainText(
+    "Workflow đang tắt",
+  );
+  await expect(tbl.getByRole("row").filter({ hasText: PD2_E2E.WS.name })).toContainText(
+    "Tác dụng phụ",
+  );
+
+  const put = p.waitForResponse(
+    (r) => r.request().method() === "PUT" && /workflow-tools/.test(r.url()),
+  );
+  await sw.click();
+  expect((await put).status()).toBe(200);
+  await expect(p.getByText(/Đã bật tool Xuất HĐ cho/)).toBeVisible();
+  await expect(sw).toBeChecked();
+
+  await sw.click();
+  const dlg = p.getByRole("alertdialog", { name: "Tắt tool Xuất HĐ?" });
+  await expect(dlg).toContainText("Lượt chạy đang chờ gọi tool này sẽ dừng ở “Cần người quyết”.");
+  await dlg.getByRole("button", { name: "Huỷ" }).click();
+  await expect(sw).toBeChecked();
+  await sw.click();
+  const del = p.waitForResponse(
+    (r) => r.request().method() === "DELETE" && /workflow-tools/.test(r.url()),
+  );
+  await p
+    .getByRole("alertdialog", { name: "Tắt tool Xuất HĐ?" })
+    .getByRole("button", { name: "Tắt tool" })
+    .click();
+  expect((await del).status()).toBe(200);
+  await expect(sw).not.toBeChecked();
 });

@@ -4,10 +4,12 @@
 // giá trị không phải ngày lịch (value rỗng) nên nhánh `dateInvalid` chỉ tới được bằng giá trị gõ tay — phủ ở unit inputs-rules.
 import { expect, type Page, test } from "@playwright/test";
 import { roomComposer } from "../chat/_x2a-support";
+import { flowLog, openThread } from "../P-a/_pa-support";
 import {
   mkRoom,
   seedEscalated,
   seedPd,
+  seedPd2Run,
   seedPdDecision,
   seedTimerRun,
   settle,
@@ -145,6 +147,23 @@ test("CHAT-AC-59 · AC-H41 · PD-E08(d) · form '!pd-wait-input': ô ngày (type
     expect(body.inputs).toEqual(
       expect.arrayContaining([{ type: "date", key: "han", value: "2026-12-14" }]),
     );
+  } finally {
+    await u.close();
+  }
+});
+
+test("CHAT-AC-59 · AC-H45 · AC-H47 · PD2-E04 · run có stage nhảy ⇒ dải 'Bỏ qua'; lỗi tool ⇒ vùng 'Cần người quyết' 'Gọi tool bị lỗi.'; thread có tin 'Rẽ nhánh: tới bước 4 (luật 1)'", async ({
+  browser,
+}) => {
+  const room = await mkRoom("EPD2E04");
+  const runId = await seedPd2Run(room.id); // tiền đề thiếu ⇒ ném "chưa có tính năng" NGAY
+  const u = await users(browser, "A");
+  try {
+    await u.A.goto(`/runs/${runId}`);
+    await expect(strip(u.A).getByRole("listitem").filter({ hasText: "Bỏ qua" })).toBeVisible();
+    await expect(decision(u.A)).toContainText("Gọi tool bị lỗi.");
+    await openThread(u.A, room.id);
+    await expect(flowLog(u.A)).toContainText("Rẽ nhánh: tới bước 4 (luật 1)");
   } finally {
     await u.close();
   }

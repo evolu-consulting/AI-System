@@ -106,10 +106,10 @@ b8545f91e490d7efedf4405e74335f2e66f74363097c4b4f16d71e9402d6cb57  e2e/P-c/playwr
 e80da141b41719e6e2164c538016b714db832b4f865f4456660c49c9add969ef  e2e/P-c2/chat/decision.pc2.ts
 7698742686506f975fc3bf130b10abbf27be91d5002d466dee135d3e753bec7d  e2e/P-c2/chat/result.pc2.ts
 c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playwright.pc2.config.ts
-30909bdf24f39176b19c4da348a8ca1ec1740fd6116d8b891c744b76bb5745da  e2e/P-d/_pd-support.ts
-7bd4fe2233d55e01113c9c63e85a4f1ad5654c6d2bd9e21e08897295150c0b98  e2e/P-d/admin-stage.pd.ts
-7f117e32fe2592748c0c012855ed6992197da291857c485ceacc5d1ff681c0c1  e2e/P-d/admin-tenant.pd.ts
-559aaf1752d8a13b52bbb1a6e5802bb6776931d512e34c95b65f20b10f88b158  e2e/P-d/chat-labels.pd.ts
+7e7b27e2adb5c8881ed14c680b63a38e32db51a2a90ceed1c6c975e267e6a960  e2e/P-d/_pd-support.ts
+d41f28c564266f4e296b7159472e54db5325de0b0a215be4d6d4778b223d77b2  e2e/P-d/admin-stage.pd.ts
+6d0d0a657d77e39c2cc2802e698c78cf80dc5a6ab7e8332b3a8409f42ed8d1a1  e2e/P-d/admin-tenant.pd.ts
+063824b2ca90ff2fd2642e9987d371b75f72bd712a0d087614fb666ad5038ddf  e2e/P-d/chat-labels.pd.ts
 9b9ab76d2d89c970fa291af89dd52b9da7ab78f29ae4cc0f147476fa69c8ad2a  e2e/P-d/playwright.pd.config.ts
 8c572e905a5a971e740b014496380e823b898946b00421604fd6f63c16ba0780  e2e/access-check.spec.ts
 d2c81bd8128f68801f72cca23c5d001a99b89e6ec9bb84eb7d6d50c2f77d3332  e2e/access-command.spec.ts
@@ -721,7 +721,7 @@ b0ef6838a41fe8f389e26686134cb421c2bed253a243f6fbe9ed2f684ac12cce  tests/acceptan
 9050d7f159372d23514374dbc3aa0b4a90e09d8f9967cde2b2be3a5161d0adb4  tests/acceptance/P-d/_support/two-tenant.ts
 af8b2d12de386420f62b542e22b31d35ed37e022814c2d90262c9c6271a98483  tests/acceptance/P-d/admin/timezone-rules.test.ts
 2610055c512b4da0c72d3b6954aa5f734d0aac62a80e286a8b3aff60718b7a87  tests/acceptance/P-d/admin/timezone.int.test.ts
-80f3f54da05b33a014fce88bd5d1177a41f106dcef4cb4e280d3579dde79aaf9  tests/acceptance/P-d/admin/workflow-tools.int.test.ts
+bac8a0fae0c9487a5c6f243a5df63b1a2ac7b620e2596aa6f108f695b90ae343  tests/acceptance/P-d/admin/workflow-tools.int.test.ts
 64e38a3cbf73b69b3814df9fe75a63ef3a03acbee615971ebfab8d3f1dfce997  tests/acceptance/P-d/arch/layers.test.ts
 0e4a401a6be001ded5aa0d1022709f47ded16c8f6280d695b0c8bc6e76cd733c  tests/acceptance/P-d/d1/_bulk.ts
 2f291b2a4c7a139d0a67ac89b9d913a1d93d62db58213728ce3ae1a2293d37aa  tests/acceptance/P-d/d1/_count.ts
@@ -752,9 +752,9 @@ bfd9e6ef7e024eb818d39ceb76fe35c6f888c0f94d4e9ed3a7571fdf8905f02a  tests/acceptan
 0a902badaa95e15440d58b7165509e076ad7a4aa7b18dbc71afa6f190dc21043  tests/acceptance/P-d/d2/db.int.test.ts
 ca19b0cc18dc34eb754fb209b3c4b94eed4ba9ab846a74e32769aeb0894b1f8f  tests/acceptance/P-d/d2/tool-net.int.test.ts
 3f3f8b646d5d6a4acd1c1554543299afced02c761bd1005199ceb5a7ac741fd6  tests/acceptance/P-d/d2/tool-switch.int.test.ts
-d80dac5247c33bf324658a12f467a9be74a4997757911e3c4acd62e24fac345f  tests/acceptance/P-d/d2/tool.int.test.ts
+d08550db3bd1bfa175217ad1089745876ad28cbafc88633a4376e282c7a58de3  tests/acceptance/P-d/d2/tool.int.test.ts
 df5bf2adf5839297dfa3ed71606207edd71995e9355977d19d2974f6f9c532da  tests/acceptance/P-d/perf/background.perf.int.test.ts
-eeb41146b9da7e7ab806252146e44a862006e06297b0ba8e0b34e30edd2c53fe  tests/acceptance/P-d/perf/d2.perf.int.test.ts
+3a4f9f80c41dc41236f9800ee874b6578e9dba96b03bb5f289cb73e95f5b8a5d  tests/acceptance/P-d/perf/d2.perf.int.test.ts
 55a43a06e1eedc783dd7581a7b3aef8b7b2db5ec816f75d89ba53d795d5a87f3  tests/acceptance/P-d/perf/remind.perf.int.test.ts
 8e58ca7cacc9f1d6166dfd0d687114ae9a83ee0a4fae2bebad196ffa73b2fc55  tests/acceptance/P-d/perf/timers.perf.int.test.ts
 6a0730f1322dbd2e6d0e5d2fe7099eaa6ad5343aabbd137e39e2d723488d1fde  tests/acceptance/P-d/rules/_contracts.ts
@@ -765,9 +765,9 @@ e6f29d8fc3471fa69a54382b8d25c34b3a5889fce3218cdca5dfb172ef346ca4  tests/acceptan
 255dd55a3e1462811a1b3a0d859e126398bb572d4422074a7ede2a5bf9be81a2  tests/acceptance/P-d/rules/contracts-pd1.test.ts
 52e756a48a8eb604e96cbee78de3797d53573736c531f2d3f9e8201638530dfb  tests/acceptance/P-d/rules/d2/branch.test.ts
 707125aa06e0bc0861b064e28905eecd5f0fe892af7bf40bb313eb7804d6591a  tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts
-48172d354634f790a30cc52f0440a95127c3ed7b1cc9c30d13bd7b2da0afa762  tests/acceptance/P-d/rules/d2/def-issues.test.ts
+f369228eade6fdfc566a24f0dfb35d7a9f6ebc2af9003f9c0d7c56cd80aa0b7b  tests/acceptance/P-d/rules/d2/def-issues.test.ts
 6428781000d3a94fb478e08d40bf3ac289cf94d577cb0a33f001e0d3228302f6  tests/acceptance/P-d/rules/d2/run-tool-stage.test.ts
-046206b1756093ecf84ee37dd615f293b58334d8285d025dac13b36018fd65ab  tests/acceptance/P-d/rules/d2/tool.test.ts
+327a9371597a41bbfb0aba8c9bb49e2d29385944a4e119431a79d39e5df58418  tests/acceptance/P-d/rules/d2/tool.test.ts
 c6020f8f9ca3e26713b4ff6d0ed71ff50069ee948892c5439ba9c7c452bf6996  tests/acceptance/P-d/rules/decision.test.ts
 60968e76e5b189cc489ad467adcae7a72ef05b32703e858c28791527a2287502  tests/acceptance/P-d/rules/domain-contract.test.ts
 82b315d676f8de562fa7c3a4043983448442df1c10b1e8bedfd7f4688b322360  tests/acceptance/P-d/rules/due-at.test.ts

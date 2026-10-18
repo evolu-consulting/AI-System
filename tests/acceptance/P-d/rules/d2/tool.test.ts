@@ -59,6 +59,66 @@ describe("PD2-U04…U05 · buildToolArgs [plan-d2-rules §1]", () => {
   });
 });
 
+describe("PD2-U04 · buildToolArgs · inputTypes [D2-29, readiness #100]", () => {
+  const args = {
+    tong_tien: { from: "input", key: "so-tien" },
+    ma_kh: { from: "input", key: "ma" },
+  };
+  const inputs = new Map([
+    ["so-tien", "25000000"],
+    ["ma", "007"],
+  ]);
+  it("AC-H44 · PD2-U04 · input kiểu number ⇒ Number (số JS); input text giữ chuỗi dù trông như số", async () => {
+    const f = await dom("buildToolArgs");
+    const types = new Map([
+      ["so-tien", "number"],
+      ["ma", "text"],
+    ]);
+    expect(f(args, inputs, new Map(), types)).toEqual({
+      ok: true,
+      values: { tong_tien: 25_000_000, ma_kh: "007" },
+    });
+  });
+  it("AC-H44 · PD2-U04 · không truyền inputTypes (tham số 4 tuỳ chọn) ⇒ giữ chuỗi như P-d2 gốc", async () => {
+    const f = await dom("buildToolArgs");
+    expect(f(args, inputs, new Map())).toEqual({
+      ok: true,
+      values: { tong_tien: "25000000", ma_kh: "007" },
+    });
+  });
+});
+
+describe("PD2-U02 · paramCompatible [plan-d2-rules §2, D2-29, readiness #100]", () => {
+  // [kiểu tham số, kiểu nguồn, hợp lệ?] — ma trận duy nhất BE ≡ FE
+  const V: [string, string, boolean][] = [
+    ["number", "number", true],
+    ["number", "string", false],
+    ["number", "date", false],
+    ["number", "boolean", false],
+    ["boolean", "boolean", true],
+    ["boolean", "string", false],
+    ["boolean", "number", false],
+    ["select", "string", true],
+    ["select", "number", false],
+    ["select", "date", false],
+    ["select", "boolean", false],
+    ["text", "string", true],
+    ["text", "number", true],
+    ["text", "date", true],
+    ["text", "boolean", true],
+    ["paragraph", "number", true],
+    ["paragraph", "date", true],
+    ["date", "date", true],
+    ["date", "string", true],
+    ["date", "number", false],
+  ];
+  it("AC-H44 · PD2-U02 · ma trận paramCompatible(sourceType, paramType) khớp bảng plan-d2-rules §2 (20 vector)", async () => {
+    const f = await dom("paramCompatible");
+    const got = V.map(([p, s]) => [p, s, f(s, p)]);
+    expect(got).toEqual(V);
+  });
+});
+
 describe("PD2-U06 · classifyToolError [plan-d2-rules §1, Q-D2-2]", () => {
   it("HUB-BR-12 · PD2-U06 · chưa gửi UPSTREAM_ERROR/TIMEOUT ⇒ transient", async () => {
     const f = await dom("classifyToolError");

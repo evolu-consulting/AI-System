@@ -99,6 +99,74 @@ describe("PD2-U01…U03 · toolStageIssues [plan-addendum A2]", () => {
   });
 });
 
+describe("PD2-U02 · toolStageIssues · kiểu nguồn ↔ tham số ⇒ TOOL_INVALID args.<tên> [D2-29, readiness #100]", () => {
+  const TYPED = new Map<string, Rec>([
+    [
+      "kieu",
+      {
+        key: "kieu",
+        side_effect: false,
+        params: [
+          { name: "n", type: "number", required: false },
+          { name: "b", type: "boolean", required: false },
+          { name: "s", type: "select", required: false, options: ["a", "b"] },
+          { name: "t", type: "text", required: false },
+          { name: "g", type: "paragraph", required: false },
+        ],
+      },
+    ],
+  ]);
+  const IN = [
+    { key: "ma-kh", type: "text" },
+    { key: "so-tien", type: "number" },
+    { key: "ngay", type: "date" },
+  ];
+  const head = s0({
+    output: {
+      fields: [
+        { key: "n", type: "number", required: true },
+        { key: "c", type: "string", required: false },
+        { key: "d", type: "date", required: false },
+      ],
+    },
+  });
+  const one = (name: string, src: Rec): Issue[] =>
+    fn(ha, "toolStageIssues")([head, toolDraft({}, { [name]: src }, "kieu")], IN, TYPED) as Issue[];
+  const f = (field: string): Rec => ({ from: "field", stage_key: "s0", field });
+  const i = (key: string): Rec => ({ from: "input", key });
+  const k = (value: unknown): Rec => ({ from: "const", value });
+  // [tên tham số, nguồn, hợp lệ?]
+  const CASES: [string, Rec, boolean][] = [
+    ["n", k(5), true],
+    ["n", k("5"), false],
+    ["n", f("n"), true],
+    ["n", f("c"), false],
+    ["n", f("d"), false],
+    ["n", i("so-tien"), true],
+    ["n", i("ma-kh"), false],
+    ["b", k(true), true],
+    ["b", k("true"), false],
+    ["b", f("n"), false],
+    ["b", i("ma-kh"), false],
+    ["s", k("a"), true],
+    ["s", k("zzz"), false],
+    ["s", k(1), false],
+    ["s", i("ma-kh"), true],
+    ["s", f("c"), true],
+    ["s", f("n"), false],
+    ["t", k(5), true],
+    ["t", f("n"), true],
+    ["t", f("d"), true],
+    ["t", i("ngay"), true],
+    ["g", k(true), true],
+  ];
+  it("AC-H44 · PD2-U02 · 22 cặp nguồn→tham số: sai kiểu ⇒ [TOOL_INVALID stages.1.executor.args.<tên>], đúng ⇒ []", () => {
+    const got = CASES.map(([name, src]) => one(name, src));
+    const want = CASES.map(([name, , ok]) => (ok ? [] : [T(`stages.1.executor.args.${name}`)]));
+    expect(got).toEqual(want);
+  });
+});
+
 // ---------- rẽ nhánh ----------
 const RULE = { field: "tong_tien", op: "gt", value: 20_000_000, goto_step: 3 };
 const stg = (key: string, step: number, o: Rec = {}): Rec => ({

@@ -2,16 +2,21 @@
 // bắt đầu, `fields` lưu, .md có `## Kết quả` + `## Bàn giao`; 64 KB ⇒ tool_failed; lưu def sai ⇒ 422. Chờ tool-driver bằng
 // `handles.settled()`. Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { loadHubAdmin } from "../_support/modules";
 import {
   agentStage,
   createDef,
   decide,
   decisionOf,
   defBody,
+  G1,
   type Json,
   jobDone,
   mdOut,
   nextStageJob,
+  noFeature,
+  noStageJob,
+  runRow,
   stageOf,
   startRun,
   waitStageStatus,
@@ -65,7 +70,7 @@ async function runTool(): Promise<string> {
       },
     ),
   );
-  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", value: "KH1" }] });
+  const runId = await startRun(c, key, { inputs: [{ type: "text", key: "ma-kh", text: "KH1" }] });
   await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
   await waitStageStatus(c.sql, runId, 0, "done");
   await settled(c);
@@ -128,6 +133,141 @@ describe("AC-H44 · chạy stage tool", () => {
     expect(c.dify.calls).toHaveLength(2);
     const s1 = await waitStageStatus(c.sql, runId, 1, "done", 0);
     expect(s1.attempt).toBe(att + 1);
+  }, 30_000);
+});
+
+describe("AC-H44 · kết quả sai kiểu ⇒ template_invalid ngay (PD2-I02, #109)", () => {
+  it.each([
+    ["tong_tien:'abc'", { kind: "json", result: { so_hd: "HD-1", tong_tien: "abc" } }],
+    ["không JSON", { kind: "raw", text: "không phải JSON" }],
+    ["mảng", { kind: "raw", text: '[{"so_hd":"HD-1"}]' }],
+  ] as const)(
+    "AC-H44 · PD2-I02 · fake trả %s ⇒ needs_decision template_invalid, Dify đúng 1 lần",
+    async (_n, reply) => {
+      await prep();
+      c.dify.script([reply]);
+      const runId = await runTool();
+      expect((await decisionOf(c.sql, runId))?.reason).toBe("template_invalid");
+      expect(c.dify.calls).toHaveLength(1);
+    },
+    30_000,
+  );
+});
+
+describe("AC-H44 · input kiểu number tới tool là số JS (readiness #100, D2-29)", () => {
+  it("AC-H44 · PD2-I17 · input 'so-tien' kiểu number = '25000000' ⇒ Dify nhận inputs.tong_tien === 25000000 (number), ma_kh vẫn chuỗi", async () => {
+    await prep();
+    const ha = (await loadHubAdmin()) as Json;
+    if (!((ha.INPUT_TYPES as string[] | undefined) ?? []).includes("number"))
+      noFeature("kiểu input quy trình `number` (contract INPUT_TYPES)", "T17", "Tranh chấp T15c-1");
+    const key = `pd2-num-${++seq}`;
+    await createDef(
+      c,
+      defBody(
+        key,
+        [
+          toolStage({
+            key: "s0",
+            step: 0,
+            args: {
+              tong_tien: { from: "input", key: "so-tien" },
+              ma_kh: { from: "input", key: "ma-kh" },
+            },
+          }),
+        ],
+        {
+          inputs: [
+            ...MA_KH_INPUT,
+            { key: "so-tien", type: "number", label: "Số tiền", required: true },
+          ],
+        },
+      ),
+    );
+    const runId = await startRun(c, key, {
+      inputs: [
+        { type: "text", key: "ma-kh", text: "KH1" },
+        { type: "number", key: "so-tien", value: "25000000" },
+      ],
+    });
+    await settled(c);
+    await waitStageStatus(c.sql, runId, 0, "done");
+    expect(c.dify.calls).toHaveLength(1);
+    const got = c.dify.calls[0]?.inputs as Json;
+    expect({ tong_tien: typeof got.tong_tien, v: got.tong_tien, ma_kh: got.ma_kh }).toEqual({
+      tong_tien: "number",
+      v: 25_000_000,
+      ma_kh: "KH1",
+    });
+  }, 30_000);
+});
+
+describe("AC-H44 · stage tool có after.review (readiness #101, PD2-R08/R12)", () => {
+  const RULE = { field: "tong_tien", op: "gt", value: 20_000_000, goto_step: 3 };
+  const FIELDS_OUT = [
+    { key: "so_hd", type: "string", required: true },
+    { key: "tong_tien", type: "number", required: true },
+  ];
+  /** s0 agent → s1 tool (after) → s2 → s3; chạy tới khi tool-driver xong. */
+  async function runAfter(after: Json): Promise<string> {
+    const key = `pd2-rv-${++seq}`;
+    await createDef(
+      c,
+      defBody(
+        key,
+        [
+          s0(),
+          toolStage({ fields: FIELDS_OUT, after }),
+          agentStage({ key: "s2", step: 2 }),
+          agentStage({ key: "s3", step: 3 }),
+        ],
+        { inputs: MA_KH_INPUT },
+      ),
+    );
+    const runId = await startRun(c, key, {
+      inputs: [{ type: "text", key: "ma-kh", text: "KH1" }],
+    });
+    await jobDone(c, await nextStageJob(c, runId), mdOut({ tong_tien: 25_000_000 }));
+    await settled(c);
+    return runId;
+  }
+  it("AC-H44 · PD2-I18 · review: tool xong ⇒ waiting_review + 1 review task mở, s2 chưa có job; Đạt ⇒ nhánh khớp: s2 skipped, current_step 3, s3 có job", async () => {
+    await prep();
+    c.dify.script([{ kind: "json", result: { so_hd: "HD-1", tong_tien: 25_000_000 } }]);
+    const runId = await runAfter({
+      kind: "review",
+      group_id: G1,
+      back_to_steps: [],
+      branch: [RULE],
+    });
+    const s1 = await waitStageStatus(c.sql, runId, 1, "waiting_review", 0);
+    expect(s1.status).toBe("waiting_review");
+    const tasks = await c.sql<
+      Json[]
+    >`select id from hub.review_tasks where process_run_id = ${runId} and kind = 'review' and status = 'open'`;
+    expect(tasks).toHaveLength(1);
+    expect(await noStageJob(c, runId)).toBe(true); // chưa đi tiếp trước khi người duyệt
+    const res = await c.call("B", "POST", `/review-tasks/${tasks[0]?.id}/decision`, {
+      result: "pass",
+    });
+    expect(res.status).toBe(200);
+    await settled(c);
+    expect((await stageOf(c.sql, runId, 1))?.status).toBe("done");
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped");
+    expect((await runRow(c.sql, runId))?.current_step).toBe(3);
+    await nextStageJob(c, runId); // s3 có job
+    expect(c.dify.calls).toHaveLength(1); // duyệt không gọi lại tool
+  }, 30_000);
+  it("AC-H44 · PD2-I18 · auto: tool xong ⇒ done + join ngay, 0 review task, s2 có job", async () => {
+    await prep();
+    c.dify.script([{ kind: "json", result: { so_hd: "HD-1", tong_tien: 25_000_000 } }]);
+    const runId = await runAfter({ kind: "auto" });
+    expect((await stageOf(c.sql, runId, 1))?.status).toBe("done");
+    const tasks = await c.sql<
+      Json[]
+    >`select id from hub.review_tasks where process_run_id = ${runId} and kind = 'review'`;
+    expect(tasks).toHaveLength(0);
+    await nextStageJob(c, runId);
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("running");
   }, 30_000);
 });
 

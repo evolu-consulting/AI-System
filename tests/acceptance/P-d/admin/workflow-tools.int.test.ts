@@ -102,12 +102,57 @@ describe("AC-A15 · ADM-FR-73 · bật/tắt tool cho tenant", () => {
     expect(row?.revoked_at).toBeNull();
     expect((await audits(env, mark)).map((r) => r.action)).toEqual(["revoke", "grant"]);
   });
+  it("AC-A15 · PD2-I43 · DELETE: revoked_at đặt; DELETE lần 2 ⇒ 200 không đổi (0 audit, revoked_at giữ); PUT lại ⇒ granted_by mới", async () => {
+    await needSwitch();
+    await admin("PUT", path(), {});
+    expect((await admin("DELETE", path())).status).toBe(200);
+    const [r1] = await env.owner<Obj[]>`select revoked_at from admin.tenant_workflow_tools
+      where tenant_id = ${A} and workflow_id = ${W.id}`;
+    expect(r1?.revoked_at).not.toBeNull();
+    const mark = await auditMark(env.owner);
+    const d2 = await admin("DELETE", path());
+    expect({
+      status: d2.status,
+      on: d2.json?.on,
+      audits: (await audits(env, mark)).length,
+    }).toEqual({
+      status: 200,
+      on: false,
+      audits: 0,
+    });
+    const [r2] = await env.owner<Obj[]>`select revoked_at from admin.tenant_workflow_tools
+      where tenant_id = ${A} and workflow_id = ${W.id}`;
+    expect(new Date(r2?.revoked_at).getTime()).toBe(new Date(r1?.revoked_at).getTime());
+    const back = await admin("PUT", path(), {});
+    expect({ status: back.status, on: back.json?.on }).toEqual({ status: 200, on: true });
+    const [r3] = await env.owner<
+      Obj[]
+    >`select granted_by, revoked_at from admin.tenant_workflow_tools
+      where tenant_id = ${A} and workflow_id = ${W.id}`;
+    expect(r3?.revoked_at).toBeNull();
+    expect(r3?.granted_by).not.toBeNull();
+  });
   it("AC-A15 · PD2-I44…I45 · tenant_admin ⇒ 403; workflow không tồn tại ⇒ 404; body thừa trường ⇒ 400", async () => {
     await needSwitch();
     await env.token("acme", "binh");
     expect((await env.by("acme", "binh")("PUT", path(), {})).status).toBe(403);
     expect((await admin("PUT", path("a5d20000-0000-4000-8000-00000000ffff"), {})).status).toBe(404);
     expect((await admin("PUT", path(), { on: true })).status).toBe(400);
+  });
+  it("AC-A15 · PD2-I45 · tenant không tồn tại ⇒ 404 NOT_FOUND (GET/PUT/DELETE)", async () => {
+    await needSwitch();
+    const ghost = "a5d20000-0000-4000-8000-00000000fffe";
+    const base = `/admin/tenants/${ghost}/workflow-tools`;
+    const rs = [
+      await admin("GET", base),
+      await admin("PUT", `${base}/${W.id}`, {}),
+      await admin("DELETE", `${base}/${W.id}`),
+    ];
+    expect(rs.map((r) => [r.status, r.json?.error?.code])).toEqual([
+      [404, "NOT_FOUND"],
+      [404, "NOT_FOUND"],
+      [404, "NOT_FOUND"],
+    ]);
   });
   it("AC-A15 · PD2-I46 · RLS: hub_ro SELECT được; admin_rw scope tenant globex không thấy hàng acme", async () => {
     await needSwitch();
@@ -123,6 +168,12 @@ describe("AC-A15 · ADM-FR-73 · bật/tắt tool cho tenant", () => {
       return tx<Obj[]>`select * from admin.tenant_workflow_tools where tenant_id = ${A}`;
     });
     expect(ro.length).toBe(1);
+    await expect(
+      env.owner.begin(async (tx) => {
+        await tx`set local role hub_ro`;
+        await tx`insert into admin.tenant_workflow_tools (workflow_id, tenant_id) values (${W.id}, ${TENANT_ID.globex})`;
+      }),
+    ).rejects.toMatchObject({ code: "42501" });
   });
 });
 
