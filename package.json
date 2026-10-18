@@ -52,6 +52,7 @@
     "done:h4b": "bun --env-file=.env.local tools/scripts/src/done-h4b2.ts",
     "done:pc": "bun --env-file=.env.local tools/scripts/src/done-pc.ts",
     "done:pc2": "bun --env-file=.env.local tools/scripts/src/done-pc2.ts",
+    "done:pd1": "bun --env-file=.env.local tools/scripts/src/done-pd1.ts",
     "done:k1": "bun --env-file=.env.local tools/scripts/src/done-k1.ts",
     "done:x2b2": "bun --env-file=.env.local tools/scripts/src/done-x2b2.ts",
     "done:x1": "bun --env-file=.env.local tools/scripts/src/done-x1.ts",
