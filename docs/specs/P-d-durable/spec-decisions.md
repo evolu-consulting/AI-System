@@ -134,6 +134,11 @@ D2-05…D2-08 ở bảng trên; audit công tắc (D2-04) = dòng "Audit công t
 | D2-16 | Nhánh chèn **một chỗ** trong `settleStep` khi `stepJoin = next_step`; T19s giữ vỏ `settleStepTx(tx, runId, tenantId)` cùng chữ ký (7 nơi gọi không đổi) | PD2-R13 |
 | D2-17 | Giới hạn 64 KB kiểm trên byte trước `JSON.parse`; timeout gọi = `min(stage.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` | PD2-R03, R06 |
 | D2-18 | Ngưỡng PD2-P01…P04 (plan-d2 §9); chữ ký luật lớp 1 tách theo chủ đề sang `plan-d2-rules.md` (trần 18 KB) | Luật 4c, WORKFLOW #5 |
+| D2-19 | FE: `StageDraft` thêm `tool: ToolDraft` + `branch: BranchDraft[]`, `executor="tool"` theo khuôn `wait_until`; logic ở `lib/tool-form.ts`, `lib/branch-form.ts`, `domain/{tool,branch}-rules.ts`; `def-form.ts` (336/400) chỉ thêm lời gọi | plan-frontend-d2 §10 (T14) |
+| D2-20 | FE: catalog tool lấy từ `useProcessEditorContext` (cùng query với múi giờ), hook `use-process-tools`; không route/query mới | L9 plan-d2, D-PD11 |
+| D2-21 | FE bundle: chat-web 141/150 KB ⇒ P-d2 chat ≤ +1 KB, `BranchMessage` lazy, đo `check:bundle` trước/sau, ≥ 146 KB ⇒ dừng + lazy namespace i18n; admin lazy `StageTool` + `TenantToolsTab` | Luật 4c, plan-frontend-d2 §14 |
+| D2-22 | FE: file đã > 200 dòng (`StageOutput` 206, `ProcessCanvas` 209) không tăng; tách `OutputFields.tsx`, `canvas-edges.ts` trong T20 (CONVENTIONS, ngoại lệ Luật 4) | plan-frontend-d2 §10 |
+| D2-23 | Mockup 04 E1/E4 thắng plan-d2 khi lệch: executor của stage tool hiển thị **tên tool**; "Bỏ qua" chat dùng sẵn `process.common.stage.skipped` + `describeStageWait` (không thêm UI mới) | stop condition T14 |
 
 ## Quyết định trong lúc làm (Luật 2, sau Gate)
 - (chưa có)
