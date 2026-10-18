@@ -20,18 +20,27 @@ import { type ToolResult, toolError, toolText, toolTimeoutS } from "../mcp.rules
 import { type StepCode, stepCodeOf } from "../mcp-call";
 import { type ToolFile, type ToolUploadResult, uploadToolFiles } from "../mcp-files";
 
-/** Ai gọi (phần `McpContext` pipeline cần): bước `tool` + usage ghi vào run này, hạn theo agent này. */
-export type InvokeCaller = { tenantId: string; userId: string; runId: string; agentId: string };
+/**
+ * Ai gọi (phần `McpContext` pipeline cần): bước `tool` + usage ghi vào run này, hạn theo agent này. P-d2 · stage `tool`:
+ * `agentId` null + `timeoutS` = `stage.timeout_s` (D2-17, vẫn kẹp `HUB_DIFY_TIMEOUT_MAX_S`).
+ */
+export type InvokeCaller = {
+  tenantId: string;
+  userId: string;
+  runId: string;
+  agentId: string | null;
+  timeoutS?: number;
+};
 export type ToolArgs = {
   inputs: Record<string, WorkflowInputValue>;
   query: string | null;
   files: readonly ToolFile[];
 };
 /** Trace thêm vào `detail` bước `tool` (R22: `confirmation: "consumed"`; H2c: `upload` + lỗi upload). */
-export type StepTrace = { confirmation?: "consumed"; upload?: UploadTrace } & Record<
-  string,
-  unknown
->;
+export type StepTrace = {
+  confirmation?: "consumed" | "gate_review";
+  upload?: UploadTrace;
+} & Record<string, unknown>;
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
 export type ToolCall = { ctx: InvokeCaller; wf: CatalogWorkflow; signal?: AbortSignal };
 
@@ -186,6 +195,7 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
   /** R20: `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` theo cấu hình Hub hiện hành. */
   async #timeoutS(ctx: InvokeCaller): Promise<number> {
     const max = this.d.difyTimeoutMaxS;
+    if (ctx.timeoutS !== undefined) return toolTimeoutS(ctx.timeoutS, max);
     const agent = (await this.d.config.snapshot()).agents.find((a) => a.id === ctx.agentId);
     return toolTimeoutS(agent?.timeoutS ?? max, max);
   }

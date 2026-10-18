@@ -32,7 +32,8 @@ export type SnapStage = {
     | { kind: "agent"; agent_id: string }
     | { kind: "team"; team_id: string }
     | { kind: "apply" }
-    | WaitUntilSnap;
+    | WaitUntilSnap
+    | { kind: "tool"; tool_key: string }; // P-d2 · Hub gọi tool (`tool-launch`)
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

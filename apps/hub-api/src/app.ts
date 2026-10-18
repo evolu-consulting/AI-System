@@ -13,14 +13,14 @@ import {
 } from "@ai/contracts/chat";
 import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
-import { DEFAULT_JOB_MAX_WAIT_S, mountDifyCredential, workflowJobs } from "./app.async";
+import { mountDifyCredential, workflowJobs } from "./app.async";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
-import { mountMcp } from "./app.mcp";
-import { agentRunner, runDrivers, startRunLoops } from "./app.runner";
+import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
+import { processAgentRunner, runDrivers, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
   mountX2a,
@@ -54,7 +54,6 @@ import {
   type ProcessMountDeps,
   type ProcessSeams,
 } from "./modules/processes/processes.mount";
-import { RunStreamReader } from "./modules/runner/run-stream-reader";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -200,26 +199,6 @@ function commandDrivers(deps: AppDeps, db: Db) {
   });
 }
 
-/** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
-function processRunner(
-  deps: AppDeps,
-  base: { db: Db; redis: Redis },
-  config: ConfigCache,
-  kh?: KhRuntime,
-) {
-  return agentRunner({
-    db: base.db,
-    owner: instanceOwner(deps),
-    reader: new RunStreamReader(base.redis, logger, deps.signal),
-    maxWaitS: deps.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S,
-    config,
-    log: logger,
-    publicInternalUrl: deps.publicInternalUrl,
-    secretMasterKey: deps.secretMasterKey,
-    kh,
-  });
-}
-
 /** P-a D15 · cờ bật: module quy trình + runner stage (N4) + nối `!` vào phòng (T1/T7); trả cổng `!` Hỏi AI (D14). */
 function processHooks(
   app: Hono<AppVars>,
@@ -232,13 +211,14 @@ function processHooks(
   },
 ): ProcessStartPort | undefined {
   if (!deps.processEngine) return undefined;
-  const runner = processRunner(deps, m, m.config, m.kh);
+  const runner = processAgentRunner({ ...deps, ...m, kh: m.kh, owner: instanceOwner(deps) });
   const proc = mountProcesses(app, {
     ...m,
     runner,
     signal: deps.signal,
     ...seamsOf(deps),
     resolveBridge: m.resolveBridge,
+    workflowInvoker: sharedWorkflowInvoker({ ...deps, ...m }), // P-d2 · D2-02 · chung với `/mcp`
     // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
     github: githubEndpointOf(deps),
     secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),

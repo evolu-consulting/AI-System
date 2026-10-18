@@ -10,7 +10,8 @@ export type Executor =
   | { kind: "agent"; agent_id: string }
   | { kind: "team"; team_id: string }
   | { kind: "apply" }
-  | { kind: "wait_until" };
+  | { kind: "wait_until" }
+  | { kind: "tool"; tool_key: string };
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
@@ -18,7 +19,13 @@ const NAME_MAX = 100; // = AgentNameSchema (contracts)
 const clip = (s: string): string => (s.length > NAME_MAX ? s.slice(0, NAME_MAX) : s);
 /** P-c2 · C19 · stage Áp không có agent/team ⇒ khoá cố định `apply`. */
 export const idOf = (e: Executor): string =>
-  e.kind === "agent" ? e.agent_id : e.kind === "team" ? e.team_id : e.kind;
+  e.kind === "agent"
+    ? e.agent_id
+    : e.kind === "team"
+      ? e.team_id
+      : e.kind === "tool"
+        ? e.tool_key
+        : e.kind;
 
 /** P-c2 · C19 · ExecutorRef cố định của stage Áp (Hub tự chạy, không catalog). */
 export const APPLY_EXECUTOR_REF: ExecutorRef = {
@@ -32,13 +39,21 @@ export const WAIT_UNTIL_EXECUTOR_REF: ExecutorRef = {
   key: "wait_until",
   name: { vi: "Chờ tới ngày", en: "Wait until date" },
 };
+/** P-d2 · stage `tool`: key = `tool_key`, tên = key (không tra workflow ở đường nóng). */
+const toolRef = (key: string): ExecutorRef => ({
+  kind: "tool",
+  key,
+  name: { vi: clip(key), en: clip(key) },
+});
 /** ExecutorRef cố định của stage Hub tự chạy; agent/team ⇒ null (tra catalog). */
 const fixedRef = (e: Executor): ExecutorRef | null =>
   e.kind === "apply"
     ? APPLY_EXECUTOR_REF
     : e.kind === "wait_until"
       ? WAIT_UNTIL_EXECUTOR_REF
-      : null;
+      : e.kind === "tool"
+        ? toolRef(e.tool_key)
+        : null;
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 
 /** ExecutorRef từ hàng catalog (vi/en → key → id); key giữ id như cũ để FE khớp. */
@@ -57,7 +72,8 @@ const teamNames = (tx: Tx, ids: readonly string[]) =>
 
 /** Một executor (ghi tin thread cho một stage). */
 export async function executorRefOf(tx: Tx, e: Executor): Promise<ExecutorRef> {
-  if (e.kind === "apply" || e.kind === "wait_until") return fixedRef(e) as ExecutorRef;
+  const fixed = fixedRef(e);
+  if (fixed) return fixed;
   const id = idOf(e);
   const [r] = e.kind === "agent" ? await agentNames(tx, [id]) : await teamNames(tx, [id]);
   return refOf(e.kind, id, r);

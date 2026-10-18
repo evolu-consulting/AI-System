@@ -13,7 +13,11 @@ import { type DirectRunStart, directOnSnapshot } from "../mention/mention.servic
 import type { CreateRunInput, ProcessRunInput } from "./create-run";
 
 /** Người thực thi stage (`ProcessStageDef.executor`, id đã chụp trong snapshot run). */
-export type StageExecutor = { kind: "agent"; agentId: string } | { kind: "team"; teamId: string };
+export type StageExecutor =
+  | { kind: "agent"; agentId: string }
+  | { kind: "team"; teamId: string }
+  /** P-d2 · stage `tool`: Hub gọi workflow bằng người bắt đầu (không agent `direct`, driver `toolDriver`). */
+  | { kind: "tool"; toolKey: string };
 export type ProcessStage = { executor: StageExecutor; process: ProcessRunInput };
 
 export type ProcessPrep = { conversationId: string; req: SendMessageRequest; stage: ProcessStage };

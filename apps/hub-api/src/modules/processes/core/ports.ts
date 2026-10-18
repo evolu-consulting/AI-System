@@ -11,7 +11,7 @@ import type { AttachmentStorage } from "../../attachments/storage";
 import type { ConfigCache } from "../../config/config.service";
 import type { KhRuntime } from "../../kh/kh.mount";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
-import type { RunService } from "../../runs/runs.service";
+import type { RunDriver, RunService } from "../../runs/runs.service";
 import type { HubSecretReader } from "../../secrets/secrets.use";
 import type { AppCtx, SystemUow, TenantUow } from "../application/ports";
 import type { Bang } from "./bang.rules";
@@ -105,6 +105,11 @@ export type ProcessDeps = {
   secrets?: Pick<HubSecretReader, "useSecret">;
   /** T7 · Luật 4c · bộ đếm việc stage-driver đang xử lý kết quả job (`handles.settled`, `adapters/drain.ts`). */
   drain?: { run<T>(fn: () => Promise<T>): Promise<T> };
+  /**
+   * P-d2 · D2-12 · factory driver stage `tool` (mount dựng, giữ cổng scope system trong closure — launcher chỉ thấy
+   * factory). Vắng ⇒ stage tool chạy `stageDriver` (không có agent ⇒ `agent_failed`).
+   */
+  toolDriver?: (link: { runId: string; stageRunId: string; tenantId: string }) => RunDriver;
 };
 
 /**

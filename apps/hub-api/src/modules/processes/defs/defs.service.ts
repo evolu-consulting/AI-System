@@ -22,6 +22,8 @@ import { dbHubAudit } from "../../../lib/hub-audit";
 import { sourceError } from "../../sources/sources.errors";
 import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
+import { toolSwitchReader, toToolItem } from "../adapters/tools/tool-switch.repo";
+import { listTools } from "../application/tools/list-tools.usecase";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
@@ -101,10 +103,19 @@ export class DefsService {
     });
   }
 
-  /** P-d1 · TZ-R04 · AC-H46 · ngữ cảnh editor: múi giờ tenant (`null` = phạm vi mẫu ⇒ `TENANT_TZ_DEFAULT`). */
+  /**
+   * P-d1 · TZ-R04 · AC-H46 · ngữ cảnh editor: múi giờ tenant (`null` = phạm vi mẫu ⇒ `TENANT_TZ_DEFAULT`). P-d2 · TT-R04 ·
+   * `tools` = tool bật cho tenant (S6: tenant theo `defScopeOf`); rỗng / mẫu ⇒ vắng trường (contract optional, FE `?? []`;
+   * giữ hình P-d1 cho tenant chưa bật tool) — 2 câu cố định (PD2-P02).
+   */
   editorContext(tenantId: string | null): Promise<ProcessEditorContext> {
     if (tenantId === null) return Promise.resolve({ timezone: TENANT_TZ_DEFAULT });
-    return this.#read(async (tx) => ({ timezone: await tenantTzRepo(tx, tenantId).read() }));
+    // Hai câu đọc độc lập (không cần ảnh nhất quán) ⇒ tx mặc định, không `set transaction` (PD2-P02: 2 câu).
+    return withHubScope(this.d.db, { kind: "system" }, async (tx) => {
+      const timezone = await tenantTzRepo(tx, tenantId).read();
+      const tools = (await listTools(toolSwitchReader(tx, tenantId))).map(toToolItem);
+      return tools.length > 0 ? { timezone, tools } : { timezone };
+    });
   }
 
   teams(s: Scope): Promise<AgentTeamListResponse> {
@@ -116,7 +127,10 @@ export class DefsService {
 
   /** Kiểm định nghĩa theo tham chiếu của tenant đích (mẫu: agent/nhóm đang bật, không Group/user) + nguồn còn sống. */
   async #check(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
-    throwIfInvalid(validateProcessDef(input, await loadDefRefs(tx, tenantId)));
+    const toolKeys = input.stages.flatMap((s) =>
+      s.executor.kind === "tool" ? [s.executor.tool_key] : [],
+    );
+    throwIfInvalid(validateProcessDef(input, await loadDefRefs(tx, tenantId, toolKeys)));
     await this.#checkSources(tx, tenantId, input.sources);
     await this.#checkAutofixKinds(tx, tenantId, input);
   }

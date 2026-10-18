@@ -15,6 +15,7 @@ import type {
   TxRepos,
   UnitOfWork,
 } from "../application/ports";
+import type { ToolStageRepo } from "../application/tools/tool.ports";
 import type { ProcessNotifier } from "../core/ports";
 import { DomainError } from "../domain/errors";
 import { writeNotices } from "../notify/batch.repo";
@@ -36,7 +37,14 @@ export type HubUowDeps = {
   publish: (events: readonly OutboxEvent[]) => Promise<void>;
   /** Vắng ⇒ `createNotifier()` (notice `run_finished` theo lô; một run khi bắn `wait_until` kết thúc run — T8b). */
   notifier?: Pick<ProcessNotifier, "runsFinished" | "runFinished">;
+  /** P-d2 · D2-11 · repo stage `tool` (cần `ProcessDeps` của mount — dựng trễ); vắng ⇒ gọi ném (chưa nối). */
+  tools?: ToolRepoFactory;
 };
+export type ToolRepoFactory = (tx: Tx, tenantId: string, outbox: Outbox) => ToolStageRepo;
+
+const NO_TOOLS: ToolStageRepo = new Proxy({} as ToolStageRepo, {
+  get: () => () => Promise.reject(new Error("ToolStageRepo chưa nối (HubUowDeps.tools)")),
+});
 
 function collector(): { outbox: Outbox; events: OutboxEvent[] } {
   const events: OutboxEvent[] = [];
@@ -48,6 +56,7 @@ function txRepos(
   tenantId: string,
   outbox: Outbox,
   notifier: RunFinishedNotifier = createNotifier(),
+  tools?: ToolRepoFactory,
 ): TxRepos {
   return {
     tenantId,
@@ -57,6 +66,7 @@ function txRepos(
     retry: retryRepo(tx, tenantId),
     sideEffect: sideEffectProbe(tx, tenantId),
     team: teamRunRepo(tx, tenantId),
+    tools: tools ? tools(tx, tenantId, outbox) : NO_TOOLS,
     outbox,
     kicker: { kick: (runId) => outbox.emit({ kind: "kick", runId }) },
     notifier: {
@@ -124,13 +134,14 @@ export function createHubUow(db: Db, deps: HubUowDeps): UnitOfWork {
       assertTenantId(who.tenantId);
       return run(
         { kind: "user", tenantId: who.tenantId, userId: who.userId },
-        (tx, o) => txRepos(tx, who.tenantId, o, deps.notifier),
+        (tx, o) => txRepos(tx, who.tenantId, o, deps.notifier, deps.tools),
         fn,
       );
     },
     system: async (tenantId, fn) => {
       assertTenantId(tenantId);
-      return run({ kind: "system" }, (tx, o) => txRepos(tx, tenantId, o, deps.notifier), fn);
+      const make = (tx: Tx, o: Outbox) => txRepos(tx, tenantId, o, deps.notifier, deps.tools);
+      return run({ kind: "system" }, make, fn);
     },
     systemBatch: (fn) => run({ kind: "system" }, (tx, o) => batchRepos(tx, o, deps.notifier), fn),
   };

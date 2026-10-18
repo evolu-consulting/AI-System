@@ -9,6 +9,7 @@ import type {
   Timer,
   TimerKind,
 } from "../domain/types";
+import type { ToolStageRepo } from "./tools/tool.ports";
 
 export type Clock = { now(): Date };
 export type IdGen = { newId(): string };
@@ -105,6 +106,8 @@ export type TxRepos = {
   retry: RetryRepo;
   sideEffect: SideEffectProbe;
   team: TeamRunRepo;
+  /** P-d2 · D2-11 · stage `tool` (`tool.ports.ts`). */
+  tools: ToolStageRepo;
   outbox: Outbox;
   kicker: StageKicker;
   notifier: Notifier;

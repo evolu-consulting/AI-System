@@ -62,7 +62,8 @@ export type ToolStepStart = {
   tenantId: string;
   userId: string;
   runId: string;
-  agentId: string;
+  /** P-d2 · stage `tool` gọi bằng người bắt đầu ⇒ `null` (cột nullable). */
+  agentId: string | null;
   workflowId: string;
   /** `{inputs: maskInputs(...)}` — đã che secret rồi cắt (R20). */
   detail: Record<string, unknown>;

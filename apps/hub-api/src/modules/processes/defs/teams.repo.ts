@@ -2,7 +2,9 @@
 // (plan-contract §6). `tenantId` null = phạm vi mẫu (platform_admin): mọi agent/nhóm đang bật, không Group/user nào.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { toolSwitchReader } from "../adapters/tools/tool-switch.repo";
 import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
+import type { ToolDefShape } from "../domain/defs/tool-def.rules";
 import type { DefRefs } from "./def.rules";
 
 type Name = { vi: string; en: string };
@@ -69,8 +71,24 @@ async function teamSectionsInfo(
   return map;
 }
 
-export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefRefs> {
+/** D2-14 · MỘT câu chỉ khi def có stage tool (tenant + key); mẫu / không tool ⇒ 0 câu, map rỗng. */
+async function toolRefs(
+  tx: Tx,
+  tenantId: string | null,
+  keys: readonly string[],
+): Promise<Map<string, ToolDefShape>> {
+  if (tenantId === null || keys.length === 0) return new Map();
+  const tools = await toolSwitchReader(tx, tenantId).available(keys);
+  return new Map(tools.map((t) => [t.key, t]));
+}
+
+export async function loadDefRefs(
+  tx: Tx,
+  tenantId: string | null,
+  toolKeys: readonly string[] = [],
+): Promise<DefRefs> {
   const teamInfo = await teamSectionsInfo(tx, tenantId);
+  const tools = await toolRefs(tx, tenantId, toolKeys);
   if (tenantId === null) {
     const agents = await tx.execute<{ id: string }>(sql`select id from hub.agents where enabled`);
     const teams = await tx.execute<{ id: string }>(
@@ -82,6 +100,7 @@ export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefR
       groupIds: new Set(),
       userIds: new Set(),
       teams: teamInfo,
+      tools,
     };
   }
   const agents = await tx.execute<{ id: string }>(sql`select a.id from hub.agent_entitlements e
@@ -101,5 +120,6 @@ export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefR
     groupIds: idSet(groups),
     userIds: idSet(users),
     teams: teamInfo,
+    tools,
   };
 }

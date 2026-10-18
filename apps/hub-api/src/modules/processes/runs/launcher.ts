@@ -14,6 +14,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import type { ProcessStage, StageExecutor } from "../../runs/run-process";
+import { launchToolStage, type ToolLaunch } from "../adapters/tools/tool-launch";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/ports";
@@ -73,7 +74,13 @@ async function alreadyRunning(tx: Tx, stage: StageRow): Promise<boolean> {
 type Prepared = Awaited<ReturnType<ProcessDeps["runs"]["prepareProcess"]>>;
 type KickResult = (
   | { kind: "skip" }
-  | { kind: "launch"; prepared: Prepared; files: unknown[]; useSession: boolean }
+  | {
+      kind: "launch";
+      prepared: Prepared;
+      files: unknown[];
+      useSession: boolean;
+      toolLink?: ToolLaunch["toolLink"];
+    }
   | { kind: "events"; events: UserEvent[] }
 ) & {
   /** D5 · còn stage `queued` khác của bước ⇒ kick lặp thêm (vắng ⇒ dừng; tránh tx thừa ở def tuần tự). */
@@ -100,9 +107,11 @@ async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Pr
     return result.more === true;
   }
   if (result.kind !== "launch") return false;
-  await d.runs.launch(result.prepared, result.files as never, {
-    driver: stageDriver(d, self, { useSession: result.useSession }),
-  });
+  const driver =
+    result.toolLink && d.toolDriver
+      ? d.toolDriver(result.toolLink)
+      : stageDriver(d, self, { useSession: result.useSession });
+  await d.runs.launch(result.prepared, result.files as never, { driver });
   return result.more === true;
 }
 
@@ -174,6 +183,14 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
     return { ...r, more };
   }
   const ctx = { runId, idx, head, stage, def, teamRunId: team.teamRunId, lost };
+  // P-d2 · stage `tool`: `hub.runs` không agent; quyền + công tắc kiểm ngay trước gọi (driver, S2/S10).
+  if (def.executor.kind === "tool") {
+    const t = { runId, stageId: stage.id, toolKey: def.executor.tool_key, name: def.name };
+    const markRunning = (hubRunId: string) =>
+      markStageRunning(tx, { u, c: ctx, runId: hubRunId, real: null });
+    const conversationId = head.conversation_id;
+    return { ...(await launchToolStage(d, tx, u, { ...t, conversationId, markRunning })), more };
+  }
   return { ...(await launchStage(d, tx, u, ctx)), more };
 }
 

@@ -6,11 +6,18 @@ import {
   type ProcessDefRule,
   processDefSourcePaths,
   processDefStageIssues,
+  resolveSteps,
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
 import { type TeamSectionsInfo, teamSectionIssues } from "../domain/defs/team-sections.rules";
+import {
+  type ToolDefShape,
+  type ToolStageShape,
+  toolStageIssues,
+} from "../domain/defs/tool-def.rules";
+import type { ArgSource } from "../domain/tools/tool-run.rules";
 import { normSection, sectionMap } from "../runs/template.rules";
 import { ensureWaitStage } from "./wait-stage.rules";
 
@@ -21,8 +28,10 @@ export type DefRefs = {
   userIds: ReadonlySet<string>;
   /** HUB-FR-143 · nhóm → chế độ + mục từng thành viên (vắng ⇒ bỏ kiểm mục bắt buộc stage team). */
   teams?: ReadonlyMap<string, TeamSectionsInfo>;
+  /** P-d2 · D2-14 · TT-R05 · tool khả dụng của tenant (key → tham số); vắng/def mẫu ⇒ rỗng ⇒ stage tool = REF_INVALID. */
+  tools?: ReadonlyMap<string, ToolDefShape>;
 };
-export type RefKind = "agent" | "team" | "group" | "user" | "source";
+export type RefKind = "agent" | "team" | "group" | "user" | "source" | "tool";
 export type DefCheck =
   | { ok: true }
   | { ok: false; code: "PROCESS_DEF_INVALID"; paths: string[]; rules: ProcessDefRule[] }
@@ -39,6 +48,9 @@ function stageRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
     return { path: `${p}.executor.agent_id`, ref: "agent" };
   if (s.executor.kind === "team" && !refs.teamIds.has(s.executor.team_id))
     return { path: `${p}.executor.team_id`, ref: "team" };
+  // P-d2 · TT-R05 · tool chưa bật cho tenant / workflow tắt / không tồn tại / def mẫu ⇒ cùng REF_INVALID (không lộ lý do).
+  if (s.executor.kind === "tool" && !refs.tools?.has(s.executor.tool_key))
+    return { path: `${p}.executor.tool_key`, ref: "tool" };
   if (
     s.after.kind === "review" &&
     s.after.group_id !== null &&
@@ -66,6 +78,59 @@ function runGroupMiss(d: ProcessDefInput, refs: DefRefs): RefMiss | null {
   return i < 0 ? null : { path: `run_group_ids.${i}`, ref: "group" };
 }
 
+/** Mapper contract → domain (`step` đã chuẩn hoá, `stage_key` → `stageKey`). */
+function toToolStage(s: Stage, step: number): ToolStageShape {
+  const ex = s.executor;
+  const args: Record<string, ArgSource> = {};
+  if (ex.kind === "tool")
+    for (const [name, a] of Object.entries(ex.args))
+      args[name] =
+        a.from === "field" ? { from: "field", stageKey: a.stage_key, field: a.field } : a;
+  return {
+    key: s.key,
+    step,
+    realAction: s.real_action,
+    fields: s.output.fields,
+    tool: ex.kind === "tool" ? { toolKey: ex.tool_key, args } : null,
+    extras: {
+      sources: s.sources?.length ?? 0,
+      mustKnow: s.must_know?.length ?? 0,
+      autofix: (s.autofix ?? null) !== null,
+      answererKind: s.answerer.kind,
+    },
+  };
+}
+
+/** D2-14 · `toolStageIssues` (domain) chỉ khi def có stage tool; tool vắng trong `refs.tools` để REF_INVALID xử. */
+function toolIssuesOf(d: ProcessDefInput, refs: DefRefs): ToolIssueRow[] {
+  if (!d.stages.some((s) => s.executor.kind === "tool")) return [];
+  const steps = resolveSteps(d.stages);
+  const stages = d.stages.map((s, i) => toToolStage(s, steps[i] as number));
+  const inputs = (d.inputs ?? []).map((x) => ({ key: x.key, type: x.type }));
+  return toolStageIssues(stages, inputs, refs.tools ?? new Map());
+}
+type ToolIssueRow = { path: string; rule: ProcessDefRule };
+
+/** A3 · stage `tool`: Hub ép template/mục/answerer/token_budget/sources/must_know/autofix; giữ `fields`, `timeout_s`. */
+export function ensureToolStage<S extends Stage>(s: S): S {
+  if (s.executor.kind !== "tool") return s;
+  return {
+    ...s,
+    output: {
+      ...s.output,
+      template: TOOL_STAGE_TEMPLATE,
+      required_sections: [TOOL_RESULT_SECTION, HANDOFF_SECTION],
+    },
+    answerer: { kind: "starter" },
+    token_budget: null,
+    sources: [],
+    must_know: [],
+    autofix: null,
+  };
+}
+const TOOL_RESULT_SECTION = "Kết quả";
+export const TOOL_STAGE_TEMPLATE = `# {name}\n\n## ${TOOL_RESULT_SECTION}\n\n## ${HANDOFF_SECTION}\n`;
+
 export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck {
   // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract). P-d1 · PD-R17 · `inputs` bật luật nguồn input
   // của `waitStageIssues` (WAIT_INVALID).
@@ -79,6 +144,7 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
       })),
       refs.teams ?? new Map(),
     ),
+    ...toolIssuesOf(d, refs),
   ].slice(0, 20);
   if (invalid.length)
     return {
@@ -182,7 +248,7 @@ export function ensureHandoff<S extends HandoffShape>(s: S): S {
 /** `ensureHandoff` + ép stage `wait_until` (PD-R17) cho mọi stage của def (`defs.service` create/update/copy SAU validate). */
 export const withHandoff = (d: ProcessDefInput): ProcessDefInput => ({
   ...d,
-  stages: d.stages.map((s) => ensureWaitStage(ensureHandoff(s))),
+  stages: d.stages.map((s) => ensureToolStage(ensureWaitStage(ensureHandoff(s)))),
 });
 
 /** Trang danh sách: khoá `(updated_at, id)` của phần tử cuối trang trước. */

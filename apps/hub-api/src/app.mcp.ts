@@ -10,7 +10,7 @@ import { CredentialService, loadMasterKey } from "./modules/dify/credential.serv
 import { DifyClient } from "./modules/dify/dify.client";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { KhQueryService } from "./modules/kh/kh.query.service";
-import { DifyWorkflowInvoker } from "./modules/mcp/adapters/workflow-invoker";
+import { DifyWorkflowInvoker, type WorkflowInvoker } from "./modules/mcp/adapters/workflow-invoker";
 import { confirmationGate } from "./modules/mcp/confirm.service";
 import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
@@ -47,23 +47,39 @@ export type McpMountDeps = {
   kh?: KhRuntime;
 };
 
-/** POST `/mcp` (+ 405 GET/DELETE). Gọi trước `notFound`. */
-export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
-  const difyTimeoutMaxS = d.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S;
+/** P-d2 · D2-02 · MỘT `WorkflowInvoker` dùng chung cho `/mcp` và stage `tool` của quy trình (`app.ts` dựng trước mount). */
+export function createWorkflowInvoker(d: Omit<McpMountDeps, "kh">): WorkflowInvoker {
   const credentials = new CredentialService({
     db: d.db,
     masterKey: loadMasterKey(d.secretMasterKey),
     log: d.log,
   });
-  const invoker = new DifyWorkflowInvoker({
+  return new DifyWorkflowInvoker({
     db: d.db,
     config: d.config,
     credentials,
     dify: new DifyClient(),
-    difyTimeoutMaxS,
+    difyTimeoutMaxS: d.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S,
     log: d.log,
     storage: d.attachments?.storage ?? null,
   });
+}
+
+const sharedInvokers = new WeakMap<ConfigCache, WorkflowInvoker>();
+/** Một invoker mỗi cache cấu hình của app: module quy trình (mount trước) và `/mcp` nhận CÙNG bản. */
+export function sharedWorkflowInvoker(d: Omit<McpMountDeps, "kh">): WorkflowInvoker {
+  let inv = sharedInvokers.get(d.config);
+  if (!inv) {
+    inv = createWorkflowInvoker(d);
+    sharedInvokers.set(d.config, inv);
+  }
+  return inv;
+}
+
+/** POST `/mcp` (+ 405 GET/DELETE). Gọi trước `notFound`. */
+export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
+  const difyTimeoutMaxS = d.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S;
+  const invoker = sharedWorkflowInvoker(d);
   const svc = new McpService({
     db: d.db,
     config: d.config,

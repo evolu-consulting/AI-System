@@ -40,6 +40,18 @@ export type AgentRunnerDeps = {
   kh?: KhRuntime;
 };
 
+/** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
+export function processAgentRunner(
+  d: Omit<AgentRunnerDeps, "reader" | "maxWaitS"> & {
+    redis: Redis;
+    signal?: AbortSignal;
+    jobMaxWaitS?: number;
+  },
+): AgentRunner {
+  const reader = new RunStreamReader(d.redis, d.log, d.signal);
+  return agentRunner({ ...d, reader, maxWaitS: d.jobMaxWaitS ?? DEFAULT_JOB_MAX_WAIT_S });
+}
+
 export function agentRunner(d: AgentRunnerDeps): AgentRunner {
   const job = new JobAgentRunner({
     db: d.db,

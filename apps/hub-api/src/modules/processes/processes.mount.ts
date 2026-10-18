@@ -4,11 +4,16 @@
 import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
 import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
+import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
 import { DrainTracker } from "./adapters/drain";
-import { createHubUow, systemOnly, tenantOnly } from "./adapters/hub-uow";
+import { createHubUow, systemOnly, type ToolRepoFactory, tenantOnly } from "./adapters/hub-uow";
 import { makeOutboxPublisher } from "./adapters/outbox";
+import { mcpToolInvoker } from "./adapters/tools/mcp-tool-invoker";
+import { toolDriverFactory } from "./adapters/tools/tool-driver";
+import { toolStageRepo } from "./adapters/tools/tool-stage.repo";
+import type { UnitOfWork } from "./application/ports";
 import { asksRoutes } from "./asks/asks.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
@@ -50,10 +55,20 @@ export type ProcessSeams = {
   resolveBridge?: ResolveBridge;
   /** P-c2 · C13 · endpoint GitHub (seam ưu tiên env `HUB_GITHUB_*`); vắng ⇒ driver Áp không mở PR. */
   github?: { apiUrl: string; webHost: string };
+  /** P-d2 · D2-02 · pipeline gọi workflow dùng chung với `/mcp` (`app.ts` dựng một bản); vắng ⇒ stage tool `NOT_CONFIGURED`. */
+  workflowInvoker?: WorkflowInvoker;
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,
-  "now" | "runsPerTenant" | "launcher" | "notifier" | "postThread" | "start" | "uow" | "ctx"
+  | "now"
+  | "runsPerTenant"
+  | "launcher"
+  | "notifier"
+  | "postThread"
+  | "start"
+  | "uow"
+  | "ctx"
+  | "toolDriver"
 > &
   ProcessSeams;
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
@@ -74,13 +89,17 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     launcher: { kick: (runId) => d.launcher.kick(runId) },
   });
   // T6c · tách cổng: route/use case HTTP chỉ thấy `tenant`; vòng nền + handles nhận `sysUow` (object riêng, không lộ qua `d`).
-  const uow = createHubUow(m.db, { clock: { now }, publish, notifier });
+  // P-d2 · D2-11 · repo stage `tool` cần `ProcessDeps` (dựng sau ⇒ gọi trễ qua closure).
+  const tools: ToolRepoFactory = (tx, tenantId, o) => toolStageRepo(tx, tenantId, o, base);
+  const uow = createHubUow(m.db, { clock: { now }, publish, notifier, tools });
   // T7 · Luật 4c · `handles.settled()`: đếm việc stage-driver đang xử lý kết quả job.
   const drain = new DrainTracker();
+  const toolDriver = toolDriverOf(m, uow, now, drain);
   const base: Omit<ProcessDeps, "start" | "launcher"> = {
     ...m,
     now,
     drain,
+    toolDriver,
     runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
     notifier,
     postThread,
@@ -105,6 +124,22 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   startBackground({ m, bg, poster, khWriter, drain });
   return { roomSender: roomStart(d), conversationStart: d.start };
+}
+
+/** P-d2 · D2-12/S11 · driver stage `tool` giữ cổng scope system trong closure; launcher chỉ nhận factory. */
+function toolDriverOf(
+  m: ProcessMountDeps,
+  uow: UnitOfWork,
+  now: Clock,
+  drain: DrainTracker,
+): ProcessDeps["toolDriver"] {
+  return toolDriverFactory({
+    uow: systemOnly(uow),
+    invoker: mcpToolInvoker({ invoker: m.workflowInvoker, config: m.config }),
+    clock: { now },
+    log: m.log,
+    drain,
+  });
 }
 
 /** Handles cho test + làm nóng pool + (khi bật) các vòng nền. */

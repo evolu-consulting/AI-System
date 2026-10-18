@@ -137,7 +137,7 @@ export async function outputStepsSingle(
     from hub.run_steps rs
     left join hub.usage_logs ul on ul.step_id = rs.id and ul.tenant_id = rs.tenant_id
     left join hub.agents ag on ag.id = rs.agent_id
-    where rs.run_id = ${p.hubRunId} and rs.tenant_id = ${p.tenantId}
+    where rs.run_id = ${p.hubRunId} and rs.tenant_id = ${p.tenantId} and rs.agent_id is not null
     ${STEP_GROUP}`);
   return [...rows].map(mapStep);
 }
