@@ -42,6 +42,13 @@ export type ToolDecisionReason =
 export type ToolStageRepo = {
   /** MỘT câu: stage `running` của `hubRunId` + snapshot + inputs + fields nguồn + công tắc/enabled + usable/canRun. */
   loadCall(runId: string, stageRunId: string, hubRunId: string): Promise<ToolCallLoad | null>;
+  /** PD2-R09 · MỘT câu audit `tool_call` (run, stage, tool_key, người bắt đầu, trạng thái, mã, ms) — KHÔNG giá trị. */
+  audit(x: ToolCallAudit): Promise<void>;
+  /**
+   * Đã hẹn `retry` (stage `waiting_timer`): `process_updated` vào outbox, không kick/thread. Tuỳ chọn (mở rộng cổng plan-d2
+   * §3 không phá cổng giả): vắng ⇒ không phát sự kiện sống (hẹn bắn sẽ phát khi requeue).
+   */
+  retried?(runId: string): Promise<void>;
   /** Sau `runs.lock`: `for update` stage còn `running ∧ current_run_id = hubRunId`; false ⇒ bỏ (đua). */
   lockRunning(stageRunId: string, hubRunId: string): Promise<boolean>;
   /** Output (.md + fields) rồi đường hậu-output như agent (D2-30); kick/thread/sự kiện vào outbox. */
@@ -62,9 +69,26 @@ export type ToolStageRepo = {
   ): Promise<void>;
 };
 
+export type ToolCallAudit = {
+  runId: string;
+  stageRunId: string;
+  toolKey: string;
+  startedBy: string;
+  status: "ok" | "failed";
+  code: string | null;
+  ms: number;
+};
+
+/** `failed` = `ToolFailure` lớp 1 (`sent` từ kết quả gọi, D2-13; `reason` của client Dify). */
 export type ToolCallResult =
   | { kind: "ok"; text: string }
-  | { kind: "failed"; code: string; httpStatus: number | null; sent: boolean };
+  | {
+      kind: "failed";
+      code: string;
+      httpStatus: number | null;
+      sent: boolean;
+      reason: string | null;
+    };
 /** Nối lớp 4 tới `WorkflowInvoker` (cùng pipeline `/mcp`: key → bước `tool` → Dify gom → usage). */
 export type ToolInvoker = {
   call(c: {

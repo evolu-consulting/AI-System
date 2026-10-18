@@ -5,7 +5,11 @@
 // D2-03). Không log tham số/kết quả.
 import type { CatalogWorkflow } from "../../../commands/catalog.types";
 import type { ConfigCache } from "../../../config/config.service";
-import type { InvokeCaller, WorkflowInvoker } from "../../../mcp/adapters/workflow-invoker";
+import type {
+  InvokeCaller,
+  InvokeFailure,
+  WorkflowInvoker,
+} from "../../../mcp/adapters/workflow-invoker";
 import { TOOL_ERROR_TEXT, type ToolErrorCode, type ToolResult } from "../../../mcp/mcp.rules";
 import type { ToolCallResult, ToolEndpoint, ToolInvoker } from "../../application/tools/tool.ports";
 
@@ -18,14 +22,19 @@ const NOT_CONFIGURED: ToolCallResult = {
   code: "NOT_CONFIGURED",
   httpStatus: null,
   sent: false,
+  reason: null,
 };
 
-/** T18-1: lỗi gọi ⇒ mã theo câu `toolError` (lạ ⇒ UPSTREAM_ERROR); `httpStatus`/`sent` chi tiết ở T18-2 (`classifyToolError`). */
-export function toCallResult(r: ToolResult): ToolCallResult {
+/**
+ * T18-2 · lỗi gọi ⇒ chi tiết từ `onFail` của invoker (`httpStatus`/`sent`/`reason`, Q-D2-2); vắng (lỗi không qua pipeline)
+ * ⇒ mã theo câu `toolError` (lạ ⇒ UPSTREAM_ERROR), coi như ĐÃ gửi trừ `NOT_CONFIGURED` (an toàn: side_effect không gọi lại).
+ */
+export function toCallResult(r: ToolResult, f: InvokeFailure | null = null): ToolCallResult {
   const text = r.content.map((c) => c.text).join("");
   if (!r.isError) return { kind: "ok", text };
+  if (f) return { kind: "failed", ...f };
   const code = CODE_BY_TEXT.get(text) ?? "UPSTREAM_ERROR";
-  return { kind: "failed", code, httpStatus: null, sent: code !== "NOT_CONFIGURED" };
+  return { kind: "failed", code, httpStatus: null, sent: code !== "NOT_CONFIGURED", reason: null };
 }
 
 /** Đích từ hàng DB (đã kiểm `enabled` + công tắc cùng câu); `app_type` lạ ⇒ null. */
@@ -64,7 +73,11 @@ export function mcpToolInvoker(d: { invoker?: WorkflowInvoker; config: ConfigCac
       };
       const args = { inputs: c.args, query: null, files: [] };
       const trace = { confirmation: "gate_review" as const };
-      return toCallResult(await d.invoker.run({ ctx, wf, signal: c.signal }, args, trace));
+      let fail: InvokeFailure | null = null;
+      const res = await d.invoker.run({ ctx, wf, signal: c.signal }, args, trace, (f) => {
+        fail = f;
+      });
+      return toCallResult(res, fail);
     },
   };
 }

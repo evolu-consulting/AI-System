@@ -6,7 +6,11 @@ import type { ProcessRunStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Outbox } from "../../application/ports";
-import type { ToolCallLoad, ToolStageRepo } from "../../application/tools/tool.ports";
+import type {
+  ToolCallAudit,
+  ToolCallLoad,
+  ToolStageRepo,
+} from "../../application/tools/tool.ports";
 import * as core from "../../core/core.repo";
 import { processUpdated } from "../../core/events";
 import type { ProcessDeps } from "../../core/ports";
@@ -160,6 +164,23 @@ function stateOf(head: RunHead, stage: StageRowIdx, def: SnapStage): RunState {
   };
 }
 
+/** PD2-R09 · audit `tool_call` — actor = người bắt đầu (gọi bằng danh tính họ, S1); `summary` chỉ id/mã/thời gian. */
+async function insertAudit(tx: Tx, tenantId: string, x: ToolCallAudit): Promise<void> {
+  const summary = {
+    run_id: x.runId,
+    stage_run_id: x.stageRunId,
+    tool_key: x.toolKey,
+    started_by: x.startedBy,
+    status: x.status,
+    code: x.code,
+    ms: x.ms,
+  };
+  await tx.execute(sql`insert into hub.audit_log (tenant_id, actor_id, actor_role, action, entity, entity_id,
+      entity_name, summary)
+    values (${tenantId}::uuid, ${x.startedBy}::uuid, null, 'tool_call', 'process_run', ${x.runId}::uuid,
+      ${x.toolKey.slice(0, 200)}, ${JSON.stringify(summary)}::jsonb)`);
+}
+
 export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps): ToolStageRepo {
   /** Hàng stage đã khoá ở `lockRunning` (dùng lại trong `settleOk`/`decide`, không đọc lại). */
   let locked: StageRowIdx | null = null;
@@ -173,6 +194,16 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
       const row = await loadCallRow(tx, { tenantId, runId, stageRunId, hubRunId });
       return row ? toLoad(row) : null;
     },
+    audit: (x) => insertAudit(tx, tenantId, x),
+    async retried(runId) {
+      const idx = locked?.stage_idx;
+      const h = idx === undefined ? null : await headOf(tx, runId);
+      if (!h || idx === undefined) return;
+      const recipients = await core.runRecipients(tx, runId, tenantId);
+      const step = stepsOfSnap(h.snapshot)[idx] ?? idx;
+      const st = { id: runId, status: h.status as ProcessRunStatus, stageIdx: idx, step };
+      outbox.emit({ kind: "user_events", events: processUpdated(recipients, st) });
+    },
     async lockRunning(stageRunId, hubRunId) {
       const [s] =
         await tx.execute<StageRowIdx>(sql`select id, stage_idx, status, attempt, attempt_limit,
@@ -185,12 +216,12 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
       return locked !== null;
     },
     async settleOk(x) {
-      const head = await headOf(tx, x.runId);
+      const h = await headOf(tx, x.runId);
       const stage = locked;
-      const def = stage && head?.snapshot.stages[stage.stage_idx];
-      if (!head || !stage || !def) return;
+      const def = stage && h?.snapshot.stages[stage.stage_idx];
+      if (!h || !stage || !def) return;
       const ev = { kind: "stage_output", templateOk: true } as const;
-      const t = transition(stateOf(head, stage, def), ev);
+      const t = transition(stateOf(h, stage, def), ev);
       if (!t.ok) return;
       const result = { kind: "output" as const, text: x.md };
       const apply = {
@@ -203,7 +234,7 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
       };
       const ctx = {
         x: apply,
-        head,
+        head: h,
         stage,
         def,
         idx: stage.stage_idx,
@@ -211,7 +242,7 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
         next: t.next,
         list: t.effects,
       };
-      // Không blob output (`storage` vắng ⇒ không hàng attachment): .md tool nhỏ, nội dung inline như stage Áp.
+      // Không blob/hàng attachment (`outputAttachment` bỏ stage `tool` — không job): .md tool nhỏ, inline như stage Áp.
       const res = await effects({ ...d, storage: undefined }, tx, ctx);
       const st = res.step;
       if (st) {

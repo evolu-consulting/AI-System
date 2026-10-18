@@ -44,10 +44,26 @@ export type StepTrace = {
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
 export type ToolCall = { ctx: InvokeCaller; wf: CatalogWorkflow; signal?: AbortSignal };
 
+/**
+ * P-d2 T18-2 · D2-13 · Q-D2-2: chi tiết lỗi cho executor `tool` (không đổi `ToolResult` của `/mcp`). `sent=false` chỉ khi
+ * chắc chắn chưa tới Dify workflow (thiếu key, upload lỗi, lỗi lập kết nối); còn lại (kể cả hết hạn) ⇒ `true`.
+ */
+export type InvokeFailure = {
+  code: string;
+  httpStatus: number | null;
+  sent: boolean;
+  reason: string | null;
+};
 /** Cổng gọi workflow (D2-02): cùng pipeline `/mcp`, dùng chung cho `McpService` và executor `tool` (T18). */
 export type WorkflowInvoker = {
-  run(call: ToolCall, args: ToolArgs, trace: StepTrace): Promise<ToolResult>;
+  run(
+    call: ToolCall,
+    args: ToolArgs,
+    trace: StepTrace,
+    onFail?: (f: InvokeFailure) => void,
+  ): Promise<ToolResult>;
 };
+type OnFail = ((f: InvokeFailure) => void) | undefined;
 
 export type WorkflowInvokerDeps = {
   db: Db;
@@ -69,6 +85,7 @@ type Invoke = {
   apiKey: string;
   stepId: string;
   inputs: Record<string, string>;
+  onFail: OnFail;
 };
 type FinishDetail = StepTrace & {
   inputs: Record<string, string>;
@@ -80,7 +97,12 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
   constructor(private readonly d: WorkflowInvokerDeps) {}
 
   /** Lấy key → bước `tool` `running` → Dify gom → kết thúc bước + usage. `trace` gộp vào `detail` của bước. */
-  async run(call: ToolCall, args: ToolArgs, trace: StepTrace): Promise<ToolResult> {
+  async run(
+    call: ToolCall,
+    args: ToolArgs,
+    trace: StepTrace,
+    onFail?: (f: InvokeFailure) => void,
+  ): Promise<ToolResult> {
     const { ctx, wf } = call;
     const stepId = crypto.randomUUID();
     let apiKey: string;
@@ -92,11 +114,12 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
       await this.#startStep(ctx, wf, stepId, inputs);
       const detail = { ...trace, inputs, code: "NOT_CONFIGURED" as const };
       await this.#guarded(ctx, stepId, inputs, () => this.#finishStep(ctx, stepId, detail));
+      onFail?.({ code: "NOT_CONFIGURED", httpStatus: null, sent: false, reason: null });
       return toolError("NOT_CONFIGURED");
     }
     const inputs = maskInputs(args.inputs, apiKey);
     await this.#startStep(ctx, wf, stepId, inputs);
-    const o: Invoke = { args, trace, apiKey, stepId, inputs };
+    const o: Invoke = { args, trace, apiKey, stepId, inputs, onFail };
     return this.#guarded(ctx, stepId, inputs, () => this.#invoke(call, o));
   }
 
@@ -144,8 +167,10 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     await this.#finishStep(ctx, o.stepId, detail);
     await this.#usage(ctx, o.stepId, out);
     if (out.kind === "finished") return toolText(out.text);
+    const mapped = code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR";
+    o.onFail?.(failureOf(out, code === "CANCELLED" ? code : mapped));
     // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
-    return toolError(code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR");
+    return toolError(mapped);
   }
 
   /** H2c P14: file của tool → Dify `/files/upload` (key + `user` như lời gọi workflow); không file ⇒ `ok` ngay. */
@@ -187,6 +212,8 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     const code = up.kind === "failed" ? up.code : timedOut ? "TIMEOUT" : "CANCELLED";
     const failed = up.kind === "failed" ? up.trace : { upload: up.upload };
     await this.#finishStep(ctx, o.stepId, { ...o.trace, ...failed, inputs: o.inputs, code });
+    // Upload lỗi ⇒ workflow CHƯA được gọi (0 lời gọi workflow) ⇒ `sent:false`.
+    o.onFail?.({ code, httpStatus: null, sent: false, reason: null });
     if (up.kind === "failed") return up.result;
     // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
     return toolError(code === "TIMEOUT" ? "TIMEOUT" : "UPSTREAM_ERROR");
@@ -250,4 +277,13 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
       this.d.log.warn("tool-usage-failed", { run_id: ctx.runId, ...safeErrorFields(err) });
     }
   }
+}
+
+/** Lỗi workflow ⇒ chi tiết cho stage `tool`: lỗi lập kết nối ⇒ chưa gửi; HTTP/SSE/hết hạn ⇒ đã gửi (an toàn, Q-D2-2). */
+function failureOf(
+  out: Exclude<DifyRunOutcome, { kind: "finished" }>,
+  code: string,
+): InvokeFailure {
+  if (out.kind === "aborted") return { code, httpStatus: null, sent: true, reason: null };
+  return { code, httpStatus: out.httpStatus, sent: out.connectFailed !== true, reason: out.reason };
 }

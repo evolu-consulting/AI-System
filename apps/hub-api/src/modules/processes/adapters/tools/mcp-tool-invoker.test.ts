@@ -53,7 +53,13 @@ describe("mcpToolInvoker", () => {
       },
     };
     const bad = { ...call, endpoint: { ...endpoint, appType: "zzz" } };
-    const want = { kind: "failed" as const, code: "NOT_CONFIGURED", httpStatus: null, sent: false };
+    const want = {
+      kind: "failed" as const,
+      code: "NOT_CONFIGURED",
+      httpStatus: null,
+      sent: false,
+      reason: null,
+    };
     expect(await mcpToolInvoker({ config }).call(call)).toEqual(want);
     expect(await mcpToolInvoker({ invoker, config }).call(bad)).toEqual(want);
     expect(n).toBe(0);
@@ -61,5 +67,20 @@ describe("mcpToolInvoker", () => {
   it("HUB-FR-146 · toCallResult: TIMEOUT/UPSTREAM_ERROR theo câu lỗi; NOT_CONFIGURED ⇒ sent=false", () => {
     expect(toCallResult(toolError("TIMEOUT"))).toMatchObject({ code: "TIMEOUT", sent: true });
     expect(toCallResult(toolError("NOT_CONFIGURED"))).toMatchObject({ sent: false });
+  });
+  it("HUB-BR-12 · Q-D2-2 · onFail của invoker thắng: lỗi lập kết nối ⇒ sent=false + httpStatus/reason giữ nguyên", async () => {
+    const invoker: WorkflowInvoker = {
+      run: async (_c, _a, _t, onFail) => {
+        onFail?.({ code: "UPSTREAM_ERROR", httpStatus: null, sent: false, reason: "upstream" });
+        return toolError("UPSTREAM_ERROR");
+      },
+    };
+    expect(await mcpToolInvoker({ invoker, config }).call(call)).toEqual({
+      kind: "failed",
+      code: "UPSTREAM_ERROR",
+      httpStatus: null,
+      sent: false,
+      reason: "upstream",
+    });
   });
 });

@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { type DifyMock, startDifyMock } from "../../../../../tools/hub-dev/src/dify-mock";
 import { DifyClient, type DifyRunRequest } from "./dify.client";
-import { networkErrorDetail } from "./dify.rules";
+import { isConnectFailure, networkErrorDetail } from "./dify.rules";
 
 let mk: DifyMock;
 const client = new DifyClient();
@@ -177,5 +177,31 @@ describe("networkErrorDetail", () => {
     expect(
       networkErrorDetail(new Error("x".repeat(500)), "app-SECRET123").length,
     ).toBeLessThanOrEqual(300);
+  });
+});
+
+describe("isConnectFailure · P-d2 D2-09 / Q-D2-2", () => {
+  it("HUB-BR-12 · mã lập kết nối (err.code hoặc cause.code) ⇒ true; đóng socket / timeout / lạ ⇒ false", () => {
+    const e = (code: string) => Object.assign(new Error("x"), { code });
+    expect(
+      ["ECONNREFUSED", "ConnectionRefused", "FailedToOpenSocket", "ENOTFOUND", "EAI_AGAIN"].map(
+        (c) => isConnectFailure(e(c)),
+      ),
+    ).toEqual([true, true, true, true, true]);
+    expect(isConnectFailure(new Error("x", { cause: e("ECONNREFUSED") }))).toBe(true);
+    expect(
+      [e("ECONNRESET"), e("ETIMEDOUT"), e("ConnectionClosed"), "boom", null].map(isConnectFailure),
+    ).toEqual([false, false, false, false, false]);
+  });
+  it("HUB-BR-12 · cổng đóng ⇒ failed{connectFailed:true}", async () => {
+    const srv = Bun.serve({ port: 0, fetch: () => new Response("x") });
+    const port = srv.port;
+    await srv.stop(true);
+    const out = await new DifyClient().runStreaming(
+      { ...req("mk-ok"), baseUrl: `http://127.0.0.1:${port}/v1` },
+      new AbortController().signal,
+      () => {},
+    );
+    expect(out).toMatchObject({ kind: "failed", code: "UPSTREAM_ERROR", connectFailed: true });
   });
 });

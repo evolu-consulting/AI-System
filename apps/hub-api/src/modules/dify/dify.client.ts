@@ -15,6 +15,7 @@ import {
   difyUsage,
   finalText,
   interpretDifyEvent,
+  isConnectFailure,
   mapDifyHttpError,
   maskSecret,
   networkErrorDetail,
@@ -49,6 +50,8 @@ export type DifyRunOutcome =
       detail: string | null;
       /** HTTP status khi lỗi HTTP (để log/trace), null với lỗi SSE/mạng. */
       httpStatus: number | null;
+      /** P-d2 D2-09 · Q-D2-2: chỉ `true` khi lỗi LẬP kết nối (yêu cầu chưa tới Dify); vắng ⇒ có thể đã gửi. */
+      connectFailed?: true;
     } & RunMeta)
   | ({ kind: "aborted" } & RunMeta);
 
@@ -167,8 +170,10 @@ export class DifyClient {
       if (!res.ok) return await this.httpFailed(req, res, meta);
       await this.consume(res, st, signal, onDelta);
     } catch (err) {
-      if (!signal.aborted)
-        return this.failed("upstream", networkErrorDetail(err, req.apiKey), meta());
+      if (!signal.aborted) {
+        const f = this.failed("upstream", networkErrorDetail(err, req.apiKey), meta());
+        return isConnectFailure(err) ? { ...f, connectFailed: true } : f;
+      }
     }
     // Huỷ đúng lúc Dify vừa kết thúc → giữ kết quả; chưa xong → stop rồi `aborted`.
     if (signal.aborted && !st.end && st.error === undefined) {
@@ -276,7 +281,11 @@ export class DifyClient {
     return { kind: "finished", text, ...m };
   }
 
-  private failed(reason: DifyFailReason, detail: string | null, m: RunMeta): DifyRunOutcome {
+  private failed(
+    reason: DifyFailReason,
+    detail: string | null,
+    m: RunMeta,
+  ): Extract<DifyRunOutcome, { kind: "failed" }> {
     return { kind: "failed", code: "UPSTREAM_ERROR", reason, detail, httpStatus: null, ...m };
   }
 }

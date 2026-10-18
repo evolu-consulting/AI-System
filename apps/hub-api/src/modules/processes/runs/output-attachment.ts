@@ -17,7 +17,7 @@ type Deps = Omit<ProcessDeps, "launcher" | "start">;
 type Ctx = {
   x: { jobId?: string | null; runId: string };
   head: { tenant_id: string; started_by: string };
-  def: { name?: string; output: { filename: string } };
+  def: { name?: string; output: { filename: string }; executor?: { kind: string } };
   idx: number;
 };
 
@@ -37,7 +37,9 @@ export async function outputAttachment(
   text: string,
 ): Promise<{ id: string; pending: PendingBlob | null } | null> {
   const size = Buffer.byteLength(text, "utf8");
-  if (size === 0) return null;
+  // P-d2 T18-2 · stage `tool` không có job (job cuối của run = job stage KHÁC) và không ghi blob ⇒ không hàng attachment
+  // (tránh hàng trỏ blob không tồn tại); .md nằm ở `process_outputs.content` (T18-1 "inline như stage Áp").
+  if (size === 0 || c.def.executor?.kind === "tool") return null;
   const jobId = c.x.jobId ?? (await lastJobOf(tx, c.x.runId));
   if (!jobId) return null;
   const id = crypto.randomUUID();

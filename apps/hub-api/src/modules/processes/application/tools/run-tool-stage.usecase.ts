@@ -1,7 +1,8 @@
-// HUB-FR-146 · AC-H44 · AC-H47 · PD2-R03 · D2-15/D2-17/D2-29/D2-30 · plan-d2 §3–§4, §10 S2/S9/S10/S12: chạy một stage `tool`
-// — tx1 đọc (MỘT câu: quyền + công tắc ngay trước gọi, tenant của run) → luật (`buildToolArgs`) → gọi tool NGOÀI tx →
-// tx2 khoá run → khoá stage → `settleOk` / `decide`. Kết quả > 64 KB (byte) ⇒ `tool_failed` trước `JSON.parse`; parse/kiểu
-// sai ⇒ `template_invalid`. T18-2 thay nhánh lỗi gọi bằng `handleToolFailure` (thử lại) + audit.
+// HUB-FR-146 · AC-H44 · AC-H47 · PD2-R03/R05/R09 · D2-13/D2-15/D2-17/D2-29/D2-30 · plan-d2 §3–§4, §10 S2/S4/S9/S10/S12:
+// chạy một stage `tool` — tx1 đọc (MỘT câu: quyền + công tắc ngay trước gọi, tenant của run) → luật (`buildToolArgs`) → gọi
+// tool NGOÀI tx → tx2 audit `tool_call` (mỗi lần đã gọi, không giá trị) → khoá run → khoá stage → `settleOk` / `decide` /
+// `handleToolFailure` (thử lại hay quyết; `side_effect` đã gửi ⇒ không gọi lại). Kết quả > 64 KB (byte) ⇒ `tool_failed`
+// trước `JSON.parse`; parse/kiểu sai ⇒ `template_invalid`.
 
 import {
   filterToolFields,
@@ -9,9 +10,17 @@ import {
   toolOutputMd,
   utf8Bytes,
 } from "../../domain/tools/tool-output.rules";
+import type { ToolFailure } from "../../domain/tools/tool-run.rules";
 import { buildToolArgs } from "../../domain/tools/tool-run.rules";
 import type { Clock, TxRepos } from "../ports";
-import type { ToolCallLoad, ToolCallResult, ToolDecisionReason, ToolInvoker } from "./tool.ports";
+import { handleToolFailure } from "./handle-tool-failure.usecase";
+import type {
+  ToolCallAudit,
+  ToolCallLoad,
+  ToolCallResult,
+  ToolDecisionReason,
+  ToolInvoker,
+} from "./tool.ports";
 
 export type ToolLink = { runId: string; stageRunId: string; hubRunId: string; tenantId: string };
 export type RunToolDeps = {
@@ -21,9 +30,15 @@ export type RunToolDeps = {
 };
 type Settle =
   | { kind: "ok"; md: string; fields: Record<string, string | number> }
-  | { kind: "decide"; reason: ToolDecisionReason };
-/** `skip` = không còn việc (stage đã đổi / đua); người gọi đóng `hub.runs`. */
-export type ToolStageOutcome = { kind: "skip" } | Settle;
+  | { kind: "decide"; reason: ToolDecisionReason }
+  | { kind: "fail"; failure: ToolFailure };
+/** `skip` = không còn việc (stage đã đổi / đua); `retry` = đã hẹn thử lại. Người gọi đóng `hub.runs`. */
+export type ToolStageOutcome =
+  | { kind: "skip" }
+  | { kind: "retry" }
+  | Exclude<Settle, { kind: "fail" }>;
+/** Ngữ cảnh tx2 khi đã gọi tool: audit + dữ liệu cho quyết định thử lại. */
+type Called = { audit: Omit<ToolCallAudit, "runId" | "stageRunId">; load: ToolCallLoad };
 
 /** S2/S10 · thứ tự: người bắt đầu dùng được → quyền chạy → công tắc + workflow bật. */
 function preCallReason(l: ToolCallLoad): ToolDecisionReason | null {
@@ -38,7 +53,10 @@ export function settleOf(
   l: Pick<ToolCallLoad, "stageName" | "outputFields">,
   res: ToolCallResult,
 ): Settle {
-  if (res.kind === "failed") return { kind: "decide", reason: "tool_failed" };
+  if (res.kind === "failed") {
+    const { kind: _k, ...failure } = res;
+    return { kind: "fail", failure };
+  }
   if (utf8Bytes(res.text) > TOOL_RESULT_MAX_BYTES) return { kind: "decide", reason: "tool_failed" };
   let parsed: unknown;
   try {
@@ -51,18 +69,53 @@ export function settleOf(
   return { kind: "ok", md: toolOutputMd(l.stageName, f.fields), fields: f.fields };
 }
 
-/** tx2: khoá run → khoá stage (còn `running` của hub run này) → ghi. Đua ⇒ `skip`. */
-async function settle(d: RunToolDeps, link: ToolLink, s: Settle): Promise<ToolStageOutcome> {
+/** Lý do quyết của nhánh thử lại: chỉ `tool_failed` / `retry_exhausted` (D2-13). */
+const toolReason = (reason: string): ToolDecisionReason =>
+  reason === "retry_exhausted" ? "retry_exhausted" : "tool_failed";
+
+/** Ghi kết quả vào stage đã khoá (tx2). */
+async function apply(
+  r: TxRepos,
+  link: ToolLink,
+  s: Settle,
+  c: Called | null,
+  now: Date,
+): Promise<ToolStageOutcome> {
+  const at = { runId: link.runId, stageRunId: link.stageRunId };
+  if (s.kind === "ok") {
+    await r.tools.settleOk({ ...at, hubRunId: link.hubRunId, md: s.md, fields: s.fields }, now);
+    return s;
+  }
+  if (s.kind === "decide" || !c) {
+    const reason = s.kind === "decide" ? s.reason : "tool_failed";
+    await r.tools.decide({ ...at, reason }, now);
+    return { kind: "decide", reason };
+  }
+  const f = { ...at, failure: s.failure, sideEffect: c.load.sideEffect, state: c.load.state };
+  const dec = await handleToolFailure(r, f, now);
+  if (dec.kind === "retry") {
+    await r.tools.retried?.(link.runId);
+    return { kind: "retry" };
+  }
+  const reason = toolReason(dec.reason);
+  await r.tools.decide({ ...at, reason }, now);
+  return { kind: "decide", reason };
+}
+
+/** tx2: audit (lời gọi đã xảy ra, kể cả khi đua) → khoá run → khoá stage (còn `running` của hub run này) → ghi. */
+async function settle(
+  d: RunToolDeps,
+  link: ToolLink,
+  s: Settle,
+  c: Called | null,
+): Promise<ToolStageOutcome> {
   const now = d.clock.now();
   return d.uow.system(link.tenantId, async (r) => {
+    if (c) await r.tools.audit({ runId: link.runId, stageRunId: link.stageRunId, ...c.audit });
     if (!(await r.runs.lock(link.runId))) return { kind: "skip" } as const;
     if (!(await r.tools.lockRunning(link.stageRunId, link.hubRunId)))
       return { kind: "skip" } as const;
-    const at = { runId: link.runId, stageRunId: link.stageRunId };
-    if (s.kind === "ok")
-      await r.tools.settleOk({ ...at, hubRunId: link.hubRunId, md: s.md, fields: s.fields }, now);
-    else await r.tools.decide({ ...at, reason: s.reason }, now);
-    return s;
+    return apply(r, link, s, c, now);
   });
 }
 
@@ -72,9 +125,10 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
   );
   if (!l) return { kind: "skip" };
   const pre = preCallReason(l);
-  if (pre) return settle(d, link, { kind: "decide", reason: pre });
+  if (pre) return settle(d, link, { kind: "decide", reason: pre }, null);
   const built = buildToolArgs(l.args, l.inputs, l.fields, l.inputTypes);
-  if (!built.ok) return settle(d, link, { kind: "decide", reason: "tool_failed" });
+  if (!built.ok) return settle(d, link, { kind: "decide", reason: "tool_failed" }, null);
+  const t0 = performance.now();
   const res = await d.invoker.call({
     tenantId: link.tenantId,
     userId: l.startedBy,
@@ -84,5 +138,12 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
     args: built.values,
     timeoutS: l.timeoutS,
   });
-  return settle(d, link, settleOf(l, res));
+  const audit = {
+    toolKey: l.toolKey,
+    startedBy: l.startedBy,
+    status: res.kind === "ok" ? ("ok" as const) : ("failed" as const),
+    code: res.kind === "ok" ? null : res.code,
+    ms: Math.round(performance.now() - t0),
+  };
+  return settle(d, link, settleOf(l, res), { audit, load: l });
 }

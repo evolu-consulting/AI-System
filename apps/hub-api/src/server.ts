@@ -193,6 +193,8 @@ async function main(): Promise<void> {
   const hubSecretsKey = await checkHubKey(env, db);
   const redis = await openRedis(env).catch((err) => fail("redis", err));
   const stop = new AbortController();
+  // TECH-DEBT #201 · tắt Hub: chờ việc stage-driver/tool-driver đang dở (`handles.settled()`, tín hiệu) TRƯỚC `db.close()`.
+  let processes: { settled(): Promise<void> } | null = null;
   const app = createApp(
     { version: pkg.version, corsOrigins: env.HUB_CORS_ORIGINS },
     {
@@ -205,6 +207,9 @@ async function main(): Promise<void> {
       hubSecretsKey,
       dlc: dlcEngineOf(env),
       signal: stop.signal,
+      onProcessHandles: (h) => {
+        processes = h;
+      },
     },
   );
   const server = serve(env, app.fetch);
@@ -213,6 +218,7 @@ async function main(): Promise<void> {
     logger.info("shutdown", { signal });
     stop.abort();
     await server.stop();
+    await processes?.settled();
     redis.disconnect();
     await db.close();
     process.exit(0);

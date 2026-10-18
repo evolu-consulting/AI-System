@@ -28,7 +28,8 @@ export type RetryInput = {
   cls: JobErrorClass;
   state: RetryState;
   sideEffectSent: boolean;
-  legacy: "job_timeout" | "agent_failed" | "interrupted";
+  /** Lý do khi không thử lại (A3); P-d2 stage `tool` ⇒ `tool_failed` (D2-13). */
+  legacy: "job_timeout" | "agent_failed" | "interrupted" | "tool_failed";
   now: Date;
 };
 export type RetryDecision =

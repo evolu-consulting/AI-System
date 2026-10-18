@@ -2,7 +2,7 @@
 // `interrupted`) ⇒ thử lại (ghi stage `waiting_timer` + hẹn `retry`) hay trả lý do cho luồng `needs_decision` cũ. Chạy
 // TRONG tx của người gọi, run ĐÃ khoá (thứ tự khoá run → stage → timer, plan §6). Chỉ biết port, không `Tx`.
 import { classifyJobError, legacyFailReason } from "../../domain/runs/job-error.rules";
-import { decideRetry, type RetryDecision } from "../../domain/runs/retry.rules";
+import { decideRetry, type RetryDecision, type RetryState } from "../../domain/runs/retry.rules";
 import { timerKey } from "../../domain/timers/timer-key.rules";
 import type { TxRepos } from "../ports";
 
@@ -40,29 +40,39 @@ export async function handleJobFailure(
   const sideEffectSent = cls === "transient" && (await r.sideEffect.sent(f.stageRunId));
   const dec = decideRetry({ cls, state, sideEffectSent, legacy, now });
   if (dec.kind === "decide") return dec;
-  await r.retry.markWaiting(f.stageRunId, {
+  const at = { runId: f.runId, stageRunId: f.stageRunId };
+  await scheduleRetry(r, { ...at, state, lastErrorCode: f.code ?? INTERRUPTED_CODE }, dec, now);
+  return dec;
+}
+
+/**
+ * D2-13 · phần "thử lại" dùng chung agent + stage `tool`: stage `waiting_timer` + bộ đếm, hẹn `retry` (khoá `timerKey`
+ * theo lượt n). Trong tx người gọi, run + stage ĐÃ khoá.
+ */
+export async function scheduleRetry(
+  r: Pick<TxRepos, "retry" | "timers">,
+  x: { runId: string; stageRunId: string; state: RetryState; lastErrorCode: string },
+  dec: Extract<RetryDecision, { kind: "retry" }>,
+  now: Date,
+): Promise<void> {
+  const { state } = x;
+  await r.retry.markWaiting(x.stageRunId, {
     retryCount: dec.retryCount,
     attempt: state.attempt,
     round: state.round,
-    lastErrorCode: f.code ?? INTERRUPTED_CODE,
+    lastErrorCode: x.lastErrorCode,
     now,
   });
-  const n = (await r.timers.countByStageKind(f.stageRunId, "retry")) + 1;
+  const n = (await r.timers.countByStageKind(x.stageRunId, "retry")) + 1;
+  const k = { stageRunId: x.stageRunId, round: state.round, attempt: state.attempt, n };
   await r.timers.insert({
-    runId: f.runId,
-    stageRunId: f.stageRunId,
+    runId: x.runId,
+    stageRunId: x.stageRunId,
     kind: "retry",
     dueAt: dec.dueAt,
-    key: timerKey({
-      kind: "retry",
-      stageRunId: f.stageRunId,
-      round: state.round,
-      attempt: state.attempt,
-      n,
-    }),
+    key: timerKey({ kind: "retry", ...k }),
     timezone: null,
   });
-  return dec;
 }
 
 /**

@@ -9,6 +9,7 @@ export * from "./timers/cancel-timers.usecase";
 export * from "./timers/enter-wait.usecase";
 export * from "./timers/fire-timer.usecase";
 export type * from "./timers/wait.ports";
+export * from "./tools/handle-tool-failure.usecase";
 export * from "./tools/list-tools.usecase";
 export * from "./tools/run-tool-stage.usecase";
 export type * from "./tools/tool.ports";

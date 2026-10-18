@@ -193,6 +193,25 @@ export function networkErrorDetail(err: unknown, secret: string): string {
   return maskSecret(parts.filter(Boolean).join(" "), secret);
 }
 
+/** Q-D2-2 · mã lỗi LẬP kết nối (yêu cầu chưa tới server). Server nhận rồi đóng socket KHÔNG thuộc tập này (đã gửi). */
+const CONNECT_FAIL_CODES: ReadonlySet<string> = new Set([
+  "ECONNREFUSED",
+  "ConnectionRefused",
+  "FailedToOpenSocket",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+]);
+
+/** P-d2 D2-09: `fetch` ném lỗi lập kết nối (mã ở `err.code` hoặc `err.cause.code`) ⇒ chắc chắn chưa gửi. */
+export function isConnectFailure(err: unknown): boolean {
+  const codeOf = (x: unknown): unknown =>
+    typeof x === "object" && x !== null ? (x as { code?: unknown }).code : undefined;
+  const cause = typeof err === "object" && err !== null ? (err as { cause?: unknown }).cause : null;
+  return [codeOf(err), codeOf(cause)].some(
+    (c) => typeof c === "string" && CONNECT_FAIL_CODES.has(c),
+  );
+}
+
 /** Che `secret` (thô/base64/hex) → `***` **trước**, rồi cắt ≤ `max` (như `mask` Python, plan-runtime §3.1). */
 export function maskSecret(text: string, secret: string, max = DIFY_UPSTREAM_DETAIL_MAX): string {
   let out = text;
