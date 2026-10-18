@@ -17,7 +17,7 @@ export function buildSteps(configs: readonly string[], o: Opts): Step[] {
     { name: "check", cmd: ["bun", "run", "check"] },
     { name: "typecheck", cmd: ["bun", "run", "typecheck"] },
     { name: "unit", cmd: ["bun", "test"] },
-    { name: "int", cmd: ["bun", "run", "test:int"] },
+    { name: "int", cmd: ["bun", "run", "test:int:par"] },
     { name: "lock", cmd: ["bun", "run", "test:lock:verify"] },
   ];
   if (o.python)
