@@ -117,3 +117,34 @@ Lô nhắc/chuyển cấp không có câu nào CHỜ khoá:
 
 ### Rubric (vòng 2)
 1 ✓ · 2 ✓ (#1 đã sửa; R2-1..3 Minor) · 3 ✓ SAFE · 4 ✓ · 5 ✓ (PD-P13 46 ms ≤ 50, 10k 5,1 s; R2-1 Minor) · 6 ✓ (lock-order 1/0; R2-4 Minor) · 7 ✓ (check:fn đỏ có từ trước, không thuộc file sửa) · 8 ✓ (#8) · 9 ✓ (HUB-FR-145/144 trong commit và test)
+
+## Security P-d2 (T20, plan-d2 §10) · Kết luận: SAFE (0 Blocker, 1 Major, 2 Minor)
+Phạm vi: `git diff 8300aa1..HEAD` phần stage `tool`, công tắc tool (admin 0012, hub 0037, contract), rẽ nhánh, FE tab tool. Không xét POST Đạt/join. Lệnh: `bun test uow-boundary.test.ts + processes/{application,adapters}/tools + domain` → 36 pass/0 fail. Int/e2e không chạy (đối chiếu test có sẵn).
+
+| # | Kết quả | Bằng chứng |
+|---|---|---|
+| S1 | Đạt | `mcp-tool-invoker.ts:67-75` (userId = `started_by`, agentId null); `workflow-invoker.ts:151-154` `difyUser(tenantKeyOf(catalog, ctx.tenantId), ctx.userId)` |
+| S2 | Đạt | lưu: `teams.repo.ts` `toolRefs` → `tool-switch.repo.ts:32-37`; trước gọi: `tool-stage.repo.ts:79-81` (`w.enabled`, `t.tenant_id = r.tenant_id`, `revoked_at is null`) → `run-tool-stage.usecase.ts:44-49,127-128` (tắt ⇒ `tool_failed`, invoker không gọi) |
+| S3 | Đạt | `base_url`/`app_type` lấy từ `admin.workflows` cùng câu (`tool-stage.repo.ts:69-70`), `app_type` ngoài {workflow,chat,agent} ⇒ NOT_CONFIGURED (`mcp-tool-invoker.ts:41-43`); không URL từ def/người dùng |
+| S4 | Không (một phần) | lưu def đạt `tool-def.rules.ts:96`; không gọi lại khi đã gửi `tool-run.rules.ts:87`; `template_invalid` ⇒ decide `run-tool-stage.usecase.ts:64-68`. **Thiếu** kiểm lại lúc gọi — xem Major M1 |
+| S5 | Đạt | audit chỉ id/mã/ms `tool-stage.repo.ts:208-221`; trace bước `maskInputs(args, apiKey)` như `/mcp` `workflow-invoker.ts:125`; log chỉ `safeErrorFields` `tool-driver.ts:46` |
+| S6 | Đạt | `defs.routes.ts:50` tenant_admin luôn tenant mình; `list-tools.usecase.ts` mẫu ⇒ `[]`; câu lọc `t.tenant_id` `tool-switch.repo.ts:35` |
+| S7 | Đạt | `workflow-tools.routes.ts:28-29` `requireRole("platform_admin")`; RLS `0012_pd2_tenant_workflow_tools.sql` policy `admin_rw` theo `app.tenant_id`; int PD2-I46 `tests/acceptance/P-d/admin/workflow-tools.int.test.ts:157` |
+| S8 | Đạt | `/mcp` vẫn qua cổng `mcp.service.ts:174-177`; stage tool trace `gate_review` `mcp-tool-invoker.ts:77` |
+| S9 | Đạt | mọi câu Hub đọc công tắc có `tenant_id` tường minh: `tool-stage.repo.ts:81`, `tool-switch.repo.ts:35`; int PD2-I23 `tests/acceptance/P-d/d2/tool-switch.int.test.ts:122` (chưa chạy ở review này) |
+| S10 | Đạt | `can_run` + `usable` cùng câu ngay trước gọi `tool-stage.repo.ts:71-73`, thứ tự `run-tool-stage.usecase.ts:44-49` |
+| S11 | Đạt | `processes.mount.ts:130-143` (`systemOnly(uow)` trong closure), launcher chỉ nhận factory; `uow-boundary.test.ts` xanh |
+| S12 | Đạt | `run-tool-stage.usecase.ts:60` `utf8Bytes > 65_536` trước `JSON.parse` (dòng 63); đếm không cấp phát `tool-output.rules.ts:15-27` |
+
+Khác đã kiểm: SQL tham số hoá/văn bản cố định (`tool-switch.repo.ts:30` mảng qua tham số bind; `step.repo.ts:56-63` tham số); `branch.repo.ts` mọi câu lọc `tenant_id`; FE tab tool không `dangerouslySetInnerHTML`.
+
+| # | Mức | file:dòng | Vấn đề | Đề xuất |
+|---|---|---|---|---|
+| M1 | Major | `run-tool-stage.usecase.ts:44-49`, `tool-stage.repo.ts:61-74` | `side_effect` chỉ kiểm lúc lưu def. Admin bật `side_effect` cho workflow SAU khi def đã lưu ⇒ stage không `real_action` vẫn gọi tool có tác dụng phụ mà không qua gate (lệch PD2-R04/S4) | `loadCall` lấy thêm `(st->>'real_action')::boolean`; `preCallReason`: `sideEffect && !realAction ⇒ tool_failed`; thêm 1 unit + 1 int |
+| m1 | Minor | `mcp-tool-invoker.ts:41-56`, `tool-stage.repo.ts:79` | (b) tool có `input_schema` hỏng: catalog `/mcp` bỏ (`catalog.rules.ts:104-107`) nhưng stage tool vẫn chạy được | lọc `jsonb_typeof(w.input_schema) = 'array'` trong `loadCall` (hoặc parse `InputSchemaSchema` ở `toLoad`) ⇒ `tool_failed` |
+| m2 | Minor | `launcher.ts:114` | thiếu `toolDriver` ⇒ rơi về `stageDriver` cho stage `tool` (mount hiện luôn cấp, không khai thác được) | thiếu driver ⇒ `decide(tool_failed)` thay vì fallback |
+
+**3 điểm gate (`P-d2-gate.md`):**
+- (a) Bỏ tx read-only repeatable-read ở `editorContext` (`defs.service.ts:114`): **an toàn**. Hai câu (múi giờ, tools) độc lập, chỉ SELECT, cả hai lọc tenant tường minh; lệch snapshot tối đa là thấy công tắc vừa đổi ở một lần tải — lưu def vẫn kiểm lại công tắc (`loadDefRefs`), chạy kiểm lại lần nữa. Không sai dữ liệu, không lộ.
+- (b) Đọc thẳng `admin.workflows`: workflow **disabled/công tắc tắt KHÔNG chạy được** (`tool-stage.repo.ts:69,79-81` ⇒ `tool_failed`); `app_type` lạ ⇒ NOT_CONFIGURED. Schema hỏng **vẫn chạy được** (m1) — không phải lỗ cách ly/secret (đích, key, danh tính không đổi), nên chặn cho nhất quán với `/mcp`.
+- (c) Bỏ khoá advisory `run_steps` khi `ownRun` (`workflow-invoker.ts:249`, `run-steps.ts:49-59`): **an toàn**. Hub run của stage tool chỉ driver ghi bước (không Orchestrator; thử lại tạo hub run mới qua launch); đua bất thường vẫn đúng nhờ unique `run_steps_run_seq_uq` + thử lại savepoint (READ COMMITTED thấy `max(seq)` mới), tối đa 3 lần rồi lỗi rõ. `/mcp` giữ khoá (`ownRun` vắng).
