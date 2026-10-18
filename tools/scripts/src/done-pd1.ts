@@ -16,9 +16,9 @@ import {
   summarize,
 } from "./done-pd1.rules";
 
-const REPO = fileURLToPath(new URL("../../..", import.meta.url));
+export const REPO = fileURLToPath(new URL("../../..", import.meta.url));
 
-function stepEnv(step: PdStep): Record<string, string | undefined> {
+export function stepEnv(step: PdStep): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
   if (!step.nodeDir) return env;
   const key = Object.keys(env).find((k) => k.toLowerCase() === "path") ?? "PATH";
@@ -42,7 +42,7 @@ function runDepcruise(step: PdStep, t0: number): PdResult {
   return { title: step.title, code: ca === 0 && !unreadable ? 0 : 1, ms: performance.now() - t0 };
 }
 
-function run(step: PdStep): PdResult {
+export function run(step: PdStep): PdResult {
   console.log(`\n▶ ${step.title}`);
   const t0 = performance.now();
   if (step.kind === "depcruise") return runDepcruise(step, t0);
@@ -55,7 +55,7 @@ function run(step: PdStep): PdResult {
   return { title: step.title, code: p.exitCode ?? 1, ms: performance.now() - t0 };
 }
 
-function detectRealNode(): boolean {
+export function detectRealNode(): boolean {
   const p = Bun.which("node");
   if (!p) return false;
   let resolved = p;

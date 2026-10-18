@@ -106,12 +106,15 @@ const fmt = (ms: number): string =>
   ms < 60_000 ? `${(ms / 1000).toFixed(1)}s` : `${(ms / 60_000).toFixed(1)}m`;
 
 /** Bảng tổng kết + dòng kết luận; xanh khi mọi bước mã 0. */
-export function summarize(rs: readonly PdResult[]): { text: string; ok: boolean } {
+export function summarize(
+  rs: readonly PdResult[],
+  name = "done:pd1",
+): { text: string; ok: boolean } {
   const ok = rs.length > 0 && rs.every((r) => r.code === 0);
   const rows = rs.map(
     (r, i) => `${i + 1}. ${r.code === 0 ? "xanh" : `đỏ (mã ${r.code})`}  ${fmt(r.ms)}  ${r.title}`,
   );
   const red = rs.filter((r) => r.code !== 0).length;
-  const verdict = ok ? "done:pd1 XANH" : `done:pd1 ĐỎ (${red}/${rs.length} bước đỏ)`;
+  const verdict = ok ? `${name} XANH` : `${name} ĐỎ (${red}/${rs.length} bước đỏ)`;
   return { text: [...rows, verdict].join("\n"), ok };
 }
