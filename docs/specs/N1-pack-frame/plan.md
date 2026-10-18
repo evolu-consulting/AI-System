@@ -155,4 +155,4 @@ apps/hub-api/src/modules/packs/
 
 Không phụ thuộc thống kê: lọc PK/`= any($arr)`; lô qua **một** tham số `jsonb`, không join `unnest` vào bảng lớn; SQL văn bản hằng ⇒ chuẩn bị một lần mỗi kết nối. N1 không khoá hàng; không sleep/poll mới.
 
-## §11 Câu hỏi mở — spec §9: Q3 (ADR-0024), Q9, Q10
+## §11 Câu hỏi mở — spec §9: Q3, Q9, Q10
