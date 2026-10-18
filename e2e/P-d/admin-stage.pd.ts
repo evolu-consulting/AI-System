@@ -141,7 +141,7 @@ test("ADM-FR-71 · AC-H44 · PD2-E01 · stage 'Gọi tool': chọn 'Xuất HĐ �
   await expect(g.getByText("Tác dụng phụ")).toHaveCount(0);
   await g.getByRole("combobox", { name: "Nguồn của tham số tong_tien" }).click();
   await p.getByRole("option", { name: "Kết quả giai đoạn trước" }).click();
-  await g.getByRole("combobox", { name: "Trường của tham số tong_tien" }).click();
+  await g.getByRole("combobox", { name: "Giá trị của tham số tong_tien" }).click();
   await p.getByRole("option", { name: /Giai đoạn 1 · tong_tien/ }).click();
   await g.getByRole("combobox", { name: "Nguồn của tham số ma_kh" }).click();
   await p.getByRole("option", { name: "Giá trị cố định" }).click();

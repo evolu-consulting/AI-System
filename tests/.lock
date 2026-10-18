@@ -107,7 +107,7 @@ e80da141b41719e6e2164c538016b714db832b4f865f4456660c49c9add969ef  e2e/P-c2/chat/
 7698742686506f975fc3bf130b10abbf27be91d5002d466dee135d3e753bec7d  e2e/P-c2/chat/result.pc2.ts
 c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playwright.pc2.config.ts
 7e7b27e2adb5c8881ed14c680b63a38e32db51a2a90ceed1c6c975e267e6a960  e2e/P-d/_pd-support.ts
-d41f28c564266f4e296b7159472e54db5325de0b0a215be4d6d4778b223d77b2  e2e/P-d/admin-stage.pd.ts
+fc95cddc4f3dfae9ee6a2b3b153b53e6aa764439c5735414b12d837babd1f030  e2e/P-d/admin-stage.pd.ts
 6d0d0a657d77e39c2cc2802e698c78cf80dc5a6ab7e8332b3a8409f42ed8d1a1  e2e/P-d/admin-tenant.pd.ts
 063824b2ca90ff2fd2642e9987d371b75f72bd712a0d087614fb666ad5038ddf  e2e/P-d/chat-labels.pd.ts
 9b9ab76d2d89c970fa291af89dd52b9da7ab78f29ae4cc0f147476fa69c8ad2a  e2e/P-d/playwright.pd.config.ts
@@ -721,7 +721,7 @@ b0ef6838a41fe8f389e26686134cb421c2bed253a243f6fbe9ed2f684ac12cce  tests/acceptan
 9050d7f159372d23514374dbc3aa0b4a90e09d8f9967cde2b2be3a5161d0adb4  tests/acceptance/P-d/_support/two-tenant.ts
 af8b2d12de386420f62b542e22b31d35ed37e022814c2d90262c9c6271a98483  tests/acceptance/P-d/admin/timezone-rules.test.ts
 2610055c512b4da0c72d3b6954aa5f734d0aac62a80e286a8b3aff60718b7a87  tests/acceptance/P-d/admin/timezone.int.test.ts
-bac8a0fae0c9487a5c6f243a5df63b1a2ac7b620e2596aa6f108f695b90ae343  tests/acceptance/P-d/admin/workflow-tools.int.test.ts
+af44c9afc1f9076aceaf975b5bfcc5b547b7e9cd060516481be1dd2fa56a3c25  tests/acceptance/P-d/admin/workflow-tools.int.test.ts
 64e38a3cbf73b69b3814df9fe75a63ef3a03acbee615971ebfab8d3f1dfce997  tests/acceptance/P-d/arch/layers.test.ts
 0e4a401a6be001ded5aa0d1022709f47ded16c8f6280d695b0c8bc6e76cd733c  tests/acceptance/P-d/d1/_bulk.ts
 2f291b2a4c7a139d0a67ac89b9d913a1d93d62db58213728ce3ae1a2293d37aa  tests/acceptance/P-d/d1/_count.ts
@@ -750,9 +750,11 @@ faa112108196786a83987fcaae4191a89f7cb5dd5e6ac0ba1b5d917e6d396830  tests/acceptan
 3bfc0624c858421e4f2c19874680ed0a1d029fe110770e4343188417a8d56b1c  tests/acceptance/P-d/d2/_d2.ts
 bfd9e6ef7e024eb818d39ceb76fe35c6f888c0f94d4e9ed3a7571fdf8905f02a  tests/acceptance/P-d/d2/branch.int.test.ts
 0a902badaa95e15440d58b7165509e076ad7a4aa7b18dbc71afa6f190dc21043  tests/acceptance/P-d/d2/db.int.test.ts
+7cdd9e83a1cd8036662a6ea40c9af194d94887ea06ed2eac5fa8639b8c0a692f  tests/acceptance/P-d/d2/escalate-notice.int.test.ts
+1e10de169cae854843c5660f1c87d34459b4be7089b398285c87ee36c5d8bae9  tests/acceptance/P-d/d2/run-summary.int.test.ts
 ca19b0cc18dc34eb754fb209b3c4b94eed4ba9ab846a74e32769aeb0894b1f8f  tests/acceptance/P-d/d2/tool-net.int.test.ts
 3f3f8b646d5d6a4acd1c1554543299afced02c761bd1005199ceb5a7ac741fd6  tests/acceptance/P-d/d2/tool-switch.int.test.ts
-d08550db3bd1bfa175217ad1089745876ad28cbafc88633a4376e282c7a58de3  tests/acceptance/P-d/d2/tool.int.test.ts
+0b0f0bb8f05aafa9d4c2678e77f8558825558815d31abcb89de63bed24ae2efd  tests/acceptance/P-d/d2/tool.int.test.ts
 df5bf2adf5839297dfa3ed71606207edd71995e9355977d19d2974f6f9c532da  tests/acceptance/P-d/perf/background.perf.int.test.ts
 3a4f9f80c41dc41236f9800ee874b6578e9dba96b03bb5f289cb73e95f5b8a5d  tests/acceptance/P-d/perf/d2.perf.int.test.ts
 55a43a06e1eedc783dd7581a7b3aef8b7b2db5ec816f75d89ba53d795d5a87f3  tests/acceptance/P-d/perf/remind.perf.int.test.ts

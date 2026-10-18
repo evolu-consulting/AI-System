@@ -102,7 +102,7 @@ describe("AC-A15 · ADM-FR-73 · bật/tắt tool cho tenant", () => {
     expect(row?.revoked_at).toBeNull();
     expect((await audits(env, mark)).map((r) => r.action)).toEqual(["revoke", "grant"]);
   });
-  it("AC-A15 · PD2-I43 · DELETE: revoked_at đặt; DELETE lần 2 ⇒ 200 không đổi (0 audit, revoked_at giữ); PUT lại ⇒ granted_by mới", async () => {
+  it("AC-A15 · PD2-I48 · DELETE: revoked_at đặt; DELETE lần 2 ⇒ 200 không đổi (0 audit, revoked_at giữ); PUT lại ⇒ granted_by mới", async () => {
     await needSwitch();
     await admin("PUT", path(), {});
     expect((await admin("DELETE", path())).status).toBe(200);

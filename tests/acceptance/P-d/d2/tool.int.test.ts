@@ -159,7 +159,7 @@ describe("AC-H44 · input kiểu number tới tool là số JS (readiness #100, 
     await prep();
     const ha = (await loadHubAdmin()) as Json;
     if (!((ha.INPUT_TYPES as string[] | undefined) ?? []).includes("number"))
-      noFeature("kiểu input quy trình `number` (contract INPUT_TYPES)", "T17", "Tranh chấp T15c-1");
+      noFeature("kiểu input quy trình `number` (contract INPUT_TYPES)", "T17", "Tranh chấp T15c-2");
     const key = `pd2-num-${++seq}`;
     await createDef(
       c,
