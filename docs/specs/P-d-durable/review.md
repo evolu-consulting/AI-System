@@ -140,9 +140,9 @@ Khác đã kiểm: SQL tham số hoá/văn bản cố định (`tool-switch.repo
 
 | # | Mức | file:dòng | Vấn đề | Đề xuất |
 |---|---|---|---|---|
-| M1 | Major | `run-tool-stage.usecase.ts:44-49`, `tool-stage.repo.ts:61-74` | `side_effect` chỉ kiểm lúc lưu def. Admin bật `side_effect` cho workflow SAU khi def đã lưu ⇒ stage không `real_action` vẫn gọi tool có tác dụng phụ mà không qua gate (lệch PD2-R04/S4) | `loadCall` lấy thêm `(st->>'real_action')::boolean`; `preCallReason`: `sideEffect && !realAction ⇒ tool_failed`; thêm 1 unit + 1 int |
-| m1 | Minor | `mcp-tool-invoker.ts:41-56`, `tool-stage.repo.ts:79` | (b) tool có `input_schema` hỏng: catalog `/mcp` bỏ (`catalog.rules.ts:104-107`) nhưng stage tool vẫn chạy được | lọc `jsonb_typeof(w.input_schema) = 'array'` trong `loadCall` (hoặc parse `InputSchemaSchema` ở `toLoad`) ⇒ `tool_failed` |
-| m2 | Minor | `launcher.ts:114` | thiếu `toolDriver` ⇒ rơi về `stageDriver` cho stage `tool` (mount hiện luôn cấp, không khai thác được) | thiếu driver ⇒ `decide(tool_failed)` thay vì fallback |
+| M1 | Major | `run-tool-stage.usecase.ts:44-49`, `tool-stage.repo.ts:61-74` | `side_effect` chỉ kiểm lúc lưu def. Admin bật `side_effect` cho workflow SAU khi def đã lưu ⇒ stage không `real_action` vẫn gọi tool có tác dụng phụ mà không qua gate (lệch PD2-R04/S4) | `loadCall` lấy thêm `(st->>'real_action')::boolean`; `preCallReason`: `sideEffect && !realAction ⇒ tool_failed`; thêm 1 unit + 1 int · **ĐÃ SỬA 2026-10-18** (PD2-U30, PD2-I53 xanh) |
+| m1 | Minor | `mcp-tool-invoker.ts:41-56`, `tool-stage.repo.ts:79` | (b) tool có `input_schema` hỏng: catalog `/mcp` bỏ (`catalog.rules.ts:104-107`) nhưng stage tool vẫn chạy được | lọc `jsonb_typeof(w.input_schema) = 'array'` trong `loadCall` (hoặc parse `InputSchemaSchema` ở `toLoad`) ⇒ `tool_failed` · **ĐÃ SỬA 2026-10-18** (parse ở `toLoad`; PD2-I54 xanh) |
+| m2 | Minor | `launcher.ts:114` | thiếu `toolDriver` ⇒ rơi về `stageDriver` cho stage `tool` (mount hiện luôn cấp, không khai thác được) | thiếu driver ⇒ `decide(tool_failed)` thay vì fallback · **ĐÃ SỬA 2026-10-18** (`runs/driver-choice.ts` + unit) |
 
 **3 điểm gate (`P-d2-gate.md`):**
 - (a) Bỏ tx read-only repeatable-read ở `editorContext` (`defs.service.ts:114`): **an toàn**. Hai câu (múi giờ, tools) độc lập, chỉ SELECT, cả hai lọc tenant tường minh; lệch snapshot tối đa là thấy công tắc vừa đổi ở một lần tải — lưu def vẫn kiểm lại công tắc (`loadDefRefs`), chạy kiểm lại lần nữa. Không sai dữ liệu, không lộ.

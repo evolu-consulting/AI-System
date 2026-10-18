@@ -39,7 +39,14 @@ describe("settleOf", () => {
 
 /** T18-2 · runToolStage với UoW giả: đếm lời gọi repo, kiểm thử lại / chặn gọi lại side_effect / audit. */
 type Ev = string;
-function fakeDeps(o: { sideEffect: boolean; res: unknown; retryCount?: number }) {
+type FakeOpts = {
+  sideEffect: boolean;
+  res: unknown;
+  retryCount?: number;
+  realAction?: boolean;
+  inputSchemaOk?: boolean;
+};
+function fakeDeps(o: FakeOpts) {
   const ev: Ev[] = [];
   const state = {
     retryCount: o.retryCount ?? 0,
@@ -53,6 +60,9 @@ function fakeDeps(o: { sideEffect: boolean; res: unknown; retryCount?: number })
     toolKey: "k",
     workflowId: "w",
     sideEffect: o.sideEffect,
+    // def hợp lệ: tool side_effect chỉ ở stage real_action (PD2-U03) ⇒ mặc định theo sideEffect.
+    realAction: o.realAction ?? o.sideEffect,
+    inputSchemaOk: o.inputSchemaOk ?? true,
     timeoutS: 60,
     args: {},
     outputFields: [{ key: "so", type: "number", required: true }],
@@ -129,5 +139,26 @@ describe("runToolStage · T18-2 lỗi/thử lại/audit [PD2-R05, PD2-R09, D2-13
     const { d, ev } = fakeDeps({ sideEffect: false, res: { kind: "ok", text: '{"so":7}' } });
     expect(await runToolStage(d, link)).toMatchObject({ kind: "ok", fields: { so: 7 } });
     expect(ev).toEqual(["audit:ok:null", "lockRun", "lockRunning", "ok"]);
+  });
+});
+
+describe("runToolStage · security P-d2 M1/m1 — kiểm lại cấu hình workflow lúc chạy [review.md]", () => {
+  it("M1/S4 · side_effect bật sau lưu def, stage không real_action ⇒ tool_failed, không gọi (0 audit)", async () => {
+    const res = { kind: "ok", text: '{"so":7}' };
+    const { d, ev } = fakeDeps({ sideEffect: true, realAction: false, res });
+    expect(await runToolStage(d, link)).toEqual({ kind: "decide", reason: "tool_failed" });
+    expect(ev).toEqual(["lockRun", "lockRunning", "decide:tool_failed"]);
+  });
+  it("M1 · side_effect ở stage real_action ⇒ vẫn gọi (ok)", async () => {
+    const res = { kind: "ok", text: '{"so":7}' };
+    const { d, ev } = fakeDeps({ sideEffect: true, realAction: true, res });
+    expect((await runToolStage(d, link)).kind).toBe("ok");
+    expect(ev[0]).toBe("audit:ok:null");
+  });
+  it("m1 · input_schema hỏng ⇒ tool_failed, không gọi (0 audit)", async () => {
+    const res = { kind: "ok", text: '{"so":7}' };
+    const { d, ev } = fakeDeps({ sideEffect: false, inputSchemaOk: false, res });
+    expect(await runToolStage(d, link)).toEqual({ kind: "decide", reason: "tool_failed" });
+    expect(ev).toEqual(["lockRun", "lockRunning", "decide:tool_failed"]);
   });
 });

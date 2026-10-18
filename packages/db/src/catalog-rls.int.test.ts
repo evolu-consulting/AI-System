@@ -142,7 +142,7 @@ describe("ADM-FR-31 · RLS admin.feature_entitlements", () => {
     expect(ins).toEqual({ code: "42501" });
   });
 
-  test("ADM-NFR-07 · relrowsecurity đúng 13 bảng (M3 thêm groups, group_members, feature_grants; M4 thêm audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp), không FORCE", async () => {
+  test("ADM-NFR-07 · relrowsecurity đúng 14 bảng (M3 thêm groups, group_members, feature_grants; M4 thêm audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp; P-d2 0012 thêm tenant_workflow_tools), không FORCE", async () => {
     const rows =
       await owner`select c.relname, c.relrowsecurity as rls, c.relforcerowsecurity as force
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -157,6 +157,7 @@ describe("ADM-FR-31 · RLS admin.feature_entitlements", () => {
       "refresh_tokens",
       "secrets",
       "tenant_quotas",
+      "tenant_workflow_tools",
       "tenants",
       "user_backup_codes",
       "user_totp",

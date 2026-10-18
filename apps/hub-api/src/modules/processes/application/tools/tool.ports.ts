@@ -10,6 +10,10 @@ export type ToolCallLoad = {
   toolKey: string;
   workflowId: string;
   sideEffect: boolean;
+  /** M1/S4 · `real_action` của stage trong snapshot — `sideEffect ∧ ¬realAction` ⇒ `tool_failed` lúc chạy. */
+  realAction: boolean;
+  /** m1 · `admin.workflows.input_schema` qua `InputSchemaSchema` (như catalog `/mcp`); `false` ⇒ `tool_failed`. */
+  inputSchemaOk: boolean;
   timeoutS: number;
   args: Readonly<Record<string, ArgSource>>;
   outputFields: readonly ToolFieldDecl[];

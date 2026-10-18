@@ -2,6 +2,7 @@
 // `loadCall` = MỘT câu đọc (stage running của hub run + snapshot + inputs + fields nguồn + công tắc của ĐÚNG tenant run +
 // workflow enabled + usable + canRun). `settleOk` đi đường hậu-output của stage agent (`transition` + `effects`: review ⇒
 // waiting_review + task; auto ⇒ done + join). Mọi câu lọc `tenant_id`; sự kiện/kick/thread vào outbox (phát sau COMMIT).
+import { InputSchemaSchema } from "@ai/contracts";
 import type { ProcessRunStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -33,6 +34,8 @@ type LoadRow = {
   started_by: string;
   workflow_id: string | null;
   side_effect: boolean | null;
+  real_action: boolean | null;
+  input_schema: unknown;
   wf_enabled: boolean | null;
   switch_on: boolean;
   wf_name: string | null;
@@ -66,7 +69,8 @@ async function loadCallRow(
         from hub.stage_runs o left join hub.process_outputs po
           on po.id = o.current_output_id and po.tenant_id = o.tenant_id
         where o.process_run_id = r.id and o.tenant_id = r.tenant_id) as src_fields,
-      w.id as workflow_id, w.side_effect, w.enabled as wf_enabled, (t.workflow_id is not null) as switch_on,
+      w.id as workflow_id, w.side_effect, (st->>'real_action')::boolean as real_action, w.input_schema,
+      w.enabled as wf_enabled, (t.workflow_id is not null) as switch_on,
       w.name as wf_name, w.app_type, w.base_url, w.output_field,
       (u.active and not u.locked_by_tenant and tn.active) as usable,
       (cardinality(d.run_group_ids) = 0 or exists (select 1 from admin.group_members gm
@@ -111,6 +115,8 @@ function toLoad(r: LoadRow): ToolCallLoad {
     toolKey: r.tool_key,
     workflowId: r.workflow_id ?? "",
     sideEffect: r.side_effect === true,
+    realAction: r.real_action === true,
+    inputSchemaOk: InputSchemaSchema.safeParse(r.input_schema).success,
     timeoutS: Number(r.timeout_s ?? 0),
     args,
     outputFields: r.out_fields ?? [],

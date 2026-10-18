@@ -21,6 +21,7 @@ import { NOOP_LAUNCHER, type ProcessDeps, type StageLauncher } from "../core/por
 import { isTerminal } from "../domain/runs/run-state.rules";
 import { stageIdxsOfStep } from "../domain/runs/step.rules";
 import { launchApplyStage } from "./apply-launch";
+import { driverKindOf } from "./driver-choice";
 import { gateResolve, type Head, type SnapStage } from "./launcher-prompt";
 import { stagePrompt } from "./launcher-session";
 import { auditRealAction, priorFiles, realActionPre } from "./launcher-step";
@@ -110,10 +111,11 @@ async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Pr
     return result.more === true;
   }
   if (result.kind !== "launch") return false;
-  const driver =
-    result.toolLink && d.toolDriver
-      ? d.toolDriver(result.toolLink)
-      : stageDriver(d, self, { useSession: result.useSession });
+  // m2 · stage tool không bao giờ rơi về `stageDriver`; thiếu `toolDriver` đã quyết `tool_failed` ở `plan`.
+  const driver = result.toolLink
+    ? d.toolDriver?.(result.toolLink)
+    : stageDriver(d, self, { useSession: result.useSession });
+  if (!driver) return false;
   await d.runs.launch(result.prepared, result.files as never, { driver });
   return result.more === true;
 }
@@ -187,14 +189,23 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
   }
   const ctx = { runId, idx, head, stage, def, teamRunId: team.teamRunId, lost };
   // P-d2 · stage `tool`: `hub.runs` không agent; quyền + công tắc kiểm ngay trước gọi (driver, S2/S10).
-  if (def.executor.kind === "tool") {
-    const t = { runId, stageId: stage.id, toolKey: def.executor.tool_key, name: def.name };
-    const markRunning = (hubRunId: string) =>
-      markStageRunning(tx, { u, c: ctx, runId: hubRunId, real: null });
-    const conversationId = head.conversation_id;
-    return { ...(await launchToolStage(d, tx, u, { ...t, conversationId, markRunning })), more };
-  }
+  if (def.executor.kind === "tool") return { ...(await launchTool(d, tx, u, ctx)), more };
   return { ...(await launchStage(d, tx, u, ctx)), more };
+}
+
+/** P-d2 · stage `tool`: thiếu `toolDriver` ⇒ quyết `tool_failed` (m2, không tạo `hub.runs`); có ⇒ `launchToolStage`. */
+async function launchTool(d: LauncherDeps, tx: Tx, u: AuthUser, c: LaunchCtx): Promise<KickResult> {
+  const { runId, stage, def } = c;
+  if (def.executor.kind !== "tool") return { kind: "skip" };
+  if (driverKindOf(true, d.toolDriver !== undefined) === "missing") {
+    const p = { runId, tenantId: u.tenantId, idx: c.idx, stageRunId: stage.id };
+    return lostPermission(d, tx, { ...p, reason: "tool_failed" });
+  }
+  const t = { runId, stageId: stage.id, toolKey: def.executor.tool_key, name: def.name };
+  const markRunning = (hubRunId: string) =>
+    markStageRunning(tx, { u, c, runId: hubRunId, real: null });
+  const conversationId = c.head.conversation_id;
+  return launchToolStage(d, tx, u, { ...t, conversationId, markRunning });
 }
 
 type Lost = (reason: "permission_lost" | "user_inactive") => Promise<KickResult>;

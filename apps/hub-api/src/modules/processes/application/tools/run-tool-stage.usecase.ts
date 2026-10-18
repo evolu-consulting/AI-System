@@ -40,11 +40,16 @@ export type ToolStageOutcome =
 /** Ngữ cảnh tx2 khi đã gọi tool: audit + dữ liệu cho quyết định thử lại. */
 type Called = { audit: Omit<ToolCallAudit, "runId" | "stageRunId">; load: ToolCallLoad };
 
-/** S2/S10 · thứ tự: người bắt đầu dùng được → quyền chạy → công tắc + workflow bật. */
+/**
+ * S2/S10 · thứ tự: người bắt đầu dùng được → quyền chạy → công tắc + workflow bật → cấu hình workflow đổi SAU khi lưu def:
+ * M1/S4 `side_effect` mà stage không `real_action` (fail-closed: vắng `realAction` ⇒ chặn); m1 `input_schema` hỏng.
+ */
 function preCallReason(l: ToolCallLoad): ToolDecisionReason | null {
   if (!l.usable) return "user_inactive";
   if (!l.canRun) return "permission_lost";
   if (!l.switchOn || !l.wfEnabled) return "tool_failed";
+  if (l.sideEffect && l.realAction !== true) return "tool_failed";
+  if (l.inputSchemaOk === false) return "tool_failed";
   return null;
 }
 
