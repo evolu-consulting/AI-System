@@ -10,15 +10,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatClock } from "@/lib/format";
+import { formatClock, type Translate } from "@/lib/format";
 
 type Props = { history: readonly HistoryItem[]; stageNames: readonly string[] };
 
-const detailOf = (h: HistoryItem): string =>
-  [h.feedback, h.question, h.answer, h.note].filter((x): x is string => !!x).join(" · ");
+export const detailOf = (h: HistoryItem, t: Translate): string =>
+  [
+    h.kind === "branch"
+      ? t("process.admin.run.log.branchDetail", { step: (h.to_step ?? 0) + 1, rule: h.rule ?? 1 })
+      : undefined,
+    h.feedback,
+    h.question,
+    h.answer,
+    h.note,
+  ]
+    .filter((x): x is string => !!x)
+    .join(" · ");
 
 export function RunLog({ history, stageNames }: Props) {
-  const { t } = useTranslation();
+  const t = useTranslation().t as unknown as Translate;
   const L = (k: string) => t(`process.admin.run.log.${k}`);
   if (history.length === 0) {
     return <EmptyState message={t("process.admin.run.log.empty")} />;
@@ -49,7 +59,7 @@ export function RunLog({ history, stageNames }: Props) {
                 </TableCell>
                 <TableCell>{h.actor?.display_name ?? "—"}</TableCell>
                 <TableCell className="max-w-md whitespace-pre-wrap break-words">
-                  {detailOf(h) || "—"}
+                  {detailOf(h, t) || "—"}
                 </TableCell>
               </TableRow>
             ))}

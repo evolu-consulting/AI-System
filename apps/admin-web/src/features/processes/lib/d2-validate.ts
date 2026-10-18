@@ -25,7 +25,7 @@ export const TOOL_ERR = {
   argRequired: `${T}argRequired`,
   pick: `${T}pick`,
 } as const;
-/** Khoá lỗi P-d2 do `d2LiveErrors` tính lại mỗi lần render (trừ `argRequired`, chỉ sinh khi Lưu). */
+/** Khoá lỗi P-d2 do `d2LiveErrors` tính lại mỗi lần render (`argRequired` cũng sinh live; còn giữ khi Lưu nếu tham số vẫn trống). */
 export const isD2Key = (v: string): boolean =>
   v !== TOOL_ERR.argRequired && (v.startsWith(T) || v.startsWith(B));
 export const BRANCH_ERR = { all: `${B}BRANCH_INVALID`, real: `${B}real` } as const;
@@ -85,14 +85,14 @@ export function branchErrors(stages: readonly StageDraft[]): DraftErrors {
   return e;
 }
 
-/** Tham số bắt buộc CHƯA khai nguồn (path `stages.i.executor.args.<name>`) ⇒ chỉ báo khi Lưu (`toolSubmitErrors`), không báo live. */
+/** Tham số bắt buộc CHƯA khai nguồn (path `stages.i.executor.args.<name>`) ⇒ báo NGAY (câu "chọn nguồn" `argRequired`), không chờ Lưu. */
 function unfilled(stages: readonly StageDraft[], path: string): boolean {
   const m = /^stages\.(\d+)\.executor\.args\.(.+)$/.exec(path);
   const s = m ? stages[Number(m[1])] : undefined;
   return s !== undefined && isTool(s) && !hasArg(s.tool, m?.[2] ?? "");
 }
 
-/** Lỗi gọi tool hiện NGAY khi sửa;  `tools` vắng (catalog chưa nạp) ⇒ bỏ kiểm theo catalog. */
+/** Lỗi gọi tool hiện NGAY khi sửa (kể cả tham số bắt buộc còn trống);  `tools` vắng (catalog chưa nạp) ⇒ bỏ kiểm theo catalog. */
 export function toolErrors(
   stages: readonly StageDraft[],
   inputs: readonly InputDraft[],
@@ -107,7 +107,8 @@ export function toolErrors(
   );
   for (const i of issues) {
     if (i.rule === "TOOL_SIDE_EFFECT") e[i.path] ??= TOOL_ERR.sideEffect;
-    else if (i.rule === "TOOL_INVALID" && !unfilled(stages, i.path)) e[i.path] ??= TOOL_ERR.invalid;
+    else if (i.rule === "TOOL_INVALID")
+      e[i.path] ??= unfilled(stages, i.path) ? TOOL_ERR.argRequired : TOOL_ERR.invalid;
   }
   stages.forEach((s, i) => {
     if (isTool(s) && s.tool.key !== "" && !tools.some((t) => t.key === s.tool.key))

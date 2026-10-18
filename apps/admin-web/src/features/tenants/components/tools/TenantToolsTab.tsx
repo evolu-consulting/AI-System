@@ -23,10 +23,16 @@ export default function TenantToolsTab({ tenant }: { tenant: TenantDetail }) {
   const locale = i18n.language === "vi" ? "vi-VN" : "en-GB";
   const columns = toolColumns(t as unknown as Translate, locale, tools.pendingId, tools.toggle);
   if (tools.forbidden) return <ForbiddenState />;
-  const noMatch = <EmptyState message={t("tenants.tools.noMatch")} />;
+  const noMatch = (
+    <EmptyState
+      message={t("tenants.tools.noMatch")}
+      className="rounded-none border-0 border-t border-solid"
+    />
+  );
   const none = (
     <EmptyState
-      message={t("tenants.tools.empty")}
+      title={t("tenants.tools.empty")}
+      message={t("tenants.tools.emptyDesc")}
       action={
         <Link to="/workflows" className={buttonVariants({ variant: "outline" })}>
           {t("tenants.tools.openWorkflows")}
@@ -34,14 +40,19 @@ export default function TenantToolsTab({ tenant }: { tenant: TenantDetail }) {
       }
     />
   );
-  return (
-    <section className="space-y-4" aria-label={t("tenants.tools.title")}>
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div>
         <h2 className="text-h3 font-semibold">{t("tenants.tools.title")}</h2>
         <p className="text-caption text-muted-foreground">{t("tenants.tools.desc")}</p>
       </div>
       <SearchBox label={t("tenants.tools.search")} value={q} onChange={setQ} />
+    </div>
+  );
+  return (
+    <section className="space-y-4" aria-label={t("tenants.tools.title")}>
       <DataTable
+        header={items && items.length === 0 ? undefined : header}
         caption={t("tenants.tools.title")}
         columns={columns}
         rows={rows}

@@ -365,6 +365,7 @@
       "actor": "Người",
       "detail": "Chi tiết",
       "empty": "Chưa có hoạt động nào",
+      "branchDetail": "Rẽ nhánh: tới bước {{step}} (luật {{rule}})",
       "kinds": {
         "review": "Kiểm",
         "ask": "Hỏi lại",
@@ -372,7 +373,8 @@
         "forward": "Chuyển việc",
         "cancel": "Huỷ",
         "expire": "Hết hạn",
-        "escalate": "Chuyển cấp"
+        "escalate": "Chuyển cấp",
+        "branch": "Rẽ nhánh"
       }
     }
   },

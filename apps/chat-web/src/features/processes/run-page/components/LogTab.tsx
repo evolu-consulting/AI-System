@@ -2,6 +2,7 @@
 import type { HistoryItem, ProcessRunFullView } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { relativeTime } from "~/features/thread/lib/thread-logic";
+import { branchParams } from "./log-params";
 
 function lineKey(kind: HistoryItem["kind"]): string {
   return `process.inbox.run.log.${kind}`;
@@ -26,6 +27,7 @@ export function LogTab({ view }: { view: ProcessRunFullView }) {
               actor: h.actor?.display_name ?? "—",
               to: h.to?.display_name ?? "—",
               group: h.group?.name ?? "—",
+              ...branchParams(h),
               result: h.result ? t(`process.common.result.${h.result}`) : "",
             })}
           </span>

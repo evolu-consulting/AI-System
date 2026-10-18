@@ -318,7 +318,10 @@ describe("validate live (hàm contract)", () => {
     expect(e["stages.0.executor.args.che_do"]).toBeUndefined();
     const none = toolSubmitErrors([st("t", 0, { executor: "tool" })], CATALOG);
     expect(none["stages.0.executor"]).toBe("process.admin.editor.stage.tool.err.pick");
-    expect(d2LiveErrors([t], [], CATALOG)["stages.0.executor.args.tong_tien"]).toBeUndefined();
+    // T20-FE2: tham số bắt buộc còn trống báo NGAY (live), không chờ Lưu.
+    expect(d2LiveErrors([t], [], CATALOG)["stages.0.executor.args.tong_tien"]).toBe(
+      "process.admin.editor.stage.tool.err.argRequired",
+    );
   });
 });
 

@@ -34,6 +34,8 @@ type Props<T> = {
   /** Hiển thị khi `rows` rỗng (đã chọn EmptyState phù hợp). */
   empty?: ReactNode;
   skeletonRows?: number;
+  /** Tiêu đề / mô tả / ô tìm nằm TRONG khung bảng (mockup P-d2 C1); vẫn hiện khi rỗng do lọc. */
+  header?: ReactNode;
 };
 
 type RowProps<T> = { row: T; columns: Column<T>[] };
@@ -76,18 +78,24 @@ export function DataTable<T>({
   onRetry,
   empty,
   skeletonRows = 8,
+  header,
 }: Props<T>) {
   if (error) return <ErrorState message={error.message} code={error.code} onRetry={onRetry} />;
   const showEmpty = !isLoading && rows !== undefined && rows.length === 0 && empty;
-  if (showEmpty) return <>{empty}</>;
+  // Có `header`: rỗng nằm TRONG cùng khung (giữ nguyên cây ⇒ ô tìm trong header không bị mount lại / mất focus).
+  const emptyInside = !!showEmpty && header !== undefined;
+  if (showEmpty && !emptyInside) return <>{empty}</>;
   return (
     // Khung cuộn: thân bảng cuộn trong khung (cao ≤ viewport − header trang), thead sticky; ngang cuộn cùng khung.
     <div
       className="max-h-[max(20rem,calc(100dvh-20rem))] overflow-auto rounded-lg border border-border bg-card"
       aria-busy={isLoading || undefined}
     >
+      {header}
       {isLoading ? <LoadingState onRetry={onRetry}>{null}</LoadingState> : null}
+      {emptyInside ? empty : null}
       <Table
+        hidden={emptyInside}
         containerClassName="overflow-visible"
         className={cn(isFetching && !isLoading && "opacity-60 transition-opacity")}
       >

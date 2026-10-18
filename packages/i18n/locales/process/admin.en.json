@@ -365,6 +365,7 @@
       "actor": "Person",
       "detail": "Details",
       "empty": "No activity yet",
+      "branchDetail": "Branch: going to step {{step}} (rule {{rule}})",
       "kinds": {
         "review": "Review",
         "ask": "Follow-up",
@@ -372,7 +373,8 @@
         "forward": "Forwarded",
         "cancel": "Cancelled",
         "expire": "Expired",
-        "escalate": "Escalate"
+        "escalate": "Escalate",
+        "branch": "Branch"
       }
     }
   },
