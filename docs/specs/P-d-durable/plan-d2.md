@@ -1,130 +1,154 @@
-# Plan phụ lục · P-d2 backend — stage `tool` + công tắc tool theo tenant + rẽ nhánh (T13)
+# Plan · P-d2 backend — stage `tool` + công tắc tool theo tenant + rẽ nhánh
 
-Phần của [`plan.md`](plan.md) (mục "P-d2" mà `tasks.md` T13 trỏ tới). Nối [spec-d2](spec-d2.md), [spec-tz-tools §2](spec-tz-tools.md), [spec-ca §3, §5–§6](spec-ca.md), ADR-0022. Contract: [plan-contract §6](plan-contract.md); DDL: [plan-db §3–§4](plan-db.md). Bắt đầu sau `done:pd1` (T12); khung UoW/outbox/mapper của P-d1 dùng lại.
+Phần P-d2 của [`plan.md`](plan.md). Nối [spec-d2](spec-d2.md), [spec-tz-tools §2](spec-tz-tools.md), [spec-ca §3, §5–§6](spec-ca.md). Contract: [plan-contract §6](plan-contract.md), hàm contract + path lỗi: [plan-addendum A2](plan-addendum.md), trường ép: A3; DDL: [plan-db §3–§4](plan-db.md). Quyết định: **chỉ ở** [`spec-decisions.md`](spec-decisions.md) mục "P-d2" (D2-01…D2-18). Rà lại theo code P-d1 ở T13 (2026-10-18).
 
-## 1. Quyết định (D2)
-| # | Quyết định | Lý do (code) |
+## 0. Lệch so với code P-d1 (T13)
+| # | Code P-d1 thật (bản đầu giả định khác) | Sửa |
 |---|---|---|
-| D2-01 | Stage `tool` chạy bằng **`hub.runs` như stage team** (`prepareProcess` + `createRunTx`, executor `{kind:"tool", workflowId}`, không agent) + driver riêng `toolDriver` | `run_steps.run_id` NOT NULL; usage/trace theo run; cùng đường kick/huỷ/`current_run_id` |
-| D2-02 | Gọi Dify qua **cùng pipeline của `/mcp`** — tách `#runTool/#invoke/#startStep/#finishStep/#usage/#guarded` của `McpService` thành `mcp/adapters/workflow-invoker.ts` (`WorkflowInvoker`, không đổi hành vi, T18s); `/mcp` và stage tool cùng gọi. Processes khai port `ToolInvoker`, nối ở lớp 4 (`app.mcp.ts` ⇒ `mountProcesses`) | ADR-0022 #3/#5 (chỉ Hub gọi, ghi token theo khách); `mcp.service.ts` 367 dòng không thêm được; lớp 1–2 không import module khác |
-| D2-03 | Bước ghi: `run_steps.type='tool'` (như lời gọi tool của agent), `agent_id = NULL`, `workflow_id`, `detail.inputs` che secret; `usage_logs` qua `recordDifyUsage` cho **người bắt đầu**; cổng xác nhận `side_effect` **bỏ qua** vì gate review đã Đạt (trace `confirmation:"gate_review"`) | PD2-R09, HUB-FR-109; PD-R05 nhận ra "đã gửi" qua D-PD03 |
-| D2-04 | Audit công tắc = `entity:"workflow"`, `action:"grant"/"revoke"`, `tenant_id` = tenant (plan §10 Q3) | enum audit admin khoá, mẫu `entitlement` |
-| D2-05 | `template_invalid` ở stage tool ⇒ **`needs_decision` ngay** (không tự làm lại) | tự làm lại = gọi tool lần nữa (vi phạm "không gọi lại sau khi gửi") |
-| D2-06 | Mẫu (`tenant_id = NULL`) không được chứa stage `tool` ⇒ 422 `PROCESS_REF_INVALID {ref:"tool"}` | công tắc theo tenant; mẫu không có tenant |
-| D2-07 | Tham số workflow kiểu `file` ⇒ 422 `TOOL_INVALID` (GĐ1 không truyền file vào tool stage) | `mcp-files` cần attachment của job |
-| D2-08 | Bước liền trước của đích có `real_action` khi các bước giữa bị `skipped` ⇒ "bước trước có hiệu lực" = bước gần nhất **không** toàn `skipped` (chính stage rẽ nhánh, PD2-R12 ép là `review`) | HUB-BR-38(b) + `realActionStepCheck` |
-| D2-09 | Lỗi "trước khi gửi" = `DifyRunOutcome.failed` ở pha `fetch` (thêm cờ `connectFailed?: true` ở `dify.client.ts` dòng ~171, chỉ thêm) | PD2-R05 phân biệt trước/sau gửi |
-| D2-10 | admin-api: module mới `modules/workflow-tools/` bốn lớp; route gắn dưới `/admin/tenants` | spec-ca §6; `tenants/` không phải sửa logic |
+| L1 | Port lớp 2 không chứa `Tx`; repo gắn tx + `tenantId` qua `TxRepos`/`bindTx` (bản đầu: port rời nhận `Tx`) | §3 `TxRepos.tools` + `tool.ports.ts` (D2-11) |
+| L2 | Launcher nhận `ProcessDeps` (chỉ `TenantUow`); `SystemUow` chỉ ở `ProcessBgDeps`; `uow-boundary.test` | Mount dựng `toolDriver` giữ `SystemUow`; launcher nhận factory `RunDriver` (D2-12) |
+| L3 | Thử lại = `handleJobFailure`: `decideRetry` + `markWaiting` + `timers.insert`; bắn ⇒ `fire-timer` ⇒ `requeue` ⇒ kick | `handleToolFailure` dùng chung `scheduleRetry` (tách, không đổi hành vi) (D2-13) |
+| L4 | Huỷ hẹn = `TimerRepo.cancelForRun(runId, ids, now)` | §7 dùng port sẵn có |
+| L5 | `validateProcessDef` gom `processDefStageIssues` + `teamSectionIssues`, cắt 20 | Gom thêm `toolStageIssues`/`branchStageIssues`; ref tool qua `DefRefs.tools` (D2-14) |
+| L6 | `settleStep(tx, runId, tenantId)` (`runs/step-persist.ts`), 7 nơi gọi | Nhánh chèn **một chỗ**: `stepJoin → next_step` (§7) |
+| L7 | Kick chỉ kiểm `starterUsable` + grant agent/nhóm, không kiểm `run_group_ids` | Câu đọc trước gọi tool kiểm `canRun` (PD2-R03, D2-15) |
+| L8 | `stage-driver` 372, `team-exec` 376, `team-runner` 385, `mcp.service` 367, `launcher` 317 dòng | Không thêm logic vào các file này; launcher +≤ 8 dòng |
+| L9 | Catalog qua `GET /process-editor/context` (D-PD11) — không cần `tools.routes` | Bỏ route mới (tasks T18) |
+| L10 | `McpService.#timeoutS` theo agent của job | `timeoutS = min(stage.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` |
+| L11 | `admin.*_hub_ro` policy `USING (true)` (0004) | Lọc `tenant_id` tường minh là rào duy nhất (§10 S9) |
+| L12 | `DrainTracker` (`handles.settled()`) | `toolDriver` bọc `drain.track` (test chờ tín hiệu) |
 
-## 2. Đặt file P-d2
-| Lớp | File | Ghi chú |
+## 1. Quyết định + khép readiness
+D2-01…D2-18: [`spec-decisions.md`](spec-decisions.md) "P-d2". Readiness: #6 ⇒ §4, §6 · #7 ⇒ A3 · #8 ⇒ ref `{kind:"tool", key, name: tên workflow}` · #12 ⇒ plan-db §3 · #13 ⇒ §4 · #14, #15 ⇒ plan-d2-rules · #26 ⇒ D2-01/03.
+
+## 2. Đặt file (P = `apps/hub-api/src/modules/processes`)
+| Lớp | File mới | Ghi chú |
 |---|---|---|
-| 1 | `P/domain/defs/tool-def.rules.ts`, `P/domain/tools/{tool-run,tool-output}.rules.ts`, `P/domain/branch/{branch-def,branch}.rules.ts` | §4 |
-| 2 | `P/application/tools/{run-tool-stage,list-tools}.usecase.ts`, `P/application/runs/settle-step.usecase.ts` (T19s), port `ToolInvoker`, `ToolSwitchReader`, `ToolCatalogReader`, `UsageWriter` | |
-| 3 | `P/adapters/tools/{mcp-tool-invoker,tool-switch.repo,tool-catalog.repo,tool-driver}.ts`, `P/adapters/runs/hub-settle.ts` (T18s), `P/adapters/branch/branch-effects.ts` | |
-| 3 (mcp) | `mcp/adapters/workflow-invoker.ts` (T18s) | `McpService` gọi sang |
-| 4 | `processes.mount.ts` (+`toolInvoker`), `app.mcp.ts` (dựng `WorkflowInvoker` dùng chung) | |
-| admin | `modules/workflow-tools/{README.md, workflow-tools.mount.ts, domain/{types,errors,toggle.rules}.ts, application/{ports,list-tools.usecase,toggle-tool.usecase}.ts, adapters/{workflow-tools.routes,workflow-tools.repo,workflow-tools.mapper(+test)}.ts}` | `app.ts` gọi mount |
-File cũ chỉ lời gọi: `runs/launcher.ts` (nhánh `tool`), `runs/executor-ref.ts` (ref tool = key/tên workflow), `runs/view-steps.ts` (`tool_key`, `skipped`), `defs/def.rules.ts` + `defs.service.ts`, `modules/runs/run-process.ts` (`StageExecutor` + `{kind:"tool"; workflowId}`), `dify/dify.client.ts` (cờ D2-09), `mcp/mcp.repo.ts` (`ToolStepStart.agentId: string | null`).
+| 1 | `P/domain/defs/tool-def.rules.ts`, `P/domain/tools/{tool-run,tool-output}.rules.ts`, `P/domain/branch/{branch-def,branch}.rules.ts` | §5 |
+| 2 | `P/application/tools/{tool.ports,run-tool-stage.usecase,handle-tool-failure.usecase,list-tools.usecase}.ts`; `P/application/runs/settle-step.usecase.ts` (T19s) | `ports.ts` chỉ thêm `TxRepos.tools` + `steps` |
+| 3 | `P/adapters/tools/{tool-stage.repo,tool-switch.repo,tool-launch,tool-driver,mcp-tool-invoker}.ts`; `P/adapters/runs/{hub-settle,step.repo}.ts` (T18s/T19s) | |
+| 3 mcp | `mcp/adapters/workflow-invoker.ts` (T18s, `McpService` gọi sang) | |
+| 4 | `processes.mount.ts` (dựng `toolDriver` + truyền factory cho launcher), `app.mcp.ts` (một `WorkflowInvoker` dùng chung) | |
+| admin | `apps/admin-api/src/modules/workflow-tools/` bốn lớp (§6) | `app.ts` gọi mount |
 
-## 3. Luồng stage `tool`
-→ thay bởi plan-addendum A2 (`toolStageIssues`/`branchStageIssues`), plan-addendum A3 (trường Hub ép).
-**Lưu def** (`defs.service`, tx tenant): `toolStageIssues` ⇒ `TOOL_INVALID`/`TOOL_SIDE_EFFECT`; `branchStageIssues` ⇒ `BRANCH_INVALID`; ref: `tool_key ∉ toolCatalog.available(tenantId)` (workflow `enabled` ∧ công tắc `revoked_at IS NULL` cho tenant def, đọc DB) hoặc def mẫu ⇒ 422 `PROCESS_REF_INVALID {path:"stages.<i>.executor.tool_key", ref:"tool"}` (không lộ tồn tại). Ép (`ensureToolStage`): `required_sections=["Kết quả","Bàn giao"]`, `template = "# {name}\n\n## Kết quả\n\n## Bàn giao\n"`, `answerer={kind:"starter"}`, `sources=[]`, `must_know=[]`, `autofix=null`, `token_budget=null`; `timeout_s` giữ.
-**Chạy** (launcher `plan()`, tx scope user người bắt đầu, run đã khoá; `starterUsable` ⇒ `user_inactive` như cũ; grant chạy quy trình (HUB-BR-27) như cũ ⇒ `permission_lost`): `if (kind==="tool") return launchToolStage(...)` ⇒ `prepareProcess` executor tool ⇒ `createRunTx` ⇒ stage `running`, `current_run_id` ⇒ sau COMMIT `runs.launch(…, {driver: toolDriver})`.
-`toolDriver` ⇒ `runToolStageTx(ctx, uow, link)`:
-1. `uow.system(run.tenantId)` đọc: snapshot stage, `process_runs.inputs`, output hiện hành các stage nguồn (bước nhỏ hơn), `switch.isOn(workflowId)` + `enabled` (**DB trực tiếp**, `tenant_id = run.tenant_id`, B5/TT-R06/TT-R08). Tắt ⇒ kết thúc với `tool_failed` (không gọi Dify).
-2. `buildToolArgs(args, inputs, fields)` ⇒ `{ok:false, missing}` (nguồn `skipped`/không output/không có trường) ⇒ `tool_failed`.
-3. **Ngoài tx**: `toolInvoker.call({tenantId, userId: run.startedBy, runId: hubRunId, workflowId, args, timeoutS: stage.timeout_s, signal})` ⇒ `{kind:"ok", text}` hoặc `{kind:"failed", code, httpStatus, sent}`.
-4. Tx mới `uow.system(tenantId)`: khoá run → stage `running ∧ current_run_id = hubRunId` (đua huỷ ⇒ bỏ) →
-   - `ok`: `byteSize` (adapter `TextEncoder`) > 65 536 ⇒ `tool_failed`; `JSON.parse` lỗi / không object ⇒ `template_invalid` (D2-05); `filterToolFields(result, def.output.fields)` sai kiểu/thiếu bắt buộc ⇒ `template_invalid`; đạt ⇒ `hub-settle.settleDone({md: toolOutputMd(name, fields), fields})` (stage done ⇒ `after.review` mở task / `auto` join), audit `tool_call {status:"ok", ms}`.
-   - `failed`: `classifyToolError` + `toolFailureDecision({cls, sideEffect, sent, state})` ⇒ `retry` (hẹn `retry` như plan §4.2, khoá `retry:<stage>:<round>:<attempt>:<n>`) hoặc `decide(tool_failed)`; audit `tool_call {status:"failed", code}`. Không ghi giá trị tham số/kết quả vào audit.
-5. Sau COMMIT: outbox (kick/process_updated/thread); `hub.runs` kết thúc (`finished`/`failed`).
-`decisionOptionsFor(hasOutput, "tool_failed")`: `use_current` chỉ khi có output hiện hành. `add_attempt` ⇒ attempt+1 ⇒ gọi lại (người quyết chủ động — không vi phạm "không tự gọi lại").
-**Catalog editor**: `GET /process-editor/context` trả thêm `tools = listTools(tenantId)` = workflow `enabled` ∧ công tắc bật (TT-R04), map `ProcessToolItemSchema` (tham số từ `workflows.input_schema`). Mẫu (tenant null) ⇒ `tools: []`.
+**File cũ chỉ thêm lời gọi:** `runs/launcher.ts` (nhánh `tool` sau `apply`), `runs/executor-ref.ts`, `runs/view-steps.ts` (`tool_key`, `skipped`), `defs/{def.rules,teams.repo,defs.service}.ts` (`DefRefs.tools`, `editorContext.tools`, `ensureToolStage`), `modules/runs/run-process.ts` (`StageExecutor` + `{kind:"tool"; workflowId}`), `dify/dify.client.ts` (`connectFailed`, D2-09), `mcp/mcp.repo.ts` (`agentId: string | null`; cột đã nullable), `handle-job-failure.usecase.ts` (tách `scheduleRetry`).
 
-## 4. Chữ ký luật P-d2 (qc test trước; kiểu domain tự khai)
-→ thay bởi plan-addendum A2, A3 khi lệch.
+## 3. Cổng (lớp 2, không `Tx`)
 ```ts
-// domain/defs/tool-def.rules.ts
-export type ToolDefShape = { key: string; sideEffect: boolean; params: readonly { name: string; type: string; required: boolean }[] };
-/** TOOL_INVALID: >20 tham số | thiếu tham số required | tên tham số ∉ params | param type "file" | nguồn input không có |
- *  nguồn field: stage_key không ở bước nhỏ hơn / field không khai | stage có sources/must_know/autofix | answerer≠starter (sau ép).
- *  TOOL_SIDE_EFFECT: tool.sideEffect ∧ ¬realAction. Path `stages.<i>.executor` / `.executor.args.<name>`. Tool không khả dụng ⇒ adapter. */
-export function toolStageIssues(stages: readonly (StageShape & { tool: { toolKey: string; args: Readonly<Record<string, ArgSource>> } | null })[],
-  inputs: readonly InputShape[], tools: ReadonlyMap<string, ToolDefShape>): DefIssue[];
-// domain/tools/tool-run.rules.ts
-export type ArgSource = { from: "input"; key: string } | { from: "field"; stageKey: string; field: string }
-  | { from: "const"; value: string | number | boolean };
-export function buildToolArgs(args: Readonly<Record<string, ArgSource>>, inputs: ReadonlyMap<string, string>,
-  fields: ReadonlyMap<string, Readonly<Record<string, string | number>> | null>):
-  { ok: true; values: Record<string, string | number | boolean> } | { ok: false; missing: string };
-export type ToolFailure = { code: string; httpStatus: number | null; sent: boolean; reason: "upstream" | "invalid_output" | null };
-/** chưa gửi ∧ (UPSTREAM_ERROR|TIMEOUT) ⇒ transient; đã gửi: TIMEOUT | UPSTREAM_ERROR với http null/≥500/408/429 ⇒ transient;
- *  4xx khác | NOT_CONFIGURED | INVALID_ARGS | invalid_output | lạ ⇒ business. */
-export function classifyToolError(f: ToolFailure): JobErrorClass;
-/** business ⇒ decide(tool_failed); transient ∧ sideEffect ∧ sent ⇒ decide(tool_failed); transient ∧ hết lượt ⇒
- *  decide(retry_exhausted); còn lại ⇒ retry (dùng decideRetry với sideEffectSent = sideEffect ∧ sent). */
-export function toolFailureDecision(i: { f: ToolFailure; sideEffect: boolean; state: RetryState; now: Date }): RetryDecision;
-// domain/tools/tool-output.rules.ts
-export function filterToolFields(result: unknown, decl: StageShape["fields"]):
-  { ok: true; fields: Record<string, string | number> } | { ok: false; why: "not_object" | "missing" | "type" };
-export function toolOutputMd(stageName: string, fields: Readonly<Record<string, string | number>>): string;
-// = "# {name}\n\n## Kết quả\n| Trường | Giá trị |\n|---|---|\n…\n\n## Bàn giao\nĐã gọi tool; trường: {k1, k2…}\n\n```fields\n{json}\n```\n" (Bàn giao ≤ 200 token qua clipHandoff)
-// domain/branch/branch-def.rules.ts
-export type BranchRule = { field: string; op: "eq" | "ne" | "lt" | "le" | "gt" | "ge"; value: string | number; gotoStep: number };
-/** BRANCH_INVALID: > 10 luật | stage không đứng một mình trong bước | field ∉ output.fields | lt…ge với string |
- *  value khác kiểu (date: ISO + ngày lịch) | gotoStep ≤ step | gotoStep ≥ số bước | đích có realAction ∧ after≠review. */
-export function branchStageIssues(stages: readonly (StageShape & { branch: readonly BranchRule[] })[]): DefIssue[];
-// domain/branch/branch.rules.ts
-/** Luật đầu tiên khớp (trường vắng ⇒ không khớp; date so chuỗi YYYY-MM-DD) ⇒ {goto, rule (1-based)}; không ⇒ null. */
-export function evaluateBranch(rules: readonly BranchRule[], fields: Readonly<Record<string, string | number>> | null):
-  { gotoStep: number; rule: number } | null;
-export function skippedStages(steps: readonly number[], fromStep: number, gotoStep: number): number[];   // idx bước (from, goto)
-/** Bước "liền trước có hiệu lực" của `step` (bỏ qua bước mà mọi stage skipped) — D2-08. */
-export function effectivePrevStep(stepStatuses: ReadonlyMap<number, readonly StageRunStatus[]>, step: number): number | null;
+// application/tools/tool.ports.ts — TxRepos thêm `tools: ToolStageRepo` (bindTx dựng, lọc tenant UoW)
+export type ToolCallLoad = { stageName: string; toolKey: string; workflowId: string; sideEffect: boolean;
+  timeoutS: number; args: Readonly<Record<string, ArgSource>>; outputFields: FieldDecl[];
+  inputs: ReadonlyMap<string, string>; fields: ReadonlyMap<string, Readonly<Record<string, string | number>> | null>;
+  startedBy: string; usable: boolean; canRun: boolean; switchOn: boolean; wfEnabled: boolean; state: RetryState };
+export type ToolStageRepo = {
+  /** MỘT câu: stage running của hubRunId + snapshot + inputs + fields nguồn + công tắc/enabled + usable/canRun. */
+  loadCall(runId: string, stageRunId: string, hubRunId: string): Promise<ToolCallLoad | null>;
+  /** Sau `runs.lock`: `for update` stage còn `running ∧ current_run_id = hubRunId`; false ⇒ bỏ (đua). */
+  lockRunning(stageRunId: string, hubRunId: string): Promise<boolean>;
+  /** Output (.md + fields) + stage done + join bước (gồm nhánh §7); kick/thread vào outbox. */
+  settleOk(x: { runId: string; stageRunId: string; md: string; fields: Record<string, string | number> }, now: Date): Promise<void>;
+  decide(x: { runId: string; stageRunId: string; reason: ToolDecisionReason }, now: Date): Promise<void>;
+  audit(x: { runId: string; stageRunId: string; toolKey: string; status: "ok" | "failed"; code: string | null; ms: number }): Promise<void>;
+};
+export type ToolDecisionReason = "tool_failed" | "template_invalid" | "retry_exhausted" | "permission_lost" | "user_inactive";
+export type ToolCallResult = { kind: "ok"; text: string } | { kind: "failed"; code: string; httpStatus: number | null; sent: boolean };
+/** Nối lớp 4 tới `WorkflowInvoker` (cùng pipeline `/mcp`: key → bước `tool` → Dify gom → usage). */
+export type ToolInvoker = { call(c: { tenantId: string; userId: string; hubRunId: string; workflowId: string;
+  args: Record<string, string | number | boolean>; timeoutS: number; signal?: AbortSignal }): Promise<ToolCallResult> };
+/** Tool khả dụng của tenant (TT-R04) — adapter scope user (editor) / tx def (lưu). `keys` vắng ⇒ tất cả (≤ 200). */
+export type ToolSwitchReader = { available(keys?: readonly string[]): Promise<ToolDefShape[]> };
+// StepRepo (T19s, settle-step.usecase): loadJoin(runId) · queueStep(idxs, step) · finish(first) · setStatus(status, first)
+//   + T19: currentFields(stageIdx) · skipStages(idxs, now) ⇒ stageRunIds · branchEvent({stageIdx, toStep, rule})
 ```
-`StageRunStatus`/`DecisionReason`/`ExecutorKind` domain thêm `skipped`/`tool_failed`/`tool` ở T17 (mapper test đỏ tới khi khớp).
+`run-tool-stage.usecase.ts`: `runToolStage(d: { uow: Pick<SystemUow,"system">; invoker: ToolInvoker; clock: Clock }, link)` — tx1 `loadCall` → luật (`buildToolArgs`) → **ngoài tx** `invoker.call` → tx2 `runs.lock` → `tools.lockRunning` → `settleOk` / `handleToolFailure` / `decide` + `audit`.
 
-## 5. Công tắc tool — admin-api `modules/workflow-tools` (T18a)
+## 4. Luồng stage `tool`
+**Lưu def** (`defs.service.#check`, tx def): `loadDefRefs(tx, tenantId, toolKeys)` thêm `tools: Map<key, ToolDefShape>` = **một câu** chỉ khi def có stage `tool` (§9). `validateProcessDef` gom `toolStageIssues` + `branchStageIssues` (domain, sau mapper) vào danh sách INVALID (cắt 20, path A2) ⇒ `PROCESS_DEF_INVALID`; `stageRefMiss`: `tool_key ∉ refs.tools` hoặc def mẫu ⇒ `PROCESS_REF_INVALID {path:"stages.<i>.executor.tool_key", ref:"tool"}` (`RefKind` + `"tool"`). Ép `ensureToolStage` (A3) cạnh `withHandoff`.
+**Launch** (`launcher.plan`, tx scope user người bắt đầu, run đã `FOR UPDATE`; sau `starterUsable` ⇒ `user_inactive` như cũ): `kind==="tool"` ⇒ `adapters/tools/tool-launch.launchToolStage` = `prepareProcess` executor `{kind:"tool", workflowId}` (không agent, như nhóm) ⇒ `createRunTx` ⇒ stage `running` + `markLaunched` ⇒ `{kind:"launch"}`; `kickOnce` gọi `runs.launch(…, {driver: d.toolDriver})` (factory từ mount, L2).
+**Driver** (`tool-driver.ts`, bọc `drain.track`): gọi `runToolStage`:
+1. tx1 `uow.system(run.tenantId)` → `loadCall`. `null` ⇒ thôi. `!usable` ⇒ `decide(user_inactive)`; `!canRun` ⇒ `permission_lost`; `!switchOn ∨ !wfEnabled` ⇒ `tool_failed` (TT-R06/R07, Dify **không** được gọi).
+2. `buildToolArgs` lỗi (nguồn `skipped`/thiếu) ⇒ `decide(tool_failed)`.
+3. Ngoài tx: `invoker.call` (tham số `confirmation:"gate_review"` vào trace, D2-03; không qua `SideEffectGate`).
+4. tx2: `runs.lock` → `lockRunning` (false ⇒ bỏ kết quả) →
+   - `ok`: `byteSize > TOOL_RESULT_MAX_BYTES` ⇒ `tool_failed` (kiểm **trước** `JSON.parse`); parse lỗi / `filterToolFields` sai ⇒ `template_invalid` (D2-05); đạt ⇒ `settleOk({md: toolOutputMd(…), fields})`.
+   - `failed`: `handleToolFailure` = `toolFailureDecision` (`sent` lấy từ kết quả gọi, không dò `run_steps`) ⇒ `retry` ⇒ `retry.markWaiting` + `timers.insert` (khoá `timerKey` như agent) ; `decide` ⇒ `decide(reason)`.
+   - luôn `audit` (không giá trị tham số/kết quả).
+5. Sau COMMIT: outbox (kick / `post_thread` / `user_events`) + `hub.runs` kết thúc.
+Hẹn `retry` bắn ⇒ `fire-timer` ⇒ `requeue` ⇒ kick ⇒ launch lại ⇒ bước 1 đọc công tắc lại (TT-R07). `add_attempt` của `tool_failed` ⇒ attempt+1 (D-PD04).
+**Catalog editor**: `editorContext(tenantId)` thêm `tools = list-tools.usecase(ToolSwitchReader)` (tenant null ⇒ `[]`), map `ProcessToolItemSchema` (A1).
+
+## 5. Chữ ký luật lớp 1
+→ [plan-d2-rules.md §1](plan-d2-rules.md) (`tool-def`, `tool-run`, `tool-output`, `branch-def`, `branch`). Domain `StageRunStatus`/`DecisionReason`/`ExecutorKind` thêm `skipped`/`tool_failed`/`tool` ở T17; `stepJoin`/`runStatusOf`: `skipped` = xong.
+
+## 6. Công tắc tool — admin-api `modules/workflow-tools` (T18a, D2-10)
 | Lớp | Nội dung |
 |---|---|
-| domain | `type ToolSwitch = { workflowId; tenantId; on: boolean; grantedAt: Date \| null; grantedBy: string \| null }`; `toggle.rules.ts`: `toggleChange(cur: { revokedAt: Date \| null } \| null, want: "on" \| "off"): "insert" \| "reactivate" \| "revoke" \| "none"` |
-| application | `ports.ts`: `WorkflowToolsRepo.{list(tenantId), get(tenantId, workflowId), insert, reactivate, revoke}`, `ConfigTx` (`write(fn(r, sink))` — sink = `changed` + `audit`); `toggle-tool.usecase.ts`: tenant/workflow tồn tại ⇒ `toggleChange` ⇒ ghi + `sink.changed({entity:"workflow", tenantId})` + `sink.audit(grant/revoke)` chỉ khi đổi; `list-tools.usecase.ts` |
-| adapters | `workflow-tools.repo.ts` (Drizzle, `withScope` platform), `workflow-tools.mapper.ts` (+test khớp `TenantWorkflowToolSchema`), `workflow-tools.routes.ts` (≤ 30 dòng/handler, `requireAuth` + `requireRole("platform_admin")`, `parseIdParam`) |
-| mount | `ConfigTx` bằng `configWrite` (`lib/config/config-write.ts`) — NOTIFY sau COMMIT sẵn có |
-Bật lại = `revoked_at = NULL, granted_by = actor, granted_at = now`. 404 khi tenant/workflow không có (`NOT_FOUND`).
+| domain | `ToolSwitch = { workflowId; tenantId; on; grantedAt: Date \| null; grantedBy: string \| null }`; `toggleChange(cur: { revokedAt: Date \| null } \| null, want: "on" \| "off"): "insert" \| "reactivate" \| "revoke" \| "none"` |
+| application | `ports.ts`: `WorkflowToolsRepo.{list(tenantId), lockOne(tenantId, workflowId), insert, reactivate, revoke}`, `ConfigTx.write(fn(r, sink))` (sink = `changed` + `audit`); `toggle-tool.usecase`: tenant + workflow tồn tại (404 `NOT_FOUND`) ⇒ `toggleChange` ⇒ ghi + `changed({entity:"workflow", tenantId})` + audit grant/revoke **chỉ khi đổi**; `list-tools.usecase` |
+| adapters | `workflow-tools.repo.ts` (Drizzle, `withScope` platform), `workflow-tools.mapper.ts` (+test khớp `TenantWorkflowToolSchema`), `workflow-tools.routes.ts` (`requireAuth` + `requireRole("platform_admin")`, `parseIdParam`) |
+| mount | `ConfigTx` = `configWrite` (`lib/config/config-write.ts`, NOTIFY sau COMMIT) |
 
-## 6. Rẽ nhánh (T19)
-Điểm đánh giá: `settleStep` (dời `application/runs/settle-step.usecase.ts`, T19s) khi stage chốt `done` (Đạt hoặc `auto`) ∧ `after.branch.length > 0`: `evaluateBranch(rules, currentOutput.fields)` ⇒ khớp ⇒ trong **cùng tx join**: `skippedStages` ⇒ `UPDATE stage_runs SET status='skipped', finished_at=$now WHERE tenant_id AND process_run_id AND stage_idx = ANY` (chỉ stage `pending`), `cancelTimers(stageIds)`, `current_step = goto_step`, `current_stage_idx = firstIdxOfStep(goto)`, stage bước đích ⇒ `queued`; thread `branch {stage_idx, to_step: goto, rule}` (câu FE "Rẽ nhánh: tới bước {goto+1} (luật {n})"), audit `branch` (entity `process_run`, actor hệ thống, `details {from_step, to_step, rule}`); không khớp ⇒ `stepJoin` như cũ. `stepJoin`/`runStatusOf`: `skipped` = xong. Quay lại (`backResetPlan`, domain/gates): stage `skipped` ⇒ `pending`, `round` **không** tăng (chưa từng chạy, PB2-R07). `realActionStepCheck` gọi với stage của `effectivePrevStep` (D2-08).
+DDL/RLS: plan-db §4 (`0012`, RLS như 0004: `admin_rw` theo tenant, `hub_ro` SELECT). Bật lại = `revoked_at = NULL, granted_by = actor, granted_at = now`.
 
-## 7. Bảo mật P-d2 (security review T20 — hard stop)
+## 7. Rẽ nhánh — nối `settleStep` (T19s ⇒ T19)
+T19s dời `settleStep` sang `application/runs/settle-step.usecase.ts` (port `StepRepo`, §3) + `adapters/runs/step.repo.ts`; giữ hàm vỏ `settleStepTx(tx, runId, tenantId)` cùng chữ ký ⇒ 7 nơi gọi không đổi. T19 chèn **một chỗ**: `stepJoin` cho `next_step` ∧ bước hiện tại có đúng một stage ∧ `after.branch.length > 0` (đọc từ snapshot đã nạp) ⇒ `currentFields` ⇒ `evaluateBranch` ⇒ khớp: `skipStages(skippedStages(…))` (chỉ `pending`/`queued` ⇒ `skipped`, `finished_at = now`) ⇒ `timers.cancelForRun(runId, ids, now)` ⇒ `queueStep(goto)` (`current_step = goto`, `current_stage_idx = first(goto)`) ⇒ `branchEvent` (thread `branch {stage_idx, to_step, rule}` + audit `branch` actor hệ thống, `details {from_step, to_step, rule}`); không khớp ⇒ `queueStep(next)` như cũ. Mọi đường chốt `done` (gate Đạt, `auto`, `wait_until`, tool, người cho qua) đều đi qua đây. Quay lại (`domain/gates/back.rules.ts`): `skipped` ⇒ `pending`, `round` không tăng (PB2-R07); `realActionStepCheck` dùng `effectivePrevStep` (D2-08).
+
+## 8. Thứ tự khoá + transaction
+| Tx | Khoá (theo thứ tự) | Ghi |
+|---|---|---|
+| launch (scope user) | `process_runs` FOR UPDATE → `stage_runs` (UPDATE) → `hub.runs` INSERT | như stage agent |
+| tx1 driver (system) | không khoá (chỉ đọc) | — |
+| gọi tool | **không giữ tx/khoá** trong lúc gọi mạng | bước `tool` + usage: tx ngắn riêng của `WorkflowInvoker` (như `/mcp`) |
+| tx2 driver (system) | run FOR UPDATE → stage FOR UPDATE → `process_timers` → (không team) | output, stage, join/nhánh, audit, thread event |
+| nhánh (trong tx đang giữ run) | run (đã giữ) → `stage_runs` bị nhảy → `process_timers` của chúng | — |
+| admin toggle | hàng `tenant_workflow_tools` FOR UPDATE (hoặc INSERT) | audit + `config_version` |
+
+`lockEventRun` (FOR SHARE run → rooms) sau COMMIT — không đổi. Vòng lô (`systemBatch`, SKIP LOCKED) không chạm stage `tool`. 40P01/40001 ⇒ chạy lại tx2, outbox phát một lần.
+
+## 9. Thiết kế hiệu năng (Luật 4c)
+| Đường | Số câu SQL (cố định) | Index | Ngưỡng (`*.perf.int.test.ts`, qc T15) |
+|---|---|---|---|
+| Lưu def có stage tool | +1 câu so với hiện tại (0 khi không có stage tool): `workflows w join tenant_workflow_tools t on (t.workflow_id = w.id and t.tenant_id = $t and t.revoked_at is null) where w.enabled and w.key = any($keys)` | `workflows_key_uq`, PK `(workflow_id, tenant_id)` | **PD2-P01** PUT def 30 stage / 10 tool, p95 ≤ 50 ms và ≤ trước + 5 ms (đo trước ở đầu T18-1) |
+| Catalog editor | `editorContext` = 2 câu (múi giờ + tools, `limit 200`, văn bản cố định) | index một phần `(tenant_id, workflow_id) where revoked_at is null` | **PD2-P02** 200 workflow × 50 tenant (10.000 hàng công tắc), p95 ≤ 20 ms |
+| Một stage tool (Hub, Dify giả trả ngay) | launch như agent; tx1 = 1 câu; invoker = 4 câu (key, mở bước, đóng bước, usage — giữ `/mcp`); tx2 ≤ 9 câu (2 khoá, output, stage, kh, join 2, audit, thread) ⇒ **≤ 14 câu ngoài launch**, không phụ thuộc số tham số/stage nguồn | `stage_runs(process_run_id)`, `process_outputs` PK | **PD2-P03** đếm câu = hằng (1 vs 20 tham số); phần Hub p95 ≤ 60 ms |
+| Nhánh | +4 câu khi khớp (fields, UPDATE `stage_idx = any`, huỷ hẹn `stage_run_id = any`, audit+thread 1 câu `insert … select`) dù nhảy bao nhiêu bước | `stage_runs(process_run_id)`, `process_timers` mở theo stage | **PD2-P04** nhảy 1 vs 18 bước: số câu bằng nhau; join p95 ≤ 30 ms |
+| Toggle admin | 3 câu (lock/insert, audit, bump version) | PK | p95 ≤ 30 ms (int) |
+
+Không vòng hàng (fields nguồn một câu `stage_key = any`, args tính trong RAM); không gọi mạng trong tx; không sleep/poll (test chờ `handles.settled()`); không cache công tắc (TT-R06).
+
+## 10. Bảo mật (security review T20 — hard stop)
 | # | Kiểm |
 |---|---|
-| T1 | Danh tính gọi tool = **người bắt đầu** (`difyUser(tenantKey(run.tenant_id), run.started_by)`), không token job/agent; `tenantKey` lấy theo `run.tenant_id` |
-| T2 | Công tắc + `enabled` đọc DB lúc **lưu** (tenant def) và **ngay trước gọi** (tenant run) — `WHERE workflow_id=$w AND tenant_id=$runTenant AND revoked_at IS NULL`; không cache; tắt giữa chừng ⇒ `tool_failed`, Dify không được gọi (AC-H47) |
-| T3 | Chỉ workflow catalog Hub (không URL người dùng) ⇒ không SSRF mới; `base_url` lấy từ catalog |
-| T4 | `side_effect` chỉ ở stage `real_action` (gate review Đạt); không tự gọi lại sau khi gửi; `template_invalid` không tự làm lại (D2-05) |
-| T5 | Audit/trace không chứa giá trị tham số/kết quả (che bằng `maskInputs`, cắt) |
-| T6 | Endpoint catalog editor chỉ trả tool của tenant người gọi (`defScopeOf`); tenant khác ⇒ không thấy |
-| T7 | admin: route chỉ `platform_admin`; `admin_rw` scope tenant B không thấy hàng A (RLS); `hub_ro` chỉ SELECT |
-| T8 | `WorkflowInvoker` tách ra không đổi luật `/mcp` (agent vẫn qua cổng xác nhận `side_effect`) — so test `/mcp` cũ xanh |
+| S1 | Danh tính gọi = **người bắt đầu** (`difyUser(tenantKey(run.tenant_id), run.started_by)`), không token job/agent |
+| S2 | Công tắc + `enabled` đọc DB lúc **lưu** và **ngay trước gọi**, `tenant_id = run.tenant_id`; tắt ⇒ `tool_failed`, Dify 0 lời gọi (AC-H47) |
+| S3 | Chỉ workflow catalog Hub, `base_url` từ catalog ⇒ không SSRF mới |
+| S4 | `side_effect` chỉ ở stage `real_action` (gate Đạt); không tự gọi lại sau khi gửi; `template_invalid` không tự làm lại |
+| S5 | Audit/trace không chứa giá trị tham số/kết quả (`maskInputs`, cắt) |
+| S6 | Catalog editor chỉ tool của tenant theo `defScopeOf` (tenant_admin chỉ tenant mình) |
+| S7 | admin: route chỉ `platform_admin`; `admin_rw` scope tenant B không thấy hàng A |
+| S8 | `WorkflowInvoker` tách không đổi luật `/mcp` (agent vẫn qua cổng `side_effect`) — test `/mcp` cũ xanh |
+| S9 | `hub_ro` policy `USING (true)` ⇒ mọi câu Hub đọc công tắc PHẢI lọc `tenant_id`; int 2 tenant (bật ở B, chạy ở A ⇒ `tool_failed`) |
+| S10 | Kiểm Group chạy quy trình (`canRun`) + `usable` ngay trước gọi (L7) |
+| S11 | `toolDriver` giữ `SystemUow` trong closure của mount; launcher/route không thấy (`uow-boundary.test` xanh) |
+| S12 | Giới hạn 64 KB kiểm trên byte **trước** `JSON.parse` (chống tốn bộ nhớ) |
 
-## 8. Tách file cũ P-d2
-| Task | File cũ → đích | qc sửa |
-|---|---|---|
-| T18s | `mcp/mcp.service.ts` (pipeline gọi Dify) → `mcp/adapters/workflow-invoker.ts` | test `/mcp` khoá nạp `McpService` (giữ public API ⇒ có thể không đổi; qc grep `mcp.service`) |
-| T18s | `runs/apply-settle.ts` (`writeApplyOutput`, `settleApply`) → `P/adapters/runs/hub-settle.ts` (+ tham số `fields?`) | P-c2 test nạp `apply-settle` (nếu có) |
-| T19s | `core/step.rules.ts` đã dời ở T8s (plan-domain §7) ⇒ T19 sửa tại `domain/runs/step.rules.ts`; `runs/step-persist.ts` (`settleStep`) → `application/runs/settle-step.usecase.ts` + `adapters/runs/step.repo.ts` | `P-b2/**` nạp `step-persist` |
-
-## 9. Ước lượng + thứ tự P-d2
-| Task | Diff | Rủi ro |
-|---|---|---|
-| T17 contract + 0037 | ~170 (+SQL ~70) | cao · Opus |
-| T18a công tắc admin | ~330 | cao · Opus |
-| T18s | ~250 | cao · Opus |
-| T18 executor tool | ~400 ⇒ chia **T18-1** (lưu def + catalog + launcher + driver đọc công tắc) / **T18-2** (gọi + kết quả + lỗi/thử lại + audit) | cao · Opus |
-| T19s / T19 | ~150 / ~300 | cao · Opus |
+## 11. Tách file cũ + ước lượng + thứ tự
+| Task | Việc | Diff | Rủi ro |
+|---|---|---|---|
+| T17 | contract + 0037 | ~170 (+SQL ~70) | cao |
+| T18a | công tắc admin (§6) + 0012 | ~330 | cao |
+| T18s | `mcp.service` pipeline → `mcp/adapters/workflow-invoker.ts`; `runs/apply-settle` (`writeApplyOutput`, `settleApply`) → `P/adapters/runs/hub-settle.ts` (+`fields?`); tách `scheduleRetry`. qc grep `mcp.service`/`apply-settle` | ~250 | cao |
+| T18-1 | lưu def + catalog + `tool-launch` + driver tx1 (đọc công tắc/quyền) | ~220 | cao |
+| T18-2 | invoker + tx2 + lỗi/thử lại + audit + PD2-P03 | ~220 | cao |
+| T19s | `settleStep` → use case + `step.repo` (qc: `P-b2/**` nạp `step-persist`) | ~150 | cao |
+| T19 | nhánh + `skipped` + back + PD2-P04 | ~300 | cao |
 Thứ tự: T17 → T18a ∥ T18s → T18-1 → T18-2 → T19s → T19 → T20.
 
-## 10. Khép readiness P-d2
-#6 ⇒ thay bằng công tắc (§3, §5, §7) · #7 ⇒ §3 ép trường · #8 ⇒ ExecutorRef tool = `{kind:"tool", key: tool_key, name:{vi,en: tên workflow}}` · #12 ⇒ plan-db §3 · #13 ⇒ §3 ref `tool` · #14 ⇒ §3 `tool_failed` cần output · #15 ⇒ `buildToolArgs` nguồn bước nhỏ hơn · #26 ⇒ D2-01/D2-03. Câu hỏi riêng P-d2: không có ngoài plan §10 Q3.
+## 12. Câu hỏi mở (đều có mặc định — không hỏi người dùng)
+| # | Câu hỏi | Mặc định |
+|---|---|---|
+| Q-T13-1 | Kiểm `canRun` (HUB-BR-27) lúc kick có áp cho stage agent không? | Chỉ stage `tool` (spec PD2-R03); agent giữ như cũ (đổi = phạm vi mới) |
+| Q-T13-2 | Ngưỡng PD2-P01…P04 | Như §9; T18-1 đo trước, lệch > 20 % ⇒ ghi "Quyết định trong lúc làm" |
+| Q-T13-3 | Catalog > 200 workflow | `limit 200` |
+| Q-T13-4 | 4 câu/lời gọi của pipeline `/mcp` (4 tx ngắn) | Giữ (T18s không đổi hành vi); gộp tx ⇒ `TECH-DEBT` |
+| Q-T13-5 | ADR-0022 vẫn Proposed | Dùng cách gọi hiện có: `WorkflowInvoker` trong tiến trình = pipeline `/mcp` (T16) |

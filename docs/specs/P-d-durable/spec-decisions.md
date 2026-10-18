@@ -96,7 +96,7 @@ Người dùng trả lời 4 câu của [`readiness.md`](readiness.md) "Lần 1"
 | B7 | Đổi `timezone` không tính lại hẹn giờ đã lưu (đã chốt `due_at` UTC) | câu 2 "đọc lúc lưu hẹn giờ" |
 
 ## Quyết định từ PLAN + readiness lần 2 (Luật 2b, 2026-10-17)
-Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [plan-frontend.md §0](plan-frontend.md). Ghi lại để spec không lệch plan.
+Nguồn đầy đủ: [plan.md §0](plan.md), mục "P-d2" bên dưới, [plan-frontend.md §0](plan-frontend.md). Ghi lại để spec không lệch plan.
 | # | Quyết định | Chỗ spec |
 |---|---|---|
 | D-PD02 | `retry_count` reset ngầm: lưu `retry_attempt/retry_round`; hiệu lực khi khớp `(attempt, round)`, khác ⇒ 0 | PD-R06, spec §4 |
@@ -116,6 +116,24 @@ Nguồn đầy đủ: [plan.md §0](plan.md), [plan-d2.md §1](plan-d2.md), [pla
 | Audit công tắc | `entity:"workflow"`, `action:"grant"/"revoke"`, `tenant_id`, before/after `{on}` (không thêm enum audit) | TT-R03, AC-A15 |
 
 **Báo người dùng ở Gate (không hỏi):** vòng nhắc production bật lần đầu nhắc ngay các task cũ quá hạn; retry `parallel_merge` gọi lại cả lượt nên tốn token.
+
+## P-d2 · quyết định backend (nguồn duy nhất; T13 rà theo code P-d1, 2026-10-18)
+D2-05…D2-08 ở bảng trên; audit công tắc (D2-04) = dòng "Audit công tắc". Chi tiết đặt file/cổng/hiệu năng: [plan-d2](plan-d2.md).
+| # | Quyết định | Chỗ |
+|---|---|---|
+| D2-01 | Stage `tool` chạy bằng `hub.runs` như stage nhóm (`prepareProcess` executor `{kind:"tool", workflowId}`, không agent) + `toolDriver` riêng | PD2-R09 (`run_steps.run_id` NOT NULL) |
+| D2-02 | Gọi Dify qua **cùng pipeline `/mcp`** trong tiến trình: tách `McpService` → `mcp/adapters/workflow-invoker.ts` (T18s, không đổi hành vi); không tự gọi HTTP `/mcp` (cần token job). ADR-0022 còn Proposed ⇒ đây là "cách gọi hiện có" T16 cho phép | PD2-R03 |
+| D2-03 | `run_steps.type='tool'`, `agent_id` NULL, usage cho người bắt đầu; bỏ `SideEffectGate` (gate review đã Đạt, trace `confirmation:"gate_review"`) | PD2-R04, R09 |
+| D2-09 | Lỗi "trước khi gửi" = `DifyRunOutcome.failed` pha `fetch` (cờ `connectFailed?: true`, chỉ thêm) | PD2-R05 |
+| D2-10 | admin-api: module mới `modules/workflow-tools/` bốn lớp, route dưới `/admin/tenants` | spec-ca §6 |
+| D2-11 | Cổng không `Tx`: `TxRepos.tools: ToolStageRepo` (kiểu ở `application/tools/tool.ports.ts`, `ports.ts` chỉ thêm trường) + `ToolInvoker` + `ToolSwitchReader` | CA-R05, plan-d2 §3 |
+| D2-12 | `toolDriver` dựng ở mount, giữ `SystemUow` trong closure; launcher nhận factory `RunDriver` (không thấy `SystemUow`, `uow-boundary.test` giữ xanh) | CA-R06 |
+| D2-13 | Lỗi gọi tool ⇒ `handleToolFailure` (`toolFailureDecision`) + `scheduleRetry` tách từ `handleJobFailure` (không đổi hành vi); `sent` lấy từ kết quả gọi, không dò `run_steps` | PD2-R05, PD-R03 |
+| D2-14 | `validateProcessDef` gom `toolStageIssues`/`branchStageIssues` (domain) vào danh sách INVALID (cắt 20); `DefRefs.tools` nạp **một câu** lọc `key = any` chỉ khi def có stage `tool`; `RefKind` + `"tool"` | PD2-R01/R02, TT-R05 |
+| D2-15 | Ngay trước gọi tool: một câu đọc `usable` + `canRun` (Group chạy quy trình) + công tắc + `enabled`; chỉ áp stage `tool` (stage agent giữ như cũ) | PD2-R03, TT-R06 |
+| D2-16 | Nhánh chèn **một chỗ** trong `settleStep` khi `stepJoin = next_step`; T19s giữ vỏ `settleStepTx(tx, runId, tenantId)` cùng chữ ký (7 nơi gọi không đổi) | PD2-R13 |
+| D2-17 | Giới hạn 64 KB kiểm trên byte trước `JSON.parse`; timeout gọi = `min(stage.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` | PD2-R03, R06 |
+| D2-18 | Ngưỡng PD2-P01…P04 (plan-d2 §9); chữ ký luật lớp 1 tách theo chủ đề sang `plan-d2-rules.md` (trần 18 KB) | Luật 4c, WORKFLOW #5 |
 
 ## Quyết định trong lúc làm (Luật 2, sau Gate)
 - (chưa có)
