@@ -2,6 +2,7 @@
 // (plan-contract §6). `tenantId` null = phạm vi mẫu (platform_admin): mọi agent/nhóm đang bật, không Group/user nào.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
 import type { DefRefs } from "./def.rules";
 
 type Name = { vi: string; en: string };
@@ -49,7 +50,27 @@ export async function listTeams(
 
 const idSet = (rows: readonly { id: string }[]): Set<string> => new Set(rows.map((r) => r.id));
 
+/** HUB-FR-143 · chế độ + `sections` từng thành viên của nhóm bật cho tenant — một câu SQL (luật mục bắt buộc stage team). */
+async function teamSectionsInfo(
+  tx: Tx,
+  tenantId: string | null,
+): Promise<Map<string, TeamSectionsInfo>> {
+  const rows = await tx.execute<{ id: string; mode: string; sections: string[] | null }>(
+    sql`select t.id, t.mode, m.sections from hub.agent_teams t
+      left join hub.agent_team_members m on m.team_id = t.id
+      where t.enabled and ${teamEntitled(tenantId)}`,
+  );
+  const map = new Map<string, { mode: string; memberSections: string[][] }>();
+  for (const r of rows) {
+    const e = map.get(r.id) ?? { mode: r.mode, memberSections: [] };
+    if (r.sections) e.memberSections.push(r.sections);
+    map.set(r.id, e);
+  }
+  return map;
+}
+
 export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefRefs> {
+  const teamInfo = await teamSectionsInfo(tx, tenantId);
   if (tenantId === null) {
     const agents = await tx.execute<{ id: string }>(sql`select id from hub.agents where enabled`);
     const teams = await tx.execute<{ id: string }>(
@@ -60,6 +81,7 @@ export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefR
       teamIds: idSet(teams),
       groupIds: new Set(),
       userIds: new Set(),
+      teams: teamInfo,
     };
   }
   const agents = await tx.execute<{ id: string }>(sql`select a.id from hub.agent_entitlements e
@@ -78,5 +100,6 @@ export async function loadDefRefs(tx: Tx, tenantId: string | null): Promise<DefR
     teamIds: idSet(teams),
     groupIds: idSet(groups),
     userIds: idSet(users),
+    teams: teamInfo,
   };
 }

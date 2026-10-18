@@ -10,6 +10,7 @@ import {
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
+import { type TeamSectionsInfo, teamSectionIssues } from "../domain/defs/team-sections.rules";
 import { normSection, sectionMap } from "../runs/template.rules";
 import { ensureWaitStage } from "./wait-stage.rules";
 
@@ -18,6 +19,8 @@ export type DefRefs = {
   teamIds: ReadonlySet<string>;
   groupIds: ReadonlySet<string>;
   userIds: ReadonlySet<string>;
+  /** HUB-FR-143 · nhóm → chế độ + mục từng thành viên (vắng ⇒ bỏ kiểm mục bắt buộc stage team). */
+  teams?: ReadonlyMap<string, TeamSectionsInfo>;
 };
 export type RefKind = "agent" | "team" | "group" | "user" | "source";
 export type DefCheck =
@@ -66,7 +69,17 @@ function runGroupMiss(d: ProcessDefInput, refs: DefRefs): RefMiss | null {
 export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck {
   // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract). P-d1 · PD-R17 · `inputs` bật luật nguồn input
   // của `waitStageIssues` (WAIT_INVALID).
-  const invalid = processDefStageIssues(d.stages, { inputs: d.inputs ?? [] });
+  const invalid: { path: string; rule: ProcessDefRule }[] = [
+    ...processDefStageIssues(d.stages, { inputs: d.inputs ?? [] }),
+    ...teamSectionIssues(
+      d.stages.map((s) => ({
+        executorKind: s.executor.kind,
+        teamId: s.executor.kind === "team" ? s.executor.team_id : null,
+        requiredSections: s.output.required_sections,
+      })),
+      refs.teams ?? new Map(),
+    ),
+  ].slice(0, 20);
   if (invalid.length)
     return {
       ok: false,

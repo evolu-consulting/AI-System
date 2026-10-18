@@ -28,6 +28,8 @@ export const PROCESS_DEF_RULES = [
   // P-d1 · PD-R17 stage `wait_until` (`waitStageIssues`) · PD-R23 chuyển cấp (`escalateStageIssues`).
   "WAIT_INVALID",
   "ESCALATE_INVALID",
+  // HUB-FR-143 · D7 · stage team sequential/parallel_merge: mục bắt buộc không thành viên nào phụ trách.
+  "TEAM_SECTION_UNOWNED",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
@@ -124,7 +126,17 @@ export type ProcessDefStageDraft = StepStageShape &
   Partial<Omit<ApplyStageShape, keyof StepStageShape>> &
   Partial<Omit<WaitStageShape, keyof StepStageShape>> & { after: EscalateStageShape["after"] };
 /** P-d1 · ngữ cảnh def: vắng `inputs` ⇒ bỏ kiểm nguồn input của `wait_until` (giữ test khoá cũ). */
-export type ProcessDefIssueCtx = { inputs?: readonly DefInputShape[] };
+export type ProcessDefIssueCtx = {
+  inputs?: readonly DefInputShape[];
+  /** HUB-FR-143 · team_id → chế độ + mục từng thành viên; vắng ⇒ bỏ kiểm `TEAM_SECTION_UNOWNED`. */
+  teams?: ReadonlyMap<string, TeamSectionsInfo>;
+};
+/** Thông tin nhóm đủ cho luật mục bắt buộc (mỗi phần tử `memberSections` = `sections` của một thành viên). */
+export type TeamSectionsInfo = { mode: string; memberSections: readonly (readonly string[])[] };
+type TeamSectionStage = {
+  executor?: { kind: string; team_id?: string };
+  output?: { required_sections?: readonly string[]; fields?: unknown };
+};
 
 /**
  * Vi phạm luật chéo stage (plan §1.2): i tăng; trong stage key → step → real_action → back; rồi tự-sửa, Áp,
@@ -151,7 +163,30 @@ export function processDefStageIssues(
     ...applyStageIssues(shaped),
     ...waitStageIssues(shaped, ctx?.inputs),
     ...escalateStageIssues(stages),
+    ...teamSectionIssues(stages, ctx?.teams),
   ].slice(0, ISSUES_MAX);
+}
+
+/**
+ * HUB-FR-143 · D7 · TEAM_SECTION_UNOWNED: stage `team` (nhóm sequential | parallel_merge) có mục trong
+ * `output.required_sections` mà không thành viên nào phụ trách — path `stages.<i>.output.required_sections`.
+ * `lead_plan` miễn (mục không giao được lấp "—"). Cùng điều kiện với luật domain `teamSectionIssues` (server).
+ */
+export function teamSectionIssues(
+  stages: readonly TeamSectionStage[],
+  teams: ReadonlyMap<string, TeamSectionsInfo> | undefined,
+): ProcessDefIssue[] {
+  if (!teams) return [];
+  const out: ProcessDefIssue[] = [];
+  stages.forEach((s, i) => {
+    const teamId = s.executor?.kind === "team" ? s.executor.team_id : undefined;
+    const team = teamId === undefined ? undefined : teams.get(teamId);
+    if (!team || team.mode === "lead_plan") return;
+    const owned = new Set(team.memberSections.flat());
+    if ((s.output?.required_sections ?? []).some((r) => !owned.has(r)))
+      out.push({ path: `stages.${i}.output.required_sections`, rule: "TEAM_SECTION_UNOWNED" });
+  });
+  return out;
 }
 
 /** P-c1 · hình tối thiểu cho luật stage tự-sửa. */
