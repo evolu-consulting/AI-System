@@ -5,6 +5,7 @@ import type {
   ProcessInputValue,
   ProcessSourceChip,
 } from "@ai/contracts/hub-admin";
+import { isIsoCalendarDate } from "../../domain/date-input";
 
 /** Trần độ dài tên nhánh (SOURCE_BRANCH_MAX của contract nguồn). */
 export const BRANCH_MAX = 255;
@@ -20,6 +21,8 @@ export const emptyValues = (defs: readonly ProcessInputDef[]): InputValues =>
   Object.fromEntries(defs.map((d) => [d.key, { value: "", fileName: "", branch: "" }]));
 
 export type BranchError = "required" | "dash" | "tooLong";
+/** Lỗi theo trường: nhánh nguồn, chữ quá dài, hoặc ngày không có thật (T11c, `date`). */
+export type FieldError = "tooLong" | BranchError | "dateInvalid";
 
 /** Chưa chọn nguồn ⇒ hợp lệ (trường bỏ trống). Đã chọn ⇒ nhánh 1..255 ký tự, không bắt đầu `-` (PB-R19). */
 export function validateSourceRef(sourceKey: string, branch: string): BranchError | null {
@@ -38,12 +41,14 @@ export const textTooLong = (v: string): boolean => v.length > PROCESS_INPUT_MAX;
 export function fieldErrors(
   defs: readonly ProcessInputDef[],
   values: InputValues,
-): Record<string, "tooLong" | BranchError> {
-  const out: Record<string, "tooLong" | BranchError> = {};
+): Record<string, FieldError> {
+  const out: Record<string, FieldError> = {};
   for (const d of defs) {
     const v = values[d.key];
     if (!v) continue;
     if (d.type === "text" && textTooLong(v.value)) out[d.key] = "tooLong";
+    if (d.type === "date" && v.value.trim() && !isIsoCalendarDate(v.value.trim()))
+      out[d.key] = "dateInvalid";
     if (d.type === "source_ref") {
       const e = validateSourceRef(v.value, v.branch);
       if (e) out[d.key] = e;
@@ -65,6 +70,7 @@ export function toRequestInputs(
     if (!val) continue;
     if (d.type === "text") out.push({ type: "text", key: d.key, text: v.value.trim() });
     else if (d.type === "select") out.push({ type: "select", key: d.key, value: v.value });
+    else if (d.type === "date") out.push({ type: "date", key: d.key, value: val });
     else if (d.type === "file") out.push({ type: "file", key: d.key, attachment_id: v.value });
     else if (v.branch.trim())
       out.push({ type: "source_ref", key: d.key, source_key: v.value, branch: v.branch.trim() });
@@ -77,6 +83,23 @@ export const gitChips = (chips: readonly ProcessSourceChip[]): ProcessSourceChip
   chips.filter((c) => c.kind === "git_remote");
 
 export type SubmitErrorKey = { key: string; params?: Record<string, string | number> };
+
+/**
+ * 400 `VALIDATION_ERROR` path `inputs.<i>.value` (i = chỉ số trong mảng ĐÃ GỬI) → khoá các trường `date` bị từ chối
+ * (lỗi hiện dưới trường, không dùng câu "Nguồn hoặc nhánh…").
+ */
+export function serverDateErrors(
+  sent: readonly ProcessInputValue[],
+  issuePaths: readonly string[],
+): string[] {
+  const keys: string[] = [];
+  for (const p of issuePaths) {
+    const m = /^inputs\.(\d+)\.value$/.exec(p);
+    const item = m ? sent[Number(m[1])] : undefined;
+    if (item?.type === "date") keys.push(item.key);
+  }
+  return keys;
+}
 
 /** Mã lỗi `POST /process-runs` → khoá i18n (đầy đủ, gồm `process.`). Mã lạ ⇒ câu chung. */
 export function submitErrorKey(code: string, processKey: string, max: number): SubmitErrorKey {

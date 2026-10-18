@@ -3,6 +3,7 @@ import type { OpenTask } from "@ai/contracts/chat";
 import { Hourglass } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { reviewWaitVariant } from "../../domain/escalation";
 import { waitNames } from "../lib/thread-task";
 
 const SENTENCE = {
@@ -23,6 +24,16 @@ export const TaskWaitingNote = memo(function TaskWaitingNote({ open }: { open: O
       : w.more > 0
         ? t("process.thread.wait.more", { first: w.names.join(", "), count: w.more })
         : w.names.join(", ");
+  if (reviewWaitVariant({ escalatedGroup: open.escalated_group?.name }) === "escalated") {
+    return (
+      <Note
+        text={t("process.thread.wait.reviewEscalated", {
+          names,
+          escalated: open.escalated_group?.name ?? "",
+        })}
+      />
+    );
+  }
   return <Note text={t(SENTENCE[open.kind], { names })} />;
 });
 

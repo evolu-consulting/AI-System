@@ -11,6 +11,7 @@ import { ApiError } from "~/lib/http";
 import { ForwardAction } from "../../ask/components/ForwardAction";
 import { ApplyGateLine } from "../../shared/apply/ApplyGateLine";
 import { AutofixResult } from "../../shared/autofix/AutofixResult";
+import { EscalatedNote } from "../../shared/components/EscalatedNote";
 import { stageAutofix } from "../../shared/lib/autofix-view";
 import { useThreadBinding } from "../../shared/thread/thread-binding";
 import type { TaskCardProps } from "../../shared/types";
@@ -21,6 +22,12 @@ import { ReviewFailPanel } from "./ReviewFailPanel";
 function agentOf(view: TaskCardProps["view"], stageIdx: number, lng: string): string {
   if (view?.access !== "full") return "";
   return view.stages[stageIdx]?.executor.name[lng === "vi" ? "vi" : "en"] ?? "";
+}
+
+/** Tên nhóm chuyển cấp từ `open_tasks` (TaskDetail chỉ có cờ); view thiếu ⇒ không hiện câu giải thích. */
+function escalatedGroupOf(view: TaskCardProps["view"], taskId: string): string | undefined {
+  if (view?.access !== "full") return undefined;
+  return view.open_tasks.find((o) => o.id === taskId)?.escalated_group?.name;
 }
 
 function reworksLeft(view: TaskCardProps["view"], stageIdx: number): number {
@@ -112,6 +119,7 @@ export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: Task
       className="flex flex-col gap-2 rounded-xl border border-warning-solid/40 bg-card p-3"
     >
       <p className="text-sm font-medium">{t("process.run.review.title", { agent })}</p>
+      {task.escalated ? <EscalatedNote group={escalatedGroupOf(view, task.id)} /> : null}
       {autofix && <AutofixResult view={autofix} load={fetchAttachmentContent} />}
       <ApplyGateLine autofix={autofix} />
       {!inlineFail ? (

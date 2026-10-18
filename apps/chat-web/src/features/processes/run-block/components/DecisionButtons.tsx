@@ -2,10 +2,13 @@
 import type { DecisionOption } from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
+import { decisionOptionKey } from "../../domain/decision-option";
 import { CancelAction } from "./CancelAction";
 
 type Props = {
   options: DecisionOption[];
+  /** Lý do quyết (FD8): đổi nhãn nút `retry_exhausted` / `timer_invalid`. */
+  reason?: string;
   autofix: boolean;
   over: boolean;
   pending: boolean;
@@ -15,6 +18,7 @@ type Props = {
 
 export function DecisionButtons({
   options,
+  reason = "",
   autofix,
   over,
   pending,
@@ -24,7 +28,7 @@ export function DecisionButtons({
   const { t } = useTranslation();
   const add = options.includes("add_attempt") && (
     <Button type="button" size="sm" disabled={over || pending} onClick={() => onRun("add_attempt")}>
-      {t("process.common.option.add_attempt")}
+      {t(decisionOptionKey(reason, "add_attempt"))}
     </Button>
   );
   const use = options.includes("use_current") && (
@@ -35,7 +39,7 @@ export function DecisionButtons({
       disabled={useCurrentDisabled || over}
       onClick={() => onRun("use_current")}
     >
-      {t("process.common.option.use_current")}
+      {t(decisionOptionKey(reason, "use_current"))}
     </Button>
   );
   const cancel = options.includes("cancel") && (

@@ -102,6 +102,7 @@ export function DecisionCard({
       )}
       <DecisionButtons
         options={options}
+        reason={task.reason}
         autofix={autofixReason || applyReason}
         over={over}
         pending={decide.isPending}

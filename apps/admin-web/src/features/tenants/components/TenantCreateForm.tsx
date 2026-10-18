@@ -1,4 +1,5 @@
 // ADM-FR-60 · form tạo tenant (canvas TenantCreate): card Công ty + card Tenant admin đầu tiên, một nút "Tạo tenant" cuối trang.
+import { TENANT_TZ_DEFAULT } from "@ai/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -17,6 +18,7 @@ import {
 import { foldKeyInput } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 import { type TenantCreateValues, tenantCreateSchema } from "../lib/schemas";
+import { TenantTimezoneField } from "./TenantTimezoneField";
 
 export type CreateFieldErrors = Partial<Record<"key" | "username" | "email", string>>;
 
@@ -45,6 +47,7 @@ export function TenantCreateForm({
       key: "",
       name: "",
       slots: "",
+      timezone: TENANT_TZ_DEFAULT,
       username: "",
       display_name: "",
       email: "",
@@ -107,6 +110,14 @@ export function TenantCreateForm({
               <Input {...p} {...form.register("slots")} type="number" min={1} inputMode="numeric" />
             )}
           </FormField>
+          <TenantTimezoneField
+            id="tenant-timezone"
+            value={form.watch("timezone")}
+            error={msg(errors.timezone?.message)}
+            onChange={(zone) =>
+              form.setValue("timezone", zone, { shouldDirty: true, shouldValidate: true })
+            }
+          />
         </CardContent>
       </Card>
       <Card>

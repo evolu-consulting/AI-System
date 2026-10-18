@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 import { type TenantInfoValues, tenantInfoSchema } from "../lib/schemas";
+import { TenantTimezoneField } from "./TenantTimezoneField";
 
 type Props = {
   tenant: TenantDetail;
   pending: boolean;
+  /** 400 `VALIDATION_ERROR` path `timezone` từ server (đã dịch). */
+  timezoneError?: string | undefined;
   onDirtyChange: (dirty: boolean) => void;
   onSubmit: (values: TenantInfoValues) => void;
 };
@@ -22,9 +25,10 @@ type Props = {
 const toValues = (t: TenantDetail): TenantInfoValues => ({
   name: t.name,
   slots: t.max_concurrent_sub === null ? "" : String(t.max_concurrent_sub),
+  timezone: t.timezone,
 });
 
-export function TenantInfoForm({ tenant, pending, onDirtyChange, onSubmit }: Props) {
+export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, onSubmit }: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const online = useOnline();
@@ -45,7 +49,10 @@ export function TenantInfoForm({ tenant, pending, onDirtyChange, onSubmit }: Pro
   const loaded = useRef(toValues(tenant));
   useEffect(() => {
     const next = toValues(tenant);
-    const same = next.name === loaded.current.name && next.slots === loaded.current.slots;
+    const same =
+      next.name === loaded.current.name &&
+      next.slots === loaded.current.slots &&
+      next.timezone === loaded.current.timezone;
     loaded.current = next;
     form.reset(next, same ? { keepDirtyValues: true } : undefined);
   }, [tenant, form]);
@@ -84,6 +91,14 @@ export function TenantInfoForm({ tenant, pending, onDirtyChange, onSubmit }: Pro
           <Input {...p} {...form.register("slots")} type="number" min={1} inputMode="numeric" />
         )}
       </FormField>
+      <TenantTimezoneField
+        id="info-timezone"
+        value={form.watch("timezone")}
+        error={msg(errors.timezone?.message) ?? timezoneError}
+        onChange={(zone) =>
+          form.setValue("timezone", zone, { shouldDirty: true, shouldValidate: true })
+        }
+      />
       <div className="flex items-center gap-3 text-body text-muted-foreground">
         <span>{t("tenants.col.status")}</span>
         {tenant.status === "locked" ? (

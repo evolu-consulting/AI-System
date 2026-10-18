@@ -16,7 +16,7 @@ import { InputField } from "./InputField";
 export function InputsForm({ request }: { request: InputsRequest }) {
   const { t } = useTranslation();
   const f = useInputsForm(request);
-  const blocked = f.pending || f.uploading !== null || Object.keys(f.errors).length > 0;
+  const blocked = f.pending || f.uploading !== null || Object.keys(f.blockingErrors).length > 0;
   return (
     <Dialog open onOpenChange={(open) => !open && !f.pending && f.cancel()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">

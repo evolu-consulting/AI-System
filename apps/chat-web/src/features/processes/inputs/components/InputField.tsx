@@ -4,7 +4,8 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
-import type { FieldValue } from "../lib/inputs-rules";
+import { DATE_INPUT_INVALID_KEY } from "../../domain/date-input";
+import type { FieldError, FieldValue } from "../lib/inputs-rules";
 import { type ChipsState, SELECT_CLASS, SourceRefField } from "./SourceRefField";
 
 export type FieldFile = { uploading: boolean; failed: boolean };
@@ -12,7 +13,7 @@ export type FieldFile = { uploading: boolean; failed: boolean };
 type Props = {
   def: ProcessInputDef;
   value: FieldValue;
-  error?: "tooLong" | "required" | "dash";
+  error?: FieldError;
   file: FieldFile;
   chips: ChipsState;
   disabled: boolean;
@@ -47,7 +48,7 @@ function Control(p: Props) {
       <SourceRefField
         def={def}
         value={value}
-        error={error === "tooLong" ? undefined : error}
+        error={error === "tooLong" || error === "dateInvalid" ? undefined : error}
         chips={p.chips}
         disabled={p.disabled}
         onSource={p.onSource}
@@ -74,6 +75,26 @@ function Control(p: Props) {
     );
   }
   if (def.type === "file") return <FileControl {...p} />;
+  if (def.type === "date") {
+    return (
+      <>
+        <input
+          type="date"
+          className={SELECT_CLASS}
+          aria-label={def.label}
+          value={value.value}
+          disabled={p.disabled}
+          aria-invalid={error ? true : undefined}
+          onChange={(e) => p.onChange({ value: e.target.value })}
+        />
+        {error === "dateInvalid" && (
+          <p role="alert" className="text-caption text-destructive">
+            {t(DATE_INPUT_INVALID_KEY)}
+          </p>
+        )}
+      </>
+    );
+  }
   return (
     <>
       <Textarea

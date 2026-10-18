@@ -18,6 +18,7 @@ const TASK_NOTICE_KINDS = new Set<NoticeKind>([
   "ask_requested",
   "decision_requested",
   "reminder",
+  "escalated",
 ]);
 
 /** Thẻ có thể mở `TaskPanel` (cần `task_id` + `kind` gắn việc). */

@@ -1,9 +1,18 @@
 // CHAT-AC-52 · plan-frontend §6: dòng trạng thái của khối/thanh (đổi trạng thái báo bằng `aria-live`). Trình bày thuần theo `view`.
-import type { OpenTask, ProcessRunFullView, TaskKind } from "@ai/contracts/chat";
+import {
+  type OpenTask,
+  type ProcessRunFullView,
+  STAGE_RETRY_MAX,
+  type TaskKind,
+} from "@ai/contracts/chat";
 import { useTranslation } from "react-i18next";
+import { describeStageWait, earliestWait } from "../../domain/stage-wait";
+import { formatWaitDateTime, type WaitLang } from "../../domain/wait-format";
 import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
 import { waitNames } from "../../shared/lib/thread-task";
-import { currentStage } from "../lib/block-view";
+import { currentStage, waitFacts } from "../lib/block-view";
+
+const lngOf = (i18n: { language: string }): WaitLang => (i18n.language === "vi" ? "vi" : "en");
 
 const hasMyOpen = (view: ProcessRunFullView, kind: TaskKind): boolean =>
   view.my_tasks.some((t) => t.kind === kind && t.status === "open");
@@ -23,19 +32,46 @@ function openWaitName(
     : w.names.join(", ");
 }
 
+/** Dòng `waiting_timer` (hẹn sớm nhất) và `running` (kể cả đang thử lại). */
+function timerOrRunningLine(
+  view: ProcessRunFullView,
+  t: ReturnType<typeof useTranslation>["t"],
+  i18n: { language: string },
+  n: number,
+  total: number,
+): string {
+  const cur = currentStage(view);
+  const stage = cur?.name ?? "";
+  if (view.status === "waiting_timer") {
+    const due = earliestWait(view.stages.map(waitFacts));
+    return due
+      ? t("process.run.line.waitingTimer", {
+          date: formatWaitDateTime(due.dueAt, due.timeZone, lngOf(i18n)),
+          n,
+          total,
+          stage,
+        })
+      : t("process.run.line.waitingTimerNoDate", { n, total });
+  }
+  const w = cur ? describeStageWait(waitFacts(cur)) : null;
+  if (w?.kind === "retrying")
+    return t("process.run.line.retrying", { retry: w.n, max: STAGE_RETRY_MAX, n, total, stage });
+  if (cur?.status === "queued") return t("process.run.line.queued", { n, total });
+  return t("process.run.line.running", { n, total, stage });
+}
+
 /** `null` cho khối/dòng = run đã kết thúc (huy hiệu đã đủ nghĩa). */
 function lineOf(
   view: ProcessRunFullView,
   t: ReturnType<typeof useTranslation>["t"],
+  i18n: ReturnType<typeof useTranslation>["i18n"],
 ): string | null {
   const n = view.current_stage_idx + 1;
   const total = view.stages.length;
   switch (view.status) {
-    case "running": {
-      const cur = currentStage(view);
-      if (cur?.status === "queued") return t("process.run.line.queued", { n, total });
-      return t("process.run.line.running", { n, total, stage: cur?.name ?? "" });
-    }
+    case "waiting_timer":
+    case "running":
+      return timerOrRunningLine(view, t, i18n, n, total);
     case "waiting_review":
       return hasMyOpen(view, "review")
         ? t("process.run.line.reviewMe")
@@ -57,11 +93,15 @@ function lineOf(
 }
 
 export function StatusLine({ view, className }: { view: ProcessRunFullView; className?: string }) {
-  const { t } = useTranslation();
-  const line = lineOf(view, t);
+  const { t, i18n } = useTranslation();
+  const line = lineOf(view, t, i18n);
   if (!line) return null;
   return (
-    <p aria-live="polite" className={className ?? "text-sm text-secondary-foreground"}>
+    <p
+      role="status"
+      aria-live="polite"
+      className={className ?? "text-sm text-secondary-foreground"}
+    >
       {line}
     </p>
   );

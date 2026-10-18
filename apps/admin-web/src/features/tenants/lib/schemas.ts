@@ -3,6 +3,7 @@ import {
   COMPANY_KEY_RE,
   DISPLAY_NAME_MAX,
   EMAIL_MAX,
+  isSupportedTimeZone,
   MAX_CONCURRENT_SUB_MAX,
   NAME_MAX,
   USERNAME_RE,
@@ -31,13 +32,24 @@ export const tenantNameField = z
   .min(1, "tenants.error.nameRequired")
   .max(NAME_MAX, "tenants.error.nameRequired");
 
-export const tenantInfoSchema = z.object({ name: tenantNameField, slots: slotsInput });
+/** TZ-R02: tên IANA hợp lệ; thông điệp là khoá i18n (không dùng `TimezoneInputSchema`). */
+export const tenantTimezoneField = z
+  .string()
+  .min(1, "tenants.error.timezoneRequired")
+  .refine(isSupportedTimeZone, "tenants.error.timezoneUnsupported");
+
+export const tenantInfoSchema = z.object({
+  name: tenantNameField,
+  slots: slotsInput,
+  timezone: tenantTimezoneField,
+});
 export type TenantInfoValues = z.infer<typeof tenantInfoSchema>;
 
 export const tenantCreateSchema = z.object({
   key: z.string().trim().toLowerCase().regex(COMPANY_KEY_RE, "tenants.error.keyFormat"),
   name: tenantNameField,
   slots: slotsInput,
+  timezone: tenantTimezoneField,
   username: z.string().trim().toLowerCase().regex(USERNAME_RE, "users.error.usernameFormat"),
   display_name: z
     .string()

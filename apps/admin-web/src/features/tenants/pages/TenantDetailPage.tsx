@@ -14,8 +14,9 @@ import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TIMEZONE_UNSUPPORTED_KEY } from "@/features/processes/domain/error-keys";
 import { useSession } from "@/lib/auth/use-session";
-import { describeError } from "@/lib/errors";
+import { describeError, validationIssues } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
@@ -78,10 +79,19 @@ export function TenantDetailPage() {
   const role = useSession((s) => s.me?.role);
   const allowed = role === "platform_admin";
   const query = useTenantDetail(tenantId, allowed);
+  const [tzError, setTzError] = useState<string | undefined>();
   const conflict = useTenantConflict(tenantId, {
     onSaved: () => notifySuccess(t("tenants.toast.saved", { key: query.data?.key ?? "" })),
     onFail: (err) => {
       if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
+      if (
+        err instanceof ApiError &&
+        err.code === "VALIDATION_ERROR" &&
+        validationIssues(err.details).paths.includes("timezone")
+      ) {
+        setTzError(tr(TIMEZONE_UNSUPPORTED_KEY));
+        return;
+      }
       const spec = describeError(err);
       notifyError(tr(spec.key, spec.params));
     },
@@ -107,8 +117,13 @@ export function TenantDetailPage() {
   }
   const tenant = query.data;
 
-  const save = (v: TenantInfoValues) =>
-    conflict.save({ name: v.name, max_concurrent_sub: slotsToValue(v.slots) }, tenant.version);
+  const save = (v: TenantInfoValues) => {
+    setTzError(undefined);
+    return conflict.save(
+      { name: v.name, max_concurrent_sub: slotsToValue(v.slots), timezone: v.timezone },
+      tenant.version,
+    );
+  };
 
   return (
     <>
@@ -132,6 +147,7 @@ export function TenantDetailPage() {
           <TenantInfoForm
             tenant={tenant}
             pending={conflict.pending}
+            timezoneError={tzError}
             onDirtyChange={setInfoDirty}
             onSubmit={save}
           />

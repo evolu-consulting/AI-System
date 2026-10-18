@@ -2,10 +2,17 @@ import { describe, expect, test } from "bun:test";
 import { TenantCreateRequestSchema, TenantKeySchema, UsernameSchema } from "@ai/contracts";
 import { slotsToValue, tenantCreateSchema, tenantInfoSchema } from "./schemas";
 
+const TZ = "Asia/Ho_Chi_Minh";
+const body0 = {
+  key: "initech",
+  name: "Initech",
+  first_admin: { username: "lumbergh", display_name: "Bill", email: "bill@initech.test" },
+};
 const valid = {
   key: "initech",
   name: "Initech",
   slots: "",
+  timezone: TZ,
   username: "lumbergh",
   display_name: "Bill",
   email: "bill@initech.test",
@@ -30,6 +37,7 @@ describe("ADM-FR-60 · schema form tenant khớp contract", () => {
       key: v.key,
       name: v.name,
       max_concurrent_sub: slotsToValue(v.slots),
+      timezone: v.timezone,
       first_admin: {
         username: v.username,
         display_name: v.display_name,
@@ -62,7 +70,26 @@ describe("ADM-FR-60 · schema form tenant khớp contract", () => {
       ["-2", false],
       ["abc", false],
     ] as const) {
-      expect(tenantInfoSchema.safeParse({ name: "x", slots }).success).toBe(ok);
+      expect(tenantInfoSchema.safeParse({ name: "x", slots, timezone: TZ }).success).toBe(ok);
     }
+  });
+
+  test("ADM-FR-72 · múi giờ: IANA hợp lệ ⇔ contract; rỗng/alias ⇒ khoá i18n", () => {
+    for (const timezone of [
+      TZ,
+      "UTC",
+      "Europe/Berlin",
+      "Asia/Saigon",
+      "europe/berlin",
+      "",
+      "Mars/Base",
+    ]) {
+      const fe = tenantInfoSchema.safeParse({ name: "x", slots: "", timezone }).success;
+      expect(fe).toBe(TenantCreateRequestSchema.safeParse({ ...body0, timezone }).success);
+    }
+    const msg = (timezone: string) =>
+      tenantInfoSchema.safeParse({ name: "x", slots: "", timezone }).error?.issues[0]?.message;
+    expect(msg("")).toBe("tenants.error.timezoneRequired");
+    expect(msg("Mars/Base")).toBe("tenants.error.timezoneUnsupported");
   });
 });

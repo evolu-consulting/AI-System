@@ -1,5 +1,5 @@
 // ADM-FR-60 · /tenants/new: tạo tenant + tenant_admin đầu tiên (một transaction), hiện mật khẩu tạm một lần.
-import { TENANT_TZ_DEFAULT, type TenantCreateResponse } from "@ai/contracts";
+import type { TenantCreateResponse } from "@ai/contracts";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,7 @@ export function TenantCreatePage() {
         key: v.key,
         name: v.name,
         max_concurrent_sub: slotsToValue(v.slots),
-        timezone: TENANT_TZ_DEFAULT, // ô "Múi giờ" ở T11 (P-d1)
+        timezone: v.timezone,
         first_admin: {
           username: v.username,
           display_name: v.display_name,
