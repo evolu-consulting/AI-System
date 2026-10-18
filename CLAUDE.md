@@ -11,7 +11,7 @@ Nền tảng AI multi-tenant: **Admin** (tenant, user, group, quyền, command, 
 TypeScript strict · Bun + Turborepo · Rsbuild + React + Tailwind + shadcn/ui · Hono · Postgres + Drizzle (RLS) · zod · Redis · Biome · bun test + Playwright · Docker Compose.
 
 ## Lệnh (có sau M0)
-`bun install` · `bun run dev` · `bun run typecheck` · `bun test` · `bun run test:int` (cần DB) · `bun run test:perf` (đo p95, không thuộc Lệnh xong) · `bun run e2e` (= `bunx playwright test`) · `bun run check:bundle` · `bun run keys:dev` · `bun run db:migrate` · `bun run mocks` · `bunx biome check --write --changed` · `bun run check:size` · `bun run trace <FR>` · `bun run test:lock:verify` · `docker compose up -d`
+`bun install` · `bun run dev` · `bun run typecheck` · `bun test` · `bun run test:int` (cần DB) · `bun run test:int:par [--workers=N] [đường dẫn…]` (int song song, DB riêng mỗi worker, DB test clone từ mẫu — dùng mặc định khi chạy ≥ 2 file int) · `bun run test:perf` (đo p95, không thuộc Lệnh xong) · `bun run e2e` (= `bunx playwright test`) · `bun run check:bundle` · `bun run keys:dev` · `bun run db:migrate` · `bun run mocks` · `bunx biome check --write --changed` · `bun run check:size` · `bun run trace <FR>` · `bun run test:lock:verify` · `docker compose up -d`
 
 **Lệnh xong M0** (T17, máy sạch): `bun install --frozen-lockfile && docker compose up -d --wait && bun run db:migrate && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
 
@@ -66,7 +66,7 @@ Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc l�
 - **Thiết kế theo tập:** không truy vấn/transaction từng hàng trong vòng lặp; mỗi lô số câu SQL cố định (không phụ thuộc số hàng), lọc `= any(array)` qua index, khoá `FOR UPDATE SKIP LOCKED` khi nhiều instance; một pipeline Redis mỗi lô; không gọi mạng/đăng tin trong vòng lặp hàng.
 - **Kế hoạch truy vấn không phụ thuộc thống kê bảng** (sau chèn hàng loạt thống kê cũ): tránh join `unnest` để lọc bảng lớn; câu SQL văn bản cố định (dữ liệu lô qua một tham số JSON) để mỗi kết nối chỉ chuẩn bị một lần.
 - **Có số đo:** đường nóng mới/sửa phải có ngưỡng đo được (vd lô 100 p95 ≤ 50 ms, tổng 10.000 hàng) + test `*.perf.int.test.ts`; test đếm số câu SQL mỗi lô khi là vòng lô. Báo số thật (trước → sau), không làm tròn; chưa đạt thì nói chưa đạt và vì sao.
-- **Test cũng phải nhanh:** chỉ chạy test của phần đang sửa khi làm; bộ đầy đủ khi đóng task/mốc. Không chạy lại cả bộ để "chắc ăn"; thấy test chậm thì đo (file chậm nhất, reset/migrate DB, tuần tự) rồi sửa hạ tầng test.
+- **Test cũng phải nhanh:** int nhiều file chạy bằng `bun run test:int:par` (P-a + K1: 174 s tuần tự → 51 s); chỉ chạy test của phần đang sửa khi làm; bộ đầy đủ khi đóng task/mốc. Không chạy lại cả bộ để "chắc ăn"; thấy test chậm thì đo (file chậm nhất, reset/migrate DB, tuần tự) rồi sửa hạ tầng test.
 
 ## Luật 5 — Truy vết
 - Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.
