@@ -4,11 +4,9 @@
 // trùng hàng. Chỉ làm việc DB; người gọi phát sự kiện SAU COMMIT.
 import type { NoticeKind } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
-import { processNotices } from "@ai/db/schema/hub-processes";
 import { sql } from "drizzle-orm";
 import type { InsertedNotice } from "./inbox.repo";
 
-const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;
 const iso = (d: Date): string => d.toISOString();
 
 export type TaskRecipients = { userIds: string[]; groupMemberIds: string[] };
@@ -20,6 +18,8 @@ export type ClaimedReminder = TaskRecipients & {
   processName: string;
   stageName: string | null;
 };
+/** Lô task vừa nhận + cờ `more` (còn task tới hạn ngoài lô ⇒ lượt xả chạy tiếp; tránh một tx rỗng để biết đã hết). */
+export type ReminderBatch = { tasks: ClaimedReminder[]; more: boolean };
 
 /**
  * MỘT câu: khoá task mở tới hạn chưa nhắc (cũ trước, bỏ qua hàng Hub khác đang khoá — #190), đặt `reminded_at` (đúng 1
@@ -27,11 +27,7 @@ export type ClaimedReminder = TaskRecipients & {
  * bằng subquery tương quan theo PK/index (`review_task_assignees_user_uq`, `group_members_pkey`) — 100 lần tra index,
  * không join theo thống kê; mọi điều kiện khớp `tenant_id` của task nguồn (K3 lô, A11).
  */
-export async function claimDueReminders(
-  tx: Tx,
-  now: Date,
-  limit: number,
-): Promise<ClaimedReminder[]> {
+export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promise<ReminderBatch> {
   const rows = await tx.execute<{
     id: string;
     tenant_id: string;
@@ -41,6 +37,7 @@ export async function claimDueReminders(
     stage_name: string | null;
     user_ids: string[] | null;
     member_ids: string[] | null;
+    more: boolean;
   }>(sql`
     with c as (
       select t.id, t.tenant_id from hub.review_tasks t
@@ -59,12 +56,15 @@ export async function claimDueReminders(
       array(select a.user_id::text from hub.review_task_assignees a
         where a.task_id = u.id and a.tenant_id = u.tenant_id and a.user_id is not null) as user_ids,
       array(select gm.user_id::text from admin.group_members gm
-        where gm.group_id = u.assignee_group_id and gm.tenant_id = u.tenant_id) as member_ids
+        where gm.group_id = u.assignee_group_id and gm.tenant_id = u.tenant_id) as member_ids,
+      exists (select 1 from hub.review_tasks t2
+        where t2.status = 'open' and t2.reminded_at is null and t2.remind_at <= ${iso(now)}::timestamptz
+          and not exists (select 1 from c where c.id = t2.id)) as more
     from u
     left join hub.stage_runs s on s.id = u.stage_run_id and s.tenant_id = u.tenant_id
     left join hub.process_runs pr on pr.id = u.process_run_id and pr.tenant_id = u.tenant_id
     order by u.remind_at asc, u.id asc`);
-  return rows.map((r) => ({
+  const tasks = rows.map((r) => ({
     taskId: r.id,
     tenantId: r.tenant_id,
     processRunId: r.process_run_id,
@@ -74,6 +74,7 @@ export async function claimDueReminders(
     userIds: r.user_ids ?? [],
     groupMemberIds: r.member_ids ?? [],
   }));
+  return { tasks, more: rows[0]?.more === true };
 }
 export type NoticeRow = {
   tenantId: string;
@@ -84,50 +85,56 @@ export type NoticeRow = {
 };
 export type InsertedNoticeRow = InsertedNotice & { tenantId: string; row: NoticeRow };
 
+export const unreadKey = (tenantId: string, userId: string): string => `${tenantId}:${userId}`;
+
 /**
- * MỘT câu INSERT nhiều hàng (không RETURNING — cùng lý do `insertNotices`: policy SELECT chỉ thấy hàng của mình). `id`,
- * `createdAt` sinh app-side, một `createdAt` cho cả lô.
+ * MỘT câu cố định cho cả lô: chèn notice (`jsonb_to_recordset` — một tham số JSON, văn bản SQL không đổi theo số hàng nên
+ * mỗi kết nối chỉ chuẩn bị một lần) VÀ đếm chưa đọc của các cặp (tenant, user) trong lô. Câu chính của một câu có CTE ghi
+ * dữ liệu đọc ảnh TRƯỚC khi chèn ⇒ unread = số chưa đọc trước + số notice vừa chèn cho cặp đó trong lô — bằng đúng số
+ * `count(*)` sau khi chèn trong cùng tx (cách cũ). `id`, `createdAt` sinh app-side, một `createdAt` cho cả lô (thứ tự
+ * `created_at desc, id desc` như `insertNotices`).
  */
-export async function insertNoticeRows(
+export async function writeNotices(
   tx: Tx,
   kind: NoticeKind,
   rows: readonly NoticeRow[],
-): Promise<InsertedNoticeRow[]> {
-  if (rows.length === 0) return [];
+): Promise<{ inserted: InsertedNoticeRow[]; unread: Map<string, number> }> {
+  if (rows.length === 0) return { inserted: [], unread: new Map() };
   const createdAt = new Date();
-  const values = rows.map((r) => ({
+  const inserted = rows.map((r) => ({
     id: crypto.randomUUID(),
-    tenantId: r.tenantId,
     userId: r.userId,
-    kind,
-    processRunId: r.processRunId,
-    taskId: r.taskId,
-    payload: r.payload,
+    tenantId: r.tenantId,
     createdAt,
+    row: r,
   }));
-  await tx.insert(processNotices).values(values);
-  return values.map((v, i) => ({
-    id: v.id,
-    userId: v.userId,
-    tenantId: v.tenantId,
-    createdAt,
-    row: rows[i] as NoticeRow,
-  }));
-}
-
-export const unreadKey = (tenantId: string, userId: string): string => `${tenantId}:${userId}`;
-
-/** MỘT câu: tổng chưa đọc theo cặp (tenant, user) của lô (`process_notices_unread_idx`). */
-export async function unreadByTenantUser(
-  tx: Tx,
-  pairs: readonly { tenantId: string; userId: string }[],
-): Promise<Map<string, number>> {
-  const uniq = [...new Map(pairs.map((p) => [unreadKey(p.tenantId, p.userId), p])).values()];
-  if (uniq.length === 0) return new Map();
-  const rows = await tx.execute<{ tenant_id: string; user_id: string; n: number | string }>(sql`
-    select tenant_id, user_id, count(*)::int as n from hub.process_notices
-    where user_id = any(${uuidArray([...new Set(uniq.map((p) => p.userId))])}::uuid[])
-      and tenant_id = any(${uuidArray([...new Set(uniq.map((p) => p.tenantId))])}::uuid[]) and read_at is null
-    group by tenant_id, user_id`);
-  return new Map(rows.map((r) => [unreadKey(r.tenant_id, r.user_id), Number(r.n)]));
+  const json = JSON.stringify(
+    inserted.map((n) => ({
+      id: n.id,
+      tenant_id: n.tenantId,
+      user_id: n.userId,
+      process_run_id: n.row.processRunId,
+      task_id: n.row.taskId,
+      payload: n.row.payload,
+    })),
+  );
+  const before = await tx.execute<{ tenant_id: string; user_id: string; n: number | string }>(sql`
+    with x as (
+      select * from jsonb_to_recordset(${json}::jsonb)
+        as x(id uuid, tenant_id uuid, user_id uuid, process_run_id uuid, task_id uuid, payload jsonb)
+    ), ins as (
+      insert into hub.process_notices (id, tenant_id, user_id, kind, process_run_id, task_id, payload, created_at)
+      select id, tenant_id, user_id, ${kind}, process_run_id, task_id, payload, ${createdAt.toISOString()}::timestamptz
+      from x
+    )
+    select n.tenant_id, n.user_id, count(*)::int as n from hub.process_notices n
+    where n.user_id = any(array(select distinct user_id from x))
+      and n.tenant_id = any(array(select distinct tenant_id from x)) and n.read_at is null
+    group by n.tenant_id, n.user_id`);
+  const unread = new Map(before.map((r) => [unreadKey(r.tenant_id, r.user_id), Number(r.n)]));
+  for (const n of inserted) {
+    const k = unreadKey(n.tenantId, n.userId);
+    unread.set(k, (unread.get(k) ?? 0) + 1);
+  }
+  return { inserted, unread };
 }
