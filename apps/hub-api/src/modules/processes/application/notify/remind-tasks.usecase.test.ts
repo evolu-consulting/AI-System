@@ -125,24 +125,54 @@ describe("remindTasks (A10 · ≤ 3 câu nhắc / lô)", () => {
       [B, "u2"],
     ]);
   });
+});
 
+type Claim = { tasks: unknown[]; claimed: number; more: boolean };
+/** `systemBatch` giả: mỗi lô lấy kết quả claim kế tiếp (hết ⇒ lặp lại cái cuối) — đếm số lô đã chạy. */
+function scripted(rems: Claim[], escs: Claim[] = [{ tasks: [], claimed: 0, more: false }]) {
+  const f = fake([], []);
+  const pick = (q: Claim[]) => (q.length > 1 ? q.shift() : q[0]) as Claim;
+  const stats = { batches: 0 };
+  const sysUow = {
+    systemBatch: (fn: (x: BatchRepos) => Promise<unknown>) =>
+      f.sysUow.systemBatch((r) => {
+        stats.batches++;
+        const rt = {
+          ...r.reviewTasks,
+          claimDueReminders: async () => pick(rems),
+          claimDueEscalations: async () => pick(escs),
+        };
+        return fn({ ...r, reviewTasks: rt } as BatchRepos);
+      }),
+  } as unknown as SystemUow;
+  return { sysUow, stats, rems };
+}
+const NONE: Claim = { tasks: [], claimed: 0, more: false };
+
+describe("remindTasks · xả nhiều lô (T12 #1 · R2-1)", () => {
   it("HUB-FR-145 · T12 #1 · lô khoá đủ 100 nhưng bỏ task có run đang bị giữ (99 trả về) ⇒ vẫn xả lô kế", async () => {
-    const f = fake([], []);
-    const batches = [
+    const s = scripted([
       { tasks: Array.from({ length: 99 }, (_, i) => rem(`t${i}`)), claimed: 100, more: true },
       { tasks: [rem("held")], claimed: 1, more: false },
-    ];
-    const sysUow = {
-      systemBatch: (fn: (x: BatchRepos) => Promise<unknown>) =>
-        f.sysUow.systemBatch((r) => {
-          const rt = { ...r.reviewTasks, claimDueReminders: async () => batches.shift() };
-          return fn({ ...r, reviewTasks: rt } as BatchRepos);
-        }),
-    } as unknown as SystemUow;
-    expect(await remindTasks({ sysUow, now: () => NOW, elapsedMs: () => 0 })).toBe(100);
-    expect(batches).toEqual([]);
+    ]);
+    expect(await remindTasks({ sysUow: s.sysUow, now: () => NOW, elapsedMs: () => 0 })).toBe(100);
+    expect(s.stats.batches).toBe(2);
   });
 
+  it("HUB-FR-112 · R2-1 · khoá ≥ 1 giữ 0 (mọi run bị giữ) mà còn hàng tới hạn ⇒ dừng lượt (không lặp tới hết 60 s)", async () => {
+    const s = scripted([{ tasks: [], claimed: 100, more: true }]);
+    expect(await remindTasks({ sysUow: s.sysUow, now: () => NOW, elapsedMs: () => 0 })).toBe(0);
+    expect(s.stats.batches).toBe(1);
+  });
+
+  it("HUB-FR-145 · R2-1 · chuyển cấp khoá ≥ 1 giữ 0 ⇒ cũng dừng lượt", async () => {
+    const s = scripted([NONE], [{ tasks: [], claimed: 100, more: true }]);
+    expect(await remindTasks({ sysUow: s.sysUow, now: () => NOW, elapsedMs: () => 0 })).toBe(0);
+    expect(s.stats.batches).toBe(1);
+  });
+});
+
+describe("remindTasks · luật nhắc lặp + chuyển cấp (PD-R18 · PD-R20)", () => {
   it("HUB-FR-145 · PD-R18 · lặp đã đủ 10 lần ⇒ không nhắc", async () => {
     const f = fake([rem("t1", { remindEveryH: 4, remindCount: 10 })], []);
     expect(await run(f)).toBe(0);

@@ -39,8 +39,10 @@ async function remindBatch(
     await r.notices.notifyMany("reminder", due.flatMap(noticeRows));
   }
   const esc = await escalateBatch(r, now, limit);
-  // Lô đầy tính theo `claimed` (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm.
-  return { n: due.length, more: (more && claimed >= limit) || esc.more };
+  // Lô đầy tính theo `claimed` (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm. Khoá ≥ 1 mà giữ 0 (mọi
+  // run đang bị giữ, R2-1) ⇒ lô sau chỉ gặp lại đúng chúng: dừng phần nhắc của lượt, lượt kế thử lại.
+  const stalled = claimed > 0 && tasks.length === 0;
+  return { n: due.length, more: (more && claimed >= limit && !stalled) || esc.more };
 }
 
 /** Lặp ⇒ `nextRemind`; cũ ⇒ giữ `remindAt`/`remindCount` (chỉ đặt `reminded_at`). */

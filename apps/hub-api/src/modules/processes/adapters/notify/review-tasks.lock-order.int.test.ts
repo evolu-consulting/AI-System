@@ -3,6 +3,7 @@
 // `lockRun(R)`; tx B (`lock_timeout` thấp — chờ khoá nào cũng ném 55P03) claim nhắc + chuyển cấp rồi chèn notice cho hàng
 // đã claim ⇒ T (run R) bị bỏ (vẫn tính vào `claimed` để xả tiếp), T2 (run R2) được nhận; A commit ⇒ lô kế nhận T.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql as dsql } from "drizzle-orm";
 import {
@@ -22,9 +23,16 @@ import {
   insertTask,
 } from "../../../../../../../tests/acceptance/P-a/_support/process-fixtures";
 import { connectDb, type Db } from "../../../../lib/db";
+import type { EscalationBatch, ReminderBatch } from "../../application/ports";
 import { lockRun } from "../../core/core.repo";
 import { writeNotices } from "../../notify/batch.repo";
-import { claimDueEscalations, claimDueReminders } from "./review-tasks.repo";
+import {
+  addEscalatedGroups,
+  auditEscalations,
+  claimDueEscalations,
+  claimDueReminders,
+  markRemindedMany,
+} from "./review-tasks.repo";
 
 const L = USERS.lan;
 let sql: Sql;
@@ -76,24 +84,55 @@ afterAll(async () => {
 
 const mine = (ids: string[]) => ids.filter((id) => id === taskT || id === taskT2).sort();
 
-/** Tx B: mọi chờ khoá ⇒ 55P03 sau 200 ms (thay cho "chờ rồi deadlock"); claim nhắc + chuyển cấp + chèn notice. */
+/** R2-4 · các câu GHI của lô (R2-4: cũng dưới `lock_timeout`): áp mốc nhắc, thêm Group chuyển cấp, audit, notice. */
+async function writesB(tx: Tx, now: Date, rem: ReminderBatch, esc: EscalationBatch): Promise<void> {
+  const claimed = rem.tasks.filter((t) => t.taskId === taskT || t.taskId === taskT2);
+  await markRemindedMany(
+    tx,
+    now,
+    claimed.map((t) => ({
+      taskId: t.taskId,
+      tenantId: t.tenantId,
+      remindAt: t.remindAt,
+      remindCount: t.remindCount,
+    })),
+  );
+  const escs = esc.tasks.filter((t) => t.taskId === taskT || t.taskId === taskT2);
+  await addEscalatedGroups(
+    tx,
+    escs.map((t) => ({ tenantId: t.tenantId, taskId: t.taskId, groupId: t.toGroupId })),
+  );
+  await auditEscalations(
+    tx,
+    escs.map((t) => ({
+      tenantId: t.tenantId,
+      taskId: t.taskId,
+      action: "escalate_skipped" as const,
+      entityName: t.stageName ?? t.processName,
+      fromGroupId: t.fromGroupId,
+      toGroupId: t.toGroupId,
+    })),
+  );
+  await writeNotices(
+    tx,
+    "reminder",
+    claimed.map((t) => ({
+      tenantId: t.tenantId,
+      userId: L.id,
+      processRunId: t.processRunId,
+      taskId: t.taskId,
+      payload: { process_name: t.processName, stage_name: t.stageName },
+    })),
+  );
+}
+
+/** Tx B: mọi chờ khoá ⇒ 55P03 sau 200 ms (thay cho "chờ rồi deadlock"); claim nhắc + chuyển cấp + mọi câu ghi của lô. */
 function batchB(now: Date) {
   return withHubScope(db, { kind: "system" }, async (tx) => {
     await tx.execute(dsql`set local lock_timeout = '200ms'`);
     const rem = await claimDueReminders(tx, now, 1000);
     const esc = await claimDueEscalations(tx, now, 1000);
-    const claimed = rem.tasks.filter((t) => t.taskId === taskT || t.taskId === taskT2);
-    await writeNotices(
-      tx,
-      "reminder",
-      claimed.map((t) => ({
-        tenantId: t.tenantId,
-        userId: L.id,
-        processRunId: t.processRunId,
-        taskId: t.taskId,
-        payload: { process_name: t.processName, stage_name: t.stageName },
-      })),
-    );
+    await writesB(tx, now, rem, esc);
     return {
       reminded: mine(rem.tasks.map((t) => t.taskId)),
       escalated: mine(esc.tasks.map((t) => t.taskId)),
@@ -118,9 +157,9 @@ describe("T12 #1 · lô nhắc/chuyển cấp không chờ khoá run", () => {
       droppedEsc: 1,
     });
     const after = await batchB(now);
-    // T2 chưa `markRemindedMany` ⇒ vẫn tới hạn nhắc; chuyển cấp đã đặt `escalated_at` ⇒ chỉ còn T.
+    // T2 đã `markRemindedMany` (lô trên) + đã `escalated_at` ⇒ chỉ còn T ở cả hai vòng.
     expect(after).toEqual({
-      reminded: [taskT, taskT2].sort(),
+      reminded: [taskT],
       escalated: [taskT],
       droppedRem: 0,
       droppedEsc: 0,

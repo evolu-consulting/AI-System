@@ -18,7 +18,8 @@ export async function escalateBatch(
 ): Promise<{ n: number; more: boolean }> {
   const { tasks, claimed, more } = await r.reviewTasks.claimDueEscalations(limit, now);
   // Lô đầy tính theo số đã khoá (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm.
-  const full = more && claimed >= limit;
+  // Khoá ≥ 1 mà giữ 0 (mọi run đang bị giữ, R2-1) ⇒ không xả tiếp trong lượt này, lượt kế thử lại.
+  const full = more && claimed >= limit && !(claimed > 0 && tasks.length === 0);
   if (tasks.length === 0) return { n: 0, more: full };
   const add: EscalatedAssigneeRow[] = [];
   const audits: EscalateAuditRow[] = [];

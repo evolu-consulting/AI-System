@@ -10,13 +10,19 @@ import { safeErrorFields } from "../../../../lib/errors";
 import { type FireCandidate, fireTimer } from "../../application/timers/fire-timer.usecase";
 import type { ProcessBgDeps } from "../../core/ports";
 import { failedTimerDueAt } from "../../domain/timers/timer.rules";
+import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
 
 /** Q10 · trần mỗi lượt (`SweepResult.timers` ≤ 100). */
 export const TIMER_SWEEP_BATCH = 100;
 
 const SYSTEM = { kind: "system" } as const;
 
-type DueTimer = { id: string; tenant_id: string; process_run_id: string; stage_run_id: string };
+export type DueTimer = {
+  id: string;
+  tenant_id: string;
+  process_run_id: string;
+  stage_run_id: string;
+};
 
 /** Một lượt: số hẹn đã BẮN (không tính hẹn bị bỏ/huỷ vì stage đã đổi hay run đã kết thúc). */
 export async function fireDueTimers(d: ProcessBgDeps): Promise<number> {
@@ -40,16 +46,46 @@ export async function fireDueTimers(d: ProcessBgDeps): Promise<number> {
   return fired;
 }
 
+type OpenTimer = {
+  kind: string;
+  due_at: string | Date;
+  created_at: string | Date;
+  timezone: string | null;
+  stage_idx: number | null;
+  snapshot: SnapshotStages | null;
+};
+
+/** Hạn GỐC của hẹn (R2-2/R2-3, không migration): `wait_until` dựng lại từ snapshot; `retry` ≈ `created_at`. */
+async function originOf(tx: Tx, t: DueTimer, cur: OpenTimer): Promise<Date> {
+  const dueAt = new Date(cur.due_at);
+  if (cur.kind !== "wait_until")
+    return new Date(Math.min(dueAt.getTime(), new Date(cur.created_at).getTime()));
+  return waitOriginalDue(tx, t.tenant_id, {
+    runId: t.process_run_id,
+    snapshot: cur.snapshot ?? {},
+    stageIdx: Number(cur.stage_idx ?? 0),
+    timezone: cur.timezone ?? "UTC",
+    dueAt,
+  });
+}
+
 /** #4 · lùi `due_at` hẹn lỗi (không thì ≥ 100 hẹn lỗi liên tục chiếm đầu `limit 100`, hẹn khác đói). Lỗi ở đây ⇒ chỉ log. */
-async function postponeFailed(d: ProcessBgDeps, t: DueTimer, now: Date): Promise<void> {
+export async function postponeFailed(
+  d: Pick<ProcessBgDeps, "db" | "log">,
+  t: DueTimer,
+  now: Date,
+): Promise<void> {
   try {
     await withHubScope(d.db, SYSTEM, async (tx) => {
-      const [cur] = await tx.execute<{
-        due_at: string | Date;
-      }>(sql`select due_at from hub.process_timers
-        where id = ${t.id} and tenant_id = ${t.tenant_id} and fired_at is null and cancelled_at is null`);
+      const [cur] =
+        await tx.execute<OpenTimer>(sql`select t.kind, t.due_at, t.created_at, t.timezone,
+          s.stage_idx, r.snapshot
+        from hub.process_timers t
+        left join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+        left join hub.process_runs r on r.id = t.process_run_id and r.tenant_id = t.tenant_id
+        where t.id = ${t.id} and t.tenant_id = ${t.tenant_id} and t.fired_at is null and t.cancelled_at is null`);
       if (!cur) return;
-      const next = failedTimerDueAt(new Date(cur.due_at), now);
+      const next = failedTimerDueAt(await originOf(tx, t, cur), now);
       await tx.execute(sql`update hub.process_timers set due_at = ${next.toISOString()}::timestamptz
         where id = ${t.id} and tenant_id = ${t.tenant_id} and fired_at is null and cancelled_at is null`);
     });
