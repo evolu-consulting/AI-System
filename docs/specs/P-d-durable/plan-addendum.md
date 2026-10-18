@@ -204,3 +204,9 @@ Staging N=10.000 cho thấy chậm do **lặp từng hàng**: hết hạn ≈ 15
 | T6c | review cả `systemBatch`: chỉ vòng nền gọi (không route/use case HTTP), K3 lô, test 2 tenant |
 
 Ghi thêm (readiness lần 5): TC13 — `runs.lock(runId)`, `timers.lockById(id)` ⇒ `null` khi không thấy, `timers.markFired(id, now)`, `timers.cancelForRun(runId, "all", now)`. TC3 (thay plan §4.9) — audit `escalate` ghi `summary {from_group, to_group}`, `actor_id` NULL (`hub.audit_log` chỉ có before/after/summary). TC4 (thêm vào plan §6) — quay lại ∥ bắn `wait_until` = huỷ XOR bắn: quay lại trước ⇒ `cancelled_at`, 0 output; bắn trước ⇒ `fired_at` + output rồi stage reset. TC12 — `ProcessEditorContextSchema` ở `@ai/contracts/hub-admin` (`hub-admin/processes.ts`).
+
+## Review T6c (security) — 2026-10-18
+**SAFE**, 0 Chặn/Cao (int `hub-uow` 2/2, `d1/uow` 6/6).
+- Trung `core/ports.ts:89`: route nhận `d.uow.system/systemBatch` ⇒ tách port vòng nền + luật depcruise.
+- Trung `batch.repo.ts:139`: notice không kiểm user∈tenant ⇒ `exists admin.users(id,tenant_id)` + test.
+- Thấp: guard tenant rỗng `hub-uow.ts:96,102`; `expire.ts:89` FK kép+PK đủ, sửa comment; `timers.repo.ts:52` mảng ghép chuỗi; `warm-pool.ts:33` quét đọc thật, sửa comment.
