@@ -1,5 +1,5 @@
 // HUB-FR-107 · HUB-FR-110 · HUB-FR-111 · M5 · C4 · R-TK01…R-TK05 — `canAct`, `askExcerpt`, `decisionAssignees`
-// (core/task.rules.ts; decisionAssignees: domain/tasks/decision.rules.ts, plan-contract §7, plan-step0 §1).
+// (askExcerpt: core/task.rules.ts; canAct: domain/tasks/task-access.rules.ts; decisionAssignees: domain/tasks/decision.rules.ts, plan-contract §7, plan-step0 §1).
 import { describe, expect, it } from "bun:test";
 import { fn, loadCoreRules, tryLoad } from "../../_support/modules";
 
@@ -41,19 +41,21 @@ const run = (status = "waiting_review") => ({
   status,
 });
 const T = async (name: string) => fn(await loadCoreRules("task"), name);
+const TA = async (name: string) =>
+  fn(await tryLoad("apps/hub-api/src/modules/processes/domain/tasks/task-access.rules.ts"), name);
 const DEC = async (name: string) =>
   fn(await tryLoad("apps/hub-api/src/modules/processes/domain/tasks/decision.rules.ts"), name);
 
 describe("R-TK · task dùng chung [plan-step0 §1]", () => {
   it("HUB-FR-107 · R-TK01 · review open: user trong userIds / thuộc group ⇒ true; ngoài cả hai ⇒ false; người đã chuyển ⇒ true", async () => {
-    const f = await T("canAct");
+    const f = await TA("canAct");
     expect(f(v(A), task(), run())).toBe(true);
     expect(f(v(B, [G]), task(), run())).toBe(true);
     expect(f(v(X), task(), run())).toBe(false);
     expect(f(v(F), task(), run())).toBe(true);
   });
   it("HUB-FR-107 · R-TK02 · task closed / run kết thúc / tenant khác ⇒ false; platform_admin task open ⇒ true", async () => {
-    const f = await T("canAct");
+    const f = await TA("canAct");
     expect(f(v(A), task({ status: "closed" }), run())).toBe(false);
     for (const s of ["cancelled", "done", "expired"]) expect(f(v(A), task(), run(s))).toBe(false);
     const dec = task({ kind: "decision", reason: "redo_limit", userIds: [A] });
@@ -62,7 +64,7 @@ describe("R-TK · task dùng chung [plan-step0 §1]", () => {
     expect(f(v(B, [], "platform_admin", PLAT), dec, run("needs_decision"))).toBe(true);
   });
   it("HUB-FR-115 · R-TK03 · decision redo_limit: starter, tenant_admin, B ∈ Group duyệt ⇒ true, X ⇒ false; team_calls: B ⇒ false (M5)", async () => {
-    const f = await T("canAct");
+    const f = await TA("canAct");
     const r = run("needs_decision");
     const redo = task({ kind: "decision", reason: "redo_limit", userIds: [A] });
     expect(f(v(A), redo, r)).toBe(true);

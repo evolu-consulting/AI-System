@@ -1,4 +1,4 @@
-// HUB-FR-112 · AC-H32 · HUB-BR-26 · R-N01, R-N02 — `noticeRecipients`, `dueReminder` (notify/notify.rules.ts, plan-contract §7).
+// HUB-FR-112 · AC-H32 · HUB-BR-26 · R-N01, R-N02 — `noticeRecipients`, `dueReminder` (domain/notify/remind.rules.ts, plan-contract §7).
 // Đỏ trước code ở `fn()` (module vắng ⇒ `{}`), test-plan §5.
 import { describe, expect, it } from "bun:test";
 import { fn, loadProcRules } from "../../_support/modules";
@@ -6,7 +6,7 @@ import { fn, loadProcRules } from "../../_support/modules";
 const T = "a5a00000-0000-4000-8000-00000000d001";
 const B = "a5a00000-0000-4000-8000-00000000d002";
 const X = "a5a00000-0000-4000-8000-00000000d003";
-const mod = () => loadProcRules("notify/notify.rules.ts");
+const mod = () => loadProcRules("domain/notify/remind.rules.ts");
 
 describe("notify.rules [HUB-FR-112]", () => {
   it("HUB-FR-112 · R-N01 · users [T,B] + group [B,X], loại B ⇒ [T,X] không trùng", async () => {

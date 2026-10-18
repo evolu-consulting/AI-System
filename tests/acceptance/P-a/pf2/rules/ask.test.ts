@@ -1,4 +1,4 @@
-// HUB-FR-110 · HUB-FR-111 · AC-H30 · R-AK01…R-AK03 — `forwardCheck` (asks/ask.rules.ts, plan-contract §7; plan §3.4 Forward).
+// HUB-FR-110 · HUB-FR-111 · AC-H30 · R-AK01…R-AK03 — `forwardCheck` (domain/asks/forward.rules.ts, plan-contract §7; plan §3.4 Forward).
 // Đỏ trước code ở `fn()` (module vắng ⇒ `{}`), test-plan §5.
 import { describe, expect, it } from "bun:test";
 import { fn, loadProcRules } from "../../_support/modules";
@@ -25,7 +25,7 @@ const to = (
   sameTenant: o.sameTenant ?? true,
   groupIds: new Set(o.groups ?? []),
 });
-const load = async () => fn(await loadProcRules("asks/ask.rules.ts"), "forwardCheck");
+const load = async () => fn(await loadProcRules("domain/asks/forward.rules.ts"), "forwardCheck");
 
 describe("forwardCheck [HUB-FR-111]", () => {
   it("HUB-FR-111 · R-AK01 · decision ⇒ TASK_KIND_MISMATCH; closed ⇒ REVIEW_TASK_CLOSED; 3 lần chuyển ⇒ FORWARD_LIMIT; closed + 3 ⇒ CLOSED (closed trước)", async () => {
