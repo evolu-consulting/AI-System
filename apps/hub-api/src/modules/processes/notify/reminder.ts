@@ -7,9 +7,9 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
 import { processNotice } from "../core/events";
 import type { ProcessBgDeps, ProcessDeps } from "../core/ports";
+import { noticeRecipients } from "../domain/notify/remind.rules";
 import { claimDueReminders, type NoticeRow, unreadKey, writeNotices } from "./batch.repo";
 import { buildNotice } from "./notifier";
-import { noticeRecipients } from "./notify.rules";
 
 /** plan §11: mỗi lô ≤ 100 hàng. */
 const REMINDER_BATCH = 100;

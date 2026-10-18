@@ -51,6 +51,8 @@ export type TeamRunStatus =
   | "limit"
   | "failed"
   | "cancelled";
+export type TaskKind = "review" | "ask" | "decision";
+export type TaskStatus = "open" | "closed";
 export type DecisionOption = "add_attempt" | "use_current" | "cancel";
 export type ExecutorKind = "agent" | "team" | "apply" | "wait_until"; // P-d2 + "tool"
 export type TimerKind = "wait_until" | "retry";

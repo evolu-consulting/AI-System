@@ -1,5 +1,5 @@
 // HUB-FR-112 · AC-H32 · HUB-BR-26 · luật thuần PF3 (plan-contract §7): người nhận notice + task tới hạn nhắc. Không DB.
-import type { TaskStatus } from "@ai/contracts/chat";
+import type { TaskStatus } from "../types";
 
 /**
  * Người nhận DM "Quy trình": hợp user assignee + thành viên group của task, bỏ trùng, loại `exclude` (vd người vừa thao

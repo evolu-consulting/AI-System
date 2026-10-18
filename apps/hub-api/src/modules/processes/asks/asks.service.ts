@@ -23,10 +23,10 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import { enqueueThread } from "../core/thread";
+import { type ForwardTarget, type ForwardTask, forwardCheck } from "../domain/asks/forward.rules";
 import type { Viewer } from "../domain/runs/run-access.rules";
 import { isTerminal } from "../domain/runs/run-state.rules";
 import { settleStep, stageRowById } from "../runs/step-persist";
-import { type ForwardTarget, type ForwardTask, forwardCheck } from "./ask.rules";
 import * as repo from "./asks.repo";
 
 /** Kết quả một thao tác: TaskDetail trả client, sự kiện phát SAU COMMIT, run cần `kick` (chỉ answer thắng). */

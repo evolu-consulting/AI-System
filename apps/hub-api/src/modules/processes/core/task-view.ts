@@ -1,5 +1,5 @@
 // HUB-FR-107 · HUB-FR-110 · HUB-FR-111 · `TaskDetail` dùng chung (plan-step0 §1): PF1 view, PF2 answer/forward, PF3
-// `/me/review-tasks` đều trả qua đây — PF không tự dựng. `can_act` = `canAct` (task.rules). Đọc dưới scope `user` của người
+// `/me/review-tasks` đều trả qua đây — PF không tự dựng. `can_act` = `canAct` (task-access.rules). Đọc dưới scope `user` của người
 // xem (RLS T); quyền xem task do người gọi kiểm trước (run-access).
 import {
   DECISION_OPTIONS,
@@ -15,8 +15,8 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
+import { canAct } from "../domain/tasks/task-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
-import { canAct } from "./task.rules";
 
 export type TaskRow = {
   id: string;

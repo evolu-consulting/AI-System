@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
 import { processNotice, reviewTaskClosed, reviewTaskCreated } from "../core/events";
 import type { FinishedRun, ProcessNotifier } from "../core/ports";
+import { noticeRecipients } from "../domain/notify/remind.rules";
 import { unreadKey, writeNotices } from "./batch.repo";
 import {
   groupMemberIds,
@@ -16,7 +17,6 @@ import {
   taskAssigneeUserIds,
   unreadByUser,
 } from "./inbox.repo";
-import { noticeRecipients } from "./notify.rules";
 
 /** Kind notice khi MỞ task theo loại task (plan-contract §1 `NOTICE_KINDS`). */
 const OPEN_NOTICE: Record<TaskKind, NoticeKind> = {

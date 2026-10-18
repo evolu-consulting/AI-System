@@ -1,6 +1,7 @@
 // HUB-FR-110 · HUB-FR-111 · PF2 · luật thuần nhờ/chuyển task (plan §3.4 Forward, plan-contract §7). QC test trước ở
 // `tests/acceptance/P-a/pf2/rules/ask.test.ts`. Thứ tự lỗi khớp contract §3: kind → closed → limit → group/target.
-import { FORWARD_CHAIN_MAX, type TaskKind, type TaskStatus } from "@ai/contracts/chat";
+import { FORWARD_CHAIN_MAX } from "../limits";
+import type { TaskKind, TaskStatus } from "../types";
 
 export type ForwardTask = {
   kind: TaskKind;
