@@ -51,8 +51,14 @@ describe("PD-C15 · processDefStageIssues hàng WAIT — path theo bảng A2 [pl
     expect(
       await issuesOf([numField, waitDraft({ executor: fieldExec() })], "WAIT_INVALID"),
     ).toEqual([W("stages.1.executor.from")]);
-    // vắng ctx ⇒ bỏ kiểm nguồn input (plan-contract §3 — giữ test khoá cũ)
-    expect(await issuesOf([inp("khong-co")], "WAIT_INVALID", undefined)).toEqual([]);
+    // vắng ctx ⇒ bỏ kiểm nguồn input nhưng GIỮ kiểm nguồn field (plan-contract §3). Gọi thẳng, KHÔNG truyền
+    // đối số thứ 2 (PD-C15 tranh chấp: `issuesOf(..., undefined)` rơi về ctx mặc định ⇒ trùng ca dòng 36).
+    const noCtx = (stages: unknown[]) =>
+      (fn(ha, "processDefStageIssues")(stages) as { path: string; rule: string }[]).filter(
+        (i) => i.rule === "WAIT_INVALID",
+      );
+    expect(noCtx([inp("khong-co")])).toEqual([]);
+    expect(noCtx(sameStep)).toEqual([W("stages.1.executor.from")]);
   });
   it("AC-H41 · PD-C15 · offset_days ∉ −365…365 (bản nháp) ⇒ stages.<i>.executor.offset_days", async () => {
     for (const d of [366, -366]) {

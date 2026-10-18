@@ -623,7 +623,7 @@ eeff8e81411ac9890271ac70760a1c2dd6f8b3a0fbefa9aee87d558626e07692  tests/acceptan
 26144e8f1e1add0c98dfeaa94b62876d57de783360962bb034775c4933bb6fbb  tests/acceptance/P-a/step0/migration.int.test.ts
 4e02e5fe2717a92a204c4fbc7efd65d7e1428533e8ee71747f6c6e9c036b3ef5  tests/acceptance/P-a/step0/rls.int.test.ts
 233db66ef8c4d6b4441c96b6541252cc2aa80cc57a965e86a412e3a82ee2c7dc  tests/acceptance/P-a/step0/rules/bang.test.ts
-3950ed83b82d1e50e91d47dd7a0171e853cc03d302660949620fc263ed16e7da  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
+0d78d75e296758434f6bb4e2a9e77509c93b45470434d48c35fee6c3e25f67c7  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
 e56e2605f3003a8e2a1610d7af47d099263b4d38a803b2abe756113d320ff814  tests/acceptance/P-a/step0/rules/def.test.ts
 b1623f719e3d4b946756cc9280a8a1b3f1f17e1a736b55d8df376acc36c9e8c7  tests/acceptance/P-a/step0/rules/limits.test.ts
 85ebe73a662bd6cad967c90e2b02561dc0f1de959be635656b343a45007090dc  tests/acceptance/P-a/step0/rules/process-state.test.ts
@@ -708,7 +708,7 @@ dea08557abe79936ed347bb0177ad8942a7912c1410e1d2ad4c5b825ff605cea  tests/acceptan
 8df689082b2ea0d5183d2dbd3625c38293b5081be44aceb3b5fc472d68101ce4  tests/acceptance/P-c2/rules/_rules2.ts
 b2debc7ef099d73f6b05a821dcb170441e3df6cf4c774450b44ce889c32b6c4a  tests/acceptance/P-c2/rules/apply-issues.test.ts
 212bb659caa3644a73b20f1242bc55eb1d5a018889eae715a77ceab44fa39456  tests/acceptance/P-c2/rules/apply-rules.test.ts
-0e621dd2438c0a76122877b73647b7aee2aee7a16045fc821d4e937f0f74daeb  tests/acceptance/P-c2/rules/contracts-pc2.test.ts
+ebaea23427f3eb840bf9e7f07e416c176cf2e866db0d5669775d1316ec5f2235  tests/acceptance/P-c2/rules/contracts-pc2.test.ts
 06bc4765be42d4bf3766aa9c47209e35896868338cac0ec917925e316732e18f  tests/acceptance/P-c2/sources.int.test.ts
 caa7e7d66140607855592eff7a36e4685e5866335af827685dcf2e833a1fecfa  tests/acceptance/P-c2/tenant.int.test.ts
 b377aa90d0ed78c00f657d8ff7e72b166eb9531250701c253db04bc5ade6281b  tests/acceptance/P-d/_support/modules.ts
@@ -748,7 +748,7 @@ df5bf2adf5839297dfa3ed71606207edd71995e9355977d19d2974f6f9c532da  tests/acceptan
 a3290c3b670c66d83e873a35c4e3fb68d0227c9b596d9a604eed51e6530ef21e  tests/acceptance/P-d/rules/_defs.ts
 34a7d643bb4c4c2ca9df4d0bbad40888a1ec49d5f1cbabf0836f0f7f10401270  tests/acceptance/P-d/rules/_support.test.ts
 5325c1f7375ae2d27357f3e16314afeab22dd6ef0e8e1744720d6cd696af6bad  tests/acceptance/P-d/rules/active-cap.test.ts
-169e8b109c6e6e446e00e5efda1d5cc99dd7d98e92f3121eab1f4590fb16346a  tests/acceptance/P-d/rules/contracts-pd1-issues.test.ts
+5b724cb3c54c3ab86b3865a9d94d4eecbfb16ce70317a0fce62efa0f1bb71817  tests/acceptance/P-d/rules/contracts-pd1-issues.test.ts
 255dd55a3e1462811a1b3a0d859e126398bb572d4422074a7ede2a5bf9be81a2  tests/acceptance/P-d/rules/contracts-pd1.test.ts
 c6020f8f9ca3e26713b4ff6d0ed71ff50069ee948892c5439ba9c7c452bf6996  tests/acceptance/P-d/rules/decision.test.ts
 60968e76e5b189cc489ad467adcae7a72ef05b32703e858c28791527a2287502  tests/acceptance/P-d/rules/domain-contract.test.ts

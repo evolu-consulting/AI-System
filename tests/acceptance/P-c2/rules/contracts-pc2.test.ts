@@ -116,10 +116,12 @@ describe("C06–C07 · stage def executor apply [plan §3.2, PC2-R01]", () => {
     });
     expect(s.safeParse(ap).success).toBe(true);
     expect(ok(s, { ...ap, executor: { kind: "apply", agent_id: RUN } })).toBe(false);
-    expect(chat.EXECUTOR_KINDS).toEqual(["agent", "team", "apply"]);
+    // P-d (T5, K16): +`wait_until`, `tool` ở CUỐI ⇒ so tiền tố 3.
+    expect([...chat.EXECUTOR_KINDS].slice(0, 3)).toEqual(["agent", "team", "apply"]);
   });
   it("HUB-BR-34 · C07 · PROCESS_DEF_RULES thêm CUỐI APPLY_REAL, APPLY_AFTER, APPLY_NO_AUTOFIX, APPLY_MAX, APPLY_FIELDS", () => {
-    expect(ha.PROCESS_DEF_RULES).toEqual([
+    // P-d (T5, K17): thêm luật ở CUỐI (+2, +3 ở P-d2) ⇒ so tiền tố 14 luật gốc.
+    expect([...ha.PROCESS_DEF_RULES].slice(0, 14)).toEqual([
       "KEY_DUP",
       "REAL_ACTION",
       "STEP_INCOMPLETE",
@@ -242,7 +244,8 @@ describe("C10–C11 · báo cáo Áp [plan §3.5]", () => {
 
 describe("C12–C16 · quyết định + view [plan §3.6, C9–C11]", () => {
   it("HUB-FR-115 · PC2-R08 · C12 · DECISION_REASONS thêm CUỐI apply_conflict, apply_failed; APPLY_ERROR_CODES đúng 8 mã theo thứ tự", () => {
-    expect(chat.DECISION_REASONS.slice(-4)).toEqual([
+    // P-d (T5, K18): đuôi đổi do thêm mã mới ⇒ lấy đoạn cố định [16, 20) thay vì slice(-4).
+    expect([...chat.DECISION_REASONS].slice(16, 20)).toEqual([
       "autofix_check_failed",
       "sandbox_unavailable",
       "apply_conflict",

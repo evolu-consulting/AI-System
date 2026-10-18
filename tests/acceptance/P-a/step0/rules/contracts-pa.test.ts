@@ -150,7 +150,8 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
     });
     expect(c.PROCESS_KEY_RE?.test("hoa-don")).toBe(true);
     expect(c.PROCESS_KEY_RE?.test("Ab")).toBe(false);
-    expect([...(c.PROCESS_RUN_STATUSES ?? [])]).toEqual([
+    // P-d (T5, K13): +`waiting_timer` ở CUỐI ⇒ so tiền tố 8 trạng thái gốc (đuôi kiểm ở PD-C01).
+    expect([...(c.PROCESS_RUN_STATUSES ?? [])].slice(0, 8)).toEqual([
       "running",
       "waiting_review",
       "waiting_answer",
@@ -160,7 +161,8 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       "failed",
       "expired",
     ]);
-    expect([...(c.PROCESS_RUN_ACTIVE ?? [])]).toEqual([
+    // P-d (T5, K14): +`waiting_timer` ⇒ so tiền tố 4 mục gốc (đủ 5 ở PD-C01).
+    expect([...(c.PROCESS_RUN_ACTIVE ?? [])].slice(0, 4)).toEqual([
       "running",
       "waiting_review",
       "waiting_answer",
