@@ -16,13 +16,13 @@ import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import { budgetHit } from "../core/limits.rules";
 import type { ProcessDeps, StageLauncher } from "../core/ports";
-import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import {
   isTerminal,
   type RunEvent,
   type RunState,
   transition,
 } from "../domain/runs/run-state.rules";
+import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
 import { autofixDecision, stageJobExtras } from "./autofix.repo";
 import { commitOutputBlob } from "./output-attachment";
 import { defaultSourceBudget } from "./sources.rules";

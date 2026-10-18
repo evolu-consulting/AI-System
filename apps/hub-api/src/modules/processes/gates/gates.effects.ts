@@ -13,9 +13,9 @@ import { resetRetry } from "../adapters/runs/retry.repo";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
-import { stageGateStatus, stepCountOf } from "../core/step.rules";
 import { enqueueThread } from "../core/thread";
 import type { RunState } from "../domain/runs/run-state.rules";
+import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
 import {
   persistStage,
   type StageWrite,

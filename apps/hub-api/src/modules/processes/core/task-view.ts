@@ -14,8 +14,8 @@ import {
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
-import type { RunFacts, Viewer } from "./run-access.rules";
 import { canAct } from "./task.rules";
 
 export type TaskRow = {

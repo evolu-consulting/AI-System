@@ -60,6 +60,7 @@ Spec `draft`. Đã có PLAN (`plan*.md`, `plan-frontend*.md`, `test-plan*.md`, `
 
 ## Quyết định trong lúc làm
 - 2026-10-17 (docs-architect, readiness lần 2): `core/run-access.rules.ts` dời toàn file sang `P/domain/runs/run-access.rules.ts` ở **T8s** (vì `decision.rules` cần `canDecide`/`REVIEW_GROUP_REASONS`); chia T7a/b, T8a/b, T18-1/2 ghi ở đầu file; T18s/T18q thêm theo plan-d2 §8–§9.
+- 2026-10-18 (backend-lead, T8s): chuyển thuần (không đổi hành vi) step/run-access/back/decision/active-cap/start-inputs sang P/domain/**; ACTIVE_CAP_STATUSES giữ 5 trạng thái cũ (gồm waiting_timer) — đổi sang 4 (CAP_COUNTED) để T-sau; ack.effects vốn chỉ gọi ackResetPlan (đã ở back.rules) nên không còn gì để tách thêm; shapeValid dùng kiểu cấu trúc cục bộ (không import contract).
 - 2026-10-18 (backend-lead, T5): `waitStageIssues`/`escalateStageIssues` đặt trong `hub-admin/process-steps.ts` (không file mới — tránh vòng import với `resolveSteps`); `processDefStageIssues` gộp theo thứ tự cũ → WAIT → ESCALATE rồi cắt 20 (plan-contract §3).
 - 2026-10-18 (backend-lead, T5): nhiều lỗi "phụ" của stage `wait_until` (real_action/sources/must_know/autofix) gộp **một** issue `stages.<i>.executor`; mỗi hàng khác của bảng A2 một issue; `time` vắng (bản nháp trước default zod) = hợp lệ (phương án đơn giản nhất; domain T8 theo cùng điều kiện, kiểm ở PD-C13).
 - 2026-10-18 (backend-lead, T5): `ProcessDefInputSchema.superRefine` truyền `{inputs: d.inputs}` vào `processDefStageIssues` (cùng điều kiện FE); route vẫn dùng Base + luật domain cho 422.

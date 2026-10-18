@@ -13,8 +13,8 @@ import type {
 } from "../../application/runs/sweep-interrupted.usecase";
 import * as core from "../../core/core.repo";
 import type { ProcessDeps } from "../../core/ports";
-import { decisionAssignees, decisionOptionsFor } from "../../core/task.rules";
 import { enqueueThread } from "../../core/thread";
+import { decisionAssignees, decisionOptionsFor } from "../../domain/tasks/decision.rules";
 import type { DecisionReason } from "../../domain/types";
 import { bindTx } from "../hub-uow";
 

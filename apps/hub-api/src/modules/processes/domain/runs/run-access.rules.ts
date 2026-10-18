@@ -1,6 +1,6 @@
 // HUB-BR-25 · HUB-FR-105 · M1 · M5 · U5 · quyền xem / thao tác run quy trình (plan §5, plan-contract §7). Thuần.
 // `originRoom` tính theo NGƯỜI XEM: `member` = đang là thành viên phòng nguồn, `outside` = không (kể cả đã rời).
-import type { DecisionReason } from "@ai/contracts/chat";
+import type { DecisionReason } from "../types";
 
 export type Viewer = {
   userId: string;

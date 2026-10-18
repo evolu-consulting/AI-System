@@ -6,11 +6,16 @@ import type { ReviewDecisionRequest } from "@ai/contracts/chat";
 import type { UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
-import { firstIdxOfStep } from "../core/step.rules";
+import {
+  backAllowed,
+  backDecisionCheck,
+  backResetPlan,
+  canRaiseBackLimit,
+} from "../domain/gates/back.rules";
+import { firstIdxOfStep } from "../domain/runs/step.rules";
 import type { StepOutcome } from "../runs/step-persist";
 import { stepsOfSnap } from "../runs/step-persist";
 import { toDecision } from "../runs/team-runner";
-import { backAllowed, backDecisionCheck, backResetPlan, canRaiseBackLimit } from "./back.rules";
 import { type EffOut, type Gx, type Locked, snapOf, threadResult } from "./gates.effects";
 import * as g from "./gates.repo";
 

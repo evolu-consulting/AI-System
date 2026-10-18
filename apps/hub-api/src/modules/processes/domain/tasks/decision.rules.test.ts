@@ -1,7 +1,7 @@
 // HUB-FR-106 · D9 · `decisionOptionsFor` dùng chung team-runner, sweeps, view (P-b2 T5b).
 import { describe, expect, it } from "bun:test";
 import { DECISION_OPTIONS } from "@ai/contracts/chat";
-import { decisionOptionsFor } from "./task.rules";
+import { decisionOptionsFor } from "./decision.rules";
 
 describe("decisionOptionsFor [HUB-FR-106]", () => {
   it("có output ⇒ đủ lựa chọn", () => {

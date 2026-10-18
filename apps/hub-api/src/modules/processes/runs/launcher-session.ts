@@ -5,7 +5,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ConfigSnapshot } from "../../config/config.rules";
-import { priorStageIdxs } from "../core/step.rules";
+import { priorStageIdxs } from "../domain/runs/step.rules";
 import { retryFailures } from "./autofix.repo";
 import { autofixRetryBlock, autofixWorkspaceBlock } from "./autofix.rules";
 import { askHistoryBlock, type HandoffItem, handoffBlock, handoffOf } from "./handoff.rules";

@@ -1,6 +1,6 @@
 // HUB-FR-106 · HUB-BR-38(a,b) · AC-PB2-01/02/05 · lớp bước song song (P-b2 plan §2, D1/D2/D9). Thuần: `transition()` vẫn
 // là máy trạng thái MỘT stage; lớp này gộp nhiều stage cùng `step` (join, trạng thái run tổng hợp, chọn decision).
-import type { ProcessRunStatus, StageRunStatus } from "@ai/contracts/chat";
+import type { ProcessRunStatus, StageRunStatus } from "../types";
 
 const TERMINAL_RUN: ReadonlySet<ProcessRunStatus> = new Set([
   "done",

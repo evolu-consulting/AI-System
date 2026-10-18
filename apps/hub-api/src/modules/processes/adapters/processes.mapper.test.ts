@@ -15,6 +15,8 @@ import {
 import type { INPUT_TYPES } from "@ai/contracts/hub-admin";
 import { DomainError, type ProcessDomainError } from "../domain/errors";
 import * as limits from "../domain/limits";
+import { ACTIVE_CAP_STATUSES } from "../domain/runs/active-cap.rules";
+import * as decision from "../domain/tasks/decision.rules";
 import type {
   DecisionOption,
   DecisionReason,
@@ -26,6 +28,7 @@ import type {
   TeamRunStatus,
   TimerKind,
 } from "../domain/types";
+import * as autofix from "../runs/autofix.rules";
 import type { AssertEqual } from "./assert-equal";
 import { DOMAIN_ERROR_MAP, domainErrorToApp, runStatusOf, timerKindOf } from "./processes.mapper";
 
@@ -87,5 +90,18 @@ describe("CONVENTIONS §5 · DOMAIN_ERROR_MAP ⇒ mã contract + HTTP", () => {
       return [c, e.code, e.status, e.details];
     });
     expect(got).toEqual(cases.map(([c, code, status]) => [c, code, status, { path: "x" }]));
+  });
+});
+
+describe("T8s · luật quyết định / trần domain khớp contract", () => {
+  it("HUB-FR-115 · DECISION_OPTION_ORDER = DECISION_OPTIONS contract (giữ thứ tự)", () => {
+    expect(decision.DECISION_OPTION_ORDER).toEqual([...chat.DECISION_OPTIONS]);
+  });
+  it("HUB-FR-115 · isAutofixReason domain = runs/autofix.rules cho mọi DECISION_REASONS", () => {
+    for (const r of chat.DECISION_REASONS)
+      expect({ r, v: decision.isAutofixReason(r) }).toEqual({ r, v: autofix.isAutofixReason(r) });
+  });
+  it("HUB-FR-105 · ACTIVE_CAP_STATUSES = PROCESS_RUN_ACTIVE contract", () => {
+    expect([...ACTIVE_CAP_STATUSES]).toEqual([...chat.PROCESS_RUN_ACTIVE]);
   });
 });

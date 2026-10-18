@@ -12,7 +12,7 @@ import { sweepInterrupted } from "../application/runs/sweep-interrupted.usecase"
 import * as core from "../core/core.repo";
 import type { SweepResult } from "../core/handles";
 import type { ProcessBgDeps, ProcessDeps } from "../core/ports";
-import { firstIdxOfStep } from "../core/step.rules";
+import { firstIdxOfStep } from "../domain/runs/step.rules";
 import { advanceApply } from "./apply-driver";
 import { expireRuns } from "./expire";
 import { stepsOfSnap } from "./step-persist";

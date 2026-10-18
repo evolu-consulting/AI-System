@@ -8,7 +8,7 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import type { ResolveReport } from "../../sources/resolve.bridge";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
-import { firstIdxOfStep } from "../core/step.rules";
+import { firstIdxOfStep } from "../domain/runs/step.rules";
 import { stepsOfSnap } from "./step-persist";
 import { headOf, stageRowOf, toDecision } from "./team-runner";
 

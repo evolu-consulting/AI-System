@@ -7,12 +7,12 @@ import type {
   ProcessRunStatus,
   ProcessRunSummary,
 } from "@ai/contracts/chat";
-import { PROCESS_RUN_ACTIVE } from "@ai/contracts/chat";
 import { type ProcessInputDef, stepGroups } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../../lib/errors";
 import { levenshtein } from "../../commands/suggest.rules";
+import { ACTIVE_CAP_STATUSES } from "../domain/runs/active-cap.rules";
 
 type Json = Record<string, unknown>;
 const iso = (c: SQL) => sql`to_char(${c} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
@@ -86,7 +86,7 @@ export async function countActive(tx: Tx, tenantId: string): Promise<number> {
 
 const activeList = () =>
   sql`(${sql.join(
-    PROCESS_RUN_ACTIVE.map((s) => sql`${s}`),
+    ACTIVE_CAP_STATUSES.map((s) => sql`${s}`),
     sql`, `,
   )})`;
 

@@ -21,17 +21,17 @@ import * as core from "../core/core.repo";
 import { processError } from "../core/errors";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
+import { loadTaskDetails } from "../core/task-view";
 import {
   canCancel,
   canDecide,
   type RunFacts,
   runAccess,
   type Viewer,
-} from "../core/run-access.rules";
-import { pickDecisionStage } from "../core/step.rules";
-import { decisionOptionsFor } from "../core/task.rules";
-import { loadTaskDetails } from "../core/task-view";
+} from "../domain/runs/run-access.rules";
 import { isTerminal, transition } from "../domain/runs/run-state.rules";
+import { pickDecisionStage } from "../domain/runs/step.rules";
+import { decisionOptionsFor } from "../domain/tasks/decision.rules";
 import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";

@@ -17,11 +17,10 @@ import { validationError } from "../../../lib/http";
 import type { KhRuntime } from "../../kh/kh.mount";
 import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
 import { processError } from "../core/errors";
+import { expiresAt, shapeValid } from "../domain/runs/start-inputs.rules";
 import type { StartDefRow } from "./runs.repo";
 import * as repo from "./runs.repo";
 import { allowlistUnion } from "./sources.rules";
-
-const DAY_MS = 86_400_000;
 
 export type RunOrigin = {
   originKind: "room" | "conversation" | "admin";
@@ -58,7 +57,7 @@ export async function createRun(
     def: p.def,
     startedBy: u.userId,
     input: p.input,
-    expiresAt: new Date(cfg.now().getTime() + PROCESS_RUN_TTL_DAYS * DAY_MS),
+    expiresAt: expiresAt(cfg.now(), PROCESS_RUN_TTL_DAYS),
     sources,
     inputs,
     pinnedSources: sources.length > 0 ? null : [],
@@ -190,13 +189,6 @@ async function ownsUpload(
 
 const badInput = () =>
   validationError([{ path: ["inputs"], code: "custom", message: "invalid input" }]);
-
-/** Khớp hình dạng tĩnh với def (key, type, select∈options). source_ref/file cần DB ⇒ kiểm riêng. */
-function shapeValid(d: ProcessInputDef | undefined, v: ProcessInputValue): boolean {
-  if (!d || d.type !== v.type) return false;
-  if (v.type === "select") return (d.options ?? []).includes(v.value);
-  return true;
-}
 
 /** C19 · key∈def.inputs, type khớp, select∈options, source_ref=git_remote cùng tenant, file thuộc người bắt đầu. */
 export async function validateRunInputs(

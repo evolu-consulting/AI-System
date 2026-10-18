@@ -1,6 +1,6 @@
 // HUB-FR-118 · HUB-BR-38(d) · AC-PB2-06/07 · P-b2 plan §2, D7–D8 · luật thuần "Quay lại bước X": kiểm đầu vào, trần vòng
 // quay lại của run, kế hoạch reset `stage_runs`. Thuần: không I/O (hiệu ứng DB ở `back.effects.ts`).
-import type { StageRunStatus } from "@ai/contracts/chat";
+import type { StageRunStatus } from "../types";
 
 /**
  * Kiểm quyết định duyệt có/không `back_to_step` (góp ý kiểm TRƯỚC đích — RB-01). `pass` + đích ⇒ BACK_TARGET_INVALID;

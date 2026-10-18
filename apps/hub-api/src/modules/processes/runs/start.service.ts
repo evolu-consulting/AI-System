@@ -26,8 +26,8 @@ import { toRoomMessage } from "../../rooms/rooms.map";
 import type { Bang } from "../core/bang.rules";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
-import { canRun } from "../core/run-access.rules";
 import { enqueueThread } from "../core/thread";
+import { canRun } from "../domain/runs/run-access.rules";
 import * as repo from "./runs.repo";
 import { createRun, type RunOrigin } from "./start-inputs";
 

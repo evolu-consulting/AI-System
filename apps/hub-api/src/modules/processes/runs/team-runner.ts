@@ -1,7 +1,6 @@
 // HUB-FR-106 · HUB-FR-114 · D5 · D7 · D8 · PF1 · (1) hiệu ứng máy trạng thái stage (ghi `process_outputs`/task/thread +
 // `notifier`, persist trạng thái) dùng chung cho agent đơn + nhóm; (2) chạy stage nhóm. Tách khỏi `stage-driver.ts` cho
 // giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
-
 import type { DecisionOption, DecisionReason } from "@ai/contracts/chat";
 import type { JobSourceRead } from "@ai/contracts/hub";
 import type { StageSource } from "@ai/contracts/hub-admin";
@@ -10,9 +9,10 @@ import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
-import { askExcerpt, decisionAssignees, decisionOptionsFor } from "../core/task.rules";
+import { askExcerpt } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import type { Effect, RunEvent, RunState } from "../domain/runs/run-state.rules";
+import { decisionAssignees, decisionOptionsFor } from "../domain/tasks/decision.rules";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";

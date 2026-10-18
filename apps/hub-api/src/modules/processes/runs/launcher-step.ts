@@ -9,7 +9,7 @@ import type { RunFile } from "../../attachments/run-files.rules";
 import { agentWorkflowIds } from "../../config/config.rules";
 import type { ProcessRunInput } from "../../runs/create-run";
 import type { ProcessDeps } from "../core/ports";
-import { priorStageIdxs, realActionStepCheck, stageIdxsOfStep } from "../core/step.rules";
+import { priorStageIdxs, realActionStepCheck, stageIdxsOfStep } from "../domain/runs/step.rules";
 import type { SnapStage } from "./launcher-prompt";
 import { runScopedFileIds } from "./output-attachment";
 import { stepsOfSnap } from "./step-persist";

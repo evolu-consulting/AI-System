@@ -1,5 +1,5 @@
 // HUB-FR-128 · HUB-BR-14 · HUB-BR-25 · PC-R14 · P-c1 B5b (plan §6.6) · luật thuần đọc file diff/log tự sửa theo quyền xem run.
-import type { RunAccess } from "../processes/core/run-access.rules";
+import type { RunAccess } from "../processes/domain/runs/run-access.rules";
 
 /** Tenant để tra file tự sửa: platform_admin + `?tenant_id` ⇒ tenant đó (như `/process-runs/:id/outputs`); vai khác bỏ qua. */
 export function autofixReadTenant(
