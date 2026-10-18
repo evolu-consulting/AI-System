@@ -188,7 +188,7 @@ async function onTarget<T>(url: string, f: (sql: Sql) => Promise<T>): Promise<T>
 /**
  * DB `url` (tên kết thúc `_test`) về đúng trạng thái "vừa migrate" bằng `migrate` (template dựng/dựng lại khi thiếu hoặc lệch
  * hash migration). Mọi kết nối khác tới DB đích bị ngắt. Đường nhanh (~0,1 s): schema còn y như lúc clone → xoá dữ liệu, chèn
- * lại hàng ban đầu, đặt lại sequence (test-db-reset.ts). Đường chậm (lần đầu mỗi tiến trình, hoặc test đã đổi schema/quyền):
+ * lại hàng ban đầu, đặt lại sequence (test-db-reset.ts). Đường chậm (DB chưa từng clone, hoặc test đã đổi schema/quyền):
  * đổi tên DB cũ thành rác (không DROP ở đường nóng) rồi CREATE DATABASE … TEMPLATE.
  */
 export async function cloneMigratedTestDb(url: string | undefined, o: CloneOpts): Promise<void> {
@@ -203,15 +203,18 @@ export async function cloneMigratedTestDb(url: string | undefined, o: CloneOpts)
       { o: number }[]
     >`select oid::int as o from pg_database where datname = ${tpl}`;
     const tag = `${comment(o.key)}@${t?.o}`;
-    const prev = snaps.get(target);
-    if (prev?.tag === tag) {
-      await terminate(m, target);
-      if (await onTarget(url, (sql) => resetToSnapshot(sql, prev.snap)).catch(() => false)) return;
+    // Ảnh chụp đọc thẳng từ template (một lần mỗi tiến trình): mỗi lô `bun test` mới không phải clone lại.
+    let snap = snaps.get(target)?.tag === tag ? snaps.get(target)?.snap : undefined;
+    if (!snap) {
+      snap = await onTarget(onDb(url, tpl), snapshot);
+      snaps.set(target, { tag, snap });
     }
+    await terminate(m, target);
+    const s = snap;
+    if (await onTarget(url, (sql) => resetToSnapshot(sql, s)).catch(() => false)) return;
     const trash = trashNames(target);
     await renameDb(m, target, trash.next());
     await cloneWithRetry(m, target, tpl);
-    snaps.set(target, { tag, snap: await onTarget(url, snapshot) });
     if (process.env.TEST_DB_GC !== "0") await dropTrashDbs(url, trash.like, GC_AT);
   } finally {
     await m.end();

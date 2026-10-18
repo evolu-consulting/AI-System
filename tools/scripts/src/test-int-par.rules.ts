@@ -7,8 +7,8 @@ export const INT_SERIAL: readonly string[] = [];
 export type Timings = Record<string, number>;
 export type IntOpts = { workers: number; filters: string[] };
 
-/** Redis DB 10..14 cho worker (15 = chạy tuần tự/mặc định, 13–14 chỉ e2e dùng khi không chạy int) → tối đa 5 worker. */
-export const MAX_WORKERS = 5;
+/** Tối đa worker một lượt (ô 1..12 chia giữa các lượt chạy cùng lúc, xem `test-db-cli lease`). */
+export const MAX_WORKERS = 8;
 
 export function defaultWorkers(cores: number): number {
   return Math.max(1, Math.min(4, Math.floor(cores / 2)));
@@ -43,27 +43,35 @@ export function selectFiles(
   };
 }
 
+/** Chi phí ước lượng mỗi file (giây): số đo JUnit lần trước; chưa đo → trung bình các file đã đo (không có gì: 1). */
+export function costOf(timings: Timings): (f: string) => number {
+  const known = Object.values(timings);
+  const avg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 1;
+  return (f) => timings[f] ?? avg;
+}
+
+/** Hàng đợi chung, file nặng trước (LPT); hoà thì theo tên để thứ tự ổn định. */
+export function lptQueue(files: readonly string[], timings: Timings): string[] {
+  const cost = costOf(timings);
+  return [...files].sort((a, b) => cost(b) - cost(a) || a.localeCompare(b));
+}
+
 /**
- * Chia `files` vào `n` shard. Có thời lượng: tham lam (file dài nhất trước, vào shard đang nhẹ nhất; file chưa có số đo
- * lấy trung bình các file đã đo). Không có số đo nào: chia vòng tròn. Kết quả ổn định với cùng đầu vào.
+ * Worker vừa rảnh lấy một lô từ đầu hàng đợi (sửa `queue`): ít nhất 1 file, cộng dồn tới ~phần còn lại / (3·workers)
+ * (kẹp 3–30 s). Lô to lúc đầu đỡ chi phí khởi động `bun test`; lô nhỏ dần về cuối để các worker xong gần cùng lúc.
  */
-export function partition(files: readonly string[], timings: Timings, n: number): string[][] {
-  const shards: string[][] = Array.from({ length: n }, () => []);
-  const known = files.map((f) => timings[f]).filter((t): t is number => typeof t === "number");
-  if (!known.length) {
-    for (const [i, f] of files.entries()) shards[i % n]?.push(f);
-    return shards;
+export function takeChunk(queue: string[], timings: Timings, workers: number): string[] {
+  const cost = costOf(timings);
+  const remaining = queue.reduce((a, f) => a + cost(f), 0);
+  const target = Math.min(30, Math.max(3, remaining / (3 * Math.max(1, workers))));
+  const out: string[] = [];
+  let acc = 0;
+  while (queue.length && (!out.length || acc + cost(queue[0] ?? "") <= target)) {
+    const f = queue.shift() as string;
+    out.push(f);
+    acc += cost(f);
   }
-  const avg = known.reduce((a, b) => a + b, 0) / known.length;
-  const cost = (f: string) => timings[f] ?? avg;
-  const load = new Array<number>(n).fill(0);
-  const order = [...files].sort((a, b) => cost(b) - cost(a) || a.localeCompare(b));
-  for (const f of order) {
-    const i = load.indexOf(Math.min(...load));
-    shards[i]?.push(f);
-    load[i] = (load[i] ?? 0) + cost(f);
-  }
-  return shards;
+  return out;
 }
 
 /** Tổng thời lượng mỗi file (giây) từ JUnit của `bun test`: `<testsuite name="<file>" … time="…">` cấp ngoài cùng. */
@@ -94,8 +102,13 @@ const unescapeXml = (s: string) =>
     .replaceAll("&gt;", ">")
     .replaceAll("&amp;", "&");
 
-/** Tag DB của worker `i`: `w<i>` (Admin, biến TEST_*) và `w<i>_h1` (Hub/Runtime) — như hai DB chung khi chạy tuần tự. */
-export const workerTags = (i: number) => ({ admin: `w${i}`, hub: `w${i}_h1` });
+/** Tag DB của ô `s`: `s<s>` (Admin, biến TEST_*) và `s<s>_h1` (Hub/Runtime) — như hai DB chung khi chạy tuần tự. */
+export const workerTags = (s: number) => ({ admin: `s${s}`, hub: `s${s}_h1` });
+
+/** Số worker thực: 1–2 file ⇒ 1 worker; không quá số file, số ô thuê được. */
+export function workerCount(want: number, files: number, slots: number): number {
+  return Math.max(1, Math.min(files <= 2 ? 1 : want, files, slots));
+}
 
 const withDb = (url: string, name: string) => {
   const u = new URL(url);
@@ -103,7 +116,7 @@ const withDb = (url: string, name: string) => {
   return u.toString();
 };
 
-/** Biến môi trường riêng worker `i`: 4 URL DB test trỏ DB của tag, Redis test DB `10+i`. Biến vắng thì bỏ qua. */
+/** Biến môi trường riêng ô `i`: 4 URL DB test trỏ DB của tag, Redis test DB `i`. Biến vắng thì bỏ qua. */
 export function workerEnv(
   env: Readonly<Record<string, string | undefined>>,
   i: number,
@@ -123,7 +136,7 @@ export function workerEnv(
   }
   const redis = env.REDIS_URL ?? "redis://localhost:6379";
   const r = new URL(redis);
-  r.pathname = `/${10 + i}`;
+  r.pathname = `/${i}`;
   out.HUB_TEST_REDIS_URL = r.toString();
   return out;
 }

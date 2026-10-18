@@ -48,6 +48,38 @@ async function ensure(tags: string[]): Promise<void> {
   console.log(`db:test:ensure OK: ${names.join(", ")}`);
 }
 
+/** Ô (slot) worker của `test:int:par`: 1..12 ⇒ DB `ai_system_s<ô>_test`, `ai_system_s<ô>_h1_test`, Redis DB <ô> (0 = dev,
+ * 13–14 e2e, 15 mặc định). Giữ bằng advisory lock phiên trên DB `postgres` ⇒ hai lượt chạy cùng lúc không dùng chung ô;
+ * lượt chết (kết nối đóng) tự nhả. */
+const SLOT_MAX = 12;
+const SLOT_LOCK = 7_316_204_700;
+
+async function acquireSlots(sql: postgres.Sql, n: number): Promise<number[]> {
+  const got: number[] = [];
+  for (let s = 1; s <= SLOT_MAX && got.length < n; s++) {
+    const [r] = await sql<{ ok: boolean }[]>`select pg_try_advisory_lock(${SLOT_LOCK + s}) as ok`;
+    if (r?.ok) got.push(s);
+  }
+  if (got.length) return got;
+  // Hết ô: chờ (bằng khoá, không poll) tới khi ô 1 được nhả.
+  await sql`select pg_advisory_lock(${SLOT_LOCK + 1})`;
+  return [1];
+}
+
+/** `lease <n>`: giữ tối đa n ô còn trống (chờ tới khi có ≥ 1), tạo DB của ô, in `LEASE <ô,…>`; nhả khi stdin đóng. */
+async function lease(n: number): Promise<void> {
+  const sql = postgres(withDatabase(baseUrl(), "postgres"), { max: 1, onnotice: () => {} });
+  const got = await acquireSlots(sql, n);
+  for (const name of got.flatMap((s) => [testDbName(`s${s}`), testDbName(`s${s}_h1`)])) {
+    const [row] = await sql`select 1 as one from pg_database where datname = ${name}`;
+    if (!row) await sql.unsafe(`CREATE DATABASE "${name}"`);
+  }
+  console.log(`LEASE ${got.join(",")}`);
+  for await (const _ of Bun.stdin.stream()) {
+    // giữ khoá tới khi tiến trình cha đóng stdin (xong hoặc chết)
+  }
+  await sql.end();
+}
 async function drop(tag: string): Promise<void> {
   const name = testDbName(tag);
   await onMaintenance(async (sql) => {
@@ -69,13 +101,17 @@ if (import.meta.main) {
     if (cmd === "create") await create(tag);
     else if (cmd === "drop") await drop(tag);
     else if (cmd === "ensure") await ensure([tag, ...more]);
+    else if (cmd === "lease") await lease(Math.max(1, Number(tag) || 1));
     else if (cmd === "gc") {
       const t0 = performance.now();
-      const n = await dropTrashDbs(baseUrl());
+      const n = await dropTrashDbs(baseUrl(), undefined, Math.max(1, Number(tag) || 1));
       console.log(
         `db:test:gc OK: xoá ${n} DB rác (${((performance.now() - t0) / 1000).toFixed(1)} s)`,
       );
-    } else throw new Error("dùng: test-db-cli.ts create|drop <tag> | ensure <tag>… | gc");
+    } else
+      throw new Error(
+        "dùng: test-db-cli.ts create|drop <tag> | ensure <tag>… | lease <n> | gc [tối thiểu]",
+      );
   } catch (err) {
     console.error(`db:test:${cmd ?? "?"} lỗi: ${describeError(err)}`);
     process.exit(1);

@@ -1,20 +1,22 @@
 // ADM-NFR-06 · `bun run test:int:par [--workers=N] [tiền tố…]`: test int song song. Mỗi worker một tiến trình `bun test`
-// với DB riêng (`ai_system_w<i>_test`, `ai_system_w<i>_h1_test`) và Redis DB `10+i`; file trong `INT_SERIAL` chạy tuần tự
-// sau cùng trên DB/Redis của worker 0. Log mỗi worker: `.data/int-w<i>.log`; thời lượng file: `.data/int-timings.json`.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// trên một "ô" thuê riêng (DB `ai_system_s<ô>_test`, `ai_system_s<ô>_h1_test`, Redis DB <ô>; hai lượt cùng lúc không chung
+// ô). Worker lấy lô từ hàng đợi chung (file nặng trước); `INT_SERIAL` chạy tuần tự sau cùng trên ô đầu.
+// Log: `.data/int-s<ô>.log`; thời lượng file (JUnit): `.data/int-timings.json`.
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
 import { repoRoot } from "./lib/git";
 import {
+  lptQueue,
   parseEnv,
   parseIntArgs,
   parseJunit,
-  partition,
   selectFiles,
   type Timings,
+  takeChunk,
+  workerCount,
   workerEnv,
-  workerTags,
 } from "./test-int-par.rules";
 
 const DATA = ".data";
@@ -49,10 +51,17 @@ const dbName = (tag: string) => `ai_system_${tag}_test`;
 /** Worker không tự gom rác DB (xem `cloneMigratedTestDb`); runner xoá một lần ở cuối. */
 const NO_GC = { TEST_DB_GC: "0" };
 
-type Run = { name: string; files: number; code: number; ms: number; log: string; junit: string };
+type Run = { name: string; files: number; code: number; ms: number; text: string; junit: string };
 
-async function runShard(name: string, files: string[], env: Record<string, string>, root: string) {
-  const log = join(DATA, `int-${name}.log`);
+/** Một lô file trong một tiến trình `bun test`; log nối vào `.data/int-<ô>.log`. */
+async function runChunk(
+  slot: string,
+  k: number,
+  files: string[],
+  env: Record<string, string>,
+  root: string,
+) {
+  const name = `${slot}-${k}`;
   const junit = join(DATA, `int-junit-${name}.xml`);
   const t0 = performance.now();
   const p = Bun.spawn(
@@ -63,23 +72,40 @@ async function runShard(name: string, files: string[], env: Record<string, strin
     new Response(p.stdout).text(),
     new Response(p.stderr).text(),
   ]);
-  writeFileSync(join(root, log), out + err);
+  const text = out + err;
+  appendFileSync(join(root, DATA, `int-${slot}.log`), `\n=== ${name}: ${files.join(" ")}\n${text}`);
   const code = await p.exited;
-  const r: Run = { name, files: files.length, code, ms: performance.now() - t0, log, junit };
-  console.log(
-    `  ${code === 0 ? "✓" : "✗"} ${name}: ${files.length} file, ${(r.ms / 1000).toFixed(1)} s`,
-  );
-  return r;
+  return { name, files: files.length, code, ms: performance.now() - t0, text, junit } satisfies Run;
 }
 
-/** Dòng tổng kết + các ca `(fail)` trong log của một lần chạy. */
-function summarize(root: string, r: Run): { pass: number; fail: number; fails: string[] } {
-  const text = readFileSync(join(root, r.log), "utf8");
-  const num = (re: RegExp) => Number(re.exec(text)?.[1] ?? 0);
-  const fails = text.split(/\r?\n/).filter((l) => l.startsWith("(fail)"));
+/** Worker ở ô `slot`: lấy lô từ hàng đợi chung tới khi hết (không chia tĩnh ⇒ không worker nào gánh đuôi). */
+async function worker(
+  slot: string,
+  queue: string[],
+  ctx: { timings: Timings; n: number; env: Record<string, string> },
+  root: string,
+) {
+  writeFileSync(join(root, DATA, `int-${slot}.log`), "");
+  const runs: Run[] = [];
+  const t0 = performance.now();
+  for (let k = 0; queue.length; k++) {
+    const files = ctx.n === 1 ? queue.splice(0) : takeChunk(queue, ctx.timings, ctx.n);
+    runs.push(await runChunk(slot, k, files, ctx.env, root));
+  }
+  const nf = runs.reduce((a, r) => a + r.files, 0);
+  const ok = runs.every((r) => r.code === 0);
+  console.log(
+    `  ${ok ? "✓" : "✗"} ${slot}: ${nf} file / ${runs.length} lô, ${((performance.now() - t0) / 1000).toFixed(1)} s`,
+  );
+  return runs;
+}
+
+/** Dòng tổng kết + các ca `(fail)` trong log của một lô. */
+function summarize(r: Run): { pass: number; fail: number; fails: string[] } {
+  const num = (re: RegExp) => Number(re.exec(r.text)?.[1] ?? 0);
+  const fails = r.text.split(/\r?\n/).filter((l) => l.startsWith("(fail)"));
   return { pass: num(/^\s*(\d+) pass/m), fail: num(/^\s*(\d+) fail/m), fails };
 }
-
 function loadTimings(root: string): Timings {
   try {
     return JSON.parse(readFileSync(join(root, TIMINGS), "utf8")) as Timings;
@@ -105,11 +131,25 @@ async function dbCli(root: string, args: string[]): Promise<void> {
   if ((await p.exited) !== 0) throw new Error(`test-db-cli ${args[0]} lỗi`);
 }
 
-const ensureDbs = (root: string, n: number) =>
-  dbCli(root, [
-    "ensure",
-    ...Array.from({ length: n }, (_, i) => Object.values(workerTags(i))).flat(),
-  ]);
+/** Thuê ô worker (advisory lock giữ trong tiến trình con tới khi lượt này xong/chết; tạo DB của ô). */
+async function leaseSlots(
+  root: string,
+  n: number,
+): Promise<{ slots: number[]; release: () => void }> {
+  const p = Bun.spawn(
+    ["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", "lease", String(n)],
+    { cwd: root, stdin: "pipe", stdout: "pipe", stderr: "inherit" },
+  );
+  const reader = p.stdout.getReader();
+  let text = "";
+  while (!/LEASE [\d,]+\r?\n/.test(text)) {
+    const { value, done } = await reader.read();
+    if (done) throw new Error("test-db-cli lease lỗi");
+    text += new TextDecoder().decode(value);
+  }
+  const slots = (/LEASE ([\d,]+)/.exec(text)?.[1] ?? "").split(",").map(Number);
+  return { slots, release: () => p.stdin.end() };
+}
 
 async function main(): Promise<number> {
   const root = repoRoot();
@@ -117,26 +157,31 @@ async function main(): Promise<number> {
   const opts = parseIntArgs(process.argv.slice(2), availableParallelism());
   const { parallel, serial } = selectFiles(await findIntFiles(root), opts.filters);
   const timings = loadTimings(root);
-  const n = Math.max(1, Math.min(opts.workers, parallel.length));
-  const shards = partition(parallel, timings, n);
-  console.log(`test:int:par: ${parallel.length} file / ${n} worker, ${serial.length} file tuần tự`);
   const t0 = performance.now();
-  await ensureDbs(root, n);
-  const env = { ...parseEnv(readFileSync(join(root, ".env.local"), "utf8")), ...process.env };
-  const runs = await Promise.all(
-    shards.map((files, i) =>
-      runShard(`w${i}`, files, { ...workerEnv(env, i, dbName), ...NO_GC }, root),
-    ),
+  const lease = await leaseSlots(
+    root,
+    workerCount(opts.workers, parallel.length + serial.length, 99),
   );
-  // Tuần tự sau cùng, trên DB/Redis của worker 0 (đã rảnh): không đụng DB chung của phiên khác đang chạy test:int.
-  if (serial.length)
-    runs.push(await runShard("serial", serial, { ...workerEnv(env, 0, dbName), ...NO_GC }, root));
-  // DB rác (đích cũ sau mỗi lần dựng lại) xoá một lần, song song: DROP DATABASE ép checkpoint, không làm giữa chừng.
-  await dbCli(root, ["gc"]).catch((e) => console.error(String(e)));
+  const n = workerCount(opts.workers, parallel.length, lease.slots.length);
+  const slots = lease.slots.slice(0, n).map((s) => `s${s}`);
+  console.log(
+    `test:int:par: ${parallel.length} file / ${n} worker (${slots.join(",")}), ${serial.length} file tuần tự`,
+  );
+  const env = { ...parseEnv(readFileSync(join(root, ".env.local"), "utf8")), ...process.env };
+  const envOf = (i: number) => ({ ...workerEnv(env, lease.slots[i] ?? 1, dbName), ...NO_GC });
+  const queue = lptQueue(parallel, timings);
+  const runs = (
+    await Promise.all(slots.map((s, i) => worker(s, queue, { timings, n, env: envOf(i) }, root)))
+  ).flat();
+  // Tuần tự sau cùng, trên ô đầu (đã rảnh): không đụng DB chung của phiên khác đang chạy test:int.
+  if (serial.length) runs.push(await runChunk(`${slots[0]}-serial`, 0, serial, envOf(0), root));
+  lease.release();
+  // DB rác (đích cũ khi test đổi schema) xoá theo loạt khi đủ 32 cái: DROP DATABASE ép checkpoint (~0,3–2 s mỗi cái).
+  await dbCli(root, ["gc", "32"]).catch((e) => console.error(String(e)));
   saveTimings(root, runs, timings);
   let [pass, fail] = [0, 0];
   for (const r of runs) {
-    const s = summarize(root, r);
+    const s = summarize(r);
     pass += s.pass;
     fail += s.fail;
     for (const l of s.fails) console.log(`  [${r.name}] ${l}`);
@@ -144,7 +189,7 @@ async function main(): Promise<number> {
   const bad = runs.filter((r) => r.code !== 0);
   console.log(
     `test:int:par: ${pass} pass, ${fail} fail, ${((performance.now() - t0) / 1000).toFixed(1)} s` +
-      (bad.length ? ` — đỏ: ${bad.map((r) => `${r.name} (${r.log})`).join(", ")}` : ""),
+      (bad.length ? ` — đỏ: ${bad.map((r) => r.name).join(", ")} (log .data/int-s*.log)` : ""),
   );
   return bad.length ? 1 : 0;
 }
