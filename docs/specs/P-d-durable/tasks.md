@@ -1,4 +1,4 @@
-# Tasks · P-d-durable
+﻿# Tasks · P-d-durable
 
 `plan-addendum.md` thắng `plan-*.md` khi lệch.
 
@@ -113,3 +113,4 @@ Spec `draft`. Đã có PLAN (`plan*.md`, `plan-frontend*.md`, `test-plan*.md`, `
 - **T17-1** `tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts` PD2-C01: `PROCESS_DEF_RULES.slice(16)` mong `[TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]`, nhưng P-d1 đã nối `TEAM_SECTION_UNOWNED` ở vị trí 16 (17 phần tử trước P-d2; plan-contract §6 "(cuối, 19)" viết trước khi có nó). Enum chỉ nối cuối ⇒ đúng là `slice(17)` (tổng 20). Đề nghị qc sửa thành `slice(17)`.
 - **T17-2** `tests/acceptance/P-d/rules/d2/branch.test.ts` PD2-U17: `runStatusOf(["done","skipped","done"])` mong `"done"`, nhưng hàm trả `"step_done"` khi mọi stage của bước xong (khoá P-b2 RS-03 `[done,done] ⇒ step_done`). Code trả `"step_done"` (skipped = done). Đề nghị qc đổi kỳ vọng thành `"step_done"`.
 - (đã biết) `tests/acceptance/P-d/rules/contracts-pd1.test.ts:86` đỏ vì `INPUT_TYPES` thêm `number` cuối (D2-44) — qc sửa như K15.
+- **Đã xử (qc, 2026-10-18):** T17-1 ĐÚNG ⇒ test sửa thành `slice(17)`. T17-2 test SAI ⇒ đổi kỳ vọng `step_done`: spec-d2/plan-d2-rules §1 chỉ nói `skipped` = xong (như `done`), RS-03 khoá `[done,done] ⇒ step_done` ⇒ `[done,skipped,done]` ⇒ `step_done`; code đúng, T19 không cần sửa. `contracts-pd1:86` sửa `INPUT_TYPES` thêm `number`. Nhãn `tool.test.ts` đổi `(T17)` ⇒ `(T18)`.

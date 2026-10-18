@@ -1,4 +1,4 @@
-// AC-H45 · AC-H44 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §1 PD2-U12…U17 (plan-d2-rules §1, D2-08, D-PD04): luật lớp 1 rẽ
+﻿// AC-H45 · AC-H44 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §1 PD2-U12…U17 (plan-d2-rules §1, D2-08, D-PD04): luật lớp 1 rẽ
 // nhánh (`evaluateBranch`, `skippedStages`, `effectivePrevStep`) + trạng thái `skipped`/`tool_failed` ở luật cũ
 // (`decisionOptionsFor`, `transition`, `stepJoin`, `runStatusOf`). Nạp qua CỔNG LỚP `loadLayer("domain", …)` (T17).
 import { describe, expect, it } from "bun:test";
@@ -84,13 +84,13 @@ describe("PD2-U15…U17 · tool_failed / skipped ở luật cũ [D-PD04, plan-d2
     expect(tool.next.stage.attempt).toBe(2);
     expect(tool.next.stage).toEqual(agent.next.stage);
   });
-  it("AC-H45 · PD2-U17 · stepJoin bước 2 {skipped, skipped} ⇒ không wait; runStatusOf toàn done/skipped ⇒ done", async () => {
+  it("AC-H45 · PD2-U17 · stepJoin bước 2 {skipped, skipped} ⇒ không wait; runStatusOf toàn done/skipped ⇒ step_done (skipped = xong, RS-03)", async () => {
     const j = await dom("stepJoin", "T17");
     const statuses = new Map([
       [2, "skipped"],
       [3, "skipped"],
     ]);
     expect(j({ steps: [0, 1, 2, 2, 3], step: 2, statuses }).kind).not.toBe("wait");
-    expect((await dom("runStatusOf", "T17"))(["done", "skipped", "done"])).toBe("done");
+    expect((await dom("runStatusOf", "T17"))(["done", "skipped", "done"])).toBe("step_done");
   });
 });

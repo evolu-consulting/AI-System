@@ -1,10 +1,10 @@
-// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §1 PD2-U04…U09 (plan-d2-rules §1, plan-addendum A7): luật lớp 1 stage `tool`
+﻿// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §1 PD2-U04…U09 (plan-d2-rules §1, plan-addendum A7): luật lớp 1 stage `tool`
 // — `buildToolArgs`, `classifyToolError`, `toolFailureDecision`, `filterToolFields`, `toolOutputMd`. Nạp qua CỔNG LỚP
-// `loadLayer("domain", …)` (barrel `P/domain/index.ts`, T17) — không phụ thuộc đường dẫn file. Barrel vắng ⇒ đỏ "chưa có cổng lớp".
+// `loadLayer("domain", …)` (barrel `P/domain/index.ts`, hàm thuộc T18) — không phụ thuộc đường dẫn file. Barrel vắng ⇒ đỏ "chưa có cổng lớp".
 import { describe, expect, it } from "bun:test";
 import { layerFn } from "../../_support/modules";
 
-const dom = (name: string) => layerFn("domain", name, "T17");
+const dom = (name: string) => layerFn("domain", name, "T18");
 const N = new Date("2026-11-20T01:00:00.000Z");
 const plus = (s: number) => new Date(N.getTime() + s * 1000);
 const S = (c: number, ra: number | null, rr: number | null, a = 1, r = 1) => ({

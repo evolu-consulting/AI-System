@@ -1,4 +1,4 @@
-// HUB-FR-146 · HUB-FR-147 · ADM-FR-73 · AC-H44 · AC-H45 · AC-A15 · test-plan-d2 §2 PD2-C01…C05 (plan-contract §6, plan-addendum A1):
+﻿// HUB-FR-146 · HUB-FR-147 · ADM-FR-73 · AC-H44 · AC-H45 · AC-A15 · test-plan-d2 §2 PD2-C01…C05 (plan-contract §6, plan-addendum A1):
 // enum P-d2 nối CUỐI mảng, hằng, schema executor `tool`, `after.branch`, part `branch`, công tắc tool admin. Không DB/env.
 // Export MỚI nạp lỏng ⇒ vắng = đỏ ở expect (lý do: T17/T18a chưa có). PD2-U20 `toggleChange` qua cổng lớp admin (T18a).
 import { describe, expect, it } from "bun:test";
@@ -30,8 +30,8 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
     ]);
     expect(chat.EXECUTOR_KINDS).toEqual(["agent", "team", "apply", "wait_until", "tool"]);
   });
-  it("AC-H44 · PD2-C01 · PROCESS_DEF_RULES.slice(16) = [TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]; PROCESS_REF_KINDS cuối tool", () => {
-    expect(ha.PROCESS_DEF_RULES?.slice(16)).toEqual([
+  it("AC-H44 · PD2-C01 · PROCESS_DEF_RULES.slice(17) = [TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]; PROCESS_REF_KINDS cuối tool", () => {
+    expect(ha.PROCESS_DEF_RULES?.slice(17)).toEqual([
       "TOOL_INVALID",
       "TOOL_SIDE_EFFECT",
       "BRANCH_INVALID",

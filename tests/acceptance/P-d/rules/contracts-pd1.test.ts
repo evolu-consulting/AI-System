@@ -1,4 +1,4 @@
-// HUB-FR-143…145 · HUB-FR-115 · AC-H39…H43 · P-d1 contract (plan-contract §1–§4, §7; plan-addendum A2, A8) · test-plan §5
+﻿// HUB-FR-143…145 · HUB-FR-115 · AC-H39…H43 · P-d1 contract (plan-contract §1–§4, §7; plan-addendum A2, A8) · test-plan §5
 // PD-C01…C06, PD-C08 + test-plan-addendum §2 PD-C15 (hàng WAIT) + ESCALATE_INVALID phía contract (A8 #57). Không DB/env.
 // Export MỚI truy cập qua module lỏng (`loadChat`/`loadHubAdmin`) ⇒ vắng = đỏ ở expect. Enum P-d2 nối thêm ⇒ so theo vị trí.
 import { describe, expect, it } from "bun:test";
@@ -72,7 +72,7 @@ describe("PD-C01 · enum thêm CUỐI mảng [plan-contract §1, §2, §3]", () 
     ]);
     expect(chat.EXECUTOR_KINDS.slice(0, 4)).toEqual(["agent", "team", "apply", "wait_until"]);
   });
-  it("AC-H41 · AC-H42 · PD-C01 · PROCESS_DEF_RULES vị trí 14–15 = WAIT_INVALID, ESCALATE_INVALID (16); INPUT_TYPES (sources) thêm date cuối", () => {
+  it("AC-H41 · AC-H42 · PD-C01 · PROCESS_DEF_RULES vị trí 14–15 = WAIT_INVALID, ESCALATE_INVALID (16); INPUT_TYPES (sources) thêm date, number cuối", () => {
     const rules = ha.PROCESS_DEF_RULES as string[];
     expect(rules.slice(9, 16)).toEqual([
       "APPLY_REAL",
@@ -83,7 +83,7 @@ describe("PD-C01 · enum thêm CUỐI mảng [plan-contract §1, §2, §3]", () 
       "WAIT_INVALID",
       "ESCALATE_INVALID",
     ]);
-    expect(ha.INPUT_TYPES).toEqual(["text", "select", "file", "source_ref", "date"]);
+    expect(ha.INPUT_TYPES).toEqual(["text", "select", "file", "source_ref", "date", "number"]);
   });
   it("AC-H42 · PD-C01 · HistoryItemSchema.kind nhận escalate (cũ vẫn nhận; lạ ⇒ chặn)", () => {
     const k = fieldOf(schemaOf(chat, "HistoryItemSchema"), "kind");
