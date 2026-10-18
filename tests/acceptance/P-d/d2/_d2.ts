@@ -2,7 +2,9 @@
 // kịch bản từng lời gọi, đếm + lưu `user`/`inputs`), workflow catalog fixture (owner SQL, secret mã hoá như H2a), công tắc
 // tool (owner SQL), điều kiện tiền đề `needD2` (đỏ NGAY khi thiếu 0037/0012 hoặc contract P-d2 — Luật 4c). Chờ việc nền bằng
 // `handles.settled()` (DrainTracker) + `*Once`, không ngủ chờ. Không chứa `it(...)`.
+
 import { expect } from "bun:test";
+import { type AddressInfo, createServer, type Socket } from "node:net";
 import { encryptSecret, parseMasterKey } from "../../../../apps/admin-api/src/lib/secret-crypto";
 import { TEST_MASTER_KEY_B64 } from "../../H2a/_h2a";
 import { type CtxPd, type Json, noFeature, type Sql, startPd, T } from "../_support/pd";
@@ -35,12 +37,22 @@ export type FakeDify = {
   baseUrl: string;
   calls: { user: string; inputs: Json }[];
   script: (r: Reply[]) => void;
+  /** T15b: chờ TÍN HIỆU lời gọi thứ `n` tới; `guard` xong trước mà chưa đủ ⇒ ném ngay (không đợi hết giờ). */
+  arrived: (n: number, guard: () => Promise<void>) => Promise<void>;
   stop: () => Promise<void>;
 };
 /** `POST /v1/workflows/run` trả theo `script` (hết kịch bản ⇒ `{so_hd:"HD-1"}`), `outputs.result` = chuỗi JSON. */
 export function startFakeDify(): FakeDify {
   let queue: Reply[] = [];
+  const waiters: { n: number; ok: () => void }[] = [];
   const calls: FakeDify["calls"] = [];
+  const wake = () => {
+    for (const w of [...waiters]) {
+      if (calls.length < w.n) continue;
+      waiters.splice(waiters.indexOf(w), 1);
+      w.ok();
+    }
+  };
   const out = (text: string) =>
     Response.json({ data: { status: "succeeded", outputs: { result: text } } });
   const server = Bun.serve({
@@ -51,6 +63,7 @@ export function startFakeDify(): FakeDify {
         return new Response("not found", { status: 404 });
       const body = (await req.json().catch(() => ({}))) as Json;
       calls.push({ user: body.user, inputs: body.inputs });
+      wake();
       const r = queue.shift() ?? { kind: "json", result: { so_hd: "HD-1" } };
       if (r.kind === "http") return new Response("lỗi", { status: r.status });
       if (r.kind === "raw") return out(r.text);
@@ -64,8 +77,90 @@ export function startFakeDify(): FakeDify {
     script: (r) => {
       queue = [...r];
     },
+    arrived: (n, guard) => {
+      if (calls.length >= n) return Promise.resolve();
+      const sig = new Promise<void>((ok) => waiters.push({ n, ok }));
+      const fail = guard().then(() => {
+        if (calls.length < n)
+          throw new Error(`tool-driver xong mà Dify mới ${calls.length}/${n} lời gọi`);
+      });
+      return Promise.race([sig, fail]);
+    },
     stop: async () => {
       await server.stop(true);
+    },
+  };
+}
+
+// ---------- Dify giả mức socket (T15b, PD2-I06/I06b, Q-D2-2) ----------
+/** Giữ trước một cổng trống: bind cổng 0 rồi đóng ⇒ `127.0.0.1:<port>` từ chối kết nối (ECONNREFUSED) tới khi `listen`. */
+export async function reservePort(): Promise<number> {
+  const s = createServer();
+  await new Promise<void>((ok) => s.listen(0, "127.0.0.1", ok));
+  const port = (s.address() as AddressInfo).port;
+  await new Promise<void>((ok) => s.close(() => ok()));
+  return port;
+}
+/** `close_before_body`: nhận kết nối rồi đóng socket ngay; `close_after_body`: đọc hết request rồi đóng (không trả gì);
+ *  `ok`: trả 200 `{so_hd:"HD-1"}`. Mỗi kết nối tới được handler = 1 lời gọi (`calls`). */
+export type NetMode = "ok" | "close_before_body" | "close_after_body";
+export type NetDify = {
+  port: number;
+  baseUrl: string;
+  calls: () => number;
+  modes: (m: NetMode[]) => void;
+  listen: () => Promise<void>;
+  stop: () => Promise<void>;
+};
+function requestComplete(buf: Buffer): boolean {
+  const i = buf.indexOf("\r\n\r\n");
+  if (i < 0) return false;
+  const head = buf.subarray(0, i).toString("latin1");
+  if (/transfer-encoding:\s*chunked/i.test(head)) return buf.subarray(i + 4).includes("0\r\n\r\n");
+  const len = Number(/content-length:\s*(\d+)/i.exec(head)?.[1] ?? 0);
+  return buf.length >= i + 4 + len;
+}
+export function startNetDify(port: number): NetDify {
+  let queue: NetMode[] = [];
+  let n = 0;
+  const socks = new Set<Socket>();
+  const okBody = JSON.stringify({
+    data: { status: "succeeded", outputs: { result: JSON.stringify({ so_hd: "HD-1" }) } },
+  });
+  const server = createServer((sock) => {
+    socks.add(sock);
+    sock.on("close", () => socks.delete(sock));
+    sock.on("error", () => undefined);
+    n++;
+    const m = queue.shift() ?? "ok";
+    if (m === "close_before_body") return void sock.destroy();
+    let buf = Buffer.alloc(0);
+    sock.on("data", (d: Buffer) => {
+      buf = Buffer.concat([buf, d]);
+      if (!requestComplete(buf)) return;
+      if (m === "close_after_body") return void sock.destroy();
+      sock.end(
+        `HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: ${Buffer.byteLength(okBody)}\r\nconnection: close\r\n\r\n${okBody}`,
+      );
+    });
+  });
+  return {
+    port,
+    baseUrl: `http://127.0.0.1:${port}`,
+    calls: () => n,
+    modes: (m) => {
+      queue = [...m];
+    },
+    listen: async () => {
+      if (server.listening) return;
+      await new Promise<void>((ok, bad) => {
+        server.once("error", bad);
+        server.listen(port, "127.0.0.1", () => ok());
+      });
+    },
+    stop: async () => {
+      for (const s of socks) s.destroy();
+      if (server.listening) await new Promise<void>((ok) => server.close(() => ok()));
     },
   };
 }

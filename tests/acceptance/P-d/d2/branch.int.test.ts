@@ -1,11 +1,13 @@
-// AC-H45 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §3.3 PD2-I30…I35 (plan-d2 §7, D2-08, Q-D2-3): rẽ nhánh qua Hub thật. Def 5 bước
+// AC-H45 · HUB-FR-147 · HUB-BR-38(e) · test-plan-d2 §3.3 PD2-I30…I37 (I35–I37: T15b) (plan-d2 §7, D2-08, Q-D2-3): rẽ nhánh qua Hub thật. Def 5 bước
 // (0…4): s1 bước 1 (agent, fields tong_tien, review G1, branch gt 20000000 ⇒ goto 3). Đi tắt: stage bước bị nhảy `skipped`,
 // quay lại xuyên qua `skipped` ⇒ `pending`, `round` không tăng. Thiếu 0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   agentStage,
   createDef,
+  decisionOf,
   defBody,
+  FIELD_NGAY,
   G1,
   type Json,
   jobDone,
@@ -16,7 +18,9 @@ import {
   runRow,
   stageOf,
   startRun,
+  waitStage,
   waitStageStatus,
+  waitStatus,
 } from "../_support/pd";
 import { auditsOf, type CtxD2, needD2, settled, startD2 } from "./_d2";
 
@@ -31,7 +35,7 @@ afterAll(async () => {
 const RULE = { field: "tong_tien", op: "gt", value: 20_000_000, goto_step: 3 };
 const FIELDS = [{ key: "tong_tien", type: "number", required: true }];
 let seq = 0;
-async function branchDef(): Promise<string> {
+async function branchDef(o: { s3RealAction?: boolean } = {}): Promise<string> {
   const key = `pd2-br-${++seq}`;
   await createDef(
     c,
@@ -48,6 +52,7 @@ async function branchDef(): Promise<string> {
         key: "s3",
         step: 3,
         after: { kind: "review", group_id: G1, back_to_steps: [1] },
+        real_action: o.s3RealAction ?? false,
       }),
       agentStage({ key: "s4", step: 4 }),
     ]),
@@ -106,6 +111,58 @@ describe("AC-H45 · rẽ nhánh khi khớp / không khớp", () => {
     await nextStageJob(c, runId);
     expect((await stageOf(c.sql, runId, 2))?.status).toBe("running");
     expect(await auditsOf(c.sql, "branch", runId)).toHaveLength(0);
+  }, 30_000);
+});
+
+describe("AC-H45 · stage skipped = xong; bước trước có hiệu lực (T15b)", () => {
+  it("AC-H45 · PD2-I35 · nhảy s2 (skipped), s3 Đạt, s4 xong ⇒ run done", async () => {
+    await needD2(c);
+    const { runId, taskId } = await toReview(await branchDef(), 25_000_000);
+    await pass(taskId);
+    await jobDone(c, await nextStageJob(c, runId));
+    await waitStageStatus(c.sql, runId, 3, "waiting_review");
+    const [t3] = await c.sql<Json[]>`select id from hub.review_tasks where process_run_id = ${runId}
+      and kind = 'review' and status = 'open' order by created_at desc limit 1`;
+    await pass(t3?.id as string);
+    await jobDone(c, await nextStageJob(c, runId));
+    await waitStatus(c.sql, runId, "done");
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped");
+  }, 30_000);
+  it("AC-H45 · PD2-I36 · D2-08 · đích s3 real_action, s1 review Đạt, s2 skipped ⇒ s3 chạy được (bước trước có hiệu lực = s1)", async () => {
+    await needD2(c);
+    const { runId, taskId } = await toReview(await branchDef({ s3RealAction: true }), 25_000_000);
+    await pass(taskId);
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped");
+    const job = await nextStageJob(c, runId);
+    expect((await stageOf(c.sql, runId, 3))?.current_run_id).toBe(job.runId);
+    expect(await decisionOf(c.sql, runId)).toBeUndefined();
+  }, 30_000);
+  it("AC-H45 · PD2-I37 · AC-H41 · wait_until s3 lấy field của s2 bị skipped ⇒ needs_decision timer_invalid", async () => {
+    await needD2(c);
+    const key = `pd2-br-${++seq}`;
+    await createDef(
+      c,
+      defBody(key, [
+        agentStage({ key: "s0", step: 0 }),
+        agentStage({
+          key: "s1",
+          step: 1,
+          fields: FIELDS,
+          after: { kind: "review", group_id: G1, back_to_steps: [0], branch: [RULE] },
+        }),
+        agentStage({ key: "s2", step: 2, fields: FIELD_NGAY }),
+        waitStage({
+          key: "s3",
+          step: 3,
+          from: { kind: "field", stage_key: "s2", field: "ngay_het_han" },
+        }),
+        agentStage({ key: "s4", step: 4 }),
+      ]),
+    );
+    const { runId, taskId } = await toReview(key, 25_000_000);
+    await pass(taskId);
+    expect((await stageOf(c.sql, runId, 2))?.status).toBe("skipped");
+    expect((await decisionOf(c.sql, runId))?.reason).toBe("timer_invalid");
   }, 30_000);
 });
 

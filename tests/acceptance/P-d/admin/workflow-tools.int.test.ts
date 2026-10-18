@@ -1,4 +1,4 @@
-// AC-A15 · ADM-FR-73 · TT-R01…R03 · test-plan-d2 §3.4 PD2-I40…I46 (plan-contract §6, plan-d2 §6): công tắc tool theo tenant qua
+// AC-A15 · ADM-FR-73 · TT-R01…R03 · test-plan-d2 §3.4 PD2-I40…I47 (I47: T15b) (plan-contract §6, plan-d2 §6): công tắc tool theo tenant qua
 // admin-api THẬT (harness M4: RLS admin_api, audit, NOTIFY). Chưa có 0012 ⇒ mọi ca đỏ NGAY ở `needSwitch` ("chưa có tính năng").
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -123,5 +123,45 @@ describe("AC-A15 · ADM-FR-73 · bật/tắt tool cho tenant", () => {
       return tx<Obj[]>`select * from admin.tenant_workflow_tools where tenant_id = ${A}`;
     });
     expect(ro.length).toBe(1);
+  });
+});
+
+describe("AC-A15 · PD2-I47 · DB 0012 tenant_workflow_tools (T15b)", () => {
+  const W2 = "a5d20000-0000-4000-8000-000000000147";
+  const U2 = "a5d20000-0000-4000-8000-000000000148";
+  const code = (p: Promise<unknown>) =>
+    p.then(
+      () => null,
+      (e: { code?: string }) => e.code ?? String(e),
+    );
+  it("AC-A15 · PD2-I47 · PK trùng ⇒ 23505; xoá workflow ⇒ cascade; xoá user granted_by ⇒ NULL; index tenant_active có", async () => {
+    await needSwitch();
+    await env.owner`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id,
+        input_schema, output_field, enabled, side_effect)
+      select ${W2}, 'pd2-i47', name, description, app_type, base_url, secret_id, input_schema, output_field,
+        enabled, side_effect from admin.workflows where id = ${W.id}`;
+    await env.owner`insert into admin.users (id, tenant_id, username, email, password_hash, display_name, role,
+        locale, active, locked_by_tenant, must_change_password)
+      select ${U2}, tenant_id, 'pd2i47', 'pd2i47@example.test', 'x', 'PD2 I47', role, locale, true, false, false
+      from admin.users where tenant_id = ${A} limit 1`;
+    const ins = (wf: string) =>
+      env.owner`insert into admin.tenant_workflow_tools (workflow_id, tenant_id, granted_at, granted_by)
+        values (${wf}, ${A}, now(), ${U2})`;
+    await ins(W.id);
+    await ins(W2);
+    expect(await code(ins(W.id))).toBe("23505");
+    await env.owner`delete from admin.users where id = ${U2}`;
+    const [g] = await env.owner<Obj[]>`select granted_by from admin.tenant_workflow_tools
+      where tenant_id = ${A} and workflow_id = ${W.id}`;
+    expect(g?.granted_by ?? "vắng hàng").toBeNull();
+    await env.owner`delete from admin.workflows where id = ${W2}`;
+    const [n] = await env.owner<Obj[]>`select count(*)::int as n from admin.tenant_workflow_tools
+      where workflow_id = ${W2}`;
+    expect(n?.n).toBe(0);
+    const [ix] = await env.owner<
+      Obj[]
+    >`select to_regclass('admin.tenant_workflow_tools_tenant_active_idx')
+      is not null as ok`;
+    expect(ix?.ok).toBe(true);
   });
 });

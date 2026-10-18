@@ -1,16 +1,18 @@
-// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §3.1 PD2-I01, I03, I10…I12: stage `tool` qua Hub thật + Dify giả. Gọi bằng người
+// AC-H44 · HUB-FR-146 · HUB-BR-12 · test-plan-d2 §3.1 PD2-I01, I03, I10…I14 (I13/I14: T15b): stage `tool` qua Hub thật + Dify giả. Gọi bằng người
 // bắt đầu, `fields` lưu, .md có `## Kết quả` + `## Bàn giao`; 64 KB ⇒ tool_failed; lưu def sai ⇒ 422. Chờ tool-driver bằng
 // `handles.settled()`. Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   agentStage,
   createDef,
+  decide,
   decisionOf,
   defBody,
   type Json,
   jobDone,
   mdOut,
   nextStageJob,
+  stageOf,
   startRun,
   waitStageStatus,
 } from "../_support/pd";
@@ -109,6 +111,61 @@ describe("AC-H44 · chạy stage tool", () => {
     c.dify.script([{ kind: "raw", text: `{"so_hd":"${"x".repeat(65_537 - 12)}"}` }]);
     const runId = await runTool();
     expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
+  }, 30_000);
+  it("AC-H44 · PD2-I14 · tool_failed không output: use_current ⇒ 409 NO_OUTPUT; add_attempt ⇒ attempt+1, gọi lại đúng 1 lần ⇒ done", async () => {
+    await prep();
+    c.dify.script([{ kind: "http", status: 400 }]); // PD2-I07: 400 ⇒ tool_failed ngay
+    const runId = await runTool();
+    expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
+    const uc = await decide(c, "A", runId, "use_current");
+    expect({ status: uc.status, code: uc.json?.error?.code }).toEqual({
+      status: 409,
+      code: "NO_OUTPUT",
+    });
+    const att = (await stageOf(c.sql, runId, 1))?.attempt as number;
+    expect((await decide(c, "A", runId, "add_attempt")).status).toBe(200);
+    await settled(c);
+    expect(c.dify.calls).toHaveLength(2);
+    const s1 = await waitStageStatus(c.sql, runId, 1, "done", 0);
+    expect(s1.attempt).toBe(att + 1);
+  }, 30_000);
+});
+
+describe("AC-H44 · plan-addendum A3 · Hub ép trường stage tool (ensureToolStage)", () => {
+  it("AC-H44 · PD2-I13 · lưu def tool có template/required_sections/token_budget tuỳ ý ⇒ GET def trả giá trị đã ép, timeout_s giữ", async () => {
+    await prep();
+    const t = toolStage({ timeout_s: 45 });
+    const stage = {
+      ...t,
+      output: { ...(t.output as Json), template: "## Tuỳ ý\n", required_sections: ["Tuỳ ý"] },
+      token_budget: 5000,
+    };
+    const def = await createDef(
+      c,
+      defBody(`pd2-ep-${++seq}`, [s0(), stage], { inputs: MA_KH_INPUT }),
+    );
+    const g = await c.call("Adm", "GET", `/process-defs/${def.id}`);
+    expect(g.status).toBe(200);
+    const s = ((g.json?.stages ?? []) as Json[])[1] as Json;
+    expect({
+      template: s.output?.template,
+      required: s.output?.required_sections,
+      answerer: s.answerer,
+      sources: s.sources ?? [],
+      must_know: s.must_know ?? [],
+      autofix: s.autofix ?? null,
+      token_budget: s.token_budget,
+      timeout_s: s.timeout_s,
+    }).toEqual({
+      template: "# {name}\n\n## Kết quả\n\n## Bàn giao\n",
+      required: ["Kết quả", "Bàn giao"],
+      answerer: { kind: "starter" },
+      sources: [],
+      must_know: [],
+      autofix: null,
+      token_budget: null,
+      timeout_s: 45,
+    });
   }, 30_000);
 });
 
