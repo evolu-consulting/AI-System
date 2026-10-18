@@ -4,6 +4,7 @@ import {
   type DecisionReason,
   PROCESS_BACK_ROUNDS_MAX,
   REDO_MAX,
+  STAGE_RETRY_MAX,
 } from "@ai/contracts/chat";
 
 export const reasonKey = (r: DecisionReason) => `process.common.${r}`;
@@ -21,7 +22,9 @@ export const reasonHintKey = (r: DecisionReason): string | null =>
   r === "source_unresolvable" ||
   r === "autofix_check_failed" ||
   r === "sandbox_unavailable" ||
-  r === "apply_conflict"
+  r === "apply_conflict" ||
+  r === "retry_exhausted" ||
+  r === "timer_invalid"
     ? `process.common.${r}_hint`
     : null;
 
@@ -30,5 +33,6 @@ export function reasonParams(r: DecisionReason): { max?: number } {
   if (r === "redo_limit") return { max: REDO_MAX };
   if (r === "ask_limit") return { max: ASKS_MAX };
   if (r === "back_limit") return { max: PROCESS_BACK_ROUNDS_MAX };
+  if (r === "retry_exhausted") return { max: STAGE_RETRY_MAX };
   return {};
 }

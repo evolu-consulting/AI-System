@@ -73,7 +73,8 @@
       "executor": "Performed by",
       "kind": {
         "agent": "Agent",
-        "team": "Agent team"
+        "team": "Agent team",
+        "wait": "Wait until date"
       },
       "instruction": "Instructions",
       "filename": "Output file name",
@@ -114,7 +115,50 @@
       "backHint": "The reviewer can choose to go back when marking Not passed. Up to 3 go-backs per run.",
       "backOption": "Go back to step {{step}}",
       "backOptionHint": "{{names}}",
-      "backNone": "The first step has nothing before it."
+      "backNone": "The first step has nothing before it.",
+      "wait": {
+        "title": "Wait until date",
+        "hint": "Pauses the run at this stage until a set date, then continues on its own. No agent and no review step.",
+        "valid": "Valid",
+        "from": "Take the date from",
+        "fromPh": "Choose a date source…",
+        "fromInput": "Input · {{label}}",
+        "fromField": "Stage {{n}} output · {{stage}} · {{field}}",
+        "fromNone": "There is no date source yet. Add a Date input field, or declare a Date field in an earlier stage.",
+        "offset": "Offset (days)",
+        "offsetHint": "Negative = before the base date, 0 = on the day, positive = after.",
+        "time": "Time of day",
+        "tz": "Uses the company time zone: {{tz}} ({{offset}}). The due time is fixed when the run reaches this stage; changing the company time zone later does not recalculate it.",
+        "tzTemplate": "Template: uses the time zone of the company that runs it (default {{tz}}).",
+        "tzLoading": "Loading time zone…",
+        "tzError": "Couldn't load the company time zone.",
+        "formula": {
+          "before_one": "Due at {{time}}, {{count}} day before the date from {{source}}.",
+          "before_other": "Due at {{time}}, {{count}} days before the date from {{source}}.",
+          "on": "Due at {{time}}, on the date from {{source}}.",
+          "after_one": "Due at {{time}}, {{count}} day after the date from {{source}}.",
+          "after_other": "Due at {{time}}, {{count}} days after the date from {{source}}."
+        },
+        "after": "Continue (fixed)",
+        "err": {
+          "source": "Choose a date source.",
+          "offset": "From −365 to 365 days.",
+          "time": "Enter a time as HH:mm, for example 09:00.",
+          "WAIT_INVALID": "The date source isn't valid. Pick a Date input field or a Date field from a stage in an earlier step."
+        }
+      },
+      "remindEvery": "Remind every (hours)",
+      "remindHint": "Leave empty = one reminder after 24 hours. Up to 10 reminders.",
+      "escalate": "Escalate if nobody has reviewed",
+      "escalateAfter": "Escalate after (hours)",
+      "escalateGroup": "Escalate to group",
+      "escalateHint": "This group is added to the review; the original group can still review. It escalates once and never marks Pass by itself.",
+      "err": {
+        "remind": "From 4 to 168 hours.",
+        "escalateAfter": "From 4 to 2,160 hours.",
+        "escalateGroup": "Pick a group other than the reviewing group.",
+        "ESCALATE_INVALID": "The escalation isn't valid: pick a group other than the reviewing group and a time from 4 to 2,160 hours."
+      }
     },
     "limits": "Run limits",
     "limitsText": "Up to 7 days · 5 runs at once · at most 3 reworks per stage · reviewer reminder after 1 day. Hitting a limit → “Needs a decision”.",
@@ -166,7 +210,8 @@
         "text": "Text",
         "select": "Choice",
         "file": "File",
-        "source_ref": "Source + branch"
+        "source_ref": "Source + branch",
+        "date": "Date"
       },
       "required": "Required",
       "options": "Options (one per line)",
@@ -191,8 +236,15 @@
       "mustKnow": {
         "max": "At most 10 items.",
         "tooLong": "Each item can be at most 200 characters."
-      }
-    }
+      },
+      "ttl": "From 1 to 365 days, or choose No expiry."
+    },
+    "ttl": "Run time limit (days)",
+    "ttlHint": "A run not finished within this many days expires. Runs already in progress aren't affected when you edit.",
+    "noExpiry": "No expiry",
+    "limitsTextTtl": "Up to {{days}} days · 5 runs at once · ≤ 3 reworks per stage · reviewer reminded after 1 day. Hitting a limit → “Needs a decision”.",
+    "limitsTextNoTtl": "No expiry · 5 runs at once · ≤ 3 reworks per stage · reviewer reminded after 1 day. Hitting a limit → “Needs a decision”.",
+    "limitsWait": "Runs waiting for a date don't count toward the 5 concurrent runs."
   },
   "run": {
     "title": "Run · {{name}}",
@@ -238,7 +290,8 @@
         "decision": "Decision",
         "forward": "Forwarded",
         "cancel": "Cancelled",
-        "expire": "Expired"
+        "expire": "Expired",
+        "escalate": "Escalate"
       }
     }
   },
@@ -297,7 +350,8 @@
       "real": "Real action",
       "gateReview": "Reviewed by a person",
       "gateAuto": "Automatic",
-      "error": "Has errors"
+      "error": "Has errors",
+      "wait": "Wait until date"
     },
     "edge": {
       "back": "Go back"

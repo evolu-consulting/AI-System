@@ -25,5 +25,8 @@ export const isActiveRun = (s: ProcessRunStatus): boolean =>
 export const runStatusKey = (s: ProcessRunStatus) => `process.common.status.${s}`;
 
 /** Khoá i18n nhãn trạng thái giai đoạn (chỉ `pending`/`queued` có chữ riêng, còn lại dùng nhãn run). */
-export const stageStatusKey = (s: StageRunStatus): string =>
-  s === "pending" || s === "queued" ? `process.common.stage.${s}` : `process.common.status.${s}`;
+/** `skipped` không thuộc enum contract: trạng thái hiển thị suy từ `describeStageWait` (domain). */
+export const stageStatusKey = (s: StageRunStatus | "skipped"): string =>
+  s === "pending" || s === "queued" || s === "skipped"
+    ? `process.common.stage.${s}`
+    : `process.common.status.${s}`;

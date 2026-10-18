@@ -73,7 +73,8 @@
       "executor": "Người thực hiện",
       "kind": {
         "agent": "Agent",
-        "team": "Nhóm agent"
+        "team": "Nhóm agent",
+        "wait": "Chờ tới ngày"
       },
       "instruction": "Hướng dẫn",
       "filename": "Tên tệp kết quả",
@@ -114,7 +115,50 @@
       "backHint": "Người duyệt có thể chọn quay lại khi chấm Chưa đạt. Tối đa 3 lần quay lại cho mỗi lần chạy.",
       "backOption": "Quay lại bước {{step}}",
       "backOptionHint": "{{names}}",
-      "backNone": "Bước đầu không có bước nào phía trước."
+      "backNone": "Bước đầu không có bước nào phía trước.",
+      "wait": {
+        "title": "Chờ tới ngày",
+        "hint": "Dừng giai đoạn này tới một ngày hẹn rồi tự chạy tiếp. Không dùng agent và không có bước duyệt.",
+        "valid": "Hợp lệ",
+        "from": "Lấy ngày từ",
+        "fromPh": "Chọn nguồn ngày…",
+        "fromInput": "Thông tin đầu vào · {{label}}",
+        "fromField": "Kết quả giai đoạn {{n}} · {{stage}} · {{field}}",
+        "fromNone": "Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở giai đoạn trước.",
+        "offset": "Chênh lệch (ngày)",
+        "offsetHint": "Số âm = trước ngày gốc, 0 = đúng ngày, số dương = sau.",
+        "time": "Giờ trong ngày",
+        "tz": "Theo múi giờ công ty: {{tz}} ({{offset}}). Ngày hẹn được chốt lúc lượt chạy vào giai đoạn này; đổi múi giờ công ty sau đó không tính lại.",
+        "tzTemplate": "Quy trình mẫu: tính theo múi giờ của công ty chạy quy trình (mặc định {{tz}}).",
+        "tzLoading": "Đang tải múi giờ…",
+        "tzError": "Không tải được múi giờ công ty.",
+        "formula": {
+          "before_one": "Tới hạn lúc {{time}}, {{count}} ngày trước ngày lấy từ {{source}}.",
+          "before_other": "Tới hạn lúc {{time}}, {{count}} ngày trước ngày lấy từ {{source}}.",
+          "on": "Tới hạn lúc {{time}}, đúng ngày lấy từ {{source}}.",
+          "after_one": "Tới hạn lúc {{time}}, {{count}} ngày sau ngày lấy từ {{source}}.",
+          "after_other": "Tới hạn lúc {{time}}, {{count}} ngày sau ngày lấy từ {{source}}."
+        },
+        "after": "Chạy tiếp (cố định)",
+        "err": {
+          "source": "Chọn nguồn ngày.",
+          "offset": "Từ −365 đến 365 ngày.",
+          "time": "Nhập giờ dạng HH:mm, ví dụ 09:00.",
+          "WAIT_INVALID": "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước."
+        }
+      },
+      "remindEvery": "Nhắc mỗi (giờ)",
+      "remindHint": "Để trống = nhắc một lần sau 24 giờ. Nhắc tối đa 10 lần.",
+      "escalate": "Chuyển cấp nếu chưa ai kiểm",
+      "escalateAfter": "Chuyển cấp sau (giờ)",
+      "escalateGroup": "Chuyển cấp tới nhóm",
+      "escalateHint": "Nhóm này được thêm vào việc kiểm; nhóm kiểm ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Đạt.",
+      "err": {
+        "remind": "Từ 4 đến 168 giờ.",
+        "escalateAfter": "Từ 4 đến 2.160 giờ.",
+        "escalateGroup": "Chọn nhóm khác với nhóm kiểm.",
+        "ESCALATE_INVALID": "Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác nhóm kiểm và thời gian từ 4 đến 2.160 giờ."
+      }
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
@@ -166,7 +210,8 @@
         "text": "Chữ",
         "select": "Chọn",
         "file": "Tệp",
-        "source_ref": "Nguồn + nhánh"
+        "source_ref": "Nguồn + nhánh",
+        "date": "Ngày"
       },
       "required": "Bắt buộc",
       "options": "Lựa chọn (mỗi dòng một giá trị)",
@@ -191,8 +236,15 @@
       "mustKnow": {
         "max": "Tối đa 10 mục.",
         "tooLong": "Mỗi mục tối đa 200 ký tự."
-      }
-    }
+      },
+      "ttl": "Từ 1 đến 365 ngày, hoặc chọn Không hết hạn."
+    },
+    "ttl": "Thời hạn lượt chạy (ngày)",
+    "ttlHint": "Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.",
+    "noExpiry": "Không hết hạn",
+    "limitsTextTtl": "Tối đa {{days}} ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
+    "limitsTextNoTtl": "Không hết hạn · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
+    "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc."
   },
   "run": {
     "title": "Lượt chạy · {{name}}",
@@ -238,7 +290,8 @@
         "decision": "Quyết định",
         "forward": "Chuyển việc",
         "cancel": "Huỷ",
-        "expire": "Hết hạn"
+        "expire": "Hết hạn",
+        "escalate": "Chuyển cấp"
       }
     }
   },
@@ -297,7 +350,8 @@
       "real": "Hành động thật",
       "gateReview": "Có người kiểm",
       "gateAuto": "Tự động",
-      "error": "Có lỗi"
+      "error": "Có lỗi",
+      "wait": "Chờ tới ngày"
     },
     "edge": {
       "back": "Quay lại"

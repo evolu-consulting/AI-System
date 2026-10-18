@@ -7,11 +7,13 @@
     "done": "Hoàn tất",
     "cancelled": "Đã huỷ",
     "failed": "Lỗi",
-    "expired": "Hết hạn"
+    "expired": "Hết hạn",
+    "waiting_timer": "Đang chờ hẹn"
   },
   "stage": {
     "pending": "Chưa tới",
-    "queued": "Đang xếp hàng"
+    "queued": "Đang xếp hàng",
+    "skipped": "Bỏ qua"
   },
   "result": {
     "pass": "Đạt",
@@ -27,7 +29,10 @@
   "option": {
     "add_attempt": "Thêm 1 lần làm lại",
     "use_current": "Dùng bản hiện có",
-    "cancel": "Huỷ lượt chạy"
+    "cancel": "Huỷ lượt chạy",
+    "add_attempt_retry_exhausted": "Thử lại ngay",
+    "add_attempt_timer_invalid": "Tính lại ngày hẹn",
+    "use_current_timer_invalid": "Bỏ chờ, đi tiếp"
   },
   "sender": {
     "name": "Quy trình"
@@ -170,5 +175,15 @@
   },
   "apply_conflict": "Bản sửa xung đột với mã mới",
   "apply_conflict_hint": "Nhánh main đã đổi và bản sửa không áp lại được. Muốn sửa trên mã mới thì chạy lại quy trình. Chọn thêm lượt chỉ có ích khi đã xử lý xung đột ở repo.",
-  "apply_failed": "Áp bản sửa không thành công"
+  "apply_failed": "Áp bản sửa không thành công",
+  "stageLabel": {
+    "waitUntil": "Chờ tới {{date}}",
+    "waitUntilAt": "Chờ tới {{date}} ({{tz}})",
+    "retrying": "Đang thử lại ({{n}}/{{max}})",
+    "retryingAt": "Đang thử lại ({{n}}/{{max}}) · {{time}}"
+  },
+  "retry_exhausted": "Đã thử lại tối đa {{max}} lần mà vẫn lỗi.",
+  "retry_exhausted_hint": "Lỗi tạm thời (mất kết nối, quá thời gian…) vẫn chưa hết. Thử lại ngay, hoặc huỷ lượt chạy.",
+  "timer_invalid": "Ngày hẹn không hợp lệ hoặc đã quá hạn lượt chạy.",
+  "timer_invalid_hint": "Thiếu ngày, ngày sai, xa quá 730 ngày hoặc sau ngày hết hạn của lượt chạy. Chọn tính lại ngày hẹn, bỏ chờ để đi tiếp, hoặc huỷ."
 }

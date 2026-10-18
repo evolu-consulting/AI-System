@@ -17,7 +17,9 @@
     "sourcePlaceholder": "Chọn nguồn",
     "branch": "{{label}} · Nhánh (branch)",
     "branchPlaceholder": "main",
-    "select": { "placeholder": "Chọn một giá trị" }
+    "select": {
+      "placeholder": "Chọn một giá trị"
+    }
   },
   "sources": {
     "loading": "Đang tải nguồn…",
@@ -25,7 +27,9 @@
     "error": "Không tải được danh sách nguồn."
   },
   "err": {
-    "text": { "tooLong": "Nội dung quá dài." },
+    "text": {
+      "tooLong": "Nội dung quá dài."
+    },
     "branch": {
       "required": "Nhập tên nhánh cho nguồn đã chọn.",
       "dash": "Tên nhánh không được bắt đầu bằng dấu “-”.",
@@ -33,7 +37,12 @@
     },
     "sourceUnresolvable": "Không bắt đầu được: không đọc được một nguồn của quy trình. Báo quản trị viên công ty kiểm tra nguồn.",
     "sourceInvalid": "Nguồn hoặc nhánh đã chọn không hợp lệ.",
-    "generic": "Không bắt đầu được quy trình. Thử lại sau."
+    "generic": "Không bắt đầu được quy trình. Thử lại sau.",
+    "date": {
+      "invalid": "Chọn một ngày hợp lệ."
+    }
   },
-  "ask": { "chipTitle": "{{key}} — {{description}}" }
+  "ask": {
+    "chipTitle": "{{key}} — {{description}}"
+  }
 }

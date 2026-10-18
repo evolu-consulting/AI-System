@@ -27,7 +27,8 @@
     "run_finished": "Quy trình {{process}} đã kết thúc",
     "expand": "Xem & xử lý",
     "openRun": "Mở trang lượt chạy",
-    "resolvedByYou": "Bạn · {{result}}"
+    "resolvedByYou": "Bạn · {{result}}",
+    "escalated": "Việc ở {{process}} · {{stage}} đã chuyển cấp tới nhóm của bạn"
   },
   "run": {
     "tab": {
@@ -52,7 +53,8 @@
       "decision": "{{actor}} quyết định: {{result}}",
       "forward": "{{actor}} nhờ {{to}}",
       "cancel": "{{actor}} huỷ lượt chạy",
-      "expire": "Lượt chạy hết hạn"
+      "expire": "Lượt chạy hết hạn",
+      "escalate": "Hệ thống chuyển cấp tới nhóm {{group}}"
     }
   }
 }

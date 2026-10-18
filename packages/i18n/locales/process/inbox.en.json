@@ -27,7 +27,8 @@
     "run_finished": "Process {{process}} has finished",
     "expand": "View & handle",
     "openRun": "Open run page",
-    "resolvedByYou": "You · {{result}}"
+    "resolvedByYou": "You · {{result}}",
+    "escalated": "{{process}} · {{stage}} was escalated to your group"
   },
   "run": {
     "tab": {
@@ -52,7 +53,8 @@
       "decision": "{{actor}} decided: {{result}}",
       "forward": "{{actor}} asked {{to}}",
       "cancel": "{{actor}} cancelled the run",
-      "expire": "The run expired"
+      "expire": "The run expired",
+      "escalate": "The system escalated to group {{group}}"
     }
   }
 }

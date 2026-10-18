@@ -34,6 +34,14 @@ describe("decision-reason", () => {
     expect(reasonHintKey("apply_failed")).toBeNull();
     expect(isApplyReason("redo_limit")).toBe(false);
   });
+  test("P-d1 · retry_exhausted / timer_invalid có câu giải thích; retry_exhausted mang {max: 3}", () => {
+    for (const r of ["retry_exhausted", "timer_invalid"] as const) {
+      expect(DECISION_REASONS).toContain(r);
+      expect(reasonHintKey(r)).toBe(`process.common.${r}_hint`);
+    }
+    expect(reasonParams("retry_exhausted")).toEqual({ max: 3 });
+    expect(reasonParams("timer_invalid")).toEqual({});
+  });
   test("mã khác giữ nguyên", () => {
     expect(reasonParams("source_unresolvable")).toEqual({});
   });

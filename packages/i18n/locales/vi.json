@@ -550,7 +550,9 @@
       "name": "Tên công ty",
       "slots": "Giới hạn slot subscription",
       "keyHint": "Người dùng gõ mã này khi đăng nhập. Không đổi được sau khi tạo.",
-      "slotsHint": "Để trống = không giới hạn"
+      "slotsHint": "Để trống = không giới hạn",
+      "timezone": "Múi giờ",
+      "timezoneHint": "Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu."
     },
     "tab": {
       "info": "Thông tin",
@@ -592,7 +594,9 @@
     "error": {
       "keyTaken": "Mã công ty đã được dùng",
       "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
-      "nameRequired": "Nhập tên công ty"
+      "nameRequired": "Nhập tên công ty",
+      "timezoneRequired": "Chọn múi giờ",
+      "timezoneUnsupported": "Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách."
     },
     "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên.",
     "quota": {
@@ -614,6 +618,11 @@
       "pickFeature": "Chọn feature",
       "noFeatureLeft": "Mọi feature đã có quota",
       "cell": "{field} · {scope}"
+    },
+    "timezone": {
+      "change": "Đổi múi giờ",
+      "search": "Tìm múi giờ",
+      "value": "{tz} ({offset})"
     }
   },
   "quota": {

@@ -13,7 +13,10 @@
     "decideMe": "Needs your decision",
     "decideOther": "Needs a decision · {{reason}}",
     "redo": "rework {{n}}/{{max}}",
-    "next": "Stage {{n}} is running"
+    "next": "Stage {{n}} is running",
+    "waitingTimer": "Waiting until {{date}} · Stage {{n}}/{{total}} · {{stage}}",
+    "waitingTimerNoDate": "Waiting for a scheduled time · Stage {{n}}/{{total}}",
+    "retrying": "Retrying ({{retry}}/{{max}}) · Stage {{n}}/{{total}} · {{stage}}"
   },
   "action": {
     "view": "View progress",
@@ -77,7 +80,9 @@
     "sentDecider": "Feedback sent. The run was handed to the decider.",
     "superseded": "This stage was just handled elsewhere. Refreshed.",
     "backLimitNote": "No go-backs left (max {{max}}). Submitting sends this to the decider.",
-    "backInvalid": "You can't go back to that step anymore. Refreshed."
+    "backInvalid": "You can't go back to that step anymore. Refreshed.",
+    "escalated": "Escalated",
+    "escalatedNote": "This review was escalated to the group {{group}} because nobody has reviewed it. The original group can still review."
   },
   "decision": {
     "region": "Needs a decision",

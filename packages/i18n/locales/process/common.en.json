@@ -7,11 +7,13 @@
     "done": "Done",
     "cancelled": "Cancelled",
     "failed": "Failed",
-    "expired": "Expired"
+    "expired": "Expired",
+    "waiting_timer": "Waiting for a scheduled time"
   },
   "stage": {
     "pending": "Not started",
-    "queued": "Queued"
+    "queued": "Queued",
+    "skipped": "Skipped"
   },
   "result": {
     "pass": "Passed",
@@ -27,7 +29,10 @@
   "option": {
     "add_attempt": "Allow 1 more rework",
     "use_current": "Use current version",
-    "cancel": "Cancel run"
+    "cancel": "Cancel run",
+    "add_attempt_retry_exhausted": "Retry now",
+    "add_attempt_timer_invalid": "Recalculate the date",
+    "use_current_timer_invalid": "Skip the wait and continue"
   },
   "sender": {
     "name": "Processes"
@@ -170,5 +175,15 @@
   },
   "apply_conflict": "The fix conflicts with the new code",
   "apply_conflict_hint": "The default branch changed and the fix cannot be re-applied. To fix against the new code, run the process again. Adding a round only helps once the conflict is resolved in the repo.",
-  "apply_failed": "Applying the fix failed"
+  "apply_failed": "Applying the fix failed",
+  "stageLabel": {
+    "waitUntil": "Waiting until {{date}}",
+    "waitUntilAt": "Waiting until {{date}} ({{tz}})",
+    "retrying": "Retrying ({{n}}/{{max}})",
+    "retryingAt": "Retrying ({{n}}/{{max}}) · {{time}}"
+  },
+  "retry_exhausted": "Retried the maximum of {{max}} times and it still failed.",
+  "retry_exhausted_hint": "The temporary error (lost connection, timeout…) hasn't cleared. Retry now, or cancel the run.",
+  "timer_invalid": "The scheduled date isn't valid or is past the run's expiry.",
+  "timer_invalid_hint": "The date is missing or wrong, more than 730 days away, or after the run expires. Recalculate the date, skip the wait to continue, or cancel."
 }

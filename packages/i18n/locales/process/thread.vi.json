@@ -31,7 +31,8 @@
     "ask": "Đang chờ {{names}} trả lời",
     "decide": "Đang chờ {{names}} hoặc quản trị viên quyết định",
     "more": "{{first}} và {{count}} người khác",
-    "group": "nhóm {{group}}"
+    "group": "nhóm {{group}}",
+    "reviewEscalated": "Đang chờ {{names}} hoặc {{escalated}} (đã chuyển cấp) kiểm — chỉ người kiểm mới bấm được."
   },
   "decision": {
     "stopped": "Quy trình dừng ở giai đoạn {{stage}}"
@@ -52,8 +53,9 @@
     "cancelledBy": "{{actor}} đã huỷ lượt chạy",
     "cancelled": "Lượt chạy đã bị huỷ",
     "failed": "Lượt chạy gặp lỗi",
-    "expired": "Lượt chạy hết hạn (7 ngày không ai xử lý)",
-    "open": "Mở trang lượt chạy"
+    "expired": "Lượt chạy hết hạn ({{days}} ngày không ai xử lý)",
+    "open": "Mở trang lượt chạy",
+    "expiredGeneric": "Lượt chạy hết hạn (quá thời hạn của quy trình)"
   },
   "hint": "Đây là trao đổi giữa người với người; agent của quy trình không đọc. Muốn hỏi agent, nhắn ở khung chat chính của phòng.",
   "err": {

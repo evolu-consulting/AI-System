@@ -17,7 +17,9 @@
     "sourcePlaceholder": "Choose a source",
     "branch": "{{label}} · Branch",
     "branchPlaceholder": "main",
-    "select": { "placeholder": "Choose a value" }
+    "select": {
+      "placeholder": "Choose a value"
+    }
   },
   "sources": {
     "loading": "Loading sources…",
@@ -25,7 +27,9 @@
     "error": "Could not load sources."
   },
   "err": {
-    "text": { "tooLong": "The text is too long." },
+    "text": {
+      "tooLong": "The text is too long."
+    },
     "branch": {
       "required": "Enter a branch for the selected source.",
       "dash": "A branch name cannot start with “-”.",
@@ -33,7 +37,12 @@
     },
     "sourceUnresolvable": "Could not start: a source of this process cannot be read. Ask your company administrator to check the sources.",
     "sourceInvalid": "The selected source or branch is not valid.",
-    "generic": "Could not start the process. Try again later."
+    "generic": "Could not start the process. Try again later.",
+    "date": {
+      "invalid": "Choose a valid date."
+    }
   },
-  "ask": { "chipTitle": "{{key}} — {{description}}" }
+  "ask": {
+    "chipTitle": "{{key}} — {{description}}"
+  }
 }

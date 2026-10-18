@@ -31,7 +31,8 @@
     "ask": "Waiting for {{names}} to answer",
     "decide": "Waiting for {{names}} or an administrator to decide",
     "more": "{{first}} and {{count}} others",
-    "group": "group {{group}}"
+    "group": "group {{group}}",
+    "reviewEscalated": "Waiting for {{names}} or {{escalated}} (escalated) to review — only reviewers can act."
   },
   "decision": {
     "stopped": "The process stopped at stage {{stage}}"
@@ -52,8 +53,9 @@
     "cancelledBy": "{{actor}} cancelled the run",
     "cancelled": "The run was cancelled",
     "failed": "The run failed",
-    "expired": "The run expired (7 days without action)",
-    "open": "Open run page"
+    "expired": "The run expired ({{days}} days without action)",
+    "open": "Open run page",
+    "expiredGeneric": "The run expired (past the process time limit)"
   },
   "hint": "This is a person-to-person thread; the process agents don't read it. To ask an agent, write in the room's main chat.",
   "err": {
