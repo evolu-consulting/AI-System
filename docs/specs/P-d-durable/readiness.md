@@ -6,6 +6,7 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 
 | Ngày | Kết quả | Chặn | Cao | Thấp | Ghi chú |
 |---|---|---|---|---|---|
+| 2026-10-18 | NOT READY (lần 6) | 0 | 1 | 12 | Diff 70bd139. Đóng #81 (A11 `systemBatch`, CA-R06/§4/§7, T6b/T6c), #82, #83–#89, #74, TC1–18. Cao mới do chính bản sửa: #90 `Notifier.runsFinished(ids)` — A11 xếp vào "repo lô gắn tx" ↔ A10 "adapter gom vào outbox xả sau COMMIT" (notice `run_finished` ghi trong hay ngoài tx). Thấp còn: 71, 73, 75–80 + mới 91–94. Không hỏi người dùng. `check:size` không có vi phạm ở docs; trần không đổi. |
 | 2026-10-18 | NOT READY (lần 5) | 0 | 2 | 34 | Diff 75ec598..3efb39f (ADR-0017 Accepted, CR-081 đóng, mockup duyệt, A9/A10, test-plan-addendum §2–§3, test T3/T3a). Cao: #81 A10 một tx hệ thống/lô nhiều tenant ↔ spec-ca CA-R06/K1 (UoW theo tenant, mỗi hàng); #82 NFR "đo riêng phần DB" ↔ PD-P13/P14 đo cả lời gọi. 18 tranh chấp qc đều Thấp, có mặc định. Không hỏi người dùng (Luật 2b). Điều kiện Gate ngoài spec đã đủ (D0a–D0c). |
 | 2026-10-17 | READY (lần 4) | 0 (+điều kiện Gate ADR-0017 — chờ staging) | 0 | 9 | Đóng #54–#70, #72; #55–#58 đã đóng. Còn Thấp: #71, #73, #74–#80 (sửa khi BUILD, T4 chạy lại readiness chỉ diff). Không hỏi người dùng. Gate P-d1 chờ điều kiện ngoài spec (ADR-0017 staging, mockup, security review T6c/T12/T20, CR-081). |
 | 2026-10-17 | NOT READY (lần 3) | 0 (+1 điều kiện Gate ADR-0017 — chờ staging) | 4 | 19 | Đóng #33–#35, #37–#39, #41–#48, #50–#52; #40 sinh mâu thuẫn mới. Còn: plan-addendum chưa được trỏ từ tasks/plan (#55), escalate ở stage auto 422↔400 (#56), PD-U68↔plan-domain:119 (#57), path WAIT phía contract + PD-C13 (#58). Mọi mục (a) sửa theo mặc định (Luật 2b); không hỏi người dùng. |
@@ -13,6 +14,28 @@ Mỗi lần chạy spec-readiness thêm một dòng (mới nhất ở trên). B�
 | 2026-10-17 | NOT READY (lần 1) | 6 | 13 | 6 (+7 Vừa) | Chưa có plan/plan-frontend/test-plan/mockup; phân loại lỗi (Q2), side_effect, team retry (Q1), quyền tool P-d2; khoá idempotency va chạm; thứ tự khoá timer↔run; FORCE RLS sai; thiếu nới CHECK audit/thread; ESCALATE_INVALID↔PROCESS_REF_INVALID; AC-H41 sai trần. Hỏi người dùng 4 câu. |
 
 ## Lần chạy
+
+### Lần 6 · 2026-10-18 · NOT READY
+
+Phạm vi: `git show 70bd139` (ADR-0017, plan-addendum A8/A9/A10/A11, plan-db §5, spec-ca CA-R06/§4/§7, spec-decisions, tasks T6/T6b/T6c/T9/T10, test-plan-addendum §2–§3, test-plan-int §1/§3/§4/§9) + "### Lần 5"; đối chiếu plan §3 (`UnitOfWork`, `TxRepos`, `OutboxEvent`), plan:67, plan §7 K1/K3, `packages/db/src/hub-scope.ts` (`HubScope`), `notify/notifier.ts` `onRunFinished` (chèn notice **trong** tx), `runs/sweeps.ts` `endRun`, test khoá `d1/{uow,isolation,batch-queries}.int`, `perf/background.perf.int`, `_support/pd.ts`, `package.json` `test:perf`, `bunfig.perf.toml` (có). Trần (không đổi trong diff): spec 25462/25600 · plan 30708/30720 · plan-frontend 24826/25600 · test-plan 30431/30720. `bun run check:size`: chỉ 3 vi phạm sẵn có ở `reference/mgmt-app-contracts/**` (code ngoài phạm vi), 0 ở docs.
+
+Đóng: **#81** — A11 (`systemBatch(fn)` scope system, chỉ vòng nền theo tập; repo lô mang `tenant_id`; K3 lô; K1 ngoại lệ duy nhất; T8 giữ `system(tenantId)` từng hàng), CA-R06 ngoại lệ, spec-ca §4/§7, T6b/T6c Đọc A11; khả thi với `HubScope {kind:"system"}`; không chạm chữ ký `tenant`/`system` mà `d1/uow.int` dùng (PD-I73…I78 vẫn đúng). Ngân sách PD-P15 nhắc 6 câu nhất quán A10. **#82** — A10 + test-plan-addendum §2 PD-P13/P14 đo cả lời gọi, tổng lời gọi tới khi trả 0. **#83–#89**, **#74** (A8), **TC1–TC18** (test-plan-addendum §3 "Mặc định đã áp"; TC3/TC4/TC12/TC13 thêm ở A11; test-plan-int sửa TC1, TC2, TC3, TC4, TC7, TC14).
+
+#### Cao (mới, sinh từ bản sửa #81 — sửa trước T6b/T10)
+| # | Vấn đề | Mặc định |
+|---|---|---|
+| 90 | `Notifier.runsFinished(ids)`: A11 xếp vào "repo lô (gắn tx)" ↔ A10 "không nhận `Tx` — adapter gom vào outbox xả sau COMMIT". Hai cách hiểu: notice `run_finished` chèn **trong** tx lô (như code hiện tại `notifier.ts:146` + "Không đổi hành vi") hay **sau** COMMIT (ngoài tx, mất notice nếu sập giữa chừng, cần scope RLS riêng). `OutboxEvent` (plan §3) không có loại cho notice | Trong tx `systemBatch`: `runsFinished(rows)` = `insert hub.process_notices … select` từ `process_runs` theo `(id, tenant_id)` của `claimExpired` (kind `run_finished`, người nhận `started_by`, `tenant_id` hàng nguồn) + `unread` một câu, rồi `outbox.emit({kind:"user_events"})`; chỉ phát Redis sau COMMIT. Ngân sách hết hạn so lượt rỗng = stage 1 + task 1 + `enqueueThread` 1 + notice 1 + unread 1 = 5 ≤ 6. Sửa một câu ở A10/A11 |
+
+#### Thấp mới (sửa khi BUILD)
+91 spec-ca §4:54 `tenant(tenantId, fn)` ↔ plan §3 + test khoá PD-I73 `tenant({tenantId, userId}, fn)` (khớp `HubScope` user) ⇒ theo plan §3/test; sửa spec-ca §4 · 92 Lệnh xong T9/T10 `PERF=1 bun …` không chạy trực tiếp trên PowerShell (máy dev Windows) ⇒ thêm script `test:perf:pd` vào `package.json` ở T9 (bun shell xử lý `PERF=1`), Lệnh xong gọi `bun run test:perf:pd` · 93 T12 cột Đọc thiếu `plan-addendum A11` (security review chuyển cấp nay qua `systemBatch`); plan §7 K1/K3, plan:67, §4.9/§5 không có con trỏ "→ A11" (plan.md còn 12 byte — ghi con trỏ ở tasks T12 thay vì plan) · 94 A10 bước nhắc: (2) `noticeRecipients` chạy trước câu "người nhận" ở (3) ⇒ thứ tự đúng: khoá → `markRemindedMany` (lịch từ `remind.rules`) → nạp người nhận → `noticeRecipients` → `insertMany` → unread (vẫn 6 câu) · còn mở: 71, 73, 75–80.
+
+#### Câu hỏi người dùng
+Không có (#90 có mặc định theo code hiện có + "Không đổi hành vi" của A10).
+
+#### Điều kiện Gate (ngoài spec)
+Như lần 5 (1–2, 4 đạt; 3 security review T6c gồm `systemBatch`, T12, T20 trong BUILD).
+
+Lần 7: docs-architect áp #90 (một câu A10/A11) ⇒ chạy lại chỉ diff.
 
 ### Lần 5 · 2026-10-18 · NOT READY
 
