@@ -31,7 +31,7 @@ export async function fireTimer(r: FireRepos, c: FireCandidate, now: Date): Prom
     r.kicker.kick(c.runId);
     return "fired";
   }
-  const timezone = (await r.stageTimers.timezoneOf(t.id)) ?? "UTC";
+  const timezone = t.timezone ?? "UTC";
   await r.stageTimers.finishWait(c.runId, c.stageRunId, { dueAt: t.dueAt, timezone });
   return "fired";
 }

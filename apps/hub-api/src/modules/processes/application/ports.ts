@@ -39,7 +39,8 @@ export type RunRepo = {
   lock(runId: string): Promise<RunLock | null>;
 };
 export type TimerRepo = {
-  lockById(id: string): Promise<Timer | null>;
+  /** Kèm `timezone` IANA đã chốt trên hàng hẹn (`wait_until`; `null` ⇒ retry) — một câu khoá, khỏi đọc lẻ (#9). */
+  lockById(id: string): Promise<(Timer & { timezone: string | null }) | null>;
   /** Đặt `fired_at` khi hẹn còn mở; `false` ⇒ đã bắn/huỷ (không đổi gì). */
   markFired(id: string, now: Date): Promise<boolean>;
   /** Huỷ hẹn mở của run (mọi stage hoặc các stage chỉ định); trả số hẹn vừa huỷ. */
@@ -74,8 +75,6 @@ export type StageTimerRepo = {
     stageRunId: string,
     w: { dueAt: Date; timezone: string },
   ): Promise<void>;
-  /** IANA đã chốt trên hàng hẹn (`wait_until`); `null` ⇒ không có (retry). */
-  timezoneOf(timerId: string): Promise<string | null>;
 };
 /** T7 · bộ đếm thử lại của `stage_runs` (PD-R03/R06) — mọi câu lọc `(id, tenant_id)`. */
 export type RetryRepo = {

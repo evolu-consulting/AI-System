@@ -9,7 +9,6 @@ import {
 } from "./error-keys";
 import { escalateIssues, remindIssue } from "./remind-rules";
 import { ttlFromValue, ttlIssue, ttlToValue } from "./ttl-rules";
-import { timeZoneOptions, utcOffsetLabel } from "./tz-format";
 import {
   dateSources,
   offsetDirection,
@@ -116,27 +115,6 @@ describe("ttl-rules", () => {
     expect(ttlFromValue(null)).toEqual({ text: "", noExpiry: true });
     expect(ttlFromValue(30)).toEqual({ text: "30", noExpiry: false });
     expect(ttlToValue(ttlFromValue(30).text, ttlFromValue(30).noExpiry)).toBe(30);
-  });
-});
-
-describe("tz-format", () => {
-  const at = "2026-06-01T00:00:00Z";
-  test("utcOffsetLabel", () => {
-    expect(utcOffsetLabel("Asia/Ho_Chi_Minh", at)).toBe("UTC+07:00");
-    expect(utcOffsetLabel("UTC", at)).toBe("UTC+00:00");
-    expect(utcOffsetLabel("America/New_York", at)).toBe("UTC-04:00");
-    expect(utcOffsetLabel("America/New_York", "2026-01-15T00:00:00Z")).toBe("UTC-05:00");
-    expect(utcOffsetLabel("Asia/Kolkata", at)).toBe("UTC+05:30");
-  });
-  test("múi giờ lạ / thời điểm hỏng ⇒ rỗng", () => {
-    expect(utcOffsetLabel("Not/AZone", at)).toBe("");
-    expect(utcOffsetLabel("UTC", "x")).toBe("");
-  });
-  test("timeZoneOptions", () => {
-    expect(timeZoneOptions(["Asia/Tokyo", "Not/AZone"], at)).toEqual([
-      { id: "Asia/Tokyo", label: "Asia/Tokyo", hint: "UTC+09:00" },
-      { id: "Not/AZone", label: "Not/AZone", hint: "" },
-    ]);
   });
 });
 

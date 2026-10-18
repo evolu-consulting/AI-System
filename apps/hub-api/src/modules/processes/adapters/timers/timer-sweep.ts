@@ -1,6 +1,7 @@
 // HUB-FR-143 · HUB-FR-144 · HUB-BR-42 · PD-R11 · CA-R06 · plan §5–§6 · vòng hẹn giờ của `sweepOnce` (chạy ĐẦU TIÊN): MỘT
-// câu chọn ≤ 100 hẹn tới hạn (scope `system`, index một phần `due_at` của hẹn mở, `FOR UPDATE SKIP LOCKED` ⇒ instance
-// khác đang bắn hàng đó thì bỏ qua), rồi mỗi hẹn MỘT tx `sysUow.system(tenantId)` — bắn là đổi trạng thái theo run
+// câu chọn ≤ 100 hẹn tới hạn (scope `system`, index một phần `due_at` của hẹn mở, `FOR UPDATE SKIP LOCKED` chỉ giữ khoá trong tx
+// chọn này, commit TRƯỚC khi bắn ⇒ KHÔNG ngăn hai Hub cùng nhặt một hẹn; đúng nhờ `fireTimer` kiểm lại sau khi khoá
+// run/stage/timer, nên chỉ một lần bắn), rồi mỗi hẹn MỘT tx `sysUow.system(tenantId)` — bắn là đổi trạng thái theo run
 // (khoá run → stage → timer, lọc `tenant_id` tường minh), không phải cập nhật hàng loạt. Lỗi một hàng ⇒ log, tiếp hàng khác.
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -8,6 +9,7 @@ import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../../lib/errors";
 import { type FireCandidate, fireTimer } from "../../application/timers/fire-timer.usecase";
 import type { ProcessBgDeps } from "../../core/ports";
+import { failedTimerDueAt } from "../../domain/timers/timer.rules";
 
 /** Q10 · trần mỗi lượt (`SweepResult.timers` ≤ 100). */
 export const TIMER_SWEEP_BATCH = 100;
@@ -32,9 +34,28 @@ export async function fireDueTimers(d: ProcessBgDeps): Promise<number> {
         run_id: t.process_run_id,
         ...safeErrorFields(err),
       });
+      await postponeFailed(d, t, now);
     }
   }
   return fired;
+}
+
+/** #4 · lùi `due_at` hẹn lỗi (không thì ≥ 100 hẹn lỗi liên tục chiếm đầu `limit 100`, hẹn khác đói). Lỗi ở đây ⇒ chỉ log. */
+async function postponeFailed(d: ProcessBgDeps, t: DueTimer, now: Date): Promise<void> {
+  try {
+    await withHubScope(d.db, SYSTEM, async (tx) => {
+      const [cur] = await tx.execute<{
+        due_at: string | Date;
+      }>(sql`select due_at from hub.process_timers
+        where id = ${t.id} and tenant_id = ${t.tenant_id} and fired_at is null and cancelled_at is null`);
+      if (!cur) return;
+      const next = failedTimerDueAt(new Date(cur.due_at), now);
+      await tx.execute(sql`update hub.process_timers set due_at = ${next.toISOString()}::timestamptz
+        where id = ${t.id} and tenant_id = ${t.tenant_id} and fired_at is null and cancelled_at is null`);
+    });
+  } catch (err) {
+    d.log.warn("process-timer-postpone-failed", { timer_id: t.id, ...safeErrorFields(err) });
+  }
 }
 
 /** Ứng viên (văn bản câu cố định; `limit` là tham số — dùng chung cho làm nóng pool). */

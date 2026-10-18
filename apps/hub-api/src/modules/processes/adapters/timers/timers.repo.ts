@@ -15,12 +15,13 @@ type TimerRow = {
   due_at: string | Date;
   fired_at: string | Date | null;
   cancelled_at: string | Date | null;
+  timezone: string | null;
 };
 
 const at = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
 const atOrNull = (v: string | Date | null): Date | null => (v === null ? null : at(v));
 
-const toTimer = (r: TimerRow): Timer => ({
+const toTimer = (r: TimerRow): Timer & { timezone: string | null } => ({
   id: r.id,
   tenantId: r.tenant_id,
   runId: r.process_run_id,
@@ -29,13 +30,15 @@ const toTimer = (r: TimerRow): Timer => ({
   dueAt: at(r.due_at),
   firedAt: atOrNull(r.fired_at),
   cancelledAt: atOrNull(r.cancelled_at),
+  timezone: r.timezone,
 });
 
 export function timerRepo(tx: Tx, tenantId: string): TimerRepo {
   return {
     async lockById(id) {
       const rows = await tx.execute<TimerRow>(sql`
-        select id, tenant_id, process_run_id, stage_run_id, kind, due_at, fired_at, cancelled_at
+        select id, tenant_id, process_run_id, stage_run_id, kind, due_at, fired_at, cancelled_at,
+          timezone
         from hub.process_timers where id = ${id} and tenant_id = ${tenantId} for update`);
       const r = rows[0];
       return r ? toTimer(r) : null;

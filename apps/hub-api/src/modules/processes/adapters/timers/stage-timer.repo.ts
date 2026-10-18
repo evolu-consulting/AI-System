@@ -119,11 +119,6 @@ export function stageTimerRepo(
       emit(events);
       if (step?.kind === "next_step") outbox.emit({ kind: "kick", runId });
     },
-    async timezoneOf(timerId) {
-      const [t] = await tx.execute<{ timezone: string | null }>(sql`select timezone
-        from hub.process_timers where id = ${timerId} and tenant_id = ${tenantId}`);
-      return t?.timezone ?? null;
-    },
   };
 }
 

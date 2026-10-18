@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { utcOffsetLabel } from "../../domain/tz-format";
+import { utcOffsetLabel } from "@/lib/tz-format";
 import { useProcessTimezone } from "../../hooks/use-process-timezone";
 
 const K = "process.admin.editor.stage.wait.";

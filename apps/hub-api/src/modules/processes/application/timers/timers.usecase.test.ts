@@ -15,7 +15,7 @@ function fake(o: {
   timer?: Partial<Timer> | null;
 }) {
   const log: string[] = [];
-  const timer: Timer | null =
+  const timer: (Timer & { timezone: string }) | null =
     o.timer === null
       ? null
       : {
@@ -27,6 +27,7 @@ function fake(o: {
           dueAt: NOW,
           firedAt: null,
           cancelledAt: null,
+          timezone: "Asia/Ho_Chi_Minh",
           ...o.timer,
         };
   const r = {
@@ -44,7 +45,6 @@ function fake(o: {
       requeue: async () => void log.push("requeue"),
       finishWait: async (_r: string, _s: string, w: { timezone: string }) =>
         void log.push(`finish:${w.timezone}`),
-      timezoneOf: async () => "Asia/Ho_Chi_Minh",
     },
     timers: {
       lockById: async () => {

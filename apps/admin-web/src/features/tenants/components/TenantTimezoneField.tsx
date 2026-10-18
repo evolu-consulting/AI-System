@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { RefPicker } from "@/components/shared/RefPicker";
 import { Input } from "@/components/ui/input";
-import { timeZoneOptions, utcOffsetLabel } from "@/features/processes/domain/tz-format";
+import { timeZoneOptions, utcOffsetLabel } from "@/lib/tz-format";
 
 type Props = {
   id: string;
