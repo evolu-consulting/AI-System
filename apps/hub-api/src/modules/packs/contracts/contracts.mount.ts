@@ -12,6 +12,7 @@ import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { appendixRoutes } from "./adapters/appendix.routes";
 import { contractsRepos } from "./adapters/contracts.repo";
 import { CONTRACTS_KEY, contractsRoutes } from "./adapters/contracts.routes";
+import { visibilityRoutes } from "./adapters/visibility.routes";
 import { attachParent, getPrices, suggestParentsFor } from "./application/appendix.usecase";
 import { createCategory, listCategories } from "./application/categories.usecase";
 import { getContract } from "./application/get-contract.usecase";
@@ -58,6 +59,7 @@ export function contractsModule(
         ),
     }),
   );
+  r.route("/", visibilityRoutes(view, CONTRACTS_KEY, db)); // M1D-FR-04: chế độ thấy (tenant|org)
   r.route("/", packMembersRoutes(view, CONTRACTS_KEY, db)); // HD5 · N1 Q8: danh bạ tên người phụ trách
   // T10 (tải lên): `upload.mount.ts`, gắn ở `packs.mount.ts` (cần Redis + FileBox + múi tenant mà module này không nhận).
   return r;

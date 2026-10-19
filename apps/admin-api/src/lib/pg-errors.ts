@@ -23,6 +23,12 @@ export function foreignKeyViolation(err: unknown): string | null {
   return c?.code === "23503" && typeof c.constraint_name === "string" ? c.constraint_name : null;
 }
 
+/** 23514 (CHECK / trigger ném kèm CONSTRAINT) với tên constraint → tên đó; khác → null (M1D: vòng quản lý). */
+export function checkViolation(err: unknown): string | null {
+  const c = pgCause(err);
+  return c?.code === "23514" && typeof c.constraint_name === "string" ? c.constraint_name : null;
+}
+
 const isDrizzleWrapper = (err: unknown): boolean =>
   !!err && typeof err === "object" && "query" in (err as object);
 
