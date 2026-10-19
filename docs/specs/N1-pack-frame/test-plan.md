@@ -1,6 +1,6 @@
 # Test plan · N1-pack-frame
 
-qc WRITE (test trước code, rủi ro cao), 2026-10-19. Spec: [spec.md](spec.md) · [plan.md](plan.md) · [plan-frontend.md](plan-frontend.md) · [spec-decisions.md](spec-decisions.md). Mọi task T5a…T5g, TF4/TF5 là rủi ro cao ⇒ test có trước code. Mã trong tên test = mã FR/AC/NFR.
+qc WRITE (test trước code, rủi ro cao), 2026-10-19. Spec: [spec.md](spec.md) · [plan.md](plan.md) · [plan-frontend.md](plan-frontend.md) · [spec-decisions.md](spec-decisions.md). Task T5a…T5g, TF4 rủi ro cao ⇒ test có trước code; TF5 `thường` (Shell không chạm auth/quyền, tasks.md), e2e Shell vẫn viết sẵn. Mã trong tên test = mã FR/AC/NFR.
 
 ## 1. Lệnh và hạ tầng
 | Việc | Lệnh |
@@ -23,10 +23,10 @@ Persona acme: `lan`=owner · `hoa`=editor · `tam`=viewer · `cuc`=không Group 
 | PK-FR-03 | int | `rls.int.test.ts`, `api.int.test.ts` | cờ role (NOBYPASSRLS, NOINHERIT, NOLOGIN…); `hub_api` `SET TRUE`/`INHERIT FALSE`; không USAGE `hub`/`admin`; `withPackScope`: `TENANT_INVALID` trước tx, role trở lại `hub_api` sau tx |
 | PK-FR-04 | int | `migrate.int.test.ts` | thư mục `migrations-packs`, `migrations-pack-pkdemo` từ `0001`; chạy 2 lần ⇒ 0 migration mới, schema không đổi; hai runner song song áp đúng 1 lần; dùng `withMigrateLock`; production không cài `pkdemo`; DB mẫu có gói |
 | PK-FR-05 | unit | `rules/pack-access.rules.test.ts`, `rules/pack-contract.test.ts` | `checkPackAccess` 8 ca (DISABLED thắng FORBIDDEN, hợp Group); `PACK_ROLE_ACTIONS`, `packFeatureKey`/`packGroupKey` khớp `^[a-z0-9-]{2,32}$` |
-| PK-FR-05 | int | `admin-packs.int.test.ts`, `access.int.test.ts` | PUT/GET/DELETE `packs` (xem §4 Tranh chấp T1): 3 Group + 6 grant + 3 entitlement, idempotent, audit `pack.enable/disable`, NOTIFY `config_changed`, chỉ platform admin (403/401); `/me`: viewer=[read], editor=[read,write], owner=cả ba, chưa bật ⇒ `enabled:false`; thêm/gỡ Group có hiệu lực ≤ 5 s; inactive/khoá ⇒ không quyền; grant user lẻ bị bỏ qua (Q9) |
+| PK-FR-05 | int | `admin-packs.int.test.ts`, `access.int.test.ts` | PUT/GET/DELETE `/admin/tenants/:id/packs[/:k]` (§4): 3 Group + 6 grant + 3 entitlement, idempotent, audit `pack.enable/disable`, NOTIFY `config_changed`, chỉ platform admin (403/401); `/me`: viewer=[read], editor=[read,write], owner=cả ba, chưa bật ⇒ `enabled:false`; thêm/gỡ Group có hiệu lực ≤ 5 s; inactive/khoá ⇒ không quyền; grant user lẻ bị bỏ qua (Q9) |
 | PK-FR-06 | int | `files.int.test.ts`, `rls.int.test.ts` | `org=t_<tenant>` (CHECK ở DB ⇒ 23514 khi lệch); tenant khác ⇒ 404 và FileBox KHÔNG bị gọi; 404 lạ ≡ 404 tenant khác; log không có `/d/…` hay `file_id`; 302 cùng origin FileBox; FileBox 5xx ⇒ fail-closed |
 | PK-FR-07 | unit · int · perf | `rules/docx.rules.test.ts`, `docx.int.test.ts`, `perf/docx.perf.int.test.ts` | **phụ thuộc ADR-0024 Accepted** (xem §5). `checkZipEntries` (2000/2001 phần, 100 MiB, macro); mẫu thật ⇒ "Điều 1…4" + ≥ 2 bảng GFM; hỏng/mã hoá/macro/PDF/ảnh/zip bomb/XXE ⇒ `DOCX_UNREADABLE`, không ném |
-| PK-FR-08 | unit · int | `rules/pack-contract.test.ts`, `api.int.test.ts` | `IndexOutboxRowSchema`; POST ⇒ ≥ 1 hàng outbox (entity `item`, `upsert`, đúng tenant); rollback (constraint trigger hoãn ở COMMIT) ⇒ 0 hàng; không có item thiếu outbox |
+| PK-FR-08 | unit · int | `rules/pack-contract.test.ts`, `api.int.test.ts` | `IndexOutboxRowSchema`; POST ⇒ ≥ 1 hàng outbox (entity `item`, `upsert`, đúng tenant); rollback (constraint trigger hoãn ở COMMIT, chỉ tạo trong test bằng SQL owner, không vào migration `pkdemo`) ⇒ 0 hàng; không có item thiếu outbox |
 | PK-FR-09 | int · unit | `api.int.test.ts`, `access.int.test.ts`, `rules/layers.test.ts`, `hops.int.test.ts` | body/query/header giả `tenant_id` bị bỏ qua; JWT sai ⇒ 401; depcruise: `domain/` import `adapters/`/driver ⇒ `ca-domain-builtin-only`; luật `pack-no-cross-pack`, `pack-no-hub-modules`, `pack-no-hub-schema`; `packs.mount.ts` được import `modules/config`; mã gói không `fetch`/ADMIN_API |
 | PK-FR-10 | e2e | `e2e/N1/login.n1.ts`, `shell.n1.ts`, `states.n1.ts` | xem §3 |
 | PK-BR-01 | int | `hops.int.test.ts` | 0 HTTP nội bộ, 0 Redis mỗi request; quyền từ ConfigCache |
@@ -55,21 +55,21 @@ Config riêng `playwright.config.ts` (đuôi `.n1.ts`, `test:all` tự nhận). 
 - `states.n1.ts` (9): `PACK_FORBIDDEN`/`PACK_DISABLED` (VI + EN); viewer/editor/owner vào shell; `status "Đang tải…"` (giữ `/me` bằng cổng); lỗi mạng ⇒ `alert` + "Thử lại"; màn rỗng.
 Ngoài phạm vi N1: nút nghiệp vụ theo vai ("+ Thêm hợp đồng", "Xoá …") thuộc màn HD5; so ảnh với mgmt-app thuộc TF7 (`e2e/contracts-web`).
 
-## 4. Tranh chấp test / Cần bổ sung (chi tiết: `tasks.md` "Tranh chấp test")
-| # | Việc | Agent |
+## 4. Chốt chữ ký (readiness lần 1 #1–#7, 2026-10-19; trước đây "Tranh chấp/Cần bổ sung")
+| # | Việc | Chốt (plan) |
 |---|---|---|
-| T1 | **Tranh chấp:** route Admin ghi `/api/v1/tenants/:id/packs` (spec §3, plan §2) nhưng admin-api mount `/admin/tenants` (`app.ts:83-84`) ⇒ test giữ nguyên văn spec qua hằng `ADMIN_PACKS_BASE` | backend-lead chốt |
-| 1 | Seam `createApp(cfg, deps)`: `deps.packs = { pkdemo: true, filebox?: { url, token } }` | backend-lead |
-| 2 | Hình body pkdemo chưa có trong plan/contract: giả định `POST /pack/pkdemo/items` `{title, lines:[{text}]}` ⇒ 201 `{id, title, lines:[{id,text}]}`; `GET …/items/:id` ⇒ 200 cùng hình (một chỗ `itemBody`) | backend-lead |
-| 3 | `packActionsFor(…)` chưa có chữ ký ⇒ chỉ kiểm qua `/me` | backend-lead |
-| 4 | Adapter DOCX: giả định `apps/hub-api/src/modules/packs/kit/adapters/docx/index.ts` xuất `createDocxConverter()` ⇒ `{toMarkdown(bytes), close?()}` | backend-lead |
-| 5 | Route file: `GET /pack/pkdemo/files/:rowId/content` ⇒ 302 `Location` (plan §6); không có route upload ⇒ test chèn hàng `pkdemo.files` bằng SQL owner + `fb.put` | backend-lead |
-| 6 | Hub chưa có tín hiệu "đã nạp lại cấu hình" ⇒ test chờ bằng hoạt động SQL kế (`hubActivity`) và đo lại; đề nghị promise `reloaded()` từ ConfigCache | backend-lead |
-| 7 | `runPackMigrations({url, appEnv}) → {kit, packs}`; `test-db-template.ts` phải gọi nó; `admin.audit_log.action` = `pack.enable`/`pack.disable`; khoá sai ở route Admin ⇒ 400 | backend-lead |
-| 8 | TTL link 10' do FileBox quyết (FB1) — N1 không có ca TTL | — |
+| T1 | Tiền tố route Admin | `/admin/tenants/:tenant_id/packs[/:pack_key]` (plan §2); qc đổi `ADMIN_PACKS_BASE` + relock |
+| 1 | Seam `createApp(cfg, deps)` | `AppDeps.packs?: { pkdemo?: boolean; filebox?: { url: string; token: string } }`; vắng ⇒ `pkdemo = APP_ENV !== "production"`, filebox từ env FB1 (plan §9) |
+| 2 | Body pkdemo | `POST /pack/pkdemo/items` `{title 1–200, lines:[{text 1–200}] ≤ 100}` ⇒ 201 `{id,title,lines:[{id,text}]}`; GET cùng hình / 404 `NOT_FOUND`; sai ⇒ 400 `VALIDATION_ERROR`; GET cần `read`, POST `write` (plan §10) |
+| 3 | `packActionsFor` | `(i: { entitled; featureOff; userGroupIds; grantedByAction }): PackAction[]` (plan §5); kiểm unit được, không chỉ qua `/me` |
+| 4 | Adapter DOCX | `kit/adapters/docx/index.ts` xuất `createDocxConverter(opts?: { maxPending?; timeoutMs? })` ⇒ `DocxConverter & { close() }` (plan §7) |
+| 5 | Route file | `GET /pack/pkdemo/files/:rowId/content` ⇒ 302 `Location` (plan §6); không route upload ⇒ test chèn hàng `pkdemo.files` bằng SQL owner + `fb.put`; route upload/xoá do HD1+ (readiness #20) |
+| 6 | Tín hiệu nạp lại | `ConfigCache.reloaded(minAdminVersion?): Promise<number>` (T5b); test `await` nó, không chờ gián tiếp bằng `hubActivity` |
+| 7 | Migrate/audit/lỗi | `runPackMigrations({url, appEnv}) → {kit, packs}`; `test-db-template.ts` gọi nó (T5a ghi thời gian dựng mẫu trước/sau); audit `pack.enable`/`pack.disable`; lỗi route Admin theo plan §2: khoá sai 400, tenant không có 404, gói chưa cài 404 `PACK_NOT_FOUND`, không phải platform admin 403, không token 401, DELETE đã tắt 204 không audit |
+| 8 | TTL link 10' | do FileBox (FB1) quyết — N1 không có ca TTL |
 
 ## 5. Ca phụ thuộc quyết định người dùng
-ADR-0024 (spec Q3/D-10) còn **Proposed**: 22 ca DOCX (6 unit + 13 int + 3 perf) đỏ NGAY với lý do "PHỤ THUỘC: ADR-0024 chưa Accepted" (`needAdr0024Accepted`, đọc `docs/adr/0024-docx-to-markdown.md`). Khi Accepted, ca tự chuyển sang đỏ vì thiếu module (T5g). Không tính vào "đỏ đúng lý do tính năng" ở §6.
+ADR-0024 **Accepted** (D-13, 2f98a5c): 22 ca DOCX (6 unit + 13 int + 3 perf) hết "PHỤ THUỘC", chuyển sang đỏ vì thiếu module (T5g); `needAdr0024Accepted` (đọc `docs/adr/0024-docx-to-markdown.md`) qua. Số liệu §6 là lần chạy trước khi ADR Accepted (19 ca "PHỤ THUỘC" khi đó).
 
 ## 6. Kết quả chạy trước code (đỏ đúng lý do)
 | Bộ | Tổng | Đỏ | Xanh sẵn | Đỏ đúng lý do |
@@ -77,7 +77,7 @@ ADR-0024 (spec Q3/D-10) còn **Proposed**: 22 ca DOCX (6 unit + 13 int + 3 perf)
 | unit `rules/` | 33 | 30 | 3 (đối chứng depcruise: `ca-*` sẵn có ×2, `packs.mount.ts` không bị cấm) | 30/30 (21 thiếu module + 3 thiếu luật `pack-*` + 6 PHỤ THUỘC ADR) |
 | int `test:int:par` | 101 | 101 | 0 | 101/101 (mọi ca đỏ ở `needPackKit` = thiếu schema/role gói, `runPackMigrations`, `withPackScope`, hoặc route vắng ⇒ 404; 13 ca DOCX là "PHỤ THUỘC") |
 | perf `perf/` | 5 | chưa chạy | — | thiếu `needPackKit`/ADR ngay ở đầu ca (không chờ) |
-| e2e `e2e/N1` | 29 | chưa chạy được | — | webServer `bun run --filter @ai/contracts-web build` thoát lỗi sau ≈ 1 s ("No workspace packages matched"); `playwright --list` trên máy này lỗi AggregateError ở cả `e2e/chat` ⇒ môi trường |
+| e2e `e2e/N1` | 29 | chưa chạy được | — | webServer `bun run --filter @ai/contracts-web build` thoát lỗi sau ≈ 1 s ("No workspace packages matched"); `playwright --list` trên máy này lỗi AggregateError ở cả `e2e/chat` ⇒ môi trường (chạy lại sau TF1; còn lỗi ⇒ ghi `docs/TECH-DEBT.md`) |
 
 Chi tiết unit: 13 `pack-contract` + 8 `pack-access` + 6 `docx.rules` + 3 `layers` đỏ ⇒ 30; trong đó 6 `docx.rules` là "PHỤ THUỘC". Đỏ đúng lý do tính năng (trừ phụ thuộc ADR): unit 24/24, int 88/88 (101 − 13 DOCX), tổng **112/112**; phụ thuộc ADR: 19 (6 + 13) ca đã chạy.
 

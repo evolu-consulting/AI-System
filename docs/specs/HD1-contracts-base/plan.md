@@ -105,7 +105,7 @@ select (select count(*) from f) as total,
 ## §7 Cần N1 (không tự sửa N1 — đề xuất)
 | # | Cần | Lý do | Tạm thời |
 |---|---|---|---|
-| N1-a | `TenantState.timezone` trong `ConfigCache` (đọc `admin.tenants` qua `hub_ro`) hoặc port kit `TenantClock` | `contracts_rw` không đọc `admin.*`; quota ngày theo múi tenant | `Asia/Ho_Chi_Minh` (mặc định 0011) |
+| N1-a | `TenantState.timezone` trong `ConfigCache` (đọc `admin.tenants` qua `hub_ro`) hoặc port kit `TenantClock` | `contracts_rw` không đọc `admin.*`; quota ngày theo múi tenant | HD1 tự thêm `timezone` vào `config.repo/rules` (N1 không mở lại); tạm `Asia/Ho_Chi_Minh` (mặc định 0011) |
 | N1-b | plan-frontend §9: `/me` = `PackMeResponse` (§1) | lệch chữ BE/FE N1 | suy 3 cờ từ `actions` |
 | N1-c | Danh bạ `GET /pack/<k>/members` → `{id, name}` từ ConfigCache | DTO chỉ có `owner_user_id` | HD5 (Q8) |
 
@@ -113,4 +113,4 @@ select (select count(*) from f) as total,
 | # | Câu | Mặc định |
 |---|---|---|
 | Q7 | Spec HD-FR-07/AC05 ghi keyset + `next_cursor`; màn S03 cần tổng + trang số (D-02). Đổi sang `page/page_size/total`? | Đổi (D-03); AC05 thành 3 trang `page=1..3` 50/50/20, `total=120`, trang 4 rỗng |
-| Q8 | Ai làm danh bạ thành viên (N1-c)? | Kit N1 thêm ở N1 T5 (dùng chung các gói), HD5 dùng |
+| Q8 | Ai làm danh bạ thành viên (N1-c)? | HD5 làm (code ở `packs/kit`, dùng chung các gói; N1 §1 "Không làm") |

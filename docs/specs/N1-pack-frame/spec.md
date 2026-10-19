@@ -22,7 +22,8 @@ Nguồn: [intake-hd](../../platform/intake-hd.md) lát N1, câu 11/13/14. Gói �
 | Chuyển DOCX → text (thư viện, giới hạn, lỗi) | Trích trường AI (HD2), parse cho RAG (N4, ADR-0021) |
 | Bảng + hàm ghi outbox chỉ mục (cùng tx) | Worker nạp OpenSearch, mapping chỉ mục (N4/HD6) |
 | Quy ước bốn lớp cho module gói + luật depcruise | Tool gói trong `/mcp` (N2), thông báo (N3) |
-| Module gói trong `hub-api` + khuôn app web gói (D-01, D-02) | Màn nghiệp vụ của gói (HD5…), dịch vụ tri thức (N4) |
+| Module gói trong `hub-api` + khung app web `contracts-web` (TF1–TF7: đăng nhập, shell, theme, web-kit, table, harness so ảnh; D-01, D-02) | Màn nghiệp vụ (HD2…), dịch vụ tri thức (N4) |
+| — | `POST /pack/<k>/feedback` ⇒ HD5; danh bạ `GET /pack/<k>/members` ⇒ HD5 (code ở `packs/kit`); `TenantState.timezone` ⇒ HD1 |
 | Luật giao tiếp nội bộ + đếm bước nhảy (PK-BR-01, PK-NFR-05) | Hạ tầng HA nhiều node (N7) |
 
 ## 2. Nghiệp vụ
@@ -41,13 +42,13 @@ Nguồn: [intake-hd](../../platform/intake-hd.md) lát N1, câu 11/13/14. Gói �
 | PK-BR-01 | **Giao tiếp nội bộ** ([D-03](spec-decisions.md)): trên đường nóng **không** gọi HTTP đồng bộ giữa app nội bộ (hub-api ↔ admin-api…); đọc dữ liệu app khác qua **role DB chỉ-đọc** (vd quyền/Group từ `admin`), sự kiện qua NOTIFY/Redis (`config_changed`). Ngoại lệ chỉ dịch vụ ngoài (FileBox, AI) | D-03 |
 
 ## 3. Contract
-Chi tiết từng trường: [plan §2](plan.md). Tóm tắt: `packages/contracts/src/packs.ts` — `PACK_KEY_RE` `^[a-z][a-z0-9_]{1,20}$` (D-05), `PACK_ACTIONS`, `PACK_ROLE_ACTIONS`, `packFeatureKey`/`packGroupKey`; lỗi `PACK_DISABLED` 403, `PACK_FORBIDDEN` 403, `PACK_NOT_FOUND` 404, `DOCX_UNREADABLE` 422, `DOCX_BUSY` 503, file sai tenant ⇒ `NOT_FOUND` 404. Admin: `GET/PUT/DELETE /api/v1/tenants/:tenant_id/packs[/:pack_key]`. Hub: `/pack/<k>/…`, `GET /pack/<k>/me` ⇒ `{pack, enabled, actions}`.
+Chi tiết từng trường: [plan §2](plan.md). Tóm tắt: `packages/contracts/src/packs.ts` — `PACK_KEY_RE` `^[a-z][a-z0-9_]{1,20}$` (D-05), `PACK_ACTIONS`, `PACK_ROLE_ACTIONS`, `packFeatureKey`/`packGroupKey`; lỗi `PACK_DISABLED` 403, `PACK_FORBIDDEN` 403, `PACK_NOT_FOUND` 404, `DOCX_UNREADABLE` 422, `DOCX_BUSY` 503, file sai tenant ⇒ `NOT_FOUND` 404. Admin: `GET/PUT/DELETE /admin/tenants/:tenant_id/packs[/:pack_key]` (platform admin). Hub: `/pack/<k>/…`, `GET /pack/<k>/me` ⇒ `{pack, enabled, actions}`.
 
 ## 4. Dữ liệu
 [plan §3](plan.md): cùng database (D-04); `migrations-packs/` (schema `packs`, `packs.install`, `packs.secure_table`) + `migrations-pack-<k>/`; role `<k>_rw` (D-06); bảng khung `<k>.files`, `<k>.index_outbox`; 3 hàng `admin.features` mỗi gói (D-05) do `packs.install` ghi — không migration Admin mới.
 
 ## 5. UI
-N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin sẵn có (Q6). App `contracts-web` (D-02) dựng ở lát UI đầu (HD5).
+Admin: không màn mới, mã quyền gói hiện trong màn Group/Grants sẵn có (Q6). Khung `contracts-web` (D-02) dựng ở **N1** (TF1–TF7, [plan-frontend](plan-frontend.md)); HD5 chỉ thêm danh sách S03. Nút "Góp ý" ở Shell chỉ mở panel rỗng.
 
 ## 6. Hiệu năng (Luật 4c)
 | Mã | Ngưỡng | Đo |
@@ -61,7 +62,7 @@ N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin 
 ## 7. Phụ thuộc & giả lập
 | Phụ thuộc | Giả lập |
 |---|---|
-| FileBox | driver mock FB1 (`guides/filebox-test.md`), kiểm `org` |
+| FileBox | driver mock FB1 (`docs/guides/filebox-test.md`), kiểm `org` |
 | admin-api JWKS | khoá dev `bun run keys:dev` |
 | Thư viện DOCX | thật (Q3), file mẫu trong `reference/…/samples` |
 
@@ -81,22 +82,11 @@ N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin 
 | PK-AC11 | depcruise: file `domain/` của module gói import `adapters/` hoặc driver DB ⇒ lỗi | FR-09 |
 | PK-AC12 | Gọi một API gói mẫu (đọc + ghi) với bộ đếm ⇒ 0 HTTP tới admin-api; số câu DB/lệnh Redis = số ghi trong plan | BR-01, NFR-05 |
 
-## 9. Câu hỏi mở (mỗi câu có mặc định — readiness xét)
-| # | Câu | Mặc định đề xuất |
-|---|---|---|
-| Q1 | Nơi đặt backend gói | **Đã chốt** = D-01 (module hub-api) |
-| Q2 | Schema gói nằm database nào? | **Đã chốt** D-04 (cùng database) |
-| Q8 | Quyền Group đọc từ `admin` thế nào khi không gọi HTTP (D-03)? | **Đã chốt** D-04 (`ConfigCache` + `hub_ro` sẵn có) |
-| Q3 | Thư viện DOCX → text | **Đã chốt** D-13: ADR-0024 Accepted (`fflate`+`saxes`) |
-| Q4 | `org` theo tenant có áp cho đính kèm Hub/phòng? | **Đã chốt** D-07 (chỉ file gói) |
-| Q5 | Bật gói theo tenant bằng gì? | **Đã chốt** D-05 (entitlement 3 feature gói, route admin-api `packs`) |
-| Q6 | Mã quyền gói vào catalog nào ở Admin? | **Đã chốt** D-05 (`features` + `feature_grants`, không bảng/màn mới) |
-| Q7 | PB-R04 (Hub không trích chữ DOCX) có mâu thuẫn N1? | **Đã chốt** D-08 (không mâu thuẫn) |
-| Q9 | Grant **user lẻ** cho feature gói: Admin hiện cho phép (`feature_grants_subject_check`) | **Đã chốt** D-11: hub-api **bỏ qua** grant user lẻ (contract M3 giữ) |
-| Q10 | Vòng nền quét chéo tenant theo lô (HD4 nhắc) dưới FORCE RLS không nhánh `system` | **Đã chốt** D-12: HD4 thêm role `<k>_job` (NOBYPASSRLS, policy riêng) |
+## 9. Câu hỏi mở
+Tất cả **đã chốt** (mỗi câu có mặc định, readiness xét): Q1 nơi đặt backend → D-01 · Q2 database, Q8 đọc quyền không HTTP → D-04 · Q3 thư viện DOCX → D-13 (ADR-0024 Accepted) · Q4 org đính kèm Hub → D-07 (chỉ file gói) · Q5 bật gói, Q6 catalog mã quyền → D-05 · Q7 PB-R04 → D-08 · Q9 grant user lẻ → D-11 (hub-api bỏ qua) · Q10 quét chéo tenant → D-12 (HD4, role `<k>_job`).
 
 ## 10. Quyết định
-[`spec-decisions.md`](spec-decisions.md) — D-01…D-03 (người dùng 2026-10-18).
+[`spec-decisions.md`](spec-decisions.md) — D-01…D-23 (người dùng + backend-lead, FE; mặc định readiness lần 1 cũng ghi ở đó).
 
 ## 11. Tranh chấp test
 - (không)

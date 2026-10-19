@@ -1,20 +1,14 @@
 # Plan frontend · N1 · khuôn `apps/contracts-web`
 
-Spec: [spec §2 PK-FR-10](spec.md), [D-02](spec-decisions.md). Chế độ PLAN, chưa code. Nguồn UI: `reference/mgmt-app-contracts/web/src/**` (viết tắt `ref:`). Khung này dùng cho mọi gói sau (`<khoá>-web`).
+Spec: [spec §2 PK-FR-10, §5](spec.md), [D-02](spec-decisions.md). Chế độ PLAN, chưa code. Nguồn UI: `reference/mgmt-app-contracts/web/src/**` (viết tắt `ref:`). Khung này dùng cho mọi gói sau (`<khoá>-web`).
 
 ## 0. Quyết định chính
-| # | Quyết định | Căn cứ |
-|---|---|---|
-| F1 | `apps/contracts-web`: Rsbuild + React 18 + Tailwind v4 + shadcn (Radix) + TanStack Router/Query + RHF/zod + `@ai/i18n`; feature-first; gọi API chỉ trong `features/<f>/api.ts`. Khuôn = `apps/chat-web` (rsbuild.config, tsconfig, check-bundle) | ADR-0001; CONVENTIONS |
-| F2 | **Giữ nguyên** màn, màu, menu, đường dẫn, câu chữ mgmt-app; **đổi** chỉ phần máy móc: react-router 7 → TanStack Router (cùng URL), `Toaster`/`DialogHost` tự viết → shadcn `sonner`/`Dialog`/`AlertDialog` (bề ngoài như cũ), Vite → Rsbuild, React 19 → 18 | D-02, ADR-0001 |
-| F3 | Class Tailwind của mgmt-app chép gần như nguyên (cùng Tailwind v4) — token đặt tên như `ref:index.css:7-45` (`ground`, `panel`, `act`…) nên trang chép không phải viết lại màu | giảm lệch ảnh |
-| F4 | Route SPA không trùng route API: API gói dưới `/pack/contracts/*` (đề xuất backend), proxy dev như `chat-web/rsbuild.config.ts` (`/auth` → admin-api, `/pack` → hub-api, cùng origin ⇒ cookie refresh `SameSite=Strict` chạy không CORS) | chat-web |
-| F5 | Auth: dùng lại logic phiên của chat-web (token trong bộ nhớ + cookie refresh + khoá refresh + kênh đa tab) — **tách `packages/web-kit`** (§4), không chép | ADR-0018 |
+[`spec-decisions.md`](spec-decisions.md): F1 stack → D-15 · F2 giữ nguyên màn → D-16 · F3 token → D-17 · F4 route/proxy → D-18 · F5 web-kit → D-19 · Q-F1 → D-20 · Q-F2 → D-14 · Q-F3 → D-21 · Q-F4 → D-22 · Q-F5 → D-23.
 
 ## 1. Khung app
 | Phần | Làm | ref |
 |---|---|---|
-| Route | `/login` · `_authed` (guard `requireSession`) → Shell: `/` → `/contracts`; `/contracts`, `/contracts/new`, `/contracts/$id`, `/partners`, `/prices`, `/cks`, `/cks/$id`, `/settings`, `/settings/scoring`; `*` → `/contracts`. `/feedback` → mở panel góp ý. Mỗi route lazy (autoCodeSplitting). **Bỏ** `/onboarding` và đăng ký (Q-F3) | App.tsx:28-50 |
+| Route | `/login` · `_authed` (guard `requireSession`) → Shell: `/` → `/contracts`; `/contracts`, `/contracts/new`, `/contracts/$id`, `/partners`, `/prices`, `/cks`, `/cks/$id`, `/settings`, `/settings/scoring`; `*` → `/contracts`. `/feedback` → mở panel góp ý (rỗng ở N1, D-23). Mỗi route lazy (autoCodeSplitting). **Bỏ** `/onboarding` và đăng ký (Q-F3) | App.tsx:28-50 |
 | Shell | Sidebar 64 px mở 224 px khi hover/focus; header 58 px (tiêu đề mục, chuông, góp ý, menu người dùng ở mobile); thanh dưới 4 mục ở mobile; panel phải 340 px (280–560, kéo, nhớ `assistant:open`/`assistant:width`); nút nổi "Mở trợ lý AI"; sheet 85 dvh ở mobile | Shell.tsx:43-189 |
 | Menu | Hợp đồng `/contracts` · Đối tác `/partners` · So sánh giá `/prices` · Sản phẩm `/cks`; tên app "Sổ Hợp Tác" + khẩu hiệu giữ nguyên (`brand.ts:3-4`, qua i18n) | Shell.tsx:13-19 |
 | Đăng nhập | Port `LoginPage` + Showcase/AppPreview; gọi admin-api `/auth/login`. Ô "Mã công ty" chỉ hiện khi chưa biết tenant (như `LoginForm` chat-web: `defaultTenant` từ env/`?tenant=`/nhớ lần trước). `next=` giữ như cũ | LoginPage.tsx:10-73,124-214 |
@@ -97,16 +91,9 @@ Nhãn từng màn: plan-frontend của lát bổ sung (từ `aria-label` ở ref
 | Tiền tố `/pack/contracts/*` (không trùng route SPA); `GET /pack/contracts/me` → `{pack, enabled, actions}` (200 cả khi chưa bật/không quyền; write = `actions` có `write`, owner = có `admin`) | guard, ẩn nút |
 | Mã lỗi `PACK_FORBIDDEN`, `PACK_DISABLED` (403), `PACK_NOT_FOUND` (404) có `code` ổn định + câu lỗi theo `Accept-Language` | trang trạng thái |
 | Danh sách HĐ: `q`, lọc theo cột, sắp xếp, trang + **facet** (giá trị lọc mỗi cột) phía server | S03 với 10.000 HĐ (mgmt-app lọc cả mảng ở client: `table.tsx:52`) |
-| `POST /pack/feedback` (**chưa có trong plan backend N1**; cần đường dẫn hoặc route chung); nguồn chuông (N3) | S14, S16 |
+| `POST /pack/<k>/feedback` — **không thuộc N1** (HD5, D-23); Shell N1 chỉ nút mở panel rỗng, không gửi. Nguồn chuông (N3) | S14 (HD5), S16 |
 | Hội thoại chat nhận `context {page,id}`; thẻ đề xuất qua cổng xác nhận | S15 (HD6) |
-| Refresh cookie của admin-api `Path=/auth`, cùng origin qua proxy | F4 |
+| Refresh cookie của admin-api `Path=/auth`, cùng origin qua proxy | D-18 |
 
-## 10. Câu hỏi mở (có mặc định)
-| # | Câu | Mặc định |
-|---|---|---|
-| Q-F1 | spec §5 nói "dựng ở HD5", nhưng HD2 đã có màn | Dựng **khung ở N1** (TF1–TF7); HD5 chỉ thêm danh sách. Spec §5 còn "HD5" (ghi nhận) |
-| Q-F2 | Font Roboto/Roboto Mono (`@fontsource/*`, OFL) chưa có trong ADR-0001 | **Đã chốt** D-14: ADR-0001 Accepted; không đổi font |
-| Q-F3 | Bỏ đăng ký/onboarding (tenant do Admin tạo, ADR-0018) | Bỏ; thêm ô "Mã công ty" khi chưa biết tenant |
-| Q-F4 | Dev/CI chụp ảnh ở OS khác nhau (font render) | Baseline theo `<platform>`; CI chụp bộ riêng bằng cùng lệnh `ref` |
-| Q-F5 | Góp ý (S14) chưa thuộc lát nào | Gộp HD5, backend nhận tin vào bảng gói |
-Ngoài ADR-0001, mgmt-app dùng `react-router` 7 và Vite (đều thay được) và Roboto (Q-F2); không thư viện UI khác ⇒ không điểm dừng.
+## 10. Câu hỏi mở
+Q-F1…Q-F5 đã chốt: D-20, D-14, D-21, D-22, D-23. Ngoài ADR-0001, mgmt-app dùng `react-router` 7 và Vite (đều thay được) và Roboto (D-14); không thư viện UI khác ⇒ không điểm dừng.
