@@ -1,0 +1,28 @@
+{
+  "contracts": {
+    "org": {
+      "title": "Members & departments",
+      "lead": "\"By structure\" mode: editors and viewers only see contracts they own, their reports' and their department's (as head). Owners see everything.",
+      "ownerOnly": "Only the owner (tenant admin) can manage members and departments.",
+      "mode": "Contract visibility",
+      "modeTenant": "Everyone sees all contracts",
+      "modeOrg": "By structure (owner, reports, departments)",
+      "members": "Members",
+      "member": "Member",
+      "manager": "Manager",
+      "none": "—",
+      "cycle": "Not allowed: this person reports to them (management loop).",
+      "departments": "Departments",
+      "head": "Head",
+      "deptMembers": "Department members",
+      "addMember": "Add member",
+      "newDept": "New department",
+      "deptKey": "Key (a-z, 0-9, -)",
+      "deptName": "Name",
+      "create": "Create department",
+      "removeDept": "Remove department",
+      "removeMember": "Remove from department",
+      "empty": "No departments yet."
+    }
+  }
+}

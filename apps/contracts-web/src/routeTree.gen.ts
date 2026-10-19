@@ -21,6 +21,7 @@ import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contr
 import { Route as AuthedContractsIdRouteImport } from './routes/_authed/contracts/$id'
 import { Route as AuthedContractsNewRouteImport } from './routes/_authed/contracts/new'
 import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedSettingsMembersRouteImport } from './routes/_authed/settings/members'
 import { Route as AuthedSettingsScoringRouteImport } from './routes/_authed/settings/scoring'
 
 const IndexRoute = IndexRouteImport.update({
@@ -82,6 +83,11 @@ const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSettingsMembersRoute = AuthedSettingsMembersRouteImport.update({
+  id: '/settings/members',
+  path: '/settings/members',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsScoringRoute = AuthedSettingsScoringRouteImport.update({
   id: '/settings/scoring',
   path: '/settings/scoring',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
+  '/settings/members': typeof AuthedSettingsMembersRoute
   '/settings/scoring': typeof AuthedSettingsScoringRoute
   '/cks/': typeof AuthedCksIndexRoute
   '/contracts/': typeof AuthedContractsIndexRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
+  '/settings/members': typeof AuthedSettingsMembersRoute
   '/settings/scoring': typeof AuthedSettingsScoringRoute
   '/cks': typeof AuthedCksIndexRoute
   '/contracts': typeof AuthedContractsIndexRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_authed/cks/$id': typeof AuthedCksIdRoute
   '/_authed/contracts/$id': typeof AuthedContractsIdRoute
   '/_authed/contracts/new': typeof AuthedContractsNewRoute
+  '/_authed/settings/members': typeof AuthedSettingsMembersRoute
   '/_authed/settings/scoring': typeof AuthedSettingsScoringRoute
   '/_authed/cks/': typeof AuthedCksIndexRoute
   '/_authed/contracts/': typeof AuthedContractsIndexRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
+    | '/settings/members'
     | '/settings/scoring'
     | '/cks/'
     | '/contracts/'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
+    | '/settings/members'
     | '/settings/scoring'
     | '/cks'
     | '/contracts'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_authed/cks/$id'
     | '/_authed/contracts/$id'
     | '/_authed/contracts/new'
+    | '/_authed/settings/members'
     | '/_authed/settings/scoring'
     | '/_authed/cks/'
     | '/_authed/contracts/'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings/members': {
+      id: '/_authed/settings/members'
+      path: '/settings/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof AuthedSettingsMembersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/scoring': {
       id: '/_authed/settings/scoring'
       path: '/settings/scoring'
@@ -287,6 +306,7 @@ interface AuthedRouteChildren {
   AuthedCksIdRoute: typeof AuthedCksIdRoute
   AuthedContractsIdRoute: typeof AuthedContractsIdRoute
   AuthedContractsNewRoute: typeof AuthedContractsNewRoute
+  AuthedSettingsMembersRoute: typeof AuthedSettingsMembersRoute
   AuthedSettingsScoringRoute: typeof AuthedSettingsScoringRoute
   AuthedCksIndexRoute: typeof AuthedCksIndexRoute
   AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
@@ -300,6 +320,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCksIdRoute: AuthedCksIdRoute,
   AuthedContractsIdRoute: AuthedContractsIdRoute,
   AuthedContractsNewRoute: AuthedContractsNewRoute,
+  AuthedSettingsMembersRoute: AuthedSettingsMembersRoute,
   AuthedSettingsScoringRoute: AuthedSettingsScoringRoute,
   AuthedCksIndexRoute: AuthedCksIndexRoute,
   AuthedContractsIndexRoute: AuthedContractsIndexRoute,

@@ -1,0 +1,28 @@
+{
+  "contracts": {
+    "org": {
+      "title": "Thành viên & phòng ban",
+      "lead": "Chế độ \"theo cơ cấu\": biên tập viên và người xem chỉ thấy hợp đồng họ phụ trách, của cấp dưới và của phòng mình làm trưởng. Chủ sở hữu thấy toàn bộ.",
+      "ownerOnly": "Chỉ chủ sở hữu (quản trị tenant) được quản lý thành viên và phòng ban.",
+      "mode": "Phạm vi xem hợp đồng",
+      "modeTenant": "Mọi người thấy toàn bộ hợp đồng",
+      "modeOrg": "Theo cơ cấu (người phụ trách, cấp dưới, phòng ban)",
+      "members": "Thành viên",
+      "member": "Thành viên",
+      "manager": "Cấp quản lý",
+      "none": "—",
+      "cycle": "Không thể chọn: người này đang là cấp dưới (vòng quản lý).",
+      "departments": "Phòng ban",
+      "head": "Trưởng phòng",
+      "deptMembers": "Thành viên phòng",
+      "addMember": "Thêm thành viên",
+      "newDept": "Phòng ban mới",
+      "deptKey": "Mã (a-z, 0-9, -)",
+      "deptName": "Tên phòng",
+      "create": "Tạo phòng ban",
+      "removeDept": "Bỏ phòng ban",
+      "removeMember": "Gỡ khỏi phòng",
+      "empty": "Chưa có phòng ban."
+    }
+  }
+}
