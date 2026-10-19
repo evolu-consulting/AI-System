@@ -13,6 +13,8 @@
 | A9 | e2e so màn hình S04/S05 + baseline ref | nhanh | HD-FR-26 | `bun run e2e:contracts` | [x] |
 | A10 | Cổng lát + security review + commit | — | — | brief mục 2 | [x] (xem Kết quả) |
 
+**Đóng 2026-10-19:** [`ket-luan.md`](ket-luan.md); cổng gộp [`wave2-gate.md`](../wave2-gate.md). #219 chuyển HD3.
+
 Nợ: TECH-DEBT #218 hàng đợi trong tiến trình (D2-02); #219 transport agent qua run Hub (D2-01, chờ N2/HD3); #220 "Xem file gốc" cần link JSON.
 
 ## Kết quả (2026-10-19)

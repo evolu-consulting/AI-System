@@ -32,5 +32,7 @@ Một agent một lát (Luật 1b). Làn: **đầy đủ** = phần chạm tenan
 - M4: journal hub ở `126e6b08` đã có entry `0041_n2_engine` trước khi file SQL tồn tại (thêm ở `42767d4f`): ai bisect cần migrate từ `42767d4f` trở đi; HEAD migrate sạch từ đầu (template DB test dựng từ trống).
 - Thấp đã sửa: L4 (link cấm ký tự điều khiển, zod), L5 (`fake` bị từ chối ở production), L6 (comment migration). Còn lại, ghi nợ: L1 (gắn `p_source` với role gọi), L2 (UPDATE `fanout_at` của user), L3 (đăng ký push chéo tenant, quyết định đã ghi), L4 phía CHECK DB (đổi migration đã áp), L7 (user bị khoá giữa chừng vẫn nhận lần thử lại), L8 (thứ tự `tests/.lock`), L9 (test `prosecdef`, perf backlog lớn, dọn dữ liệu cũ, FK user/tenant).
 
+**Đóng 2026-10-19:** [`ket-luan.md`](ket-luan.md); cổng gộp [`wave2-gate.md`](../wave2-gate.md). Flake bell "tùy chọn kênh" là lỗi ở test (uncheck → click + expect), đã sửa `d8a4a54a`; e2e:contracts 25/25 ×3.
+
 ## Tranh chấp test
 (không)

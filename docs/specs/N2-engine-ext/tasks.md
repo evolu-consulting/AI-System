@@ -14,6 +14,8 @@ Một agent làm trọn lát (CLAUDE.md Luật 1b, CR-094 đợt 2). Rủi ro **
 | T8 | FE admin: ô trần run + checkbox stage; chat-web nhãn `reject` | nhanh | thường | plan §7 | `apps/admin-web/src/features/{tenants,processes}/**`, `packages/i18n/**` | unit FE + typecheck | [x] e61572f4 — e2e admin (readiness #4) chưa làm: nợ |
 | T9 | Cổng lát: typecheck, depcruise, unit, int N2/P-d/P-b/N1/HD1, perf d2, check:fn, lock | — | — | brief | — | 0 đỏ ngoài danh sách cho phép | [x] typecheck 12/12; depcruise 0 ca-*/pack-* (3 no-cross-module-repo kh có sẵn); unit 1716/0; int N2+P-d+P-b+N1+HD1 681/0 (121,9 s); check:fn OK; perf d2: P01 p95 10,7 ms (24 câu), P02 5,9 ms, P03 driver 14 câu = trước, P04 p95 34,9 ms đỏ (cho phép, chờ staging), P05 7,3 ms; lock +7 file N2 |
 
+**Đóng 2026-10-19:** [`ket-luan.md`](ket-luan.md); cổng gộp [`wave2-gate.md`](../wave2-gate.md). Còn đỏ: e2e N2 ca trần run (#227), 5 lỗi kiểu test khoá (#228), perf P04 (staging).
+
 ## Plan ngắn
 Thứ tự T3 → T4 → T5 → T6 → T7 (mỗi bước chạy test N2 tương ứng + test P-d chạm tới), rồi T8, T9. Test khoá P-d chỉ sửa khi contract đổi có chủ ý — ghi từng chỗ ở mục dưới.
 

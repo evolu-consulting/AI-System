@@ -16,3 +16,4 @@ Làn **đầy đủ** (đường đăng nhập) — một agent một lát (Lu�
 - Perf p95 login (`auth.legacy.perf.int.test.ts`, 20 lần): trước (= M1, chỉ argon2) 46,6 ms → sau (argon2 ‖ scrypt giả) 50,2 ms; legacy lần đầu (verify + rehash + audit) 48,4 ms. Lần đo khác khi máy tải: 50,9 → 73,5 / 48,0 ms. `users.perf` (ADM-NFR-03, 5.000 user) xanh < 150 ms.
 - tsc admin-api sạch; depcruise: 0 vi phạm mới (3 sẵn có ở hub-api); check:fn: 0 vi phạm mới; `test:lock:verify` OK (không thêm file khoá — test mới nằm trong `apps/`).
 - Không đổi test khoá: fixture `SCRYPT_HASH` của N5 sai độ dài dk (24 byte) ⇒ vẫn `reset`, test N5 giữ nguyên.
+**Đóng 2026-10-19:** [`ket-luan.md`](../N5-identity/ket-luan.md); int `auth` riêng 21/0 ở [`wave2-gate.md`](../wave2-gate.md) §2. Giữ `LEGACY_HASH_SUNSET` mặc định tới khi có rate limit (#224).

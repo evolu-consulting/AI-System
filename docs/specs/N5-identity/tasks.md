@@ -23,3 +23,5 @@ Làn **đầy đủ** (auth/mật khẩu/tenant) — một agent một lát (Lu�
 ## Vòng sửa sau review + security (2026-10-19)
 - Sửa M1, M2, L1–L4, Trung 1–2, Thấp 4/5/7/8/9/10 (spec §7 F1). Test: 23 unit, 17 int (2 file, mỗi describe tự seed), 3 perf.
 - Perf 10.000 user: apply 1.937 ms (6 câu/lô), lô org 9 câu, chạy lại 267 ms (≤ 2 câu/lô), dry-run 143 ms.
+
+**Đóng 2026-10-19:** [`ket-luan.md`](ket-luan.md) (gồm N5b); cổng gộp [`wave2-gate.md`](../wave2-gate.md). Sau cổng: `check:fn` đã sửa (`c85b4411`). **Điều kiện cứng trước import thật:** rate limit đăng nhập (TECH-DEBT #224).
