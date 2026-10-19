@@ -16,6 +16,8 @@ export const PACKS_KIT_TABLE = "__drizzle_migrations_packs";
 export const PACK_DIRS = [
   { key: "pkdemo", dir: dir("migrations-pack-pkdemo"), devOnly: true },
   { key: "contracts", dir: dir("migrations-pack-contracts"), devOnly: false },
+  // N4 · ADR-0021: dịch vụ tri thức dùng khuôn gói (schema `knowledge`, role `knowledge_rw`) — không phải gói nghiệp vụ.
+  { key: "knowledge", dir: dir("migrations-pack-knowledge"), devOnly: false },
 ] as const satisfies readonly { key: string; dir: string; devOnly: boolean }[];
 
 export type PackMigrateResult = { kit: number; packs: Record<string, number> };
