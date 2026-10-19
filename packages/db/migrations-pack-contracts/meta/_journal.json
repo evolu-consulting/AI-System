@@ -99,6 +99,13 @@
       "when": 1793750400000,
       "tag": "0014_w1b_followup_send",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793836800000,
+      "tag": "0011_hd8_partners",
+      "breakpoints": true
     }
   ]
 }

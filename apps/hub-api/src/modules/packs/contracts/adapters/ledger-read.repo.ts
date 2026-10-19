@@ -8,7 +8,7 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { LedgerReadRepo } from "../application/ledger.ports";
 import { addDays } from "../domain/local-time.rules";
-import { evJson, obJson, one } from "./ledger-sql";
+import { evJson, obJson, one, seenEvent } from "./ledger-sql";
 
 /** `payments.DONE_DAYS`: "Đã xong" = 60 ngày gần nhất. */
 export const DONE_DAYS = 60;
@@ -86,7 +86,7 @@ export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
         tx,
         sql`with e as (
           select * from contracts.partner_events e where e.tenant_id = ${t}::uuid and e.party_key = ${party}
-            and (${role}::text is null or e.role = ${role}::text)
+            and (${role}::text is null or e.role = ${role}::text) and ${seenEvent("e")}
           order by e.at desc, e.id desc limit 2000)
         select coalesce(jsonb_agg(${evJson("e", "v")} order by e.at, e.id), '[]'::jsonb) as j
         from e left join contracts.partner_event_voids v on v.event_id = e.id and v.tenant_id = e.tenant_id`,

@@ -12,6 +12,7 @@ export const PAYMENT_FILTERS = ["all", "receive", "pay", "overdue", "done"] as c
 export const OBLIGATION_KINDS = ["payment", "delivery"] as const;
 export const OBLIGATION_STATUSES = ["open", "done", "cancelled"] as const;
 export const PARTNER_ROLES = ["customer", "supplier"] as const;
+export type PartnerRole = (typeof PARTNER_ROLES)[number];
 /** Việc ghi tay được (`types.MANUAL_TYPES`); phần còn lại do nút trên đợt, CKS hoặc hệ thống ghi. */
 export const MANUAL_EVENT_TYPES = [
   "appointment_kept",
@@ -134,6 +135,8 @@ export type PartnerEvent = {
   type: string;
   at: string;
   by: string | null;
+  /** HD8: tên hiển thị người ghi (cùng tenant, `contracts.user_label`); hệ thống ⇒ null. */
+  by_name: string | null;
   source: "action" | "assistant" | "system";
   contract_id: string | null;
   obligation_id: string | null;
@@ -150,6 +153,13 @@ export type PartnerEvent = {
   kind?: string;
   seq?: number;
   delta?: number;
+  /** HD8: chấm điểm tay (`type = rating`) */
+  criterion?: string;
+  value?: number;
+  rated_at?: string;
+  /** HD8: CKS (`cks_renewed`) */
+  days_before_expiry?: number;
+  with_us?: boolean;
 };
 export type ContractPartner = {
   party: string | null;

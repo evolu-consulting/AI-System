@@ -1,4 +1,4 @@
-// HD-FR-01…HD-FR-08 · HD1 plan §1: contract zod gói hợp đồng (`/pack/contracts/**`).
+// HD-FR-01â€¦HD-FR-08 Â· HD1 plan Â§1: contract zod gÃ³i há»£p Ä‘á»“ng (`/pack/contracts/**`).
 export * from "./appendix";
 export * from "./approval";
 export * from "./cks";
@@ -12,3 +12,4 @@ export * from "./ledger";
 export * from "./list";
 export * from "./mywork";
 export * from "./sourcing";
+export * from "./partners";

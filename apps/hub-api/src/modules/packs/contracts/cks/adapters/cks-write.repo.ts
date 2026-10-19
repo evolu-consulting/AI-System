@@ -185,6 +185,14 @@ function closeWrites(tx: Tx, t: string) {
       fu as (
         update contracts.cks_followups f set done_at = now()
         where f.tenant_id = ${t}::uuid and f.renewal_id = ${w.id}::uuid and f.done_at is null),
+      -- HD8-FR-07 (sales.py:130-132): mỗi chữ ký gia hạn ⇒ một dòng uy tín cks_renewed của khách (đối tác = party_key khách CKS).
+      pe as (
+        insert into contracts.partner_events (tenant_id, party_key, role, type, at, by_user, source, contract_id, data)
+        select ${t}::uuid, cu.party_key, 'customer', 'cks_renewed', ${w.today}::date, ${BY}, 'action', r0.new_contract_id,
+          jsonb_build_object('certificate_id', o.id, 'days_before_expiry', o.valid_to - ${w.today}::date, 'with_us', true)
+        from nc join contracts.cks_certificates o on o.id = nc.replaces and o.tenant_id = ${t}::uuid
+          join contracts.cks_customers cu on cu.id = o.customer_id and cu.tenant_id = ${t}::uuid cross join r0
+        where cu.party_key is not null),
       ${auditCte(t, withOrd(w.audit))},
       r as (
         update contracts.cks_renewals rr set status = 'done', done_at = ${w.today}::date
@@ -213,7 +221,14 @@ function closeWrites(tx: Tx, t: string) {
         from r where o.tenant_id = ${t}::uuid and o.contract_id = r.new_contract_id and o.status = 'open'),
       fu as (
         update contracts.cks_followups f set done_at = now()
-        from r where f.tenant_id = ${t}::uuid and f.renewal_id = r.id and f.done_at is null)
+        from r where f.tenant_id = ${t}::uuid and f.renewal_id = r.id and f.done_at is null),
+      -- HD8-FR-07 (sales.py:145): mất khách ⇒ một dòng uy tín cks_lapsed gắn HĐ bán, lý do làm ghi chú.
+      pl as (
+        insert into contracts.partner_events (tenant_id, party_key, role, type, at, by_user, source, contract_id, note)
+        select ${t}::uuid, cu.party_key, 'customer', 'cks_lapsed', ${w.today}::date, ${BY}, 'action', r.sale_contract_id,
+          nullif(left(${w.reason}::text, 500), '')
+        from r join contracts.cks_customers cu on cu.id = r.customer_id and cu.tenant_id = ${t}::uuid
+        where cu.party_key is not null)
       select ${renewalJson} as j from r`,
     );
   const insertFollowup: CksRepo["insertFollowup"] = (w) =>

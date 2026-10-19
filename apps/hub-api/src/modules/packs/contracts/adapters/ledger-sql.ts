@@ -15,10 +15,20 @@ export const obJson = (o: string) =>
     'status', ${o}.status, 'done_at', ${o}.done_at, 'postponed_to', ${o}.postponed_to, 'postpones', ${o}.postpones,
     'reminders', ${o}.reminders, 'source', ${o}.source, 'estimated', ${o}.estimated, 'basis', ${o}.basis)`);
 
+/**
+ * HD8 · M1D-FR-01 (mgmt `partner_events.py` + `test_a_member_neither_sees_nor_undoes…`): sự kiện gắn với HĐ người dùng không thấy
+ * (policy `contracts_visible` của M1) ⇒ không liệt kê, không huỷ được. Sự kiện không gắn HĐ (ghi tay theo đối tác) ai cũng thấy.
+ * Điểm uy tín vẫn tính trên cả sổ (như mgmt: "scores still come from the whole ledger").
+ */
+export const seenEvent = (e: string) =>
+  sql.raw(`(${e}.contract_id is null or exists (select 1 from contracts.contracts sc
+    where sc.tenant_id = ${e}.tenant_id and sc.id = ${e}.contract_id))`);
+
 /** JSON một sự kiện từ `e` (sổ) + `v` (hàng huỷ, left join): khoá phụ trong `data` (to/was/due_date/…) trải phẳng như mgmt. */
 export const evJson = (e: string, v: string) =>
   sql.raw(`(${e}.data || jsonb_build_object('id', ${e}.id::text, 'party', ${e}.party_key, 'role', ${e}.role,
-    'type', ${e}.type, 'at', ${e}.at, 'by', ${e}.by_user, 'source', ${e}.source, 'contract_id', ${e}.contract_id,
+    'type', ${e}.type, 'at', ${e}.at, 'by', ${e}.by_user, 'by_name', contracts.user_label(${e}.by_user),
+    'source', ${e}.source, 'contract_id', ${e}.contract_id,
     'obligation_id', ${e}.obligation_id, 'days_late', ${e}.days_late, 'amount', ${e}.amount, 'note', ${e}.note,
     'voided', ${v}.event_id is not null, 'voided_by', ${v}.by_user, 'voided_at', ${v}.at))`);
 

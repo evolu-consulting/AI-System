@@ -5,7 +5,7 @@ import type { Obligation, PartnerEvent } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { LedgerWriteRepo, LockedObligation } from "../application/ledger.ports";
-import { auditCte, eventCte, evJson, json, obJson, one } from "./ledger-sql";
+import { auditCte, eventCte, evJson, json, obJson, one, seenEvent } from "./ledger-sql";
 
 export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
   const lockContract: LedgerWriteRepo["lockContract"] = async (id) => {
@@ -128,7 +128,8 @@ function ledgerEventWrites(
         was: string | null;
       }>(sql`select e.id::text, e.type, e.source, e.obligation_id::text, e.data ->> 'to' as "to",
           e.data ->> 'was' as was
-        from contracts.partner_events e where e.tenant_id = ${t}::uuid and e.id = ${id}::bigint`);
+        from contracts.partner_events e where e.tenant_id = ${t}::uuid and e.id = ${id}::bigint
+          and ${seenEvent("e")}`);
       return r ?? null;
     },
     voidEvent: (w) => {

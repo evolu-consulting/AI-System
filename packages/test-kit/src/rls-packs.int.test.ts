@@ -336,7 +336,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
+      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes",
     );
   },
   tables: [
@@ -479,6 +479,62 @@ defineRlsSuite({
       },
       insert: (tx, t) =>
         tx.unsafe("insert into contracts.visibility_settings (tenant_id) values ($1)", [t]),
+    }, // HD8-NFR-01 · 0010: cấu hình điểm, lịch sử, ảnh chụp điểm, báo giá — RLS FORCE theo tenant.
+    {
+      name: "score_configs",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.score_configs (tenant_id, role, version, criteria, rules) values ($1, 'customer', 1, '[]', '{}')",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.score_configs (id, tenant_id, role, version, criteria, rules) values ($1, $2, 'supplier', 1, '[]', '{}')",
+          [rnd(pk), t],
+        ),
+    },
+    {
+      name: "score_config_history",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.score_config_history (tenant_id, role, version, summary, before, after) values ($1, 'customer', 1, 's', '{}', '{}')",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.score_config_history (id, tenant_id, role, version, summary, before, after) values ($1, $2, 'customer', 1, 's', '{}', '{}')",
+          [rnd(pk), t],
+        ),
+    },
+    {
+      name: "score_snapshots",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.score_snapshots (tenant_id, party_key, role, config_version) values ($1, 'tax:1', 'customer', 1)",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.score_snapshots (id, tenant_id, party_key, role, config_version) values ($1, $2, 'tax:1', 'customer', 1)",
+          [rnd(pk), t],
+        ),
+    },
+    {
+      name: "price_quotes",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.price_quotes (tenant_id, product_key, product_name, supplier_name, supplier_party_key, price, quoted_at) values ($1, 'name:x|', 'X', 'A', 'name:a', 1, '2026-10-10')",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.price_quotes (id, tenant_id, product_key, product_name, supplier_name, supplier_party_key, price, quoted_at) values ($1, $2, 'name:x|', 'X', 'A', 'name:a', 1, '2026-10-10')",
+          [rnd(pk), t],
+        ),
     },
     ...frameTables("contracts").slice(1),
   ],

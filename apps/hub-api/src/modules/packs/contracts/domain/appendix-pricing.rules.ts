@@ -96,6 +96,15 @@ export function applyAppendixPricing(
   appendices: readonly PriceSource[],
   asOf: string,
 ): PricedLine[] {
+  return applyAppendixPricingKeyed(parent, appendices, asOf).map(({ key: _k, ...l }) => l);
+}
+
+/** HD8: như `applyAppendixPricing` nhưng giữ khoá sản phẩm đã quy về sản phẩm của HĐ gốc (so giá theo sản phẩm). */
+export function applyAppendixPricingKeyed(
+  parent: PriceSource,
+  appendices: readonly PriceSource[],
+  asOf: string,
+): (PricedLine & { key: string })[] {
   const keyOf = resolver(parent.items);
   const make = (s: PriceSource, i: PriceItem, rank: number): Work => ({
     item: {
@@ -127,7 +136,7 @@ export function applyAppendixPricing(
     if (a.effective_date) supersede(lines, added, a.id, a.effective_date);
     lines.push(...added);
   }
-  return lines.map(({ key: _k, rank: _r, ...l }) => ({
+  return lines.map(({ rank: _r, ...l }) => ({
     ...l,
     current:
       (l.valid_from === null || l.valid_from <= asOf) &&
