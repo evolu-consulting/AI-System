@@ -20,6 +20,7 @@ const ID_TABLES = new Set<TableName>([
   "contracts.contract_categories",
   "contracts.files",
   "contracts.contracts",
+  "contracts.approvals",
   "contracts.contract_items",
   "contracts.cks_customers",
   "contracts.cks_lots",

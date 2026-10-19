@@ -127,8 +127,11 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
   const s = d.src;
   const ref = `contracts/${d.id}`;
   const fields = mapFields(s.fields, ctx, ref);
-  const status = typeof s.status === "string" && STATUSES.has(s.status) ? s.status : "needs_review";
+  let status = typeof s.status === "string" && STATUSES.has(s.status) ? s.status : "needs_review";
   if (status !== s.status) ctx.issues.push({ entity: "contract", ref, code: "STATUS_MAPPED" });
+  // M3: trích HĐ = job Redis do lúc tải lên xếp; HĐ đang đọc dở ở mgmt-app không có job ⇒ kẹt. Đánh dấu lỗi để người dùng trích lại.
+  const interrupted = status === "extracting";
+  if (interrupted) status = "extract_failed";
   const handled = isObj(s.handled) && OUTCOMES.has(String(s.handled.outcome)) ? s.handled : null;
   const fv = (k: string) => (isObj(fields[k]) ? (fields[k] as { value: unknown }).value : null);
   return {
@@ -138,7 +141,7 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
     title: str(s.title, 200) ?? str(fv("number"), 200) ?? "Hợp đồng",
     direction: s.direction === "sale" || s.direction === "purchase" ? s.direction : null,
     status,
-    error: str(s.error, 2000),
+    error: interrupted ? "MGMT_IMPORT_INTERRUPTED" : str(s.error, 2000),
     owner_user_id: parentOwner ?? ctx.userOf(tid, lowerEmail(s.owner_email)),
     created_by: ctx.userOf(tid, lowerEmail(s.created_by)) ?? ctx.fallbackUser(tid),
     created_at: ts(s.created_at),
@@ -152,6 +155,7 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
     warnings: jsonSafe(Array.isArray(s.warnings) ? s.warnings : []),
     action_deadline: day(s.action_deadline),
     handled: jsonSafe(handled),
+    run_id: idOf(ctx, "approval", d.id),
   };
 }
 
@@ -263,6 +267,32 @@ function parentOf(
   return null;
 }
 
+/** M3 · trạng thái HĐ ⇒ lượt duyệt `contracts.approvals` (cùng luật migration 0011_m3_approvals): đã duyệt ⇒ done (người xác
+ *  nhận = cấp 1 + người quyết), bị từ chối ⇒ rejected, trích lỗi ⇒ failed, chờ xem lại ⇒ level1 (lượt sống). `contracts.run_id`
+ *  = id lượt. `migrated = true` (lượt không đi qua máy trạng thái). */
+export function approvalRow(c: Row): Row {
+  const s = String(c.status);
+  const status = ["active", "expiring", "expired", "renewed", "terminated"].includes(s)
+    ? "done"
+    : s === "rejected"
+      ? "rejected"
+      : s === "extract_failed"
+        ? "failed"
+        : "level1";
+  const done = status === "done";
+  return {
+    id: c.run_id,
+    contract_id: c.id,
+    status,
+    started_by: c.created_by,
+    level1_by: done ? c.confirmed_by : null,
+    level1_at: done ? c.confirmed_at : null,
+    decided_by: done ? c.confirmed_by : null,
+    decided_at: done ? c.confirmed_at : null,
+    created_at: c.created_at,
+    updated_at: c.updated_at ?? c.created_at,
+  };
+}
 function mapOne(
   d: SourceDoc,
   t: TenantPlan,
@@ -275,6 +305,7 @@ function mapOne(
   const row = contractRow(d, ctx, t.tenantId, parent?.owner ?? null);
   if (parent) Object.assign(row, { kind: "appendix", parent_id: parent.id });
   push(t, "contracts.contracts", row);
+  push(t, "contracts.approvals", approvalRow(row));
   const total = (row.fields as Record<string, { value?: unknown } | undefined>).total_value?.value;
   addMoney(t, "contracts.total_value", typeof total === "number" ? total : null);
   mapItems(d, t, ctx, cats, row.id as string);

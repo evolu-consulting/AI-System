@@ -5,7 +5,7 @@ import { companyIndex } from "./companies.rules";
 import type { Ctx, Snapshot } from "./context";
 import { targetId, uuidV5 } from "./ids.rules";
 import { mapCks } from "./map-cks.rules";
-import { matchForm, parseRemindKey, productKey } from "./map-contracts.rules";
+import { approvalRow, matchForm, parseRemindKey, productKey } from "./map-contracts.rules";
 import { memberships, usersExport } from "./map-identity.rules";
 import { mapLedger } from "./map-ledger.rules";
 import { newPlan, tenantPlan } from "./plan";
@@ -235,5 +235,32 @@ describe("đối soát", () => {
     expect([...(mgmtVisible(s, m, "me@x", true) ?? [])].sort()).toEqual(["c2", "c3", "c4", "c5"]);
     expect([...(mgmtVisible(s, m, "sub@x", true) ?? [])].sort()).toEqual(["c5"]);
     expect(mgmtVisible(s, m, "me@x", false)).toBeNull();
+  });
+});
+
+describe("M3 lượt duyệt", () => {
+  test("trạng thái HĐ ⇒ contracts.approvals như migration 0011_m3_approvals; người xác nhận = cấp 1 + người quyết khi done", () => {
+    const c = (status: string) => ({
+      id: "c",
+      run_id: "r",
+      status,
+      created_by: "u",
+      confirmed_by: "k",
+      confirmed_at: "t",
+    });
+    expect(approvalRow(c("active"))).toMatchObject({
+      id: "r",
+      contract_id: "c",
+      status: "done",
+      level1_by: "k",
+      decided_by: "k",
+    });
+    expect(approvalRow(c("needs_review"))).toMatchObject({
+      status: "level1",
+      decided_by: null,
+      started_by: "u",
+    });
+    expect(approvalRow(c("extract_failed")).status).toBe("failed");
+    expect(approvalRow(c("terminated")).status).toBe("done");
   });
 });

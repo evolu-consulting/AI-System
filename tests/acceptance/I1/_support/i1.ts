@@ -40,6 +40,7 @@ export async function startI1(): Promise<CtxI1> {
 export async function counts(ctx: CtxI1): Promise<Record<string, number>> {
   const tables = [
     "contracts.contracts",
+    "contracts.approvals",
     "contracts.contract_items",
     "contracts.contract_categories",
     "contracts.contract_events",

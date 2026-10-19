@@ -20,6 +20,7 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 | — | contracts.visibility_settings `org` | D-M1-01 |
 | catalogs.categories / assign / aliases | contract_categories; item.category_id theo product key | |
 | contracts (+fields {value,quote,verified,edited}, items, clauses, warnings, handled) | contracts, contract_items | addendum ⇒ appendix, chủ = chủ HĐ cha (D-M1-03) |
+| trạng thái xác nhận (status, confirmed_by/at) | contracts.approvals (M3; `contracts.run_id` = lượt, `migrated`) | đã duyệt ⇒ done, chờ xem lại ⇒ level1, lỗi trích ⇒ failed; không run engine |
 | contracts: history, parties, origin, cks, auto, file meta | contract_events `mgmt_import` (data) | |
 | contract_files/<org>/<hđ>/ | contracts.files + FileBox/dir | sha256 đối soát |
 | state `remind:*` | contract_reminders (channel `mgmt_import`) | để HD4 không gửi lại |
@@ -29,7 +30,7 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 | obligations / partner_events (+voided) | obligations / partner_events / partner_event_voids | party_key = `contracts.party_key(tên, MST)` |
 | documents + chunks | knowledge.documents/chunks | general ⇒ `--knowledge-org`; embedding không chuyển |
 | Neo4j Entity/MENTIONS/REL/ALIAS_OF/SIMILAR/CONFLICTS/LINKS_TO | knowledge.entities/chunk_entities/entity_rels/entity_aliases/chunk_links/document_links (G1) | |
-| companies, quotes, feedback, score_*, market_scans, chat_files, chats, notifications, catalogs, followups khác, market không-CKS | contracts.legacy_records (0011, nguyên văn jsonb) | chưa có bảng đích |
+| companies, quotes, feedback, score_*, market_scans, chat_files, chats, notifications, catalogs, followups khác, market không-CKS | contracts.legacy_records (0012, nguyên văn jsonb) | chưa có bảng đích |
 | Contract/Party/Product/PriceLine (Neo4j) | không chuyển | dẫn xuất từ HĐ (project.py dựng lại) |
 | sessions, events, app_logs, llm_usage, entities (vector) | không chuyển | vận hành |
 
@@ -37,7 +38,7 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 | # | Việc | Làn | Trạng thái |
 |---|---|---|---|
 | 1 | Reader OpenSearch/Neo4j + mapper + SQL lô + use case + CLI | nhanh | xong |
-| 2 | Migration 0011 `legacy_records` (sau 0010_m1b) | nhanh | xong |
+| 2 | Migration 0012 `legacy_records` (sau 0010_m1b, 0011_m3) | nhanh | xong |
 | 3 | Unit (luật + reader) + int (`tests/acceptance/I1`, nguồn giả mọi mapper, tiền khớp, luật thấy, chạy lại) | nhanh | xong |
 | 4 | Profile `evotest-mgmt` + chạy seed: dry-run → apply → đối soát → chạy lại | nhanh | xong (xem Kết quả) |
 
@@ -50,6 +51,7 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 - D-I1-06: Importer đặt ở `apps/admin-api/src/modules/mgmt-import` (dùng lại N5 cùng app), ghi gói qua pool `hub_api`.
 - D-I1-07: Reader xin `accept-encoding: identity` — OpenSearch 2.19 trả mã nén khác gzip cho Bun (mặc định `gzip, deflate, br, zstd`) ⇒ fetch treo tới timeout; mọi phản hồi đọc hết thân, mỗi lời gọi có trần thời gian.
 - D-I1-08: Hai org trùng tên ⇒ N5 DUPLICATE_KEY; importer gán `tenant_key` tất định `<slug ≤23>-<8 hex sha256(org id)>` cho org sau (theo id).
+- D-I1-10: M3 · HĐ `extracting` ở mgmt-app (đọc dở) ⇒ `extract_failed` + lỗi `MGMT_IMPORT_INTERRUPTED` (trích là job Redis xếp lúc tải lên — HĐ nhập không có job, sẽ kẹt); người dùng trích lại.
 - D-I1-09: Phụ lục: `owner_user_id` = chủ HĐ cha (D-M1-03); M1b còn giữ `visibility_owner_id` bằng trigger.
 
 ## Kết quả trên bản sao seed (evotest-mgmt, 2026-10-20, mgmt-app b839418; 2 org demo + seed-plus)

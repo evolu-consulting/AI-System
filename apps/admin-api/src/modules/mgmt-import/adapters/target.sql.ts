@@ -44,14 +44,26 @@ export const INSERTS: Record<TableName, Q> = {
     j,
   ) => sql`insert into contracts.contracts (id, tenant_id, kind, parent_id, title, direction,
       status, error, owner_user_id, created_by, created_at, updated_at, confirmed_at, confirmed_by, fields, file_id,
-      source_text, clauses, warnings, action_deadline, handled)
+      source_text, clauses, warnings, action_deadline, handled, run_id)
     select x.id, ${T(tid)}, x.kind, x.parent_id, x.title, x.direction, x.status, x.error, x.owner_user_id, x.created_by,
       coalesce(x.created_at, now()), coalesce(x.updated_at, now()), x.confirmed_at, x.confirmed_by, x.fields, x.file_id,
-      x.source_text, x.clauses, x.warnings, x.action_deadline, x.handled
+      x.source_text, x.clauses, x.warnings, x.action_deadline, x.handled, x.run_id
     from jsonb_to_recordset(${j}::jsonb) as x(id uuid, kind text, parent_id uuid, title text, direction text, status text,
       error text, owner_user_id uuid, created_by uuid, created_at timestamptz, updated_at timestamptz,
       confirmed_at timestamptz, confirmed_by uuid, fields jsonb, file_id uuid, source_text text, clauses jsonb,
-      warnings jsonb, action_deadline date, handled jsonb)
+      warnings jsonb, action_deadline date, handled jsonb, run_id uuid)
+    on conflict do nothing returning 1`,
+  // M3 · lượt duyệt (không FK sang contracts — xem 0011_m3_approvals); id = contracts.run_id; chỉ khi HĐ có trong tenant.
+  "contracts.approvals": (
+    tid,
+    j,
+  ) => sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by,
+      level1_by, level1_at, decided_by, decided_at, migrated, created_at, updated_at)
+    select x.id, ${T(tid)}, x.contract_id, x.status, x.started_by, x.level1_by, x.level1_at, x.decided_by, x.decided_at, true,
+      coalesce(x.created_at, now()), coalesce(x.updated_at, x.created_at, now())
+    from jsonb_to_recordset(${j}::jsonb) as x(id uuid, contract_id uuid, status text, started_by uuid, level1_by uuid,
+      level1_at timestamptz, decided_by uuid, decided_at timestamptz, created_at timestamptz, updated_at timestamptz)
+    where exists (select 1 from contracts.contracts c where c.id = x.contract_id and c.tenant_id = ${T(tid)})
     on conflict do nothing returning 1`,
   "contracts.contract_items": (
     tid,

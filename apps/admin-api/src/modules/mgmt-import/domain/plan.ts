@@ -7,6 +7,7 @@ export const TABLE_ORDER = [
   "contracts.contract_categories",
   "contracts.files",
   "contracts.contracts",
+  "contracts.approvals",
   "contracts.contract_items",
   "contracts.contract_events",
   "contracts.contract_reminders",

@@ -66,6 +66,7 @@ describe("I1 mgmt-import", () => {
     const c = await counts(ctx);
     expect(c).toMatchObject({
       "contracts.contracts": 6,
+      "contracts.approvals": 6,
       "contracts.contract_items": 4,
       "contracts.contract_categories": 2,
       "contracts.contract_events": 6,
@@ -132,6 +133,15 @@ describe("I1 mgmt-import", () => {
       { h: string }[]
     >`select password_hash as h from admin.users where email = 'e1@annam.test'`;
     expect(h?.h.startsWith("$scrypt-legacy$")).toBe(true);
+    // M3: trạng thái xác nhận ⇒ contracts.approvals (run_id = lượt), không có run engine
+    const ap = await ctx.sql<{ id: string; status: string; ok: boolean }[]>`select c.id, a.status,
+        (a.decided_by is not distinct from c.confirmed_by and a.contract_id = c.id) as ok
+      from contracts.contracts c join contracts.approvals a on a.id = c.run_id where c.tenant_id = ${A}`;
+    const st = Object.fromEntries(ap.map((x) => [x.id, x.status]));
+    expect(st[targetId(SOURCE, "contract", "c1")]).toBe("done");
+    expect(st[targetId(SOURCE, "contract", "c3")]).toBe("level1");
+    expect(ap.length).toBe(5);
+    expect(ap.every((x) => x.ok)).toBe(true);
     const [v] = await ctx.sql<
       { mode: string }[]
     >`select mode from contracts.visibility_settings where tenant_id = ${A}`;
