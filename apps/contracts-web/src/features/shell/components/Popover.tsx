@@ -9,6 +9,7 @@ export function Popover({
   children,
   up = false,
   full = false,
+  onToggle,
 }: {
   label: string;
   /** `menu`: danh sách mục (menuitem); `dialog`: nội dung tự do. */
@@ -18,6 +19,8 @@ export function Popover({
   /** Mở lên trên, sang phải nút (menu tài khoản ở chân sidebar). */
   up?: boolean;
   full?: boolean;
+  /** Gọi sau khi mở/đóng (N3: mở chuông ⇒ làm tươi danh sách). */
+  onToggle?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -47,7 +50,10 @@ export function Popover({
         aria-label={label}
         aria-haspopup={role}
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+          onToggle?.(!open);
+        }}
         className={cn(
           "inline-flex h-11 items-center gap-2 rounded-lg px-2 text-left text-ink-2 hover:bg-sunk",
           full && "w-full",

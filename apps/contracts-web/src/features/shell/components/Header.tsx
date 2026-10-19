@@ -2,9 +2,9 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconFeedback } from "~/components/icons";
+import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
 import type { NavItem, Role } from "../lib/nav";
 import { Logo } from "./Logo";
-import { NotificationBell } from "./NotificationBell";
 import { type ShellUser, UserMenu } from "./UserMenu";
 
 export function Header({
@@ -29,7 +29,7 @@ export function Header({
       </Link>
       <h1 className="text-[15px] font-semibold max-md:hidden">{here ? t(here.labelKey) : null}</h1>
       <div className="ml-auto flex items-center gap-1">
-        <NotificationBell />
+        <ConnectedBell />
         <button
           type="button"
           onClick={onFeedback}

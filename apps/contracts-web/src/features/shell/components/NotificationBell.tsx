@@ -1,9 +1,32 @@
-// PK-FR-10 · TF5 · S16 chuông thông báo — khung rỗng ở N1 (danh sách và số chưa đọc nối ở HD4: truyền `unread` + `items`).
+// PK-FR-10 · TF5 · N3-FR-09 · S16 chuông thông báo: khung trình bày thuần (không gọi API). Rỗng ⇒ đúng khung N1 (baseline khoá);
+// có thông báo ⇒ danh sách, "đánh dấu tất cả", tùy chọn kênh. Dữ liệu do `features/notifications` truyền vào.
+import type { Notification, NotifyPrefs } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { IconBell } from "~/components/icons";
+import { NotificationItems } from "./NotificationItems";
+import { NotifyPrefsForm } from "./NotifyPrefsForm";
 import { Popover } from "./Popover";
 
-export function NotificationBell({ unread = 0 }: { unread?: number }) {
+export type NotificationBellProps = {
+  unread?: number;
+  items?: Notification[];
+  prefs?: NotifyPrefs | null;
+  /** Mở chuông ⇒ làm tươi danh sách. */
+  onOpen?: () => void;
+  onRead?: (id: string) => void;
+  onReadAll?: () => void;
+  onPrefs?: (p: NotifyPrefs) => void;
+};
+
+export function NotificationBell({
+  unread = 0,
+  items = [],
+  prefs = null,
+  onOpen,
+  onRead,
+  onReadAll,
+  onPrefs,
+}: NotificationBellProps) {
   const { t } = useTranslation();
   const label = unread
     ? t("contracts.shell.notificationsUnread", { n: unread })
@@ -12,6 +35,7 @@ export function NotificationBell({ unread = 0 }: { unread?: number }) {
     <Popover
       label={label}
       role="dialog"
+      onToggle={(open) => open && onOpen?.()}
       button={
         <span className="relative shrink-0">
           <IconBell />
@@ -25,12 +49,28 @@ export function NotificationBell({ unread = 0 }: { unread?: number }) {
     >
       {() => (
         <>
-          <p className="border-b border-rule px-4 py-3 text-body font-semibold">
-            {t("contracts.shell.notifications")}
-          </p>
-          <p className="px-4 py-8 text-center text-body text-dim">
-            {t("contracts.shell.notificationsEmpty")}
-          </p>
+          <div className="flex items-center justify-between border-b border-rule px-4 py-3">
+            <p className="text-body font-semibold">{t("contracts.shell.notifications")}</p>
+            {unread > 0 && onReadAll && (
+              <button
+                type="button"
+                onClick={onReadAll}
+                className="text-micro font-medium text-act hover:underline"
+              >
+                {t("contracts.shell.notificationsReadAll")}
+              </button>
+            )}
+          </div>
+          {items.length === 0 ? (
+            <p className="px-4 py-8 text-center text-body text-dim">
+              {t("contracts.shell.notificationsEmpty")}
+            </p>
+          ) : (
+            <NotificationItems items={items} onRead={onRead} />
+          )}
+          {items.length > 0 && prefs && onPrefs && (
+            <NotifyPrefsForm prefs={prefs} onChange={onPrefs} />
+          )}
         </>
       )}
     </Popover>

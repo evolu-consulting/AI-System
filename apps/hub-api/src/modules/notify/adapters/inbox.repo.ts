@@ -1,7 +1,7 @@
 // N3-FR-04 · N3-FR-09 · câu SQL chuông/tùy chọn/đăng ký push của CHÍNH người dùng. Scope `user` (RLS: tenant + user của token) và
 // lọc tường minh `tenant_id`/`user_id` ngoài RLS. Ngoại lệ có chủ đích: đăng ký push dùng scope system với tenant/user lấy từ
 // token — một endpoint (trình duyệt) có thể đang gắn với người dùng trước trên cùng máy; RLS user không thấy hàng đó để chuyển.
-import type { Db } from "@ai/db";
+import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { InboxStore, NotificationItem, Who } from "../application/ports";
@@ -14,41 +14,42 @@ type Row = Omit<NotificationItem, "created_at" | "seq"> & {
 const userScope = (who: Who) =>
   ({ kind: "user", tenantId: who.tenantId, userId: who.userId }) as const;
 
+async function listTx(tx: Tx, who: Who, limit: number, before: number | null) {
+  const cond = before === null ? sql`` : sql`and n.seq < ${before}`;
+  const rows = await tx.execute<Row>(sql`
+    select n.id, n.seq, n.source, n.kind, n.title, n.body, n.link, n.created_at, (n.read_at is not null) as read
+    from hub.notifications n
+    where n.tenant_id = ${who.tenantId} and n.user_id = ${who.userId} ${cond}
+    order by n.seq desc limit ${limit}`);
+  const cnt = await tx.execute<{ n: number }>(sql`
+    select count(*)::int as n from hub.notifications
+    where tenant_id = ${who.tenantId} and user_id = ${who.userId} and read_at is null`);
+  return {
+    items: rows.map((r) => ({
+      ...r,
+      seq: Number(r.seq),
+      created_at: new Date(r.created_at).toISOString(),
+    })),
+    unread: Number(cnt[0]?.n ?? 0),
+  };
+}
+
+async function markReadTx(tx: Tx, who: Who, ids: readonly string[] | "all") {
+  const which =
+    ids === "all"
+      ? sql`true`
+      : sql`n.id in (select jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid)`;
+  const res = await tx.execute<{ id: string }>(sql`
+    update hub.notifications n set read_at = now()
+    where n.tenant_id = ${who.tenantId} and n.user_id = ${who.userId} and n.read_at is null and ${which}
+    returning n.id`);
+  return res.length;
+}
 export function inboxRepo(db: Db): InboxStore {
   return {
     list: (who, limit, before) =>
-      withHubScope(db, userScope(who), async (tx) => {
-        const cond = before === null ? sql`` : sql`and n.seq < ${before}`;
-        const rows = await tx.execute<Row>(sql`
-          select n.id, n.seq, n.source, n.kind, n.title, n.body, n.link, n.created_at, (n.read_at is not null) as read
-          from hub.notifications n
-          where n.tenant_id = ${who.tenantId} and n.user_id = ${who.userId} ${cond}
-          order by n.seq desc limit ${limit}`);
-        const cnt = await tx.execute<{ n: number }>(sql`
-          select count(*)::int as n from hub.notifications
-          where tenant_id = ${who.tenantId} and user_id = ${who.userId} and read_at is null`);
-        return {
-          items: rows.map((r) => ({
-            ...r,
-            seq: Number(r.seq),
-            created_at: new Date(r.created_at).toISOString(),
-          })),
-          unread: Number(cnt[0]?.n ?? 0),
-        };
-      }),
-
-    markRead: (who, ids) =>
-      withHubScope(db, userScope(who), async (tx) => {
-        const which =
-          ids === "all"
-            ? sql`true`
-            : sql`n.id in (select jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid)`;
-        const res = await tx.execute<{ id: string }>(sql`
-          update hub.notifications n set read_at = now()
-          where n.tenant_id = ${who.tenantId} and n.user_id = ${who.userId} and n.read_at is null and ${which}
-          returning n.id`);
-        return res.length;
-      }),
+      withHubScope(db, userScope(who), (tx) => listTx(tx, who, limit, before)),
+    markRead: (who, ids) => withHubScope(db, userScope(who), (tx) => markReadTx(tx, who, ids)),
 
     prefs: (who) =>
       withHubScope(db, userScope(who), async (tx) => {

@@ -117,7 +117,7 @@ describe("N3-FR-03 · người nhận phải cùng tenant", () => {
     const rows = await sql<
       { user_id: string; tenant_id: string }[]
     >`select user_id, tenant_id from hub.notifications`;
-    expect(rows).toEqual([{ user_id: P.lan.id, tenant_id: T.acme }]);
+    expect([...rows]).toEqual([{ user_id: P.lan.id, tenant_id: T.acme }]);
   });
 });
 

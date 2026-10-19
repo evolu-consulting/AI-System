@@ -4,13 +4,15 @@ import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 
 // Client gọi đường dẫn tương đối; dev/preview proxy cùng origin ⇒ cookie refresh `Path=/auth` chạy không cần CORS.
-// `/auth` → admin-api (đăng nhập, refresh); `/pack` → hub-api (`/pack/contracts/*`, không trùng route SPA).
+// `/auth` → admin-api (đăng nhập, refresh); `/pack` → hub-api (`/pack/contracts/*`, không trùng route SPA);
+// `/notifications` → hub-api (N3 chuông; route SPA không dùng tiền tố này).
 const ADMIN_API_URL = process.env.ADMIN_API_URL || "http://localhost:3001";
 const HUB_URL = process.env.HUB_URL || "http://localhost:4000";
 
 export const proxy = {
   "/auth": ADMIN_API_URL,
   "/pack": HUB_URL,
+  "/notifications": HUB_URL,
 };
 
 export default defineConfig({

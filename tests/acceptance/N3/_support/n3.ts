@@ -6,7 +6,7 @@ import { HUB_API_URL, type Sql, T } from "../../H1/_fixtures";
 import { P, setupX2a } from "../../X2a/_x2a";
 
 export type { Sql };
-export { P, setupX2a, T };
+export { HUB_API_URL, P, setupX2a, T };
 
 /** Hàm `notify.enqueue` + bảng N3 đã có trong DB mẫu. Đỏ NGAY với lý do rõ (không PostgresError trong fixture). */
 export async function needNotify(sql: Sql): Promise<void> {
@@ -181,3 +181,19 @@ export { drain };
 /** Ghi thông báo của một tenant qua cổng (đúng đường gói) — trả số hàng mới. */
 export const send = (tenantId: string, rows: Notice[], key = "pkdemo"): Promise<number> =>
   inPack(key, tenantId, (tx) => enqueue(tx, key, rows));
+
+/** Như `send` nhưng GIỮ một kết nối `hub_api` (đo hàm cổng, không đo mở kết nối). */
+export function packSender(
+  key: string,
+  tenantId: string,
+): { send(rows: Notice[]): Promise<number>; close(): Promise<void> } {
+  const conn = postgres(HUB_API_URL, { max: 1, onnotice: () => {} });
+  return {
+    send: (rows) =>
+      conn.begin(async (tx) => {
+        await tx`select set_config('role', ${`${key}_rw`}, true), set_config('app.tenant_id', ${tenantId}, true)`;
+        return enqueue(tx as unknown as Sql, key, rows);
+      }) as Promise<number>,
+    close: () => conn.end({ timeout: 1 }),
+  };
+}

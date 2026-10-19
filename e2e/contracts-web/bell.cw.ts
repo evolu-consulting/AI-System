@@ -1,0 +1,141 @@
+// N3-FR-04 · N3-FR-09 · e2e chuông thông báo S16 có dữ liệu: số chưa đọc, danh sách, đánh dấu đã đọc, tùy chọn kênh, lỗi API ⇒ rỗng.
+// Backend giả bằng `page.route` (cùng cách `scenes.cw.ts`); chỉ chạy ở chế độ so (không phải CW_MODE=ref, vì đó là web mgmt-app).
+import { expect, type Page, type Route, test } from "@playwright/test";
+import { asHub } from "./dataset";
+
+test.skip(process.env.CW_MODE === "ref", "chế độ chụp tham chiếu mgmt-app");
+
+const ID1 = "a3000000-0000-4000-8000-000000000001";
+const ID2 = "a3000000-0000-4000-8000-000000000002";
+const item = (id: string, seq: number, title: string, read: boolean, link: string | null) => ({
+  id,
+  seq,
+  source: "contracts",
+  kind: "remind.deadline",
+  title,
+  body: "Còn 30 ngày",
+  link,
+  created_at: "2026-10-17T02:00:00.000Z",
+  read,
+});
+
+type Api = { posts: unknown[]; puts: unknown[]; unread: number; failList: boolean };
+
+type Json = (r: Route, status: number, body: unknown) => Promise<void>;
+const json: Json = (r, status, body) =>
+  r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+
+/** `/notifications*` giả có trạng thái: đánh dấu đã đọc làm giảm `unread`. Bảng theo "METHOD đường-dẫn". */
+function notifyRoutes(api: Api): Record<string, (r: Route) => Promise<void>> {
+  const body = (r: Route) => r.request().postDataJSON();
+  return {
+    "GET /notifications": (r) =>
+      api.failList
+        ? json(r, 500, { error: { code: "INTERNAL_ERROR", message: "x" } })
+        : json(r, 200, {
+            items: [
+              item(ID2, 2, "Giá nguyên liệu thay đổi", api.unread < 2, null),
+              item(ID1, 1, "Hợp đồng sắp hết hạn", api.unread < 1, "/contracts"),
+            ],
+            unread: api.unread,
+            next_before: null,
+          }),
+    "POST /notifications/read": (r) => {
+      const b = body(r);
+      api.posts.push(b);
+      api.unread = b.all ? 0 : Math.max(0, api.unread - b.ids.length);
+      return json(r, 200, { updated: 1 });
+    },
+    "GET /notifications/prefs": (r) => json(r, 200, { email: true, push: true }),
+    "PUT /notifications/prefs": (r) => {
+      api.puts.push(body(r));
+      return json(r, 200, body(r));
+    },
+  };
+}
+
+/** Đăng nhập giả + `/notifications*` giả. */
+async function install(page: Page, initialUnread = 2): Promise<Api> {
+  const d = asHub("editor");
+  const api: Api = { posts: [], puts: [], unread: initialUnread, failList: false };
+  const table = notifyRoutes(api);
+  await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
+  await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
+  await page.route(
+    (u) => u.pathname.startsWith("/notifications"),
+    (r) => {
+      const key = `${r.request().method()} ${new URL(r.request().url()).pathname}`;
+      return (
+        table[key] ?? ((x: Route) => json(x, 404, { error: { code: "NOT_FOUND", message: "x" } }))
+      )(r);
+    },
+  );
+  await page.addInitScript(() => {
+    localStorage.setItem("ai.locale", "vi");
+    localStorage.setItem("assistant:open", "0");
+  });
+  return api;
+}
+const bell = (page: Page) => page.locator('header button[aria-label^="Thông báo"]');
+
+test("N3-FR-09 · chuông hiện số chưa đọc và danh sách; mục chưa đọc có chấm 'Chưa đọc'", async ({
+  page,
+}) => {
+  await install(page);
+  await page.goto("/contracts");
+  await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo, 2 chưa đọc");
+  await expect(bell(page)).toContainText("2");
+  await bell(page).click();
+  const dialog = page.getByRole("dialog", { name: /Thông báo/ });
+  await expect(dialog.getByText("Hợp đồng sắp hết hạn")).toBeVisible();
+  await expect(dialog.getByText("Giá nguyên liệu thay đổi")).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Chưa đọc" })).toHaveCount(2);
+});
+
+test("N3-FR-09 · 'Đánh dấu tất cả đã đọc' gọi API và xóa số chưa đọc", async ({ page }) => {
+  const api = await install(page);
+  await page.goto("/contracts");
+  await bell(page).click();
+  await page.getByRole("button", { name: "Đánh dấu tất cả đã đọc" }).click();
+  await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo");
+  expect(api.posts).toEqual([{ all: true }]);
+});
+
+test("N3-FR-09 · bấm một thông báo có liên kết ⇒ đánh dấu đã đọc đúng id và đi tới đường dẫn trong app", async ({
+  page,
+}) => {
+  const api = await install(page);
+  await page.goto("/partners");
+  await bell(page).click();
+  await page.getByRole("link", { name: /Hợp đồng sắp hết hạn/ }).click();
+  await expect(page).toHaveURL(/\/contracts$/);
+  expect(api.posts).toEqual([{ ids: [ID1] }]);
+});
+
+test("N3-FR-04 · tùy chọn kênh: tắt email ⇒ PUT đúng body, push giữ nguyên", async ({ page }) => {
+  const api = await install(page);
+  await page.goto("/contracts");
+  await bell(page).click();
+  const email = page.getByRole("checkbox", { name: "Email" });
+  await expect(email).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Thông báo đẩy trên trình duyệt" }),
+  ).toBeChecked();
+  const put = page.waitForRequest(
+    (r) => r.method() === "PUT" && r.url().endsWith("/notifications/prefs"),
+  );
+  await email.uncheck();
+  await put; // chờ đúng tín hiệu request, không chờ giờ
+  expect(api.puts).toEqual([{ email: false, push: true }]);
+});
+
+test("N3-FR-09 · API thông báo lỗi 500 ⇒ chuông vẫn dùng được, hiện trạng thái rỗng (không văng, không toast)", async ({
+  page,
+}) => {
+  const api = await install(page, 0);
+  api.failList = true;
+  await page.goto("/contracts");
+  await bell(page).click();
+  await expect(page.getByText("Chưa có thông báo nào.")).toBeVisible();
+  await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo");
+});

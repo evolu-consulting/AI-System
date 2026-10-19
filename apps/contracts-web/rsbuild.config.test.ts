@@ -3,9 +3,10 @@ import { describe, expect, test } from "bun:test";
 import config, { proxy } from "./rsbuild.config";
 
 describe("rsbuild.config (D-18)", () => {
-  test("proxy chỉ /auth và /pack, mỗi cái một đích riêng", () => {
-    expect(Object.keys(proxy).sort()).toEqual(["/auth", "/pack"]);
+  test("proxy chỉ /auth (admin-api), /pack và /notifications (hub-api, N3); /auth khác đích hub", () => {
+    expect(Object.keys(proxy).sort()).toEqual(["/auth", "/notifications", "/pack"]);
     expect(proxy["/auth"]).not.toBe(proxy["/pack"]);
+    expect(proxy["/notifications"]).toBe(proxy["/pack"]);
   });
 
   test("route SPA (/contracts, /partners…) không bị proxy", () => {
