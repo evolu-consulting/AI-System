@@ -23,6 +23,15 @@ Khi người dùng đưa **yêu cầu / thay đổi / ghi chú / file** (đầu 
 4. Chạy theo skill `/intake`. Kết quả chốt → `docs-architect` cập nhật BA/spec + `docs/CHANGE-REQUESTS.md` (`CR-xxx`) → Luật 1 cho spec bị ảnh hưởng. Spec đã qua Gate → Gate lại.
 Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 
+## Luật 0b — Chế độ nhanh (người dùng chốt 2026-10-19, CR-095) — THẮNG Luật 1, 1b, 2b, 3, 4b khi mâu thuẫn
+- **Lát nhỏ** (≤ ½ ngày), **một agent làm trọn** trên **worktree/nhánh riêng** của lát; merge tuần tự vào `platform/gd0`. Không readiness, không Gate, không qc viết trước, không review từng lát.
+- **Giấy tờ:** chỉ `docs/specs/<lát>/tasks.md` (plan ngắn + quyết định + việc còn lại). Không spec/plan/readiness/review/ket-luan/gate riêng; STATE/ROADMAP cập nhật một lần cuối đợt.
+- **Test:** agent viết unit/int/e2e cho phần đổi (Luật 4b vẫn áp, test RLS/quyền/tiền viết trước code phần đó); trong lát chỉ chạy `test:affected` hoặc file liên quan **trên server** (`deploy/evotest`); **không** chạy `test:all` trong lát — bộ đầy đủ chạy mỗi đêm trên evotest.
+- **Review:** một lượt review + security trên diff gộp **cuối đợt**; lỗi gửi lại đúng agent đã làm lát (giữ ngữ cảnh), sửa song song.
+- **Model:** Sonnet mặc định; Opus chỉ cho RLS/tenant, quyền, auth, tiền, chuyển dữ liệu khách; Haiku cho việc cơ học.
+- **Báo cáo:** mỗi lát một dòng khi xong; quá 45 phút gửi trạng thái 3 dòng.
+- **Kiến trúc:** AI System = lõi chung (đăng nhập, tenant, phòng ban, quyền, Agent Hub, MCP, RAG); mỗi app là một gói (schema + RLS riêng). Module đóng băng: `docs/platform/modules.md` — không sửa trừ khi lát yêu cầu.
+
 ## Luật 1 — Cửa sẵn sàng (BẮT BUỘC; hỏi người dùng xác nhận trước khi chạy)
 Trước khi viết code cho một feature hoặc thay đổi không tầm thường — kể cả khi người dùng chỉ nói "implement", "code", "làm", "build", "tiếp tục", "chạy task":
 1. Xác định spec (`docs/specs/<ID>/`; chưa có spec thì mục BA/UI tương ứng trong `docs/design/`).
