@@ -171,12 +171,13 @@ describe("PK-FR-01 · packs.install / packs.secure_table kiểm đầu vào", ()
       from pg_class c where c.oid = 'n1tmp.good'::regclass`;
     expect(g).toEqual({ rls: true, forced: true, pol: 1 });
   });
-  it("PK-FR-01 · khoá gói chưa cài ⇒ không có gì rò sang schema khác: packs.registry chỉ chứa khoá đã install", async () => {
-    await loadMigratePacks();
+  it("PK-FR-01 · khoá gói chưa cài ⇒ không có gì rò sang schema khác: packs.registry chỉ chứa đúng khoá trong PACK_DIRS (môi trường test)", async () => {
+    const m = await loadMigratePacks();
     await fresh();
     await run("test");
     const reg = await sql<{ key: string }[]>`select key from packs.registry order by key`;
-    expect(reg.map((x) => x.key)).toEqual(["pkdemo"]);
+    const expected = (m.PACK_DIRS as readonly { key: string }[]).map((p) => p.key).sort();
+    expect(reg.map((x) => x.key)).toEqual(expected);
     if (reg.length === 0) noFeature("packs.registry", "T5a");
   });
 });

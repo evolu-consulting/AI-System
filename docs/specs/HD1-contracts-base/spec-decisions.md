@@ -22,6 +22,9 @@ Nơi duy nhất ghi quyết định riêng HD1; quyết định khung gói ở [
 | D-16 | 2026-10-19 · docs-architect (#4) | HD1 làm thật `TenantState.timezone?` (`config.rules.ts`, `loadTenants` chọn `tenants.timezone`); vắng/không hợp lệ (kiểm một lần khi nạp) ⇒ `Asia/Ho_Chi_Minh` | T10 thêm `modules/config/{config.rules,config.repo}.ts`; 0 SQL thêm mỗi request |
 | D-17 | 2026-10-19 · docs-architect (#5, #6) | `AppDeps.packs?.contracts?: boolean` (vắng ⇒ `true`, `false` ⇒ 404); Redis = `deps.redis`, vắng ⇒ upload 503 `UPLOAD_QUOTA_UNAVAILABLE`, đọc vẫn chạy; `adapters/zip-names.ts` (`fflate unzipSync` filter false) cấp `zipNames` cho `sniffFileType` | T10 thêm file |
 | D-18 | 2026-10-19 · docs-architect (#7) | Chuẩn hoá NFC ở biên (zod text + chuỗi ListQuery `.transform`), `foldVi` gọi `normalize("NFC")` trước; SQL `fold` giữ nguyên | qc thêm ca NFD ở `rules/fold` + `list.int` |
+| D-19 | 2026-10-19 · qc (T5 eb0c6fb9, tự quyết) | UNIQUE `contract_items (contract_id, tenant_id, ord)` và `contract_reminders (contract_id, tenant_id, deadline, milestone, user_id)` — có `tenant_id` trong khoá để HĐ của tenant khác báo 23503 (FK) thay vì 23505 (unique), tránh dò tồn tại HĐ chéo tenant | Ca chéo tenant kỳ vọng 23503 |
+| D-20 | 2026-10-19 · qc (T5 eb0c6fb9, tự quyết) | `fold` SQL dùng `translate` cho cả A-Z (không `lower()`) và cắt đầu/cuối theo tập khoảng trắng của JS `trim`; không NFC trong SQL (D-18) | Khớp `foldVi` TS ở biên sau NFC; ca NFD ở biên (D-18) |
+| D-21 | 2026-10-19 · qc (T5 eb0c6fb9, tự quyết) | `contract_events.data` ≤ 65.536 byte (CHECK) | Ghi vượt ngưỡng bị CHECK từ chối |
 
 Mặc định Thấp (#8–#13): `quotaVerdict` nhận đếm sau `INCR`, `> limit` mới vượt, vượt cả hai ⇒ `tenant`; zip thiếu `zipNames` ⇒ `null`; facets `category.n` = số HĐ, `direction` có `unknown`, `signer.label` = `min(raw)`; repo truyền jsonb bằng `sql.json`; Q8 đóng (HD5). Đều trong plan.
 
