@@ -50,6 +50,10 @@ Nền: `docs/specs/M1-departments/tasks.md` (M1D, commit 24b689a3..f26447f0).
 - perf M1D (chế độ org, 10.000 HĐ + 60.000 nền, n=200): V p95 11,82 ms · H p95 10,00 · E p95 9,00 · owner p95 11,43 · tenant p95 10,63;
   2 câu SQL; EXPLAIN không Seq Scan (trước M1b: 10,52 / 8,80 / 8,23 / 11,98 / 12,07).
 
+- perf HD9 (khách/CKS, chế độ tenant): 9/9 đạt (customers p95 44,7 ms, prices 47,7 ms). HD7 `GET /payments` p95 162,8 ms > 50 ms —
+  **đỏ cả trên nền f26447f0** (p95 142,3 ms cùng máy), không do M1b; hai vòng quá hạn HD7 đạt (p95 31–33 ms).
+
 ## Còn mở
+- HD7 perf `GET /payments` đỏ từ trước M1b (xem Số đo) — cần lát perf riêng.
 - `rls-packs.int.test.ts` › `partner_event_voids` › thăm dò tồn tại: đỏ ngay trên nền f26447f0 (ins 42501 vs 22P02) — không do M1b.
 - Phụ lục của HĐ cha chưa giao (D-M1b-02); chữ ký số không HĐ bán theo khách (D-M1b-03).
