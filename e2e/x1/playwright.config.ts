@@ -27,7 +27,7 @@ const WEB = `http://localhost:${WEB_PORT}`;
 const HUB = `http://localhost:${HUB_STUB_PORT}`;
 const STUDIO = "http://localhost:3200/studio/";
 // 48 ký tự sinh lúc chạy (P1: không chuỗi cố định). Workers kế thừa `process.env` của tiến trình config.
-const TOKEN = process.env.HUB_INTERNAL_TOKEN ?? randomBytes(24).toString("hex");
+const TOKEN = process.env.HUB_INTERNAL_TOKEN || randomBytes(24).toString("hex");
 process.env.HUB_INTERNAL_TOKEN = TOKEN;
 process.env.X1_API_URL = API;
 process.env.X1_HUB_URL = HUB;

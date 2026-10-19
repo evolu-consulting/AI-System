@@ -69,7 +69,8 @@ export default defineConfig({
       url: "http://localhost:3000",
       reuseExistingServer: !CI,
       timeout: 120_000,
-      env: { ADMIN_API_URL: API_URL },
+      // Các ca "vắng PUBLIC_HUB_URL" cần bản build KHÔNG có Hub/Studio: `.env.local` dev có PUBLIC_HUB_URL ⇒ ép rỗng (GX).
+      env: { ADMIN_API_URL: API_URL, PUBLIC_HUB_URL: "", PUBLIC_STUDIO_URL: "" },
     },
   ],
 });

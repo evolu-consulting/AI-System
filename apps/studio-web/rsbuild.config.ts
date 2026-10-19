@@ -3,10 +3,11 @@ import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 
+// `||` (không `??`): `.env.local` mẫu để `HUB_URL=` trống ⇒ target rỗng làm preview không khởi động (GX).
 // Dev/preview proxy cùng origin → cookie refresh `ai_rt` không cần CORS.
 // `/auth` → admin-api (như admin-web); `/studio/api` → Hub (prod: Hub serve cả `/studio/*` lẫn `/studio/api/*`).
-const ADMIN_API_URL = process.env.ADMIN_API_URL ?? "http://localhost:3001";
-const HUB_URL = process.env.HUB_URL ?? "http://localhost:4020";
+const ADMIN_API_URL = process.env.ADMIN_API_URL || "http://localhost:3001";
+const HUB_URL = process.env.HUB_URL || "http://localhost:4020";
 
 export default defineConfig({
   plugins: [pluginReact()],
