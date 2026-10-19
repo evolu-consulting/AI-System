@@ -1,7 +1,5 @@
-// PK-FR-10 · TF5 · route khung /partners (nội dung ở HD8).
+// PK-FR-10 · HD8-FR-01 · route /partners — danh sách đối tác + điểm uy tín (port mgmt `PartnersPage.tsx`).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { PartnersPage } from "~/features/partners/pages/PartnersPage";
 
-export const Route = createFileRoute("/_authed/partners")({
-  component: () => <StubPage titleKey="contracts.pages.partners" />,
-});
+export const Route = createFileRoute("/_authed/partners")({ component: PartnersPage });

@@ -1,7 +1,5 @@
-// PK-FR-10 · TF5 · route khung /settings/scoring (nội dung ở HD8).
+// PK-FR-10 · HD8-FR-03 · route /settings/scoring — cách tính điểm uy tín (port mgmt `ScoringPage.tsx`).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { ScoringPage } from "~/features/scoring/pages/ScoringPage";
 
-export const Route = createFileRoute("/_authed/settings/scoring")({
-  component: () => <StubPage titleKey="contracts.pages.scoring" />,
-});
+export const Route = createFileRoute("/_authed/settings/scoring")({ component: ScoringPage });

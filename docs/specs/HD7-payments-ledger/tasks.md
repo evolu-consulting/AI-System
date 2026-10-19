@@ -1,6 +1,16 @@
 # HD7 · Tasks
 
-**Trạng thái 2026-10-19: TẠM DỪNG theo yêu cầu người dùng** (BE + migration + test đã commit; FE, e2e, perf, review chưa làm).
+**Trạng thái 2026-10-20: làm tiếp trong lát HD78** (nhánh `slice/hd78`, gộp HD8 — xem `docs/specs/HD8-partners/tasks.md`).
+4 đỏ đã sửa (dưới); FE T6, e2e T7, perf T8 làm trong HD78; review + security gộp cuối đợt (Luật 0b).
+
+## HD78 (2026-10-20)
+- 4 đỏ: (1) AC02 — `remind` gửi `{to}` mà thân strict ⇒ 400 trước kiểm 409; test gửi `{}` (mgmt `remind` không có thân); không phải lỗi
+  ngày. (2) AC04 — mgmt không đếm sự kiện; đúng là 4 dòng (hẹn lại, nhắc, thu, thu lại), test sửa 5 → 4. (3) `access.int` 42501 — bắt
+  quanh `inPack`. (4) RLS `partner_event_voids` — thăm dò NIL là uuid vào cột bigint ⇒ 22P02; probe dùng số cho NIL. DB mẫu test tự dựng
+  lại khi hash migration lệch (`test-db-template`), evotest dựng DB sạch mỗi lượt ⇒ PK `(event_id, tenant_id)` của 0008 đã áp; xanh 163/163.
+- Luật thấy M1 (đã có ở base): sự kiện gắn HĐ người dùng không thấy ⇒ không liệt kê, huỷ ⇒ 404 (D8-13); `by_name` = tên người ghi.
+- FE `features/ledger` (ContractLog + PartnerLog + InstalmentRow + OtherForm), i18n `ledger.{vi,en}.json`; các "panel" lịch thanh toán /
+  đợt (obligations) / sổ đối tác / quá hạn = các khối của PartnerLog (mgmt không có màn "Thanh toán" riêng, giữ D7-08).
 
 | # | Task | Làn | Trạng thái |
 |---|---|---|---|
@@ -9,9 +19,9 @@
 | T3 | Migration 0008 + trigger lịch mặc định + `party_key` | đầy đủ | xong (áp sạch dev DB) |
 | T4 | BE: domain, repo, use case, route, vòng quá hạn, mount | đầy đủ | xong |
 | T5 | CKS: lập đợt + `paid` thật (thay D9-08) | đầy đủ | xong (`cks-paid.int` xanh) |
-| T6 | FE: `features/ledger` (ContractLog + PartnerLog) + i18n `ledger.{vi,en}.json` + unit | nhanh | chưa làm |
-| T7 | e2e hành vi + so màn S05/S06b với mgmt-app (baseline `CW_MODE=ref`) | nhanh | chưa làm |
-| T8 | Cổng lát: perf (`ledger.perf.int`), e2e, review + security | — | chưa làm |
+| T6 | FE: `features/ledger` (ContractLog + PartnerLog) + i18n `ledger.{vi,en}.json` + unit | nhanh | xong (HD78) |
+| T7 | e2e hành vi + so màn S05/S06b với mgmt-app (baseline `CW_MODE=ref`) — `e2e/contracts-web/hd78-partners.cw.ts` | nhanh | xong (HD78) |
+| T8 | Cổng lát: perf (`ledger.perf.int`), e2e; review + security gộp cuối đợt | — | xem HD8 tasks "Kết quả" |
 
 ## Kết quả lần chạy cuối (`test:int:par` HD7 + RLS): 154 xanh, 4 đỏ
 1. `money.int` AC02 "hẹn lại … trả đúng 10-20 ⇒ 0 ngày" và AC04 "huỷ việc" (đếm sự kiện 4 ≠ 5): chưa chẩn đoán. Nghi do sắp sổ theo

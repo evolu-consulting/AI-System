@@ -2,7 +2,7 @@
 // `CksPricesTab.tsx:57-197`: 4 số 12 tháng, chip lọc gói, tìm + lọc thiết bị + cột, dải "Dò giá", bảng gói, chú thích nguồn giá.
 import type { CksPackageFilter, CksPackageRow } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
@@ -99,7 +99,8 @@ function MarketPanel({ close }: { close: () => void }) {
   );
 }
 
-export function PricesPage() {
+/** `productPicker` (HD8): ô "Mặt hàng" đầy đủ (Chữ ký số + hàng hoá) do trang /prices truyền vào; vắng ⇒ ô chỉ có Chữ ký số (D9-13). */
+export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cks.prices.${k}`, o);
   const [f, setF] = useState<CksPackageFilter>("all");
@@ -146,14 +147,16 @@ export function PricesPage() {
         title={
           <span className="flex flex-wrap items-center gap-3">
             <span className="md:hidden">{L("title")}</span>
-            <select
-              aria-label={L("product")}
-              value="cks"
-              onChange={() => {}}
-              className="field h-9 w-auto py-0 text-[15px] font-medium"
-            >
-              <option value="cks">{t("contracts.cks.product")}</option>
-            </select>
+            {productPicker ?? (
+              <select
+                aria-label={L("product")}
+                value="cks"
+                onChange={() => {}}
+                className="field h-9 w-auto py-0 text-[15px] font-medium"
+              >
+                <option value="cks">{t("contracts.cks.product")}</option>
+              </select>
+            )}
           </span>
         }
       />

@@ -1,6 +1,7 @@
 // HD-FR-22 · HD-FR-23 · HD-FR-26 · S05 · D-02 · D2-05: màn kiểm/sửa HĐ — port `ContractPage.tsx:27-118` (tiêu đề + dòng phụ theo
 // trạng thái, "Xem file gốc", "Lưu", "Xác nhận" (HD3: quyết cấp 1 trên engine), thông báo, cảnh báo, trường + trích dẫn, bảng
-// hàng). HD3 thêm "Duyệt"/"Từ chối"/"Đọc lại" (lệch có chủ ý, DEVIATIONS). Bỏ "Ghi việc" (HD7), điền sẵn của trợ lý (HD6).
+// hàng). HD3 thêm "Duyệt"/"Từ chối"/"Đọc lại" (lệch có chủ ý, DEVIATIONS). "Ghi việc" (HD7, `ContractPage.tsx:163-181`) cuối trang;
+// điền sẵn của trợ lý (HD6).
 // Đang đọc ⇒ tải lại mỗi 2 s như mgmt-app (tới khi có kênh đẩy trạng thái gói).
 import type { ContractDetail, ContractFieldKey } from "@ai/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ import { ErrorLine, Loading } from "~/components/shared/states";
 import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
+import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ContractSourcing } from "~/features/sourcing/components/ContractSourcing";
 import {
@@ -154,6 +156,7 @@ export function ContractReviewPage({ id }: { id: string }) {
       <ItemsTable items={c.items} />
       <AppendixPanel c={c} write={write} />
       <ContractSourcing c={c} write={write} />
+      <ContractLog contractId={id} status={c.status} />
     </div>
   );
 }
