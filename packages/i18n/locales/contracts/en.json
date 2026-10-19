@@ -14,6 +14,38 @@
     },
     "contractsPage": {
       "title": "Contracts"
+    },
+    "table": {
+      "columns": "Columns",
+      "columnsHidden": "Columns · {{n}} hidden",
+      "columnsAria": "Visible columns",
+      "showAll": "Show all columns",
+      "pick": "choose…",
+      "from": "from {{value}}",
+      "to": "up to {{value}}",
+      "findIn": "Search {{name}}…",
+      "noOptions": "No options",
+      "rangeFrom": "From",
+      "rangeTo": "To",
+      "editFilter": "Edit filter {{name}}",
+      "removeFilter": "Remove filter {{name}}",
+      "addFilter": "Add filter",
+      "filter": "Filter",
+      "filterBy": "Filter by",
+      "findColumn": "Search columns…",
+      "range": "range",
+      "valueCount": "{{n}} values",
+      "clearFilters": "Clear filters",
+      "searchPlaceholder": "Search…",
+      "search": "Search",
+      "clearSearch": "Clear search",
+      "results": "{{n}} results",
+      "pagination": "Pagination",
+      "rows": "{{n}} rows",
+      "perPage": "Per page",
+      "pageSizeAria": "Rows per page",
+      "prev": "Previous page",
+      "next": "Next page"
     }
   }
 }

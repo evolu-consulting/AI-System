@@ -30,9 +30,47 @@ export function mismatches(
     .map(([k, v]) => `${k}: admin ${v} ≠ contracts ${b.get(k)}`);
 }
 
-/** Lệch có chủ ý (bản tối): admin-web còn là "đề xuất" #f97066 (chữ trắng trên nền này ~2.9:1); chat-web/contracts-web dùng #b42318 + `--error-border` #f97066. Test bên dưới báo nếu mục này hết lệch (xoá khỏi danh sách). */
-const DARK_DRIFT = ["--destructive"] as const;
+/** Lệch có chủ ý (bản tối), mỗi mục có lý do:
+ *  - `--destructive`: admin-web còn là "đề xuất" #f97066 (chữ trắng trên nền này ~2.9:1); contracts-web dùng #b42318 + `--error-border` #f97066.
+ *  - bề mặt/chữ/primary/viền/ring: người dùng chốt D-02 (2026-10-19) "contracts-web giống hệt mgmt-app" ⇒ bản tối dùng bộ xám-tím của
+ *    `reference/mgmt-app-contracts/web/src/index.css:49-59`, không dùng "Midnight" xanh than của admin-web.
+ *  Test bên dưới báo nếu mục nào hết lệch (xoá khỏi danh sách). Token chung còn lại (success, warning, danger, sidebar…) vẫn phải trùng. */
+const DARK_DRIFT = [
+  "--destructive",
+  "--background",
+  "--foreground",
+  "--card",
+  "--card-foreground",
+  "--popover",
+  "--popover-foreground",
+  "--muted",
+  "--muted-foreground",
+  "--primary",
+  "--primary-foreground",
+  "--border",
+  "--input",
+  "--ring",
+] as const;
 
+/** Token tối lấy nguyên từ mgmt-app (index.css:49-58) — kiểm trực tiếp với tệp tham chiếu. */
+const MGMT_DARK_MAP: Record<string, string> = {
+  "--background": "--color-ground",
+  "--card": "--color-panel",
+  "--primary": "--color-act",
+  "--border": "--color-rule",
+  "--input": "--color-field",
+  "--foreground": "--color-ink",
+  "--muted-foreground": "--color-dim",
+  "--accent": "--color-act-soft",
+  "--success": "--color-ok",
+  "--success-bg": "--color-ok-bg",
+  "--danger": "--color-late",
+  "--danger-bg": "--color-late-bg",
+  "--warning-bg": "--color-soon-bg",
+  "--primary-strong": "--color-act-hover",
+  "--primary-foreground": "--color-on-act",
+  "--ink-strong": "--color-pill",
+};
 const admin = read("../../../admin-web/src/styles/globals.css");
 const contracts = read("./globals.css");
 
@@ -54,7 +92,42 @@ describe("theme-parity admin-web ↔ contracts-web", () => {
   });
 
   test("bản tối cũng chọn được bằng html[data-theme=dark] (theme.ts của mgmt-app)", () => {
-    expect(tokensOf(contracts, ':root[data-theme="dark"]').get("--background")).toBe("#0e131b");
+    expect(tokensOf(contracts, ':root[data-theme="dark"]').get("--background")).toBe("#0e0f1c");
+  });
+
+  test("bản tối giống hệt mgmt-app: token tương ứng trong index.css:49-59 trùng giá trị", () => {
+    const mgmt = tokensOf(
+      readFileSync(
+        join(import.meta.dir, "../../../../reference/mgmt-app-contracts/web/src/index.css"),
+        "utf8",
+      ).replace(/\/\*[\s\S]*?\*\//g, ""),
+      ':root[data-theme="dark"]',
+    );
+    const c = tokensOf(contracts, ".dark");
+    expect(mgmt.size).toBeGreaterThan(25);
+    for (const [ours, theirs] of Object.entries(MGMT_DARK_MAP)) {
+      expect({ [ours]: c.get(ours) }).toEqual({ [ours]: mgmt.get(theirs) });
+    }
+    for (const k of [
+      "--sunk",
+      "--bubble",
+      "--rule",
+      "--rule-soft",
+      "--field",
+      "--ink",
+      "--ink-2",
+      "--dim",
+      "--act-line",
+      "--soon",
+      "--soon-line",
+      "--late-line",
+      "--idle-bg",
+      "--new-bg",
+      "--scroll",
+      "--scroll-hover",
+    ]) {
+      expect({ [k]: c.get(k) }).toEqual({ [k]: mgmt.get(`--color-${k.slice(2)}`) });
+    }
   });
 
   test("bộ phát hiện lệch hoạt động", () => {

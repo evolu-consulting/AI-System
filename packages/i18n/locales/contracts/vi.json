@@ -14,6 +14,38 @@
     },
     "contractsPage": {
       "title": "Hợp đồng"
+    },
+    "table": {
+      "columns": "Cột",
+      "columnsHidden": "Cột · ẩn {{n}}",
+      "columnsAria": "Cột hiển thị",
+      "showAll": "Hiện tất cả cột",
+      "pick": "chọn…",
+      "from": "từ {{value}}",
+      "to": "đến {{value}}",
+      "findIn": "Tìm {{name}}…",
+      "noOptions": "Không có lựa chọn",
+      "rangeFrom": "Từ",
+      "rangeTo": "Đến",
+      "editFilter": "Sửa lọc {{name}}",
+      "removeFilter": "Bỏ lọc {{name}}",
+      "addFilter": "Thêm lọc",
+      "filter": "Lọc",
+      "filterBy": "Lọc theo",
+      "findColumn": "Tìm cột…",
+      "range": "khoảng",
+      "valueCount": "{{n}} giá trị",
+      "clearFilters": "Xoá lọc",
+      "searchPlaceholder": "Tìm kiếm…",
+      "search": "Tìm kiếm",
+      "clearSearch": "Xoá tìm kiếm",
+      "results": "{{n}} kết quả",
+      "pagination": "Phân trang",
+      "rows": "{{n}} dòng",
+      "perPage": "Mỗi trang",
+      "pageSizeAria": "Số dòng mỗi trang",
+      "prev": "Trang trước",
+      "next": "Trang sau"
     }
   }
 }

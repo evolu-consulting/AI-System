@@ -116,58 +116,61 @@
   --shadow-color-drawer: rgb(30 27 75 / 0.18);
 }
 
-/* Tối (CR-027; đổi sang "Midnight" 2026-10-09 — xanh than dịu, lớp tách rõ, nút primary chữ trắng): đổi qua class `dark` trên <html>. */
+/* Tối theo mgmt-app (quyết định người dùng D-02, 2026-10-19: contracts-web giống hệt mgmt-app): bộ tối của
+   `reference/mgmt-app-contracts/web/src/index.css:49-59` (xám-tím lạnh, nút primary indigo sáng + chữ tối), thay bộ "Midnight" của admin-web.
+   Token mgmt có sẵn lấy nguyên giá trị; token shadcn mgmt không có (secondary, sidebar, code, destructive…) suy ra từ cùng bảng màu.
+   Lệch có chủ ý so với admin-web ghi ở DARK_DRIFT trong theme-parity.test.ts. Đổi qua class `dark` hoặc html[data-theme=dark]. */
 .dark,
 :root[data-theme="dark"] {
-  --background: #0e131b;
-  --foreground: #e6ecf3;
-  --card: #161e2a;
-  --card-foreground: #e6ecf3;
-  --popover: #161e2a;
-  --popover-foreground: #e6ecf3;
-  --muted: #1f2937;
-  --muted-foreground: #9eabbb;
-  --muted-strong-foreground: #c3ccd8;
-  --subtle-foreground: #8a98aa;
-  --placeholder: #708096;
+  --background: #0e0f1c;
+  --foreground: #ececf4;
+  --card: #17182a;
+  --card-foreground: #ececf4;
+  --popover: #17182a;
+  --popover-foreground: #ececf4;
+  --muted: #1d1f33;
+  --muted-foreground: #a1a3b8;
+  --muted-strong-foreground: #c3c5d6;
+  --subtle-foreground: #a1a3b8;
+  --placeholder: #8a8ca3;
 
-  --primary: #5b5bd6;
-  --primary-foreground: #ffffff;
+  --primary: #818cf8;
+  --primary-foreground: #0e0f1c;
   --primary-strong: #a5b4fc;
-  --secondary: #1f2937;
-  --secondary-foreground: #d0d8e4;
-  --accent: #1b2542;
-  --accent-foreground: #c3cffd;
-  --ink-strong: #dbe3ff;
+  --secondary: #1d1f33;
+  --secondary-foreground: #c3c5d6;
+  --accent: #24264a;
+  --accent-foreground: #a5b4fc;
+  --ink-strong: #c7d2fe;
   --on-ink: #e0e7ff;
   --on-ink-link: #a5b4fc;
 
-  --border: #283344;
-  --input: #5b6b82;
-  --row-divider: #1f2937;
-  --ring: #8b93f8;
+  --border: #2a2c44;
+  --input: #3a3c58;
+  --row-divider: #23253b;
+  --ring: #818cf8;
   --error-border: #f97066;
 
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --success: #6ee7b7;
-  --success-bg: #0f2a22;
-  --warning: #f5c06b;
-  --warning-bg: #2c2310;
+  --success: #6ee7a8;
+  --success-bg: #0f2e20;
+  --warning: #fbbf24;
+  --warning-bg: #352608;
   --warning-solid: #f59e0b;
   --danger: #fca5a5;
-  --danger-bg: #3a1518;
+  --danger-bg: #3b1515;
   --overage-hatch-from: #c2410c;
   --overage-hatch-to: #f59e0b;
 
-  --sidebar: #121924;
-  --sidebar-foreground: #d0d8e4;
-  --sidebar-primary: #5b5bd6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1b2542;
-  --sidebar-accent-foreground: #c3cffd;
-  --sidebar-border: #283344;
-  --sidebar-ring: #8b93f8;
+  --sidebar: #121326;
+  --sidebar-foreground: #c3c5d6;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #0e0f1c;
+  --sidebar-accent: #24264a;
+  --sidebar-accent-foreground: #a5b4fc;
+  --sidebar-border: #2a2c44;
+  --sidebar-ring: #818cf8;
 
   --mention-agent: #a5b4fc;
   --mention-command: #fbbf24;
@@ -179,13 +182,13 @@
   --chart-4: #c7d2fe;
   --chart-5: #e08bb4;
 
-  --code-bg: #0a0f16;
-  --code-fg: #e6ecf3;
+  --code-bg: #0b0c18;
+  --code-fg: #ececf4;
   --code-keyword: #d7a6f0;
   --code-string: #8fd9a8;
   --code-number: #f2b872;
   --code-title: #9db8f5;
-  --code-comment: #8a98aa;
+  --code-comment: #a1a3b8;
 
   /* Riêng mgmt-app, bản tối (reference/.../index.css:49-58) */
   --sunk: #1d1f33;
@@ -209,14 +212,6 @@
   --shadow-color-dialog: rgb(0 0 0 / 0.5);
   --shadow-color-drawer: rgb(0 0 0 / 0.5);
 }
-
-/* Dark Midnight (2026-10-09): `--primary` là màu nền nút (#5b5bd6, chữ trắng 5,4:1) — làm màu CHỮ trên nền tối
-   chỉ ~3,4:1 nên chữ/biểu tượng `text-primary` dùng indigo sáng (AA). */
-.dark .text-primary,
-:root[data-theme="dark"] .text-primary {
-  color: #a5b4fc;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -275,7 +270,7 @@
   --font-sans: "Roboto", "Segoe UI", system-ui, sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, monospace;
 
-  /* Tên mgmt-app → token chung (trùng giá trị với admin-web ở bản sáng; bản tối dùng bộ Midnight chung) */
+  /* Tên mgmt-app → token chung (trùng giá trị với admin-web ở bản sáng; bản tối theo mgmt-app) */
   --color-ground: var(--background);
   --color-panel: var(--card);
   --color-act: var(--primary);
