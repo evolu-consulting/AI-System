@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { AppDeps } from "../app";
 import type { Logger } from "../lib/logger";
 import { type AttachEnv, parseAttachEnv } from "../modules/attachments/attach-env.rules";
+import type { LiveEnv } from "../modules/notify/notify.mount";
 import { parseMaxConcurrentRuns } from "../modules/runs/run-limit.rules";
 import { type Env, khConfigOf } from "./env";
 
@@ -29,18 +30,34 @@ export type EnvAppDeps = Required<
     | "notify"
   >;
 
+/** N3 live (ADR-0027): SMTP/VAPID nền tảng một bộ từ env; bí mật chỉ từ env hoặc kho secret, không có giá trị cố định trong code. */
+function liveEnvOf(env: Env): LiveEnv {
+  return {
+    smtp: {
+      host: env.HUB_SMTP_HOST,
+      port: env.HUB_SMTP_PORT,
+      secure: env.HUB_SMTP_SECURE,
+      user: env.HUB_SMTP_USER,
+      from: env.HUB_SMTP_FROM,
+    },
+    vapid: env.HUB_VAPID_PUBLIC_KEY
+      ? { publicKey: env.HUB_VAPID_PUBLIC_KEY, subject: env.HUB_VAPID_SUBJECT }
+      : null,
+    ...(env.SMTP_PASSWORD ? { smtpPassword: env.SMTP_PASSWORD } : {}),
+    ...(env.VAPID_PRIVATE_KEY ? { vapidPrivateKey: env.VAPID_PRIVATE_KEY } : {}),
+  };
+}
+
 /**
  * Ánh xạ env → deps của `createApp`. Vắng `HUB_PUBLIC_INTERNAL_URL` (production) → cảnh báo một lần: MCP tắt.
  * `HUB_MAX_CONCURRENT_RUNS` sai → ném (server thoát ≠ 0); vắng → 2 (server luôn điền, H2b L1).
  */
 export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
-  // N3 D-03: `live` chưa có adapter (ADR-0027 Proposed) ⇒ dừng khởi động thay vì lặng lẽ không gửi.
+  // N3 D-03: `fake` ghi "đã gửi" mà không gửi thật ⇒ cấm ở production.
   if (env.HUB_NOTIFY_MODE === "fake" && env.APP_ENV === "production")
     throw new Error(
       "HUB_NOTIFY_MODE=fake không được dùng ở production (bản gửi giả đánh dấu đã gửi)",
     );
-  if (env.HUB_NOTIFY_MODE === "live")
-    throw new Error("HUB_NOTIFY_MODE=live chưa có adapter SMTP/Web Push (ADR-0027 Proposed)");
   if (env.HUB_PUBLIC_INTERNAL_URL === undefined)
     log.warn("mcp_disabled", { reason: "HUB_PUBLIC_INTERNAL_URL missing" });
   return {
@@ -60,6 +77,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
       worker: env.HUB_NOTIFY_MODE !== "off",
       baseUrl: env.HUB_NOTIFY_BASE_URL,
       vapidPublicKey: env.HUB_VAPID_PUBLIC_KEY ?? null,
+      ...(env.HUB_NOTIFY_MODE === "live" ? { live: liveEnvOf(env) } : {}),
     },
     kh: khConfigOf(env),
   };

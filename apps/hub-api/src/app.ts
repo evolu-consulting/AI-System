@@ -375,8 +375,7 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   const kh = mountProtected(app, deps, config);
   if (config) mountPacks(app, { ...deps, config }); // N1 · `/pack/:k/me` + route gói (pkdemo)
-  if (deps.db)
-    mountNotify(app, { db: deps.db, notify: deps.notify, signal: deps.signal, log: logger }); // N3
+  if (deps.db) mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)

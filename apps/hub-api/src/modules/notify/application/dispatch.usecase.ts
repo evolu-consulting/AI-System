@@ -107,7 +107,10 @@ export async function dispatchOnce(d: DispatchDeps): Promise<DispatchResult> {
   const limit = d.batchSize ?? BATCH_SIZE;
   const lease = d.leaseSec ?? LEASE_SEC;
   const fan = await d.store.fanout(d.now().toISOString(), limit);
-  const rows = await d.store.claim(d.now().toISOString(), limit, lease, MAX_ATTEMPTS);
+  const rows = await d.store.claim(d.now().toISOString(), limit, {
+    leaseSec: lease,
+    maxAttempts: MAX_ATTEMPTS,
+  });
   const res: DispatchResult = {
     fanned: fan.picked,
     claimed: rows.length,

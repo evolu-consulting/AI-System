@@ -15,12 +15,15 @@ export type Settlement = {
   nextAt: string | null;
 };
 
+/** `leaseSec`: hạn thuê; `maxAttempts`: trần số lần thử (claim lại sau hết hạn không vượt trần). */
+export type ClaimOpts = { leaseSec: number; maxAttempts: number };
+
 /** Kho cho worker (scope system, mỗi hàm một tx ngắn, một câu SQL). */
 export type DispatchStore = {
   /** Chia kênh cho tối đa `limit` thông báo chưa chia; trả số thông báo và số bản gửi tạo. */
   fanout(nowIso: string, limit: number): Promise<{ picked: number; deliveries: number }>;
   /** Nhận tối đa `limit` bản gửi tới hạn (SKIP LOCKED), đặt `sending` + hạn thuê. */
-  claim(nowIso: string, limit: number, leaseSec: number, maxAttempts: number): Promise<Claimed[]>;
+  claim(nowIso: string, limit: number, opts: ClaimOpts): Promise<Claimed[]>;
   /** Ghi kết cục cả lô + xóa đăng ký push hết hạn; trả số bản gửi cập nhật. */
   settle(
     nowIso: string,

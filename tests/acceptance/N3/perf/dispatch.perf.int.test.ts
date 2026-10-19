@@ -68,7 +68,7 @@ describe("N3-NFR-01 · lô 100 trên nền 10.000 thông báo", () => {
     const store = w.deps.store;
     w.deps.store = {
       fanout: (n, l) => timed(fanMs, () => store.fanout(n, l)),
-      claim: (n, l, s) => timed(claimMs, () => store.claim(n, l, s)),
+      claim: (n, l, o) => timed(claimMs, () => store.claim(n, l, o)),
       settle: (n, r, g) => timed(settleMs, () => store.settle(n, r, g)),
     };
     const t0 = performance.now();

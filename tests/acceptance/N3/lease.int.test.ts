@@ -1,4 +1,4 @@
-﻿// N3-FR-06 · review N3 M1/M2 · fencing theo lượt claim, trần 5 lần khi claim lại sau hết hạn thuê, hạn transport < lease.
+// N3-FR-06 · review N3 M1/M2 · fencing theo lượt claim, trần 5 lần khi claim lại sau hết hạn thuê, hạn transport < lease.
 // Đồng hồ giả (không sleep); riêng ca timeout dùng hạn 20 ms với transport không bao giờ trả lời.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { dispatchOnce } from "../../../apps/hub-api/src/modules/notify/application/dispatch.usecase";
@@ -40,9 +40,9 @@ describe("M1 · settle của lượt claim cũ không ghi đè lượt mới", (
   it("A claim, hết hạn thuê, B claim lại; A settle muộn ⇒ không đổi hàng; B settle bình thường", async () => {
     await send(T.acme, [notice(P.lan.id)]);
     await w.deps.store.fanout(now(), 100);
-    const [a] = await w.deps.store.claim(now(), 100, 120, 5);
+    const [a] = await w.deps.store.claim(now(), 100, { leaseSec: 120, maxAttempts: 5 });
     w.clock.advance(121);
-    const [b] = await w.deps.store.claim(now(), 100, 120, 5);
+    const [b] = await w.deps.store.claim(now(), 100, { leaseSec: 120, maxAttempts: 5 });
     expect([a?.attempts, b?.attempts]).toEqual([1, 2]);
     const stale = await w.deps.store.settle(
       now(),

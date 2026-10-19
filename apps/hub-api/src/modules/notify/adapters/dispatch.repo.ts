@@ -4,7 +4,7 @@
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { DispatchStore, Settlement } from "../application/ports";
+import type { ClaimOpts, DispatchStore, Settlement } from "../application/ports";
 import type { Claimed } from "../domain/notify.rules";
 
 type ClaimRow = {
@@ -67,7 +67,8 @@ async function fanout(tx: Tx, nowIso: string, limit: number) {
 }
 
 /** Nhận lô tới hạn (SKIP LOCKED) + đặt `sending` với hạn thuê; trả kèm nội dung/địa chỉ/đăng ký push để gửi ngoài tx. */
-async function claim(tx: Tx, nowIso: string, limit: number, leaseSec: number, maxAttempts: number) {
+async function claim(tx: Tx, nowIso: string, limit: number, o: ClaimOpts) {
+  const { leaseSec, maxAttempts } = o;
   const rows = await tx.execute<ClaimRow>(sql`
     with expired as (
       update hub.notification_deliveries d set status = 'dead', last_error = 'lease_expired'
@@ -134,8 +135,8 @@ async function settle(
 export function dispatchRepo(db: Db): DispatchStore {
   return {
     fanout: (nowIso, limit) => withHubScope(db, system, (tx) => fanout(tx, nowIso, limit)),
-    claim: (nowIso, limit, leaseSec, maxAttempts) =>
-      withHubScope(db, system, (tx) => claim(tx, nowIso, limit, leaseSec, maxAttempts)),
+    claim: (nowIso, limit, opts) =>
+      withHubScope(db, system, (tx) => claim(tx, nowIso, limit, opts)),
     settle: (nowIso, results, gone) =>
       withHubScope(db, system, (tx) => settle(tx, nowIso, results, gone)),
   };

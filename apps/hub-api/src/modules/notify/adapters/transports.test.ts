@@ -15,10 +15,18 @@ const baseEnv = {
 const log = { warn: () => {} };
 
 describe("transportsFor", () => {
-  test("off ⇒ null; fake ⇒ cặp transport giả; live ⇒ NotifyNotConfigured", () => {
+  test("off ⇒ null; fake ⇒ cặp transport giả; live thiếu cấu hình ⇒ NotifyNotConfigured; live có cấu hình ⇒ transport thật", () => {
     expect(transportsFor("off")).toBeNull();
     expect(transportsFor("fake")?.email).toBeInstanceOf(FakeEmailTransport);
     expect(() => transportsFor("live")).toThrow(NotifyNotConfigured);
+    const live = transportsFor("live", {
+      smtp: { host: "h", port: 587, secure: false, user: "", from: "a@b.test" },
+      vapid: null,
+      smtpPassword: async () => undefined,
+      vapidPrivateKey: async () => undefined,
+    });
+    expect(live?.email).toBeDefined();
+    expect(live?.email).not.toBeInstanceOf(FakeEmailTransport);
   });
 });
 
@@ -33,7 +41,27 @@ describe("envAppDeps · notify", () => {
     ).notify;
     expect(fake).toMatchObject({ mode: "fake", worker: true, vapidPublicKey: "BPub" });
   });
-  test("live ⇒ ném (server thoát ≠ 0, không lặng lẽ không gửi)", () => {
-    expect(() => envAppDeps(env({ HUB_NOTIFY_MODE: "live" }), log)).toThrow(/ADR-0027/);
+  test("live khởi động được với giá trị cố định mặc định; bí mật chỉ từ env nếu có", () => {
+    const d = envAppDeps(env({ HUB_NOTIFY_MODE: "live" }), log).notify;
+    expect(d?.live?.smtp).toEqual({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      user: "",
+      from: "no-reply@example.com",
+    });
+    expect(d?.live?.vapid).toBeNull();
+    expect(d?.live?.smtpPassword).toBeUndefined();
+    const withPw = envAppDeps(
+      env({ HUB_NOTIFY_MODE: "live", SMTP_PASSWORD: "p", HUB_VAPID_PUBLIC_KEY: "BPub" }),
+      log,
+    ).notify;
+    expect(withPw?.live?.smtpPassword).toBe("p");
+    expect(withPw?.live?.vapid?.publicKey).toBe("BPub");
+  });
+  test("fake bị từ chối ở production", () => {
+    expect(() => envAppDeps(env({ HUB_NOTIFY_MODE: "fake", APP_ENV: "production" }), log)).toThrow(
+      /production/,
+    );
   });
 });
