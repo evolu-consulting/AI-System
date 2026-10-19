@@ -51,6 +51,8 @@ AC bổ sung (readiness #4/#5/#9/#10): AC33c đúng 500.000.000 ⇒ cấp 2 (`lt
 | Biên đúng ngưỡng | đúng 500.000.000 ⇒ cấp 2 | intake câu 1 "giá trị ≥ ngưỡng ⇒ cấp 2" |
 | Trần thao tác / ngày | 100 / tenant (`CONTRACTS_ACTIONS_TENANT_DAY`) | Tự quyết (D3-10). **Hỏi người dùng** |
 
+**Người dùng chốt 2026-10-19:** giữ cả 4 mặc định — editor duyệt cấp 1, owner duyệt cấp 2; 100 lượt AI/tenant/ngày; người bắt đầu không được Từ chối ở cấp 2; Redis lỗi khi đếm trần ⇒ chặn (503). Các dòng "Hỏi người dùng" ở trên và readiness câu (1)(2) đã đóng.
+
 ## Quyết định trong lúc làm
 Xem `plan.md` §Quyết định.
 
