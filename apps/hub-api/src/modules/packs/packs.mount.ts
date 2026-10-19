@@ -10,6 +10,7 @@ import { FileboxClient } from "../attachments/filebox.client";
 import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
@@ -49,8 +50,10 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   const fb = packFilebox(d.packs);
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
+  if (d.db && (d.packs?.contracts ?? true))
+    app.route(`${PACK_PREFIX}/${CONTRACTS_KEY}`, contractsModule(d.db, view)); // HD1 T7
   if (d.db && (d.packs?.contracts ?? true) && fb)
-    app.route(`${PACK_PREFIX}/contracts`, contractsUpload(d, d.db, view, fb)); // HD1 T10
+    app.route(`${PACK_PREFIX}/${CONTRACTS_KEY}`, contractsUpload(d, d.db, view, fb)); // HD1 T10
   return view;
 }
 
