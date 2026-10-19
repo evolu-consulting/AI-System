@@ -1,0 +1,13 @@
+#!/bin/sh
+# Hook dùng chung cho checkout chính và mọi worktree (core.hooksPath=tools/hooks, đường dẫn tương đối
+# => git chạy hook ở gốc worktree đang commit). Dùng lefthook của CHÍNH worktree đó, không ghi
+# đường dẫn tuyệt đối nào (lefthook install từng ghi cứng đường dẫn checkout vừa cài).
+[ "$LEFTHOOK" = "0" ] && exit 0
+root="$(git rev-parse --show-toplevel)"
+for bin in "$root/node_modules/.bin/lefthook.exe" "$root/node_modules/.bin/lefthook"; do
+  if [ -f "$bin" ]; then
+    exec "$bin" run pre-commit "$@"
+  fi
+done
+echo "pre-commit: chưa có lefthook trong $root/node_modules (chạy 'bun install'); bỏ qua hook." >&2
+exit 0

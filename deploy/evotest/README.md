@@ -6,3 +6,8 @@
 - Dọn: sau mỗi lượt `down -v` (container/mạng/tmpfs), xoá mã nguồn tạm; giữ image + `~/workspace/evotest/cache` (cache bun, < 15 GB; xoá tay khi cần).
 - Log: `.data/evotest/<giờ>-<bước>/` (console.log, <bước>/ = `.data` của lượt chạy, int-s*.log, JUnit). Chưa kiểm e2e từ đầu đến cuối (kéo image Playwright lần đầu).
 - Không đụng container/mạng/volume khác; không `prune`. Khoá SSH `F:\workspace\id_evoc_key` chỉ dùng qua `-i`.
+
+## Local và evotest (Luật 0b)
+- Chạy **local**: unit test + typecheck (nhanh, không cần stack). Chạy trên **evotest**: int, e2e, perf (`run-tests.ps1 -Step int|e2e|perf` hoặc `-Dirty` từ worktree của lát; archive lấy từ chính worktree đó).
+- Playwright local: tối đa **2 lát cùng lúc**, mỗi lát một cổng riêng.
+- Đêm: `nightly.ps1` (Task Scheduler local) chạy `-Step all -Ref platform/gd0`, tóm tắt ở `.data/evotest/nightly-<ngày>.md`; không cron trên máy chủ.
