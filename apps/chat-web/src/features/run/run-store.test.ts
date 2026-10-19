@@ -30,3 +30,26 @@ test("add vượt trần → bỏ run đã kết thúc cũ nhất; run đang ch�
   expect(keys).not.toContain("done-0");
   expect(keys).toContain(`done-${MAX_SETTLED_RUNS}`);
 });
+
+test("UC-02 · quota over sống qua `remove` run (kết thúc/đã vào query) và được run.started kế tiếp cập nhật; clear đặt lại", () => {
+  const store = createRunStore();
+  store.add(run("a", "sending"));
+  expect(store.isQuotaOver()).toBe(false);
+  const started = (id: number, state: "over" | "ok") =>
+    ({
+      id,
+      event: "run.started",
+      data: { run_id: "r", flow_id: "f", quota: { state } },
+    }) as never;
+  store.dispatch("a", { type: "events", events: [started(1, "over")] });
+  expect(store.isQuotaOver()).toBe(true);
+  store.remove("a");
+  expect(store.getRuns()).toHaveLength(0);
+  expect(store.isQuotaOver()).toBe(true);
+  store.add(run("b", "sending"));
+  store.dispatch("b", { type: "events", events: [started(1, "ok")] });
+  expect(store.isQuotaOver()).toBe(false);
+  store.dispatch("b", { type: "events", events: [started(2, "over")] });
+  store.clear();
+  expect(store.isQuotaOver()).toBe(false);
+});

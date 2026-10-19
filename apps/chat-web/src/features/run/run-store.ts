@@ -24,13 +24,21 @@ export type RunStore = ReturnType<typeof createRunStore>;
 
 export function createRunStore() {
   let runs: readonly RunState[] = [];
+  // UC-02 · quota là trạng thái của phiên (theo `run.started` mới nhất), KHÔNG của một bản ghi run: run bị `remove`
+  // khi kết thúc/đã vào query và composer dựng lại khi `/c/new` → `/c/:id`, nên nhắc "quota over" phải sống ngoài run.
+  let quotaOver = false;
   const listeners = new Set<() => void>();
+  const notify = () => {
+    for (const l of listeners) l();
+  };
   const commit = (next: readonly RunState[]) => {
     runs = next;
-    for (const l of listeners) l();
+    notify();
   };
   return {
     getRuns: (): readonly RunState[] => runs,
+    /** `run.started.quota.state = over` của run gần nhất đã bắt đầu trong phiên này. */
+    isQuotaOver: (): boolean => quotaOver,
     get: (key: string): RunState | undefined => runs.find((r) => r.key === key),
     subscribe(l: () => void): () => void {
       listeners.add(l);
@@ -43,13 +51,17 @@ export function createRunStore() {
       const cur = runs.find((r) => r.key === key);
       if (!cur) return;
       const next = runReducer(cur, action);
-      if (next !== cur) commit(runs.map((r) => (r === cur ? next : r)));
+      if (next === cur) return;
+      if (next.quota && next.quota !== cur.quota) quotaOver = next.quota.state === "over";
+      commit(runs.map((r) => (r === cur ? next : r)));
     },
     remove(key: string): void {
       if (runs.some((r) => r.key === key)) commit(runs.filter((r) => r.key !== key));
     },
     clear(): void {
-      if (runs.length > 0) commit([]);
+      const changed = runs.length > 0 || quotaOver;
+      quotaOver = false;
+      if (changed) commit([]);
     },
   };
 }
@@ -64,6 +76,11 @@ export function selectFlowRun(runs: readonly RunState[], flowId: string): RunSta
 /** Run đang chạy của hội thoại — một hội thoại chỉ một run (UC-02). */
 export function selectActiveRun(runs: readonly RunState[], convId: string): RunState | undefined {
   return runs.find((r) => r.convId === convId && isRunActive(r));
+}
+
+/** Nhắc quota (UC-02): bền qua `remove` run và qua việc composer dựng lại khi đổi route. */
+export function useQuotaOver(): boolean {
+  return useSyncExternalStore(runStore.subscribe, runStore.isQuotaOver, runStore.isQuotaOver);
 }
 
 /** `selector` phải trả giá trị ổn định (primitive hoặc tham chiếu có sẵn trong store). */

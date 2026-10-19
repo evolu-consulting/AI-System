@@ -95,7 +95,8 @@
 
 /* Tối (CR-027; đổi sang "Midnight" 2026-10-09 — xanh than dịu, lớp tách rõ, nút primary chữ trắng): đổi qua class `dark` trên <html>. */
 .dark {
-  --background: #0e131b;
+  /* CR-049: nền Tối = #0F1020 (bảng đã duyệt). "Midnight" 2026-10-09 đã đổi thành #0e131b làm lệch; người dùng chốt lại 2026-10-19 (GX2). */
+  --background: #0f1020;
   --foreground: #e6ecf3;
   --card: #161e2a;
   --card-foreground: #e6ecf3;

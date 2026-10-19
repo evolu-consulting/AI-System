@@ -63,9 +63,13 @@ export function ForwardDialog(p: ForwardDialogProps) {
     );
   };
 
+  // Lỗi `FORWARD_GROUP` (review) trùng nguyên văn dòng hướng dẫn: hai chỗ cùng một câu ⇒ chỉ giữ `alert` (một lần).
+  const help = t(isAsk ? "process.ask.forwardHelp" : "process.ask.forwardHelpReview");
+  const helpIsError = error === help;
+
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
-      <DialogContent>
+      <DialogContent {...(helpIsError ? { "aria-describedby": undefined } : {})}>
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -77,9 +81,7 @@ export function ForwardDialog(p: ForwardDialogProps) {
             <DialogTitle>
               {t(isAsk ? "process.ask.forwardTitle" : "process.ask.forwardTitleReview")}
             </DialogTitle>
-            <DialogDescription>
-              {t(isAsk ? "process.ask.forwardHelp" : "process.ask.forwardHelpReview")}
-            </DialogDescription>
+            {!helpIsError && <DialogDescription>{help}</DialogDescription>}
           </DialogHeader>
           <PersonPicker
             selectedIds={new Set(picked ? [picked.id] : [])}

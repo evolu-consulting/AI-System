@@ -1,7 +1,7 @@
 // CHAT-AC-05, CHAT-AC-10, CHAT-AC-18 · trang chào `/c/new`: lời chào + thẻ gợi ý + Composer; tin đầu: E6 tạo hội thoại → E12 gửi → `/c/:id`.
 import { deriveTitle } from "@ai/contracts/chat";
 import { useRouter } from "@tanstack/react-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Composer,
@@ -12,8 +12,8 @@ import { useDraftKey } from "~/features/composer/hooks/use-draft";
 import { useCreateConversation } from "~/features/conversations/hooks/use-conversations";
 import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
 import { useProcessEngine } from "~/features/processes/shared/engine";
-import { useRunByKey } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
+import { useQuotaOver } from "~/features/run/run-store";
 import { useSession } from "~/lib/auth/use-session";
 import { SuggestionCards } from "../components/SuggestionCards";
 
@@ -27,8 +27,7 @@ export function WelcomePage() {
   const composer = useRef<ComposerHandle>(null);
   // E6 đã tạo mà E12 lỗi: thử lại dùng lại hội thoại này, không tạo thêm.
   const pendingConv = useRef<string | null>(null);
-  const [runKey, setRunKey] = useState<string | null>(null);
-  const run = useRunByKey(runKey);
+  const quotaOver = useQuotaOver();
   // P-a FD4: `!key …` ở /c/new đi `POST /process-runs` (origin none, PF1); cờ off ⇒ không chặn gì.
   const engine = useProcessEngine();
   const bang = useBangSubmit({ kind: "none" }, engine);
@@ -45,7 +44,6 @@ export function WelcomePage() {
       const convId = pendingConv.current;
       const out = await send.sendMain(convId, content, attachmentIds);
       if (!out.ok) return out;
-      setRunKey(out.key);
       pendingConv.current = null;
       void router.navigate({ to: "/c/$id", params: { id: convId }, replace: true });
       return out;
@@ -75,7 +73,7 @@ export function WelcomePage() {
           draftKey={newDraftKey}
           autoFocus
           processMenu={engine === "on"}
-          quotaOver={run?.quota?.state === "over"}
+          quotaOver={quotaOver}
           onSubmit={submit}
         />
       </div>

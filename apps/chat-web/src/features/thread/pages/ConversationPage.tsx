@@ -13,7 +13,7 @@ import { ConversationRunCards } from "~/features/processes/run-block/components/
 import { ProcessEngineGate, useProcessEngine } from "~/features/processes/shared/engine";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
-import { useRuns } from "~/features/run/run-store";
+import { useQuotaOver, useRuns } from "~/features/run/run-store";
 import { NotFoundState } from "../components/NotFoundState";
 import { ThreadView } from "../components/ThreadView";
 import { useAutoscroll } from "../hooks/use-autoscroll";
@@ -31,9 +31,7 @@ export function ConversationPage() {
 function useMainComposer(convId: string, onSent: () => void) {
   const send = useSend();
   const active = useActiveRun(convId);
-  const lastMain = useRuns((runs) =>
-    runs.findLast((r) => r.convId === convId && r.origin === "main"),
-  );
+  const quotaOver = useQuotaOver();
   const running = active?.origin === "main";
   // P-a FD4: `!key …` ở Hỏi AI đi `POST /process-runs` (PF1), không qua đường gửi run thường; cờ off ⇒ không chặn gì.
   const engine = useProcessEngine();
@@ -52,7 +50,7 @@ function useMainComposer(convId: string, onSent: () => void) {
     running,
     processMenu: engine === "on",
     locked: active !== undefined && !running,
-    quotaOver: lastMain?.quota?.state === "over",
+    quotaOver,
     onSubmit,
     onStop: () => void (active && send.cancel(active.key)),
   };
