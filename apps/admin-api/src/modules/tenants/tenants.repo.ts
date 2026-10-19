@@ -99,6 +99,7 @@ export async function insertTenant(
     name: string;
     maxConcurrentSub: number | null;
     timezone: string;
+    settings?: Record<string, unknown>;
     updatedBy: string;
   },
 ): Promise<string> {

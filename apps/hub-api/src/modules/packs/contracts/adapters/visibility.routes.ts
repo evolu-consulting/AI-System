@@ -31,8 +31,8 @@ export function visibilityRoutes(
   r.get("/visibility", packGuard(view, packKey, "read"), async (c) => {
     const u = c.get("user");
     const rows = await withPackScope(db, scope(u), (tx) =>
-      tx.execute<{ mode: string }>(sql`select mode from contracts.visibility_settings
-        where tenant_id = ${u.tenantId}::uuid`),
+      // Chế độ hiệu lực (M1b): hàng cài đặt > mặc định của tenant (tenant mới ⇒ `org`) > `tenant`.
+      tx.execute<{ mode: string }>(sql`select contracts.visibility_mode() as mode`),
     );
     return c.json({ mode: rows[0]?.mode ?? "tenant" });
   });

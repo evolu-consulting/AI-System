@@ -109,6 +109,12 @@ export async function getTenant(
   });
 }
 
+/**
+ * M1D-FR-04 · docs/specs/M1b-visibility: tenant MỚI dùng luật thấy mgmt-app (`org`) — gói đọc qua
+ * `contracts.org_default_mode()` khi tenant chưa có hàng `visibility_settings`. Tenant cũ/fixture (settings `{}`) giữ `tenant`.
+ */
+export const NEW_TENANT_SETTINGS = { visibility: "org" } as const;
+
 /** FR-60, M1-R18: tenant + tenant_admin đầu tiên trong một transaction; mật khẩu tạm sinh/băm ngoài transaction. */
 export async function createTenant(
   c: TenantsCall,
@@ -125,7 +131,9 @@ export async function createTenant(
       timezone: input.timezone,
     };
     const id = await tx
-      .transaction((sp) => repo.insertTenant(sp, { ...t, updatedBy: by }))
+      .transaction((sp) =>
+        repo.insertTenant(sp, { ...t, settings: NEW_TENANT_SETTINGS, updatedBy: by }),
+      )
       .catch((err) => {
         if (uniqueViolation(err) === "tenants_key_uq") throw appError("KEY_TAKEN");
         throw err;

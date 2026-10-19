@@ -45,7 +45,8 @@ Không đổi hành vi: thêm 3 bảng `departments`, `user_managers`, `user_rep
 V 60 cấp dưới p95 10,52 ms · trưởng phòng 30 TV p95 8,80 · editor lẻ p95 8,23 · owner p95 11,98 · chế độ tenant p95 12,07; 2 câu SQL; EXPLAIN không Seq Scan.
 
 ## Còn mở
-e2e màn /settings/members; phụ lục chưa giao theo HĐ cha (D-M1-03); cks_customers/partner_events chưa lọc theo người; N5 chưa nhập manager_email; link vào màn từ Cài đặt; proxy /admin khi deploy.
+Đã làm ở lát M1b (`docs/specs/M1b-visibility/tasks.md`): e2e /settings/members, phụ lục theo HĐ cha (thay D-M1-03), lọc
+cks_customers/partner_events theo người, N5 nhập manager_email, link từ Cài đặt, proxy /admin, tenant mới mặc định `org`.
 
 ## Quyết định trong lúc làm
 - D-M1-01: **Chế độ theo tenant, mặc định `tenant`** (mọi người thấy cả tenant như HD1–HD9 đang khoá test). Tenant nhập từ mgmt-app
