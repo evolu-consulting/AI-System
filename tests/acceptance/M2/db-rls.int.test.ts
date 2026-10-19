@@ -271,7 +271,7 @@ describe("ADM-FR-31 · RLS feature_entitlements", () => {
 });
 
 describe("ADM-NFR-07 · cấu hình RLS", () => {
-  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 13 bảng (8 bảng M1–M3 + audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp của M4); không bảng nào FORCE", async () => {
+  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 14 bảng (8 bảng M1–M3 + audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp của M4 + tenant_workflow_tools của P-d2 0012); không bảng nào FORCE", async () => {
     const rows = await owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
@@ -286,6 +286,7 @@ describe("ADM-NFR-07 · cấu hình RLS", () => {
       "refresh_tokens",
       "secrets",
       "tenant_quotas",
+      "tenant_workflow_tools",
       "tenants",
       "user_backup_codes",
       "user_totp",
@@ -307,6 +308,7 @@ describe("ADM-NFR-07 · cấu hình RLS", () => {
       "refresh_tokens",
       "secrets",
       "tenant_quotas",
+      "tenant_workflow_tools",
       "tenants",
       "user_backup_codes",
       "user_totp",

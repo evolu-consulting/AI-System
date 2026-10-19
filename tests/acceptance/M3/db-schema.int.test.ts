@@ -54,7 +54,7 @@ const names = async (schemas: string[]) =>
       where table_schema in ${sql(schemas)} and table_type = 'BASE TABLE' order by (table_schema || '.' || table_name) collate "C"`
   ).map((r) => r.t);
 
-const ADMIN19 = [
+const ADMIN20 = [
   "admin.audit_log",
   "admin.command_names",
   "admin.commands",
@@ -69,6 +69,7 @@ const ADMIN19 = [
   "admin.refresh_tokens",
   "admin.secrets",
   "admin.tenant_quotas",
+  "admin.tenant_workflow_tools",
   "admin.tenants",
   "admin.user_backup_codes",
   "admin.user_totp",
@@ -110,8 +111,8 @@ describe("ADM-NFR-06 · migration M3", () => {
     expect(n?.n).toBe(MAIN_COUNT);
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · đúng 19 bảng admin.* (M4) + 3 bảng hub.* (M4 Q2a K3)", async () => {
-    expect(await names(["admin", "hub"])).toEqual([...ADMIN19, ...HUB3]);
+  it("ADM-NFR-06 · spec M3 §4 · đúng 20 bảng admin.* (M4 + P-d2 0012) + 3 bảng hub.* (M4 Q2a K3)", async () => {
+    expect(await names(["admin", "hub"])).toEqual([...ADMIN20, ...HUB3]);
   });
 
   it("ADM-NFR-06 · CONVENTIONS §8 · migration 0000–0004 và hub-stub bất biến (băm ở HEAD khi viết test); journal có 0005_admin_permissions và 0006_permissions_rls", () => {
@@ -442,9 +443,9 @@ describe("ADM-NFR-06 · migration production M3", () => {
     await runMigrations({ url: URL, appEnv: "development" });
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 19 bảng admin.* (M4), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 20 bảng admin.* (M4 + P-d2 0012), 0 bảng hub.*", async () => {
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
-    expect(await names(["admin", "hub"])).toEqual(ADMIN19);
+    expect(await names(["admin", "hub"])).toEqual(ADMIN20);
   });
 });

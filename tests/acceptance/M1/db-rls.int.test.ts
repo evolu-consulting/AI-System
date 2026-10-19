@@ -238,7 +238,7 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
     expect(owned?.n).toBe(0);
   });
 
-  it("ADM-NFR-07 · spec §4 · RLS bật cho 13 bảng (8 bảng M1–M3 + audit_log/quota_alerts/tenant_quotas/user_totp/user_backup_codes của M4; không FORCE); 6 bảng còn lại không bật", async () => {
+  it("ADM-NFR-07 · spec §4 · RLS bật cho 14 bảng (8 bảng M1–M3 + audit_log/quota_alerts/tenant_quotas/user_totp/user_backup_codes của M4 + tenant_workflow_tools của P-d2 0012; không FORCE); 6 bảng còn lại không bật", async () => {
     const rows = await env.owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
@@ -257,6 +257,7 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
       ["refresh_tokens", true, false],
       ["secrets", true, false],
       ["tenant_quotas", true, false],
+      ["tenant_workflow_tools", true, false],
       ["tenants", true, false],
       ["user_backup_codes", true, false],
       ["user_totp", true, false],

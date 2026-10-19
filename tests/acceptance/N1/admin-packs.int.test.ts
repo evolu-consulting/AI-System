@@ -1,6 +1,6 @@
 // PK-FR-05 · PK-AC05 (nửa Admin) · D-05 · plan §2 "Route admin-api" + §5 "Bật gói": GET/PUT/DELETE
 // `/tenants/:tenant_id/packs[/:pack_key]` (chỉ platform admin) — bật gói = entitlement 3 feature + 3 Group + 6 grant, một tx,
-// audit `pack.enable`/`pack.disable`, `config_changed` NOTIFY. Đường dẫn: xem `ADMIN_PACKS_BASE` (Tranh chấp test trong tasks.md).
+// audit (enum M4 sẵn có: grant/revoke + entity entitlement + summary.op 'pack.enable'|'pack.disable'; chỉ khi có đổi), `config_changed` NOTIFY. Đường dẫn: xem `ADMIN_PACKS_BASE` (Tranh chấp test trong tasks.md).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
 import {
@@ -101,22 +101,22 @@ describe("PK-AC05 · bật gói (PUT) tạo 3 Group + 6 grant", () => {
     expect((await groupsOf(T.acme)).length).toBe(3);
     expect((await grantsOf(T.acme)).length).toBe(6);
   });
-  it("PK-FR-05 · audit: PUT ghi 1 hàng admin.audit_log action 'pack.enable' (entity pack, tenant đúng)", async () => {
+  it("PK-FR-05 · audit: PUT bật (có đổi) ghi đúng 1 hàng audit_log {action grant, entity entitlement, summary.op 'pack.enable', tenant đúng}; PUT lặp idempotent không ghi thêm", async () => {
     await needPackKit(c.sql);
-    const before =
+    await c.sql`update admin.feature_entitlements set revoked_at = now()
+      where tenant_id = ${T.acme} and feature_id in (select id from admin.features where key like ${`${PK}-%`})`;
+    const count = async (op: string) =>
       (
-        await c.sql<
-          { n: number }[]
-        >`select count(*)::int as n from admin.audit_log where action = 'pack.enable' and tenant_id = ${T.acme}`
+        await c.sql<{ n: number }[]>`select count(*)::int as n from admin.audit_log
+          where action in ('grant', 'revoke') and entity = 'entitlement'
+            and summary->>'op' = ${op} and tenant_id = ${T.acme}`
       )[0]?.n ?? 0;
+    const before = await count("pack.enable");
     await c.enable(T.acme);
-    const after =
-      (
-        await c.sql<
-          { n: number }[]
-        >`select count(*)::int as n from admin.audit_log where action = 'pack.enable' and tenant_id = ${T.acme}`
-      )[0]?.n ?? 0;
-    expect(after - before).toBeGreaterThanOrEqual(1);
+    const after = await count("pack.enable");
+    expect(after - before).toBe(1);
+    await c.enable(T.acme); // lặp: không đổi gì ⇒ không audit mới (bất biến M4 sự kiện ⇔ audit)
+    expect(await count("pack.enable")).toBe(after);
   });
   it("PK-FR-05 · PUT tăng config_version và phát NOTIFY config_changed (Hub nạp lại ≤ 5 s)", async () => {
     await needPackKit(c.sql);
@@ -176,14 +176,14 @@ describe("PK-FR-05 · GET danh sách và DELETE (tắt gói)", () => {
     expect(await grantsOf(T.acme)).toEqual(GRANTS);
     const g = await c.admin.call("GET", packsPath(T.acme));
     expect(g.json.items.find((x: { key: string }) => x.key === PK)?.enabled).toBe(false);
-    await c.enable(T.acme);
-    expect((await entOf(T.acme)).map((e) => e.revoked)).toEqual([false, false, false]);
     const a = (
-      await c.sql<
-        { n: number }[]
-      >`select count(*)::int as n from admin.audit_log where action = 'pack.disable' and tenant_id = ${T.acme}`
+      await c.sql<{ n: number }[]>`select count(*)::int as n from admin.audit_log
+        where action = 'revoke' and entity = 'entitlement'
+          and summary->>'op' = 'pack.disable' and tenant_id = ${T.acme}`
     )[0]?.n;
     expect(a).toBeGreaterThanOrEqual(1);
+    await c.enable(T.acme);
+    expect((await entOf(T.acme)).map((e) => e.revoked)).toEqual([false, false, false]);
   });
 });
 
