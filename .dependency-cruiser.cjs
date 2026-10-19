@@ -112,6 +112,14 @@ module.exports = {
       },
     },
     {
+      name: "test-kit-no-apps",
+      comment:
+        "TK1: packages/test-kit là lá — chỉ @ai/db, postgres, bun:test; không import code từ apps/**",
+      severity: "error",
+      from: { path: "(^|/)packages/test-kit/" },
+      to: { path: "(^|/)apps/" },
+    },
+    {
       name: "web-kit-no-apps",
       comment: "N1 TF3: packages/web-kit dùng chung cho các web app — không import code từ apps/**",
       severity: "error",
