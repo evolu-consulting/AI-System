@@ -42,7 +42,7 @@ import {
 } from "./application/approval-sweep";
 import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
-import type { TaxRegistry } from "./application/extraction.ports";
+import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
@@ -76,6 +76,8 @@ export type ContractsAi = {
 };
 export type ContractsFlowDeps = {
   ai: AiClient;
+  /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
+  fileText?: SourceFileText;
   groups: ApprovalGroups;
   redis?: Redis;
   quota: ActionQuota;
@@ -148,7 +150,14 @@ export function contractsAiModule(
     aiTransport(flow.ai, { model: process.env.CONTRACTS_EXTRACT_MODEL || EXTRACT_MODEL });
   const agent = createExtractionAgent(transport, { timeoutMs: agentTimeoutMs() });
   const verifier = createExtractionVerifier();
-  const run = createRunExtraction({ uow, agent, verifier, tax: d.tax, scheduleTaxRetry: schedule });
+  const run = createRunExtraction({
+    uow,
+    agent,
+    verifier,
+    tax: d.tax,
+    scheduleTaxRetry: schedule,
+    ...(flow.fileText ? { fileText: flow.fileText } : {}),
+  });
   taxQueue = createExtractionQueue({
     run,
     refresh: createRefreshParties({ uow, tax: d.tax, schedule }),

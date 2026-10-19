@@ -18,6 +18,7 @@ import type { ConfigCache } from "../config/config.service";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
+import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
@@ -33,6 +34,7 @@ import { packGroups } from "./kit/adapters/pack-groups";
 import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
 import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
+import { createPdfConverter } from "./kit/adapters/pdf";
 import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
@@ -128,6 +130,9 @@ function mountContracts<E extends Env>(
       // M3 · AI client chung (khoá từ env; test tiêm `model` giả) + Group duyệt (admin.groups + cache cấu hình)
       ai: createHubAiClient(db, model === undefined ? {} : { provider: model }),
       groups: packGroups(db, view),
+      ...(fb
+        ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
+        : {}),
       ...(d.redis ? { redis: d.redis } : {}),
       quota: actionQuota({
         ...(d.redis ? { redis: d.redis } : {}),

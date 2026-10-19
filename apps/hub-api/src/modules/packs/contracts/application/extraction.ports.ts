@@ -25,6 +25,13 @@ export type AgentFailCode =
   | "AI_CAP_EXCEEDED";
 export type AgentReply = { ok: true; raw: RawExtraction } | { ok: false; code: AgentFailCode };
 
+/** M3 · D3-04 · tệp gốc ⇒ chữ (PDF có lớp chữ, ADR-0028). `null` ⇒ loại tệp không đọc được ở đây (ảnh) ⇒ đường cũ. PDF scan ⇒
+ *  `PDF_NEEDS_OCR`. Không ném. */
+export type SourceFileText = (
+  who: PackWho,
+  f: SourceFile,
+) => Promise<{ ok: true; text: string } | { ok: false; code: string } | null>;
+
 /** Agent trích chạy trong Agent Hub (D2-01). Adapter dựng lời nhắc có rào (domain) + parse strict; không bao giờ ném. */
 export type ExtractionAgent = {
   extract(req: {

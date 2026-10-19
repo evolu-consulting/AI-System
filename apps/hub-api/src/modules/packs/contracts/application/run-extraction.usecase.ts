@@ -17,6 +17,7 @@ import type {
   ExtractionSource,
   ExtractionUow,
   ExtractionVerifier,
+  SourceFileText,
   TaxRegistry,
 } from "./extraction.ports";
 import {
@@ -35,6 +36,8 @@ export type RunExtractionDeps = {
   verifier: ExtractionVerifier;
   tax: TaxRegistry | null;
   scheduleTaxRetry?: TaxRetryScheduler;
+  /** M3 · PDF có lớp chữ ⇒ chữ (vắng ⇒ tệp đi thẳng agent như trước). */
+  fileText?: SourceFileText;
 };
 export type ExtractionOutcome = "needs_review" | "extract_failed" | "skipped";
 export type RunExtraction = (who: PackWho, contractId: string) => Promise<ExtractionOutcome>;
@@ -54,11 +57,14 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
     const src = await d.uow.tenant(who, (r) => r.extraction.source(id));
     if (!src || src.status !== "extracting") return "skipped";
     if (!src.text && !src.file) return fail(d, who, id, "NO_SOURCE");
+    const read = await sourceText(d, who, src);
+    if (!read.ok) return fail(d, who, id, read.code);
+    const text = read.text;
     const reply = await d.agent.extract({
       who,
       contractId: id,
-      text: src.text,
-      file: src.text ? null : src.file,
+      text,
+      file: text ? null : src.file,
       parent: src.parent,
     });
     if (!reply.ok) return fail(d, who, id, reply.code);
@@ -66,7 +72,7 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
     try {
       const verified = await d.verifier.verify({
         raw: reply.raw,
-        source: src.text,
+        source: text,
         kind: src.kind,
       });
       const hits = await prefetchTax(d.tax, candidateTaxIds(reply.raw, src.fields), false);
@@ -75,6 +81,20 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
       return fail(d, who, id, "SAVE_FAILED");
     }
   };
+}
+
+/** Văn bản để đọc: `source_text` có sẵn; không có mà là PDF có lớp chữ ⇒ chữ trích (kiểm trích dẫn cũng dùng chữ này). */
+async function sourceText(
+  d: RunExtractionDeps,
+  who: PackWho,
+  src: ExtractionSource,
+): Promise<{ ok: true; text: string | null } | { ok: false; code: string }> {
+  if (src.text || !src.file || !d.fileText) return { ok: true, text: src.text };
+  const t = await d
+    .fileText(who, src.file)
+    .catch(() => ({ ok: false as const, code: "PDF_UNREADABLE" }));
+  if (t === null) return { ok: true, text: null };
+  return t.ok ? { ok: true, text: t.text } : t;
 }
 
 type SaveInput = {
