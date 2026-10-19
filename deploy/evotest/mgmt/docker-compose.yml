@@ -1,0 +1,121 @@
+# I1 · bản sao mgmt-app CÓ SEED (dữ liệu bịa) để kiểm importer `mgmt-import` — CHỈ trên evotest, project Docker RIÊNG
+# `evotest-mgmt` (profile `mgmt`). Không đụng container/volume `sohoptac-*` (production) — không dùng chung mạng, volume, tên.
+# Image: đúng tag mgmt-app/docker-compose.yml (opensearch 2.19.0; neo4j `5-community` ghim bản chính xác 5.26.30-community =
+# bản đang chạy cùng máy), api build từ mã mgmt-app (Dockerfile của chính nó, commit ghi ở run.ps1).
+# Không publish cổng (truy cập trong mạng project), dữ liệu ở tmpfs / thư mục tạm của lượt chạy ⇒ `down -v` + xoá thư mục là sạch.
+# Ngân sách: CPU 1.5 + 1 + 1 + 1 + 2 = 6.5; RAM 3 + 2 + 3 + 2 + 6 = 16 GB; cpu_shares 128 + `nice -n 19` mọi tiến trình.
+name: evotest-mgmt
+
+x-cap: &cap
+  cpu_shares: 128
+  init: true
+  logging: { driver: json-file, options: { max-size: "10m", max-file: "2" } }
+
+services:
+  mgmt-opensearch:
+    <<: *cap
+    profiles: ["mgmt"]
+    image: opensearchproject/opensearch:2.19.0
+    container_name: evotest-mgmt-opensearch
+    entrypoint: ["nice", "-n", "19", "./opensearch-docker-entrypoint.sh"]
+    command: ["opensearch"]
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - action.auto_create_index=false
+    tmpfs: ["/usr/share/opensearch/data:size=2g,mode=1777"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200 >/dev/null || exit 1"]
+      interval: 5s
+      retries: 40
+    cpus: 1.5
+    mem_limit: 3g
+
+  mgmt-neo4j:
+    <<: *cap
+    profiles: ["mgmt"]
+    image: neo4j:5.26.30-community
+    container_name: evotest-mgmt-neo4j
+    entrypoint: ["nice", "-n", "19", "tini", "-g", "--", "/startup/docker-entrypoint.sh"]
+    command: ["neo4j"]
+    environment:
+      - NEO4J_AUTH=neo4j/${MGMT_NEO4J_PW:?MGMT_NEO4J_PW}
+      - NEO4J_server_memory_heap_max__size=768m
+      - NEO4J_server_memory_pagecache_size=256m
+    tmpfs: ["/data:size=1g,mode=1777", "/logs:size=200m,mode=1777"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/7474' && bash -c '</dev/tcp/localhost/7687'"]
+      interval: 5s
+      retries: 40
+    cpus: 1
+    mem_limit: 2g
+
+  mgmt-api:
+    <<: *cap
+    profiles: ["mgmt"]
+    image: evotest-mgmt-api:${MGMT_COMMIT:-local}
+    build: { context: ./mgmt-api }
+    container_name: evotest-mgmt-api
+    user: "${EVO_UID:-1002}:${EVO_GID:-1002}"
+    command: ["nice", "-n", "19", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    environment:
+      - HOME=/tmp
+      - OPENSEARCH_URL=http://mgmt-opensearch:9200
+      - NEO4J_URI=bolt://mgmt-neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${MGMT_NEO4J_PW:?MGMT_NEO4J_PW}
+      - BACKGROUND_JOBS=false
+      - FAKE_LLM=true
+      - WEB_CONCURRENCY=1
+    volumes: ["./data:/app/data", "./seed-plus.py:/seed/seed-plus.py:ro"]
+    depends_on:
+      mgmt-opensearch: { condition: service_healthy }
+      mgmt-neo4j: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json')"]
+      interval: 5s
+      retries: 60
+    cpus: 1
+    mem_limit: 3g
+
+  mgmt-pg:
+    <<: *cap
+    profiles: ["mgmt"]
+    image: postgres:16.15-alpine
+    container_name: evotest-mgmt-pg
+    entrypoint: ["nice", "-n", "19", "docker-entrypoint.sh"]
+    command: ["postgres", "-c", "max_connections=100", "-c", "fsync=off", "-c", "synchronous_commit=off"]
+    environment: { POSTGRES_USER: ai, POSTGRES_PASSWORD: ai_dev_pw, POSTGRES_DB: ai_system }
+    tmpfs: ["/var/lib/postgresql/data:size=2g"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai -d ai_system"]
+      interval: 3s
+      retries: 30
+    cpus: 1
+    mem_limit: 2g
+
+  mgmt-runner:
+    <<: *cap
+    profiles: ["mgmt"]
+    image: evotest-runner:bun-1.3.14
+    container_name: evotest-mgmt-runner
+    user: "${EVO_UID:-1002}:${EVO_GID:-1002}"
+    working_dir: /app
+    entrypoint: ["nice", "-n", "19", "bash", "/mgmt/in-runner.sh"]
+    environment:
+      HOME: /tmp/evohome
+      BUN_INSTALL_CACHE_DIR: /cache
+      MGMT_NEO4J_PW: ${MGMT_NEO4J_PW:?MGMT_NEO4J_PW}
+      MGMT_SOURCE: ${MGMT_SOURCE:-mgmt-evotest}
+      MGMT_KNOWLEDGE_ORG: ${MGMT_KNOWLEDGE_ORG:-}
+    volumes:
+      - ./app:/app
+      - ../evotest/cache:/cache
+      - ./out:/out
+      - ./data:/mgmtdata:ro
+      - ./in-runner.sh:/mgmt/in-runner.sh:ro
+    depends_on:
+      mgmt-pg: { condition: service_healthy }
+    cpus: 2
+    mem_limit: 6g
