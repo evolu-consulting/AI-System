@@ -25,6 +25,8 @@ Làn: **đầy đủ** cho máy trạng thái duyệt (quyền/tenant/tiền, ch
 | M3-07 | Model lỗi ⇒ lượt `failed`, thẻ bước `cancelled` (không "Bị từ chối"); `/extract` mở lượt mới. |
 | M3-08 | Khoá stream theo tên DB (`current_database()`) để nhiều DB test chung một Redis không lấy job của nhau. |
 | M3-09 | Group duyệt: id theo khoá đọc `admin.groups` (cache 60 s, hụt khoá ⇒ đọc lại) + Group user từ cache cấu hình (`packGroups`). |
+| M3-11 | AI chưa cấu hình (không `ANTHROPIC_API_KEY`, không seam): không xếp job, không mở worker; tải lên giữ `extracting` tới quét STALE (hành vi HD1 khi chưa có AI), `/extract` 503 `AGENT_UNAVAILABLE` trước SQL. |
+| M3-12 | Tải lên mở lượt duyệt trong CÙNG câu CTE (giữ "1 tx 3 câu" HD-NFR-03, khoá); tệp không đọc được ⇒ không mở lượt. XADD qua kết nối Redis riêng của hàng đợi (không chen lệnh lẻ vào client dùng chung). |
 | M3-10 | Run engine `contracts-approval` đang mở lúc chuyển dữ liệu KHÔNG bị huỷ (migration gói không ghi schema hub); tool `contracts-*` đã gỡ ⇒ run cũ sẽ lỗi tool ở engine. Việc còn lại: admin huỷ các run đó. |
 
 ## Bảng ánh xạ test HD3 (qc, điều phối 2026-10-20) — không bỏ luật nào
