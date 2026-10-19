@@ -15,6 +15,7 @@ export const PACKS_KIT_TABLE = "__drizzle_migrations_packs";
 /** Gói đã đăng ký, chạy theo đúng thứ tự mảng. Khoá theo `PACK_KEY_RE` (@ai/contracts) — hằng, nên ghép tên bảng an toàn. */
 export const PACK_DIRS = [
   { key: "pkdemo", dir: dir("migrations-pack-pkdemo"), devOnly: true },
+  { key: "contracts", dir: dir("migrations-pack-contracts"), devOnly: false },
 ] as const satisfies readonly { key: string; dir: string; devOnly: boolean }[];
 
 export type PackMigrateResult = { kit: number; packs: Record<string, number> };
