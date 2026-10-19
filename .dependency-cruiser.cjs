@@ -75,6 +75,30 @@ module.exports = {
       to: { path: "modules/[^/]+/", pathNot: "modules/$1/" },
     },
     {
+      name: "pack-no-cross-pack",
+      comment:
+        "PK-FR-09 (N1 plan §9): gói A không import gói B — chỉ chính nó và khung `kit/`; nối ở `packs.mount.ts`",
+      severity: "error",
+      from: { path: "modules/packs/([^/]+)/" },
+      to: { path: "modules/packs/[^/]+/", pathNot: "modules/packs/($1|kit)/" },
+    },
+    {
+      name: "pack-no-hub-modules",
+      comment:
+        "PK-FR-09 (N1 plan §9): lớp 1–3 của module gói không import module khác của hub (config, attachments…) — chỉ lớp 4 `*.mount.ts` nối",
+      severity: "error",
+      from: { path: "modules/packs/[^/]+/(domain|application|adapters)/" },
+      to: { path: "apps/hub-api/src/modules/", pathNot: "modules/packs/" },
+    },
+    {
+      name: "pack-no-hub-schema",
+      comment:
+        "PK-FR-09 (N1 plan §9): module gói không đọc schema hub — chỉ bảng của gói qua `PackUow`",
+      severity: "error",
+      from: { path: "modules/packs/" },
+      to: { path: ["(^|/)@ai/db/schema/hub", "(^|/)packages/db/src/schema/hub"] },
+    },
+    {
       name: "component-no-fetch",
       comment: "T-DEP-5: component chỉ trình bày; gọi API qua features/<f>/api.ts ở page/hook",
       severity: "error",

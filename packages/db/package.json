@@ -10,6 +10,7 @@
     "./migrate-hub": "./src/migrate-hub.ts",
     "./migrate-packs": "./src/migrate-packs.ts",
     "./hub-scope": "./src/hub-scope.ts",
+    "./pack-scope": "./src/pack-scope.ts",
     "./schema/hub": "./src/schema/hub.ts",
     "./schema/hub-rooms": "./src/schema/hub-rooms.ts",
     "./schema/hub-processes": "./src/schema/hub-processes.ts",

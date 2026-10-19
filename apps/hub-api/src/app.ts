@@ -20,7 +20,6 @@ import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
-import { mountPackKit, PACK_PREFIX } from "./app.packs";
 import { processAgentRunner, runDrivers, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
@@ -48,6 +47,7 @@ import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
+import { mountPacks, PACK_PREFIX, type PacksDeps } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
   mountProcesses,
@@ -123,6 +123,8 @@ export type AppDeps = {
   kh?: KhConfig;
   /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
   dlc?: DlcEngine;
+  /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ `appEnv !== "production"`. */
+  packs?: PacksDeps;
 } & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -364,7 +366,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   const kh = mountProtected(app, deps, config);
-  if (config) mountPackKit(app, config); // N1 T5b · `/pack/:k/me`
+  if (config) mountPacks(app, { ...deps, config }); // N1 · `/pack/:k/me` + route gói (pkdemo)
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)
