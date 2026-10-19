@@ -20,6 +20,7 @@ import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
+import { mountPackKit, PACK_PREFIX } from "./app.packs";
 import { processAgentRunner, runDrivers, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
@@ -136,6 +137,7 @@ const PROTECTED_PREFIXES = [
   "/agent-settings",
   "/studio/api",
   "/dlc",
+  PACK_PREFIX,
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
@@ -362,6 +364,7 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   const kh = mountProtected(app, deps, config);
+  if (config) mountPackKit(app, config); // N1 T5b · `/pack/:k/me`
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)

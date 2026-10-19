@@ -23,6 +23,7 @@ import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
 import { overviewRoutes } from "./modules/overview/overview.routes";
+import { packsRoutes } from "./modules/packs/packs.routes";
 import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
 import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
@@ -82,6 +83,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/quota-banner", quotaBannerRoutes(qctx));
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
+  app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));

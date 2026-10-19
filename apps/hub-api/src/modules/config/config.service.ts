@@ -46,13 +46,15 @@ export function dbConfigSource(db: Db): ConfigSource {
   };
 }
 
+type Waiter = { min: number; done: (v: number) => void };
 export type ConfigCacheOptions = { pollS: number; log: Logger; signal?: AbortSignal };
 
 /** Gộp các lần gọi chồng nhau: đang chạy thì đánh dấu chạy lại một lần nữa sau khi xong. */
-function coalesce(fn: () => Promise<void>): () => Promise<void> {
+type Coalesced = (() => Promise<void>) & { current(): Promise<void> | null };
+function coalesce(fn: () => Promise<void>): Coalesced {
   let running: Promise<void> | null = null;
   let again = false;
-  return () => {
+  const call = () => {
     if (running) {
       again = true;
       return running;
@@ -68,6 +70,7 @@ function coalesce(fn: () => Promise<void>): () => Promise<void> {
     });
     return running;
   };
+  return Object.assign(call, { current: () => running });
 }
 
 export class ConfigCache {
@@ -86,8 +89,11 @@ export class ConfigCache {
   #stopped = false;
   #polling: Promise<void> | null = null;
   #queuedPoll: Promise<void> | null = null;
+  /** Người chờ `reloaded()`: resolve khi một lần `#loadAdmin` xong với version ≥ `min`. */
+  #waiters: Waiter[] = [];
   readonly reloadHub: () => Promise<void>;
   readonly reloadAdmin: () => Promise<void>;
+  readonly #adminRun: Coalesced;
 
   constructor(src: ConfigSource, opts: ConfigCacheOptions) {
     this.#src = src;
@@ -95,7 +101,17 @@ export class ConfigCache {
     this.reloadHub = coalesce(async () => {
       this.#hub = await this.#src.loadHub();
     });
-    this.reloadAdmin = coalesce(() => this.#loadAdmin());
+    this.#adminRun = coalesce(() => this.#loadAdmin());
+    this.reloadAdmin = this.#adminRun;
+  }
+
+  /**
+   * N1 T5b · lần nạp Admin ĐANG chạy (vd vừa nhận `config_changed`) xong — không kích hoạt nạp mới, không có thì resolve
+   * ngay (0 SQL). Quyền gói chờ nó để thấy thay đổi đã NOTIFY trước request (lỗi nạp: giữ cache cũ, không ném).
+   */
+  adminSettled(): Promise<void> {
+    const run = this.#adminRun.current();
+    return run ? run.catch(() => undefined) : Promise.resolve();
   }
 
   /** Bắt đầu vòng nền (nạp đầu, LISTEN, poll). Dừng khi `signal` abort. */
@@ -112,6 +128,7 @@ export class ConfigCache {
 
   async stop(): Promise<void> {
     this.#stopped = true;
+    this.#settleWaiters(Number.POSITIVE_INFINITY);
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = null;
     const subs = this.#unlisten;
@@ -211,6 +228,31 @@ export class ConfigCache {
     this.#tenants = new Map(tenants.map((t) => [t.id, t]));
     this.#users = new Map(users.map((u) => [u.id, u]));
     this.#adminVersion = admin;
+    this.#settleWaiters(admin);
+  }
+
+  /**
+   * N1 T5b (readiness #6) · tín hiệu "đã nạp lại phần Admin": resolve version khi một lần nạp Admin XONG với version ≥
+   * `minAdminVersion` (đã đạt ⇒ resolve ngay). Vắng tham số ⇒ chờ lần nạp kế tiếp. Không kích hoạt nạp, không đổi hành vi
+   * nạp lại; `stop()` ⇒ resolve version hiện có (không treo người chờ).
+   */
+  reloaded(minAdminVersion?: number): Promise<number> {
+    if (minAdminVersion !== undefined && this.#adminVersion >= minAdminVersion)
+      return Promise.resolve(this.#adminVersion);
+    if (this.#stopped) return Promise.resolve(this.#adminVersion);
+    const min = minAdminVersion ?? Number.NEGATIVE_INFINITY;
+    return new Promise((done) => this.#waiters.push({ min, done }));
+  }
+
+  /** `version` = vừa nạp xong (vô cực = dừng: trả mọi người chờ về version hiện có). */
+  #settleWaiters(version: number): void {
+    if (this.#waiters.length === 0) return;
+    const keep: Waiter[] = [];
+    for (const w of this.#waiters) {
+      if (version >= w.min) w.done(Number.isFinite(version) ? version : this.#adminVersion);
+      else keep.push(w);
+    }
+    this.#waiters = keep;
   }
 
   #onAdminChanged = (payload: string): void => {

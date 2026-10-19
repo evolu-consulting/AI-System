@@ -10,7 +10,7 @@ import {
   providers,
   tenantAgentDefaults,
 } from "@ai/db/schema/hub";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../../lib/db";
 import type { ConfigSnapshot, TenantState, UserState } from "./config.rules";
@@ -176,6 +176,7 @@ export async function loadTenants(db: Db): Promise<TenantState[]> {
 /** User theo id (kèm nhóm). Rỗng `ids` → []. Id không tồn tại → không có trong kết quả. */
 export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserState[]> {
   if (ids.length === 0) return [];
+  // N1 PK-NFR-01: MỘT câu (Group gộp bằng subquery tương quan) ⇒ user nguội = 1 câu SQL. Chỉ Group cùng tenant với user.
   const rows = await db.db
     .select({
       id: users.id,
@@ -183,21 +184,11 @@ export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserSta
       active: users.active,
       lockedByTenant: users.lockedByTenant,
       locale: users.locale,
+      groupIds: sql<string[]>`coalesce((select array_agg(${groupMembers.groupId})::text[]
+        from ${groupMembers} where ${groupMembers.userId} = ${users.id}
+          and ${groupMembers.tenantId} = ${users.tenantId}), '{}'::text[])`,
     })
     .from(users)
     .where(inArray(users.id, [...ids]));
-  const members = await db.db
-    .select({
-      userId: groupMembers.userId,
-      groupId: groupMembers.groupId,
-      tenantId: groupMembers.tenantId,
-    })
-    .from(groupMembers)
-    .where(inArray(groupMembers.userId, [...ids]));
-  return rows.map((u) => ({
-    ...u,
-    groupIds: new Set(
-      members.filter((m) => m.userId === u.id && m.tenantId === u.tenantId).map((m) => m.groupId),
-    ),
-  }));
+  return rows.map((u) => ({ ...u, groupIds: new Set(u.groupIds) }));
 }
