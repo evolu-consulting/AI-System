@@ -172,16 +172,34 @@ export function createExtractStream(d: ExtractStreamDeps): ExtractStream {
     stop();
   };
 
+  // Kết nối riêng cho XADD của hàng đợi (tách khỏi client dùng chung: lệnh hàng đợi không chen vào pipeline quota của request).
+  let producer: Promise<Redis> | null = null;
+  const producerOf = () => {
+    producer ??= (async () => {
+      const p = d.redis.duplicate();
+      const close = () => p.disconnect();
+      d.signal?.addEventListener("abort", close, { once: true });
+      d.redis.once("end", close);
+      await p.connect();
+      return p;
+    })().catch((e: unknown) => {
+      producer = null;
+      throw e;
+    });
+    return producer;
+  };
+
   return {
     async enqueue(job) {
       const k = await keyOf();
+      const redis = await producerOf();
       const body = JSON.stringify({
         t: job.tenantId,
         u: job.userId,
         c: job.contractId,
         a: job.approvalId,
       });
-      await d.redis.xadd(k, "MAXLEN", "~", MAXLEN, "*", FIELD, body);
+      await redis.xadd(k, "MAXLEN", "~", MAXLEN, "*", FIELD, body);
     },
     start() {
       void loop().catch(() => d.log.warn("contract-extract-worker-stopped", {}));

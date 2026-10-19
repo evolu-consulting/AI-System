@@ -28,6 +28,7 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
   return {
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
+      const approvalId = r.status === "extracting" ? (r.approvalId ?? null) : null;
       try {
         const rows = await tx.execute<Out>(sql`with f as (
             insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
@@ -36,10 +37,16 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
             returning id),
           c as (
             insert into contracts.contracts (id, tenant_id, kind, parent_id, title, status, error, owner_user_id, created_by,
-              fields, file_id, source_text)
+              fields, file_id, source_text, run_id)
             select ${r.id}::uuid, ${tenantId}::uuid, ${r.kind}, ${r.parentId}::uuid, ${r.title}, ${r.status}, ${r.error},
-              ${r.userId}::uuid, ${r.userId}::uuid, ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText} from f
+              ${r.userId}::uuid, ${r.userId}::uuid, ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText},
+              ${approvalId}::uuid from f
             returning id, status, version),
+          a as (
+            -- M3 · lượt duyệt mở trong CÙNG câu (chế độ flow): giữ "1 tx 3 câu" của tải lên (HD-NFR-03).
+            insert into contracts.approvals (id, tenant_id, contract_id, status, started_by)
+            select ${approvalId}::uuid, ${tenantId}::uuid, c.id, 'extracting', ${r.userId}::uuid from c
+            where ${approvalId}::uuid is not null),
           e as (
             insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
             select ${tenantId}::uuid, c.id, 'uploaded', ${r.userId}::uuid, ${data}::jsonb from c)

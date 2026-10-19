@@ -69,27 +69,39 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
     const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
     await takeQuota(d, i, days, at);
     let stored: { org: string; fileId: string } | null = null;
-    let row: UploadContractResult;
+    let row: UploadContractResult & { approvalId: string | null };
     try {
       const text = await toText(d.docx, type, i);
       const org = orgForTenant(i.who.tenantId);
       const up = await d.files.put(org, i.name, i.bytes);
       stored = { org, fileId: up.fileId };
-      row = await persist(d, i, { type, text, org, ...up });
+      row = await persist(d, i, {
+        type,
+        text,
+        org,
+        ...up,
+        approvalId: d.starter.opensApproval && text.ok ? d.newId() : null,
+      });
     } catch (e) {
       await d.counter.refund(i.who.tenantId, days).catch(() => undefined);
       if (stored) await d.files.remove(stored.org, stored.fileId).catch(() => undefined);
       throw e;
     }
-    await startExtraction(d, i.who, row.id);
-    return row;
+    const { approvalId, ...out } = row;
+    await startExtraction(d, i.who, row.id, approvalId);
+    return out;
   };
 }
 
 /** Sau commit: HĐ đã tồn tại ⇒ lỗi (kể cả ném ĐỒNG BỘ) chỉ log, KHÔNG hoàn quota, KHÔNG xoá tệp (review m-08). */
-async function startExtraction(d: UploadContractDeps, who: PackWho, id: string): Promise<void> {
+async function startExtraction(
+  d: UploadContractDeps,
+  who: PackWho,
+  id: string,
+  approvalId: string | null,
+): Promise<void> {
   try {
-    await d.starter.start(who, id);
+    await (approvalId ? d.starter.start(who, id, approvalId) : d.starter.start(who, id));
   } catch (e) {
     d.log?.warn("contract-extraction-start-failed", {
       contract_id: id,
@@ -98,13 +110,20 @@ async function startExtraction(d: UploadContractDeps, who: PackWho, id: string):
   }
 }
 
-type Stored = { type: SniffedType; text: Text; org: string; fileId: string; versionId: string };
+type Stored = {
+  type: SniffedType;
+  text: Text;
+  org: string;
+  fileId: string;
+  versionId: string;
+  approvalId: string | null;
+};
 /** Một tx: `set_config` + một CTE (files → contracts → events) + outbox = 3 câu. */
 function persist(
   d: UploadContractDeps,
   i: UploadContractInput,
   s: Stored,
-): Promise<UploadContractResult> {
+): Promise<UploadContractResult & { approvalId: string | null }> {
   return d.uow.tenant(i.who, async (r) => {
     const out = await r.upload.insert({
       id: d.newId(),
@@ -123,9 +142,10 @@ function persist(
       fields: fillFields({}),
       sourceText: s.text.ok ? s.text.markdown : null,
       userId: i.who.userId,
+      approvalId: s.text.ok ? s.approvalId : null,
     });
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
-    return out;
+    return { ...out, approvalId: s.text.ok ? s.approvalId : null };
   });
 }
 

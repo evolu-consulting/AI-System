@@ -163,7 +163,7 @@ export function contractsAiModule(
   const legacyStarter: ExtractionStarter = {
     start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),
   };
-  const starter = legacy ? legacyStarter : flowStarter({ start, log: logger });
+  const starter = legacy ? legacyStarter : flowStarter({ start, jobs, log: logger });
   startSweep(d, flow, pack, reclaimOnce);
   const routes = extractionRoutes(view, {
     requestExtract: legacy

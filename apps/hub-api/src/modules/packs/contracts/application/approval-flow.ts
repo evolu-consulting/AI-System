@@ -14,11 +14,15 @@ type Start = ReturnType<typeof startApproval>;
 /** Tải lên (HĐ đã `extracting`, sau COMMIT): mở lượt duyệt + xếp lượt đọc. Không ném (tải lên đã 201); lỗi ⇒ vòng quét STALE. */
 export function flowStarter(d: {
   start: Start;
+  jobs: ExtractJobs;
   log: { warn(msg: string, f?: Record<string, unknown>): void };
 }): ExtractionStarter {
   return {
-    async start(who, id) {
+    opensApproval: true,
+    async start(who, id, approvalId) {
       try {
+        // Tải lên đã mở lượt duyệt trong cùng câu ghi ⇒ chỉ xếp lượt đọc (0 SQL).
+        if (approvalId) return await d.jobs.enqueue({ ...who, contractId: id, approvalId });
         const out = await d.start(who, id, "extracting");
         if (out !== "ok") d.log.warn("contract-approval-not-opened", { contract_id: id, out });
       } catch {

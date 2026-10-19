@@ -35,6 +35,8 @@ export type NewUploadedContract = {
   fields: ContractFields;
   sourceText: string | null;
   userId: string;
+  /** M3 · chế độ flow: id lượt duyệt mở CÙNG câu CTE (HĐ `extracting`); null ⇒ không mở. */
+  approvalId?: string | null;
 };
 export type UploadStatus = "extracting" | "extract_failed";
 
@@ -46,7 +48,12 @@ export type UploadTxRepos = { upload: UploadContractRepo } & KitTxRepos;
 export type UploadUow = PackUow<UploadTxRepos>;
 
 /** HD2 làm thật; HD1 no-op. Gọi SAU commit. */
-export type ExtractionStarter = { start(who: PackWho, contractId: string): Promise<void> };
+export type ExtractionStarter = {
+  /** `approvalId` = lượt duyệt đã mở trong tx tải lên (chế độ flow) ⇒ chỉ xếp lượt AI đọc. */
+  start(who: PackWho, contractId: string, approvalId?: string | null): Promise<void>;
+  /** M3 · true ⇒ tải lên mở lượt duyệt trong CÙNG câu ghi (không thêm câu SQL). */
+  opensApproval?: boolean;
+};
 
 export type UploadErrorCode =
   | "FILE_TOO_LARGE"
