@@ -71,7 +71,7 @@ test("ADM-FR-55 · M3-AC08 · workflow danh sách: bật report-export khi ngư�
   request,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflows");
+  await openPage(page, "/workflows", "Workflow Process");
   const row = page
     .getByRole("table", { name: "Workflows" })
     .getByRole("row")

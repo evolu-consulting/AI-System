@@ -129,6 +129,19 @@ export async function openPage(page: Page, path: string, heading: string) {
   await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
 }
 
+/**
+ * DLC-R15 · menu "Workflows" là nhóm sổ xuống (Workflow Steps · Workflow Process): mở nhóm nếu đang đóng, bấm
+ * "Workflow Process" → /workflows, tiêu đề "Workflow Process".
+ */
+export async function openWorkflowProcessFromNav(page: Page) {
+  const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+  const group = nav.getByRole("button", { name: "Workflows", exact: true });
+  if ((await group.getAttribute("aria-expanded")) !== "true") await group.click();
+  await nav.getByRole("link", { name: "Workflow Process", exact: true }).click();
+  await expect(page).toHaveURL(/\/workflows$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Workflow Process" })).toBeVisible();
+}
+
 export type Traffic = {
   /** Chờ mọi body response đã đọc xong rồi mới quét (không race). */
   flush: () => Promise<void>;

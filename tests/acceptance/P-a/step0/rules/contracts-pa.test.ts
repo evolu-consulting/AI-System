@@ -182,6 +182,7 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       "task_result",
       "forward",
       "run_end",
+      "branch", // P-d2 (người dùng 2026-10-19)
     ]);
     expect(c.PROCESS_SYSTEM_SENDER).toEqual({
       key: "process",

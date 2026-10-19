@@ -29,6 +29,8 @@ import {
   JOB_FAIL_REASONS,
   JobAttachmentSchema,
   JobResultEventSchema,
+  SourceApplyJobSchema,
+  SourceResolveJobSchema,
   WorkflowInputValueSchema,
 } from "@ai/contracts/hub";
 import {
@@ -176,8 +178,24 @@ describe("WRK-FR-11 · contract hub H2c [R47, R48]", () => {
     expect(buildJobPayload(payloadInput({ agent: write }))?.allowed_tools).toContain("Write");
     expect(buildJobPayload(payloadInput())?.allowed_tools).toEqual(["Read", "Grep"]);
 
-    expect(JOB_FAIL_REASONS.at(-1)).toBe("attachment");
-    expect(JOB_FAIL_REASONS).toHaveLength(15);
+    // Lý do H2c đứng đúng thứ tự làm tiền tố; lý do thêm sau (P-c1 `container`…) được phép (người dùng 2026-10-19).
+    expect([...JOB_FAIL_REASONS].slice(0, 15)).toEqual([
+      "quota",
+      "tenant_slots",
+      "provider_busy",
+      "provider_unavailable",
+      "orphaned",
+      "crash",
+      "cancelled",
+      "timeout",
+      "invalid_payload",
+      "invalid_output",
+      "sandbox",
+      "credential",
+      "upstream",
+      "refused",
+      "attachment",
+    ]);
   });
 
   it("WRK-FR-18 · R48 · job.result outputs 1–5; DifyFileInput local_file + image|document; WorkflowInputValue nhận object file [spec §3]", () => {
@@ -214,7 +232,15 @@ const NEW_INVALID = [
   "JobOutputResponse.no-id.json",
   "JobOutputResponse.extra.json",
 ];
-const schemaOf = (f: string) => HUB_JSON_SCHEMAS[f.split(".")[0] as HubJsonSchemaName];
+// `SourceResolveJob.*` (P-b) và `SourceApplyJob.*` (P-c2) cố ý không có trong HUB_JSON_SCHEMAS ⇒ ánh xạ sang schema riêng.
+const OWN_SCHEMAS: Record<string, { safeParse: (v: unknown) => { success: boolean } }> = {
+  SourceResolveJob: SourceResolveJobSchema,
+  SourceApplyJob: SourceApplyJobSchema,
+};
+const schemaOf = (f: string) => {
+  const name = f.split(".")[0] as string;
+  return OWN_SCHEMAS[name] ?? HUB_JSON_SCHEMAS[name as HubJsonSchemaName];
+};
 
 describe("HUB-FR-44 · fixture + hub-internal [R49]", () => {
   it("HUB-FR-44 · R49 · fixture mới (5 valid, 8 invalid) đúng chiều; mọi fixture cũ vẫn đúng chiều [plan §2.2]", () => {

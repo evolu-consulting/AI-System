@@ -8,6 +8,7 @@ import {
   leakForms,
   leaksOnPage,
   loginAdmin,
+  openWorkflowProcessFromNav,
   resetFixture,
   toast,
   withOwner,
@@ -47,8 +48,9 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await expect(toast(page, "Đã thêm DIFY_E2E_KEY")).toBeVisible();
 
   // 2. Workflows: tạo workflow chưa gắn
-  await goto(page, "Workflows", /\/workflows/, "Workflows");
-  await page.getByRole("link", { name: "+ Khai báo workflow" }).click();
+  await openWorkflowProcessFromNav(page);
+  await page.getByRole("button", { name: "+ Thêm workflow" }).click();
+  await page.getByRole("menuitem", { name: /^Workflow Dify/ }).click();
   await expect(page).toHaveURL(/\/workflows\/new$/);
   await page.getByRole("textbox", { name: "Key", exact: true }).fill("translate-e2e");
   await page.getByRole("textbox", { name: "Tên", exact: true }).fill("Translate e2e");
@@ -71,7 +73,7 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await save(page).click();
   expect((await wfSaved).status()).toBe(201);
   await expect(page).toHaveURL(/\/workflows\/[0-9a-f-]{36}$/);
-  await goto(page, "Workflows", /\/workflows$/, "Workflows");
+  await openWorkflowProcessFromNav(page);
   const wfRow = page
     .getByRole("table", { name: "Workflows" })
     .getByRole("row")
@@ -122,7 +124,7 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await expect(toast(page, "Đã cấp Gói E2E cho acme")).toBeVisible();
 
   // 5. Quay lại Workflows: xoá translate-e2e bị chặn, liệt kê command
-  await goto(page, "Workflows", /\/workflows$/, "Workflows");
+  await openWorkflowProcessFromNav(page);
   await wfRow.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("menuitem", { name: "Xoá", exact: true }).click();
   const blocked = page.getByRole("alertdialog", { name: /Không xoá được translate-e2e/ });
