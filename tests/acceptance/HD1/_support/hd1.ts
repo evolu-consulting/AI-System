@@ -1,4 +1,4 @@
-// HD-FR-01…08 · HD-BR-01…03 · HD-NFR-01…04 · hạ tầng int HD1 (test-plan §1): DB sạch X2a (clone mẫu `test:int:par`, sau N1 T5a/T5 HD1
+﻿// HD-FR-01…08 · HD-BR-01…03 · HD-NFR-01…04 · hạ tầng int HD1 (test-plan §1): DB sạch X2a (clone mẫu `test:int:par`, sau N1 T5a/T5 HD1
 // có schema `contracts`) + hub-api THẬT in-process (seam `packs`: gói `contracts`, FileBox giả) + admin-api THẬT trên CÙNG DB
 // (dùng lại N1 `_support/n1.ts`: `startAdminN1`, `bumpConfig`, `countHops`, `untilHubSettles`, `inPack`) + bộ chụp câu SQL đầy đủ.
 // Điều kiện tiền đề (`needContracts`) đỏ NGAY với lý do rõ, không để PostgresError trong fixture. Không chứa `it(...)`.
@@ -28,7 +28,6 @@ import {
   type AdminN1,
   bumpConfig,
   type CtxN1,
-  countHops,
   type HubN1,
   inPack,
   noFeature,
@@ -46,9 +45,10 @@ import { setupX2a } from "../../X2a/_x2a";
 
 import { itemId } from "./pure";
 
+export { countHops } from "./hops";
 export * from "./pure";
 export type { CtxN1, Res, Sql };
-export { countHops, inPack, noFeature, P, percentile, ROOT, T, untilHubSettles };
+export { inPack, noFeature, P, percentile, ROOT, T, untilHubSettles };
 // biome-ignore lint/suspicious/noExplicitAny: body JSON của response; mỗi ca tự kiểm
 export type Json = any;
 type Person = (typeof P)[keyof typeof P];

@@ -9,6 +9,7 @@ import {
   countHops,
   ensureRoles,
   getWith,
+  insFile,
   jsonWith,
   measure,
   needContracts,
@@ -109,6 +110,29 @@ function runPhase(phase: string, p: 0 | 1) {
       redis: h.redis,
     }).toEqual({ status: 200, version: 2, sql: 4, http: [], redis: [] });
     expect(st.p95).toBeLessThanOrEqual(30);
+  }, 300_000);
+
+  it(`HD-NFR-02 · ${phase} · /source và /file p95 ≤ 30 ms, mỗi đường đúng 2 câu SQL, 0 Redis, 0 HTTP nội bộ (/file: 1 lời gọi FileBox)`, async () => {
+    await prepare();
+    const id = ids[dBase + W - 1] as string; // ô cuối cửa sổ: không dùng cho chi tiết (SLOT + PERF_N < W)
+    const fid = c.fb.put(new TextEncoder().encode("%PDF-1.4 x"), "p.pdf", `t_${T.acme}`).file_id;
+    const rowId = `f11e0000-0000-4000-8000-${String(p + 1).padStart(12, "0")}`;
+    await insFile(c.sql, T.acme, rowId, fid);
+    await c.sql`update contracts.contracts set file_id = ${rowId}, source_text = 'Văn bản nguồn HĐ' where id = ${id}`;
+    const src = await measure(c, () => getWith(c, tokR, `${CBASE}/${id}/source`));
+    const fil = await measure(c, () => getWith(c, tokR, `${CBASE}/${id}/file`), {
+      okStatus: 302,
+    });
+    const hs = await countHops(c, () => getWith(c, tokR, `${CBASE}/${id}/source`));
+    const hf = await countHops(c, () => getWith(c, tokR, `${CBASE}/${id}/file`), [c.fb.origin]);
+    console.log(
+      `HD-NFR-02 · ${phase} · /source p50=${src.p50.toFixed(2)} p95=${src.p95.toFixed(2)} max=${src.max.toFixed(1)} ms (n=${src.n}, ngưỡng 30) · SQL=${hs.sql} · /file p50=${fil.p50.toFixed(2)} p95=${fil.p95.toFixed(2)} max=${fil.max.toFixed(1)} ms (n=${fil.n}, ngưỡng 30) · SQL=${hf.sql}`,
+    );
+    expect({
+      source: [hs.r.status, hs.sql, hs.redis, hs.http],
+      file: [hf.r.status, hf.sql, hf.redis, hf.http, hf.httpExt.length],
+    }).toEqual({ source: [200, 2, [], []], file: [302, 2, [], [], 1] });
+    expect(Math.max(src.p95, fil.p95)).toBeLessThanOrEqual(30);
   }, 300_000);
 
   it(`HD-NFR-03 · ${phase} · tải lên PDF nhỏ p95 ≤ 30 ms (FileBox giả cùng máy), 3 câu SQL, đúng 1 pipeline Redis, 0 lệnh lẻ`, async () => {

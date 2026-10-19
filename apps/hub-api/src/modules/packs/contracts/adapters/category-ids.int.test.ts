@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-NFR-01 · D-22 · HD1 plan §3/§6 (Luật 4c): `contracts.category_ids` giữ đúng bằng trigger MỨC CÂU LỆNH trên
+﻿// HD-FR-07 · HD-NFR-01 · D-22 · HD1 plan §3/§6 (Luật 4c): `contracts.category_ids` giữ đúng bằng trigger MỨC CÂU LỆNH trên
 // `contract_items` — ghi/sửa/xoá item (nhiều HĐ trong một câu, nhiều tenant), xoá loại (FK SET NULL), qua role `contracts_rw`
 // có RLS (tenant khác không bị chạm), hai tx đồng thời trên cùng HĐ không mất cập nhật; đo chi phí ghi lô item có/không trigger.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -124,7 +124,7 @@ describe("HD-FR-07 · D-22 · category_ids gộp sẵn bằng trigger câu lện
   });
 });
 
-describe("HD-FR-07 · D-22 · RLS và đồng thời", () => {
+describe("HD-FR-07 · D-22 · RLS", () => {
   it("qua contracts_rw + RLS (tenant acme): ghi đúng HĐ acme, HĐ tenant beta không bị chạm (xmin giữ nguyên)", async () => {
     const b0 = await xminOf(hc(101));
     await hub.begin(async (tx) => {
@@ -143,18 +143,54 @@ describe("HD-FR-07 · D-22 · RLS và đồng thời", () => {
       bx: await xminOf(hc(101)),
     }).toEqual({ c3: [cat(2)], c4: [cat(2)], b: [cat(101)], bx: b0 });
   });
+});
 
-  it("hai tx đồng thời thêm item khác loại vào cùng HĐ: không mất cập nhật", async () => {
-    const a = postgres(HUB_API_URL.replace("hub_api:hub_api_dev_pw", "ai:ai_dev_pw"), { max: 1 });
-    const b = postgres(HUB_API_URL.replace("hub_api:hub_api_dev_pw", "ai:ai_dev_pw"), { max: 1 });
+/** Quan sát tx `pid` cho tới khi nó CHỜ khoá (pg_stat_activity, mỗi vòng một lượt DB, không ngủ) hoặc `isDone()`. */
+async function untilBlocked(pid: number, isDone: () => boolean): Promise<boolean> {
+  for (let i = 0; i < 100_000 && !isDone(); i++) {
+    const [w] = await sql<{ n: number }[]>`select count(*)::int as n from pg_stat_activity
+      where pid = ${pid} and wait_event_type = 'Lock'`;
+    if ((w?.n ?? 0) > 0) return true;
+  }
+  return false;
+}
+
+describe("HD-FR-07 · D-22 · đồng thời", () => {
+  it("hai tx đồng thời thêm item khác loại vào cùng HĐ: tx2 CHỜ khoá hàng của tx1, không mất cập nhật", async () => {
+    const url = HUB_API_URL.replace("hub_api:hub_api_dev_pw", "ai:ai_dev_pw");
+    const a = postgres(url, { max: 1, onnotice: () => {} });
+    const b = postgres(url, { max: 1, onnotice: () => {} });
+    const order: string[] = [];
     try {
+      // tx1 giữ khoá hàng HĐ 2 (trigger câu lệnh cập nhật contracts) cho tới khi test chủ động commit.
       await a`begin`;
       await addItems(a, [{ c: 2, tid: T.acme, ord: 20, cat: 1 }]);
-      const pb = b.begin((tx) =>
-        addItems(tx as unknown as Sql, [{ c: 2, tid: T.acme, ord: 21, cat: 2 }]),
-      );
+      // tx2 trên kết nối khác; lấy pid rồi gửi INSERT cùng HĐ.
+      let resolvePid!: (pid: number) => void;
+      const started = new Promise<number>((r) => {
+        resolvePid = r;
+      });
+      const pending = b.begin(async (tx) => {
+        const [p] = await tx<{ pid: number }[]>`select pg_backend_pid() as pid`;
+        resolvePid(p?.pid as number);
+        await addItems(tx as unknown as Sql, [{ c: 2, tid: T.acme, ord: 21, cat: 2 }]);
+        order.push("tx2-xong");
+      });
+      let done = false;
+      void pending.finally(() => {
+        done = true;
+      });
+      // tx2 xong trước khi bị chặn ⇒ khoá không tranh chấp ⇒ ca vô nghĩa ⇒ đỏ.
+      const blocked = await untilBlocked(await started, () => done);
+      if (blocked) order.push("tx2-chờ-khoá");
+      expect({ blocked, tx2DoneBeforeCommit: done }).toEqual({
+        blocked: true,
+        tx2DoneBeforeCommit: false,
+      });
+      order.push("tx1-commit");
       await a`commit`;
-      await pb;
+      await pending;
+      expect(order).toEqual(["tx2-chờ-khoá", "tx1-commit", "tx2-xong"]);
       expect(await idsOf(hc(2))).toEqual(sorted([cat(1), cat(2)]));
     } finally {
       await a.end();
@@ -162,7 +198,6 @@ describe("HD-FR-07 · D-22 · RLS và đồng thời", () => {
     }
   });
 });
-
 describe("HD-NFR-01 · D-22 · chi phí ghi", () => {
   it("chi phí ghi lô item (một câu, 1.000 item / 200 HĐ, có loại): có trigger ≤ 2× không trigger — báo số thật", async () => {
     await seed(T.acme, 1001, 200, [11, 12, 13, 14, 15]);
