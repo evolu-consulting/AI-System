@@ -1,7 +1,5 @@
-// PK-FR-10 · TF5 · route khung /contracts/new (nội dung ở HD2).
+// PK-FR-10 · HD-FR-26 · S04: /contracts/new — thêm hợp đồng nhập tay (HD2).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { NewContractPage } from "~/features/contract-new/pages/NewContractPage";
 
-export const Route = createFileRoute("/_authed/contracts/new")({
-  component: () => <StubPage titleKey="contracts.pages.new" />,
-});
+export const Route = createFileRoute("/_authed/contracts/new")({ component: NewContractPage });

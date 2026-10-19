@@ -1,7 +1,10 @@
-// PK-FR-10 · TF5 · route khung /contracts/$id (nội dung ở HD2).
+// PK-FR-10 · HD-FR-26 · S05: /contracts/$id — màn kiểm/sửa hợp đồng (HD2).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { ContractReviewPage } from "~/features/contract-review/pages/ContractReviewPage";
 
-export const Route = createFileRoute("/_authed/contracts/$id")({
-  component: () => <StubPage titleKey="contracts.pages.detail" />,
-});
+function ContractRoute() {
+  const { id } = Route.useParams();
+  return <ContractReviewPage id={id} />;
+}
+
+export const Route = createFileRoute("/_authed/contracts/$id")({ component: ContractRoute });

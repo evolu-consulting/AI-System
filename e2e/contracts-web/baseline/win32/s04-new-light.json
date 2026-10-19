@@ -1,0 +1,35 @@
+{
+  "text": "← Hợp đồng Thêm hợp đồng (nhập tay) Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý. Loại Mua vào (mình mua của đối tác) Bán ra (mình bán cho đối tác) Số hợp đồng Tên hợp đồng Đối tác MST đối tác Người ký bên đối tác Người ký bên mình Hiệu lực từ Đến Nhắc trước (ngày) Giá trị (đ) Thanh toán Hàng hoá / dịch vụ × + Thêm dòng hàng Huỷ Lưu hợp đồng",
+  "boxes": {
+    "heading": {
+      "x": 202,
+      "y": 110.140625,
+      "w": 608.453125,
+      "h": 40.296875
+    },
+    "form": {
+      "x": 223,
+      "y": 215.4375,
+      "w": 1058,
+      "h": 728.640625
+    },
+    "title": {
+      "x": 223,
+      "y": 315.71875,
+      "w": 1058,
+      "h": 40
+    },
+    "items": {
+      "x": 223,
+      "y": 779.9375,
+      "w": 1058,
+      "h": 108.140625
+    },
+    "submit": {
+      "x": 1161.703125,
+      "y": 904.078125,
+      "w": 119.296875,
+      "h": 40
+    }
+  }
+}

@@ -1,6 +1,6 @@
 // HD-FR-08 · D-06 · D-16 · D-17 · HD1 plan §4–§5: nối tải lên hợp đồng (lớp 4 của gói): `PackUow` (role `contracts_rw`) + bộ
 // đếm Redis (vắng ⇒ 503 `UPLOAD_QUOTA_UNAVAILABLE`) + FileBox org `t_<tenant>` + `DocxConverter` (N1 T5g) + `ExtractionStarter`
-// no-op (HD2 làm thật). `packs.mount.ts` gắn dưới `/pack/contracts` cạnh `contractsModule` (T7).
+// (HD2: hàng đợi trích của `extraction.mount.ts`). `packs.mount.ts` gắn dưới `/pack/contracts` cạnh `contractsModule` (T7).
 import {
   CONTRACT_UPLOAD_GLOBAL_DAILY,
   CONTRACT_UPLOAD_MAX_BYTES,
@@ -31,6 +31,8 @@ export type UploadMountDeps = {
   /** Client FileBox theo org (mỗi lời gọi một org `t_<tenant>`). */
   filebox: (org: string) => PackFileboxClient;
   timeZoneOf: (tenantId: string) => Promise<string>;
+  /** HD2 · hàng đợi trích (`contractsAiModule`); gọi SAU commit, không chặn tải lên. */
+  starter: ExtractionStarter;
 };
 
 /** Env số nguyên dương, sai/vắng ⇒ mặc định (plan §5: `CONTRACTS_MAX_MB`, `CONTRACTS_UPLOADS_*_DAY`). */
@@ -44,9 +46,6 @@ export function contractsMaxBytes(): number {
   const cap = CONTRACT_UPLOAD_MAX_BYTES / MiB;
   return Math.min(envInt("CONTRACTS_MAX_MB", cap), cap) * MiB;
 }
-
-/** HD1: không trích xuất (HD2 thay). */
-const noExtraction: ExtractionStarter = { start: async () => {} };
 
 function fileStore(client: (org: string) => PackFileboxClient): ContractFileStore {
   return {
@@ -66,7 +65,7 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     counter: d.redis ? redisUploadCounter(d.redis) : unavailableUploadCounter,
     files: fileStore(d.filebox),
     docx: createDocxConverter(),
-    starter: noExtraction,
+    starter: d.starter,
     zipNames,
     limits: {
       tenant: envInt("CONTRACTS_UPLOADS_TENANT_DAY", CONTRACT_UPLOAD_TENANT_DAILY),

@@ -64,7 +64,14 @@ export const ContractDirectionSchema = z.enum(CONTRACT_DIRECTIONS);
 export type ContractDirection = z.infer<typeof ContractDirectionSchema>;
 
 /** Loại event (HD-FR-06); DB chỉ CHECK `^[a-z_]{2,40}$` — thêm giá trị ở CUỐI. */
-export const CONTRACT_EVENT_TYPES = ["uploaded", "field_edited"] as const;
+export const CONTRACT_EVENT_TYPES = [
+  "uploaded",
+  "field_edited",
+  "extract_requested",
+  "extracted",
+  "extract_failed",
+  "created_manual",
+] as const;
 export const ContractEventTypeSchema = z.enum(CONTRACT_EVENT_TYPES);
 export type ContractEventType = z.infer<typeof ContractEventTypeSchema>;
 export const CONTRACT_EVENT_TYPE_RE = /^[a-z_]{2,40}$/;

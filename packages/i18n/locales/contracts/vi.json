@@ -81,7 +81,11 @@
       "logout": "Đăng xuất",
       "logoutTitle": "Đăng xuất?",
       "logoutBody": "Bạn sẽ cần đăng nhập lại để dùng app.",
-      "role": { "owner": "Quản lý", "editor": "Nhân viên", "viewer": "Chỉ xem" }
+      "role": {
+        "owner": "Quản lý",
+        "editor": "Nhân viên",
+        "viewer": "Chỉ xem"
+      }
     },
     "pages": {
       "new": "Thêm hợp đồng",
@@ -144,6 +148,78 @@
         "body": "Quản trị viên công ty cần bật gói Hợp đồng trong trang quản trị."
       },
       "logout": "Đăng xuất"
+    },
+    "review": {
+      "back": "← Hợp đồng",
+      "reading": "Đang đọc hợp đồng…",
+      "checkLead": "Kiểm tra lại các trường rồi xác nhận.",
+      "viewFile": "📄 Xem file gốc",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu.",
+      "unverified": "· chưa kiểm chứng",
+      "failedTitle": "Không đọc được hợp đồng này.",
+      "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
+      "manual": "Nhập tay",
+      "fields": {
+        "number": "Số hợp đồng",
+        "title": "Tên hợp đồng",
+        "supplierName": "Bên bán",
+        "supplierTaxId": "MST bên bán",
+        "buyerName": "Bên mua",
+        "buyerTaxId": "MST bên mua",
+        "supplierSigner": "Người ký bên bán",
+        "buyerSigner": "Người ký bên mua",
+        "startDate": "Hiệu lực từ",
+        "endDate": "Đến",
+        "noticeDays": "Nhắc trước (ngày)",
+        "totalValue": "Giá trị (đ)",
+        "paymentTerms": "Thanh toán"
+      },
+      "items": {
+        "name": "Hàng hoá",
+        "unit": "ĐVT",
+        "qty": "SL",
+        "unitPrice": "Đơn giá"
+      }
+    },
+    "newContract": {
+      "title": "Thêm hợp đồng (nhập tay)",
+      "lead": "Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý.",
+      "direction": "Loại",
+      "purchase": "Mua vào (mình mua của đối tác)",
+      "sale": "Bán ra (mình bán cho đối tác)",
+      "number": "Số hợp đồng",
+      "contractTitle": "Tên hợp đồng",
+      "titlePlaceholder": "vd. Cung cấp gạo 2027",
+      "partner": "Đối tác",
+      "partnerTaxId": "MST đối tác",
+      "partnerSigner": "Người ký bên đối tác",
+      "partnerSignerPlaceholder": "Nguyễn Văn A – Giám đốc",
+      "ourSigner": "Người ký bên mình",
+      "ourSignerPlaceholder": "Trần Thị B – Giám đốc",
+      "startDate": "Hiệu lực từ",
+      "endDate": "Đến",
+      "noticeDays": "Nhắc trước (ngày)",
+      "totalValue": "Giá trị (đ)",
+      "paymentTerms": "Thanh toán",
+      "items": "Hàng hoá / dịch vụ",
+      "itemName": "Tên hàng",
+      "itemUnit": "Đơn vị",
+      "itemQty": "Số lượng",
+      "itemQtyShort": "SL",
+      "itemPrice": "Đơn giá",
+      "itemPricePlaceholder": "Đơn giá (đ)",
+      "removeRow": "Bỏ dòng",
+      "addRow": "+ Thêm dòng hàng",
+      "save": "Lưu hợp đồng",
+      "saving": "Đang lưu…",
+      "badNumbers": "Không đọc được số ở: {{list}}. Gõ kiểu 91.500.000 hoặc 1,5.",
+      "bad": {
+        "noticeShort": "Nhắc trước",
+        "valueShort": "Giá trị",
+        "qtyOf": "Số lượng “{{name}}”",
+        "priceOf": "Đơn giá “{{name}}”"
+      }
     }
   }
 }

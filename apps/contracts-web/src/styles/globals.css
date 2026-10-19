@@ -359,6 +359,86 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* HD2 (D-02): ô nhập, nút, chip của mgmt-app — port nguyên `mgmt-app/web/src/index.css:98-128` cho S04/S05. */
+@layer components {
+  .field {
+    height: 2.5rem;
+    width: 100%;
+    padding: 0 0.75rem;
+    border: 1px solid var(--color-field);
+    border-radius: 8px;
+    background: var(--color-panel);
+    font-size: 14px;
+    color: var(--color-ink);
+  }
+  .field:focus {
+    outline: 2px solid var(--color-act);
+    outline-offset: -1px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-act);
+    color: var(--color-on-act);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-act-hover);
+  }
+  .btn-outline {
+    border: 1.5px solid var(--color-act);
+    background: var(--color-panel);
+    color: var(--color-act);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-act-soft);
+  }
+  .btn-quiet {
+    border: 1px solid var(--color-field);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+  .btn-quiet:hover:not(:disabled) {
+    background: var(--color-sunk);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2.25rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--color-field);
+    border-radius: 999px;
+    background: var(--color-panel);
+    font-size: 13px;
+    color: var(--color-ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip:hover {
+    background: var(--color-sunk);
+  }
+  .chip-dashed {
+    border-style: dashed;
+    color: var(--color-dim);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

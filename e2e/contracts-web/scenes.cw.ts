@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { asHub, asMgmt } from "./dataset";
+import { contract, contractAsHub, contractAsMgmt } from "./dataset-contract";
 
 const REF = process.env.CW_MODE === "ref";
 const DIR = join(__dirname, "baseline", process.platform);
@@ -14,7 +15,10 @@ const HOW =
 const FRAME_TOL = 2;
 const PIXEL_RATIO = 0.005;
 /** Lệch có chủ ý — ẩn ở cả hai phía để phần còn lại vẫn so được (xem DEVIATIONS.md). */
-const HIDE = "label:has(input[name=tenant_key]){display:none !important}";
+const HIDE =
+  "label:has(input[name=tenant_key]){display:none !important}" +
+  // HD2 D2-05: nút "Xác nhận" của S05 thuộc HD3 — ẩn ở cả hai phía (contracts-web chưa có).
+  "main button.btn-primary[type=button]{display:none !important}";
 
 type Box = { x: number; y: number; w: number; h: number };
 type Layers = { text: string; boxes: Record<string, Box | null> };
@@ -54,6 +58,91 @@ const loginBoxes = {
   submit: 'form button[type="submit"]',
   password: 'input[name="password"]',
 };
+
+// ---------- HD2: S04 nhập tay, S05 kiểm/sửa (dữ liệu `dataset-contract.ts`) ----------
+const FAILED_ID = contract.id.replace(/1$/, "2");
+const reviewBoxes = {
+  heading: "main h1",
+  save: 'main button:text-is("Lưu")',
+  file: 'main a:has-text("Xem file gốc")',
+  warnings: "main ul",
+  firstField: "main input >> nth=0",
+  quote: "main label span.italic >> nth=0",
+  items: "main table",
+};
+const newBoxes = {
+  heading: "main h1",
+  form: "main form",
+  title: 'main input[name="title"]',
+  items: "main fieldset",
+  submit: 'main button[type="submit"]',
+};
+const mainReady = (p: Page) => p.locator("main h1");
+const HD2_SCENES: Scene[] = [
+  ...(["light", "dark"] as const).map(
+    (theme): Scene => ({
+      name: `s05-review-${theme}`,
+      signedIn: true,
+      path: `/contracts/${contract.id}`,
+      size: D,
+      theme,
+      text: ["main"],
+      boxes: reviewBoxes,
+      mask: [],
+      ready: (p) => p.locator("main table"),
+    }),
+  ),
+  {
+    name: "s05-review-mobile",
+    signedIn: true,
+    path: `/contracts/${contract.id}`,
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: reviewBoxes,
+    mask: [],
+    ready: (p) => p.locator("main table"),
+  },
+  {
+    name: "s05-failed-light",
+    signedIn: true,
+    path: `/contracts/${FAILED_ID}`,
+    size: D,
+    theme: "light",
+    text: ["main"],
+    boxes: {
+      heading: "main h1",
+      manual: 'main a:text-is("Nhập tay")',
+      panel: "main section >> nth=0",
+    },
+    mask: [],
+    ready: (p) => p.getByText("Không đọc được hợp đồng này."),
+  },
+  ...(["light", "dark"] as const).map(
+    (theme): Scene => ({
+      name: `s04-new-${theme}`,
+      signedIn: true,
+      path: "/contracts/new",
+      size: D,
+      theme,
+      text: ["main"],
+      boxes: newBoxes,
+      mask: [],
+      ready: mainReady,
+    }),
+  ),
+  {
+    name: "s04-new-mobile",
+    signedIn: true,
+    path: "/contracts/new",
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: newBoxes,
+    mask: [],
+    ready: mainReady,
+  },
+];
 
 const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
@@ -136,6 +225,7 @@ const SCENES: Scene[] = [
       },
     }),
   ),
+  ...HD2_SCENES,
 ];
 
 /** mgmt-app: API `/api/**` giả bằng dữ liệu chung (asMgmt). */
@@ -153,6 +243,14 @@ async function installMgmt(page: Page, signedIn: boolean) {
         return signedIn ? json(200, d.me) : json(401, { detail: "Chưa đăng nhập" });
       if (path === "/auth/options") return json(200, d.options);
       if (path === "/notifications") return json(200, d.notices);
+      if (path === `/contracts/${contract.id}`) return json(200, contractAsMgmt());
+      if (path === `/contracts/${FAILED_ID}`)
+        return json(200, {
+          ...contractAsMgmt("extract_failed"),
+          id: FAILED_ID,
+          items: [],
+          warnings: [],
+        });
       return route.request().method() === "GET" ? json(200, []) : json(200, {});
     },
   );
@@ -172,6 +270,12 @@ async function installHub(page: Page, signedIn: boolean) {
       : json(r, 401, { error: { code: "UNAUTHORIZED", message: "Hết phiên" } }),
   );
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
+  await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
+    json(r, 200, contractAsHub()),
+  );
+  await page.route(`**/pack/contracts/contracts/${FAILED_ID}`, (r) =>
+    json(r, 200, { ...contractAsHub("extract_failed"), id: FAILED_ID, items: [], warnings: [] }),
+  );
 }
 
 async function prepare(page: Page, s: Scene) {

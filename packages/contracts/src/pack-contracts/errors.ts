@@ -14,6 +14,12 @@ export const CONTRACT_ERRORS = {
   FILE_TYPE: 415,
   UPLOAD_QUOTA: 429,
   UPLOAD_QUOTA_UNAVAILABLE: 503,
+  /** HD2: HĐ đang trích ⇒ không trích lại. */
+  EXTRACT_BUSY: 409,
+  /** HD2: không có văn bản lẫn tệp để trích. */
+  NO_SOURCE: 422,
+  /** HD2 D2-01: chưa nối agent trích (N2). */
+  AGENT_UNAVAILABLE: 503,
 } as const;
 type OwnCode = keyof typeof CONTRACT_ERRORS;
 const OWN_CODES = Object.keys(CONTRACT_ERRORS) as OwnCode[];

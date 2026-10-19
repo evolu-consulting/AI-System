@@ -6,11 +6,14 @@ import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
+import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
 import { FileboxClient } from "../attachments/filebox.client";
 import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
+import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
@@ -28,6 +31,8 @@ export type PacksDeps = {
   pkdemo?: boolean;
   contracts?: boolean;
   filebox?: { url: string; token: string };
+  /** HD2 · agent trích (transport) + tra MST + hook test; vắng ⇒ agent chưa cấu hình, MST theo env. */
+  contractsAi?: ContractsAiDeps;
 };
 
 export type PacksMountDeps = {
@@ -58,24 +63,46 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   const fb = packFilebox(d.packs);
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
-  if (d.db && (d.packs?.contracts ?? true))
-    app.route(
-      `${PACK_PREFIX}/${CONTRACTS_KEY}`,
-      contractsModule(d.db, view, fb ? fileboxClients(fb) : null), // HD1 T7 + T8 (link tệp)
-    );
-  if (d.db && (d.packs?.contracts ?? true) && fb)
-    app.route(`${PACK_PREFIX}/${CONTRACTS_KEY}`, contractsUpload(d, d.db, view, fb)); // HD1 T10
+  if (d.db && (d.packs?.contracts ?? true)) mountContracts(app, { ...d, db: d.db }, view, fb);
   return view;
 }
 
+/** HD1 (đọc/sửa, tải lên) + HD2 (trích, nhập tay): một hàng đợi trích dùng chung cho tải lên và trích lại. */
+function mountContracts<E extends Env>(
+  app: Hono<E>,
+  d: PacksMountDeps & { db: Db },
+  view: PackAccessView,
+  fb: PackFb | null,
+): void {
+  const db = d.db;
+  const base = `${PACK_PREFIX}/${CONTRACTS_KEY}`;
+  app.route(base, contractsModule(db, view, fb ? fileboxClients(fb) : null)); // HD1 T7 + T8 (link tệp)
+  const aiDeps = d.packs?.contractsAi ?? {};
+  const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
+  const ai = contractsAiModule(db, view, { ...aiDeps, tax });
+  app.route(base, ai.routes); // HD2
+  if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
+}
+
+/** HD2 · tra MST Cục Thuế (egress `lib/`, gói không gọi HTTP): `CONTRACTS_TAX_LOOKUP_URL` vắng/sai ⇒ không tra. */
+function envTaxRegistry() {
+  const base = taxBaseUrl(process.env.CONTRACTS_TAX_LOOKUP_URL);
+  return base ? createTaxRegistry({ baseUrl: base, log: logger }) : null;
+}
+
 /** HD1 T10 · tải lên: Redis = `deps.redis` (vắng ⇒ 503, D-17); múi tenant từ `ConfigCache` (D-16, 0 SQL mỗi request). */
-function contractsUpload(d: PacksMountDeps, db: Db, view: PackAccessView, fb: PackFb) {
+function contractsUpload(
+  d: PacksMountDeps,
+  view: PackAccessView,
+  { db, fb, starter }: { db: Db; fb: PackFb; starter: ExtractionStarter },
+) {
   return uploadModule({
     db,
     view,
     ...(d.redis ? { redis: d.redis } : {}),
     filebox: fileboxClients(fb),
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
+    starter,
   });
 }
 
