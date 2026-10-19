@@ -28,18 +28,24 @@ Nguồn luật: mgmt-app `api/app/orgs.py` (`Ctx.sees`, `reports`, `_check_manag
 ## Việc
 | # | Việc | Làn | Trạng thái |
 |---|---|---|---|
-| 1 | Migration admin 0014 + contracts 0009 | đầy đủ | |
-| 2 | Test RLS (`tests/acceptance/M1D/visibility.int.test.ts`): cấp dưới thấy, ngang hàng không, trưởng phòng, tenant khác, vòng bị chặn, chế độ tenant giữ hành vi cũ | đầy đủ | |
-| 3 | Perf: list p95 ≤ 50 ms, 2 câu, EXPLAIN không Seq Scan (chế độ org, viewer) | đầy đủ | |
-| 4 | admin-api: `PUT /admin/users/:id/manager`, `/admin/departments` (CRUD + trưởng phòng) | đầy đủ | |
-| 5 | hub-api: `GET/PUT /pack/contracts/visibility` (owner) | thường | |
-| 6 | contracts-web: Cài đặt › Phòng ban & thành viên | nhanh | |
+| 1 | Migration admin 0014 + contracts 0009 | đầy đủ | xong 24b689a3 |
+| 2 | Test RLS (`tests/acceptance/M1D/visibility.int.test.ts`): cấp dưới thấy, ngang hàng không, trưởng phòng, tenant khác, vòng bị chặn, chế độ tenant giữ hành vi cũ | đầy đủ | xong |
+| 3 | Perf: list p95 ≤ 50 ms, 2 câu, EXPLAIN không Seq Scan (chế độ org, viewer) | đầy đủ | xong |
+| 4 | admin-api: `GET /admin/org`, `PUT /admin/org/managers/:id`, `PUT|DELETE /admin/org/departments/:id` | đầy đủ | xong |
+| 5 | hub-api: `GET/PUT /pack/contracts/visibility` (owner) | thường | xong |
+| 6 | contracts-web: Cài đặt › Phòng ban & thành viên | nhanh | xong |
 
 ## Test đếm/kiểm kê sửa theo migration admin 0014 (điều phối duyệt 2026-10-20, relock chỉ 7 tệp này)
 Không đổi hành vi: thêm 3 bảng `departments`, `user_managers`, `user_reports` (đều bật RLS, không FORCE) vào danh sách bảng/RLS;
 20 → 23 bảng admin, 14 → 17 bảng RLS, `runMigrations` main 14 → 15.
 - Khoá (relock): `tests/acceptance/{M1/db-schema, M1/db-rls, ADM-NFR-06/migrate, M2/db-rls, M2/db-schema, M3/db-rls, M3/db-schema}.int.test.ts`.
 - Không khoá: `packages/db/src/{migrate, migrate-hub, catalog-rls}.int.test.ts`.
+
+## Số đo (evotest, perf, chế độ org, 10.000 HĐ + 60.000 nền, n=200)
+V 60 cấp dưới p95 10,52 ms · trưởng phòng 30 TV p95 8,80 · editor lẻ p95 8,23 · owner p95 11,98 · chế độ tenant p95 12,07; 2 câu SQL; EXPLAIN không Seq Scan.
+
+## Còn mở
+e2e màn /settings/members; phụ lục chưa giao theo HĐ cha (D-M1-03); cks_customers/partner_events chưa lọc theo người; N5 chưa nhập manager_email; link vào màn từ Cài đặt; proxy /admin khi deploy.
 
 ## Quyết định trong lúc làm
 - D-M1-01: **Chế độ theo tenant, mặc định `tenant`** (mọi người thấy cả tenant như HD1–HD9 đang khoá test). Tenant nhập từ mgmt-app
