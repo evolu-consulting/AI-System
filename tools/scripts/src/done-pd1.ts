@@ -19,7 +19,7 @@ import {
 export const REPO = fileURLToPath(new URL("../../..", import.meta.url));
 
 export function stepEnv(step: PdStep): Record<string, string | undefined> {
-  const env: Record<string, string | undefined> = { ...process.env };
+  const env: Record<string, string | undefined> = { ...process.env, ...step.env };
   if (!step.nodeDir) return env;
   const key = Object.keys(env).find((k) => k.toLowerCase() === "path") ?? "PATH";
   env[key] = prependPath(step.nodeDir, env[key], delimiter);
@@ -35,8 +35,8 @@ function runDepcruise(step: PdStep, t0: number): PdResult {
   });
   const out = p.stdout.toString() + p.stderr.toString();
   console.log(out.trim());
-  const { total, ca } = parseDepcruise(out);
-  console.log(`depcruise: tổng ${total} vi phạm, ca-*: ${ca}`);
+  const { total, ca } = parseDepcruise(out, step.rulePrefixes);
+  console.log(`depcruise: tổng ${total} vi phạm, bị chặn: ${ca}`);
   // Không đọc được kết quả (mã ≠ 0 mà không có dòng vi phạm) vẫn coi là đỏ.
   const unreadable = p.exitCode !== 0 && total === 0;
   return { title: step.title, code: ca === 0 && !unreadable ? 0 : 1, ms: performance.now() - t0 };

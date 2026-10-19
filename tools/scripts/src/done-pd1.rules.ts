@@ -8,6 +8,10 @@ export type PdStep = {
   nodeDir?: string;
   /** "depcruise": xanh khi 0 vi phạm `ca-*` (bỏ qua vi phạm cũ ngoài ca-*). */
   kind?: "depcruise";
+  /** Tiền tố luật depcruise bị chặn (mặc định `["ca-"]`). */
+  rulePrefixes?: string[];
+  /** Biến môi trường thêm cho bước (vd `PERF=1`). */
+  env?: Record<string, string>;
 };
 export type PdResult = { title: string; code: number; ms: number };
 
@@ -21,12 +25,15 @@ export function isRealNode(nodePath: string | null | undefined, resolvedExe?: st
 }
 
 /** Đếm vi phạm depcruise (`--output-type err`): tổng và riêng luật `ca-*`. */
-export function parseDepcruise(out: string): { total: number; ca: number } {
+export function parseDepcruise(
+  out: string,
+  prefixes: readonly string[] = ["ca-"],
+): { total: number; ca: number } {
   let total = 0;
   let ca = 0;
   for (const m of out.matchAll(/^\s*(?:error|warn|info)\s+([\w.-]+):/gm)) {
     total++;
-    if (m[1]?.startsWith("ca-")) ca++;
+    if (prefixes.some((p) => m[1]?.startsWith(p))) ca++;
   }
   return { total, ca };
 }

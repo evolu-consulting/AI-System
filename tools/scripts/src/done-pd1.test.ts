@@ -28,6 +28,12 @@ describe("HUB-FR-143 · done:pd1", () => {
     ).toBe(true);
   });
 
+  it("parseDepcruise: tiền tố tuỳ chọn pack-", () => {
+    const out = "  error pack-x: a.ts → b.ts\n  error ca-y: c.ts → d.ts";
+    expect(parseDepcruise(out, ["ca-", "pack-"])).toEqual({ total: 2, ca: 2 });
+    expect(parseDepcruise(out)).toEqual({ total: 2, ca: 1 });
+  });
+
   it("parseDepcruise: chỉ đếm ca-* riêng, tổng gồm cả vi phạm cũ", () => {
     const out = [
       "  error no-cross-module-repo: a.ts → ",
