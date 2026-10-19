@@ -46,10 +46,15 @@ export async function createRun(
   await repo.lockTenant(tx, u.tenantId);
   // N2-FR-04 · N2-D11 · trần = seam test ?? cấu hình tenant ?? mặc định (0 câu thêm: đếm + trần cùng câu).
   const { n, max } = await repo.activeAndCap(tx, u.tenantId);
-  if (n >= (cfg.runsPerTenant ?? max ?? PROCESS_RUNS_PER_TENANT))
-    throw processError("TOO_MANY_PROCESS_RUNS", undefined, {
-      "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
-    });
+  const cap = cfg.runsPerTenant ?? max ?? PROCESS_RUNS_PER_TENANT;
+  if (n >= cap)
+    throw processError(
+      "TOO_MANY_PROCESS_RUNS",
+      { max: cap },
+      {
+        "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
+      },
+    );
   const startedAt = cfg.now();
   const runId = crypto.randomUUID();
   const flowId = crypto.randomUUID();

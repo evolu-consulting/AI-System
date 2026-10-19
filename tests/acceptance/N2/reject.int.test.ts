@@ -50,7 +50,10 @@ describe("N2-AC03…05 · Từ chối [N2-FR-02]", () => {
       where process_run_id = ${g.runId} and stage_idx = 0 order by round desc, attempt desc limit 1`;
     expect(st?.status).toBe("cancelled");
     const again = await review(c, "T", g.taskId, { result: "pass" });
-    expect(again.status).not.toBe(200);
+    expect({ status: again.status, code: errCode(again) }).toEqual({
+      status: 409,
+      code: "REVIEW_TASK_CLOSED",
+    });
   }, 60_000);
 
   it("N2-AC05 · Chưa đạt vẫn là làm lại (run running, stage queued attempt 2) — không kết thúc run", async () => {

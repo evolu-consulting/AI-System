@@ -17,7 +17,8 @@ export function pkdemoTools(uow: PackUow<PkdemoRepos>, newId: () => string): Pac
     );
     return { item_id: id, title };
   };
-  const base = { pack: "pkdemo", params: PARAMS, run };
+  // Security M2 · cả hai tool GHI item ⇒ cần quyền `write` của gói (người gọi `/mcp` / người bắt đầu run).
+  const base = { pack: "pkdemo", params: PARAMS, run, action: "write" as const };
   return [
     {
       ...base,

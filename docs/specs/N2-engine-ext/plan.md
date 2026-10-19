@@ -40,9 +40,14 @@ Luật thuần `starterBlocked(def, startedBy, userId)` (`domain/tasks/task-acce
 | N2-D03 | Tool gói `side_effect` không gọi được qua `/mcp` của agent (không có cổng xác nhận cho gói) — chỉ stage `real_action` sau duyệt |
 | N2-D04 | Bản ghi gói gắn run sau COMMIT tx hub, bù bằng huỷ run; kick sau khi gắn |
 | N2-D05 | Trần đọc từ `admin.tenants` trong cùng câu đếm (hub_ro đọc sẵn như `timezone`); chỉ platform_admin sửa |
-| N2-D06 | `exclude_starter` chỉ chặn task `review` (cấp duyệt), không chặn `decision`/`ask` |
+| N2-D06 | `exclude_starter` chặn người bắt đầu ở task `review` VÀ task `decision` lý do `redo_limit`/`back_limit` (`use_current` = coi như Đạt — lách cấp 2; **người dùng chốt 2026-10-19 "Chặn lun"**, security M1). Decision lý do khác và `ask` giữ hành vi cũ; người khác đủ quyền (Group duyệt, admin) vẫn quyết |
 | N2-D07 | `pkdemo` được thêm route mẫu `POST /items/:id/run` (guard `write`, body `{process_key, input, inputs?}`) để khoá hành vi N2-FR-01; item đã có run ⇒ 409 `CONFLICT` trước khi mở run; HD3 làm theo khuôn |
 | N2-D08 | `PackRuns.outcomes(u, runIds)` (1 câu, tenant người gọi) trả `{run_id, status, rejected, feedback}` để gói ghi "Bị từ chối" (readiness #1) |
 | N2-D09 | Group duyệt chỉ có người bắt đầu ⇒ không chặn lúc lưu def; nhắc/chuyển cấp P-d xử lý |
 | N2-D10 | Engine tắt ⇒ `PackRuns` rỗng ⇒ 503 `PROCESS_ENGINE_OFF` (contract `processes-errors.ts`) |
+| N2-D12 | Review #1 · tool gói chạy với hạn `timeout_s` của stage + `signal`; hết hạn ⇒ `TIMEOUT` (`sent` = side_effect ⇒ không gọi lại) ⇒ thử lại / quyết như lỗi tool P-d2, không kẹt `running` |
+| N2-D13 | Security M2 · `PackToolDef.action` (`read`/`write`, mặc định `write`); `/mcp` kiểm quyền của user job, stage kiểm quyền người bắt đầu (mất ⇒ `permission_lost`; gói tắt vẫn ⇒ `tool_failed`). `pkdemo-*` = `write` |
+| N2-D14 | Security L1 · lúc mount, tool gói trùng khoá workflow catalog bị gỡ khỏi registry + log `pack-tool-key-collision` (workflow admin thắng). AC09 (tool gói trong `/mcp`) CHỜ HD6: `payload.mcp.tools` hiện chỉ gồm khoá workflow gắn agent; HD6 nối khoá tool gói vào cấu hình agent — tới đó chỉ có unit test của provider |
+| N2-D15 | Security L2 / review Thấp 6 · `requeueOrphans` chỉ nhặt stage `queued` ≥ 60 s (giờ DB): không đua với `PackRuns.start`; run mồ côi (gắn + huỷ bù cùng lỗi, tiến trình chết) được vòng quét kick sau 60 s |
+| N2-D16 | Security L3 · gói đọc kết quả run CHỈ qua `ownedRunOutcome` (id run đọc từ bản ghi của gói trong tx gói); mẫu `GET /pack/pkdemo/items/:id/run`. 429 `TOO_MANY_PROCESS_RUNS` mang `details.max` (trần thật), FE hiện số này |
 | N2-D11 | Trần = seam `processRunsPerTenant` ?? `admin.tenants.process_runs_max` ?? 5; mount bỏ `?? PROCESS_RUNS_PER_TENANT` |

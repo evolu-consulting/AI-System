@@ -1,6 +1,6 @@
 // HUB-FR-10/11 · lỗi E12 trước stream hiện TRONG composer (plan-frontend §0 D5, §1.4): chọn câu + gợi ý từ `ApiError`.
 // F2 đã thêm `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`; F3 thêm `ATTACHMENT_NOT_FOUND`; CR-054 thêm `DEFAULT_AGENT_FORBIDDEN`.
-import { CMD_SUGGESTIONS_MAX, PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
+import { CMD_SUGGESTIONS_MAX, processRunsMaxOf } from "@ai/contracts/chat";
 import type { ApiError } from "@ai/web-kit/http";
 import { leadingTag } from "~/features/agents/lib/mention";
 import { leadingCommand } from "~/features/commands/lib/slash";
@@ -104,7 +104,10 @@ function processErrorView(
     // D7: không hứa đếm ngược — mời người dùng quyết/huỷ một lượt đang chờ.
     return {
       lines: [
-        { key: "process.composer.error.tooMany", params: { max: String(PROCESS_RUNS_PER_TENANT) } },
+        {
+          key: "process.composer.error.tooMany",
+          params: { max: String(processRunsMaxOf(err.details)) }, // N2-FR-04 · trần thật của tenant
+        },
       ],
       suggestions: [],
     };

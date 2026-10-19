@@ -50,7 +50,7 @@ import {
   snapOf,
 } from "./gates.effects";
 import * as g from "./gates.repo";
-import { assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
+import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
 async function decideOut(
@@ -254,6 +254,7 @@ export class GateService {
     const member = reviewGroup !== null && groupIds.has(reviewGroup);
     if (!canDecide(v, { ...facts, reason, reviewGroupMember: member }))
       throw runAccess(v, facts) ? processError("NOT_PROCESS_DECIDER") : notFound();
+    assertDecisionAllowed(run, idx, v.userId, reason); // N2-D06 · security M1 · 403 trước khi ghi
     const stage = await stageRowOf(tx, run.id, idx);
     const t = transition(buildState({ run, s: stage, def, idx, reason }), {
       kind: "decide",

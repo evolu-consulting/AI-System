@@ -1,5 +1,5 @@
 // HUB-FR-124 · AC-H37 · state + gửi của form `!key`: giữ giá trị khi lỗi, tải tệp, chọn nguồn điền sẵn nhánh.
-import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
+import { processRunsMaxOf } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -98,16 +98,23 @@ function useFormSubmit(c: SubmitCtx) {
       setServerDate([]);
       const r = await run(req.item.key, req.text, sent);
       if (r === true || (typeof r === "object" && r.ok)) return req.resolve(true);
-      const code = typeof r === "object" && r.error instanceof ApiError ? r.error.code : "";
+      const apiErr = apiErrorOf(r);
+      const code = apiErr?.code ?? "";
       const dated = typeof r === "object" ? datedByServer(sent, r.error) : [];
       if (dated.length > 0) return setServerDate(dated);
-      const e = submitErrorKey(code, req.item.key, PROCESS_RUNS_PER_TENANT);
+      const e = submitErrorKey(code, req.item.key, processRunsMaxOf(apiErr?.details)); // N2-FR-04
       setError(t(e.key, e.params));
     } finally {
       setPending(false);
     }
   }, [pending, blocked, run, req, defs, values, t, setServerDate]);
   return { submit, pending, error };
+}
+
+/** Lỗi API của kết quả `run` (không phải lỗi API ⇒ null). */
+function apiErrorOf(r: unknown): ApiError | null {
+  const e = typeof r === "object" && r !== null ? (r as { error?: unknown }).error : null;
+  return e instanceof ApiError ? e : null;
 }
 
 export function useInputsForm(req: InputsRequest) {

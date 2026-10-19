@@ -24,3 +24,17 @@ Không có. Contract chỉ thêm: mã lỗi mới đặt khối riêng `CHAT_PRO
 - e2e admin-web (readiness #4: sửa trần + checkbox exclude_starter) chưa viết — giao qc/frontend-lead.
 - chat-web: thông báo 429 vẫn dùng hằng 5 (`PROCESS_RUNS_PER_TENANT`) thay vì trần tenant; nút Từ chối ở chat-web để HD3.
 - Tool gói trong `/mcp` chỉ hiện khi agent có khoá trong `payload.mcp.tools` — nối cấu hình agent ở HD6.
+
+## Vòng sửa review + security (2026-10-19)
+| Mục | Sửa | Test |
+|---|---|---|
+| Review Trung #1 | tool gói theo `timeout_s` + `signal` ⇒ `TIMEOUT` (N2-D12) | `pack-tools.registry.test` |
+| Review #2/#4, L3 | `ownedRunOutcome` + `GET /items/:id/run`; huỷ bù int | `pack-outcome.int` |
+| Review #3 | AC08 đường chạy D2-49 | `pack-tool.int` |
+| Review #5 | e2e admin `e2e/N2/` (trần, checkbox) | viết xong; chưa chạy được: `bunx playwright` không nạp config TS trên máy này (`e2e/P-d` lỗi y hệt) |
+| Review #7/#8 | assert chặt (my_tasks, 409, reject) | `starter.int`, `reject.int` |
+| Review #10 | 429 `details.max` + FE (chat-web, admin-web) | `processes-errors.n2.test` |
+| Security M1 | **người dùng chốt 2026-10-19**: decision `redo_limit`/`back_limit` cũng chặn người bắt đầu (N2-D06) | `starter.int` (use_current 403, real_action không chạy, T quyết được) |
+| Security M2 | `PackToolDef.action`; `/mcp` + stage (người bắt đầu) kiểm (N2-D13) | registry unit, `pack-tool.int` permission_lost |
+| Security L1 | gỡ tool trùng khoá catalog lúc mount; AC09 chờ HD6 (N2-D14) | registry unit |
+| Security L2 / Thấp 6 | `orphanCands` ≥ 60 s (N2-D15) | hồi quy P-a/P-d (P1-29 đã đặt `updated_at` -2 phút) |

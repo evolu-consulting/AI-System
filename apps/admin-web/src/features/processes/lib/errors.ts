@@ -1,5 +1,5 @@
 // ADM-FR-65 · ADM-FR-66 · CR-056 · P-a F5: mã lỗi Hub của quy trình → câu hiển thị (plan-frontend-i18n §7) và `paths` lỗi ô.
-import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/hub-admin";
+import { processRunsMaxOf } from "@ai/contracts/chat";
 import { describeError, type MessageSpec } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { backPathToField, STEP_ERR } from "./def-form";
@@ -27,7 +27,7 @@ export function processErrorSpec(err: unknown): MessageSpec {
   if (code === "TOO_MANY_PROCESS_RUNS") {
     return {
       key: "process.admin.apiError.TOO_MANY_PROCESS_RUNS",
-      params: { max: PROCESS_RUNS_PER_TENANT },
+      params: { max: processRunsMaxOf(err instanceof ApiError ? err.details : null) }, // N2-FR-04
     };
   }
   if (code && KNOWN.has(code)) return { key: `process.admin.apiError.${code}` };

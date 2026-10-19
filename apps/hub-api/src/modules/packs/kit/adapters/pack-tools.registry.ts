@@ -1,10 +1,15 @@
 // N2-FR-03 · N2-D02 · plan N2 §4: registry tool của gói (một bản mỗi app, dựng ở `app.ts`, gói đăng ký lúc mount). Gói bật
 // cho tenant = entitlement `<k'>-read` còn hiệu lực ∧ feature không `off` (cùng nguồn `PackAccessView` với guard N1, làm mới
-// qua NOTIFY `config_changed` — 0 SQL khi nóng). Lỗi `run` ⇒ `failed` (`sent` = side_effect: không tự gọi lại, D2-13).
+// qua NOTIFY `config_changed` — 0 SQL khi nóng). Lỗi/hết hạn `run` ⇒ `failed` (`sent` = side_effect: không tự gọi lại,
+// D2-13). Review fix: hạn `timeoutS` + `signal` (Trung #1), quyền gói theo `action` (security M2), trùng khoá workflow
+// catalog bị từ chối (security L1).
 import { PROCESS_KEY_RE } from "@ai/contracts/chat";
 import type {
+  PackToolArgs,
+  PackToolCallOpts,
   PackToolCallResult,
   PackToolCatalog,
+  PackToolCtx,
   PackToolDef,
   PackToolInfo,
 } from "../application/pack-tools.ports";
@@ -18,18 +23,59 @@ const infoOf = (t: PackToolDef): PackToolInfo => ({
   sideEffect: t.side_effect,
   params: t.params,
 });
+const failed = (code: string, sent: boolean): PackToolCallResult => ({
+  kind: "failed",
+  code,
+  httpStatus: null,
+  sent,
+  reason: null,
+});
+type Warn = (msg: string, meta: Record<string, unknown>) => void;
+
+/** Chạy `run` với hạn: hết `timeoutS` hoặc `signal` huỷ ⇒ `TIMEOUT` (tool vẫn được báo huỷ qua `ctx.signal`). */
+async function runBounded(
+  t: PackToolDef,
+  ctx: PackToolCtx,
+  args: PackToolArgs,
+  o: PackToolCallOpts,
+): Promise<PackToolCallResult> {
+  const ac = new AbortController();
+  const outer = o.signal;
+  const onAbort = () => ac.abort();
+  outer?.addEventListener("abort", onAbort, { once: true });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stop = new Promise<PackToolCallResult>((res) => {
+    ac.signal.addEventListener("abort", () => res(failed("TIMEOUT", t.side_effect)), {
+      once: true,
+    });
+    if (o.timeoutS !== undefined && o.timeoutS > 0)
+      timer = setTimeout(() => ac.abort(), o.timeoutS * 1000); // lưới hạn của tool, không phải cơ chế chờ
+  });
+  try {
+    const work = t
+      .run({ ...ctx, signal: ac.signal }, args)
+      .then((out): PackToolCallResult => ({ kind: "ok", text: JSON.stringify(out) }));
+    return await Promise.race([work, stop]);
+  } finally {
+    clearTimeout(timer);
+    outer?.removeEventListener("abort", onAbort);
+    ac.abort();
+  }
+}
 
 export class PackToolRegistry implements PackToolCatalog {
   readonly #tools = new Map<string, PackToolDef>();
   #view: PackAccessView | undefined;
+  #warn: Warn = () => {};
 
   constructor(view?: PackAccessView) {
     this.#view = view;
   }
 
   /** Gắn cổng quyền (ConfigCache) khi app có DB; vắng ⇒ mọi gói coi như chưa bật (fail-closed). */
-  bindView(view: PackAccessView): void {
+  bindView(view: PackAccessView, warn?: Warn): void {
     this.#view = view;
+    if (warn) this.#warn = warn;
   }
 
   /** Khoá `<pack>-<tên>` khớp `PROCESS_KEY_RE`; gói có `_` không đăng ký tool được (N2-D02); trùng ⇒ ném lúc mount. */
@@ -38,6 +84,19 @@ export class PackToolRegistry implements PackToolCatalog {
       throw new Error(`pack tool key invalid: ${t.name}`);
     if (this.#tools.has(t.name)) throw new Error(`pack tool duplicated: ${t.name}`);
     this.#tools.set(t.name, t);
+  }
+
+  /**
+   * Security L1 · lúc mount (sau khi mọi gói đăng ký): tool trùng khoá workflow catalog bị gỡ khỏi registry (không che
+   * workflow admin đã gắn agent) + log `pack-tool-key-collision`. Trả các khoá bị gỡ.
+   */
+  rejectCatalogCollisions(workflowKeys: ReadonlySet<string>): string[] {
+    const out = [...this.#tools.keys()].filter((k) => workflowKeys.has(k));
+    for (const k of out) {
+      this.#tools.delete(k);
+      this.#warn("pack-tool-key-collision", { tool_key: k });
+    }
+    return out;
   }
 
   has(key: string): boolean {
@@ -62,37 +121,35 @@ export class PackToolRegistry implements PackToolCatalog {
     return want.filter((_, i) => on[i]).map(infoOf);
   }
 
+  /** Security M2 · user có quyền gói đúng `action` của tool (mặc định `write`). */
   async canUse(who: { tenantId: string; userId: string }, key: string): Promise<boolean> {
     const t = this.#tools.get(key);
     if (!t || !this.#view) return false;
     const i = await packAccessInput(this.#view, t.pack, who);
-    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.read }) === "ok";
+    const granted = i.grantedByAction[t.action ?? "write"];
+    return checkPackAccess({ ...i, grantedGroupIds: granted }) === "ok";
   }
 
   async call(
     key: string,
-    ctx: Parameters<PackToolDef["run"]>[0],
-    args: Parameters<PackToolDef["run"]>[1],
+    ctx: PackToolCtx,
+    args: PackToolArgs,
+    o: PackToolCallOpts = {},
   ): Promise<PackToolCallResult> {
     const t = this.#tools.get(key);
-    if (!t)
-      return {
-        kind: "failed",
-        code: "NOT_CONFIGURED",
-        httpStatus: null,
-        sent: false,
-        reason: null,
-      };
+    if (!t) return failed("NOT_CONFIGURED", false);
     try {
-      return { kind: "ok", text: JSON.stringify(await t.run(ctx, args)) };
-    } catch {
-      return {
-        kind: "failed",
-        code: "UPSTREAM_ERROR",
-        httpStatus: null,
-        sent: t.side_effect,
-        reason: null,
-      };
+      const r = await runBounded(t, ctx, args, o);
+      if (r.kind === "failed")
+        this.#warn("pack-tool-timeout", { tool_key: key, run_id: ctx.runId });
+      return r;
+    } catch (err) {
+      this.#warn("pack-tool-failed", {
+        tool_key: key,
+        run_id: ctx.runId,
+        error_name: err instanceof Error ? err.name : "unknown",
+      });
+      return failed("UPSTREAM_ERROR", t.side_effect);
     }
   }
 }

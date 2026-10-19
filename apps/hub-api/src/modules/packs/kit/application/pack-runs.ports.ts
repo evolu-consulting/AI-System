@@ -22,7 +22,8 @@ export type PackRunsPort = {
   start(u: PackRunCaller, req: PackRunRequest): Promise<{ runId: string; kick(): Promise<void> }>;
   /** Huỷ bù khi gắn run vào bản ghi gói thất bại (người bắt đầu được huỷ run của mình). */
   cancel(u: PackRunCaller, runId: string): Promise<void>;
-  /** N2-D08 · kết quả các run (tenant người gọi; MỘT câu `= any`). */
+  /** N2-D08 · kết quả các run (tenant người gọi; MỘT câu `= any`). Security L3: gói CHỈ gọi qua `ownedRunOutcome`
+   *  (id run đọc từ bản ghi của gói), không truyền id tuỳ ý. */
   outcomes(u: PackRunCaller, runIds: readonly string[]): Promise<PackRunOutcome[]>;
 };
 

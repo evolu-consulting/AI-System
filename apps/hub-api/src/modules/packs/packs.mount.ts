@@ -55,7 +55,7 @@ export const pkdemoEnabled = (appEnv: string | undefined): boolean =>
 /** Gắn `/pack/*` (gọi sau khi đã gắn `requireAuth`); trả cổng quyền gói. */
 export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): PackAccessView {
   const view: PackAccessView = d.config;
-  d.packTools?.bindView(view); // N2-FR-03 · gói bật cho tenant theo cùng cache với guard
+  d.packTools?.bindView(view, (m, meta) => logger.warn(m, meta)); // N2-FR-03 · gói bật theo cache guard
   app.route(PACK_PREFIX, packMeRoutes(view));
   const pkdemoOn = d.packs?.pkdemo ?? pkdemoEnabled(d.appEnv ?? process.env.APP_ENV);
   const n2 = { runs: d.packRuns, tools: d.packTools };
@@ -64,7 +64,20 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
   if (d.db && (d.packs?.contracts ?? true)) mountContracts(app, { ...d, db: d.db }, view, fb);
+  rejectToolCollisions(d);
   return view;
+}
+
+/** Security L1 · sau khi mọi gói đăng ký: tool gói trùng khoá workflow catalog bị gỡ (ảnh catalog đầu tiên, cache). */
+function rejectToolCollisions(d: PacksMountDeps): void {
+  const tools = d.packTools;
+  if (!tools) return;
+  void d.config
+    .catalog()
+    .then((c) =>
+      tools.rejectCatalogCollisions(new Set([...c.workflows.values()].map((w) => w.key))),
+    )
+    .catch(() => logger.warn("pack-tool-collision-check-failed", {}));
 }
 
 /** HD1 (đọc/sửa, tải lên) + HD2 (trích, nhập tay): một hàng đợi trích dùng chung cho tải lên và trích lại. */

@@ -1,7 +1,12 @@
 // HUB-FR-107 · HUB-FR-110 · HUB-FR-111 · HUB-FR-115 · M5 · luật quyền thao tác task dùng chung mọi PF (plan-step0 §1,
 // plan-contract §7) — tách từ `core/task.rules.ts` (P-d1 T9s). Thuần. `canAct` là nguồn duy nhất của `TaskDetail.can_act`
 // (PF1 view, PF2 answer/forward, PF3 inbox).
-import { canDecide, type RunFacts, type Viewer } from "../runs/run-access.rules";
+import {
+  canDecide,
+  REVIEW_GROUP_REASONS,
+  type RunFacts,
+  type Viewer,
+} from "../runs/run-access.rules";
 import { isTerminal } from "../runs/run-state.rules";
 import type { DecisionReason, ProcessRunStatus, TaskKind, TaskStatus } from "../types";
 
@@ -32,6 +37,18 @@ export function starterExcluded(
   return after?.kind === "review" && after.exclude_starter === true && startedBy === userId;
 }
 
+/**
+ * N2-D06 (sửa theo quyết định người dùng 2026-10-19, security M1): stage `exclude_starter` chặn người bắt đầu ở task `review`
+ * VÀ task `decision` có lý do mở quyền Group duyệt (`redo_limit`/`back_limit` — `use_current` = coi như Đạt, lách cấp 2).
+ * Decision lý do khác (lỗi agent, hết lượt thử…) không là duyệt ⇒ người bắt đầu vẫn quyết.
+ */
+export function starterGated(kind: TaskKind, reason: DecisionReason | null): boolean {
+  return (
+    kind === "review" ||
+    (kind === "decision" && reason !== null && REVIEW_GROUP_REASONS.has(reason))
+  );
+}
+
 export function canAct(
   v: Viewer & { groupIds: ReadonlySet<string> },
   t: TaskFacts,
@@ -39,7 +56,8 @@ export function canAct(
 ): boolean {
   if (v.role !== "platform_admin" && v.tenantId !== r.tenantId) return false;
   if (t.status !== "open" || isTerminal(r.status)) return false;
-  if (t.kind === "review" && t.starterExcluded === true && r.startedBy === v.userId) return false;
+  if (t.starterExcluded === true && r.startedBy === v.userId && starterGated(t.kind, t.reason))
+    return false;
   if (t.kind === "decision") {
     const reviewGroupMember = t.reviewGroupId !== null && v.groupIds.has(t.reviewGroupId);
     // Lý do vắng (dữ liệu hỏng) ⇒ chỉ người bắt đầu/admin: `interrupted` không mở quyền group.

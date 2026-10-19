@@ -13,7 +13,16 @@ export type PackToolParam = {
 };
 export type PackToolArgs = Readonly<Record<string, string | number | boolean>>;
 /** Danh tính lời gọi: tenant + người (stage tool = người bắt đầu run; `/mcp` = user của job). */
-export type PackToolCtx = { tenantId: string; userId: string; runId: string | null };
+/** `runId` = id `hub.runs` của lời gọi (job stage tool / job agent `/mcp`) — KHÔNG phải `process_run_id` (review Thấp 14).
+ *  `signal` huỷ khi hết hạn `timeout_s` của stage / kết nối `/mcp` đóng — tool dài nên dừng theo. */
+export type PackToolCtx = {
+  tenantId: string;
+  userId: string;
+  runId: string | null;
+  signal?: AbortSignal;
+};
+/** Hạn lời gọi (review Trung #1): hết hạn ⇒ `failed{code:"TIMEOUT"}`. */
+export type PackToolCallOpts = { timeoutS?: number; signal?: AbortSignal };
 
 export type PackToolDef = {
   pack: string;
@@ -21,6 +30,8 @@ export type PackToolDef = {
   name: string;
   description: string;
   side_effect: boolean;
+  /** Security M2 · quyền gói người gọi cần (`/mcp`: user của job; stage: người bắt đầu). Vắng ⇒ `write`. */
+  action?: "read" | "write";
   params: readonly PackToolParam[];
   /** Chạy trong tx gói của `ctx.tenantId`; trả object JSON (= `output.fields` của stage). Ném ⇒ lỗi tool. */
   run(ctx: PackToolCtx, args: PackToolArgs): Promise<Record<string, unknown>>;
@@ -46,7 +57,12 @@ export type PackToolCatalog = {
   enabled(tenantId: string, key: string): Promise<boolean>;
   /** Tool của gói tenant đã bật (`keys` vắng ⇒ tất cả). */
   available(tenantId: string, keys?: readonly string[]): Promise<PackToolInfo[]>;
-  call(key: string, ctx: PackToolCtx, args: PackToolArgs): Promise<PackToolCallResult>;
-  /** `/mcp`: user có quyền `read` của gói (Group được cấp). */
+  call(
+    key: string,
+    ctx: PackToolCtx,
+    args: PackToolArgs,
+    o?: PackToolCallOpts,
+  ): Promise<PackToolCallResult>;
+  /** User có quyền gói đúng `action` của tool (Group được cấp) — `/mcp` và stage (người bắt đầu). */
   canUse(who: { tenantId: string; userId: string }, key: string): Promise<boolean>;
 };

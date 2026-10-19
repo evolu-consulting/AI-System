@@ -61,6 +61,8 @@ dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwri
 b922d6e629e58cdbd335b1bcbdcbec5669e90ea2b98c2d6414ac20d345249b40  e2e/N1/playwright.config.ts
 e64411f641fe8bf118113925315af94db9cd6a9cd5d4be3b82377ce6b30ba90f  e2e/N1/shell.n1.ts
 0e79bbbce45783d0d37e6c7fc3cac05ffc667c01fc3a1b080cc8c9a6fe011c9e  e2e/N1/states.n1.ts
+20930059efff272f0bbb54ba41b111bfb73a193fb81cbbc5c096625cb17dd8fd  e2e/N2/admin-n2.n2.ts
+24ab397b8110b3dc103b0fc72108bef6f02a311b973aff2c5e13b2732be6072d  e2e/N2/playwright.n2.config.ts
 0b2d5f3c0a82d8633992f089d1a15db10967d4e09be26df974098c0929cfbd39  e2e/P-a/_pa-data.ts
 ace323079e642527c45c86da7d7388b21836ca06695783db981ef0e70cdee95a  e2e/P-a/_pa-runtime.ts
 96ae38ee8114baa40a47b96a701b506319a65ab2ade90dfddfb0968244bdb9d9  e2e/P-a/_pa-stack.ts
@@ -667,10 +669,11 @@ da1e82c9fe286ab98302e5f50a23b017839147610acfaa81ef1e61502f9b657d  tests/acceptan
 830b88ddcc3811fe8f62dfb191626bf035bdc675574b797cb583f8446eb516c7  tests/acceptance/N2/_n2.ts
 b9070962bfa0b57403c7571bb75e59aae8754ae1f877efe796cc8ae3a1c3f711  tests/acceptance/N2/admin-tenant.int.test.ts
 5376c7c68a5c80c77976c4e4489a8da56ad4105fbf2b75a6062b4de440143c8e  tests/acceptance/N2/cap.int.test.ts
+d6394cec6ac6d843942b30f266188db278e38633b3636e468219f442ba379ab6  tests/acceptance/N2/pack-outcome.int.test.ts
 1bdc4638ad51d26d41061044b9264b719f9df87d198fc07a42aa4ae498a2f68d  tests/acceptance/N2/pack-run.int.test.ts
-7e267b22ab94d2798a9c3bf7650de70370465e3d14f82bb40fccdb7ffaf57df7  tests/acceptance/N2/pack-tool.int.test.ts
-45181af8c9081c3838fb0635561f74ce993c896bbdaaec226aee63a65d2be4e9  tests/acceptance/N2/reject.int.test.ts
-2c5b4d355165a8569d5bd36d405f9eeef1028433af5694b511b830d8c5b057d4  tests/acceptance/N2/starter.int.test.ts
+5c0282742d1534ef5dae6c62a4be5da7803d836b044846c5142f385bf8033bf1  tests/acceptance/N2/pack-tool.int.test.ts
+255b2ca5a5ec321a068be209e7cfc2e0aaea5a1cbed12813697c0456c4ab637d  tests/acceptance/N2/reject.int.test.ts
+764b3e66fb283b475bac885794cd2eb9305539e02002d70732dc6e0261384d5f  tests/acceptance/N2/starter.int.test.ts
 28aa0b3738fa99d5162f321899d864ab4951e4e63304f421e2275f3fe40cb8f2  tests/acceptance/N3/_support/n3.ts
 f549963332fa25b7c969fc7f03e14daf4bd247db3f15750d39d74f266811a4c5  tests/acceptance/N3/api.int.test.ts
 922d730a34fd83a23d378637f93b57fe029e417fcbceb7e919232ffc2fdb4a69  tests/acceptance/N3/dispatch.int.test.ts

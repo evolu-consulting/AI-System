@@ -96,6 +96,32 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
     expect(r.json?.error?.details?.rules ?? []).toContain("TOOL_SIDE_EFFECT");
   });
 
+  it("N2-AC08 · đường CHẠY (D2-49): snapshot trỏ pkdemo-mark (side_effect) ở stage không real_action ⇒ needs_decision tool_failed, 0 hàng", async () => {
+    const d = await createDef(c, packDef("pkdemo-touch"));
+    // Def cũ / sửa tay qua luật lưu: chỉ đường chạy còn chặn.
+    await c.sql`update hub.process_defs set stages = jsonb_set(stages, '{0,executor,tool_key}', '"pkdemo-mark"')
+      where key = ${d.key}`;
+    const runId = await startRun(c, d.key, {
+      inputs: [{ key: "ten", type: "text", text: "N2 mark lậu" }],
+    });
+    await settled(c);
+    await waitStatus(c.sql, runId, "needs_decision");
+    expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
+    expect(await items("N2 mark lậu")).toEqual([]);
+  }, 60_000);
+
+  it("security M2 · người bắt đầu không có quyền write gói (X) ⇒ needs_decision permission_lost, 0 hàng", async () => {
+    const d = await createDef(c, packDef("pkdemo-touch"));
+    const runId = await startRun(c, d.key, {
+      role: "X",
+      inputs: [{ key: "ten", type: "text", text: "N2 không quyền" }],
+    });
+    await settled(c);
+    await waitStatus(c.sql, runId, "needs_decision");
+    expect((await decisionOf(c.sql, runId))?.reason).toBe("permission_lost");
+    expect(await items("N2 không quyền")).toEqual([]);
+  }, 60_000);
+
   it("N2-AC07 · gói tắt SAU khi lưu def ⇒ needs_decision tool_failed, 0 hàng gói mới", async () => {
     const d = await createDef(c, packDef("pkdemo-touch"));
     await disablePk(c, ACME);

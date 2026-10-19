@@ -1,4 +1,9 @@
 // N2-FR-01 · N2-D07 · mẫu khởi chạy run quy trình cho một bản ghi `pkdemo.items` (khuôn cho HD3: hợp đồng ↔ run duyệt).
+
+import {
+  type OwnedRunOutcome,
+  ownedRunOutcome,
+} from "../../kit/application/pack-run-outcome.usecase";
 import type { PackRunCaller, PackRunRequest } from "../../kit/application/pack-runs.ports";
 import {
   type StartPackRunDeps,
@@ -23,4 +28,11 @@ export function startItemRun(d: StartPackRunDeps<PkdemoRepos>): StartItemRun {
       },
       attach: (r, runId) => r.items.attachRun(itemId, runId),
     });
+}
+
+/** N2-D08 · security L3: kết quả run mà item đang giữ (id đọc trong tx gói). */
+export type ItemRunOutcome = (u: PackRunCaller, itemId: string) => Promise<OwnedRunOutcome>;
+
+export function itemRunOutcome(d: StartPackRunDeps<PkdemoRepos>): ItemRunOutcome {
+  return (u, itemId) => ownedRunOutcome(d, u, (r) => r.items.runOf(itemId));
 }

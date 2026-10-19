@@ -3,9 +3,9 @@
 // - Đạt / Chưa đạt: như P-a (`reviewEffects`); Chưa đạt có `back_to_step` ⇒ `back.effects` (P-b2).
 // - N2-FR-02 Từ chối: tin `task_result` + notice đóng task ⇒ `cancelEnd` (huỷ stage/timer, đóng task khác `cancelled`, run
 //   `cancelled`, `run_end`) — hậu COMMIT người gọi huỷ `hub.runs` như huỷ run (N2-D01).
-import type { ProcessRunStatus, ReviewDecisionRequest } from "@ai/contracts/chat";
+import type { DecisionReason, ProcessRunStatus, ReviewDecisionRequest } from "@ai/contracts/chat";
 import { processN2Error } from "../core/errors";
-import { starterExcluded } from "../domain/tasks/task-access.rules";
+import { starterExcluded, starterGated } from "../domain/tasks/task-access.rules";
 import { assertBackDecision, type BackOut, backFromReview } from "./back.effects";
 import {
   cancelEnd,
@@ -25,6 +25,21 @@ export type ReviewOut = BackOut & { status: ProcessRunStatus; kick: boolean };
 export function assertNotExcludedStarter(run: Locked, idx: number, userId: string): void {
   const after = snapOf(run).stages[idx]?.after;
   if (starterExcluded(after, run.startedBy, userId)) throw processN2Error("STARTER_CANNOT_REVIEW");
+}
+
+/**
+ * N2-D06 · security M1 (người dùng chốt 2026-10-19): stage `exclude_starter` ⇒ người bắt đầu cũng không quyết task `decision`
+ * lý do `redo_limit`/`back_limit` (`use_current` = coi như Đạt — đường lách cấp 2). Lý do khác giữ hành vi cũ.
+ */
+export function assertDecisionAllowed(
+  run: Locked,
+  idx: number,
+  userId: string,
+  reason: DecisionReason,
+): void {
+  const after = snapOf(run).stages[idx]?.after;
+  if (starterExcluded(after, run.startedBy, userId) && starterGated("decision", reason))
+    throw processN2Error("STARTER_CANNOT_REVIEW");
 }
 
 /** N2-FR-05 + P-b2 · kiểm trước khi đóng task: người bắt đầu bị loại (403) ⇒ đích quay lại sai (422). */

@@ -13,7 +13,7 @@ import { PKDEMO_KEY, pkdemoRoutes } from "./adapters/pkdemo.routes";
 import { pkdemoTools } from "./adapters/pkdemo.tools";
 import { createItem } from "./application/create-item.usecase";
 import { getItem } from "./application/get-item.usecase";
-import { startItemRun } from "./application/start-item-run.usecase";
+import { itemRunOutcome, startItemRun } from "./application/start-item-run.usecase";
 
 export { PKDEMO_KEY };
 
@@ -29,5 +29,6 @@ export function pkdemoModule(db: Db, view: PackAccessView, n2: PkdemoN2 = {}): H
     create: createItem({ uow, newId }),
     get: getItem({ uow }),
     run: startItemRun({ bridge: n2.runs ?? {}, uow, warn }),
+    outcome: itemRunOutcome({ bridge: n2.runs ?? {}, uow, warn }),
   });
 }

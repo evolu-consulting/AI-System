@@ -15,7 +15,7 @@ Chạm engine P-d đã đóng (`ket-luan-pd2.md`) + khung gói N1 (`N1-pack-fram
 | N2-FR-02 kết quả task review **Từ chối** (`reject`): bắt buộc lý do, kết thúc run | Màn chat-web nút "Từ chối" (HD3 dùng; chat-web chỉ có nhãn) |
 | N2-FR-03 tool của gói: đăng ký trong Hub, chạy trong tx gói (`withPackScope`), stage `tool` gọi được, `/mcp` liệt kê/gọi khi job cho phép | Tool gói `side_effect` gọi từ agent qua `/mcp` (luôn từ chối — chỉ stage `real_action`) |
 | N2-FR-04 trần run đồng thời cấu hình theo tenant (mặc định 5, `waiting_review` vẫn đếm) + ô sửa ở admin | Đổi tập trạng thái tính trần (giữ `PROCESS_RUN_CAP_COUNTED`) |
-| N2-FR-05 cờ stage `after.review.exclude_starter`: người bắt đầu run không được quyết task duyệt của stage + checkbox ở editor | Chặn người bắt đầu ở task `decision` / `ask` |
+| N2-FR-05 cờ stage `after.review.exclude_starter`: người bắt đầu run không được quyết task duyệt của stage + checkbox ở editor | Chặn người bắt đầu ở task `ask` và `decision` lý do ngoài `redo_limit`/`back_limit` (N2-D06) |
 
 ## 2. Yêu cầu
 | Mã | Yêu cầu | AC |

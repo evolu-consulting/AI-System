@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { reviewDecisionCheck } from "../../gates/gate.rules";
 import { type RunState, transition } from "../runs/run-state.rules";
-import { canAct, starterExcluded } from "./task-access.rules";
+import { canAct, starterExcluded, starterGated } from "./task-access.rules";
 
 const state: RunState = {
   status: "waiting_review",
@@ -63,5 +63,17 @@ describe("N2-FR-05 · exclude_starter", () => {
     };
     expect(canAct(v, { ...task, starterExcluded: true }, run)).toBe(false);
     expect(canAct(v, task, run)).toBe(true);
+    // N2-D06 · security M1: decision redo_limit cũng chặn người bắt đầu; lý do khác giữ cũ.
+    const dec = {
+      ...task,
+      kind: "decision" as const,
+      reason: "redo_limit" as const,
+      starterExcluded: true,
+    };
+    const decRun = { ...run, status: "needs_decision" as const };
+    expect(canAct(v, dec, decRun)).toBe(false);
+    expect(starterGated("decision", "redo_limit")).toBe(true);
+    expect(starterGated("decision", "agent_failed")).toBe(false);
+    expect(starterGated("review", null)).toBe(true);
   });
 });

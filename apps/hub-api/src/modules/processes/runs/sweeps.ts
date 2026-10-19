@@ -195,11 +195,15 @@ function resolveCands(tx: Tx, cutoff: Date, limit = BATCH) {
     order by r.updated_at limit ${limit}`);
 }
 
-/** Ứng viên `requeueOrphans` (chỉ đọc). */
+/**
+ * Ứng viên `requeueOrphans` (chỉ đọc). N2 review Thấp 6 / security L2: chỉ stage `queued` đã ≥ 60 s (giờ DB) — không đua
+ * với `PackRuns.start` (run COMMIT chưa kick, gói đang gắn `run_id`); run mồ côi (gắn + huỷ bù cùng lỗi, tiến trình chết)
+ * được vòng này kick sau 60 s.
+ */
 function orphanCands(tx: Tx, limit = BATCH) {
   return tx.execute<{ process_run_id: string }>(sql`
     select s.process_run_id from hub.stage_runs s
-    where s.status = 'queued'
+    where s.status = 'queued' and s.updated_at < now() - interval '60 seconds'
       and not exists (select 1 from hub.runs r where r.stage_run_id = s.id and r.status = 'running')
     order by s.updated_at limit ${limit}`);
 }

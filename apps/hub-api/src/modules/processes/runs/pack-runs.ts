@@ -43,7 +43,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       const scope = { kind: "user" as const, userId: u.userId, tenantId: u.tenantId };
       return withHubScope(d.db, scope, async (tx) => {
         const rows = await tx.execute<PackRunOutcome>(sql`select r.id as run_id, r.status,
-            (rj.feedback is not null or rj.id is not null) as rejected, rj.feedback
+            (rj.id is not null) as rejected, rj.feedback
           from hub.process_runs r
           left join lateral (select t.id, t.feedback from hub.review_tasks t
             where t.process_run_id = r.id and t.tenant_id = r.tenant_id and t.result = 'reject' limit 1) rj on true

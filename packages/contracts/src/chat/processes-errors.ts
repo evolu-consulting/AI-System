@@ -1,7 +1,7 @@
 // HUB-FR-105…111 · CR-056 · mã lỗi API quy trình (plan-contract §4). Khối riêng — không thêm vào CHAT_API_ERRORS /
 // CHAT_ROUTING_ERRORS / CHAT_ROOM_* (test khoá X2a/X2b/C1).
 import { z } from "zod";
-import { PROCESS_SUGGESTIONS_MAX, ProcessKeySchema } from "./processes";
+import { PROCESS_RUNS_PER_TENANT, PROCESS_SUGGESTIONS_MAX, ProcessKeySchema } from "./processes";
 
 export const CHAT_PROCESS_ERRORS = {
   PROCESS_NOT_FOUND: 404,
@@ -29,6 +29,17 @@ export const CHAT_PROCESS_N2_ERRORS = {
   PROCESS_ENGINE_OFF: 503,
 } as const;
 export type ChatProcessN2ErrorCode = keyof typeof CHAT_PROCESS_N2_ERRORS;
+
+/** N2-FR-04 · `TOO_MANY_PROCESS_RUNS.details` (429): trần thật của tenant (`admin.tenants.process_runs_max`). */
+export const TooManyProcessRunsDetailsSchema = z.object({ max: z.number().int().min(1) });
+/** Trần để hiện trong câu 429: `details.max` của server; thiếu/sai (server cũ, mock) ⇒ `fallback`. Thuần — FE dùng chung. */
+export function processRunsMaxOf(
+  details: unknown,
+  fallback: number = PROCESS_RUNS_PER_TENANT,
+): number {
+  const p = TooManyProcessRunsDetailsSchema.safeParse(details);
+  return p.success ? p.data.max : fallback;
+}
 export const CHAT_PROCESS_ERROR_CODES = Object.keys(CHAT_PROCESS_ERRORS) as ChatProcessErrorCode[];
 export const ChatProcessErrorCodeSchema = z.enum(
   CHAT_PROCESS_ERROR_CODES as [ChatProcessErrorCode, ...ChatProcessErrorCode[]],

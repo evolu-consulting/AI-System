@@ -68,7 +68,8 @@ export function mcpToolInvoker(d: {
       if (c.packTool) {
         if (!d.packs) return NOT_CONFIGURED;
         const ctx = { tenantId: c.tenantId, userId: c.userId, runId: c.hubRunId };
-        return d.packs.call(c.packTool, ctx, c.args);
+        // Review Trung #1 · cùng hạn `min(stage.timeout_s, …)` + huỷ như workflow: tool treo ⇒ TIMEOUT, không kẹt `running`.
+        return d.packs.call(c.packTool, ctx, c.args, { timeoutS: c.timeoutS, signal: c.signal });
       }
       if (!d.invoker) return NOT_CONFIGURED;
       const wf = c.endpoint
