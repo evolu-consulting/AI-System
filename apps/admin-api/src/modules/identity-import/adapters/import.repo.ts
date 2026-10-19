@@ -26,29 +26,44 @@ export async function preflight(
   return { actorOk: r?.actor_ok === true, features: r?.features ?? 0 };
 }
 
-export type TenantRow = { id: string; key: string; mgmt: string | null; active: boolean };
-export function findTenants(tx: Tx, orgIds: readonly string[], keys: readonly string[]) {
+export type TenantRow = {
+  id: string;
+  key: string;
+  src: string | null;
+  mgmt: string | null;
+  active: boolean;
+  pack_revoked: boolean;
+};
+/** Tenant theo marker org hoặc key; `pack_revoked` = có entitlement gói đã thu hồi (không bật lại — L2). */
+export function findTenants(
+  tx: Tx,
+  q: { orgIds: readonly string[]; keys: readonly string[] },
+  featureKeys: readonly string[],
+) {
   return run<TenantRow>(
     tx,
-    sql`select id, key, settings->>'mgmt_org_id' as mgmt, active from admin.tenants
-      where settings->>'mgmt_org_id' = any(${texts(orgIds)}) or key = any(${texts(keys)})`,
+    sql`select t.id, t.key, t.settings->>'mgmt_source' as src, t.settings->>'mgmt_org_id' as mgmt, t.active,
+        exists (select 1 from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+          where e.tenant_id = t.id and e.revoked_at is not null and f.key = any(${texts(featureKeys)})) as pack_revoked
+      from admin.tenants t
+      where t.settings->>'mgmt_org_id' = any(${texts(q.orgIds)}) or t.key = any(${texts(q.keys)})`,
   );
 }
 
-export type NewTenant = { id: string; key: string; name: string; org_id: string };
+export type NewTenant = { id: string; key: string; name: string; source: string; org_id: string };
 /** Key đã có (đua) ⇒ không trả hàng ⇒ bên gọi báo ORG_KEY_TAKEN. */
 export function insertTenants(tx: Tx, rows: readonly NewTenant[], actorId: string) {
   return run<{ id: string }>(
     tx,
     sql`insert into admin.tenants (id, key, name, settings, updated_by)
-      select x.id, x.key, x.name, jsonb_build_object('mgmt_org_id', x.org_id), ${actorId}::uuid
-      from jsonb_to_recordset(${json(rows)}::jsonb) as x(id uuid, key text, name text, org_id text)
+      select x.id, x.key, x.name, jsonb_build_object('mgmt_source', x.source, 'mgmt_org_id', x.org_id), ${actorId}::uuid
+      from jsonb_to_recordset(${json(rows)}::jsonb) as x(id uuid, key text, name text, source text, org_id text)
       on conflict (key) do nothing
       returning id`,
   );
 }
 
-/** Entitlement 3 feature × N tenant (bật lại nếu đã thu hồi — như PUT packs). Trả tenant có đổi. */
+/** Entitlement 3 feature × N tenant MỚI tạo; đã có (kể cả đã thu hồi) ⇒ không đụng (L2). Trả tenant có đổi. */
 export function enableEntitlements(
   tx: Tx,
   tenantIds: readonly string[],
@@ -61,9 +76,7 @@ export function enableEntitlements(
       select f.id, t.id, ${actorId}::uuid
       from admin.tenants t join admin.features f on f.key = any(${texts(featureKeys)})
       where t.id = any(${uuids(tenantIds)})
-      on conflict (feature_id, tenant_id) do update
-        set revoked_at = null, granted_by = excluded.granted_by, granted_at = now()
-        where admin.feature_entitlements.revoked_at is not null
+      on conflict (feature_id, tenant_id) do nothing
       returning tenant_id`,
   );
 }
@@ -110,6 +123,15 @@ export function readGroups(tx: Tx, tenantIds: readonly string[], keys: readonly 
     tx,
     sql`select tenant_id, id, key from admin.groups
       where tenant_id = any(${uuids(tenantIds)}) and key = any(${texts(keys)})`,
+  );
+}
+
+/** Dry-run (review Trung 2): email (lower) mọi user của các tenant ⇒ báo USER_CONFLICT như apply. Lọc leakproof. */
+export function tenantEmails(tx: Tx, tenantIds: readonly string[]) {
+  return run<{ tenant_id: string; email: string }>(
+    tx,
+    sql`select tenant_id, lower(email) as email from admin.users
+      where tenant_id = any(${uuids(tenantIds)}) and email is not null`,
   );
 }
 

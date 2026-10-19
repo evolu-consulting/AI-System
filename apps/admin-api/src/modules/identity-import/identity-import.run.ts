@@ -27,10 +27,10 @@ export async function unusableHash(): Promise<string> {
   return hashPassword(Buffer.from(secret).toString("base64"));
 }
 
-/** Lỗi ràng buộc (SQLSTATE lớp 23) ⇒ hỏng một lô (R1); còn lại ⇒ null (ném tiếp). */
+/** Lỗi dữ liệu (lớp 22: NUL, surrogate lẻ…) hoặc ràng buộc (lớp 23) ⇒ hỏng một lô (R1, M2); còn lại ⇒ null (ném tiếp). */
 export function constraintError(err: unknown): string | null {
   const s = safeErrorFields(err).code;
-  return s?.startsWith("23") ? s : null;
+  return s?.startsWith("22") || s?.startsWith("23") ? s : null;
 }
 
 export async function runIdentityImport(db: Db, raw: unknown, o: RunOpts): Promise<ImportReport> {
@@ -40,6 +40,7 @@ export async function runIdentityImport(db: Db, raw: unknown, o: RunOpts): Promi
   const store = createImportStore({
     db,
     actorId: o.actorId,
+    source: input.source,
     resetHash: o.apply ? await unusableHash() : "",
     newId: () => Bun.randomUUIDv7(),
   });

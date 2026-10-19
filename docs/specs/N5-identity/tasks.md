@@ -19,3 +19,7 @@ Làn **đầy đủ** (auth/mật khẩu/tenant) — một agent một lát (Lu�
 - `test:int:par N5 M1 M3 N1`: 610 pass / 7 fail khi chạy chung (timeout do tải); chạy riêng: M3 concurrency 13/13, N1 admin-packs+api 24/24 xanh; N1 hops PK-AC12 đỏ do `hub-api/.../contracts/adapters/tax-registry.http.ts` (lát khác), không liên quan N5.
 - Perf 10.000 user (lô 500): apply 2.195 ms, 6 câu/lô cố định, lô org 9 câu; chạy lại 248 ms (≤ 2 câu/lô); dry-run 263 ms.
 - `test:lock:write` + `verify`: OK.
+
+## Vòng sửa sau review + security (2026-10-19)
+- Sửa M1, M2, L1–L4, Trung 1–2, Thấp 4/5/7/8/9/10 (spec §7 F1). Test: 23 unit, 17 int (2 file, mỗi describe tự seed), 3 perf.
+- Perf 10.000 user: apply 1.937 ms (6 câu/lô), lô org 9 câu, chạy lại 267 ms (≤ 2 câu/lô), dry-run 143 ms.

@@ -1,26 +1,14 @@
-// N5-FR-01…07 · N5-NFR-02 · công cụ chuyển user mgmt-app (spec N5 §2, §7 R1–R9). Test viết TRƯỚC code (làn đầy đủ):
-// cách ly tenant, idempotent, dry-run không ghi, mật khẩu (nhập hash / buộc đặt lại — đăng nhập thật qua admin-api),
-// không lộ hash (stdout/stderr CLI, audit), actor phải là platform admin. Dữ liệu export GIẢ.
+// N5-FR-02, N5-FR-03, N5-FR-06, N5-FR-07 · công cụ chuyển user mgmt-app: tenant + Group vai, cách ly tenant, dry-run,
+// idempotent, chạy lại KHÔNG hoàn tác thu hồi (review Trung 1 / security L2), marker có nguồn (security M1), USER_CONFLICT ở
+// cả dry-run (review Trung 2), chạy lại với username fallback. Mỗi describe tự seed org riêng (độc lập thứ tự — review Thấp 8).
+// Dữ liệu export GIẢ. Mật khẩu / CLI / actor / file: `import-security.int.test.ts`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { generateKeyPairSync } from "node:crypto";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { createApp } from "../../../apps/admin-api/src/app";
-import { loadJwtKeys } from "../../../apps/admin-api/src/lib/jwt";
-import { createDummyHash } from "../../../apps/admin-api/src/modules/auth/auth.service";
+import { runIdentityImport } from "../../../apps/admin-api/src/modules/identity-import/identity-import.run";
 import {
-  ImportAbort,
-  runIdentityImport,
-} from "../../../apps/admin-api/src/modules/identity-import/identity-import.run";
-import {
-  ADMIN_API_URL,
-  argonOf,
   type CtxN5,
-  KNOWN_PW,
   mkExport,
   ROLE_GROUP,
   rolesIn,
-  SCRYPT_HASH,
   snapshot,
   startN5,
   tenantOfOrg,
@@ -28,46 +16,18 @@ import {
   userX,
 } from "./_support/n5";
 
-const ROOT = join(import.meta.dir, "../../..");
-const CLI = join(ROOT, "apps/admin-api/src/modules/identity-import/identity-import.cli.ts");
 let c: CtxN5;
-let argon: string;
-let app: ReturnType<typeof createApp>;
-
 beforeAll(async () => {
   c = await startN5();
-  argon = await argonOf(KNOWN_PW);
-  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-  const keys = await loadJwtKeys({
-    JWT_PRIVATE_KEY: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
-    JWT_PUBLIC_KEY: publicKey.export({ type: "spki", format: "pem" }).toString(),
-    JWT_KID: "n5",
-  });
-  app = createApp(
-    { version: "0.0.0", corsOrigins: ["http://localhost:3000"] },
-    { db: c.db, keys, appEnv: "test", dummyHash: await createDummyHash() },
-  );
 }, 60_000);
 afterAll(async () => {
   await c?.stop();
 });
 
-const login = (tenant_key: string, username: string, password: string) =>
-  app.request("/auth/login", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ tenant_key, username, password }),
-  });
-const run = (raw: unknown, apply: boolean, actorId = c.padmin, batch?: number) =>
-  runIdentityImport(c.db, raw, { actorId, apply, batch });
-const abortCode = async (p: Promise<unknown>) => {
-  try {
-    await p;
-    return null;
-  } catch (e) {
-    return e instanceof ImportAbort ? e.code : `other:${(e as Error).message}`;
-  }
-};
+const run = (raw: unknown, apply: boolean) =>
+  runIdentityImport(c.db, raw, { actorId: c.padmin, apply });
+const tenantId = async (orgId: string) => (await tenantOfOrg(c.sql, orgId))[0]?.id as string;
+const codes = (r: { issues: { code: string }[] }) => r.issues.map((i) => i.code);
 
 describe("N5-FR-06 · dry-run mặc định", () => {
   it("N5-FR-06 · không --apply ⇒ báo cáo số SẼ tạo, DB không đổi (không bump, không audit)", async () => {
@@ -90,243 +50,209 @@ describe("N5-FR-02 · N5-FR-03 · N5-FR-07 · apply: tenant, Group vai, cách ly
       [
         { id: "org-alpha", name: "Công ty Alpha" },
         { id: "org-bravo", name: "Bravo", tenant_key: "bravo-n5" },
-        { id: "org-steal", name: "Steal", tenant_key: "acme" }, // key của tenant fixture (không mgmt_org_id)
       ],
       [
         userX("own@alpha.test", "org-alpha", "owner"),
         userX("ed@alpha.test", "org-alpha", "editor"),
         userX("vw@alpha.test", "org-alpha", "viewer"),
         userX("lan@example.test", "org-bravo", "editor"), // trùng email user acme ⇒ vẫn tạo riêng ở bravo
-        userX("x@steal.test", "org-steal", "owner"),
       ],
     );
 
-  it("N5-FR-02 · tạo tenant (settings.mgmt_org_id, slug bỏ dấu) + bật gói contracts (3 Group, 6 grant, 3 entitlement)", async () => {
-    const r = await run(raw(), true);
-    expect(r.dry_run).toBe(false);
-    expect(r.orgs).toEqual({ read: 3, created: 2, existing: 0, errors: 1 });
+  it("N5-FR-02 · tạo tenant (marker nguồn + org, slug bỏ dấu) + bật gói contracts (3 Group, 6 grant, 3 entitlement)", async () => {
+    await run(raw(), true);
     const [a] = await tenantOfOrg(c.sql, "org-alpha");
     expect(a?.key).toBe("cong-ty-alpha");
-    const [b] = await tenantOfOrg(c.sql, "org-bravo");
-    expect(b?.key).toBe("bravo-n5");
-    const g = await c.sql<{ n: number }[]>`select count(*)::int as n from admin.groups
-      where tenant_id = ${a?.id as string} and key like 'contracts-%'`;
-    expect(g[0]?.n).toBe(3);
-    const gr = await c.sql<{ n: number }[]>`select count(*)::int as n from admin.feature_grants fg
-      join admin.features f on f.id = fg.feature_id where fg.tenant_id = ${a?.id as string} and f.key like 'contracts-%'`;
-    expect(gr[0]?.n).toBe(6);
-    const en = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from admin.feature_entitlements e
-      join admin.features f on f.id = e.feature_id
-      where e.tenant_id = ${a?.id as string} and f.key like 'contracts-%' and e.revoked_at is null`;
-    expect(en[0]?.n).toBe(3);
+    expect((await tenantOfOrg(c.sql, "org-bravo"))[0]?.key).toBe("bravo-n5");
+    const [st] = await c.sql`select settings from admin.tenants where id = ${a?.id as string}`;
+    expect(st?.settings).toEqual({ mgmt_source: "mgmt-test", mgmt_org_id: "org-alpha" });
+    const [n] = await c.sql<{ g: number; gr: number; en: number }[]>`select
+      (select count(*)::int from admin.groups where tenant_id = ${a?.id as string} and key like 'contracts-%') as g,
+      (select count(*)::int from admin.feature_grants fg join admin.features f on f.id = fg.feature_id
+        where fg.tenant_id = ${a?.id as string} and f.key like 'contracts-%') as gr,
+      (select count(*)::int from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+        where e.tenant_id = ${a?.id as string} and f.key like 'contracts-%' and e.revoked_at is null) as en`;
+    expect(n).toEqual({ g: 3, gr: 6, en: 3 });
   });
 
-  it("N5-FR-07 · mỗi user chỉ vào Group vai của tenant org mình; owner ⇒ tenant_admin, còn lại member", async () => {
-    const [a] = await tenantOfOrg(c.sql, "org-alpha");
-    const [b] = await tenantOfOrg(c.sql, "org-bravo");
-    expect(await rolesIn(c.sql, a?.id as string)).toEqual({
+  it("N5-FR-07 · mỗi user chỉ vào Group vai của tenant org mình; owner ⇒ tenant_admin, còn lại member; 0 platform_admin", async () => {
+    await run(raw(), true);
+    const a = await tenantId("org-alpha");
+    const b = await tenantId("org-bravo");
+    expect(await rolesIn(c.sql, a)).toEqual({
       "ed@alpha.test": [ROLE_GROUP.editor],
       "own@alpha.test": [ROLE_GROUP.owner],
       "vw@alpha.test": [ROLE_GROUP.viewer],
     });
-    expect(await rolesIn(c.sql, b?.id as string)).toEqual({
-      "lan@example.test": [ROLE_GROUP.editor],
-    });
+    expect(await rolesIn(c.sql, b)).toEqual({ "lan@example.test": [ROLE_GROUP.editor] });
     const roles = await c.sql<
       { email: string; role: string; tid: string }[]
     >`select lower(email) as email, role,
       tenant_id as tid from admin.users where lower(email) like '%@alpha.test' order by 1`;
-    expect(roles.map((x) => [x.email, x.role, x.tid === a?.id])).toEqual([
+    expect(roles.map((x) => [x.email, x.role, x.tid === a])).toEqual([
       ["ed@alpha.test", "member", true],
       ["own@alpha.test", "tenant_admin", true],
       ["vw@alpha.test", "member", true],
     ]);
-    const plat = await c.sql<{ n: number }[]>`select count(*)::int as n from admin.users
-      where role = 'platform_admin' and tenant_id in (${a?.id as string}, ${b?.id as string})`;
-    expect(plat[0]?.n).toBe(0);
-  });
-
-  it("N5-FR-07 · tenant fixture acme không bị đụng: key 'acme' ⇒ ORG_KEY_TAKEN, user ⇒ ORG_FAILED, user acme giữ nguyên", async () => {
-    const acmeUsers = await c.sql`select id, username, password_hash, role from admin.users
-      where tenant_id = ${USERS.lan.tid} order by id`;
-    const acmeMembers =
-      await c.sql`select * from admin.group_members where tenant_id = ${USERS.lan.tid}`;
-    const r = await run(raw(), true);
-    expect(r.issues).toContainEqual({ kind: "org", ref: "org-steal", code: "ORG_KEY_TAKEN" });
-    expect(r.issues).toContainEqual({ kind: "user", ref: "x@steal.test", code: "ORG_FAILED" });
-    expect([
-      ...(await c.sql`select id, username, password_hash, role from admin.users where tenant_id = ${USERS.lan.tid} order by id`),
-    ]).toEqual([...acmeUsers]);
-    expect([
-      ...(await c.sql`select * from admin.group_members where tenant_id = ${USERS.lan.tid}`),
-    ]).toEqual([...acmeMembers]);
-    const st = await c.sql`select settings from admin.tenants where id = ${USERS.lan.tid}`;
-    expect(st[0]?.settings).toEqual({});
+    const [p] = await c.sql<{ n: number }[]>`select count(*)::int as n from admin.users
+      where role = 'platform_admin' and tenant_id in (${a}, ${b})`;
+    expect(p?.n).toBe(0);
   });
 
   it("N5-FR-07 · idempotent: chạy lại ⇒ 0 tạo mới, không nhân đôi user/Group/thành viên/audit, không bump", async () => {
     await run(raw(), true);
     const before = await snapshot(c.sql);
     const r = await run(raw(), true);
-    expect(r.orgs.created).toBe(0);
-    expect(r.orgs.existing).toBe(2);
-    expect(r.users.created).toBe(0);
-    expect(r.users.existing).toBe(4);
+    expect(r.orgs).toEqual({ read: 2, created: 0, existing: 2, errors: 0 });
+    expect(r.users).toMatchObject({ created: 0, existing: 4, errors: 0 });
     expect(await snapshot(c.sql)).toEqual(before);
-  });
-
-  it("N5-FR-07 · user đã có ở vai khác ⇒ ROLE_CONFLICT, không thêm Group (không nâng quyền ngầm)", async () => {
-    const changed = mkExport(
-      [{ id: "org-alpha", name: "Công ty Alpha" }],
-      [userX("vw@alpha.test", "org-alpha", "owner")],
-    );
-    const r = await run(changed, true);
-    expect(r.issues).toEqual([{ kind: "user", ref: "vw@alpha.test", code: "ROLE_CONFLICT" }]);
-    const [a] = await tenantOfOrg(c.sql, "org-alpha");
-    expect((await rolesIn(c.sql, a?.id as string))["vw@alpha.test"]).toEqual([ROLE_GROUP.viewer]);
   });
 });
 
-describe("N5-FR-03 · user tạo tay trùng email, khác username", () => {
-  it("N5-FR-03 · đụng users_tenant_email_uq ⇒ USER_CONFLICT, không tạo, không thêm Group, lô vẫn xong", async () => {
-    const [a] = await tenantOfOrg(c.sql, "org-alpha");
-    await c.sql`insert into admin.users (tenant_id, username, email, password_hash, display_name, role)
-      values (${a?.id as string}, 'tay-tao', 'Manual@Alpha.test', 'x', 'Tay', 'member')`;
+describe("N5-FR-07 · cách ly tenant fixture", () => {
+  it("N5-FR-07 · key 'acme' (tenant fixture, không marker) ⇒ ORG_KEY_TAKEN, user ⇒ ORG_FAILED, acme giữ nguyên", async () => {
+    const q = () => c.sql`select id, username, password_hash, role from admin.users
+      where tenant_id = ${USERS.lan.tid} order by id`;
+    const m = () =>
+      c.sql`select * from admin.group_members where tenant_id = ${USERS.lan.tid} order by user_id`;
+    const [u0, m0] = [[...(await q())], [...(await m())]];
     const r = await run(
       mkExport(
-        [{ id: "org-alpha", name: "Công ty Alpha" }],
-        [userX("manual@alpha.test", "org-alpha", "viewer"), userX("new2@alpha.test", "org-alpha")],
+        [{ id: "org-steal", name: "Steal", tenant_key: "acme" }],
+        [userX("x@steal.test", "org-steal", "owner")],
       ),
       true,
     );
-    expect(r.issues).toEqual([{ kind: "user", ref: "manual@alpha.test", code: "USER_CONFLICT" }]);
-    expect(r.users.created).toBe(1);
-    expect((await rolesIn(c.sql, a?.id as string))["manual@alpha.test"]).toBeUndefined();
+    expect(r.issues).toEqual([
+      { kind: "org", ref: "org-steal", code: "ORG_KEY_TAKEN" },
+      { kind: "user", ref: "x@steal.test", code: "ORG_FAILED" },
+    ]);
+    expect([...(await q())]).toEqual(u0);
+    expect([...(await m())]).toEqual(m0);
+    expect(
+      (await c.sql`select settings from admin.tenants where id = ${USERS.lan.tid}`)[0]?.settings,
+    ).toEqual({});
   });
 });
 
-describe("N5-FR-04 · mật khẩu", () => {
+describe("N5-FR-07 · security M1: marker có nguồn", () => {
+  it("N5-FR-07 · cùng org id nhưng nguồn khác ⇒ ORG_MISMATCH, user ⇒ ORG_FAILED, tenant cũ không nhận user", async () => {
+    await run(
+      mkExport(
+        [{ id: "1", name: "Src A", tenant_key: "src-a" }],
+        [userX("a@src.test", "1")],
+        "mgmt-a",
+      ),
+      true,
+    );
+    const before = await snapshot(c.sql);
+    const r = await run(
+      mkExport(
+        [{ id: "1", name: "Src A", tenant_key: "src-a" }],
+        [userX("intruder@src.test", "1", "owner")],
+        "mgmt-b",
+      ),
+      true,
+    );
+    expect(codes(r)).toEqual(["ORG_MISMATCH", "ORG_FAILED"]);
+    expect(await snapshot(c.sql)).toEqual(before);
+  });
+});
+
+describe("N5-FR-07 · review Trung 1 / security L2: chạy lại không hoàn tác thu hồi", () => {
+  const raw = (extra: ReturnType<typeof userX>[] = []) =>
+    mkExport(
+      [{ id: "org-rv", name: "Revoke", tenant_key: "rv-n5" }],
+      [userX("a@rv.test", "org-rv", "editor"), userX("b@rv.test", "org-rv", "viewer"), ...extra],
+    );
+  it("N5-FR-07 · admin gỡ thành viên + xoá grant ⇒ chạy lại: không gắn lại (ROLE_MISSING), không khôi phục grant", async () => {
+    await run(raw(), true);
+    const t = await tenantId("org-rv");
+    await c.sql`delete from admin.group_members m using admin.users u
+      where m.user_id = u.id and m.tenant_id = ${t} and lower(u.email) = 'b@rv.test'`;
+    await c.sql`delete from admin.feature_grants fg using admin.groups g
+      where fg.group_id = g.id and fg.tenant_id = ${t} and g.key = 'contracts-owner'`;
+    const grants = async () =>
+      (
+        await c.sql<
+          { n: number }[]
+        >`select count(*)::int as n from admin.feature_grants where tenant_id = ${t}`
+      )[0]?.n;
+    const g0 = await grants();
+    const r = await run(raw([userX("c@rv.test", "org-rv", "viewer")]), true);
+    expect(r.issues).toEqual([{ kind: "user", ref: "b@rv.test", code: "ROLE_MISSING" }]);
+    expect(r.users).toMatchObject({ created: 1, existing: 1 });
+    expect(await rolesIn(c.sql, t)).toEqual({
+      "a@rv.test": [ROLE_GROUP.editor],
+      "c@rv.test": [ROLE_GROUP.viewer],
+    });
+    expect(await grants()).toBe(g0);
+  });
+  it("N5-FR-07 · admin thu hồi gói contracts ⇒ chạy lại: PACK_REVOKED, entitlement vẫn thu hồi, không thêm user", async () => {
+    await run(raw(), true);
+    const t = await tenantId("org-rv");
+    await c.sql`update admin.feature_entitlements set revoked_at = now() where tenant_id = ${t}
+      and feature_id in (select id from admin.features where key like 'contracts-%')`;
+    const before = await snapshot(c.sql);
+    const r = await run(raw([userX("d@rv.test", "org-rv", "editor")]), true);
+    expect(r.issues.slice(0, 1)).toEqual([{ kind: "org", ref: "org-rv", code: "PACK_REVOKED" }]);
+    expect(r.users.created).toBe(0);
+    expect(await snapshot(c.sql)).toEqual(before);
+    const [e] = await c.sql<
+      { n: number }[]
+    >`select count(*)::int as n from admin.feature_entitlements
+      where tenant_id = ${t} and revoked_at is null`;
+    expect(e?.n).toBe(0);
+  });
+});
+
+describe("N5-FR-03 · user tạo tay trùng email khác username ⇒ USER_CONFLICT (apply và dry-run)", () => {
   const raw = () =>
     mkExport(
-      [{ id: "org-pw", name: "Pw", tenant_key: "pw-n5" }],
+      [{ id: "org-uc", name: "Conflict", tenant_key: "uc-n5" }],
       [
-        userX("argon@pw.test", "org-pw", "editor", argon),
-        userX("scrypt@pw.test", "org-pw", "editor", SCRYPT_HASH),
-        userX("google@pw.test", "org-pw", "viewer", null),
+        userX("seed@uc.test", "org-uc"),
+        userX("manual@uc.test", "org-uc", "viewer"),
+        userX("new2@uc.test", "org-uc"),
       ],
     );
-  it("N5-FR-04 · argon2id đủ mạnh ⇒ giữ hash, đăng nhập bằng mật khẩu cũ ⇒ 200, không buộc đổi", async () => {
-    const r = await run(raw(), true);
-    expect(r.users.hash_imported).toBe(1);
-    expect(r.users.reset_required).toBe(2);
-    const acc = r.accounts.find((x) => x.email === "argon@pw.test");
-    expect(acc).toEqual({
-      tenant_key: "pw-n5",
-      email: "argon@pw.test",
-      username: "argon",
-      reset_required: false,
-    });
-    const res = await login("pw-n5", "argon", KNOWN_PW);
-    expect(res.status).toBe(200);
-    expect(((await res.json()) as { access_token?: string }).access_token).toBeString();
-  });
-  it("N5-FR-04 · scrypt/không mật khẩu ⇒ buộc đặt lại: must_change_password, hash argon2id lạ, không đăng nhập được, audit reset_required", async () => {
-    const rows = await c.sql<{ username: string; must: boolean; h: string }[]>`select username,
-      must_change_password as must, password_hash as h from admin.users
-      where lower(email) in ('scrypt@pw.test', 'google@pw.test') order by 1`;
-    expect(rows.map((x) => [x.username, x.must])).toEqual([
-      ["google", true],
-      ["scrypt", true],
-    ]);
-    for (const x of rows) {
-      expect(x.h.startsWith("$argon2id$")).toBe(true);
-      expect(x.h).not.toBe(SCRYPT_HASH);
+  it("N5-FR-06 · review Trung 2: dry-run báo USER_CONFLICT giống apply; apply không tạo, không gán Group", async () => {
+    await run(
+      mkExport(
+        [{ id: "org-uc", name: "Conflict", tenant_key: "uc-n5" }],
+        [userX("seed@uc.test", "org-uc")],
+      ),
+      true,
+    );
+    const t = await tenantId("org-uc");
+    await c.sql`insert into admin.users (tenant_id, username, email, password_hash, display_name, role)
+      values (${t}, 'tay-tao', 'Manual@UC.test', 'x', 'Tay', 'member') on conflict do nothing`;
+    const dry = await run(raw(), false);
+    const app = await run(raw(), true);
+    for (const r of [dry, app]) {
+      expect(r.issues).toEqual([{ kind: "user", ref: "manual@uc.test", code: "USER_CONFLICT" }]);
+      expect(r.users).toMatchObject({ created: 1, existing: 1 });
+      expect(r.accounts.map((a) => a.email)).toEqual(["new2@uc.test"]);
     }
-    expect((await login("pw-n5", "scrypt", KNOWN_PW)).status).toBe(401);
-    expect((await login("pw-n5", "google", "")).status).not.toBe(200);
-    const au = await c.sql<
-      { u: string; reset: string }[]
-    >`select a.entity_name as u, a.summary->>'reset_required' as reset
-      from admin.audit_log a where a.action = 'import' and a.entity = 'user'
-        and a.tenant_id = (select id from admin.tenants where key = 'pw-n5') order by 1`;
-    expect(au.map((x) => [x.u, x.reset])).toEqual([
-      ["argon", "false"],
-      ["google", "true"],
-      ["scrypt", "true"],
-    ]);
+    expect((await rolesIn(c.sql, t))["manual@uc.test"]).toBeUndefined();
   });
 });
 
-describe("N5-NFR-02 · không lộ hash · N5-FR-05 mã thoát CLI", () => {
-  it("N5-NFR-02 · CLI --apply: stdout/stderr không chứa hash; audit không chứa hash; exit 0 hoặc 2 theo lỗi hàng", async () => {
-    const file = join(tmpdir(), `n5-${Bun.randomUUIDv7()}.json`);
+describe("N5-FR-03 · review Thấp 10: chạy lại khi user đã nhận username fallback", () => {
+  it("N5-FR-03 · lan@a + lan@b ⇒ 'lan' + fallback; chạy lại ⇒ existing 2, 0 issue, 0 ghi", async () => {
     const raw = mkExport(
-      [{ id: "org-cli", name: "Cli", tenant_key: "cli-n5" }],
-      [
-        userX("a@cli.test", "org-cli", "editor", argon),
-        userX("b@cli.test", "org-cli", "viewer", SCRYPT_HASH),
-        userX("bad-email", "org-cli", "viewer", argon),
-      ],
+      [{ id: "org-fb", name: "Fallback", tenant_key: "fb-n5" }],
+      [userX("lan@a.fb", "org-fb"), userX("lan@b.fb", "org-fb")],
     );
-    await Bun.write(file, JSON.stringify(raw));
-    const p = Bun.spawn(["bun", CLI, "--file", file, "--actor", c.padmin, "--apply"], {
-      cwd: ROOT,
-      env: { ...process.env, ADMIN_API_DATABASE_URL: ADMIN_API_URL },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const [out, err, code] = await Promise.all([
-      new Response(p.stdout).text(),
-      new Response(p.stderr).text(),
-      p.exited,
+    const r1 = await run(raw, true);
+    expect(r1.accounts.map((a) => a.username)).toEqual([
+      "lan",
+      expect.stringMatching(/^lan-[0-9a-f]{8}$/),
     ]);
-    expect(code).toBe(2); // có lỗi hàng (INVALID_EMAIL)
-    const all = out + err;
-    for (const secret of [argon, SCRYPT_HASH, "$argon2id$", "scrypt:"])
-      expect(all.includes(secret)).toBe(false);
-    const rep = JSON.parse(out) as { users: { created: number }; issues: { code: string }[] };
-    expect(rep.users.created).toBe(2);
-    expect(rep.issues.map((i) => i.code)).toEqual(["INVALID_EMAIL"]);
-    const leak = await c.sql<{ n: number }[]>`select count(*)::int as n from admin.audit_log
-      where coalesce(after::text, '') || coalesce(before::text, '') || summary::text like '%$argon2%'
-         or coalesce(after::text, '') || summary::text like '%scrypt:%'
-         or coalesce(after::text, '') || summary::text like '%password_hash%'`;
-    expect(leak[0]?.n).toBe(0);
-  });
-  it("N5-FR-05 · CLI thiếu --actor / file hỏng ⇒ exit 1, không ghi gì", async () => {
     const before = await snapshot(c.sql);
-    const file = join(tmpdir(), `n5-${Bun.randomUUIDv7()}.json`);
-    await Bun.write(file, "{not json");
-    const p = Bun.spawn(["bun", CLI, "--file", file, "--actor", c.padmin, "--apply"], {
-      cwd: ROOT,
-      env: { ...process.env, ADMIN_API_DATABASE_URL: ADMIN_API_URL },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    expect(await p.exited).toBe(1);
+    const r2 = await run(raw, true);
+    expect(r2.issues).toEqual([]);
+    expect(r2.users).toMatchObject({ created: 0, existing: 2 });
     expect(await snapshot(c.sql)).toEqual(before);
-  });
-});
-
-describe("N5-FR-07 · actor và file", () => {
-  it("N5-FR-07 · actor là tenant_admin / không tồn tại ⇒ ACTOR_INVALID, không ghi gì", async () => {
-    const before = await snapshot(c.sql);
-    const raw = mkExport([{ id: "o-x", name: "X" }], [userX("a@x.test", "o-x")]);
-    expect(await abortCode(run(raw, true, USERS.tadmin.id))).toBe("ACTOR_INVALID");
-    expect(await abortCode(run(raw, true, "a1000000-0000-4000-8000-0000000fffff"))).toBe(
-      "ACTOR_INVALID",
-    );
-    expect(await snapshot(c.sql)).toEqual(before);
-  });
-  it("N5-FR-01 · sai format / thiếu mảng ⇒ BAD_FILE; hàng sai kiểu ⇒ BAD_ROW theo chỉ số (không chép giá trị)", async () => {
-    expect(await abortCode(run({ format: "khac", orgs: [], users: [] }, false))).toBe("BAD_FILE");
-    expect(await abortCode(run({ format: "mgmt-app-users/v1", orgs: [] }, false))).toBe("BAD_FILE");
-    const r = await run(
-      { format: "mgmt-app-users/v1", orgs: [{ id: "o-y", name: "Y" }], users: [{ email: 5 }] },
-      false,
-    );
-    expect(r.issues).toEqual([{ kind: "user", ref: "users[0]", code: "BAD_ROW" }]);
   });
 });

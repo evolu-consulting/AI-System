@@ -39,8 +39,11 @@ export type UserX = {
   password_hash: string | null;
   locale?: "vi" | "en";
 };
-export const mkExport = (orgs: OrgX[], users: UserX[]) => ({
+/** Nguồn mặc định của fixture (marker tenant = (source, org id) — security M1). */
+export const SOURCE = "mgmt-test";
+export const mkExport = (orgs: OrgX[], users: UserX[], source = SOURCE) => ({
   format: "mgmt-app-users/v1",
+  source,
   exported_at: "2026-10-19T00:00:00Z",
   orgs,
   users,

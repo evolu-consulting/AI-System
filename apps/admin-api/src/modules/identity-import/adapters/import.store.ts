@@ -1,5 +1,7 @@
 // N5-FR-02, N5-FR-03, N5-FR-07 · cài port `ImportStore`: mỗi lô MỘT tx scope platform. Apply ⇒ `withConfigWrite` (bump +
 // audit cùng tx khi có đổi, NOTIFY `config_changed` sau commit); dry-run ⇒ `withScope` chỉ câu đọc. Không log gì.
+// Chạy lại KHÔNG hoàn tác việc admin thu hồi (review Trung 1 / security L2): gói/Group/grant chỉ dựng cho tenant MỚI tạo;
+// user đã có không bao giờ được gắn Group lại.
 import { type ConfigSink, type Db, type Tx, withConfigWrite, withScope } from "@ai/db";
 import { auditOf } from "../../../lib/audit/audit.write";
 import { publishConfigChanged } from "../../../lib/config/config-write";
@@ -16,7 +18,14 @@ import type {
   UserBatchResult,
   UserQuery,
 } from "../application/ports";
-import type { ExistingUser, OrgCreate, OrgPlan, PackRole, UserInsert } from "../domain/import";
+import type {
+  ExistingTenant,
+  ExistingUser,
+  OrgCreate,
+  OrgPlan,
+  PackRole,
+  UserInsert,
+} from "../domain/import";
 import { isPackRole } from "../domain/import.rules";
 import * as repo from "./import.repo";
 
@@ -26,7 +35,16 @@ const FEATURES = packFeatureKeys(PACK);
 const GROUP_KEYS = packGroupKeys(PACK);
 const roleOfKey = (k: string): string => k.slice(PACK.length + 1);
 
-export type StoreDeps = { db: Db; actorId: string; resetHash: string; newId: () => string };
+export type StoreDeps = {
+  db: Db;
+  actorId: string;
+  /** Instance mgmt-app nguồn — ghi vào marker tenant (M1). */
+  source: string;
+  resetHash: string;
+  newId: () => string;
+};
+/** Ngữ cảnh ghi của một lô (tx + sink sự kiện/audit). */
+type W = { d: StoreDeps; tx: Tx; ch: ConfigSink };
 
 /** Apply: tx có ghi ⇒ bump + audit; có sự kiện ⇒ NOTIFY một lần sau commit. */
 async function write<T>(d: StoreDeps, fn: (tx: Tx, ch: ConfigSink) => Promise<T>): Promise<T> {
@@ -35,8 +53,9 @@ async function write<T>(d: StoreDeps, fn: (tx: Tx, ch: ConfigSink) => Promise<T>
   return r.result;
 }
 
-async function packFor(d: StoreDeps, tx: Tx, ch: ConfigSink, tids: string[]): Promise<GroupIds> {
-  if (tids.length === 0) return new Map();
+/** Bật gói cho tenant MỚI tạo (3 entitlement, 3 Group, 6 grant) + sự kiện + audit `pack.enable`. */
+async function packForNew({ d, tx, ch }: W, tids: string[]): Promise<void> {
+  if (tids.length === 0) return;
   const ent = await repo.enableEntitlements(tx, tids, FEATURES, d.actorId);
   const grp = await repo.insertRoleGroups(tx, tids, roleGroupRows(PACK), d.actorId);
   const grants = await repo.insertRoleGrants(tx, tids, roleGrantPairs(PACK), d.actorId);
@@ -60,7 +79,12 @@ async function packFor(d: StoreDeps, tx: Tx, ch: ConfigSink, tids: string[]): Pr
         summary: { op: "pack.enable", pack: PACK, features: FEATURES, source: "identity-import" },
       }),
     );
+}
+
+/** Group vai hiện có của các tenant (Group admin đã xoá ⇒ vắng ⇒ user ⇒ GROUP_MISSING). */
+async function groupsOf(tx: Tx, tids: string[]): Promise<GroupIds> {
   const out = new Map<string, Record<PackRole, string>>();
+  if (tids.length === 0) return out;
   for (const g of await repo.readGroups(tx, tids, GROUP_KEYS)) {
     const role = roleOfKey(g.key);
     if (!isPackRole(role)) continue;
@@ -71,9 +95,15 @@ async function packFor(d: StoreDeps, tx: Tx, ch: ConfigSink, tids: string[]): Pr
   return out;
 }
 
-async function createTenants(d: StoreDeps, tx: Tx, ch: ConfigSink, creates: OrgCreate[]) {
+async function createTenants({ d, tx, ch }: W, creates: OrgCreate[]) {
   if (creates.length === 0) return { created: [], lost: [] };
-  const rows = creates.map((c) => ({ id: d.newId(), key: c.key, name: c.name, org_id: c.orgId }));
+  const rows = creates.map((c) => ({
+    id: d.newId(),
+    key: c.key,
+    name: c.name,
+    source: d.source,
+    org_id: c.orgId,
+  }));
   const got = new Set((await repo.insertTenants(tx, rows, d.actorId)).map((r) => r.id));
   const created: OrgBatchResult["created"] = [];
   const lost: OrgCreate[] = [];
@@ -92,32 +122,42 @@ async function createTenants(d: StoreDeps, tx: Tx, ch: ConfigSink, creates: OrgC
         tenantId: r.id,
         before: null,
         after: { key: r.key, name: r.name, active: true, version: 1 },
-        summary: { op: "identity.import", source: "mgmt-app" },
+        summary: { op: "identity.import", source: "mgmt-app", mgmt_source: d.source },
       }),
     );
   }
   return { created, lost };
 }
 
-const toExistingTenants = (rows: repo.TenantRow[]) =>
-  rows.map((t) => ({ id: t.id, key: t.key, mgmtOrgId: t.mgmt, active: t.active }));
+const toExistingTenants = (rows: repo.TenantRow[]): ExistingTenant[] =>
+  rows.map((t) => ({
+    id: t.id,
+    key: t.key,
+    mgmtSource: t.src,
+    mgmtOrgId: t.mgmt,
+    active: t.active,
+    packRevoked: t.pack_revoked,
+  }));
 
 async function orgBatch(
   d: StoreDeps,
   apply: boolean,
   q: { orgIds: string[]; keys: string[] },
-  decide: (ex: ReturnType<typeof toExistingTenants>) => OrgPlan,
+  decide: (ex: ExistingTenant[]) => OrgPlan,
 ): Promise<OrgBatchResult> {
+  const plan = async (tx: Tx) => decide(toExistingTenants(await repo.findTenants(tx, q, FEATURES)));
+  const reused = (p: OrgPlan) => p.reuse.map((r) => r.tenantId);
   if (!apply)
     return withScope(d.db, PLATFORM, async (tx) => {
-      const plan = decide(toExistingTenants(await repo.findTenants(tx, q.orgIds, q.keys)));
-      return { plan, created: [], lost: [], groups: new Map() };
+      const p = await plan(tx);
+      return { plan: p, created: [], lost: [], groups: await groupsOf(tx, reused(p)) };
     });
   return write(d, async (tx, ch) => {
-    const plan = decide(toExistingTenants(await repo.findTenants(tx, q.orgIds, q.keys)));
-    const { created, lost } = await createTenants(d, tx, ch, plan.creates);
-    const tids = [...plan.reuse.map((r) => r.tenantId), ...created.map((c) => c.tenantId)];
-    return { plan, created, lost, groups: await packFor(d, tx, ch, tids) };
+    const p = await plan(tx);
+    const { created, lost } = await createTenants({ d, tx, ch }, p.creates);
+    const fresh = created.map((c) => c.tenantId);
+    await packForNew({ d, tx, ch }, fresh);
+    return { plan: p, created, lost, groups: await groupsOf(tx, [...reused(p), ...fresh]) };
   });
 }
 
@@ -130,6 +170,7 @@ const toExistingUsers = (rows: repo.UserRow[]): ExistingUser[] =>
     roles: u.roles.map(roleOfKey).filter(isPackRole),
   }));
 
+/** Audit mỗi user mới, kèm vai gói được gán (security L3: truy vết user → vai). Không có trường hash. */
 function userAudit(x: UserInsert, id: string) {
   return auditOf("import", "user", {
     entityId: id,
@@ -149,18 +190,18 @@ function userAudit(x: UserInsert, id: string) {
     summary: {
       op: "identity.import",
       source: "mgmt-app",
+      pack: PACK,
+      pack_role: x.packRole,
       reset_required: x.password === "reset",
       hash_imported: x.password === "import",
     },
   });
 }
 
-type Member = repo.NewMember & { audit?: ReturnType<typeof userAudit> };
-/** Ngữ cảnh ghi của một lô (tx + sink sự kiện/audit). */
-type W = { d: StoreDeps; tx: Tx; ch: ConfigSink };
-
+/** Chèn user (1 câu) rồi thành viên Group vai của CHÍNH user vừa chèn (1 câu); trả hàng thực sự chèn. */
 async function writeUsers(w: W, plan: UserBatchResult["plan"], groups: GroupIds) {
-  const { d, tx } = w;
+  const { d, tx, ch } = w;
+  if (plan.inserts.length === 0) return [];
   const ids = plan.inserts.map(() => d.newId());
   const rows: repo.NewUser[] = plan.inserts.map((x, i) => ({
     id: ids[i] as string,
@@ -173,64 +214,32 @@ async function writeUsers(w: W, plan: UserBatchResult["plan"], groups: GroupIds)
     locale: x.locale,
     must: x.password === "reset",
   }));
-  const got = new Set(
-    rows.length ? (await repo.insertUsers(tx, rows, d.resetHash, d.actorId)).map((r) => r.id) : [],
+  const got = new Set((await repo.insertUsers(tx, rows, d.resetHash, d.actorId)).map((r) => r.id));
+  const done = plan.inserts.flatMap((x, i) =>
+    got.has(ids[i] as string) ? [{ x, id: ids[i] as string }] : [],
   );
-  const inserted = plan.inserts.filter((_, i) => got.has(ids[i] as string));
-  const gid = (t: string, r: PackRole) => groups.get(t)?.[r] as string;
-  const members: Member[] = [
-    ...plan.inserts.flatMap((x, i) =>
-      got.has(ids[i] as string)
-        ? [
-            {
-              tenant_id: x.tenantId,
-              group_id: gid(x.tenantId, x.packRole),
-              user_id: ids[i] as string,
-              audit: userAudit(x, ids[i] as string),
-            },
-          ]
-        : [],
-    ),
-    ...plan.links.map((l) => ({
-      tenant_id: l.tenantId,
-      group_id: gid(l.tenantId, l.role),
-      user_id: l.userId,
-    })),
-  ];
-  if (members.length > 0) await addMembers(w, members);
-  return inserted;
+  if (done.length === 0) return [];
+  const members = done.map(({ x, id }) => ({
+    tenant_id: x.tenantId,
+    group_id: groups.get(x.tenantId)?.[x.packRole] as string,
+    user_id: id,
+  }));
+  await repo.insertMembers(tx, members, d.actorId);
+  for (const { x, id } of done) {
+    ch.changed({ entity: "user", tenantId: x.tenantId });
+    ch.changed({ entity: "group", tenantId: x.tenantId });
+    ch.audit(userAudit(x, id));
+  }
+  return done.map(({ x }) => x);
 }
 
-async function addMembers({ d, tx, ch }: W, members: Member[]) {
-  const rows = members.map(({ tenant_id, group_id, user_id }) => ({
-    tenant_id,
-    group_id,
-    user_id,
-  }));
-  const added = await repo.insertMembers(tx, rows, d.actorId);
-  const linkAdds = new Map<string, number>();
-  for (const m of members) {
-    if (m.audit) {
-      ch.changed({ entity: "user", tenantId: m.tenant_id });
-      ch.audit(m.audit);
-    }
-  }
-  const newUser = new Set(members.filter((m) => m.audit).map((m) => m.user_id));
-  for (const a of added) {
-    ch.changed({ entity: "group", tenantId: a.tenant_id });
-    if (!newUser.has(a.user_id)) linkAdds.set(a.tenant_id, (linkAdds.get(a.tenant_id) ?? 0) + 1);
-  }
-  for (const [t, n] of linkAdds)
-    ch.audit(
-      auditOf("grant", "group", {
-        entityId: null,
-        entityName: PACK,
-        tenantId: t,
-        before: null,
-        after: null,
-        summary: { op: "identity.import.members", source: "mgmt-app", added: n },
-      }),
-    );
+/** Dry-run: bỏ hàng sẽ đụng `users_tenant_email_uq` (user tạo tay khác username) ⇒ use case báo USER_CONFLICT như apply. */
+async function dryInserted(tx: Tx, q: UserQuery, plan: UserBatchResult["plan"]) {
+  if (plan.inserts.length === 0 || q.tenantIds.length === 0) return plan.inserts;
+  const taken = new Set(
+    (await repo.tenantEmails(tx, q.tenantIds)).map((r) => `${r.tenant_id}\n${r.email}`),
+  );
+  return plan.inserts.filter((x) => !taken.has(`${x.tenantId}\n${x.email}`));
 }
 
 type UserBatchArgs = {
@@ -249,7 +258,7 @@ async function userBatch(d: StoreDeps, b: UserBatchArgs): Promise<UserBatchResul
   if (!apply)
     return withScope(d.db, PLATFORM, async (tx) => {
       const plan = await read(tx);
-      return { plan, inserted: plan.inserts };
+      return { plan, inserted: await dryInserted(tx, q, plan) };
     });
   return write(d, async (tx, ch) => {
     const plan = await read(tx);

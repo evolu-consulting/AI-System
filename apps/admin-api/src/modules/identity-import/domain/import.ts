@@ -21,6 +21,8 @@ export type IssueCode =
   | "DUPLICATE_KEY"
   | "ORG_KEY_TAKEN"
   | "TENANT_INACTIVE"
+  | "ORG_MISMATCH"
+  | "PACK_REVOKED"
   | "INVALID_EMAIL"
   | "DUPLICATE_EMAIL"
   | "NO_ORG"
@@ -30,10 +32,21 @@ export type IssueCode =
   | "USERNAME_TAKEN"
   | "USER_CONFLICT"
   | "ROLE_CONFLICT"
+  | "ROLE_MISSING"
+  | "GROUP_MISSING"
   | "BATCH_FAILED";
 export type Issue = { kind: "org" | "user"; ref: string; code: IssueCode };
 
-export type ExistingTenant = { id: string; key: string; mgmtOrgId: string | null; active: boolean };
+/** Tenant đã có; `mgmtSource` + `mgmtOrgId` = marker (nguồn, org) do importer ghi (M1); `packRevoked` = có entitlement
+ *  `contracts-*` đã bị thu hồi (không bật lại — L2). */
+export type ExistingTenant = {
+  id: string;
+  key: string;
+  mgmtSource: string | null;
+  mgmtOrgId: string | null;
+  active: boolean;
+  packRevoked: boolean;
+};
 export type OrgCreate = { orgId: string; key: string; name: string };
 export type OrgPlan = {
   creates: OrgCreate[];
@@ -64,13 +77,14 @@ export type UserInsert = {
   /** Chỉ khác null khi `password = "import"`. */
   importedHash: string | null;
 };
-export type UserLink = { tenantId: string; userId: string; role: PackRole };
+/** User đã có KHÔNG bao giờ được gắn Group lại (không hoàn tác việc admin gỡ — review Trung 1 / L2): chỉ đếm hoặc báo. */
 export type UserPlan = {
   inserts: UserInsert[];
-  links: UserLink[];
   existing: number;
   issues: Issue[];
 };
+/** Trạng thái xuyên lô của một lần chạy (DUP_ORG/DUPLICATE_KEY/DUPLICATE_EMAIL); bên gọi sao chép trước mỗi lần thử tx. */
+export type OrgSeen = { ids: Set<string>; keys: Set<string> };
 
 export type Account = {
   tenant_key: string;

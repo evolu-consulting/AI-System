@@ -12,6 +12,13 @@ const fail = (error: string, extra: Record<string, unknown> = {}): never => {
   process.exit(1);
 };
 
+/** `--batch` phải là số nguyên 1..1000; sai ⇒ exit 1 (security L4: `abc` ⇒ NaN ⇒ 0 user mà exit 0). */
+function parseBatch(v: string | undefined): number | undefined {
+  if (v === undefined) return undefined;
+  const n = /^\d{1,4}$/.test(v) ? Number(v) : Number.NaN;
+  return n >= 1 && n <= 1000 ? n : fail("BAD_BATCH");
+}
+
 async function readJson(path: string): Promise<unknown> {
   try {
     return JSON.parse(await Bun.file(path).text());
@@ -33,13 +40,14 @@ async function main(): Promise<void> {
   if (!values.actor) fail("ACTOR_INVALID");
   const url = process.env.ADMIN_API_DATABASE_URL;
   if (!url) fail("MISSING_ADMIN_API_DATABASE_URL");
+  const batch = parseBatch(values.batch);
   const raw = await readJson(values.file as string);
   const db = createDb(url as string, { max: 2 });
   try {
     const report = await runIdentityImport(db, raw, {
       actorId: values.actor as string,
       apply: values.apply ?? false,
-      batch: values.batch ? Number(values.batch) : undefined,
+      batch,
     });
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     process.exitCode = report.issues.length > 0 ? 2 : 0;

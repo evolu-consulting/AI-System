@@ -1,10 +1,11 @@
 // N5-FR-02, N5-FR-03, N5-FR-04, N5-FR-07 · luật thuần chuyển user mgmt-app (viết trước code — làn đầy đủ).
 import { describe, expect, test } from "bun:test";
-import type { ExistingUser, UserIn } from "./import";
+import type { ExistingTenant, ExistingUser, UserIn } from "./import";
 import {
   adminRoleOf,
   chunk,
   classifyHash,
+  cut,
   fnv8,
   planOrgs,
   planUsers,
@@ -26,9 +27,9 @@ const u = (email: string, over: Partial<UserIn> = {}): UserIn => ({
 });
 
 describe("N5-FR-04 · classifyHash", () => {
-  test("N5-FR-04 · argon2id v19 m≥19456 t≥2 ⇒ import", () => {
+  test("N5-FR-04 · argon2id v19, 19456 ≤ m ≤ 65536, 2 ≤ t ≤ 4, p ≤ 2 ⇒ import", () => {
     expect(classifyHash(ARGON_OK)).toBe("import");
-    expect(classifyHash(ARGON_OK.replace("m=19456,t=2", "m=65536,t=3"))).toBe("import");
+    expect(classifyHash(ARGON_OK.replace("m=19456,t=2,p=1", "m=65536,t=4,p=2"))).toBe("import");
   });
   test("N5-FR-04 · scrypt/bcrypt/argon2i/yếu/rỗng/rác ⇒ reset", () => {
     for (const h of [
@@ -42,8 +43,10 @@ describe("N5-FR-04 · classifyHash", () => {
       ARGON_OK.replace("t=2", "t=1"),
       ARGON_OK.replace("v=19", "v=16"),
       ARGON_OK.replace("m=19456", "m=4194304"), // trần chặn DoS bộ nhớ (readiness R7)
-      ARGON_OK.replace("t=2", "t=11"),
-      ARGON_OK.replace("p=1", "p=8"),
+      ARGON_OK.replace("m=19456", "m=65537"), // security L1: trần 64 MiB
+      ARGON_OK.replace("m=19456", "m=262144"),
+      ARGON_OK.replace("t=2", "t=5"),
+      ARGON_OK.replace("p=1", "p=3"),
       `${ARGON_OK}${"A".repeat(200)}`,
       `${ARGON_OK}$extra`,
       "$argon2id$v=19$m=19456,t=2,p=1$$",
@@ -87,7 +90,21 @@ describe("N5-FR-03 · username + vai", () => {
 });
 
 describe("N5-FR-02 · planOrgs", () => {
-  test("N5-FR-02 · khớp mgmt_org_id ⇒ dùng lại; key trống ⇒ tạo; key thuộc tenant khác ⇒ ORG_KEY_TAKEN; trùng key trong file ⇒ DUPLICATE_KEY", () => {
+  const T = (
+    id: string,
+    key: string,
+    org: string | null,
+    o: Partial<ExistingTenant> = {},
+  ): ExistingTenant => ({
+    id,
+    key,
+    mgmtSource: org === null ? null : "src",
+    mgmtOrgId: org,
+    active: true,
+    packRevoked: false,
+    ...o,
+  });
+  test("N5-FR-02 · khớp (nguồn, org) ⇒ dùng lại; key trống ⇒ tạo; key thuộc tenant khác ⇒ ORG_KEY_TAKEN; trùng key trong file ⇒ DUPLICATE_KEY", () => {
     const p = planOrgs(
       [
         { id: "o1", name: "A", tenantKey: "aaa" },
@@ -97,11 +114,8 @@ describe("N5-FR-02 · planOrgs", () => {
         { id: "o5", name: "E", tenantKey: "eee" },
         { id: "o1", name: "A again", tenantKey: "zzz" },
       ],
-      [
-        { id: "t1", key: "aaa-old", mgmtOrgId: "o1", active: true },
-        { id: "t9", key: "taken", mgmtOrgId: null, active: true },
-        { id: "t5", key: "eee", mgmtOrgId: "o5", active: false },
-      ],
+      [T("t1", "aaa-old", "o1"), T("t9", "taken", null), T("t5", "eee", "o5", { active: false })],
+      "src",
     );
     expect(p.reuse).toEqual([{ orgId: "o1", tenantId: "t1", key: "aaa-old" }]);
     expect(p.creates).toEqual([{ orgId: "o2", key: "bbb", name: "B" }]);
@@ -113,6 +127,43 @@ describe("N5-FR-02 · planOrgs", () => {
     ]);
     expect(p.failed).toEqual(["o3", "o4", "o5"]);
   });
+  test("N5-FR-07 · security M1: org id trùng nhưng KHÁC nguồn (hoặc tenant cũ không có nguồn) ⇒ ORG_MISMATCH, không gắn", () => {
+    const p = planOrgs(
+      [
+        { id: "1", name: "A", tenantKey: null },
+        { id: "2", name: "B", tenantKey: null },
+      ],
+      [T("t1", "a", "1", { mgmtSource: "mgmt-staging" }), T("t2", "b", "2", { mgmtSource: null })],
+      "mgmt-prod",
+    );
+    expect(p.reuse).toEqual([]);
+    expect(p.creates).toEqual([]);
+    expect(p.issues.map((i) => i.code)).toEqual(["ORG_MISMATCH", "ORG_MISMATCH"]);
+  });
+  test("N5-FR-07 · L2: tenant đã thu hồi gói ⇒ PACK_REVOKED, không dùng lại (không bật lại gói)", () => {
+    const p = planOrgs(
+      [{ id: "o1", name: "A", tenantKey: null }],
+      [T("t1", "a", "o1", { packRevoked: true })],
+      "src",
+    );
+    expect(p.failed).toEqual(["o1"]);
+    expect(p.issues).toEqual([{ kind: "org", ref: "o1", code: "PACK_REVOKED" }]);
+  });
+  test("N5-FR-02 · review Thấp 4: DUP_ORG / DUPLICATE_KEY xuyên lô qua trạng thái `st`", () => {
+    const st = { ids: new Set<string>(), keys: new Set<string>() };
+    planOrgs([{ id: "o1", name: "A", tenantKey: "kkk" }], [], "src", st);
+    const p = planOrgs(
+      [
+        { id: "o1", name: "A", tenantKey: "kkk" },
+        { id: "o2", name: "B", tenantKey: "kkk" },
+      ],
+      [],
+      "src",
+      st,
+    );
+    expect(p.creates).toEqual([]);
+    expect(p.issues.map((i) => i.code)).toEqual(["DUP_ORG", "DUPLICATE_KEY"]);
+  });
 });
 
 describe("N5-FR-03 · N5-FR-07 · planUsers", () => {
@@ -121,9 +172,9 @@ describe("N5-FR-03 · N5-FR-07 · planUsers", () => {
     ["o2", "t2"],
     ["bad", null],
   ]);
-  test("N5-FR-07 · user mới ⇒ tenant của org mình; đã có (email, tenant) ⇒ existing, không đổi mật khẩu", () => {
+  test("N5-FR-07 · user mới ⇒ tenant của org mình; đã có (email, tenant) cùng vai ⇒ existing, không đổi gì", () => {
     const existing: ExistingUser[] = [
-      { tenantId: "t1", id: "u-old", email: "old@x.vn", username: "old", roles: [] },
+      { tenantId: "t1", id: "u-old", email: "old@x.vn", username: "old", roles: ["viewer"] },
     ];
     const p = planUsers(
       [u("new@x.vn"), u("OLD@x.vn", { orgRole: "viewer" }), u("b@y.vn", { orgId: "o2" })],
@@ -134,8 +185,8 @@ describe("N5-FR-03 · N5-FR-07 · planUsers", () => {
       ["t1", "new@x.vn", "new", "member"],
       ["t2", "b@y.vn", "b-u", "member"],
     ]);
-    expect(p.links).toEqual([{ tenantId: "t1", userId: "u-old", role: "viewer" }]);
     expect(p.existing).toBe(1);
+    expect(p.issues).toEqual([]);
   });
   test("N5-FR-03 · username trùng (người khác) ⇒ fallback; cả hai trùng ⇒ USERNAME_TAKEN", () => {
     const existing: ExistingUser[] = [
@@ -166,19 +217,34 @@ describe("N5-FR-07 · planUsers với user đã có", () => {
     ["o2", "t2"],
     ["bad", null],
   ]);
-  test("N5-FR-07 · user đã có: cùng vai ⇒ không thêm; vai khác của gói ⇒ ROLE_CONFLICT (không nâng quyền ngầm)", () => {
+  test("N5-FR-07 · user đã có: cùng vai ⇒ existing; vai khác ⇒ ROLE_CONFLICT; bị gỡ hết vai ⇒ ROLE_MISSING (không gắn lại — L2); mỗi user đếm một lần", () => {
     const existing: ExistingUser[] = [
       { tenantId: "t1", id: "a", email: "same@x.vn", username: "same", roles: ["editor"] },
       { tenantId: "t1", id: "b", email: "other@x.vn", username: "other", roles: ["viewer"] },
+      { tenantId: "t1", id: "c", email: "gone@x.vn", username: "gone", roles: [] },
     ];
     const p = planUsers(
-      [u("same@x.vn"), u("other@x.vn", { orgRole: "owner" })],
+      [u("same@x.vn"), u("other@x.vn", { orgRole: "owner" }), u("gone@x.vn")],
       tenantOf,
       existing,
     );
-    expect(p.links).toEqual([]);
-    expect(p.existing).toBe(2);
-    expect(p.issues).toEqual([{ kind: "user", ref: "other@x.vn", code: "ROLE_CONFLICT" }]);
+    expect(p.inserts).toEqual([]);
+    expect(p.existing).toBe(1);
+    expect(p.issues).toEqual([
+      { kind: "user", ref: "other@x.vn", code: "ROLE_CONFLICT" },
+      { kind: "user", ref: "gone@x.vn", code: "ROLE_MISSING" },
+    ]);
+  });
+  test("N5-FR-07 · L2: tenant thiếu Group vai (admin đã xoá) ⇒ GROUP_MISSING, không tạo user", () => {
+    const p = planUsers(
+      [u("a@x.vn", { orgRole: "viewer" })],
+      tenantOf,
+      [],
+      new Set(),
+      (_t, r) => r !== "viewer",
+    );
+    expect(p.inserts).toEqual([]);
+    expect(p.issues).toEqual([{ kind: "user", ref: "a@x.vn", code: "GROUP_MISSING" }]);
   });
 });
 
@@ -197,6 +263,14 @@ describe("N5-FR-01 · N5-FR-03 · N5-FR-04 · planUsers lỗi hàng và mật kh
     expect(p.issues).toEqual([{ kind: "user", ref: "không-email", code: "INVALID_EMAIL" }]);
     expect(p.inserts.map((r) => r.displayName.length)).toEqual([1, 64]);
     expect(p.inserts[0]?.displayName).toBe("x");
+  });
+  test("N5-FR-01 · security M2: cắt tên theo code point — không để lại nửa cặp surrogate", () => {
+    const name = `${"a".repeat(63)}😀😀`;
+    const p = planUsers([u("e@y.vn", { name })], tenantOf, []);
+    const dn = p.inserts[0]?.displayName ?? "";
+    expect(Array.from(dn)).toHaveLength(64);
+    expect(dn.endsWith("😀")).toBe(true);
+    expect(cut("ab😀c", 3)).toBe("ab😀");
   });
   test("N5-FR-03 · không org / org lỗi / org lạ / vai lạ ⇒ lỗi hàng", () => {
     const p = planUsers(

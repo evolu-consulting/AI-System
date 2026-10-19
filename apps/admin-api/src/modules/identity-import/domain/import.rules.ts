@@ -6,6 +6,7 @@ import type {
   Issue,
   OrgIn,
   OrgPlan,
+  OrgSeen,
   PackRole,
   PasswordKind,
   UserIn,
@@ -29,13 +30,16 @@ export function fnv8(s: string): string {
   return h.toString(16).padStart(8, "0");
 }
 
-/** argon2id v19, 19456 ≤ m ≤ 262144, 2 ≤ t ≤ 10, 1 ≤ p ≤ 4, dài ≤ 256 ⇒ nhập; còn lại ⇒ buộc đặt lại. */
+/**
+ * argon2id v19, 19456 ≤ m ≤ 65536 KiB, 2 ≤ t ≤ 4, 1 ≤ p ≤ 2, dài ≤ 256 ⇒ nhập; còn lại ⇒ buộc đặt lại. Trần (security L1):
+ * mỗi lần verify cấp `m` KiB, admin-api không rate-limit đăng nhập ⇒ 64 MiB thay vì 256 MiB.
+ */
 export function classifyHash(h: string | null): PasswordKind {
   if (!h || h.length > 256) return "reset";
   const m = ARGON_RE.exec(h);
   if (!m) return "reset";
   const [mem, t, p] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const ok = mem >= 19456 && mem <= 262144 && t >= 2 && t <= 10 && p >= 1 && p <= 4;
+  const ok = mem >= 19456 && mem <= 65536 && t >= 2 && t <= 4 && p >= 1 && p <= 2;
   return ok ? "import" : "reset";
 }
 
@@ -77,6 +81,9 @@ export function adminRoleOf(r: string | null): AdminRole | null {
   return r === "editor" || r === "viewer" ? "member" : null;
 }
 
+/** Cắt theo code point (M2): `slice` theo UTF-16 có thể để lại nửa cặp surrogate ⇒ jsonb 22023; DB đếm code point. */
+export const cut = (s: string, n: number): string => Array.from(s).slice(0, n).join("");
+
 export function chunk<T>(xs: readonly T[], n: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < xs.length; i += n) out.push(xs.slice(i, i + n));
@@ -86,11 +93,33 @@ export function chunk<T>(xs: readonly T[], n: number): T[][] {
 export const normEmail = (e: string): string => e.trim().toLowerCase();
 export const validEmail = (e: string): boolean => e.length <= 254 && EMAIL_RE.test(e);
 
-/** Org → tenant (R2, R4, R6): khớp mgmt_org_id; không thì tạo với key chưa ai dùng. */
-export function planOrgs(orgs: readonly OrgIn[], existing: readonly ExistingTenant[]): OrgPlan {
+/** Tenant đã có của org: cùng nguồn ⇒ dùng lại (trừ inactive / gói bị thu hồi); khác nguồn ⇒ ORG_MISMATCH (M1). */
+function reuseOrFail(
+  plan: OrgPlan,
+  o: OrgIn,
+  t: ExistingTenant,
+  source: string,
+  fail: (code: Issue["code"]) => void,
+) {
+  if (t.mgmtSource !== source) fail("ORG_MISMATCH");
+  else if (!t.active) fail("TENANT_INACTIVE");
+  else if (t.packRevoked) fail("PACK_REVOKED");
+  else plan.reuse.push({ orgId: o.id, tenantId: t.id, key: t.key });
+}
+
+/**
+ * Org → tenant (R2, R4, R6, M1): khớp marker `(mgmt_source, mgmt_org_id)`; org id đã có ở nguồn khác ⇒ ORG_MISMATCH;
+ * không thì tạo với key chưa ai dùng. `st` giữ id/key đã gặp ở các lô trước (DUP_ORG/DUPLICATE_KEY xuyên lô).
+ */
+export function planOrgs(
+  orgs: readonly OrgIn[],
+  existing: readonly ExistingTenant[],
+  source: string,
+  st: OrgSeen = { ids: new Set(), keys: new Set() },
+): OrgPlan {
   const plan: OrgPlan = { creates: [], reuse: [], failed: [], issues: [] };
-  const seen = new Set<string>();
-  const used = new Set<string>();
+  const seen = st.ids;
+  const used = st.keys;
   const fail = (ref: string, code: Issue["code"]) => {
     plan.failed.push(ref);
     plan.issues.push({ kind: "org", ref, code });
@@ -101,10 +130,11 @@ export function planOrgs(orgs: readonly OrgIn[], existing: readonly ExistingTena
       continue;
     }
     seen.add(o.id);
-    const mine = existing.find((t) => t.mgmtOrgId === o.id);
+    const mine =
+      existing.find((t) => t.mgmtOrgId === o.id && t.mgmtSource === source) ??
+      existing.find((t) => t.mgmtOrgId === o.id);
     if (mine) {
-      if (mine.active) plan.reuse.push({ orgId: o.id, tenantId: mine.id, key: mine.key });
-      else fail(o.id, "TENANT_INACTIVE");
+      reuseOrFail(plan, o, mine, source, (code) => fail(o.id, code));
       continue;
     }
     const key = tenantKeyFor(o);
@@ -112,7 +142,7 @@ export function planOrgs(orgs: readonly OrgIn[], existing: readonly ExistingTena
     else if (existing.some((t) => t.key === key)) fail(o.id, "ORG_KEY_TAKEN");
     else {
       used.add(key);
-      plan.creates.push({ orgId: o.id, key, name: o.name.slice(0, 128) });
+      plan.creates.push({ orgId: o.id, key, name: cut(o.name, 128) });
     }
   }
   return plan;
@@ -120,6 +150,7 @@ export function planOrgs(orgs: readonly OrgIn[], existing: readonly ExistingTena
 
 type UserCtx = {
   tenantOf: ReadonlyMap<string, string | null>;
+  hasGroup: (tenantId: string, role: PackRole) => boolean;
   byEmail: Map<string, ExistingUser>;
   taken: Set<string>;
   seen: Set<string>;
@@ -140,15 +171,20 @@ function precheck(c: UserCtx, u: UserIn, email: string): string | null {
   const tid = c.tenantOf.get(u.orgId) ?? null;
   if (tid === null) return issue("ORG_FAILED");
   if (adminRoleOf(u.orgRole) === null) return issue("BAD_ROLE");
+  if (!c.hasGroup(tid, u.orgRole as PackRole)) return issue("GROUP_MISSING");
   return tid;
 }
 
-/** User đã có: cùng vai ⇒ không làm gì; vai khác của gói ⇒ ROLE_CONFLICT; chưa vai ⇒ thêm vào Group. */
-function linkExisting(c: UserCtx, ex: ExistingUser, role: PackRole, email: string): void {
-  c.plan.existing++;
-  if (ex.roles.includes(role)) return;
-  if (ex.roles.length > 0) c.plan.issues.push({ kind: "user", ref: email, code: "ROLE_CONFLICT" });
-  else c.plan.links.push({ tenantId: ex.tenantId, userId: ex.id, role });
+/**
+ * User đã có — KHÔNG gắn Group lại (L2: không hoàn tác việc admin gỡ thành viên). Cùng vai ⇒ `existing`; vai khác ⇒
+ * ROLE_CONFLICT; không còn vai nào ⇒ ROLE_MISSING (vận hành gán tay nếu muốn). Mỗi user đếm đúng một lần.
+ */
+function checkExisting(c: UserCtx, ex: ExistingUser, role: PackRole, email: string): void {
+  if (ex.roles.includes(role)) c.plan.existing++;
+  else {
+    const code = ex.roles.length > 0 ? "ROLE_CONFLICT" : "ROLE_MISSING";
+    c.plan.issues.push({ kind: "user", ref: email, code });
+  }
 }
 
 function pickUsername(c: UserCtx, tid: string, email: string): string | null {
@@ -169,7 +205,7 @@ function newUser(u: UserIn, tid: string, email: string, username: string): UserI
     tenantId: tid,
     email,
     username,
-    displayName: (u.name.trim() || local).slice(0, 64),
+    displayName: cut(u.name.trim() || local, 64),
     role: adminRoleOf(role) as AdminRole,
     packRole: role,
     locale: u.locale,
@@ -178,20 +214,23 @@ function newUser(u: UserIn, tid: string, email: string, username: string): UserI
   };
 }
 
-/** Lô user (R2–R6): tenant theo org; khớp (tenant, email); username trùng ⇒ fallback ⇒ USERNAME_TAKEN. */
+/** Lô user (R2–R6, B1): tenant theo org; khớp (tenant, email) trên user đọc theo username ứng viên; trùng ⇒ fallback. */
 export function planUsers(
   users: readonly UserIn[],
   tenantOf: ReadonlyMap<string, string | null>,
   existing: readonly ExistingUser[],
   /** Email đã gặp ở các lô trước của cùng lần chạy (DUPLICATE_EMAIL xuyên lô). */
   seen: Set<string> = new Set(),
+  /** Tenant có Group vai (Group bị admin xoá ⇒ GROUP_MISSING, không tạo lại — L2). */
+  hasGroup: (tenantId: string, role: PackRole) => boolean = () => true,
 ): UserPlan {
   const c: UserCtx = {
     tenantOf,
+    hasGroup,
     byEmail: new Map(existing.map((e) => [`${e.tenantId}\n${e.email}`, e])),
     taken: new Set(existing.map((e) => `${e.tenantId}\n${e.username}`)),
     seen,
-    plan: { inserts: [], links: [], existing: 0, issues: [] },
+    plan: { inserts: [], existing: 0, issues: [] },
   };
   for (const u of users) {
     const email = normEmail(u.email);
@@ -199,7 +238,7 @@ export function planUsers(
     if (tid === null) continue;
     const ex = c.byEmail.get(`${tid}\n${email}`);
     if (ex) {
-      linkExisting(c, ex, u.orgRole as PackRole, email);
+      checkExisting(c, ex, u.orgRole as PackRole, email);
       continue;
     }
     const username = pickUsername(c, tid, email);
