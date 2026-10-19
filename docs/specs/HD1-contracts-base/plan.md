@@ -42,7 +42,7 @@ Dựng trên [N1 plan](../N1-pack-frame/plan.md) (D-04…D-10). Khoá gói **`co
 **Cột sinh `STORED`** (Q4 ⇒ D-07; nguồn duy nhất vẫn là `fields`): `number`, `seller` (`supplier_name`), `buyer` (`buyer_name`), `seller_signer`, `buyer_signer` (= `nullif(btrim(fields->k->>'value'),'')`), `type` (`CASE … IN CONTRACT_TYPES`), `value bigint` (`as_bigint(total_value)`), `end_date date` (`as_date(end_date)`), `signer_keys text[]` (`array_remove(ARRAY[person_key(sup_rep), person_key(buy_rep)], NULL)`), `search_key text` = `fold(coalesce(title,'') || ' ' || coalesce(fields->'number'->>'value','') || ' ' || …)` cho title, number, supplier_name, buyer_name, supplier_representative, buyer_representative; chỉ toán tử IMMUTABLE, **không `concat_ws`** (STABLE ⇒ lỗi tạo bảng); viết lại biểu thức gốc vì cột sinh không trỏ cột sinh (D-14).
 **Index:** `contracts_list_idx (tenant_id, updated_at DESC, id DESC)` · `(tenant_id, owner_user_id)` · `(tenant_id, status)` (HD4 dùng lại) · `(parent_id) WHERE parent_id IS NOT NULL` (FK).
 
-**`contract_items`**: `id uuid PK`, `tenant_id`, `contract_id uuid NOT NULL`, `ord smallint NOT NULL CHECK (0…9999)`, `code ≤ 100`, `name text NOT NULL 1…500`, `spec ≤ 2000`, `unit ≤ 50`, `qty numeric(18,4)`, `unit_price bigint`, `vat_rate numeric(5,2) CHECK (0…100)`, `moq numeric(18,4)`, `lead_time_days int CHECK (0…3650)`, `valid_from/valid_to date`, `category_id uuid`, `quote ≤ 2000`, `verified/edited bool` (ingest.py:67). UNIQUE `(contract_id, ord)`; FK kép contracts CASCADE; FK kép categories `ON DELETE SET NULL (category_id)` (PG16, giữ `tenant_id`). Index `items_category_idx (tenant_id, category_id, contract_id) WHERE category_id IS NOT NULL`.
+**`contract_items`**: `id uuid PK`, `tenant_id`, `contract_id uuid NOT NULL`, `ord smallint NOT NULL CHECK (0…9999)`, `code ≤ 100`, `name text NOT NULL 1…500`, `spec ≤ 2000`, `unit ≤ 50`, `qty numeric(18,4)`, `unit_price bigint`, `vat_rate numeric(5,2) CHECK (0…100)`, `moq numeric(18,4)`, `lead_time_days int CHECK (0…3650)`, `valid_from/valid_to date`, `category_id uuid`, `quote ≤ 2000`, `verified/edited bool` (ingest.py:67). UNIQUE `(contract_id, ord)`; FK kép contracts CASCADE; FK kép categories `ON DELETE SET NULL (category_id)` (PG16, giữ `tenant_id`). Index `items_category_idx (tenant_id, category_id, contract_id) WHERE category_id IS NOT NULL`. **0002** (D-22): `contracts.category_ids uuid[]` (không index) giữ bằng trigger câu lệnh trên items; backfill.
 **`contract_categories`**: `id uuid PK`, `tenant_id`, `name text NOT NULL CHECK (1…40)`, `created_at`; UNIQUE `(id, tenant_id)`; `UNIQUE INDEX (tenant_id, lower(name))`.
 **`contract_reminders`**: `id bigint IDENTITY PK`, `tenant_id`, `contract_id`, `deadline date`, `milestone smallint CHECK (-3650…3650)`, `user_id uuid`, `channel text CHECK (~ '^[a-z_]{2,20}$')`, `sent_at timestamptz DEFAULT now()` (đều NOT NULL); **`UNIQUE (contract_id, deadline, milestone, user_id)`** = khoá idempotency + index FK; FK kép CASCADE. HD4 ghi `ON CONFLICT DO NOTHING`.
 **`contract_events`**: `id bigint IDENTITY PK`, `tenant_id`, `contract_id`, `type text NOT NULL CHECK (~ '^[a-z_]{2,40}$')` (giá trị ở zod `ContractEventType`, thêm cuối), `actor_user_id uuid` (null = hệ thống), `at timestamptz NOT NULL DEFAULT now()`, `data jsonb NOT NULL DEFAULT '{}'` (≤ 64 KiB); FK kép CASCADE; index `(contract_id, id DESC)`.
@@ -84,14 +84,13 @@ with f as materialized (
 p as (select id from f order by <8 nhánh CASE theo $13 sort/$14 dir, mỗi nhánh 1 kiểu>, id desc limit $15 offset $16)
 select (select count(*) from f) as total,
        coalesce((select json_agg(r order by r.ord) from (select <cột ListRow>, p.ord,
-         array(select distinct i.category_id from contracts.contract_items i
-               where i.contract_id = c.id and i.category_id is not null limit 50) as category_ids
+         c.category_ids[1:50] as category_ids
          from (select id, row_number() over () as ord from p) p join contracts.contracts c on c.id = p.id) r), '[]') as items
 ```
 | Route | SQL (gồm `set_config`) | Redis | HTTP nội bộ | Ngưỡng p95 (10.000 HĐ/tenant) |
 |---|---|---|---|---|
 | Danh sách | **2** (`set_config` + câu trên; `total` + trang cùng câu) | 0 | 0 | ≤ 50 ms mọi tổ hợp, gồm trang cuối `page=500, page_size=20` |
-| Facets | **2** (1 câu: `GROUPING SETS` 6 cột một lượt quét + `LATERAL (VALUES …)` người ký + items⋈categories + min/max) | 0 | 0 | ≤ 50 ms |
+| Facets | **2** (1 câu: `GROUPING SETS` 4 tập gộp cột một lượt quét, gồm `category_ids` (D-22) + min/max) | 0 | 0 | ≤ 50 ms |
 | Chi tiết | **2** (1 câu: hàng + `jsonb_agg` items + events `ORDER BY id DESC LIMIT 50` + file) | 0 | 0 | ≤ 30 ms |
 | Source / File | 2 | 0 | 0 (+1 FileBox ngoài ở File) | ≤ 30 ms (source 40 KB) |
 | PATCH | **4**, 1 tx | 0 | 0 | ≤ 30 ms |
@@ -99,10 +98,10 @@ select (select count(*) from f) as total,
 
 **Offset + `count` cùng câu:** xem D-03; `f` vật chất hoá một lần (~400 KB), trang sâu ≈ trang đầu.
 **Cột sinh, không lọc jsonb (Q4):** `fields` ≈ 3–6 KB/hàng ⇒ TOAST; lọc/sắp trên `fields->…` giải nén cả lát (~40 MB/lượt) ⇒ vượt 50 ms. Cột sinh hẹp nằm trong heap; danh sách không chạm `fields`/`source_text`. Giá: tính lại cột khi ghi `fields`.
-**Index ↔ bộ lọc:** truy cập qua `tenant_id` (`contracts_list_idx`); `owner[]`, `status[]` có index riêng; `seller/buyer/signer/direction/kind/value/q` là điều kiện dư trên lát đã chặn (index riêng không đổi bậc vì vẫn đếm hết); `category[]` = semi-join qua `items_category_idx`. Không `pg_trgm`/`unaccent`; vượt ngưỡng ở T7 mới đề xuất ADR trgm.
+**Index ↔ bộ lọc:** truy cập qua `tenant_id` (`contracts_list_idx`); `owner[]`, `status[]` có index riêng; `seller/buyer/signer/direction/kind/value/q` là điều kiện dư trên lát đã chặn (index riêng không đổi bậc vì vẫn đếm hết); `category[]` = semi-join qua `items_category_idx` (nhanh hơn `category_ids &&`, D-22). Không `pg_trgm`/`unaccent`; vượt ngưỡng ở T7 mới đề xuất ADR trgm.
 **Không phụ thuộc thống kê:** một văn bản SQL cho mọi tổ hợp (chuẩn bị một lần/kết nối); `= any($arr)`/`&&`, không join `unnest`. Lựa chọn duy nhất của planner là cách đọc lát `tenant_id` — mọi phương án O(lát). Perf đo trước và sau `ANALYZE`; cả hai đạt.
 **Dữ liệu đo** (`generate_series`): 3 tenant × 10.000 HĐ (5 items, 20 events, 50 loại, ~200 bên bán, ~300 người ký) + tenant nền 70.000 HĐ. `EXPLAIN` sau `ANALYZE`: không `Seq Scan` trên `contracts`/`contract_items`. Đếm câu bằng `options.debug` (N1 §10). Test ở `tests/acceptance/HD1/perf/`: 200 lượt/tổ hợp, báo p50/p95 thật.
-**Ước lượng** (chưa có số "trước"): danh sách 8–15 ms, facets 15–25 ms, chi tiết/PATCH 2–5 ms. T7 đo; vượt ⇒ báo, không nới. Khoá duy nhất: `FOR UPDATE` một hàng ở PATCH.
+**Đo T7:** danh sách p95 ≤ 26 ms; facets 87–105 ⇒ ~42–45 ms nhờ D-22. Chi tiết/PATCH ước 2–5 ms; vượt ⇒ báo, không nới. Khoá duy nhất: `FOR UPDATE` một hàng ở PATCH.
 
 ## §7 Cần N1 (không tự sửa N1 — đề xuất)
 | # | Cần | Lý do | Tạm thời |

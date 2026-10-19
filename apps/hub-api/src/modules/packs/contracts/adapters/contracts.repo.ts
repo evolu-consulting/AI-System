@@ -59,8 +59,7 @@ async function list(tx: Tx, tid: string, f: ContractListFilter) {
       coalesce((select json_agg(r order by r.ord) from (
         select c.id, c.kind, c.parent_id, c.title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
           c.seller_signer, c.buyer_signer, c.value, c.end_date, c.action_deadline, c.owner_user_id, c.updated_at, c.version,
-          array(select distinct i.category_id from contracts.contract_items i
-                where i.contract_id = c.id and i.tenant_id = c.tenant_id and i.category_id is not null limit 50) as category_ids,
+          c.category_ids[1:50] as category_ids,
           pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items`);
@@ -72,44 +71,44 @@ async function list(tx: Tx, tid: string, f: ContractListFilter) {
 const FACET_CAP = 500;
 const CATEGORY_CAP = 200;
 
-/** MỘT lượt đọc lát tenant (không CTE vật chất hoá hàng): GROUPING SETS 8 cột + `()` (bitmask `grouping()`: status 127,
- *  direction 191, kind 223, owner 239, seller 247, buyer 251, người ký k1 253 / k2 254, tổng 255 cho min/max giá trị). Người ký
- *  dùng cột sinh `signer_keys` (không gọi `person_key` mỗi hàng — hàm có `SET search_path` không inline được, ~80 µs/lần);
- *  `label` = min(raw) theo vị trí khoá (k2 trùng k1 ⇒ bỏ để đếm HĐ một lần; 1 khoá mà cả hai bên có raw ⇒ không rõ raw ⇒ nhãn =
- *  khoá). Loại hàng: cặp (loại, HĐ) khác nhau qua `items_category_idx`. Lấy tới trần + 1 để mapper biết có cắt. */
+/** Một facet văn bản: đếm theo cột `col` trên các nhóm của tập `gs` (cộng lại vì tập gộp nhiều cột), tới trần + 1. Tên cột là
+ *  hằng nội bộ (`sql.raw`, không từ người dùng) ⇒ văn bản SQL vẫn cố định. */
+const dim = (col: string, gs: number) =>
+  sql.raw(`(select json_agg(json_build_object('v', x.v, 'n', x.n) order by x.n desc, x.v) from (select ${col} as v,
+    sum(g.n)::int as n from g where g.gs = ${gs} and ${col} is not null group by ${col} order by n desc, v
+    limit ${FACET_CAP + 1}) x)`);
+
+/** MỘT lượt đọc lát tenant (D-22, Luật 4c): GROUPING SETS 4 tập gộp cột + `()` — bitmask `grouping(status, seller, k1, cats)`:
+ *  7 = (status, direction, kind, owner), 11 = (seller, buyer), 13 = (k1, l1, k2, l2), 14 = (category_ids), 15 = tổng (min/max giá
+ *  trị); mỗi facet cộng lại từ nhóm của tập mình (ít bảng băm hơn 8 tập một cột, không aggregate `min(nhãn)` trên mọi tập). Người ký
+ *  dùng cột sinh `signer_keys` (không gọi `person_key` mỗi hàng); `label` = min(raw) theo vị trí khoá (k2 trùng k1 ⇒ bỏ để đếm HĐ
+ *  một lần; 1 khoá mà cả hai bên có raw ⇒ nhãn = khoá). Loại hàng: nhóm theo mảng gộp sẵn `category_ids` (trigger câu lệnh) rồi
+ *  `unnest` trên các mảng khác nhau — mỗi HĐ đếm một lần, không quét `contract_items`. Lấy tới trần + 1 để mapper biết có cắt. */
 async function facets(tx: Tx, tid: string): Promise<ContractFacetsDto> {
   const rows = await tx.execute<FacetsRaw>(sql`with g as materialized (
-      select grouping(c.status, c.direction, c.kind, c.owner, c.seller, c.buyer, c.k1, c.k2) as gs,
-        coalesce(c.status, c.direction, c.kind, c.owner, c.seller, c.buyer, c.k1, c.k2) as v, count(*)::int as n,
-        min(c.l1) as l1, min(c.l2) as l2, min(c.value) as vmin, max(c.value) as vmax
+      select grouping(c.status, c.seller, c.k1, c.cats) as gs, c.status, c.direction, c.kind, c.owner, c.seller, c.buyer,
+        c.k1, c.l1, c.k2, c.l2, c.cats, count(*)::int as n, min(c.value) as vmin, max(c.value) as vmax
       from (select c.status, coalesce(c.direction, 'unknown') as direction, c.kind, c.owner_user_id::text as owner,
           c.seller, c.buyer, c.signer_keys[1] as k1,
           case when c.signer_keys[2] is distinct from c.signer_keys[1] then c.signer_keys[2] end as k2,
           case when cardinality(c.signer_keys) = 2 or c.buyer_signer is null then c.seller_signer
                when c.seller_signer is null then c.buyer_signer end as l1,
-          c.buyer_signer as l2, c.value
+          c.buyer_signer as l2, c.value, c.category_ids as cats
         from contracts.contracts c where c.tenant_id = ${tid}::uuid) c
-      group by grouping sets ((c.status), (c.direction), (c.kind), (c.owner), (c.seller), (c.buyer), (c.k1), (c.k2), ())),
-    sg as (select g.v, sum(g.n)::int as n, coalesce(min(case when g.gs = 253 then g.l1 else g.l2 end), g.v) as label
-      from g where g.gs in (253, 254) and g.v is not null group by g.v),
-    cg as (select x.v, count(*)::int as n from (select i.category_id as v, i.contract_id from contracts.contract_items i
-        where i.tenant_id = ${tid}::uuid and i.category_id is not null group by 1, 2) x group by x.v)
-    select
-      (select json_agg(json_build_object('v', v, 'n', n) order by n desc, v) from g where gs = 127 and v is not null) as status,
-      (select json_agg(json_build_object('v', v, 'n', n) order by n desc, v) from g where gs = 191 and v is not null) as direction,
-      (select json_agg(json_build_object('v', v, 'n', n) order by n desc, v) from g where gs = 223 and v is not null) as kind,
-      (select json_agg(json_build_object('v', x.v, 'n', x.n) order by x.n desc, x.v) from (select v, n from g
-        where gs = 239 and v is not null order by n desc, v limit ${FACET_CAP + 1}::int) x) as owner,
-      (select json_agg(json_build_object('v', x.v, 'n', x.n) order by x.n desc, x.v) from (select v, n from g
-        where gs = 247 and v is not null order by n desc, v limit ${FACET_CAP + 1}::int) x) as seller,
-      (select json_agg(json_build_object('v', x.v, 'n', x.n) order by x.n desc, x.v) from (select v, n from g
-        where gs = 251 and v is not null order by n desc, v limit ${FACET_CAP + 1}::int) x) as buyer,
+      group by grouping sets ((c.status, c.direction, c.kind, c.owner), (c.seller, c.buyer), (c.k1, c.l1, c.k2, c.l2),
+        (c.cats), ())),
+    sg as (select x.k as v, sum(x.n)::int as n, coalesce(min(x.l), x.k) as label from (
+        select g.k1 as k, g.l1 as l, g.n from g where g.gs = 13 and g.k1 is not null
+        union all select g.k2, g.l2, g.n from g where g.gs = 13 and g.k2 is not null) x group by x.k),
+    cg as (select v, sum(g.n)::int as n from g cross join lateral unnest(g.cats) v where g.gs = 14 group by v)
+    select ${dim("status", 7)} as status, ${dim("direction", 7)} as direction, ${dim("kind", 7)} as kind,
+      ${dim("owner", 7)} as owner, ${dim("seller", 11)} as seller, ${dim("buyer", 11)} as buyer,
       (select json_agg(json_build_object('v', x.v, 'label', x.label, 'n', x.n) order by x.n desc, x.v) from (select v, label, n
         from sg order by n desc, v limit ${FACET_CAP + 1}::int) x) as signer,
       (select json_agg(json_build_object('v', x.v, 'label', cc.name, 'n', x.n) order by x.n desc, x.v) from (select v, n
         from cg order by n desc, v limit ${CATEGORY_CAP + 1}::int) x
         join contracts.contract_categories cc on cc.id = x.v and cc.tenant_id = ${tid}::uuid) as category,
-      (select json_build_object('min', g.vmin, 'max', g.vmax) from g where g.gs = 255 and g.vmin is not null) as value`);
+      (select json_build_object('min', g.vmin, 'max', g.vmax) from g where g.gs = 15 and g.vmin is not null) as value`);
   return toContractFacets(rows[0] as FacetsRaw, { text: FACET_CAP, category: CATEGORY_CAP });
 }
 
