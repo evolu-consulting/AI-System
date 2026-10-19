@@ -74,3 +74,44 @@ Phạm vi review: `git diff 1cdc17a..HEAD -- apps packages .dependency-cruiser.c
 | m-06 | Ghi nợ | TECH-DEBT #211 |
 | m-09 | Đã sửa | Zip có mục trùng tên ⇒ `DOCX_UNREADABLE` (`convert.ts`, test trong `convert.test.ts`) |
 | check:fn ngoài N1 | | `depcruise.test.ts:56` do N1 thêm 3 dòng (TF3) ⇒ đã tách bảng `FIXTURE_EDGES`, bỏ mục allowlist thừa. `filebox.client.ts:118 #retry` có từ trước N1 ⇒ TECH-DEBT #212 |
+
+
+---
+
+## Kết luận: APPROVED · Spec: N1 · Vòng: 2
+
+Review diff `041b1381..HEAD` (46c23652, 914db3b4, 19816e10, bỏ phần HD1). M-01, M-02 và m-01…m-09 đã sửa đúng hoặc ghi nợ hợp lý; không có Blocker/Major mới, không có lỗi cách ly tenant. Còn 3 Minor mới ghi lại, không chặn.
+
+### Lệnh đã chạy
+- `bun run check:fn` → chỉ còn `filebox.client.ts:118 #retry` (có từ trước N1, nợ #212). Không còn mục N1.
+- `bun test apps/hub-api/src/modules/packs apps/contracts-web/src/styles` → 72 pass / 0 fail.
+- `bun run depcruise` → 3 lỗi `no-cross-module-repo` có từ trước (kh/processes/studio); không có lỗi N1.
+- `bun run test:int:par packages/db/src/packs-install.int.test.ts` × 3 → 2 pass / 0 fail cả 3 lần (0,6–0,7 s).
+- Không chạy e2e; không chạy lock-order/concurrency (diff không chạm khoá).
+
+### Kiểm từng mục vòng 1
+| # | Kết quả | Căn cứ |
+|---|---|---|
+| M-01 | Đạt | `DocxQueue` (class) + `createDocxConverter` 9 dòng; hành vi giữ nguyên, `convert.test.ts`/`docx.rules.test.ts` xanh |
+| M-02 | Đạt | `use-table.ts` tách hook, `theme-parity.test.ts` chia khối; `check:fn` không còn báo |
+| m-01 | Đạt | `packs.mount.test.ts`: luật tĩnh quét `{apps,packages}/*/src` (trừ test) tìm `set_config('role'/'app.tenant_id'`, chỉ cho `scope|hub-scope|pack-scope.ts`; có ca tự kiểm "3 file scope đều khớp mẫu" nên luật không rỗng |
+| m-02 | Đạt | `0003_install_owner.sql`: chỉ khi khoá chưa có trong `packs.registry` mà feature đã tồn tại ⇒ RAISE 23505; cài lại idempotent. SECURITY INVOKER, `search_path` cố định, `REVOKE ALL … FROM PUBLIC` giữ nguyên, không SECURITY DEFINER; `check_key` vẫn chạy đầu. Journal `idx 2` đúng |
+| m-03 | Đạt (xem m-10) | `DOCX_MAX_INPUT` 20 MiB chặn trước worker; `canQueueDocx` thuần, có test |
+| m-04 | Đạt | `pkdemoEnabled`: chỉ `development`/`test`, test bảng đủ ca (production, vắng, rỗng, lạ, "Test") |
+| m-05, m-06, m-07 | Ghi nợ hợp lý | TECH-DEBT #210, #211, #209 |
+| m-08 | Đạt | comment `session.ts` đã sửa |
+| m-09 | Đạt | `convert.ts:36` tên trùng ⇒ `DOCX_UNREADABLE`, có test |
+| Khớp UI mgmt (19816e10) | Đạt | thay đổi thuần giao diện (Logo/Sidebar/ThemeMenu/AuthLayout/icon/i18n VI+EN), không đổi logic auth; `theme-parity` xanh |
+
+### Test mới `packs-install.int.test.ts` (chập chờn?)
+Chạy riêng 3 lần: xanh cả 3. Đọc code: **không phụ thuộc thứ tự hay trạng thái chung** — mỗi `it` chạy trong tx luôn `ROLLBACK` (role/schema/feature/registry đều transactional), khoá `n1own` không trùng test khác, `sql` `max: 1`, không sleep. Giả thuyết cho lần đỏ đầu (không còn log để xác nhận): test dựa vào tiền đề ngầm "DB đã áp `0003`". Nếu DB/mẫu clone chưa có `0003` thì hàm cũ `ON CONFLICT DO NOTHING` ⇒ ca 1 không ném 23505 ⇒ đỏ; đó là DB cũ (template clone theo hash migration nên lượt kế tự dựng lại ⇒ xanh), không phải chập chờn của test. Không xếp Major.
+
+### Lỗi mới (Minor)
+| # | Mức | Nhóm | file:dòng | Vấn đề | Cách sửa đề xuất | Giao cho |
+|---|---|---|---|---|---|---|
+| m-10 | Minor | 5 | `docx/index.ts:41-47`, `docx.rules.ts:41-47` | `canQueueDocx` chỉ cấm tenant có việc **đang chờ**; tenant có việc đang chạy vẫn xếp thêm 1 ⇒ một tenant vẫn chiếm đủ `maxPending=2`, tenant khác nhận `DOCX_BUSY`. Công bằng một phần, không gây kẹt/deadlock (`finish` luôn `pump`). Chưa có route dùng converter | Khi gắn route ở HD: rate limit theo tenant hoặc tính cả việc đang chạy vào hạn mức tenant | backend-lead (HD) |
+| m-11 | Minor | 6 | `packs-install.int.test.ts:11` | Ngầm yêu cầu DB đã áp `0003`; khi thiếu chỉ báo `expected "23505", received null`, khó đoán | Thêm tiền đề rõ đầu file: kiểm `pg_get_functiondef('packs.install'::regproc)` có chuỗi "không thuộc gói", báo "chưa migrate 0003" | backend-lead |
+| m-12 | Minor | 5 | `docx/index.ts:41-44` | `waitingTenants` dựng bằng `queue.map` mỗi lần gọi: O(n) với n ≤ `maxPending`, chấp nhận được | Không cần sửa | — |
+
+## Rubric
+1 ✓ · 2 ✓ · 3 ✓ (tenant isolation giữ nguyên; luật tĩnh set_config đúng) · 4 ✓ · 5 ✓ (m-10, m-12) · 6 ✓ (m-11) · 7 ✓ (check:fn sạch phần N1) · 8 ✓ · 9 ✓
