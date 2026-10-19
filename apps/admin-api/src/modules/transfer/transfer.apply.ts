@@ -89,10 +89,25 @@ async function createSecrets(
   return names;
 }
 
-async function applyInTx(c: ImportCall, a: Args, tx: Tx, ch: ConfigSink): Promise<Applied> {
+/** `config_version` hiện tại khác `base` → `ConfigVersionMoved` (409). */
+async function assertBase(tx: Tx, base: number): Promise<number> {
   const v = await readConfigVersion(tx);
-  if (v !== a.base) throw new ConfigVersionMoved(v);
+  if (v !== base) throw new ConfigVersionMoved(v);
+  return v;
+}
+
+/**
+ * Tx ghi chạy READ COMMITTED: mỗi câu một snapshot, nên một ghi cấu hình khác (vd import song song cùng base, C-A09)
+ * commit GIỮA câu đọc version và các câu đọc snapshot ⇒ kế hoạch lập trên dữ liệu MỚI nhưng nhãn `base` cũ (secret
+ * vừa được tạo bị coi là "thừa" ⇒ 400 thay vì 409; kế hoạch rỗng ⇒ 200 sai). Mọi ghi cấu hình bump `config_version`
+ * trong CÙNG commit với dữ liệu ⇒ đọc lại version SAU snapshot: còn = base thì snapshot không lẫn ghi nào sau base.
+ * Kiểm này đứng TRƯỚC mọi lỗi theo kế hoạch (IMPORT_INVALID/SECRETS_REQUIRED/VALIDATION) để xung đột luôn là 409.
+ */
+async function applyInTx(c: ImportCall, a: Args, tx: Tx, ch: ConfigSink): Promise<Applied> {
+  const v = await assertBase(tx, a.base);
+  await afterLock(c.ctx.hooks, OP, "versioned");
   const plan = planImport(a.file, await readFullSnapshot(tx, v));
+  await assertBase(tx, a.base);
   if (plan.errors.length > 0) throw appError("IMPORT_INVALID", { errors: plan.errors });
   checkSecrets(plan, a.req.secrets ?? {});
   if (plan.items.length === 0)
@@ -102,8 +117,7 @@ async function applyInTx(c: ImportCall, a: Args, tx: Tx, ch: ConfigSink): Promis
     };
   const ids = await readIds(tx, plan.items);
   await lockForImport(tx, ids, plan.items);
-  const v2 = await readConfigVersion(tx);
-  if (v2 !== a.base) throw new ConfigVersionMoved(v2);
+  await assertBase(tx, a.base);
   await afterLock(c.ctx.hooks, OP, "locked");
   const created = await createSecrets(c, a, { tx, ch, ids: ids.secrets }, plan);
   const quotaTenants = await writeImport({ tx, ch, ids, actorId: c.actor.userId }, plan.items);

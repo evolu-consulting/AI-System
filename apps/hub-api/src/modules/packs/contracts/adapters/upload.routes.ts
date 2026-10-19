@@ -95,6 +95,12 @@ export function defaultTitle(name: string): string {
   return cutCodePoints(stem || name, TITLE_MAX);
 }
 
+/** Tên khai báo của phần tệp; thiếu/không phải chuỗi (Blob trần, Bun 1.3.14 với phần rỗng) ⇒ "". */
+export function fileNameOf(file: Blob): string {
+  const n = (file as { name?: unknown }).name;
+  return typeof n === "string" ? n : "";
+}
+
 function formFields(form: FormData) {
   const pick: Record<string, string> = {};
   for (const k of ["kind", "parent_id", "title"]) {
@@ -117,11 +123,14 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       if (!form) throw appError("VALIDATION_ERROR");
       const f = formFields(form);
       const file = form.get("file");
-      if (!(file instanceof File)) throw appError("VALIDATION_ERROR");
+      if (!(file instanceof Blob)) throw appError("VALIDATION_ERROR");
       if (file.size > d.maxBytes) throw tooLarge();
+      // Tệp rỗng ⇒ 415 trước khi chạm quota/FileBox. Bun 1.3.14 trả phần rỗng là Blob không có `name`
+      // (vẫn qua `instanceof File`) ⇒ không tin `name` là chuỗi (TECH-DEBT #233).
+      if (file.size === 0) throw toAppError(new UploadError("FILE_TYPE"));
       const u = c.get("user");
       const who = { tenantId: u.tenantId, userId: u.userId };
-      const name = cleanFileName(file.name);
+      const name = cleanFileName(fileNameOf(file));
       try {
         const out = await d.upload({
           who,

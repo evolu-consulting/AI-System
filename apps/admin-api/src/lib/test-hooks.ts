@@ -24,9 +24,10 @@ export type HookOp =
 /**
  * `locked`: sau câu khoá CUỐI của luồng, trước kiểm luật. `names` (M2): command vừa ghi `command_names`, trước khi khoá
  * features. `rows`: sau câu ghi CUỐI, trước bump. `bump`: `configWrite` gọi ngay trước upsert `config_meta` (chỉ khi có
- * sự kiện). `cols` (chỉ `grant.matrix`, đọc): sau câu cột group, trước câu hàng feature.
+ * sự kiện). `cols` (chỉ `grant.matrix`, đọc): sau câu cột group, trước câu hàng feature. `versioned` (chỉ
+ * `import.apply`): sau câu đọc `config_version` đầu, trước khi đọc snapshot để lập kế hoạch.
  */
-export type HookStep = "locked" | "names" | "rows" | "bump" | "cols";
+export type HookStep = "locked" | "names" | "rows" | "bump" | "cols" | "versioned";
 export type TestHooks = {
   afterLock?: (op: HookOp, step: HookStep) => Promise<void> | void;
 };
