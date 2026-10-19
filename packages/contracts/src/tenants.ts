@@ -47,6 +47,14 @@ export const TimezoneInputSchema = TimezoneSchema.refine(
   "unsupported time zone",
 );
 
+/** N2-FR-04 · trần run quy trình đồng thời của tenant (= CHECK/DEFAULT cột `admin.tenants.process_runs_max`, admin 0013). */
+export const TENANT_PROCESS_RUNS_MAX = { min: 1, max: 1000, default: 5 } as const;
+export const ProcessRunsMaxSchema = z
+  .number()
+  .int()
+  .min(TENANT_PROCESS_RUNS_MAX.min)
+  .max(TENANT_PROCESS_RUNS_MAX.max);
+
 const tenantShape = {
   id: UuidSchema,
   key: TenantKeySchema,
@@ -62,6 +70,8 @@ const tenantShape = {
   updated_by: UpdatedBySchema,
   /** ADM-FR-72: tên IANA (TZ-R01). */
   timezone: TimezoneSchema,
+  /** N2-FR-04 · server luôn trả; optional để bản ghi/fixture cũ vẫn hợp lệ. */
+  process_runs_max: ProcessRunsMaxSchema.optional(),
 };
 const statusMatchesActive = (t: { active: boolean; status: string }) =>
   (t.status === "locked") === !t.active;
@@ -118,5 +128,7 @@ export const TenantUpdateRequestSchema = z.strictObject({
   name: TenantNameSchema.optional(),
   max_concurrent_sub: MaxConcurrentSubSchema.optional(),
   timezone: TimezoneInputSchema.optional(),
+  /** N2-FR-04 · chỉ platform_admin (route tenants). */
+  process_runs_max: ProcessRunsMaxSchema.optional(),
 });
 export type TenantUpdateRequest = z.infer<typeof TenantUpdateRequestSchema>;

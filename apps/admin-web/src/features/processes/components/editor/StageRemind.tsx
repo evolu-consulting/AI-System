@@ -29,8 +29,19 @@ export function StageRemind(p: StageFormProps) {
     t("process.admin.editor.gone"),
   );
   const cbId = `${stage.uid}-escalate`;
+  const exId = `${stage.uid}-exclude-starter`;
   return (
     <div className="space-y-3">
+      {/* N2-FR-05 · người bắt đầu lượt chạy không được duyệt bước này (vd duyệt cấp 2). */}
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={exId}
+          checked={stage.excludeStarter === true}
+          disabled={readOnly}
+          onCheckedChange={(v) => onChange({ excludeStarter: v === true })}
+        />
+        <Label htmlFor={exId}>{t(`${K}excludeStarter`)}</Label>
+      </div>
       <TextField
         id={`${stage.uid}-remind`}
         label={t(`${K}remindEvery`)}

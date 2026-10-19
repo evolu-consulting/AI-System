@@ -1,0 +1,2 @@
+ALTER TABLE "admin"."tenants" ADD COLUMN "process_runs_max" integer DEFAULT 5 NOT NULL;--> statement-breakpoint
+ALTER TABLE "admin"."tenants" ADD CONSTRAINT "tenants_process_runs_max_check" CHECK ("admin"."tenants"."process_runs_max" BETWEEN 1 AND 1000);

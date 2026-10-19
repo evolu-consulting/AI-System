@@ -552,7 +552,9 @@
       "keyHint": "Users type this code to sign in. It can't be changed later.",
       "slotsHint": "Leave empty for unlimited",
       "timezone": "Time zone",
-      "timezoneHint": "Used to work out the scheduled times of processes (for example 09:00). Changing the time zone does not recalculate times already saved."
+      "timezoneHint": "Used to work out the scheduled times of processes (for example 09:00). Changing the time zone does not recalculate times already saved.",
+      "processRuns": "Concurrent process runs",
+      "processRunsHint": "From 1 to 1000. Runs waiting for review still count."
     },
     "tab": {
       "info": "Details",
@@ -597,7 +599,8 @@
       "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
       "nameRequired": "Enter the company name",
       "timezoneRequired": "Choose a time zone",
-      "timezoneUnsupported": "This time zone isn't supported. Choose another one from the list."
+      "timezoneUnsupported": "This time zone isn't supported. Choose another one from the list.",
+      "processRunsRange": "Enter a whole number from 1 to 1000."
     },
     "empty": "No customer tenants yet. Create one to onboard your first company.",
     "quota": {

@@ -19,12 +19,32 @@ export function tenantStatus(t: { active: boolean }): "active" | "locked" {
   return t.active ? "active" : "locked";
 }
 
+export type TenantChanges = {
+  name?: string;
+  maxConcurrentSub?: number | null;
+  timezone?: string;
+  processRunsMax?: number;
+};
+
 /** PATCH: chỉ trường gửi lên và khác giá trị hiện tại mới tính là đổi (không đổi → không tăng version). */
 export function changedTenantFields(
-  current: { name: string; maxConcurrentSub: number | null; timezone: string },
-  patch: { name?: string; max_concurrent_sub?: number | null; timezone?: string },
-): { name?: string; maxConcurrentSub?: number | null; timezone?: string } {
-  const out: { name?: string; maxConcurrentSub?: number | null; timezone?: string } = {};
+  current: {
+    name: string;
+    maxConcurrentSub: number | null;
+    timezone: string;
+    processRunsMax?: number;
+  },
+  patch: {
+    name?: string;
+    max_concurrent_sub?: number | null;
+    timezone?: string;
+    process_runs_max?: number;
+  },
+): TenantChanges {
+  const out: TenantChanges = {};
+  // N2-FR-04 · trần run quy trình (1…1000 đã kiểm ở biên).
+  if (patch.process_runs_max !== undefined && patch.process_runs_max !== current.processRunsMax)
+    out.processRunsMax = patch.process_runs_max;
   if (patch.name !== undefined && patch.name !== current.name) out.name = patch.name;
   // ADM-FR-72 · TZ-R03: đã qua `TimezoneInputSchema` ở biên (tên IANA chuẩn).
   if (patch.timezone !== undefined && patch.timezone !== current.timezone) {

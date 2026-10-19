@@ -1,7 +1,7 @@
 // P-b · PF-S3 · HUB-FR-124 · C19/PB-R18 · validate `inputs` lúc start + dựng `snapshot.sources` (resolve). Tách khỏi
 // `start.service.ts`/`runs.repo.ts` cho giới hạn 400 dòng. Scope người bắt đầu (RLS lọc tenant). [HUB-FR-124]
 
-import { TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S } from "@ai/contracts/chat";
+import { PROCESS_RUNS_PER_TENANT, TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S } from "@ai/contracts/chat";
 import type {
   ProcessInputDef,
   ProcessInputValue,
@@ -37,14 +37,16 @@ export async function createRun(
   tx: Tx,
   u: AuthUser,
   p: { def: StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
-  cfg: { runsPerTenant: number; now: () => Date; kh?: KhRuntime },
+  cfg: { runsPerTenant?: number; now: () => Date; kh?: KhRuntime },
 ): Promise<{ runId: string; flowId: string }> {
   const inputs = p.inputs ?? [];
   await validateRunInputs(tx, u, p.def.inputs ?? [], inputs);
   const sources = await buildRunSources(tx, u, p.def, inputs);
   const khPlan = await khStartPlan(tx, p.def.stages, cfg.kh); // K1 · đích `## Tóm tắt` (HUB-FR-133)
   await repo.lockTenant(tx, u.tenantId);
-  if ((await repo.countActive(tx, u.tenantId)) >= cfg.runsPerTenant)
+  // N2-FR-04 · N2-D11 · trần = seam test ?? cấu hình tenant ?? mặc định (0 câu thêm: đếm + trần cùng câu).
+  const { n, max } = await repo.activeAndCap(tx, u.tenantId);
+  if (n >= (cfg.runsPerTenant ?? max ?? PROCESS_RUNS_PER_TENANT))
     throw processError("TOO_MANY_PROCESS_RUNS", undefined, {
       "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
     });

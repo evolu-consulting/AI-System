@@ -123,7 +123,12 @@ export function TenantDetailPage() {
   const save = (v: TenantInfoValues) => {
     setTzError(undefined);
     return conflict.save(
-      { name: v.name, max_concurrent_sub: slotsToValue(v.slots), timezone: v.timezone },
+      {
+        name: v.name,
+        max_concurrent_sub: slotsToValue(v.slots),
+        timezone: v.timezone,
+        process_runs_max: Number(v.processRuns), // N2-FR-04
+      },
       tenant.version,
     );
   };

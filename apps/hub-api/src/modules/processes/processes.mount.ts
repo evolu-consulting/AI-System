@@ -1,7 +1,6 @@
 // HUB-FR-104…117 · D15 · mount module quy trình khi cờ `HUB_PROCESS_ENGINE=on` (plan §8 hàng 0b, plan-contract §7.1):
 // route mọi PF (file của từng PF, mount sẵn ⇒ PF không sửa file này), ThreadPoster + vòng nền, seam N3. Cờ tắt ⇒ `app.ts`
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
-import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
 import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
@@ -100,7 +99,8 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     now,
     drain,
     toolDriver,
-    runsPerTenant: m.processRunsPerTenant ?? PROCESS_RUNS_PER_TENANT,
+    // N2-D11 · vắng seam ⇒ trần đọc theo tenant (`admin.tenants.process_runs_max`) lúc start.
+    runsPerTenant: m.processRunsPerTenant,
     notifier,
     postThread,
     uow: tenantOnly(uow),

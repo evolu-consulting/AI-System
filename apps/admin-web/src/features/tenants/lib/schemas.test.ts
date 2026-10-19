@@ -70,7 +70,9 @@ describe("ADM-FR-60 · schema form tenant khớp contract", () => {
       ["-2", false],
       ["abc", false],
     ] as const) {
-      expect(tenantInfoSchema.safeParse({ name: "x", slots, timezone: TZ }).success).toBe(ok);
+      expect(
+        tenantInfoSchema.safeParse({ name: "x", slots, timezone: TZ, processRuns: "5" }).success,
+      ).toBe(ok);
     }
   });
 
@@ -84,12 +86,36 @@ describe("ADM-FR-60 · schema form tenant khớp contract", () => {
       "",
       "Mars/Base",
     ]) {
-      const fe = tenantInfoSchema.safeParse({ name: "x", slots: "", timezone }).success;
+      const fe = tenantInfoSchema.safeParse({
+        name: "x",
+        slots: "",
+        timezone,
+        processRuns: "5",
+      }).success;
       expect(fe).toBe(TenantCreateRequestSchema.safeParse({ ...body0, timezone }).success);
     }
     const msg = (timezone: string) =>
-      tenantInfoSchema.safeParse({ name: "x", slots: "", timezone }).error?.issues[0]?.message;
+      tenantInfoSchema.safeParse({ name: "x", slots: "", timezone, processRuns: "5" }).error
+        ?.issues[0]?.message;
     expect(msg("")).toBe("tenants.error.timezoneRequired");
     expect(msg("Mars/Base")).toBe("tenants.error.timezoneUnsupported");
+  });
+});
+
+describe("N2-FR-04 · trần run quy trình (form) khớp contract 1…1000", () => {
+  test("số nguyên 1…1000 hợp lệ; ngoài khoảng / không phải số ⇒ khoá i18n", () => {
+    const parse = (processRuns: string) =>
+      tenantInfoSchema.safeParse({ name: "x", slots: "", timezone: TZ, processRuns });
+    for (const [v, ok] of [
+      ["1", true],
+      ["200", true],
+      ["1000", true],
+      ["0", false],
+      ["1001", false],
+      ["2.5", false],
+      ["", false],
+    ] as const)
+      expect({ v, ok: parse(v).success }).toEqual({ v, ok });
+    expect(parse("0").error?.issues[0]?.message).toBe("tenants.error.processRunsRange");
   });
 });

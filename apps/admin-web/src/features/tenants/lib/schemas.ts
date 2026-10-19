@@ -6,6 +6,7 @@ import {
   isSupportedTimeZone,
   MAX_CONCURRENT_SUB_MAX,
   NAME_MAX,
+  TENANT_PROCESS_RUNS_MAX,
   USERNAME_RE,
 } from "@ai/contracts";
 import { z } from "zod";
@@ -26,6 +27,18 @@ export function slotsToValue(input: string): number | null {
   return v === "" ? null : Number(v);
 }
 
+/** N2-FR-04 · trần run quy trình đồng thời: số nguyên 1…1000 (bắt buộc). */
+export const processRunsInput = z
+  .string()
+  .trim()
+  .refine(
+    (v) =>
+      /^\d+$/.test(v) &&
+      Number(v) >= TENANT_PROCESS_RUNS_MAX.min &&
+      Number(v) <= TENANT_PROCESS_RUNS_MAX.max,
+    { message: "tenants.error.processRunsRange" },
+  );
+
 export const tenantNameField = z
   .string()
   .trim()
@@ -42,6 +55,7 @@ export const tenantInfoSchema = z.object({
   name: tenantNameField,
   slots: slotsInput,
   timezone: tenantTimezoneField,
+  processRuns: processRunsInput,
 });
 export type TenantInfoValues = z.infer<typeof tenantInfoSchema>;
 

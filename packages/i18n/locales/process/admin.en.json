@@ -231,6 +231,7 @@
       "escalateAfter": "Escalate after (hours)",
       "escalateGroup": "Escalate to group",
       "escalateHint": "This group is added to the review; the original group can still review. It escalates once and never marks Pass by itself.",
+      "excludeStarter": "The person who started the run can't review this step",
       "err": {
         "remind": "From 4 to 168 hours.",
         "escalateAfter": "From 4 to 2,160 hours.",

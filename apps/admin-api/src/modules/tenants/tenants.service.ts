@@ -50,6 +50,7 @@ export function toTenant(t: TenantRow): Tenant {
     version: t.version,
     updated_by: t.updatedBy,
     timezone: t.timezone,
+    process_runs_max: t.processRunsMax,
   };
 }
 

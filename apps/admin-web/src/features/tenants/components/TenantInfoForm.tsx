@@ -1,5 +1,5 @@
 // ADM-FR-60 · tab Thông tin: mã công ty readOnly, tên, slot; thanh lưu dính đáy khi có thay đổi (Ctrl+S lưu).
-import type { TenantDetail } from "@ai/contracts";
+import { TENANT_PROCESS_RUNS_MAX, type TenantDetail } from "@ai/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -26,6 +26,7 @@ const toValues = (t: TenantDetail): TenantInfoValues => ({
   name: t.name,
   slots: t.max_concurrent_sub === null ? "" : String(t.max_concurrent_sub),
   timezone: t.timezone,
+  processRuns: String(t.process_runs_max ?? TENANT_PROCESS_RUNS_MAX.default),
 });
 
 export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, onSubmit }: Props) {
@@ -52,7 +53,8 @@ export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, 
     const same =
       next.name === loaded.current.name &&
       next.slots === loaded.current.slots &&
-      next.timezone === loaded.current.timezone;
+      next.timezone === loaded.current.timezone &&
+      next.processRuns === loaded.current.processRuns;
     loaded.current = next;
     form.reset(next, same ? { keepDirtyValues: true } : undefined);
   }, [tenant, form]);
@@ -89,6 +91,23 @@ export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, 
       >
         {(p) => (
           <Input {...p} {...form.register("slots")} type="number" min={1} inputMode="numeric" />
+        )}
+      </FormField>
+      <FormField
+        id="info-process-runs"
+        label={t("tenants.field.processRuns")}
+        description={t("tenants.field.processRunsHint")}
+        error={msg(errors.processRuns?.message)}
+      >
+        {(p) => (
+          <Input
+            {...p}
+            {...form.register("processRuns")}
+            type="number"
+            min={TENANT_PROCESS_RUNS_MAX.min}
+            max={TENANT_PROCESS_RUNS_MAX.max}
+            inputMode="numeric"
+          />
         )}
       </FormField>
       <TenantTimezoneField

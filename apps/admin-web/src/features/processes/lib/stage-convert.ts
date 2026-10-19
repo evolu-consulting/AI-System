@@ -86,6 +86,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     branch: rulesToBranch(s.after.branch),
     remind: remindFromDef(rv?.remind_every_h),
     escalate: escalateFromDef(rv?.escalate),
+    ...(rv?.exclude_starter ? { excludeStarter: true } : {}),
     instruction: s.instruction,
     filename: s.output.filename,
     template: s.output.template,
@@ -139,6 +140,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
             back_to_steps: s.backTo,
             remind_every_h: remindToDef(s),
             escalate: escalateToDef(s),
+            ...(s.excludeStarter ? { exclude_starter: true } : {}),
             ...branch,
           }
         : { kind: "auto", ...branch },

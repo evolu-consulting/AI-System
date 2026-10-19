@@ -552,7 +552,9 @@
       "keyHint": "Người dùng gõ mã này khi đăng nhập. Không đổi được sau khi tạo.",
       "slotsHint": "Để trống = không giới hạn",
       "timezone": "Múi giờ",
-      "timezoneHint": "Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu."
+      "timezoneHint": "Dùng để tính ngày giờ hẹn của quy trình (ví dụ giờ 09:00). Đổi múi giờ không tính lại các hẹn đã lưu.",
+      "processRuns": "Số lượt chạy quy trình cùng lúc",
+      "processRunsHint": "Từ 1 đến 1000. Lượt đang chờ duyệt vẫn được tính."
     },
     "tab": {
       "info": "Thông tin",
@@ -597,7 +599,8 @@
       "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
       "nameRequired": "Nhập tên công ty",
       "timezoneRequired": "Chọn múi giờ",
-      "timezoneUnsupported": "Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách."
+      "timezoneUnsupported": "Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách.",
+      "processRunsRange": "Nhập số nguyên từ 1 đến 1000."
     },
     "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên.",
     "quota": {

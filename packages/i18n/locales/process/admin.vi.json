@@ -231,6 +231,7 @@
       "escalateAfter": "Chuyển cấp sau (giờ)",
       "escalateGroup": "Chuyển cấp tới nhóm",
       "escalateHint": "Nhóm này được thêm vào việc kiểm; nhóm kiểm ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Đạt.",
+      "excludeStarter": "Người bắt đầu lượt chạy không được duyệt bước này",
       "err": {
         "remind": "Từ 4 đến 168 giờ.",
         "escalateAfter": "Từ 4 đến 2.160 giờ.",

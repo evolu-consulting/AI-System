@@ -12,6 +12,8 @@ export type TenantRow = {
   maxConcurrentSub: number | null;
   /** ADM-FR-72: tên IANA (TZ-R01). */
   timezone: string;
+  /** N2-FR-04 · trần run quy trình đồng thời. */
+  processRunsMax: number;
   userCount: number;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +34,7 @@ const rowCols = {
   active: tenants.active,
   maxConcurrentSub: tenants.maxConcurrentSub,
   timezone: tenants.timezone,
+  processRunsMax: tenants.processRunsMax,
   userCount,
   createdAt: tenants.createdAt,
   updatedAt: tenants.updatedAt,
@@ -108,7 +111,13 @@ export async function insertTenant(
 export async function updateTenant(
   tx: Tx,
   id: string,
-  set: { name?: string; maxConcurrentSub?: number | null; timezone?: string; active?: boolean },
+  set: {
+    name?: string;
+    maxConcurrentSub?: number | null;
+    timezone?: string;
+    processRunsMax?: number;
+    active?: boolean;
+  },
   by: string,
 ): Promise<void> {
   await tx

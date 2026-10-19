@@ -67,7 +67,7 @@ export const NOOP_NOTIFIER: ProcessNotifier = {
 
 /**
  * Phụ thuộc chung của module quy trình (`processes.mount.ts` dựng, mọi PF nhận). `now` = seam N3 (plan-contract §7.1);
- * `runsPerTenant` = `AppDeps.processRunsPerTenant` ?? `PROCESS_RUNS_PER_TENANT`.
+ * `runsPerTenant` = `AppDeps.processRunsPerTenant` (seam test); vắng ⇒ trần theo tenant `admin.tenants.process_runs_max` (N2-D11).
  */
 export type ProcessDeps = {
   db: Db;
@@ -78,7 +78,7 @@ export type ProcessDeps = {
   runner: AgentRunner;
   log: Logger;
   now: Clock;
-  runsPerTenant: number;
+  runsPerTenant?: number;
   launcher: StageLauncher;
   notifier: ProcessNotifier;
   /** Sau COMMIT tx quy trình: đăng tin thread của run (`ThreadPoster.post`). */

@@ -56,6 +56,8 @@ export type StageDraft = {
   /** P-d1 · "Nhắc mỗi (giờ)" — rỗng = `remind_every_h: null`; chỉ có nghĩa khi `after = review`. */
   remind: string;
   /** P-d1 · "Chuyển cấp nếu chưa ai kiểm" (tắt ⇒ `escalate: null`, giữ giá trị đã nhập). */
+  /** N2-FR-05 · "Người bắt đầu không được duyệt bước này" (`after.exclude_starter`); vắng = false. */
+  excludeStarter?: boolean;
   escalate: EscalateDraft;
   /** P-d2 · khối "Gọi tool" (chỉ có nghĩa khi `executor = tool`). */
   tool: ToolDraft;
