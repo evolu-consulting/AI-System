@@ -206,7 +206,7 @@ ca5fe8c9827a0a4e29082c9dfe099521a70f3098f690878a066ebe275ead5d30  e2e/contracts-
 179efcae6c63dffe33661d818961fc47f7311509e3330dd5d1cbd8845538b6eb  e2e/contracts-web/baseline/win32/shell-mobile.png
 cd732e6b1a06d0f1ccd0c24cf4fc755e2a4e10c120051c9dfb8de336108eb016  e2e/contracts-web/baseline/win32/shell-sidebar-open.json
 d4b9cd39151744d1a600568c7dcb152bf32310f23631965f39c08f92a6c74268  e2e/contracts-web/baseline/win32/shell-sidebar-open.png
-2079c0c773fd1a36506b7ba77167f0d48b058cc726396e94641b1892f8e12cc8  e2e/contracts-web/bell.cw.ts
+8d4a1bbb7be2c5b00a2fe01f606ad09f3e631fd63f96b83c756c91e01fa65ae2  e2e/contracts-web/bell.cw.ts
 3c43b2768a8ec42aea15a5c00dd3c4b79ed5ef196d26ec7cdf59927d0d92a364  e2e/contracts-web/capture-ref.ts
 8aa4488748ad4d351558719da9b6ce67f0b93a48380515d9b90b6ba53525161f  e2e/contracts-web/dataset-contract.ts
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts

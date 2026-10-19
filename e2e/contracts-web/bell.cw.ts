@@ -124,7 +124,10 @@ test("N3-FR-04 · tùy chọn kênh: tắt email ⇒ PUT đúng body, push giữ
   const put = page.waitForRequest(
     (r) => r.method() === "PUT" && r.url().endsWith("/notifications/prefs"),
   );
-  await email.uncheck();
+  // `uncheck()` kiểm trạng thái ngay sau khi bấm; ô controlled cập nhật lạc quan qua react-query (bất đồng bộ) nên
+  // `uncheck()` báo "did not change its state". Bấm rồi chờ trạng thái (assertion tự thử lại), không chờ giờ.
+  await email.click();
+  await expect(email).not.toBeChecked();
   await put; // chờ đúng tín hiệu request, không chờ giờ
   expect(api.puts).toEqual([{ email: false, push: true }]);
 });
