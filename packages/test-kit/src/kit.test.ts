@@ -4,6 +4,7 @@ import { FakeClock, FakeTimers, T0 } from "./clock";
 import { uuidOf } from "./env";
 import { FakeAgent, FakeTaxRegistry, fakeSmtp, fakeWebPush } from "./fakes";
 import { latencyStats, literalize, percentile, seqScansIn } from "./perf";
+import { closeAll } from "./stack";
 
 describe("clock", () => {
   it("FakeClock: now/advance/set/reset", () => {
@@ -112,5 +113,25 @@ describe("env", () => {
     expect(uuidOf(0xa1, 1)).toBe("7e5d00a1-0000-4000-8000-000000000001");
     expect(uuidOf(0xa1, 255)).toBe("7e5d00a1-0000-4000-8000-0000000000ff");
     expect(uuidOf(1, 1)).not.toBe(uuidOf(2, 1));
+  });
+});
+
+describe("stack.closeAll", () => {
+  it("chạy mọi closer ngược thứ tự dù có closer lỗi, rồi ném AggregateError", async () => {
+    const log: string[] = [];
+    const ok = (n: string) => async () => {
+      log.push(n);
+    };
+    const bad = (n: string) => async () => {
+      log.push(n);
+      throw new Error(n);
+    };
+    const err = await closeAll([ok("a"), bad("b"), ok("c"), bad("d")]).catch((e) => e);
+    expect(log).toEqual(["d", "c", "b", "a"]);
+    expect(err).toBeInstanceOf(AggregateError);
+    expect((err as AggregateError).errors.map((e: Error) => e.message)).toEqual(["d", "b"]);
+  });
+  it("không lỗi thì không ném", async () => {
+    await closeAll([async () => undefined]);
   });
 });

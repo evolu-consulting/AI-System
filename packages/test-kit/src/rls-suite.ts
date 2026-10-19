@@ -57,6 +57,8 @@ type Ops = {
   where: (t: RlsTable) => string;
   countOf: (t: RlsTable, tenant: string | null, id?: string) => Promise<number>;
   write: (t: RlsTable, kind: "upd" | "del", tenant: string, id: string) => Promise<string>;
+  /** Đổi cột tenant của hàng `id` sang `to` dưới `tenant`: số hàng (chuỗi) hoặc SQLSTATE. */
+  move: (t: RlsTable, tenant: string, id: string, to: string) => Promise<string>;
 };
 
 function makeOps(spec: RlsPackSpec): Ops {
@@ -85,7 +87,26 @@ function makeOps(spec: RlsPackSpec): Ops {
       return (e as { code?: string }).code ?? "no-code";
     }
   };
-  return { schema, role, a: spec.tenants.a, b: spec.tenants.b, as, rel, where, countOf, write };
+  const move: Ops["move"] = async (t, tenant, id, to) => {
+    const sql = `update ${rel(t)} set ${q(tcol(t))} = $2 where ${where(t)}`;
+    try {
+      return String(await as(tenant, async (tx) => (await tx.unsafe(sql, [id, to])).count));
+    } catch (e) {
+      return (e as { code?: string }).code ?? "no-code";
+    }
+  };
+  return {
+    schema,
+    role,
+    a: spec.tenants.a,
+    b: spec.tenants.b,
+    as,
+    rel,
+    where,
+    countOf,
+    write,
+    move,
+  };
 }
 
 function tableCases(t: RlsTable, o: Ops, pks: () => Pks): void {
@@ -114,6 +135,14 @@ function tableCases(t: RlsTable, o: Ops, pks: () => Pks): void {
     });
     expect(await pgCode(() => o.as(o.b, (tx) => t.insert(tx, o.a)))).toBe("42501");
     if (!t.writeOnly) expect(await o.countOf(t, o.a, idA())).toBe(1); // hàng của A còn nguyên
+  });
+  it("chuyển hàng sang tenant khác (UPDATE cột tenant) bị chặn: A chuyển hàng của mình sang B = 42501; B chuyển hàng của A = 0 hàng/42501", async () => {
+    expect(await o.move(t, o.a, idA(), o.b)).toBe("42501");
+    expect(await o.move(t, o.b, idA(), o.b)).toMatch(/^(0|42501)$/);
+    if (!t.writeOnly) {
+      expect(await o.countOf(t, o.a, idA())).toBe(1);
+      expect(await o.countOf(t, o.b, idA())).toBe(0);
+    }
   });
   it("thăm dò tồn tại: id của A ≡ id không tồn tại dưới B (đọc và ghi)", async () => {
     const probe = async (id: string) => ({

@@ -120,6 +120,21 @@ module.exports = {
       to: { path: "(^|/)apps/" },
     },
     {
+      name: "no-prod-import-test-kit",
+      comment:
+        "TK1 (review M-2): @ai/test-kit chỉ cho test — code production trong apps/** và packages/** (trừ packages/test-kit, *.test.ts, tests/**) không import",
+      severity: "error",
+      from: {
+        path: "(^|/)(apps|packages)/",
+        pathNot: [
+          "(^|/)packages/test-kit/",
+          "\\.(test|int\\.test|perf\\.int\\.test)\\.tsx?$",
+          "(^|/)tests?/",
+        ],
+      },
+      to: { path: "(^|/)packages/test-kit/" },
+    },
+    {
       name: "web-kit-no-apps",
       comment: "N1 TF3: packages/web-kit dùng chung cho các web app — không import code từ apps/**",
       severity: "error",

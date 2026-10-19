@@ -35,13 +35,25 @@ export type Stack<A extends Fetcher = Fetcher> = {
   close: () => Promise<void>;
 };
 
+/** Chạy MỌI closer (ngược thứ tự mở), rồi ném `AggregateError` nếu có closer lỗi — không nuốt lỗi. */
+export async function closeAll(closers: ReadonlyArray<() => Promise<unknown>>): Promise<void> {
+  const errors: unknown[] = [];
+  for (const c of [...closers].reverse()) {
+    try {
+      await c();
+    } catch (e) {
+      errors.push(e);
+    }
+  }
+  if (errors.length)
+    throw new AggregateError(errors, `bootStack.close: ${errors.length} closer lỗi`);
+}
+
 export async function bootStack<A extends Fetcher = Fetcher>(
   o: StackOpts<A> = {},
 ): Promise<Stack<A>> {
   const closers: Array<() => Promise<void>> = [];
-  const close = async (): Promise<void> => {
-    for (const c of closers.splice(0).reverse()) await c().catch(() => undefined);
-  };
+  const close = (): Promise<void> => closeAll(closers.splice(0));
   try {
     await cloneDb(o.template ?? "full");
     const owner = openOwner(o.ownerPool ?? 4, o.template ?? "full");
@@ -80,7 +92,7 @@ export async function bootStack<A extends Fetcher = Fetcher>(
     let closed: Promise<void> | undefined;
     return { owner, base, app, call, close: () => (closed ??= close()) };
   } catch (e) {
-    await close();
+    await close().catch(() => undefined); // lỗi gốc của boot thắng lỗi đóng
     throw e;
   }
 }
