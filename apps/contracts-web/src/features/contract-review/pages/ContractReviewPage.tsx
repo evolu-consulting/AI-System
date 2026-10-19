@@ -9,7 +9,13 @@ import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { contractKey, fetchContract, fileHref, patchContractFields } from "../api";
+import {
+  contractKey,
+  fetchContract,
+  fileHref,
+  openOriginalFile,
+  patchContractFields,
+} from "../api";
 import { ReviewFields } from "../components/ReviewFields";
 import {
   ExtractFailed,
@@ -45,7 +51,15 @@ function useSave(id: string) {
       setBusy(false);
     }
   };
-  return { msg, err, busy, save };
+  const openFile = async (cid: string) => {
+    setErr(null);
+    try {
+      await openOriginalFile(cid);
+    } catch (e) {
+      setErr(saveErrorText(e, t));
+    }
+  };
+  return { msg, err, busy, save, openFile };
 }
 
 export function ContractReviewPage({ id }: { id: string }) {
@@ -67,7 +81,9 @@ export function ContractReviewPage({ id }: { id: string }) {
   if (q.error || !q.data) return <ErrorLine error={q.error} />;
   const c = q.data;
   const canSave = write && c.status !== "extracting";
-  const file = c.file ? { href: fileHref(id), name: c.file.name } : null;
+  const file = c.file
+    ? { href: fileHref(id), name: c.file.name, onOpen: () => void s.openFile(id) }
+    : null;
   const lead = leadKey(c.status);
   const title = (typeof c.fields.title.value === "string" && c.fields.title.value) || c.title;
   const failed = c.status === "extract_failed";
@@ -96,7 +112,7 @@ export function ContractReviewPage({ id }: { id: string }) {
       <SaveNotice msg={s.msg} err={s.err} />
       <WarningList warnings={warningsOf(c)} />
       {failed ? (
-        <ExtractFailed fileHref={file?.href ?? null} />
+        <ExtractFailed file={file} />
       ) : (
         <ReviewFields
           contract={c}

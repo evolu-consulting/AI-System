@@ -1,55 +1,47 @@
-// HD-FR-21 · HD-FR-22 · HD-FR-23 · HD-FR-24 · HD-FR-25 · HD2 plan "Thiết kế hiệu năng": một lượt trích của một HĐ.
-// tx đọc (1 câu + set_config) → agent (ngoài tx) → tra MST các số ứng viên song song (ngoài tx, cache ở adapter) → tx ghi:
-// khoá hàng, còn `extracting` mới ghi (đã trích lại/đổi trạng thái ⇒ bỏ), gộp giữ `edited`, cảnh báo, outbox. Không gọi
-// mạng trong tx; số câu cố định, không phụ thuộc số dòng hàng.
+// HD-FR-21 · HD-FR-22 · HD-FR-23 · HD-FR-24 · HD-FR-25 · HD2 plan "Thiết kế hiệu năng" + review Trung 1: một lượt trích của một HĐ.
+// tx đọc (1 câu) → agent (ngoài tx, có hạn giờ ở adapter) → kiểm trích dẫn (ngoài tx, văn bản lớn ở Worker) → tra MST (ngoài tx)
+// → tx ghi KHÔNG khoá trước: gộp giữ `edited` theo bản vừa đọc rồi ghi có điều kiện `version` ∧ `extracting`; hàng đã đổi (sửa
+// tay mới hơn) ⇒ đọc lại, gộp lại (≤ 3 lần). Không gọi mạng/CPU nặng trong tx; số câu cố định, không phụ thuộc số dòng hàng.
+// MST chưa tra được vì cổng hẹn giờ (khe 2 s / 429) ⇒ hẹn `refreshParties` (Trung 4). Chiều mua/bán: không cảnh báo khi chưa có
+// pháp nhân của mình (khớp mgmt-app `enrich.py:105`, review Thấp 5).
 import type { PackWho } from "../../kit/application/ports";
-import { applyExtraction, type RawExtraction } from "../domain/extraction.rules";
-import { type ContractFields, fillFields } from "../domain/fields.rules";
-import { partyCheck, type TaxLookup } from "../domain/party.rules";
 import {
-  type DirectionCheck,
-  normalizeTaxId,
-  type Parties,
-  ruleWarnings,
-} from "../domain/warnings.rules";
-import type { ExtractionAgent, ExtractionUow, TaxRegistry } from "./extraction.ports";
+  mergeExtraction,
+  type RawExtraction,
+  type VerifiedExtraction,
+} from "../domain/extraction.rules";
+import { fillFields } from "../domain/fields.rules";
+import { ruleWarnings } from "../domain/warnings.rules";
+import type {
+  ExtractionAgent,
+  ExtractionSource,
+  ExtractionUow,
+  ExtractionVerifier,
+  TaxRegistry,
+} from "./extraction.ports";
+import {
+  partiesOf,
+  prefetchTax,
+  retryAtOf,
+  type TaxHits,
+  type TaxRetryScheduler,
+} from "./tax-parties";
+
+export { partiesOf, prefetchTax, type TaxHits } from "./tax-parties";
 
 export type RunExtractionDeps = {
   uow: ExtractionUow;
   agent: ExtractionAgent;
+  verifier: ExtractionVerifier;
   tax: TaxRegistry | null;
+  scheduleTaxRetry?: TaxRetryScheduler;
 };
 export type ExtractionOutcome = "needs_review" | "extract_failed" | "skipped";
 export type RunExtraction = (who: PackWho, contractId: string) => Promise<ExtractionOutcome>;
-export type TaxHits = ReadonlyMap<string, TaxLookup>;
 
+const SAVE_ATTEMPTS = 3;
 const TAX_KEYS = ["supplier_tax_id", "buyer_tax_id"] as const;
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v : null);
-
-/** Tra các MST (đã chuẩn hoá, bỏ trùng) song song; không có cổng ⇒ map rỗng (chỉ kiểm định dạng). */
-export async function prefetchTax(
-  tax: TaxRegistry | null,
-  raws: readonly (string | null)[],
-  fast: boolean,
-): Promise<TaxHits> {
-  const ids = [...new Set(raws.map((r) => normalizeTaxId(r)).filter((x): x is string => !!x))];
-  if (!tax || ids.length === 0) return new Map();
-  const res = await Promise.all(ids.map((id) => tax.lookup(id, { fast })));
-  return new Map(ids.map((id, i) => [id, res[i] as TaxLookup]));
-}
-
-/** Kết quả Cục Thuế của hai bên theo trường hiện tại (thuần trên map đã tra). */
-export function partiesOf(f: ContractFields, hits: TaxHits): Parties {
-  const side = (name: unknown, raw: unknown) => {
-    const tax = str(raw);
-    const id = normalizeTaxId(tax);
-    return partyCheck(str(name), tax, id ? (hits.get(id) ?? null) : null);
-  };
-  return {
-    supplier: side(f.supplier_name.value, f.supplier_tax_id.value),
-    buyer: side(f.buyer_name.value, f.buyer_tax_id.value),
-  };
-}
 
 /** MST ứng viên: số agent đọc + số người đã sửa tay (trường `edited` thắng khi gộp). */
 function candidateTaxIds(raw: RawExtraction, old: unknown): (string | null)[] {
@@ -70,44 +62,50 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
       parent: src.parent,
     });
     if (!reply.ok) return fail(d, who, id, reply.code);
-    const hits = await prefetchTax(d.tax, candidateTaxIds(reply.raw, src.fields), false);
-    // Ghi hỏng (DB từ chối giá trị lạ, mất kết nối) ⇒ `extract_failed SAVE_FAILED`, không để HĐ kẹt `extracting` (S-M1).
-    return saveOutcome(d, { who, id, raw: reply.raw, text: src.text, hits }).catch(() =>
-      fail(d, who, id, "SAVE_FAILED"),
-    );
+    // Ghi hỏng (Worker lỗi, DB từ chối, mất kết nối) ⇒ `extract_failed SAVE_FAILED`, không để HĐ kẹt `extracting` (S-M1).
+    try {
+      const verified = await d.verifier.verify({
+        raw: reply.raw,
+        source: src.text,
+        kind: src.kind,
+      });
+      const hits = await prefetchTax(d.tax, candidateTaxIds(reply.raw, src.fields), false);
+      return await save(d, { who, id, verified, hits, cur: src });
+    } catch {
+      return fail(d, who, id, "SAVE_FAILED");
+    }
   };
 }
 
 type SaveInput = {
   who: PackWho;
   id: string;
-  raw: RawExtraction;
-  text: string | null;
+  verified: VerifiedExtraction;
   hits: TaxHits;
+  cur: ExtractionSource;
 };
 
-/** tx ghi: khoá hàng, còn `extracting` mới ghi, gộp giữ `edited`, cảnh báo, outbox (4 câu, không theo số dòng). */
-function saveOutcome(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutcome> {
-  const { who, id, hits } = s;
-  const reply = { raw: s.raw };
-  const src = { text: s.text };
-  return d.uow.tenant(who, async (r): Promise<ExtractionOutcome> => {
-    const cur = await r.extraction.lock(id);
-    if (!cur || cur.status !== "extracting") return "skipped";
-    const out = applyExtraction({
-      raw: reply.raw,
-      source: src.text,
-      kind: cur.kind,
-      oldFields: cur.fields,
-      hasItems: cur.items.length > 0,
-    });
-    const direction: DirectionCheck = cur.direction ? null : "none_own";
+/** Ghi có điều kiện `version`; thua đua với sửa tay ⇒ đọc lại và gộp lại (CPU nặng đã xong, phần này rẻ). */
+async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutcome> {
+  let cur: ExtractionSource | null = s.cur;
+  for (let i = 0; i < SAVE_ATTEMPTS && cur?.status === "extracting"; i++) {
+    const out = mergeExtraction(s.verified, cur.fields, cur.items.length > 0);
     const items = out.items ?? cur.items;
-    const warnings = ruleWarnings(out.fields, items, direction, partiesOf(out.fields, hits));
-    await r.extraction.saveResult(id, { ...out, warnings });
-    await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
-    return "needs_review";
-  });
+    const warnings = ruleWarnings(out.fields, items, null, partiesOf(out.fields, s.hits));
+    const expected = cur.version;
+    const ok = await d.uow.tenant(s.who, async (r) => {
+      const saved = await r.extraction.saveResult(s.id, { ...out, warnings, expected });
+      if (saved) await r.outbox.enqueue([{ entity: "contract", entity_id: s.id, op: "upsert" }]);
+      return saved;
+    });
+    if (ok) {
+      const at = retryAtOf(out.fields, s.hits);
+      if (at !== null) d.scheduleTaxRetry?.(s.who, s.id, at, 1);
+      return "needs_review";
+    }
+    cur = await d.uow.tenant(s.who, (r) => r.extraction.source(s.id));
+  }
+  return cur?.status === "extracting" ? fail(d, s.who, s.id, "SAVE_FAILED") : "skipped";
 }
 
 /** Chỉ ghi lỗi khi HĐ còn `extracting` (repo kiểm trong câu UPDATE). */

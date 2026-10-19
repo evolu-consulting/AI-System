@@ -28,10 +28,18 @@ const whoOf = (u: { tenantId: string; userId: string }) => ({
   userId: u.userId,
 });
 
-function extractError(kind: "not_found" | "busy" | "no_source" | "unavailable"): AppError {
+function extractError(
+  kind: "not_found" | "busy" | "no_source" | "unavailable" | "not_allowed",
+): AppError {
   if (kind === "not_found") return appError("NOT_FOUND");
   if (kind === "busy")
     return new AppError("EXTRACT_BUSY", CONTRACT_ERRORS.EXTRACT_BUSY, "Contract is being read");
+  if (kind === "not_allowed")
+    return new AppError(
+      "EXTRACT_NOT_ALLOWED",
+      CONTRACT_ERRORS.EXTRACT_NOT_ALLOWED,
+      "Contract can no longer be re-read",
+    );
   if (kind === "unavailable")
     return new AppError(
       "AGENT_UNAVAILABLE",

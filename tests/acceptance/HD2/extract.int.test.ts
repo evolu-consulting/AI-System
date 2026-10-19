@@ -11,6 +11,7 @@ import {
   captureSql,
   cid,
   insContract,
+  insItem,
   item,
   P,
   startHd2,
@@ -82,7 +83,8 @@ describe("HD-FR-24 · khởi chạy trích", () => {
     expect(c.ai.calls.map((x) => x.tenantId)).toEqual([T.acme]);
     const d = await detail(r.json.id);
     expect(d.status).toBe("needs_review");
-    expect(d.warnings.map((w: { code: string }) => w.code)).toContain("direction_unknown");
+    // review Thấp 5: chưa có pháp nhân của mình ⇒ không cảnh báo chiều mua/bán (khớp mgmt-app enrich.py:105)
+    expect(d.warnings.map((w: { code: string }) => w.code)).not.toContain("direction_unknown");
   });
 
   it("HD-FR-22 · trích lại có văn bản: verified theo quote (ngày sai ⇒ false), dòng hàng + event + outbox", async () => {
@@ -279,5 +281,43 @@ describe("Luật 4c · số câu SQL lượt trích cố định", () => {
     console.log(`HD2 lượt trích: ${a} câu SQL (3 dòng) · ${b} câu (60 dòng)`);
     expect(b).toBe(a);
     expect(a).toBeLessThanOrEqual(8);
+  });
+});
+
+describe("HD2 review · trích lại khi đã có dòng hàng, trạng thái không cho trích, link tệp", () => {
+  it("D-08 · HĐ đã có dòng hàng ⇒ giữ dòng cũ, chỉ gộp trường; cảnh báo tổng lệch tính trên dòng cũ", async () => {
+    await arrangeAi();
+    await seedText();
+    await insItem(c.sql, T.acme, cid(1), 0, { name: "Dòng cũ" });
+    c.ai.script = () => ({ ok: true, text: C1_OUT() });
+    const done = c.ai.settled(cid(1));
+    expect((await extract(P.hoa, cid(1))).status).toBe(202);
+    expect(await done).toBe("needs_review");
+    const d = await detail(cid(1));
+    expect(d.items.map((i: { name: string }) => i.name)).toEqual(["Dòng cũ"]);
+    expect(d.fields.total_value.value).toBe(245_000_000);
+  });
+  it("Thấp 7 · HĐ đã duyệt (active) ⇒ 409 EXTRACT_NOT_ALLOWED, không đổi", async () => {
+    await arrangeAi();
+    await seedText(cid(1), C1_TEXT, { status: "active" });
+    const r = await extract(P.hoa, cid(1));
+    expect({ s: r.status, code: r.json?.error?.code }).toEqual({
+      s: 409,
+      code: "EXTRACT_NOT_ALLOWED",
+    });
+    const [row] = await c.sql`select status, version from contracts.contracts where id = ${cid(1)}`;
+    expect(row).toEqual({ status: "active", version: 1 });
+  });
+  it("#220 · GET /file-link ⇒ 200 {url} link FileBox ngắn hạn, no-store; tenant khác ⇒ 404; viewer đọc được", async () => {
+    await arrangeAi();
+    c.ai.script = () => ({ ok: true, text: agentJson({}) });
+    const up = await upload(c, P.hoa, {});
+    expect(up.status).toBe(201);
+    await c.ai.settled(up.json.id);
+    const r = await c.hubCall(P.tam, "GET", `${CBASE}/${up.json.id}/file-link`);
+    expect(r.status).toBe(200);
+    expect(r.json.url).toStartWith(c.fb.origin);
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    expect((await c.hubCall(P.an, "GET", `${CBASE}/${up.json.id}/file-link`)).status).toBe(404);
   });
 });

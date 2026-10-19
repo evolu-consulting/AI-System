@@ -30,7 +30,7 @@ lan: đầy đủ một phần (tenant + prompt injection) · nhanh cho màn hì
 | # | Quyết định |
 |---|---|
 | D2-01 | **Gọi agent:** cổng `ExtractionAgent` + `AgentTransport` (agent Claude trong Agent Hub, không Dify, không tool). Chạy agent qua job Hub cần run nền (hội thoại/flow/run ẩn) — đúng phần N2 `PackRunsBridge` (R14, đang làm song song); HD2 không đụng `modules/processes|runs`. Chưa tiêm transport ⇒ không chạy lượt trích: tải lên giữ hành vi HD1 (`extracting`), trích lại 503 `AGENT_UNAVAILABLE` (trước mọi SQL). Test int/e2e dùng transport giả tất định; transport trả mã lỗi ⇒ `extract_failed` + mã |
-| D2-02 | Hàng đợi trích trong tiến trình (không bảng mới, không migration). Mất khi hub-api khởi động lại ⇒ hàng kẹt `extracting`; nợ #HD2-1 (vòng quét theo tập khi có N2/engine) |
+| D2-02 | Hàng đợi trích trong tiến trình (không bảng mới, không migration). Mất khi hub-api khởi động lại ⇒ hàng kẹt `extracting`; nợ TECH-DEBT #218 (vòng quét theo tập khi có N2/engine) |
 | D2-03 | Không có danh bạ pháp nhân của mình (HD8) ⇒ HĐ tải lên `direction` null ⇒ cảnh báo `direction_unknown`; nhập tay có `direction` ⇒ không cảnh báo |
 | D2-04 | Nhập tay để `needs_review` (không tự `active` như `manual.py`): Q1 bắt buộc kiểm/duyệt |
 | D2-05 | Màn S05 bỏ nút "Xác nhận" (HD3) và khối "Ghi việc" (HD7); "Lưu" dùng PATCH HD1 (`version`). Lệch ghi `e2e/contracts-web/DEVIATIONS.md` |

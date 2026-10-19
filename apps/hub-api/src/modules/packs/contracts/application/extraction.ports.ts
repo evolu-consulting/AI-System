@@ -2,7 +2,12 @@
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ParentFacts } from "../domain/extract-prompt.rules";
-import type { Clause, ExtractedItemRow, RawExtraction } from "../domain/extraction.rules";
+import type {
+  Clause,
+  ExtractedItemRow,
+  RawExtraction,
+  VerifiedExtraction,
+} from "../domain/extraction.rules";
 import type { ContractFields } from "../domain/fields.rules";
 import type { ManualItem } from "../domain/manual.rules";
 import type { TaxLookup } from "../domain/party.rules";
@@ -25,6 +30,15 @@ export type ExtractionAgent = {
   }): Promise<AgentReply>;
 };
 
+/** Kiểm trích dẫn (phần nặng) NGOÀI tx; văn bản lớn chạy ở Worker (review Trung 1). Có thể ném (use case ⇒ `SAVE_FAILED`). */
+export type ExtractionVerifier = {
+  verify(i: {
+    raw: RawExtraction;
+    source: string | null;
+    kind: "contract" | "appendix";
+  }): Promise<VerifiedExtraction>;
+};
+
 /** Tra MST Cục Thuế (Q10). `fast` = người dùng đang chờ (nhập tay); không bao giờ ném. */
 export type TaxRegistry = { lookup(taxId: string, o: { fast: boolean }): Promise<TaxLookup> };
 
@@ -35,12 +49,8 @@ export type ExtractionSource = {
   file: SourceFile | null;
   parent: ParentFacts | null;
   fields: unknown;
-};
-export type LockedForResult = {
-  status: string;
-  kind: "contract" | "appendix";
-  direction: "sale" | "purchase" | null;
-  fields: unknown;
+  version: number;
+  /** Số liệu dòng hàng hiện có (cảnh báo tổng lệch khi giữ dòng cũ — D2-08). */
   items: ItemNumbers[];
 };
 export type ExtractionResult = {
@@ -51,7 +61,7 @@ export type ExtractionResult = {
 };
 export type RequestExtractOutcome =
   | { kind: "ok"; version: number }
-  | { kind: "not_found" | "busy" | "no_source" | "unavailable" };
+  | { kind: "not_found" | "busy" | "no_source" | "unavailable" | "not_allowed" };
 
 export type NewManualContract = {
   id: string;
@@ -67,10 +77,11 @@ export type NewManualContract = {
 export type ExtractionRepo = {
   /** Văn bản + tệp + tóm tắt HĐ gốc (phụ lục) của HĐ; không có / tenant khác ⇒ null. */
   source(id: string): Promise<ExtractionSource | null>;
-  /** `FOR UPDATE` hàng HĐ + số liệu dòng hàng hiện có. */
-  lock(id: string): Promise<LockedForResult | null>;
-  /** Một CTE: UPDATE HĐ (needs_review) + INSERT dòng hàng (lô JSON) + event `extracted`. */
-  saveResult(id: string, r: ExtractionResult): Promise<void>;
+  /** Một CTE có điều kiện `version = expected` ∧ `extracting` (không khoá trước): UPDATE HĐ + INSERT dòng hàng (lô JSON) +
+   * event `extracted`. `false` ⇒ hàng đã đổi (sửa tay mới hơn / trạng thái khác) ⇒ người gọi đọc lại rồi gộp lại. */
+  saveResult(id: string, r: ExtractionResult & { expected: number }): Promise<boolean>;
+  /** Tra MST lại (`needs_review`, `version = expected`): chỉ thay `warnings`, không tăng version. */
+  saveWarnings(id: string, warnings: Warning[], expected: number): Promise<boolean>;
   /** Còn `extracting` ⇒ UPDATE `extract_failed` + `error` (mã) + event; trả có ghi hay không. */
   saveFailure(id: string, code: string): Promise<boolean>;
   /** Trích lại: khoá + kiểm trạng thái/nguồn + đặt `extracting` + event, một câu. */

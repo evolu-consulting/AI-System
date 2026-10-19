@@ -3,7 +3,7 @@
 import { describe, expect, it } from "bun:test";
 import { applyExtraction, type RawExtraction } from "./extraction.rules";
 import { fillFields } from "./fields.rules";
-import { companyKey, isActiveStatus, namesMatch, partyCheck } from "./party.rules";
+import { isActiveStatus, partyCheck, partyForm, sameName } from "./party.rules";
 import {
   norm,
   numbersIn,
@@ -227,11 +227,34 @@ describe("HD-FR-25 · MST + Cục Thuế", () => {
     expect(isActiveStatus("Đang hoạt động (đã được cấp GCN ĐKT)")).toBe(true);
     expect(isActiveStatus("Ngừng hoạt động và đã đóng MST")).toBe(false);
     expect(isActiveStatus(null)).toBeNull();
-    expect(companyKey("CÔNG TY TNHH BAO BÌ PHƯƠNG NAM")).toBe("bao bi phuong nam");
+  });
+});
+
+describe("Trung 3 · same_name khớp mgmt-app", () => {
+  it("Trung 3 · party_form / same_name khớp enrich.py + link.py (ca đối chiếu mgmt-app)", () => {
+    // link.py:90 docstring: "Cty TNHH ABC" == "CÔNG TY TNHH ABC"
+    expect(partyForm("Cty TNHH ABC")).toBe(partyForm("CÔNG TY TNHH ABC"));
+    expect(partyForm("CÔNG TY TNHH BAO BÌ PHƯƠNG NAM")).toBe("baobiphuongnam");
+    expect(partyForm("Công ty CP Đông Á")).toBe("cpdonga"); // "cp" không thuộc _LEGAL (chỉ "co phan"/"ctcp")
     expect(
-      namesMatch("Công ty TNHH Bao Bì Phương Nam", "CÔNG TY TNHH MỘT THÀNH VIÊN BAO BÌ PHƯƠNG NAM"),
+      sameName("Công ty TNHH Bao Bì Phương Nam", ["CÔNG TY TNHH MỘT THÀNH VIÊN BAO BÌ PHƯƠNG NAM"]),
     ).toBe(true);
-    expect(namesMatch("Công ty TNHH Bao Bì Phương Nam", "CÔNG TY CỔ PHẦN XYZ")).toBe(false);
+    expect(sameName("Công ty TNHH Bao Bì Phương Nam", ["CÔNG TY CỔ PHẦN XYZ"])).toBe(false);
+    // min(len) ≥ 4 mới so chứa: tên ngắn "A" không "khớp" mọi tên có chữ a
+    expect(sameName("Công ty A", ["CÔNG TY TNHH ABA"])).toBe(false);
+    expect(sameName("Công ty ABCD", ["CÔNG TY TNHH ABCD VIỆT NAM"])).toBe(true);
+    expect(sameName("Công ty ABC", ["CÔNG TY TNHH ABCX"])).toBe(false);
+    // so cả tên viết tắt và tên quốc tế
+    expect(
+      sameName("PHUONG NAM PACKAGING", [
+        "CÔNG TY TNHH BAO BÌ PHƯƠNG NAM",
+        null,
+        "PHUONG NAM PACKAGING CO., LTD",
+      ]),
+    ).toBe(true);
+    expect(sameName("PNP", ["CÔNG TY TNHH BAO BÌ PHƯƠNG NAM", "PNP", null])).toBe(true);
+    expect(sameName(null, ["X"])).toBe(false);
+    expect(sameName("X", [null, undefined, ""])).toBe(false);
   });
   it("partyCheck + cảnh báo: không tồn tại / ngừng / tên khác / không nêu MST", () => {
     const f = fillFields({

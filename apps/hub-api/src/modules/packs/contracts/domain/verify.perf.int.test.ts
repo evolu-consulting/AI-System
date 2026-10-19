@@ -1,6 +1,6 @@
 // HD-FR-22 · Luật 4c · HD2 plan "Thiết kế hiệu năng": kiểm cả bản trích (23 trường + 50 dòng hàng + cảnh báo) cho HĐ 30.000 ký
-// tự ≤ 5 ms (p95 của 200 lượt, sau 20 lượt làm nóng). In số đo thật.
-import { expect, it } from "bun:test";
+// tự ≤ 5 ms (p95 của 200 lượt, sau 20 lượt làm nóng). In số đo thật. Chạy: `PERF=1 bun test …verify.perf.int.test.ts` / `bun run test:perf`.
+import { describe, expect, it } from "bun:test";
 import { applyExtraction, type RawExtraction } from "./extraction.rules";
 import { ruleWarnings } from "./warnings.rules";
 
@@ -59,30 +59,33 @@ const once = () => {
   return ruleWarnings(out.fields, out.items ?? [], "none_own");
 };
 
-it("HD-FR-22 · Luật 4c · verify HĐ 30.000 ký tự + 50 dòng: p95 ≤ 5 ms", () => {
-  expect(TEXT.length).toBe(30_000);
-  for (let i = 0; i < 20; i++) once();
-  const ms: number[] = [];
-  for (let i = 0; i < 200; i++) {
-    const t = performance.now();
-    once();
-    ms.push(performance.now() - t);
-  }
-  ms.sort((a, b) => a - b);
-  const p50 = ms[99] ?? 0;
-  const p95 = ms[189] ?? 0;
-  console.log(
-    `verify 30k: p50 ${p50.toFixed(3)} ms · p95 ${p95.toFixed(3)} ms · max ${ms[199]?.toFixed(3)} ms`,
-  );
-  const out = applyExtraction({
-    raw: RAW,
-    source: TEXT,
-    kind: "contract",
-    oldFields: {},
-    hasItems: false,
+// Đồng hồ thật ⇒ chỉ chạy dưới `PERF=1` (`bun run test:perf`), không trong `bun test` (review Thấp 8).
+describe.if(process.env.PERF === "1")("HD-FR-22 · perf verify", () => {
+  it("HD-FR-22 · Luật 4c · verify HĐ 30.000 ký tự + 50 dòng: p95 ≤ 5 ms", () => {
+    expect(TEXT.length).toBe(30_000);
+    for (let i = 0; i < 20; i++) once();
+    const ms: number[] = [];
+    for (let i = 0; i < 200; i++) {
+      const t = performance.now();
+      once();
+      ms.push(performance.now() - t);
+    }
+    ms.sort((a, b) => a - b);
+    const p50 = ms[99] ?? 0;
+    const p95 = ms[189] ?? 0;
+    console.log(
+      `verify 30k: p50 ${p50.toFixed(3)} ms · p95 ${p95.toFixed(3)} ms · max ${ms[199]?.toFixed(3)} ms`,
+    );
+    const out = applyExtraction({
+      raw: RAW,
+      source: TEXT,
+      kind: "contract",
+      oldFields: {},
+      hasItems: false,
+    });
+    expect(out.items?.every((x) => x.verified)).toBe(true);
+    expect(out.fields.total_value.verified).toBe(true);
+    expect(out.fields.payment_terms.verified).toBe(false);
+    expect(p95).toBeLessThanOrEqual(5);
   });
-  expect(out.items?.every((x) => x.verified)).toBe(true);
-  expect(out.fields.total_value.verified).toBe(true);
-  expect(out.fields.payment_terms.verified).toBe(false);
-  expect(p95).toBeLessThanOrEqual(5);
 });

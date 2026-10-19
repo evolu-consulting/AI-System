@@ -1,14 +1,19 @@
 // HD-FR-25 · Q10: dựng `PartyCheck` từ kết quả tra MST Cục Thuế (port `companies/registry.py:41-48` `is_active` +
-// so tên của `companies/enrich.py`). Thuần.
-import { foldVi } from "./fold.rules";
+// `enrich.py:20-26` `same_name` + `contracts/link.py:86-91` `party_form`). Thuần.
 import type { PartyCheck } from "./warnings.rules";
 import { normalizeTaxId } from "./warnings.rules";
 
-/** Kết quả cổng tra MST (adapter HTTP dựng). */
+/** Kết quả cổng tra MST (adapter HTTP dựng). `unavailable` có `retryAt` (epoch ms) khi biết lúc nên tra lại (khe 2 s / 429). */
 export type TaxLookup =
-  | { result: "found"; name: string; status: string | null }
-  | { result: "not_found" | "unavailable" | "invalid" };
-
+  | {
+      result: "found";
+      name: string;
+      status: string | null;
+      shortName?: string | null;
+      internationalName?: string | null;
+    }
+  | { result: "unavailable"; retryAt?: number }
+  | { result: "not_found" | "invalid" };
 /** "Đang hoạt động" ⇒ true; "ngừng/đóng/chấm dứt" ⇒ false; còn lại chưa rõ. */
 export function isActiveStatus(status: string | null): boolean | null {
   const s = (status ?? "").toLowerCase();
@@ -17,24 +22,28 @@ export function isActiveStatus(status: string | null): boolean | null {
   return null;
 }
 
-const LEGAL_FORMS =
-  /\b(cong ty|cty|tnhh|co phan|cp|mtv|mot thanh vien|hai thanh vien tro len|trach nhiem huu han|chi nhanh|doanh nghiep tu nhan|dntn|jsc|co\.?,? ?ltd|ltd|company|limited)\b/g;
+/** `link.py:86` `_LEGAL` nguyên văn. */
+const LEGAL = /\b(cong ty|co phan|trach nhiem huu han|tnhh|ctcp|cty|mtv|mot thanh vien)\b/g;
 
-/** Khoá so tên: bỏ dấu, bỏ loại hình doanh nghiệp và dấu câu. */
-export function companyKey(name: string): string {
-  return foldVi(name)
-    .replace(/[^\p{L}\p{N} ]/gu, " ")
-    .replace(LEGAL_FORMS, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/** `link.py:89-91` `party_form`: bỏ dấu (`đ→d`), bỏ loại hình doanh nghiệp, bỏ mọi ký tự không phải chữ/số/`_`. */
+export function partyForm(s: string | null | undefined): string {
+  const folded = (s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/đ/g, "d");
+  return folded.replace(LEGAL, " ").replace(/[^\p{L}\p{N}_]/gu, "");
 }
 
-/** Tên trong văn bản khớp tên Cục Thuế khi khoá bằng nhau hoặc khoá này chứa khoá kia. */
-export function namesMatch(written: string, registry: string): boolean {
-  const [a, b] = [companyKey(written), companyKey(registry)];
-  return a.length > 0 && b.length > 0 && (a === b || a.includes(b) || b.includes(a));
+/** `enrich.py:20-26` `same_name`: bằng nhau, hoặc chứa nhau khi cả hai dài ≥ 4; so với mọi tên (chính, viết tắt, quốc tế). */
+export function sameName(a: string | null, names: readonly (string | null | undefined)[]): boolean {
+  const mine = partyForm(a);
+  return names.some((n) => {
+    const theirs = partyForm(n);
+    if (!mine || !theirs) return false;
+    return (
+      mine === theirs ||
+      (Math.min(mine.length, theirs.length) >= 4 &&
+        (mine.includes(theirs) || theirs.includes(mine)))
+    );
+  });
 }
-
 /** Một bên của HĐ: không MST ⇒ `no_tax`; MST sai định dạng ⇒ `invalid` (đã có cảnh báo `tax_id_format`). */
 export function partyCheck(
   name: string | null,
@@ -60,6 +69,8 @@ export function partyCheck(
     registryName: lookup.name,
     status: lookup.status,
     active: isActiveStatus(lookup.status),
-    nameMatch: name ? namesMatch(name, lookup.name) : null,
+    nameMatch: name
+      ? sameName(name, [lookup.name, lookup.shortName, lookup.internationalName])
+      : null,
   };
 }

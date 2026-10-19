@@ -6,7 +6,6 @@ import { sql } from "drizzle-orm";
 import type {
   ExtractionRepo,
   ExtractionSource,
-  LockedForResult,
   RequestExtractOutcome,
 } from "../application/extraction.ports";
 
@@ -15,6 +14,8 @@ const num = (v: unknown): number | null => (v === null || v === undefined ? null
 
 type SourceRow = {
   status: string;
+  version: number;
+  items: unknown;
   kind: "contract" | "appendix";
   text: string | null;
   fields: unknown;
@@ -32,8 +33,11 @@ function toSource(r: SourceRow): ExtractionSource {
     unit: string | null;
     unit_price: number | string | null;
   }[];
+  const items = (json(r.items) ?? []) as { qty: unknown; unit_price: unknown }[];
   return {
     status: r.status,
+    version: r.version,
+    items: items.map((i) => ({ qty: num(i.qty), unit_price: num(i.unit_price) })),
     kind: r.kind,
     text: r.text,
     fields: json(r.fields),
@@ -54,7 +58,9 @@ const ITEMS_JSON = sql`(code text, name text, spec text, unit text, qty numeric,
 function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
   return async (id) => {
     const rows =
-      await tx.execute<SourceRow>(sql`select c.status, c.kind, c.source_text as text, c.fields,
+      await tx.execute<SourceRow>(sql`select c.status, c.version, c.kind, c.source_text as text, c.fields,
+        (select coalesce(jsonb_agg(jsonb_build_object('qty', i.qty, 'unit_price', i.unit_price)), '[]'::jsonb)
+          from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = ${tenantId}::uuid) as items,
         f.org, f.file_id, f.mime, p.fields as p_fields,
         (select coalesce(jsonb_agg(jsonb_build_object('code', i.code, 'name', i.name, 'unit', i.unit,
             'unit_price', i.unit_price) order by i.ord), '[]'::jsonb)
@@ -68,49 +74,39 @@ function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
   };
 }
 
-function lockQ(tx: Tx, tenantId: string): ExtractionRepo["lock"] {
-  return async (id): Promise<LockedForResult | null> => {
-    const rows = await tx.execute<{
-      status: string;
-      kind: "contract" | "appendix";
-      direction: "sale" | "purchase" | null;
-      fields: unknown;
-      items: unknown;
-    }>(sql`select c.status, c.kind, c.direction, c.fields,
-        (select coalesce(jsonb_agg(jsonb_build_object('qty', i.qty, 'unit_price', i.unit_price)), '[]'::jsonb)
-          from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = ${tenantId}::uuid) as items
-      from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update of c`);
-    const r = rows[0];
-    if (!r) return null;
-    const items = (json(r.items) ?? []) as { qty: unknown; unit_price: unknown }[];
-    return {
-      status: r.status,
-      kind: r.kind,
-      direction: r.direction,
-      fields: json(r.fields),
-      items: items.map((i) => ({ qty: num(i.qty), unit_price: num(i.unit_price) })),
-    };
-  };
-}
-
 function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
   return async (id, res) => {
     const items = res.items ?? [];
-    await tx.execute(sql`with u as (
+    const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts set fields = ${JSON.stringify(res.fields)}::jsonb,
           clauses = ${JSON.stringify(res.clauses)}::jsonb, warnings = ${JSON.stringify(res.warnings)}::jsonb,
           status = 'needs_review', error = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'extracting'
+          and version = ${res.expected}::int
         returning id),
       i as (
         insert into contracts.contract_items (tenant_id, contract_id, ord, code, name, spec, unit, qty, unit_price,
           vat_rate, moq, lead_time_days, valid_from, valid_to, quote, verified, edited)
         select ${tenantId}::uuid, u.id, x.ord, x.code, x.name, x.spec, x.unit, x.qty, x.unit_price, x.vat_rate, x.moq,
           x.lead_time_days, x.valid_from, x.valid_to, nullif(x.quote, ''), x.verified, false
-        from u, jsonb_to_recordset(${JSON.stringify(items)}::jsonb) as x ${ITEMS_JSON})
-      insert into contracts.contract_events (tenant_id, contract_id, type, data)
-      select ${tenantId}::uuid, u.id, 'extracted',
-        jsonb_build_object('items', ${items.length}::int, 'warnings', ${res.warnings.length}::int) from u`);
+        from u, jsonb_to_recordset(${JSON.stringify(items)}::jsonb) as x ${ITEMS_JSON}),
+      e as (
+        insert into contracts.contract_events (tenant_id, contract_id, type, data)
+        select ${tenantId}::uuid, u.id, 'extracted',
+          jsonb_build_object('items', ${items.length}::int, 'warnings', ${res.warnings.length}::int) from u)
+      select id from u`);
+    return rows.length > 0;
+  };
+}
+
+function saveWarningsQ(tx: Tx, tenantId: string): ExtractionRepo["saveWarnings"] {
+  return async (id, warnings, expected) => {
+    const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts
+      set warnings = ${JSON.stringify(warnings)}::jsonb
+      where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'needs_review'
+        and version = ${expected}::int
+      returning id`);
+    return rows.length > 0;
   };
 }
 
@@ -151,7 +147,10 @@ function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtra
     if (!r) return { kind: "not_found" };
     if (r.version !== null) return { kind: "ok", version: r.version };
     if (r.status === "extracting") return { kind: "busy" };
-    return r.has_src ? { kind: "busy" } : { kind: "no_source" };
+    // Đã duyệt/đang theo dõi (HD3+): không trích lại (review Thấp 7).
+    if (r.status !== "needs_review" && r.status !== "extract_failed")
+      return { kind: "not_allowed" };
+    return { kind: "no_source" };
   };
 }
 
@@ -183,8 +182,8 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
 export function extractionRepo(tx: Tx, tenantId: string): ExtractionRepo {
   return {
     source: sourceQ(tx, tenantId),
-    lock: lockQ(tx, tenantId),
     saveResult: saveResultQ(tx, tenantId),
+    saveWarnings: saveWarningsQ(tx, tenantId),
     saveFailure: saveFailureQ(tx, tenantId),
     requestExtract: requestExtractQ(tx, tenantId),
     insertManual: insertManualQ(tx, tenantId),

@@ -8,6 +8,7 @@ import { contract, contractAsHub } from "./dataset-contract";
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
 const NEW_ID = "c1000000-0000-4000-8000-000000000009";
+const FILE_URL = "https://files.e2e.test/d/hd-bao-bi-2026.pdf";
 type Sent = { method: string; path: string; body: unknown };
 
 async function install(page: Page): Promise<Sent[]> {
@@ -38,6 +39,7 @@ async function install(page: Page): Promise<Sent[]> {
       });
     if (req.method() === "POST")
       return json(r, 201, { id: NEW_ID, status: "needs_review", version: 1 });
+    if (path.endsWith("/file-link")) return json(r, 200, { url: FILE_URL });
     return json(r, 200, { ...contractAsHub(), id: path.split("/").pop() });
   });
   return sent;
@@ -106,4 +108,24 @@ test("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không g�
     "Không đọc được số ở: Đơn giá “Gạo”. Gõ kiểu 91.500.000 hoặc 1,5.",
   );
   expect(sent).toEqual([]);
+});
+
+test("HD2 #220 · S05 · «Xem file gốc» xin link qua API (Bearer) rồi mở ở tab mới", async ({
+  page,
+  context,
+}) => {
+  await install(page);
+  await context.route("https://files.e2e.test/**", (r) =>
+    r.fulfill({ status: 200, contentType: "text/plain", body: "PDF" }),
+  );
+  await page.goto(`/contracts/${contract.id}`);
+  const linkReq = page.waitForRequest((q) =>
+    q.url().endsWith(`/contracts/${contract.id}/file-link`),
+  );
+  const [popup] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.getByRole("link", { name: "📄 Xem file gốc" }).click(),
+  ]);
+  expect((await linkReq).headers().authorization).toBe("Bearer e2e.access.token");
+  await expect(popup).toHaveURL(FILE_URL);
 });

@@ -20,6 +20,8 @@ export type AgentTransport = (req: {
   system: string;
   prompt: string;
   file: SourceFile | null;
+  /** Huỷ khi hết hạn giờ — transport phải dừng job/run Hub tương ứng. */
+  signal: AbortSignal;
 }) => Promise<{ ok: true; text: string } | { ok: false; code: AgentFailCode }>;
 
 /** Trần đầu ra đọc (32k token ≈ 200 KB chữ Việt). */
@@ -48,12 +50,36 @@ export function parseExtraction(text: string): RawExtraction | null {
 
 const hexNonce = (): string => crypto.randomUUID().replace(/-/g, "");
 
+/** Hạn giờ huỷ được: `wait` resolve khi hết giờ; `cancel` gỡ bộ hẹn (test tiêm bản giả — không chờ đồng hồ thật). */
+export type Deadline = (ms: number) => { wait: Promise<void>; cancel(): void };
+const realDeadline: Deadline = (ms) => {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  const wait = new Promise<void>((res) => {
+    t = setTimeout(res, ms);
+  });
+  return { wait, cancel: () => clearTimeout(t) };
+};
+
+export type ExtractionAgentOptions = {
+  nonce?: () => string;
+  /** Trần một lượt agent (mặc định 5 phút, env `CONTRACTS_EXTRACT_TIMEOUT_S`); hết ⇒ `TIMEOUT` + huỷ `signal` (review Trung 2). */
+  timeoutMs?: number;
+  deadline?: Deadline;
+};
+
+const TIMEOUT_REPLY: AgentReply = { ok: false, code: "TIMEOUT" };
+
 export function createExtractionAgent(
   transport: AgentTransport,
-  nonce: () => string = hexNonce,
+  o: ExtractionAgentOptions = {},
 ): ExtractionAgent {
+  const nonce = o.nonce ?? hexNonce;
+  const timeoutMs = o.timeoutMs ?? 300_000;
+  const deadline = o.deadline ?? realDeadline;
   return {
     extract: async (req): Promise<AgentReply> => {
+      const ac = new AbortController();
+      const dl = deadline(timeoutMs);
       try {
         const { system, prompt } = buildExtractPrompt({
           text: req.text ?? "(The document is the attached file.)",
@@ -61,18 +87,26 @@ export function createExtractionAgent(
           schema: extractionSchemaText(),
           parent: req.parent,
         });
-        const out = await transport({
+        const call = transport({
           who: req.who,
           contractId: req.contractId,
           system,
           prompt,
           file: req.file,
+          signal: ac.signal,
         });
+        const out = await Promise.race([call, dl.wait.then(() => null)]);
+        if (out === null) {
+          ac.abort();
+          return TIMEOUT_REPLY;
+        }
         if (!out.ok) return out;
         const raw = parseExtraction(out.text);
         return raw ? { ok: true, raw } : { ok: false, code: "INVALID_OUTPUT" };
       } catch {
         return { ok: false, code: "AGENT_FAILED" };
+      } finally {
+        dl.cancel();
       }
     },
   };

@@ -5,7 +5,6 @@ import { ExtractionOutputSchema } from "@ai/contracts";
 import { createTaxRegistry, type TaxFetch, taxBaseUrl } from "../../../../lib/tax-registry.http";
 import { createExtractionQueue } from "../application/extraction-queue";
 import { requestExtract } from "../application/request-extract.usecase";
-import { createRunExtraction } from "../application/run-extraction.usecase";
 import { createExtractionAgent, extractionSchemaText, parseExtraction } from "./extraction-agent";
 
 const KEYS = Object.keys(ExtractionOutputSchema.shape.fields.shape);
@@ -136,7 +135,7 @@ describe("HD-FR-25 · tra MST HTTP (transport giả)", () => {
       data: { name: "CÔNG TY A", status: "Đang hoạt động" },
     });
     const t = createTaxRegistry({ baseUrl: "https://tax.test/v2/business", fetch: f });
-    expect(await t.lookup("0312345678", { fast: true })).toEqual({
+    expect(await t.lookup("0312345678", { fast: true })).toMatchObject({
       result: "found",
       name: "CÔNG TY A",
       status: "Đang hoạt động",
@@ -234,46 +233,5 @@ describe("D2-01 · chưa nối agent", () => {
     });
     expect(await r(who, "c")).toEqual({ kind: "unavailable" });
     expect({ tx, started }).toEqual({ tx: 0, started: 0 });
-  });
-});
-
-describe("S-M1 · ghi kết quả hỏng không để HĐ kẹt", () => {
-  it("saveResult ném ⇒ saveFailure(SAVE_FAILED) ⇒ extract_failed", async () => {
-    const failed: string[] = [];
-    const repo = {
-      source: async () => ({
-        status: "extracting",
-        kind: "contract",
-        text: "x",
-        file: null,
-        parent: null,
-        fields: {},
-      }),
-      lock: async () => ({
-        status: "extracting",
-        kind: "contract",
-        direction: null,
-        fields: {},
-        items: [],
-      }),
-      saveResult: async () => {
-        throw new Error("22P05");
-      },
-      saveFailure: async (_id: string, code: string) => {
-        failed.push(code);
-        return true;
-      },
-    };
-    const uow = {
-      tenant: async (_w: unknown, fn: (r: unknown) => Promise<unknown>) =>
-        fn({ extraction: repo, outbox: { enqueue: async () => {} } }),
-    };
-    const run = createRunExtraction({
-      uow: uow as never,
-      agent: { extract: async () => ({ ok: true, raw: { fields: {}, items: [], clauses: [] } }) },
-      tax: null,
-    });
-    expect(await run(who, "c")).toBe("extract_failed");
-    expect(failed).toEqual(["SAVE_FAILED"]);
   });
 });

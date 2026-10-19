@@ -102,6 +102,13 @@ export function contractsRoutes(
     if (!url) throw appError("NOT_FOUND");
     return c.redirect(url, 302);
   });
+  // HD2 #220: cùng link ngắn hạn nhưng trả JSON — trình duyệt mở tab mới không mang Bearer, nên S05 gọi API rồi mở `url`.
+  r.get("/contracts/:id/file-link", read, async (c) => {
+    const url = await uc.fileLink(whoOf(c.get("user")), idOf(c));
+    if (!url) throw appError("NOT_FOUND");
+    c.header("cache-control", "no-store");
+    return c.json({ url });
+  });
   // T9 · HD-AC06/07/09: guard `write` TRƯỚC đọc thân (viewer ⇒ 403, 0 SQL); id ⇒ thân ⇒ 400/422 trước SQL; tenant khác ⇒ 404.
   // Thân > 256 KiB ⇒ 413 `PAYLOAD_TOO_LARGE` khi đọc (thân hợp lệ tối đa ≈ 23 × 2.000 ký tự < 200 KiB; review m-02).
   r.patch(

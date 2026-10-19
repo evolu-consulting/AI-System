@@ -2,7 +2,13 @@
 // kiểm từng trường/dòng, `effective_date` chỉ cho phụ lục, gộp giữ trường `edited`, dòng hàng chỉ ghi khi HĐ chưa có dòng
 // nào (D-08: `contract_items` không DELETE ở HD1/HD2), chủ đề điều khoản theo số điều. Thuần.
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
-import { itemVerified, prepareSource, type RawField, verifyFields } from "./verify.rules";
+import {
+  itemVerified,
+  prepareSource,
+  type RawField,
+  type VerifiedField,
+  verifyFields,
+} from "./verify.rules";
 
 export type RawItem = {
   code: string | null;
@@ -42,20 +48,49 @@ export type ApplyOutput = {
   clauses: Clause[];
 };
 
-export function applyExtraction(i: ApplyInput): ApplyOutput {
+/** Phần nặng (chuẩn hoá cả văn bản + dò từng quote): chạy NGOÀI tx, văn bản lớn ở Worker (review Trung 1). */
+export type VerifiedExtraction = {
+  fields: Record<ContractFieldKey, VerifiedField>;
+  items: ExtractedItemRow[];
+  clauses: Clause[];
+};
+
+export function verifyExtraction(i: {
+  raw: RawExtraction;
+  source: string | null;
+  kind: "contract" | "appendix";
+}): VerifiedExtraction {
   const src = prepareSource(i.source ?? "");
   const raw = { ...i.raw.fields };
   if (i.kind === "contract") raw.effective_date = { value: null, quote: "" };
-  const fields = mergeFields(i.oldFields, verifyFields(raw, src));
-  const items = i.hasItems
-    ? null
-    : i.raw.items.map((it, ord) => ({
-        ...it,
-        ord,
-        verified: itemVerified(it, src),
-        edited: false as const,
-      }));
+  const items = i.raw.items.map((it, ord) => ({
+    ...it,
+    ord,
+    verified: itemVerified(it, src),
+    edited: false as const,
+  }));
   const seen = new Set<string>();
   const clauses = i.raw.clauses.filter((c) => !seen.has(c.number) && seen.add(c.number));
-  return { fields, items, clauses: clauses.map((c) => ({ number: c.number, topic: c.topic })) };
+  return {
+    fields: verifyFields(raw, src),
+    items,
+    clauses: clauses.map((c) => ({ number: c.number, topic: c.topic })),
+  };
+}
+
+/** Phần rẻ (trong tx ghi): gộp giữ `edited`; HĐ đã có dòng hàng ⇒ giữ dòng cũ. */
+export function mergeExtraction(
+  v: VerifiedExtraction,
+  oldFields: unknown,
+  hasItems: boolean,
+): ApplyOutput {
+  return {
+    fields: mergeFields(oldFields, v.fields),
+    items: hasItems ? null : v.items,
+    clauses: v.clauses,
+  };
+}
+
+export function applyExtraction(i: ApplyInput): ApplyOutput {
+  return mergeExtraction(verifyExtraction(i), i.oldFields, i.hasItems);
 }

@@ -4,7 +4,7 @@ import type { PackWho } from "../../kit/application/ports";
 import { type ManualInput, manualFields, manualItems } from "../domain/manual.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
 import type { ExtractionUow, TaxRegistry } from "./extraction.ports";
-import { partiesOf, prefetchTax } from "./run-extraction.usecase";
+import { partiesOf, prefetchTax, retryAtOf, type TaxRetryScheduler } from "./tax-parties";
 
 export type CreateManual = (
   who: PackWho,
@@ -15,6 +15,8 @@ export function createManual(d: {
   uow: ExtractionUow;
   tax: TaxRegistry | null;
   newId: () => string;
+  /** MST đối tác chưa tra được vì cổng hẹn giờ ⇒ hẹn tra lại (review Trung 4). */
+  schedule?: TaxRetryScheduler;
 }): CreateManual {
   return async (who, input) => {
     const fields = manualFields(input);
@@ -34,6 +36,8 @@ export function createManual(d: {
       await r.outbox.enqueue([{ entity: "contract", entity_id: row.id, op: "upsert" }]);
       return row;
     });
+    const at = retryAtOf(fields, hits);
+    if (at !== null) d.schedule?.(who, out.id, at, 1);
     return { id: out.id, status: "needs_review", version: out.version };
   };
 }

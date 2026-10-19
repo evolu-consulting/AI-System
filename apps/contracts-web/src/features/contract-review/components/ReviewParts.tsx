@@ -6,6 +6,28 @@ import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 
+export type FileRef = { href: string; name: string; onOpen: () => void };
+
+/** "📄 Xem file gốc": giữ `<a>` như mgmt-app (khung/ảnh), bấm ⇒ `onOpen` (xin link có Bearer, #220). */
+function FileLink({ file, title }: { file: FileRef; title?: string }) {
+  const { t } = useTranslation();
+  return (
+    <a
+      href={file.href}
+      target="_blank"
+      rel="noreferrer"
+      className="btn btn-outline"
+      title={title}
+      onClick={(e) => {
+        e.preventDefault();
+        file.onOpen();
+      }}
+    >
+      {t("contracts.review.viewFile")}
+    </a>
+  );
+}
+
 /** Nút trên tiêu đề (`ContractPage.tsx:95-109`): "Xem file gốc" + "Lưu" ("Xác nhận" thuộc HD3). */
 export function ReviewActions({
   file,
@@ -13,7 +35,7 @@ export function ReviewActions({
   busy,
   onSave,
 }: {
-  file: { href: string; name: string } | null;
+  file: FileRef | null;
   canSave: boolean;
   busy: boolean;
   onSave: () => void;
@@ -21,17 +43,7 @@ export function ReviewActions({
   const { t } = useTranslation();
   return (
     <>
-      {file && (
-        <a
-          href={file.href}
-          target="_blank"
-          rel="noreferrer"
-          className="btn btn-outline"
-          title={file.name}
-        >
-          {t("contracts.review.viewFile")}
-        </a>
-      )}
+      {file && <FileLink file={file} title={file.name} />}
       {canSave && (
         <button type="button" className="btn btn-quiet" disabled={busy} onClick={onSave}>
           {busy ? t("contracts.review.saving") : t("contracts.common.save")}
@@ -71,18 +83,15 @@ export function WarningList({ warnings }: { warnings: readonly ContractWarning[]
   );
 }
 
-export function ExtractFailed({ fileHref }: { fileHref: string | null }) {
+export function ExtractFailed({ file }: { file: FileRef | null }) {
   const { t } = useTranslation();
   return (
     <Panel className="mb-4 p-5">
       <p className="font-medium text-late">{t("contracts.review.failedTitle")}</p>
       <p className="mt-1 text-sm text-dim">{t("contracts.review.failedBody")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {fileHref && (
-          <a href={fileHref} target="_blank" rel="noreferrer" className="btn btn-outline">
-            {t("contracts.review.viewFile")}
-          </a>
-        )}
+        {file && <FileLink file={file} />}
+
         <Link to="/contracts/new" className="btn btn-primary">
           {t("contracts.review.manual")}
         </Link>
