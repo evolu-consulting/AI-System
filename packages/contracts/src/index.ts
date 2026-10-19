@@ -2,6 +2,7 @@
 export * from "./access";
 export * from "./audit";
 export * from "./auth";
+export * from "./auth-limit";
 export * from "./command-test";
 export * from "./commands";
 export * from "./common";

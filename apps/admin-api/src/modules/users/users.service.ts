@@ -32,6 +32,8 @@ import { uniqueViolation } from "../../lib/pg-errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { generateTempPassword } from "../auth/auth.rules";
 import { revokeUserSessions } from "../auth/auth.service";
+import type { LoginLimiter } from "../auth/limit/limit.redis";
+import { auditLockClear, clearAccountLock } from "../auth/limit/limit.service";
 import { canResetTotpFor } from "../auth/totp/totp.rules";
 import { adminResetTotp } from "../auth/totp/totp.service";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
@@ -52,7 +54,7 @@ import {
   userStatus,
 } from "./users.rules";
 
-export type UsersCtx = { db: Db; hooks?: TestHooks };
+export type UsersCtx = { db: Db; hooks?: TestHooks; limiter?: LoginLimiter; now?: () => Date };
 export type Call = { ctx: UsersCtx; actor: Actor; scope: DbScope };
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -325,21 +327,24 @@ export function lockUser(c: Call, id: string): Promise<User> {
   });
 }
 
-/** Mở khoá: `active=true` + xoá khoá tạm; không gỡ `locked_by_tenant` (M1-R10). Lặp lại không tăng version. */
+/** Mở khoá: `active=true` + xoá khoá tạm (DB + Redis L1); không gỡ `locked_by_tenant` (M1-R10). Lặp lại không tăng version. */
 export function unlockUser(c: Call, id: string): Promise<User> {
   return configWrite(c, "user.save", async (tx, ch) => {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
     const clear = { failedLogins: 0, lockedUntil: null };
+    const now = c.ctx.now?.() ?? new Date();
+    const redisLocked = await clearAccountLock(c.ctx.limiter, u, now);
     // Chỉ bỏ khoá tạm (sổ sách đăng nhập) → không bump (M3-R15); mở lại active → bump.
-    // Bỏ khoá tạm không phải thay đổi cấu hình → không audit (Q6).
     if (!u.active) {
       await repo.updateUser(tx, u, { ...clear, active: true }, { by: c.actor.userId });
       ch.changed({ entity: "user", tenantId: u.tenantId });
       return rereadAudited(tx, ch, "unlock", u);
     }
-    if (u.lockedUntil === null) return toUser(u);
-    await repo.updateUser(tx, u, clear, false);
-    return reread(tx, u);
+    if (u.lockedUntil === null && !redisLocked) return toUser(u);
+    if (u.lockedUntil !== null) await repo.updateUser(tx, u, clear, false);
+    const out = await reread(tx, u);
+    await auditLockClear(tx, u, c.actor.userId);
+    return out;
   });
 }
 

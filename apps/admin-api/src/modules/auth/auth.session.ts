@@ -6,8 +6,10 @@ import type { Db, Tx } from "@ai/db";
 import type { ClientKind } from "../../lib/http";
 import type { JwtKeys } from "../../lib/jwt";
 import { signAccessToken } from "../../lib/jwt";
+import type { Semaphore } from "../../lib/semaphore";
 import { type AuthUser, insertRefresh } from "./auth.repo";
 import { ACCESS_TOKEN_TTL_S } from "./auth.rules";
+import type { LoginLimiter } from "./limit/limit.redis";
 
 export type AuthCtx = {
   db: Db;
@@ -18,8 +20,13 @@ export type AuthCtx = {
   legacySunset?: Date;
   /** Chỉ cho test backend: chạy giữa lúc đọc ảnh chụp user và lúc verify mật khẩu (tái hiện race khoá tạm). */
   beforeVerify?: () => Promise<void>;
+  /** L1 (#224): giới hạn đăng nhập trên Redis; vắng ⇒ không giới hạn (test in-process M1–M4; server.ts luôn điền ở production). */
+  limiter?: LoginLimiter;
+  /** L1 (#224): trần phép băm/verify mật khẩu đồng thời; vắng ⇒ không trần. */
+  hashSlots?: Semaphore;
 };
-export type ClientMeta = { client: ClientKind; userAgent: string | null };
+/** `ip`: IP client (L1) — chỉ để đếm giới hạn, không ghi DB. */
+export type ClientMeta = { client: ClientKind; userAgent: string | null; ip?: string | null };
 /** Grant chưa gắn refresh token vào body: route quyết định cookie (web) hay body (extension). */
 export type Session = { grant: Omit<TokenGrant, "refresh_token">; refreshToken: string };
 

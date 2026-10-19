@@ -29,6 +29,8 @@ import {
   sha256,
   toMe,
 } from "./auth.session";
+import { accountId } from "./limit/limit.rules";
+import { checkLogin, hashSlot, recordLoginFail, recordLoginSuccess } from "./limit/limit.service";
 import { loginNextStep, TOTP_TOKEN_TTL_S } from "./totp/totp.rules";
 
 export type { AuthCtx, ClientMeta, Session } from "./auth.session";
@@ -88,27 +90,33 @@ export async function login(
   input: LoginRequest,
   meta: ClientMeta,
 ): Promise<LoginResult> {
-  const u = await findLoginUser(
-    ctx,
-    normalizeLoginId(input.tenant_key),
-    normalizeLoginId(input.username),
-  );
+  const tenantKey = normalizeLoginId(input.tenant_key);
+  const username = normalizeLoginId(input.username);
   const now = ctx.now();
+  // L1 (#224): giới hạn theo (tenant_key, username) — cả tài khoản không tồn tại — và theo IP, trước mọi phép băm.
+  const lim = ctx.limiter ? { l: ctx.limiter, acct: accountId(tenantKey, username) } : null;
+  if (lim) await checkLogin(lim.l, meta.ip ?? null, lim.acct, now);
+  const u = await findLoginUser(ctx, tenantKey, username);
   const opts = {
     dummyHash: ctx.dummyHash,
     legacyOn: legacyActive(now, ctx.legacySunset ?? DEFAULT_LEGACY_SUNSET),
   };
+  const failed = async (who: AuthUser | null) => {
+    if (lim) await recordLoginFail({ db: ctx.db, limiter: lim.l }, lim.acct, who, now);
+    return appError("INVALID_CREDENTIALS");
+  };
   if (!u) {
-    await verifyLogin(input.password, null, opts);
-    throw appError("INVALID_CREDENTIALS");
+    await hashSlot(ctx.hashSlots, () => verifyLogin(input.password, null, opts));
+    throw await failed(null);
   }
   if (isTempLocked(u.lockedUntil, now)) throw tempLocked(u.lockedUntil as Date);
   await ctx.beforeVerify?.();
-  const v = await verifyLogin(input.password, u.passwordHash, opts);
+  const v = await hashSlot(ctx.hashSlots, () => verifyLogin(input.password, u.passwordHash, opts));
   if (!v.ok) {
     await recordFailedLogin(ctx, u, now);
-    throw appError("INVALID_CREDENTIALS");
+    throw await failed(u);
   }
+  if (lim) await recordLoginSuccess(lim.l, lim.acct);
   // N5B-FR-03: hash argon2id đã băm song song lúc verify (ngoài tx); ghi trong tx của bước sau mật khẩu.
   const rehash = v.rehash ? { from: u.passwordHash, to: v.rehash } : null;
   return afterPasswordOk(ctx, u, meta, { now, rehash });
@@ -306,9 +314,12 @@ export async function changePasswordForced(
     throw appError("INVALID_CHANGE_TOKEN");
   }
   if (!canSignIn(u, u.tenant.active)) throw appError("ACCOUNT_LOCKED");
-  if (await verifyPassword(input.new_password, u.passwordHash))
-    throw appError("PASSWORD_UNCHANGED");
-  const hash = await hashPassword(input.new_password);
+  const hash = await hashSlot(ctx.hashSlots, async () =>
+    (await verifyPassword(input.new_password, u.passwordHash))
+      ? null
+      : hashPassword(input.new_password),
+  );
+  if (hash === null) throw appError("PASSWORD_UNCHANGED");
   // Đổi xong = đăng nhập thành công: ghi last_login_at (review vòng 1 #2) rồi cấp phiên.
   const s = await writePassword(
     ctx,
@@ -335,12 +346,14 @@ export async function changePasswordSelf(
   if (!u) throw appError("UNAUTHORIZED");
   const now = ctx.now();
   if (isTempLocked(u.lockedUntil, now)) throw tempLocked(u.lockedUntil as Date);
-  if (!(await verifyPassword(input.current_password, u.passwordHash))) {
+  if (
+    !(await hashSlot(ctx.hashSlots, () => verifyPassword(input.current_password, u.passwordHash)))
+  ) {
     await recordFailedLogin(ctx, u, now);
     throw appError("INVALID_CURRENT_PASSWORD");
   }
   if (input.new_password === input.current_password) throw appError("PASSWORD_UNCHANGED");
-  const hash = await hashPassword(input.new_password);
+  const hash = await hashSlot(ctx.hashSlots, () => hashPassword(input.new_password));
   await writePassword(ctx, u, hash, { keepFamily: actor.sid, tempLockAt: now }, async () => null);
 }
 

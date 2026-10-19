@@ -10,11 +10,13 @@ import { logger } from "./lib/logger";
 import type { Mailer } from "./lib/mailer";
 import { safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
+import { Semaphore } from "./lib/semaphore";
 import type { TestHooks } from "./lib/test-hooks";
 import { accessRoutes } from "./modules/access/access.routes";
 import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
+import type { LoginLimiter } from "./modules/auth/limit/limit.redis";
 import { totpRoutes } from "./modules/auth/totp/totp.routes";
 import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
@@ -57,7 +59,17 @@ export type AppDeps = {
   hub?: HubConfig;
   /** F1 (CR-095) · `false` ⇒ không mount `/admin/{workflows,commands,export,import}` + workflow-tools (đóng băng). Vắng ⇒ mount (test in-process); `server.ts` điền từ `ADMIN_FROZEN_MODULES` (mặc định off). */
   frozenModules?: boolean;
+  /** L1 (#224) · giới hạn đăng nhập (Redis). Vắng ⇒ không giới hạn — chỉ test in-process; server.ts bắt buộc ở production. */
+  loginLimiter?: LoginLimiter;
+  /** L1 · trần băm mật khẩu đồng thời; vắng ⇒ `defaultHashSlots()`. */
+  hashSlots?: Semaphore;
+  /** L1 · `TRUST_PROXY_HOPS` (IP client từ X-Forwarded-For); vắng ⇒ 0. */
+  trustProxyHops?: number;
 };
+
+/** Trần mặc định: số lõi (≥ 2) phép băm cùng lúc, hàng đợi 100 — vượt ⇒ 503 AUTH_UNAVAILABLE. */
+export const defaultHashSlots = (max = Math.max(2, navigator.hardwareConcurrency || 2)) =>
+  new Semaphore(max, 100);
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -70,6 +82,8 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     dummyHash: deps.dummyHash,
     legacySunset: deps.legacySunset,
     now: deps.now ?? (() => new Date()),
+    limiter: deps.loginLimiter,
+    hashSlots: deps.hashSlots ?? defaultHashSlots(),
   };
   const secureCookie = deps.appEnv === "production";
   const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
@@ -80,6 +94,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
       secretKey: deps.secretKey,
       secureCookie,
       selfChange: selfChangeHandler(ctx),
+      trustProxyHops: deps.trustProxyHops,
     }),
   );
   app.route("/auth", meRoutes(ctx));
@@ -147,7 +162,7 @@ export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
   app.notFound((c) => c.json(toErrorBody("NOT_FOUND", "Not found"), 404));
   app.onError((err, c) => {
     if (err instanceof AppError) {
-      return c.json(toErrorBody(err.code, err.message, err.details), err.status);
+      return c.json(toErrorBody(err.code, err.message, err.details), err.status, err.headers);
     }
     logger.error("unhandled", { request_id: c.get("requestId"), ...safeErrorFields(err) });
     return c.json(toErrorBody("INTERNAL_ERROR", "Internal server error"), 500);

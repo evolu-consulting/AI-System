@@ -12,6 +12,7 @@
     "@ai/db": "workspace:*",
     "drizzle-orm": "0.45.3",
     "hono": "4.13.12",
+    "ioredis": "6.0.0",
     "jose": "6.2.12",
     "nodemailer": "10.0.13",
     "postgres": "3.4.9",

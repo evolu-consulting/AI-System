@@ -10,6 +10,7 @@ import {
   TotpVerifyRequestSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
+import { clientIp } from "../../lib/client-ip";
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "../../lib/cookie";
 import { appError, isAppError, toErrorBody } from "../../lib/errors";
 import { type ClientKind, clientKind, parseJson, readJson, webApp } from "../../lib/http";
@@ -22,6 +23,7 @@ import {
   refresh,
   type Session,
 } from "./auth.service";
+import { checkIp } from "./limit/limit.service";
 import type { TotpCtx } from "./totp/totp.service";
 import { verifyTotpLogin } from "./totp/totp.verify";
 
@@ -31,12 +33,9 @@ export type AuthRouteDeps = TotpCtx & {
   secureCookie: boolean;
   /** Tự đổi mật khẩu (cần Bearer) — gắn ở auth.me.routes để route này không phụ thuộc middleware. */
   selfChange?: (c: Context, input: SelfChangeInput) => Promise<Response>;
+  /** L1 (#224): số proxy tin cậy trước app (`TRUST_PROXY_HOPS`); 0/vắng ⇒ IP socket, bỏ qua X-Forwarded-For. */
+  trustProxyHops?: number;
 };
-
-const meta = (c: Context): ClientMeta => ({
-  client: clientKind(c),
-  userAgent: c.req.header("user-agent") ?? null,
-});
 
 /** Kết quả login / bước 2FA: nhánh chưa có phiên trả body nguyên; phiên → cookie (web) hoặc body (extension). */
 function loginBody(c: Context, res: LoginResult, client: ClientKind, secure: boolean) {
@@ -64,6 +63,15 @@ async function tokenFrom(
 
 export function authRoutes(d: AuthRouteDeps): Hono {
   const r = new Hono();
+  const meta = (c: Context): ClientMeta => ({
+    client: clientKind(c),
+    userAgent: c.req.header("user-agent") ?? null,
+    ip: clientIp(c, d.trustProxyHops ?? 0),
+  });
+  /** L1: endpoint kiểm OTP/mật khẩu ngoài login — chỉ giới hạn IP (khoá tài khoản do bộ đếm DB M1/M4). */
+  const ipGate = async (c: Context) => {
+    if (d.limiter) await checkIp(d.limiter, clientIp(c, d.trustProxyHops ?? 0), d.now());
+  };
 
   r.post("/login", async (c) => {
     const input = await parseJson(c, LoginRequestSchema);
@@ -73,6 +81,7 @@ export function authRoutes(d: AuthRouteDeps): Hono {
 
   // Bước 2 đăng nhập (M4, plan-cd §4.2): không cần Bearer; đăng ký ở đây vì dùng chung cookie/body như login.
   r.post("/totp/verify", async (c) => {
+    await ipGate(c);
     const input = await parseJson(c, TotpVerifyRequestSchema);
     const m = meta(c);
     return c.json(loginBody(c, await verifyTotpLogin(d, input, m), m.client, d.secureCookie));
@@ -99,6 +108,7 @@ export function authRoutes(d: AuthRouteDeps): Hono {
   });
 
   r.post("/change-password", async (c) => {
+    await ipGate(c);
     const input = await parseJson(c, ChangePasswordRequestSchema);
     if ("current_password" in input) {
       if (!d.selfChange) throw appError("UNAUTHORIZED");

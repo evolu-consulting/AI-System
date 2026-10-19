@@ -42,6 +42,12 @@ export const EnvSchema = z.object({
     .date()
     .transform((d) => new Date(`${d}T00:00:00.000Z`))
     .optional(),
+  /** L1 (#224): Redis cho giới hạn đăng nhập. Bắt buộc khi `APP_ENV=production` (kiểm ở server.ts); vắng ở dev ⇒ không giới hạn. */
+  REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
+  /** L1: số reverse proxy tin cậy trước admin-api (IP client từ X-Forwarded-For). 0 ⇒ IP socket. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).optional(),
+  /** L1: trần phép băm mật khẩu đồng thời; vắng ⇒ số lõi (≥ 2). */
+  LOGIN_HASH_CONCURRENCY: z.coerce.number().int().min(1).max(64).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

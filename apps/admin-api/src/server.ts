@@ -3,14 +3,16 @@
 // Lỗi bất kỳ bước nào → log (không in giá trị env) + exit 1, không lắng nghe cổng.
 import { createDb, type Db } from "@ai/db";
 import pkg from "../package.json";
-import { createApp } from "./app";
+import { createApp, defaultHashSlots } from "./app";
 import { loadEnv } from "./config/env";
 import { assertSafeDbRole } from "./lib/db-guard";
 import { loadJwtKeys } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createMailer } from "./lib/mailer";
+import { createRedis } from "./lib/redis";
 import { parseMasterKey, selfTestSecretKey } from "./lib/secret-crypto";
 import { createDummyHash } from "./modules/auth/auth.service";
+import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -29,6 +31,23 @@ async function connect(url: string): Promise<Db> {
     // Lỗi kết nối của postgres.js không chứa mật khẩu; vẫn nhắc biến cần kiểm.
     throw new Error(`${errMsg(err)} (kiểm tra ADMIN_API_DATABASE_URL)`);
   }
+}
+
+/**
+ * L1 (#224): giới hạn đăng nhập trên Redis. Production thiếu REDIS_URL ⇒ không khởi động. Nối không chặn: Redis chưa
+ * sẵn/mất ⇒ login 503 AUTH_UNAVAILABLE (đóng an toàn) tới khi ioredis nối lại.
+ */
+function startLoginLimiter(env: ReturnType<typeof loadEnv>): LoginLimiter | undefined {
+  if (!env.REDIS_URL) {
+    if (env.APP_ENV === "production")
+      fail("env", new Error("REDIS_URL bắt buộc ở production (L1)"));
+    logger.warn("login-limit-disabled", { reason: "REDIS_URL vắng, không giới hạn đăng nhập" });
+    return undefined;
+  }
+  const redis = createRedis(env.REDIS_URL);
+  redis.on("error", (err: Error) => logger.warn("redis", { error: err.message }));
+  redis.connect().catch((err) => logger.warn("redis-connect", { error: errMsg(err) }));
+  return redisLoginLimiter(redis);
 }
 
 async function main(): Promise<void> {
@@ -50,6 +69,7 @@ async function main(): Promise<void> {
   }
   const db = await connect(env.ADMIN_API_DATABASE_URL).catch((err) => fail("db", err));
   const dummyHash = await createDummyHash();
+  const loginLimiter = startLoginLimiter(env);
   const app = createApp(
     { version: pkg.version, corsOrigins: env.CORS_ORIGINS },
     {
@@ -62,6 +82,9 @@ async function main(): Promise<void> {
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,
       frozenModules: env.ADMIN_FROZEN_MODULES === "on",
+      loginLimiter,
+      trustProxyHops: env.TRUST_PROXY_HOPS,
+      hashSlots: defaultHashSlots(env.LOGIN_HASH_CONCURRENCY),
       hub:
         env.ADMIN_HUB_URL && env.HUB_INTERNAL_TOKEN
           ? { url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }
