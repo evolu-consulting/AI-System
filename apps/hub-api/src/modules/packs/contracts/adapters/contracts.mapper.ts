@@ -1,9 +1,19 @@
-// HD-FR-07 · D-02 · D-10 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 19 khoá, Facets). Thuần: không đọc DB.
-// `bigint` về JSON là số (≤ 9e15 < 2^53); `timestamptz` về ISO UTC; facet lấy tới trần + 1 ⇒ cắt ở trần và ghi `truncated`.
-import type { ContractFacets, ContractListRow } from "@ai/contracts";
+// HD-FR-07 · HD-AC12 · D-02 · D-10 · D-13 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 19 khoá, Facets, Detail).
+// Thuần: không đọc DB. `bigint` về JSON là số (≤ 9e15 < 2^53); `timestamptz` về ISO UTC; facet lấy tới trần + 1 ⇒ cắt ở trần và
+// ghi `truncated`. Chi tiết: `fields` qua `fillFields` (đủ 23 khoá, bỏ khoá lạ khi ĐỌC).
+import type {
+  ContractDetail,
+  ContractEvent,
+  ContractFacets,
+  ContractFile,
+  ContractItem,
+  ContractListRow,
+} from "@ai/contracts";
+import { fillFields } from "../domain/fields.rules";
 
 export type ContractListRowDto = ContractListRow;
 export type ContractFacetsDto = ContractFacets;
+export type ContractDetailDto = ContractDetail;
 
 /** Một phần tử `json_agg` của câu danh sách (thừa `ord`). */
 export type ListRowRaw = Omit<ContractListRow, "value" | "updated_at"> & {
@@ -33,6 +43,49 @@ export function toContractListRow(r: ListRowRaw): ContractListRow {
     category_ids: r.category_ids ?? [],
     updated_at: new Date(r.updated_at).toISOString(),
     version: r.version,
+  };
+}
+
+/** Hàng chi tiết (MỘT `json_build_object`): cột ListRow (trừ `category_ids`) + cột chi tiết + items/events/file đã gộp. */
+export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
+  error: string | null;
+  created_by: string;
+  created_at: string;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  file_id: string | null;
+  clauses: unknown[] | null;
+  warnings: unknown[] | null;
+  handled: ContractDetail["handled"];
+  run_id: string | null;
+  fields: unknown;
+  items: ContractItem[] | null;
+  events: (Omit<ContractEvent, "at"> & { at: string })[] | null;
+  file: ContractFile | null;
+  has_source: boolean;
+};
+
+const iso = (s: string): string => new Date(s).toISOString();
+
+export function toContractDetail(r: DetailRaw): ContractDetail {
+  const { category_ids: _c, ...row } = toContractListRow({ ...r, category_ids: [] });
+  return {
+    ...row,
+    error: r.error,
+    created_by: r.created_by,
+    created_at: iso(r.created_at),
+    confirmed_at: r.confirmed_at === null ? null : iso(r.confirmed_at),
+    confirmed_by: r.confirmed_by,
+    file_id: r.file_id,
+    clauses: r.clauses ?? [],
+    warnings: r.warnings ?? [],
+    handled: r.handled,
+    run_id: r.run_id,
+    fields: fillFields(r.fields),
+    items: r.items ?? [],
+    events: (r.events ?? []).map((e) => ({ ...e, at: iso(e.at) })),
+    file: r.file ? { ...r.file, size_bytes: Number(r.file.size_bytes) } : null,
+    has_source: r.has_source,
   };
 }
 

@@ -48,12 +48,22 @@ export type ContractListFilter = {
 
 export type ContractListPage<Row> = { total: number; items: Row[] };
 
-/** Đọc danh sách/facets: mỗi hàm = MỘT câu SQL (route = 2 câu gồm `set_config`). */
-export type ContractsReadRepo<Row, Facets> = {
+/** Tệp gốc của HĐ ở FileBox (hàng `contracts.files` chưa xoá mềm) — chỉ dùng nội bộ để xin link, KHÔNG trả ra API. */
+export type ContractFileRef = { org: string; fileId: string };
+
+/** Đọc danh sách/facets/chi tiết: mỗi hàm = MỘT câu SQL (route = 2 câu gồm `set_config`). id lạ/tenant khác ⇒ `null`. */
+export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
   list(f: ContractListFilter): Promise<ContractListPage<Row>>;
   facets(): Promise<Facets>;
+  detail(id: string): Promise<Detail | null>;
+  /** `source_text` (Markdown); HĐ không có hoặc source rỗng (`null`) ⇒ `null`. */
+  source(id: string): Promise<string | null>;
+  fileOf(id: string): Promise<ContractFileRef | null>;
 };
 
 /** Repo riêng của gói (adapter dựng); `createPackUow` ghép thêm `outbox`. */
-export type ContractsOwnRepos<Row, Facets> = { contracts: ContractsReadRepo<Row, Facets> };
-export type ContractsRepos<Row, Facets> = KitTxRepos & ContractsOwnRepos<Row, Facets>;
+export type ContractsOwnRepos<Row, Facets, Detail = unknown> = {
+  contracts: ContractsReadRepo<Row, Facets, Detail>;
+};
+export type ContractsRepos<Row, Facets, Detail = unknown> = KitTxRepos &
+  ContractsOwnRepos<Row, Facets, Detail>;

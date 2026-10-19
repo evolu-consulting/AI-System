@@ -2,18 +2,23 @@
 // `contracts_rw`, RLS FORCE). SQL văn bản CỐ ĐỊNH cho mọi tổ hợp (chuẩn bị một lần/kết nối): mọi bộ lọc `($x is null or col = any($x))`,
 // mảng = MỘT tham số literal `{…}` (drizzle nở mảng JS thành danh sách). Lát tenant vật chất hoá một lần (`f`/`c` MATERIALIZED);
 // total + trang cùng câu. Chỉ cột sinh hẹp — KHÔNG đọc `fields`/`source_text` (TOAST). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
+import { CONTRACT_EVENTS_MAX, CONTRACT_ITEMS_MAX } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
+  ContractFileRef,
   ContractListFilter,
   ContractsOwnRepos,
   ContractsReadRepo,
 } from "../application/ports";
 import {
+  type ContractDetailDto,
   type ContractFacetsDto,
   type ContractListRowDto,
+  type DetailRaw,
   type FacetsRaw,
   type ListRowRaw,
+  toContractDetail,
   toContractFacets,
   toContractListRow,
 } from "./contracts.mapper";
@@ -112,17 +117,68 @@ async function facets(tx: Tx, tid: string): Promise<ContractFacetsDto> {
   return toContractFacets(rows[0] as FacetsRaw, { text: FACET_CAP, category: CATEGORY_CAP });
 }
 
-export function contractsRepo(
-  tx: Tx,
-  tenantId: string,
-): ContractsReadRepo<ContractListRowDto, ContractFacetsDto> {
-  return { list: (f) => list(tx, tenantId, f), facets: () => facets(tx, tenantId) };
+/** HD-NFR-02 · plan §6 Chi tiết: MỘT câu — hàng (PK, lọc `tenant_id` tường minh) + items `(contract_id, tenant_id, ord)` ≤ 500
+ *  + 50 event mới nhất `(contract_id, id DESC)` + tệp (PK `files`, chưa xoá mềm). Không đọc `source_text` (chỉ `is not null`,
+ *  không giải nén TOAST), không trả `search_key`/`signer_keys`. Gói cả hàng thành một `json` ⇒ kiểu ngày/giờ/số thống nhất. */
+async function detail(tx: Tx, tid: string, id: string): Promise<ContractDetailDto | null> {
+  const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select json_build_object(
+      'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', c.title, 'number', c.number, 'type', c.type,
+      'direction', c.direction, 'status', c.status, 'seller', c.seller, 'buyer', c.buyer, 'seller_signer', c.seller_signer,
+      'buyer_signer', c.buyer_signer, 'value', c.value, 'end_date', c.end_date, 'action_deadline', c.action_deadline,
+      'owner_user_id', c.owner_user_id, 'updated_at', c.updated_at, 'version', c.version, 'error', c.error,
+      'created_by', c.created_by, 'created_at', c.created_at, 'confirmed_at', c.confirmed_at, 'confirmed_by', c.confirmed_by,
+      'file_id', c.file_id, 'clauses', c.clauses, 'warnings', c.warnings, 'handled', c.handled, 'run_id', c.run_id,
+      'fields', c.fields, 'has_source', c.source_text is not null,
+      'items', (select json_agg(i order by i.ord) from (select i.id, i.ord, i.code, i.name, i.spec, i.unit, i.qty,
+          i.unit_price, i.vat_rate, i.moq, i.lead_time_days, i.valid_from, i.valid_to, i.category_id, i.quote, i.verified,
+          i.edited from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = c.tenant_id
+          order by i.ord limit ${CONTRACT_ITEMS_MAX}::int) i),
+      'events', (select json_agg(e order by e.id desc) from (select e.id, e.type, e.actor_user_id, e.at, e.data
+          from contracts.contract_events e where e.contract_id = c.id and e.tenant_id = c.tenant_id
+          order by e.id desc limit ${CONTRACT_EVENTS_MAX}::int) e),
+      'file', (select json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size_bytes', f.size_bytes)
+          from contracts.files f where f.id = c.file_id and f.tenant_id = c.tenant_id and f.deleted_at is null)
+    ) as d
+    from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
+  const d = rows[0]?.d;
+  if (!d) return null;
+  return toContractDetail(typeof d === "string" ? (JSON.parse(d) as DetailRaw) : d);
+}
+
+/** D-13: `source_text` (≤ 5 MB) — MỘT câu theo PK + `tenant_id`. */
+async function source(tx: Tx, tid: string, id: string): Promise<string | null> {
+  const rows = await tx.execute<{
+    s: string | null;
+  }>(sql`select c.source_text as s from contracts.contracts c
+    where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
+  return rows[0]?.s ?? null;
+}
+
+/** Tệp gốc (org + `file_id` FileBox) của HĐ — MỘT câu; HĐ không có / không tệp / tệp đã xoá mềm ⇒ null. */
+async function fileOf(tx: Tx, tid: string, id: string): Promise<ContractFileRef | null> {
+  const rows = await tx.execute<{ org: string; file_id: string }>(sql`select f.org, f.file_id
+    from contracts.contracts c join contracts.files f on f.id = c.file_id and f.tenant_id = c.tenant_id
+    where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and f.deleted_at is null`);
+  const r = rows[0];
+  return r ? { org: r.org, fileId: r.file_id } : null;
+}
+
+type Repo = ContractsReadRepo<ContractListRowDto, ContractFacetsDto, ContractDetailDto>;
+
+export function contractsRepo(tx: Tx, tenantId: string): Repo {
+  return {
+    list: (f) => list(tx, tenantId, f),
+    facets: () => facets(tx, tenantId),
+    detail: (id) => detail(tx, tenantId, id),
+    source: (id) => source(tx, tenantId, id),
+    fileOf: (id) => fileOf(tx, tenantId, id),
+  };
 }
 
 /** Repo riêng của gói trong một tx (`createPackUow(db, "contracts", contractsRepos)`). */
 export const contractsRepos = (
   tx: Tx,
   tenantId: string,
-): ContractsOwnRepos<ContractListRowDto, ContractFacetsDto> => ({
+): ContractsOwnRepos<ContractListRowDto, ContractFacetsDto, ContractDetailDto> => ({
   contracts: contractsRepo(tx, tenantId),
 });

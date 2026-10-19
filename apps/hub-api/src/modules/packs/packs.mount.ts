@@ -51,7 +51,10 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
   if (d.db && (d.packs?.contracts ?? true))
-    app.route(`${PACK_PREFIX}/${CONTRACTS_KEY}`, contractsModule(d.db, view)); // HD1 T7
+    app.route(
+      `${PACK_PREFIX}/${CONTRACTS_KEY}`,
+      contractsModule(d.db, view, fb ? fileboxClients(fb) : null), // HD1 T7 + T8 (link tệp)
+    );
   if (d.db && (d.packs?.contracts ?? true) && fb)
     app.route(`${PACK_PREFIX}/${CONTRACTS_KEY}`, contractsUpload(d, d.db, view, fb)); // HD1 T10
   return view;
