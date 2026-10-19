@@ -232,7 +232,34 @@
         "replaced": "Đã thay bằng HĐ mới"
       }
     },
-    "review": {
+    "approval": {
+      "confirm": "Xác nhận",
+      "confirming": "Đang xác nhận…",
+      "approve": "Duyệt",
+      "approving": "Đang duyệt…",
+      "reject": "Từ chối",
+      "redo": "Đọc lại",
+      "rejectReason": "Lý do từ chối",
+      "redoReason": "Cần đọc lại điều gì?",
+      "waitLevel1": "Đang chờ người phụ trách kiểm tra và xác nhận.",
+      "waitLevel2": "Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này).",
+      "working": "Đang xử lý hợp đồng…",
+      "rejectedWith": "Bị từ chối: {{reason}}",
+      "done": {
+        "confirm": "Đã lưu và xác nhận hợp đồng.",
+        "approve": "Đã duyệt hợp đồng.",
+        "reject": "Đã từ chối hợp đồng.",
+        "redo": "Đã gửi đọc lại hợp đồng."
+      },
+      "errors": {
+        "starter": "Bạn đã gửi hợp đồng này nên không thể duyệt bước này.",
+        "notReviewer": "Bạn không thể duyệt bước này.",
+        "reason": "Vui lòng nhập lý do.",
+        "notOpen": "Bước duyệt đã thay đổi — tải lại trang để xem trạng thái mới.",
+        "quota": "Đã hết lượt thao tác AI hôm nay ({{limit}} lượt/ngày). Thử lại vào ngày mai.",
+        "runLimit": "Công ty đang có {{max}} quy trình chạy cùng lúc (tối đa). Chờ một quy trình xong rồi thử lại."
+      }
+    },    "review": {
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",
       "checkLead": "Kiểm tra lại các trường rồi xác nhận.",

@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { asHub, asMgmt } from "./dataset";
+import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub, contractAsMgmt } from "./dataset-contract";
 
 const REF = process.env.CW_MODE === "ref";
@@ -17,8 +18,8 @@ const PIXEL_RATIO = 0.005;
 /** Lệch có chủ ý — ẩn ở cả hai phía để phần còn lại vẫn so được (xem DEVIATIONS.md). */
 const HIDE =
   "label:has(input[name=tenant_key]){display:none !important}" +
-  // HD2 D2-05: nút "Xác nhận" của S05 thuộc HD3 — ẩn ở cả hai phía (contracts-web chưa có).
-  "main button.btn-primary[type=button]{display:none !important}" +
+  // HD3: "Xác nhận" của S05 đã có (so thật); nút/khối duyệt không có ở mgmt-app ("Duyệt", "Từ chối", "Đọc lại", ghi chú) ẩn.
+  "[data-approval]{display:none !important}" +
   // HD5: khối "Phụ lục và giá" của S05 không có trong mgmt-app web (phụ lục do backend tự gắn) — ẩn ở cả hai phía.
   "[data-hd5]{display:none !important}";
 
@@ -318,6 +319,13 @@ async function installHub(page: Page, signedIn: boolean) {
   await page.route(at("members"), (r) => json(r, 200, membersAsHub()));
   await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
     json(r, 200, contractAsHub()),
+  );
+  // HD3: HĐ cần kiểm ở bước duyệt cấp 1, người xem quyết được ⇒ "Xác nhận" như mgmt-app; HĐ đọc lỗi chưa có run.
+  await page.route(`**/pack/contracts/contracts/${contract.id}/approval`, (r) =>
+    json(r, 200, approvalAsHub("level1")),
+  );
+  await page.route(`**/pack/contracts/contracts/${FAILED_ID}/approval`, (r) =>
+    json(r, 200, approvalAsHub(null)),
   );
   await page.route(`**/pack/contracts/contracts/${FAILED_ID}`, (r) =>
     json(r, 200, { ...contractAsHub("extract_failed"), id: FAILED_ID, items: [], warnings: [] }),

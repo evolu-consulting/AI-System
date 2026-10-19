@@ -67,6 +67,8 @@
   },
   "apiError": {
     "REVIEW_TASK_CLOSED": "Đã có người khác xử lý việc này.",
+    "STARTER_CANNOT_REVIEW": "Bạn là người bắt đầu lượt chạy nên không thể duyệt bước này.",
+    "FEEDBACK_REQUIRED": "Nhập lý do trước khi gửi.",
     "TASK_KIND_MISMATCH": "Thao tác này không áp dụng cho việc này. Tải lại trang.",
     "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
     "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",

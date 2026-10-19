@@ -232,7 +232,34 @@
         "replaced": "Replaced by a new contract"
       }
     },
-    "review": {
+    "approval": {
+      "confirm": "Confirm",
+      "confirming": "Confirming…",
+      "approve": "Approve",
+      "approving": "Approving…",
+      "reject": "Reject",
+      "redo": "Read again",
+      "rejectReason": "Reason for rejection",
+      "redoReason": "What should be read again?",
+      "waitLevel1": "Waiting for the person in charge to check and confirm.",
+      "waitLevel2": "Waiting for management approval (you cannot approve this step).",
+      "working": "Processing the contract…",
+      "rejectedWith": "Rejected: {{reason}}",
+      "done": {
+        "confirm": "Contract saved and confirmed.",
+        "approve": "Contract approved.",
+        "reject": "Contract rejected.",
+        "redo": "Contract sent to be read again."
+      },
+      "errors": {
+        "starter": "You submitted this contract, so you cannot approve this step.",
+        "notReviewer": "You cannot approve this step.",
+        "reason": "Please enter a reason.",
+        "notOpen": "The approval step has changed — reload the page to see the latest status.",
+        "quota": "Today's AI actions are used up ({{limit}} per day). Try again tomorrow.",
+        "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again."
+      }
+    },    "review": {
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",

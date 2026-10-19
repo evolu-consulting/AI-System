@@ -1,6 +1,7 @@
 // HD-FR-22 · HD-FR-23 · HD-FR-26 · S05 · D-02 · D2-05: màn kiểm/sửa HĐ — port `ContractPage.tsx:27-118` (tiêu đề + dòng phụ theo
-// trạng thái, "Xem file gốc", "Lưu", thông báo, cảnh báo, trường + trích dẫn, bảng hàng). Bỏ "Xác nhận" (HD3), "Ghi việc" (HD7),
-// điền sẵn của trợ lý (HD6). Đang đọc ⇒ tải lại mỗi 2 s như mgmt-app (tới khi có kênh đẩy trạng thái gói).
+// trạng thái, "Xem file gốc", "Lưu", "Xác nhận" (HD3: quyết cấp 1 trên engine), thông báo, cảnh báo, trường + trích dẫn, bảng
+// hàng). HD3 thêm "Duyệt"/"Từ chối"/"Đọc lại" (lệch có chủ ý, DEVIATIONS). Bỏ "Ghi việc" (HD7), điền sẵn của trợ lý (HD6).
+// Đang đọc ⇒ tải lại mỗi 2 s như mgmt-app (tới khi có kênh đẩy trạng thái gói).
 import type { ContractDetail, ContractFieldKey } from "@ai/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -9,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { AppendixPanel } from "~/features/appendix/AppendixPanel";
+import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import {
@@ -74,6 +76,19 @@ export function ContractReviewPage({ id }: { id: string }) {
   });
   const [draft, setDraft] = useState<Draft>({});
   const s = useSave(id);
+  // "Xác nhận" như mgmt-app: lưu ô đã đổi trước rồi quyết cấp 1.
+  const saveFirst = async () => {
+    const c = q.data;
+    const fields = c ? changedFields(c, draft) : {};
+    if (c && Object.keys(fields).length) await patchContractFields(id, c.version, fields);
+  };
+  const ap = useApprovalUi({
+    id,
+    contractKey: contractKey(id),
+    write,
+    hasSource: q.data?.has_source ?? false,
+    saveFirst,
+  });
 
   useEffect(() => {
     if (q.data) setDraft(draftOf(q.data));
@@ -102,16 +117,20 @@ export function ContractReviewPage({ id }: { id: string }) {
         lead={lead ? t(lead) : undefined}
         actions={
           (file || canSave) && (
-            <ReviewActions
-              file={file}
-              canSave={canSave}
-              busy={s.busy}
-              onSave={() => s.save(c, draft)}
-            />
+            <>
+              <ReviewActions
+                file={file}
+                canSave={canSave}
+                busy={s.busy || ap.busy}
+                onSave={() => s.save(c, draft)}
+              />
+              {ap.buttons}
+            </>
           )
         }
       />
-      <SaveNotice msg={s.msg} err={s.err} />
+      <SaveNotice msg={s.msg ?? ap.msg} err={s.err ?? ap.err} />
+      {ap.section}
       <WarningList warnings={warningsOf(c)} />
       <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
       {failed ? (

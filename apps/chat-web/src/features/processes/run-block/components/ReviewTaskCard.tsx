@@ -1,4 +1,4 @@
-// CHAT-AC-53 · plan-frontend §3 + plan-frontend-thread §5: thẻ kiểm Đạt / Chưa đạt.
+// CHAT-AC-53 · plan-frontend §3 + plan-frontend-thread §5: thẻ kiểm Đạt / Chưa đạt / Từ chối (N2-FR-02, HD3).
 // Trong thread (`useThreadBinding()`≠null): "Chưa đạt" đưa composer sang chế độ Góp ý. Ngoài thread: ô góp ý tại chỗ (inline).
 import { FEEDBACK_MAX, type ProcessRunFullView } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
@@ -18,6 +18,7 @@ import type { TaskCardProps } from "../../shared/types";
 import { useReviewDecision } from "../hooks/use-review-actions";
 import { reviewErrorMessage as errorMessage } from "../lib/review-error";
 import { ReviewFailPanel } from "./ReviewFailPanel";
+import { ReviewRejectAction } from "./ReviewRejectPanel";
 
 function agentOf(view: TaskCardProps["view"], stageIdx: number, lng: string): string {
   if (view?.access !== "full") return "";
@@ -201,6 +202,14 @@ export function ReviewTaskCard({ runId, task, view, taskView, onResolved }: Task
             </Button>
           </div>
         </div>
+      )}
+      {!inlineFail && (
+        <ReviewRejectAction
+          runId={runId}
+          taskId={task.id}
+          stage={task.stage_name}
+          onDone={() => onResolved?.("reject")}
+        />
       )}
     </section>
   );

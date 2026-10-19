@@ -41,7 +41,7 @@ export function TaskResultMessage({ message, part, myId }: TaskResultMessageProp
             </span>
           )}
         </p>
-        {part.result === "fail" && part.feedback && (
+        {(part.result === "fail" || part.result === "reject") && part.feedback && (
           <blockquote className="border-l-2 border-border pl-2 text-sm whitespace-pre-wrap wrap-anywhere text-secondary-foreground">
             {part.feedback}
           </blockquote>

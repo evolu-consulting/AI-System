@@ -67,6 +67,8 @@
   },
   "apiError": {
     "REVIEW_TASK_CLOSED": "Someone else already handled this item.",
+    "STARTER_CANNOT_REVIEW": "You started this run, so you cannot approve this step.",
+    "FEEDBACK_REQUIRED": "Enter a reason before sending.",
     "TASK_KIND_MISMATCH": "This action doesn't apply to this item. Reload the page.",
     "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
     "NO_OUTPUT": "There is no output version to use yet.",

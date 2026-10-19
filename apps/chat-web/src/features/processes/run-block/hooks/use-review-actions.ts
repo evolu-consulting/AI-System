@@ -7,7 +7,7 @@ import { isStaleReviewError } from "../lib/review-error";
 
 export type ReviewVars = {
   taskId: string;
-  result: "pass" | "fail";
+  result: "pass" | "fail" | "reject"; // N2-FR-02 · HD3: Từ chối (lý do bắt buộc)
   feedback?: string;
   /** P-b2 · 0-based; chỉ với `fail`. */
   backToStep?: number;

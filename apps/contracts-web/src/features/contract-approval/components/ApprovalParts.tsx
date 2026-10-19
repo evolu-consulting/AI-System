@@ -1,0 +1,143 @@
+// HD-FR-36 · S05 · D-02: nút duyệt trên tiêu đề ("Xác nhận" = mgmt-app `ContractPage.tsx:102-103`, cùng lớp `btn btn-primary`;
+// "Duyệt"/"Từ chối"/"Đọc lại" là lệch có chủ ý — DEVIATIONS.md, `data-approval` để harness ẩn) + khối lý do + dòng trạng thái.
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { Busy } from "../hooks/use-approval";
+import { type ApprovalView, feedbackOk } from "../lib/approval";
+
+export function ApprovalButtons({
+  v,
+  busy,
+  onConfirm,
+  onApprove,
+  onAsk,
+}: {
+  v: ApprovalView;
+  busy: Busy;
+  onConfirm: () => void;
+  onApprove: () => void;
+  onAsk: (kind: "reject" | "redo") => void;
+}) {
+  const { t } = useTranslation();
+  const off = busy !== null;
+  return (
+    <>
+      {v.redo && (
+        <button
+          type="button"
+          data-approval="redo"
+          className="btn btn-quiet"
+          disabled={off}
+          onClick={() => onAsk("redo")}
+        >
+          {t("contracts.approval.redo")}
+        </button>
+      )}
+      {v.reject && (
+        <button
+          type="button"
+          data-approval="reject"
+          className="btn btn-outline"
+          disabled={off}
+          onClick={() => onAsk("reject")}
+        >
+          {t("contracts.approval.reject")}
+        </button>
+      )}
+      {v.confirm && (
+        <button type="button" className="btn btn-primary" disabled={off} onClick={onConfirm}>
+          {busy === "approve"
+            ? t("contracts.approval.confirming")
+            : t("contracts.approval.confirm")}
+        </button>
+      )}
+      {v.approve && (
+        <button
+          type="button"
+          data-approval="approve"
+          className="btn btn-primary"
+          disabled={off}
+          onClick={onApprove}
+        >
+          {busy === "approve" ? t("contracts.approval.approving") : t("contracts.approval.approve")}
+        </button>
+      )}
+    </>
+  );
+}
+
+/** Hộp lý do cho "Từ chối" / "Đọc lại" (bắt buộc). */
+export function ReasonForm({
+  kind,
+  busy,
+  onSubmit,
+  onCancel,
+}: {
+  kind: "reject" | "redo";
+  busy: Busy;
+  onSubmit: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [text, setText] = useState("");
+  const [bad, setBad] = useState(false);
+  const label = t(
+    kind === "reject" ? "contracts.approval.rejectReason" : "contracts.approval.redoReason",
+  );
+  return (
+    <form
+      data-approval="reason"
+      className="mb-4 space-y-2 rounded-xl border border-line p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!feedbackOk(text)) return setBad(true);
+        onSubmit(text.trim());
+      }}
+    >
+      <label className="block text-sm font-medium" htmlFor="approval-reason">
+        {label}
+      </label>
+      <textarea
+        id="approval-reason"
+        className="w-full rounded-lg border border-line bg-transparent p-2 text-sm"
+        rows={3}
+        maxLength={4000}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setBad(false);
+        }}
+      />
+      {bad && (
+        <p role="alert" className="text-sm text-late">
+          {t("contracts.approval.errors.reason")}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button type="submit" className="btn btn-primary" disabled={busy !== null}>
+          {t(kind === "reject" ? "contracts.approval.reject" : "contracts.approval.redo")}
+        </button>
+        <button type="button" className="btn btn-quiet" onClick={onCancel}>
+          {t("contracts.common.cancel")}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Dòng trạng thái: chờ bước người khác / đang xử lý / lý do Từ chối. */
+export function ApprovalNote({ note, rejected }: { note: string | null; rejected: string | null }) {
+  const { t } = useTranslation();
+  if (rejected)
+    return (
+      <p data-approval="note" className="mb-3 text-sm text-late">
+        {t("contracts.approval.rejectedWith", { reason: rejected })}
+      </p>
+    );
+  if (!note) return null;
+  return (
+    <p data-approval="note" className="mb-3 text-sm text-muted">
+      {t(note)}
+    </p>
+  );
+}
