@@ -5,7 +5,7 @@
 //                     ở checkout chính (checkout chính phải đang ở platform/gd0).
 //   slice:rm <tên> [--force]       gỡ worktree + xoá nhánh (nhánh chưa merge cần --force).
 // Không bao giờ push. Hook: tools/hooks qua core.hooksPath (xem setup-hooks.ts).
-import { copyFileSync, existsSync, readdirSync } from "node:fs";
+import { copyFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const BASE = "platform/gd0";
@@ -92,6 +92,7 @@ function cmdRm(name: string | undefined, force: boolean): void {
     const r = git(main, "worktree", "remove", ...(force ? ["--force"] : []), dir);
     if (!r.ok) fail(`${r.out}\n(thêm --force nếu chắc chắn bỏ thay đổi)`);
   }
+  rmSync(dir, { recursive: true, force: true }); // git để lại node_modules (đường dẫn dài/liên kết)
   git(main, "worktree", "prune");
   const b = git(main, "branch", force ? "-D" : "-d", branch);
   console.log(
