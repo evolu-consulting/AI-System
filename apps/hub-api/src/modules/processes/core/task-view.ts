@@ -234,7 +234,7 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
       at: toDate(g.created_at),
     }));
   const row: TaskRow = { ...r, stageIdx: Number(r.stage_idx), createdAt: toDate(r.created_at) };
-  return toTaskDetail(row, {
+  const detail = toTaskDetail(row, {
     forwards,
     users: names,
     output: outputOf(r),
@@ -246,6 +246,11 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
       remind: { escalated: escalatedGroupId !== null, remindCount: Number(r.remind_count ?? 0) },
     }),
   });
+  // Review HD3 m9 · D3-07: người bắt đầu ở stage `exclude_starter` không được thấy `use_current` (engine sẽ 403).
+  const hideUse = starterExcluded && r.kind === "decision" && r.started_by === v.userId;
+  return hideUse && detail.options
+    ? { ...detail, options: detail.options.filter((o) => o !== "use_current") }
+    : detail;
 }
 
 /** Task theo thứ tự tạo; id không thấy (RLS/tenant) bị bỏ. 3 truy vấn cố định (task, grant, tên) bất kể số task. */

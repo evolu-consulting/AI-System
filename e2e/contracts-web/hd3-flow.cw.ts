@@ -59,6 +59,10 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
 }) => {
   const sent = await install(page, approvalAsHub("level1"));
   await page.goto(`/contracts/${contract.id}`);
+  // review m8 · cấp 1 hiện rõ giá trị AI đọc + trích dẫn để người xác nhận đối chiếu (kiểm soát chèn văn bản).
+  const ex = page.locator("[data-approval=extracted]");
+  await expect(ex).toContainText("Giá trị AI đọc được");
+  await expect(ex).toContainText("“Tổng giá trị theo bảng giá đính kèm”");
   await page.getByLabel("Giá trị (đ)").fill("250.000.000");
   await page.getByRole("button", { name: "Xác nhận" }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");

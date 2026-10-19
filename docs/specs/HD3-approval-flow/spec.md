@@ -53,6 +53,13 @@ AC bổ sung (readiness #4/#5/#9/#10): AC33c đúng 500.000.000 ⇒ cấp 2 (`lt
 
 **Người dùng chốt 2026-10-19:** giữ cả 4 mặc định — editor duyệt cấp 1, owner duyệt cấp 2; 100 lượt AI/tenant/ngày; người bắt đầu không được Từ chối ở cấp 2; Redis lỗi khi đếm trần ⇒ chặn (503). Các dòng "Hỏi người dùng" ở trên và readiness câu (1)(2) đã đóng.
 
+## 6. Mối đe doạ còn lại và kiểm soát (review m8)
+| Mối đe doạ | Kiểm soát |
+|---|---|
+| Văn bản HĐ chèn lệnh khiến agent trả `total_value` thấp ⇒ bỏ cấp 2 | (1) Rào nonce + parse strict + kiểm trích dẫn (HD2); (2) **cấp 1 là người "Xác nhận"**: S05 hiện rõ giá trị AI đọc + trích dẫn nguyên văn (`[data-approval=extracted]`) để đối chiếu tệp gốc; giá trị trống/không phải số ⇒ cấp 2; (3) `finalize` đọc lại giá trị + ngưỡng (D3-14); sửa sau duyệt ⇒ mở lại duyệt (D3-13) |
+| Dùng nhầm agent của tenant khác | Agent trích theo khoá cấu hình CHỈ dùng khi tenant có entitlement còn hiệu lực (`extractAgentFor`, test `pack-runs-hd3.test.ts`); không có ⇒ `AGENT_UNAVAILABLE` |
+| Người bắt đầu lách cấp 2 qua task decision | Engine 403 mọi `use_current` (D3-07); thẻ decision của người bắt đầu không có lựa chọn `use_current` (task view, review m9) |
+
 ## Quyết định trong lúc làm
 Xem `plan.md` §Quyết định.
 

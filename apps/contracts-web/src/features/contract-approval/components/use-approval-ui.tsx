@@ -3,7 +3,7 @@
 import { type ReactNode, useState } from "react";
 import { useApproval } from "../hooks/use-approval";
 import { approvalView } from "../lib/approval";
-import { ApprovalButtons, ApprovalNote, ReasonForm } from "./ApprovalParts";
+import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 
 export type ApprovalUi = {
   buttons: ReactNode;
@@ -19,6 +19,8 @@ export function useApprovalUi(o: {
   write: boolean;
   hasSource: boolean;
   saveFirst: () => Promise<void>;
+  /** Giá trị HĐ AI đọc (trường `total_value`) — hiện ở cấp 1 cùng trích dẫn (review m8). */
+  extracted?: { value: unknown; quote: string; edited: boolean } | undefined;
 }): ApprovalUi {
   const ap = useApproval(o.id, o.contractKey);
   const [ask, setAsk] = useState<"reject" | "redo" | null>(null);
@@ -38,6 +40,7 @@ export function useApprovalUi(o: {
   const section = (
     <>
       <ApprovalNote note={v.note} rejected={rejected} />
+      {v.confirm && o.extracted && <ExtractedValue {...o.extracted} />}
       {ask && (
         <ReasonForm
           kind={ask}

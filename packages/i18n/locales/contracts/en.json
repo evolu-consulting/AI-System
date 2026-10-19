@@ -233,6 +233,8 @@
       }
     },
     "approval": {
+      "extracted": "Value read by AI (decides whether management approval is needed): {{value}}",
+      "editedByHand": "edited by hand",
       "confirm": "Confirm",
       "confirming": "Confirming…",
       "approve": "Approve",

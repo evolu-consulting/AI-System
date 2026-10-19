@@ -233,6 +233,8 @@
       }
     },
     "approval": {
+      "extracted": "Giá trị AI đọc được (quyết định có cần Ban giám đốc duyệt): {{value}}",
+      "editedByHand": "đã sửa tay",
       "confirm": "Xác nhận",
       "confirming": "Đang xác nhận…",
       "approve": "Duyệt",

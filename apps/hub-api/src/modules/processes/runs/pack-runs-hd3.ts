@@ -7,6 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
+import type { AgentConfig, ConfigSnapshot } from "../../config/config.rules";
 import type {
   PackAgentReply,
   PackAgentRequest,
@@ -47,10 +48,25 @@ async function runningStageRun(d: ProcessDeps, r: PackAgentRequest): Promise<Hub
   return row ?? null;
 }
 
+/** Review m8 · agent trích theo phạm vi tenant: agent nền tảng (khoá cấu hình) CHỈ dùng được khi tenant có entitlement còn
+ *  hiệu lực cho agent đó; agent tắt / tenant khác / entitlement thu hồi ⇒ không có (AGENT_UNAVAILABLE). */
+export function extractAgentFor(
+  snap: Pick<ConfigSnapshot, "agents" | "entitlements">,
+  key: string,
+  tenantId: string,
+): AgentConfig | undefined {
+  const a = snap.agents.find((x) => x.key === key && x.enabled);
+  if (!a) return undefined;
+  const ok = snap.entitlements.some(
+    (e) => e.agentId === a.id && e.tenantId === tenantId && e.revokedAt === null,
+  );
+  return ok ? a : undefined;
+}
+
 async function agent(d: ProcessDeps, r: PackAgentRequest): Promise<PackAgentReply> {
   if (!UUID.test(r.hubRunId)) return { ok: false, code: "AGENT_UNAVAILABLE" };
   const [run, snap] = await Promise.all([runningStageRun(d, r), d.config.snapshot()]);
-  const cfg = snap.agents.find((a) => a.key === r.agentKey && a.enabled);
+  const cfg = extractAgentFor(snap, r.agentKey, r.tenantId);
   if (!run || !cfg) return { ok: false, code: "AGENT_UNAVAILABLE" };
   const o = await runJob(
     d.runner,

@@ -87,6 +87,18 @@ describe("AC34a · người bắt đầu không `use_current` ở stage cấp 2 
     }
   }, 60_000);
 
+  it("review m9 · thẻ decision của A (người bắt đầu) KHÔNG có use_current; add_attempt/cancel còn", async () => {
+    const runId = await toLevel2Decision();
+    try {
+      const v = await c.call("A", "GET", `/process-runs/${runId}`);
+      const d = ((v.json?.my_tasks ?? []) as Json[]).find((t) => t.kind === "decision");
+      expect({ seen: d !== undefined, can_act: d?.can_act }).toEqual({ seen: true, can_act: true });
+      expect(d?.options).toEqual(["add_attempt", "cancel"]);
+    } finally {
+      await regrant();
+    }
+  }, 60_000);
+
   it("D3-07 · A (người bắt đầu) cancel vẫn được (không là duyệt) ⇒ 200, run cancelled", async () => {
     const runId = await toLevel2Decision();
     try {

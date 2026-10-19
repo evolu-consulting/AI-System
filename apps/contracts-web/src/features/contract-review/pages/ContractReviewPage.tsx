@@ -33,6 +33,12 @@ import { saveErrorText } from "../lib/save-error";
 
 const READING_REFRESH_MS = 2000;
 
+/** Review m8 · giá trị + trích dẫn AI đọc cho thẻ duyệt cấp 1. */
+const extractedOf = (c: ContractDetail | undefined) => {
+  const f = c?.fields.total_value;
+  return f ? { value: f.value, quote: f.quote ?? "", edited: f.edited === true } : undefined;
+};
+
 /** "Lưu": chỉ ô đã đổi, khoá `version`; trả trạng thái nút + thông báo. */
 function useSave(id: string) {
   const { t } = useTranslation();
@@ -88,6 +94,7 @@ export function ContractReviewPage({ id }: { id: string }) {
     write,
     hasSource: q.data?.has_source ?? false,
     saveFirst,
+    extracted: extractedOf(q.data),
   });
 
   useEffect(() => {

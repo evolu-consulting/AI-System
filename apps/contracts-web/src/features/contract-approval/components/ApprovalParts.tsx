@@ -2,6 +2,7 @@
 // "Duyệt"/"Từ chối"/"Đọc lại" là lệch có chủ ý — DEVIATIONS.md, `data-approval` để harness ẩn) + khối lý do + dòng trạng thái.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { vnd } from "~/components/shared/format";
 import type { Busy } from "../hooks/use-approval";
 import { type ApprovalView, feedbackOk } from "../lib/approval";
 
@@ -138,6 +139,20 @@ export function ApprovalNote({ note, rejected }: { note: string | null; rejected
   return (
     <p data-approval="note" className="mb-3 text-sm text-muted">
       {t(note)}
+    </p>
+  );
+}
+
+/** Review m8 · kiểm soát chèn văn bản: ở cấp 1 hiện rõ giá trị AI đọc được + trích dẫn nguyên văn (và cờ đã sửa tay) để người
+ *  xác nhận đối chiếu với tệp gốc trước khi "Xác nhận" (giá trị này quyết có cần cấp 2). */
+export function ExtractedValue(p: { value: unknown; quote: string; edited: boolean }) {
+  const { t } = useTranslation();
+  const n = typeof p.value === "number" ? p.value : null;
+  return (
+    <p data-approval="extracted" className="mb-3 rounded-lg bg-act-soft px-3 py-2 text-sm text-act">
+      {t("contracts.approval.extracted", { value: n === null ? "—" : vnd(n) })}
+      {p.quote ? <span className="italic"> “{p.quote}”</span> : null}
+      {p.edited ? <span> · {t("contracts.approval.editedByHand")}</span> : null}
     </p>
   );
 }
