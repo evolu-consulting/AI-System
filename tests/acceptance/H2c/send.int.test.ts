@@ -226,6 +226,8 @@ describe("A44–A49 · gắn, rollback, hiển thị [H2c-R11 · R12 · AC-06]",
       expect(s.status).toBe(200);
       const job = await rt.next(runIdOf(s));
       await rt.decide(job, echoAnswer(job));
+      // H2c-R15 (99360274): tin có file mà Orchestrator `answer` ⇒ Hub giao cho agent đọc file; phục vụ job agent đó.
+      await rt.agent(await rt.next(runIdOf(s)), { status: "done", text: "Đã đọc hai file A47" });
       expect((await s.terminal(15_000))?.event).toBe("run.finished");
     } finally {
       s.close();

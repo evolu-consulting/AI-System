@@ -83,6 +83,6 @@ describe("N2-FR-01 · huỷ bù khi gắn run lỗi [N2-D04]", () => {
     expect(runs.map((x) => x.status)).toEqual(["cancelled"]);
     const live = await c.sql<Json[]>`select id from hub.runs
       where process_run_id = ${runs[0]?.id} and status in ('queued', 'running')`;
-    expect(live).toEqual([]);
+    expect([...live]).toEqual([]);
   }, 30_000);
 });

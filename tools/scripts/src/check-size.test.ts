@@ -43,6 +43,11 @@ describe("ADM-NFR-06 · check:size limitFor (T-SIZE-1…3)", () => {
   });
 });
 
+test("#231 · reference/ (bản sao tham chiếu chỉ đọc) được miễn", () => {
+  expect(limitFor("reference/mgmt-app-contracts/actions_more.py")).toBeNull();
+  expect(limitFor("apps/x/reference/a.ts")).toBe(400);
+});
+
 describe("ADM-NFR-06 · check:size checkFiles (T-SIZE-5)", () => {
   test("400 OK, 401 vi phạm; test 600 OK, 601 vi phạm; miễn trừ bỏ qua", () => {
     expect(

@@ -1,121 +1,23 @@
 // HUB-FR-106 · HUB-FR-107 · HUB-FR-110 · HUB-FR-115 · AC-H28 · máy trạng thái process_run + stage hiện tại (plan §3.1–3.2,
 // plan-contract §7). Thuần: trả trạng thái kế + hiệu ứng (người gọi thực thi trong tx, thứ tự khoá plan §10).
 // HUB-FR-143 · CA-R03/R04 · ADR-0023 · lớp 1: hằng ⇐ `../limits`, kiểu ⇐ `../types` (không import contract).
-import { ASKS_MAX, REDO_MAX } from "../limits";
-import type { DecisionOption, DecisionReason, ProcessRunStatus, StageRunStatus } from "../types";
+// PD-A03: kiểu ở `run-state.types.ts`, phép dựng ở `run-state.core.ts`, nhánh `decide` ở `run-state.decide.ts`.
+import type { ProcessRunStatus } from "../types";
+import {
+  advance,
+  BAD,
+  end,
+  isTerminal,
+  needsDecision,
+  ok,
+  redo,
+  withStage,
+} from "./run-state.core";
+import { onDecide } from "./run-state.decide";
+import type { RunEvent, RunState, Transition } from "./run-state.types";
 
-export type RunEvent =
-  | { kind: "stage_output"; templateOk: boolean }
-  | { kind: "need_input" }
-  | { kind: "limit"; reason: DecisionReason }
-  /** N2-FR-02 · `reject` = Từ chối ⇒ kết thúc run `cancelled` (khác `fail` = làm lại). */
-  | { kind: "review"; result: "pass" | "fail" | "reject" }
-  | { kind: "answer" }
-  | { kind: "decide"; option: DecisionOption }
-  | { kind: "cancel" }
-  | { kind: "expire" }
-  | { kind: "permission_lost" | "user_inactive" | "interrupted" };
-
-export type StageState = {
-  status: StageRunStatus;
-  attempt: number;
-  attemptLimit: number;
-  asksCount: number;
-  askLimit: number;
-  after: "review" | "auto";
-  hasOutput: boolean;
-  /** D4 · HUB-FR-109 · stage "Hành động thật": `need_input` ⇒ needs_decision (người bắt đầu không được tự xác nhận hành
-   * động thật — phải qua người quyết; chống def "lách luật" real_action sau stage auto, P1-62). */
-  realAction?: boolean;
-};
-export type RunState = {
-  status: ProcessRunStatus;
-  stageIdx: number;
-  stageCount: number;
-  stage: StageState;
-  decisionReason: DecisionReason | null;
-};
-export type Effect =
-  | "queue_stage"
-  | "queue_next_stage"
-  | "open_review"
-  | "open_ask"
-  | "open_decision"
-  | "close_open_tasks"
-  | "cancel_stage_run"
-  | "finish_run"
-  /** PD-R04 · `add_attempt` của `retry_exhausted`: `retry_count = 0`, `last_error_code = NULL` (giữ `retry_since`). */
-  | "reset_retry"
-  /** PD-R14 · `use_current` của `timer_invalid`: ghi .md "Bỏ chờ theo quyết định" trước khi advance (T8 thực thi). */
-  | "write_wait_skip";
-export type Transition =
-  | { ok: true; next: RunState; effects: Effect[] }
-  | { ok: false; code: "PROCESS_RUN_STATE" | "NO_OUTPUT" };
-
-const TERMINAL: ReadonlySet<ProcessRunStatus> = new Set(["done", "cancelled", "failed", "expired"]);
-export const isTerminal = (s: ProcessRunStatus): boolean => TERMINAL.has(s);
-
-const BAD: Transition = { ok: false, code: "PROCESS_RUN_STATE" };
-const ok = (next: RunState, effects: Effect[]): Transition => ({ ok: true, next, effects });
-
-/** Lần thử 1 + làm lại ≤ `REDO_MAX`; hỏi lại ≤ `ASKS_MAX` (mặc định stage kế; `decide add_attempt` nới). */
-const DEFAULT_ATTEMPT_LIMIT = REDO_MAX + 1;
-
-const withStage = (s: RunState, stage: Partial<StageState>, run: Partial<RunState> = {}) => ({
-  ...s,
-  decisionReason: null,
-  ...run,
-  stage: { ...s.stage, ...stage },
-});
-
-/** Stage hiện tại xong: stage kế `queued` (running) hoặc run `done`. */
-function advance(s: RunState, extra: Effect[] = []): Transition {
-  if (s.stageIdx + 1 >= s.stageCount)
-    return ok(withStage(s, { status: "done" }, { status: "done" }), [...extra, "finish_run"]);
-  const stage: StageState = {
-    ...s.stage,
-    status: "queued",
-    attempt: 1,
-    attemptLimit: DEFAULT_ATTEMPT_LIMIT,
-    asksCount: 0,
-    askLimit: ASKS_MAX,
-    hasOutput: false,
-  };
-  const next = {
-    ...s,
-    status: "running" as const,
-    stageIdx: s.stageIdx + 1,
-    stage,
-    decisionReason: null,
-  };
-  return ok(next, [...extra, "queue_next_stage"]);
-}
-
-const needsDecision = (s: RunState, reason: DecisionReason): Transition =>
-  ok(
-    withStage(
-      s,
-      { status: "needs_decision" },
-      { status: "needs_decision", decisionReason: reason },
-    ),
-    ["open_decision"],
-  );
-
-/** Cùng stage chạy lại (attempt + 1). */
-const redo = (s: RunState, stage: Partial<StageState> = {}): Transition =>
-  ok(
-    withStage(
-      s,
-      { status: "queued", attempt: s.stage.attempt + 1, ...stage },
-      { status: "running" },
-    ),
-    ["queue_stage"],
-  );
-
-function end(s: RunState, status: "cancelled" | "expired"): Transition {
-  const next = withStage(s, { status: "cancelled" }, { status });
-  return ok(next, ["cancel_stage_run", "close_open_tasks", "finish_run"]);
-}
+export type { Effect, RunEvent, RunState, StageState, Transition } from "./run-state.types";
+export { isTerminal };
 
 function onOutput(s: RunState, templateOk: boolean): Transition {
   if (!templateOk)
@@ -139,51 +41,6 @@ function onReview(s: RunState, result: "pass" | "fail" | "reject"): Transition {
   if (result === "pass") return advance(s, ["close_open_tasks"]);
   if (result === "reject") return end(s, "cancelled");
   return s.stage.attempt < s.stage.attemptLimit ? redo(s) : needsDecision(s, "redo_limit");
-}
-
-/** M5 · `add_attempt` nới đúng giới hạn theo lý do. */
-function onAddAttempt(s: RunState): Transition {
-  const reason = s.decisionReason;
-  if (reason === "ask_limit")
-    return ok(
-      withStage(s, { status: "queued", askLimit: s.stage.askLimit + 1 }, { status: "running" }),
-      ["queue_stage"],
-    );
-  // D-PD04 · `retry_exhausted`/`timer_invalid` giữ `attempt` (không phải làm lại do góp ý); retry còn reset bộ đếm.
-  if (reason === "retry_exhausted" || reason === "timer_invalid")
-    return ok(
-      withStage(s, { status: "queued" }, { status: "running" }),
-      reason === "retry_exhausted" ? ["queue_stage", "reset_retry"] : ["queue_stage"],
-    );
-  const attempt = s.stage.attempt + 1;
-  return redo(s, {
-    attemptLimit: Math.max(s.stage.attemptLimit + (reason === "redo_limit" ? 1 : 0), attempt),
-  });
-}
-
-/** M5 · `add_attempt` (xem `onAddAttempt`); `use_current` cần output (trừ `timer_invalid`). */
-function onDecide(s: RunState, option: DecisionOption): Transition {
-  const reason = s.decisionReason;
-  if (option === "cancel") return end(s, "cancelled");
-  if (option === "add_attempt") return onAddAttempt(s);
-  // P-c1 · PC-R10 · P-c2 · PC2-R08 · `autofix_*`/`apply_*` chỉ add_attempt/cancel ⇒ `use_current` 409 PROCESS_RUN_STATE
-  // (kể cả có output cũ): không có bản sửa/PR hợp lệ để "dùng hiện tại".
-  if (
-    reason === "autofix_check_failed" ||
-    reason === "sandbox_unavailable" ||
-    reason === "apply_conflict" ||
-    reason === "apply_failed"
-  )
-    return BAD;
-  // D-PD05 · `timer_invalid` + `use_current` không cần output (stage `wait_until` luôn `after: auto`, PD-R17).
-  if (reason === "timer_invalid") return advance(s, ["write_wait_skip"]);
-  if (!s.stage.hasOutput) return { ok: false, code: "NO_OUTPUT" };
-  // P-b2 D8 · `back_limit` + `use_current` ⇒ stage nguồn coi Đạt như `redo_limit` (`add_attempt` do gates/back.effects).
-  if (reason === "redo_limit" || reason === "back_limit") return advance(s, ["close_open_tasks"]);
-  if (s.stage.after === "auto") return advance(s);
-  return ok(withStage(s, { status: "waiting_review" }, { status: "waiting_review" }), [
-    "open_review",
-  ]);
 }
 
 /** Trạng thái hiện tại phải nhận sự kiện; sai ⇒ `PROCESS_RUN_STATE` (409). */

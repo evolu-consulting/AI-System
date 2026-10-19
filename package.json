@@ -12,6 +12,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tests.json",
+    "typecheck:host": "turbo run typecheck --filter=!@ai/agent-runtime && tsc -p tsconfig.tests.json",
     "test": "bun test",
     "test:all": "bun tools/scripts/src/test-all.ts",
     "test:int": "bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 .int.test",

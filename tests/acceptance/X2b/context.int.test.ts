@@ -15,6 +15,7 @@ import {
   runCount,
   settle,
   startX2b,
+  waitAgentMsg,
 } from "./_x2b";
 
 let c: CtxB;
@@ -55,6 +56,8 @@ describe("X2b-AC09 · 20 tin gần nhất + tin gọi [R07, R08]", () => {
     await say(c.hub, await c.tok("hoa"), room, "trước khi hỏi");
     const s1 = await invoke(c, "lan", room, "@hoadon lần 1");
     await answer(c, s1.runId, "Kết quả lần 1.");
+    // Tin agent vào phòng bất đồng bộ sau khi job xong: chờ tín hiệu (tin xuất hiện) trước khi gọi lần 2 (GX #229).
+    await waitAgentMsg(c, "lan", room, s1.runId);
     await say(c.hub, await c.tok("hoa"), room, "sau lần 1");
     const s2 = await invoke(c, "lan", room, "@hoadon lần 2");
     await say(c.hub, await c.tok("hoa"), room, "SAU-TIN-GOI-2");

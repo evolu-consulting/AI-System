@@ -34,9 +34,13 @@ export function shouldDrain(req: Request, status: number): boolean {
   return status !== 401 && isUploadRoute(req) && !req.headers.has("content-length");
 }
 
-/** Thân cần xử lý khi lỗi: có thân, không phải JSON. */
+/**
+ * Thân cần xử lý khi lỗi: có thân, không phải JSON, không `Content-Length` (chunked). GX #200: Bun 1.4 đóng socket ngay
+ * theo `Connection: close` mà không đọc bỏ phần dư ⇒ client bị RST (ECONNRESET trên Windows, mất cả phản hồi 413/415);
+ * thân có `Content-Length` Bun tự xử lý phần dư (đã đo: không close ⇒ 8/8 nhận 413), nên không đặt `close` cho nhánh này.
+ */
 export function needsClose(req: Request, status: number): boolean {
-  return status >= 400 && hasRequestBody(req) && !isJson(req);
+  return status >= 400 && hasRequestBody(req) && !isJson(req) && !req.headers.has("content-length");
 }
 
 /**

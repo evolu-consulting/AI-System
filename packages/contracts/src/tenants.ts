@@ -31,13 +31,49 @@ export const MaxConcurrentSubSchema = z
 export const TENANT_TZ_DEFAULT = "Asia/Ho_Chi_Minh";
 
 let tzSet: ReadonlySet<string> | null = null;
+
 /**
- * TZ-R02: tên IANA chuẩn có trong `Intl.supportedValuesOf("timeZone")` (alias như `Asia/Saigon` ⇒ false; phân biệt
- * hoa/thường). Server (Bun/JSC) là nguồn đúng — KHÔNG dùng ở schema response (danh sách của trình duyệt có thể khác).
+ * #227: tên IANA hiện hành mà một số runtime (Chromium/Node ICU cũ) chỉ liệt kê dưới tên cũ trong
+ * `Intl.supportedValuesOf("timeZone")` (vd `Asia/Saigon`), dù vẫn nhận tên hiện hành trong `Intl.DateTimeFormat`.
+ * Chỉ các tên hiện hành này được chấp nhận thêm; tên cũ (alias) vẫn chỉ hợp lệ khi runtime tự liệt kê (TZ-R02).
+ */
+const MODERN_IANA_NAMES: ReadonlySet<string> = new Set([
+  "Asia/Ho_Chi_Minh",
+  "Asia/Kolkata",
+  "Asia/Kathmandu",
+  "Asia/Yangon",
+  "Europe/Kyiv",
+  "America/Nuuk",
+  "Atlantic/Faroe",
+  "Pacific/Kanton",
+]);
+
+function knownToIntl(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Phần thuần của TZ-R02 (test được): `listed` = danh sách runtime, `known` = runtime nhận tên này. */
+export function isSupportedTimeZoneIn(
+  tz: string,
+  listed: ReadonlySet<string>,
+  known: (tz: string) => boolean,
+): boolean {
+  return listed.has(tz) || (MODERN_IANA_NAMES.has(tz) && known(tz));
+}
+
+/**
+ * TZ-R02: tên IANA có trong `Intl.supportedValuesOf("timeZone")`, hoặc là tên hiện hành mà runtime chỉ liệt kê dưới
+ * tên cũ (#227: `Asia/Ho_Chi_Minh` trên Chromium/Node chỉ có `Asia/Saigon`). Alias cũ không được runtime liệt kê
+ * (như `Asia/Saigon` trên Bun) ⇒ false; phân biệt hoa/thường. Lưu đúng tên người dùng chọn.
  */
 export function isSupportedTimeZone(tz: string): boolean {
   tzSet ??= new Set(Intl.supportedValuesOf("timeZone"));
-  return tzSet.has(tz);
+  return isSupportedTimeZoneIn(tz, tzSet, knownToIntl);
 }
 /** Response: chỉ kiểm độ dài (= CHECK DB 1…64). `abort` ⇒ input sai độ dài chỉ ra một issue (không thêm `custom`). */
 export const TimezoneSchema = z.string().min(1, { abort: true }).max(64, { abort: true });

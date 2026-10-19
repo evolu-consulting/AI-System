@@ -16,10 +16,8 @@ describe("CR-092 · test:all", () => {
       "e2e:playwright.config.ts",
     ]);
     expect(e2eSteps(["e2e/x1/playwright.config.ts"])[0]?.cmd).toEqual([
-      "bunx",
-      "playwright",
-      "test",
-      "-c",
+      "bun",
+      "tools/scripts/src/run-playwright.ts",
       "e2e/x1/playwright.config.ts",
     ]);
   });
@@ -45,5 +43,30 @@ describe("CR-092 · test:all", () => {
     ]);
     expect(buildSteps(CONFIGS, parseArgs(["--only=e2e"])).length).toBe(3);
     expect(buildSteps(CONFIGS, parseArgs(["--only=unit"])).map((s) => s.name)).toEqual(["unit"]);
+  });
+});
+
+describe("GX · test:all trên máy thiếu công cụ / thiếu env", () => {
+  it("envLocal: bước unit nạp .env.local tường minh (bun test không tự nạp)", () => {
+    const cmd = (envLocal: boolean) =>
+      buildSteps(CONFIGS, { e2e: false, python: false, envLocal }).find((s) => s.name === "unit")
+        ?.cmd;
+    expect(cmd(true)).toEqual(["bun", "--env-file=.env.local", "test"]);
+    expect(cmd(false)).toEqual(["bun", "test"]);
+  });
+
+  it("#230 · thiếu docker/uv: typecheck chạy bản host, python + typecheck agent-runtime là bước BỊ CHẶN có lý do", () => {
+    const steps = buildSteps(CONFIGS, { e2e: false, python: true, pyBlocked: "thiếu docker" });
+    expect(steps.find((s) => s.name === "typecheck")?.cmd).toEqual([
+      "bun",
+      "run",
+      "typecheck:host",
+    ]);
+    const blocked = steps.filter((s) => s.blocked).map((s) => [s.name, s.blocked]);
+    expect(blocked).toEqual([
+      ["typecheck:agent-runtime", "thiếu docker"],
+      ["python", "thiếu docker"],
+    ]);
+    expect(buildSteps(CONFIGS, { e2e: false, python: true }).some((s) => s.blocked)).toBe(false);
   });
 });

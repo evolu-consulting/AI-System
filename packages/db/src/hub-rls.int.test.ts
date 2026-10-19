@@ -166,6 +166,11 @@ const LATER_POLICY_TABLES = [
   "kh_jobs",
   "kh_stage_usage",
   "kh_writes",
+  // N3 (thông báo, hub 00xx): 4 bảng có RLS tenant, chỉ hub_rw — thêm sau khi N3 đóng (GX #176).
+  "notifications",
+  "notification_deliveries",
+  "notify_prefs",
+  "push_subscriptions",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [{ t: "runs", roles: "agent_runtime" }];

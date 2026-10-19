@@ -45,7 +45,7 @@ describe("N2-AC03…05 · Từ chối [N2-FR-02]", () => {
     expect(run?.status).toBe("cancelled");
     const open = await c.sql<Json[]>`select id from hub.review_tasks
       where process_run_id = ${g.runId} and status = 'open'`;
-    expect(open).toEqual([]);
+    expect([...open]).toEqual([]);
     const [st] = await c.sql<Json[]>`select status from hub.stage_runs
       where process_run_id = ${g.runId} and stage_idx = 0 order by round desc, attempt desc limit 1`;
     expect(st?.status).toBe("cancelled");

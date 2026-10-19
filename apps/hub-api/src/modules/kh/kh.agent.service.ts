@@ -14,7 +14,7 @@ import {
   agentKhIds,
   bumpAgentVersion,
   readAgent,
-} from "../studio/agents/agents.repo";
+} from "../studio/agents/agents.port";
 import { agentDetail } from "../studio/agents/agents.service";
 import { type StudioWriteDeps, withConfigWrite } from "../studio/studio-write";
 import { validateAgentKh } from "./kh.agent.rules";

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   isSupportedTimeZone,
+  isSupportedTimeZoneIn,
   TENANT_TZ_DEFAULT,
   TenantCreateRequestSchema,
   TenantCreateResponseSchema,
@@ -126,5 +127,21 @@ describe("ADM-FR-60 · TenantUpdateRequestSchema + VERSION_CONFLICT", () => {
     expect(s.safeParse({ current: tenant }).success).toBe(false);
     expect(s.safeParse({ current: tenant, updated_at: T1, updated_by: "x" }).success).toBe(false);
     expect(s.safeParse({ current: user, updated_at: T1 }).success).toBe(false);
+  });
+});
+
+describe("#227 · múi giờ: tên hiện hành khi runtime chỉ liệt kê tên cũ", () => {
+  const chromium = new Set(["Asia/Saigon", "Europe/Berlin"]); // như Chromium 153 / Node 22.23
+  const knows = (tz: string) => tz !== "Mars/Base";
+  test("Asia/Ho_Chi_Minh hợp lệ dù runtime chỉ liệt kê Asia/Saigon; tên sai/hoa-thường vẫn chặn", () => {
+    expect(isSupportedTimeZoneIn("Asia/Ho_Chi_Minh", chromium, knows)).toBe(true);
+    expect(isSupportedTimeZoneIn("Asia/Saigon", chromium, knows)).toBe(true); // runtime tự liệt kê
+    expect(isSupportedTimeZoneIn("Asia/Saigon", new Set(["Asia/Ho_Chi_Minh"]), knows)).toBe(false);
+    expect(isSupportedTimeZoneIn("Asia/Ho_Chi_Minh", chromium, () => false)).toBe(false);
+    expect(isSupportedTimeZoneIn("asia/ho_chi_minh", chromium, knows)).toBe(false);
+    expect(isSupportedTimeZoneIn("Mars/Base", chromium, knows)).toBe(false);
+  });
+  test("runtime hiện tại nhận tên mặc định của tenant", () => {
+    expect(isSupportedTimeZone(TENANT_TZ_DEFAULT)).toBe(true);
   });
 });

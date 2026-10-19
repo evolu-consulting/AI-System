@@ -6,7 +6,7 @@ import type { StageRunStatus } from "@ai/contracts/chat";
 import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { enqueueKhSummary } from "../../kh/kh.writes.repo";
+import { enqueueKhSummary } from "../../kh/kh.writes.port";
 import { settleStepTx } from "../adapters/runs/step.repo";
 import type { StepOutcome } from "../application/runs/settle-step.usecase";
 import type { RunState } from "../domain/runs/run-state.rules";

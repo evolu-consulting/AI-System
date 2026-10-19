@@ -107,7 +107,7 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
     await settled(c);
     await waitStatus(c.sql, runId, "needs_decision");
     expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
-    expect(await items("N2 mark lậu")).toEqual([]);
+    expect([...(await items("N2 mark lậu"))]).toEqual([]);
   }, 60_000);
 
   it("security M2 · người bắt đầu không có quyền write gói (X) ⇒ needs_decision permission_lost, 0 hàng", async () => {
@@ -119,7 +119,7 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
     await settled(c);
     await waitStatus(c.sql, runId, "needs_decision");
     expect((await decisionOf(c.sql, runId))?.reason).toBe("permission_lost");
-    expect(await items("N2 không quyền")).toEqual([]);
+    expect([...(await items("N2 không quyền"))]).toEqual([]);
   }, 60_000);
 
   it("N2-AC07 · gói tắt SAU khi lưu def ⇒ needs_decision tool_failed, 0 hàng gói mới", async () => {
@@ -132,6 +132,6 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
     await settled(c);
     await waitStatus(c.sql, runId, "needs_decision");
     expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
-    expect(await items("N2 tắt")).toEqual([]);
+    expect([...(await items("N2 tắt"))]).toEqual([]);
   }, 60_000);
 });

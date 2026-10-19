@@ -25,6 +25,7 @@ export function countLines(text: string): number {
 /** Giới hạn dòng của path posix tương đối gốc repo; null = không phải code hoặc được miễn. */
 export function limitFor(path: string): number | null {
   if (!CODE_EXT.test(path)) return null;
+  if (path.startsWith("reference/")) return null; // #231: bản sao tham chiếu chỉ đọc (mgmt-app), không phải mã sản phẩm
   const slashed = `/${path}`;
   if (EXEMPT_DIRS.some((d) => slashed.includes(d)) || EXEMPT_FILE.test(path)) return null;
   const isTest =

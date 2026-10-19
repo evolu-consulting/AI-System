@@ -6,7 +6,7 @@ import type { KhWarningCode, StageKnowledge } from "@ai/contracts/hub-admin";
 import { KH_QUERY_LIMIT, KH_WARNING_CODES } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { writeStatesOfRun } from "../../kh/kh.writes.repo";
+import { writeStatesOfRun } from "../../kh/kh.writes.port";
 
 type KhTarget = { connection_id: string; name: string; project: string } | null;
 export type SnapKh = { stages?: KhTarget[] } | undefined;

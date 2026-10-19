@@ -25,14 +25,17 @@ const streamBody = (n: number, chunk = 256 * 1024) => {
 };
 
 describe("unread-body [B1-3]", () => {
-  test("hasRequestBody / needsClose: chỉ lỗi ≥ 400, có thân, không JSON", () => {
+  test("hasRequestBody / needsClose: chỉ lỗi ≥ 400, có thân, không JSON, không Content-Length (GX #200)", () => {
     const req = (h: Record<string, string>) =>
       new Request("http://x/a", { method: "POST", headers: h });
     expect(hasRequestBody(req({ "content-length": "0" }))).toBe(false);
     expect(hasRequestBody(req({ "content-length": "5" }))).toBe(true);
     expect(hasRequestBody(req({ "transfer-encoding": "chunked" }))).toBe(true);
     expect(hasRequestBody(new Request("http://x/a"))).toBe(false);
-    const bin = req({ "content-length": "5", "content-type": "application/pdf" });
+    const bin = req({ "transfer-encoding": "chunked", "content-type": "application/pdf" });
+    expect(needsClose(req({ "content-length": "5", "content-type": "application/pdf" }), 413)).toBe(
+      false,
+    );
     expect(needsClose(bin, 413)).toBe(true);
     expect(needsClose(bin, 201)).toBe(false);
     expect(

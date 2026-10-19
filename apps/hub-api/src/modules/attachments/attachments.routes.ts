@@ -55,7 +55,11 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
     // `Content-Length` — Bun gửi chunked). Không `Range`: `blobResponse` giữ `Content-Length` (spec-decisions B3-1).
     if (c.req.header("range") === undefined) return blobResponse(c, body, 200, headers);
     const { "Content-Length": _len, ...rest } = headers;
-    return new Response(body.stream(), { status: 200, headers: rest });
+    // Bun 1.4: `Bun.file(…).stream()` vẫn nhận ra thân là file ⇒ vẫn 206; `pipeThrough` đổi thành stream thường (GX #200).
+    return new Response(body.stream().pipeThrough(new TransformStream()), {
+      status: 200,
+      headers: rest,
+    });
   });
 
   return r;

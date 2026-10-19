@@ -153,6 +153,21 @@ describe("A01–A08 · tải lên, giới hạn, thân [H2c-R01 · R05 · AC-01 
       bytes: big,
       closeAfter: true,
     });
+    // Phản hồi đầu tiên trên socket là 400 của phần "request" thừa phía sau Content-Length (không phải kết quả của request
+    // thật): chờ request 1 024 byte hoàn tất (hàng + rename) trước khi kiểm/đi tiếp, kẻo ghi muộn lọt sang ca kế (GX #200).
+    await waitFor(
+      () =>
+        sql<
+          { n: number }[]
+        >`select count(*)::int as n from hub.attachments where created_at >= ${t0}`,
+      (rows) => (rows[0]?.n ?? 0) >= 1,
+      10_000,
+    );
+    await waitFor(
+      () => diskFiles(hub.dir),
+      (fs) => parts(fs).length === 0,
+      10_000,
+    );
     const [r] = await sql<{ n: number }[]>`select count(*)::int as n from hub.attachments
       where created_at >= ${t0} and size > 1024`;
     expect(r?.n).toBe(0);
