@@ -4,7 +4,7 @@
 import { createSession } from "@ai/web-kit/auth/session";
 import { queryClient } from "~/app/query-client";
 
-/** CR-053 · `X-App` khi gọi `/auth/*`. admin-api chưa có `contracts` trong `WEB_APPS` ⇒ hiện dùng cookie `ai_rt` chung. */
+/** CR-053 · `X-App` khi gọi `/auth/*`. `contracts` nằm trong `WEB_APPS` ⇒ admin-api dùng cookie phiên riêng `ai_rt_contracts`. */
 export const CONTRACTS_APP = "contracts";
 export const AUTH_CHANNEL_NAME = "ai-contracts-auth";
 export const REFRESH_LOCK_NAME = "ai-contracts-refresh";

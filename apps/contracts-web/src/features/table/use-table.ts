@@ -22,40 +22,15 @@ export type UseTableOptions<T> = {
   serverTotal?: number;
 };
 
-export function useTable<T>(rows: T[] | undefined, opts: UseTableOptions<T>) {
-  const { text, pageSize = 20, filters = [], serverTotal } = opts;
-  const server = serverTotal !== undefined;
-  const [q, setQState] = useState("");
-  const [page, setPage] = useState(1);
+/** Lọc theo cột: điều kiện + cột đang bật + định nghĩa cột (tuỳ chọn suy từ dữ liệu). `onChange` = về trang 1. */
+function useColumnFilter<T>(
+  rows: T[] | undefined,
+  filters: ColumnFilter<T>[],
+  onChange: () => void,
+) {
   const [conds, setConds] = useState<Record<string, Cond>>({});
   const [active, setActive] = useState<string[]>([]);
-  const [size, setSizeState] = useState(pageSize);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `text`/`filters` thường là literal mới mỗi lần render; chỉ dữ liệu và điều kiện đổi mới tính lại
-  const filtered = useMemo(() => {
-    if (server) return rows ?? [];
-    const kept = applyFilters(rows ?? [], filters, conds);
-    return normalize(q).trim() ? kept.filter((r) => matches(text(r), q)) : kept;
-  }, [rows, q, conds, server]);
-
-  const total = server ? (serverTotal as number) : filtered.length;
-  const p = server
-    ? {
-        pages: Math.max(1, Math.ceil(total / size)),
-        page: Math.min(Math.max(1, page), Math.max(1, Math.ceil(total / size))),
-        shown: filtered,
-      }
-    : paginate(filtered, page, size);
-
-  const setQ = (v: string) => {
-    setQState(v);
-    setPage(1);
-  };
-  const setPageSize = (n: number) => {
-    setSizeState(n);
-    setPage(1);
-  };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: như trên
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `filters` thường là literal mới mỗi lần render; chỉ dữ liệu đổi mới tính lại
   const defs = useMemo(
     () =>
       filters.map((f) => ({
@@ -73,7 +48,7 @@ export function useTable<T>(rows: T[] | undefined, opts: UseTableOptions<T>) {
     add: (key) => setActive((a) => (a.includes(key) ? a : [...a, key])),
     set: (key, c) => {
       setConds((was) => ({ ...was, [key]: c }));
-      setPage(1);
+      onChange();
     },
     remove: (key) => {
       setActive((a) => a.filter((k) => k !== key));
@@ -81,13 +56,53 @@ export function useTable<T>(rows: T[] | undefined, opts: UseTableOptions<T>) {
         const { [key]: _, ...rest } = was;
         return rest;
       });
-      setPage(1);
+      onChange();
     },
     clear: () => {
       setActive([]);
       setConds({});
-      setPage(1);
+      onChange();
     },
+  };
+  return { conds, filter };
+}
+
+/** Phân trang: server (`rows` đã là trang) hoặc client (cắt mảng). */
+function pageOf<T>(
+  filtered: T[],
+  paging: { server: boolean; total: number; page: number; size: number },
+) {
+  const { server, total, page, size } = paging;
+  if (!server) return paginate(filtered, page, size);
+  const pages = Math.max(1, Math.ceil(total / size));
+  return { pages, page: Math.min(Math.max(1, page), pages), shown: filtered };
+}
+
+export function useTable<T>(rows: T[] | undefined, opts: UseTableOptions<T>) {
+  const { text, pageSize = 20, filters = [], serverTotal } = opts;
+  const server = serverTotal !== undefined;
+  const [q, setQState] = useState("");
+  const [page, setPage] = useState(1);
+  const [size, setSizeState] = useState(pageSize);
+  const { conds, filter } = useColumnFilter(rows, filters, () => setPage(1));
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `text`/`filters` thường là literal mới mỗi lần render; chỉ dữ liệu và điều kiện đổi mới tính lại
+  const filtered = useMemo(() => {
+    if (server) return rows ?? [];
+    const kept = applyFilters(rows ?? [], filters, conds);
+    return normalize(q).trim() ? kept.filter((r) => matches(text(r), q)) : kept;
+  }, [rows, q, conds, server]);
+
+  const total = server ? (serverTotal as number) : filtered.length;
+  const p = pageOf(filtered, { server, total, page, size });
+
+  const setQ = (v: string) => {
+    setQState(v);
+    setPage(1);
+  };
+  const setPageSize = (n: number) => {
+    setSizeState(n);
+    setPage(1);
   };
 
   return {
@@ -103,5 +118,4 @@ export function useTable<T>(rows: T[] | undefined, opts: UseTableOptions<T>) {
     setPageSize,
   };
 }
-
 export type TableState = ReturnType<typeof useTable>;

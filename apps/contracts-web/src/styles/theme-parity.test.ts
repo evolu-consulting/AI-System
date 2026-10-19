@@ -94,7 +94,9 @@ describe("theme-parity admin-web ↔ contracts-web", () => {
   test("bản tối cũng chọn được bằng html[data-theme=dark] (theme.ts của mgmt-app)", () => {
     expect(tokensOf(contracts, ':root[data-theme="dark"]').get("--background")).toBe("#0e0f1c");
   });
+});
 
+describe("theme-parity contracts-web ↔ mgmt-app + bộ phát hiện", () => {
   test("bản tối giống hệt mgmt-app: token tương ứng trong index.css:49-59 trùng giá trị", () => {
     const mgmt = tokensOf(
       readFileSync(
