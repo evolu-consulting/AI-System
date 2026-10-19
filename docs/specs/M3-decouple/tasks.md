@@ -9,9 +9,9 @@ Làn: **đầy đủ** cho máy trạng thái duyệt (quyền/tenant/tiền, ch
 4. Bỏ mọi import `PackRuns`/`processes` khỏi `packs/contracts`; luật depcruise `contracts-no-process-engine`.
 
 ## Migration
-- Gói contracts: **0010_m3_approvals** (bảng + RLS `packs.secure_table` + chuyển run cũ: mỗi `contracts.run_id` ⇒ một lượt cùng id; bước suy từ trạng thái HĐ và, nếu đọc được, từ `hub.process_runs` — stage ≥ 2 ⇒ level2, run huỷ/lỗi ⇒ cancelled/failed, `started_by` từ run).
+- Gói contracts: **0011_m3_approvals** (đổi từ 0010 khi rebase lên platform/gd0 14885aa9 — 0010 = M1b visibility; `when` 1793491200000) (bảng + RLS `packs.secure_table` + chuyển run cũ: mỗi `contracts.run_id` ⇒ một lượt cùng id; bước suy từ trạng thái HĐ và, nếu đọc được, từ `hub.process_runs` — stage ≥ 2 ⇒ level2, run huỷ/lỗi ⇒ cancelled/failed, `started_by` từ run).
 - Hub: **0042_m3_ai_usage** (`usage_logs.feature` + `hub.log_ai_usage` + `hub.ai_tokens_since`, EXECUTE `hub_rw`).
-- Số theo HEAD nhánh này (f26447f0); trùng số với nhánh khác ⇒ đổi lúc merge.
+- Hub 0042: platform/gd0 mới tới 0041 ⇒ không đổi. HD78 sắp thêm migration gói ⇒ người merge sau đổi số.
 
 ## Quyết định trong lúc làm
 | Mã | Quyết định |
