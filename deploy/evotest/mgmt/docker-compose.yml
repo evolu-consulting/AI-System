@@ -73,7 +73,7 @@ services:
       mgmt-opensearch: { condition: service_healthy }
       mgmt-neo4j: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json')"]
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8000), 2)"]
       interval: 5s
       retries: 60
     cpus: 1
