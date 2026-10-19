@@ -124,21 +124,22 @@ describe("N5-FR-03 · username + vai", () => {
   });
 });
 
+const T = (
+  id: string,
+  key: string,
+  org: string | null,
+  o: Partial<ExistingTenant> = {},
+): ExistingTenant => ({
+  id,
+  key,
+  mgmtSource: org === null ? null : "src",
+  mgmtOrgId: org,
+  active: true,
+  packRevoked: false,
+  ...o,
+});
+
 describe("N5-FR-02 · planOrgs", () => {
-  const T = (
-    id: string,
-    key: string,
-    org: string | null,
-    o: Partial<ExistingTenant> = {},
-  ): ExistingTenant => ({
-    id,
-    key,
-    mgmtSource: org === null ? null : "src",
-    mgmtOrgId: org,
-    active: true,
-    packRevoked: false,
-    ...o,
-  });
   test("N5-FR-02 · khớp (nguồn, org) ⇒ dùng lại; key trống ⇒ tạo; key thuộc tenant khác ⇒ ORG_KEY_TAKEN; trùng key trong file ⇒ DUPLICATE_KEY", () => {
     const p = planOrgs(
       [
@@ -162,6 +163,9 @@ describe("N5-FR-02 · planOrgs", () => {
     ]);
     expect(p.failed).toEqual(["o3", "o4", "o5"]);
   });
+});
+
+describe("N5-FR-07 · planOrgs nguồn và thu hồi", () => {
   test("N5-FR-07 · security M1: org id trùng nhưng KHÁC nguồn (hoặc tenant cũ không có nguồn) ⇒ ORG_MISMATCH, không gắn", () => {
     const p = planOrgs(
       [
@@ -271,13 +275,9 @@ describe("N5-FR-07 · planUsers với user đã có", () => {
     ]);
   });
   test("N5-FR-07 · L2: tenant thiếu Group vai (admin đã xoá) ⇒ GROUP_MISSING, không tạo user", () => {
-    const p = planUsers(
-      [u("a@x.vn", { orgRole: "viewer" })],
-      tenantOf,
-      [],
-      new Set(),
-      (_t, r) => r !== "viewer",
-    );
+    const p = planUsers([u("a@x.vn", { orgRole: "viewer" })], tenantOf, [], {
+      hasGroup: (_t, r) => r !== "viewer",
+    });
     expect(p.inserts).toEqual([]);
     expect(p.issues).toEqual([{ kind: "user", ref: "a@x.vn", code: "GROUP_MISSING" }]);
   });
@@ -326,6 +326,10 @@ describe("N5-FR-01 · N5-FR-03 · N5-FR-04 · planUsers lỗi hàng và mật kh
       "BAD_ROLE",
     ]);
   });
+});
+
+describe("N5-FR-04 · planUsers mật khẩu", () => {
+  const tenantOf = new Map<string, string | null>([["o1", "t1"]]);
   test("N5-FR-04 · mật khẩu: argon2id đủ mạnh ⇒ giữ hash, không buộc đổi; còn lại ⇒ reset, buộc đổi", () => {
     const p = planUsers(
       [u("a@x.vn", { passwordHash: ARGON_OK }), u("b@x.vn", { passwordHash: "scrypt:1:2:3$a$b" })],

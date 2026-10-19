@@ -161,7 +161,7 @@ async function userPhase(r: Run, users: UserIn[], o: ImportOpts, d: ImportDeps):
     // Bản sao mỗi lần `decide` chạy: withScope có thể thử lại tx (40P01) ⇒ không được đánh dấu email hai lần.
     const decide = (ex: Parameters<typeof planUsers>[2]) => {
       next = new Set(seen);
-      return planUsers(part, r.tenantOf, ex, next, hasGroup);
+      return planUsers(part, r.tenantOf, ex, { seen: next, hasGroup });
     };
     try {
       const res = await d.store.userBatch(o.apply, userQuery(r, part), decide, r.groups);

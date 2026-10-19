@@ -103,16 +103,14 @@ export function chunk<T>(xs: readonly T[], n: number): T[][] {
 export const normEmail = (e: string): string => e.trim().toLowerCase();
 export const validEmail = (e: string): boolean => e.length <= 254 && EMAIL_RE.test(e);
 
-/** Tenant đã có của org: cùng nguồn ⇒ dùng lại (trừ inactive / gói bị thu hồi); khác nguồn ⇒ ORG_MISMATCH (M1). */
+/** Tenant đã có của org, cùng nguồn ⇒ dùng lại (trừ inactive / gói bị thu hồi). */
 function reuseOrFail(
   plan: OrgPlan,
   o: OrgIn,
   t: ExistingTenant,
-  source: string,
   fail: (code: Issue["code"]) => void,
 ) {
-  if (t.mgmtSource !== source) fail("ORG_MISMATCH");
-  else if (!t.active) fail("TENANT_INACTIVE");
+  if (!t.active) fail("TENANT_INACTIVE");
   else if (t.packRevoked) fail("PACK_REVOKED");
   else plan.reuse.push({ orgId: o.id, tenantId: t.id, key: t.key });
 }
@@ -144,7 +142,9 @@ export function planOrgs(
       existing.find((t) => t.mgmtOrgId === o.id && t.mgmtSource === source) ??
       existing.find((t) => t.mgmtOrgId === o.id);
     if (mine) {
-      reuseOrFail(plan, o, mine, source, (code) => fail(o.id, code));
+      // Khác nguồn ⇒ ORG_MISMATCH (M1).
+      if (mine.mgmtSource !== source) fail(o.id, "ORG_MISMATCH");
+      else reuseOrFail(plan, o, mine, (code) => fail(o.id, code));
       continue;
     }
     const key = tenantKeyFor(o);
@@ -230,11 +230,15 @@ export function planUsers(
   users: readonly UserIn[],
   tenantOf: ReadonlyMap<string, string | null>,
   existing: readonly ExistingUser[],
-  /** Email đã gặp ở các lô trước của cùng lần chạy (DUPLICATE_EMAIL xuyên lô). */
-  seen: Set<string> = new Set(),
-  /** Tenant có Group vai (Group bị admin xoá ⇒ GROUP_MISSING, không tạo lại — L2). */
-  hasGroup: (tenantId: string, role: PackRole) => boolean = () => true,
+  opts: {
+    /** Email đã gặp ở các lô trước của cùng lần chạy (DUPLICATE_EMAIL xuyên lô). */
+    seen?: Set<string>;
+    /** Tenant có Group vai (Group bị admin xoá ⇒ GROUP_MISSING, không tạo lại — L2). */
+    hasGroup?: (tenantId: string, role: PackRole) => boolean;
+  } = {},
 ): UserPlan {
+  const seen = opts.seen ?? new Set<string>();
+  const hasGroup = opts.hasGroup ?? (() => true);
   const c: UserCtx = {
     tenantOf,
     hasGroup,
