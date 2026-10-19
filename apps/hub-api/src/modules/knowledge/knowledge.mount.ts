@@ -1,35 +1,52 @@
 // N4 · ADR-0021 §1 (module trong hub-api, không app backend mới — người dùng 2026-10-18) · lớp 4: nối dịch vụ tri thức.
-// Tx = `createPackUow(db, "knowledge")` (role `knowledge_rw`, RLS FORCE). Chiến lược theo `KNOWLEDGE_STRATEGY`: `fts` (mặc định,
-// (c)) | `embedding` ((a), cần `OPENAI_API_KEY`; vắng key ⇒ về `fts` + log). Rerank Claude khi `KNOWLEDGE_RERANK=on` và có
-// `ANTHROPIC_API_KEY`. Tool MCP đăng ký vào registry tool gói (N2) ⇒ `/mcp` và stage `tool` gọi được.
-import type { Db } from "@ai/db";
+// R1: module có POOL RIÊNG (`KNOWLEDGE_DATABASE_URL`, vắng ⇒ DSN chính `HUB_DATABASE_URL`; dev/test dùng role `knowledge_api` chỉ
+// SET ROLE được `knowledge_rw`) — không join chéo schema. Tx = `createPackUow(db, "knowledge")` (role `knowledge_rw`, RLS FORCE).
+// Chiến lược theo `KNOWLEDGE_STRATEGY`: `fts` (mặc định) | `embedding` (cần `OPENAI_API_KEY`). Rerank Claude khi
+// `KNOWLEDGE_RERANK=on` + `ANTHROPIC_API_KEY` (vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
+import { createDb, type Db } from "@ai/db";
 import { logger } from "../../lib/logger";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
 import type { PackToolDef } from "../packs/kit/application/pack-tools.ports";
 import { claudeReranker, openAiEmbedder } from "./adapters/ai.adapters";
 import { graphRepos } from "./adapters/graph.repo";
 import { graphTools } from "./adapters/graph.tools";
+import { khSource, khSourceConfig } from "./adapters/kh.source";
 import { knowledgeRepos } from "./adapters/knowledge.repo";
 import { KNOWLEDGE_KEY, knowledgeTools } from "./adapters/knowledge.tools";
 import type { GraphUow } from "./application/graph.ports";
 import { graphUsecases } from "./application/graph.usecases";
 import { addDocument, getKnowledge, searchKnowledge } from "./application/knowledge.usecases";
-import type { Embedder, KnowledgeUow, Reranker, RetrievalStrategy } from "./application/ports";
+import type {
+  Embedder,
+  ExternalSource,
+  KnowledgeUow,
+  Reranker,
+  RetrievalStrategy,
+} from "./application/ports";
 import { embeddingStrategy, ftsStrategy } from "./application/strategies";
 
 export { KNOWLEDGE_KEY };
 
+type EnvMap = Record<string, string | undefined>;
 export type KnowledgeAi = { embedder: Embedder | null; reranker: Reranker | null };
 
 const sha256 = (s: string): string => new Bun.CryptoHasher("sha256").update(s).digest("hex");
 const warn = (msg: string, meta: Record<string, unknown>) => logger.warn(msg, meta);
 
 /** Chọn chiến lược + AI theo env (key không bao giờ log). */
-export function knowledgeAiFromEnv(env: Record<string, string | undefined>): KnowledgeAi {
+export function knowledgeAiFromEnv(env: EnvMap): KnowledgeAi {
   return {
     embedder: openAiEmbedder(env),
     reranker: env.KNOWLEDGE_RERANK === "on" ? claudeReranker(env) : null,
   };
+}
+
+/** Nguồn ngoài theo env: KnowledgeHub khi đủ URL + key + project; vắng ⇒ []. */
+export function knowledgeSourcesFromEnv(env: EnvMap, f?: typeof fetch): ExternalSource[] {
+  const kh = khSourceConfig(env);
+  if (!kh) return [];
+  const dev = env.APP_ENV === "development" || env.APP_ENV === "test";
+  return [khSource(kh, { dev, ...(f ? { fetch: f } : {}) })];
 }
 
 export function pickStrategy(
@@ -46,16 +63,17 @@ export function pickStrategy(
 
 export function knowledgeService(
   db: Db,
-  o: { env?: Record<string, string | undefined>; ai?: KnowledgeAi } = {},
+  o: { env?: EnvMap; ai?: KnowledgeAi; sources?: ExternalSource[] } = {},
 ) {
   const env = o.env ?? process.env;
   const ai = o.ai ?? knowledgeAiFromEnv(env);
   const uow: KnowledgeUow = createPackUow(db, KNOWLEDGE_KEY, knowledgeRepos);
   const strategy = pickStrategy(uow, env.KNOWLEDGE_STRATEGY, ai.embedder);
+  const sources = o.sources ?? knowledgeSourcesFromEnv(env);
   return {
     uow,
     strategy,
-    search: searchKnowledge({ strategy, reranker: ai.reranker, log: warn }),
+    search: searchKnowledge({ strategy, reranker: ai.reranker, sources, log: warn }),
     get: getKnowledge({ uow }),
     // embedding lúc thêm chỉ khi chiến lược dùng nó (không tốn API khi chạy (c))
     add: addDocument({
@@ -74,13 +92,33 @@ export function graphService(db: Db) {
   return graphUsecases({ uow });
 }
 
+/**
+ * Pool riêng trên `dsn` (server điền `KNOWLEDGE_DATABASE_URL` ‖ `HUB_DATABASE_URL`), ≤ `KNOWLEDGE_DB_POOL_MAX` (mặc định 4);
+ * vắng `dsn` (createApp trong test) ⇒ pool chung. Đóng theo `signal`.
+ */
+export function knowledgeDb(
+  dsn: string | undefined,
+  env: EnvMap,
+  fallback: Db,
+  signal?: AbortSignal,
+): Db {
+  if (!dsn) return fallback;
+  const n = Number(env.KNOWLEDGE_DB_POOL_MAX);
+  const db = createDb(dsn, { max: Number.isInteger(n) && n >= 1 && n <= 50 ? n : 4 });
+  signal?.addEventListener("abort", () => void db.close(), { once: true });
+  return db;
+}
+
 /** Đăng ký tool `knowledge-*` (gọi từ `mountPacks`). */
 export function mountKnowledge(
   db: Db,
   tools: { register(t: PackToolDef): void } | undefined,
+  o: { dsn?: string; env?: EnvMap; signal?: AbortSignal } = {},
 ): void {
   if (!tools) return;
-  const svc = knowledgeService(db);
+  const env = o.env ?? process.env;
+  const kdb = knowledgeDb(o.dsn, env, db, o.signal);
+  const svc = knowledgeService(kdb, { env });
   for (const t of knowledgeTools(svc)) tools.register(t);
-  for (const t of graphTools(graphService(db))) tools.register(t); // G1 · đồ thị tri thức
+  for (const t of graphTools(graphService(kdb))) tools.register(t); // G1 · đồ thị tri thức (cùng pool riêng)
 }

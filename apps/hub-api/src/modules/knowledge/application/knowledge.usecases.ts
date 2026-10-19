@@ -12,9 +12,11 @@ import {
   type KnowledgeError,
   kindOf,
   LIMITS,
+  rrf,
 } from "../domain/knowledge.rules";
 import type {
   Embedder,
+  ExternalSource,
   Hit,
   KnowledgeLog,
   KnowledgeUow,
@@ -102,10 +104,60 @@ async function embedChunks(d: AddDeps, who: Who, chunks: readonly NewChunk[]): P
 export type SearchDeps = {
   strategy: RetrievalStrategy;
   reranker?: Reranker | null;
+  /** R1 · nguồn ngoài (KnowledgeHub); rỗng/vắng ⇒ chỉ kho nội bộ. */
+  sources?: readonly ExternalSource[];
   log?: KnowledgeLog;
 };
-export type SearchOutput = { strategy: string; reranked: boolean; hits: Hit[] };
+export type SearchOutput = {
+  strategy: string;
+  reranked: boolean;
+  /** R1 · nguồn ngoài ĐÃ trả lời lần này (rỗng khi tắt/lỗi/không được phép). */
+  federated: string[];
+  hits: Hit[];
+};
 
+const errName = (err: unknown): string => (err instanceof Error ? err.name : "unknown");
+
+/** Hỏi song song mọi nguồn ngoài tenant được phép; nguồn lỗi bị bỏ (log, không ném). */
+async function askSources(
+  d: SearchDeps,
+  who: Who,
+  query: string,
+  pool: number,
+  signal?: AbortSignal,
+): Promise<{ name: string; hits: Hit[] }[]> {
+  const on = (d.sources ?? []).filter((s) => s.allows(who.tenantId));
+  const got = await Promise.allSettled(on.map((s) => s.search(query, pool, signal)));
+  return got.flatMap((r, i) => {
+    const name = (on[i] as ExternalSource).name;
+    if (r.status === "fulfilled")
+      return [{ name, hits: r.value.map((h) => ({ ...h, source: name })) }];
+    d.log?.("knowledge-source-failed", { source: name, error_name: errName(r.reason) });
+    return [];
+  });
+}
+
+/** Rerank (có key) trên tập đã gộp; lỗi/không key ⇒ giữ thứ tự gộp (FTS khi không có nguồn ngoài). */
+async function rerankOrKeep(
+  d: SearchDeps,
+  query: string,
+  hits: Hit[],
+  k: number,
+  signal?: AbortSignal,
+): Promise<{ reranked: boolean; hits: Hit[] }> {
+  if (!d.reranker || hits.length <= 1) return { reranked: false, hits: hits.slice(0, k) };
+  try {
+    return { reranked: true, hits: (await d.reranker.rerank(query, hits, k, signal)).slice(0, k) };
+  } catch (err) {
+    d.log?.("knowledge-rerank-failed", { error_name: errName(err) });
+    return { reranked: false, hits: hits.slice(0, k) };
+  }
+}
+
+/**
+ * Nội bộ ‖ nguồn ngoài (song song) ⇒ gộp RRF (chỉ khi có nguồn ngoài trả hit; không thì giữ thứ tự FTS) ⇒ rerank Claude khi
+ * có key. Kết quả là DỮ LIỆU (HUB-BR-31).
+ */
 export function searchKnowledge(d: SearchDeps) {
   return async (
     who: Who,
@@ -116,28 +168,18 @@ export function searchKnowledge(d: SearchDeps) {
     if (bad) return fail(bad);
     const k = clampK(i.k);
     const query = i.query.trim();
-    const pool = d.reranker ? Math.max(k, LIMITS.candidates) : k;
-    const hits = await d.strategy.search(who, query, pool, signal);
-    if (!d.reranker || hits.length <= 1)
-      return {
-        ok: true,
-        value: { strategy: d.strategy.name, reranked: false, hits: hits.slice(0, k) },
-      };
-    try {
-      const re = await d.reranker.rerank(query, hits, k, signal);
-      return {
-        ok: true,
-        value: { strategy: d.strategy.name, reranked: true, hits: re.slice(0, k) },
-      };
-    } catch (err) {
-      d.log?.("knowledge-rerank-failed", {
-        error_name: err instanceof Error ? err.name : "unknown",
-      });
-      return {
-        ok: true,
-        value: { strategy: d.strategy.name, reranked: false, hits: hits.slice(0, k) },
-      };
-    }
+    const pool = d.reranker || d.sources?.length ? Math.max(k, LIMITS.candidates) : k;
+    const [local, ext] = await Promise.all([
+      d.strategy.search(who, query, pool, signal),
+      askSources(d, who, query, pool, signal),
+    ]);
+    const extHits = ext.filter((e) => e.hits.length > 0);
+    const merged = extHits.length ? rrf([local, ...extHits.map((e) => e.hits)]) : local;
+    const out = await rerankOrKeep(d, query, merged, k, signal);
+    return {
+      ok: true,
+      value: { strategy: d.strategy.name, federated: ext.map((e) => e.name), ...out },
+    };
   };
 }
 

@@ -27,6 +27,18 @@ export type Hit = {
   ord: number;
   body: string;
   score: number;
+  /** R1 · nguồn của đoạn: vắng = kho nội bộ; "kh" = KnowledgeHub (tìm liên kết). */
+  source?: string;
+};
+
+/**
+ * R1 · nguồn tìm ngoài (KnowledgeHub…): bật theo cấu hình. KH là kho DÙNG CHUNG (khoá nền tảng, không theo tenant) ⇒ chỉ
+ * tenant trong danh sách cho phép mới được hỏi (`allows`). `search` ném khi lỗi ⇒ bên gọi bỏ nguồn đó, vẫn trả kết quả nội bộ.
+ */
+export type ExternalSource = {
+  readonly name: string;
+  allows(tenantId: string): boolean;
+  search(query: string, k: number, signal?: AbortSignal): Promise<Hit[]>;
 };
 
 export type FtsMode = "idf" | "plain";

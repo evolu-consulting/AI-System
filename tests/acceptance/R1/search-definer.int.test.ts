@@ -88,7 +88,7 @@ describe("R1 · search_idf DEFINER — cách ly tenant", () => {
           { tenant_id: string; df: number }[]
         >`select tenant_id::text, df from knowledge.lexemes where lexeme = 'zebrakhoa'`,
     );
-    expect(rows).toEqual([{ tenant_id: A, df: 1 }]);
+    expect([...rows]).toEqual([{ tenant_id: A, df: 1 }]);
     const [b] = await owner<{ df: number }[]>`
       select df from knowledge.lexemes where tenant_id = ${B}::uuid and lexeme = 'zebrakhoa'`;
     expect(b?.df).toBe(30);

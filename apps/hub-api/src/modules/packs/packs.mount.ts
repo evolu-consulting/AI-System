@@ -44,6 +44,8 @@ export type PacksDeps = {
   contractsRemind?: ContractsRemindDeps;
   /** HD7 · vòng quá hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_OVERDUE` ≠ off. */
   contractsOverdue?: ContractsOverdueDeps;
+  /** R1 · DSN pool riêng của module tri thức (server: `KNOWLEDGE_DATABASE_URL` ‖ `HUB_DATABASE_URL`); vắng ⇒ dùng `db` chung. */
+  knowledgeDsn?: string;
 };
 
 export type PacksMountDeps = {
@@ -77,7 +79,11 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
   if (d.db && (d.packs?.contracts ?? true)) mountContracts(app, { ...d, db: d.db }, view, fb);
-  if (d.db) mountKnowledge(d.db, d.packTools); // N4 · tool `knowledge-search/get/add`
+  if (d.db)
+    mountKnowledge(d.db, d.packTools, {
+      ...(d.packs?.knowledgeDsn ? { dsn: d.packs.knowledgeDsn } : {}),
+      ...(d.signal ? { signal: d.signal } : {}),
+    }); // N4 · R1 pool riêng
   rejectToolCollisions(d);
   return view;
 }

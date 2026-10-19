@@ -22,6 +22,7 @@ const view = (h: Hit) => ({
   heading: h.heading,
   text: h.body.slice(0, LIMITS.hitChars),
   score: Math.round(h.score * 1000) / 1000,
+  ...(h.source ? { source: h.source } : {}),
 });
 
 const unwrap = <T>(r: { ok: true; value: T } | { ok: false; code: string }): T => {
@@ -50,7 +51,12 @@ export function knowledgeTools(d: Deps): PackToolDef[] {
             ctx.signal,
           ),
         );
-        return { strategy: out.strategy, reranked: out.reranked, hits: out.hits.map(view) };
+        return {
+          strategy: out.strategy,
+          reranked: out.reranked,
+          federated: out.federated,
+          hits: out.hits.map(view),
+        };
       },
     },
     {
