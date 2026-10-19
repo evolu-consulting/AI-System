@@ -177,7 +177,7 @@ describe("HD-FR-07 · quyền và cách ly (HD-AC01)", () => {
     const r = await listOf(c, P.tam);
     expect({ s: r.status, b: r.json }).toEqual({
       s: 200,
-      b: { items: [], total: 0, page: 1, page_size: 20 },
+      b: { items: [], total: 0, parents: [], page: 1, page_size: 20 },
     });
   });
 });
