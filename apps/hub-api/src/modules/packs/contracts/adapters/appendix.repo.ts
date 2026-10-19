@@ -17,6 +17,10 @@ const ITEMS_MAX = 500;
 export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
   return {
     lockForParent: async (id, parentId): Promise<LockedForParent | null> => {
+      // Khoá cả hai hàng THEO THỨ TỰ id (một câu) rồi mới đọc loại/phụ lục con ở câu sau (ảnh chụp mới): A→B ∥ B→A hay C→A ∥ A→B
+      // tuần tự hoá, bên sau thấy hàng đã đổi ⇒ không vòng, không phụ lục của phụ lục.
+      await tx.execute(sql`select c.id from contracts.contracts c
+        where c.tenant_id = ${tenantId}::uuid and c.id = any(array[${id}::uuid, ${parentId}::uuid]) order by c.id for update`);
       const rows = await tx.execute<{
         version: number;
         kind: Kind;

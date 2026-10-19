@@ -40,3 +40,20 @@ Perf (Luật 4c): danh sách giữ 2 câu và p95 ≤ 50 ms (thêm `parents` là
 - Perf sau ANALYZE (10.000 HĐ/tenant + 70.000 nền, n=200): danh sách không lọc p95 23,2 ms · kind=appendix 10,8 · trang cuối 23,1 · chi tiết HĐ gốc 2,8 / phụ lục 2,0 (≤ 30) · giá 2,1 · gợi ý 4,4; 2 câu SQL (gợi ý 3), không Seq Scan. HD1 ghi 23,9–26,6 cho danh sách ⇒ không tệ đi. Số 	rước đo lúc máy tải nặng (facets, không đổi, 308 ms) không dùng được; facets không đổi.
 - Parity S03: un run e2e:contracts — 3 cảnh S03 (sáng/tối/mobile) chữ 0 lệch, khung ≤ 2 px, ảnh ≤ 0,5 %.
 - Mở: xoá HĐ (D-HD5-03), panel góp ý S14, gợi ý bằng LLM/RAG (D-HD5-02), 	oday của giá theo UTC (chưa theo múi tenant), baseline S05 đang đổi do HD3, qc relock e2e/tests mới.
+
+## Tranh chấp test (đã xử lý, vòng sửa review 1b36c8d9)
+Người dùng chốt 2026-10-19: "Đồng ý cập nhật 2 test khoá HD1 theo hành vi mới: danh sách có thêm trường parents (HD5), và action_deadline = end_date − notice_days thay vì null (HD4). qc ghi lại và khoá lại."
+
+| Test khoá (`tests/acceptance/HD1/list.int.test.ts`) | Cũ | Mới | Vì sao |
+|---|---|---|---|
+| "chưa có HĐ ⇒ 200 {…}" | `{ items: [], total: 0, page: 1, page_size: 20 }` | thêm `parents: []` | HD5 thêm trường cộng thêm `parents` vào `ListResponse` (không đổi `ListRow` 19 khoá) |
+| "HĐ 1: 19 khoá ListRow, giá trị đúng" | `action_deadline: null` | `action_deadline: "2027-03-31"` | HD4 (trigger `hd4_schedule`) tính hạn = `end_date − notice_days`; HĐ mẫu end 2027-03-31, không có notice ⇒ 0 ngày. Không phải thay đổi của HD5 |
+
+qc đọc lại hai thay đổi (đúng AC, không khớp theo lỗi code) và khoá lại `tests/.lock` cho: HD1 `list.int.test.ts`, HD5 `hd5.int.test.ts`, `hd5.perf.int.test.ts`, e2e `scenes.cw.ts`, `hd5-list.cw.ts`, `dataset-list.ts`, 6 baseline S03.
+
+## Vòng sửa review (1b36c8d9)
+- Trung 2 (vòng/phụ lục của phụ lục khi đồng thời): `lockForParent` khoá CẢ hai hàng theo thứ tự id (một câu `FOR UPDATE`) rồi mới đọc loại cha/phụ lục con ở câu sau; test đồng thời A→B ∥ B→A và C→A ∥ A→B (8 vòng mỗi ca) — đỏ khi bỏ khoá, xanh khi có.
+- Trung 3 (`as_of`): mặc định theo múi tenant (`uploadDay` + `TenantState.timezone`, cùng ngày lịch HD4); test đổi múi Kiritimati/Pago_Pago.
+- Trung 4 (layout shell): chạy lại parity s03, s05, s08, s10, s11 (prices/cks/customer của HD9) + hành vi HD5: đều xanh (port riêng). `/partners` chưa có cảnh (HD8). Sửa kèm: HD3 bỏ ẩn `btn-primary` nên "+ Thêm hợp đồng" hiện ở S03 hub — thêm `HIDE` theo input file ẩn đứng trước nút (cả hai phía).
+- Thấp 5: thuộc HD4, đã xử lý qua quyết định người dùng ở trên. Thấp 6: chấp nhận (chỉ hiển thị, không phép tính tiền).
+- Mở: `today` của giá giờ theo múi tenant (hết nợ UTC).

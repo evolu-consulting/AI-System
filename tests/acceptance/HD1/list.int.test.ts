@@ -458,7 +458,8 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
       buyer_signer: "Nguyễn Văn A",
       value: 500_000_000,
       end_date: "2027-03-31",
-      action_deadline: null,
+      // HD4 (HD-FR-42): hạn chót = end_date − notice_days; HĐ này end 2027-03-31, không có notice_days (= 0) ⇒ 2027-03-31 (trước HD4: null).
+      action_deadline: "2027-03-31",
       owner_user_id: P.lan.id,
       version: 1,
     });

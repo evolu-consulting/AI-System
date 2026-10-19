@@ -6,6 +6,7 @@ import {
   type CtxN1,
   catId,
   cid,
+  dayIn,
   GHOST,
   insCategory,
   insContract,
@@ -15,6 +16,7 @@ import {
   startHd1,
   T,
 } from "../HD1/_support/hd1";
+import { afterReload, bumpConfig } from "../N1/_support/n1";
 
 let c: CtxN1;
 beforeAll(async () => {
@@ -198,7 +200,63 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
   });
 });
 
+describe("HD-FR-54 · gắn HĐ gốc đồng thời (khoá hai hàng theo thứ tự id)", () => {
+  const patch = (id: string, parent: string) =>
+    send(P.hoa, "PATCH", `/contracts/${id}/parent`, { version: 1, parent_id: parent });
+  const kinds = async () =>
+    (await c.sql`select id, kind, parent_id from contracts.contracts where tenant_id = ${T.acme} order by id`) as unknown as {
+      id: string;
+      kind: string;
+      parent_id: string | null;
+    }[];
+  it("A→B ∥ B→A (8 vòng): đúng một bên thành phụ lục, bên kia 422; không vòng", async () => {
+    for (let round = 0; round < 8; round++) {
+      await arrange(c);
+      await insContract(c.sql, { id: cid(1), tenant: T.acme, title: "A" });
+      await insContract(c.sql, { id: cid(2), tenant: T.acme, title: "B" });
+      const rs = await Promise.all([patch(cid(1), cid(2)), patch(cid(2), cid(1))]);
+      expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
+      const rows = await kinds();
+      expect(rows.filter((r) => r.kind === "appendix")).toHaveLength(1);
+    }
+  });
+  it("C→A ∥ A→B (8 vòng): không có phụ lục của phụ lục", async () => {
+    for (let round = 0; round < 8; round++) {
+      await arrange(c);
+      for (const n of [1, 2, 3])
+        await insContract(c.sql, { id: cid(n), tenant: T.acme, title: `H${n}` });
+      const rs = await Promise.all([patch(cid(3), cid(1)), patch(cid(1), cid(2))]);
+      expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
+      const rows = await kinds();
+      const apps = rows.filter((r) => r.kind === "appendix");
+      expect(apps).toHaveLength(1);
+      expect(rows.find((r) => r.id === apps[0]?.parent_id)?.kind).toBe("contract");
+    }
+  });
+});
+
 describe("HD-FR-55 · bảng giá áp phụ lục", () => {
+  it("as_of mặc định = ngày lịch theo MÚI TENANT (HD4-FR-02), không phải UTC", async () => {
+    await family();
+    const zones = ["Pacific/Kiritimati", "Pacific/Pago_Pago"] as const;
+    const got: string[] = [];
+    try {
+      for (const tz of zones) {
+        await afterReload(c.hub, async () => {
+          await c.sql`update admin.tenants set timezone = ${tz} where id = ${T.acme}`;
+          await bumpConfig(c.sql, T.acme);
+        });
+        const r = await get(P.tam, `/contracts/${cid(1)}/prices`);
+        expect(r.status).toBe(200);
+        expect(r.json.as_of).toBe(dayIn(tz));
+        got.push(r.json.as_of);
+      }
+    } finally {
+      await c.sql`update admin.tenants set timezone = 'Asia/Ho_Chi_Minh' where id = ${T.acme}`;
+      await bumpConfig(c.sql, T.acme);
+    }
+    expect(got[0]).not.toBe(got[1]);
+  });
   it("phụ lục đã chốt thay giá gốc từ ngày hiệu lực; phụ lục chờ kiểm không áp; total_value không đổi; gọi từ phụ lục = cùng họ", async () => {
     await family();
     await item(cid(1), 0, "Thùng", 100, "T1");

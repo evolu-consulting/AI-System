@@ -25,8 +25,8 @@ export type AppendixUseCases = {
   attachParent: AttachParent;
   suggestParents: SuggestParents;
   prices: GetPrices;
-  /** Hôm nay theo đồng hồ chạy (test tiêm). */
-  today?: () => string;
+  /** Ngày lịch hôm nay theo múi giờ của tenant (HD4-FR-02); mặc định theo múi của tenant token. */
+  today: (tenantId: string) => Promise<string>;
 };
 
 const whoOf = (u: { tenantId: string; userId: string }) => ({
@@ -44,7 +44,6 @@ export function appendixRoutes(
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, key, "read");
   const write = packGuard(view, key, "write");
-  const today = uc.today ?? (() => new Date().toISOString().slice(0, 10));
 
   r.get("/categories", read, async (c) =>
     c.json({ items: await uc.listCategories(whoOf(c.get("user"))) }),
@@ -102,8 +101,9 @@ export function appendixRoutes(
   r.get("/contracts/:id/prices", read, async (c) => {
     const id = idOf(c);
     const asOf = c.req.query("as_of");
-    const date = asOf === undefined ? today() : parseWith(IsoDateSchema, asOf);
-    const out = await uc.prices(whoOf(c.get("user")), id, date);
+    const who = whoOf(c.get("user"));
+    const date = asOf === undefined ? await uc.today(who.tenantId) : parseWith(IsoDateSchema, asOf);
+    const out = await uc.prices(who, id, date);
     if (!out) throw appError("NOT_FOUND");
     return c.json(out);
   });

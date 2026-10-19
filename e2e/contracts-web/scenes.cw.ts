@@ -8,6 +8,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { asHub, asMgmt } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub, contractAsMgmt } from "./dataset-contract";
+import { categoriesAsHub, facetsAsHub, listAsHub, membersAsHub, mgmtListGet } from "./dataset-list";
 
 const REF = process.env.CW_MODE === "ref";
 const DIR = join(__dirname, "baseline", process.platform);
@@ -21,7 +22,9 @@ const HIDE =
   // HD3: "Xác nhận" của S05 đã có (so thật); nút/khối duyệt không có ở mgmt-app ("Duyệt", "Từ chối", "Đọc lại", ghi chú) ẩn.
   "[data-approval]{display:none !important}" +
   // HD5: khối "Phụ lục và giá" của S05 không có trong mgmt-app web (phụ lục do backend tự gắn) — ẩn ở cả hai phía.
-  "[data-hd5]{display:none !important}";
+  "[data-hd5]{display:none !important}" +
+  // HD5 S03: "+ Thêm hợp đồng" (upload) mgmt-app ẩn cùng phía ref để chữ/ảnh khớp baseline; chọn theo input file ẩn đứng trước nút.
+  "main input[type=file][hidden] ~ button.btn-primary{display:none !important}";
 
 type Box = { x: number; y: number; w: number; h: number };
 type Layers = { text: string; boxes: Record<string, Box | null> };

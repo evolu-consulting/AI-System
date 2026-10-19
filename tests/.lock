@@ -180,6 +180,12 @@ c1603f42e79b80734f885bd78e3f59076529afe4e681fafb72d70fb25739922f  e2e/contracts-
 2a32ce3d652c37d9cf9713af44c4b884a66c8054d2898e6dbc9634de3720abb0  e2e/contracts-web/baseline/win32/s01-login-light.png
 31ce82c16aafce9227050b33bef1b40b9f9125931376372e171cc1615a042096  e2e/contracts-web/baseline/win32/s01-login-mobile.json
 d50effc3212beed6cbd8b510155905360cbea0eccf33f878a523d69c6bcc3050  e2e/contracts-web/baseline/win32/s01-login-mobile.png
+966c5206d2205d6294e89345844eef19c928d99c61a8045d283c1c57d9bb76f5  e2e/contracts-web/baseline/win32/s03-list-dark.json
+d778e321827a069c3650a3ab24b90381ace9e96dd0c170c290f53b768b23d639  e2e/contracts-web/baseline/win32/s03-list-dark.png
+966c5206d2205d6294e89345844eef19c928d99c61a8045d283c1c57d9bb76f5  e2e/contracts-web/baseline/win32/s03-list-light.json
+cfec8c6d7dae9b5adf0eddb8b4f38a955f5a7eef5c130aa256f51f52de0c9abb  e2e/contracts-web/baseline/win32/s03-list-light.png
+130b50f1414a3c927aa3b1638e720d7f7085b5c327e4ad5ad7243378cc0fab9f  e2e/contracts-web/baseline/win32/s03-list-mobile.json
+040fff7e04c922dec77d6c327806411c31076b95a3467a62cc6b2d22071e0bcf  e2e/contracts-web/baseline/win32/s03-list-mobile.png
 ce394c58b1bc209b5df6fc76b292ee2c3c7838822c979b58a765635f9ee5f968  e2e/contracts-web/baseline/win32/s04-new-dark.json
 4ae4603d6f37bd00f9511baf2a161fe44dd6f3aa50d03b6748143841536956d2  e2e/contracts-web/baseline/win32/s04-new-dark.png
 ce394c58b1bc209b5df6fc76b292ee2c3c7838822c979b58a765635f9ee5f968  e2e/contracts-web/baseline/win32/s04-new-light.json
@@ -209,10 +215,12 @@ d4b9cd39151744d1a600568c7dcb152bf32310f23631965f39c08f92a6c74268  e2e/contracts-
 8d4a1bbb7be2c5b00a2fe01f606ad09f3e631fd63f96b83c756c91e01fa65ae2  e2e/contracts-web/bell.cw.ts
 3c43b2768a8ec42aea15a5c00dd3c4b79ed5ef196d26ec7cdf59927d0d92a364  e2e/contracts-web/capture-ref.ts
 8aa4488748ad4d351558719da9b6ce67f0b93a48380515d9b90b6ba53525161f  e2e/contracts-web/dataset-contract.ts
+63456458eaa4334a1f2f4a16c757cb3df55a579ee21e18c9197fc04f19c33f4a  e2e/contracts-web/dataset-list.ts
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts
 807947b88a237dbb1b16aada55fe38338b1a28cae3aa89fb9eaa49320a1ea4e2  e2e/contracts-web/hd2-flow.cw.ts
+7cf8b41c2ad00d9b0f836b4198cc3facd51e81aa541f07db4c2dd7aae6037fe2  e2e/contracts-web/hd5-list.cw.ts
 ec797ea85995af9793e6650b85f36d202f94ae58f6caee71fe5f7e362f8c1f36  e2e/contracts-web/playwright.config.ts
-aa82278282e0caf7582e5229c81ab7fc94cc0cfc8f83b38628c76205950d3344  e2e/contracts-web/scenes.cw.ts
+5f0825021b1f8685746356da884bfb90859436bf2cb1f84572c0004318df429a  e2e/contracts-web/scenes.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 adf59fb675accb7eafd64aa118372adac461e020e2356098e0e2bb228b6ef081  e2e/features.spec.ts
 7f39e94231ea6da60be5fb1a7940af8b2b0ea82ff3fa85a5737f5fbad7f5c6be  e2e/groups-editor.spec.ts
@@ -500,7 +508,7 @@ ae4a7b97d93d23fbcabab217ded1e217b51e9d2af2d558e2d72539f13c9f15cf  tests/acceptan
 78d77675cb9c6226080fa87edeed528f1dcd79d4b3a10480f223fd26aebff652  tests/acceptance/HD1/columns.int.test.ts
 a6c80d3614d2ce182cdff8ff1ab61febb2f0cea10429fb9c134e67d7709f7f55  tests/acceptance/HD1/detail.int.test.ts
 2b80388466a85445eb4ea671094ba163ec8adbe5b721dbf2d155b4b6be92df18  tests/acceptance/HD1/hops.int.test.ts
-cbdef7408eb4fa40aafc44d628feab106bdf86a6afa3edd390abdd6f8f444c11  tests/acceptance/HD1/list.int.test.ts
+e64b10df0afc15199018b55c48f6c5f8f05a37d3574532394d3cf921d8c03122  tests/acceptance/HD1/list.int.test.ts
 41e8f45d38efeb4270d183032c75a9ab59b307b428adfb80e89eff6d7f7d9183  tests/acceptance/HD1/patch.int.test.ts
 04ecc8b4eb80583bbe0921cb81a074b643d3e1b3a5b6976c2916c57d3cd59132  tests/acceptance/HD1/perf/list.perf.int.test.ts
 c99fd373962d00b36ee3e37a36f0b483219a6ad5dc8dce5e080a5b8f02e66bf9  tests/acceptance/HD1/perf/rw.perf.int.test.ts
@@ -513,6 +521,8 @@ d9b155f6b8b69688ab02197453a52fe045309c0687dd372b1897465f79de038c  tests/acceptan
 0058d55793ffc26affe4f3fd14012cf4dab0c002f5e55b22aba116032a57cf14  tests/acceptance/HD2/_support/hd2.ts
 f04342017eac1078da1e185f45e27bec66bfae36ae2a14b88903c63aeb5e441e  tests/acceptance/HD2/extract.int.test.ts
 c63034ac1a0867b23d4e26fef31f983e896d38f8d2501a9d31e16efd1a8bab4d  tests/acceptance/HD2/manual.int.test.ts
+6ba01f15c264f42b8d6d3162c15a0535f0378e219703b493b345e3cfcee2dd82  tests/acceptance/HD5/hd5.int.test.ts
+26994b140cb6bbcf1c442b92e7e2f5ea97ace8288732f97178bd0d0d1e7166d4  tests/acceptance/HD5/perf/hd5.perf.int.test.ts
 fb16cefc5fef49f1c32d34388fdccf7592fcf862e9891b4870d9b0950b9f250e  tests/acceptance/K1/_k1.ts
 e5bf08f75e96a4883ddd1054f522f12c9cf0e503ed815d0fc975d0b0cc276bd1  tests/acceptance/K1/_khfake.ts
 74f6c925a90fe59d2ec26c4e580c588a4422aafb0f51dc4bf9b39574bea8b577  tests/acceptance/K1/_run.ts

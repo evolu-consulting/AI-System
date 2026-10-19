@@ -97,11 +97,11 @@ function mountContracts<E extends Env>(
 ): void {
   const db = d.db;
   const base = `${PACK_PREFIX}/${CONTRACTS_KEY}`;
-  app.route(base, contractsModule(db, view, fb ? fileboxClients(fb) : null)); // HD1 T7 + T8 (link tệp)
-  const aiDeps = d.packs?.contractsAi ?? {};
-  const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
   const timeZoneOf = async (tid: string) =>
     (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
+  app.route(base, contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf })); // HD1 T7 + T8 (link tệp) · HD5 ngày giá theo múi tenant
+  const aiDeps = d.packs?.contractsAi ?? {};
+  const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
   const ai = contractsAiModule(
     db,
     view,

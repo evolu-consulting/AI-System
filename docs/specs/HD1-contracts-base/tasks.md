@@ -17,3 +17,8 @@ Spec `draft`. Phụ thuộc N1 (khuôn schema/role/quyền/FileBox/DOCX/outbox) 
 | T11 | Review + security review (tenant, quyền, upload: magic bytes, quota, zip bomb, `bodyLimit`) | reviewer | cao | diff, spec §2, §6 | `review.md` | T10 | không Blocker/Major | [x] vòng 2 APPROVED, SAFE (`c068fa99`) |
 | T12 | Smoke API (không UI): `bun run test:all` | qc-uat | thường | `test-plan.md` | `evidence/` | T11 | `bun run test:all` | [x] 2026-10-19 — evidence ở [`wave2-gate.md`](../wave2-gate.md) §7–8: int HD1+N1 367/0, e2e contracts-web 25/25, N1 29/29; `test:all` toàn bộ chưa xanh (nợ #225–#231, ngoài HD1) |
 | T13 | Đóng: TRACE, CODEMAP, STATE, INDEX; (HD-FR-07/AC05 đã sửa theo D-03) | docs-architect | thường | bàn giao T4–T12 | `docs/**` | T12 | `bun run trace --check` | [x] 2026-10-19 (`ket-luan.md`) |
+
+## Tranh chấp test (đã xử lý 2026-10-19)
+Người dùng chốt: "Đồng ý cập nhật 2 test khoá HD1 theo hành vi mới: danh sách có thêm trường parents (HD5), và action_deadline = end_date − notice_days thay vì null (HD4). qc ghi lại và khoá lại."
+- `list.int.test.ts` "chưa có HĐ": `{items:[],total:0,page,page_size}` → thêm `parents: []` (HD5, trường cộng thêm).
+- `list.int.test.ts` "19 khoá ListRow": `action_deadline: null` → `"2027-03-31"` (HD4: hạn = end_date − notice_days; HĐ mẫu không có notice). Chi tiết: `docs/specs/HD5-list-appendix/tasks.md`.
