@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { runMigrations } from "./migrate";
 import { runHubMigrations } from "./migrate-hub";
+import { runPackMigrations } from "./migrate-packs";
 import { resetToSnapshot, type Snapshot, snapshot } from "./test-db-reset";
 
 const DB_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -24,10 +25,11 @@ export const migrateAdminTest = async (url: string): Promise<void> => {
   await runMigrations({ url, appEnv: "test" });
 };
 
-/** Migrate Admin + Hub (`appEnv: test`), như `prepareDb` của H1. */
+/** Migrate Admin + Hub + gói (`appEnv: test` ⇒ có `pkdemo`), như `prepareDb` của H1 (PK-FR-04: DB mẫu có schema gói). */
 export const migrateFullTest = async (url: string): Promise<void> => {
   await runMigrations({ url, appEnv: "test" });
   await runHubMigrations({ url, appEnv: "test" });
+  await runPackMigrations({ url, appEnv: "test" });
 };
 
 export function dbNameOf(url: string): string {

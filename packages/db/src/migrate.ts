@@ -5,6 +5,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { type AppEnv, loadDbEnv } from "./env";
 import { runHubMigrations, withMigrateLock } from "./migrate-hub";
+import { runPackMigrations } from "./migrate-packs";
 
 const MAIN_DIR = fileURLToPath(new URL("../migrations", import.meta.url));
 const DEV_DIR = fileURLToPath(new URL("../migrations-dev", import.meta.url));
@@ -68,8 +69,11 @@ if (import.meta.main) {
     const r = await runMigrations({ url: env.DATABASE_URL, appEnv: env.APP_ENV });
     // HUB-FR-75 · plan H1 §1 P1: schema hub chạy sau main/dev (runMigrations giữ nguyên).
     const h = await runHubMigrations({ url: env.DATABASE_URL, appEnv: env.APP_ENV });
+    // PK-FR-04 · N1 plan §3: khung gói + từng gói, sau hub (cần hub_api, admin.features).
+    const p = await runPackMigrations({ url: env.DATABASE_URL, appEnv: env.APP_ENV });
+    const packs = Object.values(p.packs).reduce((a, b) => a + b, 0);
     console.log(
-      `db:migrate OK (${env.APP_ENV}): main +${r.main}, dev +${r.dev}, hub +${h.hub}, hub-dev +${h.hubDev}`,
+      `db:migrate OK (${env.APP_ENV}): main +${r.main}, dev +${r.dev}, hub +${h.hub}, hub-dev +${h.hubDev}, packs-kit +${p.kit}, packs +${packs}`,
     );
   } catch (err) {
     console.error(`db:migrate lỗi: ${describeError(err)}`);
