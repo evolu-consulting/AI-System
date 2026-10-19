@@ -69,6 +69,20 @@ const tables: RlsTable[] = [
       ),
   },
   {
+    // R1 · bảng df (trigger giữ); seed owner trực tiếp để có hàng riêng mỗi tenant
+    name: "lexemes",
+    seed: (o, t) =>
+      one(o, `insert into knowledge.lexemes (tenant_id, lexeme, df) values ($1, $2, 1)`, [
+        t,
+        `bimat${crypto.randomUUID().slice(0, 8)}`,
+      ]),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into knowledge.lexemes (id, tenant_id, lexeme, df) values ($1, $2, $3, 1)`,
+        [rnd(pk), t, `x${crypto.randomUUID().slice(0, 8)}`],
+      ),
+  },
+  {
     name: "files",
     seed: (o, t) =>
       one(
@@ -118,6 +132,6 @@ defineRlsSuite({
   },
   close: (owner) => owner.end({ timeout: 2 }),
   reset: async (owner) => {
-    await owner`truncate knowledge.chunk_embeddings, knowledge.chunks, knowledge.documents, knowledge.files, knowledge.index_outbox cascade`;
+    await owner`truncate knowledge.chunk_embeddings, knowledge.chunks, knowledge.documents, knowledge.lexemes, knowledge.files, knowledge.index_outbox cascade`;
   },
 });

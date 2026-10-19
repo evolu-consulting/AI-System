@@ -27,35 +27,13 @@ const toHit = (r: HitRow): Hit => ({
 });
 
 /**
- * BM25-lite, chặn trần công việc (Luật 4c): df mỗi term đếm có trần `cap` = max(50, N/5) (LIMIT trong dò GIN); term chạm trần
- * = "phổ biến" (df coi như N/2). Ứng viên = đoạn khớp ≥ 1 term KHÔNG phổ biến (vắng ⇒ khớp MỌI term), tối đa 1.000; chỉ ứng
- * viên mới được chấm Σ idf·w·(0,5 + ts_rank) với mọi term. Cột rộng (`tsv`) không đi qua bước gom/sắp.
+ * BM25-lite có trần (R1, migration 0004): `knowledge.search_idf` — df tra bảng `knowledge.lexemes` (trigger giữ), rồi câu ứng
+ * viên + chấm điểm chạy bằng `EXECUTE … USING` (kế hoạch với tsquery thật ⇒ dò GIN (tenant_id, tsv)). Một câu từ client; câu
+ * chuẩn bị của pool chỉ bọc lời gọi hàm nên generic plan không còn ảnh hưởng.
  */
-const searchIdf = (tx: Tx, tid: string, terms: string, limit: number) =>
-  tx.execute<HitRow>(sql`with t as materialized (
-      select x.w, phraseto_tsquery('knowledge.vi', knowledge.fold(x.term)) as tq
-      from jsonb_to_recordset(${terms}::jsonb) as x(term text, w float8)),
-    n as materialized (select coalesce(sum(chunk_count), 0)::float8 as n,
-        greatest(50, coalesce(sum(chunk_count), 0) / 5)::int as cap
-      from knowledge.documents where tenant_id = ${tid}::uuid),
-    s as materialized (select t.w, t.tq, (select count(*) from (select 1 from knowledge.chunks c
-        where c.tenant_id = ${tid}::uuid and c.tsv @@ t.tq limit (select cap from n)) z)::float8 as df
-      from t where numnode(t.tq) > 0),
-    q as materialized (select s.tq, s.df >= n.cap as common,
-        s.w * ln(1 + (n.n - case when s.df >= n.cap then n.n / 2 else s.df end + 0.5)
-          / (case when s.df >= n.cap then n.n / 2 else s.df end + 0.5)) as idf
-      from s, n where s.df > 0),
-    a as materialized (select coalesce(string_agg('(' || q.tq::text || ')', ' | ') filter (where not q.common),
-        string_agg('(' || q.tq::text || ')', ' & '))::tsquery as tq from q),
-    cand as materialized (select c.id from knowledge.chunks c, a
-      where c.tenant_id = ${tid}::uuid and a.tq is not null and c.tsv @@ a.tq limit 1000),
-    p as (select c.id, q.idf * (0.5 + ts_rank('{0.1,0.3,0.4,1.0}', c.tsv, q.tq)) as part
-      from cand join knowledge.chunks c on c.id = cand.id and c.tenant_id = ${tid}::uuid join q on c.tsv @@ q.tq),
-    m as (select p.id, sum(p.part) as score from p group by p.id order by score desc, p.id limit ${limit})
-    select ch.id as chunk_id, ch.doc_id, d.title, ch.heading, ch.clause_no, ch.ord, ch.body, m.score
-    from m join knowledge.chunks ch on ch.id = m.id and ch.tenant_id = ${tid}::uuid
-      join knowledge.documents d on d.id = ch.doc_id and d.tenant_id = ${tid}::uuid
-    order by m.score desc, m.id`);
+const searchIdf = (tx: Tx, _tid: string, terms: string, limit: number) =>
+  tx.execute<HitRow>(sql`select chunk_id, doc_id, title, heading, clause_no, ord, body, score
+    from knowledge.search_idf(${terms}::jsonb, ${limit}::int)`);
 
 /** Đối chứng (c0): một tsquery OR mọi term, `ts_rank` mặc định — không IDF. */
 const searchPlain = (tx: Tx, tid: string, terms: string, limit: number) =>

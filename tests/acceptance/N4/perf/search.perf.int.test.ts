@@ -77,8 +77,8 @@ const fmt = (s: Stat) =>
   `p50 ${s.p50.toFixed(1)} ms p95 ${s.p95.toFixed(1)} ms max ${s.max.toFixed(1)} ms`;
 
 describe.skipIf(!PERF)("N4-NFR-01 · knowledge-search p95", () => {
-  // CHƯA ĐẠT (2026-10-19): p95 297 ms qua câu chuẩn bị (generic plan) — xem docs/specs/N4-knowledge/tasks.md. `failing` để ghi nhận, không che.
-  it.failing("N4-NFR-01 · kho zipf 10.000 đoạn/tenant: p95 ≤ 50 ms (200 lượt)", async () => {
+  // R1 (2026-10-20): 297 ms ⇒ đạt sau migration 0004 (bảng df `lexemes` + `knowledge.search_idf` DEFINER) — docs/specs/R1-rag/tasks.md.
+  it("N4-NFR-01 · kho zipf 10.000 đoạn/tenant: p95 ≤ 50 ms (200 lượt)", async () => {
     const [n] = await owner<
       { n: number }[]
     >`select count(*)::int as n from knowledge.chunks where tenant_id = ${ZIPF[0] as string}`;
