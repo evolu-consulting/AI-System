@@ -1,0 +1,23 @@
+{
+  "text": "Hợp đồng bán chữ ký số Khách hàng Mã số thuế Lấy từ lô Lô 2026-03 · Viettel-CA · 1 năm · còn 1 Giá bán / chữ ký (đ) Ngày ký Hết hạn Người giữ chữ ký USB token Ký từ xa + Thêm người giữ Huỷ Tạo hợp đồng bán",
+  "boxes": {
+    "dialog": {
+      "x": 440,
+      "y": 174.640625,
+      "w": 560,
+      "h": 550.703125
+    },
+    "form": {
+      "x": 441,
+      "y": 175.640625,
+      "w": 558,
+      "h": 548.703125
+    },
+    "submit": {
+      "x": 832.859375,
+      "y": 664.34375,
+      "w": 146.140625,
+      "h": 40
+    }
+  }
+}

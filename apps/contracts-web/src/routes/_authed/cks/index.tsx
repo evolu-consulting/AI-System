@@ -1,7 +1,5 @@
-// PK-FR-10 · TF5 · route khung /cks/ (nội dung ở HD9).
+// PK-FR-10 · HD-FR-97 · S10: /cks — sản phẩm chữ ký số (HD9).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { CksPage } from "~/features/cks/pages/CksPage";
 
-export const Route = createFileRoute("/_authed/cks/")({
-  component: () => <StubPage titleKey="contracts.pages.products" />,
-});
+export const Route = createFileRoute("/_authed/cks/")({ component: CksPage });

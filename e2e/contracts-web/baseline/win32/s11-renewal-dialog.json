@@ -1,0 +1,23 @@
+{
+  "text": "Hoàn tất gia hạn Nhập serial mới của ít nhất một chữ ký để chốt đợt gia hạn. Chữ ký công ty (cũ: 5401 0B72 33AF 9E10) Giám đốc · Lê Văn Tâm (cũ: 5401 0B72 33AF 9E11) Kế toán trưởng · Trần Thu Hà (cũ: 5401 0B72 33AF 9E12) Hạn mới (để trống: +1 năm) Huỷ Hoàn tất",
+  "boxes": {
+    "dialog": {
+      "x": 440,
+      "y": 220.640625,
+      "w": 560,
+      "h": 458.703125
+    },
+    "form": {
+      "x": 441,
+      "y": 221.640625,
+      "w": 558,
+      "h": 456.703125
+    },
+    "submit": {
+      "x": 893.421875,
+      "y": 618.34375,
+      "w": 85.578125,
+      "h": 40
+    }
+  }
+}

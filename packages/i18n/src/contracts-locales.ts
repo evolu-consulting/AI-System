@@ -3,9 +3,17 @@ import type { Locale } from "./locales";
 
 /** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */
 export async function loadContractsLocale(locale: Locale): Promise<Record<string, unknown>> {
-  const mod =
+  const [mod, cks] =
     locale === "en"
-      ? await import("../locales/contracts/en.json")
-      : await import("../locales/contracts/vi.json");
-  return mod.default as Record<string, unknown>;
+      ? await Promise.all([
+          import("../locales/contracts/en.json"),
+          import("../locales/contracts/cks.en.json"),
+        ])
+      : await Promise.all([
+          import("../locales/contracts/vi.json"),
+          import("../locales/contracts/cks.vi.json"),
+        ]);
+  // HD9: chuỗi CKS ở tệp riêng (`contracts.cks.*`), gộp vào cùng gốc `contracts`.
+  const base = mod.default as { contracts: Record<string, unknown> };
+  return { ...base, contracts: { ...base.contracts, ...cks.default.contracts } };
 }

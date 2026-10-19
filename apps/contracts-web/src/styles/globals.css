@@ -437,6 +437,48 @@
     border-style: dashed;
     color: var(--color-dim);
   }
+  /* HD9 (D-02): phần còn lại của `mgmt-app/web/src/index.css:111,127,130-132,149-154` cho S08/S10/S11. */
+  .btn-sm {
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    font-size: 13px;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--color-act-soft);
+    border-color: transparent;
+    color: var(--color-act);
+    font-weight: 600;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--color-act-soft);
+    color: var(--color-act);
+    white-space: nowrap;
+  }
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+dialog.sheet {
+  margin: auto;
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  border: 1px solid var(--color-rule);
+  border-radius: 12px;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  padding: 0;
+  box-shadow: 0 24px 64px rgba(20, 20, 60, 0.22);
+}
+dialog.sheet::backdrop {
+  background: rgba(14, 15, 28, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 @layer base {

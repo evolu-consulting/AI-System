@@ -1,7 +1,5 @@
-// PK-FR-10 · TF5 · route khung /cks/$id (nội dung ở HD9).
+// PK-FR-10 · HD-FR-97 · S11: /cks/$id — khách chữ ký số (HD9).
 import { createFileRoute } from "@tanstack/react-router";
-import { StubPage } from "~/features/shell/components/StubPage";
+import { CksCustomerPage } from "~/features/cks/pages/CksCustomerPage";
 
-export const Route = createFileRoute("/_authed/cks/$id")({
-  component: () => <StubPage titleKey="contracts.pages.productDetail" />,
-});
+export const Route = createFileRoute("/_authed/cks/$id")({ component: CksCustomerPage });
