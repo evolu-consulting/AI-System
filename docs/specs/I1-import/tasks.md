@@ -56,9 +56,9 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 
 ## Kết quả trên bản sao seed (evotest-mgmt, 2026-10-20, mgmt-app b839418; 2 org demo + seed-plus)
 - Nguồn: 2 org, 5 user, 45 HĐ, 50 đợt, 434 sự kiện sổ, 12 lô, 32 chữ ký, 142 văn bản ký, 28 công ty, 35 giá thị trường, 1 tài liệu + 2 đoạn, đồ thị 2 thực thể/4 MENTIONS/1 REL/1 SIMILAR (+137 cạnh đồ thị HĐ — dẫn xuất, không chuyển).
-- Apply: 977 hàng / 22 bảng; chạy lại: **0** hàng chèn (idempotent). Tiền 8 khoá × 2 tenant khớp **tuyệt đối** nguồn = kế hoạch = đích (vd HĐ 3.558.150.000 ₫, đợt 1.237.250.000 ₫, sổ 485.250.000 ₫).
+- Apply (sau M3): 1.022 hàng / 23 bảng (gồm 45 lượt duyệt `contracts.approvals`); chạy lại: **0** hàng chèn (idempotent). Tiền 8 khoá × 2 tenant khớp **tuyệt đối** nguồn = kế hoạch = đích (vd HĐ 3.558.150.000 ₫, đợt 1.237.250.000 ₫, sổ 485.250.000 ₫).
 - File 1/1 sha256 khớp; văn bản ký sha 142/142; so trường 95 bản ghi, 0 lệch; luật thấy 5/5 user khớp mgmt-app (RLS thật M1/M1b).
-- Thời gian (importer): dry 1,8 s · apply 0,8 s · chạy lại 0,5 s; cả lượt (build + seed + migrate + 3 lần) 121 s. Int: 16 pass (I1 6 + N5 10).
+- Thời gian (importer): dry 1,8 s · apply 0,9 s · chạy lại 0,7 s; cả lượt (build + seed + migrate + 3 lần) 115 s. Int: 16 pass (I1 6 + N5 10).
 
 ## Còn lại cho cutover thật
 - Chép chỉ-đọc volume `apidata/contract_files` + quyền đọc OpenSearch/Neo4j của sohoptac; FileBox sink chưa nối vào CLI (hiện `--sink-dir`); `--source mgmt-prod`, `--knowledge-org`.
