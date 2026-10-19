@@ -3,7 +3,7 @@ id: I1-import
 title: Nhập một lần mgmt-app (sohoptac) → Postgres — CLI `mgmt-import`
 cr: CR-095
 lane: nhanh (Luật 0b); phần tiền/tenant/migration dữ liệu khách có test viết cùng lát, chạy trên bản sao seed (không đụng dữ liệu thật)
-depends: N5 (identity-import + N5b scrypt cũ), M1D (visibility org), G1 (slice/g1-graph — bảng đồ thị, CHƯA merge)
+depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (visibility org), G1 (bảng đồ thị, đã vào platform/gd0 d374c0bd)
 ---
 # I1 · mgmt-import (plan ngắn)
 
@@ -28,8 +28,8 @@ depends: N5 (identity-import + N5b scrypt cũ), M1D (visibility org), G1 (slice/
 | followups (gia hạn/khách CKS) | cks_followups | còn lại ⇒ vùng chờ |
 | obligations / partner_events (+voided) | obligations / partner_events / partner_event_voids | party_key = `contracts.party_key(tên, MST)` |
 | documents + chunks | knowledge.documents/chunks | general ⇒ `--knowledge-org`; embedding không chuyển |
-| Neo4j Entity/MENTIONS/REL/ALIAS_OF/SIMILAR/CONFLICTS/LINKS_TO | knowledge.entities/chunk_entities/entity_rels/entity_aliases/chunk_links/document_links (G1) | bỏ qua có báo nếu DB chưa có G1 |
-| companies, quotes, feedback, score_*, market_scans, chat_files, chats, notifications, catalogs, followups khác, market không-CKS | contracts.legacy_records (0010, nguyên văn jsonb) | chưa có bảng đích |
+| Neo4j Entity/MENTIONS/REL/ALIAS_OF/SIMILAR/CONFLICTS/LINKS_TO | knowledge.entities/chunk_entities/entity_rels/entity_aliases/chunk_links/document_links (G1) | |
+| companies, quotes, feedback, score_*, market_scans, chat_files, chats, notifications, catalogs, followups khác, market không-CKS | contracts.legacy_records (0011, nguyên văn jsonb) | chưa có bảng đích |
 | Contract/Party/Product/PriceLine (Neo4j) | không chuyển | dẫn xuất từ HĐ (project.py dựng lại) |
 | sessions, events, app_logs, llm_usage, entities (vector) | không chuyển | vận hành |
 
@@ -37,9 +37,9 @@ depends: N5 (identity-import + N5b scrypt cũ), M1D (visibility org), G1 (slice/
 | # | Việc | Làn | Trạng thái |
 |---|---|---|---|
 | 1 | Reader OpenSearch/Neo4j + mapper + SQL lô + use case + CLI | nhanh | xong |
-| 2 | Migration 0010 `legacy_records` | nhanh | xong |
+| 2 | Migration 0011 `legacy_records` (sau 0010_m1b) | nhanh | xong |
 | 3 | Unit (luật + reader) + int (`tests/acceptance/I1`, nguồn giả mọi mapper, tiền khớp, luật thấy, chạy lại) | nhanh | xong |
-| 4 | Profile `evotest-mgmt` + chạy seed: dry-run → apply → đối soát → chạy lại | nhanh | xem dưới |
+| 4 | Profile `evotest-mgmt` + chạy seed: dry-run → apply → đối soát → chạy lại | nhanh | xong (xem Kết quả) |
 
 ## Quyết định trong lúc làm
 - D-I1-01: Không đụng dữ liệu sohoptac thật; kiểm trên bản sao seed `evotest-mgmt` (người dùng chọn).
@@ -48,3 +48,18 @@ depends: N5 (identity-import + N5b scrypt cũ), M1D (visibility org), G1 (slice/
 - D-I1-04: Tiền không nguyên ⇒ null + MONEY_NOT_INT (không làm tròn) — đối soát tổng lệch lộ ra.
 - D-I1-05: Bảng chưa có đích ⇒ `contracts.legacy_records` thay vì bỏ (không mất dữ liệu khi tắt mgmt-app).
 - D-I1-06: Importer đặt ở `apps/admin-api/src/modules/mgmt-import` (dùng lại N5 cùng app), ghi gói qua pool `hub_api`.
+- D-I1-07: Reader xin `accept-encoding: identity` — OpenSearch 2.19 trả mã nén khác gzip cho Bun (mặc định `gzip, deflate, br, zstd`) ⇒ fetch treo tới timeout; mọi phản hồi đọc hết thân, mỗi lời gọi có trần thời gian.
+- D-I1-08: Hai org trùng tên ⇒ N5 DUPLICATE_KEY; importer gán `tenant_key` tất định `<slug ≤23>-<8 hex sha256(org id)>` cho org sau (theo id).
+- D-I1-09: Phụ lục: `owner_user_id` = chủ HĐ cha (D-M1-03); M1b còn giữ `visibility_owner_id` bằng trigger.
+
+## Kết quả trên bản sao seed (evotest-mgmt, 2026-10-20, mgmt-app b839418; 2 org demo + seed-plus)
+- Nguồn: 2 org, 5 user, 45 HĐ, 50 đợt, 434 sự kiện sổ, 12 lô, 32 chữ ký, 142 văn bản ký, 28 công ty, 35 giá thị trường, 1 tài liệu + 2 đoạn, đồ thị 2 thực thể/4 MENTIONS/1 REL/1 SIMILAR (+137 cạnh đồ thị HĐ — dẫn xuất, không chuyển).
+- Apply: 977 hàng / 22 bảng; chạy lại: **0** hàng chèn (idempotent). Tiền 8 khoá × 2 tenant khớp **tuyệt đối** nguồn = kế hoạch = đích (vd HĐ 3.558.150.000 ₫, đợt 1.237.250.000 ₫, sổ 485.250.000 ₫).
+- File 1/1 sha256 khớp; văn bản ký sha 142/142; so trường 95 bản ghi, 0 lệch; luật thấy 5/5 user khớp mgmt-app (RLS thật M1/M1b).
+- Thời gian (importer): dry 1,8 s · apply 0,8 s · chạy lại 0,5 s; cả lượt (build + seed + migrate + 3 lần) 121 s. Int: 16 pass (I1 6 + N5 10).
+
+## Còn lại cho cutover thật
+- Chép chỉ-đọc volume `apidata/contract_files` + quyền đọc OpenSearch/Neo4j của sohoptac; FileBox sink chưa nối vào CLI (hiện `--sink-dir`); `--source mgmt-prod`, `--knowledge-org`.
+- TECH-DEBT #224 (giới hạn đăng nhập) trước khi nhập hash thật; tenant trùng khoá với tenant đã có ⇒ N5 ORG_KEY_TAKEN — đặt `tenant_key` tay.
+- Vùng chờ `legacy_records` (công ty, báo giá, góp ý, chấm điểm, chat, thông báo…) cần lát đích riêng; embedding phải dựng lại (N4).
+- Đóng băng ghi mgmt-app trong lúc chạy (đọc là ảnh chụp, không đồng bộ tăng dần).

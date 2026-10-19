@@ -11,3 +11,10 @@
 - Chạy **local**: unit test + typecheck (nhanh, không cần stack). Chạy trên **evotest**: int, e2e, perf (`run-tests.ps1 -Step int|e2e|perf` hoặc `-Dirty` từ worktree của lát; archive lấy từ chính worktree đó).
 - Playwright local: tối đa **2 lát cùng lúc**, mỗi lát một cổng riêng.
 - Đêm: `nightly.ps1` (Task Scheduler local) chạy `-Step all -Ref platform/gd0`, tóm tắt ở `.data/evotest/nightly-<ngày>.md`; không cron trên máy chủ.
+
+## evotest-mgmt (I1 — bản sao mgmt-app có seed để kiểm importer)
+`powershell -File deploy/evotest/mgmt/run.ps1 [-Ref HEAD] [-MgmtRepo F:\workspace\mgmt-app]` — project Docker riêng `evotest-mgmt`
+(profile `mgmt`, `deploy/evotest/mgmt/docker-compose.yml`): opensearch 2.19.0 + neo4j 5.26.30-community + api build từ mã mgmt-app +
+pg đích + runner; seed `app.seed.demo` (2 org) + `seed-plus.py`; chạy `mgmt-import` dry-run → apply → chạy lại, tóm tắt ở
+`.data/evotest-mgmt/<giờ>/summary.txt`. Giữ `.lock` của evotest (không chồng ngân sách); 6.5 CPU / 16 GB, cpu_shares 128 + `nice -n 19`;
+không cổng, dữ liệu tmpfs; dọn `down -v` + xoá thư mục + xoá image api. **Không bao giờ** đụng `sohoptac-*` (dữ liệu thật).
