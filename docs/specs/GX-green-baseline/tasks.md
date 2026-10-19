@@ -20,7 +20,9 @@ Làn: **nhanh** (một agent, một reviewer; Luật 1b). Người dùng duyệt
 | T5 | #231 `check:size` miễn `reference/` | [x] |
 | T6 | #229 + cũ: nguyên nhân gốc từng ca (bảng dưới) | [x] một phần — 3 Tranh chấp |
 | T7 | Python / typecheck agent-runtime: thiếu `docker` (và `uv`) ⇒ bước BỊ CHẶN có lý do, không tải về (#230) | [x] |
-| T8 | `test:all` chạy sạch, ghi `gate.md` | [ ] |
+| T8 | `test:all` chạy sạch, ghi `gate.md` | [x] chạy xong, CHƯA xanh: 5/23 đỏ (Tranh chấp/giao diện, xem gate.md §3) |
+| T9 | e2e: `.env.local` để trống `HUB_URL=`/`HUB_INTERNAL_TOKEN=` làm studio preview và combine/x1 không khởi động (`??` không thay chuỗi rỗng) ⇒ `||`; build admin ép `PUBLIC_HUB_URL` rỗng cho ca "vắng"; studio 82/82, combine 4/4, x1 20/20 | [x] |
+| T10 | `INT_SERIAL`: 4 file dựng/migrate DB chạy riêng (N1/migrate 210 s → vài giây khi riêng) | [x] |
 
 ## Thay đổi test khoá (qc, relock chỉ file đổi; assertion không đổi)
 | File | Đổi gì | Vì sao |
@@ -50,3 +52,17 @@ Làn: **nhanh** (một agent, một reviewer; Luật 1b). Người dùng duyệt
 | cùng file R49 | duyệt mọi fixture `hub/valid|invalid` kỳ vọng có schema trong `HUB_JSON_SCHEMAS`; `SourceApplyJob.*` (P-c2) và `SourceResolveJob.*` (P-b) cố ý KHÔNG đăng ký ở đó (`json-schema.ts`) | bỏ qua fixture `Source*` hoặc ánh xạ riêng sang schema của chúng |
 | `P-a/step0/rules/contracts-pa.test.ts` R-K01 | `ROOM_PROCESS_KINDS` kỳ vọng đúng 7 phần tử; P-d2 thêm `branch` | kiểm tiền tố / thêm `branch` |
 | #227 mở rộng | AC-A14, `P-d/admin/timezone-rules.test.ts`, `timezone.int.test.ts` khẳng định alias `Asia/Saigon` bị CHẶN (TZ-R02). Fix giữ nguyên điều đó (server Bun không liệt kê `Saigon` ⇒ chặn) và chỉ chấp nhận thêm tên hiện hành (`Asia/Ho_Chi_Minh`…) trên runtime chỉ liệt kê tên cũ. "Chấp nhận mọi alias" sẽ đảo assertion khoá ⇒ chưa làm | người dùng/qc quyết có đổi TZ-R02 không |
+
+## Thay đổi test/cấu hình khoá bổ sung (qc, assertion không đổi)
+| File | Đổi gì |
+|---|---|
+| `e2e/combine/playwright.config.ts`, `e2e/x1/playwright.config.ts` | `HUB_INTERNAL_TOKEN ?? random` → `|| random` (chuỗi rỗng trong `.env.local`) |
+
+## Tranh chấp / cần người quyết thêm (các ca còn đỏ sau GX)
+| Ca | Chuyện gì |
+|---|---|
+| e2e gốc `conflict-workflows`, `m2-flow`, `secrets`, `workflows` | DLC-R15: "Workflows" là nút nhóm (Workflow Steps · Workflow Process), `/workflows` là "Workflow Process"; test khoá đòi liên kết `Workflows` + tiêu đề `Workflows`. Cập nhật test theo UI mới hay chỉnh UI: người dùng/qc |
+| e2e chat CHAT-AC-35 | nền tối thực tế `rgb(14,19,27)`, test khoá `rgb(15,16,32)` (CR-049 `#0F1020`) |
+| e2e chat UC-02 | node nút "Ẩn nhắc" bị thay trong ~0,8 s đầu rồi biến mất ~1,5 s; click Playwright thấy "detached" — nghi QuotaNotice/Composer remount hoặc `quotaOver` tắt khi run kết thúc; frontend-lead điều tra |
+| e2e P-a pf2 CHAT-AC-57 | câu "Chỉ chuyển được cho người cùng nhóm kiểm" xuất hiện hai lần (strict mode) |
+| int `pf1/lock-order` P1-48e | chập chờn: sau apply ∥ sweep, lượt sweep thứ hai bỏ hàng đang bị apply giữ ⇒ run còn `running`; test không chờ apply xong |
