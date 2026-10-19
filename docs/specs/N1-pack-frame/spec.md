@@ -87,13 +87,13 @@ N1 không có màn mới: mã quyền gói hiện trong màn Group/Grants Admin 
 | Q1 | Nơi đặt backend gói | **Đã chốt** = D-01 (module hub-api) |
 | Q2 | Schema gói nằm database nào? | **Đã chốt** D-04 (cùng database) |
 | Q8 | Quyền Group đọc từ `admin` thế nào khi không gọi HTTP (D-03)? | **Đã chốt** D-04 (`ConfigCache` + `hub_ro` sẵn có) |
-| Q3 | Thư viện DOCX → text | **Mở tới Gate** — D-10, ADR-0024 Proposed (`fflate` + `saxes`); người dùng duyệt |
+| Q3 | Thư viện DOCX → text | **Đã chốt** D-13: ADR-0024 Accepted (`fflate`+`saxes`) |
 | Q4 | `org` theo tenant có áp cho đính kèm Hub/phòng? | **Đã chốt** D-07 (chỉ file gói) |
 | Q5 | Bật gói theo tenant bằng gì? | **Đã chốt** D-05 (entitlement 3 feature gói, route admin-api `packs`) |
 | Q6 | Mã quyền gói vào catalog nào ở Admin? | **Đã chốt** D-05 (`features` + `feature_grants`, không bảng/màn mới) |
 | Q7 | PB-R04 (Hub không trích chữ DOCX) có mâu thuẫn N1? | **Đã chốt** D-08 (không mâu thuẫn) |
-| Q9 | Grant **user lẻ** cho feature gói: Admin hiện cho phép (`feature_grants_subject_check`) | Mặc định: hub-api **bỏ qua** grant user lẻ với mã gói (không đổi contract M3). Chặn hẳn ở admin-api = thêm mã lỗi vào contract grants đã khoá ⇒ cần người dùng duyệt |
-| Q10 | Vòng nền quét chéo tenant theo lô (HD4 nhắc) dưới FORCE RLS không nhánh `system` | Mặc định: N1 chỉ có `system(tenantId)`; HD4 plan thêm role `<k>_job` NOBYPASSRLS với policy riêng cho bảng cần quét (không nới policy khuôn) |
+| Q9 | Grant **user lẻ** cho feature gói: Admin hiện cho phép (`feature_grants_subject_check`) | **Đã chốt** D-11: hub-api **bỏ qua** grant user lẻ (contract M3 giữ) |
+| Q10 | Vòng nền quét chéo tenant theo lô (HD4 nhắc) dưới FORCE RLS không nhánh `system` | **Đã chốt** D-12: HD4 thêm role `<k>_job` (NOBYPASSRLS, policy riêng) |
 
 ## 10. Quyết định
 [`spec-decisions.md`](spec-decisions.md) — D-01…D-03 (người dùng 2026-10-18).

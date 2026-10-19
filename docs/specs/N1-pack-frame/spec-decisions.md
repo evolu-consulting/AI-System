@@ -14,7 +14,11 @@ Nơi duy nhất ghi quyết định của N1; spec/plan trỏ mã D-xx.
 | D-07 | 2026-10-18 · backend-lead (PLAN, Q4) | `org = t_<tenant_id>` chỉ cho file gói (bảng `<k>.files`, CHECK `org = 't_'||tenant_id`); đính kèm Hub/phòng giữ ADR-0015 D5 | Q4 đóng |
 | D-08 | 2026-10-18 · backend-lead (PLAN, Q7) | Không mâu thuẫn PB-R04: DOCX → text chỉ trong module gói; gói kiểm thử `pkdemo` (chỉ ngoài production) làm khuôn cho AC01–AC12 | Q7 đóng |
 | D-09 | 2026-10-18 · backend-lead (PLAN) | Module gói đặt `apps/hub-api/src/modules/packs/<k>/` + nhân chung `packs/kit/`; 3 luật depcruise `pack-*` (plan §9) | PK-FR-09 |
-| D-10 | 2026-10-18 · backend-lead (PLAN, Q3) | Đề xuất `fflate` + `saxes` + bộ ghi Markdown tự viết, chạy Bun Worker — [ADR-0024](../../adr/0024-docx-to-markdown.md) **Proposed**, chờ người dùng ở Gate | Q3 mở tới Gate |
+| D-10 | 2026-10-18 · backend-lead (PLAN, Q3) | Đề xuất `fflate` + `saxes` + bộ ghi Markdown tự viết, chạy Bun Worker — [ADR-0024](../../adr/0024-docx-to-markdown.md) **Accepted** (2026-10-19, D-13) | Q3 đã chốt |
+| D-11 | 2026-10-19 · người dùng (Gate N1) | **Q9:** hub-api **bỏ qua** grant user lẻ với mã gói; admin-api giữ contract grants M3 (không chặn ở admin-api) | PK-FR-05; `pack-guard` (plan); test Q9 trong `admin-packs.int.test.ts` |
+| D-12 | 2026-10-19 · người dùng (Gate N1) | **Q10:** N1 chỉ có `system(tenantId)`. Quét chéo tenant theo lô (HD4) thêm role `<k>_job` NOBYPASSRLS + policy riêng — **HD4 làm**; không nới policy khuôn | HD4; PK-FR-03 giữ |
+| D-13 | 2026-10-19 · người dùng (Gate N1) | **Q3:** [ADR-0024](../../adr/0024-docx-to-markdown.md) **Accepted** — phương án B: `fflate` + `saxes` + bộ ghi Markdown tự viết, Bun Worker | Q3 đóng; T5g cài và ghi bản vào ADR-0024; ca DOCX hết đỏ "PHỤ THUỘC ADR" |
+| D-14 | 2026-10-19 · người dùng (Gate N1) | **Font `contracts-web`:** Roboto + Roboto Mono như mgmt-app (`@fontsource`, OFL, tự host như admin-web) — dòng [ADR-0001](../../adr/0001-stack.md) Accepted; Q-F2 đóng | TF2 cài gói; không đổi font |
 
 ## Trong lúc làm (Luật 2)
 - (chưa có)

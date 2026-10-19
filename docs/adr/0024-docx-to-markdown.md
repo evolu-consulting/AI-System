@@ -1,6 +1,6 @@
 # ADR-0024 · DOCX → Markdown trong module gói: `fflate` + `saxes`, bộ ghi Markdown tự viết
 
-Trạng thái: **Proposed** (backend-lead, 2026-10-18, chờ người dùng ở Gate N1) · Liên quan: CR-094, spec [N1](../specs/N1-pack-frame/spec.md) PK-FR-07, PK-NFR-02, Q3; ADR-0001 (pin chính xác), ADR-0021 (parse cho RAG ở N4 — ngoài phạm vi)
+Trạng thái: **Accepted** (2026-10-19, người dùng chốt ở Gate N1; đề xuất backend-lead 2026-10-18) · Liên quan: CR-094, spec [N1](../specs/N1-pack-frame/spec.md) PK-FR-07, PK-NFR-02, Q3; ADR-0001 (pin chính xác), ADR-0021 (parse cho RAG ở N4 — ngoài phạm vi)
 
 ## Bối cảnh
 Gói `contracts` cần chữ của DOCX dạng Markdown, giữ tiêu đề / danh sách / bảng để chia điều khoản (`reference/mgmt-app-contracts/api/app/contracts/chunk.py` tìm dòng "Điều N"; app gốc dùng Docling Python). Repo chưa có thư viện zip/XML nào (`bun.lock`: không `jszip`, `fflate`, `mammoth`, `saxes`). Yêu cầu cứng: chạy trong `hub-api` (D-01, Bun), không gọi LibreOffice/dịch vụ ngoài; chặn zip bomb (≤ 100 MB giải nén, ≤ 2.000 phần, chặn ≤ 1 s); không tải tài nguyên ngoài; file hỏng ⇒ `DOCX_UNREADABLE`, không 500; mẫu 38,5 KB p95 ≤ 300 ms, 20 MB ≤ 5 s, bộ nhớ đỉnh ≤ 256 MB.

@@ -47,7 +47,7 @@ Spec: [spec §2 PK-FR-10](spec.md), [D-02](spec-decisions.md). Chế độ PLAN,
 **16 mục, 15 giữ.** Component chung (dựng ở N1, các lát dùng lại): `ui.tsx` (PageHead, Panel, Chips, Empty, Loading, ErrorLine, Stat, ScoreBadge, `vnd`/`viDate`) → `components/shared/`; `icons.tsx` → `components/icons.tsx`; `toast.tsx`/`dialog.tsx` → shadcn bọc API cũ (`toast()`, `confirmDialog()`, `promptDialog()`); `table.tsx:98-438` (useTable, lọc cột, ColumnPicker, Pager) → `features/table/` tách ≤ 400 dòng/file, giữ `normalize`/`matches` (bỏ dấu tiếng Việt) và `aria-label` cũ. Bảng > 200 dòng/trang: virtualize bằng TanStack Table (đã có trong ADR-0001).
 
 ## 3. Bảng màu chung với admin-web
-Token cơ sở **trùng giá trị** với `apps/admin-web/src/styles/globals.css` (ground `#f4f4f9`, act `#4f46e5`, ok `#05603f`…): `ref:index.css:13-41` đã sinh từ kit admin-web. `contracts-web/src/styles/globals.css` khai tên mgmt (`--color-ground`…) trỏ `var(--background)`… cho phần trùng; phần riêng mgmt (soon/late/idle/bubble) giữ giá trị gốc, bản tối `ref:index.css:49-70`. Test đơn vị `theme-parity.test.ts` đọc hai file CSS, báo lỗi nếu token trùng tên khác giá trị. Font: Roboto + Roboto Mono như mgmt-app (`ref:index.css:8-11`) — cần dòng ADR-0001 (Q-F2).
+Token cơ sở **trùng giá trị** với `apps/admin-web/src/styles/globals.css` (ground `#f4f4f9`, act `#4f46e5`, ok `#05603f`…): `ref:index.css:13-41` đã sinh từ kit admin-web. `contracts-web/src/styles/globals.css` khai tên mgmt (`--color-ground`…) trỏ `var(--background)`… cho phần trùng; phần riêng mgmt (soon/late/idle/bubble) giữ giá trị gốc, bản tối `ref:index.css:49-70`. Test đơn vị `theme-parity.test.ts` đọc hai file CSS, báo lỗi nếu token trùng tên khác giá trị. Font: Roboto + Roboto Mono như mgmt-app (`ref:index.css:8-11`) — dòng ADR-0001 (D-14).
 
 ## 4. Chia sẻ code với chat-web
 | Phần | Cách | Căn cứ |
@@ -105,7 +105,7 @@ Nhãn từng màn: plan-frontend của lát bổ sung (từ `aria-label` ở ref
 | # | Câu | Mặc định |
 |---|---|---|
 | Q-F1 | spec §5 nói "dựng ở HD5", nhưng HD2 đã có màn | Dựng **khung ở N1** (TF1–TF7); HD5 chỉ thêm danh sách. Spec §5 còn "HD5" (ghi nhận) |
-| Q-F2 | Font Roboto/Roboto Mono (`@fontsource/*`, OFL) chưa có trong ADR-0001 | Thêm dòng ADR-0001 Proposed; không đổi font (D-02 "nguyên giao diện") |
+| Q-F2 | Font Roboto/Roboto Mono (`@fontsource/*`, OFL) chưa có trong ADR-0001 | **Đã chốt** D-14: ADR-0001 Accepted; không đổi font |
 | Q-F3 | Bỏ đăng ký/onboarding (tenant do Admin tạo, ADR-0018) | Bỏ; thêm ô "Mã công ty" khi chưa biết tenant |
 | Q-F4 | Dev/CI chụp ảnh ở OS khác nhau (font render) | Baseline theo `<platform>`; CI chụp bộ riêng bằng cùng lệnh `ref` |
 | Q-F5 | Góp ý (S14) chưa thuộc lát nào | Gộp HD5, backend nhận tin vào bảng gói |

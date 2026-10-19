@@ -96,7 +96,7 @@ Quyền: `files` SELECT/INSERT/UPDATE (xoá = `deleted_at`); `index_outbox` ch�
 ## §4 Truy cập DB từ hub-api (PK-FR-03, 09) — D-06
 `packages/db/src/pack-scope.ts` (`@ai/db/pack-scope`): `withPackScope(db, {packKey, tenantId, userId|null}, fn)` = transaction trên **pool `hub_api` sẵn có** (không pool mới), câu đầu **một** lệnh:
 `select set_config('role', $1, true), set_config('app.tenant_id', $2, true), set_config('app.user_id', $3, true)` ($1 = `<k>_rw`, hằng). Hết tx ⇒ role trở lại. Thử lại 40P01/40001 như `withHubScope`. Tenant không phải UUID ⇒ `DomainError("TENANT_INVALID")` trước khi mở tx.
-Port (kit `application/ports.ts`): `PackUow.tenant(who, fn)`; `PackSystemUow.system(tenantId, fn)` (vòng nền đặt `app.tenant_id` từng tenant — PK-FR-03). Quét chéo tenant theo lô (HD4) **không** có ở N1 ⇒ Q10.
+Port (kit `application/ports.ts`): `PackUow.tenant(who, fn)`; `PackSystemUow.system(tenantId, fn)` (vòng nền đặt `app.tenant_id` từng tenant — PK-FR-03). Quét chéo tenant (HD4) **không** ở N1 ⇒ D-12.
 
 ## §5 Quyền gói (PK-FR-05, Q5/Q6/Q8) — D-05
 - **Catalog:** 3 hàng `admin.features` mỗi gói (`<k'>-read|write|admin`, do `packs.install`); gán qua `feature_grants` cho Group — màn Group/Grants Admin sẵn có hiện chúng (không màn mới ⇒ T2 "không có FE" trừ khi frontend-lead thấy cần nút bật gói).
@@ -155,4 +155,4 @@ apps/hub-api/src/modules/packs/
 
 Không phụ thuộc thống kê: lọc PK/`= any($arr)`; lô qua **một** tham số `jsonb`, không join `unnest` vào bảng lớn; SQL văn bản hằng ⇒ chuẩn bị một lần mỗi kết nối. N1 không khoá hàng; không sleep/poll mới.
 
-## §11 Câu hỏi mở — spec §9: Q3, Q9, Q10
+## §11 Đã chốt: Q3 → D-13 · Q9 → D-11 · Q10 → D-12
