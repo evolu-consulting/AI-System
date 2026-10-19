@@ -103,12 +103,21 @@ defineRlsSuite({
   key: "knowledge",
   tables,
   tenants,
+  // G1: bảng đồ thị khai ở G1/rls.int.test.ts
+  ignoreTables: [
+    "entities",
+    "chunk_entities",
+    "entity_aliases",
+    "entity_rels",
+    "chunk_links",
+    "document_links",
+  ],
   open: async () => {
     await cloneDb("full");
     return openOwner(2);
   },
   close: (owner) => owner.end({ timeout: 2 }),
   reset: async (owner) => {
-    await owner`truncate knowledge.chunk_embeddings, knowledge.chunks, knowledge.documents, knowledge.files, knowledge.index_outbox`;
+    await owner`truncate knowledge.chunk_embeddings, knowledge.chunks, knowledge.documents, knowledge.files, knowledge.index_outbox cascade`;
   },
 });

@@ -7,8 +7,12 @@ import { logger } from "../../lib/logger";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
 import type { PackToolDef } from "../packs/kit/application/pack-tools.ports";
 import { claudeReranker, openAiEmbedder } from "./adapters/ai.adapters";
+import { graphRepos } from "./adapters/graph.repo";
+import { graphTools } from "./adapters/graph.tools";
 import { knowledgeRepos } from "./adapters/knowledge.repo";
 import { KNOWLEDGE_KEY, knowledgeTools } from "./adapters/knowledge.tools";
+import type { GraphUow } from "./application/graph.ports";
+import { graphUsecases } from "./application/graph.usecases";
 import { addDocument, getKnowledge, searchKnowledge } from "./application/knowledge.usecases";
 import type { Embedder, KnowledgeUow, Reranker, RetrievalStrategy } from "./application/ports";
 import { embeddingStrategy, ftsStrategy } from "./application/strategies";
@@ -64,6 +68,12 @@ export function knowledgeService(
   };
 }
 
+/** G1 · đồ thị tri thức (thay Neo4j) — cùng role/RLS `knowledge_rw`; uow riêng để cổng N4 giữ nguyên. */
+export function graphService(db: Db) {
+  const uow: GraphUow = createPackUow(db, KNOWLEDGE_KEY, graphRepos);
+  return graphUsecases({ uow });
+}
+
 /** Đăng ký tool `knowledge-*` (gọi từ `mountPacks`). */
 export function mountKnowledge(
   db: Db,
@@ -72,4 +82,5 @@ export function mountKnowledge(
   if (!tools) return;
   const svc = knowledgeService(db);
   for (const t of knowledgeTools(svc)) tools.register(t);
+  for (const t of graphTools(graphService(db))) tools.register(t); // G1 · đồ thị tri thức
 }
