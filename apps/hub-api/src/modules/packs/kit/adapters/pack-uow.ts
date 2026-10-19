@@ -5,13 +5,15 @@
 import type { Db, Tx } from "@ai/db";
 import { withPackScope } from "@ai/db/pack-scope";
 import type { KitTxRepos } from "../application/index-outbox";
+import type { NotifyTxRepos } from "../application/notify";
 import type { PackSystemUow, PackUow } from "../application/ports";
 import { indexOutboxFor } from "./index-outbox.repo";
+import { notifierFor } from "./notify.repo";
 
 export type PackReposFactory<R> = (tx: Tx, tenantId: string) => R;
 
-/** Repo trong tx mà gói nhận: của gói (`R`) + bộ khung (`outbox`). */
-export type PackTxRepos<R> = R & KitTxRepos;
+/** Repo trong tx mà gói nhận: của gói (`R`) + bộ khung (`outbox` chỉ mục, `notify` thông báo N3). */
+export type PackTxRepos<R> = R & KitTxRepos & NotifyTxRepos;
 
 export function createPackUow<R>(
   db: Db,
@@ -19,9 +21,11 @@ export function createPackUow<R>(
   repos: PackReposFactory<R>,
 ): PackUow<PackTxRepos<R>> & PackSystemUow<PackTxRepos<R>> {
   const outbox = indexOutboxFor(packKey);
+  const notify = notifierFor(packKey);
   const all = (tx: Tx, tenantId: string): PackTxRepos<R> => ({
     ...repos(tx, tenantId),
     outbox: outbox(tx, tenantId),
+    notify: notify(tx),
   });
   return {
     tenant: (who, fn) =>

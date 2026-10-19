@@ -12,7 +12,8 @@ export type SecretCursor = [string, string, string];
 
 /** provider ⇒ tenantId null; source_credential ⇒ khác null; kh_api_key ⇒ cả hai (Q7). */
 export function secretScopeOk(kind: HubSecretKind, tenantId: string | null): boolean {
-  if (kind === "provider_api_key") return tenantId === null;
+  if (kind === "provider_api_key" || kind === "smtp_password" || kind === "vapid_private_key")
+    return tenantId === null;
   if (kind === "source_credential") return tenantId !== null;
   return true;
 }

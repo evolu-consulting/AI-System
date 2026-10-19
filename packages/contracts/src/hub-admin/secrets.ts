@@ -5,7 +5,14 @@ import { z } from "zod";
 import { IsoDateTime, UpdatedBySchema, UuidSchema } from "../common";
 import { SecretValueSchema } from "../secrets";
 
-export const HUB_SECRET_KINDS = ["provider_api_key", "kh_api_key", "source_credential"] as const;
+// N3-FR-08: `smtp_password` / `vapid_private_key` = secret nền tảng của cổng thông báo (tenant_id NULL), chỉ Studio tạo.
+export const HUB_SECRET_KINDS = [
+  "provider_api_key",
+  "kh_api_key",
+  "source_credential",
+  "smtp_password",
+  "vapid_private_key",
+] as const;
 export type HubSecretKind = (typeof HUB_SECRET_KINDS)[number];
 export const HubSecretKindSchema = z.enum(HUB_SECRET_KINDS);
 

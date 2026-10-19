@@ -11,6 +11,7 @@ export const RESERVED_PACK_KEYS = [
   "hub",
   "drizzle",
   "packs",
+  "notify",
   "information_schema",
 ] as const;
 

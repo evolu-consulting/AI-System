@@ -47,6 +47,8 @@ import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
+import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
+import { mountNotify, type NotifyDeps } from "./modules/notify/notify.mount";
 import { mountPacks, PACK_PREFIX, type PacksDeps } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
@@ -125,6 +127,8 @@ export type AppDeps = {
   dlc?: DlcEngine;
   /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
   packs?: PacksDeps;
+  /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */
+  notify?: NotifyDeps;
 } & ProcessSeams;
 
 const DEFAULT_CONFIG_POLL_S = 60;
@@ -140,6 +144,7 @@ const PROTECTED_PREFIXES = [
   "/studio/api",
   "/dlc",
   PACK_PREFIX,
+  NOTIFICATIONS_PREFIX,
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
@@ -367,6 +372,8 @@ export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   const kh = mountProtected(app, deps, config);
   if (config) mountPacks(app, { ...deps, config }); // N1 · `/pack/:k/me` + route gói (pkdemo)
+  if (deps.db)
+    mountNotify(app, { db: deps.db, notify: deps.notify, signal: deps.signal, log: logger }); // N3
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)

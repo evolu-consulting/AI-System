@@ -21,7 +21,12 @@ export type EnvAppDeps = Required<
 > &
   Pick<
     AppDeps,
-    "secretMasterKey" | "internalToken" | "publicInternalUrl" | "studioDist" | "processEngine"
+    | "secretMasterKey"
+    | "internalToken"
+    | "publicInternalUrl"
+    | "studioDist"
+    | "processEngine"
+    | "notify"
   >;
 
 /**
@@ -29,6 +34,9 @@ export type EnvAppDeps = Required<
  * `HUB_MAX_CONCURRENT_RUNS` sai → ném (server thoát ≠ 0); vắng → 2 (server luôn điền, H2b L1).
  */
 export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
+  // N3 D-03: `live` chưa có adapter (ADR-0027 Proposed) ⇒ dừng khởi động thay vì lặng lẽ không gửi.
+  if (env.HUB_NOTIFY_MODE === "live")
+    throw new Error("HUB_NOTIFY_MODE=live chưa có adapter SMTP/Web Push (ADR-0027 Proposed)");
   if (env.HUB_PUBLIC_INTERNAL_URL === undefined)
     log.warn("mcp_disabled", { reason: "HUB_PUBLIC_INTERNAL_URL missing" });
   return {
@@ -43,6 +51,12 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
+    notify: {
+      mode: env.HUB_NOTIFY_MODE,
+      worker: env.HUB_NOTIFY_MODE !== "off",
+      baseUrl: env.HUB_NOTIFY_BASE_URL,
+      vapidPublicKey: env.HUB_VAPID_PUBLIC_KEY ?? null,
+    },
     kh: khConfigOf(env),
   };
 }

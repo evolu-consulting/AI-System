@@ -89,6 +89,11 @@ export const EnvSchema = z.object({
     .optional(),
   // Hạn mỗi lời gọi KH (ms); ngoài 1000..30000 ⇒ env lỗi, dừng khởi động.
   HUB_KH_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
+  // N3 · cổng thông báo: `off` (mặc định, không worker) · `fake` (dev/e2e, transport giả) · `live` (chờ ADR-0027 ⇒ Hub không lên).
+  HUB_NOTIFY_MODE: z.enum(["off", "fake", "live"]).default("off"),
+  // N3 · gốc URL app dựng liên kết tuyệt đối trong email; khoá công khai VAPID (KHÔNG bí mật) cho trình duyệt đăng ký push.
+  HUB_NOTIFY_BASE_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3300"),
+  HUB_VAPID_PUBLIC_KEY: z.string().max(256).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
