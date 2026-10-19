@@ -10,9 +10,9 @@ bun install --frozen-lockfile >/out/setup.log 2>&1 || { echo "bun install lỗi"
 sed -e 's#@localhost:5432#@mgmt-pg:5432#g' .env.example > .env.local
 sed -i -e 's#^SEED_ADMIN_EMAIL=.*#SEED_ADMIN_EMAIL=admin@evolu.local#' .env.local
 { bun run keys:dev && bun run db:setup; } >>/out/setup.log 2>&1 || { echo "setup lỗi"; tail -n 30 /out/setup.log; exit 2; }
-PREP=$(MGMT_OPENSEARCH_URL=http://mgmt-opensearch:9200 bun --env-file=.env.local deploy/evotest/mgmt/prep.ts) || { echo "prep lỗi"; exit 2; }
-read -r ACTOR KORG <<<"$PREP"
-MGMT_KNOWLEDGE_ORG="${MGMT_KNOWLEDGE_ORG:-$KORG}"
+getent hosts mgmt-opensearch mgmt-neo4j | tr "\n" " "; echo
+bun -e "for (const u of ['http://mgmt-opensearch:9200', 'http://mgmt-neo4j:7474']) console.log(u, await fetch(u, { signal: AbortSignal.timeout(10000) }).then((r) => r.status, (e) => String(e)))"
+ACTOR=$(bun --env-file=.env.local deploy/evotest/mgmt/prep.ts) || { echo "prep lỗi"; exit 2; }
 echo "[mgmt] Postgres đích sẵn sàng · actor $ACTOR · org tri thức ${MGMT_KNOWLEDGE_ORG:-(không)}"
 
 export MGMT_OPENSEARCH_URL=http://mgmt-opensearch:9200 MGMT_NEO4J_URL=http://mgmt-neo4j:7474 MGMT_NEO4J_USER=neo4j \

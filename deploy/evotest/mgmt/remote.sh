@@ -38,6 +38,8 @@ done
 echo "[mgmt] seed xong · $(( $(date +%s) - t1 )) s"
 "${DC[@]}" exec -T mgmt-api python -c "from app.store import opensearch as o; c=o.client(); print({i: c.count(index=i)['count'] for i in ['orgs','users','memberships','contracts','obligations','partner_events','cks_lots','cks_certificates','signed_docs','companies','documents','chunks']})"
 
+KORG=$("${DC[@]}" exec -T mgmt-api python -c "from app import orgs; print((orgs.membership('tien@annam.test') or {}).get('org_id', ''))" | tr -d '\r\n')
+export MGMT_KNOWLEDGE_ORG="$KORG"
 "${DC[@]}" up -d --wait mgmt-pg >/dev/null || exit 2
 "${DC[@]}" run --rm mgmt-runner; rc=$?
 echo "[mgmt] importer: exit $rc · tổng $(( $(date +%s) - t0 )) s"
