@@ -232,7 +232,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings",
+      "truncate contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit",
     );
   },
   tables: [
@@ -333,6 +333,21 @@ defineRlsSuite({
         ),
     },
     ...cksTables,
+    // Review HD3 M1 · nhật ký đổi luật duyệt (migration gói 0006, append-only).
+    {
+      name: "approval_settings_audit",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after) values ($1, $2, '{}', '{}')",
+          [t, who],
+        ),
+      insert: (tx, t) =>
+        tx.unsafe(
+          "insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after) values ($1, $2, '{}', '{}')",
+          [t, who],
+        ),
+    },
     ...frameTables("contracts").slice(1),
   ],
 });

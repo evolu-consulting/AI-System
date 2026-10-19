@@ -36,6 +36,13 @@
       "when": 1792890100000,
       "tag": "0004_cks",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793059200000,
+      "tag": "0006_hd3_settings_audit",
+      "breakpoints": true
     }
   ]
 }

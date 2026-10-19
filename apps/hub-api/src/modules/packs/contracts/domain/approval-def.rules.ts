@@ -3,6 +3,10 @@
 // def chỉ rẽ `level2 eq "no"` ⇒ bỏ bước cấp 2. Group duyệt lấy từ cài đặt tenant lúc dựng/đồng bộ def.
 
 export const APPROVAL_PROCESS_KEY = "contracts-approval";
+/** Khoá stage duyệt cấp 2 trong def (finalize kiểm có Đạt ở stage này khi giá trị cần cấp 2). */
+export const APPROVE_STAGE = "approve";
+/** Khoá stage cấp 1 (review của stage trích) — sửa `total_value` ở đây vẫn được (D3-02). */
+export const LEVEL1_STAGE = "extract";
 export const CONTRACT_TOOL_KEYS = {
   extract: "contracts-extract",
   value: "contracts-value",

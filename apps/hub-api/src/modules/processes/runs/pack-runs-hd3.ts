@@ -92,6 +92,37 @@ async function agent(d: ProcessDeps, r: PackAgentRequest): Promise<PackAgentRepl
     : { ok: true, text: out.result.text };
 }
 
+/** Review m5 · đồng bộ CHỈ Group: `group_id` của stage review cùng khoá + `run_group_ids` lấy từ def gói; mọi sửa tay khác
+ *  của admin (tên, chỉ dẫn, rẽ nhánh…) giữ nguyên (D3-05). */
+async function syncedInput(
+  svc: DefsService,
+  scope: { tenantId: string },
+  id: string,
+  pack: ReturnType<typeof ProcessDefInputBaseSchema.parse>,
+) {
+  const cur = await svc.get(scope, id);
+  const groupOf = new Map(
+    pack.stages.flatMap((s) =>
+      s.after.kind === "review" ? [[s.key, s.after.group_id] as const] : [],
+    ),
+  );
+  const stages = cur.stages.map((s) =>
+    s.after.kind === "review" && groupOf.has(s.key)
+      ? { ...s, after: { ...s.after, group_id: groupOf.get(s.key) ?? null } }
+      : s,
+  );
+  const {
+    id: _i,
+    tenant_id: _t,
+    is_template: _x,
+    source_template_id: _s,
+    created_at: _c,
+    updated_at: _u,
+    ...rest
+  } = cur;
+  return { ...rest, stages, run_group_ids: pack.run_group_ids } as never;
+}
+
 async function ensureDef(
   d: ProcessDeps,
   u: PackRunCaller,
@@ -107,7 +138,7 @@ async function ensureDef(
   );
   if (cur && !o.sync) return "exists";
   if (cur) {
-    await svc.update(asUser(u), scope, cur.id, { ...input, version: Number(cur.version) } as never);
+    await svc.update(asUser(u), scope, cur.id, await syncedInput(svc, scope, cur.id, input));
     return "synced";
   }
   try {
@@ -203,6 +234,19 @@ export function packRunsHd3(d: ProcessDeps): Hd3Port {
             and result = 'pass' order by decided_at desc limit 1`),
       );
       return r?.by ?? null;
+    },
+    async passedStages(tenantId, runId) {
+      if (!UUID.test(runId)) return [];
+      const rows = await withHubScope(d.db, { kind: "system" }, (tx) =>
+        tx.execute<{
+          k: string | null;
+        }>(sql`select distinct r.snapshot->'stages'->(s.stage_idx::int)->>'key' as k
+          from hub.review_tasks t join hub.process_runs r on r.id = t.process_run_id and r.tenant_id = t.tenant_id
+          join hub.stage_runs s on s.id = t.stage_run_id and s.process_run_id = r.id
+          where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.kind = 'review'
+            and t.result = 'pass'`),
+      );
+      return rows.flatMap((r) => (r.k ? [r.k] : []));
     },
     async groupIdsOf(tenantId, keys) {
       if (keys.length === 0) return new Map();

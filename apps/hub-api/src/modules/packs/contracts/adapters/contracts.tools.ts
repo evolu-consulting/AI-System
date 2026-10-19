@@ -6,7 +6,7 @@ import type { PackToolCtx, PackToolDef } from "../../kit/application/pack-tools.
 import type { ApprovalUow } from "../application/approval.ports";
 import type { ExtractionAgent } from "../application/extraction.ports";
 import type { RunExtraction } from "../application/run-extraction.usecase";
-import { CONTRACT_TOOL_KEYS, needsLevel2 } from "../domain/approval-def.rules";
+import { APPROVE_STAGE, CONTRACT_TOOL_KEYS, needsLevel2 } from "../domain/approval-def.rules";
 import type { AgentTransport } from "./extraction-agent";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,12 +79,25 @@ export function contractsTools(d: ContractsToolDeps): PackToolDef[] {
     const { id, run } = target(ctx, args);
     return valueFields(d, ctx, id, run);
   };
+  // Review S1 · đọc lại giá trị + ngưỡng HIỆN TẠI cùng tx với lệnh ghi: cần cấp 2 mà run chưa có Đạt ở stage `approve`
+  // (def bị sửa bỏ cấp 2, giá trị đổi sau rẽ nhánh…) ⇒ ném (`tool_failed`), không ghi "Đã duyệt".
   const finalize: PackToolDef["run"] = async (ctx, args) => {
     const { id, run } = target(ctx, args);
-    const by = (await d.bridge.port?.lastApprover(ctx.tenantId, run)) ?? null;
+    const port = d.bridge.port;
+    if (!port) throw new Error("contracts tool: engine off");
+    const [by, passed] = await Promise.all([
+      port.lastApprover(ctx.tenantId, run),
+      port.passedStages(ctx.tenantId, run),
+    ]);
     const who = { tenantId: ctx.tenantId, userId: ctx.userId };
-    const ok = await d.uow.tenant(who, (r) => r.approval.finalize(id, run, by));
-    if (!ok) throw new Error("contracts tool: contract not awaiting approval");
+    const out = await d.uow.tenant(who, async (r) => {
+      const v = await r.approval.valueOf(id, run);
+      if (v === undefined) return "not_in_run";
+      const s = await r.approval.settings();
+      if (needsLevel2(v, s.threshold) && !passed.includes(APPROVE_STAGE)) return "level2_missing";
+      return (await r.approval.finalize(id, run, by)) ? "ok" : "not_awaiting";
+    });
+    if (out !== "ok") throw new Error(`contracts tool: cannot finalize (${out})`);
     return {};
   };
   return [

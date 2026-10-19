@@ -17,8 +17,10 @@ export type ApprovalRepo = {
   runOf(id: string): Promise<ContractRunRef | null>;
   /** Gắn run mới khi HĐ chưa có run hoặc vẫn giữ `prev` (run cũ đã kết thúc); false ⇒ bị chiếm (đua). */
   attachRun(id: string, runId: string, prev: string | null, actor: string): Promise<boolean>;
-  /** Tool `contracts-extract`: HĐ của run, chưa kết thúc ⇒ có nguồn: đặt `extracting` (version+1) ⇒ "extract"; không nguồn ⇒ "skip". */
+  /** Tool `contracts-extract`: HĐ của run ở `extracting`/`extract_failed` có nguồn ⇒ `extracting` ⇒ "extract"; còn lại (nhập tay, mở lại duyệt sau sửa) ⇒ "skip". */
   beginExtract(id: string, runId: string): Promise<BeginExtract>;
+  /** Redo cấp 1: `on` ⇒ `needs_review → extracting`; `!on` ⇒ hoàn tác (engine từ chối). */
+  markExtracting(id: string, runId: string, on: boolean): Promise<boolean>;
   /** `fields.total_value.value` hiện tại của HĐ thuộc run; không thuộc ⇒ undefined. */
   valueOf(id: string, runId: string): Promise<number | null | undefined>;
   /** `needs_review → active` + `confirmed_*` + event `approved` (chỉ HĐ của run). */
@@ -34,16 +36,24 @@ export type ApprovalRepo = {
 };
 
 /** Vòng quét (scope `system` từng tenant): HĐ đang trong flow + đóng lô theo JSON. */
-export type FlowRow = { id: string; runId: string | null; status: string; stale: boolean };
+export type FlowRow = {
+  id: string;
+  runId: string | null;
+  status: string;
+  stale: boolean;
+  /** ISO — con trỏ quét. */
+  updatedAt: string;
+};
+export type FlowCursor = { at: string; id: string };
 export type SweepRepo = {
   /** HĐ `extracting`/`extract_failed`/`needs_review` có run, hoặc `extracting` không run quá hạn (≤ `limit`). */
-  inFlow(staleMinutes: number, limit: number): Promise<FlowRow[]>;
+  inFlow(staleMinutes: number, limit: number, after: FlowCursor | null): Promise<FlowRow[]>;
   /** MỘT câu theo lô JSON: `rejected`/`cancelled` ⇒ `rejected` + event; `stale` ⇒ `extract_failed STALE`. */
   close(
     rows: readonly {
       id: string;
       runId: string | null;
-      action: "rejected" | "cancelled" | "stale";
+      action: "rejected" | "cancelled" | "stale" | "failed";
       feedback: string | null;
     }[],
   ): Promise<number>;

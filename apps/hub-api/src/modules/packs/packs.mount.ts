@@ -99,7 +99,6 @@ function mountContracts<E extends Env>(
   const base = `${PACK_PREFIX}/${CONTRACTS_KEY}`;
   const timeZoneOf = async (tid: string) =>
     (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
-  app.route(base, contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf })); // HD1 T7 + T8 (link tệp) · HD5 ngày giá theo múi tenant
   const aiDeps = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
   const ai = contractsAiModule(
@@ -117,6 +116,11 @@ function mountContracts<E extends Env>(
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
     },
+  );
+  // HD1 T7 + T8 (link tệp) · HD5 ngày giá theo múi tenant · HD3 seam duyệt cho PATCH trường (review S1)
+  app.route(
+    base,
+    contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf }, ai.guard),
   );
   app.route(base, ai.routes); // HD2
   app.route(base, ai.approval); // HD3

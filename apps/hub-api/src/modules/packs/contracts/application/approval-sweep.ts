@@ -4,7 +4,7 @@
 // (`= any`) + mỗi tenant có thay đổi 1 câu ghi (lô JSON). Ghi có điều kiện ⇒ nhiều instance chạy cùng lúc vẫn đúng. Lớp 2.
 import type { PackRunOutcomeSys, PackRunsBridge } from "../../kit/application/pack-runs.ports";
 import type { PackSystemUow } from "../../kit/application/ports";
-import type { FlowRow, SweepRepo } from "./approval.ports";
+import type { FlowCursor, FlowRow, SweepRepo } from "./approval.ports";
 
 export type SweepDeps = {
   uow: PackSystemUow<{ sweep: SweepRepo }>;
@@ -17,11 +17,16 @@ export type SweepDeps = {
 };
 export type SweepResult = { tenants: number; read: number; closed: number };
 
+/** Review m3 · số tenant xử lý song song mỗi lượt (giữ pool kết nối). */
+const PARALLEL = 4;
 const DEAD = new Set(["cancelled", "failed", "expired"]);
-type Action = "rejected" | "cancelled" | "stale";
+type Action = "rejected" | "cancelled" | "stale" | "failed";
 type Close = { id: string; runId: string | null; action: Action; feedback: string | null };
+/** Review m2 · con trỏ xoay vòng mỗi tenant `(updated_at, id)` (RAM): lượt sau đọc tiếp sau hàng cuối, hết ⇒ quay đầu. */
+export type SweepCursors = Map<string, FlowCursor | null>;
 
-/** Hàng cần đóng của một tenant: quá hạn ⇒ `stale`; run (cùng tenant) đã kết thúc không Đạt ⇒ `rejected`/`cancelled`. */
+/** Hàng cần đóng của một tenant: quá hạn ⇒ `stale`; run (cùng tenant) huỷ ⇒ `rejected`/`cancelled`; run lỗi/hết hạn ⇒
+ *  `failed` (review m4: HĐ về `extract_failed FLOW_FAILED`, không phải "Bị từ chối"). */
 function closesOf(
   t: string,
   list: readonly FlowRow[],
@@ -32,43 +37,56 @@ function closesOf(
     if (r.stale) close.push({ id: r.id, runId: null, action: "stale", feedback: null });
     const o = r.runId ? byRun.get(r.runId) : undefined;
     if (!o || o.tenant_id !== t || !DEAD.has(o.status)) continue;
-    const action = o.rejected ? "rejected" : "cancelled";
+    const action: Action =
+      o.status !== "cancelled" ? "failed" : o.rejected ? "rejected" : "cancelled";
     close.push({ id: r.id, runId: r.runId, action, feedback: o.feedback });
   }
   return close;
 }
 
-export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
+/** Chạy `fn` cho từng phần tử, tối đa `n` việc cùng lúc. */
+async function pooled<T, R>(xs: readonly T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < xs.length; i += n)
+    out.push(...(await Promise.all(xs.slice(i, i + n).map(fn))));
+  return out;
+}
+
+export async function sweepApprovalsOnce(
+  d: SweepDeps,
+  cursors: SweepCursors = new Map(),
+): Promise<SweepResult> {
   const tenants = await d.tenants();
   const stale = d.staleMinutes ?? 15;
   const limit = d.limit ?? 500;
-  const rows = await Promise.all(
-    tenants.map(async (t) => ({
-      t,
-      rows: await d.uow.system(t, (r) => r.sweep.inFlow(stale, limit)),
-    })),
-  );
+  const rows = await pooled(tenants, PARALLEL, async (t) => {
+    const list = await d.uow.system(t, (r) => r.sweep.inFlow(stale, limit, cursors.get(t) ?? null));
+    const last = list.at(-1);
+    cursors.set(t, list.length >= limit && last ? { at: last.updatedAt, id: last.id } : null);
+    return { t, rows: list };
+  });
   const runIds = rows.flatMap((x) => x.rows.flatMap((r) => (r.runId ? [r.runId] : [])));
   const port = d.bridge.port;
   const outs = port && runIds.length > 0 ? await port.outcomesOf(tenants, runIds) : [];
   const byRun = new Map(outs.map((o) => [o.run_id, o]));
-  let closed = 0;
-  await Promise.all(
-    rows.map(async ({ t, rows: list }) => {
-      const close = closesOf(t, list, byRun);
-      if (close.length > 0) closed += await d.uow.system(t, (r) => r.sweep.close(close));
-    }),
-  );
-  return { tenants: tenants.length, read: runIds.length, closed };
+  const counts = await pooled(rows, PARALLEL, async ({ t, rows: list }) => {
+    const close = closesOf(t, list, byRun);
+    return close.length > 0 ? d.uow.system(t, (r) => r.sweep.close(close)) : 0;
+  });
+  return {
+    tenants: tenants.length,
+    read: runIds.length,
+    closed: counts.reduce((a, b) => a + b, 0),
+  };
 }
-
 /** Vòng nền: một lượt mỗi `everyMs`, dừng theo `signal`; ngủ CHỈ giữa các lượt (Luật 4c). */
 export function startApprovalSweeper(
   d: SweepDeps & { everyMs: number; signal?: AbortSignal; warn: (m: string) => void },
 ): void {
+  const cursors: SweepCursors = new Map();
   const tick = async () => {
     if (d.signal?.aborted) return;
-    await sweepApprovalsOnce(d).catch(() => d.warn("contract-approval-sweep-failed"));
+    await sweepApprovalsOnce(d, cursors).catch(() => d.warn("contract-approval-sweep-failed"));
     if (d.signal?.aborted) return;
     const t = setTimeout(tick, d.everyMs);
     (t as { unref?: () => void }).unref?.();

@@ -23,6 +23,7 @@ function harness(check: "ok" | "not_found" | "has_run", attach: boolean | Error)
     outcomesOf: async () => [],
     lastApprover: async () => null,
     groupIdsOf: async () => new Map(),
+    passedStages: async () => [],
   };
   const d = {
     bridge: { port },

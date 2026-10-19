@@ -16,4 +16,8 @@ FR → test: HD-FR-31 `flow.int` AC31a/b · HD-FR-32 `flow.int` AC32a, `isolatio
 Commit: `f4af4b7a` (spec + test trước + migration gói 0005) · `59dda88e` (BE) · `77cf4f35` (FE + e2e).
 Int HD3: flow 10/10, isolation 3/3, starter-decision 2/2, sweep 3/3; hồi quy HD2 + N2 45/45. e2e: contracts-web S05 + hd3-flow 8/8 (+ s05-review ×3, s05-failed so mgmt-app), P-a gate + reject 3/3.
 Perf (`PERF=1`, Windows dev, máy đang chạy 4 lát): quét lô 100 p50 3,4 · p95 10,6 · max 14,8 ms (ngưỡng 50); đóng 100 quá hạn một lượt 41,5 ms; `GET approval` p50 5,8 · p95 9,3 · max 20,3 ms (ngưỡng 30).
-Nợ mở: D3-04 PDF/ảnh không văn bản qua agent (chép tệp FileBox org tenant sang kho attachment hub); `_journal.json` gói contracts không theo thứ tự `when` (0005 trước 0003/0004 sau khi các lát commit) — sắp lại khi gộp đợt.
+Nợ mở: D3-04 PDF/ảnh không văn bản qua agent (chép tệp FileBox org tenant sang kho attachment hub). KHÔNG sắp lại `_journal.json` (review m6: drizzle so `when` — đổi sau khi áp sẽ bỏ qua/chạy lại migration).
+
+## Vòng sửa review (2026-10-19)
+S1 (hard stop): D3-13 (người dùng chốt mở lại duyệt), D3-14 finalize đọc lại; M1 nhật ký cài đặt (0006); M2 test AC37b, Redis lỗi ⇒ 503 (`action-quota.test.ts`), `processRunId` null (`contracts.tools.test.ts`); m2–m5 sửa (D3-15); m1, m7 ghi spec. Int HD3 (`test:int:par tests/acceptance/HD3`) 25/25 trước khi thêm guard → guard 8/8; HD1 patch/detail + HD2 + N2 xanh. Perf sau sửa: quét lô 100 p50 3,2 · p95 6,1 · max 11,7 ms; đóng 100 quá hạn 24,1 ms; GET approval p95 8,8 ms.
+Còn lại (Minor, chưa làm): m8 (a) chèn văn bản khiến agent trả `total_value` thấp — rủi ro còn lại, người duyệt cấp 1 phải kiểm; đề xuất cảnh báo khi `total_value` lệch tổng dòng hàng; (b) agent chọn theo khoá toàn cục, chưa kiểm tenant có quyền dùng agent; m9 S05 tải lại mỗi 2 s khi bước đang chạy (chờ kênh đẩy), chat-web vẫn hiện `use_current` cho người bắt đầu ở decision cấp 2 (bấm ⇒ 403).

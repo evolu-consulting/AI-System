@@ -54,7 +54,8 @@ function attachQ(tx: Tx, tid: string): ApprovalRepo["attachRun"] {
 function beginQ(tx: Tx, tid: string): ApprovalRepo["beginExtract"] {
   return async (id, runId) => {
     const [r] = await tx.execute<{ src: boolean; upd: boolean }>(sql`with c as (
-        select id, (source_text is not null or file_id is not null) as src from contracts.contracts
+        select id, (source_text is not null or file_id is not null)
+          and status in ('extracting', 'extract_failed') as src from contracts.contracts
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid and status in ${OPEN}
         for update),
       u as (update contracts.contracts t set status = 'extracting', error = null,
@@ -63,6 +64,21 @@ function beginQ(tx: Tx, tid: string): ApprovalRepo["beginExtract"] {
       select c.src, exists (select 1 from u) as upd from c`);
     const out: BeginExtract = !r ? "denied" : r.src ? "extract" : "skip";
     return out;
+  };
+}
+
+/** "Đọc lại" (redo ở cấp 1): đánh dấu `extracting` TRƯỚC khi engine chạy lại stage trích (`to`), hoặc trả về (`needs_review`)
+ *  khi engine từ chối quyết. Chỉ HĐ đang giữ run đó. */
+function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
+  return async (id, runId, on) => {
+    const from = on ? "needs_review" : "extracting";
+    const to = on ? "extracting" : "needs_review";
+    const rows = await tx.execute<{
+      id: string;
+    }>(sql`update contracts.contracts set status = ${to}, updated_at = now()
+      where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid and status = ${from}
+      returning id`);
+    return rows.length > 0;
   };
 }
 
@@ -118,24 +134,40 @@ function settingsQ(tx: Tx, tid: string): ApprovalRepo["settings"] {
   };
 }
 
+const DEFAULTS_JSON = JSON.stringify({
+  threshold: APPROVAL_DEFAULTS.threshold,
+  level1_group_key: APPROVAL_DEFAULTS.level1GroupKey,
+  level2_group_key: APPROVAL_DEFAULTS.level2GroupKey,
+});
+
+/** Upsert + nhật ký trước/sau (review M1) trong MỘT câu: `old` đọc ảnh trước khi ghi; vắng hàng ⇒ trước = mặc định. */
 function saveSettingsQ(tx: Tx, tid: string): ApprovalRepo["saveSettings"] {
   return async (s, actor) => {
-    const [r] = await tx.execute<SettingsRow>(sql`insert into contracts.approval_settings
-        (tenant_id, threshold, level1_group_key, level2_group_key, updated_by)
-      values (${tid}::uuid, ${s.threshold}::bigint, ${s.level1GroupKey}, ${s.level2GroupKey}, ${actor}::uuid)
-      on conflict (tenant_id) do update set threshold = excluded.threshold,
-        level1_group_key = excluded.level1_group_key, level2_group_key = excluded.level2_group_key,
-        updated_by = excluded.updated_by, updated_at = now()
-      returning threshold, level1_group_key as l1, level2_group_key as l2`);
+    const [r] = await tx.execute<SettingsRow>(sql`with old as (
+        select jsonb_build_object('threshold', threshold, 'level1_group_key', level1_group_key,
+          'level2_group_key', level2_group_key) as v
+        from contracts.approval_settings where tenant_id = ${tid}::uuid),
+      up as (insert into contracts.approval_settings
+          (tenant_id, threshold, level1_group_key, level2_group_key, updated_by)
+        values (${tid}::uuid, ${s.threshold}::bigint, ${s.level1GroupKey}, ${s.level2GroupKey}, ${actor}::uuid)
+        on conflict (tenant_id) do update set threshold = excluded.threshold,
+          level1_group_key = excluded.level1_group_key, level2_group_key = excluded.level2_group_key,
+          updated_by = excluded.updated_by, updated_at = now()
+        returning threshold, level1_group_key as l1, level2_group_key as l2),
+      au as (insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+        select ${tid}::uuid, ${actor}::uuid, coalesce((select v from old), ${DEFAULTS_JSON}::jsonb),
+          jsonb_build_object('threshold', up.threshold, 'level1_group_key', up.l1, 'level2_group_key', up.l2)
+        from up)
+      select threshold, l1, l2 from up`);
     return toSettings(r);
   };
 }
-
 export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
   return {
     runOf: runOfQ(tx, tenantId),
     attachRun: attachQ(tx, tenantId),
     beginExtract: beginQ(tx, tenantId),
+    markExtracting: markQ(tx, tenantId),
     valueOf: valueQ(tx, tenantId),
     finalize: finalizeQ(tx, tenantId),
     markRejected: rejectQ(tx, tenantId),
@@ -147,22 +179,31 @@ export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
 /** Vòng quét (scope system của tenant). `contracts_status_idx (tenant_id, status)` phục vụ cả hai nhánh. */
 export function sweepRepo(tx: Tx, tid: string): SweepRepo {
   return {
-    async inFlow(staleMinutes, limit) {
+    async inFlow(staleMinutes, limit, after) {
       const rows = await tx.execute<{
         id: string;
         run_id: string | null;
         status: string;
         stale: boolean;
+        updated_at: string | Date;
       }>(sql`
-        select id, run_id, status, (run_id is null and status = 'extracting'
+        select id, run_id, status, updated_at, (run_id is null and status = 'extracting'
           and updated_at < now() - make_interval(mins => ${staleMinutes}::int)) as stale
         from contracts.contracts
         where tenant_id = ${tid}::uuid and status in ${OPEN}
           and (run_id is not null or (status = 'extracting'
             and updated_at < now() - make_interval(mins => ${staleMinutes}::int)))
-        order by updated_at limit ${limit}::int`);
+          and (${after?.at ?? null}::timestamptz is null
+            or (updated_at, id) > (${after?.at ?? null}::timestamptz, ${after?.id ?? null}::uuid))
+        order by updated_at, id limit ${limit}::int`);
       return rows.map(
-        (r): FlowRow => ({ id: r.id, runId: r.run_id, status: r.status, stale: r.stale }),
+        (r): FlowRow => ({
+          id: r.id,
+          runId: r.run_id,
+          status: r.status,
+          stale: r.stale,
+          updatedAt: new Date(r.updated_at).toISOString(),
+        }),
       );
     },
     async close(rows) {
@@ -171,17 +212,17 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
           select * from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
             as x (id uuid, "runId" uuid, action text, feedback text)),
         u as (update contracts.contracts c set
-            status = case when x.action = 'stale' then 'extract_failed' else 'rejected' end,
-            error = case when x.action = 'stale' then 'STALE' else c.error end,
+            status = case when x.action in ('stale', 'failed') then 'extract_failed' else 'rejected' end,
+            error = case x.action when 'stale' then 'STALE' when 'failed' then 'FLOW_FAILED' else c.error end,
             version = c.version + 1, updated_at = now()
           from x where c.id = x.id and c.tenant_id = ${tid}::uuid
             and c.run_id is not distinct from x."runId"
             and (case when x.action = 'stale' then c.status = 'extracting' else c.status in ${OPEN} end)
           returning c.id, x.action, x.feedback, x."runId"),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
-          select ${tid}::uuid, u.id, case when u.action = 'stale' then 'extract_failed' else u.action end,
+          select ${tid}::uuid, u.id, case when u.action in ('stale', 'failed') then 'extract_failed' else u.action end,
             jsonb_build_object('run_id', u."runId"::text, 'feedback', u.feedback,
-              'code', case when u.action = 'stale' then 'STALE' end) from u)
+              'code', case u.action when 'stale' then 'STALE' when 'failed' then 'FLOW_FAILED' end) from u)
         select id from u`);
       return out.length;
     },

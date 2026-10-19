@@ -19,7 +19,7 @@ import { getFacets } from "./application/get-facets.usecase";
 import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
-import { patchFields } from "./application/patch-fields.usecase";
+import { type PatchApprovalGuard, patchFields } from "./application/patch-fields.usecase";
 import { uploadDay } from "./domain/upload.rules";
 
 export { CONTRACTS_KEY };
@@ -30,6 +30,8 @@ export function contractsModule(
   filebox: ((org: string) => Pick<PackFileboxClient, "getLink">) | null = null,
   /** Múi giờ tenant (HD4-FR-02: ngày lịch của tenant); vắng ⇒ múi mặc định. `now` để test tiêm. */
   clock: { timeZoneOf?: (tenantId: string) => Promise<string>; now?: () => Date } = {},
+  /** HD3 · review S1: seam duyệt cho PATCH trường (giai đoạn run + mở lại duyệt); vắng ⇒ hành vi HD1. */
+  guard?: PatchApprovalGuard,
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, CONTRACTS_KEY, contractsRepos));
   const link = filebox ? (org: string, fileId: string) => filebox(org).getLink(fileId) : null;
@@ -39,7 +41,7 @@ export function contractsModule(
     detail: getContract({ uow }),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
-    patchFields: patchFields({ uow }),
+    patchFields: patchFields({ uow, ...(guard ? { approval: guard } : {}) }),
   });
   r.route(
     "/",

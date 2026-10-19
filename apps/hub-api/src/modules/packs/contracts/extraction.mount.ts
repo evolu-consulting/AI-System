@@ -21,6 +21,7 @@ import { createExtractionVerifier } from "./adapters/extraction-verifier";
 import {
   actApproval,
   getApproval,
+  patchGuard,
   readApprovalSettings,
   saveApprovalSettings,
   startApproval,
@@ -34,6 +35,7 @@ import {
 import { createManual } from "./application/create-manual.usecase";
 import type { ExtractionAgent, TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
+import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
@@ -59,6 +61,8 @@ export type ContractsAi = {
   starter: ExtractionStarter;
   routes: Hono<PackGuardVars>;
   approval: Hono<PackGuardVars>;
+  /** Review S1 · seam cho PATCH trường (HD1): giai đoạn run + mở lại duyệt. */
+  guard: PatchApprovalGuard;
 };
 export type ContractsFlowDeps = {
   bridge: PackRunsBridge;
@@ -143,7 +147,7 @@ export function contractsAiModule(
     saveSettings: saveApprovalSettings(ad),
     quota: flow.quota,
   });
-  return { starter, routes, approval };
+  return { starter, routes, approval, guard: patchGuard(ad) };
 }
 
 /** Vòng quét flow (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */

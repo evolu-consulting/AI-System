@@ -63,6 +63,8 @@ export type PackRunsPort = {
   outcomesOf(tenantIds: readonly string[], runIds: readonly string[]): Promise<PackRunOutcomeSys[]>;
   /** HD3 · người Đạt task duyệt gần nhất của run (ghi `confirmed_by`); không có ⇒ null. */
   lastApprover(tenantId: string, runId: string): Promise<string | null>;
+  /** Review HD3 S1 · khoá stage có task duyệt kết quả Đạt (`pass`) của run — `contracts-finalize` đọc lại trước khi ghi. */
+  passedStages(tenantId: string, runId: string): Promise<string[]>;
   /** HD3 · D3-12 · id Group (`admin.groups`) của tenant theo khoá; khoá không có ⇒ vắng trong map. */
   groupIdsOf(tenantId: string, keys: readonly string[]): Promise<Map<string, string>>;
   /** Mở run (kiểm def bật + Group chạy + trần + inputs) và COMMIT nhưng CHƯA kick; người gọi `kick()` sau khi gắn run. */
