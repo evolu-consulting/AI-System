@@ -34,7 +34,12 @@ function liveCertsQ(tx: Tx, t: string): CksRepo["liveCerts"] {
       anc as (select ch.root, sum(o.n)::int as n from chain ch join own o on o.cert = ch.cur group by ch.root),
       -- Mỗi HĐ bán đọc fields MỘT lần (không giải nén jsonb theo từng chữ ký).
       k as materialized (
-        select k.id, k.number, coalesce(k.fields -> 'signed_date' ->> 'value', k.fields -> 'start_date' ->> 'value') as signed
+        select k.id, k.number, coalesce(k.fields -> 'signed_date' ->> 'value', k.fields -> 'start_date' ->> 'value') as signed,
+          -- HD7-FR-11 (overview.py:39): có đợt (trừ bị thay) và mọi đợt đã xong.
+          (exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = k.id
+              and o.status <> 'replaced')
+            and not exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = k.id
+              and o.status not in ('done', 'replaced'))) as paid
         from contracts.contracts k
         where k.tenant_id = ${t}::uuid and k.id in (select c.sale_contract_id from contracts.cks_certificates c
           where c.tenant_id = ${t}::uuid and c.status in ('active', 'pending_renewal')
@@ -43,7 +48,7 @@ function liveCertsQ(tx: Tx, t: string): CksRepo["liveCerts"] {
         c.holder_title, c.keeper, c.valid_from::text, c.valid_to::text, c.source, c.lot_id::text,
         c.sale_contract_id::text, c.sale_price::text, c.status, coalesce(o.n, 0) + coalesce(a.n, 0) as signed_count,
         k.number as sale_number,
-        k.signed as sale_signed_at, r.id::text as renewal_id
+        k.signed as sale_signed_at, coalesce(k.paid, false) as sale_paid, r.id::text as renewal_id
       from contracts.cks_certificates c
       join contracts.cks_customers cu on cu.id = c.customer_id and cu.tenant_id = ${t}::uuid
       left join k on k.id = c.sale_contract_id

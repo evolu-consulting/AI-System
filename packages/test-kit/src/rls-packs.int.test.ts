@@ -190,6 +190,55 @@ const cksTables: RlsTable[] = [
   },
 ];
 
+/** HD7-NFR-01 · sổ thanh toán (migration gói 0008): đợt, sổ đối tác (chỉ thêm), bảng huỷ (FK kép sang sổ). */
+const ledgerTables: RlsTable[] = [
+  {
+    name: "obligations",
+    seed: (o, t) =>
+      one(
+        o,
+        `insert into contracts.obligations (tenant_id, contract_id, direction, seq, due_date) values ($1, $2, 'pay', 1, '2026-10-01')`,
+        [t, crypto.randomUUID()],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into contracts.obligations (id, tenant_id, contract_id, direction, seq, due_date) values ($1, $2, $3, 'pay', 1, '2026-10-01')`,
+        [rnd(pk), t, crypto.randomUUID()],
+      ),
+  },
+  {
+    name: "partner_events",
+    seed: (o, t) =>
+      one(
+        o,
+        `insert into contracts.partner_events (tenant_id, party_key, role, type, at, source) values ($1, 'tax:1', 'customer', 'complaint', '2026-10-01', 'action')`,
+        [t],
+      ),
+    insert: (tx, t) =>
+      tx.unsafe(
+        `insert into contracts.partner_events (tenant_id, party_key, role, type, at, source) values ($1, 'tax:1', 'customer', 'complaint', '2026-10-01', 'action')`,
+        [t],
+      ),
+  },
+  {
+    name: "partner_event_voids",
+    pk: "event_id",
+    seed: async (o, t) => {
+      const ev = await parent(o, "contracts.partner_events", t);
+      const rows = (await o.unsafe(
+        "insert into contracts.partner_event_voids (event_id, tenant_id) values ($1, $2) returning event_id::text as id",
+        [ev, t],
+      )) as unknown as { id: string }[];
+      return rows[0]?.id as string;
+    },
+    insert: (tx, t, pk) =>
+      tx.unsafe("insert into contracts.partner_event_voids (event_id, tenant_id) values ($1, $2)", [
+        pk ?? "999999999",
+        t,
+      ]),
+  },
+];
+
 defineRlsSuite({
   key: "pkdemo",
   tenants,
@@ -232,7 +281,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit",
+      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit",
     );
   },
   tables: [
@@ -333,6 +382,7 @@ defineRlsSuite({
         ),
     },
     ...cksTables,
+    ...ledgerTables,
     // Review HD3 M1 · nhật ký đổi luật duyệt (migration gói 0006, append-only).
     {
       name: "approval_settings_audit",

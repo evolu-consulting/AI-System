@@ -69,6 +69,8 @@ export type ContractWrite = {
   direction: "purchase" | "sale";
   fields: unknown;
   item: { name: string; unit: string; qty: number; unit_price: number };
+  /** HD7-FR-11: hạn đợt thanh toán của HĐ (vắng ⇒ ngày ký); tiền đợt = qty × unit_price ở SQL. */
+  due?: string;
 };
 export type AuditWrite = {
   entity: "lot" | "sale" | "renewal" | "certificate";

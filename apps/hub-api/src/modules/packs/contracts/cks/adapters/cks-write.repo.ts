@@ -18,7 +18,19 @@ function contractCtes(t: string, c: ContractWrite): SQL {
       insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by, fields)
       values (${c.id}::uuid, ${t}::uuid, 'contract', ${c.title}, ${c.direction}, 'active', ${BY}, ${BY},
         ${json(c.fields)})
-      returning id),
+      returning id, direction, fields),
+    ko as (
+      -- HD7-FR-11 (sales.py:58, lots.py:33, sales.py:102): một đợt = số chữ ký × giá (NUMERIC, > 10¹⁵ ⇒ null), hạn = ngày ký
+      -- hoặc due (gia hạn: hôm nay + 15); đối tác như obligations.counterparty.
+      insert into contracts.obligations (tenant_id, contract_id, party_key, direction, seq, due_date, amount, source)
+      select ${t}::uuid, k.id, contracts.party_key(
+          k.fields -> (case when k.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value',
+          k.fields -> (case when k.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value'),
+        case when k.direction = 'sale' then 'receive' else 'pay' end, 1, x.due,
+        case when x.amt between 0 and 1000000000000000 then x.amt::bigint end, 'cks'
+      from k, lateral (select coalesce(${c.due ?? null}::date, contracts.as_date(k.fields -> 'signed_date' ->> 'value')) as due,
+        ${c.item.qty}::numeric * ${c.item.unit_price}::numeric as amt) x
+      where x.due is not null),
     ki as (
       insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited)
       select ${t}::uuid, k.id, 0, ${c.item.name}, ${c.item.unit}, ${c.item.qty}::numeric, ${c.item.unit_price}::bigint,
@@ -81,7 +93,7 @@ export function cksWriteRepo(tx: Tx, t: string) {
         insert into contracts.cks_customers (id, tenant_id, name, tax_id)
         select ${cu.id}::uuid, ${t}::uuid, ${cu.name}, ${cu.tax_id}::text where ${cu.isNew}::boolean
         returning id),
-      ${w.contract ? contractCtes(t, w.contract) : sql`k as (select null::uuid as id), ki as (select 1), ke as (select 1)`},
+      ${w.contract ? contractCtes(t, w.contract) : sql`k as (select null::uuid as id), ko as (select 1), ki as (select 1), ke as (select 1)`},
       ce as (
         insert into contracts.cks_certificates (id, tenant_id, customer_id, serial, serial_key, ca, device, holder_name,
           holder_title, keeper, valid_from, valid_to, source, lot_id, sale_contract_id, sale_price, status, created_by)
@@ -195,6 +207,10 @@ function closeWrites(tx: Tx, t: string) {
           handled = jsonb_build_object('outcome', 'not_renewed', 'by', ${BY}::text, 'at', ${w.today}::text,
             'note', ${w.reason}::text)
         from r where k.tenant_id = ${t}::uuid and k.id = r.new_contract_id),
+      ko as (
+        -- HD7-FR-11 (sales.py:146-148): mất khách ⇒ đợt chưa xong của HĐ gia hạn không còn ai nợ (cancelled).
+        update contracts.obligations o set status = 'cancelled', updated_at = now()
+        from r where o.tenant_id = ${t}::uuid and o.contract_id = r.new_contract_id and o.status = 'open'),
       fu as (
         update contracts.cks_followups f set done_at = now()
         from r where f.tenant_id = ${t}::uuid and f.renewal_id = r.id and f.done_at is null)

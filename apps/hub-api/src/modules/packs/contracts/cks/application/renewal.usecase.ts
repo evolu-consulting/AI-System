@@ -1,6 +1,7 @@
 // HD-FR-94 · BR-2 · BR-7 · BR-8 · D9-09 · D9-18: gia hạn cả nhóm, hoàn tất bằng serial mới, mất khách, hẹn nhắc — port
 // `mgmt-app/api/app/cks/sales.py:87-151` + `routes/cks.py:180-243`. Mỗi lệnh MỘT tx: khoá → kiểm → luật → MỘT câu ghi.
 import type { PackWho } from "../../../kit/application/ports";
+import { addDays } from "../../domain/local-time.rules";
 import {
   hasDuplicate,
   nextSaleNumber,
@@ -13,6 +14,8 @@ import type { CksClock, CksUow, RenewalOut } from "./ports";
 import { CksFail } from "./read.usecase";
 
 type Deps = { uow: CksUow; clock: CksClock };
+/** HD7-FR-11: đợt thu của HĐ gia hạn hạn sau 15 ngày (`sales.py:102`). */
+const RENEWAL_PAY_DAYS = 15;
 export type RenewInput = { price_each: number | null; years: number; remind_at: string | null };
 
 /** "2026-10-21T14:30" | "2026-10-21" (⇒ 09:00) — giờ địa phương của tenant. */
@@ -53,6 +56,7 @@ export function cksRenewals(d: Deps) {
           signed_at: today,
           valid_to: validTo,
         }),
+        due: addDays(today, RENEWAL_PAY_DAYS), // HD7-FR-11 · sales.py:102
       };
       const renewal = {
         id: d.clock.newId(),

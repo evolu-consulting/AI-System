@@ -22,6 +22,8 @@ export type CertRow = {
   signed_count: number;
   sale_number: string | null;
   sale_signed_at: string | null;
+  /** HD7-FR-11: nhóm bán đã thu đủ (mọi đợt xong). */
+  sale_paid?: boolean;
   renewal_id: string | null;
 };
 
@@ -52,7 +54,7 @@ function saleGroup(id: string, group: readonly CertRow[]) {
     count: group.length,
     price_each: price,
     total: price === null ? null : price * group.length,
-    paid: false, // D9-08: công nợ là HD7
+    paid: first.sale_paid === true, // HD7-FR-11 thay D9-08
     valid_to: group.reduce((m, c) => (c.valid_to < m ? c.valid_to : m), first.valid_to),
     renewal: first.renewal_id ? { id: first.renewal_id, status: "open" as const } : null,
   };

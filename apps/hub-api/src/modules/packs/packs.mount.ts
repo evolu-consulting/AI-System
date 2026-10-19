@@ -18,6 +18,7 @@ import type { ExtractionStarter } from "./contracts/application/upload-contract.
 import { cksModule } from "./contracts/cks/cks.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
+import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
@@ -40,6 +41,8 @@ export type PacksDeps = {
   contractsAi?: ContractsAiDeps;
   /** HD4 · vòng nhắc hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_REMIND` ≠ off. */
   contractsRemind?: ContractsRemindDeps;
+  /** HD7 · vòng quá hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_OVERDUE` ≠ off. */
+  contractsOverdue?: ContractsOverdueDeps;
 };
 
 export type PacksMountDeps = {
@@ -129,6 +132,25 @@ function mountContracts<E extends Env>(
   if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
+  app.route(base, contractsLedger(d, view, db)); // HD7
+}
+
+/** HD7 · sổ thanh toán + vòng quá hạn (tenant có quyền gói — cache, 0 SQL; múi tenant từ `ConfigCache`). */
+function contractsLedger(d: PacksMountDeps, view: PackAccessView, db: Db) {
+  const o = d.packs?.contractsOverdue ?? {};
+  const env = d.appEnv ?? process.env.APP_ENV;
+  const worker =
+    o.worker ??
+    ((env === "development" || env === "production") && process.env.CONTRACTS_OVERDUE !== "off");
+  const every = Number(process.env.CONTRACTS_OVERDUE_EVERY_MS);
+  return ledgerModule(db, view, {
+    ...(Number.isInteger(every) && every >= 1000 ? { everyMs: every } : {}),
+    ...o,
+    worker,
+    timeZoneOf: tenantTz(d),
+    tenants: () => packTenants(view, CONTRACTS_KEY),
+    ...(d.signal ? { signal: d.signal } : {}),
+  });
 }
 
 /** BR-6 (HD9) · múi giờ tenant từ `ConfigCache` (0 SQL khi nóng), vắng ⇒ mặc định. */
