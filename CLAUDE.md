@@ -32,6 +32,11 @@ Trước khi viết code cho một feature hoặc thay đổi không tầm thư�
 
 Bỏ qua Luật 1 chỉ khi: sửa chính tả/câu chữ, cấu hình nhỏ, hoặc người dùng nói rõ "bỏ qua kiểm tra".
 
+## Luật 1b — Hai làn theo rủi ro (người dùng chốt 2026-10-19, áp từ đợt 2 CR-094)
+- **Làn đầy đủ** (Luật 1 + Gate + qc test trước + review/security 2 vòng) **chỉ** cho lát/phần chạm: RLS/tenant, quyền, auth/secrets, tiền (sổ thanh toán, giá), migration dữ liệu khách thật, đường nóng có ngưỡng perf.
+- **Làn nhanh** cho lát màn hình / rủi ro thường (UI, mapper, báo cáo, nhãn): **một** agent viết plan ngắn (≤ 1 trang, trong `tasks.md` của lát) + code + test cùng task (unit/int/e2e theo Luật 4b, Luật 4c vẫn áp) → **một** vòng review. Không readiness riêng, không Gate, không qc viết trước (qc chỉ ghi lock khi có test mới dưới `tests/**`/`e2e/**`).
+- Lát lẫn hai loại ⇒ tách phần rủi ro cao ra làn đầy đủ, phần còn lại làn nhanh. Phân làn ghi ở `tasks.md` (cột Làn); phân vân ⇒ làn đầy đủ.
+
 ## Luật 2 — Sau Gate thì tự làm hết, không hỏi lại
 Gặp chỗ mơ hồ, tra theo thứ tự và dừng ở nguồn đầu tiên có câu trả lời:
 spec → BA/UI (`docs/design/`) → ADR → `CONVENTIONS.md` → code hiện có (bắt chước) → phương án đơn giản nhất, dễ đổi nhất.

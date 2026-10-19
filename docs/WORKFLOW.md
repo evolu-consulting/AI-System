@@ -81,6 +81,16 @@ Phiên chính (Claude) là **điều phối**: gọi agent theo thứ tự, gom 
 
 Mọi yêu cầu/thay đổi mới (đầu phiên hay giữa phiên) đi qua **Intake** trước (Luật 0 trong `CLAUDE.md`, skill `/intake`): hỏi người dùng → intake-analyst → người dùng chốt → docs-architect cập nhật + `CHANGE-REQUESTS.md` → spec-readiness. Spec đã qua Gate bị ảnh hưởng → Gate lại.
 
+## Hai làn (CLAUDE.md Luật 1b, người dùng 2026-10-19)
+
+Vòng dưới đây là **làn đầy đủ** — chỉ cho RLS/tenant, quyền, auth/secrets, tiền, migration dữ liệu khách thật, đường nóng có ngưỡng perf. **Làn nhanh** (màn hình, mapper, báo cáo, rủi ro thường):
+```
+1. một agent (frontend-lead/backend-lead, Sonnet)  plan ngắn trong tasks.md + code + test cùng task (Luật 4b, 4c)
+2. reviewer (Sonnet)                               một vòng; Blocker/Major ⇒ cùng agent sửa, reviewer chỉ đọc diff sửa
+3. qc (Haiku)                                      ghi tests/.lock nếu có test mới dưới tests/** hoặc e2e/**
+```
+Lát lẫn hai loại ⇒ tách. Phân vân ⇒ làn đầy đủ. Cổng đóng (`done:*`, `test:all`) vẫn chạy cho cả hai làn.
+
 ## Vòng một mốc
 
 ```
