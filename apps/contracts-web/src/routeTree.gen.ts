@@ -12,7 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthedContractsRouteImport } from './routes/_authed/contracts'
+import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
+import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
+import { Route as AuthedPricesRouteImport } from './routes/_authed/prices'
+import { Route as AuthedCksIndexRouteImport } from './routes/_authed/cks/index'
+import { Route as AuthedCksIdRouteImport } from './routes/_authed/cks/$id'
+import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contracts/index'
+import { Route as AuthedContractsIdRouteImport } from './routes/_authed/contracts/$id'
+import { Route as AuthedContractsNewRouteImport } from './routes/_authed/contracts/new'
+import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedSettingsScoringRouteImport } from './routes/_authed/settings/scoring'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +37,145 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedContractsRoute = AuthedContractsRouteImport.update({
-  id: '/contracts',
-  path: '/contracts',
+const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPricesRoute = AuthedPricesRouteImport.update({
+  id: '/prices',
+  path: '/prices',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCksIndexRoute = AuthedCksIndexRouteImport.update({
+  id: '/cks/',
+  path: '/cks/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCksIdRoute = AuthedCksIdRouteImport.update({
+  id: '/cks/$id',
+  path: '/cks/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedContractsIndexRoute = AuthedContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedContractsIdRoute = AuthedContractsIdRouteImport.update({
+  id: '/contracts/$id',
+  path: '/contracts/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedContractsNewRoute = AuthedContractsNewRouteImport.update({
+  id: '/contracts/new',
+  path: '/contracts/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSettingsScoringRoute = AuthedSettingsScoringRouteImport.update({
+  id: '/settings/scoring',
+  path: '/settings/scoring',
   getParentRoute: () => AuthedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/contracts': typeof AuthedContractsRoute
+  '/feedback': typeof AuthedFeedbackRoute
+  '/partners': typeof AuthedPartnersRoute
+  '/prices': typeof AuthedPricesRoute
+  '/cks/$id': typeof AuthedCksIdRoute
+  '/contracts/$id': typeof AuthedContractsIdRoute
+  '/contracts/new': typeof AuthedContractsNewRoute
+  '/settings/scoring': typeof AuthedSettingsScoringRoute
+  '/cks/': typeof AuthedCksIndexRoute
+  '/contracts/': typeof AuthedContractsIndexRoute
+  '/settings/': typeof AuthedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/contracts': typeof AuthedContractsRoute
+  '/feedback': typeof AuthedFeedbackRoute
+  '/partners': typeof AuthedPartnersRoute
+  '/prices': typeof AuthedPricesRoute
+  '/cks/$id': typeof AuthedCksIdRoute
+  '/contracts/$id': typeof AuthedContractsIdRoute
+  '/contracts/new': typeof AuthedContractsNewRoute
+  '/settings/scoring': typeof AuthedSettingsScoringRoute
+  '/cks': typeof AuthedCksIndexRoute
+  '/contracts': typeof AuthedContractsIndexRoute
+  '/settings': typeof AuthedSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authed/contracts': typeof AuthedContractsRoute
+  '/_authed/feedback': typeof AuthedFeedbackRoute
+  '/_authed/partners': typeof AuthedPartnersRoute
+  '/_authed/prices': typeof AuthedPricesRoute
+  '/_authed/cks/$id': typeof AuthedCksIdRoute
+  '/_authed/contracts/$id': typeof AuthedContractsIdRoute
+  '/_authed/contracts/new': typeof AuthedContractsNewRoute
+  '/_authed/settings/scoring': typeof AuthedSettingsScoringRoute
+  '/_authed/cks/': typeof AuthedCksIndexRoute
+  '/_authed/contracts/': typeof AuthedContractsIndexRoute
+  '/_authed/settings/': typeof AuthedSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/contracts'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/feedback'
+    | '/partners'
+    | '/prices'
+    | '/cks/$id'
+    | '/contracts/$id'
+    | '/contracts/new'
+    | '/settings/scoring'
+    | '/cks/'
+    | '/contracts/'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/contracts'
-  id: '__root__' | '/' | '/_authed' | '/login' | '/_authed/contracts'
+  to:
+    | '/'
+    | '/login'
+    | '/feedback'
+    | '/partners'
+    | '/prices'
+    | '/cks/$id'
+    | '/contracts/$id'
+    | '/contracts/new'
+    | '/settings/scoring'
+    | '/cks'
+    | '/contracts'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authed'
+    | '/login'
+    | '/_authed/feedback'
+    | '/_authed/partners'
+    | '/_authed/prices'
+    | '/_authed/cks/$id'
+    | '/_authed/contracts/$id'
+    | '/_authed/contracts/new'
+    | '/_authed/settings/scoring'
+    | '/_authed/cks/'
+    | '/_authed/contracts/'
+    | '/_authed/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -88,22 +207,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/contracts': {
-      id: '/_authed/contracts'
+    '/_authed/feedback': {
+      id: '/_authed/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof AuthedFeedbackRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/partners': {
+      id: '/_authed/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthedPartnersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/prices': {
+      id: '/_authed/prices'
+      path: '/prices'
+      fullPath: '/prices'
+      preLoaderRoute: typeof AuthedPricesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/cks/': {
+      id: '/_authed/cks/'
+      path: '/cks'
+      fullPath: '/cks/'
+      preLoaderRoute: typeof AuthedCksIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/cks/$id': {
+      id: '/_authed/cks/$id'
+      path: '/cks/$id'
+      fullPath: '/cks/$id'
+      preLoaderRoute: typeof AuthedCksIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/contracts/': {
+      id: '/_authed/contracts/'
       path: '/contracts'
-      fullPath: '/contracts'
-      preLoaderRoute: typeof AuthedContractsRouteImport
+      fullPath: '/contracts/'
+      preLoaderRoute: typeof AuthedContractsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/contracts/$id': {
+      id: '/_authed/contracts/$id'
+      path: '/contracts/$id'
+      fullPath: '/contracts/$id'
+      preLoaderRoute: typeof AuthedContractsIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/contracts/new': {
+      id: '/_authed/contracts/new'
+      path: '/contracts/new'
+      fullPath: '/contracts/new'
+      preLoaderRoute: typeof AuthedContractsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/': {
+      id: '/_authed/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthedSettingsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/scoring': {
+      id: '/_authed/settings/scoring'
+      path: '/settings/scoring'
+      fullPath: '/settings/scoring'
+      preLoaderRoute: typeof AuthedSettingsScoringRouteImport
       parentRoute: typeof AuthedRoute
     }
   }
 }
 
 interface AuthedRouteChildren {
-  AuthedContractsRoute: typeof AuthedContractsRoute
+  AuthedFeedbackRoute: typeof AuthedFeedbackRoute
+  AuthedPartnersRoute: typeof AuthedPartnersRoute
+  AuthedPricesRoute: typeof AuthedPricesRoute
+  AuthedCksIdRoute: typeof AuthedCksIdRoute
+  AuthedContractsIdRoute: typeof AuthedContractsIdRoute
+  AuthedContractsNewRoute: typeof AuthedContractsNewRoute
+  AuthedSettingsScoringRoute: typeof AuthedSettingsScoringRoute
+  AuthedCksIndexRoute: typeof AuthedCksIndexRoute
+  AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
+  AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedContractsRoute: AuthedContractsRoute,
+  AuthedFeedbackRoute: AuthedFeedbackRoute,
+  AuthedPartnersRoute: AuthedPartnersRoute,
+  AuthedPricesRoute: AuthedPricesRoute,
+  AuthedCksIdRoute: AuthedCksIdRoute,
+  AuthedContractsIdRoute: AuthedContractsIdRoute,
+  AuthedContractsNewRoute: AuthedContractsNewRoute,
+  AuthedSettingsScoringRoute: AuthedSettingsScoringRoute,
+  AuthedCksIndexRoute: AuthedCksIndexRoute,
+  AuthedContractsIndexRoute: AuthedContractsIndexRoute,
+  AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
 }
 
 const AuthedRouteWithChildren =

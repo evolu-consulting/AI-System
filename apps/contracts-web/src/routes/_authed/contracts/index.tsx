@@ -11,4 +11,4 @@ function ContractsRoute() {
   );
 }
 
-export const Route = createFileRoute("/_authed/contracts")({ component: ContractsRoute });
+export const Route = createFileRoute("/_authed/contracts/")({ component: ContractsRoute });
