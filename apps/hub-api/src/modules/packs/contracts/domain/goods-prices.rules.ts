@@ -8,6 +8,12 @@ import {
 } from "./appendix-pricing.rules";
 import type { Role } from "./scoring-config.rules";
 
+function pushTo<K, V>(m: Map<K, V[]>, key: K, v: V): void {
+  const a = m.get(key);
+  if (a) a.push(v);
+  else m.set(key, [v]);
+}
+
 /** Một HĐ đã duyệt (mọi loại) + dòng hàng; bên đối tác đã quy về HĐ gốc khi là phụ lục (`coalesce(ps, s)` của mgmt). */
 export type PricedContract = {
   id: string;
@@ -62,7 +68,7 @@ function families(contracts: readonly PricedContract[]): Map<string, PricedContr
   const groups = new Map<string, PricedContract[]>();
   for (const c of contracts) {
     const root = c.kind === "appendix" && c.parent ? c.parent : c.id;
-    groups.set(root, [...(groups.get(root) ?? []), c]);
+    pushTo(groups, root, c);
   }
   return groups;
 }
@@ -141,7 +147,7 @@ export function priceGaps(lines: readonly Line[], quotes: readonly Quote[]): Map
     if (by.size < 2 || low <= 0) continue;
     for (const [seller, price] of by) {
       const cid = companies.get(seller);
-      if (cid) gaps.set(cid, [...(gaps.get(cid) ?? []), (100 * (price - low)) / low]);
+      if (cid) pushTo(gaps, cid, (100 * (price - low)) / low);
     }
   }
   return new Map([...gaps].map(([cid, g]) => [cid, g.reduce((s, x) => s + x, 0) / g.length]));

@@ -75,7 +75,10 @@ export function ledgerRoutes(
 
   r.get("/payments", read, async (c) => {
     const q = parseQuery(c, PaymentsQuerySchema);
-    return c.json(await d.reads.payments(who(c), q.filter));
+    // Luật 4c: JSON của Postgres gửi thẳng (500 hàng: bỏ parse + stringify).
+    return c.body(await d.reads.paymentsText(who(c), q.filter), 200, {
+      "content-type": "application/json; charset=UTF-8",
+    });
   });
   r.get("/obligations", read, async (c) => {
     const q = parseQuery(c, ObligationsQuerySchema);

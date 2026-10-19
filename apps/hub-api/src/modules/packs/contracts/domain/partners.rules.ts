@@ -10,6 +10,18 @@ export type Cfg = { criteria: readonly Criterion[]; rules: Rules };
 /** Sự kiện sổ kèm khoá đối tác + vai + id (đọc thẳng `partner_events`, `voided` suy từ bảng huỷ). */
 export type PartyEv = Ev & { id: string; party: string; role: Role; note?: string | null };
 export type FactContract = PricedContract & { start: string | null };
+/**
+ * Sự thật HĐ đã gom ở SQL theo (vai, tên, MST) của bên đối tác (Luật 4c: một dòng mỗi nhóm thay vì mỗi HĐ), xếp theo HĐ tạo sớm
+ * nhất của nhóm. Nhiều nhóm có thể cùng một khoá đối tác (cùng MST, tên viết khác) ⇒ gộp ở `factsOf`.
+ */
+export type FactRow = {
+  role: Role;
+  name: string | null;
+  tax: string | null;
+  party: string | null;
+  n: number;
+  first_start: string | null;
+};
 type F = Required<Pick<Facts, "contracts">> & {
   first_start: string | null;
   name: string | null;
@@ -31,22 +43,35 @@ export type PartnerOut = {
 
 const k = (party: string, role: Role) => `${role}|${party}`;
 
-/** `_facts`: (đối tác, vai) → số HĐ, ngày bắt đầu sớm nhất, tên, % chênh giá (NCC). Chỉ HĐ loại `contract`. */
+/** Thêm vào mảng của khoá (không chép lại mảng ⇒ O(n)). */
+function pushTo<K, V>(m: Map<K, V[]>, key: K, v: V): void {
+  const a = m.get(key);
+  if (a) a.push(v);
+  else m.set(key, [v]);
+}
+
+/** `_facts`: (đối tác, vai) → số HĐ, ngày bắt đầu sớm nhất, tên (HĐ đầu), % chênh giá (NCC). Chỉ HĐ loại `contract`. */
 export function factsOf(
-  contracts: readonly FactContract[],
+  rows: readonly FactRow[],
   gaps: ReadonlyMap<string, number>,
 ): Map<string, F & { party: string; role: Role }> {
   const out = new Map<string, F & { party: string; role: Role }>();
-  for (const r of contracts) {
-    if (r.kind !== "contract" || !r.party) continue;
-    const role: Role = r.direction === "sale" ? "customer" : "supplier";
-    const key = k(r.party, role);
-    const f = out.get(key) ?? { party: r.party, role, contracts: 0, first_start: null, name: null };
-    f.contracts += 1;
-    if (r.start && (!f.first_start || r.start < f.first_start)) f.first_start = r.start;
-    f.name = f.name || r.party_name;
+  for (const r of rows) {
+    if (!r.party) continue;
+    const key = k(r.party, r.role);
+    const f = out.get(key) ?? {
+      party: r.party,
+      role: r.role,
+      contracts: 0,
+      first_start: null,
+      name: null,
+    };
+    f.contracts += r.n;
+    if (r.first_start && (!f.first_start || r.first_start < f.first_start))
+      f.first_start = r.first_start;
+    f.name = f.name || r.name;
     const gap = gaps.get(r.party);
-    if (role === "supplier" && gap !== undefined) f.price_gap_pct = gap;
+    if (r.role === "supplier" && gap !== undefined) f.price_gap_pct = gap;
     out.set(key, f);
   }
   return out;
@@ -56,7 +81,7 @@ export function groupEvents(events: readonly PartyEv[]): Map<string, PartyEv[]> 
   const by = new Map<string, PartyEv[]>();
   for (const e of events) {
     const key = k(e.party, e.role);
-    by.set(key, [...(by.get(key) ?? []), e]);
+    pushTo(by, key, e);
   }
   return by;
 }
@@ -72,7 +97,7 @@ export function partnersOf(i: {
 }): PartnerOut[] {
   const facts = [...i.facts.values()].filter((f) => i.visible(f.party));
   const rolesOf = new Map<string, Role[]>();
-  for (const f of facts) rolesOf.set(f.party, [...(rolesOf.get(f.party) ?? []), f.role]);
+  for (const f of facts) pushTo(rolesOf, f.party, f.role);
   const rows: PartnerOut[] = [];
   for (const f of facts) {
     if (i.role && f.role !== i.role) continue;

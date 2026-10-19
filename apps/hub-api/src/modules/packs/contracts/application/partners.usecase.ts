@@ -1,6 +1,6 @@
 // HD8-FR-01…06 · HD8-NFR-01 · port `mgmt-app/api/app/routes/{scoring,prices}.py` + `scoring/service.py`: đối tác, điểm uy tín
 // (tính khi đọc, không lưu sẵn), cấu hình + xem trước + lịch sử, chấm tay, so giá hàng hoá + báo giá. Mỗi yêu cầu đọc: MỘT tx người
-// dùng, 2 câu (`data` + `visible`) ⇒ số câu cố định, không theo số hàng. D8-04: sổ đối tác không có policy M1 ⇒ điểm trên CẢ sổ như
+// dùng, MỘT câu (`data`) ⇒ số câu cố định, không theo số hàng. D8-04: sổ đối tác không có policy M1 ⇒ điểm trên CẢ sổ như
 // mgmt; sự thật từ HĐ (số HĐ, gắn bó, chênh giá) chỉ từ HĐ người dùng thấy (owner thấy hết) — không dùng phạm vi hệ thống trong HTTP.
 import type { QuoteCreate, RatingRequest, ScoringDraft } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
@@ -37,7 +37,6 @@ export class PartnersFail extends Error {
 }
 
 type Repos = { partners: PartnersRepo };
-type Visible = Awaited<ReturnType<PartnersRepo["visible"]>>;
 export type PartnersDeps = {
   uow: PackUow<Repos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
@@ -66,15 +65,11 @@ export function partnersUsecase(d: PartnersDeps) {
   /** Mọi thứ cần để chấm (cả tenant) + tập người dùng thấy. */
   async function load(who: PackWho) {
     const day = await today(who);
-    const [data, vis] = await d.uow.tenant(
-      who,
-      async (r): Promise<[PartnerData, Visible]> => [
-        await r.partners.data(),
-        await r.partners.visible(),
-      ],
-    );
+    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data());
     const lines = priceLines(data.contracts, day);
-    const facts = factsOf(data.contracts, priceGaps(lines, data.quotes));
+    const facts = factsOf(data.facts, priceGaps(lines, data.quotes));
+    // M1 `view.company`: đối tác có HĐ đã duyệt người dùng thấy (data() đã chạy dưới RLS của người dùng).
+    const vis = { parties: new Set([...facts.values()].map((f) => f.party)) };
     const stored = new Map(data.configs.map((c) => [c.role, c]));
     const cfgs = {
       customer: cfgOf(stored.get("customer"), "customer"),
@@ -90,7 +85,7 @@ export function partnersUsecase(d: PartnersDeps) {
         role,
         visible: all ? () => true : (p) => vis.parties.has(p),
       });
-    const seenLines = lines.filter((l) => vis.ids.has(l.contract_id));
+    const seenLines = lines;
     return { day, data, vis, cfgs, events, partners, seenLines };
   }
 

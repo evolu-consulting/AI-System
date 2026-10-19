@@ -47,7 +47,8 @@ function openPage(t: string, filter: string, today: string): SQL {
     select jsonb_build_object('stats', (${statsQ(t, today)}),
       'total', (select count(*) from contracts.obligations o where ${where}),
       'rows', coalesce((select jsonb_agg(${boardRow(today)} order by r.due_date, r.id)
-        from r left join contracts.contracts c on c.tenant_id = r.tenant_id and c.id = r.contract_id), '[]'::jsonb)) as j`;
+        from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
+          where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true), '[]'::jsonb)) as j`;
 }
 
 function donePage(t: string, today: string): SQL {
@@ -58,13 +59,19 @@ function donePage(t: string, today: string): SQL {
     select jsonb_build_object('stats', (${statsQ(t, today)}),
       'total', (select count(*) from contracts.obligations o where ${where}),
       'rows', coalesce((select jsonb_agg(${boardRow(today)} order by r.done_at desc, r.due_date, r.id)
-        from r left join contracts.contracts c on c.tenant_id = r.tenant_id and c.id = r.contract_id), '[]'::jsonb)) as j`;
+        from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
+          where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true), '[]'::jsonb)) as j`;
 }
 
 export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
   return {
     payments: (filter, today) =>
       one<PaymentsOut>(tx, filter === "done" ? donePage(t, today) : openPage(t, filter, today)),
+    paymentsText: (filter, today) =>
+      one<string>(
+        tx,
+        sql`select s.j::text as j from (${filter === "done" ? donePage(t, today) : openPage(t, filter, today)}) s`,
+      ),
     obligations: (q) =>
       one<Obligation[]>(
         tx,

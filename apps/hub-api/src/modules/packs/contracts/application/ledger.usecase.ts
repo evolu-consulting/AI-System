@@ -124,6 +124,10 @@ export function ledgerReads(d: Deps) {
       const day = localDate(d.now(), await d.timeZoneOf(who.tenantId));
       return d.uow.tenant(who, ({ ledger: r }) => r.payments(filter, day));
     },
+    paymentsText: async (who: PackWho, filter: string) => {
+      const day = localDate(d.now(), await d.timeZoneOf(who.tenantId));
+      return d.uow.tenant(who, ({ ledger: r }) => r.paymentsText(filter, day));
+    },
     obligations: (who: PackWho, q: Parameters<Repo["obligations"]>[0]) =>
       d.uow.tenant(who, ({ ledger: r }) => r.obligations(q)),
     events: (who: PackWho, party: string, role: string | null) =>

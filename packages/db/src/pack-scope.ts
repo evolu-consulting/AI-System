@@ -75,9 +75,12 @@ export async function withPackScope<T>(
   for (let attempt = 1; ; attempt++) {
     try {
       return await db.db.transaction(async (tx) => {
+        // HD78 · Luật 4c: tắt JIT trong tx gói (cùng câu, không thêm câu). Policy RESTRICTIVE của M1 (subplan EXISTS) đẩy ước lượng
+        // chi phí câu danh sách vượt `jit_above_cost` ⇒ Postgres biên dịch JIT ~70 ms cho câu chạy ~30 ms (đo: GET /payments
+        // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
         await tx.execute(
           sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
-            set_config('app.user_id', ${uid}, true)`,
+            set_config('app.user_id', ${uid}, true), set_config('jit', 'off', true)`,
         );
         return fn(tx);
       }, config);
