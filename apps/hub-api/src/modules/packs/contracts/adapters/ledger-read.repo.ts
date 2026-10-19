@@ -69,15 +69,41 @@ function donePage(t: string, today: string): SQL {
       'total', (select count(*) from contracts.obligations o where ${where}),
       'rows', ${rowsOf(t, today, sql`r.done_at desc, r.due_date, r.id`)}) as j from a`;
 }
+/** Hai nửa ĐỘC LẬP của bảng (Luật 4c: chạy song song ở hai tx chỉ đọc): đầu = tổng + `total`; thân = ≤ 500 hàng. */
+function boardHead(t: string, filter: string, today: string): SQL {
+  if (filter === "done") {
+    const where = sql`o.tenant_id = ${t}::uuid and o.status = 'done' and o.kind = 'payment'
+      and o.done_at >= ${addDays(today, -DONE_DAYS)}::date`;
+    return sql`with ${statsOf(t, today, sql`0`)} select json_build_object('stats', ${statsJson},
+      'total', (select count(*) from contracts.obligations o where ${where}))::text as j from a`;
+  }
+  const dir = filter === "receive" || filter === "pay" ? filter : null;
+  const late = filter === "overdue";
+  const match = sql`(${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)`;
+  return sql`with ${statsOf(t, today, sql`count(*) filter (where ${match})`)}
+    select json_build_object('stats', ${statsJson}, 'total', a.total)::text as j from a`;
+}
+function boardRows(t: string, filter: string, today: string): SQL {
+  if (filter === "done")
+    return sql`with r as (select o.* from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'done'
+        and o.kind = 'payment' and o.done_at >= ${addDays(today, -DONE_DAYS)}::date
+        order by o.done_at desc, o.due_date, o.id limit ${LEDGER_LIST_MAX}::int)
+      select ${rowsOf(t, today, sql`r.done_at desc, r.due_date, r.id`)}::text as j`;
+  const dir = filter === "receive" || filter === "pay" ? filter : null;
+  const late = filter === "overdue";
+  return sql`with r as (select o.* from contracts.obligations o
+      where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment'
+        and (${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)
+      order by o.due_date, o.id limit ${LEDGER_LIST_MAX}::int)
+    select ${rowsOf(t, today, sql`r.due_date, r.id`)}::text as j`;
+}
+
 export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
   return {
     payments: (filter, today) =>
       one<PaymentsOut>(tx, filter === "done" ? donePage(t, today) : openPage(t, filter, today)),
-    paymentsText: (filter, today) =>
-      one<string>(
-        tx,
-        sql`select s.j::text as j from (${filter === "done" ? donePage(t, today) : openPage(t, filter, today)}) s`,
-      ),
+    paymentsHead: (filter, today) => one<string>(tx, boardHead(t, filter, today)),
+    paymentsRows: (filter, today) => one<string>(tx, boardRows(t, filter, today)),
     obligations: (q) =>
       one<Obligation[]>(
         tx,

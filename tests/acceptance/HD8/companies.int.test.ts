@@ -125,11 +125,8 @@ describe("HD8-FR-09 · danh bạ công ty (routes/companies.py)", () => {
       tax_id: "0322223333",
       name: "Công ty TNHH Thực phẩm Sạch Bình An",
     });
-    expect([made.status, made.json?.party, made.json?.edited]).toEqual([
-      201,
-      "tax:0322223333",
-      ["name"],
-    ]);
+    // Như mgmt `create`: `new()` đã đặt tên; Cục Thuế chưa tra được ⇒ tên gõ = tên đang có ⇒ không tính là "đã sửa".
+    expect([made.status, made.json?.party, made.json?.edited]).toEqual([201, "tax:0322223333", []]);
     expect(
       (await call(c, P.hoa, "POST", "/companies", { tax_id: "0322223333", name: "X" })).status,
     ).toBe(409);
@@ -137,7 +134,7 @@ describe("HD8-FR-09 · danh bạ công ty (routes/companies.py)", () => {
     const put = await ok(
       call(c, P.hoa, "PUT", `/companies?party=${enc("tax:0322223333")}`, { short_name: "Bình An" }),
     );
-    expect([put.short_name, put.edited]).toEqual(["Bình An", ["name", "short_name"]]);
+    expect([put.short_name, put.edited]).toEqual(["Bình An", ["short_name"]]);
     const empty = await call(c, P.hoa, "PUT", `/companies?party=${enc("tax:0322223333")}`, {
       name: " ",
     });

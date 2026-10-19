@@ -156,3 +156,34 @@ export function aggregate(events: readonly Ev[], w: Window, role: Role): Agg {
     a.rated[k] = { value: e.value as number, at: e.at, by: e.by ?? null };
   return a;
 }
+
+/** Một nhóm SQL (đối tác, vai, loại, gần đây): số dòng, số đúng hạn (trễ 0/null), tổng ngày trễ, tổng chỉnh tay. */
+export type Group = {
+  type: string;
+  nw: boolean;
+  n: number;
+  on: number;
+  late: number;
+  delta: number;
+};
+
+/**
+ * Cộng một nhóm vào `Agg` — đúng như `aggregate()` cộng từng dòng (trừ chấm tay, quá hạn, gia hạn CKS: đi đường riêng). Mọi tổng là
+ * số nguyên ⇒ cộng theo nhóm ≡ cộng theo dòng.
+ */
+export function addGroup(a: Agg, g: Group, role: Role): void {
+  if (g.type === (role === "customer" ? "received" : "delivered")) {
+    const b = a.set[g.nw ? 1 : 0] as Bucket;
+    b.n += g.n;
+    b.on += g.on;
+    b.late += g.late;
+  }
+  if (!NOT_COUNTED.has(g.type)) a.counted += g.n;
+  if (DEALINGS.has(g.type) && g.n > 0) a.dealings = true;
+  if (g.type === "reminded") a.reminded += g.n;
+  else if (g.type === "appointment_kept") a.kept += g.n;
+  else if (g.type === "appointment_missed") a.missed += g.n;
+  else if (g.type === "complaint") a.complaints += g.n;
+  else if (g.type === "postponed") a.postponed += g.n;
+  else if (g.type === "manual_adjust") a.adjust += g.delta;
+}

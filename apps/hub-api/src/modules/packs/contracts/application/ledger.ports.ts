@@ -79,8 +79,9 @@ export type LedgerWriteRepo = {
 
 export type LedgerReadRepo = {
   payments(filter: string, today: string): Promise<PaymentsOut>;
-  /** Như payments nhưng trả nguyên văn JSON của Postgres (route gửi thẳng, không parse + stringify 500 hàng — Luật 4c). */
-  paymentsText(filter: string, today: string): Promise<string>;
+  /** Như `payments` nhưng nguyên văn JSON của Postgres, hai nửa độc lập (đầu: tổng + total; thân: hàng) — Luật 4c. */
+  paymentsHead(filter: string, today: string): Promise<string>;
+  paymentsRows(filter: string, today: string): Promise<string>;
   obligations(q: {
     contract_id?: string;
     party?: string;

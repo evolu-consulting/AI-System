@@ -5,7 +5,7 @@
 import type { QuoteCreate, RatingRequest, ScoringDraft } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { PartnerData, PartnersRepo, StoredConfig } from "../adapters/partners.repo";
-import type { WindowOverride } from "../adapters/partners-data.repo";
+import type { PartnerParts, WindowOverride } from "../adapters/partners-data.repo";
 import { compareGoods, priceGaps, priceLines, productList } from "../domain/goods-prices.rules";
 import type { Inspect } from "../domain/link-check.rules";
 import { localDate } from "../domain/local-time.rules";
@@ -43,6 +43,8 @@ export type PartnersDeps = {
   uow: PackUow<Repos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
+  /** Ghép ba phần đọc song song ⇒ dữ liệu chấm điểm (adapter `partnerDataOf`). */
+  combine: (parts: PartnerParts) => PartnerData;
   /** Mở link giá kiểm con số (`link_check.inspect`); test thay bằng trang giả. */
   inspect: Inspect;
 };
@@ -69,7 +71,14 @@ export function partnersUsecase(d: PartnersDeps) {
   /** Mọi thứ cần để chấm (sổ đã gom ở SQL) + tập người dùng thấy. `ov`: khoảng tính của bản nháp (xem trước/lưu). */
   async function load(who: PackWho, ov?: WindowOverride) {
     const day = await today(who);
-    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data(day, ov));
+    // Ba câu độc lập ở ba tx chỉ đọc song song (độ trễ = câu chậm nhất, HD8-NFR-01).
+    const data: PartnerData = d.combine(
+      await Promise.all([
+        d.uow.tenant(who, (r) => r.partners.ledger(day, ov)),
+        d.uow.tenant(who, (r) => r.partners.facts(day)),
+        d.uow.tenant(who, (r) => r.partners.prices()),
+      ]),
+    );
     const lines = priceLines(data.contracts, day);
     const facts = factsOf(data.facts, priceGaps(lines, data.quotes));
     // M1 `view.company`: đối tác có HĐ đã duyệt người dùng thấy (data() đã chạy dưới RLS của người dùng).

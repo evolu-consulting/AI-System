@@ -10,6 +10,7 @@ import { companiesRoutes } from "./adapters/companies.routes";
 import { createInspect } from "./adapters/link-check.http";
 import { partnersRepo } from "./adapters/partners.repo";
 import { partnersRoutes } from "./adapters/partners.routes";
+import { partnerDataOf } from "./adapters/partners-data.repo";
 import { companiesUsecase } from "./application/companies.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
 import { partnersUsecase } from "./application/partners.usecase";
@@ -40,6 +41,7 @@ export function partnersModule(
     timeZoneOf: safeTimeZone(d.timeZoneOf),
     now: d.now ?? (() => new Date()),
     inspect: d.inspect ?? createInspect(),
+    combine: partnerDataOf,
   });
   const r = new Hono<PackGuardVars>();
   r.route("/", partnersRoutes(view, uc));

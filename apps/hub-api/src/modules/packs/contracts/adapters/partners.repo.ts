@@ -9,6 +9,9 @@ import { json, one } from "./ledger-sql";
 import {
   type PartnerData,
   partnerData,
+  partnerFacts,
+  partnerLedger,
+  partnerPrices,
   ratingEvents,
   type StoredConfig,
   type WindowOverride,
@@ -22,6 +25,9 @@ const side = (c: string) =>
 export function partnersRepo(tx: Tx, t: string) {
   return {
     data: (today: string, ov?: WindowOverride) => partnerData(tx, t, today, ov),
+    ledger: (today: string, ov?: WindowOverride) => partnerLedger(tx, t, today, ov),
+    facts: (today: string) => partnerFacts(tx, t, today),
+    prices: () => partnerPrices(tx, t),
     ratingEvents: (party: string, role: Role) => ratingEvents(tx, t, party, role),
     /** Cấu hình đã lưu của vai (không khoá); chưa có ⇒ null. */
     config: (role: Role) =>

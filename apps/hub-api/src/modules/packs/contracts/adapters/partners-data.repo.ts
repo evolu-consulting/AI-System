@@ -9,9 +9,10 @@ import type { PriceItem } from "../domain/appendix-pricing.rules";
 import type { PricedContract, Quote } from "../domain/goods-prices.rules";
 import { isIsoDate, partyKey } from "../domain/ledger.rules";
 import { aggKey, type FactRow, type PartyEv } from "../domain/partners.rules";
-import { type Agg, emptyAgg } from "../domain/scoring-agg.rules";
+import { type Agg, addGroup, emptyAgg } from "../domain/scoring-agg.rules";
 import type { Criterion, Role, Rules } from "../domain/scoring-config.rules";
 import { one } from "./ledger-sql";
+import { groupsJson, pendJson, ratedJson, renewJson, winCtes } from "./partners-ledger.sql";
 
 export type StoredConfig = {
   role: Role;
@@ -92,82 +93,15 @@ const itemsJson = sql`(select json_build_array(array_agg(i.contract_id), array_a
   from (select i.* from contracts.contract_items i where i.tenant_id = (select t from p)
     and i.contract_id in (select id from b) order by i.contract_id, i.ord) i)`;
 
-/**
- * HD8-NFR-01: sổ đối tác GOM ở SQL theo (đối tác, vai) — ≡ `aggregate()` (scoring-agg.rules.ts), test parity ngẫu nhiên
- * `HD8/agg-parity.int.test.ts`. Khoảng tính theo vai: `round(m·30,44)` với m nguyên không bao giờ rơi đúng .5 ⇒ làm tròn SQL ≡
- * Python; `ov` = khoảng của bản nháp (xem trước/lưu) đè cấu hình đã lưu. Dòng đã huỷ bị bỏ (engine bỏ qua).
- */
-const winCtes = (today: string, ov: unknown) => sql`rw as (
-    select x.role,
-      ${today}::date - round(coalesce((${JSON.stringify(ov ?? {})}::jsonb -> x.role ->> 'window_months')::int,
-        (s.rules ->> 'window_months')::int, 12) * 30.44)::int as start,
-      ${today}::date - round(coalesce((${JSON.stringify(ov ?? {})}::jsonb -> x.role ->> 'recency_months')::int,
-        (s.rules ->> 'recency_months')::int, 3) * 30.44)::int as recent
-    from (values ('customer'), ('supplier')) x (role)
-    left join contracts.score_configs s on s.tenant_id = (select t from p) and s.role = x.role),
-  w as (
-    select e.id, e.party_key, e.role, e.type, e.at, e.days_late, e.obligation_id, e.data, e.by_user, e.at >= rw.recent as nw
-    from contracts.partner_events e join rw on rw.role = e.role
-    where e.tenant_id = (select t from p) and e.at between rw.start and ${today}::date
-      and e.id not in (select v.event_id from contracts.partner_event_voids v where v.tenant_id = (select t from p))),
-  pd as (
-    select o.party_key, o.role, o.nw, greatest(1, ${today}::date - contracts.as_date(o.data ->> 'due_date')) as dl
-    from w o
-    where o.type = 'overdue' and o.data ->> 'party_late' = 'true'
-      and (o.role = 'supplier') = coalesce(o.data ->> 'kind' = 'delivery', false)
-      and not exists (select 1 from w s where s.party_key = o.party_key and s.role = o.role
-        and s.type in ('paid', 'received', 'delivered') and s.obligation_id is not distinct from o.obligation_id)
-      and not exists (select 1 from w s where s.party_key = o.party_key and s.role = o.role and s.type = 'postponed'
-        and s.obligation_id is not distinct from o.obligation_id and s.at >= o.at))`;
-
-const AGG_COLS = sql`
-    count(*) filter (where w.type = z.own and not w.nw),
-    count(*) filter (where w.type = z.own and not w.nw and coalesce(w.days_late, 0) = 0),
-    coalesce(sum(w.days_late) filter (where w.type = z.own and not w.nw), 0),
-    count(*) filter (where w.type = z.own and w.nw),
-    count(*) filter (where w.type = z.own and w.nw and coalesce(w.days_late, 0) = 0),
-    coalesce(sum(w.days_late) filter (where w.type = z.own and w.nw), 0),
-    count(*) filter (where w.type in ('cks_renewed', 'cks_lapsed')),
-    coalesce(sum(case
-        when w.type = 'cks_lapsed' or (w.data ? 'with_us' and coalesce(w.data ->> 'with_us', '') in ('false', '', '0')) then 0
-        when coalesce((w.data ->> 'days_before_expiry')::int, 0) >= 0 then 100
-        else greatest(0, 100 + 10 * (w.data ->> 'days_before_expiry')::int) end)
-      filter (where w.type in ('cks_renewed', 'cks_lapsed')), 0),
-    count(*) filter (where w.type = 'reminded'),
-    bool_or(w.type in ('received', 'paid', 'delivered', 'postponed', 'reminded')),
-    count(*) filter (where w.type = 'appointment_kept'),
-    count(*) filter (where w.type = 'appointment_missed'),
-    count(*) filter (where w.type = 'postponed'),
-    count(*) filter (where w.type = 'complaint'),
-    coalesce(sum(coalesce((w.data ->> 'delta')::int, 0)) filter (where w.type = 'manual_adjust'), 0),
-    count(*) filter (where w.type not in ('manual_adjust', 'rating', 'overdue'))`;
-
-const aggJson = sql`coalesce((select json_agg(json_build_array(g.party_key, g.role, g.a,
-      coalesce(pa.p0n, 0), coalesce(pa.p0l, 0), coalesce(pa.p1n, 0), coalesce(pa.p1l, 0)))
-    from (select w.party_key, w.role, json_build_array(${AGG_COLS}) as a
-      from w cross join lateral (select case when w.role = 'customer' then 'received' else 'delivered' end as own) z
-      group by w.party_key, w.role) g
-    left join (select pd.party_key, pd.role,
-        count(*) filter (where not pd.nw) as p0n, coalesce(sum(pd.dl) filter (where not pd.nw), 0) as p0l,
-        count(*) filter (where pd.nw) as p1n, coalesce(sum(pd.dl) filter (where pd.nw), 0) as p1l
-      from pd group by pd.party_key, pd.role) pa on pa.party_key = g.party_key and pa.role = g.role), '[]'::json)`;
-
-/** `_rated`: lần chấm mới nhất mỗi (đối tác, vai, tiêu chí) trong khoảng tính — theo (`at`, `rated_at`, id). */
-const ratedJson = sql`coalesce((select json_agg(json_build_array(r.party_key, r.role, r.cr, r.v, r.at, r.by)) from (
-    select distinct on (w.party_key, w.role, w.data ->> 'criterion') w.party_key, w.role, w.data ->> 'criterion' as cr,
-      (w.data ->> 'value')::int as v, w.at, contracts.user_label(w.by_user) as by
-    from w where w.type = 'rating'
-    order by w.party_key, w.role, w.data ->> 'criterion', w.at desc,
-      coalesce(w.data ->> 'rated_at', '') collate "C" desc, w.id desc) r), '[]'::json)`;
-const restJson = sql`'configs', coalesce((select json_agg(json_build_object('role', s.role, 'version', s.version,
+const configsJson = sql`coalesce((select json_agg(json_build_object('role', s.role, 'version', s.version,
       'criteria', s.criteria, 'rules', s.rules, 'updated_by', contracts.user_label(s.updated_by),
-      'updated_at', s.updated_at)) from contracts.score_configs s where s.tenant_id = (select t from p)), '[]'::json),
-  'quotes', coalesce((select json_agg(json_build_object('id', q.id, 'product_key', q.product_key,
+      'updated_at', s.updated_at)) from contracts.score_configs s where s.tenant_id = (select t from p)), '[]'::json)`;
+const quotesJson = sql`coalesce((select json_agg(json_build_object('id', q.id, 'product_key', q.product_key,
       'product_name', q.product_name, 'unit', q.unit, 'supplier_name', q.supplier_name,
       'supplier_party_key', q.supplier_party_key, 'price', q.price, 'quoted_at', q.quoted_at, 'source', q.source,
       'url', q.url, 'verified', q.verified) order by q.quoted_at, q.created_at, q.id)
-    from contracts.price_quotes q where q.tenant_id = (select t from p)), '[]'::json),
-  'names', coalesce((select json_agg(json_build_array(co.party_key, coalesce(nullif(co.short_name, ''), co.name)))
+    from contracts.price_quotes q where q.tenant_id = (select t from p)), '[]'::json)`;
+const namesJson = sql`coalesce((select json_agg(json_build_array(co.party_key, coalesce(nullif(co.short_name, ''), co.name)))
     from contracts.companies co where co.tenant_id = (select t from p)
       and coalesce(nullif(co.short_name, ''), co.name) is not null), '[]'::json)`;
 
@@ -187,7 +121,9 @@ type Raw = {
   facts: [Role, S, S, number, S][];
   buy: Cols<[string, "contract" | "appendix", string, S, S, string, S, S, S]>;
   items: Cols<[string, S, string, S, S, N, N, N, S, S]>;
-  agg: AggRow[];
+  groups: GroupRow[];
+  renew: RenewRow[];
+  pend: PendRow[];
   rated: RatedRow[];
   configs: StoredConfig[];
   quotes: Quote[];
@@ -260,49 +196,42 @@ function buyOf(c: Raw["buy"], items: Map<string, PriceItem[]>): PricedContract[]
   }));
 }
 
-type AggRow = [string, Role, number[], number, number, number, number];
+type GroupRow = [string, Role, string, boolean, number, number, number, number];
+type RenewRow = [string, Role, number, number];
+type PendRow = [string, Role, number, number, number, number];
 type RatedRow = [string, Role, string, number, string, S];
 
-/** Hàng gom SQL ⇒ `Agg` (thứ tự cột = `AGG_COLS`). */
-export function aggOf(row: AggRow): Agg {
-  const [, , a, p0n, p0l, p1n, p1l] = row;
-  const [s0n, s0on, s0l, s1n, s1on, s1l, rn, rs, rem, deal, kept, missed, post, comp, adj, cnt] =
-    a as unknown as [...number[]];
-  return {
-    set: [
-      { n: Number(s0n), on: Number(s0on), late: Number(s0l) },
-      { n: Number(s1n), on: Number(s1on), late: Number(s1l) },
-    ],
-    pend: [
-      { n: Number(p0n), on: 0, late: Number(p0l) },
-      { n: Number(p1n), on: 0, late: Number(p1l) },
-    ],
-    renew_n: Number(rn),
-    renew_sum: Number(rs),
-    reminded: Number(rem),
-    dealings: (deal as unknown) === true,
-    kept: Number(kept),
-    missed: Number(missed),
-    postponed: Number(post),
-    complaints: Number(comp),
-    adjust: Number(adj),
-    counted: Number(cnt),
-    rated: {},
-  };
-}
-
-function aggsOf(rows: AggRow[], rated: RatedRow[]): Map<string, Agg> {
+/** Nhóm SQL ⇒ `Agg` mỗi (đối tác, vai) — `addGroup` (≡ `aggregate`), gia hạn CKS, quá hạn treo, chấm tay mới nhất. */
+function aggsOf(r: Raw): Map<string, Agg> {
   const out = new Map<string, Agg>();
-  for (const r of rows) out.set(aggKey(r[0], r[1]), aggOf(r));
-  for (const [party, role, cr, v, at, by] of rated) {
+  const at = (party: string, role: Role) => {
     const key = aggKey(party, role);
     const a = out.get(key) ?? emptyAgg();
-    a.rated[cr] = { value: v, at, by };
     out.set(key, a);
+    return a;
+  };
+  for (const [party, role, type, nw, n, on, late, delta] of r.groups)
+    addGroup(
+      at(party, role),
+      { type, nw, n: Number(n), on: Number(on), late: Number(late), delta: Number(delta) },
+      role,
+    );
+  for (const [party, role, n, v] of r.renew) {
+    const a = at(party, role);
+    a.renew_n = Number(n);
+    a.renew_sum = Number(v);
   }
+  for (const [party, role, p0n, p0l, p1n, p1l] of r.pend) {
+    const a = at(party, role);
+    a.pend = [
+      { n: Number(p0n), on: 0, late: Number(p0l) },
+      { n: Number(p1n), on: 0, late: Number(p1l) },
+    ];
+  }
+  for (const [party, role, cr, v, d, by] of r.rated)
+    at(party, role).rated[cr] = { value: v, at: d, by };
   return out;
 }
-
 /** Cột ⇒ hình miền. */
 function toData(r: Raw): PartnerData {
   return {
@@ -315,7 +244,7 @@ function toData(r: Raw): PartnerData {
       first_start: day(first_start),
     })),
     contracts: buyOf(r.buy, itemsBy(r.items)),
-    aggs: aggsOf(r.agg, r.rated),
+    aggs: aggsOf(r),
     configs: r.configs,
     quotes: r.quotes,
     names: new Map(r.names),
@@ -329,24 +258,50 @@ export type WindowOverride = Partial<
 >;
 
 /**
- * MỘT câu: sự thật HĐ (gom), HĐ mua + dòng hàng, sổ đối tác ĐÃ GOM theo (đối tác, vai) + lần chấm tay mới nhất, cấu hình, báo giá.
- * HĐ CKS gia hạn mất khách không tính (`lost_renewal`).
+ * Ba câu ĐỘC LẬP (Luật 4c: chạy song song ở ba tx chỉ đọc, độ trễ = câu chậm nhất; số câu cố định 3): (A) sổ đối tác đã gom +
+ * chấm tay mới nhất; (B) sự thật HĐ + cấu hình + danh bạ + giá thị trường; (C) HĐ mua + dòng hàng + báo giá.
  */
+export const partnerLedger = (tx: Tx, t: string, today: string, ov: WindowOverride = {}) =>
+  one<Pick<Raw, "groups" | "renew" | "pend" | "rated">>(
+    tx,
+    sql`with p as (select ${t}::uuid as t), ${winCtes(today, ov)}
+    select json_build_object('groups', ${groupsJson(today)}, 'renew', ${renewJson(today)}, 'pend', ${pendJson(today)},
+      'rated', ${ratedJson(today)}) as j`,
+  );
+export const partnerFacts = (tx: Tx, t: string, today: string) =>
+  one<Pick<Raw, "facts" | "configs" | "names" | "market">>(
+    tx,
+    sql`with p as (select ${t}::uuid as t)
+    select json_build_object('facts', ${factsJson}, 'configs', ${configsJson}, 'names', ${namesJson},
+      'market', ${marketJson(today)}) as j`,
+  );
+export const partnerPrices = (tx: Tx, t: string) =>
+  one<Pick<Raw, "buy" | "items" | "quotes">>(
+    tx,
+    sql`with p as (select ${t}::uuid as t), ${bCte}
+    select json_build_object('buy', ${buyJson}, 'items', ${itemsJson}, 'quotes', ${quotesJson}) as j`,
+  );
+export type PartnerParts = [
+  Awaited<ReturnType<typeof partnerLedger>>,
+  Awaited<ReturnType<typeof partnerFacts>>,
+  Awaited<ReturnType<typeof partnerPrices>>,
+];
+/** Ghép ba phần ⇒ hình miền. */
+export const partnerDataOf = ([a, b, c]: PartnerParts): PartnerData => toData({ ...a, ...b, ...c });
+
+/** Ba phần trong MỘT tx (test parity, lưu cấu hình). */
 export async function partnerData(
   tx: Tx,
   t: string,
   today: string,
   ov: WindowOverride = {},
 ): Promise<PartnerData> {
-  const raw = await one<Raw>(
-    tx,
-    sql`with p as (select ${t}::uuid as t), ${bCte}, ${winCtes(today, ov)}
-    select json_build_object('facts', ${factsJson}, 'buy', ${buyJson}, 'items', ${itemsJson}, 'agg', ${aggJson},
-      'rated', ${ratedJson}, 'market', ${marketJson(today)}, ${restJson}) as j`,
-  );
-  return toData(raw);
+  return partnerDataOf([
+    await partnerLedger(tx, t, today, ov),
+    await partnerFacts(tx, t, today),
+    await partnerPrices(tx, t),
+  ]);
 }
-
 /** Mọi lần chấm tay (chưa huỷ) của MỘT đối tác + vai — cho "Điểm tự chấm" (lịch sử cả ngoài khoảng tính, như mgmt). */
 export async function ratingEvents(
   tx: Tx,

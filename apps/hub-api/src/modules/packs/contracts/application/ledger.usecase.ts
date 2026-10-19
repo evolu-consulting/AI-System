@@ -126,7 +126,12 @@ export function ledgerReads(d: Deps) {
     },
     paymentsText: async (who: PackWho, filter: string) => {
       const day = localDate(d.now(), await d.timeZoneOf(who.tenantId));
-      return d.uow.tenant(who, ({ ledger: r }) => r.paymentsText(filter, day));
+      // Hai tx chỉ đọc song song (độ trễ = nửa chậm hơn); ghép chữ JSON: {stats,total} + rows.
+      const [head, rows] = await Promise.all([
+        d.uow.tenant(who, ({ ledger: r }) => r.paymentsHead(filter, day)),
+        d.uow.tenant(who, ({ ledger: r }) => r.paymentsRows(filter, day)),
+      ]);
+      return `${head.slice(0, -1)}, "rows" : ${rows}}`;
     },
     obligations: (who: PackWho, q: Parameters<Repo["obligations"]>[0]) =>
       d.uow.tenant(who, ({ ledger: r }) => r.obligations(q)),
