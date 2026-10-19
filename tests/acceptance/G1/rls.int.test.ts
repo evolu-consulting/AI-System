@@ -147,7 +147,7 @@ defineRlsSuite({
   key: "knowledge",
   tables,
   tenants,
-  ignoreTables: ["documents", "chunks", "chunk_embeddings", "files", "index_outbox"],
+  ignoreTables: ["documents", "chunks", "chunk_embeddings", "lexemes", "files", "index_outbox"], // lexemes: R1, bộ N4
   open: async () => {
     await cloneDb("full");
     return openOwner(2);

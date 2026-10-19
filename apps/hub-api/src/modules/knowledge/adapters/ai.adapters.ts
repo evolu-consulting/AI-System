@@ -70,6 +70,40 @@ export function applyRanking(text: string, hits: readonly Hit[], k: number): Hit
   return out.slice(0, k);
 }
 
+/** R1 · một lời gọi Messages API ⇒ văn bản trả lời (dùng chung cho rerank + đồ thị). Key chỉ trong header. */
+export function claudeText(
+  env: Record<string, string | undefined>,
+  o: { fetch?: Fetch; model?: string; baseUrl?: string } = {},
+):
+  | ((system: string, user: string, maxTokens: number, signal?: AbortSignal) => Promise<string>)
+  | null {
+  const key = env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const f = o.fetch ?? fetch;
+  const model = o.model ?? env.KNOWLEDGE_GRAPH_MODEL ?? "claude-haiku-5-5";
+  const url = `${(o.baseUrl ?? "https://api.anthropic.com").replace(/\/+$/, "")}/v1/messages`;
+  return async (system, user, maxTokens, signal) => {
+    const res = await f(url, {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: "user", content: user }],
+      }),
+      signal: withTimeout(signal),
+    });
+    if (!res.ok) throw new Error(`claude http ${res.status}`);
+    const body = (await res.json()) as { content?: { type: string; text?: string }[] };
+    return (body.content ?? []).map((c) => c.text ?? "").join("");
+  };
+}
+
 export function claudeReranker(
   env: Record<string, string | undefined>,
   o: { fetch?: Fetch; model?: string; baseUrl?: string } = {},

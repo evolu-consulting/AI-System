@@ -2,6 +2,7 @@
 // (`RetrievalStrategy`) để (c) FTS và (a) embedding đổi cho nhau bằng cấu hình; `Embedder`/`Reranker` là dịch vụ ngoài tuỳ chọn
 // (vắng key ⇒ không dựng, không gọi mạng).
 import type { Chunk, DocKind } from "../domain/chunk.rules";
+import type { Extraction, Verdict } from "../domain/extract.rules";
 import type { QueryTerm } from "../domain/text.rules";
 
 export type Who = { tenantId: string; userId: string | null };
@@ -59,6 +60,24 @@ export type KnowledgeRepo = {
   searchVector(model: string, emb: readonly number[], limit: number): Promise<Hit[]>;
 };
 export type KnowledgeRepos = { knowledge: KnowledgeRepo };
+
+/** R1 · thực thể đã có (G1 `knowledge.entities`) — ứng viên bí danh. */
+export type ExistingEntity = { key: string; name: string; type: string };
+/** R1 · đọc phục vụ nạp (1 câu mỗi hàm, theo tập). */
+export type IngestReadRepo = {
+  /** Thực thể cùng loại có tên chứa mọi từ của `q` (đã gấp dấu); tối đa 200. */
+  aliasCandidates(probes: readonly { type: string; q: string }[]): Promise<ExistingEntity[]>;
+};
+
+/**
+ * R1 · LLM cho đồ thị (port `extract.py` / `resolve.confirm_alias` / `judge_similar`). Vắng (không key) ⇒ không trích thực thể;
+ * bản giả tất định cho dev/test. Văn bản đoạn là DỮ LIỆU (HUB-BR-31).
+ */
+export type GraphAi = {
+  extract(text: string, signal?: AbortSignal): Promise<Extraction>;
+  sameEntity(type: string, a: string, b: string, signal?: AbortSignal): Promise<boolean>;
+  judge(a: string, b: string, signal?: AbortSignal): Promise<Verdict>;
+};
 
 export type KnowledgeUow = {
   tenant<T>(who: Who, fn: (r: KnowledgeRepos) => Promise<T>): Promise<T>;

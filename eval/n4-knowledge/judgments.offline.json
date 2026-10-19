@@ -1,6 +1,6 @@
 {
   "rubric": "Thang 0–2, chấm câu trả lời dựa trên top-5 đoạn truy hồi so với đáp án vàng:\n2 = đúng và đủ: mọi ý của đáp án vàng có (hoặc suy ra trực tiếp) từ ngữ cảnh; câu no_answer: ngữ cảnh không chứa thông tin trả lời nên trả lời đúng là 'không có thông tin' và không có đoạn nào gây trả lời sai.\n1 = đúng một phần: thiếu ý (vd multi-hop chỉ đủ một bước, hoặc thiếu phụ lục sửa đổi nên con số là giá cũ).\n0 = sai/không trả lời được: ngữ cảnh không có ý chính, hoặc dẫn tới đáp án sai (vd đúng điều khoản nhưng của hợp đồng khác); no_answer: ngữ cảnh khiến trả lời bịa (vd lộ tài liệu tenant khác).",
-  "judged_by": "Claude (tác nhân N4, Opus 5.5) tự chấm OFFLINE ngày 2026-10-19 — KHÔNG gọi API (không có ANTHROPIC_API_KEY). Chấm ngữ cảnh top-5 của biến thể fts (seed 42), thay cho bước 'Claude viết câu trả lời rồi Claude chấm'.",
+  "judged_by": "Claude (tác nhân N4, Opus 5.5) tự chấm OFFLINE ngày 2026-10-19 — KHÔNG gọi API (không có ANTHROPIC_API_KEY). Chấm ngữ cảnh top-5 của biến thể fts (seed 42), thay cho bước 'Claude viết câu trả lời rồi Claude chấm'. Bổ sung 2026-10-20 (lát R1): 32 câu có top-5 đổi được Claude (Sonnet, tác nhân phụ của R1) chấm OFFLINE theo cùng rubric — không gọi API.",
   "entries": {
     "q01|c1#0,a1#1,a1#4,c1#2,c1#1": {
       "sig": "c1#0,a1#1,a1#4,c1#2,c1#1",
@@ -451,6 +451,166 @@
       "sig": "adr12#3,adr15#0,adr21#0,adr17#2,c3#4",
       "score": 2,
       "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q03|c3#0,mp#0,c1#0,c5#0,c8#0": {
+      "sig": "c3#0,mp#0,c1#0,c5#0,c8#0",
+      "score": 2,
+      "note": "c3#0 nêu đúng người đại diện Sao Việt là Phạm Quốc Hưng."
+    },
+    "q07|adr18#0,mp#0,c8#0,mp#7,mp#3": {
+      "sig": "adr18#0,mp#0,c8#0,mp#7,mp#3",
+      "score": 2,
+      "note": "mp#0 có đủ số tài khoản 0071001234567 tại Vietcombank CN Bình Tân của Minh Phát."
+    },
+    "q08|c3#1,adr17#3,adr17#1,c3#4,c3#0": {
+      "sig": "c3#1,adr17#3,adr17#1,c3#4,c3#0",
+      "score": 2,
+      "note": "c3#1 nêu rõ dịch vụ vận chuyển nội thành dùng xe 2,5 tấn, tính theo chuyến."
+    },
+    "q10|c8#0,c4#4,c2#4,mp#2,c1#4": {
+      "sig": "c8#0,c4#4,c2#4,mp#2,c1#4",
+      "score": 2,
+      "note": "c8#0 chứa Điều 4: giao hàng tại kho Bên A ở Long An, đúng hợp đồng 14/2026."
+    },
+    "q11|mp#0,c8#0,mp#7,adr17#0,adr17#3": {
+      "sig": "mp#0,c8#0,mp#7,adr17#0,adr17#3",
+      "score": 2,
+      "note": "mp#0 nêu bên bán Minh Phát do ông Trần Quốc Minh, Giám đốc đại diện."
+    },
+    "q13|c1#1,c4#0,adr17#3,c5#0,c1#0": {
+      "sig": "c1#1,c4#0,adr17#3,c5#0,c1#0",
+      "score": 2,
+      "note": "c1#1 (hợp đồng Phương Nam 01/2026) có mã hàng MC-PE25, màng co PE 25 micron."
+    },
+    "q14|c4#1,c4#0,a3#3,adr12#3,c4#7": {
+      "sig": "c4#1,c4#0,a3#3,adr12#3,c4#7",
+      "score": 2,
+      "note": "c4#1 nêu bản quyền phần mềm quản lý kho, gói 50 người dùng."
+    },
+    "q16|c3#6,c3#8,c8#0,c3#0,c3#1": {
+      "sig": "c3#6,c3#8,c8#0,c3#0,c3#1",
+      "score": 2,
+      "note": "c3#6 nêu đúng điều khoản phạt 2.000.000 đồng mỗi lần trễ chuyến quá 2 giờ của Sao Việt."
+    },
+    "q17|c2#7,c7#7,c1#7,c3#7,c4#7": {
+      "sig": "c2#7,c7#7,c1#7,c3#7,c4#7",
+      "score": 0,
+      "note": "Thiếu mp#7 (điều khoản tranh chấp Minh Phát: thương lượng rồi ra Tòa); top-5 chỉ có điều khoản 'Tòa án' của hợp đồng khác nên dẫn tới trả lời sai (thiếu thương lượng)."
+    },
+    "q18|c4#4,c4#6,c4#2,adr22#0,adr16#1": {
+      "sig": "c4#4,c4#6,c4#2,adr22#0,adr16#1",
+      "score": 2,
+      "note": "c4#4 nêu Lạc Hồng duy trì hệ thống hoạt động 99,5% thời gian mỗi tháng."
+    },
+    "q20|mp#3,c2#8,c2#3,c8#0,mp#7": {
+      "sig": "mp#3,c2#8,c2#3,c8#0,mp#7",
+      "score": 2,
+      "note": "c2#3 nêu đúng điều khoản thanh toán 50% khi đặt hàng, 50% trong 15 ngày sau giao hàng của 02/2026."
+    },
+    "q24|mp#5,mp#3,c8#0,c1#6,c5#6": {
+      "sig": "mp#5,mp#3,c8#0,c1#6,c5#6",
+      "score": 2,
+      "note": "mp#5 nêu lãi chậm trả 0,05%/ngày trên số tiền chậm trả của Minh Phát."
+    },
+    "q25|c2#5,a2#3,c6#5,c6#6,adr12#1": {
+      "sig": "c2#5,a2#3,c6#5,c6#6,adr12#1",
+      "score": 2,
+      "note": "c2#5 nêu không áp dụng bảo hành, hàng lỗi được đổi khi phát hiện lúc nhận."
+    },
+    "q30|c3#2,a2#2,mp#6,a1#2,a3#2": {
+      "sig": "c3#2,a2#2,mp#6,a1#2,a3#2",
+      "score": 2,
+      "note": "c3#2 nêu hiệu lực 01/04/2026 đến hết 30/09/2026 của hợp đồng Sao Việt."
+    },
+    "q34|c8#0,mp#1,c2#1,c5#1,c1#1": {
+      "sig": "c8#0,mp#1,c2#1,c5#1,c1#1",
+      "score": 2,
+      "note": "mp#1 có tổng giá trị sau thuế 211.248.000 đồng của hợp đồng Minh Phát."
+    },
+    "q36|mp#1,c8#0,c1#6,c5#6,c2#1": {
+      "sig": "mp#1,c8#0,c1#6,c5#6,c2#1",
+      "score": 2,
+      "note": "mp#1 có dòng túi giấy kraft đơn giá 2.900 đồng/cái."
+    },
+    "q37|mp#3,c8#0,mp#5,c1#6,c5#6": {
+      "sig": "mp#3,c8#0,mp#5,c1#6,c5#6",
+      "score": 0,
+      "note": "Ngày ký 16/10/2026 nằm ở mp#0 mà top-5 không có mp#0 (mp#6 cũng vắng); các đoạn còn lại không nêu ngày ký nên không trả lời được."
+    },
+    "q38|mp#2,c8#0,c2#4,mp#3,adr17#3": {
+      "sig": "mp#2,c8#0,c2#4,mp#3,adr17#3",
+      "score": 2,
+      "note": "mp#2 nêu đợt 1 giao 50% số lượng trước ngày 05/11/2026."
+    },
+    "q39|mp#3,mp#1,c8#0,c6#2,mp#2": {
+      "sig": "mp#3,mp#1,c8#0,c6#2,mp#2",
+      "score": 2,
+      "note": "mp#3 nêu tạm ứng 30% giá trị hợp đồng trong 5 ngày kể từ ngày ký."
+    },
+    "q40|a3#3,c4#1,adr15#2,c8#0,adr15#0": {
+      "sig": "a3#3,c4#1,adr15#2,c8#0,adr15#0",
+      "score": 2,
+      "note": "a3#3 (phụ lục) nêu phí điều chỉnh 16.500.000 đồng/tháng từ 01/08/2026, kèm c4#1 là giá gốc."
+    },
+    "q46|mp#5,c3#6,adr16#0,c4#6,c8#0": {
+      "sig": "mp#5,c3#6,adr16#0,c4#6,c8#0",
+      "score": 2,
+      "note": "mp#5 nêu phạt 0,3%/ngày, tối đa 8% giá trị phần hàng giao trễ của Minh Phát."
+    },
+    "q52|c8#0,c2#1,c6#1,c5#1,c1#1": {
+      "sig": "c8#0,c2#1,c6#1,c5#1,c1#1",
+      "score": 2,
+      "note": "c2#1 (1.200 đồng/chai) và c8#0 (1.150 đồng/chai) đủ để so sánh, chênh 50 đồng."
+    },
+    "q53|c2#1,c6#1,c8#0,c4#0,adr12#3": {
+      "sig": "c2#1,c6#1,c8#0,c4#0,adr12#3",
+      "score": 2,
+      "note": "c2#1 (Đông Á 150 đồng/cái) và c6#1 (Minh Tâm 140 đồng/cái) đủ hai nhà cung cấp và giá."
+    },
+    "q54|a3#3,c4#0,c4#6,c4#1,a3#2": {
+      "sig": "a3#3,c4#0,c4#6,c4#1,a3#2",
+      "score": 2,
+      "note": "a3#3 (16,5 triệu) và c4#1 (15 triệu) đủ tính mức tăng 1.500.000 đồng/tháng từ 01/08/2026."
+    },
+    "q55|c5#1,mp#1,c8#0,c5#8,c5#6": {
+      "sig": "c5#1,mp#1,c8#0,c5#8,c5#6",
+      "score": 2,
+      "note": "c5#1 (25.000 đồng/cuộn) và mp#1 (18.000 đồng/cuộn) đủ hai giá để so sánh."
+    },
+    "q57|c4#1,mp#1,adr16#0,adr21#0,c3#0": {
+      "sig": "c4#1,mp#1,adr16#0,adr21#0,c3#0",
+      "score": 1,
+      "note": "c4#1 cho Lạc Hồng 180 triệu, nhưng c3#1 (Sao Việt 180.000.000) không có trong top-5, chỉ có c3#0 không nêu giá trị nên thiếu một hợp đồng."
+    },
+    "q58|c8#0,c2#0,c7#0,a2#2,c2#1": {
+      "sig": "c8#0,c2#0,c7#0,a2#2,c2#1",
+      "score": 2,
+      "note": "c8#0, c2#0, c7#0 cùng nêu đủ ba hợp đồng 14/2026, 02/2026 và 12/2026 với Nhựa Đông Á."
+    },
+    "q59|adr24#1,c1#8,c5#8,c5#2,adr27#0": {
+      "sig": "adr24#1,c1#8,c5#8,c5#2,adr27#0",
+      "score": 2,
+      "note": "Không đoạn nào của hợp đồng Phương Nam nói về bảo mật; các đoạn khác (ADR) không gây trả lời bịa."
+    },
+    "q62|c8#0,c4#3,c2#3,c7#3,c1#3": {
+      "sig": "c8#0,c4#3,c2#3,c7#3,c1#3",
+      "score": 2,
+      "note": "Không có đoạn nào nêu kế toán trưởng An Khang, không có thông tin gây trả lời bịa."
+    },
+    "q63|mp#1,c8#0,c2#1,c5#1,c1#1": {
+      "sig": "mp#1,c8#0,c2#1,c5#1,c1#1",
+      "score": 2,
+      "note": "Không có tài liệu canary/tenant B nào trong top-5, không rò rỉ và không có số liệu để bịa."
+    },
+    "q83|adr21#0,adr16#0,adr12#3,adr27#0,adr12#1": {
+      "sig": "adr21#0,adr16#0,adr12#3,adr27#0,adr12#1",
+      "score": 2,
+      "note": "adr21#0 và adr16#0 nêu Neo4j mặc định bỏ, chỉ giữ khi eval tiếng Việt chứng minh có lợi."
+    },
+    "q85|adr16#0,adr16#1,adr21#0,adr24#0,adr17#2": {
+      "sig": "adr16#0,adr16#1,adr21#0,adr24#0,adr17#2",
+      "score": 2,
+      "note": "adr16#0 và adr21#0 nêu chỉ mục nạp từ outbox, dựng lại được từ Postgres; chunk, embedding, graph là bản dẫn xuất."
     }
   }
 }

@@ -1,24 +1,24 @@
 {
   "variant": "fts",
   "strategy": "fts",
-  "at": "2026-10-19T16:04:17.355Z",
+  "at": "2026-10-19T17:59:12.500Z",
   "seed": 42,
   "reps": 5,
   "judge": "offline-claude-fixture (nhãn: Claude tự chấm, không gọi API)",
   "corpus": {
     "docs": 29,
     "chunksTenantA": 118,
-    "ingestMs": 164
+    "ingestMs": 221
   },
   "machine": {
     "cpus": 12,
-    "cpuBusyPctDuringLatency": 27.2
+    "cpuBusyPctDuringLatency": 12.4
   },
   "latencyMs": {
     "n": 450,
-    "p50": 3.4747999999999593,
-    "p95": 4.763700000001336,
-    "max": 6.283999999999651
+    "p50": 3.244299999999839,
+    "p95": 3.914800000000014,
+    "max": 5.397799999999961
   },
   "leaks": [],
   "overall": {
@@ -29,8 +29,8 @@
     "recall10": 0.9814814814814815,
     "mrr": 0.8646580442876739,
     "facts5": 0.9485596707818931,
-    "judged": 58,
-    "correctness": 0.9568965517241379
+    "judged": 90,
+    "correctness": 0.9444444444444444
   },
   "byKind": {
     "fact": {
@@ -41,7 +41,7 @@
       "recall10": 1,
       "mrr": 0.91,
       "facts5": 1,
-      "judged": 17,
+      "judged": 25,
       "correctness": 1
     },
     "clause": {
@@ -52,8 +52,8 @@
       "recall10": 0.95,
       "mrr": 0.8222222222222222,
       "facts5": 0.925,
-      "judged": 14,
-      "correctness": 0.9285714285714286
+      "judged": 20,
+      "correctness": 0.9
     },
     "number_date": {
       "n": 21,
@@ -63,8 +63,8 @@
       "recall10": 1,
       "mrr": 0.8020408163265306,
       "facts5": 0.9047619047619048,
-      "judged": 13,
-      "correctness": 0.9230769230769231
+      "judged": 21,
+      "correctness": 0.9047619047619048
     },
     "multi_hop": {
       "n": 15,
@@ -74,8 +74,8 @@
       "recall10": 0.9666666666666667,
       "mrr": 0.9333333333333333,
       "facts5": 0.9555555555555555,
-      "judged": 8,
-      "correctness": 0.9375
+      "judged": 15,
+      "correctness": 0.9333333333333333
     },
     "no_answer": {
       "n": 9,
@@ -85,11 +85,11 @@
       "recall10": null,
       "mrr": null,
       "facts5": null,
-      "judged": 6,
+      "judged": 9,
       "correctness": 1
     }
   },
-  "unjudged": 32,
+  "unjudged": 0,
   "rows": [
     {
       "id": "q01",
@@ -129,7 +129,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c3#0,mp#0,c1#0,c5#0,c8#0",
       "top5": ["c3#0", "mp#0", "c1#0", "c5#0", "c8#0"]
     },
@@ -185,7 +185,7 @@
       "rr": 0.5,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "adr18#0,mp#0,c8#0,mp#7,mp#3",
       "top5": ["adr18#0", "mp#0", "c8#0", "mp#7", "mp#3"]
     },
@@ -199,7 +199,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c3#1,adr17#3,adr17#1,c3#4,c3#0",
       "top5": ["c3#1", "adr17#3", "adr17#1", "c3#4", "c3#0"]
     },
@@ -227,7 +227,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c8#0,c4#4,c2#4,mp#2,c1#4",
       "top5": ["c8#0", "c4#4", "c2#4", "mp#2", "c1#4"]
     },
@@ -241,7 +241,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#0,c8#0,mp#7,adr17#0,adr17#3",
       "top5": ["mp#0", "c8#0", "mp#7", "adr17#0", "adr17#3"]
     },
@@ -269,7 +269,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c1#1,c4#0,adr17#3,c5#0,c1#0",
       "top5": ["c1#1", "c4#0", "adr17#3", "c5#0", "c1#0"]
     },
@@ -283,7 +283,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c4#1,c4#0,a3#3,adr12#3,c4#7",
       "top5": ["c4#1", "c4#0", "a3#3", "adr12#3", "c4#7"]
     },
@@ -311,7 +311,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c3#6,c3#8,c8#0,c3#0,c3#1",
       "top5": ["c3#6", "c3#8", "c8#0", "c3#0", "c3#1"]
     },
@@ -325,7 +325,7 @@
       "rr": 0.1111111111111111,
       "facts5": 0.5,
       "leak": false,
-      "judge": null,
+      "judge": 0,
       "sig": "c2#7,c7#7,c1#7,c3#7,c4#7",
       "top5": ["c2#7", "c7#7", "c1#7", "c3#7", "c4#7"]
     },
@@ -339,7 +339,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c4#4,c4#6,c4#2,adr22#0,adr16#1",
       "top5": ["c4#4", "c4#6", "c4#2", "adr22#0", "adr16#1"]
     },
@@ -367,7 +367,7 @@
       "rr": 0.3333333333333333,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#3,c2#8,c2#3,c8#0,mp#7",
       "top5": ["mp#3", "c2#8", "c2#3", "c8#0", "mp#7"]
     },
@@ -423,7 +423,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#5,mp#3,c8#0,c1#6,c5#6",
       "top5": ["mp#5", "mp#3", "c8#0", "c1#6", "c5#6"]
     },
@@ -437,7 +437,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c2#5,a2#3,c6#5,c6#6,adr12#1",
       "top5": ["c2#5", "a2#3", "c6#5", "c6#6", "adr12#1"]
     },
@@ -507,7 +507,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c3#2,a2#2,mp#6,a1#2,a3#2",
       "top5": ["c3#2", "a2#2", "mp#6", "a1#2", "a3#2"]
     },
@@ -563,7 +563,7 @@
       "rr": 0.5,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c8#0,mp#1,c2#1,c5#1,c1#1",
       "top5": ["c8#0", "mp#1", "c2#1", "c5#1", "c1#1"]
     },
@@ -591,7 +591,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#1,c8#0,c1#6,c5#6,c2#1",
       "top5": ["mp#1", "c8#0", "c1#6", "c5#6", "c2#1"]
     },
@@ -605,7 +605,7 @@
       "rr": 0.16666666666666666,
       "facts5": 0,
       "leak": false,
-      "judge": null,
+      "judge": 0,
       "sig": "mp#3,c8#0,mp#5,c1#6,c5#6",
       "top5": ["mp#3", "c8#0", "mp#5", "c1#6", "c5#6"]
     },
@@ -619,7 +619,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#2,c8#0,c2#4,mp#3,adr17#3",
       "top5": ["mp#2", "c8#0", "c2#4", "mp#3", "adr17#3"]
     },
@@ -633,7 +633,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#3,mp#1,c8#0,c6#2,mp#2",
       "top5": ["mp#3", "mp#1", "c8#0", "c6#2", "mp#2"]
     },
@@ -647,7 +647,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "a3#3,c4#1,adr15#2,c8#0,adr15#0",
       "top5": ["a3#3", "c4#1", "adr15#2", "c8#0", "adr15#0"]
     },
@@ -731,7 +731,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#5,c3#6,adr16#0,c4#6,c8#0",
       "top5": ["mp#5", "c3#6", "adr16#0", "c4#6", "c8#0"]
     },
@@ -815,7 +815,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c8#0,c2#1,c6#1,c5#1,c1#1",
       "top5": ["c8#0", "c2#1", "c6#1", "c5#1", "c1#1"]
     },
@@ -829,7 +829,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c2#1,c6#1,c8#0,c4#0,adr12#3",
       "top5": ["c2#1", "c6#1", "c8#0", "c4#0", "adr12#3"]
     },
@@ -843,7 +843,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "a3#3,c4#0,c4#6,c4#1,a3#2",
       "top5": ["a3#3", "c4#0", "c4#6", "c4#1", "a3#2"]
     },
@@ -857,7 +857,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c5#1,mp#1,c8#0,c5#8,c5#6",
       "top5": ["c5#1", "mp#1", "c8#0", "c5#8", "c5#6"]
     },
@@ -885,7 +885,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 1,
       "sig": "c4#1,mp#1,adr16#0,adr21#0,c3#0",
       "top5": ["c4#1", "mp#1", "adr16#0", "adr21#0", "c3#0"]
     },
@@ -899,7 +899,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c8#0,c2#0,c7#0,a2#2,c2#1",
       "top5": ["c8#0", "c2#0", "c7#0", "a2#2", "c2#1"]
     },
@@ -913,7 +913,7 @@
       "rr": null,
       "facts5": null,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "adr24#1,c1#8,c5#8,c5#2,adr27#0",
       "top5": ["adr24#1", "c1#8", "c5#8", "c5#2", "adr27#0"]
     },
@@ -955,7 +955,7 @@
       "rr": null,
       "facts5": null,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "c8#0,c4#3,c2#3,c7#3,c1#3",
       "top5": ["c8#0", "c4#3", "c2#3", "c7#3", "c1#3"]
     },
@@ -969,7 +969,7 @@
       "rr": null,
       "facts5": null,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "mp#1,c8#0,c2#1,c5#1,c1#1",
       "top5": ["mp#1", "c8#0", "c2#1", "c5#1", "c1#1"]
     },
@@ -1249,7 +1249,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "adr21#0,adr16#0,adr12#3,adr27#0,adr12#1",
       "top5": ["adr21#0", "adr16#0", "adr12#3", "adr27#0", "adr12#1"]
     },
@@ -1277,7 +1277,7 @@
       "rr": 1,
       "facts5": 1,
       "leak": false,
-      "judge": null,
+      "judge": 2,
       "sig": "adr16#0,adr16#1,adr21#0,adr24#0,adr17#2",
       "top5": ["adr16#0", "adr16#1", "adr21#0", "adr24#0", "adr17#2"]
     },

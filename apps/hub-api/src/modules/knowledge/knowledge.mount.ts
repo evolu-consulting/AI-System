@@ -5,20 +5,27 @@
 // `KNOWLEDGE_RERANK=on` + `ANTHROPIC_API_KEY` (vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
 import { createDb, type Db } from "@ai/db";
 import { logger } from "../../lib/logger";
+import { createDocxConverter } from "../packs/kit/adapters/docx";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
+import { createPdfConverter } from "../packs/kit/adapters/pdf";
 import type { PackToolDef } from "../packs/kit/application/pack-tools.ports";
 import { claudeReranker, openAiEmbedder } from "./adapters/ai.adapters";
 import { graphRepos } from "./adapters/graph.repo";
 import { graphTools } from "./adapters/graph.tools";
+import { graphAiFromEnv } from "./adapters/graph-ai.adapters";
+import { ingestRepo } from "./adapters/ingest.repo";
 import { khSource, khSourceConfig } from "./adapters/kh.source";
-import { knowledgeRepos } from "./adapters/knowledge.repo";
+import { knowledgeRepo, knowledgeRepos } from "./adapters/knowledge.repo";
 import { KNOWLEDGE_KEY, knowledgeTools } from "./adapters/knowledge.tools";
 import type { GraphUow } from "./application/graph.ports";
+import { graphProducers, type IngestUow } from "./application/graph.producers";
 import { graphUsecases } from "./application/graph.usecases";
+import { ingestFile, type ToText } from "./application/ingest.usecases";
 import { addDocument, getKnowledge, searchKnowledge } from "./application/knowledge.usecases";
 import type {
   Embedder,
   ExternalSource,
+  GraphAi,
   KnowledgeUow,
   Reranker,
   RetrievalStrategy,
@@ -90,6 +97,50 @@ export function knowledgeService(
 export function graphService(db: Db) {
   const uow: GraphUow = createPackUow(db, KNOWLEDGE_KEY, graphRepos);
   return graphUsecases({ uow });
+}
+
+/** R1 · bộ chuyển tệp của bộ khung gói (worker ADR-0024 / ADR-0028) bọc thành cổng `ToText`. */
+export function fileConverters(): { docx: ToText; pdf: ToText; close(): Promise<void> } {
+  const docx = createDocxConverter();
+  const pdf = createPdfConverter();
+  return {
+    docx: (b, tenantId) => docx.toMarkdown(b, { tenantId }),
+    pdf: (b, tenantId) => pdf.toText(b, { tenantId }),
+    close: async () => {
+      await Promise.all([docx.close(), pdf.close()]);
+    },
+  };
+}
+
+/**
+ * R1 · nạp tệp (mgmt-app `ingest`): parse → chia đoạn/lưu → sinh đồ thị G1. `graphAi` vắng ⇒ theo env `KNOWLEDGE_GRAPH_AI`
+ * (on + ANTHROPIC_API_KEY | fake | tắt). `files` vắng ⇒ chỉ Markdown/văn bản.
+ */
+export function ingestService(
+  db: Db,
+  o: {
+    env?: EnvMap;
+    graphAi?: GraphAi | null;
+    files?: { docx: ToText | null; pdf: ToText | null };
+    svc?: ReturnType<typeof knowledgeService>;
+  } = {},
+) {
+  const env = o.env ?? process.env;
+  const svc = o.svc ?? knowledgeService(db, { env, sources: [] });
+  const uow: IngestUow = createPackUow(db, KNOWLEDGE_KEY, (tx, tid) => ({
+    knowledge: knowledgeRepo(tx, tid),
+    ingest: ingestRepo(tx, tid),
+  }));
+  const ai = o.graphAi === undefined ? graphAiFromEnv(env) : o.graphAi;
+  const produce = graphProducers({ graph: graphService(db), uow, ai, log: warn });
+  return ingestFile({
+    add: svc.add,
+    uow,
+    docx: o.files?.docx ?? null,
+    pdf: o.files?.pdf ?? null,
+    produce,
+    log: warn,
+  });
 }
 
 /**
