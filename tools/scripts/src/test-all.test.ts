@@ -20,6 +20,7 @@ describe("CR-092 · test:all", () => {
       python: false,
       only: undefined,
       serial: false,
+      noFrozen: false,
     });
     expect(buildSteps(parseArgs(["--no-e2e", "--no-python"])).map((s) => s.name)).toEqual([
       "check",

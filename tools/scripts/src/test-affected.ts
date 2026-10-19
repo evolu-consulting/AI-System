@@ -5,6 +5,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Glob } from "bun";
+import { isFrozenConfig, isFrozenFile } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import { affectedBy, buildGraph, posix } from "./lib/import-graph";
 import { type RunStep, runWaves, summarizeRun } from "./lib/run-steps";
@@ -139,10 +140,17 @@ async function main(): Promise<number> {
     ),
     infos: configInfos(configs, (c) => readFileSync(join(root, c), "utf8")),
     exists: (f) => existsSync(join(root, f)),
-    ignoredUnit: ignorer(root, "bunfig.toml"),
-    ignoredInt: ignorer(root, "bunfig.int.toml"),
+    // F1 (CR-095): suite của module đóng băng ra khỏi cổng lát (`bun run test:frozen` chạy theo yêu cầu).
+    ignoredUnit: (f) => ignorer(root, "bunfig.toml")(f) || isFrozenFile(f),
+    ignoredInt: (f) => ignorer(root, "bunfig.int.toml")(f) || isFrozenFile(f),
     opts: { e2e: args.e2e },
   });
+  const skipped = plan.e2e.filter(isFrozenConfig);
+  plan.e2e = plan.e2e.filter((c) => !isFrozenConfig(c));
+  if (skipped.length)
+    plan.notes.push(
+      `bỏ ${skipped.length} cấu hình e2e đóng băng (${skipped.join(", ")}); dùng \`bun run test:frozen\`.`,
+    );
   describePlan(base, plan);
   console.log(`  (lập kế hoạch ${((performance.now() - t0) / 1000).toFixed(1)} s)`);
   if (args.dryRun) return 0;

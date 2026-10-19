@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
+import { isFrozenConfig } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import { findE2eConfigs } from "./test-all.discover";
 import {
@@ -157,7 +158,9 @@ async function main(): Promise<number> {
   const root = repoRoot();
   const args = parseE2eArgs(process.argv.slice(2));
   const timings = readJson<Record<string, number>>(join(root, TIMINGS), {});
-  const configs = await findE2eConfigs(root);
+  // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ cấu hình e2e của module đóng băng.
+  const noFrozen = process.argv.includes("--no-frozen");
+  const configs = (await findE2eConfigs(root)).filter((c) => !(noFrozen && isFrozenConfig(c)));
   const specs = await rootSpecs(root, timings);
   const jobs = planJobs({ configs, specs, rootShards: args.shards }, timings, args.only);
   const n = jobConcurrency(args.jobs, availableParallelism());

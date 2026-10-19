@@ -15,7 +15,12 @@ export type Opts = {
   envLocal?: boolean;
   /** `--serial`: mỗi bước một đợt, nối tiếp (chẩn đoán chập chờn do tải). */
   serial?: boolean;
+  /** F1 (CR-095) · `--no-frozen`: cổng hằng ngày — bỏ suite module đóng băng (unit/int/e2e). Vắng ⇒ chạy hết (kiểm tra hằng tháng). */
+  noFrozen?: boolean;
 };
+
+/** bunfig sinh cho unit khi `--no-frozen` (gốc + mẫu đóng băng); `test-all.ts` ghi file này trước khi chạy. */
+export const GATE_BUNFIG = ".data/test-gate/bunfig.toml";
 
 /** Đợt của bước nhẹ (kiểm tĩnh + unit) và nặng (int + e2e + python). */
 const WAVE_LIGHT = 1;
@@ -25,14 +30,17 @@ const WAVE_INT = 2;
 const WAVE_E2E = 3;
 
 /** Bước e2e: `--only=e2e:<việc>` truyền `--only=<việc>` cho test-e2e-par; không chọn ⇒ chạy hết. */
-export function e2eStep(filter?: string): Step {
-  const cmd = ["bun", "tools/scripts/src/test-e2e-par.ts"];
+export function e2eStep(filter?: string, noFrozen = false): Step {
+  const cmd = ["bun", "tools/scripts/src/test-e2e-par.ts", ...(noFrozen ? ["--no-frozen"] : [])];
   return { name: "e2e", cmd: filter ? [...cmd, `--only=${filter}`] : cmd, wave: WAVE_E2E };
 }
 
 export function buildSteps(o: Opts): Step[] {
   // `bun test` không nạp `.env.local` (NODE_ENV=test) ⇒ ca cần `HUB_TEST_DATABASE_URL` đỏ oan; nạp tường minh (GX).
-  const unit = o.envLocal ? ["bun", "--env-file=.env.local", "test"] : ["bun", "test"];
+  const gate = o.noFrozen ? [`--config=${GATE_BUNFIG}`] : [];
+  const unit = o.envLocal
+    ? ["bun", "--env-file=.env.local", ...gate, "test"]
+    : ["bun", ...gate, "test"];
   // #230: `typecheck` của agent-runtime chạy qua docker; thiếu docker ⇒ chỉ phần còn lại + bước bị chặn riêng.
   const typecheck: Step[] = o.pyBlocked
     ? [
@@ -44,7 +52,11 @@ export function buildSteps(o: Opts): Step[] {
     { name: "check", cmd: ["bun", "run", "check"], wave: WAVE_LIGHT },
     ...typecheck,
     { name: "unit", cmd: unit, wave: WAVE_LIGHT },
-    { name: "int", cmd: ["bun", "run", "test:int:par"], wave: WAVE_INT },
+    {
+      name: "int",
+      cmd: ["bun", "run", "test:int:par", ...(o.noFrozen ? ["--no-frozen"] : [])],
+      wave: WAVE_INT,
+    },
     { name: "lock", cmd: ["bun", "run", "test:lock:verify"], wave: WAVE_LIGHT },
   ];
   if (o.python) {
@@ -57,7 +69,7 @@ export function buildSteps(o: Opts): Step[] {
   }
   const only = o.only;
   const e2eFilter = only?.startsWith("e2e:") ? only.slice("e2e:".length) : undefined;
-  if (o.e2e) steps.push(e2eStep(e2eFilter));
+  if (o.e2e) steps.push(e2eStep(e2eFilter, o.noFrozen));
   const chosen = only
     ? steps.filter(
         (s) =>
@@ -69,7 +81,7 @@ export function buildSteps(o: Opts): Step[] {
   return o.serial ? chosen.map((s, i) => ({ ...s, wave: i })) : chosen;
 }
 
-/** `--no-e2e`, `--no-python`, `--serial`, `--only=<tên bước hoặc tiền tố>` (vd `e2e:P-a`). */
+/** `--no-e2e`, `--no-python`, `--no-frozen`, `--serial`, `--only=<tên bước hoặc tiền tố>` (vd `e2e:P-a`). */
 export function parseArgs(argv: readonly string[]): Opts {
   const only = argv.find((a) => a.startsWith("--only="))?.slice("--only=".length);
   return {
@@ -77,5 +89,6 @@ export function parseArgs(argv: readonly string[]): Opts {
     python: !argv.includes("--no-python"),
     only,
     serial: argv.includes("--serial"),
+    noFrozen: argv.includes("--no-frozen"),
   };
 }

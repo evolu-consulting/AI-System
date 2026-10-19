@@ -57,7 +57,8 @@ export const WEB_OWNERS: Record<string, string[]> = {
 /** Backend → một cấu hình e2e nhỏ nhất có chạy thật backend đó (chế độ `owner`); `wide` lấy mọi cấu hình nối qua đồ thị. */
 export const API_OWNERS: Record<string, string[]> = {
   "apps/admin-api": ["playwright.config.ts"],
-  "apps/hub-api": ["e2e/chat/playwright.x2b.config.ts"],
+  // F1: x2b (phòng + agent) đóng băng ⇒ chủ e2e của hub-api là combine (hub thật + chat + admin).
+  "apps/hub-api": ["e2e/combine/playwright.config.ts"],
 };
 
 /** Tag đuôi file spec của cấu hình (`**\/*.pa.ts` → `pa`); cấu hình gốc không có tag (spec `*.spec.ts`). */

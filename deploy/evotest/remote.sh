@@ -22,7 +22,7 @@ rm -rf app out; mkdir app out
 tar xzf "/tmp/evotest-app-$TAG.tgz" -C app || { echo "giải nén mã nguồn lỗi"; exit 2; }
 unlink "/tmp/evotest-app-$TAG.tgz"; unlink "/tmp/evotest-kit-$TAG.tgz"
 echo "$COMMIT" > app/VERSION
-export EVO_WORKERS="${EVO_WORKERS:-}" EVO_FILTER="${EVO_FILTER:-}" EVO_UID=$(id -u) EVO_GID=$(id -g)
+export EVO_ALL="${EVO_ALL:-}" EVO_WORKERS="${EVO_WORKERS:-}" EVO_FILTER="${EVO_FILTER:-}" EVO_UID=$(id -u) EVO_GID=$(id -g)
 echo "[evotest] đĩa trống $free_gb GB · commit $COMMIT · bước $STEP"
 
 rc=0

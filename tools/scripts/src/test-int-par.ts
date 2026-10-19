@@ -6,6 +6,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
+import { isFrozenFile } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import {
   lptQueue,
@@ -182,7 +183,10 @@ async function main(): Promise<number> {
   const root = repoRoot();
   mkdirSync(join(root, DATA), { recursive: true });
   const opts = parseIntArgs(process.argv.slice(2), availableParallelism());
-  const { parallel, serial } = selectFiles(await findIntFiles(root), opts.filters);
+  // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ file int của module đóng băng.
+  const noFrozen = process.argv.includes("--no-frozen");
+  const all = (await findIntFiles(root)).filter((f) => !(noFrozen && isFrozenFile(f)));
+  const { parallel, serial } = selectFiles(all, opts.filters);
   const timings = loadTimings(root);
   const t0 = performance.now();
   const lease = await leaseSlots(

@@ -1,8 +1,8 @@
-﻿# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
-#   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-Filter "tests/a tests/b" (int/perf)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
+# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
+#   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 đang có lượt khác; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0)
+param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All)
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
@@ -43,7 +43,7 @@ try {
   $t0 = Get-Date
   # Hàng đợi: chờ .lock (mkdir nguyên tử) - nhiều lượt cùng lúc xếp hàng, không đè file của nhau; remote.sh nằm trong kit.
   # 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
-  $boot = "cd ~/workspace/evotest && { n=0; until mkdir .lock 2>/dev/null; do [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng...'; n=1; sleep 5; done; trap 'rmdir .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
+  $boot = "cd ~/workspace/evotest && { n=0; until mkdir .lock 2>/dev/null; do [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng...'; n=1; sleep 5; done; trap 'rmdir .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $ErrorActionPreference = "Continue"
