@@ -1,5 +1,6 @@
 // HD-FR-31 · #218 · D3-01: chế độ flow (không seam transport) — tải lên / nhập tay / trích lại MỞ RUN duyệt thay vì xếp hàng
-// trong tiến trình. Không mở được ⇒ HĐ đang `extracting` về `extract_failed` (`RUN_LIMIT` / `FLOW_UNAVAILABLE`), không kẹt.
+// trong tiến trình. Không mở được ⇒ HĐ đang `extracting` về `extract_failed` (`RUN_LIMIT` / `FLOW_UNAVAILABLE`), không kẹt;
+// engine tắt ⇒ không làm gì (hành vi HD1, test khoá HD-AC11).
 // Lớp 2: chỉ cổng.
 import type { PackWho } from "../../kit/application/ports";
 import type { ApprovalUow } from "./approval.ports";
@@ -27,7 +28,8 @@ export function flowStarter(d: FlowDeps): ExtractionStarter {
     async start(who, id) {
       try {
         const r = await d.start(asCaller(who), id);
-        if (r.kind === "ok" || r.kind === "has_run") return;
+        // Engine tắt (môi trường không bật quy trình) ⇒ giữ hành vi HD1: HĐ ở `extracting` (vòng quét đánh STALE sau 15 phút).
+        if (r.kind === "ok" || r.kind === "has_run" || r.kind === "engine_off") return;
         await fail(who, id, "FLOW_UNAVAILABLE");
       } catch (e) {
         d.log.warn("contract-approval-start-failed", { contract_id: id, limit: isRunLimit(e) });
