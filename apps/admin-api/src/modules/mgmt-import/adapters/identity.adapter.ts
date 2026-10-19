@@ -2,15 +2,38 @@
 // platform); quản lý trực tiếp `manager_email` do N5 (M1b) ghi; tra tenant theo marker `(mgmt_source, mgmt_org_id)` và user theo email.
 import { type Db, type Tx, withScope } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { tenantKeyFor } from "../../identity-import/domain/import.rules";
 import { runIdentityImport } from "../../identity-import/identity-import.run";
 import type { IdentityPort } from "../application/ports";
+import type { UsersExport } from "../domain/map-identity.rules";
 
 const PLATFORM = { kind: "platform" } as const;
+
+/** Hai org cùng tên ⇒ cùng khoá tenant (slug) ⇒ N5 báo DUPLICATE_KEY và bỏ org sau (gặp thật trên bản sao seed: 2 org
+ *  `Công ty An Nam`). Org đầu (theo id) giữ slug; org sau nhận `<slug ≤23>-<8 hex id>` — tất định, chạy lại cùng khoá. */
+export function withUniqueKeys(file: UsersExport): UsersExport {
+  const used = new Set<string>();
+  const orgs = [...file.orgs]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((o) => {
+      const key = tenantKeyFor({ id: o.id, name: o.name, tenantKey: null });
+      if (!used.has(key)) {
+        used.add(key);
+        return o;
+      }
+      const hex = new Bun.CryptoHasher("sha256").update(o.id).digest("hex").slice(0, 8);
+      const alt = `${key.slice(0, 23).replace(/-+$/, "")}-${hex}`;
+      used.add(alt);
+      return { ...o, tenant_key: alt };
+    });
+  return { ...file, orgs };
+}
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 
 export function createIdentityAdapter(db: Db, actorId: string, batch?: number): IdentityPort {
   return {
-    run: (file, apply) => runIdentityImport(db, file, { actorId, apply, batch }),
+    run: (file, apply) =>
+      runIdentityImport(db, withUniqueKeys(file as UsersExport), { actorId, apply, batch }),
     tenants: (source) =>
       withScope(db, PLATFORM, async (tx) =>
         (

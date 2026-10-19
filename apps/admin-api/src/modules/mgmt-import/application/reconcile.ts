@@ -91,8 +91,12 @@ async function signedSha(
   s: Snapshot,
   plan: Plan,
 ): Promise<ReconcileReport["signed_sha"]> {
-  const source = new Set((s.docs.signed_docs ?? []).map((x) => `${x.src.org_id}|${x.src.sha256}`))
-    .size;
+  const orgs = new Set([...plan.tenants.values()].map((t) => t.orgId));
+  const source = new Set(
+    (s.docs.signed_docs ?? [])
+      .filter((x) => orgs.has(String(x.src.org_id)))
+      .map((x) => `${x.src.org_id}|${x.src.sha256}`),
+  ).size;
   let target = 0;
   for (const t of plan.tenants.values()) {
     const want = (t.rows["contracts.cks_signed_docs"] ?? []).map((r) => String(r.id));

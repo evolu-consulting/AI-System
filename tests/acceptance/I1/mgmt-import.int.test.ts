@@ -95,7 +95,8 @@ describe("I1 mgmt-import", () => {
       { n: number }[]
     >`select count(*)::int as n from contracts.cks_market_prices`;
     expect(m?.n).toBe(3);
-    expect(first.issues_by_code).toEqual({ SIGNED_DUP: 1, DOC_DUP_HASH: 1 });
+    // nhân viên nội bộ không thuộc org ⇒ N5 NO_ORG (không chuyển — đúng); còn lại là trùng ở nguồn có chủ đích
+    expect(first.issues_by_code).toEqual({ SIGNED_DUP: 1, DOC_DUP_HASH: 1, "identity.NO_ORG": 1 });
     expect(first.no_tenant).toMatchObject({ contracts: 1, chats: 1 });
   });
 

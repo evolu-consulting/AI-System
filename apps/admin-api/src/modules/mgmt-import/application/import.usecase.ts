@@ -202,6 +202,8 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const tables = await writeAll(d, o, plan, skipped);
   const byCode: Record<string, number> = {};
   for (const i of plan.issues) bump(byCode, i.code);
+  for (const i of (identity as { issues?: { code: string }[] }).issues ?? [])
+    bump(byCode, `identity.${i.code}`);
   const rec = o.apply ? await reconcile(d, o, snap, plan, members, r.userOf, shas) : null;
   return {
     dry_run: !o.apply,

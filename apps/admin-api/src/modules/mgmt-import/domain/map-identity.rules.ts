@@ -7,7 +7,7 @@ import { lowerEmail, str } from "./values.rules";
 export type UsersExport = {
   format: "mgmt-app-users/v1";
   source: string;
-  orgs: { id: string; name: string }[];
+  orgs: { id: string; name: string; tenant_key?: string }[];
   users: {
     email: string;
     name: string;
