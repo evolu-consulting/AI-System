@@ -60,3 +60,57 @@ Phạm vi đã kiểm: `docs/specs/HD1-contracts-base/` (spec, spec-decisions D-
 
 ## Chưa kiểm
 `reference/mgmt-app-contracts/**` (không mở lại; spec trích dòng cụ thể, test đã đối chiếu); `docs/platform/intake-hd.md` ngoài lát HD1; không chạy int/perf (theo brief); không đọc toàn văn 7 file int test (chỉ ca được trỏ).
+
+
+## Lần 2 — 2026-10-19 (spec-readiness, chỉ diff `207b581..HEAD`: 483cfd76 + abb7969a)
+
+## Kết luận: READY
+Phạm vi đã kiểm: `git diff 207b581..HEAD -- docs/specs/HD1-contracts-base tests/acceptance/HD1` (plan, spec, spec-decisions D-14…D-18, tasks, test-plan, 4 file test) · đối chiếu từng lỗ hổng lần 1 · không đọc lại toàn bộ, không chạy test.
+0 Chặn · 0 Cao · 3 Thấp mở (đều không đổi hành vi).
+
+## Đối chiếu lỗ hổng lần 1
+| # lần 1 | Kết quả | Bằng chứng |
+|---|---|---|
+| 1 Cao `search_key` | Đóng | plan.md §3 + D-14: `fold(coalesce(title,'') \|\| ' ' \|\| …)` title+5 trường nêu tên, không `concat_ws`; columns.int.test.ts:153–171 kiểm `type` không vào |
+| 2 Cao `as_date` | Đóng | plan §3 + D-15: ngày ≤ số ngày của tháng, ngoài ra `null`; columns.int.test.ts ca `2027-02-30`, `2028-02-29`, 1900/2100/2000 |
+| 3 Cao page/total | Đóng | spec HD-FR-07, AC05 (3 trang 50/50/20, total=120, trang 4 rỗng), Q7 đóng ↔ D-03 ↔ plan §1 thống nhất; HD-NFR-01 `page=500` |
+| 4 Cao timezone | Đóng | D-16, plan §7 N1-a, T10 thêm `modules/config/{config.rules,config.repo}.ts`, spec HD-FR-08; upload.int Kiritimati trỏ D-16 |
+| 5 Cao seam | Đóng | D-17, plan §4: `AppDeps.packs?.contracts?: boolean` (vắng ⇒ true, false ⇒ 404), Redis vắng ⇒ 503 `UPLOAD_QUOTA_UNAVAILABLE`, đọc vẫn chạy; test-plan §6 #1 khớp |
+| 6 Cao `zipNames` | Đóng | plan §4 `adapters/zip-names.ts` (`fflate` ADR-0024, `unzipSync` filter, hỏng ⇒ `[]`, chỉ khi `PK\x03\x04`); T10 thêm file |
+| 7 Cao NFC | Đóng | D-18, plan §4; fold.rules.test.ts (3 ca NFD) + list.int.test.ts:278 (q/signer/seller NFD) |
+| 8–14 Thấp | Đóng | quotaVerdict/zipNames/facets (plan §1, §4, D-xx cuối), `sql.json` (plan §5), Q8 + NFR-03 sửa chữ, HD4 cấp EXECUTE (plan cuối) |
+| 15 Thấp trần | Đóng | plan 18.401 B ≤ 18.432 (dư 31 B) |
+| 16 Thấp tasks | Đóng | T2 `[x]`, T3 bỏ ADR-0024 |
+| 17 Thấp comment | Đóng | fold.rules.test.ts:2 trỏ `columns.int.test.ts` |
+
+## Lỗ hổng còn mở
+| # | Mức | Mục | Vị trí | Vấn đề | Mặc định đề xuất |
+|---|-----|-----|--------|--------|------------------|
+| 18 | Thấp | J | test-plan.md §6 #7; plan.md §4 | Bản TS của `as_date` (D-15 "bản TS cùng luật") chưa có tên export ⇒ chưa có ca parity TS; SQL đã có test | Điều kiện build T6: export `asDate(s: string \| null): string \| null` trong `M/domain/*.rules.ts`, backend-lead ghi vào plan §4; qc thêm ca parity khi relock. Không chặn T4/T5 (SQL đủ) |
+| 19 | Thấp | I | plan.md §5 PATCH | Backtick lồng (`` `UPDATE … (`sql.json(obj)`) … ` ``) làm hỏng hiển thị markdown, nghĩa vẫn rõ | Sửa chữ khi build |
+| 20 | Thấp | L | plan.md 18.401 B | Dư 31 B dưới trần; thêm chữ nào cũng vượt | Mọi bổ sung (vd. tên `asDate`) cắt chỗ khác hoặc trỏ D-xx; không hạ chất lượng |
+
+## Mâu thuẫn giữa tài liệu
+Không còn (spec ↔ plan ↔ test-plan ↔ D-03/D-14…D-18 khớp). Q7: D-03 ghi "chốt theo D-02" và người dùng cho áp mặc định ⇒ coi đóng; Gate vẫn nêu Q7 một dòng để xác nhận, không chặn.
+
+## Câu hỏi cho người dùng
+Không.
+
+## Checklist (chỉ mục bị diff chạm)
+| Mục | Kết quả | Bằng chứng |
+|-----|---------|------------|
+| B Hợp đồng | Đạt | plan §1 (ListQuery/Facets đủ), spec HD-FR-07/AC05 trỏ plan |
+| C Dữ liệu | Đạt | plan §3 `search_key` IMMUTABLE, `as_date` không ném |
+| D Nghiệp vụ | Đạt | D-18 NFC; D-16 múi giờ |
+| G Phụ thuộc | Đạt | D-17 seam + Redis + zip-names |
+| H Task | Đạt | tasks.md T10 File đủ, T2 tick |
+| I Nhất quán | Đạt | không mâu thuẫn |
+| J Độ chính xác | Đạt (Thấp #18) | plan §4 |
+| K Hiệu năng | Đạt | §6 rút gọn, giữ số câu/index/ngưỡng; test ở `tests/acceptance/HD1/perf/{list,rw}.perf.int.test.ts` (plan trỏ thư mục đúng) |
+| L Gọn | Đạt | spec 10.593 ≤ 12.288 · plan 18.401 ≤ 18.432 · test-plan 14.220 ≤ 18.432 · quyết định chỉ ở spec-decisions · không addendum |
+
+## Quét từ mơ hồ
+Chỉ trong phần diff: "…" là khoảng giá trị/rút gọn mô tả (`D-03…D-18`, `status[]…` trong HD-FR-07 có plan §1 liệt kê đủ), không `có thể/nên/tuỳ/khoảng` mới. Không ghi thêm lỗ hổng.
+
+## Chưa kiểm
+Ngoài diff không đọc lại; không chạy test (tests int vẫn đỏ đúng lý do, chưa có code).
