@@ -49,6 +49,22 @@ export function starterGated(kind: TaskKind, reason: DecisionReason | null): boo
   );
 }
 
+/**
+ * D3-07 · HD-FR-34 (mở rộng N2-D06, người dùng chốt 2026-10-19): ở stage `exclude_starter`, người bắt đầu không được chọn
+ * `use_current` (= coi như Đạt — lách duyệt cấp 2) ở task `decision` với MỌI lý do; lựa chọn khác chỉ bị chặn khi lý do mở
+ * quyền Group duyệt (`starterGated`). `add_attempt`/`cancel` của lỗi kỹ thuật không là duyệt ⇒ vẫn được.
+ */
+export function starterDecisionBlocked(
+  after: { kind: string; exclude_starter?: boolean } | undefined,
+  startedBy: string,
+  userId: string,
+  reason: DecisionReason,
+  option: string,
+): boolean {
+  if (!starterExcluded(after, startedBy, userId)) return false;
+  return option === "use_current" || starterGated("decision", reason);
+}
+
 export function canAct(
   v: Viewer & { groupIds: ReadonlySet<string> },
   t: TaskFacts,

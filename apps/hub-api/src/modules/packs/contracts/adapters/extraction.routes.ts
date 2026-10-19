@@ -20,7 +20,12 @@ const KEY = "contracts";
 /** 500 dòng hàng × ~600 byte + trường ≈ < 512 KiB. */
 export const MANUAL_BODY_MAX_BYTES = 512 * 1024;
 
-export type ExtractionRoutesDeps = { requestExtract: RequestExtract; createManual: CreateManual };
+export type ExtractionRoutesDeps = {
+  requestExtract: RequestExtract;
+  createManual: CreateManual;
+  /** HD3 · #221 · trần thao tác AI theo tenant/ngày (vắng ⇒ không giới hạn). */
+  quota?: (tenantId: string) => Promise<void>;
+};
 
 const tooLarge = () => new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
 const whoOf = (u: { tenantId: string; userId: string }) => ({
@@ -62,12 +67,14 @@ export function extractionRoutes(
     bodyLimit({ maxSize: MANUAL_BODY_MAX_BYTES, onError: () => Promise.reject(tooLarge()) }),
     async (c) => {
       const body = parseWith(ManualContractRequestSchema, await readJson(c));
+      await d.quota?.(c.get("user").tenantId);
       const out = await d.createManual(whoOf(c.get("user")), body as ManualInput);
       return c.json(out, 201);
     },
   );
   r.post("/contracts/:id/extract", write, async (c) => {
     const id = parseWith(z.uuid(), c.req.param("id"));
+    await d.quota?.(c.get("user").tenantId);
     const out = await d.requestExtract(whoOf(c.get("user")), id);
     if (out.kind !== "ok") throw extractError(out.kind);
     return c.json({ id, status: "extracting", version: out.version }, 202);

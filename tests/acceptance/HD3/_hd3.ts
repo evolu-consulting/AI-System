@@ -2,27 +2,55 @@
 // lời job agent như agent Claude — KHÔNG gọi AI thật, D3-11) + gói `contracts` chế độ flow (không seam transport) + admin-api
 // bật gói cho acme. Người: A lan (editor + owner, người tải lên), B hoa (editor), H q01 (owner), X tam (không vai). Không `it`.
 import { expect } from "bun:test";
-import { C1_TEXT, CBASE, cid, insContract } from "../HD1/_support/hd1";
-import { agentJson } from "../HD2/_support/hd2";
+import { CBASE, cid, insContract } from "../HD1/_support/hd1";
+import { agentJson, C1_TEXT } from "../HD2/_support/hd2";
 import { packGroupKey, packsPath, startAdminN1 } from "../N1/_support/n1";
-import { type CtxPd, type Json, jobDone, nextStageJob, PA, type Role, startPd, T } from "../P-d/_support/pd";
+import {
+  type CtxPd,
+  type Json,
+  jobDone,
+  nextStageJob,
+  PA,
+  type Role,
+  startPd,
+  T,
+} from "../P-d/_support/pd";
 import { settled } from "../P-d/d2/_d2";
 
 export { agentJson, C1_TEXT, CBASE, cid, settled, T };
-export type CtxHd3 = CtxPd & { admin: Awaited<ReturnType<typeof startAdminN1>> };
+export type SweepOut = { tenants: number; read: number; closed: number };
+export type CtxHd3 = CtxPd & {
+  admin: Awaited<ReturnType<typeof startAdminN1>>;
+  /** Lượt quét flow duyệt (hook `contractsAi.onHandles`; vòng nền tắt). */
+  sweepOnce: () => Promise<SweepOut>;
+};
 
 /** Agent trích = agent seed `hd-read` (agentic-cli) — tool `contracts-extract` chạy job KHÔNG tool của agent này. */
 export const EXTRACT_AGENT = "hd-read";
 
-export async function startHd3(): Promise<CtxHd3> {
-  const c = await startPd({
-    processRunsPerTenant: 200,
-    extraDeps: {
-      packs: { pkdemo: false, contracts: true, contractsAi: { tax: null, flowAgentKey: EXTRACT_AGENT } },
+export async function startHd3(o: { processRunsPerTenant?: number } = {}): Promise<CtxHd3> {
+  let h: { sweepOnce: () => Promise<SweepOut> } | null = null;
+  const contractsAi = {
+    tax: null,
+    flowAgentKey: EXTRACT_AGENT,
+    onHandles: (x: { sweepOnce: () => Promise<SweepOut> }) => {
+      h = x;
     },
+  };
+  const c = await startPd({
+    processRunsPerTenant: o.processRunsPerTenant ?? 200,
+    extraDeps: { packs: { pkdemo: false, contracts: true, contractsAi } },
   });
   const admin = await startAdminN1(c.k);
-  const ctx = { ...c, admin, stop: async () => (await admin.close(), await c.stop()) } as CtxHd3;
+  const sweepOnce = () => {
+    expect({ sweepHandle: h !== null }).toEqual({ sweepHandle: true });
+    return (h as unknown as { sweepOnce: () => Promise<SweepOut> }).sweepOnce();
+  };
+  const stop = async () => {
+    await admin.close();
+    await c.stop();
+  };
+  const ctx = { ...c, admin, sweepOnce, stop } as CtxHd3;
   const r = await admin.call("PUT", packsPath(T.acme, "contracts"));
   expect({ enable: r.status }).toEqual({ enable: 200 });
   await addRole(ctx, "editor", [PA.A, PA.B]);
@@ -98,7 +126,11 @@ const total = (v: number) => ({
 });
 
 /** A mở run (`/extract`) ⇒ job agent của stage `extract` ⇒ trả JSON trích (giá trị `v`) ⇒ chờ cấp 1. Trả {runId, job}. */
-export async function toLevel1(c: CtxHd3, id: string, v: number): Promise<{ runId: string; job: Json }> {
+export async function toLevel1(
+  c: CtxHd3,
+  id: string,
+  v: number,
+): Promise<{ runId: string; job: Json }> {
   const r = await c.call("A", "POST", `${CBASE}/${id}/extract`);
   expect({ status: r.status, code: errCode(r) }).toEqual({ status: 202, code: null });
   const runId = (await contractRow(c, id)).run_id as string;

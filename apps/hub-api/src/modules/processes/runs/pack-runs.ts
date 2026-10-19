@@ -12,6 +12,7 @@ import type {
 } from "../../packs/kit/application/pack-runs.ports";
 import type { ProcessDeps } from "../core/ports";
 import { GateService } from "../gates/gates.service";
+import { packRunsHd3 } from "./pack-runs-hd3";
 import { StartService } from "./start.service";
 
 const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
@@ -21,6 +22,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
   const start = new StartService(d);
   const gates = new GateService(d);
   return {
+    ...packRunsHd3(d), // HD3 · flow duyệt gói (ensureDef/agent/state/act/outcomesOf/lastApprover)
     async start(u, req) {
       const s = await start.createFromApi(
         asUser(u),

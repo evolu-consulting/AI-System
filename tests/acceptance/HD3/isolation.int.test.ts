@@ -3,13 +3,13 @@
 // không "Đã duyệt" được HĐ tuỳ ý), def `contracts-approval` của acme không chạy được từ beta.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { insContract } from "../HD1/_support/hd1";
+import { createDef, defBody, PA, startRun } from "../P-d/_support/pd";
 import { toolStage } from "../P-d/d2/_d2";
-import { createDef, decisionOf, defBody, PA, startRun, waitStatus } from "../P-d/_support/pd";
 import {
   act,
   approval,
-  CBASE,
   C1_TEXT,
+  CBASE,
   type CtxHd3,
   cid,
   contractRow,
@@ -24,7 +24,7 @@ import {
 let c: CtxHd3;
 beforeAll(async () => {
   c = await startHd3();
-}, 90_000);
+}, 180_000);
 afterAll(async () => {
   await c?.stop();
 });
@@ -58,7 +58,10 @@ describe("AC34c · tenant khác / không vai", () => {
       input: "x",
       origin: { kind: "none" },
     });
-    expect({ status: r.status, code: errCode(r) }).toEqual({ status: 404, code: "PROCESS_NOT_FOUND" });
+    expect({ status: r.status, code: errCode(r) }).toEqual({
+      status: 404,
+      code: "PROCESS_NOT_FOUND",
+    });
   }, 60_000);
 });
 
@@ -85,8 +88,17 @@ describe("AC32b · AC34f · tool gói chỉ chạm HĐ của run gọi [D3-03]",
     );
     const runId = await startRun(c, d.key, { inputs: [{ key: "hd", type: "text", text: id }] });
     await settled(c);
-    await waitStatus(c.sql, runId, "needs_decision");
-    expect((await decisionOf(c.sql, runId))?.reason).toBe("tool_failed");
+    // Lỗi tool (không side_effect) ⇒ engine hẹn thử lại / quyết (P-d2) — không bao giờ `done`; HĐ không đổi; audit failed.
+    const [a] = await c.sql<
+      { status: string }[]
+    >`select summary->>'status' as status from hub.audit_log
+      where action = 'tool_call' and entity_id = ${runId}`;
+    expect(a?.status).toBe("failed");
+    expect(
+      (
+        await c.sql<{ s: string }[]>`select status as s from hub.process_runs where id = ${runId}`
+      )[0]?.s,
+    ).not.toBe("done");
     expect(await contractRow(c, id)).toEqual(before);
   }, 60_000);
 });

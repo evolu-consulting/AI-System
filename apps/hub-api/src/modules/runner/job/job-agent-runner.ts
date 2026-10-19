@@ -86,6 +86,8 @@ export type AgentTask = {
   autofix?: JobAutofix;
   /** Phát `step.started`/`step.finished` (vd `writer.emit`); vắng → không phát. */
   emit?: (ev: SseEventBody) => Promise<unknown>;
+  /** HD3 · #219 · agent KHÔNG tool (trích hợp đồng qua `PackRuns.agent`): `allowed_tools=[]`, `mcp=null`, không KH. */
+  noTools?: boolean;
 };
 
 /** plan §5.6. Sự kiện của đúng một job, kết thúc bằng `job.result`/`job.failed`; `signal` abort → dừng, không ghi gì. */
@@ -196,7 +198,7 @@ export class JobAgentRunner implements AgentRunner {
    */
   async #mcp(task: AgentTask): Promise<JobMcp> {
     const m = this.d.mcp;
-    if (!m || task.role !== "agent") return NO_MCP;
+    if (!m || task.role !== "agent" || task.noTools) return NO_MCP;
     const [keys, kh] = await Promise.all([this.#catalogKeys(task, m), this.#kh(task)]);
     let khItems = kh;
     if (khItems.length > 0 && !keys.includes(KH_TOOL_KEY)) {
@@ -275,6 +277,7 @@ export class JobAgentRunner implements AgentRunner {
       ...(task.useSession === false ? { useSession: false } : {}),
       ...(task.role === "agent" && task.autofix ? { autofix: task.autofix } : {}),
     });
+    if (payload && task.noTools) return { ...payload, allowed_tools: [] }; // HD3 · agent không tool
     return payload && this.#outHint(task, payload);
   }
 

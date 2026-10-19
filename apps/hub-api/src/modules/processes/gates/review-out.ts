@@ -5,7 +5,7 @@
 //   `cancelled`, `run_end`) — hậu COMMIT người gọi huỷ `hub.runs` như huỷ run (N2-D01).
 import type { DecisionReason, ProcessRunStatus, ReviewDecisionRequest } from "@ai/contracts/chat";
 import { processN2Error } from "../core/errors";
-import { starterExcluded, starterGated } from "../domain/tasks/task-access.rules";
+import { starterDecisionBlocked, starterExcluded } from "../domain/tasks/task-access.rules";
 import { assertBackDecision, type BackOut, backFromReview } from "./back.effects";
 import {
   cancelEnd,
@@ -36,9 +36,11 @@ export function assertDecisionAllowed(
   idx: number,
   userId: string,
   reason: DecisionReason,
+  option: string,
 ): void {
   const after = snapOf(run).stages[idx]?.after;
-  if (starterExcluded(after, run.startedBy, userId) && starterGated("decision", reason))
+  // D3-07 · HD-FR-34: thêm `use_current` với mọi lý do (lách cấp 2).
+  if (starterDecisionBlocked(after, run.startedBy, userId, reason, option))
     throw processN2Error("STARTER_CANNOT_REVIEW");
 }
 

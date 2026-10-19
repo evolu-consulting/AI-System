@@ -104,6 +104,8 @@ export type ToolInvoker = {
     tenantId: string;
     userId: string;
     hubRunId: string;
+    /** HD3 · D3-03 · run quy trình của stage (tool gói nhận `processRunId`). */
+    processRunId?: string;
     workflowId: string;
     endpoint?: ToolEndpoint;
     /** N2-FR-03 · khoá tool gói (vắng ⇒ workflow catalog). */

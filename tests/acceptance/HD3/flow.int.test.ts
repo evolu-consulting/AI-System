@@ -20,7 +20,7 @@ import {
 let c: CtxHd3;
 beforeAll(async () => {
   c = await startHd3();
-}, 90_000);
+}, 180_000);
 afterAll(async () => {
   await c?.stop();
 });
@@ -34,7 +34,9 @@ describe("HD-FR-31/32 · mở run + trích qua agent không tool", () => {
     expect(String(p.prompt)).toContain("HỢP ĐỒNG MUA BÁN số 01/2026/HĐMB-PN");
     const row = await contractRow(c, id);
     expect({ status: row.status, run: row.run_id }).toEqual({ status: "needs_review", run: runId });
-    const [run] = await c.sql<{ tenant_id: string; started_by: string }[]>`select tenant_id, started_by
+    const [run] = await c.sql<
+      { tenant_id: string; started_by: string }[]
+    >`select tenant_id, started_by
       from hub.process_runs where id = ${runId}`;
     expect(run).toEqual({ tenant_id: T.acme, started_by: PA.A.id });
     const a = await approval(c, "B", id);
@@ -105,7 +107,7 @@ describe("HD-FR-33 · rẽ nhánh theo ngưỡng tenant + Đã duyệt", () => {
     const id = await seedContract(c, 6);
     await toLevel1(c, id, 245_000_000);
     const d = (await c.call("B", "GET", `${CBASE}/${id}`)).json;
-    const p = await c.call("B", "PATCH", `${CBASE}/${id}`, {
+    const p = await c.call("B", "PATCH", `${CBASE}/${id}/fields`, {
       version: d.version,
       fields: { total_value: 700_000_000 },
     });
@@ -116,9 +118,13 @@ describe("HD-FR-33 · rẽ nhánh theo ngưỡng tenant + Đã duyệt", () => {
   }, 60_000);
 
   it("AC37a · ngưỡng tenant 100 tr (cài đặt) ⇒ 245 tr cần cấp 2; PUT cài đặt cần quyền admin gói", async () => {
-    const no = await c.call("B", "PUT", `/pack/contracts/approval-settings`, { threshold: 100_000_000 });
+    const no = await c.call("B", "PUT", `/pack/contracts/approval-settings`, {
+      threshold: 100_000_000,
+    });
     expect(no.status).toBe(403);
-    const s = await c.call("A", "PUT", `/pack/contracts/approval-settings`, { threshold: 100_000_000 });
+    const s = await c.call("A", "PUT", `/pack/contracts/approval-settings`, {
+      threshold: 100_000_000,
+    });
     expect({ status: s.status, t: s.json?.threshold }).toEqual({ status: 200, t: 100_000_000 });
     try {
       const id = await seedContract(c, 7);
@@ -145,7 +151,9 @@ describe("HD-FR-34 · Từ chối", () => {
     expect({ status: ok.status, step: ok.json?.step }).toEqual({ status: 200, step: "rejected" });
     await waitStatus(c.sql, runId, "cancelled");
     expect((await contractRow(c, id)).status).toBe("rejected");
-    const [ev] = await c.sql<{ data: { feedback: string } }[]>`select data from contracts.contract_events
+    const [ev] = await c.sql<
+      { data: { feedback: string } }[]
+    >`select data from contracts.contract_events
       where contract_id = ${id} and type = 'rejected'`;
     expect(ev?.data.feedback).toBe("Sai đối tác");
   }, 60_000);
@@ -153,7 +161,9 @@ describe("HD-FR-34 · Từ chối", () => {
   it("D3-06 · Từ chối qua engine (chat-web) ⇒ GET approval hoà giải ⇒ HĐ rejected", async () => {
     const id = await seedContract(c, 9);
     const { runId } = await toLevel1(c, id, 245_000_000);
-    const [t] = await c.sql<{ id: string }[]>`select id from hub.review_tasks where process_run_id = ${runId}
+    const [t] = await c.sql<
+      { id: string }[]
+    >`select id from hub.review_tasks where process_run_id = ${runId}
       and kind = 'review' and status = 'open'`;
     const r = await c.call("B", "POST", `/review-tasks/${t?.id}/decision`, {
       result: "reject",

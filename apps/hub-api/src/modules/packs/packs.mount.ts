@@ -2,6 +2,7 @@
 // + route nghiệp vụ từng gói dưới `/pack/<k>`. Chỗ DUY NHẤT nối `modules/config` (ConfigCache thoả cổng `PackAccessView`) vào
 // module gói. JWT ở gốc: `PACK_PREFIX` nằm trong `PROTECTED_PREFIXES` của `app.ts` (401 trước 404). Gói `pkdemo` (D-08) chỉ
 // ngoài production: `deps.packs.pkdemo` ưu tiên, vắng ⇒ `pkdemoEnabled(appEnv)` (review m-04: chỉ khi khai báo rõ dev/test).
+import { packFeatureKey } from "@ai/contracts";
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../lib/logger";
@@ -11,6 +12,7 @@ import { FileboxClient } from "../attachments/filebox.client";
 import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
@@ -85,7 +87,7 @@ function rejectToolCollisions(d: PacksMountDeps): void {
     .catch(() => logger.warn("pack-tool-collision-check-failed", {}));
 }
 
-/** HD1 (đọc/sửa, tải lên) + HD2 (trích, nhập tay): một hàng đợi trích dùng chung cho tải lên và trích lại. */
+/** HD1 (đọc/sửa, tải lên) + HD2 (trích, nhập tay) + HD3 (flow duyệt trên engine: starter, tool gói, quét, trần thao tác). */
 function mountContracts<E extends Env>(
   app: Hono<E>,
   d: PacksMountDeps & { db: Db },
@@ -97,8 +99,26 @@ function mountContracts<E extends Env>(
   app.route(base, contractsModule(db, view, fb ? fileboxClients(fb) : null)); // HD1 T7 + T8 (link tệp)
   const aiDeps = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
-  const ai = contractsAiModule(db, view, { ...aiDeps, tax });
+  const timeZoneOf = async (tid: string) =>
+    (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
+  const ai = contractsAiModule(
+    db,
+    view,
+    { ...aiDeps, tax },
+    {
+      bridge: d.packRuns ?? {},
+      ...(d.packTools ? { tools: d.packTools } : {}),
+      quota: actionQuota({
+        ...(d.redis ? { redis: d.redis } : {}),
+        limit: envInt("CONTRACTS_ACTIONS_TENANT_DAY", ACTIONS_TENANT_DAILY),
+        timeZoneOf,
+      }),
+      tenants: () => packTenants(view, CONTRACTS_KEY),
+      ...(d.signal ? { signal: d.signal } : {}),
+    },
+  );
   app.route(base, ai.routes); // HD2
+  app.route(base, ai.approval); // HD3
   if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   app.route(base, contractsRemind(d, view, db)); // HD4
 }
@@ -118,6 +138,21 @@ function contractsRemind(d: PacksMountDeps, view: PackAccessView, db: Db) {
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
     ...(d.signal ? { signal: d.signal } : {}),
   });
+}
+
+/** Env số nguyên dương, sai/vắng ⇒ mặc định. */
+const envInt = (k: string, def: number): number => {
+  const n = Number(process.env[k]);
+  return Number.isInteger(n) && n > 0 ? n : def;
+};
+
+/** HD3 · tenant có entitlement `<k>-read` (cache cấu hình, 0 SQL) — tập quét của vòng flow duyệt. */
+async function packTenants(view: PackAccessView, key: string): Promise<string[]> {
+  const cat = await view.catalog();
+  const f = cat.features.find((x) => x.key === packFeatureKey(key, "read"));
+  if (!f) return [];
+  const suffix = `:${f.id}`;
+  return [...cat.entitled].filter((e) => e.endsWith(suffix)).map((e) => e.slice(0, -suffix.length));
 }
 
 /** HD2 · tra MST Cục Thuế (egress `lib/`, gói không gọi HTTP): `CONTRACTS_TAX_LOOKUP_URL` vắng/sai ⇒ không tra. */

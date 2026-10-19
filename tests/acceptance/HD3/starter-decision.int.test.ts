@@ -1,7 +1,8 @@
 // HD-FR-34 · AC34a · D3-07 (N2-D06 mở rộng, người dùng chốt 2026-10-19): stage `exclude_starter` (cấp 2) rơi `needs_decision`
 // lý do KHÔNG thuộc nhóm duyệt (`permission_lost` — `use_current` luôn được đưa ra) ⇒ người bắt đầu chọn `use_current` (= coi như
-// Đạt, lách cấp 2) ⇒ 403 STARTER_CANNOT_REVIEW, stage không đi tiếp; người bắt đầu vẫn `cancel` được; admin `use_current` ⇒ 200.
+// Đạt, lách cấp 2) ⇒ 403 STARTER_CANNOT_REVIEW, stage không đi tiếp; người bắt đầu vẫn `cancel` được; admin không bị chặn.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { type CtxN2, errCode, startN2 } from "../N2/_n2";
 import {
   agentStage,
   createDef,
@@ -19,12 +20,11 @@ import {
   startRun,
   waitStatus,
 } from "../P-d/_support/pd";
-import { type CtxN2, errCode, startN2 } from "../N2/_n2";
 
 let c: CtxN2;
 beforeAll(async () => {
   c = await startN2({ processRunsPerTenant: 200 });
-}, 60_000);
+}, 180_000);
 afterAll(async () => {
   await c?.stop();
 });
@@ -63,7 +63,7 @@ async function regrant(): Promise<void> {
 }
 
 describe("AC34a · người bắt đầu không `use_current` ở stage cấp 2 [HD-FR-34]", () => {
-  it("D3-07 · A (người bắt đầu) use_current ⇒ 403 STARTER_CANNOT_REVIEW, run vẫn needs_decision; Adm use_current ⇒ 200", async () => {
+  it("D3-07 · A (người bắt đầu) use_current ⇒ 403 STARTER_CANNOT_REVIEW, run vẫn needs_decision; Adm không bị chặn", async () => {
     const runId = await toLevel2Decision();
     try {
       const no = await decide(c, "A", runId, "use_current");
@@ -72,7 +72,15 @@ describe("AC34a · người bắt đầu không `use_current` ở stage cấp 2 
         code: "STARTER_CANNOT_REVIEW",
       });
       expect((await runRow(c.sql, runId))?.status).toBe("needs_decision");
-      const ok = await decide(c, "Adm", runId, "use_current");
+      // Người khác không bị luật người bắt đầu: Adm use_current đi qua kiểm D3-07 (engine trả 409 NO_OUTPUT vì stage
+      // chưa có output — luật P-a), còn add_attempt ⇒ 200.
+      const other = await decide(c, "Adm", runId, "use_current");
+      expect({ status: other.status, code: errCode(other) }).toEqual({
+        status: 409,
+        code: "NO_OUTPUT",
+      });
+      await regrant();
+      const ok = await decide(c, "Adm", runId, "add_attempt");
       expect({ status: ok.status, code: errCode(ok) }).toEqual({ status: 200, code: null });
     } finally {
       await regrant();

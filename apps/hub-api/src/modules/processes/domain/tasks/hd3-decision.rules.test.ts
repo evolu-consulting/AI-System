@@ -9,7 +9,10 @@ const on = { kind: "review", exclude_starter: true };
 describe("D3-07 · starterDecisionBlocked [HD-FR-34]", () => {
   test("use_current bị chặn với mọi lý do khi người quyết là người bắt đầu", () => {
     for (const reason of DECISION_REASONS)
-      expect({ reason, blocked: starterDecisionBlocked(on, "u1", "u1", reason, "use_current") }).toEqual({
+      expect({
+        reason,
+        blocked: starterDecisionBlocked(on, "u1", "u1", reason, "use_current"),
+      }).toEqual({
         reason,
         blocked: true,
       });
