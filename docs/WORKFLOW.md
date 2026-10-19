@@ -101,6 +101,8 @@ Lát lẫn hai loại ⇒ tách. Phân vân ⇒ làn đầy đủ. Cổng đóng
 ```
 Nhiều lát song song: mỗi agent commit qua `GIT_INDEX_FILE` tạm chỉ chứa file của mình, không `git reset`/`git stash` index chung, không `bun install` ở worktree khác.
 
+**Cổng lát và cổng đợt (TS1, 2026-10-19).** Cổng LÁT = `bun run test:affected [--base=<commit trước lát>]`: đồ thị import (`lib/import-graph.ts`) → bao đóng ngược của file đổi so với `base` (mặc định merge-base với `main`, hoặc chỉ thay đổi chưa commit khi đang ở `main`) → chỉ chạy unit, int (`test:int:par`) và cấu hình e2e dính tới diff, cùng `check` + `lock` + `typecheck` (turbo `...[base]`); `--dry-run` chỉ in kế hoạch, `--e2e=wide` thêm mọi cấu hình nối tới mã backend đổi. Cổng ĐỢT = `bun run test:all` (mọi bước; int/e2e chạy song song, DB/Redis/cổng riêng mỗi việc): chạy khi đóng mốc/đợt, không thay bằng `test:affected`. Cấu hình e2e mới đặt dưới `e2e/**/playwright*.config.ts` và khai DB/Redis trong `META` của `test-e2e-par.rules.ts` (không khai ⇒ nhận DB riêng, không Redis).
+
 ## Vòng một mốc
 
 ```
