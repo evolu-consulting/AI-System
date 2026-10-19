@@ -1,6 +1,7 @@
 // ADM-FR-08 · helper e2e 2FA (test-plan-cd §0 "Oracle TOTP", test-plan-cd-e2e): mã TOTP theo giờ thật bằng oracle
 // độc lập `tests/acceptance/M4/_totp.ts` (KHÔNG dùng `lib/totp.ts` của sản phẩm), chờ sang bước kế theo điều kiện
 // (`expect.poll`, không sleep cố định), bật 2FA qua API cho user fixture. Chạy trong Node/Playwright.
+import { readFileSync, writeFileSync } from "node:fs";
 import { type APIRequestContext, expect } from "@playwright/test";
 import { stepOf, totpAt } from "../../tests/acceptance/M4/_totp";
 
@@ -13,8 +14,23 @@ export {
   wrongCodeAt,
 } from "../../tests/acceptance/M4/_totp";
 
-const API_URL = "http://localhost:3001";
-const nowS = (): number => Math.floor(Date.now() / 1000);
+// TS1: `test:e2e:par` chia cấu hình gốc thành nhiều ca (cổng riêng) ⇒ địa chỉ admin-api từ env của cấu hình.
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+const API_URL = process.env.E2E_API_URL ?? "http://localhost:3001";
+/** Có đồng hồ máy chủ giả (preload `e2e-clock-skew`): giờ máy chủ = giờ thật + độ lệch trong file này. */
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+const clockFile = (): string | undefined => process.env.E2E_CLOCK_FILE || undefined;
+const skewMs = (): number => {
+  const f = clockFile();
+  if (!f) return 0;
+  try {
+    return Number(readFileSync(f, "utf8")) || 0;
+  } catch {
+    return 0;
+  }
+};
+/** Giờ của máy chủ (giây): giờ thật + độ lệch khi đồng hồ máy chủ giả đang bật. */
+const nowS = (): number => Math.floor((Date.now() + skewMs()) / 1000);
 
 /** Mã của bước hiện tại + `offsetSteps` (giờ thật). `offsetSteps = 5` = mã chắc chắn sai. */
 export function codeFor(secret: string, offsetSteps = 0): string {
@@ -26,6 +42,12 @@ export function codeFor(secret: string, offsetSteps = 0): string {
  * hoặc `codeFor(secret, 0)` đều thuộc bước mới hơn bước đã dùng.
  */
 export async function waitNextStep(): Promise<void> {
+  const file = clockFile();
+  if (file) {
+    // Đồng hồ máy chủ giả: dịch thẳng tới đầu bước kế (tín hiệu, không chờ 30 s thật). Mã đã dùng ở bước cũ vẫn bị chặn.
+    writeFileSync(file, String(skewMs() + (30 - (nowS() % 30)) * 1000));
+    return;
+  }
   const start = stepOf(nowS());
   await expect
     .poll(() => stepOf(nowS()), { timeout: 31_000, intervals: [250] })

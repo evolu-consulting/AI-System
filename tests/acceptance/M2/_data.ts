@@ -368,7 +368,17 @@ export async function seedCatalog(sql: Sql, parts: CatalogParts): Promise<void> 
 
 /** Xoá toàn bộ dữ liệu người dùng + danh mục (TRUNCATE tường minh, không dựa vào CASCADE ngầm của M1). */
 export async function truncateCatalog(sql: Sql): Promise<void> {
-  await sql`truncate admin.refresh_tokens, admin.users, admin.tenants, admin.features,
-    admin.secrets, admin.workflows, admin.commands cascade`;
-  await sql`truncate hub.agent_workflows`;
+  // TS1: DELETE trong transaction replica thay TRUNCATE … CASCADE (cùng tập bảng; 190 ms → ~20 ms). Nạp muộn: file này cũng
+  // được Playwright (Node) import chỉ để lấy hằng.
+  const { deleteCascade } = await import("@ai/db/test-db");
+  await deleteCascade(sql, [
+    "admin.refresh_tokens",
+    "admin.users",
+    "admin.tenants",
+    "admin.features",
+    "admin.secrets",
+    "admin.workflows",
+    "admin.commands",
+    "hub.agent_workflows",
+  ]);
 }

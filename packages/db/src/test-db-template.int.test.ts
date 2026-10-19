@@ -20,9 +20,12 @@ const FRESH = withDatabase(BASE, `${stem}_clfresh_test`);
 const SPY = withDatabase(BASE, `${stem}_clspy_test`);
 const maint = postgres(withDatabase(BASE, "postgres"), { max: 1, onnotice: () => {} });
 const FULL = { key: "chk_full", migrate: migrateFullTest };
+// TS1 #208: key riêng mỗi lượt chạy ⇒ không có template cùng key của ô khác làm "donor" (ensureTemplate chép thay vì migrate),
+// để ca bên dưới vẫn kiểm đúng việc dựng lại bằng `migrate` khi hash lệch.
+const SPY_KEY = `chk_spy_${Math.random().toString(36).slice(2, 10)}`;
 
 const dbs = [CLONE, FRESH, SPY].map(dbNameOf);
-const tpls = [templateDbName(dbs[0] ?? "", "chk_full"), templateDbName(dbs[2] ?? "", "chk_spy")];
+const tpls = [templateDbName(dbs[0] ?? "", "chk_full"), templateDbName(dbs[2] ?? "", SPY_KEY)];
 afterAll(async () => {
   const side = await maint<{ n: string }[]>`select datname as n from pg_database
     where datname like ${`${stem.replaceAll("_", "\\_")}\\_cl%`}`;
@@ -163,14 +166,14 @@ describe("ADM-NFR-06 · cloneMigratedTestDb · template, tên DB (int)", () => {
         (await s<{ v: number }[]>`select v from public.marker order by v`).map((r) => r.v),
       );
     await maint.unsafe(`DROP DATABASE IF EXISTS "${tpls[1]}" WITH (FORCE)`);
-    await cloneMigratedTestDb(SPY, { key: "chk_spy", migrate });
+    await cloneMigratedTestDb(SPY, { key: SPY_KEY, migrate });
     expect(calls).toBe(1);
     await withSql(SPY, (s) => s`insert into public.marker values (99)`);
-    await cloneMigratedTestDb(SPY, { key: "chk_spy", migrate });
+    await cloneMigratedTestDb(SPY, { key: SPY_KEY, migrate });
     expect(calls).toBe(1);
     expect(await marker()).toEqual([1]);
-    await maint.unsafe(`COMMENT ON DATABASE "${tpls[1]}" IS 'chk_spy:stale'`);
-    await cloneMigratedTestDb(SPY, { key: "chk_spy", migrate });
+    await maint.unsafe(`COMMENT ON DATABASE "${tpls[1]}" IS '${SPY_KEY}:stale'`);
+    await cloneMigratedTestDb(SPY, { key: SPY_KEY, migrate });
     expect(calls).toBe(2);
     expect(await marker()).toEqual([2]);
   }, 60_000);

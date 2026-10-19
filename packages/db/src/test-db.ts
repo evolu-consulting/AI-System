@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { HUB_TABLE } from "./migrate-hub";
 
+export { deleteCascade } from "./test-db-reset";
 export {
   type CloneOpts,
   cloneMigratedTestDb,

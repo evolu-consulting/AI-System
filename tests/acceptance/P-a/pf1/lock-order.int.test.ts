@@ -132,6 +132,26 @@ describe("P1-48 · decision ∥ cancel ∥ expire [§10]", () => {
   }, 180_000);
 });
 
+/**
+ * TS1 · #234 — `jobDone` chỉ XADD kết quả job vào Redis; Hub xử lý (apply) bất đồng bộ. Sweep lần 2 chạy ngay sau vòng đua có thể
+ * TRƯỚC apply (máy tải) ⇒ run chưa tới `waiting_review` nên chưa hết hạn ⇒ ca đỏ oan ("expired" ≠ "waiting_review"). Chờ TÍN HIỆU
+ * trạng thái (run đã kết thúc, hoặc không còn stage `running`: apply đã chuyển stage) rồi mới sweep lần 2; không chờ mốc giờ,
+ * 15 s chỉ là lưới an toàn khi engine treo.
+ */
+async function settleApply(runId: string): Promise<void> {
+  const end = Date.now() + 15_000;
+  for (;;) {
+    const [r] = await c.sql<
+      { done: boolean }[]
+    >`select (pr.status in ('done','cancelled','failed','expired')
+        or not exists (select 1 from hub.stage_runs s where s.process_run_id = pr.id and s.status = 'running')) as done
+      from hub.process_runs pr where pr.id = ${runId}`;
+    if (r?.done) return;
+    if (Date.now() > end) throw new Error(`apply chưa xong sau 15 s: ${runId}`);
+    await Bun.sleep(10);
+  }
+}
+
 /** Vòng đua: stage đang chạy (job đã claim), `finish` (apply) ∥ `rival` (huỷ / sweep); thứ tự phát xen kẽ theo i. */
 async function raceApply(i: number, rival: (runId: string) => Promise<unknown>, expired: boolean) {
   const s = await startInRoom(c);
@@ -149,6 +169,7 @@ async function raceApply(i: number, rival: (runId: string) => Promise<unknown>, 
   });
   const res = await Promise.allSettled(started);
   expect(Date.now() - t0).toBeLessThan(15_000);
+  await settleApply(s.runId);
   const txt = res.map((r) =>
     r.status === "fulfilled" ? JSON.stringify(r.value ?? "") : String(r.reason),
   );

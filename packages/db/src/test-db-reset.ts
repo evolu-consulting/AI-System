@@ -96,6 +96,27 @@ export async function snapshot(sql: Sql): Promise<Snapshot> {
   return { fp, all: tabs.map((t) => t.name), tables, seqs };
 }
 
+/**
+ * TS1 · xoá sạch dữ liệu `roots` và mọi bảng tham chiếu chúng qua FK (đúng tập của `TRUNCATE … CASCADE`) bằng DELETE trong một
+ * transaction `session_replication_role = replica` (bỏ qua FK/trigger như `resetToSnapshot`). Windows: TRUNCATE tạo lại file
+ * (bảng + index + toast) của ~30 bảng mỗi lần, đo 190 ms/lần idle và > 1 s khi 6 worker chạy cùng lúc; DELETE bảng nhỏ
+ * ~15 ms. Không đặt lại sequence (TRUNCATE mặc định cũng không). `roots` là hằng trong mã test (`schema.bảng`).
+ */
+export async function deleteCascade(sql: Sql, roots: readonly string[]): Promise<void> {
+  const list = roots.map((r) => `'${r.replaceAll("'", "''")}'::regclass::oid`).join(", ");
+  const rows = await sql.unsafe<{ name: string }[]>(
+    `with recursive t(oid) as (
+       select x from unnest(array[${list}]::oid[]) x
+       union select k.conrelid from pg_constraint k join t on k.confrelid = t.oid where k.contype = 'f'
+     ) select format('%I.%I', n.nspname, c.relname) as name
+       from t join pg_class c on c.oid = t.oid join pg_namespace n on n.oid = c.relnamespace`,
+  );
+  await sql.begin(async (tx) => {
+    await tx.unsafe("set local session_replication_role = replica");
+    await tx.unsafe(rows.map((r) => `delete from only ${r.name};`).join("\n"));
+  });
+}
+
 /** Về đúng ảnh chụp nếu vân tay còn trùng; trả false (không đổi gì) khi lệch. */
 export async function resetToSnapshot(sql: Sql, s: Snapshot): Promise<boolean> {
   if ((await fingerprint(sql)) !== s.fp) return false;

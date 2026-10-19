@@ -176,6 +176,9 @@ const notGrantable = e(409, "AGENT_NOT_GRANTABLE");
 const notEnt = (id: string) => e(409, "NOT_ENTITLED", { agent_ids: [id] });
 async function expectBad(cases: Bad[]): Promise<void> {
   const s0 = await stateOf(x.sql);
+  // TS1 · #234: NOTIFY của ca trước (vd `entitle` ở `finally` của A29) có thể còn trên đường tới listener khi máy tải; sentinel
+  // xả hết thông điệp đã commit TRƯỚC mốc để "0 ghi" chỉ tính từ request của ca này (điều kiện kiểm không đổi).
+  await n.sentinel();
   const m = n.mark();
   const got = [];
   for (const [w, g, t] of cases) got.push(errOf(await postGrant(x, w, g, t)));

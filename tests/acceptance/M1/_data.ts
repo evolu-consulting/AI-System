@@ -159,7 +159,10 @@ export async function insertBulk(sql: Sql, hash: string, n = 55): Promise<void> 
 }
 
 export async function truncateAll(sql: Sql): Promise<void> {
-  await sql`truncate admin.refresh_tokens, admin.users, admin.tenants cascade`;
+  // TS1: DELETE trong transaction replica thay TRUNCATE … CASCADE (cùng tập bảng; 190 ms → ~20 ms). Nạp muộn vì file này
+  // cũng được Playwright (Node) import chỉ để lấy hằng.
+  const { deleteCascade } = await import("@ai/db/test-db");
+  await deleteCascade(sql, ["admin.refresh_tokens", "admin.users", "admin.tenants"]);
 }
 
 /** Argon2id đúng tham số của spec §6, độc lập với code sản phẩm. */

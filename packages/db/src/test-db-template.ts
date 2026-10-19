@@ -3,7 +3,7 @@
 // không chạy ALTER ROLE của migration dev song song). Đường nóng không tạo/xoá database (xem cloneMigratedTestDb).
 // Chỉ nhận DB tên kết thúc `_test`. `resetTestDb` giữ nguyên cho test migration (cần schema rỗng).
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { appendFileSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
@@ -80,14 +80,33 @@ async function tplComment(m: Sql, tpl: string): Promise<string | null> {
   return r?.c ?? null;
 }
 
+/**
+ * TS1 · #208 — template của MỘT đích khác đã dựng đúng key + hash migration (COMMENT `key:hash` khớp ⇒ nội dung y hệt vì
+ * `migrate` theo key không phụ thuộc tên DB). Sau khi đổi migration mọi ô worker (s1…s6 × key) đều lệch cùng lúc và dựng
+ * tuần tự dưới BUILD_LOCK (mỗi lần migrate Admin + Hub + gói ~2–10 s) ⇒ worker cuối chờ hook 30 s quá hạn; chép từ template
+ * đã có (~0,3 s) thay vì migrate lại.
+ */
+async function findDonor(m: Sql, tpl: string, want: string): Promise<string | undefined> {
+  const rows = await m<{ n: string }[]>`
+    select datname as n from pg_database
+    where shobj_description(oid, 'pg_database') = ${want} and datname <> ${tpl} and datname like '%\\_tpl\\_test'
+    order by datname limit 1`;
+  return rows[0]?.n;
+}
+
 async function ensureTemplate(m: Sql, url: string, tpl: string, o: CloneOpts): Promise<void> {
   const want = comment(o.key);
   if ((await tplComment(m, tpl)) === want) return;
   await m`select pg_advisory_lock(${BUILD_LOCK})`;
   try {
     if ((await tplComment(m, tpl)) === want) return;
+    const donor = await findDonor(m, tpl, want);
     for (let i = 0; ; i++) {
       await m.unsafe(`DROP DATABASE IF EXISTS ${q(tpl)} WITH (FORCE)`);
+      if (donor) {
+        await cloneWithRetry(m, tpl, donor);
+        break;
+      }
       await m.unsafe(`CREATE DATABASE ${q(tpl)}`);
       try {
         await o.migrate(onDb(url, tpl));
@@ -175,6 +194,17 @@ export async function dropTrashDbs(
   }
 }
 
+/**
+ * TS1 · đo: `TEST_DB_TRACE=<file>` ghi mỗi lần đi ĐƯỜNG CHẬM (đổi tên + CREATE DATABASE ~3 s trên Windows, rác phải DROP sau)
+ * kèm file test đang chạy — để biết ca nào làm đổi schema/quyền thay vì chỉ ghi dữ liệu. Không đặt biến ⇒ không làm gì.
+ */
+function traceSlowClone(target: string, key: string): void {
+  const out = process.env.TEST_DB_TRACE;
+  if (!out) return;
+  const g = globalThis as { expect?: { getState?: () => { testPath?: string } } };
+  appendFileSync(out, `${target}\t${key}\t${g.expect?.getState?.().testPath ?? "?"}\n`);
+}
+
 /** Ảnh chụp mỗi đích ngay sau lần clone gần nhất trong tiến trình này, gắn với đúng lần dựng template. */
 const snaps = new Map<string, { tag: string; snap: Snapshot }>();
 
@@ -214,6 +244,7 @@ export async function cloneMigratedTestDb(url: string | undefined, o: CloneOpts)
     await terminate(m, target);
     const s = snap;
     if (await onTarget(url, (sql) => resetToSnapshot(sql, s)).catch(() => false)) return;
+    traceSlowClone(target, o.key);
     const trash = trashNames(target);
     await renameDb(m, target, trash.next());
     await cloneWithRetry(m, target, tpl);

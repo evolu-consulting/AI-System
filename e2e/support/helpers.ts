@@ -208,7 +208,9 @@ export async function leaksOnPage(page: Page, t: Traffic, forms: string[]): Prom
 export const toast = (page: Page, text: string | RegExp) =>
   page.getByRole("status").filter({ hasText: text });
 
-const API_URL = "http://localhost:3001";
+// TS1: cổng admin-api theo cấu hình (E2E_API_URL do playwright.config.ts đặt); mặc định 3001 như cũ.
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+const API_URL = process.env.E2E_API_URL ?? "http://localhost:3001";
 
 /** Gọi thẳng admin-api (cổng 3001) bằng token platform_admin seed — để dựng thay đổi "từ phía khác" (tab 2). */
 export async function apiAsAdmin(request: APIRequestContext) {

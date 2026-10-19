@@ -103,8 +103,16 @@ async function worker(
 /** Dòng tổng kết + các ca `(fail)` trong log của một lô. */
 function summarize(r: Run): { pass: number; fail: number; fails: string[] } {
   const num = (re: RegExp) => Number(re.exec(r.text)?.[1] ?? 0);
-  const fails = r.text.split(/\r?\n/).filter((l) => l.startsWith("(fail)"));
-  return { pass: num(/^\s*(\d+) pass/m), fail: num(/^\s*(\d+) fail/m), fails };
+  const lines = r.text.split(/\r?\n/);
+  const fails = lines.filter((l) => l.startsWith("(fail)"));
+  // Lỗi không gắn ca nào ("# Unhandled error between tests", chunk đỏ dù 0 fail): liệt kê để không bị che.
+  const k = lines.findIndex((l) => l.startsWith("# Unhandled error"));
+  const errs = num(/^\s*(\d+) error/m);
+  if (errs > 0)
+    fails.push(
+      `(unhandled) ${k >= 0 ? (lines.slice(k + 1, k + 4).find((l) => l.startsWith("error:")) ?? "") : ""}`,
+    );
+  return { pass: num(/^\s*(\d+) pass/m), fail: num(/^\s*(\d+) fail/m) + errs, fails };
 }
 function loadTimings(root: string): Timings {
   try {
@@ -122,13 +130,18 @@ function saveTimings(root: string, runs: Run[], old: Timings): void {
   writeFileSync(join(root, TIMINGS), `${JSON.stringify(t, null, 2)}\n`);
 }
 
-async function dbCli(root: string, args: string[]): Promise<void> {
-  const p = Bun.spawn(["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", ...args], {
-    cwd: root,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  if ((await p.exited) !== 0) throw new Error(`test-db-cli ${args[0]} lỗi`);
+/** `test-db-cli gc 32` tách rời tiến trình cha (không chờ): chỉ xoá DB `…_trash_<id>_test` (mỗi lượt tên riêng). */
+function gcInBackground(root: string): void {
+  const p = Bun.spawn(
+    ["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", "gc", "32"],
+    {
+      cwd: root,
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "ignore",
+    },
+  );
+  p.unref();
 }
 
 /** Thuê ô worker (advisory lock giữ trong tiến trình con tới khi lượt này xong/chết; tạo DB của ô). */
@@ -149,6 +162,28 @@ async function leaseSlots(
   }
   const slots = (/LEASE ([\d,]+)/.exec(text)?.[1] ?? "").split(",").map(Number);
   return { slots, release: () => p.stdin.end() };
+}
+
+/**
+ * File nặng DB (INT_SERIAL) chạy SAU khi pool xong (máy rảnh: không tranh DB/CPU với worker), nhưng mỗi file một ô riêng và
+ * song song với nhau (TS1: 4 file nối tiếp ≈ 85 s → ≈ file chậm nhất ≈ 25–65 s); hơn số ô thì chia vòng tròn theo ô.
+ */
+async function serialLanes(
+  serial: string[],
+  slots: string[],
+  envOf: (i: number) => Record<string, string>,
+  root: string,
+): Promise<Run[]> {
+  const lanes = slots.map((_, i) => serial.filter((__, k) => k % slots.length === i));
+  const done = await Promise.all(
+    lanes.map(async (files, i) => {
+      const out: Run[] = [];
+      for (const [k, f] of files.entries())
+        out.push(await runChunk(`${slots[i]}-serial${k}`, 0, [f], { env: envOf(i), root }));
+      return out;
+    }),
+  );
+  return done.flat();
 }
 
 async function main(): Promise<number> {
@@ -173,12 +208,11 @@ async function main(): Promise<number> {
   const runs = (
     await Promise.all(slots.map((s, i) => worker(s, queue, { timings, n, env: envOf(i) }, root)))
   ).flat();
-  // Tuần tự sau cùng, trên ô đầu (đã rảnh): không đụng DB chung của phiên khác đang chạy test:int.
-  if (serial.length)
-    runs.push(await runChunk(`${slots[0]}-serial`, 0, serial, { env: envOf(0), root }));
+  runs.push(...(await serialLanes(serial, slots, envOf, root)));
   lease.release();
-  // DB rác (đích cũ khi test đổi schema) xoá theo loạt khi đủ 32 cái: DROP DATABASE ép checkpoint (~0,3–2 s mỗi cái).
-  await dbCli(root, ["gc", "32"]).catch((e) => console.error(String(e)));
+  // DB rác (đích cũ khi test đổi schema) xoá theo loạt khi đủ 32 cái: mỗi DROP DATABASE ép checkpoint (đo ~1 s/DB trên máy
+  // này ⇒ 30–35 s cho 35–58 DB). TS1: chạy NỀN tách rời (không chặn kết quả); lượt sau không thấy khác biệt vì tên rác duy nhất.
+  gcInBackground(root);
   saveTimings(root, runs, timings);
   let [pass, fail] = [0, 0];
   for (const r of runs) {

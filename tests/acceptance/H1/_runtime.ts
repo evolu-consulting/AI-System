@@ -45,18 +45,27 @@ export class ScriptRuntime {
     readonly workerId = "qc-rt-1",
   ) {}
 
-  /** Job `queued` kế của run (bỏ job đã nhận); không có trong `ms` → undefined. Không claim. */
+  /**
+   * Job `queued` kế của run (bỏ job đã nhận); không có trong `ms` → undefined. Không claim.
+   * TS1: run đã kết thúc (status ≠ running) mà không còn job queued ⇒ sẽ không bao giờ có job ⇒ trả undefined NGAY (tín hiệu),
+   * không chờ hết `ms` (vòng đua huỷ ∥ kết thúc của A37 từng chờ trọn 3 s mỗi vòng). Job và status đọc trong MỘT câu SQL
+   * (cùng snapshot) nên không lỡ job vừa tạo.
+   */
   async peek(runId: string, ms = 5_000): Promise<{ id: string; payload: unknown } | undefined> {
     const end = Date.now() + ms;
     for (;;) {
       const seen = [...this.seen];
       const [row] = await this.sql<
-        { id: string; payload: unknown }[]
-      >`select id, payload from hub.jobs
-        where run_id = ${runId} and status = 'queued' and not (id = any(${this.sql.array(seen, 2950)}))
-        order by created_at, id limit 1`;
-      if (row || Date.now() > end) return row;
-      await Bun.sleep(50);
+        { id: string | null; payload: unknown; run_status: string | null }[]
+      >`select j.id, j.payload, (select status from hub.runs where id = ${runId}) as run_status
+        from (select 1) x left join lateral (
+          select id, payload from hub.jobs
+          where run_id = ${runId} and status = 'queued' and not (id = any(${this.sql.array(seen, 2950)}))
+          order by created_at, id limit 1) j on true`;
+      if (row?.id) return { id: row.id, payload: row.payload };
+      const ended = row?.run_status != null && row.run_status !== "running";
+      if (ended || Date.now() > end) return undefined;
+      await Bun.sleep(20);
     }
   }
 
