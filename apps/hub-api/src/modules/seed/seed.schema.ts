@@ -61,7 +61,14 @@ export const SeedAgentSchema = z.strictObject({
 /** H2a plan-db §4: agent `dify-*` chỉ có `workflow_key` (key Admin, `CATALOG_KEY_RE`); thừa khoá → lỗi seed. */
 export const DIFY_RUNTIMES = ["dify-workflow", "dify-agent"] as const;
 export type DifyRuntime = (typeof DIFY_RUNTIMES)[number];
-export const DifyRuntimeOptionsSchema = z.strictObject({ workflow_key: WorkflowKeySchema });
+export const DifyRuntimeOptionsSchema = z.strictObject({
+  workflow_key: WorkflowKeySchema,
+  /** M2-chat · tool gói cấp qua token chat ngắn hạn (chỉ tool đọc) khi app có input `hub_tool_token`. */
+  pack_tools: z
+    .array(z.string().regex(/^[a-z0-9-]{2,32}$/))
+    .max(20)
+    .optional(),
+});
 
 export const SeedAgentWorkflowSchema = z.strictObject({
   agent: AgentKeySchema,

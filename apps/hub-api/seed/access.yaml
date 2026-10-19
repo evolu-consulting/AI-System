@@ -13,6 +13,16 @@ grants:
   - agent: mgmt-assistant
     tenant_key: acme
     subject: group:beta-testers
+  # M2-chat · ai có vai gói contracts (Group vai do Admin tạo khi bật gói) đều dùng được trợ lý; tool vẫn theo quyền + RLS.
+  - agent: mgmt-assistant
+    tenant_key: acme
+    subject: group:contracts-viewer
+  - agent: mgmt-assistant
+    tenant_key: acme
+    subject: group:contracts-editor
+  - agent: mgmt-assistant
+    tenant_key: acme
+    subject: group:contracts-owner
   - agent: assistant
     tenant_key: acme
     subject: group:beta-testers

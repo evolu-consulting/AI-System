@@ -21,6 +21,7 @@ const infoOf = (t: PackToolDef): PackToolInfo => ({
   name: t.name,
   description: t.description,
   sideEffect: t.side_effect,
+  action: t.action ?? "write",
   params: t.params,
 });
 const failed = (code: string, sent: boolean): PackToolCallResult => ({

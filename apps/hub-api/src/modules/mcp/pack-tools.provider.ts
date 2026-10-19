@@ -12,7 +12,14 @@ import {
   validateToolArgs,
 } from "./mcp.rules";
 
-type Ctx = { tenantId: string; userId: string; runId: string; tools: readonly string[] };
+/** `readOnly` (M2-chat · token chat Dify) ⇒ chỉ tool `action: read`. */
+type Ctx = {
+  tenantId: string;
+  userId: string;
+  runId: string;
+  tools: readonly string[];
+  readOnly?: boolean;
+};
 
 export type PackMcpTools = {
   tools(ctx: Ctx): Promise<McpToolDef[]>;
@@ -26,6 +33,7 @@ export function packMcpTools(packs: PackToolCatalog): PackMcpTools {
   const usable = async (ctx: Ctx, key: string): Promise<boolean> => {
     const info = packs.info(key);
     if (!info || info.sideEffect || !ctx.tools.includes(key)) return false;
+    if (ctx.readOnly && info.action !== "read") return false;
     const who = { tenantId: ctx.tenantId, userId: ctx.userId };
     return (await packs.enabled(ctx.tenantId, key)) && (await packs.canUse(who, key));
   };
@@ -50,7 +58,7 @@ export function packMcpTools(packs: PackToolCatalog): PackMcpTools {
           if (!v.ok) return toolError("INVALID_ARGS");
           const res = await packs.call(
             name,
-            { ...ctx, runId: ctx.runId },
+            { tenantId: ctx.tenantId, userId: ctx.userId, runId: ctx.runId },
             v.inputs as PackToolArgs,
           );
           return res.kind === "ok" ? toolText(res.text) : toolError("UPSTREAM_ERROR");

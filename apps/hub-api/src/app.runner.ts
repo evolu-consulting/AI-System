@@ -2,7 +2,7 @@
 // `JobAgentRunner` (`agentic-cli`, job `agent.cli` + MCP B8) hoặc `DifyAgentRunner` (`dify-*`). Tách khỏi `app.ts` (≤ 250 dòng);
 // REVIEW 1 Hub #8: kèm `runDrivers` (driver Orchestrator/`direct`) + `startRunLoops` (lease, sweeper, orphan) từ `app.ts`.
 import { DEFAULT_JOB_MAX_WAIT_S } from "./app.async";
-import { runnerMcp } from "./app.mcp";
+import { chatToolTokens, runnerMcp } from "./app.mcp";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
@@ -12,8 +12,10 @@ import { CredentialService, loadMasterKey } from "./modules/dify/credential.serv
 import { DifyClient } from "./modules/dify/dify.client";
 import { khPrepareJob } from "./modules/kh/kh.job";
 import type { KhRuntime } from "./modules/kh/kh.mount";
+import type { ChatToolTokens } from "./modules/mcp/chat-token";
 import { directDriver } from "./modules/mention/direct-driver";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
+import type { PackToolCatalog } from "./modules/packs/kit/application/pack-tools.ports";
 import { type AgentRunner, JobAgentRunner } from "./modules/runner/job/job-agent-runner";
 import { startOrphanSweep } from "./modules/runner/orphan-sweep";
 import { RoutingRunner } from "./modules/runner/routing-runner";
@@ -38,6 +40,8 @@ export type AgentRunnerDeps = {
   secretMasterKey?: string;
   /** K1 · client + cache project KH (`mountH4a`); vắng ⇒ job stage không có `kh-query`. */
   kh?: KhRuntime;
+  /** M2-chat · cấp token tool chat ngắn hạn cho agent Dify (vắng ⇒ Dify không tool). */
+  toolTokens?: Pick<ChatToolTokens, "issue">;
 };
 
 /** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
@@ -76,6 +80,7 @@ export function agentRunner(d: AgentRunnerDeps): AgentRunner {
     credentials,
     dify: new DifyClient(),
     log: d.log,
+    ...(d.toolTokens ? { toolTokens: d.toolTokens } : {}),
   });
   return new RoutingRunner({ job, dify });
 }
@@ -92,6 +97,8 @@ export type RunDriversDeps = {
   publicInternalUrl?: string;
   secretMasterKey?: string;
   signal?: AbortSignal;
+  /** M2-chat · registry tool gói (token chat Dify). */
+  packTools?: PackToolCatalog;
 };
 
 /**
@@ -109,6 +116,7 @@ export function runDrivers(d: RunDriversDeps): { driver: RunDriver; directDriver
     log: d.log,
     publicInternalUrl: d.publicInternalUrl,
     secretMasterKey: d.secretMasterKey,
+    ...(d.packTools ? { toolTokens: chatToolTokens(d.redis, d.packTools) } : {}),
   });
   return {
     driver: orchestratorDriver({ db: d.db, runner, users: d.config, log: d.log }),

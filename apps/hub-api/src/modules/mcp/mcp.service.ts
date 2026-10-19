@@ -14,6 +14,7 @@ import { agentWorkflowIds } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { type KhJobCtx, type KhQueryService, khJobCtx } from "../kh/kh.query.service";
 import type { ToolArgs, WorkflowInvoker } from "./adapters/workflow-invoker";
+import { type ChatToolTokens, isChatToken } from "./chat-token";
 import * as repo from "./mcp.repo";
 import {
   discoverResult,
@@ -48,6 +49,8 @@ export type McpContext = {
   files: readonly JobAttachment[];
   /** K1 D6 · `kh_jobs` + stage của job; null ⇒ không `kh-query`. */
   kh: KhJobCtx | null;
+  /** M2-chat · token chat ngắn hạn (Dify): CHỈ tool gói `read`, không workflow/KH; `jobId` rỗng. */
+  readOnly?: boolean;
 };
 
 /**
@@ -74,6 +77,8 @@ export type McpServiceDeps = {
   kh?: KhQueryService;
   /** N2-FR-03 · tool của gói (CR-087); vắng ⇒ không có. */
   packTools?: PackMcpTools;
+  /** M2-chat · token chat ngắn hạn (Dify); vắng ⇒ chỉ token job. */
+  chatTokens?: Pick<ChatToolTokens, "resolve">;
 };
 
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
@@ -86,6 +91,7 @@ export class McpService {
   async authenticate(authorization: string | undefined): Promise<McpContext | null> {
     const m = /^Bearer (\S+)$/.exec(authorization ?? "");
     const token = m?.[1];
+    if (token && isChatToken(token)) return this.#chatContext(token);
     if (!token || !isJobToken(token)) return null;
     const job = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
       repo.jobByTokenHash(tx, hashJobToken(token)),
@@ -103,6 +109,25 @@ export class McpService {
       tools: p.data.mcp?.tools ?? [],
       files: p.data.attachments ?? [],
       kh: khJobCtx(job.khItems, job.stageRunId),
+    };
+  }
+
+  /** M2-chat · token chat: hết hạn/thu hồi/sai ⇒ null (401). Ngữ cảnh chỉ đọc, không job/file/KH. */
+  async #chatContext(token: string): Promise<McpContext | null> {
+    const c = await this.d.chatTokens?.resolve(token);
+    if (!c) return null;
+    const { tenantId, userId, runId, agentId, tools } = c;
+    return {
+      jobId: "",
+      tenantId,
+      userId,
+      runId,
+      flowId: "",
+      agentId,
+      tools,
+      files: [],
+      kh: null,
+      readOnly: true,
     };
   }
 
@@ -132,6 +157,7 @@ export class McpService {
 
   /** R19 từ cache (0 query DB): workflow gắn agent ∩ `enabled` ∩ `payload.mcp.tools`; H2c `hasFiles` = job có file. */
   async tools(ctx: McpContext): Promise<McpToolDef[]> {
+    if (ctx.readOnly) return (await this.d.packTools?.tools(ctx)) ?? [];
     const [snapshot, catalog] = await Promise.all([
       this.d.config.snapshot(),
       this.d.config.catalog(),
@@ -159,6 +185,7 @@ export class McpService {
     if (kh) return rpcResult(req.id, await kh.call(args), stateless);
     const pk = await this.d.packTools?.accepts(ctx, name); // N2-FR-03
     if (pk) return rpcResult(req.id, await pk.call(args), stateless);
+    if (ctx.readOnly) return rpcError(req.id, -32602, MCP_UNKNOWN_TOOL); // M2-chat · token chat
     const tools = await this.tools(ctx);
     const catalog = await this.d.config.catalog();
     const wf = [...catalog.workflows.values()].find((w) => w.key === name);

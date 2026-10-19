@@ -2,8 +2,21 @@
 // SSE vào tin trả lời đang chạy, tiêu đề hội thoại, câu lỗi. Không I/O.
 import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
 
-/** Agent dùng chung của app mgmt ở Agent Hub (seed `apps/hub-api/seed/agents.yaml`). Đổi backend = đổi agent, không đổi đây. */
-export const ASSISTANT_AGENT = "mgmt-assistant";
+/** Agent mặc định của app mgmt ở Agent Hub (seed `apps/hub-api/seed/agents.yaml`, Claude + tool đọc). */
+export const DEFAULT_ASSISTANT_AGENT = "mgmt-assistant";
+const AGENT_KEY_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+/**
+ * Cờ cấu hình chọn backend, không đổi code: env build `PUBLIC_ASSISTANT_AGENT` (vd `mgmt-assistant-dify`); vắng/sai dạng ⇒
+ * mặc định. Hoặc giữ key và đổi runtime agent ở Hub (`hub:seed`).
+ */
+export function assistantAgent(env: Record<string, unknown> | undefined): string {
+  const v = env?.PUBLIC_ASSISTANT_AGENT;
+  return typeof v === "string" && AGENT_KEY_RE.test(v) ? v : DEFAULT_ASSISTANT_AGENT;
+}
+export const ASSISTANT_AGENT = assistantAgent({
+  PUBLIC_ASSISTANT_AGENT: import.meta.env?.PUBLIC_ASSISTANT_AGENT,
+});
 export const QUESTION_MAX = 4000;
 const TITLE_MAX = 80;
 

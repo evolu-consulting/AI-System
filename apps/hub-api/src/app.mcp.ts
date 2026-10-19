@@ -3,6 +3,7 @@
 import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
+import type { Redis } from "./lib/redis";
 import type { AttachmentStorage } from "./modules/attachments/storage";
 import type { CatalogSnapshot } from "./modules/config/catalog.rules";
 import type { ConfigCache } from "./modules/config/config.service";
@@ -11,6 +12,7 @@ import { DifyClient } from "./modules/dify/dify.client";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { KhQueryService } from "./modules/kh/kh.query.service";
 import { DifyWorkflowInvoker, type WorkflowInvoker } from "./modules/mcp/adapters/workflow-invoker";
+import { ChatToolTokens, redisChatTokenStore } from "./modules/mcp/chat-token";
 import { confirmationGate } from "./modules/mcp/confirm.service";
 import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
@@ -49,7 +51,14 @@ export type McpMountDeps = {
   kh?: KhRuntime;
   /** N2-FR-03 · registry tool gói (CR-087). */
   packTools?: PackToolCatalog;
+  /** M2-chat · kho token chat ngắn hạn (Dify gọi `/mcp`); vắng ⇒ chỉ token job. */
+  redis?: Redis;
 };
+
+/** M2-chat · token tool chat ngắn hạn (Redis + registry tool gói) — dùng chung cho `/mcp` (tra) và runner Dify (cấp). */
+export function chatToolTokens(redis: Redis, packTools: PackToolCatalog): ChatToolTokens {
+  return new ChatToolTokens({ store: redisChatTokenStore(redis), packs: packTools });
+}
 
 /** P-d2 · D2-02 · MỘT `WorkflowInvoker` dùng chung cho `/mcp` và stage `tool` của quy trình (`app.ts` dựng trước mount). */
 export function createWorkflowInvoker(d: Omit<McpMountDeps, "kh" | "packTools">): WorkflowInvoker {
@@ -92,6 +101,7 @@ export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
     sideEffect: confirmationGate({ db: d.db, log: d.log }),
     kh: d.kh && new KhQueryService({ db: d.db, rt: d.kh, log: d.log }),
     ...(d.packTools ? { packTools: packMcpTools(d.packTools) } : {}),
+    ...(d.redis && d.packTools ? { chatTokens: chatToolTokens(d.redis, d.packTools) } : {}),
   });
   app.route("/mcp", mcpRoutes(svc, { requestTimeoutS: difyTimeoutMaxS + MCP_IDLE_MARGIN_S }));
 }

@@ -43,7 +43,8 @@ describe("HUB-FR-23 · đối chiếu admin.workflows", () => {
       agentWorkflows: [{ agent: "assistant", workflow: "x-wf" }],
       sideEffect: ["y-wf"],
     };
-    expect(workflowKeysOf(p).sort()).toEqual(["tom", "tro-ly", "x-wf", "y-wf"]);
+    // M2-chat: + `mgmt-assistant` (agent `mgmt-assistant-dify`, vắng ⇒ bỏ agent như dify-*).
+    expect(workflowKeysOf(p).sort()).toEqual(["mgmt-assistant", "tom", "tro-ly", "x-wf", "y-wf"]);
     const r = resolveWorkflows(p, []);
     expect(r.issues).toEqual([]);
     expect(r.agents.map((a) => a.key)).not.toContain("dify-tom");

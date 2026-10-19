@@ -123,6 +123,9 @@ export function runtimeOptionsOf(
 ): Record<string, unknown> {
   const wf = wfs[0];
   const dify = wf ? difyOptions(runtime, wf) : null;
+  // M2-chat · agent Dify giữ `pack_tools` (token chat ngắn hạn, chỉ tool đọc).
+  const packTools = given?.pack_tools;
+  if (dify && Array.isArray(packTools)) return { ...dify, pack_tools: packTools };
   return dify ?? given ?? {};
 }
 

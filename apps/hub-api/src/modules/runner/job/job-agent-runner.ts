@@ -41,6 +41,7 @@ import { KH_QUERY_HINT, type KhJobPreparer } from "../../kh/kh.job";
 import { mcpToolsFor } from "../../mcp/mcp.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
+import { noteChatUsage } from "../../usage/chat-usage";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
   type AgentRole,
@@ -372,6 +373,7 @@ export async function runJob(
     for await (const ev of runner.run(t, signal)) {
       if (ev.type === "job.result") {
         const { output, usage } = ev;
+        noteChatUsage(task, usage, true); // M2-chat · usage chat theo tenant
         return {
           kind: "result",
           jobId: ev.job_id,
@@ -383,6 +385,7 @@ export async function runJob(
       }
       if (ev.type === "job.failed") {
         const f = { code: runErrorCodeOf(ev.code), reason: ev.reason, usage: ev.usage };
+        noteChatUsage(task, ev.usage, false);
         return { kind: "failed", jobId: ev.job_id, ...f, ...streamed() };
       }
       await t.stream?.onEvent(ev);

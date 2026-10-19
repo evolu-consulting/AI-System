@@ -12,9 +12,12 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import type { CatalogWorkflow } from "../../commands/catalog.types";
 import { type CatalogSnapshot, tenantKeyOf } from "../../config/catalog.rules";
 import { stepLabel } from "../../conversations/conversations.rules";
+import { type ChatToolTokens, chatTokenTtlS, HUB_TOOL_TOKEN_INPUT } from "../../mcp/chat-token";
 import type { AgentRunner, AgentTask } from "../../runner/job/job-agent-runner";
+import { packToolKeys } from "../../runner/job/pack-tool-keys.rules";
 import { syntheticFailed } from "../../runner/runner.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import { type CredentialService, isCredentialError } from "../credential.service";
@@ -41,6 +44,8 @@ export type DifyAgentRunnerDeps = {
   credentials: Pick<CredentialService, "apiKey">;
   dify: Pick<DifyClient, "runStreaming">;
   log: Logger;
+  /** M2-chat · cấp token tool chat ngắn hạn (vắng ⇒ agent Dify không có tool). */
+  toolTokens?: Pick<ChatToolTokens, "issue">;
 };
 
 type Step = { id: string; seq: number };
@@ -133,16 +138,52 @@ export class DifyAgentRunner implements AgentRunner {
       return { end: fail("NOT_CONFIGURED", "credential"), ...none };
     }
     const session = agent.runtime === DIFY_AGENT_RUNTIME ? await this.#session(task) : null;
-    const timeout = AbortSignal.timeout((await this.#timeoutS(task)) * 1000);
-    const req: DifyRequest = {
-      appType: wf.appType,
-      baseUrl: wf.baseUrl,
-      apiKey,
-      ...difyAgentRequestParts(wf, target.inputName, task.prompt),
-      user: difyUser(tenantKeyOf(catalog, r.tenantId), r.userId),
-      conversationId: session,
-      outputField: wf.outputField,
-    };
+    const timeoutS = await this.#timeoutS(task);
+    const timeout = AbortSignal.timeout(timeoutS * 1000);
+    const parts = difyAgentRequestParts(wf, target.inputName, task.prompt);
+    // M2-chat · token tool ngắn hạn cho đúng tin này; thu hồi khi run xong (kể cả lỗi/huỷ).
+    const tok = await this.#toolToken(task, wf, timeoutS);
+    if (tok) parts.inputs[HUB_TOOL_TOKEN_INPUT] = tok.token;
+    try {
+      const req: DifyRequest = {
+        appType: wf.appType,
+        baseUrl: wf.baseUrl,
+        apiKey,
+        ...parts,
+        user: difyUser(tenantKeyOf(catalog, r.tenantId), r.userId),
+        conversationId: session,
+        outputField: wf.outputField,
+      };
+      return await this.#stream(task, step, io, req, timeout);
+    } finally {
+      await tok
+        ?.revoke()
+        .catch((err) =>
+          this.d.log.warn("chat-token-revoke-failed", { run_id: r.id, ...safeErrorFields(err) }),
+        );
+    }
+  }
+
+  /** M2-chat · cấp token khi agent khai `pack_tools` VÀ app Dify có input `hub_tool_token` (cấu hình, không code). */
+  async #toolToken(task: AgentTask, wf: CatalogWorkflow, timeoutS: number) {
+    const keys = packToolKeys(task.agent.runtimeOptions);
+    if (!this.d.toolTokens || keys.length === 0) return null;
+    if (!wf.inputSchema.some((i) => i.name === HUB_TOOL_TOKEN_INPUT)) return null;
+    const r = task.run;
+    const who = { tenantId: r.tenantId, userId: r.userId, runId: r.id };
+    const c = { ...who, conversationId: r.conversationId, agentId: task.agent.id };
+    return this.d.toolTokens.issue(c, keys, chatTokenTtlS(timeoutS));
+  }
+
+  async #stream(
+    task: AgentTask,
+    step: Step,
+    io: CallIo,
+    req: DifyRequest,
+    timeout: AbortSignal,
+  ): Promise<Ran> {
+    const { agent, run: r } = task;
+    const session = req.conversationId;
     const both = AbortSignal.any([io.signal, timeout]);
     let out = await this.d.dify.runStreaming(req, both, io.onDelta);
     await this.#usage(task, step, out);

@@ -18,6 +18,13 @@ const WfIds = (min: number, max: number) =>
   z.array(UuidSchema).min(min).max(max).refine(unique, "duplicate ids");
 const OPTIONS_MAX_BYTES = 16 * 1024;
 
+/** M2-chat · tool gói (registry N2, vd `contracts-search`) agent gọi qua `/mcp`; `/mcp` vẫn kiểm quyền người gọi. */
+const PackToolsSchema = z
+  .array(z.string().regex(/^[a-z0-9-]{2,32}$/))
+  .max(20)
+  .refine(unique, "duplicate tools")
+  .optional();
+
 const CliOptionsSchema = z.strictObject({
   cli: z.enum(CLI_KINDS).default("claude"),
   allowed_tools: z
@@ -29,11 +36,7 @@ const CliOptionsSchema = z.strictObject({
   cwd_mode: z.enum(CWD_MODES).default("job"),
   max_turns: z.number().int().min(2).max(100).optional(),
   /** M2-chat · tool gói (registry N2, vd `contracts-search`) agent được gọi qua `/mcp`; `/mcp` vẫn kiểm quyền người gọi. */
-  pack_tools: z
-    .array(z.string().regex(/^[a-z0-9-]{2,32}$/))
-    .max(20)
-    .refine(unique, "duplicate tools")
-    .optional(),
+  pack_tools: PackToolsSchema,
 });
 const PythonOptionsSchema = z
   .record(z.string(), z.unknown())
@@ -75,7 +78,8 @@ const RUNTIME_SHAPES = {
   "dify-agent": {
     profile_id: nullish,
     agent_type_key: nullish,
-    runtime_options: z.undefined().optional(),
+    /** M2-chat · `pack_tools`: Hub cấp token chat ngắn hạn (chỉ tool đọc) khi app Dify có input `hub_tool_token`. */
+    runtime_options: z.strictObject({ pack_tools: PackToolsSchema }).optional(),
     workflow_ids: WfIds(1, 1),
   },
   python: {

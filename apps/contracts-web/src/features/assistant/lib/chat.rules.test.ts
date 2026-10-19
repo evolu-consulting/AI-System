@@ -4,6 +4,7 @@ import type { ChatEvent } from "@ai/contracts/chat";
 import {
   ASSISTANT_AGENT,
   applyEvent,
+  assistantAgent,
   buildRequest,
   errorText,
   type Msg,
@@ -59,6 +60,14 @@ describe("M2-chat · chat.rules", () => {
       ev({ id: 1, event: "ask", data: { question: "Năm nào?", choices: [] } }),
     );
     expect(a.text).toBe("Năm nào?");
+  });
+
+  test("cờ PUBLIC_ASSISTANT_AGENT chọn agent; vắng/sai dạng ⇒ mgmt-assistant", () => {
+    expect(assistantAgent({ PUBLIC_ASSISTANT_AGENT: "mgmt-assistant-dify" })).toBe(
+      "mgmt-assistant-dify",
+    );
+    expect(assistantAgent({ PUBLIC_ASSISTANT_AGENT: "@evil x" })).toBe("mgmt-assistant");
+    expect(assistantAgent(undefined)).toBe("mgmt-assistant");
   });
 
   test("tiêu đề một dòng ≤ 80; câu lỗi theo mã", () => {
