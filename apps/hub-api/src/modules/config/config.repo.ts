@@ -13,7 +13,12 @@ import {
 import { eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../../lib/db";
-import type { ConfigSnapshot, TenantState, UserState } from "./config.rules";
+import {
+  type ConfigSnapshot,
+  type TenantState,
+  tenantTimeZone,
+  type UserState,
+} from "./config.rules";
 
 // jsonb validate ở biên (CONVENTIONS §5).
 const StepsSchema = z
@@ -167,10 +172,17 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
   );
 }
 
+/** HD1 D-16: kèm `timezone` (kiểm một lần ở đây — 0 SQL thêm mỗi request). */
 export async function loadTenants(db: Db): Promise<TenantState[]> {
-  return db.db
-    .select({ id: tenants.id, active: tenants.active, maxConcurrentSub: tenants.maxConcurrentSub })
+  const rows = await db.db
+    .select({
+      id: tenants.id,
+      active: tenants.active,
+      maxConcurrentSub: tenants.maxConcurrentSub,
+      timezone: tenants.timezone,
+    })
     .from(tenants);
+  return rows.map((t) => ({ ...t, timezone: tenantTimeZone(t.timezone) }));
 }
 
 /** User theo id (kèm nhóm). Rỗng `ids` → []. Id không tồn tại → không có trong kết quả. */

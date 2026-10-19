@@ -5,7 +5,26 @@ import type { EntitlementRow, GrantRow } from "../agents/agent-access.rules";
 /** H4a P9/QB1 · runtime được làm Orchestrator — một nguồn với Studio (`@ai/contracts/studio`). */
 const ORCH_RUNTIMES: ReadonlySet<string> = new Set(ORCHESTRATOR_RUNTIMES);
 
-export type TenantState = { id: string; active: boolean; maxConcurrentSub: number | null };
+/** HD1 D-16 · `timezone` IANA đã kiểm khi nạp (`tenantTimeZone`); vắng ⇒ người dùng lấy `DEFAULT_TENANT_TZ`. */
+export type TenantState = {
+  id: string;
+  active: boolean;
+  maxConcurrentSub: number | null;
+  timezone?: string;
+};
+
+export const DEFAULT_TENANT_TZ = "Asia/Ho_Chi_Minh";
+
+/** HD1 D-16 · múi IANA hợp lệ (Intl nhận) ⇒ giữ; vắng/sai ⇒ `Asia/Ho_Chi_Minh`. Gọi một lần khi nạp tenant. */
+export function tenantTimeZone(raw: unknown): string {
+  if (typeof raw !== "string" || raw.length === 0 || raw.length > 64) return DEFAULT_TENANT_TZ;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: raw });
+    return raw;
+  } catch {
+    return DEFAULT_TENANT_TZ;
+  }
+}
 export type UserState = {
   id: string;
   tenantId: string;
