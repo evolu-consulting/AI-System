@@ -11,9 +11,9 @@ import type { ExtractionStarter } from "./upload-contract.ports";
 
 type Start = ReturnType<typeof startApproval>;
 
-/** Tải lên (HĐ đã `extracting`, sau COMMIT): mở lượt duyệt + xếp lượt đọc. Không ném (tải lên đã 201); lỗi ⇒ vòng quét STALE. */
+/** Tải lên (sau COMMIT): lượt duyệt đã mở trong CÙNG câu ghi (HĐ `extracting`) ⇒ chỉ xếp lượt đọc (0 SQL). Không có lượt (tệp
+ *  không đọc được ⇒ `extract_failed`) ⇒ không làm gì; người dùng "Trích lại" sau. Không ném (tải lên đã 201); lỗi ⇒ quét STALE. */
 export function flowStarter(d: {
-  start: Start;
   jobs: ExtractJobs;
   log: { warn(msg: string, f?: Record<string, unknown>): void };
 }): ExtractionStarter {
@@ -21,10 +21,7 @@ export function flowStarter(d: {
     opensApproval: true,
     async start(who, id, approvalId) {
       try {
-        // Tải lên đã mở lượt duyệt trong cùng câu ghi ⇒ chỉ xếp lượt đọc (0 SQL).
-        if (approvalId) return await d.jobs.enqueue({ ...who, contractId: id, approvalId });
-        const out = await d.start(who, id, "extracting");
-        if (out !== "ok") d.log.warn("contract-approval-not-opened", { contract_id: id, out });
+        if (approvalId) await d.jobs.enqueue({ ...who, contractId: id, approvalId });
       } catch {
         d.log.warn("contract-approval-start-failed", { contract_id: id });
       }
