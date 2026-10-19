@@ -38,6 +38,8 @@ export default defineConfig({
     },
   },
   output: {
+    // TS1: e2e song song build vào thư mục riêng của từng cấu hình (E2E_DIST_DIR), không đè thư mục dist chung.
+    distPath: { root: process.env.E2E_DIST_DIR || "dist" },
     // Mức tối thiểu Tailwind v4 hỗ trợ.
     overrideBrowserslist: ["chrome >= 111", "edge >= 111", "firefox >= 128", "safari >= 16.4"],
   },

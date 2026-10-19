@@ -1,6 +1,7 @@
 node_modules/
 .turbo/
 dist/
+dist-e2e/
 coverage/
 .env.local
 .env.*.local

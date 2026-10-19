@@ -17,6 +17,8 @@
     "test:all": "bun tools/scripts/src/test-all.ts",
     "test:int": "bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 .int.test",
     "test:int:par": "bun tools/scripts/src/test-int-par.ts",
+    "test:e2e:par": "bun tools/scripts/src/test-e2e-par.ts",
+    "test:affected": "bun tools/scripts/src/test-affected.ts",
     "test:perf": "PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 60000 .perf.int.test config-write.int.test",
     "test:perf:pd": "PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 120000 tests/acceptance/P-d/perf/",
     "check:bundle": "turbo run check:bundle",
