@@ -62,10 +62,10 @@ describe("HD-FR-91 · lô mua", () => {
     const items =
       await c.sql`select name, unit, qty::text, unit_price::text from contracts.contract_items
       where contract_id = ${lot.purchase_contract_id}`;
-    expect(items).toEqual([
+    expect([...items]).toEqual([
       { name: "Chữ ký số Viettel-CA 1 năm", unit: "chữ ký", qty: "5.0000", unit_price: "1100000" },
     ]);
-    expect(await audit(c.sql)).toEqual([
+    expect([...(await audit(c.sql))]).toEqual([
       { entity: "lot", field: "unit_cost", old_value: null, new_value: "1100000", actor: P.hoa.id },
     ]);
   });

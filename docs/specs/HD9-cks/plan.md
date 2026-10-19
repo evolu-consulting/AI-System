@@ -5,7 +5,7 @@ Tiền `Money = int 0…10¹⁰` (đồng); ngày `IsoDate`; chuỗi `nfcText(n)
 | Route | Quyền | Vào | Ra (HTTP) |
 |---|---|---|---|
 | `GET /overview` | read | — | `{certificates, customers, expiring_30, expired, in_stock}` 200 |
-| `GET /customers` | read | `filter?∈expiring\|expired\|elsewhere`, `lot?: uuid`, `ca?: ≤60` | `CksCustomer[]` 200 |
+| `GET /customers` | read | `filter?∈expiring\|expired\|elsewhere`, `lot?: uuid`, `ca?: ≤60`, `q? ≤200`, `page ≥1`, `page_size 1–100 =50` | `{items: CksCustomerBrief[], total, page, page_size, cas}` 200 (D9-22) |
 | `GET /customers/:id` | read | uuid | `CksCustomer` 200 · 404 |
 | `GET /lots` | read | — | `CksLot[]` (theo `bought_at`) |
 | `POST /lots` | write | `{ca 1–60, supplier_name?, supplier_tax_id?, qty 1–100000, unit_cost Money, years 1–5 =1, bought_at, label? ≤40, device token\|remote}` | `CksLot` 201 |
@@ -43,7 +43,8 @@ Ghi: `PackUow.tenant` ⇒ câu 1 `pg_advisory_xact_lock(hashtextextended('cks:'�
 ## 5. Thiết kế hiệu năng (K)
 | Đường | SQL / request | Index | Ngưỡng (PERF=1, 2.000 chữ ký/400 khách/20 lô/2.000 văn bản) |
 |---|---|---|---|
-| `customers`, `customers/:id` | 1 (CTE: chữ ký sống + khách + HĐ bán + gia hạn mở + đếm văn bản theo chuỗi `replaces` đệ quy, trả JSON) → gom ở domain | `(tenant_id, customer_id)`, `(tenant_id, certificate_id)` | p95 ≤ 50 ms |
+| `customers` (trang) | 2 (chọn id trang: gộp theo khách + lọc/tìm/sắp; chữ ký của đúng các khách đó + đếm văn bản theo chuỗi `replaces`) → gom ở domain | `(tenant_id, customer_id)`, `(certificate_id, tenant_id)` | p95 ≤ 50 ms |
+| `customers/:id` | 1 | như trên | p95 ≤ 50 ms |
 | `overview`, `lots`, `prices` | 1 mỗi route (tổng hợp `count`/`sum` + lateral theo lô) | `(tenant_id, lot_id)` | p95 ≤ 50 ms |
 | `sales` (50 người giữ) | 3 cố định (khoá, kiểm, ghi lô JSON) | serial uq | p95 ≤ 50 ms; đếm câu = 3 với 1 và 50 người giữ |
 | `signed-docs/upload` | 2 cố định / lần (khoá, chèn lô JSON) | uq sha256 | đọc DER thuần ≤ 5 ms / tệp 1 MB |
