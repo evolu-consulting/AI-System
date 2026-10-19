@@ -8,7 +8,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 describe("readers", () => {
   test("OpenSearch: hai trang scroll rồi hết; gửi excludes embedding; xoá scroll", async () => {
-    const calls: { url: string; method: string; body: unknown }[] = [];
+    const calls: { url: string; method: string; body: unknown; enc?: string }[] = [];
     const pages = [
       {
         _scroll_id: "s1",
@@ -27,6 +27,7 @@ describe("readers", () => {
         url,
         method: init?.method ?? "GET",
         body: init?.body ? JSON.parse(String(init.body)) : null,
+        enc: (init?.headers as Record<string, string> | undefined)?.["accept-encoding"],
       });
       return init?.method === "DELETE" ? json({}) : json(pages.shift());
     }) as unknown as typeof fetch;
@@ -37,6 +38,8 @@ describe("readers", () => {
     expect(calls[0]?.url).toBe("http://os:9200/p_contracts/_search?scroll=2m");
     expect(calls[0]?.body).toMatchObject({ size: 2, _source: { excludes: ["embedding"] } });
     expect(calls.at(-1)?.method).toBe("DELETE");
+    // OpenSearch 2.19 + mã nén mặc định của Bun ⇒ treo; mọi lời gọi xin `identity`
+    expect(calls.every((c) => c.enc === "identity")).toBe(true);
   });
 
   test("OpenSearch: index không có (404) ⇒ không lô nào, count 0", async () => {

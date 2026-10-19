@@ -1,7 +1,6 @@
 // I1 · đọc chỉ-đọc các index OpenSearch của mgmt-app qua REST (không thêm thư viện): scroll theo lô, sắp `_doc`, bỏ
 // `embedding` (vector không chuyển — knowledge tự dựng lại). Index chưa có (404) ⇒ rỗng. Chỉ GET/POST tìm kiếm + xoá scroll.
-// Mọi phản hồi đều được đọc hết thân (kể cả 404/lỗi) — thân chưa đọc giữ kết nối keep-alive ⇒ lời gọi sau treo (đo trên
-// evotest-mgmt: treo tới timeout 300 s của fetch). Mỗi lời gọi có trần thời gian riêng ⇒ lỗi rõ mã, không treo.
+// Mọi phản hồi đọc hết thân (kể cả 404/lỗi); mỗi lời gọi có trần thời gian riêng ⇒ lỗi rõ mã, không treo.
 import type { SourceDoc, SourceReader } from "../application/ports";
 
 export type OsOpts = { url: string; prefix?: string; fetch?: typeof fetch; timeoutMs?: number };
@@ -17,7 +16,9 @@ export function createOpenSearchReader(o: OsOpts): Pick<SourceReader, "scan" | "
   const call = async (method: string, path: string, body?: unknown): Promise<Res> => {
     const r = await f(`${base}${path}`, {
       method,
-      headers: { "content-type": "application/json" },
+      // Bun mặc định xin `gzip, deflate, br, zstd`; OpenSearch 2.19 chọn mã khác gzip ⇒ fetch của Bun treo (đo trên
+      // evotest-mgmt: mọi lời gọi treo tới timeout; `identity`/`gzip` ⇒ 3–8 ms). Xin thẳng `identity`.
+      headers: { "content-type": "application/json", "accept-encoding": "identity" },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(o.timeoutMs ?? 60_000),
     }).catch((e: unknown) => {

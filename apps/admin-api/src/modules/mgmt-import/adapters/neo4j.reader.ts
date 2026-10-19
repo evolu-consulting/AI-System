@@ -44,6 +44,7 @@ export function createNeo4jReader(o: Neo4jOpts): Pick<SourceReader, "graph"> {
       headers: {
         "content-type": "application/json",
         accept: "application/json",
+        "accept-encoding": "identity",
         authorization: auth,
       },
       body: JSON.stringify({
