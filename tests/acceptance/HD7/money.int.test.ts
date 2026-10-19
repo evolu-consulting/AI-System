@@ -212,10 +212,15 @@ describe("HD7-AC02 · đã trả trễ, hẹn lại, nhắc (test_ledger.py)", (
     });
     await ok(call(c, P.hoa, "POST", `/obligations/${first.id}/settle`, { at: "2026-10-20" }));
     expect((await events(c, first.party)).at(-1)).toMatchObject({ type: "received", days_late: 0 });
+    // remind không nhận thân (strict) — mgmt `remind` không có thân; chỉ postpone mang `to`.
     for (const act of ["remind", "postpone"]) {
-      const r = await call(c, P.hoa, "POST", `/obligations/${first.id}/${act}`, {
-        to: "2026-12-01",
-      });
+      const r = await call(
+        c,
+        P.hoa,
+        "POST",
+        `/obligations/${first.id}/${act}`,
+        act === "postpone" ? { to: "2026-12-01" } : {},
+      );
       expect({ act, status: r.status }).toEqual({ act, status: 409 });
     }
   });
@@ -305,8 +310,9 @@ describe("HD7-AC04 · huỷ việc ghi nhầm hoàn tác đợt (test_voiding_a_
     );
     await ok(call(c, P.hoa, "POST", `/obligations/${ob.id}/settle`, { at: "2026-10-13" }));
     const all = await events(c, ob.party);
+    // hẹn lại, nhắc, đã thu (huỷ cả ba) + đã thu lần hai = 4 dòng (mgmt không đếm; không có dòng quá hạn vì không quét).
     expect(all.filter((e: Json) => e.voided).length).toBe(3);
-    expect(all.length).toBe(5);
+    expect(all.length).toBe(4);
     expect(
       (await call(c, P.tam, "POST", `/partner-events/${(await last("received")).id}/void`, {}))
         .status,

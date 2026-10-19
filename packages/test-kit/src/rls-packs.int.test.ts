@@ -232,8 +232,9 @@ const ledgerTables: RlsTable[] = [
       return rows[0]?.id as string;
     },
     insert: (tx, t, pk) =>
+      // `event_id` là bigint: id thăm dò không phải số (NIL uuid) ⇒ một số chắc chắn không tồn tại, để A và NIL cùng đi tới RLS.
       tx.unsafe("insert into contracts.partner_event_voids (event_id, tenant_id) values ($1, $2)", [
-        pk ?? "999999999",
+        pk && /^\d+$/.test(pk) ? pk : "999999999",
         t,
       ]),
   },

@@ -117,18 +117,15 @@ describe("HD7-AC06 · cách ly tenant", () => {
       "delete from contracts.partner_event_voids",
       "delete from contracts.obligations",
     ]) {
+      // Lỗi trong tx làm hỏng cả tx: postgres.js ném ra ở `inPack` dù `fn` đã bắt ⇒ bắt quanh `inPack`.
       const code = await inPack(
         T.acme,
         async (tx) => {
-          try {
-            await tx.unsafe(q);
-            return "ok";
-          } catch (e) {
-            return (e as { code?: string }).code ?? "err";
-          }
+          await tx.unsafe(q);
+          return "ok";
         },
         ROLE_RW,
-      );
+      ).catch((e: unknown) => (e as { code?: string }).code ?? "err");
       expect({ q, code }).toEqual({ q, code: "42501" });
     }
   });
