@@ -1,6 +1,6 @@
 // I1 · orgs + users + memberships mgmt-app ⇒ file export `mgmt-app-users/v1` của N5 (identity-import, gồm hash scrypt cũ).
 // mgmt-app: membership `_id` = email, MỘT org mỗi user; user không có membership (nhân viên nội bộ) ⇒ org null ⇒ N5 báo
-// NO_ORG (không chuyển). Hash chỉ chuyển nguyên văn vào file trong bộ nhớ, không log. Thuần.
+// NO_ORG (không chuyển). `manager_email` ⇒ N5 (M1b) đặt admin.user_managers. Hash chỉ chuyển nguyên văn vào file trong bộ nhớ, không log. Thuần.
 import type { SourceDoc } from "./context";
 import { lowerEmail, str } from "./values.rules";
 
@@ -14,6 +14,7 @@ export type UsersExport = {
     org_id: string | null;
     org_role: string | null;
     password_hash: string | null;
+    manager_email: string | null;
     locale: "vi";
   }[];
 };
@@ -55,21 +56,9 @@ export function usersExport(
         org_id: m?.orgId ?? null,
         org_role: m?.role ?? null,
         password_hash: typeof u.src.password_hash === "string" ? u.src.password_hash : null,
+        manager_email: m?.manager ?? null,
         locale: "vi",
       };
     }),
   };
-}
-
-/** Cặp (user, quản lý) cùng org; quản lý ngoài org / chính mình ⇒ bỏ. */
-export function managerPairs(
-  members: Map<string, Membership>,
-): { email: string; manager: string; orgId: string }[] {
-  const out: { email: string; manager: string; orgId: string }[] = [];
-  for (const m of members.values()) {
-    if (!m.manager || m.manager === m.email) continue;
-    if (members.get(m.manager)?.orgId !== m.orgId) continue;
-    out.push({ email: m.email, manager: m.manager, orgId: m.orgId });
-  }
-  return out;
 }

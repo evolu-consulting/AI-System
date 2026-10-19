@@ -56,6 +56,4 @@ export type IdentityPort = {
   run(exportFile: unknown, apply: boolean): Promise<unknown>;
   tenants(source: string): Promise<{ id: string; orgId: string }[]>;
   users(tenantIds: string[]): Promise<{ id: string; tenantId: string; email: string }[]>;
-  /** Quản lý trực tiếp (memberships.manager_email) ⇒ admin.user_managers; trả số hàng chèn. */
-  managers(rows: { tenantId: string; userId: string; managerId: string }[]): Promise<number>;
 };

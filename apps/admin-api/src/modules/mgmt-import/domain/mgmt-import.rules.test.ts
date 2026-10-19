@@ -6,7 +6,7 @@ import type { Ctx, Snapshot } from "./context";
 import { targetId, uuidV5 } from "./ids.rules";
 import { mapCks } from "./map-cks.rules";
 import { matchForm, parseRemindKey, productKey } from "./map-contracts.rules";
-import { managerPairs, memberships, usersExport } from "./map-identity.rules";
+import { memberships, usersExport } from "./map-identity.rules";
 import { mapLedger } from "./map-ledger.rules";
 import { newPlan, tenantPlan } from "./plan";
 import { mgmtVisible, sourceMoney } from "./reconcile.rules";
@@ -64,7 +64,7 @@ describe("ids + giá trị", () => {
 });
 
 describe("identity", () => {
-  test("export N5: một org mỗi user theo membership; quản lý cùng org", () => {
+  test("export N5: một org mỗi user theo membership; manager_email chuyển cho N5 (M1b)", () => {
     const m = memberships([
       d("a@x", { email: "a@x", org_id: "A", role: "owner" }),
       d("b@x", { email: "B@X", org_id: "A", role: "editor", manager_email: "a@x" }),
@@ -83,11 +83,19 @@ describe("identity", () => {
         org_id: "A",
         org_role: "editor",
         password_hash: "scrypt$1$2",
+        manager_email: "a@x",
         locale: "vi",
       },
-      { email: "s@x", name: "", org_id: null, org_role: null, password_hash: null, locale: "vi" },
+      {
+        email: "s@x",
+        name: "",
+        org_id: null,
+        org_role: null,
+        password_hash: null,
+        manager_email: null,
+        locale: "vi",
+      },
     ]);
-    expect(managerPairs(m)).toEqual([{ email: "b@x", manager: "a@x", orgId: "A" }]);
   });
 });
 

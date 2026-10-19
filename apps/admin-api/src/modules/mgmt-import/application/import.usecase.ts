@@ -3,7 +3,7 @@
 import { buildPlan } from "../domain/build.rules";
 import type { Ctx } from "../domain/context";
 import { targetId } from "../domain/ids.rules";
-import { managerPairs, memberships, usersExport } from "../domain/map-identity.rules";
+import { memberships, usersExport } from "../domain/map-identity.rules";
 import {
   bump,
   G1_TABLES,
@@ -52,6 +52,7 @@ export type ImportReport = {
   source: string;
   ms: number;
   identity: unknown;
+  /** Quản lý trực tiếp đặt lần này (từ báo cáo N5). */
   managers: number;
   read: Record<string, number>;
   no_tenant: Record<string, number>;
@@ -190,13 +191,8 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
     o.apply,
   );
   const r = await resolve(d, o, members, orgs);
-  const pairs = managerPairs(members).flatMap((p) => {
-    const tid = r.tenantOf.get(p.orgId);
-    const u = tid ? r.userOf.get(`${tid}|${p.email}`) : undefined;
-    const m = tid ? r.userOf.get(`${tid}|${p.manager}`) : undefined;
-    return tid && u && m ? [{ tenantId: tid, userId: u, managerId: m }] : [];
-  });
-  const managers = o.apply ? await d.identity.managers(pairs) : pairs.length;
+  // M1b: N5 nhập `manager_email` (khoá cặp quản lý trong tx của nó; MANAGER_CYCLE/MANAGER_UNKNOWN ở báo cáo identity)
+  const managers = (identity as { managers?: { set?: number } }).managers?.set ?? 0;
   const ctx = context(o, r);
   const { plan, files } = buildPlan(snap, ctx, members, orgs);
   const shas = new Map<string, string>();

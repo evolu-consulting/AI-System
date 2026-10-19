@@ -1,6 +1,5 @@
 // I1 · `IdentityPort`: user/org qua N5 (`runIdentityImport`, gồm hash scrypt cũ — N5b) trên pool `admin_api` (NOBYPASSRLS, scope
-// platform); tra tenant theo marker `(mgmt_source, mgmt_org_id)` và user theo email. Quản lý trực tiếp (`manager_email`) ⇒
-// `admin.user_managers` bằng adapter MỎNG này — thay bằng hàm của M1b (slice/m1b-visibility, N5 nhập manager_email) khi merge.
+// platform); quản lý trực tiếp `manager_email` do N5 (M1b) ghi; tra tenant theo marker `(mgmt_source, mgmt_org_id)` và user theo email.
 import { type Db, type Tx, withScope } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { runIdentityImport } from "../../identity-import/identity-import.run";
@@ -33,24 +32,5 @@ export function createIdentityAdapter(db: Db, actorId: string, batch?: number): 
           )
         ).map((r) => ({ id: r.id, tenantId: r.tenant_id, email: r.email })),
       ),
-    managers: async (rows) => {
-      if (rows.length === 0) return 0;
-      const json = JSON.stringify(
-        rows.map((r) => ({ t: r.tenantId, u: r.userId, m: r.managerId })),
-      );
-      return withScope(
-        db,
-        PLATFORM,
-        async (tx) =>
-          (
-            await run(
-              tx,
-              sql`insert into admin.user_managers (tenant_id, user_id, manager_id, updated_by)
-          select x.t, x.u, x.m, ${actorId}::uuid from jsonb_to_recordset(${json}::jsonb) as x(t uuid, u uuid, m uuid)
-          on conflict do nothing returning 1`,
-            )
-          ).length,
-      );
-    },
   };
 }
