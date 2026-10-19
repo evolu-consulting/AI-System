@@ -39,7 +39,7 @@ type Person = (typeof P)[keyof typeof P];
 
 /** Đường dẫn route admin-api (plan §2). TRANH CHẤP: code admin-api mount `/admin/tenants/…`, plan/spec ghi `/api/v1/tenants/…`
  *  (xem tasks.md "Tranh chấp test"). Một hằng ở đây — đổi một dòng khi chốt. */
-export const ADMIN_PACKS_BASE = "/api/v1/tenants";
+export const ADMIN_PACKS_BASE = "/admin/tenants";
 export const packsPath = (tenantId: string, key?: string): string =>
   `${ADMIN_PACKS_BASE}/${tenantId}/packs${key ? `/${key}` : ""}`;
 
