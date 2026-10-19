@@ -1,0 +1,287 @@
+/* C1 FE · theme contracts-web (nền chép từ chat-web; token riêng ở TF2). Token Sáng theo docs/design/canvas/tokens-map.md; giá trị Tối bổ sung ở F14. */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Bề mặt và chữ */
+  --background: #f4f4f9;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b6b6b;
+  --muted-strong-foreground: #525252;
+  --subtle-foreground: #6b6b6b; /* gộp với muted-foreground (tokens-map.md) */
+  --placeholder: #a3a3a3;
+
+  /* Thương hiệu */
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --primary-strong: #4338ca;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #404040;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
+  --ink-strong: #1e1b4b;
+  --on-ink: #e0e7ff;
+  --on-ink-link: #a5b4fc;
+
+  /* Viền */
+  --border: #e5e5e5;
+  --input: #d4d4d8;
+  --row-divider: #f5f5f5;
+  --ring: #4f46e5;
+  --error-border: #d92d20;
+
+  /* Trạng thái */
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #05603f;
+  --success-bg: #e3f4ec;
+  --warning: #7f3c04;
+  --warning-bg: #fdf0df;
+  --warning-solid: #b45309;
+  --danger: #9b1c1c;
+  --danger-bg: #fde8e8;
+  --overage-hatch-from: #c2410c;
+  --overage-hatch-to: #f59e0b;
+
+  /* Sidebar (Sidebar.dc.html) */
+  --sidebar: #fafafd;
+  --sidebar-foreground: #404040;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef2ff;
+  --sidebar-accent-foreground: #4338ca;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #4f46e5;
+
+  /* Biểu đồ (Đề xuất, M4) */
+  --chart-1: #4f46e5;
+  --chart-2: #818cf8;
+  --chart-3: #1e1b4b;
+  --chart-4: #a5b4fc;
+  --chart-5: #e08bb4;
+
+  /* Mention đầu tin (@agent / /command / !process) */
+  --mention-agent: #4f46e5;
+  --mention-command: #92400e;
+  --mention-process: #0f766e;
+
+  --radius: 8px;
+
+  /* Code (plan-frontend-theme.md §3, §5) */
+  --code-bg: #f5f5fa;
+  --code-fg: #0a0a0a;
+  --code-keyword: #8a3fa8;
+  --code-string: #0b6b3a;
+  --code-number: #9a4a00;
+  --code-title: #2a55a8;
+  --code-comment: #6b6b6b;
+
+  --shadow-color-toast: rgb(30 27 75 / 0.25);
+  --shadow-color-dialog: rgb(30 27 75 / 0.28);
+  --shadow-color-drawer: rgb(30 27 75 / 0.18);
+}
+
+/* Tối (CR-027; đổi sang "Midnight" 2026-10-09 — xanh than dịu, lớp tách rõ, nút primary chữ trắng): đổi qua class `dark` trên <html>. */
+.dark {
+  --background: #0e131b;
+  --foreground: #e6ecf3;
+  --card: #161e2a;
+  --card-foreground: #e6ecf3;
+  --popover: #161e2a;
+  --popover-foreground: #e6ecf3;
+  --muted: #1f2937;
+  --muted-foreground: #9eabbb;
+  --muted-strong-foreground: #c3ccd8;
+  --subtle-foreground: #8a98aa;
+  --placeholder: #708096;
+
+  --primary: #5b5bd6;
+  --primary-foreground: #ffffff;
+  --primary-strong: #a5b4fc;
+  --secondary: #1f2937;
+  --secondary-foreground: #d0d8e4;
+  --accent: #1b2542;
+  --accent-foreground: #c3cffd;
+  --ink-strong: #dbe3ff;
+  --on-ink: #e0e7ff;
+  --on-ink-link: #a5b4fc;
+
+  --border: #283344;
+  --input: #5b6b82;
+  --row-divider: #1f2937;
+  --ring: #8b93f8;
+  --error-border: #f97066;
+
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #6ee7b7;
+  --success-bg: #0f2a22;
+  --warning: #f5c06b;
+  --warning-bg: #2c2310;
+  --warning-solid: #f59e0b;
+  --danger: #fca5a5;
+  --danger-bg: #3a1518;
+  --overage-hatch-from: #c2410c;
+  --overage-hatch-to: #f59e0b;
+
+  --sidebar: #121924;
+  --sidebar-foreground: #d0d8e4;
+  --sidebar-primary: #5b5bd6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1b2542;
+  --sidebar-accent-foreground: #c3cffd;
+  --sidebar-border: #283344;
+  --sidebar-ring: #8b93f8;
+
+  --mention-agent: #a5b4fc;
+  --mention-command: #fbbf24;
+  --mention-process: #5eead4;
+
+  --chart-1: #818cf8;
+  --chart-2: #6366f1;
+  --chart-3: #a5b4fc;
+  --chart-4: #c7d2fe;
+  --chart-5: #e08bb4;
+
+  --code-bg: #0a0f16;
+  --code-fg: #e6ecf3;
+  --code-keyword: #d7a6f0;
+  --code-string: #8fd9a8;
+  --code-number: #f2b872;
+  --code-title: #9db8f5;
+  --code-comment: #8a98aa;
+
+  --shadow-color-toast: rgb(0 0 0 / 0.5);
+  --shadow-color-dialog: rgb(0 0 0 / 0.5);
+  --shadow-color-drawer: rgb(0 0 0 / 0.5);
+}
+
+/* Dark Midnight (2026-10-09): `--primary` là màu nền nút (#5b5bd6, chữ trắng 5,4:1) — làm màu CHỮ trên nền tối
+   chỉ ~3,4:1 nên chữ/biểu tượng `text-primary` dùng indigo sáng (AA). */
+.dark .text-primary {
+  color: #a5b4fc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-strong-foreground: var(--muted-strong-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-placeholder: var(--placeholder);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-mention-agent: var(--mention-agent);
+  --color-mention-command: var(--mention-command);
+  --color-mention-process: var(--mention-process);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ink-strong: var(--ink-strong);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-link: var(--on-ink-link);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-row-divider: var(--row-divider);
+  --color-ring: var(--ring);
+  --color-error-border: var(--error-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-solid: var(--warning-solid);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-overage-hatch-from: var(--overage-hatch-from);
+  --color-overage-hatch-to: var(--overage-hatch-to);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: system-ui, sans-serif; /* Roboto: TF2 (D-14) */
+  --font-mono: ui-monospace, monospace;
+
+  /* Thang chữ ngữ nghĩa theo canvas; không ghi đè thang mặc định để component shadcn giữ nguyên. */
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-label: 13px;
+  --text-label--line-height: 20px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-card-title: 16px;
+  --text-card-title--line-height: 24px;
+  --text-dialog-title: 18px;
+  --text-dialog-title--line-height: 28px;
+  --text-page-title: 24px;
+  --text-page-title--line-height: 32px;
+  --text-kpi: 28px;
+  --text-kpi--line-height: 36px;
+  --text-display: 40px;
+  --text-display--line-height: 48px;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-toast: 0 8px 24px var(--shadow-color-toast);
+  --shadow-dialog: 0 20px 48px var(--shadow-color-dialog);
+  --shadow-drawer: -12px 0 32px var(--shadow-color-drawer);
+
+  --spacing-sidebar: 248px;
+  --spacing-sidebar-icon: 64px;
+  --spacing-topbar: 60px;
+  --spacing-control: 36px;
+  --spacing-page: 28px;
+  --container-content: 1280px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-body;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: người dùng chọn giảm chuyển động phải thắng mọi utility animate */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: như trên — vòng lặp vô hạn 0.01ms thành nháy */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: như trên */
+    transition-duration: 0.01ms !important;
+  }
+}

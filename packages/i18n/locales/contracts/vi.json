@@ -1,0 +1,11 @@
+{
+  "contracts": {
+    "app": {
+      "name": "Sổ Hợp Tác",
+      "tagline": "Hợp đồng, đối tác, thanh toán & chữ ký số"
+    },
+    "contractsPage": {
+      "title": "Hợp đồng"
+    }
+  }
+}

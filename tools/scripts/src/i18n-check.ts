@@ -6,6 +6,7 @@ import { repoRoot } from "./lib/git";
 const LOCALES_DIR = "packages/i18n/locales";
 const CHAT_DIR = "packages/i18n/locales/chat";
 const STUDIO_DIR = "packages/i18n/locales/studio";
+const CONTRACTS_DIR = "packages/i18n/locales/contracts";
 const PROCESS_DIR = "packages/i18n/locales/process";
 const LANGS = ["vi", "en"] as const;
 type Lang = (typeof LANGS)[number];
@@ -31,7 +32,13 @@ export function diffKeys(vi: unknown, en: unknown): { missingVi: string[]; missi
 
 /** Tiền tố báo lỗi: Admin không có, chat/ và studio/ có. */
 const tag = (dir: string): string =>
-  dir === LOCALES_DIR ? "" : dir === STUDIO_DIR ? "studio:" : "chat:";
+  dir === LOCALES_DIR
+    ? ""
+    : dir === STUDIO_DIR
+      ? "studio:"
+      : dir === CONTRACTS_DIR
+        ? "contracts:"
+        : "chat:";
 
 function readLocale(root: string, dir: string, lang: Lang): unknown {
   const path = `${dir}/${lang}.json`;
@@ -122,7 +129,7 @@ function checkProcess(root: string): number {
 function main(): number {
   const root = repoRoot();
   // Gộp để mọi cặp đều được báo, không dừng ở cặp đầu.
-  const codes = [LOCALES_DIR, CHAT_DIR, STUDIO_DIR].map((d) => checkPair(root, d));
+  const codes = [LOCALES_DIR, CHAT_DIR, STUDIO_DIR, CONTRACTS_DIR].map((d) => checkPair(root, d));
   codes.push(checkProcess(root));
   return codes.some((c) => c !== 0) ? 1 : 0;
 }

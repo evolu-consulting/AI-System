@@ -1,0 +1,11 @@
+{
+  "contracts": {
+    "app": {
+      "name": "Cooperation Ledger",
+      "tagline": "Contracts, partners, payments & digital signatures"
+    },
+    "contractsPage": {
+      "title": "Contracts"
+    }
+  }
+}
