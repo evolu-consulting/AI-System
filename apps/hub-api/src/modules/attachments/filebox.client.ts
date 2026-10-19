@@ -153,7 +153,7 @@ export class FileboxClient {
       method,
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(this.cfg.timeoutMs),
-      ...(body ? { body } : {}),
+      ...(body ? { body: body as Uint8Array<ArrayBuffer> } : {}), // lib DOM (tsconfig.tests) đòi ArrayBuffer
     };
     const ca = await this.#caText();
     if (ca) init.tls = { ca };
