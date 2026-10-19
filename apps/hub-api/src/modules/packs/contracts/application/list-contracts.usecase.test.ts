@@ -60,7 +60,7 @@ describe("listContracts", () => {
           contracts: {
             list: async (f: ContractListFilter) => {
               seen.push({ who, f });
-              return { total: 7, items: ["r"] };
+              return { total: 7, items: ["r"], parents: [] };
             },
           },
         } as never),
@@ -73,7 +73,7 @@ describe("listContracts", () => {
         page_size: 5,
       },
     );
-    expect(out).toEqual({ items: ["r"], total: 7, page: 2, page_size: 5 });
+    expect(out).toEqual({ items: ["r"], total: 7, parents: [], page: 2, page_size: 5 });
     expect(seen.map((s) => [s.who, s.f.offset])).toEqual([[{ tenantId: "t", userId: "u" }, 5]]);
   });
 });

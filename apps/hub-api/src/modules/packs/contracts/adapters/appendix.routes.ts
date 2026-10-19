@@ -1,0 +1,111 @@
+// HD-FR-53…55 · HD5 plan: route loại hàng, gắn HĐ gốc (+ gợi ý) và bảng giá. Guard TRƯỚC đọc thân (viewer ghi ⇒ 403, 0 SQL); `:id`
+// sai dạng ⇒ 400; id lạ/tenant khác ⇒ 404 giống hệt. Tenant/user chỉ từ token.
+import {
+  AttachParentRequestSchema,
+  CONTRACT_ERRORS,
+  CreateCategoryRequestSchema,
+  IsoDateSchema,
+} from "@ai/contracts";
+import type { Context } from "hono";
+import { Hono } from "hono";
+import { z } from "zod";
+import { AppError, appError } from "../../../../lib/errors";
+import { parseWith, readJson } from "../../../../lib/http";
+import {
+  type PackAccessView,
+  type PackGuardVars,
+  packGuard,
+} from "../../kit/adapters/pack-guard.middleware";
+import type { AttachParent, GetPrices, SuggestParents } from "../application/appendix.usecase";
+import type { CreateCategory, ListCategories } from "../application/categories.usecase";
+
+export type AppendixUseCases = {
+  listCategories: ListCategories;
+  createCategory: CreateCategory;
+  attachParent: AttachParent;
+  suggestParents: SuggestParents;
+  prices: GetPrices;
+  /** Hôm nay theo đồng hồ chạy (test tiêm). */
+  today?: () => string;
+};
+
+const whoOf = (u: { tenantId: string; userId: string }) => ({
+  tenantId: u.tenantId,
+  userId: u.userId,
+});
+const idOf = (c: Context): string => parseWith(z.uuid(), c.req.param("id"));
+const BODY_MAX = 4 * 1024;
+
+export function appendixRoutes(
+  view: PackAccessView,
+  key: string,
+  uc: AppendixUseCases,
+): Hono<PackGuardVars> {
+  const r = new Hono<PackGuardVars>();
+  const read = packGuard(view, key, "read");
+  const write = packGuard(view, key, "write");
+  const today = uc.today ?? (() => new Date().toISOString().slice(0, 10));
+
+  r.get("/categories", read, async (c) =>
+    c.json({ items: await uc.listCategories(whoOf(c.get("user"))) }),
+  );
+  r.post("/categories", write, async (c) => {
+    const body = parseWith(CreateCategoryRequestSchema, await readJson(c));
+    const res = await uc.createCategory(whoOf(c.get("user")), body.name);
+    if (res.kind === "exists")
+      throw new AppError("CATEGORY_EXISTS", CONTRACT_ERRORS.CATEGORY_EXISTS, "Category exists");
+    if (res.kind === "full")
+      throw new AppError("CATEGORY_LIMIT", CONTRACT_ERRORS.CATEGORY_LIMIT, "Too many categories");
+    return c.json(res.row, 201);
+  });
+
+  r.patch("/contracts/:id/parent", write, async (c) => {
+    const id = idOf(c);
+    if (Number(c.req.header("content-length") ?? 0) > BODY_MAX)
+      throw new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
+    const body = parseWith(AttachParentRequestSchema, await readJson(c));
+    const res = await uc.attachParent(whoOf(c.get("user")), id, body);
+    if (res.kind === "not_found") throw appError("NOT_FOUND");
+    if (res.kind === "stale")
+      throw new AppError(
+        "CONTRACT_STALE",
+        CONTRACT_ERRORS.CONTRACT_STALE,
+        "Contract was modified",
+        {
+          current: res.current,
+          updated_at: res.updated_at,
+        },
+      );
+    if (res.kind === "invalid_parent")
+      throw new AppError(
+        "PARENT_INVALID",
+        CONTRACT_ERRORS.PARENT_INVALID,
+        "Invalid parent contract",
+        {
+          reason: res.reason,
+        },
+      );
+    const o = res.out;
+    return c.json({
+      id: o.id,
+      kind: o.kind,
+      parent_id: o.parentId,
+      version: o.version,
+      updated_at: o.updatedAt,
+    });
+  });
+  r.get("/contracts/:id/parent-suggestions", read, async (c) => {
+    const items = await uc.suggestParents(whoOf(c.get("user")), idOf(c));
+    if (!items) throw appError("NOT_FOUND");
+    return c.json({ items });
+  });
+  r.get("/contracts/:id/prices", read, async (c) => {
+    const id = idOf(c);
+    const asOf = c.req.query("as_of");
+    const date = asOf === undefined ? today() : parseWith(IsoDateSchema, asOf);
+    const out = await uc.prices(whoOf(c.get("user")), id, date);
+    if (!out) throw appError("NOT_FOUND");
+    return c.json(out);
+  });
+  return r;
+}

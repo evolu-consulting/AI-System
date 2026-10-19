@@ -71,6 +71,8 @@ export const CONTRACT_EVENT_TYPES = [
   "extracted",
   "extract_failed",
   "created_manual",
+  /** HD5: gắn/gỡ HĐ gốc (`data: {from, to}`). */
+  "parent_changed",
 ] as const;
 export const ContractEventTypeSchema = z.enum(CONTRACT_EVENT_TYPES);
 export type ContractEventType = z.infer<typeof ContractEventTypeSchema>;

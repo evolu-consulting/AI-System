@@ -1,6 +1,8 @@
 // HD-FR-07 · D-03 · D-10 · HD1 plan §4 §6: cổng đọc của gói hợp đồng (lớp 2 — chỉ kiểu). Repo dựng trong tx `PackUow`
 // (role `contracts_rw` + `app.tenant_id`, RLS FORCE). Kiểu DTO (`@ai/contracts`) chỉ ở adapter ⇒ cổng generic theo dòng/facets.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
+import type { AppendixRepo } from "./appendix.usecase";
+import type { CategoriesRepo } from "./categories.usecase";
 import type { ContractFieldsRepo } from "./patch-fields.usecase";
 
 export const CONTRACT_SORT_KEYS = ["updated_at", "value", "end_date", "title"] as const;
@@ -47,7 +49,9 @@ export type ContractListFilter = {
   offset: number;
 };
 
-export type ContractListPage<Row> = { total: number; items: Row[] };
+/** HĐ gốc của hàng phụ lục trong trang (HD5): mỗi HĐ gốc một lần. */
+export type ListParentRef = { id: string; title: string; number: string | null };
+export type ContractListPage<Row> = { total: number; items: Row[]; parents: ListParentRef[] };
 
 /** Tệp gốc của HĐ ở FileBox (hàng `contracts.files` chưa xoá mềm) — chỉ dùng nội bộ để xin link, KHÔNG trả ra API. */
 export type ContractFileRef = { org: string; fileId: string };
@@ -67,6 +71,10 @@ export type ContractsOwnRepos<Row, Facets, Detail = unknown> = {
   contracts: ContractsReadRepo<Row, Facets, Detail>;
   /** T9: ghi trường (khoá hàng + CTE update/event). */
   fields: ContractFieldsRepo;
+  /** HD5: phụ lục gắn HĐ gốc + bảng giá. */
+  appendix: AppendixRepo;
+  /** HD5: loại hàng của tenant. */
+  categories: CategoriesRepo;
 };
 export type ContractsRepos<Row, Facets, Detail = unknown> = KitTxRepos &
   ContractsOwnRepos<Row, Facets, Detail>;

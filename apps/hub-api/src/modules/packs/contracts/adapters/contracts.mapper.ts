@@ -2,12 +2,14 @@
 // Thuần: không đọc DB. `bigint` về JSON là số (≤ 9e15 < 2^53); `timestamptz` về ISO UTC; facet lấy tới trần + 1 ⇒ cắt ở trần và
 // ghi `truncated`. Chi tiết: `fields` qua `fillFields` (đủ 23 khoá, bỏ khoá lạ khi ĐỌC).
 import type {
+  ContractAppendixRef,
   ContractDetail,
   ContractEvent,
   ContractFacets,
   ContractFile,
   ContractItem,
   ContractListRow,
+  ContractParentRef,
 } from "@ai/contracts";
 import { fillFields } from "../domain/fields.rules";
 
@@ -63,6 +65,8 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   events: (Omit<ContractEvent, "at"> & { at: string })[] | null;
   file: ContractFile | null;
   has_source: boolean;
+  parent: ContractParentRef | null;
+  appendices: ContractAppendixRef[] | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -86,6 +90,8 @@ export function toContractDetail(r: DetailRaw): ContractDetail {
     events: (r.events ?? []).map((e) => ({ ...e, at: iso(e.at) })),
     file: r.file ? { ...r.file, size_bytes: Number(r.file.size_bytes) } : null,
     has_source: r.has_source,
+    parent: r.parent ?? null,
+    appendices: r.appendices ?? [],
   };
 }
 

@@ -10,6 +10,10 @@ export const CONTRACT_ERRORS = {
   FIELD_UNKNOWN: 422,
   FIELD_INVALID: 422,
   PARENT_INVALID: 422,
+  /** HD5: loại hàng trùng tên (không phân biệt hoa/thường). */
+  CATEGORY_EXISTS: 409,
+  /** HD5: tenant đã có đủ 200 loại hàng. */
+  CATEGORY_LIMIT: 422,
   FILE_TOO_LARGE: 413,
   FILE_TYPE: 415,
   UPLOAD_QUOTA: 429,

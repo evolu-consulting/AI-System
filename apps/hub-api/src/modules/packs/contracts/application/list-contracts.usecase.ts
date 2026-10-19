@@ -47,6 +47,12 @@ export function listContracts<Row>(d: {
   return async (who, q) => {
     const f = toListFilter(q);
     const p = await d.uow.tenant(who, (r) => r.contracts.list(f));
-    return { items: p.items, total: p.total, page: q.page, page_size: q.page_size };
+    return {
+      items: p.items,
+      total: p.total,
+      parents: p.parents,
+      page: q.page,
+      page_size: q.page_size,
+    };
   };
 }

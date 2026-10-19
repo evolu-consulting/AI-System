@@ -1,6 +1,7 @@
 // HD-FR-07 · HD-AC03 · HD-AC05 · D-03 · D-10 · D-18 · HD1 plan §1: ListQuery / ListRow / ListResponse / Facets gói hợp đồng.
 import { z } from "zod";
 import { CountSchema, IsoDateTime } from "../common";
+import { ContractParentRefSchema } from "./appendix";
 import {
   CONTRACT_DIRECTIONS,
   CONTRACT_STATUSES,
@@ -90,6 +91,8 @@ export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 export const ContractListResponseSchema = z.strictObject({
   items: z.array(ContractListRowSchema).max(CONTRACT_PAGE_SIZE_MAX),
   total: CountSchema,
+  /** HD5: HĐ gốc của các hàng phụ lục trong trang (mỗi HĐ gốc một lần), để hiện "Phụ lục của …" mà không đổi `ContractListRow`. */
+  parents: z.array(ContractParentRefSchema).max(CONTRACT_PAGE_SIZE_MAX),
   page: z.number().int().min(1),
   page_size: z.number().int().min(1).max(CONTRACT_PAGE_SIZE_MAX),
 });

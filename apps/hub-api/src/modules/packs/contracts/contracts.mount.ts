@@ -4,11 +4,15 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
+import { packMembersRoutes } from "../kit/adapters/members.route";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { appendixRoutes } from "./adapters/appendix.routes";
 import { contractsRepos } from "./adapters/contracts.repo";
 import { CONTRACTS_KEY, contractsRoutes } from "./adapters/contracts.routes";
+import { attachParent, getPrices, suggestParentsFor } from "./application/appendix.usecase";
+import { createCategory, listCategories } from "./application/categories.usecase";
 import { getContract } from "./application/get-contract.usecase";
 import { getFacets } from "./application/get-facets.usecase";
 import { getFileLink } from "./application/get-file-link.usecase";
@@ -33,6 +37,17 @@ export function contractsModule(
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
     patchFields: patchFields({ uow }),
   });
+  r.route(
+    "/",
+    appendixRoutes(view, CONTRACTS_KEY, {
+      listCategories: listCategories({ uow }),
+      createCategory: createCategory({ uow }),
+      attachParent: attachParent({ uow }),
+      suggestParents: suggestParentsFor({ uow }),
+      prices: getPrices({ uow }),
+    }),
+  );
+  r.route("/", packMembersRoutes(view, CONTRACTS_KEY, db)); // HD5 · N1 Q8: danh bạ tên người phụ trách
   // T10 (tải lên): `upload.mount.ts`, gắn ở `packs.mount.ts` (cần Redis + FileBox + múi tenant mà module này không nhận).
   return r;
 }

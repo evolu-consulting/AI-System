@@ -2,7 +2,7 @@
 // `contracts_rw`, RLS FORCE). SQL văn bản CỐ ĐỊNH cho mọi tổ hợp (chuẩn bị một lần/kết nối): mọi bộ lọc `($x is null or col = any($x))`,
 // mảng = MỘT tham số literal `{…}` (drizzle nở mảng JS thành danh sách). Lát tenant vật chất hoá một lần (`f`/`c` MATERIALIZED);
 // total + trang cùng câu. Chỉ cột sinh hẹp — KHÔNG đọc `fields`/`source_text` (TOAST). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
-import { CONTRACT_EVENTS_MAX, CONTRACT_ITEMS_MAX } from "@ai/contracts";
+import { CONTRACT_APPENDICES_MAX, CONTRACT_EVENTS_MAX, CONTRACT_ITEMS_MAX } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
@@ -10,7 +10,10 @@ import type {
   ContractListFilter,
   ContractsOwnRepos,
   ContractsReadRepo,
+  ListParentRef,
 } from "../application/ports";
+import { appendixRepo } from "./appendix.repo";
+import { categoriesRepo } from "./categories.repo";
 import {
   type ContractDetailDto,
   type ContractFacetsDto,
@@ -30,7 +33,11 @@ export function pgTextArray(xs: readonly string[] | null): string | null {
   return `{${xs.map((x) => `"${x.replace(/(["\\])/g, "\\$1")}"`).join(",")}}`;
 }
 
-type ListOut = { total: number; items: ListRowRaw[] | string };
+type ListOut = {
+  total: number;
+  items: ListRowRaw[] | string;
+  parents: ListParentRef[] | string;
+};
 
 async function list(tx: Tx, tid: string, f: ContractListFilter) {
   const a = pgTextArray;
@@ -68,10 +75,16 @@ async function list(tx: Tx, tid: string, f: ContractListFilter) {
           c.category_ids[1:50] as category_ids,
           pp.ord
         from (select p.id, row_number() over () as ord from p) pp
-        join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items`);
+        join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
+      coalesce((select json_agg(json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number) order by pc.id)
+        from contracts.contracts pc where pc.tenant_id = ${tid}::uuid
+          and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
+            where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents`);
   const out = rows[0] as ListOut;
   const items = typeof out.items === "string" ? (JSON.parse(out.items) as ListRowRaw[]) : out.items;
-  return { total: out.total, items: items.map(toContractListRow) };
+  const parents =
+    typeof out.parents === "string" ? (JSON.parse(out.parents) as ListParentRef[]) : out.parents;
+  return { total: out.total, items: items.map(toContractListRow), parents };
 }
 
 const FACET_CAP = 500;
@@ -138,7 +151,15 @@ async function detail(tx: Tx, tid: string, id: string): Promise<ContractDetailDt
           from contracts.contract_events e where e.contract_id = c.id and e.tenant_id = c.tenant_id
           order by e.id desc limit ${CONTRACT_EVENTS_MAX}::int) e),
       'file', (select json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size_bytes', f.size_bytes)
-          from contracts.files f where f.id = c.file_id and f.tenant_id = c.tenant_id and f.deleted_at is null)
+          from contracts.files f where f.id = c.file_id and f.tenant_id = c.tenant_id and f.deleted_at is null),
+      'parent', (select json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number)
+          from contracts.contracts pc where pc.id = c.parent_id and pc.tenant_id = c.tenant_id),
+      'appendices', (select json_agg(json_build_object('id', a.id, 'title', a.title, 'number', a.number,
+          'status', a.status, 'effective_date', a.eff) order by a.created_at desc, a.id)
+          from (select a.id, a.title, a.number, a.status, a.created_at,
+            contracts.as_date(a.fields -> 'effective_date' ->> 'value') as eff
+            from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id
+            order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a)
     ) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
@@ -183,4 +204,6 @@ export const contractsRepos = (
 ): ContractsOwnRepos<ContractListRowDto, ContractFacetsDto, ContractDetailDto> => ({
   contracts: contractsRepo(tx, tenantId),
   fields: contractFieldsRepo(tx, tenantId),
+  appendix: appendixRepo(tx, tenantId),
+  categories: categoriesRepo(tx, tenantId),
 });

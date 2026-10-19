@@ -62,6 +62,8 @@ const NULLS = {
   confirmed_by: null,
   handled: null,
   run_id: null,
+  parent: null,
+  appendices: null,
 } as const;
 
 describe("toContractDetail", () => {

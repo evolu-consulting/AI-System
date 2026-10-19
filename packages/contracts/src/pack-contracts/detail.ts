@@ -2,6 +2,11 @@
 import { z } from "zod";
 import { IsoDateTime, VersionSchema } from "../common";
 import {
+  CONTRACT_APPENDICES_MAX,
+  ContractAppendixRefSchema,
+  ContractParentRefSchema,
+} from "./appendix";
+import {
   CONTRACT_EVENT_TYPE_RE,
   CONTRACT_FIELD_KEYS,
   CONTRACT_TITLE_MAX,
@@ -58,6 +63,9 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   events: z.array(ContractEventSchema).max(CONTRACT_EVENTS_MAX),
   file: ContractFileSchema.nullable(),
   has_source: z.boolean(),
+  /** HD5: HĐ gốc (khi `kind = appendix`) và các phụ lục (khi là HĐ gốc). */
+  parent: ContractParentRefSchema.nullable(),
+  appendices: z.array(ContractAppendixRefSchema).max(CONTRACT_APPENDICES_MAX),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 
