@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
+import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import {
   contractKey,
@@ -111,6 +112,7 @@ export function ContractReviewPage({ id }: { id: string }) {
       />
       <SaveNotice msg={s.msg} err={s.err} />
       <WarningList warnings={warningsOf(c)} />
+      <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
       {failed ? (
         <ExtractFailed file={file} />
       ) : (

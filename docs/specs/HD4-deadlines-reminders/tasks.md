@@ -9,5 +9,5 @@
 | T5 | Domain `deadline.rules.ts` + unit | đầy đủ | [x] |
 | T6 | Vòng nhắc (repo claim/apply, use case drain, mount + loop) | đầy đủ | [x] |
 | T7 | API `POST /handled` + contract zod + int | đầy đủ | [x] |
-| T8 | UI `DeadlinePanel` trên S05 + unit + e2e | nhanh | [ ] |
+| T8 | UI `DeadlinePanel` trên S05 + unit + e2e | nhanh | [x] |
 | T9 | Cổng lát `test:affected` + perf thật | — | [ ] |

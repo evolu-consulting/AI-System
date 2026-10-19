@@ -149,6 +149,22 @@
       },
       "logout": "Đăng xuất"
     },
+    "deadline": {
+      "label": "Hạn chót hành động",
+      "none": "chưa có hạn chót",
+      "left": "còn {{n}} ngày",
+      "today": "hôm nay",
+      "overdue": "quá {{n}} ngày",
+      "record": "Ghi nhận xử lý",
+      "pick": "Chọn kết quả…",
+      "done": "Đã xử lý: {{outcome}}",
+      "outcomes": {
+        "renewed": "Đã gia hạn",
+        "not_renewed": "Không gia hạn",
+        "negotiating": "Đang đàm phán",
+        "replaced": "Đã thay bằng HĐ mới"
+      }
+    },
     "review": {
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",

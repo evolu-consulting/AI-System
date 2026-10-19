@@ -149,6 +149,22 @@
       },
       "logout": "Sign out"
     },
+    "deadline": {
+      "label": "Action deadline",
+      "none": "no deadline yet",
+      "left": "{{n}} days left",
+      "today": "today",
+      "overdue": "{{n}} days overdue",
+      "record": "Record handling",
+      "pick": "Choose an outcome…",
+      "done": "Handled: {{outcome}}",
+      "outcomes": {
+        "renewed": "Renewed",
+        "not_renewed": "Not renewed",
+        "negotiating": "Negotiating",
+        "replaced": "Replaced by a new contract"
+      }
+    },
     "review": {
       "back": "← Contracts",
       "reading": "Reading the contract…",
