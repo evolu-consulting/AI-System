@@ -51,19 +51,24 @@ export function caKey(name: string): string {
   return s.replace(/ca$/, "") || s;
 }
 
-/** round(num/den) half-even (num, den nguyên, den > 0). */
-export function roundHalfEven(num: number, den: number): number {
-  const n = BigInt(num);
-  const d = BigInt(den);
-  let q = n / d;
-  let r = n % d;
-  if (r < 0n) {
-    q -= 1n;
-    r += d;
-  }
-  const twice = 2n * r;
-  if (twice > d || (twice === d && q % 2n !== 0n)) q += 1n;
-  return Number(q);
+/** `round(x, nd)` của Python trên số float (review M1): làm tròn half-even theo GIÁ TRỊ NHỊ PHÂN THẬT của `x` — vd
+ *  `100*247000/2000000` = 12,3499999… ⇒ 12,3 (không phải 12,4). `toFixed(60)` cho đủ chữ số thập phân chính xác của một
+ *  double cỡ phần trăm (≤ 52 chữ số lẻ). Chỉ dùng cho tỉ lệ hiển thị; số tiền vẫn là số nguyên đồng. */
+export function pyRound(x: number, nd = 0): number {
+  if (!Number.isFinite(x)) return x;
+  const neg = x < 0;
+  const exact = Math.abs(x).toFixed(60);
+  const dot = exact.indexOf(".");
+  const keep = exact.slice(0, dot + 1 + nd).replace(/\.$/, "");
+  const rest = exact.slice(dot + 1 + nd);
+  const digits = keep.replace(".", "");
+  const last = Number(digits.at(-1));
+  const first = rest[0] ?? "0";
+  const tie = /^50*$/.test(rest);
+  const up = first > "5" || (first === "5" && (!tie || last % 2 === 1));
+  let n = BigInt(digits) + (up ? 1n : 0n);
+  if (neg) n = -n;
+  return Number(n) / 10 ** nd;
 }
 
 function marketRange(obs: readonly MarketIn[], ca: string, years: number, device: PkgDevice) {
@@ -166,7 +171,7 @@ export function cksPackages(
       label: `${p.ca} · ${p.years} năm`,
       device_label: DEVICE_VI[p.device],
       margin,
-      margin_pct: margin !== null && p.sell ? roundHalfEven(100 * margin, p.sell) : null,
+      margin_pct: margin !== null && p.sell ? pyRound((100 * margin) / p.sell) : null,
       market: marketRange(market, key.split("|")[0] as string, p.years, p.device),
       flags: [] as ("cheapest_buy" | "above_market")[],
     };
@@ -187,7 +192,7 @@ export function cksPackages(
       sold_12m: shown.reduce((s, r) => s + r.sold, 0),
       revenue,
       gross_profit: profit,
-      margin_pct: revenue ? roundHalfEven(1000 * profit, revenue) / 10 : null,
+      margin_pct: revenue ? pyRound((100 * profit) / revenue, 1) : null,
     },
     rows: shown,
     market_seen: market.reduce<string | null>(

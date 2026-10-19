@@ -32,7 +32,8 @@ export function cksRenewals(d: Deps) {
       const first = chk.certs[0];
       if (chk.open) throw new CksFail("renewal_open");
       if (!first) throw new CksFail("not_found");
-      const price = i.price_each ?? first.sale_price ?? 0;
+      // Review m3: như mgmt `price_each or group[0].sale_price or 0` — 0 nghĩa là "không đổi giá".
+      const price = i.price_each || first.sale_price || 0;
       const earliest = chk.certs.reduce(
         (m, c) => (c.valid_to < m ? c.valid_to : m),
         first.valid_to,

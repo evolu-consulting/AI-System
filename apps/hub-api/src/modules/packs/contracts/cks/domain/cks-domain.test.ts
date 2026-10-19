@@ -1,7 +1,7 @@
 // HD-FR-92…96 · luật thuần CKS (port mgmt-app): serial + DER, đọc văn bản ký, hạn/số HĐ, gom khách, gói giá half-even.
 import { describe, expect, test } from "bun:test";
 import { briefCustomer, type CertRow, groupCustomers } from "./customers.rules";
-import { caKey, cksPackages, type LotIn, type MarketIn, roundHalfEven } from "./prices.rules";
+import { caKey, cksPackages, type LotIn, type MarketIn, pyRound } from "./prices.rules";
 import {
   hasDuplicate,
   nextSaleNumber,
@@ -114,6 +114,19 @@ describe("bán/gia hạn (sales.py)", () => {
     expect(nextSaleNumber("2027", [])).toBe("CKS-2027-001");
     expect(normTaxId(" 0312.340 001 ")).toBe("0312340001");
     expect(normTaxId("  ")).toBeNull();
+    // review M2 · = normalize_tax_id: 10 / 12 / 10-3; 13 số liền ⇒ thêm gạch; ký tự lạ, gạch sai chỗ, độ dài khác ⇒ null.
+    expect(normTaxId("0312340001-002")).toBe("0312340001-002");
+    expect(normTaxId("0312340001002")).toBe("0312340001-002");
+    expect(normTaxId("001099012345")).toBe("001099012345");
+    for (const bad of [
+      "0312/345",
+      "MST:0312340001",
+      "abc",
+      "03123400011",
+      "031-2340001",
+      "０３１２３４０００１",
+    ])
+      expect({ bad, n: normTaxId(bad) }).toEqual({ bad, n: null });
     expect(hasDuplicate(["A", null, "B", null])).toBe(false);
     expect(hasDuplicate(["A", "A"])).toBe(true);
   });
@@ -200,10 +213,24 @@ describe("giá gói (prices/cks.py)", () => {
     expect(caKey("Viettel-CA")).toBe("viettel");
     expect(caKey("MISA eSign (MISA-CA)")).toBe("misa");
     expect(caKey("Mắt Bão CA")).toBe("matbao");
-    expect(roundHalfEven(125, 10)).toBe(12);
-    expect(roundHalfEven(135, 10)).toBe(14);
-    expect(roundHalfEven(-125, 10)).toBe(-12);
-    expect(roundHalfEven(333_333, 1000)).toBe(333);
+    // Review M1 · đối chiếu Python 3 `round` (số kỳ vọng chạy bằng python): ca hoà theo giá trị nhị phân thật của float.
+    const PY: [number, number, number][] = [
+      [(100 * 247_000) / 2_000_000, 1, 12.3],
+      [12.5, 0, 12],
+      [13.5, 0, 14],
+      [-12.5, 0, -12],
+      [2.675, 2, 2.67],
+      [0.125, 2, 0.12],
+      [0.375, 2, 0.38],
+      [(100 * 1) / 8, 1, 12.5],
+      [(100 * 550_000) / 1_650_000, 0, 33],
+      [(100 * 1) / 3, 1, 33.3],
+      [(100 * -247_000) / 2_000_000, 1, -12.3],
+      [33.25, 1, 33.2],
+      [33.35, 1, 33.4],
+    ];
+    for (const [x, nd, want] of PY)
+      expect({ x, nd, got: pyRound(x, nd) }).toEqual({ x, nd, got: want });
   });
   test("lô mới nhất đặt giá mua; khác thiết bị ⇒ any_device; cờ rẻ nhất chỉ khi > 1 gói cùng hạn", () => {
     const lots: LotIn[] = [
@@ -255,5 +282,28 @@ describe("giá gói (prices/cks.py)", () => {
     });
     expect(p.rows[0]?.market).toMatchObject({ any_device: true, min: 900, n: 1 });
     expect(p.stats).toEqual({ sold_12m: 1, revenue: 800, gross_profit: 100, margin_pct: 12.5 });
+  });
+  test("review M1 · stats.margin_pct 2 chữ ký 1.000.000 trên lô 876.500 ⇒ 12,3 % như mgmt (không 12,4)", () => {
+    const lots: LotIn[] = [
+      {
+        id: "l",
+        ca: "Viettel-CA",
+        years: 1,
+        device: "token",
+        unit_cost: 876_500,
+        bought_at: "2026-01-01",
+      },
+    ];
+    const sold = [1, 2].map(() => ({
+      lot_id: "l",
+      valid_from: "2026-09-01",
+      sale_price: 1_000_000,
+    }));
+    expect(cksPackages(lots, sold, [], "2026-10-19").stats).toEqual({
+      sold_12m: 2,
+      revenue: 2_000_000,
+      gross_profit: 247_000,
+      margin_pct: 12.3,
+    });
   });
 });

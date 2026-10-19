@@ -44,10 +44,15 @@ export function nextSaleNumber(year: string, used: readonly (string | null)[]): 
   return `CKS-${year}-${String(max + 1).padStart(3, "0")}`;
 }
 
-/** MST: bỏ khoảng trắng và dấu chấm; rỗng ⇒ null (D9-20). */
-export function normTaxId(s: string | null | undefined): string | null {
-  const t = (s ?? "").replace(/[\s.]/g, "");
-  return t === "" ? null : t;
+/** MST (D9-20, review M2) — port `registry.py::normalize_tax_id` (cùng luật `normalizeTaxId` của contract, biên đã trả 400):
+ *  bỏ khoảng trắng/chấm; 10 / 12 số hoặc 10-3 (13 số liền ⇒ thêm gạch); sai dạng hoặc rỗng ⇒ null (không bao giờ thành khoá). */
+export function normTaxId(raw: string | null | undefined): string | null {
+  const s = (raw ?? "").replace(/[\s.]/g, "");
+  if (s.includes("-") && !/^\d{10}-\d{3}$/.test(s)) return null;
+  const digits = s.replace("-", "");
+  if (!/^\d+$/.test(digits)) return null;
+  if (digits.length === 13) return `${digits.slice(0, 10)}-${digits.slice(10)}`;
+  return digits.length === 10 || digits.length === 12 ? digits : null;
 }
 
 /** "Chữ ký công ty", "Giám đốc · Lê Văn Tâm" (`overview.py:26-28`). */

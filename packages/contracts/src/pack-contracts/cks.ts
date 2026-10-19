@@ -1,7 +1,12 @@
 // HD-FR-91…96 · HD9 plan §1: contract zod CKS (`/pack/contracts/cks/**`). Hình trả về = `mgmt-app/web/src/api/{cks,cksPrices}.ts`
 // (id là uuid). Tiền là số nguyên đồng (BR-1, D9-18): `CksMoney` 0…10¹⁰. Thân vào strict (khoá lạ như `tenant_id` ⇒ 400).
 import { z } from "zod";
-import { IsoDateSchema, nfcText } from "./fields";
+import { IsoDateSchema as IsoDate, nfcText } from "./fields";
+
+/** Ngày có thật, năm 1900–2999 (review m2: năm 0000 ⇒ Postgres 22008 ⇒ 500; gia hạn +5 năm không vượt năm 9999). */
+const CksDate = IsoDate.refine((v) => v >= "1900" && v < "3000", {
+  message: "năm ngoài 1900–2999",
+});
 
 export const CKS_MONEY_MAX = 10_000_000_000;
 export const CksMoney = z.number().int().min(0).max(CKS_MONEY_MAX);
@@ -33,13 +38,34 @@ const optText = (n: number) =>
   nfcText(n)
     .nullish()
     .transform((v) => (v ? v : null));
+/** MST Việt Nam — port `mgmt-app/api/app/companies/registry.py::normalize_tax_id` (D9-20, review M2): bỏ khoảng trắng/chấm;
+ *  10 số (doanh nghiệp), 12 số (cá nhân), 10-3 (chi nhánh; 13 số liền ⇒ thêm gạch). Sai dạng ⇒ `null`. */
+export function normalizeTaxId(raw: string | null | undefined): string | null {
+  const s = (raw ?? "").replace(/[\s.]/g, "");
+  if (s.includes("-") && !/^\d{10}-\d{3}$/.test(s)) return null;
+  const digits = s.replace("-", "");
+  if (!/^\d+$/.test(digits)) return null;
+  if (digits.length === 13) return `${digits.slice(0, 10)}-${digits.slice(10)}`;
+  return digits.length === 10 || digits.length === 12 ? digits : null;
+}
+/** Trống ⇒ null; có giá trị mà sai dạng MST ⇒ 400 `VALIDATION` tại đúng trường (không thành khoá khách rác, không 500). */
 const taxId = () =>
   z
     .string()
-    .trim()
     .max(30)
     .nullish()
-    .transform((v) => (v ? v : null));
+    .transform((v, ctx) => {
+      if (!v?.trim()) return null;
+      const n = normalizeTaxId(v);
+      if (n === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Mã số thuế không hợp lệ (10, 12 hoặc 10-3 chữ số)",
+        });
+        return z.NEVER;
+      }
+      return n;
+    });
 
 // ---------- vào ----------
 export const CksLotCreateSchema = z.strictObject({
@@ -49,7 +75,7 @@ export const CksLotCreateSchema = z.strictObject({
   qty: z.number().int().min(1).max(100_000),
   unit_cost: CksMoney,
   years: z.number().int().min(1).max(5).default(1),
-  bought_at: IsoDateSchema,
+  bought_at: CksDate,
   label: optText(40),
   device: CksDevice.default("token"),
 });
@@ -67,8 +93,8 @@ export const CksSaleCreateSchema = z.strictObject({
   company_tax_id: taxId(),
   lot_id: z.uuid(),
   price_each: CksMoney,
-  signed_at: IsoDateSchema,
-  valid_to: IsoDateSchema,
+  signed_at: CksDate,
+  valid_to: CksDate,
   holders: z.array(CksHolderSchema).min(1).max(200),
 });
 export type CksSaleCreate = z.infer<typeof CksSaleCreateSchema>;
@@ -80,13 +106,25 @@ export const CksCertCreateSchema = z.strictObject({
   company_tax_id: taxId(),
   ca: nfcText(60).pipe(z.string().min(1)),
   serial: optText(100),
-  valid_to: IsoDateSchema,
+  valid_to: CksDate,
   holder_name: nfcText(200).pipe(z.string().min(1)).default("Chữ ký công ty"),
   device: CksDevice.default("token"),
 });
 export type CksCertCreate = z.infer<typeof CksCertCreateSchema>;
 
-const LocalAt = z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/);
+/** Giờ địa phương `YYYY-MM-DD[THH:mm]`: ngày có thật + giờ 00–23, phút 00–59 (review m2: không để SQL ép kiểu lỗi ⇒ 500). */
+const localAt = (timeRequired: boolean) =>
+  z
+    .string()
+    .regex(timeRequired ? /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/ : /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/)
+    .refine((v) => CksDate.safeParse(v.slice(0, 10)).success, { message: "ngày không có thật" })
+    .refine(
+      (v) => v.length === 10 || (Number(v.slice(11, 13)) <= 23 && Number(v.slice(14, 16)) <= 59),
+      {
+        message: "giờ không hợp lệ",
+      },
+    );
+const LocalAt = localAt(false);
 export const CksRenewSchema = z.strictObject({
   price_each: CksMoney.nullish(),
   years: z.number().int().min(1).max(5).default(1),
@@ -94,13 +132,13 @@ export const CksRenewSchema = z.strictObject({
 });
 export type CksRenew = z.infer<typeof CksRenewSchema>;
 export const CksCompleteSchema = z.strictObject({
-  serials: z.record(z.uuid(), z.string().trim().max(100)).default({}),
-  valid_to: IsoDateSchema.nullish(),
+  serials: z.record(z.uuid(), nfcText(100)).default({}),
+  valid_to: CksDate.nullish(),
 });
 export type CksComplete = z.infer<typeof CksCompleteSchema>;
 export const CksLostSchema = z.strictObject({ reason: nfcText(500).pipe(z.string().min(1)) });
 export const CksFollowupSchema = z.strictObject({
-  at: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),
+  at: localAt(true),
   note: optText(200),
 });
 export type CksFollowup = z.infer<typeof CksFollowupSchema>;
@@ -114,9 +152,9 @@ export const CksScanSchema = z.strictObject({
 export const CksCustomersQuerySchema = z.strictObject({
   filter: z.enum(CKS_CUSTOMER_FILTERS).optional(),
   lot: z.uuid().optional(),
-  ca: z.string().trim().min(1).max(60).optional(),
+  ca: nfcText(60).pipe(z.string().min(1)).optional(),
   /** Tìm bỏ dấu trên tên khách, CA, người giữ, chức danh, serial. */
-  q: z.string().trim().max(200).optional(),
+  q: nfcText(200).optional(),
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   page_size: z.coerce.number().int().min(1).max(100).default(CKS_PAGE_SIZE),
 });
