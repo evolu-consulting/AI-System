@@ -7,6 +7,8 @@ export const MAX_ATTEMPTS = 5;
 export const BACKOFF_SEC = [60, 300, 1800, 7200] as const;
 /** Hạn thuê khi claim: quá hạn mà chưa ghi kết quả (crash) ⇒ lô khác nhận lại. */
 export const LEASE_SEC = 120;
+/** Hạn một lời gọi transport — nhỏ hơn lease để lượt đang gửi chưa bị claim lại. */
+export const TRANSPORT_TIMEOUT_MS = 60_000;
 export const BATCH_SIZE = 100;
 
 export type Channel = "email" | "push";

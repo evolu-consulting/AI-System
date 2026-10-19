@@ -3,6 +3,7 @@
 // cache bản rõ. Lỗi ⇒ log warn `{secret_id, kind, failure}` rồi ném `SecretUseError` (message không id/giá trị).
 // NGƯỜI GỌI phải truyền tenant của run (không lấy từ input người dùng); giá trị chỉ sống trong `fn` — không đưa vào payload
 // job, `work/<job_id>/`, prompt, trace, audit, `detail` lỗi.
+import type { PlatformSecretKind } from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import type { Logger } from "../../lib/logger";
@@ -10,7 +11,11 @@ import { openHubSecret, type SecretKey } from "./secrets.crypto";
 import { readMaterial } from "./secrets.repo";
 import type { HubSecretKind } from "./secrets.rules";
 
-export type SecretRef = { id: string; kind: HubSecretKind; tenantId: string | null };
+export type SecretRef = {
+  id: string;
+  kind: HubSecretKind | PlatformSecretKind;
+  tenantId: string | null;
+};
 export type SecretUseFailure = "key_missing" | "secret_missing" | "decrypt_failed";
 
 export class SecretUseError extends Error {

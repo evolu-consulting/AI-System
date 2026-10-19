@@ -3,11 +3,15 @@
 // `hub.secrets:<id>:<kind>:<tenant_id|->:<key_version>`. Khoá = `HUB_SECRETS_KEY` (base64 32 byte, KHÁC SECRET_MASTER_KEY).
 // Message lỗi cố định — không bao giờ chứa khoá, giá trị hay bản mã.
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
-import type { HubSecretKind } from "@ai/contracts/hub-admin";
+import type { HubSecretKind, PlatformSecretKind } from "@ai/contracts/hub-admin";
 
 export type SecretKey = { version: number; key: Uint8Array };
 export type SealedSecret = { ciphertext: Uint8Array; iv: Uint8Array; keyVersion: number };
-export type SecretMeta = { id: string; kind: HubSecretKind; tenantId: string | null };
+export type SecretMeta = {
+  id: string;
+  kind: HubSecretKind | PlatformSecretKind;
+  tenantId: string | null;
+};
 /** Lý do boot fatal (log `hub_secrets_key_invalid`, plan §4). */
 export type HubKeyFailure = "missing" | "invalid" | "same_as_master" | "self_test";
 

@@ -196,7 +196,7 @@ describe("N3-FR-06 · crash giữa chừng và nhiều instance", () => {
     await send(T.acme, [notice(P.lan.id)]);
     const now = () => new Date(w.clock.ms).toISOString();
     await w.deps.store.fanout(now(), 100);
-    const first = await w.deps.store.claim(now(), 100, 120);
+    const first = await w.deps.store.claim(now(), 100, 120, 5);
     expect(first).toHaveLength(1); // "instance A" claim rồi chết
     w.clock.advance(119);
     expect((await dispatchOnce(w.deps)).claimed).toBe(0);

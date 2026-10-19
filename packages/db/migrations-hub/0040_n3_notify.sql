@@ -1,6 +1,7 @@
 -- N3-FR-01…08 · N3-NFR-02 · thông báo dùng chung (spec N3-notify, plan "Dữ liệu"). Viết tay, idempotent như 0028/0036 (IF NOT EXISTS /
 -- DO $$ kiểm pg_constraint·pg_policies). Chỉ THÊM bảng/hàm + nới CHECK kind của hub.secrets — không mất dữ liệu.
--- Số 0040 (không 0038): chừa chỗ cho lát N2/N5 chạy song song; `when` trong _journal lớn hơn để thứ tự áp không đảo.
+-- Số 0040: đánh số theo lát chạy song song. Migration mới luôn phải có `when` LỚN HƠN max hiện tại trong _journal
+-- (drizzle bỏ lặng lẽ migration có `when` <= bản áp cuối).
 
 -- ── (1) hub.notifications: nguồn duy nhất của chuông in-app VÀ hàng đợi (fanout_at NULL = chưa chia kênh) ────────────────────
 CREATE TABLE IF NOT EXISTS hub.notifications (

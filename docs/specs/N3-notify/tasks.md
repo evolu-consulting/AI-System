@@ -26,5 +26,11 @@ Một agent một lát (Luật 1b). Làn: **đầy đủ** = phần chạm tenan
 - Chuông: popover rỗng giữ nguyên DOM/ảnh baseline S16; tùy chọn kênh chỉ hiện khi đã có thông báo (D-05). Proxy dev/preview thêm `/notifications` → hub.
 - `test:lock:write` chỉ ghi dòng của file N3 (tests/acceptance/N3, e2e/contracts-web/bell.cw.ts) vì cây làm việc chung có test dở dang của N2/N5/HD2.
 
+## Vòng sửa review (50e473cb)
+- C1: `HUB_SECRET_KINDS` giữ nguyên 3 kind; `smtp_password`/`vapid_private_key` ở `PLATFORM_SECRET_KINDS` (contracts) chỉ đọc nội bộ qua `HubSecretReader`; test khoá H4b1 không bị đổi. M3 hết hiệu lực (Studio không thấy 2 kind).
+- M1: `settle` khớp `attempts` của lượt claim (fencing); mỗi lời gọi transport có hạn 60 s < lease 120 s (`transport_timeout` ⇒ thử lại). M2: claim bỏ hàng `attempts >= 5`, hàng `sending` hết hạn đủ 5 lần ⇒ `dead/lease_expired` trong cùng câu. Test `lease.int.test.ts`.
+- M4: journal hub ở `126e6b08` đã có entry `0041_n2_engine` trước khi file SQL tồn tại (thêm ở `42767d4f`): ai bisect cần migrate từ `42767d4f` trở đi; HEAD migrate sạch từ đầu (template DB test dựng từ trống).
+- Thấp đã sửa: L4 (link cấm ký tự điều khiển, zod), L5 (`fake` bị từ chối ở production), L6 (comment migration). Còn lại, ghi nợ: L1 (gắn `p_source` với role gọi), L2 (UPDATE `fanout_at` của user), L3 (đăng ký push chéo tenant, quyết định đã ghi), L4 phía CHECK DB (đổi migration đã áp), L7 (user bị khoá giữa chừng vẫn nhận lần thử lại), L8 (thứ tự `tests/.lock`), L9 (test `prosecdef`, perf backlog lớn, dọn dữ liệu cũ, FK user/tenant).
+
 ## Tranh chấp test
 (không)

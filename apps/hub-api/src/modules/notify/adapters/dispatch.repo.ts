@@ -67,11 +67,19 @@ async function fanout(tx: Tx, nowIso: string, limit: number) {
 }
 
 /** Nhận lô tới hạn (SKIP LOCKED) + đặt `sending` với hạn thuê; trả kèm nội dung/địa chỉ/đăng ký push để gửi ngoài tx. */
-async function claim(tx: Tx, nowIso: string, limit: number, leaseSec: number) {
+async function claim(tx: Tx, nowIso: string, limit: number, leaseSec: number, maxAttempts: number) {
   const rows = await tx.execute<ClaimRow>(sql`
-    with due as (
+    with expired as (
+      update hub.notification_deliveries d set status = 'dead', last_error = 'lease_expired'
+      where d.id in (
+        select e.id from hub.notification_deliveries e
+        where e.status = 'sending' and e.attempts >= ${maxAttempts} and e.next_attempt_at <= ${nowIso}::timestamptz
+        order by e.id limit ${limit} for update skip locked)
+      returning d.id),
+    due as (
       select d.id from hub.notification_deliveries d
-      where d.status in ('pending', 'sending') and d.next_attempt_at <= ${nowIso}::timestamptz
+      where d.status in ('pending', 'sending') and d.attempts < ${maxAttempts}
+        and d.next_attempt_at <= ${nowIso}::timestamptz
       order by d.next_attempt_at, d.id limit ${limit} for update skip locked),
     upd as (
       update hub.notification_deliveries d set status = 'sending', attempts = d.attempts + 1,
@@ -99,17 +107,23 @@ async function settle(
 ) {
   if (results.length === 0 && gone.length === 0) return 0;
   const batch = JSON.stringify(
-    results.map((r) => ({ id: r.id, outcome: r.outcome, error: r.error, next_at: r.nextAt })),
+    results.map((r) => ({
+      id: r.id,
+      attempts: r.attempts,
+      outcome: r.outcome,
+      error: r.error,
+      next_at: r.nextAt,
+    })),
   );
   const rows = await tx.execute<{ updated: number }>(sql`
     with r as (
-      select * from jsonb_to_recordset(${batch}::jsonb) as x(id bigint, outcome text, error text, next_at timestamptz)),
+      select * from jsonb_to_recordset(${batch}::jsonb) as x(id bigint, attempts int, outcome text, error text, next_at timestamptz)),
     upd as (
       update hub.notification_deliveries d set
         status = case r.outcome when 'sent' then 'sent' when 'retry' then 'pending' else 'dead' end,
         next_attempt_at = coalesce(r.next_at, d.next_attempt_at), last_error = r.error,
         sent_at = case when r.outcome = 'sent' then ${nowIso}::timestamptz end
-      from r where d.id = r.id and d.status = 'sending' returning 1),
+      from r where d.id = r.id and d.status = 'sending' and d.attempts = r.attempts returning 1),
     del as (
       delete from hub.push_subscriptions
       where endpoint in (select jsonb_array_elements_text(${JSON.stringify(gone)}::jsonb)) returning 1)
@@ -120,8 +134,8 @@ async function settle(
 export function dispatchRepo(db: Db): DispatchStore {
   return {
     fanout: (nowIso, limit) => withHubScope(db, system, (tx) => fanout(tx, nowIso, limit)),
-    claim: (nowIso, limit, leaseSec) =>
-      withHubScope(db, system, (tx) => claim(tx, nowIso, limit, leaseSec)),
+    claim: (nowIso, limit, leaseSec, maxAttempts) =>
+      withHubScope(db, system, (tx) => claim(tx, nowIso, limit, leaseSec, maxAttempts)),
     settle: (nowIso, results, gone) =>
       withHubScope(db, system, (tx) => settle(tx, nowIso, results, gone)),
   };

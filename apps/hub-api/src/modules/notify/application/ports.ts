@@ -8,6 +8,8 @@ export type PushTransport = { sendBatch(msgs: readonly PushMessage[]): Promise<S
 /** Kết cục một bản gửi để ghi lại: `nextAt` chỉ có khi `retry`. */
 export type Settlement = {
   id: string;
+  /** Số lần thử của lượt claim này (fencing: chỉ ghi nếu hàng vẫn ở đúng lượt đó). */
+  attempts: number;
   outcome: "sent" | "retry" | "dead";
   error: string | null;
   nextAt: string | null;
@@ -18,7 +20,7 @@ export type DispatchStore = {
   /** Chia kênh cho tối đa `limit` thông báo chưa chia; trả số thông báo và số bản gửi tạo. */
   fanout(nowIso: string, limit: number): Promise<{ picked: number; deliveries: number }>;
   /** Nhận tối đa `limit` bản gửi tới hạn (SKIP LOCKED), đặt `sending` + hạn thuê. */
-  claim(nowIso: string, limit: number, leaseSec: number): Promise<Claimed[]>;
+  claim(nowIso: string, limit: number, leaseSec: number, maxAttempts: number): Promise<Claimed[]>;
   /** Ghi kết cục cả lô + xóa đăng ký push hết hạn; trả số bản gửi cập nhật. */
   settle(
     nowIso: string,

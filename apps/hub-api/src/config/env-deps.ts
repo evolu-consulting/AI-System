@@ -35,6 +35,10 @@ export type EnvAppDeps = Required<
  */
 export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
   // N3 D-03: `live` chưa có adapter (ADR-0027 Proposed) ⇒ dừng khởi động thay vì lặng lẽ không gửi.
+  if (env.HUB_NOTIFY_MODE === "fake" && env.APP_ENV === "production")
+    throw new Error(
+      "HUB_NOTIFY_MODE=fake không được dùng ở production (bản gửi giả đánh dấu đã gửi)",
+    );
   if (env.HUB_NOTIFY_MODE === "live")
     throw new Error("HUB_NOTIFY_MODE=live chưa có adapter SMTP/Web Push (ADR-0027 Proposed)");
   if (env.HUB_PUBLIC_INTERNAL_URL === undefined)

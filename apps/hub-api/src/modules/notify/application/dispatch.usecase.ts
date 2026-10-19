@@ -6,10 +6,12 @@ import {
   type Claimed,
   emailOf,
   LEASE_SEC,
+  MAX_ATTEMPTS,
   mergePush,
   pushOf,
   type SendResult,
   settle,
+  TRANSPORT_TIMEOUT_MS,
   thrownResult,
 } from "../domain/notify.rules";
 import type { DispatchStore, EmailTransport, PushTransport, Settlement } from "./ports";
@@ -23,6 +25,8 @@ export type DispatchDeps = {
   baseUrl: string;
   batchSize?: number;
   leaseSec?: number;
+  /** Hạn mỗi lời gọi transport (ms); phải < lease để lượt chậm không bị claim lại khi còn đang gửi. */
+  transportTimeoutMs?: number;
 };
 
 export type DispatchResult = {
@@ -36,14 +40,27 @@ export type DispatchResult = {
 async function safeBatch<M>(
   send: (m: readonly M[]) => Promise<SendResult[]>,
   msgs: readonly M[],
+  timeoutMs: number,
 ): Promise<SendResult[]> {
   if (msgs.length === 0) return [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const out = await send(msgs);
+    // Hạn cứng < lease: transport treo không giữ lô quá hạn thuê (M1). Hết hạn ⇒ cả lô thử lại.
+    const out = await Promise.race([
+      send(msgs),
+      new Promise<never>((_, rej) => {
+        timer = setTimeout(
+          () => rej(Object.assign(new Error("timeout"), { name: "timeout" })),
+          timeoutMs,
+        );
+      }),
+    ]);
     // Transport trả thiếu ⇒ phần thiếu thử lại (không mất tin, không coi là đã gửi).
     return msgs.map((_, i) => out[i] ?? { ok: false, permanent: false, code: "transport_short" });
   } catch (err) {
     return msgs.map(() => thrownResult(err));
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -53,6 +70,7 @@ type EmailOut = { delivery: Claimed; result: SendResult | null };
 const noAddress: SendResult = { ok: false, permanent: true, code: "no_address" };
 
 async function sendAll(d: DispatchDeps, rows: readonly Claimed[]) {
+  const tmo = d.transportTimeoutMs ?? TRANSPORT_TIMEOUT_MS;
   const emails = rows.filter((r) => r.channel === "email");
   const pushes = rows.filter((r) => r.channel === "push");
   const sendable = emails.filter((r) => r.email !== "");
@@ -60,8 +78,8 @@ async function sendAll(d: DispatchDeps, rows: readonly Claimed[]) {
   const pushMsgs = pushes.flatMap((r) => pushOf(r));
   // Hai kênh song song; mỗi kênh MỘT lời gọi transport cho cả lô.
   const [er, pr] = await Promise.all([
-    safeBatch((m) => d.email.sendBatch(m), emailMsgs),
-    safeBatch((m) => d.push.sendBatch(m), pushMsgs),
+    safeBatch((m) => d.email.sendBatch(m), emailMsgs, tmo),
+    safeBatch((m) => d.push.sendBatch(m), pushMsgs, tmo),
   ]);
   const byEmail = new Map<string, SendResult>();
   sendable.forEach((r, i) => {
@@ -89,7 +107,7 @@ export async function dispatchOnce(d: DispatchDeps): Promise<DispatchResult> {
   const limit = d.batchSize ?? BATCH_SIZE;
   const lease = d.leaseSec ?? LEASE_SEC;
   const fan = await d.store.fanout(d.now().toISOString(), limit);
-  const rows = await d.store.claim(d.now().toISOString(), limit, lease);
+  const rows = await d.store.claim(d.now().toISOString(), limit, lease, MAX_ATTEMPTS);
   const res: DispatchResult = {
     fanned: fan.picked,
     claimed: rows.length,
@@ -107,6 +125,7 @@ export async function dispatchOnce(d: DispatchDeps): Promise<DispatchResult> {
     else res.dead++;
     return {
       id: delivery.id,
+      attempts: delivery.attempts,
       outcome: s.outcome,
       error: s.outcome === "sent" ? null : s.error,
       nextAt: s.outcome === "retry" ? new Date(nowMs + s.delaySec * 1000).toISOString() : null,

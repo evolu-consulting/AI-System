@@ -5,14 +5,10 @@ import { z } from "zod";
 import { IsoDateTime, UpdatedBySchema, UuidSchema } from "../common";
 import { SecretValueSchema } from "../secrets";
 
-// N3-FR-08: `smtp_password` / `vapid_private_key` = secret nền tảng của cổng thông báo (tenant_id NULL), chỉ Studio tạo.
-export const HUB_SECRET_KINDS = [
-  "provider_api_key",
-  "kh_api_key",
-  "source_credential",
-  "smtp_password",
-  "vapid_private_key",
-] as const;
+export const HUB_SECRET_KINDS = ["provider_api_key", "kh_api_key", "source_credential"] as const;
+/** N3-FR-08: secret NỀN TẢNG của cổng thông báo (tenant_id NULL). Ngoài `HUB_SECRET_KINDS` (UI Studio/route secrets không thấy); chỉ đọc nội bộ qua HubSecretReader. */
+export const PLATFORM_SECRET_KINDS = ["smtp_password", "vapid_private_key"] as const;
+export type PlatformSecretKind = (typeof PLATFORM_SECRET_KINDS)[number];
 export type HubSecretKind = (typeof HUB_SECRET_KINDS)[number];
 export const HubSecretKindSchema = z.enum(HUB_SECRET_KINDS);
 

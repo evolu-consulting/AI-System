@@ -4,7 +4,9 @@ import { z } from "zod";
 
 export const NOTIFY_KIND_RE = /^[a-z][a-z0-9_.]{1,40}$/;
 /** Đường dẫn trong app (bắt đầu `/`, không `//` hay `/\`): chống mở URL ngoài từ thông báo. */
-export const NOTIFY_LINK_RE = /^\/[^/\\]/;
+// Cấm ký tự điều khiển/khoảng trắng (TAB/LF bị trình duyệt bỏ khi parse href: "/\t/x" thành "//x").
+// biome-ignore lint/suspicious/noControlCharactersInRegex: chủ ý chặn ký tự điều khiển
+export const NOTIFY_LINK_RE = /^\/(?![/\\])[^\u0000-\u0020\u007f]*$/;
 export const NOTIFY_TITLE_MAX = 200;
 export const NOTIFY_BODY_MAX = 2000;
 export const NOTIFY_LINK_MAX = 500;

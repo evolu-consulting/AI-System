@@ -2,7 +2,7 @@
 // Transaction + scope do service/`withConfigWrite` mở. BẪY: `hub_rw` không SELECT được `ciphertext`/`iv` ⇒ mọi select liệt kê
 // cột (không `select *`/`returning *`); bản mã CHỈ đọc qua `hub.secret_material(id, kind, tenant)`. Giá trị không bao giờ
 // vào SQL — chỉ bản mã bytea. `admin.tenants`/`admin.users` đọc qua hub_ro (USING true) để dựng `tenant`/`updated_by`.
-import type { SecretUsedBy } from "@ai/contracts/hub-admin";
+import type { PlatformSecretKind, SecretUsedBy } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { SealedSecret } from "./secrets.crypto";
@@ -176,7 +176,7 @@ export type SecretMaterial = { ciphertext: Uint8Array; iv: Uint8Array; key_versi
 /** Bản mã qua hàm SECURITY DEFINER (khớp đúng id + kind + tenant; scope user không mở tenant khác). */
 export async function readMaterial(
   tx: Tx,
-  ref: { id: string; kind: HubSecretKind; tenantId: string | null },
+  ref: { id: string; kind: HubSecretKind | PlatformSecretKind; tenantId: string | null },
 ): Promise<SecretMaterial | undefined> {
   const [r] = await tx.execute<SecretMaterial>(sql`select ciphertext, iv, key_version
     from hub.secret_material(${ref.id}::uuid, ${ref.kind}::text, ${ref.tenantId}::uuid)`);
