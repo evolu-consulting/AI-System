@@ -28,10 +28,15 @@ Perf (Luật 4c): danh sách giữ 2 câu và p95 ≤ 50 ms (thêm `parents` là
 ## Tasks
 | # | Task | Rủi ro | Trạng thái |
 |---|---|---|---|
-| T1 | Contract zod (list `parents`, detail `parent`/`appendices`, parent/suggestions/prices/categories/members) | thường | [ ] |
-| T2 | BE: members (kit) + categories + `parents` trong danh sách + detail | thường | [ ] |
-| T3 | BE: gắn HĐ gốc + gợi ý + áp giá (domain thuần + repo + route) + test | thường | [ ] |
-| T4 | Perf trước/sau (list/facets/detail) | cao (đường nóng) | [ ] |
-| T5 | FE: S03 danh sách + phụ lục trên S05 | thường | [ ] |
-| T6 | e2e: cảnh S03 + baseline + hành vi | thường | [ ] |
-| T7 | Cổng lát: `test:affected`, `test:all` một lần | — | [ ] |
+| T1 | Contract zod (list `parents`, detail `parent`/`appendices`, parent/suggestions/prices/categories/members) | thường | [x] |
+| T2 | BE: members (kit) + categories + `parents` trong danh sách + detail | thường | [x] |
+| T3 | BE: gắn HĐ gốc + gợi ý + áp giá (domain thuần + repo + route) + test | thường | [x] |
+| T4 | Perf trước/sau (list/facets/detail) | cao (đường nóng) | [x] |
+| T5 | FE: S03 danh sách + phụ lục trên S05 | thường | [x] |
+| T6 | e2e: cảnh S03 + baseline + hành vi | thường | [x] |
+| T7 | Cổng lát: `test:affected`, `test:all` một lần | — | [x] test:affected (coordinator chạy test:all ở cổng đợt) |
+
+## Kết quả
+- Perf sau ANALYZE (10.000 HĐ/tenant + 70.000 nền, n=200): danh sách không lọc p95 23,2 ms · kind=appendix 10,8 · trang cuối 23,1 · chi tiết HĐ gốc 2,8 / phụ lục 2,0 (≤ 30) · giá 2,1 · gợi ý 4,4; 2 câu SQL (gợi ý 3), không Seq Scan. HD1 ghi 23,9–26,6 cho danh sách ⇒ không tệ đi. Số 	rước đo lúc máy tải nặng (facets, không đổi, 308 ms) không dùng được; facets không đổi.
+- Parity S03: un run e2e:contracts — 3 cảnh S03 (sáng/tối/mobile) chữ 0 lệch, khung ≤ 2 px, ảnh ≤ 0,5 %.
+- Mở: xoá HĐ (D-HD5-03), panel góp ý S14, gợi ý bằng LLM/RAG (D-HD5-02), 	oday của giá theo UTC (chưa theo múi tenant), baseline S05 đang đổi do HD3, qc relock e2e/tests mới.
