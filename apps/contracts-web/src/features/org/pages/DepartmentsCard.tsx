@@ -45,7 +45,10 @@ export function DepartmentsCard({ data, name, busy, act }: Props) {
                 className={field}
                 value={d.head_user_id ?? ""}
                 disabled={busy}
-                onChange={(e) => act(() => setHead(d.group_id, e.target.value || null))}
+                onChange={(e) => {
+                  const headId = e.target.value || null; // đọc ngay (xem OrgPage: select có kiểm soát bị trả về giá trị cũ)
+                  act(() => setHead(d.group_id, headId));
+                }}
               >
                 <option value="">{t("contracts.org.none")}</option>
                 {data.members.map((m) => (

@@ -69,7 +69,11 @@ export function OrgPage() {
           className={`${field} w-fit`}
           value={vis.data?.mode ?? "tenant"}
           disabled={run.isPending || !vis.data}
-          onChange={(e) => act(() => putVisibility(e.target.value as "tenant" | "org"))}
+          onChange={(e) => {
+            // Đọc giá trị NGAY: `act` chạy bất đồng bộ, lúc đó select có kiểm soát đã bị React trả về giá trị cũ.
+            const mode = e.target.value as "tenant" | "org";
+            act(() => putVisibility(mode));
+          }}
         >
           <option value="tenant">{t("contracts.org.modeTenant")}</option>
           <option value="org">{t("contracts.org.modeOrg")}</option>
@@ -96,7 +100,10 @@ export function OrgPage() {
                     className={field}
                     value={m.manager_id ?? ""}
                     disabled={run.isPending}
-                    onChange={(e) => act(() => setManager(m.user_id, e.target.value || null))}
+                    onChange={(e) => {
+                      const managerId = e.target.value || null;
+                      act(() => setManager(m.user_id, managerId));
+                    }}
                   >
                     <option value="">{t("contracts.org.none")}</option>
                     {managerOptions(data.members, m.user_id).map((x) => (
