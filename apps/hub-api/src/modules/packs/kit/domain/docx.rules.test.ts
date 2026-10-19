@@ -1,6 +1,7 @@
 // PK-FR-07 · unit cho phần luật DOCX ngoài test qc: tỉ lệ nén, tiêu đề, danh sách, bảng, đậm, cắt Markdown.
 import { describe, expect, it } from "bun:test";
 import {
+  canQueueDocx,
   checkZipEntries,
   DOCX_MAX_MD,
   type DocxPara,
@@ -63,5 +64,15 @@ describe("PK-FR-07 · docx.rules", () => {
     const r = renderMarkdown([para(big), para(big), para(big)], new Map(), emptyNumbering());
     expect(r.markdown.length).toBeLessThanOrEqual(DOCX_MAX_MD);
     expect(r.warnings).toEqual(["truncated"]);
+  });
+});
+
+describe("PK-FR-07 · review m-03 · canQueueDocx (hàng đợi công bằng theo tenant)", () => {
+  it("tổng đạt maxPending ⇒ từ chối; tenant đã có việc đang chờ ⇒ từ chối; tenant khác / vắng tenant ⇒ nhận", () => {
+    const s = { total: 1, waitingTenants: ["a"] };
+    expect(canQueueDocx({ total: 2, waitingTenants: [] }, 2, "x")).toBe(false);
+    expect(canQueueDocx(s, 3, "a")).toBe(false);
+    expect(canQueueDocx(s, 3, "b")).toBe(true);
+    expect(canQueueDocx(s, 3)).toBe(true);
   });
 });

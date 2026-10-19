@@ -61,3 +61,16 @@ Phạm vi review: `git diff 1cdc17a..HEAD -- apps packages .dependency-cruiser.c
 
 ## Rubric
 1 ✓ · 2 ✓ · 3 ✓ (SAFE; Minor m-01/m-03/m-04/m-09) · 4 ✓ (m-02/m-05) · 5 ✓ (số đo đã ghi; chưa chạy lại) · 6 ✓ (unit xanh; int/e2e chưa kiểm) · 7 ✗ (M-01, M-02: `check:fn` đỏ) · 8 ✓ (locale VI/EN cùng 144 dòng, có test `contracts-locales.test.ts`; đủ trạng thái tải/lỗi/không quyền) · 9 ✓ (m-08)
+
+## Đã sửa — backend (vòng 1, 2026-10-19)
+| # | Trạng thái | Sửa |
+|---|---|---|
+| M-01 | Đã sửa | `createDocxConverter` còn 9 dòng; hàng đợi/worker tách thành lớp `DocxQueue` (`submit`/`close`/`finish`/`spawn`/`pump`), hành vi giữ nguyên. `check:fn` không còn mục N1 backend |
+| m-01 | Đã sửa | Luật tĩnh `apps/hub-api/src/modules/packs/packs.mount.test.ts`: `set_config('role'/'app.tenant_id', …)` trong `apps/*/src`, `packages/*/src` (ngoài test) chỉ ở `packages/db/src/{scope,hub-scope,pack-scope}.ts` |
+| m-02 | Đã sửa | `migrations-packs/0003_install_owner.sql`: cài lần đầu mà feature `<k'>-read/write/admin` đã có ⇒ RAISE 23505; cài lại vẫn idempotent. Test `packages/db/src/packs-install.int.test.ts` |
+| m-03 | Đã sửa | `DOCX_MAX_INPUT` = 20 MiB chặn trước worker (`DOCX_UNREADABLE`); `toMarkdown(bytes, {tenantId?})` + luật `canQueueDocx`: mỗi tenant ≤ 1 việc đang chờ, tổng `maxPending` giữ. Perf: p95 2,4–3,0 ms; 19,1 MB 96–120 ms; bom 0,2–3,3 ms (T5g: 2,8 / 122 / ≤ 1,4) |
+| m-04 | Đã sửa | `pkdemoEnabled(appEnv)`: chỉ `development`/`test`; vắng/lạ ⇒ tắt |
+| m-05 | Ghi nợ | TECH-DEBT #210 |
+| m-06 | Ghi nợ | TECH-DEBT #211 |
+| m-09 | Đã sửa | Zip có mục trùng tên ⇒ `DOCX_UNREADABLE` (`convert.ts`, test trong `convert.test.ts`) |
+| check:fn ngoài N1 | | `depcruise.test.ts:56` do N1 thêm 3 dòng (TF3) ⇒ đã tách bảng `FIXTURE_EDGES`, bỏ mục allowlist thừa. `filebox.client.ts:118 #retry` có từ trước N1 ⇒ TECH-DEBT #212 |

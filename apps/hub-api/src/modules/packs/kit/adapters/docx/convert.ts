@@ -33,6 +33,7 @@ function convertUnsafe(bytes: Uint8Array): DocxResult {
   const entries = readCentralDirectory(bytes, DOCX_MAX_PARTS + 1);
   if (checkZipEntries(entries) !== "ok") return UNREADABLE;
   const byName = new Map(entries.map((e) => [e.name, e]));
+  if (byName.size !== entries.length) return UNREADABLE; // review m-09: tên trùng ⇒ công cụ khác có thể đọc mục khác
   const docXml = readXml(bytes, byName.get("word/document.xml"));
   if (docXml === null) return UNREADABLE;
   const { blocks, warnings } = readDocument(docXml);

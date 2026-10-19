@@ -1,7 +1,7 @@
 // PK-FR-05 · PK-FR-09 · D-09 · N1 plan §9 · lớp 4 của module gói (gộp mount tối thiểu T5b `app.packs.ts`): `GET /pack/<k>/me`
 // + route nghiệp vụ từng gói dưới `/pack/<k>`. Chỗ DUY NHẤT nối `modules/config` (ConfigCache thoả cổng `PackAccessView`) vào
 // module gói. JWT ở gốc: `PACK_PREFIX` nằm trong `PROTECTED_PREFIXES` của `app.ts` (401 trước 404). Gói `pkdemo` (D-08) chỉ
-// ngoài production: `deps.packs.pkdemo` ưu tiên, vắng ⇒ `appEnv !== "production"`.
+// ngoài production: `deps.packs.pkdemo` ưu tiên, vắng ⇒ `pkdemoEnabled(appEnv)` (review m-04: chỉ khi khai báo rõ dev/test).
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../lib/logger";
@@ -27,11 +27,15 @@ export type PacksMountDeps = {
   packs?: PacksDeps;
 };
 
+/** Review m-04 · `pkdemo` chỉ mở khi `APP_ENV` khai báo rõ `development`/`test`; vắng hoặc giá trị lạ ⇒ tắt (fail-closed). */
+export const pkdemoEnabled = (appEnv: string | undefined): boolean =>
+  appEnv === "development" || appEnv === "test";
+
 /** Gắn `/pack/*` (gọi sau khi đã gắn `requireAuth`); trả cổng quyền gói. */
 export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): PackAccessView {
   const view: PackAccessView = d.config;
   app.route(PACK_PREFIX, packMeRoutes(view));
-  const pkdemoOn = d.packs?.pkdemo ?? (d.appEnv ?? process.env.APP_ENV) !== "production";
+  const pkdemoOn = d.packs?.pkdemo ?? pkdemoEnabled(d.appEnv ?? process.env.APP_ENV);
   if (d.db && pkdemoOn) app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, pkdemoModule(d.db, view));
   const fb = packFilebox(d.packs);
   if (d.db && pkdemoOn && fb)

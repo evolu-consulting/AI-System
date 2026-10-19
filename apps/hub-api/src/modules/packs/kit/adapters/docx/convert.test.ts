@@ -2,7 +2,7 @@
 // textbox, ô gộp, danh sách đánh số; converter worker: BUSY khi vượt maxPending, close().
 import { describe, expect, it } from "bun:test";
 import { zipSync } from "fflate";
-import { DOCX_MAX_DEPTH } from "../../domain/docx.rules";
+import { DOCX_MAX_DEPTH, DOCX_MAX_INPUT } from "../../domain/docx.rules";
 import { convertDocx } from "./convert";
 import { createDocxConverter } from "./index";
 
@@ -61,5 +61,35 @@ describe("PK-FR-07 · createDocxConverter", () => {
     expect(bytes.byteLength).toBeGreaterThan(0); // mảng của người gọi không bị chuyển quyền
     await c.close();
     expect(await c.toMarkdown(bytes)).toEqual({ ok: false, code: "DOCX_BUSY" });
+  });
+  it("review m-03 · đầu vào > DOCX_MAX_INPUT ⇒ DOCX_UNREADABLE ngay (không vào worker)", async () => {
+    const c = createDocxConverter();
+    const big = new Uint8Array(DOCX_MAX_INPUT + 1);
+    expect(await c.toMarkdown(big)).toEqual({ ok: false, code: "DOCX_UNREADABLE" });
+    await c.close();
+  });
+  it("review m-03 · tenant đã có việc đang chờ ⇒ DOCX_BUSY; tenant khác vẫn vào được", async () => {
+    const c = createDocxConverter({ maxPending: 4 });
+    const bytes = doc(p("x"));
+    const t = (tenantId: string) => c.toMarkdown(bytes, { tenantId });
+    const [a1, a2, a3, b1] = await Promise.all([t("a"), t("a"), t("a"), t("b")]);
+    expect([a1.ok, a2.ok, b1.ok]).toEqual([true, true, true]); // a1 chạy, a2 chờ, b1 chờ
+    expect(a3).toEqual({ ok: false, code: "DOCX_BUSY" });
+    await c.close();
+  });
+});
+
+describe("PK-FR-07 · review m-09 · zip có mục trùng tên", () => {
+  it("hai `word/document.xml` ⇒ DOCX_UNREADABLE", () => {
+    // Tên cùng độ dài rồi vá byte tên ⇒ zip hợp lệ có 2 mục trùng tên (fflate không cho khoá trùng).
+    const z = zipSync({
+      "word/document.xml": enc.encode(`<w:document ${W}><w:body>${p("A")}</w:body></w:document>`),
+      "word/documenX.xml": enc.encode(`<w:document ${W}><w:body>${p("B")}</w:body></w:document>`),
+    });
+    const from = enc.encode("word/documenX.xml");
+    const to = enc.encode("word/document.xml");
+    for (let i = 0; i + from.length <= z.length; i++)
+      if (from.every((b, k) => z[i + k] === b)) z.set(to, i);
+    expect(md(z).markdown).toBe("!DOCX_UNREADABLE");
   });
 });

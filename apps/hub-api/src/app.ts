@@ -123,7 +123,7 @@ export type AppDeps = {
   kh?: KhConfig;
   /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
   dlc?: DlcEngine;
-  /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ `appEnv !== "production"`. */
+  /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
   packs?: PacksDeps;
 } & ProcessSeams;
 

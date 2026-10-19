@@ -15,6 +15,13 @@
       "when": 1792454400000,
       "tag": "0002_admin_read",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792540800000,
+      "tag": "0003_install_owner",
+      "breakpoints": true
     }
   ]
 }

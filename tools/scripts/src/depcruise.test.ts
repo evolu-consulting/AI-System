@@ -50,6 +50,30 @@ describe("ADM-NFR-06 · depcruise pickEntries (T-DEP-8)", () => {
   });
 });
 
+/** Cạnh vi phạm mong đợi trên fixture cho các luật nội bộ (luật npm `rules-must-be-pure`/`service-no-http` xét riêng). */
+const FIXTURE_EDGES: Record<string, string[][]> = {
+  "no-routes-to-repo": [
+    ["apps/x-api/src/modules/a/a.routes.ts", "apps/x-api/src/modules/a/a.repo.ts"],
+  ],
+  "no-cross-module-repo": [
+    ["apps/x-api/src/modules/a/a.service.ts", "apps/x-api/src/modules/b/b.repo.ts"],
+  ],
+  "component-no-fetch": [
+    ["apps/x-web/src/features/f/components/Btn.tsx", "apps/x-web/src/features/f/api.ts"],
+    ["apps/x-web/src/features/f/components/Btn.tsx", "apps/x-web/src/lib/http.ts"],
+  ],
+  "web-no-db-or-api": [
+    ["apps/x-web/src/pages/p.ts", "apps/x-api/src/lib/util.ts"],
+    ["apps/x-web/src/pages/p.ts", "packages/db/src/index.ts"],
+  ],
+  "api-no-web": [["apps/x-api/src/lib/to-web.ts", "apps/x-web/src/lib/fmt.ts"]],
+  "contracts-pure": [
+    ["packages/contracts/src/a.ts", "apps/x-api/src/lib/util.ts"],
+    ["packages/contracts/src/a.ts", "packages/db/src/index.ts"],
+  ],
+  "web-kit-no-apps": [["packages/web-kit/src/bad.ts", "apps/x-web/src/lib/fmt.ts"]],
+};
+
 describe("ADM-NFR-06 · luật dependency-cruiser trên fixture", () => {
   test(
     "fixture vi phạm: mỗi luật T-DEP-1…7 bắt đúng cạnh; bun:sqlite là core, không unresolvable",
@@ -66,35 +90,13 @@ describe("ADM-NFR-06 · luật dependency-cruiser trên fixture", () => {
       const npmTo = (name: string) =>
         byRule(name).map(([from, to]) => [from, HONO.test(to ?? "") ? "hono" : to]);
 
-      expect(byRule("no-routes-to-repo")).toEqual([
-        ["apps/x-api/src/modules/a/a.routes.ts", "apps/x-api/src/modules/a/a.repo.ts"],
-      ]);
-      expect(byRule("no-cross-module-repo")).toEqual([
-        ["apps/x-api/src/modules/a/a.service.ts", "apps/x-api/src/modules/b/b.repo.ts"],
-      ]);
       expect(npmTo("rules-must-be-pure")).toEqual([
         ["apps/x-api/src/modules/a/x.rules.ts", "bun:sqlite"],
         ["apps/x-api/src/modules/b/y.rules.ts", "hono"],
       ]);
       expect(npmTo("service-no-http")).toEqual([["apps/x-api/src/modules/b/b.service.ts", "hono"]]);
-      expect(byRule("component-no-fetch")).toEqual([
-        ["apps/x-web/src/features/f/components/Btn.tsx", "apps/x-web/src/features/f/api.ts"],
-        ["apps/x-web/src/features/f/components/Btn.tsx", "apps/x-web/src/lib/http.ts"],
-      ]);
-      expect(byRule("web-no-db-or-api")).toEqual([
-        ["apps/x-web/src/pages/p.ts", "apps/x-api/src/lib/util.ts"],
-        ["apps/x-web/src/pages/p.ts", "packages/db/src/index.ts"],
-      ]);
-      expect(byRule("api-no-web")).toEqual([
-        ["apps/x-api/src/lib/to-web.ts", "apps/x-web/src/lib/fmt.ts"],
-      ]);
-      expect(byRule("contracts-pure")).toEqual([
-        ["packages/contracts/src/a.ts", "apps/x-api/src/lib/util.ts"],
-        ["packages/contracts/src/a.ts", "packages/db/src/index.ts"],
-      ]);
-      expect(byRule("web-kit-no-apps")).toEqual([
-        ["packages/web-kit/src/bad.ts", "apps/x-web/src/lib/fmt.ts"],
-      ]);
+      for (const [rule, edges] of Object.entries(FIXTURE_EDGES))
+        expect({ rule, edges: byRule(rule) }).toEqual({ rule, edges });
       const circ = byRule("no-circular");
       expect(circ.length).toBeGreaterThanOrEqual(1);
       for (const [from, to] of circ) {

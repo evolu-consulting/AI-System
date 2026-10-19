@@ -85,11 +85,6 @@
     "reason": "TECH-DEBT #23: callback describe của test 84 dòng (trước M3), tách khi chạm lại"
   },
   {
-    "file": "tools/scripts/src/depcruise.test.ts",
-    "name": "describe(\"ADM-NFR-06 · luật dependency-cruiser trê\")",
-    "reason": "TECH-DEBT #23: callback describe của test 64 dòng (trước M3), tách khi chạm lại"
-  },
-  {
     "file": "tools/scripts/src/trace.test.ts",
     "name": "describe(\"ADM-NFR-06 · trace parse (T-TRACE-1, T-T\")",
     "reason": "TECH-DEBT #23: callback describe của test 65 dòng (trước M3), tách khi chạm lại"

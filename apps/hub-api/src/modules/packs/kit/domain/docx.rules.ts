@@ -23,9 +23,27 @@ export type DocxErrorCode = "DOCX_UNREADABLE" | "DOCX_BUSY";
 export type DocxResult =
   | { ok: true; markdown: string; warnings: string[] }
   | { ok: false; code: DocxErrorCode };
+/** Kích thước đầu vào tối đa — khớp giới hạn upload 20 MiB (`files_ck` của bộ khung). Chặn TRƯỚC khi vào worker. */
+export const DOCX_MAX_INPUT = 20 * MiB;
+
+/** `tenantId` (tuỳ chọn) ⇒ hàng đợi công bằng: mỗi tenant ≤ 1 việc đang chờ. */
+export type DocxRequestOpts = { tenantId?: string };
 /** Port (ADR-0023 §2): không ném — mọi lỗi thành `{ok:false}`. */
 export interface DocxConverter {
-  toMarkdown(bytes: Uint8Array): Promise<DocxResult>;
+  toMarkdown(bytes: Uint8Array, opts?: DocxRequestOpts): Promise<DocxResult>;
+}
+
+/**
+ * Review N1 m-03 · nhận việc mới vào hàng đợi DOCX? Tổng (đang chạy + đang chờ) < `maxPending`, và tenant (nếu có) chưa có
+ * việc nào ĐANG CHỜ — một tenant gửi dồn không chiếm hết chỗ chờ của tenant khác. Vắng tenant ⇒ chỉ xét tổng.
+ */
+export function canQueueDocx(
+  s: { total: number; waitingTenants: readonly (string | undefined)[] },
+  maxPending: number,
+  tenantId?: string,
+): boolean {
+  if (s.total >= maxPending) return false;
+  return tenantId === undefined || !s.waitingTenants.includes(tenantId);
 }
 
 export type ZipEntryCheck = "ok" | "TOO_MANY_PARTS" | "TOO_LARGE" | "MACRO";
