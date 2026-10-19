@@ -22,6 +22,7 @@ describe("ADM-NFR-06 · loadEnv", () => {
       PORT: 3001,
       CORS_ORIGINS: ["http://a.test", "http://b.test:3000"],
       ADMIN_WEB_URL: "http://localhost:3000",
+      ADMIN_FROZEN_MODULES: "off", // F1 (CR-095): mặc định off
     });
   });
 

@@ -25,6 +25,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useProcessEngineOn } from "@/features/processes/engine";
 import { useSession } from "@/lib/auth/use-session";
+import { frozenModulesOn } from "@/lib/frozen";
 import { cn } from "@/lib/utils";
 import { type NavId, type NavItem, navGroups } from "../lib/nav";
 
@@ -120,7 +121,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: Props) {
   const processes = useProcessEngineOn(); // P-a FD2: mục "Quy trình" chỉ khi engine on
   return (
     <nav aria-label={t("nav.main")} className="flex-1 space-y-4 overflow-y-auto p-3">
-      {navGroups(role, { processes }).map((group) => (
+      {navGroups(role, { processes, frozen: frozenModulesOn }).map((group) => (
         <div key={group.labelKey ?? "root"} className="space-y-1">
           {group.labelKey && !collapsed ? (
             <p className="px-3 pb-1 text-micro font-semibold tracking-wide text-subtle-foreground">

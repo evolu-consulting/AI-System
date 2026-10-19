@@ -1,6 +1,8 @@
 /// <reference types="@rsbuild/core/types" />
 
 interface ImportMetaEnv {
+  /** F1 (CR-095): `on` ⇒ hiện UI module đóng băng (docs/platform/modules.md); vắng/khác ⇒ ẩn. */
+  readonly PUBLIC_FROZEN_MODULES?: string;
   /** URL Evolu Copilot (tuỳ chọn, M1 FE3). Rsbuild nhúng biến `PUBLIC_*` lúc build. */
   readonly PUBLIC_CHAT_APP_URL?: string;
   /** Gốc Hub (X1 F5): admin-web gọi thẳng `/agent-grants*`. Vắng → "Chưa cấu hình địa chỉ Hub". */

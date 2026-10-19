@@ -120,6 +120,12 @@ export type AppDeps = {
   studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
   /** P-a D15 · = `HUB_PROCESS_ENGINE==="on"`; vắng ⇒ false (không mount route quy trình, `!` là chữ thường). */
   processEngine?: boolean;
+  /**
+   * F1 (CR-095) · module đóng băng (docs/platform/modules.md): `false` ⇒ KHÔNG mount route công khai của quy trình, phòng (`/rooms`), nguồn,
+   * KH (`/studio/api/kh*`) và `/dlc`; engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process
+   * giữ nguyên); `server.ts` luôn điền từ `HUB_FROZEN_MODULES` (mặc định off).
+   */
+  frozenModules?: boolean;
   /** P-b C13 · = `HUB_SOURCE_CHECK_TIMEOUT_MS`; "Kiểm tra kết nối" chờ Runtime resolve (mặc định 60000). */
   sourceCheckTimeoutMs?: number;
   /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */
@@ -232,6 +238,7 @@ function processHooks(
     workflowInvoker: sharedWorkflowInvoker({ ...deps, ...m }), // P-d2 · D2-02 · chung với `/mcp`
     // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
     github: githubEndpointOf(deps),
+    publicRoutes: deps.frozenModules !== false, // F1 · route công khai quy trình chỉ khi module không đóng băng
     secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),
   });
   m.messages.useProcesses(proc.roomSender);
@@ -241,10 +248,13 @@ function processHooks(
 /** Route chỉ cần `db` (+ `config` nếu có): phòng X2a, lệnh/`@`, quyền agent, trace, nguồn. Trả phần cần cho vòng run. */
 function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: ConfigCache) {
   // DLC-R11 · Workspaces/Process (AI SDLC) — chỉ cần db; engine vắng ⇒ route trả engine: not_configured.
-  app.route("/dlc", dlcRoutes(deps.db, deps.dlc));
-  app.route("/dlc", dlcAdminRoutes(deps.db, deps.dlc));
+  const frozenOn = deps.frozenModules !== false; // F1 (CR-095): false ⇒ không mount route công khai module đóng băng
+  if (frozenOn) {
+    app.route("/dlc", dlcRoutes(deps.db, deps.dlc));
+    app.route("/dlc", dlcAdminRoutes(deps.db, deps.dlc));
+  }
   const { redis, pingMs, signal } = deps;
-  const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal });
+  const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal, rooms: frozenOn });
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
@@ -258,12 +268,13 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
   // P-b · nguồn: mount TRƯỚC module quy trình để `/process-runs/sources` không bị `/process-runs/:id` nuốt.
   // Bridge chung: module nguồn nhận `/sources-resolved`, engine quy trình (mount sau) gắn `onReport`.
   const resolveBridge: ResolveBridge = {};
-  mountSources(app, {
-    db: deps.db,
-    sourceCheckTimeoutMs: deps.sourceCheckTimeoutMs,
-    resolveBridge,
-    now: deps.now,
-  });
+  if (frozenOn)
+    mountSources(app, {
+      db: deps.db,
+      sourceCheckTimeoutMs: deps.sourceCheckTimeoutMs,
+      resolveBridge,
+      now: deps.now,
+    });
   return { x2a, h2a, h2b, resolveBridge };
 }
 

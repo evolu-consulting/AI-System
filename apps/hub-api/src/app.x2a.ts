@@ -29,7 +29,15 @@ export const ME_STREAM_PING_MS_DEFAULT = 15_000;
  * `redis` vắng (test khung) ⇒ không phát sự kiện, DB vẫn ghi (R21), không mount `/me/stream`. `pingMs` vắng ⇒ 15000 (test
  * truyền 500). `signal` = tắt instance ⇒ đóng mọi stream + kết nối đọc.
  */
-export type X2aDeps = { db: Db; redis?: Redis; log: Logger; pingMs?: number; signal?: AbortSignal };
+export type X2aDeps = {
+  db: Db;
+  redis?: Redis;
+  log: Logger;
+  pingMs?: number;
+  signal?: AbortSignal;
+  /** F1 (CR-095) · `false` ⇒ không mount route `/rooms*` (module phòng đóng băng); dịch vụ + `/directory` + `/me/stream` vẫn chạy. Vắng ⇒ mount. */
+  rooms?: boolean;
+};
 
 /** Dịch vụ X2a mà X2b nối thêm (gọi agent cần runtime dựng sau trong `app.ts`). */
 export type X2aMounted = { rooms: RoomsService; messages: MessagesService };
@@ -60,9 +68,11 @@ export function roomPoster(d: RoomPosterDeps & { signal?: AbortSignal }): RoomRu
 export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): X2aMounted {
   app.route("/directory", directoryRoutes(new DirectoryService(deps.db)));
   const rooms = new RoomsService(deps);
-  app.route("/rooms", roomsRoutes(rooms));
   const messages = new MessagesService(rooms);
-  app.route("/rooms", roomMessagesRoutes(messages));
+  if (deps.rooms !== false) {
+    app.route("/rooms", roomsRoutes(rooms));
+    app.route("/rooms", roomMessagesRoutes(messages));
+  }
   if (!deps.redis) return { rooms, messages };
   const reader = new UserStreamReader(deps.redis, deps.log, deps.signal);
   const pingMs = deps.pingMs ?? ME_STREAM_PING_MS_DEFAULT;

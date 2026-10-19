@@ -61,6 +61,7 @@ async function main(): Promise<void> {
       secretKey,
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,
+      frozenModules: env.ADMIN_FROZEN_MODULES === "on",
       hub:
         env.ADMIN_HUB_URL && env.HUB_INTERNAL_TOKEN
           ? { url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }

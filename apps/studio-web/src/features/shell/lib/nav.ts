@@ -1,4 +1,5 @@
 // HUB-FR-72 · CR-080 · menu Studio: chỉ các mục đã làm (link thật); mục chưa làm không hiển thị.
+import { frozenModulesOn } from "#/lib/frozen";
 export type NavId = "agents" | "orchestrator" | "models" | "secrets" | "settings" | "access";
 
 export type NavItem = {
@@ -12,7 +13,7 @@ export type NavGroup = {
   items: NavItem[];
 };
 
-export const NAV_GROUPS: NavGroup[] = [
+const ALL_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.group.config",
     items: [
@@ -25,3 +26,9 @@ export const NAV_GROUPS: NavGroup[] = [
   { labelKey: "nav.group.access", items: [{ id: "access", kind: "link", to: "/access" }] },
   { labelKey: "nav.group.system", items: [{ id: "settings", kind: "link", to: "/settings" }] },
 ];
+
+/** F1 (CR-095): "Cài đặt" (KnowledgeHub cũ) đóng băng; nhóm rỗng thì bỏ. */
+export const NAV_GROUPS: NavGroup[] = ALL_GROUPS.map((g) => ({
+  ...g,
+  items: g.items.filter((i) => frozenModulesOn || i.id !== "settings"),
+})).filter((g) => g.items.length > 0);

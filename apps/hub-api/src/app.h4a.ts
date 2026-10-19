@@ -39,6 +39,8 @@ export type H4aDeps = {
   /** K1 G1 · origin KH được phép + hạn mỗi lời gọi; vắng ⇒ `KH_CONFIG_NONE`. */
   kh?: KhConfig;
   appEnv?: "development" | "test" | "production";
+  /** F1 (CR-095) · `false` ⇒ không mount `/studio/api/kh/connections*` (KH đóng băng); `KhRuntime` vẫn dựng cho `kh-query`/runner. Vắng ⇒ mount. */
+  frozenModules?: boolean;
   /** H4b-2 plan §4 · "Kiểm tra key" gọi hãng; vắng ⇒ `globalThis.fetch`. */
   fetch?: typeof fetch;
   /** H4b-2 plan §4 · chờ probe subscription; vắng ⇒ `Bun.sleep`. */
@@ -81,7 +83,8 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
     mountSecrets(app, { db: deps.db, audit, key, studioBase: STUDIO_API });
     // K1 · `/kh/connections*`; `KhRuntime` (client + cache project) một instance cho cả process (T5e dùng).
     kh = khRuntime({ ...deps, db: deps.db, key });
-    mountKh(app, { db: deps.db, audit, studioBase: STUDIO_API, rt: kh });
+    if (deps.frozenModules !== false)
+      mountKh(app, { db: deps.db, audit, studioBase: STUDIO_API, rt: kh });
   }
   mountH4aStatic(app, deps.studioDist, deps.log);
   return kh;

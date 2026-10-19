@@ -22,6 +22,7 @@ import { featuresRoutes } from "./modules/features/features.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { orgRoutes } from "./modules/org/org.routes";
 import { overviewRoutes } from "./modules/overview/overview.routes";
 import { packsRoutes } from "./modules/packs/packs.routes";
 import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
@@ -54,6 +55,8 @@ export type AppDeps = {
   adminWebUrl?: string;
   /** Hub cho "Chạy thử" lệnh (`ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN`); vắng ⇒ 503 `HUB_NOT_CONFIGURED`. */
   hub?: HubConfig;
+  /** F1 (CR-095) · `false` ⇒ không mount `/admin/{workflows,commands,export,import}` + workflow-tools (đóng băng). Vắng ⇒ mount (test in-process); `server.ts` điền từ `ADMIN_FROZEN_MODULES` (mặc định off). */
+  frozenModules?: boolean;
 };
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -87,17 +90,21 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
-  mountWorkflowTools(app, { ...ctx, hooks });
+  const frozenOn = deps.frozenModules !== false;
+  if (frozenOn) mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));
+  app.route("/admin/org", orgRoutes({ ...ctx, hooks })); // M1D
   app.route("/admin/grants", grantsRoutes({ ...ctx, hooks }));
   app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey, hooks }));
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
-  app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
-  app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
-  app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
-  app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
+  if (frozenOn) {
+    app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
+    app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
+    app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
+    app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
+  }
   app.route("/admin/audit", auditRoutes({ ...qctx, hooks }));
   app.route("/admin", usageRoutes(ctx));
   app.route("/admin", overviewRoutes(qctx));

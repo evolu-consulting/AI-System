@@ -95,18 +95,31 @@ const AUDIT = item("audit", "/audit");
 const TRANSFER = item("transfer", "/transfer");
 
 /** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
-export type NavOptions = { processes?: boolean };
+export type NavOptions = {
+  processes?: boolean;
+  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Commands, Workflows, Transfer, Quy trình, Nguồn). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
+  frozen?: boolean;
+};
+
+/** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
+const FROZEN_PREFIXES = ["/commands", "/workflows", "/transfer", "/processes", "/sources"];
+export const isFrozenPath = (pathname: string): boolean =>
+  FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" (CHỨC NĂNG, cả hai role) chỉ khi `opts.processes`. */
 export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
-  const proc = opts.processes ? [PROCESSES, SOURCES] : [];
+  const on = opts.frozen !== false;
+  const proc = on && opts.processes ? [PROCESSES, SOURCES] : [];
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.features", items: [AGENTS, FEATURES, COMMANDS, WORKFLOWS, ...proc] },
+      {
+        labelKey: "nav.group.features",
+        items: [AGENTS, FEATURES, ...(on ? [COMMANDS, WORKFLOWS] : []), ...proc],
+      },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
-      { labelKey: "nav.group.system", items: [USAGE, AUDIT, TRANSFER] },
+      { labelKey: "nav.group.system", items: [USAGE, AUDIT, ...(on ? [TRANSFER] : [])] },
     ];
   }
   if (role === "tenant_admin") {

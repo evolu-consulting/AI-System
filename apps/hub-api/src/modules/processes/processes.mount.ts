@@ -76,7 +76,10 @@ export type ProcessMountDeps = Omit<
   | "ctx"
   | "toolDriver"
 > &
-  ProcessSeams;
+  ProcessSeams & {
+    /** F1 (CR-095) · `false` ⇒ KHÔNG mount route công khai (`/process-runs`, `/processes`, …); engine + vòng nền + cầu gói vẫn chạy. Vắng ⇒ mount. */
+    publicRoutes?: boolean;
+  };
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
 export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart: ProcessStartPort };
 
@@ -120,7 +123,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
   if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
-  mountRoutes(app, d);
+  if (m.publicRoutes !== false) mountRoutes(app, d);
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   startBackground({ m, bg, poster, khWriter, drain });
   return { roomSender: roomStart(d), conversationStart: d.start };

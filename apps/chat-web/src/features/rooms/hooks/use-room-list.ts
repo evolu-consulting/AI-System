@@ -1,6 +1,7 @@
 // HUB-FR-96 · danh sách phòng (infinite, cursor) + `unread_total` từ trang đầu.
 import type { RoomSummary } from "@ai/contracts/chat";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { frozenModulesOn } from "~/lib/frozen";
 import { listRooms } from "../api";
 import { type RoomListData, roomKeys, unreadTotalOf } from "../lib/room-cache";
 
@@ -11,6 +12,7 @@ export function useRoomList() {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
     retry: false,
+    enabled: frozenModulesOn, // F1 (CR-095): phòng đóng băng — cờ off ⇒ không gọi `/rooms`
   });
   const items: RoomSummary[] = query.data?.pages.flatMap((p) => p.items) ?? [];
   return { ...query, items };

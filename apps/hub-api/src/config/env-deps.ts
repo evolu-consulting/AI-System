@@ -27,6 +27,7 @@ export type EnvAppDeps = Required<
     | "publicInternalUrl"
     | "studioDist"
     | "processEngine"
+    | "frozenModules"
     | "notify"
   >;
 
@@ -72,6 +73,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
+    frozenModules: env.HUB_FROZEN_MODULES === "on",
     notify: {
       mode: env.HUB_NOTIFY_MODE,
       worker: env.HUB_NOTIFY_MODE !== "off",
