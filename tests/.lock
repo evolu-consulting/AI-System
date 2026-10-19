@@ -644,6 +644,9 @@ da1e82c9fe286ab98302e5f50a23b017839147610acfaa81ef1e61502f9b657d  tests/acceptan
 1985922898bd7e877270b568e2a79be9277e7b9a13b60e1f4ffdba6804f77575  tests/acceptance/N1/rules/layers.test.ts
 0e6bc1e9fe4aabfa940582f5f92b15fe88ba7d36733bd96304a0b5d35dba81e2  tests/acceptance/N1/rules/pack-access.rules.test.ts
 44c5a09ea08b7db7596292a17c82d554fdd00f4c2decd6e6466ba2afc9eaf478  tests/acceptance/N1/rules/pack-contract.test.ts
+f84efb3194bdc01599776290ddd8ed8ef2a8f8441d8b53e2b8377c4f5d01006b  tests/acceptance/N5/_support/n5.ts
+b124fa070fe9c359cfc1eeb5c692aab30e27ae95c6b461dfb926c98a3abb95da  tests/acceptance/N5/import.int.test.ts
+65973d817d0d2a69a7c588aacdba481ada8501ca95124a328ef6adc083ff44d8  tests/acceptance/N5/perf/import.perf.int.test.ts
 9073f33046cfe19449cd214396c70c7c754d1d981ce19c8e33c9262b9e64184d  tests/acceptance/P-a/_support/modules.ts
 2520342249feae08aecc88db9f385d0511b90167c858b0669acfe78f2eb4d7b7  tests/acceptance/P-a/_support/pa.ts
 4f538961e8540a2c6ff07614203b25a9ae00a22f95e46075e8b5e7eb536a7a4c  tests/acceptance/P-a/_support/parts.ts
