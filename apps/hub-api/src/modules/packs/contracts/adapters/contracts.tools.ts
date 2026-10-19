@@ -79,7 +79,7 @@ export function contractsTools(d: ContractsToolDeps): PackToolDef[] {
     const { id, run } = target(ctx, args);
     return valueFields(d, ctx, id, run);
   };
-  // Review S1 · đọc lại giá trị + ngưỡng HIỆN TẠI cùng tx với lệnh ghi: cần cấp 2 mà run chưa có Đạt ở stage `approve`
+  // Review S1 · luật cấp 2 kiểm TRONG câu UPDATE của finalize (giá trị + ngưỡng hiện tại, sau khoá hàng): cần cấp 2 mà run chưa có Đạt ở stage `approve`
   // (def bị sửa bỏ cấp 2, giá trị đổi sau rẽ nhánh…) ⇒ ném (`tool_failed`), không ghi "Đã duyệt".
   const finalize: PackToolDef["run"] = async (ctx, args) => {
     const { id, run } = target(ctx, args);
@@ -90,13 +90,10 @@ export function contractsTools(d: ContractsToolDeps): PackToolDef[] {
       port.passedStages(ctx.tenantId, run),
     ]);
     const who = { tenantId: ctx.tenantId, userId: ctx.userId };
-    const out = await d.uow.tenant(who, async (r) => {
-      const v = await r.approval.valueOf(id, run);
-      if (v === undefined) return "not_in_run";
-      const s = await r.approval.settings();
-      if (needsLevel2(v, s.threshold) && !passed.includes(APPROVE_STAGE)) return "level2_missing";
-      return (await r.approval.finalize(id, run, by)) ? "ok" : "not_awaiting";
-    });
+    const ok = await d.uow.tenant(who, (r) =>
+      r.approval.finalize(id, run, by, passed.includes(APPROVE_STAGE)),
+    );
+    const out = ok ? "ok" : "refused";
     if (out !== "ok") throw new Error(`contracts tool: cannot finalize (${out})`);
     return {};
   };

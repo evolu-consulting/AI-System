@@ -214,8 +214,9 @@ export function patchGuard(d: ApprovalDeps) {
       if (!s || DONE_RUN.has(s.status)) return "none";
       return s.stage_key === LEVEL1_STAGE ? "level1" : "later";
     },
+    /** Không ném: PATCH đã COMMIT; mở run lỗi (def tắt, trần…) ⇒ log, vòng quét mở lại sau (`orphanReopens`). */
     async restart(w: { tenantId: string; userId: string }, id: string): Promise<void> {
-      const r = await start({ ...w, role: "member" }, id);
+      const r = await start({ ...w, role: "member" }, id).catch(() => ({ kind: "error" as const }));
       if (r.kind !== "ok")
         d.warn("contract-approval-reopen-not-started", { contract_id: id, kind: r.kind });
     },

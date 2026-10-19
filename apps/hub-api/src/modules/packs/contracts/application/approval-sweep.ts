@@ -14,6 +14,8 @@ export type SweepDeps = {
   staleMinutes?: number;
   /** Trần HĐ đọc mỗi tenant mỗi lượt. */
   limit?: number;
+  /** Re-verify Low · mở lại run duyệt cho HĐ mồ côi sau D3-13 (danh tính người đã sửa). Vắng ⇒ bỏ qua. */
+  restart?: (who: { tenantId: string; userId: string }, id: string) => Promise<unknown>;
 };
 export type SweepResult = { tenants: number; read: number; closed: number };
 
@@ -52,6 +54,21 @@ async function pooled<T, R>(xs: readonly T[], n: number, fn: (x: T) => Promise<R
   return out;
 }
 
+/** HĐ mở lại duyệt mà run mới không mở được (lỗi giữa chừng) ⇒ mở lại thay người sửa; lỗi từng HĐ không chặn lượt. Hiếm ⇒
+ *  một lời gọi mỗi HĐ, trần 50/tenant/lượt. */
+async function restartOrphans(d: SweepDeps, tenants: readonly string[], stale: number) {
+  const restart = d.restart;
+  if (!restart) return;
+  const lists = await pooled(tenants, PARALLEL, async (t) => ({
+    t,
+    rows: await d.uow.system(t, (r) => r.sweep.orphanReopens(stale, 50)),
+  }));
+  const jobs = lists.flatMap(({ t, rows }) => rows.map((x) => ({ t, ...x })));
+  await pooled(jobs, PARALLEL, (j) =>
+    restart({ tenantId: j.t, userId: j.actor }, j.id).catch(() => undefined),
+  );
+}
+
 export async function sweepApprovalsOnce(
   d: SweepDeps,
   cursors: SweepCursors = new Map(),
@@ -73,6 +90,7 @@ export async function sweepApprovalsOnce(
     const close = closesOf(t, list, byRun);
     return close.length > 0 ? d.uow.system(t, (r) => r.sweep.close(close)) : 0;
   });
+  await restartOrphans(d, tenants, stale);
   return {
     tenants: tenants.length,
     read: runIds.length,

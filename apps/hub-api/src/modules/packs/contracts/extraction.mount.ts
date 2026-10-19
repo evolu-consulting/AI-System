@@ -131,7 +131,7 @@ export function contractsAiModule(
       makeAgent,
     });
     for (const t of tools) flow.tools?.register(t);
-    startSweep(d, flow, pack);
+    startSweep(d, flow, pack, patchGuard(ad).restart);
   }
   const routes = extractionRoutes(view, {
     requestExtract: d.transport
@@ -151,8 +151,13 @@ export function contractsAiModule(
 }
 
 /** Vòng quét flow (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */
-function startSweep(d: ContractsAiDeps, flow: ContractsFlowDeps, pack: SweepDeps["uow"]): void {
-  const sd: SweepDeps = { uow: pack, bridge: flow.bridge, tenants: flow.tenants };
+function startSweep(
+  d: ContractsAiDeps,
+  flow: ContractsFlowDeps,
+  pack: SweepDeps["uow"],
+  restart: NonNullable<SweepDeps["restart"]>,
+): void {
+  const sd: SweepDeps = { uow: pack, bridge: flow.bridge, tenants: flow.tenants, restart };
   if (d.onHandles) {
     d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd) });
     return;

@@ -23,8 +23,9 @@ export type ApprovalRepo = {
   markExtracting(id: string, runId: string, on: boolean): Promise<boolean>;
   /** `fields.total_value.value` hiện tại của HĐ thuộc run; không thuộc ⇒ undefined. */
   valueOf(id: string, runId: string): Promise<number | null | undefined>;
-  /** `needs_review → active` + `confirmed_*` + event `approved` (chỉ HĐ của run). */
-  finalize(id: string, runId: string, by: string | null): Promise<boolean>;
+  /** `needs_review → active` + `confirmed_*` + event `approved` (chỉ HĐ của run); giá trị cần cấp 2 mà `!level2Passed` ⇒ 0 hàng
+   *  (luật kiểm TRONG câu UPDATE, re-verify TOCTOU). */
+  finalize(id: string, runId: string, by: string | null, level2Passed: boolean): Promise<boolean>;
   /** Run kết thúc không Đạt ⇒ `rejected` + event (`rejected`/`cancelled`) — chỉ khi HĐ còn giữ run và chưa kết thúc. */
   markRejected(
     id: string,
@@ -48,6 +49,9 @@ export type FlowCursor = { at: string; id: string };
 export type SweepRepo = {
   /** HĐ `extracting`/`extract_failed`/`needs_review` có run, hoặc `extracting` không run quá hạn (≤ `limit`). */
   inFlow(staleMinutes: number, limit: number, after: FlowCursor | null): Promise<FlowRow[]>;
+  /** Re-verify Low · HĐ mở lại duyệt (D3-13) mà run mới không mở được: `needs_review`, `run_id` null, event cuối là
+   *  `field_edited.approval_reopened`, quá `staleMinutes` ⇒ người sửa (để mở lại run thay họ). */
+  orphanReopens(staleMinutes: number, limit: number): Promise<{ id: string; actor: string }[]>;
   /** MỘT câu theo lô JSON: `rejected`/`cancelled` ⇒ `rejected` + event; `stale` ⇒ `extract_failed STALE`. */
   close(
     rows: readonly {

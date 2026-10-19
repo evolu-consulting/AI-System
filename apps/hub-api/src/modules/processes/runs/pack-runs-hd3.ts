@@ -259,8 +259,8 @@ export function packRunsHd3(d: ProcessDeps): Hd3Port {
         }>(sql`select distinct r.snapshot->'stages'->(s.stage_idx::int)->>'key' as k
           from hub.review_tasks t join hub.process_runs r on r.id = t.process_run_id and r.tenant_id = t.tenant_id
           join hub.stage_runs s on s.id = t.stage_run_id and s.process_run_id = r.id
-          where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.kind = 'review'
-            and t.result = 'pass'`),
+          where t.process_run_id = ${runId} and t.tenant_id = ${tenantId}
+            and ((t.kind = 'review' and t.result = 'pass') or (t.kind = 'decision' and t.result = 'use_current'))`),
       );
       return rows.flatMap((r) => (r.k ? [r.k] : []));
     },

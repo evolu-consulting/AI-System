@@ -93,12 +93,19 @@ function valueQ(tx: Tx, tid: string): ApprovalRepo["valueOf"] {
 }
 
 function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
-  return async (id, runId, by) => {
+  return async (id, runId, by, level2Passed) => {
+    // Re-verify TOCTOU: luật cấp 2 nằm TRONG điều kiện UPDATE (đánh giá lại trên hàng mới nhất sau khi chờ khoá hàng — PATCH
+    // giữ `FOR UPDATE` cùng hàng) ⇒ không có cửa sổ giữa đọc giá trị và ghi "Đã duyệt". Cột sinh `value` (bigint) ≡ `needsLevel2`:
+    // trống / không phải số nguyên / âm / ≥ ngưỡng ⇒ cần cấp 2.
     const rows = await tx.execute<{ id: string }>(sql`with u as (
-        update contracts.contracts set status = 'active', confirmed_at = now(), confirmed_by = ${by}::uuid,
-          version = version + 1, updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid and status = 'needs_review'
-        returning id),
+        update contracts.contracts c set status = 'active', confirmed_at = now(), confirmed_by = ${by}::uuid,
+          version = c.version + 1, updated_at = now()
+        where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = ${runId}::uuid
+          and c.status = 'needs_review'
+          and (${level2Passed}::boolean or (c.value is not null and c.value >= 0 and c.value < coalesce(
+            (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid),
+            ${APPROVAL_DEFAULTS.threshold}::bigint)))
+        returning c.id),
       e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${tid}::uuid, u.id, 'approved', ${by}::uuid, jsonb_build_object('run_id', ${runId}::text) from u)
       select id from u`);
@@ -205,6 +212,23 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
           updatedAt: new Date(r.updated_at).toISOString(),
         }),
       );
+    },
+    async orphanReopens(staleMinutes, limit) {
+      const rows = await tx.execute<{
+        id: string;
+        actor: string;
+      }>(sql`select c.id, e.actor_user_id as actor
+        from contracts.contracts c
+        join lateral (select ev.type, ev.actor_user_id, ev.data from contracts.contract_events ev
+          where ev.contract_id = c.id and ev.tenant_id = c.tenant_id
+            and ev.type in ('field_edited', 'approval_started')
+          order by ev.id desc limit 1) e on true
+        where c.tenant_id = ${tid}::uuid and c.status = 'needs_review' and c.run_id is null
+          and c.updated_at < now() - make_interval(mins => ${staleMinutes}::int)
+          and e.type = 'field_edited' and (e.data->>'approval_reopened')::boolean is true
+          and e.actor_user_id is not null
+        order by c.updated_at, c.id limit ${limit}::int`);
+      return [...rows];
     },
     async close(rows) {
       if (rows.length === 0) return 0;

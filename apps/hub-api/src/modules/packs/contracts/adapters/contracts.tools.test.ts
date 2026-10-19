@@ -10,7 +10,7 @@ import { contractsTools } from "./contracts.tools";
 const RUN = "11111111-1111-4111-8111-111111111111";
 const CID = "22222222-2222-4222-8222-222222222222";
 
-function harness(o: { value: number | null; passed: string[] }) {
+function harness(o: { value: number | null; passed: string[]; finalizeOk?: boolean }) {
   const calls: string[] = [];
   const repo = {
     beginExtract: async () => {
@@ -25,9 +25,10 @@ function harness(o: { value: number | null; passed: string[] }) {
       calls.push("settings");
       return { ...APPROVAL_DEFAULTS };
     },
-    finalize: async () => {
-      calls.push("finalize");
-      return true;
+    // Luật cấp 2 nằm trong câu UPDATE (repo): fake ghi lại cờ `level2Passed` mà tool truyền xuống.
+    finalize: async (_i: string, _r: string, _b: string | null, level2Passed: boolean) => {
+      calls.push(`finalize:${level2Passed}`);
+      return o.finalizeOk ?? true;
     },
   } as unknown as ApprovalRepo;
   const uow = {
@@ -61,19 +62,16 @@ describe("contracts tools [D3-03]", () => {
       await expect(h.tool(k).run(ctx(null), { contract_id: CID })).rejects.toThrow();
     expect(h.calls).toEqual([]);
   });
-  test("S1 · finalize: 600 tr ≥ ngưỡng, run chưa Đạt `approve` ⇒ ném, không finalize", async () => {
-    const h = harness({ value: 600_000_000, passed: ["extract"] });
+  test("S1 · finalize truyền `level2Passed` = đã Đạt/use_current ở `approve`; repo từ chối (cần cấp 2) ⇒ ném", async () => {
+    const h = harness({ value: 600_000_000, passed: ["extract"], finalizeOk: false });
     await expect(
       h.tool(CONTRACT_TOOL_KEYS.finalize).run(ctx(RUN), { contract_id: CID }),
     ).rejects.toThrow();
-    expect(h.calls).not.toContain("finalize");
+    expect(h.calls).toEqual(["finalize:false"]);
   });
-  test("S1 · finalize: 600 tr và đã Đạt `approve` ⇒ ghi; 245 tr không cần cấp 2 ⇒ ghi", async () => {
+  test("S1 · đã qua `approve` ⇒ finalize(level2Passed=true) ghi", async () => {
     const a = harness({ value: 600_000_000, passed: ["extract", "approve"] });
     await a.tool(CONTRACT_TOOL_KEYS.finalize).run(ctx(RUN), { contract_id: CID });
-    expect(a.calls).toContain("finalize");
-    const b = harness({ value: 245_000_000, passed: ["extract"] });
-    await b.tool(CONTRACT_TOOL_KEYS.finalize).run(ctx(RUN), { contract_id: CID });
-    expect(b.calls).toContain("finalize");
+    expect(a.calls).toEqual(["finalize:true"]);
   });
 });
