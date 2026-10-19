@@ -28,6 +28,11 @@ Làn: **đầy đủ về rủi ro (auth)** nhưng chạy theo Luật 0b (một 
 - **IP:** chỉ tin `X-Forwarded-For` khi `TRUST_PROXY_HOPS ≥ 1` (lấy phần tử thứ hops từ cuối); không thì IP socket Bun. Production sau reverse proxy phải đặt biến này, nếu không mọi người dùng chung một xô IP của proxy.
 - Bộ đếm Redis hết hạn 28h không hoạt động (DB counter M1 không hết hạn) — chênh nhỏ, chấp nhận.
 
+## Kết quả (evotest, 2026-10-20)
+- Unit 26/26. Int `limit.int.test.ts` 8/8; hồi quy 14 file (M1 auth/users/error-codes, M2 error-codes, M3 notify, M4 audit/TOTP, H1 auth, auth.service/legacy) 241 pass / 0 fail.
+- Perf login p95: không limiter 66.8 ms → có limiter 80.7 ms (NFR < 150 ms, đạt). N5b legacy perf vẫn đạt (58.0 / 49.3 / 44.9 ms).
+- Không lộ tài khoản: median 401 có thật 46.9 ms · lạ 47.1 ms.
+
 ## Việc còn lại
 - FE (admin-web/chat-web/studio-web/contracts-web): hiện câu riêng cho `RATE_LIMITED`/`AUTH_UNAVAILABLE` (hiện rơi về lỗi chung).
 - Deploy staging/production: đặt `REDIS_URL`, `TRUST_PROXY_HOPS` cho admin-api.
