@@ -13,6 +13,9 @@ export const proxy = {
   "/auth": ADMIN_API_URL,
   "/pack": HUB_URL,
   "/notifications": HUB_URL,
+  // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
+  "/conversations": HUB_URL,
+  "/runs": HUB_URL,
 };
 
 export default defineConfig({

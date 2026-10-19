@@ -1,0 +1,22 @@
+{
+  "contracts": {
+    "assistant": {
+      "intro": "Chào bạn 👋 Mình tra cứu được hợp đồng, chữ ký số và sổ thanh toán mà bạn được xem. Mình chỉ đọc, không sửa dữ liệu.",
+      "try": "Thử hỏi",
+      "suggest1": "Hợp đồng nào sắp hết hạn trong 60 ngày?",
+      "suggest2": "Có khoản thanh toán nào đang quá hạn không?",
+      "suggest3": "Chữ ký số nào sắp hết hạn tháng này?",
+      "thinking": "Đang xem dữ liệu…",
+      "answering": "Đang trả lời…",
+      "ready": "Sẵn sàng",
+      "placeholder": "Hỏi về hợp đồng, chữ ký số, thanh toán…",
+      "question": "Câu hỏi cho trợ lý",
+      "enterHint": "Enter để gửi · Shift+Enter xuống dòng",
+      "send": "Gửi",
+      "stop": "Dừng trả lời",
+      "errForbidden": "Bạn chưa được dùng trợ lý AI. Nhờ quản trị cấp quyền trong Agent Hub.",
+      "errBusy": "Trợ lý đang bận với câu trước, thử lại sau giây lát.",
+      "errGeneric": "Không gửi được câu hỏi. Thử lại sau."
+    }
+  }
+}

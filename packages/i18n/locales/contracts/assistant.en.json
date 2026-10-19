@@ -1,0 +1,22 @@
+{
+  "contracts": {
+    "assistant": {
+      "intro": "Hi 👋 I can look up the contracts, digital signatures and payment ledger you can see. I only read; I never change data.",
+      "try": "Try asking",
+      "suggest1": "Which contracts expire in the next 60 days?",
+      "suggest2": "Are any payments overdue?",
+      "suggest3": "Which digital signatures expire this month?",
+      "thinking": "Looking at the data…",
+      "answering": "Answering…",
+      "ready": "Ready",
+      "placeholder": "Ask about contracts, signatures, payments…",
+      "question": "Question for the assistant",
+      "enterHint": "Enter to send · Shift+Enter for a new line",
+      "send": "Send",
+      "stop": "Stop answering",
+      "errForbidden": "You can't use the AI assistant yet. Ask an admin to grant access in Agent Hub.",
+      "errBusy": "The assistant is busy with the previous question. Try again in a moment.",
+      "errGeneric": "Couldn't send the question. Try again later."
+    }
+  }
+}

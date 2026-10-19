@@ -26,6 +26,10 @@ describe("Shell · khung rỗng", () => {
     );
     expect(docked).toContain("Trợ lý AI");
     expect(docked).toContain("Thu gọn ›");
-    expect(renderToStaticMarkup(<AssistantPanel onClose={() => {}} />)).not.toContain("<button");
+    // M2-chat: sheet không có nút Thu gọn, nhưng có ô hỏi + gợi ý.
+    const sheet = renderToStaticMarkup(<AssistantPanel onClose={() => {}} />);
+    expect(sheet).not.toContain("Thu gọn");
+    expect(sheet).toContain('aria-label="Câu hỏi cho trợ lý"');
+    expect(sheet).toContain("Hợp đồng nào sắp hết hạn trong 60 ngày?");
   });
 });
