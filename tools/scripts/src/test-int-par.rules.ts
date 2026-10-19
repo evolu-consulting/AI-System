@@ -2,7 +2,14 @@
 // chạy song song được chạy tuần tự sau cùng. Hàm thuần; `test-int-par.ts` lo spawn. Thời lượng lấy từ JUnit lần trước.
 
 /** File int không chạy song song được (đo bằng cách chạy, xem docs/TECH-DEBT.md); chạy tuần tự sau các shard. */
-export const INT_SERIAL: readonly string[] = [];
+export const INT_SERIAL: readonly string[] = [
+  // GX #208: dựng/migrate cả DB (và DB mẫu) trên Postgres dùng chung — chạy cạnh 5 worker khác thì mỗi file vượt 30–60 s
+  // (đo: N1/migrate 210 s, test-db-template 108 s, packs-install/migrate-lock treo 30 s); chạy riêng thì vài giây–vài chục giây.
+  "tests/acceptance/N1/migrate.int.test.ts",
+  "packages/db/src/test-db-template.int.test.ts",
+  "packages/db/src/migrate-lock.int.test.ts",
+  "packages/db/src/packs-install.int.test.ts",
+];
 
 export type Timings = Record<string, number>;
 export type IntOpts = { workers: number; filters: string[] };
