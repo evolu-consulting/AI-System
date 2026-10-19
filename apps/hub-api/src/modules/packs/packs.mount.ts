@@ -14,6 +14,7 @@ import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
+import { cksModule } from "./contracts/cks/cks.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
@@ -121,7 +122,12 @@ function mountContracts<E extends Env>(
   app.route(base, ai.approval); // HD3
   if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   app.route(base, contractsRemind(d, view, db)); // HD4
+  app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
 }
+
+/** BR-6 (HD9) · múi giờ tenant từ `ConfigCache` (0 SQL khi nóng), vắng ⇒ mặc định. */
+const tenantTz = (d: PacksMountDeps) => async (tid: string) =>
+  (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
 
 /** HD4 · nhắc hạn + kết quả xử lý; múi tenant từ `ConfigCache` (0 SQL). Test bật vòng bằng `packs.contractsRemind.worker`. */
 function contractsRemind(d: PacksMountDeps, view: PackAccessView, db: Db) {

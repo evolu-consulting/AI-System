@@ -1,0 +1,25 @@
+# HD9 — quyết định (Luật 2: mỗi lần tự quyết một dòng)
+
+| # | Ngày · ai | Quyết định | Lý do |
+|---|---|---|---|
+| D9-01 | 2026-10-19 · HD9 | Bảng CKS nằm trong schema gói `contracts` (role `contracts_rw`, `packs.secure_table`), tiền tố `cks_`, route dưới `/pack/contracts/cks/**` | Brief: CKS thuộc gói hợp đồng; HĐ mua/bán CKS là HĐ của gói |
+| D9-02 | 2026-10-19 · HD9 | Cột trỏ `contracts.contracts` (`purchase_contract_id`, `sale_contract_id`, `new_contract_id`) **không có FK**; FK kép `(x, tenant_id)` chỉ giữa các bảng `cks_*` | Test HD1/HD2 (khoá) `TRUNCATE contracts.contracts` không CASCADE — FK từ bảng mới làm đỏ chúng. HĐ không xoá được (REVOKE DELETE, D-08) nên không sinh tham chiếu treo; repo kiểm HĐ cùng tenant khi đọc |
+| D9-03 | 2026-10-19 · HD9 | Khách CKS là bảng riêng `cks_customers` (khoá MST, không MST thì khoá tên `fold`) | Chưa có đối tác (HD8). HD8 nối `cks_customers` ↔ đối tác sau (chỉ thêm cột) |
+| D9-04 | 2026-10-19 · HD9 | Pháp nhân của mình trên HĐ CKS = "Công ty của chúng tôi" (hằng `US_FALLBACK` của mgmt `lots.py:9`), không MST | Chưa có danh bạ pháp nhân (HD8, như D2-03) |
+| D9-05 | 2026-10-19 · HD9 | HĐ CKS tạo ở `active` (không `needs_review`) + event `created_cks` | Port `manual.create` mặc định của mgmt; nội dung do hệ thống dựng từ lô/bán, không phải người gõ lại HĐ giấy (khác D2-04) |
+| D9-06 | 2026-10-19 · HD9 | Mọi lệnh ghi CKS khoá `pg_advisory_xact_lock(hashtextextended('cks:'‖tenant, 0))` làm câu đầu của tx | Tồn kho, số `CKS-YYYY-NNN`, serial duy nhất, gia hạn mở là bất biến chéo nhiều hàng; một khoá/tenant, không deadlock; lưu lượng ghi CKS thấp |
+| D9-07 | 2026-10-19 · HD9 | Serial so/duy nhất theo `serial_key` = `norm_serial` (hex hoa bỏ 0 đầu) | mgmt so chuỗi thô ở bán nhưng so `norm_serial` khi gắn văn bản; một khoá cho cả hai tránh hai chữ ký cùng chứng thư |
+| D9-08 | 2026-10-19 · HD9 | `paid` của nhóm bán luôn `false` | Công nợ là HD7 (`obligations`); HD7 thay nguồn |
+| D9-09 | 2026-10-19 · HD9 | "Hẹn nhắc" và `remind_at` của gia hạn ghi vào `cks_followups` (due_at theo múi giờ tenant); hoàn tất/mất khách đóng nhắc của lượt gia hạn (`done_at`). Gửi đúng giờ = HD4 | Port `followups.remind_me/end_for`; HD9 không có vòng nền |
+| D9-10 | 2026-10-19 · HD9 | "Dò giá": `GET /cks/scans` ⇒ `[]`, `POST /cks/scans` ⇒ 503 `AGENT_UNAVAILABLE` (sau guard + validate). Nút giữ nguyên (so màn hình) | Cần run agent tìm web (N2 bridge, như D2-01); không giả kết quả |
+| D9-11 | 2026-10-19 · HD9 | Giá thị trường đọc từ `cks_market_prices` của **tenant** (mgmt có tầng chia sẻ `org="*"`) | RLS tenant không có hàng dùng chung; nạp giá công khai cho từng tenant là việc của lát "Dò giá"/HD8 |
+| D9-12 | 2026-10-19 · HD9 | Tải văn bản: trần thân 64 MB/lần (mgmt 50 × 20 MB, không trần tổng); đọc từng tệp ngoài tx; chứng thư đọc bằng bộ đọc DER thuần (lấy `serialNumber` của TBSCertificate; PDF: `SignedData.certificates`) | Không giữ 1 GB trong bộ nhớ; không thêm thư viện |
+| D9-13 | 2026-10-19 · HD9 | `S08` gắn ở `/prices` với ô chọn "Mặt hàng" chỉ có "Chữ ký số"; S07/S09 (hàng hoá, bảng rẻ nhất) là HD8 — nút "Kiểm tra thị trường" giữ, panel mở hiện trạng thái rỗng | Màn mặc định của mgmt `/prices` là CKS (`PricesPage.tsx:32`) |
+| D9-14 | 2026-10-19 · HD9 | Nhóm bán trong một khách sắp theo ngày ký rồi số HĐ (mgmt sắp theo id ngẫu nhiên) | Thứ tự ổn định, so màn hình tất định |
+| D9-16 | 2026-10-19 · readiness G1 | Tải văn bản: 413 chỉ khi > 50 tệp hoặc thân > 64 MB; tệp > 20 MB hoặc không `.xml`/`.pdf` ⇒ đếm `unreadable` | `signed_docs.py:17-25` |
+| D9-17 | 2026-10-19 · readiness G2 | Không lọc theo người xem (mgmt `access.view` chuỗi quản lý): viewer/editor/owner thấy cả tenant | Như HD-BR-02; phân quyền theo người (nếu cần) là việc của Group N1 |
+| D9-18 | 2026-10-19 · readiness G3 | Nhật ký giá: 1 dòng `lot.unit_cost` mỗi lô; 1 dòng `sale.price_each` (entity_id = HĐ bán) mỗi lần bán; 1 dòng `renewal.price_each` (cũ = giá bán nhóm) mỗi lần gia hạn; khi hoàn tất 1 dòng `certificate.sale_price` mỗi chữ ký mới (một INSERT). `old_value`/`new_value bigint NULL` | Đủ truy vết mọi lần đặt giá, ghi theo tập |
+| D9-19 | 2026-10-19 · readiness G5/G6 | HĐ CKS port nguyên `sales.py:27-39`/`lots.py:24-32`: số `CKS-<năm ký>-NNN` (lớn nhất + 1) / `LO-<nhãn>`, nhãn mặc định `YYYY-MM` của `bought_at`; tiêu đề "Dịch vụ/Gia hạn chữ ký số · <số>", "Mua lô <qty> chữ ký · <nhãn>"; `notice_days 30` (bán); 1 dòng hàng "Chữ ký số <CA>[ <n> năm]", đơn vị "chữ ký" | Khớp mgmt |
+| D9-20 | 2026-10-19 · readiness G7 | MST khách: bỏ khoảng trắng, chấm, gạch nối (giữ chữ số và `-` chi nhánh dạng `0312345678-001` sau khi ghép lại); khách đã có giữ tên cũ | Như `normalize_tax_id`; không đổi tên khách khi bán lại |
+| D9-21 | 2026-10-19 · readiness G9 | Mọi lệnh ghi = khoá + kiểm + 1 CTE ghi (≤ 3 câu, không theo số chữ ký/người giữ); AC09 đếm câu cho bán và hoàn tất với 1 và 50 chữ ký | Luật 4c |
+| D9-15 | 2026-10-19 · HD9 | Làm tròn `margin_pct`/`stats.margin_pct` half-even bằng số nguyên (`round` Python) | Khớp số mgmt, không float cho phép chia tiền |
