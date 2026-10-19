@@ -38,6 +38,30 @@ function checkScope(scope: PackScope): { role: string; tid: string; uid: string 
 }
 
 /**
+ * HD4 · N1 D-12 · tx của role quét chéo tenant `<k>_job` (NOBYPASSRLS, policy riêng chỉ cho cột lịch): một câu đặt role,
+ * KHÔNG đặt `app.tenant_id` (việc theo tenant phải mở `withPackScope` riêng). Chỉ đọc; thử lại 40P01/40001.
+ */
+export async function withPackJobScope<T>(
+  db: Db,
+  packKey: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  if (!PackKeySchema.safeParse(packKey).success) throw new PackScopeError("PACK_KEY_INVALID");
+  const role = `${packKey}_job`;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await db.db.transaction(async (tx) => {
+        await tx.execute(sql`select set_config('role', ${role}, true)`);
+        return fn(tx);
+      });
+    } catch (err) {
+      const state = sqlState(err);
+      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
+    }
+  }
+}
+
+/**
  * Mở tx, một câu `set_config('role'…)` + tenant/user, rồi chạy `fn`. `fn` chỉ làm việc DB (chạy lại khi 40P01/40001 không
  * có tác dụng phụ). Mọi bảng gói có RLS FORCE theo `app.tenant_id` (`packs.secure_table`).
  */

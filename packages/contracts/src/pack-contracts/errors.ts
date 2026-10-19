@@ -22,6 +22,8 @@ export const CONTRACT_ERRORS = {
   EXTRACT_NOT_ALLOWED: 409,
   /** HD2 D2-01: chưa nối agent trích (N2). */
   AGENT_UNAVAILABLE: 503,
+  /** HD4-FR-06: ghi kết quả xử lý cho HĐ chưa duyệt hoặc phụ lục. */
+  CONTRACT_NOT_CONFIRMED: 409,
 } as const;
 type OwnCode = keyof typeof CONTRACT_ERRORS;
 const OWN_CODES = Object.keys(CONTRACT_ERRORS) as OwnCode[];

@@ -14,6 +14,7 @@ import type { ConfigCache } from "../config/config.service";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
+import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
@@ -33,6 +34,8 @@ export type PacksDeps = {
   filebox?: { url: string; token: string };
   /** HD2 · agent trích (transport) + tra MST + hook test; vắng ⇒ agent chưa cấu hình, MST theo env. */
   contractsAi?: ContractsAiDeps;
+  /** HD4 · vòng nhắc hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_REMIND` ≠ off. */
+  contractsRemind?: ContractsRemindDeps;
 };
 
 export type PacksMountDeps = {
@@ -46,6 +49,8 @@ export type PacksMountDeps = {
   packRuns?: PackRunsBridge;
   /** N2-FR-03 · registry tool gói (dùng chung với engine + `/mcp`). */
   packTools?: PackToolRegistry;
+  /** HD4 · dừng vòng nhắc khi server tắt. */
+  signal?: AbortSignal;
 };
 
 /** Review m-04 · `pkdemo` chỉ mở khi `APP_ENV` khai báo rõ `development`/`test`; vắng hoặc giá trị lạ ⇒ tắt (fail-closed). */
@@ -95,6 +100,24 @@ function mountContracts<E extends Env>(
   const ai = contractsAiModule(db, view, { ...aiDeps, tax });
   app.route(base, ai.routes); // HD2
   if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
+  app.route(base, contractsRemind(d, view, db)); // HD4
+}
+
+/** HD4 · nhắc hạn + kết quả xử lý; múi tenant từ `ConfigCache` (0 SQL). Test bật vòng bằng `packs.contractsRemind.worker`. */
+function contractsRemind(d: PacksMountDeps, view: PackAccessView, db: Db) {
+  const r = d.packs?.contractsRemind ?? {};
+  const env = d.appEnv ?? process.env.APP_ENV;
+  const worker =
+    r.worker ??
+    ((env === "development" || env === "production") && process.env.CONTRACTS_REMIND !== "off");
+  const every = Number(process.env.CONTRACTS_REMIND_EVERY_MS);
+  return contractsRemindModule(db, view, {
+    ...(Number.isInteger(every) && every >= 1000 ? { everyMs: every } : {}),
+    ...r,
+    worker,
+    timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
+    ...(d.signal ? { signal: d.signal } : {}),
+  });
 }
 
 /** HD2 · tra MST Cục Thuế (egress `lib/`, gói không gọi HTTP): `CONTRACTS_TAX_LOOKUP_URL` vắng/sai ⇒ không tra. */

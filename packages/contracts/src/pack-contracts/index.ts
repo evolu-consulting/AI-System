@@ -3,4 +3,5 @@ export * from "./detail";
 export * from "./errors";
 export * from "./extract";
 export * from "./fields";
+export * from "./handled";
 export * from "./list";
