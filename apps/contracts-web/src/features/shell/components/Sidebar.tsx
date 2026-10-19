@@ -55,6 +55,7 @@ export function Sidebar({
           <Link
             key={n.to}
             to={n.to}
+            data-w1-nav={n.extra ? "" : undefined}
             title={wide ? undefined : t(n.labelKey)}
             onClick={() => setWide(false)}
             className="flex h-11 items-center gap-3 whitespace-nowrap rounded-lg px-3 text-body text-ink-2 transition-colors hover:bg-sunk aria-[current=page]:bg-act-soft aria-[current=page]:font-semibold aria-[current=page]:text-act"

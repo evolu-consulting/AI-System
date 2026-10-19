@@ -13,6 +13,7 @@ import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { ContractSourcing } from "~/features/sourcing/components/ContractSourcing";
 import {
   contractKey,
   fetchContract,
@@ -152,6 +153,7 @@ export function ContractReviewPage({ id }: { id: string }) {
       )}
       <ItemsTable items={c.items} />
       <AppendixPanel c={c} write={write} />
+      <ContractSourcing c={c} write={write} />
     </div>
   );
 }

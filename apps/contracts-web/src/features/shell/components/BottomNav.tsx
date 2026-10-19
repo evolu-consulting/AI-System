@@ -8,12 +8,13 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("contracts.shell.navBottom")}
-      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-rule bg-panel md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 grid grid-flow-col auto-cols-fr border-t border-rule bg-panel md:hidden"
     >
       {NAV.map((n) => (
         <Link
           key={n.to}
           to={n.to}
+          data-w1-nav={n.extra ? "" : undefined}
           className="flex h-14 flex-col items-center justify-center gap-0.5 text-micro text-dim aria-[current=page]:font-semibold aria-[current=page]:text-act"
         >
           <n.icon width={19} height={19} />

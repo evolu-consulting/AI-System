@@ -239,6 +239,42 @@ const ledgerTables: RlsTable[] = [
   },
 ];
 
+/** W1 · nguồn mua do người chọn (migration gói 0010); không FK sang HĐ (D9-02), thấy được khi thấy HĐ bán (M1D). */
+const sourcingTables: RlsTable[] = [
+  {
+    name: "followups",
+    seed: (o, t) =>
+      one(
+        o,
+        `insert into contracts.followups (tenant_id, user_id, subject_kind, subject_id, due_at, title)
+         values ($1, $2, 'company', $3, now(), 'T')`,
+        [t, who, `tax:${crypto.randomUUID()}`],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into contracts.followups (id, tenant_id, user_id, subject_kind, subject_id, due_at, title)
+         values ($1, $2, $3, 'company', $4, now(), 'T')`,
+        [rnd(pk), t, who, `tax:${crypto.randomUUID()}`],
+      ),
+  },
+  {
+    name: "sourcing_choices",
+    seed: (o, t) =>
+      one(
+        o,
+        `insert into contracts.sourcing_choices (tenant_id, sale_contract_id, sale_line, source_contract_id, source_line, chosen_by)
+         values ($1, $2, 0, $3, 0, $4)`,
+        [t, crypto.randomUUID(), crypto.randomUUID(), who],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into contracts.sourcing_choices (id, tenant_id, sale_contract_id, sale_line, source_contract_id, source_line, chosen_by)
+         values ($1, $2, $3, 0, $4, 0, $5)`,
+        [rnd(pk), t, crypto.randomUUID(), crypto.randomUUID(), who],
+      ),
+  },
+];
+
 defineRlsSuite({
   key: "pkdemo",
   tenants,
@@ -281,7 +317,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
+      "truncate contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
     );
   },
   tables: [
@@ -398,6 +434,7 @@ defineRlsSuite({
     },
     ...cksTables,
     ...ledgerTables,
+    ...sourcingTables,
     // Review HD3 M1 · nhật ký đổi luật duyệt (migration gói 0006, append-only).
     {
       name: "approval_settings_audit",

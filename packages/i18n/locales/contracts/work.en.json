@@ -1,0 +1,108 @@
+{
+  "contracts": {
+    "work": {
+      "nav": "My work",
+      "lead": "Follow-ups, payments due and contract deadlines — only what you are allowed to see.",
+      "filter": "Filter by kind",
+      "filters": {
+        "all": "All",
+        "followup": "Follow-ups",
+        "obligation": "Payments",
+        "deadline": "Contract deadlines",
+        "reminder": "Reminders"
+      },
+      "group": { "late": "Overdue", "today": "Today", "upcoming": "Upcoming" },
+      "when": { "late": "{{n}} days late", "today": "Today", "left": "{{n}} days left" },
+      "kind": {
+        "followup": "Follow-up",
+        "obligation": "Payment",
+        "deadline": "Contract action deadline",
+        "reminder": "Reminder sent"
+      },
+      "title": {
+        "page": "My work",
+        "pay": "Pay {{party}}",
+        "receive": "Collect from {{party}}",
+        "followupCustomer": "Call back {{customer}}",
+        "followupRenewal": "Finish signature renewal for {{customer}}",
+        "followupGeneric": "{{name}}",
+        "deadline": "Contract {{name}} is due for action",
+        "reminder": "Contract {{name}} — {{n}}-day reminder sent"
+      },
+      "partnerFallback": "the partner",
+      "act": {
+        "paid": "Paid",
+        "received": "Received",
+        "postpone": "Customer rescheduled",
+        "done": "Done",
+        "snooze": "Remind me later",
+        "remind": "Remind me",
+        "compare": "Compare prices"
+      },
+      "pick": { "postpone": "Date promised", "snooze": "Remind me at", "remind": "Remind me at" },
+      "emptyTitle": "Nothing to do",
+      "emptyBody": "Your follow-ups, payments due and contracts to act on will show up here.",
+      "truncated": "The list is long, so only the most urgent part is shown.",
+      "errors": {
+        "OBLIGATION_DONE": "This instalment is already done.",
+        "POSTPONE_DATE": "The new date must be after the current due date.",
+        "CONTRACT_NOT_CONFIRMED": "This contract is not approved yet.",
+        "VALIDATION_ERROR": "Invalid data.",
+        "NOT_FOUND": "This item is gone — reload the page.",
+        "PACK_FORBIDDEN": "You are not allowed to do this."
+      }
+    },
+    "sourcing": {
+      "nav": "Purchasing",
+      "title": "Purchasing",
+      "lead": "Where each line we sell is bought, the margin, and which sales depend on a purchase contract that is running out.",
+      "stat": {
+        "lines": "Lines on sale",
+        "profit": "Gross profit at contract quantities",
+        "sourced": "Have a source",
+        "risk": "Need a look"
+      },
+      "search": "Search product, contract, customer, supplier…",
+      "onlyRisk": "Only lines at risk",
+      "selling": "Lines on sale",
+      "suppliers": "Dependence on suppliers",
+      "emptyTitle": "No sale contract with a price table yet",
+      "emptyBody": "A sale contract is one where your company is the seller; it must be confirmed and have a price table.",
+      "noRisk": "No line is at risk.",
+      "truncated": "There are too many contracts, so the report covers the first part only.",
+      "col": {
+        "sale": "Sale contract · customer",
+        "product": "Product",
+        "price": "Sell price",
+        "source": "Bought from",
+        "buy": "Buy price",
+        "margin": "Margin / unit",
+        "profit": "Profit at qty",
+        "risk": "Risk"
+      },
+      "sup": {
+        "name": "Supplier",
+        "lines": "Sale lines relying on it",
+        "customers": "Customers",
+        "profit": "Gross profit",
+        "risk": "Risk",
+        "atRisk": "{{n}} lines"
+      },
+      "risk": { "source_expiring": "Source expiring", "source_ended": "Source no longer valid" },
+      "cardSale": "Sources and margin",
+      "cardPurchase": "Sale lines bought from this contract",
+      "auto": "Automatic: lowest purchase price in force",
+      "sourceOf": "Source of {{name}}",
+      "noSource": "No purchase contract for this product (own service?)",
+      "ended": "no longer valid",
+      "endsOn": "ends {{date}}",
+      "qty": "Qty {{n}} {{unit}}",
+      "errors": {
+        "SOURCING_INVALID": "The source must be a purchase price line of the same product.",
+        "NOT_FOUND": "The contract or line is gone — reload the page.",
+        "PACK_FORBIDDEN": "Viewers cannot change the source.",
+        "VALIDATION_ERROR": "Invalid data."
+      }
+    }
+  }
+}

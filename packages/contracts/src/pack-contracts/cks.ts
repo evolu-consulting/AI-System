@@ -125,6 +125,8 @@ const localAt = (timeRequired: boolean) =>
       },
     );
 const LocalAt = localAt(false);
+/** W1: giờ địa phương bắt buộc có giờ (nhắc lại sau của "Việc của tôi"). */
+export const CksLocalAtTime = localAt(true);
 export const CksRenewSchema = z.strictObject({
   price_each: CksMoney.nullish(),
   years: z.number().int().min(1).max(5).default(1),

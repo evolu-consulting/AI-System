@@ -32,7 +32,18 @@ export type PricedLine = {
   current: boolean;
 };
 
-const fold = (s: string | null | undefined): string => foldVi(s ?? "");
+// Tên hàng lặp lại rất nhiều giữa các HĐ (báo cáo "Mua hàng" gấp hàng nghìn dòng) và `foldVi` đi từng ký tự ⇒ nhớ kết quả (thuần).
+const foldMemo = new Map<string, string>();
+const fold = (s: string | null | undefined): string => {
+  const k = s ?? "";
+  let v = foldMemo.get(k);
+  if (v === undefined) {
+    if (foldMemo.size > 50_000) foldMemo.clear();
+    v = foldVi(k);
+    foldMemo.set(k, v);
+  }
+  return v;
+};
 
 /** Khoá sản phẩm: có mã ⇒ theo mã; không ⇒ tên + quy cách (đã fold). */
 export function productKey(i: Pick<PriceItem, "code" | "name" | "spec">): string {
@@ -40,7 +51,7 @@ export function productKey(i: Pick<PriceItem, "code" | "name" | "spec">): string
 }
 
 /** `_parent_products`: dòng phụ lục không mã, tên trùng đúng MỘT sản phẩm của HĐ gốc ⇒ là sản phẩm đó (phụ lục gọi tên ngắn). */
-function resolver(parent: readonly PriceItem[]): (i: PriceItem) => string {
+export function resolver(parent: readonly PriceItem[]): (i: PriceItem) => string {
   const byName = new Map<string, Set<string>>();
   for (const p of parent) {
     const n = fold(p.name);

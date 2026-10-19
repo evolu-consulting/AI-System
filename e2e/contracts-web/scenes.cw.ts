@@ -21,6 +21,8 @@ const HIDE =
   "label:has(input[name=tenant_key]){display:none !important}" +
   // HD3: "Xác nhận" của S05 đã có (so thật); nút/khối duyệt không có ở mgmt-app ("Duyệt", "Từ chối", "Đọc lại", ghi chú) ẩn.
   "[data-approval]{display:none !important}" +
+  // W1: "Việc của tôi" + "Mua hàng" (mục menu thêm) không có ở mgmt-app web — ẩn để khung menu vẫn so được.
+  "[data-w1-nav]{display:none !important}" +
   // HD5: khối "Phụ lục và giá" của S05 không có trong mgmt-app web (phụ lục do backend tự gắn) — ẩn ở cả hai phía.
   "[data-hd5]{display:none !important}" +
   // HD5 S03: "+ Thêm hợp đồng" (upload) mgmt-app ẩn cùng phía ref để chữ/ảnh khớp baseline; chọn theo input file ẩn đứng trước nút.

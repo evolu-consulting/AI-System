@@ -23,8 +23,15 @@ describe("vai theo quyền gói", () => {
 });
 
 describe("menu", () => {
-  test("4 mục đúng đường dẫn", () => {
-    expect(NAV.map((n) => n.to)).toEqual(["/contracts", "/partners", "/prices", "/cks"]);
+  test("6 mục đúng đường dẫn (4 của mgmt-app + Việc của tôi + Mua hàng)", () => {
+    expect(NAV.map((n) => n.to)).toEqual([
+      "/contracts",
+      "/partners",
+      "/prices",
+      "/cks",
+      "/my-work",
+      "/sourcing",
+    ]);
   });
   test("mục đang chọn theo tiền tố đường dẫn, không khớp nửa chữ", () => {
     expect(activeNav("/cks/123")?.to).toBe("/cks");

@@ -12,6 +12,9 @@ Chỉ những lệch đã chốt; mọi lệch khác là lỗi và nằm ở `do
 | S10 `/cks` (HD9) | Bảng khách phân trang + tìm ở server (HD9-AC09, D9-22) thay vì tải hết; giao diện, nhãn, Pager giữ nguyên. Điền sẵn từ trợ lý `?sell_to=` (HD6) chưa có | Không ảnh hưởng ảnh: dữ liệu 3 khách, một trang |
 | S08 `/prices` (HD9) | Ô "Mặt hàng" chỉ có "Chữ ký số" (hàng hoá = HD8); "Kiểm tra thị trường" mở panel báo lát HD8 (S09); "Dò giá" ⇒ 503 `AGENT_UNAVAILABLE` (D9-10, D9-13) | Cảnh chụp trạng thái panel đóng, chưa có lượt dò ⇒ không ảnh hưởng |
 | S11 `/cks/$id` (HD9) | "🔔 Hẹn nhắc" / nhắc hoàn tất gia hạn: HD9 ghi lịch `cks_followups`, gửi đúng giờ ở HD4 (D9-09); "đã thanh toán" chờ HD7 (D9-08) | Không ảnh hưởng ảnh |
+| W1 /my-work «Việc của tôi» | mgmt-app không có màn riêng (việc nằm ở thẻ đầu khoang trợ lý) — màn thiết kế mới theo khung contracts-web | Không có cảnh so ảnh; hành vi ở mywork.cw.ts |
+| W1 /sourcing «Mua hàng» | Gốc ở cm-web (Next), không phải web Vite mgmt-app dùng làm baseline; thêm tìm + phân trang | Không có cảnh so ảnh; hành vi ở sourcing.cw.ts |
+| W1 menu | Hai mục thêm «Việc của tôi», «Mua hàng» (mgmt-app web có 4 mục) | data-w1-nav bị ẩn ở cả hai phía trong HIDE (cảnh shell) |
 | Đăng nhập (nhãn) | Ô "Email" nhận tên đăng nhập admin-api | Cùng nhãn "Email" ⇒ không ảnh hưởng chữ |
 
 Dữ liệu giả dùng chung: `dataset.ts` (`asMgmt()` cho mgmt-app, `asHub()` cho contracts-web). Baseline theo OS ở `baseline/<platform>/` (hiện `win32`; máy khác chụp lại bằng `bun run e2e:contracts:ref`).
