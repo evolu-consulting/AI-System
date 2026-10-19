@@ -13,56 +13,70 @@ import { evJson, obJson, one, seenEvent } from "./ledger-sql";
 /** `payments.DONE_DAYS`: "Đã xong" = 60 ngày gần nhất. */
 export const DONE_DAYS = 60;
 
-/** Cột của một hàng bảng (`payments.board`): đối tác = bên mua (bán) / bên bán (mua) — tên thô như mgmt. */
-const boardRow = (today: string) => sql`jsonb_build_object('id', r.id, 'contract_id', r.contract_id,
+/**
+ * Cột của một hàng bảng (`payments.board`): đối tác = bên mua (bán) / bên bán (mua) — tên thô như mgmt. Luật 4c: `json` (không
+ * `jsonb`: không đổi sang nhị phân rồi lại ra chữ — route gửi thẳng chữ), `of` = một lượt đếm theo nhóm cho ≤ 500 HĐ (`n`).
+ */
+const boardRow = (today: string) => sql`json_build_object('id', r.id, 'contract_id', r.contract_id,
     'party_key', r.party_key, 'direction', r.direction, 'kind', r.kind, 'seq', r.seq, 'due_date', r.due_date,
     'amount', r.amount, 'status', r.status, 'done_at', r.done_at, 'postponed_to', r.postponed_to,
     'postpones', r.postpones, 'reminders', r.reminders, 'source', r.source, 'estimated', r.estimated, 'basis', r.basis,
-    'of', (select count(*) from contracts.obligations x
-           where x.tenant_id = r.tenant_id and x.contract_id = r.contract_id and x.status <> 'replaced'),
+    'of', coalesce(n.of, 0),
     'party', case when c.direction = 'sale' then c.fields -> 'buyer_name' ->> 'value'
                   else c.fields -> 'supplier_name' ->> 'value' end,
     'contract_title', coalesce(nullif(c.fields -> 'title' ->> 'value', ''), nullif(c.fields -> 'number' ->> 'value', ''),
                                c.title),
     'days_late', case when r.status = 'open' then greatest(0, ${today}::date - r.due_date) else 0 end)`;
 
-function statsQ(t: string, today: string): SQL {
-  return sql`select jsonb_build_object(
-      'receive_open', coalesce(sum(o.amount) filter (where o.direction = 'receive'), 0)::text,
-      'pay_open', coalesce(sum(o.amount) filter (where o.direction = 'pay'), 0)::text,
-      'overdue_count', count(*) filter (where o.due_date < ${today}::date),
-      'overdue_amount', coalesce(sum(o.amount) filter (where o.due_date < ${today}::date), 0)::text,
-      'due_7d', coalesce(sum(o.amount) filter (
-        where o.due_date >= ${today}::date and o.due_date <= ${addDays(today, 7)}::date), 0)::text)
-    from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment'`;
+/** ≤ 500 hàng `r` + HĐ (tra theo id) + số đợt mỗi HĐ (một lượt gom), theo thứ tự `order`. */
+const rowsOf = (
+  t: string,
+  today: string,
+  order: SQL,
+) => sql`coalesce((select json_agg(${boardRow(today)} order by ${order})
+    from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
+      where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true
+    left join (select x.contract_id, count(*) as of from contracts.obligations x
+      where x.tenant_id = ${t}::uuid and x.contract_id in (select contract_id from r)
+        and x.status <> 'replaced' group by x.contract_id) n on n.contract_id = r.contract_id), '[]'::json)`;
+
+/** Tổng (không theo bộ lọc, D7-18) + `total` của bộ lọc mở — MỘT lượt quét đợt tiền đang mở. */
+function statsOf(t: string, today: string, total: SQL): SQL {
+  return sql`a as (select
+      coalesce(sum(o.amount) filter (where o.direction = 'receive'), 0)::text as receive_open,
+      coalesce(sum(o.amount) filter (where o.direction = 'pay'), 0)::text as pay_open,
+      count(*) filter (where o.due_date < ${today}::date) as overdue_count,
+      coalesce(sum(o.amount) filter (where o.due_date < ${today}::date), 0)::text as overdue_amount,
+      coalesce(sum(o.amount) filter (
+        where o.due_date >= ${today}::date and o.due_date <= ${addDays(today, 7)}::date), 0)::text as due_7d,
+      ${total} as total
+    from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment')`;
 }
+const statsJson = sql`json_build_object('receive_open', a.receive_open, 'pay_open', a.pay_open,
+    'overdue_count', a.overdue_count, 'overdue_amount', a.overdue_amount, 'due_7d', a.due_7d)`;
 
 function openPage(t: string, filter: string, today: string): SQL {
   const dir = filter === "receive" || filter === "pay" ? filter : null;
   const late = filter === "overdue";
-  const where = sql`o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment'
-    and (${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)`;
-  return sql`with r as (select o.* from contracts.obligations o where ${where} order by o.due_date, o.id
-      limit ${LEDGER_LIST_MAX}::int)
-    select jsonb_build_object('stats', (${statsQ(t, today)}),
-      'total', (select count(*) from contracts.obligations o where ${where}),
-      'rows', coalesce((select jsonb_agg(${boardRow(today)} order by r.due_date, r.id)
-        from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
-          where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true), '[]'::jsonb)) as j`;
+  const match = sql`(${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)`;
+  return sql`with r as (select o.* from contracts.obligations o
+      where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and ${match}
+      order by o.due_date, o.id limit ${LEDGER_LIST_MAX}::int),
+    ${statsOf(t, today, sql`count(*) filter (where ${match})`)}
+    select json_build_object('stats', ${statsJson}, 'total', a.total,
+      'rows', ${rowsOf(t, today, sql`r.due_date, r.id`)}) as j from a`;
 }
 
 function donePage(t: string, today: string): SQL {
   const where = sql`o.tenant_id = ${t}::uuid and o.status = 'done' and o.kind = 'payment'
     and o.done_at >= ${addDays(today, -DONE_DAYS)}::date`;
   return sql`with r as (select o.* from contracts.obligations o where ${where}
-      order by o.done_at desc, o.due_date, o.id limit ${LEDGER_LIST_MAX}::int)
-    select jsonb_build_object('stats', (${statsQ(t, today)}),
+      order by o.done_at desc, o.due_date, o.id limit ${LEDGER_LIST_MAX}::int),
+    ${statsOf(t, today, sql`0`)}
+    select json_build_object('stats', ${statsJson},
       'total', (select count(*) from contracts.obligations o where ${where}),
-      'rows', coalesce((select jsonb_agg(${boardRow(today)} order by r.done_at desc, r.due_date, r.id)
-        from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
-          where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true), '[]'::jsonb)) as j`;
+      'rows', ${rowsOf(t, today, sql`r.done_at desc, r.due_date, r.id`)}) as j from a`;
 }
-
 export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
   return {
     payments: (filter, today) =>

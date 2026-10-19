@@ -29,7 +29,7 @@ Nguồn port NGUYÊN (mgmt-app, chỉ đọc): `api/app/scoring/{engine,config,s
 ## Việc
 | # | Việc | Làn | Trạng thái |
 |---|---|---|---|
-| 1 | Migration `0010_hd8_partners` (journal idx 9, `when` 1793404800000, ngay sau `0009_m1_visibility` của HEAD) | đầy đủ | xong |
+| 1 | Migration `0011_hd8_partners` (journal idx 10, `when` 1793491200000, ngay sau `0010_m1b_visibility` của `platform/gd0` 14885aa9; commit 74030e50 ghi "0010" — đã đổi số khi rebase) | đầy đủ | xong |
 | 2 | Domain thuần: `scoring.rules`, `scoring-config.rules`, `partners.rules`, `goods-prices.rules` + unit parity (22 ca engine/config) | đầy đủ | xong |
 | 3 | Repo + use case + route + mount (`partners.mount.ts`) | đầy đủ | xong |
 | 4 | CKS: dòng uy tín gia hạn/mất khách | đầy đủ | xong |
@@ -63,6 +63,22 @@ Nguồn port NGUYÊN (mgmt-app, chỉ đọc): `api/app/scoring/{engine,config,s
   `test_a_member_neither_sees_nor_undoes…`).
 - D8-14: Báo giá tenant-wide (mgmt `view.quote` theo người tạo) — TODO nếu cần luật thấy theo người cho báo giá.
 
+## Kết quả (2026-10-20, evotest, rebase trên platform/gd0 14885aa9 có M1b)
+- Unit: parity engine/config 22 ca + giá hàng hoá 4 + FE ledger/scoring 10 — xanh. Int: 62 file contracts-pack + M1/M1b/M1D + rls-packs
+  821/821 xanh (trước tối ưu cuối); sau tối ưu cuối HD7+HD8 41/41.
+- e2e (local, Windows, `CW_E2E_WEB_PORT=3378`): `hd78-partners.cw.ts` 12/12 (9 cảnh so màn chữ/khung/ảnh khớp mgmt-app + 3 hành vi),
+  `cks.cw.ts` + `scenes.cw.ts` không hồi quy (44/44 cùng lượt).
+- Perf (số thật, trước → sau): số câu SQL `/partners`, `/prices/products` = 2 (set_config + 1) cho 10 hay 400 đối tác.
+  `GET /partners` (400 đối tác, 2.000 HĐ, 6.000 dòng hàng, 10.000 dòng sổ trong 12 tháng): p95 708,0 → 145,4 ms (p50 100,4) — **CHƯA
+  ĐẠT 50 ms**. Gốc: đọc + tính lại toàn bộ sổ mỗi lần (như mgmt "tính lại mỗi lần mở trang"); SQL còn ~105 ms (gom sự thật HĐ trên
+  jsonb `fields`, 10.000 dòng sổ), TS ~35 ms. Hướng làm tiếp (cần quyết vì đụng parity/độ tươi): gom sẵn đầu vào engine theo (đối tác,
+  vai) ở SQL, hoặc cache theo dấu phiên bản (max id sổ + số dòng huỷ + version cấu hình + báo giá + `updated_at` HĐ).
+- HD7 `GET /payments` (10.000 đợt + nền beta): p95 142,8 → 52,6 ms (p50 124,0 → 27,4; SQL thuần 23–26 ms) — **sát nhưng CHƯA ĐẠT**
+  50 ms ở p95 trên máy chung. Gốc chính đã sửa: JIT (70,7 ms/125,6 ms) do policy M1 đẩy ước lượng vượt `jit_above_cost` ⇒ tắt JIT
+  trong tx gói (`pack-scope.ts`, cùng câu set_config); thêm: tra HĐ theo id thay hash join 10.000 HĐ, `json` thay `jsonb`, tổng + `total`
+  một lượt quét, route gửi thẳng chữ JSON. Vòng quá hạn HD7 lô 500: p95 29,3–31,4 ms (đạt).
+
 ## Việc còn lại / nợ
+- Perf `/partners` và `/payments` p95 ≤ 50 ms (ở trên).
 - Kiểm link báo giá (D8-10), dò giá thị trường hàng hoá (D8-08, N2), danh bạ công ty + `short_name` (D8-01), lịch sử điểm từng đối tác
   (ảnh chụp đã lưu, chưa có màn).

@@ -63,9 +63,10 @@ export function partnersUsecase(d: PartnersDeps) {
   const today = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
   /** Mọi thứ cần để chấm (cả tenant) + tập người dùng thấy. */
-  async function load(who: PackWho) {
+  /** `months`: khoảng tính tối thiểu của bản nháp (xem trước/lưu) để không thiếu sự kiện. */
+  async function load(who: PackWho, months?: number) {
     const day = await today(who);
-    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data());
+    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data(day, months));
     const lines = priceLines(data.contracts, day);
     const facts = factsOf(data.facts, priceGaps(lines, data.quotes));
     // M1 `view.company`: đối tác có HĐ đã duyệt người dùng thấy (data() đã chạy dưới RLS của người dùng).
@@ -131,14 +132,14 @@ export function partnersUsecase(d: PartnersDeps) {
 
   const preview = async (who: PackWho, role: Role, b: ScoringDraft) => {
     const draft = draftOf(role, b);
-    const l = await load(who);
+    const l = await load(who, draft.rules.window_months);
     return previewOf(l.partners(role), l.partners(role, { [role]: draft }));
   };
 
   /** `save_config`: chỉ quản lý (route kiểm `admin`); tăng version, lịch sử + ảnh chụp điểm mọi đối tác của vai (cả tenant). */
   const save = async (who: PackWho, role: Role, b: ScoringDraft) => {
     const draft = draftOf(role, b);
-    const l = await load(who);
+    const l = await load(who, draft.rules.window_months);
     const snapshots = l
       .partners(role, { [role]: draft }, true)
       .map((p) => ({ party: p.party, score: p.score, band: p.band }));

@@ -15,7 +15,7 @@ const side = (c: string) =>
 
 export function partnersRepo(tx: Tx, t: string) {
   return {
-    data: () => partnerData(tx, t),
+    data: (today: string, months?: number) => partnerData(tx, t, today, months),
     /** Cấu hình đã lưu của vai (không khoá); chưa có ⇒ null. */
     config: (role: Role) =>
       one<StoredConfig | null>(
