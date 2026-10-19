@@ -117,6 +117,8 @@
     "error": {
       "invalid": "Sai mã công ty, tên đăng nhập hoặc mật khẩu.",
       "tempLocked": "Tạm khoá đến {time}",
+      "rateLimited": "Thử đăng nhập quá nhiều lần. Hãy thử lại sau {minutes} phút.",
+      "unavailable": "Đăng nhập tạm thời không khả dụng. Hãy thử lại sau ít phút.",
       "accountLocked": "Tài khoản đã bị khoá. Liên hệ quản trị viên công ty bạn.",
       "network": "Không kết nối được máy chủ. Hãy thử lại.",
       "server": "Có lỗi xảy ra, hãy thử lại sau (mã {code}).",

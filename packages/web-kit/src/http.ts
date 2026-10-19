@@ -23,7 +23,10 @@ export type AuthErrorCode =
   | "REFRESH_SUPERSEDED"
   | "UNAUTHORIZED"
   | "ACCOUNT_LOCKED"
-  | "TEMP_LOCKED";
+  | "TEMP_LOCKED"
+  /** L1: `AUTH_LIMIT_ERRORS` — 429 vượt trần IP, 503 kho đếm/hàng đợi băm không dùng được. */
+  | "RATE_LIMITED"
+  | "AUTH_UNAVAILABLE";
 export type ApiErrorCode =
   | ChatErrorCode
   | ChatCommandErrorCode

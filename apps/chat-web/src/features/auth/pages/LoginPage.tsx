@@ -39,16 +39,16 @@ export function LoginPage() {
   const search = loginRoute.useSearch();
   const [defaultTenant] = useState(rememberedTenant);
   const [pending, setPending] = useState(false);
-  const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [alert, setAlert] = useState<Extract<LoginOutcome, { kind: "alert" }> | null>(null);
   const [locked, setLocked] = useState(false);
 
   const submit = async (values: LoginValues) => {
     setPending(true);
-    setErrorKey(null);
+    setAlert(null);
     const outcome = await attempt(values);
     setPending(false);
     if (outcome.kind === "locked") return setLocked(true);
-    if (outcome.kind === "alert") return setErrorKey(outcome.key);
+    if (outcome.kind === "alert") return setAlert(outcome);
     const next = safeNext(search.next);
     if (next) router.history.replace(next);
     else await router.navigate({ to: "/c/new", replace: true });
@@ -70,7 +70,7 @@ export function LoginPage() {
       <LoginForm
         defaultTenant={defaultTenant}
         pending={pending}
-        error={errorKey ? t(errorKey) : null}
+        error={alert ? t(alert.key, alert.params) : null}
         onSubmit={submit}
       />
       <LockedDialog open={locked} onClose={() => setLocked(false)} />

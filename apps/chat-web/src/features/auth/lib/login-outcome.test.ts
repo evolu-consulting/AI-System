@@ -28,6 +28,30 @@ describe("outcomeOfError", () => {
     expect(outcomeOfError(new ApiError(423, "ACCOUNT_LOCKED", "x"))).toEqual({ kind: "locked" });
     expect(outcomeOfError(new ApiError(423, "TEMP_LOCKED", "x"))).toEqual({ kind: "locked" });
   });
+  test("L1b · TEMP_LOCKED có until ⇒ alert login.tempLocked {time} HH:MM giờ trình duyệt", () => {
+    const until = new Date(2026, 9, 20, 9, 7).toISOString();
+    const err = new ApiError(423, "TEMP_LOCKED", "x", { details: { until } });
+    expect(outcomeOfError(err)).toEqual({
+      kind: "alert",
+      key: "login.tempLocked",
+      params: { time: "09:07" },
+    });
+  });
+  test("L1b · RATE_LIMITED ⇒ login.rateLimited {minutes}; AUTH_UNAVAILABLE ⇒ login.unavailable", () => {
+    const rl = new ApiError(429, "RATE_LIMITED", "x", {
+      details: { retry_after_s: 125 },
+      retryAfter: 125,
+    });
+    expect(outcomeOfError(rl)).toEqual({
+      kind: "alert",
+      key: "login.rateLimited",
+      params: { minutes: 3 },
+    });
+    expect(outcomeOfError(new ApiError(503, "AUTH_UNAVAILABLE", "x"))).toEqual({
+      kind: "alert",
+      key: "login.unavailable",
+    });
+  });
   test("CHAT-AC-02 · mất mạng → conn.down; 5xx / lỗi lạ → errors.unknown.title", () => {
     expect(outcomeOfError(new ApiError(0, "NETWORK_ERROR", "x"))).toEqual({
       kind: "alert",

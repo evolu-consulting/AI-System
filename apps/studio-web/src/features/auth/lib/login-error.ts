@@ -12,6 +12,13 @@ export function formatClock(iso: unknown): string {
   return Number.isNaN(d.getTime()) ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** L1b · `details.retry_after_s` (429) ⇒ số phút chờ, làm tròn lên, ≥ 1; thiếu ⇒ 1. */
+export function retryMinutes(details: unknown): string {
+  const s = (details as { retry_after_s?: unknown } | null | undefined)?.retry_after_s;
+  const sec = typeof s === "number" && Number.isFinite(s) && s > 0 ? s : 60;
+  return String(Math.max(1, Math.ceil(sec / 60)));
+}
+
 /** Bước mật khẩu (và mã chung cho bước TOTP). */
 export function describeLoginError(err: unknown): MessageSpec {
   if (!(err instanceof ApiError)) return { key: "login.err.server", params: { code: "UNKNOWN" } };
@@ -26,6 +33,11 @@ export function describeLoginError(err: unknown): MessageSpec {
       const until = (err.details as { until?: unknown } | null | undefined)?.until;
       return { key: "login.err.tempLocked", params: { time: formatClock(until) } };
     }
+    // L1b: 429 vượt trần IP (phút chờ từ `details.retry_after_s`), 503 giới hạn đăng nhập tạm không dùng được.
+    case "RATE_LIMITED":
+      return { key: "login.err.rateLimited", params: { minutes: retryMinutes(err.details) } };
+    case "AUTH_UNAVAILABLE":
+      return { key: "login.err.unavailable" };
     default:
       return {
         key: "login.err.server",

@@ -181,6 +181,9 @@
       "forgot": "Forgot your password? Ask your company's administrator to reset it.",
       "invalid": "Incorrect sign-in details.",
       "locked": "This account is locked. Contact your company's administrator.",
+      "tempLocked": "Too many wrong attempts. This account is locked until {{time}}.",
+      "rateLimited": "Too many sign-in attempts. Try again in {{minutes}} min.",
+      "unavailable": "Sign-in is temporarily unavailable. Please try again in a few minutes.",
       "useAdmin": "Your account needs a password change or two-step verification in the admin console first.",
       "showcaseTitle": "Contracts, partners and digital signatures — one assistant handles them.",
       "showcaseLead": "Sign in to see what needs doing today.",
@@ -261,7 +264,8 @@
         "quota": "Today's AI actions are used up ({{limit}} per day). Try again tomorrow.",
         "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again."
       }
-    },    "review": {
+    },
+    "review": {
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",

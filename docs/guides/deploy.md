@@ -94,6 +94,8 @@ chmod 600 /etc/ai-system.env
 #       HUB_SECRETS_KEY, HUB_INTERNAL_TOKEN, CORS/URL, SMTP, HUB_ATTACH_DIR, PUBLIC_* (cho build)…
 ```
 
+> **Giới hạn đăng nhập (L1, TECH-DEBT #224):** admin-api **không khởi động** ở `APP_ENV=production` nếu thiếu `REDIS_URL` (bộ đếm khoá tài khoản / trần IP). Redis chết ⇒ đăng nhập trả 503 `AUTH_UNAVAILABLE` (đóng an toàn) tới khi Redis lên lại. Đặt `TRUST_PROXY_HOPS=1` khi admin-api chạy sau reverse proxy §10 (Caddy/nginx nối `X-Forwarded-For`); để `0` sau proxy thì mọi người dùng chung một xô IP (30 lượt / 10 phút cho cả hệ thống). Tuỳ chọn `LOGIN_HASH_CONCURRENCY` (mặc định số lõi).
+
 > **Quan trọng:** PEM một dòng chỉ được **dotenv của Bun** mở chuỗi `\n`. Vì vậy 2 service Bun phải nạp env bằng `bun --env-file=/etc/ai-system.env`, **đừng** nạp bằng `EnvironmentFile=` của systemd. (agent-runtime thì ngược lại — xem §9.)
 
 ---

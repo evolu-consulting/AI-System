@@ -13,6 +13,8 @@ export const ERROR_MESSAGE_KEYS = [
   "auth.error.tempLocked",
   "auth.error.accountLocked",
   "auth.error.server",
+  "auth.error.rateLimited",
+  "auth.error.unavailable",
   "password.error.currentWrong",
   "password.error.same",
   "password.error.tokenExpired",
@@ -69,6 +71,13 @@ function untilTime(details: unknown): string {
   return typeof until === "string" ? formatClock(until) : "";
 }
 
+/** L1b · `details.retry_after_s` (429) ⇒ phút chờ, làm tròn lên, ≥ 1; thiếu ⇒ 1. */
+export function retryMinutes(details: unknown): number {
+  const s = (details as { retry_after_s?: unknown } | null | undefined)?.retry_after_s;
+  const sec = typeof s === "number" && Number.isFinite(s) && s > 0 ? s : 60;
+  return Math.max(1, Math.ceil(sec / 60));
+}
+
 function lastAdminKey(details: unknown): string {
   const scope = (details as { scope?: unknown } | null | undefined)?.scope;
   return scope === "platform" ? "users.error.lastPlatformAdmin" : "users.error.lastAdmin";
@@ -123,15 +132,29 @@ function detailString(details: unknown, field: string): string {
   return typeof v === "string" ? v : "";
 }
 
+/**
+ * Khoá tạm / giới hạn đăng nhập: `TEMP_LOCKED {until}` ⇒ giờ mở; L1b (`AUTH_LIMIT_ERRORS`, ngoài `API_ERRORS`): 429 vượt
+ * trần IP ⇒ số phút, 503 giới hạn đăng nhập tạm không dùng được. Mã khác ⇒ null.
+ */
+function loginLimitSpec(err: ApiError): MessageSpec | null {
+  const code = err.code as string;
+  if (code === "TEMP_LOCKED") {
+    return { key: "auth.error.tempLocked", params: { time: untilTime(err.details) } };
+  }
+  if (code === "RATE_LIMITED") {
+    return { key: "auth.error.rateLimited", params: { minutes: retryMinutes(err.details) } };
+  }
+  return code === "AUTH_UNAVAILABLE" ? { key: "auth.error.unavailable" } : null;
+}
+
 /** Lỗi → câu hiển thị. Mã chưa biết/5xx → `toast.saveFailed` kèm `message` server làm lý do. */
 export function describeError(
   err: unknown,
   opts?: { keyTaken?: string; coreProtected?: string },
 ): MessageSpec {
   if (!(err instanceof ApiError)) return { key: "toast.saveFailed", params: { reason: "" } };
-  if (err.code === "TEMP_LOCKED") {
-    return { key: "auth.error.tempLocked", params: { time: untilTime(err.details) } };
-  }
+  const limited = loginLimitSpec(err);
+  if (limited) return limited;
   if (err.code === "KEY_TAKEN" && opts?.keyTaken) return { key: opts.keyTaken };
   if (err.code === "CORE_FEATURE_PROTECTED" && opts?.coreProtected)
     return { key: opts.coreProtected };

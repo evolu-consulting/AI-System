@@ -49,6 +49,8 @@
       "invalid": "Wrong company code, username or password.",
       "locked": "This account is locked. Contact your company administrator.",
       "tempLocked": "Temporarily locked until {time}",
+      "rateLimited": "Too many sign-in attempts. Try again in {minutes} min.",
+      "unavailable": "Sign-in is temporarily unavailable. Please try again in a few minutes.",
       "network": "Couldn't reach the server. Please try again.",
       "server": "Something went wrong, please try again later (code {code})."
     },

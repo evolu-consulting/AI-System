@@ -29,6 +29,19 @@ describe("ADM-FR-01 · lỗi API → key i18n", () => {
     expect(spec.params).toEqual({ time: "14:45" });
   });
 
+  test("L1b · RATE_LIMITED ⇒ auth.error.rateLimited {minutes}; AUTH_UNAVAILABLE ⇒ auth.error.unavailable (cả describeLoginError)", () => {
+    const rl = new ApiError(429, "RATE_LIMITED" as ApiErrorCode, "x", { retry_after_s: 301 });
+    expect(describeLoginError(rl)).toEqual({
+      key: "auth.error.rateLimited",
+      params: { minutes: 6 },
+    });
+    const un = new ApiError(503, "AUTH_UNAVAILABLE" as ApiErrorCode, "x");
+    expect(describeLoginError(un)).toEqual({ key: "auth.error.unavailable" });
+    expect(describeError(new ApiError(429, "RATE_LIMITED" as ApiErrorCode, "x")).params).toEqual({
+      minutes: 1,
+    });
+  });
+
   test("LAST_ADMIN theo scope", () => {
     expect(describeError(err("LAST_ADMIN", { scope: "platform" })).key).toBe(
       "users.error.lastPlatformAdmin",

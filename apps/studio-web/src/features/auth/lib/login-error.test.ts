@@ -29,6 +29,22 @@ describe("HUB-FR-72 · describeLoginError", () => {
     expect(formatClock("không-phải-ngày")).toBe("");
   });
 
+  test("L1b · RATE_LIMITED → rateLimited {minutes} (cả bước TOTP); AUTH_UNAVAILABLE → unavailable", () => {
+    const rl = new ApiError(429, "RATE_LIMITED", "x", { retry_after_s: 61 });
+    expect(describeLoginError(rl)).toEqual({
+      key: "login.err.rateLimited",
+      params: { minutes: "2" },
+    });
+    expect(classifyTotpError(rl)).toEqual({
+      kind: "other",
+      spec: { key: "login.err.rateLimited", params: { minutes: "2" } },
+    });
+    expect(describeLoginError(new ApiError(503, "AUTH_UNAVAILABLE", "x"))).toEqual({
+      key: "login.err.unavailable",
+    });
+    for (const k of ["login.err.rateLimited", "login.err.unavailable"]) expect(has(k)).toBe(true);
+  });
+
   test("mã khác → login.err.server {code}; HTTP_ERROR / không phải ApiError → UNKNOWN", () => {
     expect(describeLoginError(new ApiError(500, "INTERNAL_ERROR", "x"))).toEqual({
       key: "login.err.server",

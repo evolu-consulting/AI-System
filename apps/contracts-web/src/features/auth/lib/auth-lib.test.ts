@@ -44,17 +44,16 @@ describe("knownTenant (Q-F3)", () => {
 describe("login-outcome", () => {
   test("PK-FR-10 · authenticated ⇒ vào app; cần đổi mật khẩu/2FA ⇒ nhắc trang quản trị", () => {
     expect(outcomeOfResponse({ status: "authenticated" } as LoginResponse)).toBeNull();
-    expect(outcomeOfResponse({ status: "totp_required" } as unknown as LoginResponse)).toBe(
+    expect(outcomeOfResponse({ status: "totp_required" } as unknown as LoginResponse)?.key).toBe(
       "contracts.login.useAdmin",
     );
   });
-  test("PK-FR-10 · lỗi ⇒ một câu chung theo loại", () => {
-    expect(outcomeOfError(new ApiError(401, "INVALID_CREDENTIALS", "x"))).toBe(
-      "contracts.login.invalid",
-    );
-    expect(outcomeOfError(new ApiError(423, "ACCOUNT_LOCKED", "x"))).toBe("contracts.login.locked");
-    expect(outcomeOfError(new ApiError(0, "NETWORK_ERROR", "x"))).toBe("contracts.errors.network");
-    expect(outcomeOfError(new ApiError(502, "HTTP_ERROR", "x"))).toBe("contracts.errors.unknown");
-    expect(outcomeOfError(new Error("x"))).toBe("contracts.errors.unknown");
+  test("PK-FR-10 · lỗi ⇒ một câu chung theo loại (L1b: kết quả là {key, params})", () => {
+    const key = (e: unknown) => outcomeOfError(e)?.key;
+    expect(key(new ApiError(401, "INVALID_CREDENTIALS", "x"))).toBe("contracts.login.invalid");
+    expect(key(new ApiError(423, "ACCOUNT_LOCKED", "x"))).toBe("contracts.login.locked");
+    expect(key(new ApiError(0, "NETWORK_ERROR", "x"))).toBe("contracts.errors.network");
+    expect(key(new ApiError(502, "HTTP_ERROR", "x"))).toBe("contracts.errors.unknown");
+    expect(key(new Error("x"))).toBe("contracts.errors.unknown");
   });
 });

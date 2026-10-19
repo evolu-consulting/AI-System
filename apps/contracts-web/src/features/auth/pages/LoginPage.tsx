@@ -41,14 +41,14 @@ export function LoginPage() {
     }),
   );
   const [busy, setBusy] = useState(false);
-  const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [error, setError] = useState<LoginOutcome>(null);
 
   const submit = async (values: LoginValues) => {
     setBusy(true);
-    setErrorKey(null);
+    setError(null);
     const outcome = await attempt(values);
     setBusy(false);
-    if (outcome) return setErrorKey(outcome);
+    if (outcome) return setError(outcome);
     const next = safeNext(search.next);
     if (next) router.history.replace(next);
     else await router.navigate({ to: "/contracts", replace: true });
@@ -63,7 +63,7 @@ export function LoginPage() {
       <LoginForm
         tenant={tenant}
         busy={busy}
-        error={errorKey ? t(errorKey) : null}
+        error={error ? t(error.key, error.params) : null}
         onSubmit={submit}
       />
     </AuthLayout>
