@@ -24,7 +24,8 @@ requirements: [N4-FR-02, N4-FR-03, N4-FR-05, N4-NFR-01]
 | Đo | Trước | Sau |
 |---|---|---|
 | Perf 10k đoạn/tenant, kho zipf, p95 (cục bộ, máy dùng chung 12 luồng) | 377 ms (N4 báo 297) | 28–49 ms tuỳ tải máy (chi tiết ở dưới) |
-| Perf evotest (`-Step perf`) | 297 ms (N4) | xem báo cáo cuối lát |
+| Perf evotest (`-Step perf`), kho zipf, p95 | 297 ms (N4) | 74 ms (bảng df + DEFINER), rồi **28,1 ms** (p50 25,3) sau `SET enable_seqscan = off` trong hàm (planner ước 5% ⇒ quét tuần tự) |
+| Perf evotest, kho đều (ca xấu, chỉ ghi số), p95 | 85 ms (N4) | 14,8 ms |
 | Eval fts 90 câu: R@1 / R@3 / R@5 / R@10 / MRR / phủ ý@5 | 0,708 / 0,901 / 0,944 / 0,981 / 0,865 / 0,949 | **y hệt** (xếp hạng giữ nguyên ngữ nghĩa) |
 | Eval chấm đáp án (OFFLINE) | 0,957 trên 58/90 câu | **0,944 trên 90/90** (2 = 29, 1 = 1, 0 = 2 ở 32 câu mới: q17, q37 thiếu đoạn mp; q57 thiếu c3#1) |
 | Eval độ trễ p95 (kho nhỏ 118 đoạn) | 4,8 ms | 3,9 ms |

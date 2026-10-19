@@ -98,7 +98,10 @@ CREATE POLICY lexemes_search ON knowledge.lexemes FOR SELECT TO knowledge_search
 -- nhiều lexeme = min df các lexeme (cận trên).
 CREATE OR REPLACE FUNCTION knowledge.search_idf(p_terms jsonb, p_limit integer, p_cand integer DEFAULT 1000)
   RETURNS TABLE (chunk_id uuid, doc_id uuid, title text, heading text, clause_no text, ord integer, body text, score float8)
-  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+  LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+  -- Luật 4c: kế hoạch không phụ thuộc thống kê — evotest: ước 5% đoạn ⇒ planner chọn quét tuần tự cả bảng (p95 74 ms) thay vì
+  -- dò GIN (tenant_id, tsv). Tắt seqscan CHỈ trong hàm này (mọi bảng ở đây đều có chỉ mục phù hợp).
+  SET enable_seqscan = off AS $$
 DECLARE
   v_tenant uuid := NULLIF(current_setting('app.tenant_id', true), '')::uuid;
   v_q jsonb;
