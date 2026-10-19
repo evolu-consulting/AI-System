@@ -8,6 +8,13 @@
       "when": 1794900000000,
       "tag": "0001_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794900100000,
+      "tag": "0002_gin_tenant",
+      "breakpoints": true
     }
   ]
 }

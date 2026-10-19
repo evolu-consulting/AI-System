@@ -1,0 +1,208 @@
+{
+  "note": "Ảnh chụp kho eval 0.11 (N4). contracts/* = mgmt-app api/tests/fixtures/contracts (dữ liệu giả lập) + mp.md (reference/mgmt-app-contracts/samples/HD-bao-bi-Minh-Phat.docx qua bộ DOCX→Markdown của hub-api). kh/* = ADR nội bộ tiếng Việt (thay kho KnowledgeHub thật D:\\AI\\ai-sdlc-rowan — không có trên máy). general/* = tài liệu tiếng Anh mgmt-app làm nhiễu. tenant-b/* chỉ nạp cho tenant B để dò rò rỉ.",
+  "docs": [
+    {
+      "id": "c1",
+      "file": "contracts/c1.md",
+      "title": "Hợp đồng 01/2026/HĐMB-PN — Bao Bì Phương Nam",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c2",
+      "file": "contracts/c2.md",
+      "title": "Hợp đồng 02/2026/HĐMB-DA — Nhựa Đông Á",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c3",
+      "file": "contracts/c3.md",
+      "title": "Hợp đồng 05/2026/HĐDV-SV — Vận tải Sao Việt",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c4",
+      "file": "contracts/c4.md",
+      "title": "Hợp đồng 07/2026/HĐDV-LH — Phần mềm Lạc Hồng",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c5",
+      "file": "contracts/c5.md",
+      "title": "Hợp đồng 09/2026/HĐMB-PN2 — Bao Bì Phương Nam",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c6",
+      "file": "contracts/c6.md",
+      "title": "Hợp đồng 11/2026/HĐMB-MT — Hộ kinh doanh Minh Tâm",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c7",
+      "file": "contracts/c7.md",
+      "title": "Hợp đồng nguyên tắc 12/2026/HĐNT-DA — Nhựa Đông Á",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "c8",
+      "file": "contracts/c8.md",
+      "title": "Hợp đồng 14/2026/HĐMB-DA2 — Nhựa Đông Á",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "a1",
+      "file": "contracts/a1.md",
+      "title": "Phụ lục PL01-01/2026/HĐMB-PN",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "a2",
+      "file": "contracts/a2.md",
+      "title": "Phụ lục PL01-02/2026/HĐMB-DA",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "a3",
+      "file": "contracts/a3.md",
+      "title": "Phụ lục PL01-07/2026/HĐDV-LH",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "mp",
+      "file": "contracts/mp.md",
+      "title": "Hợp đồng BB-MP-2026-27 — Bao Bì Minh Phát",
+      "kind": "contract",
+      "tenant": "A"
+    },
+    {
+      "id": "adr12",
+      "file": "kh/adr0012.md",
+      "title": "ADR-0012 KnowledgeHub làm RAG ngoài",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr15",
+      "file": "kh/adr0015.md",
+      "title": "ADR-0015 FileBox lưu file ngoài",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr16",
+      "file": "kh/adr0016.md",
+      "title": "ADR-0016 Postgres là nguồn chuẩn",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr17",
+      "file": "kh/adr0017.md",
+      "title": "ADR-0017 Engine quy trình chạy bền",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr18",
+      "file": "kh/adr0018.md",
+      "title": "ADR-0018 Một nguồn định danh, SSO",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr19",
+      "file": "kh/adr0019.md",
+      "title": "ADR-0019 AI runtime auth",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr20",
+      "file": "kh/adr0020.md",
+      "title": "ADR-0020 Hạ tầng production",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr21",
+      "file": "kh/adr0021.md",
+      "title": "ADR-0021 Một dịch vụ tri thức",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr22",
+      "file": "kh/adr0022.md",
+      "title": "ADR-0022 Dify hybrid tạm",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr24",
+      "file": "kh/adr0024.md",
+      "title": "ADR-0024 DOCX sang Markdown",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "adr27",
+      "file": "kh/adr0027.md",
+      "title": "ADR-0027 Thư viện SMTP và Web Push",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "en_a",
+      "file": "general/en_a.md",
+      "title": "Project Apollo launch plan",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "en_a_prime",
+      "file": "general/en_a_prime.md",
+      "title": "Project Apollo launch plan (copy)",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "en_b",
+      "file": "general/en_b.md",
+      "title": "Office parking rules",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "en_c",
+      "file": "general/en_c.md",
+      "title": "Apollo ownership",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "en_c_prime",
+      "file": "general/en_c_prime.md",
+      "title": "Apollo budget note",
+      "kind": "markdown",
+      "tenant": "A"
+    },
+    {
+      "id": "canary",
+      "file": "tenant-b/canary.md",
+      "title": "Hợp đồng 99/2026/HĐMB-CANARY — Canary Bí Mật",
+      "kind": "contract",
+      "tenant": "B"
+    }
+  ]
+}

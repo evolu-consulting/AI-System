@@ -1,0 +1,456 @@
+{
+  "rubric": "Thang 0–2, chấm câu trả lời dựa trên top-5 đoạn truy hồi so với đáp án vàng:\n2 = đúng và đủ: mọi ý của đáp án vàng có (hoặc suy ra trực tiếp) từ ngữ cảnh; câu no_answer: ngữ cảnh không chứa thông tin trả lời nên trả lời đúng là 'không có thông tin' và không có đoạn nào gây trả lời sai.\n1 = đúng một phần: thiếu ý (vd multi-hop chỉ đủ một bước, hoặc thiếu phụ lục sửa đổi nên con số là giá cũ).\n0 = sai/không trả lời được: ngữ cảnh không có ý chính, hoặc dẫn tới đáp án sai (vd đúng điều khoản nhưng của hợp đồng khác); no_answer: ngữ cảnh khiến trả lời bịa (vd lộ tài liệu tenant khác).",
+  "judged_by": "Claude (tác nhân N4, Opus 5.5) tự chấm OFFLINE ngày 2026-10-19 — KHÔNG gọi API (không có ANTHROPIC_API_KEY). Chấm ngữ cảnh top-5 của biến thể fts (seed 42), thay cho bước 'Claude viết câu trả lời rồi Claude chấm'.",
+  "entries": {
+    "q01|c1#0,a1#1,a1#4,c1#2,c1#1": {
+      "sig": "c1#0,a1#1,a1#4,c1#2,c1#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q02|c8#0,c2#0,c7#0,c2#1,c7#1": {
+      "sig": "c8#0,c2#0,c7#0,c2#1,c7#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q03|c3#0,mp#0,c1#0,c5#0,adr17#3": {
+      "sig": "c3#0,mp#0,c1#0,c5#0,adr17#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q04|c4#0,a3#2,c4#1,a3#3,c4#2": {
+      "sig": "c4#0,a3#2,c4#1,a3#3,c4#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q05|c6#0,c6#1,c6#2,c6#3,c6#4": {
+      "sig": "c6#0,c6#1,c6#2,c6#3,c6#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q06|mp#0,mp#6,mp#1,mp#7,mp#3": {
+      "sig": "mp#0,mp#6,mp#1,mp#7,mp#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q07|adr18#0,mp#0,mp#7,mp#3,c8#0": {
+      "sig": "adr18#0,mp#0,mp#7,mp#3,c8#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q08|c3#1,adr17#3,adr17#1,c3#4,adr15#2": {
+      "sig": "c3#1,adr17#3,adr17#1,c3#4,adr15#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q09|a3#1,a3#2,a3#4,a3#0,a3#3": {
+      "sig": "a3#1,a3#2,a3#4,a3#0,a3#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q10|c8#0,mp#2,c1#4,c5#4,c2#4": {
+      "sig": "c8#0,mp#2,c1#4,c5#4,c2#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q11|mp#0,adr18#0,c8#0,mp#7,adr17#0": {
+      "sig": "mp#0,adr18#0,c8#0,mp#7,adr17#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q12|c7#1,c2#1,c7#0,c8#0,c5#1": {
+      "sig": "c7#1,c2#1,c7#0,c8#0,c5#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q13|c1#1,adr17#3,c4#0,c5#0,c1#0": {
+      "sig": "c1#1,adr17#3,c4#0,c5#0,c1#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q14|c4#1,c4#0,a3#3,adr18#0,adr12#3": {
+      "sig": "c4#1,c4#0,a3#3,adr18#0,adr12#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q15|c1#8,a1#4,c2#8,c7#8,c3#8": {
+      "sig": "c1#8,a1#4,c2#8,c7#8,c3#8",
+      "score": 0,
+      "note": "Không có Điều 5 (bảo hành) của c1 trong top-5; chỉ Điều 8 các HĐ khác."
+    },
+    "q16|c3#6,c3#8,c3#0,c3#1,c8#0": {
+      "sig": "c3#6,c3#8,c3#0,c3#1,c8#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q17|c7#7,c2#7,c3#7,c4#7,c5#7": {
+      "sig": "c7#7,c2#7,c3#7,c4#7,c5#7",
+      "score": 0,
+      "note": "Top-5 là điều khoản tranh chấp của HĐ KHÁC (c2,c3,c4,c5,c7); thiếu 'thương lượng' của HĐ Minh Phát ⇒ trả lời sai HĐ."
+    },
+    "q18|c4#4,c4#6,c4#2,adr16#1,adr22#0": {
+      "sig": "c4#4,c4#6,c4#2,adr16#1,adr22#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q19|c4#6,c4#0,a3#2,c4#1,a3#3": {
+      "sig": "c4#6,c4#0,a3#2,c4#1,a3#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q20|mp#3,c2#3,c2#8,c8#0,c1#3": {
+      "sig": "mp#3,c2#3,c2#8,c8#0,c1#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q21|c6#3,c6#0,c6#1,c6#8,c6#2": {
+      "sig": "c6#3,c6#0,c6#1,c6#8,c6#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q22|c3#5,adr17#3,adr12#2,adr17#2,adr12#1": {
+      "sig": "c3#5,adr17#3,adr12#2,adr17#2,adr12#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q23|mp#4,c8#0,mp#1,c2#5,adr17#1": {
+      "sig": "mp#4,c8#0,mp#1,c2#5,adr17#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q24|mp#5,mp#3,c1#6,c5#6,c8#0": {
+      "sig": "mp#5,mp#3,c1#6,c5#6,c8#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q25|c2#5,adr12#1,adr12#2,c6#5,c6#6": {
+      "sig": "c2#5,adr12#1,adr12#2,c6#5,c6#6",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q26|a1#3,a2#3,a3#3,a1#1,adr15#2": {
+      "sig": "a1#3,a2#3,a3#3,a1#1,adr15#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q27|mp#2,adr22#0,c3#6,mp#5,c1#6": {
+      "sig": "mp#2,adr22#0,c3#6,mp#5,c1#6",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q28|c8#0,mp#6,c3#2,c4#2,c7#2": {
+      "sig": "c8#0,mp#6,c3#2,c4#2,c7#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q29|c1#1,c8#0,mp#1,c2#1,c5#1": {
+      "sig": "c1#1,c8#0,mp#1,c2#1,c5#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q30|c3#2,a2#2,a1#2,a3#2,mp#6": {
+      "sig": "c3#2,a2#2,a1#2,a3#2,mp#6",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q31|c8#0,c2#1,c6#1,c7#1,c5#1": {
+      "sig": "c8#0,c2#1,c6#1,c7#1,c5#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q32|c7#2,c7#0,a2#4,a1#4,a3#4": {
+      "sig": "c7#2,c7#0,a2#4,a1#4,a3#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q33|mp#1,c2#1,c8#0,c2#0,c4#1": {
+      "sig": "mp#1,c2#1,c8#0,c2#0,c4#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q34|c8#0,mp#1,c2#1,c5#1,c4#1": {
+      "sig": "c8#0,mp#1,c2#1,c5#1,c4#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q35|c8#0,c2#1,c5#1,c1#1,c3#1": {
+      "sig": "c8#0,c2#1,c5#1,c1#1,c3#1",
+      "score": 0,
+      "note": "Không có đoạn mp#1 chứa 15.648.000; chỉ tổng giá trị các HĐ khác."
+    },
+    "q36|mp#1,c8#0,c1#6,c5#6,mp#3": {
+      "sig": "mp#1,c8#0,c1#6,c5#6,mp#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q37|mp#3,adr15#2,mp#5,c1#6,c5#6": {
+      "sig": "mp#3,adr15#2,mp#5,c1#6,c5#6",
+      "score": 0,
+      "note": "Không có Mở đầu mp#0 chứa ngày ký 16/10/2026."
+    },
+    "q38|mp#2,c8#0,c2#4,adr17#3,mp#3": {
+      "sig": "mp#2,c8#0,c2#4,adr17#3,mp#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q39|mp#3,mp#1,c8#0,mp#2,adr22#0": {
+      "sig": "mp#3,mp#1,c8#0,mp#2,adr22#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q40|a3#3,c4#1,adr15#2,adr15#0,c8#0": {
+      "sig": "a3#3,c4#1,adr15#2,adr15#0,c8#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q41|c5#2,c4#2,c7#2,c1#2,c3#2": {
+      "sig": "c5#2,c4#2,c7#2,c1#2,c3#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q42|c2#1,c8#0,c6#1,c5#1,mp#1": {
+      "sig": "c2#1,c8#0,c6#1,c5#1,mp#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q43|c6#1,c2#1,c6#0,c6#2,c6#8": {
+      "sig": "c6#1,c2#1,c6#0,c6#2,c6#8",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q44|c3#4,adr21#0,adr24#1,adr24#0,adr12#2": {
+      "sig": "c3#4,adr21#0,adr24#1,adr24#0,adr12#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q45|c5#0,mp#0,c1#0,c4#0,c1#1": {
+      "sig": "c5#0,mp#0,c1#0,c4#0,c1#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q46|mp#5,c3#6,adr16#0,c4#6,adr16#1": {
+      "sig": "mp#5,c3#6,adr16#0,c4#6,adr16#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q47|a1#3,c1#1,c5#1,mp#1,a1#1": {
+      "sig": "a1#3,c1#1,c5#1,mp#1,a1#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q48|a1#3,c1#2,c8#0,c1#3,c4#2": {
+      "sig": "a1#3,c1#2,c8#0,c1#3,c4#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q49|c2#2,a2#3,c7#2,c8#0,c4#2": {
+      "sig": "c2#2,a2#3,c7#2,c8#0,c4#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q50|c8#0,c4#2,c5#2,c7#2,c1#2": {
+      "sig": "c8#0,c4#2,c5#2,c7#2,c1#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q51|a1#3,c5#1,c1#1,mp#1,adr17#2": {
+      "sig": "a1#3,c5#1,c1#1,mp#1,adr17#2",
+      "score": 1,
+      "note": "Có bảng hàng c1#1, c5#1 (Phương Nam, carton) nhưng thiếu điều thời hạn ⇒ không nêu được ngày hết hạn."
+    },
+    "q52|c8#0,c2#1,c6#1,adr17#1,c5#1": {
+      "sig": "c8#0,c2#1,c6#1,adr17#1,c5#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q53|c2#1,c6#1,c8#0,adr12#3,c4#0": {
+      "sig": "c2#1,c6#1,c8#0,adr12#3,c4#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q54|a3#3,c4#6,c4#0,a3#2,c4#1": {
+      "sig": "a3#3,c4#6,c4#0,a3#2,c4#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q55|c5#1,mp#1,c5#6,c8#0,c5#8": {
+      "sig": "c5#1,mp#1,c5#6,c8#0,c5#8",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q56|c8#0,c2#6,mp#5,c1#6,c5#6": {
+      "sig": "c8#0,c2#6,mp#5,c1#6,c5#6",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q57|c4#1,adr21#0,mp#1,adr16#0,adr27#0": {
+      "sig": "c4#1,adr21#0,mp#1,adr16#0,adr27#0",
+      "score": 1,
+      "note": "Có c4#1 (180 triệu, Lạc Hồng); thiếu HĐ vận chuyển Sao Việt (c3)."
+    },
+    "q58|c8#0,c2#0,c7#0,c2#1,a2#2": {
+      "sig": "c8#0,c2#0,c7#0,c2#1,a2#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q59|adr24#1,adr27#0,c1#8,c5#8,c5#2": {
+      "sig": "adr24#1,adr27#0,c1#8,c5#8,c5#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q60|c6#0,c6#1,c6#2,c6#3,c6#4": {
+      "sig": "c6#0,c6#1,c6#2,c6#3,c6#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q61|c8#0,mp#1,c2#1,c5#1,c1#1": {
+      "sig": "c8#0,mp#1,c2#1,c5#1,c1#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q62|adr22#0,c4#3,c2#3,c7#3,c1#3": {
+      "sig": "adr22#0,c4#3,c2#3,c7#3,c1#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q63|mp#1,adr27#0,c8#0,adr16#0,c2#1": {
+      "sig": "mp#1,adr27#0,c8#0,adr16#0,c2#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q64|adr12#1,adr12#0,adr12#3,adr12#2,adr27#0": {
+      "sig": "adr12#1,adr12#0,adr12#3,adr12#2,adr27#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q65|adr21#0,adr12#0,adr17#1,adr12#2,adr12#3": {
+      "sig": "adr21#0,adr12#0,adr17#1,adr12#2,adr12#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q66|adr12#2,adr21#0,adr12#3,adr24#1,adr12#0": {
+      "sig": "adr12#2,adr21#0,adr12#3,adr24#1,adr12#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q67|adr12#2,adr21#0,adr12#1,adr12#3,adr12#0": {
+      "sig": "adr12#2,adr21#0,adr12#1,adr12#3,adr12#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q68|adr15#1,adr15#0,adr15#2,adr15#3,adr12#3": {
+      "sig": "adr15#1,adr15#0,adr15#2,adr15#3,adr12#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q69|adr15#2,adr15#0,adr19#0,adr15#1,adr15#3": {
+      "sig": "adr15#2,adr15#0,adr19#0,adr15#1,adr15#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q70|adr16#0,adr16#1,adr15#3,adr21#0,adr15#2": {
+      "sig": "adr16#0,adr16#1,adr15#3,adr21#0,adr15#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q71|adr16#0,adr16#1,adr22#0,adr18#0,adr21#0": {
+      "sig": "adr16#0,adr16#1,adr22#0,adr18#0,adr21#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q72|adr18#0,adr19#0,adr16#0,adr16#1,adr22#0": {
+      "sig": "adr18#0,adr19#0,adr16#0,adr16#1,adr22#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q73|adr18#0,adr15#2,adr27#0,adr15#0,adr12#1": {
+      "sig": "adr18#0,adr15#2,adr27#0,adr15#0,adr12#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q74|adr19#0,adr22#0,adr12#2,adr17#0,adr17#4": {
+      "sig": "adr19#0,adr22#0,adr12#2,adr17#0,adr17#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q75|adr20#0,adr22#0,adr19#0,adr12#3,adr17#1": {
+      "sig": "adr20#0,adr22#0,adr19#0,adr12#3,adr17#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q76|adr22#0,adr12#3,adr16#0,adr19#0,adr21#0": {
+      "sig": "adr22#0,adr12#3,adr16#0,adr19#0,adr21#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q77|adr22#0,adr17#3,adr17#1,adr17#2,adr17#0": {
+      "sig": "adr22#0,adr17#3,adr17#1,adr17#2,adr17#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q78|adr24#1,adr24#0,adr24#3,adr24#2,adr27#0": {
+      "sig": "adr24#1,adr24#0,adr24#3,adr24#2,adr27#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q79|adr24#3,adr24#1,adr24#2,adr24#0,adr12#1": {
+      "sig": "adr24#3,adr24#1,adr24#2,adr24#0,adr12#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q80|adr27#0,adr27#1,adr12#3,adr24#0,adr24#1": {
+      "sig": "adr27#0,adr27#1,adr12#3,adr24#0,adr24#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q81|adr17#2,adr17#1,adr17#3,adr17#4,adr17#0": {
+      "sig": "adr17#2,adr17#1,adr17#3,adr17#4,adr17#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q82|adr17#2,adr17#3,adr17#1,adr17#0,adr17#4": {
+      "sig": "adr17#2,adr17#3,adr17#1,adr17#0,adr17#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q83|adr21#0,adr16#0,adr27#0,adr12#3,adr15#2": {
+      "sig": "adr21#0,adr16#0,adr27#0,adr12#3,adr15#2",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q84|adr12#3,adr12#1,adr21#0,adr12#0,adr27#0": {
+      "sig": "adr12#3,adr12#1,adr21#0,adr12#0,adr27#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q85|adr16#0,adr16#1,adr21#0,adr24#0,adr20#0": {
+      "sig": "adr16#0,adr16#1,adr21#0,adr24#0,adr20#0",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q86|adr18#0,adr21#0,adr16#0,adr24#0,adr17#3": {
+      "sig": "adr18#0,adr21#0,adr16#0,adr24#0,adr17#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q87|adr12#2,adr12#3,adr12#0,adr12#1,adr15#3": {
+      "sig": "adr12#2,adr12#3,adr12#0,adr12#1,adr15#3",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q88|adr17#2,adr15#2,adr17#1,mp#0,c4#1": {
+      "sig": "adr17#2,adr15#2,adr17#1,mp#0,c4#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q89|adr24#1,adr15#2,adr27#0,adr12#3,adr15#1": {
+      "sig": "adr24#1,adr15#2,adr27#0,adr12#3,adr15#1",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    },
+    "q90|adr12#3,adr15#0,adr21#0,adr17#2,c3#4": {
+      "sig": "adr12#3,adr15#0,adr21#0,adr17#2,c3#4",
+      "score": 2,
+      "note": "Ngữ cảnh top-5 (tiêu đề + thân) đủ mọi ý đáp án vàng / no_answer: không có thông tin gây trả lời bịa, không lộ tenant B."
+    }
+  }
+}

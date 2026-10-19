@@ -12,6 +12,7 @@ import { FileboxClient } from "../attachments/filebox.client";
 import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { cksModule } from "./contracts/cks/cks.mount";
@@ -72,6 +73,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f
   if (d.db && (d.packs?.contracts ?? true)) mountContracts(app, { ...d, db: d.db }, view, fb);
+  if (d.db) mountKnowledge(d.db, d.packTools); // N4 · tool `knowledge-search/get/add`
   rejectToolCollisions(d);
   return view;
 }

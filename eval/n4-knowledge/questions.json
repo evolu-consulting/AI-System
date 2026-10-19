@@ -1,0 +1,856 @@
+{
+  "version": "0.11",
+  "note": "Bộ câu hỏi tiếng Việt eval 0.11 (N4, ADR-0021). Claude viết câu hỏi + đáp án từ kho corpus.json. gold = danh sách NHÓM; mỗi nhóm = các đoạn thay thế nhau (đoạn của `doc` chứa chuỗi `has`, so khớp không dấu); recall@k = tỉ lệ nhóm có ≥ 1 đoạn trong top-k. facts = các ý đáp án (mỗi ý là danh sách cách viết tương đương) cho kiểm tự động. kind: fact | clause | number_date | multi_hop | no_answer.",
+  "questions": [
+    {
+      "id": "q01",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Bên bán trong hợp đồng số 01/2026/HĐMB-PN là công ty nào?",
+      "answer": "Công ty TNHH Bao Bì Phương Nam.",
+      "facts": [["Phương Nam"]],
+      "gold": [[{ "doc": "c1", "has": "Bao Bì Phương Nam" }]]
+    },
+    {
+      "id": "q02",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Mã số thuế của Công ty Cổ phần Nhựa Đông Á là gì?",
+      "answer": "0109876543.",
+      "facts": [["0109876543"]],
+      "gold": [
+        [
+          { "doc": "c2", "has": "0109876543" },
+          { "doc": "c7", "has": "0109876543" },
+          { "doc": "c8", "has": "0109876543" }
+        ]
+      ]
+    },
+    {
+      "id": "q03",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Ai là người đại diện của Công ty TNHH Vận tải Sao Việt?",
+      "answer": "Ông/Bà Phạm Quốc Hưng.",
+      "facts": [["Phạm Quốc Hưng"]],
+      "gold": [[{ "doc": "c3", "has": "Phạm Quốc Hưng" }]]
+    },
+    {
+      "id": "q04",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Công ty TNHH Phần mềm Lạc Hồng có địa chỉ ở đâu?",
+      "answer": "88 Cách Mạng Tháng Tám, Quận 3, TP. Hồ Chí Minh.",
+      "facts": [["88 Cách Mạng Tháng Tám"]],
+      "gold": [[{ "doc": "c4", "has": "88 Cách Mạng Tháng Tám" }]]
+    },
+    {
+      "id": "q05",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Hộ kinh doanh Minh Tâm đặt ở đâu?",
+      "answer": "Chợ Bình Tây, Quận 6, TP. Hồ Chí Minh.",
+      "facts": [["Chợ Bình Tây"]],
+      "gold": [[{ "doc": "c6", "has": "Chợ Bình Tây" }]]
+    },
+    {
+      "id": "q06",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Bên mua trong hợp đồng BB-MP-2026-27 là ai?",
+      "answer": "Công ty An Nam (MST 0999000001).",
+      "facts": [["An Nam"]],
+      "gold": [[{ "doc": "mp", "has": "CÔNG TY AN NAM" }]]
+    },
+    {
+      "id": "q07",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Số tài khoản ngân hàng của Công ty TNHH Bao Bì Minh Phát là gì?",
+      "answer": "0071001234567 tại Vietcombank CN Bình Tân.",
+      "facts": [["0071001234567"]],
+      "gold": [[{ "doc": "mp", "has": "0071001234567" }]]
+    },
+    {
+      "id": "q08",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Hợp đồng vận chuyển với Sao Việt dùng loại xe gì?",
+      "answer": "Xe 2,5 tấn (vận chuyển nội thành, tính theo chuyến).",
+      "facts": [["2,5 tấn"]],
+      "gold": [[{ "doc": "c3", "has": "xe 2,5 tấn" }]]
+    },
+    {
+      "id": "q09",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Phụ lục PL01-07/2026/HĐDV-LH kèm theo hợp đồng nào?",
+      "answer": "Hợp đồng số 07/2026/HĐDV-LH (phần mềm Lạc Hồng).",
+      "facts": [["07/2026/HĐDV-LH"]],
+      "gold": [[{ "doc": "a3", "has": "Kèm theo Hợp đồng số 07/2026/HĐDV-LH" }]]
+    },
+    {
+      "id": "q10",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Hợp đồng 14/2026/HĐMB-DA2 giao hàng ở đâu?",
+      "answer": "Tại kho Bên A ở Long An.",
+      "facts": [["Long An"]],
+      "gold": [[{ "doc": "c8", "has": "Long An" }]]
+    },
+    {
+      "id": "q11",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Ai đại diện bên bán ký hợp đồng bao bì Minh Phát và giữ chức vụ gì?",
+      "answer": "Ông Trần Quốc Minh, Giám đốc.",
+      "facts": [["Trần Quốc Minh"], ["Giám đốc"]],
+      "gold": [[{ "doc": "mp", "has": "Trần Quốc Minh – Chức vụ: Giám đốc" }]]
+    },
+    {
+      "id": "q12",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Hợp đồng nguyên tắc với Nhựa Đông Á xác định hàng hóa và đơn giá thế nào?",
+      "answer": "Theo từng đơn đặt hàng; giá chưa gồm thuế GTGT 10%.",
+      "facts": [["từng đơn đặt hàng"]],
+      "gold": [[{ "doc": "c7", "has": "được xác định theo từng đơn đặt hàng" }]]
+    },
+    {
+      "id": "q13",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Mã hàng của màng co PE trong hợp đồng với Phương Nam là gì?",
+      "answer": "MC-PE25 (màng co PE 25 micron).",
+      "facts": [["MC-PE25"]],
+      "gold": [[{ "doc": "c1", "has": "MC-PE25" }]]
+    },
+    {
+      "id": "q14",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Lạc Hồng cung cấp bản quyền phần mềm gì và cho bao nhiêu người dùng?",
+      "answer": "Phần mềm quản lý kho, gói 50 người dùng.",
+      "facts": [["quản lý kho"], ["50 người dùng"]],
+      "gold": [[{ "doc": "c4", "has": "gói 50 người dùng" }]]
+    },
+    {
+      "id": "q15",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Điều khoản bảo hành trong hợp đồng 01/2026/HĐMB-PN quy định gì?",
+      "answer": "Bên B đổi mới hàng lỗi trong vòng 30 ngày kể từ ngày giao.",
+      "facts": [["đổi mới hàng lỗi"], ["30 ngày"]],
+      "gold": [[{ "doc": "c1", "has": "đổi mới hàng lỗi" }]]
+    },
+    {
+      "id": "q16",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Điều khoản phạt vi phạm của hợp đồng vận chuyển với Sao Việt là gì?",
+      "answer": "Phạt 2.000.000 đồng cho mỗi lần trễ chuyến quá 2 giờ.",
+      "facts": [["2.000.000"], ["quá 2 giờ"]],
+      "gold": [[{ "doc": "c3", "has": "2.000.000 đồng cho mỗi lần" }]]
+    },
+    {
+      "id": "q17",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Tranh chấp trong hợp đồng Minh Phát được giải quyết thế nào?",
+      "answer": "Thương lượng; không thành thì đưa ra Tòa án nhân dân TP. HCM.",
+      "facts": [["thương lượng"], ["Toà án", "Tòa án"]],
+      "gold": [[{ "doc": "mp", "has": "giải quyết bằng thương lượng" }]]
+    },
+    {
+      "id": "q18",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Lạc Hồng cam kết hệ thống phần mềm hoạt động bao nhiêu phần trăm thời gian?",
+      "answer": "99,5% thời gian mỗi tháng.",
+      "facts": [["99,5%"]],
+      "gold": [[{ "doc": "c4", "has": "99,5%" }]]
+    },
+    {
+      "id": "q19",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Nếu phần mềm ngừng vượt mức cam kết thì Lạc Hồng bị phạt thế nào?",
+      "answer": "Mỗi 0,1% thời gian ngừng vượt mức được giảm 5% phí tháng đó.",
+      "facts": [["0,1%"], ["5% phí"]],
+      "gold": [[{ "doc": "c4", "has": "giảm 5% phí" }]]
+    },
+    {
+      "id": "q20",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Điều khoản thanh toán của hợp đồng 02/2026/HĐMB-DA là gì?",
+      "answer": "Thanh toán 50% khi đặt hàng, 50% còn lại trong 15 ngày sau khi giao hàng.",
+      "facts": [["50% khi đặt hàng"], ["15 ngày"]],
+      "gold": [[{ "doc": "c2", "has": "50% khi đặt hàng" }]]
+    },
+    {
+      "id": "q21",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Hợp đồng với Hộ kinh doanh Minh Tâm thanh toán bằng hình thức nào?",
+      "answer": "Thanh toán tiền mặt khi nhận hàng.",
+      "facts": [["tiền mặt"]],
+      "gold": [[{ "doc": "c6", "has": "tiền mặt" }]]
+    },
+    {
+      "id": "q22",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Khi hàng hư hỏng do lỗi vận chuyển, Sao Việt phải làm gì?",
+      "answer": "Bồi thường toàn bộ giá trị hàng hư hỏng.",
+      "facts": [["bồi thường toàn bộ"]],
+      "gold": [[{ "doc": "c3", "has": "bồi thường toàn bộ" }]]
+    },
+    {
+      "id": "q23",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Theo hợp đồng Minh Phát, hàng lỗi, móp hoặc sai màu in được đổi trong bao lâu?",
+      "answer": "Trong 7 ngày kể từ khi Bên B báo.",
+      "facts": [["7 ngày"]],
+      "gold": [[{ "doc": "mp", "has": "đổi trong 7 ngày" }]]
+    },
+    {
+      "id": "q24",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Bên mua thanh toán trễ trong hợp đồng Minh Phát chịu lãi chậm trả bao nhiêu?",
+      "answer": "0,05%/ngày trên số tiền chậm trả.",
+      "facts": [["0,05%"]],
+      "gold": [[{ "doc": "mp", "has": "0,05%/ngày" }]]
+    },
+    {
+      "id": "q25",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Hợp đồng 02/2026/HĐMB-DA có áp dụng bảo hành không?",
+      "answer": "Không áp dụng bảo hành; hàng lỗi được đổi khi phát hiện lúc nhận.",
+      "facts": [["Không áp dụng bảo hành"]],
+      "gold": [[{ "doc": "c2", "has": "Không áp dụng bảo hành" }]]
+    },
+    {
+      "id": "q26",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Phụ lục PL01-01/2026/HĐMB-PN sửa đổi những nội dung gì?",
+      "answer": "Đơn giá thùng carton CT5L-60 thành 8.900 đồng/thùng từ 01/07/2026 và thời hạn thanh toán thành 45 ngày.",
+      "facts": [["8.900"], ["45 ngày"]],
+      "gold": [[{ "doc": "a1", "has": "8.900" }]]
+    },
+    {
+      "id": "q27",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Ai chịu chi phí vận chuyển trong hợp đồng Minh Phát?",
+      "answer": "Bên A (bên bán Minh Phát) chịu chi phí vận chuyển.",
+      "facts": [["Bên A chịu"]],
+      "gold": [[{ "doc": "mp", "has": "Chi phí vận chuyển do Bên A chịu" }]]
+    },
+    {
+      "id": "q28",
+      "kind": "clause",
+      "corpus": "contracts",
+      "q": "Hợp đồng Minh Phát hết hạn mà không gia hạn bằng văn bản thì sao?",
+      "answer": "Hợp đồng tự thanh lý.",
+      "facts": [["tự thanh lý"]],
+      "gold": [[{ "doc": "mp", "has": "tự thanh lý" }]]
+    },
+    {
+      "id": "q29",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Tổng giá trị hợp đồng 01/2026/HĐMB-PN chưa gồm thuế là bao nhiêu?",
+      "answer": "245.000.000 đồng.",
+      "facts": [["245.000.000"]],
+      "gold": [[{ "doc": "c1", "has": "245.000.000" }]]
+    },
+    {
+      "id": "q30",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Hợp đồng 05/2026/HĐDV-SV có hiệu lực từ ngày nào đến ngày nào?",
+      "answer": "Từ 01/04/2026 đến hết 30/09/2026.",
+      "facts": [["01/04/2026"], ["30/09/2026"]],
+      "gold": [[{ "doc": "c3", "has": "30/09/2026" }]]
+    },
+    {
+      "id": "q31",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Đơn giá chai nhựa PET 500ml trong hợp đồng 14/2026/HĐMB-DA2 là bao nhiêu?",
+      "answer": "1.150 đồng/chai.",
+      "facts": [["1.150"]],
+      "gold": [[{ "doc": "c8", "has": "1.150" }]]
+    },
+    {
+      "id": "q32",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Hợp đồng nguyên tắc 12/2026/HĐNT-DA có hiệu lực đến khi nào?",
+      "answer": "Đến hết 31/07/2028, sau đó tự động gia hạn 12 tháng nếu không bên nào thông báo chấm dứt.",
+      "facts": [["31/07/2028"]],
+      "gold": [[{ "doc": "c7", "has": "31/07/2028" }]]
+    },
+    {
+      "id": "q33",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Thuế GTGT của hợp đồng 02/2026/HĐMB-DA là bao nhiêu phần trăm?",
+      "answer": "10%.",
+      "facts": [["10%"]],
+      "gold": [[{ "doc": "c2", "has": "Thuế GTGT 10%" }]]
+    },
+    {
+      "id": "q34",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Tổng giá trị hợp đồng Minh Phát sau thuế là bao nhiêu?",
+      "answer": "211.248.000 đồng.",
+      "facts": [["211.248.000"]],
+      "gold": [[{ "doc": "mp", "has": "211.248.000" }]]
+    },
+    {
+      "id": "q35",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Tiền thuế GTGT trong hợp đồng Minh Phát là bao nhiêu?",
+      "answer": "15.648.000 đồng (8%).",
+      "facts": [["15.648.000"]],
+      "gold": [[{ "doc": "mp", "has": "15.648.000" }]]
+    },
+    {
+      "id": "q36",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Đơn giá túi giấy kraft trong hợp đồng Minh Phát là bao nhiêu?",
+      "answer": "2.900 đồng/cái.",
+      "facts": [["2.900"]],
+      "gold": [[{ "doc": "mp", "has": "Túi giấy kraft" }]]
+    },
+    {
+      "id": "q37",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Hợp đồng Minh Phát được ký ngày nào?",
+      "answer": "Ngày 16/10/2026.",
+      "facts": [["16 tháng 10 năm 2026", "16/10/2026"]],
+      "gold": [[{ "doc": "mp", "has": "ngày 16 tháng 10 năm 2026" }]]
+    },
+    {
+      "id": "q38",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Đợt 1 giao hàng của hợp đồng Minh Phát phải xong trước ngày nào?",
+      "answer": "Trước ngày 05/11/2026 (50% số lượng).",
+      "facts": [["05/11/2026"]],
+      "gold": [[{ "doc": "mp", "has": "05/11/2026" }]]
+    },
+    {
+      "id": "q39",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Đợt tạm ứng đầu tiên của hợp đồng Minh Phát là bao nhiêu phần trăm và hạn khi nào?",
+      "answer": "30% giá trị hợp đồng, trong 5 ngày kể từ ngày ký.",
+      "facts": [["30%"], ["5 ngày"]],
+      "gold": [[{ "doc": "mp", "has": "tạm ứng 30%" }]]
+    },
+    {
+      "id": "q40",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Phí bản quyền phần mềm quản lý kho sau điều chỉnh là bao nhiêu mỗi tháng?",
+      "answer": "16.500.000 đồng/tháng từ 01/08/2026.",
+      "facts": [["16.500.000"]],
+      "gold": [[{ "doc": "a3", "has": "16.500.000" }]]
+    },
+    {
+      "id": "q41",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Hợp đồng 09/2026/HĐMB-PN2 hết hạn ngày nào?",
+      "answer": "Hết ngày 30/11/2026.",
+      "facts": [["30 tháng 11 năm 2026", "30/11/2026"]],
+      "gold": [[{ "doc": "c5", "has": "30 tháng 11 năm 2026" }]]
+    },
+    {
+      "id": "q42",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Số lượng chai PET500 trong hợp đồng 02/2026/HĐMB-DA là bao nhiêu?",
+      "answer": "200.000 chai.",
+      "facts": [["200.000"]],
+      "gold": [[{ "doc": "c2", "has": "PET500" }]]
+    },
+    {
+      "id": "q43",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Đơn giá nắp chai phi 28 mua của Hộ kinh doanh Minh Tâm là bao nhiêu?",
+      "answer": "140 đồng/cái.",
+      "facts": [["140"]],
+      "gold": [[{ "doc": "c6", "has": "100.000 | 140" }]]
+    },
+    {
+      "id": "q44",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Sao Việt phải bố trí xe trong bao lâu kể từ khi nhận yêu cầu?",
+      "answer": "Trong vòng 4 giờ.",
+      "facts": [["4 giờ"]],
+      "gold": [[{ "doc": "c3", "has": "trong vòng 4 giờ" }]]
+    },
+    {
+      "id": "q45",
+      "kind": "fact",
+      "corpus": "contracts",
+      "q": "Mã số thuế của Công ty An Nam là gì?",
+      "answer": "0999000001.",
+      "facts": [["0999000001"]],
+      "gold": [[{ "doc": "mp", "has": "0999000001" }]]
+    },
+    {
+      "id": "q46",
+      "kind": "number_date",
+      "corpus": "contracts",
+      "q": "Mức phạt giao trễ tối đa trong hợp đồng Minh Phát là bao nhiêu?",
+      "answer": "0,3% giá trị phần hàng giao trễ mỗi ngày, tối đa 8% giá trị phần hàng đó.",
+      "facts": [["0,3%"], ["8%"]],
+      "gold": [[{ "doc": "mp", "has": "0,3%" }]]
+    },
+    {
+      "id": "q47",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Giá thùng carton CT5L-60 hiện hành của hợp đồng 01/2026/HĐMB-PN sau phụ lục là bao nhiêu?",
+      "answer": "8.900 đồng/thùng (phụ lục PL01-01 sửa từ 8.500, áp dụng từ 01/07/2026).",
+      "facts": [["8.900"]],
+      "gold": [[{ "doc": "a1", "has": "8.900" }], [{ "doc": "c1", "has": "CT5L-60" }]]
+    },
+    {
+      "id": "q48",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Thời hạn thanh toán hiện hành của hợp đồng 01/2026/HĐMB-PN là bao nhiêu ngày?",
+      "answer": "45 ngày (phụ lục PL01-01 sửa từ 30 ngày).",
+      "facts": [["45"]],
+      "gold": [
+        [{ "doc": "a1", "has": "45 ngày" }],
+        [{ "doc": "c1", "has": "trong vòng 30 ngày kể từ ngày nhận hóa đơn" }]
+      ]
+    },
+    {
+      "id": "q49",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Hợp đồng 02/2026/HĐMB-DA với Nhựa Đông Á hiện hết hạn khi nào?",
+      "answer": "Hết ngày 31/07/2027 theo phụ lục PL01-02 (gốc là 31/01/2027).",
+      "facts": [["31/07/2027"]],
+      "gold": [[{ "doc": "a2", "has": "31/07/2027" }], [{ "doc": "c2", "has": "31/01/2027" }]]
+    },
+    {
+      "id": "q50",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Những hợp đồng nào tự động gia hạn và phải báo trước bao nhiêu ngày?",
+      "answer": "07/2026/HĐDV-LH (báo trước 60 ngày) và 12/2026/HĐNT-DA (báo trước 90 ngày).",
+      "facts": [["07/2026/HĐDV-LH"], ["60 ngày"], ["12/2026/HĐNT-DA"], ["90 ngày"]],
+      "gold": [
+        [{ "doc": "c4", "has": "tự động gia hạn" }],
+        [{ "doc": "c7", "has": "tự động gia hạn" }]
+      ]
+    },
+    {
+      "id": "q51",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Nhà cung cấp nào bán thùng carton 5 lớp cho An Khang và các hợp đồng đó hết hạn khi nào?",
+      "answer": "Bao Bì Phương Nam: hợp đồng 01/2026/HĐMB-PN hết 31/12/2026 và 09/2026/HĐMB-PN2 hết 30/11/2026.",
+      "facts": [["Phương Nam"], ["31/12/2026"], ["30 tháng 11 năm 2026", "30/11/2026"]],
+      "gold": [
+        [{ "doc": "c1", "has": "Thùng carton 5 lớp" }],
+        [{ "doc": "c5", "has": "Thùng carton 5 lớp" }]
+      ]
+    },
+    {
+      "id": "q52",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "So sánh đơn giá chai PET500 giữa hợp đồng 02/2026/HĐMB-DA và 14/2026/HĐMB-DA2.",
+      "answer": "1.200 đồng/chai (02/2026) so với 1.150 đồng/chai (14/2026), rẻ hơn 50 đồng.",
+      "facts": [["1.200"], ["1.150"]],
+      "gold": [[{ "doc": "c2", "has": "1.200" }], [{ "doc": "c8", "has": "1.150" }]]
+    },
+    {
+      "id": "q53",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "An Khang mua nắp chai phi 28 từ những nhà cung cấp nào, giá bao nhiêu?",
+      "answer": "Nhựa Đông Á 150 đồng/cái (02/2026/HĐMB-DA) và Hộ kinh doanh Minh Tâm 140 đồng/cái (11/2026/HĐMB-MT).",
+      "facts": [["150"], ["140"]],
+      "gold": [[{ "doc": "c2", "has": "Nắp chai" }], [{ "doc": "c6", "has": "Nắp chai" }]]
+    },
+    {
+      "id": "q54",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Phí phần mềm Lạc Hồng tăng bao nhiêu so với hợp đồng gốc?",
+      "answer": "Từ 15.000.000 lên 16.500.000 đồng/tháng, tăng 1.500.000 đồng/tháng (từ 01/08/2026).",
+      "facts": [["15.000.000"], ["16.500.000"]],
+      "gold": [[{ "doc": "c4", "has": "15.000.000" }], [{ "doc": "a3", "has": "16.500.000" }]]
+    },
+    {
+      "id": "q55",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Giá băng keo đóng thùng 48mm x 100y trong hợp đồng 09/2026/HĐMB-PN2 và hợp đồng Minh Phát khác nhau thế nào?",
+      "answer": "25.000 đồng/cuộn (Phương Nam) so với 18.000 đồng/cuộn (Minh Phát).",
+      "facts": [["25.000"], ["18.000"]],
+      "gold": [[{ "doc": "c5", "has": "Băng keo" }], [{ "doc": "mp", "has": "Băng keo" }]]
+    },
+    {
+      "id": "q56",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Những hợp đồng nào phạt 8% giá trị phần hợp đồng bị vi phạm?",
+      "answer": "02/2026/HĐMB-DA và 14/2026/HĐMB-DA2 (đều với Nhựa Đông Á).",
+      "facts": [["02/2026/HĐMB-DA"], ["14/2026/HĐMB-DA2"]],
+      "gold": [[{ "doc": "c2", "has": "Phạt 8%" }], [{ "doc": "c8", "has": "Phạt 8%" }]]
+    },
+    {
+      "id": "q57",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "Hợp đồng dịch vụ nào của An Khang có giá trị 180 triệu đồng?",
+      "answer": "Vận chuyển Sao Việt 05/2026/HĐDV-SV và phần mềm Lạc Hồng 07/2026/HĐDV-LH.",
+      "facts": [["Sao Việt", "05/2026/HĐDV-SV"], ["Lạc Hồng", "07/2026/HĐDV-LH"]],
+      "gold": [[{ "doc": "c3", "has": "180.000.000" }], [{ "doc": "c4", "has": "180 triệu" }]]
+    },
+    {
+      "id": "q58",
+      "kind": "multi_hop",
+      "corpus": "contracts",
+      "q": "An Khang có những hợp đồng nào với Nhựa Đông Á?",
+      "answer": "02/2026/HĐMB-DA, 12/2026/HĐNT-DA và 14/2026/HĐMB-DA2.",
+      "facts": [["02/2026/HĐMB-DA"], ["12/2026/HĐNT-DA"], ["14/2026/HĐMB-DA2"]],
+      "gold": [
+        [{ "doc": "c2", "has": "Nhựa Đông Á" }],
+        [{ "doc": "c7", "has": "Nhựa Đông Á" }],
+        [{ "doc": "c8", "has": "Nhựa Đông Á" }]
+      ]
+    },
+    {
+      "id": "q59",
+      "kind": "no_answer",
+      "corpus": "contracts",
+      "q": "Hợp đồng với Bao Bì Phương Nam có điều khoản bảo mật thông tin không?",
+      "answer": "Không có điều khoản bảo mật trong các hợp đồng với Phương Nam.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q60",
+      "kind": "no_answer",
+      "corpus": "contracts",
+      "q": "Mã số thuế của Hộ kinh doanh Minh Tâm là gì?",
+      "answer": "Hợp đồng không ghi mã số thuế của Hộ kinh doanh Minh Tâm.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q61",
+      "kind": "no_answer",
+      "corpus": "contracts",
+      "q": "Hợp đồng số 20/2026/HĐMB-XY với Công ty Hoàng Long có giá trị bao nhiêu?",
+      "answer": "Không có hợp đồng này trong kho.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q62",
+      "kind": "no_answer",
+      "corpus": "contracts",
+      "q": "Ai là kế toán trưởng của Công ty Cổ phần Thực phẩm An Khang?",
+      "answer": "Không có thông tin.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q63",
+      "kind": "no_answer",
+      "corpus": "contracts",
+      "q": "Hợp đồng số 99/2026/HĐMB-CANARY với Công ty Canary Bí Mật có giá trị bao nhiêu?",
+      "answer": "Không có (tài liệu này chỉ thuộc tenant B — dò rò rỉ).",
+      "facts": [],
+      "gold": [],
+      "leak_probe": true
+    },
+    {
+      "id": "q64",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Hub gửi khoá cho KnowledgeHub bằng header nào?",
+      "answer": "Header X-KH-Key.",
+      "facts": [["X-KH-Key"]],
+      "gold": [[{ "doc": "adr12", "has": "X-KH-Key" }]]
+    },
+    {
+      "id": "q65",
+      "kind": "number_date",
+      "corpus": "kh",
+      "q": "Mỗi lần gọi kh_query trả tối đa bao nhiêu ký tự và mỗi stage được gọi mấy lần?",
+      "answer": "4000 ký tự mỗi lần, tối đa 5 lần mỗi stage.",
+      "facts": [["4000"], ["5 lần"]],
+      "gold": [
+        [{ "doc": "adr12", "has": "4000/lần" }, { "doc": "adr12", "has": "4000 ký tự × 5 lần" }]
+      ]
+    },
+    {
+      "id": "q66",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Phiên bản KnowledgeHub tối thiểu mà Hub yêu cầu là bao nhiêu?",
+      "answer": "v6.4.",
+      "facts": [["v6.4"]],
+      "gold": [[{ "doc": "adr12", "has": "Phiên bản tối thiểu" }]]
+    },
+    {
+      "id": "q67",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "KnowledgeHub phải dùng embedder nào để giữ được tiếng Việt?",
+      "answer": "Embedder đa ngữ bge-m3 thay cho bge-small-en.",
+      "facts": [["bge-m3"]],
+      "gold": [[{ "doc": "adr12", "has": "bge-m3" }]]
+    },
+    {
+      "id": "q68",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "API của FileBox nằm ở địa chỉ nào?",
+      "answer": "HTTPS 149.202.83.5:9443.",
+      "facts": [["149.202.83.5:9443"]],
+      "gold": [[{ "doc": "adr15", "has": "149.202.83.5:9443" }]]
+    },
+    {
+      "id": "q69",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Link tải /d/… của FileBox có hiệu lực bao lâu và có cần key không?",
+      "answer": "10 phút, không cần key.",
+      "facts": [["10 phút", "10'"], ["không key", "không cần key"]],
+      "gold": [[{ "doc": "adr15", "has": "10 phút, không key" }]]
+    },
+    {
+      "id": "q70",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Theo ADR-0016, dữ liệu giao dịch của gói lưu ở đâu và OpenSearch đóng vai trò gì?",
+      "answer": "Postgres là nguồn chuẩn (có tenant_id, RLS); OpenSearch chỉ là chỉ mục tìm kiếm nạp từ outbox.",
+      "facts": [["Postgres"], ["chỉ mục"]],
+      "gold": [[{ "doc": "adr16", "has": "OpenSearch chỉ là chỉ mục" }]]
+    },
+    {
+      "id": "q71",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Chuyển dữ liệu sang Postgres theo ADR-0016 gồm những bước nào?",
+      "answer": "6 bước: dựng bảng → ghi kép → nạp dữ liệu cũ → đối soát 100% trong 7 ngày → chuyển đọc → tắt ghi cũ.",
+      "facts": [["ghi kép"], ["đối soát"]],
+      "gold": [[{ "doc": "adr16", "has": "Chuyển dữ liệu 6 bước" }]]
+    },
+    {
+      "id": "q72",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Nguồn đăng nhập duy nhất cho mọi gói là gì?",
+      "answer": "admin-api (JWT EdDSA, JWKS).",
+      "facts": [["admin-api"]],
+      "gold": [[{ "doc": "adr18", "has": "admin-api là nguồn đăng nhập duy nhất" }]]
+    },
+    {
+      "id": "q73",
+      "kind": "number_date",
+      "corpus": "kh",
+      "q": "Tắt tài khoản ở IdP thì sau bao lâu người dùng mất quyền?",
+      "answer": "Trong 5 phút.",
+      "facts": [["5 phút"]],
+      "gold": [[{ "doc": "adr18", "has": "mất quyền trong 5 phút" }]]
+    },
+    {
+      "id": "q74",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Cần điều kiện gì trước khi ký khách trả tiền khi agent chạy bằng đăng nhập subscription Claude?",
+      "answer": "Có văn bản duyệt của Anthropic, hoặc tenant đó chạy bằng API key.",
+      "facts": [["văn bản duyệt"], ["API key"]],
+      "gold": [[{ "doc": "adr19", "has": "có văn bản duyệt của Anthropic" }]]
+    },
+    {
+      "id": "q75",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Ở giai đoạn 2, hạ tầng production dự phòng thế nào?",
+      "answer": "Hai node sau reverse proxy; Postgres primary + replica.",
+      "facts": [["Hai node"], ["replica"]],
+      "gold": [[{ "doc": "adr20", "has": "Hai node sau reverse proxy" }]]
+    },
+    {
+      "id": "q76",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Dify phải tuân theo bao nhiêu quy tắc khi làm công cụ AI trong giai đoạn hybrid?",
+      "answer": "Bảy quy tắc (một app một việc AI, không logic nghiệp vụ, chỉ Hub gọi, …).",
+      "facts": [["bảy quy tắc", "7 quy tắc"]],
+      "gold": [[{ "doc": "adr22", "has": "theo bảy quy tắc" }]]
+    },
+    {
+      "id": "q77",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Có được đặt logic nghiệp vụ trong Dify không?",
+      "answer": "Không: không duyệt, không rẽ nhánh nghiệp vụ, không ghi dữ liệu.",
+      "facts": [["Không có logic nghiệp vụ"]],
+      "gold": [[{ "doc": "adr22", "has": "Không có logic nghiệp vụ trong Dify" }]]
+    },
+    {
+      "id": "q78",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Thư viện nào được chọn để đọc DOCX sang Markdown?",
+      "answer": "fflate (giải nén) + saxes (XML SAX) và bộ ghi Markdown tự viết.",
+      "facts": [["fflate"], ["saxes"]],
+      "gold": [
+        [
+          { "doc": "adr24", "has": "phương án B" },
+          { "doc": "adr24", "has": "Thêm `fflate` và `saxes`" }
+        ]
+      ]
+    },
+    {
+      "id": "q79",
+      "kind": "number_date",
+      "corpus": "kh",
+      "q": "Giới hạn số phần zip và dung lượng giải nén khi đọc DOCX là bao nhiêu?",
+      "answer": "≤ 2.000 phần zip; ≤ 100 MB giải nén.",
+      "facts": [["2.000"], ["100 MB"]],
+      "gold": [
+        [
+          { "doc": "adr24", "has": "số phần zip ≤ 2.000" },
+          { "doc": "adr24", "has": "≤ 2.000 phần" }
+        ]
+      ]
+    },
+    {
+      "id": "q80",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Cổng thông báo N3 dùng thư viện email và web push nào, bản nào?",
+      "answer": "nodemailer 10.0.14 và web-push 3.6.7.",
+      "facts": [["nodemailer"], ["web-push"]],
+      "gold": [[{ "doc": "adr27", "has": "10.0.14" }]]
+    },
+    {
+      "id": "q81",
+      "kind": "number_date",
+      "corpus": "kh",
+      "q": "Trên staging, nhắc 10.000 task với một Hub có p95 mỗi lượt là bao nhiêu?",
+      "answer": "p95 1,09 s/lượt (p50 748 ms, 101 lượt lô 100, tổng 77,5 s).",
+      "facts": [["1,09 s"]],
+      "gold": [[{ "doc": "adr17", "has": "p95 1,09 s/lượt" }]]
+    },
+    {
+      "id": "q82",
+      "kind": "clause",
+      "corpus": "kh",
+      "q": "Lỗi nhắc trùng khi chạy hai Hub (TECH-DEBT #190) được sửa thế nào?",
+      "answer": "dueTasks khoá hàng FOR UPDATE SKIP LOCKED và markReminded kiểm rowCount, kèm int test hai Hub.",
+      "facts": [["SKIP LOCKED"], ["rowCount"]],
+      "gold": [[{ "doc": "adr17", "has": "SKIP LOCKED" }]]
+    },
+    {
+      "id": "q83",
+      "kind": "fact",
+      "corpus": "kh",
+      "q": "Neo4j có được giữ trong dịch vụ tri thức mới không?",
+      "answer": "Mặc định bỏ; chỉ giữ khi eval tiếng Việt chứng minh có lợi.",
+      "facts": [["bỏ"], ["eval"]],
+      "gold": [
+        [{ "doc": "adr16", "has": "Neo4j mặc định bỏ" }, { "doc": "adr21", "has": "Graph Neo4j" }]
+      ]
+    },
+    {
+      "id": "q84",
+      "kind": "multi_hop",
+      "corpus": "kh",
+      "q": "KnowledgeHub và dịch vụ tri thức mới khác nhau thế nào về cách ly tenant?",
+      "answer": "KnowledgeHub: Hub không cách ly theo tenant (CR-073, người dùng chấp nhận rủi ro đọc chéo). Dịch vụ mới: truy vấn thiếu tenant bị từ chối, test chéo tenant không lộ đoạn nào.",
+      "facts": [["không cách ly"], ["thiếu tenant bị từ chối"]],
+      "gold": [
+        [{ "doc": "adr12", "has": "không cách ly theo tenant" }],
+        [{ "doc": "adr21", "has": "thiếu tenant bị từ chối" }]
+      ]
+    },
+    {
+      "id": "q85",
+      "kind": "multi_hop",
+      "corpus": "kh",
+      "q": "Theo ADR-0016 và ADR-0021, chỉ mục tìm kiếm và chunk/embedding là dữ liệu gì so với Postgres?",
+      "answer": "Bản dẫn xuất: chỉ mục nạp từ outbox, xoá đi dựng lại được từ Postgres; chunk, embedding, graph là bản dẫn xuất.",
+      "facts": [["dựng lại"], ["dẫn xuất"]],
+      "gold": [
+        [{ "doc": "adr16", "has": "dựng lại được hoàn toàn từ Postgres" }],
+        [{ "doc": "adr21", "has": "bản dẫn xuất" }]
+      ]
+    },
+    {
+      "id": "q86",
+      "kind": "multi_hop",
+      "corpus": "kh",
+      "q": "ADR-0018 và ADR-0021 được người dùng chốt ngày nào?",
+      "answer": "Cả hai ngày 2026-10-18 (CR-094).",
+      "facts": [["2026-10-18"]],
+      "gold": [[{ "doc": "adr18", "has": "2026-10-18" }], [{ "doc": "adr21", "has": "2026-10-18" }]]
+    },
+    {
+      "id": "q87",
+      "kind": "no_answer",
+      "corpus": "kh",
+      "q": "KnowledgeHub có hỗ trợ tìm kiếm bằng hình ảnh không?",
+      "answer": "Không có thông tin.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q88",
+      "kind": "no_answer",
+      "corpus": "kh",
+      "q": "Giá thuê máy chủ staging mỗi tháng là bao nhiêu?",
+      "answer": "Không có thông tin.",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q89",
+      "kind": "no_answer",
+      "corpus": "kh",
+      "q": "Thư viện nào được chọn để đọc file PDF?",
+      "answer": "Không có (ADR-0024 chỉ chọn thư viện cho DOCX; KnowledgeHub không parse PDF).",
+      "facts": [],
+      "gold": []
+    },
+    {
+      "id": "q90",
+      "kind": "no_answer",
+      "corpus": "kh",
+      "q": "Rate-limit của FileBox là bao nhiêu yêu cầu mỗi phút?",
+      "answer": "Không có thông tin (rate-limit 1200/phút/ns là của KnowledgeHub, không phải FileBox).",
+      "facts": [],
+      "gold": []
+    }
+  ]
+}
