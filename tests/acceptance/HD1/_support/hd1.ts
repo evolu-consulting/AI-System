@@ -263,6 +263,7 @@ export async function arrange(c: CtxN1): Promise<void> {
   await truncateAll(c.sql);
   await clearQuota(c.hub.redis);
   c.fb.reset();
+  c.fb.wipe();
   await ensureRoles(c);
 }
 

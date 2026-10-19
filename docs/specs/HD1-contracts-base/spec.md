@@ -94,5 +94,5 @@ Q1–Q8 đóng: D-04…D-09 (Q1–Q6), D-03 (Q7), N1 (Q8).
 [`spec-decisions.md`](spec-decisions.md).
 
 ## 11. Tranh chấp test
-- T10 · `upload.int.test.ts:94` kỳ vọng FileBox POST trả `200`, nhưng FB giả `FB1/_fbfake.ts` trả `201` cho `POST /files` ⇒ đỏ dù code đúng (org/auth khớp). Đề xuất qc: kỳ vọng `201`.
-- T10 · `upload.int.test.ts:244` (`noNew`) và `:416` kỳ vọng `c.fb.ids()` rỗng, nhưng `fb.reset()` (`_fbfake.ts:235`) không xoá `files` ⇒ còn tệp hợp lệ của ca trước trong cùng file. Chạy riêng (`-t "PARENT|ghi DB lỗi"`, từng ca) xanh. Đề xuất qc: so `ids()` trước/sau, hoặc `reset()` xoá `files`.
+- T10 · `upload.int.test.ts:94` kỳ vọng FileBox POST trả `200`, nhưng FB giả `FB1/_fbfake.ts` trả `201` cho `POST /files` ⇒ đỏ dù code đúng (org/auth khớp). Đề xuất qc: kỳ vọng `201`. **CHƯA XỬ (qc 2026-10-19):** `filebox.client.ts:48` ghi FileBox THẬT trả 200 (không 201) còn FB1 spec/giả nói 201 ⇒ mâu thuẫn nguồn; không sửa test, chờ xác nhận hợp đồng thật (curl `POST /files`) rồi sửa giả hoặc test.
+- T10 · `upload.int.test.ts:244` (`noNew`) và `:416` kỳ vọng `c.fb.ids()` rỗng, nhưng `fb.reset()` (`_fbfake.ts:235`) không xoá `files` ⇒ còn tệp hợp lệ của ca trước trong cùng file. Chạy riêng (`-t "PARENT|ghi DB lỗi"`, từng ca) xanh. Đề xuất qc: so `ids()` trước/sau, hoặc `reset()` xoá `files`. **ĐÃ XỬ (qc 2026-10-19):** thêm `fb.wipe()` vào `_fbfake.ts`, `arrange()` (HD1 `_support/hd1.ts`) gọi sau `reset()` — `reset()` giữ nguyên cho FB1.

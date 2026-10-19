@@ -47,6 +47,8 @@ export type FbFake = {
   bytesOf: (fileId: string) => Uint8Array | undefined;
   /** xoá khỏi kho giả mà không ghi `calls` (mô phỏng file mất phía FileBox). */
   vanish: (fileId: string) => void;
+  /** Xoá mọi tệp đã lưu (`reset()` chỉ xoá nhật ký/hàng đợi lỗi) — cho ca cần `ids()` rỗng. */
+  wipe: () => void;
   callsTo: (route: FbRoute) => FbCall[];
   reset: () => void;
   close: () => Promise<void>;
@@ -230,6 +232,9 @@ export function startFbFake(token = "fb-test-token-Zx9Pq7Lm"): FbFake {
     bytesOf: (id) => files.get(id)?.versions.at(-1)?.bytes,
     vanish: (id) => {
       files.delete(id);
+    },
+    wipe: () => {
+      files.clear();
     },
     callsTo: (route) => calls.filter((c) => c.route === route),
     reset: () => {
