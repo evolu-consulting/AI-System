@@ -66,3 +66,16 @@ Làn: **nhanh** (một agent, một reviewer; Luật 1b). Người dùng duyệt
 | e2e chat UC-02 | node nút "Ẩn nhắc" bị thay trong ~0,8 s đầu rồi biến mất ~1,5 s; click Playwright thấy "detached" — nghi QuotaNotice/Composer remount hoặc `quotaOver` tắt khi run kết thúc; frontend-lead điều tra |
 | e2e P-a pf2 CHAT-AC-57 | câu "Chỉ chuyển được cho người cùng nhóm kiểm" xuất hiện hai lần (strict mode) |
 | int `pf1/lock-order` P1-48e | chập chờn: sau apply ∥ sweep, lượt sweep thứ hai bỏ hàng đang bị apply giữ ⇒ run còn `running`; test không chờ apply xong |
+
+## GX2 (2026-10-19) · đóng đỏ còn lại, lát nhanh một agent
+
+Người dùng chốt 2026-10-19 (thẩm quyền đổi test khoá; qc đóng vai, relock chỉ file đổi): "cập nhật test khoá R48/R49/R-K01 và 4 e2e menu Workflows theo sản phẩm đã duyệt; giữ TZ-R02; sửa giao diện nền tối về #0F1020, sửa lỗi nút Ẩn nhắc và câu lặp hai lần".
+
+| File | Đổi gì | Vì sao |
+|---|---|---|
+| `tests/acceptance/H2c/rules/contracts-h2c.test.ts` R48 | `at(-1)==="attachment"` + `toHaveLength(15)` → 15 lý do H2c đúng thứ tự là tiền tố, cho phép lý do thêm sau | P-c1 thêm `container` |
+| cùng file R49 | fixture `SourceApplyJob.*`/`SourceResolveJob.*` ánh xạ sang `SourceApplyJobSchema`/`SourceResolveJobSchema`, không bỏ qua | cố ý không đăng ký trong `HUB_JSON_SCHEMAS` |
+| `tests/acceptance/P-a/step0/rules/contracts-pa.test.ts` R-K01 | `ROOM_PROCESS_KINDS` thêm `branch` ở cuối | P-d2 |
+| `e2e/{conflict-workflows,m2-flow,secrets,workflows}.spec.ts`, `e2e/support/helpers.ts` | DLC-R15: nhóm "Workflows" (Workflow Steps · Workflow Process) thay liên kết; `/workflows` tiêu đề "Workflow Process"; "+ Thêm workflow" → "Workflow Dify"; helper `openWorkflowProcessFromNav` | UI đã duyệt (DLC-R15/R14) |
+
+Giữ nguyên: TZ-R02 (`Asia/Saigon` bị chặn phía server, AC-A14). Sản phẩm sửa: nền tối chat-web `#0f1020` (CR-049); `run-store` giữ trạng thái quota over (UC-02); `ForwardDialog` không lặp câu (CHAT-AC-57). Chi tiết ở `gate.md` mục GX2, nợ #232 đóng, #233 (Bun pin), #234 (chập chờn dưới tải).
