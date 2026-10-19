@@ -1,0 +1,224 @@
+// I1 · use case importer mgmt-app: đọc nguồn ⇒ N5 (org/user) ⇒ tra tenant/user ⇒ dựng kế hoạch ⇒ file ⇒ ghi theo lô (dry-run:
+// chỉ đếm "đã có") ⇒ đối soát. Chạy lại an toàn (id tất định + ON CONFLICT DO NOTHING); `Checkpoint` bỏ qua lô đã xong.
+import { buildPlan } from "../domain/build.rules";
+import type { Ctx } from "../domain/context";
+import { targetId } from "../domain/ids.rules";
+import { managerPairs, memberships, usersExport } from "../domain/map-identity.rules";
+import {
+  bump,
+  G1_TABLES,
+  type Plan,
+  push,
+  type Row,
+  TABLE_ORDER,
+  type TableName,
+} from "../domain/plan";
+import { str } from "../domain/values.rules";
+import { loadSnapshot } from "./load";
+import type {
+  Checkpoint,
+  FileSink,
+  FileSource,
+  IdentityPort,
+  SourceReader,
+  TargetStore,
+  VisibilityProbe,
+} from "./ports";
+import { type ReconcileReport, reconcile } from "./reconcile";
+
+export type ImportOpts = {
+  source: string;
+  apply: boolean;
+  batch: number;
+  /** Org nhận tài liệu tri thức chung (domain=general); null ⇒ không chuyển (đếm ở no_tenant). */
+  knowledgeOrg: string | null;
+  /** Actor (platform admin) — dự phòng `created_by` khi org không có chủ. */
+  actorId: string;
+  withGraph: boolean;
+  diffSample: number;
+};
+export type ImportDeps = {
+  reader: SourceReader;
+  identity: IdentityPort;
+  target: TargetStore;
+  files: { source: FileSource | null; sink: FileSink | null };
+  checkpoint: Checkpoint;
+  visible: VisibilityProbe;
+  now: () => number;
+};
+export type TableCount = { planned: number; inserted: number; existing: number };
+export type ImportReport = {
+  dry_run: boolean;
+  source: string;
+  ms: number;
+  identity: unknown;
+  managers: number;
+  read: Record<string, number>;
+  no_tenant: Record<string, number>;
+  tables: Partial<Record<TableName, TableCount>>;
+  skipped_tables: string[];
+  issues_by_code: Record<string, number>;
+  issues_sample: Plan["issues"];
+  reconcile: ReconcileReport | null;
+};
+
+type Resolved = {
+  tenantOf: Map<string, string>;
+  userOf: Map<string, string>;
+  owners: Map<string, string>;
+};
+
+async function resolve(
+  d: ImportDeps,
+  o: ImportOpts,
+  members: ReturnType<typeof memberships>,
+  orgs: string[],
+): Promise<Resolved> {
+  const tenantOf = new Map((await d.identity.tenants(o.source)).map((t) => [t.orgId, t.id]));
+  if (!o.apply)
+    for (const org of orgs)
+      if (!tenantOf.has(org)) tenantOf.set(org, targetId(o.source, "tenant", org));
+  const users = await d.identity.users([...tenantOf.values()]);
+  const userOf = new Map(users.map((u) => [`${u.tenantId}|${u.email}`, u.id]));
+  const owners = new Map<string, string>();
+  for (const m of members.values()) {
+    const tid = tenantOf.get(m.orgId);
+    const uid = tid ? userOf.get(`${tid}|${m.email}`) : undefined;
+    if (tid && uid && m.role === "owner" && !owners.has(tid)) owners.set(tid, uid);
+  }
+  return { tenantOf, userOf, owners };
+}
+
+function context(o: ImportOpts, r: Resolved): Ctx {
+  const issues: Plan["issues"] = [];
+  return {
+    source: o.source,
+    tenantOf: (org) => (org ? (r.tenantOf.get(org) ?? null) : null),
+    userOf: (tid, email) => (email ? (r.userOf.get(`${tid}|${email}`) ?? null) : null),
+    fallbackUser: (tid) => r.owners.get(tid) ?? o.actorId,
+    knowledgeOrg: o.knowledgeOrg,
+    issues,
+  };
+}
+
+/** File HĐ: đọc nguồn, đưa vào kho đích, thêm hàng `contracts.files` + gắn `file_id` (apply); dry-run chỉ kiểm có/không. */
+async function moveFiles(
+  d: ImportDeps,
+  o: ImportOpts,
+  plan: Plan,
+  jobs: ReturnType<typeof buildPlan>["files"],
+  out: Map<string, string>,
+): Promise<void> {
+  for (const j of jobs) {
+    const f = d.files.source ? await d.files.source.readDir(j.dir) : null;
+    if (!f) {
+      plan.issues.push({ entity: "file", ref: j.dir, code: "FILE_MISSING" });
+      continue;
+    }
+    const sha = new Bun.CryptoHasher("sha256").update(f.bytes).digest("hex");
+    out.set(j.fileRowId, sha);
+    const t = plan.tenants.get(j.tenantId);
+    if (!o.apply || !d.files.sink || !t) continue;
+    const c = (t.rows["contracts.contracts"] ?? []).find((x) => x.id === j.contractId);
+    if (c) c.file_id = j.fileRowId;
+    // chạy lại: hàng file đã có ⇒ không đưa bytes lên FileBox lần nữa (không tạo file mồ côi)
+    if ((await d.target.existing(j.tenantId, "contracts.files", [{ id: j.fileRowId }])) > 0)
+      continue;
+    const up = await d.files.sink.put(`t_${j.tenantId}`, j.name, f.bytes);
+    push(t, "contracts.files", {
+      id: j.fileRowId,
+      org: `t_${j.tenantId}`,
+      file_id: up.fileId,
+      version_id: up.versionId,
+      name: j.name,
+      mime: j.mime,
+      size_bytes: f.bytes.byteLength,
+      created_by: j.createdBy,
+    });
+  }
+}
+
+/** Một bảng của một tenant, theo lô: dry-run đếm "đã có"; apply ghi lô chưa đánh dấu xong rồi đánh dấu (chạy tiếp được). */
+async function writeTable(
+  d: ImportDeps,
+  o: ImportOpts,
+  tid: string,
+  table: TableName,
+  rows: Row[],
+  c: TableCount,
+): Promise<void> {
+  c.planned += rows.length;
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += o.batch) {
+    const part = rows.slice(i, i + o.batch);
+    const key = `${tid}|${table}|${i / o.batch}`;
+    if (!o.apply) c.existing += Math.max(0, await d.target.existing(tid, table, part));
+    else if (!d.checkpoint.done(key)) {
+      inserted += await d.target.write(tid, table, part);
+      await d.checkpoint.mark(key);
+    }
+  }
+  c.inserted += inserted;
+  if (o.apply) c.existing += rows.length - inserted;
+}
+
+async function writeAll(
+  d: ImportDeps,
+  o: ImportOpts,
+  plan: Plan,
+  skipped: Set<TableName>,
+): Promise<ImportReport["tables"]> {
+  const tables: ImportReport["tables"] = {};
+  for (const t of plan.tenants.values())
+    for (const table of TABLE_ORDER) {
+      const rows = t.rows[table] ?? [];
+      if (rows.length === 0 || skipped.has(table)) continue;
+      const c = tables[table] ?? { planned: 0, inserted: 0, existing: 0 };
+      tables[table] = c;
+      await writeTable(d, o, t.tenantId, table, rows, c);
+    }
+  return tables;
+}
+
+export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportReport> {
+  const t0 = d.now();
+  const snap = await loadSnapshot(d.reader, o.batch, o.withGraph);
+  const members = memberships(snap.docs.memberships ?? []);
+  const orgs = (snap.docs.orgs ?? []).map((x) => str(x.src.id, 128) ?? x.id);
+  const identity = await d.identity.run(
+    usersExport(o.source, snap.docs.orgs ?? [], snap.docs.users ?? [], members),
+    o.apply,
+  );
+  const r = await resolve(d, o, members, orgs);
+  const pairs = managerPairs(members).flatMap((p) => {
+    const tid = r.tenantOf.get(p.orgId);
+    const u = tid ? r.userOf.get(`${tid}|${p.email}`) : undefined;
+    const m = tid ? r.userOf.get(`${tid}|${p.manager}`) : undefined;
+    return tid && u && m ? [{ tenantId: tid, userId: u, managerId: m }] : [];
+  });
+  const managers = o.apply ? await d.identity.managers(pairs) : pairs.length;
+  const ctx = context(o, r);
+  const { plan, files } = buildPlan(snap, ctx, members, orgs);
+  const shas = new Map<string, string>();
+  await moveFiles(d, o, plan, files, shas);
+  const skipped = new Set<TableName>();
+  for (const g of G1_TABLES) if (!(await d.target.hasTable(g))) skipped.add(g);
+  const tables = await writeAll(d, o, plan, skipped);
+  const byCode: Record<string, number> = {};
+  for (const i of plan.issues) bump(byCode, i.code);
+  const rec = o.apply ? await reconcile(d, o, snap, plan, members, r.userOf, shas) : null;
+  return {
+    dry_run: !o.apply,
+    source: o.source,
+    ms: Math.round(d.now() - t0),
+    identity,
+    managers,
+    read: plan.read,
+    no_tenant: plan.noTenant,
+    tables,
+    skipped_tables: [...skipped],
+    issues_by_code: byCode,
+    issues_sample: plan.issues.slice(0, 50),
+    reconcile: rec,
+  };
+}
