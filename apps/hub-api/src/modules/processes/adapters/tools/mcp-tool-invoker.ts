@@ -11,6 +11,7 @@ import type {
   WorkflowInvoker,
 } from "../../../mcp/adapters/workflow-invoker";
 import { TOOL_ERROR_TEXT, type ToolErrorCode, type ToolResult } from "../../../mcp/mcp.rules";
+import type { PackToolCatalog } from "../../../packs/kit/application/pack-tools.ports";
 import type { ToolCallResult, ToolEndpoint, ToolInvoker } from "../../application/tools/tool.ports";
 
 const CODE_BY_TEXT = new Map(
@@ -56,9 +57,19 @@ function workflowOfEndpoint(id: string, e: ToolEndpoint): CatalogWorkflow | null
 }
 
 /** `invoker` vắng (Hub không có cache cấu hình) ⇒ mọi lời gọi `NOT_CONFIGURED` (fail-closed, 0 lời gọi Dify). */
-export function mcpToolInvoker(d: { invoker?: WorkflowInvoker; config: ConfigCache }): ToolInvoker {
+export function mcpToolInvoker(d: {
+  invoker?: WorkflowInvoker;
+  config: ConfigCache;
+  /** N2-FR-03 · tool của gói: chạy trong tx gói của tenant run, danh tính người bắt đầu. */
+  packs?: PackToolCatalog;
+}): ToolInvoker {
   return {
     async call(c) {
+      if (c.packTool) {
+        if (!d.packs) return NOT_CONFIGURED;
+        const ctx = { tenantId: c.tenantId, userId: c.userId, runId: c.hubRunId };
+        return d.packs.call(c.packTool, ctx, c.args);
+      }
       if (!d.invoker) return NOT_CONFIGURED;
       const wf = c.endpoint
         ? workflowOfEndpoint(c.workflowId, c.endpoint)

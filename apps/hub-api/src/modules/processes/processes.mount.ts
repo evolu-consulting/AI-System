@@ -4,6 +4,8 @@
 import type { Env, Hono } from "hono";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
+import type { PackRunsBridge } from "../packs/kit/application/pack-runs.ports";
+import type { PackToolCatalog } from "../packs/kit/application/pack-tools.ports";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
 import { DrainTracker } from "./adapters/drain";
@@ -25,6 +27,7 @@ import { createNotifier } from "./notify/notifier";
 import { remindOnce, startProcessReminder } from "./notify/reminder";
 import { conversationStart } from "./runs/conversation-start";
 import { createStageLauncher } from "./runs/launcher";
+import { packRunsOf } from "./runs/pack-runs";
 import { applyResolveReport } from "./runs/resolve-apply";
 import { roomStart } from "./runs/room-start";
 import { processRunsRoutes } from "./runs/runs.routes";
@@ -56,6 +59,10 @@ export type ProcessSeams = {
   github?: { apiUrl: string; webHost: string };
   /** P-d2 · D2-02 · pipeline gọi workflow dùng chung với `/mcp` (`app.ts` dựng một bản); vắng ⇒ stage tool `NOT_CONFIGURED`. */
   workflowInvoker?: WorkflowInvoker;
+  /** N2-FR-01 · cầu khởi chạy run cho module gói (engine gắn `port` khi mount). */
+  packRuns?: PackRunsBridge;
+  /** N2-FR-03 · registry tool gói (stage `tool`, editor, luật lưu def). */
+  packTools?: PackToolCatalog;
 };
 export type ProcessMountDeps = Omit<
   ProcessDeps,
@@ -112,6 +119,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
+  if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
   mountRoutes(app, d);
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   startBackground({ m, bg, poster, khWriter, drain });
@@ -139,7 +147,7 @@ function toolDriverOf(
 ): ProcessDeps["toolDriver"] {
   return toolDriverFactory({
     uow: systemOnly(uow),
-    invoker: mcpToolInvoker({ invoker: m.workflowInvoker, config: m.config }),
+    invoker: mcpToolInvoker({ invoker: m.workflowInvoker, config: m.config, packs: m.packTools }),
     // m-2 · đồng hồ đơn điệu ở lớp ráp (adapter), không ở use case.
     clock: { now, monotonicMs: () => performance.now() },
     log: m.log,

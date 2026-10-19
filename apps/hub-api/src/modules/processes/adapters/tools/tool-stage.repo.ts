@@ -20,6 +20,7 @@ import { stageGateStatus, stepCountOf } from "../../domain/runs/step.rules";
 import type { ArgSource } from "../../domain/tools/tool-run.rules";
 import { type StageRowIdx, stepsOfSnap } from "../../runs/step-persist";
 import { effects, headOf, type RunHead, type SnapStage, toDecision } from "../../runs/team-runner";
+import { withPackTool } from "./pack-tool-load";
 
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
 
@@ -308,7 +309,7 @@ export function toolStageRepo(tx: Tx, tenantId: string, outbox: Outbox, d: Deps)
   return {
     async loadCall(runId, stageRunId, hubRunId): Promise<ToolCallLoad | null> {
       const row = await loadCallRow(tx, { tenantId, runId, stageRunId, hubRunId });
-      return row ? toLoad(row) : null;
+      return row ? withPackTool(toLoad(row), d.packTools, tenantId) : null; // N2-FR-03
     },
     audit: (x) => insertAudit(tx, tenantId, x),
     retried: (runId) => emitRetried(c, s, runId),

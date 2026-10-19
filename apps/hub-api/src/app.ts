@@ -20,6 +20,7 @@ import { mountH2c } from "./app.h2c";
 import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
+import { withPackBridges } from "./app.n2";
 import { processAgentRunner, runDrivers, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
@@ -192,6 +193,7 @@ const seamsOf = (d: AppDeps): ProcessSeams => ({
   now: d.now,
   processLoops: d.processLoops,
   onProcessHandles: d.onProcessHandles,
+  ...{ packRuns: d.packRuns, packTools: d.packTools }, // N2-FR-01/03
 });
 
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
@@ -354,7 +356,8 @@ const corsOf = (cfg: AppConfig): MiddlewareHandler =>
     ],
   });
 
-export function createApp(cfg: AppConfig, deps: AppDeps = {}): Hono<AppVars> {
+export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
+  const deps = withPackBridges(depsIn); // N2 · cầu gói ↔ engine
   const app = new Hono<AppVars>();
   const config = deps.db
     ? startConfigCache(deps.db, {

@@ -167,6 +167,8 @@ export class StartService {
       };
       inputs?: ProcessInputValue[];
     },
+    /** N2-FR-01 · gói gắn run vào bản ghi trước rồi tự kick (`PackRuns.start`). */
+    o: { deferKick?: boolean } = {},
   ): Promise<ProcessRunSummary> {
     const me = meOf(u);
     const userState = await this.d.config.user(u.userId);
@@ -190,7 +192,7 @@ export class StartService {
         };
       },
     );
-    await this.#afterCommit(runId, isRoom);
+    if (!o.deferKick) await this.#afterCommit(runId, isRoom);
     return summary;
   }
 

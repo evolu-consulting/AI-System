@@ -1,9 +1,10 @@
 // PK-FR-09 · PK-AC10 · N1 plan §10: route gói kiểm thử `pkdemo` (mount dưới `/pack/pkdemo`, sau `requireAuth`). Quyền: GET
 // `read`, POST `write` (guard T5b, 403 trước 400). Body không bao giờ mang phạm vi: zod strip `tenant_id`/`user_id`; tenant/user
 // chỉ từ token. Sai body ⇒ 400 `VALIDATION_ERROR`; `:id` không phải uuid / không thấy ⇒ 404 `NOT_FOUND` (không lộ tồn tại).
+import { CreateProcessRunRequestSchema } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import { z } from "zod";
-import { appError } from "../../../../lib/errors";
+import { AppError, appError } from "../../../../lib/errors";
 import { parseIdParam, parseJson } from "../../../../lib/http";
 import {
   type PackAccessView,
@@ -12,6 +13,7 @@ import {
 } from "../../kit/adapters/pack-guard.middleware";
 import type { CreateItem } from "../application/create-item.usecase";
 import type { GetItem } from "../application/get-item.usecase";
+import type { StartItemRun } from "../application/start-item-run.usecase";
 import { ITEM_LINE_TEXT_MAX, ITEM_LINES_MAX, ITEM_TITLE_MAX } from "../domain/item";
 
 export const PKDEMO_KEY = "pkdemo";
@@ -22,7 +24,10 @@ export const CreateItemBodySchema = z.object({
   lines: z.array(z.object({ text: z.string().min(1).max(ITEM_LINE_TEXT_MAX) })).max(ITEM_LINES_MAX),
 });
 
-export type PkdemoUseCases = { create: CreateItem; get: GetItem };
+export type PkdemoUseCases = { create: CreateItem; get: GetItem; run: StartItemRun };
+
+/** N2-FR-01 · body = `POST /process-runs` bỏ `origin` (sai ⇒ 400 như route quy trình). */
+const ItemRunBodySchema = CreateProcessRunRequestSchema.omit({ origin: true });
 
 const whoOf = (u: { tenantId: string; userId: string }) => ({
   tenantId: u.tenantId,
@@ -40,6 +45,17 @@ export function pkdemoRoutes(view: PackAccessView, uc: PkdemoUseCases): Hono<Pac
   r.post("/items", packGuard(view, PKDEMO_KEY, "write"), async (c) => {
     const body = await parseJson(c, CreateItemBodySchema);
     return c.json(await uc.create(whoOf(c.get("user")), body), 201);
+  });
+  // N2-FR-01 · N2-D07 · khởi chạy run quy trình cho item (cổng `PackRuns`, cùng process) + gắn `run_id`.
+  r.post("/items/:id/run", packGuard(view, PKDEMO_KEY, "write"), async (c) => {
+    const id = parseIdParam(c);
+    const body = await parseJson(c, ItemRunBodySchema);
+    const out = await uc.run(c.get("user"), id, body);
+    if (out.kind === "ok") return c.json({ run_id: out.runId }, 201);
+    if (out.kind === "engine_off")
+      throw new AppError("PROCESS_ENGINE_OFF", 503, "Process engine is not enabled");
+    if (out.kind === "has_run") throw new AppError("CONFLICT", 409, "Item already has a run");
+    throw appError("NOT_FOUND");
   });
   return r;
 }

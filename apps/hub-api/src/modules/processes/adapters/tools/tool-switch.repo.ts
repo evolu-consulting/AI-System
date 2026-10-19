@@ -1,9 +1,11 @@
 // HUB-FR-146 · AC-H47 · TT-R04/R05 · D2-14 · plan-d2 §9 · S9: tool khả dụng của tenant = workflow `enabled` ∧ công tắc
 // `admin.tenant_workflow_tools` còn hiệu lực CỦA ĐÚNG tenant. `hub_ro` policy `USING (true)` ⇒ `t.tenant_id = $tenant`
 // tường minh là rào duy nhất. MỘT câu, văn bản cố định (khoá theo `= any($keys)` hoặc `limit 200`), không cache (TT-R06).
+
 import type { ProcessToolItem } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { PackToolCatalog } from "../../../packs/kit/application/pack-tools.ports";
 import type { ToolCatalogItem, ToolSwitchReader } from "../../application/tools/tool.ports";
 import type { ToolDefShape } from "../../domain/defs/tool-def.rules";
 
@@ -83,9 +85,21 @@ export function toToolItem(t: ToolCatalogItem): ProcessToolItem {
   };
 }
 
-/** Cổng `ToolSwitchReader` gắn tx + tenant của người gọi (editor: tx đọc; lưu def: tx ghi def). */
-export function toolSwitchReader(tx: Tx, tenantId: string): ToolSwitchReader {
+/**
+ * Cổng `ToolSwitchReader` gắn tx + tenant của người gọi (editor: tx đọc; lưu def: tx ghi def). N2-FR-03 · N2-D02: gộp tool
+ * của gói tenant đã bật (`packs`, cache — 0 câu thêm); trùng khoá với workflow ⇒ tool gói thắng.
+ */
+export function toolSwitchReader(
+  tx: Tx,
+  tenantId: string,
+  packs?: PackToolCatalog,
+): ToolSwitchReader {
   return {
-    available: async (keys) => (await availableToolRows(tx, tenantId, keys)).map(toolDefOf),
+    available: async (keys) => {
+      const pk = packs ? await packs.available(tenantId, keys) : [];
+      const own = new Set(pk.map((t) => t.key));
+      const rows = (await availableToolRows(tx, tenantId, keys)).map(toolDefOf);
+      return [...pk, ...rows.filter((r) => !own.has(r.key))];
+    },
   };
 }

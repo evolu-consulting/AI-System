@@ -63,7 +63,7 @@ const audit = (a: Audit): StudioAudit => ({
 
 export class DefsService {
   readonly #w;
-  constructor(private readonly d: Pick<ProcessDeps, "db" | "start">) {
+  constructor(private readonly d: Pick<ProcessDeps, "db" | "start" | "packTools">) {
     this.#w = { db: d.db, audit: dbHubAudit };
   }
 
@@ -113,7 +113,9 @@ export class DefsService {
     // Hai câu đọc độc lập (không cần ảnh nhất quán) ⇒ tx mặc định, không `set transaction` (PD2-P02: 2 câu).
     return withHubScope(this.d.db, { kind: "system" }, async (tx) => {
       const timezone = await tenantTzRepo(tx, tenantId).read();
-      const tools = (await listTools(toolSwitchReader(tx, tenantId))).map(toToolItem);
+      const tools = (await listTools(toolSwitchReader(tx, tenantId, this.d.packTools))).map(
+        toToolItem,
+      );
       return tools.length > 0 ? { timezone, tools } : { timezone };
     });
   }
@@ -130,7 +132,9 @@ export class DefsService {
     const toolKeys = input.stages.flatMap((s) =>
       s.executor.kind === "tool" ? [s.executor.tool_key] : [],
     );
-    throwIfInvalid(validateProcessDef(input, await loadDefRefs(tx, tenantId, toolKeys)));
+    throwIfInvalid(
+      validateProcessDef(input, await loadDefRefs(tx, tenantId, toolKeys, this.d.packTools)),
+    );
     await this.#checkSources(tx, tenantId, input.sources);
     await this.#checkAutofixKinds(tx, tenantId, input);
   }

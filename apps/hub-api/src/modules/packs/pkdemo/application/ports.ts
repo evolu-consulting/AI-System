@@ -7,6 +7,10 @@ export type ItemsRepo = {
   insert(item: Item): Promise<void>;
   /** Cha + con (json_agg) trong MỘT câu; không thấy (kể cả tenant khác) ⇒ null. */
   get(id: string): Promise<Item | null>;
+  /** N2-FR-01 · `run_id` của bản ghi: không thấy ⇒ undefined; chưa gắn ⇒ null. MỘT câu. */
+  runOf(id: string): Promise<string | null | undefined>;
+  /** N2-FR-01 · gắn run nếu chưa có (`run_id is null`); false ⇒ không gắn được. MỘT câu. */
+  attachRun(id: string, runId: string): Promise<boolean>;
 };
 
 /** Repo riêng của gói (adapter dựng); bộ khung `createPackUow` ghép thêm `outbox`. */

@@ -40,6 +40,7 @@ function app(actions: string[]) {
   r.route(
     "/",
     pkdemoRoutes(view(actions), {
+      run: async () => ({ kind: "engine_off" }),
       create: async (who, input) => {
         Object.assign(seen, { who, input });
         const it = buildItem(

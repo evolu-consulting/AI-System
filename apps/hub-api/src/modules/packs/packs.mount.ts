@@ -16,7 +16,9 @@ import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
 import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
+import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
+import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
 export const PACK_PREFIX = "/pack";
@@ -35,6 +37,10 @@ export type PacksMountDeps = {
   packs?: PacksDeps;
   /** HD1 T10 · bộ đếm quota tải lên (D-17). */
   redis?: Redis;
+  /** N2-FR-01 · cầu khởi chạy run quy trình (engine gắn khi mount). */
+  packRuns?: PackRunsBridge;
+  /** N2-FR-03 · registry tool gói (dùng chung với engine + `/mcp`). */
+  packTools?: PackToolRegistry;
 };
 
 /** Review m-04 · `pkdemo` chỉ mở khi `APP_ENV` khai báo rõ `development`/`test`; vắng hoặc giá trị lạ ⇒ tắt (fail-closed). */
@@ -44,9 +50,11 @@ export const pkdemoEnabled = (appEnv: string | undefined): boolean =>
 /** Gắn `/pack/*` (gọi sau khi đã gắn `requireAuth`); trả cổng quyền gói. */
 export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): PackAccessView {
   const view: PackAccessView = d.config;
+  d.packTools?.bindView(view); // N2-FR-03 · gói bật cho tenant theo cùng cache với guard
   app.route(PACK_PREFIX, packMeRoutes(view));
   const pkdemoOn = d.packs?.pkdemo ?? pkdemoEnabled(d.appEnv ?? process.env.APP_ENV);
-  if (d.db && pkdemoOn) app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, pkdemoModule(d.db, view));
+  const n2 = { runs: d.packRuns, tools: d.packTools };
+  if (d.db && pkdemoOn) app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, pkdemoModule(d.db, view, n2));
   const fb = packFilebox(d.packs);
   if (d.db && pkdemoOn && fb)
     app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, packFiles(d.db, view, PKDEMO_KEY, fb)); // T5f

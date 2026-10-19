@@ -1,7 +1,9 @@
 // HUB-FR-114 · ADM-FR-65 · nhóm agent bật cho tenant (`GET /agent-teams`) + tập tham chiếu hợp lệ cho `validateProcessDef`
 // (plan-contract §6). `tenantId` null = phạm vi mẫu (platform_admin): mọi agent/nhóm đang bật, không Group/user nào.
+
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import { toolSwitchReader } from "../adapters/tools/tool-switch.repo";
 import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
 import type { ToolDefShape } from "../domain/defs/tool-def.rules";
@@ -76,9 +78,10 @@ async function toolRefs(
   tx: Tx,
   tenantId: string | null,
   keys: readonly string[],
+  packs?: PackToolCatalog,
 ): Promise<Map<string, ToolDefShape>> {
   if (tenantId === null || keys.length === 0) return new Map();
-  const tools = await toolSwitchReader(tx, tenantId).available(keys);
+  const tools = await toolSwitchReader(tx, tenantId, packs).available(keys);
   return new Map(tools.map((t) => [t.key, t]));
 }
 
@@ -86,9 +89,10 @@ export async function loadDefRefs(
   tx: Tx,
   tenantId: string | null,
   toolKeys: readonly string[] = [],
+  packs?: PackToolCatalog,
 ): Promise<DefRefs> {
   const teamInfo = await teamSectionsInfo(tx, tenantId);
-  const tools = await toolRefs(tx, tenantId, toolKeys);
+  const tools = await toolRefs(tx, tenantId, toolKeys, packs);
   if (tenantId === null) {
     const agents = await tx.execute<{ id: string }>(sql`select id from hub.agents where enabled`);
     const teams = await tx.execute<{ id: string }>(

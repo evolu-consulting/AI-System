@@ -28,6 +28,18 @@ export function itemsRepo(tx: Tx, tenantId: string): ItemsRepo {
       const lines = typeof r.lines === "string" ? (JSON.parse(r.lines) as ItemLine[]) : r.lines;
       return { id: r.id, title: r.title, lines } satisfies Item;
     },
+    runOf: async (id) => {
+      const [r] = await tx.execute<{ run_id: string | null }>(sql`select run_id from pkdemo.items
+        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid`);
+      return r === undefined ? undefined : r.run_id;
+    },
+    attachRun: async (id, runId) => {
+      const rows = await tx.execute<{
+        id: string;
+      }>(sql`update pkdemo.items set run_id = ${runId}::uuid
+        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and run_id is null returning id`);
+      return rows.length === 1;
+    },
   };
 }
 

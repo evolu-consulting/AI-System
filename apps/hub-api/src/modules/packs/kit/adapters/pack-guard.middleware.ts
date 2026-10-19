@@ -73,6 +73,18 @@ export async function packAccessInput(
   };
 }
 
+/** N2-FR-03 · gói bật cho tenant (không xét user): entitlement `<k'>-read` còn hiệu lực ∧ feature không `off`. */
+export async function packEnabled(
+  view: PackAccessView,
+  packKey: string,
+  tenantId: string,
+): Promise<boolean> {
+  await view.adminSettled?.();
+  const cat = await view.catalog();
+  const read = featureIndex(cat).get(packFeatureKey(packKey, "read"));
+  return read !== undefined && !read.off && cat.entitled.has(`${tenantId}:${read.id}`);
+}
+
 const MESSAGES = { PACK_DISABLED: "Pack is not enabled", PACK_FORBIDDEN: "Forbidden" } as const;
 
 /** Chặn route gói cần `action`: 403 `PACK_DISABLED` / `PACK_FORBIDDEN` (plan §2). Đặt SAU `requireAuth`. */

@@ -10,6 +10,7 @@ import type { UserEvent } from "../../../lib/user-stream";
 import type { AttachmentStorage } from "../../attachments/storage";
 import type { ConfigCache } from "../../config/config.service";
 import type { KhRuntime } from "../../kh/kh.mount";
+import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
 import type { RunDriver, RunService } from "../../runs/runs.service";
 import type { HubSecretReader } from "../../secrets/secrets.use";
@@ -79,6 +80,8 @@ export type ProcessDeps = {
   log: Logger;
   now: Clock;
   runsPerTenant?: number;
+  /** N2-FR-03 · tool của gói (registry ở `app.ts`); vắng ⇒ không có tool gói. */
+  packTools?: PackToolCatalog;
   launcher: StageLauncher;
   notifier: ProcessNotifier;
   /** Sau COMMIT tx quy trình: đăng tin thread của run (`ThreadPoster.post`). */

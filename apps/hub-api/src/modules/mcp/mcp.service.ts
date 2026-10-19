@@ -33,6 +33,7 @@ import {
   validateToolArgs,
 } from "./mcp.rules";
 import { notAttached, resolveToolFiles } from "./mcp-files";
+import type { PackMcpTools } from "./pack-tools.provider";
 
 /** Ngữ cảnh của token (plan §6 Auth). `tools` = `payload.mcp.tools`. */
 export type McpContext = {
@@ -71,6 +72,8 @@ export type McpServiceDeps = {
   invoker: WorkflowInvoker;
   sideEffect?: SideEffectGate;
   kh?: KhQueryService;
+  /** N2-FR-03 · tool của gói (CR-087); vắng ⇒ không có. */
+  packTools?: PackMcpTools;
 };
 
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
@@ -141,6 +144,7 @@ export class McpService {
         hasFiles: ctx.files.length > 0,
       }),
       ...(this.d.kh?.tools(ctx) ?? []),
+      ...((await this.d.packTools?.tools(ctx)) ?? []),
     ];
   }
 
@@ -153,6 +157,8 @@ export class McpService {
     const { name, args } = toolCallParams(req.params);
     const kh = this.d.kh?.accepts(ctx, name);
     if (kh) return rpcResult(req.id, await kh.call(args), stateless);
+    const pk = await this.d.packTools?.accepts(ctx, name); // N2-FR-03
+    if (pk) return rpcResult(req.id, await pk.call(args), stateless);
     const tools = await this.tools(ctx);
     const catalog = await this.d.config.catalog();
     const wf = [...catalog.workflows.values()].find((w) => w.key === name);

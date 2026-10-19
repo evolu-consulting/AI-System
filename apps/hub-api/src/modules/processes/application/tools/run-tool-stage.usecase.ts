@@ -153,6 +153,7 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
     hubRunId: link.hubRunId,
     workflowId: l.workflowId,
     ...(l.endpoint ? { endpoint: l.endpoint } : {}),
+    ...(l.packTool ? { packTool: l.toolKey } : {}),
     args: built.values,
     timeoutS: l.timeoutS,
   });

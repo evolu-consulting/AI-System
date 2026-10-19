@@ -17,6 +17,8 @@ function harness(failInsert = false) {
         log.push(`insert:${it.id}`);
       },
       get: async () => null,
+      runOf: async () => undefined,
+      attachRun: async () => false,
     },
     outbox: {
       enqueue: async (rows) => {
