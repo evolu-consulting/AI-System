@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS contracts.approvals (
   CONSTRAINT approvals_pkey PRIMARY KEY (id),
   CONSTRAINT approvals_status_ck CHECK (status IN ('extracting', 'level1', 'level2', 'done', 'rejected', 'cancelled',
     'failed')),
-  CONSTRAINT approvals_feedback_ck CHECK (char_length(feedback) <= 4000),
-  CONSTRAINT approvals_contract_fk FOREIGN KEY (contract_id, tenant_id)
-    REFERENCES contracts.contracts (id, tenant_id) ON DELETE CASCADE
+  CONSTRAINT approvals_feedback_ck CHECK (char_length(feedback) <= 4000)
+  -- Không FK sang `contracts.contracts`: HĐ không bị xoá (REVOKE DELETE, D-08) và fixture test khoá TRUNCATE danh sách bảng cố
+  -- định (FK làm TRUNCATE contracts lỗi). Mọi ghi lượt duyệt đi kèm điều kiện `contract_id`/`run_id` + `tenant_id` trong CTE.
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS approvals_live_uq ON contracts.approvals (tenant_id, contract_id)
