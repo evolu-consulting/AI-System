@@ -8,7 +8,7 @@ import type {
   RoomSummary,
 } from "@ai/contracts/chat";
 import { parseMeStreamEvent } from "@ai/contracts/chat";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import {
   type RoomListData,
   type RoomMessagesData,
@@ -102,6 +102,85 @@ describe("room.message", () => {
     route({ event: "room.message", data: { room_id: uid(7), message: msg(7, 1) } });
     expect(client.getQueryData(roomKeys.messages(uid(7)))).toBeUndefined();
     expect(client.getQueryState(roomKeys.list)?.isInvalidated).toBe(true);
+  });
+});
+
+// Truy vấn tin tải lần đầu (TS1 · #234): helper dùng chung cho các ca bên dưới.
+/** Xả hàng đợi microtask (huỷ + tải lại của TanStack chạy qua promise); không chờ mốc giờ. */
+const flush = async () => {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+};
+
+/** Truy vấn tin còn bay: lượt tải đầu chụp danh sách TRƯỚC khi tin được đăng; lượt tải lại (sau sự kiện) có tin. */
+function firstLoad(key: readonly unknown[]) {
+  const calls: { release: (items: RoomMessage[]) => void; aborted: boolean }[] = [];
+  // Có observer (như `useInfiniteQuery` của khung flow) thì invalidate mới tải lại.
+  const obs = new QueryObserver<RoomMessagesData>(client, {
+    queryKey: key,
+    retry: false,
+    queryFn: ({ signal }) =>
+      new Promise<RoomMessagesData>((resolve) => {
+        const call = {
+          aborted: false,
+          release: (items: RoomMessage[]) =>
+            resolve({ pages: [{ items, has_more: false }], pageParams: [undefined] }),
+        };
+        signal.addEventListener("abort", () => {
+          call.aborted = true;
+        });
+        calls.push(call);
+      }),
+  });
+  const off = obs.subscribe(() => undefined);
+  return { calls, off };
+}
+
+describe("TS1 · #234 · tin tới khi truy vấn tin đang tải lần đầu", () => {
+  test("tin tới giữa lúc tải lần đầu ⇒ tải lại, tin có trong kết quả (không rơi khỏi cache)", async () => {
+    seedList(room(3));
+    const key = roomKeys.messages(uid(3));
+    const { calls, off } = firstLoad(key);
+    expect(client.getQueryState(key)?.fetchStatus).toBe("fetching");
+    // sự kiện tới trước khi response đầu về: cache chưa có data nên setQueryData bỏ qua
+    route({ event: "room.message", data: { room_id: uid(3), message: msg(3, 2) } });
+    expect(client.getQueryData(key)).toBeUndefined();
+    await flush();
+    // lượt tải mới (sau commit) có cả hai tin; lượt cũ bị huỷ nên không ghi đè
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    calls.at(-1)?.release([msg(3, 1), msg(3, 2)]);
+    await client.getQueryCache().find({ queryKey: key })?.promise;
+    expect(client.getQueryData<RoomMessagesData>(key)?.pages[0]?.items.map((x) => x.seq)).toEqual([
+      1, 2,
+    ]);
+    off();
+  });
+
+  test("tin có flow_id tới khi flow đang tải lần đầu ⇒ cũng tải lại flow", async () => {
+    seedList(room(4));
+    const flowId = uid(55);
+    const key = roomKeys.flow(uid(4), flowId);
+    const { calls, off } = firstLoad(key);
+    route({
+      event: "room.message",
+      data: { room_id: uid(4), message: { ...msg(4, 2), placement: "flow", flow_id: flowId } },
+    });
+    await flush();
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    off();
+  });
+
+  test("truy vấn đã có data hoặc không tải ⇒ không tải lại (vá cache như cũ)", () => {
+    seedList(room(5));
+    const key = roomKeys.messages(uid(5));
+    client.setQueryData<RoomMessagesData>(key, {
+      pages: [{ items: [msg(5, 1)], has_more: false }],
+      pageParams: [undefined],
+    });
+    route({ event: "room.message", data: { room_id: uid(5), message: msg(5, 2) } });
+    expect(client.getQueryState(key)?.isInvalidated).toBe(false);
+    expect(client.getQueryData<RoomMessagesData>(key)?.pages[0]?.items.map((x) => x.seq)).toEqual([
+      1, 2,
+    ]);
   });
 });
 

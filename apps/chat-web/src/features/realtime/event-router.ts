@@ -87,6 +87,19 @@ function makeCtx(deps: EventRouterDeps): Ctx {
 const findInList = (d: RoomListData | undefined, id: string) =>
   d?.pages.flatMap((p) => p.items).find((r) => r.id === id);
 
+/**
+ * TS1 · #234 — tin tới khi truy vấn tin của phòng/flow đang TẢI LẦN ĐẦU (chưa có data): `setQueryData` bỏ qua, còn response
+ * đang bay có thể đã chụp trước khi tin được đăng ⇒ thiếu tin vĩnh viễn (SC-2 "Lượt chạy hoàn tất", E-PB11 AskCard; chỉ hiện khi
+ * máy tải vì cửa sổ đua rộng ra). Sự kiện phát SAU commit nên một lượt tải mới chắc chắn gồm tin này: huỷ lượt dở và tải lại.
+ */
+function refetchIfFirstLoad(client: QueryClient, key: readonly unknown[]): void {
+  const s = client.getQueryState(key);
+  if (!s || s.data !== undefined || s.fetchStatus !== "fetching") return;
+  // `invalidateQueries` KHÔNG huỷ lượt tải đầu (chưa có data ⇒ TanStack trả lại promise đang bay): phải huỷ tường minh.
+  const q = { queryKey: key, exact: true } as const;
+  void client.cancelQueries(q).then(() => client.refetchQueries({ ...q, type: "active" }));
+}
+
 function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
   // Tin thread (`placement=flow`) không vào timeline chính: chỉ tăng đếm của khối gốc (X2b §3).
   c.client.setQueryData<RoomMessagesData>(roomKeys.messages(room_id), (d) =>
@@ -94,11 +107,13 @@ function onMessage(c: Ctx, { room_id, message }: Of<"room.message">): void {
       ? insertMessage(d, message)
       : bumpFlowOf(d, message, c.deps.myId() ?? undefined),
   );
+  refetchIfFirstLoad(c.client, roomKeys.messages(room_id));
   // Thread đang mở (cache `flow` đã có): mọi tin cùng `flow_id` (cả tin gốc ở timeline) vào khung (X2b D10).
   if (message.flow_id) {
     c.client.setQueryData<RoomMessagesData>(roomKeys.flow(room_id, message.flow_id), (d) =>
       insertMessage(d, message),
     );
+    refetchIfFirstLoad(c.client, roomKeys.flow(room_id, message.flow_id));
   }
   if (message.sender_type === "agent") c.patchDetail(room_id, (d) => applyAgentMessage(d, message));
   // P-a (thread §6 #1): tin quy trình làm tươi view của run; KHÔNG đụng `active_runs` (đó là run agent X2b).
