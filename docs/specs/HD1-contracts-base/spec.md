@@ -38,10 +38,10 @@ Dựng trên [N1](../N1-pack-frame/spec.md) (khoá gói `contracts`, module `hub
 | HD-BR-03 | **Không port** cách đọc cả tenant vào bộ nhớ rồi lọc (`store.py:50-64`): lọc, sắp, phân trang ở SQL qua index | Luật 4c, intake "Rủi ro" |
 
 ## 3. Contract
-<!-- backend-lead: route, DTO, mã lỗi (FIELD_UNKNOWN 422, CONTRACT_STALE 409, FILE_TYPE 415, FILE_TOO_LARGE 413, UPLOAD_QUOTA 429, DOCX_UNREADABLE), cursor -->
+[plan §1–§2](plan.md): `packages/contracts/src/pack-contracts/`, 7 route `/pack/contracts/contracts…` + `/me` (N1), mã lỗi, phân trang `page/page_size/total` (D-03).
 
 ## 4. Dữ liệu
-<!-- backend-lead: DDL theo khuôn N1 (RLS, FK kép, role contracts_rw), index cho từng bộ lọc (gồm biểu thức chuẩn hoá người ký, items theo category), đếm tải lên theo ngày -->
+[plan §3](plan.md): `migrations-pack-contracts/0001_init.sql`, 5 bảng + cột sinh lọc (D-07), index từng bộ lọc; đếm tải lên theo ngày bằng Redis (D-06).
 
 ## 5. UI
 Không có (HD5, D-02).
@@ -85,6 +85,10 @@ FileBox mock (FB1) · DOCX mẫu `R/samples/HD-bao-bi-Minh-Phat.docx` · seed pe
 | Q4 | Trường lọc trong `fields` jsonb hay cột riêng? | Plan chọn (cột sinh/biểu thức index) miễn đạt HD-NFR-01 |
 | Q5 | Xoá HĐ trong HD1? | Không — HD5 (cần dọn reminder/event/outbox/FileBox) |
 | Q6 | Ảnh: định dạng nào? | JPEG, PNG; HEIC/WebP ngoài phạm vi |
+| Q7 | Keyset (`next_cursor`) hay `page/page_size/total` (S03 cần tổng + trang số)? | `page/total` (D-03); AC05 đổi theo |
+| Q8 | Danh bạ thành viên gói (tên người phụ trách) làm ở đâu? | Kit N1, HD5 dùng (plan §7 N1-c) |
+
+Q1–Q6 đóng: D-04, D-05, D-06, D-07, D-08, D-09.
 
 ## 10. Quyết định
 [`spec-decisions.md`](spec-decisions.md).

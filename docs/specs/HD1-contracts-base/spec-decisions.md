@@ -6,6 +6,17 @@ Nơi duy nhất ghi quyết định riêng HD1; quyết định khung gói ở [
 |---|---|---|---|
 | D-01 | 2026-10-18 · người dùng | Backend gói hợp đồng là **module trong `hub-api`** (schema `contracts` riêng, Clean Architecture), không app backend mới (= N1 D-01) | HD1 code ở `apps/hub-api/src/modules/contracts/` |
 | D-02 | 2026-10-18 · người dùng | UI là app riêng `contracts-web`, port nguyên giao diện mgmt-app; e2e chụp màn hình so với mgmt-app thật theo danh sách màn (lệch = lỗi); thẻ chờ duyệt/nhắc trong màn hợp đồng; trợ lý chung nhúng (= N1 D-02) | HD1 không UI; DTO danh sách phải đủ cột màn mgmt-app (HD-FR-07) cho HD5 |
+| D-03 | 2026-10-19 · backend-lead (PLAN) | Danh sách phân trang **`page`/`page_size`(1…100, mặc định 20) + `total`**, không keyset: màn S03 có tổng dòng + nhảy trang số (`table.tsx` Pager, D-02); `total` + trang cùng một câu SQL trên lát tenant vật chất hoá | Đổi HD-FR-07/AC05 (`next_cursor` ⇒ `total`) — chờ người dùng xác nhận (plan §8 Q7) |
+| D-04 | 2026-10-19 · backend-lead (Q1) | Thêm `rejected` vào CHECK `status` ngay HD1 (cuối danh sách) | HD3 không dựng lại CHECK |
+| D-05 | 2026-10-19 · backend-lead (Q2) | Mọi thành viên có quyền gói thấy mọi HĐ tenant; RLS chỉ theo `tenant_id` | HD-BR-02; chuỗi quản lý chỉ cho nhắc (HD4) |
+| D-06 | 2026-10-19 · backend-lead (Q3) | Giữ trần 30/tenant/ngày (múi tenant) và 300/hệ thống/ngày (UTC) bằng **bộ đếm Redis** `INCR` (1 pipeline, nguyên tử, hoàn bằng `DECR` khi lỗi); Redis lỗi ⇒ 503 | RLS FORCE cấm đếm chéo tenant bằng SQL; đếm SQL không khoá thì vượt trần khi tải đồng thời |
+| D-07 | 2026-10-19 · backend-lead (Q4) | Trường lọc/sắp = **cột sinh `STORED`** từ `fields` (`seller`, `buyer`, `value`, `end_date`, `signer_keys`, `search_key`…) qua hàm IMMUTABLE; `fields` jsonb vẫn là nguồn | Câu danh sách không giải nén `fields` (TOAST ~4 KB/hàng); plan §6 |
+| D-08 | 2026-10-19 · backend-lead (Q5) | Không xoá HĐ ở HD1; `REVOKE DELETE` trên contracts/items/categories | HD5 cấp lại cùng dọn reminder/event/outbox/FileBox |
+| D-09 | 2026-10-19 · backend-lead (Q6) | Ảnh chỉ JPEG, PNG; nhận dạng bằng magic bytes (+ `word/document.xml` cho DOCX) | HEIC/WebP ngoài phạm vi ⇒ 415 |
+| D-10 | 2026-10-19 · backend-lead (PLAN) | Facet ở route riêng `GET …/facets`, tính trên **cả tenant** (như `optionsOf(rows)` mgmt), không theo bộ lọc đang chọn | Câu danh sách giữ nhẹ; client giữ facet 60 s |
+| D-11 | 2026-10-19 · backend-lead (PLAN) | Đường dẫn theo N1 D-09: module `apps/hub-api/src/modules/packs/contracts/`, migration `packages/db/migrations-pack-contracts/` (thay câu chữ D-01) | tasks.md sửa cột File |
+| D-12 | 2026-10-19 · backend-lead (PLAN) | `/pack/contracts/me` = `PackMeResponse {pack, enabled, actions}` của N1; contracts-web suy `write`/`owner`/`packEnabled` | plan-frontend N1 §9 cần sửa chữ (N1-b) |
+| D-13 | 2026-10-19 · backend-lead (PLAN) | Chi tiết không trả `source_text` (≤ 5 MB) — route `…/:id/source`; PATCH đặt `{value, quote giữ, verified:true, edited:true}` (`manual.py:16`) | Giữ chi tiết ≤ 30 ms |
 
 ## Trong lúc làm (Luật 2)
 - (chưa có)
