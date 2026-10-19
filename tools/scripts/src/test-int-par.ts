@@ -165,8 +165,8 @@ async function leaseSlots(
 }
 
 /**
- * File nặng DB (INT_SERIAL) chạy SAU khi pool xong (máy rảnh: không tranh DB/CPU với worker), nhưng mỗi file một ô riêng và
- * song song với nhau (TS1: 4 file nối tiếp ≈ 85 s → ≈ file chậm nhất ≈ 25–65 s); hơn số ô thì chia vòng tròn theo ô.
+ * File nặng DB (INT_SERIAL) chạy NỐI TIẾP trên ô đầu sau khi pool xong. TS1 đã thử chạy song song mỗi file một ô: ca "hash lệch →
+ * dựng lại" của test-db-template quá 60 s vì tranh DB mẫu/ALTER ROLE với 3 file kia ⇒ hoàn lại nối tiếp (đo ≈ 40–85 s).
  */
 async function serialLanes(
   serial: string[],
@@ -174,16 +174,8 @@ async function serialLanes(
   envOf: (i: number) => Record<string, string>,
   root: string,
 ): Promise<Run[]> {
-  const lanes = slots.map((_, i) => serial.filter((__, k) => k % slots.length === i));
-  const done = await Promise.all(
-    lanes.map(async (files, i) => {
-      const out: Run[] = [];
-      for (const [k, f] of files.entries())
-        out.push(await runChunk(`${slots[i]}-serial${k}`, 0, [f], { env: envOf(i), root }));
-      return out;
-    }),
-  );
-  return done.flat();
+  if (!serial.length) return [];
+  return [await runChunk(`${slots[0]}-serial`, 0, serial, { env: envOf(0), root })];
 }
 
 async function main(): Promise<number> {

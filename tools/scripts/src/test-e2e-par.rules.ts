@@ -30,7 +30,11 @@ export const META: Record<string, Meta> = {
   "e2e/P-c/playwright.pc.config.ts": { db: "pc", redis: REDIS_DB("PC_REDIS_DB"), cost: 47 },
   "e2e/P-c2/playwright.pc2.config.ts": { db: "pc2", redis: REDIS_DB("PC2_REDIS_DB"), cost: 58 },
   "e2e/P-d/playwright.pd.config.ts": { db: "pd", redis: REDIS_DB("PD_REDIS_DB"), cost: 75 },
-  "e2e/chat/playwright.config.ts": { cost: 89 },
+  // Mock tools/mocks đọc GITHUB_MOCK_PORT=4040 / KH_MOCK_PORT=4030 từ .env.local: trùng hub của combine / stub của x1.
+  "e2e/chat/playwright.config.ts": {
+    env: { GITHUB_MOCK_PORT: "4041", KH_MOCK_PORT: "4031" },
+    cost: 89,
+  },
   "e2e/chat/playwright.x2a.config.ts": { db: "x2a", redis: REDIS_URL("X2A_REDIS_URL"), cost: 44 },
   "e2e/chat/playwright.x2b.config.ts": { db: "x2b", redis: REDIS_URL("X2B_REDIS_URL"), cost: 50 },
   // Cổng Runtime giả mặc định 4059 trùng "sẵn sàng" của x2a (trước đây chạy nối tiếp nên không lộ).
