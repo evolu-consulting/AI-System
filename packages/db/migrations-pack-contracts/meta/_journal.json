@@ -15,6 +15,13 @@
       "when": 1792540800000,
       "tag": "0002_category_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792886400000,
+      "tag": "0005_hd3_approval_settings",
+      "breakpoints": true
     }
   ]
 }

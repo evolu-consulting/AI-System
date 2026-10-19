@@ -105,7 +105,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox",
+      "truncate contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings",
     );
   },
   tables: [
@@ -177,6 +177,17 @@ defineRlsSuite({
           "insert into contracts.contract_events (tenant_id, contract_id, type) values ($1, $2, 'field_edited')",
           [t, crypto.randomUUID()],
         ),
+    },
+    // HD-FR-37 · AC37c · HD3: luật duyệt theo tenant (migration gói 0005).
+    {
+      name: "approval_settings",
+      seed: (o, t) =>
+        one(o, "insert into contracts.approval_settings (tenant_id) values ($1)", [t]),
+      insert: (tx, t, pk) =>
+        tx.unsafe("insert into contracts.approval_settings (id, tenant_id) values ($1, $2)", [
+          rnd(pk),
+          t,
+        ]),
     },
     ...frameTables("contracts").slice(1),
   ],
