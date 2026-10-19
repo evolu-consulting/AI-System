@@ -56,7 +56,11 @@ export type AiFailCode = "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED";
 export type AiCallResult =
   | { ok: true; text: string; model: string; usage: AiUsage }
   | { ok: false; code: AiFailCode };
-export type AiClient = { complete(req: AiCallRequest): Promise<AiCallResult> };
+export type AiClient = {
+  /** false ⇒ chưa cấu hình nhà cung cấp (khoá) — mọi lời gọi `UNAVAILABLE`. */
+  readonly ready: boolean;
+  complete(req: AiCallRequest): Promise<AiCallResult>;
+};
 
 export type AiClientDeps = {
   /** null ⇒ chưa cấu hình khoá ⇒ mọi lời gọi `UNAVAILABLE` (0 SQL). */
@@ -87,6 +91,7 @@ async function underCap(d: AiClientDeps, tenantId: string, at: Date): Promise<bo
 export function createAiClient(d: AiClientDeps): AiClient {
   const now = d.now ?? (() => new Date());
   return {
+    ready: d.provider !== null,
     async complete(req) {
       const provider = d.provider;
       if (!provider) return { ok: false, code: "UNAVAILABLE" };

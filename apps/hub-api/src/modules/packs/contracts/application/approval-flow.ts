@@ -37,8 +37,11 @@ export function flowStarter(d: {
 export function flowRequestExtract(d: {
   uow: PackUow<ExtractionTxRepos & ApprovalTxRepos>;
   jobs: ExtractJobs;
+  /** false ⇒ AI chưa cấu hình: `unavailable` (503) trước mọi SQL, như HD2 D2-01. */
+  ready: boolean;
 }): RequestExtract {
   return async (who, id): Promise<RequestExtractOutcome> => {
+    if (!d.ready) return { kind: "unavailable" };
     const aid = crypto.randomUUID();
     const out = await d.uow.tenant(who, async (r): Promise<RequestExtractOutcome> => {
       const st = await r.approval.state(id, { lock: true });

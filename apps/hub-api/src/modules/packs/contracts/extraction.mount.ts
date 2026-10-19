@@ -93,13 +93,18 @@ const envInt = (k: string, def: number): number => {
   return Number.isInteger(n) && n > 0 ? n : def;
 };
 
-/** Hàng đợi lượt đọc: Redis Streams (bền) hoặc, vắng Redis, chạy ngay trong tiến trình. */
+/** Hàng đợi lượt đọc: Redis Streams (bền) hoặc, vắng Redis, chạy ngay trong tiến trình. AI chưa cấu hình (không khoá, không
+ *  seam) ⇒ không xếp, không mở worker: HĐ giữ `extracting` tới vòng quét STALE (như HD1 khi chưa có AI). */
 function extractJobs(
   db: Db,
   flow: ContractsFlowDeps,
   handle: (j: ExtractJob) => Promise<void>,
-  concurrency: number,
+  o: { concurrency: number; ready: boolean },
 ) {
+  if (!o.ready) {
+    const jobs: ExtractJobs = { enqueue: async () => undefined };
+    return { jobs, reclaimOnce: async () => 0 };
+  }
   if (!flow.redis) {
     const jobs: ExtractJobs = {
       enqueue: async (j) => void handle(j),
@@ -114,7 +119,7 @@ function extractJobs(
     },
     consumer: `${hostname()}-${process.pid}-${crypto.randomUUID().slice(0, 8)}`,
     handle,
-    concurrency,
+    concurrency: o.concurrency,
     claimIdleMs: agentTimeoutMs() + 60_000,
     log: logger,
     ...(flow.signal ? { signal: flow.signal } : {}),
@@ -155,7 +160,10 @@ export function contractsAiModule(
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
   });
-  const { jobs, reclaimOnce } = extractJobs(db, flow, handle, d.concurrency ?? 2);
+  const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
+    concurrency: d.concurrency ?? 2,
+    ready: d.transport !== undefined || flow.ai.ready,
+  });
   const ad = { uow, groups: flow.groups, jobs };
   const start = startApproval(ad);
   const manual = createManual({ uow, tax: d.tax, newId: () => Bun.randomUUIDv7(), schedule });
@@ -168,7 +176,7 @@ export function contractsAiModule(
   const routes = extractionRoutes(view, {
     requestExtract: legacy
       ? requestExtract({ uow, starter, available: true })
-      : flowRequestExtract({ uow, jobs }),
+      : flowRequestExtract({ uow, jobs, ready: flow.ai.ready }),
     createManual: legacy ? manual : flowCreateManual(manual, start),
     quota: flow.quota,
   });
