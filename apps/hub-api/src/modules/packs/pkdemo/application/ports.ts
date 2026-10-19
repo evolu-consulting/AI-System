@@ -1,4 +1,5 @@
 // PK-FR-09 · N1 plan §9: cổng của gói `pkdemo` (lớp 2). Repo trong tx của `PackUow` (RLS `pkdemo_rw` + tenant).
+import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { Item } from "../domain/item";
 
 export type ItemsRepo = {
@@ -8,7 +9,8 @@ export type ItemsRepo = {
   get(id: string): Promise<Item | null>;
 };
 
-export type PkdemoRepos = { items: ItemsRepo };
+/** Repo trong một tx: của gói + bộ khung (`outbox` cùng tx — PK-FR-08). */
+export type PkdemoRepos = KitTxRepos & { items: ItemsRepo };
 
 /** Sinh id tăng dần (thứ tự dòng). */
 export type IdGen = () => string;
