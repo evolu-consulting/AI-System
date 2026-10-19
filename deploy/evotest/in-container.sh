@@ -18,7 +18,8 @@ echo "[evotest] bun $(bun --version) · nproc $(nproc) · setup $(( $(date +%s) 
 
 # --no-python: Python/agent-runtime ngoài phạm vi runner này.
 # EVO_FILTER (chỉ int): tiền tố/đường dẫn file, chạy thẳng test:int:par (bỏ qua test:all) để chạy lại vài file.
-if [ "$EVO_STEP" = int ] && [ -n "$EVO_FILTER" ]; then bun run test:int:par $EVO_FILTER; else bun run test:all --no-python --only="$EVO_STEP"; fi
+if [ "$EVO_STEP" = perf ]; then PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 120000 ${EVO_FILTER:-tests/acceptance/HD4/perf/}   # đo hiệu năng, mặc định HD4
+elif [ "$EVO_STEP" = int ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_WORKERS" ]; }; then bun run test:int:par ${EVO_WORKERS:+--workers=$EVO_WORKERS} $EVO_FILTER; else bun run test:all --no-python --only="$EVO_STEP"; fi
 rc=$?
 mkdir -p /out/logs
 [ -d .data ] && cp -r .data/. /out/logs/ 2>/dev/null

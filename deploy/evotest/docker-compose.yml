@@ -11,6 +11,7 @@ x-runner: &runner
     BUN_INSTALL_CACHE_DIR: /cache
     EVO_STEP: ${EVO_STEP:-unit}
     EVO_FILTER: ${EVO_FILTER:-}
+    EVO_WORKERS: ${EVO_WORKERS:-}
   volumes:
     - ./app:/app
     - ./cache:/cache

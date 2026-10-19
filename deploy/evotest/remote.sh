@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # Chạy TRÊN máy chủ (do run-tests.ps1 gọi qua ssh). Chỉ đụng ~/workspace/evotest và project Docker "evotest".
-# Dùng: [EVO_FILTER="tests/a tests/b"] remote.sh <bước: unit|int|e2e|all> <commit>
+# Dùng: [EVO_FILTER="tests/a tests/b"] remote.sh <bước: unit|int|e2e|all> <commit> <tag>  (khoá .lock do lệnh ssh gọi giữ; tag = hậu tố file /tmp riêng mỗi lượt)
 set -uo pipefail
-STEP="$1"; COMMIT="$2"
+STEP="$1"; COMMIT="$2"; TAG="$3"
 D="$HOME/workspace/evotest"
 mkdir -p "$D/cache" && cd "$D" || exit 2
-if ! mkdir .lock 2>/dev/null; then echo "evotest đang chạy (có $D/.lock) - bỏ qua"; exit 3; fi
 
 cleanup() {
   # chỉ project evotest: dừng container + xoá volume/mạng của chính nó, bỏ mã nguồn tạm; giữ cache bun + image (<15 GB)
   docker compose -p evotest --profile e2e down -v --remove-orphans >/dev/null 2>&1
-  rm -rf "$D/app" "$D/.lock"
+  rm -rf "$D/app"
 }
 trap cleanup EXIT
 
@@ -20,10 +19,10 @@ cache_gb=$(du -s --block-size=1G "$D/cache" "$D/out" 2>/dev/null | awk '{s+=$1} 
 [ "$cache_gb" -lt 15 ] || { echo "evotest chiếm $cache_gb GB (>=15) - xoá $D/cache rồi chạy lại"; exit 4; }
 
 rm -rf app out; mkdir app out
-tar xzf /tmp/evotest-app.tgz -C app
-unlink /tmp/evotest-app.tgz; unlink /tmp/evotest-kit.tgz
+tar xzf "/tmp/evotest-app-$TAG.tgz" -C app || { echo "giải nén mã nguồn lỗi"; exit 2; }
+unlink "/tmp/evotest-app-$TAG.tgz"; unlink "/tmp/evotest-kit-$TAG.tgz"
 echo "$COMMIT" > app/VERSION
-export EVO_FILTER="${EVO_FILTER:-}" EVO_UID=$(id -u) EVO_GID=$(id -g)
+export EVO_WORKERS="${EVO_WORKERS:-}" EVO_FILTER="${EVO_FILTER:-}" EVO_UID=$(id -u) EVO_GID=$(id -g)
 echo "[evotest] đĩa trống $free_gb GB · commit $COMMIT · bước $STEP"
 
 rc=0
@@ -40,5 +39,5 @@ for s in $steps; do
   mkdir -p "out/$s"; [ -d out/logs ] && { cp -r out/logs/. "out/$s/"; rm -rf out/logs; }
   docker compose -p evotest --profile e2e down -v --remove-orphans >/dev/null 2>&1   # DB sạch cho bước sau
 done
-tar czf /tmp/evotest-out.tgz -C out . 2>/dev/null
+tar czf "/tmp/evotest-out-$TAG.tgz" -C out . 2>/dev/null
 exit $rc
