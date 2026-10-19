@@ -4,8 +4,8 @@ import {
   type DirectoryResponse,
   DirectoryResponseSchema,
 } from "@ai/contracts/chat";
+import { api } from "@ai/web-kit/http";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "~/lib/http";
 
 export const DIRECTORY_KEY = "directory";
 export const DIRECTORY_STALE_MS = 30_000;

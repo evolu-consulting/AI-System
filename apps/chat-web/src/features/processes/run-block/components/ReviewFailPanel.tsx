@@ -2,6 +2,7 @@
 // giai đoạn này | Quay lại bước X), góp ý BẮT BUỘC, cảnh báo còn n lần / hết lượt. Tự gửi (`useReviewDecision`); thẻ cha chỉ
 // nhận kết quả. Lỗi: 409 đóng ⇒ toast "vừa được xử lý ở bước khác"; 422 đích ⇒ câu tĩnh (view được làm tươi).
 import { FEEDBACK_MAX, PROCESS_BACK_ROUNDS_MAX, type TaskDetail } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -9,7 +10,6 @@ import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Textarea } from "~/components/ui/textarea";
-import { ApiError } from "~/lib/http";
 import { useReviewDecision } from "../hooks/use-review-actions";
 import { reviewErrorMessage } from "../lib/review-error";
 

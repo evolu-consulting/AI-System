@@ -10,7 +10,7 @@ import {
   parseMeStreamRunEvent,
   type RawSseEvent,
 } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { backoffDelay, DOWN_AFTER_FAILURES, IDLE_TIMEOUT_MS } from "./lib/backoff";
 import type { RealtimeStore } from "./realtime-store";
 

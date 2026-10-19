@@ -7,7 +7,7 @@ import {
   type TaskDetail,
   TaskDetailSchema,
 } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api } from "@ai/web-kit/http";
 
 const path = (id: string, verb: "answer" | "forward") =>
   `/review-tasks/${encodeURIComponent(id)}/${verb}`;

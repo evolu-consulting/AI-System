@@ -1,7 +1,7 @@
 // review C1 #3 · E12 trả 200 nhưng thiếu header id → đóng stream (nhả kết nối) rồi mới ném `ApiError`.
 import { afterEach, expect, test } from "bun:test";
 import { FLOW_ID_HEADER, MESSAGE_ID_HEADER, RUN_ID_HEADER } from "@ai/contracts/chat";
-import { ApiError, setAuthHooks } from "~/lib/http";
+import { ApiError, setAuthHooks } from "@ai/web-kit/http";
 import { sendMessage } from "./api";
 
 const realFetch = globalThis.fetch;

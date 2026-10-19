@@ -1,8 +1,7 @@
-// CHAT-AC-03 · refresh token xoay vòng (chép admin-web, khoá `ai-chat-refresh`): single-flight trong tab + Web Locks liên tab + dùng lại token broadcast.
+// CHAT-AC-03 · refresh token xoay vòng (chép admin-web; tên khoá do app truyền, chat `ai-chat-refresh`): single-flight trong tab + Web Locks liên tab + dùng lại token broadcast.
 import type { Me } from "@ai/contracts/chat";
 import { ApiError } from "../http";
 
-export const REFRESH_LOCK_NAME = "ai-chat-refresh";
 /** Cửa sổ chấp nhận token do tab khác vừa xoay (khớp ân hạn 10 s của backend). */
 export const SHARED_TOKEN_WINDOW_MS = 10_000;
 const SUPERSEDED_RETRY_DELAY_MS = 100;
@@ -14,6 +13,8 @@ export type LockManagerLike = {
 };
 
 export type RefresherDeps = {
+  /** Tên Web Lock liên tab, riêng mỗi app (trùng tên với app khác = tranh khoá). */
+  lockName: string;
   /** Gọi `POST /auth/refresh` (cookie), trả token + hồ sơ. Ném `ApiError` khi lỗi. */
   callRefresh(): Promise<RefreshResult>;
   /** `null` = không có Web Locks (chỉ còn single-flight trong tab). */
@@ -71,9 +72,7 @@ export function createRefresher(deps: RefresherDeps): Refresher {
   return {
     refresh(opts) {
       if (inflight) return inflight;
-      const run = deps.locks
-        ? deps.locks.request(REFRESH_LOCK_NAME, () => locked(opts))
-        : locked(opts);
+      const run = deps.locks ? deps.locks.request(deps.lockName, () => locked(opts)) : locked(opts);
       const p: Promise<RefreshResult> = run.finally(() => {
         if (inflight === p) inflight = null;
       });

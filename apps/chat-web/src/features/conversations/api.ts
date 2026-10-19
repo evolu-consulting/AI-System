@@ -1,6 +1,6 @@
 // CHAT-AC-19, CHAT-AC-21, CHAT-AC-22 · gọi Hub E5/E8/E9 (nơi duy nhất của feature conversations).
 import type { ChatPage, Conversation } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api } from "@ai/web-kit/http";
 
 export const CONVERSATIONS_KEY = "conversations";
 

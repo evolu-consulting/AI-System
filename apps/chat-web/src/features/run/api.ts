@@ -7,7 +7,7 @@ import {
   type Run,
   type SendMessageRequest,
 } from "@ai/contracts/chat";
-import { ApiError, api, apiResponse } from "~/lib/http";
+import { ApiError, api, apiResponse } from "@ai/web-kit/http";
 
 const SSE_ACCEPT = { Accept: "text/event-stream" };
 

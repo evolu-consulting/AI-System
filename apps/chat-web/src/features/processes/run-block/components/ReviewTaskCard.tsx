@@ -1,13 +1,13 @@
 // CHAT-AC-53 · plan-frontend §3 + plan-frontend-thread §5: thẻ kiểm Đạt / Chưa đạt.
 // Trong thread (`useThreadBinding()`≠null): "Chưa đạt" đưa composer sang chế độ Góp ý. Ngoài thread: ô góp ý tại chỗ (inline).
 import { FEEDBACK_MAX, type ProcessRunFullView } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";
-import { ApiError } from "~/lib/http";
 import { ForwardAction } from "../../ask/components/ForwardAction";
 import { ApplyGateLine } from "../../shared/apply/ApplyGateLine";
 import { AutofixResult } from "../../shared/autofix/AutofixResult";

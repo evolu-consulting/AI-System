@@ -1,5 +1,7 @@
 // C1 FE · F12 · render markdown GFM an toàn (ADR-0006): không HTML thô, URL nguy hiểm bị lọc, link mở tab mới.
 // Chỉ nạp qua `AnswerBody` (React.lazy) → chunk riêng. Khối đã đóng được memo; chỉ khối cuối parse lại khi stream.
+
+import { splitBlocks } from "@ai/web-kit/answer/blocks";
 import {
   Children,
   type ComponentProps,
@@ -10,7 +12,6 @@ import {
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { splitBlocks } from "../lib/blocks";
 import { CodeBlock } from "./CodeBlock";
 
 export type MarkdownProps = { content: string; streaming?: boolean };

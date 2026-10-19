@@ -1,7 +1,7 @@
 // CHAT-AC-01, CHAT-AC-02 · kết quả đăng nhập → câu báo chung / modal khoá / alert Admin Console.
 import { describe, expect, test } from "bun:test";
 import type { LoginResponse } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { outcomeOfError, outcomeOfResponse } from "./login-outcome";
 
 const res = (status: string) => ({ status }) as unknown as LoginResponse;

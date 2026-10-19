@@ -1,8 +1,9 @@
 // HUB-FR-10/91/94 · lỗi gửi hiện trong composer + đếm ngược 429 (`Retry-After`): chữ giữ nguyên, Gửi khoá tới 0.
+
+import type { ApiError } from "@ai/web-kit/http";
 import { useState } from "react";
 import { replaceTag } from "~/features/agents/lib/mention";
 import { replaceCommandName } from "~/features/commands/lib/slash";
-import type { ApiError } from "~/lib/http";
 import {
   isCooldownCode,
   retrySecondsOf,

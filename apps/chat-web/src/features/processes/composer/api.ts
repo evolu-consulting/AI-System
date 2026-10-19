@@ -7,8 +7,8 @@ import {
   ProcessListResponseSchema,
 } from "@ai/contracts/chat";
 import type { ProcessInputDef, ProcessInputValue } from "@ai/contracts/hub-admin";
+import { api } from "@ai/web-kit/http";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "~/lib/http";
 import { processKeys } from "../shared/keys";
 
 const CATALOG_STALE_MS = 60_000;

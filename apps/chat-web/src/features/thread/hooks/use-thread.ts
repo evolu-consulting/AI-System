@@ -1,9 +1,9 @@
 // CHAT-AC-05, CHAT-AC-20 · query hội thoại `['conv', id]` (E7) + flow `['conv', id, 'flows']` (E10, CR-051: tải dần khi cuộn lên).
 // Run kết thúc → runtime invalidate `['conv', id]` → cả hai query làm mới.
 import type { Flow } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
-import { ApiError } from "~/lib/http";
 import { getConversation, listFlows } from "../api";
 
 export function useConversation(id: string) {

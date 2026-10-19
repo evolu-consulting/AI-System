@@ -1,6 +1,7 @@
 // CHAT-AC-53/60 · lỗi của `POST /review-tasks/:id/decision` → câu hiển thị. Thuần.
+
+import { ApiError } from "@ai/web-kit/http";
 import type { TFunction } from "i18next";
-import { ApiError } from "~/lib/http";
 
 /** `null` ⇒ việc đã đóng (người khác xử lý trước), thoát êm; ngược lại ⇒ câu lỗi cho composer/ô inline. */
 export function reviewErrorMessage(err: unknown, t: TFunction): string | null {

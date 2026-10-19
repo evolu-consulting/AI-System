@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { type Chip, isBusy, markMissing, nextToStart, readyIds, uploadFailure } from "./queue";
 
 const chip = (uid: number, status: Chip["status"], id?: string): Chip => ({

@@ -1,4 +1,6 @@
 // CHAT-AC-53 · plan-frontend-thread §4: nút "Huỷ lượt chạy" + xác nhận. Dùng ở thanh trạng thái thread và `/runs/$id` (PF3).
+
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -14,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
-import { ApiError } from "~/lib/http";
 import { useCancelRun } from "../hooks/use-decide";
 
 export type CancelRunButtonProps = {

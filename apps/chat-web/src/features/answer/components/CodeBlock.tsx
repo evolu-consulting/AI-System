@@ -1,9 +1,10 @@
 // C1 FE · F12 · khối code: tô màu hljs (chunk riêng, chỉ khi `highlight`), nút Copy (ADR-0006).
+
+import { copyText } from "@ai/web-kit/answer/clipboard";
+import { highlightToHtml } from "@ai/web-kit/answer/highlight";
 import { Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { copyText } from "../lib/clipboard";
-import { highlightToHtml } from "../lib/highlight";
 
 type Props = { code: string; lang?: string | undefined; highlight: boolean };
 

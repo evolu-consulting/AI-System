@@ -18,7 +18,7 @@ import {
   RUN_ID_HEADER,
   type SendRoomMessageRequest,
 } from "@ai/contracts/chat";
-import { api, apiResponse } from "~/lib/http";
+import { api, apiResponse } from "@ai/web-kit/http";
 
 const base = (id: string) => `/rooms/${encodeURIComponent(id)}`;
 

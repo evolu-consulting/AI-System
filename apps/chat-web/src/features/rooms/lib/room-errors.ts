@@ -1,6 +1,6 @@
 // X2a · mã lỗi phòng → key i18n `rtErr.*` (plan-frontend-i18n). Mã lạ → `rtErr.unknown`; message của server không hiện ra.
 import { CHAT_ROOM_ERROR_CODES } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 
 const KNOWN: ReadonlySet<string> = new Set([...CHAT_ROOM_ERROR_CODES, "VALIDATION_ERROR"]);
 

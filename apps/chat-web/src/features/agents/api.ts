@@ -1,7 +1,7 @@
 // HUB-FR-91 · `GET /agents` (menu `@`): nạp lười lần đầu gõ `@`, cache 60 s (Studio sửa thấy sau ≤ 1 phút, CR-044). 403 coi như rỗng.
 import { type AgentMenuResponse, AgentMenuResponseSchema } from "@ai/contracts/chat";
+import { ApiError, api } from "@ai/web-kit/http";
 import { useQuery } from "@tanstack/react-query";
-import { ApiError, api } from "~/lib/http";
 
 export const AGENT_MENU_STALE_MS = 60_000;
 

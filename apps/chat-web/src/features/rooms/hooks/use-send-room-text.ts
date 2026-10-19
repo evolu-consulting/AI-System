@@ -1,12 +1,13 @@
 // HUB-FR-96, HUB-FR-100, HUB-FR-103 · gửi tin của composer phòng. `client_msg_id` sinh một lần cho mỗi lần gõ gửi,
 // giữ nguyên khi bấm Gửi lại cùng nội dung (idempotent R15). Không optimistic: chèn cache sau khi POST xong (plan-frontend D7).
 // Trả `SubmitResult` (D5): lỗi composer (`AGENT_NOT_FOUND`, `TOO_MANY_RUNS`…) hiện trong ô, giữ nội dung; mã khác → toast.
+
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
-import { ApiError } from "~/lib/http";
 import { sendKey } from "../lib/send-key";
 import { useSendRoomMessage } from "./use-room-actions";
 

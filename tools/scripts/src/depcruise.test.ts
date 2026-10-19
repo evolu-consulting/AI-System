@@ -92,6 +92,9 @@ describe("ADM-NFR-06 · luật dependency-cruiser trên fixture", () => {
         ["packages/contracts/src/a.ts", "apps/x-api/src/lib/util.ts"],
         ["packages/contracts/src/a.ts", "packages/db/src/index.ts"],
       ]);
+      expect(byRule("web-kit-no-apps")).toEqual([
+        ["packages/web-kit/src/bad.ts", "apps/x-web/src/lib/fmt.ts"],
+      ]);
       const circ = byRule("no-circular");
       expect(circ.length).toBeGreaterThanOrEqual(1);
       for (const [from, to] of circ) {
@@ -101,7 +104,7 @@ describe("ADM-NFR-06 · luật dependency-cruiser trên fixture", () => {
         ["apps/x-api/src/lib/missing.ts", "./khong-ton-tai"],
       ]);
       // Không luật nào ngoài 10 luật đã khai.
-      expect(v.length).toBe(13 + circ.length);
+      expect(v.length).toBe(14 + circ.length);
     },
     SLOW,
   );

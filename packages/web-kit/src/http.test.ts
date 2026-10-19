@@ -6,6 +6,7 @@ import {
   apiResponse,
   isAuthPath,
   sendPublic,
+  setAppName,
   setAuthHooks,
   setRequestLanguage,
 } from "./http";
@@ -178,6 +179,7 @@ describe("isAuthPath", () => {
 
 describe("CR-053 · X-App", () => {
   test("`/auth/*` gửi X-App: chat; endpoint Hub thì không", async () => {
+    setAppName("chat");
     replies = [
       { status: 200, body: {} },
       { status: 200, body: {} },

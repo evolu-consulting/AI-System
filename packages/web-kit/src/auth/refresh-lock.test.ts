@@ -4,7 +4,6 @@ import { ApiError } from "../http";
 import {
   createRefresher,
   type LockManagerLike,
-  REFRESH_LOCK_NAME,
   type RefresherDeps,
   type RefreshResult,
 } from "./refresh-lock";
@@ -28,6 +27,7 @@ function setup(over: Partial<RefresherDeps> = {}) {
   let clock = 1_000;
   const sent: Array<{ token: string; at: number }> = [];
   const deps: RefresherDeps = {
+    lockName: "ai-chat-refresh",
     callRefresh: async (): Promise<RefreshResult> => {
       calls += 1;
       return { accessToken: `tok-${calls}`, me };
@@ -62,6 +62,7 @@ describe("CHAT-AC-03 · refresh single-flight + Web Locks", () => {
     };
     let tabB: ReturnType<typeof createRefresher> | undefined;
     const tabA = createRefresher({
+      lockName: "ai-chat-refresh",
       callRefresh: call,
       locks,
       broadcast: (token, at) => tabB?.receive(token, at),
@@ -69,6 +70,7 @@ describe("CHAT-AC-03 · refresh single-flight + Web Locks", () => {
       sleep: async () => {},
     });
     tabB = createRefresher({
+      lockName: "ai-chat-refresh",
       callRefresh: call,
       locks,
       broadcast: (token, at) => tabA.receive(token, at),
@@ -168,9 +170,21 @@ describe("CHAT-AC-03 · refresh xoay vòng: SUPERSEDED / lỗi", () => {
   });
 });
 
-describe("CHAT-AC-03 · tên khoá riêng của chat", () => {
-  test("khoá Web Lock là ai-chat-refresh (không tranh khoá với Admin)", () => {
-    expect(REFRESH_LOCK_NAME).toBe("ai-chat-refresh");
+describe("CHAT-AC-03 · tên khoá do app truyền", () => {
+  test("Web Lock dùng đúng `lockName` của app (không tranh khoá với app khác)", async () => {
+    const names: string[] = [];
+    const locks = fakeLocks();
+    const s = setup({
+      lockName: "ai-x-refresh",
+      locks: {
+        request: (name, cb) => {
+          names.push(name);
+          return locks.request(name, cb);
+        },
+      },
+    });
+    await createRefresher(s.deps).refresh({ stale: null, allowShared: false });
+    expect(names).toEqual(["ai-x-refresh"]);
   });
 });
 

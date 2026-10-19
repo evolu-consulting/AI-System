@@ -1,9 +1,15 @@
 // CHAT-AC-24..27, CHAT-AC-30 · thẻ lỗi theo mã: câu i18n (không hiện message/hint thô), nút theo bảng, dòng `CODE · run id`.
+
+import { copyText } from "@ai/web-kit/answer/clipboard";
+import {
+  errorActions,
+  errorBodyKey,
+  errorTitleKey,
+  reportText,
+} from "@ai/web-kit/answer/error-map";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import { copyText } from "../lib/clipboard";
-import { errorActions, errorBodyKey, errorTitleKey, reportText } from "../lib/error-map";
 
 export type ErrorCardProps = {
   code: string;

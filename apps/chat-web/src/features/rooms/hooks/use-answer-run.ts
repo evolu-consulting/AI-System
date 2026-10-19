@@ -2,11 +2,11 @@
 // `{flow_id, answer_run_id}` (thiếu `answer_run_id` server coi là tin thường). 403 `NOT_RUN_CALLER` → toast + làm tươi;
 // 404 `NOT_FOUND` (run hết chờ / thread lạ) → toast + làm tươi. "Chạy lại" (lỗi/huỷ) gửi lại nguyên văn tin gọi.
 import type { RoomDetail, RoomMessage, SendRoomMessageRequest } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ApiError } from "~/lib/http";
 import { type SentRoomMessage, sendRoomMessage } from "../api";
 import { isMainPlacement, removeActiveRun } from "../lib/room-agent";
 import { insertMessage, type RoomMessagesData, roomKeys } from "../lib/room-cache";

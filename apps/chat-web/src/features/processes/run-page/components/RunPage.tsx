@@ -1,10 +1,11 @@
 // HUB-FR-113 · CHAT-AC-54…56 · PF3: trang `/runs/$id?tab&task`. Tabs Tiến độ / Token / Nhật ký ("Nhật ký" ẩn khi
 // `access:"task"`). 404 (gồm không có quyền) ⇒ "Không tìm thấy". Token tab = chỗ dành cho PF4 (`UsageTab`, lười).
+
+import { ApiError } from "@ai/web-kit/http";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { ApiError } from "~/lib/http";
 import { ProcessNotFound } from "../../shared/components/ProcessRouteGate";
 import { useProcessRun } from "../../shared/hooks/use-process-run";
 import { LogTab } from "./LogTab";

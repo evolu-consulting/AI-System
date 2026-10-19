@@ -1,6 +1,7 @@
 // C1 FE · F12 · thân câu trả lời: markdown nạp lazy; chunk chưa tới → chữ thô, không chặn stream (ADR-0006).
+
+import { preloadHighlighter } from "@ai/web-kit/answer/highlight";
 import { lazy, Suspense } from "react";
-import { preloadHighlighter } from "../lib/highlight";
 
 const loadMarkdown = () => import("./Markdown");
 const Markdown = lazy(loadMarkdown);

@@ -1,8 +1,9 @@
 // HUB-FR-44 · đính kèm trong composer: chọn/kéo-thả → chặn sớm → hàng đợi; `ids` + `busy` cho nút Gửi.
+
+import type { ApiError } from "@ai/web-kit/http";
 import { type DragEvent, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { ApiError } from "~/lib/http";
 import { type Chip, isBusy, markMissing, missingIds, readyIds } from "../lib/queue";
 import { validateAttachment } from "../lib/validate.rules";
 import { useAttachQueue } from "./use-attach-queue";

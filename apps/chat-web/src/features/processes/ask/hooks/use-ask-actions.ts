@@ -1,7 +1,7 @@
 // CHAT-AC-57 · HUB-FR-110/111 — mutation `answer` / `forward`. Mọi kết quả (kể cả 409 `REVIEW_TASK_CLOSED`) → làm mới view/danh sách.
 import type { ForwardReviewTaskRequest, ReviewAnswerRequest } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError } from "~/lib/http";
 import { processKeys } from "../../shared/keys";
 import { answerTask, forwardTask } from "../api";
 

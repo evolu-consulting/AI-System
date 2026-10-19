@@ -1,11 +1,9 @@
-// CHAT-AC-03 · BroadcastChannel liên tab (chép admin-web, kênh `ai-chat-auth`): chia sẻ access token mới và tín hiệu đăng xuất.
+// CHAT-AC-03 · BroadcastChannel liên tab (chép admin-web; tên kênh do app truyền, chat `ai-chat-auth`): chia sẻ access token mới và tín hiệu đăng xuất.
 
 /** `sub` = `me.id` của token (thiếu khi tab gửi chưa biết user) — tab nhận so với user của mình. */
 export type AuthMessage =
   | { type: "token"; accessToken: string; at: number; sub?: string }
   | { type: "logout" };
-
-export const AUTH_CHANNEL_NAME = "ai-chat-auth";
 
 /** Kiểm tra thông điệp nhận từ tab khác (dữ liệu ngoài, không tin kiểu). */
 export function parseAuthMessage(data: unknown): AuthMessage | null {
@@ -33,8 +31,8 @@ export type AuthChannel = {
 
 const NOOP_CHANNEL: AuthChannel = { post: () => {}, subscribe: () => () => {} };
 
-/** Không có `BroadcastChannel` → kênh rỗng (mỗi tab tự lo). */
-export function createAuthChannel(name = AUTH_CHANNEL_NAME): AuthChannel {
+/** `name` riêng mỗi app (chat: `ai-chat-auth`). Không có `BroadcastChannel` → kênh rỗng (mỗi tab tự lo). */
+export function createAuthChannel(name: string): AuthChannel {
   if (typeof BroadcastChannel === "undefined") return NOOP_CHANNEL;
   const bc = new BroadcastChannel(name);
   return {

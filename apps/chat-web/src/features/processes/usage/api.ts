@@ -1,8 +1,8 @@
 // CHAT-AC-58 · HUB-FR-116 · P-a PF4: nơi duy nhất gọi `GET /process-runs/:id/usage`.
 import { type ProcessRunUsage, ProcessRunUsageSchema } from "@ai/contracts/chat";
+import { api } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { api } from "~/lib/http";
 import { processKeys } from "../shared/keys";
 
 const STALE_MS = 15_000;

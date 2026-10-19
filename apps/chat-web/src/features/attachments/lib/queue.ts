@@ -1,5 +1,5 @@
 // HUB-FR-44 · luật thuần của hàng đợi upload: ≤ 3 đồng thời, ánh xạ lỗi → câu chữ.
-import type { ApiError } from "~/lib/http";
+import type { ApiError } from "@ai/web-kit/http";
 import type { AttachErrorKey } from "./validate.rules";
 
 export const UPLOAD_CONCURRENCY = 3;

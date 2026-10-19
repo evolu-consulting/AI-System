@@ -1,9 +1,9 @@
 // HUB-FR-10/11 · lỗi E12 trước stream hiện TRONG composer (plan-frontend §0 D5, §1.4): chọn câu + gợi ý từ `ApiError`.
 // F2 đã thêm `AGENT_NOT_FOUND`, `TOO_MANY_RUNS`; F3 thêm `ATTACHMENT_NOT_FOUND`; CR-054 thêm `DEFAULT_AGENT_FORBIDDEN`.
 import { CMD_SUGGESTIONS_MAX, PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
+import type { ApiError } from "@ai/web-kit/http";
 import { leadingTag } from "~/features/agents/lib/mention";
 import { leadingCommand } from "~/features/commands/lib/slash";
-import type { ApiError } from "~/lib/http";
 
 const COMPOSER_CODES: ReadonlySet<string> = new Set([
   "CMD_NOT_FOUND",

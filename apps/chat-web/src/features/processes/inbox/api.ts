@@ -8,8 +8,8 @@ import {
   type ReviewTaskListResponse,
   ReviewTaskListResponseSchema,
 } from "@ai/contracts/chat";
+import { api } from "@ai/web-kit/http";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "~/lib/http";
 import { processKeys } from "../shared/keys";
 
 const REVIEW_TASKS_LIMIT = 50;

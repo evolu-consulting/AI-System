@@ -1,12 +1,13 @@
 // CHAT-AC-08..13, CHAT-AC-24..27 · phần dưới câu trả lời: bước, hỏi lại, lỗi, đã dừng. Props `{ answer: AnswerView }` ổn định.
 // Gửi lại dùng `answer.context` (convId/flowId/nội dung gốc); thiếu → không có nút gửi.
+
+import { answererName } from "@ai/web-kit/answer/step-label";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AskCard } from "~/features/answer/components/AskCard";
 import { CancelledNote } from "~/features/answer/components/CancelledNote";
 import { ErrorCard } from "~/features/answer/components/ErrorCard";
 import { StepList } from "~/features/answer/components/StepList";
-import { answererName } from "~/features/answer/lib/step-label";
 import { useSend } from "~/features/run/hooks/use-send";
 import type { AnswerContext, AnswerView } from "../lib/thread-logic";
 

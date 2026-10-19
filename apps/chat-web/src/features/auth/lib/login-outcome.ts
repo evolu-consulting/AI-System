@@ -1,6 +1,6 @@
 // CHAT-AC-01, CHAT-AC-02 · kết quả đăng nhập → việc UI làm. Lỗi thông tin luôn là một câu chung (không nói ô nào sai).
 import type { LoginResponse } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 
 export type LoginOutcome =
   | { kind: "ok" }

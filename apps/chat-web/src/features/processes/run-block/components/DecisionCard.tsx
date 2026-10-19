@@ -1,11 +1,11 @@
 // CHAT-AC-53 · plan-frontend §3: thẻ "Cần người quyết" — 3 nút theo `task.options`, ghi chú ≤ 500. Mount một lần (DecisionMessage).
 import { type DecisionOption, FORWARD_NOTE_MAX } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";
-import { ApiError } from "~/lib/http";
 import { LazyApplyIssue } from "../../shared/apply/lazy";
 import { AutofixFailures } from "../../shared/autofix/AutofixFailures";
 import { ReasonLines } from "../../shared/components/ReasonLines";

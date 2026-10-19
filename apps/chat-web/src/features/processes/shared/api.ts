@@ -1,6 +1,6 @@
 // HUB-FR-105…113 · P-a Bước 0: gọi API dùng chung (dò cờ, đọc run, đọc output). Mỗi PF có `api.ts` riêng cho phần của mình.
 import { ProcessOutputSchema, type ProcessRunView, ProcessRunViewSchema } from "@ai/contracts/chat";
-import { ApiError, api } from "~/lib/http";
+import { ApiError, api } from "@ai/web-kit/http";
 import type { EngineState } from "./types";
 
 /**

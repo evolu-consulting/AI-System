@@ -1,6 +1,6 @@
 // CHAT-AC-05, CHAT-AC-20 · gọi Hub E7 (hội thoại) + E10 (flow, cursor) — nơi duy nhất gọi API của feature thread.
 import { CHAT_RECENT_PAGE, type ChatPage, type Conversation, type Flow } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api } from "@ai/web-kit/http";
 
 const convPath = (id: string) => `/conversations/${encodeURIComponent(id)}`;
 

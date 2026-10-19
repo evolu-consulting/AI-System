@@ -1,6 +1,7 @@
 // HUB-FR-44 · hàng đợi upload của một composer: chip theo thứ tự chọn, ≤ 3 đồng thời, 429 chờ `Retry-After` rồi thử 1 lần.
+
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError } from "~/lib/http";
 import { uploadAttachment } from "../api";
 import { type Chip, nextToStart, uploadFailure } from "../lib/queue";
 

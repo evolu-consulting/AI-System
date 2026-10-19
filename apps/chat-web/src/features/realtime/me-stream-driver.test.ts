@@ -1,7 +1,7 @@
 // HUB-FR-99, HUB-FR-100, X2a-AC08, X2a-AC12 · driver /me/stream với stream/đồng hồ giả.
 import { expect, test } from "bun:test";
 import type { MeStreamEvent, MeStreamProcessEvent, MeStreamRunEvent } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { readRawSse } from "./lib/read-raw-sse";
 import { type MeStreamDeps, MeStreamDriver } from "./me-stream-driver";
 import { createRealtimeStore } from "./realtime-store";

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { AUTH_CHANNEL_NAME, parseAuthMessage } from "./auth-channel";
+import { parseAuthMessage } from "./auth-channel";
 
 describe("CHAT-AC-03 · parseAuthMessage", () => {
   test("nhận token và logout hợp lệ", () => {
@@ -22,12 +22,6 @@ describe("CHAT-AC-03 · parseAuthMessage", () => {
     ]) {
       expect(parseAuthMessage(bad)).toBeNull();
     }
-  });
-});
-
-describe("CHAT-AC-03 · tên kênh riêng của chat", () => {
-  test("kênh BroadcastChannel là ai-chat-auth", () => {
-    expect(AUTH_CHANNEL_NAME).toBe("ai-chat-auth");
   });
 });
 

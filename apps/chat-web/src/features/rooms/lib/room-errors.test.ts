@@ -1,7 +1,7 @@
 // X2a · mã lỗi phòng → key i18n; mọi mã contract có chuỗi trong cả vi/en.
 import { describe, expect, test } from "bun:test";
 import { CHAT_ROOM_ERROR_CODES } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import en from "../../../../../../packages/i18n/locales/chat/en.json";
 import vi from "../../../../../../packages/i18n/locales/chat/vi.json";
 import { isRoomNotFound, roomErrorKey, roomErrorKeyOf } from "./room-errors";

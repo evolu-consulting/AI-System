@@ -77,9 +77,15 @@ export type RequestOptions = {
 
 let hooks: AuthHooks | null = null;
 let language: string | null = null;
+let appName: string | null = null;
 
 export function setAuthHooks(next: AuthHooks | null): void {
   hooks = next;
+}
+
+/** CR-053 · tên app gửi qua `X-App` khi gọi `/auth/*` (chat-web: `chat`); `null` = không gửi. */
+export function setAppName(app: string | null): void {
+  appName = app;
 }
 
 /** Ngôn ngữ UI gửi qua `Accept-Language` (nối từ i18n khi đổi ngôn ngữ). */
@@ -140,8 +146,8 @@ async function execRaw(
   if (opts.rawBody === undefined && opts.body !== undefined)
     headers["Content-Type"] = "application/json";
   Object.assign(headers, opts.headers);
-  // CR-053: `/auth/*` báo app ⇒ admin-api dùng cookie phiên riêng `ai_rt_chat`.
-  if (isAuthPath(path)) headers[X_APP_HEADER] = "chat";
+  // CR-053: `/auth/*` báo app ⇒ admin-api dùng cookie phiên riêng của app (chat: `ai_rt_chat`).
+  if (appName && isAuthPath(path)) headers[X_APP_HEADER] = appName;
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {

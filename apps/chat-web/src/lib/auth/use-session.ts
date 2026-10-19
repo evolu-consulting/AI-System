@@ -1,6 +1,8 @@
 // CHAT-AC-01 · hook đọc phiên bằng useSyncExternalStore + selector (CONVENTIONS §6: tránh re-render thừa).
+
+import type { SessionState } from "@ai/web-kit/auth/session";
 import { useSyncExternalStore } from "react";
-import { type SessionState, session } from "./session";
+import { session } from "./session";
 
 /** `selector` phải trả giá trị ổn định (primitive hoặc tham chiếu trong state), ví dụ `(s) => s.me`. */
 export function useSession<T>(selector: (s: SessionState) => T): T {

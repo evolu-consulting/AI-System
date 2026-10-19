@@ -2,8 +2,8 @@
 // Last-Event-ID + backoff, lost + Thử lại, 410, 409 FLOW_BUSY, Dừng không abort, gắn lại từ 0.
 import { expect, test } from "bun:test";
 import { type ChatEvent, encodeSseEvent, type Run } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
-import { readEvents } from "~/lib/sse";
+import { ApiError } from "@ai/web-kit/http";
+import { readEvents } from "@ai/web-kit/sse";
 import type { SendAccepted } from "./api";
 import type { RunState } from "./lib/reducer";
 import { RunDriver } from "./run-driver";

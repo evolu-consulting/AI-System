@@ -13,7 +13,7 @@ import {
   ReviewTaskResponseSchema,
   type TaskDetail,
 } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api } from "@ai/web-kit/http";
 
 const runPath = (id: string) => `/process-runs/${encodeURIComponent(id)}`;
 const reviewPath = (id: string) => `/review-tasks/${encodeURIComponent(id)}`;

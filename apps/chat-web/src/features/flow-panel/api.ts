@@ -1,6 +1,6 @@
 // CHAT-AC-14 · gọi Hub E11 (tin của một flow, cursor) — nơi duy nhất gọi API của feature flow-panel.
 import { CHAT_RECENT_PAGE, type ChatPage, type Message } from "@ai/contracts/chat";
-import { api } from "~/lib/http";
+import { api } from "@ai/web-kit/http";
 
 /** E11 · trang đầu = tin mới nhất, `items` sắp tăng; `next_cursor` = trang cũ hơn. */
 export function listFlowMessages(

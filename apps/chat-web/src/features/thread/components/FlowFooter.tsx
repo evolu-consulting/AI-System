@@ -1,9 +1,10 @@
 // CHAT-AC-05, CHAT-AC-14 · footer khối flow: Copy · "+N tin trong flow · thời gian" · Trả lời tiếp (mở khung qua `?flow=`, F10).
+
+import { copyText } from "@ai/web-kit/answer/clipboard";
 import { ChevronRight, Copy, LoaderCircle, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import { copyText } from "~/features/answer/lib/clipboard";
 import { ProcessButton } from "~/features/dlc/components/ProcessDialog";
 import { extraMessages } from "../lib/thread-logic";
 

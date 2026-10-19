@@ -1,11 +1,11 @@
 // CHAT-AC-05, CHAT-AC-06 · khối flow ở luồng chính: câu hỏi đầu (phải) + Consultant + câu trả lời đầu (stream ngay trong khối) + footer.
 import type { AttachmentRef } from "@ai/contracts/chat";
+import { answererName } from "@ai/web-kit/answer/step-label";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { MessageText } from "~/components/shared/MessageText";
 import { AnswerBody } from "~/features/answer/components/AnswerBody";
 import { ColdResumeNote } from "~/features/answer/components/ColdResumeNote";
-import { answererName } from "~/features/answer/lib/step-label";
 import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { cn } from "~/lib/utils";
 import type { AnswerView } from "../lib/thread-logic";

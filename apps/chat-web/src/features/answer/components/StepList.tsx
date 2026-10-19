@@ -1,11 +1,11 @@
 // CHAT-AC-08, CHAT-AC-09, CR-054 · danh sách bước: đang chạy (spinner, aria-busy) → Collapsible "✓ n bước · s".
 // Bước có agent: "Orchestrator · Haiku — <nhãn>".
 import type { StepAgent } from "@ai/contracts/chat";
+import { stepAgentPrefix } from "@ai/web-kit/answer/step-label";
 import { Check, ChevronDown, LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
-import { stepAgentPrefix } from "../lib/step-label";
 
 export type StepItem = {
   id: string;

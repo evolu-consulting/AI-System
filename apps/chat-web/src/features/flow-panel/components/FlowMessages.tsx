@@ -1,10 +1,10 @@
 // CHAT-AC-14..16 · luồng tin của khung flow: tin E11 (cuộn lên tải cũ hơn) + câu hỏi/trả lời của run đang chạy (stream, cold).
 import type { AttachmentRef } from "@ai/contracts/chat";
+import { answererName } from "@ai/web-kit/answer/step-label";
 import { useTranslation } from "react-i18next";
 import { ConsultantAvatar } from "~/components/shared/ConsultantAvatar";
 import { MessageText } from "~/components/shared/MessageText";
 import { Skeleton } from "~/components/ui/skeleton";
-import { answererName } from "~/features/answer/lib/step-label";
 import { AttachmentList } from "~/features/attachments/components/AttachmentList";
 import { AnswerExtras } from "~/features/thread/components/AnswerExtras";
 import { Answer } from "~/features/thread/components/FlowBlock";

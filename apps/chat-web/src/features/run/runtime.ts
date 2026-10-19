@@ -1,7 +1,8 @@
 // UC-02, UC-08 · ghép `RunDriver` với I/O thật: API E12–E15, `readEvents`, rAF, QueryClient; đăng xuất → bỏ mọi run.
+
+import { readEvents } from "@ai/web-kit/sse";
 import { queryClient } from "~/app/query-client";
 import { session } from "~/lib/auth/session";
-import { readEvents } from "~/lib/sse";
 import { cancelRun, getRun, openEvents, sendMessage } from "./api";
 import type { RunState } from "./lib/reducer";
 import { RunDriver } from "./run-driver";

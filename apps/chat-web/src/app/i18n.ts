@@ -2,9 +2,9 @@
 import { loadChatLocale } from "@ai/i18n/chat-locales";
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { loadProcessLocale } from "@ai/i18n/process-locales";
+import { setRequestLanguage } from "@ai/web-kit/http";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { setRequestLanguage } from "~/lib/http";
 import { readLocal, writeLocal } from "~/lib/storage";
 
 export const LOCALE_STORAGE_KEY = "ai.locale";

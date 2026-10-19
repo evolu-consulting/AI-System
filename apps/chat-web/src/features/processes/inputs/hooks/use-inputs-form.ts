@@ -1,8 +1,8 @@
 // HUB-FR-124 · AC-H37 · state + gửi của form `!key`: giữ giá trị khi lỗi, tải tệp, chọn nguồn điền sẵn nhánh.
 import { PROCESS_RUNS_PER_TENANT } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ApiError } from "~/lib/http";
 import { useRunStarter } from "../../composer/hooks/use-bang-submit";
 import { uploadInputFile, useSourceChips } from "../api";
 import {

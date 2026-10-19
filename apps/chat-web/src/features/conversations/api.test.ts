@@ -1,6 +1,6 @@
 // CHAT-AC-19, CHAT-AC-21, CHAT-AC-22 · E5/E8/E9: query, body, 204.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { setAuthHooks } from "~/lib/http";
+import { setAuthHooks } from "@ai/web-kit/http";
 import { deleteConversation, listConversations, renameConversation } from "./api";
 
 type Call = { path: string; method: string; body?: string };

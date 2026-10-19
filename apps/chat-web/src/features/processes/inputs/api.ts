@@ -3,9 +3,9 @@ import {
   type ProcessSourceChip,
   ProcessSourceChipListResponseSchema,
 } from "@ai/contracts/hub-admin";
+import { api } from "@ai/web-kit/http";
 import { useQuery } from "@tanstack/react-query";
 import { uploadAttachment } from "~/features/attachments/api";
-import { api } from "~/lib/http";
 import { processKeys } from "../shared/keys";
 
 const CHIPS_STALE_MS = 60_000;

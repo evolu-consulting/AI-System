@@ -1,6 +1,6 @@
 // HUB-FR-10/11 · câu lỗi gửi hiện trong composer (plan-frontend §1.4).
 import { describe, expect, test } from "bun:test";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { isComposerError, sendErrorView } from "./send-error";
 
 const err = (code: ConstructorParameters<typeof ApiError>[1], details?: unknown) =>

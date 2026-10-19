@@ -1,6 +1,6 @@
 // HUB-FR-96…102 · api.ts rooms + directory với fetch giả: URL, method, body, parse zod, lỗi.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import { fetchDirectory } from "../directory/api";
 import {
   addRoomMembers,

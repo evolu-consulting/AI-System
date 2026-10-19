@@ -3,6 +3,7 @@
 // Gửi: MỌI thành viên `{content, flow_id}`; không tag = tin người↔người; tag `@agent` = run mới bằng quyền người tag;
 // lượt của mình đang chờ + tin không tag ⇒ kèm `answer_run_id`. `AGENT_NOT_FOUND`… giữ chữ trong ô; `FLOW_BUSY` → toast.
 import type { RoomActiveRun, RoomDetail, SendRoomMessageRequest } from "@ai/contracts/chat";
+import { ApiError } from "@ai/web-kit/http";
 import { type QueryClient, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
@@ -11,7 +12,6 @@ import { toast } from "sonner";
 import { leadingTag } from "~/features/agents/lib/mention";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
-import { ApiError } from "~/lib/http";
 import { listFlowMessages, type SentRoomMessage, sendRoomMessage } from "../api";
 import { ownWaitingRunId, removeActiveRun } from "../lib/room-agent";
 import { insertMessage, type RoomMessagesData, roomKeys } from "../lib/room-cache";

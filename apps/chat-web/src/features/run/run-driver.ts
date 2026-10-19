@@ -3,7 +3,7 @@
 // Stream đóng êm mà chưa có sự kiện kết thúc → hỏi E14; lượt nối lại chỉ hồi lại khi nhận được sự kiện mới.
 // Không phụ thuộc React/DOM: mọi I/O qua `RunDriverDeps` để unit test dựng stream giả.
 import { type ChatEvent, isNewEvent, type Run, type SendMessageRequest } from "@ai/contracts/chat";
-import { ApiError } from "~/lib/http";
+import { ApiError } from "@ai/web-kit/http";
 import type { SendAccepted } from "./api";
 import { reconnectDelay } from "./lib/reconnect";
 import {

@@ -1,7 +1,7 @@
 // HUB-FR-10 · `GET /commands` (menu `/`): nạp lười lần đầu gõ `/`, cache 5 phút. 403 coi như rỗng (không được cấp lệnh nào).
 import { type CommandMenuResponse, CommandMenuResponseSchema } from "@ai/contracts/chat";
+import { ApiError, api } from "@ai/web-kit/http";
 import { useQuery } from "@tanstack/react-query";
-import { ApiError, api } from "~/lib/http";
 
 export const COMMAND_MENU_STALE_MS = 5 * 60_000;
 
