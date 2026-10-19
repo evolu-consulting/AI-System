@@ -82,3 +82,47 @@ Reviewer độc lập, 2026-10-19, nhánh `platform/gd0`. Phạm vi: các commit
 
 ## Rubric
 1 ✓ · 2 ✓ (Minor m-03, m-08) · 3 ✓ (SAFE; Minor m-02, m-06, m-07, m-10) · 4 ✓ (Minor m-05, m-09, m-14, m-15) · 5 ✗ (M-01: thiếu số đo T8/T10) · 6 ✓ (Minor m-04, m-13) · 7 ✓ · 8 — (không UI) · 9 ✗ nhẹ (m-01, m-12)
+
+---
+
+# Vòng 2 (reviewer độc lập, 2026-10-19)
+
+## Kết luận: APPROVED · SAFE · Spec: HD1-contracts-base · Vòng: 2
+
+Phạm vi: `git diff b5ceae8c..HEAD` (3cd4df38 backend, f2f13c68 qc, d8098aa0 qc) trong `apps`, `packages`, `tests/acceptance/HD1`, `docs/specs/HD1-contracts-base`. Không có Blocker hay Major. Không có lỗi cách ly tenant mới: bản sửa không đổi SQL, RLS hay thứ tự khoá. Còn 3 Minor mới và 1 rủi ro cần ghi (facets).
+
+## Lệnh đã chạy
+- `bun test apps/hub-api/src/modules/packs/contracts packages/contracts/src/pack-contracts apps/hub-api/src/modules/attachments` → 108 pass / 1 skip / 0 fail (20 file). Skip có từ trước, không thuộc diff.
+- `bun run check:fn` → OK (665 file). #212 đã hết.
+- `bun run test:lock:verify` → OK (939 file).
+- `bun run test:int:par tests/acceptance/HD1` → 158 pass / 0 fail, 10,7 s (7 file, gồm `category-ids`/đồng thời, `hops`, `perf`).
+- Không chạy depcruise: diff không đổi chiều import (application vẫn không import `@ai/contracts`).
+
+## Kiểm từng mục vòng 1
+| Mục | Kết quả | Căn cứ |
+|---|---|---|
+| M-01 | Đạt | Số p95 T8/T9/T10 ở `spec-decisions.md` và plan §6, kèm trước/sau ANALYZE. `/source` và `/file` có ca perf mới `rw.perf.int.test.ts` (2 câu SQL, 0 Redis, 0 HTTP nội bộ, `/file` đúng 1 lời gọi FileBox, p95 ≤ 30 ms). Nên #217 gần như đã xử; xem N-03. |
+| m-01, m-12 | Đạt | Mã FR ghi ở decisions; `spec.md` §11 ghi d8098aa0. |
+| m-02 | Đạt | `bodyLimit` đặt sau `packGuard` (viewer vẫn 403, 0 SQL) và trước `readJson`. `onError` reject `AppError` 413 `PAYLOAD_TOO_LARGE`, đi qua `onError` chung. Test phủ 413, use case không chạy, và thân hợp lệ lớn nhất (23 × 2.000 ký tự 3 byte) vẫn dưới trần. |
+| m-03 | Đạt | `toMarkdown(bytes, {tenantId})`; test kiểm đúng `{tenantId}`. |
+| m-04 | Đạt | Tx `b` lấy pid, test đợi `wait_event_type='Lock'` rồi mới commit `a`; khẳng định `blocked:true` trước khi commit và thứ tự `tx2-chờ-khoá → tx1-commit → tx2-xong`. Ca chồng khoá thật, xanh qua int. Xem N-02 về cách đợi. |
+| m-06 | Đạt | `SOURCE_HEADERS` có `nosniff` + `no-store` + `text/markdown`, có test. |
+| m-07 | Đạt | `nfcText` cấm NUL; PATCH 422 `FIELD_INVALID`, ListQuery/tiêu đề tải lên 400, trước SQL. Test phủ `q/seller/buyer/signer` và `title`. |
+| m-08 | Đạt | `startExtraction` nằm ngoài `try`, bắt cả ném đồng bộ lẫn reject, chỉ log `{contract_id, error: name}`; không hoàn quota, không gỡ tệp. Không log message nên không lộ PII. Test phủ cả hai kiểu và khẳng định log không có `refund`/`remove`. Hệ quả: HĐ có thể ở `extracting` nếu HD2 starter hỏng; việc phục hồi là của HD2. |
+| m-10 | Đạt | `isHidden` = `\p{Cc}` + U+200E/F, U+202A–E, U+2066–69. `cutCodePoints` không tách cặp surrogate. Test phủ. |
+| m-11 | Đạt | Giữ bản sao theo ADR-0023, có test khớp `CONTRACT_FILE_MIME`. Hợp lý. |
+| m-13 | Đạt, kèm N-01 | Bộ đếm mới chỉ tính câu từ `set_config('role'…)` tới `commit/rollback` trên cùng kết nối. Câu `loadUsers` nền của guard và lượt nạp cấu hình nằm ngoài khoảng đó. Không che câu thừa trong tx của route (set_config + câu danh sách = 2). |
+| m-14 | Đạt | `contractsMaxBytes()` kẹp ≤ 20 MiB; sai ⇒ 20; có test. |
+| #212 | Đạt | `#retry(req, first)` / `#attempt({…})`. Test mới với máy chủ giả: GET 5xx thử lại cùng method/path/token, POST không retry, 401 làm mới token đúng một lần. Hành vi giữ nguyên. |
+| m-05, m-09, m-15 | Ghi nợ hợp lý | #214, #215, #216. m-09 cần qc vì `multi()` đổi số đếm Redis của test khoá. m-15 phải vào "Cần" của HD2/HD5. |
+
+## Lỗi mới
+| # | Mức | Nhóm | file:dòng | Vấn đề | Cách sửa đề xuất | Giao cho |
+|---|---|---|---|---|---|---|
+| N-01 | Minor | 6 Test | `tests/acceptance/HD1/_support/hops.ts:34-50` | `sql` giờ chỉ đếm câu trong tx của request. Một câu thừa chạy **ngoài** tx (ví dụ route gọi pool trần) sẽ không bị đếm. Hiện không có câu như vậy (code đã đọc), nhưng độ che phủ của NFR-02 yếu hơn trước. | Trả thêm `outside = h.sql − (số câu thuộc tx)` và khẳng định `≤ 1` (tương ứng ngưỡng ≤ 1 `loadUsers` của N1 PK-NFR-01). | qc |
+| N-02 | Minor | 5 / 6 | `adapters/category-ids.int.test.ts:~150` (`untilBlocked`) | Vòng `for` tối đa 100.000 lượt truy vấn `pg_stat_activity` không ngủ, dừng khi thấy `Lock` hoặc `done`. Không `sleep`, kết thúc theo tín hiệu thật; nhưng vẫn là thăm dò (Luật 4c: không poll). Với tx2 bị chặn ngay, thường 1–vài lượt. | Chấp nhận. Nếu muốn đúng chữ Luật 4c: dùng tín hiệu `debug` của câu INSERT của tx2 rồi kiểm `pg_blocking_pids` đúng một lần. | qc (tuỳ chọn) |
+| N-03 | Minor | 7 Chuẩn code | `tests/acceptance/HD1/_support/hd1.ts:1`, `_support/hops.ts:1`, `adapters/category-ids.int.test.ts:1` | Dòng đầu có BOM (U+FEFF) chèn vào, không cần thiết và lệch phần còn lại của repo. Hiển thị lẫn trong diff. | Bỏ BOM khi relock. | qc |
+| R-01 | Rủi ro | 5 Hiệu năng | `tests/acceptance/HD1/perf/list.perf.int.test.ts:95` | Ngưỡng facets p95 ≤ 50 ms; đo thường 41–44 ms (còn ~12–20%), nhưng một lượt máy tải ra 53,6 / 65,9 ms, vượt ngưỡng. Cho thấy đường facets nhạy với tải chung (≈ 2 câu, gộp theo nhóm trên lát tenant 10.000–70.000 hàng, O(lát) theo plan §6), không phải lỗi mã. Không phải Blocker: số đo thường đạt và D-22 đã giảm từ 87–105 ms. | Ghi vào plan §6 / TECH-DEBT: "facets p95 sát trần 50 ms; chờ đo trên staging (dữ liệu và tải thật) trước khi tin ngưỡng; nếu vượt thì xét bảng tổng hợp theo tenant hoặc nới ngưỡng có ghi lý do". Không nới ngưỡng ngay. | backend-lead / docs-architect |
+
+## Rubric
+1 ✓ · 2 ✓ · 3 ✓ (SAFE; bản sửa chỉ thêm kiểm tra ở biên, không đổi truy vấn) · 4 ✓ · 5 ✓ (R-01 ghi rủi ro; N-02 Minor) · 6 ✓ (Minor N-01, N-03) · 7 ✓ · 8 — (không UI) · 9 ✓
