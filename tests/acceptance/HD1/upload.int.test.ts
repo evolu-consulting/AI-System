@@ -90,8 +90,10 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
     expect([
       ...(await c.sql`select entity, op, entity_id, tenant_id from contracts.index_outbox`),
     ]).toEqual([{ entity: "contract", op: "upsert", entity_id: r.json.id, tenant_id: T.acme }]);
+    // Hợp đồng Hub: chỉ cần FileBox trả 2xx (thật 200, giả 201); mã thô không thuộc hành vi Hub.
     const post = c.fb.callsTo("post");
-    expect(post.map((x) => [x.org, x.auth, x.status])).toEqual([[`t_${T.acme}`, "ok", 200]]);
+    expect(post.map((x) => [x.org, x.auth])).toEqual([[`t_${T.acme}`, "ok"]]);
+    expect(post.every((x) => x.status >= 200 && x.status < 300)).toBe(true);
   });
   it("HD-AC11 · DOCX hỏng (zip hợp lệ nhưng word/document.xml không phải XML) ⇒ 201, status 'extract_failed', error 'DOCX_UNREADABLE', vẫn lưu tệp + event", async () => {
     needAdr0024Accepted();
