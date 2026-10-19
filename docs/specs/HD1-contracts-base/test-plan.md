@@ -1,6 +1,6 @@
 # Test plan · HD1-contracts-base
 
-qc WRITE (test trước code, rủi ro cao), 2026-10-19. Spec: [spec.md](spec.md) · [plan.md](plan.md) (commit 06006d6) · [spec-decisions.md](spec-decisions.md) (D-03…D-13). Phạm vi: T4, T5, T7–T11 (cao). T6 (domain), T12, T13 là task thường: không viết trước ở đây — riêng **ca luật thuần T6** vẫn có sẵn (`rules/`) vì chữ ký đã chốt ở plan §4. Q7 chấp nhận mặc định: test theo `page/page_size/total` (không `next_cursor`).
+qc WRITE (test trước code, rủi ro cao), 2026-10-19. Spec: [spec.md](spec.md) · [plan.md](plan.md) (commit 06006d6) · [spec-decisions.md](spec-decisions.md) (D-03…D-13). Phạm vi: T4, T5, T7–T11 (cao). T6 (domain), T12, T13 là task thường: không viết trước ở đây — riêng **ca luật thuần T6** vẫn có sẵn (`rules/`) vì chữ ký đã chốt ở plan §4. Q7 đóng (D-03): test theo `page/page_size/total`. Mặc định readiness lần 1 áp ở D-14…D-18.
 
 ## 1. Lệnh và hạ tầng
 | Việc | Lệnh |
@@ -75,12 +75,12 @@ Tổng **269/269 đỏ đúng lý do**. Seed perf đo thử trên DB nháp với
 ## 6. Diễn giải đã chọn / Cần bổ sung
 | # | Việc | Agent |
 |---|---|---|
-| 1 | Seam hub-api: `createApp(cfg, deps)` nhận `deps.packs = { contracts: true, filebox: {url, token} }` (cùng khuôn `pkdemo` N1). Vắng ⇒ 404 | backend-lead (T7) |
+| 1 | Seam hub-api: `createApp(cfg, deps)` nhận `deps.packs = { contracts: true, filebox: {url, token} }` (D-17: `contracts` vắng ⇒ `true`, `false` ⇒ 404; Redis thiếu ⇒ upload 503) | backend-lead (T7) |
 | 2 | Tên hằng route: ListQuery dùng `owner`, `category`, `seller`, `buyer`, `signer`, `direction`, `kind`, `value_min/max`, `sort`, `dir`, `page`, `page_size` (plan §1, tham số mảng = lặp) — khác tên cột spec (`owner_user_id`, `category_id`) | — (plan thắng) |
 | 3 | `quotaVerdict` nhận bộ đếm **sau** `INCR` (30 còn được, 31 ⇒ `tenant`; vượt cả hai ⇒ `tenant`) | backend-lead xác nhận (T6) |
 | 4 | `sniffFileType(head)` của zip không kèm `zipNames` ⇒ `null` (không đoán DOCX từ "PK") | backend-lead xác nhận (T6) |
 | 5 | Tên file domain tự do (`M/domain/*.rules.ts` — test hợp mọi export); tên export theo plan §4 (`fillFields mergeFields applyEdits foldVi personKey likePattern sniffFileType uploadDay quotaVerdict`) và contract §1 (`CONTRACT_FIELD_KINDS CONTRACT_TYPES CONTRACT_STATUSES HANDLED_OUTCOMES ITEM_KINDS fieldValueSchema ContractFieldSchema`) từ `packages/contracts/src/pack-contracts/index.ts` | backend-lead (T4, T6) |
-| 6 | Ca "đổi múi giờ tenant ⇒ khoá ngày đổi" cần **N1-a** (`TenantState.timezone` trong ConfigCache). Nếu HD1 dùng tạm `Asia/Ho_Chi_Minh` cố định, ca này đỏ cho tới khi N1-a xong ⇒ ghi Tranh chấp khi đó | backend-lead (T10) |
-| 7 | `foldVi` chỉ xét chữ dựng sẵn (NFC); chuỗi NFD (dấu tổ hợp) chưa quy định ⇒ không test | docs/BA: có cần chuẩn hoá NFC khi ghi? |
+| 6 | Ca "đổi múi giờ tenant ⇒ khoá ngày đổi" (Kiritimati): HD1 làm thật `TenantState.timezone` (D-16), không còn hằng tạm | backend-lead (T10) |
+| 7 | NFC ở biên + `foldVi` gọi `normalize("NFC")` (D-18) ⇒ qc thêm ca NFD ở `rules/fold` + `list.int`; thêm ca `as_date` `2027-02-30`⇒null, `2028-02-29` (D-15) | qc (relock) |
 | 8 | `facets.category.n` = số HĐ có ≥ 1 item loại đó (không phải số item); `facets.direction` có khoá `unknown` (khớp `ListQuery`) | backend-lead xác nhận (T7) |
-| 9 | `search_key`/`value`… trong thiết kế dùng `concat_ws` (STABLE) — không được làm biểu thức cột sinh | backend-lead (T5) |
+| 9 | `search_key` viết bằng `coalesce(...) \|\| ' ' \|\|` 5 trường + title, không `concat_ws` (D-14) | backend-lead (T5) |

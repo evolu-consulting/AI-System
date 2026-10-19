@@ -31,8 +31,8 @@ Dựng trên [N1](../N1-pack-frame/spec.md) (khoá gói `contracts`, module `hub
 | HD-FR-04 | `contract_items`: id, tenant_id, contract_id (FK kép), thứ tự, 11 trường `ITEM_KINDS` (code, name, spec, unit, qty, unit_price, vat_rate, moq, lead_time_days, valid_from, valid_to), `category_id` null (FK kép `contract_categories`). `contract_categories`: id, tenant_id, name ≤ 40, UNIQUE (tenant_id, lower(name)); CRUD + AI xếp loại = HD5 | `fields.py:12-15`, `categories.py:18-44`, `web/src/api/board.ts:13, 24` |
 | HD-FR-05 | `contract_reminders`: tenant_id, contract_id (FK kép), `deadline` date, `milestone` int (ngày còn lại), `user_id`, sent_at, channel; **UNIQUE (contract_id, deadline, milestone, user_id)** = khoá idempotency (đổi hạn ⇒ khoá mới). HD1 chỉ bảng; ghi = HD4 | `remind.py:63-65` |
 | HD-FR-06 | `contract_events`: id, tenant_id, contract_id (FK kép), `type` (`uploaded`, `field_edited`, … thêm cuối), actor_user_id null (null = hệ thống), at, data jsonb (với `field_edited`: khoá + giá trị cũ/mới). Ghi **cùng tx** với thay đổi + outbox N1 | `store.py:25` (`history`) |
-| HD-FR-07 | **API** (đường dẫn do plan; quyền N1): `GET` danh sách (viewer) — lọc `category_id` (HĐ có ≥ 1 hàng thuộc loại), `owner_user_id`, `signer` (khớp không phân biệt hoa/thường, bỏ dấu cách thừa, trên `supplier_representative`/`buyer_representative`), `status[]`; phân trang keyset, `limit` 1–100 (mặc định 50), sắp `updated_at desc, id`; trả hàng tóm tắt (cột màn danh sách: bên bán, bên mua, giá trị, người ký, phụ trách, loại hàng, trạng thái) + `next_cursor`. `GET` chi tiết (viewer): HĐ + items + 50 event mới nhất. `PATCH` trường (editor): `{version, fields:{khoá: value}}` ⇒ đặt `edited=true`, ghi event; `version` lệch ⇒ 409 `CONTRACT_STALE`. `GET` file (viewer) ⇒ 302 link FileBox 10' | `web/src/pages/contracts/ContractsPage.tsx:15-17`, `ContractPage.tsx:21` |
-| HD-FR-08 | **Tải lên** (editor): PDF/DOCX/JPEG/PNG (kiểm magic bytes, không tin đuôi) ⇒ sai `FILE_TYPE` 415; > 20 MB ⇒ 413 `FILE_TOO_LARGE`; tenant đã 30 tệp trong ngày (múi giờ tenant) ⇒ 429 `UPLOAD_QUOTA`; toàn hệ thống 300/ngày ⇒ 429 (Q3). Lưu FileBox `org` tenant, DOCX ⇒ `source_text` (N1 PK-FR-07, lỗi ⇒ `status=extract_failed` + error), tạo HĐ `extracting` + event `uploaded`, gọi port `ExtractionStarter` (HD1: không làm gì; HD2 nối) | `R/api/app/settings.py:84-86` |
+| HD-FR-07 | **API** (đường dẫn do plan; quyền N1): `GET` danh sách (viewer) — lọc `category` (HĐ có ≥ 1 hàng thuộc loại), `owner`, `signer` (khớp không phân biệt hoa/thường/dấu, bỏ dấu cách thừa, trên `supplier_representative`/`buyer_representative`), `status[]`…; phân trang `page`/`page_size`, sắp `sort`/`dir`; trả hàng tóm tắt (cột màn danh sách) + `total` — tham số, mặc định, giới hạn: [plan §1](plan.md) (D-03). `GET` chi tiết (viewer): HĐ + items + 50 event mới nhất. `PATCH` trường (editor): `{version, fields:{khoá: value}}` ⇒ đặt `edited=true`, ghi event; `version` lệch ⇒ 409 `CONTRACT_STALE`. `GET` file (viewer) ⇒ 302 link FileBox 10' | `web/src/pages/contracts/ContractsPage.tsx:15-17`, `ContractPage.tsx:21` |
+| HD-FR-08 | **Tải lên** (editor): PDF/DOCX/JPEG/PNG (kiểm magic bytes, không tin đuôi) ⇒ sai `FILE_TYPE` 415; > 20 MB ⇒ 413 `FILE_TOO_LARGE`; tenant đã 30 tệp trong ngày (múi giờ tenant `TenantState.timezone`, mặc định `Asia/Ho_Chi_Minh`, D-16) ⇒ 429 `UPLOAD_QUOTA`; toàn hệ thống 300/ngày ⇒ 429 (Q3). Lưu FileBox `org` tenant, DOCX ⇒ `source_text` (N1 PK-FR-07, lỗi ⇒ `status=extract_failed` + error), tạo HĐ `extracting` + event `uploaded`, gọi port `ExtractionStarter` (HD1: không làm gì; HD2 nối) | `R/api/app/settings.py:84-86` |
 | HD-BR-01 | **Giữ giá trị sửa tay khi trích lại**: hàm domain `mergeFields(old, new)` ⇒ mỗi khoá lấy `old` nếu `old.edited`, ngược lại `new`. HD2 dùng; HD1 có unit test | `R/api/app/contracts/ingest.py:63-65` |
 | HD-BR-02 | Mọi thành viên có quyền gói thấy mọi HĐ của tenant (Q2); chuỗi quản lý chỉ dùng cho nhắc (HD4) | ADR-0018 §2 |
 | HD-BR-03 | **Không port** cách đọc cả tenant vào bộ nhớ rồi lọc (`store.py:50-64`): lọc, sắp, phân trang ở SQL qua index | Luật 4c, intake "Rủi ro" |
@@ -50,9 +50,9 @@ Không có (HD5, D-02).
 Dữ liệu đo: 3 tenant × 10.000 HĐ, mỗi HĐ 5 items, 20 event; 50 loại hàng/tenant.
 | Mã | Ngưỡng | Đo |
 |---|---|---|
-| HD-NFR-01 | Danh sách: p95 ≤ 50 ms mọi tổ hợp lọc (kể cả không lọc, trang cuối qua cursor), số câu SQL **cố định ≤ 2** (không phụ thuộc số hàng/trang), không quét tuần tự bảng `contracts` | `*.perf.int.test.ts` + đếm câu + `EXPLAIN` |
+| HD-NFR-01 | Danh sách: p95 ≤ 50 ms mọi tổ hợp lọc (kể cả không lọc, trang cuối `page=500`), số câu SQL **cố định ≤ 2** (không phụ thuộc số hàng/trang), không quét tuần tự bảng `contracts` | `*.perf.int.test.ts` + đếm câu + `EXPLAIN` |
 | HD-NFR-02 | Chi tiết p95 ≤ 30 ms, ≤ 3 câu; PATCH trường p95 ≤ 30 ms, 1 tx, số câu cố định (đọc khoá + cập nhật + event + outbox) | như trên |
-| HD-NFR-03 | Tải lên (trừ thời gian mạng FileBox, DOCX theo PK-NFR-02): kiểm quota 1 câu, ghi 1 tx | đếm câu |
+| HD-NFR-03 | Tải lên (trừ thời gian mạng FileBox, DOCX theo PK-NFR-02): kiểm quota 1 pipeline Redis (4 lệnh), ghi 1 tx 3 câu | đếm câu |
 | HD-NFR-04 | Mọi route: 0 HTTP nội bộ (N1 PK-BR-01); cách ly 2 tenant mọi bảng 0 hàng lộ | int RLS |
 
 ## 7. Phụ thuộc & giả lập
@@ -65,7 +65,7 @@ FileBox mock (FB1) · DOCX mẫu `R/samples/HD-bao-bi-Minh-Phat.docx` · seed pe
 | HD-AC02 | Item tenant B trỏ HĐ tenant A ⇒ lỗi FK kép | FR-04 |
 | HD-AC03 | Lọc `category_id`=X ⇒ chỉ HĐ có ≥ 1 item loại X; kết hợp `status[]`+`owner_user_id` ⇒ giao các điều kiện | FR-07 |
 | HD-AC04 | `signer`=" nguyễn văn  a " khớp `buyer_representative`="Nguyễn Văn A" | FR-07 |
-| HD-AC05 | 120 HĐ, `limit`=50 ⇒ 3 trang 50/50/20, không trùng, không sót, trang 3 `next_cursor`=null | FR-07 |
+| HD-AC05 | 120 HĐ, `page_size`=50 ⇒ `page=1..3` có 50/50/20, `total`=120, không trùng, không sót; trang 4 rỗng | FR-07 |
 | HD-AC06 | PATCH `total_value` ⇒ `edited=true`, event `field_edited` có cũ/mới, 1 hàng outbox; `version` cũ ⇒ 409 `CONTRACT_STALE` | FR-06, FR-07 |
 | HD-AC07 | PATCH khoá lạ / sai kiểu (`notice_days`="abc") ⇒ 422 | FR-02 |
 | HD-AC08 | `mergeFields`: old `{number:{edited:true,value:"A"}}`, new `{number:{value:"B"}}` ⇒ "A"; khoá không edited ⇒ lấy new | BR-01 |
@@ -86,9 +86,9 @@ FileBox mock (FB1) · DOCX mẫu `R/samples/HD-bao-bi-Minh-Phat.docx` · seed pe
 | Q5 | Xoá HĐ trong HD1? | Không — HD5 (cần dọn reminder/event/outbox/FileBox) |
 | Q6 | Ảnh: định dạng nào? | JPEG, PNG; HEIC/WebP ngoài phạm vi |
 | Q7 | Keyset (`next_cursor`) hay `page/page_size/total` (S03 cần tổng + trang số)? | `page/total` (D-03); AC05 đổi theo |
-| Q8 | Danh bạ thành viên gói (tên người phụ trách) làm ở đâu? | Kit N1, HD5 dùng (plan §7 N1-c) |
+| Q8 | Danh bạ thành viên gói (tên người phụ trách) làm ở đâu? | HD5 làm, code ở `packs/kit` (N1 spec:26) |
 
-Q1–Q6 đóng: D-04, D-05, D-06, D-07, D-08, D-09.
+Q1–Q8 đóng: D-04…D-09 (Q1–Q6), D-03 (Q7), N1 (Q8).
 
 ## 10. Quyết định
 [`spec-decisions.md`](spec-decisions.md).
