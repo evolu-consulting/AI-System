@@ -28,6 +28,12 @@ const CliOptionsSchema = z.strictObject({
   mcp: z.boolean().default(false),
   cwd_mode: z.enum(CWD_MODES).default("job"),
   max_turns: z.number().int().min(2).max(100).optional(),
+  /** M2-chat · tool gói (registry N2, vd `contracts-search`) agent được gọi qua `/mcp`; `/mcp` vẫn kiểm quyền người gọi. */
+  pack_tools: z
+    .array(z.string().regex(/^[a-z0-9-]{2,32}$/))
+    .max(20)
+    .refine(unique, "duplicate tools")
+    .optional(),
 });
 const PythonOptionsSchema = z
   .record(z.string(), z.unknown())

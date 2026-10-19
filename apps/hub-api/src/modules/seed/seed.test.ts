@@ -41,17 +41,25 @@ function patched(name: string, edit: (d: Record<string, unknown>) => void): Seed
 }
 
 describe("HUB-FR-60 · seed yaml mặc định", () => {
-  it("HUB-FR-60 · CR-081 · development tối giản: fake-cli + dify, đúng 4 agent, mọi agent fake-1", () => {
+  it("HUB-FR-60 · CR-081 · M2-chat · development tối giản: fake-cli + dify, đúng 5 agent, mọi agent fake-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "development" });
     expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "dify", "fake-cli"]);
     // CR-081: mặc định bỏ `*.full.yaml` ⇒ chỉ agent của agents.yaml, không agent vai.
     expect(p.agents.map((a) => a.key)).toEqual([
       "orchestrator",
       "assistant",
+      "mgmt-assistant",
       "dify-tom",
       "dify-tro-ly",
     ]);
-    expect(p.agents).toHaveLength(4);
+    expect(p.agents).toHaveLength(5);
+    // M2-chat · trợ lý app mgmt: Claude + tool ĐỌC gói contracts (không tool CLI/tệp).
+    const mgmt = p.agents.find((a) => a.key === "mgmt-assistant");
+    expect(mgmt?.runtime).toBe("agentic-cli");
+    expect(mgmt?.runtime_options).toEqual({
+      allowed_tools: [],
+      pack_tools: ["contracts-search", "contracts-get", "contracts-cks", "contracts-ledger"],
+    });
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
     expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
     // grant assistant × acme/beta (access.yaml) vẫn ở seed tối giản.
@@ -60,14 +68,15 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
 
   it("HUB-FR-60 · CR-081 · HUB_SEED_FIXTURES ⇒ nạp thêm processes.full.yaml: 20 agent", () => {
     const p = buildSeedPlan(full(), { appEnv: "development" });
-    expect(p.agents.slice(0, 4).map((a) => a.key)).toEqual([
+    expect(p.agents.slice(0, 5).map((a) => a.key)).toEqual([
       "orchestrator",
       "assistant",
+      "mgmt-assistant",
       "dify-tom",
       "dify-tro-ly",
     ]);
     // + hoa-don-doc + 8 agent vai + 4 agent nhóm BA + 3 agent fixbug (P-c1 B6) — mọi agent fake-1 ở development.
-    expect(p.agents).toHaveLength(20);
+    expect(p.agents).toHaveLength(21);
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
   });
 

@@ -5,8 +5,14 @@ entitlements:
     tenant_key: acme
   - agent: assistant
     tenant_key: beta
+  # M2-chat · trợ lý app mgmt (contracts-web); thêm grant cho group/user của tenant qua Studio (`/agent-grants`).
+  - agent: mgmt-assistant
+    tenant_key: acme
 
 grants:
+  - agent: mgmt-assistant
+    tenant_key: acme
+    subject: group:beta-testers
   - agent: assistant
     tenant_key: acme
     subject: group:beta-testers

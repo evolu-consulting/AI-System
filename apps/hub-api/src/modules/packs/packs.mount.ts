@@ -15,6 +15,7 @@ import type { ConfigCache } from "../config/config.service";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
+import { mountAssistantTools } from "./contracts/assistant.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
@@ -133,6 +134,7 @@ function mountContracts<E extends Env>(
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
   app.route(base, contractsLedger(d, view, db)); // HD7
+  mountAssistantTools(db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
 }
 
 /** HD7 · sổ thanh toán + vòng quá hạn (tenant có quyền gói — cache, 0 SQL; múi tenant từ `ConfigCache`). */

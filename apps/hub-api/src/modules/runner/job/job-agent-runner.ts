@@ -53,6 +53,7 @@ import {
 } from "../runner.rules";
 import { EventQueue, emitStep, JobFollower } from "./job-follow";
 import { chooseJobStep, type JobStep, stepProviderKeys } from "./job-step.rules";
+import { withPackTools } from "./pack-tool-keys.rules";
 import * as repo from "./runner.repo";
 
 /** TD #52 (H2c P18): giữ đường import cũ cho người gọi (`workflow-job-runner.ts`). */
@@ -199,7 +200,8 @@ export class JobAgentRunner implements AgentRunner {
   async #mcp(task: AgentTask): Promise<JobMcp> {
     const m = this.d.mcp;
     if (!m || task.role !== "agent" || task.noTools) return NO_MCP;
-    const [keys, kh] = await Promise.all([this.#catalogKeys(task, m), this.#kh(task)]);
+    const [wf, kh] = await Promise.all([this.#catalogKeys(task, m), this.#kh(task)]);
+    const keys = withPackTools(wf, task.agent.runtimeOptions); // M2-chat · tool gói của agent
     let khItems = kh;
     if (khItems.length > 0 && !keys.includes(KH_TOOL_KEY)) {
       if (keys.length < MCP_TOOLS_MAX) keys.push(KH_TOOL_KEY);
