@@ -137,8 +137,8 @@ describe("M3 · AI client chung · usage + trần theo tenant", () => {
   });
 });
 
-describe("M3 · usage chat (M2) vào bảng chung", () => {
-  it("createApp nối sink ⇒ một bước agent chat (`noteChatUsage`, đường của runJob) ghi usage feature chat theo tenant; bước stage quy trình không ghi", async () => {
+describe("M3 · usage chat (M2) — một nguồn duy nhất", () => {
+  it("runtime đã ghi usage của job ⇒ Hub chỉ gắn feature chat (không chèn dòng thứ hai), lặp lại vẫn 1 dòng; bước stage quy trình không đụng; tính vào trần tenant", async () => {
     const ac = new AbortController();
     createApp({ version: "0.0.0-test", corsOrigins: [] }, {
       db,
@@ -146,22 +146,33 @@ describe("M3 · usage chat (M2) vào bảng chung", () => {
       appEnv: "test",
     } as never);
     ac.abort();
-    const task = (stageRunId: string | null) => ({
-      run: { id: crypto.randomUUID(), tenantId: TB, userId: U },
+    const run = crypto.randomUUID();
+    const stageRun = crypto.randomUUID();
+    // Dòng usage do runtime agent ghi lúc kết thúc job (finish_sql.py) — nguồn duy nhất.
+    for (const r of [run, stageRun])
+      await sql`insert into hub.usage_logs (tenant_id, run_id, user_id, provider_key, model, billing,
+          input_tokens, output_tokens, cost_usd)
+        values (${TB}, ${r}, ${U}, 'claude-sub', 'claude-opus-5-5', 'api', 70, 30, 0.00088)`;
+    const task = (id: string, stageRunId: string | null) => ({
+      run: { id, tenantId: TB, userId: U },
       agent: { id: crypto.randomUUID(), key: "mgmt-assistant", runtime: "agentic-cli" },
       stageRunId,
     });
-    noteChatUsage(task(null), { input_tokens: 70, output_tokens: 30 } as never, true);
-    noteChatUsage(task("stage-1"), { input_tokens: 1, output_tokens: 1 } as never, true);
+    noteChatUsage(task(run, null), { input_tokens: 70, output_tokens: 30 } as never, true);
+    noteChatUsage(task(run, null), { input_tokens: 70, output_tokens: 30 } as never, true); // bước 2 cùng run
+    noteChatUsage(task(stageRun, "stage-1"), { input_tokens: 1, output_tokens: 1 } as never, true);
     await chatUsageSettled(); // sink ghi bất đồng bộ (không chặn run) — chờ tín hiệu xong
-    const chat = (await rowsOf(TB)).filter((r) => r.feature === "chat");
-    expect(chat).toHaveLength(1);
-    expect(chat[0]).toMatchObject({
-      input_tokens: 70,
-      output_tokens: 30,
-      user_id: U,
-      provider_key: "agentic-cli",
-      billing: "api",
-    });
+    const rows = await sql<
+      { feature: string | null; input_tokens: number }[]
+    >`select feature, input_tokens
+      from hub.usage_logs where tenant_id = ${TB} and run_id = any(${[run, stageRun]}::uuid[]) order by feature`;
+    expect(rows.map((r) => [r.feature, r.input_tokens])).toEqual([
+      ["chat", 70],
+      [null, 70],
+    ]);
+    const [cap] = await sql<
+      { n: string }[]
+    >`select hub.ai_tokens_since(${TB}, now() - interval '1 hour') as n`;
+    expect(Number(cap?.n)).toBeGreaterThanOrEqual(100); // dòng chat tính vào trần
   });
 });

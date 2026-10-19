@@ -29,6 +29,22 @@ REVOKE EXECUTE ON FUNCTION hub.log_ai_usage(uuid, uuid, text, text, text, intege
 GRANT EXECUTE ON FUNCTION hub.log_ai_usage(uuid, uuid, text, text, text, integer, integer, integer, integer, numeric,
   integer) TO hub_rw;
 --> statement-breakpoint
+-- Chat (M2): runtime agent đã ghi usage của mỗi job trong CÙNG tx kết thúc job (`finish_sql.py`, billing api/subscription/dify)
+-- ⇒ một nguồn duy nhất: Hub chỉ GẮN `feature='chat'` cho các dòng của run (không chèn dòng thứ hai). Trả số dòng của run đã gắn.
+CREATE OR REPLACE FUNCTION hub.tag_chat_usage(p_tenant_id uuid, p_run_id uuid)
+  RETURNS integer
+  LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+  AS $$
+  WITH u AS (UPDATE hub.usage_logs SET feature = 'chat'
+    WHERE tenant_id = p_tenant_id AND run_id = p_run_id AND feature IS NULL RETURNING 1)
+  SELECT (SELECT count(*) FROM u)::integer + (SELECT count(*) FROM hub.usage_logs
+    WHERE tenant_id = p_tenant_id AND run_id = p_run_id AND feature = 'chat')::integer
+$$;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION hub.tag_chat_usage(uuid, uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION hub.tag_chat_usage(uuid, uuid) TO hub_rw;
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.ai_tokens_since(p_tenant_id uuid, p_since timestamptz)
   RETURNS bigint
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp

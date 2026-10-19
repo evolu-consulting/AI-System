@@ -27,3 +27,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0022 | Hybrid tạm: Dify là công cụ AI do Hub gọi | Proposed (Gate GĐ0 platform) |
 | 0023 | Clean Architecture bốn lớp, lớp 1–2 chỉ dùng thư viện có sẵn; chuyển dần theo module (CR-088…091) | Accepted (người dùng, 2026-10-17) |
 | 0024 | DOCX → Markdown trong module gói: fflate + saxes (N1, CR-094) | Accepted (Gate N1, 2026-10-19) |
+| 0029 | AI client chung của Hub gọi Claude bằng `@anthropic-ai/sdk` 0.135.0 (usage + trần theo tenant, M3-decouple) | Accepted (người dùng, 2026-10-20) |

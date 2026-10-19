@@ -15,15 +15,6 @@ function harness(check: "ok" | "not_found" | "has_run", attach: boolean | Error)
     },
     cancel: async (_u, id) => void log.push(`cancel:${id}`),
     outcomes: async () => [],
-    // HD3 · cổng mở rộng — khuôn N2 không dùng.
-    ensureDef: async () => "exists",
-    agent: async () => ({ ok: false, code: "AGENT_UNAVAILABLE" }),
-    state: async () => null,
-    act: async () => "not_open",
-    outcomesOf: async () => [],
-    lastApprover: async () => null,
-    groupIdsOf: async () => new Map(),
-    passedStages: async () => [],
   };
   const d = {
     bridge: { port },
