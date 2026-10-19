@@ -36,6 +36,7 @@ Bỏ qua Luật 1 chỉ khi: sửa chính tả/câu chữ, cấu hình nhỏ, ho
 - **Làn đầy đủ** (Luật 1 + Gate + qc test trước + review/security 2 vòng) **chỉ** cho lát/phần chạm: RLS/tenant, quyền, auth/secrets, tiền (sổ thanh toán, giá), migration dữ liệu khách thật, đường nóng có ngưỡng perf.
 - **Làn nhanh** cho lát màn hình / rủi ro thường (UI, mapper, báo cáo, nhãn): **một** agent viết plan ngắn (≤ 1 trang, trong `tasks.md` của lát) + code + test cùng task (unit/int/e2e theo Luật 4b, Luật 4c vẫn áp) → **một** vòng review. Không readiness riêng, không Gate, không qc viết trước (qc chỉ ghi lock khi có test mới dưới `tests/**`/`e2e/**`).
 - Lát lẫn hai loại ⇒ tách phần rủi ro cao ra làn đầy đủ, phần còn lại làn nhanh. Phân làn ghi ở `tasks.md` (cột Làn); phân vân ⇒ làn đầy đủ.
+- **Một agent làm trọn một lát** (người dùng chốt 2026-10-19, thay cách băm nhiều agent nhỏ): agent viết spec+plan ngắn (≤ 1 trang mỗi file) + BE + FE + test + tự chạy cổng của lát, rồi **một** reviewer. Lát rủi ro cao: thêm security review và readiness **tối đa 1 vòng** (lỗ hổng Cao có mặc định ⇒ áp luôn). Test của lát do chính agent viết; qc chỉ ghi lock và đọc nhanh (Luật 3 test trước chỉ còn áp cho phần tenant/quyền/tiền/migration bên trong lát — agent viết test đó **trước** code của phần đó).
 
 ## Luật 2 — Sau Gate thì tự làm hết, không hỏi lại
 Gặp chỗ mơ hồ, tra theo thứ tự và dừng ở nguồn đầu tiên có câu trả lời:

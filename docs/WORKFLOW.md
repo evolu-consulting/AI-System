@@ -91,6 +91,16 @@ Vòng dưới đây là **làn đầy đủ** — chỉ cho RLS/tenant, quyền,
 ```
 Lát lẫn hai loại ⇒ tách. Phân vân ⇒ làn đầy đủ. Cổng đóng (`done:*`, `test:all`) vẫn chạy cho cả hai làn.
 
+**Từ đợt 2 CR-094 (2026-10-19): một agent làm trọn một lát.**
+```
+1. một agent (Opus nếu lát rủi ro cao, Sonnet nếu thường)
+   spec + plan ngắn → [rủi ro cao: test tenant/quyền/tiền/migration viết TRƯỚC code phần đó] → BE + FE + test → tự chạy cổng lát
+2. [rủi ro cao] spec-readiness tối đa 1 vòng trước khi code (Cao có mặc định ⇒ áp luôn, không vòng 2)
+3. reviewer một vòng (+ security review nếu rủi ro cao); Blocker/Major ⇒ cùng agent sửa, reviewer chỉ đọc diff sửa
+4. qc (Haiku) ghi tests/.lock khi có test mới dưới tests/** hoặc e2e/**
+```
+Nhiều lát song song: mỗi agent commit qua `GIT_INDEX_FILE` tạm chỉ chứa file của mình, không `git reset`/`git stash` index chung, không `bun install` ở worktree khác.
+
 ## Vòng một mốc
 
 ```

@@ -17,3 +17,4 @@
 - 10 task rủi ro cao ⇒ test qc (78bdab1, abb7969a) có trước; T6/T12/T13 thường ⇒ code + test cùng task, qc đọc nhanh sau.
 - Luật 4c: danh sách/facets p95 ≤ 50 ms (2 câu), chi tiết ≤ 30 ms (2 câu), PATCH ≤ 30 ms (4 câu), upload 3 câu + 1 pipeline Redis; đo cả trước và sau `ANALYZE`, EXPLAIN không Seq Scan; seed perf theo tập.
 - Security review: RLS gói, quyền owner/editor/viewer, upload (magic bytes, zip-names, quota) — hard stop nếu lỗi cách ly tenant.
+- **Đóng 2026-10-19** (đợt 1 CR-094): kết luận [ket-luan.md](HD1-contracts-base/ket-luan.md); review vòng 2 APPROVED, SAFE (c068fa99); R-01 facets p95 sát 50 ms chờ đo staging; T12 smoke `test:all` chưa có evidence.
