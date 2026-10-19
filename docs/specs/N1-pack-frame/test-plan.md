@@ -51,7 +51,7 @@ Persona acme: `lan`=owner · `hoa`=editor · `tam`=viewer · `cuc`=không Group 
 ## 3. e2e khung contracts-web (TF4, TF5) — `e2e/N1/`
 Config riêng `playwright.config.ts` (đuôi `.n1.ts`, `test:all` tự nhận). Backend giả bằng `page.route` (`_support.ts`: `/auth/refresh|login|logout`, `/pack/contracts/me`; hình theo `TokenGrant` và `PackMeResponse`). Nhãn nguyên văn plan-frontend §7.
 - `login.n1.ts` (8): guard `/login?next=`; đăng nhập đúng (next, Bearer ở `/me`, body `tenant_key/username/password`); sai mật khẩu; ô "Mã công ty" chỉ khi chưa biết tenant; Hiện/Ẩn mật khẩu; đã có phiên; hết phiên 401; bản EN.
-- `shell.n1.ts` (12): 4 mục menu + href; `aria-current`; `/` và `*` → `/contracts`; 6 route khung; "Sổ Hợp Tác"; panel trợ lý (mở/đóng/nhớ sau reload, kéo); chunk `assistant` lazy; "Góp ý về app"; chuông rỗng; "Giao diện" sáng/tối; mobile 390: thanh dưới 4 mục, sidebar ẩn, không cuộn ngang.
+- `shell.n1.ts` (12): 4 mục menu + href; `aria-current`; `/` và `*` → `/contracts`; 6 route khung; "Sổ Hợp Tác" (rê chuột mở sidebar rồi kiểm, D-02); panel trợ lý (mở/đóng/nhớ sau reload, kéo); chunk `assistant` lazy; "Góp ý về app"; chuông rỗng; menu "Tài khoản" ⇒ radio "☾ Tối"/"☀ Sáng" đổi `data-theme` (D-02, không có nút "Giao diện" ở header); mobile 390: thanh dưới 4 mục, sidebar ẩn, không cuộn ngang.
 - `states.n1.ts` (9): `PACK_FORBIDDEN`/`PACK_DISABLED` (VI + EN); viewer/editor/owner vào shell; `status "Đang tải…"` (giữ `/me` bằng cổng); lỗi mạng ⇒ `alert` + "Thử lại"; màn rỗng.
 Ngoài phạm vi N1: nút nghiệp vụ theo vai ("+ Thêm hợp đồng", "Xoá …") thuộc màn HD5; so ảnh với mgmt-app thuộc TF7 (`e2e/contracts-web`).
 

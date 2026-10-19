@@ -69,6 +69,8 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     page,
   }) => {
     await page.goto("/contracts");
+    // mgmt-app: sidebar thu gọn không hiện tên; rê chuột mở sidebar rồi mới thấy.
+    await page.getByRole("navigation", { name: "Điều hướng chính" }).hover();
     await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
   });
 
@@ -112,15 +114,15 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(page.getByRole("dialog").or(page.getByRole("menu"))).toBeVisible();
   });
 
-  test("PK-FR-10 · giao diện: menu 'Giao diện' đổi html[data-theme] sáng ⇄ tối", async ({
+  test("PK-FR-10 · giao diện: menu 'Tài khoản' có nhóm 'Giao diện' (radio ☾ Tối / ☀ Sáng) đổi html[data-theme] (D-02, như mgmt-app)", async ({
     page,
   }) => {
     await page.goto("/contracts");
-    await page.getByRole("button", { name: "Giao diện" }).click();
-    await page.getByRole("menuitem", { name: "Tối" }).click();
+    await expect(page.getByRole("button", { name: "Giao diện" })).toHaveCount(0);
+    await page.getByRole("button", { name: /Tài khoản/ }).click();
+    await page.getByRole("radio", { name: "☾ Tối" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await page.getByRole("button", { name: "Giao diện" }).click();
-    await page.getByRole("menuitem", { name: "Sáng" }).click();
+    await page.getByRole("radio", { name: "☀ Sáng" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
 });
