@@ -1,13 +1,16 @@
-// HD-FR-32 · HD-FR-34 · AC32b · AC34c · AC34f · AC34g · D3-03: cách ly tenant + quyền của flow duyệt — id HĐ tenant khác ⇒ 404
-// (như không có), không vai gói ⇒ 403, tool gói chỉ chạm HĐ mà `run_id` = run đang gọi (def tự dựng dùng tool `contracts-finalize`
-// không "Đã duyệt" được HĐ tuỳ ý), def `contracts-approval` của acme không chạy được từ beta.
+// HD-FR-32 · HD-FR-34 · AC32b · AC34c · AC34f · AC34g · D3-03 · M3-decouple: cách ly tenant + quyền của flow duyệt — id HĐ tenant
+// khác ⇒ 404 (như không có), không vai gói ⇒ 403; ghi của máy trạng thái chỉ chạm HĐ mà `run_id` = lượt duyệt đang xét (lượt của
+// HĐ khác / id tuỳ ý ⇒ 0 hàng); gói không dựng def engine nào (`contracts-approval` không chạy được từ đâu cả).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { Db } from "@ai/db";
+import { withPackScope } from "@ai/db/pack-scope";
+import { approvalRepo } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/approval.repo";
 import { insContract } from "../HD1/_support/hd1";
-import { createDef, defBody, PA, startRun } from "../P-d/_support/pd";
-import { toolStage } from "../P-d/d2/_d2";
+import { PA } from "../P-d/_support/pd";
 import {
   act,
   approval,
+  approvalRow,
   C1_TEXT,
   CBASE,
   type CtxHd3,
@@ -15,7 +18,6 @@ import {
   contractRow,
   errCode,
   seedContract,
-  settled,
   startHd3,
   T,
   toLevel1,
@@ -50,55 +52,46 @@ describe("AC34c · tenant khác / không vai", () => {
     expect((await contractRow(c, cid(50))).run_id).toBeNull();
   }, 60_000);
 
-  it("AC34g · beta không chạy được def `contracts-approval` của acme ⇒ 404 PROCESS_NOT_FOUND", async () => {
+  it("AC34g · gói không dựng def engine: `contracts-approval` không chạy được (acme lẫn beta ⇒ 404 PROCESS_NOT_FOUND)", async () => {
     const id = await seedContract(c, 52);
-    await toLevel1(c, id, 1); // acme đã có def (gói tự dựng)
-    const r = await c.call("D", "POST", "/process-runs", {
-      process_key: "contracts-approval",
-      input: "x",
-      origin: { kind: "none" },
-    });
-    expect({ status: r.status, code: errCode(r) }).toEqual({
-      status: 404,
-      code: "PROCESS_NOT_FOUND",
-    });
+    await toLevel1(c, id, 1);
+    const [n] = await c.sql<{ n: number }[]>`select count(*)::int as n from hub.process_defs
+      where key = 'contracts-approval' and deleted_at is null`;
+    expect(n?.n).toBe(0);
+    for (const who of ["D", "A"] as const) {
+      const r = await c.call(who, "POST", "/process-runs", {
+        process_key: "contracts-approval",
+        input: "x",
+        origin: { kind: "none" },
+      });
+      expect({ who, status: r.status, code: errCode(r) }).toEqual({
+        who,
+        status: 404,
+        code: "PROCESS_NOT_FOUND",
+      });
+    }
   }, 60_000);
 });
 
-describe("AC32b · AC34f · tool gói chỉ chạm HĐ của run gọi [D3-03]", () => {
-  it("def tự dựng gọi `contracts-finalize` cho HĐ needs_review của run khác ⇒ tool_failed, HĐ không đổi", async () => {
+describe("AC32b · AC34f · ghi chỉ chạm HĐ của chính lượt duyệt [D3-03]", () => {
+  it("finalize / từ chối HĐ needs_review bằng lượt duyệt của HĐ KHÁC (hoặc id tuỳ ý) ⇒ 0 hàng, cả hai HĐ không đổi", async () => {
     const id = await seedContract(c, 53);
     await toLevel1(c, id, 245_000_000);
-    const before = await contractRow(c, id);
-    const d = await createDef(
-      c,
-      defBody(
-        "hd3-hijack",
-        [
-          toolStage({
-            key: "s0",
-            step: 0,
-            tool_key: "contracts-finalize",
-            args: { contract_id: { from: "input", key: "hd" } },
-            fields: [],
-          }),
-        ],
-        { inputs: [{ key: "hd", type: "text", label: "HĐ", required: true }] },
-      ),
-    );
-    const runId = await startRun(c, d.key, { inputs: [{ key: "hd", type: "text", text: id }] });
-    await settled(c);
-    // Lỗi tool (không side_effect) ⇒ engine hẹn thử lại / quyết (P-d2) — không bao giờ `done`; HĐ không đổi; audit failed.
-    const [a] = await c.sql<
-      { status: string }[]
-    >`select summary->>'status' as status from hub.audit_log
-      where action = 'tool_call' and entity_id = ${runId}`;
-    expect(a?.status).toBe("failed");
-    expect(
-      (
-        await c.sql<{ s: string }[]>`select status as s from hub.process_runs where id = ${runId}`
-      )[0]?.s,
-    ).not.toBe("done");
-    expect(await contractRow(c, id)).toEqual(before);
+    const other = await seedContract(c, 54);
+    const { runId: otherRun } = await toLevel1(c, other, 245_000_000);
+    const before = [await contractRow(c, id), await contractRow(c, other)];
+    const repo = <R>(fn: (r: ReturnType<typeof approvalRepo>) => Promise<R>) =>
+      withPackScope(
+        c.hub.db as unknown as Db,
+        { packKey: "contracts", tenantId: T.acme, userId: PA.B.id },
+        (tx) => fn(approvalRepo(tx, T.acme)),
+      );
+    for (const run of [otherRun, crypto.randomUUID()]) {
+      expect(await repo((r) => r.finalize(id, run, PA.B.id, true))).toBe(false);
+      const e = { kind: "rejected" as const, feedback: "x", actor: PA.B.id };
+      expect(await repo((r) => r.markRejected(id, run, e))).toBe(false);
+    }
+    expect([await contractRow(c, id), await contractRow(c, other)]).toEqual(before);
+    expect((await approvalRow(c, otherRun)).status).toBe("level1");
   }, 60_000);
 });

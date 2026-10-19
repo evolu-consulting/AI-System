@@ -1,25 +1,33 @@
-// HD-FR-21…26 · HD-FR-31…37 · D2-01 · D2-02 · D3-01 · HD2/HD3 plan: nối trích + flow duyệt hợp đồng (lớp 4 của gói).
-// - Seam `transport` (test HD2) ⇒ đường HD2: hàng đợi trích trong tiến trình (giữ nguyên hành vi đã khoá).
-// - Vắng seam (production, HD3) ⇒ chế độ flow: tải lên / nhập tay / trích lại mở run `contracts-approval` qua `PackRuns`; lượt
-//   trích chạy trong stage tool `contracts-extract` với agent KHÔNG tool (#219), bền theo engine (#218); vòng quét hoà giải.
+// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
+// - Lượt AI đọc = job trên hàng đợi bền Redis Streams (vắng Redis ⇒ chạy ngay trong tiến trình) → lời gọi model trực tiếp qua AI
+//   client chung (usage + trần theo tenant). Lời nhắc có rào + parse strict + kiểm trích dẫn của HD2 giữ nguyên.
+// - Duyệt = máy trạng thái của gói (`contracts.approvals`); vòng quét đóng HĐ `extracting` quá hạn (STALE).
+// - Seam `transport` (test HD2) ⇒ đường HD2: tải lên/trích lại chỉ xếp lượt đọc, không mở lượt duyệt (hành vi đã khoá).
 // Tra MST (`TaxRegistry`) do `packs.mount.ts` tiêm từ `lib/` (gói không gọi HTTP — PK-AC12).
+import { hostname } from "node:os";
 import type { Db } from "@ai/db";
+import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
+import type { Redis } from "ioredis";
+import type { AiClient } from "../../../lib/ai-client/ai-client";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
-import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import type { ActionQuota } from "./adapters/action-quota";
-import { approvalRepo, sweepRepo } from "./adapters/approval.repo";
+import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
+import { approvalRepo } from "./adapters/approval.repo";
 import { approvalRoutes } from "./adapters/approval.routes";
-import { contractsTools } from "./adapters/contracts.tools";
+import { sweepRepo } from "./adapters/approval-sweep.repo";
+import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { type AgentTransport, createExtractionAgent } from "./adapters/extraction-agent";
 import { createExtractionVerifier } from "./adapters/extraction-verifier";
 import {
+  type ApprovalGroups,
   actApproval,
+  type ExtractJob,
+  type ExtractJobs,
   getApproval,
   patchGuard,
   readApprovalSettings,
@@ -33,7 +41,8 @@ import {
   sweepApprovalsOnce,
 } from "./application/approval-sweep";
 import { createManual } from "./application/create-manual.usecase";
-import type { ExtractionAgent, TaxRegistry } from "./application/extraction.ports";
+import { handleExtractJob } from "./application/extract-job.usecase";
+import type { TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
@@ -45,38 +54,36 @@ const KEY = "contracts";
 
 /** Seam `PacksDeps.contractsAi` (test ↔ hub-api). */
 export type ContractsAiDeps = {
-  /** HD2 · transport giả ⇒ đường hàng đợi trong tiến trình (vắng ⇒ chế độ flow HD3). */
+  /** HD2 · transport giả ⇒ đường HD2 (không mở lượt duyệt). Vắng ⇒ chế độ flow (AI client chung). */
   transport?: AgentTransport;
   /** Vắng ⇒ `packs.mount.ts` dựng theo env `CONTRACTS_TAX_LOOKUP_URL`; null ⇒ không tra. */
   tax?: TaxRegistry | null;
   concurrency?: number;
   onSettled?: (contractId: string, outcome: ExtractionOutcome | "error") => void;
-  /** HD3 · khoá agent trích (vắng ⇒ env `CONTRACTS_EXTRACT_AGENT` ?? `contracts-extractor`). */
-  flowAgentKey?: string;
-  /** HD3 · test gọi lượt quét trực tiếp (vòng nền tắt khi có hook). */
-  onHandles?: (h: { sweepOnce: () => ReturnType<typeof sweepApprovalsOnce> }) => void;
+  /** M3 · test gọi lượt quét / nhận lại job trực tiếp (vòng quét nền tắt khi có hook). */
+  onHandles?: (h: {
+    sweepOnce: () => ReturnType<typeof sweepApprovalsOnce>;
+    reclaimOnce: () => Promise<number>;
+  }) => void;
 };
 
 export type ContractsAi = {
   starter: ExtractionStarter;
   routes: Hono<PackGuardVars>;
   approval: Hono<PackGuardVars>;
-  /** Review S1 · seam cho PATCH trường (HD1): giai đoạn run + mở lại duyệt. */
+  /** Review S1 · seam cho PATCH trường (HD1): giai đoạn lượt duyệt. */
   guard: PatchApprovalGuard;
 };
 export type ContractsFlowDeps = {
-  bridge: PackRunsBridge;
-  tools?: { register(t: PackToolDef): void };
+  ai: AiClient;
+  groups: ApprovalGroups;
+  redis?: Redis;
   quota: ActionQuota;
   tenants: SweepDeps["tenants"];
   signal?: AbortSignal;
 };
 
-const noAgent: ExtractionAgent = {
-  extract: async () => ({ ok: false, code: "AGENT_UNAVAILABLE" }),
-};
-
-/** `CONTRACTS_EXTRACT_TIMEOUT_S` (10–3600, mặc định 300) — trần một lượt agent (review Trung 2). */
+/** `CONTRACTS_EXTRACT_TIMEOUT_S` (10–3600, mặc định 300) — trần một lượt AI (review Trung 2). */
 function agentTimeoutMs(): number {
   const n = Number(process.env.CONTRACTS_EXTRACT_TIMEOUT_S);
   return (Number.isInteger(n) && n >= 10 && n <= 3600 ? n : 300) * 1000;
@@ -85,6 +92,36 @@ const envInt = (k: string, def: number): number => {
   const n = Number(process.env[k]);
   return Number.isInteger(n) && n > 0 ? n : def;
 };
+
+/** Hàng đợi lượt đọc: Redis Streams (bền) hoặc, vắng Redis, chạy ngay trong tiến trình. */
+function extractJobs(
+  db: Db,
+  flow: ContractsFlowDeps,
+  handle: (j: ExtractJob) => Promise<void>,
+  concurrency: number,
+) {
+  if (!flow.redis) {
+    const jobs: ExtractJobs = {
+      enqueue: async (j) => void handle(j),
+    };
+    return { jobs, reclaimOnce: async () => 0 };
+  }
+  const s = createExtractStream({
+    redis: flow.redis,
+    key: async () => {
+      const [r] = await db.db.execute<{ d: string }>(sql`select current_database() as d`);
+      return `contracts:extract:${r?.d ?? "db"}`;
+    },
+    consumer: `${hostname()}-${process.pid}-${crypto.randomUUID().slice(0, 8)}`,
+    handle,
+    concurrency,
+    claimIdleMs: agentTimeoutMs() + 60_000,
+    log: logger,
+    ...(flow.signal ? { signal: flow.signal } : {}),
+  });
+  s.start();
+  return { jobs: s as ExtractJobs, reclaimOnce: s.reclaimOnce };
+}
 
 export function contractsAiModule(
   db: Db,
@@ -98,46 +135,41 @@ export function contractsAiModule(
     sweep: sweepRepo(tx, tid),
   }));
   const uow = packTenantOnly(pack);
+  // Tra lại MST hẹn giờ (cổng Cục Thuế) — hàng trong tiến trình, chỉ cho việc `tax`.
+  let taxQueue: ExtractionQueue | null = null;
+  const schedule: TaxRetryScheduler = (...a) => taxQueue?.scheduleTaxRetry(...a);
+  const transport =
+    d.transport ??
+    aiTransport(flow.ai, { model: process.env.CONTRACTS_EXTRACT_MODEL || EXTRACT_MODEL });
+  const agent = createExtractionAgent(transport, { timeoutMs: agentTimeoutMs() });
   const verifier = createExtractionVerifier();
-  // Hàng đợi luôn có (tra lại MST cho cả nhập tay); lượt trích chỉ xếp hàng ở đường HD2 (seam).
-  let queue: ExtractionQueue | null = null;
-  const schedule: TaxRetryScheduler = (...a) => queue?.scheduleTaxRetry(...a);
-  const runWith = (agent: ExtractionAgent) =>
-    createRunExtraction({ uow, agent, verifier, tax: d.tax, scheduleTaxRetry: schedule });
-  const agent = d.transport
-    ? createExtractionAgent(d.transport, { timeoutMs: agentTimeoutMs() })
-    : noAgent;
-  queue = createExtractionQueue({
-    run: runWith(agent),
+  const run = createRunExtraction({ uow, agent, verifier, tax: d.tax, scheduleTaxRetry: schedule });
+  taxQueue = createExtractionQueue({
+    run,
     refresh: createRefreshParties({ uow, tax: d.tax, schedule }),
-    concurrency: d.concurrency ?? 2,
+    log: logger,
+  });
+  const handle = handleExtractJob({
+    run,
+    uow,
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
   });
-  const warn = (m: string, meta: Record<string, unknown>) => logger.warn(m, meta);
-  const ad = { bridge: flow.bridge, uow, warn };
+  const { jobs, reclaimOnce } = extractJobs(db, flow, handle, d.concurrency ?? 2);
+  const ad = { uow, groups: flow.groups, jobs };
   const start = startApproval(ad);
   const manual = createManual({ uow, tax: d.tax, newId: () => Bun.randomUUIDv7(), schedule });
-  const starter = d.transport ? queue : flowStarter({ start, uow, log: logger });
-  if (!d.transport) {
-    const agentKey = d.flowAgentKey ?? process.env.CONTRACTS_EXTRACT_AGENT ?? "contracts-extractor";
-    const makeAgent = (t: AgentTransport) =>
-      createExtractionAgent(t, { timeoutMs: agentTimeoutMs() });
-    const tools = contractsTools({
-      bridge: flow.bridge,
-      uow,
-      agentKey,
-      runExtraction: runWith,
-      makeAgent,
-    });
-    for (const t of tools) flow.tools?.register(t);
-    startSweep(d, flow, pack, patchGuard(ad).restart);
-  }
+  const legacy = d.transport !== undefined;
+  const legacyStarter: ExtractionStarter = {
+    start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),
+  };
+  const starter = legacy ? legacyStarter : flowStarter({ start, log: logger });
+  startSweep(d, flow, pack, reclaimOnce);
   const routes = extractionRoutes(view, {
-    requestExtract: d.transport
+    requestExtract: legacy
       ? requestExtract({ uow, starter, available: true })
-      : flowRequestExtract({ start, uow }),
-    createManual: d.transport ? manual : flowCreateManual(manual, starter),
+      : flowRequestExtract({ uow, jobs }),
+    createManual: legacy ? manual : flowCreateManual(manual, start),
     quota: flow.quota,
   });
   const approval = approvalRoutes(view, {
@@ -150,16 +182,16 @@ export function contractsAiModule(
   return { starter, routes, approval, guard: patchGuard(ad) };
 }
 
-/** Vòng quét flow (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */
+/** Vòng quét (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */
 function startSweep(
   d: ContractsAiDeps,
   flow: ContractsFlowDeps,
   pack: SweepDeps["uow"],
-  restart: NonNullable<SweepDeps["restart"]>,
+  reclaimOnce: () => Promise<number>,
 ): void {
-  const sd: SweepDeps = { uow: pack, bridge: flow.bridge, tenants: flow.tenants, restart };
+  const sd: SweepDeps = { uow: pack, tenants: flow.tenants };
   if (d.onHandles) {
-    d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd) });
+    d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd), reclaimOnce });
     return;
   }
   startApprovalSweeper({

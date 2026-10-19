@@ -55,6 +55,8 @@ export const usageLogs = hub.table(
     stepId: uuid("step_id"),
     userId: uuid("user_id"),
     featureId: uuid("feature_id"),
+    /** M3 · khoá tính năng của lời gọi AI client chung (`contracts.extract`…); null ⇒ runtime/dify. */
+    feature: text("feature"),
     agentId: uuid("agent_id"),
     providerKey: text("provider_key"),
     model: text("model"),

@@ -281,7 +281,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
+      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
     );
   },
   tables: [
@@ -352,6 +352,21 @@ defineRlsSuite({
         tx.unsafe(
           "insert into contracts.contract_events (tenant_id, contract_id, type) values ($1, $2, 'field_edited')",
           [t, crypto.randomUUID()],
+        ),
+    },
+    // M3-decouple · lượt duyệt của máy trạng thái trong gói (migration gói 0010); hàng ghi qua role dùng HĐ giả (RLS chặn trước FK).
+    {
+      name: "approvals",
+      seed: async (o, t) =>
+        one(
+          o,
+          "insert into contracts.approvals (tenant_id, contract_id, status, started_by) values ($1, $2, 'done', $3)",
+          [t, await parent(o, "contracts.contracts", t), who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.approvals (id, tenant_id, contract_id, status, started_by) values ($1, $2, $3, 'done', $4)",
+          [rnd(pk), t, crypto.randomUUID(), who],
         ),
     },
     // HD-FR-37 · AC37c · HD3: luật duyệt theo tenant (migration gói 0005).

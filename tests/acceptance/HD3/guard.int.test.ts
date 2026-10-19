@@ -1,19 +1,23 @@
-// Review HD3 S1 (hard stop) · M1 · M2(a) · m4: (1) D3-13 (người dùng chốt 2026-10-19): HĐ "Đã duyệt" sửa trường tiền ⇒ mở lại
-// duyệt (run mới, không còn "Đã duyệt"); trường khác không mở lại; (2) HĐ đang trong flow sau cấp 1 ⇒ PATCH `total_value`
-// 409 CONTRACT_IN_APPROVAL (ở cấp 1 vẫn sửa được — D3-02); (3) `contracts-finalize` đọc lại giá trị + ngưỡng: cần cấp 2 mà run không
-// có Đạt ở stage `approve` ⇒ không ghi "Đã duyệt"; (4) đổi cài đặt duyệt ⇒ nhật ký trước/sau/người/lúc; (5) AC37b đổi Group cấp 2 ⇒
-// def `approve.after.group_id` = Group mới, sửa tay khác của def giữ nguyên; (6) run `failed` ⇒ HĐ `extract_failed FLOW_FAILED`.
+// Review HD3 S1 · M1 · M2(a) · m4 · M3-decouple (luật giữ nguyên, kiểm trên máy trạng thái của gói): (1) D3-13 HĐ "Đã duyệt" sửa
+// trường tiền ⇒ mở lại duyệt (lượt mới, không còn "Đã duyệt"); trường khác không mở lại; (2) HĐ đang ở cấp 2 ⇒ PATCH `total_value`
+// 409 CONTRACT_IN_APPROVAL (ở cấp 1 vẫn sửa được — D3-02); (3) finalize đánh giá lại ngưỡng TRONG câu UPDATE: chưa qua cấp 2 mà
+// giá trị ≥ ngưỡng ⇒ không "Đã duyệt"; (4) đổi cài đặt duyệt ⇒ nhật ký trước/sau/người/lúc; (5) AC37b đổi Group cấp 2 ⇒ người
+// duyệt cấp 2 theo Group mới; (6) lỗi kỹ thuật lượt AI ⇒ `extract_failed`, không "Bị từ chối".
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { PA, waitStatus } from "../P-d/_support/pd";
+import type { Db } from "@ai/db";
+import { withPackScope } from "@ai/db/pack-scope";
+import { approvalRepo } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/approval.repo";
+import { PA } from "../P-d/_support/pd";
 import {
   act,
   approval,
+  approvalRow,
+  bump,
   CBASE,
   type CtxHd3,
   contractRow,
   errCode,
   seedContract,
-  settled,
   startHd3,
   T,
   toLevel1,
@@ -35,27 +39,29 @@ const settings = (body: Record<string, unknown>) =>
   c.call("A", "PUT", "/pack/contracts/approval-settings", body);
 
 describe("review S1 · sửa trường không lách cấp 2", () => {
-  it("D3-13 · HĐ Đã duyệt 245 tr sửa thành 900 tr ⇒ 200, về chờ duyệt, run mới (cấp 1 rồi BẮT BUỘC cấp 2); lịch sử duyệt cũ giữ", async () => {
+  it("D3-13 · HĐ Đã duyệt 245 tr sửa thành 900 tr ⇒ 200, về chờ duyệt, lượt mới (cấp 1 rồi BẮT BUỘC cấp 2); lịch sử duyệt cũ giữ", async () => {
     const id = await seedContract(c, 100);
     const { runId } = await toLevel1(c, id, 245_000_000);
     expect((await act(c, "B", id, "approve")).status).toBe(200);
-    await settled(c);
-    await waitStatus(c.sql, runId, "done");
     expect((await contractRow(c, id)).status).toBe("active");
     const r = await patch(id, { total_value: 900_000_000 });
     expect(r.status).toBe(200);
-    await settled(c);
     const row = await contractRow(c, id);
     expect({
       status: row.status,
       confirmed: row.confirmed_at,
       newRun: row.run_id !== runId && row.run_id !== null,
     }).toEqual({ status: "needs_review", confirmed: null, newRun: true });
+    // Lượt cũ giữ nguyên "Đã duyệt"; lượt mới do người sửa (B) bắt đầu, ở cấp 1.
+    expect(await approvalRow(c, runId)).toMatchObject({ status: "done", decided_by: PA.B.id });
+    expect(await approvalRow(c, row.run_id as string)).toMatchObject({
+      status: "level1",
+      started_by: PA.B.id,
+    });
     expect((await approval(c, "B", id)).json).toMatchObject({ step: "level1", can_act: true });
     expect((await act(c, "B", id, "approve")).status).toBe(200);
-    await settled(c);
     expect((await approval(c, "H", id)).json).toMatchObject({ step: "level2", can_act: true });
-    expect((await contractRow(c, id)).status).toBe("needs_review"); // chưa "Đã duyệt" tới khi run mới xong
+    expect((await contractRow(c, id)).status).toBe("needs_review"); // chưa "Đã duyệt" tới khi cấp 2 xong
     const ev = await c.sql<{ type: string; reopened: boolean | null }[]>`select type,
         (data->>'approval_reopened')::boolean as reopened from contracts.contract_events
       where contract_id = ${id} and type in ('approved', 'field_edited', 'approval_started') order by id`;
@@ -63,7 +69,6 @@ describe("review S1 · sửa trường không lách cấp 2", () => {
       ["approval_started", null],
       ["approved", null],
       ["field_edited", true],
-      ["approval_started", null],
     ]);
   }, 90_000);
 
@@ -71,17 +76,15 @@ describe("review S1 · sửa trường không lách cấp 2", () => {
     const id = await seedContract(c, 106);
     const { runId } = await toLevel1(c, id, 245_000_000);
     expect((await act(c, "B", id, "approve")).status).toBe(200);
-    await settled(c);
-    await waitStatus(c.sql, runId, "done");
     expect((await patch(id, { payment_terms: "Thanh toán 30 ngày" })).status).toBe(200);
     expect(await contractRow(c, id)).toMatchObject({ status: "active", run_id: runId });
   }, 90_000);
+
   it("đang chờ cấp 2: PATCH total_value ⇒ 409 CONTRACT_IN_APPROVAL; ở cấp 1 ⇒ 200 (D3-02)", async () => {
     const id = await seedContract(c, 101);
     await toLevel1(c, id, 600_000_000);
     expect((await patch(id, { total_value: 650_000_000 })).status).toBe(200);
     expect((await act(c, "B", id, "approve")).status).toBe(200);
-    await settled(c);
     expect((await approval(c, "H", id)).json?.step).toBe("level2");
     const r = await patch(id, { total_value: 100_000_000 });
     expect({ status: r.status, code: errCode(r) }).toEqual({
@@ -90,26 +93,21 @@ describe("review S1 · sửa trường không lách cấp 2", () => {
     });
   }, 60_000);
 
-  it("finalize đọc lại: def bị sửa bỏ cấp 2 (rẽ luôn) mà HĐ 600 tr ⇒ không Đã duyệt, run không done", async () => {
-    // Admin sửa def: rẽ nhánh luôn bỏ cấp 2 (level2 ≠ "zzz") — finalize phải tự chặn.
-    const id0 = await seedContract(c, 102);
-    await toLevel1(c, id0, 1); // bảo đảm def đã được dựng
-    await c.sql`update hub.process_defs set stages = jsonb_set(stages, '{1,after,branch,0}',
-        '{"field":"level2","op":"ne","value":"zzz","goto_step":3}'::jsonb), version = version + 1
-      where tenant_id = ${T.acme} and key = 'contracts-approval' and deleted_at is null`;
-    const id = await seedContract(c, 103);
+  it("D3-14 · finalize đọc lại TRONG câu UPDATE: 600 tr chưa qua cấp 2 ⇒ 0 hàng, HĐ không Đã duyệt, lượt không done", async () => {
+    const id = await seedContract(c, 102);
     const { runId } = await toLevel1(c, id, 600_000_000);
-    expect((await act(c, "B", id, "approve")).status).toBe(200);
-    await settled(c);
+    // Đường lách: gọi finalize như thể cấp 2 đã bị bỏ qua (giả lập lỗi rẽ nhánh / giá trị đổi sau rẽ).
+    const ok = await withPackScope(
+      c.hub.db as unknown as Db,
+      { packKey: "contracts", tenantId: T.acme, userId: PA.B.id },
+      (tx) => approvalRepo(tx, T.acme).finalize(id, runId, PA.B.id, false),
+    );
+    expect(ok).toBe(false);
     expect((await contractRow(c, id)).status).toBe("needs_review");
-    const [run] = await c.sql<
-      { status: string }[]
-    >`select status from hub.process_runs where id = ${runId}`;
-    expect(run?.status).not.toBe("done");
-    // khôi phục def theo gói (đồng bộ Group) cho ca sau
-    await c.sql`update hub.process_defs set stages = jsonb_set(stages, '{1,after,branch,0}',
-        '{"field":"level2","op":"eq","value":"no","goto_step":3}'::jsonb), version = version + 1
-      where tenant_id = ${T.acme} and key = 'contracts-approval' and deleted_at is null`;
+    expect((await approvalRow(c, runId)).status).toBe("level1");
+    // Đường thật: Xác nhận cấp 1 ⇒ chuyển cấp 2, không "Đã duyệt".
+    expect((await act(c, "B", id, "approve")).json?.step).toBe("level2");
+    expect((await contractRow(c, id)).status).toBe("needs_review");
   }, 60_000);
 });
 
@@ -136,32 +134,51 @@ describe("review M1 · M2(a) · cài đặt duyệt", () => {
     expect((await settings({ threshold: 500_000_000 })).status).toBe(200);
   }, 60_000);
 
-  it("AC37b · đổi Group cấp 2 ⇒ def approve.after.group_id = Group mới; tên def sửa tay giữ nguyên", async () => {
-    const id = await seedContract(c, 104);
-    await toLevel1(c, id, 1);
+  it("AC37b · đổi Group cấp 2 ⇒ người duyệt cấp 2 theo Group MỚI (owner cũ hết quyền); Group không có ⇒ 422", async () => {
+    const missing = await settings({ level2_group_key: "khong-co-group" });
+    expect({ status: missing.status, code: errCode(missing) }).toEqual({
+      status: 422,
+      code: "APPROVAL_GROUP_MISSING",
+    });
     const [g] = await c.sql<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
       values (${T.acme}, 'ban-giam-doc', ${c.sql.json({ vi: "Ban giám đốc", en: "Board" })}) returning id`;
-    await c.sql`update hub.process_defs set name = 'Duyệt HĐ (sửa tay)'
-      where tenant_id = ${T.acme} and key = 'contracts-approval' and deleted_at is null`;
+    await c.sql`insert into admin.group_members (tenant_id, group_id, user_id)
+      values (${T.acme}, ${g?.id as string}, ${PA.B.id})`;
+    await bump(c);
     const r = await settings({ level2_group_key: "ban-giam-doc" });
-    expect(r.status).toBe(200);
-    const [d] = await c.sql<{ name: string; g: string }[]>`select name,
-        stages->2->'after'->>'group_id' as g from hub.process_defs
-      where tenant_id = ${T.acme} and key = 'contracts-approval' and deleted_at is null`;
-    expect(d).toEqual({ name: "Duyệt HĐ (sửa tay)", g: g?.id as string });
-    expect((await settings({ level2_group_key: "contracts-owner" })).status).toBe(200);
+    expect({ status: r.status, key: r.json?.level2_group_key }).toEqual({
+      status: 200,
+      key: "ban-giam-doc",
+    });
+    try {
+      const id = await seedContract(c, 104);
+      await toLevel1(c, id, 600_000_000);
+      expect((await act(c, "B", id, "approve")).status).toBe(200);
+      expect((await approval(c, "H", id)).json).toMatchObject({ step: "level2", can_act: false });
+      const h = await act(c, "H", id, "approve");
+      expect({ status: h.status, code: errCode(h) }).toEqual({ status: 403, code: "NOT_REVIEWER" });
+      // B đã xác nhận cấp 1 nhưng không phải người bắt đầu (A) ⇒ được duyệt cấp 2 theo Group mới.
+      expect((await approval(c, "B", id)).json).toMatchObject({ step: "level2", can_act: true });
+      expect((await act(c, "B", id, "approve")).json?.step).toBe("done");
+    } finally {
+      expect((await settings({ level2_group_key: "contracts-owner" })).status).toBe(200);
+    }
   }, 60_000);
 });
 
-describe("review m4 · run lỗi kỹ thuật ≠ Bị từ chối", () => {
-  it("run failed ⇒ quét ⇒ HĐ extract_failed FLOW_FAILED (không rejected)", async () => {
+describe("review m4 · lỗi kỹ thuật ≠ Bị từ chối", () => {
+  it("model lỗi ⇒ HĐ extract_failed AGENT_FAILED, lượt failed (bước cancelled, không rejected)", async () => {
     const id = await seedContract(c, 105);
-    const { runId } = await toLevel1(c, id, 1);
-    await c.sql`update hub.process_runs set status = 'failed' where id = ${runId}`;
-    await c.sweepOnce();
-    expect(await contractRow(c, id)).toMatchObject({
+    c.model.reply = { ok: false };
+    const done = c.extracted(id);
+    expect((await c.call("A", "POST", `${CBASE}/${id}/extract`)).status).toBe(202);
+    expect(await done).toBe("extract_failed");
+    const row = await contractRow(c, id);
+    expect({ status: row.status, error: row.error }).toEqual({
       status: "extract_failed",
-      error: "FLOW_FAILED",
+      error: "AGENT_FAILED",
     });
+    expect((await approvalRow(c, row.run_id as string)).status).toBe("failed");
+    expect((await approval(c, "B", id)).json).toMatchObject({ step: "cancelled", can_act: false });
   }, 60_000);
 });

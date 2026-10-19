@@ -27,11 +27,16 @@ export function setChatUsageSink(s: ChatUsageSink | null): void {
   sink = s ?? logSink;
 }
 
+let inflight: Promise<void> = Promise.resolve();
+/** M3 · tín hiệu: mọi lần ghi usage chat đã gửi tới lúc gọi đã xong (test chờ, không poll). */
+export const chatUsageSettled = (): Promise<void> => inflight;
+
 export function recordChatUsage(row: ChatUsageRow): void {
   try {
-    void Promise.resolve(sink(row)).catch((err: unknown) =>
+    const p = Promise.resolve(sink(row)).catch((err: unknown) =>
       logger.warn("chat-usage-failed", { run_id: row.runId, error_name: (err as Error)?.name }),
     );
+    inflight = Promise.all([inflight, p]).then(() => undefined);
   } catch (err) {
     logger.warn("chat-usage-failed", { run_id: row.runId, error_name: (err as Error)?.name });
   }

@@ -1,5 +1,5 @@
-// HD-FR-31…37 · HD3 plan §2: cổng của flow duyệt hợp đồng (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role `contracts_rw`,
-// RLS tenant); mỗi hàm MỘT câu. Mọi ghi do tool/flow có điều kiện `run_id = $run` (D3-03) + trạng thái (idempotent, D3-09).
+// HD-FR-31…37 · M3-decouple: cổng của flow duyệt HĐ trong gói (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role
+// `contracts_rw`, RLS tenant); mỗi hàm MỘT câu. Lượt duyệt = hàng `contracts.approvals`; HĐ trỏ lượt hiện tại qua `run_id`.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow } from "../../kit/application/ports";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
@@ -10,57 +10,51 @@ export type ContractRunRef = {
   hasSource: boolean;
   version: number;
 };
-export type BeginExtract = "extract" | "skip" | "denied";
+/** HĐ + lượt duyệt hiện tại + giá trị + ngưỡng tenant (MỘT câu; `lock` ⇒ FOR UPDATE HĐ). */
+export type ApprovalState = ContractRunRef & {
+  approval: { id: string; status: string; startedBy: string; feedback: string | null } | null;
+  value: unknown;
+  threshold: number;
+};
+export type OpenOutcome = "ok" | "not_found" | "busy";
+export type RejectEvent = {
+  kind: "rejected" | "cancelled";
+  feedback: string | null;
+  actor: string | null;
+};
 
 export type ApprovalRepo = {
-  /** HĐ của tenant: run đang gắn + trạng thái; không có ⇒ null. */
+  /** HĐ của tenant: lượt đang gắn + trạng thái; không có ⇒ null. */
   runOf(id: string): Promise<ContractRunRef | null>;
-  /** Gắn run mới khi HĐ chưa có run hoặc vẫn giữ `prev` (run cũ đã kết thúc); false ⇒ bị chiếm (đua). */
-  attachRun(id: string, runId: string, prev: string | null, actor: string): Promise<boolean>;
-  /** Tool `contracts-extract`: HĐ của run ở `extracting`/`extract_failed` có nguồn ⇒ `extracting` ⇒ "extract"; còn lại (nhập tay, mở lại duyệt sau sửa) ⇒ "skip". */
-  beginExtract(id: string, runId: string): Promise<BeginExtract>;
-  /** Redo cấp 1: `on` ⇒ `needs_review → extracting`; `!on` ⇒ hoàn tác (engine từ chối). */
-  markExtracting(id: string, runId: string, on: boolean): Promise<boolean>;
-  /** `fields.total_value.value` hiện tại của HĐ thuộc run; không thuộc ⇒ undefined. */
-  valueOf(id: string, runId: string): Promise<number | null | undefined>;
-  /** `needs_review → active` + `confirmed_*` + event `approved` (chỉ HĐ của run); giá trị cần cấp 2 mà `!level2Passed` ⇒ 0 hàng
-   *  (luật kiểm TRONG câu UPDATE, re-verify TOCTOU). */
-  finalize(id: string, runId: string, by: string | null, level2Passed: boolean): Promise<boolean>;
-  /** Run kết thúc không Đạt ⇒ `rejected` + event (`rejected`/`cancelled`) — chỉ khi HĐ còn giữ run và chưa kết thúc. */
-  markRejected(
+  state(id: string, o: { lock: boolean }): Promise<ApprovalState | null>;
+  /** Mở lượt duyệt mới (`extracting` khi có việc AI đọc, `level1` khi nhập tay/mở lại) + gắn `run_id` + event
+   *  `approval_started`; HĐ đã có lượt sống ⇒ `busy`. */
+  open(
     id: string,
-    runId: string,
-    e: { kind: "rejected" | "cancelled"; feedback: string | null; actor: string | null },
-  ): Promise<boolean>;
+    approvalId: string,
+    actor: string,
+    initial: "extracting" | "level1",
+  ): Promise<OpenOutcome>;
+  /** Cấp 1 Xác nhận mà giá trị cần cấp 2 ⇒ lượt `level2` + `level1_by/at`. */
+  toLevel2(approvalId: string, actor: string): Promise<boolean>;
+  /** `needs_review → active` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của lượt); giá trị cần cấp 2 mà
+   *  `!level2Passed` ⇒ 0 hàng (luật kiểm TRONG câu UPDATE, D3-14). */
+  finalize(id: string, runId: string, by: string | null, level2Passed: boolean): Promise<boolean>;
+  /** Từ chối / huỷ ⇒ HĐ `rejected` + event + lượt `rejected`/`cancelled` (chỉ khi HĐ còn giữ lượt và chưa kết thúc). */
+  markRejected(id: string, runId: string, e: RejectEvent): Promise<boolean>;
+  /** Trích lại ở bước mở: HĐ `needs_review → extracting`, lượt → `extracting`. */
+  markExtracting(id: string, runId: string): Promise<boolean>;
+  /** Sau lượt AI: lượt `extracting` ⇒ `level1` (HĐ needs_review) / `failed` (extract_failed). Trả trạng thái mới hoặc null. */
+  afterExtraction(id: string, runId: string): Promise<string | null>;
+  /** Trạng thái lượt duyệt (luật sửa trường); không có ⇒ null. */
+  statusOf(runId: string): Promise<string | null>;
   settings(): Promise<ApprovalSettings>;
   saveSettings(s: ApprovalSettings, actor: string): Promise<ApprovalSettings>;
 };
 
-/** Vòng quét (scope `system` từng tenant): HĐ đang trong flow + đóng lô theo JSON. */
-export type FlowRow = {
-  id: string;
-  runId: string | null;
-  status: string;
-  stale: boolean;
-  /** ISO — con trỏ quét. */
-  updatedAt: string;
-};
-export type FlowCursor = { at: string; id: string };
 export type SweepRepo = {
-  /** HĐ `extracting`/`extract_failed`/`needs_review` có run, hoặc `extracting` không run quá hạn (≤ `limit`). */
-  inFlow(staleMinutes: number, limit: number, after: FlowCursor | null): Promise<FlowRow[]>;
-  /** Re-verify Low · HĐ mở lại duyệt (D3-13) mà run mới không mở được: `needs_review`, `run_id` null, event cuối là
-   *  `field_edited.approval_reopened`, quá `staleMinutes` ⇒ người sửa (để mở lại run thay họ). */
-  orphanReopens(staleMinutes: number, limit: number): Promise<{ id: string; actor: string }[]>;
-  /** MỘT câu theo lô JSON: `rejected`/`cancelled` ⇒ `rejected` + event; `stale` ⇒ `extract_failed STALE`. */
-  close(
-    rows: readonly {
-      id: string;
-      runId: string | null;
-      action: "rejected" | "cancelled" | "stale" | "failed";
-      feedback: string | null;
-    }[],
-  ): Promise<number>;
+  /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed`. */
+  sweep(staleMinutes: number, limit: number): Promise<{ read: number; closed: number }>;
 };
 
 export type ApprovalTxRepos = { approval: ApprovalRepo } & KitTxRepos;

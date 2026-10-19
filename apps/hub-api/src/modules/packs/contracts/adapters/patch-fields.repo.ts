@@ -53,5 +53,18 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
       if (!r) throw new Error("patch-fields: row vanished under lock");
       return { version: r.version, updated_at: iso(r.updated_at) };
     },
+    // M3 · D3-13 · cùng tx với `save(reopen)` (hàng HĐ đang khoá): lượt duyệt mới ở cấp 1, người sửa = người bắt đầu. Hàng
+    // `approvals` là lịch sử của lượt mở lại (không thêm event: test khoá HD1 đếm đúng 1 event `field_edited`).
+    reopenApproval: async (id, actor): Promise<void> => {
+      await tx.execute(sql`with ins as (
+          insert into contracts.approvals (tenant_id, contract_id, status, started_by)
+          select ${tenantId}::uuid, c.id, 'level1', ${actor}::uuid from contracts.contracts c
+          where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid and c.status = 'needs_review'
+            and not exists (select 1 from contracts.approvals a where a.tenant_id = c.tenant_id
+              and a.contract_id = c.id and a.status in ('extracting', 'level1', 'level2'))
+          returning id, contract_id)
+        update contracts.contracts t set run_id = ins.id from ins
+        where t.id = ins.contract_id and t.tenant_id = ${tenantId}::uuid`);
+    },
   };
 }

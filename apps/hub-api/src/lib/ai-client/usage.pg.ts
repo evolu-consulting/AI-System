@@ -1,0 +1,30 @@
+// M3-decouple · bảng usage CHUNG của AI client = `hub.usage_logs` (billing `api`, cột `feature`) qua hàm SECURITY DEFINER
+// `hub.log_ai_usage` / `hub.ai_tokens_since` (migration hub 0042) — `hub_api` không INSERT/SELECT trực tiếp. Mỗi hàm MỘT câu.
+// `recordAiUsage` là hàm ghi dùng chung (trợ lý chat M2 trỏ vào đây).
+import { sql } from "drizzle-orm";
+import type { Db } from "../db";
+import type { UsageRecord, UsageStore } from "./ai-client";
+
+const INT_MAX = 2_147_483_647;
+const int = (n: number): number => Math.min(INT_MAX, Math.max(0, Math.floor(Number(n) || 0)));
+
+/** Ghi một dòng usage (tenant, người, tính năng, model, token, chi phí). */
+export async function recordAiUsage(db: Db, r: UsageRecord): Promise<void> {
+  const cost = r.costUsd === null || !Number.isFinite(r.costUsd) ? null : String(r.costUsd);
+  await db.db.execute(sql`select hub.log_ai_usage(${r.tenantId}::uuid, ${r.userId}::uuid, ${r.feature},
+    ${r.providerKey}, ${r.model}, ${int(r.usage.inputTokens)}::int, ${int(r.usage.outputTokens)}::int,
+    ${int(r.usage.cacheReadTokens)}::int, ${int(r.usage.cacheWriteTokens)}::int, ${cost}::numeric,
+    ${int(r.latencyMs)}::int)`);
+}
+
+export function pgUsageStore(db: Db): UsageStore {
+  return {
+    record: (r) => recordAiUsage(db, r),
+    async tokensSince(tenantId, since) {
+      const [row] = await db.db.execute<{ n: string | number }>(
+        sql`select hub.ai_tokens_since(${tenantId}::uuid, ${since.toISOString()}::timestamptz) as n`,
+      );
+      return Number(row?.n ?? 0);
+    },
+  };
+}

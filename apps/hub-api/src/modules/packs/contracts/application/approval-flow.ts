@@ -1,63 +1,63 @@
-// HD-FR-31 · #218 · D3-01: chế độ flow (không seam transport) — tải lên / nhập tay / trích lại MỞ RUN duyệt thay vì xếp hàng
-// trong tiến trình. Không mở được ⇒ HĐ đang `extracting` về `extract_failed` (`RUN_LIMIT` / `FLOW_UNAVAILABLE`), không kẹt;
-// engine tắt ⇒ không làm gì (hành vi HD1, test khoá HD-AC11).
-// Lớp 2: chỉ cổng.
-import type { PackWho } from "../../kit/application/ports";
-import type { ApprovalUow } from "./approval.ports";
-import type { StartApproval } from "./approval.usecase";
+// HD-FR-31 · #218 · M3-decouple: chế độ flow (production) — tải lên / trích lại / nhập tay MỞ LƯỢT DUYỆT của gói rồi xếp lượt AI
+// đọc vào hàng đợi bền (Redis Streams). Không engine quy trình. Lớp 2: chỉ cổng.
+import type { PackUow } from "../../kit/application/ports";
+import { LIVE_APPROVAL } from "../domain/approval-machine.rules";
+import type { ApprovalTxRepos } from "./approval.ports";
+import type { ExtractJobs, startApproval } from "./approval.usecase";
 import type { CreateManual } from "./create-manual.usecase";
-import type { ExtractionUow, RequestExtractOutcome } from "./extraction.ports";
+import type { ExtractionTxRepos, RequestExtractOutcome } from "./extraction.ports";
 import type { RequestExtract } from "./request-extract.usecase";
 import type { ExtractionStarter } from "./upload-contract.ports";
 
-const asCaller = (w: PackWho) => ({ ...w, role: "member" });
-const isRunLimit = (e: unknown) =>
-  typeof e === "object" && e !== null && (e as { status?: number }).status === 429;
+type Start = ReturnType<typeof startApproval>;
 
-type FlowDeps = {
-  start: StartApproval;
-  uow: ExtractionUow;
+/** Tải lên (HĐ đã `extracting`, sau COMMIT): mở lượt duyệt + xếp lượt đọc. Không ném (tải lên đã 201); lỗi ⇒ vòng quét STALE. */
+export function flowStarter(d: {
+  start: Start;
   log: { warn(msg: string, f?: Record<string, unknown>): void };
-};
-
-/** Tải lên: mở run sau COMMIT; lỗi ⇒ `extract_failed` (chỉ khi HĐ còn `extracting`). Không ném (tải lên đã 201). */
-export function flowStarter(d: FlowDeps): ExtractionStarter {
-  const fail = (who: PackWho, id: string, code: string) =>
-    d.uow.tenant(who, (r) => r.extraction.saveFailure(id, code)).then(() => undefined);
+}): ExtractionStarter {
   return {
     async start(who, id) {
       try {
-        const r = await d.start(asCaller(who), id);
-        // Engine tắt (môi trường không bật quy trình) ⇒ giữ hành vi HD1: HĐ ở `extracting` (vòng quét đánh STALE sau 15 phút).
-        if (r.kind === "ok" || r.kind === "has_run" || r.kind === "engine_off") return;
-        await fail(who, id, "FLOW_UNAVAILABLE");
-      } catch (e) {
-        d.log.warn("contract-approval-start-failed", { contract_id: id, limit: isRunLimit(e) });
-        await fail(who, id, isRunLimit(e) ? "RUN_LIMIT" : "FLOW_UNAVAILABLE").catch(
-          () => undefined,
-        );
+        const out = await d.start(who, id, "extracting");
+        if (out !== "ok") d.log.warn("contract-approval-not-opened", { contract_id: id, out });
+      } catch {
+        d.log.warn("contract-approval-start-failed", { contract_id: id });
       }
     },
   };
 }
 
-/** Trích lại = mở run duyệt mới (run cũ đã kết thúc); run còn sống ⇒ `busy`. Lỗi engine (429…) ném lên route. */
-export function flowRequestExtract(d: { start: StartApproval; uow: ApprovalUow }): RequestExtract {
+/** Trích lại: lượt duyệt sống ⇒ `busy` (409); còn lại như HD2 (kiểm trạng thái/nguồn ⇒ `extracting`) + mở lượt mới + xếp đọc,
+ *  một tx khoá HĐ. */
+export function flowRequestExtract(d: {
+  uow: PackUow<ExtractionTxRepos & ApprovalTxRepos>;
+  jobs: ExtractJobs;
+}): RequestExtract {
   return async (who, id): Promise<RequestExtractOutcome> => {
-    const r = await d.start(asCaller(who), id);
-    if (r.kind === "has_run") return { kind: "busy" };
-    if (r.kind === "not_found" || r.kind === "not_allowed") return { kind: r.kind };
-    if (r.kind !== "ok") return { kind: "unavailable" };
-    const cur = await d.uow.tenant(who, (x) => x.approval.runOf(id));
-    return { kind: "ok", version: cur?.version ?? 1 };
+    const aid = crypto.randomUUID();
+    const out = await d.uow.tenant(who, async (r): Promise<RequestExtractOutcome> => {
+      const st = await r.approval.state(id, { lock: true });
+      if (!st) return { kind: "not_found" };
+      if (st.approval && LIVE_APPROVAL.has(st.approval.status)) return { kind: "busy" };
+      const o = await r.extraction.requestExtract(id, who.userId);
+      if (o.kind !== "ok") return o;
+      // Đã kiểm lượt sống dưới khoá HĐ; thua đua hiếm ⇒ ném để ROLLBACK cả `extracting`.
+      if ((await r.approval.open(id, aid, who.userId, "extracting")) !== "ok")
+        throw new Error("contract-approval-open-raced");
+      await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
+      return o;
+    });
+    if (out.kind === "ok") await d.jobs.enqueue({ ...who, contractId: id, approvalId: aid });
+    return out;
   };
 }
 
-/** Nhập tay: tạo HĐ như HD2 rồi mở run duyệt (tool trích bỏ qua vì không có nguồn). */
-export function flowCreateManual(create: CreateManual, starter: ExtractionStarter): CreateManual {
+/** Nhập tay: tạo HĐ như HD2 rồi mở lượt duyệt ở cấp 1 (không có gì cho AI đọc). */
+export function flowCreateManual(create: CreateManual, start: Start): CreateManual {
   return async (who, input) => {
     const out = await create(who, input);
-    await starter.start(who, out.id);
+    await start(who, out.id, "level1");
     return out;
   };
 }

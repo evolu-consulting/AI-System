@@ -91,6 +91,19 @@ module.exports = {
       to: { path: "apps/hub-api/src/modules/", pathNot: "modules/packs/" },
     },
     {
+      name: "contracts-no-process-engine",
+      comment:
+        "M3-decouple: gói contracts (trích + duyệt) không phụ thuộc engine quy trình — cấm `modules/processes/**` và cầu `PackRuns` của kit; chỉ trợ lý chat ở Agent Hub",
+      severity: "error",
+      from: { path: "modules/packs/contracts/" },
+      to: {
+        path: [
+          "apps/hub-api/src/modules/processes/",
+          "modules/packs/kit/application/(pack-runs\\.ports|start-pack-run\\.usecase|pack-run-outcome\\.usecase)\\.ts$",
+        ],
+      },
+    },
+    {
       name: "pack-no-hub-schema",
       comment:
         "PK-FR-09 (N1 plan §9): module gói không đọc schema hub — chỉ bảng của gói qua `PackUow`",

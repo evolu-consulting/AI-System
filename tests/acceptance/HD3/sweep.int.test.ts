@@ -1,10 +1,13 @@
-// HD-FR-35 · AC35a · #218 · #221 · D3-06 · D3-09 · D3-10: vòng quét flow duyệt + trần thao tác theo tenant. (1) Từ chối qua engine
-// (chat-web) ⇒ lượt quét kế ghi "Bị từ chối" (không cần mở S05); (2) `extracting` không run quá 15 phút ⇒ `extract_failed STALE`;
-// lượt 2 không đổi gì (idempotent); (3) vượt trần thao tác ⇒ 429 `ACTION_QUOTA {limit, resets_at}`, không run mới.
+// HD-FR-35 · AC35a · #218 · #221 · D3-09 · D3-10 · M3-decouple: vòng quét flow duyệt + trần thao tác theo tenant. (1) Lượt AI đọc
+// mất job (khởi động lại giữa chừng) ⇒ HĐ `extracting` + lượt `extracting` quá 15 phút ⇒ `extract_failed STALE`, lượt `failed`;
+// lượt quét 2 không đổi gì (idempotent); (2) `extracting` không lượt quá 15 phút ⇒ STALE, mới tải lên giữ nguyên; (3) vượt trần
+// thao tác ⇒ 429 `ACTION_QUOTA {limit, resets_at}`, không lượt mới.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { insContract } from "../HD1/_support/hd1";
 import { PA } from "../P-d/_support/pd";
 import {
+  agentJson,
+  approvalRow,
   C1_TEXT,
   CBASE,
   type CtxHd3,
@@ -14,7 +17,7 @@ import {
   seedContract,
   startHd3,
   T,
-  toLevel1,
+  total,
 } from "./_hd3";
 
 let c: CtxHd3;
@@ -26,30 +29,30 @@ afterAll(async () => {
 });
 
 describe("D3-09 · vòng quét [HD-FR-35]", () => {
-  it("D3-06 · Từ chối ở chat-web ⇒ quét ⇒ rejected + event; lượt 2 closed = 0", async () => {
+  it("#218 · lượt AI mất (HĐ + lượt kẹt `extracting` > 15 phút) ⇒ quét ⇒ extract_failed STALE + event, lượt failed; lượt 2 closed = 0", async () => {
     const id = await seedContract(c, 70);
-    const { runId } = await toLevel1(c, id, 245_000_000);
-    const [t] = await c.sql<
-      { id: string }[]
-    >`select id from hub.review_tasks where process_run_id = ${runId}
-      and kind = 'review' and status = 'open'`;
-    const r = await c.call("B", "POST", `/review-tasks/${t?.id}/decision`, {
-      result: "reject",
-      feedback: "Sai MST",
-    });
-    expect(r.status).toBe(200);
+    c.model.reply = { ok: true, text: agentJson(total(245_000_000)) };
+    const done = c.extracted(id);
+    expect((await c.call("A", "POST", `${CBASE}/${id}/extract`)).status).toBe(202);
+    await done;
+    const runId = (await contractRow(c, id)).run_id as string;
+    // Giả lập job mất giữa chừng: HĐ + lượt về `extracting`, cũ 20 phút.
+    await c.sql`update contracts.contracts set status = 'extracting',
+      updated_at = now() - interval '20 minutes' where id = ${id}`;
+    await c.sql`update contracts.approvals set status = 'extracting' where id = ${runId}`;
     const s1 = await c.sweepOnce();
     expect(s1.closed).toBeGreaterThanOrEqual(1);
-    expect((await contractRow(c, id)).status).toBe("rejected");
+    expect(await contractRow(c, id)).toMatchObject({ status: "extract_failed", error: "STALE" });
+    expect((await approvalRow(c, runId)).status).toBe("failed");
     const [ev] = await c.sql<
-      { data: { feedback: string } }[]
+      { data: { code: string } }[]
     >`select data from contracts.contract_events
-      where contract_id = ${id} and type = 'rejected'`;
-    expect(ev?.data.feedback).toBe("Sai MST");
+      where contract_id = ${id} and type = 'extract_failed' order by id desc limit 1`;
+    expect(ev?.data.code).toBe("STALE");
     expect((await c.sweepOnce()).closed).toBe(0);
   }, 60_000);
 
-  it("#218 · `extracting` không run > 15 phút ⇒ extract_failed STALE; mới tải lên (< 15 phút) giữ nguyên", async () => {
+  it("#218 · `extracting` không lượt > 15 phút ⇒ extract_failed STALE; mới tải lên (< 15 phút) giữ nguyên", async () => {
     await insContract(c.sql, {
       id: cid(71),
       tenant: T.acme,

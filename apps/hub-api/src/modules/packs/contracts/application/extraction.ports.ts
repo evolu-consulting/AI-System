@@ -16,7 +16,13 @@ import type { ItemNumbers, Warning } from "../domain/warnings.rules";
 /** Tệp gốc (PDF/ảnh) khi không có văn bản — adapter đưa cho agent đọc trực tiếp. */
 export type SourceFile = { org: string; fileId: string; mime: string };
 
-export type AgentFailCode = "AGENT_UNAVAILABLE" | "AGENT_FAILED" | "INVALID_OUTPUT" | "TIMEOUT";
+export type AgentFailCode =
+  | "AGENT_UNAVAILABLE"
+  | "AGENT_FAILED"
+  | "INVALID_OUTPUT"
+  | "TIMEOUT"
+  /** M3 · trần token AI/ngày của tenant đã hết (AI client chung). */
+  | "AI_CAP_EXCEEDED";
 export type AgentReply = { ok: true; raw: RawExtraction } | { ok: false; code: AgentFailCode };
 
 /** Agent trích chạy trong Agent Hub (D2-01). Adapter dựng lời nhắc có rào (domain) + parse strict; không bao giờ ném. */

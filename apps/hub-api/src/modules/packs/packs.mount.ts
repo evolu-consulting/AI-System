@@ -5,6 +5,9 @@
 import { packFeatureKey } from "@ai/contracts";
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
+import type { ModelProvider } from "../../lib/ai-client/ai-client";
+import { createHubAiClient } from "../../lib/ai-client/ai-client.env";
+import { chatUsageSink } from "../../lib/ai-client/chat-usage.sink";
 import { logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
@@ -13,6 +16,7 @@ import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
+import { setChatUsageSink } from "../usage/chat-usage";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
@@ -25,6 +29,7 @@ import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
+import { packGroups } from "./kit/adapters/pack-groups";
 import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
 import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
@@ -38,8 +43,9 @@ export type PacksDeps = {
   pkdemo?: boolean;
   contracts?: boolean;
   filebox?: { url: string; token: string };
-  /** HD2 · agent trích (transport) + tra MST + hook test; vắng ⇒ agent chưa cấu hình, MST theo env. */
-  contractsAi?: ContractsAiDeps;
+  /** HD2 · agent trích (transport) + tra MST + hook test; M3 · `model` = nhà cung cấp model giả cho AI client chung (null ⇒
+   *  chưa cấu hình); vắng ⇒ khoá theo env. */
+  contractsAi?: ContractsAiDeps & { model?: ModelProvider | null };
   /** HD4 · vòng nhắc hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_REMIND` ≠ off. */
   contractsRemind?: ContractsRemindDeps;
   /** HD7 · vòng quá hạn; `worker` vắng ⇒ bật khi `APP_ENV` development/production và `CONTRACTS_OVERDUE` ≠ off. */
@@ -84,6 +90,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       ...(d.packs?.knowledgeDsn ? { dsn: d.packs.knowledgeDsn } : {}),
       ...(d.signal ? { signal: d.signal } : {}),
     }); // N4 · R1 pool riêng
+  if (d.db) setChatUsageSink(chatUsageSink(d.db)); // M3 · usage chat (M2) ⇒ bảng usage chung của AI client
   rejectToolCollisions(d);
   return view;
 }
@@ -111,15 +118,17 @@ function mountContracts<E extends Env>(
   const base = `${PACK_PREFIX}/${CONTRACTS_KEY}`;
   const timeZoneOf = async (tid: string) =>
     (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
-  const aiDeps = d.packs?.contractsAi ?? {};
+  const { model, ...aiDeps } = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
   const ai = contractsAiModule(
     db,
     view,
     { ...aiDeps, tax },
     {
-      bridge: d.packRuns ?? {},
-      ...(d.packTools ? { tools: d.packTools } : {}),
+      // M3 · AI client chung (khoá từ env; test tiêm `model` giả) + Group duyệt (admin.groups + cache cấu hình)
+      ai: createHubAiClient(db, model === undefined ? {} : { provider: model }),
+      groups: packGroups(db, view),
+      ...(d.redis ? { redis: d.redis } : {}),
       quota: actionQuota({
         ...(d.redis ? { redis: d.redis } : {}),
         limit: envInt("CONTRACTS_ACTIONS_TENANT_DAY", ACTIONS_TENANT_DAILY),

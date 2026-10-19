@@ -71,6 +71,13 @@
       "when": 1793404800000,
       "tag": "0010_m1b_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793491200000,
+      "tag": "0011_m3_approvals",
+      "breakpoints": true
     }
   ]
 }

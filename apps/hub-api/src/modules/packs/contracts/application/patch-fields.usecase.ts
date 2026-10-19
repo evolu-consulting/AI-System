@@ -48,6 +48,9 @@ export type ContractFieldsRepo = {
       reopen?: boolean;
     },
   ): Promise<SavedContract>;
+  /** M3 · D3-13 · CÙNG tx sau `save(reopen)`: mở lượt duyệt mới ở cấp 1 (người sửa = người bắt đầu) + gắn `run_id` + event
+   *  `approval_started`. Vắng (fake cũ) ⇒ không mở. */
+  reopenApproval?(id: string, actor: string): Promise<void>;
 };
 
 export type PatchFieldsInput = {
@@ -130,15 +133,14 @@ async function applyPatch(
   const reopened = verdict === "reopen";
   const s = { fields, changes, expected: cur.version, actor: who.userId };
   const saved = await r.fields.save(id, reopened ? { ...s, reopen: true } : s);
+  if (reopened) await r.fields.reopenApproval?.(id, who.userId);
   await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
   return { res: { kind: "ok", out: { id, ...saved, fields } }, reopened };
 }
 
 export function patchFields(d: Deps): PatchFields {
   return async (who, id, input) => {
-    const { res, reopened } = await d.uow.tenant(who, (r) => applyPatch(d, r, { who, id, input }));
-    // D3-13 · run duyệt mới SAU COMMIT (giá trị mới đã ghi).
-    if (reopened) await d.approval?.restart?.(who, id);
+    const { res } = await d.uow.tenant(who, (r) => applyPatch(d, r, { who, id, input }));
     return res;
   };
 }
