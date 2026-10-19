@@ -9,8 +9,9 @@
       "cancel": "Cancel",
       "close": "Close",
       "confirm": "OK",
-      "loading": "Loading",
-      "save": "Save"
+      "save": "Save",
+      "loading": "Loading…",
+      "retry": "Try again"
     },
     "contractsPage": {
       "title": "Contracts"
@@ -46,6 +47,63 @@
       "pageSizeAria": "Rows per page",
       "prev": "Previous page",
       "next": "Next page"
+    },
+    "nav": {
+      "contracts": "Contracts",
+      "partners": "Partners",
+      "prices": "Price comparison",
+      "products": "Products"
+    },
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Contracts, partners, prices and digital signatures in one place.",
+      "tenant": "Company code",
+      "tenantKnown": "Company: {{tenant}}.",
+      "changeTenant": "Change company",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submit": "Sign in",
+      "submitting": "Working…",
+      "forgot": "Forgot your password? Ask your company's administrator to reset it.",
+      "invalid": "Incorrect sign-in details.",
+      "locked": "This account is locked. Contact your company's administrator.",
+      "useAdmin": "Your account needs a password change or two-step verification in the admin console first.",
+      "showcaseTitle": "Contracts, partners and digital signatures — one assistant handles them.",
+      "showcaseLead": "Sign in to see what needs doing today.",
+      "preview": {
+        "add": "+ Add contract",
+        "search": "Search by name, partner, contract no…",
+        "colContract": "Contract",
+        "colSeller": "Seller",
+        "colValue": "Value",
+        "colStatus": "Status",
+        "ok": "Active",
+        "soon": "Expiring soon",
+        "late": "Expired",
+        "act": "Awaiting confirmation"
+      }
+    },
+    "session": {
+      "expired": "Your session has expired. Please sign in again."
+    },
+    "errors": {
+      "network": "Can't reach the server. Check your connection and try again.",
+      "unknown": "Something went wrong. Please try again.",
+      "conflict": "This was just updated by someone else — reload to see it."
+    },
+    "packState": {
+      "forbidden": {
+        "title": "You don't have access to the Contracts pack",
+        "body": "Ask your company's administrator to add you to a Contracts pack group, then reload the page."
+      },
+      "disabled": {
+        "title": "The Contracts pack isn't enabled for your company",
+        "body": "Your company's administrator needs to enable the Contracts pack in the admin console."
+      },
+      "logout": "Sign out"
     }
   }
 }

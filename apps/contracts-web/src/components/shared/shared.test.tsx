@@ -37,7 +37,7 @@ describe("shared layout", () => {
 
 describe("shared states", () => {
   test("Loading là status có nhãn dịch", () => {
-    expect(html(<Loading />)).toContain('role="status" aria-label="Loading"');
+    expect(html(<Loading />)).toContain('role="status" aria-label="Loading…"');
   });
   test("ErrorLine: không lỗi → không render; Error → message; giá trị khác → chuỗi", () => {
     expect(html(<ErrorLine error={null} />)).toBe("");

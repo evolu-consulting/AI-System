@@ -9,8 +9,9 @@
       "cancel": "Huỷ",
       "close": "Đóng",
       "confirm": "Đồng ý",
-      "loading": "Đang tải",
-      "save": "Lưu"
+      "save": "Lưu",
+      "loading": "Đang tải…",
+      "retry": "Thử lại"
     },
     "contractsPage": {
       "title": "Hợp đồng"
@@ -46,6 +47,63 @@
       "pageSizeAria": "Số dòng mỗi trang",
       "prev": "Trang trước",
       "next": "Trang sau"
+    },
+    "nav": {
+      "contracts": "Hợp đồng",
+      "partners": "Đối tác",
+      "prices": "So sánh giá",
+      "products": "Sản phẩm"
+    },
+    "login": {
+      "title": "Đăng nhập",
+      "subtitle": "Hợp đồng, đối tác, giá và chữ ký số ở một chỗ.",
+      "tenant": "Mã công ty",
+      "tenantKnown": "Công ty: {{tenant}}.",
+      "changeTenant": "Đổi công ty",
+      "email": "Email",
+      "emailPlaceholder": "ban@congty.vn",
+      "password": "Mật khẩu",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang xử lý…",
+      "forgot": "Quên mật khẩu? Liên hệ quản trị viên công ty bạn để đặt lại.",
+      "invalid": "Sai thông tin đăng nhập.",
+      "locked": "Tài khoản đang bị khoá. Liên hệ quản trị viên công ty bạn.",
+      "useAdmin": "Tài khoản cần đổi mật khẩu hoặc bật xác thực 2 bước trong trang quản trị trước.",
+      "showcaseTitle": "Cả hợp đồng, đối tác và chữ ký số — một trợ lý lo giúp.",
+      "showcaseLead": "Đăng nhập để xem việc cần làm hôm nay.",
+      "preview": {
+        "add": "+ Thêm hợp đồng",
+        "search": "Tìm theo tên, đối tác, số HĐ…",
+        "colContract": "Hợp đồng",
+        "colSeller": "Bên bán",
+        "colValue": "Giá trị",
+        "colStatus": "Trạng thái",
+        "ok": "Đang hiệu lực",
+        "soon": "Sắp đáo hạn",
+        "late": "Đã hết hạn",
+        "act": "Chờ xác nhận"
+      }
+    },
+    "session": {
+      "expired": "Phiên đã hết hạn, vui lòng đăng nhập lại."
+    },
+    "errors": {
+      "network": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
+      "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
+      "conflict": "Dữ liệu vừa được người khác cập nhật — tải lại để xem."
+    },
+    "packState": {
+      "forbidden": {
+        "title": "Bạn chưa có quyền dùng gói Hợp đồng",
+        "body": "Nhờ quản trị viên công ty thêm bạn vào một nhóm của gói Hợp đồng, rồi tải lại trang."
+      },
+      "disabled": {
+        "title": "Gói Hợp đồng chưa được bật cho công ty bạn",
+        "body": "Quản trị viên công ty cần bật gói Hợp đồng trong trang quản trị."
+      },
+      "logout": "Đăng xuất"
     }
   }
 }

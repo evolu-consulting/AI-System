@@ -1,4 +1,4 @@
-// PK-FR-10 · TF1 · `/contracts` — route rỗng; danh sách ở HD5.
+// PK-FR-10 · TF1 · `/contracts` — route rỗng trong `_authed` (TF4); danh sách ở HD5.
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
@@ -11,4 +11,4 @@ function ContractsRoute() {
   );
 }
 
-export const Route = createFileRoute("/contracts")({ component: ContractsRoute });
+export const Route = createFileRoute("/_authed/contracts")({ component: ContractsRoute });

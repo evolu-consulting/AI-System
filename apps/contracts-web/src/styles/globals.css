@@ -344,6 +344,18 @@
   scrollbar-color: var(--scroll-hover) transparent;
 }
 
+/* Màn đăng nhập S01 (TF4): nền showcase + ô robot, giữ nguyên mgmt-app `index.css:143-147`, `LoginPage.tsx:150`. */
+.auth-show {
+  background: linear-gradient(140deg, #eef2ff 0%, #f0eafc 55%, #fdeef6 100%);
+}
+.dark .auth-show,
+:root[data-theme="dark"] .auth-show {
+  background: linear-gradient(140deg, #1a1b31 0%, #211e40 55%, #2b2140 100%);
+}
+.auth-robot {
+  background: linear-gradient(to bottom right, #6366f1, #a855f7);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
