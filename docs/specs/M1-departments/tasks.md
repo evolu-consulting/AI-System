@@ -35,6 +35,12 @@ Nguồn luật: mgmt-app `api/app/orgs.py` (`Ctx.sees`, `reports`, `_check_manag
 | 5 | hub-api: `GET/PUT /pack/contracts/visibility` (owner) | thường | |
 | 6 | contracts-web: Cài đặt › Phòng ban & thành viên | nhanh | |
 
+## Test đếm/kiểm kê sửa theo migration admin 0014 (điều phối duyệt 2026-10-20, relock chỉ 7 tệp này)
+Không đổi hành vi: thêm 3 bảng `departments`, `user_managers`, `user_reports` (đều bật RLS, không FORCE) vào danh sách bảng/RLS;
+20 → 23 bảng admin, 14 → 17 bảng RLS, `runMigrations` main 14 → 15.
+- Khoá (relock): `tests/acceptance/{M1/db-schema, M1/db-rls, ADM-NFR-06/migrate, M2/db-rls, M2/db-schema, M3/db-rls, M3/db-schema}.int.test.ts`.
+- Không khoá: `packages/db/src/{migrate, migrate-hub, catalog-rls}.int.test.ts`.
+
 ## Quyết định trong lúc làm
 - D-M1-01: **Chế độ theo tenant, mặc định `tenant`** (mọi người thấy cả tenant như HD1–HD9 đang khoá test). Tenant nhập từ mgmt-app
   bật `org`. Lý do: luật mgmt-app làm mặc định sẽ đỏ test khoá HD1 (viewer `tam` đọc HĐ của `lan`) ⇒ Tranh chấp test, chờ người dùng.

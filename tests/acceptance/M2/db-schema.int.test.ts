@@ -61,6 +61,7 @@ const ADMIN20 = [
   "admin.command_names",
   "admin.commands",
   "admin.config_meta",
+  "admin.departments",
   "admin.feature_commands",
   "admin.feature_entitlements",
   "admin.feature_grants",
@@ -74,6 +75,8 @@ const ADMIN20 = [
   "admin.tenant_workflow_tools",
   "admin.tenants",
   "admin.user_backup_codes",
+  "admin.user_managers",
+  "admin.user_reports",
   "admin.user_totp",
   "admin.users",
   "admin.workflows",
@@ -152,7 +155,7 @@ describe("ADM-NFR-06 · migration M2", () => {
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
-  it("ADM-NFR-06 · spec M2 §4 · đúng 20 bảng admin.* (M4 + P-d2 0012) + 3 bảng hub.* (M4 Q2a K3)", async () => {
+  it("ADM-NFR-06 · spec M2 §4 · đúng 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014) + 3 bảng hub.* (M4 Q2a K3)", async () => {
     expect(await names(["admin", "hub"])).toEqual([...ADMIN20, ...HUB3]);
   });
 
@@ -466,7 +469,7 @@ describe("ADM-NFR-06 · bất biến M1 và hub-stub", () => {
 });
 
 describe("ADM-NFR-06 · migration production M2", () => {
-  it("ADM-NFR-06 · spec M2 §4 · production: {main: <journal>, dev:0}; 20 bảng admin.* (M4 + P-d2 0012), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M2 §4 · production: {main: <journal>, dev:0}; 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014), 0 bảng hub.*", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });

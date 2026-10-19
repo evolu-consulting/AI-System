@@ -285,13 +285,14 @@ describe("ADM-FR-53 · quyền trên config_meta (M3-R15, R17)", () => {
 });
 
 describe("ADM-NFR-07 · cấu hình RLS", () => {
-  it("ADM-NFR-07 · spec M3 §4 · relrowsecurity bật đúng 14 bảng (M4 + P-d2 0012); 6 bảng còn lại false; không bảng nào FORCE", async () => {
+  it("ADM-NFR-07 · spec M3 §4 · relrowsecurity bật đúng 17 bảng (M4 + P-d2 0012 + M1D 0014); 6 bảng còn lại false; không bảng nào FORCE", async () => {
     const rows = await owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
     const on = rows.filter((r) => r.relrowsecurity).map((r) => r.relname);
     expect(on).toEqual([
       "audit_log",
+      "departments",
       "feature_entitlements",
       "feature_grants",
       "group_members",
@@ -303,6 +304,8 @@ describe("ADM-NFR-07 · cấu hình RLS", () => {
       "tenant_workflow_tools",
       "tenants",
       "user_backup_codes",
+      "user_managers",
+      "user_reports",
       "user_totp",
       "users",
     ]);

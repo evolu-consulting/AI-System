@@ -6,12 +6,9 @@ import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPackAs, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import { mapError } from "../../../apps/hub-api/src/lib/errors";
-import { visibilityRoutes } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/visibility.routes";
-import type {
-  PackAccessView,
-  PackGuardVars,
-} from "../../../apps/hub-api/src/modules/packs/kit/adapters/pack-guard.middleware";
+import { mapError } from "../../../../lib/errors";
+import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import { visibilityRoutes } from "./visibility.routes";
 
 let sql: Sql;
 let db: Db;
