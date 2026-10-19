@@ -25,6 +25,8 @@
     "e2e:chat:x2b": "bunx playwright test -c e2e/chat/playwright.x2b.config.ts",
     "e2e:chat:x2b2": "bunx playwright test -c e2e/chat/playwright.x2b2.config.ts",
     "e2e:studio": "bunx playwright test -c e2e/studio/playwright.config.ts",
+    "e2e:contracts": "bunx playwright test -c e2e/contracts-web/playwright.config.ts",
+    "e2e:contracts:ref": "bun e2e/contracts-web/capture-ref.ts",
     "test:contract:chat": "bun --config=bunfig.contract.toml test --timeout 30000 tests/contract/chat",
     "test:h1:stack": "bun --env-file=.env.local test --timeout 120000 tests/acceptance/H1/stack",
     "test:h2a:stack": "bun --env-file=.env.local test --timeout 120000 tests/acceptance/H2a/stack",
