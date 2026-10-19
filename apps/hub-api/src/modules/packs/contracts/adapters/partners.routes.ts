@@ -3,6 +3,7 @@
 // vai lạ ⇒ 404 như mgmt `_role`; thân/tham số sai ⇒ 400; luật sai ⇒ 422 đúng câu mgmt. Không đầu vào nào ra 500.
 import {
   CompareQuerySchema,
+  LinkCheckRequestSchema,
   PartnerQuerySchema,
   PartnersQuerySchema,
   QuoteCreateSchema,
@@ -93,6 +94,10 @@ export function partnersRoutes(view: PackAccessView, uc: PartnersUsecase): Hono<
   r.post("/prices/quotes", write, async (c) =>
     c.json(await run(uc.addQuote(who(c), await body(c, QuoteCreateSchema))), 201),
   );
+  r.post("/prices/check-link", write, async (c) => {
+    const b = await body(c, LinkCheckRequestSchema);
+    return c.json(await run(uc.checkLink(b.url, b.price)));
+  });
   r.delete("/prices/quotes/:id", write, async (c) =>
     c.json(await run(uc.deleteQuote(who(c), parseWith(z.uuid(), c.req.param("id"))))),
   );

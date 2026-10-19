@@ -336,7 +336,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes",
+      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes, contracts.market_observations, contracts.companies",
     );
   },
   tables: [
@@ -520,6 +520,34 @@ defineRlsSuite({
         tx.unsafe(
           "insert into contracts.score_snapshots (id, tenant_id, party_key, role, config_version) values ($1, $2, 'tax:1', 'customer', 1)",
           [rnd(pk), t],
+        ),
+    },
+    {
+      name: "market_observations",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.market_observations (tenant_id, product_key, price_ex_vat, seen) values ($1, 'name:x|', 1, '2026-10-10')",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.market_observations (id, tenant_id, product_key, price_ex_vat, seen) values ($1, $2, 'name:x|', 1, '2026-10-10')",
+          [rnd(pk), t],
+        ),
+    },
+    {
+      name: "companies",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.companies (tenant_id, party_key, name) values ($1, 'name:a', 'A')",
+          [t],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.companies (id, tenant_id, party_key, name) values ($1, $2, $3, 'A')",
+          [rnd(pk), t, `name:${Math.random()}`],
         ),
     },
     {

@@ -49,6 +49,8 @@ export type Quote = {
   quoted_at: string;
   source: "quote" | "website";
   url: string | null;
+  /** Máy chủ đã thấy đúng con số trên trang (null = không có link). */
+  verified?: boolean | null;
 };
 
 /** `products.LIVE`: chỉ HĐ đang hiệu lực mới có "giá đang áp dụng". */
@@ -222,6 +224,8 @@ export function compareGoods(
   quotes: readonly Quote[],
   product: string,
   scores: Scores,
+  /** `compare.market`: quan sát 30 ngày của mặt hàng; không có ⇒ `tbd` (HD8-FR-08). */
+  market?: { min: number; max: number; seen: string; n: number },
 ) {
   const mine = lines.filter((r) => r.product === product);
   const { rows, contractSuppliers } = contractRows(mine);
@@ -234,7 +238,13 @@ export function compareGoods(
       party: q.supplier_party_key,
       price: q.price,
       unit: q.unit,
-      source: { type: q.source, date: q.quoted_at, quote_id: q.id, url: q.url },
+      source: {
+        type: q.source,
+        date: q.quoted_at,
+        quote_id: q.id,
+        url: q.url,
+        verified: q.verified ?? null,
+      },
     });
   }
   const out = [...rows].map(([key, r]) => {
@@ -253,7 +263,7 @@ export function compareGoods(
   return {
     product: { key: product, label: name, unit: first ? first.unit : null },
     rows: out,
-    market: { status: "tbd" as const },
+    market: market ? { status: "ok" as const, ...market } : { status: "tbd" as const },
   };
 }
 type Row = {
@@ -267,5 +277,6 @@ type Row = {
     contract_id?: string;
     quote_id?: string;
     url?: string | null;
+    verified?: boolean | null;
   };
 };

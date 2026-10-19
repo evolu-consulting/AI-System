@@ -1,9 +1,18 @@
 // HD8-FR-01 · HD8-FR-02 · HD8-FR-04 · port NGUYÊN `mgmt-app/api/app/scoring/service.py` (`_facts`, `partners`, `preview`,
 // `ratings`) + `routes/scoring.py::partners` (role=all: mỗi đối tác một dòng, vai giao dịch nhiều nhất). Thuần: dữ liệu cả tenant
-// (điểm tính trên CẢ sổ như mgmt) + tập đối tác người dùng thấy (M1: `view.company`).
+// (điểm tính trên CẢ sổ như mgmt, đã gom theo (đối tác, vai)) + tập đối tác người dùng thấy (M1: `view.company`).
 
 import type { PricedContract } from "./goods-prices.rules";
-import { cmp, type Ev, type Facts, type ScoreOut, score, windowStart } from "./scoring.rules";
+import {
+  type Agg,
+  cmp,
+  type Ev,
+  type Facts,
+  type ScoreOut,
+  scoreAgg,
+  windowStart,
+} from "./scoring.rules";
+import { emptyAgg } from "./scoring-agg.rules";
 import type { Criterion, Role, Rules } from "./scoring-config.rules";
 
 export type Cfg = { criteria: readonly Criterion[]; rules: Rules };
@@ -41,7 +50,9 @@ export type PartnerOut = {
   contracts: number;
 };
 
-const k = (party: string, role: Role) => `${role}|${party}`;
+/** Khoá nhóm (đối tác, vai). */
+export const aggKey = (party: string, role: Role) => `${role}|${party}`;
+const k = aggKey;
 
 /** Thêm vào mảng của khoá (không chép lại mảng ⇒ O(n)). */
 function pushTo<K, V>(m: Map<K, V[]>, key: K, v: V): void {
@@ -89,7 +100,10 @@ export function groupEvents(events: readonly PartyEv[]): Map<string, PartyEv[]> 
 /** `service.partners`: mỗi (đối tác, vai) người dùng thấy, chấm từ sổ; xếp điểm giảm dần, chưa có điểm cuối, rồi tên. */
 export function partnersOf(i: {
   facts: ReadonlyMap<string, F & { party: string; role: Role }>;
-  events: ReadonlyMap<string, readonly PartyEv[]>;
+  /** Đầu vào đã gom theo (đối tác, vai) — khoá `vai|đối tác` (`aggKey`); thiếu ⇒ chưa có dòng sổ nào trong khoảng tính. */
+  aggs: ReadonlyMap<string, Agg>;
+  /** Danh bạ: tên ngắn ?? tên của đối tác (mgmt `short_name or name or tên trên HĐ`). */
+  names?: ReadonlyMap<string, string>;
   cfgs: Readonly<Record<Role, Cfg>>;
   today: string;
   role: Role | null;
@@ -101,10 +115,16 @@ export function partnersOf(i: {
   const rows: PartnerOut[] = [];
   for (const f of facts) {
     if (i.role && f.role !== i.role) continue;
-    const s = score(i.events.get(k(f.party, f.role)) ?? [], i.cfgs[f.role], i.today, f.role, f);
+    const s = scoreAgg(
+      i.aggs.get(k(f.party, f.role)) ?? emptyAgg(),
+      i.cfgs[f.role],
+      i.today,
+      f.role,
+      f,
+    );
     rows.push({
       party: f.party,
-      name: f.name ?? "",
+      name: i.names?.get(f.party) || f.name || "",
       role: f.role,
       roles: [...(rolesOf.get(f.party) ?? [])].sort(),
       score: s.score,

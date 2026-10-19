@@ -1,29 +1,14 @@
 // HD8-FR-01 · HD8-FR-02 · port NGUYÊN `mgmt-app/api/app/scoring/engine.py`: sổ đối tác + cấu hình + hôm nay (+ vài sự thật từ HĐ)
 // ⇒ điểm 0–100, mức, lý do. Làm tròn = `round()` của Python (nửa về chẵn trên giá trị nhị phân đúng) qua `pyRound` của HD9 (D8-02);
-// mọi phép tính giữ đúng thứ tự toán hạng của mgmt để ra cùng số double. Ngày = chuỗi ISO `YYYY-MM-DD`, so sánh chuỗi như mgmt.
+// mọi phép tính giữ đúng thứ tự toán hạng của mgmt để ra cùng số double. Hai tầng (HD8-NFR-01): `aggregate` (dòng sổ ⇒ đếm/tổng
+// theo (đối tác, vai), ≡ câu gom SQL) rồi `scoreAgg` (công thức). `score(events)` = `scoreAgg(aggregate(events))` — test parity mgmt.
 import { pyRound } from "../cks/domain/prices.rules";
-import { addDays, daysBetween } from "./local-time.rules";
+import { daysBetween } from "./local-time.rules";
+import { type Agg, aggregate, type Bucket, type Ev, windowOf } from "./scoring-agg.rules";
 import type { Criterion, Role, Rules } from "./scoring-config.rules";
 
+export type { Agg, Ev };
 export type Band = "good" | "fair" | "watch";
-/** Một dòng sổ như mgmt đọc (khoá trong `data` đã trải phẳng). */
-export type Ev = {
-  type: string;
-  at: string;
-  voided?: boolean;
-  days_late?: number | null;
-  obligation_id?: string | null;
-  party_late?: boolean;
-  due_date?: string;
-  kind?: string;
-  delta?: number | null;
-  criterion?: string;
-  value?: number;
-  rated_at?: string | null;
-  days_before_expiry?: number | null;
-  with_us?: boolean;
-  by?: string | null;
-};
 export type Facts = {
   contracts?: number;
   first_start?: string | null;
@@ -39,7 +24,6 @@ type Crit = {
   by?: string | null;
   at?: string;
 };
-type W = [Ev, number];
 export type Breakdown = Record<string, Crit & { label: string }>;
 export type ScoreOut = {
   score: number | null;
@@ -49,8 +33,7 @@ export type ScoreOut = {
   adjust: number;
   event_count: number;
 };
-
-const SETTLED = new Set(["paid", "received", "delivered"]);
+type Cfg = { criteria: readonly Criterion[]; rules: Rules };
 
 export function band(score: number | null, rules: Rules): Band | null {
   if (score === null) return null;
@@ -61,63 +44,29 @@ export function band(score: number | null, rules: Rules): Band | null {
 export const clamp = (x: number, lo = 0, hi = 100): number =>
   pyRound(Math.max(lo, Math.min(hi, x)));
 
-export const windowStart = (rules: Rules, today: string): string =>
-  addDays(today, -pyRound(rules.window_months * 30.44));
+export const windowStart = (rules: Rules, today: string): string => windowOf(rules, today).start;
 
-function inWindow(events: readonly Ev[], rules: Rules, today: string): W[] {
-  const start = windowStart(rules, today);
-  const recent = addDays(today, -pyRound(rules.recency_months * 30.44));
-  const out: W[] = [];
-  for (const e of events) {
-    if (e.voided || e.at < start || e.at > today) continue;
-    out.push([e, rules.recency_boost && e.at >= recent ? 2.0 : 1.0]);
-  }
-  return out;
-}
-
-const sum = (xs: readonly number[]) => xs.reduce((s, x) => s + x, 0);
-
-function onTime(rows: readonly W[], label: string, unit: string): Crit {
-  if (!rows.length) return { value: null, detail: null };
-  const w = sum(rows.map(([, x]) => x));
-  const on = sum(rows.filter(([e]) => !e.days_late).map(([, x]) => x));
-  const lateDays = sum(rows.map(([e, x]) => (e.days_late || 0) * x)) / w;
-  const nOn = rows.filter(([e]) => !e.days_late).length;
-  const n = rows.length;
+/** `_on_time` trên nhóm [cũ, gần đây] của dòng đã xong + dòng quá hạn treo; `wn` = trọng số dòng gần đây (2 khi ưu tiên). */
+function onTime(
+  set: readonly Bucket[],
+  pend: readonly Bucket[],
+  wn: number,
+  label: string,
+  unit: string,
+): Crit {
+  const [so, sn] = set as [Bucket, Bucket];
+  const [po, pn] = pend as [Bucket, Bucket];
+  const n = so.n + sn.n + po.n + pn.n;
+  if (!n) return { value: null, detail: null };
+  const w = so.n + po.n + wn * (sn.n + pn.n);
+  const on = so.on + wn * sn.on;
+  const lateDays = (so.late + po.late + wn * (sn.late + pn.late)) / w;
+  const nOn = so.on + sn.on;
   return {
     value: clamp((100 * on) / w - 2 * lateDays),
     detail: `${label} ${nOn}/${n} ${unit}`,
     on: nOn,
     total: n,
-  };
-}
-
-/** `_pending_overdue`: dòng "Quá hạn" chưa ai trả lời ⇒ dòng trễ, lớn dần theo ngày. */
-function pendingOverdue(win: readonly W[], today: string): W[] {
-  const settled = new Set(win.filter(([e]) => SETTLED.has(e.type)).map(([e]) => e.obligation_id));
-  const moved = win.filter(([e]) => e.type === "postponed").map(([e]) => [e.obligation_id, e.at]);
-  const out: W[] = [];
-  for (const [e, x] of win) {
-    if (e.type !== "overdue" || !e.party_late || settled.has(e.obligation_id)) continue;
-    if (moved.some(([o, at]) => o === e.obligation_id && (at as string) >= e.at)) continue;
-    const days = daysBetween(e.due_date as string, today);
-    out.push([{ ...e, days_late: Math.max(1, days) }, x]);
-  }
-  return out;
-}
-
-function renewal(renew: readonly W[]): Crit {
-  if (!renew.length) return { value: null, detail: null };
-  const vals = renew.map(([e]) =>
-    e.type === "cks_lapsed" || !(e.with_us ?? true)
-      ? 0
-      : (e.days_before_expiry || 0) >= 0
-        ? 100
-        : Math.max(0, 100 + 10 * (e.days_before_expiry as number)),
-  );
-  return {
-    value: clamp(sum(vals) / vals.length),
-    detail: `${renew.length} lần gia hạn chữ ký số`,
   };
 }
 
@@ -141,47 +90,35 @@ function priceCrit(gap: number | null | undefined): Crit {
 }
 
 function criteria(
-  win: readonly W[],
+  a: Agg,
   role: Role,
   facts: Facts,
   today: string,
+  wn: number,
 ): Record<string, Crit> {
-  const of = (...types: string[]) => win.filter(([e]) => types.includes(e.type));
   const out: Record<string, Crit> = {};
-  const pending = pendingOverdue(win, today);
   if (role === "customer")
-    out.payment_on_time = onTime(
-      [...of("received"), ...pending.filter(([e]) => e.kind !== "delivery")],
-      "Thanh toán đúng hạn",
-      "đợt",
-    );
-  else
-    out.delivery_on_time = onTime(
-      [...of("delivered"), ...pending.filter(([e]) => e.kind === "delivery")],
-      "Giao đúng hạn",
-      "lần",
-    );
-  out.cks_renewal = renewal(of("cks_renewed", "cks_lapsed"));
-  const reminded = of("reminded").length;
-  const dealings = of("received", "paid", "delivered", "postponed", "reminded").length > 0;
-  const per = reminded / Math.max(1, facts.contracts || 1);
+    out.payment_on_time = onTime(a.set, a.pend, wn, "Thanh toán đúng hạn", "đợt");
+  else out.delivery_on_time = onTime(a.set, a.pend, wn, "Giao đúng hạn", "lần");
+  out.cks_renewal = a.renew_n
+    ? { value: clamp(a.renew_sum / a.renew_n), detail: `${a.renew_n} lần gia hạn chữ ký số` }
+    : { value: null, detail: null };
+  const per = a.reminded / Math.max(1, facts.contracts || 1);
   out.reminders = {
-    value: dealings ? clamp(100 - 15 * per) : null,
-    detail: `Phải nhắc ${reminded} lần`,
-    count: reminded,
+    value: a.dealings ? clamp(100 - 15 * per) : null,
+    detail: `Phải nhắc ${a.reminded} lần`,
+    count: a.reminded,
   };
-  const kept = of("appointment_kept").length;
-  const moved = of("postponed", "appointment_missed").length;
+  const moved = a.postponed + a.missed;
   out.appointments = {
-    value: kept + moved ? clamp((100 * kept) / (kept + moved)) : null,
-    detail: `Giữ hẹn ${kept}/${kept + moved} lần`,
-    postponed: of("postponed").length,
+    value: a.kept + moved ? clamp((100 * a.kept) / (a.kept + moved)) : null,
+    detail: `Giữ hẹn ${a.kept}/${a.kept + moved} lần`,
+    postponed: a.postponed,
   };
   out.tenure = tenure(facts, today);
-  const complaints = of("complaint").length;
   out.complaints = {
-    value: dealings || complaints ? clamp(100 - 25 * complaints) : null,
-    detail: `${complaints} lần khiếu nại`,
+    value: a.dealings || a.complaints ? clamp(100 - 25 * a.complaints) : null,
+    detail: `${a.complaints} lần khiếu nại`,
   };
   if (role === "supplier") out.price = priceCrit(facts.price_gap_pct);
   return out;
@@ -208,18 +145,14 @@ function reason(score: number | null, role: Role, crit: Record<string, Crit>, b:
 
 const viDay = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
-/** `_rated`: lần chấm tay mới nhất trong khoảng tính (theo `at`, rồi `rated_at`). */
-function rated(win: readonly W[], key: string): Crit {
-  const rows = win
-    .map(([e]) => e)
-    .filter((e) => e.type === "rating" && e.criterion === key)
-    .sort((a, b) => cmp(a.at, b.at) || cmp(a.rated_at ?? "", b.rated_at ?? ""));
-  const e = rows.at(-1);
+/** `_rated`: lần chấm tay mới nhất trong khoảng tính (đã chọn ở bước gom). */
+function rated(a: Agg, key: string): Crit {
+  const e = a.rated[key];
   if (!e) return { value: null, detail: null };
   return {
-    value: clamp(e.value as number),
+    value: clamp(e.value),
     detail: `Chấm tay ${e.value}/100 ngày ${viDay(e.at)}`,
-    by: e.by ?? null,
+    by: e.by,
     at: e.at,
   };
 }
@@ -227,34 +160,21 @@ function rated(win: readonly W[], key: string): Crit {
 /** So chuỗi theo điểm mã như Python (không theo locale). */
 export const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-const NOT_DEALINGS = new Set(["manual_adjust", "rating", "overdue"]);
-
-/** `engine.score`. `cfg.criteria` đã chuẩn hoá (`normalise`). */
-export function score(
-  events: readonly Ev[],
-  cfg: { criteria: readonly Criterion[]; rules: Rules },
-  today: string,
-  role: Role,
-  facts: Facts = {},
-): ScoreOut {
+/** Công thức `engine.score` trên đầu vào đã gom. `cfg.criteria` đã chuẩn hoá (`normalise`). */
+export function scoreAgg(a: Agg, cfg: Cfg, today: string, role: Role, facts: Facts = {}): ScoreOut {
   const { rules } = cfg;
-  const win = inWindow(events, rules, today);
-  const counted = win.filter(([e]) => !NOT_DEALINGS.has(e.type));
-  const crit = criteria(win, role, facts, today);
-  for (const c of cfg.criteria) if (c.kind === "manual") crit[c.key] = rated(win, c.key);
+  const crit = criteria(a, role, facts, today, rules.recency_boost ? 2 : 1);
+  for (const c of cfg.criteria) if (c.kind === "manual") crit[c.key] = rated(a, c.key);
   const on = cfg.criteria.filter(
     (c) => c.enabled && c.weight > 0 && (crit[c.key]?.value ?? null) !== null,
   );
-  let adjust = 0;
-  if (rules.manual_adjust) {
-    const d = sum(win.filter(([e]) => e.type === "manual_adjust").map(([e]) => e.delta || 0));
-    adjust = Math.max(-10, Math.min(10, d));
-  }
+  const adjust = rules.manual_adjust ? Math.max(-10, Math.min(10, a.adjust)) : 0;
   const ratedAny = on.some((c) => c.kind === "manual");
   let value: number | null = null;
-  if (!((counted.length < rules.min_events && !ratedAny) || !on.length)) {
-    const total = sum(on.map((c) => c.weight));
-    value = clamp(sum(on.map((c) => (crit[c.key]?.value as number) * c.weight)) / total + adjust);
+  if (!((a.counted < rules.min_events && !ratedAny) || !on.length)) {
+    const total = on.reduce((s, c) => s + c.weight, 0);
+    const sum = on.reduce((s, c) => s + (crit[c.key]?.value as number) * c.weight, 0);
+    value = clamp(sum / total + adjust);
   }
   const b = band(value, rules);
   const breakdown: Breakdown = {};
@@ -266,6 +186,17 @@ export function score(
     reason: reason(value, role, crit, b),
     breakdown,
     adjust,
-    event_count: counted.length,
+    event_count: a.counted,
   };
+}
+
+/** `engine.score` trên từng dòng sổ (= gom TS rồi `scoreAgg`). */
+export function score(
+  events: readonly Ev[],
+  cfg: Cfg,
+  today: string,
+  role: Role,
+  facts: Facts = {},
+): ScoreOut {
+  return scoreAgg(aggregate(events, windowOf(cfg.rules, today), role), cfg, today, role, facts);
 }

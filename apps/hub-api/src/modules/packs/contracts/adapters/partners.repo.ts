@@ -6,7 +6,13 @@ import { sql } from "drizzle-orm";
 import type { PartyEv } from "../domain/partners.rules";
 import type { Criterion, Role, Rules } from "../domain/scoring-config.rules";
 import { json, one } from "./ledger-sql";
-import { type PartnerData, partnerData, type StoredConfig } from "./partners-data.repo";
+import {
+  type PartnerData,
+  partnerData,
+  ratingEvents,
+  type StoredConfig,
+  type WindowOverride,
+} from "./partners-data.repo";
 
 export type { PartnerData, StoredConfig };
 
@@ -15,7 +21,8 @@ const side = (c: string) =>
 
 export function partnersRepo(tx: Tx, t: string) {
   return {
-    data: (today: string, months?: number) => partnerData(tx, t, today, months),
+    data: (today: string, ov?: WindowOverride) => partnerData(tx, t, today, ov),
+    ratingEvents: (party: string, role: Role) => ratingEvents(tx, t, party, role),
     /** Cấu hình đã lưu của vai (không khoá); chưa có ⇒ null. */
     config: (role: Role) =>
       one<StoredConfig | null>(
@@ -98,25 +105,39 @@ export function partnersRepo(tx: Tx, t: string) {
           'by', contracts.user_label(e.by_user), 'at', e.at, 'rated_at', e.data ->> 'rated_at') as j from e`,
       ),
 
-    /** Báo giá: NCC không MST ⇒ đối tác cùng tên (fold) nếu đã có trên HĐ (`compare.supplier_company`), không thì khoá theo tên. */
-    insertQuote: (q: QuoteCreate & { product_name: string; unit: string | null }) =>
+    /**
+     * Báo giá (`routes/prices.add_quote` + `compare.supplier_company`): NCC không MST ⇒ đối tác cùng tên (fold) đã có trên HĐ, không thì
+     * khoá theo tên; NCC chưa có trong danh bạ thì vào danh bạ (`created_from = quote`). Kết quả kiểm link lưu kèm. MỘT câu.
+     */
+    insertQuote: (
+      q: QuoteCreate & {
+        product_name: string;
+        unit: string | null;
+        tax: string | null;
+        check: { verified: boolean | null; page_date: string | null; note: string | null };
+      },
+    ) =>
       one<{ id: string }>(
         tx,
         sql`with named as (
           select contracts.party_key(c.fields -> (s.side || '_name') ->> 'value', c.fields -> (s.side || '_tax_id') ->> 'value') as k
           from contracts.contracts c, lateral (values ('supplier'), ('buyer')) s (side)
-          where c.tenant_id = ${t}::uuid and nullif(regexp_replace(coalesce(${q.supplier_tax_id ?? null}::text, ''), '[^0-9]', '', 'g'), '') is null
+          where c.tenant_id = ${t}::uuid and ${q.tax}::text is null
             and contracts.fold(c.fields -> (s.side || '_name') ->> 'value') = contracts.fold(${q.supplier_name}::text)
-          order by c.created_at, c.id, s.side desc limit 1)
+          order by c.created_at, c.id, s.side desc limit 1),
+        k as (select coalesce((select k from named), contracts.party_key(${q.supplier_name}::text, ${q.tax}::text)) as k),
+        co as (
+          insert into contracts.companies (tenant_id, party_key, tax_id, name, created_from)
+          select ${t}::uuid, k.k, ${q.tax}::text, ${q.supplier_name}::text, 'quote' from k
+          on conflict (tenant_id, party_key) do nothing)
         insert into contracts.price_quotes (tenant_id, product_key, product_name, unit, supplier_name, supplier_tax_id,
-          supplier_party_key, price, quoted_at, source, url, note, created_by)
-        values (${t}::uuid, ${q.product}, ${q.product_name}, ${q.unit}, ${q.supplier_name}, ${q.supplier_tax_id ?? null},
-          coalesce((select k from named), contracts.party_key(${q.supplier_name}::text, ${q.supplier_tax_id ?? null}::text)),
-          ${q.price}::bigint, ${q.quoted_at}::date, ${q.url ? "website" : "quote"}, ${q.url ?? null}, ${q.note ?? null},
-          nullif(current_setting('app.user_id', true), '')::uuid)
+          supplier_party_key, price, quoted_at, source, url, verified, page_date, check_note, note, created_by)
+        select ${t}::uuid, ${q.product}, ${q.product_name}, ${q.unit}, ${q.supplier_name}, ${q.tax}, k.k,
+          ${q.price}::bigint, ${q.quoted_at}::date, ${q.url ? "website" : "quote"}, ${q.url ?? null}, ${q.check.verified}::boolean,
+          ${q.check.page_date}::date, ${q.check.note}, ${q.note ?? null}, nullif(current_setting('app.user_id', true), '')::uuid
+        from k
         returning jsonb_build_object('id', id) as j`,
       ),
-
     deleteQuote: async (id: string): Promise<boolean> =>
       (
         await tx.execute(

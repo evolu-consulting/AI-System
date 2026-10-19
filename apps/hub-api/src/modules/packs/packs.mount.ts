@@ -160,6 +160,7 @@ function mountContracts<E extends Env>(
   app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Việc của tôi
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Mua hàng
   app.route(base, partnersModule(db, view, { timeZoneOf: tenantTz(d) })); // HD8
+  app.route(base, partnersModule(db, view, { timeZoneOf: tenantTz(d), tax })); // HD8
   mountAssistantTools(db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
 }
 

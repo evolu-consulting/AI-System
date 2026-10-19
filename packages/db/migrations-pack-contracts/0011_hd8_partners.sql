@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS contracts.score_snapshots (
 CREATE INDEX IF NOT EXISTS score_snapshots_party_idx ON contracts.score_snapshots (tenant_id, party_key, role, at);
 --> statement-breakpoint
 -- HD8-FR-05 · báo giá (`quotes` của mgmt): giá = bigint đồng > 0 … 10¹⁵. `supplier_party_key` tính lúc thêm (khớp đối tác cùng tên
--- khi không MST, `compare.supplier_company`). `source` = website khi có link (chưa kiểm link: D8-10).
+-- khi không MST, `compare.supplier_company`). `source` = website khi có link; máy chủ mở link kiểm con số (`link_check`, D8-10).
 CREATE TABLE IF NOT EXISTS contracts.price_quotes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS contracts.price_quotes (
   quoted_at date NOT NULL,
   source text NOT NULL DEFAULT 'quote',
   url text,
+  verified boolean,
+  page_date date,
+  check_note text,
   note text,
   created_by uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -101,10 +104,64 @@ CREATE TABLE IF NOT EXISTS contracts.price_quotes (
   CONSTRAINT price_quotes_text_ck CHECK (char_length(product_key) BETWEEN 1 AND 600
     AND char_length(product_name) BETWEEN 1 AND 300 AND char_length(unit) <= 40
     AND char_length(supplier_name) BETWEEN 1 AND 200 AND char_length(supplier_tax_id) <= 30
-    AND char_length(supplier_party_key) BETWEEN 1 AND 300 AND char_length(url) <= 2000 AND char_length(note) <= 500)
+    AND char_length(supplier_party_key) BETWEEN 1 AND 300 AND char_length(url) <= 2000 AND char_length(note) <= 500
+    AND char_length(check_note) <= 200)
 );
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS price_quotes_product_idx ON contracts.price_quotes (tenant_id, product_key, quoted_at);
+--> statement-breakpoint
+-- HD8-FR-08 · giá thị trường hàng hoá (`compare.market`: quan sát 30 ngày gần nhất của mặt hàng ⇒ min/max/ngày/số nguồn). mgmt cũng
+-- chưa có nguồn ghi cho hàng hoá (chỉ CKS do AI dò; hàng hoá "TBD on the Trello card") ⇒ bảng + đường đọc như mgmt, nguồn ghi = lát
+-- "Dò giá" (N2) sau. Giá chưa VAT, bigint đồng.
+CREATE TABLE IF NOT EXISTS contracts.market_observations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  product_key text NOT NULL,
+  price_ex_vat bigint NOT NULL,
+  seen date NOT NULL,
+  seller text,
+  url text,
+  source text NOT NULL DEFAULT 'scan',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT market_observations_pkey PRIMARY KEY (id),
+  CONSTRAINT market_observations_price_ck CHECK (price_ex_vat BETWEEN 1 AND 1000000000000000),
+  CONSTRAINT market_observations_text_ck CHECK (char_length(product_key) BETWEEN 1 AND 600 AND char_length(seller) <= 200
+    AND char_length(url) <= 2000 AND char_length(source) <= 40)
+);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS market_observations_product_idx ON contracts.market_observations (tenant_id, product_key, seen);
+--> statement-breakpoint
+-- HD8-FR-09 · danh bạ công ty (`companies/store.py`): khoá = `party_key` (≡ `company_id` của mgmt), tên/tên ngắn/tên quốc tế/địa chỉ,
+-- trạng thái theo Cục Thuế; `edited` = trường người đã sửa (tra lại Cục Thuế không đè). Tên đối tác = tên ngắn ?? tên ?? tên trên HĐ.
+-- Ngoài lát (D8-15): người phụ trách, người liên hệ, gộp tên, đánh dấu pháp nhân của mình (`own`, đổi chiều HĐ).
+CREATE TABLE IF NOT EXISTS contracts.companies (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  party_key text NOT NULL,
+  tax_id text,
+  name text,
+  short_name text,
+  international_name text,
+  address text,
+  status text,
+  active boolean,
+  edited text[] NOT NULL DEFAULT '{}',
+  registry_result text,
+  registry_synced_at timestamptz,
+  created_from text NOT NULL DEFAULT 'manual',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT companies_pkey PRIMARY KEY (id),
+  CONSTRAINT companies_party_uq UNIQUE (tenant_id, party_key),
+  CONSTRAINT companies_text_ck CHECK (char_length(party_key) BETWEEN 1 AND 300 AND char_length(tax_id) <= 30
+    AND char_length(name) <= 300 AND char_length(short_name) <= 200 AND char_length(international_name) <= 300
+    AND char_length(address) <= 500 AND char_length(status) <= 200 AND char_length(created_from) <= 20
+    AND char_length(registry_result) <= 20 AND cardinality(edited) <= 10)
+);
+--> statement-breakpoint
+SELECT packs.secure_table('contracts', 'market_observations');
+--> statement-breakpoint
+SELECT packs.secure_table('contracts', 'companies');
 --> statement-breakpoint
 SELECT packs.secure_table('contracts', 'score_configs');
 --> statement-breakpoint

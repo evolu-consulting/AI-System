@@ -5,12 +5,13 @@
 import type { QuoteCreate, RatingRequest, ScoringDraft } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { PartnerData, PartnersRepo, StoredConfig } from "../adapters/partners.repo";
+import type { WindowOverride } from "../adapters/partners-data.repo";
 import { compareGoods, priceGaps, priceLines, productList } from "../domain/goods-prices.rules";
+import type { Inspect } from "../domain/link-check.rules";
 import { localDate } from "../domain/local-time.rules";
 import {
   type Cfg,
   factsOf,
-  groupEvents,
   onePerParty,
   type PartnerOut,
   partnersOf,
@@ -26,6 +27,7 @@ import {
   restorable,
   summary,
 } from "../domain/scoring-config.rules";
+import { normalizeTaxId } from "../domain/warnings.rules";
 
 export class PartnersFail extends Error {
   constructor(
@@ -41,6 +43,8 @@ export type PartnersDeps = {
   uow: PackUow<Repos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
+  /** Mở link giá kiểm con số (`link_check.inspect`); test thay bằng trang giả. */
+  inspect: Inspect;
 };
 
 const ROLES: Role[] = ["customer", "supplier"];
@@ -62,11 +66,10 @@ const strip = ({ breakdown: _b, ...p }: PartnerOut) => p;
 export function partnersUsecase(d: PartnersDeps) {
   const today = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
-  /** Mọi thứ cần để chấm (cả tenant) + tập người dùng thấy. */
-  /** `months`: khoảng tính tối thiểu của bản nháp (xem trước/lưu) để không thiếu sự kiện. */
-  async function load(who: PackWho, months?: number) {
+  /** Mọi thứ cần để chấm (sổ đã gom ở SQL) + tập người dùng thấy. `ov`: khoảng tính của bản nháp (xem trước/lưu). */
+  async function load(who: PackWho, ov?: WindowOverride) {
     const day = await today(who);
-    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data(day, months));
+    const data: PartnerData = await d.uow.tenant(who, (r) => r.partners.data(day, ov));
     const lines = priceLines(data.contracts, day);
     const facts = factsOf(data.facts, priceGaps(lines, data.quotes));
     // M1 `view.company`: đối tác có HĐ đã duyệt người dùng thấy (data() đã chạy dưới RLS của người dùng).
@@ -76,18 +79,18 @@ export function partnersUsecase(d: PartnersDeps) {
       customer: cfgOf(stored.get("customer"), "customer"),
       supplier: cfgOf(stored.get("supplier"), "supplier"),
     };
-    const events = groupEvents(data.events);
     const partners = (role: Role | null, over: Partial<Record<Role, Cfg>> = {}, all = false) =>
       partnersOf({
         facts,
-        events,
+        aggs: data.aggs,
+        names: data.names,
         cfgs: { ...cfgs, ...over },
         today: day,
         role,
         visible: all ? () => true : (p) => vis.parties.has(p),
       });
     const seenLines = lines;
-    return { day, data, vis, cfgs, events, partners, seenLines };
+    return { day, data, vis, cfgs, partners, seenLines };
   }
 
   const list = async (who: PackWho, role: Role | "all") => {
@@ -105,7 +108,8 @@ export function partnersUsecase(d: PartnersDeps) {
   const ratings = async (who: PackWho, party: string, role: Role) => {
     const l = await load(who);
     if (!l.vis.parties.has(party)) throw new PartnersFail("not_found");
-    return ratingsOf(l.cfgs[role], l.events.get(`${role}|${party}`) ?? [], l.day);
+    const evs = await d.uow.tenant(who, (r) => r.partners.ratingEvents(party, role));
+    return ratingsOf(l.cfgs[role], evs, l.day);
   };
 
   const rate = async (who: PackWho, b: RatingRequest) => {
@@ -132,14 +136,14 @@ export function partnersUsecase(d: PartnersDeps) {
 
   const preview = async (who: PackWho, role: Role, b: ScoringDraft) => {
     const draft = draftOf(role, b);
-    const l = await load(who, draft.rules.window_months);
+    const l = await load(who, { [role]: draft.rules });
     return previewOf(l.partners(role), l.partners(role, { [role]: draft }));
   };
 
   /** `save_config`: chỉ quản lý (route kiểm `admin`); tăng version, lịch sử + ảnh chụp điểm mọi đối tác của vai (cả tenant). */
   const save = async (who: PackWho, role: Role, b: ScoringDraft) => {
     const draft = draftOf(role, b);
-    const l = await load(who, draft.rules.window_months);
+    const l = await load(who, { [role]: draft.rules });
     const snapshots = l
       .partners(role, { [role]: draft }, true)
       .map((p) => ({ party: p.party, score: p.score, band: p.band }));
@@ -182,20 +186,32 @@ export function partnersUsecase(d: PartnersDeps) {
     if (!productList(l.seenLines, l.data.quotes).some((p) => p.key === product))
       throw new PartnersFail("not_found");
     const scores = new Map(l.partners("supplier").map((p) => [p.party, p]));
-    return compareGoods(l.seenLines, l.data.quotes, product, scores);
+    return compareGoods(l.seenLines, l.data.quotes, product, scores, l.data.market.get(product));
   };
 
+  /** `add_quote`: mặt hàng phải so được; tên mặt hàng mặc định theo nhãn; có link ⇒ máy chủ mở kiểm con số (ngoài tx). */
   const addQuote = async (who: PackWho, b: QuoteCreate) => {
     const l = await load(who);
     const known = productList(l.seenLines, l.data.quotes).find((p) => p.key === b.product);
     if (!known) throw new PartnersFail("not_found");
     const name = b.product_name || (known.label.split(" · ").at(-1) ?? "").split(" (đ/")[0] || "";
     if (!name) throw new PartnersFail("invalid", "Cần tên mặt hàng");
+    const check = b.url
+      ? await d.inspect(b.url, b.price)
+      : { verified: null, page_date: null, note: null };
     return d.uow.tenant(who, (r) =>
-      r.partners.insertQuote({ ...b, product_name: name, unit: b.unit || known.unit }),
+      r.partners.insertQuote({
+        ...b,
+        product_name: name,
+        unit: b.unit || known.unit,
+        tax: b.supplier_tax_id ? normalizeTaxId(b.supplier_tax_id) : null,
+        check,
+      }),
     );
   };
 
+  /** `POST /prices/check-link`. */
+  const checkLink = (url: string, price: number) => d.inspect(url, price);
   const deleteQuote = (who: PackWho, id: string) =>
     d.uow.tenant(who, async (r) => {
       if (!(await r.partners.deleteQuote(id))) throw new PartnersFail("not_found");
@@ -214,6 +230,7 @@ export function partnersUsecase(d: PartnersDeps) {
     products,
     compare,
     addQuote,
+    checkLink,
     deleteQuote,
     roles: ROLES,
   };

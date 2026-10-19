@@ -14,32 +14,24 @@ import { evJson, obJson, one, seenEvent } from "./ledger-sql";
 export const DONE_DAYS = 60;
 
 /**
- * Cột của một hàng bảng (`payments.board`): đối tác = bên mua (bán) / bên bán (mua) — tên thô như mgmt. Luật 4c: `json` (không
- * `jsonb`: không đổi sang nhị phân rồi lại ra chữ — route gửi thẳng chữ), `of` = một lượt đếm theo nhóm cho ≤ 500 HĐ (`n`).
+ * Một hàng bảng (`payments.board`): đối tác = bên mua (bán) / bên bán (mua) — tên thô như mgmt. Luật 4c: `json_agg` trên bản ghi của
+ * truy vấn con đã sắp (Postgres đổi bản ghi ⇒ JSON một lượt, không dựng object từng cột; route gửi thẳng chữ); `of` = một lượt đếm
+ * theo nhóm cho ≤ 500 HĐ (`n`); HĐ tra theo id.
  */
-const boardRow = (today: string) => sql`json_build_object('id', r.id, 'contract_id', r.contract_id,
-    'party_key', r.party_key, 'direction', r.direction, 'kind', r.kind, 'seq', r.seq, 'due_date', r.due_date,
-    'amount', r.amount, 'status', r.status, 'done_at', r.done_at, 'postponed_to', r.postponed_to,
-    'postpones', r.postpones, 'reminders', r.reminders, 'source', r.source, 'estimated', r.estimated, 'basis', r.basis,
-    'of', coalesce(n.of, 0),
-    'party', case when c.direction = 'sale' then c.fields -> 'buyer_name' ->> 'value'
-                  else c.fields -> 'supplier_name' ->> 'value' end,
-    'contract_title', coalesce(nullif(c.fields -> 'title' ->> 'value', ''), nullif(c.fields -> 'number' ->> 'value', ''),
-                               c.title),
-    'days_late', case when r.status = 'open' then greatest(0, ${today}::date - r.due_date) else 0 end)`;
-
-/** ≤ 500 hàng `r` + HĐ (tra theo id) + số đợt mỗi HĐ (một lượt gom), theo thứ tự `order`. */
-const rowsOf = (
-  t: string,
-  today: string,
-  order: SQL,
-) => sql`coalesce((select json_agg(${boardRow(today)} order by ${order})
+const rowsOf = (t: string, today: string, order: SQL) => sql`coalesce((select json_agg(x) from (
+    select r.id, r.contract_id, r.party_key, r.direction, r.kind, r.seq, r.due_date, r.amount, r.status, r.done_at,
+      r.postponed_to, r.postpones, r.reminders, r.source, r.estimated, r.basis, coalesce(n.of, 0) as of,
+      case when c.direction = 'sale' then c.fields -> 'buyer_name' ->> 'value'
+           else c.fields -> 'supplier_name' ->> 'value' end as party,
+      coalesce(nullif(c.fields -> 'title' ->> 'value', ''), nullif(c.fields -> 'number' ->> 'value', ''), c.title)
+        as contract_title,
+      case when r.status = 'open' then greatest(0, ${today}::date - r.due_date) else 0 end as days_late
     from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
       where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true
-    left join (select x.contract_id, count(*) as of from contracts.obligations x
-      where x.tenant_id = ${t}::uuid and x.contract_id in (select contract_id from r)
-        and x.status <> 'replaced' group by x.contract_id) n on n.contract_id = r.contract_id), '[]'::json)`;
-
+    left join (select y.contract_id, count(*) as of from contracts.obligations y
+      where y.tenant_id = ${t}::uuid and y.contract_id in (select contract_id from r)
+        and y.status <> 'replaced' group by y.contract_id) n on n.contract_id = r.contract_id
+    order by ${order}) x), '[]'::json)`;
 /** Tổng (không theo bộ lọc, D7-18) + `total` của bộ lọc mở — MỘT lượt quét đợt tiền đang mở. */
 function statsOf(t: string, today: string, total: SQL): SQL {
   return sql`a as (select

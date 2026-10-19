@@ -10,6 +10,8 @@ export const HD8_TABLES = [
   "score_config_history",
   "score_snapshots",
   "price_quotes",
+  "market_observations",
+  "companies",
 ] as const;
 
 export async function needHd8(sql: Sql): Promise<void> {

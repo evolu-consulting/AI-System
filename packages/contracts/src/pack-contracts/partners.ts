@@ -153,10 +153,48 @@ export type GoodsPriceRow = {
     contract_id?: string;
     quote_id?: string;
     url?: string | null;
+    verified?: boolean | null;
   };
 };
 export type GoodsCompare = {
   product: PriceProduct;
   rows: GoodsPriceRow[];
-  market: { status: "ok" | "tbd"; min?: number; max?: number; seen?: string | null };
+  market: { status: "ok" | "tbd"; min?: number; max?: number; seen?: string | null; n?: number };
 };
+
+// ---------- HD8-FR-05 kiểm link báo giá · HD8-FR-09 danh bạ công ty ----------
+const HttpUrl = z.url({ protocol: /^https?$/ }).max(2000);
+export const LinkCheckRequestSchema = z.strictObject({
+  url: HttpUrl,
+  price: z.number().int().min(0).max(LEDGER_MONEY_MAX),
+});
+export type LinkCheckOut = { verified: boolean; page_date: string | null; note: string };
+
+const TaxIn = z.string().trim().max(30);
+export const CompanyCreateSchema = z.strictObject({
+  tax_id: TaxIn.nullish(),
+  name: nfcText(300).nullish(),
+  address: nfcText(500).nullish(),
+});
+export const CompanyPatchSchema = z.strictObject({
+  name: nfcText(300).nullish(),
+  international_name: nfcText(300).nullish(),
+  short_name: nfcText(200).nullish(),
+  address: nfcText(500).nullish(),
+});
+export const CompanyQuerySchema = z.strictObject({ q: z.string().max(200).optional() });
+export const CompanyPartySchema = z.strictObject({ party: Party });
+export type Company = {
+  party: string;
+  tax_id: string | null;
+  name: string | null;
+  short_name: string | null;
+  international_name: string | null;
+  address: string | null;
+  status: string | null;
+  active: boolean | null;
+  edited: string[];
+  registry_result: string | null;
+  created_from: string;
+};
+export type CompanyRow = Company & { contract_count: number; roles: PartnerRole[] };
