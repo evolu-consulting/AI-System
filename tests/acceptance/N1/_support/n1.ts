@@ -7,6 +7,8 @@
 // `deps.packs = { pkdemo: true, filebox?: { url, token } }`. Vắng ⇒ route `/pack/*` không có ⇒ 404 ⇒ đỏ ở expect.
 import { expect } from "bun:test";
 import { createDb } from "@ai/db";
+import { asRole, pgCode } from "@ai/test-kit/db";
+import { percentile } from "@ai/test-kit/perf";
 import postgres from "postgres";
 import { createApp as createHubApp } from "../../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../../apps/hub-api/src/lib/db";
@@ -70,32 +72,13 @@ export async function needPackKit(sql: Sql): Promise<void> {
 export function hubApiSql(): Sql {
   return postgres(HUB_API_URL, { max: 1, onnotice: () => {} });
 }
-/** Chạy `fn` trong tx của `hub_api` đã `set_config('role', '<k>_rw')` + tenant (`null` = KHÔNG đặt `app.tenant_id`). */
-export async function inPack<R>(
+/** Chạy `fn` trong tx của `hub_api` đã `set_config('role', '<k>_rw')` + tenant (`null` = KHÔNG đặt `app.tenant_id`). Cài đặt: `@ai/test-kit/db` (TK1). */
+export const inPack = <R>(
   tenantId: string | null,
   fn: (tx: Sql) => Promise<R>,
   role = `${PK}_rw`,
-): Promise<R> {
-  const conn = hubApiSql();
-  try {
-    return (await conn.begin(async (tx) => {
-      await tx`select set_config('role', ${role}, true)`;
-      if (tenantId !== null) await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
-      return fn(tx as unknown as Sql);
-    })) as R;
-  } finally {
-    await conn.end({ timeout: 1 });
-  }
-}
-/** Mã SQLSTATE của lỗi `fn` ném (hoặc null). */
-export async function pgCode(fn: () => Promise<unknown>): Promise<string | null> {
-  try {
-    await fn();
-    return null;
-  } catch (e) {
-    return (e as { code?: string }).code ?? `no-code:${(e as Error).message}`;
-  }
-}
+): Promise<R> => asRole(role, tenantId, fn);
+export { pgCode };
 
 // ---------- id cố định (dải `a5e1…`) ----------
 const x = (n: number) => `a5e10000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -388,8 +371,4 @@ export const itemBody = (title: string, nLines: number, extra: Json = {}): Json 
   lines: Array.from({ length: nLines }, (_, i) => ({ text: `dòng ${i + 1}` })),
   ...extra,
 });
-export const percentile = (xs: number[], p: number): number => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)] as number;
-};
-export { loadPackContract };
+export { loadPackContract, percentile }; // TK1: cài đặt ở `@ai/test-kit/perf`

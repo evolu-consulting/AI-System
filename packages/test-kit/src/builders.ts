@@ -107,7 +107,7 @@ export async function enablePack(
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id)
     select g.tenant_id, f.id, g.id
     from admin.groups g
-    join jsonb_to_recordset(${JSON.stringify(pairs)}::jsonb) as p(grp text, feat text) on g.key = p.grp
+    join jsonb_to_recordset(${sql.json(pairs)}) as p(grp text, feat text) on g.key = p.grp
     join admin.features f on f.key = p.feat
     where g.tenant_id = any(${tids}::uuid[])
     on conflict (tenant_id, feature_id, group_id) where group_id is not null do nothing`;

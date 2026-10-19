@@ -3,10 +3,11 @@
 // (index `contracts_list_idx`); clone DB từ template ghi số thật (không ngưỡng cứng — phụ thuộc máy). Không `analyze` sau chèn hàng loạt.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { contracts, tenants, userId, users } from "./builders";
-import { cloneDb, inPack, openOwner, type Sql } from "./db";
+import { cloneDb, openOwner, rolePool, type Sql } from "./db";
 import { assertNoSeqScan, captureSql, measure } from "./perf";
 
 let sql: Sql;
+const pool = rolePool(1);
 let tid: string;
 const cloneMs: number[] = [];
 beforeAll(async () => {
@@ -18,6 +19,7 @@ beforeAll(async () => {
   await users(sql, tid, 1, { from: 850 });
 });
 afterAll(async () => {
+  await pool.close();
   await sql.end({ timeout: 2 });
 });
 
@@ -38,14 +40,14 @@ describe("harness perf kit", () => {
   it("danh sách theo tenant: p95 ≤ 20 ms, không Seq Scan", async () => {
     const q =
       "select id from contracts.contracts where tenant_id = $1 order by updated_at desc, id desc limit 50";
-    const run = <R>(f: (tx: Sql) => Promise<R>) => inPack("contracts", tid, f);
+    const run = <R>(f: (tx: Sql) => Promise<R>) => pool.inPack("contracts", tid, f);
     await assertNoSeqScan(run, { text: q, params: [tid] }, ["contracts"]);
-    const stat = await measure(() => inPack("contracts", tid, (tx) => tx.unsafe(q, [tid])), {
+    const stat = await measure(() => pool.inPack("contracts", tid, (tx) => tx.unsafe(q, [tid])), {
       n: 100,
       warm: 5,
     });
     console.log(
-      `[TK1 perf] list p50=${stat.p50.toFixed(1)} p95=${stat.p95.toFixed(1)} max=${stat.max.toFixed(1)} ms (n=${stat.n}, mỗi lượt gồm mở kết nối)`,
+      `[TK1 perf] list p50=${stat.p50.toFixed(1)} p95=${stat.p95.toFixed(1)} max=${stat.max.toFixed(1)} ms (n=${stat.n}, kết nối giữ sẵn)`,
     );
     expect(stat.p95).toBeLessThanOrEqual(20);
   });

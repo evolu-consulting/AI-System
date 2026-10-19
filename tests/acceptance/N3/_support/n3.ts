@@ -17,66 +17,10 @@ export async function needNotify(sql: Sql): Promise<void> {
   expect({ n3_migrations: r?.ok === true }).toEqual({ n3_migrations: true });
 }
 
-const hubConn = (): Sql => postgres(HUB_API_URL, { max: 1, onnotice: () => {} });
+// inPack / inHub / pgCode / HubScopeArg: cài đặt dùng chung ở `@ai/test-kit/db` (TK1), chữ ký giữ nguyên.
+import { inPack } from "@ai/test-kit/db";
 
-/** Tx của `hub_api` đã `SET ROLE <k>_rw` + tenant (đúng `withPackScope`). `tenantId=null` = không đặt `app.tenant_id`. */
-export async function inPack<R>(
-  key: string,
-  tenantId: string | null,
-  fn: (tx: Sql) => Promise<R>,
-  opts: { rollback?: boolean } = {},
-): Promise<R> {
-  const conn = hubConn();
-  try {
-    return (await conn.begin(async (tx) => {
-      await tx`select set_config('role', ${`${key}_rw`}, true)`;
-      if (tenantId !== null) await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
-      const out = await fn(tx as unknown as Sql);
-      if (opts.rollback) throw new Rollback(out);
-      return out;
-    })) as R;
-  } catch (e) {
-    if (e instanceof Rollback) return e.value as R;
-    throw e;
-  } finally {
-    await conn.end({ timeout: 1 });
-  }
-}
-class Rollback {
-  constructor(readonly value: unknown) {}
-}
-
-export type HubScopeArg = { kind: "system" } | { kind: "user"; tenantId: string; userId: string };
-/** Tx của `hub_api` với `app.scope` (đúng `withHubScope`); `none` = không đặt gì (fail-closed). */
-export async function inHub<R>(
-  scope: HubScopeArg | "none",
-  fn: (tx: Sql) => Promise<R>,
-): Promise<R> {
-  const conn = hubConn();
-  try {
-    return (await conn.begin(async (tx) => {
-      if (scope !== "none") {
-        const tid = scope.kind === "user" ? scope.tenantId : "";
-        const uid = scope.kind === "user" ? scope.userId : "";
-        await tx`select set_config('app.scope', ${scope.kind}, true), set_config('app.tenant_id', ${tid}, true),
-          set_config('app.user_id', ${uid}, true)`;
-      }
-      return fn(tx as unknown as Sql);
-    })) as R;
-  } finally {
-    await conn.end({ timeout: 1 });
-  }
-}
-
-/** Mã SQLSTATE của lỗi `fn` ném (hoặc null). */
-export async function pgCode(fn: () => Promise<unknown>): Promise<string | null> {
-  try {
-    await fn();
-    return null;
-  } catch (e) {
-    return (e as { code?: string }).code ?? `no-code:${(e as Error).message}`;
-  }
-}
+export { type HubScopeArg, inHub, inPack, pgCode } from "@ai/test-kit/db";
 
 export type Notice = {
   user_id: string;

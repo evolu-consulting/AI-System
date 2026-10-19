@@ -9,15 +9,28 @@ export type Template = "admin" | "full";
 /** `admin` = Admin; `full` = Admin + Hub + gói (có `pkdemo`, `contracts`). Mẫu dựng một lần, clone mỗi lần gọi. */
 export async function cloneDb(template: Template = "full"): Promise<void> {
   const migrate = template === "admin" ? migrateAdminTest : migrateFullTest;
-  await cloneMigratedTestDb(urls().owner, {
+  await cloneMigratedTestDb(template === "admin" ? urls().admin : urls().owner, {
     key: template === "admin" ? "admin" : "full",
     migrate,
   });
 }
 
 /** Kết nối owner (bỏ RLS) để dựng dữ liệu. */
-export const openOwner = (max = 4): Sql => postgres(urls().owner, { max, onnotice: () => {} });
+export const openOwner = (max = 4, template: Template = "full"): Sql =>
+  postgres(template === "admin" ? urls().admin : urls().owner, { max, onnotice: () => {} });
 const hubConn = (): Sql => postgres(urls().hubApi, { max: 1, onnotice: () => {} });
+
+/**
+ * MỘT câu đặt nhiều biến tx-local. Tên biến đi qua tham số: review N1 m-01 chỉ cho `packages/db/src/*-scope.ts` viết literal
+ * role/tenant; kit cần đường "sai" (tenant rỗng/thiếu) mà `withPackScope` từ chối nên không dùng lại được helper đó.
+ */
+async function setConfigs(tx: Sql, vars: Record<string, string>): Promise<void> {
+  const names = Object.keys(vars);
+  const values = names.map((k) => vars[k] as string);
+  await tx`select set_config(t.k, t.v, true) from unnest(${names}::text[], ${values}::text[]) as t(k, v)`;
+}
+const enter = (tx: Sql, role: string, tenantId: string | null): Promise<void> =>
+  setConfigs(tx, { role, ...(tenantId === null ? {} : { "app.tenant_id": tenantId }) });
 
 class Rollback {
   constructor(readonly value: unknown) {}
@@ -34,7 +47,7 @@ export async function pgCode(fn: () => Promise<unknown>): Promise<string | null>
 }
 
 /**
- * Tx của `hub_api` đã `set_config('role', <role>)` + `app.tenant_id` (đúng `withPackScope`).
+ * Tx của `hub_api` đã đặt role + `app.tenant_id` (một câu, như `withPackScope`).
  * `tenantId = null` KHÔNG đặt biến (fail-closed). `rollback` luôn hoàn tác, trả kết quả của `fn`.
  */
 export async function asRole<R>(
@@ -46,8 +59,7 @@ export async function asRole<R>(
   const conn = hubConn();
   try {
     return (await conn.begin(async (tx) => {
-      await tx`select set_config('role', ${role}, true)`;
-      if (tenantId !== null) await tx`select set_config('app.tenant_id', ${tenantId}, true)`;
+      await enter(tx as unknown as Sql, role, tenantId);
       const out = await fn(tx as unknown as Sql);
       if (opts.rollback) throw new Rollback(out);
       return out;
@@ -58,6 +70,27 @@ export async function asRole<R>(
   } finally {
     await conn.end({ timeout: 1 });
   }
+}
+
+/**
+ * Như `asRole` nhưng GIỮ kết nối `hub_api` giữa các lần gọi (đo perf không tính chi phí mở kết nối; vòng lặp nhiều lần gọi nhanh hơn).
+ * Nhớ `close()`.
+ */
+export function rolePool(max = 2): {
+  inPack: <R>(key: string, tenantId: string | null, fn: (tx: Sql) => Promise<R>) => Promise<R>;
+  client: Sql;
+  close: () => Promise<void>;
+} {
+  const client = postgres(urls().hubApi, { max, onnotice: () => {} });
+  return {
+    client,
+    inPack: async (key, tenantId, fn) =>
+      (await client.begin(async (tx) => {
+        await enter(tx as unknown as Sql, `${key}_rw`, tenantId);
+        return fn(tx as unknown as Sql);
+      })) as Awaited<ReturnType<typeof fn>>,
+    close: () => client.end({ timeout: 1 }),
+  };
 }
 
 /** Như `asRole` với role gói `<key>_rw`. */
@@ -80,8 +113,11 @@ export async function inHub<R>(
       if (scope !== "none") {
         const tid = scope.kind === "user" ? scope.tenantId : "";
         const uid = scope.kind === "user" ? scope.userId : "";
-        await tx`select set_config('app.scope', ${scope.kind}, true), set_config('app.tenant_id', ${tid}, true),
-          set_config('app.user_id', ${uid}, true)`;
+        await setConfigs(tx as unknown as Sql, {
+          "app.scope": scope.kind,
+          "app.tenant_id": tid,
+          "app.user_id": uid,
+        });
       }
       return fn(tx as unknown as Sql);
     })) as R;

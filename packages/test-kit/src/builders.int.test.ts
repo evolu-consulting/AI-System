@@ -50,7 +50,9 @@ describe("builders theo tập", () => {
     const big = await captureSql(sql, () => users(sql, t as string, 500, { from: 2000 }));
     expect([small.queries.length, big.queries.length]).toEqual([1, 1]);
   });
+});
 
+describe("builders theo tập · nhóm và gói", () => {
   it("groups + members: idempotent theo khoá, thêm thành viên theo tập", async () => {
     const [t] = await tenants(sql, 1, 820);
     const us = await users(sql, t as string, 3, { from: 3000 });

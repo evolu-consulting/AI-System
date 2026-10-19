@@ -44,7 +44,7 @@ export async function bootStack<A extends Fetcher = Fetcher>(
   };
   try {
     await cloneDb(o.template ?? "full");
-    const owner = openOwner(o.ownerPool ?? 4);
+    const owner = openOwner(o.ownerPool ?? 4, o.template ?? "full");
     closers.push(() => owner.end({ timeout: 2 }));
     if (o.fixture) await o.fixture(owner);
     let app: A | undefined;

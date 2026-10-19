@@ -1,4 +1,4 @@
-﻿// HD-FR-01…08 · HD-BR-01…03 · HD-NFR-01…04 · hạ tầng int HD1 (test-plan §1): DB sạch X2a (clone mẫu `test:int:par`, sau N1 T5a/T5 HD1
+// HD-FR-01…08 · HD-BR-01…03 · HD-NFR-01…04 · hạ tầng int HD1 (test-plan §1): DB sạch X2a (clone mẫu `test:int:par`, sau N1 T5a/T5 HD1
 // có schema `contracts`) + hub-api THẬT in-process (seam `packs`: gói `contracts`, FileBox giả) + admin-api THẬT trên CÙNG DB
 // (dùng lại N1 `_support/n1.ts`: `startAdminN1`, `bumpConfig`, `countHops`, `untilHubSettles`, `inPack`) + bộ chụp câu SQL đầy đủ.
 // Điều kiện tiền đề (`needContracts`) đỏ NGAY với lý do rõ, không để PostgresError trong fixture. Không chứa `it(...)`.
@@ -6,7 +6,9 @@
 //
 // Seam test ↔ hub-api (ghi cho backend-lead, test-plan "Cần bổ sung" #1): `createApp(cfg, deps)` nhận `deps.packs = { contracts: true,
 // filebox: { url, token } }` (cùng khuôn `pkdemo` của N1). Vắng ⇒ route `/pack/contracts/*` không có ⇒ 404 ⇒ đỏ ở expect.
+
 import { expect } from "bun:test";
+import { literalize, type PlanNode, seqScansIn } from "@ai/test-kit/perf";
 import type postgres from "postgres";
 import { createApp as createHubApp } from "../../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../../apps/hub-api/src/lib/db";
@@ -478,27 +480,8 @@ export async function captureSql<R>(
     opts.debug = prev;
   }
 }
-const lit = (v: unknown): string => {
-  if (v === null || v === undefined) return "null";
-  if (typeof v === "number" || typeof v === "bigint" || typeof v === "boolean") return String(v);
-  if (Array.isArray(v))
-    return `'{${v.map((e) => `"${String(e).replace(/(["\\])/g, "\\$1")}"`).join(",")}}'`;
-  if (v instanceof Date) return `'${v.toISOString()}'`;
-  return `'${String(v).replace(/'/g, "''")}'`;
-};
-/** Thay `$n` bằng literal (kế hoạch tuỳ chỉnh với hằng, không cần biết kiểu tham số). */
-export const literalize = (cap: Cap): string =>
-  cap.text.replace(/\$(\d+)/g, (_m, n: string) => lit(cap.params[Number(n) - 1]));
-type PlanNode = { "Node Type": string; "Relation Name"?: string; Plans?: PlanNode[] };
-export function seqScansIn(node: PlanNode, rels: readonly string[]): string[] {
-  const own =
-    node["Node Type"] === "Seq Scan" &&
-    node["Relation Name"] &&
-    rels.includes(node["Relation Name"])
-      ? [node["Relation Name"]]
-      : [];
-  return own.concat(...(node.Plans ?? []).map((p) => seqScansIn(p, rels)));
-}
+// literalize / seqScansIn: cài đặt dùng chung ở `@ai/test-kit/perf` (TK1).
+export { literalize, seqScansIn };
 /** `EXPLAIN` câu đã chụp, chạy bằng role gói + tenant (RLS thật). Trả danh sách quan hệ bị `Seq Scan`. */
 export async function seqScansOf(
   tid: string,
