@@ -1,6 +1,7 @@
 // HD-FR-07 · D-03 · D-10 · HD1 plan §4 §6: cổng đọc của gói hợp đồng (lớp 2 — chỉ kiểu). Repo dựng trong tx `PackUow`
 // (role `contracts_rw` + `app.tenant_id`, RLS FORCE). Kiểu DTO (`@ai/contracts`) chỉ ở adapter ⇒ cổng generic theo dòng/facets.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
+import type { ContractFieldsRepo } from "./patch-fields.usecase";
 
 export const CONTRACT_SORT_KEYS = ["updated_at", "value", "end_date", "title"] as const;
 export type ContractSortKey = (typeof CONTRACT_SORT_KEYS)[number];
@@ -64,6 +65,8 @@ export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
 /** Repo riêng của gói (adapter dựng); `createPackUow` ghép thêm `outbox`. */
 export type ContractsOwnRepos<Row, Facets, Detail = unknown> = {
   contracts: ContractsReadRepo<Row, Facets, Detail>;
+  /** T9: ghi trường (khoá hàng + CTE update/event). */
+  fields: ContractFieldsRepo;
 };
 export type ContractsRepos<Row, Facets, Detail = unknown> = KitTxRepos &
   ContractsOwnRepos<Row, Facets, Detail>;

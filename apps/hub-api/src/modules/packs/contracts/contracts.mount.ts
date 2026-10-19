@@ -14,6 +14,7 @@ import { getFacets } from "./application/get-facets.usecase";
 import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
+import { patchFields } from "./application/patch-fields.usecase";
 
 export { CONTRACTS_KEY };
 
@@ -30,6 +31,7 @@ export function contractsModule(
     detail: getContract({ uow }),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
+    patchFields: patchFields({ uow }),
   });
   // T10 (tải lên): `upload.mount.ts`, gắn ở `packs.mount.ts` (cần Redis + FileBox + múi tenant mà module này không nhận).
   return r;

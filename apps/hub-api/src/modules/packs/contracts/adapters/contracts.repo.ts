@@ -22,6 +22,7 @@ import {
   toContractFacets,
   toContractListRow,
 } from "./contracts.mapper";
+import { contractFieldsRepo } from "./patch-fields.repo";
 
 /** Mảng chuỗi → literal mảng Postgres `{"a","b"}` (một tham số); `null` giữ nguyên (= không lọc). */
 export function pgTextArray(xs: readonly string[] | null): string | null {
@@ -181,4 +182,5 @@ export const contractsRepos = (
   tenantId: string,
 ): ContractsOwnRepos<ContractListRowDto, ContractFacetsDto, ContractDetailDto> => ({
   contracts: contractsRepo(tx, tenantId),
+  fields: contractFieldsRepo(tx, tenantId),
 });

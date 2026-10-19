@@ -6,7 +6,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";
-import { parseWith, withoutScopeKeys } from "../../../../lib/http";
+import { parseWith, readJson, withoutScopeKeys } from "../../../../lib/http";
 import {
   type PackAccessView,
   type PackGuardVars,
@@ -17,7 +17,9 @@ import type { GetFacets } from "../application/get-facets.usecase";
 import type { GetFileLink } from "../application/get-file-link.usecase";
 import type { GetSource } from "../application/get-source.usecase";
 import type { ListContracts } from "../application/list-contracts.usecase";
+import type { PatchFields } from "../application/patch-fields.usecase";
 import type { ContractDetailDto, ContractFacetsDto, ContractListRowDto } from "./contracts.mapper";
+import { patchBody, patchReply } from "./patch-fields.http";
 
 export const CONTRACTS_KEY = "contracts";
 
@@ -27,6 +29,7 @@ export type ContractsReadUseCases = {
   detail: GetContract<ContractDetailDto>;
   source: GetSource;
   fileLink: GetFileLink;
+  patchFields: PatchFields;
 };
 
 const REPEATED = new Set([
@@ -87,6 +90,11 @@ export function contractsRoutes(
     if (!url) throw appError("NOT_FOUND");
     return c.redirect(url, 302);
   });
-  // T9: PATCH `/contracts/:id/fields` (guard `write`) đặt ở đây.
+  // T9 · HD-AC06/07/09: guard `write` TRƯỚC đọc thân (viewer ⇒ 403, 0 SQL); id ⇒ thân ⇒ 400/422 trước SQL; tenant khác ⇒ 404.
+  r.patch("/contracts/:id/fields", packGuard(view, CONTRACTS_KEY, "write"), async (c) => {
+    const id = idOf(c);
+    const input = patchBody(await readJson(c));
+    return c.json(patchReply(await uc.patchFields(whoOf(c.get("user")), id, input)));
+  });
   return r;
 }
