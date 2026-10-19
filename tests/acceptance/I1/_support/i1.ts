@@ -1,5 +1,5 @@
 // I1 · hạ tầng int của importer mgmt-app: DB sạch (mẫu "full" + fixture H1 qua N5: `padmin`), pool `admin_api` + `hub_api`
-// (NOBYPASSRLS — đúng role CLI dùng), bảng G1 từ ảnh chụp DDL nhánh slice/g1-graph khi DB chưa có (phụ thuộc G1 chưa merge).
+// (NOBYPASSRLS — đúng role CLI dùng). Bảng đồ thị G1 (pack-knowledge 0003) phải có sẵn trong mẫu — thiếu ⇒ đỏ ngay.
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,20 +10,15 @@ import { ORG_A } from "./fixture";
 
 export type CtxI1 = CtxN5 & { hub: Db; filesDir: string; sinkDir: string };
 
-/** Áp DDL G1 (IF NOT EXISTS) — ảnh chụp `0003_graph.sql` của slice/g1-graph; G1 merge ⇒ template đã có, câu này vô hại. */
-async function ensureG1(ctx: CtxN5): Promise<void> {
-  const [r] = await ctx.sql<
-    { ok: boolean }[]
-  >`select to_regclass('knowledge.entities') is not null as ok`;
-  if (r?.ok) return;
-  const ddl = await Bun.file(join(import.meta.dir, "g1-graph.snapshot.sql")).text();
-  for (const stmt of ddl.split("--> statement-breakpoint"))
-    if (stmt.trim()) await ctx.sql.unsafe(stmt);
-}
-
 export async function startI1(): Promise<CtxI1> {
   const ctx = await startN5({ max: 4 });
-  await ensureG1(ctx);
+  const [g] = await ctx.sql<
+    { ok: boolean }[]
+  >`select to_regclass('knowledge.entities') is not null as ok`;
+  if (!g?.ok)
+    throw new Error(
+      "thiếu bảng G1 (knowledge.entities) trong mẫu DB — migration pack-knowledge 0003_graph chưa chạy",
+    );
   const root = await mkdtemp(join(tmpdir(), "i1-"));
   const filesDir = join(root, "contract_files");
   await mkdir(join(filesDir, ORG_A, "c2"), { recursive: true });
