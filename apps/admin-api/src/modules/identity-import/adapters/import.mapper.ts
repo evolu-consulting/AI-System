@@ -44,6 +44,8 @@ const UserSchema = z.object({
   org_role: raw(32).nullable(),
   password_hash: raw(4096).nullable(),
   locale: z.enum(["vi", "en"]).default("vi"),
+  /** M1b · quản lý trực tiếp (mgmt-app `manager_email`); vắng/null ⇒ không đặt. */
+  manager_email: raw(320).nullable().optional(),
 });
 
 export function parseExport(raw: unknown): ImportInput {
@@ -71,6 +73,7 @@ export function parseExport(raw: unknown): ImportInput {
       orgRole: d.org_role,
       passwordHash: d.password_hash,
       locale: d.locale,
+      managerEmail: d.manager_email ?? null,
     });
   }
   return {

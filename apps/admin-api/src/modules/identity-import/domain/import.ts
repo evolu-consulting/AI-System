@@ -13,6 +13,8 @@ export type UserIn = {
   /** Hash thô từ mgmt-app — chỉ đi vào câu chèn, KHÔNG vào log/báo cáo/audit (N5-NFR-02). */
   passwordHash: string | null;
   locale: Locale;
+  /** M1b · `manager_email` của mgmt-app (người quản lý trực tiếp, cùng org); null/rỗng ⇒ không đặt. */
+  managerEmail?: string | null;
 };
 
 export type IssueCode =
@@ -34,8 +36,22 @@ export type IssueCode =
   | "ROLE_CONFLICT"
   | "ROLE_MISSING"
   | "GROUP_MISSING"
-  | "BATCH_FAILED";
-export type Issue = { kind: "org" | "user"; ref: string; code: IssueCode };
+  | "BATCH_FAILED"
+  | "MANAGER_UNKNOWN"
+  | "MANAGER_CYCLE";
+export type Issue = { kind: "org" | "user" | "manager"; ref: string; code: IssueCode };
+
+/** M1b · user của một tenant cho luật quản lý: `key` = email thường (hoặc `#<id>` khi không email); `managerKey` = quản lý
+ *  hiện có (DB). `id` null ⇒ user sẽ được tạo (dry-run). */
+export type OrgUser = { key: string; id: string | null; managerKey: string | null };
+export type ManagerWant = { email: string; managerEmail: string };
+export type ManagerPlan = {
+  sets: { userKey: string; managerKey: string }[];
+  /** User đã có quản lý (đặt tay/lần chạy trước) ⇒ không đè (L2). */
+  existing: number;
+  issues: Issue[];
+};
+export type ManagerCounts = { read: number; set: number; existing: number; errors: number };
 
 /** Tenant đã có; `mgmtSource` + `mgmtOrgId` = marker (nguồn, org) do importer ghi (M1); `packRevoked` = có entitlement
  *  `contracts-*` đã bị thu hồi (không bật lại — L2). */
@@ -97,6 +113,7 @@ export type ImportReport = {
   dry_run: boolean;
   orgs: Counts;
   users: Counts & { hash_imported: number; reset_required: number };
+  managers: ManagerCounts;
   issues: Issue[];
   accounts: Account[];
   batches: number;

@@ -31,7 +31,25 @@ export type UserBatchResult = {
 /** Lọc leakproof theo (tenant, username ứng viên) — xem `findUsers` (RLS + index). */
 export type UserQuery = { tenantIds: string[]; usernames: string[] };
 
+/** M1b · user của các tenant trong lô quản lý (DB), kèm quản lý hiện có. */
+export type TenantUser = {
+  tenantId: string;
+  id: string;
+  email: string | null;
+  username: string;
+  managerId: string | null;
+};
+/** Cặp đặt quản lý theo id (apply) — `decide` trả. */
+export type ManagerSet = { tenantId: string; userId: string; managerId: string };
+export type ManagerBatchResult<P> = { plan: P; written: number };
+
 export interface ImportStore {
+  /** M1b · một lô quản lý = MỘT tx: 1 câu đọc user + quản lý của các tenant, `decide`, 1 câu chèn (apply). */
+  managerBatch<P extends { sets: ManagerSet[] }>(
+    apply: boolean,
+    tenantIds: string[],
+    decide: (users: TenantUser[]) => P,
+  ): Promise<ManagerBatchResult<P>>;
   /** Actor là platform admin active (tenant active) và gói `contracts` đủ 3 feature. Một tx. */
   preflight(actorId: string): Promise<{ actorOk: boolean; packOk: boolean }>;
   orgBatch(

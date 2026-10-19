@@ -14,7 +14,9 @@ import {
 import type {
   GroupIds,
   ImportStore,
+  ManagerSet,
   OrgBatchResult,
+  TenantUser,
   UserBatchResult,
   UserQuery,
 } from "../application/ports";
@@ -266,6 +268,53 @@ async function userBatch(d: StoreDeps, b: UserBatchArgs): Promise<UserBatchResul
   });
 }
 
+/** M1b · một lô quản lý: đọc (1 câu) → `decide` → chèn (1 câu, apply) + sự kiện/audit mỗi user được đặt (như PUT quản lý). */
+async function managerBatch<P extends { sets: ManagerSet[] }>(
+  d: StoreDeps,
+  apply: boolean,
+  tids: string[],
+  decide: (users: TenantUser[]) => P,
+) {
+  const read = async (tx: Tx) => {
+    const rows = tids.length === 0 ? [] : await repo.tenantUsers(tx, tids);
+    const users: TenantUser[] = rows.map((u) => ({
+      tenantId: u.tenant_id,
+      id: u.id,
+      email: u.email,
+      username: u.username,
+      managerId: u.manager_id,
+    }));
+    return { users, plan: decide(users) };
+  };
+  if (!apply)
+    return withScope(d.db, PLATFORM, async (tx) => ({ plan: (await read(tx)).plan, written: 0 }));
+  return write(d, async (tx, ch) => {
+    const { users, plan } = await read(tx);
+    if (plan.sets.length === 0) return { plan, written: 0 };
+    const rows = plan.sets.map((s) => ({
+      tenant_id: s.tenantId,
+      user_id: s.userId,
+      manager_id: s.managerId,
+    }));
+    const got = await repo.insertManagers(tx, rows, d.actorId);
+    const nameOf = new Map(users.map((u) => [u.id, u.username]));
+    for (const x of got) {
+      ch.changed({ entity: "user", tenantId: x.tenant_id });
+      ch.audit(
+        auditOf("update", "user", {
+          entityId: x.user_id,
+          entityName: nameOf.get(x.user_id) ?? x.user_id,
+          tenantId: x.tenant_id,
+          before: null,
+          after: null,
+          summary: { op: "identity.import", source: "mgmt-app", manager_id: x.manager_id },
+        }),
+      );
+    }
+    return { plan, written: got.length };
+  });
+}
+
 export function createImportStore(d: StoreDeps): ImportStore {
   return {
     preflight: (actorId) =>
@@ -275,5 +324,6 @@ export function createImportStore(d: StoreDeps): ImportStore {
       }),
     orgBatch: (apply, q, decide) => orgBatch(d, apply, q, decide),
     userBatch: (apply, q, decide, groups) => userBatch(d, { apply, q, decide, groups }),
+    managerBatch: (apply, tids, decide) => managerBatch(d, apply, tids, decide),
   };
 }

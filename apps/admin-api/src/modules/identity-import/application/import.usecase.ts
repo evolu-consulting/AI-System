@@ -20,6 +20,7 @@ import {
   usernameFallback,
   validEmail,
 } from "../domain/import.rules";
+import { managerPhase } from "./managers.phase";
 import type { Clock, ErrorClass, ImportStore, OrgBatchResult, UserQuery } from "./ports";
 
 export type ImportInput = {
@@ -33,7 +34,7 @@ export type ImportInput = {
   userRows: number;
 };
 export type ImportOpts = { actorId: string; apply: boolean; batch: number };
-export type BatchKind = "check" | "org" | "user";
+export type BatchKind = "check" | "org" | "user" | "manager";
 export type ImportDeps = {
   store: ImportStore;
   clock: Clock;
@@ -61,6 +62,7 @@ function emptyReport(dry: boolean, input: ImportInput): ImportReport {
       hash_imported: 0,
       reset_required: 0,
     },
+    managers: { read: 0, set: 0, existing: 0, errors: 0 },
     issues: [...input.issues],
     accounts: [],
     batches: 0,
@@ -197,6 +199,7 @@ export async function runImport(
   };
   await orgPhase(r, input, o, d);
   await userPhase(r, input.users, o, d);
+  await managerPhase(r, input.users, o, d);
   r.report.orgs.errors = r.report.issues.filter((i) => i.kind === "org").length;
   r.report.users.errors = r.report.issues.filter((i) => i.kind === "user").length;
   r.report.ms = Math.round(d.clock.now() - t0);

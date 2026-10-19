@@ -191,6 +191,38 @@ export function insertUsers(tx: Tx, rows: readonly NewUser[], resetHash: string,
   );
 }
 
+/** M1b · user + quản lý hiện có của các tenant (lọc `tenant_id = any` — leakproof, index `users_tenant_*`). */
+export function tenantUsers(tx: Tx, tenantIds: readonly string[]) {
+  return run<{
+    tenant_id: string;
+    id: string;
+    email: string | null;
+    username: string;
+    manager_id: string | null;
+  }>(
+    tx,
+    sql`select u.tenant_id, u.id, lower(u.email) as email, u.username, m.manager_id
+      from admin.users u left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id
+      where u.tenant_id = any(${uuids(tenantIds)})`,
+  );
+}
+
+/** M1b · đặt quản lý theo tập (1 câu); đã có quản lý (đua/đặt tay) ⇒ không đè (L2). Trigger DB duy trì closure + chặn vòng. */
+export function insertManagers(
+  tx: Tx,
+  rows: readonly { tenant_id: string; user_id: string; manager_id: string }[],
+  actorId: string,
+) {
+  return run<{ tenant_id: string; user_id: string; manager_id: string }>(
+    tx,
+    sql`insert into admin.user_managers (tenant_id, user_id, manager_id, updated_by)
+      select x.tenant_id, x.user_id, x.manager_id, ${actorId}::uuid
+      from jsonb_to_recordset(${json(rows)}::jsonb) as x(tenant_id uuid, user_id uuid, manager_id uuid)
+      on conflict (user_id) do nothing
+      returning tenant_id, user_id, manager_id`,
+  );
+}
+
 export type NewMember = { tenant_id: string; group_id: string; user_id: string };
 export function insertMembers(tx: Tx, rows: readonly NewMember[], actorId: string) {
   return run<{ tenant_id: string; user_id: string }>(
