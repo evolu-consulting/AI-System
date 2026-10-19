@@ -1,0 +1,46 @@
+---
+id: M1-departments
+title: Phòng ban + luật thấy dữ liệu (RLS) cho app mgmt (contracts-web)
+cr: CR-095
+lane: đầy đủ (RLS/tenant) — một agent, review + security gộp cuối đợt (CR-095)
+requirements: [M1D-FR-01, M1D-FR-02, M1D-FR-03, M1D-FR-04, M1D-FR-05, M1D-NFR-01]
+---
+
+# M1 · Phòng ban + luật thấy (plan ngắn)
+
+Nguồn luật: mgmt-app `api/app/orgs.py` (`Ctx.sees`, `reports`, `_check_manager`) + `access.py` (CKS/lô theo HĐ).
+
+## Luật (M1D-FR-01)
+- **owner** (thành viên Group được cấp `contracts-admin`) thấy mọi hàng của tenant.
+- **editor/viewer** thấy: HĐ mình phụ trách (`owner_user_id`) · HĐ của cấp dưới mọi tầng (chuỗi quản lý, cấm vòng) ·
+  HĐ chưa giao (`owner_user_id is null`) do mình tải lên (`created_by`) · **mới**: trưởng phòng thấy HĐ của thành viên phòng.
+- Việc nền (`app.user_id` rỗng — `PackSystemUow`) thấy cả tenant (như trước).
+- Hàng con theo HĐ: `contract_items`, `contract_events`, `obligations` (theo `contract_id`), `cks_lots` (HĐ mua),
+  `cks_certificates`/`cks_renewals` (HĐ bán; hoặc do mình tạo).
+
+## Dữ liệu
+- admin 0014 `m1_org` (tay, không đổi bảng cũ): `admin.user_managers` (một quản lý/user), `admin.user_reports` (closure, trigger
+  duy trì theo tập, khoá advisory theo tenant, vòng ⇒ 23514 `user_managers_cycle_ck`), `admin.departments` (Group ⇒ phòng ban,
+  `head_user_id`; thành viên = `group_members`).
+- contracts 0009 `m1_visibility`: `visibility_settings(mode tenant|org)`; hàm `org_owner_ids()` / `org_is_owner()` (SECURITY
+  DEFINER, chỉ đọc admin theo `app.tenant_id`/`app.user_id`), `sees_all()` (INVOKER); policy RESTRICTIVE FOR SELECT.
+
+## Việc
+| # | Việc | Làn | Trạng thái |
+|---|---|---|---|
+| 1 | Migration admin 0014 + contracts 0009 | đầy đủ | |
+| 2 | Test RLS (`tests/acceptance/M1D/visibility.int.test.ts`): cấp dưới thấy, ngang hàng không, trưởng phòng, tenant khác, vòng bị chặn, chế độ tenant giữ hành vi cũ | đầy đủ | |
+| 3 | Perf: list p95 ≤ 50 ms, 2 câu, EXPLAIN không Seq Scan (chế độ org, viewer) | đầy đủ | |
+| 4 | admin-api: `PUT /admin/users/:id/manager`, `/admin/departments` (CRUD + trưởng phòng) | đầy đủ | |
+| 5 | hub-api: `GET/PUT /pack/contracts/visibility` (owner) | thường | |
+| 6 | contracts-web: Cài đặt › Phòng ban & thành viên | nhanh | |
+
+## Quyết định trong lúc làm
+- D-M1-01: **Chế độ theo tenant, mặc định `tenant`** (mọi người thấy cả tenant như HD1–HD9 đang khoá test). Tenant nhập từ mgmt-app
+  bật `org`. Lý do: luật mgmt-app làm mặc định sẽ đỏ test khoá HD1 (viewer `tam` đọc HĐ của `lan`) ⇒ Tranh chấp test, chờ người dùng.
+- D-M1-02: Quản lý ở bảng riêng `admin.user_managers` (không thêm cột vào `admin.users` — tránh đụng contract/test khoá của users).
+- D-M1-03: Phụ lục chưa giao **không** "theo HĐ cha" như mgmt-app (cần đọc HĐ cha trong policy của chính bảng ⇒ đệ quy policy);
+  upload luôn gán người phụ trách = người tải ⇒ chỉ gặp ở dữ liệu nhập; HD10 nhập gán owner phụ lục = owner HĐ cha.
+- D-M1-04: Trưởng phòng thấy HĐ của thành viên trực tiếp của phòng (không lan tiếp cấp dưới của họ); phòng ban phẳng.
+- D-M1-05: `cks_certificates`/`cks_lots`/`cks_renewals`: người tạo luôn thấy hàng mình tạo (câu chèn CKS chèn HĐ mới + CKS cùng
+  câu ⇒ RETURNING không thấy HĐ mới qua EXISTS).

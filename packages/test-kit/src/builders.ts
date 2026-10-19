@@ -122,7 +122,13 @@ export async function enablePack(
   return out;
 }
 
-export type ContractsOpts = { from?: number; createdBy: string; status?: string };
+export type ContractsOpts = {
+  from?: number;
+  createdBy: string;
+  status?: string;
+  /** Người phụ trách (`owner_user_id`); mặc định null (chưa giao). */
+  owner?: string | null;
+};
 /** `n` hợp đồng mẫu của `tenant` (`contracts.contracts`): id `contractId(i)`, title `HD i`. 1 câu. */
 export async function contracts(
   sql: Sql,
@@ -132,9 +138,49 @@ export async function contracts(
 ): Promise<string[]> {
   const from = o.from ?? 1;
   await sql.unsafe(
-    `insert into contracts.contracts (id, tenant_id, title, status, created_by)
-     select ${uuidSql(NS_CONTRACT, "i")}, $1::uuid, 'HD ' || i, $2, $3::uuid from generate_series($4::int, $5::int) i`,
-    [tenant, o.status ?? "active", o.createdBy, from, from + n - 1],
+    `insert into contracts.contracts (id, tenant_id, title, status, created_by, owner_user_id)
+     select ${uuidSql(NS_CONTRACT, "i")}, $1::uuid, 'HD ' || i, $2, $3::uuid, $6::uuid
+     from generate_series($4::int, $5::int) i`,
+    [tenant, o.status ?? "active", o.createdBy, from, from + n - 1, o.owner ?? null],
   );
   return Array.from({ length: n }, (_, k) => contractId(from + k));
+}
+
+/** M1D · gán quản lý `[user, manager]` (theo tập, 1 câu; trigger duy trì closure + chặn vòng). Trùng user ⇒ đổi quản lý. */
+export async function managers(
+  sql: Sql,
+  tenant: string,
+  pairs: readonly (readonly [string, string])[],
+): Promise<void> {
+  await sql`insert into admin.user_managers (tenant_id, user_id, manager_id)
+    select ${tenant}::uuid, p.u, p.m
+    from jsonb_to_recordset(${sql.json(pairs.map(([u, m]) => ({ u, m })))}) as p(u uuid, m uuid)
+    on conflict (user_id) do update set manager_id = excluded.manager_id`;
+}
+
+/** M1D · phòng ban = Group `key` + hàng `admin.departments` (trưởng phòng) + thành viên. 3 câu. Trả group id. */
+export async function department(
+  sql: Sql,
+  tenant: string,
+  key: string,
+  head: string | null,
+  memberIds: readonly string[],
+): Promise<string> {
+  const g = (await groups(sql, tenant, [key])).get(key) as string;
+  await sql`insert into admin.departments (tenant_id, group_id, head_user_id)
+    values (${tenant}::uuid, ${g}::uuid, ${head}::uuid)
+    on conflict (group_id) do update set head_user_id = excluded.head_user_id`;
+  if (memberIds.length) await members(sql, tenant, g, memberIds);
+  return g;
+}
+
+/** M1D-FR-04 · chế độ thấy của gói contracts cho các tenant (`tenant` = cả tenant, `org` = luật mgmt-app). 1 câu. */
+export async function visibility(
+  sql: Sql,
+  tenantIds: readonly string[],
+  mode: "tenant" | "org",
+): Promise<void> {
+  await sql`insert into contracts.visibility_settings (tenant_id, mode)
+    select t, ${mode} from unnest(${sql.array([...tenantIds])}::uuid[]) t
+    on conflict (tenant_id) do update set mode = excluded.mode, updated_at = now()`;
 }

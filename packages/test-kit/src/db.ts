@@ -101,6 +101,37 @@ export const inPack = <R>(
   opts: { rollback?: boolean } = {},
 ): Promise<R> => asRole(`${key}_rw`, tenantId, fn, opts);
 
+/**
+ * M1D · như `inPack` nhưng đặt thêm `app.user_id` (đúng `withPackScope` của request người dùng) ⇒ luật thấy theo người áp dụng.
+ * `userId = ""` = việc nền (thấy cả tenant).
+ */
+export async function inPackAs<R>(
+  key: string,
+  tenantId: string,
+  userId: string,
+  fn: (tx: Sql) => Promise<R>,
+  opts: { rollback?: boolean } = {},
+): Promise<R> {
+  const conn = hubConn();
+  try {
+    return (await conn.begin(async (tx) => {
+      await setConfigs(tx as unknown as Sql, {
+        role: `${key}_rw`,
+        "app.tenant_id": tenantId,
+        "app.user_id": userId,
+      });
+      const out = await fn(tx as unknown as Sql);
+      if (opts.rollback) throw new Rollback(out);
+      return out;
+    })) as R;
+  } catch (e) {
+    if (e instanceof Rollback) return e.value as R;
+    throw e;
+  } finally {
+    await conn.end({ timeout: 1 });
+  }
+}
+
 export type HubScopeArg = { kind: "system" } | { kind: "user"; tenantId: string; userId: string };
 /** Tx của `hub_api` với `app.scope` (đúng `withHubScope`); `"none"` = không đặt gì (fail-closed). */
 export async function inHub<R>(

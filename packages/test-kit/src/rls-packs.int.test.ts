@@ -281,7 +281,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit",
+      "truncate contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
     );
   },
   tables: [
@@ -397,6 +397,17 @@ defineRlsSuite({
           "insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after) values ($1, $2, '{}', '{}')",
           [t, who],
         ),
+    },
+    // M1D-FR-04 · chế độ thấy theo tenant (migration gói 0009); khoá chính = tenant_id.
+    {
+      name: "visibility_settings",
+      pk: "tenant_id",
+      seed: async (o, t) => {
+        await o.unsafe("insert into contracts.visibility_settings (tenant_id) values ($1)", [t]);
+        return t;
+      },
+      insert: (tx, t) =>
+        tx.unsafe("insert into contracts.visibility_settings (tenant_id) values ($1)", [t]),
     },
     ...frameTables("contracts").slice(1),
   ],
