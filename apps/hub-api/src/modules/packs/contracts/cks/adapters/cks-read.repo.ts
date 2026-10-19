@@ -91,7 +91,8 @@ function customerPageQ(tx: Tx, t: string): CksRepo["customerPage"] {
       tx,
       sql`with live as (
         select c.customer_id, c.valid_to, c.ca, c.source, c.sale_contract_id, c.lot_id,
-          contracts.fold(concat_ws(' ', c.ca, c.holder_name, c.holder_title, c.serial)) as text
+          -- Đo HD9-AC09: fold chỉ khi có ô tìm (CASE bảo đảm không gọi khi không tìm).
+          case when ${q.like}::text <> '%%' then contracts.fold(concat_ws(' ', c.ca, c.holder_name, c.holder_title, c.serial)) end as text
         from contracts.cks_certificates c
         where c.tenant_id = ${t}::uuid and c.status in ('active', 'pending_renewal')),
       agg as (
@@ -108,7 +109,7 @@ function customerPageQ(tx: Tx, t: string): CksRepo["customerPage"] {
             or (${q.filter ?? null}::text = 'expiring' and a.left_days between 0 and 30)
             or (${q.filter ?? null}::text = 'expired' and a.left_days < 0)
             or (${q.filter ?? null}::text = 'elsewhere' and a.elsewhere))
-          and (${q.like}::text = '%%' or a.hit or contracts.fold(cu.name) like ${q.like})),
+          and case when ${q.like}::text = '%%' then true else a.hit or contracts.fold(cu.name) like ${q.like} end),
       pg as (select customer_id, row_number() over (order by left_days, name collate "C", customer_id) as ord from f
         order by left_days, name collate "C", customer_id limit ${q.size} offset ${q.offset})
       select jsonb_build_object(
