@@ -2,16 +2,16 @@
 // `reference/mgmt-app-contracts/web/src/pages/auth/LoginPage.tsx:123-157`.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { IconContract, IconRobot } from "~/components/icons";
+import { IconRobot } from "~/components/icons";
 import { AppPreview } from "./AppPreview";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <div className="flex min-h-dvh bg-panel">
+    <div className="flex min-h-dvh bg-panel text-base leading-[1.55]">
       <main className="flex w-full flex-col px-6 py-8 sm:px-10 lg:w-[520px] lg:shrink-0 lg:px-14">
         <span className="flex items-center gap-2.5">
-          <IconContract width={32} height={32} className="text-act" />
+          <img src="/evolu-icon.svg" alt="" className="h-8 w-8" />
           <span className="text-[17px] font-semibold tracking-tight">
             {t("contracts.app.name")}
           </span>

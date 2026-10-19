@@ -80,7 +80,7 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
             name="password"
             type={show ? "text" : "password"}
             required
-            className={`${FIELD} mt-0 pr-11`}
+            className={`${FIELD} mt-0 block pr-11`}
             autoComplete="current-password"
           />
           <button

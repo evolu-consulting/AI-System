@@ -8,6 +8,7 @@ import { confirmDialog } from "~/components/shared/dialog-bus";
 
 import { canSeeSettings, type Role } from "../lib/nav";
 import { Popover } from "./Popover";
+import { ThemePicker } from "./ThemeMenu";
 
 export type ShellUser = {
   display_name: string;
@@ -73,6 +74,7 @@ export function UserMenu({
               <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
             </p>
           </div>
+          <ThemePicker />
           {canSeeSettings(role) && (
             <Link
               to="/settings"

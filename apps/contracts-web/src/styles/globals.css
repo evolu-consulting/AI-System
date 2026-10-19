@@ -9,8 +9,6 @@
 @import "@fontsource/roboto/vietnamese-400.css";
 @import "@fontsource/roboto/vietnamese-500.css";
 @import "@fontsource/roboto/vietnamese-700.css";
-@import "@fontsource/roboto-mono/latin-400.css";
-@import "@fontsource/roboto-mono/vietnamese-400.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -268,7 +266,8 @@
   --color-chart-5: var(--chart-5);
 
   --font-sans: "Roboto", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, monospace;
+  /* như mgmt-app (D-02): số tiền/mã dùng Roboto, chữ số cùng độ rộng; không dùng chữ đánh máy */
+  --font-mono: "Roboto", "Segoe UI", system-ui, sans-serif;
 
   /* Tên mgmt-app → token chung (trùng giá trị với admin-web ở bản sáng; bản tối theo mgmt-app) */
   --color-ground: var(--background);
@@ -354,6 +353,10 @@
 }
 .auth-robot {
   background: linear-gradient(to bottom right, #6366f1, #a855f7);
+}
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
 }
 
 @layer base {

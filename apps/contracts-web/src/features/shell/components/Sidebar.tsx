@@ -40,16 +40,16 @@ export function Sidebar({
           title={t("contracts.app.name")}
         >
           <Logo className="h-8 w-8 shrink-0" />
-          <span className={cn("min-w-0 leading-tight", !wide && "sr-only")}>
-            <span className="block text-card-title font-bold tracking-tight">
-              {t("contracts.app.name")}
-            </span>
-            {wide && (
-              <span aria-hidden="true" className="block truncate text-micro text-dim">
+          {wide && (
+            <span className="min-w-0 leading-tight">
+              <span className="block text-[15.5px] font-bold tracking-tight">
+                {t("contracts.app.name")}
+              </span>
+              <span className="block truncate text-micro text-dim">
                 {t("contracts.app.tagline")}
               </span>
-            )}
-          </span>
+            </span>
+          )}
         </Link>
         {NAV.map((n) => (
           <Link

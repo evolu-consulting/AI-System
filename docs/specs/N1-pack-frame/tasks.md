@@ -59,3 +59,16 @@ Nguồn: `e2e/contracts-web` (so với baseline chụp từ web mgmt-app thật;
 | Shell sidebar mở 224 (`shell-sidebar-open`) | khớp | LỆCH | đạt | `bell.x` như trên (ThemeMenu thừa). |
 | Shell mobile 390 (`shell-mobile`) | khớp | khớp | đạt | — |
 | S16 chuông sáng/tối (`s16-bell-*`) | khớp | LỆCH | đạt | `bell.x` 1300 vs 1340 và `popover.x` 1036 vs 1076 (cùng nguyên nhân ThemeMenu thừa; popover rỗng "Chưa có thông báo nào." khớp chữ). |
+
+### Đã sửa (frontend-lead, 2026-10-19) — `bun run e2e:contracts` 9/9 xanh
+- [x] S01 `h1` 41,8 px: gốc là `line-height` thân trang (hub `text-body` 20 px, mgmt 1,55 không đơn vị) ⇒ `AuthLayout` đặt `text-base leading-[1.55]` (chỉ màn đăng nhập; Shell không đổi); form lệch 14 px/ô mật khẩu 10,6 px: cùng gốc.
+- [x] S01 form cao 244 → 239,7: ô mật khẩu `block` (input inline trong span để lại 4 px dưới dòng).
+- [x] S01 tối: `index.html` áp `data-theme` từ `localStorage.theme` trước lần vẽ đầu (như mgmt-app).
+- [x] S01 logo trái + AppPreview: `public/evolu-icon.svg` (bản sao mgmt-app) thay `IconContract`; Shell `Logo` dùng cùng ảnh; bóng AppPreview `rgba(30,27,75,.18)` cố định như mgmt.
+- [x] S01 font: `--font-mono` = Roboto (như mgmt-app) + `.font-mono {tabular-nums}`; bỏ import Roboto Mono (giảm bundle).
+- [x] Shell chữ: bỏ `sr-only` "Sổ Hợp Tác"/tên mục trong `nav` thu gọn (tên chỉ khi mở; liên kết giữ `title`); tiêu đề mục `<p>` → `<h1 text-[15px]>`; tên chữ nhãn sidebar mở 15,5 px.
+- [x] Shell/S16 `bell.x`, `popover.x`: bỏ nút `ThemeMenu` khỏi header; "Giao diện" (radiogroup ☀ Sáng · ☾ Tối · Theo máy) chuyển vào menu tài khoản đúng như mgmt `TopBar.tsx ThemePicker` (i18n `themeLight/themeDark` thêm biểu tượng, vi+en).
+
+### Tranh chấp test (frontend-lead, 2026-10-19) — 2 ca N1 đỏ do D-02 (e2e N1: 27/29)
+- `e2e/N1/shell.n1.ts:115` "menu 'Giao diện' đổi data-theme" đòi `button "Giao diện"` ở header + `menuitem` Sáng/Tối. mgmt-app (D-02, nguồn `TopBar.tsx:116-133`) đặt đổi giao diện trong menu tài khoản, không có nút ở header; giữ nút header ⇒ `bell.x` lệch 40 px (e2e contracts đỏ). Đề xuất qc: mở menu "Tài khoản" rồi chọn `radio "☾ Tối"`/`"☀ Sáng"`.
+- `e2e/N1/shell.n1.ts:68` "tên app 'Sổ Hợp Tác' hiện trong shell" (desktop `/contracts`): mgmt-app chỉ hiện tên khi sidebar mở (hover) hoặc ở header điện thoại; ở desktop thu gọn không có chữ này (qc TF7 đã bắt `sr-only` là lệch). Đề xuất qc: rê chuột vào sidebar trước khi kiểm, hoặc kiểm ở viewport mobile.

@@ -2,6 +2,8 @@
 <html lang="vi">
   <head>
     <meta name="color-scheme" content="light dark" />
+    <!-- sáng trừ khi người dùng chọn tối hoặc "theo máy" (shell/lib/theme.ts); đặt trước lần vẽ đầu như mgmt-app -->
+    <script>var t = "light"; try { t = localStorage.getItem("theme") || "light"; } catch (e) {} if (t !== "auto") document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";</script>
   </head>
   <body>
     <div id="root"></div>

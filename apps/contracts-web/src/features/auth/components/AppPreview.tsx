@@ -1,7 +1,6 @@
 // PK-FR-10 · TF4 · ảnh xem trước tĩnh (trang trí) của bảng hợp đồng ở showcase đăng nhập — port
 // `reference/mgmt-app-contracts/web/src/pages/auth/LoginPage.tsx:159-214`. Dữ liệu mẫu giữ nguyên (so màn hình D-02).
 import { useTranslation } from "react-i18next";
-import { IconContract } from "~/components/icons";
 
 type Tone = "ok" | "soon" | "late" | "act";
 const ROWS: [string, string, string, string, Tone][] = [
@@ -24,10 +23,10 @@ const TD = "border-b border-rule-soft px-2.5 py-3";
 export function AppPreview() {
   const { t } = useTranslation();
   return (
-    <div className="mt-1 ml-auto flex h-[560px] w-[860px] shrink-0 overflow-hidden rounded-tl-2xl border border-r-0 border-b-0 border-rule bg-panel shadow-[0_24px_60px_var(--shadow-color-drawer)]">
+    <div className="mt-1 ml-auto flex h-[560px] w-[860px] shrink-0 overflow-hidden rounded-tl-2xl border border-r-0 border-b-0 border-rule bg-panel shadow-[0_24px_60px_rgba(30,27,75,0.18)]">
       <div className="flex w-[188px] shrink-0 flex-col gap-1 border-r border-rule bg-sunk p-4">
         <div className="mb-3 flex items-center gap-2 text-[13.5px] font-bold">
-          <IconContract width={24} height={24} className="text-act" /> {t("contracts.app.name")}
+          <img src="/evolu-icon.svg" alt="" className="h-6 w-6" /> {t("contracts.app.name")}
         </div>
         {NAV.map((n, i) => (
           <span
