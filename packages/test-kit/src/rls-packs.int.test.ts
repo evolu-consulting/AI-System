@@ -241,6 +241,24 @@ const ledgerTables: RlsTable[] = [
 
 /** W1 · nguồn mua do người chọn (migration gói 0010); không FK sang HĐ (D9-02), thấy được khi thấy HĐ bán (M1D). */
 const sourcingTables: RlsTable[] = [
+  // I1 · vùng chờ của importer mgmt-app (migration gói 0012); khoá chính (tenant_id, kind, mgmt_id) ⇒ dùng mgmt_id (duy nhất mỗi lần seed).
+  {
+    name: "legacy_records",
+    pk: "mgmt_id",
+    seed: async (o, t) => {
+      const id = `m-${crypto.randomUUID()}`;
+      await o.unsafe(
+        `insert into contracts.legacy_records (tenant_id, kind, mgmt_id, doc) values ($1, 'followup', $2, '{}')`,
+        [t, id],
+      );
+      return id;
+    },
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into contracts.legacy_records (tenant_id, kind, mgmt_id, doc) values ($1, 'followup', $2, '{}')`,
+        [t, pk ?? `m-${crypto.randomUUID()}`],
+      ),
+  },
   {
     name: "followups",
     seed: (o, t) =>
@@ -317,7 +335,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
+      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings",
     );
   },
   tables: [

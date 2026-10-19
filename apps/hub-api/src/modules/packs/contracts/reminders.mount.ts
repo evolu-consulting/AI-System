@@ -8,9 +8,11 @@ import { logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { followupDueFinder, followupSendRepo } from "./adapters/followup-send.repo";
 import { handledRepo } from "./adapters/handled.repo";
 import { handledRoutes } from "./adapters/handled.routes";
 import { dueTenantFinder, reminderBatchRepo } from "./adapters/reminders.repo";
+import { createFollowupSender } from "./application/followup-send.usecase";
 import { recordHandled } from "./application/record-handled.usecase";
 import { createRemindDue } from "./application/remind-due.usecase";
 
@@ -53,6 +55,19 @@ export function createContractReminders(db: Db, d: ContractRemindersDeps): Contr
   });
 }
 
+/** W1b · vòng gửi hẹn nhắc chung (cùng khuôn `createContractReminders`; test gọi trực tiếp với đồng hồ giả). */
+export function createContractFollowupSender(db: Db, d: ContractRemindersDeps) {
+  const uow = createPackUow(db, KEY, (tx, tid) => ({ followupSend: followupSendRepo(tx, tid) }));
+  return createFollowupSender({
+    finder: followupDueFinder(db, KEY),
+    uow: { system: (tid, fn) => uow.system(tid, fn) },
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    now: d.now ?? (() => new Date()),
+    batchSize: d.batchSize ?? REMIND_BATCH,
+    log: logger,
+  });
+}
+
 /** Seam `PacksDeps.contractsRemind`: `worker` ⇒ dựng vòng nền (server); test gọi `createContractReminders` trực tiếp. */
 export type ContractsRemindDeps = { worker?: boolean; everyMs?: number };
 
@@ -67,6 +82,14 @@ export function contractsRemindModule(
       name: "contracts-remind",
       everyMs: d.everyMs ?? DEFAULT_EVERY_MS,
       tick: () => r.drain(),
+      log: logger,
+      ...(d.signal ? { signal: d.signal } : {}),
+    });
+    const s = createContractFollowupSender(db, d); // W1b: hẹn nhắc chung tới giờ
+    startLoop({
+      name: "contracts-followups",
+      everyMs: d.everyMs ?? DEFAULT_EVERY_MS,
+      tick: () => s.drain(),
       log: logger,
       ...(d.signal ? { signal: d.signal } : {}),
     });
