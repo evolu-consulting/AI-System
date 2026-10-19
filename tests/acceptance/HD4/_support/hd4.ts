@@ -18,12 +18,11 @@ export { FakeClock, P, T };
 export const VN = "Asia/Ho_Chi_Minh";
 export const JOB_ROLE = "contracts_job";
 
-/** Migration HD4 đã áp: cột `remind_at`, trigger lịch, role `contracts_job`. */
+/** Migration HD4 đã áp: bảng lịch `contract_schedule`, trigger lịch, role `contracts_job`. */
 export async function needHd4(sql: Sql): Promise<void> {
   await needContracts(sql);
   const [r] = await sql<{ col: boolean; trg: boolean; role: boolean }[]>`select
-    exists (select 1 from information_schema.columns where table_schema = 'contracts' and table_name = 'contracts'
-      and column_name = 'remind_at') as col,
+    to_regclass('contracts.contract_schedule') is not null as col,
     exists (select 1 from pg_trigger where tgrelid = 'contracts.contracts'::regclass and tgname = 'contracts_hd4_schedule') as trg,
     exists (select 1 from pg_roles where rolname = ${JOB_ROLE}) as role`;
   expect({ hd4_migration: r }).toEqual({ hd4_migration: { col: true, trg: true, role: true } });
@@ -80,7 +79,7 @@ export type HRow = {
   status: string;
   action_deadline: string | null;
   remind_at: Date | null;
-  /** `remind_at::text` (`-infinity` = xử lý ngay). */
+  /** `contract_schedule.remind_at::text` (`-infinity` = xử lý ngay; null = không có lịch). */
   due: string | null;
   handled: { outcome: string } | null;
   version: number;
@@ -88,9 +87,9 @@ export type HRow = {
 export async function rowOf(sql: Sql, id: string): Promise<HRow> {
   const [r] = await sql<
     HRow[]
-  >`select status, to_char(action_deadline, 'YYYY-MM-DD') as action_deadline, remind_at,
-    remind_at::text as due,
-    handled, version from contracts.contracts where id = ${id}`;
+  >`select c.status, to_char(c.action_deadline, 'YYYY-MM-DD') as action_deadline, s.remind_at,
+    s.remind_at::text as due, c.handled, c.version
+    from contracts.contracts c left join contracts.contract_schedule s on s.contract_id = c.id where c.id = ${id}`;
   return r as HRow;
 }
 

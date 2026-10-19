@@ -60,6 +60,19 @@ export function daysBetween(a: string, b: string): number {
 
 /** Giờ tường `date` + `HH:MM` ở `tz` ⇒ instant. Lùi giờ (lặp) ⇒ lần đầu; khe tiến giờ ⇒ offset trước chuyển. */
 export function atLocal(date: string, time: string, tz: string): Date {
+  // Lô 100 HĐ dùng chung ít ngày/mốc ⇒ nhớ kết quả (Intl.formatToParts đắt; HD4-NFR-01). Thuần: cùng đầu vào ⇒ cùng kết quả.
+  const key = `${date}|${time}|${tz}`;
+  let ms = memo.get(key);
+  if (ms === undefined) {
+    if (memo.size > 50_000) memo.clear();
+    ms = computeAtLocal(date, time, tz);
+    memo.set(key, ms);
+  }
+  return new Date(ms);
+}
+const memo = new Map<string, number>();
+
+function computeAtLocal(date: string, time: string, tz: string): number {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const [hh, mm] = time.split(":").map(Number) as [number, number];
   const g = Date.UTC(y, m - 1, d, hh, mm);
@@ -68,5 +81,5 @@ export function atLocal(date: string, time: string, tz: string): Date {
     const p = wall(c, tz);
     return p.year === y && p.month === m && p.day === d && p.hour % 24 === hh && p.minute === mm;
   });
-  return new Date(ok.length ? Math.min(...ok) : (cands[0] as number));
+  return ok.length ? Math.min(...ok) : (cands[0] as number);
 }

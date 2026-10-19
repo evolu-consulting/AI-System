@@ -75,13 +75,16 @@ async function phase(name: string): Promise<void> {
   const [n] = await sql<{ notes: number; rems: number; due: number }[]>`select
     (select count(*)::int from hub.notifications where source = 'contracts') as notes,
     (select count(*)::int from contracts.contract_reminders) as rems,
-    (select count(*)::int from contracts.contracts where remind_at <= ${AT}) as due`;
+    (select count(*)::int from contracts.contract_schedule where remind_at <= ${AT}) as due`;
   // EXPLAIN câu tìm tenant (role job) và claim (role rw + tenant) của lô đầu, với hằng thật.
   const caps = first?.caps ?? [];
   const find = caps.find((c) => /order by remind_at/i.test(c.text) && /limit 1/i.test(c.text));
-  const claim = caps.find((c) => /for update skip locked/i.test(c.text));
+  const claim = caps.find((c) => /skip locked/i.test(c.text));
   const seqFind = find
-    ? await seqScansOf((f) => asRole(JOB_ROLE, null, f, { rollback: true }), find, ["contracts"])
+    ? await seqScansOf((f) => asRole(JOB_ROLE, null, f, { rollback: true }), find, [
+        "contracts",
+        "contract_schedule",
+      ])
     : ["?"];
   const seqClaim = claim
     ? await seqScansOf((f) => asRole("contracts_rw", T.acme, f, { rollback: true }), claim, [

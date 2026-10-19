@@ -316,6 +316,22 @@ defineRlsSuite({
           t,
         ]),
     },
+    // HD4-NFR-02 · lịch nhắc (migration gói 0003): hàng tự tạo khi HĐ đã duyệt được chèn (trigger), khoá = contract_id.
+    {
+      name: "contract_schedule",
+      pk: "contract_id",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into contracts.contracts (tenant_id, title, status, created_by) values ($1, 'HD', 'active', $2)",
+          [t, who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.contract_schedule (contract_id, tenant_id, remind_at) values ($1, $2, now())",
+          [rnd(pk), t],
+        ),
+    },
     ...cksTables,
     ...frameTables("contracts").slice(1),
   ],

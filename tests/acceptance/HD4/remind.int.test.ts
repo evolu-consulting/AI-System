@@ -71,7 +71,7 @@ describe("HD4-FR-01 · HD4-AC01 · action_deadline = end_date − notice_days (t
       status: "renewed",
       handled: { outcome: "renewed", by: P.lan.id },
     });
-    await sql`update contracts.contracts set remind_at = null where id = ${id}`;
+    await sql`delete from contracts.contract_schedule where contract_id = ${id}`;
     await setFields(id, { title: fv("Đổi tiêu đề") });
     expect(await rowOf(sql, id)).toMatchObject({
       status: "renewed",
@@ -166,7 +166,7 @@ describe("HD4-FR-03 · HD4-FR-04 · HD4-AC03 · mốc nhỏ nhất đã tới, g
     expect((await notes(sql)).map((n) => n.dedup_key)).toEqual([`remind:${id}:2026-10-06:7`]);
     expect(iso((await rowOf(sql, id)).remind_at)).toBe("2026-10-05T01:00:00.000Z");
 
-    await sql`update contracts.contracts set remind_at = '-infinity' where id = ${id}`; // ép chạy lại cùng ngày
+    await sql`update contracts.contract_schedule set remind_at = '-infinity' where contract_id = ${id}`; // ép chạy lại cùng ngày
     await r.r.once();
     expect(await notes(sql)).toHaveLength(1);
     expect(await reminderRows(sql)).toHaveLength(1);

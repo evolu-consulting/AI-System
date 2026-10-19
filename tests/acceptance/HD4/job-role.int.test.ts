@@ -1,5 +1,5 @@
 // HD4-NFR-02 · HD4-AC05 · N1 D-12: role quét chéo tenant `contracts_job` — NOBYPASSRLS/NOINHERIT/NOLOGIN, chỉ đọc (tenant_id,
-// remind_at) của hàng có lịch, không đọc nội dung HĐ, không ghi, không chạm bảng khác / schema hub / cổng notify. Policy mới chỉ
+// remind_at) của bảng lịch `contract_schedule`, không đọc bảng HĐ, không ghi, không chạm bảng khác / schema hub / cổng notify. Policy mới chỉ
 // gắn `contracts_job` (contracts_rw vẫn cách ly như HD1). Chạy qua `hub_api` + SET ROLE như đường thật (`withPackJobScope`).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { asRole, pgCode } from "@ai/test-kit/db";
@@ -13,13 +13,12 @@ beforeAll(async () => {
 afterAll(async () => {
   await sql?.end();
 });
-let a1 = "";
 beforeEach(async () => {
   await needHd4(sql);
   await resetHd4(sql);
-  a1 = await addContract(sql, { tenant: T.acme });
+  await addContract(sql, { tenant: T.acme });
   await addContract(sql, { tenant: T.beta });
-  await addContract(sql, { tenant: T.acme, status: "needs_review" }); // remind_at null ⇒ ngoài policy
+  await addContract(sql, { tenant: T.acme, status: "needs_review" }); // chưa duyệt ⇒ không có hàng lịch
 });
 const job = <R>(fn: (tx: Sql) => Promise<R>) => asRole(JOB_ROLE, null, fn, { rollback: true });
 
@@ -41,17 +40,23 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
       where r.rolname = ${JOB_ROLE} and u.rolname = 'hub_api'`;
     expect(m).toEqual({ inh: false, set: true });
   });
-  it("đọc chéo tenant CHỈ (tenant_id, remind_at) của hàng có lịch: thấy 2 hàng (acme + beta), không thấy hàng needs_review", async () => {
+  it("đọc chéo tenant CHỈ (tenant_id, remind_at) của hàng có lịch: thấy 2 hàng (acme + beta), HĐ needs_review không có lịch", async () => {
     const rows = await job(
-      (tx) => tx`select tenant_id from contracts.contracts order by tenant_id`,
+      (tx) => tx`select tenant_id, remind_at from contracts.contract_schedule order by tenant_id`,
     );
     expect(rows.map((r) => r.tenant_id).sort()).toEqual([T.acme, T.beta].sort());
   });
-  it("không đọc nội dung HĐ (title/fields/source_text/id, select *) ⇒ 42501", async () => {
-    for (const col of ["title", "fields", "source_text", "owner_user_id", "*"])
+  it("không đọc bảng HĐ (mọi cột) và cột contract_id của lịch ⇒ 42501", async () => {
+    for (const col of [
+      "title from contracts.contracts",
+      "tenant_id from contracts.contracts",
+      "* from contracts.contracts",
+      "contract_id from contracts.contract_schedule",
+      "* from contracts.contract_schedule",
+    ])
       expect({
         col,
-        code: await pgCode(() => job((tx) => tx.unsafe(`select ${col} from contracts.contracts`))),
+        code: await pgCode(() => job((tx) => tx.unsafe(`select ${col}`))),
       }).toEqual({
         col,
         code: "42501",
@@ -60,18 +65,23 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
   it("không ghi: UPDATE remind_at / INSERT / DELETE ⇒ 42501", async () => {
     expect(
       await pgCode(() =>
-        job((tx) => tx`update contracts.contracts set remind_at = null where id = ${a1}`),
+        job(
+          (tx) =>
+            tx`update contracts.contract_schedule set remind_at = now() where tenant_id = ${T.acme}`,
+        ),
       ),
     ).toBe("42501");
     expect(
       await pgCode(() =>
         job(
           (tx) =>
-            tx`insert into contracts.contracts (tenant_id, title, created_by) values (${T.acme}, 'x', ${T.acme})`,
+            tx`insert into contracts.contract_schedule (contract_id, tenant_id, remind_at) values (${T.acme}, ${T.acme}, now())`,
         ),
       ),
     ).toBe("42501");
-    expect(await pgCode(() => job((tx) => tx`delete from contracts.contracts`))).toBe("42501");
+    expect(await pgCode(() => job((tx) => tx`delete from contracts.contract_schedule`))).toBe(
+      "42501",
+    );
   });
   it("không chạm bảng khác của gói, schema hub, cổng notify.enqueue ⇒ 42501", async () => {
     for (const t of [
@@ -96,15 +106,15 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
   it("policy mới chỉ gắn contracts_job: contracts_rw tenant beta vẫn thấy 0 hàng của acme", async () => {
     const pols = await sql<{ name: string; roles: string[] }[]>`select polname as name,
       array(select rolname::text from pg_roles where oid = any(polroles)) as roles
-      from pg_policy where polrelid = 'contracts.contracts'::regclass order by 1`;
+      from pg_policy where polrelid = 'contracts.contract_schedule'::regclass order by 1`;
     expect(pols).toEqual([
-      { name: "contracts_job_due", roles: [JOB_ROLE] },
-      { name: "contracts_tenant", roles: ["contracts_rw"] },
+      { name: "contract_schedule_job", roles: [JOB_ROLE] },
+      { name: "contract_schedule_tenant", roles: ["contracts_rw"] },
     ]);
     const n = await asRole(
       "contracts_rw",
       T.beta,
-      (tx) => tx`select count(*)::int as n from contracts.contracts
+      (tx) => tx`select count(*)::int as n from contracts.contract_schedule
       where tenant_id = ${T.acme}`,
       { rollback: true },
     );

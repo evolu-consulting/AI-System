@@ -1,13 +1,12 @@
 # HD4 · Plan (≤ 1 trang)
 
 ## 1. Dữ liệu — `migrations-pack-contracts/0003_hd4_reminders.sql` (chỉ cộng thêm)
-- `contracts.contracts.remind_at timestamptz` + index một phần `(remind_at)` (tìm tenant) và `(tenant_id, remind_at)` (claim lô) `WHERE remind_at IS NOT NULL`.
-  Không bảng mới (bảng con có FK tới `contracts` làm vỡ `truncate` của test HD1 khoá).
+- Bảng lịch `contracts.contract_schedule (contract_id PK, tenant_id, remind_at)` + index `(remind_at)` (tìm tenant) và `(tenant_id, remind_at)` (claim), RLS `secure_table`; không FK (`truncate` test HD1 khoá) — trigger AFTER DELETE/TRUNCATE dọn (D4-11).
 - Trigger `BEFORE INSERT OR UPDATE` `contracts.hd4_schedule()`: tính `action_deadline` từ `fields` (cột sinh chưa có trong BEFORE),
   mở lại khi hạn đổi, đặt `remind_at = '-infinity'` khi HĐ vào trạng thái đã duyệt hoặc đổi hạn/handled/người phụ trách/end_date;
   HĐ chưa duyệt/phụ lục ⇒ null. `-infinity` không phụ thuộc đồng hồ (FakeClock trong test).
-- Role `contracts_job` (D-12): NOLOGIN NOINHERIT NOBYPASSRLS, `GRANT SELECT (tenant_id, remind_at)`, policy
-  `FOR SELECT TO contracts_job USING (remind_at IS NOT NULL)`, `GRANT contracts_job TO hub_api WITH INHERIT FALSE, SET TRUE`.
+- Role `contracts_job` (D-12): NOLOGIN NOINHERIT NOBYPASSRLS, `GRANT SELECT (tenant_id, remind_at) ON contract_schedule`, policy
+  `FOR SELECT TO contracts_job USING (true)` trên bảng lịch, `GRANT contracts_job TO hub_api WITH INHERIT FALSE, SET TRUE`.
 
 ## 2. Vòng nhắc (một lô = một tenant, số câu cố định)
 1. `contracts_job` (tx riêng): `select tenant_id … where remind_at <= $now order by remind_at limit 1` — 1 câu.
@@ -43,4 +42,5 @@ Một tx: khoá hàng + update (CTE) + event + outbox = 2 câu sau `set_config`.
 | D4-07 | Nhắc giá `valid_to`, nhắc quản lý, mốc riêng từng người: ngoài lát (§1), ghi nợ. |
 | D4-08 | Journal: `0003_hd4_reminders` thêm SAU `0005` (HD3 commit trước) với `when` lớn hơn mọi mục — drizzle bỏ lặng lẽ mục có `when` ≤ bản áp cuối. |
 | D4-09 | Thân nhắc dùng số ngày thật tới hạn (mgmt-app in số mốc) — duyệt muộn còn 5 ngày không báo "còn 7 ngày". |
+| D4-11 | Lịch tách sang bảng `contract_schedule` (không FK; dọn bằng trigger DELETE/TRUNCATE): UPDATE hàng `contracts` tính lại mọi cột sinh (100 hàng ~12 ms) + trigger plpgsql (~22 ms); trigger UPDATE có `WHEN` để lệnh của vòng không vào plpgsql. `contracts_job` chỉ đọc bảng lịch. Đo: lô 100 p95 129,6 → 61,1 ms (trước tách bảng), xem ket-luan. |
 | D4-10 | Lỗi thân `/handled` = 400 `VALIDATION_ERROR` theo `parseWith` chung (mgmt-app 422). |

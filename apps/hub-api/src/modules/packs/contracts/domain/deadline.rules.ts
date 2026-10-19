@@ -69,6 +69,8 @@ export type ReminderMsg = {
 export type ReminderPlan = {
   id: string;
   status: ContractStatus;
+  /** Trạng thái lúc claim (event `status_changed`). */
+  prev: ContractStatus;
   changed: boolean;
   nextAt: Date | null;
   reminder: ReminderMsg | null;
@@ -107,7 +109,14 @@ export function planReminder(c: DueContract, now: Date, tz: string): ReminderPla
       };
     }
   }
-  return { id: c.id, status, changed: status !== c.status, nextAt: minDate(future), reminder };
+  return {
+    id: c.id,
+    status,
+    prev: c.status,
+    changed: status !== c.status,
+    nextAt: minDate(future),
+    reminder,
+  };
 }
 
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
