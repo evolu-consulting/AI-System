@@ -69,3 +69,24 @@ Phần FE (77cf4f35) chỉ đọc lướt `contract-approval/lib`, `hooks` và c
 - `needsLevel2`: giá trị trống, âm, chuỗi hay không hữu hạn ⇒ vẫn đi cấp 2.
 - Số đo perf có thật: quét p95 10,6 ms ≤ 50; GET p95 9,3 ms ≤ 30.
 - Mọi câu SQL là văn bản hằng; lô quét truyền qua MỘT tham số JSON.
+
+## Re-verify (bảo mật, 2026-10-19) — commit 2a00c051, 3a60b3d8, 627bf0cb
+
+**Kết luận: SAFE** cho hard stop S1 và các sửa liên quan bảo mật. Đây không phải review lại toàn bộ; chỉ đọc code, không chạy test int.
+
+- **Finalize (S1).** `contracts.tools.ts` finalize đọc lại `valueOf` (theo `run_id`) và `settings()` trong cùng tx với câu ghi. Nếu `needsLevel2(v, threshold)` mà không có `pass` ở stage `approve` (`passedStages`: task `review` có `result = 'pass'`) thì ném `tool_failed`. Engine tắt ⇒ ném, không ghi. Đường lách cũ (sửa `total_value` sau khi rẽ nhánh, hoặc def bị sửa bỏ cấp 2) bị chặn. Có test `guard.int` "finalize đọc lại".
+- **PATCH khi đang duyệt.** `editVerdict` + `needsRunPhase`: HĐ ở `needs_review` có run và đổi `total_value` ⇒ hỏi engine giai đoạn run (đọc trong khi đang giữ `FOR UPDATE` hàng HĐ). Kết quả `later` ⇒ 409 `CONTRACT_IN_APPROVAL`; `level1` ⇒ cho sửa (D3-02). Sau quyết định cấp 2, run nằm ở `approve`/`finalize`, hoặc đã xong và HĐ `active` ⇒ 409 hoặc mở lại duyệt. Vì vậy sửa ở cấp 1 không thể hạ giá trị xuống dưới ngưỡng sau khi cấp 2 đã quyết. `state` dùng RLS hub theo tenant nên người sửa cùng tenant luôn thấy run; lỗi engine ⇒ PATCH lỗi (fail-closed).
+- **D3-13 mở lại duyệt.** Cùng một câu UPDATE (`version = expected`, sau `FOR UPDATE`) đặt `needs_review` và xoá `confirmed_*` cùng `run_id`. Finalize run cũ cần `status = 'needs_review' and run_id = run` nên không còn khớp; `attachRun` gắn run mới với `prev = null`. Không thấy đường nào để HĐ `active` mang giá trị chưa duyệt. Các đường ghi tiền khác:
+  - `requestExtract` chỉ chạy từ `needs_review`/`extract_failed` (`active` ⇒ `not_allowed`), và `saveResult` cần `extracting`.
+  - Nhập tay chỉ INSERT `needs_review`.
+  - Giá phụ lục HD5 chỉ đọc (`family`, không ghi `total_value`).
+  - `handled.repo` và vòng nhắc chỉ đổi giữa các trạng thái đã duyệt: `statusOn` giữ nguyên trạng thái chưa duyệt, `apply` có `c.status = x.prev`.
+  - CKS chỉ ghi `terminated`.
+- **Audit cài đặt (M1).** Migration gói 0006 tạo `contracts.approval_settings_audit` qua `packs.secure_table` (ENABLE + FORCE RLS, policy tenant), rồi `REVOKE UPDATE, DELETE` khỏi `contracts_rw` ⇒ chỉ thêm. Bản ghi audit được chèn trong cùng câu CTE với upsert cài đặt; đã thêm bảng vào `rls-packs.int`.
+- **m8.** `extractAgentFor`: agent phải `enabled` và tenant phải có entitlement đúng `agentId` + `tenantId` với `revokedAt === null`; nếu không ⇒ `AGENT_UNAVAILABLE`.
+- **m9.** `task-view.ts` bỏ `use_current` khỏi thẻ decision của người bắt đầu ở stage `exclude_starter`, ngay phía server trong phản hồi API. Engine vẫn chặn khi gửi lên: `task-access.rules.ts` cho `use_current` vào nhóm chặn người bắt đầu với mọi lý do. Có test AC34a + m9.
+
+### Còn lại (không chặn)
+- **Trung bình (làm cứng): TOCTOU hẹp ở finalize.** `valueQ` là SELECT thường, không khoá. Giả sử một PATCH cấp 1 đã đọc `phase = level1` trước khi cấp 1 quyết, rồi commit giá trị ≥ ngưỡng giữa lúc finalize đọc `valueOf` và lúc chạy UPDATE (hoặc UPDATE chờ khoá hàng của PATCH, sau đó READ COMMITTED đánh giá lại WHERE vẫn khớp). Khi đó HĐ thành `active` mà không qua cấp 2. Muốn vậy, tx PATCH phải mở suốt từ trước khi cấp 1 quyết, qua stage `value`, tới lúc finalize; thực tế gần như không khai thác được. Sửa: thêm `for update` vào `valueQ`, hoặc đưa điều kiện ngưỡng vào chính câu UPDATE của finalize.
+- **Thấp (khả dụng): mở lại duyệt nhưng `restart` lỗi.** HĐ ở `needs_review` với `run_id = null`. Vòng quét không nhặt hàng này, chỉ có log warn. An toàn (không `active`) nhưng HĐ bị treo.
+- **Thấp (chức năng): `passedStages` chỉ đếm task `review` `pass`.** Một `use_current` hợp lệ của nhóm cấp 2 ở stage `approve` (task decision) sẽ bị finalize từ chối. Kết quả là fail-closed.
