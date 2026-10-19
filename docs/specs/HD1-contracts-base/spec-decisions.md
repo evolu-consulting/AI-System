@@ -26,4 +26,4 @@ Nơi duy nhất ghi quyết định riêng HD1; quyết định khung gói ở [
 Mặc định Thấp (#8–#13): `quotaVerdict` nhận đếm sau `INCR`, `> limit` mới vượt, vượt cả hai ⇒ `tenant`; zip thiếu `zipNames` ⇒ `null`; facets `category.n` = số HĐ, `direction` có `unknown`, `signer.label` = `min(raw)`; repo truyền jsonb bằng `sql.json`; Q8 đóng (HD5). Đều trong plan.
 
 ## Trong lúc làm (Luật 2)
-- (chưa có)
+- T4 (backend-lead): contract ở thư mục `packages/contracts/src/pack-contracts/` (test + plan §1), export qua `src/index.ts`; tham số ListQuery một giá trị ⇒ mảng 1 phần tử, tham số lạ ⇒ 400 (strict); facet `owner` trần 500, có thể nằm trong `truncated`; Detail giữ `file_id` + `file`; `UploadContractResponse.status` ∈ `extracting|extract_failed`; `handled` = `looseObject({outcome})` (HD4 thêm khoá).
