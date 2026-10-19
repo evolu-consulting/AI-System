@@ -1,6 +1,7 @@
 // HD4-NFR-01 · HD4-AC07 · Luật 4c (không thuộc Lệnh xong; `PERF=1 bun --config=bunfig.perf.toml test tests/acceptance/HD4/perf/`):
 // 10.000 HĐ tới hạn (acme) + 10.000 nền (beta, chưa duyệt), lô 100. Mỗi lô (tìm tenant + claim + áp dụng/nhắc/notify) p95 ≤ 50 ms;
 // số câu SQL mỗi lô cố định; không Seq Scan `contracts` ở câu tìm tenant và claim. Đo trước và sau ANALYZE. Báo số thật.
+// Dữ liệu cố định (generate_series, hạn còn 1…50 ngày, đồng hồ giả `AT`) ⇒ chạy lại trên máy yên (evotest) cho cùng tải; ngưỡng 50 ms giữ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { asRole } from "@ai/test-kit/db";
 import { latencyStats, seqScansOf } from "@ai/test-kit/perf";

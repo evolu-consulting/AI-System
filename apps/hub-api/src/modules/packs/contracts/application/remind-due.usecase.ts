@@ -8,6 +8,8 @@ export type RemindApplied = { statusChanged: number; reminded: number; notified:
 export type ReminderBatchRepo = {
   /** ≤ `limit` HĐ của tenant tx có `remind_at <= now`, khoá `FOR UPDATE SKIP LOCKED`. */
   claim(now: Date, limit: number): Promise<DueContract[]>;
+  /** Xoá hàng lịch tới hạn không còn HĐ (mồ côi); trả số hàng xoá. */
+  purgeOrphans(now: Date): Promise<number>;
   /** Một câu cho cả lô. */
   apply(plans: readonly ReminderPlan[]): Promise<RemindApplied>;
 };
@@ -31,13 +33,21 @@ export type RemindDeps = {
 export type RemindBatch = RemindApplied & { tenantId: string; claimed: number };
 export type RemindTotals = RemindApplied & { batches: number; claimed: number; failed: number };
 
+/** Review m3: SQLSTATE để log (drizzle bọc lỗi postgres trong `cause`); không log nội dung HĐ. */
+const sqlStateOf = (err: unknown): string | null => {
+  const e = err as { code?: string; cause?: { code?: string } } | null;
+  return e?.cause?.code ?? e?.code ?? null;
+};
+
 export function createRemindDue(d: RemindDeps) {
   const batch = async (tenantId: string, now: Date): Promise<RemindBatch> => {
     const tz = await d.timeZoneOf(tenantId);
     return d.uow.system(tenantId, async ({ reminders }) => {
       const due = await reminders.claim(now, d.batchSize);
-      if (due.length === 0)
+      if (due.length === 0) {
+        await reminders.purgeOrphans(now);
         return { tenantId, claimed: 0, statusChanged: 0, reminded: 0, notified: 0 };
+      }
       const applied = await reminders.apply(due.map((c) => planReminder(c, now, tz)));
       return { tenantId, claimed: due.length, ...applied };
     });
@@ -79,6 +89,7 @@ export function createRemindDue(d: RemindDeps) {
         d.log?.warn("contracts-remind-batch-failed", {
           tenantId,
           error: (err as Error)?.name ?? "Error",
+          code: sqlStateOf(err),
         });
       }
     }

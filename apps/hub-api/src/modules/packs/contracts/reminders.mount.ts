@@ -1,6 +1,7 @@
 // HD4-FR-03…06 · HD4-NFR-01 · D4-01 · D4-02 · plan §2–§3 (lớp 4 của gói): nối vòng nhắc hạn (role `contracts_job` tìm tenant +
 // `PackSystemUow` role `contracts_rw` xử lý lô) và route ghi kết quả xử lý. Vòng nền chỉ khi `worker`: `drain` chạy tới hết việc rồi
 // mới trả ⇒ `startLoop` chỉ "ngủ" giữa các lượt khi không còn HĐ tới hạn (due_at = `remind_at`, không poll từng HĐ).
+import { TENANT_TZ_DEFAULT } from "@ai/contracts";
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
@@ -24,12 +25,28 @@ export type ContractRemindersDeps = {
 };
 export type ContractReminders = ReturnType<typeof createRemindDue>;
 
+/** Review m3: múi tenant không hợp lệ (Intl ném RangeError ⇒ lô của tenant đó hỏng mãi) ⇒ mặc định + warn (chỉ tenantId). */
+export function safeTimeZone(
+  timeZoneOf: (tenantId: string) => Promise<string>,
+): (tenantId: string) => Promise<string> {
+  return async (tid) => {
+    const tz = await timeZoneOf(tid);
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: tz });
+      return tz;
+    } catch {
+      logger.warn("contracts-remind-tz-invalid", { tenantId: tid });
+      return TENANT_TZ_DEFAULT;
+    }
+  };
+}
+
 export function createContractReminders(db: Db, d: ContractRemindersDeps): ContractReminders {
   const uow = createPackUow(db, KEY, (tx, tid) => ({ reminders: reminderBatchRepo(tx, tid) }));
   return createRemindDue({
     finder: dueTenantFinder(db, KEY),
     uow: { system: (tid, fn) => uow.system(tid, fn) },
-    timeZoneOf: d.timeZoneOf,
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
     now: d.now ?? (() => new Date()),
     batchSize: d.batchSize ?? REMIND_BATCH,
     log: logger,
@@ -58,6 +75,10 @@ export function contractsRemindModule(
     createPackUow(db, KEY, (tx, tid) => ({ handled: handledRepo(tx, tid) })),
   );
   return handledRoutes(view, {
-    record: recordHandled({ uow, timeZoneOf: d.timeZoneOf, now: d.now ?? (() => new Date()) }),
+    record: recordHandled({
+      uow,
+      timeZoneOf: safeTimeZone(d.timeZoneOf),
+      now: d.now ?? (() => new Date()),
+    }),
   });
 }

@@ -61,12 +61,26 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
         select c.id, c.status, c.kind, c.handled ->> 'outcome' as outcome, to_char(c.end_date, 'YYYY-MM-DD') as end_date,
           to_char(c.action_deadline, 'YYYY-MM-DD') as deadline, c.owner_user_id, c.number, c.direction, c.seller, c.buyer,
           c.value, c.fields -> 'auto_renew' ->> 'value' as auto_renew
-        from contracts.contract_schedule s
-        join contracts.contracts c on c.id = s.contract_id and c.tenant_id = s.tenant_id
+        from contracts.contracts c
+        join contracts.contract_schedule s on s.contract_id = c.id and s.tenant_id = c.tenant_id
         where s.tenant_id = ${tenantId}::uuid and s.remind_at <= ${now.toISOString()}::timestamptz
         order by s.remind_at limit ${limit}
-        for update of s skip locked`);
+        for no key update of c, s skip locked`);
       return rows.map(toDue);
+    },
+    async purgeOrphans(now) {
+      // Review m1: hàng lịch mất HĐ (trigger không chạy: replica, restore một phần) ⇒ xoá, tránh tìm-tenant rỗng mãi. Chỉ chạy
+      // khi claim ra 0 hàng (đường hiếm), nên lô thường vẫn 3 câu.
+      const r = await tx.execute<{ n: number }>(sql`
+        with d as (
+          delete from contracts.contract_schedule s where s.contract_id in (
+            select s2.contract_id from contracts.contract_schedule s2
+            where s2.tenant_id = ${tenantId}::uuid and s2.remind_at <= ${now.toISOString()}::timestamptz
+              and not exists (select 1 from contracts.contracts c where c.id = s2.contract_id and c.tenant_id = s2.tenant_id)
+            limit 1000)
+          returning 1)
+        select count(*)::int as n from d`);
+      return Number(r[0]?.n ?? 0);
     },
     async apply(plans) {
       const batch = JSON.stringify(
@@ -90,7 +104,7 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
             milestone int, deadline date, user_id uuid, title text, body text, link text)
         ), upd as (
           update contracts.contracts c set status = x.status
-          from x where c.id = x.id and c.tenant_id = ${tenantId}::uuid and x.changed
+          from x where c.id = x.id and c.tenant_id = ${tenantId}::uuid and x.changed and c.status = x.prev
           returning c.id
         ), sch as (
           update contracts.contract_schedule s set remind_at = x.next_at
@@ -110,22 +124,22 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
         ), ev as (
           insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
           select ${tenantId}::uuid, x.id, 'status_changed', null::uuid, jsonb_build_object('from', x.prev, 'to', x.status)
-            from x where x.changed
+            from x join upd on upd.id = x.id
           union all
           select ${tenantId}::uuid, s.id, 'reminded', null::uuid,
             jsonb_build_object('deadline', s.deadline, 'milestone', s.milestone, 'user_id', s.user_id) from sent s
           returning 1
         ), ob as (
           insert into contracts.index_outbox (tenant_id, entity, entity_id, op)
-          select ${tenantId}::uuid, 'contract', x.id, 'upsert' from x where x.changed
+          select ${tenantId}::uuid, 'contract', upd.id, 'upsert' from upd
           returning 1
         )
-        select (select count(*) from x where x.changed)::int as changed, (select count(*) from rem)::int as reminded,
+        select (select count(*) from upd)::int as changed, (select count(*) from rem)::int as reminded,
           notify.enqueue('contracts', coalesce((select jsonb_agg(jsonb_build_object('user_id', s.user_id,
             'kind', 'contract.deadline', 'title', s.title, 'body', s.body, 'link', s.link,
             'dedup_key', 'remind:' || s.id || ':' || to_char(s.deadline, 'YYYY-MM-DD') || ':' || s.milestone)) from sent s),
             '[]'::jsonb)) as notified,
-          (select count(*) from upd) + (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ev)
+          (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ev)
             + (select count(*) from ob) as touched`);
       return {
         statusChanged: r?.changed ?? 0,
