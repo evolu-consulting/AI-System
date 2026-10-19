@@ -63,3 +63,40 @@ Không có câu hỏi mới. Chờ người dùng ở Gate (đã trình, không 
 
 ## Chưa kiểm
 `reference/mgmt-app-contracts/**` (nguồn UI, tham chiếu dòng của plan-frontend), nội dung `tests/acceptance/N1/**` và `e2e/N1/**` (chỉ đối chiếu test-plan), ADR-0015/0016/0018/0021/0023 ngoài các mục spec trỏ.
+
+## Lần 2 · 2026-10-19 · spec-readiness (vòng cuối, chỉ diff a8d097b..HEAD = 2f98a5c + 5456432)
+
+## Kết luận: READY
+Không còn Chặn/Cao. Đã đóng Cao #1–#10 và Thấp #11–#21 (mặc định ghi ở `spec-decisions.md` mục "Mặc định readiness lần 1"; D-11…D-23). Không phát sinh lỗ hổng mới.
+
+**Điều kiện trước build (không tính NOT READY):** `tests/acceptance/N1/_support/n1.ts` — `ADMIN_PACKS_BASE` trong HEAD vẫn `"/api/v1/tenants"`; working tree đã sửa thành `"/admin/tenants"` nhưng chưa commit. qc commit + relock (`bun run test:lock:verify`) trước khi T5b build.
+
+| # | Kết quả | Bằng chứng |
+|---|---------|------------|
+| 1 | Đóng spec/plan/test-plan; chờ qc commit hằng (điều kiện trước build) | plan.md:46, test-plan.md:61, tasks.md:13 |
+| 2 | Đóng | plan.md:127, test-plan.md:62 |
+| 3 | Đóng | plan.md:152, test-plan.md:63 |
+| 4 | Đóng | plan.md:104-105, test-plan.md:64 |
+| 5 | Đóng | test-plan.md:65, plan §7 (`createDocxConverter` + `close()`) |
+| 6 | Đóng | test-plan.md:67, tasks.md:13 (`ConfigCache.reloaded`) |
+| 7 | Đóng | plan.md:46 (400/404/404 `PACK_NOT_FOUND`/403/401) |
+| 8 | Đóng | spec.md:26, spec.md:51, plan-frontend.md:94, D-23 |
+| 9 | Đóng | spec.md:26, HD1 plan §7 N1-a/N1-c + Q8 khớp (HD1 tự thêm timezone; members ⇒ HD5) |
+| 10 | Đóng | spec.md:25, 51, D-20; tasks TF1–TF7 |
+| 11 | Đóng | spec.md 11.800 B ≤ 12.288 |
+| 12 | Đóng | spec.md:89 "D-01…D-23" |
+| 13 | Đóng | spec-decisions.md D-14…D-23; plan-frontend.md:6, 99 chỉ trỏ mã |
+| 14 | Đóng | spec.md:65 `docs/guides/filebox-test.md` (tasks.md:17 còn dạng ngắn `guides/…` — vô hại) |
+| 15 | Đóng | plan.md:32, 62 (`beta` coi như `on`) |
+| 16 | Đóng | spec-decisions.md ghi chú #16; plan.md:107 |
+| 17 | Đóng | tasks.md T5a, test-plan.md:68 |
+| 18 | Đóng | test-plan.md:29 |
+| 19 | Đóng | test-plan.md:3 (TF5 `thường`) |
+| 20 | Đóng (chấp nhận) | test-plan.md:66 |
+| 21 | Mở (Thấp, theo kế hoạch) | test-plan.md:80: chạy lại e2e sau TF1; lỗi môi trường ghi TECH-DEBT khi build |
+
+Quyết định Gate (2f98a5c): ADR-0024 `Accepted` (adr/0024:3); Q9/Q10 = D-11/D-12; font Roboto = D-14 + dòng ADR-0001:31; test-plan.md:72 cập nhật 22 ca DOCX. Không mâu thuẫn giữa D-11…D-14 và plan.
+
+Checklist K/L: K Đạt (plan.md:137-152 giữ nguyên, T5a thêm đo DB mẫu). L Đạt: spec 11.800 ≤ 12.288 · plan 18.388 ≤ 18.432 · plan-frontend 13.560 ≤ 15.360 · test-plan 13.127 ≤ 18.432; quyết định chỉ ở `spec-decisions.md`; không có `*-addendum.md`. (plan còn dư 44 B: mọi sửa plan phải cắt tương ứng.)
+
+Thấp còn mở: #21 (sửa khi build). Chưa kiểm: nội dung `tests/acceptance/N1/**`, `e2e/N1/**` ngoài hằng `ADMIN_PACKS_BASE`.
