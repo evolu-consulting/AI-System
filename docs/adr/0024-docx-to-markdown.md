@@ -25,7 +25,7 @@ Gói `contracts` cần chữ của DOCX dạng Markdown, giữ tiêu đề / dan
 
 | Gói | Bản | Ghi chú |
 |---|---|---|
-| `fflate` | (ghi khi T5g cài) | 0 phụ thuộc |
-| `saxes` | (ghi khi T5g cài) | phụ thuộc `xmlchars` |
+| `fflate` | 0.8.3 (2026-05-16) | 0 phụ thuộc; T5g chỉ dùng `Inflate` (central directory đọc tay) |
+| `saxes` | 6.0.0 | phụ thuộc `xmlchars` |
 
 Nguồn: README `github.com/mwilliamson/mammoth.js` (Markdown deprecated, cảnh báo tài liệu độc), README `github.com/101arrowz/fflate` (kích thước, `filter`/`originalSize`, so pako), README `github.com/lddubeau/saxes` (không xử lý entity DTD tự khai).
