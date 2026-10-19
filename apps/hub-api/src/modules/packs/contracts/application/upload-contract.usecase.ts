@@ -18,6 +18,8 @@ import {
   type UploadUow,
 } from "./upload-contract.ports";
 
+/** Bản sao có chủ đích của `CONTRACT_FILE_MIME` (application không import `@ai/contracts`, ADR-0023); test khớp ở
+ * `adapters/hd1-review-fixes.test.ts` (review m-11). */
 export const UPLOAD_MIME: Record<SniffedType, string> = {
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -36,6 +38,7 @@ export type UploadContractDeps = {
   limits: { tenant: number; global: number };
   newId: () => string;
   now?: () => Date;
+  log?: { warn(msg: string, fields?: Record<string, unknown>): void };
 };
 
 export type UploadContractInput = {
@@ -66,20 +69,33 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
     const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
     await takeQuota(d, i, days, at);
     let stored: { org: string; fileId: string } | null = null;
+    let row: UploadContractResult;
     try {
-      const text = await toText(d.docx, type, i.bytes);
+      const text = await toText(d.docx, type, i);
       const org = orgForTenant(i.who.tenantId);
       const up = await d.files.put(org, i.name, i.bytes);
       stored = { org, fileId: up.fileId };
-      const row = await persist(d, i, { type, text, org, ...up });
-      await d.starter.start(i.who, row.id).catch(() => undefined); // sau commit; lỗi không huỷ tải lên
-      return row;
+      row = await persist(d, i, { type, text, org, ...up });
     } catch (e) {
       await d.counter.refund(i.who.tenantId, days).catch(() => undefined);
       if (stored) await d.files.remove(stored.org, stored.fileId).catch(() => undefined);
       throw e;
     }
+    await startExtraction(d, i.who, row.id);
+    return row;
   };
+}
+
+/** Sau commit: HĐ đã tồn tại ⇒ lỗi (kể cả ném ĐỒNG BỘ) chỉ log, KHÔNG hoàn quota, KHÔNG xoá tệp (review m-08). */
+async function startExtraction(d: UploadContractDeps, who: PackWho, id: string): Promise<void> {
+  try {
+    await d.starter.start(who, id);
+  } catch (e) {
+    d.log?.warn("contract-extraction-start-failed", {
+      contract_id: id,
+      error: e instanceof Error ? e.name : "unknown",
+    });
+  }
 }
 
 type Stored = { type: SniffedType; text: Text; org: string; fileId: string; versionId: string };
@@ -137,10 +153,15 @@ async function takeQuota(
 }
 
 type Text = { ok: true; markdown: string | null } | { ok: false };
-/** DOCX ⇒ Markdown; `DOCX_BUSY` ⇒ 503 (người gọi hoàn quota); `DOCX_UNREADABLE` ⇒ vẫn lưu, `extract_failed`. */
-async function toText(docx: DocxConverter, type: SniffedType, bytes: Uint8Array): Promise<Text> {
+/** DOCX ⇒ Markdown; `DOCX_BUSY` ⇒ 503 (người gọi hoàn quota); `DOCX_UNREADABLE` ⇒ vẫn lưu, `extract_failed`.
+ * Truyền `tenantId` ⇒ hàng đợi công bằng N1 (tenant đã có việc chờ ⇒ BUSY; review m-03). */
+async function toText(
+  docx: DocxConverter,
+  type: SniffedType,
+  i: UploadContractInput,
+): Promise<Text> {
   if (type !== "docx") return { ok: true, markdown: null };
-  const r = await docx.toMarkdown(bytes);
+  const r = await docx.toMarkdown(i.bytes, { tenantId: i.who.tenantId });
   if (r.ok) return { ok: true, markdown: r.markdown };
   if (r.code === "DOCX_BUSY") throw new UploadError("DOCX_BUSY");
   return { ok: false };

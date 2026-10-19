@@ -9,6 +9,7 @@ import {
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import type { Redis } from "ioredis";
+import { logger } from "../../../lib/logger";
 import { createDocxConverter } from "../kit/adapters/docx";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
@@ -38,6 +39,12 @@ const envInt = (k: string, def: number): number => {
   return Number.isInteger(n) && n > 0 ? n : def;
 };
 
+/** `CONTRACTS_MAX_MB` kẹp ≤ 20 MiB: trên mức này CHECK `files.size_bytes` và `DOCX_MAX_INPUT` từ chối ⇒ 5xx (review m-14). */
+export function contractsMaxBytes(): number {
+  const cap = CONTRACT_UPLOAD_MAX_BYTES / MiB;
+  return Math.min(envInt("CONTRACTS_MAX_MB", cap), cap) * MiB;
+}
+
 /** HD1: không trích xuất (HD2 thay). */
 const noExtraction: ExtractionStarter = { start: async () => {} };
 
@@ -66,7 +73,8 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       global: envInt("CONTRACTS_UPLOADS_GLOBAL_DAY", CONTRACT_UPLOAD_GLOBAL_DAILY),
     },
     newId: () => Bun.randomUUIDv7(),
+    log: logger,
   });
-  const maxBytes = envInt("CONTRACTS_MAX_MB", CONTRACT_UPLOAD_MAX_BYTES / MiB) * MiB;
+  const maxBytes = contractsMaxBytes();
   return uploadRoutes(d.view, { upload, maxBytes, timeZoneOf: d.timeZoneOf });
 }

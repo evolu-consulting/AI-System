@@ -34,6 +34,27 @@ Reviewer độc lập, 2026-10-19, nhánh `platform/gd0`. Phạm vi: các commit
 | m-14 | Minor | 4 Dữ liệu | `upload.mount.ts:70`; `packages/db/migrations-packs/0001_kit.sql:65` | Đặt env `CONTRACTS_MAX_MB` > 20 sẽ xung đột với CHECK `files.size_bytes ≤ 20971520` và `DOCX_MAX_INPUT` 20 MiB: tệp 21–N MiB qua route rồi 5xx ở DB (sau khi đã ghi FileBox, sau đó dọn). | Kẹp `min(envInt(...), 20)`, hoặc bỏ env này. | backend-lead |
 | m-15 | Minor | 4 Dữ liệu | `0002_category_ids.sql:18-22` | Trigger ghi `category_ids` nhưng không tăng `updated_at` và không đẩy outbox. Chỉ mục ngoài (N4/OpenSearch) sẽ lệch khi HD2/HD5 ghi item. HD1 chưa ghi item. | Ghi vào "Cần" của HD2/HD5: lệnh ghi item enqueue outbox `contract upsert` cho tập HĐ bị chạm (cùng tx, theo tập). | backend-lead (HD2) |
 
+### Trạng thái sửa (backend-lead, sau vòng 1)
+| # | Trạng thái |
+|---|---|
+| M-01 | ĐÃ SỬA — số p95 T8/T9/T10 ghi ở `spec-decisions.md` (T8, T9, T10) + plan §6. `/source`, `/file` chưa có ca perf ⇒ TECH-DEBT #217 (qc). |
+| m-01 | ĐÃ GHI — mã FR đúng ở `spec-decisions.md` (T8: HD-FR-07; T9: HD-FR-02/06/07); không amend. TRACE ở T13. |
+| m-02 | ĐÃ SỬA — `bodyLimit` 256 KiB ⇒ 413 `PAYLOAD_TOO_LARGE` (`adapters/hd1-review-fixes.test.ts`). |
+| m-03 | ĐÃ SỬA — `toMarkdown(bytes, {tenantId})` (`application/upload-review-fixes.test.ts`). |
+| m-04 | qc (song song). |
+| m-05 | TECH-DEBT #214 (không sửa migration đã áp). |
+| m-06 | ĐÃ SỬA — `nosniff` + `no-store` ở `/source`. |
+| m-07 | ĐÃ SỬA — `nfcText` cấm `\u0000` (PATCH 422, ListQuery/tiêu đề 400). |
+| m-08 | ĐÃ SỬA — `starter.start` ngoài khối hoàn/gỡ; lỗi (cả đồng bộ) chỉ log, giữ tệp + quota. |
+| m-09 | TECH-DEBT #215 (`multi()` đổi số đếm Redis của test khoá ⇒ cần qc). |
+| m-10 | ĐÃ SỬA — bỏ `\p{Cc}` + bidi, cắt theo điểm mã. |
+| m-11 | ĐÃ XỬ — giữ bản sao ở application (ADR-0023, không import `@ai/contracts`), test khớp `CONTRACT_FILE_MIME`. |
+| m-12 | ĐÃ SỬA — `spec.md` §11 ghi hash d8098aa0. |
+| m-13 | qc (song song). |
+| m-14 | ĐÃ SỬA — `CONTRACTS_MAX_MB` kẹp ≤ 20 (`contractsMaxBytes`). |
+| m-15 | TECH-DEBT #216 (HD2/HD5). |
+| #212 | ĐÃ SỬA — `filebox.client.ts` `#retry(req, first)`; `check:fn` sạch. |
+
 ## Security (S-xx)
 | # | Kiểm | Kết quả | Căn cứ |
 |---|---|---|---|

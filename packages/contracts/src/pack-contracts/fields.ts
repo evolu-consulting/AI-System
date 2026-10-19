@@ -91,8 +91,14 @@ export const CONTRACT_TOTAL_VALUE_MAX = 9_000_000_000_000_000;
 export const CONTRACT_DAYS_MAX = 3650;
 export const CONTRACT_TITLE_MAX = 200;
 
-/** Chuỗi ở biên: cắt khoảng trắng + chuẩn NFC (D-18) + trần độ dài. */
-export const nfcText = (max: number) => z.string().trim().normalize("NFC").max(max);
+/** Chuỗi ở biên: cắt khoảng trắng + chuẩn NFC (D-18) + trần độ dài + cấm `\u0000` (Postgres từ chối ⇒ 5xx; review m-07). */
+export const nfcText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .normalize("NFC")
+    .max(max)
+    .refine((v) => !v.includes("\u0000"), { message: "NUL không được phép" });
 export const IsoDateSchema = z.iso.date();
 
 const percent = () => z.number().min(0).max(100);

@@ -101,7 +101,7 @@ select (select count(*) from f) as total,
 **Index ↔ bộ lọc:** truy cập qua `tenant_id` (`contracts_list_idx`); `owner[]`, `status[]` có index riêng; `seller/buyer/signer/direction/kind/value/q` là điều kiện dư trên lát đã chặn (index riêng không đổi bậc vì vẫn đếm hết); `category[]` = semi-join qua `items_category_idx` (nhanh hơn `category_ids &&`, D-22). Không `pg_trgm`/`unaccent`; vượt ngưỡng ở T7 mới đề xuất ADR trgm.
 **Không phụ thuộc thống kê:** một văn bản SQL cho mọi tổ hợp (chuẩn bị một lần/kết nối); `= any($arr)`/`&&`, không join `unnest`. Lựa chọn duy nhất của planner là cách đọc lát `tenant_id` — mọi phương án O(lát). Perf đo trước và sau `ANALYZE`; cả hai đạt.
 **Dữ liệu đo** (`generate_series`): 3 tenant × 10.000 HĐ (5 items, 20 events, 50 loại, ~200 bên bán, ~300 người ký) + tenant nền 70.000 HĐ. `EXPLAIN` sau `ANALYZE`: không `Seq Scan` trên `contracts`/`contract_items`. Đếm câu bằng `options.debug` (N1 §10). Test ở `tests/acceptance/HD1/perf/`: 200 lượt/tổ hợp, báo p50/p95 thật.
-**Đo T7:** danh sách p95 ≤ 26 ms; facets 87–105 ⇒ ~42–45 ms nhờ D-22. Chi tiết/PATCH ước 2–5 ms; vượt ⇒ báo, không nới. Khoá duy nhất: `FOR UPDATE` một hàng ở PATCH.
+**Đo p95 ms (trước/sau ANALYZE):** danh sách ≤ 26,64; facets 87–105 ⇒ 41–44 (D-22); chi tiết 1,96/1,89; PATCH ≤ 4,02/4,13; tải lên 5,12/4,12 (decisions). Khoá: `FOR UPDATE` 1 hàng (PATCH).
 
 ## §7 Cần N1 (không tự sửa N1 — đề xuất)
 | # | Cần | Lý do | Tạm thời |

@@ -4,8 +4,9 @@
 import { ContractListQuerySchema } from "@ai/contracts";
 import type { Context } from "hono";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { appError } from "../../../../lib/errors";
+import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson, withoutScopeKeys } from "../../../../lib/http";
 import {
   type PackAccessView,
@@ -57,6 +58,17 @@ export function listQueryInput(c: Context): Record<string, unknown> {
 /** `:id` sai dạng ⇒ 400 `VALIDATION` (không lọt vào SQL). */
 const idOf = (c: Context): string => parseWith(z.uuid(), c.req.param("id"));
 
+/** Trần thân PATCH trường (review m-02). */
+export const PATCH_BODY_MAX_BYTES = 256 * 1024;
+const payloadTooLarge = () => new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
+
+/** `/source` là văn bản từ DOCX người dùng tải lên: không cho trình duyệt đoán kiểu, không lưu đệm (review m-06). */
+export const SOURCE_HEADERS = {
+  "content-type": "text/markdown; charset=utf-8",
+  "x-content-type-options": "nosniff",
+  "cache-control": "no-store",
+} as const;
+
 const whoOf = (u: { tenantId: string; userId: string }) => ({
   tenantId: u.tenantId,
   userId: u.userId,
@@ -82,7 +94,7 @@ export function contractsRoutes(
   r.get("/contracts/:id/source", read, async (c) => {
     const s = await uc.source(whoOf(c.get("user")), idOf(c));
     if (s === null) throw appError("NOT_FOUND");
-    return c.body(s, 200, { "content-type": "text/markdown; charset=utf-8" });
+    return c.body(s, 200, SOURCE_HEADERS);
   });
   // 302 tới link FileBox ngắn hạn; không log URL, không phơi `file_id` (PK-FR-06). 404 ⇒ FileBox không bị gọi.
   r.get("/contracts/:id/file", read, async (c) => {
@@ -91,10 +103,16 @@ export function contractsRoutes(
     return c.redirect(url, 302);
   });
   // T9 · HD-AC06/07/09: guard `write` TRƯỚC đọc thân (viewer ⇒ 403, 0 SQL); id ⇒ thân ⇒ 400/422 trước SQL; tenant khác ⇒ 404.
-  r.patch("/contracts/:id/fields", packGuard(view, CONTRACTS_KEY, "write"), async (c) => {
-    const id = idOf(c);
-    const input = patchBody(await readJson(c));
-    return c.json(patchReply(await uc.patchFields(whoOf(c.get("user")), id, input)));
-  });
+  // Thân > 256 KiB ⇒ 413 `PAYLOAD_TOO_LARGE` khi đọc (thân hợp lệ tối đa ≈ 23 × 2.000 ký tự < 200 KiB; review m-02).
+  r.patch(
+    "/contracts/:id/fields",
+    packGuard(view, CONTRACTS_KEY, "write"),
+    bodyLimit({ maxSize: PATCH_BODY_MAX_BYTES, onError: () => Promise.reject(payloadTooLarge()) }),
+    async (c) => {
+      const id = idOf(c);
+      const input = patchBody(await readJson(c));
+      return c.json(patchReply(await uc.patchFields(whoOf(c.get("user")), id, input)));
+    },
+  );
   return r;
 }

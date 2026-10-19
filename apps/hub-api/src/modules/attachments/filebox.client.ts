@@ -38,6 +38,8 @@ export function fileboxUrlOk(base: string, url: string): boolean {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Attempt = { res: Response | null; status: number | null };
+/** Một yêu cầu đã có token — gom tham số của `#retry`/`#attempt` (nợ #212). */
+type Req = { method: string; path: string; body: Uint8Array | undefined; token: string };
 
 export class FileboxClient {
   #ca: string | null | undefined; // undefined = chưa đọc; null = không dùng (http/mock)
@@ -99,45 +101,34 @@ export class FileboxClient {
       this.cfg.log.warn("filebox-token-missing", {});
       throw new FileboxUnavailable("filebox token missing");
     }
-    let at = await this.#attempt(method, path, o.body, token);
+    let at = await this.#attempt({ method, path, body: o.body, token });
     if (at.status === 401 || at.status === 403) {
       token = await this.cfg.token.refresh();
       if (!token) {
         this.cfg.log.warn("filebox-token-missing", {});
         throw new FileboxUnavailable("filebox token missing after refresh");
       }
-      at = await this.#attempt(method, path, o.body, token);
+      at = await this.#attempt({ method, path, body: o.body, token });
       if (at.status === 401 || at.status === 403)
         throw new FileboxUnavailable("filebox auth failed");
     }
-    if (o.retryable) at = await this.#retry(method, path, o.body, token, at);
+    if (o.retryable) at = await this.#retry({ method, path, body: o.body, token }, at);
     if (!at.res) throw new FileboxUnavailable("filebox network error");
     return at.res;
   }
 
-  async #retry(
-    method: string,
-    path: string,
-    body: Uint8Array | undefined,
-    token: string,
-    first: Attempt,
-  ): Promise<Attempt> {
+  async #retry(req: Req, first: Attempt): Promise<Attempt> {
     let at = first;
     for (const d of this.cfg.retryDelaysMs) {
       if (!fileboxRetryable(at.status)) break;
       await sleep(d);
-      at = await this.#attempt(method, path, body, token);
+      at = await this.#attempt(req);
     }
     return at;
   }
 
   /** Một lần fetch; lỗi mạng/timeout ⇒ `{res:null, status:null}` (retryable). */
-  async #attempt(
-    method: string,
-    path: string,
-    body: Uint8Array | undefined,
-    token: string,
-  ): Promise<Attempt> {
+  async #attempt({ method, path, body, token }: Req): Promise<Attempt> {
     const url = `${this.cfg.url}${path}`;
     if (!fileboxUrlOk(this.cfg.url, url)) throw new FileboxUnavailable("filebox egress blocked");
     try {

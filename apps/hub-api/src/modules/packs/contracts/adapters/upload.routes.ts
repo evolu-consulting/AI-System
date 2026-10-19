@@ -65,18 +65,34 @@ function limitBody(max: number): MiddlewareHandler {
   };
 }
 
-/** Tên tệp an toàn để lưu: bỏ đường dẫn + ký tự điều khiển, NFC, ≤ 255. */
+/** Ký tự điều khiển C0/DEL/C1 (`\p{Cc}`) + điều khiển hướng chữ (giả đuôi tệp trên UI) — review m-10. */
+const isHidden = (ch: string): boolean => {
+  const c = ch.codePointAt(0) ?? 0;
+  const bidi = c === 0x200e || c === 0x200f || (c >= 0x202a && c <= 0x202e);
+  return /\p{Cc}/u.test(ch) || bidi || (c >= 0x2066 && c <= 0x2069);
+};
+/** Cắt ≤ `max` đơn vị UTF-16 (trần zod) theo ranh giới điểm mã — không tách đôi cặp surrogate. */
+export function cutCodePoints(s: string, max: number): string {
+  let out = "";
+  for (const ch of s) {
+    if (out.length + ch.length > max) break;
+    out += ch;
+  }
+  return out;
+}
+
+/** Tên tệp an toàn để lưu: bỏ đường dẫn + ký tự điều khiển/hướng chữ, NFC, ≤ 255 điểm mã. */
 export function cleanFileName(raw: string): string {
   const base = raw.split(/[\\/]/).pop() ?? "";
-  const visible = [...base].filter((ch) => ch.charCodeAt(0) >= 0x20 && ch !== "\u007f");
+  const visible = [...base].filter((ch) => !isHidden(ch));
   const s = visible.join("").normalize("NFC").trim();
-  return (s || "file").slice(0, NAME_MAX);
+  return cutCodePoints(s || "file", NAME_MAX);
 }
-/** Tiêu đề mặc định = tên tệp bỏ đuôi (≤ 200). */
+/** Tiêu đề mặc định = tên tệp bỏ đuôi (≤ 200 điểm mã). */
 export function defaultTitle(name: string): string {
   const dot = name.lastIndexOf(".");
   const stem = (dot > 0 ? name.slice(0, dot) : name).trim();
-  return (stem || name).slice(0, TITLE_MAX);
+  return cutCodePoints(stem || name, TITLE_MAX);
 }
 
 function formFields(form: FormData) {
