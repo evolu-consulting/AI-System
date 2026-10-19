@@ -627,7 +627,8 @@ be8daeda096561d2817467d0f45320705d3d33a6b260b9949416a3374f984ed1  tests/acceptan
 594121bce96376c3540f36a3c31e626f42122caefdac12a5a364b66119f72e7f  tests/acceptance/M3/rules/grants.rules.test.ts
 70160e554875572c7aa27b3e76e3528bf768b9cf57c0c57254bf4279401f3fca  tests/acceptance/M3/rules/groups.rules.test.ts
 6f9e1794adb867aa2941bd48273943bfa04704239c71e53c02f7153bce57aab0  tests/acceptance/M3/users-groups.int.test.ts
-4da24bf0d8e90d25eefc878cec2f1fe7bfa00650af142d3d05c2a040d09e7e05  tests/acceptance/M3D/ai-usage.int.test.ts
+7fe5970dc29ea1179acc364e15b5be35eddae8047c302e1e55c03d5cf411d578  tests/acceptance/M3D/ai-usage.int.test.ts
+8007c39e85b656949dcf46801e20a8955f982c1437f5578f346c96a3e2d5a6e2  tests/acceptance/M3D/close-legacy-runs.int.test.ts
 327e970c2151c31290add368ad247b05357142efb120918f0f79b6e154ea8a8a  tests/acceptance/M3D/extract-queue.int.test.ts
 06a6af0bfbaf6e9ef42bde5bb8ec5075f3be3ab1a31df463e934be9508e2777b  tests/acceptance/M4/_ab.ts
 cc92ae0abef892b96d55b41bd8405c0d038f5563c0f40df1e7d28695d21e02ec  tests/acceptance/M4/_cd-modules.ts

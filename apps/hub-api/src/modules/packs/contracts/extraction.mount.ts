@@ -156,7 +156,8 @@ export function contractsAiModule(
     verifier,
     tax: d.tax,
     scheduleTaxRetry: schedule,
-    ...(flow.fileText ? { fileText: flow.fileText } : {}),
+    // Seam HD2 (`transport`) giữ hành vi đã khoá: tệp đi thẳng agent. Chế độ flow: PDF có lớp chữ ⇒ chữ (D3-04).
+    ...(flow.fileText && !d.transport ? { fileText: flow.fileText } : {}),
   });
   taxQueue = createExtractionQueue({
     run,

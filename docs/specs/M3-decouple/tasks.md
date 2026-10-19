@@ -27,6 +27,8 @@ Làn: **đầy đủ** cho máy trạng thái duyệt (quyền/tenant/tiền, ch
 | M3-09 | Group duyệt: id theo khoá đọc `admin.groups` (cache 60 s, hụt khoá ⇒ đọc lại) + Group user từ cache cấu hình (`packGroups`). |
 | M3-11 | AI chưa cấu hình (không `ANTHROPIC_API_KEY`, không seam): không xếp job, không mở worker; tải lên giữ `extracting` tới quét STALE (hành vi HD1 khi chưa có AI), `/extract` 503 `AGENT_UNAVAILABLE` trước SQL. |
 | M3-12 | Tải lên mở lượt duyệt trong CÙNG câu CTE (giữ "1 tx 3 câu" HD-NFR-03, khoá); tệp không đọc được ⇒ không mở lượt. XADD qua kết nối Redis riêng của hàng đợi (không chen lệnh lẻ vào client dùng chung). |
+| M3-13 | Usage chat một nguồn: runtime agent đã ghi `usage_logs` mỗi job (cùng tx kết thúc job); Hub chỉ gắn `feature='chat'` cho dòng của run (`hub.tag_chat_usage`), không chèn dòng thứ hai. Run không có dòng ⇒ cảnh báo `chat-usage-missing`. |
+| M3-14 | PDF hợp đồng (D3-04): chế độ flow tải tệp từ FileBox ⇒ `PdfConverter` (unpdf, ADR-0028) ⇒ chữ vào lời nhắc + kiểm trích dẫn; scan ⇒ `PDF_NEEDS_OCR`; ảnh vẫn `AGENT_UNAVAILABLE`. Seam HD2 giữ tệp đi thẳng agent (test khoá). |
 | M3-10 | Run engine `contracts-approval` đang mở lúc chuyển dữ liệu KHÔNG bị huỷ (migration gói không ghi schema hub); tool `contracts-*` đã gỡ ⇒ run cũ sẽ lỗi tool ở engine. Việc còn lại: admin huỷ các run đó. |
 
 ## Bảng ánh xạ test HD3 (qc, điều phối 2026-10-20) — không bỏ luật nào
@@ -64,8 +66,8 @@ Redis lỗi khi đếm trần ⇒ 503: unit `adapters/action-quota.test.ts` (kh�
 - Int: `tests/acceptance/M3D/extract-queue.int.test.ts` (hàng đợi bền: xử lý + ACK, consumer chết ⇒ XAUTOCLAIM, entry hỏng, tách khoá), `tests/acceptance/M3D/ai-usage.int.test.ts` (usage theo tenant, trần, đóng an toàn, usage chat M2), RLS `contracts.approvals` trong `packages/test-kit/src/rls-packs.int.test.ts` (`defineRlsSuite`).
 
 ## Việc còn lại
-- [ ] ADR cho `@anthropic-ai/sdk` (M3-02).
-- [ ] PDF/ảnh không văn bản vẫn `AGENT_UNAVAILABLE` (D3-04) — có thể gửi PDF base64 qua AI client sau.
-- [ ] Huỷ run engine `contracts-approval` còn mở sau khi chuyển (M3-10); gỡ `processes/runs/pack-runs-hd3.ts` khi không còn ai dùng.
-- [ ] Usage chat feature `chat` có thể trùng với dòng runtime `agentic-cli` tự ghi (`usage_sql.py`) — kiểm tổng ở màn usage admin.
-- [ ] qc relock `tests/.lock` cho file HD3 đã đổi + file M3D mới.
+- [x] ADR-0029 `@anthropic-ai/sdk` (Accepted).
+- [x] PDF có lớp chữ (M3-14). Còn: OCR PDF scan / ảnh (ADR riêng).
+- [x] Đóng run engine cũ: `bun tools/scripts/src/m3-close-contract-runs.ts` (chạy thử) rồi `--apply` một lần sau deploy (cần `DATABASE_URL` chủ migration); `pack-runs-hd3.ts` đã gỡ.
+- [x] Usage chat một nguồn (M3-13).
+- [ ] Trần token riêng theo tenant (bảng quota admin) thay env chung.
