@@ -16,7 +16,21 @@ export type TaskFacts = {
   reviewGroupId: string | null;
   /** PD-R21 · Group thêm (chuyển cấp, `via='escalated'`) — thành viên cũng quyết được. Vắng ⇒ hành vi cũ. */
   extraGroupIds?: readonly string[];
+  /** N2-FR-05 · task duyệt của stage `exclude_starter` ⇒ người bắt đầu không quyết. Vắng ⇒ hành vi cũ. */
+  starterExcluded?: boolean;
 };
+
+/**
+ * N2-FR-05 · N2-D06 · stage `after.review.exclude_starter` (snapshot cũ vắng ⇒ false): người bắt đầu run không được quyết
+ * task duyệt của stage — kể cả là thành viên Group duyệt / chuyển cấp / người được chuyển. Không áp cho `decision`/`ask`.
+ */
+export function starterExcluded(
+  after: { kind: string; exclude_starter?: boolean } | undefined,
+  startedBy: string,
+  userId: string,
+): boolean {
+  return after?.kind === "review" && after.exclude_starter === true && startedBy === userId;
+}
 
 export function canAct(
   v: Viewer & { groupIds: ReadonlySet<string> },
@@ -25,6 +39,7 @@ export function canAct(
 ): boolean {
   if (v.role !== "platform_admin" && v.tenantId !== r.tenantId) return false;
   if (t.status !== "open" || isTerminal(r.status)) return false;
+  if (t.kind === "review" && t.starterExcluded === true && r.startedBy === v.userId) return false;
   if (t.kind === "decision") {
     const reviewGroupMember = t.reviewGroupId !== null && v.groupIds.has(t.reviewGroupId);
     // Lý do vắng (dữ liệu hỏng) ⇒ chỉ người bắt đầu/admin: `interrupted` không mở quyền group.

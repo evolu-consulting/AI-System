@@ -49,7 +49,8 @@ export function backStageOf(run: Locked, idx: number): { step: number; backToSte
 
 /** Kiểm `back_to_step` trên stage của task (sau khoá, trước đóng task). Sai ⇒ ném 422. */
 export function assertBackDecision(run: Locked, idx: number, b: ReviewDecisionRequest): void {
-  const r = backDecisionCheck(b, backStageOf(run, idx));
+  if (b.result === "reject") return; // N2-FR-02 · Từ chối kết thúc run — `back_to_step` (nếu gửi) bỏ qua
+  const r = backDecisionCheck({ ...b, result: b.result }, backStageOf(run, idx));
   if (r !== "ok") throw processError(r);
 }
 

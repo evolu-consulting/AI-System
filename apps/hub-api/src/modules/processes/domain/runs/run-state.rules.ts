@@ -8,7 +8,8 @@ export type RunEvent =
   | { kind: "stage_output"; templateOk: boolean }
   | { kind: "need_input" }
   | { kind: "limit"; reason: DecisionReason }
-  | { kind: "review"; result: "pass" | "fail" }
+  /** N2-FR-02 · `reject` = Từ chối ⇒ kết thúc run `cancelled` (khác `fail` = làm lại). */
+  | { kind: "review"; result: "pass" | "fail" | "reject" }
   | { kind: "answer" }
   | { kind: "decide"; option: DecisionOption }
   | { kind: "cancel" }
@@ -134,8 +135,9 @@ function onNeedInput(s: RunState): Transition {
   return ok(withStage(s, stage, { status: "waiting_answer" }), ["open_ask"]);
 }
 
-function onReview(s: RunState, result: "pass" | "fail"): Transition {
+function onReview(s: RunState, result: "pass" | "fail" | "reject"): Transition {
   if (result === "pass") return advance(s, ["close_open_tasks"]);
+  if (result === "reject") return end(s, "cancelled");
   return s.stage.attempt < s.stage.attemptLimit ? redo(s) : needsDecision(s, "redo_limit");
 }
 

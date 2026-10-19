@@ -148,7 +148,8 @@ export type ReviewTaskListResponse = z.infer<typeof ReviewTaskListResponseSchema
 // ---------- POST /review-tasks/:id/{decision,answer,forward} (200 TaskDetail) ----------
 /** `fail` thiếu/rỗng `feedback` ⇒ 422 FEEDBACK_REQUIRED ở luật (`reviewDecisionCheck`), không phải zod 400. */
 export const ReviewDecisionRequestSchema = z.strictObject({
-  result: z.enum(["pass", "fail"]),
+  /** N2-FR-02 · `reject` = Từ chối: bắt buộc `feedback` (422 FEEDBACK_REQUIRED ở luật), kết thúc run. */
+  result: z.enum(["pass", "fail", "reject"]),
   // `fail` góp ý rỗng/khoảng trắng ⇒ 422 FEEDBACK_REQUIRED ở luật (`reviewDecisionCheck`), KHÔNG zod 400 ⇒ không `.min(1)`.
   feedback: z.string().trim().max(FEEDBACK_MAX).optional(),
   sections: z

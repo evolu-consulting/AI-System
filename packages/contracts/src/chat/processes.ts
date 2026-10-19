@@ -97,6 +97,8 @@ export const TASK_RESULTS = [
   "cancelled",
   "expired",
   "superseded",
+  // N2 · N2-FR-02 · Từ chối (bắt buộc lý do, kết thúc run) — khác "fail" (làm lại).
+  "reject",
 ] as const;
 export const DECISION_REASONS = [
   "redo_limit",

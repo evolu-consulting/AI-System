@@ -114,6 +114,8 @@ type TaskSql = {
   o_missing: string[] | null;
   o_at: Ts | null;
   back_steps: number[] | null;
+  /** N2-FR-05 · `after.exclude_starter` của stage (snapshot). */
+  starter_excluded?: boolean;
   back_rounds: number;
   back_limit: number;
   remind_count: number;
@@ -130,7 +132,11 @@ type GrantSql = {
 
 type StageSnap = {
   name?: string | null;
-  after?: { group_id?: string | null; back_to_steps?: number[] | null } | null;
+  after?: {
+    group_id?: string | null;
+    back_to_steps?: number[] | null;
+    exclude_starter?: boolean;
+  } | null;
 } | null;
 
 /** T19-perf · `snapshot` (jsonb lớn, TOAST) chỉ trích MỘT lần — stage của task; tên/nhóm duyệt/bước quay lại tách ở JS
@@ -143,6 +149,7 @@ const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
     stage_name: st?.name ?? null,
     review_group_id: st?.after?.group_id ?? null,
     back_steps: Array.isArray(back) ? back : null,
+    starter_excluded: st?.after?.exclude_starter === true,
   };
 };
 
@@ -213,7 +220,8 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   const escalatedGroupId = mine.find((g) => g.via === "escalated" && g.group_id)?.group_id ?? null;
   const extraGroupIds = escalatedGroupId ? [escalatedGroupId] : [];
   const facts = { kind: r.kind, status: r.status, reason: r.reason, userIds, groupId: r.group_id };
-  const task = { ...facts, reviewGroupId: r.review_group_id, extraGroupIds };
+  const starterExcluded = r.starter_excluded === true; // N2-FR-05
+  const task = { ...facts, reviewGroupId: r.review_group_id, extraGroupIds, starterExcluded };
   const inGroup = (g: string | null) => g !== null && v.groupIds.has(g);
   const assignee = userIds.has(v.userId) || inGroup(r.group_id) || inGroup(escalatedGroupId);
   const run = { tenantId: r.tenant_id, startedBy: r.started_by, originRoom: r.origin_room };

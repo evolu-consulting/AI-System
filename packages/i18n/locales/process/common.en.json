@@ -24,7 +24,8 @@
     "cancel": "Cancelled the run",
     "cancelled": "Cancelled",
     "expired": "Expired",
-    "superseded": "Handled by someone else"
+    "superseded": "Handled by someone else",
+    "reject": "Rejected"
   },
   "option": {
     "add_attempt": "Allow 1 more rework",

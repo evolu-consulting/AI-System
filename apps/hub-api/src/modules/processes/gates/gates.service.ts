@@ -36,13 +36,7 @@ import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
-import {
-  assertBackDecision,
-  type BackOut,
-  backFromDecision,
-  backFromReview,
-  type CancelIds,
-} from "./back.effects";
+import { assertBackDecision, type BackOut, backFromDecision, type CancelIds } from "./back.effects";
 import { reviewDecisionCheck } from "./gate.rules";
 import {
   buildState,
@@ -53,27 +47,10 @@ import {
   type Locked,
   needsKick,
   notFound,
-  reviewEffects,
   snapOf,
 } from "./gates.effects";
 import * as g from "./gates.repo";
-
-/** P-b2 · Chưa đạt có `back_to_step` ⇒ `back.effects` (quay lại / `back_limit`); còn lại như P-a (`reviewEffects`). */
-async function reviewOut(
-  gx: Gx,
-  e: Eff,
-  task: g.GateTask,
-  b: ReviewDecisionRequest,
-): Promise<BackOut & { status: ProcessRunStatus; kick: boolean }> {
-  if (b.result !== "fail" || b.back_to_step === undefined) {
-    const o = await reviewEffects(gx, e, task, b);
-    return { ...o, status: e.next.status, kick: needsKick(e.effects, o.step) };
-  }
-  const { run, idx, ref } = e;
-  const fb = b.feedback ?? "";
-  const o = await backFromReview(gx, { run, idx, ref, task, feedback: fb, target: b.back_to_step });
-  return { ...o, status: "needs_decision", kick: o.step?.kind === "next_step" };
-}
+import { assertNotExcludedStarter, reviewOut } from "./review-out";
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
 async function decideOut(
@@ -204,6 +181,7 @@ export class GateService {
       stageRowOf(tx, task.process_run_id, idx),
     ]);
     if (!run) throw notFound();
+    assertNotExcludedStarter(run, idx, v.userId); // N2-FR-05 · 403 trước khi đóng task
     assertBackDecision(run, idx, b); // P-b2 · 422 BACK_TARGET_INVALID trước khi đóng task
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
@@ -233,7 +211,9 @@ export class GateService {
     events.push(...processUpdated(recipients, updatedOf(run, status, step)));
     const detail = details[0];
     if (!detail) throw notFound();
-    return { body: detail, events, kick, runId: run.id, cancel };
+    // N2-FR-02 · Từ chối kết thúc run ⇒ huỷ `hub.runs` còn chạy SAU COMMIT như `cancel`.
+    const cancelRun = status === "cancelled" ? { tenantId: run.tenantId } : undefined;
+    return { body: detail, events, kick, runId: run.id, cancel, cancelRun };
   }
 
   // ── POST /process-runs/:id/decide ──

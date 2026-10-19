@@ -24,7 +24,8 @@
     "cancel": "Huỷ lượt chạy",
     "cancelled": "Đã huỷ",
     "expired": "Hết hạn",
-    "superseded": "Đã có người khác xử lý"
+    "superseded": "Đã có người khác xử lý",
+    "reject": "Từ chối"
   },
   "option": {
     "add_attempt": "Thêm 1 lần làm lại",

@@ -20,6 +20,15 @@ export const CHAT_PROCESS_ERRORS = {
   BACK_TARGET_INVALID: 422,
 } as const;
 export type ChatProcessErrorCode = keyof typeof CHAT_PROCESS_ERRORS;
+/**
+ * N2 · khối riêng (không thêm vào CHAT_PROCESS_ERRORS — test khoá P-a/P-b2 đếm đúng 13 mã). N2-FR-05: người bắt đầu quyết
+ * task duyệt của stage exclude_starter; N2-D10: gói gọi PackRuns khi engine quy trình tắt.
+ */
+export const CHAT_PROCESS_N2_ERRORS = {
+  STARTER_CANNOT_REVIEW: 403,
+  PROCESS_ENGINE_OFF: 503,
+} as const;
+export type ChatProcessN2ErrorCode = keyof typeof CHAT_PROCESS_N2_ERRORS;
 export const CHAT_PROCESS_ERROR_CODES = Object.keys(CHAT_PROCESS_ERRORS) as ChatProcessErrorCode[];
 export const ChatProcessErrorCodeSchema = z.enum(
   CHAT_PROCESS_ERROR_CODES as [ChatProcessErrorCode, ...ChatProcessErrorCode[]],

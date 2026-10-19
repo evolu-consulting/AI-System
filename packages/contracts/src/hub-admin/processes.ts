@@ -201,6 +201,8 @@ export const ProcessStageDefSchema = z.strictObject({
       escalate: StageEscalateSchema.nullable().default(null),
       /** P-d2 · PD2-R12 · rẽ nhánh sau Đạt (luật `branchStageIssues`). */
       branch: AfterBranchSchema,
+      /** N2-FR-05 · người bắt đầu run không được quyết task duyệt của stage này (vắng ở snapshot cũ ⇒ false). */
+      exclude_starter: z.boolean().default(false),
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),
@@ -231,8 +233,10 @@ export type ProcessStageDef = Omit<StageDefParsed, "after" | "autofix"> & {
   after:
     | (Omit<
         Extract<StageAfterParsed, { kind: "review" }>,
-        "back_to_steps" | "remind_every_h" | "escalate" | "branch"
+        "back_to_steps" | "remind_every_h" | "escalate" | "branch" | "exclude_starter"
       > & {
+        /** N2 · vắng ở snapshot cũ; đọc dùng ?? false. */
+        exclude_starter?: boolean;
         back_to_steps?: number[];
         /** P-d1 · vắng ở snapshot cũ; đọc dùng `?? null`. */
         remind_every_h?: number | null;

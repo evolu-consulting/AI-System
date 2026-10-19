@@ -14,9 +14,9 @@ export function realActionAllowed(
   return prev !== null && prev.after === "review" && prev.status === "done";
 }
 
-/** HUB-FR-107 · R-G03 · "Chưa đạt" bắt buộc góp ý (trim ≠ rỗng); "Đạt" không cần. */
+/** HUB-FR-107 · R-G03 · "Chưa đạt" và N2-FR-02 "Từ chối" bắt buộc góp ý/lý do (trim ≠ rỗng); "Đạt" không cần. */
 export function reviewDecisionCheck(b: {
-  result: "pass" | "fail";
+  result: "pass" | "fail" | "reject";
   feedback?: string;
 }): "ok" | "FEEDBACK_REQUIRED" {
   if (b.result === "pass") return "ok";
