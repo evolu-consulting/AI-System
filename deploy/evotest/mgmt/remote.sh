@@ -34,7 +34,7 @@ t1=$(date +%s)
 for owner in tien@annam.test hai@binhminh.test; do
   "${DC[@]}" exec -T -e SEED_PASSWORD="$MGMT_NEO4J_PW" mgmt-api nice -n 19 python -m app.seed.demo --owner "$owner" --create --today 2026-10-20 || exit 2
 done
-"${DC[@]}" exec -T -e SEED_PASSWORD="$MGMT_NEO4J_PW" mgmt-api nice -n 19 python /seed/seed-plus.py tien@annam.test || exit 2
+"${DC[@]}" exec -T -e SEED_PASSWORD="$MGMT_NEO4J_PW" -e PYTHONPATH=/app mgmt-api nice -n 19 python /seed/seed-plus.py tien@annam.test || exit 2
 echo "[mgmt] seed xong · $(( $(date +%s) - t1 )) s"
 "${DC[@]}" exec -T mgmt-api python -c "from app.store import opensearch as o; c=o.client(); print({i: c.count(index=i)['count'] for i in ['orgs','users','memberships','contracts','obligations','partner_events','cks_lots','cks_certificates','signed_docs','companies','documents','chunks']})"
 
