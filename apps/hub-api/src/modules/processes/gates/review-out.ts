@@ -6,7 +6,7 @@
 import type { ProcessRunStatus, ReviewDecisionRequest } from "@ai/contracts/chat";
 import { processN2Error } from "../core/errors";
 import { starterExcluded } from "../domain/tasks/task-access.rules";
-import { type BackOut, backFromReview } from "./back.effects";
+import { assertBackDecision, type BackOut, backFromReview } from "./back.effects";
 import {
   cancelEnd,
   type Eff,
@@ -26,6 +26,21 @@ export function assertNotExcludedStarter(run: Locked, idx: number, userId: strin
   const after = snapOf(run).stages[idx]?.after;
   if (starterExcluded(after, run.startedBy, userId)) throw processN2Error("STARTER_CANNOT_REVIEW");
 }
+
+/** N2-FR-05 + P-b2 · kiểm trước khi đóng task: người bắt đầu bị loại (403) ⇒ đích quay lại sai (422). */
+export function assertReviewAllowed(
+  run: Locked,
+  idx: number,
+  userId: string,
+  b: ReviewDecisionRequest,
+): void {
+  assertNotExcludedStarter(run, idx, userId);
+  assertBackDecision(run, idx, b);
+}
+
+/** N2-FR-02 · run kết thúc ở quyết duyệt (Từ chối) ⇒ huỷ `hub.runs` sau COMMIT. */
+export const cancelRunOf = (run: Locked, status: ProcessRunStatus) =>
+  status === "cancelled" ? { tenantId: run.tenantId } : undefined;
 
 /** N2-FR-02 · Từ chối: task đã đóng `reject` (+ lý do) ở service; ghi tin + notice rồi kết thúc run. */
 async function rejectOut(gx: Gx, e: Eff, task: g.GateTask, b: ReviewDecisionRequest) {

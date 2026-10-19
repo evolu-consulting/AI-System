@@ -36,7 +36,7 @@ import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
-import { assertBackDecision, type BackOut, backFromDecision, type CancelIds } from "./back.effects";
+import { type BackOut, backFromDecision, type CancelIds } from "./back.effects";
 import { reviewDecisionCheck } from "./gate.rules";
 import {
   buildState,
@@ -50,7 +50,7 @@ import {
   snapOf,
 } from "./gates.effects";
 import * as g from "./gates.repo";
-import { assertNotExcludedStarter, reviewOut } from "./review-out";
+import { assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
 async function decideOut(
@@ -181,8 +181,7 @@ export class GateService {
       stageRowOf(tx, task.process_run_id, idx),
     ]);
     if (!run) throw notFound();
-    assertNotExcludedStarter(run, idx, v.userId); // N2-FR-05 · 403 trước khi đóng task
-    assertBackDecision(run, idx, b); // P-b2 · 422 BACK_TARGET_INVALID trước khi đóng task
+    assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
       result: b.result,
@@ -211,8 +210,7 @@ export class GateService {
     events.push(...processUpdated(recipients, updatedOf(run, status, step)));
     const detail = details[0];
     if (!detail) throw notFound();
-    // N2-FR-02 · Từ chối kết thúc run ⇒ huỷ `hub.runs` còn chạy SAU COMMIT như `cancel`.
-    const cancelRun = status === "cancelled" ? { tenantId: run.tenantId } : undefined;
+    const cancelRun = cancelRunOf(run, status); // N2-FR-02 · Từ chối ⇒ huỷ `hub.runs` sau COMMIT
     return { body: detail, events, kick, runId: run.id, cancel, cancelRun };
   }
 

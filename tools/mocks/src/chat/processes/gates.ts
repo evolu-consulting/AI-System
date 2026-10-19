@@ -28,8 +28,10 @@ export function createGateRoutes(s: ProcessState): Hono<ChatVars> {
     if (!b.ok) return invalid(c, b);
     if (t.kind !== "review") return processError(c, "TASK_KIND_MISMATCH");
     if (t.status !== "open") return processError(c, "REVIEW_TASK_CLOSED");
-    if (b.data.result === "fail" && !b.data.feedback) return processError(c, "FEEDBACK_REQUIRED");
-    review(s, t, me(c), b.data);
+    if (b.data.result !== "pass" && !b.data.feedback) return processError(c, "FEEDBACK_REQUIRED");
+    // N2-FR-02 · mock chưa mô phỏng Từ chối (UI chưa dùng — HD3) ⇒ 409 như trạng thái không cho phép.
+    if (b.data.result === "reject") return processError(c, "PROCESS_RUN_STATE");
+    review(s, t, me(c), { ...b.data, result: b.data.result });
     return c.json(taskDetail(s, viewerOf(me(c)), t));
   });
   return app;
