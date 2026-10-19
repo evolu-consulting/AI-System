@@ -15,7 +15,7 @@ Chạm engine P-d đã đóng (`ket-luan-pd2.md`) + khung gói N1 (`N1-pack-fram
 | N2-FR-02 kết quả task review **Từ chối** (`reject`): bắt buộc lý do, kết thúc run | Màn chat-web nút "Từ chối" (HD3 dùng; chat-web chỉ có nhãn) |
 | N2-FR-03 tool của gói: đăng ký trong Hub, chạy trong tx gói (`withPackScope`), stage `tool` gọi được, `/mcp` liệt kê/gọi khi job cho phép | Tool gói `side_effect` gọi từ agent qua `/mcp` (luôn từ chối — chỉ stage `real_action`) |
 | N2-FR-04 trần run đồng thời cấu hình theo tenant (mặc định 5, `waiting_review` vẫn đếm) + ô sửa ở admin | Đổi tập trạng thái tính trần (giữ `PROCESS_RUN_CAP_COUNTED`) |
-| N2-FR-05 cờ stage `after.exclude_starter`: người bắt đầu run không được quyết task duyệt của stage + checkbox ở editor | Chặn người bắt đầu ở task `decision` / `ask` |
+| N2-FR-05 cờ stage `after.review.exclude_starter`: người bắt đầu run không được quyết task duyệt của stage + checkbox ở editor | Chặn người bắt đầu ở task `decision` / `ask` |
 
 ## 2. Yêu cầu
 | Mã | Yêu cầu | AC |
@@ -31,7 +31,7 @@ Chạm engine P-d đã đóng (`ket-luan-pd2.md`) + khung gói N1 (`N1-pack-fram
 |---|---|
 | `chat/processes.ts` | `TASK_RESULTS` += `"reject"` (cuối) |
 | `chat/processes-api.ts` | `ReviewDecisionRequestSchema.result` = `pass \| fail \| reject` |
-| `chat/processes-errors.ts` | `STARTER_CANNOT_REVIEW: 403` |
+| `chat/processes-errors.ts` | khối riêng `CHAT_PROCESS_N2_ERRORS`: `STARTER_CANNOT_REVIEW: 403`, `PROCESS_ENGINE_OFF: 503` |
 | `hub-admin/processes.ts` | `after.review.exclude_starter: z.boolean().default(false)` |
 | `tenants.ts` | `process_runs_max` (1…1000): response optional (server luôn trả), PATCH optional; `TENANT_PROCESS_RUNS_MAX = {min:1,max:1000,default:5}` |
 | DB | hub `0041_n2_engine.sql` (CHECK `review_tasks_result_ck` += `reject`); admin `0013` cột `process_runs_max`; gói `pkdemo/0002` cột `items.run_id uuid` |
