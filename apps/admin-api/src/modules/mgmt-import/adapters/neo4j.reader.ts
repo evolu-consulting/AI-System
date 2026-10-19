@@ -8,6 +8,7 @@ export type Neo4jOpts = {
   password: string;
   database?: string;
   fetch?: typeof fetch;
+  timeoutMs?: number;
 };
 
 /** Truy vấn đọc theo loại cạnh/nút (G1 + đồ thị hợp đồng); `$skip/$limit` do reader gắn. */
@@ -48,9 +49,15 @@ export function createNeo4jReader(o: Neo4jOpts): Pick<SourceReader, "graph"> {
       body: JSON.stringify({
         statements: [{ statement, parameters, resultDataContents: ["row"] }],
       }),
+      signal: AbortSignal.timeout(o.timeoutMs ?? 120_000),
+    }).catch((e: unknown) => {
+      throw new Error(
+        (e as Error)?.name === "TimeoutError" ? "NEO4J_TIMEOUT" : "NEO4J_UNREACHABLE",
+      );
     });
+    const text = await r.text(); // luôn đọc hết thân (keep-alive không treo lời gọi sau)
     if (!r.ok) throw new Error(`NEO4J_HTTP_${r.status}`);
-    const body = (await r.json()) as TxResult;
+    const body = JSON.parse(text) as TxResult;
     if (body.errors?.length) throw new Error(`NEO4J_${body.errors[0]?.code ?? "ERROR"}`);
     return (body.results?.[0]?.data ?? []).map((d) => d.row);
   };
