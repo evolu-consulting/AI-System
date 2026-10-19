@@ -11,11 +11,12 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
-import { activeNav, roleOf } from "../lib/nav";
+import { activeNav, layoutOf, roleOf } from "../lib/nav";
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
+  const { pathname, searchStr } = useLocation();
+  const layout = layoutOf(pathname, searchStr);
   const dock = useDock();
   const role = roleOf({ write, owner });
   const sheetName =
@@ -34,8 +35,21 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
           onLogout={logout}
         />
         <div className="flex min-h-0 flex-1">
-          <main className="min-w-0 flex-1 overflow-y-auto px-7 py-7 max-md:px-4 max-md:pb-28">
-            <div className={cn("mx-auto w-full", dock.open ? "max-w-[900px]" : "max-w-[1100px]")}>
+          <main
+            className={cn(
+              "min-w-0 flex-1 overflow-y-auto px-7 py-7 max-md:px-4 max-md:pb-28",
+              layout === "board" && "md:flex md:flex-col md:overflow-hidden",
+            )}
+          >
+            <div
+              className={cn(
+                "mx-auto w-full",
+                layout === "board" &&
+                  "max-w-[1600px] md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
+                layout === "wide" && "max-w-[1500px]",
+                layout === "reading" && (dock.open ? "max-w-[900px]" : "max-w-[1100px]"),
+              )}
+            >
               <Outlet />
             </div>
           </main>

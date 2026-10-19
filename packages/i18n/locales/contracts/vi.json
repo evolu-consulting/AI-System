@@ -16,6 +16,73 @@
     "contractsPage": {
       "title": "Hợp đồng"
     },
+    "appendix": {
+      "title": "Phụ lục và giá",
+      "parentOf": "Phụ lục của hợp đồng",
+      "detach": "Gỡ khỏi hợp đồng gốc",
+      "attach": "Gắn làm phụ lục của hợp đồng khác…",
+      "attachLabel": "Hợp đồng gốc",
+      "search": "Gợi ý bên dưới, hoặc gõ tên/số hợp đồng để tìm",
+      "effective": "hiệu lực từ {{date}}",
+      "noDate": "chưa có ngày hiệu lực",
+      "prices": "Bảng giá hiện hành (đã áp phụ lục)",
+      "item": "Hàng hoá",
+      "price": "Đơn giá",
+      "validity": "Hiệu lực",
+      "source": "Nguồn",
+      "open": "nay",
+      "fromContract": "Hợp đồng gốc",
+      "fromAppendix": "Phụ lục: {{title}}",
+      "replaced": "đã bị thay",
+      "why": {
+        "cited_number": "văn bản nêu số hợp đồng này",
+        "same_parties": "cùng hai bên",
+        "same_supplier": "cùng bên bán"
+      }
+    },
+    "list": {
+      "filter": {
+        "category": "Loại hàng",
+        "direction": "Mua / bán",
+        "seller": "Bên bán",
+        "buyer": "Bên mua",
+        "owner": "Phụ trách",
+        "signer": "Người ký",
+        "status": "Trạng thái",
+        "value": "Giá trị (đ)"
+      },
+      "col": {
+        "title": "Hợp đồng",
+        "seller": "Bên bán",
+        "buyer": "Bên mua",
+        "value": "Giá trị",
+        "signers": "Người ký",
+        "owner": "Phụ trách",
+        "status": "Trạng thái",
+        "what": "Loại hàng"
+      },
+      "search": "Tìm theo tên, đối tác, số HĐ, loại…",
+      "add": "+ Thêm hợp đồng",
+      "manual": "Nhập tay",
+      "newCategory": "+ Loại mới",
+      "newCategoryTitle": "Thêm loại hàng",
+      "newCategoryLabel": "Tên loại mới",
+      "newCategoryHint": "Vd: Bao bì, Gia vị…",
+      "newCategoryOk": "Thêm",
+      "categoryAdded": "Đã thêm loại hàng",
+      "categoryExists": "Loại hàng này đã có.",
+      "emptyTitle": "Chưa có hợp đồng",
+      "emptyBody": "Bấm “+ Thêm hợp đồng” để tải file lên.",
+      "noMatchTitle": "Không có hợp đồng khớp",
+      "noMatchBody": "Thử từ khoá khác hoặc bỏ bớt bộ lọc.",
+      "appendixOf": "Phụ lục của {{title}}",
+      "appendixTag": "Phụ lục",
+      "signSell": "Bán · ",
+      "signBuy": "Mua · ",
+      "ownerLine": "Phụ trách: {{name}}",
+      "ownerUnknown": "(không rõ)",
+      "uploadFailed": "Không tải lên được. Thử lại sau."
+    },
     "table": {
       "columns": "Cột",
       "columnsHidden": "Cột · ẩn {{n}}",

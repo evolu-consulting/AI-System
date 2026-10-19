@@ -16,6 +16,73 @@
     "contractsPage": {
       "title": "Contracts"
     },
+    "appendix": {
+      "title": "Appendices and prices",
+      "parentOf": "Appendix of contract",
+      "detach": "Detach from parent contract",
+      "attach": "Attach as an appendix of another contract…",
+      "attachLabel": "Parent contract",
+      "search": "Suggestions below, or type a contract name/number to search",
+      "effective": "effective {{date}}",
+      "noDate": "no effective date",
+      "prices": "Current prices (appendices applied)",
+      "item": "Item",
+      "price": "Unit price",
+      "validity": "Validity",
+      "source": "Source",
+      "open": "now",
+      "fromContract": "Parent contract",
+      "fromAppendix": "Appendix: {{title}}",
+      "replaced": "replaced",
+      "why": {
+        "cited_number": "the text cites this contract number",
+        "same_parties": "same two parties",
+        "same_supplier": "same seller"
+      }
+    },
+    "list": {
+      "filter": {
+        "category": "Category",
+        "direction": "Buy / sell",
+        "seller": "Seller",
+        "buyer": "Buyer",
+        "owner": "Owner",
+        "signer": "Signer",
+        "status": "Status",
+        "value": "Value (VND)"
+      },
+      "col": {
+        "title": "Contract",
+        "seller": "Seller",
+        "buyer": "Buyer",
+        "value": "Value",
+        "signers": "Signers",
+        "owner": "Owner",
+        "status": "Status",
+        "what": "Category"
+      },
+      "search": "Search by name, partner, number, category…",
+      "add": "+ Add contract",
+      "manual": "Enter manually",
+      "newCategory": "+ New category",
+      "newCategoryTitle": "Add category",
+      "newCategoryLabel": "New category name",
+      "newCategoryHint": "E.g. Packaging, Spices…",
+      "newCategoryOk": "Add",
+      "categoryAdded": "Category added",
+      "categoryExists": "This category already exists.",
+      "emptyTitle": "No contracts yet",
+      "emptyBody": "Press “+ Add contract” to upload a file.",
+      "noMatchTitle": "No matching contracts",
+      "noMatchBody": "Try another keyword or remove some filters.",
+      "appendixOf": "Appendix of {{title}}",
+      "appendixTag": "Appendix",
+      "signSell": "Sell · ",
+      "signBuy": "Buy · ",
+      "ownerLine": "Owner: {{name}}",
+      "ownerUnknown": "(unknown)",
+      "uploadFailed": "Could not upload. Try again later."
+    },
     "table": {
       "columns": "Columns",
       "columnsHidden": "Columns · {{n}} hidden",

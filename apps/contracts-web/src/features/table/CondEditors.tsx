@@ -71,6 +71,7 @@ export function ValuesEditor({
           <p className="px-2 py-1.5 text-label text-dim">{t("contracts.table.noOptions")}</p>
         )}
       </div>
+      {def.extra && <div className="mt-1 border-t border-rule-soft px-1 pt-1.5">{def.extra}</div>}
     </>
   );
 }

@@ -30,16 +30,18 @@ function useColumnFilter<T>(
 ) {
   const [conds, setConds] = useState<Record<string, Cond>>({});
   const [active, setActive] = useState<string[]>([]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `filters` thường là literal mới mỗi lần render; chỉ dữ liệu đổi mới tính lại
+  const optionsKey = filters.map((f) => f.options?.join("\u0001") ?? "").join("\u0002");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `filters` thường là literal mới mỗi lần render; chỉ dữ liệu/lựa chọn đổi mới tính lại
   const defs = useMemo(
     () =>
       filters.map((f) => ({
         key: f.key,
         label: f.label,
         kind: f.kind ?? ("values" as const),
-        options: f.kind === "number" ? [] : optionsOf(rows ?? [], f.value),
+        options: f.kind === "number" ? [] : (f.options ?? optionsOf(rows ?? [], f.value)),
+        extra: f.extra,
       })),
-    [rows],
+    [rows, optionsKey],
   );
   const filter: FilterState = {
     defs,

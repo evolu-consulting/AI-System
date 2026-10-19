@@ -174,5 +174,7 @@ export function contractAsHub(status = contract.status) {
       size_bytes: c.file.size,
     },
     has_source: false,
+    parent: null,
+    appendices: [],
   };
 }

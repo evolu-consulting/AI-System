@@ -61,7 +61,7 @@ export function ColumnFilters({ filter }: { filter: FilterState }) {
   const [last, setLast] = useState<string | null>(null); // chip vừa thêm mở ô sửa ngay
   const [find, setFind] = useState("");
   const free = filter.defs.filter(
-    (d) => !filter.active.includes(d.key) && (d.kind === "number" || d.options.length),
+    (d) => !filter.active.includes(d.key) && (d.kind === "number" || d.options.length || d.extra),
   );
   const byKey = new Map(filter.defs.map((d) => [d.key, d]));
   return (
@@ -88,8 +88,24 @@ export function ColumnFilters({ filter }: { filter: FilterState }) {
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className={cn(PILL, PILL_OFF, "border-dashed")}
+              // không dùng `cn`: tailwind-merge coi `text-label` (cỡ chữ tuỳ biến) là màu và gỡ nó khi gặp `text-ink-2`
+              className={`${PILL} ${PILL_OFF} border-dashed`}
             >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                aria-hidden="true"
+                className="opacity-70"
+              >
+                <path
+                  d="M1.5 2.5h10L7.6 7v3.5l-2.2 1V7z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                />
+              </svg>
               {filter.active.length ? t("contracts.table.addFilter") : t("contracts.table.filter")}
             </button>
           )}

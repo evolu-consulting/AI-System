@@ -24,6 +24,8 @@ export function paginate<T>(rows: T[], page: number, pageSize: number) {
   return { pages, page: p, shown: rows.slice((p - 1) * pageSize, p * pageSize) };
 }
 
+import type { ReactNode } from "react";
+
 export type Vals = string | string[] | number | null | undefined;
 /** Cột cho phép lọc. "values": lựa chọn là các giá trị đang có trong dòng (một dòng có thể giữ nhiều giá trị),
  *  chọn nhiều ⇒ giữ dòng có bất kỳ giá trị nào. "number": khoảng từ–đến. */
@@ -32,6 +34,10 @@ export type ColumnFilter<T> = {
   label: string;
   value: (r: T) => Vals;
   kind?: "values" | "number";
+  /** Chế độ server: lựa chọn từ facets (cả tenant), không suy từ trang hiện tại. */
+  options?: string[];
+  /** Nút phụ cuối ô sửa lọc (vd "+ Loại mới"). */
+  extra?: ReactNode;
 };
 /** Một điều kiện người dùng thêm: một trong các giá trị, hoặc một khoảng. */
 export type Cond = { in?: string[]; min?: number | null; max?: number | null };
@@ -40,6 +46,7 @@ export type FilterDef = {
   label: string;
   kind: "values" | "number";
   options: string[];
+  extra?: ReactNode;
 };
 export type FilterState = {
   defs: FilterDef[];

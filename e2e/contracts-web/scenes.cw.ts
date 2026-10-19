@@ -18,7 +18,9 @@ const PIXEL_RATIO = 0.005;
 const HIDE =
   "label:has(input[name=tenant_key]){display:none !important}" +
   // HD2 D2-05: nút "Xác nhận" của S05 thuộc HD3 — ẩn ở cả hai phía (contracts-web chưa có).
-  "main button.btn-primary[type=button]{display:none !important}";
+  "main button.btn-primary[type=button]{display:none !important}" +
+  // HD5: khối "Phụ lục và giá" của S05 không có trong mgmt-app web (phụ lục do backend tự gắn) — ẩn ở cả hai phía.
+  "[data-hd5]{display:none !important}";
 
 type Box = { x: number; y: number; w: number; h: number };
 type Layers = { text: string; boxes: Record<string, Box | null> };
@@ -144,6 +146,42 @@ const HD2_SCENES: Scene[] = [
   },
 ];
 
+// ---------- HD5: S03 danh sách hợp đồng (dữ liệu `dataset-list.ts`) ----------
+const listBoxes = {
+  heading: "main h1",
+  search: "main input[type=search]",
+  table: "main table",
+  firstRow: "main tbody tr >> nth=0",
+  pager: "main nav",
+};
+const listReady = (p: Page) => p.locator("main").getByText("Hợp đồng mua bán bao bì 2026").first();
+const HD5_SCENES: Scene[] = [
+  ...(["light", "dark"] as const).map(
+    (theme): Scene => ({
+      name: `s03-list-${theme}`,
+      signedIn: true,
+      path: "/contracts",
+      size: D,
+      theme,
+      text: ["main"],
+      boxes: listBoxes,
+      mask: [],
+      ready: listReady,
+    }),
+  ),
+  {
+    name: "s03-list-mobile",
+    signedIn: true,
+    path: "/contracts",
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: { search: listBoxes.search, firstCard: "main ul li >> nth=0", pager: listBoxes.pager },
+    mask: [],
+    ready: (p) => p.locator("main ul li").first(),
+  },
+];
+
 const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
@@ -226,6 +264,7 @@ const SCENES: Scene[] = [
     }),
   ),
   ...HD2_SCENES,
+  ...HD5_SCENES,
 ];
 
 /** mgmt-app: API `/api/**` giả bằng dữ liệu chung (asMgmt). */
@@ -242,7 +281,6 @@ async function installMgmt(page: Page, signedIn: boolean) {
       if (path === "/auth/me")
         return signedIn ? json(200, d.me) : json(401, { detail: "Chưa đăng nhập" });
       if (path === "/auth/options") return json(200, d.options);
-      if (path === "/notifications") return json(200, d.notices);
       if (path === `/contracts/${contract.id}`) return json(200, contractAsMgmt());
       if (path === `/contracts/${FAILED_ID}`)
         return json(200, {
@@ -251,7 +289,10 @@ async function installMgmt(page: Page, signedIn: boolean) {
           items: [],
           warnings: [],
         });
-      return route.request().method() === "GET" ? json(200, []) : json(200, {});
+      return json(
+        200,
+        mgmtListGet(path, d.notices) ?? (route.request().method() === "GET" ? [] : {}),
+      );
     },
   );
 }
@@ -270,6 +311,11 @@ async function installHub(page: Page, signedIn: boolean) {
       : json(r, 401, { error: { code: "UNAUTHORIZED", message: "Hết phiên" } }),
   );
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
+  const at = (name: string) => (u: URL) => u.pathname === `/pack/contracts/${name}`;
+  await page.route(at("contracts"), (r) => json(r, 200, listAsHub()));
+  await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));
+  await page.route(at("categories"), (r) => json(r, 200, categoriesAsHub()));
+  await page.route(at("members"), (r) => json(r, 200, membersAsHub()));
   await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
     json(r, 200, contractAsHub()),
   );

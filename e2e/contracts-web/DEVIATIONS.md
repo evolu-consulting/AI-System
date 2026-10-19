@@ -12,3 +12,5 @@ Chỉ những lệch đã chốt; mọi lệch khác là lỗi và nằm ở `do
 | Đăng nhập (nhãn) | Ô "Email" nhận tên đăng nhập admin-api | Cùng nhãn "Email" ⇒ không ảnh hưởng chữ |
 
 Dữ liệu giả dùng chung: `dataset.ts` (`asMgmt()` cho mgmt-app, `asHub()` cho contracts-web). Baseline theo OS ở `baseline/<platform>/` (hiện `win32`; máy khác chụp lại bằng `bun run e2e:contracts:ref`).
+
+HD5 (S03 danh sách + S05 phụ lục): màn S03 so thật (chữ/khung/ảnh) — dữ liệu `dataset-list.ts`. Khối `Phụ lục và giá` của S05 (gắn HĐ gốc, bảng giá áp phụ lục) không có trong mgmt-app web (phụ lục do backend gắn tự động) ⇒ gắn `data-hd5` và ẩn ở cả hai phía bằng `HIDE`; hành vi kiểm ở `hd5-list.cw.ts`. Nút xoá HĐ của owner chưa có (D-HD5-03).

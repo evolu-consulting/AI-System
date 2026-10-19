@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
+import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import {
@@ -124,6 +125,7 @@ export function ContractReviewPage({ id }: { id: string }) {
         />
       )}
       <ItemsTable items={c.items} />
+      <AppendixPanel c={c} write={write} />
     </div>
   );
 }

@@ -26,3 +26,12 @@ export const canSeeSettings = (r: Role): boolean => r !== "viewer";
 /** Mục menu đang chọn theo đường dẫn (`/cks/123` → Sản phẩm). */
 export const activeNav = (pathname: string): NavItem | undefined =>
   NAV.find((n) => pathname === n.to || pathname.startsWith(`${n.to}/`));
+
+/** Trang danh sách đầy cột (mgmt-app `Shell.tsx:119-122`): rộng tới 1600 px, tự giữ thanh cuộn dọc (thanh công cụ + phân trang đứng yên) từ md. */
+export type PageLayout = "board" | "wide" | "reading";
+export function layoutOf(pathname: string, searchStr: string): PageLayout {
+  const pricesCks =
+    pathname === "/prices" && (new URLSearchParams(searchStr).get("product") ?? "cks") === "cks";
+  if (pricesCks) return "wide";
+  return ["/contracts", "/partners", "/prices", "/cks"].includes(pathname) ? "board" : "reading";
+}
