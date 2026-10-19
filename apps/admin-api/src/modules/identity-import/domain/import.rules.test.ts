@@ -7,6 +7,7 @@ import {
   classifyHash,
   cut,
   fnv8,
+  importableHash,
   planOrgs,
   planUsers,
   tenantKeyFor,
@@ -52,6 +53,40 @@ describe("N5-FR-04 · classifyHash", () => {
       "$argon2id$v=19$m=19456,t=2,p=1$$",
     ])
       expect(classifyHash(h)).toBe("reset");
+  });
+});
+
+describe("N5B-FR-01 · importableHash (scrypt mgmt-app ⇒ legacy)", () => {
+  const SALT = "00112233445566778899aabbccddeeff";
+  const DK = "89df".repeat(32);
+  test("N5B-FR-01 · `scrypt$<32 hex>$<128 hex>` ⇒ import, lưu `$scrypt-legacy$ln=14,r=8,p=1$…`", () => {
+    const h = `scrypt$${SALT}$${DK}`;
+    expect(classifyHash(h)).toBe("import");
+    expect(importableHash(h)).toBe(`$scrypt-legacy$ln=14,r=8,p=1$${SALT}$${DK}`);
+    expect(importableHash(ARGON_OK)).toBe(ARGON_OK);
+  });
+  test("N5B-FR-01 · Werkzeug / hex hoa / salt-dk sai độ dài / legacy sẵn ⇒ reset", () => {
+    for (const h of [
+      `scrypt:16384:8:1$${SALT}$${DK}`,
+      `scrypt$${SALT.toUpperCase()}$${DK}`,
+      `scrypt$${SALT.slice(2)}$${DK}`,
+      `scrypt$${SALT}$${DK.slice(2)}`,
+      `scrypt$${SALT}$${DK}$`,
+      `$scrypt-legacy$ln=14,r=8,p=1$${SALT}$${DK}`,
+    ]) {
+      expect(classifyHash(h)).toBe("reset");
+      expect(importableHash(h)).toBeNull();
+    }
+  });
+  test("N5B-FR-01 · planUsers: user scrypt ⇒ insert password=import với hash legacy", () => {
+    const p = planUsers(
+      [u("s@x.vn", { passwordHash: `scrypt$${SALT}$${DK}` })],
+      new Map([["o1", "t1"]]),
+      [],
+    );
+    expect(p.inserts.map((r) => [r.password, r.importedHash])).toEqual([
+      ["import", `$scrypt-legacy$ln=14,r=8,p=1$${SALT}$${DK}`],
+    ]);
   });
 });
 

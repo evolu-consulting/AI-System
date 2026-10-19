@@ -211,6 +211,26 @@ export async function updatePassword(tx: Tx, tenantId: string, userId: string, h
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)));
 }
 
+/**
+ * N5B-FR-03 · rehash legacy ⇒ argon2id: CAS theo hash cũ (login song song ⇒ đúng một lần). Không đổi version,
+ * password_changed_at, phiên (cùng mật khẩu — readiness R7). Trả true khi CAS trúng.
+ */
+export async function rehashLegacy(
+  tx: Tx,
+  k: { tenantId: string; userId: string },
+  from: string,
+  to: string,
+): Promise<boolean> {
+  const rows = await tx
+    .update(users)
+    .set({ passwordHash: to })
+    .where(
+      and(eq(users.tenantId, k.tenantId), eq(users.id, k.userId), eq(users.passwordHash, from)),
+    )
+    .returning({ id: users.id });
+  return rows.length === 1;
+}
+
 export async function lockPasswordRow(tx: Tx, tenantId: string, userId: string) {
   const [row] = await tx
     .select({ passwordChangedAt: users.passwordChangedAt, lockedUntil: users.lockedUntil })

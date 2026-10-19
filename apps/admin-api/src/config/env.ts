@@ -35,6 +35,11 @@ export const EnvSchema = z.object({
   ADMIN_HUB_URL: z.url({ protocol: /^https?$/ }).optional(),
   /** Token dịch vụ Hub `/internal/*` — chỉ server-side, cùng giá trị với hub-api. Vắng ⇒ 503. */
   HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
+  /** N5B-FR-04: hạn nhận hash scrypt legacy mgmt-app, `YYYY-MM-DD` = 00:00 UTC. Vắng ⇒ mặc định trong auth.legacy.rules. */
+  LEGACY_HASH_SUNSET: z.iso
+    .date()
+    .transform((d) => new Date(`${d}T00:00:00.000Z`))
+    .optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

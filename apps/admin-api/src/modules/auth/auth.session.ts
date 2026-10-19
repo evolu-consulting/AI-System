@@ -14,6 +14,8 @@ export type AuthCtx = {
   keys: JwtKeys;
   now: () => Date;
   dummyHash: string;
+  /** N5B-FR-04: hạn nhận hash legacy mgmt-app; vắng ⇒ `DEFAULT_LEGACY_SUNSET`. */
+  legacySunset?: Date;
   /** Chỉ cho test backend: chạy giữa lúc đọc ảnh chụp user và lúc verify mật khẩu (tái hiện race khoá tạm). */
   beforeVerify?: () => Promise<void>;
 };

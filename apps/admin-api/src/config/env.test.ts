@@ -55,6 +55,17 @@ describe("ADM-NFR-06 · loadEnv", () => {
   });
 });
 
+describe("N5B-FR-04 · LEGACY_HASH_SUNSET", () => {
+  test("N5B-FR-04 · YYYY-MM-DD ⇒ 00:00 UTC; vắng ⇒ undefined; sai ⇒ lỗi nêu tên biến", () => {
+    expect(
+      loadEnv({ ...OK, LEGACY_HASH_SUNSET: "2027-04-19" }).LEGACY_HASH_SUNSET?.toISOString(),
+    ).toBe("2027-04-19T00:00:00.000Z");
+    expect(loadEnv(OK).LEGACY_HASH_SUNSET).toBeUndefined();
+    for (const bad of ["2027-13-01", "19/04/2027", "2027-04-19T10:00:00Z"])
+      expect(() => loadEnv({ ...OK, LEGACY_HASH_SUNSET: bad })).toThrow(/LEGACY_HASH_SUNSET/);
+  });
+});
+
 describe("TECH-DEBT #193 · chuỗi rỗng = vắng", () => {
   test("biến tuỳ chọn để trống ⇒ nhận mặc định/undefined", () => {
     const env = loadEnv({

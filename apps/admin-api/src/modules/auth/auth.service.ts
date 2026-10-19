@@ -2,9 +2,12 @@
 // Không biết HTTP: route quyết định cookie/body. Mỗi bước có DB = một withScope.
 import type { Locale, LoginRequest, Me, PasswordChangeRequired, TotpRequired } from "@ai/contracts";
 import { hashPassword, NIL_SCOPE, setScope, type Tx, verifyPassword, withScope } from "@ai/db";
+import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { appError } from "../../lib/errors";
 import { signChangeToken, signTotpToken, verifyChangeToken } from "../../lib/jwt";
 import { tempLocked } from "./auth.errors";
+import { verifyLogin } from "./auth.legacy";
+import { DEFAULT_LEGACY_SUNSET, legacyActive } from "./auth.legacy.rules";
 import type { AuthUser } from "./auth.repo";
 import * as repo from "./auth.repo";
 import {
@@ -90,18 +93,44 @@ export async function login(
     normalizeLoginId(input.tenant_key),
     normalizeLoginId(input.username),
   );
+  const now = ctx.now();
+  const opts = {
+    dummyHash: ctx.dummyHash,
+    legacyOn: legacyActive(now, ctx.legacySunset ?? DEFAULT_LEGACY_SUNSET),
+  };
   if (!u) {
-    await verifyPassword(input.password, ctx.dummyHash);
+    await verifyLogin(input.password, null, opts);
     throw appError("INVALID_CREDENTIALS");
   }
-  const now = ctx.now();
   if (isTempLocked(u.lockedUntil, now)) throw tempLocked(u.lockedUntil as Date);
   await ctx.beforeVerify?.();
-  if (!(await verifyPassword(input.password, u.passwordHash))) {
+  const v = await verifyLogin(input.password, u.passwordHash, opts);
+  if (!v.ok) {
     await recordFailedLogin(ctx, u, now);
     throw appError("INVALID_CREDENTIALS");
   }
-  return afterPasswordOk(ctx, u, now, meta);
+  // N5B-FR-03: hash argon2id đã băm song song lúc verify (ngoài tx); ghi trong tx của bước sau mật khẩu.
+  const rehash = v.rehash ? { from: u.passwordHash, to: v.rehash } : null;
+  return afterPasswordOk(ctx, u, meta, { now, rehash });
+}
+
+type Rehash = { from: string; to: string } | null;
+
+/** CAS legacy ⇒ argon2id + audit `legacy_rehash` (câu cuối của tx; actor = chính user). Không có ⇒ không làm gì. */
+async function applyRehash(tx: Tx, u: AuthUser, r: Rehash): Promise<void> {
+  if (!r || !(await repo.rehashLegacy(tx, { tenantId: u.tenantId, userId: u.id }, r.from, r.to)))
+    return;
+  await recordAudit(tx, {
+    ...auditOf("update", "user", {
+      entityId: u.id,
+      entityName: u.username,
+      tenantId: u.tenantId,
+      before: null,
+      after: null,
+      summary: { op: "legacy_rehash" },
+    }),
+    actorId: u.id,
+  });
 }
 
 /** Body `password_change_required` (login M1 và bước 2FA khi còn phải đổi mật khẩu). */
@@ -126,16 +155,17 @@ export async function changeRequired(ctx: AuthCtx, u: AuthUser): Promise<LoginRe
 async function afterPasswordOk(
   ctx: AuthCtx,
   u: AuthUser,
-  now: Date,
   meta: ClientMeta,
+  { now, rehash }: { now: Date; rehash: Rehash },
 ): Promise<LoginResult> {
   const step = loginNextStep({
     canSignIn: canSignIn(u, u.tenant.active),
     totpEnabled: u.totpEnabledAt !== null,
     mustChangePassword: u.mustChangePassword,
   });
+  // Rehash ở mọi bước trừ account_locked (readiness R6); luôn là việc cuối trong tx.
   if (step === "totp_required") {
-    await confirmNotTempLocked(ctx, u, now, async () => null);
+    await confirmNotTempLocked(ctx, u, now, (tx) => applyRehash(tx, u, rehash));
     const claims = { sub: u.id, tid: u.tenantId, pwc: u.passwordChangedAt.getTime() };
     const token = await signTotpToken(
       ctx.keys,
@@ -146,13 +176,19 @@ async function afterPasswordOk(
     return { kind: "totp", body: body as TotpRequired };
   }
   if (step !== "authenticated") {
-    await confirmNotTempLocked(ctx, u, now, (tx) => resetCounter(tx, u));
+    const r = step === "account_locked" ? null : rehash;
+    await confirmNotTempLocked(ctx, u, now, async (tx) => {
+      await resetCounter(tx, u);
+      await applyRehash(tx, u, r);
+    });
     if (step === "account_locked") throw appError("ACCOUNT_LOCKED");
     return changeRequired(ctx, u);
   }
   const session = await confirmNotTempLocked(ctx, u, now, async (tx) => {
     await repo.markLoginSuccess(tx, u.tenantId, u.id, now);
-    return issueSession(ctx, tx, u, meta);
+    const s = await issueSession(ctx, tx, u, meta);
+    await applyRehash(tx, u, rehash);
+    return s;
   });
   return { kind: "session", ...session };
 }

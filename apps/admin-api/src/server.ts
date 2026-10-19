@@ -57,6 +57,7 @@ async function main(): Promise<void> {
       keys,
       appEnv: env.APP_ENV,
       dummyHash,
+      legacySunset: env.LEGACY_HASH_SUNSET,
       secretKey,
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,

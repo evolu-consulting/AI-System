@@ -41,6 +41,8 @@ export type AppDeps = {
   keys: JwtKeys;
   appEnv: AppEnv;
   dummyHash: string;
+  /** N5B-FR-04 (`LEGACY_HASH_SUNSET`); vắng ⇒ mặc định. */
+  legacySunset?: Date;
   now?: () => Date;
   /** Khoá mã hoá secret (M2); vắng (fixture M1) → POST/PUT /admin/secrets trả 500. */
   secretKey?: SecretKey;
@@ -63,6 +65,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     db: deps.db,
     keys: deps.keys,
     dummyHash: deps.dummyHash,
+    legacySunset: deps.legacySunset,
     now: deps.now ?? (() => new Date()),
   };
   const secureCookie = deps.appEnv === "production";

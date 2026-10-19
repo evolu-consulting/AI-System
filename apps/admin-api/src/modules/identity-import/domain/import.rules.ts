@@ -35,12 +35,22 @@ export function fnv8(s: string): string {
  * mỗi lần verify cấp `m` KiB, admin-api không rate-limit đăng nhập ⇒ 64 MiB thay vì 256 MiB.
  */
 export function classifyHash(h: string | null): PasswordKind {
-  if (!h || h.length > 256) return "reset";
+  return importableHash(h) === null ? "reset" : "import";
+}
+
+/** scrypt mgmt-app (auth.py: salt 16 byte, dk 64 byte, N=2^14, r=8, p=1) — N5b spec §0. */
+const MGMT_SCRYPT_RE = /^scrypt\$([0-9a-f]{32})\$([0-9a-f]{128})$/;
+
+/** Hash sẽ lưu: argon2id đủ chuẩn giữ nguyên; scrypt mgmt-app ⇒ dạng legacy tường minh (N5B-FR-01); khác ⇒ null. */
+export function importableHash(h: string | null): string | null {
+  if (!h || h.length > 256) return null;
+  const s = MGMT_SCRYPT_RE.exec(h);
+  if (s) return `$scrypt-legacy$ln=14,r=8,p=1$${s[1]}$${s[2]}`;
   const m = ARGON_RE.exec(h);
-  if (!m) return "reset";
+  if (!m) return null;
   const [mem, t, p] = [Number(m[1]), Number(m[2]), Number(m[3])];
   const ok = mem >= 19456 && mem <= 65536 && t >= 2 && t <= 4 && p >= 1 && p <= 2;
-  return ok ? "import" : "reset";
+  return ok ? h : null;
 }
 
 const fold = (s: string): string =>
@@ -199,7 +209,8 @@ function pickUsername(c: UserCtx, tid: string, email: string): string | null {
 
 function newUser(u: UserIn, tid: string, email: string, username: string): UserInsert {
   const role = u.orgRole as PackRole;
-  const password = classifyHash(u.passwordHash);
+  const importedHash = importableHash(u.passwordHash);
+  const password: PasswordKind = importedHash === null ? "reset" : "import";
   const local = email.slice(0, email.lastIndexOf("@"));
   return {
     tenantId: tid,
@@ -210,7 +221,7 @@ function newUser(u: UserIn, tid: string, email: string, username: string): UserI
     packRole: role,
     locale: u.locale,
     password,
-    importedHash: password === "import" ? u.passwordHash : null,
+    importedHash,
   };
 }
 
