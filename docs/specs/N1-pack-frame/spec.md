@@ -3,7 +3,7 @@ id: N1-pack-frame
 title: Khung gói nghiệp vụ dùng chung
 milestone: GĐ1 · Luồng A (lõi)
 cr: CR-094
-status: draft
+status: done             # Đóng 2026-10-19 (ket-luan.md); perf staging chờ
 requirements: [PK-FR-01, PK-FR-02, PK-FR-03, PK-FR-04, PK-FR-05, PK-FR-06, PK-FR-07, PK-FR-08, PK-FR-09, PK-FR-10, PK-BR-01, PK-NFR-01, PK-NFR-02, PK-NFR-03, PK-NFR-04, PK-NFR-05]
 design: [docs/platform/intake-hd.md#kế-hoạch-lát, docs/adr/0015-filebox-external-file-storage.md, docs/adr/0016-postgres-source-of-truth.md, docs/adr/0018-single-identity-sso.md, docs/adr/0021-knowledge-service.md, docs/adr/0023-clean-architecture.md]
 owner: backend-lead + frontend-lead (khuôn app web gói, D-02)

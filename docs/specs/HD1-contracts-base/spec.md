@@ -3,7 +3,7 @@ id: HD1-contracts-base
 title: Nền dữ liệu hợp đồng (gói contracts)
 milestone: GĐ1 · Luồng B (app mẫu mgmt-app)
 cr: CR-094
-status: draft
+status: done             # Đóng 2026-10-19 (ket-luan.md); facets p95 chờ đo staging
 requirements: [HD-FR-01, HD-FR-02, HD-FR-03, HD-FR-04, HD-FR-05, HD-FR-06, HD-FR-07, HD-FR-08, HD-NFR-01, HD-NFR-02, HD-NFR-03, HD-NFR-04]
 design: [docs/platform/intake-hd.md#kế-hoạch-lát, docs/specs/N1-pack-frame/spec.md, docs/adr/0016-postgres-source-of-truth.md]
 owner: backend-lead

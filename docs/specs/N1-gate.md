@@ -18,3 +18,4 @@
 - Security review T6 (RLS gói, role NOINHERIT NOBYPASSRLS, FileBox org, zip bomb) — hard stop nếu lỗi cách ly tenant.
 - TF3 (tách `packages/web-kit` từ chat-web) rủi ro cao: `e2e/chat` xanh y nguyên.
 - Thấp #21: chạy lại e2e N1 sau TF1, ghi TECH-DEBT nếu lỗi môi trường Playwright còn.
+- **Đóng 2026-10-19** (đợt 1 CR-094): kết luận [ket-luan.md](N1-pack-frame/ket-luan.md); review vòng 2 APPROVED, security SAFE (74a128ca); cổng done:n1 14/16 (đỏ: #208 timeout int khi chạy cả bộ, #205 e2e chat); perf đo staging còn chờ.

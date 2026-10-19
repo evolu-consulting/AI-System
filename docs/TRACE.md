@@ -6,8 +6,8 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | FR | Ưu tiên | Spec | Code | Test | Trạng thái |
 |---|---|---|---|---|---|
 | ADM-FR-01 | MUST | docs/specs/M1-foundation-identity/spec.md | 38 file | 19 file | có test |
-| ADM-FR-02 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 10 file | có test |
-| ADM-FR-03 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 5 file | có test |
+| ADM-FR-02 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 12 file | có test |
+| ADM-FR-03 | MUST | docs/specs/M1-foundation-identity/spec.md | 12 file | 6 file | có test |
 | ADM-FR-04 | MUST | docs/specs/M1-foundation-identity/spec.md | 42 file | 11 file | có test |
 | ADM-FR-05 | MUST | docs/specs/M1-foundation-identity/spec.md | 11 file | 7 file | có test |
 | ADM-FR-06 | SHOULD | docs/specs/M1-foundation-identity/spec.md | 15 file | 10 file | có test |
@@ -53,7 +53,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-FR-68 | — | docs/specs/P-b-sources/spec.md | 33 file | 2 file | có test |
 | ADM-FR-69 | — | docs/specs/P-b-sources/spec.md | 7 file | 1 file | có test |
 | ADM-FR-70 | — |  |  |  | chưa spec |
-| ADM-FR-71 | — | docs/specs/P-b2-canvas/spec.md<br>docs/specs/P-d-durable/spec.md | 39 file | 2 file | có test |
+| ADM-FR-71 | — | docs/specs/P-b2-canvas/spec.md<br>docs/specs/P-d-durable/spec.md | 39 file | 3 file | có test |
 | ADM-BR-01 | — | docs/specs/M2-catalog-command/spec.md | 8 file | 10 file | có test |
 | ADM-BR-02 | — | docs/specs/M2-catalog-command/spec.md | 3 file | 5 file | có test |
 | ADM-BR-04 | — | docs/specs/M2-catalog-command/spec.md<br>docs/specs/M4-ops/spec.md | 11 file | 7 file | có test |
@@ -71,7 +71,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | ADM-NFR-03 | — |  | 2 file | 3 file | chưa spec |
 | ADM-NFR-04 | — |  |  |  | chưa spec |
 | ADM-NFR-05 | — |  |  |  | chưa spec |
-| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 52 file | 50 file | có test |
+| ADM-NFR-06 | — | docs/specs/M0-bootstrap/spec.md<br>docs/specs/M1-foundation-identity/spec.md | 54 file | 51 file | có test |
 | ADM-NFR-07 | — | docs/specs/M1-foundation-identity/spec.md | 16 file | 13 file | có test |
 | HUB-FR-01 | MUST | docs/specs/H1-hub-core/spec.md | 2 file | 1 file | có test |
 | HUB-FR-02 | MUST | docs/specs/H1-hub-core/spec.md | 3 file | 1 file | có test |
@@ -200,7 +200,7 @@ Tra một mã: `bun run trace ADM-FR-32`. CI đỏ khi một FR **MUST** trong m
 | HUB-BR-09 | — | docs/specs/H4a-studio-shell-agents/spec.md |  |  | có spec |
 | HUB-BR-10 | — |  |  |  | chưa spec |
 | HUB-BR-11 | — | docs/specs/H2a-dify-command/spec.md |  |  | có spec |
-| HUB-BR-12 | — | docs/specs/H2a-dify-command/spec.md<br>docs/specs/P-d-durable/spec.md | 1 file | 6 file | có test |
+| HUB-BR-12 | — | docs/specs/H2a-dify-command/spec.md<br>docs/specs/P-d-durable/spec.md | 1 file | 8 file | có test |
 | HUB-BR-13 | — |  |  |  | chưa spec |
 | HUB-BR-14 | — | docs/specs/H1-hub-core/spec.md<br>docs/specs/H3b-agent-grants/spec.md<br>docs/specs/X2a-rooms/spec.md | 12 file | 19 file | có test |
 | HUB-BR-15 | — | docs/specs/H4b1-secrets/spec.md | 5 file | 6 file | có test |
