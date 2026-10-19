@@ -80,7 +80,7 @@ Tổng **269/269 đỏ đúng lý do**. Seed perf đo thử trên DB nháp với
 | 3 | `quotaVerdict` nhận bộ đếm **sau** `INCR` (30 còn được, 31 ⇒ `tenant`; vượt cả hai ⇒ `tenant`) | backend-lead xác nhận (T6) |
 | 4 | `sniffFileType(head)` của zip không kèm `zipNames` ⇒ `null` (không đoán DOCX từ "PK") | backend-lead xác nhận (T6) |
 | 5 | Tên file domain tự do (`M/domain/*.rules.ts` — test hợp mọi export); tên export theo plan §4 (`fillFields mergeFields applyEdits foldVi personKey likePattern sniffFileType uploadDay quotaVerdict`) và contract §1 (`CONTRACT_FIELD_KINDS CONTRACT_TYPES CONTRACT_STATUSES HANDLED_OUTCOMES ITEM_KINDS fieldValueSchema ContractFieldSchema`) từ `packages/contracts/src/pack-contracts/index.ts` | backend-lead (T4, T6) |
-| 6 | Ca "đổi múi giờ tenant ⇒ khoá ngày đổi" (Kiritimati): HD1 làm thật `TenantState.timezone` (D-16), không còn hằng tạm | backend-lead (T10) |
-| 7 | NFC ở biên + `foldVi` gọi `normalize("NFC")` (D-18) ⇒ qc thêm ca NFD ở `rules/fold` + `list.int`; thêm ca `as_date` `2027-02-30`⇒null, `2028-02-29` (D-15) | qc (relock) |
+| 6 | Ca "đổi múi giờ tenant ⇒ khoá ngày đổi" (Kiritimati) đã bỏ nhãn N1-a: kỳ vọng theo `TenantState.timezone` (D-16, mặc định `Asia/Ho_Chi_Minh`) | backend-lead (T10) |
+| 7 | NFC ở biên + `foldVi` gọi `normalize("NFC")` (D-18) ⇒ **đã thêm** ca NFD: `rules/fold` (3 ca: foldVi, fold NFD≡NFC, personKey/likePattern), `list.int` (q/signer/seller NFD); ca `as_date` (D-15) ở `columns.int` (`2027-02-30`⇒null, `2028-02-29`, 1900/2100 không nhuận…). Parity SQL↔TS không gồm NFD (SQL `fold` giữ nguyên). Bản TS của `as_date`: plan chưa đặt tên export ⇒ chưa có ca parity TS | qc (xong); backend-lead đặt tên nếu muốn ca TS |
 | 8 | `facets.category.n` = số HĐ có ≥ 1 item loại đó (không phải số item); `facets.direction` có khoá `unknown` (khớp `ListQuery`) | backend-lead xác nhận (T7) |
-| 9 | `search_key` viết bằng `coalesce(...) \|\| ' ' \|\|` 5 trường + title, không `concat_ws` (D-14) | backend-lead (T5) |
+| 9 | (đã khớp D-14: `columns.int` kiểm `type` không vào `search_key`) `search_key` viết bằng `coalesce(...) \|\| ' ' \|\|` 5 trường + title, không `concat_ws` (D-14) | backend-lead (T5) |

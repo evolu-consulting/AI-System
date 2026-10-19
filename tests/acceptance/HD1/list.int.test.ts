@@ -274,6 +274,17 @@ describe("HD-AC03 · bộ lọc", () => {
     expect(idsOf(await listOf(c, P.tam, { q: "hợp đồng" }))).toEqual(ids(6, 3, 2, 1));
     expect(idsOf(await listOf(c, P.tam, { q: "HD-001" }))).toEqual(ids(1));
   });
+  it("D-18 · q / signer / seller viết bằng dấu tổ hợp (NFD) ⇒ chuẩn NFC ở biên, cho kết quả như bản NFC", async () => {
+    await dataset();
+    const nfd = (s: string) => s.normalize("NFD");
+    expect(nfd("MINH PHÁT")).not.toBe("MINH PHÁT"); // tiền đề: thật sự là chuỗi tổ hợp
+    expect(idsOf(await listOf(c, P.tam, { q: nfd("MINH PHÁT") }))).toEqual(ids(6, 1));
+    expect(idsOf(await listOf(c, P.tam, { q: nfd("hợp đồng") }))).toEqual(ids(6, 3, 2, 1));
+    expect(idsOf(await listOf(c, P.tam, { signer: [nfd("Nguyễn Văn A")] }))).toEqual(ids(6, 3, 1));
+    expect(idsOf(await listOf(c, P.tam, { seller: [nfd("Công ty Minh Phát")] }))).toEqual(
+      ids(6, 1),
+    );
+  });
   it("HD-BR-03 · q='100%' chỉ khớp tiêu đề có đúng '100%' (ký tự đại diện LIKE bị thoát)", async () => {
     await dataset();
     expect(idsOf(await listOf(c, P.tam, { q: "100%" }))).toEqual(ids(5));

@@ -368,7 +368,7 @@ describe("D-06 · HD-AC10 · quota 30 tệp/tenant/ngày + 300/hệ thống/ngà
       expect({ k, ok: ttl > 0 && ttl <= 172_800 }).toEqual({ k, ok: true });
     }
   });
-  it("D-06 · (N1-a) đổi múi giờ tenant sang Pacific/Kiritimati ⇒ khoá ngày của tenant đổi theo múi mới", async () => {
+  it("D-06 · D-16 · đổi múi giờ tenant (TenantState.timezone) sang Pacific/Kiritimati ⇒ khoá ngày của tenant đổi theo múi mới", async () => {
     await arrange(c);
     try {
       await afterReload(c.hub, async () => {

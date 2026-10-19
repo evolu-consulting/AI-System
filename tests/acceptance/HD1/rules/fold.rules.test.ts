@@ -1,5 +1,5 @@
 // HD-FR-07 · HD-AC04 · HD-BR-03 · D-07 · plan §3–§4: `foldVi` / `personKey` / `likePattern` (bản TS của hàm SQL `contracts.fold`/`person_key`).
-// Parity TS ↔ SQL từng ký tự ở `fold-parity.int.test.ts`. Không DB.
+// Parity TS ↔ SQL từng ký tự ở `columns.int.test.ts`. Không DB.
 import { describe, expect, it } from "bun:test";
 import { domainFn, likeMatch, VI_PAIRS } from "../_support/pure";
 
@@ -26,6 +26,27 @@ describe("HD-FR-07 · foldVi", () => {
         if (f(ch.toUpperCase()) !== plain) bad.push(`${ch.toUpperCase()}→${f(ch.toUpperCase())}`);
       }
     expect(bad).toEqual([]);
+  });
+  it("D-18 · chuỗi dấu tổ hợp (NFD) ⇒ chuẩn NFC trước khi bỏ dấu: kết quả như chuỗi dựng sẵn", async () => {
+    const f = await fold();
+    const nfd = (s: string) => s.normalize("NFD");
+    expect(nfd("Nguyễn Văn A")).not.toBe("Nguyễn Văn A"); // tiền đề: thật sự là chuỗi tổ hợp
+    expect(f(nfd(" Nguyễn  Văn A "))).toBe("nguyen van a");
+    expect(f("ế")).toBe("e"); // ê + sắc tổ hợp = ế
+    expect(f("D̂̉")).toBe(f("D̂̉".normalize("NFC")));
+    const bad: string[] = [];
+    for (const [accented, plain] of VI_PAIRS)
+      for (const ch of accented) {
+        if (f(nfd(ch)) !== plain) bad.push(`${nfd(ch)}→${f(nfd(ch))}`);
+        if (f(nfd(ch.toUpperCase())) !== plain)
+          bad.push(`${nfd(ch.toUpperCase())}→${f(nfd(ch.toUpperCase()))}`);
+      }
+    expect(bad).toEqual([]);
+  });
+  it("D-18 · fold(NFD x) = fold(NFC x) với mẫu hỗn hợp", async () => {
+    const f = await fold();
+    for (const s of ["Công ty TNHH Bao Bì Minh Phát", "ĐẶNG THỊ BÉ", "Phạm  Ngọc\tThạch"])
+      expect(f(s.normalize("NFD"))).toBe(f(s.normalize("NFC")));
   });
   it("HD-FR-07 · ASCII hoa → thường; số và dấu câu giữ nguyên; chuỗi rỗng ⇒ ''", async () => {
     const f = await fold();
@@ -58,6 +79,12 @@ describe("HD-AC04 · personKey (= personOf + normalize của mgmt)", () => {
   });
   it("HD-AC04 · gạch nối KHÔNG có dấu cách hai bên là một phần tên, không bị cắt", async () => {
     expect((await person())("Trần Anh-Tuấn")).toBe("tran anh-tuan");
+  });
+  it("D-18 · personKey nhận tên NFD ⇒ cùng khoá với NFC; likePattern(NFD) = likePattern(NFC)", async () => {
+    const [k, lp] = [await person(), await like()];
+    expect(k("Nguyễn Văn A – Giám đốc".normalize("NFD"))).toBe("nguyen van a");
+    expect(k("Trần Anh-Tuấn".normalize("NFD"))).toBe("tran anh-tuan");
+    expect(lp("MINH PHÁT".normalize("NFD"))).toBe(lp("MINH PHÁT".normalize("NFC")));
   });
   it("HD-AC04 · phần trước dấu tách rỗng ⇒ null", async () => {
     const k = await person();

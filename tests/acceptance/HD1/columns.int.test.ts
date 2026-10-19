@@ -150,7 +150,12 @@ describe("D-07 · cột sinh từ fields", () => {
       tenant: T.acme,
       title: "Hợp đồng bao bì Minh Phát",
       fields: mkFields(
-        { supplier_name: "Công ty TNHH Đông Á", buyer_name: "Bên Mua XYZ", number: "HĐ-07/2026" },
+        {
+          supplier_name: "Công ty TNHH Đông Á",
+          buyer_name: "Bên Mua XYZ",
+          number: "HĐ-07/2026",
+          type: "purchase",
+        },
         { quote: "TRÍCH DẪN-RIÊNG" },
       ),
     });
@@ -163,6 +168,7 @@ describe("D-07 · cột sinh từ fields", () => {
     ])
       expect(k).toContain(part);
     expect(k).not.toContain("trich dan-rieng");
+    expect(k).not.toContain("purchase"); // D-14: type (enum) không vào search_key
     expect(k).toBe(k.toLowerCase());
   });
   it("D-07 · ghi lại fields ⇒ cột sinh tính lại (nguồn duy nhất là fields); không cho ghi trực tiếp cột sinh (428C9)", async () => {
@@ -295,6 +301,28 @@ describe("D-07 · parity TS ↔ SQL từng ký tự (fold, person_key)", () => {
       (await rw((tx) => tx<{ b: string | null }[]>`select contracts.as_bigint(null)::text as b`))[0]
         ?.b,
     ).toBeNull();
+  });
+  it("D-15 · as_date: ngày không tồn tại ⇒ null (không ném 22008); năm nhuận đúng; ngày hợp lệ ⇒ date", async () => {
+    await needContracts(sql);
+    const xs = [
+      "2027-02-30",
+      "2027-02-29",
+      "2026-04-31",
+      "2026-13-01",
+      "2026-00-10",
+      "2028-02-29",
+      "2100-02-29",
+      "2000-02-29",
+      "2026-04-30",
+    ];
+    const want = [null, null, null, null, null, "2028-02-29", null, "2000-02-29", "2026-04-30"];
+    const got = await rw(
+      (tx) =>
+        tx<
+          { x: string; d: string | null }[]
+        >`select x, contracts.as_date(x)::text as d from unnest(${xs}::text[]) as x`,
+    );
+    expect(got.map((r) => r.d)).toEqual(want);
   });
   it("D-07 · as_date: ISO 'YYYY-MM-DD' ⇒ date; '31/12/2026', '2027-3-1', '', null ⇒ null", async () => {
     await needContracts(sql);
