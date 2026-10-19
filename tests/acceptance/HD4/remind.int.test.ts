@@ -160,7 +160,7 @@ describe("HD4-FR-03 · HD4-FR-04 · HD4-AC03 · mốc nhỏ nhất đã tới, g
     const r = start("2026-10-01T03:00:00Z"); // 10:00 VN
     await r.r.once();
     expect((await rowOf(sql, id)).status).toBe("expiring");
-    expect(await reminderRows(sql)).toEqual([
+    expect([...(await reminderRows(sql))]).toEqual([
       { contract_id: id, deadline: "2026-10-06", milestone: 7, user_id: P.lan.id },
     ]);
     expect((await notes(sql)).map((n) => n.dedup_key)).toEqual([`remind:${id}:2026-10-06:7`]);

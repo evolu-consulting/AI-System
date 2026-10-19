@@ -107,7 +107,7 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
     const pols = await sql<{ name: string; roles: string[] }[]>`select polname as name,
       array(select rolname::text from pg_roles where oid = any(polroles)) as roles
       from pg_policy where polrelid = 'contracts.contract_schedule'::regclass order by 1`;
-    expect(pols).toEqual([
+    expect([...pols]).toEqual([
       { name: "contract_schedule_job", roles: [JOB_ROLE] },
       { name: "contract_schedule_tenant", roles: ["contracts_rw"] },
     ]);
