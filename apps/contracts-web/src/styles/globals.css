@@ -1,6 +1,16 @@
-/* C1 FE · theme contracts-web (nền chép từ chat-web; token riêng ở TF2). Token Sáng theo docs/design/canvas/tokens-map.md; giá trị Tối bổ sung ở F14. */
+/* PK-FR-10 · TF2 · theme contracts-web: token shadcn trùng admin-web/chat-web + tên mgmt-app (ground, panel, act, ok, soon, late…) trỏ vào đó
+   cho phần trùng giá trị; phần riêng mgmt (sunk, bubble, rule, field, ink, dim, soon, idle, new…) giữ giá trị gốc `reference/mgmt-app-contracts/web/src/index.css:13-70`. */
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Font Roboto + Roboto Mono (ADR-0001, D-14): chỉ subset latin + vietnamese, 400/500/700 (Roboto không có 600). */
+@import "@fontsource/roboto/latin-400.css";
+@import "@fontsource/roboto/latin-500.css";
+@import "@fontsource/roboto/latin-700.css";
+@import "@fontsource/roboto/vietnamese-400.css";
+@import "@fontsource/roboto/vietnamese-500.css";
+@import "@fontsource/roboto/vietnamese-700.css";
+@import "@fontsource/roboto-mono/latin-400.css";
+@import "@fontsource/roboto-mono/vietnamese-400.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -83,13 +93,32 @@
   --code-title: #2a55a8;
   --code-comment: #6b6b6b;
 
+  /* Riêng mgmt-app (reference/.../index.css:13-45) */
+  --sunk: #f6f6fa;
+  --bubble: #f1f1f7;
+  --rule: #e5e5ec;
+  --rule-soft: #efeff4;
+  --field: #d4d4dc;
+  --ink: #0f1020;
+  --ink-2: #45465a;
+  --dim: #6b6c80;
+  --act-line: #c7d2fe;
+  --soon: #8a4306;
+  --soon-line: #f5cf9a;
+  --late-line: #f6b8b8;
+  --idle-bg: #f1f1f4;
+  --new-bg: #f0f2ff;
+  --scroll: #c9c9d6;
+  --scroll-hover: #a3a3b8;
+
   --shadow-color-toast: rgb(30 27 75 / 0.25);
   --shadow-color-dialog: rgb(30 27 75 / 0.28);
   --shadow-color-drawer: rgb(30 27 75 / 0.18);
 }
 
 /* Tối (CR-027; đổi sang "Midnight" 2026-10-09 — xanh than dịu, lớp tách rõ, nút primary chữ trắng): đổi qua class `dark` trên <html>. */
-.dark {
+.dark,
+:root[data-theme="dark"] {
   --background: #0e131b;
   --foreground: #e6ecf3;
   --card: #161e2a;
@@ -158,6 +187,24 @@
   --code-title: #9db8f5;
   --code-comment: #8a98aa;
 
+  /* Riêng mgmt-app, bản tối (reference/.../index.css:49-58) */
+  --sunk: #1d1f33;
+  --bubble: #202238;
+  --rule: #2a2c44;
+  --rule-soft: #23253b;
+  --field: #3a3c58;
+  --ink: #ececf4;
+  --ink-2: #c3c5d6;
+  --dim: #a1a3b8;
+  --act-line: #4b4f8f;
+  --soon: #fbbf24;
+  --soon-line: #6b4d12;
+  --late-line: #7a2e2e;
+  --idle-bg: #24253a;
+  --new-bg: #1c1e3a;
+  --scroll: #34364f;
+  --scroll-hover: #4a4d6c;
+
   --shadow-color-toast: rgb(0 0 0 / 0.5);
   --shadow-color-dialog: rgb(0 0 0 / 0.5);
   --shadow-color-drawer: rgb(0 0 0 / 0.5);
@@ -165,7 +212,8 @@
 
 /* Dark Midnight (2026-10-09): `--primary` là màu nền nút (#5b5bd6, chữ trắng 5,4:1) — làm màu CHỮ trên nền tối
    chỉ ~3,4:1 nên chữ/biểu tượng `text-primary` dùng indigo sáng (AA). */
-.dark .text-primary {
+.dark .text-primary,
+:root[data-theme="dark"] .text-primary {
   color: #a5b4fc;
 }
 
@@ -224,8 +272,36 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: system-ui, sans-serif; /* Roboto: TF2 (D-14) */
-  --font-mono: ui-monospace, monospace;
+  --font-sans: "Roboto", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+
+  /* Tên mgmt-app → token chung (trùng giá trị với admin-web ở bản sáng; bản tối dùng bộ Midnight chung) */
+  --color-ground: var(--background);
+  --color-panel: var(--card);
+  --color-act: var(--primary);
+  --color-act-hover: var(--primary-strong);
+  --color-act-soft: var(--accent);
+  --color-on-act: var(--primary-foreground);
+  --color-pill: var(--ink-strong);
+  --color-ok: var(--success);
+  --color-ok-bg: var(--success-bg);
+  --color-soon-bg: var(--warning-bg);
+  --color-late: var(--danger);
+  --color-late-bg: var(--danger-bg);
+  --color-sunk: var(--sunk);
+  --color-bubble: var(--bubble);
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
+  --color-field: var(--field);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-dim: var(--dim);
+  --color-act-line: var(--act-line);
+  --color-soon: var(--soon);
+  --color-soon-line: var(--soon-line);
+  --color-late-line: var(--late-line);
+  --color-idle-bg: var(--idle-bg);
+  --color-new-bg: var(--new-bg);
 
   /* Thang chữ ngữ nghĩa theo canvas; không ghi đè thang mặc định để component shadcn giữ nguyên. */
   --text-micro: 11px;
@@ -262,6 +338,15 @@
   --spacing-control: 36px;
   --spacing-page: 28px;
   --container-content: 1280px;
+}
+
+/* Thanh cuộn mảnh như mgmt-app (index.css:87-94) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll) transparent;
+}
+*:hover {
+  scrollbar-color: var(--scroll-hover) transparent;
 }
 
 @layer base {

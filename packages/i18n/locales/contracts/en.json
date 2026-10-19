@@ -4,6 +4,14 @@
       "name": "Cooperation Ledger",
       "tagline": "Contracts, partners, payments & digital signatures"
     },
+    "common": {
+      "breadcrumb": "Breadcrumb",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "OK",
+      "loading": "Loading",
+      "save": "Save"
+    },
     "contractsPage": {
       "title": "Contracts"
     }

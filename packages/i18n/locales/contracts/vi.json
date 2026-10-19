@@ -4,6 +4,14 @@
       "name": "Sổ Hợp Tác",
       "tagline": "Hợp đồng, đối tác, thanh toán & chữ ký số"
     },
+    "common": {
+      "breadcrumb": "Vị trí",
+      "cancel": "Huỷ",
+      "close": "Đóng",
+      "confirm": "Đồng ý",
+      "loading": "Đang tải",
+      "save": "Lưu"
+    },
     "contractsPage": {
       "title": "Hợp đồng"
     }

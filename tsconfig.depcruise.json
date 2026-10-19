@@ -6,9 +6,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["apps/admin-web/src/*"],
-      "~/*": ["apps/chat-web/src/*"],
+      "~/*": ["apps/chat-web/src/*", "apps/contracts-web/src/*"],
       "#/*": ["apps/studio-web/src/*"]
     }
   },
-  "include": ["apps/admin-web/src", "apps/chat-web/src", "apps/studio-web/src"]
+  "include": [
+    "apps/admin-web/src",
+    "apps/chat-web/src",
+    "apps/contracts-web/src",
+    "apps/studio-web/src"
+  ]
 }
