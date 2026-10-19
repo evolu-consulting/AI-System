@@ -4,7 +4,7 @@
 import type { IndexOutboxRow as ContractRow } from "@ai/contracts";
 import { PackKeySchema } from "@ai/contracts";
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import type { IndexOutbox, IndexOutboxRow } from "../application/index-outbox";
 
 // Kiểu lớp 2 phải trùng contract (hai chiều) — lệch là lỗi biên dịch.
@@ -13,7 +13,16 @@ const _sameRow: Same<IndexOutboxRow, ContractRow> = true;
 void _sameRow;
 
 export function indexOutboxRepo(tx: Tx, packKey: string, tenantId: string): IndexOutbox {
+  return indexOutboxFor(packKey)(tx, tenantId);
+}
+
+/** Kiểm khoá + dựng tên bảng MỘT lần mỗi gói (lúc mount); mỗi tx chỉ dựng closure, 0 câu SQL. */
+export function indexOutboxFor(packKey: string): (tx: Tx, tenantId: string) => IndexOutbox {
   const table = sql.raw(`${PackKeySchema.parse(packKey)}.index_outbox`);
+  return (tx, tenantId) => outbox(tx, table, tenantId);
+}
+
+function outbox(tx: Tx, table: SQL, tenantId: string): IndexOutbox {
   return {
     enqueue: async (rows) => {
       if (rows.length === 0) return;

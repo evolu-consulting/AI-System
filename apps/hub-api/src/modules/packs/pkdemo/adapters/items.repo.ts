@@ -3,10 +3,8 @@
 // con qua `item_lines(item_id)`). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { indexOutboxRepo } from "../../kit/adapters/index-outbox.repo";
-import type { ItemsRepo, PkdemoRepos } from "../application/ports";
+import type { ItemsRepo, PkdemoOwnRepos } from "../application/ports";
 import type { Item, ItemLine } from "../domain/item";
-import { PKDEMO_KEY } from "./pkdemo.routes";
 
 type ItemRow = { id: string; title: string; lines: ItemLine[] | string };
 
@@ -33,8 +31,7 @@ export function itemsRepo(tx: Tx, tenantId: string): ItemsRepo {
   };
 }
 
-/** Repo của gói trong một tx (`createPackUow(db, "pkdemo", pkdemoRepos)`). */
-export const pkdemoRepos = (tx: Tx, tenantId: string): PkdemoRepos => ({
+/** Repo riêng của gói trong một tx (`createPackUow(db, "pkdemo", pkdemoRepos)`; `outbox` do bộ khung ghép). */
+export const pkdemoRepos = (tx: Tx, tenantId: string): PkdemoOwnRepos => ({
   items: itemsRepo(tx, tenantId),
-  outbox: indexOutboxRepo(tx, PKDEMO_KEY, tenantId),
 });

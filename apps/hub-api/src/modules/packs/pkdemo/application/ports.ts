@@ -9,8 +9,11 @@ export type ItemsRepo = {
   get(id: string): Promise<Item | null>;
 };
 
-/** Repo trong một tx: của gói + bộ khung (`outbox` cùng tx — PK-FR-08). */
-export type PkdemoRepos = KitTxRepos & { items: ItemsRepo };
+/** Repo riêng của gói (adapter dựng); bộ khung `createPackUow` ghép thêm `outbox`. */
+export type PkdemoOwnRepos = { items: ItemsRepo };
+
+/** Repo use case nhận trong một tx: của gói + bộ khung (`outbox` cùng tx — PK-FR-08). */
+export type PkdemoRepos = KitTxRepos & PkdemoOwnRepos;
 
 /** Sinh id tăng dần (thứ tự dòng). */
 export type IdGen = () => string;

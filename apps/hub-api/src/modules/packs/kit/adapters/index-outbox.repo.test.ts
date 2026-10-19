@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test";
 import type { Tx } from "@ai/db";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { indexOutboxRepo } from "./index-outbox.repo";
+import { indexOutboxFor, indexOutboxRepo } from "./index-outbox.repo";
 
 const TID = "a5e10000-0000-4000-8000-000000000001";
 const id = (n: number) => `a5e10000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -50,6 +50,16 @@ describe("PK-FR-08 · indexOutboxRepo", () => {
       JSON.stringify([{ entity: "item", entity_id: id(1), op: "upsert" }]),
     ]);
     expect(JSON.parse(String(b?.params[1])).length).toBe(100);
+  });
+
+  test("indexOutboxFor: kiểm khoá một lần lúc dựng, mỗi tx cùng văn bản SQL với indexOutboxRepo", async () => {
+    expect(() => indexOutboxFor("Bad-Key")).toThrow();
+    const f = fakeTx();
+    const row = [{ entity: "item", entity_id: id(1), op: "upsert" as const }];
+    await indexOutboxFor("pkdemo")(f.tx, TID).enqueue(row);
+    await indexOutboxRepo(f.tx, "pkdemo", TID).enqueue(row);
+    expect(f.calls.length).toBe(2);
+    expect(f.calls[0]).toEqual(f.calls[1] ?? { sql: "", params: [] });
   });
 
   test("khoá gói sai dạng ⇒ ném, không chạy câu nào", () => {
