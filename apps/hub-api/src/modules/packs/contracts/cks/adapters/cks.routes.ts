@@ -29,6 +29,7 @@ import { CksFail, type CksReads } from "../application/read.usecase";
 import type { CksRenewals } from "../application/renewal.usecase";
 import type { CksSales } from "../application/sale.usecase";
 import type { CksUpload } from "../application/signed.usecase";
+import { cksWriteGuard } from "./cks-read-only";
 import { signedUploadRoute } from "./signed.routes";
 
 const KEY = "contracts";
@@ -39,6 +40,8 @@ export type CksRoutesDeps = {
   sales: CksSales;
   renewals: CksRenewals;
   upload: CksUpload;
+  /** V2-H (Q4): tenant còn được ghi CKS? Không ⇒ route ghi 410 `CKS_READ_ONLY`. */
+  writable: (tenantId: string) => Promise<boolean>;
 };
 
 const FAIL: Record<CksFail["kind"], keyof typeof CKS_ERRORS | "NOT_FOUND"> = {
@@ -75,7 +78,7 @@ const tooLarge = () => new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large
 export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
-  const write = packGuard(view, KEY, "write");
+  const write = cksWriteGuard(packGuard(view, KEY, "write"), d.writable);
   const small = bodyLimit({ maxSize: JSON_MAX, onError: () => Promise.reject(tooLarge()) });
   const body = async <S extends z.ZodType>(c: Context, s: S) => parseWith(s, await readJson(c));
 

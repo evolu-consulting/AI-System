@@ -3,7 +3,7 @@
 import type { ContractDeal } from "@ai/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { createManualContract } from "~/features/contract-new/api";
@@ -22,7 +22,9 @@ import {
   type TextKey,
   toRequest,
   unlinkedLines,
+  withNoticeDefault,
 } from "../lib/form-model";
+import { useNoticeDefault } from "./use-notice-default";
 
 const orNull = (s: string) => (s.trim() ? s.trim() : null);
 
@@ -61,7 +63,10 @@ export function useContractForm() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const [f, setF] = useState<FormState>(EMPTY_FORM);
+  // V2-H: "Nhắc trước khi hết hạn" để trống tới khi đọc xong Cài đặt rồi điền sẵn (người đã gõ thì giữ).
+  const [f, setF] = useState<FormState>({ ...EMPTY_FORM, notice_days: "" });
+  const notice = useNoticeDefault();
+  useEffect(() => setF((s) => withNoticeDefault(s, notice)), [notice]);
   const [tried, setTried] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

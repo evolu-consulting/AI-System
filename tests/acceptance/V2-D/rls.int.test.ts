@@ -1,6 +1,6 @@
 // V2-D · RLS + quyền của bảng mới (viết TRƯỚC code): `milestone_items` (SL từng dòng của mốc giao) theo luật thấy HĐ (M1, như
-// `contract_items`); `service_customers` (khách đang dùng) cách ly tenant, thấy cả tenant như danh mục/tồn (V2-B D2), chỉ ghi được cho
-// HĐ mình thấy, không xoá. Mức DB: `inPackAs` (role `contracts_rw` + tenant + người dùng, chế độ thấy `org` ở tenant A).
+// `contract_items`); `service_customers` (khách đang dùng) cách ly tenant, đọc theo luật thấy HĐ (V2-H thay D11), không ghi/xoá
+// trực tiếp (chỉ qua trigger lưu HĐ). Mức DB: `inPackAs` (role `contracts_rw` + tenant + người dùng, chế độ thấy `org` ở tenant A).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { inPackAs } from "@ai/test-kit/db";
 import { failOf, product, type Sql, type World, world } from "../V2-B/_support/v2b";
@@ -61,12 +61,13 @@ describe("V2-D · milestone_items theo luật thấy HĐ", () => {
 });
 
 describe("V2-D · service_customers", () => {
-  it("cách ly tenant; trong tenant thấy cả tenant (như danh mục SP)", async () => {
+  // V2-H (thay D11): đọc theo luật thấy M1 — dòng thấy khi thấy HĐ hiện tại của dòng (u2 ngang hàng không thấy C1 của u1).
+  it("cách ly tenant; trong tenant đọc theo luật thấy HĐ (M1, V2-H)", async () => {
     const pA = await product(w.sql, w.A, { name: "DV có hạn RLS", grp: "service" });
     await w.sql`insert into contracts.service_customers (tenant_id, product_id, party_key, contract_id, expires_on)
       values (${w.A}, ${pA.id}, 'name:khach rls', ${w.C1}, current_date + 30)`;
     expect(await count(w.A, w.u1, "service_customers")).toBe(1);
-    expect(await count(w.A, w.u2, "service_customers")).toBe(1);
+    expect(await count(w.A, w.u2, "service_customers")).toBe(0);
     expect(await count(w.B, w.b1, "service_customers")).toBe(0);
   });
 

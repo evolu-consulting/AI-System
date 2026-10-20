@@ -1,0 +1,35 @@
+{
+  "contracts": {
+    "svc": {
+      "tabs": "Thông tin sản phẩm",
+      "tabCustomers": "Khách đang dùng",
+      "filterLabel": "Lọc khách theo hạn dùng",
+      "filter": {
+        "all": "Tất cả",
+        "expired": "Hết hạn",
+        "soon": "Sắp hết hạn",
+        "active": "Còn hạn"
+      },
+      "col": {
+        "customer": "Khách hàng",
+        "expires": "Hạn dùng",
+        "status": "Trạng thái"
+      },
+      "left": "còn {{n}} ngày",
+      "over": "đã hết {{n}} ngày",
+      "today": "hết hạn hôm nay",
+      "noEnd": "không có ngày kết thúc",
+      "contract": "Hợp đồng",
+      "renewals": "gia hạn {{n}} lần",
+      "remind": "Nhắc gia hạn",
+      "reminded": "Đã nhắc",
+      "remindedTitle": "Đã có việc liên hệ mời gia hạn trong Cần xử lý",
+      "someone": "khách",
+      "toast": "Đã thêm vào Cần xử lý: liên hệ {{name}} mời gia hạn",
+      "empty": "Không có khách nào.",
+      "notService": "Chỉ sản phẩm dịch vụ có hạn mới có khách đang dùng.",
+      "rule": "Sắp hết hạn: còn ít hơn hoặc bằng số ngày nhắc của hợp đồng (mặc định {{n}} ngày trong Cài đặt).",
+      "truncated": "Chỉ hiện {{n}} khách gần hạn nhất."
+    }
+  }
+}

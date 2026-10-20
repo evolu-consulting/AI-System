@@ -19,4 +19,5 @@ export * from "./partners";
 export * from "./products";
 export * from "./reputation";
 export * from "./review";
+export * from "./service-customers";
 export * from "./sourcing";

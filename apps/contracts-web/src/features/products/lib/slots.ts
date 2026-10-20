@@ -2,7 +2,8 @@
 // (hiện chưa có dữ liệu nguồn): "Khách đang dùng" — V2-H (dịch vụ có hạn, `key: "users"`); "NCC & giá" — V2-J2 (không phải Giới thiệu,
 // `key: "suppliers"`). Thứ tự trong mảng = thứ tự tab, nằm giữa "Lịch sử mua bán" và "Hợp đồng". Slot nhận id + nhóm của SP.
 import type { ProductGroup } from "@ai/contracts";
-import type { ReactNode } from "react";
+import { createElement, type ReactNode } from "react";
+import { ServiceCustomersPanel } from "../components/ServiceCustomersPanel";
 
 export type DetailSlot = {
   /** Khoá trong URL `?ht=`. */
@@ -14,7 +15,15 @@ export type DetailSlot = {
   render: (p: { productId: string; group: ProductGroup }) => ReactNode;
 };
 
-export const DETAIL_SLOTS: readonly DetailSlot[] = [];
+export const DETAIL_SLOTS: readonly DetailSlot[] = [
+  // V2-H · SP-03: khách đang dùng của SP dịch vụ có hạn.
+  {
+    key: "users",
+    labelKey: "contracts.svc.tabCustomers",
+    groups: ["service"],
+    render: ({ productId }) => createElement(ServiceCustomersPanel, { productId }),
+  },
+];
 
 export const slotsFor = (
   g: ProductGroup,

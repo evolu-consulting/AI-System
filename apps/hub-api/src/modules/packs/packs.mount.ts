@@ -33,6 +33,7 @@ import { partnersModule } from "./contracts/partners.mount";
 import { productsModule } from "./contracts/products.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
 import { reputationModule } from "./contracts/reputation.mount";
+import { serviceCustomersModule } from "./contracts/service-customers.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
@@ -169,6 +170,7 @@ function mountContracts<E extends Env>(
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Mua hàng
   app.route(base, productsModule(db, view)); // V2-B · danh mục SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 · điểm kinh doanh SP
+  app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H · khách đang dùng
   app.route(
     base,
     partnersModule(db, view, {

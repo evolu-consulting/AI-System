@@ -1,0 +1,35 @@
+{
+  "contracts": {
+    "svc": {
+      "tabs": "Product information",
+      "tabCustomers": "Current customers",
+      "filterLabel": "Filter customers by expiry",
+      "filter": {
+        "all": "All",
+        "expired": "Expired",
+        "soon": "Expiring soon",
+        "active": "Active"
+      },
+      "col": {
+        "customer": "Customer",
+        "expires": "Valid until",
+        "status": "Status"
+      },
+      "left": "{{n}} days left",
+      "over": "expired {{n}} days ago",
+      "today": "expires today",
+      "noEnd": "no end date",
+      "contract": "Contract",
+      "renewals": "renewed {{n}} times",
+      "remind": "Remind to renew",
+      "reminded": "Reminded",
+      "remindedTitle": "A renewal follow-up is already in To do",
+      "someone": "the customer",
+      "toast": "Added to To do: contact {{name}} about renewal",
+      "empty": "No customers.",
+      "notService": "Only time-limited services have current customers.",
+      "rule": "Expiring soon: within the contract's reminder days (default {{n}} days in Settings).",
+      "truncated": "Showing only the {{n}} customers closest to expiry."
+    }
+  }
+}

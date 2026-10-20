@@ -10,6 +10,7 @@ import { toast } from "~/components/shared/toast";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-form/api";
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
+import { useNoticeDefault } from "~/features/contract-form/hooks/use-notice-default";
 import { PARTNER_ROLE } from "~/features/contract-form/lib/deal";
 import { formOfDetail, patchOfForm } from "~/features/contract-form/lib/detail-form";
 import {
@@ -21,6 +22,7 @@ import {
   readNumbers,
   type TextKey,
   unlinkedLines,
+  withNoticeDefault,
 } from "~/features/contract-form/lib/form-model";
 import {
   dealUnsure,
@@ -66,6 +68,12 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     setSug((n) => n + 1);
   }, [c]);
   useEffect(load, [load]);
+  // V2-H · BA 5.8: bước xác nhận — HĐ không ghi điều khoản báo trước ⇒ "Nhắc trước khi hết hạn" điền sẵn từ Cài đặt.
+  const notice = useNoticeDefault(confirm);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: điền lại sau mỗi lần nạp form (`sug` đổi khi tải lại)
+  useEffect(() => {
+    if (confirm) setF((s) => (s ? withNoticeDefault(s, notice) : s));
+  }, [confirm, notice, sug]);
 
   // Gợi ý SP cho dòng chưa gắn (quy tắc nhận diện ⇒ trùng từ ⇒ "Tạo sản phẩm mới" + thành phần): song song, tối đa 50 dòng.
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi `sug` đổi (tải lại / đổi loại)

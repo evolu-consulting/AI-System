@@ -71,6 +71,10 @@ export const EMPTY_FORM: FormState = {
 
 export const named = (items: readonly LineState[]) => items.filter((i) => i.name.trim());
 
+/** V2-H · BA 5.8: "Nhắc trước khi hết hạn" điền sẵn từ Cài đặt (mặc định 60) khi ô còn trống; người đã gõ / HĐ đã ghi thì giữ. */
+export const withNoticeDefault = (f: FormState, days: number | undefined): FormState =>
+  days === undefined || f.notice_days.trim() !== "" ? f : { ...f, notice_days: String(days) };
+
 /** Ô bắt buộc còn thiếu (đỏ viền + tên ô trong thông báo). Giới thiệu: cần % hoặc số tiền hoa hồng, không cần giá trị. */
 export type RequiredKey = "title" | "partner_name" | "start_date" | "commission";
 export function missingRequired(f: FormState): RequiredKey[] {
