@@ -1,6 +1,6 @@
 ﻿// PK-FR-10 · TF5 · thanh trái: biểu tượng 64 px, mở 224 px khi rê chuột / focus (nổi trên trang). Nguồn: mgmt-app Shell.tsx Sidebar.
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { EXTRA_NAV, MAIN_NAV, type NavItem, type Role } from "../lib/nav";
@@ -33,13 +33,26 @@ export function Sidebar({
 }) {
   const { t } = useTranslation();
   const [wide, setWide] = useState(false);
+  // Bấm một mục thì thanh thu lại và giữ thu tới khi chuột rời (như mgmt-app); còn lại, chuột chạm/di trong thanh là mở.
+  const picked = useRef(false);
+  const pick = () => {
+    picked.current = true;
+    setWide(false);
+  };
+  const open = () => {
+    if (!picked.current) setWide(true);
+  };
   return (
     // Thanh giữ 64 px trong bố cục; bản mở nổi lên trên trang.
     <div className="relative h-dvh w-16 shrink-0 max-md:hidden">
       <nav
         aria-label={t("contracts.shell.navMain")}
-        onMouseEnter={() => setWide(true)}
-        onMouseLeave={() => setWide(false)}
+        onMouseEnter={open}
+        onMouseMove={open}
+        onMouseLeave={() => {
+          picked.current = false;
+          setWide(false);
+        }}
         onFocus={() => setWide(true)}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) setWide(false);
@@ -68,11 +81,11 @@ export function Sidebar({
           )}
         </Link>
         {MAIN_NAV.map((n) => (
-          <SideLink key={n.to} n={n} wide={wide} onPick={() => setWide(false)} />
+          <SideLink key={n.to} n={n} wide={wide} onPick={pick} />
         ))}
         <div data-w1-nav="" className="mt-2 flex flex-col gap-1 border-t border-rule pt-2">
           {EXTRA_NAV.map((n) => (
-            <SideLink key={n.to} n={n} wide={wide} onPick={() => setWide(false)} />
+            <SideLink key={n.to} n={n} wide={wide} onPick={pick} />
           ))}
         </div>
         <div className="mt-auto flex flex-col gap-1 border-t border-rule pt-2">
