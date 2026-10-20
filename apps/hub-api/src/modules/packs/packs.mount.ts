@@ -18,6 +18,7 @@ import type { ConfigCache } from "../config/config.service";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
+import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
@@ -159,7 +160,15 @@ function mountContracts<E extends Env>(
   app.route(base, contractsLedger(d, view, db)); // HD7
   app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Việc của tôi
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Mua hàng
-  app.route(base, partnersModule(db, view, { timeZoneOf: tenantTz(d), tax })); // HD8
+  app.route(
+    base,
+    partnersModule(db, view, {
+      timeZoneOf: tenantTz(d),
+      tax,
+      ...(d.redis ? { redis: d.redis } : {}),
+      linkChecksPerMinute: envInt("CONTRACTS_LINK_CHECKS_USER_MIN", LINK_CHECKS_PER_MINUTE),
+    }),
+  ); // HD8
   mountAssistantTools(db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
 }
 

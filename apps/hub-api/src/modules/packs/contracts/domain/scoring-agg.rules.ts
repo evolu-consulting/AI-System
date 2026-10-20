@@ -4,6 +4,7 @@
 // số double ⇒ gom trước rồi tính ≡ tính trên từng dòng (test parity ngẫu nhiên SQL ↔ TS ở `HD8/agg-parity.int.test.ts`).
 
 import { pyRound } from "../cks/domain/prices.rules";
+import { isIsoDate } from "./ledger.rules";
 import { addDays, daysBetween } from "./local-time.rules";
 import type { Role } from "./scoring-config.rules";
 
@@ -22,9 +23,16 @@ export type Ev = {
   value?: number;
   rated_at?: string | null;
   days_before_expiry?: number | null;
-  with_us?: boolean | null;
+  /** Giá trị JSON tuỳ ý (sổ cũ có chuỗi) — đọc theo truthiness của Python như mgmt `e.get("with_us", True)`. */
+  with_us?: unknown;
   by?: string | null;
 };
+/** `bool(x)` của Python trên giá trị JSON: false/null/0/""/[]/{} ⇒ sai; còn lại (kể cả chuỗi "false") ⇒ đúng. */
+export function pyTruthy(v: unknown): boolean {
+  if (Array.isArray(v)) return v.length > 0;
+  if (v !== null && typeof v === "object") return Object.keys(v).length > 0;
+  return Boolean(v);
+}
 /** Một nhóm dòng trễ/đúng hạn: số dòng, số dòng đúng hạn, tổng ngày trễ. */
 export type Bucket = { n: number; on: number; late: number };
 export type Rated = { value: number; at: string; by: string | null };
@@ -81,7 +89,7 @@ export const emptyAgg = (): Agg => ({
 
 /** Điểm một lần gia hạn CKS (`engine._criteria`): mất/không qua mình 0; đúng hạn 100; trễ trừ 10/ngày. */
 export function renewValue(e: Ev): number {
-  if (e.type === "cks_lapsed" || !(e.with_us === undefined ? true : e.with_us)) return 0;
+  if (e.type === "cks_lapsed" || !pyTruthy(e.with_us === undefined ? true : e.with_us)) return 0;
   const d = e.days_before_expiry || 0;
   return d >= 0 ? 100 : Math.max(0, 100 + 10 * d);
 }
@@ -133,7 +141,9 @@ function addPending(a: Agg, win: readonly Ev[], w: Window, role: Role): void {
     if ((role === "supplier") !== (e.kind === "delivery")) continue;
     const b = a.pend[e.at >= w.recent ? 1 : 0] as Bucket;
     b.n += 1;
-    b.late += Math.max(1, daysBetween(e.due_date as string, w.today));
+    // hạn thiếu/sai dạng ⇒ trễ 1 ngày (≡ SQL `greatest(1, null)`; review HD78 #5 — trước ra NaN)
+    b.late +=
+      e.due_date && isIsoDate(e.due_date) ? Math.max(1, daysBetween(e.due_date, w.today)) : 1;
   }
 }
 

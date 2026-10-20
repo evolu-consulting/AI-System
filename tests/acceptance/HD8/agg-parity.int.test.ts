@@ -1,5 +1,5 @@
 // HD8-NFR-01 · HD8-FR-02 · bảo vệ parity khi gom sổ ở SQL: trên sổ NGẪU NHIÊN (nhiều hạt giống — dòng huỷ, ngoài khoảng, tương lai,
-// cùng/không mã đợt, quá hạn hai loại, chấm tay trùng ngày + trùng `rated_at`, `with_us` vắng/false/null, chỉnh tay, đối tác không
+// cùng/không mã đợt, quá hạn hai loại, chấm tay trùng ngày + trùng `rated_at`, `with_us` vắng/false/null/chuỗi/0/[] + hạn vắng/sai dạng, chỉnh tay, đối tác không
 // có dòng nào, ca làm tròn nửa về chẵn), đường SQL (`partnerData` ⇒ `Agg`) phải ra ĐÚNG `aggregate()` của TS trên từng dòng, và
 // `scoreAgg(SQL)` ≡ `score(từng dòng)` (engine mgmt) với cấu hình ngẫu nhiên. Sai một đơn vị ⇒ đỏ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -94,7 +94,10 @@ function dataOf(r: R, type: string, at: string): Record<string, unknown> {
     return {
       party_late: r.next() < 0.75,
       kind: r.pick(["payment", "delivery", null]),
-      due_date: addDays(at, -1),
+      // review HD78 #5: hạn vắng/sai dạng ⇒ trễ 1 (TS ≡ SQL)
+      ...(r.next() < 0.2
+        ? {}
+        : { due_date: r.pick([addDays(at, -1), addDays(at, -1), "không-phải-ngày"]) }),
       seq: 1,
     };
   if (type === "manual_adjust") return { delta: r.pick([-10, -3, 2, 7, 10]) };
@@ -110,8 +113,9 @@ function dataOf(r: R, type: string, at: string): Record<string, unknown> {
     };
   if (type !== "cks_renewed") return {};
   const data: Record<string, unknown> = { days_before_expiry: r.pick([-30, -6, -1, 0, 9, null]) };
-  const wu = r.int(0, 3); // vắng / false / null / true
-  if (wu) data.with_us = [false, null, true][wu - 1];
+  // vắng / false / null / true / chuỗi "false" / "" / 0 / [] / "0" (review HD78 #5: truthiness của Python, TS ≡ SQL)
+  const wu = r.int(0, 9);
+  if (wu) data.with_us = [false, null, true, "false", "", 0, [], "0", {}][wu - 1];
   return data;
 }
 

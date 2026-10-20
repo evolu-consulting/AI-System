@@ -66,7 +66,7 @@ export const groupsJson = (
     from (select e.party_key, e.role, e.type, ${nw("e")} as nw, coalesce(e.days_late, 0) as late,
         case when e.type = 'manual_adjust' then coalesce((e.data ->> 'delta')::int, 0) else 0 end as delta,
         case when e.type not in ('cks_renewed', 'cks_lapsed') then 0
-          when e.type = 'cks_lapsed' or (e.data ? 'with_us' and coalesce(e.data ->> 'with_us', '') in ('false', '', '0')) then 0
+          when e.type = 'cks_lapsed' or (e.data ? 'with_us' and (e.data -> 'with_us') in ('false', 'null', '0', '""', '[]', '{}')) then 0
           when coalesce((e.data ->> 'days_before_expiry')::int, 0) >= 0 then 100
           else greatest(0, 100 + 10 * (e.data ->> 'days_before_expiry')::int) end as rv
       ${scan("e", today)} and e.type in ${RARE}) x

@@ -125,27 +125,60 @@ function v4Public(ip: string): boolean {
   return !V4_BLOCK.some(([net, bits]) => n >>> (32 - bits) === net >>> (32 - bits));
 }
 
-/** `ipaddress.ip_address(a).is_global` (chặt hơn một chút: chặn cả multicast). IPv6 ánh xạ IPv4 xét phần IPv4. */
+/** IPv6 (kể cả dạng rút gọn `::` và đuôi IPv4) ⇒ số 128 bit; sai dạng ⇒ null. */
+export function parseV6(ip: string): bigint | null {
+  let s = ip;
+  const v4 = /^(.*:)(\d+\.\d+\.\d+\.\d+)$/.exec(s);
+  if (v4) {
+    const o = (v4[2] as string).split(".").map(Number);
+    if (o.some((x) => !(x >= 0 && x <= 255))) return null;
+    const [a, b, c, d] = o as [number, number, number, number];
+    s = `${v4[1]}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const part = (x: string | undefined) => (x ? x.split(":") : []);
+  const head = part(halves[0]);
+  const tail = part(halves[1]);
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0 || (halves.length === 1 && head.length !== 8)) return null;
+  const groups = [...head, ...Array<string>(fill).fill("0"), ...tail];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null;
+  return groups.reduce((n, g) => (n << 16n) | BigInt(Number.parseInt(g, 16)), 0n);
+}
+
+/** Dải IPv6 không công khai (IANA special-purpose; chặt hơn `is_global` của Python ở 6to4/NAT64). [tiền tố, số bit]. */
+const V6_BLOCKED: [string, number][] = [
+  ["::", 96], // chưa chỉ định, loopback, IPv4-compatible (cũ)
+  ["64:ff9b::", 96], // NAT64
+  ["64:ff9b:1::", 48],
+  ["100::", 64], // discard
+  ["2001::", 23], // IETF protocol assignments — gồm Teredo 2001::/32, benchmark, ORCHID
+  ["2001:db8::", 32], // tài liệu
+  ["2002::", 16], // 6to4
+  ["3fff::", 20], // tài liệu (RFC 9637)
+  ["fc00::", 7], // ULA
+  ["fe80::", 10], // link-local
+  ["fec0::", 10], // site-local (cũ)
+  ["ff00::", 8], // multicast
+];
+const inPrefix = (n: bigint, [p, bits]: [string, number]) =>
+  n >> BigInt(128 - bits) === (parseV6(p) as bigint) >> BigInt(128 - bits);
+
+/** `ipaddress.ip_address(a).is_global` (chặt hơn một chút: chặn cả multicast). IPv6 ánh xạ IPv4 xét phần IPv4; IPv6 so theo số. */
 export function isPublicIp(addr: string): boolean {
   const ip = addr.split("%")[0]?.toLowerCase() ?? "";
   if (/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return v4Public(ip);
   if (!ip.includes(":")) return false;
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(ip);
-  if (mapped) return v4Public(mapped[1] as string);
-  if (ip === "::" || ip === "::1") return false;
-  const head = Number.parseInt(ip.split(":")[0] || "0", 16);
-  if ((head & 0xfe00) === 0xfc00 || (head & 0xffc0) === 0xfe80 || (head & 0xff00) === 0xff00)
-    return false;
-  if (
-    ip.startsWith("2001:db8") ||
-    ip.startsWith("64:ff9b") ||
-    ip.startsWith("2002:") ||
-    ip.startsWith("2001:0:")
-  )
-    return false;
-  return (head & 0xe000) === 0x2000; // chỉ dải unicast toàn cầu 2000::/3
+  const n = parseV6(ip);
+  if (n === null) return false;
+  if (n >> 32n === 0xffffn) {
+    const v = Number(n & 0xffffffffn);
+    return v4Public([v >>> 24, (v >>> 16) & 255, (v >>> 8) & 255, v & 255].join("."));
+  }
+  if (V6_BLOCKED.some((r) => inPrefix(n, r))) return false;
+  return n >> 125n === 1n; // chỉ dải unicast toàn cầu 2000::/3
 }
-
 export type LinkCheck = { verified: boolean; page_date: string | null; note: string };
 /** Cổng: mở link giá và kiểm con số (adapter `link-check.http.ts`). */
 export type Inspect = (url: string, price: number) => Promise<LinkCheck>;

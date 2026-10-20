@@ -2,7 +2,7 @@
 // + chống SSRF (địa chỉ nội bộ, phân giải ra IP riêng, giao thức lạ). Không mạng: trang và DNS giả.
 import { describe, expect, test } from "bun:test";
 import { isPublicIp, normDate, numbersIn, pageDate } from "../domain/link-check.rules";
-import { createInspect, publicTarget } from "./link-check.http";
+import { createInspect, fetchPage, publicTarget } from "./link-check.http";
 
 const page =
   '<html><head><meta property="article:modified_time" content="2026-10-12T08:00:00+07:00"></head>' +
@@ -77,5 +77,43 @@ describe("link_check", () => {
         "2606:4700::1111",
       ].map(isPublicIp),
     ).toEqual([true, false, false, false, false, false, false, false, true]);
+  });
+
+  // review HD78 #4: IPv6 so theo số 128 bit (dạng rút gọn/đủ chữ số/đuôi IPv4 không lách được tiền tố chữ).
+  test("IPv6 đặc biệt: Teredo, 2001::/23, tài liệu, 6to4, NAT64, ULA, ánh xạ IPv4 viết dài", () => {
+    const cases: [string, boolean][] = [
+      ["2001::1", false],
+      ["2001:0000:4136:e378:8000:63bf:3fff:fdd2", false], // Teredo viết đủ số 0
+      ["2001:0:4136:e378::1", false],
+      ["2001:1ff::1", false], // vẫn trong 2001::/23
+      ["2001:200::1", true], // ngoài /23 — dải thường
+      ["2001:0db8::1", false],
+      ["2002:0a00:0001::1", false],
+      ["0064:ff9b::0a00:0001", false],
+      ["fd12:3456::1", false],
+      ["0:0:0:0:0:ffff:7f00:1", false], // ::ffff:127.0.0.1 viết dài
+      ["::ffff:8.8.8.8", true],
+      ["::127.0.0.1", false],
+      ["3fff:1::1", false],
+      ["2606:4700:4700::1111", true],
+      ["2606:4700::1111:zzzz", false], // sai dạng
+      ["1:2:3:4:5:6:7:8:9", false],
+    ];
+    expect(cases.map(([ip]) => [ip, isPublicIp(ip)])).toEqual(cases);
+  });
+
+  // review HD78 #3: MỘT hạn cho cả lượt — DNS treo cũng dừng đúng hạn, không chờ socket rảnh.
+  test("tra DNS treo ⇒ hết hạn chung ⇒ chưa kiểm (TimeoutError), không treo", async () => {
+    const hang = () => new Promise<string[]>(() => {});
+    const inspect = createInspect({ resolve: hang, now, timeoutMs: 30 });
+    const t0 = performance.now();
+    expect(await inspect("https://example.vn/gia", 1)).toEqual({
+      verified: false,
+      page_date: null,
+      note: "Không mở được trang (TimeoutError)",
+    });
+    expect(performance.now() - t0).toBeLessThan(1_000);
+    const gone = AbortSignal.abort();
+    await expect(fetchPage("https://example.vn/x", fakeDns, gone)).rejects.toThrow("TimeoutError");
   });
 });

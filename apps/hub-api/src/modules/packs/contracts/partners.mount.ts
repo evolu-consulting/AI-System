@@ -3,11 +3,13 @@
 // `TaxRegistry` của HD2 (null ⇒ "chưa tra được").
 import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
+import type { Redis } from "ioredis";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { companiesRepo } from "./adapters/companies.repo";
 import { companiesRoutes } from "./adapters/companies.routes";
 import { createInspect } from "./adapters/link-check.http";
+import { LINK_CHECKS_PER_MINUTE, linkCheckLimit } from "./adapters/link-check-limit.redis";
 import { partnersRepo } from "./adapters/partners.repo";
 import { partnersRoutes } from "./adapters/partners.routes";
 import { partnerDataOf } from "./adapters/partners-data.repo";
@@ -28,6 +30,9 @@ export function partnersModule(
     /** Test: trang giả thay mạng thật. */
     inspect?: Inspect;
     tax?: TaxRegistry | null;
+    /** Trần kiểm link theo người dùng (Redis; vắng ⇒ 503 khi kiểm link). */
+    redis?: Redis;
+    linkChecksPerMinute?: number;
   },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(
@@ -44,7 +49,11 @@ export function partnersModule(
     combine: partnerDataOf,
   });
   const r = new Hono<PackGuardVars>();
-  r.route("/", partnersRoutes(view, uc));
+  const limit = linkCheckLimit({
+    ...(d.redis ? { redis: d.redis } : {}),
+    limit: d.linkChecksPerMinute ?? LINK_CHECKS_PER_MINUTE,
+  });
+  r.route("/", partnersRoutes(view, uc, limit));
   r.route("/", companiesRoutes(view, companiesUsecase({ uow, tax: d.tax ?? null })));
   return r;
 }
