@@ -143,6 +143,81 @@
         "less": "Show less",
         "empty": "Nothing needs your attention."
       },
+      "period": {
+        "label": "Period",
+        "month": "This month",
+        "quarter": "This quarter",
+        "12m": "12 months",
+        "cmp": {
+          "month": "vs last month",
+          "quarter": "vs last quarter",
+          "12m": "vs previous 12 months"
+        }
+      },
+      "kpi": {
+        "revenue": "Revenue",
+        "commission": "Commission",
+        "profit": "Gross profit",
+        "held": "Stock held",
+        "received": "{{label}} received",
+        "pctAria": "{{n}}% of expected received",
+        "ofExpected": "{{n}}% of expected",
+        "unpaid": "unpaid",
+        "unreceived": "not received",
+        "margin": "{{n}}% margin on expected revenue",
+        "heldSub": "at average cost",
+        "costMissing": "Some items have no cost yet."
+      },
+      "groups": {
+        "title": "By product group",
+        "lead": "12 months · bold is {{period}}",
+        "service": "Term services",
+        "goods": "Goods",
+        "referral": "Referral",
+        "byMonth": "{{group}} by month",
+        "basis": {
+          "revenue_expected": "Expected {{period}}",
+          "commission_expected": "Expected commission {{period}}"
+        }
+      },
+      "recs": {
+        "title": "Products: what to do",
+        "lead": "by business score",
+        "buy": "Buy more / push",
+        "hold": "Hold / keep",
+        "dump": "Clear stock / consider stopping",
+        "none": "None"
+      },
+      "top": {
+        "title": "Most active",
+        "lead": "by recorded jobs",
+        "jobs": "{{n}} jobs",
+        "none": "None yet"
+      },
+      "todo": {
+        "skip": "Dismiss",
+        "done": "Done",
+        "skipAria": "Dismiss this task",
+        "doneAria": "Mark as done",
+        "toastSkip": "Dismissed",
+        "toastDone": "Marked done",
+        "kind": {
+          "overdue": "Overdue",
+          "due_soon": "Due soon",
+          "contract_expiring": "Expiring",
+          "customers_expiring": "Customers expiring",
+          "renewal_contact": "Renewal",
+          "commission": "Commission",
+          "rating": "Rate",
+          "rating_quarter": "Rate",
+          "missing_file": "Missing file"
+        },
+        "when": {
+          "late": "{{n}} days late",
+          "today": "today",
+          "left": "{{n}} days left"
+        }
+      },
       "contracts": {
         "title": "Contracts",
         "count": "{{n}} contracts",

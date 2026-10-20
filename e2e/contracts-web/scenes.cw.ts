@@ -10,7 +10,13 @@ import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
 import { categoriesAsHub, facetsAsHub, membersAsHub } from "./dataset-list";
-import { contractsListAsHub, myWorkAsHub, partnersForOverview } from "./dataset-overview";
+import {
+  bizListAsHub,
+  contractsListAsHub,
+  overviewAsHub,
+  partnersForOverview,
+  todoAsHub,
+} from "./dataset-overview";
 import { ACTIVE_ID, activeContract, lookupFor, matchFor, PRODUCTS } from "./dataset-v2f";
 
 const CAPTURE = process.env.CW_MODE === "capture";
@@ -246,7 +252,7 @@ const V2F_SCENES: Scene[] = [
 const overviewBoxes = {
   heading: "main h1",
   work: "main section >> nth=0",
-  firstWorkRow: 'main [data-testid="work-row"] >> nth=0',
+  firstWorkRow: 'main [data-testid="todo-row"] >> nth=0',
   contracts: "main section >> nth=1",
   partners: "main section >> nth=2",
 };
@@ -288,7 +294,7 @@ const OVERVIEW_SCENES: Scene[] = [
     ready: overviewReady,
     act: async (p) => {
       await p.getByRole("button", { name: "Xem thêm 2 việc" }).click();
-      await expect(p.getByTestId("work-row")).toHaveCount(8);
+      await expect(p.getByTestId("todo-row")).toHaveCount(8);
     },
   },
 ];
@@ -451,8 +457,12 @@ async function installHub(page: Page, signedIn: boolean) {
   await page.route(at("contracts"), (r) =>
     json(r, 200, contractsListAsHub(new URL(r.request().url()).searchParams)),
   );
-  await page.route(at("my-work"), (r) => json(r, 200, myWorkAsHub()));
-  await page.route(at("partners"), (r) =>
+  await page.route(at("my-work/todo"), (r) => json(r, 200, todoAsHub()));
+  await page.route(at("overview"), (r) =>
+    json(r, 200, overviewAsHub(new URL(r.request().url()).searchParams.get("period") ?? "month")),
+  );
+  await page.route(at("business/products"), (r) => json(r, 200, bizListAsHub()));
+  await page.route(at("reputation/partners"), (r) =>
     json(r, 200, partnersForOverview(new URL(r.request().url()).searchParams)),
   );
   await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));

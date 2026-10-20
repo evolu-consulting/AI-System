@@ -143,6 +143,81 @@
         "less": "Thu gọn",
         "empty": "Không có việc cần xử lý."
       },
+      "period": {
+        "label": "Kỳ xem",
+        "month": "Tháng này",
+        "quarter": "Quý này",
+        "12m": "12 tháng",
+        "cmp": {
+          "month": "so với tháng trước",
+          "quarter": "so với quý trước",
+          "12m": "so với 12 tháng trước"
+        }
+      },
+      "kpi": {
+        "revenue": "Doanh thu",
+        "commission": "Hoa hồng",
+        "profit": "Lãi gộp",
+        "held": "Hàng đang giữ",
+        "received": "{{label}} thực nhận",
+        "pctAria": "Đã nhận {{n}}% dự kiến",
+        "ofExpected": "{{n}}% của dự kiến",
+        "unpaid": "chưa thu",
+        "unreceived": "chưa nhận",
+        "margin": "biên {{n}}% trên doanh thu dự kiến",
+        "heldSub": "theo giá vốn bình quân",
+        "costMissing": "Có phần chưa có giá vốn."
+      },
+      "groups": {
+        "title": "Theo nhóm sản phẩm",
+        "lead": "12 tháng · đậm là {{period}}",
+        "service": "Dịch vụ có hạn",
+        "goods": "Hàng hoá",
+        "referral": "Giới thiệu",
+        "byMonth": "{{group}} theo tháng",
+        "basis": {
+          "revenue_expected": "Dự kiến {{period}}",
+          "commission_expected": "HH dự kiến {{period}}"
+        }
+      },
+      "recs": {
+        "title": "Sản phẩm: nên làm gì",
+        "lead": "theo điểm kinh doanh",
+        "buy": "Mua thêm / đẩy mạnh",
+        "hold": "Giữ / duy trì",
+        "dump": "Xả hàng / cân nhắc dừng",
+        "none": "Không có"
+      },
+      "top": {
+        "title": "Giao dịch nhiều nhất",
+        "lead": "theo số việc đã ghi",
+        "jobs": "{{n}} việc",
+        "none": "Chưa có"
+      },
+      "todo": {
+        "skip": "Bỏ qua",
+        "done": "Đã xong",
+        "skipAria": "Bỏ qua việc này",
+        "doneAria": "Đánh dấu đã xong",
+        "toastSkip": "Đã bỏ qua",
+        "toastDone": "Đã xong",
+        "kind": {
+          "overdue": "Quá hạn",
+          "due_soon": "Sắp đến hạn",
+          "contract_expiring": "Sắp hết hạn",
+          "customers_expiring": "Khách sắp hết hạn",
+          "renewal_contact": "Gia hạn",
+          "commission": "Hoa hồng",
+          "rating": "Đánh giá",
+          "rating_quarter": "Đánh giá",
+          "missing_file": "Thiếu file"
+        },
+        "when": {
+          "late": "trễ {{n}} ngày",
+          "today": "hôm nay",
+          "left": "còn {{n}} ngày"
+        }
+      },
       "contracts": {
         "title": "Hợp đồng",
         "count": "{{n}} hợp đồng",

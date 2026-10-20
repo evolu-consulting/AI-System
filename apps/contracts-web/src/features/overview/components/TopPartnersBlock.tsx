@@ -1,0 +1,69 @@
+// V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (V2-E `/reputation/partners`),
+// kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API uy tín chưa trả giá trị nên dùng số việc.)
+import type { RepPartnerRow, RepRole } from "@ai/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { Panel } from "~/components/shared/layout";
+import { ErrorLine, Loading } from "~/components/shared/states";
+import { fetchRepPartners, partnerKeys } from "~/features/partners/api";
+import { RepBadge } from "~/features/partners/components/RepBadge";
+import { topPartners } from "../lib/overview";
+import { BlockHead } from "./BlockHead";
+
+function Col({ kind, rows }: { kind: RepRole; rows: RepPartnerRow[] }) {
+  const { t } = useTranslation();
+  return (
+    <div data-role={kind}>
+      <h3 className="mb-1 text-label font-semibold text-dim">
+        {t(`contracts.pv2.roleWord.${kind}`)}
+      </h3>
+      {rows.length === 0 ? (
+        <p className="py-1.5 text-label text-dim">{t("contracts.overview.top.none")}</p>
+      ) : (
+        rows.map((p) => (
+          <Link
+            key={p.party}
+            to="/partners"
+            search={{ party: p.party, role: p.role }}
+            className="flex items-center gap-2 rounded-md px-1.5 py-1.5 hover:bg-sunk"
+          >
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-body">{p.name}</b>
+              <span className="block text-[12px] text-dim">
+                {t("contracts.overview.top.jobs", { n: p.jobs })}
+              </span>
+            </span>
+            <RepBadge score={p.score} level={p.level} />
+          </Link>
+        ))
+      )}
+    </div>
+  );
+}
+
+export function TopPartnersBlock() {
+  const { t } = useTranslation();
+  const q = useQuery({
+    queryKey: partnerKeys.repList,
+    queryFn: ({ signal }) => fetchRepPartners(signal),
+  });
+  return (
+    <Panel>
+      <BlockHead
+        title={t("contracts.overview.top.title")}
+        meta={t("contracts.overview.top.lead")}
+      />
+      {q.isLoading ? (
+        <Loading />
+      ) : q.error ? (
+        <ErrorLine error={q.error} />
+      ) : (
+        <div className="grid grid-cols-2 gap-4 p-4 max-sm:grid-cols-1" data-testid="top-partners">
+          <Col kind="supplier" rows={topPartners(q.data, "supplier")} />
+          <Col kind="customer" rows={topPartners(q.data, "customer")} />
+        </div>
+      )}
+    </Panel>
+  );
+}
