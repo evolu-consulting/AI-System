@@ -10,13 +10,13 @@
 // SL chưa giao × BQ hiện tại các thành phần). Dòng chưa gắn SP / thành phần không giữ hàng ⇒ giá vốn 0 + cờ `cost_missing`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { OverviewRaw, OverviewWindow } from "../application/overview.ports";
 import type { MonthRow } from "../domain/overview.rules";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 
-export type OverviewWindow = { from: string; to: string; profitFrom: string };
-export type OverviewRaw = { months: MonthRow[]; stock: number };
+export type { OverviewRaw, OverviewWindow };
 
 export function overviewRepo(tx: Tx, t: string) {
   const months = (w: OverviewWindow): Promise<OverviewRaw> =>

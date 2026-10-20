@@ -1,8 +1,9 @@
 // V2-M · HD-07 · 5.5e · 6a · C7: xoá HĐ hẳn. Lớp 2 — không SQL. MỘT tx `PackUow`: đảo kho (`reverseStock`) rồi hàm
 // `contracts.delete_contract` (voids sổ đối tác, gỡ khách đang dùng / SP sinh từ HĐ, xoá mốc + dòng giao, một dòng audit).
 // Lỗi bất kỳ ⇒ tx huỷ, không đổi gì. Quyền (`admin` = contracts-owner) kiểm ở route.
-import type { DeleteImpact, DeleteResult } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { DeleteImpact, DeleteResult } from "../domain/delivery.types";
 import { localDate } from "../domain/local-time.rules";
 import { StockError } from "../domain/stock.rules";
 

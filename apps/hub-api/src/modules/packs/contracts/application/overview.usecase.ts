@@ -1,8 +1,6 @@
 // V2-K · TQ-01/TQ-02: Tổng quan (4 con số + theo nhóm) và Cần xử lý 8 nguồn (đọc, Bỏ qua / Đã xong). Mỗi ca MỘT tx `PackUow` (role
 // `contracts_rw`, RLS tenant + luật thấy M1); số câu SQL cố định (Tổng quan: 1; Cần xử lý: 1; Bỏ qua/Đã xong: 1). Ngày = lịch tenant.
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { OverviewRepo } from "../adapters/overview.repo";
-import type { TodoRepo } from "../adapters/todo.repo";
 import { addDays, localDate } from "../domain/local-time.rules";
 import { MYWORK_AHEAD_DAYS } from "../domain/mywork.types";
 import {
@@ -19,6 +17,7 @@ import {
   type TodoOut,
 } from "../domain/todo.rules";
 import type { MyWorkRepo } from "./mywork.usecase";
+import type { OverviewRepo, TodoRepo } from "./overview.ports";
 
 export type OverviewRepos = { overview: OverviewRepo; todo: TodoRepo; mywork: MyWorkRepo };
 

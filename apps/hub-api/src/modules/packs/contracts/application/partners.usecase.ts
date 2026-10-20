@@ -4,7 +4,7 @@
 // tác có policy RESTRICTIVE `partner_events_visible` (M1b: đối tác mình thấy, HĐ mình thấy, hoặc do mình ghi) ⇒ điểm tính trên phần sổ
 // người dùng thấy; danh bạ / báo giá / ảnh chụp điểm theo `visible_party_keys()` hoặc do mình tạo (0019); owner/chế độ tenant thấy hết.
 // Không dùng phạm vi hệ thống trong HTTP.
-import type { QuoteCreate, RatingRequest, ScoringDraft } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { PartnerData, PartnersRepo, StoredConfig } from "../adapters/partners.repo";
 import type { PartnerParts, WindowOverride } from "../adapters/partners-data.repo";
@@ -20,6 +20,7 @@ import {
   previewOf,
   ratingsOf,
 } from "../domain/partners.rules";
+import type { QuoteCreate, RatingRequest, ScoringDraft } from "../domain/reputation.types";
 import {
   defaultConfig,
   MANUAL_CHOICES,

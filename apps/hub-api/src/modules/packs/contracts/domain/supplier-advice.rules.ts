@@ -7,7 +7,7 @@ import type {
   SupplierPriceRow,
   SupplierPriceSource,
   SupplierSummaryRow,
-} from "@ai/contracts";
+} from "./supplier-prices.types";
 
 /** Chênh giá còn chấp nhận được / quá cao so với NCC rẻ nhất (%). */
 export const GAP_OK_PCT = 5;

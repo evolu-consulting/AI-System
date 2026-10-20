@@ -1,7 +1,7 @@
 // V2-I · DT-07 · intake Q8: "Tìm trên internet" — chỉ gửi TÊN + MST ra ngoài (không hợp đồng, không ghi chú, không điểm), chạy khi
 // người dùng bấm. Thuần: dựng lời nhắc + đọc đầu ra của AI thành vài dòng chữ thuần để người dùng chọn lưu vào ghi chú.
 // Đầu ra là DỮ LIỆU từ web (có thể chứa chỉ dẫn lạ): chỉ hiển thị, cắt độ dài, bỏ mọi thứ không phải chữ — không chạy gì.
-import type { PartnerWebLine } from "@ai/contracts";
+import type { PartnerWebLine } from "./partner-roles.types";
 
 export const SEARCH_MAX_LINES = 6;
 export const SEARCH_TITLE_MAX = 120;

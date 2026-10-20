@@ -3,6 +3,7 @@
 import type { Company } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { CompanyUse } from "../application/companies.ports";
 import { one } from "./ledger-sql";
 
 const COLS =
@@ -10,11 +11,7 @@ const COLS =
   'international_name', co.international_name, 'address', co.address, 'status', co.status, 'active', co.active,
   'edited', to_jsonb(co.edited), 'registry_result', co.registry_result, 'created_from', co.created_from`);
 
-export type CompanyUse = {
-  party: string;
-  contract_count: number;
-  roles: ("customer" | "supplier")[];
-};
+export type { CompanyUse };
 
 export function companiesRepo(tx: Tx, t: string) {
   return { ...companyReads(tx, t), ...companyWrites(tx, t) };

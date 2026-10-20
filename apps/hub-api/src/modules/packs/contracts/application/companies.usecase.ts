@@ -1,8 +1,7 @@
 // HD8-FR-09 · port `mgmt-app/api/app/routes/companies.py` (danh sách, tạo, sửa, tra lại Cục Thuế) — câu lỗi + mã như mgmt. Tra MST
 // qua cổng `TaxRegistry` của HD2 (vắng cấu hình ⇒ coi như "chưa tra được"). Gọi Cục Thuế NGOÀI tx.
-import type { Company, CompanyRow } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { CompaniesRepo } from "../adapters/companies.repo";
 import {
   applyRegistry,
   companyOrder,
@@ -10,9 +9,11 @@ import {
   matches,
   patchCompany,
 } from "../domain/companies.rules";
+import type { Company, CompanyRow } from "../domain/companies.types";
 import { partyKey } from "../domain/ledger.rules";
 import type { TaxLookup } from "../domain/party.rules";
 import { normalizeTaxId } from "../domain/warnings.rules";
+import type { CompaniesRepo } from "./companies.ports";
 import type { TaxRegistry } from "./extraction.ports";
 
 export class CompanyFail extends Error {

@@ -1,13 +1,14 @@
 // V2-C · BA 5.6b/d · HD-10: luật thuần của vai đối tác — vai theo loại HĐ (≡ SQL `contracts.partner_role_of`), nhãn MỚI theo số việc,
 // và dựng kết quả gợi ý đối tác. Không I/O.
+
+import { partyKey } from "./ledger.rules";
 import {
   NEW_PARTNER_LABEL,
   type PartnerDeal,
   type PartnerLookup,
   type PartnerRoleV2,
   type ScoreBand,
-} from "@ai/contracts";
-import { partyKey } from "./ledger.rules";
+} from "./partner-roles.types";
 
 /** 5.6b: Mua → NCC, Bán → khách, Giới thiệu → bên trả hoa hồng. */
 export const ROLE_OF_DEAL: Record<PartnerDeal, PartnerRoleV2> = {

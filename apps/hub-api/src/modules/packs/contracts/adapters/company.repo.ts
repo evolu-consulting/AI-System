@@ -3,14 +3,10 @@
 import type { CompanyIn } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { ApprovalFlag, StoredCompany } from "../application/companies.ports";
 import { one } from "./ledger-sql";
 
-export type StoredCompany = {
-  company: Omit<CompanyIn, "approval_enabled">;
-  version: number;
-  updated_at: string;
-} | null;
-export type ApprovalFlag = { enabled: boolean; by_default: boolean };
+export type { ApprovalFlag, StoredCompany };
 
 export function companyRepo(tx: Tx, tid: string) {
   const company = (): Promise<StoredCompany> =>

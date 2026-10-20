@@ -1,7 +1,7 @@
 // V2-J2 · SP-04/05/06: tab "Nhà cung cấp & giá". `overview` = bảng so sánh + gợi ý (một tx đọc ‖ bảng uy tín NCC V2-E); `search` = AI
 // tìm giá trên mạng (CHỈ khi người dùng bấm, CHỈ gửi tên SP, qua AI client gói `ai-sub`, có trần thao tác + trần token); `save` = lưu
 // kết quả vào bảng so sánh; `remove`. SP nhóm Giới thiệu không có tab ⇒ 404.
-import type { SupplierOverviewOut, SupplierPriceInput, SupplierSearchOut } from "@ai/contracts";
+
 import type { AiClient } from "../../../../lib/ai-client/ai-client";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ActionQuota } from "../adapters/action-quota";
@@ -14,6 +14,11 @@ import {
   searchPrompt,
 } from "../domain/price-search.rules";
 import { buildOverview, type OverviewData } from "../domain/supplier-advice.rules";
+import type {
+  SupplierOverviewOut,
+  SupplierPriceInput,
+  SupplierSearchOut,
+} from "../domain/supplier-prices.types";
 
 export type SuppliersRepo = {
   overview(productId: string): Promise<OverviewData | null>;

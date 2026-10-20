@@ -1,7 +1,7 @@
 // HD-FR-21 · HD-FR-22 · HD-FR-24 · HD-BR-01: áp bản trích của agent lên HĐ (port `R/api/app/contracts/ingest.py:81-98`):
 // kiểm từng trường/dòng, `effective_date` chỉ cho phụ lục, gộp giữ trường `edited`, dòng hàng chỉ ghi khi HĐ chưa có dòng
 // nào (D-08: `contract_items` không DELETE ở HD1/HD2), chủ đề điều khoản theo số điều. Thuần.
-import type { AiMilestone, AiRead, AiSummary, AiUnsureKey } from "@ai/contracts";
+import type { AiMilestone, AiRead, AiSummary, AiUnsureKey } from "./extraction.types";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
 import type { Deal } from "./milestones.rules";
 import {

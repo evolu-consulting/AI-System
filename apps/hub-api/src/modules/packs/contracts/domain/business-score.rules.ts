@@ -3,14 +3,8 @@
 //   Tốc độ bán — kho: 100 − (ngày tồn − 30) ÷ 1,5 · gói suất có hạn: suất dự kiến bán trước hạn ÷ suất đang giữ · đặt theo khách:
 //   bán 3 tháng ÷ mục tiêu. Biên lãi ×400 (25% = 100); Giới thiệu: hoa hồng đã nhận ÷ phát sinh. Xu hướng = 50 + (3 th gần − 3 th
 //   trước) ÷ 3 th trước × 50. Đề xuất: đang giữ hàng ⇒ Mua thêm / Giữ / Xả hàng; không giữ ⇒ Đẩy mạnh / Duy trì / Cân nhắc dừng.
-import type {
-  BizConfig,
-  BizFactor,
-  BizKind,
-  BizScore,
-  BizSuggestion,
-  ProductGroup,
-} from "@ai/contracts";
+import type { BizConfig, BizFactor, BizKind, BizScore, BizSuggestion } from "./business.types";
+import type { ProductGroup } from "./products.types";
 
 export const DEFAULT_BIZ: BizConfig = {
   w: { rot: 40, margin: 35, trend: 25 },

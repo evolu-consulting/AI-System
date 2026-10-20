@@ -5,26 +5,12 @@
 import type { BizContractOut, BizLotOut, BizSaleOut } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { BizExtras, BizFilter, BizRow, StoredBiz } from "../application/business.ports";
 import type { BizInput } from "../domain/business-score.rules";
 import { likePattern } from "../domain/fold.rules";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
-export type BizRow = {
-  id: string;
-  name: string;
-  unit: string | null;
-  input: BizInput;
-  value: number;
-  expiresOn: string | null;
-  revenueAll: number;
-};
-export type StoredBiz = { config: unknown; version: number; updated_at: string } | null;
-export type BizFilter = { id?: string; group?: string; q?: string };
-export type BizExtras = {
-  lots: BizLotOut[];
-  sales: BizSaleOut[];
-  contracts_count: number;
-};
+export type { BizExtras, BizFilter, BizRow, StoredBiz };
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 const n = (v: unknown) => Number(v ?? 0);

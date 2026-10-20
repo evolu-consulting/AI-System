@@ -1,13 +1,14 @@
 // V2-B · BA v2 §2 (nhóm SP, cách lấy hàng) · §5.5b (gợi ý: quy tắc nhận diện ⇒ trùng từ ⇒ Tạo mới) · §5.5c (HĐ Giới thiệu chỉ gắn SP
 // nhóm Giới thiệu) · §5.5f (thành phần: AI/từ gợi ý thành phần trùng từ — "USB Token trắng" ⇒ USB Token). Thuần.
+
+import { foldVi } from "./fold.rules";
 import type {
   ComponentMode,
   ProductCreate,
   ProductGroup,
   ProductMatchOut,
   ProductOut,
-} from "@ai/contracts";
-import { foldVi } from "./fold.rules";
+} from "./products.types";
 
 /** Cách lấy hàng được phép theo nhóm: Dịch vụ có hạn (gói suất, kho thiết bị kèm, đặt theo khách) · Hàng hoá · Giới thiệu. */
 export const MODES_OF: Record<ProductGroup, readonly ComponentMode[]> = {

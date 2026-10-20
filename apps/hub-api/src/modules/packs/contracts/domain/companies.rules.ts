@@ -1,6 +1,6 @@
 // HD8-FR-09 · port `mgmt-app/api/app/companies/store.py` (`apply_registry`, EDITABLE) + `routes/companies.py` (`_haystack`, sắp xếp):
 // danh bạ công ty theo khoá đối tác. Thuần.
-import type { Company } from "@ai/contracts";
+import type { Company } from "./companies.types";
 import { isActiveStatus, type TaxLookup } from "./party.rules";
 import { searchForm } from "./scoring-config.rules";
 

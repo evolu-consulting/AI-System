@@ -1,8 +1,9 @@
 // V2-L · CD-01: đọc/ghi cài đặt công ty. Đọc: mọi người có quyền đọc gói (sidebar/menu dùng tên, logo, màu); ghi: chỉ quản lý (route).
 // Một tx đọc cả hai nguồn (bảng nhận diện + cờ duyệt); ghi chỉ cờ khi đổi (nhật ký duyệt chỉ ghi lúc đổi thật).
-import type { CompanyIn, CompanyOut } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { CompanyRepo } from "../adapters/company.repo";
+import type { CompanyIn, CompanyOut } from "../domain/companies.types";
+import type { CompanyRepo } from "./companies.ports";
 
 export const DEFAULT_COMPANY: Omit<CompanyIn, "approval_enabled"> = {
   name: null,

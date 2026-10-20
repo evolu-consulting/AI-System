@@ -1,11 +1,6 @@
 // V2-D · HD-05 · BA §5.7a-d · §5.3b: xác nhận mốc giao ⇒ kho (gọi trong tx của `settle`, cùng khoá HĐ → mốc), bảng Trên HĐ · Đã giao ·
 // Giao lần này, kiểm tồn khi lưu HĐ bán (cảnh báo, không chặn). Lớp 2: không SQL — luật ở `domain/delivery.rules.ts`.
-import type {
-  DeliveryOutcome,
-  DeliveryView,
-  StockCheckOut,
-  StockCheckRequest,
-} from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import {
   checkPlan,
@@ -19,6 +14,12 @@ import {
   qtyOf,
   stockNotes,
 } from "../domain/delivery.rules";
+import type {
+  DeliveryOutcome,
+  DeliveryView,
+  StockCheckOut,
+  StockCheckRequest,
+} from "../domain/delivery.types";
 import { type DeliveryResult, fmtQty, StockError } from "../domain/stock.rules";
 import {
   DeliveryFail,

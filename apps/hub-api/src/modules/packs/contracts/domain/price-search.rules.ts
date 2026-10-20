@@ -1,6 +1,6 @@
 // V2-J2 · BA v2 §4.4 · intake §4 Q8 (SP-05): "Tìm giá trên thị trường" — lời nhắc gửi AI (CHỈ tên sản phẩm) + đọc kết quả AI thành
 // dòng giá. Kết quả AI là DỮ LIỆU không tin: parse chặt từng dòng, bỏ dòng sai (giá/URL/ngày), tối đa 10 dòng. Thuần.
-import type { SupplierSearchItem } from "@ai/contracts";
+import type { SupplierSearchItem } from "./supplier-prices.types";
 
 export const SEARCH_FEATURE = "contracts.price_search";
 export const SEARCH_MODEL = "claude-sonnet-5-5";

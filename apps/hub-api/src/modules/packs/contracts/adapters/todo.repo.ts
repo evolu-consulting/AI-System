@@ -4,6 +4,7 @@
 // `<loại>:<uuid>:<ngày>`. "Mình" = `app.user_id` của tx (từ token).
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { TodoWindow } from "../application/overview.ports";
 import type { RawTodo, TodoAction } from "../domain/todo.rules";
 import { TODO_SOURCE_MAX } from "../domain/todo.rules";
 import { CONFIRMED_STATUSES, confirmedOf, one } from "./ledger-sql";
@@ -32,13 +33,8 @@ const notDismissed = (
 const k = (kind: string, id: string, day: string) =>
   sql.raw(`'${kind}:' || ${id}::text || ':' || to_char(${day}, 'YYYY-MM-DD')`);
 
-/** `quarter`: trong 30 ngày đầu quý ⇒ đầu quý này + quý trước (nguồn Đánh giá sau quý); ngoài ⇒ null. */
-export type TodoWindow = {
-  today: string;
-  horizon: string;
-  tz: string;
-  quarter: { start: string; prevStart: string; prevEnd: string } | null;
-};
+export type { TodoWindow };
+
 /** CD-05 "Nhắc đánh giá khi": `score_configs_v2` phạm vi `settings`, khoá `rating_remind` (mảng end|quarter); vắng ⇒ cả hai (mockup). */
 const REMIND = (
   t: string,

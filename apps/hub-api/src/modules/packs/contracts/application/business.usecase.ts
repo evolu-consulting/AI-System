@@ -1,5 +1,7 @@
 // V2-J1 · SP-01/02/07 · KN-15 · CD-06: điểm kinh doanh của SP — danh sách (một câu gom theo tập), chi tiết (tóm tắt + lịch sử mua bán), HĐ theo SP,
 // cấu hình. Điểm tính khi đọc (đổi cấu hình ⇒ đổi ngay), không lưu. Ngày = ngày lịch tenant.
+
+import type { PackUow, PackWho } from "../../kit/application/ports";
 import type {
   BizConfig,
   BizConfigOut,
@@ -10,11 +12,10 @@ import type {
   BizPreviewIn,
   BizProductRow,
   BizScore,
-} from "@ai/contracts";
-import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { BizRow, BusinessRepo } from "../adapters/business.repo";
+} from "../domain/business.types";
 import { bizProblem, DEFAULT_BIZ, mergeBiz, scoreBusiness } from "../domain/business-score.rules";
 import { localDate } from "../domain/local-time.rules";
+import type { BizRow, BusinessRepo } from "./business.ports";
 
 export class BizFail extends Error {
   constructor(
@@ -43,18 +44,47 @@ const rowOut = (r: BizRow, cfg: BizConfig): BizProductRow => ({
   business: scoreBusiness(r.input, cfg),
 });
 
-export function businessUsecase(d: BizDeps) {
+/** "Thử tính" (CD-06): số mẫu một SP theo cấu hình đang chỉnh — hàm thuần, không đọc/ghi DB. */
+function previewBiz(b: BizPreviewIn): BizScore {
+  const msg = bizProblem(b.config);
+  if (msg) throw new BizFail("invalid", msg);
+  const s = b.sample;
+  return scoreBusiness(
+    {
+      group: s.kind === "quota" ? "service" : s.kind === "referral" ? "referral" : "goods",
+      kind: s.kind,
+      heldQty: s.held,
+      unit: null,
+      expiresInDays: s.kind === "quota" ? s.dte : null,
+      sold12: s.l3 + s.p3,
+      l3: s.l3,
+      p3: s.p3,
+      revenue: s.price * s.l3,
+      cost: s.cost * s.l3,
+      commissionTotal: 0,
+      commissionReceived: 0,
+    },
+    b.config,
+  );
+}
+
+const configOut = (s: Awaited<ReturnType<BusinessRepo["config"]>>): BizConfigOut => ({
+  config: mergeBiz(s?.config),
+  defaults: DEFAULT_BIZ,
+  version: s?.version ?? 0,
+  updated_at: s?.updated_at ?? null,
+});
+
+function bizCtx(d: BizDeps) {
   const tx = <T>(who: PackWho, fn: (r: BusinessRepo) => Promise<T>) =>
     d.uow.tenant(who, (r) => fn(r.business));
   const today = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
-  const configOut = (s: Awaited<ReturnType<BusinessRepo["config"]>>): BizConfigOut => ({
-    config: mergeBiz(s?.config),
-    defaults: DEFAULT_BIZ,
-    version: s?.version ?? 0,
-    updated_at: s?.updated_at ?? null,
-  });
   const cfgOf = async (who: PackWho) => configOut(await tx(who, (r) => r.config())).config;
+  return { tx, today, cfgOf };
+}
 
+export function businessUsecase(d: BizDeps) {
+  const { tx, today, cfgOf } = bizCtx(d);
   return {
     getConfig: async (who: PackWho): Promise<BizConfigOut> =>
       configOut(await tx(who, (r) => r.config())),
@@ -63,29 +93,7 @@ export function businessUsecase(d: BizDeps) {
       if (msg) throw new BizFail("invalid", msg);
       return configOut(await tx(who, (r) => r.saveConfig(cfg)));
     },
-    /** "Thử tính" (CD-06): số mẫu một SP theo cấu hình đang chỉnh — hàm thuần, không đọc/ghi DB. */
-    preview(b: BizPreviewIn): BizScore {
-      const msg = bizProblem(b.config);
-      if (msg) throw new BizFail("invalid", msg);
-      const s = b.sample;
-      return scoreBusiness(
-        {
-          group: s.kind === "quota" ? "service" : s.kind === "referral" ? "referral" : "goods",
-          kind: s.kind,
-          heldQty: s.held,
-          unit: null,
-          expiresInDays: s.kind === "quota" ? s.dte : null,
-          sold12: s.l3 + s.p3,
-          l3: s.l3,
-          p3: s.p3,
-          revenue: s.price * s.l3,
-          cost: s.cost * s.l3,
-          commissionTotal: 0,
-          commissionReceived: 0,
-        },
-        b.config,
-      );
-    },
+    preview: previewBiz,
     /** Cấu hình rồi MỘT câu gom cho cả danh sách: số câu cố định theo số SP. */
     async list(who: PackWho, q: BizListQuery): Promise<BizListOut> {
       const [day, cfg] = await Promise.all([today(who), cfgOf(who)]);

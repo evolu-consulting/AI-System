@@ -2,7 +2,7 @@
 // hình + thử tính, đánh giá sao, ghi việc. Điểm hiện tại tính khi đọc (một câu gom theo tập, Luật 4c) ⇒ đổi cấu hình chỉ đổi điểm
 // hiện tại; kỳ đã chốt đọc từ `score_locks`, không tính lại. Đọc bảng điểm: cấu hình (một câu) rồi hai câu chấm song song — 3 tx, số
 // câu cố định.
-import type { RepCellConfigIn, RepJobTypesIn, RepPreviewIn, RepSettingsIn } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { RepRepo } from "../adapters/rep.repo";
 import type { AggPart, FactPart, ScoreRows } from "../adapters/rep.sql";
@@ -30,6 +30,12 @@ import {
   resolveConfig,
 } from "../domain/rep-normalise.rules";
 import { decaySample, roleScore } from "../domain/rep-score.rules";
+import type {
+  RepCellConfigIn,
+  RepJobTypesIn,
+  RepPreviewIn,
+  RepSettingsIn,
+} from "../domain/reputation.types";
 
 export class RepFail extends Error {
   constructor(

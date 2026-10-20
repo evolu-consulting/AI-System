@@ -1,5 +1,5 @@
 // HD-FR-21 · HD-FR-24 · HD-FR-25 · HD-FR-26 · D2-01 · HD2 plan: cổng của trích hợp đồng. Lớp 2 — chỉ kiểu.
-import type { AiRead } from "@ai/contracts";
+
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ParentFacts } from "../domain/extract-prompt.rules";
@@ -9,6 +9,7 @@ import type {
   RawExtraction,
   VerifiedExtraction,
 } from "../domain/extraction.rules";
+import type { AiRead } from "../domain/extraction.types";
 import type { ContractFields } from "../domain/fields.rules";
 import type { ManualItem } from "../domain/manual.rules";
 import type { Deal } from "../domain/milestones.rules";

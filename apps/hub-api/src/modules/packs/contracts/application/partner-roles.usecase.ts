@@ -1,17 +1,7 @@
 // V2-C · KN-08 · HD-10 · BA 5.6 · DT-05: vai đối tác (nhãn MỚI), gợi ý đối tác khi gõ tên trên HĐ ("có sẵn + điểm" hoặc "Đối tác mới ·
 // sẽ tạo khi lưu"), ghi chú đối tác. Mọi đọc/ghi trong tx người dùng (RLS M1); đối tác ngoài phạm vi ⇒ như chưa có (không lộ).
 // Tạo đối tác/vai khi lưu HĐ là trigger DB (0024), không ở đây.
-import type {
-  PartnerContractCount,
-  PartnerContractRow,
-  PartnerDeal,
-  PartnerLookup,
-  PartnerNote,
-  PartnerProfile,
-  PartnerRoleRow,
-  PartnerWebLine,
-  ScoreBand,
-} from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { toProgress } from "../adapters/milestones.mapper";
 import type { PartnerRolesRepo, RoleCount } from "../adapters/partner-roles.repo";
@@ -22,6 +12,17 @@ import {
   lookupKey,
   lookupResult,
 } from "../domain/partner-roles.rules";
+import type {
+  PartnerContractCount,
+  PartnerContractRow,
+  PartnerDeal,
+  PartnerLookup,
+  PartnerNote,
+  PartnerProfile,
+  PartnerRoleRow,
+  PartnerWebLine,
+  ScoreBand,
+} from "../domain/partner-roles.types";
 
 export class PartnerRolesFail extends Error {
   constructor(
