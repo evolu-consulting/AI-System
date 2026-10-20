@@ -25,13 +25,16 @@ export function patchContractFields(
 /** Đường dẫn tệp gốc (`href` giữ như mgmt-app; bấm ⇒ `openOriginalFile`). */
 export const fileHref = (id: string) => `${BASE}/${encodeURIComponent(id)}/file`;
 
+/** Link hợp lệ: `https?://…` hoặc đường dẫn cùng origin `/…` (FileBox riêng: `/_fb/d/…` qua nginx của web; không nhận `//host`). */
+export const isOpenableLink = (url: string): boolean => /^https?:\/\//.test(url) || /^\/(?!\/)/.test(url);
+
 /** #220: điều hướng trình duyệt không mang Bearer ⇒ xin link FileBox ngắn hạn qua API rồi mở ở tab đã mở sẵn
  * (mở tab ngay trong lúc bấm để không bị chặn popup). Lỗi ⇒ đóng tab, ném cho trang báo. */
 export async function openOriginalFile(id: string): Promise<void> {
   const tab = window.open("", "_blank");
   try {
     const { url } = await api<{ url: string }>(`${BASE}/${encodeURIComponent(id)}/file-link`);
-    if (!/^https?:\/\//.test(url)) throw new Error("bad link");
+    if (!isOpenableLink(url)) throw new Error("bad link");
     if (tab) {
       tab.opener = null;
       tab.location.href = url;
