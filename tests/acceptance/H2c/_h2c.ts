@@ -408,7 +408,10 @@ function responseComplete(s: string): boolean {
   const [head, rest] = splitHead(s);
   if (!s.includes("\r\n\r\n")) return false;
   const m = /content-length:\s*(\d+)/i.exec(head);
-  return m ? Buffer.byteLength(rest, "latin1") >= Number(m[1]) : false;
+  if (m) return Buffer.byteLength(rest, "latin1") >= Number(m[1]);
+  // Bun 1.3.x (Linux): phần thân thừa sau Content-Length bị đọc như request hỏng ⇒ `431 … Connection: close` chỉ có đầu, không
+  // Content-Length và không đóng socket ngay ⇒ đầu đã trọn, thân rỗng là đủ (kẻo chờ tới hết timeout 30 s).
+  return rest === "" && /^connection:\s*close\s*$/im.test(head);
 }
 
 // ---------- gửi tin có file (E12) ----------

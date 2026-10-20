@@ -1,9 +1,13 @@
 // CR-096 · bảng mới của gói `contracts` (V2-B/C/E/H/J2/L/M) khai cho bộ RLS theo hợp đồng (rls-packs.int.test.ts).
-import { userId } from "./builders";
+import { tenantId, userId } from "./builders";
 import type { Sql } from "./db";
 import type { RlsTable } from "./rls-suite";
 
 const who = userId(901);
+/** Khoá dò của bảng khoá ghép phải khác nhau giữa hai tenant, kẻo B «thấy» hàng cùng khoá của chính mình. */
+const idx = (t: string): number => (t === tenantId(901) ? 0 : 1);
+const SCOPES = ["settings", "job_types"] as const;
+const PERIODS = ["2026-09-01", "2026-08-01"] as const;
 const rnd = (pk?: string): string => pk ?? crypto.randomUUID();
 const one = async (sql: Sql, text: string, params: unknown[]): Promise<string> => {
   const rows = (await sql.unsafe(
@@ -133,11 +137,12 @@ v2Tables.push(tenantPk("business_settings"), tenantPk("company_settings"), {
   name: "score_configs_v2", // V2-E · khoá ghép (tenant_id, scope) ⇒ dò theo scope
   pk: "scope",
   seed: async (o, t) => {
+    const scope = SCOPES[idx(t)];
     await o.unsafe(
-      "insert into contracts.score_configs_v2 (tenant_id, scope, config) values ($1, 'settings', '{}')",
-      [t],
+      "insert into contracts.score_configs_v2 (tenant_id, scope, config) values ($1, $2, '{}')",
+      [t, scope],
     );
-    return "settings";
+    return scope;
   },
   insert: (tx, t) =>
     tx.unsafe(
@@ -163,11 +168,12 @@ v2Tables.push(
     name: "score_lock_runs",
     pk: "period",
     seed: async (o, t) => {
+      const period = PERIODS[idx(t)];
       await o.unsafe(
-        "insert into contracts.score_lock_runs (tenant_id, period, rows) values ($1, '2026-09-01', 0)",
-        [t],
+        "insert into contracts.score_lock_runs (tenant_id, period, rows) values ($1, $2, 0)",
+        [t, period],
       );
-      return "2026-09-01";
+      return period;
     },
     insert: (tx, t) =>
       tx.unsafe(
