@@ -218,14 +218,17 @@ function contractRows(mine: readonly Line[]) {
   return { rows, contractSuppliers };
 }
 
+export type CompareCtx = {
+  scores: Scores;
+  /** `compare.market`: quan sát 30 ngày của mặt hàng; không có ⇒ `tbd` (HD8-FR-08). */
+  market?: { min: number; max: number; seen: string; n: number } | undefined;
+};
 /** `compare.compare`: một sản phẩm, giá từng NCC cạnh điểm uy tín và nguồn giá. Giá thị trường hàng hoá chưa có (D8-08). */
 export function compareGoods(
   lines: readonly Line[],
   quotes: readonly Quote[],
   product: string,
-  scores: Scores,
-  /** `compare.market`: quan sát 30 ngày của mặt hàng; không có ⇒ `tbd` (HD8-FR-08). */
-  market?: { min: number; max: number; seen: string; n: number },
+  { scores, market }: CompareCtx,
 ) {
   const mine = lines.filter((r) => r.product === product);
   const { rows, contractSuppliers } = contractRows(mine);

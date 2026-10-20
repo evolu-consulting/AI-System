@@ -253,7 +253,10 @@ function priceCommands<L, F>(d: PartnersDeps<L, F>, c: PartnersCtx) {
     if (!productList(l.seenLines, l.data.quotes).some((p) => p.key === product))
       throw new PartnersFail("not_found");
     const scores = new Map(l.partners("supplier").map((p) => [p.party, p]));
-    return compareGoods(l.seenLines, l.data.quotes, product, scores, l.data.market.get(product));
+    return compareGoods(l.seenLines, l.data.quotes, product, {
+      scores,
+      market: l.data.market.get(product),
+    });
   };
 
   /** `POST /prices/check-link`. */

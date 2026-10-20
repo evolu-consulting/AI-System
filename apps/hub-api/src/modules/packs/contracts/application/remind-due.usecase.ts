@@ -39,19 +39,30 @@ const sqlStateOf = (err: unknown): string | null => {
   return e?.cause?.code ?? e?.code ?? null;
 };
 
+/** Một lô của một tenant trong tx `system(tenant)`; không có việc ⇒ dọn lịch mồ côi. */
+async function remindBatch(d: RemindDeps, tenantId: string, now: Date): Promise<RemindBatch> {
+  const tz = await d.timeZoneOf(tenantId);
+  return d.uow.system(tenantId, async ({ reminders }) => {
+    const due = await reminders.claim(now, d.batchSize);
+    if (due.length === 0) {
+      await reminders.purgeOrphans(now);
+      return { tenantId, claimed: 0, statusChanged: 0, reminded: 0, notified: 0 };
+    }
+    const applied = await reminders.apply(due.map((c) => planReminder(c, now, tz)));
+    return { tenantId, claimed: due.length, ...applied };
+  });
+}
+
+const addBatch = (t: RemindTotals, b: RemindBatch): void => {
+  t.batches += b.claimed > 0 ? 1 : 0;
+  t.claimed += b.claimed;
+  t.statusChanged += b.statusChanged;
+  t.reminded += b.reminded;
+  t.notified += b.notified;
+};
+
 export function createRemindDue(d: RemindDeps) {
-  const batch = async (tenantId: string, now: Date): Promise<RemindBatch> => {
-    const tz = await d.timeZoneOf(tenantId);
-    return d.uow.system(tenantId, async ({ reminders }) => {
-      const due = await reminders.claim(now, d.batchSize);
-      if (due.length === 0) {
-        await reminders.purgeOrphans(now);
-        return { tenantId, claimed: 0, statusChanged: 0, reminded: 0, notified: 0 };
-      }
-      const applied = await reminders.apply(due.map((c) => planReminder(c, now, tz)));
-      return { tenantId, claimed: due.length, ...applied };
-    });
-  };
+  const batch = (tenantId: string, now: Date) => remindBatch(d, tenantId, now);
 
   /** Một lô (một tenant); không có việc ⇒ null. */
   const once = async (skip: readonly string[] = []): Promise<RemindBatch | null> => {
@@ -78,11 +89,7 @@ export function createRemindDue(d: RemindDeps) {
       try {
         const b = await batch(tenantId, now);
         if (b.claimed === 0) skip.push(tenantId); // hàng đang bị instance khác khoá ⇒ để lượt sau
-        t.batches += b.claimed > 0 ? 1 : 0;
-        t.claimed += b.claimed;
-        t.statusChanged += b.statusChanged;
-        t.reminded += b.reminded;
-        t.notified += b.notified;
+        addBatch(t, b);
       } catch (err) {
         skip.push(tenantId); // một tenant lỗi không chặn tenant khác (không log nội dung HĐ)
         t.failed++;

@@ -58,51 +58,53 @@ export type BizInput = {
 const clamp = (n: number) => Math.max(0, Math.min(100, n));
 const fmt = (n: number) => n.toLocaleString("vi-VN");
 
-function rotation(
-  i: BizInput,
-  c: BizConfig,
-  vel: number,
-): { f: BizFactor; ds: number; ratio: number } {
+type Rotation = { f: BizFactor; ds: number; ratio: number };
+type RotBase = { key: "rot"; weight: number };
+
+/** Giới thiệu (số HĐ) / đặt theo khách (SL): 3 tháng ÷ mục tiêu. */
+function volumeRotation(i: BizInput, c: BizConfig, base: RotBase): Rotation {
+  const u = i.unit ?? "";
+  const f: BizFactor =
+    i.kind === "referral"
+      ? {
+          ...base,
+          label: "Số lượng giới thiệu",
+          value: clamp((i.l3 / c.vol) * 100),
+          detail: `${i.l3} hợp đồng / mục tiêu ${c.vol} trong 3 tháng`,
+        }
+      : {
+          ...base,
+          label: "Số lượng bán",
+          value: clamp((i.l3 / c.vol) * 100),
+          detail: `${i.l3} ${u} / mục tiêu ${c.vol} trong 3 tháng`.replace("  ", " "),
+        };
+  return { f, ds: 0, ratio: 0 };
+}
+
+/** Gói suất có hạn: suất dự kiến bán trước hạn ÷ suất đang giữ. */
+function quotaRotation(i: BizInput, days: number, vel: number, base: RotBase): Rotation {
+  const proj = Math.round(vel * days);
+  const value = i.heldQty ? clamp((proj / i.heldQty) * 100) : 100;
+  return {
+    f: {
+      ...base,
+      label: "Tốc độ bán",
+      value,
+      detail: vel
+        ? `~${Math.round(vel * 30)} suất/tháng · dự kiến bán ${Math.min(proj, i.heldQty)}/${i.heldQty} suất trước khi gói hết hạn`
+        : "3 tháng chưa bán",
+    },
+    ds: 0,
+    ratio: i.heldQty ? proj / i.heldQty : 9,
+  };
+}
+
+function rotation(i: BizInput, c: BizConfig, vel: number): Rotation {
   const u = i.unit ?? "";
   const base = { key: "rot" as const, weight: c.w.rot };
-  if (i.kind === "referral")
-    return {
-      f: {
-        ...base,
-        label: "Số lượng giới thiệu",
-        value: clamp((i.l3 / c.vol) * 100),
-        detail: `${i.l3} hợp đồng / mục tiêu ${c.vol} trong 3 tháng`,
-      },
-      ds: 0,
-      ratio: 0,
-    };
-  if (i.kind === "order")
-    return {
-      f: {
-        ...base,
-        label: "Số lượng bán",
-        value: clamp((i.l3 / c.vol) * 100),
-        detail: `${i.l3} ${u} / mục tiêu ${c.vol} trong 3 tháng`.replace("  ", " "),
-      },
-      ds: 0,
-      ratio: 0,
-    };
-  if (i.kind === "quota" && i.expiresInDays !== null) {
-    const proj = Math.round(vel * i.expiresInDays);
-    const value = i.heldQty ? clamp((proj / i.heldQty) * 100) : 100;
-    return {
-      f: {
-        ...base,
-        label: "Tốc độ bán",
-        value,
-        detail: vel
-          ? `~${Math.round(vel * 30)} suất/tháng · dự kiến bán ${Math.min(proj, i.heldQty)}/${i.heldQty} suất trước khi gói hết hạn`
-          : "3 tháng chưa bán",
-      },
-      ds: 0,
-      ratio: i.heldQty ? proj / i.heldQty : 9,
-    };
-  }
+  if (i.kind === "referral" || i.kind === "order") return volumeRotation(i, c, base);
+  if (i.kind === "quota" && i.expiresInDays !== null)
+    return quotaRotation(i, i.expiresInDays, vel, base);
   const ds = vel ? Math.round(i.heldQty / vel) : Number.POSITIVE_INFINITY;
   return {
     f: {
@@ -166,10 +168,9 @@ function heldPick(
   i: BizInput,
   c: BizConfig,
   score: number,
-  r: { ds: number; ratio: number },
-  vel: number,
+  r: { ds: number; ratio: number; vel: number },
 ): Pick {
-  if (!vel)
+  if (!r.vel)
     return {
       suggestion: "dump",
       reason:
@@ -221,6 +222,8 @@ export function scoreBusiness(i: BizInput, c: BizConfig = DEFAULT_BIZ): BizScore
     return { score: null, suggestion: null, reason: "Chưa bán lần nào.", factors };
   const score = Math.round(use.reduce((a, f) => a + (f.value as number) * f.weight, 0) / wsum);
   const held = (i.kind === "stock" || i.kind === "quota") && i.heldQty > 0;
-  const p = held ? heldPick(i, c, score, rot, vel) : freePick(c, score);
+  const p = held
+    ? heldPick(i, c, score, { ds: rot.ds, ratio: rot.ratio, vel })
+    : freePick(c, score);
   return { score, suggestion: p.suggestion, reason: p.reason, factors };
 }

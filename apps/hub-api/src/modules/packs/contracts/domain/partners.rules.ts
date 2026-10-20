@@ -115,13 +115,11 @@ export function partnersOf(i: {
   const rows: PartnerOut[] = [];
   for (const f of facts) {
     if (i.role && f.role !== i.role) continue;
-    const s = scoreAgg(
-      i.aggs.get(k(f.party, f.role)) ?? emptyAgg(),
-      i.cfgs[f.role],
-      i.today,
-      f.role,
-      f,
-    );
+    const s = scoreAgg(i.aggs.get(k(f.party, f.role)) ?? emptyAgg(), i.cfgs[f.role], {
+      today: i.today,
+      role: f.role,
+      facts: f,
+    });
     rows.push({
       party: f.party,
       name: i.names?.get(f.party) || f.name || "",

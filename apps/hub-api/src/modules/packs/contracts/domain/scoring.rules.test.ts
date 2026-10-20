@@ -37,12 +37,18 @@ const times = <T>(n: number, x: T): T[] => Array.from({ length: n }, () => x);
 
 describe("engine (test_scoring_engine.py)", () => {
   test("không đủ sự kiện ⇒ không chấm", () => {
-    const r = score([ev("received", 30, { days_late: 0 })], cust(), TODAY, "customer");
+    const r = score([ev("received", 30, { days_late: 0 })], cust(), {
+      today: TODAY,
+      role: "customer",
+    });
     expect([r.score, r.band, r.reason]).toEqual([null, null, "Chưa đủ dữ liệu để chấm"]);
   });
 
   test("đúng hạn: tỉ lệ − 2 điểm mỗi ngày trễ trung bình", () => {
-    const r = score(paid(11, 1, 6), cust({ recency_boost: false }), TODAY, "customer");
+    const r = score(paid(11, 1, 6), cust({ recency_boost: false }), {
+      today: TODAY,
+      role: "customer",
+    });
     // round(100*11/12 − 2*6/12) = round(90.67) = 91
     expect([r.breakdown.payment_on_time?.value, r.breakdown.payment_on_time?.detail]).toEqual([
       91,
@@ -52,7 +58,7 @@ describe("engine (test_scoring_engine.py)", () => {
   });
 
   test("chỉ tiêu chí có dữ liệu được tính, trọng số chia lại", () => {
-    const r = score(paid(10, 0), cust(), TODAY, "customer");
+    const r = score(paid(10, 0), cust(), { today: TODAY, role: "customer" });
     expect(r.score).toBe(100);
     expect(r.breakdown.cks_renewal?.value).toBeNull();
   });
@@ -60,41 +66,45 @@ describe("engine (test_scoring_engine.py)", () => {
   test("tiêu chí tắt bị bỏ", () => {
     const c = cust();
     const events = [...paid(5, 5), ...times(3, ev("complaint", 10))];
-    const full = score(events, c, TODAY, "customer").score as number;
+    const full = score(events, c, { today: TODAY, role: "customer" }).score as number;
     const off = {
       ...c,
       criteria: c.criteria.map((x) => (x.key === "complaints" ? { ...x, enabled: false } : x)),
     };
-    expect(score(events, off, TODAY, "customer").score as number).toBeGreaterThan(full);
+    expect(score(events, off, { today: TODAY, role: "customer" }).score as number).toBeGreaterThan(
+      full,
+    );
   });
 
   test("gia hạn CKS trễ 6 ngày = 40; mất khách = 0", () => {
     const r = score(
       [...paid(4, 0), ev("cks_renewed", 200, { days_before_expiry: -6, with_us: true })],
       cust(),
-      TODAY,
-      "customer",
+      { today: TODAY, role: "customer" },
     );
     expect(r.breakdown.cks_renewal?.value).toBe(40);
-    const lapsed = score([...paid(4, 0), ev("cks_lapsed", 100)], cust(), TODAY, "customer");
+    const lapsed = score([...paid(4, 0), ev("cks_lapsed", 100)], cust(), {
+      today: TODAY,
+      role: "customer",
+    });
     expect(lapsed.breakdown.cks_renewal?.value).toBe(0);
   });
 
   test("ngoài khoảng bỏ qua; gần đây tính gấp đôi", () => {
     const oldLate = times(5, ev("received", 400, { days_late: 10 }));
     expect(
-      score([...paid(4, 0), ...oldLate], cust(), TODAY, "customer").breakdown.payment_on_time
-        ?.value,
+      score([...paid(4, 0), ...oldLate], cust(), { today: TODAY, role: "customer" }).breakdown
+        .payment_on_time?.value,
     ).toBe(100);
     const events = [
       ...times(2, ev("received", 30, { days_late: 0 })),
       ...times(2, ev("received", 200, { days_late: 0 })),
       ...times(2, ev("received", 200, { days_late: 4 })),
     ];
-    const flat = score(events, cust({ recency_boost: false }), TODAY, "customer").breakdown
+    const flat = score(events, cust({ recency_boost: false }), { today: TODAY, role: "customer" })
+      .breakdown.payment_on_time?.value as number;
+    const boosted = score(events, cust(), { today: TODAY, role: "customer" }).breakdown
       .payment_on_time?.value as number;
-    const boosted = score(events, cust(), TODAY, "customer").breakdown.payment_on_time
-      ?.value as number;
     expect(boosted).toBeGreaterThan(flat);
   });
 
@@ -103,26 +113,26 @@ describe("engine (test_scoring_engine.py)", () => {
     const up = score(
       [...base, ev("manual_adjust", 5, { delta: 10 }), ev("manual_adjust", 6, { delta: 10 })],
       cust(),
-      TODAY,
-      "customer",
+      { today: TODAY, role: "customer" },
     );
     expect([up.score, up.adjust]).toEqual([100, 10]);
-    const down = score(
-      [...base, ev("manual_adjust", 5, { delta: -10 })],
-      cust(),
-      TODAY,
-      "customer",
-    );
+    const down = score([...base, ev("manual_adjust", 5, { delta: -10 })], cust(), {
+      today: TODAY,
+      role: "customer",
+    });
     expect(down.score).toBe(90);
     const off = cust({ manual_adjust: false });
     expect(
-      score([...base, ev("manual_adjust", 5, { delta: -10 })], off, TODAY, "customer").score,
+      score([...base, ev("manual_adjust", 5, { delta: -10 })], off, {
+        today: TODAY,
+        role: "customer",
+      }).score,
     ).toBe(100);
   });
 
   test("dòng đã huỷ không tính; mức theo quy tắc", () => {
     const events = [...paid(3, 0), ...times(4, { ...ev("complaint", 5), voided: true })];
-    expect(score(events, cust(), TODAY, "customer").score).toBe(100);
+    expect(score(events, cust(), { today: TODAY, role: "customer" }).score).toBe(100);
     const r = cust().rules;
     expect([band(80, r), band(79, r), band(59, r)]).toEqual(["good", "fair", "watch"]);
   });
@@ -133,7 +143,7 @@ describe("engine (test_scoring_engine.py)", () => {
       ...Array.from({ length: 5 }, (_, i) => ev("reminded", 10 + i)),
       ...Array.from({ length: 3 }, (_, i) => ev("postponed", 40 + i)),
     ];
-    const r = score(events, cust(), TODAY, "customer", { contracts: 2 });
+    const r = score(events, cust(), { today: TODAY, role: "customer", facts: { contracts: 2 } });
     expect(r.reason).toBe("Phải nhắc thanh toán 5 lần, dời hẹn 3 lần");
     expect(r.breakdown.reminders?.value).toBe(62);
     expect(r.breakdown.appointments?.value).toBe(0);
@@ -144,27 +154,37 @@ describe("engine (test_scoring_engine.py)", () => {
       ...Array.from({ length: 34 }, (_, i) => ev("delivered", 5 + i * 8, { days_late: 0 })),
       ...Array.from({ length: 6 }, (_, i) => ev("delivered", 9 + i * 8, { days_late: 2 })),
     ];
-    const r = score(late, sup({ recency_boost: false }), TODAY, "supplier");
+    const r = score(late, sup({ recency_boost: false }), { today: TODAY, role: "supplier" });
     expect([r.reason, r.breakdown.delivery_on_time?.value]).toEqual(["Giao trễ 6/40 lần", 84]);
     const good = [
       ...Array.from({ length: 95 }, (_, i) => ev("delivered", 3 + i * 3, { days_late: 0 })),
       ...times(3, ev("delivered", 4, { days_late: 1 })),
     ];
-    expect(score(good, sup(), TODAY, "supplier").reason).toBe("Giao đúng hạn 95/98 lần");
+    expect(score(good, sup(), { today: TODAY, role: "supplier" }).reason).toBe(
+      "Giao đúng hạn 95/98 lần",
+    );
   });
 
   test("gắn bó: năm + gia hạn", () => {
-    const r = score(paid(4, 0), cust(), TODAY, "customer", {
-      first_start: "2023-10-01",
-      contracts: 3,
+    const r = score(paid(4, 0), cust(), {
+      today: TODAY,
+      role: "customer",
+      facts: {
+        first_start: "2023-10-01",
+        contracts: 3,
+      },
     });
     expect([r.breakdown.tenure?.value, r.breakdown.tenure?.detail]).toEqual([
       100,
       "Hợp tác 3 năm, gia hạn 2 lần",
     ]);
-    const fresh = score(paid(4, 0), cust(), TODAY, "customer", {
-      first_start: "2026-04-13",
-      contracts: 1,
+    const fresh = score(paid(4, 0), cust(), {
+      today: TODAY,
+      role: "customer",
+      facts: {
+        first_start: "2026-04-13",
+        contracts: 1,
+      },
     });
     expect(fresh.breakdown.tenure?.value).toBe(50);
   });
@@ -187,7 +207,10 @@ describe("tiêu chí tự chấm (test_scoring_engine.py L124-165)", () => {
   test("lần chấm mới nhất trong khoảng", () => {
     const c = withQuality(20);
     const base = paid(10, 0);
-    const r = score([...base, rating(10, 40), rating(40, 3)], c, TODAY, "customer");
+    const r = score([...base, rating(10, 40), rating(40, 3)], c, {
+      today: TODAY,
+      role: "customer",
+    });
     const q = r.breakdown["custom:q"];
     expect([q?.value, q?.label, q?.by]).toEqual([40, "Chất lượng", "a@x"]);
     expect(r.score).toBe(80); // round((100*40 + 40*20) / 60)
@@ -199,33 +222,42 @@ describe("tiêu chí tự chấm (test_scoring_engine.py L124-165)", () => {
         rating(30, 3, "custom:q", { rated_at: "2026-10-10T10:00" }),
       ],
       c,
-      TODAY,
-      "customer",
+      { today: TODAY, role: "customer" },
     );
     expect(same.breakdown["custom:q"]?.value).toBe(30);
   });
 
   test("chưa giao dịch nhưng được chấm ⇒ có điểm", () => {
     const c = withQuality(20);
-    expect(score([], c, TODAY, "customer").score).toBeNull();
-    const r = score([rating(85)], c, TODAY, "customer");
+    expect(score([], c, { today: TODAY, role: "customer" }).score).toBeNull();
+    const r = score([rating(85)], c, { today: TODAY, role: "customer" });
     expect([r.score, r.band]).toEqual([85, "good"]);
-    const t = score([rating(60)], c, TODAY, "customer", {
-      first_start: "2023-10-01",
-      contracts: 3,
+    const t = score([rating(60)], c, {
+      today: TODAY,
+      role: "customer",
+      facts: {
+        first_start: "2023-10-01",
+        contracts: 3,
+      },
     });
     expect(t.score).toBe(73); // round((60*20 + 100*10) / 30)
   });
 
   test("chưa chấm / quá khoảng / đã huỷ / tiêu chí khác ⇒ bỏ tiêu chí tự chấm", () => {
     const c = withQuality(20);
-    const r = score(paid(10, 0), c, TODAY, "customer");
+    const r = score(paid(10, 0), c, { today: TODAY, role: "customer" });
     expect([r.breakdown["custom:q"]?.value, r.score]).toEqual([null, 100]);
-    expect(score([...paid(10, 0), rating(0, 400)], c, TODAY, "customer").score).toBe(100);
     expect(
-      score([...paid(10, 0), { ...rating(0), voided: true }], c, TODAY, "customer").score,
+      score([...paid(10, 0), rating(0, 400)], c, { today: TODAY, role: "customer" }).score,
     ).toBe(100);
-    const other = score([...paid(10, 0), rating(0, 5, "custom:other")], c, TODAY, "customer");
+    expect(
+      score([...paid(10, 0), { ...rating(0), voided: true }], c, { today: TODAY, role: "customer" })
+        .score,
+    ).toBe(100);
+    const other = score([...paid(10, 0), rating(0, 5, "custom:other")], c, {
+      today: TODAY,
+      role: "customer",
+    });
     expect(other.score).toBe(100);
     expect("custom:other" in other.breakdown).toBe(false);
   });
@@ -237,34 +269,56 @@ describe("tiêu chí tự chấm (test_scoring_engine.py L124-165)", () => {
         .filter((x) => x.key !== "tenure")
         .map((x, i) => (i === 0 ? { ...x, label: "Trả tiền đúng hạn", weight: x.weight + 10 } : x)),
     );
-    const r = score(paid(5, 0), { ...c, criteria: crit }, TODAY, "customer", {
-      first_start: "2020-01-01",
-    });
+    const r = score(
+      paid(5, 0),
+      { ...c, criteria: crit },
+      {
+        today: TODAY,
+        role: "customer",
+        facts: {
+          first_start: "2020-01-01",
+        },
+      },
+    );
     expect("tenure" in r.breakdown).toBe(false);
     expect(r.breakdown.payment_on_time?.label).toBe("Thanh toán đúng hạn");
   });
 
   test("giá NCC: khoảng cách tới nơi rẻ nhất", () => {
     const events = Array.from({ length: 4 }, (_, i) => ev("delivered", 5 + i, { days_late: 0 }));
-    const cheapest = score(events, sup(), TODAY, "supplier", { price_gap_pct: 0 });
+    const cheapest = score(events, sup(), {
+      today: TODAY,
+      role: "supplier",
+      facts: { price_gap_pct: 0 },
+    });
     expect([cheapest.breakdown.price?.value, cheapest.breakdown.price?.detail]).toEqual([
       100,
       "Giá rẻ nhất",
     ]);
-    const dear = score(events, sup(), TODAY, "supplier", { price_gap_pct: 4.2 });
+    const dear = score(events, sup(), {
+      today: TODAY,
+      role: "supplier",
+      facts: { price_gap_pct: 4.2 },
+    });
     expect([dear.breakdown.price?.value, dear.breakdown.price?.detail]).toEqual([
       79,
       "Đắt hơn 4.2%",
     ]);
     // test_scoring_ratings L106-110: heo 110.000 so 100.000 ⇒ 10% ⇒ (50, "Đắt hơn 10.0%")
-    const ten = score(events, sup(), TODAY, "supplier", {
-      price_gap_pct: (100 * (110_000 - 100_000)) / 100_000,
+    const ten = score(events, sup(), {
+      today: TODAY,
+      role: "supplier",
+      facts: {
+        price_gap_pct: (100 * (110_000 - 100_000)) / 100_000,
+      },
     });
     expect([ten.breakdown.price?.value, ten.breakdown.price?.detail]).toEqual([
       50,
       "Đắt hơn 10.0%",
     ]);
-    expect(score(events, sup(), TODAY, "supplier", {}).breakdown.price?.value).toBeNull();
+    expect(
+      score(events, sup(), { today: TODAY, role: "supplier", facts: {} }).breakdown.price?.value,
+    ).toBeNull();
   });
 });
 
@@ -282,20 +336,22 @@ describe("dòng quá hạn chưa trả lời tính như trễ (test_overdue.py L
     kind: "payment",
   });
   test("3 đúng hạn + 1 quá hạn đang treo ⇒ < 90, 3/4; trả trễ 11 ngày ⇒ vẫn 3/4, điểm cao hơn", () => {
-    const pend = score([...onTime3, od], cust(), T2, "customer").breakdown.payment_on_time;
+    const pend = score([...onTime3, od], cust(), { today: T2, role: "customer" }).breakdown
+      .payment_on_time;
     expect(pend?.detail).toContain("3/4");
     expect(pend?.value as number).toBeLessThan(90);
     const paidLate = at("2026-10-12", { type: "received", days_late: 11, obligation_id: "o1" });
-    const after = score([...onTime3, od, paidLate], cust(), T2, "customer").breakdown
-      .payment_on_time;
+    const after = score([...onTime3, od, paidLate], cust(), { today: T2, role: "customer" })
+      .breakdown.payment_on_time;
     expect(after?.detail).toContain("3/4");
     expect(after?.value as number).toBeGreaterThan(pend?.value as number);
   });
   test("party_late = false ⇒ không tính trễ", () => {
     const mine = { ...od, party_late: false };
-    expect(score([...onTime3, mine], cust(), T2, "customer").breakdown.payment_on_time?.value).toBe(
-      100,
-    );
+    expect(
+      score([...onTime3, mine], cust(), { today: T2, role: "customer" }).breakdown.payment_on_time
+        ?.value,
+    ).toBe(100);
   });
 });
 

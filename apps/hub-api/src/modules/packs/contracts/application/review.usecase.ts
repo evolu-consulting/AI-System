@@ -87,8 +87,7 @@ async function reviewTx(
   r: ReviewTxRepos,
   who: PackWho,
   id: string,
-  input: ReviewInput,
-  today: string,
+  { input, today }: { input: ReviewInput; today: string },
 ): Promise<ReviewResult> {
   const cur = await r.review.lock(id);
   if (!cur) return { kind: "not_found" };
@@ -107,7 +106,7 @@ export function reviewSave(d: Deps): ReviewSave {
   return async (who, id, input) => {
     const today = await d.today(who.tenantId);
     return d.uow
-      .tenant(who, (r) => reviewTx(r, who, id, input, today))
+      .tenant(who, (r) => reviewTx(r, who, id, { input, today }))
       .catch((e) => {
         if (e instanceof ReviewRollback) return { kind: e.reason } satisfies ReviewResult;
         throw e;

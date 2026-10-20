@@ -34,6 +34,8 @@ export type ScoreOut = {
   event_count: number;
 };
 type Cfg = { criteria: readonly Criterion[]; rules: Rules };
+/** Ngày tính + vai + vài sự thật từ HĐ (vắng ⇒ `{}`). */
+export type ScoreAt = { today: string; role: Role; facts?: Facts };
 
 export function band(score: number | null, rules: Rules): Band | null {
   if (score === null) return null;
@@ -51,8 +53,7 @@ function onTime(
   set: readonly Bucket[],
   pend: readonly Bucket[],
   wn: number,
-  label: string,
-  unit: string,
+  { label, unit }: { label: string; unit: string },
 ): Crit {
   const [so, sn] = set as [Bucket, Bucket];
   const [po, pn] = pend as [Bucket, Bucket];
@@ -89,17 +90,12 @@ function priceCrit(gap: number | null | undefined): Crit {
   };
 }
 
-function criteria(
-  a: Agg,
-  role: Role,
-  facts: Facts,
-  today: string,
-  wn: number,
-): Record<string, Crit> {
+function criteria(a: Agg, at: Required<ScoreAt>, wn: number): Record<string, Crit> {
+  const { role, facts, today } = at;
   const out: Record<string, Crit> = {};
   if (role === "customer")
-    out.payment_on_time = onTime(a.set, a.pend, wn, "Thanh toán đúng hạn", "đợt");
-  else out.delivery_on_time = onTime(a.set, a.pend, wn, "Giao đúng hạn", "lần");
+    out.payment_on_time = onTime(a.set, a.pend, wn, { label: "Thanh toán đúng hạn", unit: "đợt" });
+  else out.delivery_on_time = onTime(a.set, a.pend, wn, { label: "Giao đúng hạn", unit: "lần" });
   out.cks_renewal = a.renew_n
     ? { value: clamp(a.renew_sum / a.renew_n), detail: `${a.renew_n} lần gia hạn chữ ký số` }
     : { value: null, detail: null };
@@ -161,9 +157,10 @@ function rated(a: Agg, key: string): Crit {
 export const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Công thức `engine.score` trên đầu vào đã gom. `cfg.criteria` đã chuẩn hoá (`normalise`). */
-export function scoreAgg(a: Agg, cfg: Cfg, today: string, role: Role, facts: Facts = {}): ScoreOut {
+export function scoreAgg(a: Agg, cfg: Cfg, at: ScoreAt): ScoreOut {
+  const { today, role, facts = {} } = at;
   const { rules } = cfg;
-  const crit = criteria(a, role, facts, today, rules.recency_boost ? 2 : 1);
+  const crit = criteria(a, { role, facts, today }, rules.recency_boost ? 2 : 1);
   for (const c of cfg.criteria) if (c.kind === "manual") crit[c.key] = rated(a, c.key);
   const on = cfg.criteria.filter(
     (c) => c.enabled && c.weight > 0 && (crit[c.key]?.value ?? null) !== null,
@@ -191,12 +188,6 @@ export function scoreAgg(a: Agg, cfg: Cfg, today: string, role: Role, facts: Fac
 }
 
 /** `engine.score` trên từng dòng sổ (= gom TS rồi `scoreAgg`). */
-export function score(
-  events: readonly Ev[],
-  cfg: Cfg,
-  today: string,
-  role: Role,
-  facts: Facts = {},
-): ScoreOut {
-  return scoreAgg(aggregate(events, windowOf(cfg.rules, today), role), cfg, today, role, facts);
+export function score(events: readonly Ev[], cfg: Cfg, at: ScoreAt): ScoreOut {
+  return scoreAgg(aggregate(events, windowOf(cfg.rules, at.today), at.role), cfg, at);
 }

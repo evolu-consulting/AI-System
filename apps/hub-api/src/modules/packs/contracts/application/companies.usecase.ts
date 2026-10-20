@@ -66,6 +66,21 @@ async function withRegistry(d: CompaniesDeps, c: Company, tax: string | null, na
   return applyRegistry(c, look);
 }
 
+/** `refresh`: tra lại Cục Thuế (trừ trường người đã sửa). */
+async function refreshCompany(d: CompaniesDeps, who: PackWho, party: string) {
+  const c = await d.uow.tenant(who, (x) => x.companies.get(party));
+  if (!c) throw new CompanyFail(404);
+  if (!c.tax_id) throw new CompanyFail(409, "Công ty chưa có MST");
+  const look = await lookup(d, c.tax_id);
+  if (look.result === "unavailable")
+    throw new CompanyFail(503, "Chưa tra được Cục Thuế, thử lại sau ít phút");
+  return d.uow.tenant(who, async (x) => {
+    const now = await x.companies.get(party, true);
+    if (!now) throw new CompanyFail(404);
+    return x.companies.save(applyRegistry(now, look));
+  });
+}
+
 export function companiesUsecase(d: CompaniesDeps) {
   const list = async (who: PackWho, q?: string): Promise<CompanyRow[]> => {
     const r = await d.uow.tenant(who, (x) => x.companies.list());
@@ -103,21 +118,7 @@ export function companiesUsecase(d: CompaniesDeps) {
       return x.companies.save(next);
     });
 
-  /** `refresh`: tra lại Cục Thuế (trừ trường người đã sửa). */
-  const refresh = async (who: PackWho, party: string) => {
-    const c = await d.uow.tenant(who, (x) => x.companies.get(party));
-    if (!c) throw new CompanyFail(404);
-    if (!c.tax_id) throw new CompanyFail(409, "Công ty chưa có MST");
-    const look = await lookup(d, c.tax_id);
-    if (look.result === "unavailable")
-      throw new CompanyFail(503, "Chưa tra được Cục Thuế, thử lại sau ít phút");
-    return d.uow.tenant(who, async (x) => {
-      const now = await x.companies.get(party, true);
-      if (!now) throw new CompanyFail(404);
-      return x.companies.save(applyRegistry(now, look));
-    });
-  };
-
+  const refresh = (who: PackWho, party: string) => refreshCompany(d, who, party);
   return { list, create, update, refresh };
 }
 export type CompaniesUsecase = ReturnType<typeof companiesUsecase>;

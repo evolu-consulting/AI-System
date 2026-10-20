@@ -96,7 +96,7 @@ describe("so giá một mặt hàng (test_prices.py)", () => {
   );
   const scores = new Map([["tax:0322223333", { score: 90, band: "good" }]]);
   test("giá HĐ trước, báo giá NCC mới «MỚI»; báo giá mới hơn của cùng NCC thay báo giá cũ", () => {
-    const r = compareGoods(lines, [quote({})], "name:thit heo|", scores);
+    const r = compareGoods(lines, [quote({})], "name:thit heo|", { scores: scores });
     expect(r.rows.map((x) => [x.supplier, x.price, x.source.type, x.is_new, x.score])).toEqual([
       ["Bình An", 98_000, "contract", false, 90],
       ["Hưng Phát", 94_500, "quote", true, null],
@@ -105,7 +105,7 @@ describe("so giá một mặt hàng (test_prices.py)", () => {
       lines,
       [quote({}), quote({ id: "q2", price: 94_000, quoted_at: "2026-10-12" })],
       "name:thit heo|",
-      scores,
+      { scores: scores },
     );
     expect(again.rows.map((x) => x.price)).toEqual([98_000, 94_000]);
     expect([r.product, r.market]).toEqual([

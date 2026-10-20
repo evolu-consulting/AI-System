@@ -48,35 +48,36 @@ function checkManual(b: PartnerEventCreate, isAdmin: boolean): void {
 const todayOf = (d: Deps) => async (who: PackWho) =>
   localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
+type SettleIn = { at?: string | null; amount?: number | null; fault?: Fault | null };
+
+/** Đã trả/thu một đợt. */
+async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
+  const at = b.at ?? (await todayOf(d)(who));
+  return d.uow.tenant(who, async ({ ledger: r, delivery }) => {
+    const ob = await openObligation(r, id);
+    const late = daysLate(at, ob.due_date);
+    // V2-D · HD-05: mốc giao ⇒ SL đã giao + kho (cùng tx, sau khoá HĐ → mốc); lỗi ⇒ huỷ cả tx, mốc giữ mở.
+    const dv = ob.kind === "delivery" ? await confirmDelivery(delivery, id, at) : null;
+    const out = await r.settle({
+      id,
+      at,
+      by: who.userId,
+      type: settledType(ob.kind, ob.direction),
+      role: roleOf(ob.direction),
+      late,
+      amount: b.amount ?? ob.amount,
+      // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
+      fault: late > 0 ? (b.fault ?? "unknown") : null,
+      delivered: dv?.rows ?? [],
+    });
+    return dv?.outcome ? { ...out, delivery: dv.outcome } : out;
+  });
+}
+
 /** Lệnh trên một đợt: đã trả/thu, hẹn lại, nhắc. */
 function obligationCommands(d: Deps) {
   const today = todayOf(d);
-  const settle = async (
-    who: PackWho,
-    id: string,
-    b: { at?: string | null; amount?: number | null; fault?: Fault | null },
-  ) => {
-    const at = b.at ?? (await today(who));
-    return d.uow.tenant(who, async ({ ledger: r, delivery }) => {
-      const ob = await openObligation(r, id);
-      const late = daysLate(at, ob.due_date);
-      // V2-D · HD-05: mốc giao ⇒ SL đã giao + kho (cùng tx, sau khoá HĐ → mốc); lỗi ⇒ huỷ cả tx, mốc giữ mở.
-      const dv = ob.kind === "delivery" ? await confirmDelivery(delivery, id, at) : null;
-      const out = await r.settle({
-        id,
-        at,
-        by: who.userId,
-        type: settledType(ob.kind, ob.direction),
-        role: roleOf(ob.direction),
-        late,
-        amount: b.amount ?? ob.amount,
-        // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
-        fault: late > 0 ? (b.fault ?? "unknown") : null,
-        delivered: dv?.rows ?? [],
-      });
-      return dv?.outcome ? { ...out, delivery: dv.outcome } : out;
-    });
-  };
+  const settle = (who: PackWho, id: string, b: SettleIn) => settleOne(d, who, id, b);
 
   const postpone = async (who: PackWho, id: string, b: { to: string; note?: string | null }) => {
     const day = await today(who);
