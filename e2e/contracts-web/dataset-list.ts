@@ -111,7 +111,7 @@ function hubRow(r: Row) {
   return {
     id: r.id,
     kind: "contract",
-    parent_id: null,
+    parent_id: null as string | null,
     title: r.title,
     number: r.number,
     type: null,

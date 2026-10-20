@@ -1,20 +1,30 @@
 // W1 · "Mua hàng": use case đọc báo cáo nguồn hàng (một trang) + đổi nguồn một dòng bán.
-// Dòng giá của CẢ tenant tính một lần và nhớ theo dấu vân tay dữ liệu (`sourcing-cache.ts`); mỗi request: dấu vân tay (tx hệ thống, tenant-wide)
-// ‖ tập id HĐ người dùng thấy (tx người dùng, RLS tenant + luật thấy M1/M1b) ⇒ lọc dòng theo tập đó ⇒ nguồn / lãi / rủi ro / trang trong bộ
-// nhớ. Số câu SQL cố định (trúng: 4 = phạm vi + dấu vân tay, phạm vi + id; trượt thêm 3). HĐ không thấy không có mặt; đổi nguồn HĐ không thấy ⇒ 404.
-import type { SourceChoice, SourcingOut, SourcingQuery } from "@ai/contracts";
-import { SOURCING_PAGE_SIZE } from "@ai/contracts";
+// Dữ liệu THÔ của CẢ tenant nạp một lần và nhớ theo dấu vân tay dữ liệu (`sourcing-cache.ts`); mỗi request: dấu vân tay (tx hệ thống,
+// tenant-wide) ‖ tập id HĐ người dùng thấy (SQL trong tx người dùng, RLS tenant + luật thấy M1/M1b) ⇒ lọc dữ liệu thô theo tập đó TRƯỚC khi
+// dựng dòng giá (`visibleTo`, review B #9) ⇒ nguồn / lãi / rủi ro / trang trong bộ nhớ. Số câu SQL cố định (trúng: 4 = phạm vi + dấu vân
+// tay, phạm vi + id; trượt thêm 3). HĐ không thấy không có mặt và không ảnh hưởng dòng khác; đổi nguồn HĐ không thấy ⇒ 404.
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
 import { localDate } from "../domain/local-time.rules";
 import {
   type FullSale,
   isCandidate,
-  priceLines,
   type RawSourcing,
   reportOf,
-  sales,
+  salesOf,
+  visibleTo,
 } from "../domain/sourcing.rules";
-import { createSourcingCache, type SourcingCache, type SourcingEntry } from "./sourcing-cache";
+import {
+  SOURCING_PAGE_SIZE,
+  type SourceChoice,
+  type SourcingOut,
+  type SourcingQuery,
+} from "../domain/sourcing.types";
+import {
+  createSourcingCache,
+  type SourcingCache,
+  type SourcingEntry,
+  viewOf,
+} from "./sourcing-cache";
 
 export type SourcingRepo = {
   /** Dấu vân tay dữ liệu của CẢ tenant (chạy ở tx hệ thống). */
@@ -53,17 +63,10 @@ export function sourcingUsecases(d: Deps) {
   const entryFor = async (who: PackWho, today: string, fp: string): Promise<SourcingEntry> => {
     const hit = cache.get(who.tenantId);
     if (hit && hit.fp === fp && hit.today === today) return hit;
-    return cache.fill(who.tenantId, () =>
+    return cache.fill(who.tenantId, { fp, today }, () =>
       d.uow.system(who.tenantId, async ({ sourcing: r }) => {
         const fp2 = await r.fingerprint(); // cùng tx với lần nạp ⇒ khớp dữ liệu đọc
-        const raw = await r.load();
-        return {
-          fp: fp2,
-          today,
-          lines: priceLines(raw.contracts, today),
-          choices: raw.choices,
-          truncated: raw.truncated,
-        };
+        return { fp: fp2, today, raw: await r.load(), views: new Map() };
       }),
     );
   };
@@ -76,10 +79,8 @@ export function sourcingUsecases(d: Deps) {
       d.uow.tenant(who, ({ sourcing: r }) => r.visibleIds()),
     ]);
     const e = await entryFor(who, today, fp);
-    const seen = new Set(ids);
-    const lines = e.lines.filter((l) => seen.has(l.contract_id));
-    const choices = e.choices.filter((c) => seen.has(c.sale_contract_id));
-    return { rows: sales(lines, choices), truncated: e.truncated };
+    const rows = viewOf(e, ids, () => salesOf(visibleTo(e.raw, ids), e.today));
+    return { rows, truncated: e.raw.truncated };
   };
 
   const read = async (who: PackWho, q: SourcingQuery = {}): Promise<SourcingOut> => {

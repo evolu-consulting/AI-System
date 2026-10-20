@@ -65,6 +65,8 @@ async function world(
 const get = (p = P.hoa, q = "") => call(c, p, "GET", `/sourcing${q}`);
 const row = (r: { json: Json }, name: string) =>
   r.json.lines.find((l: { name: string }) => l.name === name);
+const choicesN = async (): Promise<number | undefined> =>
+  (await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.sourcing_choices`)[0]?.n;
 const choose = (p: typeof P.hoa, sale: string, line: number | string, body: unknown) =>
   call(c, p, "PUT", `/sourcing/${sale}/${line}`, body);
 
@@ -125,10 +127,7 @@ describe("W1 · báo cáo nguồn hàng", () => {
       margin: 20_000,
       profit: 200_000,
     });
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.sourcing_choices`;
-    expect(n).toBe(1);
+    expect(await choicesN()).toBe(1);
     expect((await choose(P.hoa, w.s1, 0, { contract_id: null })).status).toBe(200);
     expect(row(await get(), A4)).toMatchObject({ source: { contract_id: w.m1, mode: "auto" } });
     expect((await choose(P.hoa, w.s1, 0, {})).status).toBe(200); // bỏ chọn khi chưa chọn: vô hại
@@ -214,15 +213,80 @@ describe("W1 · luật thấy M1 (chế độ org)", () => {
       await setVisibility(c, "tenant");
     }
   });
+  it("lạm dụng (A): thấy phụ lục nhưng KHÔNG thấy HĐ bán gốc ⇒ không dòng nào, không lộ khách/sản phẩm/số HĐ gốc", async () => {
+    const w = await world({ sale: P.lan.id, m1: P.lan.id, m2: P.lan.id });
+    const app = await priced(c.sql, {
+      sale: true,
+      partner: "Khách An",
+      number: "S-1-PL1",
+      parent: w.s1,
+      effective: d(-1),
+      items: [{ name: A4, price: 85_000 }],
+      owner: P.hoa.id,
+    });
+    await setVisibility(c, "org");
+    try {
+      const h = await get(P.hoa);
+      expect(h.status).toBe(200);
+      expect([h.json.lines, h.json.suppliers, h.json.candidates, h.json.stats.lines]).toEqual([
+        [],
+        [],
+        {},
+        0,
+      ]);
+      expect((await get(P.hoa, `?contract=${app}`)).json.lines).toEqual([]);
+      const text = JSON.stringify(h.json);
+      for (const leak of ["Khách An", "S-1", w.s1, A4])
+        expect({ leak, hit: text.includes(leak) }).toEqual({ leak, hit: false });
+      // lan (owner) vẫn thấy giá phụ lục thay giá gốc
+      expect(row(await get(P.lan), A4)).toMatchObject({ contract_id: app, price: 85_000 });
+    } finally {
+      await setVisibility(c, "tenant");
+    }
+  });
+  it("lạm dụng (B): thấy HĐ gốc nhưng KHÔNG thấy phụ lục ⇒ dòng gốc vẫn hiện giá gốc (phụ lục ẩn không làm nó hết hiệu lực)", async () => {
+    const w = await world({ sale: P.hoa.id, m1: P.hoa.id, m2: P.hoa.id });
+    const app = await priced(c.sql, {
+      sale: true,
+      partner: "Khách An",
+      number: "S-1-PL1",
+      parent: w.s1,
+      effective: d(-1),
+      items: [{ name: A4, price: 85_000 }],
+      owner: P.lan.id,
+    });
+    await setVisibility(c, "org");
+    try {
+      const h = await get(P.hoa);
+      expect(row(h, A4)).toMatchObject({ contract_id: w.s1, price: 80_000, margin: 30_000 });
+      expect(JSON.stringify(h.json).includes(app)).toBe(false);
+      expect(JSON.stringify(h.json).includes("S-1-PL1")).toBe(false);
+    } finally {
+      await setVisibility(c, "tenant");
+    }
+  });
+  it("lạm dụng: người không thấy HĐ nào (chế độ org) ⇒ không dòng nào dù bộ nhớ đệm đã nóng", async () => {
+    await world({ sale: P.lan.id, m1: P.lan.id, m2: P.lan.id });
+    await setVisibility(c, "org");
+    try {
+      expect((await get(P.lan)).json.lines).toHaveLength(2); // làm nóng bộ nhớ đệm
+      const h = await get(P.hoa);
+      expect([h.status, h.json.lines, h.json.suppliers, h.json.stats.lines]).toEqual([
+        200,
+        [],
+        [],
+        0,
+      ]);
+    } finally {
+      await setVisibility(c, "tenant");
+    }
+  });
   it("đổi nguồn HĐ bán không thấy ⇒ 404 và không ghi gì", async () => {
     const w = await world({ sale: P.lan.id });
     await setVisibility(c, "org");
     try {
       expect((await choose(P.hoa, w.s1, 0, { contract_id: w.m1, line: 0 })).status).toBe(404);
-      const [{ n }] = await c.sql<
-        { n: number }[]
-      >`select count(*)::int as n from contracts.sourcing_choices`;
-      expect(n).toBe(0);
+      expect(await choicesN()).toBe(0);
     } finally {
       await setVisibility(c, "tenant");
     }
@@ -238,10 +302,7 @@ describe("W1 · quyền gói, tenant, đầu vào xấu", () => {
       expect([r.status, r.json?.error?.code]).toEqual([403, "PACK_FORBIDDEN"]);
     }
     expect((await get(P.cuc)).status).toBe(403);
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.sourcing_choices`;
-    expect(n).toBe(0);
+    expect(await choicesN()).toBe(0);
     expect((await fetch(`${c.hub.base}/pack/contracts/sourcing`)).status).toBe(401);
   });
   it("beta (tenant khác): đọc rỗng; đổi nguồn HĐ acme ⇒ 404; không đổi gì", async () => {
@@ -249,10 +310,7 @@ describe("W1 · quyền gói, tenant, đầu vào xấu", () => {
     const r = await get(P.an);
     expect([r.status, r.json.lines, r.json.suppliers]).toEqual([200, [], []]);
     expect((await choose(P.an, w.s1, 0, { contract_id: w.m1, line: 0 })).status).toBe(404);
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.sourcing_choices`;
-    expect(n).toBe(0);
+    expect(await choicesN()).toBe(0);
   });
   it("nguồn không hợp lệ ⇒ 422 SOURCING_INVALID (sản phẩm khác, dòng không có, HĐ không có, thiếu line); HĐ/dòng bán không có ⇒ 404", async () => {
     const w = await world();
@@ -282,10 +340,7 @@ describe("W1 · quyền gói, tenant, đầu vào xấu", () => {
         code,
       });
     }
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.sourcing_choices`;
-    expect(n).toBe(0);
+    expect(await choicesN()).toBe(0);
   });
   it("đầu vào xấu ⇒ 4xx rõ, KHÔNG BAO GIỜ 5xx: id/line sai dạng, line ngoài 0…9999, thân lạ/hỏng, query lạ, tenant_id trong thân", async () => {
     const w = await world();

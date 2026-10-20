@@ -484,10 +484,9 @@ describe("W1 · hẹn nhắc chung (GET/POST /followups)", () => {
     } finally {
       await setVisibility(c, "tenant");
     }
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.followups`;
-    expect(n).toBe(3);
+    expect(
+      (await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.followups`)[0]?.n,
+    ).toBe(3);
     const titles = (await call(c, P.hoa, "GET", "/followups")).json.map(
       (f: { title: string }) => f.title,
     );

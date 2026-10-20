@@ -105,7 +105,7 @@ describe("W1b · gửi đúng giờ", () => {
       "done",
       "sent",
     ]);
-    expect(await notices()).toEqual([]);
+    expect([...(await notices())]).toEqual([]);
   });
   it("dedup: chạy lại cùng giờ hẹn không nhân đôi; nhắc lại sau sang giờ mới ⇒ gửi lại một thông báo mới", async () => {
     await fresh();
@@ -137,10 +137,13 @@ describe("W1b · gửi đúng giờ", () => {
     const all = await notices();
     expect(all).toHaveLength(50);
     expect(new Set(all.map((n) => n.dedup_key)).size).toBe(50);
-    const [{ n }] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.followups where status = 'pending'`;
-    expect(n).toBe(0);
+    expect(
+      (
+        await c.sql<
+          { n: number }[]
+        >`select count(*)::int as n from contracts.followups where status = 'pending'`
+      )[0]?.n,
+    ).toBe(0);
   });
   it("hàng đang bị giao dịch khác khoá ⇒ bỏ qua lượt này (SKIP LOCKED), các hàng còn lại vẫn gửi; mở khoá ⇒ lượt sau gửi", async () => {
     await fresh();
@@ -174,7 +177,7 @@ describe("W1b · gửi đúng giờ", () => {
     const id = await followup({ due: `${d(-1)}T09:00:00+07:00`, who: P.an }); // an thuộc beta, hẹn nhắc lại ở acme
     expect(await sender(new FakeClock(noon(0))).once()).toMatchObject({ claimed: 1, notified: 0 });
     expect(await statusOf(id)).toBe("sent");
-    expect(await notices()).toEqual([]);
+    expect([...(await notices())]).toEqual([]);
   });
   it("role job chỉ đọc (tenant_id, due_at, status) của hàng chờ: đọc tiêu đề ⇒ 42501, không ghi được", async () => {
     await fresh();

@@ -4,20 +4,20 @@
 // Quyết định: `current` theo NGÀY hiệu lực của dòng (giá phụ lục có ngày hiệu lực tương lai chưa thay giá cũ) và trạng thái HĐ còn
 // sống; mgmt đánh dấu thêm "đã bị thay" theo đồ thị — ở đây ngày hiệu lực đã là nguồn duy nhất (D-HD5-01).
 import {
-  type SaleLine,
-  SOURCING_CANDIDATES_MAX,
-  type SourceRef,
-  type SourcingOut,
-  type SourcingParty,
-  type SupplierExposure,
-} from "@ai/contracts";
-import {
   applyAppendixPricing,
   type PriceItem,
   type PriceSource,
   resolver,
 } from "./appendix-pricing.rules";
 import { foldVi } from "./fold.rules";
+import {
+  type SaleLine,
+  SOURCING_CANDIDATES_MAX,
+  type SourceRef,
+  type SourcingOut,
+  type SourcingParty,
+  type SupplierExposure,
+} from "./sourcing.types";
 
 /** Trạng thái HĐ còn hiệu lực cho giá (`products.LIVE`). */
 export const LIVE = new Set(["active", "expiring", "renewed"]);
@@ -139,6 +139,37 @@ export function priceLines(contracts: readonly RawContract[], today: string): Pr
     .flatMap((p) => familyLines(p, apps.get(p.id) ?? [], byId, today));
 }
 
+/**
+ * Luật thấy M1/M1b áp lên dữ liệu THÔ, TRƯỚC khi dựng dòng giá (`ids` = tập id HĐ người xem thấy, đọc bằng SQL dưới RLS): HĐ/phụ lục
+ * không thấy coi như không tồn tại ⇒ phụ lục ẩn không thay giá (không làm dòng gốc thành hết hiệu lực), phụ lục thấy mà HĐ gốc ẩn
+ * thành mồ côi và bị bỏ (không lộ bên/hướng/sản phẩm của HĐ gốc). Lựa chọn nguồn chỉ giữ khi thấy cả dòng bán lẫn nguồn.
+ */
+export function visibleTo(raw: RawSourcing, ids: Iterable<string>): RawSourcing {
+  const seen = new Set(ids);
+  return {
+    contracts: raw.contracts.filter((c) => seen.has(c.id)),
+    choices: raw.choices.filter(
+      (c) => seen.has(c.sale_contract_id) && seen.has(c.source_contract_id),
+    ),
+    truncated: raw.truncated,
+  };
+}
+
+/** Dòng bán đầy đủ từ dữ liệu thô (đã lọc theo người xem bằng `visibleTo`). */
+export const salesOf = (raw: RawSourcing, today: string): FullSale[] =>
+  sales(priceLines(raw.contracts, today), raw.choices);
+
+/** Trần tiền như sổ thanh toán (`LEDGER_MONEY_MAX` = 10^15): giá vượt trần (dữ liệu hỏng) không dùng để tính lãi. */
+export const PRICE_MAX = 1_000_000_000_000_000;
+const money = (p: number | null): number | null =>
+  p !== null && Number.isFinite(p) && Math.abs(p) <= PRICE_MAX ? p : null;
+/** Lãi theo số lượng làm tròn về đồng; ngoài vùng số nguyên an toàn ⇒ null (không báo số sai). */
+const profitOf = (margin: number | null, qty: number | null): number | null => {
+  if (margin === null || !qty) return null;
+  const p = Math.round(margin * qty);
+  return Number.isSafeInteger(p) ? p : null;
+};
+
 const ref = (b: PriceLine): SourceRef => ({
   contract_id: b.contract_id,
   number: b.number,
@@ -189,10 +220,10 @@ export type FullSale = SaleLine & { cands: readonly PriceLine[] };
 
 function saleLine(s: PriceLine, cands: readonly PriceLine[], p: Picked): FullSale {
   const src = p?.src;
+  const sell = money(s.price);
+  const buy = src ? money(src.price) : null;
   const margin =
-    src && s.price !== null && src.price !== null && sameUnit(src.unit, s.unit)
-      ? s.price - src.price
-      : null;
+    src && sell !== null && buy !== null && sameUnit(src.unit, s.unit) ? sell - buy : null;
   return {
     product: s.product,
     name: s.name,
@@ -209,8 +240,8 @@ function saleLine(s: PriceLine, cands: readonly PriceLine[], p: Picked): FullSal
     source: p ? { ...ref(p.src), mode: p.mode } : null,
     cands,
     margin,
-    margin_pct: margin !== null && s.price ? (margin / s.price) * 100 : null,
-    profit: margin !== null && s.qty ? margin * s.qty : null,
+    margin_pct: margin !== null && sell ? Math.round((margin / sell) * 10_000) / 100 : null,
+    profit: profitOf(margin, s.qty),
     risk: riskOf(src),
   };
 }
