@@ -19,7 +19,7 @@ const who = { tenantId: T, userId: userId(993) };
 
 async function seed(o: Sql): Promise<void> {
   await o`with d as (insert into knowledge.documents (tenant_id, title, uri, content_hash, chunk_count)
-      select ${T}::uuid, 'Tài liệu ' || g, 'file://s' || g, md5('s' || g), 1 from generate_series(1, ${N_DOCS}) g
+      select ${T}::uuid, 'Tài liệu ' || g, 'file://s' || g, md5('s' || g) || md5(g::text), 1 from generate_series(1, ${N_DOCS}) g
       returning id, tenant_id)
     insert into knowledge.chunks (tenant_id, doc_id, ord, body) select d.tenant_id, d.id, 0, 'đoạn' from d`;
   await o`insert into knowledge.entities (tenant_id, key, name, type)
