@@ -1,7 +1,9 @@
 // N4 eval 0.11 · chấm "đáp án đúng" theo RUBRIC cố định. Hai đường:
-// - `claude` (có ANTHROPIC_API_KEY): Claude viết câu trả lời CHỈ từ top-5 ngữ cảnh, rồi Claude chấm câu trả lời so với đáp án vàng.
-// - `offline` (không key): đọc `judgments.offline.json` — Claude (tác nhân N4) tự chấm ngữ cảnh top-5 theo cùng rubric, ghi tay
-//   vào fixture, khoá theo chữ ký top-5 (`doc#ord`). Ngữ cảnh đổi ⇒ chữ ký đổi ⇒ "chưa chấm" (không dùng điểm cũ).
+// - `claude` (ai-sub: mặc định GÓI Claude qua Claude Code CLI; `EVAL_JUDGE=api` ⇒ ANTHROPIC_API_KEY): Claude viết câu trả lời
+//   CHỈ từ top-5 ngữ cảnh, rồi Claude chấm câu trả lời so với đáp án vàng.
+// - `offline` (`EVAL_JUDGE=offline` hoặc không có model): đọc `judgments.offline.json` — Claude (tác nhân N4) tự chấm ngữ cảnh
+//   top-5 theo cùng rubric, ghi tay vào fixture, khoá theo chữ ký top-5 (`doc#ord`). Ngữ cảnh đổi ⇒ "chưa chấm".
+import type { ModelProvider } from "../../apps/hub-api/src/lib/ai-client/ai-client";
 import type { Question, Ranked } from "./metrics";
 
 export const RUBRIC = [
@@ -20,7 +22,7 @@ export const signature = (ranked: readonly Ranked[]): string =>
 export type Verdict = {
   score: 0 | 1 | 2;
   note: string;
-  by: "offline-claude-fixture" | "claude-api";
+  by: "offline-claude-fixture" | "claude-api" | "claude-subscription";
 };
 export type OfflineFixture = {
   rubric: string;
@@ -43,29 +45,35 @@ const ctxText = (ranked: readonly Ranked[]): string =>
     .map((r, i) => `<doc n="${i + 1}" src="${r.doc}#${r.ord}">\n${r.text}\n</doc>`)
     .join("\n");
 
-async function messages(
-  key: string,
+/** Một lượt model qua `ModelProvider` của AI client chung (gói Claude qua CLI hoặc API) — eval không ghi usage, không trần. */
+async function ask(
+  p: ModelProvider,
   model: string,
   prompt: string,
   maxTokens: number,
 ): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }],
-    }),
-    signal: AbortSignal.timeout(60_000),
+  const r = await p.complete({
+    model,
+    system: "Trả lời ngắn gọn, chính xác, đúng định dạng được yêu cầu.",
+    prompt,
+    maxTokens,
+    signal: AbortSignal.timeout(180_000),
   });
-  if (!res.ok) throw new Error(`anthropic http ${res.status}`);
-  const b = (await res.json()) as { content?: { text?: string }[] };
-  return (b.content ?? []).map((c) => c.text ?? "").join("");
+  if (!r.ok) throw new Error(`judge model ${r.code}`);
+  return r.text;
+}
+
+/** JSON `{score, note}` trong đầu ra; hỏng ⇒ 0 điểm kèm ghi chú (không ném — review F-20). */
+export function parseVerdict(raw: string): { score: 0 | 1 | 2; note: string } {
+  const m = /\{[\s\S]*\}/.exec(raw);
+  let v: { score?: number; note?: string } = {};
+  try {
+    v = m ? (JSON.parse(m[0]) as typeof v) : {};
+  } catch {
+    return { score: 0, note: "judge output not JSON" };
+  }
+  const score = v.score === 2 ? 2 : v.score === 1 ? 1 : 0;
+  return { score, note: typeof v.note === "string" ? v.note : "" };
 }
 
 export const answerPrompt = (q: Question, ranked: readonly Ranked[]): string =>
@@ -74,16 +82,16 @@ export const answerPrompt = (q: Question, ranked: readonly Ranked[]): string =>
 export const judgePrompt = (q: Question, answer: string): string =>
   `${RUBRIC}\n\nCâu hỏi: ${q.q}\nLoại: ${q.kind}\nĐáp án vàng: ${q.answer}\nCâu trả lời cần chấm: ${answer}\n\nTrả về DUY NHẤT JSON {"score":0|1|2,"note":"<lý do ngắn>"}.`;
 
-export function claudeJudge(
-  key: string,
+/** Chấm bằng Claude qua `provider` (ai-sub: mặc định gói Claude — Claude Code CLI; `EVAL_JUDGE=api` ⇒ khoá API). */
+export function modelJudge(
+  provider: ModelProvider,
   model = process.env.EVAL_JUDGE_MODEL ?? "claude-sonnet-5-5",
 ) {
+  const by: Verdict["by"] =
+    provider.billing === "subscription" ? "claude-subscription" : "claude-api";
   return async (q: Question, ranked: readonly Ranked[]): Promise<Verdict & { answer: string }> => {
-    const answer = await messages(key, model, answerPrompt(q, ranked), 400);
-    const raw = await messages(key, model, judgePrompt(q, answer), 200);
-    const m = /\{[\s\S]*\}/.exec(raw);
-    const v = m ? (JSON.parse(m[0]) as { score?: number; note?: string }) : {};
-    const score = v.score === 2 ? 2 : v.score === 1 ? 1 : 0;
-    return { score, note: v.note ?? "", by: "claude-api", answer };
+    const answer = await ask(provider, model, answerPrompt(q, ranked), 400);
+    const v = parseVerdict(await ask(provider, model, judgePrompt(q, answer), 200));
+    return { ...v, by, answer };
   };
 }

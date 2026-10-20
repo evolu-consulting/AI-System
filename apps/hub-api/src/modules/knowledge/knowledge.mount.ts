@@ -2,7 +2,7 @@
 // R1: module có POOL RIÊNG (`KNOWLEDGE_DATABASE_URL`, vắng ⇒ DSN chính `HUB_DATABASE_URL`; dev/test dùng role `knowledge_api` chỉ
 // SET ROLE được `knowledge_rw`) — không join chéo schema. Tx = `createPackUow(db, "knowledge")` (role `knowledge_rw`, RLS FORCE).
 // Chiến lược theo `KNOWLEDGE_STRATEGY`: `fts` (mặc định) | `embedding` (cần `OPENAI_API_KEY`). Rerank Claude khi
-// `KNOWLEDGE_RERANK=on` + `ANTHROPIC_API_KEY` (vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
+// `KNOWLEDGE_RERANK=on` + nhà cung cấp AI (ai-sub: gói Claude mặc định, `AI_PROVIDER*`; vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
 import { createDb, type Db } from "@ai/db";
 import type { AiClient } from "../../lib/ai-client/ai-client";
 import { createHubAiClient } from "../../lib/ai-client/ai-client.env";
@@ -122,7 +122,7 @@ export function fileConverters(): { docx: ToText; pdf: ToText; close(): Promise<
 
 /**
  * R1 · nạp tệp (mgmt-app `ingest`): parse → chia đoạn/lưu → sinh đồ thị G1. `graphAi` vắng ⇒ theo env `KNOWLEDGE_GRAPH_AI`
- * (on + ANTHROPIC_API_KEY | fake | tắt). `files` vắng ⇒ chỉ Markdown/văn bản.
+ * (on + nhà cung cấp AI — gói Claude mặc định hoặc API, `AI_PROVIDER*` | fake | tắt). `files` vắng ⇒ chỉ Markdown/văn bản.
  */
 export function ingestService(
   db: Db,

@@ -22,14 +22,22 @@ export type ModelRequest = {
 export type ModelReply =
   | { ok: true; text: string; model: string; usage: AiUsage }
   | { ok: false; code: "REFUSED" | "FAILED" | "UNAVAILABLE"; model?: string; usage?: AiUsage };
-/** Nhà cung cấp model (Anthropic thật / giả trong test). */
-export type ModelProvider = { key: string; complete(r: ModelRequest): Promise<ModelReply> };
+/** Cách tính tiền của dòng usage (`hub.usage_logs.billing`): `api` = khoá API trả theo token; `subscription` = gói Claude
+ *  (CLI đăng nhập gói, chi phí 0 theo lời gọi — ai-sub). */
+export type AiBilling = "api" | "subscription";
+/** Nhà cung cấp model (Anthropic API / Claude CLI gói / giả trong test). `billing` vắng ⇒ `api`. */
+export type ModelProvider = {
+  key: string;
+  billing?: AiBilling;
+  complete(r: ModelRequest): Promise<ModelReply>;
+};
 
 export type UsageRecord = {
   tenantId: string;
   userId: string | null;
   feature: string;
   providerKey: string;
+  billing: AiBilling;
   model: string;
   usage: AiUsage;
   costUsd: number | null;
@@ -82,8 +90,11 @@ export type AiClient = {
 
 type Log = { warn(msg: string, f?: Record<string, unknown>): void };
 export type AiClientDeps = {
-  /** null ⇒ chưa cấu hình khoá ⇒ mọi lời gọi `UNAVAILABLE` (0 SQL). */
-  provider: ModelProvider | null;
+  /** null ⇒ chưa cấu hình khoá ⇒ mọi lời gọi `UNAVAILABLE` (0 SQL). Hàm ⇒ chọn nhà cung cấp theo `feature` (ai-sub:
+   *  gói hoặc API theo cấu hình từng tính năng); trả null ⇒ tính năng đó `UNAVAILABLE`. */
+  provider: ModelProvider | null | ((feature: string) => ModelProvider | null);
+  /** Chỉ khi `provider` là hàm: có ít nhất một tính năng đã cấu hình (giá trị `ready`). Vắng ⇒ true. */
+  anyReady?: boolean;
   usage: UsageStore;
   caps: AiCaps;
   now?: () => Date;
@@ -160,10 +171,13 @@ async function settle(d: AiClientDeps, r: UsageRecord, holdId: string | null): P
 
 export function createAiClient(d: AiClientDeps): AiClient {
   const now = d.now ?? (() => new Date());
+  const pick = d.provider;
+  const providerOf = (feature: string): ModelProvider | null =>
+    typeof pick === "function" ? pick(feature) : pick;
   return {
-    ready: d.provider !== null,
+    ready: typeof pick === "function" ? (d.anyReady ?? true) : pick !== null,
     async complete(req) {
-      const provider = d.provider;
+      const provider = providerOf(req.feature);
       if (!provider) return { ok: false, code: "UNAVAILABLE" };
       const gate = await admit(d, req, now());
       if (gate.kind === "unavailable") return { ok: false, code: "UNAVAILABLE" };
@@ -172,6 +186,7 @@ export function createAiClient(d: AiClientDeps): AiClient {
       const reply = await callProvider(provider, req, gate.maxTokens);
       const usage = reply.usage ?? ZERO;
       const model = reply.model ?? req.model;
+      const billing = provider.billing ?? "api";
       await settle(
         d,
         {
@@ -179,9 +194,11 @@ export function createAiClient(d: AiClientDeps): AiClient {
           userId: req.userId,
           feature: req.feature,
           providerKey: provider.key,
+          billing,
           model,
           usage,
-          costUsd: costUsd(model, usage),
+          // Gói: không tính tiền theo lời gọi (như dòng `subscription` của runtime agent: cost 0); token vẫn vào trần.
+          costUsd: billing === "subscription" ? 0 : costUsd(model, usage),
           latencyMs: Math.round(performance.now() - t0),
         },
         gate.holdId,

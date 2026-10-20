@@ -1,5 +1,5 @@
 // R1 · port LLM của mgmt-app cho đồ thị: `extract.EXTRACT_SYSTEM`, `resolve.ALIAS_SYSTEM`, `extract.JUDGE_SYSTEM` — qua AI client
-// CHUNG của Hub (M3 `lib/ai-client`, F-07: usage + trần token theo tenant). Bật: `KNOWLEDGE_GRAPH_AI=on` + `ANTHROPIC_API_KEY`;
+// CHUNG của Hub (M3 `lib/ai-client`, F-07: usage + trần token theo tenant). Bật: `KNOWLEDGE_GRAPH_AI=on` + nhà cung cấp AI (ai-sub: gói Claude mặc định, `AI_PROVIDER*`);
 // `fake` ⇒ bản giả tất định (dev/test, như `fake_llm`); khác ⇒ tắt (không trích thực thể). Đoạn văn là DỮ LIỆU: đặt trong thẻ,
 // dặn không làm theo chỉ dẫn bên trong; trả lời chỉ được là JSON, sai dạng ⇒ rỗng / RELATED / không phải bí danh.
 import type { AiClient } from "../../../lib/ai-client/ai-client";

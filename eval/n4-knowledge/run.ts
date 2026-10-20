@@ -1,9 +1,11 @@
 // N4 eval 0.11 (ADR-0021) · harness chạy được: nạp kho `corpus.json` qua use case thật của module `knowledge` (DB Postgres test
 // riêng, role `knowledge_rw`, RLS), hỏi `questions.json`, đo recall@k, MRR, phủ ý đáp án, rò rỉ chéo tenant, p50/p95 độ trễ
-// (thứ tự câu hỏi xáo bằng hạt cố định) + tải CPU máy; chấm đáp án theo RUBRIC (Claude API nếu có key, không thì fixture
+// (thứ tự câu hỏi xáo bằng hạt cố định) + tải CPU máy; chấm đáp án theo RUBRIC (Claude qua gói/CLI hoặc API theo `EVAL_JUDGE`, không thì fixture
 // offline). Chạy: `bun --env-file=.env.local eval/n4-knowledge/run.ts --variant fts [--reps 5] [--seed 42]`.
 // Biến thể: fts (c) | fts-plain (đối chứng: OR + ts_rank, không IDF) | fts-bigram | fts-bgw<w> | fts-noctx | embedding (a, cần
-// OPENAI_API_KEY) | embedding+rerank / fts+rerank (cần ANTHROPIC_API_KEY). Không in key.
+// OPENAI_API_KEY — embedding thật sự cần, FTS thì không) | fts+rerank / embedding+rerank (ai-sub: gói Claude qua Claude Code
+// CLI theo `AI_PROVIDER[_KNOWLEDGE_RERANK]`, không cần khoá). Chấm: `EVAL_JUDGE` = subscription (mặc định) | api | offline.
+// Không in key.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { cpus } from "node:os";
 import { join } from "node:path";
@@ -11,7 +13,11 @@ import { createDb } from "@ai/db";
 import { cloneDb } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";
 import { createAiClient } from "../../apps/hub-api/src/lib/ai-client/ai-client";
-import { envProvider } from "../../apps/hub-api/src/lib/ai-client/ai-client.env";
+import {
+  envProvider,
+  envProviderRouter,
+  envSubscriptionProvider,
+} from "../../apps/hub-api/src/lib/ai-client/ai-client.env";
 import {
   clientReranker,
   openAiEmbedder,
@@ -30,7 +36,7 @@ import {
   ftsStrategy,
 } from "../../apps/hub-api/src/modules/knowledge/application/strategies";
 import { createPackUow } from "../../apps/hub-api/src/modules/packs/kit/adapters/pack-uow";
-import { claudeJudge, type OfflineFixture, offlineJudge, signature, type Verdict } from "./judge";
+import { modelJudge, type OfflineFixture, offlineJudge, signature, type Verdict } from "./judge";
 import * as M from "./metrics";
 
 const DIR = import.meta.dir;
@@ -68,10 +74,12 @@ function write(name: string, v: unknown): void {
 
 const needEmb = VARIANT.startsWith("embedding");
 const needRerank = VARIANT.endsWith("+rerank");
-if ((needEmb && !process.env.OPENAI_API_KEY) || (needRerank && !process.env.ANTHROPIC_API_KEY)) {
+// ai-sub · rerank chọn nhà cung cấp như Hub (`AI_PROVIDER[_KNOWLEDGE_RERANK]`, mặc định gói Claude qua CLI)
+const rerankProvider = needRerank ? envProviderRouter(process.env).pick("knowledge.rerank") : null;
+if ((needEmb && !process.env.OPENAI_API_KEY) || (needRerank && !rerankProvider)) {
   const missing = [
     needEmb && !process.env.OPENAI_API_KEY ? "OPENAI_API_KEY" : null,
-    needRerank && !process.env.ANTHROPIC_API_KEY ? "ANTHROPIC_API_KEY" : null,
+    needRerank && !rerankProvider ? "AI_PROVIDER (claude CLI / ANTHROPIC_API_KEY)" : null,
   ].filter(Boolean);
   write(`${VARIANT}.json`, {
     variant: VARIANT,
@@ -128,7 +136,7 @@ const search = searchKnowledge({
   reranker: needRerank
     ? clientReranker(
         createAiClient({
-          provider: envProvider(),
+          provider: rerankProvider,
           usage: { record: async () => {}, tokensSince: async () => 0 },
           caps: { dailyTokens: async () => null },
         }),
@@ -199,9 +207,16 @@ const busy = M.busyPct(cpu0, M.cpuSnap());
 const fixture = (await Bun.file(join(DIR, "judgments.offline.json"))
   .json()
   .catch(() => ({ rubric: "", judged_by: "", entries: {} }))) as OfflineFixture;
-const key = process.env.ANTHROPIC_API_KEY;
+// ai-sub · chấm bằng gói Claude (CLI) mặc định; `EVAL_JUDGE=api` ⇒ khoá API; `offline` hoặc không có model ⇒ fixture
+const judgeMode = (process.env.EVAL_JUDGE ?? "subscription").toLowerCase();
+const judgeProvider =
+  judgeMode === "api"
+    ? envProvider(process.env)
+    : judgeMode === "offline"
+      ? null
+      : envSubscriptionProvider(process.env);
 const judgeOff = offlineJudge(fixture);
-const judgeApi = key ? claudeJudge(key) : null;
+const judgeApi = judgeProvider ? modelJudge(judgeProvider) : null;
 const rows = [];
 const toJudge = [];
 for (const q of questions) {
@@ -250,7 +265,9 @@ const report = {
   at: new Date().toISOString(),
   seed: SEED,
   reps: REPS,
-  judge: judgeApi ? "claude-api" : "offline-claude-fixture (nhãn: Claude tự chấm, không gọi API)",
+  judge: judgeApi
+    ? `claude-${judgeProvider?.billing === "subscription" ? "subscription" : "api"}`
+    : "offline-claude-fixture (nhãn: Claude tự chấm, không gọi API)",
   corpus: { docs: corpus.docs.length, chunksTenantA: all.length, ingestMs: Math.round(ingestMs) },
   machine: { cpus: cpus().length, cpuBusyPctDuringLatency: Math.round(busy * 10) / 10 },
   latencyMs: {
