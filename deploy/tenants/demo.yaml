@@ -1,0 +1,22 @@
+# demo · tenant demo vĩnh viễn (dữ liệu giả, giống tài khoản demo của sohoptac cũ). Người dùng 2026-10-20.
+# Email người dùng demo CHỈ ở example.invalid (không thể gửi tới người thật). Mật khẩu: ~/workspace/sohoptac2/DEMO_CREDENTIALS.txt trên máy chủ.
+# Chạy (idempotent): xem docs/specs/niti-onboard/tasks.md "Thứ tự chạy production"; ở đây thêm
+#   --file deploy/tenants/demo.yaml --actor <uuid platform admin> [--mgmt-org <id org "Demo dữ liệu mẫu">]
+key: demo
+name: Demo Sổ Hợp Tác
+timezone: Asia/Ho_Chi_Minh
+profile:
+  legal_name: Demo Sổ Hợp Tác (dữ liệu giả)
+  email: demo@example.invalid
+
+packs: [contracts]
+
+root: { key: pb-giam-doc, vi: Phòng Giám đốc, en: Board of Directors, head: demo-owner@example.invalid }
+departments:
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, members: [demo-editor@example.invalid] }
+  - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting, members: [demo-viewer@example.invalid] }
+  - { key: pb-phap-che, vi: Phòng Pháp chế, en: Legal }
+
+import:
+  source: mgmt-prod
+  org_id: 03daf8fa-0eed-4997-9f0e-637b86d846d6

@@ -108,3 +108,17 @@ OK 69 · LỖI 3 · chờ key 3 · chưa xác nhận (lỗi script, hết giờ)
 - Sửa dữ liệu ngoài UI: trong lúc dựng stack đã xoá khoá rate-limit Redis của stack UAT một lần (do script thử sai mật khẩu); không đụng bảng hay mã sản phẩm.
 - Cần chạy tiếp khi có khoá: trích xuất DOCX bằng AI (đang `extracting`/`extract_failed`), "Đọc lại", chat thật.
 - Không có UI cài ngưỡng/cấp duyệt; ngưỡng 500 tr (mặc định) / 100 tr được thử qua API PUT /approval-settings (viewer 403, nhóm sai 422).
+
+
+## AI thật (sohoptac2)
+Ngày chạy 2026-10-20, stack production `sohoptac2` (149.202.83.5) qua SSH tunnel :18431, tenant `demo` ("Demo Sổ Hợp Tác", gói contracts, dữ liệu = org "Demo dữ liệu mẫu" của sohoptac cũ, 49 HĐ, không file), đăng nhập `demo-owner` (tenant_admin + contracts-owner). AI = gói Claude của server (provider `claude-sub`). Playwright + Node 22.23.3 thật; script `scripts/real-ai-*.mjs`, kết quả thô `real-ai-results.jsonl`, ảnh `shots/real-ai-*.png`. Tổng 2 lượt gọi AI.
+
+| # | Mục | Kết quả | Chi tiết / ảnh |
+|---|---|---|---|
+| a | Tải DOCX + AI trích xuất | CHẶN bởi FileBox | `POST /pack/contracts/contracts` (multipart) trả 404 `NOT_FOUND`, UI "Không tải lên được. Thử lại sau." Không gọi AI. `.env` sohoptac2 chưa đặt `FILEBOX_*` ⇒ đường tải lên không hoạt động. `shots/real-ai-01-upload.png` |
+| b | "Đọc lại" | CHẶN bởi FileBox | HĐ docx đã nhập (BB-MP-2026-27, Chờ xác nhận) không có file trong FileBox nên trang chi tiết không hiện nút "Đọc lại"; không gọi AI. `shots/real-ai-02-reread.png` |
+| c1 | Chat nhúng, lượt 1: "Hợp đồng nào sắp hết hạn?" | ĐẠT | Trợ lý gọi tool hợp đồng, trả "11 hợp đồng sắp hết hạn" + bảng 5 HĐ theo ngày (CKS-2025-009 20/11/2026, 09/2026/HĐMB-PN2, CKS-2025-010, 01/2026/HĐMB-PN, 07/2026/HĐDV-LH), cảnh báo hạn xử lý 21/10/2026. Khớp dữ liệu demo (số HĐ, đối tác, ngày có trong danh sách). 24,3 s. `shots/real-ai-03-chat-turn1.png` |
+| c2 | Lượt 2 (cùng hội thoại): HĐ nào lớn nhất | ĐẠT | Trả lời đúng ngữ cảnh lượt 1: 01/2026/HĐMB-PN, 245.000.000 đ (khớp cột Giá trị trong danh sách), nêu rõ chưa xem 6 HĐ còn lại. 10,4 s. `shots/real-ai-04-chat-turn2.png` |
+| u | Dòng usage | ĐẠT | `hub.usage_logs` tenant `demo`: 2 dòng mới, feature `chat`, provider `claude-sub`, model claude-opus-5-5, **billing='subscription'**, cost_usd 0 (5.905/766 và 4.341/247 token vào/ra). Không có dòng `contracts.extract` mới (a, b bị chặn trước khi tới AI). |
+
+Ghi chú: (a) và (b) chạy được khi nối FileBox cho sohoptac2 (`FILEBOX_URL`, `FILEBOX_TOKEN`) rồi `mgmt-import --filebox` để gắn file; cần chạy lại sau đó. Log hub-api có cảnh báo lặp `db-prepare-spread-failed: permission denied for schema contracts` ở mỗi lần đọc danh sách HĐ (yêu cầu vẫn 200; nghi role hub_api thiếu USAGE cho một bước chuẩn bị câu lệnh) — chưa xử lý, cần kiểm.
