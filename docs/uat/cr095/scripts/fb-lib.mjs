@@ -1,7 +1,7 @@
 import { chromium } from "file:///F:/workspace/evolu-platform/node_modules/@playwright/test/index.mjs";
 import { mkdirSync, appendFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-export const OUT = "F:/workspace/evolu-wt/filebox-uat/docs/uat/cr095";
+export const OUT = "F:/workspace/evolu-wt/filebox-uat2/docs/uat/cr095";
 export const CW = "http://localhost:18431";
 // Mật khẩu đọc TRÊN MÁY CHỦ qua ssh, chỉ giữ trong bộ nhớ (không ghi file, không in).
 export function cred(u) { const o = execFileSync("ssh", ["-i", "F:\\workspace\\id_evoc_key", "-o", "BatchMode=yes", "evoc@149.202.83.5", `grep "^${u} / " ~/workspace/sohoptac2/DEMO_CREDENTIALS.txt`], { encoding: "utf8" }); return o.split(" / ")[1].split(" ")[0].trim(); }
