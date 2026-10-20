@@ -55,10 +55,12 @@ describe("R1 · F-05 / F-06 nạp tệp", () => {
     const out = ok(await ingest(who, { filename: "lon.md", bytes: enc(md) }));
     expect(out.warnings).toContain("truncated");
     expect(out.duplicate).toBe(false);
-    const [c] = await owner<{ n: number }[]>`
-      select coalesce(sum(length(body)), 0)::int as n from knowledge.chunks where doc_id = ${out.documentId}::uuid`;
-    expect(c?.n ?? 0).toBeGreaterThan(0);
-    expect(c?.n ?? 0).toBeLessThanOrEqual(500_000);
+    // cắt ở ranh giới đoạn: mục ~480 còn, mục cuối (599) không vào kho
+    const [c] = await owner<{ head: number; tail: number }[]>`select
+      count(*) filter (where heading like '%Mục 480%' or body like '%Mục 480%')::int as head,
+      count(*) filter (where heading like '%Mục 599%' or body like '%Mục 599%')::int as tail
+      from knowledge.chunks where doc_id = ${out.documentId}::uuid`;
+    expect([Math.min(c?.head ?? 0, 1), c?.tail]).toEqual([1, 0]);
   });
 
   it("F-06: tài liệu có sẵn chưa có đồ thị ⇒ nạp lại dựng đồ thị; lần sau không dựng lại", async () => {
