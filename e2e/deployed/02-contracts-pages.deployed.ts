@@ -85,7 +85,7 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  test("Hợp đồng: form Thêm thủ công — bắt buộc điền, KHÔNG lưu (app chưa có xoá hợp đồng)", async () => {
+  test("Hợp đồng: form Thêm thủ công — bắt buộc điền, huỷ, không lưu", async () => {
     await go("/contracts");
     await page.getByRole("link", { name: "Thêm thủ công" }).click();
     await expect(page).toHaveURL(/\/contracts\/new/);
@@ -99,8 +99,34 @@ test.describe("02 contracts-web", () => {
     await expect(page).toHaveURL(/\/contracts$/);
   });
 
-  // TODO(chưa xây): tạo hợp đồng E2E-DEPLOY rồi dọn — contracts-web/hub chưa có thao tác Xoá hợp đồng, nên test không tạo bản ghi không dọn được.
-  test.fixme("Hợp đồng: tạo + sửa + xoá hợp đồng E2E-DEPLOY", async () => {});
+  test("Hợp đồng: tạo + sửa + xoá (chủ sở hữu, có hộp xác nhận) hợp đồng E2E-DEPLOY", async () => {
+    await go("/contracts/new");
+    const title = `${TAG} ${Date.now().toString(36)}`;
+    await page.locator("input[name=title]").fill(title);
+    // Đối tác có sẵn trong dữ liệu mẫu ⇒ không sinh đối tác rác (đối tác không xoá theo hợp đồng).
+    await page.locator("#cf-partner").fill("Hưng Thịnh");
+    await page.locator("input[name=start_date]").fill("2026-01-01");
+    await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
+    await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    try {
+      const number = `E2E-${Date.now().toString(36)}`;
+      await page.locator("input[name=number]").fill(number);
+      await page.getByRole("button", { name: "Lưu thay đổi" }).click();
+      await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+      await page.reload();
+      await settle(page);
+      await expect(page.locator("input[name=number]")).toHaveValue(number);
+    } finally {
+      // Xoá qua giao diện (V2-M): nút → hộp xác nhận kèm tác động → "Xoá hẳn" → về danh sách.
+      await page.getByTestId("delete-contract").click();
+      await expect(page.getByTestId("delete-impact")).toBeVisible();
+      await expect(page.getByTestId("delete-confirm")).toBeEnabled();
+      await page.getByTestId("delete-confirm").click();
+      await expect(page).toHaveURL(/\/contracts$/, { timeout: 30_000 });
+    }
+    await page.getByPlaceholder(/Tìm/).first().fill(title);
+    await expect(page.locator("table tbody tr").filter({ hasText: title })).toHaveCount(0);
+  });
 
   test("Đối tác: danh sách điểm uy tín có dữ liệu, mở chi tiết", async () => {
     await go("/partners");
@@ -110,12 +136,49 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  // TODO(chưa triển khai): trang chi tiết đối tác V2-I (`/partners?party=…`, 3 tab) có trong code nhưng bản sohoptac2 hiện chạy (build 2026-10-20 17:22) chưa có — bấm tên đối tác không mở gì. Bật lại sau khi deploy V2-I.
-  test.fixme("Đối tác: bấm tên mở chi tiết (3 tab Tổng quan · Hợp đồng · Đánh giá & ghi chú)", async () => {
+  test("Đối tác: bấm tên mở chi tiết, 3 tab Tổng quan · Hợp đồng · Đánh giá & ghi chú", async () => {
     await go("/partners");
-    await page.getByText("Thực phẩm Hưng Phát").first().click();
+    await page.getByRole("link", { name: "Hưng Thịnh" }).first().click();
     await expect(page).toHaveURL(/party=/);
-    await expect(page.getByRole("tab", { name: /Đánh giá/ })).toBeVisible();
+    const tabs = page.getByRole("tablist", { name: "Thông tin đối tác" });
+    await expect(tabs.getByRole("tab")).toHaveCount(3);
+    await expect(tabs.getByRole("tab", { name: "Tổng quan" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await tabs.getByRole("tab", { name: /^Hợp đồng · \d+$/ }).click();
+    await expect(page).toHaveURL(/tab=contracts/);
+    await expect(page.locator("main a[href^='/contracts/']").first()).toBeVisible();
+    await tabs.getByRole("tab", { name: /Đánh giá/ }).click();
+    await expect(page).toHaveURL(/tab=review/);
+    await expect(tabs.getByRole("tab", { name: /Đánh giá/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(errs.list).toEqual([]);
+  });
+
+  test("Sản phẩm & Giá: chi tiết sản phẩm dịch vụ có tab Lịch sử · NCC & giá · Khách đang dùng · Hợp đồng", async () => {
+    await go("/products?g=service");
+    const first = page.locator("main a[href*='sp=']").first();
+    await expect(first).toBeVisible();
+    await first.click();
+    await expect(page).toHaveURL(/sp=/);
+    const tabs = page.getByRole("tablist");
+    await expect(tabs.getByRole("tab", { name: "Lịch sử mua bán" })).toBeVisible();
+    await tabs.getByRole("tab", { name: "Nhà cung cấp & giá" }).click();
+    await expect(page).toHaveURL(/ht=suppliers/);
+    await expect(page.getByText(/So sánh giá nhà cung cấp/).first()).toBeVisible();
+    await tabs.getByRole("tab", { name: "Khách đang dùng" }).click();
+    await expect(page).toHaveURL(/ht=users/);
+    await expect(tabs.getByRole("tab", { name: "Khách đang dùng" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await tabs.getByRole("tab", { name: /^Hợp đồng · \d+$/ }).click();
+    await expect(page).toHaveURL(/ht=contracts/);
+    expect(await bodyText(page)).not.toMatch(RAW_KEY);
+    expect(errs.list).toEqual([]);
   });
 
   test("Sản phẩm & Giá: danh sách sản phẩm có dữ liệu (sau khi nạp bộ mẫu v2)", async () => {
@@ -153,7 +216,20 @@ test.describe("02 contracts-web", () => {
     await go("/overview");
     await page.getByRole("button", { name: "Tài khoản" }).first().click();
     await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    const dlg = page.getByRole("dialog");
+    await expect(dlg).toBeVisible();
+    await expect(dlg.getByRole("heading", { name: "Cài đặt" })).toBeVisible();
+    for (const sec of ["Công ty", "Điểm uy tín", "Điểm kinh doanh"])
+      await expect(dlg.getByRole("button", { name: new RegExp(`^${sec}`) })).toBeVisible();
+    await dlg.getByRole("button", { name: /^Điểm kinh doanh/ }).click();
+    await expect(dlg.getByRole("button", { name: /^Điểm kinh doanh/ })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(dlg.getByRole("button", { name: "Lưu cài đặt" })).toBeVisible();
+    expect(await dlg.innerText()).not.toMatch(RAW_KEY);
+    await page.keyboard.press("Escape");
+    await expect(dlg).toBeHidden();
   });
 
   test("Cài đặt › Thành viên & phòng ban: tạo phòng ban E2E-DEPLOY, rồi xoá (dọn)", async () => {
