@@ -10,6 +10,7 @@ import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { DeleteContractButton } from "~/features/contract-delete/components/DeleteContractButton";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
@@ -72,7 +73,7 @@ function ContractBody({
   ap: Approval;
 }) {
   const { t } = useTranslation();
-  const { write } = useMe();
+  const { write, owner } = useMe();
   const [fileErr, setFileErr] = useState<string | null>(null);
   const confirm = c.status === "needs_review";
   const canSave = write && c.status !== "extracting";
@@ -120,6 +121,11 @@ function ContractBody({
       <AppendixPanel c={c} write={write} />
       <ContractSourcing c={c} write={write} />
       <ContractLog contractId={id} status={c.status} />
+      {owner && c.status !== "extracting" && (
+        <div className="mt-6 flex justify-end">
+          <DeleteContractButton id={id} />
+        </div>
+      )}
     </div>
   );
 }

@@ -27,6 +27,7 @@ import { businessModule } from "./contracts/business.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
 import { companyModule } from "./contracts/company.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
+import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
@@ -175,6 +176,7 @@ function mountContracts<E extends Env>(
   app.route(base, productsModule(db, view)); // V2-B · danh mục SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 · điểm kinh doanh SP
   app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H · khách đang dùng
+  app.route(base, deleteContractModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-M · xoá HĐ
   app.route(
     base,
     supplierPricesModule(db, view, {

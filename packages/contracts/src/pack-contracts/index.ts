@@ -1,9 +1,10 @@
-// HD-FR-01Ã¢â‚¬Â¦HD-FR-08 Ã‚Â· HD1 plan Ã‚Â§1: contract zod gÃƒÂ³i hÃ¡Â»Â£p Ã„â€˜Ã¡Â»â€œng (`/pack/contracts/**`).
+// HD-FR-01ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦HD-FR-08 Ãƒâ€šÃ‚Â· HD1 plan Ãƒâ€šÃ‚Â§1: contract zod gÃƒÆ’Ã‚Â³i hÃƒÂ¡Ã‚Â»Ã‚Â£p Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“ng (`/pack/contracts/**`).
 export * from "./appendix";
 export * from "./approval";
 export * from "./business";
 export * from "./cks";
 export * from "./company";
+export * from "./delete-contract";
 export * from "./delivery";
 export * from "./detail";
 export * from "./errors";

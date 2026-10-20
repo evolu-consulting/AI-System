@@ -13,12 +13,14 @@ import {
   type CompState,
   type DeliveryCtx,
   type DeliveryMove,
+  type DeliveryPlan,
   type DeliveryResult,
   type OpenLot,
   planDelivery,
   StockError,
   type StockMode,
 } from "../domain/stock.rules";
+import { planReversal } from "../domain/stock-reversal.rules";
 
 export type { DeliveryCtx, DeliveryMove, DeliveryResult };
 export { StockError };
@@ -51,7 +53,7 @@ const scaled = (s: string): bigint => {
   return BigInt(i) * 10_000n + BigInt(f.padEnd(4, "0").slice(0, 4));
 };
 
-async function lockComps(tx: Tx, t: string, ids: string[]): Promise<Map<string, CompState>> {
+export async function lockComps(tx: Tx, t: string, ids: string[]): Promise<Map<string, CompState>> {
   const rows =
     await tx.execute<CompRow>(sql`select pc.id::text, pc.product_id::text, pc.mode, pc.on_hand::text,
       pc.stock_value::text, pc.avg_cost::text
@@ -89,24 +91,14 @@ async function openLots(tx: Tx, t: string, ids: string[]): Promise<OpenLot[]> {
   }));
 }
 
-/**
- * Ghi một lần giao (nhập HĐ mua / xuất HĐ bán) theo tập. Ném `StockError` (`invalid` | `stock_insufficient`, kèm từng thành phần
- * thiếu) mà KHÔNG ghi gì; người gọi huỷ tx. Trả kho + giá vốn trước → sau từng thành phần và các dòng sổ đã ghi.
- */
-export async function applyDelivery(
+/** Ghi kế hoạch (lô mới + trừ lô + dòng sổ, rồi tồn/BQ) — 2 câu SQL cố định; dùng chung cho giao hàng và đảo kho (V2-M). */
+async function writePlan(
   tx: Tx,
-  moves: readonly DeliveryMove[],
-  ctx: DeliveryCtx,
-): Promise<DeliveryResult> {
-  const t = ctx.tenantId;
-  const ids = [
-    ...new Set(
-      moves.map((m) => m.componentId).filter((id) => typeof id === "string" && UUID.test(id)),
-    ),
-  ].sort();
-  const comps = await lockComps(tx, t, ids);
-  const lots = await openLots(tx, t, ids);
-  const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
+  t: string,
+  on: string,
+  plan: Pick<DeliveryPlan, "lots" | "takes" | "moves" | "updates">,
+  ids: string[],
+): Promise<void> {
   const w = {
     lots: plan.lots,
     takes: plan.takes,
@@ -127,19 +119,110 @@ export async function applyDelivery(
       returning l.id)
     insert into contracts.stock_moves (id, tenant_id, component_id, lot_id, direction, reason, qty, unit_cost, amount,
       on_hand_before, on_hand_after, value_before, value_after, avg_before, avg_after, moved_on, contract_id, milestone_id,
-      contract_item_id, supplier_party_key)
+      contract_item_id, supplier_party_key, reverses)
     select m.id, ${t}::uuid, m."componentId", m."lotId", m.direction, m.reason, m.qty, m."unitCost", m.amount,
-      m."onHandBefore", m."onHandAfter", m."valueBefore", m."valueAfter", m."avgBefore", m."avgAfter", ${ctx.on}::date,
-      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey"
+      m."onHandBefore", m."onHandAfter", m."valueBefore", m."valueAfter", m."avgBefore", m."avgAfter", ${on}::date,
+      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey", m.reverses
     from p, jsonb_to_recordset(p.j -> 'moves') as m(id uuid, "componentId" uuid, "lotId" uuid, direction text,
       reason text, qty numeric, "unitCost" bigint, amount bigint, "onHandBefore" numeric, "onHandAfter" numeric,
       "valueBefore" bigint, "valueAfter" bigint, "avgBefore" bigint, "avgAfter" bigint, "contractId" uuid, "milestoneId" uuid,
-      "contractItemId" uuid, "supplierPartyKey" text, ord bigint)
+      "contractItemId" uuid, "supplierPartyKey" text, reverses uuid, ord bigint)
     order by m.ord`);
   await tx.execute(sql`update contracts.product_components pc
     set on_hand = u."onHand"::numeric / 10000, stock_value = u.value, avg_cost = u.avg, last_move_id = u."lastMoveId",
       updated_at = now()
     from jsonb_to_recordset(${json(plan.updates)}) as u(id uuid, "onHand" bigint, value bigint, avg bigint, "lastMoveId" uuid)
     where pc.tenant_id = ${t}::uuid and pc.id = any(${pgArr(ids)}::uuid[]) and pc.id = u.id`);
+}
+
+/**
+ * Ghi một lần giao (nhập HĐ mua / xuất HĐ bán) theo tập. Ném `StockError` (`invalid` | `stock_insufficient`, kèm từng thành phần
+ * thiếu) mà KHÔNG ghi gì; người gọi huỷ tx. Trả kho + giá vốn trước → sau từng thành phần và các dòng sổ đã ghi.
+ */
+export async function applyDelivery(
+  tx: Tx,
+  moves: readonly DeliveryMove[],
+  ctx: DeliveryCtx,
+): Promise<DeliveryResult> {
+  const t = ctx.tenantId;
+  const ids = [
+    ...new Set(
+      moves.map((m) => m.componentId).filter((id) => typeof id === "string" && UUID.test(id)),
+    ),
+  ].sort();
+  const comps = await lockComps(tx, t, ids);
+  const lots = await openLots(tx, t, ids);
+  const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
+  await writePlan(tx, t, ctx.on, plan, ids);
   return plan.result;
+}
+
+type OrigRow = {
+  id: string;
+  seq: string;
+  component_id: string;
+  lot_id: string | null;
+  direction: "in" | "out";
+  qty: string;
+  unit_cost: string;
+  amount: string;
+  contract_id: string | null;
+  milestone_id: string | null;
+  contract_item_id: string | null;
+  supplier_party_key: string | null;
+};
+
+/**
+ * V2-M · đảo kho của MỘT HĐ trước khi xoá (cùng tx): mọi dòng sổ `delivery` chưa đảo ⇒ dòng `reversal` + trả/trừ lô + tồn/BQ tính
+ * lại (`planReversal`). Số câu SQL cố định (khoá, đọc dòng, đọc lô, 2 câu ghi). Thiếu hàng để trừ ⇒ `StockError` TRƯỚC khi ghi.
+ * Trả số dòng đã đảo.
+ */
+export async function reverseContractStock(
+  tx: Tx,
+  t: string,
+  contractId: string,
+  on: string,
+): Promise<number> {
+  const rows =
+    await tx.execute<OrigRow>(sql`select m.id::text, m.seq::text, m.component_id::text, m.lot_id::text, m.direction,
+      m.qty::text, m.unit_cost::text, m.amount::text, m.contract_id::text, m.milestone_id::text, m.contract_item_id::text,
+      m.supplier_party_key
+    from contracts.stock_moves m
+    where m.tenant_id = ${t}::uuid and m.contract_id = ${contractId}::uuid and m.reason = 'delivery'
+      and not exists (select 1 from contracts.stock_moves r where r.tenant_id = m.tenant_id and r.reverses = m.id)`);
+  const orig = [...rows];
+  if (orig.length === 0) return 0;
+  const ids = [...new Set(orig.map((r) => r.component_id))].sort();
+  const comps = await lockComps(tx, t, ids);
+  const lotIds = [...new Set(orig.map((r) => r.lot_id).filter((x): x is string => x !== null))];
+  const lotRows = await tx.execute<{
+    id: string;
+    remaining: string;
+  }>(sql`select l.id::text, l.remaining::text
+    from contracts.stock_lots l where l.tenant_id = ${t}::uuid and l.id = any(${pgArr(lotIds)}::uuid[])`);
+  const lots = new Map(
+    [...lotRows].map((l) => [l.id, { id: l.id, remaining: scaled(l.remaining) }]),
+  );
+  const plan = planReversal({
+    on,
+    moves: orig.map((r) => ({
+      id: r.id,
+      seq: Number(r.seq),
+      componentId: r.component_id,
+      lotId: r.lot_id,
+      direction: r.direction,
+      qty: r.qty,
+      unitCost: Number(r.unit_cost),
+      amount: Number(r.amount),
+      contractId: r.contract_id,
+      milestoneId: r.milestone_id,
+      contractItemId: r.contract_item_id,
+      supplierPartyKey: r.supplier_party_key,
+    })),
+    comps,
+    lots,
+    newId: () => crypto.randomUUID(),
+  });
+  await writePlan(tx, t, on, plan, ids);
+  return plan.moves.length;
 }

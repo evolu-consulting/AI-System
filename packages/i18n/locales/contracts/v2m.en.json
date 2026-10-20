@@ -1,0 +1,26 @@
+{
+  "contracts": {
+    "del": {
+      "button": "Delete contract",
+      "title": "Delete this contract?",
+      "warn": "Permanent, cannot be undone. The following will change:",
+      "loading": "Working out the impact…",
+      "milestones": "{{count}} milestone(s)/instalment(s) of the contract deleted",
+      "deliveredLines": "{{count}} delivered line(s) deleted",
+      "stock": "Stock: {{product}} — {{component}} {{dir}} {{qty}}",
+      "stockIn": "taken back",
+      "stockOut": "returned",
+      "customers": "{{count}} current customer(s) removed",
+      "products": "Products created from this contract are deleted: {{names}}",
+      "events": "{{count}} partner ledger event(s) voided (current score recalculated, locked periods kept)",
+      "keep": "Partners and locked-period scores are kept.",
+      "appendix": "The contract still has {{count}} appendix(es) — delete them first.",
+      "cks": "The contract is linked to digital signatures — it cannot be deleted.",
+      "confirm": "Delete permanently",
+      "deleting": "Deleting…",
+      "cancel": "Keep it",
+      "done": "Contract deleted",
+      "failed": "Could not delete the contract"
+    }
+  }
+}

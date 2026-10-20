@@ -26,7 +26,7 @@ export type PlannedMove = {
   componentId: string;
   lotId: string | null;
   direction: "in" | "out";
-  reason: "delivery" | "expire";
+  reason: "delivery" | "expire" | "reversal";
   qty: string;
   unitCost: number;
   amount: number;
@@ -40,6 +40,8 @@ export type PlannedMove = {
   milestoneId: string | null;
   contractItemId: string | null;
   supplierPartyKey: string | null;
+  /** V2-M: id dòng sổ bị đảo (chỉ `reason = "reversal"`). */
+  reverses?: string | null;
 };
 
 /** Kho trước → sau, giá vốn trước → sau của một thành phần (BA 5.7d). */

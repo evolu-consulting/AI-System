@@ -1,0 +1,26 @@
+{
+  "contracts": {
+    "del": {
+      "button": "Xoá hợp đồng",
+      "title": "Xoá hợp đồng này?",
+      "warn": "Xoá hẳn, không hoàn tác. Những thứ sau sẽ thay đổi:",
+      "loading": "Đang tính tác động…",
+      "milestones": "{{count}} mốc/đợt của hợp đồng bị xoá",
+      "deliveredLines": "{{count}} dòng đã giao bị xoá",
+      "stock": "Kho: {{product}} — {{component}} {{dir}} {{qty}}",
+      "stockIn": "trừ lại",
+      "stockOut": "trả lại",
+      "customers": "{{count}} khách đang dùng bị gỡ",
+      "products": "Sản phẩm sinh từ hợp đồng bị xoá: {{names}}",
+      "events": "{{count}} sự kiện sổ đối tác bị huỷ (điểm hiện tại tính lại, điểm đã chốt giữ nguyên)",
+      "keep": "Đối tác và điểm kỳ đã chốt được giữ nguyên.",
+      "appendix": "Hợp đồng còn {{count}} phụ lục — hãy xoá phụ lục trước.",
+      "cks": "Hợp đồng đã gắn chữ ký số — không xoá được.",
+      "confirm": "Xoá hẳn",
+      "deleting": "Đang xoá…",
+      "cancel": "Giữ lại",
+      "done": "Đã xoá hợp đồng",
+      "failed": "Không xoá được hợp đồng"
+    }
+  }
+}
