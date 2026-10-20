@@ -78,7 +78,7 @@ describe.skipIf(!PERF)("G1 · F-10 phân bố lệch (thực thể siêu phổ b
     expect(byType("R")).toBeGreaterThan(0);
     const st = await measure(
       async (i) => {
-        const r = await g.neighbourhood(who, docs[i % docs.length] as string);
+        const r = await g.neighbourhood(who, docs[Math.abs(i) % docs.length] as string);
         if (!r.ok) throw new Error(r.code);
       },
       { n: 100, warm: 10 },
