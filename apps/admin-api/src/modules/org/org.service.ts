@@ -61,8 +61,13 @@ export function setManager(
 ): Promise<{ user_id: string; manager_id: string | null }> {
   const t = tenantOf(c, q, "write");
   return configWrite(c, "group.save", async (tx, ch) => {
-    const u = (await tx.execute(sql`select username from admin.users
-      where id = ${userId}::uuid and tenant_id = ${t}::uuid`)) as unknown as { username: string }[];
+    // M1c (review A-10): quản lý cũ đọc cùng tx (khoá hàng user) ⇒ audit có `summary.before`.
+    const u = (await tx.execute(sql`select u.username, m.manager_id from admin.users u
+      left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id
+      where u.id = ${userId}::uuid and u.tenant_id = ${t}::uuid for no key update of u`)) as unknown as {
+      username: string;
+      manager_id: string | null;
+    }[];
     if (!u[0]) throw appError("NOT_FOUND");
     if (input.manager_id === null) {
       await tx.execute(
@@ -92,7 +97,7 @@ export function setManager(
         tenantId: t,
         before: null,
         after: null,
-        summary: { manager_id: input.manager_id },
+        summary: { manager_id: input.manager_id, before: { manager_id: u[0].manager_id } },
       }),
     );
     return { user_id: userId, manager_id: input.manager_id };
@@ -108,9 +113,12 @@ export function setDepartment(
 ): Promise<{ group_id: string; head_user_id: string | null } | null> {
   const t = tenantOf(c, q, "write");
   return configWrite(c, "group.save", async (tx, ch) => {
-    const g = (await tx.execute(sql`select key from admin.groups
-      where id = ${groupId}::uuid and tenant_id = ${t}::uuid for no key update`)) as unknown as {
+    const g = (await tx.execute(sql`select g.key, d.head_user_id, d.group_id is not null as dept
+      from admin.groups g left join admin.departments d on d.group_id = g.id and d.tenant_id = g.tenant_id
+      where g.id = ${groupId}::uuid and g.tenant_id = ${t}::uuid for no key update of g`)) as unknown as {
       key: string;
+      head_user_id: string | null;
+      dept: boolean;
     }[];
     if (!g[0]) throw appError("NOT_FOUND");
     if (input === "remove") {
@@ -137,7 +145,10 @@ export function setDepartment(
         tenantId: t,
         before: null,
         after: null,
-        summary: { department: input === "remove" ? null : { head_user_id: input.head_user_id } },
+        summary: {
+          department: input === "remove" ? null : { head_user_id: input.head_user_id },
+          before: { department: g[0].dept ? { head_user_id: g[0].head_user_id } : null },
+        },
       }),
     );
     return input === "remove" ? null : { group_id: groupId, head_user_id: input.head_user_id };

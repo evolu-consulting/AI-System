@@ -119,3 +119,30 @@ describe("M1D-FR-03 · phòng ban = Group + trưởng phòng", () => {
     ).toBe(true);
   });
 });
+
+describe("M1c · audit đổi quản lý / trưởng phòng ghi giá trị cũ (review A-10)", () => {
+  const lastSummary = async (id: string) =>
+    (
+      await owner<{ s: Record<string, unknown> }[]>`select summary as s from admin.audit_log
+        where tenant_id = ${TID} and entity_id = ${id} order by seq desc limit 1`
+    )[0]?.s;
+  test("bỏ quản lý U2 (đang là U1) ⇒ summary.before.manager_id = U1; đổi trưởng phòng ⇒ before.head cũ", async () => {
+    await setManager(call, undefined, U2, { manager_id: U1 });
+    await setManager(call, undefined, U2, { manager_id: null });
+    const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
+      values (${TID}, 'm1c', '{"vi":"M1c"}') returning id`;
+    const gid = g?.id as string;
+    await setDepartment(call, undefined, gid, { head_user_id: U1 });
+    const first = await lastSummary(gid);
+    await setDepartment(call, undefined, gid, { head_user_id: U3 });
+    expect({
+      mgr: await lastSummary(U2),
+      first: first?.before,
+      dept: (await lastSummary(gid))?.before,
+    }).toEqual({
+      mgr: { manager_id: null, before: { manager_id: U1 } },
+      first: { department: null },
+      dept: { department: { head_user_id: U1 } },
+    });
+  });
+});

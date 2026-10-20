@@ -66,7 +66,10 @@ export function cksReads(d: CksReadDeps) {
     signedDocs: (
       who: PackWho,
       q: { customer_id: string; certificate_id?: string; kind?: string },
-    ) => d.uow.tenant(who, (r) => r.cks.signedDocs(q)),
+    ) =>
+      // M1c (review A-1): khách không thấy được ⇒ [] — điều kiện nằm trong CÙNG câu của repo (HD9-AC09 khoá: 1 câu nghiệp vụ;
+      // tenant khác ⇒ `[]`, không 404); RLS `cks_signed_docs_visible` lọc thêm từng văn bản.
+      d.uow.tenant(who, (r) => r.cks.signedDocs(q)),
   };
 }
 export type CksReads = ReturnType<typeof cksReads>;

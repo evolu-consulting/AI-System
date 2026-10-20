@@ -2,7 +2,7 @@
 // tenant (mỗi lô MỘT tx: 1 câu đọc + 1 câu chèn — N5-NFR-01), cấm vòng ở domain trước khi ghi (trigger DB vẫn là chốt cuối:
 // vi phạm ⇒ hỏng MỘT lô, BATCH_FAILED). Chạy sau pha user (user mới đã có id). Dry-run: user sẽ tạo tính như đã có.
 import type { ImportReport, Issue, ManagerWant, OrgUser } from "../domain/import";
-import { normEmail } from "../domain/import.rules";
+import { normEmail, validEmail } from "../domain/import.rules";
 import { planManagers, tenantBatches } from "../domain/managers.rules";
 import type { ErrorClass, ImportStore, ManagerSet, TenantUser } from "./ports";
 
@@ -28,9 +28,15 @@ function wantsByTenant(
     if (!m) continue;
     r.report.managers.read++;
     const tid = u.orgId === null ? null : r.tenantOf.get(u.orgId);
-    if (!tid) continue;
+    const email = normEmail(u.email);
+    // M1c (review A-13): chỉ email hợp lệ — khoá nội bộ `#<uuid>` (user không email) không được nhắm tới từ file.
+    if (!tid || !validEmail(email)) continue;
+    if (!validEmail(m)) {
+      r.report.issues.push({ kind: "manager", ref: email, code: "MANAGER_UNKNOWN" });
+      continue;
+    }
     const list = by.get(tid) ?? [];
-    list.push({ email: normEmail(u.email), managerEmail: m });
+    list.push({ email, managerEmail: m });
     by.set(tid, list);
   }
   return by;

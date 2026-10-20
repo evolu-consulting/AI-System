@@ -2,7 +2,7 @@
 // `org` ⇒ editor thấy ít đi ngay câu kế; editor PUT ⇒ 403 PACK_FORBIDDEN; thân sai ⇒ 400; tenant khác không bị đổi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { contracts, tenants, users } from "@ai/test-kit/builders";
+import { contracts, enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPackAs, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
@@ -63,6 +63,9 @@ beforeAll(async () => {
   [A, B] = (await tenants(sql, 2, 851)) as [string, string];
   [own, ed] = (await users(sql, A, 2, { from: 851 })) as [string, string];
   [other] = (await users(sql, B, 1, { from: 861 })) as [string];
+  // M1c (A-9): DB chỉ cho owner gói (thành viên Group được cấp contracts-admin) ghi chế độ thấy.
+  const roles = await enablePack(sql, [A], "contracts");
+  await members(sql, A, roles.get(A)?.owner as string, [own]);
   await contracts(sql, A, 1, { from: 851, createdBy: own, owner: own });
   await contracts(sql, A, 1, { from: 852, createdBy: ed, owner: ed });
   db = createDb(urls().hubApi, { max: 2 });

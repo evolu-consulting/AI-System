@@ -180,6 +180,9 @@ function signedDocsQ(tx: Tx, t: string): CksRepo["signedDocs"] {
         order by d.signed_at desc nulls last, d.created_at desc, d.id), '[]'::jsonb) as j
       from contracts.cks_signed_docs d
       where d.tenant_id = ${t}::uuid and d.customer_id = ${q.customer_id}::uuid
+        -- M1c (review A-1): khách phải thấy được (RLS cks_customers) — gộp vào câu (HD9-AC09: 1 câu nghiệp vụ).
+        and exists (select 1 from contracts.cks_customers cu
+          where cu.id = ${q.customer_id}::uuid and cu.tenant_id = ${t}::uuid)
         and (${q.certificate_id ?? null}::uuid is null or d.certificate_id in (select id from chain))
         and (${q.kind ?? null}::text is null or d.kind = ${q.kind ?? null}::text)`,
     );
