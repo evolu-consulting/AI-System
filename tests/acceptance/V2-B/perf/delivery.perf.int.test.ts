@@ -70,6 +70,7 @@ describe("V2-B Â· xÃ¡c nháº­n má»‘c giao 20 dÃ²ng (applyDelivery)",
     it(`p95 â‰¤ 50 ms, 1 + 4 cÃ¢u SQL, khÃ´ng Seq Scan (${analyzed ? "sau" : "trÆ°á»›c"} ANALYZE)`, async () => {
       if (analyzed)
         await w.sql`analyze contracts.product_components, contracts.stock_lots, contracts.stock_moves, contracts.products`;
+      await confirm(analyzed ? 1001 : 2001); // kết nối nóng (câu dò kiểu của postgres.js lần đầu không tính)
       const cap = await captureSql(client(), () => confirm(analyzed ? 1000 : 2000));
       expect(cap.r.components).toHaveLength(LINES);
       expect(cap.queries.map((q) => q.text.replace(/\s+/g, " ").slice(0, 60))).toHaveLength(5);
