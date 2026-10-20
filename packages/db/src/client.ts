@@ -55,13 +55,20 @@ export type CreateDbOpts = {
   /** T19-perf vòng 3 · phát câu chuẩn bị mới sang mọi kết nối (prepare-spread.ts); lỗi phát gọi onSpreadError. */
   spread?: boolean;
   onSpreadError?: (err: unknown) => void;
+  /** Một lần: có câu spread bị từ chối quyền (schema gói) nên được bỏ qua — không phải lỗi. */
+  onSpreadDenied?: (err: unknown) => void;
 };
 
 export function createDb(url: string, opts: CreateDbOpts = {}): Db {
   const max = opts.max ?? 10;
   const sql = postgres(url, { max, onnotice: () => {} });
   const spread = opts.spread
-    ? createSpread(sql as unknown as SpreadPool, max, opts.onSpreadError ?? (() => {}))
+    ? createSpread(
+        sql as unknown as SpreadPool,
+        max,
+        opts.onSpreadError ?? (() => {}),
+        opts.onSpreadDenied,
+      )
     : undefined;
   return {
     db: drizzle(preparing(sql, spread)),

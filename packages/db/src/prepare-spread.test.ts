@@ -52,6 +52,41 @@ describe("CR-093 · T19-perf vòng 3 · prepare-spread", () => {
     expect(f.stats().reserved).toBe(3);
   });
 
+  test("42501 (schema gói) ⇒ bỏ câu đó, không báo onError, onDenied đúng MỘT lần, câu khác vẫn phát", async () => {
+    const calls: string[] = [];
+    const pool = {
+      reserve: async (): Promise<SpreadConn> => ({
+        unsafe: (q) => ({
+          describe: async () => {
+            calls.push(q);
+            if (q.includes("contracts."))
+              throw Object.assign(new Error("permission denied for schema contracts"), {
+                code: "42501",
+              });
+          },
+        }),
+        release: () => {},
+      }),
+    };
+    const errs: unknown[] = [];
+    let denied = 0;
+    const s = createSpread(
+      pool,
+      3,
+      (e) => errs.push(e),
+      () => denied++,
+    );
+    s.see("select * from contracts.a where x = $1", [1]);
+    s.see("select * from contracts.b where x = $1", [1]);
+    s.see("select * from hub.t where x = $1", [1]);
+    await s.idle();
+    expect(errs).toEqual([]);
+    expect(denied).toBe(1);
+    // câu bị từ chối chỉ describe 1 lần (không lặp trên n kết nối); câu hợp lệ trên cả 3 kết nối
+    expect(calls.filter((q) => q.includes("contracts.")).length).toBe(2);
+    expect(calls.filter((q) => q.includes("hub.t")).length).toBe(3);
+  });
+
   test("kiểu tham số khác (bool vs chuỗi) ⇒ chữ ký khác, như bộ đệm postgres.js", () => {
     expect(inferredType(true)).toBe(16);
     expect(inferredType(new Date(0))).toBe(1184);

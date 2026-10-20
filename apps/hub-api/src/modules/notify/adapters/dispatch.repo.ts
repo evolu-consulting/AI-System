@@ -121,7 +121,7 @@ async function settle(
       select * from jsonb_to_recordset(${batch}::jsonb) as x(id bigint, attempts int, outcome text, error text, next_at timestamptz)),
     upd as (
       update hub.notification_deliveries d set
-        status = case r.outcome when 'sent' then 'sent' when 'retry' then 'pending' else 'dead' end,
+        status = case r.outcome when 'sent' then 'sent' when 'retry' then 'pending' when 'skipped' then 'skipped' else 'dead' end,
         next_attempt_at = coalesce(r.next_at, d.next_attempt_at), last_error = r.error,
         sent_at = case when r.outcome = 'sent' then ${nowIso}::timestamptz end
       from r where d.id = r.id and d.status = 'sending' and d.attempts = r.attempts returning 1),

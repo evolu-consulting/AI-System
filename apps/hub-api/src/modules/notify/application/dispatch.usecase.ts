@@ -35,6 +35,8 @@ export type DispatchResult = {
   sent: number;
   retried: number;
   dead: number;
+  /** Bỏ qua có lý do (miền dành riêng…): không phải lỗi. */
+  skipped?: number;
 };
 
 async function safeBatch<M>(
@@ -125,6 +127,7 @@ export async function dispatchOnce(d: DispatchDeps): Promise<DispatchResult> {
     const s = settle(delivery.attempts, result);
     if (s.outcome === "sent") res.sent++;
     else if (s.outcome === "retry") res.retried++;
+    else if (s.outcome === "skipped") res.skipped = (res.skipped ?? 0) + 1;
     else res.dead++;
     return {
       id: delivery.id,

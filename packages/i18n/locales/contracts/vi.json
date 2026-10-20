@@ -81,7 +81,8 @@
       "signBuy": "Mua · ",
       "ownerLine": "Phụ trách: {{name}}",
       "ownerUnknown": "(không rõ)",
-      "uploadFailed": "Không tải lên được. Thử lại sau."
+      "uploadFailed": "Không tải lên được. Thử lại sau.",
+      "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị"
     },
     "table": {
       "columns": "Cột",

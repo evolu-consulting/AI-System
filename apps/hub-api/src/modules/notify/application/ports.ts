@@ -10,7 +10,7 @@ export type Settlement = {
   id: string;
   /** Số lần thử của lượt claim này (fencing: chỉ ghi nếu hàng vẫn ở đúng lượt đó). */
   attempts: number;
-  outcome: "sent" | "retry" | "dead";
+  outcome: "sent" | "retry" | "dead" | "skipped";
   error: string | null;
   nextAt: string | null;
 };

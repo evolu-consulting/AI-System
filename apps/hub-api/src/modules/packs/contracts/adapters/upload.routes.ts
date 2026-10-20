@@ -112,6 +112,15 @@ function formFields(form: FormData) {
   return p.data;
 }
 
+/** FileBox chưa cấu hình ⇒ tải lên trả 503 `FILE_STORAGE_UNAVAILABLE` (thay vì 404 do route không được gắn). Guard `write` trước. */
+export function uploadUnavailableRoutes(view: PackAccessView): Hono<PackGuardVars> {
+  const r = new Hono<PackGuardVars>();
+  r.post("/contracts", packGuard(view, CONTRACTS_KEY, "write"), () => {
+    throw new AppError("FILE_STORAGE_UNAVAILABLE", 503, "File storage (FileBox) is not configured");
+  });
+  return r;
+}
+
 export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   r.post(

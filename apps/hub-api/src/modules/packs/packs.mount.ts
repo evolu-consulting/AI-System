@@ -20,6 +20,7 @@ import { setChatUsageSink } from "../usage/chat-usage";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
+import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
@@ -154,7 +155,9 @@ function mountContracts<E extends Env>(
   );
   app.route(base, ai.routes); // HD2
   app.route(base, ai.approval); // HD3
-  if (fb) app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
+  if (fb)
+    app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
+  else app.route(base, uploadUnavailableRoutes(view)); // FileBox vắng ⇒ 503 FILE_STORAGE_UNAVAILABLE (không 404)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
   app.route(base, contractsLedger(d, view, db)); // HD7

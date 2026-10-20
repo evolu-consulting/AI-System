@@ -4,11 +4,13 @@ import {
   BACKOFF_SEC,
   type Claimed,
   emailOf,
+  isUndeliverableEmail,
   MAX_ATTEMPTS,
   mergePush,
   pushOf,
   safeCode,
   settle,
+  skippedReserved,
   thrownResult,
 } from "./notify.rules";
 
@@ -44,6 +46,21 @@ describe("settle · backoff 1′ → 5′ → 30′ → 2h, tối đa 5 lần", 
   test("lần thứ 5 vẫn hỏng ⇒ dead; lỗi vĩnh viễn ⇒ dead ngay lần 1", () => {
     expect(settle(MAX_ATTEMPTS, fail(false)).outcome).toBe("dead");
     expect(settle(1, fail(true, "smtp_550")).outcome).toBe("dead");
+  });
+});
+
+describe("skip · miền không giao được", () => {
+  test("isUndeliverableEmail", () => {
+    for (const a of ["a@x.invalid", "a@x.test", "a@example.com", "a@m.example.org", "a@localhost"])
+      expect(isUndeliverableEmail(a)).toBe(true);
+    for (const a of ["a@corp.vn", "a@notexample.com", "a@example.com.vn", "khong-co-at"])
+      expect(isUndeliverableEmail(a)).toBe(false);
+  });
+  test("settle: skip ⇒ skipped (không phải dead/retry)", () => {
+    expect(settle(1, skippedReserved)).toEqual({
+      outcome: "skipped",
+      error: "skipped_reserved_domain",
+    });
   });
 });
 

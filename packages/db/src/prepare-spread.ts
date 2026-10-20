@@ -40,23 +40,40 @@ export function signatureOf(text: string, args: readonly unknown[]): string {
   return `${args.map(inferredType).join(",")}\u0000${text}`;
 }
 
+/** SQLSTATE 42501 = insufficient_privilege (vd `permission denied for schema contracts`). */
+export const isPermissionDenied = (err: unknown): boolean =>
+  (err as { code?: string } | null)?.code === "42501";
+
+/**
+ * Câu của schema gói chạy dưới role gói (`SET LOCAL ROLE` trong tx), còn mượn kết nối ở đây chạy bằng role gốc ⇒ 42501.
+ * Không phải lỗi: bỏ câu đó khỏi các vòng sau (không describe lại, không báo từng câu) và chỉ báo `onDenied` MỘT lần.
+ * Trả các câu còn lại.
+ */
 async function describeOn(
   pool: SpreadPool,
   batch: readonly Entry[],
   onError: (e: unknown) => void,
-) {
+  onDenied: (e: unknown) => void,
+): Promise<Entry[]> {
   const c = await pool.reserve();
+  const kept: Entry[] = [];
   try {
     for (const e of batch) {
       try {
         await c.unsafe(e.text, e.args, { prepare: true }).describe();
+        kept.push(e);
       } catch (err) {
-        onError(err);
+        if (isPermissionDenied(err)) onDenied(err);
+        else {
+          kept.push(e);
+          onError(err);
+        }
       }
     }
   } finally {
     c.release();
   }
+  return kept;
 }
 
 /** `n` = số kết nối của pool: mỗi lô mượn lần lượt `n` lần (pool trả kết nối rảnh theo FIFO ⇒ lần lượt từng kết nối). */
@@ -64,16 +81,25 @@ export function createSpread(
   pool: SpreadPool,
   n: number,
   onError: (e: unknown) => void,
+  /** Gọi đúng MỘT lần khi gặp câu bị từ chối quyền (bị bỏ qua, không phải lỗi). */
+  onDenied: (e: unknown) => void = () => {},
 ): StatementSpread {
   const seen = new Set<string>();
+  let deniedReported = false;
+  const denied = (e: unknown) => {
+    if (deniedReported) return;
+    deniedReported = true;
+    onDenied(e);
+  };
   let pending: Entry[] = [];
   let running: Promise<void> | null = null;
   const flush = async () => {
     try {
       while (pending.length > 0) {
-        const batch = pending;
+        let batch = pending;
         pending = [];
-        for (let i = 0; i < n; i++) await describeOn(pool, batch, onError);
+        for (let i = 0; i < n && batch.length > 0; i++)
+          batch = await describeOn(pool, batch, onError, denied);
       }
     } catch (err) {
       pending = [];

@@ -3,7 +3,14 @@
 // Mỗi tin một `sendMail` song song (pool giới hạn kết nối); lỗi ánh xạ qua `mapSmtpError` (thuần, có test).
 import nodemailer from "nodemailer";
 import type { EmailTransport } from "../application/ports";
-import type { EmailMessage, SendResult } from "../domain/notify.rules";
+import {
+  type EmailMessage,
+  isUndeliverableEmail,
+  type SendResult,
+  skippedReserved,
+} from "../domain/notify.rules";
+
+const SKIPPED = Symbol("skipped");
 
 export type SmtpConfig = {
   host: string;
@@ -69,18 +76,27 @@ export function createSmtpTransport(
       // Lấy mật khẩu chỉ khi cần xác thực; lỗi lấy secret ném ra ⇒ cả lô thử lại (safeBatch).
       sender ??= factory(cfg, cfg.user ? await getPassword() : undefined);
       const s = sender;
+      // Miền dành riêng/không giao được: không đụng SMTP, ghi skipped (không phải lỗi).
       const out = await Promise.allSettled(
         msgs.map((m) =>
-          s.sendMail({
-            from: cfg.from,
-            to: { name: m.toName, address: m.to },
-            subject: m.subject,
-            text: m.text,
-            messageId: `<${m.idempotencyKey}@${domain}>`,
-          }),
+          isUndeliverableEmail(m.to)
+            ? Promise.reject(SKIPPED)
+            : s.sendMail({
+                from: cfg.from,
+                to: { name: m.toName, address: m.to },
+                subject: m.subject,
+                text: m.text,
+                messageId: `<${m.idempotencyKey}@${domain}>`,
+              }),
         ),
       );
-      return out.map((r) => (r.status === "fulfilled" ? { ok: true } : mapSmtpError(r.reason)));
+      return out.map((r) =>
+        r.status === "fulfilled"
+          ? { ok: true }
+          : r.reason === SKIPPED
+            ? skippedReserved
+            : mapSmtpError(r.reason),
+      );
     },
   };
 }

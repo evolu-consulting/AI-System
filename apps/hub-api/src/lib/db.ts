@@ -14,6 +14,8 @@ export function connectDb(url: string, max = 10, o: { spread?: boolean } = {}): 
     max,
     spread: o.spread === true,
     onSpreadError: (err) => logger.warn("db-prepare-spread-failed", safeErrorFields(err)),
+    // Schema gói (contracts…) chạy dưới role gói, không phải `hub_api` ⇒ bỏ qua, chỉ ghi MỘT dòng info.
+    onSpreadDenied: () => logger.info("db-prepare-spread-skipped-pack-schemas"),
   });
 }
 

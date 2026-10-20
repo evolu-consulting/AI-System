@@ -81,7 +81,8 @@
       "signBuy": "Buy · ",
       "ownerLine": "Owner: {{name}}",
       "ownerUnknown": "(unknown)",
-      "uploadFailed": "Could not upload. Try again later."
+      "uploadFailed": "Could not upload. Try again later.",
+      "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator"
     },
     "table": {
       "columns": "Columns",

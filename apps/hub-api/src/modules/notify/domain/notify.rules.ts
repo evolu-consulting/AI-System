@@ -16,10 +16,35 @@ export type Channel = "email" | "push";
 /** Kết quả transport cho MỘT tin. `permanent` = lỗi không đáng thử lại (địa chỉ sai, 4xx). `gone` (push) = đăng ký hết hạn. */
 export type SendResult =
   | { ok: true }
-  | { ok: false; permanent: boolean; code: string; gone?: boolean };
+  | { ok: false; permanent: boolean; code: string; gone?: boolean; skip?: boolean };
+
+/** Miền dành riêng/không giao được (RFC 2606/6761): không bao giờ gửi SMTP thật tới đó. */
+const RESERVED_TLDS = ["invalid", "test", "example", "localhost"];
+const RESERVED_DOMAINS = ["example.com", "example.org", "example.net"];
+export function isUndeliverableEmail(address: string): boolean {
+  const at = address.lastIndexOf("@");
+  const d = address
+    .slice(at + 1)
+    .trim()
+    .toLowerCase()
+    .replace(/\.$/, "");
+  if (at < 0 || d === "") return false;
+  const tld = d.slice(d.lastIndexOf(".") + 1);
+  return (
+    RESERVED_TLDS.includes(tld) || RESERVED_DOMAINS.some((r) => d === r || d.endsWith(`.${r}`))
+  );
+}
+/** Kết quả "bỏ qua": không phải lỗi, không thử lại. */
+export const skippedReserved: SendResult = {
+  ok: false,
+  permanent: true,
+  skip: true,
+  code: "skipped_reserved_domain",
+};
 
 export type Settled =
   | { outcome: "sent" }
+  | { outcome: "skipped"; error: string }
   | { outcome: "retry"; delaySec: number; error: string }
   | { outcome: "dead"; error: string };
 
@@ -36,6 +61,7 @@ export function safeCode(raw: string): string {
 export function settle(attempts: number, r: SendResult): Settled {
   if (r.ok) return { outcome: "sent" };
   const error = safeCode(r.code);
+  if (r.skip) return { outcome: "skipped", error };
   if (r.permanent || attempts >= MAX_ATTEMPTS) return { outcome: "dead", error };
   const delaySec = BACKOFF_SEC[Math.min(attempts, BACKOFF_SEC.length) - 1] ?? BACKOFF_SEC[0];
   return { outcome: "retry", delaySec, error };

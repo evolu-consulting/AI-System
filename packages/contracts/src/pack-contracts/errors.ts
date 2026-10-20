@@ -18,6 +18,8 @@ export const CONTRACT_ERRORS = {
   FILE_TYPE: 415,
   UPLOAD_QUOTA: 429,
   UPLOAD_QUOTA_UNAVAILABLE: 503,
+  /** FileBox chưa cấu hình ⇒ không tải lên được. */
+  FILE_STORAGE_UNAVAILABLE: 503,
   /** HD2: HĐ đang trích ⇒ không trích lại. */
   EXTRACT_BUSY: 409,
   /** HD2: không có văn bản lẫn tệp để trích. */

@@ -1,4 +1,4 @@
-// N3-FR-07 · ADR-0027 · transport live với stub (KHÔNG mạng): ánh xạ lỗi SMTP/push, lấy bí mật qua hàm, Message-ID/topic idempotency.
+﻿// N3-FR-07 · ADR-0027 · transport live với stub (KHÔNG mạng): ánh xạ lỗi SMTP/push, lấy bí mật qua hàm, Message-ID/topic idempotency.
 import { describe, expect, test } from "bun:test";
 import type { EmailMessage, PushMessage } from "../domain/notify.rules";
 import {
@@ -60,7 +60,7 @@ describe("createSmtpTransport (stub nodemailer)", () => {
     const sent: unknown[] = [];
     const sender: MailSender = {
       sendMail: async (m) => {
-        if (m.to.address === "bad@x.test")
+        if (m.to.address === "bad@x.vn")
           throw Object.assign(new Error("no such user"), { responseCode: 550 });
         sent.push(m);
       },
@@ -80,15 +80,40 @@ describe("createSmtpTransport (stub nodemailer)", () => {
         return sender;
       },
     );
-    const out = await t.sendBatch([mail("lan@x.test"), mail("bad@x.test")]);
+    const out = await t.sendBatch([mail("lan@x.vn"), mail("bad@x.vn")]);
     expect(out).toEqual([{ ok: true }, { ok: false, permanent: true, code: "smtp_550" }]);
     expect(sent[0]).toMatchObject({
       from: "Hop Dong <no-reply@corp.test>",
-      to: { name: "Lan", address: "lan@x.test" },
+      to: { name: "Lan", address: "lan@x.vn" },
       messageId: "<n3-42@corp.test>",
     });
-    await t.sendBatch([mail("lan@x.test")]);
+    await t.sendBatch([mail("lan@x.vn")]);
     expect({ built, pwCalls }).toEqual({ built: 1, pwCalls: 1 }); // dựng một lần, lấy mật khẩu một lần
+  });
+});
+
+describe("createSmtpTransport · miền dành riêng", () => {
+  test("không gửi tới .invalid/.test/.example/.localhost/example.com|org|net ⇒ skipped, không gọi SMTP", async () => {
+    const sent: string[] = [];
+    const t = createSmtpTransport(
+      cfg,
+      async () => "pw",
+      () => ({ sendMail: async (m) => void sent.push(m.to.address) }),
+    );
+    const bad = [
+      "a@x.invalid",
+      "a@x.test",
+      "a@y.example",
+      "a@h.localhost",
+      "a@example.com",
+      "a@mail.example.org",
+      "a@EXAMPLE.NET",
+    ];
+    const out = await t.sendBatch([...bad.map(mail), mail("ok@corp.vn")]);
+    expect(sent).toEqual(["ok@corp.vn"]);
+    for (const r of out.slice(0, bad.length))
+      expect(r).toMatchObject({ ok: false, skip: true, code: "skipped_reserved_domain" });
+    expect(out[bad.length]).toEqual({ ok: true });
   });
 });
 
@@ -103,7 +128,7 @@ describe("createSmtpTransport · bí mật", () => {
       },
       () => ({ sendMail: async () => {} }),
     );
-    expect(await open.sendBatch([mail("a@x.test")])).toEqual([{ ok: true }]);
+    expect(await open.sendBatch([mail("a@x.vn")])).toEqual([{ ok: true }]);
     expect(pw).toBe(0);
     const broken = createSmtpTransport(
       cfg,
@@ -112,7 +137,7 @@ describe("createSmtpTransport · bí mật", () => {
       },
       () => ({ sendMail: async () => {} }),
     );
-    await expect(broken.sendBatch([mail("a@x.test")])).rejects.toThrow("secret_missing");
+    await expect(broken.sendBatch([mail("a@x.vn")])).rejects.toThrow("secret_missing");
   });
 });
 

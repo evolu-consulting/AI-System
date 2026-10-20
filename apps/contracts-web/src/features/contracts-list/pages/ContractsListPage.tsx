@@ -20,6 +20,7 @@ import {
   type RowCtx,
 } from "../components/ContractCells";
 import { useContractsList } from "../hooks/use-contracts-list";
+import { uploadErrorText } from "../list-upload-error";
 
 const errText = (e: unknown, t: (k: string) => string): string =>
   (e as { status?: number } | null)?.status === 409
@@ -82,8 +83,8 @@ export function ContractsListPage() {
     try {
       const r = await uploadContract(f);
       await nav({ to: "/contracts/$id", params: { id: r.id } });
-    } catch {
-      setErr(t("contracts.list.uploadFailed"));
+    } catch (e) {
+      setErr(uploadErrorText(e, t));
     }
   }
 
