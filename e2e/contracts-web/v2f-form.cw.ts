@@ -235,7 +235,7 @@ test.describe("lưu", () => {
         partner_tax_id: null,
         start_date: "2026-10-20",
         end_date: null,
-        notice_days: 30,
+        notice_days: 45, // mặc định từ Cài đặt (V2-H), form không còn cứng 30
         total_value: 3_600_000,
         payment_terms: null,
         partner_signer: null,

@@ -40,6 +40,8 @@ export async function installV2f(page: Page, o: Opts = {}): Promise<Sent[]> {
   await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));
   await page.route(at("categories"), (r) => json(r, 200, categoriesAsHub()));
   await page.route(at("members"), (r) => json(r, 200, membersAsHub()));
+  // V2-H · BA 5.8: "Nhắc trước khi hết hạn" mặc định lấy từ Cài đặt (45 để phân biệt với mặc định BA 60 khi lỗi đọc).
+  await page.route(at("business-settings"), (r) => json(r, 200, { renewal_notice_days: 45 }));
   await page.route(at("contracts"), (r) => json(r, 200, listAsHub()));
   await page.route(at("products"), (r) => {
     rec(r);

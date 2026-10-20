@@ -93,16 +93,16 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     }
   });
 
-  test("PK-FR-10 · nav-v2 · Sản phẩm & Giá: 3 tab So sánh giá · Sản phẩm CKS · Mua hàng; một H1; mục menu 'Sản phẩm & Giá' sáng ở mọi tab", async ({
+  test("PK-FR-10 · nav-v2 · Sản phẩm & Giá: một trang (V2-O đã gộp 3 tab cũ), một H1, không còn tab; mục menu 'Sản phẩm & Giá' sáng; link tab cũ vẫn về /products", async ({
     page,
   }) => {
     await page.goto("/products");
     const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sản phẩm & Giá");
-    await expect(page.getByRole("tab")).toHaveText(["So sánh giá", "Sản phẩm CKS", "Mua hàng"]);
-    for (const tab of ["Sản phẩm CKS", "Mua hàng", "So sánh giá"]) {
-      await page.getByRole("tab", { name: tab }).click();
-      await expect(page.getByRole("tab", { name: tab })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    for (const url of ["/products?tab=cks", "/products?tab=purchase", "/products?tab=compare"]) {
+      await page.goto(url);
+      await expect(page).toHaveURL(/\/products(\?|$)/);
       await expect(nav.getByRole("link", { name: "Sản phẩm & Giá" })).toHaveAttribute(
         "aria-current",
         "page",

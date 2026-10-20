@@ -48,10 +48,12 @@ test("B1 · viewer ở /partners: không có nút Ghi việc / Chấm điểm", 
   await expect(page.getByRole("button", { name: /Ghi việc|Chấm điểm/ })).toHaveCount(0);
 });
 
-test("B1 · editor ở /partners: vẫn có nút Ghi việc / Chấm điểm", async ({ page }) => {
+test("B1 · editor ở /partners: vẫn có nút + Ghi việc (V2-I: chấm điểm 0–100 đã thay bằng sao ở tab Đánh giá)", async ({
+  page,
+}) => {
   await partnersAs(page, "editor");
   await expect(page.getByRole("button", { name: /Ghi việc/ }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Chấm điểm" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Chấm điểm" })).toHaveCount(0);
 });
 
 test("B6 · Xác nhận cấp 1 → cấp 2 người gửi không quyết được: hết nút, hiện ghi chú chờ", async ({

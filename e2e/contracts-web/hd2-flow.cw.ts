@@ -90,7 +90,7 @@ test("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán, SP 
       partner_tax_id: null,
       start_date: "2026-11-01",
       end_date: null,
-      notice_days: 30,
+      notice_days: 45, // mặc định từ Cài đặt (V2-H), form không còn cứng 30
       total_value: 91_500_000,
       payment_terms: null,
       partner_signer: null,

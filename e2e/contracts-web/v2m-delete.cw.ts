@@ -18,6 +18,7 @@ const impact = {
   partner_events: 3,
   appendices: 0,
   has_cks: false,
+  stock_blocked: null,
 };
 
 test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async ({ page }) => {

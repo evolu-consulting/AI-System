@@ -267,7 +267,7 @@ test("DT-04 · DT-05 · sao 1–5 (lệch > 25 điểm cần lý do) + ghi chú 
     stars: 1,
     reason: "Chậm kích hoạt nhiều lần",
   });
-  await page.getByLabel("Ghi chú").first().fill("Gọi lại thứ Hai");
+  await page.getByRole("textbox", { name: "Ghi chú" }).fill("Gọi lại thứ Hai");
   await page.getByRole("button", { name: "Lưu ghi chú" }).click();
   await expect.poll(() => sent.length).toBe(3);
   expect(sent[2]).toEqual({

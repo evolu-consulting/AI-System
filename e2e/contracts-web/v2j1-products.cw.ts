@@ -137,13 +137,17 @@ async function install(page: Page) {
   );
 }
 
-test("danh sách: mặc định là tab Sản phẩm, 4 tab nhóm có số lượng, 5 cột", async ({ page }) => {
+test("danh sách: một trang (V2-O gộp tab), mặc định nhóm Tất cả, 4 tab nhóm có số lượng, 5 cột", async ({
+  page,
+}) => {
   await install(page);
   await page.goto("/products");
-  await expect(page.getByRole("tab", { name: "Sản phẩm", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("tablist", { name: "Nhóm sản phẩm" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Tất cả · 3" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
+  await expect(page.getByRole("tab", { name: "Sản phẩm", exact: true })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "Tất cả · 3" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Dịch vụ có hạn · 1" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Hàng hoá · 1" })).toBeVisible();

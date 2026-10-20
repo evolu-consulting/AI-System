@@ -89,6 +89,27 @@ const FOUND = {
 
 async function open(page: Page, overview: SupplierOverviewOut = OVERVIEW): Promise<Sent[]> {
   const sent = await installV2f(page);
+  // Chi tiết SP của V2-J1 (tab NCC & giá gắn qua `lib/slots.ts`): tóm tắt tối thiểu.
+  await page.route(`**/pack/contracts/business/products/${PID}`, (r) =>
+    json(r, 200, {
+      product: {
+        id: PID,
+        name: overview.product.name,
+        unit: overview.product.unit,
+        group: overview.product.group,
+        kind: overview.product.group === "referral" ? "referral" : "stock",
+        held: { qty: 0, unit: null, expires_on: null, value: 0 },
+        sold_12m: 0,
+        sold_3m: 0,
+        business: { score: null, suggestion: null, reason: "", factors: [] },
+      },
+      revenue_12m: 0,
+      margin_pct: null,
+      lots: [],
+      sales: [],
+      contracts_count: 0,
+    }),
+  );
   await page.route(
     (u) => u.pathname.startsWith(`/pack/contracts/products/${PID}`),
     (r) => {
@@ -117,11 +138,12 @@ test("bảng so sánh: giá vốn BQ, Mua mới mặc định, chuyển Gia hạ
 }) => {
   await open(page);
   await expect(page.getByText("Giá vốn bình quân của mình")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "VNPT" }).first()).toBeVisible();
-  await expect(page.getByRole("cell", { name: "FPT IS" })).toHaveCount(0); // FPT chỉ có giá Gia hạn
+  const cmp = page.locator("table").first(); // bảng so sánh (bảng thứ hai là đánh giá NCC, liệt kê cả FPT)
+  await expect(cmp.getByRole("cell", { name: "VNPT" })).toBeVisible();
+  await expect(cmp.getByRole("cell", { name: "FPT IS" })).toHaveCount(0); // FPT chỉ có giá Gia hạn
   await page.getByRole("button", { name: "Gia hạn" }).click();
-  await expect(page.getByRole("cell", { name: "FPT IS" }).first()).toBeVisible();
-  await expect(page.getByText("Hợp tác tiếp")).toBeVisible();
+  await expect(cmp.getByRole("cell", { name: "FPT IS" })).toBeVisible();
+  await expect(page.getByText("Hợp tác tiếp").first()).toBeVisible();
   await expect(page.getByText("Có thể mua thử")).toBeVisible();
 });
 
@@ -135,7 +157,7 @@ test("tìm giá: chỉ chạy khi bấm Tìm (nói rõ chỉ gửi tên SP); lư
   const search = page.waitForRequest((q) => q.url().endsWith("/suppliers/search"));
   await page.getByRole("button", { name: "Tìm", exact: true }).click();
   expect((await search).postDataJSON()).toEqual({});
-  await expect(page.getByText("Viettel")).toBeVisible();
+  await expect(page.getByText("Viettel", { exact: true })).toBeVisible();
   const save = page.waitForRequest(
     (q) => q.url().endsWith("/supplier-prices") && q.method() === "POST",
   );

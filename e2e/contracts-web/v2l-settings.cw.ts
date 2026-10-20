@@ -169,7 +169,9 @@ test("đổi màu chủ đạo: chấm cam ở mục Công ty, nút Lưu mở; L
   const dlg = await open(page);
   await dlg.getByRole("radio", { name: "Xanh ngọc" }).click();
   await expect(dlg.getByTestId("changed-dot").first()).toBeVisible();
-  await expect(page.locator("#brand-css")).toContainText("#0d9488");
+  await expect
+    .poll(() => page.locator("#brand-css").evaluate((el) => el.textContent))
+    .toContain("#0d9488"); // <style>: toContainText bỏ qua nội dung style
   await dlg.getByRole("button", { name: "Lưu cài đặt" }).click();
   await expect
     .poll(() => sent.find((s) => s.path === `${P}/company`)?.body)
@@ -194,6 +196,36 @@ test("điểm uy tín: 5 ô × 3 tab + Mức & đánh giá; đổi trọng số 
   await expect
     .poll(() => sent.find((s) => s.path.endsWith("/cells/service/supplier")))
     .toBeTruthy();
+});
+
+test("HD8-FR-03 (chuyển từ /settings/scoring): trọng số gửi lên tổng đúng 100; máy chủ 422 ⇒ hiện đúng câu, ô vẫn giữ nháp", async ({
+  page,
+}) => {
+  const sent = await install(page, "owner");
+  await page.route(`**${P}/reputation/config/cells/service/supplier`, (r) => {
+    if (r.request().method() !== "PUT") return r.fallback();
+    sent.push({
+      method: "PUT",
+      path: new URL(r.request().url()).pathname,
+      body: r.request().postDataJSON(),
+    });
+    return r.fulfill(
+      json({ error: { code: "SCORING_INVALID", message: "Mức Tốt phải cao hơn mức Khá" } }, 422),
+    );
+  });
+  const dlg = await open(page);
+  await dlg
+    .getByRole("button", { name: /Điểm uy tín/ })
+    .first()
+    .click();
+  await dlg.getByLabel("Trọng số Giao đúng hạn").fill("30");
+  await dlg.getByRole("button", { name: "Lưu cài đặt" }).click();
+  await expect(page.getByText("Mức Tốt phải cao hơn mức Khá")).toBeVisible();
+  const put = sent.find((s) => s.path.endsWith("/cells/service/supplier"));
+  const body = put?.body as { criteria: { key: string; weight: number }[] };
+  expect(body.criteria.reduce((a, c) => a + c.weight, 0)).toBe(100);
+  expect(body.criteria.map((c) => c.key)).toEqual(["on_time_delivery", "quality"]);
+  await expect(dlg.getByRole("button", { name: "Lưu cài đặt" })).toBeEnabled();
 });
 
 test("điểm kinh doanh: thử tính hiện điểm + đề xuất từ API", async ({ page }) => {

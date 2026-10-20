@@ -7,10 +7,14 @@ import { contract, contractAsHub } from "./dataset-contract";
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
 type Sent = { method: string; path: string; body: unknown };
+// Ngày theo múi giờ của trình duyệt trong cấu hình (Asia/Ho_Chi_Minh), không theo múi giờ máy chạy test (container UTC lệch ngày lúc 17–24 giờ UTC).
 const iso = (days: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(
+    new Date(),
+  );
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 };
 
 async function install(page: Page, status: string): Promise<Sent[]> {

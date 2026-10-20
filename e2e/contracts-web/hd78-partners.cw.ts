@@ -1,14 +1,14 @@
 // HD7-AC09 · HD8-AC08 · plan-frontend N1 §6 · nav-v2 (người dùng chốt 2026-10-20: giao diện theo mockup NITI, thay D-02 "giống hệt mgmt-app"):
 // cảnh 3 lớp như `cks.cw.ts` — chữ (0 ký tự lệch), khung (±2 px), ảnh (≤ 0,5 %) so với BASELINE của chính contracts-web: `/partners`
-// (+ "Ghi việc", "Chấm điểm", mobile, tối), `/settings/scoring`, `/products?product=` (hàng hoá), khối "Ghi việc với …" của trang HĐ đã
-// duyệt. `CW_MODE=capture` chụp từ contracts-web và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ ngay. Hành vi (chỉ chế độ so):
+// (+ "Ghi việc", mobile, tối) và khối "Ghi việc với …" của trang HĐ đã duyệt. (V2-I/V2-L/V2-O: `/settings/scoring` và `/products?product=`
+// đã gỡ — cách tính điểm nay ở hộp thoại Cài đặt, test `v2l-settings.cw.ts`; danh sách SP ở `v2j1-products.cw.ts`.) `CW_MODE=capture` chụp từ contracts-web và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ ngay. Hành vi (chỉ chế độ so):
 // mỗi nút gửi đúng API/thân. Không sleep: chờ phần tử/điều kiện. Dữ liệu `dataset-partners.ts`.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
-import { PORK, partnerData, partnersAsHub } from "./dataset-partners";
+import { partnerData, partnersAsHub } from "./dataset-partners";
 
 const CAPTURE = process.env.CW_MODE === "capture";
 const DIR = join(__dirname, "baseline", process.platform);
@@ -76,30 +76,6 @@ const SCENES: Scene[] = [
     boxes: { ...listBoxes, log: LOG },
     ready: partnersReady,
     act: openRow("+ Ghi việc"),
-  },
-  ...(["light", "dark"] as const).map(
-    (theme): Scene => ({
-      name: `p06-scoring-${theme}`,
-      path: "/settings/scoring",
-      size: D,
-      theme,
-      text: ["main"],
-      boxes: {
-        heading: "main h1",
-        criteria: "main section >> nth=0",
-        rules: "main section >> nth=2",
-      },
-      ready: (p) => p.getByText("Thái độ hợp tác").first(),
-    }),
-  ),
-  {
-    name: "p03-goods-light",
-    path: `/products?product=${encodeURIComponent(PORK)}`,
-    size: D,
-    theme: "light",
-    text: ["main"],
-    boxes: { table: "main table", firstRow: "main tbody tr >> nth=0" },
-    ready: (p) => p.getByText("Thực phẩm Hưng Phát"),
   },
   {
     name: "s05-contract-log",
@@ -283,43 +259,4 @@ test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại 
   await page.getByRole("button", { name: "Huỷ việc này" }).click();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ method: "POST", path: "/partner-events/105/void", body: {} });
-});
-
-test("HD8-FR-03 · Cách tính: tổng ≠ 100 khoá nút Lưu; lưu gửi tiêu chí + quy tắc; 422 hiện đúng câu", async ({
-  page,
-}) => {
-  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
-  await prepare(page, SCENES.find((s) => s.name === "p06-scoring-light") as Scene);
-  const sent: Sent[] = [];
-  await page.route("**/pack/contracts/scoring/customer", (r) => {
-    if (r.request().method() !== "PUT") return r.fallback();
-    sent.push({ method: "PUT", path: "/scoring/customer", body: r.request().postDataJSON() });
-    return json(r, 422, {
-      error: { code: "SCORING_INVALID", message: "Mức Tốt phải cao hơn mức Khá" },
-    });
-  });
-  const save = page.getByRole("button", { name: "Lưu & tính lại điểm" });
-  await expect(save).toBeDisabled();
-  await page.getByLabel("Trọng số Giữ lịch hẹn").fill("15");
-  await expect(page.getByText("· cần đúng 100%")).toBeVisible();
-  await expect(save).toBeDisabled();
-  await page.getByLabel("Trọng số Thái độ hợp tác").fill("25");
-  await expect(save).toBeEnabled();
-  await save.click();
-  await expect(page.getByRole("alert")).toHaveText("Mức Tốt phải cao hơn mức Khá");
-  const body = sent[0]?.body as { criteria: { key: string; weight: number }[]; rules: object };
-  expect(body.criteria.map((c) => [c.key, c.weight])).toContainEqual(["appointments", 15]);
-  expect(body.criteria.map((c) => [c.key, c.weight])).toContainEqual([
-    "custom:thai-do-hop-tac",
-    25,
-  ]);
-  expect(Object.keys(body.rules).sort()).toEqual([
-    "fair_from",
-    "good_from",
-    "manual_adjust",
-    "min_events",
-    "recency_boost",
-    "recency_months",
-    "window_months",
-  ]);
 });
