@@ -158,13 +158,13 @@ export async function managers(
     on conflict (user_id) do update set manager_id = excluded.manager_id`;
 }
 
-/** M1D · phòng ban = Group `key` + hàng `admin.departments` (trưởng phòng) + thành viên. 3 câu. Trả group id.
- *  `[head, memberIds]` gom thành tuple (≤ 4 tham số, CONVENTIONS §4) — lời gọi vị trí giữ nguyên. */
+/** M1D · phòng ban = Group `key` + hàng `admin.departments` (trưởng phòng) + thành viên. 3 câu. Trả group id. */
 export async function department(
   sql: Sql,
   tenant: string,
   key: string,
-  ...[head, memberIds]: [head: string | null, memberIds: readonly string[]]
+  head: string | null,
+  memberIds: readonly string[],
 ): Promise<string> {
   const g = (await groups(sql, tenant, [key])).get(key) as string;
   await sql`insert into admin.departments (tenant_id, group_id, head_user_id)
