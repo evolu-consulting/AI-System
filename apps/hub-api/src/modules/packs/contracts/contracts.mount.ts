@@ -26,15 +26,21 @@ import { uploadDay } from "./domain/upload.rules";
 
 export { CONTRACTS_KEY };
 
+export type ContractsClock = {
+  /** Múi giờ tenant (HD4-FR-02: ngày lịch của tenant); vắng ⇒ múi mặc định. `now` để test tiêm. */
+  timeZoneOf?: (tenantId: string) => Promise<string>;
+  now?: () => Date;
+  /** HD3 · review S1: seam duyệt cho PATCH trường (giai đoạn run + mở lại duyệt); vắng ⇒ hành vi HD1. */
+  guard?: PatchApprovalGuard;
+};
+
 export function contractsModule(
   db: Db,
   view: PackAccessView,
   filebox: ((org: string) => Pick<PackFileboxClient, "getLink">) | null = null,
-  /** Múi giờ tenant (HD4-FR-02: ngày lịch của tenant); vắng ⇒ múi mặc định. `now` để test tiêm. */
-  clock: { timeZoneOf?: (tenantId: string) => Promise<string>; now?: () => Date } = {},
-  /** HD3 · review S1: seam duyệt cho PATCH trường (giai đoạn run + mở lại duyệt); vắng ⇒ hành vi HD1. */
-  guard?: PatchApprovalGuard,
+  clock: ContractsClock = {},
 ): Hono<PackGuardVars> {
+  const { guard } = clock;
   const uow = packTenantOnly(createPackUow(db, CONTRACTS_KEY, contractsRepos));
   const link = filebox ? (org: string, fileId: string) => filebox(org).getLink(fileId) : null;
   // V2-A: ngày lịch tenant cho giai đoạn/quá hạn của mốc (cache múi giờ, 0 SQL khi nóng).

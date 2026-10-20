@@ -128,6 +128,16 @@ function mountContracts<E extends Env>(
   view: PackAccessView,
   fb: PackFb | null,
 ): void {
+  const cx = contractsCtx(d, view, fb);
+  mountContractsCore(app, cx);
+  mountContractsMore(app, cx);
+  mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
+}
+
+type ContractsCtx = ReturnType<typeof contractsCtx>;
+
+/** Phụ thuộc chung của gói contracts: AI client (M3), tra MST, trần thao tác, module trích HD2/HD3. */
+function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: PackFb | null) {
   const db = d.db;
   const base = `${PACK_PREFIX}/${CONTRACTS_KEY}`;
   const timeZoneOf = async (tid: string) =>
@@ -158,10 +168,15 @@ function mountContracts<E extends Env>(
       timeZoneOf, // V2-A · ngày lịch tenant cho mốc mặc định
     },
   );
+  return { d, db, view, fb, base, timeZoneOf, tax, aiClient, quota, ai };
+}
+
+function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void {
+  const { d, db, view, fb, base, timeZoneOf, ai } = cx;
   // HD1 T7 + T8 (link tệp) · HD5 ngày giá theo múi tenant · HD3 seam duyệt cho PATCH trường (review S1)
   app.route(
     base,
-    contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf }, ai.guard),
+    contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf, guard: ai.guard }),
   );
   app.route(base, ai.routes); // HD2
   app.route(base, ai.approval); // HD3
@@ -177,6 +192,10 @@ function mountContracts<E extends Env>(
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 · điểm kinh doanh SP
   app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H · khách đang dùng
   app.route(base, deleteContractModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-M · xoá HĐ
+}
+
+function mountContractsMore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void {
+  const { d, db, view, base, timeZoneOf, tax, aiClient, quota } = cx;
   app.route(
     base,
     supplierPricesModule(db, view, {
@@ -198,9 +217,7 @@ function mountContracts<E extends Env>(
     }),
   ); // HD8 (engine cũ chỉ đọc — CR-096 Q1)
   app.route(base, contractsReputation(d, view, db)); // V2-E · uy tín v2
-  mountAssistantTools(db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
 }
-
 /** HD7 · sổ thanh toán + vòng quá hạn (tenant có quyền gói — cache, 0 SQL; múi tenant từ `ConfigCache`). */
 function contractsLedger(d: PacksMountDeps, view: PackAccessView, db: Db) {
   const o = d.packs?.contractsOverdue ?? {};

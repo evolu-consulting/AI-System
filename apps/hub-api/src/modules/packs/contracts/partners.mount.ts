@@ -38,21 +38,23 @@ const scoreOf =
     return p ? { score: p.score, band: p.band } : null;
   };
 
+export type PartnersModuleDeps = {
+  timeZoneOf: (tenantId: string) => Promise<string>;
+  now?: () => Date;
+  /** Test: trang giả thay mạng thật. */
+  inspect?: Inspect;
+  tax?: TaxRegistry | null;
+  /** Trần kiểm link theo người dùng (Redis; vắng ⇒ 503 khi kiểm link). */
+  redis?: Redis;
+  linkChecksPerMinute?: number;
+  /** V2-I · Q8: AI client chung cho "Tìm trên internet" (vắng ⇒ 503 AGENT_UNAVAILABLE). */
+  ai?: AiClient | null;
+};
+
 export function partnersModule(
   db: Db,
   view: PackAccessView,
-  d: {
-    timeZoneOf: (tenantId: string) => Promise<string>;
-    now?: () => Date;
-    /** Test: trang giả thay mạng thật. */
-    inspect?: Inspect;
-    tax?: TaxRegistry | null;
-    /** Trần kiểm link theo người dùng (Redis; vắng ⇒ 503 khi kiểm link). */
-    redis?: Redis;
-    linkChecksPerMinute?: number;
-    /** V2-I · Q8: AI client chung cho "Tìm trên internet" (vắng ⇒ 503 AGENT_UNAVAILABLE). */
-    ai?: AiClient | null;
-  },
+  d: PartnersModuleDeps,
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(
     createPackUow(db, KEY, (tx: Tx, t: string) => ({
