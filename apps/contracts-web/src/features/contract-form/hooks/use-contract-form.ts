@@ -3,13 +3,20 @@
 import type { ContractDeal } from "@ai/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { createManualContract } from "~/features/contract-new/api";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
 import { createProduct, fetchProducts, PRODUCTS_KEY } from "../api";
-import { PARTNER_ROLE } from "../lib/deal";
+import { blockerMessage } from "../lib/blocker";
 import {
   EMPTY_FORM,
   EMPTY_LINE,
@@ -59,79 +66,53 @@ export async function productIdsOf(f: FormState): Promise<(string | null)[]> {
   return ids;
 }
 
-export function useContractForm() {
-  const { t } = useTranslation();
-  const nav = useNavigate();
-  const qc = useQueryClient();
-  // V2-H: "Nhắc trước khi hết hạn" để trống tới khi đọc xong Cài đặt rồi điền sẵn (người đã gõ thì giữ).
-  const [f, setF] = useState<FormState>({ ...EMPTY_FORM, notice_days: "" });
-  const notice = useNoticeDefault();
-  useEffect(() => setF((s) => withNoticeDefault(s, notice)), [notice]);
-  const [tried, setTried] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const products = useQuery({
-    queryKey: PRODUCTS_KEY,
-    queryFn: ({ signal }) => fetchProducts(signal),
-    staleTime: 60_000,
-  });
+type SetForm = Dispatch<SetStateAction<FormState>>;
 
-  const invalid = useMemo<Set<RequiredKey>>(
-    () => (tried ? new Set(missingRequired(f)) : new Set()),
-    [tried, f],
+/** Các thao tác sửa form (ổn định tham chiếu). */
+function useFormEditors(setF: SetForm) {
+  const set = useCallback((k: TextKey, v: string) => setF((s) => ({ ...s, [k]: v })), [setF]);
+  const setDeal = useCallback(
+    (deal: ContractDeal) => {
+      // Giới thiệu chỉ gắn SP nhóm Giới thiệu (5.5c): đổi loại ⇒ bỏ các lựa chọn SP đã chọn để chọn lại theo loại mới.
+      setF((s) => ({
+        ...s,
+        deal,
+        items: s.items.map((l) => ({ ...l, product_id: "", component_id: "", suggested: false })),
+      }));
+    },
+    [setF],
   );
-  const unlinked = useMemo<Set<number>>(
-    () => (tried ? new Set(unlinkedLines(f)) : new Set()),
-    [tried, f],
-  );
-
-  const set = useCallback((k: TextKey, v: string) => setF((s) => ({ ...s, [k]: v })), []);
-  const setDeal = useCallback((deal: ContractDeal) => {
-    // Giới thiệu chỉ gắn SP nhóm Giới thiệu (5.5c): đổi loại ⇒ bỏ các lựa chọn SP đã chọn để chọn lại theo loại mới.
-    setF((s) => ({
-      ...s,
-      deal,
-      items: s.items.map((l) => ({ ...l, product_id: "", component_id: "", suggested: false })),
-    }));
-  }, []);
   const patchLine = useCallback(
     (i: number, p: Partial<LineState>) =>
       setF((s) => ({ ...s, items: s.items.map((l, j) => (j === i ? patchOneLine(l, p) : l)) })),
-    [],
+    [setF],
   );
   const addLine = useCallback(
     () => setF((s) => ({ ...s, items: [...s.items, { ...EMPTY_LINE }] })),
-    [],
+    [setF],
   );
   const removeLine = useCallback(
     (i: number) => setF((s) => ({ ...s, items: s.items.filter((_, j) => j !== i) })),
-    [],
+    [setF],
   );
+  return { set, setDeal, patchLine, addLine, removeLine };
+}
 
-  /** Lỗi chặn lưu (số không đọc được / thiếu ô bắt buộc / dòng chưa gắn SP) ⇒ câu báo; ổn ⇒ null. */
-  function blocker(): string | null {
-    const n = readNumbers(f);
-    if (n.bad.length) {
-      const names = n.bad.map((b) => t(`contracts.cform.bad.${b.key}`, { name: b.name }));
-      return t("contracts.cform.badNumbers", { list: names.join(", ") });
-    }
-    setTried(true);
-    const role = t(`contracts.cform.partnerRole.${PARTNER_ROLE[f.deal]}`);
-    const parts = [
-      ...missingRequired(f).map((k) => t(`contracts.cform.required.${k}`, { role })),
-      ...unlinkedLines(f).map((i) =>
-        t("contracts.cform.lineUnlinked", { name: f.items[i]?.name.trim() }),
-      ),
-    ];
-    if (!parts.length) return null;
-    const msg = t("contracts.cform.missing", { list: parts.join(", ") });
-    toast(msg, "late");
-    return msg;
-  }
-
+/** Lưu: chặn lỗi ⇒ câu báo; ổn ⇒ tạo HĐ rồi mở HĐ mới. */
+function useSubmit(f: FormState, setTried: (v: boolean) => void) {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   async function submit() {
     setErr(null);
-    const stop = blocker();
+    const stop = blockerMessage(
+      f,
+      t,
+      () => setTried(true),
+      (msg) => toast(msg, "late"),
+    );
     if (stop) return setErr(stop);
     setBusy(true);
     try {
@@ -145,19 +126,29 @@ export function useContractForm() {
       setBusy(false);
     }
   }
+  return { err, busy, submit };
+}
 
-  return {
-    f,
-    set,
-    setDeal,
-    patchLine,
-    addLine,
-    removeLine,
-    invalid,
-    unlinked,
-    err,
-    busy,
-    submit,
-    products: products.data ?? [],
-  };
+export function useContractForm() {
+  // V2-H: "Nhắc trước khi hết hạn" để trống tới khi đọc xong Cài đặt rồi điền sẵn (người đã gõ thì giữ).
+  const [f, setF] = useState<FormState>({ ...EMPTY_FORM, notice_days: "" });
+  const notice = useNoticeDefault();
+  useEffect(() => setF((s) => withNoticeDefault(s, notice)), [notice]);
+  const [tried, setTried] = useState(false);
+  const products = useQuery({
+    queryKey: PRODUCTS_KEY,
+    queryFn: ({ signal }) => fetchProducts(signal),
+    staleTime: 60_000,
+  });
+  const invalid = useMemo<Set<RequiredKey>>(
+    () => (tried ? new Set(missingRequired(f)) : new Set()),
+    [tried, f],
+  );
+  const unlinked = useMemo<Set<number>>(
+    () => (tried ? new Set(unlinkedLines(f)) : new Set()),
+    [tried, f],
+  );
+  const editors = useFormEditors(setF);
+  const { err, busy, submit } = useSubmit(f, setTried);
+  return { f, ...editors, invalid, unlinked, err, busy, submit, products: products.data ?? [] };
 }

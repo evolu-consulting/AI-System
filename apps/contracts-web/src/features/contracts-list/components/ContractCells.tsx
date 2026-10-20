@@ -92,7 +92,16 @@ function Dates({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   );
 }
 
-/** Ô theo cột; `title` mang cả liên kết mở HĐ (S05). */
+function PartnerCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  const name = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
+  return (
+    <td className={cn("min-w-[130px]", TD)} title={name ?? undefined}>
+      <span className="line-clamp-2">{shortName(name)}</span>
+    </td>
+  );
+}
+
+/** Ô theo cột;  `title` mang cả liên kết mở HĐ (S05). */
 export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode {
   switch (key) {
     case "title":
@@ -110,14 +119,9 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
           <SubLine r={r} ctx={ctx} />
         </td>
       );
-    case "partner": {
-      const name = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
-      return (
-        <td className={cn("min-w-[130px]", TD)} title={name ?? undefined}>
-          <span className="line-clamp-2">{shortName(name)}</span>
-        </td>
-      );
-    }
+    case "partner":
+      return <PartnerCell r={r} ctx={ctx} />;
+
     case "type":
       return (
         <td className={cn("whitespace-nowrap", TD)}>

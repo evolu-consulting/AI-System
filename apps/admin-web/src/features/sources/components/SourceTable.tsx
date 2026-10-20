@@ -121,6 +121,37 @@ function RowMenu({
   );
 }
 
+function KindCell({ s }: { s: SourceView }) {
+  const { t } = useTranslation();
+  return (
+    <span className="flex flex-wrap items-center gap-1">
+      <Badge variant="info">{t(`process.sources.kind.${s.kind}`)}</Badge>
+      {isPrivateSource(s.config) ? (
+        <Badge variant="warn">{t("process.sources.badge.private")}</Badge>
+      ) : null}
+    </span>
+  );
+}
+
+function DescCell({ s }: { s: SourceView }) {
+  return (
+    <span className="block truncate text-muted-foreground" title={s.description}>
+      {s.description}
+    </span>
+  );
+}
+
+function UsedByCell({ s }: { s: SourceView }) {
+  const { t } = useTranslation();
+  return s.used_by.length === 0 ? (
+    <span className="text-muted-foreground">{t("process.sources.usedBy.none")}</span>
+  ) : (
+    <span title={s.used_by.join(", ")}>
+      {t("process.sources.usedBy.count", { count: s.used_by.length })}
+    </span>
+  );
+}
+
 export function SourceTable({
   sources,
   role,
@@ -142,14 +173,7 @@ export function SourceTable({
       {
         id: "kind",
         header: t("process.sources.col.kind"),
-        cell: (s) => (
-          <span className="flex flex-wrap items-center gap-1">
-            <Badge variant="info">{t(`process.sources.kind.${s.kind}`)}</Badge>
-            {isPrivateSource(s.config) ? (
-              <Badge variant="warn">{t("process.sources.badge.private")}</Badge>
-            ) : null}
-          </span>
-        ),
+        cell: (s) => <KindCell s={s} />,
       },
       {
         id: "applyMode",
@@ -160,11 +184,7 @@ export function SourceTable({
         id: "desc",
         header: t("process.sources.col.desc"),
         className: "max-w-64",
-        cell: (s) => (
-          <span className="block truncate text-muted-foreground" title={s.description}>
-            {s.description}
-          </span>
-        ),
+        cell: (s) => <DescCell s={s} />,
       },
       {
         id: "target",
@@ -175,14 +195,7 @@ export function SourceTable({
       {
         id: "usedBy",
         header: t("process.sources.col.usedBy"),
-        cell: (s) =>
-          s.used_by.length === 0 ? (
-            <span className="text-muted-foreground">{t("process.sources.usedBy.none")}</span>
-          ) : (
-            <span title={s.used_by.join(", ")}>
-              {t("process.sources.usedBy.count", { count: s.used_by.length })}
-            </span>
-          ),
+        cell: (s) => <UsedByCell s={s} />,
       },
       { id: "status", header: t("process.sources.col.status"), cell: (s) => <Status s={s} /> },
       {

@@ -30,6 +30,74 @@ const initials = (name: string): string =>
     .join("")
     .toUpperCase();
 
+type BodyProps = {
+  user: NonNullable<ShellUser>;
+  role: Role;
+  name: string;
+  company: string;
+  close: () => void;
+  onLogout: () => Promise<void>;
+};
+
+function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return (
+    <>
+      <div className="border-b border-rule px-4 py-3">
+        <p className="text-body font-semibold">{name}</p>
+        {user.email && <p className="text-caption text-dim">{user.email}</p>}
+        <p className="mt-1 text-caption">
+          {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
+        </p>
+      </div>
+      <ThemePicker />
+      {canSeeSettings(role, user.role) && (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              close();
+              openSettings();
+            }}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk"
+          >
+            <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
+          </button>
+          <Link
+            to="/settings"
+            role="menuitem"
+            onClick={close}
+            className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
+          >
+            <IconSettings width={18} height={18} /> {t("contracts.settings.more")}
+          </Link>
+        </>
+      )}
+      <button
+        type="button"
+        role="menuitem"
+        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label text-late hover:bg-sunk"
+        onClick={async () => {
+          const ok = await confirmDialog({
+            title: t("contracts.shell.logoutTitle"),
+            body: t("contracts.shell.logoutBody"),
+            confirmLabel: t("contracts.shell.logout"),
+            danger: true,
+          });
+          if (!ok) return;
+          close();
+          await onLogout().catch(() => null);
+          qc.clear();
+        }}
+      >
+        <IconLogout width={18} height={18} /> {t("contracts.shell.logout")}
+      </button>
+    </>
+  );
+}
+
 /** `side`: chân sidebar (tên chỉ hiện khi thanh mở); mặc định: thanh trên ở điện thoại. */
 export function UserMenu({
   user,
@@ -45,7 +113,6 @@ export function UserMenu({
   wide?: boolean;
 }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const brand = useBrand();
   if (!user) return null;
   const company = nameOf(brand, user.tenant.name);
@@ -73,58 +140,14 @@ export function UserMenu({
       }
     >
       {(close) => (
-        <>
-          <div className="border-b border-rule px-4 py-3">
-            <p className="text-body font-semibold">{name}</p>
-            {user.email && <p className="text-caption text-dim">{user.email}</p>}
-            <p className="mt-1 text-caption">
-              {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
-            </p>
-          </div>
-          <ThemePicker />
-          {canSeeSettings(role, user.role) && (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  close();
-                  openSettings();
-                }}
-                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk"
-              >
-                <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
-              </button>
-              <Link
-                to="/settings"
-                role="menuitem"
-                onClick={close}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
-              >
-                <IconSettings width={18} height={18} /> {t("contracts.settings.more")}
-              </Link>
-            </>
-          )}
-          <button
-            type="button"
-            role="menuitem"
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label text-late hover:bg-sunk"
-            onClick={async () => {
-              const ok = await confirmDialog({
-                title: t("contracts.shell.logoutTitle"),
-                body: t("contracts.shell.logoutBody"),
-                confirmLabel: t("contracts.shell.logout"),
-                danger: true,
-              });
-              if (!ok) return;
-              close();
-              await onLogout().catch(() => null);
-              qc.clear();
-            }}
-          >
-            <IconLogout width={18} height={18} /> {t("contracts.shell.logout")}
-          </button>
-        </>
+        <MenuBody
+          user={user}
+          role={role}
+          name={name}
+          company={company}
+          close={close}
+          onLogout={onLogout}
+        />
       )}
     </Popover>
   );

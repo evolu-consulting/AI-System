@@ -72,40 +72,39 @@ function UnsureTag() {
   return <Tag tone="soon">{t("contracts.cform.unsure")}</Tag>;
 }
 
-export function FieldsGrid({
+type TextOpts = {
+  req?: boolean;
+  bad?: boolean;
+  span?: boolean;
+  type?: string;
+  mono?: boolean;
+  ph?: string;
+  suffix?: string;
+};
+
+function TextField({
+  k,
+  label,
+  o,
   f,
   onSet,
-  invalid,
-  cols = 3,
   disabled,
-  lockedKeys,
+  locked,
   badges,
   unsure,
-}: Props) {
-  const { t } = useTranslation();
-  const L = (k: string) => t(`contracts.cform.${k}`);
-  const sum = autoTotal(f.items);
-  const text = (
-    k: TextKey,
-    label: string,
-    o: {
-      req?: boolean;
-      bad?: boolean;
-      span?: boolean;
-      type?: string;
-      mono?: boolean;
-      ph?: string;
-      suffix?: string;
-    } = {},
-  ) => (
-    <Row
-      id={`cf-${k}`}
-      label={label}
-      req={o.req}
-      span={o.span}
-      badges={badges?.[k]}
-      unsure={unsure?.has(k)}
-    >
+}: {
+  k: TextKey;
+  label: string;
+  o: TextOpts;
+  f: FormState;
+  onSet: Props["onSet"];
+  disabled?: boolean;
+  locked?: boolean;
+  badges?: readonly FieldBadge[];
+  unsure?: boolean;
+}) {
+  return (
+    <Row id={`cf-${k}`} label={label} req={o.req} span={o.span} badges={badges} unsure={unsure}>
       <div className="relative">
         <input
           id={`cf-${k}`}
@@ -113,10 +112,10 @@ export function FieldsGrid({
           type={o.type ?? "text"}
           inputMode={o.mono ? "decimal" : undefined}
           value={f[k]}
-          disabled={disabled || lockedKeys?.has(k)}
-          data-unsure={unsure?.has(k) || undefined}
+          disabled={disabled || locked}
+          data-unsure={unsure || undefined}
           style={
-            unsure?.has(k)
+            unsure
               ? { background: "var(--color-soon-bg)", borderColor: "var(--color-soon-line)" }
               : undefined
           }
@@ -137,6 +136,34 @@ export function FieldsGrid({
         )}
       </div>
     </Row>
+  );
+}
+
+export function FieldsGrid({
+  f,
+  onSet,
+  invalid,
+  cols = 3,
+  disabled,
+  lockedKeys,
+  badges,
+  unsure,
+}: Props) {
+  const { t } = useTranslation();
+  const L = (k: string) => t(`contracts.cform.${k}`);
+  const sum = autoTotal(f.items);
+  const text = (k: TextKey, label: string, o: TextOpts = {}) => (
+    <TextField
+      k={k}
+      label={label}
+      o={o}
+      f={f}
+      onSet={onSet}
+      disabled={disabled}
+      locked={lockedKeys?.has(k)}
+      badges={badges?.[k]}
+      unsure={unsure?.has(k)}
+    />
   );
   const referral = f.deal === "referral";
   return (

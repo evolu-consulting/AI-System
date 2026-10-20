@@ -17,6 +17,66 @@ import { TryBox, TryNum } from "./TryBox";
 type Props = { cell: Cell; set: (c: Cell) => void; share: number; good: number; fair: number };
 const MS: Milestone[] = ["delivery", "payment", "serial", "commission"];
 
+type RowProps = {
+  x: Criterion;
+  pctValue: number | undefined;
+  cell: Cell;
+  set: (c: Cell) => void;
+  patch: (key: string, p: Partial<Criterion>) => void;
+};
+
+function CritRow({ x, pctValue, cell, set, patch }: RowProps) {
+  const { t } = useTranslation();
+  const s = (k: string, o?: Record<string, string | number>) => t(`contracts.settings.rep.${k}`, o);
+  return (
+    <div
+      className={`grid grid-cols-[1fr_280px] items-center gap-4 border-t border-rule-soft px-5 py-3 first:border-t-0 max-md:grid-cols-1 ${x.enabled ? "" : "opacity-60"}`}
+    >
+      <div className="min-w-0">
+        <b className="text-label">{x.label}</b>
+        {x.custom && (
+          <span className="ml-2 rounded bg-sunk px-1.5 py-0.5 text-micro">{s("custom")}</span>
+        )}
+        {x.custom && (
+          <button
+            type="button"
+            className="ml-2 text-caption text-late hover:underline"
+            onClick={() => set({ ...cell, criteria: cell.criteria.filter((y) => y.key !== x.key) })}
+          >
+            {s("remove")}
+          </button>
+        )}
+        <p className="text-caption text-dim">{x.custom ? s(`how.${x.kind}`) : s(`how.${x.key}`)}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Switch
+          checked={x.enabled}
+          onChange={(v) => patch(x.key, { enabled: v })}
+          label={s("use", { name: x.label })}
+        />
+        {x.enabled ? (
+          <>
+            <input
+              type="range"
+              min={1}
+              max={50}
+              value={Math.min(50, Math.max(1, x.weight))}
+              aria-label={s("weight", { name: x.label })}
+              className="min-w-0 flex-1 accent-[var(--primary)]"
+              onChange={(e) => patch(x.key, { weight: Number(e.target.value) })}
+            />
+            <span className="w-11 text-right text-label font-semibold text-act tabular-nums">
+              {pctValue}%
+            </span>
+          </>
+        ) : (
+          <span className="text-caption text-dim">{s("off")}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AddForm({ cell, set, done }: { cell: Cell; set: (c: Cell) => void; done: () => void }) {
   const { t } = useTranslation();
   const s = (k: string) => t(`contracts.settings.rep.${k}`);
@@ -135,56 +195,7 @@ export function CritTab({ cell, set, share, good, fair }: Props) {
         }
       >
         {cell.criteria.map((x) => (
-          <div
-            key={x.key}
-            className={`grid grid-cols-[1fr_280px] items-center gap-4 border-t border-rule-soft px-5 py-3 first:border-t-0 max-md:grid-cols-1 ${x.enabled ? "" : "opacity-60"}`}
-          >
-            <div className="min-w-0">
-              <b className="text-label">{x.label}</b>
-              {x.custom && (
-                <span className="ml-2 rounded bg-sunk px-1.5 py-0.5 text-micro">{s("custom")}</span>
-              )}
-              {x.custom && (
-                <button
-                  type="button"
-                  className="ml-2 text-caption text-late hover:underline"
-                  onClick={() =>
-                    set({ ...cell, criteria: cell.criteria.filter((y) => y.key !== x.key) })
-                  }
-                >
-                  {s("remove")}
-                </button>
-              )}
-              <p className="text-caption text-dim">
-                {x.custom ? s(`how.${x.kind}`) : s(`how.${x.key}`)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={x.enabled}
-                onChange={(v) => patch(x.key, { enabled: v })}
-                label={s("use", { name: x.label })}
-              />
-              {x.enabled ? (
-                <>
-                  <input
-                    type="range"
-                    min={1}
-                    max={50}
-                    value={Math.min(50, Math.max(1, x.weight))}
-                    aria-label={s("weight", { name: x.label })}
-                    className="min-w-0 flex-1 accent-[var(--primary)]"
-                    onChange={(e) => patch(x.key, { weight: Number(e.target.value) })}
-                  />
-                  <span className="w-11 text-right text-label font-semibold text-act tabular-nums">
-                    {pct[x.key]}%
-                  </span>
-                </>
-              ) : (
-                <span className="text-caption text-dim">{s("off")}</span>
-              )}
-            </div>
-          </div>
+          <CritRow key={x.key} x={x} pctValue={pct[x.key]} cell={cell} set={set} patch={patch} />
         ))}
         {adding && <AddForm cell={cell} set={set} done={() => setAdding(false)} />}
       </Panel>
