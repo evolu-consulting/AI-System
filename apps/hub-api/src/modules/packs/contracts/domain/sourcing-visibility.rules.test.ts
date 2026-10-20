@@ -75,7 +75,7 @@ describe("W1 · luật thấy trước dòng giá (review B #9)", () => {
       { sale_contract_id: "S", sale_line: 0, source_contract_id: "M", source_line: 0 },
       { sale_contract_id: "S", sale_line: 1, source_contract_id: "X", source_line: 0 },
     ];
-    expect(visibleTo({ ...all, choices }, ["S", "M"]).choices).toEqual([choices[0]]);
+    expect(visibleTo({ ...all, choices }, ["S", "M"]).choices).toEqual(choices.slice(0, 1));
   });
 });
 

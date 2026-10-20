@@ -1,11 +1,10 @@
 // W1 · thẻ "Nguồn hàng & lãi" trên trang chi tiết HĐ (port cm-web `sourcing/Contract.tsx`): HĐ bán ⇒ mỗi dòng mua từ đâu và lãi;
 // HĐ mua ⇒ các dòng bán đang mua từ HĐ này. Không có dòng nào ⇒ không hiện gì. Đổi nguồn chỉ trên HĐ bán và cần quyền ghi.
 import type { ContractDetail } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { showsDeadline } from "~/features/contract-deadline/lib/deadline";
-import { fetchSourcing, type SourcingParams, sourcingKeys } from "../api";
+import { type SourcingParams, useContractSourcing } from "../hooks/use-sourcing";
 import { SaleLines } from "./SaleLines";
 
 type Props = { c: Pick<ContractDetail, "id" | "kind" | "status" | "direction">; write: boolean };
@@ -15,12 +14,7 @@ export function ContractSourcing({ c, write }: Props) {
   const sale = c.direction === "sale";
   const { t } = useTranslation();
   const params: SourcingParams = { contract: id, page: 1, page_size: 100 };
-  const q = useQuery({
-    queryKey: sourcingKeys.list(params),
-    queryFn: ({ signal }) => fetchSourcing(params, signal),
-    retry: false,
-    enabled: showsDeadline(c), // chỉ HĐ đã duyệt có dòng giá
-  });
+  const q = useContractSourcing(params, showsDeadline(c)); // chỉ HĐ đã duyệt có dòng giá
   if (!showsDeadline(c) || !q.data?.lines.length) return null;
   return (
     <Panel className="mb-4">

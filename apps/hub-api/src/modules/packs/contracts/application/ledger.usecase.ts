@@ -1,10 +1,14 @@
 // HD7-FR-03…08 · HD7-FR-10 · HD7 plan §2 · D7-15…D7-19: lệnh và đọc của sổ thanh toán — port `routes/obligations.py`,
 // `routes/partner_events.py`, `ledger/obligations.py`. Mỗi lệnh MỘT tx `PackUow`: khoá HĐ → khoá + đọc lại đợt → luật thuần → MỘT
 // câu ghi (CTE: đợt + sổ + nhật ký HĐ). "Hôm nay" = ngày lịch múi tenant (HD4 `localDate`).
-import type { PartnerEventCreate, ScheduleRequest } from "@ai/contracts";
-import { MANUAL_EVENT_TYPES } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { daysLate, roleOf, settledType, undoOf } from "../domain/ledger.rules";
+import {
+  MANUAL_EVENT_TYPES,
+  type PartnerEventCreate,
+  type ScheduleRequest,
+} from "../domain/ledger.types";
 import { localDate } from "../domain/local-time.rules";
 import { LedgerFail, type LedgerRepos, type LockedObligation } from "./ledger.ports";
 

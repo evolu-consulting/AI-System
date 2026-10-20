@@ -1,11 +1,9 @@
 // HD4-FR-06 · HD4-AC08 · S05: thẻ "Hạn chót hành động" + "Ghi nhận xử lý" (port cm-web `contracts/[id]/page.tsx:324-341`).
 // Chỉ HĐ đã duyệt; người có quyền ghi chọn kết quả ⇒ POST rồi tải lại chi tiết. Bản SPA `web/` của mgmt-app không có thẻ này.
 import type { ContractDetail } from "@ai/contracts";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { postHandled } from "../api";
+import { useRecordHandled } from "../hooks/use-record-handled";
 import {
   daysUntil,
   HANDLED_OUTCOMES,
@@ -52,22 +50,8 @@ function Deadline({
 
 export function DeadlinePanel({ contract: c, write, queryKey, today = todayIso() }: Props) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
+  const { busy, err, record } = useRecordHandled(c.id, queryKey);
   if (!showsDeadline(c)) return null;
-  const record = async (o: Outcome) => {
-    setBusy(true);
-    setErr(false);
-    try {
-      await postHandled(c.id, o);
-      await qc.invalidateQueries({ queryKey });
-    } catch {
-      setErr(true);
-    } finally {
-      setBusy(false);
-    }
-  };
   const outcome = c.handled?.outcome as Outcome | undefined;
   return (
     <Panel className="mb-4">

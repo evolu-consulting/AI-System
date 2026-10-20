@@ -1,12 +1,11 @@
 // W1 · bảng dòng đang bán: nguồn mua (chọn tay nếu có quyền ghi), giá mua, lãi, rủi ro (port cm-web `sourcing/Lines.tsx`).
 import type { SaleLine, SourceRef } from "@ai/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { cn } from "~/lib/utils";
-import { chooseSource, sourcingKeys } from "../api";
-import { parseRef, RISK_TONE, refKey, selectValue, sourcingErrorText } from "../lib/sourcing";
+import { useChooseSource } from "../hooks/use-sourcing";
+import { RISK_TONE, refKey, selectValue, sourcingErrorText } from "../lib/sourcing";
 
 const th =
   "px-4 py-3 text-left text-xs font-semibold text-dim whitespace-nowrap sticky top-0 z-10 bg-sunk";
@@ -85,18 +84,7 @@ export function SaleLines({
   showContract?: boolean;
 }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
-  const pick = useMutation({
-    mutationFn: (v: { r: SaleLine; value: string }) => {
-      const c = parseRef(v.value, candidates[v.r.product] ?? []);
-      return chooseSource(
-        v.r.contract_id,
-        v.r.line,
-        c && { contract_id: c.contract_id, line: c.line },
-      );
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: sourcingKeys.all }),
-  });
+  const pick = useChooseSource(candidates);
   const L = (k: string) => t(`contracts.sourcing.col.${k}`);
   return (
     <>

@@ -1,38 +1,22 @@
 // W1 · nút hành động của một việc (như thẻ trợ lý mgmt-app): Đã trả / Đã thu / Khách hẹn lại (ngày), Xong / Nhắc lại sau (giờ),
 // ghi kết quả xử lý HĐ + so sánh giá khi HĐ mua sắp đến hạn. Ghi sổ/HĐ cần quyền ghi; hẹn nhắc là của riêng mình nên người xem cũng đóng được.
 import type { MyWorkItem } from "@ai/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { postHandled } from "~/features/contract-deadline/api";
 import { HANDLED_OUTCOMES, type Outcome } from "~/features/contract-deadline/lib/deadline";
-import {
-  createFollowup,
-  doneFollowup,
-  postponeObligation,
-  settleObligation,
-  snoozeFollowup,
-  workKeys,
-} from "../api";
+import { useWorkActions } from "../hooks/use-work-actions";
 import { defaultPostpone, defaultSnooze, postponeOk, snoozeOk, workErrorText } from "../lib/mywork";
 
 type Pick = "postpone" | "snooze" | "remind" | null;
 
 export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string; write: boolean }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const [pick, setPick] = useState<Pick>(null);
   const [val, setVal] = useState("");
-  const run = useMutation({
-    mutationFn: (f: () => Promise<unknown>) => f(),
-    onSuccess: () => {
-      setPick(null);
-      return qc.invalidateQueries({ queryKey: workKeys.all });
-    },
-  });
   const id = i.id.slice(i.id.indexOf(":") + 1);
-  const go = (f: () => Promise<unknown>) => run.mutate(f);
+  const act = useWorkActions(id, () => setPick(null));
+  const run = act.run;
   const open = (p: Exclude<Pick, null>) => {
     setPick(p);
     setVal(p === "postpone" ? defaultPostpone(i, today) : defaultSnooze(today));
@@ -40,10 +24,10 @@ export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string;
   const valid = pick === "postpone" ? postponeOk(val, i) : snoozeOk(val);
   const btn = "btn btn-sm";
   const confirm = () => {
-    if (pick === "postpone") return go(() => postponeObligation(id, val));
+    if (pick === "postpone") return act.postpone(val);
     if (pick === "remind")
-      return go(() => createFollowup(i.kind === "obligation" ? "obligation" : "contract", id, val));
-    return go(() => snoozeFollowup(id, val));
+      return act.remind(i.kind === "obligation" ? "obligation" : "contract", val);
+    return act.snooze(val);
   };
   return (
     <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
@@ -53,7 +37,7 @@ export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string;
             type="button"
             className={`${btn} btn-primary`}
             disabled={run.isPending}
-            onClick={() => go(() => settleObligation(id))}
+            onClick={act.settle}
           >
             {t(
               i.direction === "receive" ? "contracts.work.act.received" : "contracts.work.act.paid",
@@ -72,7 +56,7 @@ export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string;
             type="button"
             className={`${btn} btn-primary`}
             disabled={run.isPending}
-            onClick={() => go(() => doneFollowup(id))}
+            onClick={act.done}
           >
             {t("contracts.work.act.done")}
           </button>
@@ -87,7 +71,7 @@ export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string;
           className="field h-9 w-48"
           defaultValue=""
           disabled={run.isPending}
-          onChange={(e) => e.target.value && go(() => postHandled(id, e.target.value as Outcome))}
+          onChange={(e) => e.target.value && act.handled(e.target.value as Outcome)}
         >
           <option value="">{t("contracts.deadline.pick")}</option>
           {HANDLED_OUTCOMES.map((o) => (

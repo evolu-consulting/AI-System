@@ -1,10 +1,10 @@
 // W1 · "Việc của tôi": use case đọc + hai lệnh trên hẹn nhắc CỦA CHÍNH MÌNH (`cks_followups.user_id`). Mỗi ca MỘT tx `PackUow`
 // (role `contracts_rw`, RLS tenant + luật thấy M1); số câu SQL cố định (đọc: 1; xong/nhắc lại: 1).
-import type { MyWorkOut } from "@ai/contracts";
-import { MYWORK_AHEAD_DAYS } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { addDays, localDate } from "../domain/local-time.rules";
 import { buildMyWork, type RawMyWork } from "../domain/mywork.rules";
+import { MYWORK_AHEAD_DAYS, type MyWorkOut } from "../domain/mywork.types";
 
 /** Hạn "còn cho vào danh sách": đọc HĐ đã hết hạn quá 60 ngày thì bỏ (mgmt `ARCHIVE_AFTER_DAYS`). */
 export const ARCHIVE_AFTER_DAYS = 60;

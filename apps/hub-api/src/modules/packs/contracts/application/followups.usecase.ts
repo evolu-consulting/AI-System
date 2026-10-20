@@ -1,7 +1,8 @@
 // W1 · hẹn nhắc chung: đặt (`POST /followups`), liệt kê của mình (`GET /followups`); xong / nhắc lại sau dùng `my-work` (cùng hai bảng).
 // Mỗi ca MỘT tx `PackUow` (role `contracts_rw`, RLS tenant + luật thấy M1). Hẹn nhắc là của riêng người tạo ⇒ người xem cũng đặt được.
-import type { Followup, FollowupCreate } from "@ai/contracts";
+
 import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { Followup, FollowupCreate } from "../domain/followups.types";
 
 export type FollowupsRepo = {
   /** id hẹn nhắc (mới hoặc dời); `null` = chủ thể không có hoặc người dùng không thấy. */

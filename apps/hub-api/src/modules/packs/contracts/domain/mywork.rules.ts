@@ -1,6 +1,8 @@
 // W1 · "Việc của tôi" (port `assistant/digest.py` — `_late`, `money_cards`, `renewal_cards`, `followup_cards`; sắp xếp
 // `digest.build`): gom bốn nguồn hàng thô (hẹn nhắc của mình, đợt thanh toán, hạn xử lý HĐ, nhắc hạn đã gửi) thành MỘT danh sách có
 // mức độ gấp. Thuần: không đọc DB/đồng hồ — `today` là ngày lịch tenant do tầng trên đưa vào (HD4 `localDate`).
+
+import { daysBetween } from "./local-time.rules";
 import {
   MYWORK_MAX,
   MYWORK_SOURCE_MAX,
@@ -8,8 +10,7 @@ import {
   type MyWorkKind,
   type MyWorkOut,
   type MyWorkTone,
-} from "@ai/contracts";
-import { daysBetween } from "./local-time.rules";
+} from "./mywork.types";
 
 type Dir = "pay" | "receive";
 type ContractDir = "sale" | "purchase";
