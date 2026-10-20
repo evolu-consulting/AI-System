@@ -36,8 +36,8 @@ export function Sidebar({
   return (
     // Thanh giữ 64 px trong bố cục; bản mở nổi lên trên trang.
     <div className="relative h-dvh w-16 shrink-0 max-md:hidden">
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: vùng mở rộng khi rê/focus, các nav bên trong mới là landmark */}
-      <div
+      <nav
+        aria-label={t("contracts.shell.navMain")}
         onMouseEnter={() => setWide(true)}
         onMouseLeave={() => setWide(false)}
         onFocus={() => setWide(true)}
@@ -49,42 +49,36 @@ export function Sidebar({
           wide ? "w-56 shadow-drawer" : "w-16",
         )}
       >
-        <nav aria-label={t("contracts.shell.navMain")} className="flex flex-col gap-1">
-          <Link
-            to="/contracts"
-            className="mb-3 flex h-10 items-center gap-2.5 overflow-hidden px-1.5"
-            title={t("contracts.app.name")}
-            aria-label={t("contracts.app.name")}
-          >
-            <Logo className="h-8 w-8 shrink-0" />
-            {wide && (
-              <span className="min-w-0 leading-tight">
-                <span className="block text-[15.5px] font-bold tracking-tight">
-                  {t("contracts.app.name")}
-                </span>
-                <span className="block truncate text-micro text-dim">
-                  {t("contracts.app.tagline")}
-                </span>
-              </span>
-            )}
-          </Link>
-          {MAIN_NAV.map((n) => (
-            <SideLink key={n.to} n={n} wide={wide} onPick={() => setWide(false)} />
-          ))}
-        </nav>
-        <nav
-          aria-label={t("contracts.shell.navExtra")}
-          data-w1-nav=""
-          className="mt-2 flex flex-col gap-1 border-t border-rule pt-2"
+        <Link
+          to="/contracts"
+          className="mb-3 flex h-10 items-center gap-2.5 overflow-hidden px-1.5"
+          title={t("contracts.app.name")}
+          aria-label={t("contracts.app.name")}
         >
+          <Logo className="h-8 w-8 shrink-0" />
+          {wide && (
+            <span className="min-w-0 leading-tight">
+              <span className="block text-[15.5px] font-bold tracking-tight">
+                {t("contracts.app.name")}
+              </span>
+              <span className="block truncate text-micro text-dim">
+                {t("contracts.app.tagline")}
+              </span>
+            </span>
+          )}
+        </Link>
+        {MAIN_NAV.map((n) => (
+          <SideLink key={n.to} n={n} wide={wide} onPick={() => setWide(false)} />
+        ))}
+        <div data-w1-nav="" className="mt-2 flex flex-col gap-1 border-t border-rule pt-2">
           {EXTRA_NAV.map((n) => (
             <SideLink key={n.to} n={n} wide={wide} onPick={() => setWide(false)} />
           ))}
-        </nav>
+        </div>
         <div className="mt-auto flex flex-col gap-1 border-t border-rule pt-2">
           <UserMenu user={user} role={role} onLogout={onLogout} side wide={wide} />
         </div>
-      </div>
+      </nav>
     </div>
   );
 }
