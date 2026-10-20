@@ -1,0 +1,160 @@
+# sohoptac2 — AI System + gói contracts (Sổ Hợp Tác mới) trên 149.202.83.5, project Docker RIÊNG (xem README.md).
+# Không đụng project khác: mạng mặc định riêng, volume riêng, image tên sohoptac2-*. Mọi cổng chỉ bind 127.0.0.1.
+# Bí mật: ./.env (600, gen-env.sh tạo trên máy chủ) — admin-api/hub-api nạp bằng `bun --env-file` (PEM một dòng);
+# compose đọc cùng file để nội suy biến cho postgres + agent-runtime. Mã nguồn + Dockerfile nằm ở ./build (deploy.ps1 giải nén).
+name: sohoptac2
+
+x-app: &app
+  image: sohoptac2-app:latest
+  restart: unless-stopped
+  user: "${S2_UID:-1002}:${S2_GID:-1002}"
+  init: true
+  depends_on:
+    pg: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  pg:
+    image: postgres:16.15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: s2_owner
+      POSTGRES_PASSWORD: ${PG_OWNER_PASSWORD:?run gen-env.sh}
+      POSTGRES_DB: ai_system
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=512MB"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U s2_owner -d ai_system"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    cpus: 2
+    mem_limit: 2g
+    cpu_shares: 512
+
+  redis:
+    image: redis:7.4.11-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - redisdata:/data
+    cpus: 0.5
+    mem_limit: 512m
+    cpu_shares: 512
+
+  admin-api:
+    <<: *app
+    build:
+      context: ./build
+      target: app
+      args: &public
+        PUBLIC_HUB_URL: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}
+        PUBLIC_STUDIO_URL: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
+        PUBLIC_CHAT_APP_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
+        PUBLIC_ADMIN_WEB_URL: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
+        PUBLIC_CHAT_WEB_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
+        PUBLIC_AUTH_URL: ""
+    environment:
+      HOME: /tmp
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+    cpus: 1
+    mem_limit: 1g
+
+  hub-api:
+    <<: *app
+    # Claude CLI gói (ai-sub): bản sao đăng nhập riêng của project ở ./claude-home (KHÔNG phải ~/.claude của host).
+    environment:
+      HOME: /claude-home
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./data/attachments:/data/attachments
+      - ./claude-home:/claude-home
+      - ./claude-bin/claude:/opt/claude/claude:ro
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      admin-api: { condition: service_started }
+    cpus: 2
+    mem_limit: 3g
+
+  # Agent Runtime (Python): trợ lý chat chạy Claude CLI bằng cùng bản sao đăng nhập (HOME=/claude-home ⇒ ~/.claude).
+  agent-runtime:
+    image: sohoptac2-runtime:latest
+    build:
+      context: ./build
+      target: runtime
+    restart: unless-stopped
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      HOME: /claude-home
+      APP_ENV: production
+      LOG_LEVEL: info
+      REDIS_URL: redis://redis:6379
+      AGENT_RT_DATABASE_URL: ${AGENT_RT_DATABASE_URL:?run gen-env.sh}
+      AGENT_RT_PROVIDERS: claude-sub
+      AGENT_RT_WORKER_ID: sohoptac2
+      AGENT_RT_HUB_URL: http://hub-api:4000
+      AGENT_RT_WORK_DIR: /rtdata/work
+      AGENT_RT_LOG_DIR: /rtdata/logs
+      AGENT_RT_CLI_PATH: /opt/claude/claude
+    volumes:
+      - ./claude-home:/claude-home
+      - ./claude-bin/claude:/opt/claude/claude:ro
+      - ./runtime-data/work:/rtdata/work
+      - ./runtime-data/logs:/rtdata/logs
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      hub-api: { condition: service_started }
+    cpus: 2
+    mem_limit: 3g
+
+  # nginx: 4 bản build web + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1). Mở public = bước sau (edge-proxy/host nginx).
+  web:
+    image: sohoptac2-web:latest
+    build:
+      context: ./build
+      target: web
+      args: *public
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${S2_PORT_CONTRACTS:-18431}:8081"
+      - "127.0.0.1:${S2_PORT_ADMIN:-18432}:8082"
+      - "127.0.0.1:${S2_PORT_CHAT:-18433}:8083"
+      - "127.0.0.1:${S2_PORT_HUB:-18434}:8084"
+    depends_on: [admin-api, hub-api]
+    cpus: 0.5
+    mem_limit: 256m
+
+  # Lệnh một lần (migrate, seed, smoke): docker compose run --rm -T tool <file.ts>
+  tool:
+    image: sohoptac2-app:latest
+    profiles: ["tools"]
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    entrypoint: ["bun", "--env-file=/run/s2/app.env"]
+    environment:
+      HOME: /claude-home
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./claude-home:/claude-home
+      - ./claude-bin/claude:/opt/claude/claude:ro
+      - ./smoke-ai.ts:/app/tools/scripts/src/s2-smoke-ai.ts:ro
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    cpus: 1
+    mem_limit: 1g
+
+volumes:
+  pgdata:
+  redisdata:
