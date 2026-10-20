@@ -1,9 +1,9 @@
-// V2-B · Luật 4c · intake §3 (ngưỡng V2-D): xác nhận một mốc giao 20 dòng qua `applyDelivery` — p95 ≤ 50 ms, số câu SQL cố định
-// (1 câu phạm vi `withPackScope` + 4 câu nghiệp vụ, không phụ thuộc số dòng), không Seq Scan trên bảng kho. Dữ liệu: tenant A 100 SP ×
-// 20 thành phần, mỗi thành phần 20 lô (40.000 lô + 40.000 dòng sổ) + nền tenant B như vậy; người dùng ở chế độ thấy `org` (policy M1
-// chạy thật). Đo trước/sau ANALYZE. Chỉ chạy dưới `PERF=1` (`bun run test:perf`). Báo số thật.
+// V2-B Â· Luáº­t 4c Â· intake Â§3 (ngÆ°á»¡ng V2-D): xÃ¡c nháº­n má»™t má»‘c giao 20 dÃ²ng qua `applyDelivery` â€” p95 â‰¤ 50 ms, sá»‘ cÃ¢u SQL cá»‘ Ä‘á»‹nh
+// (1 cÃ¢u pháº¡m vi `withPackScope` + 4 cÃ¢u nghiá»‡p vá»¥, khÃ´ng phá»¥ thuá»™c sá»‘ dÃ²ng), khÃ´ng Seq Scan trÃªn báº£ng kho. Dá»¯ liá»‡u: tenant A 100 SP Ã—
+// 20 thÃ nh pháº§n, má»—i thÃ nh pháº§n 20 lÃ´ (40.000 lÃ´ + 40.000 dÃ²ng sá»•) + ná»n tenant B nhÆ° váº­y; ngÆ°á»i dÃ¹ng á»Ÿ cháº¿ Ä‘á»™ tháº¥y `org` (policy M1
+// cháº¡y tháº­t). Äo trÆ°á»›c/sau ANALYZE. Chá»‰ cháº¡y dÆ°á»›i `PERF=1` (`bun run test:perf`). BÃ¡o sá»‘ tháº­t.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { withPackScope } from "@ai/db";
+import { withPackScope } from "@ai/db/pack-scope";
 import { inPackAs } from "@ai/test-kit/db";
 import { captureSql, measure, seqScansOf } from "@ai/test-kit/perf";
 import { applyDelivery, type DeliveryMove, type Sql, type World, world } from "../_support/v2b";
@@ -15,7 +15,7 @@ let compsA: string[] = [];
 
 async function seed(sql: Sql, tenant: string, contract: string, by: string): Promise<string[]> {
   await sql`insert into contracts.products (tenant_id, name, unit, grp)
-    select ${tenant}::uuid, 'SP perf ' || g, 'cái', 'goods' from generate_series(1, 100) g`;
+    select ${tenant}::uuid, 'SP perf ' || g, 'cÃ¡i', 'goods' from generate_series(1, 100) g`;
   await sql`insert into contracts.product_components (tenant_id, product_id, ord, name, mode, on_hand, stock_value, avg_cost)
     select p.tenant_id, p.id, k, p.name || ' #' || k, 'stock', 100000, 1000000000, 10000
     from contracts.products p, generate_series(0, 19) k where p.tenant_id = ${tenant}::uuid`;
@@ -33,7 +33,7 @@ async function seed(sql: Sql, tenant: string, contract: string, by: string): Pro
   ).map((r) => r.id);
 }
 
-/** Lượt i: 20 thành phần liên tiếp; lượt chẵn bán 5, lượt lẻ nhập 5 (tồn ổn định). */
+/** LÆ°á»£t i: 20 thÃ nh pháº§n liÃªn tiáº¿p; lÆ°á»£t cháºµn bÃ¡n 5, lÆ°á»£t láº» nháº­p 5 (tá»“n á»•n Ä‘á»‹nh). */
 const movesOf = (i: number): DeliveryMove[] => {
   const k = Math.abs(i) % 50;
   const sell = Math.abs(i) % 2 === 0;
@@ -65,9 +65,9 @@ afterAll(async () => {
   await w?.stop();
 });
 
-describe("V2-B · xác nhận mốc giao 20 dòng (applyDelivery)", () => {
+describe("V2-B Â· xÃ¡c nháº­n má»‘c giao 20 dÃ²ng (applyDelivery)", () => {
   for (const analyzed of [false, true]) {
-    it(`p95 ≤ 50 ms, 1 + 4 câu SQL, không Seq Scan (${analyzed ? "sau" : "trước"} ANALYZE)`, async () => {
+    it(`p95 â‰¤ 50 ms, 1 + 4 cÃ¢u SQL, khÃ´ng Seq Scan (${analyzed ? "sau" : "trÆ°á»›c"} ANALYZE)`, async () => {
       if (analyzed)
         await w.sql`analyze contracts.product_components, contracts.stock_lots, contracts.stock_moves, contracts.products`;
       const cap = await captureSql(client(), () => confirm(analyzed ? 1000 : 2000));
@@ -75,7 +75,7 @@ describe("V2-B · xác nhận mốc giao 20 dòng (applyDelivery)", () => {
       expect(cap.queries.length).toBe(5);
       const st = await measure(confirm, { n: 200, warm: 10 });
       console.log(
-        `V2-B applyDelivery 20 dòng (${analyzed ? "sau" : "trước"} ANALYZE): p50 ${st.p50.toFixed(1)} ms · p95 ${st.p95.toFixed(1)} ms · max ${st.max.toFixed(1)} ms`,
+        `V2-B applyDelivery 20 dÃ²ng (${analyzed ? "sau" : "trÆ°á»›c"} ANALYZE): p50 ${st.p50.toFixed(1)} ms Â· p95 ${st.p95.toFixed(1)} ms Â· max ${st.max.toFixed(1)} ms`,
       );
       const run = <R>(fn: (tx: Sql) => Promise<R>) =>
         inPackAs("contracts", w.A, w.u1, fn, { rollback: true });

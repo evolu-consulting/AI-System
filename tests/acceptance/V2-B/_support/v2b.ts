@@ -1,7 +1,8 @@
-// V2-B · hạ tầng int: DB sạch (template `full`), 2 tenant, gói contracts bật, luật thấy M1 chế độ `org` ở tenant A. Ghi kho qua
-// `applyDelivery` THẬT trong `withPackScope` (role `contracts_rw` + `app.tenant_id` + `app.user_id`, như request). SP dựng bằng owner.
-// Không chứa `it(...)`.
-import { type Db, withPackScope } from "@ai/db";
+// V2-B Â· háº¡ táº§ng int: DB sáº¡ch (template `full`), 2 tenant, gÃ³i contracts báº­t, luáº­t tháº¥y M1 cháº¿ Ä‘á»™ `org` á»Ÿ tenant A. Ghi kho qua
+// `applyDelivery` THáº¬T trong `withPackScope` (role `contracts_rw` + `app.tenant_id` + `app.user_id`, nhÆ° request). SP dá»±ng báº±ng owner.
+// KhÃ´ng chá»©a `it(...)`.
+import type { Db } from "@ai/db";
+import { withPackScope } from "@ai/db/pack-scope";
 import { contracts, enablePack, members, tenants, users, visibility } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -20,15 +21,15 @@ export type World = {
   db: Db;
   A: string;
   B: string;
-  /** A: owner gói (thấy hết) */
+  /** A: owner gÃ³i (tháº¥y háº¿t) */
   boss: string;
-  /** A: editor, phụ trách C1 */
+  /** A: editor, phá»¥ trÃ¡ch C1 */
   u1: string;
-  /** A: editor ngang hàng, phụ trách C2 */
+  /** A: editor ngang hÃ ng, phá»¥ trÃ¡ch C2 */
   u2: string;
   /** B: editor */
   b1: string;
-  /** HĐ mua của u1 (A) · HĐ bán của u2 (A) · HĐ của b1 (B) */
+  /** HÄ mua cá»§a u1 (A) Â· HÄ bÃ¡n cá»§a u2 (A) Â· HÄ cá»§a b1 (B) */
   C1: string;
   C2: string;
   CB: string;
@@ -74,7 +75,7 @@ export async function world(o: { ns: number }): Promise<World> {
 }
 
 export type CompSpec = { name: string; mode: "stock" | "quota" | "order" | "none" };
-/** SP + thành phần (owner, bỏ RLS). Trả id SP và id thành phần theo thứ tự. */
+/** SP + thÃ nh pháº§n (owner, bá» RLS). Tráº£ id SP vÃ  id thÃ nh pháº§n theo thá»© tá»±. */
 export async function product(
   sql: Sql,
   tenant: string,
@@ -86,7 +87,7 @@ export async function product(
   const [r] = await sql<
     { id: string }[]
   >`insert into contracts.products (tenant_id, name, unit, grp)
-    values (${tenant}, ${p.name}, 'cái', ${p.grp}) returning id::text`;
+    values (${tenant}, ${p.name}, 'cÃ¡i', ${p.grp}) returning id::text`;
   const id = (r as { id: string }).id;
   const rows = await sql<
     { id: string }[]
@@ -97,7 +98,7 @@ export async function product(
   return { id, comps: rows.map((x) => x.id) };
 }
 
-/** `applyDelivery` trong tx người dùng `user` (`""` = việc nền). */
+/** `applyDelivery` trong tx ngÆ°á»i dÃ¹ng `user` (`""` = viá»‡c ná»n). */
 export const deliver = (
   w: World,
   tenant: string,
@@ -109,7 +110,7 @@ export const deliver = (
     applyDelivery(tx, moves, { tenantId: tenant, on }),
   );
 
-/** Trạng thái thành phần (owner). */
+/** Tráº¡ng thÃ¡i thÃ nh pháº§n (owner). */
 export async function comp(sql: Sql, id: string) {
   const [r] = await sql<{ on_hand: string; stock_value: string; avg_cost: string }[]>`
     select on_hand::text, stock_value::text, avg_cost::text from contracts.product_components where id = ${id}`;
@@ -118,7 +119,7 @@ export async function comp(sql: Sql, id: string) {
     : null;
 }
 
-/** Dòng sổ của thành phần (owner), theo thứ tự ghi. */
+/** DÃ²ng sá»• cá»§a thÃ nh pháº§n (owner), theo thá»© tá»± ghi. */
 export async function movesOf(sql: Sql, componentId: string) {
   return sql<
     {
@@ -134,14 +135,14 @@ export async function movesOf(sql: Sql, componentId: string) {
     from contracts.stock_moves where component_id = ${componentId} order by seq`;
 }
 
-/** Lô của thành phần (owner), theo thứ tự nhập. */
+/** LÃ´ cá»§a thÃ nh pháº§n (owner), theo thá»© tá»± nháº­p. */
 export async function lotsOf(sql: Sql, componentId: string) {
   return sql<{ qty: number; remaining: number; expires_on: string | null }[]>`
     select qty::float8 as qty, remaining::float8 as remaining, to_char(expires_on, 'YYYY-MM-DD') as expires_on
     from contracts.stock_lots where component_id = ${componentId} order by seq`;
 }
 
-/** Lỗi `fn` ném: mã SQLSTATE, hoặc `code` của StockError. */
+/** Lá»—i `fn` nÃ©m: mÃ£ SQLSTATE, hoáº·c `code` cá»§a StockError. */
 export async function failOf(fn: () => Promise<unknown>): Promise<string | null> {
   try {
     await fn();
