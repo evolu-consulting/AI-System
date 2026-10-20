@@ -128,7 +128,7 @@ mật khẩu Neo4j sinh theo lượt; reader chỉ đọc nguồn.
 - **Chưa kiểm** (cần thêm một lượt đọc): parity điểm SQL (aggregate + scoreAgg) = TS = mgmt-app và độ phủ của test parity ngẫu nhiên; quyền sửa
   cấu hình chấm điểm và audit; xác thực đầu vào của `/partners`, `/scoring`, `/prices`, `/companies` (NUL, số lớn).
 
-Đếm: Chặn 0 · Cao 7 · Trung 20 · Thấp 1 trong bảng, cộng các mục Thấp bên dưới bảng (M3 ×12, W1/W1b ×5, I1 ×5, HD78 ×1).
+Đếm: Chặn 0 · Cao 7 · Trung 21 · Thấp 1 trong bảng, cộng các mục Thấp bên dưới bảng (M3 ×12, W1/W1b ×5, I1 ×5, HD78 ×1).
 
 **CHANGES_REQUESTED.** Lý do: 7 lỗi Cao (M3 #5–#7, W1b #8, W1 #9, I1 #20–#21), migrate-hub int đỏ (#1), script đóng run không an toàn cho
 cutover (#2–#3).
