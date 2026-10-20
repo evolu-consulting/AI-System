@@ -1,3 +1,4 @@
+// (tên file = metadata `file.name` của HĐ nguồn, không phải tên trên đĩa)
 // niti-filebox · importer I1 `--filebox`: file HĐ của mgmt-app vào FileBox với org `t_<tenant>` (đúng org upload của app), hàng
 // `contracts.files` trỏ file đó ⇒ mở qua API thường của app (`GET /pack/contracts/contracts/:id/file` ⇒ 302 `/d/…` ⇒ đúng bytes
 // nguồn); đối soát sha256 đọc lại từ FileBox; chạy lại không upload lần nữa. hub-api THẬT in-process + FileBox GIẢ (FB1 `_fbfake`).
@@ -75,7 +76,7 @@ describe("niti-filebox · importer --filebox", () => {
     const r = await run(true);
     const posts = c.fb.callsTo("post");
     expect(posts.map((x) => [x.org, x.name, x.auth, x.status])).toEqual([
-      [`t_${T.acme}`, "hd-goc.pdf", "ok", 201],
+      [`t_${T.acme}`, "hd.pdf", "ok", 201],
     ]);
     expect(r.reconcile?.files).toEqual({ jobs: 1, found: 1, stored: 1, checksum_ok: 1 });
     expect(r.reconcile?.money_ok).toBe(true);
@@ -83,7 +84,7 @@ describe("niti-filebox · importer --filebox", () => {
     const [row] = await c.sql<{ org: string; file_id: string; name: string }[]>`
       select f.org, f.file_id, f.name from contracts.contracts k join contracts.files f on f.id = k.file_id
       where k.id = ${targetId(SOURCE, "contract", "c2")}`;
-    expect(row).toMatchObject({ org: `t_${T.acme}`, name: "hd-goc.pdf" });
+    expect(row).toMatchObject({ org: `t_${T.acme}`, name: "hd.pdf" });
 
     // mở như người dùng app: 302 tới link FileBox ⇒ đúng bytes nguồn
     const res = await fetch(`${c.hub.base}${CBASE}/${targetId(SOURCE, "contract", "c2")}/file`, {
