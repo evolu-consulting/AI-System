@@ -21,6 +21,99 @@ type Props = {
   act: (fn: () => Promise<unknown>) => void;
 };
 
+type Dept = OrgResponse["departments"][number];
+
+function DeptMembers({ d, name, busy, act }: Omit<Props, "data"> & { d: Dept }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="flex flex-wrap gap-2" aria-label={t("contracts.org.deptMembers")}>
+      {d.member_ids.map((id) => (
+        <li
+          key={id}
+          className="flex items-center gap-1 rounded-full bg-act-soft px-3 py-1 text-body"
+        >
+          {name(id)}
+          <button
+            type="button"
+            aria-label={`${t("contracts.org.removeMember")} · ${name(id)}`}
+            disabled={busy}
+            className="text-dim hover:text-late"
+            onClick={() => act(() => removeDeptMember(d.group_id, id))}
+          >
+            ×
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function AddMember({ d, data, busy, act }: Omit<Props, "name"> & { d: Dept }) {
+  const { t } = useTranslation();
+  return (
+    <select
+      aria-label={`${t("contracts.org.addMember")} · ${d.name}`}
+      className={`${field} w-fit`}
+      value=""
+      disabled={busy}
+      onChange={(e) => {
+        const u = data.members.find((m) => m.user_id === e.target.value);
+        if (u) act(() => addDeptMember(d.group_id, u.username));
+      }}
+    >
+      <option value="">{t("contracts.org.addMember")}</option>
+      {data.members
+        .filter((m) => !d.member_ids.includes(m.user_id))
+        .map((m) => (
+          <option key={m.user_id} value={m.user_id}>
+            {m.display_name}
+          </option>
+        ))}
+    </select>
+  );
+}
+
+function DeptItem({ d, data, name, busy, act }: Props & { d: Dept }) {
+  const { t } = useTranslation();
+  return (
+    <article className="flex flex-col gap-2 rounded-lg border border-rule bg-panel p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="font-semibold">{d.name}</h3>
+        <label className="flex items-center gap-2 text-body">
+          {t("contracts.org.head")}
+          <select
+            aria-label={`${t("contracts.org.head")} · ${d.name}`}
+            className={field}
+            value={d.head_user_id ?? ""}
+            disabled={busy}
+            onChange={(e) => {
+              const headId = e.target.value || null; // đọc ngay (xem OrgPage: select có kiểm soát bị trả về giá trị cũ)
+              act(() => setHead(d.group_id, headId));
+            }}
+          >
+            <option value="">{t("contracts.org.none")}</option>
+            {data.members.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.display_name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={`${btn} ml-auto`}
+          disabled={busy}
+          onClick={() => act(() => removeDepartment(d.group_id))}
+        >
+          {t("contracts.org.removeDept")}
+        </button>
+      </div>
+      <DeptMembers d={d} name={name} busy={busy} act={act} />
+      <AddMember d={d} data={data} busy={busy} act={act} />
+    </article>
+  );
+}
+
 export function DepartmentsCard({ data, name, busy, act }: Props) {
   const { t } = useTranslation();
   const [key, setKey] = useState("");
@@ -32,80 +125,7 @@ export function DepartmentsCard({ data, name, busy, act }: Props) {
         <p className="text-body text-dim">{t("contracts.org.empty")}</p>
       )}
       {data.departments.map((d) => (
-        <article
-          key={d.group_id}
-          className="flex flex-col gap-2 rounded-lg border border-rule bg-panel p-4"
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-semibold">{d.name}</h3>
-            <label className="flex items-center gap-2 text-body">
-              {t("contracts.org.head")}
-              <select
-                aria-label={`${t("contracts.org.head")} · ${d.name}`}
-                className={field}
-                value={d.head_user_id ?? ""}
-                disabled={busy}
-                onChange={(e) => {
-                  const headId = e.target.value || null; // đọc ngay (xem OrgPage: select có kiểm soát bị trả về giá trị cũ)
-                  act(() => setHead(d.group_id, headId));
-                }}
-              >
-                <option value="">{t("contracts.org.none")}</option>
-                {data.members.map((m) => (
-                  <option key={m.user_id} value={m.user_id}>
-                    {m.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className={`${btn} ml-auto`}
-              disabled={busy}
-              onClick={() => act(() => removeDepartment(d.group_id))}
-            >
-              {t("contracts.org.removeDept")}
-            </button>
-          </div>
-          <ul className="flex flex-wrap gap-2" aria-label={t("contracts.org.deptMembers")}>
-            {d.member_ids.map((id) => (
-              <li
-                key={id}
-                className="flex items-center gap-1 rounded-full bg-act-soft px-3 py-1 text-body"
-              >
-                {name(id)}
-                <button
-                  type="button"
-                  aria-label={`${t("contracts.org.removeMember")} · ${name(id)}`}
-                  disabled={busy}
-                  className="text-dim hover:text-late"
-                  onClick={() => act(() => removeDeptMember(d.group_id, id))}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-          <select
-            aria-label={`${t("contracts.org.addMember")} · ${d.name}`}
-            className={`${field} w-fit`}
-            value=""
-            disabled={busy}
-            onChange={(e) => {
-              const u = data.members.find((m) => m.user_id === e.target.value);
-              if (u) act(() => addDeptMember(d.group_id, u.username));
-            }}
-          >
-            <option value="">{t("contracts.org.addMember")}</option>
-            {data.members
-              .filter((m) => !d.member_ids.includes(m.user_id))
-              .map((m) => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.display_name}
-                </option>
-              ))}
-          </select>
-        </article>
+        <DeptItem key={d.group_id} d={d} data={data} name={name} busy={busy} act={act} />
       ))}
       <form
         className="flex flex-wrap items-end gap-3 rounded-lg border border-rule bg-panel p-4"

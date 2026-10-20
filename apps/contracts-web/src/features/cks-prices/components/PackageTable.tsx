@@ -31,6 +31,24 @@ function MarketCell({ r }: { r: CksPackageRow }) {
     </td>
   );
 }
+function PctCell({ pct }: { pct: number | null | undefined }) {
+  return (
+    <td className="px-4 py-3.5">
+      {pct != null && (
+        <span className="flex items-center gap-2 font-mono text-[13px]">
+          {pct}%
+          <span className="h-1.5 w-12 rounded-full bg-idle-bg">
+            <span
+              className="block h-1.5 rounded-full bg-act"
+              style={{ width: `${Math.min(100, pct * 2)}%` }}
+            />
+          </span>
+        </span>
+      )}
+    </td>
+  );
+}
+
 function cells(
   r: CksPackageRow,
   market: ReactNode,
@@ -64,21 +82,8 @@ function cells(
       </td>
     ),
     margin: <td className={num}>{vnd(r.margin)}</td>,
-    pct: (
-      <td className="px-4 py-3.5">
-        {r.margin_pct != null && (
-          <span className="flex items-center gap-2 font-mono text-[13px]">
-            {r.margin_pct}%
-            <span className="h-1.5 w-12 rounded-full bg-idle-bg">
-              <span
-                className="block h-1.5 rounded-full bg-act"
-                style={{ width: `${Math.min(100, r.margin_pct * 2)}%` }}
-              />
-            </span>
-          </span>
-        )}
-      </td>
-    ),
+    pct: <PctCell pct={r.margin_pct} />,
+
     market,
     sold: <td className={num}>{r.sold}</td>,
   };

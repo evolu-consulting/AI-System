@@ -4,14 +4,22 @@
 //   `POST /review` (trường, loại HĐ, dòng, mốc); "Hủy" = trả về giá trị đã đọc, KHÔNG gửi gì. "Xác nhận" (HD3) lưu trước rồi quyết cấp 1.
 import type { ContractDeal, ContractDetail } from "@ai/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-form/api";
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
 import { useNoticeDefault } from "~/features/contract-form/hooks/use-notice-default";
-import { PARTNER_ROLE } from "~/features/contract-form/lib/deal";
+import { blockerMessage } from "~/features/contract-form/lib/blocker";
 import { formOfDetail, patchOfForm } from "~/features/contract-form/lib/detail-form";
 import {
   EMPTY_LINE,
@@ -39,27 +47,14 @@ import { saveErrorText } from "../lib/save-error";
 
 const SUGGEST_MAX = 50;
 
-export function useInfoForm(c: ContractDetail | undefined, id: string) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  // Màn xác nhận sau AI đọc = chờ xác nhận + có phần AI đọc (`ai`); HĐ nhập tay / bản đọc cũ (ai = null) giữ luồng PATCH của V2-F.
-  const confirm = c?.status === "needs_review" && c.ai !== null;
+type SetF = Dispatch<SetStateAction<FormState | null>>;
+
+/** Nạp form + mốc từ HĐ; `sug` tăng mỗi lần nạp lại / đổi loại (kích hoạt gợi ý SP + điền lại nhắc trước). */
+function useInfoLoad(c: ContractDetail | undefined, confirm: boolean) {
   const [f, setF] = useState<FormState | null>(null);
   const [rows, setRows] = useState<MsRow[]>([]);
   const [tried, setTried] = useState(false);
   const [sug, setSug] = useState(0);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const fRef = useRef(f);
-  fRef.current = f;
-  const products = useQuery({
-    queryKey: PRODUCTS_KEY,
-    queryFn: ({ signal }) => fetchProducts(signal),
-    staleTime: 60_000,
-    enabled: !!c,
-  });
-
   const load = useCallback(() => {
     if (!c) return;
     setF(c.status === "needs_review" && c.ai !== null ? formOfConfirm(c) : formOfDetail(c));
@@ -74,8 +69,13 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
   useEffect(() => {
     if (confirm) setF((s) => (s ? withNoticeDefault(s, notice) : s));
   }, [confirm, notice, sug]);
+  return { f, setF, rows, setRows, tried, setTried, sug, setSug, load };
+}
 
-  // Gợi ý SP cho dòng chưa gắn (quy tắc nhận diện ⇒ trùng từ ⇒ "Tạo sản phẩm mới" + thành phần): song song, tối đa 50 dòng.
+/** Gợi ý SP cho dòng chưa gắn (quy tắc nhận diện ⇒ trùng từ ⇒ "Tạo sản phẩm mới" + thành phần): song song, tối đa 50 dòng. */
+function useProductSuggest(confirm: boolean, f: FormState | null, setF: SetF, sug: number) {
+  const fRef = useRef(f);
+  fRef.current = f;
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi `sug` đổi (tải lại / đổi loại)
   useEffect(() => {
     const f0 = fRef.current;
@@ -99,44 +99,55 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
       live = false;
     };
   }, [sug]);
+}
 
-  const patch = useMemo(() => (c && f && !confirm ? patchOfForm(c, f) : {}), [c, f, confirm]);
-  const dirty = confirm ? true : Object.keys(patch).length > 0;
-  const set = useCallback((k: TextKey, v: string) => setF((s) => (s ? { ...s, [k]: v } : s)), []);
+type Load = ReturnType<typeof useInfoLoad>;
+
+/** Các thao tác sửa form / mốc (ổn định tham chiếu). */
+function useInfoEditors(c: ContractDetail | undefined, L: Load) {
+  const { setF, setRows, setSug } = L;
+  const set = useCallback(
+    (k: TextKey, v: string) => setF((s) => (s ? { ...s, [k]: v } : s)),
+    [setF],
+  );
   const setDeal = useCallback(
     (d: ContractDeal) => {
       if (!c) return;
       setF((s) => (s ? switchDeal(c, s, d) : s));
       setSug((n) => n + 1);
     },
-    [c],
+    [c, setF, setSug],
   );
   const patchLine = useCallback(
     (i: number, p: Partial<LineState>) =>
       setF((s) =>
         s ? { ...s, items: s.items.map((l, j) => (j === i ? patchOneLine(l, p) : l)) } : s,
       ),
-    [],
+    [setF],
   );
   const addLine = useCallback(
     () => setF((s) => (s ? { ...s, items: [...s.items, { ...EMPTY_LINE }] } : s)),
-    [],
+    [setF],
   );
   const removeLine = useCallback(
     (i: number) => setF((s) => (s ? { ...s, items: s.items.filter((_, j) => j !== i) } : s)),
-    [],
+    [setF],
   );
   const setRow = useCallback(
     (i: number, p: Partial<MsRow>) =>
       setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...p } : r))),
-    [],
+    [setRows],
   );
-  const reset = useCallback(() => {
-    load();
-    setErr(null);
-    setMsg(null);
-  }, [load]);
+  return { set, setDeal, patchLine, addLine, removeLine, setRow };
+}
 
+/** Tập ô lỗi / dòng chưa gắn / ô AI chưa chắc, suy ra từ form. */
+function useInfoDerived(
+  c: ContractDetail | undefined,
+  f: FormState | null,
+  tried: boolean,
+  confirm: boolean,
+) {
   const unlinked = useMemo<Set<number>>(
     () => (tried && f ? new Set(unlinkedLines(f)) : new Set()),
     [tried, f],
@@ -150,32 +161,18 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     [c, f, confirm],
   );
   const dealIsUnsure = !!c && !!f && confirm && dealUnsure(c, f);
+  return { unlinked, invalid, unsure, dealUnsure: dealIsUnsure };
+}
 
-  /** Lỗi chặn lưu ở bước xác nhận (số không đọc được / thiếu ô bắt buộc / dòng chưa gắn SP) ⇒ câu báo; ổn ⇒ null. */
-  const blocker = useCallback(
-    (form: FormState): string | null => {
-      const n = readNumbers(form);
-      if (n.bad.length) {
-        const names = n.bad.map((b) => t(`contracts.cform.bad.${b.key}`, { name: b.name }));
-        return t("contracts.cform.badNumbers", { list: names.join(", ") });
-      }
-      setTried(true);
-      const role = t(`contracts.cform.partnerRole.${PARTNER_ROLE[form.deal]}`);
-      const parts = [
-        ...missingRequired(form).map((k) => t(`contracts.cform.required.${k}`, { role })),
-        ...unlinkedLines(form).map((i) =>
-          t("contracts.cform.lineUnlinked", { name: form.items[i]?.name.trim() }),
-        ),
-      ];
-      return parts.length ? t("contracts.cform.missing", { list: parts.join(", ") }) : null;
-    },
-    [t],
-  );
+type SaveCtx = { c: ContractDetail | undefined; id: string; confirm: boolean; f: FormState | null };
 
-  /** Lưu ở bước xác nhận: tạo SP mới (nếu chọn) rồi MỘT `POST /review`. */
-  const saveConfirm = useCallback(async () => {
+/** Lưu ở bước xác nhận: tạo SP mới (nếu chọn) rồi MỘT `POST /review`; chặn lỗi ⇒ toast + ném. */
+function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => void) {
+  const { t } = useTranslation();
+  const { c, f, id } = x;
+  return useCallback(async () => {
     if (!c || !f) return null;
-    const stop = blocker(f);
+    const stop = blockerMessage(f, t, () => setTried(true));
     if (stop) {
       toast(stop, "late");
       throw new Error(stop);
@@ -185,14 +182,27 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
       id,
       reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
     );
-  }, [c, f, rows, id, blocker]);
+  }, [c, f, rows, id, t, setTried]);
+}
 
-  /** Chỉ ghi khi có gì để ghi; ném lỗi cho người gọi (luồng "Xác nhận"). */
+/** Lưu + trạng thái (busy/msg/err) + hủy. `saveFirst` chỉ ghi khi có gì để ghi (luồng "Xác nhận"). */
+function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { c, id, confirm } = x;
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const saveConfirm = useSaveConfirm(x, L.rows, L.setTried);
+  const reset = useCallback(() => {
+    L.load();
+    setErr(null);
+    setMsg(null);
+  }, [L.load]);
   const saveFirst = useCallback(async () => {
     if (confirm) await saveConfirm();
     else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
   }, [confirm, saveConfirm, c, patch, id]);
-
   const save = useCallback(async () => {
     setErr(null);
     setMsg(null);
@@ -220,28 +230,33 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
       setBusy(false);
     }
   }, [confirm, saveConfirm, saveFirst, qc, id, t]);
+  return { reset, save, saveFirst, busy, msg, err };
+}
 
+export function useInfoForm(c: ContractDetail | undefined, id: string) {
+  // Màn xác nhận sau AI đọc = chờ xác nhận + có phần AI đọc (`ai`); HĐ nhập tay / bản đọc cũ (ai = null) giữ luồng PATCH của V2-F.
+  const confirm = c?.status === "needs_review" && c.ai !== null;
+  const L = useInfoLoad(c, confirm);
+  const products = useQuery({
+    queryKey: PRODUCTS_KEY,
+    queryFn: ({ signal }) => fetchProducts(signal),
+    staleTime: 60_000,
+    enabled: !!c,
+  });
+  useProductSuggest(confirm, L.f, L.setF, L.sug);
+  const patch = useMemo(() => (c && L.f && !confirm ? patchOfForm(c, L.f) : {}), [c, L.f, confirm]);
+  const dirty = confirm ? true : Object.keys(patch).length > 0;
+  const editors = useInfoEditors(c, L);
+  const derived = useInfoDerived(c, L.f, L.tried, confirm);
+  const saving = useInfoSave({ c, id, confirm, f: L.f }, L, patch);
   return {
-    f,
-    set,
-    setDeal,
-    patchLine,
-    addLine,
-    removeLine,
-    rows,
-    setRow,
+    f: L.f,
+    ...editors,
+    rows: L.rows,
     confirm,
-    unlinked,
-    invalid,
-    unsure,
-    dealUnsure: dealIsUnsure,
+    ...derived,
     products: products.data ?? [],
     dirty,
-    reset,
-    save,
-    saveFirst,
-    busy,
-    msg,
-    err,
+    ...saving,
   };
 }

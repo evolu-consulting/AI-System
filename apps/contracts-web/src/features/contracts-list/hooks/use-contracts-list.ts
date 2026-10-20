@@ -41,8 +41,8 @@ const FILTERS: { key: keyof FilterMaps | "value"; kind?: "number" }[] = [
   { key: "value", kind: "number" },
 ];
 
-export function useContractsList(categoryExtra?: ReactNode) {
-  const { t: tr } = useTranslation();
+/** Facets + danh bạ + loại hàng (ít đổi, dùng lại trong phiên). */
+function useLookups() {
   const facets = useQuery({
     queryKey: FACETS_KEY,
     queryFn: ({ signal }) => fetchFacets(signal),
@@ -58,6 +58,12 @@ export function useContractsList(categoryExtra?: ReactNode) {
     queryFn: ({ signal }) => fetchCategories(signal),
     staleTime: STALE_MS,
   });
+  return { facets, members, cats };
+}
+
+export function useContractsList(categoryExtra?: ReactNode) {
+  const { t: tr } = useTranslation();
+  const { facets, members, cats } = useLookups();
   const memberNames = useMemo(
     () => new Map((members.data?.items ?? []).map((m) => [m.id, m.name])),
     [members.data],

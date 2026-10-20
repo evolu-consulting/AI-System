@@ -40,9 +40,9 @@ export function withKind(
   d: MsDraft,
   kind: MilestoneKind,
   deal: ContractDeal,
-  kindTitle: string,
-  titleEdited: boolean,
+  ...title: [kindTitle: string, titleEdited: boolean]
 ): MsDraft {
+  const [kindTitle, titleEdited] = title;
   return {
     ...d,
     kind,
