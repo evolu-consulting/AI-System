@@ -1,5 +1,8 @@
-// PK-FR-10 · HD8-FR-03 · route /settings/scoring — cách tính điểm uy tín (port mgmt `ScoringPage.tsx`).
-import { createFileRoute } from "@tanstack/react-router";
-import { ScoringPage } from "~/features/scoring/pages/ScoringPage";
+// V2-O · /settings/scoring đã thay bằng hộp thoại Cài đặt (Điểm uy tín) — chuyển hướng về Đối tác.
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authed/settings/scoring")({ component: ScoringPage });
+export const Route = createFileRoute("/_authed/settings/scoring")({
+  beforeLoad: () => {
+    throw redirect({ to: "/partners", replace: true });
+  },
+});

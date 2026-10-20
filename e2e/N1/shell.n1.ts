@@ -58,7 +58,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(page).toHaveURL(/\/contracts$/);
   });
 
-  test("PK-FR-10 · các route khung đều có (không 404 trắng): /overview /contracts/new /partners /products /settings /settings/scoring", async ({
+  test("PK-FR-10 · các route khung đều có (không 404 trắng): /overview /contracts/new /partners /products /settings/members", async ({
     page,
   }) => {
     for (const path of [
@@ -66,8 +66,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "/contracts/new",
       "/partners",
       "/products",
-      "/settings",
-      "/settings/scoring",
+      "/settings/members",
     ]) {
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(`${path.replaceAll("/", "\\/")}$`));
@@ -75,31 +74,23 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     }
   });
 
-  test("PK-FR-10 · nav-v2 · tuyến cũ chuyển hướng: /my-work ⇒ /overview; /prices ⇒ /products; /cks ⇒ /products?tab=cks; /sourcing ⇒ /products?tab=sourcing", async ({
+  test("PK-FR-10 · V2-O · tuyến cũ chuyển hướng: /my-work ⇒ /overview; /prices /cks /cks/x /sourcing ⇒ /products; /settings ⇒ /settings/members; /settings/scoring ⇒ /partners", async ({
     page,
   }) => {
-    await page.goto("/my-work");
-    await expect(page).toHaveURL(/\/overview$/);
-    await page.goto("/prices");
-    await expect(page).toHaveURL(/\/products$/);
-    await expect(page.getByRole("tab", { name: "So sánh giá" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await page.goto("/prices?product=gao");
-    await expect(page).toHaveURL(/\/products\?product=gao$/);
-    await page.goto("/cks");
-    await expect(page).toHaveURL(/\/products\?tab=cks$/);
-    await expect(page.getByRole("tab", { name: "Sản phẩm CKS" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await page.goto("/sourcing");
-    await expect(page).toHaveURL(/\/products\?tab=sourcing$/);
-    await expect(page.getByRole("tab", { name: "Mua hàng" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    const hops: [string, RegExp][] = [
+      ["/my-work", /\/overview$/],
+      ["/prices", /\/products$/],
+      ["/prices?product=gao", /\/products$/],
+      ["/cks", /\/products$/],
+      ["/cks/abc", /\/products$/],
+      ["/sourcing", /\/products$/],
+      ["/settings", /\/settings\/members$/],
+      ["/settings/scoring", /\/partners$/],
+    ];
+    for (const [from, to] of hops) {
+      await page.goto(from);
+      await expect(page).toHaveURL(to);
+    }
   });
 
   test("PK-FR-10 · nav-v2 · Sản phẩm & Giá: 3 tab So sánh giá · Sản phẩm CKS · Mua hàng; một H1; mục menu 'Sản phẩm & Giá' sáng ở mọi tab", async ({
@@ -144,7 +135,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect.poll(async () => (await nav.boundingBox())?.width).toBe(224);
   });
 
-  test("PK-FR-10 · nav-v2 · avatar ở chân sidebar mở menu có 'Cài đặt' (→ /settings) và 'Đăng xuất'", async ({
+  test("PK-FR-10 · nav-v2 · avatar ở chân sidebar mở menu có 'Cài đặt' (mở hộp thoại, không đổi trang) và 'Đăng xuất'", async ({
     page,
   }) => {
     await page.goto("/contracts");
@@ -154,8 +145,9 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       .click();
     const menu = page.getByRole("menu", { name: "Tài khoản" });
     await expect(menu.getByRole("menuitem", { name: "Đăng xuất" })).toBeVisible();
-    await menu.getByRole("menuitem", { name: "Cài đặt" }).click();
-    await expect(page).toHaveURL(/\/settings$/);
+    await menu.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page).toHaveURL(/\/contracts$/);
   });
 
   test("PK-FR-10 · panel trợ lý: 'Mở trợ lý AI' mở complementary 'Trợ lý AI'; 'Thu gọn ›' đóng; trạng thái nhớ sau reload (assistant:open)", async ({

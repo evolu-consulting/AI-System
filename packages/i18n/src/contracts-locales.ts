@@ -1,46 +1,69 @@
-// PK-FR-10 Ã‚Â· TF1: chuÃ¡Â»â€”i riÃƒÂªng cÃ¡Â»Â§a contracts-web (`contracts.*`), nÃ¡ÂºÂ¡p Ã„â€˜Ã¡Â»â„¢ng tÃ¡Â»Â«ng ngÃƒÂ´n ngÃ¡Â»Â¯ (khÃƒÂ´ng kÃƒÂ©o chuÃ¡Â»â€”i Admin/chat vÃƒÂ o bundle).
+// PK-FR-10 · TF1: chuỗi riêng của contracts-web (`contracts.*`), nạp động từng ngôn ngữ (không kéo chuỗi Admin/chat vào bundle).
+// HD9: chuỗi CKS ở tệp riêng (`contracts.cks.*`); M2-chat: trợ lý (`contracts.assistant.*`); M1D: cơ cấu (`contracts.org.*`);
+// HD7: sổ đối tác (`contracts.ledger.*`); HD8: đối tác, điểm uy tín, giá hàng hoá (`contracts.partners.*`, `contracts.scoring.*`,
+// `contracts.goods.*`) — gộp vào cùng gốc `contracts`; V2-F: form + chi tiết hợp đồng (`contracts.cform.*`, `contracts.cdetail.*`).
 import type { Locale } from "./locales";
 
-// HD9: chuÃ¡Â»â€”i CKS Ã¡Â»Å¸ tÃ¡Â»â€¡p riÃƒÂªng (`contracts.cks.*`); M2-chat: trÃ¡Â»Â£ lÃƒÂ½ (`contracts.assistant.*`); M1D: cÃ†Â¡ cÃ¡ÂºÂ¥u (`contracts.org.*`);
-// HD7: sÃ¡Â»â€¢ Ã„â€˜Ã¡Â»â€˜i tÃƒÂ¡c (`contracts.ledger.*`); HD8: Ã„â€˜Ã¡Â»â€˜i tÃƒÂ¡c, Ã„â€˜iÃ¡Â»Æ’m uy tÃƒÂ­n, giÃƒÂ¡ hÃƒÂ ng hoÃƒÂ¡ (`contracts.partners.*`, `contracts.scoring.*`,
-// `contracts.goods.*`) Ã¢â‚¬â€ gÃ¡Â»â„¢p vÃƒÂ o cÃƒÂ¹ng gÃ¡Â»â€˜c `contracts`; V2-F: form + chi tiÃ¡ÂºÂ¿t hÃ¡Â»Â£p Ã„â€˜Ã¡Â»â€œng (`contracts.cform.*`, `contracts.cdetail.*`).
-/** NÃ¡ÂºÂ¡p bÃ¡ÂºÂ£n dÃ¡Â»â€¹ch contracts-web cÃ¡Â»Â§a mÃ¡Â»â„¢t ngÃƒÂ´n ngÃ¡Â»Â¯ khi cÃ¡ÂºÂ§n (mÃ¡Â»â€”i ngÃƒÂ´n ngÃ¡Â»Â¯ mÃ¡Â»â„¢t chunk riÃƒÂªng). */
-export async function loadContractsLocale(locale: Locale): Promise<Record<string, unknown>> {
-  const [mod, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m] =
-    locale === "en"
-      ? await Promise.all([
-          import("../locales/contracts/en.json"),
-          import("../locales/contracts/cks.en.json"),
-          import("../locales/contracts/assistant.en.json"),
-          import("../locales/contracts/org.en.json"),
-          import("../locales/contracts/work.en.json"),
-          import("../locales/contracts/ledger.en.json"),
-          import("../locales/contracts/partners.en.json"),
-          import("../locales/contracts/v2f.en.json"),
-          import("../locales/contracts/v2g.en.json"),
-          import("../locales/contracts/v2h.en.json"),
-          import("../locales/contracts/v2i.en.json"),
-          import("../locales/contracts/v2j2.en.json"),
-          import("../locales/contracts/v2l.en.json"),
-          import("../locales/contracts/v2m.en.json"),
-        ])
-      : await Promise.all([
-          import("../locales/contracts/vi.json"),
-          import("../locales/contracts/cks.vi.json"),
-          import("../locales/contracts/assistant.vi.json"),
-          import("../locales/contracts/org.vi.json"),
-          import("../locales/contracts/work.vi.json"),
-          import("../locales/contracts/ledger.vi.json"),
-          import("../locales/contracts/partners.vi.json"),
-          import("../locales/contracts/v2f.vi.json"),
-          import("../locales/contracts/v2g.vi.json"),
-          import("../locales/contracts/v2h.vi.json"),
-          import("../locales/contracts/v2i.vi.json"),
-          import("../locales/contracts/v2j2.vi.json"),
-          import("../locales/contracts/v2l.vi.json"),
-          import("../locales/contracts/v2m.vi.json"),
-        ]);
+type Part = { default: { contracts: Record<string, unknown> } };
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m. */
+type Parts = readonly [
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+  Part,
+];
+
+const loadEn = (): Promise<Parts> =>
+  Promise.all([
+    import("../locales/contracts/en.json"),
+    import("../locales/contracts/cks.en.json"),
+    import("../locales/contracts/assistant.en.json"),
+    import("../locales/contracts/org.en.json"),
+    import("../locales/contracts/work.en.json"),
+    import("../locales/contracts/ledger.en.json"),
+    import("../locales/contracts/partners.en.json"),
+    import("../locales/contracts/v2f.en.json"),
+    import("../locales/contracts/v2g.en.json"),
+    import("../locales/contracts/v2h.en.json"),
+    import("../locales/contracts/v2i.en.json"),
+    import("../locales/contracts/v2j2.en.json"),
+    import("../locales/contracts/v2l.en.json"),
+    import("../locales/contracts/v2m.en.json"),
+  ]);
+
+const loadVi = (): Promise<Parts> =>
+  Promise.all([
+    import("../locales/contracts/vi.json"),
+    import("../locales/contracts/cks.vi.json"),
+    import("../locales/contracts/assistant.vi.json"),
+    import("../locales/contracts/org.vi.json"),
+    import("../locales/contracts/work.vi.json"),
+    import("../locales/contracts/ledger.vi.json"),
+    import("../locales/contracts/partners.vi.json"),
+    import("../locales/contracts/v2f.vi.json"),
+    import("../locales/contracts/v2g.vi.json"),
+    import("../locales/contracts/v2h.vi.json"),
+    import("../locales/contracts/v2i.vi.json"),
+    import("../locales/contracts/v2j2.vi.json"),
+    import("../locales/contracts/v2l.vi.json"),
+    import("../locales/contracts/v2m.vi.json"),
+  ]);
+
+function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...rest]: Parts) {
   const base = mod.default as { contracts: Record<string, unknown> };
+  const later = rest.map((p) => p.default.contracts); // V2-H svc, V2-I pv2, V2-J2 psup, V2-L settings, V2-M
+  const f = v2f.default.contracts as { cform: object; cdetail: object };
+  const g = v2g.default.contracts as { cform: object; cdetail: object };
   return {
     ...base,
     contracts: {
@@ -51,17 +74,16 @@ export async function loadContractsLocale(locale: Locale): Promise<Record<string
       ...work.default.contracts,
       ...ledger.default.contracts,
       ...partners.default.contracts,
-      ...v2f.default.contracts,
-      // V2-H: khÃƒÂ¡ch Ã„â€˜ang dÃƒÂ¹ng (`contracts.svc.*`).
-      ...v2h.default.contracts,
-      ...v2i.default.contracts, // V2-I: Ã„ÂÃ¡Â»â€˜i tÃƒÂ¡c UI v2 (`contracts.pv2.*`)
-      ...v2j2.default.contracts, // V2-J2: tab NCC & giÃƒÂ¡ (contracts.psup.*)
-      // V2-L: hÃ¡Â»â„¢p thoÃ¡ÂºÂ¡i CÃƒÂ i Ã„â€˜Ã¡ÂºÂ·t (`contracts.settings.*`).
-      ...v2l.default.contracts,
-      ...v2m.default.contracts,
-      // V2-G: thÃƒÂªm khoÃƒÂ¡ vÃƒÂ o cform/cdetail cÃ¡Â»Â§a V2-F (gÃ¡Â»â„¢p mÃ¡Â»â„¢t cÃ¡ÂºÂ¥p, khÃƒÂ´ng ghi Ã„â€˜ÃƒÂ¨).
-      cform: { ...v2f.default.contracts.cform, ...v2g.default.contracts.cform },
-      cdetail: { ...v2f.default.contracts.cdetail, ...v2g.default.contracts.cdetail },
+      ...f,
+      ...Object.assign({}, ...later),
+      // V2-G: thêm khoá vào cform/cdetail của V2-F (gộp một cấp, không ghi đè).
+      cform: { ...f.cform, ...g.cform },
+      cdetail: { ...f.cdetail, ...g.cdetail },
     },
   };
+}
+
+/** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */
+export async function loadContractsLocale(locale: Locale): Promise<Record<string, unknown>> {
+  return merge(await (locale === "en" ? loadEn() : loadVi()));
 }

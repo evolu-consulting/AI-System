@@ -167,10 +167,11 @@ async function listAs(page: Page, f: Fake, who: Who): Promise<string[]> {
   return seen;
 }
 
-test("M1D · Settings có lối vào 'Thành viên & phòng ban' → /settings/members", async ({ page }) => {
+test("M1D · /settings chuyển thẳng tới 'Thành viên & phòng ban' (/settings/members)", async ({
+  page,
+}) => {
   await install(page);
   await page.goto("/settings");
-  await page.getByRole("link", { name: /Thành viên & phòng ban/ }).click();
   await expect(page).toHaveURL(/\/settings\/members$/);
   await expect(page.getByRole("heading", { name: "Thành viên & phòng ban" })).toBeVisible();
 });

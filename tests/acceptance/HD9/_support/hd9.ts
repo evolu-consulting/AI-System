@@ -45,6 +45,10 @@ export async function arrangeCks(c: CtxN1): Promise<void> {
   expect({ hd9_migration_cks: await hasCks(c.sql) }).toEqual({ hd9_migration_cks: true });
   await c.sql.unsafe(`truncate ${CKS_TABLES.map((t) => `contracts.${t}`).join(", ")}`);
   await arrange(c);
+  // V2-O: CKS chỉ đọc toàn cục theo mặc định (0036); bộ HD9 kiểm đường GHI nên mở cờ cho mọi tenant test.
+  await c.sql`insert into contracts.business_settings (tenant_id, cks_writable)
+    select id, true from admin.tenants
+    on conflict (tenant_id) do update set cks_writable = true`;
 }
 
 /** Hôm nay ± n ngày theo Asia/Ho_Chi_Minh (YYYY-MM-DD) — cùng luật "hôm nay" của server (BR-6). */

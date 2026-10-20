@@ -73,11 +73,11 @@ const co = {
   name: null,
   app_name: null,
   logo: null,
-  accent: "indigo",
-  theme: "auto",
-  own_names: [],
-  own_tax_ids: [],
-} as const;
+  accent: "indigo" as const,
+  theme: "auto" as const,
+  own_names: [] as string[],
+  own_tax_ids: [] as string[],
+};
 const state = () =>
   buildState(
     {

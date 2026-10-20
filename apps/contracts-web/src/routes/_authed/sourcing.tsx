@@ -1,8 +1,8 @@
-// W1 · nav-v2: /sourcing → tab "Mua hàng" của /products.
+// V2-O · /sourcing đã gộp vào Hợp đồng (chi tiết) và Sản phẩm — chuyển hướng.
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/sourcing")({
   beforeLoad: () => {
-    throw redirect({ to: "/products", search: { tab: "sourcing" }, replace: true });
+    throw redirect({ to: "/products", replace: true });
   },
 });

@@ -115,43 +115,30 @@ test.describe("02 contracts-web", () => {
     await expect(page.getByRole("tab", { name: /Đánh giá/ })).toBeVisible();
   });
 
-  test("Sản phẩm & Giá: các tab tải được; So sánh giá có dữ liệu", async () => {
+  test("Sản phẩm & Giá: danh sách sản phẩm có dữ liệu (sau khi nạp bộ mẫu v2)", async () => {
     await go("/products");
     await expect(page.getByRole("heading", { name: "Sản phẩm & Giá" })).toBeVisible();
-    for (const tab of ["So sánh giá", "Sản phẩm CKS", "Mua hàng"]) {
-      await page.getByRole("tab", { name: tab, exact: true }).click();
-      await settle(page);
-      await expect(page.getByRole("heading", { name: "Sản phẩm & Giá" })).toBeVisible();
-      if (tab === "So sánh giá") expect(await bodyText(page)).toMatch(/Chữ ký số|Thịt heo/);
-    }
-    expect(errs.list).toEqual([]);
-  });
-
-  // TODO(dữ liệu/ứng dụng): tab Sản phẩm (V2-J1) hiện "Chưa có sản phẩm" cho tenant demo — danh mục SP chưa được tạo/gắn vào dòng hợp đồng.
-  test.fixme("Sản phẩm & Giá › Sản phẩm: có sản phẩm kèm điểm kinh doanh", async () => {
-    await go("/products");
     expect(await bodyText(page)).not.toMatch(/Chưa có sản phẩm/);
+    expect(await bodyText(page)).toMatch(/Chữ ký số|Băng keo|Thùng phi/);
+    expect(errs.list).toEqual([]);
   });
 
-  test("Cài đặt: trang mở được, có Thành viên & phòng ban + Cách tính điểm", async () => {
-    await go("/settings");
-    await expect(page.getByRole("heading", { name: "Cài đặt" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Thành viên & phòng ban/ })).toBeVisible();
-    expect(errs.list).toEqual([]);
+  test("Tuyến cũ (/prices /cks /sourcing /settings /settings/scoring) chuyển hướng, không 404", async () => {
+    for (const [from, to] of [
+      ["/prices", /\/products$/],
+      ["/cks", /\/products$/],
+      ["/sourcing", /\/products$/],
+      ["/settings", /\/settings\/members$/],
+      ["/settings/scoring", /\/partners$/],
+    ] as const) {
+      await go(from);
+      await expect(page).toHaveURL(to);
+    }
   });
 
   test("Cài đặt: không lộ khoá i18n thô (contracts.xxx.yyy) ở các trang chính", async () => {
     const bad: string[] = [];
-    for (const p of [
-      "/overview",
-      "/contracts",
-      "/partners",
-      "/products",
-      "/products?tab=prices",
-      "/settings",
-      "/settings/scoring",
-      "/settings/members",
-    ]) {
+    for (const p of ["/overview", "/contracts", "/partners", "/products", "/settings/members"]) {
       await go(p);
       const m = (await bodyText(page)).match(RAW_KEY);
       if (m) bad.push(`${p}: ${m[0]}`);
@@ -159,11 +146,10 @@ test.describe("02 contracts-web", () => {
     expect(bad, "khoá i18n chưa dịch hiện ra giao diện (lỗi ứng dụng)").toEqual([]);
   });
 
-  // TODO(chưa xây): mockup nav có "Cài đặt" dạng hộp thoại (dialog) mở từ menu tài khoản; hiện là trang /settings.
-  test.fixme("Cài đặt mở dạng dialog từ menu tài khoản", async () => {
+  test("Cài đặt mở dạng hộp thoại từ menu tài khoản", async () => {
     await go("/overview");
     await page.getByRole("button", { name: "Tài khoản" }).first().click();
-    await page.getByRole("menuitem", { name: /Cài đặt/ }).click();
+    await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
   });
 

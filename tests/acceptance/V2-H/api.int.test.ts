@@ -111,5 +111,15 @@ describe("V2-H · khách đang dùng + nhắc gia hạn", () => {
     });
     expect([w.status, w.json.error?.code]).toEqual([410, "CKS_READ_ONLY"]);
     expect((await call(c, P.tam, "GET", "/cks/overview")).status).toBe(200);
+    // V2-O (0036): không có hàng cài đặt ⇒ vẫn chỉ đọc (mặc định toàn cục, không riêng nitigroup/demo).
+    await c.sql`delete from contracts.business_settings where tenant_id = ${T.acme}`;
+    const d2 = await call(c, P.hoa, "POST", "/cks/lots", {
+      ca: "Viettel-CA",
+      qty: 1,
+      unit_cost: 1,
+      bought_at: d(-1),
+      device: "token",
+    });
+    expect([d2.status, d2.json.error?.code]).toEqual([410, "CKS_READ_ONLY"]);
   });
 });

@@ -323,22 +323,3 @@ test("HD8-FR-03 · Cách tính: tổng ≠ 100 khoá nút Lưu; lưu gửi tiêu
     "window_months",
   ]);
 });
-
-test("HD8-FR-05 · Thêm báo giá gửi đơn giá số nguyên đồng (chấm điểm: V2-I)", async ({ page }) => {
-  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
-  await prepare(page, SCENES.find((s) => s.name === "p02-partners-light") as Scene);
-  const sent = await recordWrites(page);
-  await page.goto(`/prices?product=${encodeURIComponent(PORK)}`);
-  await page.getByRole("button", { name: "+ Thêm báo giá" }).click();
-  const dlg = page.locator("dialog[open]");
-  await dlg.locator('input[name="supplier"]').fill("Heo Mới");
-  await dlg.locator('input[name="price"]').fill("93.000");
-  await dlg.getByRole("button", { name: "Lưu báo giá" }).click();
-  await expect(dlg).toBeHidden();
-  await expect.poll(() => sent.length).toBe(1);
-  expect(sent[0]).toEqual({
-    method: "POST",
-    path: "/prices/quotes",
-    body: { product: PORK, supplier_name: "Heo Mới", price: 93_000, quoted_at: "2026-10-18" },
-  });
-});

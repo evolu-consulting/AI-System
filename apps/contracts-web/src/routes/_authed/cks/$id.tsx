@@ -1,5 +1,8 @@
-// PK-FR-10 · HD-FR-97 · S11: /cks/$id — khách chữ ký số (HD9).
-import { createFileRoute } from "@tanstack/react-router";
-import { CksCustomerPage } from "~/features/cks/pages/CksCustomerPage";
+// V2-O · /cks/$id đã thay bằng "khách đang dùng" của Sản phẩm — chuyển hướng.
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authed/cks/$id")({ component: CksCustomerPage });
+export const Route = createFileRoute("/_authed/cks/$id")({
+  beforeLoad: () => {
+    throw redirect({ to: "/products", replace: true });
+  },
+});
