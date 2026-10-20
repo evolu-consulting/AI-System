@@ -10,8 +10,10 @@ import { join } from "node:path";
 import { createDb } from "@ai/db";
 import { cloneDb } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";
+import { createAiClient } from "../../apps/hub-api/src/lib/ai-client/ai-client";
+import { envProvider } from "../../apps/hub-api/src/lib/ai-client/ai-client.env";
 import {
-  claudeReranker,
+  clientReranker,
   openAiEmbedder,
 } from "../../apps/hub-api/src/modules/knowledge/adapters/ai.adapters";
 import { knowledgeRepos } from "../../apps/hub-api/src/modules/knowledge/adapters/knowledge.repo";
@@ -122,7 +124,17 @@ const add = addDocument({
 });
 const search = searchKnowledge({
   strategy,
-  reranker: needRerank ? claudeReranker({ ...process.env, KNOWLEDGE_RERANK: "on" }) : null,
+  // F-07: rerank qua AI client chung (eval chạy ngoài Hub: không ghi usage, không trần)
+  reranker: needRerank
+    ? clientReranker(
+        createAiClient({
+          provider: envProvider(),
+          usage: { record: async () => {}, tokensSince: async () => 0 },
+          caps: { dailyTokens: async () => null },
+        }),
+        process.env,
+      )
+    : null,
 });
 
 // ---- nạp kho

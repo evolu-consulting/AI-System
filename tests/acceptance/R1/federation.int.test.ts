@@ -126,7 +126,7 @@ describe("R1 · liên kết KnowledgeHub (KH giả)", () => {
   it("rerank (giả) chạy trên tập gộp nội bộ + KH", async () => {
     const seen: string[][] = [];
     const reranker: Reranker = {
-      rerank: async (_q, hs, k) => {
+      rerank: async ({ hits: hs, k }) => {
         seen.push(hs.map((h) => h.source ?? "local"));
         return [...hs].reverse().slice(0, k);
       },
