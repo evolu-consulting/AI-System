@@ -151,8 +151,26 @@ export async function agentDetail(tx: Tx, row: AgentDbRow): Promise<Agent> {
   });
 }
 
+/** M2-chat · m2c (A-19): `pack_tools` phải là tool có trong registry (vắng registry ⇒ không kiểm, `/mcp` vẫn kiểm lại). */
+export function checkPackTools(
+  opts: Record<string, unknown>,
+  packs: { has(key: string): boolean } | undefined,
+): void {
+  const v = opts.pack_tools;
+  if (!packs || !Array.isArray(v)) return;
+  const unknown = v.filter((k) => typeof k !== "string" || !packs.has(k));
+  if (unknown.length > 0)
+    throw appError("INVALID_REFERENCE", {
+      field: "runtime_options.pack_tools",
+      reason: "not_found",
+      keys: unknown.map(String).slice(0, 20),
+    });
+}
+
 export class AgentsService {
-  constructor(private readonly d: StudioWriteDeps) {}
+  constructor(
+    private readonly d: StudioWriteDeps & { packTools?: { has(key: string): boolean } },
+  ) {}
 
   #read<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
     return withHubScope(this.d.db, { kind: "system" }, fn, {
@@ -170,6 +188,7 @@ export class AgentsService {
     const { result, version } = await withConfigWrite(this.d, actor, async (tx) => {
       if (await findAgentByKey(tx, b.key)) throw appError("KEY_TAKEN", { field: "key" });
       const wfs = await checkRefs(tx, b);
+      checkPackTools(runtimeOptionsOf(b.runtime, b.runtime_options, wfs), this.d.packTools);
       const tools = b.runtime === "agentic-cli" ? cliTools(b.runtime_options) : [];
       const bashAck = needsBashAck(null, tools);
       if (bashAck && b.bash_ack !== true) throw appError("BASH_ACK_REQUIRED");
@@ -240,6 +259,7 @@ export class AgentsService {
       await assertNotDefault(tx, id, b.enabled);
       const wfs = await checkRefs(tx, { ...b, runtime });
       const given = b.runtime_options as Record<string, unknown> | undefined;
+      checkPackTools(runtimeOptionsOf(runtime, given, wfs), this.d.packTools);
       const bashAck = needsBashAck(toolsOf(runtime, row.runtimeOptions), toolsOf(runtime, given));
       if (bashAck && b.bash_ack !== true) throw appError("BASH_ACK_REQUIRED");
       const before = auditSnapshot(await this.#detail(tx, row));

@@ -1,22 +1,22 @@
-// M2-chat · token tool chat ngắn hạn (unit, kho bộ nhớ + đồng hồ giả): chỉ tool đọc, hết hạn/thu hồi ⇒ null, sai dạng ⇒ null.
+// M2-chat · m2c · quyền tool chat (unit, kho bộ nhớ + đồng hồ giả): handle gắn hội thoại, grant theo run (chỉ tool đọc), handle
+// không có grant ⇒ null, grant hết hạn/thu hồi ⇒ null, thu hồi chỉ xoá grant của đúng run, handle cũ chết khi cấp handle mới.
 import { describe, expect, it } from "bun:test";
 import {
   CHAT_TOKEN_TTL_MAX_S,
   CHAT_TOKEN_TTL_MIN_S,
-  type ChatTokenClaims,
   type ChatTokenStore,
   ChatToolTokens,
   chatTokenTtlS,
   isChatToken,
 } from "./chat-token";
 
-function memStore(): ChatTokenStore & { size: () => number } {
-  const m = new Map<string, ChatTokenClaims>();
+function memStore(): ChatTokenStore {
+  const m = new Map<string, string>();
   return {
-    put: async (h, c) => void m.set(h, c),
-    get: async (h) => m.get(h) ?? null,
-    del: async (h) => void m.delete(h),
-    size: () => m.size,
+    get: async (k) => m.get(k) ?? null,
+    set: async (k, v) => void m.set(k, v),
+    expire: async (k) => m.has(k),
+    del: async (k) => void m.delete(k),
   };
 }
 const INFO: Record<string, { sideEffect: boolean; action: "read" | "write" }> = {
@@ -28,41 +28,62 @@ const packs = {
   info: (k: string) =>
     INFO[k] ? { key: k, name: k, description: k, params: [], ...INFO[k] } : undefined,
 };
-const WHO = { tenantId: "t", userId: "u", runId: "r", conversationId: "c", agentId: "a" };
+const B = { tenantId: "t", userId: "u", conversationId: "c", agentId: "a" };
+const KEYS = ["contracts-finalize", "contracts-search", "pkdemo-mark", "x-y"];
 
-describe("M2-chat · token tool chat ngắn hạn", () => {
-  it("chỉ cấp tool đọc không side_effect; không còn tool nào ⇒ không cấp", async () => {
-    const store = memStore();
-    const t = new ChatToolTokens({ store, packs });
-    const tok = await t.issue(
-      WHO,
-      ["contracts-finalize", "contracts-search", "pkdemo-mark", "x-y"],
-      60,
-    );
-    expect(tok && isChatToken(tok.token)).toBe(true);
-    expect((await t.resolve(tok?.token ?? ""))?.tools).toEqual(["contracts-search"]);
-    expect(await t.issue(WHO, ["contracts-finalize"], 60)).toBeNull();
-    expect(store.size()).toBe(1);
+describe("M2-chat · m2c · handle hội thoại + grant theo run", () => {
+  it("grant chỉ tool đọc; handle chỉ dùng được khi có grant", async () => {
+    const t = new ChatToolTokens({ store: memStore(), packs });
+    const h = await t.newHandle(B);
+    expect(isChatToken(h)).toBe(true);
+    expect(await t.resolve(h)).toBeNull();
+    const g = await t.grant({ ...B, runId: "r1" }, KEYS, 60);
+    expect((await t.resolve(h))?.tools).toEqual(["contracts-search"]);
+    expect((await t.resolve(h))?.runId).toBe("r1");
+    expect(await t.grant({ ...B, runId: "r2" }, ["contracts-finalize"], 60)).toBeNull();
+    await g?.revoke();
+    expect(await t.resolve(h)).toBeNull();
   });
 
-  it("hết hạn (exp) ⇒ null dù kho còn giữ; thu hồi ⇒ null; sai dạng ⇒ null", async () => {
+  it("A-5 · cùng handle qua 2 lượt (2 run): mỗi run có grant riêng, giữa hai lượt ⇒ null", async () => {
+    const t = new ChatToolTokens({ store: memStore(), packs });
+    const h = await t.newHandle(B);
+    const g1 = await t.grant({ ...B, runId: "r1" }, KEYS, 60);
+    expect((await t.resolve(h))?.runId).toBe("r1");
+    await g1?.revoke();
+    expect(await t.resolve(h)).toBeNull();
+    expect(await t.refreshHandle(B)).toBe(true);
+    const g2 = await t.grant({ ...B, runId: "r2" }, KEYS, 60);
+    expect((await t.resolve(h))?.runId).toBe("r2");
+    await g1?.revoke(); // thu hồi muộn của run cũ không xoá grant run mới
+    expect((await t.resolve(h))?.runId).toBe("r2");
+    await g2?.revoke();
+  });
+
+  it("grant hết hạn (exp) ⇒ null; handle mới làm handle cũ chết; hội thoại khác không dùng grant này", async () => {
     let now = 1_000_000;
     const t = new ChatToolTokens({ store: memStore(), packs, now: () => now });
-    const tok = await t.issue(WHO, ["contracts-search"], 60);
-    if (!tok) throw new Error("no token");
-    expect((await t.resolve(tok.token))?.userId).toBe("u");
+    const h1 = await t.newHandle(B);
+    await t.grant({ ...B, runId: "r1" }, KEYS, 60);
     now += 60_000;
-    expect(await t.resolve(tok.token)).toBeNull();
+    expect(await t.resolve(h1)).toBeNull();
     now -= 60_000;
-    await tok.revoke();
-    expect(await t.resolve(tok.token)).toBeNull();
+    const h2 = await t.newHandle(B);
+    expect(await t.resolve(h1)).toBeNull();
+    expect((await t.resolve(h2))?.runId).toBe("r1");
+    const other = await t.newHandle({ ...B, conversationId: "c2" });
+    expect(await t.resolve(other)).toBeNull();
     expect(await t.resolve("hct_short")).toBeNull();
-    expect(await t.resolve(tok.token.slice(4))).toBeNull();
   });
 
-  it("TTL kẹp [60 s, 15 phút]", () => {
+  it("refreshHandle ⇒ false khi hội thoại chưa có handle", async () => {
+    const t = new ChatToolTokens({ store: memStore(), packs });
+    expect(await t.refreshHandle(B)).toBe(false);
+  });
+
+  it("TTL grant kẹp [60 s, 1 giờ]", () => {
     expect(chatTokenTtlS(5)).toBe(CHAT_TOKEN_TTL_MIN_S);
-    expect(chatTokenTtlS(300)).toBe(300);
-    expect(chatTokenTtlS(3600)).toBe(CHAT_TOKEN_TTL_MAX_S);
+    expect(chatTokenTtlS(1200)).toBe(1200);
+    expect(chatTokenTtlS(7200)).toBe(CHAT_TOKEN_TTL_MAX_S);
   });
 });

@@ -14,12 +14,15 @@ duyệt): token ngắn hạn cho Dify gọi tool, kế hoạch thoát Dify → C
   cho tenant, quyền gói `read` của người gọi). Ghi để sau, dạng thẻ xác nhận như mgmt-app: sửa trường HĐ, ghi đã trả/hoãn/nhắc
   đợt, bán/gia hạn CKS, gắn phụ lục.
 - **Claude** (`agentic-cli`): `pack_tools` → `payload.mcp.tools`; CLI gọi `/mcp` bằng token job (= user + tenant của run).
-- **Dify** (`dify-agent`): Dify custom tool/MCP chỉ có khoá tĩnh ⇒ không dùng. Hub cấp **token chat ngắn hạn** cho ĐÚNG một tin:
-  `hct_` + 32 byte ngẫu nhiên, Redis lưu theo sha256 (không bản rõ), claims = tenant + user + run + hội thoại + agent + tool
-  đọc; TTL = hạn agent kẹp [60 s, 15 phút] + `exp` kiểm lại; chỉ tool `action: read` không side_effect (lọc lúc cấp và lúc
-  dùng); **thu hồi khi run kết thúc** (kể cả lỗi/huỷ). Hub tiêm vào `inputs.hub_tool_token` của tin gửi Dify; app Dify dùng
-  làm `Authorization: Bearer` khi gọi `POST /mcp` của Hub. Bản Dify lưu trong log vô dụng sau run. Không token dài hạn/dịch vụ.
-  Cấp chỉ khi agent có `pack_tools` VÀ app Dify khai input `hub_tool_token` (cấu hình).
+- **Dify** (`dify-agent`): Dify custom tool/MCP chỉ có khoá tĩnh ⇒ không dùng. **m2c (review A-5)**: app chat Dify GIỮ `inputs`
+  của lượt đầu suốt hội thoại ⇒ token theo từng tin chết từ lượt 2. Tách hai phần: **handle** `hct_` (32 byte ngẫu nhiên,
+  Redis giữ sha256) gắn hội thoại Hub + agent + user + tenant, gửi `inputs.hub_tool_token` CHỈ khi mở hội thoại Dify, tự nó
+  không cho quyền gì, sống trượt 24 giờ (hết ⇒ Hub bỏ phiên Dify, mở hội thoại mới kèm handle mới); **grant của run** (tool
+  `action: read` không side_effect, `runId`, TTL = hạn agent kẹp [60 s, 1 giờ] + `exp` kiểm lại) cấp khi run bắt đầu,
+  **thu hồi khi run kết thúc** (chỉ xoá nếu còn là grant của run đó). `/mcp` nhận handle ⇒ chỉ chạy khi có grant còn hạn VÀ run
+  còn `running` trong DB (A-18: Hub chết giữa run). App Dify dùng handle làm `Authorization: Bearer` khi gọi `POST /mcp`.
+  Cấp chỉ khi agent có `pack_tools` VÀ app Dify khai input `hub_tool_token` (cấu hình). Studio kiểm `pack_tools` theo
+  registry khi lưu (A-19).
 - **Usage chat theo tenant**: mọi bước agent của chat (Dify lẫn Claude) đi qua `runJob` ⇒ `noteChatUsage` →
   `recordChatUsage` (`modules/usage/chat-usage.ts`). Bảng dùng chung là của M3: tới khi có, sink mặc định log `chat-usage`;
   M3 gọi `setChatUsageSink` trỏ vào bảng. Dify vẫn ghi thêm `hub.log_dify_usage` như cũ.

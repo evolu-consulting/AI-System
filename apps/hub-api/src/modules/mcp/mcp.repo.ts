@@ -184,3 +184,11 @@ export async function runLocale(tx: Tx, runId: string, tenantId: string): Promis
   );
   return rows[0]?.locale ?? "vi";
 }
+
+/** M2-chat · m2c (A-18): run của grant token chat còn `running` (một câu theo PK) — Hub chết giữa run thì token không dùng được. */
+export async function runIsRunning(tx: Tx, runId: string, tenantId: string): Promise<boolean> {
+  const rows = await tx.execute(
+    sql`SELECT 1 FROM hub.runs WHERE id = ${runId} AND tenant_id = ${tenantId} AND status = 'running'`,
+  );
+  return rows.length > 0;
+}

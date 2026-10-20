@@ -32,6 +32,8 @@ export const STUDIO_API = "/studio/api";
 /** `hubAudit` vắng ⇒ ghi DB thật; test tiêm lỗi giữa transaction (P7). */
 export type H4aDeps = {
   db?: Db;
+  /** M2-chat · m2c (A-19) · registry tool gói để Studio kiểm `runtime_options.pack_tools` khi lưu agent. */
+  packTools?: { has(key: string): boolean };
   studioDist?: string;
   hubAudit?: HubAuditWriter;
   /** H4b-1 D11 · khoá secrets Hub; vắng ⇒ POST/PUT secret có `value` 409 `NOT_CONFIGURED`. */
@@ -58,7 +60,10 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
   if (deps.db) {
     const audit = deps.hubAudit ?? dbHubAudit;
     app.route(STUDIO_API, studioReadRoutes(new StudioReadService({ db: deps.db })));
-    app.route(STUDIO_API, agentRoutes(new AgentsService({ db: deps.db, audit })));
+    app.route(
+      STUDIO_API,
+      agentRoutes(new AgentsService({ db: deps.db, audit, packTools: deps.packTools })),
+    );
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
     // H4b-2 · Models: provider (B3, B4), model profile (B5). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
     const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };

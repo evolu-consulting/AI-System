@@ -1,8 +1,8 @@
-// M2-chat · token tool chat NGẮN HẠN (Dify gọi `/mcp` của Hub) — người dùng duyệt 2026-10-19: gắn user + tenant + run, TTL
-// phút, chỉ tool đọc, thu hồi khi run xong, không token dài hạn. Hub THẬT in-process (DB + Redis thật, RLS `contracts_rw`).
-// Ca: hết hạn ⇒ 401; thu hồi ⇒ 401; token của user A không đọc được hàng của B (tenant khác); token tenant chưa bật gói ⇒ từ
-// chối; tool ghi không bao giờ vào token. Đầu-cuối: `DifyAgentRunner` + Dify GIẢ (transport) — Dify nhận token trong
-// `inputs.hub_tool_token`, gọi `/mcp` bằng nó trong lúc chạy (thấy đúng dữ liệu), sau run token chết (401). Không sleep.
+// M2-chat · m2c (review A-5, A-18) · quyền tool chat NGẮN HẠN cho Dify gọi `/mcp` của Hub. Hub THẬT in-process (DB + Redis thật,
+// RLS `contracts_rw`). Mô hình: handle gắn hội thoại (gửi Dify khi mở hội thoại; Dify GIỮ `inputs` lượt đầu) + grant theo run
+// (tool đọc, TTL, thu hồi khi run xong) + run phải còn `running`. Ca: hết hạn ⇒ 401; thu hồi ⇒ 401; run không còn chạy ⇒ 401;
+// user A không đọc được hàng của B (tenant khác); tenant chưa bật gói ⇒ từ chối; tool ghi không vào grant. Đầu-cuối 2 LƯỢT với
+// Dify GIẢ mô phỏng hành vi thật (lượt 2 dùng `inputs` của lượt 1): tool chạy được cả hai lượt, giữa và sau các lượt ⇒ 401.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { logger } from "../../../apps/hub-api/src/lib/logger";
 import type { AgentConfig } from "../../../apps/hub-api/src/modules/config/config.rules";
@@ -51,126 +51,168 @@ afterAll(async () => {
 });
 
 type Who = "lan" | "an" | "zed";
-const claims = (who: Who) => ({
-  tenantId: USERS[who].tid,
-  userId: USERS[who].id,
-  runId: crypto.randomUUID(),
-  conversationId: crypto.randomUUID(),
-  agentId: AG.assistant,
-});
-async function issue(who: Who, keys = READ, t = tokens): Promise<string> {
-  const tok = await t.issue(claims(who), keys, 300);
-  if (!tok) throw new Error("không cấp được token");
-  return tok.token;
+/** Run `running` thật (hội thoại mới) + handle + grant của run đó. */
+async function issue(who: Who, keys = READ, t = tokens) {
+  const j = await insertSqlJob(c.sql, ids, {
+    who,
+    type: "agent.cli",
+    agentId: AG.assistant,
+    agentKey: "assistant",
+  });
+  const b = {
+    tenantId: USERS[who].tid,
+    userId: USERS[who].id,
+    conversationId: j.convId,
+    agentId: AG.assistant,
+  };
+  const handle = await t.newHandle(b);
+  const grant = await t.grant({ ...b, runId: j.runId }, keys, 300);
+  if (!grant) throw new Error("không cấp được grant");
+  return { handle, grant, runId: j.runId };
 }
 const call = (tok: string, name: string, args: Record<string, unknown>) =>
   mcp(c.hub, tok, "tools/call", { name, arguments: args });
 const dataOf = (r: { json?: { result?: { content?: { text: string }[] } } }) =>
   JSON.parse(r.json?.result?.content?.[0]?.text ?? "null");
 
-describe("M2-chat · token tool chat ngắn hạn qua /mcp", () => {
-  it("token hợp lệ: tools/list chỉ tool đọc; search của lan chỉ thấy HĐ acme", async () => {
-    const tok = await issue("lan");
-    const list = await mcp(c.hub, tok, "tools/list");
+describe("M2-chat · m2c · quyền tool chat qua /mcp", () => {
+  it("hợp lệ: tools/list chỉ tool đọc; search của lan chỉ thấy HĐ acme", async () => {
+    const { handle } = await issue("lan");
+    const list = await mcp(c.hub, handle, "tools/list");
     expect(list.status).toBe(200);
     const names = (list.json?.result?.tools ?? []).map((t: { name: string }) => t.name).sort();
     expect(names).toEqual([...READ].sort());
-    const s = dataOf(await call(tok, "contracts-search", {}));
+    const s = dataOf(await call(handle, "contracts-search", {}));
     expect(s.items.map((i: { id: string }) => i.id)).toEqual([A1]);
   });
 
-  it("hết hạn ⇒ 401 (exp đã qua dù Redis còn giữ khoá)", async () => {
+  it("grant hết hạn ⇒ 401 (exp đã qua dù Redis còn giữ khoá)", async () => {
     const past = new ChatToolTokens({
       store: redisChatTokenStore(c.hub.redis),
       packs,
       now: () => Date.now() - 600_000,
     });
-    const tok = await issue("lan", READ, past);
-    const r = await mcp(c.hub, tok, "tools/list");
-    expect(r.status).toBe(401);
+    const { handle } = await issue("lan", READ, past);
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(401);
   });
 
   it("thu hồi ⇒ 401", async () => {
-    const tok = await tokens.issue(claims("lan"), READ, 300);
-    if (!tok) throw new Error("no token");
-    expect((await mcp(c.hub, tok.token, "tools/list")).status).toBe(200);
-    await tok.revoke();
-    expect((await mcp(c.hub, tok.token, "tools/list")).status).toBe(401);
+    const { handle, grant } = await issue("lan");
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(200);
+    await grant.revoke();
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(401);
   });
 
-  it("token của user A (lan/acme) không đọc được hàng của B (an/beta) — và ngược lại", async () => {
-    const lan = await issue("lan");
+  it("A-18 · run không còn `running` (Hub chết, grant chưa thu hồi) ⇒ 401", async () => {
+    const { handle, runId } = await issue("lan");
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(200);
+    await c.sql`update hub.runs set status = 'cancelled', error_code = 'CANCELLED',
+      error_message = 'x', error_hint = '', finished_at = now()
+      where id = ${runId}`;
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(401);
+  });
+
+  it("user A (lan/acme) không đọc được hàng của B (an/beta) — và ngược lại", async () => {
+    const lan = (await issue("lan")).handle;
     expect(dataOf(await call(lan, "contracts-get", { contract_id: B1 }))).toEqual({ found: false });
-    const an = await issue("an");
+    const an = (await issue("an")).handle;
     expect(dataOf(await call(an, "contracts-get", { contract_id: A1 }))).toEqual({ found: false });
     expect(dataOf(await call(an, "contracts-get", { contract_id: B1 })).found).toBe(true);
   });
 
-  it("token của tenant chưa bật gói (zed/zeta) ⇒ không tool, gọi bị từ chối, 0 dữ liệu", async () => {
-    const tok = await issue("zed");
-    expect((await mcp(c.hub, tok, "tools/list")).json?.result?.tools ?? []).toEqual([]);
-    const r = await call(tok, "contracts-get", { contract_id: A1 });
+  it("tenant chưa bật gói (zed/zeta) ⇒ không tool, gọi bị từ chối, 0 dữ liệu", async () => {
+    const { handle } = await issue("zed");
+    expect((await mcp(c.hub, handle, "tools/list")).json?.result?.tools ?? []).toEqual([]);
+    const r = await call(handle, "contracts-get", { contract_id: A1 });
     expect(r.json?.error?.code).toBe(-32602);
     expect(JSON.stringify(r.json)).not.toContain("Phương Nam");
   });
 
-  it("tool ghi không vào token; gọi tool ghi bằng token ⇒ Unknown tool", async () => {
-    const tok = await issue("lan", ["contracts-finalize", "contracts-search"]);
-    const r = await call(tok, "contracts-finalize", { contract_id: A1 });
-    expect(r.json?.error?.code).toBe(-32602);
+  it("tool ghi không vào grant; gọi tool ghi ⇒ Unknown tool", async () => {
+    const { handle } = await issue("lan", ["contracts-finalize", "contracts-search"]);
+    expect((await call(handle, "contracts-finalize", { contract_id: A1 })).json?.error?.code).toBe(
+      -32602,
+    );
   });
 
-  it("token sai dạng / token job giả ⇒ 401", async () => {
+  it("handle sai dạng / không tồn tại ⇒ 401", async () => {
     expect((await mcp(c.hub, "hct_x", "tools/list")).status).toBe(401);
     expect((await mcp(c.hub, `hct_${"A".repeat(43)}`, "tools/list")).status).toBe(401);
   });
 });
 
-describe("M2-chat · Dify (transport giả) gọi tool bằng token của đúng tin, token chết sau run", () => {
-  it("Dify nhận hub_tool_token, gọi /mcp thấy HĐ acme; sau run ⇒ 401", async () => {
+// ---------- đầu-cuối 2 lượt với Dify giả ----------
+const WF = {
+  id: crypto.randomUUID(),
+  key: "m2-assistant",
+  name: "m2",
+  description: null,
+  appType: "chat" as const,
+  baseUrl: "http://dify.invalid/v1",
+  secretId: null,
+  inputSchema: [
+    { name: "query", type: "text", required: true, description: "câu hỏi" },
+    { name: HUB_TOOL_TOKEN_INPUT, type: "text", required: false, description: "token" },
+  ],
+  outputField: null,
+  enabled: true,
+  sideEffect: false,
+};
+
+/** Dify giả như app chat THẬT: hội thoại có `conversation_id` dùng `inputs` của lượt mở, bỏ `inputs` mới. Mỗi lượt gọi tool. */
+function fakeDify() {
+  const convInputs = new Map<string, Record<string, unknown>>();
+  const turns: { token: string; items: string[] | null; status: number }[] = [];
+  const dify: Pick<DifyClient, "runStreaming"> = {
+    runStreaming: async (req: DifyRunRequest) => {
+      const conv = req.conversationId ?? `dify-conv-${convInputs.size + 1}`;
+      if (!convInputs.has(conv)) convInputs.set(conv, { ...req.inputs });
+      const token = String(convInputs.get(conv)?.[HUB_TOOL_TOKEN_INPUT] ?? "");
+      const r = await call(token, "contracts-search", {});
+      const items = r.status === 200 ? dataOf(r).items.map((i: { id: string }) => i.id) : null;
+      turns.push({ token, items, status: r.status });
+      return {
+        kind: "finished",
+        text: "Có 1 hợp đồng.",
+        conversationId: conv,
+        taskId: `task-${turns.length}`,
+        usage: { input_tokens: 10, output_tokens: 5, cost_usd: 0 },
+        ms: 5,
+      };
+    },
+  };
+  return { dify, turns };
+}
+
+/** Lượt mới (run `running` mới) trong CÙNG hội thoại Hub. */
+async function nextRun(convId: string, flowId: string): Promise<string> {
+  const [mu, ma, run] = [ids(), ids(), ids()];
+  const u = USERS.lan;
+  await c.sql`insert into hub.messages (id, tenant_id, user_id, conversation_id, flow_id, role, content, run_id) values
+    (${mu}, ${u.tid}, ${u.id}, ${convId}, ${flowId}, 'user', 'hỏi tiếp', null),
+    (${ma}, ${u.tid}, ${u.id}, ${convId}, ${flowId}, 'assistant', '', ${run})`;
+  await c.sql`insert into hub.runs (id, tenant_id, user_id, conversation_id, flow_id, status, config_version,
+      user_message_id, answer_message_id, owner, lease_until)
+    values (${run}, ${u.tid}, ${u.id}, ${convId}, ${flowId}, 'running', 1, ${mu}, ${ma}, 'qc-other-instance',
+      now() + interval '1 hour')`;
+  return run;
+}
+
+describe("M2-chat · m2c · A-5 · Dify giữ inputs lượt đầu — tool chạy cả lượt 2", () => {
+  it("2 lượt cùng hội thoại: cùng handle, mỗi lượt có grant riêng; sau mỗi lượt ⇒ 401", async () => {
     const j = await insertSqlJob(c.sql, ids, {
       who: "lan",
       type: "agent.cli",
       agentId: AG.assistant,
       agentKey: "assistant",
     });
-    const seen: { token?: string; during?: unknown } = {};
-    const dify: Pick<DifyClient, "runStreaming"> = {
-      runStreaming: async (req: DifyRunRequest) => {
-        seen.token = String(req.inputs[HUB_TOOL_TOKEN_INPUT] ?? "");
-        seen.during = dataOf(await call(seen.token, "contracts-search", {}));
-        return {
-          kind: "finished",
-          text: "Có 1 hợp đồng.",
-          conversationId: "dify-conv-1",
-          taskId: "task-1",
-          usage: { input_tokens: 10, output_tokens: 5, cost_usd: 0 },
-          ms: 5,
-        };
-      },
-    };
-    const wf = {
-      id: crypto.randomUUID(),
-      key: "m2-assistant",
-      name: "m2",
-      description: null,
-      appType: "chat" as const,
-      baseUrl: "http://dify.invalid/v1",
-      secretId: null,
-      inputSchema: [
-        { name: "query", type: "text", required: true, description: "câu hỏi" },
-        { name: HUB_TOOL_TOKEN_INPUT, type: "text", required: false, description: "token" },
-      ],
-      outputField: null,
-      enabled: true,
-      sideEffect: false,
-    };
+    const f = fakeDify();
     const runner = new DifyAgentRunner({
       db: c.hub.db,
       owner: "qc-other-instance",
-      catalog: async () => ({ workflows: new Map([[wf.key, wf]]), tenantKeys: new Map() }) as never,
+      catalog: async () => ({ workflows: new Map([[WF.key, WF]]), tenantKeys: new Map() }) as never,
       credentials: { apiKey: async () => "k-m2" },
-      dify,
+      dify: f.dify,
       log: logger,
       toolTokens: new ChatToolTokens({ store: redisChatTokenStore(c.hub.redis), packs }),
     });
@@ -178,29 +220,41 @@ describe("M2-chat · Dify (transport giả) gọi tool bằng token của đúng
       id: AG.assistant,
       key: "mgmt-assistant",
       runtime: "dify-agent",
-      runtimeOptions: { workflow_key: wf.key, pack_tools: [...READ, "contracts-finalize"] },
+      runtimeOptions: { workflow_key: WF.key, pack_tools: [...READ, "contracts-finalize"] },
       timeoutS: 60,
     } as unknown as AgentConfig;
-    const run = {
-      id: j.runId,
-      tenantId: T.acme,
-      userId: USERS.lan.id,
-      conversationId: j.convId,
-      flowId: j.flowId,
-      locale: "vi" as const,
+    const turn = async (runId: string) => {
+      const run = {
+        id: runId,
+        tenantId: T.acme,
+        userId: USERS.lan.id,
+        conversationId: j.convId,
+        flowId: j.flowId,
+        locale: "vi" as const,
+      };
+      const task = {
+        run,
+        agent,
+        role: "agent",
+        prompt: "HĐ nào?",
+        history: [],
+      } as unknown as AgentTask;
+      const evs = [];
+      for await (const ev of runner.run(task, new AbortController().signal)) evs.push(ev);
+      return evs.at(-1)?.type;
     };
-    const task = {
-      run,
-      agent,
-      role: "agent",
-      prompt: "có bao nhiêu HĐ?",
-      history: [],
-    } as unknown as AgentTask;
-    const evs = [];
-    for await (const ev of runner.run(task, new AbortController().signal)) evs.push(ev);
-    expect(evs.at(-1)?.type).toBe("job.result");
-    expect(seen.token?.startsWith("hct_")).toBe(true);
-    expect((seen.during as { items: { id: string }[] }).items.map((i) => i.id)).toEqual([A1]);
-    expect((await mcp(c.hub, seen.token as string, "tools/list")).status).toBe(401);
+    expect(await turn(j.runId)).toBe("job.result");
+    const handle = f.turns[0]?.token ?? "";
+    expect(handle.startsWith("hct_")).toBe(true);
+    expect(f.turns[0]).toMatchObject({ status: 200, items: [A1] });
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(401); // giữa hai lượt
+
+    // lượt 1 kết thúc (một run `running` mỗi flow) rồi mới tới lượt 2
+    await c.sql`update hub.runs set status = 'cancelled', error_code = 'CANCELLED',
+      error_message = 'x', error_hint = '', finished_at = now()
+      where id = ${j.runId}`;
+    expect(await turn(await nextRun(j.convId, j.flowId))).toBe("job.result");
+    expect(f.turns[1]).toEqual({ token: handle, status: 200, items: [A1] }); // lượt 2 dùng inputs lượt 1 vẫn chạy
+    expect((await mcp(c.hub, handle, "tools/list")).status).toBe(401); // sau lượt 2
   });
 });

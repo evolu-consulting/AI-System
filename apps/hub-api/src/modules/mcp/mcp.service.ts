@@ -117,6 +117,11 @@ export class McpService {
     const c = await this.d.chatTokens?.resolve(token);
     if (!c) return null;
     const { tenantId, userId, runId, agentId, tools } = c;
+    // m2c (A-18): grant chỉ dùng được khi run của nó còn chạy (Hub chết giữa run ⇒ `finally` không thu hồi được).
+    const alive = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      repo.runIsRunning(tx, runId, tenantId),
+    );
+    if (!alive) return null;
     return {
       jobId: "",
       tenantId,

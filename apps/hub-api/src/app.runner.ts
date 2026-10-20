@@ -41,7 +41,7 @@ export type AgentRunnerDeps = {
   /** K1 · client + cache project KH (`mountH4a`); vắng ⇒ job stage không có `kh-query`. */
   kh?: KhRuntime;
   /** M2-chat · cấp token tool chat ngắn hạn cho agent Dify (vắng ⇒ Dify không tool). */
-  toolTokens?: Pick<ChatToolTokens, "issue">;
+  toolTokens?: Pick<ChatToolTokens, "grant" | "refreshHandle" | "newHandle">;
 };
 
 /** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
