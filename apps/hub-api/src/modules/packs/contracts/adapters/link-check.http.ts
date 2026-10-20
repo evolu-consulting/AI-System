@@ -126,7 +126,8 @@ export async function fetchPage(
 export function createInspect(
   d: {
     resolve?: Resolve;
-    fetch?: (url: string) => Promise<string>;
+    /** Thay bước tải trang (test); có ⇒ bỏ kiểm DNS công khai. */
+    loadPage?: (url: string) => Promise<string>;
     now?: () => Date;
     timeoutMs?: number;
   } = {},
@@ -136,9 +137,13 @@ export function createInspect(
   return async (url, price) => {
     const signal = AbortSignal.timeout(d.timeoutMs ?? TIMEOUT_MS);
     try {
-      if (!d.fetch && !(await publicTarget(url, resolve, signal)))
+      if (!d.loadPage && !(await publicTarget(url, resolve, signal)))
         return { verified: false, page_date: null, note: NOTE.invalid };
-      return judge(await (d.fetch ? d.fetch(url) : fetchPage(url, resolve, signal)), price, year());
+      return judge(
+        await (d.loadPage ? d.loadPage(url) : fetchPage(url, resolve, signal)),
+        price,
+        year(),
+      );
     } catch (e) {
       const why = e instanceof LinkError ? e.message : e instanceof Error ? e.name : "Error";
       return { verified: false, page_date: null, note: NOTE.failed(why) };

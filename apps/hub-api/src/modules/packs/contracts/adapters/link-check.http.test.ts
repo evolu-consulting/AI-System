@@ -17,7 +17,7 @@ const fakeDns = async (h: string) =>
 
 describe("link_check", () => {
   test("thấy đúng con số + ngày trang; con số khác ⇒ chưa kiểm", async () => {
-    const inspect = createInspect({ fetch: async () => page, now });
+    const inspect = createInspect({ loadPage: async () => page, now });
     expect(await inspect("https://example.vn/gia", 92_000)).toEqual({
       verified: true,
       page_date: "2026-10-12",
@@ -42,7 +42,7 @@ describe("link_check", () => {
 
   test("lỗi mở trang ⇒ vẫn trả, chưa kiểm, có lý do", async () => {
     const inspect = createInspect({
-      fetch: async () => {
+      loadPage: async () => {
         throw new Error("boom");
       },
       now,
