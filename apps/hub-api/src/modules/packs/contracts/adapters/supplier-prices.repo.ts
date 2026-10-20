@@ -13,11 +13,8 @@ const MAIN =
   sql.raw(`(select c2.id from contracts.product_components c2 where c2.tenant_id = p.tenant_id
   and c2.product_id = p.id and c2.mode <> 'none' order by c2.ord limit 1)`);
 
-export function suppliersRepo(tx: Tx, t: string): SuppliersRepo {
-  const overview: SuppliersRepo["overview"] = (productId) =>
-    one<OverviewData | null>(
-      tx,
-      sql`select jsonb_build_object(
+/** Tổng quan NCC của SP: SP + thành phần + giá nhập từ sổ kho + giá đã lưu. */
+const overviewQ = (t: string, productId: string) => sql`select jsonb_build_object(
           'product', jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'group', p.grp),
           'components', coalesce((select jsonb_agg(jsonb_build_object('mode', c.mode, 'avg_cost', c.avg_cost) order by c.ord)
             from contracts.product_components c where c.tenant_id = p.tenant_id and c.product_id = p.id), '[]'::jsonb),
@@ -38,8 +35,11 @@ export function suppliersRepo(tx: Tx, t: string): SuppliersRepo {
               'url', s.url, 'seen_on', s.seen_on) order by s.seen_on desc, s.created_at desc)
             from (select * from contracts.product_supplier_prices s0 where s0.tenant_id = p.tenant_id
               and s0.product_id = p.id order by s0.seen_on desc, s0.created_at desc limit 200) s), '[]'::jsonb)) as j
-        from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid`,
-    );
+        from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid`;
+
+export function suppliersRepo(tx: Tx, t: string): SuppliersRepo {
+  const overview: SuppliersRepo["overview"] = (productId) =>
+    one<OverviewData | null>(tx, overviewQ(t, productId));
 
   const head: SuppliersRepo["head"] = (productId) =>
     one<{ name: string; group: "service" | "goods" | "referral" } | null>(

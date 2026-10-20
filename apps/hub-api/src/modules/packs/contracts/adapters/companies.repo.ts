@@ -17,6 +17,10 @@ export type CompanyUse = {
 };
 
 export function companiesRepo(tx: Tx, t: string) {
+  return { ...companyReads(tx, t), ...companyWrites(tx, t) };
+}
+
+function companyReads(tx: Tx, t: string) {
   return {
     list: () =>
       one<{ companies: Company[]; use: CompanyUse[] }>(
@@ -44,7 +48,11 @@ export function companiesRepo(tx: Tx, t: string) {
           : sql`select jsonb_build_object(${COLS}) as j from contracts.companies co
               where co.tenant_id = ${t}::uuid and co.party_key = ${party}`,
       ),
+  };
+}
 
+function companyWrites(tx: Tx, t: string) {
+  return {
     /** Thêm (đã có ⇒ null, để báo 409). */
     insert: (c: Company) =>
       one<Company | null>(

@@ -14,28 +14,7 @@ const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
 
 export function serviceCustomersRepo(tx: Tx, t: string): ServiceCustomersRepo {
   return {
-    page: (productId, limit) =>
-      one<RawCustomersPage>(
-        tx,
-        sql`with r as (
-            select sc.id, sc.customer_name, sc.party_key, sc.contract_id, c.number as contract_number,
-              coalesce(nullif(c.fields -> 'title' ->> 'value', ''), c.number, c.title) as contract_title,
-              to_char(sc.started_on, 'YYYY-MM-DD') as started_on, to_char(sc.expires_on, 'YYYY-MM-DD') as expires_on,
-              (select n::int from (select contracts.as_bigint(c.fields -> 'notice_days' ->> 'value') as n) x
-                where n between 0 and 3650) as notice_days,
-              sc.renewals,
-              exists (select 1 from contracts.followups f where f.tenant_id = ${t}::uuid and f.user_id = ${ME}
-                and f.subject_id = sc.id::text and f.status <> 'done') as reminded
-            from contracts.service_customers sc
-            join contracts.contracts c on c.tenant_id = sc.tenant_id and c.id = sc.contract_id
-            where sc.tenant_id = ${t}::uuid and sc.product_id = ${productId}::uuid
-            order by sc.expires_on nulls last, sc.id limit ${limit}::int)
-          select jsonb_build_object(
-            'product', (select jsonb_build_object('id', p.id, 'name', p.name, 'group', p.grp) from contracts.products p
-              where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid),
-            'notice_default', (select b.renewal_notice_days from contracts.business_settings b where b.tenant_id = ${t}::uuid),
-            'rows', coalesce((select jsonb_agg(to_jsonb(r)) from r), '[]'::jsonb)) as j`,
-      ),
+    page: (productId, limit) => one<RawCustomersPage>(tx, pageQ(t, productId, limit)),
     target: (productId, customerId) =>
       one(
         tx,
@@ -65,4 +44,25 @@ export function serviceCustomersRepo(tx: Tx, t: string): ServiceCustomersRepo {
           updated_by = ${ME}, updated_at = now()`);
     },
   };
+}
+
+function pageQ(t: string, productId: string, limit: number) {
+  return sql`with r as (
+            select sc.id, sc.customer_name, sc.party_key, sc.contract_id, c.number as contract_number,
+              coalesce(nullif(c.fields -> 'title' ->> 'value', ''), c.number, c.title) as contract_title,
+              to_char(sc.started_on, 'YYYY-MM-DD') as started_on, to_char(sc.expires_on, 'YYYY-MM-DD') as expires_on,
+              (select n::int from (select contracts.as_bigint(c.fields -> 'notice_days' ->> 'value') as n) x
+                where n between 0 and 3650) as notice_days,
+              sc.renewals,
+              exists (select 1 from contracts.followups f where f.tenant_id = ${t}::uuid and f.user_id = ${ME}
+                and f.subject_id = sc.id::text and f.status <> 'done') as reminded
+            from contracts.service_customers sc
+            join contracts.contracts c on c.tenant_id = sc.tenant_id and c.id = sc.contract_id
+            where sc.tenant_id = ${t}::uuid and sc.product_id = ${productId}::uuid
+            order by sc.expires_on nulls last, sc.id limit ${limit}::int)
+          select jsonb_build_object(
+            'product', (select jsonb_build_object('id', p.id, 'name', p.name, 'group', p.grp) from contracts.products p
+              where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid),
+            'notice_default', (select b.renewal_notice_days from contracts.business_settings b where b.tenant_id = ${t}::uuid),
+            'rows', coalesce((select jsonb_agg(to_jsonb(r)) from r), '[]'::jsonb)) as j`;
 }

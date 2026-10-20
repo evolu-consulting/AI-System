@@ -54,15 +54,23 @@ function lockQ(tx: Tx, t: string): ReviewRepo["lock"] {
 
 /** ② Dòng hàng (sửa theo `id` / thêm mới) + bộ mốc (thay mốc AI/mặc định còn mở). Đếm để use case kiểm. */
 async function itemsAndMilestones(tx: Tx, t: string, id: string, w: ReviewWrite) {
-  const ms = (w.plan.milestones ?? []).map((m, ord) => ({ ...m, ord }));
   const rows = await tx.execute<{
     bad: number;
     unk: number;
     upd: number;
     ins: number;
     ms: number;
-  }>(sql`with
-    k as (
+  }>(sql`with ${itemCtes(t, id, w)}, ${milestoneCtes(t, id, w)}
+    select (select n from bad) as bad, (select n from unk) as unk, (select count(*)::int from up) as upd,
+      (select count(*)::int from ins) as ins, (select count(*)::int from mi) as ms`);
+  const r = rows[0];
+  if (!r) throw new Error("review-save: no row");
+  return r;
+}
+
+/** CTE `k` (HĐ + đối tác + đỉnh seq/ord) … `ins` của ②. */
+function itemCtes(t: string, id: string, w: ReviewWrite) {
+  return sql`k as (
       select c.id,
         contracts.party_key(
           c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value',
@@ -95,8 +103,13 @@ async function itemsAndMilestones(tx: Tx, t: string, id: string, w: ReviewWrite)
       select ${t}::uuid, k.id, k.top_ord + 1 + comp.ord, comp.name, comp.unit, comp.qty, comp.unit_price, true, true,
         comp.product_id, comp.comps
       from k, comp where comp.id is null and (select n from bad) = 0
-      returning id),
-    rp as (
+      returning id)`;
+}
+
+/** CTE `rp` (thay mốc AI/mặc định còn mở) + `mi` (mốc mới) của ②. */
+function milestoneCtes(t: string, id: string, w: ReviewWrite) {
+  const ms = (w.plan.milestones ?? []).map((m, ord) => ({ ...m, ord }));
+  return sql`rp as (
       update contracts.obligations o set status = 'replaced', updated_at = now()
       where ${w.plan.milestones !== null}::boolean and o.tenant_id = ${t}::uuid and o.contract_id = ${id}::uuid
         and o.source in ('ai', 'default') and o.status = 'open'
@@ -109,12 +122,7 @@ async function itemsAndMilestones(tx: Tx, t: string, id: string, w: ReviewWrite)
       from k, jsonb_to_recordset(${JSON.stringify(ms)}::jsonb) as m (ord int, kind text, direction text, due_date date,
         amount bigint, title text, owner text, source text)
       where ${w.plan.milestones !== null}::boolean
-      returning id)
-    select (select n from bad) as bad, (select n from unk) as unk, (select count(*)::int from up) as upd,
-      (select count(*)::int from ins) as ins, (select count(*)::int from mi) as ms`);
-  const r = rows[0];
-  if (!r) throw new Error("review-save: no row");
-  return r;
+      returning id)`;
 }
 
 function saveQ(tx: Tx, t: string): ReviewRepo["save"] {

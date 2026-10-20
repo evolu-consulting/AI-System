@@ -83,22 +83,38 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
       return Number(r[0]?.n ?? 0);
     },
     async apply(plans) {
-      const batch = JSON.stringify(
-        plans.map((p) => ({
-          id: p.id,
-          status: p.status,
-          prev: p.prev,
-          changed: p.changed,
-          next_at: p.nextAt?.toISOString() ?? null,
-          milestone: p.reminder?.milestone ?? null,
-          deadline: p.reminder?.deadline ?? null,
-          user_id: p.reminder?.userId ?? null,
-          title: p.reminder?.title ?? null,
-          body: p.reminder?.body ?? null,
-          link: p.reminder?.link ?? null,
-        })),
+      const [r] = await tx.execute<{ changed: number; reminded: number; notified: number }>(
+        applyQ(tenantId, batchJson(plans)),
       );
-      const [r] = await tx.execute<{ changed: number; reminded: number; notified: number }>(sql`
+      return {
+        statusChanged: r?.changed ?? 0,
+        reminded: r?.reminded ?? 0,
+        notified: r?.notified ?? 0,
+      };
+    },
+  };
+}
+
+const batchJson = (plans: Parameters<ReminderBatchRepo["apply"]>[0]) =>
+  JSON.stringify(
+    plans.map((p) => ({
+      id: p.id,
+      status: p.status,
+      prev: p.prev,
+      changed: p.changed,
+      next_at: p.nextAt?.toISOString() ?? null,
+      milestone: p.reminder?.milestone ?? null,
+      deadline: p.reminder?.deadline ?? null,
+      user_id: p.reminder?.userId ?? null,
+      title: p.reminder?.title ?? null,
+      body: p.reminder?.body ?? null,
+      link: p.reminder?.link ?? null,
+    })),
+  );
+
+/** MỘT câu CTE áp cả lô: trạng thái, lịch, nhắc, sự kiện, outbox, NOTIFY. */
+function applyQ(tenantId: string, batch: string) {
+  return sql`
         with x as (
           select * from jsonb_to_recordset(${batch}::jsonb) as x(id uuid, status text, prev text, changed boolean, next_at timestamptz,
             milestone int, deadline date, user_id uuid, title text, body text, link text)
@@ -140,12 +156,5 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
             'dedup_key', 'remind:' || s.id || ':' || to_char(s.deadline, 'YYYY-MM-DD') || ':' || s.milestone)) from sent s),
             '[]'::jsonb)) as notified,
           (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ev)
-            + (select count(*) from ob) as touched`);
-      return {
-        statusChanged: r?.changed ?? 0,
-        reminded: r?.reminded ?? 0,
-        notified: r?.notified ?? 0,
-      };
-    },
-  };
+            + (select count(*) from ob) as touched`;
 }

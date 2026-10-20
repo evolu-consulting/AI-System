@@ -38,10 +38,35 @@ export function productsRepo(tx: Tx, t: string): ProductsRepo {
         order by p.name_key limit ${q.limit}) x`,
     );
 
-  const get: ProductsRepo["get"] = (id) =>
-    one<ProductDetailOut | null>(
+  const get: ProductsRepo["get"] = (id) => one<ProductDetailOut | null>(tx, getQ(t, id));
+
+  /** Một CTE: SP + thành phần + quy tắc. HĐ nguồn phải thấy được (RLS HĐ) — không thấy ⇒ không thêm gì (null). */
+  const create: ProductsRepo["create"] = (p: ProductCreate, plan: ProductPlan) =>
+    one<ProductOut | null>(tx, createQ(t, p, plan));
+
+  const addRule: ProductsRepo["addRule"] = (productId, pattern, componentId) =>
+    one<ProductRuleOut | null>(
       tx,
-      sql`select ${productJson} || jsonb_build_object(
+      sql`insert into contracts.product_rules (tenant_id, product_id, component_id, pattern)
+        select p.tenant_id, p.id, ${componentId}::uuid, ${pattern} from contracts.products p
+        where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid
+          and (${componentId}::uuid is null or exists (select 1 from contracts.product_components c
+            where c.tenant_id = p.tenant_id and c.product_id = p.id and c.id = ${componentId}::uuid))
+        returning jsonb_build_object('id', id, 'pattern', pattern, 'component_id', component_id) as j`,
+    );
+
+  const deleteRule: ProductsRepo["deleteRule"] = async (productId, ruleId) =>
+    (
+      await tx.execute(sql`delete from contracts.product_rules
+        where tenant_id = ${t}::uuid and product_id = ${productId}::uuid and id = ${ruleId}::uuid returning id`)
+    ).length > 0;
+
+  return { list, get, create, addRule, deleteRule };
+}
+
+/** Chi tiết SP: SP + 200 lô + 100 dòng sổ mới nhất. */
+function getQ(t: string, id: string) {
+  return sql`select ${productJson} || jsonb_build_object(
           'lots', coalesce((select jsonb_agg(jsonb_build_object('id', l.id, 'component_id', l.component_id,
               'qty', trim_scale(l.qty)::text, 'remaining', trim_scale(l.remaining)::text,
               'received_on', l.received_on, 'expires_on', l.expires_on) order by l.seq desc)
@@ -55,14 +80,11 @@ export function productsRepo(tx: Tx, t: string): ProductsRepo {
             from (select m.* from contracts.stock_moves m join contracts.product_components c
                     on c.id = m.component_id and c.tenant_id = m.tenant_id
                   where m.tenant_id = p.tenant_id and c.product_id = p.id order by m.seq desc limit 100) m), '[]'::jsonb)) as j
-        from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${id}::uuid`,
-    );
+        from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${id}::uuid`;
+}
 
-  /** Một CTE: SP + thành phần + quy tắc. HĐ nguồn phải thấy được (RLS HĐ) — không thấy ⇒ không thêm gì (null). */
-  const create: ProductsRepo["create"] = (p: ProductCreate, plan: ProductPlan) =>
-    one<ProductOut | null>(
-      tx,
-      sql`with src as (
+function createQ(t: string, p: ProductCreate, plan: ProductPlan) {
+  return sql`with src as (
         select ${p.from_contract_id ?? null}::uuid as cid
         where ${p.from_contract_id ?? null}::uuid is null or exists (select 1 from contracts.contracts k
           where k.tenant_id = ${t}::uuid and k.id = ${p.from_contract_id ?? null}::uuid)),
@@ -93,25 +115,5 @@ export function productsRepo(tx: Tx, t: string): ProductsRepo {
           from c join jsonb_to_recordset(${json(plan.components)}) as x(ord int, name text, unit text, mode text) on x.ord = c.ord),
         'rules', coalesce((select jsonb_agg(jsonb_build_object('id', r.id, 'pattern', r.pattern, 'component_id', r.component_id))
           from r), '[]'::jsonb)) as j
-      from p`,
-    );
-
-  const addRule: ProductsRepo["addRule"] = (productId, pattern, componentId) =>
-    one<ProductRuleOut | null>(
-      tx,
-      sql`insert into contracts.product_rules (tenant_id, product_id, component_id, pattern)
-        select p.tenant_id, p.id, ${componentId}::uuid, ${pattern} from contracts.products p
-        where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid
-          and (${componentId}::uuid is null or exists (select 1 from contracts.product_components c
-            where c.tenant_id = p.tenant_id and c.product_id = p.id and c.id = ${componentId}::uuid))
-        returning jsonb_build_object('id', id, 'pattern', pattern, 'component_id', component_id) as j`,
-    );
-
-  const deleteRule: ProductsRepo["deleteRule"] = async (productId, ruleId) =>
-    (
-      await tx.execute(sql`delete from contracts.product_rules
-        where tenant_id = ${t}::uuid and product_id = ${productId}::uuid and id = ${ruleId}::uuid returning id`)
-    ).length > 0;
-
-  return { list, get, create, addRule, deleteRule };
+      from p`;
 }

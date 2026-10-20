@@ -26,15 +26,10 @@ const itemsJson = (
       group by mi.contract_item_id) dv on dv.contract_item_id = i.id
     where i.tenant_id = ${t}::uuid and i.contract_id = ${cid}), '[]'::jsonb)`;
 
-export function deliveryRepo(tx: Tx, t: string): DeliveryRepo {
-  return {
-    // Mỗi bảng có RLS đọc MỘT lần (policy M1 tốn ~0,3 ms mỗi lần đánh giá): dòng HĐ một lần, SL mốc một lần cho cả HĐ (đã giao
-    // theo dòng + bảng của mốc này cùng lượt quét), thành phần theo SP lấy từ chính `it`. Lọc HĐ bằng `= (select …)` (tham số
-    // InitPlan) chứ không join CTE ⇒ kế hoạch CHUNG của câu chuẩn bị sẵn vẫn đi index (đo: join ⇒ Seq Scan `milestone_items`).
-    load: (milestoneId) =>
-      one<DeliveryLoad | null>(
-        tx,
-        sql`with k as materialized (
+// Mỗi bảng có RLS đọc MỘT lần (policy M1 tốn ~0,3 ms mỗi lần đánh giá): dòng HĐ một lần, SL mốc một lần cho cả HĐ (đã giao
+// theo dòng + bảng của mốc này cùng lượt quét), thành phần theo SP lấy từ chính `it`. Lọc HĐ bằng `= (select …)` (tham số
+// InitPlan) chứ không join CTE ⇒ kế hoạch CHUNG của câu chuẩn bị sẵn vẫn đi index (đo: join ⇒ Seq Scan `milestone_items`).
+const loadQ = (t: string, milestoneId: string) => sql`with k as materialized (
             select o.id as mid, o.status, o.kind, o.qty, c.id, c.deal, c.end_date,
               contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value') as supplier
             from contracts.obligations o
@@ -65,8 +60,11 @@ export function deliveryRepo(tx: Tx, t: string): DeliveryRepo {
               where pc.tenant_id = ${t}::uuid
                 and pc.product_id = any (array(select it.product_id from it where it.product_id is not null))),
               '[]'::jsonb)) as j
-          from k`,
-      ),
+          from k`;
+
+export function deliveryRepo(tx: Tx, t: string): DeliveryRepo {
+  return {
+    load: (milestoneId) => one<DeliveryLoad | null>(tx, loadQ(t, milestoneId)),
     contractItems: async (contractId) =>
       (await one<DeliveryItemRow[] | null>(
         tx,

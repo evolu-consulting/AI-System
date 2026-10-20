@@ -38,9 +38,36 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
         contracts: RawSourcing["contracts"];
         choices: RawSourcing["choices"];
         n: number;
-      }>(
-        tx,
-        sql`with c as (
+      }>(tx, loadQ(t));
+      return {
+        contracts: j.contracts,
+        choices: j.choices,
+        truncated: j.n > SOURCING_CONTRACTS_MAX,
+      };
+    },
+    itemExists: async (contractId, line) =>
+      (
+        await tx.execute(sql`select 1 from contracts.contract_items i
+          where i.tenant_id = ${t}::uuid and i.contract_id = ${contractId}::uuid and i.ord = ${line}::int`)
+      ).length > 0,
+    setChoice: async (sale, src) => {
+      await tx.execute(sql`insert into contracts.sourcing_choices
+          (tenant_id, sale_contract_id, sale_line, source_contract_id, source_line, chosen_by)
+        values (${t}::uuid, ${sale.contract_id}::uuid, ${sale.line}::smallint, ${src.contract_id}::uuid,
+          ${src.line}::smallint, ${ME})
+        on conflict (tenant_id, sale_contract_id, sale_line) do update set source_contract_id = excluded.source_contract_id,
+          source_line = excluded.source_line, chosen_by = excluded.chosen_by, chosen_at = now()`);
+    },
+    clearChoice: async (sale) => {
+      await tx.execute(sql`delete from contracts.sourcing_choices
+        where tenant_id = ${t}::uuid and sale_contract_id = ${sale.contract_id}::uuid and sale_line = ${sale.line}::smallint`);
+    },
+  };
+}
+
+/** HĐ đã duyệt (≤ MAX + 1 để biết bị cắt) + dòng hàng + lựa chọn nguồn — MỘT câu. */
+function loadQ(t: string) {
+  return sql`with c as (
             select c.id, c.kind, c.parent_id, c.title, c.number, c.status, c.direction, c.end_date, c.created_at,
               contracts.as_date(c.fields -> 'effective_date' ->> 'value') as eff,
               json_build_object('key', contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value'),
@@ -67,30 +94,5 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
             'choices', coalesce((select json_agg(json_build_object('sale_contract_id', s.sale_contract_id,
                 'sale_line', s.sale_line, 'source_contract_id', s.source_contract_id, 'source_line', s.source_line))
               from (select * from contracts.sourcing_choices s where s.tenant_id = ${t}::uuid
-                limit ${CHOICES_MAX}::int) s), '[]'::json)) as j`,
-      );
-      return {
-        contracts: j.contracts,
-        choices: j.choices,
-        truncated: j.n > SOURCING_CONTRACTS_MAX,
-      };
-    },
-    itemExists: async (contractId, line) =>
-      (
-        await tx.execute(sql`select 1 from contracts.contract_items i
-          where i.tenant_id = ${t}::uuid and i.contract_id = ${contractId}::uuid and i.ord = ${line}::int`)
-      ).length > 0,
-    setChoice: async (sale, src) => {
-      await tx.execute(sql`insert into contracts.sourcing_choices
-          (tenant_id, sale_contract_id, sale_line, source_contract_id, source_line, chosen_by)
-        values (${t}::uuid, ${sale.contract_id}::uuid, ${sale.line}::smallint, ${src.contract_id}::uuid,
-          ${src.line}::smallint, ${ME})
-        on conflict (tenant_id, sale_contract_id, sale_line) do update set source_contract_id = excluded.source_contract_id,
-          source_line = excluded.source_line, chosen_by = excluded.chosen_by, chosen_at = now()`);
-    },
-    clearChoice: async (sale) => {
-      await tx.execute(sql`delete from contracts.sourcing_choices
-        where tenant_id = ${t}::uuid and sale_contract_id = ${sale.contract_id}::uuid and sale_line = ${sale.line}::smallint`);
-    },
-  };
+                limit ${CHOICES_MAX}::int) s), '[]'::json)) as j`;
 }

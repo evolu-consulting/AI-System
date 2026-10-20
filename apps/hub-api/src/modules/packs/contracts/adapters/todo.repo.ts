@@ -46,7 +46,11 @@ const REMIND = (
 ) => sql`coalesce((select s.config -> 'rating_remind' from contracts.score_configs_v2 s
     where s.tenant_id = ${t}::uuid and s.scope = 'settings'), '["end", "quarter"]'::jsonb) ? ${on}`;
 
-const sources = (t: string, w: TodoWindow, q = w.quarter) => sql`with
+const sources = (t: string, w: TodoWindow) =>
+  sql`with ${dueSources(t, w)}, ${ratingSources(t, w, w.quarter)}`;
+
+/** Nguồn hạn: mốc, hoa hồng, HĐ sắp hết, khách sắp hết, liên hệ gia hạn. */
+const dueSources = (t: string, w: TodoWindow) => sql`
   ms as (select o.id, o.contract_id, o.kind, o.direction, o.amount, o.title, o.due_date from contracts.obligations o
     where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind not in ('renewal', 'commission')
       and o.due_date <= ${w.horizon}::date and ${confirmedOf("o", t)}
@@ -74,7 +78,10 @@ const sources = (t: string, w: TodoWindow, q = w.quarter) => sql`with
       case when g.subject_id ~ ${UUID_RE} then g.subject_id::uuid end as sc_id
     from contracts.followups g
     where g.tenant_id = ${t}::uuid and g.user_id = ${ME} and g.status <> 'done' and g.subject_kind = 'renewal'
-    order by g.due_at, g.id limit ${LIM}::int),
+    order by g.due_at, g.id limit ${LIM}::int)`;
+
+/** Nguồn đánh giá (sau HĐ, sau quý) + HĐ thiếu file. */
+const ratingSources = (t: string, w: TodoWindow, q: TodoWindow["quarter"]) => sql`
   fin as (select o.contract_id, max(o.done_at) as last from contracts.obligations o
     where o.tenant_id = ${t}::uuid and o.status = 'done' and o.done_at >= ${w.today}::date - 30 and o.kind <> 'renewal'
     group by o.contract_id),

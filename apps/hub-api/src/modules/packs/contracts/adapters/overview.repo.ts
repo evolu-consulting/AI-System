@@ -22,7 +22,15 @@ export function overviewRepo(tx: Tx, t: string) {
   const months = (w: OverviewWindow): Promise<OverviewRaw> =>
     one<OverviewRaw>(
       tx,
-      sql`with p as (select ${w.from}::date as a, ${w.to}::date as b, ${w.profitFrom}::date as pa),
+      sql`with ${moneyCtes(t, w)}, ${costCtes(t)}, ${periodCtes()} ${monthsSelect(t)}`,
+    );
+  return { months };
+}
+export type OverviewRepo = ReturnType<typeof overviewRepo>;
+
+/** Kỳ `p`, mốc tiền `w`, HĐ `k`, chia 5.4a `bx`, số tiền hiệu lực `e`, HĐ bán trong kỳ lãi `sc`. */
+function moneyCtes(t: string, w: OverviewWindow) {
+  return sql`p as (select ${w.from}::date as a, ${w.to}::date as b, ${w.profitFrom}::date as pa),
       w as materialized (select o.id, o.contract_id, o.kind = 'commission' as com, o.amount, o.status = 'done' as done,
           o.due_date, o.done_at
         from contracts.obligations o, p
@@ -52,7 +60,12 @@ export function overviewRepo(tx: Tx, t: string) {
       e as materialized (select w.contract_id, w.due_date, w.done_at, w.done, w.com, k.deal = 'sell' and not w.com as rev, k.svc,
           coalesce(w.amount, case when (k.deal = 'sell' and not w.com) or (k.deal = 'referral' and w.com) then bx.eff end, 0) as amt
         from w join k on k.id = w.contract_id left join bx on bx.id = w.id),
-      sc as (select distinct e.contract_id as id from e, p where e.rev and e.due_date between p.pa and p.b),
+      sc as (select distinct e.contract_id as id from e, p where e.rev and e.due_date between p.pa and p.b)`;
+}
+
+/** Giá vốn theo dòng `il`, theo HĐ `cg`, hệ số lãi `rk`. */
+function costCtes(t: string) {
+  return sql`
       -- Giá vốn theo dòng: gom theo tập từ BẢNG gốc (có thống kê ⇒ hash join; nối các CTE ước lượng 1 hàng từng làm planner chọn
       -- nested loop O(n²) — đo 320 ms ở 1.000 dòng). Thành phần chọn riêng (component_ids) tra theo dòng.
       il as (select i.contract_id, i.product_id, i.qty * i.unit_price as net,
@@ -80,8 +93,12 @@ export function overviewRepo(tx: Tx, t: string) {
       -- Hệ số lãi của HĐ bán trong kỳ + kỳ trước: (giá trước VAT − giá vốn) ÷ giá trị HĐ; không dòng ⇒ 1 + thiếu giá vốn.
       rk as materialized (select sc.id, coalesce((coalesce(cg.net, k.value) - coalesce(cg.cogs, 0))::numeric
             / nullif(coalesce(nullif(k.value, 0), nullif(cg.net, 0)), 0), 1) as ratio, coalesce(cg.missing, true) as missing
-        from sc join k on k.id = sc.id left join cg on cg.id = sc.id),
-      ex as (select date_trunc('month', e.due_date) as m,
+        from sc join k on k.id = sc.id left join cg on cg.id = sc.id)`;
+}
+
+/** Gom theo tháng: dự kiến theo hạn `ex`, thực nhận theo ngày xác nhận `ac`. */
+function periodCtes() {
+  return sql`ex as (select date_trunc('month', e.due_date) as m,
           sum(e.amt) filter (where e.rev) as rev_exp, sum(e.amt) filter (where e.com) as comm_exp,
           coalesce(sum(floor(e.amt * rk.ratio)) filter (where e.rev and e.due_date >= p.pa), 0)
             + coalesce(sum(e.amt) filter (where e.com and e.due_date >= p.pa), 0) as profit,
@@ -91,8 +108,11 @@ export function overviewRepo(tx: Tx, t: string) {
         where e.due_date between p.a and p.b group by 1),
       ac as (select date_trunc('month', e.done_at) as m, sum(e.amt) filter (where e.rev) as rev_act,
           sum(e.amt) filter (where e.com) as comm_act
-        from e, p where e.done and e.done_at between p.a and p.b group by 1)
-      select jsonb_build_object(
+        from e, p where e.done and e.done_at between p.a and p.b group by 1)`;
+}
+
+function monthsSelect(t: string) {
+  return sql`select jsonb_build_object(
         'months', coalesce((select jsonb_agg(jsonb_build_object('m', to_char(coalesce(ex.m, ac.m), 'YYYY-MM'),
             'rev_exp', coalesce(ex.rev_exp, 0)::bigint, 'rev_act', coalesce(ac.rev_act, 0)::bigint,
             'comm_exp', coalesce(ex.comm_exp, 0)::bigint, 'comm_act', coalesce(ac.comm_act, 0)::bigint,
@@ -100,8 +120,5 @@ export function overviewRepo(tx: Tx, t: string) {
             'service', coalesce(ex.service, 0)::bigint, 'goods', coalesce(ex.goods, 0)::bigint) order by coalesce(ex.m, ac.m))
           from ex full join ac on ac.m = ex.m), '[]'::jsonb),
         'stock', (select coalesce(sum(pc.stock_value), 0)::bigint from contracts.product_components pc
-          where pc.tenant_id = ${t}::uuid and pc.mode in ('stock', 'quota'))) as j`,
-    );
-  return { months };
+          where pc.tenant_id = ${t}::uuid and pc.mode in ('stock', 'quota'))) as j`;
 }
-export type OverviewRepo = ReturnType<typeof overviewRepo>;

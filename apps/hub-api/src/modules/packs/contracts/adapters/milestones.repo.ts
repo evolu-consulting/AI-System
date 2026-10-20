@@ -76,23 +76,7 @@ export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
         sql`select ${msJson("o")} as j from contracts.obligations o
           where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced' for update`,
       ),
-    insert: (contractId, w, by) =>
-      one<MilestoneWritten>(
-        tx,
-        sql`with k as (
-          select c.id, ${partyOf("c")} as party,
-            (select coalesce(max(o.seq), 0) from contracts.obligations o
-              where o.tenant_id = ${t}::uuid and o.contract_id = c.id) as top
-          from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
-        u as (
-          insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, amount,
-            qty, title, owner, source)
-          select ${t}::uuid, k.id, k.party, ${w.direction}, ${w.kind}, k.top + 1, ${w.due_date}::date, ${w.amount}::bigint,
-            ${w.qty}::numeric, ${w.title}, ${w.owner}, 'manual' from k
-          returning *),
-        ${audit(t, "milestone_added", by, sql`jsonb_build_object('milestone_id', u.id, 'kind', u.kind)`)}
-        ${written(t)}`,
-      ),
+    insert: (contractId, w, by) => one<MilestoneWritten>(tx, insertQ(t, contractId, w, by)),
     update: (id, w, by) => one<MilestoneWritten>(tx, updateQ(t, id, w, by)),
     remove: async (id, by) => {
       const [r] = await tx.execute<{ n: number }>(sql`with u as (
@@ -106,6 +90,22 @@ export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
       return (r?.n ?? 0) > 0;
     },
   };
+}
+
+function insertQ(t: string, contractId: string, w: MilestoneWrite, by: string): SQL {
+  return sql`with k as (
+      select c.id, ${partyOf("c")} as party,
+        (select coalesce(max(o.seq), 0) from contracts.obligations o
+          where o.tenant_id = ${t}::uuid and o.contract_id = c.id) as top
+      from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
+    u as (
+      insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, amount,
+        qty, title, owner, source)
+      select ${t}::uuid, k.id, k.party, ${w.direction}, ${w.kind}, k.top + 1, ${w.due_date}::date, ${w.amount}::bigint,
+        ${w.qty}::numeric, ${w.title}, ${w.owner}, 'manual' from k
+      returning *),
+    ${audit(t, "milestone_added", by, sql`jsonb_build_object('milestone_id', u.id, 'kind', u.kind)`)}
+    ${written(t)}`;
 }
 
 function updateQ(t: string, id: string, w: MilestoneWrite & { moved: boolean }, by: string): SQL {
