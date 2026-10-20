@@ -20,7 +20,7 @@ type Window = Parameters<MyWorkRepo["list"]>[0];
 const sources = (t: string, w: Window) => sql`with ob as (
             select o.id, o.contract_id, o.direction, o.amount, o.due_date from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and o.due_date <= ${w.horizon}::date
-              and ${confirmedOf("o")}
+              and ${confirmedOf("o", t)}
             order by o.due_date, o.id limit ${LIM}::int),
           dl as (
             select c.id, c.action_deadline, c.number, c.title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
@@ -44,7 +44,7 @@ const sources = (t: string, w: Window) => sql`with ob as (
               and case when g.subject_kind <> 'obligation' then true
                 when g.subject_id !~ ${UUID_RE} then false
                 else exists (select 1 from contracts.obligations o
-                  where o.tenant_id = ${t}::uuid and o.id = g.subject_id::uuid and o.status = 'open' and ${confirmedOf("o")}) end
+                  where o.tenant_id = ${t}::uuid and o.id = g.subject_id::uuid and o.status = 'open' and ${confirmedOf("o", t)}) end
             order by g.due_at, g.id limit ${LIM}::int),
           rm as (
             select * from (

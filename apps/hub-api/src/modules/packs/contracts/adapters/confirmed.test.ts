@@ -10,11 +10,9 @@ describe("UAT B5 · CONFIRMED_STATUSES", () => {
       expect((CONFIRMED_STATUSES as readonly string[]).includes(s)).toBe(false);
   });
   it("mảnh SQL nối theo HĐ của đúng bí danh", () => {
-    const q = confirmedOf("x")
-      .queryChunks.map((c) => JSON.stringify(c))
-      .join("");
-    expect(q).toContain("ck.id = x.contract_id");
-    expect(q).toContain("'active'");
+    const q = JSON.stringify(confirmedOf("x", "t").queryChunks);
+    expect(q).toContain(".contract_id <> all");
+    expect(q).toContain("'active', 'expiring', 'expired', 'renewed', 'terminated'");
     expect(q).not.toContain("needs_review");
   });
 });

@@ -12,7 +12,7 @@ export function overdueRepo(tx: Tx, t: string): OverdueRepo {
       const [r] = await tx.execute<{ n: number }>(sql`with late as (
           select o.id from contracts.obligations o
           where o.tenant_id = ${t}::uuid and o.status = 'open' and o.party_key is not null
-            and o.overdue_for is distinct from o.due_date and o.due_date < ${today}::date and ${confirmedOf("o")}
+            and o.overdue_for is distinct from o.due_date and o.due_date < ${today}::date and ${confirmedOf("o", t)}
           order by o.due_date, o.id limit ${limit}::int
           for update skip locked),
         u as (

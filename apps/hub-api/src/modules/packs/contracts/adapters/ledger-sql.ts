@@ -18,11 +18,14 @@ export const CONFIRMED_STATUSES = [
 ] as const;
 /**
  * UAT CR-095 B5: đợt của bí danh `o` thuộc HĐ đã xác nhận — HĐ chờ xác nhận (needs_review, kể cả vừa mở lại do sửa MST) chưa có việc
- * tiền, như mgmt-app (đợt chỉ sinh khi HĐ được xác nhận). Semi-join theo PK HĐ; không thêm câu SQL.
+ * tiền, như mgmt-app (đợt chỉ sinh khi HĐ được xác nhận). Luật 4c: HĐ chưa xác nhận là số ít ⇒ gom id của chúng MỘT lần (InitPlan,
+ * index `contracts_status_idx`) rồi loại bằng `<> all(mảng)` — không semi-join từng đợt vào bảng HĐ (RLS HĐ chạy mỗi hàng: /payments
+ * 10.000 đợt p95 32 → 105 ms). Không thêm câu SQL.
  */
-export const confirmedOf = (o: string) =>
-  sql.raw(`exists (select 1 from contracts.contracts ck where ck.tenant_id = ${o}.tenant_id
-    and ck.id = ${o}.contract_id and ck.status in (${CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", ")}))`);
+const CONFIRMED_SQL = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
+export const confirmedOf = (o: string, t: string) =>
+  sql`${sql.raw(o)}.contract_id <> all (coalesce((select array_agg(ck.id) from contracts.contracts ck
+    where ck.tenant_id = ${t}::uuid and ck.status not in (${CONFIRMED_SQL})), '{}'::uuid[]))`;
 
 /** JSON một đợt từ bí danh `o` (cột của `contracts.obligations`). */
 export const obJson = (o: string) =>
