@@ -29,7 +29,8 @@ async function counts() {
         `${R}/history?party=${encodeURIComponent(party)}&role=customer&months=12`,
       ),
     );
-  await list(); // ấm: kế hoạch truy vấn, cache quyền
+  // ấm: kế hoạch truy vấn, cache quyền, kết nối pool mới (đọc song song mở thêm kết nối)
+  for (const f of [list, one, hist, list, one, hist]) await f();
   return { list: await count(list), one: await count(one), hist: await count(hist) };
 }
 

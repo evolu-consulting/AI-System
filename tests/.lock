@@ -1108,7 +1108,7 @@ fdc0cc05e3d5cca16cfe72f4a8e90dff03e0b6a55285034b3f9766cfccf340e4  tests/acceptan
 a03265e5682b95cd64bdbd398f86f31bb28b1f7b49297cc7966c789b28cda07a  tests/acceptance/V2-E/perf/reputation.perf.int.test.ts
 0b182866867e198aaa19b0c1d272535a6eefbd3f37a00b38a3ee91557c0e27b5  tests/acceptance/V2-E/ratings-locks.int.test.ts
 5c0729fb5ca341f7323d6b881551573165256923b5bc1e3af471bc0eddd3692a  tests/acceptance/V2-E/scoring.int.test.ts
-824e87e8ecabc9bd3f797f0fd3a4c5d787802d493b451a176ebf9ee84709e304  tests/acceptance/V2-E/sqlcount.int.test.ts
+94cac8a1be6b683a9447406f348ba954971d15087284b9597baf7d9344262191  tests/acceptance/V2-E/sqlcount.int.test.ts
 880673bcfa598d77984d040c64d405e8acf30ae6793e18fef4f35a8a5f6b50b1  tests/acceptance/X1/_modules.ts
 a3c8834cd8d0f154ff5eccb812ec7435fff0849a9d997ac2b8aea469ac177706  tests/acceptance/X1/_x1.ts
 034f5a531f2f8f47f362556105db1077bad03d4c0062cea0fffa66ae54ed2c87  tests/acceptance/X1/bundle-secret.test.ts
