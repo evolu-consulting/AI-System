@@ -105,3 +105,5 @@ Mọi lệnh dưới chạy trên máy chủ: `cd ~/workspace/sohoptac2; dc() { 
 - Hiện cây phòng ban (cha/thứ tự) ở contracts-web Cài đặt › Phòng ban (cần thêm trường vào `OrgResponse`).
 - sohoptac thật có > 1 org ⇒ cần quyết định gộp (D-NO-05).
 - FileBox sink cho CLI importer (I1 "Còn lại") vẫn mở — production phải có trước bước 7.
+
+- D-NITI-09 (người dùng 2026-10-20): sohoptac cũ chỉ có 3 org dữ liệu thử/demo (.test) ⇒ KHÔNG nhập; NitiGroup trên sohoptac2 bắt đầu trống. Đã xoá niti-b-run.sh + niti-out/ trên máy chủ.
