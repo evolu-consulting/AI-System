@@ -50,7 +50,9 @@ describe("L1 · Semaphore", () => {
     g.open();
     await Promise.all([a, b]);
   });
+});
 
+describe("L1 · Semaphore · lỗi", () => {
   test("fn ném lỗi vẫn trả slot", async () => {
     const s = new Semaphore(1, 0);
     await expect(s.run(() => Promise.reject(new Error("x")))).rejects.toThrow("x");

@@ -14,8 +14,9 @@ export function forwardedIp(xff: string | undefined, hops: number): string | nul
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
-  if (parts.length === 0) return null;
-  return parts[Math.max(0, parts.length - hops)] ?? null;
+  // L1c (A-6): ít phần tử hơn số proxy tin cậy ⇒ phần còn lại do client tự ghi ⇒ không tin (xô `unknown`).
+  if (parts.length < hops) return null;
+  return parts[parts.length - hops] ?? null;
 }
 
 export function clientIp(c: Context, trustProxyHops: number): string | null {

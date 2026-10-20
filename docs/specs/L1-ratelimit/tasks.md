@@ -33,7 +33,12 @@ Làn: **đầy đủ về rủi ro (auth)** nhưng chạy theo Luật 0b (một 
 - Perf login p95: không limiter 66.8 ms → có limiter 80.7 ms (NFR < 150 ms, đạt). N5b legacy perf vẫn đạt (58.0 / 49.3 / 44.9 ms).
 - Không lộ tài khoản: median 401 có thật 46.9 ms · lạ 47.1 ms.
 
+## L1c — sửa sau review A (cr095-wave-A) và C (cr095-wave-C)
+- **A-3 (Trung):** PRE giữ chỗ lượt đang verify trong zset `p:<acct>` (điểm = hạn giữ chỗ 30 s theo `now` app), nguyên tử cùng kiểm khoá: `lần sai đã ghi + lượt đang chạy ≥ 5` ⇒ 429 `RATE_LIMITED {retry_after_s: 1}` trước mọi phép băm (tài khoản lạ cũng vậy). FAIL/SUCCESS nhả chỗ trong cùng lệnh; lượt dừng giữa chừng (khoá DB, lỗi) nhả bằng `finally`; tiến trình chết ⇒ chỗ tự hết hạn. Một đợt song song nay tối đa 5 lần verify mỗi chu kỳ khoá (trước: ~ hashSlots + 100).
+- **A-6 (Thấp):** XFF ít phần tử hơn `TRUST_PROXY_HOPS` ⇒ không tin (xô `unknown`); IPv6 gộp theo /64 trong `ipId`.
+- **A-7 (Thấp, đánh đổi đã biết — ghi nhận):** ai biết (tenant_key, username) cũng khoá tạm được tài khoản (5 lần sai, backoff tới 4h, đúng mật khẩu vẫn 423). Chấp nhận vì không lộ tài khoản và chặn đoán mật khẩu; vận hành: admin gỡ khoá qua `POST /admin/users/:id/unlock` (xoá cả Redis), audit `login_lockout` cho biết tài khoản bị nhắm. Chưa làm: gỡ khoá hàng loạt, không tăng bậc khi lượt sai đến từ IP đã 429.
+- **T-10:** `limit.int.test.ts` sắp audit theo `seq` (không theo uuid ngẫu nhiên). Tệp nằm ngoài `tests/.lock` (chỉ khoá `tests/acceptance/**`, `e2e/**`) ⇒ không cần relock.
+- **Review C:** `limit.rules.ts` không còn import `crypto` — cổng `Hasher` + `accountIdWith`, adapter SHA-256 ở `limit.keys.ts` (depcruise rules-must-be-pure xanh cho L1); `check:fn` hết vi phạm L1 (`authRoutes` tách `metaOf`/`ipGate`/`refreshRoute`, `recordLoginFail` gom tham số, helper test `post`/`login` nhận object, tách 2 `describe` > 50 dòng).
+
 ## Việc còn lại
-- FE (admin-web/chat-web/studio-web/contracts-web): hiện câu riêng cho `RATE_LIMITED`/`AUTH_UNAVAILABLE` (hiện rơi về lỗi chung).
-- Deploy staging/production: đặt `REDIS_URL`, `TRUST_PROXY_HOPS` cho admin-api.
-- Nhiều request song song cùng tài khoản có thể vượt 5 lần trước khi `fail` ghi (đã có trần IP + semaphore chặn quy mô).
+- Deploy staging/production: đặt `REDIS_URL`, `TRUST_PROXY_HOPS` cho admin-api (đã ghi trong `docs/guides/deploy.md` §5 ở L1b).

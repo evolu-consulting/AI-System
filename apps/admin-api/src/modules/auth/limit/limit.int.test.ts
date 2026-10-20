@@ -31,6 +31,7 @@ const ID = {
   dan: "01900000-0000-7000-8000-0000000011b3",
   leg: "01900000-0000-7000-8000-0000000011b4",
   eve: "01900000-0000-7000-8000-0000000011b5",
+  fay: "01900000-0000-7000-8000-0000000011b6",
 };
 const PW = "bí mật 123";
 const LEGACY = importableHash(
@@ -81,16 +82,15 @@ async function post(
   app: App,
   path: string,
   body: unknown,
-  ip: string,
-  token?: string,
+  o: { ip: string; token?: string },
 ): Promise<Res> {
   const t0 = performance.now();
   const res = await app.request(path, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": `6.6.6.6, ${ip}`,
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      "x-forwarded-for": `6.6.6.6, ${o.ip}`,
+      ...(o.token ? { authorization: `Bearer ${o.token}` } : {}),
     },
     body: JSON.stringify(body),
   });
@@ -102,8 +102,8 @@ async function post(
     ms: performance.now() - t0,
   };
 }
-const login = (app: App, username: string, password: string, ip = freshIp(), tenant = "l1-acme") =>
-  post(app, "/auth/login", { tenant_key: tenant, username, password }, ip);
+const login = (app: App, username: string, password: string, ip = freshIp()) =>
+  post(app, "/auth/login", { tenant_key: "l1-acme", username, password }, { ip });
 
 /** n lần sai, mỗi lần một IP mới (không đụng trần IP); trả status từng lần. */
 async function failN(app: App, username: string, n: number): Promise<number[]> {
@@ -114,7 +114,7 @@ async function failN(app: App, username: string, n: number): Promise<number[]> {
 
 const auditOf = (id: string) =>
   owner<{ action: string; summary: Record<string, unknown> | null; actor_id: string | null }[]>`
-    select action, summary, actor_id from admin.audit_log where entity_id = ${id} order by id`;
+    select action, summary, actor_id from admin.audit_log where entity_id = ${id} order by seq`;
 
 beforeAll(async () => {
   await resetTestDb(OWNER);
@@ -125,7 +125,7 @@ beforeAll(async () => {
     (${ID.boss}, ${TID}, 'boss', 'boss@l1.test', ${h}, 'B', 'tenant_admin'),
     (${ID.an}, ${TID}, 'an', null, ${h}, 'A', 'member'), (${ID.cleo}, ${TID}, 'cleo', null, ${h}, 'C', 'member'),
     (${ID.dan}, ${TID}, 'dan', null, ${h}, 'D', 'member'), (${ID.leg}, ${TID}, 'leg', null, ${LEGACY}, 'L', 'member'),
-    (${ID.eve}, ${TID}, 'eve', null, ${h}, 'E', 'member')`;
+    (${ID.eve}, ${TID}, 'eve', null, ${h}, 'E', 'member'), (${ID.fay}, ${TID}, 'fay', null, ${h}, 'F', 'member')`;
   await owner`update admin.users set must_change_password = false where tenant_id = ${TID}`;
   const { privateKey, publicKey } = generateKeyPairSync("ed25519");
   keys = await loadJwtKeys({
@@ -178,6 +178,44 @@ describe("L1 · khoá theo tài khoản", () => {
   });
 });
 
+describe("L1c · A-3 · đợt song song không vượt ngân sách 5 lần sai", () => {
+  /** 20 lượt sai cùng lúc, mỗi lượt một IP: chỉ ≤ 5 lượt được verify (401), còn lại 429/423 trước mọi phép băm. */
+  async function burst(app: App, username: string): Promise<number[]> {
+    const rs = await Promise.all(
+      Array.from({ length: 20 }, () => login(app, username, "sai-mat-khau")),
+    );
+    return rs.map((r) => r.status);
+  }
+  const count = (xs: number[], s: number) => xs.filter((x) => x === s).length;
+
+  test("L1c · tài khoản có thật và tài khoản lạ: ≤ 5 lần 401, phần còn lại 429/423; sau đợt thì khoá, đúng mật khẩu ⇒ 423", async () => {
+    const app = mkApp();
+    for (const name of ["fay", "ghost-burst"]) {
+      const st = await burst(app, name);
+      expect(count(st, 401)).toBeGreaterThan(0);
+      expect(count(st, 401)).toBeLessThanOrEqual(5);
+      expect(st.every((s) => s === 401 || s === 429 || s === 423)).toBe(true);
+      const after = await login(app, name, PW);
+      expect(after.status).toBe(423);
+    }
+    const [row] = await owner<{ n: number }[]>`
+      select count(*)::int n from admin.audit_log where entity_id = ${ID.fay}
+        and summary->>'op' = 'login_lockout'`;
+    expect(row?.n).toBe(1);
+    clock += 16 * MIN;
+    expect((await login(app, "fay", PW)).status).toBe(200);
+  }, 30_000);
+
+  test("L1c · lượt bị khoá DB (không verify) vẫn nhả chỗ: lượt sau không kẹt 429", async () => {
+    const app = mkApp();
+    const now = new Date(clock).toISOString();
+    await owner`update admin.users set locked_until = ${now}::timestamptz + interval '1 minute' where id = ${ID.fay}`;
+    for (let i = 0; i < 7; i++) expect((await login(app, "fay", PW)).status).toBe(423);
+    await owner`update admin.users set locked_until = null, failed_logins = 0 where id = ${ID.fay}`;
+    expect((await login(app, "fay", PW)).status).toBe(200);
+  });
+});
+
 describe("L1 · không lộ tài khoản", () => {
   test("L1 · tài khoản lạ và có thật: cùng chuỗi status, cùng body 401/423, cùng `until`; thời gian 401 cùng lớp", async () => {
     const app = mkApp();
@@ -221,12 +259,13 @@ describe("L1 · trần theo IP", () => {
   test("L1 · /auth/totp/verify và /auth/change-password dùng chung trần IP", async () => {
     const app = mkApp({ policy: { ipMaxAttempts: 2 } });
     const ip = "203.0.113.60";
-    const totp = () => post(app, "/auth/totp/verify", { totp_token: "x.y.z", code: "123456" }, ip);
+    const totp = () =>
+      post(app, "/auth/totp/verify", { totp_token: "x.y.z", code: "123456" }, { ip });
     expect([400, 401]).toContain((await totp()).status);
     const pw = { change_token: "x.y.z", new_password: "mat-khau-moi-123" };
-    expect([400, 401]).toContain((await post(app, "/auth/change-password", pw, ip)).status);
+    expect([400, 401]).toContain((await post(app, "/auth/change-password", pw, { ip })).status);
     expect((await totp()).status).toBe(429);
-    expect((await post(app, "/auth/change-password", pw, ip)).status).toBe(429);
+    expect((await post(app, "/auth/change-password", pw, { ip })).status).toBe(429);
     clock += 10 * MIN;
   });
 });
@@ -244,7 +283,7 @@ describe("L1 · Redis chết ⇒ 503 (đóng an toàn)", () => {
       app,
       "/auth/totp/verify",
       { totp_token: "x.y.z", code: "123456" },
-      freshIp(),
+      { ip: freshIp() },
     );
     expect(t.status).toBe(503);
   });
@@ -258,7 +297,7 @@ describe("L1 · admin gỡ khoá", () => {
     const boss = await login(app, "boss", PW);
     expect([boss.status, boss.body.error?.code]).toEqual([200, undefined]);
     const token = boss.body.access_token as string;
-    const u = await post(app, `/admin/users/${ID.cleo}/unlock`, {}, freshIp(), token);
+    const u = await post(app, `/admin/users/${ID.cleo}/unlock`, {}, { ip: freshIp(), token });
     expect([u.status, u.body.error?.code]).toEqual([200, undefined]);
     expect(u.body.locked_until).toBeNull();
     const after = await login(app, "cleo", PW);
@@ -268,7 +307,7 @@ describe("L1 · admin gỡ khoá", () => {
       ["update", "login_lockout", null],
       ["unlock", "login_lockout_clear", ID.boss],
     ]);
-    const again = await post(app, `/admin/users/${ID.cleo}/unlock`, {}, freshIp(), token);
+    const again = await post(app, `/admin/users/${ID.cleo}/unlock`, {}, { ip: freshIp(), token });
     expect(again.status).toBe(200);
     expect(await auditOf(ID.cleo)).toHaveLength(2);
   });

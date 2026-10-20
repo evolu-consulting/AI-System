@@ -15,22 +15,14 @@ import {
   CHANGE_TOKEN_TTL_S,
   canSignIn,
   changeTokenMatches,
-  classifyRefresh,
   clearExpiredLock,
   isTempLocked,
   normalizeLoginId,
   type RevokeReason,
 } from "./auth.rules";
-import {
-  type AuthCtx,
-  type ClientMeta,
-  issueSession,
-  type Session,
-  sha256,
-  toMe,
-} from "./auth.session";
-import { accountId } from "./limit/limit.rules";
-import { checkLogin, hashSlot, recordLoginFail, recordLoginSuccess } from "./limit/limit.service";
+import { type AuthCtx, type ClientMeta, issueSession, type Session, toMe } from "./auth.session";
+import { accountId } from "./limit/limit.keys";
+import { hashSlot, type LoginSlot, openLoginSlot } from "./limit/limit.service";
 import { loginNextStep, TOTP_TOKEN_TTL_S } from "./totp/totp.rules";
 
 export type { AuthCtx, ClientMeta, Session } from "./auth.session";
@@ -94,15 +86,40 @@ export async function login(
   const username = normalizeLoginId(input.username);
   const now = ctx.now();
   // L1 (#224): giới hạn theo (tenant_key, username) — cả tài khoản không tồn tại — và theo IP, trước mọi phép băm.
-  const lim = ctx.limiter ? { l: ctx.limiter, acct: accountId(tenantKey, username) } : null;
-  if (lim) await checkLogin(lim.l, meta.ip ?? null, lim.acct, now);
-  const u = await findLoginUser(ctx, tenantKey, username);
+  // L1c (A-3): lượt giữ chỗ trong Redis; finally nhả chỗ nếu lượt không kết thúc bằng sai/đúng mật khẩu.
+  const slot = ctx.limiter
+    ? await openLoginSlot(
+        { db: ctx.db, limiter: ctx.limiter },
+        meta.ip ?? null,
+        accountId(tenantKey, username),
+        now,
+      )
+    : null;
+  try {
+    return await verifyAndContinue(ctx, { input, meta, now, tenantKey, username, slot });
+  } finally {
+    await slot?.release();
+  }
+}
+
+type LoginRun = {
+  input: LoginRequest;
+  meta: ClientMeta;
+  now: Date;
+  tenantKey: string;
+  username: string;
+  slot: LoginSlot | null;
+};
+
+async function verifyAndContinue(ctx: AuthCtx, r: LoginRun): Promise<LoginResult> {
+  const { input, meta, now, slot } = r;
+  const u = await findLoginUser(ctx, r.tenantKey, r.username);
   const opts = {
     dummyHash: ctx.dummyHash,
     legacyOn: legacyActive(now, ctx.legacySunset ?? DEFAULT_LEGACY_SUNSET),
   };
   const failed = async (who: AuthUser | null) => {
-    if (lim) await recordLoginFail({ db: ctx.db, limiter: lim.l }, lim.acct, who, now);
+    await slot?.fail(who);
     return appError("INVALID_CREDENTIALS");
   };
   if (!u) {
@@ -116,7 +133,7 @@ export async function login(
     await recordFailedLogin(ctx, u, now);
     throw await failed(u);
   }
-  if (lim) await recordLoginSuccess(lim.l, lim.acct);
+  await slot?.ok();
   // N5B-FR-03: hash argon2id đã băm song song lúc verify (ngoài tx); ghi trong tx của bước sau mật khẩu.
   const rehash = v.rehash ? { from: u.passwordHash, to: v.rehash } : null;
   return afterPasswordOk(ctx, u, meta, { now, rehash });
@@ -201,72 +218,7 @@ async function afterPasswordOk(
   return { kind: "session", ...session };
 }
 
-type FoundRefresh = { tid: string; token: repo.RefreshRow; user: AuthUser | null };
-
-async function findRefreshToken(ctx: AuthCtx, hash: Buffer): Promise<FoundRefresh | null> {
-  return withScope(ctx.db, NIL_SCOPE, async (tx) => {
-    const tid = await repo.tenantIdByRefreshHash(tx, hash);
-    if (!tid) return null;
-    await setScope(tx, tenantScope(tid));
-    const token = await repo.findRefresh(tx, tid, hash);
-    if (!token) return null;
-    return { tid, token, user: await repo.findUserById(tx, tid, token.userId) };
-  });
-}
-
-async function rotate(
-  ctx: AuthCtx,
-  f: FoundRefresh,
-  u: AuthUser,
-  meta: ClientMeta,
-): Promise<Session> {
-  return withScope(ctx.db, tenantScope(f.tid), async (tx: Tx) => {
-    await repo.lockUserShared(tx, f.tid, u.id);
-    // Đọc lại dưới khoá: user có thể vừa bị khoá/tenant khoá trước khi ta giữ được hàng.
-    const fresh = await repo.findUserById(tx, f.tid, u.id);
-    if (!fresh || !canSignIn(fresh, fresh.tenant.active)) throw appError("INVALID_REFRESH_TOKEN");
-    const id = Bun.randomUUIDv7();
-    // Request song song thua race: UPDATE chờ khoá hàng rồi thấy revoked_at đã đặt → 0 hàng.
-    if (!(await repo.rotateRefresh(tx, f.tid, f.token.id, id)))
-      throw appError("REFRESH_SUPERSEDED");
-    const family = { id: f.token.familyId, expiresAt: f.token.expiresAt };
-    return issueSession(ctx, tx, fresh, { ...meta, id, family });
-  });
-}
-
-/** Refresh (FR-02): valid → xoay; rotated ≤ 10 s → SUPERSEDED; thu hồi khác → thu hồi cả chuỗi. */
-export async function refresh(
-  ctx: AuthCtx,
-  token: string | undefined,
-  meta: ClientMeta,
-): Promise<Session> {
-  if (!token) throw appError("INVALID_REFRESH_TOKEN");
-  const f = await findRefreshToken(ctx, sha256(token));
-  if (!f) throw appError("INVALID_REFRESH_TOKEN");
-  const verdict = classifyRefresh(f.token, f.token.dbNow);
-  if (verdict === "superseded") throw appError("REFRESH_SUPERSEDED");
-  if (verdict === "reuse") {
-    await withScope(ctx.db, tenantScope(f.tid), (tx) =>
-      repo.revokeFamily(tx, f.tid, f.token.familyId, "reuse"),
-    );
-    throw appError("INVALID_REFRESH_TOKEN");
-  }
-  const u = f.user;
-  if (verdict === "expired" || !u || !canSignIn(u, u.tenant.active)) {
-    throw appError("INVALID_REFRESH_TOKEN");
-  }
-  return rotate(ctx, f, u, meta);
-}
-
-/** Logout (FR-03): idempotent, token lạ/đã thu hồi vẫn thành công. */
-export async function logout(ctx: AuthCtx, token: string | undefined): Promise<void> {
-  if (!token) return;
-  const f = await findRefreshToken(ctx, sha256(token));
-  if (!f || f.token.revokedAt !== null) return;
-  await withScope(ctx.db, tenantScope(f.tid), (tx) =>
-    repo.revokeRefresh(tx, f.tid, f.token.id, "logout"),
-  );
-}
+export { logout, refresh } from "./auth.refresh";
 
 export type Actor = { userId: string; tenantId: string; sid: string | null };
 

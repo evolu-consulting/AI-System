@@ -1,8 +1,6 @@
 // L1 (TECH-DEBT #224) · ADM-FR-07 · luật giới hạn đăng nhập dạng hàm thuần (không I/O; giờ truyền vào).
 // Theo tài khoản: khoá theo (tenant_key, username) đã chuẩn hoá — CẢ tài khoản không tồn tại, để 423 không lộ tài khoản có thật.
 // Theo IP: cửa sổ cố định. Bản Lua trong limit.redis.ts làm đúng các luật này một cách nguyên tử; test unit giữ hai bên khớp.
-import { createHash } from "node:crypto";
-
 export type LimitPolicy = {
   /** Số lần sai liên tiếp tới khi khoá (giống M1: lần 5 vẫn 401, lần 6 thấy 423). */
   accountMaxFails: number;
@@ -74,13 +72,39 @@ export function retryAfterS(until: number, now: number): number {
   return Math.max(1, Math.ceil((until - now) / 1000));
 }
 
-/** Khoá tài khoản: SHA-256 của tenant_key + NUL + username (đã chuẩn hoá) — không đưa tên người dùng thô vào Redis. */
-export function accountId(tenantKey: string, username: string): string {
-  return createHash("sha256").update(`${tenantKey}\u0000${username}`).digest("hex");
+/** Cổng băm (L1c, review C: rules thuần, không import crypto) — adapter `limit.keys.ts` nối SHA-256. */
+export type Hasher = (input: string) => string;
+
+/** Khoá tài khoản: băm(tenant_key + NUL + username đã chuẩn hoá) — không đưa tên người dùng thô vào Redis. */
+export function accountIdWith(hash: Hasher, tenantKey: string, username: string): string {
+  return hash(`${tenantKey}\u0000${username}`);
 }
 
-/** IP rỗng/không đọc được dồn chung một xô (an toàn: vẫn bị giới hạn). Bỏ ký tự lạ, cắt 64. */
+const HEXTET = /^[0-9a-f]{1,4}$/;
+
+/** IPv6 thuần ⇒ tiền tố /64 ("2001:db8:0:1::/64"); IPv4-mapped / hỏng ⇒ null. */
+function v6Prefix64(s: string): string | null {
+  if (!s.includes(":") || s.includes(".")) return null;
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const gap = 8 - head.length - tail.length;
+  if (gap < 0 || (halves.length === 1 && gap !== 0)) return null;
+  const all = [...head, ...Array<string>(gap).fill("0"), ...tail];
+  if (!all.every((h) => HEXTET.test(h))) return null;
+  return `${all
+    .slice(0, 4)
+    .map((h) => h.replace(/^0+(?=.)/, ""))
+    .join(":")}::/64`;
+}
+
+/**
+ * IP rỗng/không đọc được dồn chung một xô (an toàn: vẫn bị giới hạn). Bỏ ký tự lạ, cắt 64. L1c (A-6): IPv6 gộp theo /64
+ * — một máy thường có cả /64, xoay địa chỉ trong đó không né được trần IP.
+ */
 export function ipId(ip: string | null | undefined): string {
   const s = (ip ?? "").trim().toLowerCase();
-  return /^[0-9a-f.:]{1,64}$/.test(s) ? s : "unknown";
+  if (!/^[0-9a-f.:]{1,64}$/.test(s)) return "unknown";
+  return v6Prefix64(s) ?? s;
 }

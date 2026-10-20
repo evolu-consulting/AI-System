@@ -9,9 +9,11 @@ describe("L1 · forwardedIp", () => {
     expect(forwardedIp("203.0.113.7", 1)).toBe("203.0.113.7");
   });
 
-  test("2 proxy: phần tử thứ 2 từ cuối; ít phần tử hơn số hop ⇒ phần tử đầu", () => {
+  test("2 proxy: phần tử thứ 2 từ cuối; L1c (A-6) ít phần tử hơn số hop ⇒ null (không tin phần client ghi)", () => {
     expect(forwardedIp("1.1.1.1, 203.0.113.7, 10.0.0.2", 2)).toBe("203.0.113.7");
-    expect(forwardedIp("203.0.113.7", 2)).toBe("203.0.113.7");
+    expect(forwardedIp("203.0.113.7, 10.0.0.2", 2)).toBe("203.0.113.7");
+    expect(forwardedIp("203.0.113.7", 2)).toBeNull();
+    expect(forwardedIp("6.6.6.6", 3)).toBeNull();
   });
 
   test("không có header / hops = 0 / rỗng ⇒ null", () => {

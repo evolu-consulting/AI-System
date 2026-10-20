@@ -8,8 +8,9 @@ import { AppError, isAppError } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
 import { type Semaphore, SemaphoreFullError } from "../../../lib/semaphore";
 import { tempLocked } from "../auth.errors";
+import { accountId } from "./limit.keys";
 import type { LoginLimiter } from "./limit.redis";
-import { accountId, ipId, retryAfterS } from "./limit.rules";
+import { ipId, retryAfterS } from "./limit.rules";
 
 const MESSAGES: Record<AuthLimitErrorCode, string> = {
   RATE_LIMITED: "Too many sign-in attempts; try again later",
@@ -37,16 +38,52 @@ async function store<T>(op: string, p: Promise<T>): Promise<T> {
   }
 }
 
-/** Trước login: IP +1 (429 khi vượt) rồi khoá tài khoản (423 `{until}`) — trước mọi phép băm. */
-export async function checkLogin(
-  l: LoginLimiter,
+/** Một lượt login đã giữ chỗ (A-3): kết thúc bằng đúng một trong fail/ok; `release` (finally) nhả chỗ nếu chưa kết thúc. */
+export type LoginSlot = {
+  fail(u: LockedUser | null): Promise<void>;
+  ok(): Promise<void>;
+  release(): Promise<void>;
+};
+
+/**
+ * Trước login: IP +1 (429 khi vượt), khoá tài khoản (423 `{until}`), rồi giữ chỗ lượt verify — đủ chỗ (lần sai đã ghi +
+ * lượt đang chạy = trần) ⇒ 429 `retry_after_s: 1`. Tất cả trước mọi phép băm, cùng cách cho tài khoản lạ.
+ */
+export async function openLoginSlot(
+  x: { db: Db; limiter: LoginLimiter },
   ip: string | null,
   account: string,
   now: Date,
-): Promise<void> {
-  const r = await store("pre", l.pre(ipId(ip), account, now.getTime()));
+): Promise<LoginSlot> {
+  const l = x.limiter;
+  const token = Bun.randomUUIDv7();
+  const r = await store("pre", l.pre(ipId(ip), account, now.getTime(), token));
   if (r.kind === "ip_limited") throw rateLimited(retryAfterS(r.resetAt, now.getTime()));
   if (r.kind === "locked") throw tempLocked(new Date(r.until));
+  if (r.kind === "busy") throw rateLimited(1);
+  let open = true;
+  const settle = async (p: Promise<unknown>, op: string) => {
+    open = false;
+    await store(op, p);
+  };
+  return {
+    fail: async (u) => {
+      open = false;
+      await recordLoginFail(x, { account, token, now }, u);
+    },
+    ok: () => settle(l.success(account, token), "success"),
+    release: async () => {
+      if (!open) return;
+      open = false;
+      // Không che lỗi gốc của lượt; chỗ giữ tự hết hạn sau RESERVE_MS nếu Redis lỗi.
+      await l.release(account, token).catch((err: unknown) => {
+        logger.warn("auth-limit-store", {
+          op: "release",
+          error: err instanceof Error ? err.message : "?",
+        });
+      });
+    },
+  };
 }
 
 /** Endpoint kiểm mật khẩu/OTP khác (TOTP, đổi mật khẩu): chỉ IP. */
@@ -58,13 +95,12 @@ export async function checkIp(l: LoginLimiter, ip: string | null, now: Date): Pr
 export type LockedUser = { id: string; tenantId: string; username: string };
 
 /** Một lần sai: khoá mới + tài khoản có thật ⇒ audit (tx riêng, actor hệ thống). */
-export async function recordLoginFail(
+async function recordLoginFail(
   x: { db: Db; limiter: LoginLimiter },
-  account: string,
+  t: { account: string; token: string; now: Date },
   u: LockedUser | null,
-  now: Date,
 ): Promise<void> {
-  const until = await store("fail", x.limiter.fail(account, now.getTime()));
+  const until = await store("fail", x.limiter.fail(t.account, t.now.getTime(), t.token));
   if (until === null || !u) return;
   await withScope(x.db, { kind: "tenant", tenantId: u.tenantId }, (tx) =>
     recordAudit(tx, {
@@ -80,9 +116,6 @@ export async function recordLoginFail(
     }),
   );
 }
-
-export const recordLoginSuccess = (l: LoginLimiter, account: string) =>
-  store("success", l.success(account));
 
 /** Admin gỡ khoá: xoá bộ đếm Redis của (tenant_key, username); true khi đang khoá. Không limiter ⇒ false; Redis lỗi ⇒ 503. */
 export function clearAccountLock(

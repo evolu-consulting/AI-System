@@ -1,8 +1,9 @@
 // L1 (TECH-DEBT #224) · luật giới hạn đăng nhập (thuần): ngưỡng, backoff, cửa sổ IP, khoá Redis không lộ tên.
 import { describe, expect, test } from "bun:test";
+import { accountId } from "./limit.keys";
 import {
   type AccountState,
-  accountId,
+  accountIdWith,
   afterAccountFail,
   EMPTY_ACCOUNT,
   ipId,
@@ -93,8 +94,29 @@ describe("L1 · cửa sổ IP và Retry-After", () => {
   });
 });
 
+describe("L1c · A-6 · IPv6 gộp theo /64", () => {
+  test("cùng /64 ⇒ cùng xô; khác /64 ⇒ khác xô; dạng đầy đủ = dạng rút gọn", () => {
+    const a = ipId("2001:db8:aa:bb:1:2:3:4");
+    expect(a).toBe("2001:db8:aa:bb::/64");
+    expect(ipId("2001:db8:aa:bb::ffff")).toBe(a);
+    expect(ipId("2001:0db8:00aa:00bb:0:0:0:9")).toBe(a);
+    expect(ipId("2001:db8:aa:bc::1")).not.toBe(a);
+    expect(ipId("::1")).toBe("0:0:0:0::/64");
+  });
+  test("IPv4 / IPv4-mapped giữ nguyên; IPv6 hỏng không gộp", () => {
+    expect(ipId("10.1.2.3")).toBe("10.1.2.3");
+    expect(ipId("::ffff:10.0.0.1")).toBe("::ffff:10.0.0.1");
+    expect(ipId("1:2:3")).toBe("1:2:3");
+    expect(ipId("1::2::3")).toBe("1::2::3");
+  });
+});
+
 describe("L1 · định danh khoá", () => {
-  test("accountId: sha256 hex, không chứa tên, tách tenant/username bằng NUL", () => {
+  test("L1c · accountIdWith dùng cổng băm với tenant ‖ NUL ‖ username (rules không import crypto)", () => {
+    expect(accountIdWith((s) => `h(${s})`, "acme", "an")).toBe("h(acme\u0000an)");
+  });
+
+  test("accountId (adapter sha256): hex 64, không chứa tên, tách tenant/username bằng NUL", () => {
     const a = accountId("acme", "an");
     expect(a).toMatch(/^[0-9a-f]{64}$/);
     expect(a).not.toContain("acme");
@@ -105,7 +127,7 @@ describe("L1 · định danh khoá", () => {
 
   test("ipId: IPv4/IPv6 giữ nguyên (thường hoá), rỗng/lạ ⇒ 'unknown'", () => {
     expect(ipId("203.0.113.7")).toBe("203.0.113.7");
-    expect(ipId(" 2001:DB8::1 ")).toBe("2001:db8::1");
+    expect(ipId(" 2001:DB8::1 ")).toBe("2001:db8:0:0::/64");
     expect(ipId("::ffff:10.0.0.1")).toBe("::ffff:10.0.0.1");
     expect(ipId(null)).toBe("unknown");
     expect(ipId("")).toBe("unknown");
