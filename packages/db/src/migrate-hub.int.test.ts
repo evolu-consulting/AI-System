@@ -20,6 +20,15 @@ const HUB_N = (
     ),
   ) as { entries: unknown[] }
 ).entries.length;
+/** Số migration hub-dev (dev/test) = số entry journal (R1 thêm `0001_knowledge_login_dev`). */
+const HUB_DEV_N = (
+  JSON.parse(
+    readFileSync(
+      new globalThis.URL("../migrations-hub-dev/meta/_journal.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { entries: unknown[] }
+).entries.length;
 
 beforeAll(async () => {
   const name = "ai_system_h1_test";
@@ -119,7 +128,10 @@ async function migrateOverStub(): Promise<string> {
   await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
     values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
   await sql`insert into hub.usage_logs (tenant_id, billing) values (${tid}, 'api')`;
-  expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: HUB_N, hubDev: 1 });
+  expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({
+    hub: HUB_N,
+    hubDev: HUB_DEV_N,
+  });
   return tid;
 }
 
@@ -142,7 +154,10 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
     });
     // Stub dev áp sau hub (đổi production → test trên cùng DB) không lỗi, runMigrations không đổi số.
     expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 0, dev: 3 });
-    expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({ hub: 0, hubDev: 1 });
+    expect(await runHubMigrations({ url: URL, appEnv: "test" })).toEqual({
+      hub: 0,
+      hubDev: HUB_DEV_N,
+    });
   });
 
   test("DB có stub: dòng cũ giữ (FK NOT VALID), dòng mới phải có agent; lần 2 {0,0}", async () => {
