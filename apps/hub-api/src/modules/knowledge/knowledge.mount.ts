@@ -4,12 +4,14 @@
 // Chiến lược theo `KNOWLEDGE_STRATEGY`: `fts` (mặc định) | `embedding` (cần `OPENAI_API_KEY`). Rerank Claude khi
 // `KNOWLEDGE_RERANK=on` + `ANTHROPIC_API_KEY` (vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
 import { createDb, type Db } from "@ai/db";
+import type { AiClient } from "../../lib/ai-client/ai-client";
+import { createHubAiClient } from "../../lib/ai-client/ai-client.env";
 import { logger } from "../../lib/logger";
 import { createDocxConverter } from "../packs/kit/adapters/docx";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
 import { createPdfConverter } from "../packs/kit/adapters/pdf";
 import type { PackToolDef } from "../packs/kit/application/pack-tools.ports";
-import { claudeReranker, openAiEmbedder } from "./adapters/ai.adapters";
+import { clientReranker, openAiEmbedder } from "./adapters/ai.adapters";
 import { graphRepos } from "./adapters/graph.repo";
 import { graphTools } from "./adapters/graph.tools";
 import { graphAiFromEnv } from "./adapters/graph-ai.adapters";
@@ -30,6 +32,7 @@ import type {
   Reranker,
   RetrievalStrategy,
 } from "./application/ports";
+import { withBreaker } from "./application/source-breaker";
 import { embeddingStrategy, ftsStrategy } from "./application/strategies";
 
 export { KNOWLEDGE_KEY };
@@ -40,11 +43,11 @@ export type KnowledgeAi = { embedder: Embedder | null; reranker: Reranker | null
 const sha256 = (s: string): string => new Bun.CryptoHasher("sha256").update(s).digest("hex");
 const warn = (msg: string, meta: Record<string, unknown>) => logger.warn(msg, meta);
 
-/** Chọn chiến lược + AI theo env (key không bao giờ log). */
-export function knowledgeAiFromEnv(env: EnvMap): KnowledgeAi {
+/** Chọn chiến lược + AI theo env (key không bao giờ log). Rerank qua AI client chung (F-07: usage + trần theo tenant). */
+export function knowledgeAiFromEnv(env: EnvMap, client: AiClient | null = null): KnowledgeAi {
   return {
     embedder: openAiEmbedder(env),
-    reranker: env.KNOWLEDGE_RERANK === "on" ? claudeReranker(env) : null,
+    reranker: env.KNOWLEDGE_RERANK === "on" ? clientReranker(client, env) : null,
   };
 }
 
@@ -53,7 +56,7 @@ export function knowledgeSourcesFromEnv(env: EnvMap, f?: typeof fetch): External
   const kh = khSourceConfig(env);
   if (!kh) return [];
   const dev = env.APP_ENV === "development" || env.APP_ENV === "test";
-  return [khSource(kh, { dev, ...(f ? { fetch: f } : {}) })];
+  return [withBreaker(khSource(kh, { dev, ...(f ? { fetch: f } : {}) }))]; // F-09: ngắt mạch KH chậm/chết
 }
 
 export function pickStrategy(
@@ -70,10 +73,15 @@ export function pickStrategy(
 
 export function knowledgeService(
   db: Db,
-  o: { env?: EnvMap; ai?: KnowledgeAi; sources?: ExternalSource[] } = {},
+  o: {
+    env?: EnvMap;
+    ai?: KnowledgeAi;
+    aiClient?: AiClient | null;
+    sources?: ExternalSource[];
+  } = {},
 ) {
   const env = o.env ?? process.env;
-  const ai = o.ai ?? knowledgeAiFromEnv(env);
+  const ai = o.ai ?? knowledgeAiFromEnv(env, o.aiClient ?? null);
   const uow: KnowledgeUow = createPackUow(db, KNOWLEDGE_KEY, knowledgeRepos);
   const strategy = pickStrategy(uow, env.KNOWLEDGE_STRATEGY, ai.embedder);
   const sources = o.sources ?? knowledgeSourcesFromEnv(env);
@@ -121,6 +129,8 @@ export function ingestService(
   o: {
     env?: EnvMap;
     graphAi?: GraphAi | null;
+    /** F-07 · AI client chung (pool Hub `hub_api` ghi `hub.usage_logs`); vắng ⇒ không có LLM thật cho đồ thị. */
+    aiClient?: AiClient | null;
     files?: { docx: ToText | null; pdf: ToText | null };
     svc?: ReturnType<typeof knowledgeService>;
   } = {},
@@ -131,7 +141,7 @@ export function ingestService(
     knowledge: knowledgeRepo(tx, tid),
     ingest: ingestRepo(tx, tid),
   }));
-  const ai = o.graphAi === undefined ? graphAiFromEnv(env) : o.graphAi;
+  const ai = o.graphAi === undefined ? graphAiFromEnv(env, o.aiClient ?? null) : o.graphAi;
   const produce = graphProducers({ graph: graphService(db), uow, ai, log: warn });
   return ingestFile({
     add: svc.add,
@@ -164,12 +174,14 @@ export function knowledgeDb(
 export function mountKnowledge(
   db: Db,
   tools: { register(t: PackToolDef): void } | undefined,
-  o: { dsn?: string; env?: EnvMap; signal?: AbortSignal } = {},
+  o: { dsn?: string; env?: EnvMap; signal?: AbortSignal; aiClient?: AiClient | null } = {},
 ): void {
   if (!tools) return;
   const env = o.env ?? process.env;
   const kdb = knowledgeDb(o.dsn, env, db, o.signal);
-  const svc = knowledgeService(kdb, { env });
+  // F-07: usage/trần token ghi qua pool Hub chung (`db`, role hub_api) — pool tri thức chỉ SET ROLE knowledge_rw
+  const aiClient = o.aiClient === undefined ? createHubAiClient(db) : o.aiClient;
+  const svc = knowledgeService(kdb, { env, aiClient });
   for (const t of knowledgeTools(svc)) tools.register(t);
   for (const t of graphTools(graphService(kdb))) tools.register(t); // G1 · đồ thị tri thức (cùng pool riêng)
 }

@@ -77,7 +77,7 @@ describe("R1 · searchKnowledge liên kết", () => {
   it("rerank trên tập gộp; rerank lỗi ⇒ giữ thứ tự gộp, reranked false", async () => {
     const seen: string[][] = [];
     const rev: Reranker = {
-      rerank: async (_q, hs, k) => {
+      rerank: async ({ hits: hs, k }) => {
         seen.push(hs.map((h) => h.chunkId));
         return [...hs].reverse().slice(0, k);
       },

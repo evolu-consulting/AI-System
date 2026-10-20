@@ -22,6 +22,7 @@ import type {
   KnowledgeUow,
   NewChunk,
   Reranker,
+  RerankRequest,
   RetrievalStrategy,
   Who,
 } from "./ports";
@@ -122,12 +123,11 @@ const errName = (err: unknown): string => (err instanceof Error ? err.name : "un
 async function askSources(
   d: SearchDeps,
   who: Who,
-  query: string,
-  pool: number,
+  q: { query: string; pool: number },
   signal?: AbortSignal,
 ): Promise<{ name: string; hits: Hit[] }[]> {
   const on = (d.sources ?? []).filter((s) => s.allows(who.tenantId));
-  const got = await Promise.allSettled(on.map((s) => s.search(query, pool, signal)));
+  const got = await Promise.allSettled(on.map((s) => s.search(q.query, q.pool, signal)));
   return got.flatMap((r, i) => {
     const name = (on[i] as ExternalSource).name;
     if (r.status === "fulfilled")
@@ -140,14 +140,13 @@ async function askSources(
 /** Rerank (có key) trên tập đã gộp; lỗi/không key ⇒ giữ thứ tự gộp (FTS khi không có nguồn ngoài). */
 async function rerankOrKeep(
   d: SearchDeps,
-  query: string,
-  hits: Hit[],
-  k: number,
+  r: RerankRequest,
   signal?: AbortSignal,
 ): Promise<{ reranked: boolean; hits: Hit[] }> {
+  const { hits, k } = r;
   if (!d.reranker || hits.length <= 1) return { reranked: false, hits: hits.slice(0, k) };
   try {
-    return { reranked: true, hits: (await d.reranker.rerank(query, hits, k, signal)).slice(0, k) };
+    return { reranked: true, hits: (await d.reranker.rerank(r, signal)).slice(0, k) };
   } catch (err) {
     d.log?.("knowledge-rerank-failed", { error_name: errName(err) });
     return { reranked: false, hits: hits.slice(0, k) };
@@ -171,11 +170,11 @@ export function searchKnowledge(d: SearchDeps) {
     const pool = d.reranker || d.sources?.length ? Math.max(k, LIMITS.candidates) : k;
     const [local, ext] = await Promise.all([
       d.strategy.search(who, query, pool, signal),
-      askSources(d, who, query, pool, signal),
+      askSources(d, who, { query, pool }, signal),
     ]);
     const extHits = ext.filter((e) => e.hits.length > 0);
     const merged = extHits.length ? rrf([local, ...extHits.map((e) => e.hits)]) : local;
-    const out = await rerankOrKeep(d, query, merged, k, signal);
+    const out = await rerankOrKeep(d, { who, query, hits: merged, k }, signal);
     return {
       ok: true,
       value: { strategy: d.strategy.name, federated: ext.map((e) => e.name), ...out },

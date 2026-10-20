@@ -39,6 +39,22 @@ export function guessKind(title: string, md: string): "contract" | "markdown" {
     : "markdown";
 }
 
+/**
+ * F-05: văn bản sau chuyển đổi (DOCX/PDF cho tới 5 M ký tự) vượt trần `max` của kho (`LIMITS.contentMax`) ⇒ cắt ở ranh giới
+ * đoạn (dòng trống) hoặc dòng gần nhất trong nửa sau, không tách cặp surrogate; `truncated` ⇒ bên gọi thêm cảnh báo `truncated`
+ * (cùng mã cảnh báo của bộ chuyển). Trong trần ⇒ giữ nguyên.
+ */
+export function fitContent(md: string, max: number): { md: string; truncated: boolean } {
+  if (md.length <= max) return { md, truncated: false };
+  let head = md.slice(0, max);
+  const para = head.lastIndexOf("\n\n");
+  const line = head.lastIndexOf("\n");
+  const cut = para > max / 2 ? para : line > max / 2 ? line : -1;
+  if (cut > 0) head = head.slice(0, cut);
+  else if (/[\uD800-\uDBFF]$/.test(head)) head = head.slice(0, -1);
+  return { md: head, truncated: true };
+}
+
 const LINK = /\]\((https?:\/\/[^)\s]+)\)/g;
 
 /** `extract_links`: URL http(s) của liên kết Markdown, giữ thứ tự, không trùng, tối đa `max`. */

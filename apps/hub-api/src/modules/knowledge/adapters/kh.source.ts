@@ -2,7 +2,7 @@
 // không sửa): chính sách URL, `redirect:"error"`, hạn gọi, đọc thân ≤ 1 MiB, khoá trong header `X-KH-Key` không log. Cấu hình
 // (env, vắng ⇒ TẮT, không gọi mạng): `KNOWLEDGE_KH_URL`, `KNOWLEDGE_KH_KEY` (secret — chỉ đọc lúc gọi), `KNOWLEDGE_KH_PROJECT`,
 // `KNOWLEDGE_KH_TENANTS` (uuid cách dấu phẩy, hoặc `*`; vắng ⇒ không tenant nào — KH là kho dùng chung),
-// `KNOWLEDGE_KH_TIMEOUT_MS` (1000–30000, mặc định 3000).
+// `KNOWLEDGE_KH_TIMEOUT_MS` (200–30000, mặc định 800 — F-09: ngân sách tìm liên kết, KH trả muộn hơn ⇒ chỉ kết quả nội bộ).
 import { KhClient, type KhConn } from "../../kh/kh.client";
 import type { ExternalSource, Hit } from "../application/ports";
 import { parseKhHits } from "../domain/federation.rules";
@@ -14,6 +14,9 @@ export type KhSourceConfig = {
   tenants: "*" | ReadonlySet<string>;
   timeoutMs: number;
 };
+
+/** F-09 · N4-NFR-01: ngân sách mặc định cho KH trong một lần tìm (ms). */
+export const KH_BUDGET_MS = 800;
 
 const num = (v: string | undefined, def: number, lo: number, hi: number): number => {
   const n = Number(v);
@@ -39,7 +42,7 @@ export function khSourceConfig(env: Record<string, string | undefined>): KhSourc
     key,
     project,
     tenants,
-    timeoutMs: num(env.KNOWLEDGE_KH_TIMEOUT_MS, 3000, 1000, 30_000),
+    timeoutMs: num(env.KNOWLEDGE_KH_TIMEOUT_MS, KH_BUDGET_MS, 200, 30_000),
   };
 }
 

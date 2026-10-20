@@ -129,7 +129,7 @@ describe("N4-FR-03 · searchKnowledge", () => {
     const f = fakeUow();
     const rev = searchKnowledge({
       strategy: ftsStrategy(f.uow),
-      reranker: { rerank: async (_q, h, k) => [...h].reverse().slice(0, k) },
+      reranker: { rerank: async ({ hits: h, k }) => [...h].reverse().slice(0, k) },
     });
     const r = await rev(who, { query: "hợp đồng", k: 2 });
     expect(r.ok && r.value.hits.map((h) => h.chunkId)).toEqual(["c2", "c1"]);

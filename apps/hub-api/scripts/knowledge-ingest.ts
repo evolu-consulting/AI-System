@@ -5,6 +5,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 import { createDb } from "@ai/db";
+import { createHubAiClient } from "../src/lib/ai-client/ai-client.env";
 import { fileConverters, ingestService } from "../src/modules/knowledge/knowledge.mount";
 
 const EXT = new Set([".md", ".markdown", ".txt", ".docx", ".pdf"]);
@@ -33,7 +34,10 @@ function walk(p: string): string[] {
 
 const db = createDb(dsn, { max: 2 });
 const files = fileConverters();
-const ingest = ingestService(db, { files });
+// F-07: LLM đồ thị qua AI client chung — usage/trần token ghi bằng pool Hub (`HUB_DATABASE_URL`, role hub_api)
+const hubDsn = process.env.HUB_DATABASE_URL;
+const hubDb = hubDsn ? createDb(hubDsn, { max: 1 }) : null;
+const ingest = ingestService(db, { files, aiClient: hubDb ? createHubAiClient(hubDb) : null });
 let failed = 0;
 for (const path of args.flatMap(walk)) {
   const bytes = new Uint8Array(await Bun.file(path).arrayBuffer());
@@ -50,4 +54,5 @@ for (const path of args.flatMap(walk)) {
 }
 await files.close();
 await db.close();
+await hubDb?.close();
 process.exit(failed ? 1 : 0);

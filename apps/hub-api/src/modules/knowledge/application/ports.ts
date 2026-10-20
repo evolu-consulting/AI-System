@@ -67,16 +67,25 @@ export type ExistingEntity = { key: string; name: string; type: string };
 export type IngestReadRepo = {
   /** Thực thể cùng loại có tên chứa mọi từ của `q` (đã gấp dấu); tối đa 200. */
   aliasCandidates(probes: readonly { type: string; q: string }[]): Promise<ExistingEntity[]>;
+  /** F-08: cặp (a, b) theo key ĐÃ là bí danh của nhau — một câu cho cả lô (thay `hasAlias` từng cặp). Trả "a\u0000b". */
+  aliasedPairs(pairs: readonly { a: string; b: string }[]): Promise<Set<string>>;
+  /** F-06: tài liệu đã có đồ thị (MENTIONS, SIMILAR/CONFLICTS hoặc LINKS_TO đi ra)? Một câu. */
+  hasGraph(docId: string): Promise<boolean>;
 };
 
 /**
  * R1 · LLM cho đồ thị (port `extract.py` / `resolve.confirm_alias` / `judge_similar`). Vắng (không key) ⇒ không trích thực thể;
- * bản giả tất định cho dev/test. Văn bản đoạn là DỮ LIỆU (HUB-BR-31).
+ * bản giả tất định cho dev/test. Văn bản đoạn là DỮ LIỆU (HUB-BR-31). F-07: `who` ⇒ AI client chung ghi usage + trần token
+ * theo tenant. Ném khi lỗi ⇒ bên gọi coi như rỗng / không phải bí danh / không phán.
  */
 export type GraphAi = {
-  extract(text: string, signal?: AbortSignal): Promise<Extraction>;
-  sameEntity(type: string, a: string, b: string, signal?: AbortSignal): Promise<boolean>;
-  judge(a: string, b: string, signal?: AbortSignal): Promise<Verdict>;
+  extract(who: Who, text: string, signal?: AbortSignal): Promise<Extraction>;
+  sameEntity(
+    who: Who,
+    q: { type: string; a: string; b: string },
+    signal?: AbortSignal,
+  ): Promise<boolean>;
+  judge(who: Who, q: { a: string; b: string }, signal?: AbortSignal): Promise<Verdict>;
 };
 
 export type KnowledgeUow = {
@@ -89,9 +98,10 @@ export type Embedder = {
   embed(texts: readonly string[], signal?: AbortSignal): Promise<number[][]>;
 };
 
+export type RerankRequest = { who: Who; query: string; hits: readonly Hit[]; k: number };
 export type Reranker = {
   /** Sắp lại `hits` theo độ liên quan với `query`, trả tối đa `k`. Ném khi lỗi ⇒ bên gọi giữ thứ tự cũ. */
-  rerank(query: string, hits: readonly Hit[], k: number, signal?: AbortSignal): Promise<Hit[]>;
+  rerank(r: RerankRequest, signal?: AbortSignal): Promise<Hit[]>;
 };
 
 export type RetrievalStrategy = {

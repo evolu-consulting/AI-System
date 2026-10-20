@@ -28,10 +28,15 @@ export const EXTRACT_LIMITS = {
   neighbours: 6,
   judgeMax: 10,
   aliasMax: 10,
+  /** F-08: trần số cặp thử (gồm cặp LLM bác), không chỉ số bí danh thêm được. */
+  aliasTryMax: 30,
 } as const;
 
 /** `Entity.key` của mgmt-app: `Type:tên thường`. */
 export const entityKey = (e: Entity): string => `${e.type}:${e.name.trim().toLowerCase()}`;
+
+/** Khoá cặp bí danh (key a, key b) trong tập trả về của `IngestReadRepo.aliasedPairs`. */
+export const aliasPairKey = (a: string, b: string): string => `${a}\u0000${b}`;
 
 /** `match_form`: bỏ dấu (NFD), chữ thường, trim — "đ" giữ nguyên như bản gốc. */
 export function matchForm(name: string): string {
@@ -45,6 +50,35 @@ export function aliasForm(name: string): string {
   let f = matchForm(name).replace(/đ/g, "d");
   for (const n of LEAD_NOUNS) if (f.startsWith(`${n} `)) f = f.slice(n.length + 1);
   return (f.match(/[\p{L}\p{N}]+/gu) ?? []).sort().join(" ");
+}
+
+export type AliasTry = { a: string; b: string; type: string; aName: string; bName: string };
+
+/**
+ * F-08 · `link_aliases` (thuần): thực thể mới (không trùng key) × ứng viên đã có cùng loại + cùng `aliasForm`, khác key — tra
+ * bằng Map (type, dạng so), không quét lồng; ≤ 1 cặp mỗi thực thể, ≤ `max` cặp (trần lần thử, gồm cả cặp sau đó bị bác).
+ */
+export function aliasTries(
+  ents: readonly Entity[],
+  cands: readonly { key: string; name: string; type: string }[],
+  max: number = EXTRACT_LIMITS.aliasTryMax,
+): AliasTry[] {
+  const idx = new Map<string, { key: string; name: string }[]>();
+  for (const c of cands) {
+    const k = `${c.type}\u0000${aliasForm(c.name)}`;
+    idx.set(k, [...(idx.get(k) ?? []), c]);
+  }
+  const out: AliasTry[] = [];
+  const seen = new Set<string>();
+  for (const e of ents) {
+    const a = entityKey(e);
+    if (out.length >= max || seen.has(a)) continue;
+    seen.add(a);
+    const f = aliasForm(e.name);
+    const c = f === "" ? undefined : idx.get(`${e.type}\u0000${f}`)?.find((x) => x.key !== a);
+    if (c) out.push({ a, b: c.key, type: e.type, aName: e.name, bName: c.name });
+  }
+  return out;
 }
 
 const isType = (t: unknown): t is EntityType => ENTITY_TYPES.includes(t as EntityType);
