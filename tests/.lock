@@ -437,7 +437,7 @@ f7310dc083f7af8a089b24da951fb5718acf77c62750dd7e76e84b82ad2d0b3f  tests/acceptan
 9209b5996bfdf4b0ceaa8f3c667003d9f57bcb0fd6c14a0967fb6583829b0146  tests/acceptance/H3a/blocked.int.test.ts
 b5c157b044630847af557df666019e67b6a7bddbff923ef71259a3211453f533  tests/acceptance/H3a/command.int.test.ts
 5b52563b7b9170cc59fcd9a52a17f563e75d4b75091c448dfa4fa4a9d7d8e025  tests/acceptance/H3a/compat.int.test.ts
-c63ad362f5664584b7b58c47856b27666a794c9a73140b587a07c7ea21dd2ae4  tests/acceptance/H3a/db.int.test.ts
+43035e46365013c0b23b73b70ee344391dd9c26b0859fb14ae6f230c1653d896  tests/acceptance/H3a/db.int.test.ts
 b4ee5f2e16fd5cb07f9f28c185dd6563686583df8856382862c2bec7ec921202  tests/acceptance/H3a/job-reason.int.test.ts
 92f080ed384e032c4d1ee545083a38527fe3467b8633f33e4c4adc1ea4176aaa  tests/acceptance/H3a/queue-wait.int.test.ts
 1c6684f272e1bb13bfd444b4a4b556838ecd67cbf3520ed0d9a72fdf6a404243  tests/acceptance/H3a/rules/blocked-reason.test.ts
