@@ -19,7 +19,9 @@ echo "[evotest] bun $(bun --version) · nproc $(nproc) · setup $(( $(date +%s) 
 # --no-python: Python/agent-runtime ngoài phạm vi runner này.
 # EVO_FILTER (chỉ int): tiền tố/đường dẫn file, chạy thẳng test:int:par (bỏ qua test:all) để chạy lại vài file.
 if [ "$EVO_STEP" = perf ]; then PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 120000 ${EVO_FILTER:-tests/acceptance/HD4/perf/}   # đo hiệu năng, mặc định HD4
-elif [ "$EVO_STEP" = int ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_WORKERS" ]; }; then bun run test:int:par ${EVO_WORKERS:+--workers=$EVO_WORKERS} $EVO_FILTER; else
+elif [ "$EVO_STEP" = int ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_WORKERS" ]; }; then bun run test:int:par ${EVO_WORKERS:+--workers=$EVO_WORKERS} $EVO_FILTER
+# EVO_FILTER (e2e): việc/cấu hình test:e2e:par, ngăn bằng dấu phẩy (vd "root,N1") - chạy lại vài việc e2e.
+elif [ "$EVO_STEP" = e2e ] && [ -n "$EVO_FILTER" ]; then bun tools/scripts/src/test-e2e-par.ts --no-frozen --only="$EVO_FILTER"; else
   # F1 (CR-095): cổng hằng ngày bỏ suite module đóng băng; EVO_ALL=1 (run-tests.ps1 -All) chạy hết (kiểm tra hằng tháng).
   FZ=--no-frozen; [ -n "${EVO_ALL:-}" ] && FZ=
   bun run test:all --no-python $FZ --only="$EVO_STEP"
