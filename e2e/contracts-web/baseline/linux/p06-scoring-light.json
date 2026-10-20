@@ -2,20 +2,20 @@
   "text": "← Đối tác Cách tính điểm uy tín Chỉ quản lý được chỉnh. Mọi thay đổi đều được lưu lịch sử. Lưu & tính lại điểm Khách hàng Nhà cung cấp Tiêu chí & trọng số Tổng 100% ✓ Thanh toán đúng hạn % đợt trả đúng hạn, trừ thêm theo số ngày trễ % Xoá Gia hạn chữ ký số Gia hạn trước khi hết hạn và gia hạn qua mình % Xoá Số lần phải nhắc Nhắc thanh toán, nhắc nghĩa vụ trên mỗi hợp đồng % Xoá Giữ lịch hẹn % cuộc hẹn không bị dời hoặc hủy % Xoá Khiếu nại, tranh chấp Số lần phát sinh, trừ điểm mỗi lần % Xoá Thái độ hợp tác Tự chấmTự chấm: mỗi đối tác được chấm 0–100 ở trang đối tác % Xoá Thêm tiêu chí tự chấm Chọn tiêu chí… Tốc độ phản hồi Chứng từ, hoá đơn đầy đủ Tiềm năng mua thêm Mức độ gắn bó Dễ làm việc Giới thiệu khách mới Trọng số % + Thêm tiêu chí tự chấm Khôi phục tiêu chí có sẵn… Gắn bó (10%) Tiêu chí tự chấm không được tính tự động: người dùng cho mỗi đối tác 0–100, ở trang Đối tác › “Chấm điểm” hoặc nhờ trợ lý (“chấm Phương Nam chất lượng hàng 80”). Đối tác chưa được chấm thì tiêu chí này được bỏ qua, các tiêu chí còn lại tự chia lại trọng số. Điểm được tính lúc nào? Điểm không lưu sẵn: mỗi lần mở danh sách đối tác hay xem điểm, hệ thống tính lại ngay theo cách tính đang lưu. Dữ liệu lấy từ những gì ứng dụng tự ghi khi bạn thao tác: ghi Đã thu / Đã trả (đúng hạn hay trễ), Khách hẹn lại, Đã nhắc, gia hạn hoặc mất khách chữ ký số, ghi khiếu nại / giao hàng / lịch hẹn; từ hợp đồng (thâm niên, giá đang áp dụng) và từ điểm tự chấm. Ghi ở đâu: nút “+ Ghi việc” của từng đối tác (trang Đối tác) hoặc cuối trang một hợp đồng, hoặc nói với trợ lý (vd “Bếp Việt đã trả đợt 1 hôm qua”). Ghi nhầm thì bấm “Huỷ” ở dòng đó. Bấm “Lưu & tính lại điểm” còn lưu một ảnh chụp điểm của mọi đối tác để xem lịch sử thay đổi. Quy tắc chung Xếp mức Tốt từ Khá từ Chú ý dưới 60 Chỉ chấm khi có tối thiểu sự kiện Tính trong tháng gần nhất Ưu tiên gần đây 3 tháng gần nhất tính gấp đôi Cho chỉnh tay ±10 điểm Bắt buộc ghi lý do Lịch sử thay đổi 16/10/2026 · Lan Nguyễn · thêm Thái độ hợp tác 30%, tắt Khiếu nại, tranh chấp 01/10/2026 · Lan Nguyễn · Số lần phải nhắc 10→15%",
   "boxes": {
     "heading": {
-      "x": 202,
-      "y": 110.140625,
+      "x": 282,
+      "y": 104,
       "w": 354,
       "h": 40.296875
     },
     "criteria": {
-      "x": 202,
-      "y": 254.4375,
+      "x": 282,
+      "y": 248.296875,
       "w": 1100,
       "h": 658.40625
     },
     "rules": {
-      "x": 202,
-      "y": 1141.625,
+      "x": 282,
+      "y": 1135.484375,
       "w": 1100,
       "h": 225.25
     }

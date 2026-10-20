@@ -1,0 +1,47 @@
+{
+  "text": "A Sổ Hợp Tác Acme Corp Tổng quan Hợp đồng Đối tác Sản phẩm & Giá LN Lan Nguyễn Acme Corp · Nhân viên Lan Nguyễn lan@acme.test Acme Corp · Nhân viên Giao diện ☀ Sáng ☾ Tối Theo máy Cài đặt Đăng xuất |",
+  "boxes": {
+    "sidebar": {
+      "x": 0,
+      "y": 0,
+      "w": 224,
+      "h": 900
+    },
+    "header": {
+      "x": 224,
+      "y": 0,
+      "w": 1216,
+      "h": 52
+    },
+    "bell": {
+      "x": 1340,
+      "y": 3.5,
+      "w": 36,
+      "h": 44
+    },
+    "feedback": {
+      "x": 1380,
+      "y": 5.5,
+      "w": 40,
+      "h": 40
+    },
+    "assistantFab": {
+      "x": 1368,
+      "y": 828,
+      "w": 48,
+      "h": 48
+    },
+    "firstNavLink": {
+      "x": 10,
+      "y": 64,
+      "w": 203,
+      "h": 44
+    },
+    "menu": {
+      "x": 221,
+      "y": 670,
+      "w": 300,
+      "h": 218
+    }
+  }
+}

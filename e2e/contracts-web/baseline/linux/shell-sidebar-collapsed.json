@@ -1,27 +1,27 @@
 {
-  "text": "Sổ Hợp Tác Hợp đồng, đối tác, thanh toán & chữ ký số Hợp đồng Đối tác So sánh giá Sản phẩm LN Lan Nguyễn Acme Corp | Hợp đồng",
+  "text": "A Tổng quan Hợp đồng Đối tác Sản phẩm & Giá LN |",
   "boxes": {
     "sidebar": {
       "x": 0,
       "y": 0,
-      "w": 224,
+      "w": 64,
       "h": 900
     },
     "header": {
       "x": 64,
       "y": 0,
       "w": 1376,
-      "h": 58
+      "h": 52
     },
     "bell": {
       "x": 1340,
-      "y": 6.5,
+      "y": 3.5,
       "w": 36,
       "h": 44
     },
     "feedback": {
       "x": 1380,
-      "y": 8.5,
+      "y": 5.5,
       "w": 40,
       "h": 40
     },
@@ -33,8 +33,8 @@
     },
     "firstNavLink": {
       "x": 10,
-      "y": 68,
-      "w": 203,
+      "y": 64,
+      "w": 43,
       "h": 44
     }
   }
