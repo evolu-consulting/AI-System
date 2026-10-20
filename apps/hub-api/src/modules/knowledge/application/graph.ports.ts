@@ -1,6 +1,7 @@
 // G1 · CR-095 (bỏ Neo4j): cổng đồ thị tri thức trên bảng Postgres `knowledge.*` (thay `app/store/graph.py` của mgmt-app).
 // Mọi id là uuid của N4 (`documents.id`, `chunks.id`); thực thể định danh bằng `key` (vd "Project:apollo") trong tenant.
 // Mỗi hàm = số câu SQL cố định (Luật 4c), không phụ thuộc số hàng.
+import type { CorpusRow, NbRow } from "../domain/graph.types";
 import type { Who } from "./ports";
 
 export type EntityIn = { key: string; name: string; type: string };
@@ -28,30 +29,15 @@ export type SimilarRow = {
   otherChunkId: string;
 };
 
-/** Hàng thô của `neighbourhood` (một câu SQL); `toNeighbourhood` dựng nodes/links như mgmt-app. */
-export type NbRowKind = "doc" | "mention" | "rel" | "alias" | "doclink";
-export type NbRow = {
-  row: NbRowKind;
-  src: string;
-  dst: string | null;
-  label: string;
-  ntype: string;
-  ltype: string | null;
-};
-
-export type CorpusRowKind = "node" | "pair" | "link" | "shares";
-export type CorpusRow = {
-  row: CorpusRowKind;
-  a: string;
-  b: string | null;
-  label: string | null;
-  type: string;
-  n: number;
-};
-
-export type GraphNode = { id: string; label: string; type: string };
-export type GraphLink = { source: string; target: string; type: string; n?: number };
-export type Graph = { nodes: GraphNode[]; links: GraphLink[] };
+export type {
+  CorpusRow,
+  CorpusRowKind,
+  Graph,
+  GraphLink,
+  GraphNode,
+  NbRow,
+  NbRowKind,
+} from "../domain/graph.types";
 
 export type DocRef = { id: string; title: string; uri: string | null };
 export type ConflictRow = {

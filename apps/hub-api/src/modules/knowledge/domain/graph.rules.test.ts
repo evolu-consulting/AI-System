@@ -1,6 +1,5 @@
-// G1 · luật thuần đồ thị: dựng {nodes, links} từ hàng SQL đúng như graph.neighbourhood / graph.corpus của mgmt-app.
+﻿// G1 · luật thuần đồ thị: dựng {nodes, links} từ hàng SQL đúng như graph.neighbourhood / graph.corpus của mgmt-app.
 import { describe, expect, it } from "bun:test";
-import type { CorpusRow, NbRow } from "../application/graph.ports";
 import {
   checkIds,
   checkKeys,
@@ -9,6 +8,7 @@ import {
   toCorpus,
   toNeighbourhood,
 } from "./graph.rules";
+import type { CorpusRow, NbRow } from "./graph.types";
 
 const D = "00000000-0000-4000-8000-000000000001";
 const D2 = "00000000-0000-4000-8000-000000000002";

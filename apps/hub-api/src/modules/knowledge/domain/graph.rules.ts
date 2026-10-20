@@ -1,14 +1,7 @@
 // G1 · CR-095: luật thuần của đồ thị tri thức — giới hạn đầu vào và dựng {nodes, links} từ hàng SQL đúng như
 // `graph.neighbourhood` / `graph.corpus` của mgmt-app (node tài liệu id = id tài liệu, node thực thể id = key; MENTIONS ghi đè
 // node thực thể, REL/ALIAS_OF/tài liệu kề chỉ thêm khi chưa có — `setdefault`).
-import type {
-  CorpusRow,
-  Graph,
-  GraphLink,
-  GraphNode,
-  NbRow,
-  NbRowKind,
-} from "../application/graph.ports";
+import type { CorpusRow, Graph, GraphLink, GraphNode, NbRow, NbRowKind } from "./graph.types";
 
 export const GRAPH_LIMITS = {
   keysMax: 200,
