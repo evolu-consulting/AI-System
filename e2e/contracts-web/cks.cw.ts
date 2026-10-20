@@ -1,17 +1,18 @@
-// HD-FR-97 · HD9-AC10 · D-02 · plan-frontend N1 §6: so màn S08 `/prices`, S10 `/cks` (+ mở rộng, 2 hộp thoại, mobile), S11
-// `/cks/$id` (+ form gia hạn, hộp thoại hoàn tất) với mgmt-app, 3 lớp như `scenes.cw.ts` — chữ (0 ký tự lệch), khung (±2 px),
-// ảnh (≤ 0,5 %). `CW_MODE=ref` chụp mgmt-app và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ ngay. Dữ liệu `dataset-cks.ts`.
-// Không sleep: chờ phần tử/điều kiện. Harness riêng (không sửa `scenes.cw.ts` của lát khác).
+// HD-FR-97 · HD9-AC10 · plan-frontend N1 §6 · nav-v2 (người dùng chốt 2026-10-20: giao diện theo mockup NITI, thay D-02 "giống hệt mgmt-app"):
+// cảnh Sản phẩm CKS (tab `/products?tab=cks`, + mở rộng, 2 hộp thoại, mobile), chi tiết khách `/cks/$id` (+ form gia hạn, hộp thoại
+// hoàn tất) và So sánh giá (tab mặc định của `/products`), 3 lớp như `scenes.cw.ts` — chữ (0 ký tự lệch), khung (±2 px), ảnh (≤ 0,5 %)
+// so với BASELINE của chính contracts-web. `CW_MODE=capture` chụp từ contracts-web và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ
+// ngay. Dữ liệu `dataset-cks.ts`. Không sleep: chờ phần tử/điều kiện. Harness riêng (không sửa `scenes.cw.ts` của lát khác).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { asHub, asMgmt } from "./dataset";
-import { cks, cksAsHub, cksAsMgmt } from "./dataset-cks";
+import { asHub } from "./dataset";
+import { cks, cksAsHub } from "./dataset-cks";
 
-const REF = process.env.CW_MODE === "ref";
+const CAPTURE = process.env.CW_MODE === "capture";
 const DIR = join(__dirname, "baseline", process.platform);
 const HOW =
-  "Chụp tham chiếu: `bun run e2e:contracts:ref -- cks.cw.ts` (cần web mgmt-app ở MGMT_WEB_DIR), rồi commit baseline.";
+  "Chụp baseline: `bun run e2e:contracts:capture -- cks.cw.ts` (hoặc evotest `-Capture cw` cho bản Linux), rồi commit baseline.";
 const FRAME_TOL = 2;
 const PIXEL_RATIO = 0.005;
 
@@ -61,7 +62,7 @@ const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
       name: `s10-cks-${theme}`,
-      path: "/cks",
+      path: "/products?tab=cks",
       size: D,
       theme,
       text: ["main"],
@@ -71,7 +72,7 @@ const SCENES: Scene[] = [
   ),
   {
     name: "s10-cks-mobile",
-    path: "/cks",
+    path: "/products?tab=cks",
     size: M,
     theme: "light",
     text: ["main"],
@@ -80,7 +81,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "s10-cks-expanded",
-    path: "/cks",
+    path: "/products?tab=cks",
     size: D,
     theme: "light",
     text: ["main"],
@@ -93,7 +94,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "s10-lot-dialog",
-    path: "/cks",
+    path: "/products?tab=cks",
     size: D,
     theme: "light",
     text: ["dialog[open]"],
@@ -106,7 +107,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "s10-sale-dialog",
-    path: "/cks",
+    path: "/products?tab=cks",
     size: D,
     theme: "light",
     text: ["dialog[open]"],
@@ -157,7 +158,7 @@ const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
       name: `s08-prices-${theme}`,
-      path: "/prices",
+      path: "/products",
       size: D,
       theme,
       text: ["main"],
@@ -170,23 +171,6 @@ const SCENES: Scene[] = [
 type Route = Parameters<Parameters<Page["route"]>[1]>[0];
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
-
-async function installMgmt(page: Page) {
-  const d = asMgmt("editor");
-  await page.route(
-    (u) => u.pathname.startsWith("/api/"),
-    (r) => {
-      const url = new URL(r.request().url());
-      const path = url.pathname.replace(/^\/api/, "");
-      const got = cksAsMgmt(path, url.searchParams);
-      if (got !== undefined) return json(r, 200, got);
-      if (path === "/auth/me") return json(r, 200, d.me);
-      if (path === "/auth/options") return json(r, 200, d.options);
-      if (path === "/notifications") return json(r, 200, d.notices);
-      return r.request().method() === "GET" ? json(r, 200, []) : json(r, 200, {});
-    },
-  );
-}
 
 async function installHub(page: Page) {
   const d = asHub("editor");
@@ -215,7 +199,7 @@ async function prepare(page: Page, s: Scene) {
     },
     [s.theme],
   );
-  await (REF ? installMgmt(page) : installHub(page));
+  await installHub(page);
   await page.setViewportSize(s.size);
   await page.goto(s.path);
   await s.ready(page).first().waitFor();
@@ -237,16 +221,19 @@ async function collect(page: Page, s: Scene): Promise<Layers> {
 }
 
 function compare(s: Scene, got: Layers, want: Layers) {
-  expect.soft(got.text, `[${s.name}] chữ lệch mgmt-app`).toBe(want.text);
+  expect.soft(got.text, `[${s.name}] chữ lệch baseline`).toBe(want.text);
   for (const [k, w] of Object.entries(want.boxes)) {
     const g = got.boxes[k];
     if (!w || !g) {
-      expect.soft(g, `[${s.name}] khung "${k}" ${w ? "thiếu" : "thừa"} so với mgmt-app`).toEqual(w);
+      expect.soft(g, `[${s.name}] khung "${k}" ${w ? "thiếu" : "thừa"} so với baseline`).toEqual(w);
       continue;
     }
     for (const f of ["x", "y", "w", "h"] as const)
       expect
-        .soft(Math.abs(g[f] - w[f]), `[${s.name}] khung "${k}".${f}: hub ${g[f]} · mgmt ${w[f]}`)
+        .soft(
+          Math.abs(g[f] - w[f]),
+          `[${s.name}] khung "${k}".${f}: hub ${g[f]} · baseline ${w[f]}`,
+        )
         .toBeLessThanOrEqual(FRAME_TOL);
   }
 }
@@ -256,7 +243,7 @@ function compare(s: Scene, got: Layers, want: Layers) {
 test("HD-FR-91 · HD-FR-92 · BR-1 · hộp thoại lô/bán gửi đúng thân, lỗi theo mã", async ({
   page,
 }) => {
-  test.skip(REF, "chỉ chạy trên contracts-web");
+  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
   const sent: { path: string; body: unknown }[] = [];
   await prepare(page, SCENES[0] as Scene);
   await page.route("**/pack/contracts/cks/lots", (r) => {
@@ -307,11 +294,11 @@ test("HD-FR-91 · HD-FR-92 · BR-1 · hộp thoại lô/bán gửi đúng thân,
 });
 
 for (const s of SCENES) {
-  test(`HD-FR-97 · HD9-AC10 · ${s.name} · chữ/khung/ảnh khớp mgmt-app`, async ({ page }) => {
+  test(`HD-FR-97 · HD9-AC10 · ${s.name} · chữ/khung/ảnh khớp baseline nav-v2`, async ({ page }) => {
     await prepare(page, s);
     const got = await collect(page, s);
     const file = join(DIR, `${s.name}.json`);
-    if (REF) {
+    if (CAPTURE) {
       mkdirSync(DIR, { recursive: true });
       writeFileSync(file, `${JSON.stringify(got, null, 2)}\n`);
     } else {

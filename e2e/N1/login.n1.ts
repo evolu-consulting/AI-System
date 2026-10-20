@@ -17,7 +17,7 @@ test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
     await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
   });
 
-  test("PK-FR-10 · nhập đúng ⇒ vào /contracts (theo next), token Bearer được gửi cho /pack/contracts/me", async ({
+  test("PK-FR-10 · nhập đúng ⇒ vào trang theo next (/partners), token Bearer được gửi cho /pack/contracts/me", async ({
     page,
   }) => {
     const be = await installBackend(page, { session: false });
@@ -66,12 +66,12 @@ test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
     await expect(page.getByRole("button", { name: "Ẩn mật khẩu" })).toBeVisible();
   });
 
-  test("PK-FR-10 · đã có phiên (refresh cookie còn hạn): vào /login ⇒ chuyển /contracts, không hiện form", async ({
+  test("PK-FR-10 · nav-v2 · đã có phiên (refresh cookie còn hạn): vào /login ⇒ chuyển /overview, không hiện form", async ({
     page,
   }) => {
     await installBackend(page, { session: true });
     await page.goto("/login");
-    await expect(page).toHaveURL(/\/contracts$/);
+    await expect(page).toHaveURL(/\/overview$/);
     await expect(page.getByRole("heading", { name: "Đăng nhập" })).toHaveCount(0);
   });
 

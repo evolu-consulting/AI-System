@@ -1,6 +1,7 @@
 // PK-FR-10 · D-02 · N1 plan-frontend §1 (Shell, Menu, Theme) §7 (nhãn Shell): layout và menu contracts-web — sidebar 4 mục, điều
-// hướng, `/` → `/contracts`, `*` → `/contracts`, thanh dưới mobile, panel trợ lý (slot lazy), nút góp ý, đổi giao diện sáng/tối.
-// So ảnh với mgmt-app (khung ±2 px, điểm ảnh) là việc của TF7 `e2e/contracts-web`. Backend giả `_support.ts`; không sleep.
+// hướng, `/` → `/overview`, `*` → `/contracts`, thanh dưới mobile, panel trợ lý (slot lazy), nút góp ý, đổi giao diện sáng/tối.
+// nav-v2 (người dùng chốt 2026-10-20, thay D-02 "giống hệt mgmt-app" cho điều hướng): menu Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá,
+// tuyến cũ chuyển hướng, menu avatar. Ảnh/khung theo baseline mới ở `e2e/contracts-web`. Backend giả `_support.ts`; không sleep.
 import { expect, test } from "@playwright/test";
 import { installBackend } from "./_support";
 
@@ -9,21 +10,27 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await installBackend(page, { session: true, role: "editor" });
   });
 
-  test("PK-FR-10 · menu chính 4 mục đúng nhãn và đường dẫn: Hợp đồng /contracts · Đối tác /partners · So sánh giá /prices · Sản phẩm /cks", async ({
+  test("PK-FR-10 · nav-v2 · menu chính 4 mục đúng nhãn, thứ tự và đường dẫn: Tổng quan /overview · Hợp đồng /contracts · Đối tác /partners · Sản phẩm & Giá /products", async ({
     page,
   }) => {
     await page.goto("/contracts");
     const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+    const links = nav.getByRole("link").filter({ hasNotText: "Sổ Hợp Tác" });
+    await expect(links).toHaveText(["Tổng quan", "Hợp đồng", "Đối tác", "Sản phẩm & Giá"]);
     const hrefs: Record<string, string | null> = {};
-    for (const name of ["Hợp đồng", "Đối tác", "So sánh giá", "Sản phẩm"]) {
-      hrefs[name] = await nav.getByRole("link", { name }).getAttribute("href");
+    for (const name of ["Tổng quan", "Hợp đồng", "Đối tác", "Sản phẩm & Giá"]) {
+      hrefs[name] = await nav.getByRole("link", { name, exact: true }).getAttribute("href");
     }
     expect(hrefs).toEqual({
+      "Tổng quan": "/overview",
       "Hợp đồng": "/contracts",
       "Đối tác": "/partners",
-      "So sánh giá": "/prices",
-      "Sản phẩm": "/cks",
+      "Sản phẩm & Giá": "/products",
     });
+    // Không còn mục riêng cho So sánh giá / Sản phẩm CKS / Mua hàng / Việc của tôi.
+    for (const gone of ["So sánh giá", "Mua hàng", "Việc của tôi"]) {
+      await expect(nav.getByRole("link", { name: gone })).toHaveCount(0);
+    }
   });
 
   test("PK-FR-10 · bấm menu đổi URL và đánh dấu mục đang chọn (aria-current)", async ({ page }) => {
@@ -41,21 +48,24 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     );
   });
 
-  test("PK-FR-10 · '/' ⇒ /contracts; đường dẫn lạ ⇒ /contracts (route *)", async ({ page }) => {
+  test("PK-FR-10 · nav-v2 · '/' ⇒ /overview (Tổng quan là trang đầu); đường dẫn lạ ⇒ /contracts (route *)", async ({
+    page,
+  }) => {
     await page.goto("/");
-    await expect(page).toHaveURL(/\/contracts$/);
+    await expect(page).toHaveURL(/\/overview$/);
+    await expect(page.getByRole("heading", { name: "Tổng quan", level: 1 })).toBeVisible();
     await page.goto("/khong-ton-tai/abc");
     await expect(page).toHaveURL(/\/contracts$/);
   });
 
-  test("PK-FR-10 · các route khung đều có (không 404 trắng): /contracts/new /partners /prices /cks /settings /settings/scoring", async ({
+  test("PK-FR-10 · các route khung đều có (không 404 trắng): /overview /contracts/new /partners /products /settings /settings/scoring", async ({
     page,
   }) => {
     for (const path of [
+      "/overview",
       "/contracts/new",
       "/partners",
-      "/prices",
-      "/cks",
+      "/products",
       "/settings",
       "/settings/scoring",
     ]) {
@@ -65,13 +75,87 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     }
   });
 
-  test("PK-FR-10 · tên app 'Sổ Hợp Tác' hiện trong shell (brand giữ nguyên mgmt-app)", async ({
+  test("PK-FR-10 · nav-v2 · tuyến cũ chuyển hướng: /my-work ⇒ /overview; /prices ⇒ /products; /cks ⇒ /products?tab=cks; /sourcing ⇒ /products?tab=sourcing", async ({
+    page,
+  }) => {
+    await page.goto("/my-work");
+    await expect(page).toHaveURL(/\/overview$/);
+    await page.goto("/prices");
+    await expect(page).toHaveURL(/\/products$/);
+    await expect(page.getByRole("tab", { name: "So sánh giá" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.goto("/prices?product=gao");
+    await expect(page).toHaveURL(/\/products\?product=gao$/);
+    await page.goto("/cks");
+    await expect(page).toHaveURL(/\/products\?tab=cks$/);
+    await expect(page.getByRole("tab", { name: "Sản phẩm CKS" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.goto("/sourcing");
+    await expect(page).toHaveURL(/\/products\?tab=sourcing$/);
+    await expect(page.getByRole("tab", { name: "Mua hàng" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("PK-FR-10 · nav-v2 · Sản phẩm & Giá: 3 tab So sánh giá · Sản phẩm CKS · Mua hàng; một H1; mục menu 'Sản phẩm & Giá' sáng ở mọi tab", async ({
+    page,
+  }) => {
+    await page.goto("/products");
+    const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sản phẩm & Giá");
+    await expect(page.getByRole("tab")).toHaveText(["So sánh giá", "Sản phẩm CKS", "Mua hàng"]);
+    for (const tab of ["Sản phẩm CKS", "Mua hàng", "So sánh giá"]) {
+      await page.getByRole("tab", { name: tab }).click();
+      await expect(page.getByRole("tab", { name: tab })).toHaveAttribute("aria-selected", "true");
+      await expect(nav.getByRole("link", { name: "Sản phẩm & Giá" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    }
+  });
+
+  test("PK-FR-10 · nav-v2 · tên app + tên công ty hiện sẵn ở đầu sidebar (ghim mở 224 px, không cần rê chuột)", async ({
     page,
   }) => {
     await page.goto("/contracts");
-    // mgmt-app: sidebar thu gọn không hiện tên; rê chuột mở sidebar rồi mới thấy.
-    await page.getByRole("navigation", { name: "Điều hướng chính" }).hover();
-    await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
+    const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+    await expect(nav.getByText("Sổ Hợp Tác")).toBeVisible();
+    await expect(nav.getByText("Acme Corp").first()).toBeVisible();
+    expect((await nav.boundingBox())?.width).toBe(224);
+  });
+
+  test("PK-FR-10 · nav-v2 · nút thanh trên thu sidebar về cột biểu tượng 64 px rồi mở lại; nhớ sau reload (nav:pinned)", async ({
+    page,
+  }) => {
+    await page.goto("/contracts");
+    const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+    await page.getByRole("button", { name: "Thu gọn thanh bên" }).click();
+    await expect.poll(async () => (await nav.boundingBox())?.width).toBe(64);
+    await expect(nav.getByText("Sổ Hợp Tác")).toHaveCount(0);
+    await page.reload();
+    await expect.poll(async () => (await nav.boundingBox())?.width).toBe(64);
+    await page.getByRole("button", { name: "Mở rộng thanh bên" }).click();
+    await expect.poll(async () => (await nav.boundingBox())?.width).toBe(224);
+  });
+
+  test("PK-FR-10 · nav-v2 · avatar ở chân sidebar mở menu có 'Cài đặt' (→ /settings) và 'Đăng xuất'", async ({
+    page,
+  }) => {
+    await page.goto("/contracts");
+    await page
+      .getByRole("navigation", { name: "Điều hướng chính" })
+      .getByRole("button", { name: "Tài khoản" })
+      .click();
+    const menu = page.getByRole("menu", { name: "Tài khoản" });
+    await expect(menu.getByRole("menuitem", { name: "Đăng xuất" })).toBeVisible();
+    await menu.getByRole("menuitem", { name: "Cài đặt" }).click();
+    await expect(page).toHaveURL(/\/settings$/);
   });
 
   test("PK-FR-10 · panel trợ lý: 'Mở trợ lý AI' mở complementary 'Trợ lý AI'; 'Thu gọn ›' đóng; trạng thái nhớ sau reload (assistant:open)", async ({
@@ -130,12 +214,20 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
 test.describe("PK-FR-10 · shell mobile (390×844)", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("PK-FR-10 · thanh dưới 'Điều hướng' 4 mục; sidebar chính ẩn", async ({ page }) => {
+  test("PK-FR-10 · nav-v2 · thanh dưới 'Điều hướng' đúng 4 mục như menu trái; sidebar chính ẩn", async ({
+    page,
+  }) => {
     await installBackend(page, { session: true, role: "editor" });
     await page.goto("/contracts");
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom).toBeVisible();
     await expect(bottom.getByRole("link")).toHaveCount(4);
+    await expect(bottom.getByRole("link")).toHaveText([
+      "Tổng quan",
+      "Hợp đồng",
+      "Đối tác",
+      "Sản phẩm & Giá",
+    ]);
     await expect(page.getByRole("navigation", { name: "Điều hướng chính" })).toBeHidden();
   });
 

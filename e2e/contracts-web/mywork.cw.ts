@@ -1,8 +1,9 @@
-// W1 · "Việc của tôi" (/my-work) · Luật 4b: danh sách nhóm theo mức gấp, nút hành động đúng quyền (Đã thu / Khách hẹn lại / Xong / Nhắc lại
-// sau / ghi kết quả HĐ), POST đúng thân rồi tải lại, mục menu mới. Backend giả `page.route`. mgmt-app không có màn riêng (việc nằm ở
-// thẻ trợ lý) ⇒ không có cảnh so ảnh (DEVIATIONS.md).
+// W1 · nav-v2 · "Việc của tôi" nay là khối «Cần xử lý» của Tổng quan (`/overview`; `/my-work` chuyển hướng) · Luật 4b: nhãn mức gấp, nút hành
+// động đúng quyền (Đã thu / Khách hẹn lại / Xong / Nhắc lại sau / ghi kết quả HĐ), POST đúng thân rồi tải lại, menu mới. Backend giả
+// `page.route`. Phần 6 việc + «Xem thêm», khối Hợp đồng / Đối tác: `overview.cw.ts`. Chỉ kiểm hành vi (cảnh ảnh ở `scenes.cw.ts`).
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
+import { facetsAsHub } from "./dataset-list";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -97,6 +98,19 @@ async function install(page: Page, role: Role, items: unknown[] = ITEMS) {
   await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
   await page.route("**/pack/contracts/my-work", (r) => json(r, 200, out(current)));
+  // Khối Hợp đồng / Đối tác của Tổng quan: dữ liệu rỗng, không liên quan tới các ca việc ở đây.
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/contracts/facets",
+    (r) => json(r, 200, facetsAsHub()),
+  );
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/contracts",
+    (r) => json(r, 200, { items: [], total: 0, parents: [], page: 1, page_size: 3 }),
+  );
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/partners",
+    (r) => json(r, 200, []),
+  );
   await page.route("**/pack/contracts/followups", (r) => {
     const req = r.request();
     sent.push({
@@ -120,26 +134,29 @@ async function install(page: Page, role: Role, items: unknown[] = ITEMS) {
   return sent;
 }
 
-test("nhóm theo mức gấp, 3 ô số, chip lọc theo loại", async ({ page }) => {
+test("/my-work chuyển về Tổng quan; «Cần xử lý» liệt kê việc với nhãn mức gấp và đếm quá hạn", async ({
+  page,
+}) => {
   await install(page, "editor");
   await page.goto("/my-work");
+  await expect(page).toHaveURL(/\/overview$/);
   await expect(
-    page.getByRole("main").getByRole("heading", { name: "Việc của tôi", level: 1 }),
+    page.getByRole("main").getByRole("heading", { name: "Tổng quan", level: 1 }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cần xử lý", level: 2 })).toBeVisible();
+  await expect(page.getByText("4 việc · 1 quá hạn")).toBeVisible();
   await expect(page.getByTestId("work-row")).toHaveCount(4);
-  await expect(page.getByRole("region", { name: "Trễ hạn" })).toContainText("Thu tiền Khách An");
-  await expect(page.getByRole("region", { name: "Trễ hạn" })).toContainText("Trễ 3 ngày");
-  await expect(page.getByRole("region", { name: "Hôm nay" })).toContainText("Gọi lại Bếp Việt");
-  await expect(page.getByRole("region", { name: "Sắp tới" })).toContainText("Còn 2 ngày");
-  await page.getByRole("button", { name: /^Thanh toán/ }).click();
-  await expect(page.getByTestId("work-row")).toHaveCount(2);
-  await page.getByRole("button", { name: /^Hẹn nhắc \(\d+\)/ }).click();
-  await expect(page.getByTestId("work-row")).toHaveCount(1);
+  await expect(page.getByTestId("work-row").filter({ hasText: "Thu tiền Khách An" })).toContainText(
+    "Trễ 3 ngày",
+  );
+  await expect(page.getByTestId("work-row").filter({ hasText: "Gọi lại Bếp Việt" })).toContainText(
+    "Hôm nay",
+  );
+  await expect(page.getByTestId("work-row").filter({ hasText: "M-2" })).toContainText("Còn 2 ngày");
 });
-
 test("Đã thu ⇒ POST /obligations/:id/settle rồi tải lại (hàng biến mất)", async ({ page }) => {
   const sent = await install(page, "editor");
-  await page.goto("/my-work");
+  await page.goto("/overview");
   const row = page.getByTestId("work-row").filter({ hasText: "Thu tiền Khách An" });
   await row.getByRole("button", { name: "Đã thu" }).click();
   await expect(page.getByTestId("work-row")).toHaveCount(3);
@@ -150,7 +167,7 @@ test("Đã thu ⇒ POST /obligations/:id/settle rồi tải lại (hàng biến 
 
 test("Khách hẹn lại: ô ngày mặc định +7 ngày, xác nhận ⇒ POST /postpone {to}", async ({ page }) => {
   const sent = await install(page, "editor");
-  await page.goto("/my-work");
+  await page.goto("/overview");
   const row = page.getByTestId("work-row").filter({ hasText: "Thu tiền Khách An" });
   await row.getByRole("button", { name: "Khách hẹn lại" }).click();
   const date = row.getByLabel("Ngày khách hẹn");
@@ -167,7 +184,7 @@ test("Khách hẹn lại: ô ngày mặc định +7 ngày, xác nhận ⇒ POST 
 
 test("hẹn nhắc: Xong và Nhắc lại sau (giờ mặc định 09:00 ngày mai)", async ({ page }) => {
   const sent = await install(page, "editor");
-  await page.goto("/my-work");
+  await page.goto("/overview");
   const row = page.getByTestId("work-row").filter({ hasText: "Bếp Việt" });
   await row.getByRole("button", { name: "Nhắc lại sau" }).click();
   await expect(row.getByLabel("Nhắc lại lúc")).toHaveValue("2026-10-21T09:00");
@@ -182,7 +199,7 @@ test("hẹn nhắc: Xong và Nhắc lại sau (giờ mặc định 09:00 ngày m
 
 test("hạn xử lý HĐ mua: ghi kết quả ⇒ POST /handled; có liên kết So sánh giá", async ({ page }) => {
   const sent = await install(page, "editor");
-  await page.goto("/my-work");
+  await page.goto("/overview");
   const row = page.getByTestId("work-row").filter({ hasText: "M-2" });
   await expect(row.getByRole("link", { name: "So sánh giá" })).toBeVisible();
   await row.getByRole("combobox").selectOption("negotiating");
@@ -200,7 +217,7 @@ test("người xem: không có nút ghi sổ/HĐ, nhưng vẫn đóng được h
   page,
 }) => {
   await install(page, "viewer");
-  await page.goto("/my-work");
+  await page.goto("/overview");
   await expect(page.getByTestId("work-row")).toHaveCount(4);
   await expect(page.getByRole("button", { name: "Đã thu" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Đã trả" })).toHaveCount(0);
@@ -208,18 +225,18 @@ test("người xem: không có nút ghi sổ/HĐ, nhưng vẫn đóng được h
   await expect(page.getByRole("button", { name: "Xong" })).toBeVisible();
 });
 
-test("rỗng ⇒ thông báo không có việc; menu có «Việc của tôi» và «Mua hàng»", async ({ page }) => {
+test("rỗng ⇒ «Không có việc cần xử lý»; menu chỉ còn 4 mục, «Tổng quan» sáng", async ({ page }) => {
   await install(page, "editor", []);
-  await page.goto("/my-work");
-  await expect(page.getByText("Không có việc nào cần làm")).toBeVisible();
+  await page.goto("/overview");
+  await expect(page.getByText("Không có việc cần xử lý.")).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-  await expect(nav.getByRole("link", { name: "Việc của tôi" })).toHaveAttribute(
+  await expect(nav.getByRole("link", { name: "Tổng quan" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  await expect(nav.getByRole("link", { name: "Mua hàng" })).toBeAttached();
+  await expect(nav.getByRole("link", { name: "Việc của tôi" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Mua hàng" })).toHaveCount(0);
 });
-
 test("hẹn nhắc chung: hiện tiêu đề máy chủ đặt; «Hẹn nhắc» trên đợt ⇒ POST /followups đúng thân; hẹn nhắc chung Xong được", async ({
   page,
 }) => {
@@ -235,7 +252,7 @@ test("hẹn nhắc chung: hiện tiêu đề máy chủ đặt; «Hẹn nhắc»
     contract_id: CID,
   });
   const sent = await install(page, "editor", [generic, ITEMS[0]]);
-  await page.goto("/my-work");
+  await page.goto("/overview");
   const row = page.getByTestId("work-row").filter({ hasText: "Thu Khách An 5.000.000 đ" });
   await expect(row).toContainText("10:00");
   await expect(row.getByRole("button", { name: "Xong" })).toBeVisible();

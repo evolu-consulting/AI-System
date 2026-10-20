@@ -1,4 +1,4 @@
-// W1 · "Mua hàng" (/sourcing) · Luật 4b: 4 ô số, bảng hàng đang bán (nguồn, lãi, rủi ro), đổi nguồn ⇒ PUT đúng thân, lỗi 422, người xem
+// W1 · nav-v2 · "Mua hàng" = tab của "Sản phẩm & Giá" (`/products?tab=sourcing`; `/sourcing` chuyển hướng) · Luật 4b: 4 ô số, bảng hàng đang bán (nguồn, lãi, rủi ro), đổi nguồn ⇒ PUT đúng thân, lỗi 422, người xem
 // không có ô chọn, lọc rủi ro, bảng nhà cung cấp. Backend giả `page.route`. Màn gốc ở cm-web (Next), không phải web mgmt-app dùng cho
 // so ảnh ⇒ không có cảnh so ảnh (DEVIATIONS.md).
 import { expect, type Page, type Route, test } from "@playwright/test";
@@ -146,9 +146,14 @@ async function install(page: Page, role: Role, init: Line[] = [RISKY, line({})])
 test("4 ô số, bảng dòng bán: nguồn, lãi, rủi ro xếp trước; bảng nhà cung cấp", async ({ page }) => {
   await install(page, "editor");
   await page.goto("/sourcing");
+  await expect(page).toHaveURL(/\/products\?tab=sourcing$/);
   await expect(
-    page.getByRole("main").getByRole("heading", { name: "Mua hàng", level: 1 }),
+    page.getByRole("main").getByRole("heading", { name: "Sản phẩm & Giá", level: 1 }),
   ).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Mua hàng" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page.getByTestId("sale-line")).toHaveCount(2);
   await expect(page.getByTestId("sale-line").first()).toContainText("Nguồn sắp hết hạn");
   const a4 = page.getByTestId("sale-line").filter({ hasText: "Giấy A4" });
@@ -162,7 +167,7 @@ test("đổi nguồn ⇒ PUT /sourcing/:hđ/:dòng đúng thân rồi tải lạ
   page,
 }) => {
   const sent = await install(page, "editor");
-  await page.goto("/sourcing");
+  await page.goto("/products?tab=sourcing");
   const sel = page.getByLabel("Nguồn của Giấy A4");
   await sel.selectOption(`${M2}#0`);
   await expect(page.getByTestId("sale-line").filter({ hasText: "Giấy A4" })).toContainText(
@@ -178,14 +183,14 @@ test("đổi nguồn ⇒ PUT /sourcing/:hđ/:dòng đúng thân rồi tải lạ
 
 test("người xem: không có ô chọn nguồn", async ({ page }) => {
   await install(page, "viewer");
-  await page.goto("/sourcing");
+  await page.goto("/products?tab=sourcing");
   await expect(page.getByTestId("sale-line")).toHaveCount(2);
   await expect(page.getByRole("combobox", { name: /Nguồn của/ })).toHaveCount(0);
 });
 
 test("chỉ dòng có rủi ro; ô tìm; rỗng", async ({ page }) => {
   await install(page, "editor");
-  await page.goto("/sourcing");
+  await page.goto("/products?tab=sourcing");
   await page.getByLabel("Chỉ dòng có rủi ro").check();
   await expect(page.getByTestId("sale-line")).toHaveCount(1);
   await page.getByLabel("Chỉ dòng có rủi ro").uncheck();
@@ -197,7 +202,7 @@ test("chỉ dòng có rủi ro; ô tìm; rỗng", async ({ page }) => {
 
 test("chưa có hợp đồng bán ⇒ thông báo rỗng", async ({ page }) => {
   await install(page, "editor", []);
-  await page.goto("/sourcing");
+  await page.goto("/products?tab=sourcing");
   await expect(page.getByText("Chưa có hợp đồng bán có bảng giá")).toBeVisible();
 });
 
@@ -212,7 +217,7 @@ test("phân trang ở máy chủ: 25 dòng, 20/trang ⇒ trang 2 còn 5 dòng; �
     }),
   );
   await install(page, "editor", lines);
-  await page.goto("/sourcing");
+  await page.goto("/products?tab=sourcing");
   await expect(page.getByTestId("sale-line")).toHaveCount(20);
   await page.getByRole("button", { name: "2", exact: true }).click();
   await expect(page.getByTestId("sale-line")).toHaveCount(5);

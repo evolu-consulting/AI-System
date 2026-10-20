@@ -1,18 +1,19 @@
-// HD7-AC09 · HD8-AC08 · D-02 · plan-frontend N1 §6: so màn với mgmt-app thật, 3 lớp như `cks.cw.ts` — chữ (0 ký tự lệch), khung
-// (±2 px), ảnh (≤ 0,5 %): `/partners` (+ "Ghi việc", "Chấm điểm", mobile, tối), `/settings/scoring`, `/prices?product=` (hàng hoá),
-// khối "Ghi việc với …" của trang HĐ đã duyệt. `CW_MODE=ref` chụp mgmt-app và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ
-// ngay. Hành vi (chỉ chế độ so): mỗi nút gửi đúng API/thân. Không sleep: chờ phần tử/điều kiện. Dữ liệu `dataset-partners.ts`.
+// HD7-AC09 · HD8-AC08 · plan-frontend N1 §6 · nav-v2 (người dùng chốt 2026-10-20: giao diện theo mockup NITI, thay D-02 "giống hệt mgmt-app"):
+// cảnh 3 lớp như `cks.cw.ts` — chữ (0 ký tự lệch), khung (±2 px), ảnh (≤ 0,5 %) so với BASELINE của chính contracts-web: `/partners`
+// (+ "Ghi việc", "Chấm điểm", mobile, tối), `/settings/scoring`, `/products?product=` (hàng hoá), khối "Ghi việc với …" của trang HĐ đã
+// duyệt. `CW_MODE=capture` chụp từ contracts-web và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ ngay. Hành vi (chỉ chế độ so):
+// mỗi nút gửi đúng API/thân. Không sleep: chờ phần tử/điều kiện. Dữ liệu `dataset-partners.ts`.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { asHub, asMgmt } from "./dataset";
-import { contract, contractAsHub, contractAsMgmt } from "./dataset-contract";
-import { PORK, partnerData, partnersAsHub, partnersAsMgmt } from "./dataset-partners";
+import { asHub } from "./dataset";
+import { contract, contractAsHub } from "./dataset-contract";
+import { PORK, partnerData, partnersAsHub } from "./dataset-partners";
 
-const REF = process.env.CW_MODE === "ref";
+const CAPTURE = process.env.CW_MODE === "capture";
 const DIR = join(__dirname, "baseline", process.platform);
 const HOW =
-  "Chụp tham chiếu: `bun run e2e:contracts:ref -- hd78-partners.cw.ts`, rồi commit baseline.";
+  "Chụp baseline: `bun run e2e:contracts:capture -- hd78-partners.cw.ts` (hoặc evotest `-Capture cw` cho bản Linux), rồi commit baseline.";
 const FRAME_TOL = 2;
 const PIXEL_RATIO = 0.005;
 type Box = { x: number; y: number; w: number; h: number };
@@ -103,7 +104,7 @@ const SCENES: Scene[] = [
   ),
   {
     name: "p03-goods-light",
-    path: `/prices?product=${encodeURIComponent(PORK)}`,
+    path: `/products?product=${encodeURIComponent(PORK)}`,
     size: D,
     theme: "light",
     text: ["main"],
@@ -139,24 +140,6 @@ type Route = Parameters<Parameters<Page["route"]>[1]>[0];
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
-async function installMgmt(page: Page) {
-  const d = asMgmt("owner");
-  await page.route(
-    (u) => u.pathname.startsWith("/api/"),
-    (r) => {
-      const url = new URL(r.request().url());
-      const path = url.pathname.replace(/^\/api/, "");
-      const got = partnersAsMgmt(path, url.searchParams);
-      if (got !== undefined) return json(r, 200, got);
-      if (path === `/contracts/${contract.id}`) return json(r, 200, contractAsMgmt("active"));
-      if (path === "/auth/me") return json(r, 200, d.me);
-      if (path === "/auth/options") return json(r, 200, d.options);
-      if (path === "/notifications") return json(r, 200, d.notices);
-      return r.request().method() === "GET" ? json(r, 200, []) : json(r, 200, {});
-    },
-  );
-}
-
 async function installHub(page: Page) {
   const d = asHub("owner");
   await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
@@ -190,7 +173,7 @@ async function prepare(page: Page, s: Scene) {
     },
     [s.theme],
   );
-  await (REF ? installMgmt(page) : installHub(page));
+  await installHub(page);
   await page.setViewportSize(s.size);
   await page.goto(s.path);
   await s.ready(page).first().waitFor();
@@ -212,26 +195,29 @@ async function collect(page: Page, s: Scene): Promise<Layers> {
 }
 
 function compare(s: Scene, got: Layers, want: Layers) {
-  expect.soft(got.text, `[${s.name}] chữ lệch mgmt-app`).toBe(want.text);
+  expect.soft(got.text, `[${s.name}] chữ lệch baseline`).toBe(want.text);
   for (const [k, w] of Object.entries(want.boxes)) {
     const g = got.boxes[k];
     if (!w || !g) {
-      expect.soft(g, `[${s.name}] khung "${k}" ${w ? "thiếu" : "thừa"} so với mgmt-app`).toEqual(w);
+      expect.soft(g, `[${s.name}] khung "${k}" ${w ? "thiếu" : "thừa"} so với baseline`).toEqual(w);
       continue;
     }
     for (const f of ["x", "y", "w", "h"] as const)
       expect
-        .soft(Math.abs(g[f] - w[f]), `[${s.name}] khung "${k}".${f}: hub ${g[f]} · mgmt ${w[f]}`)
+        .soft(
+          Math.abs(g[f] - w[f]),
+          `[${s.name}] khung "${k}".${f}: hub ${g[f]} · baseline ${w[f]}`,
+        )
         .toBeLessThanOrEqual(FRAME_TOL);
   }
 }
 
 for (const s of SCENES) {
-  test(`HD7-AC09 · HD8-AC08 · ${s.name} · chữ/khung/ảnh khớp mgmt-app`, async ({ page }) => {
+  test(`HD7-AC09 · HD8-AC08 · ${s.name} · chữ/khung/ảnh khớp baseline nav-v2`, async ({ page }) => {
     await prepare(page, s);
     const got = await collect(page, s);
     const file = join(DIR, `${s.name}.json`);
-    if (REF) {
+    if (CAPTURE) {
       mkdirSync(DIR, { recursive: true });
       writeFileSync(file, `${JSON.stringify(got, null, 2)}\n`);
     } else {
@@ -269,7 +255,7 @@ async function recordWrites(page: Page): Promise<Sent[]> {
 test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại / việc khác / Huỷ gửi đúng API", async ({
   page,
 }) => {
-  test.skip(REF, "chỉ chạy trên contracts-web");
+  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
   await prepare(page, SCENES.find((s) => s.name === "p02-partners-log") as Scene);
   const sent = await recordWrites(page);
   const [first] = partnerData.instalments;
@@ -312,7 +298,7 @@ test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại 
 test("HD8-FR-03 · Cách tính: tổng ≠ 100 khoá nút Lưu; lưu gửi tiêu chí + quy tắc; 422 hiện đúng câu", async ({
   page,
 }) => {
-  test.skip(REF, "chỉ chạy trên contracts-web");
+  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
   await prepare(page, SCENES.find((s) => s.name === "p06-scoring-light") as Scene);
   const sent: Sent[] = [];
   await page.route("**/pack/contracts/scoring/customer", (r) => {
@@ -351,7 +337,7 @@ test("HD8-FR-03 · Cách tính: tổng ≠ 100 khoá nút Lưu; lưu gửi tiêu
 test("HD8-FR-04 · HD8-FR-05 · Chấm điểm gửi điểm 0–100; Thêm báo giá gửi đơn giá số nguyên đồng", async ({
   page,
 }) => {
-  test.skip(REF, "chỉ chạy trên contracts-web");
+  test.skip(CAPTURE, "chỉ chạy trên contracts-web");
   await prepare(page, SCENES.find((s) => s.name === "p02-partners-rate") as Scene);
   const sent = await recordWrites(page);
   await page.getByLabel("Điểm Thái độ hợp tác (số)").fill("85");
