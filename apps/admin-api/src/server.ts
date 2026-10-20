@@ -9,11 +9,12 @@ import { assertSafeDbRole } from "./lib/db-guard";
 import { loadJwtKeys } from "./lib/jwt";
 import { logger, setMinLevel } from "./lib/logger";
 import { createMailer } from "./lib/mailer";
-import { createRedis } from "./lib/redis";
+import { createRedis, type Redis } from "./lib/redis";
 import { parseMasterKey, selfTestSecretKey } from "./lib/secret-crypto";
 import { createDummyHash } from "./modules/auth/auth.service";
 import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
 import { type LimitPolicy, policyFromEnv } from "./modules/auth/limit/limit.rules";
+import { redisSsoStore } from "./modules/auth/sso/sso.store";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -44,7 +45,7 @@ const REDIS_READY_WAIT_MS = 3_000;
  */
 async function startLoginLimiter(
   env: ReturnType<typeof loadEnv>,
-): Promise<LoginLimiter | undefined> {
+): Promise<{ limiter: LoginLimiter; redis: Redis } | undefined> {
   let policy: LimitPolicy;
   try {
     policy = policyFromEnv(env.APP_ENV, env.LOGIN_IP_MAX_ATTEMPTS);
@@ -72,7 +73,7 @@ async function startLoginLimiter(
   });
   if (!(await Promise.race([ready, late]))) logger.warn("redis-not-ready", { op: "login-limit" });
   clearTimeout(timer);
-  return redisLoginLimiter(redis, { policy });
+  return { limiter: redisLoginLimiter(redis, { policy }), redis };
 }
 
 async function main(): Promise<void> {
@@ -94,7 +95,7 @@ async function main(): Promise<void> {
   }
   const db = await connect(env.ADMIN_API_DATABASE_URL).catch((err) => fail("db", err));
   const dummyHash = await createDummyHash();
-  const loginLimiter = await startLoginLimiter(env);
+  const limit = await startLoginLimiter(env);
   const app = createApp(
     { version: pkg.version, corsOrigins: env.CORS_ORIGINS },
     {
@@ -107,7 +108,9 @@ async function main(): Promise<void> {
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,
       frozenModules: env.ADMIN_FROZEN_MODULES === "on",
-      loginLimiter,
+      loginLimiter: limit?.limiter,
+      // sso-switch: mã chuyển phiên dùng chung Redis của giới hạn đăng nhập (production bắt buộc có).
+      ssoStore: limit ? redisSsoStore(limit.redis) : undefined,
       trustProxyHops: env.TRUST_PROXY_HOPS,
       hashSlots: defaultHashSlots(env.LOGIN_HASH_CONCURRENCY),
       hub:

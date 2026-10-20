@@ -132,7 +132,7 @@ export function DepartmentsCard({ data, name, busy, act }: Props) {
           {t("contracts.org.deptKey")}
           <input
             required
-            pattern="[a-z0-9-]{2,32}"
+            pattern="[a-z0-9\-]{2,32}"
             className={field}
             value={key}
             onChange={(e) => setKey(e.target.value)}

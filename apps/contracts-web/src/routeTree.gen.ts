@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SsoRouteImport } from './routes/sso'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMyWorkRouteImport } from './routes/_authed/my-work'
 import { Route as AuthedOverviewRouteImport } from './routes/_authed/overview'
@@ -40,6 +41,11 @@ const AuthedRoute = AuthedRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SsoRoute = SsoRouteImport.update({
+  id: '/sso',
+  path: '/sso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
@@ -121,6 +127,7 @@ const AuthedSettingsScoringRoute = AuthedSettingsScoringRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
   '/overview': typeof AuthedOverviewRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
   '/overview': typeof AuthedOverviewRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/my-work': typeof AuthedMyWorkRoute
   '/_authed/overview': typeof AuthedOverviewRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/sso'
     | '/feedback'
     | '/my-work'
     | '/overview'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/sso'
     | '/feedback'
     | '/my-work'
     | '/overview'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/login'
+    | '/sso'
     | '/_authed/feedback'
     | '/_authed/my-work'
     | '/_authed/overview'
@@ -242,6 +254,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SsoRoute: typeof SsoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sso': {
+      id: '/sso'
+      path: '/sso'
+      fullPath: '/sso'
+      preLoaderRoute: typeof SsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/feedback': {
@@ -418,6 +438,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  SsoRoute: SsoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

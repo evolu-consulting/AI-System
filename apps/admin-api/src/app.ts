@@ -17,6 +17,8 @@ import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
 import type { LoginLimiter } from "./modules/auth/limit/limit.redis";
+import { ssoRoutes } from "./modules/auth/sso/sso.routes";
+import { memorySsoStore, type SsoCodeStore } from "./modules/auth/sso/sso.store";
 import { totpRoutes } from "./modules/auth/totp/totp.routes";
 import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
@@ -65,6 +67,8 @@ export type AppDeps = {
   hashSlots?: Semaphore;
   /** L1 · `TRUST_PROXY_HOPS` (IP client từ X-Forwarded-For); vắng ⇒ 0. */
   trustProxyHops?: number;
+  /** sso-switch · kho mã chuyển phiên (Redis ở production); vắng ⇒ Map trong bộ nhớ (một tiến trình). */
+  ssoStore?: SsoCodeStore;
 };
 
 /** Trần mặc định: số lõi (≥ 2) phép băm cùng lúc, hàng đợi 100 — vượt ⇒ 503 AUTH_UNAVAILABLE. */
@@ -98,6 +102,15 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     }),
   );
   app.route("/auth", meRoutes(ctx));
+  app.route(
+    "/auth",
+    ssoRoutes({
+      ...ctx,
+      ssoStore: deps.ssoStore ?? memorySsoStore(),
+      secureCookie,
+      trustProxyHops: deps.trustProxyHops,
+    }),
+  );
   app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
   const qctx = { ...ctx, mailer: deps.mailer, webUrl: deps.adminWebUrl };
   if (deps.mailer) startQuotaListener(qctx);

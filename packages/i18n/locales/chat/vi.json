@@ -66,6 +66,10 @@
     "openList": "Danh sách hội thoại",
     "collapseSidebar": "Thu gọn thanh bên",
     "expandSidebar": "Mở rộng thanh bên",
+    "apps": "Ứng dụng",
+    "appContracts": "Sổ Hợp Tác",
+    "appAdmin": "Quản trị",
+    "appSwitching": "Đang chuyển ứng dụng…",
     "newGroup": "Nhóm mới"
   },
   "group": {

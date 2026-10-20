@@ -18,7 +18,7 @@ function SettingsHome() {
         </li>
         <li>
           <Link to="/settings/scoring" className={card}>
-            <span className="font-semibold">{t("contracts.partners.scoring.title")}</span>
+            <span className="font-semibold">{t("contracts.scoring.title")}</span>
           </Link>
         </li>
       </ul>

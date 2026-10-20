@@ -34,6 +34,8 @@ const proxy = {
   "/rooms": spaNavigation,
   "/me": spaNavigation,
   "/health": HUB_URL,
+  // sso-switch: app switcher hỏi gói Sổ Hợp Tác đã bật cho người dùng chưa (`GET /pack/contracts/me`).
+  "/pack": HUB_URL,
 };
 
 export default defineConfig({

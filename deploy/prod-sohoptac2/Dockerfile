@@ -14,8 +14,12 @@ ARG PUBLIC_CHAT_APP_URL
 ARG PUBLIC_ADMIN_WEB_URL
 ARG PUBLIC_CHAT_WEB_URL
 ARG PUBLIC_AUTH_URL=
+# sso-switch: chat-web (app switcher) cần URL contracts-web; contracts-web/admin-web dội về AI System (chat-web) để SSO.
+ARG PUBLIC_CONTRACTS_WEB_URL
+ARG PUBLIC_SSO_URL
 ENV PUBLIC_HUB_URL=$PUBLIC_HUB_URL PUBLIC_STUDIO_URL=$PUBLIC_STUDIO_URL PUBLIC_CHAT_APP_URL=$PUBLIC_CHAT_APP_URL \
-    PUBLIC_ADMIN_WEB_URL=$PUBLIC_ADMIN_WEB_URL PUBLIC_CHAT_WEB_URL=$PUBLIC_CHAT_WEB_URL PUBLIC_AUTH_URL=$PUBLIC_AUTH_URL
+    PUBLIC_ADMIN_WEB_URL=$PUBLIC_ADMIN_WEB_URL PUBLIC_CHAT_WEB_URL=$PUBLIC_CHAT_WEB_URL PUBLIC_AUTH_URL=$PUBLIC_AUTH_URL \
+    PUBLIC_CONTRACTS_WEB_URL=$PUBLIC_CONTRACTS_WEB_URL PUBLIC_SSO_URL=$PUBLIC_SSO_URL
 # Build từng web riêng (turbo strict env có thể bỏ mất PUBLIC_*).
 RUN bun run --cwd apps/contracts-web build && bun run --cwd apps/chat-web build \
  && bun run --cwd apps/admin-web build && bun run --cwd apps/studio-web build \

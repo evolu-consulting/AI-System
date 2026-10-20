@@ -60,6 +60,9 @@ services:
         PUBLIC_ADMIN_WEB_URL: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
         PUBLIC_CHAT_WEB_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
         PUBLIC_AUTH_URL: ""
+        # sso-switch: app switcher (chat → contracts) + SSO dội về AI System (chat-web).
+        PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+        PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
     environment:
       HOME: /tmp
     command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]

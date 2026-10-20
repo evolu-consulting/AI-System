@@ -126,6 +126,31 @@ async function login(ctx: Ctx, req: LoginRequest): Promise<LoginResponse> {
   return res;
 }
 
+/** sso-switch · web nguồn (đã đăng nhập): xin mã một lần cho app đích. Token cũ ⇒ refresh một lần rồi thử lại. */
+async function ssoCode(ctx: Ctx, app: string): Promise<string> {
+  const call = (token: string | null) =>
+    sendPublic<{ code: string }>("/auth/sso/code", {
+      method: "POST",
+      body: { app },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  try {
+    return (await call(ctx.state.accessToken)).code;
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 401) throw err;
+    const fresh = await refreshToken(ctx, ctx.state.accessToken);
+    if (!fresh) throw err;
+    return (await call(fresh)).code;
+  }
+}
+
+/** sso-switch · web đích: đổi mã lấy phiên riêng (cookie `ai_rt_<app>` do admin-api đặt). */
+async function ssoRedeem(ctx: Ctx, code: string, tenantKey?: string): Promise<void> {
+  const body = tenantKey ? { code, tenant_key: tenantKey } : { code };
+  const grant = await sendPublic<TokenGrant>("/auth/sso/redeem", { method: "POST", body });
+  applyGrant(ctx, grant);
+}
+
 async function logout(ctx: Ctx): Promise<void> {
   try {
     await sendPublic<void>("/auth/logout", { method: "POST" });
@@ -166,6 +191,8 @@ export function createSession(cfg: SessionConfig) {
     login: (req: LoginRequest): Promise<LoginResponse> => login(ctx, req),
     logout: (): Promise<void> => logout(ctx),
     applyGrant: (grant: TokenGrant): void => applyGrant(ctx, grant),
+    ssoCode: (app: string): Promise<string> => ssoCode(ctx, app),
+    ssoRedeem: (code: string, tenantKey?: string): Promise<void> => ssoRedeem(ctx, code, tenantKey),
     /** Chỉ dùng cho test: giả thông điệp BroadcastChannel từ tab khác. */
     receive: (msg: AuthMessage): void => receive(ctx, msg),
     /** Chỉ dùng cho test. */

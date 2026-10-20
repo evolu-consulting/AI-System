@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SsoRouteImport } from './routes/sso'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedAgentsRouteImport } from './routes/_authed/agents'
@@ -58,6 +59,11 @@ const ChangePasswordRoute = ChangePasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SsoRoute = SsoRouteImport.update({
+  id: '/sso',
+  path: '/sso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/audit': typeof AuthedAuditRouteRouteWithChildren
   '/access': typeof AuthedAccessRoute
   '/agents': typeof AuthedAgentsRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/audit': typeof AuthedAuditRouteRouteWithChildren
   '/access': typeof AuthedAccessRoute
   '/agents': typeof AuthedAgentsRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
+  '/sso': typeof SsoRoute
   '/_authed/audit': typeof AuthedAuditRouteRouteWithChildren
   '/_authed/access': typeof AuthedAccessRoute
   '/_authed/agents': typeof AuthedAgentsRoute
@@ -348,6 +357,7 @@ export interface FileRouteTypes {
     | '/'
     | '/change-password'
     | '/login'
+    | '/sso'
     | '/audit'
     | '/access'
     | '/agents'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
   to:
     | '/change-password'
     | '/login'
+    | '/sso'
     | '/audit'
     | '/access'
     | '/agents'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/change-password'
     | '/login'
+    | '/sso'
     | '/_authed/audit'
     | '/_authed/access'
     | '/_authed/agents'
@@ -461,6 +473,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
+  SsoRoute: typeof SsoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -484,6 +497,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sso': {
+      id: '/sso'
+      path: '/sso'
+      fullPath: '/sso'
+      preLoaderRoute: typeof SsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -809,6 +829,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
+  SsoRoute: SsoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

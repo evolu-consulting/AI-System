@@ -94,6 +94,26 @@ export const RefreshResponseSchema = TokenGrantSchema;
 export type RefreshResponse = TokenGrant;
 
 /** Logout idempotent: extension có thể gửi `refresh_token`, web gửi body rỗng. */
+/**
+ * sso-switch · chuyển phiên giữa các web (đăng nhập AI System một lần): web nguồn (Bearer) xin mã một lần cho `app` đích
+ * (`POST /auth/sso/code`); web đích (`X-App` = app đó) đổi mã lấy phiên riêng của nó (`POST /auth/sso/redeem` ⇒ cookie
+ * `ai_rt_<app>` + TokenGrant). Mã 60 giây, dùng một lần; mọi lỗi = 401 UNAUTHORIZED (không lộ lý do).
+ */
+export const SSO_CODE_TTL_S = 60;
+export const SsoCodeRequestSchema = z.strictObject({ app: z.enum(WEB_APPS) });
+export type SsoCodeRequest = z.infer<typeof SsoCodeRequestSchema>;
+export const SsoCodeResponseSchema = z.strictObject({
+  code: z.string().min(1).max(TOKEN_MAX),
+  expires_in: z.literal(SSO_CODE_TTL_S),
+});
+export type SsoCodeResponse = z.infer<typeof SsoCodeResponseSchema>;
+/** `tenant_key` (tuỳ chọn): web đích gắn với một công ty ⇒ mã của công ty khác bị từ chối. */
+export const SsoRedeemRequestSchema = z.strictObject({
+  code: z.string().min(1).max(TOKEN_MAX),
+  tenant_key: LoginIdSchema.optional(),
+});
+export type SsoRedeemRequest = z.infer<typeof SsoRedeemRequestSchema>;
+
 export const LogoutRequestSchema = z.strictObject({
   refresh_token: z.string().max(TOKEN_MAX).optional(),
 });

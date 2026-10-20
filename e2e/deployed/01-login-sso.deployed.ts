@@ -25,16 +25,17 @@ test.describe("01 đăng nhập + SSO", () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  // TODO(chưa xây): app switcher trong chat-web/admin-web (chọn "Sổ Hợp Tác" ⇒ nhảy sang contracts-web). Hiện không có control nào như vậy.
-  test.fixme("app switcher trong AI System mở Sổ Hợp Tác", async ({ page }) => {
+  // sso-switch: nút "Ứng dụng" ở thanh bên chat-web ⇒ link Sổ Hợp Tác (/sso?app=contracts ⇒ mã một lần) ⇒ contracts-web đã đăng nhập.
+  test("app switcher trong AI System mở Sổ Hợp Tác", async ({ page }) => {
     await login(page, CHAT);
     await page.getByRole("button", { name: /Ứng dụng|Apps|Sổ Hợp Tác/ }).click();
     await page.getByRole("link", { name: /Sổ Hợp Tác/ }).click();
-    await expect(page).toHaveURL(new RegExp(`^${CW}`));
+    await expect(page).toHaveURL(new RegExp(`^${CW}/(?!login)`));
+    await expect(page.getByRole("link", { name: "Tổng quan" }).first()).toBeVisible();
   });
 
-  // TODO(chưa xây): SSO giữa các web. Hiện contracts-web giữ phiên riêng theo origin (cổng) ⇒ mở sau khi đăng nhập chat-web vẫn đòi đăng nhập lại.
-  test.fixme("sang contracts-web sau khi đăng nhập chat-web KHÔNG phải đăng nhập lại", async ({
+  // sso-switch: contracts-web chưa có phiên ⇒ dội về AI System (/sso) ⇒ mã một lần ⇒ phiên contracts riêng, không hỏi mật khẩu.
+  test("sang contracts-web sau khi đăng nhập chat-web KHÔNG phải đăng nhập lại", async ({
     page,
   }) => {
     await login(page, CHAT);
