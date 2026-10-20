@@ -29,6 +29,13 @@
       "when": 1794900300000,
       "tag": "0004_r1_lexemes_role",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794900400000,
+      "tag": "0005_r1_lexemes_lock_order",
+      "breakpoints": true
     }
   ]
 }
