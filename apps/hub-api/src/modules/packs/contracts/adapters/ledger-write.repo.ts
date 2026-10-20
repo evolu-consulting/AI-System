@@ -175,6 +175,13 @@ function ledgerEventWrites(
             ${json(w.delta == null ? {} : { delta: w.delta })}
           where exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.party_key = ${w.party})
              or exists (select 1 from contracts.partner_events p where p.tenant_id = ${t}::uuid and p.party_key = ${w.party})
+             -- M1e (UAT B2): đối tác là một bên của HĐ CỦA MÌNH (tạo/phụ trách) — kể cả HĐ tự duyệt chưa có đợt. Chỉ mở GHI;
+             -- đọc vẫn theo luật thấy (việc mình ghi: by_user; việc người khác: khoá bên của HĐ được người khác duyệt).
+             or exists (select 1 from contracts.contracts k
+               where k.tenant_id = ${t}::uuid and (k.owner_user_id = ${w.by}::uuid or k.created_by = ${w.by}::uuid)
+                 and ${w.party} in (
+                   contracts.party_key(k.fields -> 'buyer_name' ->> 'value', k.fields -> 'buyer_tax_id' ->> 'value'),
+                   contracts.party_key(k.fields -> 'supplier_name' ->> 'value', k.fields -> 'supplier_tax_id' ->> 'value')))
           returning *)
         select ${evJson("e", "x")} as j from e left join contracts.partner_event_voids x on false`,
       ),
