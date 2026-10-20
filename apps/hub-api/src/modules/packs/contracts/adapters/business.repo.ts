@@ -2,7 +2,7 @@
 // + lịch sử mua bán + HĐ theo SP + cấu hình (`score_configs_v2`, phạm vi `business`). Tx do `PackUow` mở (RLS tenant + luật thấy HĐ M1);
 // lọc `tenant_id` tường minh. Mỗi hàm MỘT câu, văn bản cố định, dữ liệu qua tham số. Bán = SL ĐÃ GIAO của HĐ Bán (`milestone_items.delivered`,
 // ngày = ngày xác nhận mốc giao); giá vốn = dòng sổ xuất của đúng mốc + dòng HĐ (đặt theo khách không có ⇒ không tính biên lãi).
-import type { BizContractOut, BizLotOut, BizSaleOut } from "@ai/contracts";
+import type { BizContractOut } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { BizExtras, BizFilter, BizRow, StoredBiz } from "../application/business.ports";

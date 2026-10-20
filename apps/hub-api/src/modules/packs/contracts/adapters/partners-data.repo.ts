@@ -5,37 +5,22 @@
 // HĐ cha chỉ tra cho phụ lục; sổ đối tác GOM theo (đối tác, vai) ở SQL (≡ `aggregate`); mảng `json` gọn; khoá đối tác + ngày ở TS.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type {
+  Market,
+  PartnerData,
+  StoredConfig,
+  WindowOverride,
+} from "../application/partners.ports";
 import type { PriceItem } from "../domain/appendix-pricing.rules";
 import type { PricedContract, Quote } from "../domain/goods-prices.rules";
 import { isIsoDate, partyKey } from "../domain/ledger.rules";
-import { aggKey, type FactRow, type PartyEv } from "../domain/partners.rules";
+import { aggKey, type PartyEv } from "../domain/partners.rules";
 import { type Agg, addGroup, emptyAgg } from "../domain/scoring-agg.rules";
-import type { Criterion, Role, Rules } from "../domain/scoring-config.rules";
+import type { Role } from "../domain/scoring-config.rules";
 import { one } from "./ledger-sql";
 import { groupsJson, pendJson, ratedJson, winCtes } from "./partners-ledger.sql";
 
-export type StoredConfig = {
-  role: Role;
-  version: number;
-  criteria: Criterion[];
-  rules: Rules;
-  updated_by: string | null;
-  updated_at: string | null;
-};
-export type PartnerData = {
-  facts: FactRow[];
-  /** HĐ mua đã duyệt (mọi loại) + dòng hàng — đủ cho giá phía NCC (chênh giá, so giá). */
-  contracts: PricedContract[];
-  /** Sổ đối tác đã gom, khoá `aggKey(đối tác, vai)`. */
-  aggs: Map<string, Agg>;
-  configs: StoredConfig[];
-  quotes: Quote[];
-  /** Danh bạ: khoá đối tác ⇒ tên ngắn ?? tên (HD8-FR-09). */
-  names: Map<string, string>;
-  /** Giá thị trường hàng hoá theo mặt hàng (HD8-FR-08). */
-  market: Map<string, Market>;
-};
-export type Market = { min: number; max: number; seen: string; n: number };
+export type { Market, PartnerData, StoredConfig, WindowOverride };
 
 const ISO = sql`'^\\d{4}-\\d{2}-\\d{2}$'`;
 
@@ -257,11 +242,7 @@ function toData(r: Omit<Raw, "buy" | "items"> & { contracts: PricedContract[] })
   };
 }
 
-/** Khoảng tính đè theo vai (bản nháp xem trước/lưu). */
 const BOTH: readonly Role[] = ["customer", "supplier"];
-export type WindowOverride = Partial<
-  Record<Role, { window_months: number; recency_months: number }>
->;
 
 /**
  * Ba câu ĐỘC LẬP (Luật 4c: chạy song song ở ba tx chỉ đọc, độ trễ = câu chậm nhất; số câu cố định 3): (A) sổ đối tác đã gom +

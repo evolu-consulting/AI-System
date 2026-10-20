@@ -2,9 +2,7 @@
 // tìm giá trên mạng (CHỈ khi người dùng bấm, CHỈ gửi tên SP, qua AI client gói `ai-sub`, có trần thao tác + trần token); `save` = lưu
 // kết quả vào bảng so sánh; `remove`. SP nhóm Giới thiệu không có tab ⇒ 404.
 
-import type { AiClient } from "../../../../lib/ai-client/ai-client";
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { ActionQuota } from "../adapters/action-quota";
 import { localDate } from "../domain/local-time.rules";
 import {
   parseSearchReply,
@@ -19,6 +17,7 @@ import type {
   SupplierPriceInput,
   SupplierSearchOut,
 } from "../domain/supplier-prices.types";
+import type { ActionQuota, AiComplete } from "./ai.ports";
 
 export type SuppliersRepo = {
   overview(productId: string): Promise<OverviewData | null>;
@@ -43,7 +42,7 @@ export class SupplierFail extends Error {
 type Rep = { score: number | null; level: "good" | "fair" | "watch" | "new" };
 export type SuppliersDeps = {
   uow: PackUow<{ suppliers: SuppliersRepo }>;
-  ai: AiClient;
+  ai: AiComplete;
   /** Trần thao tác tốn AI/tenant/ngày (cùng bộ đếm với trích HĐ). */
   quota: ActionQuota;
   /** Điểm uy tín vai NCC theo khoá đối tác (V2-E). */
@@ -56,7 +55,7 @@ export type SuppliersDeps = {
 
 export const SEARCH_TIMEOUT_MS = 180_000;
 
-export function suppliersUsecase(d: SuppliersDeps) {
+function suppliersCtx(d: SuppliersDeps) {
   const now = d.now ?? (() => new Date());
   const tx = <T>(who: PackWho, fn: (r: SuppliersRepo) => Promise<T>) =>
     d.uow.tenant(who, (r) => fn(r.suppliers));
@@ -67,6 +66,40 @@ export function suppliersUsecase(d: SuppliersDeps) {
     if (!h || h.group === "referral") throw new SupplierFail("not_found");
     return h;
   }
+  return { tx, today, product };
+}
+type SuppliersCtx = ReturnType<typeof suppliersCtx>;
+
+async function searchPrices(
+  d: SuppliersDeps,
+  c: SuppliersCtx,
+  who: PackWho,
+  id: string,
+): Promise<SupplierSearchOut> {
+  const p = await c.product(who, id);
+  await d.quota(who.tenantId);
+  const out = await d.ai.complete({
+    tenantId: who.tenantId,
+    userId: who.userId,
+    feature: SEARCH_FEATURE,
+    model: process.env.CONTRACTS_PRICE_SEARCH_MODEL || SEARCH_MODEL,
+    system: SEARCH_SYSTEM,
+    prompt: searchPrompt(p.name), // CHỈ tên SP ra ngoài
+    webSearch: true,
+    signal: AbortSignal.timeout(d.searchTimeoutMs ?? SEARCH_TIMEOUT_MS),
+  });
+  if (!out.ok)
+    throw new SupplierFail(
+      out.code === "CAP_EXCEEDED" ? "cap" : out.code === "UNAVAILABLE" ? "unavailable" : "failed",
+    );
+  const items = parseSearchReply(out.text, await c.today(who));
+  if (!items) throw new SupplierFail("failed");
+  return { query: p.name, items };
+}
+
+export function suppliersUsecase(d: SuppliersDeps) {
+  const c = suppliersCtx(d);
+  const { tx, today, product } = c;
   return {
     async overview(who: PackWho, id: string): Promise<SupplierOverviewOut> {
       const [data, scores] = await Promise.all([tx(who, (r) => r.overview(id)), d.reputation(who)]);
@@ -74,31 +107,7 @@ export function suppliersUsecase(d: SuppliersDeps) {
       return buildOverview(data, scores);
     },
 
-    async search(who: PackWho, id: string): Promise<SupplierSearchOut> {
-      const p = await product(who, id);
-      await d.quota(who.tenantId);
-      const out = await d.ai.complete({
-        tenantId: who.tenantId,
-        userId: who.userId,
-        feature: SEARCH_FEATURE,
-        model: process.env.CONTRACTS_PRICE_SEARCH_MODEL || SEARCH_MODEL,
-        system: SEARCH_SYSTEM,
-        prompt: searchPrompt(p.name), // CHỈ tên SP ra ngoài
-        webSearch: true,
-        signal: AbortSignal.timeout(d.searchTimeoutMs ?? SEARCH_TIMEOUT_MS),
-      });
-      if (!out.ok)
-        throw new SupplierFail(
-          out.code === "CAP_EXCEEDED"
-            ? "cap"
-            : out.code === "UNAVAILABLE"
-              ? "unavailable"
-              : "failed",
-        );
-      const items = parseSearchReply(out.text, await today(who));
-      if (!items) throw new SupplierFail("failed");
-      return { query: p.name, items };
-    },
+    search: (who: PackWho, id: string): Promise<SupplierSearchOut> => searchPrices(d, c, who, id),
 
     async save(who: PackWho, id: string, items: SupplierPriceInput[]): Promise<{ ids: string[] }> {
       await product(who, id);

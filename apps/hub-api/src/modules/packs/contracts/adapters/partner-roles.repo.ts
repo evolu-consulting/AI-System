@@ -1,37 +1,19 @@
 // V2-C · KN-08 · HD-10 · DT-05: câu SQL của vai đối tác + gợi ý đối tác + ghi chú — MỘT câu mỗi hàm (Luật 4c), lọc `tenant_id` tường
 // minh ngoài RLS; luật thấy M1 do policy của 0024 (vai/ghi chú của đối tác mình thấy hoặc do mình tạo).
-import type {
-  PartnerContractCount,
-  PartnerNote,
-  PartnerProfile,
-  PartnerRoleV2,
-} from "@ai/contracts";
+import type { PartnerContractCount, PartnerNote, PartnerProfile } from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type {
+  NoteDelete,
+  PartnerContractRaw,
+  PartyHit,
+  RoleCount,
+} from "../application/partner-roles.ports";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
-import type { ProgressRaw } from "./milestones.mapper";
 
-/** Hàng HĐ thô của đối tác (`contracts`): tóm tắt mốc cho `toProgress` + cột hiển thị. */
-export type PartnerContractRaw = ProgressRaw & {
-  title: string;
-  number: string | null;
-  value: number | string | null;
-  end_date: string | null;
-};
+export type { NoteDelete, PartnerContractRaw, PartyHit, RoleCount };
+
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
-
-export type RoleCount = {
-  party: string;
-  role: PartnerRoleV2;
-  name: string | null;
-  created_from: "contract" | "backfill" | "manual";
-  contract_id: string | null;
-  first_at: string;
-  events: number;
-  min_events: number | null;
-};
-export type PartyHit = { party: string; name: string | null; tax_id: string | null };
-export type NoteDelete = { deleted: number; exists: boolean };
 
 const ME = sql.raw(`NULLIF(current_setting('app.user_id', true), '')::uuid`);
 const NOTE =

@@ -5,6 +5,7 @@
 // join + hash aggregate). Kết quả dạng CỘT. Chạy dưới RLS người gọi (M1: thấy gì chấm nấy) hoặc phạm vi hệ thống (chốt tháng).
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import type { DetailJob, DetailMilestone, ScoreRows } from "../application/reputation.ports";
 import { type CellParam, REP_CELLS, type RepGroup, type RepRole } from "../domain/rep-config.rules";
 import { type CellInput, monthsBefore, type SrcAgg } from "../domain/rep-score.rules";
 import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
@@ -153,7 +154,8 @@ type Raw = {
   rt: [Col<string>, Col<number>, Col<string>, Col<number>];
   nm: [Col<string>, Col<string>];
 };
-export type ScoreRows = { inputs: Map<string, CellInput>; names: Map<string, string> };
+
+export type { DetailJob, DetailMilestone, ScoreRows };
 
 function inputsOf(r: Raw): Map<string, CellInput> {
   const out = new Map<string, CellInput>();
@@ -232,26 +234,6 @@ export async function scoreRows(tx: Tx, t: string, q: RepQuery): Promise<ScoreRo
   const a = await aggRows(tx, t, q);
   return rowsOf(a, await factRows(tx, t, q));
 }
-
-export type DetailMilestone = {
-  id: string;
-  grp: RepGroup;
-  kind: string;
-  title: string | null;
-  contract_id: string;
-  contract: string | null;
-  due_date: string;
-  done_at: string;
-  fault: string | null;
-};
-export type DetailJob = {
-  id: string;
-  grp: RepGroup;
-  job_type: string;
-  at: string;
-  note: string | null;
-  contract_id: string | null;
-};
 
 /** DT-02: từng việc góp điểm của MỘT đối tác × vai trong khoảng tính (mốc việc của đối tác + việc ghi tay; ≤ 500 mỗi loại). */
 export async function detailRows(

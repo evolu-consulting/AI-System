@@ -4,13 +4,14 @@
 import { CONTRACT_APPROVAL_ERRORS } from "@ai/contracts";
 import type { Redis } from "ioredis";
 import { AppError } from "../../../../lib/errors";
+import type { ActionQuota } from "../application/ai.ports";
 import { nextDayStart } from "../domain/quota-reset.rules";
 import { uploadDay } from "../domain/upload.rules";
 import { QUOTA_KEY_PREFIX, QUOTA_TTL_S } from "./upload-counter.redis";
 
 export const ACTIONS_TENANT_DAILY = 100;
 
-export type ActionQuota = (tenantId: string) => Promise<void>;
+export type { ActionQuota };
 
 export function actionQuota(o: {
   redis?: Redis;

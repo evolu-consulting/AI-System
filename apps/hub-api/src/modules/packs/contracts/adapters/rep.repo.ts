@@ -2,34 +2,12 @@
 // MỘT câu văn bản cố định, lọc `tenant_id` tường minh ngoài RLS. Câu chấm (gom theo tập) ở `rep.sql.ts`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { LockPoint, LockRow, StoredRep } from "../application/reputation.ports";
 import type { RepGroup, RepRole } from "../domain/rep-config.rules";
 import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
 import { aggRows, type CellParam, cellIndex, detailRows, factRows, scoreRows } from "./rep.sql";
 
-export type StoredRep = {
-  scope: string;
-  version: number;
-  config: unknown;
-  updated_by: string | null;
-  updated_at: string;
-};
-export type LockRow = {
-  party: string;
-  role: RepRole;
-  grp: RepGroup | "all";
-  score: number | null;
-  data_score: number | null;
-  level: string;
-  jobs: number;
-  detail: Record<string, unknown>;
-};
-export type LockPoint = {
-  period: string;
-  grp: RepGroup | "all";
-  score: number | null;
-  level: string;
-  jobs: number;
-};
+export type { LockPoint, LockRow, StoredRep };
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 /** Đối tác là một bên của HĐ đã xác nhận người gọi thấy (RLS), đúng vai + nhóm của ô. */

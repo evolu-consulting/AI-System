@@ -11,7 +11,6 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { OverviewRaw, OverviewWindow } from "../application/overview.ports";
-import type { MonthRow } from "../domain/overview.rules";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
