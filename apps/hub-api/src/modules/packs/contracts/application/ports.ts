@@ -22,6 +22,8 @@ export type ContractListInput = {
   kind?: readonly string[] | undefined;
   value_min?: number | undefined;
   value_max?: number | undefined;
+  /** V2-A: `progress` ⇒ trả thêm giai đoạn + bước hiện tại. */
+  include?: "progress" | undefined;
   sort: ContractSortKey;
   dir: ContractSortDir;
   page: number;
@@ -64,7 +66,7 @@ export type ContractFileRef = { org: string; fileId: string };
 
 /** Đọc danh sách/facets/chi tiết: mỗi hàm = MỘT câu SQL (route = 2 câu gồm `set_config`). id lạ/tenant khác ⇒ `null`. */
 export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
-  /** `today` (ngày lịch tenant) ⇒ giai đoạn + quá hạn của `progress` (V2-A). */
+  /** V2-A: `today` (ngày lịch tenant) có ⇒ kèm `progress` (giai đoạn + quá hạn); vắng ⇒ không tính. */
   list(f: ContractListFilter, today?: string): Promise<ContractListPage<Row>>;
   facets(): Promise<Facets>;
   detail(id: string, today?: string): Promise<Detail | null>;

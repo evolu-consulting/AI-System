@@ -52,7 +52,8 @@ const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) 
  *  `(tenant_id, contract_id, seq)`, không đọc `fields`: đếm mốc bắt buộc / đã xong + mốc mở sớm nhất. */
 const progressOf = (
   tid: string,
-) => sql`coalesce((select json_agg(json_build_object('id', c.id, 'deal', c.deal,
+  want: boolean,
+) => sql`case when ${want}::boolean then coalesce((select json_agg(json_build_object('id', c.id, 'deal', c.deal,
       'start_date', c.start_date, 'n_req', a.n_req, 'n_req_done', a.n_req_done, 'n_done', a.n_done, 'next', nx.j)
       order by pp.ord)
     from (select p.id, row_number() over () as ord from p) pp
@@ -65,9 +66,9 @@ const progressOf = (
     left join lateral (select json_build_object('id', o.id, 'kind', o.kind, 'direction', o.direction, 'title', o.title,
         'due_date', o.due_date) as j
       from contracts.obligations o where o.tenant_id = ${tid}::uuid and o.contract_id = c.id and o.status = 'open'
-      order by o.due_date, o.seq limit 1) nx on true), '[]'::json)`;
+      order by o.due_date, o.seq limit 1) nx on true), '[]'::json) end`;
 
-async function list(tx: Tx, tid: string, f: ContractListFilter, today: string) {
+async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | undefined) {
   const a = pgTextArray;
   const cats = a(f.category);
   const rows = await tx.execute<ListOut>(sql`with f as materialized (
@@ -108,11 +109,12 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string) {
         from contracts.contracts pc where pc.tenant_id = ${tid}::uuid
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
             where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
-      ${progressOf(tid)} as progress`);
+      ${progressOf(tid, today !== undefined)} as progress`);
   const out = rows[0] as ListOut;
   const items = parsed(out.items);
   const parents = parsed(out.parents);
-  const progress = parsed(out.progress ?? []).map((p) => toProgress(p, today));
+  const progress =
+    today === undefined ? [] : parsed(out.progress ?? []).map((p) => toProgress(p, today));
   return { total: out.total, items: items.map(toContractListRow), parents, progress };
 }
 
@@ -231,7 +233,7 @@ type Repo = ContractsReadRepo<ContractListRowDto, ContractFacetsDto, ContractDet
 
 export function contractsRepo(tx: Tx, tenantId: string): Repo {
   return {
-    list: (f, today) => list(tx, tenantId, f, today ?? new Date().toISOString().slice(0, 10)),
+    list: (f, today) => list(tx, tenantId, f, today),
     facets: () => facets(tx, tenantId),
     detail: (id, today) => detail(tx, tenantId, id, today ?? new Date().toISOString().slice(0, 10)),
     source: (id) => source(tx, tenantId, id),

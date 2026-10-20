@@ -53,6 +53,8 @@ export const ContractListQuerySchema = z.strictObject({
   kind: repeated(ContractKindSchema, 2),
   value_min: valueBound(),
   value_max: valueBound(),
+  /** V2-A: `include=progress` ⇒ thêm mảng `progress` (giai đoạn + bước hiện tại); vắng ⇒ hình phản hồi HD1 giữ nguyên. */
+  include: z.enum(["progress"]).optional(),
   sort: z.enum(CONTRACT_SORTS).default("updated_at"),
   dir: z.enum(CONTRACT_SORT_DIRS).default("desc"),
   page: z.coerce.number().int().min(1).max(CONTRACT_PAGE_MAX).default(1),
@@ -94,8 +96,9 @@ export const ContractListResponseSchema = z.strictObject({
   total: CountSchema,
   /** HD5: HĐ gốc của các hàng phụ lục trong trang (mỗi HĐ gốc một lần), để hiện "Phụ lục của …" mà không đổi `ContractListRow`. */
   parents: z.array(ContractParentRefSchema).max(CONTRACT_PAGE_SIZE_MAX),
-  /** V2-A: loại HĐ + giai đoạn + bước hiện tại của từng HĐ trong trang (cùng thứ tự `items`; ListRow đã khoá giữ 19 khoá). */
-  progress: z.array(ContractProgressSchema).max(CONTRACT_PAGE_SIZE_MAX),
+  /** V2-A (chỉ khi `include=progress`): loại HĐ + giai đoạn + bước hiện tại từng HĐ của trang (cùng thứ tự `items`; ListRow
+   *  đã khoá giữ 19 khoá). */
+  progress: z.array(ContractProgressSchema).max(CONTRACT_PAGE_SIZE_MAX).optional(),
   page: z.number().int().min(1),
   page_size: z.number().int().min(1).max(CONTRACT_PAGE_SIZE_MAX),
 });

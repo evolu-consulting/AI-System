@@ -77,7 +77,6 @@ describe("listContracts", () => {
       items: ["r"],
       total: 7,
       parents: [],
-      progress: [],
       page: 2,
       page_size: 5,
     });

@@ -286,7 +286,7 @@ describe("V2-A · KN-04 giai đoạn + bước hiện tại (chi tiết + danh s
     await ok(call(c, P.hoa, "POST", `/obligations/${give.id}/settle`, { at: d(0) }));
     const y = await detail(c, out.id);
     expect([y.stage, y.next_milestone_id]).toEqual(["in_progress", collect.id]);
-    const list = await ok(call(c, P.hoa, "GET", "/contracts"));
+    const list = await ok(call(c, P.hoa, "GET", "/contracts?include=progress"));
     expect(list.progress).toEqual([
       {
         id: out.id,

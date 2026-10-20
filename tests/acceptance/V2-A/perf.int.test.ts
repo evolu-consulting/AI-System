@@ -33,7 +33,9 @@ async function seed(n: number, k: number): Promise<string[]> {
       from contracts.contracts cc, generate_series(1, ${k}::int) g where cc.id = any(${ids}::uuid[])`;
   return ids;
 }
+/** `captureSql` đếm cả câu `set_config` (tenant/user) đầu mỗi tx ⇒ một tx = 1 + số câu của lệnh. */
 const count = async (fn: () => Promise<unknown>) => (await captureSql(c, fn)).queries.length;
+const TX = 1;
 
 describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
   it("chi tiết: 0 mốc = 40 mốc = MỘT câu đọc", async () => {
@@ -44,7 +46,7 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
     await get(a as string)(); // ấm (kế hoạch truy vấn, cache quyền)
     const na = await count(get(a as string));
     const nb = await count(get(b as string));
-    expect({ na, nb }).toEqual({ na: 1, nb: 1 });
+    expect({ na, nb }).toEqual({ na: TX + 1, nb: TX + 1 });
     const body = await get(b as string)();
     expect(body.milestones.length).toBe(40);
   });
@@ -52,13 +54,13 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
   it("danh sách 20 HĐ × 0 mốc = 20 HĐ × 15 mốc = MỘT câu; `progress` đủ 20 dòng", async () => {
     await arrangeV2a(c);
     await seed(20, 0);
-    const list = () => ok(call(c, P.hoa, "GET", "/contracts?page_size=20"));
+    const list = () => ok(call(c, P.hoa, "GET", "/contracts?page_size=20&include=progress"));
     await list();
     const n0 = await count(list);
     await arrangeV2a(c);
     await seed(20, 15);
     const n1 = await count(list);
-    expect({ n0, n1 }).toEqual({ n0: 1, n1: 1 });
+    expect({ n0, n1 }).toEqual({ n0: TX + 1, n1: TX + 1 });
     const page = await list();
     expect(page.progress.length).toBe(20);
     expect(page.progress.map((p: { id: string }) => p.id)).toEqual(
@@ -79,9 +81,9 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
     );
     const nDel = await count(() => call(c, P.hoa, "DELETE", `/milestones/${m.id}`));
     expect({ add: cap.queries.length, patch: nPatch, del: nDel }).toEqual({
-      add: 2,
-      patch: 3,
-      del: 3,
+      add: TX + 2,
+      patch: TX + 3,
+      del: TX + 3,
     });
   });
 });
