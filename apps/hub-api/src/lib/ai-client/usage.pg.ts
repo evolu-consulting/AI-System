@@ -1,5 +1,6 @@
 // M3-decouple · bảng usage CHUNG của AI client = `hub.usage_logs` (billing `api`, cột `feature`) qua hàm SECURITY DEFINER
-// `hub.log_ai_usage` / `hub.ai_tokens_since` (migration hub 0042) — `hub_api` không INSERT/SELECT trực tiếp. Mỗi hàm MỘT câu.
+// `hub.log_ai_usage` / `hub.ai_tokens_since` (migration hub 0042) + giữ chỗ `hub.ai_reserve_tokens` / `hub.ai_release_tokens`
+// (hub 0043, M3c) — `hub_api` không INSERT/SELECT trực tiếp. Mỗi hàm MỘT câu.
 // `recordAiUsage` là hàm ghi dùng chung (trợ lý chat M2 trỏ vào đây).
 import { sql } from "drizzle-orm";
 import type { Db } from "../db";
@@ -25,6 +26,18 @@ export function pgUsageStore(db: Db): UsageStore {
         sql`select hub.ai_tokens_since(${tenantId}::uuid, ${since.toISOString()}::timestamptz) as n`,
       );
       return Number(row?.n ?? 0);
+    },
+    // M3c (review B #13) · giữ chỗ nguyên tử: MỘT câu (hàm khoá advisory theo tenant trong tx của câu).
+    async reserve(r) {
+      const [row] = await db.db.execute<{ hold_id: string; max_output: number }>(
+        sql`select hold_id, max_output from hub.ai_reserve_tokens(${r.tenantId}::uuid,
+          ${r.since.toISOString()}::timestamptz, ${Math.max(0, Math.floor(r.cap))}::bigint, ${int(r.inputTokens)}::int,
+          ${int(r.maxOutput)}::int, ${int(r.minOutput)}::int, ${int(r.ttlS)}::int)`,
+      );
+      return row ? { holdId: row.hold_id, maxOutput: Number(row.max_output) } : null;
+    },
+    async release(holdId) {
+      await db.db.execute(sql`select hub.ai_release_tokens(${holdId}::uuid)`);
     },
   };
 }

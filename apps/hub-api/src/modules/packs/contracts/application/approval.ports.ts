@@ -46,15 +46,27 @@ export type ApprovalRepo = {
   markExtracting(id: string, runId: string): Promise<boolean>;
   /** Sau lượt AI: lượt `extracting` ⇒ `level1` (HĐ needs_review) / `failed` (extract_failed). Trả trạng thái mới hoặc null. */
   afterExtraction(id: string, runId: string): Promise<string | null>;
+  /** Worker bắt đầu lượt đọc: lượt hết xếp hàng (`queued_at = null`) + HĐ `updated_at = now()`; false ⇒ lượt/HĐ không còn
+   *  `extracting`. */
+  markStarted(id: string, runId: string): Promise<boolean>;
   /** Trạng thái lượt duyệt (luật sửa trường); không có ⇒ null. */
   statusOf(runId: string): Promise<string | null>;
   settings(): Promise<ApprovalSettings>;
   saveSettings(s: ApprovalSettings, actor: string): Promise<ApprovalSettings>;
 };
 
+export type SweepOptions = {
+  /** HĐ `extracting` mà job đã chạy (hoặc không có lượt xếp hàng): quá hạn tính từ `updated_at` (worker chạm lúc bắt đầu). */
+  staleMinutes: number;
+  /** Job còn xếp hàng (lượt `queued_at` có giá trị, worker chưa nhận): chỉ đóng khi chờ quá mức này (entry Redis bị mất). */
+  queuedMinutes: number;
+  limit: number;
+};
+export type SweepCounts = { read: number; closed: number; healed: number };
 export type SweepRepo = {
-  /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed`. */
-  sweep(staleMinutes: number, limit: number): Promise<{ read: number; closed: number }>;
+  /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed` +
+   *  lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi) ⇒ `level1`/`failed` (review B #12). */
+  sweep(o: SweepOptions): Promise<SweepCounts>;
 };
 
 export type ApprovalTxRepos = { approval: ApprovalRepo } & KitTxRepos;

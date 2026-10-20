@@ -4,6 +4,9 @@
 //   `concurrency` job cùng lúc mỗi instance; xong ⇒ XACK + XDEL. Instance chết giữa chừng ⇒ entry còn trong PEL; instance khác
 //   lấy lại bằng XAUTOCLAIM sau `claimIdleMs` (≥ hạn giờ một lượt AI). Lượt đọc idempotent (chỉ ghi khi HĐ còn `extracting`).
 // - Khoá stream theo DB (`contracts:extract:<db>`) ⇒ nhiều DB test chung một Redis không lấy nhầm job của nhau.
+// - M3c (review B #5/#6/#10): worker tự chạy lại khi `loop()` lỗi (backoff tăng gấp đôi, dừng theo `signal`); Redis mất group
+//   (restart không AOF, FLUSH) ⇒ NOGROUP ⇒ tạo lại group rồi đọc tiếp; entry giao quá `maxDeliveries` lần (làm crash/OOM tiến
+//   trình) ⇒ bỏ (ACK + XDEL + log) — vòng quét STALE đóng HĐ. Mọi lỗi đều log + đếm (`stats()`), không nuốt im lặng.
 import type { Redis } from "ioredis";
 import type { ExtractJob, ExtractJobs } from "../application/approval.usecase";
 
@@ -11,9 +14,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FIELD = "j";
 const MAXLEN = 100_000;
 
+type Log = { warn(msg: string, f?: Record<string, unknown>): void };
 export type ExtractStreamDeps = {
   redis: Redis;
-  /** Khoá stream (đọc một lần lúc chạy — vd theo tên DB). */
+  /** Khoá stream (đọc một lần lúc chạy — vd theo tên DB; lỗi ⇒ thử lại lần sau). */
   key: () => Promise<string>;
   group?: string;
   consumer: string;
@@ -22,24 +26,45 @@ export type ExtractStreamDeps = {
   /** Entry treo trong PEL lâu hơn mức này ⇒ instance khác nhận lại. */
   claimIdleMs?: number;
   blockMs?: number;
-  log: { warn(msg: string, f?: Record<string, unknown>): void };
+  /** Nghỉ trước lần thử lại đầu sau lỗi Redis / worker dừng vì lỗi (ms; gấp đôi mỗi lần tới `maxRetryMs`). */
+  retryMs?: number;
+  maxRetryMs?: number;
+  /** Số lần giao tối đa một entry (XAUTOCLAIM tăng bộ đếm); vượt ⇒ entry độc, bỏ. */
+  maxDeliveries?: number;
+  log: Log;
   signal?: AbortSignal;
   /** Test: tín hiệu sau khi entry đã ACK + XDEL. */
   onAcked?: (entryId: string) => void;
+  /** Test/số đo: tín hiệu mỗi lần worker dừng vì lỗi (trước khi nghỉ rồi chạy lại). */
+  onWorkerError?: (attempt: number) => void;
 };
+export type ExtractStreamStats = { restarts: number; groupRecreated: number; poison: number };
 export type ExtractStream = ExtractJobs & {
-  /** Bắt đầu worker (không chặn). */
+  /** Bắt đầu worker (không chặn); lỗi ⇒ tự chạy lại có backoff tới khi `signal` huỷ. */
   start(): void;
   /** Lượt nhận lại entry treo (XAUTOCLAIM) — trả số job đã nhận; test gọi thẳng. */
   reclaimOnce(): Promise<number>;
+  /** Bộ đếm lỗi (số đo): lần worker chạy lại, lần tạo lại group, entry độc đã bỏ. */
+  stats(): ExtractStreamStats;
 };
 
 type Entry = [id: string, fields: string[]];
-const pause = (ms: number) =>
+/** Nghỉ giữa hai lần thử (vòng nền khi lỗi); `signal` huỷ ⇒ dừng ngay. */
+const pause = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((res) => {
-    const t = setTimeout(res, ms);
+    if (signal?.aborted) return res();
+    const t = setTimeout(done, ms);
     (t as { unref?: () => void }).unref?.();
+    function done() {
+      clearTimeout(t);
+      signal?.removeEventListener("abort", done);
+      res();
+    }
+    signal?.addEventListener("abort", done, { once: true });
   });
+/** Group mất: NOGROUP (FLUSH/restart), hoặc khoá stream bị xoá khi đang BLOCK (Redis 7: UNBLOCKED). */
+export const groupLost = (e: unknown): boolean => /NOGROUP|no longer exists/i.test(String(e));
+const errName = (e: unknown) => (e instanceof Error ? e.name : "unknown");
 
 export function parseJob(raw: string | undefined): ExtractJob | null {
   try {
@@ -62,119 +87,200 @@ const fieldOf = (fields: string[]): string | undefined => {
   return i >= 0 ? fields[i + 1] : undefined;
 };
 
-export function createExtractStream(d: ExtractStreamDeps): ExtractStream {
-  const group = d.group ?? "contracts-extract";
-  const limit = Math.max(1, d.concurrency ?? 2);
-  const claimIdleMs = d.claimIdleMs ?? 10 * 60_000;
-  let key: Promise<string> | null = null;
-  const keyOf = () => {
-    key ??= d.key();
-    return key;
-  };
-  let running = 0;
-  let freed: (() => void) | null = null;
-  let groupReady: Promise<void> | null = null;
+type Ctx = {
+  d: ExtractStreamDeps;
+  group: string;
+  limit: number;
+  claimIdleMs: number;
+  stats: ExtractStreamStats;
+  running: number;
+  freed: (() => void) | null;
+  groupReady: Promise<void> | null;
+};
 
-  const ensureGroup = async (k: string) => {
-    groupReady ??= d.redis
-      .xgroup("CREATE", k, group, "0", "MKSTREAM")
-      .then(() => undefined)
-      .catch((e: unknown) => {
-        if (!String(e).includes("BUSYGROUP")) {
-          groupReady = null;
-          throw e;
-        }
-      });
-    return groupReady;
-  };
+function ensureGroup(c: Ctx, k: string): Promise<void> {
+  c.groupReady ??= c.d.redis
+    .xgroup("CREATE", k, c.group, "0", "MKSTREAM")
+    .then(() => undefined)
+    .catch((e: unknown) => {
+      if (!String(e).includes("BUSYGROUP")) {
+        c.groupReady = null;
+        throw e;
+      }
+    });
+  return c.groupReady;
+}
 
-  const runEntry = (k: string, [id, fields]: Entry) => {
-    running += 1;
-    const job = parseJob(fieldOf(fields));
-    const work = job ? d.handle(job) : Promise.resolve();
-    void work
-      .catch(() => d.log.warn("contract-extract-job-failed", { entry: id }))
-      .then(() => d.redis.multi().xack(k, group, id).xdel(k, id).exec())
-      .catch(() => d.log.warn("contract-extract-ack-failed", { entry: id }))
-      .finally(() => {
-        d.onAcked?.(id);
-        running -= 1;
-        const f = freed;
-        freed = null;
-        f?.();
-      });
-  };
+/** Chạy `fn` khi group đã có; NOGROUP ⇒ tạo lại group (log + đếm) rồi chạy lại MỘT lần. */
+async function withGroup<T>(c: Ctx, k: string, fn: () => Promise<T>): Promise<T> {
+  await ensureGroup(c, k);
+  try {
+    return await fn();
+  } catch (e) {
+    if (!groupLost(e)) throw e;
+    c.groupReady = null;
+    c.stats.groupRecreated += 1;
+    c.d.log.warn("contract-extract-group-recreated", { group: c.group });
+    await ensureGroup(c, k);
+    return fn();
+  }
+}
 
-  const reclaimOnce = async (): Promise<number> => {
-    const k = await keyOf();
-    await ensureGroup(k);
-    const out = (await d.redis.call(
+/** ACK + XDEL rồi báo slot rảnh (tín hiệu cho vòng chờ). */
+function ackEntry(c: Ctx, k: string, id: string, work: Promise<unknown>): void {
+  void work
+    .catch(() => c.d.log.warn("contract-extract-job-failed", { entry: id }))
+    .then(() => c.d.redis.multi().xack(k, c.group, id).xdel(k, id).exec())
+    .catch(() => c.d.log.warn("contract-extract-ack-failed", { entry: id }))
+    .finally(() => {
+      c.d.onAcked?.(id);
+      c.running -= 1;
+      const f = c.freed;
+      c.freed = null;
+      f?.();
+    });
+}
+
+function runEntry(c: Ctx, k: string, [id, fields]: Entry): void {
+  c.running += 1;
+  const job = parseJob(fieldOf(fields));
+  ackEntry(c, k, id, job ? c.d.handle(job) : Promise.resolve());
+}
+
+/** Số lần giao của các entry vừa nhận (một pipeline XPENDING cho cả lô). */
+async function deliveriesOf(c: Ctx, k: string, ids: string[]): Promise<number[]> {
+  const p = c.d.redis.pipeline();
+  for (const id of ids) p.xpending(k, c.group, id, id, 1);
+  const out = (await p.exec()) ?? [];
+  return out.map(([, r]) =>
+    Number((r as [[string, string, number, number]] | null)?.[0]?.[3] ?? 0),
+  );
+}
+
+async function reclaim(c: Ctx, k: string): Promise<number> {
+  const out = (await withGroup(c, k, () =>
+    c.d.redis.call(
       "XAUTOCLAIM",
       k,
-      group,
-      d.consumer,
-      String(claimIdleMs),
+      c.group,
+      c.d.consumer,
+      String(c.claimIdleMs),
       "0-0",
       "COUNT",
-      String(limit),
-    )) as [string, Entry[]] | null;
-    const entries = (out?.[1] ?? []).filter((e) => Array.isArray(e?.[1]));
-    for (const e of entries) runEntry(k, e);
-    return entries.length;
-  };
-
-  /** Chờ một job xong (tín hiệu từ `runEntry`), không poll. */
-  const slotFreed = () =>
-    new Promise<void>((res) => {
-      freed = res;
-    });
-
-  /** Một lượt XREADGROUP BLOCK; lỗi Redis ⇒ nghỉ 1 s giữa hai lượt thử (không quay vòng nóng). */
-  const readOnce = async (blocking: Redis, k: string, alive: () => boolean) => {
-    const got = (await blocking
-      .xreadgroup(
-        "GROUP",
-        group,
-        d.consumer,
-        "COUNT",
-        limit - running,
-        "BLOCK",
-        d.blockMs ?? 2000,
-        "STREAMS",
-        k,
-        ">",
-      )
-      .catch(() => "error" as const)) as [string, Entry[]][] | null | "error";
-    if (got === "error") {
-      if (alive()) await pause(1000);
-      return;
+      String(c.limit),
+    ),
+  )) as [string, Entry[]] | null;
+  const entries = (out?.[1] ?? []).filter((e) => Array.isArray(e?.[1]));
+  if (entries.length === 0) return 0;
+  const max = c.d.maxDeliveries ?? 5;
+  const counts = await deliveriesOf(
+    c,
+    k,
+    entries.map((e) => e[0]),
+  );
+  for (const [i, e] of entries.entries()) {
+    if ((counts[i] ?? 0) <= max) {
+      runEntry(c, k, e);
+      continue;
     }
-    for (const e of got?.[0]?.[1] ?? []) runEntry(k, e);
-  };
+    c.stats.poison += 1;
+    c.d.log.warn("contract-extract-poison", { entry: e[0], deliveries: counts[i] });
+    c.running += 1;
+    ackEntry(c, k, e[0], Promise.resolve());
+  }
+  return entries.length;
+}
 
-  const loop = async () => {
-    const k = await keyOf();
-    await ensureGroup(k);
-    const blocking = d.redis.duplicate();
-    const stop = () => blocking.disconnect();
-    d.signal?.addEventListener("abort", stop, { once: true });
-    d.redis.once("end", stop);
+/** Một lượt XREADGROUP BLOCK; NOGROUP ⇒ tạo lại group; lỗi Redis khác ⇒ ném (vòng ngoài nghỉ có backoff). */
+async function readOnce(c: Ctx, blocking: Redis, k: string): Promise<void> {
+  const got = (await withGroup(c, k, () =>
+    blocking.xreadgroup(
+      "GROUP",
+      c.group,
+      c.d.consumer,
+      "COUNT",
+      c.limit - c.running,
+      "BLOCK",
+      c.d.blockMs ?? 2000,
+      "STREAMS",
+      k,
+      ">",
+    ),
+  )) as [string, Entry[]][] | null;
+  for (const e of got?.[0]?.[1] ?? []) runEntry(c, k, e);
+}
+
+/** Chờ một job xong (tín hiệu từ `ackEntry`), không poll. */
+const slotFreed = (c: Ctx) =>
+  new Promise<void>((res) => {
+    c.freed = res;
+  });
+
+/** Vòng worker trên một kết nối BLOCK riêng; lỗi Redis ⇒ nghỉ `retry` (backoff) rồi đọc tiếp; trả về khi huỷ/kết nối đóng. */
+async function loop(c: Ctx, k: string, onReady: () => void): Promise<void> {
+  await ensureGroup(c, k);
+  const blocking = c.d.redis.duplicate();
+  const stop = () => blocking.disconnect();
+  c.d.signal?.addEventListener("abort", stop, { once: true });
+  c.d.redis.once("end", stop);
+  try {
     await blocking.connect();
-    const alive = () => !d.signal?.aborted && (blocking.status as string) !== "end";
+    onReady();
+    const alive = () => !c.d.signal?.aborted && (blocking.status as string) !== "end";
     let lastClaim = 0;
+    let delay = c.d.retryMs ?? 1000;
     while (alive()) {
-      if (running >= limit) await slotFreed();
-      else if (Date.now() - lastClaim >= claimIdleMs / 2) {
-        lastClaim = Date.now();
-        await reclaimOnce().catch(() => 0);
-      } else await readOnce(blocking, k, alive);
+      try {
+        if (c.running >= c.limit) await slotFreed(c);
+        else if (Date.now() - lastClaim >= c.claimIdleMs / 2) {
+          lastClaim = Date.now();
+          await reclaim(c, k);
+        } else await readOnce(c, blocking, k);
+        delay = c.d.retryMs ?? 1000;
+      } catch (e) {
+        if (!alive()) break;
+        c.d.log.warn("contract-extract-redis-failed", { error: errName(e), retry_ms: delay });
+        await pause(delay, c.d.signal);
+        delay = Math.min(delay * 2, c.d.maxRetryMs ?? 30_000);
+      }
     }
+  } finally {
+    c.d.signal?.removeEventListener("abort", stop);
+    c.d.redis.off("end", stop);
     stop();
-  };
+  }
+}
 
-  // Kết nối riêng cho XADD của hàng đợi (tách khỏi client dùng chung: lệnh hàng đợi không chen vào pipeline quota của request).
+/** Giám sát: `loop()` lỗi (Redis down lúc khởi động, XGROUP CREATE, đọc khoá) ⇒ log + đếm + nghỉ (backoff) rồi chạy lại. */
+async function supervise(c: Ctx, keyOf: () => Promise<string>): Promise<void> {
+  const base = c.d.retryMs ?? 1000;
+  let delay = base;
+  let attempt = 0;
+  while (!c.d.signal?.aborted && c.d.redis.status !== "end") {
+    try {
+      await loop(c, await keyOf(), () => {
+        delay = base;
+      });
+      return;
+    } catch (e) {
+      attempt += 1;
+      c.stats.restarts += 1;
+      c.d.log.warn("contract-extract-worker-failed", {
+        attempt,
+        error: errName(e),
+        retry_ms: delay,
+      });
+      c.d.onWorkerError?.(attempt);
+      await pause(delay, c.d.signal);
+      delay = Math.min(delay * 2, c.d.maxRetryMs ?? 30_000);
+    }
+  }
+}
+
+/** Kết nối riêng cho XADD của hàng đợi (tách khỏi client dùng chung: lệnh hàng đợi không chen vào pipeline quota). */
+function producerOf(d: ExtractStreamDeps) {
   let producer: Promise<Redis> | null = null;
-  const producerOf = () => {
+  return () => {
     producer ??= (async () => {
       const p = d.redis.duplicate();
       const close = () => p.disconnect();
@@ -188,11 +294,32 @@ export function createExtractStream(d: ExtractStreamDeps): ExtractStream {
     });
     return producer;
   };
+}
 
+export function createExtractStream(d: ExtractStreamDeps): ExtractStream {
+  const c: Ctx = {
+    d,
+    group: d.group ?? "contracts-extract",
+    limit: Math.max(1, d.concurrency ?? 2),
+    claimIdleMs: d.claimIdleMs ?? 10 * 60_000,
+    stats: { restarts: 0, groupRecreated: 0, poison: 0 },
+    running: 0,
+    freed: null,
+    groupReady: null,
+  };
+  let key: Promise<string> | null = null;
+  const keyOf = () => {
+    key ??= d.key().catch((e: unknown) => {
+      key = null;
+      throw e;
+    });
+    return key;
+  };
+  const producer = producerOf(d);
   return {
     async enqueue(job) {
       const k = await keyOf();
-      const redis = await producerOf();
+      const redis = await producer();
       const body = JSON.stringify({
         t: job.tenantId,
         u: job.userId,
@@ -202,8 +329,9 @@ export function createExtractStream(d: ExtractStreamDeps): ExtractStream {
       await redis.xadd(k, "MAXLEN", "~", MAXLEN, "*", FIELD, body);
     },
     start() {
-      void loop().catch(() => d.log.warn("contract-extract-worker-stopped", {}));
+      void supervise(c, keyOf);
     },
-    reclaimOnce,
+    reclaimOnce: async () => reclaim(c, await keyOf()),
+    stats: () => ({ ...c.stats }),
   };
 }

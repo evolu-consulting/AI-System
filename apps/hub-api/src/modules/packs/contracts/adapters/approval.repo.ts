@@ -127,12 +127,16 @@ function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
   return async (id, runId, by, level2Passed) => {
     // Re-verify TOCTOU (D3-14): luật cấp 2 nằm TRONG điều kiện UPDATE (đánh giá lại trên hàng mới nhất sau khi chờ khoá hàng —
     // PATCH giữ `FOR UPDATE` cùng hàng). Cột sinh `value` (bigint) ≡ `needsLevel2`: trống / âm / ≥ ngưỡng ⇒ cần cấp 2.
+    // Review B #26 · `level2Passed` của caller không đủ: câu UPDATE tự kiểm lượt đang ở `level2` và người quyết ≠ người bắt đầu.
     const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts c set status = 'active', confirmed_at = now(), confirmed_by = ${by}::uuid,
           version = c.version + 1, updated_at = now()
         where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = ${runId}::uuid
           and c.status = 'needs_review'
-          and (${level2Passed}::boolean or (c.value is not null and c.value >= 0 and c.value < coalesce(
+          and ((${level2Passed}::boolean and exists (select 1 from contracts.approvals y
+              where y.id = ${runId}::uuid and y.tenant_id = ${tid}::uuid and y.status = 'level2'
+                and y.started_by <> ${by}::uuid))
+            or (c.value is not null and c.value >= 0 and c.value < coalesce(
             (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid),
             ${APPROVAL_DEFAULTS.threshold}::bigint)))
         returning c.id),
@@ -169,7 +173,7 @@ function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
         update contracts.contracts set status = 'extracting', error = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid
           and status in ('needs_review', 'extract_failed') returning id),
-      a as (update contracts.approvals x set status = 'extracting', updated_at = now()
+      a as (update contracts.approvals x set status = 'extracting', queued_at = now(), updated_at = now()
         from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ('level1', 'level2'))
       select id from u`);
     return rows.length > 0;
@@ -186,6 +190,20 @@ function afterQ(tx: Tx, tid: string): ApprovalRepo["afterExtraction"] {
         and c.status in ('needs_review', 'extract_failed')
       returning x.status`);
     return r?.status ?? null;
+  };
+}
+
+/** Review B #7 · worker bắt đầu lượt đọc: lượt hết "xếp hàng" (`queued_at = null`) + HĐ `updated_at = now()` ⇒ STALE tính từ
+ *  lúc chạy (không tính thời gian chờ hàng). Không đổi `version` (không phải sửa nội dung). */
+function startedQ(tx: Tx, tid: string): ApprovalRepo["markStarted"] {
+  return async (id, runId) => {
+    const rows = await tx.execute<{ id: string }>(sql`with a as (
+        update contracts.approvals set queued_at = null, updated_at = now()
+        where id = ${runId}::uuid and tenant_id = ${tid}::uuid and status = 'extracting' returning id)
+      update contracts.contracts c set updated_at = now() from a
+      where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = a.id and c.status = 'extracting'
+      returning c.id`);
+    return rows.length > 0;
   };
 }
 
@@ -208,6 +226,7 @@ export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
     markRejected: rejectQ(tx, tenantId),
     markExtracting: markQ(tx, tenantId),
     afterExtraction: afterQ(tx, tenantId),
+    markStarted: startedQ(tx, tenantId),
     statusOf: statusQ(tx, tenantId),
     settings: s.settings,
     saveSettings: s.saveSettings,

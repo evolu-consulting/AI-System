@@ -36,7 +36,9 @@ import {
 } from "./application/approval.usecase";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
 import {
+  QUEUED_STALE_MINUTES,
   type SweepDeps,
+  staleMinutesFor,
   startApprovalSweeper,
   sweepApprovalsOnce,
 } from "./application/approval-sweep";
@@ -90,6 +92,8 @@ function agentTimeoutMs(): number {
   const n = Number(process.env.CONTRACTS_EXTRACT_TIMEOUT_S);
   return (Number.isInteger(n) && n >= 10 && n <= 3600 ? n : 300) * 1000;
 }
+/** Entry treo trong PEL lâu hơn một lượt AI + 1' ⇒ instance khác nhận lại. */
+const claimIdleMs = () => agentTimeoutMs() + 60_000;
 const envInt = (k: string, def: number): number => {
   const n = Number(process.env[k]);
   return Number.isInteger(n) && n > 0 ? n : def;
@@ -122,25 +126,44 @@ function extractJobs(
     consumer: `${hostname()}-${process.pid}-${crypto.randomUUID().slice(0, 8)}`,
     handle,
     concurrency: o.concurrency,
-    claimIdleMs: agentTimeoutMs() + 60_000,
+    claimIdleMs: claimIdleMs(),
     log: logger,
     ...(flow.signal ? { signal: flow.signal } : {}),
   });
   s.start();
-  return { jobs: s as ExtractJobs, reclaimOnce: s.reclaimOnce };
+  return { jobs: withFallback(s, handle), reclaimOnce: s.reclaimOnce };
 }
 
-export function contractsAiModule(
-  db: Db,
-  view: PackAccessView,
-  d: Omit<ContractsAiDeps, "tax"> & { tax: TaxRegistry | null },
-  flow: ContractsFlowDeps,
-): ContractsAi {
-  const pack = createPackUow(db, KEY, (tx, tid) => ({
+/** Review B #11 · XADD lỗi SAU commit (Redis down) ⇒ không trả 500 rồi kẹt 409 tới STALE: log + chạy job ngay trong tiến trình
+ *  (như chế độ vắng Redis; mất tính bền nhưng HĐ không kẹt). */
+export function withFallback(
+  q: ExtractJobs,
+  handle: (j: ExtractJob) => Promise<void>,
+  log: { warn(msg: string, f?: Record<string, unknown>): void } = logger,
+): ExtractJobs {
+  return {
+    async enqueue(j) {
+      try {
+        await q.enqueue(j);
+      } catch {
+        log.warn("contract-extract-enqueue-failed", { contract_id: j.contractId });
+        void handle(j);
+      }
+    },
+  };
+}
+
+type AiDeps = Omit<ContractsAiDeps, "tax"> & { tax: TaxRegistry | null };
+
+const packUow = (db: Db) =>
+  createPackUow(db, KEY, (tx, tid) => ({
     extraction: extractionRepo(tx, tid),
     approval: approvalRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
   }));
+
+/** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
+function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<typeof packUow>) {
   const uow = packTenantOnly(pack);
   // Tra lại MST hẹn giờ (cổng Cục Thuế) — hàng trong tiến trình, chỉ cho việc `tax`.
   let taxQueue: ExtractionQueue | null = null;
@@ -170,11 +193,25 @@ export function contractsAiModule(
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
   });
+  return { handle, schedule };
+}
+
+export function contractsAiModule(
+  db: Db,
+  view: PackAccessView,
+  d: AiDeps,
+  flow: ContractsFlowDeps,
+): ContractsAi {
+  const pack = packUow(db);
+  const uow = packTenantOnly(pack);
+  const { handle, schedule } = extractionRunner(d, flow, pack);
+  const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
     concurrency: d.concurrency ?? 2,
-    ready: d.transport !== undefined || flow.ai.ready,
+    ready,
   });
-  const ad = { uow, groups: flow.groups, jobs };
+  // Review B #27/#28: quota + kiểm AI sẵn sàng của "Trích lại" chạy SAU `decide`, chỉ khi thật sự trích lại.
+  const ad = { uow, groups: flow.groups, jobs, redo: { ready, quota: flow.quota } };
   const start = startApproval(ad);
   const manual = createManual({ uow, tax: d.tax, newId: () => Bun.randomUUIDv7(), schedule });
   const legacy = d.transport !== undefined;
@@ -195,7 +232,6 @@ export function contractsAiModule(
     act: actApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
-    quota: flow.quota,
   });
   return { starter, routes, approval, guard: patchGuard(ad) };
 }
@@ -207,7 +243,12 @@ function startSweep(
   pack: SweepDeps["uow"],
   reclaimOnce: () => Promise<number>,
 ): void {
-  const sd: SweepDeps = { uow: pack, tenants: flow.tenants };
+  const sd: SweepDeps = {
+    uow: pack,
+    tenants: flow.tenants,
+    staleMinutes: staleMinutesFor(claimIdleMs()),
+    queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
+  };
   if (d.onHandles) {
     d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd), reclaimOnce });
     return;

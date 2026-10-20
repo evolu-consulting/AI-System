@@ -288,6 +288,13 @@
       "when": 1794900000000,
       "tag": "0042_m3_ai_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795000000000,
+      "tag": "0043_m3c_ai_token_holds",
+      "breakpoints": true
     }
   ]
 }

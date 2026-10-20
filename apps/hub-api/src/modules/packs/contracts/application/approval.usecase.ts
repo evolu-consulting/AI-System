@@ -32,10 +32,17 @@ export type ApprovalDeps = {
   uow: ApprovalUow;
   groups: ApprovalGroups;
   jobs: ExtractJobs;
+  /** "Trích lại" (review B #27/#28): AI sẵn sàng + trần thao tác tenant — chỉ áp khi phán quyết thật sự trích lại (sau
+   *  kiểm người duyệt/bước/nguồn). `quota` ném 429/503 ⇒ tx ROLLBACK. Vắng ⇒ không kiểm. */
+  redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> };
 };
 export type ContractApproval = ReturnType<typeof approvalView>;
 export type ApprovalAction = { action: "approve" | "reject" | "redo"; feedback?: string };
-export type ActOutcome = ContractApproval | "not_found" | { error: ApprovalErrorCode };
+export type ActOutcome =
+  | ContractApproval
+  | "not_found"
+  | "unavailable"
+  | { error: ApprovalErrorCode };
 
 /** Mở lượt duyệt; `extracting` ⇒ xếp lượt AI đọc sau commit. */
 export function startApproval(d: ApprovalDeps) {
@@ -81,14 +88,13 @@ export function getApproval(d: ApprovalDeps) {
 async function apply(
   r: ApprovalTxRepos,
   who: PackWho,
-  c: { contractId: string; approvalId: string },
+  c: { contractId: string; approvalId: string; feedback: string | undefined },
   dec: Exclude<Decision, { kind: "error" }>,
-  b: ApprovalAction,
 ): Promise<"ok" | "redo" | null> {
   const { contractId: cid, approvalId: id } = c;
   if (dec.kind === "to_level2") return (await r.approval.toLevel2(id, who.userId)) ? "ok" : null;
   if (dec.kind === "reject") {
-    const e = { kind: "rejected" as const, feedback: b.feedback ?? null, actor: who.userId };
+    const e = { kind: "rejected" as const, feedback: c.feedback ?? null, actor: who.userId };
     return (await r.approval.markRejected(cid, id, e)) ? "ok" : null;
   }
   if (dec.kind === "redo") {
@@ -110,34 +116,57 @@ async function finalizeOrLevel2(
   return (await r.approval.toLevel2(c.approvalId, who.userId)) ? "ok" : null;
 }
 
+type Decided = { done: "ok" | "redo"; approvalId: string; error?: undefined };
+type TxOutcome = Decided | "not_found" | "unavailable" | { error: ApprovalErrorCode };
+
+/** Trích lại thật sự (sau `decide`): AI chưa sẵn sàng ⇒ `unavailable`; trừ quota (ném ⇒ ROLLBACK). */
+async function redoGate(
+  d: ApprovalDeps,
+  who: PackWho,
+  dec: Decision,
+): Promise<"unavailable" | null> {
+  if (dec.kind !== "redo" || !dec.reextract || !d.redo) return null;
+  if (!d.redo.ready) return "unavailable";
+  await d.redo.quota(who.tenantId);
+  return null;
+}
+
+/** Trong tx khoá HĐ: đọc trạng thái → `decide` → cổng trích lại → ghi. */
+function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction) {
+  return async (r: ApprovalTxRepos, actor: ApprovalActor): Promise<TxOutcome> => {
+    const st = await r.approval.state(id, { lock: true });
+    if (!st) return "not_found";
+    if (!st.approval) return { error: "APPROVAL_NOT_OPEN" };
+    const dec = decide({
+      status: st.approval.status,
+      startedBy: st.approval.startedBy,
+      actor,
+      action: b.action,
+      feedback: b.feedback,
+      value: st.value,
+      threshold: st.threshold,
+      hasSource: st.hasSource,
+    });
+    if (dec.kind === "error") return { error: dec.code };
+    if ((await redoGate(d, who, dec)) === "unavailable") return "unavailable";
+    const c = { contractId: id, approvalId: st.approval.id, feedback: b.feedback };
+    const done = await apply(r, who, c, dec);
+    if (done === null) return { error: "APPROVAL_NOT_OPEN" };
+    if (done === "redo")
+      await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
+    return { done, approvalId: st.approval.id };
+  };
+}
+
 /** Quyết bước đang mở: quyền Group + người bắt đầu + lý do theo `decide`; ghi trong tx khoá HĐ. */
 export function actApproval(d: ApprovalDeps) {
   const get = getApproval(d);
   return async (who: PackWho, id: string, b: ApprovalAction): Promise<ActOutcome> => {
     const s = await d.uow.tenant(who, (r) => r.approval.settings());
     const actor = await actorOf(d, who, s);
-    const out = await d.uow.tenant(who, async (r) => {
-      const st = await r.approval.state(id, { lock: true });
-      if (!st) return "not_found" as const;
-      if (!st.approval) return { error: "APPROVAL_NOT_OPEN" as const };
-      const dec = decide({
-        status: st.approval.status,
-        startedBy: st.approval.startedBy,
-        actor,
-        action: b.action,
-        feedback: b.feedback,
-        value: st.value,
-        threshold: st.threshold,
-        hasSource: st.hasSource,
-      });
-      if (dec.kind === "error") return { error: dec.code };
-      const done = await apply(r, who, { contractId: id, approvalId: st.approval.id }, dec, b);
-      if (done === null) return { error: "APPROVAL_NOT_OPEN" as const };
-      if (done === "redo")
-        await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
-      return { done, approvalId: st.approval.id, startedBy: st.approval.startedBy };
-    });
-    if (out === "not_found") return out;
+    const inTx = decideInTx(d, who, id, b);
+    const out = await d.uow.tenant(who, (r) => inTx(r, actor));
+    if (out === "not_found" || out === "unavailable") return out;
     if (out.error !== undefined) return { error: out.error };
     if (out.done === "redo")
       await d.jobs.enqueue({ ...who, contractId: id, approvalId: out.approvalId });

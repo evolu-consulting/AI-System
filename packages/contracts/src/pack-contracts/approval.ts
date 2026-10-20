@@ -18,11 +18,19 @@ export type ApprovalStep = z.infer<typeof ApprovalStepSchema>;
 
 export const APPROVAL_FEEDBACK_MAX = 4000;
 export const APPROVAL_ACTIONS = ["approve", "reject", "redo"] as const;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: chặn đúng các ký tự điều khiển
+const CONTROL_CHARS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
 
 /** `reject`/`redo` cần lý do (engine trả 422 `FEEDBACK_REQUIRED` khi thiếu — giữ một nguồn luật). */
 export const ApprovalActionRequestSchema = z.strictObject({
   action: z.enum(APPROVAL_ACTIONS),
-  feedback: z.string().trim().max(APPROVAL_FEEDBACK_MAX).optional(),
+  // Review B #29: ký tự điều khiển (NUL ⇒ Postgres 22021 ⇒ 500) bị chặn ở biên; giữ \t \n \r.
+  feedback: z
+    .string()
+    .trim()
+    .max(APPROVAL_FEEDBACK_MAX)
+    .refine((v) => !CONTROL_CHARS.test(v), { message: "control characters are not allowed" })
+    .optional(),
 });
 export type ApprovalActionRequest = z.infer<typeof ApprovalActionRequestSchema>;
 

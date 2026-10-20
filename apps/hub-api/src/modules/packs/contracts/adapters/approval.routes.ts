@@ -5,6 +5,7 @@ import {
   ApprovalActionRequestSchema,
   ApprovalSettingsPatchSchema,
   CONTRACT_APPROVAL_ERRORS,
+  CONTRACT_ERRORS,
 } from "@ai/contracts";
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -26,7 +27,6 @@ import type {
 } from "../application/approval.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { ApprovalErrorCode } from "../domain/approval-machine.rules";
-import type { ActionQuota } from "./action-quota";
 
 const KEY = "contracts";
 export type ApprovalRoutesDeps = {
@@ -34,7 +34,6 @@ export type ApprovalRoutesDeps = {
   act: ReturnType<typeof actApproval>;
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
-  quota: ActionQuota;
 };
 
 const who = (u: AuthUser) => ({ userId: u.userId, tenantId: u.tenantId });
@@ -69,10 +68,15 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
   r.post("/contracts/:id/approval", write, async (c) => {
     const id = parseWith(z.uuid(), c.req.param("id"));
     const b = parseWith(ApprovalActionRequestSchema, await readJson(c)) as ApprovalAction;
-    const u = who(c.get("user"));
-    if (b.action === "redo") await d.quota(u.tenantId); // Trích lại tốn AI (#221)
-    const out = await d.act(u, id, b);
+    // Trích lại tốn AI (#221): quota + AI sẵn sàng kiểm trong use case SAU `decide` (review B #27/#28).
+    const out = await d.act(who(c.get("user")), id, b);
     if (out === "not_found") throw appError("NOT_FOUND");
+    if (out === "unavailable")
+      throw new AppError(
+        "AGENT_UNAVAILABLE",
+        CONTRACT_ERRORS.AGENT_UNAVAILABLE,
+        "Extraction agent unavailable",
+      );
     if ("error" in out) throw approvalError(out.error);
     return c.json(out);
   });

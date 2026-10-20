@@ -45,6 +45,7 @@ const HUB_TABLES = [
   "agent_types",
   "agent_workflows",
   "agents",
+  "ai_token_holds", // M3c hub 0043 · giữ chỗ trần token AI (review B #13)
   "attachments",
   "audit_log",
   "autofix_applies",
