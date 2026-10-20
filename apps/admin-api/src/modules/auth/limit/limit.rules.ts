@@ -22,6 +22,17 @@ export const DEFAULT_LIMIT_POLICY: LimitPolicy = {
   ipWindowMs: 10 * 60_000,
 };
 
+/**
+ * T1: chính sách theo env. `LOGIN_IP_MAX_ATTEMPTS` chỉ cho dev/test (e2e chạy song song nhiều app từ một IP 127.0.0.1,
+ * dùng chung một Redis ⇒ trần 30/10' của cả lượt chặn đăng nhập); production đặt biến này ⇒ lỗi (không nới trần IP).
+ */
+export function policyFromEnv(appEnv: string, ipMaxAttempts: number | undefined): LimitPolicy {
+  if (ipMaxAttempts === undefined) return DEFAULT_LIMIT_POLICY;
+  if (appEnv === "production")
+    throw new Error("LOGIN_IP_MAX_ATTEMPTS chỉ dùng cho dev/test, không đặt ở production");
+  return { ...DEFAULT_LIMIT_POLICY, ipMaxAttempts };
+}
+
 /** Thời hạn khoá cho lần khoá thứ `strike` (≥ 1): 15' → 30' → 1h → 2h → 4h (trần). */
 export function lockDurationMs(strike: number, p: LimitPolicy = DEFAULT_LIMIT_POLICY): number {
   const n = Math.max(1, Math.floor(strike));

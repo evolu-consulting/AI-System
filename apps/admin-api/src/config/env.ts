@@ -48,6 +48,8 @@ export const EnvSchema = z.object({
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).optional(),
   /** L1: trần phép băm mật khẩu đồng thời; vắng ⇒ số lõi (≥ 2). */
   LOGIN_HASH_CONCURRENCY: z.coerce.number().int().min(1).max(64).optional(),
+  /** T1: trần lượt đăng nhập mỗi IP / 10' (mặc định 30). Chỉ dev/test (e2e song song từ một IP); production ⇒ không khởi động. */
+  LOGIN_IP_MAX_ATTEMPTS: z.coerce.number().int().min(1).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

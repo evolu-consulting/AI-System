@@ -10,6 +10,7 @@ import {
   ipWindow,
   lockDurationMs,
   DEFAULT_LIMIT_POLICY as P,
+  policyFromEnv,
   retryAfterS,
 } from "./limit.rules";
 
@@ -44,6 +45,14 @@ describe("L1 · chính sách mặc định", () => {
       15, 30, 60, 120, 240, 240, 240,
     ]);
     expect(lockDurationMs(0)).toBe(15 * MIN);
+  });
+
+  test("T1 · policyFromEnv: vắng ⇒ mặc định; dev/test nới trần IP, phần còn lại giữ; production ⇒ lỗi", () => {
+    expect(policyFromEnv("production", undefined)).toBe(P);
+    expect(policyFromEnv("test", undefined)).toBe(P);
+    expect(policyFromEnv("test", 100_000)).toEqual({ ...P, ipMaxAttempts: 100_000 });
+    expect(policyFromEnv("development", 50).accountMaxFails).toBe(5);
+    expect(() => policyFromEnv("production", 100)).toThrow("LOGIN_IP_MAX_ATTEMPTS");
   });
 });
 

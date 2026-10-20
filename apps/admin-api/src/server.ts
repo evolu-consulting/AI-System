@@ -13,6 +13,7 @@ import { createRedis } from "./lib/redis";
 import { parseMasterKey, selfTestSecretKey } from "./lib/secret-crypto";
 import { createDummyHash } from "./modules/auth/auth.service";
 import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
+import { type LimitPolicy, policyFromEnv } from "./modules/auth/limit/limit.rules";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -33,11 +34,23 @@ async function connect(url: string): Promise<Db> {
   }
 }
 
+/** T1: chờ Redis sẵn sàng trước khi lắng nghe tối đa chừng này (lưới an toàn; chờ theo tín hiệu `connect()`). */
+const REDIS_READY_WAIT_MS = 3_000;
+
 /**
- * L1 (#224): giới hạn đăng nhập trên Redis. Production thiếu REDIS_URL ⇒ không khởi động. Nối không chặn: Redis chưa
- * sẵn/mất ⇒ login 503 AUTH_UNAVAILABLE (đóng an toàn) tới khi ioredis nối lại.
+ * L1 (#224): giới hạn đăng nhập trên Redis. Production thiếu REDIS_URL ⇒ không khởi động. T1: chờ lần nối đầu (client
+ * tắt offline queue ⇒ login ngay sau `listening` từng 503 vì chưa nối xong); Redis không lên trong REDIS_READY_WAIT_MS
+ * ⇒ vẫn lắng nghe, login 503 AUTH_UNAVAILABLE (đóng an toàn) tới khi ioredis nối lại.
  */
-function startLoginLimiter(env: ReturnType<typeof loadEnv>): LoginLimiter | undefined {
+async function startLoginLimiter(
+  env: ReturnType<typeof loadEnv>,
+): Promise<LoginLimiter | undefined> {
+  let policy: LimitPolicy;
+  try {
+    policy = policyFromEnv(env.APP_ENV, env.LOGIN_IP_MAX_ATTEMPTS);
+  } catch (err) {
+    fail("env", err);
+  }
   if (!env.REDIS_URL) {
     if (env.APP_ENV === "production")
       fail("env", new Error("REDIS_URL bắt buộc ở production (L1)"));
@@ -46,8 +59,20 @@ function startLoginLimiter(env: ReturnType<typeof loadEnv>): LoginLimiter | unde
   }
   const redis = createRedis(env.REDIS_URL);
   redis.on("error", (err: Error) => logger.warn("redis", { error: err.message }));
-  redis.connect().catch((err) => logger.warn("redis-connect", { error: errMsg(err) }));
-  return redisLoginLimiter(redis);
+  const ready = redis.connect().then(
+    () => true,
+    (err) => {
+      logger.warn("redis-connect", { error: errMsg(err) });
+      return false;
+    },
+  );
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<false>((r) => {
+    timer = setTimeout(() => r(false), REDIS_READY_WAIT_MS);
+  });
+  if (!(await Promise.race([ready, late]))) logger.warn("redis-not-ready", { op: "login-limit" });
+  clearTimeout(timer);
+  return redisLoginLimiter(redis, { policy });
 }
 
 async function main(): Promise<void> {
@@ -69,7 +94,7 @@ async function main(): Promise<void> {
   }
   const db = await connect(env.ADMIN_API_DATABASE_URL).catch((err) => fail("db", err));
   const dummyHash = await createDummyHash();
-  const loginLimiter = startLoginLimiter(env);
+  const loginLimiter = await startLoginLimiter(env);
   const app = createApp(
     { version: pkg.version, corsOrigins: env.CORS_ORIGINS },
     {

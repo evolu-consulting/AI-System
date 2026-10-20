@@ -193,6 +193,9 @@ function redisEnv(
   );
 }
 
+/** Trần lượt đăng nhập mỗi IP cho admin-api trong e2e (admin-api chỉ nhận biến này ngoài production). */
+export const E2E_LOGIN_IP_MAX = "100000";
+
 /** Biến môi trường riêng của một việc (đè lên `.env.local` vì `loadEnvFile` không ghi đè biến đã có). */
 export function jobEnv(
   job: Job,
@@ -202,6 +205,8 @@ export function jobEnv(
 ): Record<string, string> {
   return {
     E2E_DIST_DIR: dir.dist,
+    // T1: mọi việc gọi admin-api từ cùng IP 127.0.0.1 và chung Redis ⇒ trần IP 30/10' (L1) chặn đăng nhập của cả lượt.
+    LOGIN_IP_MAX_ATTEMPTS: E2E_LOGIN_IP_MAX,
     ...(job.clock ? { E2E_CLOCK_FILE: dir.clockFile } : {}),
     ...(job.meta.env ?? {}),
     ...dbEnv(job, base),

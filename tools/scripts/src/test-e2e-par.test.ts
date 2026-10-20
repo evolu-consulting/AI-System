@@ -1,6 +1,7 @@
 // TS1 · luật lập việc của `test:e2e:par`: mỗi việc DB/Redis/cổng riêng, ca gốc chia đều, spec ghim cổng 3000 ở ca 0.
 import { describe, expect, it } from "bun:test";
 import {
+  E2E_LOGIN_IP_MAX,
   fileSeconds,
   jobConcurrency,
   jobEnv,
@@ -158,7 +159,8 @@ describe("TS1 · test:e2e:par · env mỗi việc", () => {
     );
     const e = jobEnv(job("e2e/N1/playwright.config.ts"), base, undefined, dir);
     expect(e.TEST_DATABASE_URL).toBeUndefined();
-    expect(Object.keys(e)).toEqual(["E2E_DIST_DIR"]);
+    expect(Object.keys(e)).toEqual(["E2E_DIST_DIR", "LOGIN_IP_MAX_ATTEMPTS"]);
+    expect(e.LOGIN_IP_MAX_ATTEMPTS).toBe(E2E_LOGIN_IP_MAX);
   });
 
   it("cấu hình lạ nhận DB riêng (không dùng chung ai_system_test)", () => {
