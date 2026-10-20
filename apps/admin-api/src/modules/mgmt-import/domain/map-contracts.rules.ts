@@ -159,15 +159,17 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
   };
 }
 
-function itemRow(
-  it: Record<string, unknown>,
-  ord: number,
-  contractId: string,
-  cats: Map<string, string> | undefined,
-  ctx: Ctx,
-  org: string,
-  ref: string,
-): Row | null {
+/** Ngữ cảnh của một hạng mục: HĐ cha, loại hàng của org, chỗ ghi vấn đề. */
+type ItemCtx = {
+  ctx: Ctx;
+  contractId: string;
+  cats: Map<string, string> | undefined;
+  org: string;
+  ref: string;
+};
+
+function itemRow(it: Record<string, unknown>, ord: number, x: ItemCtx): Row | null {
+  const { ctx, contractId, cats, org, ref } = x;
   const name = str(it.name, 500);
   if (!name) {
     ctx.issues.push({ entity: "item", ref: `${ref}/items[${ord}]`, code: "ITEM_NO_NAME" });
@@ -235,18 +237,20 @@ function fileJob(d: SourceDoc, t: TenantPlan, ctx: Ctx, row: Row): FileJob | nul
   };
 }
 
-function mapItems(
-  d: SourceDoc,
-  t: TenantPlan,
-  ctx: Ctx,
-  cats: CategoryIndex,
-  contractId: string,
-): void {
+/** Bộ chung khi ánh xạ HĐ: ngữ cảnh, loại hàng theo org, chủ HĐ đã chuyển (cho phụ lục), việc file. */
+type CMap = { ctx: Ctx; cats: CategoryIndex; owners: Map<string, string | null>; files: FileJob[] };
+
+function mapItems(d: SourceDoc, t: TenantPlan, m: CMap, contractId: string): void {
+  const x: ItemCtx = {
+    ctx: m.ctx,
+    contractId,
+    cats: m.cats.get(t.orgId),
+    org: t.orgId,
+    ref: `contracts/${d.id}`,
+  };
   const items = Array.isArray(d.src.items) ? d.src.items.slice(0, 10_000) : [];
   items.forEach((it, i) => {
-    const r = isObj(it)
-      ? itemRow(it, i, contractId, cats.get(t.orgId), ctx, t.orgId, `contracts/${d.id}`)
-      : null;
+    const r = isObj(it) ? itemRow(it, i, x) : null;
     if (!r) return;
     push(t, "contracts.contract_items", r);
     addMoney(t, "items.unit_price", r.unit_price as number | null);
@@ -293,14 +297,9 @@ export function approvalRow(c: Row): Row {
     updated_at: c.updated_at ?? c.created_at,
   };
 }
-function mapOne(
-  d: SourceDoc,
-  t: TenantPlan,
-  ctx: Ctx,
-  cats: CategoryIndex,
-  owners: Map<string, string | null>,
-  files: FileJob[],
-): void {
+
+function mapOne(d: SourceDoc, t: TenantPlan, m: CMap): void {
+  const { ctx, owners, files } = m;
   const parent = parentOf(d, ctx, owners);
   const row = contractRow(d, ctx, t.tenantId, parent?.owner ?? null);
   if (parent) Object.assign(row, { kind: "appendix", parent_id: parent.id });
@@ -308,7 +307,7 @@ function mapOne(
   push(t, "contracts.approvals", approvalRow(row));
   const total = (row.fields as Record<string, { value?: unknown } | undefined>).total_value?.value;
   addMoney(t, "contracts.total_value", typeof total === "number" ? total : null);
-  mapItems(d, t, ctx, cats, row.id as string);
+  mapItems(d, t, m, row.id as string);
   push(t, "contracts.contract_events", importEvent(d, row.id as string));
   const job = fileJob(d, t, ctx, row);
   if (job) files.push(job);
@@ -316,9 +315,8 @@ function mapOne(
 
 /** HĐ cha trước phụ lục (FK + chủ phụ lục = chủ cha). */
 export function mapContracts(s: Snapshot, ctx: Ctx, p: Plan): FileJob[] {
-  const cats = mapCatalogs(s, ctx, p);
-  const files: FileJob[] = [];
-  const owners = new Map<string, string | null>();
+  const m: CMap = { ctx, cats: mapCatalogs(s, ctx, p), owners: new Map(), files: [] };
+  const { owners, files } = m;
   const all = docsOf(s, "contracts");
   const sorted = [
     ...all.filter((d) => d.src.kind !== "addendum"),
@@ -332,7 +330,7 @@ export function mapContracts(s: Snapshot, ctx: Ctx, p: Plan): FileJob[] {
       continue;
     }
     const t = tenantPlan(p, tid, org);
-    mapOne(d, t, ctx, cats, owners, files);
+    mapOne(d, t, m);
     const last = t.rows["contracts.contracts"]?.at(-1) as Row;
     owners.set(last.id as string, (last.owner_user_id as string | null) ?? null);
   }

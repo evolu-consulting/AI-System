@@ -17,6 +17,10 @@ type Cks = {
   lots: Set<string>;
   certs: Set<string>;
   renewals: Set<string>;
+  /** `tenant|serial_key` đã dùng (khoá duy nhất chữ ký). */
+  serials: Set<string>;
+  /** `tenant|sha|serial` đã dùng (khoá duy nhất văn bản ký). */
+  signed: Set<string>;
 };
 
 /** Khách: thêm hàng cks_customers (gộp theo khoá) + trả cột tra cứu cho hàng con. */
@@ -71,7 +75,8 @@ function lotRef(v: unknown, k: Cks, ctx: Ctx, ref: string): string | null {
   return null;
 }
 
-function mapCert(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks, seen: Set<string>): void {
+function mapCert(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks): void {
+  const seen = k.serials;
   const s = d.src;
   const ref = `cks_certificates/${d.id}`;
   const validTo = day(s.valid_to);
@@ -148,7 +153,8 @@ function mapRenewal(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks): void {
   addMoney(t, "cks_renewals.price_each", price);
 }
 
-function mapSigned(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks, seen: Set<string>): void {
+function mapSigned(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks): void {
+  const seen = k.signed;
   const s = d.src;
   const sha = typeof s.sha256 === "string" && /^[0-9a-f]{64}$/.test(s.sha256) ? s.sha256 : null;
   const filename = str(s.filename, 255);
@@ -271,16 +277,21 @@ export function mapCks(
   p: Plan,
   companies: Map<string, Company>,
 ): Set<string> {
-  const k: Cks = { companies, lots: new Set(), certs: new Set(), renewals: new Set() };
-  const serials = new Set<string>();
-  const signed = new Set<string>();
-  eachOrgDoc(s, ctx, p, "cks_lots", (d, t) => mapLot(d, t, ctx, k));
-  eachOrgDoc(s, ctx, p, "cks_certificates", (d, t) => mapCert(d, t, ctx, k, serials));
-  eachOrgDoc(s, ctx, p, "cks_renewals", (d, t) => mapRenewal(d, t, ctx, k));
-  eachOrgDoc(s, ctx, p, "signed_docs", (d, t) => mapSigned(d, t, ctx, k, signed));
+  const k: Cks = {
+    companies,
+    lots: new Set(),
+    certs: new Set(),
+    renewals: new Set(),
+    serials: new Set(),
+    signed: new Set(),
+  };
+  eachOrgDoc({ s, ctx, p }, "cks_lots", (d, t) => mapLot(d, t, ctx, k));
+  eachOrgDoc({ s, ctx, p }, "cks_certificates", (d, t) => mapCert(d, t, ctx, k));
+  eachOrgDoc({ s, ctx, p }, "cks_renewals", (d, t) => mapRenewal(d, t, ctx, k));
+  eachOrgDoc({ s, ctx, p }, "signed_docs", (d, t) => mapSigned(d, t, ctx, k));
   mapMarket(s, ctx, p);
   const moved = new Set<string>();
-  eachOrgDoc(s, ctx, p, "followups", (d, t) => {
+  eachOrgDoc({ s, ctx, p }, "followups", (d, t) => {
     if (mapFollowup(d, t, ctx, k)) moved.add(d.id);
   });
   for (const t of p.tenants.values()) {

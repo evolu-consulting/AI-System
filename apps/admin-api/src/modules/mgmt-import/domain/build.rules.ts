@@ -35,7 +35,7 @@ export function buildPlan(
   mapReminders(s, ctx, p, orgOfContract);
   const movedFollowups = mapCks(s, ctx, p, companies);
   mapLedger(s, ctx, p, companies);
-  mapLegacy(s, ctx, p, members, movedFollowups);
+  mapLegacy({ s, ctx, p }, members, movedFollowups);
   mapKnowledge(s, ctx, p, orgOfContract);
   return { plan: p, files };
 }

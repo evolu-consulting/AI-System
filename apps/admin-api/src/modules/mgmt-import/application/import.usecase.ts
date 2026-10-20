@@ -112,13 +112,11 @@ function context(o: ImportOpts, r: Resolved): Ctx {
 }
 
 /** File HĐ: đọc nguồn, đưa vào kho đích, thêm hàng `contracts.files` + gắn `file_id` (apply); dry-run chỉ kiểm có/không. */
-async function moveFiles(
-  d: ImportDeps,
-  o: ImportOpts,
-  plan: Plan,
-  jobs: ReturnType<typeof buildPlan>["files"],
-  out: Map<string, string>,
-): Promise<void> {
+/** `out`: id hàng file ⇒ sha256 bytes nguồn (đối soát). */
+type FileWork = { jobs: ReturnType<typeof buildPlan>["files"]; out: Map<string, string> };
+
+async function moveFiles(d: ImportDeps, o: ImportOpts, plan: Plan, w: FileWork): Promise<void> {
+  const { jobs, out } = w;
   for (const j of jobs) {
     const f = d.files.source ? await d.files.source.readDir(j.dir) : null;
     if (!f) {
@@ -149,14 +147,16 @@ async function moveFiles(
 }
 
 /** Một bảng của một tenant, theo lô: dry-run đếm "đã có"; apply ghi lô chưa đánh dấu xong rồi đánh dấu (chạy tiếp được). */
+/** Một bảng của một tenant. */
+type TableWork = { tid: string; table: TableName; rows: Row[] };
+
 async function writeTable(
   d: ImportDeps,
   o: ImportOpts,
-  tid: string,
-  table: TableName,
-  rows: Row[],
+  w: TableWork,
   c: TableCount,
 ): Promise<void> {
+  const { tid, table, rows } = w;
   c.planned += rows.length;
   let inserted = 0;
   for (let i = 0; i < rows.length; i += o.batch) {
@@ -187,7 +187,7 @@ async function writeAll(
       if (rows.length === 0 || skipped.has(table)) continue;
       const c = tables[table] ?? { planned: 0, inserted: 0, existing: 0 };
       tables[table] = c;
-      await writeTable(d, o, t.tenantId, table, rows, c);
+      await writeTable(d, o, { tid: t.tenantId, table, rows }, c);
     }
   return tables;
 }
@@ -207,7 +207,7 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const ctx = context(o, r);
   const { plan, files } = buildPlan(snap, ctx, members, orgs);
   const shas = new Map<string, string>();
-  await moveFiles(d, o, plan, files, shas);
+  await moveFiles(d, o, plan, { jobs: files, out: shas });
   const skipped = new Set<TableName>();
   for (const g of G1_TABLES) if (!(await d.target.hasTable(g))) skipped.add(g);
   const tables = await writeAll(d, o, plan, skipped);
@@ -216,7 +216,9 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   for (const s of r.skipped) bump(byCode, `tenant.${s.reason}`);
   for (const i of (identity as { issues?: { code: string }[] }).issues ?? [])
     bump(byCode, `identity.${i.code}`);
-  const rec = o.apply ? await reconcile(d, o, snap, plan, members, r.userOf, shas) : null;
+  const rec = o.apply
+    ? await reconcile(d, o, { s: snap, plan, members, userOf: r.userOf, shas })
+    : null;
   return {
     dry_run: !o.apply,
     source: o.source,

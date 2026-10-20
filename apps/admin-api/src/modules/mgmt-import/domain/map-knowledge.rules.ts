@@ -11,6 +11,8 @@ type Kn = {
   docRow: Map<string, Record<string, unknown>>;
   chunkTenant: Map<string, TenantPlan>;
   cid: (mgmtId: string) => string;
+  /** id HĐ mgmt ⇒ org (tài liệu HĐ theo org của HĐ). */
+  orgOfContract: Map<string, string>;
 };
 
 function docTenant(
@@ -40,10 +42,10 @@ function docRow(d: SourceDoc, ctx: Ctx, hash: string): Record<string, unknown> {
   };
 }
 
-function mapDocs(s: Snapshot, ctx: Ctx, p: Plan, orgOfContract: Map<string, string>, k: Kn): void {
+function mapDocs(s: Snapshot, ctx: Ctx, p: Plan, k: Kn): void {
   const hashes = new Set<string>();
   for (const d of docsOf(s, "documents")) {
-    const t = docTenant(d, ctx, p, orgOfContract);
+    const t = docTenant(d, ctx, p, k.orgOfContract);
     if (!t) {
       bump(p.noTenant, "documents");
       continue;
@@ -192,8 +194,9 @@ export function mapKnowledge(
     docRow: new Map(),
     chunkTenant: new Map(),
     cid: (m) => idOf(ctx, "chunk", m),
+    orgOfContract,
   };
-  mapDocs(s, ctx, p, orgOfContract, k);
+  mapDocs(s, ctx, p, k);
   mapChunks(s, ctx, k);
   mapEntityEdges(s, k, mapEntities(s, k));
   mapDocEdges(s, ctx, k);

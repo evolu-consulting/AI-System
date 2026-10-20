@@ -148,6 +148,9 @@ describe("sổ + CKS", () => {
     expect(t?.rows["contracts.partner_event_voids"]).toHaveLength(1);
     expect(issues.map((i) => i.code)).toEqual(["DONE_WITHOUT_DATE", "EVENT_INCOMPLETE"]);
   });
+});
+
+describe("CKS", () => {
   test("CKS: khách gộp theo MST; serial trùng ⇒ serial_key null; replaces trỏ chữ ký không chuyển ⇒ null; giá thị trường dùng chung vào mọi tenant", () => {
     const issues: Issue[] = [];
     const s = snap({

@@ -88,20 +88,23 @@ export async function managerPhase(
 ): Promise<void> {
   const by = wantsByTenant(r, users);
   for (const tids of tenantBatches(by, o.batch)) {
-    await managerBatch(r, tids, by, o.apply, d);
+    await managerBatch(r, { tids, by }, o.apply, d);
     r.report.batches++;
     d.onBatch?.("manager", r.report.batches);
   }
   r.report.managers.errors = r.report.issues.filter((i) => i.kind === "manager").length;
 }
 
+/** Một lô tenant: id tenant + yêu cầu quản lý theo tenant. */
+type ManagerSlice = { tids: string[]; by: ReadonlyMap<string, ManagerWant[]> };
+
 async function managerBatch(
   r: ManagerRun,
-  tids: string[],
-  by: ReadonlyMap<string, ManagerWant[]>,
+  slice: ManagerSlice,
   apply: boolean,
   d: Deps,
 ): Promise<void> {
+  const { tids, by } = slice;
   const m = r.report.managers;
   const real = tids.filter((t) => !t.startsWith("new:"));
   try {

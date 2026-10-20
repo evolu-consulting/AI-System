@@ -9,11 +9,13 @@ type Hit = { _id: string; _source: Record<string, unknown> };
 type Page = { _scroll_id?: string; hits?: { hits?: Hit[] }; count?: number };
 type Res = { status: number; body: Page };
 
-export function createOpenSearchReader(o: OsOpts): Pick<SourceReader, "scan" | "count"> {
+type Call = (method: string, path: string, body?: unknown) => Promise<Res>;
+
+/** Một lời gọi REST: đọc hết thân (kể cả lỗi), trần thời gian riêng, lỗi mạng ⇒ mã. */
+function makeCall(o: OsOpts): Call {
   const f = o.fetch ?? fetch;
   const base = o.url.replace(/\/+$/, "");
-  const ix = (name: string) => encodeURIComponent(`${o.prefix ?? ""}${name}`);
-  const call = async (method: string, path: string, body?: unknown): Promise<Res> => {
+  return async (method, path, body) => {
     const r = await f(`${base}${path}`, {
       method,
       // Bun mặc định xin `gzip, deflate, br, zstd`; OpenSearch 2.19 chọn mã khác gzip ⇒ fetch của Bun treo (đo trên
@@ -29,6 +31,11 @@ export function createOpenSearchReader(o: OsOpts): Pick<SourceReader, "scan" | "
     const text = await r.text();
     return { status: r.status, body: text ? (JSON.parse(text) as Page) : {} };
   };
+}
+
+export function createOpenSearchReader(o: OsOpts): Pick<SourceReader, "scan" | "count"> {
+  const ix = (name: string) => encodeURIComponent(`${o.prefix ?? ""}${name}`);
+  const call = makeCall(o);
   const ok = (r: Res, what: string): Page => {
     if (r.status < 200 || r.status >= 300) throw new Error(`OPENSEARCH_${what}_${r.status}`);
     return r.body;

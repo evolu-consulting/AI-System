@@ -3,10 +3,11 @@ import { type Ctx, docsOf, type Snapshot, type SourceDoc } from "./context";
 import { bump, type Plan, type TenantPlan, tenantPlan } from "./plan";
 import { str } from "./values.rules";
 
+/** Bộ ba mọi mapper dùng: ảnh chụp nguồn, ngữ cảnh phân giải, kế hoạch đang dựng. */
+export type MapRun = { s: Snapshot; ctx: Ctx; p: Plan };
+
 export function eachOrgDoc(
-  s: Snapshot,
-  ctx: Ctx,
-  p: Plan,
+  { s, ctx, p }: MapRun,
   index: string,
   fn: (d: SourceDoc, t: TenantPlan) => void,
 ): void {

@@ -147,6 +147,6 @@ function mapEvent(d: SourceDoc, t: TenantPlan, ctx: Ctx, companies: Map<string, 
 }
 
 export function mapLedger(s: Snapshot, ctx: Ctx, p: Plan, companies: Map<string, Company>): void {
-  eachOrgDoc(s, ctx, p, "obligations", (d, t) => mapObligation(d, t, ctx, companies));
-  eachOrgDoc(s, ctx, p, "partner_events", (d, t) => mapEvent(d, t, ctx, companies));
+  eachOrgDoc({ s, ctx, p }, "obligations", (d, t) => mapObligation(d, t, ctx, companies));
+  eachOrgDoc({ s, ctx, p }, "partner_events", (d, t) => mapEvent(d, t, ctx, companies));
 }

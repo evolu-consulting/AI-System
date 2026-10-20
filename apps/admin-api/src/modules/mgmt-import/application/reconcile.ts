@@ -4,7 +4,7 @@
 import type { Snapshot } from "../domain/context";
 import { targetId } from "../domain/ids.rules";
 import type { Membership } from "../domain/map-identity.rules";
-import type { MoneyKey, Plan, TableName } from "../domain/plan";
+import type { MoneyKey, Plan, TableName, TenantPlan } from "../domain/plan";
 import { diffFields, type FieldDiff, mgmtVisible, sourceMoney } from "../domain/reconcile.rules";
 import { isObj } from "../domain/values.rules";
 import type { ImportDeps, ImportOpts } from "./ports";
@@ -110,6 +110,65 @@ async function signedSha(
 const fv = (src: Record<string, unknown>, k: string): unknown =>
   isObj(src.fields) && isObj(src.fields[k]) ? src.fields[k].value : null;
 
+type Src = Record<string, unknown>;
+/** Mẫu so trường của một loại bản ghi: index nguồn, loại id, bảng đích, cặp (trường, nguồn, đích). */
+type DiffSpec = {
+  index: string;
+  kind: string;
+  table: TableName;
+  pairs: (src: Src, row: Src) => [string, unknown, unknown][];
+};
+
+const CONTRACT_DIFF: DiffSpec = {
+  index: "contracts",
+  kind: "contract",
+  table: "contracts.contracts",
+  pairs: (c, r) => [
+    ["title", c.title, r.title],
+    ["number", fv(c, "number"), r.number],
+    ["total_value", fv(c, "total_value"), r.value],
+    ["end_date", fv(c, "end_date"), r.end_date],
+    ["direction", c.direction, r.direction],
+    ["status", c.status, r.status],
+    ["supplier_name", fv(c, "supplier_name"), r.seller],
+    ["buyer_name", fv(c, "buyer_name"), r.buyer],
+  ],
+};
+const OBLIGATION_DIFF: DiffSpec = {
+  index: "obligations",
+  kind: "obligation",
+  table: "contracts.obligations",
+  pairs: (x, r) => [
+    ["amount", x.amount, r.amount],
+    ["due_date", x.due_date, r.due_date],
+    ["status", x.status, r.status],
+    ["direction", x.direction, r.direction],
+  ],
+};
+
+/** `diffSample` bản ghi đầu của org trong tenant `t`, đọc lại đích theo id tất định rồi so từng cặp. */
+async function sampleDiffs(
+  d: ImportDeps,
+  o: ImportOpts,
+  x: { s: Snapshot; t: TenantPlan },
+  spec: DiffSpec,
+): Promise<FieldDiff[]> {
+  const sample = (x.s.docs[spec.index] ?? [])
+    .filter((c) => c.src.org_id === x.t.orgId)
+    .slice(0, o.diffSample);
+  const ids = sample.map((c) => targetId(o.source, spec.kind, c.id));
+  const back = new Map(
+    (await d.target.readBack(x.t.tenantId, spec.table, ids)).map((r) => [r.id, r]),
+  );
+  return sample.flatMap((c) =>
+    diffFields(
+      spec.kind,
+      c.id,
+      spec.pairs(c.src, back.get(targetId(o.source, spec.kind, c.id)) ?? {}),
+    ),
+  );
+}
+
 async function diffs(
   d: ImportDeps,
   o: ImportOpts,
@@ -118,60 +177,14 @@ async function diffs(
 ): Promise<{ diffs: FieldDiff[]; checked: number }> {
   const out: FieldDiff[] = [];
   let checked = 0;
-  for (const t of plan.tenants.values()) {
-    const sample = (s.docs.contracts ?? [])
-      .filter((c) => c.src.org_id === t.orgId)
-      .slice(0, o.diffSample);
-    const back = new Map(
-      (
-        await d.target.readBack(
-          t.tenantId,
-          "contracts.contracts",
-          sample.map((c) => targetId(o.source, "contract", c.id)),
-        )
-      ).map((r) => [r.id, r]),
-    );
-    for (const c of sample) {
-      const r = back.get(targetId(o.source, "contract", c.id)) ?? {};
-      checked++;
-      out.push(
-        ...diffFields("contract", c.id, [
-          ["title", c.src.title, r.title],
-          ["number", fv(c.src, "number"), r.number],
-          ["total_value", fv(c.src, "total_value"), r.value],
-          ["end_date", fv(c.src, "end_date"), r.end_date],
-          ["direction", c.src.direction, r.direction],
-          ["status", c.src.status, r.status],
-          ["supplier_name", fv(c.src, "supplier_name"), r.seller],
-          ["buyer_name", fv(c.src, "buyer_name"), r.buyer],
-        ]),
+  for (const t of plan.tenants.values())
+    for (const spec of [CONTRACT_DIFF, OBLIGATION_DIFF]) {
+      out.push(...(await sampleDiffs(d, o, { s, t }, spec)));
+      checked += Math.min(
+        o.diffSample,
+        (s.docs[spec.index] ?? []).filter((c) => c.src.org_id === t.orgId).length,
       );
     }
-    const obs = (s.docs.obligations ?? [])
-      .filter((x) => x.src.org_id === t.orgId)
-      .slice(0, o.diffSample);
-    const ob = new Map(
-      (
-        await d.target.readBack(
-          t.tenantId,
-          "contracts.obligations",
-          obs.map((x) => targetId(o.source, "obligation", x.id)),
-        )
-      ).map((r) => [r.id, r]),
-    );
-    for (const x of obs) {
-      const r = ob.get(targetId(o.source, "obligation", x.id)) ?? {};
-      checked++;
-      out.push(
-        ...diffFields("obligation", x.id, [
-          ["amount", x.src.amount, r.amount],
-          ["due_date", x.src.due_date, r.due_date],
-          ["status", x.src.status, r.status],
-          ["direction", x.src.direction, r.direction],
-        ]),
-      );
-    }
-  }
   return { diffs: out, checked };
 }
 
@@ -199,11 +212,9 @@ const activeOf = (s: Snapshot): Set<string> =>
 async function visibility(
   d: ImportDeps,
   o: ImportOpts,
-  s: Snapshot,
-  plan: Plan,
-  members: Map<string, Membership>,
-  userOf: Map<string, string>,
+  x: ReconcileInput,
 ): Promise<ReconcileReport["visibility"]> {
+  const { s, plan, members, userOf } = x;
   const res: ReconcileReport["visibility"] = {
     users: 0,
     match: 0,
@@ -231,15 +242,21 @@ async function visibility(
   return res;
 }
 
+/** Đầu vào đối soát: ảnh chụp nguồn, kế hoạch đã ghi, membership mgmt, user đích theo `tenant|email`, sha file nguồn. */
+export type ReconcileInput = {
+  s: Snapshot;
+  plan: Plan;
+  members: Map<string, Membership>;
+  userOf: Map<string, string>;
+  shas: Map<string, string>;
+};
+
 export async function reconcile(
   d: ImportDeps,
   o: ImportOpts,
-  s: Snapshot,
-  plan: Plan,
-  members: Map<string, Membership>,
-  userOf: Map<string, string>,
-  shas: Map<string, string>,
+  x: ReconcileInput,
 ): Promise<ReconcileReport> {
+  const { s, plan, shas } = x;
   const m = await money(d, s, plan);
   const df = await diffs(d, o, s, plan);
   return {
@@ -248,6 +265,6 @@ export async function reconcile(
     signed_sha: await signedSha(d, s, plan),
     diffs: df.diffs,
     diffs_checked: df.checked,
-    visibility: await visibility(d, o, s, plan, members, userOf),
+    visibility: await visibility(d, o, x),
   };
 }

@@ -3,10 +3,10 @@
 // không phải CKS, danh mục hàng) giữ NGUYÊN VĂN (jsonb) theo tenant, khoá (kind, mgmt_id) ⇒ không mất dữ liệu khi tắt
 // mgmt-app; lát sau đọc từ đây. Thông báo không phát lại (tránh gửi lại email/push). Thuần.
 
-import { type Ctx, docsOf, type Snapshot } from "./context";
-import { eachOrgDoc } from "./each.rules";
+import { docsOf } from "./context";
+import { eachOrgDoc, type MapRun } from "./each.rules";
 import type { Membership } from "./map-identity.rules";
-import { bump, type Plan, push, tenantPlan } from "./plan";
+import { bump, push, tenantPlan } from "./plan";
 import { jsonSafe, lowerEmail } from "./values.rules";
 
 /** index mgmt ⇒ kind trong vùng chờ (bản ghi có `org_id`). */
@@ -29,25 +29,24 @@ const stage = (kind: string, id: string, doc: unknown) => ({
 });
 
 export function mapLegacy(
-  s: Snapshot,
-  ctx: Ctx,
-  p: Plan,
+  run: MapRun,
   members: Map<string, Membership>,
   movedFollowups: Set<string>,
 ): void {
+  const { s, ctx, p } = run;
   for (const ix of STAGED_INDICES)
-    eachOrgDoc(s, ctx, p, ix, (d, t) =>
+    eachOrgDoc({ s, ctx, p }, ix, (d, t) =>
       push(t, "contracts.legacy_records", stage(ix, d.id, d.src)),
     );
-  eachOrgDoc(s, ctx, p, "followups", (d, t) => {
+  eachOrgDoc({ s, ctx, p }, "followups", (d, t) => {
     if (!movedFollowups.has(d.id))
       push(t, "contracts.legacy_records", stage("followups", d.id, d.src));
   });
-  eachOrgDoc(s, ctx, p, "market_observations", (d, t) => {
+  eachOrgDoc({ s, ctx, p }, "market_observations", (d, t) => {
     if (d.src.product_kind !== "cks")
       push(t, "contracts.legacy_records", stage("market_observations", d.id, d.src));
   });
-  eachOrgDoc(s, ctx, p, "chats", (d, t) =>
+  eachOrgDoc({ s, ctx, p }, "chats", (d, t) =>
     push(t, "contracts.legacy_records", stage("chats", d.id, d.src)),
   );
   for (const d of docsOf(s, "notifications")) {
