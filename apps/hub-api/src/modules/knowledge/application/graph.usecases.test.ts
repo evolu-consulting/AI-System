@@ -76,7 +76,9 @@ describe("G1 · graph use cases", () => {
     expect(await f.g.addAlias(who, "P:a", "P:a")).toEqual({ ok: true, value: false });
     expect(f.txs()).toBe(0);
   });
+});
 
+describe("G1 · graph use cases (tiếp)", () => {
   it("limit kẹp theo GRAPH_LIMITS; mỗi lời gọi đúng một tx", async () => {
     const f = fake();
     await f.g.expand(who, ["P:a"], [C], 10_000);

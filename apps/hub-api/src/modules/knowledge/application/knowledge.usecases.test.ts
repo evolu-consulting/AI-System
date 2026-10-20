@@ -84,6 +84,9 @@ describe("N4-FR-04 · addDocument", () => {
     expect(f.docs.length).toBe(1);
     expect(f.docs[0]?.chunks.map((c) => c.ord)).toEqual([0, 1, 2]);
   });
+});
+
+describe("N4-FR-04 · addDocument (tiếp)", () => {
   it("embedding theo lô (2/lô ⇒ 2 lời gọi cho 3 đoạn), ghi một lần; embedder lỗi ⇒ vẫn thêm được, embedded 0", async () => {
     const f = fakeUow();
     let calls = 0;

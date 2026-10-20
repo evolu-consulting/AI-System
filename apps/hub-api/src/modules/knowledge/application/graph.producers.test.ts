@@ -113,7 +113,9 @@ describe("R1 · graphProducers — lô", () => {
     expect(rep).toMatchObject({ similar: 1, conflicts: 1, docLinks: 1, aliases: 1, failed: [] });
     expect(f.calls.addAlias?.[0]?.slice(1)).toEqual(["Person:nguyen an", "Person:an nguyen"]);
   });
+});
 
+describe("R1 · graphProducers — bí danh", () => {
   it("cặp đã là bí danh (aliasedPairs) ⇒ không hỏi LLM, không addAlias", async () => {
     const f = fakes({ existing: AN, aliased: ["Person:nguyen an\u0000Person:an nguyen"] });
     let asked = 0;

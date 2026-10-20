@@ -64,6 +64,9 @@ describe("R1 · searchKnowledge liên kết", () => {
     expect(calls).toEqual([]);
     expect(r.ok && r.value.federated).toEqual([]);
   });
+});
+
+describe("R1 · searchKnowledge liên kết (tiếp)", () => {
   it("KH lỗi ⇒ log knowledge-source-failed, vẫn trả nội bộ theo thứ tự FTS", async () => {
     const logs: string[] = [];
     const r = await searchKnowledge({

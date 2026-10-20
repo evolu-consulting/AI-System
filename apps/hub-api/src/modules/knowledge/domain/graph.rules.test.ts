@@ -1,4 +1,4 @@
-﻿// G1 · luật thuần đồ thị: dựng {nodes, links} từ hàng SQL đúng như graph.neighbourhood / graph.corpus của mgmt-app.
+// G1 · luật thuần đồ thị: dựng {nodes, links} từ hàng SQL đúng như graph.neighbourhood / graph.corpus của mgmt-app.
 import { describe, expect, it } from "bun:test";
 import {
   checkIds,
@@ -14,12 +14,14 @@ const D = "00000000-0000-4000-8000-000000000001";
 const D2 = "00000000-0000-4000-8000-000000000002";
 const D3 = "00000000-0000-4000-8000-000000000003";
 const nb = (
-  row: NbRow["row"],
-  src: string,
-  dst: string | null,
-  label: string,
-  ntype: string,
-  ltype: string | null,
+  ...[row, src, dst, label, ntype, ltype]: [
+    NbRow["row"],
+    string,
+    string | null,
+    string,
+    string,
+    string | null,
+  ]
 ): NbRow => ({
   row,
   src,
@@ -67,7 +69,9 @@ describe("G1 · toNeighbourhood", () => {
       type: "LINKS_TO",
     });
   });
+});
 
+describe("G1 · toNeighbourhood (tiếp)", () => {
   it("MENTIONS ghi đè node thực thể; REL/ALIAS chỉ thêm khi chưa có (setdefault)", () => {
     const g = toNeighbourhood(D, [
       nb("rel", "A:x", "B:y", "nhãn từ REL", "B", "R"),

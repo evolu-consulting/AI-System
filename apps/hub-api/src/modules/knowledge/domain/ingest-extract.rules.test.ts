@@ -80,6 +80,9 @@ describe("extract.rules", () => {
     expect(firstJson("không có")).toBeNull();
     expect(firstJson("{hỏng")).toBeNull();
   });
+});
+
+describe("extract.rules (tiếp)", () => {
   it("fakeExtract / fakeJudge như fake_llm", () => {
     const ex = fakeExtract("Dự án Apollo do Nguyen An phụ trách cùng Hanoi Team");
     expect(ex.entities.map((e) => `${e.type}:${e.name}`)).toContain("Concept:Apollo");
