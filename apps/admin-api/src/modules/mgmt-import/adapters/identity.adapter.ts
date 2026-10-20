@@ -65,5 +65,19 @@ export function createIdentityAdapter(db: Db, actorId: string, batch?: number): 
           )
         ).map((r) => ({ id: r.id, tenantId: r.tenant_id, email: r.email })),
       ),
+    tenantByKey: (key) =>
+      withScope(db, PLATFORM, async (tx) => {
+        const [r] = await run<{
+          id: string;
+          active: boolean;
+          src: string | null;
+          org: string | null;
+        }>(
+          tx,
+          sql`select id, active, settings->>'mgmt_source' as src, settings->>'mgmt_org_id' as org
+            from admin.tenants where key = ${key}`,
+        );
+        return r ? { id: r.id, active: r.active, source: r.src, orgId: r.org } : null;
+      }),
   };
 }

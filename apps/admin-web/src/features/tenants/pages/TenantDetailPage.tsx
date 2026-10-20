@@ -22,6 +22,7 @@ import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantInfoForm } from "../components/TenantInfoForm";
+import { TenantProfileCard } from "../components/TenantProfileCard";
 import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
@@ -170,6 +171,7 @@ export function TenantDetailPage() {
             onDirtyChange={setInfoDirty}
             onSubmit={save}
           />
+          <TenantProfileCard profile={tenant.profile} />
         </TabsContent>
         <TabsContent value="features" className="pt-4">
           <UnavailableTab body="tenants.tab.unavailableBody" />

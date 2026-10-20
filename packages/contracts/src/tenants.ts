@@ -117,13 +117,41 @@ const statusIssue = { message: "status must be 'locked' iff !active", path: ["st
 export const TenantSchema = z.strictObject(tenantShape).refine(statusMatchesActive, statusIssue);
 export type Tenant = z.infer<typeof TenantSchema>;
 
+/** niti-onboard (admin 0015): hồ sơ công ty, chỉ đọc ở admin-web; ghi bằng công cụ onboarding (deploy/tenants/*.yaml). */
+export const TenantProfileSchema = z.strictObject({
+  legal_name: z.string().min(1).max(256).optional(),
+  address: z.string().min(1).max(512).optional(),
+  /** MST 10 số, chi nhánh `-xxx`. */
+  tax_id: z
+    .string()
+    .regex(/^\d{10}(-\d{3})?$/)
+    .optional(),
+  email: EmailSchema.optional(),
+  websites: z.array(z.url().max(256)).max(10).optional(),
+  zalo_oa: z.string().min(1).max(128).optional(),
+  phones: z
+    .array(
+      z.strictObject({
+        label: z.string().min(1).max(64),
+        number: z.string().regex(/^[0-9 .+()-]{6,24}$/),
+      }),
+    )
+    .max(10)
+    .optional(),
+});
+export type TenantProfile = z.infer<typeof TenantProfileSchema>;
+
 export const TenantStatsSchema = z.strictObject({
   user_count: CountSchema,
   tenant_admin_count: CountSchema,
   locked_user_count: CountSchema,
 });
 export const TenantDetailSchema = z
-  .strictObject({ ...tenantShape, stats: TenantStatsSchema })
+  .strictObject({
+    ...tenantShape,
+    stats: TenantStatsSchema,
+    profile: TenantProfileSchema.optional(),
+  })
   .refine(statusMatchesActive, statusIssue);
 export type TenantDetail = z.infer<typeof TenantDetailSchema>;
 

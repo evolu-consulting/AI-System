@@ -92,6 +92,16 @@ export async function tenantStats(tx: Tx, tenantId: string) {
   return s ?? { tenant_admin_count: 0, locked_user_count: 0 };
 }
 
+/** niti-onboard: hồ sơ công ty (chỉ chi tiết tenant đọc — danh sách không kéo jsonb). */
+export async function tenantProfile(tx: Tx, id: string): Promise<Record<string, unknown>> {
+  const [r] = await tx
+    .select({ profile: tenants.profile })
+    .from(tenants)
+    .where(eq(tenants.id, id))
+    .limit(1);
+  return (r?.profile as Record<string, unknown> | undefined) ?? {};
+}
+
 export async function insertTenant(
   tx: Tx,
   t: {

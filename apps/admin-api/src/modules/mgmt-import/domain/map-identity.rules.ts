@@ -37,6 +37,36 @@ export function memberships(docs: SourceDoc[]): Map<string, Membership> {
   return out;
 }
 
+export type SourceOrg = { id: string; name: string; members: number };
+
+/** Org nguồn + số membership — báo cáo để người vận hành chọn org gắn với tenant (`--into-tenant`). */
+export function sourceOrgs(orgs: SourceDoc[], members: Map<string, Membership>): SourceOrg[] {
+  const n = new Map<string, number>();
+  for (const m of members.values()) n.set(m.orgId, (n.get(m.orgId) ?? 0) + 1);
+  return orgs.map((o) => {
+    const id = str(o.src.id, 128) ?? o.id;
+    return { id, name: str(o.src.name, 512) ?? o.id, members: n.get(id) ?? 0 };
+  });
+}
+
+/**
+ * niti-onboard · `onlyOrg` (org gắn với tenant đích): giữ org đó + user của nó + user KHÔNG thuộc org nào (N5 vẫn báo NO_ORG
+ * như I1 gốc); user của org khác bị loại (không tạo tenant/user cho org không được chọn). `onlyOrg` null ⇒ giữ nguyên.
+ */
+export function scopeToOrg(
+  onlyOrg: string | null | undefined,
+  docs: { orgs: SourceDoc[]; users: SourceDoc[] },
+  members: Map<string, Membership>,
+): { orgs: SourceDoc[]; users: SourceDoc[]; excludedUsers: number } {
+  if (onlyOrg == null) return { ...docs, excludedUsers: 0 };
+  const orgs = docs.orgs.filter((o) => (str(o.src.id, 128) ?? o.id) === onlyOrg);
+  const users = docs.users.filter((u) => {
+    const m = members.get(lowerEmail(u.src.email) ?? u.id.toLowerCase());
+    return !m || m.orgId === onlyOrg;
+  });
+  return { orgs, users, excludedUsers: docs.users.length - users.length };
+}
+
 export function usersExport(
   source: string,
   orgs: SourceDoc[],

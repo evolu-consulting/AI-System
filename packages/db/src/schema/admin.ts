@@ -54,6 +54,8 @@ export const tenants = admin.table(
     timezone: text("timezone").notNull().default("Asia/Ho_Chi_Minh"),
     /** N2-FR-04 (0013): trần run quy trình đồng thời; Hub đọc trong câu đếm trần (hub_ro). */
     processRunsMax: integer("process_runs_max").notNull().default(5),
+    /** niti-onboard (0015): hồ sơ công ty (`TenantProfileSchema`); `{}` = chưa khai. */
+    profile: jsonb("profile").notNull().default({}),
   },
   (t) => [
     uniqueIndex("tenants_key_uq").on(t.key),
@@ -66,6 +68,10 @@ export const tenants = admin.table(
       sql`${t.maxConcurrentSub} IS NULL OR ${t.maxConcurrentSub} BETWEEN 1 AND 10000`,
     ),
     check("tenants_version_check", sql`${t.version} >= 1`),
+    check(
+      "tenants_profile_check",
+      sql`jsonb_typeof(${t.profile}) = 'object' AND pg_column_size(${t.profile}) <= 8192`,
+    ),
   ],
 );
 

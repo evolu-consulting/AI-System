@@ -2,6 +2,7 @@
 //   bun --env-file=.env.local apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts --source mgmt-prod \
 //     --actor <uuid platform admin> [--apply] [--batch 500] [--knowledge-org <org id>] [--files-dir <contract_files>] \
 //     [--sink-dir <dir>] [--state <checkpoint.json>] [--no-graph] [--diff-sample 20] [--report out.json]
+//     [--into-tenant <key>]   niti-onboard: chỉ org đã gắn với tenant đó (docs/specs/niti-onboard/tasks.md)
 // Env: MGMT_OPENSEARCH_URL, [MGMT_INDEX_PREFIX], [MGMT_NEO4J_URL (HTTP :7474), MGMT_NEO4J_USER, MGMT_NEO4J_PASSWORD],
 //      ADMIN_API_DATABASE_URL (admin_api), HUB_DATABASE_URL (hub_api). Không dùng role chủ.
 // stdout = báo cáo JSON; exit 0 khớp · 2 có vấn đề hàng/lệch đối soát · 1 lỗi cấu hình/hệ thống (stderr chỉ mã lỗi).
@@ -31,10 +32,13 @@ function args() {
       "no-graph": { type: "boolean", default: false },
       "diff-sample": { type: "string", default: "20" },
       report: { type: "string" },
+      "into-tenant": { type: "string" },
     },
   });
   if (!v.source || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(v.source)) fail("BAD_SOURCE");
   if (!v.actor || !UUID.test(v.actor)) fail("ACTOR_INVALID");
+  const into = v["into-tenant"];
+  if (into !== undefined && !/^[a-z0-9-]{2,32}$/.test(into)) fail("BAD_INTO_TENANT");
   const batch = /^\d{1,4}$/.test(v.batch ?? "") ? Number(v.batch) : 0;
   if (batch < 1 || batch > 2000) fail("BAD_BATCH");
   return { v, batch };
@@ -57,6 +61,7 @@ function config(v: ReturnType<typeof args>["v"], batch: number): RunConfig {
     filesDir: v["files-dir"] ?? null,
     sinkDir: v["sink-dir"] ?? null,
     statePath: v.state ?? null,
+    intoTenant: v["into-tenant"] ?? null,
   };
 }
 

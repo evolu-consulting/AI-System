@@ -54,4 +54,8 @@ out.push(
   `so trường: ${rec?.diffs_checked} bản ghi, lệch ${rec?.diffs.length}: ${JSON.stringify(rec?.diffs.slice(0, 5))}`,
 );
 out.push(`luật thấy: ${JSON.stringify(rec?.visibility)}`);
+// niti-onboard: `--into-tenant` ⇒ tenant đích + org bị loại
+const x = apply as Rep & { into?: unknown; excluded?: unknown; source_orgs?: unknown };
+if (x?.into) out.push(`into: ${JSON.stringify(x.into)} · loại: ${JSON.stringify(x.excluded)}`);
+if (x?.source_orgs) out.push(`org nguồn: ${JSON.stringify(x.source_orgs)}`);
 console.log(out.join("\n"));

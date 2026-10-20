@@ -575,6 +575,16 @@
       "createdAt": "Created {date}",
       "userCount": "{users} users"
     },
+    "profile": {
+      "title": "Company profile",
+      "legalName": "Legal name",
+      "address": "Address",
+      "taxId": "Tax ID",
+      "email": "Email",
+      "websites": "Websites",
+      "zalo": "Zalo OA",
+      "phones": "Phones"
+    },
     "users": {
       "summary": "{users} users · {admins} tenant admins · {locked} locked",
       "open": "Open Users list"

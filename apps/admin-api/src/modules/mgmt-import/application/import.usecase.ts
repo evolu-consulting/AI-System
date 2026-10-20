@@ -3,7 +3,13 @@
 import { buildPlan } from "../domain/build.rules";
 import type { Ctx } from "../domain/context";
 import { sha1, targetId, toHex } from "../domain/ids.rules";
-import { memberships, usersExport } from "../domain/map-identity.rules";
+import {
+  memberships,
+  type SourceOrg,
+  scopeToOrg,
+  sourceOrgs,
+  usersExport,
+} from "../domain/map-identity.rules";
 import {
   bump,
   G1_TABLES,
@@ -37,6 +43,10 @@ export type ImportReport = {
   issues_by_code: Record<string, number>;
   issues_sample: Plan["issues"];
   reconcile: ReconcileReport | null;
+  /** Org nguồn (id, tên, số membership) — chọn org để gắn tenant (niti-onboard). */
+  source_orgs: SourceOrg[];
+  /** `onlyOrg`: org không nhập + số user bị loại theo (null khi nhập mọi org). */
+  excluded: { orgs: string[]; users: number } | null;
 };
 
 export type SkippedTenant = {
@@ -58,7 +68,10 @@ async function resolve(
   members: ReturnType<typeof memberships>,
   orgs: string[],
 ): Promise<Resolved> {
-  const all = await d.identity.tenants(o.source);
+  // niti-onboard: chỉ org được chọn — tenant có marker của org khác (lượt I1 trước) không nhận gì.
+  const all = (await d.identity.tenants(o.source)).filter(
+    (t) => o.onlyOrg == null || t.orgId === o.onlyOrg,
+  );
   // review A-4: chỉ tenant N5 tạo/dùng lại được (đang hoạt động, gói chưa thu hồi); tenant khác ⇒ bỏ + báo, không ghi gì.
   const skipped = all
     .filter((t) => !t.active || t.packRevoked)
@@ -197,9 +210,11 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const t0 = d.now();
   const snap = await loadSnapshot(d.reader, o.batch, o.withGraph);
   const members = memberships(snap.docs.memberships ?? []);
-  const orgs = (snap.docs.orgs ?? []).map((x) => str(x.src.id, 128) ?? x.id);
+  const allOrgs = snap.docs.orgs ?? [];
+  const scoped = scopeToOrg(o.onlyOrg, { orgs: allOrgs, users: snap.docs.users ?? [] }, members);
+  const orgs = scoped.orgs.map((x) => str(x.src.id, 128) ?? x.id);
   const identity = await d.identity.run(
-    usersExport(o.source, snap.docs.orgs ?? [], snap.docs.users ?? [], members),
+    usersExport(o.source, scoped.orgs, scoped.users, members),
     o.apply,
   );
   const r = await resolve(d, o, members, orgs);
@@ -212,14 +227,11 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const skipped = new Set<TableName>();
   for (const g of G1_TABLES) if (!(await d.target.hasTable(g))) skipped.add(g);
   const tables = await writeAll(d, o, plan, skipped);
-  const byCode: Record<string, number> = {};
-  for (const i of plan.issues) bump(byCode, i.code);
-  for (const s of r.skipped) bump(byCode, `tenant.${s.reason}`);
-  for (const i of (identity as { issues?: { code: string }[] }).issues ?? [])
-    bump(byCode, `identity.${i.code}`);
+  const byCode = issueCounts(plan, r.skipped, identity);
   const rec = o.apply
     ? await reconcile(d, o, { s: snap, plan, members, userOf: r.userOf, shas })
     : null;
+  const src = sourceOrgs(allOrgs, members);
   return {
     dry_run: !o.apply,
     source: o.source,
@@ -234,5 +246,25 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
     issues_by_code: byCode,
     issues_sample: plan.issues.slice(0, 50),
     reconcile: rec,
+    source_orgs: src,
+    excluded: excludedOf(o, src, scoped.excludedUsers),
   };
+}
+
+function issueCounts(
+  plan: Plan,
+  skipped: SkippedTenant[],
+  identity: unknown,
+): Record<string, number> {
+  const byCode: Record<string, number> = {};
+  for (const i of plan.issues) bump(byCode, i.code);
+  for (const s of skipped) bump(byCode, `tenant.${s.reason}`);
+  for (const i of (identity as { issues?: { code: string }[] }).issues ?? [])
+    bump(byCode, `identity.${i.code}`);
+  return byCode;
+}
+
+function excludedOf(o: ImportOpts, src: SourceOrg[], users: number): ImportReport["excluded"] {
+  if (o.onlyOrg == null) return null;
+  return { orgs: src.map((x) => x.id).filter((x) => x !== o.onlyOrg), users };
 }

@@ -1,0 +1,57 @@
+# niti-onboard · tenant thật đầu tiên của app mới (AI System + gói contracts, thay sohoptac cũ). Người dùng cung cấp 2026-10-20.
+# Chạy (idempotent, chạy lại an toàn):
+#   bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+#     --file deploy/tenants/nitigroup.yaml --actor <uuid platform admin> [--mgmt-org <org id sohoptac>]
+# Thứ tự cutover đầy đủ: docs/specs/niti-onboard/tasks.md "Thứ tự chạy production".
+key: nitigroup
+name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
+timezone: Asia/Ho_Chi_Minh
+profile:
+  legal_name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
+  address: 83 đường 48, khu phố 6, Phường Hiệp Bình, TP Hồ Chí Minh, Việt Nam
+  tax_id: "0318938091"
+  email: nitigroupvn@gmail.com
+  websites:
+    - https://nitigroupvn.com/
+    - https://annamtax.com/
+  zalo_oa: NitiGroup
+  phones:
+    - { label: Báo giá, number: 076.99.55.688 }
+    - { label: Kỹ thuật, number: 0768.139.688 }
+
+# Bật gói qua đường admin-web (PK-FR-05): entitlement + 3 Group vai + grant + trợ lý gói (mgmt-assistant).
+packs: [contracts]
+
+# Cây phòng ban (M1 + admin 0015): mọi phòng nằm ngay dưới gốc (Phòng Giám đốc), thứ tự như khai.
+# "Bộ phận / Phòng ban trong công ty" là nhãn chung, KHÔNG phải phòng ⇒ bỏ.
+# Gán người: `head: email` / `members: [email…]` — chỉ khớp user ĐÃ có (sau import); email chưa có ⇒ báo `pending_emails`.
+root: { key: pb-giam-doc, vi: Phòng Giám đốc, en: Board of Directors }
+departments:
+  - { key: pb-hanh-chinh, vi: Phòng Hành chính tổng hợp, en: Administration }
+  - { key: pb-nhan-su, vi: Phòng Nhân sự, en: HR }
+  - { key: pb-dao-tao, vi: Phòng Đào tạo, en: Training }
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales }
+  - { key: pb-cskh, vi: Phòng Chăm sóc Khách hàng, en: Customer Service }
+  - { key: pb-nc-san-pham, vi: Phòng Nghiên cứu và phát triển Sản phẩm, en: Product Development }
+  - { key: pb-nc-phat-trien, vi: Phòng Nghiên cứu và Phát triển, en: R&D }
+  - { key: pb-marketing, vi: Phòng Marketing, en: Marketing }
+  - { key: pb-vp-dai-dien, vi: Văn phòng đại diện, en: Representative office }
+  - { key: pb-quan-he-cong-chung, vi: Phòng Quan hệ công chúng, en: PR }
+  - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting }
+  - { key: pb-tai-chinh, vi: Phòng Tài chính, en: Finance }
+  - { key: pb-kiem-toan, vi: Phòng Kiểm toán, en: Audit }
+  - { key: pb-ngan-quy, vi: Phòng Ngân quỹ, en: Treasury }
+  - { key: pb-quan-he-quoc-te, vi: Phòng Quan hệ Quốc tế, en: International Relations }
+  - { key: pb-thanh-toan-trong-nuoc, vi: Phòng Thanh toán trong nước, en: Local Payment }
+  - { key: pb-cntt, vi: Phòng Công nghệ thông tin, en: IT }
+  - { key: pb-cong-doan, vi: Công đoàn, en: Trade union }
+  - { key: pb-tru-so-chinh, vi: Trụ sở chính, en: Headquarters }
+  - { key: pb-chi-nhanh, vi: Chi nhánh, en: Branch }
+  - { key: pb-vp-dia-phuong, vi: Văn phòng địa phương, en: Regional office }
+  - { key: pb-cua-hang-ban-si, vi: Cửa hàng bán sỉ, en: Wholesaler }
+
+# Gắn với org sohoptac cho importer I1 (`mgmt-import --into-tenant nitigroup`). org_id điền khi đã biết (xem `source_orgs`
+# trong báo cáo dry-run của importer) hoặc truyền `--mgmt-org`. Đã gắn thì không đổi được sang org khác (ORG_REBIND).
+import:
+  source: mgmt-prod
+  org_id: null

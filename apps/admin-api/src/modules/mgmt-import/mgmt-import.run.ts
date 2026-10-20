@@ -19,6 +19,8 @@ export type RunConfig = ImportOpts & {
   sinkDir: string | null;
   /** File điểm dừng (chạy tiếp sau khi đứt). */
   statePath: string | null;
+  /** niti-onboard: key tenant đích (đã onboarding + gắn org); vắng ⇒ mỗi org một tenant (I1 gốc). */
+  intoTenant?: string | null;
 };
 
 /** Điểm dừng lưu file JSON `{done: [...]}`; không có đường dẫn ⇒ chỉ trong bộ nhớ. */
@@ -63,11 +65,32 @@ export function buildDeps(adminDb: Db, hubDb: Db, c: RunConfig, reader: SourceRe
   };
 }
 
+export type IntoReport = { key: string; tenant_id: string; org_id: string | null };
+
+/**
+ * niti-onboard · `--into-tenant <key>`: nhập ĐÚNG org đã gắn với tenant (marker onboarding, cùng `--source`). Tenant lạ/đã tắt ⇒
+ * lỗi. Chưa gắn: apply ⇒ lỗi `TENANT_NOT_BOUND`; dry-run ⇒ chạy với 0 org (báo `source_orgs` để chọn) + vấn đề `into.*`.
+ */
+async function resolveInto(d: ImportDeps, c: RunConfig, key: string) {
+  const t = await d.identity.tenantByKey(key);
+  if (!t) throw new Error("TENANT_NOT_FOUND");
+  if (!t.active) throw new Error("TENANT_INACTIVE");
+  const bound = t.source === c.source && t.orgId !== null;
+  if (!bound && c.apply) throw new Error("TENANT_NOT_BOUND");
+  return { key, tenant_id: t.id, org_id: bound ? t.orgId : null } satisfies IntoReport;
+}
+
 export async function runMgmtImport(
   adminDb: Db,
   hubDb: Db,
   c: RunConfig,
   reader: SourceReader = sourceReader(c),
-): Promise<ImportReport> {
-  return runImport(c, buildDeps(adminDb, hubDb, c, reader));
+): Promise<ImportReport & { into?: IntoReport }> {
+  const deps = buildDeps(adminDb, hubDb, c, reader);
+  if (!c.intoTenant) return runImport(c, deps);
+  const into = await resolveInto(deps, c, c.intoTenant);
+  // chưa gắn (dry-run): org "" không khớp org nào ⇒ không lập kế hoạch cho ai
+  const r = await runImport({ ...c, onlyOrg: into.org_id ?? "" }, deps);
+  if (!into.org_id) r.issues_by_code["into.TENANT_NOT_BOUND"] = 1;
+  return { ...r, into };
 }

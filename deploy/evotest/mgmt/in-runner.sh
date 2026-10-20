@@ -21,6 +21,17 @@ CLI=(bun --env-file=.env.local apps/admin-api/src/modules/mgmt-import/mgmt-impor
   --files-dir /mgmtdata/contract_files --sink-dir /out/sink --diff-sample 30)
 [ -n "$MGMT_KNOWLEDGE_ORG" ] && CLI+=(--knowledge-org "$MGMT_KNOWLEDGE_ORG")
 rc=0
+# niti-onboard: MGMT_INTO_TENANT=<key> ⇒ onboarding deploy/tenants/<key>.yaml (gắn org tri thức = org của chủ seed, nguồn bản sao)
+# hai lần (lần 2 phải không đổi gì) rồi importer chỉ nhập org đó vào tenant (`--into-tenant`).
+if [ -n "${MGMT_INTO_TENANT:-}" ]; then
+  for n in 1 2; do
+    bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+      --file "deploy/tenants/$MGMT_INTO_TENANT.yaml" --actor "$ACTOR" --mgmt-org "$MGMT_KNOWLEDGE_ORG" \
+      --mgmt-source "$MGMT_SOURCE" >"/out/onboard$n.json" 2>"/out/onboard$n.err" || { echo "[mgmt] onboarding $n lỗi"; cat "/out/onboard$n.err"; exit 1; }
+  done
+  bun -e "const [a,b]=await Promise.all(['/out/onboard1.json','/out/onboard2.json'].map((p)=>Bun.file(p).json()));console.log('[mgmt] onboarding 1:', JSON.stringify({tenant:a.tenant,departments:a.departments,packs:a.packs}));console.log('[mgmt] onboarding 2:', JSON.stringify({tenant:b.tenant,departments:b.departments,members:b.members}))"
+  CLI+=(--into-tenant "$MGMT_INTO_TENANT")
+fi
 for step in dry apply rerun; do
   args=(); [ "$step" != dry ] && args=(--apply)
   [ "$step" = apply ] && args+=(--state /out/state.json)

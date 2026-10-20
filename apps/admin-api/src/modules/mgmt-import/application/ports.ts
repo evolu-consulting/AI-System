@@ -59,6 +59,10 @@ export type IdentityPort = {
     source: string,
   ): Promise<{ id: string; orgId: string; active: boolean; packRevoked: boolean }[]>;
   users(tenantIds: string[]): Promise<{ id: string; tenantId: string; email: string }[]>;
+  /** niti-onboard: tenant theo key + marker (để `--into-tenant` tra org đã gắn). */
+  tenantByKey(
+    key: string,
+  ): Promise<{ id: string; active: boolean; source: string | null; orgId: string | null } | null>;
 };
 
 /** Tuỳ chọn + phụ thuộc của use case (ở đây — không ở import.usecase — để reconcile không import ngược: hết vòng, review C). */
@@ -72,6 +76,11 @@ export type ImportOpts = {
   actorId: string;
   withGraph: boolean;
   diffSample: number;
+  /**
+   * niti-onboard (`--into-tenant`): chỉ nhập MỘT org (org gắn với tenant đích qua marker onboarding); org khác ⇒ không đụng
+   * (không tạo tenant, user/HĐ của họ đếm ở `excluded_orgs`/`no_tenant`). Vắng ⇒ mọi org (I1 gốc).
+   */
+  onlyOrg?: string | null;
 };
 export type ImportDeps = {
   reader: SourceReader;

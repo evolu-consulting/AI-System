@@ -4,6 +4,7 @@
 # Dùng: remote.sh <tag> <mgmt commit>. Dọn khi thoát: down -v, xoá thư mục tạm, xoá image api đã build.
 set -uo pipefail
 TAG="$1"; MCOMMIT="$2"
+export MGMT_INTO_TENANT="${3:-}"   # niti-onboard: key tenant (deploy/tenants/<key>.yaml) ⇒ onboarding + --into-tenant
 D="$HOME/workspace/evotest-mgmt"
 mkdir -p "$D" && cd "$D" || exit 2
 export EVO_UID=$(id -u) EVO_GID=$(id -g) MGMT_COMMIT="$MCOMMIT" MGMT_NEO4J_PW="$(head -c 18 /dev/urandom | base64 | tr -dc A-Za-z0-9)"

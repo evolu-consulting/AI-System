@@ -575,6 +575,16 @@
       "createdAt": "Tạo lúc {date}",
       "userCount": "{users} user"
     },
+    "profile": {
+      "title": "Hồ sơ công ty",
+      "legalName": "Tên pháp lý",
+      "address": "Địa chỉ",
+      "taxId": "MST",
+      "email": "Email",
+      "websites": "Website",
+      "zalo": "Zalo OA",
+      "phones": "Điện thoại"
+    },
     "users": {
       "summary": "{users} user · {admins} tenant_admin · {locked} đã khoá",
       "open": "Mở danh sách Users"

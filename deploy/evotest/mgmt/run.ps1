@@ -2,7 +2,8 @@
 # sohoptac-* (dữ liệu thật). Giữ khoá ~/workspace/evotest/.lock (xếp hàng với run-tests.ps1, không chồng ngân sách CPU/RAM).
 #   powershell -File deploy/evotest/mgmt/run.ps1 [-Ref HEAD] [-MgmtRepo F:\workspace\mgmt-app]
 # Gửi: git archive <Ref> của repo này + git archive HEAD:api của mgmt-app (Dockerfile + mã, không .venv/data). Kết quả: .data/evotest-mgmt/<giờ>/.
-param([string]$Ref = "HEAD", [string]$MgmtRepo = "F:\workspace\mgmt-app")
+#   -Tenant nitigroup: onboarding deploy/tenants/nitigroup.yaml (gắn org seed) rồi importer `--into-tenant` (niti-onboard).
+param([string]$Ref = "HEAD", [string]$MgmtRepo = "F:\workspace\mgmt-app", [string]$Tenant = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
@@ -19,7 +20,7 @@ try {
   [IO.File]::WriteAllText("$tmp\remote-mgmt-$stamp.sh", $t, (New-Object Text.UTF8Encoding $false))
   scp @ssh "$tmp\evotest-mgmt-app-$stamp.tgz" "$tmp\evotest-mgmt-api-$stamp.tgz" "$tmp\remote-mgmt-$stamp.sh" "${Server}:/tmp/"
   $t0 = Get-Date
-  $boot = "cd ~/workspace/evotest && { n=0; until mkdir .lock 2>/dev/null; do [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng...'; n=1; sleep 5; done; trap 'rmdir .lock' EXIT; bash /tmp/remote-mgmt-$stamp.sh $stamp $mcommit; r=`$?; unlink /tmp/remote-mgmt-$stamp.sh; exit `$r; } 2>&1"
+  $boot = "cd ~/workspace/evotest && { n=0; until mkdir .lock 2>/dev/null; do [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng...'; n=1; sleep 5; done; trap 'rmdir .lock' EXIT; bash /tmp/remote-mgmt-$stamp.sh $stamp $mcommit $Tenant; r=`$?; unlink /tmp/remote-mgmt-$stamp.sh; exit `$r; } 2>&1"
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $ErrorActionPreference = "Continue"

@@ -105,7 +105,8 @@ export async function getTenant(
   return withScope(ctx.db, scope, async (tx) => {
     const t = await mustFind(tx, id);
     const s = await repo.tenantStats(tx, id);
-    return { ...toTenant(t), stats: { user_count: t.userCount, ...s } };
+    const profile = (await repo.tenantProfile(tx, id)) as TenantDetail["profile"];
+    return { ...toTenant(t), stats: { user_count: t.userCount, ...s }, profile };
   });
 }
 

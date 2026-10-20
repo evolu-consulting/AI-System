@@ -109,6 +109,7 @@ services:
       MGMT_NEO4J_PW: ${MGMT_NEO4J_PW:?MGMT_NEO4J_PW}
       MGMT_SOURCE: ${MGMT_SOURCE:-mgmt-evotest}
       MGMT_KNOWLEDGE_ORG: ${MGMT_KNOWLEDGE_ORG:-}
+      MGMT_INTO_TENANT: ${MGMT_INTO_TENANT:-}
     volumes:
       - ./app:/app
       - ../evotest/cache:/cache
