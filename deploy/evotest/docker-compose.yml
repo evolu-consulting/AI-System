@@ -1,6 +1,8 @@
 # Test runner từ xa cho evolu-platform (deploy/evotest/run-tests.ps1) - project Docker RIÊNG "evotest" trên máy chủ production.
 # Không `ports:`, không gắn mạng nào có sẵn (mạng mặc định của project), Postgres ở tmpfs (không volume cần dọn).
-# Ngân sách cứng: CPU 2 + 0.5 + 3.5 = 6; RAM 8 + 1 + 14 = 23 GB (<= 24). cpu_shares thấp + `nice -n 19` trong lệnh chạy.
+# Nhiều slot song song: mỗi slot = project riêng `-p evotest-sN` (remote.sh), thư mục riêng ~/workspace/evotest/slots/sN, không container_name cố định.
+# Ngân sách MỖI slot (máy chủ 12 CPU / 125 GB RAM, ~70 GB trống): CPU trần 2 + 1 + 0.25 = 3.25; RAM 6 + 5 + 0.5 = 11.5 GB.
+# 4 slot = 13 CPU trần (mềm nhờ cpu_shares 128 + `nice -n 19`), 46 GB RAM.
 name: evotest
 
 x-runner: &runner
@@ -16,15 +18,15 @@ x-runner: &runner
     EVO_CAPTURE: ${EVO_CAPTURE:-}
   volumes:
     - ./app:/app
-    - ./cache:/cache
+    - ${EVO_CACHE:-./cache}:/cache
     - ./out:/out
     - ./in-container.sh:/in-container.sh:ro
   depends_on:
     pg: { condition: service_healthy }
     redis: { condition: service_healthy }
   entrypoint: ["nice", "-n", "19", "bash", "/in-container.sh"]
-  cpus: 3.5
-  mem_limit: 14g
+  cpus: 2
+  mem_limit: 6g
   cpu_shares: 128
   shm_size: 1g
   init: true
@@ -32,12 +34,11 @@ x-runner: &runner
 services:
   pg:
     image: postgres:16.15-alpine
-    container_name: evotest-pg
     environment:
       POSTGRES_USER: ai
       POSTGRES_PASSWORD: ai_dev_pw
       POSTGRES_DB: ai_system
-    command: ["postgres", "-c", "max_connections=300", "-c", "shared_buffers=1GB", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    command: ["postgres", "-c", "max_connections=300", "-c", "shared_buffers=512MB", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ai -d ai_system"]
       interval: 3s
@@ -46,33 +47,30 @@ services:
     volumes:
       - ./pg-init:/docker-entrypoint-initdb.d:ro
     tmpfs:
-      - /var/lib/postgresql/data:size=6g
-    cpus: 2
-    mem_limit: 8g
+      - /var/lib/postgresql/data:size=3g
+    cpus: 1
+    mem_limit: 5g
     cpu_shares: 128
 
   redis:
     image: redis:7.4.11-alpine
-    container_name: evotest-redis
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 3s
       timeout: 3s
       retries: 30
-    cpus: 0.5
-    mem_limit: 1g
+    cpus: 0.25
+    mem_limit: 512m
     cpu_shares: 128
 
   runner:
     <<: *runner
-    container_name: evotest-runner
     image: evotest-runner:bun-1.3.14
     build: { context: ., dockerfile: Dockerfile, target: runner }
 
   runner-e2e:
     <<: *runner
-    container_name: evotest-runner-e2e
     image: evotest-runner-e2e:pw-1.63.0
     build: { context: ., dockerfile: Dockerfile, target: e2e }
     profiles: ["e2e"]

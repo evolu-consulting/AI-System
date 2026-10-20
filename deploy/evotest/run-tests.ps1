@@ -1,20 +1,20 @@
 ﻿# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
 #   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
-# Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 đang có lượt khác; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateSet("", "cw")][string]$Capture = "")
+# Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
+param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 4, [ValidateSet("", "cw")][string]$Capture = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")
 $commit = (git -C $Repo rev-parse --short $Ref).Trim() + $(if ($Dirty) { "+dirty" } else { "" })
-$stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$stamp = (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $PID   # PID: các lượt cùng giây không đè thư mục tạm/file /tmp/log của nhau
 $out = Join-Path $Repo ".data\evotest\$stamp-$Step"
 $tmp = Join-Path $env:TEMP "evotest-$stamp"
 
 if ($DryRun) {
-  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest; log: $out"
-  Write-Host "ssh: bash ~/workspace/evotest/remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
+  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out"
+  Write-Host "ssh: bash ~/workspace/evotest/boot.sh -> remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
   return
 }
 New-Item -ItemType Directory -Force $tmp, $out | Out-Null
@@ -33,7 +33,7 @@ try {
     tar.exe -czf "$tmp\evotest-app-$stamp.tgz" -C $src .
   }
   # Bộ dựng/chạy lấy từ thư mục này (không phụ thuộc Ref có chứa deploy/evotest hay không); ép LF cho .sh
-  foreach ($f in "remote.sh", "in-container.sh") {
+  foreach ($f in "remote.sh", "in-container.sh", "boot.sh") {
     $t = [IO.File]::ReadAllText("$PSScriptRoot\$f").Replace("`r`n", "`n"); [IO.File]::WriteAllText("$tmp\$f", $t, (New-Object Text.UTF8Encoding $false))
   }
   Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\Dockerfile" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
@@ -41,9 +41,10 @@ try {
   ssh @ssh $Server "mkdir -p ~/workspace/evotest"
   scp @ssh "$tmp\evotest-app-$stamp.tgz" "$tmp\evotest-kit-$stamp.tgz" "${Server}:/tmp/"
   $t0 = Get-Date
-  # Hàng đợi: chờ .lock (mkdir nguyên tử) - nhiều lượt cùng lúc xếp hàng, không đè file của nhau; remote.sh nằm trong kit.
-  # 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
-  $boot = "cd ~/workspace/evotest && { n=0; w=0; until mkdir .lock 2>/dev/null; do o=`$(cat .lock/owner 2>/dev/null); p=`${o%% *}; if [ `${#p} -gt 0 ] && ! kill -0 `$p 2>/dev/null; then echo 'evotest: .lock mồ côi, gỡ - owner:' `$o; rm -rf .lock; continue; fi; [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng... owner:' `$o; n=1; w=`$((w+5)); if [ `$w -ge 5400 ]; then echo 'evotest: chờ .lock quá 90 phút; nếu treo, xoá ~/workspace/evotest/.lock - owner:' `$o; exit 3; fi; sleep 5; done; echo `$`$ `$(date +%s) $commit > .lock/owner; trap 'rm -rf .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
+  # Slot song song (mặc định 4, đổi bằng -Slots): boot.sh chọn slot trống đầu tiên (mkdir .lock nguyên tử, gỡ lock mồ côi), chỉ chờ khi mọi slot bận.
+  # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
+  scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
+  $boot = "EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $ErrorActionPreference = "Continue"
