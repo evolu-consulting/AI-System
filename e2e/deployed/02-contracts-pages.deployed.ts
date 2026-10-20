@@ -54,7 +54,10 @@ test.describe("02 contracts-web", () => {
   test("Cần xử lý (khối trong Tổng quan): có việc, hành động chọn kết quả hiện, không đổi dữ liệu", async () => {
     await go("/overview");
     expect(await bodyText(page)).toMatch(/quá hạn|Trễ \d+ ngày/);
-    await expect(page.getByRole("button", { name: /Hẹn nhắc/ }).first()).toBeVisible();
+    // V2-N: mỗi việc chỉ còn nút Bỏ qua (hoặc Đã xong cho "Liên hệ mời gia hạn"); Hẹn nhắc nằm ở trang Việc của tôi cũ.
+    await expect(
+      page.getByRole("button", { name: /^(Bỏ qua việc này|Đánh dấu đã xong)$/ }).first(),
+    ).toBeVisible();
     expect(errs.list).toEqual([]);
   });
 

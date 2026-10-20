@@ -1,6 +1,8 @@
 // sso-switch · contracts-web dùng chung đăng nhập AI System (chat-web, `PUBLIC_SSO_URL`): chưa có phiên ⇒ dội sang
 // `<AI System>/sso?app=contracts` (một lần mỗi phút mỗi tab, chống vòng); AI System trả về `/sso#code=…` ⇒ đổi mã lấy phiên.
 import { shouldTrySso, ssoStartUrl } from "@ai/web-kit/auth/sso";
+import { i18n } from "~/app/i18n";
+import { session } from "./session";
 
 export const SSO_URL = (import.meta.env.PUBLIC_SSO_URL ?? "").trim().replace(/\/+$/, "");
 const TRIED_KEY = "contracts:sso_tried_at";
@@ -24,4 +26,11 @@ export function bounceToSso(nextHref: string): boolean {
   }
   window.location.assign(ssoStartUrl(SSO_URL, "contracts", nextHref));
   return true;
+}
+
+/** Đổi mã một lần lấy phiên, rồi theo ngôn ngữ của người dùng như đăng nhập bằng form (LoginPage) — không thì kẹt `en`. */
+export async function redeemSso(code: string, tenantKey?: string): Promise<void> {
+  await session.ssoRedeem(code, tenantKey);
+  const locale = session.getState().me?.locale;
+  if (locale) await i18n.changeLanguage(locale);
 }

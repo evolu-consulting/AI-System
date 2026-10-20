@@ -5,7 +5,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { safeNext } from "~/features/auth/lib/next";
-import { session } from "~/features/auth/lib/session";
+import { redeemSso } from "~/features/auth/lib/sso";
 
 function SsoLanding() {
   const { t } = useTranslation();
@@ -20,7 +20,7 @@ function SsoLanding() {
     const tenant = (import.meta.env.PUBLIC_TENANT_KEY ?? "").trim() || undefined;
     const go = async () => {
       if (!code) throw new Error("no code");
-      await session.ssoRedeem(code, tenant);
+      await redeemSso(code, tenant);
       router.history.replace(target === "/" ? "/overview" : target);
     };
     go().catch(() => router.navigate({ to: "/login", search: { next: target }, replace: true }));
