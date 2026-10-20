@@ -13,6 +13,63 @@ bun install --frozen-lockfile >/out/setup.log 2>&1 || { echo "bun install lỗi"
 sed -e 's#@localhost:5432#@pg:5432#g' -e 's#redis://localhost:6379#redis://redis:6379#g' .env.example > .env.local
 sed -i -e 's#^SEED_ADMIN_EMAIL=.*#SEED_ADMIN_EMAIL=admin@evolu.local#' -e 's#^HUB_PROCESS_ENGINE=.*#HUB_PROCESS_ENGINE=on#' .env.local
 echo "HUB_TEST_REDIS_URL=redis://redis:6379/15" >> .env.local
+# Stack e2e (P-a/P-b dùng cho N2, K1…; test:e2e:par biến Redis dạng URL) ghi cứng redis://localhost:6379 ⇒ chuyển
+# 127.0.0.1:6379 → redis:6379 trong container (tiến trình nền, chết cùng container).
+cat > /tmp/redis-fwd.ts <<'EOF'
+type P = { peer: Bun.Socket<P> | null; out: Uint8Array[]; early: Uint8Array[] };
+const send = (s: Bun.Socket<P>, b: Uint8Array) => {
+  if (s.data.out.length === 0) {
+    const n = s.write(b);
+    if (n >= b.length) return;
+    b = b.subarray(Math.max(0, n));
+  }
+  s.data.out.push(b);
+};
+const drain = (s: Bun.Socket<P>) => {
+  const q = s.data.out;
+  while (q.length) {
+    const b = q[0] as Uint8Array;
+    const n = s.write(b);
+    if (n < b.length) return void (q[0] = b.subarray(Math.max(0, n)));
+    q.shift();
+  }
+};
+const end = (s: Bun.Socket<P>) => s.data.peer?.end();
+Bun.listen<P>({
+  hostname: "127.0.0.1",
+  port: 6379,
+  socket: {
+    open(c) {
+      c.data = { peer: null, out: [], early: [] };
+      Bun.connect<P>({
+        hostname: "redis",
+        port: 6379,
+        data: { peer: c, out: [], early: [] },
+        socket: {
+          open(u) {
+            c.data.peer = u;
+            for (const b of c.data.early) send(u, b);
+            c.data.early = [];
+          },
+          data: (u, b) => u.data.peer && send(u.data.peer, new Uint8Array(b)),
+          drain,
+          close: end,
+          error: end,
+        },
+      }).catch(() => c.end());
+    },
+    data(c, b) {
+      const copy = new Uint8Array(b);
+      if (c.data.peer) send(c.data.peer, copy);
+      else c.data.early.push(copy);
+    },
+    drain,
+    close: end,
+    error: end,
+  },
+});
+EOF
+bun /tmp/redis-fwd.ts >>/out/setup.log 2>&1 &
 bun run keys:dev >>/out/setup.log 2>&1 && bun run db:setup >>/out/setup.log 2>&1 || { echo "setup lỗi"; tail -n 40 /out/setup.log; exit 2; }
 echo "[evotest] bun $(bun --version) · nproc $(nproc) · setup $(( $(date +%s) - t0 )) s · bước: $EVO_STEP"
 
