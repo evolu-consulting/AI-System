@@ -43,14 +43,18 @@ export function toListFilter(q: ContractListInput): ContractListFilter {
 
 export function listContracts<Row>(d: {
   uow: PackUow<{ contracts: Pick<ContractsReadRepo<Row, unknown>, "list"> }>;
+  /** V2-A: ngày lịch tenant (giai đoạn/quá hạn); vắng ⇒ ngày UTC. */
+  today?: (tenantId: string) => Promise<string>;
 }): ListContracts<Row> {
   return async (who, q) => {
     const f = toListFilter(q);
-    const p = await d.uow.tenant(who, (r) => r.contracts.list(f));
+    const today = await (d.today?.(who.tenantId) ?? new Date().toISOString().slice(0, 10));
+    const p = await d.uow.tenant(who, (r) => r.contracts.list(f, today));
     return {
       items: p.items,
       total: p.total,
       parents: p.parents,
+      progress: p.progress ?? [],
       page: q.page,
       page_size: q.page_size,
     };

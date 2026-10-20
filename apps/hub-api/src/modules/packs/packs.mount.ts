@@ -146,6 +146,7 @@ function mountContracts<E extends Env>(
       }),
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
+      timeZoneOf, // V2-A · ngày lịch tenant cho mốc mặc định
     },
   );
   // HD1 T7 + T8 (link tệp) · HD5 ngày giá theo múi tenant · HD3 seam duyệt cho PATCH trường (review S1)

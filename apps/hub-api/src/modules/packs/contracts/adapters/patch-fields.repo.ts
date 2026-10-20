@@ -18,9 +18,10 @@ const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v
 export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo {
   return {
     lock: async (id): Promise<LockedContract | null> => {
+      // V2-A · C3: cờ duyệt của tenant đọc cùng câu (không thêm câu) — tắt duyệt ⇒ sửa HĐ đã lưu không mở lại duyệt.
       const rows = await tx.execute<
-        Raw & { fields: unknown; status: string; run_id: string | null }
-      >(sql`select c.version, c.updated_at, c.fields, c.status, c.run_id
+        Raw & { fields: unknown; status: string; run_id: string | null; approval: boolean }
+      >(sql`select c.version, c.updated_at, c.fields, c.status, c.run_id, contracts.approval_on() as approval
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`);
       const r = rows[0];
       return r
@@ -30,6 +31,7 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
             fields: json(r.fields),
             status: r.status,
             run_id: r.run_id,
+            approval: r.approval,
           }
         : null;
     },

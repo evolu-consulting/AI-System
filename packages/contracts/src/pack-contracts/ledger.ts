@@ -10,6 +10,14 @@ export const LEDGER_SCHEDULE_MAX = 120;
 export const LEDGER_LIST_MAX = 500;
 export const PAYMENT_FILTERS = ["all", "receive", "pay", "overdue", "done"] as const;
 export const OBLIGATION_KINDS = ["payment", "delivery"] as const;
+/** V2-A: loại đợt trong DB (mốc 7 loại BA: Thu tiền/Thanh toán = `payment` theo hướng; 4 loại mới). */
+export const OBLIGATION_DB_KINDS = [
+  ...OBLIGATION_KINDS,
+  "commission",
+  "serial",
+  "renewal",
+  "other",
+] as const;
 export const OBLIGATION_STATUSES = ["open", "done", "cancelled"] as const;
 export const PARTNER_ROLES = ["customer", "supplier"] as const;
 export type PartnerRole = (typeof PARTNER_ROLES)[number];
@@ -62,6 +70,8 @@ export type ScheduleRequest = z.infer<typeof ScheduleRequestSchema>;
 export const SettleRequestSchema = z.strictObject({
   at: IsoDay.nullish(),
   amount: LedgerMoney.nullish(),
+  /** V2-A · BA §2: mốc trễ ⇒ lỗi do ai (chỉ lỗi đối tác trừ điểm); trễ mà để trống ⇒ `unknown`; đúng hạn ⇒ bỏ qua. */
+  fault: z.enum(["partner", "ours", "unknown"]).nullish(),
 });
 export const PostponeRequestSchema = z.strictObject({
   to: IsoDay,
@@ -101,7 +111,7 @@ export type Obligation = {
   contract_id: string;
   party: string | null;
   direction: "pay" | "receive";
-  kind: (typeof OBLIGATION_KINDS)[number];
+  kind: (typeof OBLIGATION_DB_KINDS)[number];
   seq: number;
   due_date: string;
   amount: number | null;

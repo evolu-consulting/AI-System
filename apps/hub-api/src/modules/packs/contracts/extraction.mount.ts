@@ -12,6 +12,7 @@ import type { Redis } from "ioredis";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
 import { safeErrorFields } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
+import { DEFAULT_TENANT_TZ } from "../../config/config.rules";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import type { ActionQuota } from "./adapters/action-quota";
@@ -57,6 +58,7 @@ import { requestExtract } from "./application/request-extract.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
+import { localDate } from "./domain/local-time.rules";
 
 const KEY = "contracts";
 
@@ -91,6 +93,8 @@ export type ContractsFlowDeps = {
   quota: ActionQuota;
   tenants: SweepDeps["tenants"];
   signal?: AbortSignal;
+  /** V2-A · múi giờ tenant (ngày lịch cho mốc mặc định); vắng ⇒ múi mặc định. */
+  timeZoneOf?: (tenantId: string) => Promise<string>;
 };
 
 /** `CONTRACTS_EXTRACT_TIMEOUT_S` (10–3600, mặc định 300) — trần một lượt AI (review Trung 2). */
@@ -226,7 +230,14 @@ export function contractsAiModule(
   // Review B #27/#28: quota + kiểm AI sẵn sàng của "Trích lại" chạy SAU `decide`, chỉ khi thật sự trích lại.
   const ad = { uow, groups: flow.groups, jobs, redo: { ready, quota: flow.quota } };
   const start = startApproval(ad);
-  const manual = createManual({ uow, tax: d.tax, newId: () => Bun.randomUUIDv7(), schedule });
+  const tz = flow.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ);
+  const manual = createManual({
+    uow,
+    tax: d.tax,
+    newId: () => Bun.randomUUIDv7(),
+    today: async (tid) => localDate(new Date(), await tz(tid)), // V2-A: hạn mốc mặc định
+    schedule,
+  });
   const legacy = d.transport !== undefined;
   const legacyStarter: ExtractionStarter = {
     start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),

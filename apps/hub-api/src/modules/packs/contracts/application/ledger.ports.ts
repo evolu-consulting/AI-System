@@ -10,6 +10,7 @@ import type {
   PaymentsOut,
   ScheduleRequest,
 } from "../domain/ledger.types";
+import type { Fault } from "../domain/milestones.rules";
 
 export type LockedObligation = {
   id: string;
@@ -39,6 +40,8 @@ export type SettleWrite = {
   role: PartnerRole;
   late: number;
   amount: number | null;
+  /** V2-A: lỗi do ai khi trễ (null = đúng hạn). */
+  fault: Fault | null;
 };
 export type PostponeWrite = {
   id: string;

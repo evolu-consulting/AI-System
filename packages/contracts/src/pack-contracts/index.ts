@@ -10,6 +10,7 @@ export * from "./followups";
 export * from "./handled";
 export * from "./ledger";
 export * from "./list";
+export * from "./milestones";
 export * from "./mywork";
-export * from "./sourcing";
 export * from "./partners";
+export * from "./sourcing";

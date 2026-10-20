@@ -1,6 +1,7 @@
 // HD7 · sổ thanh toán: kiểu vào/ra ở lớp domain (ADR-0023: domain/application không import `@ai/contracts`).
 // Bản sao có chủ đích của `packages/contracts/src/pack-contracts/ledger.ts`; `dto-mirror.test.ts` kiểm hai bên khớp nhau.
 import type { Direction, ObligationKind, PartnerRole } from "./ledger.rules";
+import type { DbKind } from "./milestones.rules";
 
 /** Việc ghi tay được (`types.MANUAL_TYPES`). */
 export const MANUAL_EVENT_TYPES = [
@@ -32,7 +33,7 @@ export type Obligation = {
   contract_id: string;
   party: string | null;
   direction: Direction;
-  kind: ObligationKind;
+  kind: DbKind;
   seq: number;
   due_date: string;
   amount: number | null;

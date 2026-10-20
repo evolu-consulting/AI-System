@@ -10,8 +10,10 @@ import type {
 } from "../domain/extraction.rules";
 import type { ContractFields } from "../domain/fields.rules";
 import type { ManualItem } from "../domain/manual.rules";
+import type { Deal } from "../domain/milestones.rules";
 import type { TaxLookup } from "../domain/party.rules";
 import type { ItemNumbers, Warning } from "../domain/warnings.rules";
+import type { MilestoneWrite } from "./milestones.ports";
 
 /** Tệp gốc (PDF/ảnh) khi không có văn bản — adapter đưa cho agent đọc trực tiếp. */
 export type SourceFile = { org: string; fileId: string; mime: string };
@@ -80,6 +82,12 @@ export type NewManualContract = {
   id: string;
   title: string;
   direction: "sale" | "purchase";
+  /** V2-A: loại HĐ + hoa hồng (Giới thiệu). */
+  deal: Deal;
+  commissionPct: number | null;
+  commissionFixed: number | null;
+  /** V2-A · HD-01: mốc mặc định — chỉ ghi khi tenant TẮT duyệt (`contracts.approval_on()` trong cùng câu ⇒ HĐ `active`). */
+  milestones: MilestoneWrite[];
   fields: ContractFields;
   items: ManualItem[];
   warnings: Warning[];
@@ -100,7 +108,9 @@ export type ExtractionRepo = {
   /** Trích lại: khoá + kiểm trạng thái/nguồn + đặt `extracting` + event, một câu. */
   requestExtract(id: string, actor: string): Promise<RequestExtractOutcome>;
   /** Nhập tay: một CTE (HĐ + dòng hàng + event `created_manual`). */
-  insertManual(c: NewManualContract): Promise<{ id: string; version: number }>;
+  insertManual(
+    c: NewManualContract,
+  ): Promise<{ id: string; version: number; status: "needs_review" | "active" }>;
 };
 export type ExtractionTxRepos = { extraction: ExtractionRepo } & KitTxRepos;
 export type ExtractionUow = PackUow<ExtractionTxRepos>;

@@ -11,7 +11,9 @@ import type {
   ContractListRow,
   ContractParentRef,
 } from "@ai/contracts";
+import type { MilestoneRow } from "../application/milestones.ports";
 import { fillFields } from "../domain/fields.rules";
+import { milestonesView } from "./milestones.mapper";
 
 export type ContractListRowDto = ContractListRow;
 export type ContractFacetsDto = ContractFacets;
@@ -67,13 +69,43 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   has_source: boolean;
   parent: ContractParentRef | null;
   appendices: ContractAppendixRef[] | null;
+  /** V2-A */
+  deal?: ContractDetail["deal"];
+  commission_pct?: number | string | null;
+  commission_fixed?: number | string | null;
+  start_date?: string | null;
+  milestones?: MilestoneRow[] | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
+const num = (v: number | string | null | undefined): number | null =>
+  v === null || v === undefined ? null : Number(v);
 
-export function toContractDetail(r: DetailRaw): ContractDetail {
+/** V2-A: loại HĐ, hoa hồng, giai đoạn + mốc (5.4a) theo ngày lịch tenant `today`. */
+function v2aOf(r: DetailRaw, today: string) {
+  const deal = r.deal ?? null;
+  const start = r.start_date ?? null;
+  const view = milestonesView(r.milestones ?? [], {
+    deal,
+    value: r.value,
+    pct: r.commission_pct ?? null,
+    fixed: r.commission_fixed ?? null,
+    start,
+    today,
+  });
+  return {
+    deal,
+    commission_pct: num(r.commission_pct),
+    commission_fixed: num(r.commission_fixed),
+    start_date: start,
+    ...view,
+  };
+}
+
+export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
   const { category_ids: _c, ...row } = toContractListRow({ ...r, category_ids: [] });
   return {
+    ...v2aOf(r, today),
     ...row,
     error: r.error,
     created_by: r.created_by,

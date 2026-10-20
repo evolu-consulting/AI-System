@@ -16,6 +16,7 @@ import {
   IsoDateSchema,
   nfcText,
 } from "./fields";
+import { ContractDealSchema } from "./milestones";
 
 export const EXTRACT_ITEMS_MAX = 500;
 export const EXTRACT_CLAUSES_MAX = 200;
@@ -138,26 +139,61 @@ export const ManualItemSchema = z.strictObject({
 });
 
 /** `POST /pack/contracts/contracts/manual` — hình `NewContractPage.tsx:60-66` (Q15). */
-export const ManualContractRequestSchema = z.strictObject({
-  direction: ContractDirectionSchema,
-  number: optText(CONTRACT_TEXT_MAX),
-  title: nfcText(CONTRACT_TITLE_MAX).min(1),
-  partner_name: nfcText(CONTRACT_TEXT_MAX).min(1),
-  partner_tax_id: optText(20),
-  partner_signer: optText(CONTRACT_TEXT_MAX),
-  our_signer: optText(CONTRACT_TEXT_MAX),
-  start_date: IsoDateSchema.nullable().optional(),
-  end_date: IsoDateSchema.nullable().optional(),
-  notice_days: z.number().int().min(0).max(CONTRACT_DAYS_MAX).nullable().optional(),
-  total_value: money().nullable().optional(),
-  payment_terms: optText(CONTRACT_TEXT_MAX),
-  items: z.array(ManualItemSchema).max(EXTRACT_ITEMS_MAX).default([]),
-});
+/** V2-A · % hoa hồng 0…100, tối đa 2 chữ số thập phân (= `numeric(5,2)`). */
+const pct = z
+  .number()
+  .min(0)
+  .max(100)
+  .refine((v) => Math.round(v * 100) === v * 100, "tối đa 2 chữ số thập phân");
+
+/** HD-FR-26 + V2-A HD-01: `deal` (Mua/Bán/Giới thiệu) hoặc `direction` cũ (ít nhất một, khớp nhau); hoa hồng (% HOẶC cố định)
+ *  chỉ cho Giới thiệu. */
+export const ManualContractRequestSchema = z
+  .strictObject({
+    deal: ContractDealSchema.optional(),
+    commission_pct: pct.nullable().optional(),
+    commission_fixed: money().nullable().optional(),
+    direction: ContractDirectionSchema.optional(),
+    number: optText(CONTRACT_TEXT_MAX),
+    title: nfcText(CONTRACT_TITLE_MAX).min(1),
+    partner_name: nfcText(CONTRACT_TEXT_MAX).min(1),
+    partner_tax_id: optText(20),
+    partner_signer: optText(CONTRACT_TEXT_MAX),
+    our_signer: optText(CONTRACT_TEXT_MAX),
+    start_date: IsoDateSchema.nullable().optional(),
+    end_date: IsoDateSchema.nullable().optional(),
+    notice_days: z.number().int().min(0).max(CONTRACT_DAYS_MAX).nullable().optional(),
+    total_value: money().nullable().optional(),
+    payment_terms: optText(CONTRACT_TEXT_MAX),
+    items: z.array(ManualItemSchema).max(EXTRACT_ITEMS_MAX).default([]),
+  })
+  .refine((b) => b.deal !== undefined || b.direction !== undefined, {
+    message: "cần deal hoặc direction",
+    path: ["deal"],
+  })
+  .refine(
+    (b) =>
+      b.deal === undefined ||
+      b.direction === undefined ||
+      (b.deal === "buy") === (b.direction === "purchase"),
+    { message: "deal và direction lệch nhau", path: ["direction"] },
+  )
+  .refine(
+    (b) =>
+      b.deal === "referral" ||
+      ((b.commission_pct ?? null) === null && (b.commission_fixed ?? null) === null),
+    { message: "hoa hồng chỉ cho HĐ Giới thiệu", path: ["commission_pct"] },
+  )
+  .refine((b) => (b.commission_pct ?? null) === null || (b.commission_fixed ?? null) === null, {
+    message: "chọn % hoặc số tiền cố định",
+    path: ["commission_fixed"],
+  });
 export type ManualContractRequest = z.infer<typeof ManualContractRequestSchema>;
 
 export const ManualContractResponseSchema = z.strictObject({
   id: z.uuid(),
-  status: z.literal("needs_review"),
+  /** V2-A: tenant tắt duyệt (C3) ⇒ HĐ lưu là có hiệu lực (`active`) + mốc mặc định. */
+  status: z.enum(["needs_review", "active"]),
   version: VersionSchema,
 });
 export type ManualContractResponse = z.infer<typeof ManualContractResponseSchema>;

@@ -6,9 +6,14 @@ import {
   type FieldValue,
   fillFields,
 } from "./fields.rules";
+import { type Deal, directionOfDeal } from "./milestones.rules";
 
 export type ManualInput = {
-  direction: "purchase" | "sale";
+  /** V2-A: một trong hai (zod bắt buộc ≥ 1 và khớp nhau); xem `dealAndDirection`. */
+  direction?: "purchase" | "sale" | undefined;
+  deal?: Deal | undefined;
+  commission_pct?: number | null | undefined;
+  commission_fixed?: number | null | undefined;
   number?: string | null;
   title: string;
   partner_name: string;
@@ -41,9 +46,18 @@ const blank = (v: string | null | undefined): string | null => {
   return t === "" ? null : t;
 };
 
-/** Trường của HĐ nhập tay; giá trị rỗng ⇒ trường rỗng (không `edited`). */
+/** V2-A: loại HĐ + hướng cũ từ đầu vào (zod đã bảo đảm có ít nhất một và khớp nhau). */
+export function dealAndDirection(i: Pick<ManualInput, "deal" | "direction">): {
+  deal: Deal;
+  direction: "purchase" | "sale";
+} {
+  const deal = i.deal ?? (i.direction === "purchase" ? "buy" : "sell");
+  return { deal, direction: i.direction ?? directionOfDeal(deal) };
+}
+
+/** Trường của HĐ nhập tay; giá trị rỗng ⇒ trường rỗng (không `edited`). Giới thiệu: đối tác (bên trả HH) ở phía bên mua. */
 export function manualFields(i: ManualInput): ContractFields {
-  const buying = i.direction === "purchase";
+  const buying = dealAndDirection(i).direction === "purchase";
   const typed: Partial<Record<ContractFieldKey, FieldValue>> = {
     number: blank(i.number),
     title: blank(i.title),

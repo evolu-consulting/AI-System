@@ -68,31 +68,34 @@ const NULLS = {
 
 describe("toContractDetail", () => {
   it("HD-AC12 · fields đủ 23 khoá (bỏ khoá lạ), giờ ISO UTC, items/events/clauses null ⇒ []; khớp ContractDetailSchema", () => {
-    const d = toContractDetail({
-      ...NULLS,
-      id: U,
-      kind: "contract",
-      title: "HĐ",
-      status: "needs_review",
-      owner_user_id: U,
-      updated_at: T0,
-      version: 1,
-      created_by: U,
-      created_at: T0,
-      file_id: U,
-      clauses: null,
-      warnings: null,
-      fields: { number: { value: "HD-1", quote: "q", verified: true }, khoa_la: { value: 1 } },
-      items: null,
-      events: [{ id: 3, type: "uploaded", actor_user_id: null, at: T0, data: {} }],
-      file: {
+    const d = toContractDetail(
+      {
+        ...NULLS,
         id: U,
-        name: "a.pdf",
-        mime: "application/pdf",
-        size_bytes: "10" as unknown as number,
+        kind: "contract",
+        title: "HĐ",
+        status: "needs_review",
+        owner_user_id: U,
+        updated_at: T0,
+        version: 1,
+        created_by: U,
+        created_at: T0,
+        file_id: U,
+        clauses: null,
+        warnings: null,
+        fields: { number: { value: "HD-1", quote: "q", verified: true }, khoa_la: { value: 1 } },
+        items: null,
+        events: [{ id: 3, type: "uploaded", actor_user_id: null, at: T0, data: {} }],
+        file: {
+          id: U,
+          name: "a.pdf",
+          mime: "application/pdf",
+          size_bytes: "10" as unknown as number,
+        },
+        has_source: false,
       },
-      has_source: false,
-    });
+      "2026-03-01",
+    );
     expect(ContractDetailSchema.parse(d)).toEqual(d);
     expect(Object.keys(d.fields)).toHaveLength(23);
     expect(d.fields.number).toEqual({ value: "HD-1", quote: "q", verified: true, edited: false });

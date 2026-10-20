@@ -21,6 +21,7 @@ import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
 import { type PatchApprovalGuard, patchFields } from "./application/patch-fields.usecase";
+import { localDate } from "./domain/local-time.rules";
 import { uploadDay } from "./domain/upload.rules";
 
 export { CONTRACTS_KEY };
@@ -36,10 +37,16 @@ export function contractsModule(
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, CONTRACTS_KEY, contractsRepos));
   const link = filebox ? (org: string, fileId: string) => filebox(org).getLink(fileId) : null;
+  // V2-A: ngày lịch tenant cho giai đoạn/quá hạn của mốc (cache múi giờ, 0 SQL khi nóng).
+  const today = async (tid: string) =>
+    localDate(
+      (clock.now ?? (() => new Date()))(),
+      await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ),
+    );
   const r = contractsRoutes(view, {
-    list: listContracts({ uow }),
+    list: listContracts({ uow, today }),
     facets: getFacets({ uow }),
-    detail: getContract({ uow }),
+    detail: getContract({ uow, today }),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
     patchFields: patchFields({ uow, ...(guard ? { approval: guard } : {}) }),

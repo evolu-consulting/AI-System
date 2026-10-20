@@ -16,9 +16,16 @@ import {
   ContractKindSchema,
   fieldValueSchema,
   HandledOutcomeSchema,
+  IsoDateSchema,
   nfcText,
 } from "./fields";
 import { ContractListRowSchema } from "./list";
+import {
+  ContractDealSchema,
+  ContractStageSchema,
+  MILESTONES_MAX,
+  MilestoneSchema,
+} from "./milestones";
 
 export const CONTRACT_EVENTS_MAX = 50;
 export const CONTRACT_ITEMS_MAX = 500;
@@ -66,6 +73,14 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   /** HD5: HĐ gốc (khi `kind = appendix`) và các phụ lục (khi là HĐ gốc). */
   parent: ContractParentRefSchema.nullable(),
   appendices: z.array(ContractAppendixRefSchema).max(CONTRACT_APPENDICES_MAX),
+  /** V2-A: loại HĐ, hoa hồng (Giới thiệu), ngày bắt đầu, giai đoạn suy từ mốc, dãy mốc (hạn tăng dần). */
+  deal: ContractDealSchema.nullable(),
+  commission_pct: z.number().min(0).max(100).nullable(),
+  commission_fixed: z.number().int().min(0).nullable(),
+  start_date: IsoDateSchema.nullable(),
+  stage: ContractStageSchema,
+  next_milestone_id: z.uuid().nullable(),
+  milestones: z.array(MilestoneSchema).max(MILESTONES_MAX),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

@@ -10,6 +10,7 @@ import {
   type ScheduleRequest,
 } from "../domain/ledger.types";
 import { localDate } from "../domain/local-time.rules";
+import type { Fault } from "../domain/milestones.rules";
 import { LedgerFail, type LedgerRepos, type LockedObligation } from "./ledger.ports";
 
 type Deps = {
@@ -47,19 +48,22 @@ function obligationCommands(d: Deps) {
   const settle = async (
     who: PackWho,
     id: string,
-    b: { at?: string | null; amount?: number | null },
+    b: { at?: string | null; amount?: number | null; fault?: Fault | null },
   ) => {
     const at = b.at ?? (await today(who));
     return d.uow.tenant(who, async ({ ledger: r }) => {
       const ob = await openObligation(r, id);
+      const late = daysLate(at, ob.due_date);
       return r.settle({
         id,
         at,
         by: who.userId,
         type: settledType(ob.kind, ob.direction),
         role: roleOf(ob.direction),
-        late: daysLate(at, ob.due_date),
+        late,
         amount: b.amount ?? ob.amount,
+        // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
+        fault: late > 0 ? (b.fault ?? "unknown") : null,
       });
     });
   };

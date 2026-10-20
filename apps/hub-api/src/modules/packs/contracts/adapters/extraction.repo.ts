@@ -157,12 +157,32 @@ function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtra
 function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"] {
   return async (m) => {
     const items = m.items;
-    const rows = await tx.execute<{ id: string; version: number }>(sql`with c as (
-        insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by,
-          fields, warnings)
-        values (${m.id}::uuid, ${tenantId}::uuid, 'contract', ${m.title}, ${m.direction}, 'needs_review',
-          ${m.userId}::uuid, ${m.userId}::uuid, ${JSON.stringify(m.fields)}::jsonb, ${JSON.stringify(m.warnings)}::jsonb)
-        returning id, version),
+    // V2-A · C3: cờ duyệt đọc TRONG câu (`approval_on()`, RLS tenant) ⇒ tắt duyệt: HĐ `active` + mốc mặc định cùng câu.
+    const rows = await tx.execute<{
+      id: string;
+      version: number;
+      status: "needs_review" | "active";
+    }>(sql`with s as (select contracts.approval_on() as on),
+      c as (
+        insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, commission_pct, commission_fixed,
+          status, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
+        select ${m.id}::uuid, ${tenantId}::uuid, 'contract', ${m.title}, ${m.direction}, ${m.deal},
+          ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint,
+          case when s.on then 'needs_review' else 'active' end,
+          ${m.userId}::uuid, ${m.userId}::uuid, ${JSON.stringify(m.fields)}::jsonb, ${JSON.stringify(m.warnings)}::jsonb,
+          case when s.on then null else now() end, case when s.on then null else ${m.userId}::uuid end
+        from s
+        returning id, version, status, direction, fields),
+      ms as (
+        insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, title, owner,
+          source)
+        select ${tenantId}::uuid, c.id, contracts.party_key(
+            c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value',
+            c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value'),
+          x.direction, x.kind, x.ord, x.due_date, x.title, x.owner, 'default'
+        from c, jsonb_to_recordset(${JSON.stringify(m.milestones.map((x, ord) => ({ ...x, ord: ord + 1 })))}::jsonb)
+          as x (ord int, kind text, direction text, due_date date, title text, owner text)
+        where c.status = 'active'),
       i as (
         insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited)
         select ${tenantId}::uuid, c.id, x.ord, x.name, x.unit, x.qty, x.unit_price, true, true
@@ -171,11 +191,11 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
       e as (
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${tenantId}::uuid, c.id, 'created_manual', ${m.userId}::uuid,
-          jsonb_build_object('items', ${items.length}::int) from c)
-      select id, version from c`);
+          jsonb_build_object('items', ${items.length}::int, 'deal', ${m.deal}::text, 'status', c.status) from c)
+      select id, version, status from c`);
     const r = rows[0];
     if (!r) throw new Error("insert-manual: no row");
-    return { id: r.id, version: r.version };
+    return { id: r.id, version: r.version, status: r.status };
   };
 }
 

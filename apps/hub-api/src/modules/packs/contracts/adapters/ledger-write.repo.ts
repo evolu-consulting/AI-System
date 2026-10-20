@@ -70,9 +70,9 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
       tx,
       sql`with u as (
         update contracts.obligations o set status = 'done', done_at = ${w.at}::date, done_by = ${w.by}::uuid,
-          updated_at = now()
+          fault = ${w.fault}::text, updated_at = now()
         where o.tenant_id = ${t}::uuid and o.id = ${w.id}::uuid and o.status = 'open' returning o.*),
-      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint` })},
+      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, ...(w.fault ? { data: { fault: w.fault } } : {}) })},
       ${auditCte(t, "obligation_settled", w.by, sql`jsonb_build_object('obligation_id', u.id, 'at', ${w.at}::text, 'amount', ${w.amount}::bigint)`)}
       select ${obJson("u")} as j from u`,
     );
@@ -148,6 +148,7 @@ function ledgerEventWrites(
             status = case when ${reopen}::boolean then 'open' else o.status end,
             done_at = case when ${reopen}::boolean then null else o.done_at end,
             done_by = case when ${reopen}::boolean then null else o.done_by end,
+            fault = case when ${reopen}::boolean then null else o.fault end,
             due_date = coalesce(${due?.due_date ?? null}::date, o.due_date),
             postpones = coalesce(${due?.postpones ?? null}::int, o.postpones),
             postponed_to = case when ${due?.clearPostponed ?? false}::boolean then null else o.postponed_to end,

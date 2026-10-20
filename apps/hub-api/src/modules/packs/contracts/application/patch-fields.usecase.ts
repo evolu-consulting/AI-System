@@ -29,6 +29,8 @@ export type LockedContract = {
   /** HD3 · vắng (fake cũ) ⇒ coi như không trong flow. */
   status?: string;
   run_id?: string | null;
+  /** V2-A · C3: cờ duyệt của tenant (vắng ⇒ coi như bật). */
+  approval?: boolean;
 };
 export type SavedContract = { version: number; updated_at: string };
 
@@ -90,7 +92,8 @@ type Deps = {
 
 /** S1 · phán quyết sửa theo trạng thái + giai đoạn run (hỏi engine chỉ khi đổi trường rẽ nhánh trong flow). */
 async function verdictOf(d: Deps, who: PackWho, cur: LockedContract, changed: string[]) {
-  if (!d.approval || !cur.status) return "ok";
+  // V2-A · C3: tenant tắt duyệt ⇒ HĐ lưu là có hiệu lực, sửa thông tin không mở lại duyệt (HD-09).
+  if (!d.approval || !cur.status || cur.approval === false) return "ok";
   const status = cur.status;
   const run = cur.run_id ?? null;
   const phase =

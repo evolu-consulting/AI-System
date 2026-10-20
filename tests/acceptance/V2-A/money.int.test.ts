@@ -82,7 +82,20 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
     await setApproval(c.sql, T.acme, true);
     const out = await manual(c, { direction: "sale", total_value: 9_000_000 });
     expect(out.status).toBe("needs_review");
-    expect(await rowsOf(c.sql, out.id)).toEqual([]);
+    expect((await rowsOf(c.sql, out.id)).length).toBe(0);
+  });
+
+  it("HD-09 · tenant tắt duyệt: sửa giá trị HĐ đã lưu không mở lại duyệt (vẫn active)", async () => {
+    await v2();
+    const out = await manual(c, { deal: "sell", total_value: 1_000 });
+    const x = await detail(c, out.id);
+    const p = await call(c, P.hoa, "PATCH", `/contracts/${out.id}/fields`, {
+      version: x.version,
+      fields: { total_value: 2_000 },
+    });
+    expect(p.status).toBe(200);
+    const y = await detail(c, out.id);
+    expect([y.status, y.value]).toEqual(["active", 2_000]);
   });
 });
 

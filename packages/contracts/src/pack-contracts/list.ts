@@ -14,6 +14,7 @@ import {
   IsoDateSchema,
   nfcText,
 } from "./fields";
+import { ContractProgressSchema } from "./milestones";
 
 export const CONTRACT_PAGE_MAX = 1000;
 export const CONTRACT_PAGE_SIZE_MAX = 100;
@@ -93,6 +94,8 @@ export const ContractListResponseSchema = z.strictObject({
   total: CountSchema,
   /** HD5: HĐ gốc của các hàng phụ lục trong trang (mỗi HĐ gốc một lần), để hiện "Phụ lục của …" mà không đổi `ContractListRow`. */
   parents: z.array(ContractParentRefSchema).max(CONTRACT_PAGE_SIZE_MAX),
+  /** V2-A: loại HĐ + giai đoạn + bước hiện tại của từng HĐ trong trang (cùng thứ tự `items`; ListRow đã khoá giữ 19 khoá). */
+  progress: z.array(ContractProgressSchema).max(CONTRACT_PAGE_SIZE_MAX),
   page: z.number().int().min(1),
   page_size: z.number().int().min(1).max(CONTRACT_PAGE_SIZE_MAX),
 });

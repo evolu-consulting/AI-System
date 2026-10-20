@@ -10,8 +10,11 @@ import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { ledgerRoutes } from "./adapters/ledger.routes";
 import { ledgerReadRepo } from "./adapters/ledger-read.repo";
 import { ledgerWriteRepo } from "./adapters/ledger-write.repo";
+import { milestonesRepo } from "./adapters/milestones.repo";
+import { milestonesRoutes } from "./adapters/milestones.routes";
 import { overdueRepo } from "./adapters/overdue.repo";
 import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
+import { milestoneCommands } from "./application/milestones.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
 import { safeTimeZone } from "./reminders.mount";
 
@@ -23,6 +26,7 @@ const DEFAULT_EVERY_MS = 3_600_000;
 
 const ledgerRepos = (tx: Tx, t: string) => ({
   ledger: { ...ledgerWriteRepo(tx, t), ...ledgerReadRepo(tx, t) },
+  milestones: milestonesRepo(tx, t), // V2-A · HD-11
 });
 
 export type OverdueSweepDeps = {
@@ -65,5 +69,7 @@ export function ledgerModule(
   }
   const uow = packTenantOnly(createPackUow(db, KEY, ledgerRepos));
   const deps = { uow, timeZoneOf: safeTimeZone(d.timeZoneOf), now: d.now ?? (() => new Date()) };
-  return ledgerRoutes(view, { cmd: ledgerCommands(deps), reads: ledgerReads(deps) });
+  const r = ledgerRoutes(view, { cmd: ledgerCommands(deps), reads: ledgerReads(deps) });
+  r.route("/", milestonesRoutes(view, milestoneCommands({ uow }))); // V2-A · thêm/sửa/xoá mốc
+  return r;
 }

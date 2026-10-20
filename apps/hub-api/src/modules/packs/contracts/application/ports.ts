@@ -51,16 +51,23 @@ export type ContractListFilter = {
 
 /** HĐ gốc của hàng phụ lục trong trang (HD5): mỗi HĐ gốc một lần. */
 export type ListParentRef = { id: string; title: string; number: string | null };
-export type ContractListPage<Row> = { total: number; items: Row[]; parents: ListParentRef[] };
+/** V2-A: `progress` = loại HĐ + giai đoạn + bước hiện tại từng HĐ của trang (DTO của adapter, cùng thứ tự `items`). */
+export type ContractListPage<Row> = {
+  total: number;
+  items: Row[];
+  parents: ListParentRef[];
+  progress?: unknown[];
+};
 
 /** Tệp gốc của HĐ ở FileBox (hàng `contracts.files` chưa xoá mềm) — chỉ dùng nội bộ để xin link, KHÔNG trả ra API. */
 export type ContractFileRef = { org: string; fileId: string };
 
 /** Đọc danh sách/facets/chi tiết: mỗi hàm = MỘT câu SQL (route = 2 câu gồm `set_config`). id lạ/tenant khác ⇒ `null`. */
 export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
-  list(f: ContractListFilter): Promise<ContractListPage<Row>>;
+  /** `today` (ngày lịch tenant) ⇒ giai đoạn + quá hạn của `progress` (V2-A). */
+  list(f: ContractListFilter, today?: string): Promise<ContractListPage<Row>>;
   facets(): Promise<Facets>;
-  detail(id: string): Promise<Detail | null>;
+  detail(id: string, today?: string): Promise<Detail | null>;
   /** `source_text` (Markdown); HĐ không có hoặc source rỗng (`null`) ⇒ `null`. */
   source(id: string): Promise<string | null>;
   fileOf(id: string): Promise<ContractFileRef | null>;

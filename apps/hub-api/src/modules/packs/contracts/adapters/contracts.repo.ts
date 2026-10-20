@@ -2,7 +2,12 @@
 // `contracts_rw`, RLS FORCE). SQL văn bản CỐ ĐỊNH cho mọi tổ hợp (chuẩn bị một lần/kết nối): mọi bộ lọc `($x is null or col = any($x))`,
 // mảng = MỘT tham số literal `{…}` (drizzle nở mảng JS thành danh sách). Lát tenant vật chất hoá một lần (`f`/`c` MATERIALIZED);
 // total + trang cùng câu. Chỉ cột sinh hẹp — KHÔNG đọc `fields`/`source_text` (TOAST). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
-import { CONTRACT_APPENDICES_MAX, CONTRACT_EVENTS_MAX, CONTRACT_ITEMS_MAX } from "@ai/contracts";
+import {
+  CONTRACT_APPENDICES_MAX,
+  CONTRACT_EVENTS_MAX,
+  CONTRACT_ITEMS_MAX,
+  MILESTONES_MAX,
+} from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
@@ -25,6 +30,8 @@ import {
   toContractFacets,
   toContractListRow,
 } from "./contracts.mapper";
+import { type ProgressRaw, toProgress } from "./milestones.mapper";
+import { msJson } from "./milestones.repo";
 import { contractFieldsRepo } from "./patch-fields.repo";
 
 /** Mảng chuỗi → literal mảng Postgres `{"a","b"}` (một tham số); `null` giữ nguyên (= không lọc). */
@@ -37,9 +44,30 @@ type ListOut = {
   total: number;
   items: ListRowRaw[] | string;
   parents: ListParentRef[] | string;
+  progress: ProgressRaw[] | string | null;
 };
+const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as T) : v);
 
-async function list(tx: Tx, tid: string, f: ContractListFilter) {
+/** V2-A · KN-04: tóm tắt mốc của các HĐ trong trang `p` (cùng thứ tự `items`) — hai lateral theo index
+ *  `(tenant_id, contract_id, seq)`, không đọc `fields`: đếm mốc bắt buộc / đã xong + mốc mở sớm nhất. */
+const progressOf = (
+  tid: string,
+) => sql`coalesce((select json_agg(json_build_object('id', c.id, 'deal', c.deal,
+      'start_date', c.start_date, 'n_req', a.n_req, 'n_req_done', a.n_req_done, 'n_done', a.n_done, 'next', nx.j)
+      order by pp.ord)
+    from (select p.id, row_number() over () as ord from p) pp
+    join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid
+    left join lateral (select count(*) filter (where o.kind <> 'renewal' and o.status <> 'cancelled')::int as n_req,
+        count(*) filter (where o.kind <> 'renewal' and o.status = 'done')::int as n_req_done,
+        count(*) filter (where o.status = 'done')::int as n_done
+      from contracts.obligations o
+      where o.tenant_id = ${tid}::uuid and o.contract_id = c.id and o.status <> 'replaced') a on true
+    left join lateral (select json_build_object('id', o.id, 'kind', o.kind, 'direction', o.direction, 'title', o.title,
+        'due_date', o.due_date) as j
+      from contracts.obligations o where o.tenant_id = ${tid}::uuid and o.contract_id = c.id and o.status = 'open'
+      order by o.due_date, o.seq limit 1) nx on true), '[]'::json)`;
+
+async function list(tx: Tx, tid: string, f: ContractListFilter, today: string) {
   const a = pgTextArray;
   const cats = a(f.category);
   const rows = await tx.execute<ListOut>(sql`with f as materialized (
@@ -79,13 +107,20 @@ async function list(tx: Tx, tid: string, f: ContractListFilter) {
       coalesce((select json_agg(json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number) order by pc.id)
         from contracts.contracts pc where pc.tenant_id = ${tid}::uuid
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
-            where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents`);
+            where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
+      ${progressOf(tid)} as progress`);
   const out = rows[0] as ListOut;
-  const items = typeof out.items === "string" ? (JSON.parse(out.items) as ListRowRaw[]) : out.items;
-  const parents =
-    typeof out.parents === "string" ? (JSON.parse(out.parents) as ListParentRef[]) : out.parents;
-  return { total: out.total, items: items.map(toContractListRow), parents };
+  const items = parsed(out.items);
+  const parents = parsed(out.parents);
+  const progress = parsed(out.progress ?? []).map((p) => toProgress(p, today));
+  return { total: out.total, items: items.map(toContractListRow), parents, progress };
 }
+
+/** V2-A: mốc còn hiệu lực của HĐ `c` theo dòng thời gian (hạn, seq), tới trần chi tiết. */
+const milestonesOf = sql`(select json_agg(m.j order by m.due_date, m.seq, m.id) from (select ${msJson("o")} as j,
+      o.due_date, o.seq, o.id from contracts.obligations o
+      where o.contract_id = c.id and o.tenant_id = c.tenant_id and o.status <> 'replaced'
+      order by o.due_date, o.seq, o.id limit ${MILESTONES_MAX}::int) m)`;
 
 const FACET_CAP = 500;
 const CATEGORY_CAP = 200;
@@ -134,7 +169,12 @@ async function facets(tx: Tx, tid: string): Promise<ContractFacetsDto> {
 /** HD-NFR-02 · plan §6 Chi tiết: MỘT câu — hàng (PK, lọc `tenant_id` tường minh) + items `(contract_id, tenant_id, ord)` ≤ 500
  *  + 50 event mới nhất `(contract_id, id DESC)` + tệp (PK `files`, chưa xoá mềm). Không đọc `source_text` (chỉ `is not null`,
  *  không giải nén TOAST), không trả `search_key`/`signer_keys`. Gói cả hàng thành một `json` ⇒ kiểu ngày/giờ/số thống nhất. */
-async function detail(tx: Tx, tid: string, id: string): Promise<ContractDetailDto | null> {
+async function detail(
+  tx: Tx,
+  tid: string,
+  id: string,
+  today: string,
+): Promise<ContractDetailDto | null> {
   const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select json_build_object(
       'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', c.title, 'number', c.number, 'type', c.type,
       'direction', c.direction, 'status', c.status, 'seller', c.seller, 'buyer', c.buyer, 'seller_signer', c.seller_signer,
@@ -159,12 +199,14 @@ async function detail(tx: Tx, tid: string, id: string): Promise<ContractDetailDt
           from (select a.id, a.title, a.number, a.status, a.created_at,
             contracts.as_date(a.fields -> 'effective_date' ->> 'value') as eff
             from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id
-            order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a)
+            order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
+      'deal', c.deal, 'commission_pct', c.commission_pct, 'commission_fixed', c.commission_fixed,
+      'start_date', c.start_date, 'milestones', ${milestonesOf}
     ) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
   if (!d) return null;
-  return toContractDetail(typeof d === "string" ? (JSON.parse(d) as DetailRaw) : d);
+  return toContractDetail(typeof d === "string" ? (JSON.parse(d) as DetailRaw) : d, today);
 }
 
 /** D-13: `source_text` (≤ 5 MB) — MỘT câu theo PK + `tenant_id`. */
@@ -189,9 +231,9 @@ type Repo = ContractsReadRepo<ContractListRowDto, ContractFacetsDto, ContractDet
 
 export function contractsRepo(tx: Tx, tenantId: string): Repo {
   return {
-    list: (f) => list(tx, tenantId, f),
+    list: (f, today) => list(tx, tenantId, f, today ?? new Date().toISOString().slice(0, 10)),
     facets: () => facets(tx, tenantId),
-    detail: (id) => detail(tx, tenantId, id),
+    detail: (id, today) => detail(tx, tenantId, id, today ?? new Date().toISOString().slice(0, 10)),
     source: (id) => source(tx, tenantId, id),
     fileOf: (id) => fileOf(tx, tenantId, id),
   };

@@ -57,11 +57,12 @@ export function flowRequestExtract(d: {
   };
 }
 
-/** Nhập tay: tạo HĐ như HD2 rồi mở lượt duyệt ở cấp 1 (không có gì cho AI đọc). */
+/** Nhập tay: tạo HĐ như HD2 rồi mở lượt duyệt ở cấp 1 (không có gì cho AI đọc). V2-A · C3: tenant tắt duyệt ⇒ HĐ đã `active`,
+ *  không mở lượt duyệt. */
 export function flowCreateManual(create: CreateManual, start: Start): CreateManual {
   return async (who, input) => {
     const out = await create(who, input);
-    await start(who, out.id, "level1");
+    if (out.status === "needs_review") await start(who, out.id, "level1");
     return out;
   };
 }
