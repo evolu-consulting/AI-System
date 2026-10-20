@@ -1,7 +1,6 @@
 // F1 (CR-095) · danh sách suite của module ĐÓNG BĂNG (docs/platform/modules.md): ra khỏi cổng hằng ngày (`test:affected`, `test:all --no-frozen`),
 // chạy theo yêu cầu bằng `bun run test:frozen` (khi nâng cấp). `test:all` (không cờ) vẫn chạy hết cho kiểm tra hằng tháng.
 // Chỉ sửa danh sách này khi một module đổi trạng thái (cùng lúc với docs/platform/modules.md).
-import { Glob } from "bun";
 
 /** Mẫu đường dẫn file test (unit + int) thuộc module đóng băng. */
 export const FROZEN_TEST_GLOBS: readonly string[] = [
@@ -31,12 +30,27 @@ export const FROZEN_E2E_CONFIGS: readonly string[] = [
   "e2e/chat/playwright.x2b2.config.ts",
 ];
 
-const GLOBS = FROZEN_TEST_GLOBS.map((g) => new Glob(g));
+/** Glob tối giản, thuần (không phụ thuộc `bun`): hỗ trợ `**`, `*`, `?`, `{a,b}`. */
+export function globToRegExp(glob: string): RegExp {
+  const re = glob
+    .replace(/[.+^$()|[\]\\]/g, "\\$&")
+    .replace(/\*\*|\*|\?|[{},]/g, (m) => TOKENS[m] ?? m);
+  return new RegExp(`^${re}$`);
+}
+const TOKENS: Record<string, string> = {
+  "**": ".*",
+  "*": "[^/]*",
+  "?": "[^/]",
+  "{": "(?:",
+  "}": ")",
+  ",": "|",
+};
+const GLOBS = FROZEN_TEST_GLOBS.map(globToRegExp);
 const norm = (p: string): string => p.replaceAll("\\", "/").replace(/^\.\//, "");
 
 export const isFrozenFile = (f: string): boolean => {
   const p = norm(f);
-  return GLOBS.some((g) => g.match(p));
+  return GLOBS.some((g) => g.test(p));
 };
 
 export const isFrozenConfig = (c: string): boolean => FROZEN_E2E_CONFIGS.includes(norm(c));

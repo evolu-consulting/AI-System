@@ -24,7 +24,7 @@ try {
     # chồng thay đổi chưa commit (đã sửa + chưa theo dõi, trừ file bị ignore) lên bản archive; file đã xoá thì xoá khỏi bản sao
     $src = "$tmp\src"; New-Item -ItemType Directory $src | Out-Null
     tar.exe -xzf "$tmp\evotest-app-$stamp.tgz" -C $src
-    $changed = git -C $Repo -c core.quotepath=off ls-files -m -o --exclude-standard
+    $changed = @(git -C $Repo -c core.quotepath=off ls-files -m -o --exclude-standard) + @(git -C $Repo -c core.quotepath=off diff --cached --name-only) | Sort-Object -Unique   # gồm cả file đã stage (F-02)
     foreach ($f in $changed) {
       $p = Join-Path $Repo $f
       if (Test-Path -LiteralPath $p) { $t = Join-Path $src $f; New-Item -ItemType Directory -Force (Split-Path $t) | Out-Null; Copy-Item -LiteralPath $p $t -Force }
@@ -43,7 +43,7 @@ try {
   $t0 = Get-Date
   # Hàng đợi: chờ .lock (mkdir nguyên tử) - nhiều lượt cùng lúc xếp hàng, không đè file của nhau; remote.sh nằm trong kit.
   # 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
-  $boot = "cd ~/workspace/evotest && { n=0; until mkdir .lock 2>/dev/null; do [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng...'; n=1; sleep 5; done; trap 'rmdir .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
+  $boot = "cd ~/workspace/evotest && { n=0; w=0; until mkdir .lock 2>/dev/null; do o=`$(cat .lock/owner 2>/dev/null); p=`${o%% *}; if [ -n `"`$p`" ] && ! kill -0 `$p 2>/dev/null; then echo `"evotest: .lock mồ côi (owner `$o), gỡ`"; rm -rf .lock; continue; fi; [ `$n -eq 0 ] && echo `"evotest đang bận (owner: `${o:-không rõ}), xếp hàng...`"; n=1; w=`$((w+5)); if [ `$w -ge 5400 ]; then echo `"evotest: chờ .lock quá 90 phút (owner: `${o:-không rõ}); nếu treo, xoá ~/workspace/evotest/.lock`"; exit 3; fi; sleep 5; done; echo `"`$`$ `$(date +%s) $commit`" > .lock/owner; trap 'rm -rf .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $ErrorActionPreference = "Continue"
