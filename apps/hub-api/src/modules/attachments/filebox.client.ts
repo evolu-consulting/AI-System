@@ -79,7 +79,8 @@ export class FileboxClient {
     if (!res.ok) throw new FileboxUnavailable(`filebox link ${res.status}`);
     const j = (await res.json()) as { url?: string };
     if (!j.url) throw new FileboxUnavailable("filebox link: missing url");
-    if (this.cfg.publicPath) return j.url.startsWith("/d/") ? `${this.cfg.publicPath}${j.url}` : null;
+    if (this.cfg.publicPath)
+      return j.url.startsWith("/d/") ? `${this.cfg.publicPath}${j.url}` : null;
     return `${this.cfg.url}${j.url}`;
   }
 

@@ -80,7 +80,7 @@
     <h2>Access key</h2>
     <div class="row">
       <div><label for="key">Key</label><input id="key" type="password" autocomplete="off" placeholder="Paste the Filebox key"></div>
-      <button id="useKey">Open</button>
+      <button type="button" id="useKey">Open</button>
     </div>
     <p class="muted" style="margin:8px 0 0;font-size:13px">Kept only in this browser tab until you close it.</p>
     <div id="keyMsg" class="msg bad hidden" role="alert" style="margin-top:10px"></div>
@@ -90,7 +90,7 @@
     <h2>Upload</h2>
     <div class="row">
       <div><label for="org">Organisation</label><input id="org" type="text" list="orgs" placeholder="e.g. Công ty Acme"><datalist id="orgs"></datalist></div>
-      <div style="flex:0 0 auto"><button id="pick" class="ghost">Choose files…</button></div>
+      <div style="flex:0 0 auto"><button type="button" id="pick" class="ghost">Choose files…</button></div>
     </div>
     <input id="files" type="file" multiple class="hidden">
     <input id="versionFile" type="file" class="hidden">
@@ -101,7 +101,7 @@
   <section id="listBox" class="hidden">
     <div class="row" style="margin-bottom:12px">
       <div><label for="filter">Show organisation</label><select id="filter"><option value="">All organisations</option></select></div>
-      <div style="flex:0 0 auto"><button id="refresh" class="ghost">Refresh</button></div>
+      <div style="flex:0 0 auto"><button type="button" id="refresh" class="ghost">Refresh</button></div>
     </div>
     <div class="tablewrap">
       <table aria-label="Files">

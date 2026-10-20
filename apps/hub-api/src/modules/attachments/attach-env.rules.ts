@@ -109,7 +109,9 @@ function parseFileboxUrl(raw: string | undefined, httpHosts: string | undefined)
   );
   const loop = LOOPBACK.has(u.hostname) || allowed.has(u.hostname.toLowerCase());
   if (u.protocol !== "https:" && !(u.protocol === "http:" && loop))
-    throw new Error("FILEBOX_URL phải là https (http chỉ cho loopback hoặc host trong FILEBOX_HTTP_HOSTS)");
+    throw new Error(
+      "FILEBOX_URL phải là https (http chỉ cho loopback hoặc host trong FILEBOX_HTTP_HOSTS)",
+    );
   return raw;
 }
 
