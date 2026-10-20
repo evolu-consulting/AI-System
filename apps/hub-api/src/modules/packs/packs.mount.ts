@@ -29,6 +29,7 @@ import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
 import { partnersModule } from "./contracts/partners.mount";
+import { productsModule } from "./contracts/products.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { uploadModule } from "./contracts/upload.mount";
@@ -164,6 +165,7 @@ function mountContracts<E extends Env>(
   app.route(base, contractsLedger(d, view, db)); // HD7
   app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Việc của tôi
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Mua hàng
+  app.route(base, productsModule(db, view)); // V2-B · danh mục SP + kho
   app.route(
     base,
     partnersModule(db, view, {

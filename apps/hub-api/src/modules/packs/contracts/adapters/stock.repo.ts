@@ -106,7 +106,11 @@ export async function applyDelivery(
   const comps = await lockComps(tx, t, ids);
   const lots = await openLots(tx, t, ids);
   const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
-  const w = { lots: plan.lots, takes: plan.takes, moves: plan.moves };
+  const w = {
+    lots: plan.lots,
+    takes: plan.takes,
+    moves: plan.moves.map((m, ord) => ({ ...m, ord })),
+  };
   await tx.execute(sql`with p as (select ${json(w)} as j),
     nl as (
       insert into contracts.stock_lots (id, tenant_id, component_id, qty, remaining, received_on, expires_on)
@@ -125,7 +129,7 @@ export async function applyDelivery(
     select m.id, ${t}::uuid, m."componentId", m."lotId", m.direction, m.reason, m.qty, m."unitCost", m.amount,
       m."onHandBefore", m."onHandAfter", m."valueBefore", m."valueAfter", m."avgBefore", m."avgAfter", ${ctx.on}::date,
       m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey"
-    from p, jsonb_to_recordset(p.j -> 'moves') with ordinality as m(id uuid, "componentId" uuid, "lotId" uuid, direction text,
+    from p, jsonb_to_recordset(p.j -> 'moves') as m(id uuid, "componentId" uuid, "lotId" uuid, direction text,
       reason text, qty numeric, "unitCost" bigint, amount bigint, "onHandBefore" numeric, "onHandAfter" numeric,
       "valueBefore" bigint, "valueAfter" bigint, "avgBefore" bigint, "avgAfter" bigint, "contractId" uuid, "milestoneId" uuid,
       "contractItemId" uuid, "supplierPartyKey" text, ord bigint)
