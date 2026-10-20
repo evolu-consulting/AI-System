@@ -2,6 +2,7 @@
 // của riêng mình; Đã xong việc Liên hệ mời gia hạn đóng hẹn nhắc); khoá sai ⇒ 400; Bỏ qua của lan không ẩn việc của hoa.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
+import { quarterWindow } from "../../../apps/hub-api/src/modules/packs/contracts/domain/todo.rules";
 import { HUB_API_URL } from "../H1/_fixtures";
 import {
   arrangeV2k,
@@ -78,6 +79,19 @@ describe("V2-K · Cần xử lý 8 nguồn", () => {
     expect(f?.status).toBe("done");
     expect((await todo(c, P.hoa)).items.map((i: Item) => i.kind)).toContain("rating");
     expect((await dismissRaw(c, "overdue:x:2026-01-01", "skip")).status).toBe(400);
+  });
+
+  it("đánh giá sau quý: 30 ngày đầu quý ⇒ một việc gom đối tác có HĐ trong quý trước; Bỏ qua ẩn", async () => {
+    const q = quarterWindow(d(0));
+    if (!q) return; // ngoài 30 ngày đầu quý: nguồn tắt (luật thuần đã kiểm ở unit)
+    await arrangeV2k(c);
+    const id = await contract(c.sql, { deal: "sell" });
+    await c.sql`update contracts.contracts set fields = fields || jsonb_build_object('start_date',
+      jsonb_build_object('value', ${q.prevStart}::text)) where id = ${id}`;
+    const it0 = (await todo(c)).items.find((i: Item) => i.kind === "rating_quarter");
+    expect(it0).toMatchObject({ kind: "rating_quarter" });
+    await ok(dismissRaw(c, it0.key, "skip"));
+    expect((await todo(c)).items.map((i: Item) => i.kind)).not.toContain("rating_quarter");
   });
 
   it("RLS `todo_dismissals`: tenant khác (role gói) không đọc được hàng của acme", async () => {

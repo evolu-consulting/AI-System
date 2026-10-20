@@ -1,6 +1,12 @@
 // V2-K · TQ-01 · BA §4.1/§5.9: loại, số ngày, khoá, thứ tự (quá hạn đầu), cắt nguồn.
 import { describe, expect, it } from "bun:test";
-import { buildTodo, parseTodoKey, type RawTodo, TODO_SOURCE_MAX } from "./todo.rules";
+import {
+  buildTodo,
+  parseTodoKey,
+  quarterWindow,
+  type RawTodo,
+  TODO_SOURCE_MAX,
+} from "./todo.rules";
 
 const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const raw = (kind: RawTodo["kind"], n: number, due: string): RawTodo => ({
@@ -43,6 +49,28 @@ describe("V2-K · Cần xử lý", () => {
     });
     expect(parseTodoKey(`overdue:${U(1)}:2026-10-10`)).toBeNull();
     expect(parseTodoKey(`rating:x:2026-10-10`)).toBeNull();
+  });
+  it("đánh giá sau quý: chỉ 30 ngày đầu quý; tiêu đề theo quý trước", () => {
+    expect(quarterWindow("2026-10-21")).toEqual({
+      start: "2026-10-01",
+      prevStart: "2026-07-01",
+      prevEnd: "2026-09-30",
+    });
+    expect(quarterWindow("2026-01-31")).toEqual({
+      start: "2026-01-01",
+      prevStart: "2025-10-01",
+      prevEnd: "2025-12-31",
+    });
+    expect(quarterWindow("2026-11-05")).toBeNull();
+    const out = buildTodo(
+      [{ ...raw("rating_quarter", 9, "2026-10-01"), title: "2026-07-01", count: 4 }],
+      "2026-10-21",
+    );
+    expect(out.items[0]).toMatchObject({
+      kind: "rating_quarter",
+      title: "Đánh giá 4 đối tác sau quý 3/2026",
+      days: 20,
+    });
   });
   it("nguồn vượt trần ⇒ cắt + truncated", () => {
     const many = Array.from({ length: TODO_SOURCE_MAX + 1 }, (_, i) =>

@@ -13,6 +13,7 @@ export const TODO_KINDS = [
   "renewal_contact",
   "commission",
   "rating",
+  "rating_quarter",
   "missing_file",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
@@ -26,6 +27,7 @@ export type RawKind =
   | "customers_expiring"
   | "renewal_contact"
   | "rating"
+  | "rating_quarter"
   | "missing_file";
 export const RAW_KINDS: readonly RawKind[] = [
   "milestone",
@@ -34,6 +36,7 @@ export const RAW_KINDS: readonly RawKind[] = [
   "customers_expiring",
   "renewal_contact",
   "rating",
+  "rating_quarter",
   "missing_file",
 ];
 
@@ -89,8 +92,21 @@ const PRI: Record<TodoKind, number> = {
   renewal_contact: 1,
   commission: 1,
   rating: 2,
+  rating_quarter: 2,
   missing_file: 3,
 };
+
+/** BA §5.9 Đánh giá đối tác (nhắc lúc hết quý): chỉ trong 30 ngày đầu quý mới ⇒ đầu quý này + [đầu, cuối] quý trước; ngoài ⇒ null. */
+export function quarterWindow(
+  today: string,
+): { start: string; prevStart: string; prevEnd: string } | null {
+  const [y, m] = today.split("-").map(Number) as [number, number];
+  const q0 = Math.floor((m - 1) / 3) * 3;
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  const start = iso(Date.UTC(y, q0, 1));
+  if (daysBetween(start, today) > 30) return null;
+  return { start, prevStart: iso(Date.UTC(y, q0 - 3, 1)), prevEnd: iso(Date.UTC(y, q0, 0)) };
+}
 
 export const todoKey = (raw: RawKind, id: string, due: string) => `${raw}:${id}:${due}`;
 const KEY_RE =
@@ -100,6 +116,13 @@ export function parseTodoKey(key: string): { raw: RawKind; id: string; due: stri
   const m = KEY_RE.exec(key);
   if (!m || !RAW_KINDS.includes(m[1] as RawKind)) return null;
   return { raw: m[1] as RawKind, id: m[2] as string, due: m[3] as string };
+}
+
+/** Đánh giá sau quý: `title` thô = đầu quý trước ⇒ "Đánh giá n đối tác sau quý Q/YYYY" (mockup). */
+function titleOf(r: RawTodo): string | null {
+  if (r.kind !== "rating_quarter" || !r.title) return r.title ?? null;
+  const [y, m] = r.title.split("-").map(Number) as [number, number];
+  return `Đánh giá ${r.count ?? 0} đối tác sau quý ${Math.floor((m - 1) / 3) + 1}/${y}`;
 }
 
 function kindOf(r: RawTodo, days: number): TodoKind {
@@ -114,7 +137,7 @@ export function todoItem(r: RawTodo, today: string): TodoItem {
     kind: kindOf(r, days),
     days,
     due: r.due,
-    title: r.title ?? null,
+    title: titleOf(r),
     sub: r.sub ?? null,
     party: r.party ?? null,
     party_key: r.party_key ?? null,
@@ -130,7 +153,8 @@ export function todoItem(r: RawTodo, today: string): TodoItem {
 
 /** Quá hạn đầu (trễ lâu nhất trước); rồi theo mức, hạn gần trước; Đánh giá / Thiếu file mới nhất trước. */
 export function compareTodo(a: TodoItem, b: TodoItem): number {
-  const backward = (k: TodoKind) => k === "rating" || k === "missing_file";
+  const backward = (k: TodoKind) =>
+    k === "rating" || k === "rating_quarter" || k === "missing_file";
   return (
     PRI[a.kind] - PRI[b.kind] ||
     (backward(a.kind) ? b.due.localeCompare(a.due) : a.due.localeCompare(b.due)) ||

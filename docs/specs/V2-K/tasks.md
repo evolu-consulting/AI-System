@@ -29,7 +29,9 @@ ba: docs/platform/ba-v2/so-hop-tac-ba-v2.pdf §3.4 TQ-01/02, §4.1, §5.3c, §5.
   - Khách sắp hết hạn: `service_customers` còn trong số ngày nhắc (của HĐ hiện tại của dòng) — gom MỘT việc mỗi SP (số khách + hạn sớm nhất), mở tab Khách đang dùng (mockup).
   - Liên hệ mời gia hạn: hẹn nhắc `renewal` (V2-H) của chính mình chưa xong; Đã xong/Bỏ qua ⇒ đóng hẹn nhắc.
   - Hoa hồng chưa nhận: mốc Nhận hoa hồng mở đã quá hạn (hạn mốc = ngày đối soát); kèm SP đầu tiên của HĐ để mở trang SP.
-  - Đánh giá đối tác: HĐ không còn mốc bắt buộc mở, mốc cuối xác nhận ≤ 30 ngày, mình chưa chấm sao đối tác đó từ ngày ấy. Nhánh "30 ngày đầu quý" và cờ bật/tắt nhắc chưa có trong Cài đặt (V2-E) ⇒ luôn bật nhánh kết thúc HĐ; để V2-L.
+  - Đánh giá đối tác (kết thúc HĐ): HĐ không còn mốc bắt buộc mở, mốc cuối xác nhận ≤ 30 ngày, mình chưa chấm sao đối tác đó từ ngày ấy.
+  - Đánh giá sau quý (`rating_quarter`, mockup `_todoQ`): trong 30 ngày đầu quý ⇒ MỘT việc "Đánh giá n đối tác sau quý Q/YYYY" gom đối tác có HĐ hiệu lực giao quý trước (bắt đầu ?? xác nhận ?? tạo ≤ cuối quý trước, kết thúc ?? bắt đầu ≥ đầu quý trước) mà mình chưa chấm sao từ đầu quý này; sub = 3 tên đầu; khoá `rating_quarter:<user>:<đầu quý>`.
+  - Cờ "Nhắc đánh giá khi" (CD-05): V2-L chưa lưu ⇒ đọc khoá `rating_remind` (mảng `end`/`quarter`) trong `score_configs_v2` phạm vi `settings`; vắng ⇒ cả hai bật (mockup). Ô bật/tắt trên UI Cài đặt để lát sau.
   - Thiếu file: HĐ đã xác nhận `file_id` null (HĐ nhập tay).
 - K9 Bỏ qua / Đã xong việc suy ra = hàng `todo_dismissals` của RIÊNG người bấm, khoá `<tiền tố>:<uuid>:<ngày>` (ngày = hạn/ngày kết thúc/ngày xong/ngày tạo ⇒ hạn đổi thì việc hiện lại; mốc dùng chung tiền tố `milestone` nên trễ hạn sau khi Bỏ qua lúc "sắp đến hạn" vẫn ẩn tới khi đổi hạn). Chỉ kiểm dạng khoá (khoá sai ⇒ 400); không đổi dữ liệu nghiệp vụ, không lộ gì (chỉ ẩn danh sách của chính mình). Quyền `read` như hẹn nhắc W1.
 - K10 Số câu SQL: Tổng quan 1 + set_config; Cần xử lý 1 + set_config; Bỏ qua 1 (+1 khi là hẹn nhắc).
@@ -41,6 +43,6 @@ ba: docs/platform/ba-v2/so-hop-tac-ba-v2.pdf §3.4 TQ-01/02, §4.1, §5.3c, §5.
 
 ## Việc còn lại (lát sau)
 - V2-N: UI Tổng quan dùng `/overview` + `/my-work/todo` (6 việc + Xem thêm, nút Bỏ qua/Đã xong).
-- V2-L: cờ nhắc đánh giá (kết thúc HĐ / đầu quý) + nhánh đầu quý của nguồn Đánh giá.
+- Cài đặt: ô "Nhắc đánh giá khi" ghi `rating_remind` vào `settings` (API đã đọc).
+- Perf 12 tháng: điều phối chấp nhận vượt nhẹ (TECH-DEBT #253), không làm trigger.
 - V2-M: xoá HĐ ⇒ số Tổng quan tự đổi (đọc khi gọi); `todo_dismissals` không cần gỡ.
-- Perf 12 tháng (xem Số đo).

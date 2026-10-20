@@ -56,6 +56,7 @@ export const TODO_KINDS = [
   "renewal_contact",
   "commission",
   "rating",
+  "rating_quarter",
   "missing_file",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];

@@ -11,7 +11,13 @@ import {
   type OverviewPeriod,
   overviewRange,
 } from "../domain/overview.rules";
-import { buildTodo, parseTodoKey, type TodoAction, type TodoOut } from "../domain/todo.rules";
+import {
+  buildTodo,
+  parseTodoKey,
+  quarterWindow,
+  type TodoAction,
+  type TodoOut,
+} from "../domain/todo.rules";
 import type { MyWorkRepo } from "./mywork.usecase";
 
 export type OverviewRepos = { overview: OverviewRepo; todo: TodoRepo; mywork: MyWorkRepo };
@@ -44,7 +50,12 @@ export function overviewUsecase(d: Deps) {
   const todo = async (who: PackWho): Promise<TodoOut> => {
     const { today, tz } = await zone(who);
     const raw = await d.uow.tenant(who, ({ todo: t }) =>
-      t.list({ today, horizon: addDays(today, MYWORK_AHEAD_DAYS), tz }),
+      t.list({
+        today,
+        horizon: addDays(today, MYWORK_AHEAD_DAYS),
+        tz,
+        quarter: quarterWindow(today),
+      }),
     );
     return buildTodo(raw ?? [], today);
   };

@@ -32,9 +32,21 @@ const notDismissed = (
 const k = (kind: string, id: string, day: string) =>
   sql.raw(`'${kind}:' || ${id}::text || ':' || to_char(${day}, 'YYYY-MM-DD')`);
 
-export type TodoWindow = { today: string; horizon: string; tz: string };
+/** `quarter`: trong 30 ngày đầu quý ⇒ đầu quý này + quý trước (nguồn Đánh giá sau quý); ngoài ⇒ null. */
+export type TodoWindow = {
+  today: string;
+  horizon: string;
+  tz: string;
+  quarter: { start: string; prevStart: string; prevEnd: string } | null;
+};
+/** CD-05 "Nhắc đánh giá khi": `score_configs_v2` phạm vi `settings`, khoá `rating_remind` (mảng end|quarter); vắng ⇒ cả hai (mockup). */
+const REMIND = (
+  t: string,
+  on: string,
+) => sql`coalesce((select s.config -> 'rating_remind' from contracts.score_configs_v2 s
+    where s.tenant_id = ${t}::uuid and s.scope = 'settings'), '["end", "quarter"]'::jsonb) ? ${on}`;
 
-const sources = (t: string, w: TodoWindow) => sql`with
+const sources = (t: string, w: TodoWindow, q = w.quarter) => sql`with
   ms as (select o.id, o.contract_id, o.kind, o.direction, o.amount, o.title, o.due_date from contracts.obligations o
     where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind not in ('renewal', 'commission')
       and o.due_date <= ${w.horizon}::date and ${confirmedOf("o", t)}
@@ -68,13 +80,23 @@ const sources = (t: string, w: TodoWindow) => sql`with
     group by o.contract_id),
   rt as (select c.id, c.partner_key, f.last, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from fin f
       join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = f.contract_id
-    where c.kind = 'contract' and c.status in (${CONFIRMED}) and c.partner_key is not null
+    where c.kind = 'contract' and c.status in (${CONFIRMED}) and c.partner_key is not null and ${REMIND(t, "end")}
       and not exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = c.id
         and o.status = 'open' and o.kind <> 'renewal')
       and not exists (select 1 from contracts.score_ratings r where r.tenant_id = ${t}::uuid and r.party_key = c.partner_key
         and r.by_user = ${ME} and r.at >= f.last::timestamptz)
       and ${notDismissed(t, sql`${k("rating", "c.id", "f.last")}`)}
     order by f.last desc, c.id limit ${LIM}::int),
+  rq as (select count(distinct c.partner_key)::int as n,
+      (array_agg(distinct ${PARTY("c")}) filter (where ${PARTY("c")} is not null))[1:3] as names
+    from contracts.contracts c
+    where ${q !== null}::boolean and ${REMIND(t, "quarter")} and c.tenant_id = ${t}::uuid and c.kind = 'contract'
+      and c.status in (${CONFIRMED}) and c.partner_key is not null
+      and coalesce(c.start_date, c.confirmed_at::date, c.created_at::date) <= ${q?.prevEnd ?? null}::date
+      and coalesce(c.end_date, c.start_date, c.confirmed_at::date, c.created_at::date) >= ${q?.prevStart ?? null}::date
+      and not exists (select 1 from contracts.score_ratings r where r.tenant_id = ${t}::uuid and r.party_key = c.partner_key
+        and r.by_user = ${ME} and r.at >= ${q?.start ?? null}::date::timestamptz)
+      and ${notDismissed(t, sql`'rating_quarter:' || ${ME}::text || ':' || ${q?.start ?? null}::text`)}),
   mf as (select c.id, (c.created_at at time zone 'UTC')::date as day, c.fields, c.number, c.title, c.direction,
       c.seller, c.buyer from contracts.contracts c
     where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.file_id is null
@@ -82,7 +104,10 @@ const sources = (t: string, w: TodoWindow) => sql`with
     order by c.created_at desc, c.id limit ${LIM}::int)`;
 
 /** Mọi nguồn ⇒ MỘT mảng hàng đồng dạng (`RawTodo`). */
-const payload = (t: string) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) as j from (
+const payload = (
+  t: string,
+  q: TodoWindow["quarter"],
+) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) as j from (
   select jsonb_build_object('kind', 'milestone', 'id', m.id, 'due', m.due_date, 'title', coalesce(m.title, ${TITLE("c")}),
       'sub', ${TITLE("c")}, 'party', ${PARTY("c")}, 'amount', m.amount, 'contract_id', m.contract_id, 'milestone_id', m.id,
       'direction', m.direction) as j
@@ -108,12 +133,15 @@ const payload = (t: string) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) 
   select jsonb_build_object('kind', 'rating', 'id', c.id, 'due', c.last, 'title', ${PARTY("c")}, 'sub', ${TITLE("c")},
       'party', ${PARTY("c")}, 'party_key', c.partner_key, 'contract_id', c.id) from rt c
   union all
+  select jsonb_build_object('kind', 'rating_quarter', 'id', ${ME}, 'due', ${q?.start ?? null}::date, 'count', r.n,
+      'title', ${q?.prevStart ?? null}::text, 'sub', array_to_string(r.names, ', ')) from rq r where r.n > 0
+  union all
   select jsonb_build_object('kind', 'missing_file', 'id', c.id, 'due', c.day, 'title', ${TITLE("c")},
       'party', ${PARTY("c")}, 'contract_id', c.id) from mf c) x`;
 
 export function todoRepo(tx: Tx, t: string) {
   return {
-    list: (w: TodoWindow) => one<RawTodo[]>(tx, sql`${sources(t, w)} ${payload(t)}`),
+    list: (w: TodoWindow) => one<RawTodo[]>(tx, sql`${sources(t, w)} ${payload(t, w.quarter)}`),
     /** Bỏ qua / Đã xong: việc suy ra ⇒ ghi khoá của riêng mình (đặt lại = cập nhật). */
     dismiss: async (key: string, action: TodoAction) => {
       await tx.execute(sql`insert into contracts.todo_dismissals (tenant_id, user_id, item_key, action)
