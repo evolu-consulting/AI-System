@@ -95,7 +95,8 @@ function context(o: ImportOpts, r: Resolved): Ctx {
   const fallback = (tid: string): string => {
     const owner = r.owners.get(tid);
     if (owner) return owner;
-    if (!actorUsed.has(tid)) {
+    // dry-run: user của tenant mới chưa có (N5 chưa ghi) ⇒ không báo nhầm
+    if (o.apply && !actorUsed.has(tid)) {
       actorUsed.add(tid);
       issues.push({ entity: "tenant", ref: tid, code: "ACTOR_AS_CREATOR" });
     }
