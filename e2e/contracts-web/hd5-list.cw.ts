@@ -75,7 +75,7 @@ test.describe("HD-FR-51 · danh sách phía server", () => {
     await expect(
       page.getByText("PL01 · Phụ lục của Hợp đồng mua bán bao bì 2026").first(),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Thêm hợp đồng" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toHaveCount(0);
   });
 });
 

@@ -102,10 +102,36 @@ export function boardAsMgmt() {
 export const categoriesAsMgmt = () => CATEGORIES.map((c) => ({ ...c, product_count: 0 }));
 
 const at = "2026-10-18T02:00:00.000Z";
+
+/** V2-F · HD-03: `progress` (V2-A) cạnh `items` — loại HĐ, ngày bắt đầu, giai đoạn, bước hiện tại (đỏ khi quá hạn). */
+export const PROGRESS: Record<string, unknown> = {
+  [ROWS[0]?.id as string]: {
+    deal: "buy",
+    start_date: "2026-01-01",
+    stage: "in_progress",
+    next: {
+      id: "d1000000-0000-4000-8000-000000000001",
+      kind: "delivery",
+      title: "Giao đợt 2",
+      due_date: "2026-10-10",
+      overdue: true,
+    },
+  },
+  [ROWS[1]?.id as string]: { deal: "buy", start_date: null, stage: "not_started", next: null },
+  [ROWS[2]?.id as string]: { deal: null, start_date: null, stage: "done", next: null },
+};
 /** Hub: `GET /pack/contracts/contracts`. `extra` thêm hàng (vd phụ lục) cho test hành vi. */
 export function listAsHub(extra: Partial<ReturnType<typeof hubRow>>[] = [], total?: number) {
   const items = [...ROWS.map(hubRow), ...extra.map((e) => ({ ...hubRow(ROWS[0] as Row), ...e }))];
-  return { items, total: total ?? items.length, parents: [], page: 1, page_size: 20 };
+  const progress = items.map((r) => ({
+    id: r.id,
+    deal: null,
+    start_date: null,
+    stage: "in_progress",
+    next: null,
+    ...(PROGRESS[r.id] as object | undefined),
+  }));
+  return { items, total: total ?? items.length, parents: [], progress, page: 1, page_size: 20 };
 }
 function hubRow(r: Row) {
   return {

@@ -176,5 +176,13 @@ export function contractAsHub(status = contract.status) {
     has_source: false,
     parent: null,
     appendices: [],
+    // V2-A/V2-F: loại HĐ, hoa hồng, ngày bắt đầu, giai đoạn + dòng thời gian mốc (HĐ chờ xác nhận ⇒ chưa có mốc).
+    deal: "buy",
+    commission_pct: null,
+    commission_fixed: null,
+    start_date: "2026-01-01",
+    stage: "not_started",
+    next_milestone_id: null,
+    milestones: [] as unknown[],
   };
 }

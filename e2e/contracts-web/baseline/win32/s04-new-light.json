@@ -1,33 +1,33 @@
 {
-  "text": "← Hợp đồng Thêm hợp đồng (nhập tay) Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý. Loại Mua vào (mình mua của đối tác) Bán ra (mình bán cho đối tác) Số hợp đồng Tên hợp đồng Đối tác MST đối tác Người ký bên đối tác Người ký bên mình Hiệu lực từ Đến Nhắc trước (ngày) Giá trị (đ) Thanh toán Hàng hoá / dịch vụ × + Thêm dòng hàng Huỷ Lưu hợp đồng",
+  "text": "← Hợp đồng Thêm hợp đồng Huỷ Lưu hợp đồng Thông tin hợp đồng Loại hợp đồng Mua Mình mua từ nhà cung cấp Bán Mình bán cho khách Giới thiệu Hưởng hoa hồng Tên hợp đồng * Số hợp đồng Nhà cung cấp * Mã số thuế đối tác Giá trị đ Hiệu lực từ * Đến Nhắc trước khi hết hạn ngày Người ký bên mình Người ký bên đối tác Thanh toán Sản phẩm Nhập kho Dòng trên hợp đồng Số lượng Đơn vị Đơn giá (đ) Thành tiền — × ↳ Sản phẩm trong danh mục Chọn sản phẩm… USB Token Chữ ký số 1 năm Bảo hiểm xe ＋ Tạo sản phẩm mới + Thêm dòng Tổng —",
   "boxes": {
     "heading": {
       "x": 282,
-      "y": 104,
-      "w": 608.734375,
+      "y": 100,
+      "w": 896.125,
       "h": 40.296875
     },
     "form": {
-      "x": 303,
-      "y": 209.296875,
-      "w": 1058,
-      "h": 728.640625
+      "x": 282,
+      "y": 52,
+      "w": 1100,
+      "h": 978.296875
     },
     "title": {
       "x": 303,
-      "y": 309.578125,
+      "y": 375.890625,
       "w": 1058,
       "h": 40
     },
     "items": {
-      "x": 303,
-      "y": 773.796875,
-      "w": 1058,
-      "h": 108.140625
+      "x": 283,
+      "y": 838.703125,
+      "w": 1098,
+      "h": 190.59375
     },
     "submit": {
-      "x": 1241.703125,
-      "y": 897.9375,
+      "x": 1262.703125,
+      "y": 100.296875,
       "w": 119.296875,
       "h": 40
     }

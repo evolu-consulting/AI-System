@@ -1,5 +1,5 @@
 {
-  "text": "← Hợp đồng Thêm hợp đồng (nhập tay) Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý. Loại Mua vào (mình mua của đối tác) Bán ra (mình bán cho đối tác) Số hợp đồng Tên hợp đồng Đối tác MST đối tác Người ký bên đối tác Người ký bên mình Hiệu lực từ Đến Nhắc trước (ngày) Giá trị (đ) Thanh toán Hàng hoá / dịch vụ × + Thêm dòng hàng Huỷ Lưu hợp đồng",
+  "text": "← Hợp đồng Thêm hợp đồng Huỷ Lưu hợp đồng Thông tin hợp đồng Loại hợp đồng Mua Bán Giới thiệu Tên hợp đồng * Số hợp đồng Nhà cung cấp * Mã số thuế đối tác Giá trị đ Hiệu lực từ * Đến Nhắc trước khi hết hạn ngày Người ký bên mình Người ký bên đối tác Thanh toán Sản phẩm Nhập kho Dòng trên hợp đồng Số lượng Đơn vị Đơn giá (đ) Thành tiền — × ↳ Sản phẩm trong danh mục Chọn sản phẩm… USB Token Chữ ký số 1 năm Bảo hiểm xe ＋ Tạo sản phẩm mới + Thêm dòng Tổng —",
   "boxes": {
     "heading": {
       "x": 16,
@@ -8,27 +8,27 @@
       "h": 34.09375
     },
     "form": {
-      "x": 37,
-      "y": 223.09375,
-      "w": 316,
-      "h": 1190.140625
+      "x": 16,
+      "y": 64,
+      "w": 358,
+      "h": 1463.5625
     },
     "title": {
       "x": 37,
-      "y": 399.515625,
+      "y": 404.3125,
       "w": 316,
       "h": 40
     },
     "items": {
-      "x": 37,
-      "y": 1168.296875,
-      "w": 316,
-      "h": 188.9375
+      "x": 17,
+      "y": 1335.96875,
+      "w": 573,
+      "h": 190.59375
     },
     "submit": {
-      "x": 233,
-      "y": 1373.234375,
-      "w": 120,
+      "x": 201,
+      "y": 154.09375,
+      "w": 173,
       "h": 40
     }
   }

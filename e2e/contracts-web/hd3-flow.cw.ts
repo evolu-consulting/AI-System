@@ -63,7 +63,7 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
   const ex = page.locator("[data-approval=extracted]");
   await expect(ex).toContainText("Giá trị AI đọc được");
   await expect(ex).toContainText("“Tổng giá trị theo bảng giá đính kèm”");
-  await page.getByLabel("Giá trị (đ)").fill("250.000.000");
+  await page.getByLabel("Giá trị").fill("250.000.000");
   await page.getByRole("button", { name: "Xác nhận" }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");
   expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([

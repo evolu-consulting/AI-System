@@ -11,6 +11,7 @@ import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
 import { categoriesAsHub, facetsAsHub, membersAsHub } from "./dataset-list";
 import { contractsListAsHub, myWorkAsHub, partnersForOverview } from "./dataset-overview";
+import { ACTIVE_ID, activeContract, lookupFor, matchFor, PRODUCTS } from "./dataset-v2f";
 
 const CAPTURE = process.env.CW_MODE === "capture";
 const DIR = join(__dirname, "baseline", process.platform);
@@ -67,14 +68,14 @@ const reviewBoxes = {
   file: 'main a:has-text("Xem file gốc")',
   warnings: "main ul",
   firstField: "main input >> nth=0",
-  quote: "main label span.italic >> nth=0",
+  quote: "main span.italic >> nth=0",
   items: "main table",
 };
 const newBoxes = {
   heading: "main h1",
   form: "main form",
   title: 'main input[name="title"]',
-  items: "main fieldset",
+  items: "main table",
   submit: 'main button[type="submit"]',
 };
 const mainReady = (p: Page) => p.locator("main h1");
@@ -139,6 +140,103 @@ const HD2_SCENES: Scene[] = [
     theme: "light",
     text: ["main"],
     boxes: newBoxes,
+    mask: [],
+    ready: mainReady,
+  },
+];
+
+// ---------- V2-F: chi tiết HĐ đã có hiệu lực (dòng thời gian mốc) + form nhập tay đã chọn loại Bán, có dòng hàng gắn SP ----------
+const detailBoxes = {
+  heading: "main h1",
+  info: "main section >> nth=0",
+  timeline: 'main section:has-text("Dòng thời gian") >> nth=0',
+  currentStep: 'main li[data-state="cur"]',
+  confirm: 'main li[data-state="cur"] button:has-text("Xác nhận xong")',
+  summary: 'main [data-testid="summary"]',
+};
+const V2F_SCENES: Scene[] = [
+  ...(["light", "dark"] as const).map(
+    (theme): Scene => ({
+      name: `v2f-detail-${theme}`,
+      signedIn: true,
+      path: `/contracts/${ACTIVE_ID}`,
+      size: D,
+      theme,
+      text: ["main"],
+      boxes: detailBoxes,
+      mask: [],
+      ready: (p) => p.getByTestId("stage-now"),
+    }),
+  ),
+  {
+    name: "v2f-detail-mobile",
+    signedIn: true,
+    path: `/contracts/${ACTIVE_ID}`,
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: { heading: detailBoxes.heading, timeline: detailBoxes.timeline },
+    mask: [],
+    ready: (p) => p.getByTestId("stage-now"),
+  },
+  {
+    name: "v2f-detail-confirm-box",
+    signedIn: true,
+    path: `/contracts/${ACTIVE_ID}`,
+    size: D,
+    theme: "light",
+    text: ["main"],
+    boxes: {
+      heading: detailBoxes.heading,
+      timeline: detailBoxes.timeline,
+      box: 'main [data-testid="confirm-box"]',
+    },
+    mask: [],
+    ready: (p) => p.getByTestId("stage-now"),
+    act: async (p) => {
+      await p.getByRole("button", { name: "Xác nhận xong" }).click();
+      await expect(p.getByText("Mốc trễ 8 ngày — lỗi của ai?")).toBeVisible();
+    },
+  },
+  ...(["light", "dark"] as const).map(
+    (theme): Scene => ({
+      name: `v2f-new-sell-${theme}`,
+      signedIn: true,
+      path: "/contracts/new",
+      size: D,
+      theme,
+      text: ["main"],
+      boxes: {
+        ...newBoxes,
+        bar: 'main [data-testid="form-bar"]',
+        tiles: 'main [role="radiogroup"] >> nth=0',
+        link: 'main [data-testid="link-0"]',
+      },
+      mask: [],
+      ready: mainReady,
+      act: async (p) => {
+        await p.getByRole("radio", { name: /^Bán/ }).click();
+        await p.getByLabel(/^Khách hàng/).fill("Công ty Hoàn Toàn Mới");
+        await expect(p.getByText("Đối tác mới · sẽ tạo khi lưu")).toBeVisible();
+        await p.getByLabel("Tên hàng").fill("USB Token trắng");
+        await p.getByLabel("Số lượng", { exact: true }).fill("50");
+        await p.getByLabel("Tên hàng").blur();
+        await expect(p.getByTestId("oversell")).toBeVisible();
+      },
+    }),
+  ),
+  {
+    name: "v2f-new-sell-mobile",
+    signedIn: true,
+    path: "/contracts/new",
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: {
+      heading: "main h1",
+      bar: 'main [data-testid="form-bar"]',
+      tiles: 'main [role="radiogroup"] >> nth=0',
+    },
     mask: [],
     ready: mainReady,
   },
@@ -332,6 +430,7 @@ const SCENES: Scene[] = [
   ...OVERVIEW_SCENES,
   ...HD2_SCENES,
   ...HD5_SCENES,
+  ...V2F_SCENES,
 ];
 
 /** contracts-web: `/auth/refresh` + `/pack/contracts/me` giả bằng dữ liệu chung (asHub). */
@@ -359,6 +458,17 @@ async function installHub(page: Page, signedIn: boolean) {
   await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));
   await page.route(at("categories"), (r) => json(r, 200, categoriesAsHub()));
   await page.route(at("members"), (r) => json(r, 200, membersAsHub()));
+  // V2-F: danh mục SP + gợi ý đối tác (form nhập tay) và HĐ đã có hiệu lực (dòng thời gian).
+  await page.route(at("products"), (r) => json(r, 200, { items: PRODUCTS }));
+  await page.route(at("products/match"), (r) =>
+    json(r, 200, matchFor((r.request().postDataJSON() as { text: string }).text)),
+  );
+  await page.route(at("partners/lookup"), (r) =>
+    json(r, 200, lookupFor(new URL(r.request().url()).searchParams.get("name") ?? "")),
+  );
+  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}`, (r) =>
+    json(r, 200, activeContract()),
+  );
   await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
     json(r, 200, contractAsHub()),
   );

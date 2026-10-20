@@ -1,13 +1,14 @@
 // HD-FR-26 · S04/S05 · Luật 4b: hành vi màn kiểm/sửa và nhập tay của contracts-web (backend giả `page.route`, không AI thật).
-// S05 "Lưu" ⇒ PATCH chỉ ô đã đổi kèm `version`; S04 "Lưu hợp đồng" ⇒ POST `/manual` đúng thân rồi mở HĐ mới; số sai ⇒ báo
+// S05 "Lưu" ⇒ PATCH chỉ ô đã đổi kèm `version`; S04 "Lưu hợp đồng" ⇒ POST `/manual` đúng thân (V2-F: loại + SP danh mục) rồi mở HĐ mới; số sai ⇒ báo
 // tên ô, không gửi. Chỉ chạy ở chế độ so (contracts-web); chế độ chụp tham chiếu bỏ qua.
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
+import { NEW_ID, P_TOKEN } from "./dataset-v2f";
+import { installV2f } from "./v2f-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
-const NEW_ID = "c1000000-0000-4000-8000-000000000009";
 const FILE_URL = "https://files.e2e.test/d/hd-bao-bi-2026.pdf";
 type Sent = { method: string; path: string; body: unknown };
 
@@ -48,9 +49,9 @@ async function install(page: Page): Promise<Sent[]> {
 test("HD-FR-26 · S05 · Lưu gửi PATCH chỉ ô đã đổi + version, báo «Đã lưu.»", async ({ page }) => {
   const sent = await install(page);
   await page.goto(`/contracts/${contract.id}`);
-  const value = page.getByLabel("Giá trị (đ)");
+  const value = page.getByLabel("Giá trị");
   await value.fill("250.000.000");
-  await page.getByRole("button", { name: "Lưu" }).click();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu.");
   expect(sent).toEqual([
     {
@@ -61,48 +62,53 @@ test("HD-FR-26 · S05 · Lưu gửi PATCH chỉ ô đã đổi + version, báo �
   ]);
 });
 
-test("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân rồi mở màn kiểm/sửa HĐ mới", async ({
+test("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán, SP danh mục) rồi mở HĐ mới", async ({
   page,
 }) => {
-  const sent = await install(page);
+  const sent = await installV2f(page);
   await page.goto("/contracts/new");
-  await page.getByLabel("Loại").selectOption("sale");
-  await page.getByLabel("Tên hợp đồng").fill("Cung cấp gạo 2027");
-  await page.getByLabel("Đối tác", { exact: true }).fill("Công ty TNHH Gạo Ngon");
-  await page.getByLabel("Giá trị (đ)").fill("91.500.000");
-  await page.getByLabel("Tên hàng").fill("Gạo ST25");
-  await page.getByLabel("Số lượng").fill("1,5");
-  await page.getByLabel("Đơn giá").fill("20.000");
+  await page.getByRole("radio", { name: /^Bán/ }).click();
+  await page.getByLabel("Tên hợp đồng").fill("Cung cấp token 2027");
+  await page.getByLabel(/^Khách hàng/).fill("Công ty TNHH Gạo Ngon");
+  await page.getByLabel(/^Hiệu lực từ/).fill("2026-11-01");
+  await page.getByLabel("Giá trị").fill("91.500.000");
+  await page.getByLabel("Tên hàng").fill("USB Token");
+  await page.getByLabel("Số lượng", { exact: true }).fill("1,5");
+  await page.getByLabel("Đơn giá", { exact: true }).fill("20.000");
+  await page.getByLabel("Tên hàng").blur();
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_TOKEN.id);
   await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
   await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
   expect(sent[0]).toEqual({
     method: "POST",
     path: "/pack/contracts/contracts/manual",
     body: {
-      direction: "sale",
+      deal: "sell",
       number: null,
-      title: "Cung cấp gạo 2027",
+      title: "Cung cấp token 2027",
       partner_name: "Công ty TNHH Gạo Ngon",
       partner_tax_id: null,
-      start_date: null,
+      start_date: "2026-11-01",
       end_date: null,
       notice_days: 30,
       total_value: 91_500_000,
       payment_terms: null,
       partner_signer: null,
       our_signer: null,
-      items: [{ name: "Gạo ST25", unit: null, qty: 1.5, unit_price: 20_000 }],
+      items: [
+        { name: "USB Token", unit: null, qty: 1.5, unit_price: 20_000, product_id: P_TOKEN.id },
+      ],
     },
   });
 });
 
 test("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không gửi", async ({ page }) => {
-  const sent = await install(page);
+  const sent = await installV2f(page);
   await page.goto("/contracts/new");
   await page.getByLabel("Tên hợp đồng").fill("HĐ");
-  await page.getByLabel("Đối tác", { exact: true }).fill("A");
+  await page.getByLabel(/^Nhà cung cấp/).fill("A");
   await page.getByLabel("Tên hàng").fill("Gạo");
-  await page.getByLabel("Đơn giá").fill("hai mươi");
+  await page.getByLabel("Đơn giá", { exact: true }).fill("hai mươi");
   await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "Không đọc được số ở: Đơn giá “Gạo”. Gõ kiểu 91.500.000 hoặc 1,5.",
