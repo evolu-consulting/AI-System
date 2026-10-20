@@ -1,6 +1,8 @@
 // ADM-FR-60, ADM-FR-61, ADM-FR-40 · gọi API /admin/tenants* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
   GrantMatrix,
+  PackListResponse,
+  PackState,
   QuotaSetRequest,
   QuotaSetResponse,
   TenantCreateRequest,
@@ -133,6 +135,29 @@ export function useQuotaFeatureOptions(id: string, enabled: boolean) {
         .filter((f) => f.state === "core" || f.state === "entitled")
         .map((f) => ({ id: f.feature.id, key: f.feature.key, name: f.feature.name }));
     },
+  });
+}
+
+const PACK_KEYS = { list: (id: string) => ["tenants", "packs", id] as const };
+
+/** PK-FR-05 · D-05 · UAT B3: gói đã cài + trạng thái bật của tenant; chỉ platform_admin. */
+export function useTenantPacks(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: PACK_KEYS.list(id),
+    enabled,
+    queryFn: () => api<PackListResponse>(`/admin/tenants/${id}/packs`),
+  });
+}
+
+/** Bật (`PUT` → `PackState`) hoặc tắt (`DELETE` → 204); xong làm mới danh sách (không optimistic). */
+export function useSetTenantPack(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, on }: { key: string; on: boolean }) =>
+      api<PackState | undefined>(`/admin/tenants/${id}/packs/${key}`, {
+        method: on ? "PUT" : "DELETE",
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: PACK_KEYS.list(id) }),
   });
 }
 

@@ -1,5 +1,6 @@
 // PK-FR-05 · D-05 · N1 plan §5 "Bật gói": truy vấn bật/tắt gói theo tenant (scope platform, RLS). Mỗi bước MỘT câu cố định,
 // tập hợp qua `= any($array)` / một tham số JSON (Luật 4c) — số câu không phụ thuộc số feature/Group.
+import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 
@@ -89,6 +90,29 @@ export async function insertRoleGrants(
       returning id`,
   );
   return rows.length;
+}
+
+/**
+ * UAT B4 · trợ lý AI của gói (`packs.pack_agents`): entitlement + grant 3 Group vai cho tenant — hàm SECURITY DEFINER
+ * (`migrations-packs/0005`), cùng tx bật gói. Có đổi ⇒ đã khoá + bump `hub.config_meta`, trả version mới để NOTIFY
+ * `hub_config_changed` trong tx (giao khi commit); không đổi ⇒ null.
+ */
+export async function grantPackAgents(
+  tx: Tx,
+  g: { tenantIds: readonly string[]; key: string; actorId: string },
+): Promise<number | null> {
+  if (g.tenantIds.length === 0) return null;
+  const [r] = await run<{ v: string | number | null }>(
+    tx,
+    sql`select packs.grant_agents(${g.key}, ${uuids(g.tenantIds)}, ${g.actorId}::uuid) as v`,
+  );
+  return r?.v == null ? null : Number(r.v);
+}
+
+export async function notifyHubConfig(tx: Tx, version: number): Promise<void> {
+  await tx.execute(
+    sql`select pg_notify(${HUB_CONFIG_CHANNEL}, ${JSON.stringify({ v: HUB_CONTRACT_VERSION, version })})`,
+  );
 }
 
 export function findGroups(

@@ -565,6 +565,7 @@
       "quota": "Quota",
       "users": "Users",
       "workflowTools": "Process tools",
+      "packs": "Packs",
       "unavailableBody": "This section will be available in a later release."
     },
     "agents": {
@@ -652,6 +653,30 @@
         "on": "Enabled tool {name} for {tenant}",
         "off": "Turned off tool {name} for {tenant}",
         "gone": "This workflow is no longer in the catalog. The list was reloaded."
+      }
+    },
+    "packs": {
+      "title": "Business packs",
+      "desc": "Only the platform operator enables a pack. Enabling creates the Owner / Editor / Viewer groups and grants the pack's AI assistant to them.",
+      "col": {
+        "name": "Pack",
+        "status": "Status",
+        "on": "Enabled for company"
+      },
+      "name": {
+        "contracts": "Contracts",
+        "knowledge": "Knowledge"
+      },
+      "on": "Enabled",
+      "off": "Off",
+      "switchAria": "Enable pack {name}",
+      "empty": "No pack is installed on this system yet.",
+      "offTitle": "Turn off pack {name}?",
+      "offBody": "Company users can no longer open the pack. Groups and permissions are kept for when it is turned back on.",
+      "offConfirm": "Turn off pack",
+      "toast": {
+        "on": "Enabled pack {name} for {tenant}",
+        "off": "Turned off pack {name} for {tenant}"
       }
     },
     "timezone": {

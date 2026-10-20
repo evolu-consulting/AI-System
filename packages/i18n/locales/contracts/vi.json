@@ -216,7 +216,7 @@
       },
       "disabled": {
         "title": "Gói Hợp đồng chưa được bật cho công ty bạn",
-        "body": "Quản trị viên công ty cần bật gói Hợp đồng trong trang quản trị."
+        "body": "Gói chỉ do đơn vị vận hành nền tảng bật. Nhờ quản trị viên công ty liên hệ đơn vị vận hành để bật gói Hợp đồng, rồi tải lại trang."
       },
       "logout": "Đăng xuất"
     },

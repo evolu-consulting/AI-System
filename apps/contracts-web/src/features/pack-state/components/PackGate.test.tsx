@@ -50,6 +50,9 @@ describe("PackGate", () => {
     const out = gate("ready", { kind: "disabled" });
     expect(out).toContain("Gói Hợp đồng chưa được bật cho công ty bạn");
     expect(out).not.toContain("Bạn chưa có quyền");
+    // UAT B3 · D-05: chỉ platform_admin bật gói ⇒ trỏ đơn vị vận hành, không bảo "bật trong trang quản trị".
+    expect(out).toContain("đơn vị vận hành");
+    expect(out).not.toContain("trong trang quản trị");
   });
   test("PK-FR-05 · quyền đủ ⇒ nội dung", () => {
     expect(gate("ready", { kind: "ok", write: false, owner: false })).toBe("<nav>NOI-DUNG</nav>");

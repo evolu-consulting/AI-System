@@ -565,6 +565,7 @@
       "quota": "Quota",
       "users": "Users",
       "workflowTools": "Tool quy trình",
+      "packs": "Gói",
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },
     "agents": {
@@ -652,6 +653,30 @@
         "on": "Đã bật tool {name} cho {tenant}",
         "off": "Đã tắt tool {name} cho {tenant}",
         "gone": "Workflow này không còn trong catalog. Đã tải lại danh sách."
+      }
+    },
+    "packs": {
+      "title": "Gói nghiệp vụ",
+      "desc": "Chỉ đơn vị vận hành nền tảng bật gói. Bật gói tạo sẵn nhóm Chủ sở hữu / Biên tập / Xem và cấp trợ lý AI của gói cho các nhóm đó.",
+      "col": {
+        "name": "Gói",
+        "status": "Trạng thái",
+        "on": "Bật cho công ty"
+      },
+      "name": {
+        "contracts": "Hợp đồng",
+        "knowledge": "Tri thức"
+      },
+      "on": "Đang bật",
+      "off": "Chưa bật",
+      "switchAria": "Bật gói {name}",
+      "empty": "Hệ thống chưa cài gói nào.",
+      "offTitle": "Tắt gói {name}?",
+      "offBody": "Người dùng của công ty không mở được gói nữa. Nhóm và quyền được giữ lại để bật lại sau.",
+      "offConfirm": "Tắt gói",
+      "toast": {
+        "on": "Đã bật gói {name} cho {tenant}",
+        "off": "Đã tắt gói {name} cho {tenant}"
       }
     },
     "timezone": {

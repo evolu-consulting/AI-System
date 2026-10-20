@@ -1,5 +1,6 @@
 // PK-FR-05 · D-05 · N1 plan §2 "Route admin-api", §5 "Bật gói": bật/tắt gói nghiệp vụ cho tenant (platform admin).
-// Bật = một tx `configWrite`: khoá 3 feature · upsert 3 entitlement · 3 Group vai · 6 grant · đọc lại Group · bump + audit
+// Bật = một tx `configWrite`: khoá 3 feature · upsert 3 entitlement · 3 Group vai · 6 grant · trợ lý gói (Hub, UAT B4:
+// `packs.grant_agents` khoá + bump `hub.config_meta`, NOTIFY `hub_config_changed` trong tx) · đọc lại Group · bump + audit
 // (chỉ khi có đổi — bất biến M3-R15/M4 sự kiện ⇔ audit) · NOTIFY `config_changed` sau commit. Tắt = thu hồi 3 entitlement,
 // giữ Group/grant. Audit dùng enum M4 sẵn có (`grant`/`revoke` · entity `entitlement`, summary `op: pack.enable|disable`).
 import type { PackListResponse, PackState } from "@ai/contracts";
@@ -70,6 +71,9 @@ export function enablePack(c: PacksCall, tenantId: string, k: string): Promise<P
     });
     const grp = await repo.insertRoleGroups(tx, { tenantId, actorId, rows: roleGroupRows(k) });
     const grants = await repo.insertRoleGrants(tx, { tenantId, actorId, pairs: roleGrantPairs(k) });
+    // UAT B4: trợ lý của gói cho 3 Group vai, cùng tx (không chờ `hub:seed`); NOTIFY Hub giao khi commit.
+    const hubVersion = await repo.grantPackAgents(tx, { tenantIds: [tenantId], key: k, actorId });
+    if (hubVersion !== null) await repo.notifyHubConfig(tx, hubVersion);
     if (ent > 0) ch.changed({ entity: "entitlement", tenantId });
     if (grp > 0) ch.changed({ entity: "group", tenantId });
     if (grants > 0) ch.changed({ entity: "grant", tenantId });

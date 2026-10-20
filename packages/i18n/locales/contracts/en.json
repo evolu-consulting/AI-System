@@ -216,7 +216,7 @@
       },
       "disabled": {
         "title": "The Contracts pack isn't enabled for your company",
-        "body": "Your company's administrator needs to enable the Contracts pack in the admin console."
+        "body": "Packs are enabled only by the platform operator. Ask your company's administrator to contact the platform operator to enable the Contracts pack, then reload the page."
       },
       "logout": "Sign out"
     },

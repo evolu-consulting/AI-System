@@ -180,7 +180,19 @@ export async function writeAccess(tx: Tx, plan: SeedPlan): Promise<string[]> {
   const tenants = await tenantIds(tx, plan);
   await insertEntitlements(tx, plan, tenants, warn);
   await insertGrants(tx, plan, tenants, warn);
+  await grantPackAgents(tx);
   return warn;
+}
+
+/**
+ * UAT B4 · trợ lý của gói (`packs.pack_agents`) cho MỌI tenant đang bật gói — bù trường hợp agent được seed SAU khi gói
+ * đã bật (bật gói bình thường đã cấp trong tx của admin-api). Không có bộ khung gói ⇒ bỏ qua. Số câu cố định (2 câu, mọi gói).
+ */
+async function grantPackAgents(tx: Tx): Promise<void> {
+  const [fn] = await tx<{ ok: boolean }[]>`select
+    to_regprocedure('packs.grant_agents(text, uuid[], uuid)') is not null as ok`;
+  if (!fn?.ok) return;
+  await tx`select packs.grant_agents(r.key, null::uuid[], null::uuid) from packs.registry r`;
 }
 
 /** H2a plan-db §4: chỉ ĐỌC `admin.workflows` theo key seed tham chiếu. */

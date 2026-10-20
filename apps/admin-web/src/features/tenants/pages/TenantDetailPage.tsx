@@ -28,10 +28,19 @@ import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
-export type TenantTab = "info" | "features" | "agents" | "workflow-tools" | "quota" | "users";
+export type TenantTab =
+  | "info"
+  | "features"
+  | "agents"
+  | "workflow-tools"
+  | "packs"
+  | "quota"
+  | "users";
 
 /** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
 const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
+/** UAT B3 · tab "Gói" (bật/tắt gói nghiệp vụ, D-05 chỉ platform_admin) nạp lười. */
+const TenantPacksTab = lazy(() => import("../components/packs/TenantPacksTab"));
 
 function Header({
   tenant,
@@ -149,6 +158,7 @@ export function TenantDetailPage() {
           <TabsTrigger value="features">{t("tenants.tab.features")}</TabsTrigger>
           <TabsTrigger value="agents">{t("tenants.tab.agents")}</TabsTrigger>
           <TabsTrigger value="workflow-tools">{t("tenants.tab.workflowTools")}</TabsTrigger>
+          <TabsTrigger value="packs">{t("tenants.tab.packs")}</TabsTrigger>
           <TabsTrigger value="quota">{t("tenants.tab.quota")}</TabsTrigger>
           <TabsTrigger value="users">{t("tenants.tab.users")}</TabsTrigger>
         </TabsList>
@@ -170,6 +180,11 @@ export function TenantDetailPage() {
         <TabsContent value="workflow-tools" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantToolsTab tenant={tenant} />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="packs" className="pt-4">
+          <Suspense fallback={<LoadingState />}>
+            <TenantPacksTab tenant={tenant} />
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">
