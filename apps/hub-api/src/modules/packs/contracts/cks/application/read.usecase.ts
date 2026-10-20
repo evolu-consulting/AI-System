@@ -21,37 +21,38 @@ export type CksReadDeps = { uow: CksUow; clock: CksClock };
 const today = async (d: CksReadDeps, who: PackWho) =>
   todayIn(d.clock.now(), await d.clock.timeZoneOf(who.tenantId));
 
+type CustomerQuery = CustomerFilter & { q?: string; page: number; page_size: number };
+
+/** Một trang khách: câu 1 chọn id theo lọc/tìm/sắp, câu 2 lấy chữ ký của đúng các khách đó (HD9-AC09). */
+async function customers(d: CksReadDeps, who: PackWho, f: CustomerQuery) {
+  const day = await today(d, who);
+  const { page, rows } = await d.uow.tenant(who, async (r) => {
+    const pg = await r.cks.customerPage({
+      today: day,
+      ...(f.filter ? { filter: f.filter } : {}),
+      ...(f.lot ? { lot: f.lot } : {}),
+      ...(f.ca ? { ca: f.ca } : {}),
+      like: `%${likePattern(f.q ?? "")}%`,
+      size: f.page_size,
+      offset: (f.page - 1) * f.page_size,
+    });
+    return { page: pg, rows: pg.ids.length ? await r.cks.liveCerts(pg.ids) : [] };
+  });
+  const by = new Map(groupCustomers(rows, day).map((c) => [c.company_id, c]));
+  const items = page.ids.flatMap((id) => {
+    const c = by.get(id);
+    return c ? [briefCustomer(c)] : [];
+  });
+  return { items, total: page.total, page: f.page, page_size: f.page_size, cas: page.cas };
+}
+
 export function cksReads(d: CksReadDeps) {
   return {
     overview: async (who: PackWho) => {
       const day = await today(d, who);
       return d.uow.tenant(who, (r) => r.cks.overview(day));
     },
-    /** Một trang khách: câu 1 chọn id theo lọc/tìm/sắp, câu 2 lấy chữ ký của đúng các khách đó (HD9-AC09). */
-    customers: async (
-      who: PackWho,
-      f: CustomerFilter & { q?: string; page: number; page_size: number },
-    ) => {
-      const day = await today(d, who);
-      const { page, rows } = await d.uow.tenant(who, async (r) => {
-        const pg = await r.cks.customerPage({
-          today: day,
-          ...(f.filter ? { filter: f.filter } : {}),
-          ...(f.lot ? { lot: f.lot } : {}),
-          ...(f.ca ? { ca: f.ca } : {}),
-          like: `%${likePattern(f.q ?? "")}%`,
-          size: f.page_size,
-          offset: (f.page - 1) * f.page_size,
-        });
-        return { page: pg, rows: pg.ids.length ? await r.cks.liveCerts(pg.ids) : [] };
-      });
-      const by = new Map(groupCustomers(rows, day).map((c) => [c.company_id, c]));
-      const items = page.ids.flatMap((id) => {
-        const c = by.get(id);
-        return c ? [briefCustomer(c)] : [];
-      });
-      return { items, total: page.total, page: f.page, page_size: f.page_size, cas: page.cas };
-    },
+    customers: (who: PackWho, f: CustomerQuery) => customers(d, who, f),
     customer: async (who: PackWho, id: string) => {
       const day = await today(d, who);
       const rows = await d.uow.tenant(who, (r) => r.cks.liveCerts([id]));
@@ -60,8 +61,7 @@ export function cksReads(d: CksReadDeps) {
     lots: (who: PackWho) => d.uow.tenant(who, (r) => r.cks.lots()),
     prices: async (who: PackWho, filter: PkgFilter) => {
       const day = await today(d, who);
-      const i = await d.uow.tenant(who, (r) => r.cks.priceInputs());
-      return cksPackages(i.lots, i.sold, i.market, day, filter);
+      return cksPackages(await d.uow.tenant(who, (r) => r.cks.priceInputs()), day, filter);
     },
     signedDocs: (
       who: PackWho,

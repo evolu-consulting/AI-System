@@ -158,12 +158,11 @@ const addDaysIso = (iso: string, n: number): string =>
 
 /** Bảng "Chữ ký số của tôi" + thống kê 12 tháng (`cks.py:53-95`). */
 export function cksPackages(
-  lots: readonly LotIn[],
-  sold: readonly SoldIn[],
-  market: readonly MarketIn[],
+  i: { lots: readonly LotIn[]; sold: readonly SoldIn[]; market: readonly MarketIn[] },
   today: string,
   filter: PkgFilter = "all",
 ) {
+  const { lots, sold, market } = i;
   const rows = [...collect(lots, sold, today).entries()].map(([key, p]) => {
     const margin = p.sell === null ? null : p.sell - p.buy;
     return {

@@ -57,10 +57,41 @@ const CERT_COLS = sql`id uuid, serial text, serial_key text, ca text, device tex
   keeper text, valid_from date, valid_to date, source text, lot_id uuid, sale_contract_id uuid, sale_price bigint`;
 
 export function cksWriteRepo(tx: Tx, t: string) {
-  const lock: CksRepo["lock"] = async () => {
+  const lock: CksRepo["lock"] = lockQ(tx, t);
+  const saleCheck: CksRepo["saleCheck"] = saleCheckQ(tx, t);
+  const insertLot: CksRepo["insertLot"] = insertLotQ(tx, t);
+  const insertSale: CksRepo["insertSale"] = insertSaleQ(tx, t);
+  return { lock, saleCheck, insertLot, insertSale, ...renewalWrites(tx, t) };
+}
+
+const renewalJson = sql`jsonb_build_object('id', r.id, 'sale_contract_id', r.sale_contract_id, 'company_id', r.customer_id,
+  'certificate_ids', to_jsonb(r.certificate_ids), 'status', r.status, 'new_contract_id', r.new_contract_id,
+  'price_each', r.price_each, 'valid_to', r.valid_to, 'lost_reason', r.lost_reason, 'done_at', r.done_at)`;
+
+function renewalWrites(tx: Tx, t: string) {
+  const renewCheck: CksRepo["renewCheck"] = renewCheckQ(tx, t);
+  const insertRenewal: CksRepo["insertRenewal"] = insertRenewalQ(tx, t);
+  const renewal: CksRepo["renewal"] = renewalQ(tx, t);
+  const takenSerials: CksRepo["takenSerials"] = takenSerialsQ(tx, t);
+  return { renewCheck, insertRenewal, renewal, takenSerials, ...closeWrites(tx, t) };
+}
+
+function closeWrites(tx: Tx, t: string) {
+  const completeRenewal: CksRepo["completeRenewal"] = completeRenewalQ(tx, t);
+  const loseRenewal: CksRepo["loseRenewal"] = loseRenewalQ(tx, t);
+  const insertFollowup: CksRepo["insertFollowup"] = insertFollowupQ(tx, t);
+  const insertSignedDocs: CksRepo["insertSignedDocs"] = insertSignedDocsQ(tx, t);
+  return { completeRenewal, loseRenewal, insertFollowup, insertSignedDocs };
+}
+
+function lockQ(tx: Tx, t: string): CksRepo["lock"] {
+  return async () => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`cks:${t}`}, 0))`);
   };
-  const saleCheck: CksRepo["saleCheck"] = (i) =>
+}
+
+function saleCheckQ(tx: Tx, t: string): CksRepo["saleCheck"] {
+  return (i) =>
     one(
       tx,
       sql`select jsonb_build_object(
@@ -78,7 +109,10 @@ export function cksWriteRepo(tx: Tx, t: string) {
           where k.tenant_id = ${t}::uuid and ${i.year}::text is not null
             and k.number like 'CKS-' || ${i.year}::text || '-%'), '[]'::jsonb)) as j`,
     );
-  const insertLot: CksRepo["insertLot"] = async (w) => {
+}
+
+function insertLotQ(tx: Tx, t: string): CksRepo["insertLot"] {
+  return async (w) => {
     const l = w.lot;
     await tx.execute(sql`with ${contractCtes(t, w.contract)},
       lo as (
@@ -89,7 +123,10 @@ export function cksWriteRepo(tx: Tx, t: string) {
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
   };
-  const insertSale: CksRepo["insertSale"] = async (w) => {
+}
+
+function insertSaleQ(tx: Tx, t: string): CksRepo["insertSale"] {
+  return async (w) => {
     const cu = w.customer;
     await tx.execute(sql`with
       cu as (
@@ -106,15 +143,10 @@ export function cksWriteRepo(tx: Tx, t: string) {
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
   };
-  return { lock, saleCheck, insertLot, insertSale, ...renewalWrites(tx, t) };
 }
 
-const renewalJson = sql`jsonb_build_object('id', r.id, 'sale_contract_id', r.sale_contract_id, 'company_id', r.customer_id,
-  'certificate_ids', to_jsonb(r.certificate_ids), 'status', r.status, 'new_contract_id', r.new_contract_id,
-  'price_each', r.price_each, 'valid_to', r.valid_to, 'lost_reason', r.lost_reason, 'done_at', r.done_at)`;
-
-function renewalWrites(tx: Tx, t: string) {
-  const renewCheck: CksRepo["renewCheck"] = (saleId, year) =>
+function renewCheckQ(tx: Tx, t: string): CksRepo["renewCheck"] {
+  return (saleId, year) =>
     one(
       tx,
       sql`select jsonb_build_object(
@@ -131,7 +163,10 @@ function renewalWrites(tx: Tx, t: string) {
         'numbers', coalesce((select jsonb_agg(k.number) from contracts.contracts k
           where k.tenant_id = ${t}::uuid and k.number like 'CKS-' || ${year}::text || '-%'), '[]'::jsonb)) as j`,
     );
-  const insertRenewal: CksRepo["insertRenewal"] = async (w) => {
+}
+
+function insertRenewalQ(tx: Tx, t: string): CksRepo["insertRenewal"] {
+  return async (w) => {
     const r = w.renewal;
     await tx.execute(sql`with ${contractCtes(t, w.contract)},
       re as (
@@ -151,24 +186,29 @@ function renewalWrites(tx: Tx, t: string) {
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
   };
-  const renewal: CksRepo["renewal"] = (id) =>
+}
+
+function renewalQ(tx: Tx, t: string): CksRepo["renewal"] {
+  return (id) =>
     one(
       tx,
       sql`select (select ${renewalJson} || jsonb_build_object('old_price', (select c.sale_price
           from contracts.cks_certificates c where c.tenant_id = ${t}::uuid and c.id = r.certificate_ids[1]))
         from contracts.cks_renewals r where r.tenant_id = ${t}::uuid and r.id = ${id}::uuid) as j`,
     );
-  const takenSerials: CksRepo["takenSerials"] = (keys) =>
+}
+
+function takenSerialsQ(tx: Tx, t: string): CksRepo["takenSerials"] {
+  return (keys) =>
     one(
       tx,
       sql`select coalesce(jsonb_agg(c.serial_key), '[]'::jsonb) as j from contracts.cks_certificates c
         where c.tenant_id = ${t}::uuid and c.serial_key in (select jsonb_array_elements_text(${json(keys)}))`,
     );
-  return { renewCheck, insertRenewal, renewal, takenSerials, ...closeWrites(tx, t) };
 }
 
-function closeWrites(tx: Tx, t: string) {
-  const completeRenewal: CksRepo["completeRenewal"] = (w) =>
+function completeRenewalQ(tx: Tx, t: string): CksRepo["completeRenewal"] {
+  return (w) =>
     one<RenewalOut>(
       tx,
       sql`with r0 as (select * from contracts.cks_renewals where tenant_id = ${t}::uuid and id = ${w.id}::uuid),
@@ -203,7 +243,10 @@ function closeWrites(tx: Tx, t: string) {
         returning rr.*)
       select ${renewalJson} as j from r`,
     );
-  const loseRenewal: CksRepo["loseRenewal"] = (w) =>
+}
+
+function loseRenewalQ(tx: Tx, t: string): CksRepo["loseRenewal"] {
+  return (w) =>
     one<RenewalOut>(
       tx,
       sql`with r as (
@@ -234,14 +277,20 @@ function closeWrites(tx: Tx, t: string) {
         where cu.party_key is not null)
       select ${renewalJson} as j from r`,
     );
-  const insertFollowup: CksRepo["insertFollowup"] = (w) =>
+}
+
+function insertFollowupQ(tx: Tx, t: string): CksRepo["insertFollowup"] {
+  return (w) =>
     one(
       tx,
       sql`insert into contracts.cks_followups (tenant_id, user_id, customer_id, due_at, note)
         values (${t}::uuid, ${BY}, ${w.customer_id}::uuid, (${w.local}::timestamp at time zone ${w.tz}::text), ${w.note})
         returning to_jsonb(id) as j`,
     );
-  const insertSignedDocs: CksRepo["insertSignedDocs"] = (rows) =>
+}
+
+function insertSignedDocsQ(tx: Tx, t: string): CksRepo["insertSignedDocs"] {
+  return (rows) =>
     one(
       tx,
       sql`with x as (
@@ -258,5 +307,4 @@ function closeWrites(tx: Tx, t: string) {
       select jsonb_build_object('added', count(*), 'unmatched', count(*) filter (where certificate_id is null)) as j
       from ins`,
     );
-  return { completeRenewal, loseRenewal, insertFollowup, insertSignedDocs };
 }

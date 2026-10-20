@@ -266,9 +266,7 @@ describe("giá gói (prices/cks.py)", () => {
       },
     ];
     const p = cksPackages(
-      lots,
-      [{ lot_id: "l1", valid_from: "2026-10-01", sale_price: 800 }],
-      market,
+      { lots, sold: [{ lot_id: "l1", valid_from: "2026-10-01", sale_price: 800 }], market },
       "2026-10-19",
     );
     expect(p.rows).toHaveLength(1);
@@ -299,7 +297,7 @@ describe("giá gói (prices/cks.py)", () => {
       valid_from: "2026-09-01",
       sale_price: 1_000_000,
     }));
-    expect(cksPackages(lots, sold, [], "2026-10-19").stats).toEqual({
+    expect(cksPackages({ lots, sold, market: [] }, "2026-10-19").stats).toEqual({
       sold_12m: 2,
       revenue: 2_000_000,
       gross_profit: 247_000,

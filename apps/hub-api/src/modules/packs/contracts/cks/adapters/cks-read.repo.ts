@@ -10,14 +10,9 @@ type J<T> = { j: T };
 const one = async <T>(tx: Tx, q: ReturnType<typeof sql>): Promise<T> =>
   ((await tx.execute<J<T>>(q))[0] as J<T>).j;
 
-/** Chữ ký còn hiệu lực + khách + HĐ bán + gia hạn mở + số văn bản theo chuỗi `replaces` (đệ quy, ≤ 50 đời). */
-function liveCertsQ(tx: Tx, t: string): CksRepo["liveCerts"] {
-  return async (customerIds) => {
-    // Đo HD9-AC09: không ORDER BY ở SQL (sắp hàng rộng tốn ~16 ms / 5.500 hàng) — domain sắp; đếm văn bản = của chính chữ ký
-    // + của các chữ ký nó đã thay (chỉ đệ quy cho hàng có `replaces`).
-    const rows = await tx.execute<
-      CertRow & { sale_price: string | null }
-    >(sql`with recursive ids as (select v::uuid as id from jsonb_array_elements_text(${JSON.stringify(customerIds)}::jsonb) v),
+/** CTE đầu của `liveCertsQ`: id khách + số văn bản của chính chữ ký (`own`) + của chuỗi chữ ký nó đã thay (`anc`). */
+const liveDocCtes = (t: string, ids: string) =>
+  sql`with recursive ids as (select v::uuid as id from jsonb_array_elements_text(${ids}::jsonb) v),
       own as (
         select d.certificate_id as cert, count(*)::int as n from contracts.cks_signed_docs d
         where d.tenant_id = ${t}::uuid and d.certificate_id is not null
@@ -31,7 +26,16 @@ function liveCertsQ(tx: Tx, t: string): CksRepo["liveCerts"] {
         select ch.root, p.replaces, ch.depth + 1 from chain ch
         join contracts.cks_certificates p on p.id = ch.cur and p.tenant_id = ${t}::uuid
         where p.replaces is not null and ch.depth < 50),
-      anc as (select ch.root, sum(o.n)::int as n from chain ch join own o on o.cert = ch.cur group by ch.root),
+      anc as (select ch.root, sum(o.n)::int as n from chain ch join own o on o.cert = ch.cur group by ch.root),`;
+
+/** Chữ ký còn hiệu lực + khách + HĐ bán + gia hạn mở + số văn bản theo chuỗi `replaces` (đệ quy, ≤ 50 đời). */
+function liveCertsQ(tx: Tx, t: string): CksRepo["liveCerts"] {
+  return async (customerIds) => {
+    // Đo HD9-AC09: không ORDER BY ở SQL (sắp hàng rộng tốn ~16 ms / 5.500 hàng) — domain sắp; đếm văn bản = của chính chữ ký
+    // + của các chữ ký nó đã thay (chỉ đệ quy cho hàng có `replaces`).
+    const rows = await tx.execute<
+      CertRow & { sale_price: string | null }
+    >(sql`${liveDocCtes(t, JSON.stringify(customerIds))}
       -- Mỗi HĐ bán đọc fields MỘT lần (không giải nén jsonb theo từng chữ ký).
       k as materialized (
         select k.id, k.number, coalesce(k.fields -> 'signed_date' ->> 'value', k.fields -> 'start_date' ->> 'value') as signed,

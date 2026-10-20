@@ -74,13 +74,24 @@ const whoOf = (u: { tenantId: string; userId: string }) => ({
 const id = (v: string | undefined) => parseWith(z.uuid(), v);
 const tooLarge = () => new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
 
+const body = async <S extends z.ZodType>(c: Context, s: S) => parseWith(s, await readJson(c));
+type R = Hono<PackGuardVars>;
+type Mw = ReturnType<typeof packGuard>;
+/** Guard ghi (+ chặn tenant chỉ đọc) và trần thân JSON. */
+type WriteMw = { write: Mw; small: ReturnType<typeof bodyLimit> };
+
 export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  const read = packGuard(view, KEY, "read");
   const write = cksWriteGuard(packGuard(view, KEY, "write"), d.writable);
   const small = bodyLimit({ maxSize: JSON_MAX, onError: () => Promise.reject(tooLarge()) });
-  const body = async <S extends z.ZodType>(c: Context, s: S) => parseWith(s, await readJson(c));
+  readRoutes(r, packGuard(view, KEY, "read"), d);
+  saleRoutes(r, { write, small }, d);
+  renewalRoutes(r, { write, small }, d);
+  signedUploadRoute(r, write, d.upload);
+  return r;
+}
 
+function readRoutes(r: R, read: Mw, d: CksRoutesDeps): void {
   r.get("/cks/overview", read, async (c) => c.json(await d.reads.overview(whoOf(c.get("user")))));
   r.get("/cks/customers", read, async (c) =>
     c.json(await d.reads.customers(whoOf(c.get("user")), parseQuery(c, CksCustomersQuerySchema))),
@@ -99,7 +110,9 @@ export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuar
   );
   // V2-J2: `/cks/scans` (dò giá CKS) gỡ — thay bằng "Tìm giá trên thị trường" ở tab NCC & giá của SP
   // (`POST /products/:id/suppliers/search`, supplier-prices.routes.ts).
+}
 
+function saleRoutes(r: R, { write, small }: WriteMw, d: CksRoutesDeps): void {
   r.post("/cks/lots", write, small, async (c) =>
     c.json(
       await run(d.sales.createLot(whoOf(c.get("user")), await body(c, CksLotCreateSchema))),
@@ -115,6 +128,9 @@ export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuar
       201,
     ),
   );
+}
+
+function renewalRoutes(r: R, { write, small }: WriteMw, d: CksRoutesDeps): void {
   r.post("/cks/groups/:id/renew", write, small, async (c) => {
     const sale = id(c.req.param("id"));
     const b = await body(c, CksRenewSchema);
@@ -144,6 +160,4 @@ export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuar
     const b = await body(c, CksFollowupSchema);
     return c.json(await run(d.renewals.followup(whoOf(c.get("user")), cid, b)), 201);
   });
-  signedUploadRoute(r, write, d.upload);
-  return r;
 }
