@@ -33,3 +33,10 @@ Kit: `deploy/prod-sohoptac2/` (README = runbook). Bản deploy đầu: `platform
   xoá `claude-home/.claude/.credentials.json` và chạy lại `gen-env.sh` (README).
 - [ ] admin-web gọi `/process-defs` (404 vì engine tắt) và thẻ Agent Forge báo "Available once Agent Hub is ready" — không chặn.
 - [ ] Sao lưu `.env` (SECRET_MASTER_KEY/HUB_SECRETS_KEY) và volume `sohoptac2_pgdata` — chưa có lịch.
+
+## FileBox (slice filebox-s2, 2026-10-20)
+- FileBox của host (`/home/evoc/filebox`, uvicorn :9100 chỉ loopback; HTTPS công khai `:9443`) chỉ có MỘT Bearer toàn cục (env `FILEBOX_TOKEN`, không có đường cấp key theo app) ⇒ dùng chung key theo ADR-0015 D3/D5; không sửa/khởi động lại FileBox. Tách file theo tenant bằng org `t_<tenant>` (pack contracts).
+- Nối: `.env` (600) thêm `FILEBOX_URL=https://149.202.83.5:9443`, `FILEBOX_ORG=ai-system`, `FILEBOX_CA=/etc/s2/filebox.crt`, `FILEBOX_TOKEN` (người dùng tự chép từ `~/.config/filebox/filebox.env`, không in/log), `HUB_ATTACH_DRIVER=filebox`. Dùng URL theo IP vì cert tự ký chỉ có SAN IP 149.202.83.5/127.0.0.1/localhost (không host-gateway). Container tới `:9443` qua IP công khai của host: `/health` 200 (~47 ms) với CA ghim.
+- `filebox.crt` (cert công khai) chép từ `/home/evoc/filebox/certs/filebox.crt` vào `~/workspace/sohoptac2/filebox.crt`; compose mount `:ro` vào `hub-api` và `tool` (`deploy/prod-sohoptac2/docker-compose.yml`). Không cần mở cổng/đổi bind.
+- Gắn lại 19 file demo: `docker compose run --rm -T tool` + `mgmt-import --into-tenant demo --mgmt-org <id Demo dữ liệu mẫu> --filebox` (dry-run, apply, chạy lại 0 upload) — theo `docs/specs/niti-attach/tasks.md`.
+- [ ] CHƯA LÀM (bị chặn quyền chạy deploy/recreate production trong phiên này): tạo lại `hub-api` (và deploy gd0 HEAD gồm prod-fixes1 qua `deploy/prod-sohoptac2/deploy.ps1`), rồi UAT mục 3 (tải DOCX + AI + "Đọc lại"), `--filebox` mục 4, bổ sung `docs/uat/cr095/report.md` mục "AI thật (sohoptac2)". `.env` và compose trên máy chủ đã sửa sẵn; deploy.ps1 ghi đè compose bằng bản trong repo (đã có mount).
