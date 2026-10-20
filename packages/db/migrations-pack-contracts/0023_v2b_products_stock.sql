@@ -4,6 +4,8 @@
 -- `FOR UPDATE` theo id ⇒ đọc lô mở ⇒ một CTE ghi lô + sổ ⇒ cập nhật tồn/BQ (trigger đối chiếu với dòng sổ vừa ghi).
 -- Thấy (M1, docs/specs/V2-B/tasks.md D2): danh mục + tồn + lô (chỉ số lượng/hạn) thấy cả tenant (form HĐ cần tồn, BA 5.7e);
 -- sổ nhập/xuất (giá lô, NCC, HĐ) theo luật thấy HĐ như `cks_lots` (sees_all · mình ghi · HĐ thấy được).
+-- Không FK tới `contracts.contracts` (như `cks_lots`): TRUNCATE HĐ của các bộ test cũ không vướng; HĐ phải thấy được khi ghi (policy
+-- `stock_moves_visible_ins`, CTE tạo SP); xoá HĐ xử lý ở V2-M.
 CREATE TABLE IF NOT EXISTS contracts.products (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
@@ -21,9 +23,7 @@ CREATE TABLE IF NOT EXISTS contracts.products (
   CONSTRAINT products_name_uq UNIQUE (tenant_id, name_key),
   CONSTRAINT products_grp_ck CHECK (grp IN ('service', 'goods', 'referral')),
   CONSTRAINT products_text_ck CHECK (char_length(name) BETWEEN 1 AND 300 AND char_length(unit) <= 40
-    AND char_length(main_supplier_party_key) BETWEEN 1 AND 300 AND char_length(main_supplier_name) <= 300),
-  CONSTRAINT products_contract_fk FOREIGN KEY (created_from_contract_id, tenant_id)
-    REFERENCES contracts.contracts (id, tenant_id) ON DELETE SET NULL (created_from_contract_id)
+    AND char_length(main_supplier_party_key) BETWEEN 1 AND 300 AND char_length(main_supplier_name) <= 300)
 );
 --> statement-breakpoint
 -- Thành phần: SP một phần có đúng 1 thành phần cùng tên. `mode`: stock (kho lô) · quota (gói suất có hạn) · order (không giữ hàng,
@@ -131,9 +131,7 @@ CREATE TABLE IF NOT EXISTS contracts.stock_moves (
   CONSTRAINT stock_moves_component_fk FOREIGN KEY (component_id, tenant_id)
     REFERENCES contracts.product_components (id, tenant_id) ON DELETE CASCADE,
   CONSTRAINT stock_moves_lot_fk FOREIGN KEY (lot_id, tenant_id)
-    REFERENCES contracts.stock_lots (id, tenant_id) ON DELETE CASCADE,
-  CONSTRAINT stock_moves_contract_fk FOREIGN KEY (contract_id, tenant_id)
-    REFERENCES contracts.contracts (id, tenant_id) ON DELETE SET NULL (contract_id)
+    REFERENCES contracts.stock_lots (id, tenant_id) ON DELETE CASCADE
 );
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS stock_moves_component_idx ON contracts.stock_moves (tenant_id, component_id, seq);
