@@ -53,17 +53,16 @@
       },
       "col": {
         "title": "Hợp đồng",
-        "seller": "Bên bán",
-        "buyer": "Bên mua",
+        "partner": "Đối tác",
+        "type": "Loại",
         "value": "Giá trị",
-        "signers": "Người ký",
-        "owner": "Phụ trách",
-        "status": "Trạng thái",
-        "what": "Loại hàng"
+        "dates": "Hiệu lực",
+        "stage": "Giai đoạn",
+        "actions": "Thao tác"
       },
       "search": "Tìm theo tên, đối tác, số HĐ, loại…",
-      "add": "+ Thêm hợp đồng",
-      "manual": "Nhập tay",
+      "add": "Upload hợp đồng",
+      "manual": "Thêm thủ công",
       "newCategory": "+ Loại mới",
       "newCategoryTitle": "Thêm loại hàng",
       "newCategoryLabel": "Tên loại mới",
@@ -72,7 +71,7 @@
       "categoryAdded": "Đã thêm loại hàng",
       "categoryExists": "Loại hàng này đã có.",
       "emptyTitle": "Chưa có hợp đồng",
-      "emptyBody": "Bấm “+ Thêm hợp đồng” để tải file lên.",
+      "emptyBody": "Bấm “Upload hợp đồng” để tải file lên, hoặc “Thêm thủ công” để nhập tay.",
       "noMatchTitle": "Không có hợp đồng khớp",
       "noMatchBody": "Thử từ khoá khác hoặc bỏ bớt bộ lọc.",
       "appendixOf": "Phụ lục của {{title}}",
@@ -82,7 +81,10 @@
       "ownerLine": "Phụ trách: {{name}}",
       "ownerUnknown": "(không rõ)",
       "uploadFailed": "Không tải lên được. Thử lại sau.",
-      "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị"
+      "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị",
+      "until": "đến {{date}}",
+      "view": "Xem",
+      "viewAria": "Xem {{title}}"
     },
     "table": {
       "columns": "Cột",
@@ -313,70 +315,9 @@
       "viewFile": "📄 Xem file gốc",
       "saving": "Đang lưu…",
       "saved": "Đã lưu.",
-      "unverified": "· chưa kiểm chứng",
       "failedTitle": "Không đọc được hợp đồng này.",
       "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
-      "manual": "Nhập tay",
-      "fields": {
-        "number": "Số hợp đồng",
-        "title": "Tên hợp đồng",
-        "supplierName": "Bên bán",
-        "supplierTaxId": "MST bên bán",
-        "buyerName": "Bên mua",
-        "buyerTaxId": "MST bên mua",
-        "supplierSigner": "Người ký bên bán",
-        "buyerSigner": "Người ký bên mua",
-        "startDate": "Hiệu lực từ",
-        "endDate": "Đến",
-        "noticeDays": "Nhắc trước (ngày)",
-        "totalValue": "Giá trị (đ)",
-        "paymentTerms": "Thanh toán"
-      },
-      "items": {
-        "name": "Hàng hoá",
-        "unit": "ĐVT",
-        "qty": "SL",
-        "unitPrice": "Đơn giá"
-      }
-    },
-    "newContract": {
-      "title": "Thêm hợp đồng (nhập tay)",
-      "lead": "Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý.",
-      "direction": "Loại",
-      "purchase": "Mua vào (mình mua của đối tác)",
-      "sale": "Bán ra (mình bán cho đối tác)",
-      "number": "Số hợp đồng",
-      "contractTitle": "Tên hợp đồng",
-      "titlePlaceholder": "vd. Cung cấp gạo 2027",
-      "partner": "Đối tác",
-      "partnerTaxId": "MST đối tác",
-      "partnerSigner": "Người ký bên đối tác",
-      "partnerSignerPlaceholder": "Nguyễn Văn A – Giám đốc",
-      "ourSigner": "Người ký bên mình",
-      "ourSignerPlaceholder": "Trần Thị B – Giám đốc",
-      "startDate": "Hiệu lực từ",
-      "endDate": "Đến",
-      "noticeDays": "Nhắc trước (ngày)",
-      "totalValue": "Giá trị (đ)",
-      "paymentTerms": "Thanh toán",
-      "items": "Hàng hoá / dịch vụ",
-      "itemName": "Tên hàng",
-      "itemUnit": "Đơn vị",
-      "itemQty": "Số lượng",
-      "itemQtyShort": "SL",
-      "itemPrice": "Đơn giá",
-      "itemPricePlaceholder": "Đơn giá (đ)",
-      "removeRow": "Bỏ dòng",
-      "addRow": "+ Thêm dòng hàng",
-      "save": "Lưu hợp đồng",
-      "saving": "Đang lưu…",
-      "badNumbers": "Không đọc được số ở: {{list}}. Gõ kiểu 91.500.000 hoặc 1,5.",
-      "bad": {
-        "noticeShort": "Nhắc trước",
-        "valueShort": "Giá trị",
-        "qtyOf": "Số lượng “{{name}}”",
-        "priceOf": "Đơn giá “{{name}}”"
-      }
+      "manual": "Nhập tay"
     }
   }
 }

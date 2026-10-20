@@ -124,6 +124,7 @@ export function listQueryString(p: ListParams): string {
   const v = p.conds.value;
   if (v?.min != null) u.set("value_min", String(v.min));
   if (v?.max != null) u.set("value_max", String(v.max));
+  u.set("include", "progress"); // V2-F: giai đoạn + bước hiện tại + loại HĐ của từng HĐ trong trang
   u.set("page", String(p.page));
   u.set("page_size", String(p.pageSize));
   return u.toString();

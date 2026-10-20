@@ -65,8 +65,8 @@ describe("filterMaps", () => {
 describe("listQueryString", () => {
   const maps = filterMaps(facets, new Map([["u1", "Lan"]]));
   const base = { q: "", conds: {}, maps, page: 1, pageSize: 20 };
-  test("không lọc ⇒ chỉ page/page_size", () => {
-    expect(listQueryString(base)).toBe("page=1&page_size=20");
+  test("không lọc ⇒ chỉ include=progress (V2-F) + page/page_size", () => {
+    expect(listQueryString(base)).toBe("include=progress&page=1&page_size=20");
   });
   test("q < 2 ký tự bị bỏ; chọn nhãn ⇒ tham số lặp theo giá trị thô; khoảng giá trị", () => {
     const qs = new URLSearchParams(
@@ -91,7 +91,7 @@ describe("listQueryString", () => {
   });
   test("nhãn không còn trong facets ⇒ không lọc (không gửi tham số rỗng)", () => {
     expect(listQueryString({ ...base, conds: { status: { in: ["Không có"] } } })).toBe(
-      "page=1&page_size=20",
+      "include=progress&page=1&page_size=20",
     );
   });
 });

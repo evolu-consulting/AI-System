@@ -1,31 +1,23 @@
-// HD-FR-51 · S03 · port `ContractsPage.tsx:100-143` (ô bảng) + thẻ điện thoại `:196-215`. Hàng phụ lục: dòng phụ "Phụ lục của <HĐ gốc>".
-import type { ContractListRow } from "@ai/contracts";
+// HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI `renderCList`): ô bảng — Hợp đồng (tên + số / phụ lục của), Đối tác, Loại, Giá trị, Hiệu lực,
+// Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem; Xoá ẩn tới V2-M). Thẻ điện thoại: một thẻ mỗi HĐ.
+import type { ContractListRow, ContractProgress } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { TONE_TEXT, vnd } from "~/components/shared/format";
+import { viDate, vnd } from "~/components/shared/format";
+import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
 import { STATUS_VIEW, shortName } from "../lib/list-model";
+import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
 
 export type RowCtx = {
-  /** Tên loại hàng theo id. */
-  categories: ReadonlyMap<string, string>;
-  /** Tên phụ trách theo id. */
-  owners: ReadonlyMap<string, string>;
   /** Tiêu đề HĐ gốc của hàng phụ lục trong trang (`parents` của API). */
   parents: ReadonlyMap<string, string>;
+  /** Giai đoạn + bước hiện tại theo id HĐ (`progress` của API, V2-A). */
+  progress: ReadonlyMap<string, ContractProgress>;
 };
 
-export const COLUMN_KEYS = [
-  "title",
-  "seller",
-  "buyer",
-  "value",
-  "signers",
-  "owner",
-  "status",
-  "what",
-] as const;
+export const COLUMN_KEYS = ["title", "partner", "type", "value", "dates", "stage"] as const;
 export type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 const TD = "px-3 py-3";
@@ -41,38 +33,71 @@ function SubLine({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   );
 }
 
-export function Tags({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
-  const names = r.category_ids.map((id) => ctx.categories.get(id)).filter(Boolean);
-  return (
-    <span className="flex flex-wrap gap-1.5">
-      {names.map((n) => (
-        <span
-          key={n}
-          className="inline-flex h-[22px] items-center rounded-md bg-act-soft px-2 text-[12px] whitespace-nowrap text-act"
-        >
-          {n}
-        </span>
-      ))}
-    </span>
+export function DealTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  const { t } = useTranslation();
+  const deal = dealOfRow(r, ctx.progress.get(r.id));
+  return deal ? (
+    <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
+  ) : (
+    <span className="text-dim">—</span>
   );
 }
 
-export function StatusText({ r, className }: { r: ContractListRow; className?: string }) {
-  const v = STATUS_VIEW[r.status];
-  return <span className={cn(TONE_TEXT[v.tone], className)}>{v.label}</span>;
+export function StageCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  const { t } = useTranslation();
+  const v = stageView(r, ctx.progress.get(r.id));
+  if (v.kind === "status") {
+    const s = STATUS_VIEW[r.status];
+    return (
+      <Tag
+        tone={
+          s.tone === "late"
+            ? "late"
+            : s.tone === "soon"
+              ? "soon"
+              : s.tone === "act"
+                ? "act"
+                : "grey"
+        }
+      >
+        {s.label}
+      </Tag>
+    );
+  }
+  return (
+    <>
+      <Tag tone={v.overdue ? "late" : STAGE_TONE[v.stage]}>
+        {v.overdue ? t("contracts.cdetail.stageOver") : t(`contracts.cdetail.stage.${v.stage}`)}
+      </Tag>
+      {v.step && (
+        <span className={cn("mt-0.5 block text-[12.5px]", v.overdue ? "text-late" : "text-dim")}>
+          {v.step}
+        </span>
+      )}
+    </>
+  );
 }
 
-/** Ô theo cột; `title` mang cả liên kết mở màn kiểm (S05). */
-export function cell(
-  key: ColumnKey,
-  r: ContractListRow,
-  ctx: RowCtx,
-  t: (k: string) => string,
-): ReactNode {
+function Dates({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  const { t } = useTranslation();
+  const start = ctx.progress.get(r.id)?.start_date ?? null;
+  if (!start && !r.end_date) return <span className="text-dim">—</span>;
+  return (
+    <>
+      {start ? viDate(start) : "—"}
+      <span className="block text-[12.5px] text-dim">
+        {t("contracts.list.until", { date: viDate(r.end_date) })}
+      </span>
+    </>
+  );
+}
+
+/** Ô theo cột; `title` mang cả liên kết mở HĐ (S05). */
+export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode {
   switch (key) {
     case "title":
       return (
-        <td className="max-w-[240px] px-3 py-3 pl-5">
+        <td className="max-w-[260px] px-3 py-3 pl-5">
           <Link
             to="/contracts/$id"
             params={{ id: r.id }}
@@ -85,78 +110,64 @@ export function cell(
           <SubLine r={r} ctx={ctx} />
         </td>
       );
-    case "seller":
+    case "partner": {
+      const name = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
       return (
-        <td className={cn("min-w-[130px]", TD)} title={r.seller ?? undefined}>
-          <span className="line-clamp-2">{shortName(r.seller)}</span>
+        <td className={cn("min-w-[130px]", TD)} title={name ?? undefined}>
+          <span className="line-clamp-2">{shortName(name)}</span>
         </td>
       );
-    case "buyer":
+    }
+    case "type":
       return (
-        <td className={cn("min-w-[130px]", TD)} title={r.buyer ?? undefined}>
-          <span className="line-clamp-2">{shortName(r.buyer)}</span>
+        <td className={cn("whitespace-nowrap", TD)}>
+          <DealTag r={r} ctx={ctx} />
         </td>
       );
     case "value":
       return (
         <td className={cn("text-right font-mono whitespace-nowrap", TD)}>
-          {r.value != null ? `${vnd(r.value)} đ` : "—"}
+          {r.value != null ? `${vnd(r.value)} đ` : <span className="text-dim">—</span>}
         </td>
       );
-    case "signers":
+    case "dates":
       return (
-        <td className={cn("min-w-[170px] text-[13px]", TD)}>
-          {r.seller_signer || r.buyer_signer ? (
-            <>
-              <span className="block truncate" title={r.seller_signer ?? undefined}>
-                <span className="text-dim">{t("contracts.list.signSell")}</span>
-                {r.seller_signer ?? "—"}
-              </span>
-              <span className="block truncate" title={r.buyer_signer ?? undefined}>
-                <span className="text-dim">{t("contracts.list.signBuy")}</span>
-                {r.buyer_signer ?? "—"}
-              </span>
-            </>
-          ) : (
-            <span className="text-dim">—</span>
-          )}
+        <td className={cn("font-mono whitespace-nowrap", TD)}>
+          <Dates r={r} ctx={ctx} />
         </td>
       );
-    case "owner": {
-      const name = r.owner_user_id ? ctx.owners.get(r.owner_user_id) : undefined;
+    case "stage":
       return (
-        <td className={cn("max-w-[140px] truncate", TD)} title={name}>
-          {name ?? "—"}
-        </td>
-      );
-    }
-    case "status":
-      return (
-        <td className={cn("whitespace-nowrap", TD)}>
-          <StatusText r={r} />
-        </td>
-      );
-    case "what":
-      return (
-        <td className="min-w-[200px] px-3 py-3 pr-5">
-          <Tags r={r} ctx={ctx} />
+        <td className={cn("min-w-[150px]", TD)}>
+          <StageCell r={r} ctx={ctx} />
         </td>
       );
   }
 }
 
+/** Cột "Thao tác": Xem (mở HĐ). Nút Xoá chưa hiện — chờ V2-M (đảo sổ kho/giá vốn khi xoá). */
+export function ActionsCell({ r }: { r: ContractListRow }) {
+  const { t } = useTranslation();
+  return (
+    <td className="px-3 py-3 pr-5 text-right whitespace-nowrap">
+      <Link
+        to="/contracts/$id"
+        params={{ id: r.id }}
+        className="btn btn-quiet btn-sm"
+        aria-label={t("contracts.list.viewAria", { title: r.title })}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {t("contracts.list.view")}
+      </Link>
+    </td>
+  );
+}
+
 /** Thẻ điện thoại: một thẻ mỗi HĐ. */
 export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
-  const owner = r.owner_user_id ? ctx.owners.get(r.owner_user_id) : undefined;
   const parent = r.parent_id ? ctx.parents.get(r.parent_id) : undefined;
-  const sides = [r.seller, r.buyer].filter(Boolean).map(shortName).join(" → ");
-  const money = [
-    r.value != null ? `${vnd(r.value)} đ` : null,
-    owner ? t("contracts.list.ownerLine", { name: owner }) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const partner = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
   return (
     <li className="relative border-b border-rule-soft last:border-0">
       <Link
@@ -164,16 +175,23 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         params={{ id: r.id }}
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >
-        <span className="truncate font-semibold">{r.title}</span>
+        <span className="flex items-center gap-2">
+          <span className="truncate font-semibold">{r.title}</span>
+          <DealTag r={r} ctx={ctx} />
+        </span>
         {parent && (
           <span className="text-[13px] text-dim">
             {t("contracts.list.appendixOf", { title: parent })}
           </span>
         )}
-        <span className="text-[13px] text-dim">{sides}</span>
-        <span className="text-[13px] text-dim">{money}</span>
-        <Tags r={r} ctx={ctx} />
-        <StatusText r={r} className="text-[13.5px]" />
+        <span className="text-[13px] text-dim">
+          {[shortName(partner), r.value != null ? `${vnd(r.value)} đ` : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+        <span>
+          <StageCell r={r} ctx={ctx} />
+        </span>
       </Link>
     </li>
   );

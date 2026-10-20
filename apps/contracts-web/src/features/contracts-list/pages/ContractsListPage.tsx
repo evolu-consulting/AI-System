@@ -1,6 +1,6 @@
-// HD-FR-51 · S03 · port `ContractsPage.tsx:65-227`: thanh tìm + lọc theo cột + chọn cột, bảng (desktop) / thẻ (điện thoại),
-// phân trang, "Nhập tay" + "+ Thêm hợp đồng" (cần quyền ghi), "+ Loại mới". Dữ liệu phía server (HD1 list + facets).
-// Xoá HĐ (nút thùng rác của owner) chưa làm — D-HD5-03.
+// HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI "Hợp đồng"): thanh tìm + lọc + chọn cột, bảng (desktop) / thẻ (điện thoại) với cột Hợp đồng,
+// Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Thêm thủ công" +
+// "Upload hợp đồng" (cần quyền ghi). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, useMemo, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, ColumnPicker, Pager, TableTools, useColumns } from "~/features/table";
 import { CATEGORIES_KEY, createCategory, uploadContract } from "../api";
 import {
+  ActionsCell,
   COLUMN_KEYS,
   type ColumnKey,
   cell,
@@ -34,27 +35,23 @@ export function ContractsListPage() {
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
-  const {
-    t: table,
-    list,
-    memberNames,
-    categories,
-  } = useContractsList(write ? addCategoryButton(t, () => void addCategory()) : undefined);
+  const { t: table, list } = useContractsList(
+    write ? addCategoryButton(t, () => void addCategory()) : undefined,
+  );
   const cols = useColumns(
-    "contracts",
+    "contracts-v2",
     COLUMN_KEYS.map((key) => ({
       key,
       label: t(`contracts.list.col.${key}`),
-      locked: key === "title",
+      locked: key === "title" || key === "stage",
     })),
   );
   const ctx: RowCtx = useMemo(
     () => ({
-      categories: new Map(categories.map((c) => [c.id, c.name])),
-      owners: memberNames,
       parents: new Map((list.data?.parents ?? []).map((p) => [p.id, p.title])),
+      progress: new Map((list.data?.progress ?? []).map((p) => [p.id, p])),
     }),
-    [categories, memberNames, list.data],
+    [list.data],
   );
 
   async function addCategory() {
@@ -90,7 +87,7 @@ export function ContractsListPage() {
 
   const items = list.data?.items ?? [];
   const shown = COLUMN_KEYS.filter((k) => cols.shows(k));
-  const row = (k: ColumnKey, r: (typeof items)[number]) => cell(k, r, ctx, t);
+  const row = (k: ColumnKey, r: (typeof items)[number]) => cell(k, r, ctx);
   return (
     // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55); khung list tự giữ cuộn (Shell `layoutOf` = board).
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
@@ -110,14 +107,16 @@ export function ContractsListPage() {
                   void onFile(picked);
                 }}
               />
-              <Link to="/contracts/new" className="btn btn-outline">
+              <Link to="/contracts/new" className="btn btn-outline btn-sm">
+                <PlusIcon />
                 {t("contracts.list.manual")}
               </Link>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 onClick={() => file.current?.click()}
               >
+                <UploadIcon />
                 {t("contracts.list.add")}
               </button>
             </>
@@ -154,18 +153,21 @@ export function ContractsListPage() {
             <div className="overflow-auto max-sm:hidden md:min-h-0 md:flex-1">
               <table
                 className="w-full text-[13.5px]"
-                style={{ minWidth: Math.max(560, shown.length * 135) }}
+                style={{ minWidth: Math.max(560, (shown.length + 1) * 135) }}
               >
                 <thead className="text-left text-[12px] text-dim">
                   <tr>
                     {shown.map((k) => (
                       <th
                         key={k}
-                        className={`sticky top-0 z-10 bg-sunk px-3 py-2.5 font-semibold first:pl-5 last:pr-5 ${k === "value" ? "text-right" : ""}`}
+                        className={`sticky top-0 z-10 bg-sunk px-3 py-2.5 font-semibold first:pl-5 ${k === "value" ? "text-right" : ""}`}
                       >
                         {t(`contracts.list.col.${k}`)}
                       </th>
                     ))}
+                    <th className="sticky top-0 z-10 bg-sunk px-3 py-2.5 pr-5 text-right font-semibold">
+                      {t("contracts.list.col.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,6 +180,7 @@ export function ContractsListPage() {
                       {shown.map((k) => (
                         <Fragment key={k}>{row(k, r)}</Fragment>
                       ))}
+                      <ActionsCell r={r} />
                     </tr>
                   ))}
                 </tbody>
@@ -210,3 +213,33 @@ function addCategoryButton(t: (k: string) => string, onClick: () => void) {
     </button>
   );
 }
+
+const PlusIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+const UploadIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 16V4M6 10l6-6 6 6M4 20h16" />
+  </svg>
+);

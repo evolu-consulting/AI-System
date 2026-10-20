@@ -1,9 +1,7 @@
-// HD-FR-23 · HD-FR-26 · S05 · D-02: phần phụ của màn kiểm/sửa — cảnh báo (`ContractPage.tsx:120-124`), khối "Không đọc được"
-// (`:125-139`), bảng hàng hoá (`:159-171`). Chỉ trình bày.
-import type { ContractItem, ContractWarning } from "@ai/contracts";
+// HD-FR-23 · HD-FR-26 · S05 · D-02: phần phụ của màn kiểm/sửa — nút "Xem file gốc", thông báo sau Lưu, khối "Không đọc được"
+// (`ContractPage.tsx:125-139`). Chỉ trình bày. (V2-F: cảnh báo chuyển vào "Tóm tắt", bảng hàng vào "Sản phẩm".)
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 
 export type FileRef = { href: string; name: string; onOpen: () => void };
@@ -71,18 +69,6 @@ export function SaveNotice({ msg, err }: { msg: string | null; err: string | nul
   );
 }
 
-export function WarningList({ warnings }: { warnings: readonly ContractWarning[] }) {
-  if (warnings.length === 0) return null;
-  return (
-    <ul className="mb-4 space-y-1 rounded-xl border border-soon-line bg-soon-bg p-4 text-sm text-soon">
-      {warnings.map((w, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: cảnh báo không có id, thứ tự cố định theo luật
-        <li key={i}>{w.message}</li>
-      ))}
-    </ul>
-  );
-}
-
 export function ExtractFailed({ file }: { file: FileRef | null }) {
   const { t } = useTranslation();
   return (
@@ -96,35 +82,6 @@ export function ExtractFailed({ file }: { file: FileRef | null }) {
           {t("contracts.review.manual")}
         </Link>
       </div>
-    </Panel>
-  );
-}
-
-export function ItemsTable({ items }: { items: readonly ContractItem[] }) {
-  const { t } = useTranslation();
-  if (items.length === 0) return null;
-  return (
-    <Panel>
-      <table className="w-full text-sm">
-        <thead className="bg-sunk text-left text-xs text-dim">
-          <tr>
-            <th className="px-4 py-2.5">{t("contracts.review.items.name")}</th>
-            <th className="px-4">{t("contracts.review.items.unit")}</th>
-            <th className="px-4 text-right">{t("contracts.review.items.qty")}</th>
-            <th className="px-4 text-right">{t("contracts.review.items.unitPrice")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it) => (
-            <tr key={it.id} className="border-t border-rule-soft">
-              <td className="px-4 py-2.5">{it.name}</td>
-              <td className="px-4">{it.unit ?? ""}</td>
-              <td className="px-4 text-right font-mono">{it.qty ?? ""}</td>
-              <td className="px-4 text-right font-mono">{vnd(it.unit_price)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </Panel>
   );
 }

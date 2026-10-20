@@ -1,37 +1,27 @@
-// HD-FR-22 · HD-FR-23 · HD-FR-26 · S05 · D-02 · D2-05: màn kiểm/sửa HĐ — port `ContractPage.tsx:27-118` (tiêu đề + dòng phụ theo
-// trạng thái, "Xem file gốc", "Lưu", "Xác nhận" (HD3: quyết cấp 1 trên engine), thông báo, cảnh báo, trường + trích dẫn, bảng
-// hàng). HD3 thêm "Duyệt"/"Từ chối"/"Đọc lại" (lệch có chủ ý, DEVIATIONS). "Ghi việc" (HD7, `ContractPage.tsx:163-181`) cuối trang;
-// điền sẵn của trợ lý (HD6).
-// Đang đọc ⇒ tải lại mỗi 2 s như mgmt-app (tới khi có kênh đẩy trạng thái gói).
-import type { ContractDetail, ContractFieldKey } from "@ai/contracts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+// HD-FR-22 · HD-FR-23 · HD-FR-26 · S05 · V2-F (HD-04 · HD-09 · HD-11 · mockup NITI "chi tiết hợp đồng"): trang HĐ — tiêu đề + dòng phụ theo
+// trạng thái, "Xem file gốc", thẻ duyệt (HD3), hai cột: [Thông tin · Sản phẩm] | [Dòng thời gian mốc · Tóm tắt]; "Ghi việc" (HD7) cuối trang.
+// Bước xác nhận sau upload (`needs_review`) dùng thanh Hủy/Lưu dính như form nhập tay. Đang đọc ⇒ tải lại mỗi 2 s.
+import type { ContractDetail } from "@ai/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHead } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
+import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { dealOf } from "~/features/contract-form/lib/deal";
+import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ContractSourcing } from "~/features/sourcing/components/ContractSourcing";
-import {
-  contractKey,
-  fetchContract,
-  fileHref,
-  openOriginalFile,
-  patchContractFields,
-} from "../api";
-import { ReviewFields } from "../components/ReviewFields";
-import {
-  ExtractFailed,
-  ItemsTable,
-  ReviewActions,
-  SaveNotice,
-  WarningList,
-} from "../components/ReviewParts";
-import { changedFields, type Draft, draftOf, leadKey, warningsOf } from "../lib/review";
+import { contractKey, fetchContract, fileHref, openOriginalFile } from "../api";
+import { ContractHead } from "../components/ContractHead";
+import { DetailGrid } from "../components/DetailGrid";
+import { DetailLead } from "../components/DetailLead";
+import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
+import { useInfoForm } from "../hooks/use-info-form";
+import { leadKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
 
 const READING_REFRESH_MS = 2000;
@@ -42,121 +32,114 @@ const extractedOf = (c: ContractDetail | undefined) => {
   return f ? { value: f.value, quote: f.quote ?? "", edited: f.edited === true } : undefined;
 };
 
-/** "Lưu": chỉ ô đã đổi, khoá `version`; trả trạng thái nút + thông báo. */
-function useSave(id: string) {
+const partnerOf = (c: ContractDetail): string => {
+  const v = c.fields[dealOf(c) === "buy" ? "supplier_name" : "buyer_name"]?.value;
+  return typeof v === "string" ? shortName(v) : "";
+};
+
+const titleOf = (c: ContractDetail): string => {
+  const v = c.fields.title.value;
+  return (typeof v === "string" && v) || c.title;
+};
+
+type Info = ReturnType<typeof useInfoForm>;
+type Approval = ReturnType<typeof useApprovalUi>;
+
+function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: boolean }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const save = async (c: ContractDetail, draft: Draft) => {
-    setErr(null);
-    setMsg(null);
-    setBusy(true);
-    try {
-      const fields = changedFields(c, draft);
-      if (Object.keys(fields).length) await patchContractFields(id, c.version, fields);
-      await qc.invalidateQueries({ queryKey: contractKey(id) });
-      setMsg(t("contracts.review.saved"));
-    } catch (e) {
-      setErr(saveErrorText(e, t));
-    } finally {
-      setBusy(false);
-    }
+  const idle = t(confirm ? "contracts.common.save" : "contracts.cform.saveChanges");
+  return (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      disabled={info.busy || ap.busy || !info.dirty}
+      onClick={() => void info.save()}
+    >
+      {info.busy ? t("contracts.review.saving") : idle}
+    </button>
+  );
+}
+
+function ContractBody({
+  id,
+  c,
+  info,
+  ap,
+}: {
+  id: string;
+  c: ContractDetail;
+  info: Info & { f: NonNullable<Info["f"]> };
+  ap: Approval;
+}) {
+  const { t } = useTranslation();
+  const { write } = useMe();
+  const [fileErr, setFileErr] = useState<string | null>(null);
+  const confirm = c.status === "needs_review";
+  const canSave = write && c.status !== "extracting";
+  const key = leadKey(c.status);
+  const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
+  const openFile = () => {
+    setFileErr(null);
+    openOriginalFile(id).catch((e) => setFileErr(saveErrorText(e, t)));
   };
-  const openFile = async (cid: string) => {
-    setErr(null);
-    try {
-      await openOriginalFile(cid);
-    } catch (e) {
-      setErr(saveErrorText(e, t));
-    }
-  };
-  return { msg, err, busy, save, openFile };
+  const file = c.file ? { href: fileHref(id), name: c.file.name, onOpen: openFile } : null;
+  const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
+  return (
+    // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó.
+    <div className="text-base leading-[1.55]">
+      <ContractHead
+        title={titleOf(c)}
+        lead={lead}
+        sticky={confirm && canSave}
+        file={file}
+        canSave={canSave}
+        dirty={info.dirty}
+        onReset={info.reset}
+        saveButton={saveButton}
+        approvalButtons={ap.buttons}
+        approvalBusy={ap.busy}
+      />
+      <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err ?? fileErr} />
+      {ap.section}
+      <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
+      {c.status === "extract_failed" ? (
+        <ExtractFailed file={file} />
+      ) : (
+        <DetailGrid
+          c={c}
+          f={info.f}
+          onSet={info.set}
+          canSave={canSave}
+          saveButton={confirm ? undefined : saveButton}
+          write={write}
+          partner={partnerOf(c)}
+          today={todayIso()}
+        />
+      )}
+      <AppendixPanel c={c} write={write} />
+      <ContractSourcing c={c} write={write} />
+      <ContractLog contractId={id} status={c.status} />
+    </div>
+  );
 }
 
 export function ContractReviewPage({ id }: { id: string }) {
-  const { t } = useTranslation();
   const { write } = useMe();
   const q = useQuery({
     queryKey: contractKey(id),
     queryFn: ({ signal }) => fetchContract(id, signal),
     refetchInterval: (s) => (s.state.data?.status === "extracting" ? READING_REFRESH_MS : false),
   });
-  const [draft, setDraft] = useState<Draft>({});
-  const s = useSave(id);
-  // "Xác nhận" như mgmt-app: lưu ô đã đổi trước rồi quyết cấp 1.
-  const saveFirst = async () => {
-    const c = q.data;
-    const fields = c ? changedFields(c, draft) : {};
-    if (c && Object.keys(fields).length) await patchContractFields(id, c.version, fields);
-  };
+  const info = useInfoForm(q.data, id);
   const ap = useApprovalUi({
     id,
     contractKey: contractKey(id),
     write,
     hasSource: q.data?.has_source ?? false,
-    saveFirst,
+    saveFirst: info.saveFirst,
     extracted: extractedOf(q.data),
   });
-
-  useEffect(() => {
-    if (q.data) setDraft(draftOf(q.data));
-  }, [q.data]);
-
   if (q.isLoading) return <Loading />;
-  if (q.error || !q.data) return <ErrorLine error={q.error} />;
-  const c = q.data;
-  const canSave = write && c.status !== "extracting";
-  const file = c.file
-    ? { href: fileHref(id), name: c.file.name, onOpen: () => void s.openFile(id) }
-    : null;
-  const lead = leadKey(c.status);
-  const title = (typeof c.fields.title.value === "string" && c.fields.title.value) || c.title;
-  const failed = c.status === "extract_failed";
-  return (
-    // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó.
-    <div className="text-base leading-[1.55]">
-      <PageHead
-        crumb={
-          <Link to="/contracts" className="hover:underline">
-            {t("contracts.review.back")}
-          </Link>
-        }
-        title={title}
-        lead={lead ? t(lead) : undefined}
-        actions={
-          (file || canSave) && (
-            <>
-              <ReviewActions
-                file={file}
-                canSave={canSave}
-                busy={s.busy || ap.busy}
-                onSave={() => s.save(c, draft)}
-              />
-              {ap.buttons}
-            </>
-          )
-        }
-      />
-      <SaveNotice msg={s.msg ?? ap.msg} err={s.err ?? ap.err} />
-      {ap.section}
-      <WarningList warnings={warningsOf(c)} />
-      <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
-      {failed ? (
-        <ExtractFailed file={file} />
-      ) : (
-        <ReviewFields
-          contract={c}
-          draft={draft}
-          write={write}
-          onChange={(k: ContractFieldKey, v: string) => setDraft((d) => ({ ...d, [k]: v }))}
-        />
-      )}
-      <ItemsTable items={c.items} />
-      <AppendixPanel c={c} write={write} />
-      <ContractSourcing c={c} write={write} />
-      <ContractLog contractId={id} status={c.status} />
-    </div>
-  );
+  if (q.error || !q.data || !info.f) return <ErrorLine error={q.error} />;
+  return <ContractBody id={id} c={q.data} info={{ ...info, f: info.f }} ap={ap} />;
 }

@@ -53,17 +53,16 @@
       },
       "col": {
         "title": "Contract",
-        "seller": "Seller",
-        "buyer": "Buyer",
+        "partner": "Partner",
+        "type": "Type",
         "value": "Value",
-        "signers": "Signers",
-        "owner": "Owner",
-        "status": "Status",
-        "what": "Category"
+        "dates": "Effective",
+        "stage": "Stage",
+        "actions": "Actions"
       },
       "search": "Search by name, partner, number, category…",
-      "add": "+ Add contract",
-      "manual": "Enter manually",
+      "add": "Upload contract",
+      "manual": "Add manually",
       "newCategory": "+ New category",
       "newCategoryTitle": "Add category",
       "newCategoryLabel": "New category name",
@@ -72,7 +71,7 @@
       "categoryAdded": "Category added",
       "categoryExists": "This category already exists.",
       "emptyTitle": "No contracts yet",
-      "emptyBody": "Press “+ Add contract” to upload a file.",
+      "emptyBody": "Press “Upload contract” to upload a file, or “Add manually” to type it in.",
       "noMatchTitle": "No matching contracts",
       "noMatchBody": "Try another keyword or remove some filters.",
       "appendixOf": "Appendix of {{title}}",
@@ -82,7 +81,10 @@
       "ownerLine": "Owner: {{name}}",
       "ownerUnknown": "(unknown)",
       "uploadFailed": "Could not upload. Try again later.",
-      "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator"
+      "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator",
+      "until": "until {{date}}",
+      "view": "View",
+      "viewAria": "View {{title}}"
     },
     "table": {
       "columns": "Columns",
@@ -313,70 +315,9 @@
       "viewFile": "📄 View original file",
       "saving": "Saving…",
       "saved": "Saved.",
-      "unverified": "· not verified",
       "failedTitle": "This contract could not be read.",
       "failedBody": "AI could not extract information from the file (it may be blurry, a scan, or an unusual format). You can review the original file, delete it and upload a clearer copy, or enter it manually.",
-      "manual": "Enter manually",
-      "fields": {
-        "number": "Contract number",
-        "title": "Contract name",
-        "supplierName": "Seller",
-        "supplierTaxId": "Seller tax ID",
-        "buyerName": "Buyer",
-        "buyerTaxId": "Buyer tax ID",
-        "supplierSigner": "Seller signatory",
-        "buyerSigner": "Buyer signatory",
-        "startDate": "Effective from",
-        "endDate": "Until",
-        "noticeDays": "Remind before (days)",
-        "totalValue": "Value (VND)",
-        "paymentTerms": "Payment"
-      },
-      "items": {
-        "name": "Goods",
-        "unit": "Unit",
-        "qty": "Qty",
-        "unitPrice": "Unit price"
-      }
-    },
-    "newContract": {
-      "title": "Add contract (manual)",
-      "lead": "No file: enter the key details. If you have a file, use “+ Add contract” or drop it into the assistant.",
-      "direction": "Type",
-      "purchase": "Purchase (we buy from the partner)",
-      "sale": "Sale (we sell to the partner)",
-      "number": "Contract number",
-      "contractTitle": "Contract name",
-      "titlePlaceholder": "e.g. Rice supply 2027",
-      "partner": "Partner",
-      "partnerTaxId": "Partner tax ID",
-      "partnerSigner": "Partner signatory",
-      "partnerSignerPlaceholder": "Nguyen Van A – Director",
-      "ourSigner": "Our signatory",
-      "ourSignerPlaceholder": "Tran Thi B – Director",
-      "startDate": "Effective from",
-      "endDate": "Until",
-      "noticeDays": "Remind before (days)",
-      "totalValue": "Value (VND)",
-      "paymentTerms": "Payment",
-      "items": "Goods / services",
-      "itemName": "Item name",
-      "itemUnit": "Unit",
-      "itemQty": "Quantity",
-      "itemQtyShort": "Qty",
-      "itemPrice": "Unit price",
-      "itemPricePlaceholder": "Unit price (VND)",
-      "removeRow": "Remove row",
-      "addRow": "+ Add item row",
-      "save": "Save contract",
-      "saving": "Saving…",
-      "badNumbers": "Could not read the number in: {{list}}. Type it like 91.500.000 or 1,5.",
-      "bad": {
-        "noticeShort": "Remind before",
-        "valueShort": "Value",
-        "qtyOf": "Quantity “{{name}}”",
-        "priceOf": "Unit price “{{name}}”"
-      }
+      "manual": "Enter manually"
     }
   }
 }
