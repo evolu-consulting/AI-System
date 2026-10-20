@@ -23,6 +23,7 @@ import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
+import { businessModule } from "./contracts/business.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
@@ -167,6 +168,7 @@ function mountContracts<E extends Env>(
   app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Việc của tôi
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 · Mua hàng
   app.route(base, productsModule(db, view)); // V2-B · danh mục SP + kho
+  app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 · điểm kinh doanh SP
   app.route(
     base,
     partnersModule(db, view, {

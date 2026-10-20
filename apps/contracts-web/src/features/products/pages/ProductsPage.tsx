@@ -8,8 +8,10 @@ import { CksPage } from "~/features/cks/pages/CksPage";
 import { PricesRoutePage } from "~/features/goods-prices/pages/PricesRoutePage";
 import { SourcingPage } from "~/features/sourcing/pages/SourcingPage";
 import { PRODUCT_TABS, type ProductsTab, tabOf } from "../lib/tabs";
+import { CatalogTab } from "./CatalogTab";
 
 const BODY: Record<ProductsTab, () => ReactElement> = {
+  catalog: CatalogTab,
   prices: PricesRoutePage,
   cks: CksPage,
   sourcing: SourcingPage,
@@ -32,7 +34,7 @@ export function ProductsPage() {
           <Link
             key={k}
             to="/products"
-            search={k === "prices" ? {} : { tab: k }}
+            search={k === "catalog" ? {} : { tab: k }}
             role="tab"
             id={`products-tab-${k}`}
             aria-selected={tab === k}

@@ -7,8 +7,8 @@ export const Route = createFileRoute("/_authed/prices")({
   beforeLoad: ({ search }) => {
     throw redirect({
       to: "/products",
-      // `tab` vắng = "So sánh giá" (mặc định) nên không ghi vào URL.
-      search: search.product ? { product: search.product } : {},
+      // V2-J1: tab mặc định của /products là "Sản phẩm" ⇒ ghi `tab=prices` rõ ràng.
+      search: search.product ? { tab: "prices", product: search.product } : { tab: "prices" },
       replace: true,
     });
   },

@@ -190,6 +190,13 @@
       "when": 1795500000000,
       "tag": "0028_v2e_reputation",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795700000000,
+      "tag": "0030_v2j1_product_group",
+      "breakpoints": true
     }
   ]
 }

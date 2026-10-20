@@ -127,6 +127,7 @@
     "productsPage": {
       "title": "Products & Prices",
       "tabs": "Products & Prices sections",
+      "catalog": "Products",
       "prices": "Price comparison",
       "cks": "Digital-signature products",
       "sourcing": "Sourcing"
@@ -318,6 +319,84 @@
       "failedTitle": "This contract could not be read.",
       "failedBody": "AI could not extract information from the file (it may be blurry, a scan, or an unusual format). You can review the original file, delete it and upload a clearer copy, or enter it manually.",
       "manual": "Enter manually"
+    },
+    "catalog": {
+      "tabs": "Product groups",
+      "search": "Search products",
+      "emptyTitle": "No products yet",
+      "emptyBody": "Products are created when contract lines are linked to the product catalogue.",
+      "tab": {
+        "all": "All",
+        "service": "Term services",
+        "goods": "Goods",
+        "referral": "Referral"
+      },
+      "group": {
+        "service": "Term service",
+        "goods": "Goods",
+        "referral": "Referral"
+      },
+      "col": {
+        "name": "Name",
+        "kind": "Type",
+        "held": "On hand",
+        "sold": "Sold",
+        "score": "Business score"
+      },
+      "sug": {
+        "buy": "Buy more",
+        "hold": "Hold",
+        "dump": "Clear stock",
+        "push": "Push",
+        "keep": "Maintain",
+        "stop": "Consider stopping"
+      },
+      "noScore": "No data yet",
+      "heldNone": "Not held",
+      "expires": "expires {{date}}",
+      "sold12": "Sold in 12 months",
+      "reason": "Reason:",
+      "back": "← Product list",
+      "tabHistory": "Purchase and sales history",
+      "tabContracts": "Contracts · {{n}}",
+      "hist": {
+        "buy": "Purchases",
+        "sell": "Sales",
+        "noLots": "No lots received yet.",
+        "noSales": "Nothing sold yet.",
+        "lot": {
+          "date": "Received",
+          "supplier": "Supplier",
+          "price": "Purchase price",
+          "change": "vs previous",
+          "qty": "Quantity",
+          "remaining": "Remaining",
+          "expires": "Expires"
+        },
+        "sale": {
+          "date": "Delivered",
+          "contract": "Contract",
+          "customer": "Customer",
+          "qty": "Quantity",
+          "price": "Sale price",
+          "cost": "Cost",
+          "profit": "Profit"
+        }
+      },
+      "con": {
+        "empty": "No contract uses this product yet.",
+        "title": "Contract",
+        "deal": "Type",
+        "partner": "Partner",
+        "value": "Value",
+        "start": "Start",
+        "commission": "Commission received / accrued",
+        "dealWord": {
+          "buy": "Purchase",
+          "sell": "Sale",
+          "referral": "Referral"
+        }
+      }
     }
   }
 }

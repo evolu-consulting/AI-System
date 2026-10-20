@@ -127,6 +127,7 @@
     "productsPage": {
       "title": "Sản phẩm & Giá",
       "tabs": "Nhóm trang Sản phẩm & Giá",
+      "catalog": "Sản phẩm",
       "prices": "So sánh giá",
       "cks": "Sản phẩm CKS",
       "sourcing": "Mua hàng"
@@ -318,6 +319,84 @@
       "failedTitle": "Không đọc được hợp đồng này.",
       "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
       "manual": "Nhập tay"
+    },
+    "catalog": {
+      "tabs": "Nhóm sản phẩm",
+      "search": "Tìm sản phẩm",
+      "emptyTitle": "Chưa có sản phẩm",
+      "emptyBody": "Sản phẩm được tạo khi gắn dòng hợp đồng với danh mục sản phẩm.",
+      "tab": {
+        "all": "Tất cả",
+        "service": "Dịch vụ có hạn",
+        "goods": "Hàng hoá",
+        "referral": "Giới thiệu"
+      },
+      "group": {
+        "service": "Dịch vụ có hạn",
+        "goods": "Hàng hoá",
+        "referral": "Giới thiệu"
+      },
+      "col": {
+        "name": "Tên",
+        "kind": "Loại",
+        "held": "Đang nắm giữ",
+        "sold": "Đã bán",
+        "score": "Điểm kinh doanh"
+      },
+      "sug": {
+        "buy": "Mua thêm",
+        "hold": "Giữ",
+        "dump": "Xả hàng",
+        "push": "Đẩy mạnh",
+        "keep": "Duy trì",
+        "stop": "Cân nhắc dừng"
+      },
+      "noScore": "Chưa có dữ liệu",
+      "heldNone": "Không giữ hàng",
+      "expires": "hết hạn {{date}}",
+      "sold12": "Đã bán 12 tháng",
+      "reason": "Lý do:",
+      "back": "← Danh sách sản phẩm",
+      "tabHistory": "Lịch sử mua bán",
+      "tabContracts": "Hợp đồng · {{n}}",
+      "hist": {
+        "buy": "Mua",
+        "sell": "Bán",
+        "noLots": "Chưa nhập lô nào.",
+        "noSales": "Chưa bán lần nào.",
+        "lot": {
+          "date": "Ngày nhập",
+          "supplier": "Nhà cung cấp",
+          "price": "Giá nhập",
+          "change": "So lần trước",
+          "qty": "Số lượng",
+          "remaining": "Còn lại",
+          "expires": "Hạn"
+        },
+        "sale": {
+          "date": "Ngày giao",
+          "contract": "Hợp đồng",
+          "customer": "Khách hàng",
+          "qty": "Số lượng",
+          "price": "Giá bán",
+          "cost": "Giá vốn",
+          "profit": "Lãi"
+        }
+      },
+      "con": {
+        "empty": "Chưa có hợp đồng nào dùng sản phẩm này.",
+        "title": "Hợp đồng",
+        "deal": "Loại",
+        "partner": "Đối tác",
+        "value": "Giá trị",
+        "start": "Bắt đầu",
+        "commission": "Hoa hồng nhận / phát sinh",
+        "dealWord": {
+          "buy": "Mua",
+          "sell": "Bán",
+          "referral": "Giới thiệu"
+        }
+      }
     }
   }
 }

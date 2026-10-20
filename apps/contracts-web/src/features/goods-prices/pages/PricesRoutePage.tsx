@@ -23,7 +23,10 @@ export function PricesRoutePage() {
       onChange={(e) =>
         void navigate({
           to: "/products",
-          search: e.target.value === "cks" ? {} : { product: e.target.value },
+          search:
+            e.target.value === "cks"
+              ? { tab: "prices" }
+              : { tab: "prices", product: e.target.value },
         })
       }
       className="field h-9 w-auto py-0 text-[15px] font-medium"
