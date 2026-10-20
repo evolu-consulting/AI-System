@@ -16,6 +16,7 @@ export * from "./ledger";
 export * from "./list";
 export * from "./milestones";
 export * from "./mywork";
+export * from "./overview";
 export * from "./partner-roles";
 export * from "./partners";
 export * from "./products";

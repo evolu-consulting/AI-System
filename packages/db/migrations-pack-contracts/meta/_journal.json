@@ -215,12 +215,19 @@
     {
       "idx": 31,
       "version": "7",
+      "when": 1796000000000,
+      "tag": "0033_v2k_overview",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
       "when": 1796100000000,
       "tag": "0034_v2l_company_settings",
       "breakpoints": true
     },
     {
-      "idx": 32,
+      "idx": 33,
       "version": "7",
       "when": 1796200000000,
       "tag": "0035_v2m_delete_contract",

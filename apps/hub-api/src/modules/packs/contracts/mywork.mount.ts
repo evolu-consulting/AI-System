@@ -7,14 +7,20 @@ import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { followupsRepo } from "./adapters/followups.repo";
 import { myWorkRepo } from "./adapters/mywork.repo";
 import { myWorkRoutes } from "./adapters/mywork.routes";
+import { overviewRepo } from "./adapters/overview.repo";
+import { overviewRoutes } from "./adapters/overview.routes";
+import { todoRepo } from "./adapters/todo.repo";
 import { followupsUsecases } from "./application/followups.usecase";
 import { myWork } from "./application/mywork.usecase";
+import { overviewUsecase } from "./application/overview.usecase";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
 const repos = (tx: Tx, t: string) => ({
   mywork: myWorkRepo(tx, t),
   followups: followupsRepo(tx, t),
+  overview: overviewRepo(tx, t),
+  todo: todoRepo(tx, t),
 });
 
 export function myWorkModule(
@@ -24,12 +30,16 @@ export function myWorkModule(
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, KEY, repos));
   const tz = safeTimeZone(d.timeZoneOf);
-  return myWorkRoutes(view, {
+  const now = d.now ?? (() => new Date());
+  const r = myWorkRoutes(view, {
     followups: followupsUsecases({ uow, timeZoneOf: tz }),
     mywork: myWork({
       uow,
       timeZoneOf: safeTimeZone(d.timeZoneOf),
-      now: d.now ?? (() => new Date()),
+      now,
     }),
   });
+  // V2-K · Tổng quan + Cần xử lý 8 nguồn (cùng PackUow).
+  r.route("/", overviewRoutes(view, overviewUsecase({ uow, timeZoneOf: tz, now })));
+  return r;
 }
