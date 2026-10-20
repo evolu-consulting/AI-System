@@ -1,7 +1,9 @@
 // HD8-FR-01…06 · HD8-NFR-01 · port `mgmt-app/api/app/routes/{scoring,prices}.py` + `scoring/service.py`: đối tác, điểm uy tín
 // (tính khi đọc, không lưu sẵn), cấu hình + xem trước + lịch sử, chấm tay, so giá hàng hoá + báo giá. Mỗi yêu cầu đọc: MỘT tx người
-// dùng, MỘT câu (`data`) ⇒ số câu cố định, không theo số hàng. D8-04: sổ đối tác không có policy M1 ⇒ điểm trên CẢ sổ như
-// mgmt; sự thật từ HĐ (số HĐ, gắn bó, chênh giá) chỉ từ HĐ người dùng thấy (owner thấy hết) — không dùng phạm vi hệ thống trong HTTP.
+// dùng; đọc = ba câu song song cố định (D8-18), không theo số hàng. Luật thấy M1 (review HD78 #9 — sửa chú thích cũ sai): sổ đối
+// tác có policy RESTRICTIVE `partner_events_visible` (M1b: đối tác mình thấy, HĐ mình thấy, hoặc do mình ghi) ⇒ điểm tính trên phần sổ
+// người dùng thấy; danh bạ / báo giá / ảnh chụp điểm theo `visible_party_keys()` hoặc do mình tạo (0019); owner/chế độ tenant thấy hết.
+// Không dùng phạm vi hệ thống trong HTTP.
 import type { QuoteCreate, RatingRequest, ScoringDraft } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { PartnerData, PartnersRepo, StoredConfig } from "../adapters/partners.repo";

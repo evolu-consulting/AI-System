@@ -7,7 +7,14 @@ import { IsoDay, LEDGER_MONEY_MAX, PARTNER_ROLES, type PartnerRole } from "./led
 
 export const SCORE_BANDS = ["good", "fair", "watch"] as const;
 export type ScoreBand = (typeof SCORE_BANDS)[number];
-const Party = z.string().min(1).max(300);
+/** Chuỗi khoá/tham số không qua `nfcText` (giữ nguyên chữ để khớp khoá) — vẫn cấm NUL (Postgres từ chối ⇒ 500, review HD78 #1). */
+const keyText = (min: number, max: number) =>
+  z
+    .string()
+    .min(min)
+    .max(max)
+    .refine((v) => !v.includes("\u0000"), { message: "NUL không được phép" });
+const Party = keyText(1, 300);
 const Role = z.enum(PARTNER_ROLES);
 
 export const PartnersQuerySchema = z.strictObject({
@@ -17,9 +24,9 @@ export const PartnerQuerySchema = z.strictObject({ party: Party, role: Role });
 export const ScoringRoleSchema = Role;
 
 export const CriterionInSchema = z.strictObject({
-  key: z.string().max(60).nullish(),
+  key: keyText(0, 60).nullish(),
   kind: z.enum(["auto", "manual"]).nullish(),
-  label: z.string().max(200).nullish(),
+  label: keyText(0, 200).nullish(),
   enabled: z.boolean(),
   weight: z.number().int().min(-1000).max(1000),
 });
@@ -41,15 +48,15 @@ export type ScoringDraft = z.infer<typeof ScoringDraftSchema>;
 export const RatingRequestSchema = z.strictObject({
   party: Party,
   role: Role,
-  criterion: z.string().min(1).max(60),
+  criterion: keyText(1, 60),
   value: z.number().int().min(0).max(100),
   note: nfcText(500).nullish(),
 });
 export type RatingRequest = z.infer<typeof RatingRequestSchema>;
 
-export const CompareQuerySchema = z.strictObject({ product: z.string().min(1).max(600) });
+export const CompareQuerySchema = z.strictObject({ product: keyText(1, 600) });
 export const QuoteCreateSchema = z.strictObject({
-  product: z.string().min(1).max(600),
+  product: keyText(1, 600),
   product_name: nfcText(300).nullish(),
   unit: nfcText(40).nullish(),
   supplier_name: nfcText(200).pipe(z.string().trim().min(1)),
@@ -170,7 +177,7 @@ export const LinkCheckRequestSchema = z.strictObject({
 });
 export type LinkCheckOut = { verified: boolean; page_date: string | null; note: string };
 
-const TaxIn = z.string().trim().max(30);
+const TaxIn = keyText(0, 60).pipe(z.string().trim().max(30));
 export const CompanyCreateSchema = z.strictObject({
   tax_id: TaxIn.nullish(),
   name: nfcText(300).nullish(),
@@ -182,7 +189,7 @@ export const CompanyPatchSchema = z.strictObject({
   short_name: nfcText(200).nullish(),
   address: nfcText(500).nullish(),
 });
-export const CompanyQuerySchema = z.strictObject({ q: z.string().max(200).optional() });
+export const CompanyQuerySchema = z.strictObject({ q: keyText(0, 200).optional() });
 export const CompanyPartySchema = z.strictObject({ party: Party });
 export type Company = {
   party: string;

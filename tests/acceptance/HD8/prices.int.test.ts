@@ -96,7 +96,11 @@ describe("HD8-AC05 · so giá một mặt hàng (test_prices.py)", () => {
       (await call(c, P.an, "POST", "/prices/quotes", { ...q, supplier_name: "X", price: 1 }))
         .status,
     ).toBe(404);
-    const del = await ok(call(c, P.hoa, "DELETE", `/prices/quotes/${quote.source.quote_id}`));
+    // review HD78 #2: xoá báo giá cần quản lý (editor ⇒ 403)
+    expect((await call(c, P.hoa, "DELETE", `/prices/quotes/${quote.source.quote_id}`)).status).toBe(
+      403,
+    );
+    const del = await ok(call(c, P.lan, "DELETE", `/prices/quotes/${quote.source.quote_id}`));
     expect(del).toEqual({ ok: true });
   });
 

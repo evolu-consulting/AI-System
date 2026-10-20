@@ -34,6 +34,13 @@ export type LedgerErrorCode = keyof typeof LEDGER_ERRORS;
 
 const ISO_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 /** Ngày lịch `YYYY-MM-DD` có thật (không nhận 2026-02-30). */
+/** Khoá/tham số giữ nguyên chữ, không rỗng, cấm NUL (Postgres từ chối NUL ⇒ 500). */
+const keyStr = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine((v) => !v.includes("\u0000"), { message: "NUL không được phép" });
 export const IsoDay = z
   .string()
   .regex(ISO_DATE)
@@ -62,9 +69,9 @@ export const PostponeRequestSchema = z.strictObject({
 });
 export const RemindRequestSchema = z.strictObject({});
 export const PartnerEventCreateSchema = z.strictObject({
-  party: z.string().min(1).max(300),
+  party: keyStr(300),
   role: z.enum(PARTNER_ROLES),
-  type: z.string().min(1).max(40),
+  type: keyStr(40),
   at: IsoDay.nullish(),
   days_late: z.number().int().min(0).max(36_500).nullish(),
   delta: z.number().int().min(-100).max(100).nullish(),
@@ -78,13 +85,13 @@ export const PaymentsQuerySchema = z.strictObject({
 });
 export const ObligationsQuerySchema = z.strictObject({
   contract_id: z.uuid().optional(),
-  party: z.string().min(1).max(300).optional(),
+  party: keyStr(300).optional(),
   status: z.enum(OBLIGATION_STATUSES).optional(),
   direction: z.enum(["pay", "receive"]).optional(),
   due_before: IsoDay.optional(),
 });
 export const PartnerEventsQuerySchema = z.strictObject({
-  party: z.string().min(1).max(300),
+  party: keyStr(300),
   role: z.enum(PARTNER_ROLES).optional(),
 });
 

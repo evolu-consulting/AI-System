@@ -23,6 +23,7 @@ import {
 } from "../../kit/adapters/pack-guard.middleware";
 import { checkPackAccess } from "../../kit/domain/pack-access.rules";
 import { PartnersFail, type PartnersUsecase } from "../application/partners.usecase";
+import type { LinkCheckLimit } from "./link-check-limit.redis";
 
 const KEY = "contracts";
 
@@ -46,7 +47,11 @@ const roleOf = (v: string | undefined) => {
 const body = async <S extends z.ZodType>(c: Context, s: S): Promise<z.output<S>> =>
   parseWith(s, await readJson(c));
 
-export function partnersRoutes(view: PackAccessView, uc: PartnersUsecase): Hono<PackGuardVars> {
+export function partnersRoutes(
+  view: PackAccessView,
+  uc: PartnersUsecase,
+  limit: LinkCheckLimit,
+): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
   const write = packGuard(view, KEY, "write");
@@ -91,15 +96,23 @@ export function partnersRoutes(view: PackAccessView, uc: PartnersUsecase): Hono<
   r.get("/prices/compare", read, async (c) =>
     c.json(await run(uc.compare(who(c), parseQuery(c, CompareQuerySchema).product))),
   );
-  r.post("/prices/quotes", write, async (c) =>
-    c.json(await run(uc.addQuote(who(c), await body(c, QuoteCreateSchema))), 201),
-  );
+  // Báo giá có link ⇒ máy chủ mở link: tính vào trần kiểm link của người dùng (review HD78 #3).
+  r.post("/prices/quotes", write, async (c) => {
+    const b = await body(c, QuoteCreateSchema);
+    if (b.url) await limit(who(c).tenantId, who(c).userId);
+    return c.json(await run(uc.addQuote(who(c), b)), 201);
+  });
   r.post("/prices/check-link", write, async (c) => {
     const b = await body(c, LinkCheckRequestSchema);
+    await limit(who(c).tenantId, who(c).userId);
     return c.json(await run(uc.checkLink(b.url, b.price)));
   });
-  r.delete("/prices/quotes/:id", write, async (c) =>
-    c.json(await run(uc.deleteQuote(who(c), parseWith(z.uuid(), c.req.param("id"))))),
-  );
+  // Xoá báo giá: quản lý (`admin`, mgmt owner) — review HD78 #2; DB còn chặn theo luật thấy M1.
+  r.delete("/prices/quotes/:id", write, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    if (!(await isAdmin(c)))
+      throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được xoá báo giá");
+    return c.json(await run(uc.deleteQuote(who(c), id)));
+  });
   return r;
 }
