@@ -5,7 +5,7 @@ import { withPackScope } from "@ai/db/pack-scope";
 import { type SQL, sql } from "drizzle-orm";
 import type { TargetStore } from "../application/ports";
 import type { MoneyKey, Row, TableName } from "../domain/plan";
-import { INSERTS, packOf } from "./target.sql";
+import { ATTACH_FILES, INSERTS, packOf } from "./target.sql";
 
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 const ident = (t: TableName): SQL => {
@@ -119,6 +119,31 @@ export function createTargetStore(db: Db, source: string): TargetStore {
           )
         ).map((r) => r.j),
       );
+    },
+    async contractFiles(tenantId, pairs) {
+      if (pairs.length === 0) return new Map();
+      const rows = await withPackScope(db, scope(tenantId, "contracts.contracts"), (tx) =>
+        run<{ contract_id: string; exists: boolean; file_id: string | null; file_row: boolean }>(
+          tx,
+          sql`select x.contract_id, c.id is not null as exists, c.file_id, f.id is not null as file_row
+          from jsonb_to_recordset(${JSON.stringify(pairs)}::jsonb) as x(contract_id uuid, file_row_id uuid)
+          left join contracts.contracts c on c.tenant_id = ${tenantId}::uuid and c.id = x.contract_id
+          left join contracts.files f on f.tenant_id = ${tenantId}::uuid and f.id = x.file_row_id`,
+        ),
+      );
+      return new Map(
+        rows.map((r) => [
+          r.contract_id,
+          { exists: r.exists, fileId: r.file_id, fileRow: r.file_row },
+        ]),
+      );
+    },
+    async attachFiles(tenantId, rows) {
+      if (rows.length === 0) return 0;
+      const [r] = await withPackScope(db, scope(tenantId, "contracts.files"), (tx) =>
+        run<{ n: number }>(tx, ATTACH_FILES(tenantId, JSON.stringify(rows))),
+      );
+      return r?.n ?? 0;
     },
     async hasTable(table) {
       const tid = "00000000-0000-4000-8000-000000000000";

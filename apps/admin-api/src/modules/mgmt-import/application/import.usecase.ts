@@ -10,16 +10,9 @@ import {
   sourceOrgs,
   usersExport,
 } from "../domain/map-identity.rules";
-import {
-  bump,
-  G1_TABLES,
-  type Plan,
-  push,
-  type Row,
-  TABLE_ORDER,
-  type TableName,
-} from "../domain/plan";
+import { bump, G1_TABLES, type Plan, type Row, TABLE_ORDER, type TableName } from "../domain/plan";
 import { str } from "../domain/values.rules";
+import { type FileStats, moveFiles } from "./files";
 import { loadSnapshot } from "./load";
 import type { ImportDeps, ImportOpts } from "./ports";
 import { type ReconcileReport, reconcile } from "./reconcile";
@@ -47,6 +40,8 @@ export type ImportReport = {
   source_orgs: SourceOrg[];
   /** `onlyOrg`: org không nhập + số user bị loại theo (null khi nhập mọi org). */
   excluded: { orgs: string[]; users: number } | null;
+  /** niti-attach: file HĐ — đã có / tải lên / gắn vào HĐ đã nhập / còn chờ (chưa có kho đích). */
+  files: FileStats;
 };
 
 export type SkippedTenant = {
@@ -125,41 +120,6 @@ function context(o: ImportOpts, r: Resolved): Ctx {
   };
 }
 
-/** File HĐ: đọc nguồn, đưa vào kho đích, thêm hàng `contracts.files` + gắn `file_id` (apply); dry-run chỉ kiểm có/không. */
-/** `out`: id hàng file ⇒ sha256 bytes nguồn (đối soát). */
-type FileWork = { jobs: ReturnType<typeof buildPlan>["files"]; out: Map<string, string> };
-
-async function moveFiles(d: ImportDeps, o: ImportOpts, plan: Plan, w: FileWork): Promise<void> {
-  const { jobs, out } = w;
-  for (const j of jobs) {
-    const f = d.files.source ? await d.files.source.readDir(j.dir) : null;
-    if (!f) {
-      plan.issues.push({ entity: "file", ref: j.dir, code: "FILE_MISSING" });
-      continue;
-    }
-    const sha = new Bun.CryptoHasher("sha256").update(f.bytes).digest("hex");
-    out.set(j.fileRowId, sha);
-    const t = plan.tenants.get(j.tenantId);
-    if (!o.apply || !d.files.sink || !t) continue;
-    const c = (t.rows["contracts.contracts"] ?? []).find((x) => x.id === j.contractId);
-    if (c) c.file_id = j.fileRowId;
-    // chạy lại: hàng file đã có ⇒ không đưa bytes lên FileBox lần nữa (không tạo file mồ côi)
-    if ((await d.target.existing(j.tenantId, "contracts.files", [{ id: j.fileRowId }])) > 0)
-      continue;
-    const up = await d.files.sink.put(`t_${j.tenantId}`, j.name, f.bytes);
-    push(t, "contracts.files", {
-      id: j.fileRowId,
-      org: `t_${j.tenantId}`,
-      file_id: up.fileId,
-      version_id: up.versionId,
-      name: j.name,
-      mime: j.mime,
-      size_bytes: f.bytes.byteLength,
-      created_by: j.createdBy,
-    });
-  }
-}
-
 /** Một bảng của một tenant, theo lô: dry-run đếm "đã có"; apply ghi lô chưa đánh dấu xong rồi đánh dấu (chạy tiếp được). */
 /** Một bảng của một tenant. */
 type TableWork = { tid: string; table: TableName; rows: Row[] };
@@ -223,7 +183,7 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const ctx = context(o, r);
   const { plan, files } = buildPlan(snap, ctx, members, orgs);
   const shas = new Map<string, string>();
-  await moveFiles(d, o, plan, { jobs: files, out: shas });
+  const fileStats = await moveFiles(d, o, plan, { jobs: files, out: shas });
   const skipped = new Set<TableName>();
   for (const g of G1_TABLES) if (!(await d.target.hasTable(g))) skipped.add(g);
   const tables = await writeAll(d, o, plan, skipped);
@@ -248,6 +208,7 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
     reconcile: rec,
     source_orgs: src,
     excluded: excludedOf(o, src, scoped.excludedUsers),
+    files: fileStats,
   };
 }
 

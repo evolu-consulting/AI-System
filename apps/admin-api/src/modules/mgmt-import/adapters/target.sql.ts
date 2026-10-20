@@ -18,6 +18,24 @@ const CUSTOMER = (
 const ENTITY = (tid: string, col: SQL) =>
   sql`(select e.id from knowledge.entities e where e.tenant_id = ${T(tid)} and e.key = ${col})`;
 
+/**
+ * niti-attach · MỘT câu: chèn hàng file mới (`file_id` khác null; trùng id ⇒ bỏ) rồi gắn vào HĐ còn `file_id` null (không đè file
+ * gắn sau). FK `contracts_file_fk` kiểm cuối câu ⇒ thấy hàng vừa chèn trong CTE. Trả số HĐ được gắn.
+ */
+export const ATTACH_FILES: Q = (tid, j) => sql`with x as (
+    select * from jsonb_to_recordset(${j}::jsonb) as x(id uuid, contract_id uuid, org text, file_id text, version_id text,
+      name text, mime text, size_bytes bigint, created_by uuid)),
+  ins as (insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
+    select x.id, ${T(tid)}, x.org, x.file_id, x.version_id, x.name, x.mime, x.size_bytes, x.created_by
+    from x where x.file_id is not null
+    on conflict do nothing returning id),
+  up as (update contracts.contracts c set file_id = x.id from x
+    where c.tenant_id = ${T(tid)} and c.id = x.contract_id and c.file_id is null
+      and (x.id in (select id from ins)
+        or exists (select 1 from contracts.files f where f.tenant_id = ${T(tid)} and f.id = x.id))
+    returning 1)
+  select count(*)::int as n from up`;
+
 export const INSERTS: Record<TableName, Q> = {
   "contracts.visibility_settings": (
     tid,

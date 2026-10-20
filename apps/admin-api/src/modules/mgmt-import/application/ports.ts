@@ -49,7 +49,20 @@ export type TargetStore = {
   readBack(tenantId: string, table: TableName, ids: string[]): Promise<Row[]>;
   /** Bảng có ở DB đích không (G1 chưa merge ⇒ bỏ qua có báo). */
   hasTable(table: TableName): Promise<boolean>;
+  /** niti-attach · trạng thái file của các HĐ (theo id tất định) — MỘT câu; khoá = contract id. */
+  contractFiles(
+    tenantId: string,
+    pairs: { contract_id: string; file_row_id: string }[],
+  ): Promise<Map<string, ContractFileState>>;
+  /**
+   * niti-attach · MỘT câu (một tx): chèn hàng `contracts.files` (hàng có `file_id`) + gắn `file_id` vào HĐ còn null. Trả số HĐ
+   * được gắn. Hàng `{id, file_id: null, contract_id}` = hàng file đã có, chỉ gắn.
+   */
+  attachFiles(tenantId: string, rows: Row[]): Promise<number>;
 };
+
+/** HĐ đã ở đích? `fileId` = `contracts.file_id` hiện tại; `fileRow` = hàng `contracts.files` của lần nhập đã có. */
+export type ContractFileState = { exists: boolean; fileId: string | null; fileRow: boolean };
 
 /** Nhập user/org bằng N5 (`runIdentityImport`) và tra cứu tenant/user đã nhập. */
 export type IdentityPort = {
