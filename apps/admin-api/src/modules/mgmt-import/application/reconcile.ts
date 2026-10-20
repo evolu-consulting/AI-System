@@ -73,7 +73,9 @@ async function files(
     const want = [...shas.keys()];
     for (const r of await d.target.readBack(t.tenantId, "contracts.files", want)) {
       stored++;
-      const bytes = d.files.sink ? await d.files.sink.readBack(String(r.file_id)) : null;
+      const bytes = d.files.sink
+        ? await d.files.sink.readBack(String(r.file_id), String(r.org ?? ""))
+        : null;
       const sha = bytes ? new Bun.CryptoHasher("sha256").update(bytes).digest("hex") : null;
       if (sha && sha === shas.get(String(r.id))) good++;
     }

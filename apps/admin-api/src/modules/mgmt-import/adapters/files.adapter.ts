@@ -44,12 +44,17 @@ export function createDirSink(root: string): FileSink {
 /** Phần client FileBox cần (khớp `PackFileboxClient` của hub-api). */
 export type FileboxLike = {
   postFile(name: string, bytes: Uint8Array): Promise<{ fileId: string; versionId: string }>;
+  getContent(fileId: string): Promise<Uint8Array | null>;
 };
 
+/**
+ * niti-filebox · đích FileBox thật: org `t_<tenant>` (đúng org upload của app — use case truyền). `readBack` đọc lại bytes qua
+ * client của org hàng `contracts.files` (đối soát sha256, cả khi chạy lại không upload).
+ */
 export function createFileboxSink(client: (org: string) => FileboxLike): FileSink {
   return {
     put: async (org, name, bytes) => client(org).postFile(name, bytes),
-    readBack: async () => null,
+    readBack: async (fileId, org) => client(org).getContent(fileId),
   };
 }
 

@@ -3,6 +3,7 @@
 //     --actor <uuid platform admin> [--apply] [--batch 500] [--knowledge-org <org id>] [--files-dir <contract_files>] \
 //     [--sink-dir <dir>] [--state <checkpoint.json>] [--no-graph] [--diff-sample 20] [--report out.json]
 //     [--into-tenant <key>]   niti-onboard: chỉ org đã gắn với tenant đó (docs/specs/niti-onboard/tasks.md)
+//     [--filebox]   niti-filebox: file HĐ vào FileBox (org t_<tenant>, như upload của app); env FILEBOX_URL, FILEBOX_TOKEN, [FILEBOX_CA]
 // Env: MGMT_OPENSEARCH_URL, [MGMT_INDEX_PREFIX], [MGMT_NEO4J_URL (HTTP :7474), MGMT_NEO4J_USER, MGMT_NEO4J_PASSWORD],
 //      ADMIN_API_DATABASE_URL (admin_api), HUB_DATABASE_URL (hub_api). Không dùng role chủ.
 // stdout = báo cáo JSON; exit 0 khớp · 2 có vấn đề hàng/lệch đối soát · 1 lỗi cấu hình/hệ thống (stderr chỉ mã lỗi).
@@ -33,6 +34,7 @@ function args() {
       "diff-sample": { type: "string", default: "20" },
       report: { type: "string" },
       "into-tenant": { type: "string" },
+      filebox: { type: "boolean", default: false },
     },
   });
   if (!v.source || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(v.source)) fail("BAD_SOURCE");
@@ -41,6 +43,7 @@ function args() {
   if (into !== undefined && !/^[a-z0-9-]{2,32}$/.test(into)) fail("BAD_INTO_TENANT");
   const batch = /^\d{1,4}$/.test(v.batch ?? "") ? Number(v.batch) : 0;
   if (batch < 1 || batch > 2000) fail("BAD_BATCH");
+  if (v.filebox && v["sink-dir"]) fail("SINK_CONFLICT");
   return { v, batch };
 }
 
@@ -60,6 +63,13 @@ function config(v: ReturnType<typeof args>["v"], batch: number): RunConfig {
       : null,
     filesDir: v["files-dir"] ?? null,
     sinkDir: v["sink-dir"] ?? null,
+    filebox: v.filebox
+      ? {
+          url: env("FILEBOX_URL"),
+          token: env("FILEBOX_TOKEN"),
+          caPath: process.env.FILEBOX_CA || undefined,
+        }
+      : null,
     statePath: v.state ?? null,
     intoTenant: v["into-tenant"] ?? null,
   };

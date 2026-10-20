@@ -31,8 +31,8 @@ export type FileSink = {
     name: string,
     bytes: Uint8Array,
   ): Promise<{ fileId: string; versionId: string | null }>;
-  /** Đọc lại bytes đã nhận (đối soát checksum); không hỗ trợ ⇒ null. */
-  readBack(fileId: string): Promise<Uint8Array | null>;
+  /** Đọc lại bytes đã nhận (đối soát checksum); `org` = cột org của hàng file; không hỗ trợ ⇒ null. */
+  readBack(fileId: string, org: string): Promise<Uint8Array | null>;
 };
 
 export type TargetStore = {

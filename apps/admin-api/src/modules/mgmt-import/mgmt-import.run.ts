@@ -2,7 +2,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import type { Db } from "@ai/db";
-import { createDirSink, createDirSource } from "./adapters/files.adapter";
+import { createFileboxHttp, type FileboxCfg } from "./adapters/filebox.http";
+import { createDirSink, createDirSource, createFileboxSink } from "./adapters/files.adapter";
 import { createIdentityAdapter } from "./adapters/identity.adapter";
 import { createNeo4jReader } from "./adapters/neo4j.reader";
 import { createOpenSearchReader } from "./adapters/opensearch.reader";
@@ -15,8 +16,10 @@ export type RunConfig = ImportOpts & {
   neo4j: { url: string; user: string; password: string } | null;
   /** Thư mục `contract_files` của mgmt-app (bản chép chỉ-đọc). */
   filesDir: string | null;
-  /** Kho file đích dạng thư mục (bản sao seed). FileBox cho cutover thật: xem tasks.md "Còn lại". */
+  /** Kho file đích dạng thư mục (bản sao seed). */
   sinkDir: string | null;
+  /** niti-filebox: kho file đích FileBox thật (org `t_<tenant>` như upload của app); ưu tiên hơn `sinkDir`. */
+  filebox?: FileboxCfg | null;
   /** File điểm dừng (chạy tiếp sau khi đứt). */
   statePath: string | null;
   /** niti-onboard: key tenant đích (đã onboarding + gắn org); vắng ⇒ mỗi org một tenant (I1 gốc). */
@@ -57,7 +60,11 @@ export function buildDeps(adminDb: Db, hubDb: Db, c: RunConfig, reader: SourceRe
     target: createTargetStore(hubDb, c.source),
     files: {
       source: c.filesDir ? createDirSource(c.filesDir) : null,
-      sink: c.sinkDir ? createDirSink(c.sinkDir) : null,
+      sink: c.filebox
+        ? createFileboxSink(createFileboxHttp(c.filebox))
+        : c.sinkDir
+          ? createDirSink(c.sinkDir)
+          : null,
     },
     checkpoint: fileCheckpoint(c.statePath),
     visible: (tid, uid) => visibleContracts(hubDb, tid, uid),
