@@ -8,6 +8,22 @@ export const one = async <T>(tx: Tx, q: SQL): Promise<T> =>
   ((await tx.execute<J<T>>(q))[0]?.j ?? null) as T;
 export const json = (v: unknown) => sql`${JSON.stringify(v)}::jsonb`;
 
+/** Trạng thái HĐ ĐÃ xác nhận (= `appendix.repo.ts::PRICED_STATUSES`; bản sao để không vòng import, `confirmed.test.ts` kiểm khớp). */
+export const CONFIRMED_STATUSES = [
+  "active",
+  "expiring",
+  "expired",
+  "renewed",
+  "terminated",
+] as const;
+/**
+ * UAT CR-095 B5: đợt của bí danh `o` thuộc HĐ đã xác nhận — HĐ chờ xác nhận (needs_review, kể cả vừa mở lại do sửa MST) chưa có việc
+ * tiền, như mgmt-app (đợt chỉ sinh khi HĐ được xác nhận). Semi-join theo PK HĐ; không thêm câu SQL.
+ */
+export const confirmedOf = (o: string) =>
+  sql.raw(`exists (select 1 from contracts.contracts ck where ck.tenant_id = ${o}.tenant_id
+    and ck.id = ${o}.contract_id and ck.status in (${CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", ")}))`);
+
 /** JSON một đợt từ bí danh `o` (cột của `contracts.obligations`). */
 export const obJson = (o: string) =>
   sql.raw(`jsonb_build_object('id', ${o}.id, 'contract_id', ${o}.contract_id, 'party', ${o}.party_key,

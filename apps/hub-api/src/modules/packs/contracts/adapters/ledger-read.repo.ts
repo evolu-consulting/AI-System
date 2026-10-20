@@ -8,7 +8,10 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { LedgerReadRepo } from "../application/ledger.ports";
 import { addDays } from "../domain/local-time.rules";
-import { evJson, obJson, one, seenEvent } from "./ledger-sql";
+import { confirmedOf, evJson, obJson, one, seenEvent } from "./ledger-sql";
+
+/** Chỉ đợt của HĐ đã xác nhận (UAT B5). */
+const OK = confirmedOf("o");
 
 /** `payments.DONE_DAYS`: "Đã xong" = 60 ngày gần nhất. */
 export const DONE_DAYS = 60;
@@ -42,7 +45,7 @@ function statsOf(t: string, today: string, total: SQL): SQL {
       coalesce(sum(o.amount) filter (
         where o.due_date >= ${today}::date and o.due_date <= ${addDays(today, 7)}::date), 0)::text as due_7d,
       ${total} as total
-    from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment')`;
+    from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and ${OK})`;
 }
 const statsJson = sql`json_build_object('receive_open', a.receive_open, 'pay_open', a.pay_open,
     'overdue_count', a.overdue_count, 'overdue_amount', a.overdue_amount, 'due_7d', a.due_7d)`;
@@ -52,7 +55,7 @@ function openPage(t: string, filter: string, today: string): SQL {
   const late = filter === "overdue";
   const match = sql`(${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)`;
   return sql`with r as (select o.* from contracts.obligations o
-      where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and ${match}
+      where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and ${match} and ${OK}
       order by o.due_date, o.id limit ${LEDGER_LIST_MAX}::int),
     ${statsOf(t, today, sql`count(*) filter (where ${match})`)}
     select json_build_object('stats', ${statsJson}, 'total', a.total,
@@ -61,7 +64,7 @@ function openPage(t: string, filter: string, today: string): SQL {
 
 function donePage(t: string, today: string): SQL {
   const where = sql`o.tenant_id = ${t}::uuid and o.status = 'done' and o.kind = 'payment'
-    and o.done_at >= ${addDays(today, -DONE_DAYS)}::date`;
+    and o.done_at >= ${addDays(today, -DONE_DAYS)}::date and ${OK}`;
   return sql`with r as (select o.* from contracts.obligations o where ${where}
       order by o.done_at desc, o.due_date, o.id limit ${LEDGER_LIST_MAX}::int),
     ${statsOf(t, today, sql`0`)}
@@ -73,7 +76,7 @@ function donePage(t: string, today: string): SQL {
 function boardHead(t: string, filter: string, today: string): SQL {
   if (filter === "done") {
     const where = sql`o.tenant_id = ${t}::uuid and o.status = 'done' and o.kind = 'payment'
-      and o.done_at >= ${addDays(today, -DONE_DAYS)}::date`;
+      and o.done_at >= ${addDays(today, -DONE_DAYS)}::date and ${OK}`;
     return sql`with ${statsOf(t, today, sql`0`)} select json_build_object('stats', ${statsJson},
       'total', (select count(*) from contracts.obligations o where ${where}))::text as j from a`;
   }
@@ -86,7 +89,7 @@ function boardHead(t: string, filter: string, today: string): SQL {
 function boardRows(t: string, filter: string, today: string): SQL {
   if (filter === "done")
     return sql`with r as (select o.* from contracts.obligations o where o.tenant_id = ${t}::uuid and o.status = 'done'
-        and o.kind = 'payment' and o.done_at >= ${addDays(today, -DONE_DAYS)}::date
+        and o.kind = 'payment' and o.done_at >= ${addDays(today, -DONE_DAYS)}::date and ${OK}
         order by o.done_at desc, o.due_date, o.id limit ${LEDGER_LIST_MAX}::int)
       select ${rowsOf(t, today, sql`r.done_at desc, r.due_date, r.id`)}::text as j`;
   const dir = filter === "receive" || filter === "pay" ? filter : null;
@@ -94,6 +97,7 @@ function boardRows(t: string, filter: string, today: string): SQL {
   return sql`with r as (select o.* from contracts.obligations o
       where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment'
         and (${dir}::text is null or o.direction = ${dir}::text) and (not ${late}::boolean or o.due_date < ${today}::date)
+        and ${OK}
       order by o.due_date, o.id limit ${LEDGER_LIST_MAX}::int)
     select ${rowsOf(t, today, sql`r.due_date, r.id`)}::text as j`;
 }
