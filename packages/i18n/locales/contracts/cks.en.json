@@ -171,26 +171,10 @@
         "cheapest": " · lowest buy price",
         "above": "Priced above market",
         "anyDevice": "any device type",
-        "scanning": "Scanning…",
-        "scan": "Scan prices",
-        "scanTitle": "AI looks up other resellers' prices online",
-        "scanConfirm": "Scan prices for {{ca}}?",
-        "scanBody": "AI finds this provider's public prices and re-opens each page to check the number — about 3–5 minutes.",
-        "scanGo": "Scan now",
         "foot1": "Other resellers: found online{{seen}}, prices before VAT, for reference only.",
         "footSeen": " on {{date}}",
         "foot2": "Hover a price range to see each source; ask the assistant for a detailed comparison.",
         "marketPanel": "The cheapest-market table is built in slice HD8.",
-        "strip": {
-          "whole": "Whole-market scan",
-          "of": "Price scan {{ca}}",
-          "head": "{{what}} · {{years}} years · {{device}}",
-          "remote": "remote signing",
-          "token": "USB token",
-          "running": "AI is searching the web and the server re-opens each link to check the number (about 3–5 minutes)…",
-          "done": "done: found {{found}} sources, {{verified}} showing the right number on the page.",
-          "failed": "did not finish."
-        },
         "close": "Collapse"
       }
     }

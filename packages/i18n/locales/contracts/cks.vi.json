@@ -171,26 +171,10 @@
         "cheapest": " · giá mua thấp nhất",
         "above": "Bán cao hơn thị trường",
         "anyDevice": "mọi loại thiết bị",
-        "scanning": "Đang dò…",
-        "scan": "Dò giá",
-        "scanTitle": "AI tìm giá của các nơi bán khác trên internet",
-        "scanConfirm": "Dò giá {{ca}}?",
-        "scanBody": "AI tìm giá công khai của nhà cung cấp này và mở lại từng trang để kiểm con số — khoảng 3–5 phút.",
-        "scanGo": "Dò ngay",
         "foot1": "Giá đại lý khác: tìm trên internet{{seen}}, giá chưa VAT, chỉ để tham khảo.",
         "footSeen": " ngày {{date}}",
         "foot2": "Rê chuột lên khoảng giá để xem từng nguồn; hỏi trợ lý để so sánh chi tiết.",
         "marketPanel": "Bảng giá rẻ nhất thị trường làm ở lát HD8.",
-        "strip": {
-          "whole": "Dò toàn thị trường",
-          "of": "Dò giá {{ca}}",
-          "head": "{{what}} · {{years}} năm · {{device}}",
-          "remote": "ký từ xa",
-          "token": "USB token",
-          "running": "AI đang tìm trên internet và máy chủ mở lại từng link để kiểm con số (khoảng 3–5 phút)…",
-          "done": "xong: tìm thấy {{found}} nguồn, {{verified}} nguồn thấy đúng con số trên trang.",
-          "failed": "không xong."
-        },
         "close": "Thu gọn"
       }
     }

@@ -144,12 +144,6 @@ export const CksFollowupSchema = z.strictObject({
   note: optText(200),
 });
 export type CksFollowup = z.infer<typeof CksFollowupSchema>;
-export const CksScanSchema = z.strictObject({
-  scope: z.enum(["package", "market"]).default("package"),
-  ca: z.string().trim().max(60).nullish(),
-  years: z.number().int().min(1).max(5),
-  device: CksDevice,
-});
 
 export const CksCustomersQuerySchema = z.strictObject({
   filter: z.enum(CKS_CUSTOMER_FILTERS).optional(),
@@ -280,19 +274,6 @@ export type CksUploadResult = {
   skipped: number;
   unmatched: number;
   unreadable: number;
-};
-export type CksScanJob = {
-  id: string;
-  ca: string;
-  years: number;
-  device: CksDevice;
-  state: "queued" | "running" | "done" | "error" | "interrupted";
-  by: string;
-  created_at: string;
-  finished_at: string | null;
-  n_found: number | null;
-  n_verified: number | null;
-  error: string | null;
 };
 export type CksMarketRange = {
   min: number;

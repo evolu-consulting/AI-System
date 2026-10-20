@@ -1,28 +1,18 @@
 // HD-FR-96 · S08 · bảng "Chữ ký số của tôi" — port `CksPricesTab.tsx:131-184` (ô theo cột đang hiện, cờ rẻ nhất / trên thị trường,
-// thanh biên lãi, khoảng giá đại lý khác + nút "Dò giá").
-import type { CksPackageRow, CksScanJob } from "@ai/contracts";
+// thanh biên lãi, khoảng giá đại lý khác). "Dò giá" đã gỡ ở V2-J2.
+import type { CksPackageRow } from "@ai/contracts";
 import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import type { Column } from "~/features/table";
-import { active, rowTone, same } from "../lib/prices";
+import { rowTone } from "../lib/prices";
 
 const th =
   "px-4 py-3 text-left text-xs font-semibold text-dim whitespace-nowrap sticky top-0 z-10 bg-sunk";
 const num = "px-4 py-3.5 text-right font-mono text-[13.5px] tnum whitespace-nowrap";
 export const RIGHT = ["buy", "sell", "margin", "market", "sold"];
 
-function MarketCell({
-  r,
-  write,
-  jobs,
-  scan,
-}: {
-  r: CksPackageRow;
-  write: boolean;
-  jobs: CksScanJob[];
-  scan: (r: CksPackageRow) => void;
-}) {
+function MarketCell({ r }: { r: CksPackageRow }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cks.prices.${k}`);
   return (
@@ -38,23 +28,9 @@ function MarketCell({
       {r.market?.any_device && (
         <span className="block font-sans text-[11px]">{L("anyDevice")}</span>
       )}
-      {write &&
-        (jobs.some((j) => active(j) && same(j, r)) ? (
-          <span className="mt-1 block font-sans text-[12px] text-act">{L("scanning")}</span>
-        ) : (
-          <button
-            type="button"
-            className="mt-1 font-sans text-[12px] text-act underline underline-offset-2"
-            onClick={() => scan(r)}
-            title={L("scanTitle")}
-          >
-            {L("scan")}
-          </button>
-        ))}
     </td>
   );
 }
-
 function cells(
   r: CksPackageRow,
   market: ReactNode,
@@ -111,12 +87,9 @@ function cells(
 type Props = {
   rows: CksPackageRow[];
   shown: Column[];
-  write: boolean;
-  jobs: CksScanJob[];
-  scan: (r: CksPackageRow) => void;
 };
 
-export function PackageTable({ rows, shown, write, jobs, scan }: Props) {
+export function PackageTable({ rows, shown }: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cks.prices.${k}`);
   return (
@@ -132,7 +105,7 @@ export function PackageTable({ rows, shown, write, jobs, scan }: Props) {
       </thead>
       <tbody>
         {rows.map((r) => {
-          const cell = cells(r, <MarketCell r={r} write={write} jobs={jobs} scan={scan} />, L);
+          const cell = cells(r, <MarketCell r={r} />, L);
           return (
             <tr key={r.label + r.device} className={`border-t border-rule-soft ${rowTone(r)}`}>
               {shown.map((c) => (

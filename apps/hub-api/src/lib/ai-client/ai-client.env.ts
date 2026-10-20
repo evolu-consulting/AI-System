@@ -21,6 +21,7 @@ export const AI_FEATURES = [
   "knowledge.graph",
   "contracts.extract",
   "contracts.partner-search",
+  "contracts.price_search",
 ] as const;
 
 type Env = Record<string, string | undefined>;

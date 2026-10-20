@@ -39,6 +39,18 @@ export function anthropicProvider(o: { apiKey: string; baseURL?: string }): Mode
             output_config: { effort: "medium" },
             betas: ["server-side-fallback-2026-07-01"],
             fallbacks: "default",
+            // V2-J2 · tìm web phía server (giá thị trường) — chỉ khi người gọi bật.
+            ...(r.webSearch
+              ? {
+                  tools: [
+                    {
+                      type: "web_search_20250305" as const,
+                      name: "web_search" as const,
+                      max_uses: 5,
+                    },
+                  ],
+                }
+              : {}),
           },
           { signal: r.signal },
         );

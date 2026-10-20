@@ -38,6 +38,21 @@ export function createRepLock(db: Db, d: RepLockDeps): RepLockSweep {
   });
 }
 
+/** V2-J2 · điểm uy tín vai NCC theo khoá đối tác (bảng điểm V2-E, tính khi đọc) cho tab "Nhà cung cấp & giá" của SP. */
+export function supplierScores(db: Db, d: Pick<RepLockDeps, "timeZoneOf" | "now">) {
+  const uow = packTenantOnly(createPackUow(db, KEY, (tx, t) => ({ rep: repRepo(tx, t) })));
+  const uc = reputationUsecase({
+    uow,
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    now: d.now ?? (() => new Date()),
+    merge: rowsOf,
+  });
+  return async (who: { tenantId: string; userId: string }) =>
+    new Map(
+      (await uc.list(who, "supplier")).map((p) => [p.party, { score: p.score, level: p.level }]),
+    );
+}
+
 export function reputationModule(
   db: Db,
   view: PackAccessView,

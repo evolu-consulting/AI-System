@@ -1,15 +1,12 @@
 // HD-FR-96 · HD-FR-97 · S08 `/prices` — `PricesPage.tsx:27-45` (ô "Mặt hàng", mặc định Chữ ký số; hàng hoá ở HD8, D9-13) + tab
-// `CksPricesTab.tsx:57-197`: 4 số 12 tháng, chip lọc gói, tìm + lọc thiết bị + cột, dải "Dò giá", bảng gói, chú thích nguồn giá.
-import type { CksPackageFilter, CksPackageRow } from "@ai/contracts";
+// `CksPricesTab.tsx:57-197`: 4 số 12 tháng, chip lọc gói, tìm + lọc thiết bị + cột, bảng gói, chú thích nguồn giá.
+import type { CksPackageFilter } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
 import { PageHead, Panel, Stat, useEmbedded } from "~/components/shared/layout";
 import { Chips, Empty, ErrorLine, Loading } from "~/components/shared/states";
-import { cksErrorText } from "~/features/cks/lib/cks";
-import { useMe } from "~/features/pack-state/hooks/use-me";
 import {
   type Column,
   ColumnFilters,
@@ -19,9 +16,8 @@ import {
   useColumns,
   useTable,
 } from "~/features/table";
-import { fetchCksPrices, fetchScans, pricesKey, scansKey, startScan } from "../api";
+import { fetchCksPrices, pricesKey } from "../api";
 import { PackageTable } from "../components/PackageTable";
-import { ScanStrip } from "../components/ScanStrip";
 import { tr } from "../lib/prices";
 
 const KEYS = ["pkg", "buy", "sell", "margin", "pct", "market", "sold"] as const;
@@ -54,25 +50,6 @@ function Stats({
       />
     </div>
   );
-}
-
-function useScan(setErr: (e: string | null) => void, refetch: () => void) {
-  const { t } = useTranslation();
-  return async (r: CksPackageRow) => {
-    const ok = await confirmDialog({
-      title: t("contracts.cks.prices.scanConfirm", { ca: r.ca }),
-      body: t("contracts.cks.prices.scanBody"),
-      confirmLabel: t("contracts.cks.prices.scanGo"),
-    });
-    if (!ok) return;
-    setErr(null);
-    try {
-      await startScan(r.ca, r.years, r.device);
-      refetch();
-    } catch (e) {
-      setErr(cksErrorText(e, t));
-    }
-  };
 }
 
 function Foot({ seen }: { seen: string | null }) {
@@ -109,9 +86,6 @@ export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}
     queryKey: pricesKey(f),
     queryFn: ({ signal }) => fetchCksPrices(f, signal),
   });
-  const scans = useQuery({ queryKey: scansKey, queryFn: ({ signal }) => fetchScans(signal) });
-  const me = useMe();
-  const [err, setErr] = useState<string | null>(null);
   const [showMarket, setShowMarket] = useState(false);
   const tb = useTable(q.data?.rows, {
     text: (r) =>
@@ -125,22 +99,12 @@ export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}
   }));
   const picker = useColumns("cks-prices", cols);
   const shown = cols.filter((c) => picker.shows(c.key));
-  const scan = useScan(setErr, () => void scans.refetch());
   const body = () => {
     if (q.isLoading) return <Loading />;
     if (q.error) return <ErrorLine error={q.error} />;
     if (!q.data?.rows.length) return <Empty title={L("emptyTitle")}>{L("emptyBody")}</Empty>;
     if (!tb.total) return <Empty title={L("noMatchTitle")}>{t("contracts.cks.noMatchBody")}</Empty>;
-    const jobs = scans.data ?? [];
-    return (
-      <PackageTable
-        rows={tb.shown}
-        shown={shown}
-        write={me.write}
-        jobs={jobs}
-        scan={(r) => void scan(r)}
-      />
-    );
+    return <PackageTable rows={tb.shown} shown={shown} />;
   };
   return (
     <div className="text-base leading-[1.55]">
@@ -180,12 +144,6 @@ export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}
           <ColumnPicker cols={picker} />
         </span>
       </TableTools>
-      <ScanStrip jobs={scans.data ?? []} />
-      {err && (
-        <p role="alert" className="mb-3 text-sm text-late">
-          {err}
-        </p>
-      )}
       <div className={`grid items-stretch gap-4 ${showMarket ? "xl:grid-cols-2" : "grid-cols-1"}`}>
         <Panel className={showMarket ? "xl:flex xl:max-h-[72vh] xl:flex-col" : "overflow-x-auto"}>
           <div className="flex flex-wrap items-center gap-3 border-b border-rule px-5 py-3.5">

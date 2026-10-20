@@ -21,3 +21,4 @@ export * from "./reputation";
 export * from "./review";
 export * from "./service-customers";
 export * from "./sourcing";
+export * from "./supplier-prices";

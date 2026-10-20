@@ -12,7 +12,6 @@ import {
   CksPricesQuerySchema,
   CksRenewSchema,
   CksSaleCreateSchema,
-  CksScanSchema,
   CksSignedDocsQuerySchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
@@ -98,12 +97,8 @@ export function cksRoutes(view: PackAccessView, d: CksRoutesDeps): Hono<PackGuar
   r.get("/cks/signed-docs", read, async (c) =>
     c.json(await d.reads.signedDocs(whoOf(c.get("user")), parseQuery(c, CksSignedDocsQuerySchema))),
   );
-  // D9-10: "Dò giá" cần cầu run agent (N2) — chưa có lượt dò nào; dò mới ⇒ 503 sau guard + validate.
-  r.get("/cks/scans", read, (c) => c.json([]));
-  r.post("/cks/scans", write, small, async (c) => {
-    await body(c, CksScanSchema);
-    throw new AppError("AGENT_UNAVAILABLE", 503, "Price scan agent not configured");
-  });
+  // V2-J2: `/cks/scans` (dò giá CKS) gỡ — thay bằng "Tìm giá trên thị trường" ở tab NCC & giá của SP
+  // (`POST /products/:id/suppliers/search`, supplier-prices.routes.ts).
 
   r.post("/cks/lots", write, small, async (c) =>
     c.json(

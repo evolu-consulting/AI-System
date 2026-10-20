@@ -1,0 +1,62 @@
+{
+  "contracts": {
+    "psup": {
+      "title": "Nhà cung cấp & giá",
+      "compare": "So sánh giá nhà cung cấp",
+      "kind": { "new": "Mua mới", "renew": "Gia hạn" },
+      "search": "Tìm giá trên thị trường",
+      "own": "Giá vốn bình quân của mình",
+      "ownNote": "chưa VAT, theo kho",
+      "empty": "Chưa có giá nào. Bấm \"Tìm giá trên thị trường\" để tham khảo.",
+      "exVat": "chưa VAT",
+      "equal": "bằng",
+      "old": "Cũ",
+      "remove": "Xoá",
+      "noRep": "Chưa giao dịch",
+      "level": { "good": "Tốt", "fair": "Khá", "watch": "Chú ý", "new": "Mới" },
+      "source": {
+        "purchase": "Đã mua (kho)",
+        "market": "Giá thị trường",
+        "quote": "Báo giá",
+        "manual": "Nhập tay"
+      },
+      "col": {
+        "supplier": "Nhà cung cấp",
+        "price": "Giá",
+        "vsOwn": "So với giá mình",
+        "source": "Nguồn",
+        "rep": "Uy tín",
+        "date": "Ngày",
+        "times": "Số lần mua",
+        "share": "Tỷ trọng mua",
+        "last": "Lần cuối",
+        "advice": "Đề xuất"
+      },
+      "eval": "Đánh giá nhà cung cấp",
+      "evalHint": "Mua nhiều hay ít, giá, uy tín — có nên hợp tác tiếp",
+      "ofValue": "giá trị",
+      "advice": {
+        "keep": "Hợp tác tiếp",
+        "backup": "Duy trì nguồn phụ",
+        "replace": "Tìm nguồn thay thế",
+        "trial": "Có thể mua thử",
+        "none": "Tham khảo"
+      },
+      "dlgTitle": "Tìm giá trên thị trường",
+      "dlgPrivacy": "AI sẽ tìm trên web giá bán cho \"{{name}}\". Chỉ tên sản phẩm được gửi đi — không gửi mã số thuế, hợp đồng hay tên đối tác.",
+      "dlgHint": "Kết quả chỉ là gợi ý. Chọn dòng cần giữ rồi lưu vào bảng so sánh.",
+      "run": "Tìm",
+      "searching": "Đang tìm giá, có thể mất vài chục giây…",
+      "noResult": "Không tìm thấy giá nào có nguồn rõ ràng.",
+      "saveSel": "Lưu {{n}} dòng vào bảng so sánh",
+      "close": "Đóng",
+      "errors": {
+        "SEARCH_UNAVAILABLE": "Chưa kết nối được AI để tìm giá. Báo quản trị.",
+        "SEARCH_CAP": "Hôm nay đã dùng hết hạn mức AI. Thử lại ngày mai.",
+        "SEARCH_FAILED": "AI không trả về kết quả đọc được. Thử lại.",
+        "ACTION_QUOTA": "Đã hết số lượt dùng AI trong ngày.",
+        "PACK_FORBIDDEN": "Bạn không có quyền thực hiện."
+      }
+    }
+  }
+}

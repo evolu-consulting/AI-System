@@ -1,0 +1,62 @@
+{
+  "contracts": {
+    "psup": {
+      "title": "Suppliers & prices",
+      "compare": "Supplier price comparison",
+      "kind": { "new": "New purchase", "renew": "Renewal" },
+      "search": "Find market prices",
+      "own": "Our average cost",
+      "ownNote": "excl. VAT, from stock",
+      "empty": "No prices yet. Click \"Find market prices\" for a reference.",
+      "exVat": "excl. VAT",
+      "equal": "equal",
+      "old": "Old",
+      "remove": "Remove",
+      "noRep": "No dealings yet",
+      "level": { "good": "Good", "fair": "Fair", "watch": "Watch", "new": "New" },
+      "source": {
+        "purchase": "Bought (stock)",
+        "market": "Market price",
+        "quote": "Quote",
+        "manual": "Entered by hand"
+      },
+      "col": {
+        "supplier": "Supplier",
+        "price": "Price",
+        "vsOwn": "vs our cost",
+        "source": "Source",
+        "rep": "Reputation",
+        "date": "Date",
+        "times": "Purchases",
+        "share": "Share of buying",
+        "last": "Last",
+        "advice": "Advice"
+      },
+      "eval": "Supplier review",
+      "evalHint": "How much you buy, price, reputation — keep working together?",
+      "ofValue": "of value",
+      "advice": {
+        "keep": "Keep working together",
+        "backup": "Keep as backup",
+        "replace": "Find a replacement",
+        "trial": "Worth a trial order",
+        "none": "For reference"
+      },
+      "dlgTitle": "Find market prices",
+      "dlgPrivacy": "AI will search the web for prices of \"{{name}}\". Only the product name is sent — no tax IDs, contracts or partner names.",
+      "dlgHint": "Results are suggestions only. Pick the rows to keep and save them to the comparison table.",
+      "run": "Search",
+      "searching": "Searching, this can take a few dozen seconds…",
+      "noResult": "No price with a clear source was found.",
+      "saveSel": "Save {{n}} rows to the comparison table",
+      "close": "Close",
+      "errors": {
+        "SEARCH_UNAVAILABLE": "AI is not connected for price search. Contact your admin.",
+        "SEARCH_CAP": "Today's AI allowance is used up. Try again tomorrow.",
+        "SEARCH_FAILED": "AI returned nothing readable. Try again.",
+        "ACTION_QUOTA": "Daily AI request limit reached.",
+        "PACK_FORBIDDEN": "You do not have permission to do this."
+      }
+    }
+  }
+}

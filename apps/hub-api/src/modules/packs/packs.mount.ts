@@ -32,9 +32,10 @@ import { myWorkModule } from "./contracts/mywork.mount";
 import { partnersModule } from "./contracts/partners.mount";
 import { productsModule } from "./contracts/products.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
-import { reputationModule } from "./contracts/reputation.mount";
+import { reputationModule, supplierScores } from "./contracts/reputation.mount";
 import { serviceCustomersModule } from "./contracts/service-customers.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
+import { supplierPricesModule } from "./contracts/supplier-prices.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
@@ -132,6 +133,11 @@ function mountContracts<E extends Env>(
   const { model, ...aiDeps } = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
   const aiClient = createHubAiClient(db, model === undefined ? {} : { provider: model }); // M3 · dùng chung trích HĐ + V2-I tìm web
+  const quota = actionQuota({
+    ...(d.redis ? { redis: d.redis } : {}),
+    limit: envInt("CONTRACTS_ACTIONS_TENANT_DAY", ACTIONS_TENANT_DAILY),
+    timeZoneOf,
+  });
   const ai = contractsAiModule(
     db,
     view,
@@ -144,11 +150,7 @@ function mountContracts<E extends Env>(
         ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
         : {}),
       ...(d.redis ? { redis: d.redis } : {}),
-      quota: actionQuota({
-        ...(d.redis ? { redis: d.redis } : {}),
-        limit: envInt("CONTRACTS_ACTIONS_TENANT_DAY", ACTIONS_TENANT_DAILY),
-        timeZoneOf,
-      }),
+      quota,
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
       timeZoneOf, // V2-A · ngày lịch tenant cho mốc mặc định
@@ -172,6 +174,15 @@ function mountContracts<E extends Env>(
   app.route(base, productsModule(db, view)); // V2-B · danh mục SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 · điểm kinh doanh SP
   app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H · khách đang dùng
+  app.route(
+    base,
+    supplierPricesModule(db, view, {
+      ai: aiClient,
+      quota,
+      timeZoneOf,
+      reputation: supplierScores(db, { timeZoneOf }),
+    }),
+  ); // V2-J2 · tab NCC & giá (thay /cks/scans)
   app.route(
     base,
     partnersModule(db, view, {

@@ -3,6 +3,7 @@
 // `key: "suppliers"`). Thứ tự trong mảng = thứ tự tab, nằm giữa "Lịch sử mua bán" và "Hợp đồng". Slot nhận id + nhóm của SP.
 import type { ProductGroup } from "@ai/contracts";
 import { createElement, type ReactNode } from "react";
+import { SupplierPricesTab } from "~/features/product-suppliers/components/SupplierPricesTab";
 import { ServiceCustomersPanel } from "../components/ServiceCustomersPanel";
 
 export type DetailSlot = {
@@ -22,6 +23,13 @@ export const DETAIL_SLOTS: readonly DetailSlot[] = [
     labelKey: "contracts.svc.tabCustomers",
     groups: ["service"],
     render: ({ productId }) => createElement(ServiceCustomersPanel, { productId }),
+  },
+  // V2-J2 · SP-04/05/06: NCC & giá (không hiện cho Giới thiệu).
+  {
+    key: "suppliers",
+    labelKey: "contracts.psup.title",
+    groups: ["service", "goods"],
+    render: ({ productId }) => createElement(SupplierPricesTab, { productId }),
   },
 ];
 
