@@ -18,9 +18,9 @@ const MESSAGES: Record<AuthLimitErrorCode, string> = {
 };
 
 function limitError(code: AuthLimitErrorCode, retryS: number, details?: unknown): AppError {
-  return new AppError(code, AUTH_LIMIT_ERRORS[code], MESSAGES[code], details, {
-    "Retry-After": String(retryS),
-  });
+  const err = new AppError(code, AUTH_LIMIT_ERRORS[code], MESSAGES[code], details);
+  err.headers = { "Retry-After": String(retryS) };
+  return err;
 }
 
 export const rateLimited = (retryS: number) =>

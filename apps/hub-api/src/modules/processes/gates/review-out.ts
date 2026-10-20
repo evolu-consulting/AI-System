@@ -35,12 +35,11 @@ export function assertDecisionAllowed(
   run: Locked,
   idx: number,
   userId: string,
-  reason: DecisionReason,
-  option: string,
+  d: { reason: DecisionReason; option: string },
 ): void {
   const after = snapOf(run).stages[idx]?.after;
   // D3-07 · HD-FR-34: thêm `use_current` với mọi lý do (lách cấp 2).
-  if (starterDecisionBlocked(after, run.startedBy, userId, reason, option))
+  if (starterDecisionBlocked(after, run.startedBy, userId, d))
     throw processN2Error("STARTER_CANNOT_REVIEW");
 }
 

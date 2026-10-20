@@ -8,12 +8,13 @@ export class AppError extends Error {
     readonly status: ContentfulStatusCode,
     message: string,
     readonly details?: unknown,
-    /** Header thêm vào phản hồi lỗi (vd `Retry-After` của 429/503 giới hạn đăng nhập, L1). */
-    readonly headers?: Readonly<Record<string, string>>,
   ) {
     super(message);
     this.name = "AppError";
   }
+
+  /** Header thêm vào phản hồi lỗi (vd `Retry-After` của 429/503 giới hạn đăng nhập, L1). Gán ngay sau khi tạo. */
+  headers?: Readonly<Record<string, string>>;
 }
 
 /** Message tiếng Anh cố định theo mã; web dịch theo `code`. Không chứa dữ liệu người dùng. */

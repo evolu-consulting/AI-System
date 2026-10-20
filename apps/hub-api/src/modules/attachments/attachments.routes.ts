@@ -45,7 +45,8 @@ export function attachmentRoutes(svc: AttachmentService): Hono<AuthVars> {
 
   r.get("/:id/content", async (c) => {
     const id = parseIdParam(c).toLowerCase();
-    const out = await svc.content(c.var.user, id, c.var.log, tenantIdQ(c), {
+    const out = await svc.content(c.var.user, id, c.var.log, {
+      tenantIdQ: tenantIdQ(c),
       navigate: isNavigate(c),
     });
     // FB1 (HUB-FR-139): kho FileBox + điều hướng ⇒ 302 tới link FileBox (không log URL).

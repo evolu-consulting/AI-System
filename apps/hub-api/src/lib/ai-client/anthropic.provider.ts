@@ -18,6 +18,19 @@ const usageOf = (u: RawUsage): AiUsage => ({
   cacheWriteTokens: u.cache_creation_input_tokens ?? 0,
 });
 
+type FinalMsg = {
+  model: string;
+  usage: unknown;
+  stop_reason: string | null;
+  content: ReadonlyArray<{ type: string; text?: string }>;
+};
+function replyOf(msg: FinalMsg): ModelReply {
+  const usage = usageOf(msg.usage as RawUsage);
+  if (msg.stop_reason === "refusal") return { ok: false, code: "REFUSED", model: msg.model, usage };
+  const text = msg.content.flatMap((b) => (b.type === "text" ? [b.text ?? ""] : [])).join("");
+  return { ok: true, text, model: msg.model, usage };
+}
+
 export function anthropicProvider(o: { apiKey: string; baseURL?: string }): ModelProvider {
   const client = new Anthropic({
     apiKey: o.apiKey,
@@ -54,16 +67,7 @@ export function anthropicProvider(o: { apiKey: string; baseURL?: string }): Mode
           },
           { signal: r.signal },
         );
-        const msg = await stream.finalMessage();
-        const usage = usageOf(msg.usage as RawUsage);
-        if (msg.stop_reason === "refusal")
-          return { ok: false, code: "REFUSED", model: msg.model, usage };
-        const text = msg.content
-          .flatMap((b: { type: string; text?: string }) =>
-            b.type === "text" ? [b.text ?? ""] : [],
-          )
-          .join("");
-        return { ok: true, text, model: msg.model, usage };
+        return replyOf(await stream.finalMessage());
       } catch (e) {
         return failed(e, stream?.currentMessage ?? stream?.receivedMessages.at(-1));
       }

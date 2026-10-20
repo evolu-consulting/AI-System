@@ -30,30 +30,34 @@ export function withUniqueKeys(file: UsersExport): UsersExport {
 }
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 
-export function createIdentityAdapter(db: Db, actorId: string, batch?: number): IdentityPort {
-  return {
-    run: (file, apply) =>
-      runIdentityImport(db, withUniqueKeys(file as UsersExport), { actorId, apply, batch }),
-    tenants: (source) =>
-      withScope(db, PLATFORM, async (tx) =>
-        (
-          await run<{ id: string; org_id: string; active: boolean; pack_revoked: boolean }>(
-            tx,
-            // review A-4: cùng luật với N5 (`import.repo.ts::findTenants`) — tenant đã tắt hoặc đã thu hồi gói `contracts-*` mà
-            // N5 bỏ qua thì importer cũng bỏ (không hoàn tác việc admin thu hồi — L2).
-            sql`select t.id, t.settings->>'mgmt_org_id' as org_id, t.active,
+const tenantsOf =
+  (db: Db): IdentityPort["tenants"] =>
+  (source) =>
+    withScope(db, PLATFORM, async (tx) =>
+      (
+        await run<{ id: string; org_id: string; active: boolean; pack_revoked: boolean }>(
+          tx,
+          // review A-4: cùng luật với N5 (`import.repo.ts::findTenants`) — tenant đã tắt hoặc đã thu hồi gói `contracts-*` mà
+          // N5 bỏ qua thì importer cũng bỏ (không hoàn tác việc admin thu hồi — L2).
+          sql`select t.id, t.settings->>'mgmt_org_id' as org_id, t.active,
               exists (select 1 from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
                 where e.tenant_id = t.id and e.revoked_at is not null and f.key like 'contracts-%') as pack_revoked
             from admin.tenants t
             where t.settings->>'mgmt_source' = ${source} and t.settings ? 'mgmt_org_id'`,
-          )
-        ).map((r) => ({
-          id: r.id,
-          orgId: r.org_id,
-          active: r.active,
-          packRevoked: r.pack_revoked,
-        })),
-      ),
+        )
+      ).map((r) => ({
+        id: r.id,
+        orgId: r.org_id,
+        active: r.active,
+        packRevoked: r.pack_revoked,
+      })),
+    );
+
+export function createIdentityAdapter(db: Db, actorId: string, batch?: number): IdentityPort {
+  return {
+    run: (file, apply) =>
+      runIdentityImport(db, withUniqueKeys(file as UsersExport), { actorId, apply, batch }),
+    tenants: tenantsOf(db),
     users: (tenantIds) =>
       withScope(db, PLATFORM, async (tx) =>
         (

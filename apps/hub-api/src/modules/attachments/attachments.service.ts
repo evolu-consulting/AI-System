@@ -362,11 +362,10 @@ export class AttachmentService {
     u: AuthUser,
     id: string,
     log: Logger,
-    tenantIdQ?: string,
-    o?: { navigate?: boolean },
+    o: { tenantIdQ?: string; navigate?: boolean } = {},
   ): Promise<ContentResult> {
-    const r = await this.#readable(u, id, tenantIdQ);
+    const r = await this.#readable(u, id, o.tenantIdQ);
     if (r.purgedAt !== null) throw appError("NOT_FOUND");
-    return resolveContent(this.d.storage, r, o ?? {}, log);
+    return resolveContent(this.d.storage, r, { navigate: o.navigate }, log);
   }
 }

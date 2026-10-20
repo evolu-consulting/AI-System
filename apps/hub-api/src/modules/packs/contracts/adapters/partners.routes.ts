@@ -60,13 +60,32 @@ export function partnersRoutes(
   limit: LinkCheckLimit,
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  const read = packGuard(view, KEY, "read");
-  const write = packGuard(view, KEY, "write");
-  const isAdmin = async (c: Context<PackGuardVars>) => {
-    const i = await packAccessInput(view, KEY, c.get("user"));
-    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+  const g: Routes = {
+    r,
+    uc,
+    read: packGuard(view, KEY, "read"),
+    write: packGuard(view, KEY, "write"),
+    isAdmin: async (c) => {
+      const i = await packAccessInput(view, KEY, c.get("user"));
+      return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+    },
   };
+  partnerRoutes(g);
+  scoringRoutes(g);
+  priceRoutes(g, limit);
+  return r;
+}
 
+type Guard = ReturnType<typeof packGuard>;
+type Routes = {
+  r: Hono<PackGuardVars>;
+  uc: PartnersUsecase;
+  read: Guard;
+  write: Guard;
+  isAdmin: (c: Context<PackGuardVars>) => Promise<boolean>;
+};
+
+function partnerRoutes({ r, uc, read, write }: Routes): void {
   r.get("/partners", read, async (c) =>
     c.json(await run(uc.list(who(c), parseQuery(c, PartnersQuerySchema).role))),
   );
@@ -83,7 +102,9 @@ export function partnersRoutes(
     await body(c, RatingRequestSchema);
     throw readOnly();
   });
+}
 
+function scoringRoutes({ r, uc, read, write, isAdmin }: Routes): void {
   r.get("/scoring/:role", read, async (c) =>
     c.json(await run(uc.getConfig(who(c), roleOf(c.req.param("role"))))),
   );
@@ -102,7 +123,9 @@ export function partnersRoutes(
     await body(c, ScoringDraftSchema);
     throw readOnly();
   });
+}
 
+function priceRoutes({ r, uc, read, write, isAdmin }: Routes, limit: LinkCheckLimit): void {
   r.get("/prices/products", read, async (c) => c.json(await run(uc.products(who(c)))));
   r.get("/prices/compare", read, async (c) =>
     c.json(await run(uc.compare(who(c), parseQuery(c, CompareQuerySchema).product))),
@@ -125,5 +148,4 @@ export function partnersRoutes(
       throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được xoá báo giá");
     return c.json(await run(uc.deleteQuote(who(c), id)));
   });
-  return r;
 }

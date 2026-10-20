@@ -109,8 +109,7 @@ export async function inPackAs<R>(
   key: string,
   tenantId: string,
   userId: string,
-  fn: (tx: Sql) => Promise<R>,
-  opts: { rollback?: boolean } = {},
+  ...[fn, opts = {}]: [fn: (tx: Sql) => Promise<R>, opts?: { rollback?: boolean }]
 ): Promise<R> {
   const conn = hubConn();
   try {

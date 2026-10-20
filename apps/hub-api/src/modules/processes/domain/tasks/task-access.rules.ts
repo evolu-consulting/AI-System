@@ -58,11 +58,10 @@ export function starterDecisionBlocked(
   after: { kind: string; exclude_starter?: boolean } | undefined,
   startedBy: string,
   userId: string,
-  reason: DecisionReason,
-  option: string,
+  d: { reason: DecisionReason; option: string },
 ): boolean {
   if (!starterExcluded(after, startedBy, userId)) return false;
-  return option === "use_current" || starterGated("decision", reason);
+  return d.option === "use_current" || starterGated("decision", d.reason);
 }
 
 export function canAct(

@@ -36,30 +36,31 @@ function hooksOf(body: DlcJson): DlcHook[] {
   });
 }
 
+async function catalogOf(engine?: DlcEngine): Promise<DlcCatalogResponse> {
+  if (!engine) return { engine: "not_configured", ...EMPTY };
+  let body: DlcJson;
+  try {
+    body = await engine.get("/api/catalog");
+  } catch {
+    return { engine: "unreachable", ...EMPTY };
+  }
+  // Hook cần quyền admin của engine; không đọc được ⇒ danh sách rỗng, phần còn lại vẫn trả.
+  const hooks = await engine.get("/api/admin/hooks").then(hooksOf, () => []);
+  const models = (body.models ?? {}) as Record<string, unknown>;
+  const parsed = DlcCatalogResponseSchema.safeParse({
+    engine: "ok",
+    default_model: String(models.default ?? ""),
+    steps: body.steps ?? [],
+    agents: body.agents ?? [],
+    processes: body.processes ?? [],
+    hooks,
+  });
+  return parsed.success ? parsed.data : { engine: "unreachable", ...EMPTY };
+}
+
 export function dlcAdminService(db: Db, engine?: DlcEngine) {
   const sys = <T>(fn: (tx: Tx) => Promise<T>) => withHubScope(db, { kind: "system" }, fn);
-
-  async function catalog(): Promise<DlcCatalogResponse> {
-    if (!engine) return { engine: "not_configured", ...EMPTY };
-    let body: DlcJson;
-    try {
-      body = await engine.get("/api/catalog");
-    } catch {
-      return { engine: "unreachable", ...EMPTY };
-    }
-    // Hook cần quyền admin của engine; không đọc được ⇒ danh sách rỗng, phần còn lại vẫn trả.
-    const hooks = await engine.get("/api/admin/hooks").then(hooksOf, () => []);
-    const models = (body.models ?? {}) as Record<string, unknown>;
-    const parsed = DlcCatalogResponseSchema.safeParse({
-      engine: "ok",
-      default_model: String(models.default ?? ""),
-      steps: body.steps ?? [],
-      agents: body.agents ?? [],
-      processes: body.processes ?? [],
-      hooks,
-    });
-    return parsed.success ? parsed.data : { engine: "unreachable", ...EMPTY };
-  }
+  const catalog = (): Promise<DlcCatalogResponse> => catalogOf(engine);
 
   const list = (): Promise<DlcWorkflowListResponse> =>
     sys(async (tx) => ({ items: await repo.listWorkflows(tx) }));

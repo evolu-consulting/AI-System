@@ -36,15 +36,22 @@ const whoOf = (u: { tenantId: string; userId: string }) => ({
 const idOf = (c: Context): string => parseWith(z.uuid(), c.req.param("id"));
 const BODY_MAX = 4 * 1024;
 
+type Guard = ReturnType<typeof packGuard>;
+type Guards = { read: Guard; write: Guard };
+
 export function appendixRoutes(
   view: PackAccessView,
   key: string,
   uc: AppendixUseCases,
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  const read = packGuard(view, key, "read");
-  const write = packGuard(view, key, "write");
+  const g = { read: packGuard(view, key, "read"), write: packGuard(view, key, "write") };
+  categoryRoutes(r, g, uc);
+  parentRoutes(r, g, uc);
+  return r;
+}
 
+function categoryRoutes(r: Hono<PackGuardVars>, { read, write }: Guards, uc: AppendixUseCases) {
   r.get("/categories", read, async (c) =>
     c.json({ items: await uc.listCategories(whoOf(c.get("user"))) }),
   );
@@ -57,41 +64,15 @@ export function appendixRoutes(
       throw new AppError("CATEGORY_LIMIT", CONTRACT_ERRORS.CATEGORY_LIMIT, "Too many categories");
     return c.json(res.row, 201);
   });
+}
 
+function parentRoutes(r: Hono<PackGuardVars>, { read, write }: Guards, uc: AppendixUseCases) {
   r.patch("/contracts/:id/parent", write, async (c) => {
     const id = idOf(c);
     if (Number(c.req.header("content-length") ?? 0) > BODY_MAX)
       throw new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
     const body = parseWith(AttachParentRequestSchema, await readJson(c));
-    const res = await uc.attachParent(whoOf(c.get("user")), id, body);
-    if (res.kind === "not_found") throw appError("NOT_FOUND");
-    if (res.kind === "stale")
-      throw new AppError(
-        "CONTRACT_STALE",
-        CONTRACT_ERRORS.CONTRACT_STALE,
-        "Contract was modified",
-        {
-          current: res.current,
-          updated_at: res.updated_at,
-        },
-      );
-    if (res.kind === "invalid_parent")
-      throw new AppError(
-        "PARENT_INVALID",
-        CONTRACT_ERRORS.PARENT_INVALID,
-        "Invalid parent contract",
-        {
-          reason: res.reason,
-        },
-      );
-    const o = res.out;
-    return c.json({
-      id: o.id,
-      kind: o.kind,
-      parent_id: o.parentId,
-      version: o.version,
-      updated_at: o.updatedAt,
-    });
+    return c.json(attachedOut(await uc.attachParent(whoOf(c.get("user")), id, body)));
   });
   r.get("/contracts/:id/parent-suggestions", read, async (c) => {
     const items = await uc.suggestParents(whoOf(c.get("user")), idOf(c));
@@ -107,5 +88,31 @@ export function appendixRoutes(
     if (!out) throw appError("NOT_FOUND");
     return c.json(out);
   });
-  return r;
+}
+
+/** Kết quả gắn HĐ gốc ⇒ DTO; lỗi nghiệp vụ ⇒ AppError (404/409/422). */
+function attachedOut(res: Awaited<ReturnType<AttachParent>>) {
+  if (res.kind === "not_found") throw appError("NOT_FOUND");
+  if (res.kind === "stale")
+    throw new AppError("CONTRACT_STALE", CONTRACT_ERRORS.CONTRACT_STALE, "Contract was modified", {
+      current: res.current,
+      updated_at: res.updated_at,
+    });
+  if (res.kind === "invalid_parent")
+    throw new AppError(
+      "PARENT_INVALID",
+      CONTRACT_ERRORS.PARENT_INVALID,
+      "Invalid parent contract",
+      {
+        reason: res.reason,
+      },
+    );
+  const o = res.out;
+  return {
+    id: o.id,
+    kind: o.kind,
+    parent_id: o.parentId,
+    version: o.version,
+    updated_at: o.updatedAt,
+  };
 }

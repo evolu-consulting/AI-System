@@ -64,6 +64,19 @@ type DifyRequest = Parameters<DifyClient["runStreaming"]>[0];
 type Ran = { end: DifyAgentEnd; usage: TokenUsage; resumed: boolean };
 /** Huỷ run + mẩu chữ Dify (P14: `job.delta` khi stream). */
 type CallIo = { signal: AbortSignal; onDelta: (text: string) => void };
+type StreamCall = {
+  step: Step;
+  io: CallIo;
+  req: DifyRequest;
+  timeout: AbortSignal;
+  access: ToolAccess | null;
+};
+type Resolved = {
+  catalog: CatalogSnapshot;
+  wf: CatalogWorkflow;
+  inputName: Parameters<typeof difyAgentRequestParts>[1];
+  apiKey: string;
+};
 
 const ZERO: TokenUsage = { input_tokens: 0, output_tokens: 0 };
 const DIFY_AGENT_RUNTIME = "dify-agent";
@@ -127,7 +140,8 @@ export class DifyAgentRunner implements AgentRunner {
     }
   }
 
-  async #call(task: AgentTask, step: Step, io: CallIo): Promise<Ran> {
+  /** Workflow + app-key (R17) ngay trước khi gọi; thiếu ⇒ kết quả `NOT_CONFIGURED` (không gọi Dify). */
+  async #resolve(task: AgentTask): Promise<Resolved | { ran: Ran }> {
     const { agent, run: r } = task;
     const catalog = await this.d.catalog();
     const target = difyAgentTarget(agent, catalog.workflows.values());
@@ -138,20 +152,27 @@ export class DifyAgentRunner implements AgentRunner {
         agent_id: agent.id,
         failure: target.failure,
       });
-      return { end: fail("NOT_CONFIGURED", null), ...none };
+      return { ran: { end: fail("NOT_CONFIGURED", null), ...none } };
     }
     const wf = target.workflow;
-    let apiKey: string;
     try {
-      apiKey = await this.d.credentials.apiKey(wf.id);
+      const apiKey = await this.d.credentials.apiKey(wf.id);
+      return { catalog, wf, inputName: target.inputName, apiKey };
     } catch (err) {
       if (!isCredentialError(err)) throw err;
-      return { end: fail("NOT_CONFIGURED", "credential"), ...none };
+      return { ran: { end: fail("NOT_CONFIGURED", "credential"), ...none } };
     }
+  }
+
+  async #call(task: AgentTask, step: Step, io: CallIo): Promise<Ran> {
+    const { agent, run: r } = task;
+    const got = await this.#resolve(task);
+    if ("ran" in got) return got.ran;
+    const { catalog, wf, apiKey } = got;
     let session = agent.runtime === DIFY_AGENT_RUNTIME ? await this.#session(task) : null;
     const timeoutS = await this.#timeoutS(task);
     const timeout = AbortSignal.timeout(timeoutS * 1000);
-    const parts = difyAgentRequestParts(wf, target.inputName, task.prompt);
+    const parts = difyAgentRequestParts(wf, got.inputName, task.prompt);
     // M2-chat · m2c (A-5): grant tool cho run này (thu hồi khi run xong); handle chỉ gửi khi MỞ hội thoại Dify (Dify giữ
     // `inputs` lượt đầu). Handle cũ hết hạn ⇒ bỏ phiên Dify, mở hội thoại mới kèm handle mới.
     const access = await this.#toolAccess(task, wf, timeoutS);
@@ -171,7 +192,7 @@ export class DifyAgentRunner implements AgentRunner {
         conversationId: session,
         outputField: wf.outputField,
       };
-      return await this.#stream(task, step, io, req, timeout, access);
+      return await this.#stream(task, { step, io, req, timeout, access });
     } finally {
       await access?.grant
         .revoke()
@@ -197,14 +218,8 @@ export class DifyAgentRunner implements AgentRunner {
     const grant = await tokens.grant({ ...binding, runId: r.id }, keys, chatTokenTtlS(timeoutS));
     return grant ? { tokens, binding, grant } : null;
   }
-  async #stream(
-    task: AgentTask,
-    step: Step,
-    io: CallIo,
-    req: DifyRequest,
-    timeout: AbortSignal,
-    access: ToolAccess | null,
-  ): Promise<Ran> {
+  async #stream(task: AgentTask, c: StreamCall): Promise<Ran> {
+    const { step, io, req, timeout, access } = c;
     const { agent, run: r } = task;
     const session = req.conversationId;
     const both = AbortSignal.any([io.signal, timeout]);

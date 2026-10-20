@@ -33,7 +33,7 @@ export async function resolveContent(
   });
   const fb = parseFileboxLocator(locator);
   if (fb && o.navigate && storage.link) return redirect(storage, fb.fileId, r.id, log);
-  const file = await inline(storage, locator, r.mime, r.id, log);
+  const file = await inline(storage, { locator, mime: r.mime, attachmentId: r.id }, log);
   return { kind: "blob", body: file, headers: contentHeaders(r, file.size) };
 }
 
@@ -62,9 +62,7 @@ async function redirect(
 /** Nhánh inline: đọc nội dung (local đọc đĩa / FileBox `/content`); kho mất/404 ⇒ content-missing 404; lỗi ⇒ 500. */
 async function inline(
   storage: AttachmentStorage,
-  locator: string,
-  mime: string,
-  attachmentId: string,
+  { locator, mime, attachmentId }: { locator: string; mime: string; attachmentId: string },
   log: Logger,
 ): Promise<Blob> {
   let file: Blob | null;

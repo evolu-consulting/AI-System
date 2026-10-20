@@ -62,78 +62,85 @@ const opOf = (method: string, path: string): GhOp | "other" => {
 const tokenOf = (auth: string | null): string | null =>
   /^(?:bearer|token) (.+)$/i.exec(auth ?? "")?.[1]?.trim() ?? null;
 
-export function createGithubMock(opts: GithubMockOpts = {}) {
-  let tokens = opts.tokens ?? [GH_MOCK_TOKEN];
-  let webHost = opts.webHost ?? "github.com";
-  let prs: GhPr[] = [];
-  let log: GhCall[] = [];
-  let queue = new Map<GhOp, GhForced[]>();
-  let seq = 0;
+type GhState = {
+  tokens: string[];
+  webHost: string;
+  prs: GhPr[];
+  log: GhCall[];
+  queue: Map<GhOp, GhForced[]>;
+  seq: number;
+};
+type SeedPr = {
+  owner: string;
+  repo: string;
+  head: string;
+  base: string;
+  state?: "open" | "closed";
+};
 
-  const mock = {
+const view = (p: GhPr) => ({
+  number: p.number,
+  node_id: p.node_id,
+  state: p.state,
+  title: p.title,
+  body: p.body,
+  html_url: p.html_url,
+  head: { ref: p.head, label: `${p.owner}:${p.head}` },
+  base: { ref: p.base },
+  auto_merge: p.auto_merge,
+});
+const forced = (f: GhForced): Response =>
+  new Response(f.raw ?? (f.body === undefined ? "" : JSON.stringify(f.body)), {
+    status: f.status,
+    headers: { "content-type": "application/json", ...(f.headers ?? {}) },
+  });
+const json = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", "x-ratelimit-remaining": "4999" },
+  });
+const headOf = (owner: string, h: string) => (h.includes(":") ? h : `${owner}:${h}`);
+
+function seedPr(s: GhState, o: SeedPr): GhPr {
+  s.seq += 1;
+  const seq = s.seq;
+  const pr: GhPr = {
+    number: seq,
+    node_id: `PR_mock_${seq}`,
+    owner: o.owner,
+    repo: o.repo,
+    head: o.head,
+    base: o.base,
+    title: `seed ${seq}`,
+    body: "",
+    state: o.state ?? "open",
+    html_url: `https://${s.webHost}/${o.owner}/${o.repo}/pull/${seq}`,
+    auto_merge: null,
+  };
+  s.prs.push(pr);
+  return pr;
+}
+
+function mockApi(s: GhState, opts: GithubMockOpts) {
+  return {
     reset(o: GithubMockOpts = {}): void {
-      tokens = o.tokens ?? opts.tokens ?? [GH_MOCK_TOKEN];
-      webHost = o.webHost ?? opts.webHost ?? "github.com";
-      prs = [];
-      log = [];
-      queue = new Map();
-      seq = 0;
+      s.tokens = o.tokens ?? opts.tokens ?? [GH_MOCK_TOKEN];
+      s.webHost = o.webHost ?? opts.webHost ?? "github.com";
+      s.prs = [];
+      s.log = [];
+      s.queue = new Map();
+      s.seq = 0;
     },
     queue(op: GhOp, ...responses: GhForced[]): void {
-      queue.set(op, [...(queue.get(op) ?? []), ...responses]);
+      s.queue.set(op, [...(s.queue.get(op) ?? []), ...responses]);
     },
-    seedPr(o: {
-      owner: string;
-      repo: string;
-      head: string;
-      base: string;
-      state?: "open" | "closed";
-    }): GhPr {
-      seq += 1;
-      const pr: GhPr = {
-        number: seq,
-        node_id: `PR_mock_${seq}`,
-        owner: o.owner,
-        repo: o.repo,
-        head: o.head,
-        base: o.base,
-        title: `seed ${seq}`,
-        body: "",
-        state: o.state ?? "open",
-        html_url: `https://${webHost}/${o.owner}/${o.repo}/pull/${seq}`,
-        auto_merge: null,
-      };
-      prs.push(pr);
-      return pr;
-    },
-    calls: (op?: GhOp): GhCall[] => log.filter((c) => op === undefined || c.op === op),
-    pulls: (): GhPr[] => prs.map((p) => ({ ...p })),
+    seedPr: (o: SeedPr): GhPr => seedPr(s, o),
+    calls: (op?: GhOp): GhCall[] => s.log.filter((c) => op === undefined || c.op === op),
+    pulls: (): GhPr[] => s.prs.map((p) => ({ ...p })),
   };
+}
 
-  const view = (p: GhPr) => ({
-    number: p.number,
-    node_id: p.node_id,
-    state: p.state,
-    title: p.title,
-    body: p.body,
-    html_url: p.html_url,
-    head: { ref: p.head, label: `${p.owner}:${p.head}` },
-    base: { ref: p.base },
-    auto_merge: p.auto_merge,
-  });
-  const forced = (f: GhForced): Response =>
-    new Response(f.raw ?? (f.body === undefined ? "" : JSON.stringify(f.body)), {
-      status: f.status,
-      headers: { "content-type": "application/json", ...(f.headers ?? {}) },
-    });
-  const json = (body: unknown, status = 200): Response =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "content-type": "application/json", "x-ratelimit-remaining": "4999" },
-    });
-  const headOf = (owner: string, h: string) => (h.includes(":") ? h : `${owner}:${h}`);
-
-  const app = new Hono();
+function controlRoutes(app: Hono, mock: ReturnType<typeof mockApi>): void {
   app.post("/__mock/reset", async (c) => {
     const b = await c.req.json().catch(() => ({}));
     mock.reset(isPlainObject(b) ? (b as GithubMockOpts) : {});
@@ -149,102 +156,114 @@ export function createGithubMock(opts: GithubMockOpts = {}) {
   app.post("/__mock/pulls", async (c) => c.json(mock.seedPr(await c.req.json()), 201));
   app.get("/__mock/pulls", (c) => c.json({ pulls: mock.pulls() }));
   app.get("/__mock/calls", (c) => c.json({ calls: mock.calls() }));
+}
 
-  async function record(c: Context): Promise<{ op: GhOp | "other"; url: URL; body: unknown }> {
-    const url = new URL(c.req.url);
-    const op = opOf(c.req.method, url.pathname);
-    const body: unknown = c.req.method === "GET" ? null : await c.req.json().catch(() => null);
-    log.push({
-      op,
-      method: c.req.method,
-      path: url.pathname,
-      query: Object.fromEntries(url.searchParams),
-      auth: c.req.header("authorization") ?? null,
-      headers: Object.fromEntries(c.req.raw.headers),
-      body,
+async function record(
+  s: GhState,
+  c: Context,
+): Promise<{ op: GhOp | "other"; url: URL; body: unknown }> {
+  const url = new URL(c.req.url);
+  const op = opOf(c.req.method, url.pathname);
+  const body: unknown = c.req.method === "GET" ? null : await c.req.json().catch(() => null);
+  s.log.push({
+    op,
+    method: c.req.method,
+    path: url.pathname,
+    query: Object.fromEntries(url.searchParams),
+    auth: c.req.header("authorization") ?? null,
+    headers: Object.fromEntries(c.req.raw.headers),
+    body,
+  });
+  return { op, url, body };
+}
+
+function listPulls(s: GhState, owner: string, repo: string, q: URLSearchParams): Response {
+  const head = q.get("head") ?? "";
+  const state = q.get("state") ?? "open";
+  const hit = s.prs.filter(
+    (p) =>
+      p.owner === owner &&
+      p.repo === repo &&
+      (!head || `${p.owner}:${p.head}` === head) &&
+      (state === "all" || p.state === state),
+  );
+  return json(hit.slice(0, Number(q.get("per_page") ?? 30)).map(view));
+}
+
+function createPull(s: GhState, owner: string, repo: string, body: unknown): Response {
+  const b = isPlainObject(body) ? body : {};
+  const missing = ["title", "head", "base"].find((k) => typeof b[k] !== "string" || b[k] === "");
+  if (missing)
+    return json(
+      {
+        message: "Validation Failed",
+        errors: [{ resource: "PullRequest", field: missing, code: "missing_field" }],
+      },
+      422,
+    );
+  const head = String(b.head);
+  const full = headOf(owner, head);
+  const dup = s.prs.find(
+    (p) =>
+      p.owner === owner && p.repo === repo && p.state === "open" && `${p.owner}:${p.head}` === full,
+  );
+  if (dup) return json(ghAlreadyExists(owner, dup.head), 422);
+  const pr = seedPr(s, { owner, repo, head: full.split(":")[1] ?? head, base: String(b.base) });
+  pr.title = String(b.title);
+  pr.body = typeof b.body === "string" ? b.body : "";
+  return json(view(pr), 201);
+}
+
+function graphql(s: GhState, body: unknown): Response {
+  const b = isPlainObject(body) ? body : {};
+  const q = typeof b.query === "string" ? b.query : "";
+  const vars = isPlainObject(b.variables) ? b.variables : {};
+  if (!q.includes("enablePullRequestAutoMerge"))
+    return json({
+      errors: [{ type: "NOT_SUPPORTED", message: "mock: chỉ enablePullRequestAutoMerge" }],
     });
-    return { op, url, body };
-  }
+  const text = `${q} ${JSON.stringify(vars)}`;
+  const pr = s.prs.find((p) => text.includes(p.node_id));
+  if (!pr)
+    return json({
+      data: null,
+      errors: [{ type: "NOT_FOUND", message: "Could not resolve to a node" }],
+    });
+  const method = /SQUASH|MERGE|REBASE/.exec(text)?.[0] ?? "MERGE";
+  pr.auto_merge = { merge_method: method.toLowerCase() };
+  return json({
+    data: {
+      enablePullRequestAutoMerge: {
+        pullRequest: { number: pr.number, autoMergeRequest: { mergeMethod: method } },
+      },
+    },
+  });
+}
 
-  function listPulls(owner: string, repo: string, q: URLSearchParams): Response {
-    const head = q.get("head") ?? "";
-    const state = q.get("state") ?? "open";
-    const hit = prs.filter(
-      (p) =>
-        p.owner === owner &&
-        p.repo === repo &&
-        (!head || `${p.owner}:${p.head}` === head) &&
-        (state === "all" || p.state === state),
-    );
-    return json(hit.slice(0, Number(q.get("per_page") ?? 30)).map(view));
-  }
-
-  function createPull(owner: string, repo: string, body: unknown): Response {
-    const b = isPlainObject(body) ? body : {};
-    const missing = ["title", "head", "base"].find((k) => typeof b[k] !== "string" || b[k] === "");
-    if (missing)
-      return json(
-        {
-          message: "Validation Failed",
-          errors: [{ resource: "PullRequest", field: missing, code: "missing_field" }],
-        },
-        422,
-      );
-    const head = String(b.head);
-    const full = headOf(owner, head);
-    const dup = prs.find(
-      (p) =>
-        p.owner === owner &&
-        p.repo === repo &&
-        p.state === "open" &&
-        `${p.owner}:${p.head}` === full,
-    );
-    if (dup) return json(ghAlreadyExists(owner, dup.head), 422);
-    const pr = mock.seedPr({ owner, repo, head: full.split(":")[1] ?? head, base: String(b.base) });
-    pr.title = String(b.title);
-    pr.body = typeof b.body === "string" ? b.body : "";
-    return json(view(pr), 201);
-  }
-
+export function createGithubMock(opts: GithubMockOpts = {}) {
+  const s: GhState = {
+    tokens: opts.tokens ?? [GH_MOCK_TOKEN],
+    webHost: opts.webHost ?? "github.com",
+    prs: [],
+    log: [],
+    queue: new Map(),
+    seq: 0,
+  };
+  const mock = mockApi(s, opts);
+  const app = new Hono();
+  controlRoutes(app, mock);
   app.all("*", async (c) => {
-    const { op, url, body } = await record(c);
+    const { op, url, body } = await record(s, c);
     if (op === "other") return json(GH_NOT_FOUND, 404);
-    const f = queue.get(op)?.shift();
+    const f = s.queue.get(op)?.shift();
     if (f) return forced(f);
     const t = tokenOf(c.req.header("authorization") ?? null);
-    if (!t || !tokens.includes(t)) return json(GH_BAD_CREDENTIALS, 401);
-    if (op === "graphql") return graphql(body);
+    if (!t || !s.tokens.includes(t)) return json(GH_BAD_CREDENTIALS, 401);
+    if (op === "graphql") return graphql(s, body);
     const [, , owner = "", repo = ""] = url.pathname.split("/");
-    if (op === "pulls.list") return listPulls(owner, repo, url.searchParams);
-    return createPull(owner, repo, body);
+    if (op === "pulls.list") return listPulls(s, owner, repo, url.searchParams);
+    return createPull(s, owner, repo, body);
   });
-
-  function graphql(body: unknown): Response {
-    const b = isPlainObject(body) ? body : {};
-    const q = typeof b.query === "string" ? b.query : "";
-    const vars = isPlainObject(b.variables) ? b.variables : {};
-    if (!q.includes("enablePullRequestAutoMerge"))
-      return json({
-        errors: [{ type: "NOT_SUPPORTED", message: "mock: chỉ enablePullRequestAutoMerge" }],
-      });
-    const text = `${q} ${JSON.stringify(vars)}`;
-    const pr = prs.find((p) => text.includes(p.node_id));
-    if (!pr)
-      return json({
-        data: null,
-        errors: [{ type: "NOT_FOUND", message: "Could not resolve to a node" }],
-      });
-    const method = /SQUASH|MERGE|REBASE/.exec(text)?.[0] ?? "MERGE";
-    pr.auto_merge = { merge_method: method.toLowerCase() };
-    return json({
-      data: {
-        enablePullRequestAutoMerge: {
-          pullRequest: { number: pr.number, autoMergeRequest: { mergeMethod: method } },
-        },
-      },
-    });
-  }
-
   return { app, fetch: app.fetch, mock };
 }
 export type GithubMock = ReturnType<typeof createGithubMock>;

@@ -59,12 +59,6 @@ export function reputationRoutes(
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
   const write = packGuard(view, KEY, "write");
-  const admin = async (c: Context<PackGuardVars>) => {
-    const i = await packAccessInput(view, KEY, c.get("user"));
-    if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) !== "ok")
-      throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
-  };
-
   r.get(`${P}/partners`, read, async (c) =>
     c.json(await run(uc.list(who(c), parseQuery(c, RepPartnersQuerySchema).role))),
   );
@@ -86,7 +80,19 @@ export function reputationRoutes(
   r.post(`${P}/jobs`, write, async (c) =>
     c.json(await run(wr.logJob(who(c), await body(c, RepJobSchema))), 201),
   );
+  configRoutes(r, view, uc);
+  return r;
+}
 
+/** Cấu hình điểm: đọc/xem trước theo quyền đọc; lưu cần `admin` (quản lý). */
+function configRoutes(r: Hono<PackGuardVars>, view: PackAccessView, uc: ReputationUsecase): void {
+  const read = packGuard(view, KEY, "read");
+  const write = packGuard(view, KEY, "write");
+  const admin = async (c: Context<PackGuardVars>) => {
+    const i = await packAccessInput(view, KEY, c.get("user"));
+    if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) !== "ok")
+      throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
+  };
   r.get(`${P}/config`, read, async (c) => c.json(await run(uc.getConfig(who(c)))));
   r.post(`${P}/config/preview`, read, async (c) =>
     c.json(await run(uc.preview(who(c), await body(c, RepPreviewSchema)))),
@@ -104,5 +110,4 @@ export function reputationRoutes(
     await admin(c);
     return c.json(await run(uc.saveJobTypes(who(c), await body(c, RepJobTypesSchema))));
   });
-  return r;
 }

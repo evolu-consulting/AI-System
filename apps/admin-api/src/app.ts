@@ -79,8 +79,8 @@ const REQUEST_ID_HEADER = "X-Request-Id";
 const REQUEST_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 const ALLOW_HEADERS = ["Content-Type", "Authorization", "X-Client", "X-App", REQUEST_ID_HEADER];
 
-function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
-  const ctx = {
+function apiCtx(deps: AppDeps) {
+  return {
     db: deps.db,
     keys: deps.keys,
     dummyHash: deps.dummyHash,
@@ -89,8 +89,11 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     limiter: deps.loginLimiter,
     hashSlots: deps.hashSlots ?? defaultHashSlots(),
   };
+}
+type ApiCtx = ReturnType<typeof apiCtx>;
+
+function mountAuth(app: Hono<AppVars>, deps: AppDeps, ctx: ApiCtx): void {
   const secureCookie = deps.appEnv === "production";
-  const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
   app.route(
     "/auth",
     authRoutes({
@@ -112,6 +115,12 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     }),
   );
   app.route("/auth/totp", totpRoutes({ ...ctx, secretKey: deps.secretKey }));
+}
+
+function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
+  const ctx = apiCtx(deps);
+  const hooks = deps.appEnv === "test" ? deps.testHooks : undefined;
+  mountAuth(app, deps, ctx);
   const qctx = { ...ctx, mailer: deps.mailer, webUrl: deps.adminWebUrl };
   if (deps.mailer) startQuotaListener(qctx);
   app.route("/admin/quota-banner", quotaBannerRoutes(qctx));

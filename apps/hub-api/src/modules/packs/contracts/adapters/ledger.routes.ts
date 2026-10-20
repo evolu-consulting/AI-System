@@ -77,9 +77,15 @@ export function ledgerRoutes(
   d: { cmd: LedgerCommands; reads: LedgerReads },
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  const read = packGuard(view, KEY, "read");
-  const write = packGuard(view, KEY, "write");
+  readRoutes(r, packGuard(view, KEY, "read"), d.reads);
+  writeRoutes(r, view, d.cmd);
+  return r;
+}
 
+type R = Hono<PackGuardVars>;
+
+function readRoutes(r: R, read: ReturnType<typeof packGuard>, reads: LedgerReads): void {
+  const d = { reads };
   r.get("/payments", read, async (c) => {
     const q = parseQuery(c, PaymentsQuerySchema);
     // Luật 4c: JSON của Postgres gửi thẳng (500 hàng: bỏ parse + stringify).
@@ -98,6 +104,11 @@ export function ledgerRoutes(
   r.get("/contracts/:id/partner", read, async (c) =>
     c.json(await run(d.reads.partner(who(c), uuid(c.req.param("id"))))),
   );
+}
+
+function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
+  const write = packGuard(view, KEY, "write");
+  const d = { cmd };
   r.put("/contracts/:id/schedule", write, async (c) => {
     const id = uuid(c.req.param("id"));
     const b = await body(c, ScheduleRequestSchema);
@@ -126,5 +137,4 @@ export function ledgerRoutes(
     const admin = checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
     return c.json(await run(d.cmd.record(who(c), b, admin)), 201);
   });
-  return r;
 }
