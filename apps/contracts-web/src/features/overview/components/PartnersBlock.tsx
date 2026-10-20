@@ -5,16 +5,16 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchPartners, partnerKeys } from "~/features/partners/api";
-import { ScoreBadge } from "~/features/partners/components/ScoreBadge";
+import { fetchRepPartners, partnerKeys } from "~/features/partners/api";
+import { RepBadge } from "~/features/partners/components/RepBadge";
 import { partnersToReview } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
 export function PartnersBlock() {
   const { t } = useTranslation();
   const q = useQuery({
-    queryKey: partnerKeys.list("all"),
-    queryFn: ({ signal }) => fetchPartners("all", signal),
+    queryKey: partnerKeys.repList,
+    queryFn: ({ signal }) => fetchRepPartners(signal),
   });
   const rows = partnersToReview(q.data);
   return (
@@ -42,13 +42,18 @@ export function PartnersBlock() {
               className="flex items-center gap-3 border-t border-rule-soft px-5 py-3 first:border-t-0"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-body font-semibold">{p.name}</span>
+                <Link
+                  to="/partners"
+                  search={{ party: p.party, role: p.role }}
+                  className="block truncate text-body font-semibold hover:text-act hover:underline"
+                >
+                  {p.name}
+                </Link>
                 <span className="block truncate text-[12.5px] text-dim">
-                  {t(`contracts.partners.roleWord.${p.role}`)}
-                  {p.reason ? ` · ${p.reason}` : ""}
+                  {t(`contracts.pv2.roleWord.${p.role}`)}
                 </span>
               </span>
-              <ScoreBadge score={p.score} band={p.band} />
+              <RepBadge score={p.score} level={p.level} />
             </li>
           ))}
         </ul>

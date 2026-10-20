@@ -1,9 +1,24 @@
 // V2-C · KN-08 · HD-10 · DT-05: câu SQL của vai đối tác + gợi ý đối tác + ghi chú — MỘT câu mỗi hàm (Luật 4c), lọc `tenant_id` tường
 // minh ngoài RLS; luật thấy M1 do policy của 0024 (vai/ghi chú của đối tác mình thấy hoặc do mình tạo).
-import type { PartnerNote, PartnerRoleV2 } from "@ai/contracts";
+import type {
+  PartnerContractCount,
+  PartnerNote,
+  PartnerProfile,
+  PartnerRoleV2,
+} from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { one } from "./ledger-sql";
+import { CONFIRMED_STATUSES, one } from "./ledger-sql";
+import type { ProgressRaw } from "./milestones.mapper";
+
+/** Hàng HĐ thô của đối tác (`contracts`): tóm tắt mốc cho `toProgress` + cột hiển thị. */
+export type PartnerContractRaw = ProgressRaw & {
+  title: string;
+  number: string | null;
+  value: number | string | null;
+  end_date: string | null;
+};
+const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 
 export type RoleCount = {
   party: string;
@@ -82,12 +97,64 @@ export function partnerRolesRepo(tx: Tx, t: string) {
             order by n.created_at desc, n.id desc limit 200) n`,
       ),
 
+    /**
+     * V2-I · DT-01: hồ sơ đầu trang chi tiết. Đối tác ngoài phạm vi M1 (không có vai/danh bạ mình thấy) ⇒ null. Liên hệ = người đại
+     * diện bên đối tác ở HĐ mới nhất; điện thoại chưa có nguồn trong dữ liệu (danh bạ không có cột) ⇒ null.
+     */
+    profile: (party: string) =>
+      one<PartnerProfile | null>(
+        tx,
+        sql`select jsonb_build_object('party', k.party, 'name', coalesce(co.short_name, co.name, pr.name),
+            'tax_id', coalesce(co.tax_id, case when k.party like 'tax:%' then substr(k.party, 5) end),
+            'phone', null, 'contact', lc.contact) as j
+          from (select ${party}::text as party) k
+          left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = k.party
+          left join lateral (select p.name from contracts.partner_roles p
+            where p.tenant_id = ${t}::uuid and p.party_key = k.party and p.name is not null order by p.first_at limit 1) pr on true
+          left join lateral (select case when c.direction = 'sale' then c.buyer_signer else c.seller_signer end as contact
+            from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key = k.party
+            order by c.updated_at desc, c.id desc limit 1) lc on true
+          where co.id is not null or exists (select 1 from contracts.partner_roles p
+            where p.tenant_id = ${t}::uuid and p.party_key = k.party)`,
+      ),
+
+    /** V2-I · DT-06: HĐ đã xác nhận của đối tác (mới nhất trước, ≤ 200) kèm đếm mốc + mốc mở sớm nhất để suy giai đoạn. */
+    contracts: (party: string) =>
+      one<PartnerContractRaw[]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_object('id', c.id, 'title', c.title, 'number', c.number, 'deal', c.deal,
+            'value', c.value, 'start_date', c.start_date, 'end_date', c.end_date, 'n_req', a.n_req, 'n_req_done', a.n_req_done,
+            'n_done', a.n_done, 'next', nx.j) order by c.updated_at desc, c.id desc), '[]'::json) as j
+          from (select * from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract'
+              and c.partner_key = ${party}::text and c.status in (${CONFIRMED})
+            order by c.updated_at desc, c.id desc limit 200) c
+          left join lateral (select count(*) filter (where o.kind <> 'renewal' and o.status <> 'cancelled')::int as n_req,
+              count(*) filter (where o.kind <> 'renewal' and o.status = 'done')::int as n_req_done,
+              count(*) filter (where o.status = 'done')::int as n_done
+            from contracts.obligations o
+            where o.tenant_id = ${t}::uuid and o.contract_id = c.id and o.status <> 'replaced') a on true
+          left join lateral (select json_build_object('id', o.id, 'kind', o.kind, 'direction', o.direction, 'title', o.title,
+              'due_date', o.due_date) as j
+            from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = c.id and o.status = 'open'
+            order by o.due_date, o.seq limit 1) nx on true`,
+      ),
+
+    /** V2-I · DT-01: số HĐ đã xác nhận mỗi đối tác (một câu theo tập, cột `partner_key` có index). */
+    contractCounts: () =>
+      one<PartnerContractCount[]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_object('party', x.k, 'n', x.n)), '[]'::json) as j
+          from (select c.partner_key as k, count(*)::int as n from contracts.contracts c
+            where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key is not null and c.status in (${CONFIRMED})
+            group by c.partner_key) x`,
+      ),
+
     /** Thêm ghi chú khi đối tác có (vai/danh bạ mình thấy); không ⇒ null. */
-    addNote: (party: string, body: string) =>
+    addNote: (party: string, body: string, source: "manual" | "internet" = "manual") =>
       one<PartnerNote | null>(
         tx,
-        sql`insert into contracts.partner_notes as n (tenant_id, party_key, body)
-          select ${t}::uuid, ${party}, ${body}
+        sql`insert into contracts.partner_notes as n (tenant_id, party_key, body, source)
+          select ${t}::uuid, ${party}, ${body}, ${source}
           where exists (select 1 from contracts.partner_roles pr where pr.tenant_id = ${t}::uuid and pr.party_key = ${party})
             or exists (select 1 from contracts.companies co where co.tenant_id = ${t}::uuid and co.party_key = ${party})
           returning ${NOTE} as j`,

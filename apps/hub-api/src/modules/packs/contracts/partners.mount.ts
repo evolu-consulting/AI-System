@@ -4,6 +4,7 @@
 import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
 import type { Redis } from "ioredis";
+import type { AiClient } from "../../../lib/ai-client/ai-client";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { companiesRepo } from "./adapters/companies.repo";
@@ -12,6 +13,7 @@ import { createInspect } from "./adapters/link-check.http";
 import { LINK_CHECKS_PER_MINUTE, linkCheckLimit } from "./adapters/link-check-limit.redis";
 import { partnerRolesRepo } from "./adapters/partner-roles.repo";
 import { partnerRolesRoutes } from "./adapters/partner-roles.routes";
+import { PARTNER_SEARCH_MODEL, partnerWebSearch } from "./adapters/partner-web-search";
 import { partnersRepo } from "./adapters/partners.repo";
 import { partnersRoutes } from "./adapters/partners.routes";
 import { partnerDataOf } from "./adapters/partners-data.repo";
@@ -48,6 +50,8 @@ export function partnersModule(
     /** Trần kiểm link theo người dùng (Redis; vắng ⇒ 503 khi kiểm link). */
     redis?: Redis;
     linkChecksPerMinute?: number;
+    /** V2-I · Q8: AI client chung cho "Tìm trên internet" (vắng ⇒ 503 AGENT_UNAVAILABLE). */
+    ai?: AiClient | null;
   },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(
@@ -71,6 +75,18 @@ export function partnersModule(
   });
   r.route("/", partnersRoutes(view, uc, limit));
   r.route("/", companiesRoutes(view, companiesUsecase({ uow, tax: d.tax ?? null })));
-  r.route("/", partnerRolesRoutes(view, partnerRolesUsecase({ uow, scoreOf: scoreOf(uc) })));
+  const search = d.ai
+    ? partnerWebSearch(d.ai, {
+        model: process.env.CONTRACTS_PARTNER_SEARCH_MODEL?.trim() || PARTNER_SEARCH_MODEL,
+      })
+    : null;
+  const roles = partnerRolesUsecase({
+    uow,
+    scoreOf: scoreOf(uc),
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    now: d.now ?? (() => new Date()),
+    webSearch: search,
+  });
+  r.route("/", partnerRolesRoutes(view, roles, limit));
   return r;
 }

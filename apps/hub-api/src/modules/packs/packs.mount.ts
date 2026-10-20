@@ -131,13 +131,14 @@ function mountContracts<E extends Env>(
     (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
   const { model, ...aiDeps } = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
+  const aiClient = createHubAiClient(db, model === undefined ? {} : { provider: model }); // M3 · dùng chung trích HĐ + V2-I tìm web
   const ai = contractsAiModule(
     db,
     view,
     { ...aiDeps, tax },
     {
       // M3 · AI client chung (khoá từ env; test tiêm `model` giả) + Group duyệt (admin.groups + cache cấu hình)
-      ai: createHubAiClient(db, model === undefined ? {} : { provider: model }),
+      ai: aiClient,
       groups: packGroups(db, view),
       ...(fb
         ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
@@ -176,6 +177,7 @@ function mountContracts<E extends Env>(
     partnersModule(db, view, {
       timeZoneOf: tenantTz(d),
       tax,
+      ai: aiClient,
       ...(d.redis ? { redis: d.redis } : {}),
       linkChecksPerMinute: envInt("CONTRACTS_LINK_CHECKS_USER_MIN", LINK_CHECKS_PER_MINUTE),
     }),

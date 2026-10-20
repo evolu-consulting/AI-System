@@ -1,0 +1,159 @@
+{
+  "contracts": {
+    "pv2": {
+      "title": "Đối tác",
+      "lead": "Điểm uy tín tự tính từ việc đã ghi và hạn trong hợp đồng, tách riêng theo từng vai trò.",
+      "search": "Tìm theo tên đối tác…",
+      "roleFilter": "Lọc theo vai trò",
+      "filter": {
+        "all": "Mọi vai trò",
+        "supplier": "Nhà cung cấp",
+        "customer": "Khách hàng",
+        "commission_payer": "Bên trả hoa hồng",
+        "watch": "Cần chú ý"
+      },
+      "roleWord": {
+        "supplier": "Nhà cung cấp",
+        "customer": "Khách hàng",
+        "commission_payer": "Bên trả hoa hồng"
+      },
+      "roleShort": { "supplier": "NCC", "customer": "Khách", "commission_payer": "Hoa hồng" },
+      "badge": { "new": "MỚI" },
+      "newTip": "Mới — chưa đủ số việc tối thiểu để chấm",
+      "level": { "good": "Tốt", "fair": "Khá", "watch": "Cần chú ý", "new": "Mới" },
+      "contractsN": "{{n}} hợp đồng",
+      "close": "Đóng",
+      "log": "+ Ghi việc",
+      "detail": "Chi tiết",
+      "emptyTitle": "Chưa có đối tác",
+      "emptyBody": "Đối tác tự xuất hiện khi có hợp đồng.",
+      "noMatchTitle": "Không có đối tác khớp",
+      "noMatchBody": "Thử từ khoá khác hoặc bỏ bộ lọc.",
+      "foot": "Điểm tính lại mỗi lần mở trang, theo cách tính của từng nhóm sản phẩm và vai trò.",
+      "howLink": "⚙ Cách tính điểm",
+      "mst": "MST",
+      "noRole": "Đối tác này chưa có vai trò nào.",
+      "tabs": "Thông tin đối tác",
+      "tab": {
+        "overview": "Tổng quan",
+        "contracts": "Hợp đồng · {{n}}",
+        "review": "Đánh giá & ghi chú"
+      },
+      "roleSeg": "Chọn vai trò",
+      "noScoreYet": "Chưa có việc hoặc hợp đồng nào để chấm điểm vai trò này.",
+      "jobsTotal": "{{n}} việc có tính điểm",
+      "scoreTitle": "Điểm uy tín",
+      "group": { "service": "Dịch vụ", "goods": "Hàng hoá", "referral": "Giới thiệu" },
+      "web": {
+        "button": "Tìm trên internet",
+        "searching": "Đang tìm…",
+        "title": "Kết quả trên internet",
+        "hint": "Chỉ tên và mã số thuế được gửi đi; kết quả chỉ để tham khảo.",
+        "close": "Đóng kết quả",
+        "none": "Không tìm thấy thông tin đáng tin cậy.",
+        "save": "Lưu vào ghi chú",
+        "savedShort": "Đã lưu",
+        "saved": "Đã lưu vào ghi chú",
+        "error": {
+          "unavailable": "Chưa dùng được AI tìm web. Thử lại sau hoặc báo quản trị.",
+          "cap": "Đã hết hạn mức AI hôm nay.",
+          "failed": "Tìm trên internet không thành công. Thử lại sau."
+        }
+      },
+      "table": {
+        "criterion": "Tiêu chí",
+        "score": "Điểm",
+        "weight": "Trọng số",
+        "gives": "Góp",
+        "data": "Dữ liệu",
+        "noData": "chưa có",
+        "dataScore": "Điểm dữ liệu",
+        "stars": "đánh giá sao",
+        "jobsN": "{{n}} việc"
+      },
+      "jobs": {
+        "title": "Việc góp điểm “{{name}}”",
+        "manual": "Tiêu chí này lấy từ đánh giá sao (tab Đánh giá & ghi chú).",
+        "none": "Chưa có việc nào trong khoảng tính điểm.",
+        "contract": "Hợp đồng",
+        "late": "Trễ {{n}} ngày · lỗi {{fault}}",
+        "onTime": "Đúng hạn",
+        "manualJob": "Ghi tay",
+        "fault": { "partner": "đối tác", "ours": "của mình", "unknown": "chưa rõ" },
+        "hTip": "Hệ số độ cũ: việc càng cũ càng ít tính",
+        "h": "×{{h}}"
+      },
+      "steps": {
+        "title": "Các bước tới điểm cuối",
+        "group": "Nhóm {{group}}:",
+        "starsOnly": "chưa có dữ liệu, lấy điểm sao {{stars}} → {{score}}",
+        "dataOnly": "điểm dữ liệu {{data}} (tổng cột Góp), chưa có đánh giá sao → {{score}}",
+        "blend": "điểm dữ liệu {{data}}; sao TB {{stars}} ★ = {{starsScore}}; trộn {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
+        "role": "Điểm vai = bình quân các nhóm theo giá trị giao dịch: {{parts}} → {{score}}",
+        "foot": "Điểm cuối của vai: {{score}}"
+      },
+      "chart": {
+        "title": "Diễn biến điểm uy tín",
+        "empty": "Chưa đủ dữ liệu để vẽ biểu đồ.",
+        "aria": "Điểm uy tín {{n}} tháng",
+        "good": "TỐT",
+        "fair": "KHÁ",
+        "range": { "3": "3 tháng", "6": "6 tháng", "12": "1 năm" }
+      },
+      "contracts": {
+        "title": "Hợp đồng liên quan",
+        "stageFilter": "Lọc theo giai đoạn",
+        "stage": {
+          "all": "Tất cả",
+          "not_started": "Chưa bắt đầu",
+          "in_progress": "Đang thực hiện",
+          "done": "Đã xong"
+        },
+        "emptyTitle": "Không có hợp đồng",
+        "emptyBody": "Đối tác này chưa có hợp đồng đã xác nhận.",
+        "emptyFilter": "Không có hợp đồng ở giai đoạn này.",
+        "col": {
+          "contract": "Hợp đồng",
+          "deal": "Loại",
+          "value": "Giá trị",
+          "period": "Hiệu lực",
+          "stage": "Giai đoạn"
+        },
+        "deal": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
+        "overdue": "Quá hạn",
+        "view": "Xem"
+      },
+      "review": {
+        "title": "Đánh giá thủ công",
+        "share": "chiếm {{s}}% điểm",
+        "noCriteria": "Chưa có tiêu chí để đánh giá.",
+        "history": "Lịch sử đánh giá",
+        "historyNone": "Chưa có đánh giá nào.",
+        "starsN": "{{n}} sao",
+        "starsFor": "Đánh giá {{name}}",
+        "noData": "chưa có dữ liệu",
+        "data": "dữ liệu {{n}}",
+        "reasonRequired": "Lệch hơn {{gap}} điểm so với dữ liệu — cần ghi lý do",
+        "reasonOptional": "Lý do (không bắt buộc)",
+        "reasonFor": "Lý do đánh giá {{name}}",
+        "save": "Lưu đánh giá",
+        "saving": "Đang lưu…",
+        "saved": "Đã lưu đánh giá",
+        "failed": "Không lưu được đánh giá. Kiểm tra lý do rồi thử lại."
+      },
+      "notes": {
+        "title": "Ghi chú",
+        "optional": "không bắt buộc",
+        "placeholder": "VD: Liên hệ chị Lan phòng kế toán khi đối soát",
+        "save": "Lưu ghi chú",
+        "saved": "Đã lưu ghi chú",
+        "none": "Chưa có ghi chú.",
+        "fromInternet": "Từ internet",
+        "delete": "Xoá ghi chú",
+        "deleteTitle": "Xoá ghi chú?",
+        "deleteBody": "Ghi chú sẽ bị xoá khỏi đối tác này.",
+        "deleteAria": "Xoá ghi chú"
+      }
+    }
+  }
+}

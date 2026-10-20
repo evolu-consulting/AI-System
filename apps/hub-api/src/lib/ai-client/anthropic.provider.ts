@@ -27,6 +27,7 @@ export function anthropicProvider(o: { apiKey: string; baseURL?: string }): Mode
   return {
     key: "anthropic",
     async complete(r): Promise<ModelReply> {
+      if (r.webSearch) return { ok: false, code: "UNAVAILABLE" }; // V2-I: tìm web chỉ chạy trên gói (Q8: ai-sub)
       let stream: ReturnType<typeof client.beta.messages.stream> | undefined;
       try {
         stream = client.beta.messages.stream(

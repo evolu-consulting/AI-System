@@ -1,5 +1,9 @@
-// PK-FR-10 · HD8-FR-01 · route /partners — danh sách đối tác + điểm uy tín (port mgmt `PartnersPage.tsx`).
+// PK-FR-10 · HD8-FR-01 · V2-I · route /partners — danh sách đối tác (điểm từng vai); `?party=` mở trang chi tiết (tab, vai, khoảng biểu đồ).
 import { createFileRoute } from "@tanstack/react-router";
-import { PartnersPage } from "~/features/partners/pages/PartnersPage";
+import { parsePartnersSearch } from "~/features/partners/lib/partner-v2";
+import { PartnersRoutePage } from "~/features/partners/pages/PartnersRoutePage";
 
-export const Route = createFileRoute("/_authed/partners")({ component: PartnersPage });
+export const Route = createFileRoute("/_authed/partners")({
+  validateSearch: parsePartnersSearch,
+  component: PartnersRoutePage,
+});

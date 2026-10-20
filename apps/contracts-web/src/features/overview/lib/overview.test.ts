@@ -1,6 +1,6 @@
 // nav-v2 · Tổng quan: luật thuần — nhóm trạng thái, số ngày còn lại, đối tác CHÚ Ý.
 import { describe, expect, test } from "bun:test";
-import type { ContractFacets, PartnerRow } from "@ai/contracts";
+import type { ContractFacets, RepPartnerRow } from "@ai/contracts";
 import {
   counterparty,
   daysLeft,
@@ -11,8 +11,8 @@ import {
 } from "./overview";
 
 const facets = (status: { v: string; n: number }[]) => ({ status }) as unknown as ContractFacets;
-const partner = (name: string, score: number | null, band: PartnerRow["band"]) =>
-  ({ name, score, band, party: name, role: "customer", reason: "" }) as unknown as PartnerRow;
+const partner = (name: string, score: number | null, level: RepPartnerRow["level"]) =>
+  ({ name, score, level, party: name, role: "customer", jobs: 5, groups: [] }) as RepPartnerRow;
 
 describe("groupCounts", () => {
   test("gộp 9 trạng thái vào 3 nhóm và cộng tổng", () => {
@@ -65,7 +65,7 @@ describe("partnersToReview", () => {
       partner("Beta", 63, "watch"),
       partner("Alpha", 80, "good"),
       partner("Gamma", 55, "watch"),
-      partner("Delta", null, null),
+      partner("Delta", null, "new"),
     ];
     expect(partnersToReview(rows).map((p) => p.name)).toEqual(["Gamma", "Beta"]);
     expect(partnersToReview(undefined)).toEqual([]);

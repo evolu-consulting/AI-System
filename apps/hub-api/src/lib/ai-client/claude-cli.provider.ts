@@ -43,7 +43,10 @@ const BASE_ENV = [
 ];
 const AUTH_RE = /\/login|not logged in|log in|authenticat|oauth|invalid api key|credential/i;
 
-export function cliArgs(model: string, system: string): string[] {
+/** Lượt tìm web (V2-I): đúng một công cụ `WebSearch` (không Bash/đọc tệp/MCP), vài lượt để gọi tìm rồi trả lời. */
+export const WEB_SEARCH_MAX_TURNS = 6;
+
+export function cliArgs(model: string, system: string, webSearch = false): string[] {
   return [
     "-p",
     "--output-format",
@@ -51,11 +54,12 @@ export function cliArgs(model: string, system: string): string[] {
     "--model",
     model,
     "--max-turns",
-    "1",
+    webSearch ? String(WEB_SEARCH_MAX_TURNS) : "1",
     "--system-prompt",
     system,
     "--tools",
-    "",
+    webSearch ? "WebSearch" : "",
+    ...(webSearch ? ["--allowedTools", "WebSearch"] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "",
@@ -191,7 +195,7 @@ export function claudeCliProvider(o: ClaudeCliOptions): ModelProvider {
       if (r.system.length > SYSTEM_ARG_MAX) return { ok: false, code: "FAILED" };
       try {
         const out = await gate(r.signal, () =>
-          run([o.cliPath, ...cliArgs(r.model, r.system)], {
+          run([o.cliPath, ...cliArgs(r.model, r.system, r.webSearch === true)], {
             stdin: r.prompt,
             env: cliEnv(src, {
               ...(o.configDir ? { configDir: o.configDir } : {}),

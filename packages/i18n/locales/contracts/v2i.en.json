@@ -1,0 +1,163 @@
+{
+  "contracts": {
+    "pv2": {
+      "title": "Partners",
+      "lead": "Reputation scores are computed from logged jobs and contract deadlines, separately for each role.",
+      "search": "Search by partner name…",
+      "roleFilter": "Filter by role",
+      "filter": {
+        "all": "All roles",
+        "supplier": "Supplier",
+        "customer": "Customer",
+        "commission_payer": "Commission payer",
+        "watch": "Needs attention"
+      },
+      "roleWord": {
+        "supplier": "Supplier",
+        "customer": "Customer",
+        "commission_payer": "Commission payer"
+      },
+      "roleShort": {
+        "supplier": "Supplier",
+        "customer": "Customer",
+        "commission_payer": "Commission"
+      },
+      "badge": { "new": "NEW" },
+      "newTip": "New — not enough jobs to score yet",
+      "level": { "good": "Good", "fair": "Fair", "watch": "Needs attention", "new": "New" },
+      "contractsN": "{{n}} contracts",
+      "close": "Close",
+      "log": "+ Log a job",
+      "detail": "Details",
+      "emptyTitle": "No partners yet",
+      "emptyBody": "Partners appear automatically once a contract exists.",
+      "noMatchTitle": "No matching partners",
+      "noMatchBody": "Try another keyword or clear the filter.",
+      "foot": "Scores are recomputed each time the page opens, using the rules of each product group and role.",
+      "howLink": "⚙ How scores work",
+      "mst": "Tax ID",
+      "noRole": "This partner has no role yet.",
+      "tabs": "Partner information",
+      "tab": {
+        "overview": "Overview",
+        "contracts": "Contracts · {{n}}",
+        "review": "Reviews & notes"
+      },
+      "roleSeg": "Choose role",
+      "noScoreYet": "No jobs or contracts to score this role yet.",
+      "jobsTotal": "{{n}} scored jobs",
+      "scoreTitle": "Reputation score",
+      "group": { "service": "Services", "goods": "Goods", "referral": "Referral" },
+      "web": {
+        "button": "Search the internet",
+        "searching": "Searching…",
+        "title": "Results from the internet",
+        "hint": "Only the name and tax ID are sent; results are for reference only.",
+        "close": "Close results",
+        "none": "No reliable information found.",
+        "save": "Save to notes",
+        "savedShort": "Saved",
+        "saved": "Saved to notes",
+        "error": {
+          "unavailable": "AI web search is not available. Try again later or tell an admin.",
+          "cap": "Today's AI quota is used up.",
+          "failed": "The internet search failed. Try again later."
+        }
+      },
+      "table": {
+        "criterion": "Criterion",
+        "score": "Score",
+        "weight": "Weight",
+        "gives": "Contribution",
+        "data": "Data",
+        "noData": "none yet",
+        "dataScore": "Data score",
+        "stars": "star reviews",
+        "jobsN": "{{n}} jobs"
+      },
+      "jobs": {
+        "title": "Jobs behind “{{name}}”",
+        "manual": "This criterion comes from star reviews (Reviews & notes tab).",
+        "none": "No jobs in the scoring window yet.",
+        "contract": "Contract",
+        "late": "{{n}} days late · fault: {{fault}}",
+        "onTime": "On time",
+        "manualJob": "Logged by hand",
+        "fault": { "partner": "partner", "ours": "ours", "unknown": "unknown" },
+        "hTip": "Age factor: older jobs count less",
+        "h": "×{{h}}"
+      },
+      "steps": {
+        "title": "Steps to the final score",
+        "group": "{{group}} group:",
+        "starsOnly": "no data yet, using star score {{stars}} → {{score}}",
+        "dataOnly": "data score {{data}} (sum of Contribution), no star review yet → {{score}}",
+        "blend": "data score {{data}}; avg {{stars}} ★ = {{starsScore}}; blend {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
+        "role": "Role score = average of the groups weighted by transaction value: {{parts}} → {{score}}",
+        "foot": "Final role score: {{score}}"
+      },
+      "chart": {
+        "title": "Reputation trend",
+        "empty": "Not enough data to draw the chart.",
+        "aria": "Reputation score over {{n}} months",
+        "good": "GOOD",
+        "fair": "FAIR",
+        "range": { "3": "3 months", "6": "6 months", "12": "1 year" }
+      },
+      "contracts": {
+        "title": "Related contracts",
+        "stageFilter": "Filter by stage",
+        "stage": {
+          "all": "All",
+          "not_started": "Not started",
+          "in_progress": "In progress",
+          "done": "Done"
+        },
+        "emptyTitle": "No contracts",
+        "emptyBody": "This partner has no confirmed contracts yet.",
+        "emptyFilter": "No contracts at this stage.",
+        "col": {
+          "contract": "Contract",
+          "deal": "Type",
+          "value": "Value",
+          "period": "Valid",
+          "stage": "Stage"
+        },
+        "deal": { "buy": "Buy", "sell": "Sell", "referral": "Referral" },
+        "overdue": "Overdue",
+        "view": "View"
+      },
+      "review": {
+        "title": "Manual review",
+        "share": "{{s}}% of the score",
+        "noCriteria": "No criteria to review yet.",
+        "history": "Review history",
+        "historyNone": "No reviews yet.",
+        "starsN": "{{n}} stars",
+        "starsFor": "Review {{name}}",
+        "noData": "no data yet",
+        "data": "data {{n}}",
+        "reasonRequired": "Differs from the data by more than {{gap}} points — a reason is required",
+        "reasonOptional": "Reason (optional)",
+        "reasonFor": "Reason for the {{name}} review",
+        "save": "Save review",
+        "saving": "Saving…",
+        "saved": "Review saved",
+        "failed": "Could not save the review. Check the reason and try again."
+      },
+      "notes": {
+        "title": "Notes",
+        "optional": "optional",
+        "placeholder": "e.g. Contact Lan in accounting for reconciliation",
+        "save": "Save note",
+        "saved": "Note saved",
+        "none": "No notes yet.",
+        "fromInternet": "From the internet",
+        "delete": "Delete note",
+        "deleteTitle": "Delete this note?",
+        "deleteBody": "The note will be removed from this partner.",
+        "deleteAria": "Delete note"
+      }
+    }
+  }
+}

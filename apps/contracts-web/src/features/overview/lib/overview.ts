@@ -1,6 +1,6 @@
 // nav-v2 · Tổng quan: luật thuần (không React, không đọc đồng hồ). Chỉ dùng dữ liệu/API sẵn có: việc cần xử lý (my-work), facets trạng thái
 // hợp đồng, danh sách HĐ sắp hết hiệu lực, đối tác ở mức CHÚ Ý (`band = watch`). Quyền xem (RLS) do các API tự lọc.
-import type { ContractFacets, ContractListRow, ContractStatus, PartnerRow } from "@ai/contracts";
+import type { ContractFacets, ContractListRow, ContractStatus, RepPartnerRow } from "@ai/contracts";
 
 /** "Cần xử lý" hiện tối đa bấy nhiêu việc, phần còn lại sau "Xem thêm". */
 export const WORK_PREVIEW = 6;
@@ -49,8 +49,8 @@ export const counterparty = (r: Pick<ContractListRow, "direction" | "seller" | "
   (r.direction === "sale" ? (r.buyer ?? r.seller) : (r.seller ?? r.buyer)) ?? "";
 
 /** Đối tác cần xem lại = mức CHÚ Ý, điểm thấp lên trước (cùng điểm: theo tên). */
-export function partnersToReview(rows: readonly PartnerRow[] | undefined): PartnerRow[] {
+export function partnersToReview(rows: readonly RepPartnerRow[] | undefined): RepPartnerRow[] {
   return (rows ?? [])
-    .filter((p) => p.band === "watch")
+    .filter((p) => p.level === "watch")
     .sort((a, b) => (a.score ?? 0) - (b.score ?? 0) || a.name.localeCompare(b.name, "vi"));
 }

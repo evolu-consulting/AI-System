@@ -77,16 +77,6 @@ const SCENES: Scene[] = [
     ready: partnersReady,
     act: openRow("+ Ghi việc"),
   },
-  {
-    name: "p02-partners-rate",
-    path: "/partners",
-    size: D,
-    theme: "light",
-    text: ["main"],
-    boxes: { ...listBoxes, rate: 'section[aria-label="Điểm tự chấm"]' },
-    ready: partnersReady,
-    act: openRow("Chấm điểm"),
-  },
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
       name: `p06-scoring-${theme}`,
@@ -334,25 +324,10 @@ test("HD8-FR-03 · Cách tính: tổng ≠ 100 khoá nút Lưu; lưu gửi tiêu
   ]);
 });
 
-test("HD8-FR-04 · HD8-FR-05 · Chấm điểm gửi điểm 0–100; Thêm báo giá gửi đơn giá số nguyên đồng", async ({
-  page,
-}) => {
+test("HD8-FR-05 · Thêm báo giá gửi đơn giá số nguyên đồng (chấm điểm: V2-I)", async ({ page }) => {
   test.skip(CAPTURE, "chỉ chạy trên contracts-web");
-  await prepare(page, SCENES.find((s) => s.name === "p02-partners-rate") as Scene);
+  await prepare(page, SCENES.find((s) => s.name === "p02-partners-light") as Scene);
   const sent = await recordWrites(page);
-  await page.getByLabel("Điểm Thái độ hợp tác (số)").fill("85");
-  await page.getByRole("button", { name: "Lưu điểm" }).click();
-  await expect.poll(() => sent.length).toBe(1);
-  expect(sent[0]).toEqual({
-    method: "PUT",
-    path: "/partners/ratings",
-    body: {
-      party: partnerData.BV,
-      role: "customer",
-      criterion: "custom:thai-do-hop-tac",
-      value: 85,
-    },
-  });
   await page.goto(`/prices?product=${encodeURIComponent(PORK)}`);
   await page.getByRole("button", { name: "+ Thêm báo giá" }).click();
   const dlg = page.locator("dialog[open]");
@@ -360,7 +335,8 @@ test("HD8-FR-04 · HD8-FR-05 · Chấm điểm gửi điểm 0–100; Thêm báo
   await dlg.locator('input[name="price"]').fill("93.000");
   await dlg.getByRole("button", { name: "Lưu báo giá" }).click();
   await expect(dlg).toBeHidden();
-  expect(sent[1]).toEqual({
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({
     method: "POST",
     path: "/prices/quotes",
     body: { product: PORK, supplier_name: "Heo Mới", price: 93_000, quoted_at: "2026-10-18" },

@@ -18,6 +18,8 @@ export type ModelRequest = {
   prompt: string;
   maxTokens: number;
   signal: AbortSignal;
+  /** V2-I · DT-07: cho phép đúng MỘT công cụ — tìm web (nhà cung cấp không hỗ trợ ⇒ `UNAVAILABLE`). */
+  webSearch?: boolean;
 };
 export type ModelReply =
   | { ok: true; text: string; model: string; usage: AiUsage }
@@ -78,6 +80,8 @@ export type AiCallRequest = {
   model: string;
   maxTokens?: number;
   signal: AbortSignal;
+  /** V2-I: lời gọi có tìm web (chỉ gói/CLI; xem `ModelRequest.webSearch`). */
+  webSearch?: boolean;
 };
 export type AiFailCode = "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED";
 export type AiCallResult =
@@ -156,6 +160,7 @@ async function callProvider(p: ModelProvider, req: AiCallRequest, maxTokens: num
       prompt: req.prompt,
       maxTokens,
       signal: req.signal,
+      ...(req.webSearch ? { webSearch: true } : {}),
     });
   } catch {
     return { ok: false, code: "FAILED" } as ModelReply;

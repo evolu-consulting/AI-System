@@ -16,7 +16,12 @@ import { pgUsageStore } from "./usage.pg";
 
 export const AI_TENANT_DAILY_TOKENS = 5_000_000;
 /** Các tính năng gọi AI client (khoá `feature` của usage). Trợ lý chat chạy qua runtime agent (profile Studio), không ở đây. */
-export const AI_FEATURES = ["knowledge.rerank", "knowledge.graph", "contracts.extract"] as const;
+export const AI_FEATURES = [
+  "knowledge.rerank",
+  "knowledge.graph",
+  "contracts.extract",
+  "contracts.partner-search",
+] as const;
 
 type Env = Record<string, string | undefined>;
 export type AiMode = "subscription" | "api" | "off";

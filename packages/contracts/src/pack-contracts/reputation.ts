@@ -100,3 +100,96 @@ export const RepJobSchema = z.strictObject({
   contract_id: z.uuid().nullish(),
 });
 export type RepJobIn = z.infer<typeof RepJobSchema>;
+
+// ---------- ra (V2-I: UI đọc) ----------
+export type RepGroup = (typeof REP_GROUPS)[number];
+export type RepRole = (typeof REP_ROLES)[number];
+export type RepGroupOut = {
+  group: RepGroup;
+  score: number | null;
+  data_score: number | null;
+  stars: number | null;
+  level: RepLevel;
+  jobs: number;
+  value: number;
+};
+/** `GET /reputation/partners`: một dòng mỗi đối tác × vai, kèm điểm từng nhóm. */
+export type RepPartnerRow = {
+  party: string;
+  name: string;
+  role: RepRole;
+  score: number | null;
+  level: RepLevel;
+  jobs: number;
+  groups: RepGroupOut[];
+};
+export type RepCriterionOut = {
+  key: string;
+  label: string;
+  kind: "ontime" | "jobs" | "bad_count" | "manual";
+  weight: number;
+  score: number | null;
+  n: number;
+};
+export type RepCellOut = RepGroupOut & { role: RepRole; criteria: RepCriterionOut[] };
+/** DT-02: một việc góp điểm của một tiêu chí. */
+export type RepDetailItem = {
+  source: "milestone" | "job";
+  id: string;
+  group: RepGroup;
+  criterion: string;
+  at: string;
+  score: number | null;
+  h: number;
+  label: string;
+  late_days?: number;
+  fault?: string | null;
+  contract_id: string | null;
+  contract?: string | null;
+  note?: string | null;
+};
+export type RepDetail = {
+  party: string;
+  name: string;
+  role: RepRole;
+  score: number | null;
+  level: RepLevel;
+  jobs: number;
+  groups: RepCellOut[];
+  items: RepDetailItem[];
+};
+export type RepHistoryPoint = {
+  period: string;
+  score: number | null;
+  level: RepLevel;
+  jobs: number;
+};
+/** DT-03: điểm đã chốt các tháng + điểm hiện tại + hai ngưỡng để vẽ đường TỐT/KHÁ. */
+export type RepHistory = {
+  party: string;
+  role: RepRole;
+  months: number;
+  thresholds: { good_from: number; fair_from: number };
+  points: RepHistoryPoint[];
+  current: { period: string; score: number | null; level: RepLevel; jobs: number } | null;
+};
+export type RepRatingRow = {
+  id: string;
+  group: RepGroup;
+  criterion: string;
+  stars: number;
+  reason: string | null;
+  by_user: string | null;
+  by: string | null;
+  at: string;
+};
+export type RepRatings = { current: RepRatingRow[]; history: RepRatingRow[] };
+export type RepSettingsOut = {
+  good_from: number;
+  fair_from: number;
+  min_jobs: number;
+  manual_share: number;
+  reason_gap: number;
+  lock_period: "month";
+};
+export type RepConfigOut = { settings: RepSettingsOut };
