@@ -100,7 +100,7 @@ describe("W1b · gửi đúng giờ", () => {
     const t = await sender(new FakeClock(noon(0))).drain();
     expect(t).toMatchObject({ claimed: 2, notified: 2, failed: 0 });
     expect([await statusOf(long), await statusOf(next)]).toEqual(["sent", "sent"]);
-    expect((await notices()).map((n) => n.title)).toEqual(["Đ".repeat(200), "Sau"]);
+    expect((await notices()).map((n) => n.title).sort()).toEqual(["Sau", "Đ".repeat(200)]); // cùng một câu ⇒ thứ tự không định
   });
   it("chưa tới giờ / đã xong / đã gửi ⇒ không gửi; không còn việc ⇒ null", async () => {
     await fresh();
