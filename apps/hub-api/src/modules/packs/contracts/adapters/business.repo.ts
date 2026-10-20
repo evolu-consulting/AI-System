@@ -78,12 +78,58 @@ export function businessRepo(tx: Tx, t: string) {
    * doanh thu + giá vốn các dòng có giá vốn, hoa hồng của HĐ Giới thiệu. `today` = ngày lịch tenant.
    */
   const rows = async (today: string, f: BizFilter): Promise<BizRow[]> => {
-    const id = f.id ?? null;
-    const grp = f.group ?? null;
-    const q = f.q ? likePattern(f.q) : null;
     const res = await one<Raw[]>(
       tx,
-      sql`with d as (select ${today}::date as t),
+      sql`with ${salesCtes(t, today, f)}, ${referralCtes(t)} ${BIZ_SELECT}`,
+    );
+    return res.map(toRow);
+  };
+
+  /** Lô (kèm giá nhập, chênh giá so với lô trước của thành phần), bán (kèm giá vốn) và số HĐ của MỘT SP — một câu. */
+  const extras = (id: string, today: string): Promise<BizExtras> =>
+    one<BizExtras>(tx, extrasQ(t, id, today));
+
+  /** HĐ có dòng gắn SP (mới nhất trước, ≤ 200) kèm hoa hồng của HĐ Giới thiệu. */
+  const contractsOf = (id: string): Promise<BizContractOut[]> =>
+    one<BizContractOut[]>(tx, contractsOfQ(t, id));
+
+  const exists = async (id: string): Promise<boolean> =>
+    (
+      await tx.execute(
+        sql`select 1 from contracts.products where tenant_id = ${t}::uuid and id = ${id}::uuid`,
+      )
+    ).length > 0;
+
+  return { rows, extras, contractsOf, exists, ...bizConfig(tx, t) };
+}
+export type BusinessRepo = ReturnType<typeof businessRepo>;
+
+function bizConfig(tx: Tx, t: string) {
+  const config = (): Promise<StoredBiz> =>
+    one<StoredBiz>(
+      tx,
+      sql`select jsonb_build_object('config', s.config, 'version', s.version, 'updated_at', s.updated_at) as j
+        from contracts.score_configs_v2 s where s.tenant_id = ${t}::uuid and s.scope = 'business'`,
+    );
+
+  const saveConfig = (cfg: unknown): Promise<NonNullable<StoredBiz>> =>
+    one<NonNullable<StoredBiz>>(
+      tx,
+      sql`insert into contracts.score_configs_v2 as s (tenant_id, scope, version, config)
+        values (${t}::uuid, 'business', 1, ${JSON.stringify(cfg)}::jsonb)
+        on conflict (tenant_id, scope) do update set version = s.version + 1, config = excluded.config,
+          updated_by = excluded.updated_by, updated_at = now()
+        returning jsonb_build_object('config', s.config, 'version', s.version, 'updated_at', s.updated_at) as j`,
+    );
+  return { config, saveConfig };
+}
+
+/** CTE ngày `d`, SP khớp lọc `p`, tồn `h`, hạn `ex`, giá vốn `mv`, dòng bán `sl`, gom bán `sa`. */
+function salesCtes(t: string, today: string, f: BizFilter) {
+  const id = f.id ?? null;
+  const grp = f.group ?? null;
+  const q = f.q ? likePattern(f.q) : null;
+  return sql`d as (select ${today}::date as t),
       p as (select p.id, p.name, p.name_key, p.unit, p.grp from contracts.products p
         where p.tenant_id = ${t}::uuid and (${id}::uuid is null or p.id = ${id}::uuid)
           and (${grp}::text is null or p.grp = ${grp}::text)
@@ -117,8 +163,12 @@ export function businessRepo(tx: Tx, t: string) {
           coalesce(sum(sl.qty * sl.unit_price) filter (where sl.cost is not null and sl.unit_price is not null), 0)::float8 as rev,
           coalesce(sum(sl.cost) filter (where sl.cost is not null and sl.unit_price is not null), 0)::float8 as cost,
           coalesce(sum(sl.qty * sl.unit_price), 0)::float8 as rev_all
-        from sl, d group by sl.product_id),
-      oc as (select o.contract_id, sum(o.amount) filter (where o.status in ('open', 'done')) as total,
+        from sl, d group by sl.product_id)`;
+}
+
+/** CTE hoa hồng `oc`, HĐ Giới thiệu theo SP `rc`, gom `rf`. */
+function referralCtes(t: string) {
+  return sql`oc as (select o.contract_id, sum(o.amount) filter (where o.status in ('open', 'done')) as total,
           sum(o.amount) filter (where o.status = 'done') as got
         from contracts.obligations o where o.tenant_id = ${t}::uuid and o.kind = 'commission' group by o.contract_id),
       rc as (select distinct i.product_id, c.id as cid, coalesce(c.confirmed_at, c.created_at)::date as dt
@@ -129,8 +179,10 @@ export function businessRepo(tx: Tx, t: string) {
           count(*) filter (where rc.dt > d.t - 91)::float8 as l3,
           count(*) filter (where rc.dt <= d.t - 91 and rc.dt > d.t - 182)::float8 as p3,
           coalesce(sum(oc.total), 0)::float8 as total, coalesce(sum(oc.got), 0)::float8 as got
-        from rc join d on true left join oc on oc.contract_id = rc.cid group by rc.product_id)
-      select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'grp', p.grp,
+        from rc join d on true left join oc on oc.contract_id = rc.cid group by rc.product_id)`;
+}
+
+const BIZ_SELECT = sql`select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'grp', p.grp,
           'kind', case when p.grp = 'referral' then 'referral' when h.has_quota then 'quota' when h.has_stock then 'stock' else 'order' end,
           'held', coalesce(h.held, 0), 'value', coalesce(h.value, 0),
           'exp_days', case when ex.exp_on is null then null else greatest(0, ex.exp_on - d.t) end,
@@ -141,16 +193,10 @@ export function businessRepo(tx: Tx, t: string) {
           'rev', coalesce(sa.rev, 0), 'cost', coalesce(sa.cost, 0), 'rev_all', coalesce(sa.rev_all, 0),
           'comm_total', coalesce(rf.total, 0), 'comm_got', coalesce(rf.got, 0)) order by p.name_key), '[]'::jsonb) as j
       from p cross join d left join h on h.product_id = p.id left join ex on ex.product_id = p.id
-        left join sa on sa.product_id = p.id left join rf on rf.product_id = p.id`,
-    );
-    return res.map(toRow);
-  };
+        left join sa on sa.product_id = p.id left join rf on rf.product_id = p.id`;
 
-  /** Lô (kèm giá nhập, chênh giá so với lô trước của thành phần), bán (kèm giá vốn) và số HĐ của MỘT SP — một câu. */
-  const extras = (id: string, today: string): Promise<BizExtras> =>
-    one<BizExtras>(
-      tx,
-      sql`with lots as (select l.id, l.seq, l.received_on, l.qty, l.remaining, l.expires_on, c.name as comp, m.unit_cost,
+function extrasQ(t: string, id: string, today: string) {
+  return sql`with lots as (select l.id, l.seq, l.received_on, l.qty, l.remaining, l.expires_on, c.name as comp, m.unit_cost,
           m.contract_id, k.seller,
           lag(m.unit_cost) over (partition by l.component_id order by l.seq) as prev
         from contracts.stock_lots l
@@ -181,14 +227,11 @@ export function businessRepo(tx: Tx, t: string) {
             order by s.done_at desc, s.cid) from (select * from sales order by done_at desc limit 100) s), '[]'::jsonb),
         'contracts_count', (select count(*)::int from contracts.contracts k where k.tenant_id = ${t}::uuid and k.kind = 'contract'
           and exists (select 1 from contracts.contract_items i where i.tenant_id = k.tenant_id and i.contract_id = k.id
-            and i.product_id = ${id}::uuid))) as j`,
-    );
+            and i.product_id = ${id}::uuid))) as j`;
+}
 
-  /** HĐ có dòng gắn SP (mới nhất trước, ≤ 200) kèm hoa hồng của HĐ Giới thiệu. */
-  const contractsOf = (id: string): Promise<BizContractOut[]> =>
-    one<BizContractOut[]>(
-      tx,
-      sql`select coalesce(jsonb_agg(jsonb_build_object('id', k.id, 'title', k.title, 'number', k.number, 'deal', k.deal,
+function contractsOfQ(t: string, id: string) {
+  return sql`select coalesce(jsonb_agg(jsonb_build_object('id', k.id, 'title', k.title, 'number', k.number, 'deal', k.deal,
           'status', k.status, 'partner', case when k.deal = 'buy' then k.seller else k.buyer end, 'value', k.value,
           'start_date', k.start_date,
           'commission_total', case when k.deal = 'referral' then coalesce(oc.total, 0) end,
@@ -201,33 +244,5 @@ export function businessRepo(tx: Tx, t: string) {
         left join (select o.contract_id, sum(o.amount) filter (where o.status in ('open', 'done')) as total,
             sum(o.amount) filter (where o.status = 'done') as got
           from contracts.obligations o where o.tenant_id = ${t}::uuid and o.kind = 'commission' group by o.contract_id) oc
-          on oc.contract_id = k.id`,
-    );
-
-  const exists = async (id: string): Promise<boolean> =>
-    (
-      await tx.execute(
-        sql`select 1 from contracts.products where tenant_id = ${t}::uuid and id = ${id}::uuid`,
-      )
-    ).length > 0;
-
-  const config = (): Promise<StoredBiz> =>
-    one<StoredBiz>(
-      tx,
-      sql`select jsonb_build_object('config', s.config, 'version', s.version, 'updated_at', s.updated_at) as j
-        from contracts.score_configs_v2 s where s.tenant_id = ${t}::uuid and s.scope = 'business'`,
-    );
-
-  const saveConfig = (cfg: unknown): Promise<NonNullable<StoredBiz>> =>
-    one<NonNullable<StoredBiz>>(
-      tx,
-      sql`insert into contracts.score_configs_v2 as s (tenant_id, scope, version, config)
-        values (${t}::uuid, 'business', 1, ${JSON.stringify(cfg)}::jsonb)
-        on conflict (tenant_id, scope) do update set version = s.version + 1, config = excluded.config,
-          updated_by = excluded.updated_by, updated_at = now()
-        returning jsonb_build_object('config', s.config, 'version', s.version, 'updated_at', s.updated_at) as j`,
-    );
-
-  return { rows, extras, contractsOf, exists, config, saveConfig };
+          on oc.contract_id = k.id`;
 }
-export type BusinessRepo = ReturnType<typeof businessRepo>;

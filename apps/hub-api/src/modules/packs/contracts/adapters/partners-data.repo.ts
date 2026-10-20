@@ -268,13 +268,8 @@ export type WindowOverride = Partial<
  * chấm tay mới nhất; (B) sự thật HĐ + cấu hình + danh bạ + giá thị trường; (C) HĐ mua + dòng hàng + báo giá.
  */
 /** `roles`: vai cần chấm (vd so giá chỉ cần NCC, danh sách mặt hàng không cần điểm ⇒ `[]`) — dòng vai khác không đọc. */
-export const partnerLedger = (
-  tx: Tx,
-  t: string,
-  today: string,
-  ov: WindowOverride = {},
-  roles: readonly Role[] = BOTH,
-) =>
+export type LedgerWindow = { today: string; ov?: WindowOverride; roles?: readonly Role[] };
+export const partnerLedger = (tx: Tx, t: string, { today, ov = {}, roles = BOTH }: LedgerWindow) =>
   one<Pick<Raw, "groups" | "pend" | "rated">>(
     tx,
     sql`with p as (select ${t}::uuid as t), ${winCtes(today, ov, roles)}
@@ -316,7 +311,7 @@ export async function partnerData(
   ov: WindowOverride = {},
 ): Promise<PartnerData> {
   return partnerDataOf([
-    await partnerLedger(tx, t, today, ov),
+    await partnerLedger(tx, t, { today, ov }),
     await partnerFacts(tx, t, today),
     await partnerPrices(tx, t),
   ]);

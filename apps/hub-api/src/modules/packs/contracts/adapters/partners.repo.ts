@@ -22,11 +22,23 @@ export type { PartnerData, StoredConfig };
 const side = (c: string) =>
   sql.raw(`case when ${c}.direction = 'sale' then 'buyer' else 'supplier' end`);
 
+type QuoteWrite = QuoteCreate & {
+  product_name: string;
+  unit: string | null;
+  tax: string | null;
+  check: { verified: boolean | null; page_date: string | null; note: string | null };
+};
+
 export function partnersRepo(tx: Tx, t: string) {
+  return { ...scoreReads(tx, t), ...configWrites(tx, t), ...eventWrites(tx, t) };
+}
+export type PartnersRepo = ReturnType<typeof partnersRepo>;
+
+function scoreReads(tx: Tx, t: string) {
   return {
     data: (today: string, ov?: WindowOverride) => partnerData(tx, t, today, ov),
     ledger: (today: string, ov?: WindowOverride, roles?: readonly Role[]) =>
-      partnerLedger(tx, t, today, ov, roles),
+      partnerLedger(tx, t, { today, ov, roles }),
     facts: (today: string) => partnerFacts(tx, t, today),
     prices: () => partnerPrices(tx, t),
     ratingEvents: (party: string, role: Role) => ratingEvents(tx, t, party, role),
@@ -47,7 +59,11 @@ export function partnersRepo(tx: Tx, t: string) {
             'updated_by', null, 'updated_at', s.updated_at) as j
           from contracts.score_configs s where s.tenant_id = ${t}::uuid and s.role = ${role} for update`,
       ),
+  };
+}
 
+function configWrites(tx: Tx, t: string) {
+  return {
     /** `save_config`: cấu hình + một dòng lịch sử + ảnh chụp điểm mọi đối tác của vai, MỘT câu. */
     saveConfig: (w: {
       role: Role;
@@ -87,7 +103,11 @@ export function partnersRepo(tx: Tx, t: string) {
           from (select * from contracts.score_config_history h where h.tenant_id = ${t}::uuid and h.role = ${role}
             order by h.version desc limit 200) h`,
       ),
+  };
+}
 
+function eventWrites(tx: Tx, t: string) {
+  return {
     /** Chấm tay: một dòng `rating` trên sổ; đối tác phải có HĐ người dùng thấy (như `visible_company`). */
     insertRating: (w: {
       party: string;
@@ -116,17 +136,18 @@ export function partnersRepo(tx: Tx, t: string) {
      * Báo giá (`routes/prices.add_quote` + `compare.supplier_company`): NCC không MST ⇒ đối tác cùng tên (fold) đã có trên HĐ, không thì
      * khoá theo tên; NCC chưa có trong danh bạ thì vào danh bạ (`created_from = quote`). Kết quả kiểm link lưu kèm. MỘT câu.
      */
-    insertQuote: (
-      q: QuoteCreate & {
-        product_name: string;
-        unit: string | null;
-        tax: string | null;
-        check: { verified: boolean | null; page_date: string | null; note: string | null };
-      },
-    ) =>
-      one<{ id: string }>(
-        tx,
-        sql`with named as (
+    insertQuote: (q: QuoteWrite) => one<{ id: string }>(tx, insertQuoteQ(t, q)),
+    deleteQuote: async (id: string): Promise<boolean> =>
+      (
+        await tx.execute(
+          sql`delete from contracts.price_quotes where tenant_id = ${t}::uuid and id = ${id}::uuid returning id`,
+        )
+      ).length > 0,
+  };
+}
+
+function insertQuoteQ(t: string, q: QuoteWrite) {
+  return sql`with named as (
           select contracts.party_key(c.fields -> (s.side || '_name') ->> 'value', c.fields -> (s.side || '_tax_id') ->> 'value') as k
           from contracts.contracts c, lateral (values ('supplier'), ('buyer')) s (side)
           where c.tenant_id = ${t}::uuid and ${q.tax}::text is null
@@ -143,14 +164,5 @@ export function partnersRepo(tx: Tx, t: string) {
           ${q.price}::bigint, ${q.quoted_at}::date, ${q.url ? "website" : "quote"}, ${q.url ?? null}, ${q.check.verified}::boolean,
           ${q.check.page_date}::date, ${q.check.note}, ${q.note ?? null}, nullif(current_setting('app.user_id', true), '')::uuid
         from k
-        returning jsonb_build_object('id', id) as j`,
-      ),
-    deleteQuote: async (id: string): Promise<boolean> =>
-      (
-        await tx.execute(
-          sql`delete from contracts.price_quotes where tenant_id = ${t}::uuid and id = ${id}::uuid returning id`,
-        )
-      ).length > 0,
-  };
+        returning jsonb_build_object('id', id) as j`;
 }
-export type PartnersRepo = ReturnType<typeof partnersRepo>;

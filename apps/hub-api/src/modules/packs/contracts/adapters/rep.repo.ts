@@ -39,15 +39,20 @@ const partyOfCell = (t: string, party: string, role: string, grp: string) => sql
     and c.rep_cell = ${cellIndex(grp as RepGroup, role as RepRole)}::smallint and c.partner_key = ${party}::text)`;
 
 export function repRepo(tx: Tx, t: string) {
+  return { ...scoreReads(tx, t), ...eventWrites(tx, t), ...lockOps(tx, t) };
+}
+export type RepRepo = ReturnType<typeof repRepo>;
+
+function scoreReads(tx: Tx, t: string) {
   return {
     scoreRows: (today: string, cells: CellParam[], party: string | null = null) =>
-      scoreRows(tx, t, today, cells, party),
+      scoreRows(tx, t, { today, cells, party }),
     aggRows: (today: string, cells: CellParam[], party: string | null = null) =>
-      aggRows(tx, t, today, cells, party),
+      aggRows(tx, t, { today, cells, party }),
     factRows: (today: string, cells: CellParam[], party: string | null = null) =>
-      factRows(tx, t, today, cells, party),
+      factRows(tx, t, { today, cells, party }),
     detailRows: (today: string, cells: CellParam[], party: string) =>
-      detailRows(tx, t, today, cells, party),
+      detailRows(tx, t, { today, cells, party }),
 
     /** Mọi hàng cấu hình đã lưu (ô / settings / job_types). */
     configs: () =>
@@ -69,7 +74,11 @@ export function repRepo(tx: Tx, t: string) {
           returning json_build_object('scope', s.scope, 'version', s.version, 'config', s.config,
             'updated_by', contracts.user_label(s.updated_by), 'updated_at', s.updated_at) as j`,
       ),
+  };
+}
 
+function eventWrites(tx: Tx, t: string) {
+  return {
     /** HD-06: một việc ghi tay; đối tác phải là bên của HĐ đã xác nhận người gọi thấy, đúng ô. Null ⇒ không thấy. */
     insertJob: (w: {
       party: string;
@@ -114,7 +123,11 @@ export function repRepo(tx: Tx, t: string) {
           'criterion', r.criterion, 'stars', r.stars, 'reason', r.reason, 'by', contracts.user_label(r.by_user),
           'at', r.at) as j from r`,
       ),
+  };
+}
 
+function lockOps(tx: Tx, t: string) {
+  return {
     /** Mọi lượt chấm của một đối tác × vai (mới nhất trước, ≤ 200) — UI lấy lượt mới nhất mỗi người. */
     ratings: (party: string, role: RepRole) =>
       one<Record<string, unknown>[]>(
@@ -161,4 +174,3 @@ export function repRepo(tx: Tx, t: string) {
       ),
   };
 }
-export type RepRepo = ReturnType<typeof repRepo>;

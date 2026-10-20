@@ -200,26 +200,16 @@ function namesOf(r: Raw): Map<string, string> {
 export type AggPart = Pick<Raw, "ag">;
 export type FactPart = Omit<Raw, "ag">;
 /** Câu (A): việc đã gom theo (đối tác, ô, nguồn) — mốc + việc ghi tay. */
-export const aggRows = (
-  tx: Tx,
-  t: string,
-  today: string,
-  cells: CellParam[],
-  party: string | null,
-) =>
+/** Câu chấm: ngày tính, các ô, một đối tác (null ⇒ tất cả). */
+export type RepQuery = { today: string; cells: CellParam[]; party: string | null };
+export const aggRows = (tx: Tx, t: string, { today, cells, party }: RepQuery) =>
   one<AggPart>(
     tx,
     sql`with ${base(t, today, cells)}, ${aggCte(party, { t, d: today, lo: arrsOf(today, cells).lomin })}
     select json_build_object('ag', ${cols("ag", ["party", "cell", "src", "n", "wh", "whs"])}) as j`,
   );
 /** Câu (B): HĐ theo ô (giá trị, tên) + sao TB + danh bạ. */
-export const factRows = (
-  tx: Tx,
-  t: string,
-  today: string,
-  cells: CellParam[],
-  party: string | null,
-) =>
+export const factRows = (tx: Tx, t: string, { today, cells, party }: RepQuery) =>
   one<FactPart>(
     tx,
     sql`with ${base(t, today, cells)}, ${cvCte(party, { t, d: today, lo: arrsOf(today, cells).lomin })}, ${rtCte(party)},
@@ -238,15 +228,9 @@ export const rowsOf = (a: AggPart, f: FactPart): ScoreRows => {
  * Hai câu ĐỘC LẬP (A) + (B) trong MỘT tx (vòng chốt tháng). Đường đọc HTTP chạy chúng song song ở hai tx (`reputation.usecase.ts`,
  * Luật 4c: độ trễ = câu chậm nhất).
  */
-export async function scoreRows(
-  tx: Tx,
-  t: string,
-  today: string,
-  cells: CellParam[],
-  party: string | null = null,
-): Promise<ScoreRows> {
-  const a = await aggRows(tx, t, today, cells, party);
-  return rowsOf(a, await factRows(tx, t, today, cells, party));
+export async function scoreRows(tx: Tx, t: string, q: RepQuery): Promise<ScoreRows> {
+  const a = await aggRows(tx, t, q);
+  return rowsOf(a, await factRows(tx, t, q));
 }
 
 export type DetailMilestone = {
@@ -273,9 +257,7 @@ export type DetailJob = {
 export async function detailRows(
   tx: Tx,
   t: string,
-  today: string,
-  cells: CellParam[],
-  party: string,
+  { today, cells, party }: RepQuery & { party: string },
 ) {
   const r = await one<{ ms: (Omit<DetailMilestone, "grp"> & { cell: number })[]; jb: DetailJob[] }>(
     tx,

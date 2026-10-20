@@ -40,6 +40,16 @@ const NOTE =
 
 export function partnerRolesRepo(tx: Tx, t: string) {
   return {
+    ...roleReads(tx, t),
+    ...profileReads(tx, t),
+    ...contractReads(tx, t),
+    ...noteWrites(tx, t),
+  };
+}
+export type PartnerRolesRepo = ReturnType<typeof partnerRolesRepo>;
+
+function roleReads(tx: Tx, t: string) {
+  return {
     /**
      * Vai (một đối tác hoặc tất cả) + số việc mỗi vai (sổ `partner_events` bỏ việc huỷ, chấm tay — dưới RLS của sổ) + số việc tối
      * thiểu đã lưu của vai (`score_configs`, chưa có ⇒ null).
@@ -65,10 +75,12 @@ export function partnerRolesRepo(tx: Tx, t: string) {
       ),
 
     /** Đối tác khớp khoá; không có MST ⇒ thêm khớp tên đã fold (vai, danh bạ tên/tên ngắn). Ưu tiên khớp khoá. */
-    find: (key: string, fold: string | null) =>
-      one<PartyHit | null>(
-        tx,
-        sql`with hit as (
+    find: (key: string, fold: string | null) => one<PartyHit | null>(tx, findQ(t, key, fold)),
+  };
+}
+
+function findQ(t: string, key: string, fold: string | null) {
+  return sql`with hit as (
             select x.k from (
               select pr.party_key as k, 1 as pri from contracts.partner_roles pr
                 where pr.tenant_id = ${t}::uuid and pr.party_key = ${key}
@@ -86,9 +98,11 @@ export function partnerRolesRepo(tx: Tx, t: string) {
               'name', coalesce(co.short_name, co.name, (select pr.name from contracts.partner_roles pr
                 where pr.tenant_id = ${t}::uuid and pr.party_key = h.k and pr.name is not null order by pr.first_at limit 1)),
               'tax_id', coalesce(co.tax_id, case when h.k like 'tax:%' then substr(h.k, 5) end)) as j
-          from hit h left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = h.k`,
-      ),
+          from hit h left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = h.k`;
+}
 
+function profileReads(tx: Tx, t: string) {
+  return {
     notes: (party: string) =>
       one<PartnerNote[]>(
         tx,
@@ -117,7 +131,11 @@ export function partnerRolesRepo(tx: Tx, t: string) {
           where co.id is not null or exists (select 1 from contracts.partner_roles p
             where p.tenant_id = ${t}::uuid and p.party_key = k.party)`,
       ),
+  };
+}
 
+function contractReads(tx: Tx, t: string) {
+  return {
     /** V2-I · DT-06: HĐ đã xác nhận của đối tác (mới nhất trước, ≤ 200) kèm đếm mốc + mốc mở sớm nhất để suy giai đoạn. */
     contracts: (party: string) =>
       one<PartnerContractRaw[]>(
@@ -148,7 +166,11 @@ export function partnerRolesRepo(tx: Tx, t: string) {
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key is not null and c.status in (${CONFIRMED})
             group by c.partner_key) x`,
       ),
+  };
+}
 
+function noteWrites(tx: Tx, t: string) {
+  return {
     /** Thêm ghi chú khi đối tác có (vai/danh bạ mình thấy); không ⇒ null. */
     addNote: (party: string, body: string, source: "manual" | "internet" = "manual") =>
       one<PartnerNote | null>(
@@ -172,4 +194,3 @@ export function partnerRolesRepo(tx: Tx, t: string) {
       ),
   };
 }
-export type PartnerRolesRepo = ReturnType<typeof partnerRolesRepo>;
