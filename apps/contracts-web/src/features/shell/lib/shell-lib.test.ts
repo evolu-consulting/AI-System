@@ -1,11 +1,12 @@
 // PK-FR-10 · TF5 · luật thuần của Shell: vai theo quyền gói, mục menu đang chọn, giới hạn độ rộng khoang, giao diện.
 import { describe, expect, test } from "bun:test";
-import { activeNav, canSeeSettings, EXTRA_NAV, MAIN_NAV, NAV, roleOf } from "./nav";
+import { activeNav, canSeeSettings, layoutOf, NAV, roleOf } from "./nav";
 import {
   ASSISTANT_DEFAULT,
   ASSISTANT_MAX,
   ASSISTANT_MIN,
   clampWidth,
+  NAV_PINNED_KEY,
   readBool,
   readWidth,
 } from "./stored";
@@ -24,26 +25,34 @@ describe("vai theo quyền gói", () => {
   });
 });
 
-describe("menu", () => {
-  test("6 mục đúng đường dẫn (4 của mgmt-app + Việc của tôi + Mua hàng)", () => {
-    expect(NAV.map((n) => n.to)).toEqual([
-      "/contracts",
-      "/partners",
-      "/prices",
-      "/cks",
-      "/my-work",
-      "/sourcing",
+describe("menu (nav-v2)", () => {
+  test("đúng 4 mục, đúng thứ tự: Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá", () => {
+    expect(NAV.map((n) => n.to)).toEqual(["/overview", "/contracts", "/partners", "/products"]);
+    expect(NAV.map((n) => n.labelKey)).toEqual([
+      "contracts.nav.overview",
+      "contracts.nav.contracts",
+      "contracts.nav.partners",
+      "contracts.nav.products",
     ]);
   });
-  test("menu chính/thanh dưới đúng 4 mục mgmt-app; mục thêm tách nhóm riêng", () => {
-    expect(MAIN_NAV.map((n) => n.to)).toEqual(["/contracts", "/partners", "/prices", "/cks"]);
-    expect(EXTRA_NAV.map((n) => n.to)).toEqual(["/my-work", "/sourcing"]);
-  });
   test("mục đang chọn theo tiền tố đường dẫn, không khớp nửa chữ", () => {
-    expect(activeNav("/cks/123")?.to).toBe("/cks");
     expect(activeNav("/contracts/new")?.to).toBe("/contracts");
+    expect(activeNav("/products")?.to).toBe("/products");
     expect(activeNav("/contractsX")).toBeUndefined();
     expect(activeNav("/settings")).toBeUndefined();
+  });
+  test("tuyến cũ và chi tiết khách rơi về mục chứa chúng", () => {
+    expect(activeNav("/cks/123")?.to).toBe("/products");
+    expect(activeNav("/prices")?.to).toBe("/products");
+    expect(activeNav("/sourcing")?.to).toBe("/products");
+    expect(activeNav("/my-work")?.to).toBe("/overview");
+  });
+  test("bố cục: Tổng quan rộng; danh sách đầy cột; còn lại đọc", () => {
+    expect(layoutOf("/overview")).toBe("wide");
+    expect(layoutOf("/contracts")).toBe("board");
+    expect(layoutOf("/partners")).toBe("board");
+    expect(layoutOf("/products")).toBe("board");
+    expect(layoutOf("/contracts/new")).toBe("reading");
   });
 });
 
@@ -57,6 +66,7 @@ describe("độ rộng khoang phải", () => {
   test("storage không có / bị chặn ⇒ mặc định", () => {
     expect(readBool("assistant:open", false)).toBe(false);
     expect(readWidth("assistant:width")).toBe(ASSISTANT_DEFAULT);
+    expect(readBool(NAV_PINNED_KEY, true)).toBe(true);
   });
 });
 

@@ -11,13 +11,15 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
-import { activeNav, layoutOf, roleOf } from "../lib/nav";
+import { layoutOf, roleOf } from "../lib/nav";
+import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
-  const { pathname, searchStr } = useLocation();
-  const layout = layoutOf(pathname, searchStr);
+  const { pathname } = useLocation();
+  const layout = layoutOf(pathname);
   const dock = useDock();
+  const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });
   const sheetName =
     dock.sheet === "feedback" ? t("contracts.shell.feedback") : t("contracts.shell.assistant");
@@ -25,12 +27,13 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
     <div
       className={cn("flex h-dvh overflow-hidden", dock.dragging && "cursor-col-resize select-none")}
     >
-      <Sidebar user={user} role={role} onLogout={logout} />
+      <Sidebar user={user} role={role} pinned={pinned} onLogout={logout} />
       <div className="flex h-dvh min-w-0 flex-1 flex-col">
         <Header
-          here={activeNav(pathname)}
           user={user}
           role={role}
+          pinned={pinned}
+          onTogglePinned={() => setPinned(!pinned)}
           onFeedback={dock.openFeedback}
           onLogout={logout}
         />
@@ -46,7 +49,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
                 "mx-auto w-full",
                 layout === "board" &&
                   "max-w-[1600px] md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
-                layout === "wide" && "max-w-[1500px]",
+                layout === "wide" && "max-w-[1560px]",
                 layout === "reading" && (dock.open ? "max-w-[900px]" : "max-w-[1100px]"),
               )}
             >

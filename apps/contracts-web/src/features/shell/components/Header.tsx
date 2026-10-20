@@ -1,58 +1,56 @@
-﻿// PK-FR-10 · TF5 · thanh trên 58 px: tiêu đề mục (desktop) / tên app (điện thoại), chuông, giao diện, góp ý, tài khoản (điện thoại).
+﻿// PK-FR-10 · TF5 · nav-v2 · thanh trên 52 px theo mockup NITI: nút thu/mở thanh trái (desktop) hoặc tên app (điện thoại), chuông, góp ý,
+// tài khoản (điện thoại). Không còn tiêu đề mục — mỗi trang tự có H1.
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { IconFeedback } from "~/components/icons";
+import { IconFeedback, IconSidebar } from "~/components/icons";
 import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
-import { EXTRA_NAV, type NavItem, type Role } from "../lib/nav";
-import { Logo } from "./Logo";
+import type { Role } from "../lib/nav";
+import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
 
+const BTN = "grid h-10 w-10 place-items-center rounded-[10px] text-ink-2 hover:bg-sunk";
+
 export function Header({
-  here,
   user,
   role,
+  pinned,
+  onTogglePinned,
   onFeedback,
   onLogout,
 }: {
   onLogout: () => Promise<void>;
-  here: NavItem | undefined;
   user: ShellUser;
   role: Role;
+  pinned: boolean;
+  onTogglePinned: () => void;
   onFeedback: () => void;
 }) {
   const { t } = useTranslation();
+  const toggle = t(pinned ? "contracts.shell.navCollapse" : "contracts.shell.navExpand");
   return (
-    <header className="flex h-[58px] shrink-0 items-center gap-3 border-b border-rule bg-panel px-5 max-md:px-3">
-      <Link to="/contracts" className="flex items-center gap-2 md:hidden">
-        <Logo className="h-7 w-7" />
+    <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-rule bg-panel px-5 max-md:px-3">
+      <Link to="/overview" className="flex items-center gap-2 md:hidden">
+        <BrandMark name={user?.tenant.name} className="h-7 w-7 text-[13px]" />
         <span className="text-card-title font-bold tracking-tight">{t("contracts.app.name")}</span>
       </Link>
-      <h1 className="text-[15px] font-semibold max-md:hidden">{here ? t(here.labelKey) : null}</h1>
+      <button
+        type="button"
+        onClick={onTogglePinned}
+        aria-label={toggle}
+        title={toggle}
+        aria-pressed={pinned}
+        className={`${BTN} max-md:hidden`}
+      >
+        <IconSidebar />
+      </button>
       <div className="ml-auto flex items-center gap-1">
-        <nav
-          data-w1-nav=""
-          aria-label={t("contracts.shell.navExtra")}
-          className="flex items-center gap-1 md:hidden"
-        >
-          {EXTRA_NAV.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              aria-label={t(n.labelKey)}
-              title={t(n.labelKey)}
-              className="grid h-10 w-10 place-items-center rounded-lg text-ink-2 hover:bg-sunk aria-[current=page]:text-act"
-            >
-              <n.icon />
-            </Link>
-          ))}
-        </nav>
         <ConnectedBell />
         <button
           type="button"
           onClick={onFeedback}
           aria-label={t("contracts.shell.feedback")}
           title={t("contracts.shell.feedback")}
-          className="grid h-10 w-10 place-items-center rounded-lg text-ink-2 hover:bg-sunk"
+          className={BTN}
         >
           <IconFeedback />
         </button>

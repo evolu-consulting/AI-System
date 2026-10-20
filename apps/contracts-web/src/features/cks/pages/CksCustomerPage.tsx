@@ -79,7 +79,7 @@ export function CksCustomerPage() {
     <div className="text-base leading-[1.55]">
       <PageHead
         crumb={
-          <Link to="/cks" className="hover:underline">
+          <Link to="/products" search={{ tab: "cks" }} className="hover:underline">
             {L("back")}
           </Link>
         }

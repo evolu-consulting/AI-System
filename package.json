@@ -36,7 +36,7 @@
     "e2e:n1": "bun tools/scripts/src/run-playwright.ts e2e/N1/playwright.config.ts",
     "e2e:n2": "bun tools/scripts/src/run-playwright.ts e2e/N2/playwright.n2.config.ts",
     "e2e:pd": "bun tools/scripts/src/run-playwright.ts e2e/P-d/playwright.pd.config.ts",
-    "e2e:contracts:ref": "bun tools/scripts/src/run-playwright.ts CW_MODE=ref e2e/contracts-web/playwright.config.ts",
+    "e2e:contracts:capture": "bun tools/scripts/src/run-playwright.ts CW_MODE=capture e2e/contracts-web/playwright.config.ts",
     "test:contract:chat": "bun --config=bunfig.contract.toml test --timeout 30000 tests/contract/chat",
     "test:h1:stack": "bun --env-file=.env.local test --timeout 120000 tests/acceptance/H1/stack",
     "test:h2a:stack": "bun --env-file=.env.local test --timeout 120000 tests/acceptance/H2a/stack",

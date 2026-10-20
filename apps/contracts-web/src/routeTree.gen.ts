@@ -14,8 +14,10 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMyWorkRouteImport } from './routes/_authed/my-work'
+import { Route as AuthedOverviewRouteImport } from './routes/_authed/overview'
 import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedPricesRouteImport } from './routes/_authed/prices'
+import { Route as AuthedProductsRouteImport } from './routes/_authed/products'
 import { Route as AuthedSourcingRouteImport } from './routes/_authed/sourcing'
 import { Route as AuthedCksIndexRouteImport } from './routes/_authed/cks/index'
 import { Route as AuthedCksIdRouteImport } from './routes/_authed/cks/$id'
@@ -50,6 +52,11 @@ const AuthedMyWorkRoute = AuthedMyWorkRouteImport.update({
   path: '/my-work',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedOverviewRoute = AuthedOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
   id: '/partners',
   path: '/partners',
@@ -58,6 +65,11 @@ const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
 const AuthedPricesRoute = AuthedPricesRouteImport.update({
   id: '/prices',
   path: '/prices',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProductsRoute = AuthedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSourcingRoute = AuthedSourcingRouteImport.update({
@@ -111,8 +123,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
+  '/overview': typeof AuthedOverviewRoute
   '/partners': typeof AuthedPartnersRoute
   '/prices': typeof AuthedPricesRoute
+  '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
@@ -128,8 +142,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
+  '/overview': typeof AuthedOverviewRoute
   '/partners': typeof AuthedPartnersRoute
   '/prices': typeof AuthedPricesRoute
+  '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
@@ -147,8 +163,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/my-work': typeof AuthedMyWorkRoute
+  '/_authed/overview': typeof AuthedOverviewRoute
   '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/prices': typeof AuthedPricesRoute
+  '/_authed/products': typeof AuthedProductsRoute
   '/_authed/sourcing': typeof AuthedSourcingRoute
   '/_authed/cks/$id': typeof AuthedCksIdRoute
   '/_authed/contracts/$id': typeof AuthedContractsIdRoute
@@ -166,8 +184,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/feedback'
     | '/my-work'
+    | '/overview'
     | '/partners'
     | '/prices'
+    | '/products'
     | '/sourcing'
     | '/cks/$id'
     | '/contracts/$id'
@@ -183,8 +203,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/feedback'
     | '/my-work'
+    | '/overview'
     | '/partners'
     | '/prices'
+    | '/products'
     | '/sourcing'
     | '/cks/$id'
     | '/contracts/$id'
@@ -201,8 +223,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/feedback'
     | '/_authed/my-work'
+    | '/_authed/overview'
     | '/_authed/partners'
     | '/_authed/prices'
+    | '/_authed/products'
     | '/_authed/sourcing'
     | '/_authed/cks/$id'
     | '/_authed/contracts/$id'
@@ -257,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMyWorkRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/overview': {
+      id: '/_authed/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof AuthedOverviewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/partners': {
       id: '/_authed/partners'
       path: '/partners'
@@ -269,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/prices'
       fullPath: '/prices'
       preLoaderRoute: typeof AuthedPricesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/products': {
+      id: '/_authed/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthedProductsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/sourcing': {
@@ -340,8 +378,10 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
   AuthedMyWorkRoute: typeof AuthedMyWorkRoute
+  AuthedOverviewRoute: typeof AuthedOverviewRoute
   AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedPricesRoute: typeof AuthedPricesRoute
+  AuthedProductsRoute: typeof AuthedProductsRoute
   AuthedSourcingRoute: typeof AuthedSourcingRoute
   AuthedCksIdRoute: typeof AuthedCksIdRoute
   AuthedContractsIdRoute: typeof AuthedContractsIdRoute
@@ -356,8 +396,10 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFeedbackRoute: AuthedFeedbackRoute,
   AuthedMyWorkRoute: AuthedMyWorkRoute,
+  AuthedOverviewRoute: AuthedOverviewRoute,
   AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedPricesRoute: AuthedPricesRoute,
+  AuthedProductsRoute: AuthedProductsRoute,
   AuthedSourcingRoute: AuthedSourcingRoute,
   AuthedCksIdRoute: AuthedCksIdRoute,
   AuthedContractsIdRoute: AuthedContractsIdRoute,

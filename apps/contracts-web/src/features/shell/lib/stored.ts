@@ -3,6 +3,8 @@ import { useCallback, useState } from "react";
 
 export const ASSISTANT_OPEN_KEY = "assistant:open";
 export const ASSISTANT_WIDTH_KEY = "assistant:width";
+/** nav-v2: thanh trái ghim mở (224 px, mặc định) hay thu thành cột biểu tượng (64 px). */
+export const NAV_PINNED_KEY = "nav:pinned";
 export const ASSISTANT_MIN = 280;
 export const ASSISTANT_MAX = 560;
 export const ASSISTANT_DEFAULT = 340;

@@ -10,7 +10,7 @@ export function main(
   argv: string[],
   env: Record<string, string | undefined> = process.env,
 ): number {
-  // Đối số đầu dạng KEY=VAL là biến môi trường cho Playwright (vd `CW_MODE=ref`), sau đó là config rồi đối số thêm.
+  // Đối số đầu dạng KEY=VAL là biến môi trường cho Playwright (vd `CW_MODE=capture`), sau đó là config rồi đối số thêm.
   let n = 0;
   while (/^\w+=/.test(argv[n] ?? "")) n++;
   const sets = argv.slice(0, n);

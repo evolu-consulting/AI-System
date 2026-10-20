@@ -1,8 +1,8 @@
-// PK-FR-10 · TF1 · `/` → `/contracts` (guard `_authed` thêm ở TF4).
+// PK-FR-10 · TF1 · nav-v2 · `/` → `/overview` (Tổng quan là trang đầu; guard `_authed` thêm ở TF4).
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    throw redirect({ to: "/contracts" });
+    throw redirect({ to: "/overview" });
   },
 });

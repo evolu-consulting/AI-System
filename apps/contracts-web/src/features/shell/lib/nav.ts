@@ -1,40 +1,25 @@
-// PK-FR-10 · TF5 · 4 mục menu chính (plan-frontend §1 "Menu") và vai suy từ quyền gói (`write`/`owner`).
+// PK-FR-10 · TF5 · nav-v2 (người dùng chốt 2026-10-20): 4 mục menu — Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá — theo mockup NITI;
+// vai suy từ quyền gói (`write`/`owner`). Tuyến cũ (/my-work, /prices, /cks, /sourcing) chuyển hướng vào Tổng quan / Sản phẩm & Giá.
 import type { ComponentType, SVGProps } from "react";
-import {
-  IconBell,
-  IconContract,
-  IconPartners,
-  IconPayments,
-  IconPrices,
-  IconSignature,
-} from "~/components/icons";
+import { IconBox, IconContract, IconOverview, IconPartners } from "~/components/icons";
 
 export type NavItem = {
-  to: "/contracts" | "/partners" | "/prices" | "/cks" | "/my-work" | "/sourcing";
-  /** W1: mục thêm so với mgmt-app (ẩn ở cảnh so ảnh, xem DEVIATIONS.md). */
-  extra?: true;
+  to: "/overview" | "/contracts" | "/partners" | "/products";
   labelKey: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
 };
 
 export const NAV: readonly NavItem[] = [
+  { to: "/overview", labelKey: "contracts.nav.overview", icon: IconOverview },
   { to: "/contracts", labelKey: "contracts.nav.contracts", icon: IconContract },
   { to: "/partners", labelKey: "contracts.nav.partners", icon: IconPartners },
-  { to: "/prices", labelKey: "contracts.nav.prices", icon: IconPrices },
-  { to: "/cks", labelKey: "contracts.nav.products", icon: IconSignature },
-  { to: "/my-work", labelKey: "contracts.work.nav", icon: IconBell, extra: true },
-  { to: "/sourcing", labelKey: "contracts.sourcing.nav", icon: IconPayments, extra: true },
+  { to: "/products", labelKey: "contracts.nav.products", icon: IconBox },
 ];
 
 export type Role = "owner" | "editor" | "viewer";
 
 export const roleOf = (p: { write: boolean; owner: boolean }): Role =>
   p.owner ? "owner" : p.write ? "editor" : "viewer";
-
-/** 4 mục menu chính của mgmt-app (menu desktop + thanh dưới mobile). */
-export const MAIN_NAV: readonly NavItem[] = NAV.filter((n) => !n.extra);
-/** Mục thêm của W1: nhóm "Tiện ích" riêng, không nằm trong menu chính / thanh dưới. */
-export const EXTRA_NAV: readonly NavItem[] = NAV.filter((n) => n.extra);
 
 /** Mục chỉ người ghi thấy: "Cài đặt" (chấm điểm đối tác...) — viewer chỉ xem. */
 /** B8: người đọc chỉ xem; quản trị công ty (tenant_admin / platform_admin) luôn mở được Thành viên & phòng ban. */
@@ -43,17 +28,28 @@ export const isCompanyAdmin = (tenantRole: string | undefined): boolean =>
 export const canSeeSettings = (r: Role, tenantRole?: string): boolean =>
   r !== "viewer" || isCompanyAdmin(tenantRole);
 
-/** Mục menu đang chọn theo đường dẫn (`/cks/123` → Sản phẩm). */
-export const activeNav = (pathname: string): NavItem | undefined =>
-  NAV.find((n) => pathname === n.to || pathname.startsWith(`${n.to}/`));
+/** Tuyến cũ vẫn còn làm chuyển hướng (và `/cks/$id`, chi tiết khách) → mục menu chứa nó. */
+const LEGACY: readonly [prefix: string, to: NavItem["to"]][] = [
+  ["/cks", "/products"],
+  ["/prices", "/products"],
+  ["/sourcing", "/products"],
+  ["/my-work", "/overview"],
+];
 
-/** Trang danh sách đầy cột (mgmt-app `Shell.tsx:119-122`): rộng tới 1600 px, tự giữ thanh cuộn dọc (thanh công cụ + phân trang đứng yên) từ md. */
+const under = (pathname: string, prefix: string): boolean =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+/** Mục menu đang chọn theo đường dẫn (`/cks/123` → Sản phẩm & Giá). */
+export function activeNav(pathname: string): NavItem | undefined {
+  const hit = NAV.find((n) => under(pathname, n.to));
+  if (hit) return hit;
+  const to = LEGACY.find(([p]) => under(pathname, p))?.[1];
+  return NAV.find((n) => n.to === to);
+}
+
+/** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
 export type PageLayout = "board" | "wide" | "reading";
-export function layoutOf(pathname: string, searchStr: string): PageLayout {
-  const pricesCks =
-    pathname === "/prices" && (new URLSearchParams(searchStr).get("product") ?? "cks") === "cks";
-  if (pricesCks) return "wide";
-  return ["/contracts", "/partners", "/prices", "/cks", "/sourcing"].includes(pathname)
-    ? "board"
-    : "reading";
+export function layoutOf(pathname: string): PageLayout {
+  if (pathname === "/overview") return "wide";
+  return ["/contracts", "/partners", "/products"].includes(pathname) ? "board" : "reading";
 }

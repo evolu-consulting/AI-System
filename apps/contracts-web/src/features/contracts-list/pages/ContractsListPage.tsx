@@ -96,7 +96,6 @@ export function ContractsListPage() {
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHead
         title={t("contracts.contractsPage.title")}
-        titleMobileOnly
         actions={
           write && (
             <>
@@ -162,7 +161,7 @@ export function ContractsListPage() {
                     {shown.map((k) => (
                       <th
                         key={k}
-                        className={`sticky top-0 z-10 border-b border-rule bg-panel px-3 py-2.5 font-medium first:pl-5 last:pr-5 ${k === "value" ? "text-right" : ""}`}
+                        className={`sticky top-0 z-10 bg-sunk px-3 py-2.5 font-semibold first:pl-5 last:pr-5 ${k === "value" ? "text-right" : ""}`}
                       >
                         {t(`contracts.list.col.${k}`)}
                       </th>

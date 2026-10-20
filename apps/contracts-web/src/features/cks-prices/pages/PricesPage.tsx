@@ -6,7 +6,7 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
-import { PageHead, Panel, Stat } from "~/components/shared/layout";
+import { PageHead, Panel, Stat, useEmbedded } from "~/components/shared/layout";
 import { Chips, Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { cksErrorText } from "~/features/cks/lib/cks";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -102,6 +102,7 @@ function MarketPanel({ close }: { close: () => void }) {
 /** `productPicker` (HD8): ô "Mặt hàng" đầy đủ (Chữ ký số + hàng hoá) do trang /prices truyền vào; vắng ⇒ ô chỉ có Chữ ký số (D9-13). */
 export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}) {
   const { t } = useTranslation();
+  const embedded = useEmbedded();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cks.prices.${k}`, o);
   const [f, setF] = useState<CksPackageFilter>("all");
   const q = useQuery({
@@ -146,7 +147,7 @@ export function PricesPage({ productPicker }: { productPicker?: ReactNode } = {}
       <PageHead
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <span className="md:hidden">{L("title")}</span>
+            {!embedded && <span className="md:hidden">{L("title")}</span>}
             {productPicker ?? (
               <select
                 aria-label={L("product")}

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Fragment, type ReactNode, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { PageHead, Panel, useEmbedded } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { fetchCompare, partnerKeys } from "~/features/partners/api";
@@ -65,6 +65,7 @@ function cellsOf({
 
 export function GoodsTab({ picker, product }: { picker: ReactNode; product: string }) {
   const { t } = useTranslation();
+  const embedded = useEmbedded();
   const L: T = (k, o) => t(`contracts.goods.${k}`, o);
   const tb = (b: string) => t(`contracts.partners.band.${b}`);
   const cmp = useQuery({
@@ -140,7 +141,7 @@ export function GoodsTab({ picker, product }: { picker: ReactNode; product: stri
       <PageHead
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <span className="md:hidden">{L("compare")}</span>
+            {!embedded && <span className="md:hidden">{L("compare")}</span>}
             {picker}
           </span>
         }

@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
-import { PageHead, Panel, Stat } from "~/components/shared/layout";
+import { PageHead, Panel, Stat, useEmbedded } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools } from "~/features/table";
@@ -14,6 +14,7 @@ import { SuppliersTable } from "../components/SuppliersTable";
 
 export function SourcingPage() {
   const { t } = useTranslation();
+  const embedded = useEmbedded();
   const me = useMe();
   const [risky, setRisky] = useState(false);
   const [q, setQ] = useState("");
@@ -46,7 +47,7 @@ export function SourcingPage() {
   };
   return (
     <div className="text-base leading-[1.55]">
-      <PageHead title={L("title")} lead={L("lead")} />
+      <PageHead title={embedded ? undefined : L("title")} lead={L("lead")} />
       <div className="mb-5 grid grid-cols-4 gap-3 max-md:grid-cols-2">
         <Stat loading={query.isLoading} value={d?.stats.lines ?? 0} label={L("stat.lines")} />
         <Stat

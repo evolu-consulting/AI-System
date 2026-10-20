@@ -61,7 +61,9 @@ export function UserMenu({
             className={`min-w-0 flex-col items-start leading-tight ${wide ? "flex" : "hidden"} ${side ? "" : "max-md:hidden"}`}
           >
             <span className="max-w-full truncate text-label font-semibold text-ink">{name}</span>
-            <span className="max-w-full truncate text-micro text-dim">{user.tenant.name}</span>
+            <span className="max-w-full truncate text-micro text-dim">
+              {user.tenant.name} · {t(`contracts.shell.role.${role}`)}
+            </span>
           </span>
         </>
       }

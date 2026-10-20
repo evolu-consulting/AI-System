@@ -72,11 +72,11 @@ describe("requireSession", () => {
 });
 
 describe("redirectIfAuthed", () => {
-  test("PK-FR-10 · đã đăng nhập → /contracts", async () => {
+  test("PK-FR-10 · nav-v2 · đã đăng nhập → /overview (Tổng quan)", async () => {
     mockRefresh(true);
     const e = await caught(redirectIfAuthed());
     expect(isRedirect(e)).toBe(true);
-    expect((e as { options: { to: string } }).options.to).toBe("/contracts");
+    expect((e as { options: { to: string } }).options.to).toBe("/overview");
   });
   test("PK-FR-10 · sau đăng xuất → ở lại /login, vùng _authed lại đòi đăng nhập", async () => {
     mockRefresh(true);

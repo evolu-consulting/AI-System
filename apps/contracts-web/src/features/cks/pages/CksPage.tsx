@@ -5,7 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { Fragment, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHead, Panel, Stat } from "~/components/shared/layout";
+import { PageHead, Panel, Stat, useEmbedded } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import {
@@ -124,6 +124,7 @@ function CustomersBody({ rows, q, shown }: { rows: RowsQuery; q: string; shown: 
 
 export function CksPage() {
   const { t } = useTranslation();
+  const embedded = useEmbedded();
   const me = useMe();
   const search = useSearch({ strict: false }) as { filter?: Filter["filter"]; lot?: string };
   const [f, setF] = useState<Filter>({ filter: search.filter, lot: search.lot });
@@ -166,7 +167,7 @@ export function CksPage() {
       <PageHead
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <span className="md:hidden">{t("contracts.cks.products")}</span>
+            {!embedded && <span className="md:hidden">{t("contracts.cks.products")}</span>}
             <span className="rounded-lg bg-act-soft px-2.5 py-1 text-[14px] font-medium text-act">
               {t("contracts.cks.product")}
             </span>

@@ -104,7 +104,7 @@ export function PartnersPage() {
   return (
     // Như mgmt (trang nằm thẳng trong `main` flex-col): khung danh sách giãn tới đáy, danh sách cuộn bên trong.
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
-      <PageHead title={L("title")} titleMobileOnly />
+      <PageHead title={L("title")} />
       <TableTools q={tb.q} setQ={tb.setQ} total={tb.total} placeholder={L("search")}>
         <ColumnFilters filter={tb.filter} />
       </TableTools>

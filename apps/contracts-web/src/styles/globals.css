@@ -108,6 +108,8 @@
   --new-bg: #f0f2ff;
   --scroll: #c9c9d6;
   --scroll-hover: #a3a3b8;
+  /* nav-v2 (mockup NITI): điểm cuối nền chuyển màu của ô nhận diện công ty */
+  --grad-to: #a855f7;
 
   --shadow-color-toast: rgb(30 27 75 / 0.25);
   --shadow-color-dialog: rgb(30 27 75 / 0.28);
@@ -296,6 +298,7 @@
   --color-late-line: var(--late-line);
   --color-idle-bg: var(--idle-bg);
   --color-new-bg: var(--new-bg);
+  --color-grad-to: var(--grad-to);
 
   /* Thang chữ ngữ nghĩa theo canvas; không ghi đè thang mặc định để component shadcn giữ nguyên. */
   --text-micro: 11px;

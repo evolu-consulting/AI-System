@@ -117,15 +117,54 @@
       "next": "Trang sau"
     },
     "nav": {
+      "overview": "Tổng quan",
       "contracts": "Hợp đồng",
       "partners": "Đối tác",
+      "products": "Sản phẩm & Giá"
+    },
+    "productsPage": {
+      "title": "Sản phẩm & Giá",
+      "tabs": "Nhóm trang Sản phẩm & Giá",
       "prices": "So sánh giá",
-      "products": "Sản phẩm"
+      "cks": "Sản phẩm CKS",
+      "sourcing": "Mua hàng"
+    },
+    "overview": {
+      "title": "Tổng quan",
+      "today": "Hôm nay {{date}}",
+      "work": {
+        "title": "Cần xử lý",
+        "count": "{{n}} việc",
+        "late": "{{n}} quá hạn",
+        "more": "Xem thêm {{n}} việc",
+        "less": "Thu gọn",
+        "empty": "Không có việc cần xử lý."
+      },
+      "contracts": {
+        "title": "Hợp đồng",
+        "count": "{{n}} hợp đồng",
+        "pending": "Chờ xác nhận",
+        "active": "Đang hiệu lực",
+        "done": "Đã xử lý / hết hạn",
+        "expiring": "Sắp hết hiệu lực",
+        "expiringNone": "Không có hợp đồng sắp hết hiệu lực.",
+        "left": "còn {{n}} ngày",
+        "leftToday": "hết hạn hôm nay",
+        "all": "Xem tất cả hợp đồng",
+        "empty": "Chưa có hợp đồng."
+      },
+      "partners": {
+        "title": "Đối tác cần xem lại",
+        "lead": "mức CHÚ Ý",
+        "none": "Không có đối tác ở mức CHÚ Ý.",
+        "all": "Xem tất cả đối tác"
+      }
     },
     "shell": {
       "navMain": "Điều hướng chính",
       "navBottom": "Điều hướng",
-      "navExtra": "Tiện ích",
+      "navCollapse": "Thu gọn thanh bên",
+      "navExpand": "Mở rộng thanh bên",
       "feedback": "Góp ý về app",
       "feedbackSoon": "Phần góp ý sẽ có ở bản sau.",
       "openAssistant": "Mở trợ lý AI",

@@ -117,15 +117,54 @@
       "next": "Next page"
     },
     "nav": {
+      "overview": "Overview",
       "contracts": "Contracts",
       "partners": "Partners",
+      "products": "Products & Prices"
+    },
+    "productsPage": {
+      "title": "Products & Prices",
+      "tabs": "Products & Prices sections",
       "prices": "Price comparison",
-      "products": "Products"
+      "cks": "Digital-signature products",
+      "sourcing": "Sourcing"
+    },
+    "overview": {
+      "title": "Overview",
+      "today": "Today {{date}}",
+      "work": {
+        "title": "To do",
+        "count": "{{n}} tasks",
+        "late": "{{n}} overdue",
+        "more": "Show {{n}} more",
+        "less": "Show less",
+        "empty": "Nothing needs your attention."
+      },
+      "contracts": {
+        "title": "Contracts",
+        "count": "{{n}} contracts",
+        "pending": "Awaiting confirmation",
+        "active": "In force",
+        "done": "Handled / expired",
+        "expiring": "Expiring soon",
+        "expiringNone": "No contracts expiring soon.",
+        "left": "{{n}} days left",
+        "leftToday": "expires today",
+        "all": "View all contracts",
+        "empty": "No contracts yet."
+      },
+      "partners": {
+        "title": "Partners to review",
+        "lead": "WATCH level",
+        "none": "No partners at WATCH level.",
+        "all": "View all partners"
+      }
     },
     "shell": {
       "navMain": "Main navigation",
       "navBottom": "Navigation",
-      "navExtra": "Utilities",
+      "navCollapse": "Collapse sidebar",
+      "navExpand": "Expand sidebar",
       "feedback": "Send feedback",
       "feedbackSoon": "Feedback will be available in a later release.",
       "openAssistant": "Open AI assistant",

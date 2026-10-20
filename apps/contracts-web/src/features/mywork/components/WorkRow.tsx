@@ -48,7 +48,7 @@ export function WorkRow({ i, today, write }: { i: MyWorkItem; today: string; wri
     >
       <span
         className={cn(
-          "mt-0.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+          "mt-0.5 inline-flex h-[22px] items-center rounded-md px-2 text-xs font-medium whitespace-nowrap",
           TONE[i.tone],
         )}
       >

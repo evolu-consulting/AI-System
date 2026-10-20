@@ -22,7 +22,7 @@ export function PricesRoutePage() {
       value={product}
       onChange={(e) =>
         void navigate({
-          to: "/prices",
+          to: "/products",
           search: e.target.value === "cks" ? {} : { product: e.target.value },
         })
       }

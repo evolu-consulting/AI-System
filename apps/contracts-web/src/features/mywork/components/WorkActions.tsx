@@ -87,7 +87,7 @@ export function WorkActions({ i, today, write }: { i: MyWorkItem; today: string;
         </button>
       )}
       {(i.kind === "deadline" || i.kind === "reminder") && i.contract_direction === "purchase" && (
-        <Link to="/prices" className={`${btn} btn-quiet`}>
+        <Link to="/products" search={{ tab: "prices" }} className={`${btn} btn-quiet`}>
           {t("contracts.work.act.compare")}
         </Link>
       )}

@@ -51,7 +51,7 @@ export function LoginPage() {
     if (outcome) return setError(outcome);
     const next = safeNext(search.next);
     if (next) router.history.replace(next);
-    else await router.navigate({ to: "/contracts", replace: true });
+    else await router.navigate({ to: "/overview", replace: true });
   };
 
   return (
