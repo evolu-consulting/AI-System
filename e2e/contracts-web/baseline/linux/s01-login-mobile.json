@@ -1,0 +1,29 @@
+{
+  "text": "Sổ Hợp Tác Đăng nhập Hợp đồng, đối tác, giá và chữ ký số ở một chỗ. Email Mật khẩu Đăng nhập Quên mật khẩu? Liên hệ quản trị viên công ty bạn để đặt lại. Evolu Consulting · Intelligent automation",
+  "boxes": {
+    "heading": {
+      "x": 24,
+      "y": 262.953125,
+      "w": 342,
+      "h": 41.84375
+    },
+    "form": {
+      "x": 24,
+      "y": 354.796875,
+      "w": 342,
+      "h": 239.65625
+    },
+    "submit": {
+      "x": 24,
+      "y": 515.078125,
+      "w": 342,
+      "h": 44
+    },
+    "password": {
+      "x": 24,
+      "y": 459.078125,
+      "w": 342,
+      "h": 40
+    }
+  }
+}

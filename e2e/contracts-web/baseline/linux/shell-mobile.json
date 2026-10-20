@@ -1,0 +1,23 @@
+{
+  "text": "Sổ Hợp Tác LN | Hợp đồng Đối tác So sánh giá Sản phẩm",
+  "boxes": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 58
+    },
+    "bottomNav": {
+      "x": 0,
+      "y": 787,
+      "w": 390,
+      "h": 57
+    },
+    "assistantFab": {
+      "x": 322,
+      "y": 716,
+      "w": 48,
+      "h": 48
+    }
+  }
+}

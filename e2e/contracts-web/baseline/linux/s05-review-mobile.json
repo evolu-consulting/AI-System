@@ -1,0 +1,47 @@
+{
+  "text": "← Hợp đồng Hợp đồng mua bán bao bì 2026 Kiểm tra lại các trường rồi xác nhận. 📄 Xem file gốc Lưu Xác nhận Chưa xác định giá đã gồm VAT hay chưa. Không bên nào là pháp nhân của mình, nên chưa biết đây là HĐ mua hay bán. Kiểm tra MST hai bên, hoặc đánh dấu pháp nhân trong mục Đối tác. Số hợp đồng “HỢP ĐỒNG MUA BÁN Số: 01/2026/HĐMB-PN” Tên hợp đồng · chưa kiểm chứng Bên bán “Bên bán: Công ty TNHH Bao Bì Phương Nam” MST bên bán “Mã số thuế: 0312345678” Bên mua “Bên mua: Công ty CP Thực phẩm An Khang” MST bên mua “Mã số thuế: 0109876543” Người ký bên bán “Đại diện: Ông Nguyễn Văn Phúc, chức vụ: Giám đốc” Người ký bên mua “Đại diện: Bà Trần Thị Mai, chức vụ: Phó Giám đốc” Hiệu lực từ “có hiệu lực từ ngày 01/01/2026” Đến “đến hết ngày 31/12/2026” Nhắc trước (ngày) “báo trước ít nhất 30 ngày” Giá trị (đ) · chưa kiểm chứng “Tổng giá trị theo bảng giá đính kèm” Thanh toán · chưa kiểm chứng Hàng hoá ĐVT SL Đơn giá Thùng carton 5 lớp 60×40×40 thùng 1000 8.500 Màng co PE 25 micron cuộn 500 320.000",
+  "boxes": {
+    "heading": {
+      "x": 16,
+      "y": 110.140625,
+      "w": 300.84375,
+      "h": 34.09375
+    },
+    "save": {
+      "x": 216,
+      "y": 184.234375,
+      "w": 59,
+      "h": 40
+    },
+    "file": {
+      "x": 75,
+      "y": 184.234375,
+      "w": 133,
+      "h": 40
+    },
+    "warnings": {
+      "x": 16,
+      "y": 244.234375,
+      "w": 358,
+      "h": 118
+    },
+    "firstField": {
+      "x": 37,
+      "y": 423.375,
+      "w": 316,
+      "h": 40
+    },
+    "quote": {
+      "x": 37,
+      "y": 467.375,
+      "w": 316,
+      "h": 18.59375
+    },
+    "items": {
+      "x": 17,
+      "y": 1711.59375,
+      "w": 356,
+      "h": 158
+    }
+  }
+}

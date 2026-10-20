@@ -1,0 +1,23 @@
+{
+  "text": "Nhập lô mua chữ ký số Nhà cung cấp (CA) Tên lô Số lượng Giá vốn / chữ ký (đ) Thời hạn (năm) Ngày mua Loại USB token Ký từ xa Huỷ Nhập lô",
+  "boxes": {
+    "dialog": {
+      "x": 440,
+      "y": 234.71875,
+      "w": 560,
+      "h": 430.5625
+    },
+    "form": {
+      "x": 441,
+      "y": 235.71875,
+      "w": 558,
+      "h": 428.5625
+    },
+    "submit": {
+      "x": 898,
+      "y": 604.28125,
+      "w": 81,
+      "h": 40
+    }
+  }
+}
