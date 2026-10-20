@@ -19,6 +19,13 @@ export const GRAPH_LIMITS = {
   urisMax: 500,
   chunksMax: 2000,
   perChunkMax: 200,
+  /** F-10 · trần vùng lân cận (`nbSql`): thực thể của tài liệu, cạnh REL/ALIAS_OF, tài liệu kề. */
+  nbEntityMax: 200,
+  nbEdgeMax: 500,
+  nbDocMax: 200,
+  /** F-10 · trần kho (`corpus`): tài liệu mỗi thực thể khi đếm SHARES (chặn bùng nổ cặp), số node. */
+  corpusFanMax: 100,
+  corpusNodeMax: 2000,
 } as const;
 
 export type GraphError =

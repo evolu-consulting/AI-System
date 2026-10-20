@@ -57,8 +57,10 @@ function checkLinks(rows: readonly ChunkLinkIn[]): GraphError | null {
   return bad ? "LINK_INVALID" : null;
 }
 
-export function graphUsecases(d: { uow: GraphUow }) {
-  const run = <T>(who: Who, fn: (r: GraphRepos) => Promise<T>): Promise<T> => d.uow.tenant(who, fn);
+type Run = <T>(who: Who, fn: (r: GraphRepos) => Promise<T>) => Promise<T>;
+
+/** Ghi: MENTIONS/Entity/REL, LINKS_TO, ALIAS_OF, SIMILAR/CONFLICTS. */
+function writeUsecases(run: Run) {
   return {
     /** `upsert_document` (phần đồ thị): MENTIONS + Entity + REL của các đoạn đã có (N4 `knowledge.add` ghi đoạn). */
     async attach(who: Who, docId: string, chunks: readonly ChunkGraphIn[]): Promise<GResult<null>> {
@@ -77,18 +79,6 @@ export function graphUsecases(d: { uow: GraphUow }) {
       if (uris.length === 0) return ok(0);
       return ok(await run<number>(who, (r) => r.graph.linkDocuments(docId, uris)));
     },
-    async expand(
-      who: Who,
-      keys: readonly string[],
-      exclude: readonly string[] = [],
-      limit?: unknown,
-    ): Promise<GResult<string[]>> {
-      const bad = checkKeys(keys) ?? checkIds(exclude, L.excludeMax);
-      if (bad) return fail(bad);
-      if (keys.length === 0) return ok([]);
-      const n = clampInt(limit, 1, L.expandMax, L.expandDefault);
-      return ok(await run<string[]>(who, (r) => r.graph.expand(keys, exclude, n)));
-    },
     async hasAlias(who: Who, a: string, b: string): Promise<GResult<boolean>> {
       if (!validKey(a) || !validKey(b)) return fail("KEY_INVALID");
       return ok(await run<boolean>(who, (r) => r.graph.hasAlias(a, b)));
@@ -105,6 +95,24 @@ export function graphUsecases(d: { uow: GraphUow }) {
       if (rows.length === 0) return ok(0);
       return ok(await run<number>(who, (r) => r.graph.addLinks(rows)));
     },
+  };
+}
+
+/** Đọc: mở rộng theo thực thể, tài liệu giống, vùng lân cận, kho, thống kê, mâu thuẫn. */
+function readUsecases(run: Run) {
+  return {
+    async expand(
+      who: Who,
+      keys: readonly string[],
+      exclude: readonly string[] = [],
+      limit?: unknown,
+    ): Promise<GResult<string[]>> {
+      const bad = checkKeys(keys) ?? checkIds(exclude, L.excludeMax);
+      if (bad) return fail(bad);
+      if (keys.length === 0) return ok([]);
+      const n = clampInt(limit, 1, L.expandMax, L.expandDefault);
+      return ok(await run<string[]>(who, (r) => r.graph.expand(keys, exclude, n)));
+    },
     async similarDocuments(
       who: Who,
       docId: string,
@@ -116,14 +124,12 @@ export function graphUsecases(d: { uow: GraphUow }) {
     },
     async neighbourhood(who: Who, docId: string): Promise<GResult<Graph>> {
       if (!isUuid(docId)) return fail("ID_INVALID");
-      const rows = await d.uow.tenant(who, (r) => r.graph.neighbourhood(docId));
-      return ok(toNeighbourhood(docId, rows));
+      return ok(toNeighbourhood(docId, await run(who, (r) => r.graph.neighbourhood(docId))));
     },
     async corpus(who: Who, minShared?: unknown, limit?: unknown): Promise<GResult<Graph>> {
       const min = clampInt(minShared, 1, 100, 2);
       const n = clampInt(limit, 1, L.corpusMax, L.corpusDefault);
-      const rows = await d.uow.tenant(who, (r) => r.graph.corpus(min, n));
-      return ok(toCorpus(rows));
+      return ok(toCorpus(await run(who, (r) => r.graph.corpus(min, n))));
     },
     async stats(who: Who): Promise<GResult<GraphStats>> {
       return ok(await run<GraphStats>(who, (r) => r.graph.stats()));
@@ -133,5 +139,10 @@ export function graphUsecases(d: { uow: GraphUow }) {
       return ok(await run<ConflictRow[]>(who, (r) => r.graph.conflicts(n)));
     },
   };
+}
+
+export function graphUsecases(d: { uow: GraphUow }) {
+  const run: Run = (who, fn) => d.uow.tenant(who, fn);
+  return { ...writeUsecases(run), ...readUsecases(run) };
 }
 export type GraphService = ReturnType<typeof graphUsecases>;
