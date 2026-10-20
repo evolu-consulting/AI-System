@@ -4,7 +4,7 @@
 // cháº¡y tháº­t). Äo trÆ°á»›c/sau ANALYZE. Chá»‰ cháº¡y dÆ°á»›i `PERF=1` (`bun run test:perf`). BÃ¡o sá»‘ tháº­t.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { withPackScope } from "@ai/db/pack-scope";
-import { inPackAs } from "@ai/test-kit/db";
+import { inPackAsRollback } from "@ai/test-kit/db";
 import { captureSql, measure, seqScansOf } from "@ai/test-kit/perf";
 import { applyDelivery, type DeliveryMove, type Sql, type World, world } from "../_support/v2b";
 
@@ -78,8 +78,7 @@ describe("V2-B Â· xÃ¡c nháº­n má»‘c giao 20 dÃ²ng (applyDelivery)",
       console.log(
         `V2-B applyDelivery 20 dÃ²ng (${analyzed ? "sau" : "trÆ°á»›c"} ANALYZE): p50 ${st.p50.toFixed(1)} ms Â· p95 ${st.p95.toFixed(1)} ms Â· max ${st.max.toFixed(1)} ms`,
       );
-      const run = <R>(fn: (tx: Sql) => Promise<R>) =>
-        inPackAs("contracts", w.A, w.u1, fn, { rollback: true });
+      const run = <R>(fn: (tx: Sql) => Promise<R>) => inPackAsRollback("contracts", w.A, w.u1, fn);
       for (const i of [1, 2, 4]) {
         const seq = await seqScansOf(
           run,

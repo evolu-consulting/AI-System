@@ -1,8 +1,8 @@
-﻿// V2-D · Luật 4c · intake §3: xác nhận một mốc giao 20 dòng qua HTTP (`POST /obligations/:id/settle`) — p95 ≤ 50 ms, số câu cố
+// V2-D · Luật 4c · intake §3: xác nhận một mốc giao 20 dòng qua HTTP (`POST /obligations/:id/settle`) — p95 ≤ 50 ms, số câu cố
 // định. Nền: 2.000 SP (mỗi SP 1 thành phần, 10 lô + 10 dòng sổ) + 2.000 HĐ × 5 dòng đã giao ở acme + beta; lượt chẵn Mua 5/dòng, lượt lẻ Bán 5/dòng (tồn ổn định).
 // Mốc mới (và cặp HĐ mới mỗi 20 lượt) tạo trong `before` (không tính giờ). Chỉ chạy dưới `PERF=1` (`bun run test:perf`). Báo số thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { inPackAs } from "@ai/test-kit/db";
+import { inPackAsRollback } from "@ai/test-kit/db";
 import { type Cap, type PlanNode, seqScansIn, seqScansOf } from "@ai/test-kit/perf";
 import { captureSql, measure } from "../../HD1/_support/hd1";
 import {
@@ -103,7 +103,7 @@ async function planScans(caps: Cap[]): Promise<string[]> {
   const out: string[] = [];
   for (const [i, q] of caps.entries()) {
     const run = <R>(fn: (tx: Sql) => Promise<R>) =>
-      inPackAs("contracts", T.acme, P.hoa.id, fn, { rollback: true });
+      inPackAsRollback("contracts", T.acme, P.hoa.id, fn);
     for (const s of await seqScansOf(run, q, RELS)) out.push(`#${i} riêng: ${s}`);
     const generic = await run(async (tx) => {
       await tx.unsafe("set local plan_cache_mode = force_generic_plan");

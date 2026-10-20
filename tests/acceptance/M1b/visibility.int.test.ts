@@ -13,7 +13,7 @@ import {
   users,
   visibility,
 } from "@ai/test-kit/builders";
-import { cloneDb, inPackAs, openOwner, type Sql } from "@ai/test-kit/db";
+import { cloneDb, inPackAs, inPackAsRollback, openOwner, type Sql } from "@ai/test-kit/db";
 
 let sql: Sql;
 let A = "";
@@ -116,21 +116,15 @@ describe("M1D-FR-01 · phụ lục chưa giao theo HĐ cha (orgs.sees)", () => {
     expect(await seen(A, u2)).toEqual(["HD u3", "PL u3"]);
   });
   it("không lộ/không giả: u5 tạo phụ lục dưới HĐ u3 (không thấy) ⇒ cột null; tự đặt cột = u3 ⇒ trigger tính lại null", async () => {
-    const r = await inPackAs(
-      "contracts",
-      A,
-      u5,
-      async (tx) => {
-        const [x] = await tx<{ id: string; v: string | null }[]>`insert into contracts.contracts
+    const r = await inPackAsRollback("contracts", A, u5, async (tx) => {
+      const [x] = await tx<{ id: string; v: string | null }[]>`insert into contracts.contracts
             (tenant_id, kind, parent_id, title, status, created_by, visibility_owner_id)
           values (${A}, 'appendix', ${C.u3 as string}, 'PL u5', 'active', ${u5}, ${u3})
           returning id, visibility_owner_id::text as v`;
-        const [y] = await tx<{ v: string | null }[]>`update contracts.contracts
+      const [y] = await tx<{ v: string | null }[]>`update contracts.contracts
           set visibility_owner_id = ${u3} where id = ${x?.id as string} returning visibility_owner_id::text as v`;
-        return { insert: x?.v ?? null, update: y?.v ?? null };
-      },
-      { rollback: true },
-    );
+      return { insert: x?.v ?? null, update: y?.v ?? null };
+    });
     expect(r).toEqual({ insert: null, update: null });
   });
 });
@@ -145,7 +139,7 @@ describe("M1D-FR-01 · đối tác theo người (access.View.company)", () => {
     });
   });
   it("khách do mình tạo luôn thấy (INSERT … RETURNING qua RLS, created_by mặc định = app.user_id)", async () => {
-    const got = await inPackAs(
+    const got = await inPackAsRollback(
       "contracts",
       A,
       u5,
@@ -154,7 +148,6 @@ describe("M1D-FR-01 · đối tác theo người (access.View.company)", () => {
           await tx<{ name: string }[]>`insert into contracts.cks_customers (tenant_id, name)
           values (${A}, 'Khach Moi') returning name`
         )[0]?.name,
-      { rollback: true },
     );
     expect(got).toBe("Khach Moi");
   });

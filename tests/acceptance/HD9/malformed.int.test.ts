@@ -82,8 +82,6 @@ describe("HD9 · đầu vào hỏng ⇒ 4xx, không bao giờ 500", () => {
         { at: "2026-10-20T10:00", note: "x".repeat(201) },
         [400],
       ],
-      ["/scans", { years: 0, device: "token" }, [400]],
-      ["/scans", { years: 1, device: "token" }, [503]],
     ];
     for (const [path, body, ok] of cases) {
       const r = await kcall(c, P.hoa, "POST", path, body);

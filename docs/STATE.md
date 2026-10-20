@@ -3,6 +3,7 @@
 Cập nhật: 2026-10-20 · Người cập nhật: docs-architect (đóng đợt CR-095)
 
 ## Đang ở đâu
+- **2026-10-21 CR-096 V2-O (dữ liệu demo v2 + dọn trang cũ) XONG trên nhánh slice/v2-o, CHƯA merge/KHÔNG push:** script `bun tools/scripts/src/seed-demo-v2.ts --tenant demo [--apply]` (chỉ khoá `demo`, từ chối nitigroup; xoá + nạp lại gói contracts của demo theo mockup NITI: 16 HĐ/45 mốc, 7 SP, kho BQ, giá NCC, 6 khách đang dùng, đối tác + sao + điểm đã chốt) — **CHƯA chạy trên sohoptac2**; CKS chỉ đọc toàn cục (migration `0036_v2o_cks_readonly`); gỡ trang cũ (Mua hàng, So sánh giá, CKS, Cài đặt/Điểm uy tín, Việc của tôi) — route cũ chuyển hướng; cổng `check:fn`/`depcruise`/typecheck contracts-web xanh (tách ports/types theo ADR-0023). Việc còn lại: `test:all` + UAT một lần cuối đợt; chạy script trên máy chủ (người dùng duyệt).
 - **2026-10-20 CR-095 ĐỢT ĐÓNG (docs) — chờ ai-sub + người dùng đăng nhập subscription** (nhánh `platform/gd0`, KHÔNG push; HEAD `01e87283` lúc đóng docs; lý do đổi kế hoạch: [CR-095](CHANGE-REQUESTS.md)).
   - **Lát đã xong + merge:** M1, M1b, M2, F1, G1, R1, M3, I1, L1, L1b, W1, W1b, HD78.
   - **Review:** wave A/B/C + HD78 + security review các bản sửa ⇒ SAFE (`docs/reviews/cr095-*.md`).

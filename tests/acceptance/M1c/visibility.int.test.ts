@@ -12,7 +12,7 @@ import {
   users,
   visibility,
 } from "@ai/test-kit/builders";
-import { cloneDb, inPackAs, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
+import { cloneDb, inPackAs, inPackAsRollback, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
 
 let sql: Sql;
 let A = "";
@@ -69,21 +69,13 @@ afterAll(async () => {
 
 describe("M1D-FR-01 · A-2 khoá bên chỉ từ HĐ đã duyệt", () => {
   it("u5 tạo HĐ nháp (tự phụ trách) mang MST 0101 ⇒ vẫn 0 khách, 0 sự kiện sổ đối tác của 0101; u2 (quản lý u3) thấy", async () => {
-    const abuse = await inPackAs(
-      "contracts",
-      A,
-      u5,
-      async (tx) => {
-        await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, fields)
+    const abuse = await inPackAsRollback("contracts", A, u5, async (tx) => {
+      await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, fields)
           values (${A}, 'Nhap gia', 'needs_review', ${u5}, ${u5}, ${tx.json(party("X", "0101"))})`;
-        const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
-        const e = await tx<
-          { n: number }[]
-        >`select count(*)::int as n from contracts.partner_events`;
-        return { customers: c[0]?.n, events: e[0]?.n };
-      },
-      { rollback: true },
-    );
+      const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
+      const e = await tx<{ n: number }[]>`select count(*)::int as n from contracts.partner_events`;
+      return { customers: c[0]?.n, events: e[0]?.n };
+    });
     expect({
       abuse,
       u2: { customers: await n(u2, "cks_customers"), events: await n(u2, "partner_events") },
@@ -106,13 +98,13 @@ describe("M1D-FR-01 · A-1 bảng con CKS / sổ đối tác theo khách thấy 
 describe("M1D-FR-04 · A-9 chế độ thấy chỉ owner gói ghi", () => {
   it("editor u5 chèn/đổi visibility_settings ⇒ 42501 / 0 hàng; owner boss đổi được", async () => {
     const as = (u: string, q: string) =>
-      inPackAs("contracts", A, u, async (tx) => (await tx.unsafe(q)).count, { rollback: true });
+      inPackAsRollback("contracts", A, u, async (tx) => (await tx.unsafe(q)).count);
     const upd = `update contracts.visibility_settings set mode = 'tenant' where tenant_id = '${A}'`;
     expect({
       editorUpd: await as(u5, upd).catch((e: { code?: string }) => e.code),
       ownerUpd: await as(boss, upd),
       editorIns: await pgCode(() =>
-        inPackAs(
+        inPackAsRollback(
           "contracts",
           A,
           u5,
@@ -120,7 +112,6 @@ describe("M1D-FR-04 · A-9 chế độ thấy chỉ owner gói ghi", () => {
             tx,
           ) => tx`insert into contracts.visibility_settings (tenant_id, mode) values (${A}, 'tenant')
             on conflict (tenant_id) do update set mode = excluded.mode`,
-          { rollback: true },
         ),
       ),
     }).toEqual({ editorUpd: 0, ownerUpd: 1, editorIns: "42501" });

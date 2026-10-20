@@ -45,7 +45,7 @@ describe("V2-D · khách đang dùng (5.8a)", () => {
     const end = d(365);
     const k = await deal(c.sql, { sale: true, partner: "Công ty Khách A", tax: "0312345678", end });
     await item(c.sql, k, { qty: 1, price: 500_000, productId: p.id });
-    expect(await rows(c.sql)).toEqual([
+    expect([...(await rows(c.sql))]).toEqual([
       {
         product_id: p.id,
         party_key: "tax:0312345678",
@@ -73,7 +73,7 @@ describe("V2-D · khách đang dùng (5.8a)", () => {
       partner: "Khách B",
     });
     await item(c.sql, draft, { qty: 1, price: 1, productId: svc.id });
-    expect(await rows(c.sql)).toEqual([]);
+    expect([...(await rows(c.sql))]).toEqual([]);
     await c.sql`update contracts.contracts set status = 'active' where id = ${draft}`;
     expect((await rows(c.sql)).map((r) => r.contract_id)).toEqual([draft]);
   });
@@ -102,7 +102,7 @@ describe("V2-D · gia hạn (5.8b)", () => {
     const k2 = await deal(c.sql, { sale: true, partner: "Khách D", tax: "0399999999", end: end2 });
     await item(c.sql, k2, { qty: 1, price: 1, productId: p.id });
     await c.sql`update contracts.contracts set status = 'expiring' where id = ${k2}`;
-    expect(await rows(c.sql)).toEqual([
+    expect([...(await rows(c.sql))]).toEqual([
       expect.objectContaining({
         contract_id: k2,
         expires_on: end2,

@@ -20,7 +20,7 @@ afterAll(async () => {
   await c?.stop();
 });
 
-const READS = ["/overview", "/customers", "/lots", "/prices", "/scans"] as const;
+const READS = ["/overview", "/customers", "/lots", "/prices"] as const;
 
 describe("HD9-AC07 · quyền gói", () => {
   it("viewer: mọi GET 200; mọi POST 403 PACK_FORBIDDEN (kể cả thân rác) và không ghi gì", async () => {
@@ -42,7 +42,6 @@ describe("HD9-AC07 · quyền gói", () => {
       [`/renewals/${crypto.randomUUID()}/complete`, {}],
       [`/renewals/${crypto.randomUUID()}/lost`, {}],
       [`/customers/${w.tt.company_id}/followups`, {}],
-      ["/scans", {}],
     ];
     const before = await c.sql`select (select count(*) from contracts.cks_lots)::int as l,
       (select count(*) from contracts.cks_renewals)::int as r, (select count(*) from contracts.cks_followups)::int as f`;

@@ -91,9 +91,12 @@ describe("V2-D · service_customers", () => {
       ),
     );
     expect(steal).toBe("42501");
-    const del = await failOf(() =>
-      as(w.A, w.boss, (tx) => tx`delete from contracts.service_customers where tenant_id = ${w.A}`),
+    // V2-M: DELETE được cấp lại nhưng policy chỉ mở khi có cờ xoá HĐ ⇒ xoá thường = 0 hàng (không còn lỗi quyền).
+    const del = await as(
+      w.A,
+      w.boss,
+      (tx) => tx`delete from contracts.service_customers where tenant_id = ${w.A}`,
     );
-    expect(del).toBe("42501");
+    expect(del.count).toBe(0);
   });
 });

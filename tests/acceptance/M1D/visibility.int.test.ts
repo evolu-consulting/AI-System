@@ -12,7 +12,7 @@ import {
   users,
   visibility,
 } from "@ai/test-kit/builders";
-import { cloneDb, inPackAs, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
+import { cloneDb, inPackAs, inPackAsRollback, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
 
 let sql: Sql;
 let A = "";
@@ -64,7 +64,7 @@ beforeAll(async () => {
     [u3, u2],
     [u4, u3],
   ]);
-  await department(sql, A, "kd", u6, [u6, u7]);
+  await department(sql, A, "kd", { head: u6, members: [u6, u7] });
   const own: [string, string][] = [
     ["boss", boss],
     ["u2", u2],
@@ -162,13 +162,12 @@ describe("M1D-FR-01 · chế độ org: luật mgmt-app dưới RLS", () => {
   });
   it("ghi cũng bị lọc: u2 UPDATE HĐ của u5 tác động 0 hàng; HĐ của u4 (cấp dưới) 1 hàng", async () => {
     const upd = (id: string) =>
-      inPackAs(
+      inPackAsRollback(
         "contracts",
         A,
         u2,
         async (tx) =>
           (await tx`update contracts.contracts set title = title where id = ${id}`).count,
-        { rollback: true },
       );
     expect({ peer: await upd(C.u5 as string), sub: await upd(C.u4 as string) }).toEqual({
       peer: 0,

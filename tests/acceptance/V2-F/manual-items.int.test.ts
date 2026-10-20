@@ -69,7 +69,7 @@ describe("V2-F · 5.5a nhập tay: dòng gắn SP + thành phần", () => {
         ],
       }),
     );
-    expect(await itemsOf(out.id)).toEqual([
+    expect([...(await itemsOf(out.id))]).toEqual([
       { name: "USB Token trắng", product_id: tokenId, component_ids: [tokenCompId] },
       { name: "Dòng chưa gắn", product_id: null, component_ids: null },
     ]);

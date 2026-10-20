@@ -70,7 +70,7 @@ beforeAll(async () => {
   for (let i = 1022; i <= 1061; i++) pairs.push([userId(i), userId(1002 + ((i - 1022) % 20))]);
   await managers(sql, P, pairs);
   const dept = Array.from({ length: 30 }, (_, k) => userId(1101 + k));
-  await department(sql, P, "kd", H, dept);
+  await department(sql, P, "kd", { head: H, members: dept });
   await sql.unsafe(
     `insert into contracts.contracts (tenant_id, title, status, owner_user_id, created_by, updated_at)
      select $1::uuid, 'HD ' || i, 'active', u.id, u.id, now() - (i || ' minutes')::interval

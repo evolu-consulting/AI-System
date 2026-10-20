@@ -66,7 +66,7 @@ export const PRODUCTS: readonly ProductSpec[] = [
     grp: "service",
     unit: "gói 300 số",
     supplier: "viettel",
-    rules: ["hoá đơn điện tử", "hóa đơn điện tử"],
+    rules: ["hoá đơn điện tử"],
   },
   {
     key: "hopdong-dt",

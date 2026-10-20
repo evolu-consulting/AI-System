@@ -270,9 +270,11 @@ describe("giá gói (prices/cks.py)", () => {
   });
   test("lô mới nhất đặt giá mua; khác thiết bị ⇒ any_device; cờ rẻ nhất chỉ khi > 1 gói cùng hạn", () => {
     const p = cksPackages(
-      NEWEST_LOTS,
-      [{ lot_id: "l1", valid_from: "2026-10-01", sale_price: 800 }],
-      ONE_MARKET,
+      {
+        lots: NEWEST_LOTS,
+        sold: [{ lot_id: "l1", valid_from: "2026-10-01", sale_price: 800 }],
+        market: ONE_MARKET,
+      },
       "2026-10-19",
     );
     expect(p.rows).toHaveLength(1);
@@ -306,7 +308,7 @@ describe("giá gói (prices/cks.py) · biên lợi nhuận", () => {
       valid_from: "2026-09-01",
       sale_price: 1_000_000,
     }));
-    expect(cksPackages(lots, sold, [], "2026-10-19").stats).toEqual({
+    expect(cksPackages({ lots, sold, market: [] }, "2026-10-19").stats).toEqual({
       sold_12m: 2,
       revenue: 2_000_000,
       gross_profit: 247_000,

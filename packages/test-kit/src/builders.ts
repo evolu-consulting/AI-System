@@ -163,8 +163,7 @@ export async function department(
   sql: Sql,
   tenant: string,
   key: string,
-  head: string | null,
-  memberIds: readonly string[],
+  { head, members: memberIds }: { head: string | null; members: readonly string[] },
 ): Promise<string> {
   const g = (await groups(sql, tenant, [key])).get(key) as string;
   await sql`insert into admin.departments (tenant_id, group_id, head_user_id)

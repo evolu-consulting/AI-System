@@ -11,7 +11,7 @@ import {
   users,
   visibility,
 } from "@ai/test-kit/builders";
-import { cloneDb, inPackAs, openOwner, type Sql } from "@ai/test-kit/db";
+import { cloneDb, inPackAs, inPackAsRollback, openOwner, type Sql } from "@ai/test-kit/db";
 
 let sql: Sql;
 let A = "";
@@ -34,21 +34,15 @@ const n = (user: string, table: string): Promise<number> =>
   });
 /** u5 tự tạo HĐ `active` mang MST 0101 với người duyệt `by` (rollback) ⇒ số khách / sự kiện 0101 u5 thấy. */
 const forged = (by: string | null) =>
-  inPackAs(
-    "contracts",
-    A,
-    u5,
-    async (tx) => {
-      await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, confirmed_by,
+  inPackAsRollback("contracts", A, u5, async (tx) => {
+    await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, confirmed_by,
           confirmed_at, fields)
         values (${A}, 'Tu duyet', 'active', ${u5}, ${u5}, ${by}, now(), ${tx.json(party("X", "0101"))})`;
-      const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
-      const e = await tx<{ n: number }[]>`select count(*)::int as n from contracts.partner_events
+    const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
+    const e = await tx<{ n: number }[]>`select count(*)::int as n from contracts.partner_events
         where party_key = 'tax:0101'`;
-      return { customers: c[0]?.n, events: e[0]?.n };
-    },
-    { rollback: true },
-  );
+    return { customers: c[0]?.n, events: e[0]?.n };
+  });
 
 beforeAll(async () => {
   await cloneDb("full");

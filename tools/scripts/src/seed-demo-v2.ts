@@ -54,7 +54,7 @@ async function ins(tx: Tx, table: string, rows: readonly Row[], tail = ""): Prom
   const def = cols.map((c) => (typeof c === "string" ? c : `${c[0]} ${c[1]}`)).join(", ");
   const exprs = cols.map((c) => (typeof c === "string" ? `x.${name(c)}` : (c[2] ?? `x.${c[0]}`)));
   await tx.unsafe(
-    `insert into contracts.${table} (${cols.map(name).join(", ")}) select ${exprs.join(", ")} from jsonb_to_recordset($1::jsonb) as x(${def}) ${tail}`,
+    `insert into contracts.${table} (${cols.map(name).join(", ")}) select ${exprs.join(", ")} from jsonb_to_recordset($1::text::jsonb) as x(${def}) ${tail}`,
     [JSON.stringify(rows)],
   );
 }
@@ -129,7 +129,7 @@ async function loadContracts({ tx, tenant, a, shift, stock }: Ctx): Promise<void
   const moved = productRows(tenant, stock, a).comps.filter((c) => c.last_move_id);
   await tx.unsafe(
     `update contracts.product_components c set on_hand = x.on_hand, stock_value = x.stock_value, avg_cost = x.avg_cost, last_move_id = x.last_move_id
-     from jsonb_to_recordset($1::jsonb) as x(id uuid, on_hand numeric, stock_value bigint, avg_cost bigint, last_move_id uuid)
+     from jsonb_to_recordset($1::text::jsonb) as x(id uuid, on_hand numeric, stock_value bigint, avg_cost bigint, last_move_id uuid)
      where c.id = x.id and c.tenant_id = $2`,
     [JSON.stringify(moved), tenant],
   );

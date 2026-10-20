@@ -78,7 +78,7 @@ describe("V2-D · HĐ Mua: nhập kho + BQ (5.3, 5.7c/d)", () => {
     const end = d(400);
     await stockIn(c, p.id, 50, 200_000, { end });
     expect(await comp(c.sql, cid)).toEqual({ onHand: 50, value: 10_000_000, avg: 200_000 });
-    expect(await lotsOf(c.sql, cid)).toEqual([{ qty: 50, remaining: 50, expires_on: end }]);
+    expect([...(await lotsOf(c.sql, cid))]).toEqual([{ qty: 50, remaining: 50, expires_on: end }]);
   });
 
   it("HĐ dịch vụ có hạn không có ngày kết thúc ⇒ 422, không ghi gì, mốc còn mở", async () => {
@@ -103,7 +103,7 @@ describe("V2-D · HĐ Mua: nhập kho + BQ (5.3, 5.7c/d)", () => {
     expect([r.status, r.json?.error?.code]).toEqual([422, "DELIVERY_INVALID"]);
     expect(await statusOf(c.sql, m)).toBe("open");
     expect(await deliveredOf(c.sql, line)).toBe(0);
-    expect(await movesOf(c.sql, p.comps[0] as string)).toEqual([]);
+    expect([...(await movesOf(c.sql, p.comps[0] as string))]).toEqual([]);
   });
 
   it("SP nhiều thành phần: dòng chọn USB Token ⇒ chỉ cộng kho USB Token, không cộng suất chứng thư (5.7f)", async () => {
