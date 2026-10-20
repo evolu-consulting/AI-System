@@ -184,10 +184,12 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
           as x (ord int, kind text, direction text, due_date date, title text, owner text)
         where c.status = 'active'),
       i as (
-        insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited)
-        select ${tenantId}::uuid, c.id, x.ord, x.name, x.unit, x.qty, x.unit_price, true, true
+        insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited,
+          product_id, component_ids)
+        select ${tenantId}::uuid, c.id, x.ord, x.name, x.unit, x.qty, x.unit_price, true, true, x.product_id,
+          (select array_agg(e::uuid) from jsonb_array_elements_text(x.component_ids) e)
         from c, jsonb_to_recordset(${JSON.stringify(items)}::jsonb)
-          as x (ord int, name text, unit text, qty numeric, unit_price bigint)),
+          as x (ord int, name text, unit text, qty numeric, unit_price bigint, product_id uuid, component_ids jsonb)),
       e as (
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${tenantId}::uuid, c.id, 'created_manual', ${m.userId}::uuid,

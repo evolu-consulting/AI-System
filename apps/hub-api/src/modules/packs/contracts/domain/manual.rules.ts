@@ -32,6 +32,9 @@ export type ManualItemInput = {
   unit?: string | null;
   qty?: number | null;
   unit_price?: number | null;
+  /** V2-F · 5.5a: dòng gắn SP danh mục + thành phần đã chọn (zod: thành phần ⇒ có SP). */
+  product_id?: string | null;
+  component_ids?: readonly string[] | null;
 };
 export type ManualItem = {
   ord: number;
@@ -39,6 +42,8 @@ export type ManualItem = {
   unit: string | null;
   qty: number | null;
   unit_price: number | null;
+  product_id: string | null;
+  component_ids: string[] | null;
 };
 
 const blank = (v: string | null | undefined): string | null => {
@@ -89,6 +94,8 @@ export function manualItems(items: readonly ManualItemInput[]): ManualItem[] {
       unit: blank(it.unit),
       qty: it.qty ?? null,
       unit_price: it.unit_price ?? null,
+      product_id: it.product_id ?? null,
+      component_ids: it.product_id && it.component_ids?.length ? [...it.component_ids] : null,
     }));
 }
 

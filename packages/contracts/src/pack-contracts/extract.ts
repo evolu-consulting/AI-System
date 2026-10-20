@@ -131,12 +131,20 @@ export type ExtractResponse = z.infer<typeof ExtractResponseSchema>;
 
 const optText = (max: number) => nfcText(max).nullable().optional();
 
-export const ManualItemSchema = z.strictObject({
-  name: nfcText(500).min(1),
-  unit: optText(50),
-  qty: z.number().min(0).max(1e12).nullable().optional(),
-  unit_price: money().nullable().optional(),
-});
+export const ManualItemSchema = z
+  .strictObject({
+    name: nfcText(500).min(1),
+    unit: optText(50),
+    qty: z.number().min(0).max(1e12).nullable().optional(),
+    unit_price: money().nullable().optional(),
+    /** V2-F · 5.5a: SP trong danh mục (V2-B) + thành phần đã chọn; thành phần chỉ khi có SP. */
+    product_id: z.uuid().nullable().optional(),
+    component_ids: z.array(z.uuid()).min(1).max(20).nullable().optional(),
+  })
+  .refine((i) => !i.component_ids?.length || !!i.product_id, {
+    message: "thành phần cần có sản phẩm",
+    path: ["component_ids"],
+  });
 
 /** `POST /pack/contracts/contracts/manual` — hình `NewContractPage.tsx:60-66` (Q15). */
 /** V2-A · % hoa hồng 0…100, tối đa 2 chữ số thập phân (= `numeric(5,2)`). */

@@ -291,6 +291,7 @@ describe("V2-A · KN-04 giai đoạn + bước hiện tại (chi tiết + danh s
       {
         id: out.id,
         deal: "sell",
+        start_date: d(5),
         stage: "in_progress",
         next: {
           id: collect.id,

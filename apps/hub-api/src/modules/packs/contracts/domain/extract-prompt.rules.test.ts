@@ -103,7 +103,15 @@ describe("HD-FR-26 · nhập tay", () => {
     expect(f.buyer_name.value).toBe("Gạo Ngon");
     expect(f.supplier_representative.value).toBe("B – GĐ");
     expect(manualItems(base.items)).toEqual([
-      { ord: 0, name: "Gạo", unit: null, qty: 1, unit_price: 2 },
+      {
+        ord: 0,
+        name: "Gạo",
+        unit: null,
+        qty: 1,
+        unit_price: 2,
+        product_id: null,
+        component_ids: null,
+      },
     ]);
   });
 });

@@ -1,7 +1,7 @@
 // HD-FR-24 · HD-FR-26 · HD2 plan: `POST /pack/contracts/contracts/:id/extract` (trích lại ⇒ 202) và
 // `POST /pack/contracts/contracts/manual` (nhập tay ⇒ 201). Guard `write` TRƯỚC đọc thân/tham số (viewer ⇒ 403, 0 SQL);
 // `:id` sai dạng ⇒ 400; tenant khác ⇒ 404 như không có; thân strict (khoá lạ như `tenant_id` ⇒ 400).
-import { CONTRACT_ERRORS, ManualContractRequestSchema } from "@ai/contracts";
+import { CONTRACT_ERRORS, ManualContractRequestSchema, PRODUCT_ERRORS } from "@ai/contracts";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -54,6 +54,23 @@ function extractError(
   return new AppError("NO_SOURCE", CONTRACT_ERRORS.NO_SOURCE, "Nothing to read");
 }
 
+/** V2-F · 5.5a: dòng gắn SP không có / của tenant khác ⇒ FK kép `contract_items_product_fk` (23503) ⇒ 422 `PRODUCT_INVALID`. */
+function productFail(e: unknown): never {
+  const o = e as {
+    code?: string;
+    constraint_name?: string;
+    cause?: { code?: string; constraint_name?: string };
+  };
+  const pg = o?.cause?.code ? o.cause : o;
+  if (pg?.code === "23503" && pg.constraint_name === "contract_items_product_fk")
+    throw new AppError(
+      "PRODUCT_INVALID",
+      PRODUCT_ERRORS.PRODUCT_INVALID,
+      "Sản phẩm không có trong danh mục",
+    );
+  throw e;
+}
+
 export function extractionRoutes(
   view: PackAccessView,
   d: ExtractionRoutesDeps,
@@ -68,7 +85,9 @@ export function extractionRoutes(
     async (c) => {
       const body = parseWith(ManualContractRequestSchema, await readJson(c));
       await d.quota?.(c.get("user").tenantId);
-      const out = await d.createManual(whoOf(c.get("user")), body as ManualInput);
+      const out = await d
+        .createManual(whoOf(c.get("user")), body as ManualInput)
+        .catch(productFail);
       return c.json(out, 201);
     },
   );

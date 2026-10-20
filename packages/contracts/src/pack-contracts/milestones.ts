@@ -87,10 +87,13 @@ export const MilestoneSchema = z.strictObject({
 export type Milestone = z.infer<typeof MilestoneSchema>;
 
 export const ContractStageSchema = z.enum(CONTRACT_STAGES);
+export type ContractStage = z.infer<typeof ContractStageSchema>;
 /** Giai đoạn + bước hiện tại của một HĐ (danh sách: mảng `progress` cạnh `items`, không đổi ListRow đã khoá). */
 export const ContractProgressSchema = z.strictObject({
   id: z.uuid(),
   deal: ContractDealSchema.nullable(),
+  /** V2-F: ngày bắt đầu hiệu lực (cột "Hiệu lực" của danh sách). */
+  start_date: IsoDay.nullable(),
   stage: ContractStageSchema,
   next: z
     .strictObject({

@@ -104,6 +104,7 @@ export function toProgress(r: ProgressRaw, today: string): ContractProgress {
   return {
     id: r.id,
     deal: r.deal,
+    start_date: r.start_date,
     stage,
     next:
       n && kind
