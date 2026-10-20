@@ -126,17 +126,32 @@ type Where = Map<string, Set<TenantPlan>>;
 const both = (where: Where, a: unknown, b: unknown): TenantPlan[] =>
   [...(where.get(String(a)) ?? [])].filter((t) => where.get(String(b))?.has(t));
 
-/** REL: có đoạn làm chứng ⇒ tenant của đoạn đó; không ⇒ mọi tenant có cả hai đầu. ALIAS_OF: mọi tenant có cả hai. */
+/** review C#25: tenant nhận một REL. Có đoạn làm chứng ⇒ CHỈ tenant của đoạn đó (đoạn không được nhập ⇒ không tenant nào,
+ *  không rải sang tenant khác); không có đoạn làm chứng ⇒ mọi tenant có cả hai đầu. */
+function relTenants(
+  k: Kn,
+  where: Where,
+  rel: unknown[],
+): { tenants: TenantPlan[]; evidence: string | null } {
+  const [a, b, , ev] = rel;
+  if (ev === null || ev === undefined) return { tenants: both(where, a, b), evidence: null };
+  const evT = k.chunkTenant.get(String(ev));
+  return {
+    tenants: evT ? both(where, a, b).filter((t) => t === evT) : [],
+    evidence: evT ? k.cid(String(ev)) : null,
+  };
+}
+
+/** REL theo `relTenants`; ALIAS_OF: mọi tenant có cả hai đầu. */
 function mapEntityEdges(s: Snapshot, k: Kn, where: Where): void {
-  for (const [a, b, type, ev] of s.graph.rels ?? []) {
-    const evT = k.chunkTenant.get(String(ev));
-    const ts2 = both(where, a, b).filter((t) => !evT || t === evT);
-    for (const t of ts2)
+  for (const rel of s.graph.rels ?? []) {
+    const { tenants, evidence } = relTenants(k, where, rel);
+    for (const t of tenants)
       push(t, "knowledge.entity_rels", {
-        src: a,
-        dst: b,
-        type: str(type, 60) ?? "RELATED",
-        evidence: evT ? k.cid(String(ev)) : null,
+        src: rel[0],
+        dst: rel[1],
+        type: str(rel[2], 60) ?? "RELATED",
+        evidence,
       });
   }
   for (const [a, b] of s.graph.aliases ?? [])

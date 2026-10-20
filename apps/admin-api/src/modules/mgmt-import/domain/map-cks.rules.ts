@@ -12,7 +12,12 @@ const DOC_KIND = new Set(["invoice", "tax_return", "contract", "other"]);
 const device = (v: unknown): string => (v === "remote" ? "remote" : "token");
 const cap = (v: number | null): number | null => (v !== null && v <= 10_000_000_000 ? v : null);
 
-type Cks = { companies: Map<string, Company>; certs: Set<string>; renewals: Set<string> };
+type Cks = {
+  companies: Map<string, Company>;
+  lots: Set<string>;
+  certs: Set<string>;
+  renewals: Set<string>;
+};
 
 /** Khách: thêm hàng cks_customers (gộp theo khoá) + trả cột tra cứu cho hàng con. */
 function customer(t: TenantPlan, k: Cks, ctx: Ctx, companyId: string | null): Row | null {
@@ -29,7 +34,7 @@ function customer(t: TenantPlan, k: Cks, ctx: Ctx, companyId: string | null): Ro
   return { cust_name: c.name, cust_tax: c.tax };
 }
 
-function mapLot(d: SourceDoc, t: TenantPlan, ctx: Ctx): void {
+function mapLot(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks): void {
   const s = d.src;
   const ref = `cks_lots/${d.id}`;
   const qty = int(s.qty, 1, 100_000);
@@ -53,7 +58,17 @@ function mapLot(d: SourceDoc, t: TenantPlan, ctx: Ctx): void {
     created_by: ctx.fallbackUser(t.tenantId),
     created_at: ts(s.created_at),
   });
+  k.lots.add(d.id);
   addMoney(t, "cks_lots.qty_x_unit_cost", BigInt(qty) * BigInt(cost));
+}
+
+/** review B#21: lô bị bỏ (LOT_INCOMPLETE) hoặc không có ⇒ null + LOT_MISSING (không để FK `cks_certificates_lot_fk` rollback cả lô). */
+function lotRef(v: unknown, k: Cks, ctx: Ctx, ref: string): string | null {
+  const id = str(v, 128);
+  if (!id) return null;
+  if (k.lots.has(id)) return idOf(ctx, "lot", id);
+  ctx.issues.push({ entity: "cks_certificate", ref, code: "LOT_MISSING" });
+  return null;
 }
 
 function mapCert(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks, seen: Set<string>): void {
@@ -87,7 +102,7 @@ function mapCert(d: SourceDoc, t: TenantPlan, ctx: Ctx, k: Cks, seen: Set<string
     valid_from: day(s.valid_from),
     valid_to: validTo,
     source: s.source === "elsewhere" ? "elsewhere" : "ours",
-    lot_id: ref2(s.lot_id, "lot"),
+    lot_id: lotRef(s.lot_id, k, ctx, ref),
     sale_contract_id: ref2(s.sale_contract_id, "contract"),
     sale_price: price,
     status: CERT_STATUS.has(String(s.status)) ? s.status : "active",
@@ -256,10 +271,10 @@ export function mapCks(
   p: Plan,
   companies: Map<string, Company>,
 ): Set<string> {
-  const k: Cks = { companies, certs: new Set(), renewals: new Set() };
+  const k: Cks = { companies, lots: new Set(), certs: new Set(), renewals: new Set() };
   const serials = new Set<string>();
   const signed = new Set<string>();
-  eachOrgDoc(s, ctx, p, "cks_lots", (d, t) => mapLot(d, t, ctx));
+  eachOrgDoc(s, ctx, p, "cks_lots", (d, t) => mapLot(d, t, ctx, k));
   eachOrgDoc(s, ctx, p, "cks_certificates", (d, t) => mapCert(d, t, ctx, k, serials));
   eachOrgDoc(s, ctx, p, "cks_renewals", (d, t) => mapRenewal(d, t, ctx, k));
   eachOrgDoc(s, ctx, p, "signed_docs", (d, t) => mapSigned(d, t, ctx, k, signed));
