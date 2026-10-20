@@ -161,7 +161,6 @@ describe("V2-B · chỉ thêm + tồn/BQ chỉ đổi kèm dòng sổ", () => {
       "update contracts.stock_moves set amount = 1",
       "delete from contracts.stock_moves",
       "update contracts.products set name = 'X'",
-      "delete from contracts.products",
       "delete from contracts.product_components",
       "update contracts.product_components set name = 'X'",
       "delete from contracts.stock_lots",
@@ -169,6 +168,12 @@ describe("V2-B · chỉ thêm + tồn/BQ chỉ đổi kèm dòng sổ", () => {
     ]) {
       expect({ q, code: await asU1(q) }).toEqual({ q, code: "42501" });
     }
+    // V2-M: contracts_rw lấy lại DELETE trên products, nhưng chỉ khi tx có cờ v2m_del của HĐ tạo ra SP
+    // ⇒ xoá trần không lỗi nhưng 0 hàng, danh mục còn nguyên.
+    const before = await count(w.A, w.boss, "products");
+    expect(before).toBeGreaterThan(0);
+    expect(await asU1("delete from contracts.products")).toBeNull();
+    expect(await count(w.A, w.boss, "products")).toBe(before);
   });
 
   it("sửa tay tồn / giá vốn không kèm dòng sổ mới ⇒ 23514", async () => {

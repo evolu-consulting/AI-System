@@ -381,11 +381,18 @@ describe("D-08 · quyền bớt của contracts_rw", () => {
     await arrange();
     const del = async (t: string) =>
       pgCode(() => rw(T.acme, (tx) => tx.unsafe(`delete from contracts.${t}`)));
+    // V2-M: contracts_rw lấy lại DELETE trên contracts, nhưng policy RESTRICTIVE chỉ mở khi tx có cờ
+    // contracts.v2m_del = <id> (hàm delete_contract) ⇒ xoá trần không lỗi nhưng KHÔNG xoá hàng nào.
+    const countContracts = async () =>
+      Number((await sql`select count(*)::int as n from contracts.contracts`)[0]?.n);
+    const before = await countContracts();
+    expect(before).toBeGreaterThan(0);
+    expect(await del("contracts")).toBeNull();
+    expect(await countContracts()).toBe(before);
     expect({
-      contracts: await del("contracts"),
       items: await del("contract_items"),
       categories: await del("contract_categories"),
-    }).toEqual({ contracts: "42501", items: "42501", categories: "42501" });
+    }).toEqual({ items: "42501", categories: "42501" });
   });
   it("D-08 · events/reminders chỉ thêm: UPDATE và DELETE đều 42501; INSERT/SELECT được", async () => {
     await arrange();

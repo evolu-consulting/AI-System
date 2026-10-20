@@ -115,7 +115,6 @@ describe("HD7-AC06 · cách ly tenant", () => {
       "delete from contracts.partner_events",
       "update contracts.partner_event_voids set by_user = null",
       "delete from contracts.partner_event_voids",
-      "delete from contracts.obligations",
     ]) {
       // Lỗi trong tx làm hỏng cả tx: postgres.js ném ra ở `inPack` dù `fn` đã bắt ⇒ bắt quanh `inPack`.
       const code = await inPack(
@@ -128,5 +127,17 @@ describe("HD7-AC06 · cách ly tenant", () => {
       ).catch((e: unknown) => (e as { code?: string }).code ?? "err");
       expect({ q, code }).toEqual({ q, code: "42501" });
     }
+    // V2-M: DELETE đợt chỉ qua contracts.delete_contract (cờ v2m_del) ⇒ xoá trần = 0 hàng, đợt còn nguyên.
+    const countObs = async () =>
+      Number((await c.sql`select count(*)::int as n from contracts.obligations`)[0]?.n);
+    const before = await countObs();
+    expect(before).toBeGreaterThan(0);
+    const removed = await inPack(
+      T.acme,
+      async (tx) => (await tx.unsafe("delete from contracts.obligations returning id")).length,
+      ROLE_RW,
+    );
+    expect(removed).toBe(0);
+    expect(await countObs()).toBe(before);
   });
 });

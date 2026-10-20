@@ -211,7 +211,9 @@ describe("HD7-AC02 · đã trả trễ, hẹn lại, nhắc (test_ledger.py)", (
       at: d(0),
     });
     await ok(call(c, P.hoa, "POST", `/obligations/${first.id}/settle`, { at: "2026-10-20" }));
-    expect((await events(c, first.party)).at(-1)).toMatchObject({ type: "received", days_late: 0 });
+    // sổ sắp theo ngày ghi: «nhắc» ghi ngày thật hôm nay (có thể sau ngày trả 10-20) ⇒ lấy đúng sự kiện «received».
+    const received = (await events(c, first.party)).filter((e: Json) => e.type === "received");
+    expect(received.at(-1)).toMatchObject({ type: "received", days_late: 0 });
     // remind không nhận thân (strict) — mgmt `remind` không có thân; chỉ postpone mang `to`.
     for (const act of ["remind", "postpone"]) {
       const r = await call(

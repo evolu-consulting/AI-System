@@ -540,10 +540,17 @@ describe("W1 · hẹn nhắc chung (GET/POST /followups)", () => {
     });
     expect(raw.status).toBe(400);
     await mk(P.hoa, ok);
+    // V2-M: contracts_rw lấy lại DELETE trên followups, nhưng chỉ khi tx có cờ v2m_del của HĐ gắn
+    // ⇒ xoá trần không lỗi nhưng 0 hàng, hẹn nhắc còn nguyên.
+    const countF = async () =>
+      Number((await c.sql`select count(*)::int as n from contracts.followups`)[0]?.n);
+    const before = await countF();
+    expect(before).toBeGreaterThan(0);
     const code = await pgCode(() =>
       inPackAs("contracts", T.acme, P.hoa.id, (tx) => tx.unsafe("delete from contracts.followups")),
     );
-    expect(code).toBe("42501");
+    expect(code).toBeNull();
+    expect(await countF()).toBe(before);
   });
   it("review B #8/#15/#16: tiêu đề cắt về 200 (trần thông báo); nhắc lại hẹn đã xong khi đã có hẹn mở cùng chủ thể ⇒ 404 không 5xx; NUL trong subject_id ⇒ 400", async () => {
     await arrangeW1(c);

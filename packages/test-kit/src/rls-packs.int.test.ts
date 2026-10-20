@@ -3,6 +3,7 @@
 
 import { tenantId, userId } from "./builders";
 import { cloneDb, openOwner, type Sql } from "./db";
+import { v2IgnoreTables, v2Tables } from "./rls-packs-v2";
 import { defineRlsSuite, type RlsTable } from "./rls-suite";
 
 const tenants = { a: tenantId(901), b: tenantId(902) };
@@ -332,11 +333,12 @@ defineRlsSuite({
 defineRlsSuite({
   key: "contracts",
   tenants,
+  ignoreTables: v2IgnoreTables,
   open,
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes, contracts.market_observations, contracts.companies",
+      "truncate contracts.product_supplier_prices, contracts.product_rules, contracts.product_components, contracts.products, contracts.partner_notes, contracts.partner_roles, contracts.contract_delete_log, contracts.business_settings, contracts.company_settings, contracts.score_configs_v2, contracts.score_locks, contracts.score_lock_runs, contracts.score_ratings, contracts.milestone_items, contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes, contracts.market_observations, contracts.companies cascade",
     );
   },
   tables: [
@@ -454,6 +456,7 @@ defineRlsSuite({
     ...cksTables,
     ...ledgerTables,
     ...sourcingTables,
+    ...v2Tables,
     // Review HD3 M1 · nhật ký đổi luật duyệt (migration gói 0006, append-only).
     {
       name: "approval_settings_audit",
