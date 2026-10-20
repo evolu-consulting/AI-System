@@ -41,7 +41,7 @@ it("HĐ mua: nhập 10 × 100 ⇒ đảo trừ lô, kho về 0", () => {
       }),
     ],
     comps: new Map([["c1", comp(10n, 1000n)]]),
-    lots: new Map([["L1", { id: "L1", remaining: 10n * Q }]]),
+    lots: new Map([["L1", { id: "L1", componentId: "c1", remaining: 10n * Q }]]),
     newId,
   });
   expect(p.takes).toEqual([{ lotId: "L1", qty: 10n * Q }]);
@@ -80,7 +80,7 @@ it("hàng nhập đã bán bớt (lô còn ít hơn) ⇒ stock_insufficient, kh�
       on: "2026-10-21",
       moves: [mv({ id: "m1", seq: 1, direction: "in", qty: "10.0000", amount: 1000, lotId: "L1" })],
       comps: new Map([["c1", comp(3n, 300n)]]),
-      lots: new Map([["L1", { id: "L1", remaining: 3n * Q }]]),
+      lots: new Map([["L1", { id: "L1", componentId: "c1", remaining: 3n * Q }]]),
       newId,
     });
   expect(run).toThrow(StockError);
@@ -94,12 +94,30 @@ it("đảo theo thứ tự từ mới đến cũ: nhập 10 rồi xuất 4 ⇒ t
       mv({ id: "b", seq: 2, direction: "out", qty: "4.0000", amount: 400 }),
     ],
     comps: new Map([["c1", comp(6n, 600n)]]),
-    lots: new Map([["L1", { id: "L1", remaining: 6n * Q }]]),
+    lots: new Map([["L1", { id: "L1", componentId: "c1", remaining: 6n * Q }]]),
     newId,
   });
   // trả 4 thành lô mới rồi rút lại khỏi lô mới khi trừ lô gốc (còn 6) ⇒ chỉ một lần trừ 6, không lô mới thừa
   expect(p.moves.map((m) => m.reverses)).toEqual(["b", "a"]);
   expect(p.takes).toEqual([{ lotId: "L1", qty: 6n * Q }]);
   expect(p.lots).toEqual([]);
+  expect(p.updates[0]).toMatchObject({ onHand: 0n, value: 0n });
+});
+
+it("hàng nhập còn ở lô khác (đã trả từ lần xoá HĐ trước) ⇒ trừ tiếp từ lô đó", () => {
+  const p = planReversal({
+    on: "2026-10-21",
+    moves: [mv({ id: "a", seq: 1, direction: "in", qty: "10.0000", amount: 1000, lotId: "L1" })],
+    comps: new Map([["c1", comp(10n, 1000n)]]),
+    lots: new Map([
+      ["L2", { id: "L2", componentId: "c1", remaining: 4n * Q }],
+      ["L1", { id: "L1", componentId: "c1", remaining: 6n * Q }],
+    ]),
+    newId,
+  });
+  expect([...p.takes].sort((a, b) => a.lotId.localeCompare(b.lotId))).toEqual([
+    { lotId: "L1", qty: 6n * Q },
+    { lotId: "L2", qty: 4n * Q },
+  ]);
   expect(p.updates[0]).toMatchObject({ onHand: 0n, value: 0n });
 });

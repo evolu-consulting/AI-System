@@ -29,7 +29,7 @@ export type OrigMove = {
   contractItemId: string | null;
   supplierPartyKey: string | null;
 };
-export type LotState = { id: string; remaining: bigint };
+export type LotState = { id: string; componentId: string; remaining: bigint };
 export type ReversalPlan = {
   lots: NewLot[];
   takes: LotTake[];
@@ -71,12 +71,26 @@ function drawBack(x: Ctx, componentId: string, need: bigint): bigint {
   return left;
 }
 
-/** Đảo một dòng NHẬP: trừ lô gốc (+ phần đã trả); trả lô dùng cho dòng đảo. */
+/** Lấy tiếp `need` từ các lô còn hàng KHÁC của thành phần (vd hàng đã trả ở lần xoá HĐ trước); trả phần còn thiếu. */
+function drawOthers(x: Ctx, s: CompState, skip: string | null, need: bigint): bigint {
+  let left = need;
+  for (const l of x.lots.values()) {
+    if (left === 0n) break;
+    if (l.componentId !== s.id || l.id === skip || l.remaining === 0n) continue;
+    const t = l.remaining < left ? l.remaining : left;
+    l.remaining -= t;
+    left -= t;
+    x.plan.takes.push({ lotId: l.id, qty: t });
+  }
+  return left;
+}
+
+/** Đảo một dòng NHẬP: trừ lô gốc (+ phần đã trả, + lô khác); trả lô dùng cho dòng đảo. */
 function reverseIn(x: Ctx, s: CompState, o: OrigMove, qty: bigint): string | null {
   const lot = o.lotId ? x.lots.get(o.lotId) : undefined;
   const amount = BigInt(o.amount);
   const t = lot && lot.remaining < qty ? lot.remaining : qty;
-  const left = drawBack(x, s.id, qty - t);
+  const left = drawOthers(x, s, o.lotId, drawBack(x, s.id, qty - t));
   if (left > 0n || s.onHand < qty || s.value < amount)
     throw new StockError("stock_insufficient", "hàng nhập từ HĐ này đã xuất bán, không đảo được", [
       { componentId: s.id, need: fmtQty(qty), have: fmtQty(qty - left) },

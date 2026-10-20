@@ -94,11 +94,10 @@ async function openLots(tx: Tx, t: string, ids: string[]): Promise<OpenLot[]> {
 /** Ghi kế hoạch (lô mới + trừ lô + dòng sổ, rồi tồn/BQ) — 2 câu SQL cố định; dùng chung cho giao hàng và đảo kho (V2-M). */
 async function writePlan(
   tx: Tx,
-  t: string,
-  on: string,
+  at: { t: string; on: string; ids: string[] },
   plan: Pick<DeliveryPlan, "lots" | "takes" | "moves" | "updates">,
-  ids: string[],
 ): Promise<void> {
+  const { t, on, ids } = at;
   const w = {
     lots: plan.lots,
     takes: plan.takes,
@@ -153,7 +152,7 @@ export async function applyDelivery(
   const comps = await lockComps(tx, t, ids);
   const lots = await openLots(tx, t, ids);
   const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
-  await writePlan(tx, t, ctx.on, plan, ids);
+  await writePlan(tx, { t, on: ctx.on, ids }, plan);
   return plan.result;
 }
 
@@ -172,6 +171,20 @@ type OrigRow = {
   supplier_party_key: string | null;
 };
 
+const origOf = (r: OrigRow) => ({
+  id: r.id,
+  seq: Number(r.seq),
+  componentId: r.component_id,
+  lotId: r.lot_id,
+  direction: r.direction,
+  qty: r.qty,
+  unitCost: Number(r.unit_cost),
+  amount: Number(r.amount),
+  contractId: r.contract_id,
+  milestoneId: r.milestone_id,
+  contractItemId: r.contract_item_id,
+  supplierPartyKey: r.supplier_party_key,
+});
 /**
  * V2-M · đảo kho của MỘT HĐ trước khi xoá (cùng tx): mọi dòng sổ `delivery` chưa đảo ⇒ dòng `reversal` + trả/trừ lô + tồn/BQ tính
  * lại (`planReversal`). Số câu SQL cố định (khoá, đọc dòng, đọc lô, 2 câu ghi). Thiếu hàng để trừ ⇒ `StockError` TRƯỚC khi ghi.
@@ -197,32 +210,25 @@ export async function reverseContractStock(
   const lotIds = [...new Set(orig.map((r) => r.lot_id).filter((x): x is string => x !== null))];
   const lotRows = await tx.execute<{
     id: string;
+    component_id: string;
     remaining: string;
-  }>(sql`select l.id::text, l.remaining::text
-    from contracts.stock_lots l where l.tenant_id = ${t}::uuid and l.id = any(${pgArr(lotIds)}::uuid[])`);
+  }>(sql`select l.id::text, l.component_id::text, l.remaining::text
+    from contracts.stock_lots l where l.tenant_id = ${t}::uuid
+      and (l.id = any(${pgArr(lotIds)}::uuid[]) or (l.component_id = any(${pgArr(ids)}::uuid[]) and l.remaining > 0))
+    order by l.seq desc`);
   const lots = new Map(
-    [...lotRows].map((l) => [l.id, { id: l.id, remaining: scaled(l.remaining) }]),
+    [...lotRows].map((l) => [
+      l.id,
+      { id: l.id, componentId: l.component_id, remaining: scaled(l.remaining) },
+    ]),
   );
   const plan = planReversal({
     on,
-    moves: orig.map((r) => ({
-      id: r.id,
-      seq: Number(r.seq),
-      componentId: r.component_id,
-      lotId: r.lot_id,
-      direction: r.direction,
-      qty: r.qty,
-      unitCost: Number(r.unit_cost),
-      amount: Number(r.amount),
-      contractId: r.contract_id,
-      milestoneId: r.milestone_id,
-      contractItemId: r.contract_item_id,
-      supplierPartyKey: r.supplier_party_key,
-    })),
+    moves: orig.map(origOf),
     comps,
     lots,
     newId: () => crypto.randomUUID(),
   });
-  await writePlan(tx, t, on, plan, ids);
+  await writePlan(tx, { t, on, ids }, plan);
   return plan.moves.length;
 }
