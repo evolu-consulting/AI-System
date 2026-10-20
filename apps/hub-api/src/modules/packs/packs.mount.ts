@@ -25,6 +25,7 @@ import type { ExtractionStarter } from "./contracts/application/upload-contract.
 import { mountAssistantTools } from "./contracts/assistant.mount";
 import { businessModule } from "./contracts/business.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
+import { companyModule } from "./contracts/company.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
@@ -183,6 +184,7 @@ function mountContracts<E extends Env>(
       reputation: supplierScores(db, { timeZoneOf }),
     }),
   ); // V2-J2 · tab NCC & giá (thay /cks/scans)
+  app.route(base, companyModule(db, view)); // V2-L · cài đặt công ty + cờ duyệt
   app.route(
     base,
     partnersModule(db, view, {

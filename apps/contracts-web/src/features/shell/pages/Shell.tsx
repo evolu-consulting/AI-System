@@ -4,6 +4,8 @@ import { Outlet, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
 import { logout } from "~/features/auth/api";
+import { SettingsDialog } from "~/features/settings/components/SettingsDialog";
+import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
 import { AssistantDock, DockBody } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
@@ -19,6 +21,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const { pathname } = useLocation();
   const layout = layoutOf(pathname);
   const dock = useDock();
+  useBrandSync();
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });
   const sheetName =
@@ -68,6 +71,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
         </div>
       </div>
       <BottomNav />
+      <SettingsDialog owner={owner} tenantName={user?.tenant.name ?? ""} />
       <button
         type="button"
         onClick={dock.openAssistant}

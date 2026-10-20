@@ -33,6 +33,25 @@ export const BizConfigSchema = z.strictObject({
 });
 export type BizConfig = z.infer<typeof BizConfigSchema>;
 
+/** "Thử tính" (CD-06): số mẫu một SP + cấu hình đang chỉnh ⇒ điểm, đề xuất, từng yếu tố. Không ghi gì. */
+export const BizPreviewSchema = z.strictObject({
+  config: BizConfigSchema,
+  sample: z.strictObject({
+    kind: z.enum(["stock", "quota", "order", "referral"]),
+    /** SL đang giữ (kho / suất). */
+    held: z.number().min(0).max(1_000_000),
+    /** SL bán 3 tháng gần / 3 tháng trước. */
+    l3: z.number().min(0).max(1_000_000),
+    p3: z.number().min(0).max(1_000_000),
+    /** Giá vốn / giá bán một đơn vị (đồng). */
+    cost: z.number().min(0).max(1e12),
+    price: z.number().min(0).max(1e12),
+    /** Gói suất: số ngày tới hạn. */
+    dte: z.number().int().min(0).max(3650),
+  }),
+});
+export type BizPreviewIn = z.infer<typeof BizPreviewSchema>;
+
 export const BizTabSchema = z.enum(["all", ...PRODUCT_GROUPS]);
 export const BizListQuerySchema = z.strictObject({
   group: z.enum(PRODUCT_GROUPS).optional(),

@@ -3,6 +3,7 @@ export * from "./appendix";
 export * from "./approval";
 export * from "./business";
 export * from "./cks";
+export * from "./company";
 export * from "./delivery";
 export * from "./detail";
 export * from "./errors";

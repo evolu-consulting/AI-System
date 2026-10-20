@@ -211,6 +211,13 @@
       "when": 1795800000000,
       "tag": "0031_v2j2_supplier_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1796100000000,
+      "tag": "0034_v2l_company_settings",
+      "breakpoints": true
     }
   ]
 }

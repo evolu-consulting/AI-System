@@ -5,6 +5,8 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconLogout, IconSettings } from "~/components/icons";
 import { confirmDialog } from "~/components/shared/dialog-bus";
+import { nameOf, useBrand } from "~/features/settings/lib/brand";
+import { openSettings } from "~/features/settings/lib/bus";
 
 import { canSeeSettings, type Role } from "../lib/nav";
 import { Popover } from "./Popover";
@@ -44,7 +46,9 @@ export function UserMenu({
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const brand = useBrand();
   if (!user) return null;
+  const company = nameOf(brand, user.tenant.name);
   const name = user.display_name || user.username;
   return (
     <Popover
@@ -62,7 +66,7 @@ export function UserMenu({
           >
             <span className="max-w-full truncate text-label font-semibold text-ink">{name}</span>
             <span className="max-w-full truncate text-micro text-dim">
-              {user.tenant.name} · {t(`contracts.shell.role.${role}`)}
+              {company} · {t(`contracts.shell.role.${role}`)}
             </span>
           </span>
         </>
@@ -74,20 +78,32 @@ export function UserMenu({
             <p className="text-body font-semibold">{name}</p>
             {user.email && <p className="text-caption text-dim">{user.email}</p>}
             <p className="mt-1 text-caption">
-              {user.tenant.name} ·{" "}
-              <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
+              {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
             </p>
           </div>
           <ThemePicker />
           {canSeeSettings(role, user.role) && (
-            <Link
-              to="/settings"
-              role="menuitem"
-              onClick={close}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
-            >
-              <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
-            </Link>
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  close();
+                  openSettings();
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk"
+              >
+                <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
+              </button>
+              <Link
+                to="/settings"
+                role="menuitem"
+                onClick={close}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
+              >
+                <IconSettings width={18} height={18} /> {t("contracts.settings.more")}
+              </Link>
+            </>
           )}
           <button
             type="button"

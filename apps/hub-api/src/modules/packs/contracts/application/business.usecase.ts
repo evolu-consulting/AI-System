@@ -7,7 +7,9 @@ import type {
   BizDetailOut,
   BizListOut,
   BizListQuery,
+  BizPreviewIn,
   BizProductRow,
+  BizScore,
 } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { BizRow, BusinessRepo } from "../adapters/business.repo";
@@ -60,6 +62,29 @@ export function businessUsecase(d: BizDeps) {
       const msg = bizProblem(cfg);
       if (msg) throw new BizFail("invalid", msg);
       return configOut(await tx(who, (r) => r.saveConfig(cfg)));
+    },
+    /** "Thử tính" (CD-06): số mẫu một SP theo cấu hình đang chỉnh — hàm thuần, không đọc/ghi DB. */
+    preview(b: BizPreviewIn): BizScore {
+      const msg = bizProblem(b.config);
+      if (msg) throw new BizFail("invalid", msg);
+      const s = b.sample;
+      return scoreBusiness(
+        {
+          group: s.kind === "quota" ? "service" : s.kind === "referral" ? "referral" : "goods",
+          kind: s.kind,
+          heldQty: s.held,
+          unit: null,
+          expiresInDays: s.kind === "quota" ? s.dte : null,
+          sold12: s.l3 + s.p3,
+          l3: s.l3,
+          p3: s.p3,
+          revenue: s.price * s.l3,
+          cost: s.cost * s.l3,
+          commissionTotal: 0,
+          commissionReceived: 0,
+        },
+        b.config,
+      );
     },
     /** Cấu hình rồi MỘT câu gom cho cả danh sách: số câu cố định theo số SP. */
     async list(who: PackWho, q: BizListQuery): Promise<BizListOut> {

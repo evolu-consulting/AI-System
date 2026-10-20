@@ -4,7 +4,15 @@ import { cn } from "~/lib/utils";
 export const initialOf = (name: string | undefined): string =>
   (name?.trim().charAt(0) || "S").toLocaleUpperCase("vi");
 
-export function BrandMark({ name, className }: { name?: string; className?: string }) {
+export function BrandMark({
+  name,
+  logo,
+  className,
+}: {
+  name?: string | undefined;
+  logo?: string | null | undefined;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden="true"
@@ -13,7 +21,11 @@ export function BrandMark({ name, className }: { name?: string; className?: stri
         className,
       )}
     >
-      {initialOf(name)}
+      {logo ? (
+        <img src={logo} alt="" className="h-full w-full rounded-[inherit] object-cover" />
+      ) : (
+        initialOf(name)
+      )}
     </span>
   );
 }

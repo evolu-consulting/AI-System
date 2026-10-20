@@ -1,7 +1,8 @@
-﻿// PK-FR-10 · TF5 · nav-v2 · thanh trái theo mockup NITI: khối tên app + công ty, 4 mục, tài khoản ở chân. Ghim mở 224 px (mặc định) hoặc
+// PK-FR-10 · TF5 · nav-v2 · thanh trái theo mockup NITI: khối tên app + công ty, 4 mục, tài khoản ở chân. Ghim mở 224 px (mặc định) hoặc
 // thu thành cột biểu tượng 64 px (nút ở thanh trên); trạng thái nhớ theo trình duyệt (`nav:pinned`).
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
 import { NAV, type NavItem, type Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
@@ -33,6 +34,9 @@ export function Sidebar({
   onLogout: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const brand = useBrand();
+  const app = appNameOf(brand, t("contracts.app.name"));
+  const company = nameOf(brand, user?.tenant.name);
   return (
     <nav
       aria-label={t("contracts.shell.navMain")}
@@ -44,16 +48,16 @@ export function Sidebar({
       <Link
         to="/overview"
         className="mb-2 flex h-10 items-center gap-2.5 overflow-hidden px-1.5"
-        title={t("contracts.app.name")}
-        aria-label={t("contracts.app.name")}
+        title={app}
+        aria-label={app}
       >
-        <BrandMark name={user?.tenant.name} />
+        <BrandMark name={company} logo={brand.logo} />
         {pinned && (
           <span className="min-w-0 leading-tight">
             <span className="block text-[15.5px] font-bold tracking-tight whitespace-nowrap">
-              {t("contracts.app.name")}
+              {app}
             </span>
-            <span className="block truncate text-micro text-dim">{user?.tenant.name}</span>
+            <span className="block truncate text-micro text-dim">{company}</span>
           </span>
         )}
       </Link>

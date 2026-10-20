@@ -12,6 +12,9 @@ import {
   type CellParam,
   cellKey,
   cellProblem,
+  DEFAULT_JOB_TYPES,
+  DEFAULT_SETTINGS,
+  defaultCell,
   isCell,
   jobTypesProblem,
   REP_CELLS,
@@ -156,6 +159,12 @@ export function reputationUsecase(d: RepDeps) {
       settings: cfg.settings,
       job_types: cfg.jobTypes,
       versions: cfg.versions,
+      /** Mặc định BA (V2-L: chấm cam + Khôi phục). */
+      defaults: {
+        cells: Object.fromEntries(REP_CELLS.map(([g, r]) => [cellKey(g, r), defaultCell(g, r)])),
+        settings: DEFAULT_SETTINGS,
+        job_types: DEFAULT_JOB_TYPES,
+      },
     };
   };
 
