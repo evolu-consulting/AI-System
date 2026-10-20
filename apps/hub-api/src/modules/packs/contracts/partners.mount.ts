@@ -10,16 +10,31 @@ import { companiesRepo } from "./adapters/companies.repo";
 import { companiesRoutes } from "./adapters/companies.routes";
 import { createInspect } from "./adapters/link-check.http";
 import { LINK_CHECKS_PER_MINUTE, linkCheckLimit } from "./adapters/link-check-limit.redis";
+import { partnerRolesRepo } from "./adapters/partner-roles.repo";
+import { partnerRolesRoutes } from "./adapters/partner-roles.routes";
 import { partnersRepo } from "./adapters/partners.repo";
 import { partnersRoutes } from "./adapters/partners.routes";
 import { partnerDataOf } from "./adapters/partners-data.repo";
 import { companiesUsecase } from "./application/companies.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
-import { partnersUsecase } from "./application/partners.usecase";
+import { partnerRolesUsecase, type ScoreOf } from "./application/partner-roles.usecase";
+import { PartnersFail, partnersUsecase } from "./application/partners.usecase";
 import type { Inspect } from "./domain/link-check.rules";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
+
+/** V2-C gợi ý đối tác: điểm HD8 hiện hành (khách/NCC); đối tác chưa có điểm / vai bên trả HH ⇒ null (V2-E thay engine). */
+const scoreOf =
+  (uc: ReturnType<typeof partnersUsecase>): ScoreOf =>
+  async (who, party, role) => {
+    if (role === "commission_payer") return null;
+    const p = await uc.one(who, party, role).catch((e: unknown) => {
+      if (e instanceof PartnersFail && e.kind === "not_found") return null;
+      throw e;
+    });
+    return p ? { score: p.score, band: p.band } : null;
+  };
 
 export function partnersModule(
   db: Db,
@@ -39,6 +54,7 @@ export function partnersModule(
     createPackUow(db, KEY, (tx: Tx, t: string) => ({
       partners: partnersRepo(tx, t),
       companies: companiesRepo(tx, t),
+      roles: partnerRolesRepo(tx, t),
     })),
   );
   const uc = partnersUsecase({
@@ -55,5 +71,6 @@ export function partnersModule(
   });
   r.route("/", partnersRoutes(view, uc, limit));
   r.route("/", companiesRoutes(view, companiesUsecase({ uow, tax: d.tax ?? null })));
+  r.route("/", partnerRolesRoutes(view, partnerRolesUsecase({ uow, scoreOf: scoreOf(uc) })));
   return r;
 }
