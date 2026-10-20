@@ -21,9 +21,10 @@ export function impactLines(i: DeleteImpact): ImpactLine[] {
   if (i.service_customers > 0) out.push({ key: "customers", vars: { count: i.service_customers } });
   if (i.products.length > 0) out.push({ key: "products", vars: { names: i.products.join(", ") } });
   if (i.partner_events > 0) out.push({ key: "events", vars: { count: i.partner_events } });
+  if (i.appendices > 0) out.push({ key: "appendices", vars: { count: i.appendices } });
+  if (i.has_cks) out.push({ key: "cks", vars: {} });
   return out;
 }
 
-/** Chặn xoá: còn phụ lục hoặc gắn CKS (máy chủ cũng chặn, 409). */
-export const blockedKey = (i: DeleteImpact): "appendix" | "cks" | null =>
-  i.appendices > 0 ? "appendix" : i.has_cks ? "cks" : null;
+/** Lý do không xoá được (kho không đảo được; máy chủ cũng chặn, 409) — null = xoá được. */
+export const blockedReason = (i: DeleteImpact): string | null => i.stock_blocked;

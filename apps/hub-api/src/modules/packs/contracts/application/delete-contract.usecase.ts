@@ -8,7 +8,7 @@ import { StockError } from "../domain/stock.rules";
 
 export type DeleteContractRepo = {
   /** Tác động của việc xoá (một câu); HĐ không có / không thấy ⇒ null. */
-  preview(contractId: string): Promise<DeleteImpact | null>;
+  preview(contractId: string, on: string): Promise<DeleteImpact | null>;
   /** Đảo kho của HĐ (V2-M `reverseContractStock`); trả số dòng đã đảo. Ném `StockError`. */
   reverseStock(contractId: string, on: string): Promise<number>;
   /** `contracts.delete_contract`; null = không thấy. Ném `DeleteContractFail` khi còn phụ lục / gắn CKS. */
@@ -19,6 +19,7 @@ export type DeleteContractRepo = {
         service_customers: number;
         products: number;
         partner_events_voided: number;
+        appendices: number;
       })
     | null
   >;
@@ -27,7 +28,7 @@ export type DeleteContractRepos = { deleteContract: DeleteContractRepo };
 
 export class DeleteContractFail extends Error {
   constructor(
-    readonly kind: "not_found" | "has_appendix" | "has_cks" | "stock_blocked",
+    readonly kind: "not_found" | "stock_blocked",
     readonly detail: string = kind,
     readonly shortages: { componentId: string; need: string; have: string }[] = [],
   ) {
@@ -44,7 +45,8 @@ type Deps = {
 export function deleteContractUsecases(d: Deps) {
   return {
     preview: async (who: PackWho, id: string): Promise<DeleteImpact> => {
-      const out = await d.uow.tenant(who, (r) => r.deleteContract.preview(id));
+      const on = localDate(d.now(), await d.timeZoneOf(who.tenantId));
+      const out = await d.uow.tenant(who, (r) => r.deleteContract.preview(id, on));
       if (!out) throw new DeleteContractFail("not_found");
       return out;
     },

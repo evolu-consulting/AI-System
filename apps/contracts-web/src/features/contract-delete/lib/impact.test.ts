@@ -1,7 +1,7 @@
 // V2-M · dòng tác động hộp xác nhận xoá HĐ.
 import { describe, expect, test } from "bun:test";
 import type { DeleteImpact } from "@ai/contracts";
-import { blockedKey, impactLines } from "./impact";
+import { blockedReason, impactLines } from "./impact";
 
 const base: DeleteImpact = {
   contract: { id: "00000000-0000-4000-8000-000000000001", number: "N-1", title: "HĐ" },
@@ -13,6 +13,7 @@ const base: DeleteImpact = {
   partner_events: 0,
   appendices: 0,
   has_cks: false,
+  stock_blocked: null,
 };
 
 describe("V2-M · impactLines", () => {
@@ -26,9 +27,10 @@ describe("V2-M · impactLines", () => {
     }).map((l) => l.key);
     expect(keys).toEqual(["milestones", "stock", "products"]);
   });
-  test("chặn: phụ lục trước CKS", () => {
-    expect(blockedKey(base)).toBeNull();
-    expect(blockedKey({ ...base, appendices: 1, has_cks: true })).toBe("appendix");
-    expect(blockedKey({ ...base, has_cks: true })).toBe("cks");
+  test("phụ lục + CKS được liệt kê (không chặn); chặn chỉ khi kho không đảo được", () => {
+    const keys = impactLines({ ...base, appendices: 2, has_cks: true }).map((l) => l.key);
+    expect(keys).toEqual(["appendices", "cks"]);
+    expect(blockedReason(base)).toBeNull();
+    expect(blockedReason({ ...base, stock_blocked: "đã bán" })).toBe("đã bán");
   });
 });

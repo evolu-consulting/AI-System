@@ -76,6 +76,13 @@ describe("V2-M · xoá hợp đồng (owner)", () => {
     await c.sql`update contracts.products set created_from_contract_id = ${svc} where id = ${s.id}`;
     await c.sql`insert into contracts.partner_events (tenant_id, party_key, role, type, at, contract_id)
       values (${T.acme}, 'khach v2m', 'customer', 'delivered', current_date, ${svc})`;
+    // phụ lục + việc hẹn của người khác + lô CKS gắn HĐ: xoá theo / gỡ liên kết
+    const app = await deal(c.sql, { sale: true, end: d(100) });
+    await c.sql`update contracts.contracts set kind = 'appendix', parent_id = ${svc} where id = ${app}`;
+    await c.sql`insert into contracts.followups (tenant_id, user_id, subject_kind, subject_id, contract_id, due_at, title)
+      values (${T.acme}, gen_random_uuid(), 'contract', ${svc}, ${svc}, now(), 'nhắc người khác')`;
+    await c.sql`insert into contracts.cks_lots (tenant_id, label, ca, qty, unit_cost, bought_at, purchase_contract_id, created_by)
+      values (${T.acme}, 'L', 'CA', 1, 1, current_date, ${svc}, gen_random_uuid())`;
     expect(await exists("service_customers", "contract_id", svc)).toBe(1);
     const pv3 = await ok(call(c, P.lan, "GET", `/contracts/${svc}/delete-preview`));
     expect([pv3.service_customers, pv3.products, pv3.partner_events]).toEqual([
@@ -84,6 +91,9 @@ describe("V2-M · xoá hợp đồng (owner)", () => {
       1,
     ]);
     await ok(call(c, P.lan, "DELETE", `/contracts/${svc}`));
+    expect(await exists("contracts", "id", app)).toBe(0);
+    expect(await exists("followups", "contract_id", svc)).toBe(0);
+    expect(await exists("cks_lots", "purchase_contract_id", svc)).toBe(0);
     expect(await exists("service_customers", "contract_id", svc)).toBe(0);
     expect(await exists("products", "id", s.id)).toBe(0);
     const [v] = await c.sql<

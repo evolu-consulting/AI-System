@@ -20,7 +20,7 @@ import {
   StockError,
   type StockMode,
 } from "../domain/stock.rules";
-import { planReversal } from "../domain/stock-reversal.rules";
+import { planReversal, type ReversalPlan } from "../domain/stock-reversal.rules";
 
 export type { DeliveryCtx, DeliveryMove, DeliveryResult };
 export { StockError };
@@ -190,21 +190,21 @@ const origOf = (r: OrigRow) => ({
  * lại (`planReversal`). Số câu SQL cố định (khoá, đọc dòng, đọc lô, 2 câu ghi). Thiếu hàng để trừ ⇒ `StockError` TRƯỚC khi ghi.
  * Trả số dòng đã đảo.
  */
-export async function reverseContractStock(
+async function planContractReversal(
   tx: Tx,
   t: string,
-  contractId: string,
+  contractIds: readonly string[],
   on: string,
-): Promise<number> {
+): Promise<{ plan: ReversalPlan; ids: string[] } | null> {
   const rows =
     await tx.execute<OrigRow>(sql`select m.id::text, m.seq::text, m.component_id::text, m.lot_id::text, m.direction,
       m.qty::text, m.unit_cost::text, m.amount::text, m.contract_id::text, m.milestone_id::text, m.contract_item_id::text,
       m.supplier_party_key
     from contracts.stock_moves m
-    where m.tenant_id = ${t}::uuid and m.contract_id = ${contractId}::uuid and m.reason = 'delivery'
+    where m.tenant_id = ${t}::uuid and m.contract_id = any(${pgArr(contractIds)}::uuid[]) and m.reason = 'delivery'
       and not exists (select 1 from contracts.stock_moves r where r.tenant_id = m.tenant_id and r.reverses = m.id)`);
   const orig = [...rows];
-  if (orig.length === 0) return 0;
+  if (orig.length === 0) return null;
   const ids = [...new Set(orig.map((r) => r.component_id))].sort();
   const comps = await lockComps(tx, t, ids);
   const lotIds = [...new Set(orig.map((r) => r.lot_id).filter((x): x is string => x !== null))];
@@ -229,6 +229,34 @@ export async function reverseContractStock(
     lots,
     newId: () => crypto.randomUUID(),
   });
-  await writePlan(tx, { t, on, ids }, plan);
-  return plan.moves.length;
+  return { plan, ids };
+}
+
+/** Ghi đảo kho của HĐ + phụ lục (cùng tx). Trả số dòng đã đảo. */
+export async function reverseContractStock(
+  tx: Tx,
+  t: string,
+  contractIds: readonly string[],
+  on: string,
+): Promise<number> {
+  const r = await planContractReversal(tx, t, contractIds, on);
+  if (!r) return 0;
+  await writePlan(tx, { t, on, ids: r.ids }, r.plan);
+  return r.plan.moves.length;
+}
+
+/** Xem trước: lý do không đảo kho được (hàng nhập đã bán nơi khác), hoặc null. Không ghi. */
+export async function contractStockBlock(
+  tx: Tx,
+  t: string,
+  contractIds: readonly string[],
+  on: string,
+): Promise<string | null> {
+  try {
+    await planContractReversal(tx, t, contractIds, on);
+    return null;
+  } catch (e) {
+    if (e instanceof StockError) return e.detail;
+    throw e;
+  }
 }

@@ -10,13 +10,13 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { useDeleteContract } from "../hooks/use-delete-contract";
-import { blockedKey, impactLines } from "../lib/impact";
+import { blockedReason, impactLines } from "../lib/impact";
 
 export function DeleteContractButton({ id }: { id: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { impact: q, del } = useDeleteContract(id, open, () => setOpen(false));
-  const blocked = q.data ? blockedKey(q.data) : null;
+  const blocked = q.data ? blockedReason(q.data) : null;
   return (
     <>
       <button
@@ -49,8 +49,8 @@ export function DeleteContractButton({ id }: { id: string }) {
             </ul>
           )}
           {blocked && (
-            <p role="alert" className="text-sm">
-              {t(`contracts.del.${blocked}`, { count: q.data?.appendices })}
+            <p role="alert" className="text-sm" data-testid="delete-blocked">
+              {t("contracts.del.blocked", { reason: blocked })}
             </p>
           )}
           <DialogFooter>

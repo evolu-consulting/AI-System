@@ -3,11 +3,7 @@
 import { z } from "zod";
 
 export const DELETE_CONTRACT_ERRORS = {
-  /** HĐ còn phụ lục ⇒ xoá phụ lục trước. */
-  CONTRACT_HAS_APPENDIX: 409,
-  /** HĐ đã gắn lô/chứng thư CKS ⇒ không xoá (CKS chỉ thêm). */
-  CONTRACT_HAS_CKS: 409,
-  /** Đảo kho không được (hàng nhập từ HĐ này đã bán hết) ⇒ chặn, không xoá gì. */
+  /** Đảo kho không được (hàng nhập từ HĐ này đã xuất bán nơi khác) ⇒ chặn, không xoá gì. */
   DELETE_STOCK_BLOCKED: 409,
 } as const;
 export type DeleteContractErrorCode = keyof typeof DELETE_CONTRACT_ERRORS;
@@ -29,8 +25,12 @@ export const DeleteImpactSchema = z.object({
   /** SP sinh từ HĐ này, chưa có giao dịch khác ⇒ xoá theo. */
   products: z.array(z.string()),
   partner_events: z.number().int(),
+  /** Số phụ lục xoá theo (cascade). */
   appendices: z.number().int(),
+  /** Có liên kết CKS ⇒ gỡ liên kết (không chặn). */
   has_cks: z.boolean(),
+  /** Lý do KHÔNG xoá được (kho không đảo được) — null = xoá được. */
+  stock_blocked: z.string().nullable(),
 });
 export type DeleteImpact = z.infer<typeof DeleteImpactSchema>;
 
@@ -43,6 +43,7 @@ export const DeleteResultSchema = z.object({
     service_customers: z.number().int(),
     products: z.number().int(),
     partner_events_voided: z.number().int(),
+    appendices: z.number().int(),
   }),
 });
 export type DeleteResult = z.infer<typeof DeleteResultSchema>;

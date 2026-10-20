@@ -20,25 +20,18 @@ const who = (c: Context<PackGuardVars>) => {
   const u = c.get("user");
   return { tenantId: u.tenantId, userId: u.userId };
 };
-const MSG = {
-  has_appendix: ["CONTRACT_HAS_APPENDIX", "Hợp đồng còn phụ lục — xoá phụ lục trước"],
-  has_cks: ["CONTRACT_HAS_CKS", "Hợp đồng đã gắn lô/chứng thư chữ ký số — không xoá được"],
-  stock_blocked: [
-    "DELETE_STOCK_BLOCKED",
-    "Hàng nhập từ hợp đồng này đã xuất bán — không đảo kho được",
-  ],
-} as const;
+const MSG = [
+  "DELETE_STOCK_BLOCKED",
+  "Hàng nhập từ hợp đồng này đã xuất bán nơi khác — không đảo kho được",
+] as const;
 const run = <T>(p: Promise<T>): Promise<T> =>
   p.catch((e) => {
     if (!(e instanceof DeleteContractFail)) throw e;
     if (e.kind === "not_found") throw appError("NOT_FOUND");
-    const [code, msg] = MSG[e.kind];
-    throw new AppError(
-      code,
-      DELETE_CONTRACT_ERRORS[code],
-      e.kind === "stock_blocked" ? `${msg} (${e.detail})` : msg,
-      e.kind === "stock_blocked" ? { shortages: e.shortages } : undefined,
-    );
+    const [code, msg] = MSG;
+    throw new AppError(code, DELETE_CONTRACT_ERRORS[code], `${msg} (${e.detail})`, {
+      shortages: e.shortages,
+    });
   });
 
 export function deleteContractRoutes(
