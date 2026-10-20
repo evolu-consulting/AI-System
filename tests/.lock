@@ -937,7 +937,7 @@ b9070962bfa0b57403c7571bb75e59aae8754ae1f877efe796cc8ae3a1c3f711  tests/acceptan
 d3eeb3232973223cc272a08c0495b895e43df31da03a6f15964985866880f819  tests/acceptance/N2/reject.int.test.ts
 764b3e66fb283b475bac885794cd2eb9305539e02002d70732dc6e0261384d5f  tests/acceptance/N2/starter.int.test.ts
 cbb65f4c751edddfbe73c4d40eaf326d922fd7fed81ca85678c2fbb14f922a64  tests/acceptance/N3/_support/n3.ts
-f549963332fa25b7c969fc7f03e14daf4bd247db3f15750d39d74f266811a4c5  tests/acceptance/N3/api.int.test.ts
+64cf6b7bc5d79cc77afbb33d3a798b2aa2d09f407d7fe33ebeca45bf1a64d533  tests/acceptance/N3/api.int.test.ts
 922d730a34fd83a23d378637f93b57fe029e417fcbceb7e919232ffc2fdb4a69  tests/acceptance/N3/dispatch.int.test.ts
 3cff73a931541eddce423bf7d5f31c4c300e36feafc478bf8007b0c086548f91  tests/acceptance/N3/isolation.int.test.ts
 7d8a6224c1553444f0c845f158626cf8029318cac36e94e6b4796ee36f1193a3  tests/acceptance/N3/lease.int.test.ts

@@ -63,6 +63,21 @@ describe("N3-FR-09 · đọc chuông", () => {
     expect(p3.next_before).toBeNull();
   });
 
+  it("thứ tự lô = thứ tự seq: 40 thông báo xen người nhận ngoài tenant ⇒ chuông trả đúng thứ tự ngược đầu vào", async () => {
+    const rows = Array.from({ length: 40 }, (_, i) =>
+      i % 5 === 4
+        ? notice(P.an.id, { title: `ngoài${i}`, dedup_key: `o${i}` }) // an thuộc tenant beta: bị bỏ qua
+        : notice(P.lan.id, { title: `m${i}`, dedup_key: `m${i}` }),
+    );
+    await send(T.acme, rows);
+    const r = await as("lan", "GET", "/notifications?limit=50");
+    const want = rows
+      .filter((_, i) => i % 5 !== 4)
+      .map((n) => n.title)
+      .reverse();
+    expect(r.json.items.map((i: { title: string }) => i.title)).toEqual(want);
+  });
+
   it("tham số sai ⇒ 400 VALIDATION_ERROR (limit 0/51, before 0, khóa lạ); tenant_id/user_id trong query bị BỎ QUA (không đổi người xem)", async () => {
     await send(T.beta, [notice(P.an.id)]);
     const ignored = await as("lan", "GET", `/notifications?tenant_id=${T.beta}&user_id=${P.an.id}`);
