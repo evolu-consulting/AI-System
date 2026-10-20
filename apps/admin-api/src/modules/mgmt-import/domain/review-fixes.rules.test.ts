@@ -3,6 +3,7 @@
 import { describe, expect, test } from "bun:test";
 import { companyIndex } from "./companies.rules";
 import type { Ctx, Snapshot } from "./context";
+import { sha1, toHex } from "./ids.rules";
 import { mapCks } from "./map-cks.rules";
 import { mapKnowledge } from "./map-knowledge.rules";
 import { newPlan, tenantPlan } from "./plan";
@@ -119,5 +120,16 @@ describe("review C#25 · REL không rải chéo tenant", () => {
       (p.tenants.get(t)?.rows["knowledge.entity_rels"] ?? []).map((r) => r.type).sort();
     expect(types(TA)).toEqual(["GLOBAL", "WORKS_WITH"]);
     expect(types(TB)).toEqual(["GLOBAL"]);
+  });
+});
+
+describe("review C · SHA-1 thuần (không node:crypto ở domain)", () => {
+  test("vector FIPS 180: '' / 'abc' / 448 bit", () => {
+    const h = (s: string) => toHex(sha1(new TextEncoder().encode(s)));
+    expect(h("")).toBe("da39a3ee5e6b4b0d3255bfef95601890afd80709");
+    expect(h("abc")).toBe("a9993e364706816aba3e25717850c26c9cd0d89d");
+    expect(h("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")).toBe(
+      "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
+    );
   });
 });

@@ -15,37 +15,11 @@ import {
 } from "../domain/plan";
 import { str } from "../domain/values.rules";
 import { loadSnapshot } from "./load";
-import type {
-  Checkpoint,
-  FileSink,
-  FileSource,
-  IdentityPort,
-  SourceReader,
-  TargetStore,
-  VisibilityProbe,
-} from "./ports";
+import type { ImportDeps, ImportOpts } from "./ports";
 import { type ReconcileReport, reconcile } from "./reconcile";
 
-export type ImportOpts = {
-  source: string;
-  apply: boolean;
-  batch: number;
-  /** Org nhận tài liệu tri thức chung (domain=general); null ⇒ không chuyển (đếm ở no_tenant). */
-  knowledgeOrg: string | null;
-  /** Actor (platform admin) — dự phòng `created_by` khi org không có chủ. */
-  actorId: string;
-  withGraph: boolean;
-  diffSample: number;
-};
-export type ImportDeps = {
-  reader: SourceReader;
-  identity: IdentityPort;
-  target: TargetStore;
-  files: { source: FileSource | null; sink: FileSink | null };
-  checkpoint: Checkpoint;
-  visible: VisibilityProbe;
-  now: () => number;
-};
+export type { ImportDeps, ImportOpts } from "./ports";
+
 export type TableCount = { planned: number; inserted: number; existing: number };
 export type ImportReport = {
   dry_run: boolean;

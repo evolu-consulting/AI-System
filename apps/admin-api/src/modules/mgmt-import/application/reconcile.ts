@@ -7,7 +7,7 @@ import type { Membership } from "../domain/map-identity.rules";
 import type { MoneyKey, Plan, TableName } from "../domain/plan";
 import { diffFields, type FieldDiff, mgmtVisible, sourceMoney } from "../domain/reconcile.rules";
 import { isObj } from "../domain/values.rules";
-import type { ImportDeps, ImportOpts } from "./import.usecase";
+import type { ImportDeps, ImportOpts } from "./ports";
 
 type MoneyLine = { source: string; planned: string; target: string; ok: boolean };
 export type ReconcileReport = {

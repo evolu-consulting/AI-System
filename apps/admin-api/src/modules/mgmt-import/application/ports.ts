@@ -60,3 +60,25 @@ export type IdentityPort = {
   ): Promise<{ id: string; orgId: string; active: boolean; packRevoked: boolean }[]>;
   users(tenantIds: string[]): Promise<{ id: string; tenantId: string; email: string }[]>;
 };
+
+/** Tuỳ chọn + phụ thuộc của use case (ở đây — không ở import.usecase — để reconcile không import ngược: hết vòng, review C). */
+export type ImportOpts = {
+  source: string;
+  apply: boolean;
+  batch: number;
+  /** Org nhận tài liệu tri thức chung (domain=general); null ⇒ không chuyển (đếm ở no_tenant). */
+  knowledgeOrg: string | null;
+  /** Actor (platform admin) — dự phòng `created_by` khi org không có chủ. */
+  actorId: string;
+  withGraph: boolean;
+  diffSample: number;
+};
+export type ImportDeps = {
+  reader: SourceReader;
+  identity: IdentityPort;
+  target: TargetStore;
+  files: { source: FileSource | null; sink: FileSink | null };
+  checkpoint: Checkpoint;
+  visible: VisibilityProbe;
+  now: () => number;
+};
