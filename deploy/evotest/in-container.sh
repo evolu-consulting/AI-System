@@ -10,6 +10,17 @@ bun -e "const f='package.json',p=JSON.parse(await Bun.file(f).text());delete p.s
 t0=$(date +%s)
 bun install --frozen-lockfile >/out/setup.log 2>&1 || { echo "bun install lỗi"; tail -n 40 /out/setup.log; exit 2; }
 
+# EVO_CAPTURE=cw (run-tests.ps1 -Step e2e -Capture cw): chup baseline Linux cua e2e/contracts-web tu web mgmt-app tham chieu
+# (reference/mgmt-app-contracts/web), cung image/font voi lan so. Ra /out/baseline-linux; khong chay test khac.
+if [ "${EVO_CAPTURE:-}" = cw ]; then
+  MG=/app/reference/mgmt-app-contracts/web
+  (cd "$MG" && bun install >/out/mgmt-install.log 2>&1) || { echo "bun install mgmt web loi"; tail -n 40 /out/mgmt-install.log; exit 2; }
+  rm -rf e2e/contracts-web/baseline/linux
+  MGMT_WEB_DIR="$MG" bun tools/scripts/src/run-playwright.ts CW_MODE=ref e2e/contracts-web/playwright.config.ts scenes.cw cks.cw hd78-partners.cw; rc=$?
+  mkdir -p /out/baseline-linux && cp -r e2e/contracts-web/baseline/linux/. /out/baseline-linux/ 2>/dev/null
+  exit $rc
+fi
+
 sed -e 's#@localhost:5432#@pg:5432#g' -e 's#redis://localhost:6379#redis://redis:6379#g' .env.example > .env.local
 sed -i -e 's#^SEED_ADMIN_EMAIL=.*#SEED_ADMIN_EMAIL=admin@evolu.local#' -e 's#^HUB_PROCESS_ENGINE=.*#HUB_PROCESS_ENGINE=on#' .env.local
 echo "HUB_TEST_REDIS_URL=redis://redis:6379/15" >> .env.local

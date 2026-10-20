@@ -13,6 +13,7 @@ x-runner: &runner
     EVO_FILTER: ${EVO_FILTER:-}
     EVO_WORKERS: ${EVO_WORKERS:-}
     EVO_ALL: ${EVO_ALL:-}
+    EVO_CAPTURE: ${EVO_CAPTURE:-}
   volumes:
     - ./app:/app
     - ./cache:/cache

@@ -2,7 +2,7 @@
 #   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 đang có lượt khác; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All)
+param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateSet("", "cw")][string]$Capture = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
@@ -43,7 +43,7 @@ try {
   $t0 = Get-Date
   # Hàng đợi: chờ .lock (mkdir nguyên tử) - nhiều lượt cùng lúc xếp hàng, không đè file của nhau; remote.sh nằm trong kit.
   # 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
-  $boot = "cd ~/workspace/evotest && { n=0; w=0; until mkdir .lock 2>/dev/null; do o=`$(cat .lock/owner 2>/dev/null); p=`${o%% *}; if [ `${#p} -gt 0 ] && ! kill -0 `$p 2>/dev/null; then echo 'evotest: .lock mồ côi, gỡ - owner:' `$o; rm -rf .lock; continue; fi; [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng... owner:' `$o; n=1; w=`$((w+5)); if [ `$w -ge 5400 ]; then echo 'evotest: chờ .lock quá 90 phút; nếu treo, xoá ~/workspace/evotest/.lock - owner:' `$o; exit 3; fi; sleep 5; done; echo `$`$ `$(date +%s) $commit > .lock/owner; trap 'rm -rf .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
+  $boot = "cd ~/workspace/evotest && { n=0; w=0; until mkdir .lock 2>/dev/null; do o=`$(cat .lock/owner 2>/dev/null); p=`${o%% *}; if [ `${#p} -gt 0 ] && ! kill -0 `$p 2>/dev/null; then echo 'evotest: .lock mồ côi, gỡ - owner:' `$o; rm -rf .lock; continue; fi; [ `$n -eq 0 ] && echo 'evotest đang bận, xếp hàng... owner:' `$o; n=1; w=`$((w+5)); if [ `$w -ge 5400 ]; then echo 'evotest: chờ .lock quá 90 phút; nếu treo, xoá ~/workspace/evotest/.lock - owner:' `$o; exit 3; fi; sleep 5; done; echo `$`$ `$(date +%s) $commit > .lock/owner; trap 'rm -rf .lock' EXIT; tar xzf /tmp/evotest-kit-$stamp.tgz && EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash remote.sh $Step $commit $stamp; } 2>&1"
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $ErrorActionPreference = "Continue"
