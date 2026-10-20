@@ -8,6 +8,19 @@ import type { LedgerWriteRepo, LockedObligation } from "../application/ledger.po
 import { auditCte, eventCte, evJson, json, obJson, one, seenEvent } from "./ledger-sql";
 
 export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
+  return {
+    ...ledgerLocks(tx, t),
+    replaceSchedule: (contractId, rows, by) =>
+      one<Obligation[]>(tx, replaceScheduleQ(t, contractId, rows, by)),
+    ...obligationWrites(tx, t),
+    ...ledgerEventWrites(tx, t),
+  };
+}
+
+function ledgerLocks(
+  tx: Tx,
+  t: string,
+): Pick<LedgerWriteRepo, "lockContract" | "lockContractOf" | "lockObligation"> {
   const lockContract: LedgerWriteRepo["lockContract"] = async (id) => {
     const [r] = await tx.execute<{ id: string }>(sql`select id::text from contracts.contracts
       where id = ${id}::uuid and tenant_id = ${t}::uuid for no key update`);
@@ -26,12 +39,14 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
       sql`select ${obJson("o")} as j from contracts.obligations o
         where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced' for update`,
     );
+  return { lockContract, lockContractOf, lockObligation };
+}
 
-  /** `replace_schedule`: đợt đã xong giữ; còn lại ⇒ `replaced` (D7-02) + huỷ dòng quá hạn của chúng (hệ thống); đợt mới nối số. */
-  const replaceSchedule: LedgerWriteRepo["replaceSchedule"] = (contractId, rows, by) =>
-    one<Obligation[]>(
-      tx,
-      sql`with old as (
+type ScheduleRows = Parameters<LedgerWriteRepo["replaceSchedule"]>[1];
+
+/** `replace_schedule`: đợt đã xong giữ; còn lại ⇒ `replaced` (D7-02) + huỷ dòng quá hạn của chúng (hệ thống); đợt mới nối số. */
+function replaceScheduleQ(t: string, contractId: string, rows: ScheduleRows, by: string) {
+  return sql`with old as (
         update contracts.obligations o set status = 'replaced', updated_at = now()
         where o.tenant_id = ${t}::uuid and o.contract_id = ${contractId}::uuid and o.status in ('open', 'cancelled')
         returning o.id),
@@ -62,9 +77,13 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
         select * from contracts.obligations d
         where d.tenant_id = ${t}::uuid and d.contract_id = ${contractId}::uuid and d.status = 'done'
         union all select * from ins)
-      select coalesce(jsonb_agg(${obJson("q")} order by q.seq), '[]'::jsonb) as j from q`,
-    );
+      select coalesce(jsonb_agg(${obJson("q")} order by q.seq), '[]'::jsonb) as j from q`;
+}
 
+function obligationWrites(
+  tx: Tx,
+  t: string,
+): Pick<LedgerWriteRepo, "settle" | "postpone" | "remind"> {
   const settle: LedgerWriteRepo["settle"] = (w) =>
     one<Obligation>(
       tx,
@@ -106,16 +125,7 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
       select ${obJson("u")} as j from u`,
     );
 
-  return {
-    lockContract,
-    lockContractOf,
-    lockObligation,
-    replaceSchedule,
-    settle,
-    postpone,
-    remind,
-    ...ledgerEventWrites(tx, t),
-  };
+  return { settle, postpone, remind };
 }
 
 /** Huỷ (hàng `partner_event_voids`, D7-16) + ghi tay — tách để file ≤ 400 dòng. */
@@ -141,14 +151,17 @@ function ledgerEventWrites(
           and ${seenEvent("e")}`);
       return r ?? null;
     },
-    voidEvent: (w) => {
-      const p = w.patch;
-      const reopen = !!p && "reopen" in p;
-      const due = p && "due_date" in p ? p : null;
-      const rem = p && "reminders" in p ? p.reminders : null;
-      return one<PartnerEvent>(
-        tx,
-        sql`with v as (
+    voidEvent: (w) => one<PartnerEvent>(tx, voidEventQ(t, w)),
+    insertManual: (w) => one<PartnerEvent | null>(tx, insertManualQ(t, w)),
+  };
+}
+
+function voidEventQ(t: string, w: Parameters<LedgerWriteRepo["voidEvent"]>[0]) {
+  const p = w.patch;
+  const reopen = !!p && "reopen" in p;
+  const due = p && "due_date" in p ? p : null;
+  const rem = p && "reminders" in p ? p.reminders : null;
+  return sql`with v as (
           insert into contracts.partner_event_voids (event_id, tenant_id, by_user)
           values (${w.id}::bigint, ${t}::uuid, ${w.by}::uuid) on conflict (event_id, tenant_id) do nothing
           returning event_id, by_user, at),
@@ -171,13 +184,11 @@ function ledgerEventWrites(
             'voided_by', coalesce((select v.by_user from v), x.by_user),
             'voided_at', coalesce((select v.at from v), x.at)) as j
         from contracts.partner_events e left join contracts.partner_event_voids x on x.event_id = e.id
-        where e.tenant_id = ${t}::uuid and e.id = ${w.id}::bigint`,
-      );
-    },
-    insertManual: (w) =>
-      one<PartnerEvent | null>(
-        tx,
-        sql`with e as (
+        where e.tenant_id = ${t}::uuid and e.id = ${w.id}::bigint`;
+}
+
+function insertManualQ(t: string, w: Parameters<LedgerWriteRepo["insertManual"]>[0]) {
+  return sql`with e as (
           insert into contracts.partner_events (tenant_id, party_key, role, type, at, by_user, source, contract_id,
             days_late, note, data)
           select ${t}::uuid, ${w.party}, ${w.role}, ${w.type}, ${w.at}::date, ${w.by}::uuid, 'action',
@@ -193,7 +204,5 @@ function ledgerEventWrites(
                    contracts.party_key(k.fields -> 'buyer_name' ->> 'value', k.fields -> 'buyer_tax_id' ->> 'value'),
                    contracts.party_key(k.fields -> 'supplier_name' ->> 'value', k.fields -> 'supplier_tax_id' ->> 'value')))
           returning *)
-        select ${evJson("e", "x")} as j from e left join contracts.partner_event_voids x on false`,
-      ),
-  };
+        select ${evJson("e", "x")} as j from e left join contracts.partner_event_voids x on false`;
 }

@@ -14,43 +14,45 @@ export const PRICED_STATUSES = ["active", "expiring", "expired", "renewed", "ter
 const FAMILY_MAX = 101;
 const ITEMS_MAX = 500;
 
-export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
-  return {
-    lockForParent: async (id, parentId): Promise<LockedForParent | null> => {
-      // Khoá cả hai hàng THEO THỨ TỰ id (một câu) rồi mới đọc loại/phụ lục con ở câu sau (ảnh chụp mới): A→B ∥ B→A hay C→A ∥ A→B
-      // tuần tự hoá, bên sau thấy hàng đã đổi ⇒ không vòng, không phụ lục của phụ lục.
-      await tx.execute(sql`select c.id from contracts.contracts c
+function lockQ(tx: Tx, tenantId: string): AppendixRepo["lockForParent"] {
+  return async (id, parentId): Promise<LockedForParent | null> => {
+    // Khoá cả hai hàng THEO THỨ TỰ id (một câu) rồi mới đọc loại/phụ lục con ở câu sau (ảnh chụp mới): A→B ∥ B→A hay C→A ∥ A→B
+    // tuần tự hoá, bên sau thấy hàng đã đổi ⇒ không vòng, không phụ lục của phụ lục.
+    await tx.execute(sql`select c.id from contracts.contracts c
         where c.tenant_id = ${tenantId}::uuid and c.id = any(array[${id}::uuid, ${parentId}::uuid]) order by c.id for update`);
-      const rows = await tx.execute<{
-        version: number;
-        kind: Kind;
-        parent_id: string | null;
-        updated_at: string | Date;
-        has_appendices: boolean;
-        parent_kind: Kind | null;
-      }>(sql`select c.version, c.kind, c.parent_id, c.updated_at,
+    const rows = await tx.execute<{
+      version: number;
+      kind: Kind;
+      parent_id: string | null;
+      updated_at: string | Date;
+      has_appendices: boolean;
+      parent_kind: Kind | null;
+    }>(sql`select c.version, c.kind, c.parent_id, c.updated_at,
           exists (select 1 from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id) as has_appendices,
           (select p.kind from contracts.contracts p where p.id = ${parentId}::uuid and p.tenant_id = c.tenant_id) as parent_kind
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update of c`);
-      const r = rows[0];
-      return r
-        ? {
-            version: r.version,
-            kind: r.kind,
-            parentId: r.parent_id,
-            updatedAt: iso(r.updated_at),
-            hasAppendices: r.has_appendices,
-            parentKind: r.parent_kind,
-          }
-        : null;
-    },
-    setParent: async (id, s): Promise<ParentSaved> => {
-      const rows = await tx.execute<{
-        version: number;
-        updated_at: string | Date;
-        kind: Kind;
-        parent_id: string | null;
-      }>(sql`with u as (
+    const r = rows[0];
+    return r
+      ? {
+          version: r.version,
+          kind: r.kind,
+          parentId: r.parent_id,
+          updatedAt: iso(r.updated_at),
+          hasAppendices: r.has_appendices,
+          parentKind: r.parent_kind,
+        }
+      : null;
+  };
+}
+
+function setParentQ(tx: Tx, tenantId: string): AppendixRepo["setParent"] {
+  return async (id, s): Promise<ParentSaved> => {
+    const rows = await tx.execute<{
+      version: number;
+      updated_at: string | Date;
+      kind: Kind;
+      parent_id: string | null;
+    }>(sql`with u as (
           update contracts.contracts set parent_id = ${s.parentId}::uuid,
             kind = case when ${s.parentId}::uuid is null then 'contract' else 'appendix' end,
             version = version + 1, updated_at = now()
@@ -61,15 +63,21 @@ export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
           select ${tenantId}::uuid, u.id, 'parent_changed', ${s.actor}::uuid,
             jsonb_build_object('from', ${s.from}::text, 'to', ${s.parentId}::text) from u)
         select u.version, u.updated_at, u.kind, u.parent_id from u`);
-      const r = rows[0];
-      if (!r) throw new Error("attach-parent: row vanished under lock");
-      return {
-        version: r.version,
-        updatedAt: iso(r.updated_at),
-        kind: r.kind,
-        parentId: r.parent_id,
-      };
-    },
+    const r = rows[0];
+    if (!r) throw new Error("attach-parent: row vanished under lock");
+    return {
+      version: r.version,
+      updatedAt: iso(r.updated_at),
+      kind: r.kind,
+      parentId: r.parent_id,
+    };
+  };
+}
+
+export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
+  return {
+    lockForParent: lockQ(tx, tenantId),
+    setParent: setParentQ(tx, tenantId),
     hints: async (id) => {
       const rows = await tx.execute<{
         kind: Kind;
@@ -93,8 +101,13 @@ export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
       }>(sql`select c.id, c.title, c.number, c.seller, c.buyer from contracts.contracts c
         where c.tenant_id = ${tenantId}::uuid and c.kind = 'contract' and c.id <> ${id}::uuid
         order by c.updated_at desc, c.id desc limit ${limit}::int`),
-    family: async (id): Promise<PriceSource[] | null> => {
-      const rows = await tx.execute<{ fam: PriceSourceRaw[] | string | null }>(sql`with r as (
+    family: familyQ(tx, tenantId),
+  };
+}
+
+function familyQ(tx: Tx, tenantId: string): AppendixRepo["family"] {
+  return async (id): Promise<PriceSource[] | null> => {
+    const rows = await tx.execute<{ fam: PriceSourceRaw[] | string | null }>(sql`with r as (
           select coalesce(c.parent_id, c.id) as root from contracts.contracts c
           where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid),
         fam as (
@@ -114,16 +127,15 @@ export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
             '[]'::json))
           order by (f.kind = 'appendix'), f.created_at, f.id) as fam
         from fam f`);
-      const fam = rows[0]?.fam;
-      if (!fam) return null;
-      return json(fam).map((f) => ({
-        id: f.id,
-        kind: f.kind,
-        title: f.title,
-        effective_date: f.effective_date,
-        items: f.items,
-      }));
-    },
+    const fam = rows[0]?.fam;
+    if (!fam) return null;
+    return json(fam).map((f) => ({
+      id: f.id,
+      kind: f.kind,
+      title: f.title,
+      effective_date: f.effective_date,
+      items: f.items,
+    }));
   };
 }
 
