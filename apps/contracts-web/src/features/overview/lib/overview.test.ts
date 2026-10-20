@@ -90,6 +90,17 @@ describe("hằng số", () => {
   });
 });
 
+const todo = (o: Partial<TodoItem>) =>
+  ({
+    key: "k",
+    kind: "overdue",
+    days: 0,
+    contract_id: null,
+    product_id: null,
+    party_key: null,
+    ...o,
+  }) as TodoItem;
+
 describe("V2-N · định dạng & suy diễn", () => {
   test("moneyShort: tỷ / triệu / đồng", () => {
     expect(moneyShort(1_250_000_000)).toBe("1,25 tỷ");
@@ -116,16 +127,9 @@ describe("V2-N · định dạng & suy diễn", () => {
     expect(inPeriod(11, 12, "month")).toBe(true);
     expect(inPeriod(10, 12, "month")).toBe(false);
   });
-  const todo = (o: Partial<TodoItem>) =>
-    ({
-      key: "k",
-      kind: "overdue",
-      days: 0,
-      contract_id: null,
-      product_id: null,
-      party_key: null,
-      ...o,
-    }) as TodoItem;
+});
+
+describe("V2-N · định dạng & suy diễn (todo)", () => {
   test("todoWhen: trễ / hôm nay / còn; đánh giá & thiếu file không có hạn", () => {
     expect(todoWhen(todo({ kind: "overdue", days: -3 }))).toEqual({ key: "late", n: 3 });
     expect(todoWhen(todo({ kind: "due_soon", days: 0 }))).toEqual({ key: "today", n: 0 });
@@ -149,6 +153,9 @@ describe("V2-N · định dạng & suy diễn", () => {
     expect(todoCanDone(todo({ kind: "renewal_contact" }))).toBe(true);
     expect(todoCanDone(todo({ kind: "overdue" }))).toBe(false);
   });
+});
+
+describe("V2-N · định dạng & suy diễn (cột gợi ý, đối tác)", () => {
   test("suggestColumns: 3 cột, điểm cao trước, bỏ SP chưa có điểm", () => {
     const p = (
       id: string,

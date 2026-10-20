@@ -82,13 +82,14 @@ describe("V2-A · 5.4c hoa hồng dự kiến (tiền: số nguyên đồng)", (
   });
 });
 
+const m = (id: string, kind: string, amount: number | null, status = "open") => ({
+  id,
+  kind: kind as "collect",
+  amount,
+  status: status as "open",
+});
+
 describe("V2-A · 5.4a số tiền mốc: trống ⇒ chia đều phần còn lại của giá trị cho mốc tiền chính", () => {
-  const m = (id: string, kind: string, amount: number | null, status = "open") => ({
-    id,
-    kind: kind as "collect",
-    amount,
-    status: status as "open",
-  });
   test("một mốc trống ⇒ cả giá trị; ba mốc ⇒ chia đều, đồng lẻ dồn vào mốc đầu, tổng đúng từng đồng", () => {
     expect(effectiveAmounts([m("a", "collect", null)], 100_000_000, "collect").get("a")).toBe(
       100_000_000,
@@ -130,6 +131,9 @@ describe("V2-A · 5.4a số tiền mốc: trống ⇒ chia đều phần còn l�
     );
     expect(over.get("b")).toBe(0);
   });
+});
+
+describe("V2-A · 5.4a số tiền mốc (không biết giá trị, BigInt)", () => {
   test("không biết giá trị ⇒ mốc trống null; trần 10¹⁵ chia chính xác (BigInt)", () => {
     expect(effectiveAmounts([m("a", "collect", null)], null, "collect").get("a")).toBeNull();
     const ids = Array.from({ length: 7 }, (_, i) => `k${i}`);
@@ -183,15 +187,16 @@ describe("V2-A · HD-01 mốc mặc định theo loại khi lưu", () => {
   });
 });
 
+const ms = (...xs: [string, string, string?][]) =>
+  xs.map(([kind, status, due], i) => ({
+    id: `m${i}`,
+    kind: kind as "collect",
+    status: status as "open",
+    due_date: due ?? "2026-12-01",
+    seq: i + 1,
+  }));
+
 describe("V2-A · KN-04 giai đoạn suy từ mốc", () => {
-  const ms = (...xs: [string, string, string?][]) =>
-    xs.map(([kind, status, due], i) => ({
-      id: `m${i}`,
-      kind: kind as "collect",
-      status: status as "open",
-      due_date: due ?? "2026-12-01",
-      seq: i + 1,
-    }));
   test("chưa mốc nào xong + chưa tới ngày bắt đầu ⇒ Chưa bắt đầu; tới ngày ⇒ Đang thực hiện", () => {
     const x = ms(["delivery", "open"], ["collect", "open"]);
     expect(stageOf({ today: "2026-10-20", start: "2026-11-01", milestones: x })).toBe(

@@ -59,6 +59,9 @@ describe("HUB-FR-129 · mock GitHub", () => {
     expect((await g.req("GET", "/repos/acme/app/pulls")).status).toBe(200);
     expect(g.mock.calls("pulls.list")).toHaveLength(4);
   });
+});
+
+describe("HUB-FR-129 · mock GitHub (token, graphql)", () => {
   test("graphql enablePullRequestAutoMerge SQUASH ⇒ auto_merge squash; node lạ ⇒ errors", async () => {
     const g = setup();
     const pr = g.mock.seedPr({ owner: "acme", repo: "app", head: BR, base: "main" });

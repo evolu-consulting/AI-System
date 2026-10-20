@@ -130,6 +130,9 @@ describe("ánh xạ form và request", () => {
     );
     expect(noCred).toMatchObject({ credential_secret_id: "", apply_mode: "" });
   });
+});
+
+describe("ánh xạ form và request (tạo, công khai, issues)", () => {
   test("toCreateRequest: tenant_id chỉ khi có; key chuẩn hoá", () => {
     const a = toCreateRequest(git({ key: " Docs " }), undefined);
     expect(a.key).toBe("docs");

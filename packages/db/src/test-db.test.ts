@@ -21,7 +21,9 @@ describe("ADM-NFR-06 · DB test riêng mỗi agent (TECH-DEBT #17)", () => {
       ),
     ).toBe("postgres://ai:p%40ss@localhost:5432/ai_system_be_test?sslmode=disable");
   });
+});
 
+describe("ADM-NFR-06 · DB test riêng mỗi agent (TECH-DEBT #17) · testEnvFile", () => {
   test("testEnvFile chỉ đổi hai biến TEST_*, giữ nguyên các dòng khác (kể cả PEM nhiều dòng)", () => {
     const env = [
       "DATABASE_URL=postgres://ai:x@h:5432/ai_system",

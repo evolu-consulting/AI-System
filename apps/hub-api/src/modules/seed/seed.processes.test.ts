@@ -54,7 +54,9 @@ describe("seed.processes · buildProcessPlan [HUB-FR-104]", () => {
     ]);
     expect(p.teamEntitlements).toContainEqual({ team: "dev-team", tenant_key: "evolu" });
   });
+});
 
+describe("seed.processes · buildProcessPlan [HUB-FR-104] (agent lạ)", () => {
   it("agent lạ trong mẫu + real_action ở stage 0 ⇒ SeedValidationError", () => {
     const data = {
       process_templates: [

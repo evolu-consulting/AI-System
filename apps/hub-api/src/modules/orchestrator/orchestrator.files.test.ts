@@ -110,7 +110,9 @@ describe("Orchestrator · tin có file [HUB-FR-20 · H2c-R15]", () => {
     await runLoop(f.io, input([CONSULT]));
     expect(f.jobs[1]?.agent.key).toBe("consultant");
   });
+});
 
+describe("Orchestrator · tin có file (không agent, đã xử lý, prompt)", () => {
   it("không agent nào trong quyền ⇒ giữ câu trả lời của Orchestrator", async () => {
     const f = fakeIo(() => ANSWER);
     expect(await runLoop(f.io, input([]))).toEqual({

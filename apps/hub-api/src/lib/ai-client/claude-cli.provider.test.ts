@@ -91,7 +91,9 @@ describe("claudeCliProvider (gói Claude)", () => {
     for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "SECRET"])
       expect(o?.env[k]).toBeUndefined();
   });
+});
 
+describe("claudeCliProvider (gói Claude) · lỗi, argv", () => {
   test("chưa đăng nhập ⇒ UNAVAILABLE (JSON lỗi hoặc stderr); lỗi khác ⇒ FAILED; runner ném ⇒ FAILED", async () => {
     const authJson = ok({ is_error: true, result: "Not logged in · Please run /login" });
     expect(replyOf({ ...authJson, exitCode: 1 }, "m")).toMatchObject({
@@ -136,7 +138,9 @@ describe("claudeCliProvider (gói Claude)", () => {
     });
     expect(r.calls).toHaveLength(0);
   });
+});
 
+describe("claudeCliProvider (gói Claude) · chạy cùng lúc", () => {
   test("giới hạn chạy cùng lúc: lượt 2 chờ lượt 1 xong; huỷ khi đang chờ ⇒ FAILED, không chạy", async () => {
     let release: () => void = () => undefined;
     const held = new Promise<void>((res) => {

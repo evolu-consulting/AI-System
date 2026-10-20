@@ -36,7 +36,9 @@ describe("V2-G · planReview", () => {
       direction: "purchase",
     });
   });
+});
 
+describe("V2-G · planReview (hoa hồng, trường)", () => {
   it("hoa hồng chỉ cho Giới thiệu; không gửi ⇒ giữ đã lưu; gửi một bên ⇒ bỏ bên kia", () => {
     expect(planReview(cur(), { deal: "sell", commission_pct: 5 }, TODAY)).toBe("commission_kind");
     const ref = cur({ deal: "referral", commissionPct: 10 });
@@ -66,7 +68,9 @@ describe("V2-G · planReview", () => {
     expect(typeof clear !== "string" && clear.milestones).toEqual([]);
     expect(typeof clear !== "string" && clear.activate).toBe(false);
   });
+});
 
+describe("V2-G · planReview (mốc người gửi)", () => {
   it("mốc người gửi: loại BA ⇒ (kind, direction), việc của ai theo loại, tên mặc định, nguồn ai", () => {
     const p = planReview(
       cur(),
@@ -103,7 +107,9 @@ describe("V2-G · planReview", () => {
       },
     ]);
   });
+});
 
+describe("V2-G · planReview (số tiền mốc, tắt duyệt)", () => {
   it("số tiền cho mốc không phải tiền ⇒ milestone_invalid", () => {
     expect(
       planReview(
@@ -144,16 +150,16 @@ const empty = () =>
 const raw = (o: Record<string, unknown> = {}) =>
   ({ fields: { ...(empty() as object) }, items: [], clauses: [], ...o }) as never;
 
-describe("V2-G · aiReadOf (phần AI đọc)", () => {
-  const src = prepareSource(TEXT);
-  const fields = (over: Record<string, unknown> = {}) =>
-    fillFields({
-      supplier_name: { value: "Công ty A", quote: "Bên bán: Công ty A", verified: true },
-      payment_terms: { value: "30 ngày", quote: "Thanh toán trong 30 ngày", verified: true },
-      penalty: { value: "0,5%/ngày", quote: "không có trong văn bản", verified: false },
-      ...over,
-    });
+const src = prepareSource(TEXT);
+const fields = (over: Record<string, unknown> = {}) =>
+  fillFields({
+    supplier_name: { value: "Công ty A", quote: "Bên bán: Công ty A", verified: true },
+    payment_terms: { value: "30 ngày", quote: "Thanh toán trong 30 ngày", verified: true },
+    penalty: { value: "0,5%/ngày", quote: "không có trong văn bản", verified: false },
+    ...over,
+  });
 
+describe("V2-G · aiReadOf (phần AI đọc)", () => {
   it("bản trích cũ (không khoá v2) ⇒ null", () => {
     expect(aiReadOf(raw(), fields() as never, src)).toBeNull();
   });
@@ -166,7 +172,9 @@ describe("V2-G · aiReadOf (phần AI đọc)", () => {
     );
     expect(r?.unsure).toEqual(["payment_terms", "penalty"]);
   });
+});
 
+describe("V2-G · aiReadOf (chưa chắc Mua/Bán, mốc)", () => {
   it("Mua/Bán luôn chưa chắc (AI không biết bên nào là của mình); Giới thiệu thì tin, trừ khi AI tự báo", () => {
     expect(aiReadOf(raw({ deal: "buy" }), fields() as never, src)?.unsure).toContain("deal");
     expect(aiReadOf(raw({ deal: "sell" }), fields() as never, src)?.unsure).toContain("deal");
@@ -208,7 +216,9 @@ describe("V2-G · aiReadOf (phần AI đọc)", () => {
     expect(r?.milestones.map((m) => m.verified)).toEqual([true, false, false]);
     expect(norm("Thanh toán")).toBe("thanh toan");
   });
+});
 
+describe("V2-G · aiReadOf (verify + merge)", () => {
   it("verifyExtraction + mergeExtraction: trường người đã sửa không còn chưa chắc; deal vẫn do AI nói", () => {
     const v = verifyExtraction({
       raw: raw({

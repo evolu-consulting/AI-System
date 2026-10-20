@@ -43,7 +43,9 @@ describe("M2-chat · chat.rules", () => {
     );
     expect(m).toEqual({ role: "assistant", text: "Có 2 HĐ.", pending: false, step: undefined });
   });
+});
 
+describe("M2-chat · chat.rules (lỗi, cờ, tiêu đề)", () => {
   test("run.failed ⇒ lỗi, tắt chờ; ask ⇒ câu hỏi lại vào chữ", () => {
     const base: Msg = { role: "assistant", text: "", pending: true };
     const f = applyEvent(

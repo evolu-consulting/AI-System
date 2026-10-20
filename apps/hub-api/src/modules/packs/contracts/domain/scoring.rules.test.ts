@@ -75,7 +75,9 @@ describe("engine (test_scoring_engine.py)", () => {
       full,
     );
   });
+});
 
+describe("engine (test_scoring_engine.py) · CKS, khoảng, chỉnh tay", () => {
   test("gia hạn CKS trễ 6 ngày = 40; mất khách = 0", () => {
     const r = score(
       [...paid(4, 0), ev("cks_renewed", 200, { days_before_expiry: -6, with_us: true })],
@@ -107,7 +109,9 @@ describe("engine (test_scoring_engine.py)", () => {
       .payment_on_time?.value as number;
     expect(boosted).toBeGreaterThan(flat);
   });
+});
 
+describe("engine (test_scoring_engine.py) · chỉnh tay, mức, nhắc", () => {
   test("chỉnh tay chặn ở ±10, điểm trong 0–100", () => {
     const base = paid(10, 0);
     const up = score(
@@ -148,7 +152,9 @@ describe("engine (test_scoring_engine.py)", () => {
     expect(r.breakdown.reminders?.value).toBe(62);
     expect(r.breakdown.appointments?.value).toBe(0);
   });
+});
 
+describe("engine (test_scoring_engine.py) · NCC, gắn bó", () => {
   test("NCC: giao hàng, nói trễ hay đúng hạn", () => {
     const late = [
       ...Array.from({ length: 34 }, (_, i) => ev("delivered", 5 + i * 8, { days_late: 0 })),
@@ -242,7 +248,9 @@ describe("tiêu chí tự chấm (test_scoring_engine.py L124-165)", () => {
     });
     expect(t.score).toBe(73); // round((60*20 + 100*10) / 30)
   });
+});
 
+describe("tiêu chí tự chấm (test_scoring_engine.py L124-165) · bỏ, chi tiết", () => {
   test("chưa chấm / quá khoảng / đã huỷ / tiêu chí khác ⇒ bỏ tiêu chí tự chấm", () => {
     const c = withQuality(20);
     const r = score(paid(10, 0), c, { today: TODAY, role: "customer" });
@@ -283,7 +291,9 @@ describe("tiêu chí tự chấm (test_scoring_engine.py L124-165)", () => {
     expect("tenure" in r.breakdown).toBe(false);
     expect(r.breakdown.payment_on_time?.label).toBe("Thanh toán đúng hạn");
   });
+});
 
+describe("tiêu chí tự chấm (test_scoring_engine.py L124-165) · giá NCC", () => {
   test("giá NCC: khoảng cách tới nơi rẻ nhất", () => {
     const events = Array.from({ length: 4 }, (_, i) => ev("delivered", 5 + i, { days_late: 0 }));
     const cheapest = score(events, sup(), {

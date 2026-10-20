@@ -93,6 +93,9 @@ describe("W1 · dòng giá", () => {
       ["a1", 45, true, "supplier", "NCC 1"],
     ]);
   });
+});
+
+describe("W1 · dòng giá (phụ lục mồ côi, line)", () => {
   it("phụ lục mồ côi (HĐ gốc không có trong tập: không thấy/chưa duyệt) bị bỏ", () => {
     const orphan = con({ kind: "appendix", parent_id: "ghost", items: [item("A", 1)] });
     expect(priceLines([orphan], TODAY)).toEqual([]);
@@ -141,6 +144,9 @@ describe("W1 · sales: nguồn, lãi, rủi ro", () => {
     expect(sales(lines, pick("b2"))[0]?.source).toMatchObject({ mode: "chosen", price: 60 });
     expect(sales(lines, pick("gone"))[0]?.source).toMatchObject({ mode: "auto", price: 50 });
   });
+});
+
+describe("W1 · sales: nguồn, lãi, rủi ro (đơn vị, rủi ro)", () => {
   it("khác đơn vị ⇒ không có lãi; không có HĐ mua ⇒ không nguồn, không rủi ro (dịch vụ tự làm)", () => {
     const [a] = sales(
       priceLines(
@@ -181,15 +187,16 @@ describe("W1 · sales: nguồn, lãi, rủi ro", () => {
   });
 });
 
+const lines = priceLines(
+  [
+    sale([item("A", 80)], { id: "s1" }),
+    sale([item("B", 90)], { id: "s2", buyer: { key: "tax:8", name: "Khách 2" } }),
+    buy([item("A", 50), item("B", 40, { ord: 1 })], { status: "expiring" }),
+  ],
+  TODAY,
+);
+
 describe("W1 · bySupplier và report", () => {
-  const lines = priceLines(
-    [
-      sale([item("A", 80)], { id: "s1" }),
-      sale([item("B", 90)], { id: "s2", buyer: { key: "tax:8", name: "Khách 2" } }),
-      buy([item("A", 50), item("B", 40, { ord: 1 })], { status: "expiring" }),
-    ],
-    TODAY,
-  );
   it("gom theo nhà cung cấp: số dòng, khách, dòng rủi ro, tổng lãi; rủi ro nhiều xếp trước", () => {
     const [s] = bySupplier(sales(lines, []));
     expect(s).toMatchObject({ lines: 2, at_risk: 2, profit: 30 * 10 + 50 * 10 });
@@ -213,6 +220,9 @@ describe("W1 · bySupplier và report", () => {
     ).toEqual(["s1", "s9"]);
     expect(report(raw, TODAY, { contract: "none" }).lines).toEqual([]);
   });
+});
+
+describe("W1 · bySupplier và report (ứng viên)", () => {
   it("ứng viên bị cắt ở SOURCING_CANDIDATES_MAX nhưng nguồn đang dùng vẫn nằm trong danh sách", () => {
     const buys = Array.from({ length: SOURCING_CANDIDATES_MAX + 5 }, (_, i) =>
       buy([item("A", 100 + i)], { id: `b${String(i).padStart(2, "0")}` }),

@@ -56,7 +56,9 @@ describe("điểm kinh doanh · yếu tố", () => {
     expect(f(r, "rot")?.value).toBe(75);
     expect(f(r, "rot")?.detail).toContain("dự kiến bán 30/40 suất");
   });
+});
 
+describe("điểm kinh doanh · yếu tố (đặt theo khách, thiếu dữ liệu)", () => {
   it("đặt theo khách: bán 3 tháng ÷ mục tiêu; Giới thiệu: số HĐ ÷ mục tiêu và hoa hồng đã nhận ÷ phát sinh", () => {
     const o = scoreBusiness({ ...base, kind: "order", group: "goods", sold12: 4, l3: 3, p3: 1 });
     expect(f(o, "rot")?.value).toBe(50);

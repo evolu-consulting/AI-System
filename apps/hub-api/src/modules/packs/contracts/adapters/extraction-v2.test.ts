@@ -52,7 +52,9 @@ describe("V2-G · parse đầu ra agent v2", () => {
       milestones: [{ kind: "pay" }, { kind: "renewal" }],
     });
   });
+});
 
+describe("V2-G · parse đầu ra agent v2 (từ chối)", () => {
   it.each([
     ["loại lạ", { deal: "lease" }],
     ["khoá chưa chắc lạ", { unsure: ["khong_co"] }],
@@ -91,7 +93,9 @@ describe("V2-G · parse đầu ra agent v2", () => {
   ])("từ chối: %s", (_n, extra) => {
     expect(parseExtraction(JSON.stringify({ ...base(), ...extra }))).toBeNull();
   });
+});
 
+describe("V2-G · parse đầu ra agent v2 (lời nhắc)", () => {
   it("lời nhắc: lệnh hệ thống nêu 4 khoá mới + schema đầu ra có chúng; văn bản vẫn là dữ liệu", () => {
     const p = buildExtractPrompt({
       text: "Nội dung",

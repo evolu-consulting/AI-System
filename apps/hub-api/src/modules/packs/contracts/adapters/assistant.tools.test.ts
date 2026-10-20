@@ -14,29 +14,45 @@ const C = "01900000-0000-7000-8000-00000000c001";
 const ctx: PackToolCtx = { tenantId: T, userId: U, runId: "r1", processRunId: null };
 
 type Call = { fn: string; who: unknown; arg: unknown };
+const row = (i: number) => ({
+  id: `${C.slice(0, -3)}${String(i).padStart(3, "0")}`,
+  kind: "contract",
+  title: `HĐ ${i}`,
+  number: null,
+  status: "active",
+  direction: "sell",
+  seller: "A",
+  buyer: "B",
+  value: 1000,
+  end_date: null,
+  action_deadline: null,
+  owner_user_id: U,
+  seller_signer: null,
+  buyer_signer: null,
+  parent_id: null,
+  type: null,
+  category_ids: [],
+  updated_at: "2026-10-19T00:00:00.000Z",
+  version: 1,
+});
+function ledgerFakes(calls: Call[]) {
+  return {
+    payments: async (who: unknown, filter: string) => {
+      calls.push({ fn: "payments", who, arg: filter });
+      return {
+        stats: { overdue_count: 1 },
+        rows: Array.from({ length: 50 }, (_, i) => ({ i })),
+        total: 50,
+      };
+    },
+    obligations: async (who: unknown, q: unknown) => {
+      calls.push({ fn: "obligations", who, arg: q });
+      return [{ id: "o1" }];
+    },
+  };
+}
 function fakes() {
   const calls: Call[] = [];
-  const row = (i: number) => ({
-    id: `${C.slice(0, -3)}${String(i).padStart(3, "0")}`,
-    kind: "contract",
-    title: `HĐ ${i}`,
-    number: null,
-    status: "active",
-    direction: "sell",
-    seller: "A",
-    buyer: "B",
-    value: 1000,
-    end_date: null,
-    action_deadline: null,
-    owner_user_id: U,
-    seller_signer: null,
-    buyer_signer: null,
-    parent_id: null,
-    type: null,
-    category_ids: [],
-    updated_at: "2026-10-19T00:00:00.000Z",
-    version: 1,
-  });
   const deps = {
     list: async (who: unknown, q: { page_size: number }) => {
       calls.push({ fn: "list", who, arg: q });
@@ -66,20 +82,7 @@ function fakes() {
         return { items: [{ company_id: "k" }], total: 1, page: 1, page_size: 10, cas: [] };
       },
     },
-    ledger: {
-      payments: async (who: unknown, filter: string) => {
-        calls.push({ fn: "payments", who, arg: filter });
-        return {
-          stats: { overdue_count: 1 },
-          rows: Array.from({ length: 50 }, (_, i) => ({ i })),
-          total: 50,
-        };
-      },
-      obligations: async (who: unknown, q: unknown) => {
-        calls.push({ fn: "obligations", who, arg: q });
-        return [{ id: "o1" }];
-      },
-    },
+    ledger: ledgerFakes(calls),
   } as unknown as AssistantToolDeps;
   return { deps, calls };
 }
@@ -122,7 +125,9 @@ describe("M2-chat · tool đọc gói contracts cho trợ lý [N2-FR-03]", () =>
     await expect(t.run(ctx, { q: "x" })).rejects.toThrow();
     expect(f.calls).toEqual([]);
   });
+});
 
+describe("M2-chat · tool đọc gói contracts cho trợ lý (get, cks, ledger)", () => {
   it("get: id sai dạng ⇒ ném; không thấy (RLS/tenant khác) ⇒ found false; có ⇒ bỏ clauses/file, ≤ 5 việc", async () => {
     const f = fakes();
     const t = tool(assistantTools(f.deps), "contracts-get");

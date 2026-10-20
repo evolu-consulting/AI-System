@@ -107,7 +107,9 @@ describe("HUB-FR-91 · 0006_h2b_routing D1 — runs (int)", () => {
     expect(await code(insertRun({ kind: "orchestrated", agent: AG }))).toBe("23514:runs_direct_ck");
     expect(await code(insertRun({ kind: "command" }))).toBe("ok");
   });
+});
 
+describe("HUB-FR-91 · 0006_h2b_routing D1 — runs (int) · orchestrator, kind lạ", () => {
   test("orchestrator_tenant_id: = tenant_id và chỉ kind orchestrated", async () => {
     expect(await code(insertRun({ kind: "orchestrated", orchTenant: T1 }))).toBe("ok");
     expect(await code(insertRun({ kind: "orchestrated", orchTenant: T2 }))).toBe(

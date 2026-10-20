@@ -66,7 +66,9 @@ describe("chat agents (H2b)", () => {
     expect(ResponderSchema.safeParse({ ...responder, name: "" }).success).toBe(false);
     expect(ResponderSchema.safeParse({ ...responder, agent: "x" }).success).toBe(false);
   });
+});
 
+describe("chat agents (H2b) · Message, run.started, lỗi", () => {
   test("Message: responder tuỳ chọn ở assistant, vắng giữ hình cũ, cấm ở user và null", () => {
     expect(MessageSchema.parse(msg("assistant"))).toEqual(msg("assistant"));
     const withR = { ...msg("assistant"), responder };

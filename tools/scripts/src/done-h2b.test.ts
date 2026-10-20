@@ -12,17 +12,17 @@ const ROOT = join(import.meta.dir, "../../..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
 
-describe("HUB-H2b-AC-13 · done:h2b", () => {
-  const a = h2aSteps({});
-  const b = h2bSteps({});
-  const titles = b.map((s) => s.title);
-  const idx = (prefix: string) => titles.findIndex((t) => t.startsWith(prefix));
-  const step = (i: number) => {
-    const s = b[i];
-    if (!s) throw new Error(`thiếu bước ${i + 1}`);
-    return s;
-  };
+const a = h2aSteps({});
+const b = h2bSteps({});
+const titles = b.map((s) => s.title);
+const idx = (prefix: string) => titles.findIndex((t) => t.startsWith(prefix));
+const step = (i: number) => {
+  const s = b[i];
+  if (!s) throw new Error(`thiếu bước ${i + 1}`);
+  return s;
+};
 
+describe("HUB-H2b-AC-13 · done:h2b", () => {
   it("16 bước; bước chặn của done:h2a giữ nguyên thứ tự (unit/int/perf chỉ nối thêm H2b)", () => {
     expect(b).toHaveLength(16);
     const pos = a.map((s) =>

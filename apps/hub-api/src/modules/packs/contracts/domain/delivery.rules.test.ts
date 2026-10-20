@@ -92,8 +92,9 @@ describe("deliveryLines (5.7a)", () => {
   });
 });
 
+const line = { itemId: "a", qty: Q(3), planned: null };
+
 describe("deliveryMoves (5.7c/f)", () => {
-  const line = { itemId: "a", qty: Q(3), planned: null };
   it("Mua: nhập theo giá dòng; gói suất hạn = ngày kết thúc; đặt theo khách vẫn ghi giá vốn đơn", () => {
     const comps = [
       comp("q", "p-a", "quota", 0),

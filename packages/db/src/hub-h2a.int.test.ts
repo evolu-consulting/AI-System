@@ -119,7 +119,9 @@ describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int)", () => {
     );
     expect(none.length).toBe(0);
   });
+});
 
+describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int) · hub_api, EXECUTE", () => {
   test("P1: hub_api (thành viên hub_ro) gọi được trong transaction thường; workflow khác → secret khác", async () => {
     const [r] = await hubApi<{ secret_id: string }[]>`
       select secret_id from hub.workflow_secret(${wf.b.id})`;
@@ -142,7 +144,9 @@ describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int)", () => {
       await rt.end();
     }
   });
+});
 
+describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int) · SECURITY DEFINER", () => {
   test("SECURITY DEFINER + search_path cố định cho cả hai hàm; ACL không có PUBLIC", async () => {
     const rows = await owner<
       { proname: string; sec: boolean; cfg: string[] | null; pub: boolean }[]
@@ -166,7 +170,9 @@ describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int)", () => {
       },
     ]);
   });
+});
 
+describe("HUB-FR-95 · 0003_h2a_dify_fn D2 (int) · log_dify_usage", () => {
   test("P2: hub_api không INSERT usage_logs (A51) nhưng gọi log_dify_usage được → billing/provider dify, model null, số âm → 0", async () => {
     const [p] = await owner<Record<string, boolean>[]>`select
       has_table_privilege('hub_api', 'hub.usage_logs', 'INSERT') as ins,
