@@ -7,10 +7,16 @@ import { nfcText } from "./fields";
 export const FOLLOWUP_KINDS = ["obligation", "contract", "company", "renewal"] as const;
 export type FollowupKind = (typeof FOLLOWUP_KINDS)[number];
 export const FOLLOWUP_LIST_MAX = 200;
+/** Khoá chủ thể (uuid hoặc khoá bên `tax:…`): 1…300 ký tự, không NUL (Postgres từ chối U+0000 ⇒ 22021 ⇒ 5xx — review B #16). */
+const SubjectId = z
+  .string()
+  .min(1)
+  .max(300)
+  .refine((s) => !s.includes("\u0000"), "NUL");
 
 export const FollowupCreateSchema = z.strictObject({
   subject_kind: z.enum(FOLLOWUP_KINDS),
-  subject_id: z.string().min(1).max(300),
+  subject_id: SubjectId,
   at: CksLocalAtTime,
   note: nfcText(200)
     .nullish()
@@ -18,7 +24,7 @@ export const FollowupCreateSchema = z.strictObject({
 });
 export type FollowupCreate = z.infer<typeof FollowupCreateSchema>;
 export const FollowupsQuerySchema = z.strictObject({
-  subject_id: z.string().min(1).max(300).optional(),
+  subject_id: SubjectId.optional(),
 });
 
 export type Followup = {

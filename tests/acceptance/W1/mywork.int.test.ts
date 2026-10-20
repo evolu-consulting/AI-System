@@ -545,6 +545,31 @@ describe("W1 · hẹn nhắc chung (GET/POST /followups)", () => {
     );
     expect(code).toBe("42501");
   });
+  it("review B #8/#15/#16: tiêu đề cắt về 200 (trần thông báo); nhắc lại hẹn đã xong khi đã có hẹn mở cùng chủ thể ⇒ 404 không 5xx; NUL trong subject_id ⇒ 400", async () => {
+    await arrangeW1(c);
+    const k = await priced(c.sql, { partner: "A", number: "G-8", items: [] });
+    await c.sql`update contracts.contracts
+      set fields = jsonb_set(fields, '{title}', jsonb_build_object('value', repeat('T', 250))) where id = ${k}`;
+    const first = await mk(P.hoa, { subject_kind: "contract", subject_id: k, at: when(1) });
+    expect(first.status).toBe(201);
+    const [f] = (await call(c, P.hoa, "GET", "/followups")).json as { title: string }[];
+    expect(f?.title).toBe("T".repeat(200));
+    expect((await call(c, P.hoa, "POST", `/followups/${first.json.id}/done`, {})).status).toBe(200);
+    const open = await mk(P.hoa, { subject_kind: "contract", subject_id: k, at: when(2) });
+    expect([open.status, open.json.id === first.json.id]).toEqual([201, false]);
+    for (const path of [
+      `/followups/${first.json.id}/snooze`,
+      `/my-work/followups/${first.json.id}/snooze`,
+    ]) {
+      const r = await call(c, P.hoa, "POST", path, { at: when(3) });
+      expect({ path, status: r.status }).toEqual({ path, status: 404 });
+    }
+    for (const subject_id of ["a\u0000b", "\u0000"]) {
+      const r = await mk(P.hoa, { subject_kind: "company", subject_id, at: when(1) });
+      expect({ subject_id, status: r.status }).toEqual({ subject_id, status: 400 });
+    }
+    expect((await call(c, P.hoa, "GET", "/followups?subject_id=a%00b")).status).toBe(400);
+  });
   it("số câu SQL cố định: đặt = phạm vi tx + 1; liệt kê = phạm vi tx + 1", async () => {
     await arrangeW1(c);
     const k = await priced(c.sql, { partner: "A", number: "G-7", items: [] });

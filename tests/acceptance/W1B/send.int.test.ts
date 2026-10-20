@@ -93,6 +93,15 @@ describe("W1b · gửi đúng giờ", () => {
       `followup:${id}`,
     );
   });
+  it("review B #8: tiêu đề 250 ký tự (cột cho 300, thông báo chỉ 200) ⇒ gửi được với tiêu đề cắt 200; hàng sau cùng lô vẫn gửi, không chặn", async () => {
+    await fresh();
+    const long = await followup({ due: `${d(-2)}T09:00:00+07:00`, title: "Đ".repeat(250) });
+    const next = await followup({ due: `${d(-1)}T09:00:00+07:00`, title: "Sau" });
+    const t = await sender(new FakeClock(noon(0))).drain();
+    expect(t).toMatchObject({ claimed: 2, notified: 2, failed: 0 });
+    expect([await statusOf(long), await statusOf(next)]).toEqual(["sent", "sent"]);
+    expect((await notices()).map((n) => n.title)).toEqual(["Đ".repeat(200), "Sau"]);
+  });
   it("chưa tới giờ / đã xong / đã gửi ⇒ không gửi; không còn việc ⇒ null", async () => {
     await fresh();
     const later = await followup({ due: `${d(0)}T15:00:00+07:00` });

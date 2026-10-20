@@ -10,6 +10,8 @@ import type { RawMyWork } from "../domain/mywork.rules";
 import { one } from "./ledger-sql";
 
 const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
+/** Chủ thể dạng uuid (so bằng uuid để dùng PK index thay vì `id::text = …` quét bảng — review B #19). */
+const UUID_RE = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
 const LIM = MYWORK_SOURCE_MAX + 1;
 
 export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
@@ -40,8 +42,10 @@ export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
             select g.id, g.due_at, g.title, g.note, g.subject_kind, g.contract_id from contracts.followups g
             where g.tenant_id = ${t}::uuid and g.user_id = ${ME} and g.status <> 'done'
               and g.due_at < ((${w.horizon}::date + 1)::timestamp at time zone ${w.tz}::text)
-              and (g.subject_kind <> 'obligation' or exists (select 1 from contracts.obligations o
-                where o.tenant_id = ${t}::uuid and o.id::text = g.subject_id and o.status = 'open'))
+              and case when g.subject_kind <> 'obligation' then true
+                when g.subject_id !~ ${UUID_RE} then false
+                else exists (select 1 from contracts.obligations o
+                  where o.tenant_id = ${t}::uuid and o.id = g.subject_id::uuid and o.status = 'open') end
             order by g.due_at, g.id limit ${LIM}::int),
           rm as (
             select * from (
@@ -104,7 +108,7 @@ export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
             where tenant_id = ${t}::uuid and id = ${id}::uuid and user_id = ${ME} returning id),
           b as (update contracts.followups set status = 'pending', done_at = null,
               due_at = (${localAt}::timestamp at time zone ${tz}::text)
-            where tenant_id = ${t}::uuid and id = ${id}::uuid and user_id = ${ME} returning id)
+            where tenant_id = ${t}::uuid and id = ${id}::uuid and user_id = ${ME} and status <> 'done' returning id)
           select ((select count(*) from a) + (select count(*) from b))::int as j`,
       )) > 0,
   };
