@@ -3,6 +3,8 @@
 // REVIEW 1 Hub #8: kèm `runDrivers` (driver Orchestrator/`direct`) + `startRunLoops` (lease, sweeper, orphan) từ `app.ts`.
 import { DEFAULT_JOB_MAX_WAIT_S } from "./app.async";
 import { chatToolTokens, runnerMcp } from "./app.mcp";
+import { envDailyTokens } from "./lib/ai-client/ai-client.env";
+import { pgUsageStore } from "./lib/ai-client/usage.pg";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
@@ -24,6 +26,7 @@ import { startLeaseLoop } from "./modules/runs/close/lease";
 import { startLeaseSweeper } from "./modules/runs/close/sweeper";
 import type { RunDriver } from "./modules/runs/runs.service";
 import type { RunRegistry } from "./modules/runs/sse/sse-writer";
+import { chatTokenGate } from "./modules/usage/chat-token-gate";
 
 export type AgentRunnerDeps = {
   db: Db;
@@ -65,6 +68,8 @@ export function agentRunner(d: AgentRunnerDeps): AgentRunner {
     log: d.log,
     mcp: runnerMcp(d.publicInternalUrl, d.config),
     kh: d.kh && khPrepareJob({ db: d.db, rt: d.kh, log: d.log }),
+    // TD #252 · trần token tenant/ngày cho lượt chat (cùng trần + giữ chỗ với ai-client)
+    tokenGate: chatTokenGate({ usage: pgUsageStore(d.db), cap: () => envDailyTokens() }),
   });
   const credentials = new CredentialService({
     db: d.db,

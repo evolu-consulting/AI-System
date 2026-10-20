@@ -41,6 +41,7 @@ import { KH_QUERY_HINT, type KhJobPreparer } from "../../kh/kh.job";
 import { mcpToolsFor } from "../../mcp/mcp.rules";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
+import { type ChatTokenGate, gatedRun } from "../../usage/chat-token-gate";
 import { noteChatUsage } from "../../usage/chat-usage";
 import type { RunStreamReader } from "../run-stream-reader";
 import {
@@ -131,6 +132,8 @@ export type JobAgentRunnerDeps = {
   mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
   /** K1 · `khPrepareJob` (KH của job stage); vắng ⇒ không `kh-query`. */
   kh?: KhJobPreparer;
+  /** TD #252 · cửa trần token tenant (giữ chỗ trước khi đẩy job chat); vắng ⇒ không chặn (test). */
+  tokenGate?: ChatTokenGate;
 };
 
 /** `payload.mcp` + KH của job (`kh_jobs.items`; [] ⇒ không `kh-query`). */
@@ -295,7 +298,13 @@ export class JobAgentRunner implements AgentRunner {
     return { ...payload, system_prompt: hint.text };
   }
 
-  async *run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
+  /** TD #252 · trần token tenant: giữ chỗ trước khi đẩy job, trả chỗ khi xong (`gatedRun`); job stage không qua cửa chat. */
+  run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
+    const gate = task.stageRunId ? undefined : this.d.tokenGate;
+    return gatedRun(gate, task, this.d.log, () => this.#runJob(task, signal));
+  }
+
+  async *#runJob(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
     const jobId = crypto.randomUUID();
     const stepId = task.stepId ?? crypto.randomUUID();
     const jm = await this.#mcp(task);

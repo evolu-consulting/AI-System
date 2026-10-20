@@ -62,7 +62,8 @@ export type UsageStore = {
   tokensSince(tenantId: string, since: Date): Promise<number>;
   /** Giữ chỗ nguyên tử (khoá theo tenant): null ⇒ hết trần. Vắng ⇒ kiểm-rồi-gọi (chỉ cho test/fake). */
   reserve?(r: TokenHoldRequest): Promise<TokenHold | null>;
-  release?(holdId: string): Promise<void>;
+  /** Trả chỗ giữ; kèm tenant (hàm DB chỉ xoá khi id + tenant cùng khớp — TD #241). */
+  release?(holdId: string, tenantId: string): Promise<void>;
 };
 /** Trần token/ngày của tenant; null ⇒ không giới hạn. */
 export type AiCaps = { dailyTokens(tenantId: string): Promise<number | null> };
@@ -166,7 +167,9 @@ async function settle(d: AiClientDeps, r: UsageRecord, holdId: string | null): P
   const f = { tenant_id: r.tenantId, feature: r.feature };
   await d.usage.record(r).catch(() => d.log?.warn("ai-usage-record-failed", f));
   if (holdId && d.usage.release)
-    await d.usage.release(holdId).catch(() => d.log?.warn("ai-token-release-failed", f));
+    await d.usage
+      .release(holdId, r.tenantId)
+      .catch(() => d.log?.warn("ai-token-release-failed", f));
 }
 
 export function createAiClient(d: AiClientDeps): AiClient {

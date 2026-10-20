@@ -17,6 +17,12 @@ function memStore(): ChatTokenStore {
     set: async (k, v) => void m.set(k, v),
     expire: async (k) => m.has(k),
     del: async (k) => void m.delete(k),
+    // một bước đồng bộ (không await giữa đọc và xoá) = nguyên tử như script Lua
+    delIfRun: async (k, runId) => {
+      const raw = m.get(k);
+      if (!raw || (JSON.parse(raw) as { runId?: string }).runId !== runId) return false;
+      return m.delete(k);
+    },
   };
 }
 const INFO: Record<string, { sideEffect: boolean; action: "read" | "write" }> = {

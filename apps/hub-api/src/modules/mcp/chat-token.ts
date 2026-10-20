@@ -45,13 +45,22 @@ export type ChatTokenStore = {
   set(key: string, value: string, ttlS: number): Promise<void>;
   expire(key: string, ttlS: number): Promise<boolean>;
   del(key: string): Promise<void>;
+  /** TD #239 · NGUYÊN TỬ: xoá `key` chỉ khi grant trong đó còn là của `runId` (Lua compare-and-delete); true ⇒ đã xoá. */
+  delIfRun(key: string, runId: string): Promise<boolean>;
 };
 
 export const isChatToken = (s: string): boolean => CHAT_TOKEN_RE.test(s);
 const hashOf = (token: string): string => createHash("sha256").update(token, "utf8").digest("hex");
 
+/** GET → so `runId` trong JSON của grant → DEL, trong MỘT script (không chen giữa GET và DEL được). Lỗi JSON ⇒ giữ nguyên. */
+export const REVOKE_IF_RUN_LUA = `local v = redis.call("GET", KEYS[1])
+if not v then return 0 end
+local ok, c = pcall(cjson.decode, v)
+if ok and type(c) == "table" and c.runId == ARGV[1] then return redis.call("DEL", KEYS[1]) end
+return 0`;
+
 export function redisChatTokenStore(
-  redis: Pick<Redis, "set" | "get" | "del" | "expire">,
+  redis: Pick<Redis, "set" | "get" | "del" | "expire" | "eval">,
 ): ChatTokenStore {
   return {
     get: (k) => redis.get(k),
@@ -62,6 +71,7 @@ export function redisChatTokenStore(
     async del(k) {
       await redis.del(k);
     },
+    delIfRun: async (k, runId) => Number(await redis.eval(REVOKE_IF_RUN_LUA, 1, k, runId)) === 1,
   };
 }
 
@@ -110,11 +120,8 @@ export class ChatToolTokens {
     const claims: ChatTokenClaims = { ...c, tools, exp: this.#now() + ttlS * 1000 };
     await this.d.store.set(key, JSON.stringify(claims), ttlS);
     return {
-      revoke: async () => {
-        const raw = await this.d.store.get(key);
-        if (raw && (JSON.parse(raw) as ChatTokenClaims).runId === c.runId)
-          await this.d.store.del(key);
-      },
+      // TD #239 · compare-and-delete nguyên tử (trước: GET rồi DEL ⇒ hai run đồng thời có thể xoá grant của nhau)
+      revoke: async () => void (await this.d.store.delIfRun(key, c.runId)),
     };
   }
 

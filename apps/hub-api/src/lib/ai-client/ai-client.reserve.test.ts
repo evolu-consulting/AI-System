@@ -52,7 +52,8 @@ function harness(o: { grant: number | null | "throw"; provider?: ModelProvider["
         if (o.grant === "throw") throw new Error("db");
         return o.grant === null ? null : { holdId: "h1", maxOutput: o.grant };
       },
-      release: async (id) => void seen.released.push(id),
+      // TD #241 · trả chỗ kèm tenant (hàm DB kiểm id + tenant)
+      release: async (id, tenantId) => void seen.released.push(id, tenantId),
     },
     caps: { dailyTokens: async () => 10_000 },
     now: () => new Date("2026-10-20T15:30:00Z"),
@@ -73,7 +74,7 @@ describe("M3c · AI client giữ chỗ token [review B #13]", () => {
     expect(h.seen.holds[0]?.since.toISOString()).toBe("2026-10-20T00:00:00.000Z");
     expect(h.seen.sent[0]?.maxTokens).toBe(2_500);
     expect(h.seen.records).toHaveLength(1);
-    expect(h.seen.released).toEqual(["h1"]);
+    expect(h.seen.released).toEqual(["h1", req.tenantId]);
   });
   test("hết chỗ ⇒ CAP_EXCEEDED, không gọi model, không ghi; giữ chỗ lỗi ⇒ UNAVAILABLE", async () => {
     const h = harness({ grant: null });
@@ -96,7 +97,7 @@ describe("M3c · usage khi model lỗi [review B #14]", () => {
     expect(await h.ai.complete(req)).toEqual({ ok: false, code: "FAILED" });
     expect(h.seen.records).toHaveLength(1);
     expect(h.seen.records[0]?.usage.outputTokens).toBe(0);
-    expect(h.seen.released).toEqual(["h1"]);
+    expect(h.seen.released).toEqual(["h1", req.tenantId]);
   });
   test("Anthropic lỗi giữa stream ⇒ usage một phần từ message đang dở; lỗi xác thực ⇒ UNAVAILABLE", () => {
     const partial = {

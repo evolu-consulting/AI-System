@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { Redis } from "ioredis";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
+import { safeErrorFields } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
@@ -23,6 +24,11 @@ import { extractionRepo } from "./adapters/extraction.repo";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { type AgentTransport, createExtractionAgent } from "./adapters/extraction-agent";
 import { createExtractionVerifier } from "./adapters/extraction-verifier";
+import {
+  createInprocLimiter,
+  INPROC_DEFAULT_CONCURRENCY,
+  type InprocLimiter,
+} from "./adapters/inproc-limit";
 import {
   type ApprovalGroups,
   actApproval,
@@ -111,9 +117,13 @@ function extractJobs(
     const jobs: ExtractJobs = { enqueue: async () => undefined };
     return { jobs, reclaimOnce: async () => 0 };
   }
+  // TD #242 · job chạy trong tiến trình (vắng Redis / Redis sập) dùng chung một semaphore, cùng trần với worker.
+  const inproc = createInprocLimiter(o.concurrency, (err) =>
+    logger.warn("contract-extract-inproc-failed", safeErrorFields(err)),
+  );
   if (!flow.redis) {
     const jobs: ExtractJobs = {
-      enqueue: async (j) => void handle(j),
+      enqueue: async (j) => void inproc.run(() => handle(j)),
     };
     return { jobs, reclaimOnce: async () => 0 };
   }
@@ -134,12 +144,15 @@ function extractJobs(
   return { jobs: withFallback(s, handle), reclaimOnce: s.reclaimOnce };
 }
 
-/** Review B #11 · XADD lỗi SAU commit (Redis down) ⇒ không trả 500 rồi kẹt 409 tới STALE: log + chạy job ngay trong tiến trình
- *  (như chế độ vắng Redis; mất tính bền nhưng HĐ không kẹt). */
+/** Review B #11 · XADD lỗi SAU commit (Redis down) ⇒ không trả 500 rồi kẹt 409 tới STALE: log + chạy job trong tiến trình
+ *  (như chế độ vắng Redis; mất tính bền nhưng HĐ không kẹt). TD #242: qua semaphore `limit` (quá trần thì xếp hàng). */
 export function withFallback(
   q: ExtractJobs,
   handle: (j: ExtractJob) => Promise<void>,
   log: { warn(msg: string, f?: Record<string, unknown>): void } = logger,
+  limit: InprocLimiter = createInprocLimiter(INPROC_DEFAULT_CONCURRENCY, (err) =>
+    log.warn("contract-extract-inproc-failed", safeErrorFields(err)),
+  ),
 ): ExtractJobs {
   return {
     async enqueue(j) {
@@ -147,7 +160,7 @@ export function withFallback(
         await q.enqueue(j);
       } catch {
         log.warn("contract-extract-enqueue-failed", { contract_id: j.contractId });
-        void handle(j);
+        void limit.run(() => handle(j));
       }
     },
   };

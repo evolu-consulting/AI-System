@@ -37,8 +37,9 @@ export function pgUsageStore(db: Db): UsageStore {
       );
       return row ? { holdId: row.hold_id, maxOutput: Number(row.max_output) } : null;
     },
-    async release(holdId) {
-      await db.db.execute(sql`select hub.ai_release_tokens(${holdId}::uuid)`);
+    async release(holdId, tenantId) {
+      // TD #241 · hub 0045: hàm nhận thêm tenant (id + tenant cùng khớp mới xoá)
+      await db.db.execute(sql`select hub.ai_release_tokens(${holdId}::uuid, ${tenantId}::uuid)`);
     },
   };
 }
