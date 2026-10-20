@@ -27,7 +27,8 @@ source: docs/platform/ba-v2/intake.md (V2-A, C2, C3, C8, §4) · BA v2 §2, §3.
 - Giai đoạn: Đã xong = mọi mốc bắt buộc (trừ Nhắc gia hạn, trừ huỷ) xong; Chưa bắt đầu = chưa mốc nào xong và chưa tới ngày bắt đầu (không có ngày ⇒ chưa bắt đầu); còn lại Đang thực hiện.
 - Xoá mốc = `status='replaced'` (bảng chỉ thêm, REVOKE DELETE) + huỷ dòng quá hạn; sửa hạn cũng huỷ dòng quá hạn cũ.
 - `fault` chỉ khi trễ (trễ không chọn ⇒ `unknown`), lưu trên mốc và `partner_events.data.fault`; huỷ dòng xác nhận ⇒ bỏ `fault`. Điểm dùng `fault` ở V2-E.
-- Danh sách: `progress` là mảng riêng cạnh `items` vì ListRow 19 khoá bị test HD1 khoá. List/chi tiết vẫn MỘT câu SQL.
+- Danh sách: `progress` là mảng riêng cạnh `items`, chỉ khi `?include=progress` (ListRow 19 khoá và hình phản hồi rỗng bị test HD1 khoá). List/chi tiết vẫn MỘT câu SQL (+ `set_config` của tx).
+- Kiểm: evotest int V2-A + HD1/2/3/4/7/8 + W1 = 362 pass, 0 fail.
 - Tenant tắt duyệt: sửa tiền/bên của HĐ đã lưu không mở lại duyệt (`approval_on()` đọc cùng câu khoá).
 
 ## Còn lại (lát sau)
