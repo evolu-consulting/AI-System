@@ -11,7 +11,7 @@ $ssh = @("-i", $Key, "-o", "BatchMode=yes")
 $commit = (git -C $Repo rev-parse --short $Ref).Trim()
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $tmp = Join-Path $env:TEMP "sohoptac2-$stamp"
-$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "setup.sh", "smoke-ai.ts", "env.template", "README.md")
+$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "smoke-ai.ts", "env.template", "README.md")
 
 if ($DryRun) { Write-Host "commit $commit ($Ref) -> ${Server}:$Dir"; return }
 New-Item -ItemType Directory -Force $tmp | Out-Null

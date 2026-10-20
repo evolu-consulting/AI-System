@@ -60,6 +60,8 @@ export const EnvSchema = z.object({
   FILEBOX_CA: z.string().optional(),
   FILEBOX_TOKEN: z.string().optional(),
   FILEBOX_TIMEOUT_MS: z.string().optional(),
+  FILEBOX_HTTP_HOSTS: z.string().optional(), // FileBox riêng nội bộ: host (tên service Docker) được dùng http
+  FILEBOX_PUBLIC_PATH: z.string().optional(), // tiền tố công khai cho link tải (nginx proxy tới FileBox nội bộ)
   // DLC-R11 · engine AI SDLC (agent `dlc`) cho `/dlc/*` (sidebar Workspaces, modal Process). Vắng URL ⇒ `engine:
   // not_configured`. Client Keycloak (client_credentials) tuỳ chọn, đặt đủ ba biến; CA = PEM của Keycloak tự ký.
   HUB_DLC_URL: z.url({ protocol: /^https?$/ }).optional(),

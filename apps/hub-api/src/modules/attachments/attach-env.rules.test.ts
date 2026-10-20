@@ -49,3 +49,37 @@ describe("parseAttachEnv · HUB_ATTACH_DIR mặc định dev/test", () => {
     expect(r).toMatchObject({ dir: "/srv/a" });
   });
 });
+
+describe("parseAttachEnv · FileBox riêng nội bộ (FILEBOX_HTTP_HOSTS / FILEBOX_PUBLIC_PATH)", () => {
+  const base = {
+    APP_ENV: "production",
+    HUB_ATTACH_DRIVER: "filebox",
+    FILEBOX_ORG: "o",
+    FILEBOX_TOKEN: "t",
+  };
+  test("http tới host service không trong danh sách ⇒ ném; có trong danh sách ⇒ nhận", () => {
+    expect(() => parseAttachEnv({ ...base, FILEBOX_URL: "http://filebox:9100" }, "linux")).toThrow(
+      /FILEBOX_URL phải là https/,
+    );
+    const r = parseAttachEnv(
+      { ...base, FILEBOX_URL: "http://filebox:9100", FILEBOX_HTTP_HOSTS: "filebox" },
+      "linux",
+    );
+    expect(r).toMatchObject({ driver: "filebox", url: "http://filebox:9100" });
+  });
+  test("host công khai không được nới http dù có danh sách khác", () => {
+    expect(() =>
+      parseAttachEnv(
+        { ...base, FILEBOX_URL: "http://example.com", FILEBOX_HTTP_HOSTS: "filebox" },
+        "linux",
+      ),
+    ).toThrow(/FILEBOX_URL phải là https/);
+  });
+  test("FILEBOX_PUBLIC_PATH: chuẩn hoá bỏ / cuối; sai dạng ⇒ ném", () => {
+    const e = { ...base, FILEBOX_URL: "https://x.example", FILEBOX_PUBLIC_PATH: "/_fb/" };
+    expect(parseAttachEnv(e, "linux")).toMatchObject({ publicPath: "/_fb" });
+    expect(() => parseAttachEnv({ ...e, FILEBOX_PUBLIC_PATH: "https://evil/" }, "linux")).toThrow(
+      /FILEBOX_PUBLIC_PATH/,
+    );
+  });
+});

@@ -105,6 +105,7 @@ async function openAttachments(env: Env): Promise<AttachmentDeps | undefined> {
     org: a.org,
     token: envFileboxToken(env.FILEBOX_TOKEN),
     ...(a.caPath ? { caPath: a.caPath } : {}),
+    ...(a.publicPath ? { publicPath: a.publicPath } : {}),
     timeoutMs: a.timeoutMs,
     log: logger,
   });

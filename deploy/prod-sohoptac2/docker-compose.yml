@@ -77,15 +77,68 @@ services:
     volumes:
       - ./.env:/run/s2/app.env:ro
       - ./data/attachments:/data/attachments
-      - ./filebox.crt:/etc/s2/filebox.crt:ro
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro
     depends_on:
       pg: { condition: service_healthy }
       redis: { condition: service_healthy }
       admin-api: { condition: service_started }
+      filebox: { condition: service_healthy }
     cpus: 2
     mem_limit: 3g
+
+  # FileBox RIÊNG của sohoptac2 (ADR-0015, quyết định người dùng): app FastAPI + MinIO, token + khoá MinIO riêng trong .env.
+  # KHÔNG publish cổng (chỉ `expose`): hub-api/tool gọi http://filebox:9100 trong mạng compose (http trong mạng kín — hub-api chỉ nhận
+  # nhờ FILEBOX_HTTP_HOSTS=filebox). Trình duyệt không tới được: link tải `<FILEBOX_PUBLIC_PATH>/d/<id>?v&exp&sig` (ký, 10 phút)
+  # đi qua nginx của `web` (chỉ GET/HEAD /_fb/d/…). Mã nguồn app = bản sao của FileBox dùng chung (./filebox/app.py), không sửa bản gốc.
+  filebox:
+    image: sohoptac2-filebox:latest
+    build:
+      context: ./build
+      target: filebox
+    restart: unless-stopped
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      FILEBOX_TOKEN: ${FILEBOX_TOKEN:?run gen-env.sh}
+      FILEBOX_S3_URL: http://filebox-minio:9000
+      FILEBOX_DB: /data/filebox.db
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9100"]
+    volumes:
+      - fbdata:/data
+    depends_on:
+      filebox-minio: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:9100/health\", timeout=3).status == 200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    cpus: 1
+    mem_limit: 768m
+
+  filebox-minio:
+    # minio/minio không còn được phát hành trên Docker Hub/quay ⇒ dùng bản nhị phân tĩnh (static) của MinIO đã build sẵn trên host
+    # (cùng bản FileBox dùng chung đang chạy), chép chỉ-đọc vào ./minio-bin/minio bởi filebox-env.sh; chạy trong alpine, không đụng host.
+    image: alpine:3.20
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/minio"]
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9000"]
+    volumes:
+      - fbminio:/data
+      - ./minio-bin/minio:/usr/local/bin/minio:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    cpus: 1
+    mem_limit: 1g
 
   # Agent Runtime (Python): trợ lý chat chạy Claude CLI bằng cùng bản sao đăng nhập (HOME=/claude-home ⇒ ~/.claude).
   agent-runtime:
@@ -133,7 +186,7 @@ services:
       - "127.0.0.1:${S2_PORT_ADMIN:-18432}:8082"
       - "127.0.0.1:${S2_PORT_CHAT:-18433}:8083"
       - "127.0.0.1:${S2_PORT_HUB:-18434}:8084"
-    depends_on: [admin-api, hub-api]
+    depends_on: [admin-api, hub-api, filebox]
     cpus: 0.5
     mem_limit: 256m
 
@@ -150,13 +203,15 @@ services:
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro
       - ./smoke-ai.ts:/app/tools/scripts/src/s2-smoke-ai.ts:ro
-      - ./filebox.crt:/etc/s2/filebox.crt:ro
     depends_on:
       pg: { condition: service_healthy }
       redis: { condition: service_healthy }
+      filebox: { condition: service_healthy }
     cpus: 1
     mem_limit: 1g
 
 volumes:
   pgdata:
   redisdata:
+  fbdata:
+  fbminio:

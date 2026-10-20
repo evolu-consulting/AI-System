@@ -259,11 +259,14 @@ function fileboxClients(fb: PackFb) {
 }
 
 /** T5f · FileBox của gói: `deps.packs.filebox` ưu tiên, vắng ⇒ env FB1 (`FILEBOX_URL` + `FILEBOX_TOKEN`, CA `FILEBOX_CA`). */
-type PackFb = { url: string; token: string; caPath?: string };
+type PackFb = { url: string; token: string; caPath?: string; publicPath?: string };
 function packFilebox(p: PacksDeps | undefined): PackFb | null {
   if (p?.filebox) return p.filebox;
   const { FILEBOX_URL: url, FILEBOX_TOKEN: token, FILEBOX_CA: caPath } = process.env;
-  return url && token ? { url, token, ...(caPath ? { caPath } : {}) } : null;
+  const publicPath = process.env.FILEBOX_PUBLIC_PATH?.replace(/\/+$/, "");
+  return url && token
+    ? { url, token, ...(caPath ? { caPath } : {}), ...(publicPath ? { publicPath } : {}) }
+    : null;
 }
 
 /** T5f · route file gói `/files/:id/content` — client FileBox dựng theo org `t_<tenant>` mỗi lời gọi (PK-FR-06). */

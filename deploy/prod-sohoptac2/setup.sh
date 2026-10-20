@@ -8,7 +8,7 @@ dc() { docker compose -p sohoptac2 "$@"; }
 envv() { grep -m1 "^$1=" .env | cut -d= -f2-; }
 pw_of() { envv "$1" | sed -E 's#^postgres://[^:]+:([^@]+)@.*#\1#'; }
 
-dc up -d --wait pg redis
+dc up -d --wait pg redis filebox
 dc run --rm -T tool packages/db/src/migrate.ts
 # Production không áp migration dev ⇒ 3 role ứng dụng chưa có mật khẩu đăng nhập.
 dc exec -T pg psql -v ON_ERROR_STOP=1 -q -U s2_owner -d ai_system \
@@ -22,7 +22,7 @@ SEED_ADMIN_PASSWORD="$(sed -n 's/^password: //p' ADMIN_CREDENTIALS.txt)"; export
 dc run --rm -T -e SEED_ADMIN_PASSWORD tool packages/db/src/seed.ts
 unset SEED_ADMIN_PASSWORD
 dc run --rm -T tool apps/hub-api/src/modules/seed/seed.ts
-dc up -d --remove-orphans admin-api hub-api agent-runtime web
+dc up -d --remove-orphans filebox admin-api hub-api agent-runtime web
 
 ok=0
 for i in $(seq 1 60); do

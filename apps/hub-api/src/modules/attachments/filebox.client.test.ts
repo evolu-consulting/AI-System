@@ -61,3 +61,19 @@ describe("FileboxClient · #retry gom tham số (#212)", () => {
     expect(hits.map((h) => h.auth)).toEqual(["Bearer a", "Bearer b", "Bearer b"]);
   });
 });
+
+describe("FileboxClient · publicPath (FileBox riêng nội bộ)", () => {
+  test("getLink trả đường dẫn tương đối <prefix>/d/… thay vì origin nội bộ", async () => {
+    reset([200]);
+    const c = new FileboxClient({
+      url: `http://localhost:${srv.port}`,
+      org: "t_x",
+      token: { get: async () => "a", refresh: async () => null },
+      publicPath: "/_fb",
+      timeoutMs: 2000,
+      retryDelaysMs: [],
+      log: log as never,
+    });
+    expect(await c.getLink("f1")).toBe("/_fb/d/x");
+  });
+});

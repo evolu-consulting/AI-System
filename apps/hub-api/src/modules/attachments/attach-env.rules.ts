@@ -13,6 +13,10 @@ export type AttachEnvInput = {
   FILEBOX_CA?: string;
   FILEBOX_TOKEN?: string;
   FILEBOX_TIMEOUT_MS?: string;
+  /** Danh sách host nội bộ (tên service Docker, phân tách phẩy) được dùng `http` — FileBox riêng trong mạng nội bộ (không cổng host). */
+  FILEBOX_HTTP_HOSTS?: string;
+  /** Tiền tố đường dẫn công khai (vd `/_fb`) thay origin trong link tải gửi trình duyệt; nginx proxy `<prefix>/d/…` tới FileBox nội bộ. */
+  FILEBOX_PUBLIC_PATH?: string;
 };
 
 export type LocalAttachEnv = {
@@ -27,6 +31,7 @@ export type FileboxAttachEnv = {
   url: string;
   org: string;
   caPath?: string;
+  publicPath?: string;
   timeoutMs: number;
   tenantMaxBytes: number;
   sweepS: number;
@@ -85,8 +90,10 @@ function requireDir(
   return dir;
 }
 
-/** `https` bắt buộc trừ khi host loopback (http dev/mock). Chỉ nêu TÊN biến khi lỗi (không giá trị). */
-function parseFileboxUrl(raw: string | undefined): string {
+/** `https` bắt buộc trừ khi host loopback (http dev/mock) hoặc host nằm TƯỜNG MINH trong `FILEBOX_HTTP_HOSTS`
+ * (FileBox riêng chạy cùng mạng Docker nội bộ, không publish cổng ⇒ http trong mạng kín; không dành cho host công khai).
+ * Chỉ nêu TÊN biến khi lỗi (không giá trị). */
+function parseFileboxUrl(raw: string | undefined, httpHosts: string | undefined): string {
   if (!raw) throw new Error("FILEBOX_URL bắt buộc khi HUB_ATTACH_DRIVER=filebox");
   let u: URL;
   try {
@@ -94,14 +101,23 @@ function parseFileboxUrl(raw: string | undefined): string {
   } catch {
     throw new Error("FILEBOX_URL không phải URL hợp lệ");
   }
-  const loop = LOOPBACK.has(u.hostname);
+  const allowed = new Set(
+    (httpHosts ?? "")
+      .split(",")
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const loop = LOOPBACK.has(u.hostname) || allowed.has(u.hostname.toLowerCase());
   if (u.protocol !== "https:" && !(u.protocol === "http:" && loop))
-    throw new Error("FILEBOX_URL phải là https (http chỉ cho loopback)");
+    throw new Error("FILEBOX_URL phải là https (http chỉ cho loopback hoặc host trong FILEBOX_HTTP_HOSTS)");
   return raw;
 }
 
 function parseFilebox(e: AttachEnvInput): FileboxAttachEnv {
-  const url = parseFileboxUrl(e.FILEBOX_URL);
+  const url = parseFileboxUrl(e.FILEBOX_URL, e.FILEBOX_HTTP_HOSTS);
+  const publicPath = e.FILEBOX_PUBLIC_PATH?.replace(/\/+$/, "");
+  if (publicPath && !/^\/[A-Za-z0-9._~/-]+$/.test(publicPath))
+    throw new Error("FILEBOX_PUBLIC_PATH phải là đường dẫn bắt đầu bằng /");
   if (!e.FILEBOX_ORG) throw new Error("FILEBOX_ORG bắt buộc khi HUB_ATTACH_DRIVER=filebox");
   // Chỉ kiểm sự hiện diện (fail-closed sớm); KHÔNG lưu giá trị vào AttachEnv (tránh lọt log). Server đọc thẳng `env.FILEBOX_TOKEN`.
   if (!e.FILEBOX_TOKEN) throw new Error("FILEBOX_TOKEN bắt buộc khi HUB_ATTACH_DRIVER=filebox");
@@ -112,6 +128,7 @@ function parseFilebox(e: AttachEnvInput): FileboxAttachEnv {
     url,
     org: e.FILEBOX_ORG,
     ...(e.FILEBOX_CA ? { caPath: e.FILEBOX_CA } : {}),
+    ...(publicPath ? { publicPath } : {}),
     timeoutMs,
     ...commonLimits(e),
   };

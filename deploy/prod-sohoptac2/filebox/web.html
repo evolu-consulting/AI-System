@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filebox</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --sunken: #eef0f4; --line: #dde1e8;
+    --fg: #1b2230; --muted: #5d6677; --accent: #2457d6; --accent-fg: #ffffff;
+    --ok: #1d7a46; --ok-bg: #e5f5ec; --bad: #b42318; --bad-bg: #fdecea; --bar: #2457d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11151c; --surface: #181d26; --sunken: #1f2530; --line: #2b3240;
+      --fg: #e6e9ef; --muted: #9aa3b4; --accent: #6f97ff; --accent-fg: #0d1220;
+      --ok: #59c98a; --ok-bg: #16301f; --bad: #ff8a80; --bad-bg: #3a1d1b; --bar: #6f97ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11151c; --surface: #181d26; --sunken: #1f2530; --line: #2b3240;
+    --fg: #e6e9ef; --muted: #9aa3b4; --accent: #6f97ff; --accent-fg: #0d1220;
+    --ok: #59c98a; --ok-bg: #16301f; --bad: #ff8a80; --bad-bg: #3a1d1b; --bar: #6f97ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-inline: 16px; }
+  main { max-width: 980px; margin: 0 auto; padding-block: 28px 60px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  p.lead { margin: 4px 0 0; color: var(--muted); }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--surface); color: var(--fg); font: inherit; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  .row > div { flex: 1 1 220px; }
+  button { font: inherit; font-weight: 600; border-radius: 7px; padding: 8px 14px; cursor: pointer;
+           border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+  button.ghost { background: transparent; color: var(--fg); border-color: var(--line); font-weight: 500; }
+  button.small { padding: 4px 9px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .drop { margin-top: 12px; border: 2px dashed var(--line); border-radius: 10px; padding: 26px; text-align: center;
+          color: var(--muted); background: var(--sunken); }
+  .drop.over { border-color: var(--accent); color: var(--fg); }
+  .jobs { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .job { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
+  .job .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+  .job .bar > span { display: block; height: 100%; width: 0; background: var(--bar); transition: width .2s; }
+  .job .note { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .job.done .note { color: var(--ok); } .job.failed .note { color: var(--bad); }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+       font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.actions { white-space: nowrap; text-align: right; }
+  td.actions button { margin-left: 4px; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--sunken); color: var(--muted); }
+  .versions td { background: var(--sunken); font-size: 13px; }
+  .msg { padding: 10px 12px; border-radius: 7px; font-size: 14px; }
+  .msg.bad { background: var(--bad-bg); color: var(--bad); } .msg.ok { background: var(--ok-bg); color: var(--ok); }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .job .bar > span { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Filebox</h1>
+    <p class="lead">Upload and download files fast. Each file gets a file ID, is labelled with its organisation, and keeps every version.</p>
+  </header>
+
+  <section id="keyBox">
+    <h2>Access key</h2>
+    <div class="row">
+      <div><label for="key">Key</label><input id="key" type="password" autocomplete="off" placeholder="Paste the Filebox key"></div>
+      <button id="useKey">Open</button>
+    </div>
+    <p class="muted" style="margin:8px 0 0;font-size:13px">Kept only in this browser tab until you close it.</p>
+    <div id="keyMsg" class="msg bad hidden" role="alert" style="margin-top:10px"></div>
+  </section>
+
+  <section id="uploadBox" class="hidden">
+    <h2>Upload</h2>
+    <div class="row">
+      <div><label for="org">Organisation</label><input id="org" type="text" list="orgs" placeholder="e.g. Công ty Acme"><datalist id="orgs"></datalist></div>
+      <div style="flex:0 0 auto"><button id="pick" class="ghost">Choose files…</button></div>
+    </div>
+    <input id="files" type="file" multiple class="hidden">
+    <input id="versionFile" type="file" class="hidden">
+    <div id="drop" class="drop">Drop files here — big files go up in parallel parts</div>
+    <ul id="jobs" class="jobs" aria-live="polite"></ul>
+  </section>
+
+  <section id="listBox" class="hidden">
+    <div class="row" style="margin-bottom:12px">
+      <div><label for="filter">Show organisation</label><select id="filter"><option value="">All organisations</option></select></div>
+      <div style="flex:0 0 auto"><button id="refresh" class="ghost">Refresh</button></div>
+    </div>
+    <div class="tablewrap">
+      <table aria-label="Files">
+        <thead><tr><th>File</th><th>Organisation</th><th style="text-align:right">Size</th><th style="text-align:right">Versions</th><th>Updated</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const PARALLEL = 6;
+let KEY = "";
+try { KEY = sessionStorage.getItem("filebox.key") || ""; } catch (e) { KEY = ""; }
+
+const size = (n) => n == null ? "—" : n >= 1e9 ? (n / 1e9).toFixed(2) + " GB" : n >= 1e6 ? (n / 1e6).toFixed(1) + " MB" : n >= 1e3 ? (n / 1e3).toFixed(0) + " KB" : n + " B";
+const when = (s) => s ? new Date(s * 1000).toLocaleString() : "—";
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(method, path, body, raw) {
+  const headers = { Authorization: "Bearer " + KEY };
+  if (body !== undefined && !raw) headers["Content-Type"] = "application/json";
+  const res = await fetch(path, { method, headers, body: raw ? body : body === undefined ? undefined : JSON.stringify(body) });
+  const text = await res.text();
+  let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = { error: text }; }
+  if (!res.ok) throw Object.assign(new Error((data && (data.detail || data.error)) || ("HTTP " + res.status)), { status: res.status });
+  return data;
+}
+
+async function open() {
+  try {
+    await api("GET", "/files?limit=1");
+    try { sessionStorage.setItem("filebox.key", KEY); } catch (e) { /* tab-only convenience */ }
+    $("keyBox").classList.add("hidden");
+    $("uploadBox").classList.remove("hidden");
+    $("listBox").classList.remove("hidden");
+    load();
+  } catch (e) {
+    $("keyMsg").textContent = e.status === 401 ? "That key is not right." : "Cannot reach Filebox: " + e.message;
+    $("keyMsg").classList.remove("hidden");
+  }
+}
+$("useKey").onclick = () => { KEY = $("key").value.trim(); open(); };
+$("key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("useKey").click(); });
+
+// ---- upload: parts PUT in parallel, each retried on its own ------------------------------------
+function job(name) {
+  const li = document.createElement("li");
+  li.className = "job";
+  li.innerHTML = `<span>${esc(name)}</span><span class="note">starting…</span><div class="bar"><span></span></div>`;
+  $("jobs").prepend(li);
+  return {
+    progress(done, total, started) {
+      const secs = (performance.now() - started) / 1000;
+      li.querySelector(".bar > span").style.width = (100 * done / total).toFixed(1) + "%";
+      li.querySelector(".note").textContent = `${size(done)} of ${size(total)} · ${(done / 1e6 / Math.max(secs, .001)).toFixed(1)} MB/s`;
+    },
+    finish(text, ok) { li.classList.add(ok ? "done" : "failed"); li.querySelector(".note").textContent = text; if (ok) li.querySelector(".bar > span").style.width = "100%"; },
+  };
+}
+
+class Unreachable extends Error {}
+
+async function putPart(p, blob) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      if (p.path) return (await api("PUT", p.path, blob, true)).etag;
+      let res;  // direct: a link Filebox signed, straight to storage, no key
+      try { res = await fetch(p.url, { method: "PUT", body: blob }); }
+      catch (e) { throw new Unreachable("storage not reachable from this browser"); }
+      const etag = res.headers.get("ETag");
+      if (!res.ok) throw Object.assign(new Error("storage answered HTTP " + res.status), { status: res.status });
+      if (!etag) throw new Unreachable("storage does not show the part's ETag to this page");
+      return etag;
+    } catch (e) {
+      if (e instanceof Unreachable || attempt >= 3 || e.status === 401 || e.status === 404) throw e;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+
+// Filebox names the file (file_id, organisation, version); the bytes go straight to storage, and
+// through the API when this browser cannot reach storage (port closed, certificate not trusted).
+async function send(file, target, direct = true) {
+  const j = job(target.file_id ? `${file.name} → new version` : file.name);
+  const started = performance.now();
+  let plan;
+  try {
+    plan = await api("POST", "/uploads", { ...target, size: file.size || 1, content_type: file.type || undefined, direct });
+    const etags = new Array(plan.parts.length);
+    let next = 0, done = 0;
+    const worker = async () => {
+      while (next < plan.parts.length) {
+        const i = next++, p = plan.parts[i];
+        const blob = file.slice((p.part - 1) * plan.part_size, p.part * plan.part_size);
+        etags[i] = await putPart(p, blob);
+        done += blob.size; j.progress(done, file.size, started);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(PARALLEL, plan.parts.length) }, worker));
+    const saved = await api("POST", `/uploads/${plan.upload_id}/complete`, { parts: plan.parts.map((p, i) => ({ part: p.part, etag: etags[i] })) });
+    const secs = (performance.now() - started) / 1000;
+    j.finish(`done in ${secs.toFixed(1)}s ${direct ? "straight to storage" : "through the API"} · file ID ${saved.file_id}`, true);
+    load();
+  } catch (e) {
+    if (plan) api("DELETE", `/uploads/${plan.upload_id}`).catch(() => {});
+    if (e instanceof Unreachable && direct) {
+      j.finish("storage not reachable from this browser — sending through Filebox instead", true);
+      return send(file, target, false);
+    }
+    j.finish("failed: " + e.message, false);
+  }
+}
+
+function uploadAll(list) {
+  const org = $("org").value.trim();
+  if (!org) { $("org").focus(); $("org").placeholder = "Type the organisation first"; return; }
+  for (const f of list) send(f, { org, name: f.name });
+}
+$("pick").onclick = () => $("files").click();
+$("files").onchange = (e) => { uploadAll([...e.target.files]); e.target.value = ""; };
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); uploadAll([...e.dataTransfer.files]); });
+
+let versionOf = null;
+$("versionFile").onchange = (e) => { const f = e.target.files[0]; if (f && versionOf) send(f, { file_id: versionOf }); e.target.value = ""; };
+
+// ---- list, versions, download, delete ----------------------------------------------------------
+async function download(id, version) {
+  const link = await api("GET", `/files/${id}/link` + (version ? `?version=${encodeURIComponent(version)}` : ""));
+  window.location.href = link.url;
+}
+
+async function load() {
+  const filter = $("filter").value;
+  const rows = $("rows");
+  try {
+    const files = await api("GET", "/files?limit=500" + (filter ? "&org=" + encodeURIComponent(filter) : ""));
+    if (!filter) {
+      const orgs = [...new Set(files.map((f) => f.org))].sort();
+      $("filter").innerHTML = '<option value="">All organisations</option>' + orgs.map((o) => `<option>${esc(o)}</option>`).join("");
+      $("orgs").innerHTML = orgs.map((o) => `<option value="${esc(o)}">`).join("");
+    }
+    if (!files.length) { rows.innerHTML = '<tr><td colspan="6" class="muted">No files yet — upload one above.</td></tr>'; return; }
+    rows.innerHTML = files.map((f) => `
+      <tr data-id="${f.file_id}">
+        <td><strong>${esc(f.name)}</strong><br><code>${f.file_id}</code>${f.encoding ? ` <span class="chip">kept ${esc(f.encoding)}</span>` : ""}</td>
+        <td>${esc(f.org)}</td>
+        <td class="num">${size(f.size)}</td>
+        <td class="num">${f.versions}</td>
+        <td>${when(f.updated || f.created)}</td>
+        <td class="actions">
+          <button class="small" data-act="get">Download</button>
+          <button class="small ghost" data-act="versions">Versions</button>
+          <button class="small ghost" data-act="newver">New version</button>
+          <button class="small ghost" data-act="del" aria-label="Delete ${esc(f.name)}">Delete</button>
+        </td>
+      </tr>`).join("");
+  } catch (e) {
+    rows.innerHTML = `<tr><td colspan="6"><div class="msg bad">Could not load files: ${esc(e.message)}</div></td></tr>`;
+  }
+}
+$("filter").onchange = load;
+$("refresh").onclick = load;
+
+$("rows").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const tr = btn.closest("tr");
+  try {
+    if (btn.dataset.ver !== undefined) return download(btn.dataset.id, btn.dataset.ver);
+    const id = tr.dataset.id;
+    if (btn.dataset.act === "get") return download(id);
+    if (btn.dataset.act === "newver") { versionOf = id; return $("versionFile").click(); }
+    if (btn.dataset.act === "del") {
+      if (!confirm("Delete this file and every version of it?")) return;
+      await api("DELETE", `/files/${id}`); return load();
+    }
+    if (btn.dataset.act === "versions") {
+      const shown = tr.nextElementSibling;
+      if (shown && shown.classList.contains("versions")) { shown.remove(); return; }
+      const list = await api("GET", `/files/${id}/versions`);
+      const vr = document.createElement("tr"); vr.className = "versions";
+      vr.innerHTML = `<td colspan="6"><table aria-label="Versions">${list.map((v, i) => `
+        <tr><td>${v.current ? "<strong>current</strong>" : "version " + (list.length - i)}</td>
+            <td class="num">${size(v.size)}</td><td>${when(v.modified)}</td>
+            <td class="actions"><button class="small ghost" data-id="${id}" data-ver="${esc(v.version_id)}">Download</button></td></tr>`).join("")}</table></td>`;
+      tr.after(vr);
+    }
+  } catch (err) { alert(err.message); }
+});
+
+if (KEY) open();
+</script>
+</body>
+</html>

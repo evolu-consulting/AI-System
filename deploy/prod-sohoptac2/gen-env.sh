@@ -61,6 +61,9 @@ EOF
   echo "gen-env: đã tạo .env (600). SAO LƯU: mất SECRET_MASTER_KEY/HUB_SECRETS_KEY = mất mọi secret đã lưu."
 fi
 
+# FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
+bash ./filebox-env.sh
+
 # Mật khẩu platform admin: CHỈ ở ADMIN_CREDENTIALS.txt (600); setup.sh đọc khi seed.
 if [ ! -f ADMIN_CREDENTIALS.txt ]; then
   pw="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"

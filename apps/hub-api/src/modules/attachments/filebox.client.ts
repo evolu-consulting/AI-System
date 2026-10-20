@@ -16,6 +16,8 @@ export type FileboxClientCfg = {
   org: string;
   token: FileboxTokenSource;
   caPath?: string;
+  /** Tiền tố công khai (vd `/_fb`): link tải trả đường dẫn tương đối `<prefix>/d/…` (trình duyệt không tới được FileBox nội bộ). */
+  publicPath?: string;
   timeoutMs: number;
   retryDelaysMs: number[];
   log: Logger;
@@ -77,6 +79,7 @@ export class FileboxClient {
     if (!res.ok) throw new FileboxUnavailable(`filebox link ${res.status}`);
     const j = (await res.json()) as { url?: string };
     if (!j.url) throw new FileboxUnavailable("filebox link: missing url");
+    if (this.cfg.publicPath) return j.url.startsWith("/d/") ? `${this.cfg.publicPath}${j.url}` : null;
     return `${this.cfg.url}${j.url}`;
   }
 
