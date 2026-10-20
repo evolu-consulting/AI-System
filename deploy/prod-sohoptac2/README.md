@@ -12,6 +12,8 @@
 | hub-api | sohoptac2-app | 2 / 3 GB | :4000 nội bộ, Studio `/studio`, AI client = gói Claude |
 | agent-runtime | sohoptac2-runtime (python 3.12 + uv) | 2 / 3 GB | worker `claude-sub` |
 | web | sohoptac2-web (nginx) | 0.5 / 256 MB | 4 web + reverse proxy |
+| filebox | sohoptac2-filebox (python 3.12, app = bản sao FileBox dùng chung) | 1 / 768 MB | :9100 **chỉ nội bộ** (không publish), volume `fbdata`; FileBox RIÊNG, token riêng |
+| filebox-minio | alpine + nhị phân MinIO tĩnh chép từ host | 1 / 1 GB | :9000 chỉ nội bộ, volume `fbminio`, khoá riêng |
 | tool (profile `tools`) | sohoptac2-app | 1 / 1 GB | migrate / seed / smoke |
 
 Cổng (chỉ `127.0.0.1`): **18431** contracts-web · **18432** admin-web · **18433** chat-web · **18434** Hub + Studio (`/studio/`).
@@ -46,6 +48,13 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
 - `setup.sh` tự kiểm `/health` của admin-api + hub-api. Qua tunnel: `http://localhost:18434/health` (hub), `/auth-health` (admin-api).
 - UI (Node thật, tunnel đang mở): `S2_PW=<mật khẩu admin, không in> node deploy/prod-sohoptac2/verify-ui.mjs` — đăng nhập
   admin-web, contracts-web, chat-web + một lượt chat thật; ảnh vào `docs/deploy/sohoptac2/`.
+
+## FileBox riêng (ADR-0015)
+- `filebox-env.sh` (gọi bởi `gen-env.sh`, idempotent, không in giá trị) sinh `FILEBOX_TOKEN`, `FILEBOX_MINIO_USER/PASSWORD` riêng, đặt `HUB_ATTACH_DRIVER=filebox`,
+  `FILEBOX_URL=http://filebox:9100`, `FILEBOX_HTTP_HOSTS=filebox` (hub-api chỉ nhận http cho host liệt kê tường minh; host công khai vẫn buộc https),
+  `FILEBOX_PUBLIC_PATH=/_fb`; thay các dòng FILEBOX_* của FileBox dùng chung (bản cũ: `.env.bak-filebox`). MinIO chính thức không còn trên registry ⇒ chép CHỈ-ĐỌC nhị phân tĩnh `~/filebox/bin/minio` vào `./minio-bin/`.
+- Không cổng host. Trình duyệt tải qua link ký 10 phút `<web>/_fb/d/<id>?…`: nginx của `web` chỉ cho GET/HEAD tới `filebox:9100/d/<id>` (contracts :8081, chat :8083, hub :8084).
+- Dữ liệu FileBox cũ (kho chung `ai-system`) KHÔNG chuyển sang; file đã đính kèm trước đây phải gắn lại bằng `mgmt-import --filebox`.
 
 ## Không làm ở đây
 Không nạp dữ liệu, không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
