@@ -72,15 +72,21 @@ describe("V2-B Â· xÃ¡c nháº­n má»‘c giao 20 dÃ²ng (applyDelivery)",
         await w.sql`analyze contracts.product_components, contracts.stock_lots, contracts.stock_moves, contracts.products`;
       const cap = await captureSql(client(), () => confirm(analyzed ? 1000 : 2000));
       expect(cap.r.components).toHaveLength(LINES);
-      expect(cap.queries.length).toBe(5);
+      expect(cap.queries.map((q) => q.text.replace(/\s+/g, " ").slice(0, 60))).toHaveLength(5);
       const st = await measure(confirm, { n: 200, warm: 10 });
       console.log(
         `V2-B applyDelivery 20 dÃ²ng (${analyzed ? "sau" : "trÆ°á»›c"} ANALYZE): p50 ${st.p50.toFixed(1)} ms Â· p95 ${st.p95.toFixed(1)} ms Â· max ${st.max.toFixed(1)} ms`,
       );
       const run = <R>(fn: (tx: Sql) => Promise<R>) =>
         inPackAs("contracts", w.A, w.u1, fn, { rollback: true });
-      for (const q of [cap.queries[1], cap.queries[2], cap.queries[4]])
-        expect(await seqScansOf(run, q as { text: string; params: unknown[] }, RELS)).toEqual([]);
+      for (const i of [1, 2, 4]) {
+        const seq = await seqScansOf(
+          run,
+          cap.queries[i] as { text: string; params: unknown[] },
+          RELS,
+        );
+        expect({ i, seq }).toEqual({ i, seq: [] });
+      }
       expect(st.p95).toBeLessThanOrEqual(50);
     }, 180_000);
   }

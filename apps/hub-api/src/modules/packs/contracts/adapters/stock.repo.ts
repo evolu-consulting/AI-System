@@ -137,6 +137,6 @@ export async function applyDelivery(
   await tx.execute(sql`update contracts.product_components pc
     set on_hand = u."onHand"::numeric / 10000, stock_value = u.value, avg_cost = u.avg, last_move_id = u."lastMoveId"
     from jsonb_to_recordset(${json(plan.updates)}) as u(id uuid, "onHand" bigint, value bigint, avg bigint, "lastMoveId" uuid)
-    where pc.tenant_id = ${t}::uuid and pc.id = u.id`);
+    where pc.tenant_id = ${t}::uuid and pc.id = any(${pgArr(ids)}::uuid[]) and pc.id = u.id`);
   return plan.result;
 }
