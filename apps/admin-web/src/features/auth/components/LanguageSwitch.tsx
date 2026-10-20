@@ -1,6 +1,7 @@
 // ADM-FR-01 · công tắc VI/EN ở trang đăng nhập (chỉ đổi cục bộ, chưa gọi server).
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { markLocaleChosen } from "../lib/login-locale";
 
 const OPTIONS = [
   { code: "en", short: "EN" },
@@ -20,7 +21,10 @@ export function LanguageSwitch() {
             type="button"
             aria-pressed={active}
             aria-label={code === "vi" ? t("auth.lang.vi") : t("auth.lang.en")}
-            onClick={() => void i18n.changeLanguage(code)}
+            onClick={() => {
+              markLocaleChosen();
+              void i18n.changeLanguage(code);
+            }}
             className={cn(
               "h-8 rounded-md border border-input px-2.5 text-label focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
               active

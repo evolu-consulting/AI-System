@@ -4,7 +4,7 @@
       "title": "Thành viên & phòng ban",
       "entryHint": "Cấp quản lý, phòng ban và phạm vi xem hợp đồng của từng người.",
       "lead": "Chế độ \"theo cơ cấu\": biên tập viên và người xem chỉ thấy hợp đồng họ phụ trách, của cấp dưới và của phòng mình làm trưởng. Chủ sở hữu thấy toàn bộ.",
-      "ownerOnly": "Chỉ chủ sở hữu (quản trị tenant) được quản lý thành viên và phòng ban.",
+      "ownerOnly": "Cần quyền quản trị công ty để quản lý thành viên và phòng ban.",
       "mode": "Phạm vi xem hợp đồng",
       "modeTenant": "Mọi người thấy toàn bộ hợp đồng",
       "modeOrg": "Theo cơ cấu (người phụ trách, cấp dưới, phòng ban)",

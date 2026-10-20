@@ -19,6 +19,8 @@ describe("vai theo quyền gói", () => {
     expect(canSeeSettings("viewer")).toBe(false);
     expect(canSeeSettings("editor")).toBe(true);
     expect(canSeeSettings("owner")).toBe(true);
+    expect(canSeeSettings("viewer", "tenant_admin")).toBe(true);
+    expect(canSeeSettings("viewer", "member")).toBe(false);
   });
 });
 

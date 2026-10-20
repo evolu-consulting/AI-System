@@ -37,7 +37,11 @@ export const MAIN_NAV: readonly NavItem[] = NAV.filter((n) => !n.extra);
 export const EXTRA_NAV: readonly NavItem[] = NAV.filter((n) => n.extra);
 
 /** Mục chỉ người ghi thấy: "Cài đặt" (chấm điểm đối tác...) — viewer chỉ xem. */
-export const canSeeSettings = (r: Role): boolean => r !== "viewer";
+/** B8: người đọc chỉ xem; quản trị công ty (tenant_admin / platform_admin) luôn mở được Thành viên & phòng ban. */
+export const isCompanyAdmin = (tenantRole: string | undefined): boolean =>
+  tenantRole === "tenant_admin" || tenantRole === "platform_admin";
+export const canSeeSettings = (r: Role, tenantRole?: string): boolean =>
+  r !== "viewer" || isCompanyAdmin(tenantRole);
 
 /** Mục menu đang chọn theo đường dẫn (`/cks/123` → Sản phẩm). */
 export const activeNav = (pathname: string): NavItem | undefined =>

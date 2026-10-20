@@ -17,6 +17,7 @@ import { LoginShowcase } from "../components/LoginShowcase";
 import { ShowcaseWindow } from "../components/ShowcaseWindow";
 import { LoginTotpStep } from "../components/totp/LoginTotpStep";
 import { useTotpLogin } from "../hooks/use-totp-login";
+import { localeAfterLogin } from "../lib/login-locale";
 import type { LoginValues } from "../lib/schemas";
 
 const loginRoute = getRouteApi("/login");
@@ -42,7 +43,8 @@ export function LoginPage() {
       await router.navigate({ to: "/change-password" });
       return;
     }
-    await i18n.changeLanguage(res.user.locale);
+    const nextLng = localeAfterLogin(res.user.locale);
+    if (nextLng) await i18n.changeLanguage(nextLng);
     const next = safeNext(search.next);
     if (next) router.history.push(next);
     else await router.navigate({ to: res.user.role === "member" ? "/member" : "/" });

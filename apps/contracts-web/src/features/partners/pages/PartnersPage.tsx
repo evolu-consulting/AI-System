@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { PartnerLog } from "~/features/ledger/components/PartnerLog";
+import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, Pager, TableTools, useTable } from "~/features/table";
 import { fetchPartners, fetchScoring, partnerKeys } from "../api";
 import { PartnerRatings } from "../components/PartnerRatings";
@@ -18,6 +19,7 @@ type Open = { key: string; what: "log" | "rate" } | null;
 function Row({ p, open, setOpen }: { p: PartnerRow; open: Open; setOpen: (o: Open) => void }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.partners.${k}`);
+  const { write } = useMe();
   const key = `${p.party}:${p.role}`;
   return (
     <li
@@ -32,7 +34,8 @@ function Row({ p, open, setOpen }: { p: PartnerRow; open: Open; setOpen: (o: Ope
           </span>
         </span>
         <span className="ml-auto flex shrink-0 gap-1.5">
-          {(["log", "rate"] as const).map((what) => {
+          {/* B1: ghi việc / chấm điểm là thao tác ghi — người chỉ xem (không `write`) không thấy nút (server 403). */}
+          {(write ? (["log", "rate"] as const) : []).map((what) => {
             const on = open?.key === key && open.what === what;
             return (
               <button

@@ -15,6 +15,8 @@ export type ShellUser = {
   username: string;
   email: string | null;
   tenant: { name: string };
+  /** Vai ở tenant (`tenant_admin` mở được Thành viên & phòng ban). */
+  role?: string;
 } | null;
 
 const initials = (name: string): string =>
@@ -75,7 +77,7 @@ export function UserMenu({
             </p>
           </div>
           <ThemePicker />
-          {canSeeSettings(role) && (
+          {canSeeSettings(role, user.role) && (
             <Link
               to="/settings"
               role="menuitem"

@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { changePasswordForced } from "../api";
 import { ForcedPasswordForm } from "../components/ForcedPasswordForm";
+import { localeAfterLogin } from "../lib/login-locale";
 import type { ForcedPasswordValues } from "../lib/schemas";
 
 export function ForcedPasswordPage() {
@@ -34,7 +35,8 @@ export function ForcedPasswordPage() {
     try {
       const me = await changePasswordForced(values.new_password);
       notifySuccess(t("password.toast.changed"));
-      await i18n.changeLanguage(me.locale);
+      const nextLng = localeAfterLogin(me.locale);
+      if (nextLng) await i18n.changeLanguage(nextLng);
       await router.navigate({ to: me.role === "member" ? "/member" : "/" });
     } catch (err) {
       if (err instanceof ApiError && err.code === "INVALID_CHANGE_TOKEN") {

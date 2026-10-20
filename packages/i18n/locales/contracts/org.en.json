@@ -4,7 +4,7 @@
       "title": "Members & departments",
       "entryHint": "Reporting lines, departments and who can see which contracts.",
       "lead": "\"By structure\" mode: editors and viewers only see contracts they own, their reports' and their department's (as head). Owners see everything.",
-      "ownerOnly": "Only the owner (tenant admin) can manage members and departments.",
+      "ownerOnly": "A company admin is required to manage members and departments.",
       "mode": "Contract visibility",
       "modeTenant": "Everyone sees all contracts",
       "modeOrg": "By structure (owner, reports, departments)",
