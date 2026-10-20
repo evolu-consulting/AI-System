@@ -124,6 +124,7 @@
     "shell": {
       "navMain": "Main navigation",
       "navBottom": "Navigation",
+      "navExtra": "Utilities",
       "feedback": "Send feedback",
       "feedbackSoon": "Feedback will be available in a later release.",
       "openAssistant": "Open AI assistant",

@@ -31,6 +31,11 @@ export type Role = "owner" | "editor" | "viewer";
 export const roleOf = (p: { write: boolean; owner: boolean }): Role =>
   p.owner ? "owner" : p.write ? "editor" : "viewer";
 
+/** 4 mục menu chính của mgmt-app (menu desktop + thanh dưới mobile). */
+export const MAIN_NAV: readonly NavItem[] = NAV.filter((n) => !n.extra);
+/** Mục thêm của W1: nhóm "Tiện ích" riêng, không nằm trong menu chính / thanh dưới. */
+export const EXTRA_NAV: readonly NavItem[] = NAV.filter((n) => n.extra);
+
 /** Mục chỉ người ghi thấy: "Cài đặt" (chấm điểm đối tác...) — viewer chỉ xem. */
 export const canSeeSettings = (r: Role): boolean => r !== "viewer";
 

@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · luật thuần của Shell: vai theo quyền gói, mục menu đang chọn, giới hạn độ rộng khoang, giao diện.
 import { describe, expect, test } from "bun:test";
-import { activeNav, canSeeSettings, NAV, roleOf } from "./nav";
+import { activeNav, canSeeSettings, EXTRA_NAV, MAIN_NAV, NAV, roleOf } from "./nav";
 import {
   ASSISTANT_DEFAULT,
   ASSISTANT_MAX,
@@ -32,6 +32,10 @@ describe("menu", () => {
       "/my-work",
       "/sourcing",
     ]);
+  });
+  test("menu chính/thanh dưới đúng 4 mục mgmt-app; mục thêm tách nhóm riêng", () => {
+    expect(MAIN_NAV.map((n) => n.to)).toEqual(["/contracts", "/partners", "/prices", "/cks"]);
+    expect(EXTRA_NAV.map((n) => n.to)).toEqual(["/my-work", "/sourcing"]);
   });
   test("mục đang chọn theo tiền tố đường dẫn, không khớp nửa chữ", () => {
     expect(activeNav("/cks/123")?.to).toBe("/cks");

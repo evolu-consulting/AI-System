@@ -124,6 +124,7 @@
     "shell": {
       "navMain": "Điều hướng chính",
       "navBottom": "Điều hướng",
+      "navExtra": "Tiện ích",
       "feedback": "Góp ý về app",
       "feedbackSoon": "Phần góp ý sẽ có ở bản sau.",
       "openAssistant": "Mở trợ lý AI",
