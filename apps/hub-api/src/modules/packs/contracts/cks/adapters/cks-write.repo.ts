@@ -15,9 +15,12 @@ const BY = sql`nullif(current_setting('app.user_id', true), '')::uuid`;
 /** CTE dựng HĐ + 1 dòng hàng + event `created_cks` (đặt sau `with`, trước CTE khác). */
 function contractCtes(t: string, c: ContractWrite): SQL {
   return sql`k as (
-      insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by, fields)
+      -- M1d (N-1): HĐ bán/mua CKS tự vào "đã duyệt" bởi chính người ghi ⇒ ghi người duyệt = người tạo (tự duyệt — không mở đối tác
+      -- ngoài chính HĐ này, xem migration 0019).
+      insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by, fields,
+        confirmed_by, confirmed_at)
       values (${c.id}::uuid, ${t}::uuid, 'contract', ${c.title}, ${c.direction}, 'active', ${BY}, ${BY},
-        ${json(c.fields)})
+        ${json(c.fields)}, ${BY}, now())
       returning id, direction, fields),
     ko as (
       -- HD7-FR-11 (sales.py:58, lots.py:33, sales.py:102): một đợt = số chữ ký × giá (NUMERIC, > 10¹⁵ ⇒ null), hạn = ngày ký

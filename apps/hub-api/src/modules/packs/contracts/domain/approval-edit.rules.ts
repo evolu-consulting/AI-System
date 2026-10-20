@@ -10,6 +10,17 @@ export const MONEY_FIELDS: ReadonlySet<string> = new Set([
   "vat_rate",
   "vat_included",
 ]);
+/**
+ * M1d (security review N-1 a): trường bên (tên/MST bên mua, bên bán) quyết định đối tác người xem thấy (visible_party_keys) ⇒
+ * đổi trên HĐ đã duyệt cũng mở lại duyệt như trường tiền (không tự đổi MST thành của đối tác khác mà giữ "Đã duyệt").
+ */
+export const PARTY_FIELDS: ReadonlySet<string> = new Set([
+  "buyer_name",
+  "buyer_tax_id",
+  "supplier_name",
+  "supplier_tax_id",
+]);
+const REOPEN_FIELDS: ReadonlySet<string> = new Set([...MONEY_FIELDS, ...PARTY_FIELDS]);
 /** Trạng thái sau "Đã duyệt" (theo dõi hạn HD4). */
 export const CONFIRMED_STATUSES: ReadonlySet<string> = new Set([
   "active",
@@ -42,7 +53,7 @@ export function editVerdict(i: {
   phase: RunPhase;
   policy: ApprovalEditPolicy;
 }): EditVerdict {
-  if (CONFIRMED_STATUSES.has(i.status) && i.changed.some((k) => MONEY_FIELDS.has(k)))
+  if (CONFIRMED_STATUSES.has(i.status) && i.changed.some((k) => REOPEN_FIELDS.has(k)))
     return i.policy.confirmed === "lock" ? "locked" : "reopen";
   if (!FLOW_STATUSES.has(i.status) || !i.changed.some((k) => BRANCH_FIELDS.has(k))) return "ok";
   if (i.phase === "none") return "ok";

@@ -34,13 +34,21 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
         : null;
     },
     save: async (id, s): Promise<SavedContract> => {
-      const rows = await tx.execute<Raw>(sql`with u as (
+      // M1d · D3-13 · mở lại duyệt gộp trong CÙNG câu (HD-NFR-02 khoá: PATCH đúng 4 câu, kể cả khi đổi trường bên/tiền ⇒ reopen):
+      // lượt duyệt mới ở cấp 1 (người sửa = người bắt đầu) rồi gắn vào `run_id`. Không thêm event (HD1 đếm 1 `field_edited`).
+      const rows = await tx.execute<Raw>(sql`with a as (
+          insert into contracts.approvals (tenant_id, contract_id, status, started_by)
+          select ${tenantId}::uuid, ${id}::uuid, 'level1', ${s.actor}::uuid
+          where ${s.reopen === true} and not exists (select 1 from contracts.approvals x where x.tenant_id = ${tenantId}::uuid
+            and x.contract_id = ${id}::uuid and x.status in ('extracting', 'level1', 'level2'))
+          returning id),
+        u as (
           update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now(),
             -- HD3 D3-13 · mở lại duyệt: bỏ "Đã duyệt" + gỡ run cũ trong CÙNG câu (version tăng một lần)
             status = case when ${s.reopen === true} then 'needs_review' else status end,
             confirmed_at = case when ${s.reopen === true} then null else confirmed_at end,
             confirmed_by = case when ${s.reopen === true} then null else confirmed_by end,
-            run_id = case when ${s.reopen === true} then null else run_id end
+            run_id = case when ${s.reopen === true} then (select a.id from a) else run_id end
           where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and version = ${s.expected}::int
           returning id, version, updated_at),
         e as (
@@ -52,19 +60,6 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
       // Không xảy ra khi đã giữ khoá hàng (version vừa đọc dưới FOR UPDATE) — ném ⇒ rollback cả tx.
       if (!r) throw new Error("patch-fields: row vanished under lock");
       return { version: r.version, updated_at: iso(r.updated_at) };
-    },
-    // M3 · D3-13 · cùng tx với `save(reopen)` (hàng HĐ đang khoá): lượt duyệt mới ở cấp 1, người sửa = người bắt đầu. Hàng
-    // `approvals` là lịch sử của lượt mở lại (không thêm event: test khoá HD1 đếm đúng 1 event `field_edited`).
-    reopenApproval: async (id, actor): Promise<void> => {
-      await tx.execute(sql`with ins as (
-          insert into contracts.approvals (tenant_id, contract_id, status, started_by)
-          select ${tenantId}::uuid, c.id, 'level1', ${actor}::uuid from contracts.contracts c
-          where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid and c.status = 'needs_review'
-            and not exists (select 1 from contracts.approvals a where a.tenant_id = c.tenant_id
-              and a.contract_id = c.id and a.status in ('extracting', 'level1', 'level2'))
-          returning id, contract_id)
-        update contracts.contracts t set run_id = ins.id from ins
-        where t.id = ins.contract_id and t.tenant_id = ${tenantId}::uuid`);
     },
   };
 }

@@ -16,6 +16,13 @@ describe("editVerdict [S1]", () => {
     expect(v("active", ["payment_terms"])).toBe("ok");
     expect(v("active", ["total_value"], "none", { ...P, confirmed: "lock" })).toBe("locked");
   });
+  test("M1d N-1 a · Đã duyệt: đổi tên/MST bên mua/bán ⇒ reopen (như trường tiền); khoá khi chính sách lock", () => {
+    for (const k of ["buyer_name", "buyer_tax_id", "supplier_name", "supplier_tax_id"])
+      expect(v("active", [k])).toBe("reopen");
+    expect(v("terminated", ["payment_terms", "buyer_tax_id"])).toBe("reopen");
+    expect(v("active", ["buyer_tax_id"], "none", { ...P, confirmed: "lock" })).toBe("locked");
+    expect(v("needs_review", ["buyer_tax_id"], "later")).toBe("ok");
+  });
   test("trong flow: total_value sau cấp 1 ⇒ in_approval; ở cấp 1 ⇒ ok; run đã kết thúc ⇒ ok", () => {
     expect(v("needs_review", ["total_value"], "later")).toBe("in_approval");
     expect(v("needs_review", ["total_value"], "level1")).toBe("ok");
