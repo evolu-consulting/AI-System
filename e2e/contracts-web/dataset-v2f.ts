@@ -78,7 +78,7 @@ export function activeContract(o: Over = {}) {
   };
 }
 
-const comp = (id: string, name: string, mode: string, onHand: string, unit = "cái") => ({
+export const comp = (id: string, name: string, mode: string, onHand: string, unit = "cái") => ({
   id,
   ord: 0,
   name,
@@ -88,7 +88,13 @@ const comp = (id: string, name: string, mode: string, onHand: string, unit = "c�
   avg_cost: 100_000,
   stock_value: Math.round(Number(onHand) * 100_000),
 });
-const prod = (id: string, name: string, group: string, components: unknown[], unit = "cái") => ({
+export const prod = (
+  id: string,
+  name: string,
+  group: string,
+  components: { id: string }[],
+  unit = "cái",
+) => ({
   id,
   name,
   unit,

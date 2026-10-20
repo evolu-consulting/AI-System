@@ -79,6 +79,7 @@ export function PartnerField({
   onName,
   invalid,
   disabled,
+  unsure,
 }: {
   deal: ContractDeal;
   name: string;
@@ -86,6 +87,8 @@ export function PartnerField({
   onName: (v: string) => void;
   invalid: boolean;
   disabled?: boolean;
+  /** V2-G: AI chưa chắc tên đối tác ⇒ tô vàng. */
+  unsure?: boolean;
 }) {
   const { t } = useTranslation();
   const q = useDebounced(name.trim(), DEBOUNCE_MS);
@@ -100,6 +103,7 @@ export function PartnerField({
     <div className="flex flex-col gap-1 text-[13px]">
       <label htmlFor="cf-partner">
         {label} <span className="text-late">*</span>
+        {unsure && <Tag tone="soon">{t("contracts.cform.unsure")}</Tag>}
       </label>
       <input
         id="cf-partner"
@@ -109,6 +113,12 @@ export function PartnerField({
         onChange={(e) => onName(e.target.value)}
         placeholder={t("contracts.cform.partnerPlaceholder")}
         aria-invalid={invalid}
+        data-unsure={unsure || undefined}
+        style={
+          unsure
+            ? { background: "var(--color-soon-bg)", borderColor: "var(--color-soon-line)" }
+            : undefined
+        }
         className={cn("field", invalid && "border-late")}
       />
       <span className="flex min-h-5 items-center">

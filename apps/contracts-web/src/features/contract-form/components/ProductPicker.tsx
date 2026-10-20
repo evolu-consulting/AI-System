@@ -101,6 +101,7 @@ export function ProductPicker({
   products,
   onPatch,
   invalid,
+  allowNew = true,
 }: {
   line: LineState;
   index: number;
@@ -108,6 +109,8 @@ export function ProductPicker({
   products: readonly ProductOut[];
   onPatch: Patch;
   invalid: boolean;
+  /** Vắng "＋ Tạo sản phẩm mới" khi gắn lại cho HĐ đã lưu (V2-G). */
+  allowNew?: boolean;
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cform.${k}`, o);
@@ -143,7 +146,7 @@ export function ProductPicker({
             {p.name}
           </option>
         ))}
-        <option value={NEW_PRODUCT}>{L("linkNew")}</option>
+        {allowNew && <option value={NEW_PRODUCT}>{L("linkNew")}</option>}
       </select>
       {picked && picked.components.length > 1 && (
         <ComponentSelect product={picked} value={line.component_id} n={n} onPatch={onPatch} />

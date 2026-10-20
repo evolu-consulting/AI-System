@@ -1,12 +1,49 @@
 // V2-F · HD-04 · mockup `summaryBody`: khối "Tóm tắt hợp đồng" — các điểm chính suy từ dữ liệu đã lưu (loại, đối tác, giá trị, hiệu lực, tiến độ,
 // bước hiện tại + hạn) kèm lưu ý do agent đọc (cảnh báo). Chưa có tóm tắt viết bằng AI (V2-G) nên không bịa câu chữ.
-import type { ContractDetail } from "@ai/contracts";
+import type { AiSummary as AiSummaryT, ContractDetail } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { warningsOf } from "../lib/review";
 import { type SummaryInput, summaryRows } from "../lib/summary";
 
-type C = SummaryInput & Pick<ContractDetail, "warnings">;
+type C = SummaryInput & Pick<ContractDetail, "warnings" | "ai">;
+
+/** V2-G · BA §4.2: tóm tắt 5 mục do AI viết khi đọc hợp đồng (nội dung chính, hạn quan trọng, phạt, thưởng, điều khoản chính). */
+function AiSummary({ s }: { s: AiSummaryT }) {
+  const { t } = useTranslation();
+  const L = (k: string) => t(`contracts.cdetail.${k}`);
+  const lists: [string, string[]][] = [
+    ["aiSumDeadlines", s.deadlines],
+    ["aiSumPenalties", s.penalties],
+    ["aiSumBonuses", s.bonuses],
+    ["aiSumClauses", s.clauses],
+  ];
+  return (
+    <div
+      className="flex flex-col gap-3 border-b border-rule-soft px-5 py-4"
+      data-testid="ai-summary"
+    >
+      <section data-testid="ai-sum-main">
+        <h3 className="text-[12.5px] font-semibold text-dim">{L("aiSumMain")}</h3>
+        <p className="mt-0.5 text-[13.5px]">{s.main}</p>
+      </section>
+      {lists.map(([k, xs]) => (
+        <section key={k} data-testid={`ai-sum-${k}`}>
+          <h3 className="text-[12.5px] font-semibold text-dim">{L(k)}</h3>
+          {xs.length === 0 ? (
+            <p className="mt-0.5 text-[13px] text-dim">—</p>
+          ) : (
+            <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-[13.5px]">
+              {xs.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
 
 export function SummaryPanel({ c, partner }: { c: C; partner: string }) {
   const { t } = useTranslation();
@@ -31,6 +68,7 @@ export function SummaryPanel({ c, partner }: { c: C; partner: string }) {
       <div className="border-b border-rule-soft px-5 py-3.5">
         <h2 className="text-[15px] font-semibold">{L("summary")}</h2>
       </div>
+      {c.ai?.summary && <AiSummary s={c.ai.summary} />}
       <dl className="grid grid-cols-2 gap-2 px-5 py-4 max-sm:grid-cols-1" data-testid="summary">
         {rows.map(([k, val]) => (
           <div key={k} className="rounded-[10px] bg-sunk px-3 py-2">

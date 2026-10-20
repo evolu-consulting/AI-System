@@ -106,6 +106,79 @@ describe("toContractDetail", () => {
       10,
       false,
     ]);
+    // V2-G: HĐ chưa có phần AI đọc ⇒ `ai` null (khớp schema)
+    expect(d.ai).toBeNull();
+  });
+
+  it("V2-G · dòng trả product_id/component_ids (thiếu ⇒ null); `ai` đi nguyên; khớp ContractDetailSchema", () => {
+    const item = (o: Record<string, unknown>) => ({
+      id: U,
+      ord: 0,
+      code: null,
+      name: "Token",
+      spec: null,
+      unit: null,
+      qty: 1,
+      unit_price: 10,
+      vat_rate: null,
+      moq: null,
+      lead_time_days: null,
+      valid_from: null,
+      valid_to: null,
+      category_id: null,
+      quote: null,
+      verified: true,
+      edited: false,
+      ...o,
+    });
+    const ai = {
+      deal: "sell" as const,
+      unsure: ["end_date" as const],
+      summary: { main: "x", deadlines: [], penalties: [], bonuses: [], clauses: [] },
+      milestones: [
+        {
+          kind: "pay" as const,
+          title: null,
+          due_date: null,
+          amount: null,
+          quote: "",
+          verified: false,
+        },
+      ],
+    };
+    const d = toContractDetail(
+      {
+        ...NULLS,
+        id: U,
+        kind: "contract",
+        title: "HĐ",
+        status: "needs_review",
+        owner_user_id: U,
+        updated_at: T0,
+        version: 1,
+        created_by: U,
+        created_at: T0,
+        file_id: null,
+        clauses: null,
+        warnings: null,
+        fields: {},
+        items: [
+          item({ product_id: U, component_ids: [U] }),
+          item({ id: "c0de0000-0000-4000-8000-000000000002" }),
+        ] as never,
+        events: null,
+        file: null,
+        has_source: false,
+        ai_read: ai,
+      },
+      "2026-03-01",
+    );
+    expect(ContractDetailSchema.parse(d)).toEqual(d);
+    expect(d.items.map((i) => [i.product_id, i.component_ids])).toEqual([
+      [U, [U]],
+      [null, null],
+    ]);
+    expect(d.ai).toEqual(ai);
   });
 });
 

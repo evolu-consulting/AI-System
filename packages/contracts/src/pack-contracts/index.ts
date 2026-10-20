@@ -16,4 +16,5 @@ export * from "./mywork";
 export * from "./partner-roles";
 export * from "./partners";
 export * from "./products";
+export * from "./review";
 export * from "./sourcing";

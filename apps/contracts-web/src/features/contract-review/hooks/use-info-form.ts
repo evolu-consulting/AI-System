@@ -1,54 +1,239 @@
-// V2-F · HD-09 · S05: trạng thái form "Thông tin" của HĐ đã lưu — bản nháp từ chi tiết, chỉ PATCH ô đã đổi (khoá `version`), "Hủy" = trả
-// về giá trị đã lưu. "Xác nhận" (HD3) lưu ô đã đổi trước rồi quyết cấp 1 (`saveFirst`).
-import type { ContractDetail } from "@ai/contracts";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+// V2-F · HD-09 · S05 + V2-G · HD-02/HD-08: trạng thái form của HĐ đã lưu.
+// - Thường: bản nháp "Thông tin" từ chi tiết, chỉ PATCH ô đã đổi (khoá `version`).
+// - Bước xác nhận sau khi AI đọc (`needs_review`): form dùng chung điền sẵn + dòng hàng AI đọc (kèm gợi ý SP) + mốc AI tìm thấy; "Lưu" = MỘT
+//   `POST /review` (trường, loại HĐ, dòng, mốc); "Hủy" = trả về giá trị đã đọc, KHÔNG gửi gì. "Xác nhận" (HD3) lưu trước rồi quyết cấp 1.
+import type { ContractDeal, ContractDetail } from "@ai/contracts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "~/components/shared/toast";
+import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-form/api";
+import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
+import { PARTNER_ROLE } from "~/features/contract-form/lib/deal";
 import { formOfDetail, patchOfForm } from "~/features/contract-form/lib/detail-form";
-import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";
-import { contractKey, patchContractFields } from "../api";
+import {
+  EMPTY_LINE,
+  type FormState,
+  type LineState,
+  missingRequired,
+  type RequiredKey,
+  readNumbers,
+  type TextKey,
+  unlinkedLines,
+} from "~/features/contract-form/lib/form-model";
+import {
+  dealUnsure,
+  formOfConfirm,
+  type MsRow,
+  msRowsOf,
+  reviewRequest,
+  switchDeal,
+  unsureKeys,
+} from "~/features/contract-form/lib/review-model";
+import { suggestionPatch } from "~/features/contract-form/lib/suggest";
+import { contractKey, patchContractFields, saveReview } from "../api";
 import { saveErrorText } from "../lib/save-error";
+
+const SUGGEST_MAX = 50;
 
 export function useInfoForm(c: ContractDetail | undefined, id: string) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  // Màn xác nhận sau AI đọc = chờ xác nhận + có phần AI đọc (`ai`); HĐ nhập tay / bản đọc cũ (ai = null) giữ luồng PATCH của V2-F.
+  const confirm = c?.status === "needs_review" && c.ai !== null;
   const [f, setF] = useState<FormState | null>(null);
+  const [rows, setRows] = useState<MsRow[]>([]);
+  const [tried, setTried] = useState(false);
+  const [sug, setSug] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const fRef = useRef(f);
+  fRef.current = f;
+  const products = useQuery({
+    queryKey: PRODUCTS_KEY,
+    queryFn: ({ signal }) => fetchProducts(signal),
+    staleTime: 60_000,
+    enabled: !!c,
+  });
 
-  useEffect(() => {
-    if (c) setF(formOfDetail(c));
+  const load = useCallback(() => {
+    if (!c) return;
+    setF(c.status === "needs_review" && c.ai !== null ? formOfConfirm(c) : formOfDetail(c));
+    setRows(msRowsOf(c));
+    setTried(false);
+    setSug((n) => n + 1);
   }, [c]);
+  useEffect(load, [load]);
 
-  const patch = useMemo(() => (c && f ? patchOfForm(c, f) : {}), [c, f]);
-  const dirty = Object.keys(patch).length > 0;
+  // Gợi ý SP cho dòng chưa gắn (quy tắc nhận diện ⇒ trùng từ ⇒ "Tạo sản phẩm mới" + thành phần): song song, tối đa 50 dòng.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi `sug` đổi (tải lại / đổi loại)
+  useEffect(() => {
+    const f0 = fRef.current;
+    if (!confirm || !f0) return;
+    const todo = f0.items
+      .map((l, i) => ({ l, i }))
+      .filter(({ l }) => !l.product_id && l.name.trim().length >= 2)
+      .slice(0, SUGGEST_MAX);
+    let live = true;
+    for (const { l, i } of todo)
+      matchProduct(l.name.trim(), f0.deal)
+        .then((r) => {
+          const p = suggestionPatch(r, f0.deal);
+          if (!live || !p) return;
+          setF((s) =>
+            s ? { ...s, items: s.items.map((x, j) => (j === i ? patchOneLine(x, p) : x)) } : s,
+          );
+        })
+        .catch(() => undefined); // gợi ý là phụ: lỗi mạng ⇒ người dùng tự chọn
+    return () => {
+      live = false;
+    };
+  }, [sug]);
+
+  const patch = useMemo(() => (c && f && !confirm ? patchOfForm(c, f) : {}), [c, f, confirm]);
+  const dirty = confirm ? true : Object.keys(patch).length > 0;
   const set = useCallback((k: TextKey, v: string) => setF((s) => (s ? { ...s, [k]: v } : s)), []);
+  const setDeal = useCallback(
+    (d: ContractDeal) => {
+      if (!c) return;
+      setF((s) => (s ? switchDeal(c, s, d) : s));
+      setSug((n) => n + 1);
+    },
+    [c],
+  );
+  const patchLine = useCallback(
+    (i: number, p: Partial<LineState>) =>
+      setF((s) =>
+        s ? { ...s, items: s.items.map((l, j) => (j === i ? patchOneLine(l, p) : l)) } : s,
+      ),
+    [],
+  );
+  const addLine = useCallback(
+    () => setF((s) => (s ? { ...s, items: [...s.items, { ...EMPTY_LINE }] } : s)),
+    [],
+  );
+  const removeLine = useCallback(
+    (i: number) => setF((s) => (s ? { ...s, items: s.items.filter((_, j) => j !== i) } : s)),
+    [],
+  );
+  const setRow = useCallback(
+    (i: number, p: Partial<MsRow>) =>
+      setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...p } : r))),
+    [],
+  );
   const reset = useCallback(() => {
-    if (c) setF(formOfDetail(c));
+    load();
     setErr(null);
     setMsg(null);
-  }, [c]);
+  }, [load]);
 
-  /** Chỉ ghi khi có ô đổi; ném lỗi cho người gọi khi `throws` (luồng "Xác nhận"). */
+  const unlinked = useMemo<Set<number>>(
+    () => (tried && f ? new Set(unlinkedLines(f)) : new Set()),
+    [tried, f],
+  );
+  const invalid = useMemo<Set<RequiredKey>>(
+    () => (tried && f && confirm ? new Set(missingRequired(f)) : new Set()),
+    [tried, f, confirm],
+  );
+  const unsure = useMemo(
+    () => (c && f && confirm ? unsureKeys(c, f) : new Set<TextKey>()),
+    [c, f, confirm],
+  );
+  const dealIsUnsure = !!c && !!f && confirm && dealUnsure(c, f);
+
+  /** Lỗi chặn lưu ở bước xác nhận (số không đọc được / thiếu ô bắt buộc / dòng chưa gắn SP) ⇒ câu báo; ổn ⇒ null. */
+  const blocker = useCallback(
+    (form: FormState): string | null => {
+      const n = readNumbers(form);
+      if (n.bad.length) {
+        const names = n.bad.map((b) => t(`contracts.cform.bad.${b.key}`, { name: b.name }));
+        return t("contracts.cform.badNumbers", { list: names.join(", ") });
+      }
+      setTried(true);
+      const role = t(`contracts.cform.partnerRole.${PARTNER_ROLE[form.deal]}`);
+      const parts = [
+        ...missingRequired(form).map((k) => t(`contracts.cform.required.${k}`, { role })),
+        ...unlinkedLines(form).map((i) =>
+          t("contracts.cform.lineUnlinked", { name: form.items[i]?.name.trim() }),
+        ),
+      ];
+      return parts.length ? t("contracts.cform.missing", { list: parts.join(", ") }) : null;
+    },
+    [t],
+  );
+
+  /** Lưu ở bước xác nhận: tạo SP mới (nếu chọn) rồi MỘT `POST /review`. */
+  const saveConfirm = useCallback(async () => {
+    if (!c || !f) return null;
+    const stop = blocker(f);
+    if (stop) {
+      toast(stop, "late");
+      throw new Error(stop);
+    }
+    const productIds = await productIdsOf(f);
+    return saveReview(
+      id,
+      reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
+    );
+  }, [c, f, rows, id, blocker]);
+
+  /** Chỉ ghi khi có gì để ghi; ném lỗi cho người gọi (luồng "Xác nhận"). */
   const saveFirst = useCallback(async () => {
-    if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
-  }, [c, patch, id]);
+    if (confirm) await saveConfirm();
+    else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
+  }, [confirm, saveConfirm, c, patch, id]);
 
   const save = useCallback(async () => {
     setErr(null);
     setMsg(null);
     setBusy(true);
     try {
-      await saveFirst();
-      await qc.invalidateQueries({ queryKey: contractKey(id) });
-      setMsg(t("contracts.review.saved"));
+      if (confirm) {
+        const out = await saveConfirm();
+        await qc.invalidateQueries({ queryKey: contractKey(id) });
+        await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+        const m = t(
+          out?.status === "active"
+            ? "contracts.cform.reviewSavedActive"
+            : "contracts.cform.reviewSaved",
+        );
+        toast(m);
+        setMsg(m);
+      } else {
+        await saveFirst();
+        await qc.invalidateQueries({ queryKey: contractKey(id) });
+        setMsg(t("contracts.review.saved"));
+      }
     } catch (e) {
-      setErr(saveErrorText(e, t));
+      setErr(e instanceof Error && !("status" in e) ? e.message : saveErrorText(e, t));
     } finally {
       setBusy(false);
     }
-  }, [saveFirst, qc, id, t]);
+  }, [confirm, saveConfirm, saveFirst, qc, id, t]);
 
-  return { f, set, dirty, reset, save, saveFirst, busy, msg, err };
+  return {
+    f,
+    set,
+    setDeal,
+    patchLine,
+    addLine,
+    removeLine,
+    rows,
+    setRow,
+    confirm,
+    unlinked,
+    invalid,
+    unsure,
+    dealUnsure: dealIsUnsure,
+    products: products.data ?? [],
+    dirty,
+    reset,
+    save,
+    saveFirst,
+    busy,
+    msg,
+    err,
+  };
 }

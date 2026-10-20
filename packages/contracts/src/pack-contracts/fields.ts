@@ -183,5 +183,8 @@ export const ContractItemSchema = z.strictObject({
   quote: z.string().max(CONTRACT_QUOTE_MAX).nullable(),
   verified: z.boolean(),
   edited: z.boolean(),
+  /** V2-G: SP danh mục (V2-B) + thành phần đã gắn cho dòng; chưa gắn ⇒ null. */
+  product_id: z.uuid().nullable(),
+  component_ids: z.array(z.uuid()).nullable(),
 });
 export type ContractItem = z.infer<typeof ContractItemSchema>;

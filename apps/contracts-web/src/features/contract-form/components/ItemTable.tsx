@@ -159,7 +159,7 @@ export function ItemTable({ items, deal, products, unlinked, onPatch, onAdd, onR
               key={i}
               line={l}
               index={i}
-              last={items.length < 2}
+              last={items.length < 2 || !!l.id}
               deal={deal}
               products={products}
               invalid={unlinked.has(i)}

@@ -35,7 +35,7 @@ export function patchOneLine(l: LineState, p: Partial<LineState>): LineState {
 }
 
 /** Mỗi dòng có tên ⇒ id SP: chọn sẵn thì dùng, "tạo mới" thì tạo SP từ dòng trước (HĐ Mua: NCC chính = đối tác). */
-async function productIdsOf(f: FormState): Promise<(string | null)[]> {
+export async function productIdsOf(f: FormState): Promise<(string | null)[]> {
   const ids: (string | null)[] = [];
   for (const l of f.items.filter((x) => x.name.trim())) {
     if (l.product_id !== NEW_PRODUCT) {

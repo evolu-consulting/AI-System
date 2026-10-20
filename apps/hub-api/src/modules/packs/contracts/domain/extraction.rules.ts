@@ -1,10 +1,13 @@
 // HD-FR-21 · HD-FR-22 · HD-FR-24 · HD-BR-01: áp bản trích của agent lên HĐ (port `R/api/app/contracts/ingest.py:81-98`):
 // kiểm từng trường/dòng, `effective_date` chỉ cho phụ lục, gộp giữ trường `edited`, dòng hàng chỉ ghi khi HĐ chưa có dòng
 // nào (D-08: `contract_items` không DELETE ở HD1/HD2), chủ đề điều khoản theo số điều. Thuần.
+import type { AiMilestone, AiRead, AiSummary, AiUnsureKey } from "@ai/contracts";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
+import type { Deal } from "./milestones.rules";
 import {
   itemVerified,
   prepareSource,
+  quoteFound,
   type RawField,
   type VerifiedField,
   verifyFields,
@@ -30,6 +33,11 @@ export type RawExtraction = {
   fields: Partial<Record<ContractFieldKey, RawField>>;
   items: readonly RawItem[];
   clauses: readonly RawClause[];
+  /** V2-G: phần thêm của bản trích v2 (vắng ở bản trích cũ). */
+  deal?: Deal | null | undefined;
+  unsure?: readonly AiUnsureKey[] | undefined;
+  summary?: AiSummary | null | undefined;
+  milestones?: readonly AiMilestone[] | undefined;
 };
 export type ExtractedItemRow = RawItem & { ord: number; verified: boolean; edited: false };
 export type Clause = { number: string; topic: string };
@@ -46,6 +54,7 @@ export type ApplyOutput = {
   fields: ContractFields;
   items: ExtractedItemRow[] | null;
   clauses: Clause[];
+  ai: AiRead | null;
 };
 
 /** Phần nặng (chuẩn hoá cả văn bản + dò từng quote): chạy NGOÀI tx, văn bản lớn ở Worker (review Trung 1). */
@@ -53,7 +62,34 @@ export type VerifiedExtraction = {
   fields: Record<ContractFieldKey, VerifiedField>;
   items: ExtractedItemRow[];
   clauses: Clause[];
+  /** V2-G · HD-02/HD-08: loại đoán + trường chưa chắc + tóm tắt + mốc (`null` ⇒ bản trích cũ, không ghi đè phần AI đọc đã có). */
+  ai: AiRead | null;
 };
+
+/** V2-G: "chưa chắc" = AI tự báo ∪ có giá trị mà trích dẫn không có trong văn bản (chưa kiểm chứng). Loại Mua/Bán luôn chưa chắc
+ *  (AI không biết bên nào là của mình); Giới thiệu thì tin AI. Giữ thứ tự khoá của `fields`. */
+export function aiReadOf(
+  raw: RawExtraction,
+  fields: Record<ContractFieldKey, VerifiedField>,
+  src: ReturnType<typeof prepareSource>,
+): AiRead | null {
+  if (raw.deal === undefined && !raw.unsure && !raw.summary && !raw.milestones) return null;
+  const said = new Set<AiUnsureKey>(raw.unsure ?? []);
+  const unsure: AiUnsureKey[] = (Object.keys(fields) as ContractFieldKey[]).filter(
+    (k) => said.has(k) || (fields[k].value !== null && !fields[k].verified),
+  );
+  const deal = raw.deal ?? null;
+  if (deal !== null && (deal !== "referral" || said.has("deal"))) unsure.push("deal");
+  return {
+    deal,
+    unsure,
+    summary: raw.summary ?? null,
+    milestones: (raw.milestones ?? []).map((m) => ({
+      ...m,
+      verified: m.quote.trim() !== "" && quoteFound(m.quote, src),
+    })),
+  };
+}
 
 export function verifyExtraction(i: {
   raw: RawExtraction;
@@ -71,10 +107,12 @@ export function verifyExtraction(i: {
   }));
   const seen = new Set<string>();
   const clauses = i.raw.clauses.filter((c) => !seen.has(c.number) && seen.add(c.number));
+  const fields = verifyFields(raw, src);
   return {
-    fields: verifyFields(raw, src),
+    fields,
     items,
     clauses: clauses.map((c) => ({ number: c.number, topic: c.topic })),
+    ai: aiReadOf(i.raw, fields, src),
   };
 }
 
@@ -84,11 +122,13 @@ export function mergeExtraction(
   oldFields: unknown,
   hasItems: boolean,
 ): ApplyOutput {
-  return {
-    fields: mergeFields(oldFields, v.fields),
-    items: hasItems ? null : v.items,
-    clauses: v.clauses,
+  const fields = mergeFields(oldFields, v.fields);
+  // Trường người đã sửa tay thì không còn "chưa chắc".
+  const ai = v.ai && {
+    ...v.ai,
+    unsure: v.ai.unsure.filter((k) => k === "deal" || !fields[k].edited),
   };
+  return { fields, items: hasItems ? null : v.items, clauses: v.clauses, ai };
 }
 
 export function applyExtraction(i: ApplyInput): ApplyOutput {

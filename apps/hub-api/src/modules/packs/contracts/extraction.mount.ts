@@ -15,6 +15,7 @@ import { logger } from "../../../lib/logger";
 import { DEFAULT_TENANT_TZ } from "../../config/config.rules";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackUow } from "../kit/application/ports";
 import type { ActionQuota } from "./adapters/action-quota";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRepo } from "./adapters/approval.repo";
@@ -30,6 +31,8 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { reviewRepo } from "./adapters/review.repo";
+import { reviewRoutes } from "./adapters/review.routes";
 import {
   type ApprovalGroups,
   actApproval,
@@ -55,6 +58,8 @@ import type { SourceFileText, TaxRegistry } from "./application/extraction.ports
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
+import type { ReviewTxRepos } from "./application/review.ports";
+import { attachProduct, reviewSave } from "./application/review.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
@@ -177,6 +182,7 @@ const packUow = (db: Db) =>
     extraction: extractionRepo(tx, tid),
     approval: approvalRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
+    review: reviewRepo(tx, tid),
   }));
 
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
@@ -251,6 +257,7 @@ export function contractsAiModule(
     createManual: legacy ? manual : flowCreateManual(manual, start),
     quota: flow.quota,
   });
+  routes.route("/", reviewModule(view, uow, tz));
   const approval = approvalRoutes(view, {
     get: getApproval(ad),
     act: actApproval(ad),
@@ -258,6 +265,18 @@ export function contractsAiModule(
     saveSettings: saveApprovalSettings(ad),
   });
   return { starter, routes, approval, guard: patchGuard(ad) };
+}
+
+/** V2-G: Lưu màn xác nhận (tenant tắt duyệt ⇒ `active` ngay) + gắn lại SP cho dòng HĐ đã lưu. */
+function reviewModule(
+  view: PackAccessView,
+  uow: PackUow<ReviewTxRepos>,
+  tz: (tenantId: string) => Promise<string>,
+) {
+  return reviewRoutes(view, {
+    save: reviewSave({ uow, today: async (tid) => localDate(new Date(), await tz(tid)) }),
+    attach: attachProduct({ uow }),
+  });
 }
 
 /** Vòng quét (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */

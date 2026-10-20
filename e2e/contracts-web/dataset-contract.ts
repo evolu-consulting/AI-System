@@ -164,6 +164,8 @@ export function contractAsHub(status = contract.status) {
       quote: null,
       verified: true,
       edited: false,
+      product_id: null,
+      component_ids: null,
       ...it,
     })),
     events: [],
@@ -184,5 +186,7 @@ export function contractAsHub(status = contract.status) {
     stage: "not_started",
     next_milestone_id: null,
     milestones: [] as unknown[],
+    // V2-G: phần AI đọc (null = nhập tay / bản đọc cũ ⇒ màn xác nhận giữ luồng PATCH của V2-F).
+    ai: null as unknown,
   };
 }

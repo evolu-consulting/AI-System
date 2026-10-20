@@ -1,6 +1,14 @@
 // HD-FR-24 · HD-FR-26 · S05: chi tiết HĐ (HD1), sửa trường (PATCH HD1, khoá `version`), mở tệp gốc (#220). Bearer + refresh
 // do web-kit lo.
-import type { ContractDetail, ContractFieldKey, PatchFieldsResponse } from "@ai/contracts";
+import type {
+  ContractDetail,
+  ContractFieldKey,
+  ItemProductRequest,
+  ItemProductResponse,
+  PatchFieldsResponse,
+  ReviewSaveRequest,
+  ReviewSaveResponse,
+} from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";
@@ -22,11 +30,32 @@ export function patchContractFields(
   });
 }
 
+/** V2-G: Lưu ở màn xác nhận — trường + loại + dòng hàng + mốc trong MỘT lần ghi (tenant tắt duyệt ⇒ `active`). */
+export function saveReview(id: string, body: ReviewSaveRequest): Promise<ReviewSaveResponse> {
+  return api<ReviewSaveResponse>(`${BASE}/${encodeURIComponent(id)}/review`, {
+    method: "POST",
+    body,
+  });
+}
+
+/** V2-G: gắn / gắn lại SP cho dòng của HĐ đã lưu. */
+export function putItemProduct(
+  id: string,
+  itemId: string,
+  body: ItemProductRequest,
+): Promise<ItemProductResponse> {
+  return api<ItemProductResponse>(
+    `${BASE}/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}/product`,
+    { method: "PUT", body },
+  );
+}
+
 /** Đường dẫn tệp gốc (`href` giữ như mgmt-app; bấm ⇒ `openOriginalFile`). */
 export const fileHref = (id: string) => `${BASE}/${encodeURIComponent(id)}/file`;
 
 /** Link hợp lệ: `https?://…` hoặc đường dẫn cùng origin `/…` (FileBox riêng: `/_fb/d/…` qua nginx của web; không nhận `//host`). */
-export const isOpenableLink = (url: string): boolean => /^https?:\/\//.test(url) || /^\/(?!\/)/.test(url);
+export const isOpenableLink = (url: string): boolean =>
+  /^https?:\/\//.test(url) || /^\/(?!\/)/.test(url);
 
 /** #220: điều hướng trình duyệt không mang Bearer ⇒ xin link FileBox ngắn hạn qua API rồi mở ở tab đã mở sẵn
  * (mở tab ngay trong lúc bấm để không bị chặn popup). Lỗi ⇒ đóng tab, ném cho trang báo. */

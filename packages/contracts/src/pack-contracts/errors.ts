@@ -30,6 +30,10 @@ export const CONTRACT_ERRORS = {
   AGENT_UNAVAILABLE: 503,
   /** HD4-FR-06: ghi kết quả xử lý cho HĐ chưa duyệt hoặc phụ lục. */
   CONTRACT_NOT_CONFIRMED: 409,
+  /** V2-G: dòng SP đã có phát sinh kho (V2-D) ⇒ không đổi SP đã gắn (C12). */
+  ITEM_LOCKED: 409,
+  /** V2-G: Lưu ở màn xác nhận khi HĐ không còn chờ xác nhận (đã duyệt / đang đọc / bị từ chối). */
+  REVIEW_NOT_ALLOWED: 409,
 } as const;
 type OwnCode = keyof typeof CONTRACT_ERRORS;
 const OWN_CODES = Object.keys(CONTRACT_ERRORS) as OwnCode[];

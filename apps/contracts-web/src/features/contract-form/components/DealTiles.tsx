@@ -17,10 +17,13 @@ export function DealTiles({
   value,
   onChange,
   locked = false,
+  unsure = false,
 }: {
   value: ContractDeal;
   onChange: (d: ContractDeal) => void;
   locked?: boolean;
+  /** V2-G: AI chưa chắc loại HĐ (bước xác nhận) ⇒ tô vàng khung + nhắc kiểm tra. */
+  unsure?: boolean;
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
@@ -29,7 +32,15 @@ export function DealTiles({
       <span id="deal-label" className="text-[13px]">
         {L("deal")}
       </span>
-      <div role="radiogroup" aria-labelledby="deal-label" className="grid grid-cols-3 gap-2.5">
+      <div
+        role="radiogroup"
+        aria-labelledby="deal-label"
+        data-unsure={unsure || undefined}
+        className={cn(
+          "grid grid-cols-3 gap-2.5",
+          unsure && "rounded-xl border border-soon-line bg-soon-bg p-1.5",
+        )}
+      >
         {DEALS.map((d) => (
           <SegButton
             key={d}
@@ -43,6 +54,7 @@ export function DealTiles({
           </SegButton>
         ))}
       </div>
+      {unsure && <p className="text-[12px] text-soon">{L("dealUnsure")}</p>}
       {locked && <p className="text-[12px] text-dim">{L("dealLocked")}</p>}
     </div>
   );

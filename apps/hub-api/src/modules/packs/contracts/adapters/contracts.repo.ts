@@ -187,7 +187,7 @@ async function detail(
       'fields', c.fields, 'has_source', c.source_text is not null,
       'items', (select json_agg(i order by i.ord) from (select i.id, i.ord, i.code, i.name, i.spec, i.unit, i.qty,
           i.unit_price, i.vat_rate, i.moq, i.lead_time_days, i.valid_from, i.valid_to, i.category_id, i.quote, i.verified,
-          i.edited from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = c.tenant_id
+          i.edited, i.product_id, i.component_ids from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = c.tenant_id
           order by i.ord limit ${CONTRACT_ITEMS_MAX}::int) i),
       'events', (select json_agg(e order by e.id desc) from (select e.id, e.type, e.actor_user_id, e.at, e.data
           from contracts.contract_events e where e.contract_id = c.id and e.tenant_id = c.tenant_id
@@ -203,7 +203,7 @@ async function detail(
             from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id
             order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
       'deal', c.deal, 'commission_pct', c.commission_pct, 'commission_fixed', c.commission_fixed,
-      'start_date', c.start_date, 'milestones', ${milestonesOf}
+      'start_date', c.start_date, 'milestones', ${milestonesOf}, 'ai_read', c.ai_read
     ) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;

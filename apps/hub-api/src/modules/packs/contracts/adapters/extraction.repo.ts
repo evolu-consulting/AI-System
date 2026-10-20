@@ -77,9 +77,16 @@ function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
 function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
   return async (id, res) => {
     const items = res.items ?? [];
+    const aiJson = res.ai ? JSON.stringify(res.ai) : null;
+    // V2-G: loại HĐ AI đoán chỉ điền khi HĐ chưa có loại (người đã chọn/lưu thì giữ); Giới thiệu = tiền vào ⇒ hướng "sale".
+    const aiDeal = res.ai?.deal ?? null;
     const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts set fields = ${JSON.stringify(res.fields)}::jsonb,
           clauses = ${JSON.stringify(res.clauses)}::jsonb, warnings = ${JSON.stringify(res.warnings)}::jsonb,
+          ai_read = coalesce(${aiJson}::jsonb, ai_read),
+          deal = coalesce(deal, ${aiDeal}::text),
+          direction = coalesce(direction, case ${aiDeal}::text when 'buy' then 'purchase' when 'sell' then 'sale'
+            when 'referral' then 'sale' end),
           status = 'needs_review', error = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'extracting'
           and version = ${res.expected}::int

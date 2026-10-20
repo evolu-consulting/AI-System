@@ -114,6 +114,7 @@ function ContractBody({
           write={write}
           partner={partnerOf(c)}
           today={todayIso()}
+          info={info}
         />
       )}
       <AppendixPanel c={c} write={write} />

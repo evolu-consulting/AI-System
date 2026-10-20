@@ -75,6 +75,8 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   commission_fixed?: number | string | null;
   start_date?: string | null;
   milestones?: MilestoneRow[] | null;
+  /** V2-G */
+  ai_read?: ContractDetail["ai"] | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -118,12 +120,17 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     handled: r.handled,
     run_id: r.run_id,
     fields: fillFields(r.fields),
-    items: r.items ?? [],
+    items: (r.items ?? []).map((i) => ({
+      ...i,
+      product_id: i.product_id ?? null,
+      component_ids: i.component_ids ?? null,
+    })),
     events: (r.events ?? []).map((e) => ({ ...e, at: iso(e.at) })),
     file: r.file ? { ...r.file, size_bytes: Number(r.file.size_bytes) } : null,
     has_source: r.has_source,
     parent: r.parent ?? null,
     appendices: r.appendices ?? [],
+    ai: r.ai_read ?? null,
   };
 }
 

@@ -1,0 +1,27 @@
+{
+  "contracts": {
+    "cdetail": {
+      "aiMsTitle": "Mốc AI tìm thấy",
+      "aiMsHint": "Bỏ chọn mốc không đúng; hạn để trống sẽ lấy theo ngày hợp đồng.",
+      "aiMsEmpty": "AI không tìm thấy mốc nào trong văn bản.",
+      "aiMsKeep": "Giữ mốc {{title}}",
+      "aiMsDue": "Hạn mốc {{title}}",
+      "aiMsUnverified": "chưa kiểm chứng",
+      "aiSummary": "AI tóm tắt",
+      "aiSumMain": "Nội dung chính",
+      "aiSumDeadlines": "Hạn quan trọng",
+      "aiSumPenalties": "Phạt",
+      "aiSumBonuses": "Thưởng",
+      "aiSumClauses": "Điều khoản chính",
+      "attachSaved": "Đã gắn sản phẩm",
+      "itemLocked": "Dòng này đã phát sinh kho, không đổi sản phẩm được.",
+      "productsHint": "Gắn lại sản phẩm danh mục cho từng dòng.",
+      "reviewItems": "Sản phẩm (AI đọc)"
+    },
+    "cform": {
+      "dealUnsure": "AI chưa chắc loại hợp đồng, kiểm tra lại",
+      "reviewSaved": "Đã lưu hợp đồng",
+      "reviewSavedActive": "Đã lưu — hợp đồng có hiệu lực"
+    }
+  }
+}

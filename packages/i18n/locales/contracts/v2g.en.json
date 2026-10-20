@@ -1,0 +1,27 @@
+{
+  "contracts": {
+    "cdetail": {
+      "aiMsTitle": "Milestones found by AI",
+      "aiMsHint": "Untick wrong milestones; an empty due date uses the contract date.",
+      "aiMsEmpty": "AI found no milestones in the text.",
+      "aiMsKeep": "Keep milestone {{title}}",
+      "aiMsDue": "Due date of {{title}}",
+      "aiMsUnverified": "unverified",
+      "aiSummary": "AI summary",
+      "aiSumMain": "Main content",
+      "aiSumDeadlines": "Key deadlines",
+      "aiSumPenalties": "Penalties",
+      "aiSumBonuses": "Bonuses",
+      "aiSumClauses": "Key clauses",
+      "attachSaved": "Product attached",
+      "itemLocked": "This line already has stock movements; its product cannot change.",
+      "productsHint": "Re-attach a catalog product to each line.",
+      "reviewItems": "Products (read by AI)"
+    },
+    "cform": {
+      "dealUnsure": "AI is unsure of the contract type, please check",
+      "reviewSaved": "Contract saved",
+      "reviewSavedActive": "Saved — the contract is now in effect"
+    }
+  }
+}

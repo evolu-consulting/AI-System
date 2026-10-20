@@ -1,4 +1,5 @@
 // HD-FR-21 · HD-FR-24 · HD-FR-25 · HD-FR-26 · D2-01 · HD2 plan: cổng của trích hợp đồng. Lớp 2 — chỉ kiểu.
+import type { AiRead } from "@ai/contracts";
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ParentFacts } from "../domain/extract-prompt.rules";
@@ -73,6 +74,8 @@ export type ExtractionResult = {
   items: ExtractedItemRow[] | null;
   clauses: Clause[];
   warnings: Warning[];
+  /** V2-G: phần AI đọc (null ⇒ bản trích cũ: giữ nguyên `ai_read` hiện có). */
+  ai: AiRead | null;
 };
 export type RequestExtractOutcome =
   | { kind: "ok"; version: number }

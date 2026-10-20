@@ -6,6 +6,7 @@ import {
   ContractAppendixRefSchema,
   ContractParentRefSchema,
 } from "./appendix";
+import { AiReadSchema } from "./extract";
 import {
   CONTRACT_EVENT_TYPE_RE,
   CONTRACT_FIELD_KEYS,
@@ -81,6 +82,8 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   stage: ContractStageSchema,
   next_milestone_id: z.uuid().nullable(),
   milestones: z.array(MilestoneSchema).max(MILESTONES_MAX),
+  /** V2-G: phần AI đọc (loại đoán, trường chưa chắc, tóm tắt 5 mục, mốc tìm thấy); HĐ nhập tay / chưa đọc ⇒ null. */
+  ai: AiReadSchema.nullable(),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

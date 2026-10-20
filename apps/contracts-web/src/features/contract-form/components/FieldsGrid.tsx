@@ -20,6 +20,8 @@ type Props = {
   lockedKeys?: ReadonlySet<TextKey>;
   /** Dấu hiệu của agent trên từng ô ("AI chưa chắc", trích dẫn). */
   badges?: Partial<Record<TextKey, readonly FieldBadge[]>>;
+  /** V2-G: ô AI chưa chắc và người chưa sửa ⇒ tô vàng (`data-unsure`). */
+  unsure?: ReadonlySet<TextKey>;
 };
 
 function Row({
@@ -28,6 +30,7 @@ function Row({
   req,
   span,
   badges,
+  unsure,
   children,
 }: {
   id: string;
@@ -35,6 +38,7 @@ function Row({
   req?: boolean;
   span?: boolean;
   badges?: readonly FieldBadge[];
+  unsure?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -42,6 +46,7 @@ function Row({
       <label htmlFor={id} className="flex flex-wrap items-center gap-2">
         {label}
         {req && <span className="text-late">*</span>}
+        {unsure && !badges?.some((b) => b.kind === "warn") && <UnsureTag />}
         {badges
           ?.filter((b) => b.kind === "warn")
           .map((b) => (
@@ -62,7 +67,21 @@ function Row({
   );
 }
 
-export function FieldsGrid({ f, onSet, invalid, cols = 3, disabled, lockedKeys, badges }: Props) {
+function UnsureTag() {
+  const { t } = useTranslation();
+  return <Tag tone="soon">{t("contracts.cform.unsure")}</Tag>;
+}
+
+export function FieldsGrid({
+  f,
+  onSet,
+  invalid,
+  cols = 3,
+  disabled,
+  lockedKeys,
+  badges,
+  unsure,
+}: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
   const sum = autoTotal(f.items);
@@ -79,7 +98,14 @@ export function FieldsGrid({ f, onSet, invalid, cols = 3, disabled, lockedKeys, 
       suffix?: string;
     } = {},
   ) => (
-    <Row id={`cf-${k}`} label={label} req={o.req} span={o.span} badges={badges?.[k]}>
+    <Row
+      id={`cf-${k}`}
+      label={label}
+      req={o.req}
+      span={o.span}
+      badges={badges?.[k]}
+      unsure={unsure?.has(k)}
+    >
       <div className="relative">
         <input
           id={`cf-${k}`}
@@ -88,6 +114,12 @@ export function FieldsGrid({ f, onSet, invalid, cols = 3, disabled, lockedKeys, 
           inputMode={o.mono ? "decimal" : undefined}
           value={f[k]}
           disabled={disabled || lockedKeys?.has(k)}
+          data-unsure={unsure?.has(k) || undefined}
+          style={
+            unsure?.has(k)
+              ? { background: "var(--color-soon-bg)", borderColor: "var(--color-soon-line)" }
+              : undefined
+          }
           placeholder={o.ph}
           aria-invalid={o.bad || undefined}
           onChange={(e) => onSet(k, e.target.value)}
@@ -128,6 +160,7 @@ export function FieldsGrid({ f, onSet, invalid, cols = 3, disabled, lockedKeys, 
         onName={(v) => onSet("partner_name", v)}
         invalid={invalid.has("partner_name")}
         disabled={disabled}
+        unsure={unsure?.has("partner_name")}
       />
       {text("partner_tax_id", L("partnerTaxId"), { mono: true })}
       {referral ? (

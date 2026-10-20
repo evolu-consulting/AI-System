@@ -4,6 +4,8 @@ import type { ContractDeal, ManualContractRequest } from "@ai/contracts";
 import { parseMoney, parseQty } from "~/components/shared/format";
 
 export type LineState = {
+  /** V2-G: id dòng đã lưu (AI đọc) — màn xác nhận sửa tại chỗ, không xoá. */
+  id?: string;
   name: string;
   unit: string;
   qty: string;
@@ -67,7 +69,7 @@ export const EMPTY_FORM: FormState = {
   items: [EMPTY_LINE],
 };
 
-const named = (items: readonly LineState[]) => items.filter((i) => i.name.trim());
+export const named = (items: readonly LineState[]) => items.filter((i) => i.name.trim());
 
 /** Ô bắt buộc còn thiếu (đỏ viền + tên ô trong thông báo). Giới thiệu: cần % hoặc số tiền hoa hồng, không cần giá trị. */
 export type RequiredKey = "title" | "partner_name" | "start_date" | "commission";

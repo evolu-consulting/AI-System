@@ -16,7 +16,7 @@ import {
   IsoDateSchema,
   nfcText,
 } from "./fields";
-import { ContractDealSchema } from "./milestones";
+import { ContractDealSchema, MilestoneKindSchema } from "./milestones";
 
 export const EXTRACT_ITEMS_MAX = 500;
 export const EXTRACT_CLAUSES_MAX = 200;
@@ -89,7 +89,36 @@ export const ExtractedClauseSchema = z.strictObject({
   topic: z.enum(CLAUSE_TOPICS),
 });
 
-/** Đầu ra agent trích (HD-FR-21). Strict ở mọi tầng: chỉ dẫn chèn trong văn bản không thêm được khoá/hình mới. */
+/** V2-G · HD-02/HD-08: trường AI chưa chắc = khoá của `fields` hoặc `deal` (loại HĐ Mua/Bán/Giới thiệu). */
+export const AI_UNSURE_KEYS = [...CONTRACT_FIELD_KEYS, "deal"] as const;
+export type AiUnsureKey = (typeof AI_UNSURE_KEYS)[number];
+export const AI_MILESTONES_MAX = 50;
+const SUMMARY_LINES_MAX = 12;
+const sumLine = () => pgText(600);
+const sumList = () => z.array(sumLine()).max(SUMMARY_LINES_MAX);
+
+/** V2-G · BA §4.2 "Upload và xác nhận": tóm tắt 5 mục (nội dung chính, hạn quan trọng, phạt, thưởng, điều khoản chính). */
+export const AiSummarySchema = z.strictObject({
+  main: pgText(2000),
+  deadlines: sumList(),
+  penalties: sumList(),
+  bonuses: sumList(),
+  clauses: sumList(),
+});
+export type AiSummary = z.infer<typeof AiSummarySchema>;
+
+/** Mốc AI tìm thấy trong văn bản (loại BA 7 loại; ngày có thể chưa rõ). */
+export const AiMilestoneSchema = z.strictObject({
+  kind: MilestoneKindSchema,
+  title: pgText(200).nullable(),
+  due_date: outDate().nullable(),
+  amount: money().nullable(),
+  quote: quote(),
+});
+export type AiMilestone = z.infer<typeof AiMilestoneSchema>;
+
+/** Đầu ra agent trích (HD-FR-21). Strict ở mọi tầng: chỉ dẫn chèn trong văn bản không thêm được khoá/hình mới.
+ *  V2-G: `deal`, `unsure`, `summary`, `milestones` là phần thêm (tuỳ chọn — bản trích cũ vẫn hợp lệ). */
 export const ExtractionOutputSchema = z.strictObject({
   fields: z.strictObject(
     Object.fromEntries(CONTRACT_FIELD_KEYS.map((k) => [k, outField(k)])) as {
@@ -98,8 +127,22 @@ export const ExtractionOutputSchema = z.strictObject({
   ),
   items: z.array(ExtractedItemSchema).max(EXTRACT_ITEMS_MAX),
   clauses: z.array(ExtractedClauseSchema).max(EXTRACT_CLAUSES_MAX),
+  deal: ContractDealSchema.nullable().optional(),
+  unsure: z.array(z.enum(AI_UNSURE_KEYS)).max(AI_UNSURE_KEYS.length).optional(),
+  summary: AiSummarySchema.nullable().optional(),
+  milestones: z.array(AiMilestoneSchema).max(AI_MILESTONES_MAX).optional(),
 });
 export type ExtractionOutput = z.infer<typeof ExtractionOutputSchema>;
+
+/** V2-G: phần AI đọc lưu cùng HĐ (`contracts.ai_read`) và trả ở chi tiết — loại AI đoán, trường chưa chắc, tóm tắt, mốc tìm thấy
+ *  (kèm cờ `verified`: trích dẫn có trong văn bản). */
+export const AiReadSchema = z.strictObject({
+  deal: ContractDealSchema.nullable(),
+  unsure: z.array(z.enum(AI_UNSURE_KEYS)).max(AI_UNSURE_KEYS.length),
+  summary: AiSummarySchema.nullable(),
+  milestones: z.array(AiMilestoneSchema.extend({ verified: z.boolean() })).max(AI_MILESTONES_MAX),
+});
+export type AiRead = z.infer<typeof AiReadSchema>;
 
 export const CONTRACT_WARNING_CODES = [
   "dates_order",
