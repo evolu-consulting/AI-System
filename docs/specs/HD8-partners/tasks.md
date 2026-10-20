@@ -110,6 +110,16 @@ qua `partner_events_party_idx` + lọc policy từng dòng; lập kế hoạch 8
   đuôi trên máy chung (p50 30–37). Phần còn lại: câu giá (HĐ mua + 3.000 dòng hàng, ~20 ms gồm chuyển JSON) ngang câu sổ; giảm tiếp
   cần bớt dữ liệu giá (`productList` dùng cả dòng HĐ hết hạn nên không lọc được ở SQL mà giữ parity).
 
+## Sửa theo review HD78 (2026-10-20, lát hd8-perf)
+- #1 khoá đối tác/tham số có NUL ⇒ 400 (`keyText`/`keyStr`). #2 (làn đầy đủ, test viết trước `review-visibility.int.test.ts`): migration
+  `0019_hd8c_visibility` — RESTRICTIVE trên `companies` (đọc/sửa), `price_quotes` (đọc/xoá), `score_snapshots` (đọc) theo
+  `visible_party_keys()` hoặc do mình tạo; xoá báo giá cần `admin`. #3 một hạn 15 s cho cả lượt kiểm link + trần 10 lần/phút/người dùng.
+  #4 IPv6 so theo số 128 bit. #5 `with_us` theo truthiness Python ở TS và SQL; hạn vắng/sai ⇒ trễ 1 ở cả hai; parity sinh thêm các ca đó.
+  #9 sửa chú thích. #6–#8 ⇒ TECH-DEBT #247–#249.
+- D8-23: `market_observations` là giá công khai theo mặt hàng (không gắn đối tác/người) ⇒ không thêm luật thấy M1; người dùng không ghi
+  (REVOKE INSERT/UPDATE/DELETE), chỉ việc dò giá nền ghi.
+- Perf sau 0019 (evotest): `/partners` p95 44,7; `?role=supplier` 48,1; `/prices/products` 41,6; `/prices/compare` 52,6 ms.
+
 ## Việc còn lại / nợ
 - `/prices/compare` p95 đuôi 49–54 ms trên máy chung (D8-22).
 - "Dò giá" hàng hoá tự động (N2, agent) đổ vào `market_observations`; lịch sử điểm từng đối tác (ảnh chụp đã lưu, chưa có màn).
