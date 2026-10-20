@@ -158,8 +158,13 @@ describe("ai-sub · AI client trên gói Claude", () => {
   });
 
   it("hub.log_ai_usage_billed chỉ nhận api | subscription", async () => {
-    await expect(
-      sql`select hub.log_ai_usage_billed(${TC}::uuid, null, 'x.y', 'p', 'm', 1, 1, 0, 0, 0, 1, 'dify')`,
-    ).rejects.toThrow(/invalid billing/);
+    // postgres.js chỉ chạy câu khi `.then` được gọi — `expect(query).rejects` của bun không gọi ⇒ treo; await tường minh.
+    let err: unknown = null;
+    try {
+      await sql`select hub.log_ai_usage_billed(${TC}::uuid, null, 'x.y', 'p', 'm', 1, 1, 0, 0, 0, 1, 'dify')`;
+    } catch (e) {
+      err = e;
+    }
+    expect(String(err)).toMatch(/invalid billing/);
   });
 });
