@@ -90,7 +90,27 @@ Nguồn port NGUYÊN (mgmt-app, chỉ đọc): `api/app/scoring/{engine,config,s
     câu sổ đã gom 23 ms ‖ giá mua (HĐ + dòng hàng + phụ lục) 19 ms ‖ sự thật HĐ 6,7 ms, + ~20 ms ngoài SQL (JSON, engine, HTTP). Hướng tiếp:
     bớt quét `fields` jsonb của HĐ mua (cột sinh sẵn party/ngày), hoặc cache theo dấu phiên bản nếu điều phối đổi quyết định "không cache".
 
+## Lát hd8-perf (2026-10-20) — `/partners` p95 ≤ 50 ms, điểm không đổi
+Đo bằng EXPLAIN (ANALYZE, BUFFERS) dưới RLS người dùng + bấm giờ JS từng bước (400 đối tác / 2.000 HĐ / 10.000 dòng sổ + nền beta):
+câu sổ 31,7–37,7 ms (gom chính 23 ms; ba tập con hiếm — gia hạn CKS, quá hạn, chấm tay — mỗi tập ~4 ms vì quét lại cả 10.000 dòng
+qua `partner_events_party_idx` + lọc policy từng dòng; lập kế hoạch 8–9 ms vì quá hạn có bốn `exists` mở policy M1 bốn lần); câu giá 16 ms
++ 381 KB JSON; JS ~10 ms (giá đang áp dụng 4,7, chấm 3,0). Policy M1 không phải nút thắt (InitPlan "thấy hết" đúng cho owner/editor).
+- D8-19: migration `0018_hd8_perf`: chỉ mục `partner_events_type_idx (tenant_id, type, party_key, role, at)` — tập hiếm đọc theo loại
+  (~0,02 ms thay ~4 ms), lượt gom chính đi theo thứ tự chỉ mục (loại, đối tác, vai) không sắp xếp lại.
+- D8-20: gia hạn CKS gộp vào lượt gom chính; hai nửa cũ/gần đây là cột `filter` của cùng nhóm; loại cần đọc `data` (chỉnh tay, CKS) đi
+  lượt riêng qua chỉ mục loại; quá hạn: MỘT `exists` (thanh toán/giao HOẶC hoãn muộn hơn, `is not distinct from` mã đợt) thay bốn —
+  cùng nghĩa; ngưỡng khoảng tính là InitPlan thay `cross join rw` mỗi dòng.
+- D8-21: chỉ đọc sổ của vai cần chấm (`roles` qua CTE khoảng tính): `/prices/compare` chỉ NCC, `/prices/products` và thêm báo giá không
+  đọc sổ, `/partners?role=` một vai. Số câu vẫn 6 cố định.
+- D8-22: dòng hàng trỏ HĐ bằng vị trí trong mảng HĐ (số nhỏ thay uuid) — JSON câu giá 381 → 276 KB; đổi sang hình miền + tính giá đang
+  áp dụng ngay khi câu giá xong, chồng lên lúc chờ câu sổ.
+- Kết quả (evotest, máy chung, n=60 sau ANALYZE; parity `agg-parity` 7/7 + HD7/HD8 int 57/57 xanh): câu sổ 31,7–37,7 → 14,5–19,3 ms
+  (EXPLAIN), trung vị 36,7 → 20,3 ms; ba câu song song 37,8 → 23,9 ms. `GET /partners` p95 57,8–69,2 → **40,9–49,1 ms** (p50 32–37);
+  `?role=supplier` 43,4–48,2; `/prices/products` 30,8–42,1; `/prices/compare` 49,1–53,7 ms — **sát ngưỡng, chưa ổn định dưới 50** ở
+  đuôi trên máy chung (p50 30–37). Phần còn lại: câu giá (HĐ mua + 3.000 dòng hàng, ~20 ms gồm chuyển JSON) ngang câu sổ; giảm tiếp
+  cần bớt dữ liệu giá (`productList` dùng cả dòng HĐ hết hạn nên không lọc được ở SQL mà giữ parity).
+
 ## Việc còn lại / nợ
-- `/partners` p95 ≤ 50 ms (ở trên).
+- `/prices/compare` p95 đuôi 49–54 ms trên máy chung (D8-22).
 - "Dò giá" hàng hoá tự động (N2, agent) đổ vào `market_observations`; lịch sử điểm từng đối tác (ảnh chụp đã lưu, chưa có màn).
 - Danh bạ: người phụ trách, liên hệ, gộp công ty (D8-15).

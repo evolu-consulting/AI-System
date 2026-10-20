@@ -120,6 +120,13 @@
       "when": 1794009600000,
       "tag": "0017_m3c_extract_queued",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794096000000,
+      "tag": "0018_hd8_perf",
+      "breakpoints": true
     }
   ]
 }

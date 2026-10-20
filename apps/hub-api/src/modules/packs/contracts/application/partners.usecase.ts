@@ -68,18 +68,22 @@ const strip = ({ breakdown: _b, ...p }: PartnerOut) => p;
 export function partnersUsecase(d: PartnersDeps) {
   const today = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
-  /** Mọi thứ cần để chấm (sổ đã gom ở SQL) + tập người dùng thấy. `ov`: khoảng tính của bản nháp (xem trước/lưu). */
-  async function load(who: PackWho, ov?: WindowOverride) {
+  /**
+   * Mọi thứ cần để chấm (sổ đã gom ở SQL) + tập người dùng thấy. `ov`: khoảng tính của bản nháp (xem trước/lưu); `roles`: vai cần
+   * điểm (Luật 4c: sổ của vai khác không đọc — so giá chỉ NCC, danh sách mặt hàng không cần điểm).
+   */
+  async function load(who: PackWho, ov?: WindowOverride, roles: readonly Role[] = ROLES) {
     const day = await today(who);
-    // Ba câu độc lập ở ba tx chỉ đọc song song (độ trễ = câu chậm nhất, HD8-NFR-01).
-    const data: PartnerData = d.combine(
-      await Promise.all([
-        d.uow.tenant(who, (r) => r.partners.ledger(day, ov)),
-        d.uow.tenant(who, (r) => r.partners.facts(day)),
-        d.uow.tenant(who, (r) => r.partners.prices()),
-      ]),
-    );
-    const lines = priceLines(data.contracts, day);
+    // Ba câu độc lập ở ba tx chỉ đọc song song (độ trễ = câu chậm nhất, HD8-NFR-01); giá đang áp dụng tính ngay khi câu giá xong,
+    // chồng lên lúc còn chờ câu sổ.
+    const [ledger, facts0, [prices, lines]] = await Promise.all([
+      d.uow.tenant(who, (r) => r.partners.ledger(day, ov, roles)),
+      d.uow.tenant(who, (r) => r.partners.facts(day)),
+      d.uow
+        .tenant(who, (r) => r.partners.prices())
+        .then((p) => [p, priceLines(p.contracts, day)] as const),
+    ]);
+    const data: PartnerData = d.combine([ledger, facts0, prices]);
     const facts = factsOf(data.facts, priceGaps(lines, data.quotes));
     // M1 `view.company`: đối tác có HĐ đã duyệt người dùng thấy (data() đã chạy dưới RLS của người dùng).
     const vis = { parties: new Set([...facts.values()].map((f) => f.party)) };
@@ -103,13 +107,13 @@ export function partnersUsecase(d: PartnersDeps) {
   }
 
   const list = async (who: PackWho, role: Role | "all") => {
-    const l = await load(who);
+    const l = await load(who, undefined, role === "all" ? ROLES : [role]);
     const rows = l.partners(role === "all" ? null : role);
     return (role === "all" ? onePerParty(rows) : rows).map(strip);
   };
 
   const one = async (who: PackWho, party: string, role: Role) => {
-    const p = (await load(who)).partners(role).find((x) => x.party === party);
+    const p = (await load(who, undefined, [role])).partners(role).find((x) => x.party === party);
     if (!p) throw new PartnersFail("not_found");
     return p;
   };
@@ -186,12 +190,12 @@ export function partnersUsecase(d: PartnersDeps) {
 
   // ---- so giá hàng hoá ----
   const products = async (who: PackWho) => {
-    const l = await load(who);
+    const l = await load(who, undefined, []);
     return productList(l.seenLines, l.data.quotes);
   };
 
   const compare = async (who: PackWho, product: string) => {
-    const l = await load(who);
+    const l = await load(who, undefined, ["supplier"]);
     if (!productList(l.seenLines, l.data.quotes).some((p) => p.key === product))
       throw new PartnersFail("not_found");
     const scores = new Map(l.partners("supplier").map((p) => [p.party, p]));
@@ -200,7 +204,7 @@ export function partnersUsecase(d: PartnersDeps) {
 
   /** `add_quote`: mặt hàng phải so được; tên mặt hàng mặc định theo nhãn; có link ⇒ máy chủ mở kiểm con số (ngoài tx). */
   const addQuote = async (who: PackWho, b: QuoteCreate) => {
-    const l = await load(who);
+    const l = await load(who, undefined, []);
     const known = productList(l.seenLines, l.data.quotes).find((p) => p.key === b.product);
     if (!known) throw new PartnersFail("not_found");
     const name = b.product_name || (known.label.split(" · ").at(-1) ?? "").split(" (đ/")[0] || "";

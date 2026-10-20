@@ -25,7 +25,8 @@ const side = (c: string) =>
 export function partnersRepo(tx: Tx, t: string) {
   return {
     data: (today: string, ov?: WindowOverride) => partnerData(tx, t, today, ov),
-    ledger: (today: string, ov?: WindowOverride) => partnerLedger(tx, t, today, ov),
+    ledger: (today: string, ov?: WindowOverride, roles?: readonly Role[]) =>
+      partnerLedger(tx, t, today, ov, roles),
     facts: (today: string) => partnerFacts(tx, t, today),
     prices: () => partnerPrices(tx, t),
     ratingEvents: (party: string, role: Role) => ratingEvents(tx, t, party, role),

@@ -12,7 +12,7 @@ import { aggKey, type FactRow, type PartyEv } from "../domain/partners.rules";
 import { type Agg, addGroup, emptyAgg } from "../domain/scoring-agg.rules";
 import type { Criterion, Role, Rules } from "../domain/scoring-config.rules";
 import { one } from "./ledger-sql";
-import { groupsJson, pendJson, ratedJson, renewJson, winCtes } from "./partners-ledger.sql";
+import { groupsJson, pendJson, ratedJson, winCtes } from "./partners-ledger.sql";
 
 export type StoredConfig = {
   role: Role;
@@ -87,11 +87,13 @@ const buyJson = sql`(select json_build_array(array_agg(b.id), array_agg(b.kind),
     array_agg(b.dir), array_agg(b.title), array_agg(b.eff), array_agg(b.pname), array_agg(b.ptax))
   from (select * from b order by b.created_at, b.id) b)`;
 
-const itemsJson = sql`(select json_build_array(array_agg(i.contract_id), array_agg(i.code), array_agg(i.name),
+// Dòng hàng trỏ HĐ bằng VỊ TRÍ của HĐ trong `buy` (số nhỏ thay uuid 36 ký tự mỗi dòng — Luật 4c: bớt ~⅓ chữ JSON phải gửi + đọc).
+const itemsJson = sql`(select json_build_array(array_agg(i.ix), array_agg(i.code), array_agg(i.name),
     array_agg(i.spec), array_agg(i.unit), array_agg(i.qty), array_agg(i.unit_price), array_agg(i.vat_rate),
     array_agg(i.valid_from), array_agg(i.valid_to))
-  from (select i.* from contracts.contract_items i where i.tenant_id = (select t from p)
-    and i.contract_id in (select id from b) order by i.contract_id, i.ord) i)`;
+  from (select bx.ix, i.* from contracts.contract_items i
+    join (select b.id, (row_number() over (order by b.created_at, b.id))::int - 1 as ix from b) bx on bx.id = i.contract_id
+    where i.tenant_id = (select t from p) order by bx.ix, i.ord) i)`;
 
 const configsJson = sql`coalesce((select json_agg(json_build_object('role', s.role, 'version', s.version,
       'criteria', s.criteria, 'rules', s.rules, 'updated_by', contracts.user_label(s.updated_by),
@@ -120,9 +122,8 @@ type Cols<T extends unknown[]> = { [K in keyof T]: T[K][] | null };
 type Raw = {
   facts: [Role, S, S, number, S][];
   buy: Cols<[string, "contract" | "appendix", string, S, S, string, S, S, S]>;
-  items: Cols<[string, S, string, S, S, N, N, N, S, S]>;
+  items: Cols<[number, S, string, S, S, N, N, N, S, S]>;
   groups: GroupRow[];
-  renew: RenewRow[];
   pend: PendRow[];
   rated: RatedRow[];
   configs: StoredConfig[];
@@ -135,10 +136,10 @@ const col = <T>(c: T[] | null | undefined): T[] => c ?? [];
 const colsOf = (c: unknown): unknown[][] => (c as (unknown[] | null)[]).map((x) => x ?? []);
 const rowsOf = <T extends unknown[]>(cols: Cols<T>): number => col(cols[0] as unknown[]).length;
 
-function itemsBy(c: Raw["items"]): Map<string, PriceItem[]> {
-  const out = new Map<string, PriceItem[]>();
+function itemsBy(c: Raw["items"]): Map<number, PriceItem[]> {
+  const out = new Map<number, PriceItem[]>();
   const [cid, code, name, spec, unit, qty, price, vat, from, to] = colsOf(c) as unknown as [
-    string[],
+    number[],
     S[],
     string[],
     S[],
@@ -161,16 +162,16 @@ function itemsBy(c: Raw["items"]): Map<string, PriceItem[]> {
       valid_from: from[i] ?? null,
       valid_to: to[i] ?? null,
     };
-    const a = out.get(cid[i] as string);
+    const a = out.get(cid[i] as number);
     if (a) a.push(it);
-    else out.set(cid[i] as string, [it]);
+    else out.set(cid[i] as number, [it]);
   }
   return out;
 }
 
 const day = (v: S | undefined) => (v && isIsoDate(v) ? v : null);
 
-function buyOf(c: Raw["buy"], items: Map<string, PriceItem[]>): PricedContract[] {
+function buyOf(c: Raw["buy"], items: Map<number, PriceItem[]>): PricedContract[] {
   const [id, kind, status, parent, dir, title, eff, pname, ptax] = colsOf(c) as unknown as [
     string[],
     ("contract" | "appendix")[],
@@ -192,17 +193,31 @@ function buyOf(c: Raw["buy"], items: Map<string, PriceItem[]>): PricedContract[]
     eff: day(eff[i]),
     party: partyKey(pname[i], ptax[i]),
     party_name: pname[i] ?? null,
-    items: items.get(x) ?? [],
+    items: items.get(i) ?? [],
   }));
 }
 
-type GroupRow = [string, Role, string, boolean, number, number, number, number];
-type RenewRow = [string, Role, number, number];
+/** (đối tác, vai, loại, [số dòng, đúng hạn, ngày trễ, chỉnh tay] cũ, [như vậy] gần đây, điểm gia hạn CKS). */
+type GroupRow = [string, Role, string, ...number[]];
 type PendRow = [string, Role, number, number, number, number];
 type RatedRow = [string, Role, string, number, string, S];
 
+/** Một hàng nhóm SQL ⇒ `addGroup` cho từng nửa có dòng (cũ, gần đây) + gia hạn CKS (≡ `addEvent`: mỗi dòng `cks_*` +1, + `renewValue`). */
+function addRow(a: Agg, row: GroupRow): void {
+  const [, role, type, ...v] = row;
+  const [n0, on0, dl0, d0, n1, on1, dl1, d1, rv] = v.map(Number) as number[];
+  if (n0)
+    addGroup(a, { type, nw: false, n: n0, on: on0 ?? 0, late: dl0 ?? 0, delta: d0 ?? 0 }, role);
+  if (n1)
+    addGroup(a, { type, nw: true, n: n1, on: on1 ?? 0, late: dl1 ?? 0, delta: d1 ?? 0 }, role);
+  if (type === "cks_renewed" || type === "cks_lapsed") {
+    a.renew_n += (n0 ?? 0) + (n1 ?? 0);
+    a.renew_sum += rv ?? 0;
+  }
+}
+
 /** Nhóm SQL ⇒ `Agg` mỗi (đối tác, vai) — `addGroup` (≡ `aggregate`), gia hạn CKS, quá hạn treo, chấm tay mới nhất. */
-function aggsOf(r: Raw): Map<string, Agg> {
+function aggsOf(r: Pick<Raw, "groups" | "pend" | "rated">): Map<string, Agg> {
   const out = new Map<string, Agg>();
   const at = (party: string, role: Role) => {
     const key = aggKey(party, role);
@@ -210,17 +225,7 @@ function aggsOf(r: Raw): Map<string, Agg> {
     out.set(key, a);
     return a;
   };
-  for (const [party, role, type, nw, n, on, late, delta] of r.groups)
-    addGroup(
-      at(party, role),
-      { type, nw, n: Number(n), on: Number(on), late: Number(late), delta: Number(delta) },
-      role,
-    );
-  for (const [party, role, n, v] of r.renew) {
-    const a = at(party, role);
-    a.renew_n = Number(n);
-    a.renew_sum = Number(v);
-  }
+  for (const row of r.groups) addRow(at(row[0], row[1]), row);
   for (const [party, role, p0n, p0l, p1n, p1l] of r.pend) {
     const a = at(party, role);
     a.pend = [
@@ -233,7 +238,7 @@ function aggsOf(r: Raw): Map<string, Agg> {
   return out;
 }
 /** Cột ⇒ hình miền. */
-function toData(r: Raw): PartnerData {
+function toData(r: Omit<Raw, "buy" | "items"> & { contracts: PricedContract[] }): PartnerData {
   return {
     facts: r.facts.map(([role, name, tax, n, first_start]) => ({
       role,
@@ -243,7 +248,7 @@ function toData(r: Raw): PartnerData {
       n,
       first_start: day(first_start),
     })),
-    contracts: buyOf(r.buy, itemsBy(r.items)),
+    contracts: r.contracts,
     aggs: aggsOf(r),
     configs: r.configs,
     quotes: r.quotes,
@@ -253,6 +258,7 @@ function toData(r: Raw): PartnerData {
 }
 
 /** Khoảng tính đè theo vai (bản nháp xem trước/lưu). */
+const BOTH: readonly Role[] = ["customer", "supplier"];
 export type WindowOverride = Partial<
   Record<Role, { window_months: number; recency_months: number }>
 >;
@@ -261,11 +267,18 @@ export type WindowOverride = Partial<
  * Ba câu ĐỘC LẬP (Luật 4c: chạy song song ở ba tx chỉ đọc, độ trễ = câu chậm nhất; số câu cố định 3): (A) sổ đối tác đã gom +
  * chấm tay mới nhất; (B) sự thật HĐ + cấu hình + danh bạ + giá thị trường; (C) HĐ mua + dòng hàng + báo giá.
  */
-export const partnerLedger = (tx: Tx, t: string, today: string, ov: WindowOverride = {}) =>
-  one<Pick<Raw, "groups" | "renew" | "pend" | "rated">>(
+/** `roles`: vai cần chấm (vd so giá chỉ cần NCC, danh sách mặt hàng không cần điểm ⇒ `[]`) — dòng vai khác không đọc. */
+export const partnerLedger = (
+  tx: Tx,
+  t: string,
+  today: string,
+  ov: WindowOverride = {},
+  roles: readonly Role[] = BOTH,
+) =>
+  one<Pick<Raw, "groups" | "pend" | "rated">>(
     tx,
-    sql`with p as (select ${t}::uuid as t), ${winCtes(today, ov)}
-    select json_build_object('groups', ${groupsJson(today)}, 'renew', ${renewJson(today)}, 'pend', ${pendJson(today)},
+    sql`with p as (select ${t}::uuid as t), ${winCtes(today, ov, roles)}
+    select json_build_object('groups', ${groupsJson(today)}, 'pend', ${pendJson(today)},
       'rated', ${ratedJson(today)}) as j`,
   );
 export const partnerFacts = (tx: Tx, t: string, today: string) =>
@@ -275,12 +288,18 @@ export const partnerFacts = (tx: Tx, t: string, today: string) =>
     select json_build_object('facts', ${factsJson}, 'configs', ${configsJson}, 'names', ${namesJson},
       'market', ${marketJson(today)}) as j`,
   );
-export const partnerPrices = (tx: Tx, t: string) =>
-  one<Pick<Raw, "buy" | "items" | "quotes">>(
+/** (C) đổi sang hình miền NGAY khi câu xong — chạy chồng lúc còn chờ câu (A) (Luật 4c: bớt việc trên đường găng). */
+export async function partnerPrices(
+  tx: Tx,
+  t: string,
+): Promise<{ contracts: PricedContract[]; quotes: Quote[] }> {
+  const r = await one<Pick<Raw, "buy" | "items" | "quotes">>(
     tx,
     sql`with p as (select ${t}::uuid as t), ${bCte}
     select json_build_object('buy', ${buyJson}, 'items', ${itemsJson}, 'quotes', ${quotesJson}) as j`,
   );
+  return { contracts: buyOf(r.buy, itemsBy(r.items)), quotes: r.quotes };
+}
 export type PartnerParts = [
   Awaited<ReturnType<typeof partnerLedger>>,
   Awaited<ReturnType<typeof partnerFacts>>,
