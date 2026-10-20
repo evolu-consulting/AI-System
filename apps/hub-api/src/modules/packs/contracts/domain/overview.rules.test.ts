@@ -99,6 +99,9 @@ describe("V2-K · 4 con số + theo nhóm", () => {
     expect(g.service?.months.at(-1)).toEqual({ month: "2026-10", value: 120 });
     expect(g.service?.months.at(-2)).toEqual({ month: "2026-09", value: 0 });
   });
+});
+
+describe("V2-K · 4 con số + theo nhóm (không dữ liệu)", () => {
   it("không có dữ liệu ⇒ 0, biên null", () => {
     const o = buildOverview([], 0, "2026-10-21", "12m");
     expect(o.revenue.outstanding).toBe(0);

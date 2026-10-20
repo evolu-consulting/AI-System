@@ -89,7 +89,9 @@ describe("ADM-FR-13 · workflows.service", () => {
     await owner`delete from admin.commands where id = ${cid}`;
     await deleteWorkflow(call, w.id);
   });
+});
 
+describe("ADM-FR-13 · workflows.service (side_effect, usages)", () => {
   test("X1 · HUB-FR-95 · side_effect: vắng → false; PATCH đổi → version+1; PATCH vắng → giữ", async () => {
     const w = await createWorkflow(call, { ...base, key: "se", input_schema: [] });
     expect(w).toMatchObject({ side_effect: false, version: 1 });

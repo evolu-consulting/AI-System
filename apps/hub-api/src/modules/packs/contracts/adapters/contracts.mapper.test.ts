@@ -2,6 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import { ContractDetailSchema, ContractFacetsSchema, ContractListRowSchema } from "@ai/contracts";
 import {
+  type DetailRaw,
   type FacetsRaw,
   toContractDetail,
   toContractFacets,
@@ -66,23 +67,64 @@ const NULLS = {
   appendices: null,
 } as const;
 
+const detailRaw = (o: Record<string, unknown>) =>
+  ({
+    ...NULLS,
+    id: U,
+    kind: "contract",
+    title: "HĐ",
+    status: "needs_review",
+    owner_user_id: U,
+    updated_at: T0,
+    version: 1,
+    created_by: U,
+    created_at: T0,
+    clauses: null,
+    warnings: null,
+    has_source: false,
+    ...o,
+  }) as unknown as DetailRaw;
+const item = (o: Record<string, unknown>) => ({
+  id: U,
+  ord: 0,
+  code: null,
+  name: "Token",
+  spec: null,
+  unit: null,
+  qty: 1,
+  unit_price: 10,
+  vat_rate: null,
+  moq: null,
+  lead_time_days: null,
+  valid_from: null,
+  valid_to: null,
+  category_id: null,
+  quote: null,
+  verified: true,
+  edited: false,
+  ...o,
+});
+const ai = {
+  deal: "sell" as const,
+  unsure: ["end_date" as const],
+  summary: { main: "x", deadlines: [], penalties: [], bonuses: [], clauses: [] },
+  milestones: [
+    {
+      kind: "pay" as const,
+      title: null,
+      due_date: null,
+      amount: null,
+      quote: "",
+      verified: false,
+    },
+  ],
+};
+
 describe("toContractDetail", () => {
   it("HD-AC12 · fields đủ 23 khoá (bỏ khoá lạ), giờ ISO UTC, items/events/clauses null ⇒ []; khớp ContractDetailSchema", () => {
     const d = toContractDetail(
-      {
-        ...NULLS,
-        id: U,
-        kind: "contract",
-        title: "HĐ",
-        status: "needs_review",
-        owner_user_id: U,
-        updated_at: T0,
-        version: 1,
-        created_by: U,
-        created_at: T0,
+      detailRaw({
         file_id: U,
-        clauses: null,
-        warnings: null,
         fields: { number: { value: "HD-1", quote: "q", verified: true }, khoa_la: { value: 1 } },
         items: null,
         events: [{ id: 3, type: "uploaded", actor_user_id: null, at: T0, data: {} }],
@@ -92,8 +134,7 @@ describe("toContractDetail", () => {
           mime: "application/pdf",
           size_bytes: "10" as unknown as number,
         },
-        has_source: false,
-      },
+      }),
       "2026-03-01",
     );
     expect(ContractDetailSchema.parse(d)).toEqual(d);
@@ -109,58 +150,13 @@ describe("toContractDetail", () => {
     // V2-G: HĐ chưa có phần AI đọc ⇒ `ai` null (khớp schema)
     expect(d.ai).toBeNull();
   });
+});
 
+describe("toContractDetail (dòng trả sản phẩm/thành phần)", () => {
   it("V2-G · dòng trả product_id/component_ids (thiếu ⇒ null); `ai` đi nguyên; khớp ContractDetailSchema", () => {
-    const item = (o: Record<string, unknown>) => ({
-      id: U,
-      ord: 0,
-      code: null,
-      name: "Token",
-      spec: null,
-      unit: null,
-      qty: 1,
-      unit_price: 10,
-      vat_rate: null,
-      moq: null,
-      lead_time_days: null,
-      valid_from: null,
-      valid_to: null,
-      category_id: null,
-      quote: null,
-      verified: true,
-      edited: false,
-      ...o,
-    });
-    const ai = {
-      deal: "sell" as const,
-      unsure: ["end_date" as const],
-      summary: { main: "x", deadlines: [], penalties: [], bonuses: [], clauses: [] },
-      milestones: [
-        {
-          kind: "pay" as const,
-          title: null,
-          due_date: null,
-          amount: null,
-          quote: "",
-          verified: false,
-        },
-      ],
-    };
     const d = toContractDetail(
-      {
-        ...NULLS,
-        id: U,
-        kind: "contract",
-        title: "HĐ",
-        status: "needs_review",
-        owner_user_id: U,
-        updated_at: T0,
-        version: 1,
-        created_by: U,
-        created_at: T0,
+      detailRaw({
         file_id: null,
-        clauses: null,
-        warnings: null,
         fields: {},
         items: [
           item({ product_id: U, component_ids: [U] }),
@@ -168,9 +164,8 @@ describe("toContractDetail", () => {
         ] as never,
         events: null,
         file: null,
-        has_source: false,
         ai_read: ai,
-      },
+      }),
       "2026-03-01",
     );
     expect(ContractDetailSchema.parse(d)).toEqual(d);

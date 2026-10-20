@@ -66,6 +66,9 @@ describe("applyAppendixPricing", () => {
     );
     expect(l.map((x) => x.superseded_by)).toEqual(["a1", null, null, null, null]);
   });
+});
+
+describe("applyAppendixPricing (phụ lục nối tiếp, dayBefore)", () => {
   it("hai phụ lục nối tiếp: phụ lục sau thay phụ lục trước; phụ lục thiếu ngày không thay gì", () => {
     const l = applyAppendixPricing(
       { ...P, items: [item({ code: "X", name: "x", unit_price: 1 })] },

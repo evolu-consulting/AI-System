@@ -105,6 +105,9 @@ describe("V2-E §5.1 · bước 3–4: dữ liệu, sao, mức", () => {
     );
     expect(c.criteria.find((x) => x.key === "complaints")?.score).toBe(80);
   });
+});
+
+describe("V2-E §5.1 · bước 3–4: sao, mức, điểm vai", () => {
   it("sao: (1 − s)·dữ liệu + s·sao×20; chưa có dữ liệu ⇒ sao×20; chưa có sao ⇒ dữ liệu", () => {
     expect(blend(90, 3, 20)).toBeCloseTo(84);
     expect(blend(null, 4, 20)).toBe(80);

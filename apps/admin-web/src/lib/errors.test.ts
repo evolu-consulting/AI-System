@@ -41,7 +41,9 @@ describe("ADM-FR-01 · lỗi API → key i18n", () => {
       minutes: 1,
     });
   });
+});
 
+describe("ADM-FR-01 · lỗi API → key i18n (scope, mã lạ)", () => {
   test("LAST_ADMIN theo scope", () => {
     expect(describeError(err("LAST_ADMIN", { scope: "platform" })).key).toBe(
       "users.error.lastPlatformAdmin",

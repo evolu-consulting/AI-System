@@ -39,7 +39,9 @@ describe("link_check", () => {
     const inspect = createInspect({ resolve: fakeDns, now });
     expect((await inspect("http://10.0.0.1/x", 1)).note).toBe("Link không hợp lệ");
   });
+});
 
+describe("link_check (lỗi mở trang, số/ngày/IP)", () => {
   test("lỗi mở trang ⇒ vẫn trả, chưa kiểm, có lý do", async () => {
     const inspect = createInspect({
       loadPage: async () => {
@@ -78,7 +80,9 @@ describe("link_check", () => {
       ].map(isPublicIp),
     ).toEqual([true, false, false, false, false, false, false, false, true]);
   });
+});
 
+describe("link_check (IPv6, DNS treo)", () => {
   // review HD78 #4: IPv6 so theo số 128 bit (dạng rút gọn/đủ chữ số/đuôi IPv4 không lách được tiền tố chữ).
   test("IPv6 đặc biệt: Teredo, 2001::/23, tài liệu, 6to4, NAT64, ULA, ánh xạ IPv4 viết dài", () => {
     const cases: [string, boolean][] = [

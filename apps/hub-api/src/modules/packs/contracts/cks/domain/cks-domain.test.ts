@@ -130,6 +130,9 @@ describe("bán/gia hạn (sales.py)", () => {
     expect(hasDuplicate(["A", null, "B", null])).toBe(false);
     expect(hasDuplicate(["A", "A"])).toBe(true);
   });
+});
+
+describe("bán/gia hạn (sales.py) · HĐ bán", () => {
   test("HĐ bán: tiêu đề, bên mua, hạn, báo trước 30, tổng = số × giá", () => {
     const k = saleContract({
       number: "CKS-2026-001",
@@ -208,67 +211,68 @@ describe("khách (overview.py)", () => {
   });
 });
 
+const PY_ROUND: [number, number, number][] = [
+  [(100 * 247_000) / 2_000_000, 1, 12.3],
+  [12.5, 0, 12],
+  [13.5, 0, 14],
+  [-12.5, 0, -12],
+  [2.675, 2, 2.67],
+  [0.125, 2, 0.12],
+  [0.375, 2, 0.38],
+  [(100 * 1) / 8, 1, 12.5],
+  [(100 * 550_000) / 1_650_000, 0, 33],
+  [(100 * 1) / 3, 1, 33.3],
+  [(100 * -247_000) / 2_000_000, 1, -12.3],
+  [33.25, 1, 33.2],
+  [33.35, 1, 33.4],
+];
+
+const NEWEST_LOTS: LotIn[] = [
+  {
+    id: "l1",
+    ca: "Viettel-CA",
+    years: 1,
+    device: "remote",
+    unit_cost: 700,
+    bought_at: "2026-01-01",
+  },
+  {
+    id: "l2",
+    ca: "VIETTEL CA",
+    years: 1,
+    device: "remote",
+    unit_cost: 650,
+    bought_at: "2026-05-01",
+  },
+];
+const ONE_MARKET: MarketIn[] = [
+  {
+    ca_key: "viettel",
+    years: 1,
+    device: "token",
+    kind: "new",
+    seller: "S",
+    tier: null,
+    price_ex_vat: 900,
+    url: null,
+    verified: true,
+    seen: "2026-10-01",
+  },
+];
 describe("giá gói (prices/cks.py)", () => {
   test("caKey + half-even", () => {
     expect(caKey("Viettel-CA")).toBe("viettel");
     expect(caKey("MISA eSign (MISA-CA)")).toBe("misa");
     expect(caKey("Mắt Bão CA")).toBe("matbao");
     // Review M1 · đối chiếu Python 3 `round` (số kỳ vọng chạy bằng python): ca hoà theo giá trị nhị phân thật của float.
-    const PY: [number, number, number][] = [
-      [(100 * 247_000) / 2_000_000, 1, 12.3],
-      [12.5, 0, 12],
-      [13.5, 0, 14],
-      [-12.5, 0, -12],
-      [2.675, 2, 2.67],
-      [0.125, 2, 0.12],
-      [0.375, 2, 0.38],
-      [(100 * 1) / 8, 1, 12.5],
-      [(100 * 550_000) / 1_650_000, 0, 33],
-      [(100 * 1) / 3, 1, 33.3],
-      [(100 * -247_000) / 2_000_000, 1, -12.3],
-      [33.25, 1, 33.2],
-      [33.35, 1, 33.4],
-    ];
-    for (const [x, nd, want] of PY)
+    for (const [x, nd, want] of PY_ROUND)
       expect({ x, nd, got: pyRound(x, nd) }).toEqual({ x, nd, got: want });
   });
   test("lô mới nhất đặt giá mua; khác thiết bị ⇒ any_device; cờ rẻ nhất chỉ khi > 1 gói cùng hạn", () => {
-    const lots: LotIn[] = [
-      {
-        id: "l1",
-        ca: "Viettel-CA",
-        years: 1,
-        device: "remote",
-        unit_cost: 700,
-        bought_at: "2026-01-01",
-      },
-      {
-        id: "l2",
-        ca: "VIETTEL CA",
-        years: 1,
-        device: "remote",
-        unit_cost: 650,
-        bought_at: "2026-05-01",
-      },
-    ];
-    const market: MarketIn[] = [
-      {
-        ca_key: "viettel",
-        years: 1,
-        device: "token",
-        kind: "new",
-        seller: "S",
-        tier: null,
-        price_ex_vat: 900,
-        url: null,
-        verified: true,
-        seen: "2026-10-01",
-      },
-    ];
     const p = cksPackages(
-      lots,
+      NEWEST_LOTS,
       [{ lot_id: "l1", valid_from: "2026-10-01", sale_price: 800 }],
-      market,
+      ONE_MARKET,
       "2026-10-19",
     );
     expect(p.rows).toHaveLength(1);
@@ -283,6 +287,9 @@ describe("giá gói (prices/cks.py)", () => {
     expect(p.rows[0]?.market).toMatchObject({ any_device: true, min: 900, n: 1 });
     expect(p.stats).toEqual({ sold_12m: 1, revenue: 800, gross_profit: 100, margin_pct: 12.5 });
   });
+});
+
+describe("giá gói (prices/cks.py) · biên lợi nhuận", () => {
   test("review M1 · stats.margin_pct 2 chữ ký 1.000.000 trên lô 876.500 ⇒ 12,3 % như mgmt (không 12,4)", () => {
     const lots: LotIn[] = [
       {

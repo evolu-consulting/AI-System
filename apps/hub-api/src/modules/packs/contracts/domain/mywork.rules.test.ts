@@ -97,6 +97,9 @@ describe("W1 · từng nguồn → hàng", () => {
       subject: "customer",
     });
   });
+});
+
+describe("W1 · từng nguồn → hàng (hẹn nhắc chung, nhắc hạn)", () => {
   it("hẹn nhắc chung: giữ tiêu đề máy chủ đặt, chủ thể, HĐ; xếp cùng nhóm hẹn nhắc", () => {
     const g = {
       id: "g",
@@ -178,6 +181,9 @@ describe("W1 · buildMyWork: thứ tự và đếm", () => {
     );
     expect(out.items.map((i) => i.id)).toEqual(["followup:c", "followup:a", "followup:b"]);
   });
+});
+
+describe("W1 · buildMyWork: thứ tự và đếm (tổng thứ tự, rỗng)", () => {
   it("compareItems là thứ tự toàn phần ổn định (a≠b ⇒ ≠ 0, đối xứng)", () => {
     const xs = [
       obligationItem(ob("1", "2026-10-19"), TODAY),

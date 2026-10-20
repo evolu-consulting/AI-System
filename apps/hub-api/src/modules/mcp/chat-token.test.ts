@@ -65,7 +65,9 @@ describe("M2-chat · m2c · handle hội thoại + grant theo run", () => {
     expect((await t.resolve(h))?.runId).toBe("r2");
     await g2?.revoke();
   });
+});
 
+describe("M2-chat · m2c · handle hội thoại + grant (hết hạn, TTL)", () => {
   it("grant hết hạn (exp) ⇒ null; handle mới làm handle cũ chết; hội thoại khác không dùng grant này", async () => {
     let now = 1_000_000;
     const t = new ChatToolTokens({ store: memStore(), packs, now: () => now });

@@ -20,16 +20,14 @@ const newId = () => `00000000-0000-4000-9000-${String(++seq).padStart(12, "0")}`
 const comp = (
   id: string,
   mode: CompState["mode"],
-  onHand = 0n,
-  value = 0n,
-  avg = 0n,
+  o: { onHand?: bigint; value?: bigint; avg?: bigint } = {},
 ): CompState => ({
   id,
   productId: K,
   mode,
-  onHand: onHand * 10_000n,
-  value,
-  avg,
+  onHand: (o.onHand ?? 0n) * 10_000n,
+  value: o.value ?? 0n,
+  avg: o.avg ?? 0n,
 });
 const plan = (
   comps: CompState[],
@@ -46,17 +44,14 @@ const plan = (
 const lot = (
   id: string,
   componentId: string,
-  remaining: number,
-  receivedOn: string,
-  expiresOn: string | null = null,
-  s = 1,
+  o: { remaining: number; receivedOn: string; expiresOn?: string | null; seq?: number },
 ): OpenLot => ({
   id,
   componentId,
-  remaining: BigInt(remaining) * 10_000n,
-  receivedOn,
-  expiresOn,
-  seq: s,
+  remaining: BigInt(o.remaining) * 10_000n,
+  receivedOn: o.receivedOn,
+  expiresOn: o.expiresOn ?? null,
+  seq: o.seq ?? 1,
 });
 const lcg = (seed: number) => {
   let r = seed;
@@ -133,7 +128,7 @@ describe("số học", () => {
 describe("planDelivery · nhập/xuất", () => {
   it("BA 5.3a: 320 × 10.000 + 300 × 12.000 ⇒ BQ 10.968; dòng nhập tạo lô, cập nhật trỏ dòng sổ cuối", () => {
     const p = plan(
-      [comp(C1, "stock", 320n, 3_200_000n, 10_000n)],
+      [comp(C1, "stock", { onHand: 320n, value: 3_200_000n, avg: 10_000n })],
       [{ componentId: C1, direction: "in", qty: "300", unitPrice: 12_000 }],
     );
     expect(p.result.components[0]).toMatchObject({
@@ -160,14 +155,16 @@ describe("planDelivery · nhập/xuất", () => {
       onHandAfter: "620",
     });
   });
+});
 
+describe("planDelivery · nhập/xuất (FIFO)", () => {
   it("xuất FIFO theo lô, BQ không đổi; hai dòng cùng thành phần cộng dồn, cập nhật một lần", () => {
     const lots = [
-      lot("L2", C1, 300, "2026-02-01", null, 2),
-      lot("L1", C1, 20, "2026-01-01", null, 1),
+      lot("L2", C1, { remaining: 300, receivedOn: "2026-02-01", expiresOn: null, seq: 2 }),
+      lot("L1", C1, { remaining: 20, receivedOn: "2026-01-01", expiresOn: null, seq: 1 }),
     ];
     const p = plan(
-      [comp(C1, "stock", 320n, 6_800_000n, 21_250n)],
+      [comp(C1, "stock", { onHand: 320n, value: 6_800_000n, avg: 21_250n })],
       [
         { componentId: C1, direction: "out", qty: "50" },
         { componentId: C1, direction: "out", qty: "10" },
@@ -182,17 +179,27 @@ describe("planDelivery · nhập/xuất", () => {
     expect(p.updates).toHaveLength(1);
     expect(p.result.components[0]).toMatchObject({ onHandAfter: "260", avgCostAfter: 21_250 });
   });
+});
 
+describe("planDelivery · nhập/xuất (vượt tồn, bảo toàn tiền)", () => {
   it("vượt tồn ⇒ stock_insufficient báo MỌI thành phần thiếu, theo tổng cộng dồn", () => {
     const e = err(() =>
       plan(
-        [comp(C1, "stock", 5n, 50n, 10n), comp(C2, "stock", 1n, 10n, 10n)],
+        [
+          comp(C1, "stock", { onHand: 5n, value: 50n, avg: 10n }),
+          comp(C2, "stock", { onHand: 1n, value: 10n, avg: 10n }),
+        ],
         [
           { componentId: C1, direction: "out", qty: "3" },
           { componentId: C1, direction: "out", qty: "3" },
           { componentId: C2, direction: "out", qty: "2" },
         ],
-        { lots: [lot("a", C1, 5, "2026-01-01"), lot("b", C2, 1, "2026-01-01")] },
+        {
+          lots: [
+            lot("a", C1, { remaining: 5, receivedOn: "2026-01-01" }),
+            lot("b", C2, { remaining: 1, receivedOn: "2026-01-01" }),
+          ],
+        },
       ),
     );
     expect([e.code, e.shortages]).toEqual([
@@ -225,11 +232,16 @@ describe("planDelivery · nhập/xuất", () => {
 describe("planDelivery · gói suất có hạn, không giữ hàng, kiểm dòng", () => {
   it("gói quá hạn ⇒ dòng expire theo BQ trước; bán trừ gói hết hạn sớm nhất", () => {
     const lots = [
-      lot("late", C1, 50, "2026-07-01", "2027-06-30", 2),
-      lot("early", C1, 70, "2026-01-10", "2026-12-31", 1),
+      lot("late", C1, { remaining: 50, receivedOn: "2026-07-01", expiresOn: "2027-06-30", seq: 2 }),
+      lot("early", C1, {
+        remaining: 70,
+        receivedOn: "2026-01-10",
+        expiresOn: "2026-12-31",
+        seq: 1,
+      }),
     ];
     const p = plan(
-      [comp(C1, "quota", 120n, 26_400_000n, 220_000n)],
+      [comp(C1, "quota", { onHand: 120n, value: 26_400_000n, avg: 220_000n })],
       [{ componentId: C1, direction: "out", qty: "10" }],
       {
         on: "2027-01-05",
@@ -254,9 +266,11 @@ describe("planDelivery · gói suất có hạn, không giữ hàng, kiểm dòn
     expect(p.moves[0]).toMatchObject({ amount: 900_000, onHandBefore: null, onHandAfter: null });
     expect(p.updates).toEqual([]);
   });
+});
 
+describe("planDelivery · gói suất có hạn, không giữ hàng, kiểm dòng (dòng sai)", () => {
   it("dòng sai ⇒ invalid", () => {
-    const g = comp(C1, "stock", 10n, 100n, 10n);
+    const g = comp(C1, "stock", { onHand: 10n, value: 100n, avg: 10n });
     const cases: [CompState[], DeliveryMove[]][] = [
       [[g], [{ componentId: C2, direction: "in", qty: "1", unitPrice: 1 }]],
       [[comp(C1, "none")], [{ componentId: C1, direction: "in", qty: "1", unitPrice: 1 }]],

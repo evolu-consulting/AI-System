@@ -50,6 +50,9 @@ describe("V2-K · Cần xử lý", () => {
     expect(parseTodoKey(`overdue:${U(1)}:2026-10-10`)).toBeNull();
     expect(parseTodoKey(`rating:x:2026-10-10`)).toBeNull();
   });
+});
+
+describe("V2-K · Cần xử lý (đánh giá sau quý, trần)", () => {
   it("đánh giá sau quý: chỉ 30 ngày đầu quý; tiêu đề theo quý trước", () => {
     expect(quarterWindow("2026-10-21")).toEqual({
       start: "2026-10-01",
