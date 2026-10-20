@@ -2,7 +2,7 @@
 // chỉ đếm "đã có") ⇒ đối soát. Chạy lại an toàn (id tất định + ON CONFLICT DO NOTHING); `Checkpoint` bỏ qua lô đã xong.
 import { buildPlan } from "../domain/build.rules";
 import type { Ctx } from "../domain/context";
-import { targetId } from "../domain/ids.rules";
+import { sha1, targetId, toHex } from "../domain/ids.rules";
 import { memberships, usersExport } from "../domain/map-identity.rules";
 import {
   bump,
@@ -161,7 +161,9 @@ async function writeTable(
   let inserted = 0;
   for (let i = 0; i < rows.length; i += o.batch) {
     const part = rows.slice(i, i + o.batch);
-    const key = `${tid}|${table}|${i / o.batch}`;
+    // review B#20: khoá theo NỘI DUNG lô (sha1 của hàng), không theo vị trí ⇒ chạy tiếp với lô xếp khác / cỡ lô khác chỉ bỏ
+    // qua lô y hệt đã ghi xong; lô khác đi ghi lại (ON CONFLICT DO NOTHING — an toàn).
+    const key = `${tid}|${table}|${toHex(sha1(new TextEncoder().encode(JSON.stringify(part))))}`;
     if (!o.apply) c.existing += Math.max(0, await d.target.existing(tid, table, part));
     else if (!d.checkpoint.done(key)) {
       inserted += await d.target.write(tid, table, part);

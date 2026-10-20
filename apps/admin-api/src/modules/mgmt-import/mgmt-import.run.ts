@@ -7,8 +7,8 @@ import { createIdentityAdapter } from "./adapters/identity.adapter";
 import { createNeo4jReader } from "./adapters/neo4j.reader";
 import { createOpenSearchReader } from "./adapters/opensearch.reader";
 import { createTargetStore, visibleContracts } from "./adapters/target.repo";
-import { type ImportOpts, type ImportReport, runImport } from "./application/import.usecase";
-import type { Checkpoint, SourceReader } from "./application/ports";
+import { type ImportReport, runImport } from "./application/import.usecase";
+import type { Checkpoint, ImportDeps, ImportOpts, SourceReader } from "./application/ports";
 
 export type RunConfig = ImportOpts & {
   opensearch: { url: string; prefix?: string };
@@ -47,13 +47,9 @@ export function sourceReader(c: RunConfig): SourceReader {
   };
 }
 
-export async function runMgmtImport(
-  adminDb: Db,
-  hubDb: Db,
-  c: RunConfig,
-  reader: SourceReader = sourceReader(c),
-): Promise<ImportReport> {
-  return runImport(c, {
+/** Nối adapter thật (tách riêng để test int bọc một cổng — vd đích lỗi giữa chừng — mà vẫn dùng mọi adapter khác). */
+export function buildDeps(adminDb: Db, hubDb: Db, c: RunConfig, reader: SourceReader): ImportDeps {
+  return {
     reader,
     identity: createIdentityAdapter(adminDb, c.actorId, Math.min(c.batch, 1000)),
     target: createTargetStore(hubDb, c.source),
@@ -64,5 +60,14 @@ export async function runMgmtImport(
     checkpoint: fileCheckpoint(c.statePath),
     visible: (tid, uid) => visibleContracts(hubDb, tid, uid),
     now: () => performance.now(),
-  });
+  };
+}
+
+export async function runMgmtImport(
+  adminDb: Db,
+  hubDb: Db,
+  c: RunConfig,
+  reader: SourceReader = sourceReader(c),
+): Promise<ImportReport> {
+  return runImport(c, buildDeps(adminDb, hubDb, c, reader));
 }
