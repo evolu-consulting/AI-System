@@ -7,12 +7,15 @@ import { logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { deliveryRepo } from "./adapters/delivery.repo";
+import { deliveryRoutes } from "./adapters/delivery.routes";
 import { ledgerRoutes } from "./adapters/ledger.routes";
 import { ledgerReadRepo } from "./adapters/ledger-read.repo";
 import { ledgerWriteRepo } from "./adapters/ledger-write.repo";
 import { milestonesRepo } from "./adapters/milestones.repo";
 import { milestonesRoutes } from "./adapters/milestones.routes";
 import { overdueRepo } from "./adapters/overdue.repo";
+import { deliveryReads } from "./application/delivery.usecase";
 import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
 import { milestoneCommands } from "./application/milestones.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
@@ -27,6 +30,7 @@ const DEFAULT_EVERY_MS = 3_600_000;
 const ledgerRepos = (tx: Tx, t: string) => ({
   ledger: { ...ledgerWriteRepo(tx, t), ...ledgerReadRepo(tx, t) },
   milestones: milestonesRepo(tx, t), // V2-A · HD-11
+  delivery: deliveryRepo(tx, t), // V2-D · HD-05 (mốc giao ⇒ kho)
 });
 
 export type OverdueSweepDeps = {
@@ -71,5 +75,6 @@ export function ledgerModule(
   const deps = { uow, timeZoneOf: safeTimeZone(d.timeZoneOf), now: d.now ?? (() => new Date()) };
   const r = ledgerRoutes(view, { cmd: ledgerCommands(deps), reads: ledgerReads(deps) });
   r.route("/", milestonesRoutes(view, milestoneCommands({ uow }))); // V2-A · thêm/sửa/xoá mốc
+  r.route("/", deliveryRoutes(view, deliveryReads({ uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
   return r;
 }

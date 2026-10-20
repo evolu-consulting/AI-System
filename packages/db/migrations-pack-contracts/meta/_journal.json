@@ -169,6 +169,13 @@
       "when": 1795100000000,
       "tag": "0024_v2c_partner_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795300000000,
+      "tag": "0026_v2d_delivery_stock",
+      "breakpoints": true
     }
   ]
 }

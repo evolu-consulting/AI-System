@@ -11,7 +11,13 @@ import {
 } from "../domain/ledger.types";
 import { localDate } from "../domain/local-time.rules";
 import type { Fault } from "../domain/milestones.rules";
-import { LedgerFail, type LedgerRepos, type LockedObligation } from "./ledger.ports";
+import { confirmDelivery } from "./delivery.usecase";
+import {
+  type EventHead,
+  LedgerFail,
+  type LedgerRepos,
+  type LockedObligation,
+} from "./ledger.ports";
 
 type Deps = {
   uow: PackUow<LedgerRepos>;
@@ -51,10 +57,12 @@ function obligationCommands(d: Deps) {
     b: { at?: string | null; amount?: number | null; fault?: Fault | null },
   ) => {
     const at = b.at ?? (await today(who));
-    return d.uow.tenant(who, async ({ ledger: r }) => {
+    return d.uow.tenant(who, async ({ ledger: r, delivery }) => {
       const ob = await openObligation(r, id);
       const late = daysLate(at, ob.due_date);
-      return r.settle({
+      // V2-D · HD-05: mốc giao ⇒ SL đã giao + kho (cùng tx, sau khoá HĐ → mốc); lỗi ⇒ huỷ cả tx, mốc giữ mở.
+      const dv = ob.kind === "delivery" ? await confirmDelivery(delivery, id, at) : null;
+      const out = await r.settle({
         id,
         at,
         by: who.userId,
@@ -64,7 +72,9 @@ function obligationCommands(d: Deps) {
         amount: b.amount ?? ob.amount,
         // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
         fault: late > 0 ? (b.fault ?? "unknown") : null,
+        delivered: dv?.rows ?? [],
       });
+      return dv?.outcome ? { ...out, delivery: dv.outcome } : out;
     });
   };
 
@@ -95,6 +105,15 @@ function obligationCommands(d: Deps) {
   return { settle, postpone, remind };
 }
 
+/** Khoá HĐ → đợt của sự kiện rồi tính hoàn tác. V2-D: mở lại mốc giao đã ghi SL/kho ⇒ chặn (đảo kho + BQ khi xoá HĐ — V2-M). */
+async function undoPatch(r: Repo, e: EventHead) {
+  if (!e.obligation_id || !(await r.lockContractOf(e.obligation_id))) return null;
+  const ob = await r.lockObligation(e.obligation_id);
+  const patch = ob ? undoOf(e, ob) : null;
+  if (e.locked && patch && "reopen" in patch) throw new LedgerFail("locked");
+  return patch;
+}
+
 /** Lệnh trên sổ đối tác: huỷ dòng, ghi tay. */
 function eventCommands(d: Deps) {
   const today = todayOf(d);
@@ -104,11 +123,7 @@ function eventCommands(d: Deps) {
       const e = await r.eventHead(id);
       if (!e) throw new LedgerFail("not_found");
       if (e.source === "system") throw new LedgerFail("system");
-      let patch = null;
-      if (e.obligation_id && (await r.lockContractOf(e.obligation_id))) {
-        const ob = await r.lockObligation(e.obligation_id);
-        if (ob) patch = undoOf(e, ob);
-      }
+      const patch = await undoPatch(r, e);
       return r.voidEvent({ id, by: who.userId, obligationId: e.obligation_id, patch });
     });
 

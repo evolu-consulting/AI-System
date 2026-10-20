@@ -1,6 +1,7 @@
 // V2-A · HD-11: cổng repo mốc HĐ (lớp 2 — chỉ kiểu). Mỗi hàm = MỘT câu SQL trong tx `PackUow` (RLS tenant). Thứ tự khoá như
 // HD7 D7-15: hàng HĐ (`FOR NO KEY UPDATE`) TRƯỚC hàng mốc (`FOR UPDATE`).
 import type { DbKind, Deal, Fault, Owner } from "../domain/milestones.rules";
+import type { DeliveryRepo } from "./delivery.ports";
 
 /** Hàng mốc thô (cột `contracts.obligations`; qty/amount có thể về chuỗi NUMERIC). */
 export type MilestoneRow = {
@@ -51,7 +52,7 @@ export type MilestonesRepo = {
   /** Gỡ mốc chưa xác nhận (`replaced` — sổ chỉ thêm, không DELETE) + huỷ dòng quá hạn của nó. */
   remove(id: string, by: string): Promise<boolean>;
 };
-export type MilestoneRepos = { milestones: MilestonesRepo };
+export type MilestoneRepos = { milestones: MilestonesRepo; delivery: DeliveryRepo };
 
 export class MilestoneFail extends Error {
   constructor(readonly kind: "not_found" | "confirmed" | "invalid") {

@@ -4,7 +4,8 @@
 //   1. khoá thành phần `FOR UPDATE` theo id (thứ tự khoá cố định ⇒ không deadlock giữa hai lần giao chéo nhau);
 //   2. đọc lô còn hàng/suất của các thành phần đó (index một phần `stock_lots_open_idx`);
 //   — `planDelivery` (thuần) tính BQ, giá vốn, chặn vượt tồn (ném `StockError` TRƯỚC khi ghi) —
-//   3. một CTE: thêm lô mới + trừ lô + thêm dòng sổ (RLS: sổ cho HĐ không thấy ⇒ 42501);
+//   3. một CTE: thêm lô mới + trừ lô + thêm dòng sổ (RLS: sổ cho HĐ không thấy ⇒ 42501); lô bị trừ lọc thêm `= any(mảng id)` để kế
+//      hoạch CHUNG (câu chuẩn bị sẵn) vẫn đi index khoá chính, không Seq Scan `stock_lots` (đo V2-D);
 //   4. cập nhật tồn/giá trị/BQ + `last_move_id` (trigger đối chiếu dòng sổ vừa ghi).
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -122,6 +123,7 @@ export async function applyDelivery(
       from (select y."lotId" as id, sum(y.qty)::numeric / 10000 as q
             from p, jsonb_to_recordset(p.j -> 'takes') as y("lotId" uuid, qty bigint) group by y."lotId") x
       where l.tenant_id = ${t}::uuid and l.id = x.id
+        and l.id = any (${pgArr([...new Set(plan.takes.map((k) => k.lotId))])}::uuid[])
       returning l.id)
     insert into contracts.stock_moves (id, tenant_id, component_id, lot_id, direction, reason, qty, unit_cost, amount,
       on_hand_before, on_hand_after, value_before, value_after, avg_before, avg_after, moved_on, contract_id, milestone_id,
@@ -135,7 +137,8 @@ export async function applyDelivery(
       "contractItemId" uuid, "supplierPartyKey" text, ord bigint)
     order by m.ord`);
   await tx.execute(sql`update contracts.product_components pc
-    set on_hand = u."onHand"::numeric / 10000, stock_value = u.value, avg_cost = u.avg, last_move_id = u."lastMoveId"
+    set on_hand = u."onHand"::numeric / 10000, stock_value = u.value, avg_cost = u.avg, last_move_id = u."lastMoveId",
+      updated_at = now()
     from jsonb_to_recordset(${json(plan.updates)}) as u(id uuid, "onHand" bigint, value bigint, avg bigint, "lastMoveId" uuid)
     where pc.tenant_id = ${t}::uuid and pc.id = any(${pgArr(ids)}::uuid[]) and pc.id = u.id`);
   return plan.result;

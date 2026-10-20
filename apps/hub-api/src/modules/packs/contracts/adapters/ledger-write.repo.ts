@@ -72,6 +72,12 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
         update contracts.obligations o set status = 'done', done_at = ${w.at}::date, done_by = ${w.by}::uuid,
           fault = ${w.fault}::text, updated_at = now()
         where o.tenant_id = ${t}::uuid and o.id = ${w.id}::uuid and o.status = 'open' returning o.*),
+      di as (
+        insert into contracts.milestone_items (tenant_id, contract_id, milestone_id, contract_item_id, qty, delivered)
+        select ${t}::uuid, u.contract_id, u.id, x.item_id, x.planned::numeric, x.qty::numeric
+        from u, jsonb_to_recordset(${json(w.delivered)}) as x(item_id uuid, qty text, planned text)
+        on conflict (tenant_id, milestone_id, contract_item_id) do update set delivered = excluded.delivered,
+          updated_at = now()),
       ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, ...(w.fault ? { data: { fault: w.fault } } : {}) })},
       ${auditCte(t, "obligation_settled", w.by, sql`jsonb_build_object('obligation_id', u.id, 'at', ${w.at}::text, 'amount', ${w.amount}::bigint)`)}
       select ${obJson("u")} as j from u`,
@@ -126,8 +132,11 @@ function ledgerEventWrites(
         obligation_id: string | null;
         to: string | null;
         was: string | null;
+        locked: boolean;
       }>(sql`select e.id::text, e.type, e.source, e.obligation_id::text, e.data ->> 'to' as "to",
-          e.data ->> 'was' as was
+          e.data ->> 'was' as was,
+          exists (select 1 from contracts.milestone_items mi where mi.tenant_id = e.tenant_id
+            and mi.milestone_id = e.obligation_id and mi.delivered > 0) as locked
         from contracts.partner_events e where e.tenant_id = ${t}::uuid and e.id = ${id}::bigint
           and ${seenEvent("e")}`);
       return r ?? null;

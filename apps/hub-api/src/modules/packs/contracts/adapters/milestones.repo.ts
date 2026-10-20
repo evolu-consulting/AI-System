@@ -44,6 +44,10 @@ const voidOverdue = (t: string, on: boolean) => sql`vo as (
     select e.id, e.tenant_id, null from contracts.partner_events e join u on e.obligation_id = u.id
     where e.tenant_id = ${t}::uuid and e.type = 'overdue' and ${on}::boolean
     on conflict (event_id, tenant_id) do nothing)`;
+/** V2-D: bỏ bảng SL chưa giao của mốc ở `u` khi `on` (mốc gỡ / đổi khỏi Giao hàng). */
+const dropPlan = (t: string, on: SQL) => sql`dp as (
+    delete from contracts.milestone_items mi using u
+    where mi.tenant_id = ${t}::uuid and mi.milestone_id = u.id and mi.delivered is null and ${on})`;
 const audit = (t: string, type: string, by: string, data: SQL) => sql`a as (
     insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
     select ${t}::uuid, u.contract_id, ${type}, ${by}::uuid, ${data} from u)`;
@@ -96,6 +100,7 @@ export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
           where o.tenant_id = ${t}::uuid and o.id = ${id}::uuid and o.status in ('open', 'cancelled')
           returning o.id, o.contract_id),
         ${voidOverdue(t, true)},
+        ${dropPlan(t, sql`true`)},
         ${audit(t, "milestone_deleted", by, sql`jsonb_build_object('milestone_id', u.id)`)}
         select count(*)::int as n from u`);
       return (r?.n ?? 0) > 0;
@@ -111,6 +116,7 @@ function updateQ(t: string, id: string, w: MilestoneWrite & { moved: boolean }, 
       where o.tenant_id = ${t}::uuid and o.id = ${id}::uuid and o.status in ('open', 'cancelled')
       returning o.*),
     ${voidOverdue(t, w.moved)},
+    ${dropPlan(t, sql`u.kind <> 'delivery'`)},
     ${audit(t, "milestone_edited", by, sql`jsonb_build_object('milestone_id', u.id, 'kind', u.kind, 'due_date', u.due_date)`)}
     ${written(t)}`;
 }

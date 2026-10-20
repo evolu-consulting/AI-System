@@ -1,6 +1,7 @@
 // V2-A · BA v2 §2 · §3.1 HD-01/HD-03/HD-04/HD-11 · §5.4: contract zod mốc HĐ (`/pack/contracts/contracts/:id/milestones`,
 // `/milestones/:id`) + loại HĐ (Mua/Bán/Giới thiệu) + giai đoạn suy từ mốc. Tiền = số nguyên đồng 0…10¹⁵; SL ≤ 4 chữ số thập phân.
 import { z } from "zod";
+import { MilestonePlanSchema } from "./delivery";
 import { nfcText } from "./fields";
 import { IsoDay, LedgerMoney } from "./ledger";
 
@@ -48,6 +49,8 @@ export const MilestoneCreateSchema = z.strictObject({
   owner: z.enum(MILESTONE_OWNERS).nullish(),
   qty: qty.nullish(),
   amount: LedgerMoney.nullish(),
+  /** V2-D · 5.7a: bảng "Giao lần này" (chỉ mốc Giao hàng). Bỏ trống = giao hết phần còn lại mọi dòng. */
+  items: MilestonePlanSchema.nullish(),
 });
 export type MilestoneCreate = z.infer<typeof MilestoneCreateSchema>;
 export const MilestonePatchSchema = z
@@ -58,6 +61,8 @@ export const MilestonePatchSchema = z
     owner: z.enum(MILESTONE_OWNERS).optional(),
     qty: qty.nullable().optional(),
     amount: LedgerMoney.nullable().optional(),
+    /** V2-D: thay cả bảng SL (null/[] = giao hết phần còn lại). */
+    items: MilestonePlanSchema.nullable().optional(),
   })
   .refine((p) => Object.keys(p).length >= 1, { message: "cần ≥ 1 khoá" });
 export type MilestonePatch = z.infer<typeof MilestonePatchSchema>;

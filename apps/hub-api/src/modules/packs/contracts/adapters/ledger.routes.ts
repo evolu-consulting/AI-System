@@ -24,11 +24,16 @@ import {
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
 import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+import { DeliveryFail } from "../application/delivery.ports";
 import { LedgerFail } from "../application/ledger.ports";
 import type { LedgerCommands, LedgerReads } from "../application/ledger.usecase";
+import { deliveryError } from "./delivery.routes";
 
 const KEY = "contracts";
-const FAIL: Record<LedgerFail["kind"], LedgerErrorCode | "NOT_FOUND" | "FORBIDDEN"> = {
+const FAIL: Record<
+  Exclude<LedgerFail["kind"], "locked">,
+  LedgerErrorCode | "NOT_FOUND" | "FORBIDDEN"
+> = {
   not_found: "NOT_FOUND",
   done: "OBLIGATION_DONE",
   postpone_date: "POSTPONE_DATE",
@@ -47,7 +52,9 @@ const MESSAGES: Record<LedgerErrorCode, string> = {
 };
 
 function ledgerError(e: unknown): never {
+  if (e instanceof DeliveryFail) deliveryError(e);
   if (!(e instanceof LedgerFail)) throw e;
+  if (e.kind === "locked") deliveryError(new DeliveryFail("locked"));
   const code = FAIL[e.kind];
   if (code === "NOT_FOUND") throw appError("NOT_FOUND");
   if (code === "FORBIDDEN")

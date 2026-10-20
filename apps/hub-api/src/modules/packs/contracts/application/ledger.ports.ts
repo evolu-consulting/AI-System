@@ -11,6 +11,7 @@ import type {
   ScheduleRequest,
 } from "../domain/ledger.types";
 import type { Fault } from "../domain/milestones.rules";
+import type { DeliveryRepo } from "./delivery.ports";
 
 export type LockedObligation = {
   id: string;
@@ -31,6 +32,8 @@ export type EventHead = {
   obligation_id: string | null;
   to: string | null;
   was: string | null;
+  /** V2-D: mốc giao đã ghi SL đã giao (> 0) ⇒ không huỷ xác nhận (đảo kho ở V2-M). */
+  locked: boolean;
 };
 export type SettleWrite = {
   id: string;
@@ -42,6 +45,8 @@ export type SettleWrite = {
   amount: number | null;
   /** V2-A: lỗi do ai khi trễ (null = đúng hạn). */
   fault: Fault | null;
+  /** V2-D: SL đã giao theo dòng HĐ, ghi CÙNG câu (`milestone_items.delivered`); [] = không có. */
+  delivered: { item_id: string; qty: string; planned: string | null }[];
 };
 export type PostponeWrite = {
   id: string;
@@ -97,7 +102,7 @@ export type LedgerReadRepo = {
   contractPartner(contractId: string): Promise<ContractPartner | null>;
 };
 
-export type LedgerRepos = { ledger: LedgerWriteRepo & LedgerReadRepo };
+export type LedgerRepos = { ledger: LedgerWriteRepo & LedgerReadRepo; delivery: DeliveryRepo };
 
 /** Lỗi luật ⇒ mã contract (`LEDGER_ERRORS`) ở route. */
 export class LedgerFail extends Error {
@@ -109,7 +114,8 @@ export class LedgerFail extends Error {
       | "system"
       | "event_type"
       | "adjust"
-      | "forbidden",
+      | "forbidden"
+      | "locked",
   ) {
     super(kind);
   }

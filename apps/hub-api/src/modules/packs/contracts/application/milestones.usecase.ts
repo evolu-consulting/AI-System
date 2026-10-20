@@ -4,6 +4,7 @@
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import {
   checkMilestone,
+  type DbKind,
   type Deal,
   defaultOwner,
   fromDb,
@@ -12,6 +13,8 @@ import {
   type Owner,
   toDb,
 } from "../domain/milestones.rules";
+import { DeliveryFail, type DeliveryRepo } from "./delivery.ports";
+import { checkMilestonePlan } from "./delivery.usecase";
 import {
   MilestoneFail,
   type MilestoneRepos,
@@ -30,7 +33,10 @@ export type MilestoneInput = {
   owner?: Owner | null | undefined;
   qty?: number | null | undefined;
   amount?: number | null | undefined;
+  /** V2-D · 5.7a: bảng "Giao lần này" (chỉ mốc Giao hàng). */
+  items?: PlanInput | null | undefined;
 };
+type PlanInput = readonly { item_id: string; qty: number | null }[];
 export type MilestoneChange = {
   kind?: MilestoneKind | undefined;
   title?: string | undefined;
@@ -38,13 +44,18 @@ export type MilestoneChange = {
   owner?: Owner | undefined;
   qty?: number | null | undefined;
   amount?: number | null | undefined;
+  /** V2-D: thay cả bảng SL (null/[] = giao hết phần còn lại). */
+  items?: PlanInput | null | undefined;
 };
 
 type Uow = PackUow<MilestoneRepos>;
 const num = (v: number | string | null): number | null => (v === null ? null : Number(v));
 
 /** Đầu vào đã gộp ⇒ hàng ghi; sai luật SL/tiền ⇒ `invalid`. */
-function toWrite(deal: Deal, m: Required<MilestoneChange> & { title: string }): MilestoneWrite {
+function toWrite(
+  deal: Deal,
+  m: Required<Omit<MilestoneChange, "items">> & { title: string },
+): MilestoneWrite {
   if (checkMilestone({ kind: m.kind, qty: m.qty, amount: m.amount }) !== "ok")
     throw new MilestoneFail("invalid");
   const db = toDb(m.kind, deal);
@@ -85,29 +96,59 @@ async function editable(r: MilestoneRepos["milestones"], id: string) {
   return { deal: c.deal, cur };
 }
 
+/** V2-D: bảng SL chỉ cho mốc Giao hàng; dòng thuộc HĐ (lạ/trùng ⇒ `invalid`); vượt phần còn lại ⇒ `DeliveryFail("over")`. */
+async function planOf(
+  r: DeliveryRepo,
+  contractId: string,
+  kind: DbKind,
+  items: PlanInput,
+): Promise<{ item_id: string; qty: string | null }[]> {
+  if (items.length === 0) return [];
+  if (kind !== "delivery") throw new MilestoneFail("invalid");
+  try {
+    return await checkMilestonePlan(r, contractId, items);
+  } catch (e) {
+    if (e instanceof DeliveryFail && e.kind === "invalid") throw new MilestoneFail("invalid");
+    throw e;
+  }
+}
+
+/** Thêm mốc: khoá rỗng ⇒ mặc định theo loại (tên, việc của ai). */
+const newWrite = (deal: Deal, b: MilestoneInput): MilestoneWrite =>
+  toWrite(deal, {
+    kind: b.kind,
+    title: b.title ?? MILESTONE_TITLES[b.kind],
+    due_date: b.due_date,
+    owner: b.owner ?? defaultOwner(b.kind, deal),
+    qty: b.qty ?? null,
+    amount: b.amount ?? null,
+  });
+
 export function milestoneCommands(d: { uow: Uow }) {
   const add = (who: PackWho, contractId: string, b: MilestoneInput): Promise<MilestoneWritten> =>
-    d.uow.tenant(who, async ({ milestones: r }) => {
+    d.uow.tenant(who, async ({ milestones: r, delivery }) => {
       const c = await r.lockContract(contractId);
       if (!c) throw new MilestoneFail("not_found");
       if (!c.deal || c.n >= MILESTONES_PER_CONTRACT) throw new MilestoneFail("invalid");
-      const w = toWrite(c.deal, {
-        kind: b.kind,
-        title: b.title ?? MILESTONE_TITLES[b.kind],
-        due_date: b.due_date,
-        owner: b.owner ?? defaultOwner(b.kind, c.deal),
-        qty: b.qty ?? null,
-        amount: b.amount ?? null,
-      });
-      return r.insert(contractId, w, who.userId);
+      const w = newWrite(c.deal, b);
+      const plan = b.items?.length ? await planOf(delivery, contractId, w.kind, b.items) : null;
+      const out = await r.insert(contractId, w, who.userId);
+      if (plan) await delivery.replacePlan(out.m.id, contractId, plan);
+      return out;
     });
 
   const edit = (who: PackWho, id: string, p: MilestoneChange): Promise<MilestoneWritten> =>
-    d.uow.tenant(who, async ({ milestones: r }) => {
+    d.uow.tenant(who, async ({ milestones: r, delivery }) => {
       const { deal, cur } = await editable(r, id);
       if (!deal) throw new MilestoneFail("invalid");
       const w = mergeChange(deal, cur, p);
-      return r.update(id, { ...w, moved: w.due_date !== cur.due_date }, who.userId);
+      const plan =
+        p.items !== undefined
+          ? await planOf(delivery, cur.contract_id, w.kind, p.items ?? [])
+          : null;
+      const out = await r.update(id, { ...w, moved: w.due_date !== cur.due_date }, who.userId);
+      if (plan) await delivery.replacePlan(id, cur.contract_id, plan);
+      return out;
     });
 
   const remove = (who: PackWho, id: string): Promise<void> =>

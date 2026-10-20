@@ -16,8 +16,10 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
+import { DeliveryFail } from "../application/delivery.ports";
 import { MilestoneFail } from "../application/milestones.ports";
 import type { MilestoneCommands } from "../application/milestones.usecase";
+import { deliveryError } from "./delivery.routes";
 import { toWrittenMilestone } from "./milestones.mapper";
 
 const KEY = "contracts";
@@ -28,6 +30,7 @@ const MESSAGES: Record<MilestoneErrorCode, string> = {
 };
 
 function fail(e: unknown): never {
+  if (e instanceof DeliveryFail) deliveryError(e); // V2-D: bảng SL vượt phần còn lại ⇒ DELIVERY_OVER
   if (!(e instanceof MilestoneFail)) throw e;
   if (e.kind === "not_found") throw appError("NOT_FOUND");
   const code: MilestoneErrorCode =

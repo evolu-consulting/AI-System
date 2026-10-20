@@ -6,6 +6,7 @@ import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import { assistantTools } from "./adapters/assistant.tools";
 import { contractsRepos } from "./adapters/contracts.repo";
+import { deliveryRepo } from "./adapters/delivery.repo";
 import { ledgerReadRepo } from "./adapters/ledger-read.repo";
 import { ledgerWriteRepo } from "./adapters/ledger-write.repo";
 import { getContract } from "./application/get-contract.usecase";
@@ -35,6 +36,7 @@ export function contractsAssistantTools(db: Db, o: AssistantMountDeps): PackTool
   const ledgerUow = packTenantOnly(
     createPackUow(db, KEY, (tx: Tx, t: string) => ({
       ledger: { ...ledgerWriteRepo(tx, t), ...ledgerReadRepo(tx, t) },
+      delivery: deliveryRepo(tx, t),
     })),
   );
   const clock = { now, timeZoneOf: d.timeZoneOf, newId: () => crypto.randomUUID() };
