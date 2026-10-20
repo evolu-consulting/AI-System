@@ -1,0 +1,161 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+Hợp đồng
+Nhập tay
++ Thêm hợp đồng
+Lọc
+
+LỌC THEO
+
+Loại hàng
+0 giá trị
+Mua / bán
+2 giá trị
+Bên bán
+3 giá trị
+Bên mua
+2 giá trị
+Phụ trách
+3 giá trị
+Người ký
+2 giá trị
+Trạng thái
+2 giá trị
+Giá trị (đ)
+khoảng
+Cột
+10 kết quả
+Hợp đồng	Bên bán	Bên mua	Giá trị	Người ký	Phụ trách	Trạng thái	Loại hàng
+
+Thiết bị Hoàng Long 2026
+HL-04
+	
+—
+	
+Hoàng Long
+	80.000.000 đ	
+Bán · Trần Thị B
+Mua · Nguyễn Văn A
+	Soạn Editor	Sắp đáo hạn	
+
+
+Bao bì Minh Phát 2026
+BB-01
+	
+Minh Phát
+	
+—
+	500.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Soạn Editor	Sắp đáo hạn	
+
+
+Văn phòng phẩm Kín 2026
+K-05
+	
+Kín
+	
+—
+	15.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Hẹp Restricted	Chờ xác nhận	
+
+
+Thuê văn phòng Tân Phát 2026
+TP-03
+	
+Tân Phát
+	
+—
+	240.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Soạn Editor	Chờ xác nhận	
+
+
+Phần mềm Sao Mai 2026
+SM-02
+	
+—
+	
+Sao Mai
+	1.200.000.000 đ	
+Bán · Trần Thị B
+Mua · Nguyễn Văn A
+	Soạn Editor	Chờ xác nhận	
+
+
+Mua văn phòng phẩm Công ty Kín
+HĐ-3948
+	
+Kín
+	
+—
+	15.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Hẹp Restricted	Chờ xác nhận	
+
+
+Bán thiết bị Hoàng Long
+HĐ-1687
+	
+—
+	
+Hoàng Long
+	80.000.000 đ	
+Bán · Trần Thị B
+Mua · Nguyễn Văn A
+	Soạn Editor	Chờ xác nhận	
+
+
+Thuê văn phòng Tân Phát
+HĐ-1526
+	
+Tân Phát
+	
+—
+	240.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Soạn Editor	Chờ xác nhận	
+
+
+Dịch vụ phần mềm Sao Mai
+HĐ-3214
+	
+—
+	
+Sao Mai
+	1.200.000.000 đ	
+Bán · Trần Thị B
+Mua · Nguyễn Văn A
+	Chủ Owner	Chờ xác nhận	
+
+
+Cung cấp bao bì Minh Phát
+HĐ-2617
+	
+Minh Phát
+	
+—
+	500.000.000 đ	
+Bán · Nguyễn Văn A
+Mua · Trần Thị B
+	Chủ Owner	Chờ xác nhận	
+1–10 / 10 dòng
+Mỗi trang
+10
+20
+50
+100
+‹
+1
+›

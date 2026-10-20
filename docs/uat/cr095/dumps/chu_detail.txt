@@ -1,0 +1,36 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+Hợp đồng
+← Hợp đồng
+Mua văn phòng phẩm Công ty Kín
+
+Kiểm tra lại các trường rồi xác nhận.
+
+Lưu
+
+Đang chờ người phụ trách kiểm tra và xác nhận.
+
+Tổng các dòng hàng (1.800.000) lệch hơn 1% so với giá trị hợp đồng.
+Chưa xác định giá đã gồm VAT hay chưa.
+Số hợp đồng
+Tên hợp đồng
+Bên bán
+MST bên bán
+Bên mua
+MST bên mua
+Người ký bên bán
+Người ký bên mua
+Hiệu lực từ
+Đến
+Nhắc trước (ngày)
+Giá trị (đ)
+Thanh toán
+Hàng hoá	ĐVT	SL	Đơn giá
+Bút bi	hộp	50	36.000
+Phụ lục và giá
+Gắn làm phụ lục của hợp đồng khác…

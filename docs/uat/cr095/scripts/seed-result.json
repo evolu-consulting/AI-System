@@ -1,0 +1,46 @@
+{
+ "acme": "01a15860-09ab-7000-8426-5fe61eab3e74",
+ "ids": {
+  "chu": "01a15861-458c-7000-8fd1-6db5cf13cbec",
+  "soan": "01a15861-4904-7000-a7b9-00a15f8363b1",
+  "xem": "01a15861-4ccd-7000-a6c0-08e0b59df441",
+  "han": "01a15861-5028-7000-967a-c557ba6e82c9",
+  "hoa": "01a15860-0ae3-7000-9eb1-9b5d2f654758",
+  "khoa": "01a15860-0cc5-7000-a725-0c6d55a3d71f",
+  "lan": "01a15860-0a04-7000-859b-d9e16cffc715",
+  "tadmin": "01a15860-09b0-7000-8603-720e95435816"
+ },
+ "made": [
+  {
+   "id": "01a15861-6375-7000-8cc6-8374531b27be",
+   "by": "chu",
+   "title": "Cung cấp bao bì Minh Phát",
+   "partner": "Công ty Minh Phát"
+  },
+  {
+   "id": "01a15861-64a6-7000-9412-1abb98a14ea2",
+   "by": "chu",
+   "title": "Dịch vụ phần mềm Sao Mai",
+   "partner": "Công ty Sao Mai"
+  },
+  {
+   "id": "01a15861-65c2-7000-b842-441a25323082",
+   "by": "soan",
+   "title": "Thuê văn phòng Tân Phát",
+   "partner": "Công ty Tân Phát"
+  },
+  {
+   "id": "01a15861-66f1-7000-ab46-7fd0210e3b3e",
+   "by": "soan",
+   "title": "Bán thiết bị Hoàng Long",
+   "partner": "Công ty Hoàng Long"
+  },
+  {
+   "id": "01a15861-6823-7000-84b5-03309bf8d87d",
+   "by": "han",
+   "title": "Mua văn phòng phẩm Công ty Kín",
+   "partner": "Công ty Kín"
+  }
+ ],
+ "pw": "dev-password-1"
+}

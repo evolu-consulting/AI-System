@@ -1,0 +1,46 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+Mua hàng
+Mua hàng
+
+Mỗi dòng đang bán mua từ nhà cung cấp nào, lãi bao nhiêu, và hàng bán nào đang dựa vào một hợp đồng mua sắp hết hạn.
+
+1
+
+Dòng hàng đang bán
+
+0 đ
+
+Lãi gộp theo số lượng hợp đồng
+
+0
+
+Có nguồn mua
+
+0
+
+Cần xem lại
+
+Chỉ dòng có rủi ro
+1 kết quả
+Hàng đang bán
+HĐ bán · khách hàng	Sản phẩm	Giá bán	Mua từ	Giá mua	Lãi / đơn vị	Lãi theo SL	Rủi ro
+HL-04
+Công ty Hoàng Long
+	Bút bi
+SL 1.000 hộp
+	80.000	Không có hợp đồng mua sản phẩm này (dịch vụ tự làm?)	—	—	—	—
+1–1 / 1 dòng
+Mỗi trang
+10
+20
+50
+100
+‹
+1
+›

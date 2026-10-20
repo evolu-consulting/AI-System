@@ -1,0 +1,9 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+
+Chỉ chủ sở hữu (quản trị tenant) được quản lý thành viên và phòng ban.

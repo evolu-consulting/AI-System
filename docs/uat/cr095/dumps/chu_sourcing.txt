@@ -1,0 +1,44 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+Mua hàng
+Mua hàng
+
+Mỗi dòng đang bán mua từ nhà cung cấp nào, lãi bao nhiêu, và hàng bán nào đang dựa vào một hợp đồng mua sắp hết hạn.
+
+0
+
+Dòng hàng đang bán
+
+0 đ
+
+Lãi gộp theo số lượng hợp đồng
+
+0
+
+Có nguồn mua
+
+0
+
+Cần xem lại
+
+Chỉ dòng có rủi ro
+0 kết quả
+Hàng đang bán
+
+Chưa có hợp đồng bán có bảng giá
+
+Hợp đồng bán là hợp đồng mà pháp nhân của mình là bên bán; cần đã xác nhận và có bảng giá.
+0–0 / 0 dòng
+Mỗi trang
+10
+20
+50
+100
+‹
+1
+›

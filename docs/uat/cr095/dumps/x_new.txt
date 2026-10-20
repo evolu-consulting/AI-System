@@ -1,0 +1,32 @@
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Việc của tôi
+Mua hàng
+CO
+Hợp đồng
+← Hợp đồng
+Thêm hợp đồng (nhập tay)
+
+Không có file: nhập các thông tin chính. Có file thì dùng “+ Thêm hợp đồng” hoặc kéo file vào trợ lý.
+
+Loại
+Mua vào (mình mua của đối tác)
+Bán ra (mình bán cho đối tác)
+Số hợp đồng
+Tên hợp đồng
+Đối tác
+MST đối tác
+Người ký bên đối tác
+Người ký bên mình
+Hiệu lực từ
+Đến
+Nhắc trước (ngày)
+Giá trị (đ)
+Thanh toán
+Hàng hoá / dịch vụ
+×
++ Thêm dòng hàng
+Huỷ
+Lưu hợp đồng

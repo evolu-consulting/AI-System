@@ -1,0 +1,42 @@
+Sổ Hợp Tác
+Đăng nhập
+
+Hợp đồng, đối tác, giá và chữ ký số ở một chỗ.
+
+Mã công ty
+Email
+Mật khẩu
+Đăng nhập
+
+Quên mật khẩu? Liên hệ quản trị viên công ty bạn để đặt lại.
+
+Evolu Consulting · Intelligent automation
+
+Cả hợp đồng, đối tác và chữ ký số — một trợ lý lo giúp.
+
+Đăng nhập để xem việc cần làm hôm nay.
+
+Sổ Hợp Tác
+Hợp đồng
+Đối tác
+So sánh giá
+Sản phẩm
+Hợp đồng
++ Thêm hợp đồng
+Tìm theo tên, đối tác, số HĐ…
+HỢP ĐỒNG	BÊN BÁN	GIÁ TRỊ	TRẠNG THÁI
+HĐ-2026-014
+Mua bao bì
+	Bao Bì Phương Nam	91.500.000 đ	Đang hiệu lực
+HĐ-2026-011
+Chữ ký số · 12 CKS
+	Viettel-CA	21.600.000 đ	Sắp đáo hạn
+HĐ-2025-098
+Thuê kho
+	Kho Vận Miền Nam	120.000.000 đ	Đã hết hạn
+HĐ-2026-016
+Gia công in
+	In Ấn Thành Đạt	34.200.000 đ	Chờ xác nhận
+HĐ-2026-009
+Mua gia vị
+	Gia Vị Việt	58.000.000 đ	Đang hiệu lực
