@@ -213,6 +213,14 @@ export function extractionRepo(tx: Tx, tenantId: string): ExtractionRepo {
     source: sourceQ(tx, tenantId),
     saveResult: saveResultQ(tx, tenantId),
     saveWarnings: saveWarningsQ(tx, tenantId),
+    ownParties: async () => {
+      const [r] = await tx.execute<{
+        n: string[] | null;
+        t: string[] | null;
+      }>(sql`select own_names as n, own_tax_ids as t
+        from contracts.company_settings where tenant_id = ${tenantId}::uuid`);
+      return { names: r?.n ?? [], taxIds: r?.t ?? [] };
+    },
     saveFailure: saveFailureQ(tx, tenantId),
     requestExtract: requestExtractQ(tx, tenantId),
     insertManual: insertManualQ(tx, tenantId),

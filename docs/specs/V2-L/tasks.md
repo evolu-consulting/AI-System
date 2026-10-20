@@ -40,6 +40,6 @@ source: docs/platform/ba-v2/intake.md (V2-L: CD-01..06) · BA v2 §3.5, §4.5 ·
 
 ## Việc còn lại
 - qc: `e2e/N1/shell.n1.ts` (dòng ~147–158) còn kỳ vọng menu avatar "Cài đặt" → URL `/settings`; nay mở hộp thoại, trang cũ ở mục "Thành viên & điểm đối tác" — cần sửa + relock (lý do «V2-L»). Baseline ảnh avatar-menu (`shell-account-menu`) đổi vì thêm một mục.
-- V2-G: dùng `own_names`/`own_tax_ids` đoán Mua/Bán (hiện luôn "chưa chắc").
+- (xong trong V2-L) V2-G: `save` của lượt trích đọc `company_settings` (`ExtractionRepo.ownParties`) và `withOwnDeal` chốt Mua/Bán theo bên cung cấp/bên mua khớp MST (10 số, bỏ chi nhánh) hoặc tên (không dấu); đúng một bên khớp ⇒ đặt `ai.deal` + bỏ "deal" khỏi chưa chắc; Giới thiệu / không phân định ⇒ như cũ. Unit `own-deal.test.ts`.
 - V2-F/V2-G: màn xác nhận ẩn bước duyệt khi `approval_enabled=false` đã có ở server (V2-A); UI đọc cờ từ `GET /company` nếu cần.
 - Nợ nhỏ: baseline e2e/ảnh cho hộp thoại (chạy cuối đợt).

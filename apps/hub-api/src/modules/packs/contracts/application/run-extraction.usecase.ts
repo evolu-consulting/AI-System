@@ -6,11 +6,13 @@
 // pháp nhân của mình (khớp mgmt-app `enrich.py:105`, review Thấp 5).
 import type { PackWho } from "../../kit/application/ports";
 import {
+  type ApplyOutput,
   mergeExtraction,
   type RawExtraction,
   type VerifiedExtraction,
 } from "../domain/extraction.rules";
 import { fillFields } from "../domain/fields.rules";
+import { NO_OWN, type OwnParties, ownDeal } from "../domain/own-side.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
 import type {
   ExtractionAgent,
@@ -76,7 +78,11 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
         kind: src.kind,
       });
       const hits = await prefetchTax(d.tax, candidateTaxIds(reply.raw, src.fields), false);
-      return await save(d, { who, id, verified, hits, cur: src });
+      const own = await d.uow.tenant(
+        who,
+        (r) => r.extraction.ownParties?.() ?? Promise.resolve(NO_OWN),
+      );
+      return await save(d, { who, id, verified, hits, cur: src, own });
     } catch {
       return fail(d, who, id, "SAVE_FAILED");
     }
@@ -103,13 +109,29 @@ type SaveInput = {
   verified: VerifiedExtraction;
   hits: TaxHits;
   cur: ExtractionSource;
+  own: OwnParties;
 };
+
+/** V2-L: biết công ty mình đứng bên nào ⇒ chốt Mua/Bán (bỏ "chưa chắc" của loại HĐ). Giới thiệu và HĐ không phân định được: giữ nguyên. */
+export function withOwnDeal(out: ApplyOutput, own: OwnParties): ApplyOutput {
+  if (!out.ai || out.ai.deal === "referral") return out;
+  const f = out.fields;
+  const deal = ownDeal(
+    {
+      supplier: { name: f.supplier_name.value, tax: f.supplier_tax_id.value },
+      buyer: { name: f.buyer_name.value, tax: f.buyer_tax_id.value },
+    },
+    own,
+  );
+  if (!deal) return out;
+  return { ...out, ai: { ...out.ai, deal, unsure: out.ai.unsure.filter((k) => k !== "deal") } };
+}
 
 /** Ghi có điều kiện `version`; thua đua với sửa tay ⇒ đọc lại và gộp lại (CPU nặng đã xong, phần này rẻ). */
 async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutcome> {
   let cur: ExtractionSource | null = s.cur;
   for (let i = 0; i < SAVE_ATTEMPTS && cur?.status === "extracting"; i++) {
-    const out = mergeExtraction(s.verified, cur.fields, cur.items.length > 0);
+    const out = withOwnDeal(mergeExtraction(s.verified, cur.fields, cur.items.length > 0), s.own);
     const items = out.items ?? cur.items;
     const warnings = ruleWarnings(out.fields, items, null, partiesOf(out.fields, s.hits));
     const expected = cur.version;

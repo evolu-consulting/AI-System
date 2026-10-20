@@ -12,6 +12,7 @@ import type {
 import type { ContractFields } from "../domain/fields.rules";
 import type { ManualItem } from "../domain/manual.rules";
 import type { Deal } from "../domain/milestones.rules";
+import type { OwnParties } from "../domain/own-side.rules";
 import type { TaxLookup } from "../domain/party.rules";
 import type { ItemNumbers, Warning } from "../domain/warnings.rules";
 import type { MilestoneWrite } from "./milestones.ports";
@@ -106,6 +107,8 @@ export type ExtractionRepo = {
   saveResult(id: string, r: ExtractionResult & { expected: number }): Promise<boolean>;
   /** Tra MST lại (`needs_review`, `version = expected`): chỉ thay `warnings`, không tăng version. */
   saveWarnings(id: string, warnings: Warning[], expected: number): Promise<boolean>;
+  /** V2-L: tên + MST của chính công ty (`company_settings`) để đoán Mua/Bán; vắng ⇒ rỗng. */
+  ownParties?(): Promise<OwnParties>;
   /** Còn `extracting` ⇒ UPDATE `extract_failed` + `error` (mã) + event; trả có ghi hay không. */
   saveFailure(id: string, code: string): Promise<boolean>;
   /** Trích lại: khoá + kiểm trạng thái/nguồn + đặt `extracting` + event, một câu. */
