@@ -58,12 +58,21 @@ export type ImportReport = {
   no_tenant: Record<string, number>;
   tables: Partial<Record<TableName, TableCount>>;
   skipped_tables: string[];
+  /** Tenant có marker nhưng N5 bỏ qua (đã tắt / đã thu hồi gói) — importer không ghi gì vào đó (review A-4). */
+  skipped_tenants: SkippedTenant[];
   issues_by_code: Record<string, number>;
   issues_sample: Plan["issues"];
   reconcile: ReconcileReport | null;
 };
 
+export type SkippedTenant = {
+  orgId: string;
+  tenantId: string;
+  reason: "TENANT_INACTIVE" | "PACK_REVOKED";
+};
+
 type Resolved = {
+  skipped: SkippedTenant[];
   tenantOf: Map<string, string>;
   userOf: Map<string, string>;
   owners: Map<string, string>;
@@ -75,10 +84,24 @@ async function resolve(
   members: ReturnType<typeof memberships>,
   orgs: string[],
 ): Promise<Resolved> {
-  const tenantOf = new Map((await d.identity.tenants(o.source)).map((t) => [t.orgId, t.id]));
+  const all = await d.identity.tenants(o.source);
+  // review A-4: chỉ tenant N5 tạo/dùng lại được (đang hoạt động, gói chưa thu hồi); tenant khác ⇒ bỏ + báo, không ghi gì.
+  const skipped = all
+    .filter((t) => !t.active || t.packRevoked)
+    .map(
+      (t): SkippedTenant => ({
+        orgId: t.orgId,
+        tenantId: t.id,
+        reason: t.active ? "PACK_REVOKED" : "TENANT_INACTIVE",
+      }),
+    );
+  const tenantOf = new Map(
+    all.filter((t) => t.active && !t.packRevoked).map((t) => [t.orgId, t.id]),
+  );
+  const known = new Set(all.map((t) => t.orgId));
   if (!o.apply)
     for (const org of orgs)
-      if (!tenantOf.has(org)) tenantOf.set(org, targetId(o.source, "tenant", org));
+      if (!known.has(org)) tenantOf.set(org, targetId(o.source, "tenant", org));
   const users = await d.identity.users([...tenantOf.values()]);
   const userOf = new Map(users.map((u) => [`${u.tenantId}|${u.email}`, u.id]));
   const owners = new Map<string, string>();
@@ -87,16 +110,28 @@ async function resolve(
     const uid = tid ? userOf.get(`${tid}|${m.email}`) : undefined;
     if (tid && uid && m.role === "owner" && !owners.has(tid)) owners.set(tid, uid);
   }
-  return { tenantOf, userOf, owners };
+  return { skipped, tenantOf, userOf, owners };
 }
 
 function context(o: ImportOpts, r: Resolved): Ctx {
   const issues: Plan["issues"] = [];
+  const actorUsed = new Set<string>();
+  // review A-15: org không có chủ ⇒ cột NOT NULL `created_by`/`started_by` nhận id actor (platform admin, tenant khác) — báo một
+  // lần mỗi tenant (ACTOR_AS_CREATOR) để vận hành gán lại; cột cho phép null thì mapper đã để null.
+  const fallback = (tid: string): string => {
+    const owner = r.owners.get(tid);
+    if (owner) return owner;
+    if (!actorUsed.has(tid)) {
+      actorUsed.add(tid);
+      issues.push({ entity: "tenant", ref: tid, code: "ACTOR_AS_CREATOR" });
+    }
+    return o.actorId;
+  };
   return {
     source: o.source,
     tenantOf: (org) => (org ? (r.tenantOf.get(org) ?? null) : null),
     userOf: (tid, email) => (email ? (r.userOf.get(`${tid}|${email}`) ?? null) : null),
-    fallbackUser: (tid) => r.owners.get(tid) ?? o.actorId,
+    fallbackUser: fallback,
     knowledgeOrg: o.knowledgeOrg,
     issues,
   };
@@ -202,6 +237,7 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
   const tables = await writeAll(d, o, plan, skipped);
   const byCode: Record<string, number> = {};
   for (const i of plan.issues) bump(byCode, i.code);
+  for (const s of r.skipped) bump(byCode, `tenant.${s.reason}`);
   for (const i of (identity as { issues?: { code: string }[] }).issues ?? [])
     bump(byCode, `identity.${i.code}`);
   const rec = o.apply ? await reconcile(d, o, snap, plan, members, r.userOf, shas) : null;
@@ -215,6 +251,7 @@ export async function runImport(o: ImportOpts, d: ImportDeps): Promise<ImportRep
     no_tenant: plan.noTenant,
     tables,
     skipped_tables: [...skipped],
+    skipped_tenants: r.skipped,
     issues_by_code: byCode,
     issues_sample: plan.issues.slice(0, 50),
     reconcile: rec,

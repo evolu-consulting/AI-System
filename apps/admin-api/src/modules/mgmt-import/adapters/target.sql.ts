@@ -204,8 +204,9 @@ export const INSERTS: Record<TableName, Q> = {
     j,
   ) => sql`insert into contracts.partner_event_voids (event_id, tenant_id, by_user, at)
     select e.id, ${T(tid)}, x.by_user, coalesce(x.at, now())
-    from jsonb_to_recordset(${j}::jsonb) as x(mgmt_id text, by_user uuid, at timestamptz)
+    from jsonb_to_recordset(${j}::jsonb) as x(mgmt_id text, source text, by_user uuid, at timestamptz)
     join contracts.partner_events e on e.tenant_id = ${T(tid)} and e.data->>'mgmt_id' = x.mgmt_id
+      and e.data->>'mgmt_source' = x.source -- review A-16: cùng nguồn như đường chèn sự kiện
     on conflict do nothing returning 1`,
   "contracts.legacy_records": (
     tid,

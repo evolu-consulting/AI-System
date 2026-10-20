@@ -54,6 +54,11 @@ depends: N5 (identity-import + N5b scrypt cũ + M1b manager_email), M1D/M1b (vis
 - D-I1-10: M3 · HĐ `extracting` ở mgmt-app (đọc dở) ⇒ `extract_failed` + lỗi `MGMT_IMPORT_INTERRUPTED` (trích là job Redis xếp lúc tải lên — HĐ nhập không có job, sẽ kẹt); người dùng trích lại.
 - D-I1-09: Phụ lục: `owner_user_id` = chủ HĐ cha (D-M1-03); M1b còn giữ `visibility_owner_id` bằng trigger.
 
+- D-I1-11 (review A-4, lát i1c-fixes): tenant có marker nhưng N5 bỏ qua (`active=false` hoặc gói `contracts-*` đã thu hồi) ⇒ importer bỏ, báo `skipped_tenants` + `tenant.TENANT_INACTIVE|PACK_REVOKED`; dry-run chỉ đặt tenant tạm cho org CHƯA có tenant.
+- D-I1-12 (A-15): org không có chủ ⇒ cột NOT NULL `created_by`/`started_by` nhận id actor (platform admin) và báo `ACTOR_AS_CREATOR` một lần mỗi tenant; cột cho phép null giữ null.
+- D-I1-13 (A-16): hàng huỷ sự kiện sổ nối theo `data.mgmt_id` **và** `data.mgmt_source`.
+- Runbook (A-17): `--actor` chỉ cần là platform_admin đang hoạt động — quyền thật nằm ở credential DB (`ADMIN_API_DATABASE_URL`/`HUB_DATABASE_URL`); người vận hành chạy với actor của chính mình, audit N5 ghi actor đó.
+
 ## Kết quả trên bản sao seed (evotest-mgmt, 2026-10-20, mgmt-app b839418; 2 org demo + seed-plus)
 - Nguồn: 2 org, 5 user, 45 HĐ, 50 đợt, 434 sự kiện sổ, 12 lô, 32 chữ ký, 142 văn bản ký, 28 công ty, 35 giá thị trường, 1 tài liệu + 2 đoạn, đồ thị 2 thực thể/4 MENTIONS/1 REL/1 SIMILAR (+137 cạnh đồ thị HĐ — dẫn xuất, không chuyển).
 - Apply (sau M3): 1.022 hàng / 23 bảng (gồm 45 lượt duyệt `contracts.approvals`); chạy lại: **0** hàng chèn (idempotent). Tiền 8 khoá × 2 tenant khớp **tuyệt đối** nguồn = kế hoạch = đích (vd HĐ 3.558.150.000 ₫, đợt 1.237.250.000 ₫, sổ 485.250.000 ₫).

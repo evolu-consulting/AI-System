@@ -37,12 +37,22 @@ export function createIdentityAdapter(db: Db, actorId: string, batch?: number): 
     tenants: (source) =>
       withScope(db, PLATFORM, async (tx) =>
         (
-          await run<{ id: string; org_id: string }>(
+          await run<{ id: string; org_id: string; active: boolean; pack_revoked: boolean }>(
             tx,
-            sql`select id, settings->>'mgmt_org_id' as org_id from admin.tenants
-          where settings->>'mgmt_source' = ${source} and settings ? 'mgmt_org_id'`,
+            // review A-4: cùng luật với N5 (`import.repo.ts::findTenants`) — tenant đã tắt hoặc đã thu hồi gói `contracts-*` mà
+            // N5 bỏ qua thì importer cũng bỏ (không hoàn tác việc admin thu hồi — L2).
+            sql`select t.id, t.settings->>'mgmt_org_id' as org_id, t.active,
+              exists (select 1 from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+                where e.tenant_id = t.id and e.revoked_at is not null and f.key like 'contracts-%') as pack_revoked
+            from admin.tenants t
+            where t.settings->>'mgmt_source' = ${source} and t.settings ? 'mgmt_org_id'`,
           )
-        ).map((r) => ({ id: r.id, orgId: r.org_id })),
+        ).map((r) => ({
+          id: r.id,
+          orgId: r.org_id,
+          active: r.active,
+          packRevoked: r.pack_revoked,
+        })),
       ),
     users: (tenantIds) =>
       withScope(db, PLATFORM, async (tx) =>

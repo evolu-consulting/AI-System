@@ -54,6 +54,9 @@ export type TargetStore = {
 /** Nhập user/org bằng N5 (`runIdentityImport`) và tra cứu tenant/user đã nhập. */
 export type IdentityPort = {
   run(exportFile: unknown, apply: boolean): Promise<unknown>;
-  tenants(source: string): Promise<{ id: string; orgId: string }[]>;
+  /** Mọi tenant có marker nguồn, kèm cờ dùng được (đang hoạt động, gói `contracts` chưa bị thu hồi). */
+  tenants(
+    source: string,
+  ): Promise<{ id: string; orgId: string; active: boolean; packRevoked: boolean }[]>;
   users(tenantIds: string[]): Promise<{ id: string; tenantId: string; email: string }[]>;
 };

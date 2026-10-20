@@ -140,6 +140,7 @@ function mapEvent(d: SourceDoc, t: TenantPlan, ctx: Ctx, companies: Map<string, 
   if (bool(s.voided))
     push(t, "contracts.partner_event_voids", {
       mgmt_id: d.id,
+      source: ctx.source,
       by_user: ctx.userOf(t.tenantId, lowerEmail(s.voided_by)),
       at: ts(s.voided_at),
     });
