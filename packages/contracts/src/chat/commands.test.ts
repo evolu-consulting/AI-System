@@ -50,7 +50,9 @@ describe("H2a contract chat — chỉ thêm (plan §2.1)", () => {
       false,
     );
   });
+});
 
+describe("H2a contract chat — chỉ thêm (plan §2.1) · context, lỗi", () => {
   test("MessageContext: giới hạn, page_url http(s), không trim, strict", () => {
     expect(MessageContextSchema.parse({ selection: "  a  " })).toEqual({ selection: "  a  " });
     expect(MessageContextSchema.safeParse({ selection: "" }).success).toBe(false);

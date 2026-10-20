@@ -89,7 +89,9 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
     expect(p.agents).toHaveLength(22);
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
   });
+});
 
+describe("HUB-FR-60 · seed yaml mặc định (production, profile)", () => {
   it("HUB-FR-61 · production: bỏ provider dev_only và profile hết step, agent dùng claude-sub-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "production" });
     expect(p.providers.map((x) => x.key)).toEqual(["claude-sub", "dify"]);

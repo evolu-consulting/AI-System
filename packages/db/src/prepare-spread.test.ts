@@ -51,7 +51,9 @@ describe("CR-093 · T19-perf vòng 3 · prepare-spread", () => {
     await s.idle();
     expect(f.stats().reserved).toBe(3);
   });
+});
 
+describe("CR-093 · T19-perf vòng 3 · prepare-spread · 42501, kiểu tham số", () => {
   test("42501 (schema gói) ⇒ bỏ câu đó, không báo onError, onDenied đúng MỘT lần, câu khác vẫn phát", async () => {
     const calls: string[] = [];
     const pool = {

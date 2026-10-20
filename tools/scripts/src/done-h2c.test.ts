@@ -113,7 +113,9 @@ describe("MK H2c · script + bunfig + env", () => {
     ])
       expect(ex.split(/\r?\n/)).toContain(k);
   });
+});
 
+describe("MK H2c · script + bunfig + env (hub-dev, filebox)", () => {
   it("hub-dev: HUB_ATTACH_DRIVER=local; DIR = env nếu có, không thì thư mục tạm; giữ env H2b", () => {
     expect(hubApiEnv({}).HUB_ATTACH_DRIVER).toBe("local");
     expect(hubApiEnv({}).HUB_ATTACH_DIR).toBeUndefined();

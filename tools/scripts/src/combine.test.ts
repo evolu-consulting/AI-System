@@ -61,7 +61,9 @@ describe("combine.rules · webEnv + tiện ích", () => {
     expect(toWslPath("C:/x/y/")).toBe("/mnt/c/x/y");
     expect(toWslPath("/home/u/repo")).toBe("/home/u/repo");
   });
+});
 
+describe("combine.rules · webEnv + tiện ích (script WSL, hubApiEnv)", () => {
   it("script WSL: provider claude-sub,dify + Hub localhost:4000, không chứa token", () => {
     const s = wslRuntimeScript("/mnt/d/r");
     expect(s).toContain("AGENT_RT_PROVIDERS=claude-sub,dify");
