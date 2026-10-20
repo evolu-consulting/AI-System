@@ -706,6 +706,7 @@ c63034ac1a0867b23d4e26fef31f983e896d38f8d2501a9d31e16efd1a8bab4d  tests/acceptan
 c5742abdaed1985f2a3cc623bf0aeba7015274f930ee2223a03312d327247700  tests/acceptance/HD3/sweep.int.test.ts
 6ba01f15c264f42b8d6d3162c15a0535f0378e219703b493b345e3cfcee2dd82  tests/acceptance/HD5/hd5.int.test.ts
 26994b140cb6bbcf1c442b92e7e2f5ea97ace8288732f97178bd0d0d1e7166d4  tests/acceptance/HD5/perf/hd5.perf.int.test.ts
+0d790e8819e6358e9b2b10312798f88328d4c50b57f04ea504c84558d5e118e8  tests/acceptance/HD8/scoring.int.test.ts
 fb16cefc5fef49f1c32d34388fdccf7592fcf862e9891b4870d9b0950b9f250e  tests/acceptance/K1/_k1.ts
 e5bf08f75e96a4883ddd1054f522f12c9cf0e503ed815d0fc975d0b0cc276bd1  tests/acceptance/K1/_khfake.ts
 74f6c925a90fe59d2ec26c4e580c588a4422aafb0f51dc4bf9b39574bea8b577  tests/acceptance/K1/_run.ts
@@ -1102,6 +1103,12 @@ ddf48cf573da94f3363423737026c125bf029bf3ebd7894e23b89c4672bfb7e4  tests/acceptan
 86ca3429df6bbf618a838a44b3bdd345686fe2751a94b2c74e486e24cb4c098c  tests/acceptance/P-d/rules/timer.test.ts
 fdc0cc05e3d5cca16cfe72f4a8e90dff03e0b6a55285034b3f9766cfccf340e4  tests/acceptance/P-d/rules/ttl.test.ts
 7d82c29e46b8561ded11482090cb8a0f2b8fef5ece6a02dccea28e7fd13bfe90  tests/acceptance/P-d/rules/wait-def.test.ts
+5513ad8398bccc4063f0fac3850d3f6b9fc658619df87cfe1e139f6f4dee12f6  tests/acceptance/V2-E/_support/seed.ts
+1b08dedf23b2945cb5066b8c79854a4537b8dc81ef95f3a097d68384a7a0b68c  tests/acceptance/V2-E/_support/v2e.ts
+a03265e5682b95cd64bdbd398f86f31bb28b1f7b49297cc7966c789b28cda07a  tests/acceptance/V2-E/perf/reputation.perf.int.test.ts
+0b182866867e198aaa19b0c1d272535a6eefbd3f37a00b38a3ee91557c0e27b5  tests/acceptance/V2-E/ratings-locks.int.test.ts
+5c0729fb5ca341f7323d6b881551573165256923b5bc1e3af471bc0eddd3692a  tests/acceptance/V2-E/scoring.int.test.ts
+824e87e8ecabc9bd3f797f0fd3a4c5d787802d493b451a176ebf9ee84709e304  tests/acceptance/V2-E/sqlcount.int.test.ts
 880673bcfa598d77984d040c64d405e8acf30ae6793e18fef4f35a8a5f6b50b1  tests/acceptance/X1/_modules.ts
 a3c8834cd8d0f154ff5eccb812ec7435fff0849a9d997ac2b8aea469ac177706  tests/acceptance/X1/_x1.ts
 034f5a531f2f8f47f362556105db1077bad03d4c0062cea0fffa66ae54ed2c87  tests/acceptance/X1/bundle-secret.test.ts

@@ -26,6 +26,13 @@ import { PartnersFail, type PartnersUsecase } from "../application/partners.usec
 import type { LinkCheckLimit } from "./link-check-limit.redis";
 
 const KEY = "contracts";
+/** CR-096 Q1: engine HD8 thay bằng uy tín v2 — cấu hình/điểm cũ chỉ đọc. */
+const readOnly = () =>
+  new AppError(
+    "SCORING_READ_ONLY",
+    410,
+    "Cách tính điểm cũ chỉ đọc (CR-096) — dùng uy tín v2 /reputation",
+  );
 
 function fail(e: unknown): never {
   if (!(e instanceof PartnersFail)) throw e;
@@ -71,9 +78,11 @@ export function partnersRoutes(
     const q = parseQuery(c, PartnerQuerySchema);
     return c.json(await run(uc.ratings(who(c), q.party, q.role)));
   });
-  r.put("/partners/ratings", write, async (c) =>
-    c.json(await run(uc.rate(who(c), await body(c, RatingRequestSchema)))),
-  );
+  // CR-096 Q1 (V2-E): engine HD8 chỉ đọc — chấm tay mới ở `POST /reputation/ratings`. Thân vẫn kiểm (400) trước.
+  r.put("/partners/ratings", write, async (c) => {
+    await body(c, RatingRequestSchema);
+    throw readOnly();
+  });
 
   r.get("/scoring/:role", read, async (c) =>
     c.json(await run(uc.getConfig(who(c), roleOf(c.req.param("role"))))),
@@ -86,10 +95,12 @@ export function partnersRoutes(
     return c.json(await run(uc.preview(who(c), role, await body(c, ScoringDraftSchema))));
   });
   r.put("/scoring/:role", write, async (c) => {
-    const role = roleOf(c.req.param("role"));
+    roleOf(c.req.param("role"));
     if (!(await isAdmin(c)))
       throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
-    return c.json(await run(uc.save(who(c), role, await body(c, ScoringDraftSchema))));
+    // CR-096 Q1 (V2-E): cấu hình HD8 chỉ đọc — cấu hình mới ở `PUT /reputation/config/**`.
+    await body(c, ScoringDraftSchema);
+    throw readOnly();
   });
 
   r.get("/prices/products", read, async (c) => c.json(await run(uc.products(who(c)))));

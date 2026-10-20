@@ -1,6 +1,6 @@
-// HD8-FR-01…04 · HD8-AC01…AC04 · HD8-NFR-02: đối tác + điểm uy tín + cách tính qua hub-api thật — parity NGUYÊN VĂN mgmt-app
-// `tests/test_scoring_routes.py` (+ chấm tay `test_scoring_ratings.py`). Quyền: viewer chỉ đọc, editor ghi việc/chấm, chỉ owner
-// (`admin`) lưu cách tính; tenant khác không thấy gì. Không đầu vào nào ra 500.
+// HD8-FR-01…04 · HD8-AC01…AC04 · HD8-NFR-02: đối tác + điểm uy tín + cách tính qua hub-api thật — đọc như mgmt-app
+// `tests/test_scoring_routes.py`. CR-096 Q1 (V2-E): engine cũ CHỈ ĐỌC — lưu cách tính / chấm tay ⇒ 410 (uy tín v2: `/reputation`).
+// Quyền: viewer chỉ đọc; tenant khác không thấy gì. Không đầu vào nào ra 500.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   ago,
@@ -107,102 +107,45 @@ const body = (cfg: Json) => ({
   rules: cfg.rules,
 });
 
-describe("HD8-AC02 · chỉ quản lý lưu cách tính đúng 100%; xem trước không ghi (test_only_the_owner_saves…)", () => {
-  it("xem trước, 403, 422 đúng chữ, lưu ⇒ version 1 + lịch sử; vai tách riêng; vai lạ 404", async () => {
+// CR-096 Q1 (V2-E, qc khoá lại): engine HD8 thay bằng uy tín v2 — cấu hình + chấm tay cũ CHỈ ĐỌC. Lưu cách tính / chấm tay cũ ⇒
+// 410 (quyền + thân vẫn kiểm trước: 403 / 400); đọc + xem trước vẫn chạy, không ghi gì. Parity mgmt (`agg-parity`) đã gỡ.
+describe("HD8-AC02 · cách tính cũ chỉ đọc (CR-096 Q1); xem trước không ghi", () => {
+  it("xem trước chạy; editor/viewer 403; quản lý lưu ⇒ 410, version giữ 0, không ảnh chụp; vai lạ 404", async () => {
     await world();
     const cfg = await ok(call(c, P.lan, "GET", "/scoring/customer"));
     expect(cfg.version).toBe(0);
     expect(cfg.criteria.reduce((s: number, x: Json) => s + x.weight, 0)).toBe(100);
-    expect(cfg.manual_choices).toContain("Thái độ hợp tác");
     const b = body(cfg);
     const pv = await ok(call(c, P.lan, "POST", "/scoring/customer/preview", b));
     expect(pv.total).toBe(2);
-    expect(pv.changes.some((x: Json) => x.name === "Bếp Việt" && x.new < x.old)).toBe(true);
-    expect((await ok(call(c, P.lan, "GET", "/scoring/customer"))).version).toBe(0);
     expect((await call(c, P.hoa, "PUT", "/scoring/customer", b)).status).toBe(403);
     expect((await call(c, P.tam, "PUT", "/scoring/customer", b)).status).toBe(403);
-    const bad = {
-      ...b,
-      criteria: b.criteria.map((x: Json, i: number) =>
-        i === 0 ? { ...x, weight: x.weight + 1 } : x,
-      ),
-    };
-    const r = await call(c, P.lan, "PUT", "/scoring/customer", bad);
-    expect([r.status, r.json?.error?.message]).toEqual([422, "Tổng trọng số phải đúng 100%"]);
-    const saved = await ok(call(c, P.lan, "PUT", "/scoring/customer", b));
-    expect(saved.version).toBe(1);
-    expect(saved.updated_by).toBeString();
-    const hist: Json[] = await ok(call(c, P.tam, "GET", "/scoring/customer/history"));
-    expect(hist[0].version).toBe(1);
-    expect(hist[0].summary).toContain("Số lần phải nhắc 15→20%");
-    expect((await ok(call(c, P.lan, "GET", "/scoring/supplier"))).version).toBe(0);
+    const r = await call(c, P.lan, "PUT", "/scoring/customer", b);
+    expect([r.status, r.json?.error?.code]).toEqual([410, "SCORING_READ_ONLY"]);
+    expect((await ok(call(c, P.lan, "GET", "/scoring/customer"))).version).toBe(0);
+    expect(await ok(call(c, P.tam, "GET", "/scoring/customer/history"))).toEqual([]);
     expect((await call(c, P.lan, "GET", "/scoring/nobody")).status).toBe(404);
     const [snap] = await c.sql<
       { n: number }[]
-    >`select count(*)::int as n from contracts.score_snapshots
-      where tenant_id = ${T.acme} and role = 'customer' and config_version = 1`;
-    expect(snap?.n).toBe(2);
+    >`select count(*)::int as n from contracts.score_snapshots where tenant_id = ${T.acme}`;
+    expect(snap?.n).toBe(0);
   });
 });
 
-describe("HD8-AC03 · chấm tay theo tiêu chí tự chấm (test_scoring_ratings.py)", () => {
-  it("thêm tiêu chí từ danh sách ⇒ editor chấm 0–100 ⇒ điểm tính; viewer 403; tiêu chí ngoài cách tính 422", async () => {
+describe("HD8-AC03 · chấm tay cũ chỉ đọc (CR-096 Q1)", () => {
+  it("PUT /partners/ratings ⇒ viewer 403, editor 410 (không ghi sổ); GET ratings vẫn đọc", async () => {
     await world();
-    const cfg = await ok(call(c, P.lan, "GET", "/scoring/customer"));
-    const criteria = [
-      ...cfg.criteria.map((x: Json) => (x.key === "payment_on_time" ? { ...x, weight: 15 } : x)),
-      { kind: "manual", label: "Thái độ hợp tác", enabled: true, weight: 20 },
-    ];
-    const saved = await ok(
-      call(c, P.lan, "PUT", "/scoring/customer", { criteria, rules: cfg.rules }),
-    );
-    const key = saved.criteria.at(-1).key;
-    expect(key).toBe("custom:thai-do-hop-tac");
-    const free = await call(c, P.lan, "PUT", "/scoring/customer", {
-      criteria: [
-        ...criteria.slice(0, -1),
-        { kind: "manual", label: "Tự đặt", enabled: true, weight: 20 },
-      ],
-      rules: cfg.rules,
-    });
-    expect([free.status, free.json?.error?.message]).toEqual([
-      422,
-      "Chọn tiêu chí tự chấm trong danh sách: Tự đặt không có",
-    ]);
-    const rate = { party: PN, role: "customer", criterion: key, value: 40, note: "chậm trả lời" };
+    const rate = { party: PN, role: "customer", criterion: "custom:x", value: 40, note: "x" };
     expect((await call(c, P.tam, "PUT", "/partners/ratings", rate)).status).toBe(403);
-    const r1 = await ok(call(c, P.hoa, "PUT", "/partners/ratings", rate));
-    expect([r1.value, r1.note]).toEqual([40, "chậm trả lời"]);
-    const wrong = await call(c, P.hoa, "PUT", "/partners/ratings", {
-      ...rate,
-      criterion: "custom:x",
-    });
-    expect([wrong.status, wrong.json?.error?.message]).toEqual([
-      422,
-      "Tiêu chí không có trong cách tính điểm",
-    ]);
-    const ghost = await call(c, P.hoa, "PUT", "/partners/ratings", { ...rate, party: "tax:999" });
-    expect(ghost.status).toBe(404);
+    expect((await call(c, P.hoa, "PUT", "/partners/ratings", rate)).status).toBe(410);
+    const [n] = await c.sql<
+      { n: number }[]
+    >`select count(*)::int as n from contracts.partner_events where type = 'rating'`;
+    expect(n?.n).toBe(0);
     const rt = await ok(
       call(c, P.tam, "GET", `/partners/ratings?party=${encodeURIComponent(PN)}&role=customer`),
     );
-    expect(rt.criteria[0]).toMatchObject({ key, label: "Thái độ hợp tác", weight: 20 });
-    expect([rt.criteria[0].current.value, rt.criteria[0].current.counts]).toEqual([40, true]);
-    expect(rt.history.length).toBe(1);
-    const one = await ok(
-      call(c, P.lan, "GET", `/partners/score?party=${encodeURIComponent(PN)}&role=customer`),
-    );
-    expect(one.breakdown[key].value).toBe(40);
-    expect(
-      (
-        await call(
-          c,
-          P.an,
-          "GET",
-          `/partners/ratings?party=${encodeURIComponent(PN)}&role=customer`,
-        )
-      ).status,
-    ).toBe(404);
+    expect(rt.history).toEqual([]);
   });
 });
 

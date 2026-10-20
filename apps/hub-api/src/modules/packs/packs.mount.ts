@@ -31,6 +31,7 @@ import { myWorkModule } from "./contracts/mywork.mount";
 import { partnersModule } from "./contracts/partners.mount";
 import { productsModule } from "./contracts/products.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
+import { reputationModule } from "./contracts/reputation.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
@@ -174,7 +175,8 @@ function mountContracts<E extends Env>(
       ...(d.redis ? { redis: d.redis } : {}),
       linkChecksPerMinute: envInt("CONTRACTS_LINK_CHECKS_USER_MIN", LINK_CHECKS_PER_MINUTE),
     }),
-  ); // HD8
+  ); // HD8 (engine cũ chỉ đọc — CR-096 Q1)
+  app.route(base, contractsReputation(d, view, db)); // V2-E · uy tín v2
   mountAssistantTools(db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
 }
 
@@ -189,6 +191,20 @@ function contractsLedger(d: PacksMountDeps, view: PackAccessView, db: Db) {
   return ledgerModule(db, view, {
     ...(Number.isInteger(every) && every >= 1000 ? { everyMs: every } : {}),
     ...o,
+    worker,
+    timeZoneOf: tenantTz(d),
+    tenants: () => packTenants(view, CONTRACTS_KEY),
+    ...(d.signal ? { signal: d.signal } : {}),
+  });
+}
+
+/** V2-E · uy tín v2 + vòng chốt tháng (bật cùng điều kiện vòng quá hạn HD7: `worker`, `CONTRACTS_OVERDUE` ≠ off). */
+function contractsReputation(d: PacksMountDeps, view: PackAccessView, db: Db) {
+  const env = d.appEnv ?? process.env.APP_ENV;
+  const worker =
+    d.packs?.contractsOverdue?.worker ??
+    ((env === "development" || env === "production") && process.env.CONTRACTS_OVERDUE !== "off");
+  return reputationModule(db, view, {
     worker,
     timeZoneOf: tenantTz(d),
     tenants: () => packTenants(view, CONTRACTS_KEY),

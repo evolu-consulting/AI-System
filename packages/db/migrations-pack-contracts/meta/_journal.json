@@ -183,6 +183,13 @@
       "when": 1795400000000,
       "tag": "0027_v2g_ai_read",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795500000000,
+      "tag": "0028_v2e_reputation",
+      "breakpoints": true
     }
   ]
 }
