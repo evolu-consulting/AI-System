@@ -86,17 +86,52 @@ async function existingRows(
   return r?.n ?? 0;
 }
 
+/** Mỗi HĐ đích: có chưa, `file_id` hiện tại, dòng tệp đích có chưa (một câu cho cả lô). */
+function contractFilesOf(db: Db): TargetStore["contractFiles"] {
+  return async (tenantId, pairs) => {
+    if (pairs.length === 0) return new Map();
+    const rows = await withPackScope(db, scopeOf(tenantId, "contracts.contracts"), (tx) =>
+      run<{ contract_id: string; exists: boolean; file_id: string | null; file_row: boolean }>(
+        tx,
+        sql`select x.contract_id, c.id is not null as exists, c.file_id, f.id is not null as file_row
+          from jsonb_to_recordset(${JSON.stringify(pairs)}::jsonb) as x(contract_id uuid, file_row_id uuid)
+          left join contracts.contracts c on c.tenant_id = ${tenantId}::uuid and c.id = x.contract_id
+          left join contracts.files f on f.tenant_id = ${tenantId}::uuid and f.id = x.file_row_id`,
+      ),
+    );
+    return new Map(
+      rows.map((r) => [
+        r.contract_id,
+        { exists: r.exists, fileId: r.file_id, fileRow: r.file_row },
+      ]),
+    );
+  };
+}
+
+/** Bảng đích có tồn tại không (`to_regclass`). */
+function hasTableOf(db: Db): TargetStore["hasTable"] {
+  return async (table) => {
+    const tid = "00000000-0000-4000-8000-000000000000";
+    return withPackScope(
+      db,
+      { packKey: packOf(table), tenantId: tid, userId: null },
+      async (tx) => {
+        const [r] = await run<{ ok: boolean }>(
+          tx,
+          sql`select to_regclass(${table}) is not null as ok`,
+        );
+        return r?.ok === true;
+      },
+    );
+  };
+}
+
 export function createTargetStore(db: Db, source: string): TargetStore {
-  const scope = (tenantId: string, table: TableName) => ({
-    packKey: packOf(table),
-    tenantId,
-    userId: null,
-  });
   return {
     async write(tenantId, table, rows) {
       if (rows.length === 0) return 0;
       const q = INSERTS[table](tenantId, JSON.stringify(rows));
-      return withPackScope(db, scope(tenantId, table), async (tx) => (await run(tx, q)).length);
+      return withPackScope(db, scopeOf(tenantId, table), async (tx) => (await run(tx, q)).length);
     },
     existing: (tenantId, table, rows) => existingRows(db, { tenantId, table, rows }),
     async money(tenantId, ids) {
@@ -110,7 +145,7 @@ export function createTargetStore(db: Db, source: string): TargetStore {
     },
     async readBack(tenantId, table, ids) {
       if (!ID_TABLES.has(table) || ids.length === 0) return [];
-      return withPackScope(db, scope(tenantId, table), async (tx) =>
+      return withPackScope(db, scopeOf(tenantId, table), async (tx) =>
         (
           await run<{ j: Row }>(
             tx,
@@ -120,45 +155,15 @@ export function createTargetStore(db: Db, source: string): TargetStore {
         ).map((r) => r.j),
       );
     },
-    async contractFiles(tenantId, pairs) {
-      if (pairs.length === 0) return new Map();
-      const rows = await withPackScope(db, scope(tenantId, "contracts.contracts"), (tx) =>
-        run<{ contract_id: string; exists: boolean; file_id: string | null; file_row: boolean }>(
-          tx,
-          sql`select x.contract_id, c.id is not null as exists, c.file_id, f.id is not null as file_row
-          from jsonb_to_recordset(${JSON.stringify(pairs)}::jsonb) as x(contract_id uuid, file_row_id uuid)
-          left join contracts.contracts c on c.tenant_id = ${tenantId}::uuid and c.id = x.contract_id
-          left join contracts.files f on f.tenant_id = ${tenantId}::uuid and f.id = x.file_row_id`,
-        ),
-      );
-      return new Map(
-        rows.map((r) => [
-          r.contract_id,
-          { exists: r.exists, fileId: r.file_id, fileRow: r.file_row },
-        ]),
-      );
-    },
+    contractFiles: contractFilesOf(db),
     async attachFiles(tenantId, rows) {
       if (rows.length === 0) return 0;
-      const [r] = await withPackScope(db, scope(tenantId, "contracts.files"), (tx) =>
+      const [r] = await withPackScope(db, scopeOf(tenantId, "contracts.files"), (tx) =>
         run<{ n: number }>(tx, ATTACH_FILES(tenantId, JSON.stringify(rows))),
       );
       return r?.n ?? 0;
     },
-    async hasTable(table) {
-      const tid = "00000000-0000-4000-8000-000000000000";
-      return withPackScope(
-        db,
-        { packKey: packOf(table), tenantId: tid, userId: null },
-        async (tx) => {
-          const [r] = await run<{ ok: boolean }>(
-            tx,
-            sql`select to_regclass(${table}) is not null as ok`,
-          );
-          return r?.ok === true;
-        },
-      );
-    },
+    hasTable: hasTableOf(db),
   };
 }
 
