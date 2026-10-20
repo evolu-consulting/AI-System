@@ -29,32 +29,51 @@ VỤ NITIGROUP** (MST 0318938091). Dữ liệu sohoptac cũ chép vào tenant n�
 | 5 | evotest-mgmt: `run.ps1 -Tenant nitigroup` (onboarding ×2 + dry-run/apply/chạy lại `--into-tenant`) | đầy đủ | xong (xem Kết quả) |
 | 6 | admin-web thẻ hồ sơ | nhanh | xong (chưa có e2e — xem Còn lại) |
 
-## Thứ tự chạy production (KHÔNG chạy trong lát này)
-Mọi lệnh chạy trên máy chủ app mới, thư mục repo đã deploy, `--env-file=.env.local` (role `admin_api`/`hub_api` NOBYPASSRLS).
-`ACTOR` = uuid platform admin của người vận hành. sohoptac chỉ **ĐỌC** (OpenSearch REST + Neo4j HTTP; không ghi, không đổi index).
-1. **Deploy** `platform/gd0` (gồm admin 0015) — `bun run db:migrate` (main + hub + packs); kiểm `select count(*) from
-   admin.features where key like 'contracts-%'` = 3 và `packs.pack_agents` có `mgmt-assistant`; `hub:seed` đã có agent `mgmt-assistant`.
-2. **Đóng băng ghi sohoptac** (thông báo người dùng; importer đọc ảnh chụp, không đồng bộ tăng dần). Chép chỉ-đọc `apidata/contract_files`.
-3. **Onboarding** (chưa gắn org): `bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts
-   --file deploy/tenants/nitigroup.yaml --actor $ACTOR` ⇒ `tenant.created=true`, 23 phòng, `packs=[{contracts,3}]`. Chạy lại ⇒ mọi
-   số đổi = 0.
-4. **Tìm org sohoptac:** `MGMT_OPENSEARCH_URL=… MGMT_NEO4J_URL=… bun --env-file=.env.local
-   apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts --source mgmt-prod --actor $ACTOR --into-tenant nitigroup --report
-   dry0.json` (dry-run, tenant chưa gắn ⇒ exit 2 `into.TENANT_NOT_BOUND`, không lập kế hoạch) ⇒ đọc `source_orgs` (id, tên, số
-   thành viên), chọn org của NitiGroup. **Nhiều org ⇒ dừng, hỏi người dùng** (lát này chỉ nhập MỘT org vào tenant; gộp nhiều org
-   cần quyết định riêng — xem Còn lại).
-5. **Gắn org:** điền `import.org_id` trong `deploy/tenants/nitigroup.yaml` (commit) hoặc thêm `--mgmt-org <id>`; chạy lại
-   onboarding ⇒ `binding.state = "set"` (lần sau `kept`; đổi org ⇒ `ORG_REBIND`).
-6. **Import dry-run:** như bước 4 + `--files-dir <bản chép contract_files> --knowledge-org <id> --report dry.json` ⇒ exit 0/2;
-   xem `identity` (user reuse/tạo), `tables.*.planned`, `excluded`, `issues_by_code`. Vấn đề lạ ⇒ dừng.
-7. **Import apply:** thêm `--apply --state checkpoint.json --report apply.json` (đứt giữa chừng ⇒ chạy lại cùng `--state`).
-8. **Đối soát:** `apply.json` `reconcile.money_ok = true` (tiền nguồn = kế hoạch = đích, tuyệt đối), `files.checksum_ok = found`,
-   `signed_sha.ok`, `diffs = []`, `visibility.mismatches = []`; số hàng `tables.*.inserted` = `planned`; chạy lại `--apply` ⇒ tổng
-   `inserted = 0`. So tay vài HĐ/sổ trên contracts-web với sohoptac.
-9. **Gán phòng ban:** sohoptac KHÔNG có phòng ban (mgmt-app `orgs.py` chỉ có role + `manager_email`, đã nhập qua N5/M1b) ⇒ điền
-   `head`/`members` (email) trong yaml rồi chạy lại onboarding (`pending_emails` = email chưa có user), hoặc gán ở contracts-web
-   Cài đặt › Phòng ban.
-10. Điều kiện cứng trước khi mở đăng nhập: TECH-DEBT #224 (giới hạn đăng nhập) — như I1.
+## Thứ tự chạy production — stack `sohoptac2` (KHÔNG chạy trong lát này)
+Kit `deploy/prod-sohoptac2/` (gd0 8b7571c2): máy `evoc@149.202.83.5`, thư mục `~/workspace/sohoptac2`, project Docker `sohoptac2`
+(service `pg` owner `s2_owner` DB `ai_system`; lệnh một lần = service `tool`, entrypoint `bun --env-file=/run/s2/app.env`, role
+`admin_api`/`hub_api` NOBYPASSRLS từ `.env`). sohoptac cũ = project Docker `sohoptac` (mgmt-app compose: `opensearch` :9200,
+`neo4j` :7474/7687, volume `sohoptac_apidata` → `/app/data/contract_files`) — chỉ **ĐỌC** (REST scroll + Cypher MATCH, mount `:ro`).
+Mọi lệnh dưới chạy trên máy chủ: `cd ~/workspace/sohoptac2; dc() { docker compose -p sohoptac2 "$@"; }`.
+
+1. **Deploy** (máy dev): `powershell -File deploy/prod-sohoptac2/deploy.ps1 -Ref platform/gd0` (gd0 đã merge lát này) — `setup.sh`
+   migrate áp admin 0015. Kiểm:
+   `dc exec -T pg psql -U s2_owner -d ai_system -Atc "select (select count(*) from admin.features where key like 'contracts-%'), (select count(*) from hub.agents where key='mgmt-assistant'), (select count(*) from information_schema.columns where table_schema='admin' and table_name='tenants' and column_name='profile')"`
+   ⇒ `3|1|1`.
+2. **Actor:** `ACTOR=$(dc exec -T pg psql -U s2_owner -d ai_system -Atc "select id from admin.users where role='platform_admin' and username='admin'")`.
+3. **Onboarding (chưa gắn org):**
+   `dc run --rm -T -v "$PWD/build/deploy/tenants:/app/deploy/tenants:ro" tool apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts --file deploy/tenants/nitigroup.yaml --actor "$ACTOR" > onboard1.json`
+   ⇒ `tenant.created=true`, `departments.total=23`, `packs=[{contracts,3}]`. Chạy lại ⇒ `created/updated=false`, mọi số đổi = 0.
+4. **Nối nguồn chỉ-đọc** (chỉ xem, không đổi gì ở sohoptac): `docker ps --filter name=sohoptac- --format '{{.Names}} {{.Ports}}'`
+   (cần `sohoptac-opensearch-1` có `0.0.0.0:9200`, `sohoptac-neo4j-1` có `0.0.0.0:7474`); mật khẩu Neo4j:
+   `export MGMT_NEO4J_PASSWORD=$(docker inspect sohoptac-neo4j-1 --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's#^NEO4J_AUTH=neo4j/##p')`.
+   Lệnh importer chung (container một lần trên mạng `sohoptac2_default` để thấy `pg`; nguồn qua cổng host; file `:ro`):
+   ```
+   mkdir -p import-out
+   IMP=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default --add-host host.docker.internal:host-gateway
+     -v "$PWD/.env:/run/s2/app.env:ro" -v sohoptac_apidata:/mgmtdata:ro -v "$PWD/import-out:/out"
+     -e MGMT_OPENSEARCH_URL=http://host.docker.internal:9200 -e MGMT_NEO4J_URL=http://host.docker.internal:7474
+     -e MGMT_NEO4J_USER=neo4j -e MGMT_NEO4J_PASSWORD
+     sohoptac2-app:latest bun --env-file=/run/s2/app.env apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts
+     --source mgmt-prod --actor "$ACTOR" --into-tenant nitigroup --files-dir /mgmtdata/contract_files --sink-dir /out/sink)
+   ```
+5. **Tìm org sohoptac:** `"${IMP[@]}" --report /out/dry0.json > /dev/null` ⇒ exit 2 `into.TENANT_NOT_BOUND` (dry-run rỗng); đọc
+   `jq .source_orgs import-out/dry0.json` (id, tên, số thành viên). **> 1 org ⇒ dừng, hỏi người dùng** (lát này nhập MỘT org — D-NO-05).
+6. **Gắn org:** điền `import.org_id` trong `deploy/tenants/nitigroup.yaml` (commit + deploy) hoặc chạy lại bước 3 thêm
+   `--mgmt-org <id>` ⇒ `binding.state = "set"` (lần sau `kept`; đổi org ⇒ `ORG_REBIND`).
+7. **Đóng băng ghi sohoptac** (báo người dùng; importer đọc ảnh chụp, không đồng bộ tăng dần).
+8. **Import dry-run:** `"${IMP[@]}" --knowledge-org <org id> --report /out/dry.json > /dev/null; echo $?` ⇒ 0 (2 = có vấn đề: đọc
+   `issues_by_code`, `identity`, `excluded`, `tables.*.planned` — lạ ⇒ dừng).
+9. **Import apply:** `"${IMP[@]}" --knowledge-org <org id> --apply --state /out/checkpoint.json --report /out/apply.json > /dev/null`
+   (đứt ⇒ chạy lại đúng lệnh, cùng `--state`).
+10. **Đối soát:** `jq '{money_ok: .reconcile.money_ok, money: .reconcile.money, files: .reconcile.files, signed: .reconcile.signed_sha, diffs: (.reconcile.diffs|length), vis: .reconcile.visibility, into, excluded}' import-out/apply.json`
+    ⇒ `money_ok=true` (nguồn = kế hoạch = đích, tuyệt đối), `files.checksum_ok = found`, `signed.ok`, `diffs=0`,
+    `vis.mismatches=[]`; chạy lại bước 9 với `--report /out/rerun.json` ⇒ tổng `tables.*.inserted = 0`. So tay vài HĐ/sổ trên
+    contracts-web (tunnel :18431) với sohoptac.
+11. **Phòng ban:** sohoptac KHÔNG có phòng ban (mgmt-app `orgs.py` chỉ role + `manager_email`, đã nhập qua N5/M1b) ⇒ điền
+    `head`/`members` (email) trong yaml, chạy lại bước 3 (`pending_emails` = email chưa có user), hoặc gán ở contracts-web Cài đặt › Phòng ban.
+12. **Chặn trước khi mở đăng nhập/cutover:** FileBox sink chưa nối vào CLI (`--sink-dir` chỉ là thư mục — file HĐ chưa vào FileBox,
+    I1 "Còn lại"); TECH-DEBT #224 (giới hạn đăng nhập).
 
 ## Quyết định trong lúc làm
 - D-NO-01: Hồ sơ = cột `admin.tenants.profile jsonb` (không thêm nhiều cột): trường hồ sơ còn đổi; kiểm dạng ở zod
@@ -73,7 +92,13 @@ Mọi lệnh chạy trên máy chủ app mới, thư mục repo đã deploy, `--
 - D-NO-08: Không có e2e cho thẻ hồ sơ trong lát (chỉ đọc, dữ liệu do CLI ghi): unit `profileLines` + int API — e2e ghi ở Còn lại.
 
 ## Kết quả
-(điền sau khi chạy evotest)
+- Int evotest (`run-tests.ps1 -Step int`, 0d8ada08): 347 pass / 0 fail, 34,7 s — NITI 7/7 + I1, N5, M1, M1D, M2/M3 db-schema,
+  ADM-NFR-06 migrate, N1 admin-packs/pack-assistant, N2 admin-tenant.
+- evotest-mgmt `run.ps1 -Tenant nitigroup` (bản sao seed, 2 org cùng tên "Công ty An Nam"): onboarding 1 tạo tenant + 23 phòng +
+  contracts (3 Group vai); onboarding 2: 0 đổi. Importer `--into-tenant nitigroup` (org của chủ seed): dry 2.632 ms · apply 894 ms ·
+  chạy lại 927 ms; 521 hàng / 22 bảng, chạy lại 0; org kia + 1 user bị loại (không tạo tenant); tiền 8 khoá khớp tuyệt đối (HĐ
+  3.558.150.000 ₫, đợt 1.237.250.000 ₫, sổ 485.250.000 ₫, lô CKS 56.500.000 ₫…); file 1/1 sha; văn bản ký 71/71; so trường 48, lệch
+  0; luật thấy 4/4; vấn đề {}. Tổng lượt 129 s.
 
 ## Còn lại
 - e2e Playwright thẻ "Hồ sơ công ty" (Luật 4b) — cần seed `profile` cho tenant e2e.
