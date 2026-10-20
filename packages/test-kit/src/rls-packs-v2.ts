@@ -5,7 +5,7 @@ import type { RlsTable } from "./rls-suite";
 
 const who = userId(901);
 /** Khoá dò của bảng khoá ghép phải khác nhau giữa hai tenant, kẻo B «thấy» hàng cùng khoá của chính mình. */
-const idx = (t: string): number => (t === tenantId(901) ? 0 : 1);
+const pick = <T>(pair: readonly [T, T], t: string): T => (t === tenantId(901) ? pair[0] : pair[1]);
 const SCOPES = ["settings", "job_types"] as const;
 const PERIODS = ["2026-09-01", "2026-08-01"] as const;
 const rnd = (pk?: string): string => pk ?? crypto.randomUUID();
@@ -137,7 +137,7 @@ v2Tables.push(tenantPk("business_settings"), tenantPk("company_settings"), {
   name: "score_configs_v2", // V2-E · khoá ghép (tenant_id, scope) ⇒ dò theo scope
   pk: "scope",
   seed: async (o, t) => {
-    const scope = SCOPES[idx(t)];
+    const scope = pick(SCOPES, t);
     await o.unsafe(
       "insert into contracts.score_configs_v2 (tenant_id, scope, config) values ($1, $2, '{}')",
       [t, scope],
@@ -168,7 +168,7 @@ v2Tables.push(
     name: "score_lock_runs",
     pk: "period",
     seed: async (o, t) => {
-      const period = PERIODS[idx(t)];
+      const period = pick(PERIODS, t);
       await o.unsafe(
         "insert into contracts.score_lock_runs (tenant_id, period, rows) values ($1, $2, 0)",
         [t, period],
