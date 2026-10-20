@@ -38,15 +38,12 @@ function checkManual(b: PartnerEventCreate, isAdmin: boolean): void {
   if (delta === 0 || Math.abs(delta) > 10 || !(b.note ?? "").trim()) throw new LedgerFail("adjust");
 }
 
-export function ledgerCommands(d: Deps) {
-  const today = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
+const todayOf = (d: Deps) => async (who: PackWho) =>
+  localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
-  const schedule = (who: PackWho, contractId: string, rows: ScheduleRequest["rows"]) =>
-    d.uow.tenant(who, async ({ ledger: r }) => {
-      if (!(await r.lockContract(contractId))) throw new LedgerFail("not_found");
-      return r.replaceSchedule(contractId, rows, who.userId);
-    });
-
+/** Lệnh trên một đợt: đã trả/thu, hẹn lại, nhắc. */
+function obligationCommands(d: Deps) {
+  const today = todayOf(d);
   const settle = async (
     who: PackWho,
     id: string,
@@ -91,7 +88,12 @@ export function ledgerCommands(d: Deps) {
       return r.remind({ id, today: day, by: who.userId, role: roleOf(ob.direction) });
     });
   };
+  return { settle, postpone, remind };
+}
 
+/** Lệnh trên sổ đối tác: huỷ dòng, ghi tay. */
+function eventCommands(d: Deps) {
+  const today = todayOf(d);
   /** `partner_events.void` + `obligations.undo`: dòng hệ thống không huỷ; huỷ song song ⇒ chỉ một lần hoàn tác (D7-16). */
   const voidEvent = (who: PackWho, id: string) =>
     d.uow.tenant(who, async ({ ledger: r }) => {
@@ -118,7 +120,16 @@ export function ledgerCommands(d: Deps) {
     });
   };
 
-  return { schedule, settle, postpone, remind, voidEvent, record };
+  return { voidEvent, record };
+}
+
+export function ledgerCommands(d: Deps) {
+  const schedule = (who: PackWho, contractId: string, rows: ScheduleRequest["rows"]) =>
+    d.uow.tenant(who, async ({ ledger: r }) => {
+      if (!(await r.lockContract(contractId))) throw new LedgerFail("not_found");
+      return r.replaceSchedule(contractId, rows, who.userId);
+    });
+  return { schedule, ...obligationCommands(d), ...eventCommands(d) };
 }
 export type LedgerCommands = ReturnType<typeof ledgerCommands>;
 

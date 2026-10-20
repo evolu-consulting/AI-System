@@ -51,7 +51,8 @@ export type FollowupSendTotals = {
   failed: number;
 };
 
-export function createFollowupSender(d: FollowupSendDeps) {
+/** Một lô của một tenant (kèm tách hàng xấu). */
+function batcher(d: FollowupSendDeps) {
   const send = (tenantId: string, now: Date, limit: number, tz: string) =>
     d.uow.system(tenantId, ({ followupSend }) => followupSend.sendDue(now, limit, tz));
 
@@ -69,7 +70,7 @@ export function createFollowupSender(d: FollowupSendDeps) {
     }
   };
 
-  const batch = async (tenantId: string, now: Date): Promise<FollowupSendBatch> => {
+  return async (tenantId: string, now: Date): Promise<FollowupSendBatch> => {
     const tz = await d.timeZoneOf(tenantId);
     try {
       return { tenantId, ...(await send(tenantId, now, d.batchSize, tz)) };
@@ -78,6 +79,10 @@ export function createFollowupSender(d: FollowupSendDeps) {
       return isolate(tenantId, now, tz);
     }
   };
+}
+
+export function createFollowupSender(d: FollowupSendDeps) {
+  const batch = batcher(d);
 
   /** Một lô (một tenant); không có việc ⇒ null. */
   const once = async (skip: readonly string[] = []): Promise<FollowupSendBatch | null> => {

@@ -18,16 +18,14 @@ const money = (col: string) =>
 export const FOLLOWUP_TITLE_MAX = 200;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-export function followupsRepo(tx: Tx, t: string): FollowupsRepo {
-  return {
-    create: (b: FollowupCreate, tz: string) => {
-      // So bằng uuid (PK index) thay vì `id::text = …` (review B #19); chủ thể không phải uuid ⇒ null ⇒ không khớp nhánh uuid nào.
-      const sid = UUID_RE.test(b.subject_id) ? b.subject_id : null;
-      const kind = b.subject_kind;
-      return one<string | null>(
-        tx,
-        sql`with s as (
-            select c.id as cid, 'obligation'::text as k,
+/**
+ * Chủ thể (HĐ gốc + tiêu đề máy chủ đặt) — chỉ nhánh của `subject_kind` chạy. So bằng uuid (PK index) thay vì `id::text = …` (review
+ * B #19); chủ thể không phải uuid ⇒ null ⇒ không khớp nhánh uuid nào.
+ */
+function subjectOf(t: string, b: FollowupCreate) {
+  const sid = UUID_RE.test(b.subject_id) ? b.subject_id : null;
+  const kind = b.subject_kind;
+  return sql`select c.id as cid, 'obligation'::text as k,
               (case when o.direction = 'receive' then 'Thu ' else 'Trả ' end
                 || coalesce(case when c.direction = 'sale' then c.buyer else c.seller end, 'đối tác') || ${money("o.amount")}) as title
             from contracts.obligations o
@@ -48,7 +46,15 @@ export function followupsRepo(tx: Tx, t: string): FollowupsRepo {
                   (c.seller, contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value'))
                 ) x(name, k)
                 where c.tenant_id = ${t}::uuid and x.k = ${b.subject_id} limit 1), ${b.subject_id})
-            where ${kind}::text = 'company' and ${b.subject_id} = any (contracts.visible_party_keys()))
+            where ${kind}::text = 'company' and ${b.subject_id} = any (contracts.visible_party_keys())`;
+}
+
+export function followupsRepo(tx: Tx, t: string): FollowupsRepo {
+  return {
+    create: (b: FollowupCreate, tz: string) =>
+      one<string | null>(
+        tx,
+        sql`with s as (${subjectOf(t, b)})
           insert into contracts.followups (tenant_id, user_id, subject_kind, subject_id, contract_id, due_at, title, note)
           select ${t}::uuid, ${ME}, ${b.subject_kind}, ${b.subject_id}, s.cid, (${b.at}::timestamp at time zone ${tz}::text),
             left(coalesce(nullif(btrim(s.title), ''), ${b.subject_id}), ${FOLLOWUP_TITLE_MAX}::int), ${b.note}
@@ -57,8 +63,7 @@ export function followupsRepo(tx: Tx, t: string): FollowupsRepo {
             due_at = excluded.due_at, title = excluded.title, note = excluded.note, status = 'pending',
             contract_id = excluded.contract_id, subject_kind = excluded.subject_kind
           returning to_jsonb(id) as j`,
-      );
-    },
+      ),
     mine: (subjectId, tz) =>
       one<Followup[]>(
         tx,

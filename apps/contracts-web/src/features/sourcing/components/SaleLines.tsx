@@ -71,6 +71,16 @@ function SourceCell({
     </>
   );
 }
+function RiskBadge({ risk }: { risk: SaleLine["risk"] }) {
+  const { t } = useTranslation();
+  if (!risk) return <span className="text-[13px] text-dim">—</span>;
+  return (
+    <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", RISK_TONE[risk])}>
+      {t(`contracts.sourcing.risk.${risk}`)}
+    </span>
+  );
+}
+
 export function SaleLines({
   rows,
   candidates,
@@ -147,18 +157,7 @@ export function SaleLines({
               </td>
               <td className={`${td} text-right text-[13px]`}>{money(r.profit)}</td>
               <td className={td}>
-                {r.risk ? (
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                      RISK_TONE[r.risk],
-                    )}
-                  >
-                    {t(`contracts.sourcing.risk.${r.risk}`)}
-                  </span>
-                ) : (
-                  <span className="text-[13px] text-dim">—</span>
-                )}
+                <RiskBadge risk={r.risk} />
               </td>
             </tr>
           ))}

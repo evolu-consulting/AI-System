@@ -56,7 +56,8 @@ type Deps = {
   cache?: SourcingCache;
 };
 
-export function sourcingUsecases(d: Deps) {
+/** Dòng bán người dùng THẤY: dữ liệu thô (bộ nhớ đệm theo tenant) lọc theo tập HĐ thấy TRƯỚC khi dựng dòng giá. */
+function visibleSalesOf(d: Deps) {
   const cache = d.cache ?? createSourcingCache();
   const dayOf = async (who: PackWho) => localDate(d.now(), await d.timeZoneOf(who.tenantId));
 
@@ -71,8 +72,8 @@ export function sourcingUsecases(d: Deps) {
     );
   };
 
-  /** Dòng bán người dùng THẤY (nguồn mua cũng chỉ trong HĐ họ thấy). */
-  const visibleSales = async (who: PackWho): Promise<{ rows: FullSale[]; truncated: boolean }> => {
+  /** Nguồn mua cũng chỉ trong HĐ họ thấy. */
+  return async (who: PackWho): Promise<{ rows: FullSale[]; truncated: boolean }> => {
     const today = await dayOf(who);
     const [fp, ids] = await Promise.all([
       d.uow.system(who.tenantId, ({ sourcing: r }) => r.fingerprint()),
@@ -82,6 +83,10 @@ export function sourcingUsecases(d: Deps) {
     const rows = viewOf(e, ids, () => salesOf(visibleTo(e.raw, ids), e.today));
     return { rows, truncated: e.raw.truncated };
   };
+}
+
+export function sourcingUsecases(d: Deps) {
+  const visibleSales = visibleSalesOf(d);
 
   const read = async (who: PackWho, q: SourcingQuery = {}): Promise<SourcingOut> => {
     const size = q.page_size ?? SOURCING_PAGE_SIZE;

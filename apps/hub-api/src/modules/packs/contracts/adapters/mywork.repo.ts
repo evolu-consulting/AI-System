@@ -14,12 +14,10 @@ const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
 const UUID_RE = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
 const LIM = MYWORK_SOURCE_MAX + 1;
 
-export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
-  return {
-    list: (w) =>
-      one<RawMyWork>(
-        tx,
-        sql`with ob as (
+type Window = Parameters<MyWorkRepo["list"]>[0];
+
+/** Năm nguồn (CTE), mỗi nguồn ≤ LIM hàng. */
+const sources = (t: string, w: Window) => sql`with ob as (
             select o.id, o.contract_id, o.direction, o.amount, o.due_date from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and o.due_date <= ${w.horizon}::date
             order by o.due_date, o.id limit ${LIM}::int),
@@ -57,8 +55,10 @@ export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
                 and r.deadline > ${w.horizon}::date and c.handled is null and c.status in ('active', 'expiring')
                 and c.action_deadline = r.deadline
               order by r.contract_id, r.sent_at desc) x
-            order by x.deadline, x.id limit ${LIM}::int)
-          select jsonb_build_object(
+            order by x.deadline, x.id limit ${LIM}::int)`;
+
+/** Gom năm nguồn thành MỘT jsonb (`RawMyWork`). */
+const payload = (t: string, w: Window) => sql`select jsonb_build_object(
             'obligations', coalesce((select jsonb_agg(jsonb_build_object('id', r.id, 'contract_id', r.contract_id,
                 'direction', r.direction, 'amount', r.amount, 'due', r.due_date, 'number', c.number,
                 'title', coalesce(nullif(c.fields -> 'title' ->> 'value', ''), c.number, c.title),
@@ -87,8 +87,11 @@ export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
               from fu f
               left join contracts.cks_renewals rn on rn.tenant_id = ${t}::uuid and rn.id = f.renewal_id
               left join contracts.cks_customers cu on cu.tenant_id = ${t}::uuid and cu.id = coalesce(f.customer_id, rn.customer_id)),
-              '[]'::jsonb)) as j`,
-      ),
+              '[]'::jsonb)) as j`;
+
+export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
+  return {
+    list: (w) => one<RawMyWork>(tx, sql`${sources(t, w)} ${payload(t, w)}`),
     // Chỉ hàng của mình: hẹn nhắc của người khác ≡ không tồn tại (không lộ).
     // Hai bảng (hẹn nhắc CKS HD9 + hẹn nhắc chung W1) trong MỘT câu.
     doneFollowup: async (id) =>
