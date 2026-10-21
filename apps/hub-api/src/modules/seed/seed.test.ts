@@ -75,9 +75,17 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
         "app-guide",
       ],
     });
-    // ai-tiers-rag · trợ lý chung: tool tri thức, giữ công cụ đọc tệp (không khai allowed_tools).
+    // ai-tiers-rag · trợ lý chung: tool tri thức, giữ công cụ đọc tệp (không khai allowed_tools); chat-fast2: + tool đọc contracts.
     expect(p.agents.find((a) => a.key === "assistant")?.runtime_options).toEqual({
-      pack_tools: ["knowledge-search", "knowledge-get", "app-guide"],
+      pack_tools: [
+        "knowledge-search",
+        "knowledge-get",
+        "app-guide",
+        "contracts-search",
+        "contracts-get",
+        "contracts-cks",
+        "contracts-ledger",
+      ],
     });
     // M2-chat · cùng trợ lý, backend Dify (token chat ngắn hạn cho tool đọc).
     expect(p.agents.find((a) => a.key === "mgmt-assistant-dify")?.runtime_options).toEqual({

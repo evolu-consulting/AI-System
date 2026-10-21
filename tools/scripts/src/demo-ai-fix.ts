@@ -7,6 +7,7 @@
 // knowledge-read/write/admin) và cấp cho ĐÚNG các Group đang có quyền gói contracts cùng việc ⇒ tool `knowledge-search` của
 // trợ lý chạy theo quyền người gọi; (6) tài liệu nội bộ giả QC-TC-01 (hạn mức duyệt, thanh toán, đối tác Minh Phát) theo băm
 // nội dung; (7) chỉ BÁO số agent seed chưa có bậc/tool tri thức (`agentsStale` > 0 ⇒ chạy hub seed — script không ghi hub.agents).
+// chat-fast2: (8) agent mặc định của demo = `assistant` (`hub.tenant_agent_defaults`) ⇒ tin không tag 1 job, không Orchestrator.
 // KHÔNG đụng tenant khác (kiểm cả trong DB).
 import { createHash } from "node:crypto";
 import postgres from "postgres";
@@ -54,6 +55,8 @@ export type Plan = {
   knowledgeGrants: number;
   policyDoc: boolean;
   agentsStale: number;
+  /** chat-fast2 · agent mặc định của demo chưa là `assistant` (tin không tag ⇒ 1 job thay vì Orchestrator + agent). */
+  defaultAgent: boolean;
 };
 
 /** Agent seed phải có bậc model + tool tri thức sau `hub:seed` của lát ai-tiers-rag. */
@@ -82,7 +85,9 @@ async function planKnowledge(
       where a.key = any(${Object.keys(TIERED_AGENTS)}::text[])
         and (p.key is distinct from 'claude-sub-' || (${JSON.stringify(TIERED_AGENTS)}::text::jsonb ->> a.key)
           or (a.key <> 'orchestrator'
-            and not coalesce(a.runtime_options -> 'pack_tools' ? 'knowledge-search', false)))) as stale`;
+            and not coalesce(a.runtime_options -> 'pack_tools' ? 'knowledge-search', false))
+          or (a.key = 'assistant'
+            and not coalesce(a.runtime_options -> 'pack_tools' ? 'contracts-search', false)))) as stale`;
   if (!r) throw new Error("demo-ai-fix: không đọc được hiện trạng tri thức");
   return {
     knowledgePack: r.feats < 3 ? -1 : r.missing,
@@ -130,8 +135,17 @@ async function applyKnowledge(tx: Tx, t: string, p: Plan): Promise<void> {
 
 async function plan(tx: Tx, t: string): Promise<Plan> {
   const [r] = await tx<
-    { ent: boolean; grants: number; docs: number; company: boolean; partners: number }[]
+    {
+      ent: boolean;
+      grants: number;
+      docs: number;
+      company: boolean;
+      partners: number;
+      def: boolean;
+    }[]
   >`select
+    not exists (select 1 from hub.tenant_agent_defaults d join hub.agents a on a.id = d.default_agent_id
+      where d.tenant_id = ${t} and a.key = 'assistant') as def,
     not exists (select 1 from hub.agent_entitlements e join hub.agents a on a.id = e.agent_id
       where a.key = 'assistant' and e.tenant_id = ${t} and e.revoked_at is null) as ent,
     (select count(*)::int from hub.agent_grants g join hub.agents m on m.id = g.agent_id and m.key = 'mgmt-assistant'
@@ -147,6 +161,7 @@ async function plan(tx: Tx, t: string): Promise<Plan> {
     doc: r.docs === 0,
     company: r.company,
     partners: r.partners,
+    defaultAgent: r.def,
     ...(await planKnowledge(tx, t)),
   };
 }
@@ -163,6 +178,12 @@ async function apply(tx: Tx, t: string, p: Plan): Promise<void> {
       join hub.agents m on m.id = g.agent_id and m.key = 'mgmt-assistant', hub.agents a
     where g.tenant_id = ${t} and a.key = 'assistant'
     on conflict (agent_id, tenant_id, subject_type, subject_id) do nothing`;
+  // chat-fast2 · agent mặc định = assistant (đã cấp như mgmt-assistant ở trên) ⇒ tin không tag ở AI System chạy thẳng 1 job.
+  if (p.defaultAgent)
+    await tx`insert into hub.tenant_agent_defaults (tenant_id, default_agent_id, fallback_agent_id, on_no_match)
+      select ${t}::uuid, id, null, 'answer' from hub.agents where key = 'assistant'
+      on conflict (tenant_id) do update set default_agent_id = excluded.default_agent_id,
+        fallback_agent_id = null, on_no_match = 'answer', updated_at = now()`;
   await tx`select pg_notify('hub_config_changed', ${JSON.stringify({ v: 1, version: v?.v })})`;
   if (p.doc) {
     await tx`select set_config('app.tenant_id', ${t}, true)`;

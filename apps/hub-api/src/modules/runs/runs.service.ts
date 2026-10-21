@@ -38,7 +38,7 @@ import {
   createRunTx as insertRun,
   newRun,
 } from "./create-run";
-import { planOf, type Untagged, untaggedRoute } from "./run-plan";
+import { type ForceOrchestrator, planOf, type Untagged, untaggedRoute } from "./run-plan";
 import { type ProcessPrep, type ProcessPrepOpts, prepareProcessRun } from "./run-process";
 import { emptyStream, lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
@@ -86,8 +86,8 @@ export type CommandRunStart = {
 };
 
 /** H2b plan §4 `runs/` · kế hoạch run từ E12: lệnh `/` (H2a) hoặc tag `@` (`direct` / `orchestrated` thu hẹp). */
-export type RunPlan = CommandRunStart | MentionPlan | Untagged;
-export { UNTAGGED } from "./run-plan";
+export type RunPlan = CommandRunStart | MentionPlan | Untagged | ForceOrchestrator;
+export { FORCE_ORCHESTRATOR, ORCHESTRATOR_TAG, UNTAGGED } from "./run-plan";
 
 export type RunServiceDeps = {
   db: Db;
@@ -142,6 +142,11 @@ export type StartedRun = {
 export class RunService {
   readonly registry = new RunRegistry();
   readonly #reader: SseReader;
+
+  /** chat-fast · `HUB_FAST_ROUTE=on` (route E12 dùng cho `@orchestrator`). */
+  get fastRoute(): boolean {
+    return this.d.fastRoute === true;
+  }
 
   constructor(private readonly d: RunServiceDeps) {
     this.#reader = new SseReader(d.redis, d.log, d.signal);

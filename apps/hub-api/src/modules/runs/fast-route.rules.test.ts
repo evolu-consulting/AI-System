@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { AgentConfig, ConfigSnapshot, TenantAgentDefaults } from "../config/config.rules";
 import { fastRoute } from "./fast-route.rules";
-import { untaggedRoute } from "./run-plan";
+import { FORCE_ORCHESTRATOR, planOf, untaggedRoute } from "./run-plan";
 
 const T = "t-1";
 const OTHER_T = "t-2";
@@ -138,13 +138,52 @@ describe("chat-fast · untaggedRoute", () => {
   test("cờ bật + AU 1 ⇒ fast", () => {
     expect(untaggedRoute(true, one, who, true).fast?.agent.id).toBe("a");
   });
-  test("CR-054 forbidden giữ nguyên (không bị fast che)", () => {
+  const defaults = (id: string) => ({
+    defaultAgentId: id,
+    fallbackAgentId: null,
+    onNoMatch: "answer" as const,
+  });
+  const two = (id: string) =>
+    snap({
+      agents: [agent("a"), agent("b"), agent("c")],
+      ent: [
+        ["a", T],
+        ["c", T],
+      ],
+      grants: [
+        ["a", T, U],
+        ["c", T, U],
+      ],
+      defaults: defaults(id),
+    });
+
+  test("agent mặc định không được dùng: cờ tắt ⇒ forbidden (403 CR-054); cờ bật ⇒ về Orchestrator (legacy)", () => {
+    expect(untaggedRoute(true, two("b"), who, false)).toEqual({
+      route: { kind: "forbidden" },
+      fast: null,
+    });
+    expect(untaggedRoute(true, two("b"), who, true)).toEqual({ route: LEGACY, fast: null });
+  });
+  test("chat-fast2 · agent mặc định được dùng (AU 2) ⇒ direct agent đó, không qua fast", () => {
+    const r = untaggedRoute(true, two("a"), who, true);
+    expect(r.route).toMatchObject({ kind: "direct", agent: { id: "a" } });
+    expect(r.fast).toBeNull();
+  });
+  test("chat-fast2 · forbidden + AU 1 ⇒ fast (Orchestrator chỉ còn một đích)", () => {
     const s = snap({
       agents: [agent("a"), agent("b")],
       ent: [["a", T]],
       grants: [["a", T, U]],
-      defaults: { defaultAgentId: "b", fallbackAgentId: null, onNoMatch: "answer" },
+      defaults: defaults("b"),
     });
-    expect(untaggedRoute(true, s, who, true)).toEqual({ route: { kind: "forbidden" }, fast: null });
+    expect(untaggedRoute(true, s, who, true).fast?.agent.id).toBe("a");
+  });
+});
+
+describe("chat-fast2 · planOf", () => {
+  test("@orchestrator (FORCE_ORCHESTRATOR) ⇒ không plan (Orchestrator đủ AU), kể cả khi tenant có agent mặc định", () => {
+    expect(
+      planOf({ kind: "direct", agent: agent("a") }, FORCE_ORCHESTRATOR, "vi", "x"),
+    ).toBeUndefined();
   });
 });

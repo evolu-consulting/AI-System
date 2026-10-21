@@ -20,6 +20,7 @@ import {
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
+import { appError } from "../../lib/errors";
 import { parseIdParam, parseJson } from "../../lib/http";
 import { normalizeAttachmentIds } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
@@ -29,7 +30,14 @@ import { routeMessage } from "../mention/mention-parse.rules";
 import { type Bang, classifyBang } from "../processes/core/bang.rules";
 import type { ProcessStartPort } from "../processes/core/ports";
 import { parseLastEventId } from "./runs.rules";
-import { type CommandRunStart, type RunService, type StartedRun, UNTAGGED } from "./runs.service";
+import {
+  type CommandRunStart,
+  FORCE_ORCHESTRATOR,
+  ORCHESTRATOR_TAG,
+  type RunService,
+  type StartedRun,
+  UNTAGGED,
+} from "./runs.service";
 
 const NO_BANG: Bang = { kind: "none" };
 
@@ -71,6 +79,12 @@ async function startFor(
   if (msg.kind === "command") {
     const req = { name: msg.name, rest: msg.rest, ctx: body.context ?? {}, attachments: c.files };
     return runs.start(u, id, body, await p.command(u, req));
+  }
+  // chat-fast2 · `@orchestrator x` (cờ bật) ⇒ Orchestrator đủ AU; cờ tắt ⇒ như H2b (`AGENT_NOT_FOUND`).
+  if (runs.fastRoute && msg.kind === "mention" && msg.tags.join() === ORCHESTRATOR_TAG) {
+    if (msg.content === "")
+      throw appError("CMD_MISSING_ARG", { missing: ["content"], invalid: [] });
+    return runs.start(u, id, { ...body, content: msg.content }, FORCE_ORCHESTRATOR);
   }
   return runs.start(u, id, body, await p.mention(u, msg));
 }
