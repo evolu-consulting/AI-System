@@ -6,7 +6,8 @@ import type { Page } from "@playwright/test";
 import { CHAT, CW, chatTurn, expect, login, settle, test } from "./_support";
 
 const ERR_UI =
-  /Đã xảy ra lỗi|Không gửi được|không thể trả lời|Something went wrong|Lỗi kết nối|quá tải|hết lượt|ALL_PROVIDERS_EXHAUSTED/i;
+  // Không có "hết lượt": hướng dẫn hợp lệ có nhắc thông báo "Đã hết lượt thao tác AI hôm nay"; lỗi máy chủ thật vẫn bắt qua mã.
+  /Đã xảy ra lỗi|Không gửi được|không thể trả lời|Something went wrong|Lỗi kết nối|quá tải|ALL_PROVIDERS_EXHAUSTED/i;
 
 async function ask(page: Page, text: string): Promise<string> {
   const all = await chatTurn(page, text);
