@@ -5,6 +5,8 @@ import type { Page } from "@playwright/test";
 import { CW, expect, login, settle, TAG, test } from "./_support";
 
 let page: Page;
+// Sản phẩm không xoá được qua app và tên/quy tắc phải duy nhất ⇒ mỗi lần chạy một hậu tố riêng (chạy lại không đụng dữ liệu cũ).
+const RUN = Date.now().toString(36);
 test.beforeAll(async ({ browser }) => {
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   await ctx.addInitScript(() => localStorage.setItem("ai.locale", "vi"));
@@ -22,7 +24,7 @@ test.describe("11 gap-d1", () => {
     await page.goto(`${CW}/products`);
     await settle(page);
     await page.getByTestId("gd1-add-product").click();
-    await page.getByTestId("gd1-p-name").fill(`${TAG} Cáp mạng`);
+    await page.getByTestId("gd1-p-name").fill(`${TAG} Cáp mạng ${RUN}`);
     await page.getByTestId("gd1-p-unit").fill("cuộn");
     await page.getByTestId("gd1-p-spec").fill("305m");
     await page.getByTestId("gd1-p-save").click();
@@ -42,9 +44,9 @@ test.describe("11 gap-d1", () => {
     await expect(page.getByTestId("gd1-risk")).toBeVisible();
 
     await page.getByRole("tab", { name: "Nhận diện" }).click();
-    await page.getByTestId("gd1-r-pattern").fill(`${TAG} cap mang`);
+    await page.getByTestId("gd1-r-pattern").fill(`${TAG} cap mang ${RUN}`);
     await page.getByTestId("gd1-r-add").click();
-    await expect(page.getByText(`${TAG} cap mang`)).toBeVisible();
+    await expect(page.getByText(`${TAG} cap mang ${RUN}`)).toBeVisible();
 
     await page.getByRole("tab", { name: /Nhà cung cấp & giá/ }).click();
     await page.getByTestId("gd1-manual-open").click();
