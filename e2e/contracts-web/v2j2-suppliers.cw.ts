@@ -72,6 +72,32 @@ const OVERVIEW: SupplierOverviewOut = {
     },
   ],
 };
+/** price-scout: tab NCC & giá cũng đọc cấu hình dò giá của SP (`GET /products/:id/price-scout`); thiếu route ⇒ trang lỗi. */
+const SCOUT_CFG = {
+  enabled: false,
+  keywords: [],
+  spec: null,
+  unit: null,
+  include_sites: [],
+  exclude_sites: [],
+  watched_suppliers: [],
+  region: null,
+  vat: "excl",
+  schedule: "off",
+  alert_pct: null,
+  alert_watched: false,
+};
+const SCOUT = {
+  product_id: PID,
+  group: "goods",
+  override: {},
+  defaults: SCOUT_CFG,
+  effective: SCOUT_CFG,
+  next_at: null,
+  last_at: null,
+  last_status: null,
+  usage: { month: "2026-10", searches: 0, tokens: 0, searches_limit: null, tokens_limit: null },
+};
 const FOUND = {
   query: "USB Token ký số",
   items: [
@@ -124,6 +150,7 @@ async function open(page: Page, overview: SupplierOverviewOut = OVERVIEW): Promi
         }
         sent.push({ method: q.method(), path, body });
       }
+      if (path.endsWith("/price-scout")) return json(r, 200, SCOUT);
       if (path.endsWith("/suppliers/search")) return json(r, 200, FOUND);
       if (path.endsWith("/supplier-prices")) return json(r, 201, { ids: ["n1"] });
       return json(r, 200, overview);
@@ -152,7 +179,7 @@ test("tìm giá: chỉ chạy khi bấm Tìm (nói rõ chỉ gửi tên SP); lư
 }) => {
   const sent = await open(page);
   await page.getByRole("button", { name: "Tìm giá trên thị trường" }).click();
-  await expect(page.getByText(/Chỉ tên sản phẩm được gửi đi/)).toBeVisible();
+  await expect(page.getByText(/Chỉ tên sản phẩm và cấu hình dò giá.*được gửi đi/)).toBeVisible();
   expect(sent.filter((s) => s.path.endsWith("/suppliers/search"))).toHaveLength(0);
   const search = page.waitForRequest((q) => q.url().endsWith("/suppliers/search"));
   await page.getByRole("button", { name: "Tìm", exact: true }).click();

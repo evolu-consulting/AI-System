@@ -16,7 +16,7 @@ const PILL: Record<Tone, string> = {
   late: "bg-late-bg text-late",
   act: "bg-act-soft text-act",
 };
-const NAV = ["contracts", "partners", "prices", "products"] as const;
+const NAV = ["contracts", "partners", "products"] as const;
 const TH = "border-b border-rule px-2.5 py-2.5 font-semibold";
 const TD = "border-b border-rule-soft px-2.5 py-3";
 
