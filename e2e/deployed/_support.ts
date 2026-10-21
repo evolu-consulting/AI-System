@@ -126,3 +126,35 @@ export async function sweepTaggedGroups(base: string = CW): Promise<number> {
 
 export const test = base;
 export { expect };
+
+export type DifyRunRow = {
+  at: string;
+  trigger: string;
+  status: string;
+  error_message: string | null;
+};
+
+/** Lịch sử chạy Dify của workflow `key` (platform admin qua Admin API; mật khẩu `ADMIN_PW` do runner nạp, không in). Mới → cũ. */
+export async function difyRuns(key: string): Promise<DifyRunRow[]> {
+  const pw = process.env.ADMIN_PW;
+  if (!pw) throw new Error("ADMIN_PW thiếu — chạy qua deploy/prod-sohoptac2/e2e-deployed.ps1");
+  const api = await playwrightRequest.newContext({ baseURL: ADMIN });
+  try {
+    const lr = await api.post("/auth/login", {
+      data: { tenant_key: "platform", username: "admin", password: pw },
+      headers: { "X-App": "admin" },
+    });
+    const token = ((await lr.json()) as { access_token?: string }).access_token;
+    if (!token) throw new Error("đăng nhập platform admin thất bại");
+    const headers = { Authorization: `Bearer ${token}` };
+    const wl = await api.get(`/admin/workflows?q=${encodeURIComponent(key)}&limit=50`, { headers });
+    const wf = ((await wl.json()) as { items?: { id: string; key: string }[] }).items?.find(
+      (w) => w.key === key,
+    );
+    if (!wf) throw new Error(`không thấy workflow ${key}`);
+    const rr = await api.get(`/admin/workflows/${wf.id}/runs?limit=20`, { headers });
+    return ((await rr.json()) as { items?: DifyRunRow[] }).items ?? [];
+  } finally {
+    await api.dispose();
+  }
+}

@@ -75,12 +75,19 @@ export function difyUsageSelect(r: DifyUsageRow): SQL {
     ${r.stepId}::uuid, ${r.userId}::uuid, ${r.featureId}::uuid, ${r.agentId}::uuid,
     ${int(r.usage.input_tokens)}::int, ${int(r.usage.output_tokens)}::int,
     ${money(r.usage.cost_usd)}::numeric, ${int(r.latencyMs)}::int)`;
-  const m = r.run;
-  if (!m) return usage;
-  return sql`${usage}, hub.log_dify_run(${r.tenantId}::uuid, ${r.userId}::uuid, ${m.workflowId}::uuid,
+  return r.run ? sql`${usage}, ${difyRunCall(r, r.run)}` : usage;
+}
+
+function difyRunCall(r: DifyUsageRow, m: DifyRunMeta): SQL {
+  return sql`hub.log_dify_run(${r.tenantId}::uuid, ${r.userId}::uuid, ${m.workflowId}::uuid,
     ${r.runId}::uuid, ${r.stepId}::uuid, ${m.trigger}::text, ${m.status}::text, ${int(r.latencyMs)}::int,
     ${int(r.usage.input_tokens)}::int, ${int(r.usage.output_tokens)}::int, ${m.error}::text,
     ${m.difyWorkflowRunId}::text, ${m.difyConversationId}::text, ${m.difyTaskId}::text)`;
+}
+
+/** Lời gọi Dify lỗi TRƯỚC khi Dify cấp `task_id` (vd 400 "Workflow not published"): không có usage, chỉ ghi lịch sử chạy để Admin thấy lỗi. */
+export async function recordDifyRunOnly(db: Db, r: DifyUsageRow): Promise<void> {
+  if (r.run) await db.db.execute(sql`select ${difyRunCall(r, r.run)}`);
 }
 
 /** Ghi ngoài transaction (vd sau khi stream Dify kết thúc). */

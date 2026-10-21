@@ -13,6 +13,7 @@ import {
   USERS,
 } from "../../../../../tests/acceptance/H1/_fixtures";
 import {
+  AG,
   deltaText,
   type HubX,
   insertConv,
@@ -30,6 +31,8 @@ import {
   stored,
   TEST_MASTER_KEY_B64,
 } from "../../../../../tests/acceptance/H2a/_h2a";
+import { MOCK_TEXT as TOOL_TEXT, toolCall } from "../../../../../tests/acceptance/H2a/_h2a2";
+import { insertSqlJob } from "../../../../../tests/acceptance/H2a/_runtime2";
 import {
   HMD_COMMAND,
   HMD_FEATURE,
@@ -55,6 +58,8 @@ beforeAll(async () => {
   dify = startDify();
   await insertCatalog(sql, { baseUrl: dify.baseUrl });
   await insertHmd();
+  // Workflow cũng là tool của agent `hoadon` (chat thường) — gắn TRƯỚC khi hub nạp cấu hình.
+  await sql`insert into hub.agent_workflows (agent_id, workflow_id) values (${AG.hoadon}, ${ids.wf})`;
   k = await makeKeys();
   hub = await startHubH2a(k);
 }, 60_000);
@@ -122,5 +127,47 @@ describe("dify-demo-flow · /han-muc-duyet end-to-end (mock Dify)", () => {
     const usage =
       await sql`select 1 from hub.usage_logs where run_id = ${run?.run_id} and billing = 'dify'`;
     expect(usage).toHaveLength(1);
+  });
+
+  it("tool chat thường: inputs đúng kiểu (number/select), số dạng chuỗi → INVALID_ARGS; Dify lỗi trước task_id vẫn ghi dify_runs (trigger agent)", async () => {
+    const job = await insertSqlJob(sql, id, {
+      type: "agent.cli",
+      who: "lan",
+      agentId: AG.hoadon,
+      agentKey: "hoadon",
+      tools: [HMD_WORKFLOW.key],
+      mcpUrl: `${hub.base}/mcp`,
+    });
+    dify.mock.reset();
+    const bad = await toolCall(hub, job.token, HMD_WORKFLOW.key, {
+      contract_value: "600000000",
+      contract_type: "Mua",
+    });
+    expect(bad.result?.isError).toBe(true);
+    expect(dify.runs()).toHaveLength(0);
+    const ok = await toolCall(hub, job.token, HMD_WORKFLOW.key, {
+      contract_value: 600000000,
+      contract_type: "Mua",
+    });
+    expect(ok.result).toEqual({ content: [{ type: "text", text: TOOL_TEXT }], isError: false });
+    expect(dify.runs()[0]?.body).toMatchObject({
+      inputs: { contract_value: 600000000, contract_type: "Mua" },
+    });
+    // Dify từ chối trước khi cấp task_id (mk-400 ≈ "Workflow not published"): lỗi vẫn thấy trong lịch sử chạy.
+    const v = stored("mk-400");
+    const s = encryptSecret(parseMasterKey(TEST_MASTER_KEY_B64), ids.sec, v);
+    await sql`update admin.secrets set ciphertext = ${Buffer.from(s.ciphertext)}, iv = ${Buffer.from(s.iv)} where id = ${ids.sec}`;
+    const fail = await toolCall(hub, job.token, HMD_WORKFLOW.key, {
+      contract_value: 100,
+      contract_type: "Bán",
+    });
+    expect(fail.result?.isError).toBe(true);
+    const rows = await sql`select status, trigger, error_message from hub.dify_runs
+      where workflow_id = ${ids.wf} and run_id = ${job.runId} order by created_at`;
+    expect(rows.map((r) => [r.status, r.trigger])).toEqual([
+      ["ok", "agent"],
+      ["failed", "agent"],
+    ]);
+    expect(String(rows[1]?.error_message)).toContain("400");
   });
 });

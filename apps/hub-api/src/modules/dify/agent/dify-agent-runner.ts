@@ -29,7 +29,7 @@ import type { SseEventBody } from "../../runs/sse/sse-writer";
 import { type CredentialService, isCredentialError } from "../credential.service";
 import type { DifyClient, DifyRunOutcome } from "../dify.client";
 import { difyUser } from "../dify.rules";
-import { difyRunMeta, recordDifyUsage } from "../dify.usage";
+import { difyRunMeta, recordDifyRunOnly, recordDifyUsage } from "../dify.usage";
 import * as repo from "./dify-agent.repo";
 import {
   type DifyAgentEnd,
@@ -285,10 +285,10 @@ export class DifyAgentRunner implements AgentRunner {
     out: DifyRunOutcome,
     workflowId: string,
   ): Promise<void> {
-    if (out.kind !== "finished" && !out.taskId) return;
+    const noTask = out.kind !== "finished" && !out.taskId;
     const r = task.run;
     try {
-      await recordDifyUsage(this.d.db, {
+      await (noTask ? recordDifyRunOnly : recordDifyUsage)(this.d.db, {
         tenantId: r.tenantId,
         runId: r.id,
         stepId: step.id,

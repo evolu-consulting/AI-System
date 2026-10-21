@@ -15,7 +15,7 @@ import type { ConfigCache } from "../../config/config.service";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser, maskInputs } from "../../dify/dify.rules";
-import { difyRunMeta } from "../../dify/dify.usage";
+import { difyRunMeta, recordDifyRunOnly } from "../../dify/dify.usage";
 import * as repo from "../mcp.repo";
 import { type ToolResult, toolError, toolText, toolTimeoutS } from "../mcp.rules";
 import { type StepCode, stepCodeOf } from "../mcp-call";
@@ -263,7 +263,6 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     out: DifyRunOutcome,
     workflowId: string,
   ): Promise<void> {
-    if (out.kind !== "finished" && !out.taskId) return this.#finishStep(ctx, stepId, detail);
     const status = detail.code ? "failed" : "ok";
     const step = { id: stepId, runId: ctx.runId, tenantId: ctx.tenantId, status, detail } as const;
     const usage = {
@@ -277,6 +276,13 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
       latencyMs: out.ms,
       run: difyRunMeta(out, workflowId, "agent"),
     };
+    if (out.kind !== "finished" && !out.taskId) {
+      // Dify lỗi trước khi cấp task_id (vd chưa publish): chỉ lịch sử chạy (best-effort), không usage.
+      await recordDifyRunOnly(this.d.db, usage).catch((err) =>
+        this.d.log.warn("tool-run-record-failed", { run_id: ctx.runId, ...safeErrorFields(err) }),
+      );
+      return this.#finishStep(ctx, stepId, detail);
+    }
     try {
       await withHubScope(this.d.db, { kind: "system" }, (tx) =>
         repo.finishToolStepWithUsage(tx, step, usage),

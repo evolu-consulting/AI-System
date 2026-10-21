@@ -26,20 +26,20 @@ export const HMD_WORKFLOW: WorkflowSpec = {
   key: "dify-han-muc-duyet",
   name: "Kiểm tra hạn mức duyệt hợp đồng (Dify)",
   description:
-    "Workflow Dify không dùng LLM: áp chính sách hạn mức QC-TC-01 theo giá trị hợp đồng, trả chuỗi người duyệt, dùng cho lệnh /han-muc-duyet.",
+    "Tra chính sách hạn mức duyệt QC-TC-01: cho giá trị hợp đồng (VND) và loại hợp đồng (Mua/Bán/Giới thiệu), trả về ai (chức danh nào) phải duyệt và chuỗi các cấp duyệt. Dùng khi người dùng hỏi hợp đồng giá trị bao nhiêu thì ai phải duyệt/ký. Thiếu giá trị hoặc loại hợp đồng thì hỏi lại người dùng, không đoán. Không dùng để tra hay sửa một hợp đồng cụ thể.",
   app_type: "workflow",
   input_schema: [
     {
       name: "contract_value",
       type: "number",
       required: true,
-      description: "Giá trị hợp đồng (VND)",
+      description: "Giá trị hợp đồng bằng số, đơn vị VND (vd 600000000 cho 600 triệu)",
     },
     {
       name: "contract_type",
       type: "select",
       required: true,
-      description: "Loại hợp đồng",
+      description: "Loại hợp đồng: Mua, Bán hoặc Giới thiệu",
       options: CONTRACT_TYPES,
     },
     { name: "partner_name", type: "text", required: false, description: "Tên đối tác (tuỳ chọn)" },

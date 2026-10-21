@@ -22,7 +22,7 @@ import { stepLabel } from "../../conversations/conversations.rules";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser } from "../../dify/dify.rules";
-import { difyRunMeta, recordDifyUsage } from "../../dify/dify.usage";
+import { difyRunMeta, recordDifyRunOnly, recordDifyUsage } from "../../dify/dify.usage";
 import { chunkText } from "../../orchestrator/orchestrator.rules";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { SseWriter } from "../../runs/sse/sse-writer";
@@ -147,10 +147,10 @@ export async function failOpenStep(l: StepLive, step: Step | null, log: Logger):
 
 /** R15: usage `billing=dify`; lỗi ghi chỉ cảnh báo — Dify đã xong, run không thành `INTERNAL_ERROR` (REVIEW 1 Hub #2). */
 async function usageOf(l: Live, step: Step, res: DifyRunOutcome): Promise<void> {
-  if (res.kind !== "finished" && res.taskId === null) return;
   const r = l.writer.run;
+  const noTask = res.kind !== "finished" && res.taskId === null;
   try {
-    await recordDifyUsage(l.d.db, {
+    await (noTask ? recordDifyRunOnly : recordDifyUsage)(l.d.db, {
       tenantId: r.tenantId,
       runId: r.id,
       stepId: step.id,

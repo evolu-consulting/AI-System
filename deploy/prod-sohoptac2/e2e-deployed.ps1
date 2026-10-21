@@ -34,6 +34,10 @@ try {
   $env:DEMO_PW = ($line -split " / ")[1].Split(" ")[0].Trim()
   $env:DEMO_USER = $User
   $line = $null
+  # Mat khau platform admin (chi trong bo nho tien trinh con): e2e doc lich su chay Dify qua Admin API de xac minh tool that su duoc goi.
+  $aline = & ssh -i $Key -o BatchMode=yes $Server 'grep -E ^password: ~/workspace/sohoptac2/ADMIN_CREDENTIALS.txt'
+  if ($aline) { $env:ADMIN_PW = ($aline -replace '^password:[[:space:]]*', '').Trim() }
+  $aline = $null
 
   Set-Location $root
   # Node that (khong qua shim Bun): xem tools/scripts/src/run-playwright.ts
@@ -45,6 +49,7 @@ try {
 }
 finally {
   $env:DEMO_PW = $null
+  $env:ADMIN_PW = $null
   if ($tunnel -and -not $tunnel.HasExited) { Stop-Process -Id $tunnel.Id -Force }
 }
 exit $code
