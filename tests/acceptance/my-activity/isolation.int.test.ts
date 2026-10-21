@@ -38,10 +38,21 @@ let ua4 = "";
 let ub1 = "";
 let hA = "";
 
-const ctx = (tenantId: string, userId: string) => ({ tenantId, userId, runId: "r1", tools: KEYS });
+const ctx = (tenantId: string, userId: string, runId = "r1") => ({
+  tenantId,
+  userId,
+  runId,
+  tools: KEYS,
+});
 type Json = Record<string, unknown>;
-async function call(tenant: string, user: string, tool: string, args: Json): Promise<Json> {
-  const t = await mcp.accepts(ctx(tenant, user), tool);
+async function call(
+  tenant: string,
+  user: string,
+  tool: string,
+  args: Json,
+  runId?: string,
+): Promise<Json> {
+  const t = await mcp.accepts(ctx(tenant, user, runId), tool);
   if (!t) throw new Error(`tool ${tool} không có cho ${user}`);
   const r = await t.call(args);
   expect(r.isError).toBe(false);
@@ -213,6 +224,37 @@ describe("my-chat-history · chỉ hội thoại của chính người gọi", (
     } finally {
       await owner`update admin.tenants set settings = settings - 'chat_history_months' where id = ${A}`;
     }
+  });
+});
+
+describe("my-chat-history · lặp câu hỏi giữa các lượt (my-activity-fix, sohoptac2 2026-10-21)", () => {
+  // e2e 08 lượt 2 trong ngày: câu "Hôm nay tôi đã hỏi AI những gì?" của lượt 1 nằm trong kết quả (đúng — là lịch sử), còn câu
+  // của CHÍNH run đang gọi tool thì không (excludeRun). Harness e2e dựa vào điều này để cắt câu trả lời theo câu hỏi có `tag`.
+  it("bỏ câu hỏi + trả lời của run đang gọi; giữ câu giống hệt của lượt trước và tin mới vừa hỏi", async () => {
+    const q = "Hôm nay tôi đã hỏi AI những gì?";
+    await talk(A, ua1, [["user", `${q} PREV-RUN`, "50 minutes"]]);
+    await talk(A, ua1, [["user", "Ghi nhớ mã JUST-NOW", "30 seconds"]]);
+    const [c] = await owner<
+      { id: string; f: string }[]
+    >`select v.id, f.id as f from hub.conversations v
+      join hub.flows f on f.conversation_id = v.id where v.user_id = ${ua1} order by v.created_at limit 1`;
+    const [u, a] = await owner<{ id: string }[]>`insert into hub.messages
+        (tenant_id, user_id, conversation_id, flow_id, role, content)
+      values (${A}, ${ua1}, ${c?.id as string}, ${c?.f as string}, 'user', ${`${q} THIS-RUN`}),
+        (${A}, ${ua1}, ${c?.id as string}, ${c?.f as string}, 'assistant', 'đang trả lời THIS-RUN-ANS')
+      returning id`;
+    const [run] = await owner<
+      { id: string }[]
+    >`insert into hub.runs (tenant_id, user_id, conversation_id, flow_id,
+        status, config_version, user_message_id, answer_message_id)
+      values (${A}, ${ua1}, ${c?.id as string}, ${c?.f as string}, 'running', 1, ${u?.id as string},
+        ${a?.id as string}) returning id`;
+    const r = JSON.stringify(
+      await call(A, ua1, "my-chat-history", { role: "user", limit: 20 }, run?.id as string),
+    );
+    expect(r).toContain("JUST-NOW");
+    expect(r).toContain("PREV-RUN");
+    expect(r).not.toContain("THIS-RUN");
   });
 });
 
