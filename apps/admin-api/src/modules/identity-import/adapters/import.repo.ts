@@ -85,14 +85,14 @@ export function enableEntitlements(
 export function insertRoleGroups(
   tx: Tx,
   tenantIds: readonly string[],
-  rows: readonly { key: string; name: unknown }[],
+  rows: readonly { key: string; name: unknown; description?: string }[],
   actorId: string,
 ) {
   return run<{ tenant_id: string }>(
     tx,
-    sql`insert into admin.groups (tenant_id, key, name, updated_by)
-      select t.id, x.key, x.name, ${actorId}::uuid
-      from admin.tenants t cross join jsonb_to_recordset(${json(rows)}::jsonb) as x(key text, name jsonb)
+    sql`insert into admin.groups (tenant_id, key, name, description, updated_by)
+      select t.id, x.key, x.name, x.description, ${actorId}::uuid
+      from admin.tenants t cross join jsonb_to_recordset(${json(rows)}::jsonb) as x(key text, name jsonb, description text)
       where t.id = any(${uuids(tenantIds)})
       on conflict (tenant_id, key) do nothing
       returning tenant_id`,

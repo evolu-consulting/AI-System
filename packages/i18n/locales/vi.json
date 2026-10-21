@@ -670,7 +670,7 @@
     },
     "packs": {
       "title": "Gói nghiệp vụ",
-      "desc": "Chỉ đơn vị vận hành nền tảng bật gói. Bật gói tạo sẵn nhóm Chủ sở hữu / Biên tập / Xem và cấp trợ lý AI của gói cho các nhóm đó.",
+      "desc": "Chỉ đơn vị vận hành nền tảng bật gói. Bật gói tạo sẵn 3 nhóm Toàn quyền / Nhân viên / Chỉ xem và cấp trợ lý AI của gói cho các nhóm đó.",
       "col": {
         "name": "Gói",
         "status": "Trạng thái",

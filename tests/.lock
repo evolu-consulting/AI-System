@@ -1236,7 +1236,8 @@ cb693450b5fe829ef3b9ebf0c62213585cf0360d2712518b5bf8c9ed697208b1  tests/acceptan
 208bda5d9a064445bc5f5e869893d8fa6e038a231c97a40b3e2fc8a71b9f54ec  tests/acceptance/V2-L/company.int.test.ts
 4d21e0e3c2ed67d42d1de968265d29fe8ee63bbb9be36fc92ee435a1c0ab7fb5  tests/acceptance/V2-M/delete.int.test.ts
 bfb6b7b7c05016ea11f811fea7b7f4d619e9bec883c12547806e4744ca78b829  tests/acceptance/V2-M/deny.int.test.ts
-aab6580c61dcecf5bc4819c31f1bac3859a67dc79e0b83f98cde2e7034c3ad15  tests/acceptance/V2-O/demo-ai-fix.int.test.ts
+0647175b8b6c9c757fc9ee486337850c49f86b327df0e8ff2532e339e45d7336  tests/acceptance/V2-O/demo-ai-fix.int.test.ts
+790702162d4fb9d369985ed6659c7345798f5e0604507f59f9bcd53526d9bdef  tests/acceptance/V2-O/friendly-groups.int.test.ts
 512b1611ad6bd169fc17e4d7980357715dbc673b24015dc79c070735796b1d3e  tests/acceptance/V2-O/seed-demo.int.test.ts
 6ee54f2a015a491e8a7732b3c45fa2755398b1478be0d2dda747599ed44b146f  tests/acceptance/W1/_support/w1.ts
 2593428431e43b7040fd7b04a3948e436e2d98ba6312ef37a7c3417e8e545296  tests/acceptance/W1/mywork.int.test.ts

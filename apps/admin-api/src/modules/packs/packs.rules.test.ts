@@ -14,10 +14,22 @@ describe("packs.rules", () => {
     expect(packFeatureKeys("my_pk")).toEqual(["my-pk-read", "my-pk-write", "my-pk-admin"]);
     expect(packGroupKeys("my_pk")).toEqual(["my-pk-owner", "my-pk-editor", "my-pk-viewer"]);
     expect(roleGroupRows("pk").map((r) => r.name.vi)).toEqual([
-      "pk · Chủ sở hữu",
-      "pk · Biên tập",
-      "pk · Xem",
+      "pk – Toàn quyền",
+      "pk – Nhân viên",
+      "pk – Chỉ xem",
     ]);
+  });
+  test("friendly-groups · tên thân thiện cho contracts/knowledge, có en + mô tả", () => {
+    expect(roleGroupRows("contracts").map((r) => r.name.vi)).toEqual([
+      "Sổ Hợp Tác – Toàn quyền",
+      "Sổ Hợp Tác – Nhân viên",
+      "Sổ Hợp Tác – Chỉ xem",
+    ]);
+    expect(roleGroupRows("knowledge")[2]?.name).toEqual({
+      vi: "Tài liệu nội bộ – Chỉ xem",
+      en: "Internal Documents – View only",
+    });
+    expect(roleGroupRows("contracts")[1]?.description).toContain("Sổ Hợp Tác");
   });
   test("PK-AC05 · 6 cặp grant: viewer=read · editor=read+write · owner=cả ba", () => {
     const s = roleGrantPairs("pk").map((p) => `${p.grp}>${p.feat}`);

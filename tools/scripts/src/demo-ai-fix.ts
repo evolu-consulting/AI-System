@@ -11,6 +11,7 @@
 // KHÔNG đụng tenant khác (kiểm cả trong DB).
 import { createHash } from "node:crypto";
 import postgres from "postgres";
+import { applyPeople, type PeoplePlan, planPeople } from "./demo-ai-fix.people";
 import { POLICY_CHUNKS, POLICY_TITLE, policyHash } from "./demo-ai-fix.policy";
 import { DEMO_KEY } from "./seed-demo-v2";
 import { partyKeyOf } from "./seed-demo-v2.build";
@@ -58,6 +59,8 @@ export type Plan = {
   agentsStale: number;
   /** chat-fast2 · agent mặc định của demo chưa là `assistant` (tin không tag ⇒ 1 job thay vì Orchestrator + agent). */
   defaultAgent: boolean;
+  /** friendly-groups · phòng ban/tên người dùng thật + bỏ Beta testers (việc còn phải làm). */
+  org: PeoplePlan;
 };
 
 /** Agent seed phải có bậc model + tool tri thức sau `hub:seed` của lát ai-tiers-rag. */
@@ -111,6 +114,7 @@ async function plan(tx: Tx, t: string): Promise<Plan> {
     company: r.company,
     partners: r.partners,
     defaultAgent: s.defaultAgent,
+    org: await planPeople(tx, t),
     knowledgePack: s.knowledgePack,
     knowledgeGrants: s.knowledgeGrants,
     ...(await planKnowledge(tx, t)),
@@ -148,6 +152,7 @@ async function apply(tx: Tx, t: string, p: Plan): Promise<void> {
       await tx`update contracts.companies set phone = coalesce(phone, ${x.phone}), contact_person = coalesce(contact_person, ${x.contact ?? null})
         where tenant_id = ${t} and party_key = ${partyKeyOf(x.key)}`;
   await applyPolicyDoc(tx, t, p);
+  await applyPeople(tx, t);
 }
 export async function run(sql: Sql, doApply: boolean): Promise<Plan> {
   return sql.begin(async (tx) => {

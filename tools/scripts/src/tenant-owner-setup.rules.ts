@@ -84,7 +84,7 @@ export function describeOwnerPlan(p: OwnerPlan, a: OwnerArgs): string[] {
     : `không có phòng "${TOP_DEPARTMENT}" ⇒ không đặt trưởng phòng`;
   return [
     `tạo user ${a.username} "${a.name}" · tenant_admin · locale vi · KHÔNG email · bắt đổi mật khẩu`,
-    `thêm vào Group ${p.group.key} (contracts · Chủ sở hữu)`,
+    `thêm vào Group ${p.group.key} (Sổ Hợp Tác – Toàn quyền)`,
     head,
     `mật khẩu ${OWNER_PASSWORD_LEN} ký tự ⇒ chỉ ghi vào ${a.out} (mode 600)`,
     `người ghi (audit): ${p.actor.username}`,

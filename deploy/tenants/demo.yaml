@@ -11,11 +11,12 @@ profile:
 
 packs: [contracts]
 
-root: { key: pb-giam-doc, vi: Phòng Giám đốc, en: Board of Directors, head: demo-owner@example.invalid }
+root: { key: pb-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: demo-owner@example.invalid }
 departments:
   - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, members: [demo-editor@example.invalid] }
   - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting, members: [demo-viewer@example.invalid] }
   - { key: pb-phap-che, vi: Phòng Pháp chế, en: Legal }
+  - { key: pb-kho-van, vi: Kho vận, en: Warehouse & Logistics }
 
 import:
   source: mgmt-prod

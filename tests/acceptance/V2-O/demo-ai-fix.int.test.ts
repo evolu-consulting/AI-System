@@ -16,6 +16,8 @@ beforeAll(async () => {
   );
   // Mô phỏng demo đã nạp bản cũ: tên công ty NITI, đối tác thiếu điện thoại.
   await w.sql`update contracts.company_settings set company_name = 'NITI GROUP' where tenant_id = ${w.A}`;
+  await w.sql`insert into admin.groups (tenant_id, key, name) values (${w.A}, 'beta-testers', '{"vi":"Beta testers"}'::jsonb) on conflict do nothing`;
+  await w.sql`update admin.users set email = 'demo-owner@example.invalid', display_name = 'demo-owner' where id = ${w.boss}`;
   await w.sql`update contracts.companies set phone = null, contact_person = null where tenant_id = ${w.A}`;
 }, 180_000);
 afterAll(async () => {
@@ -51,5 +53,24 @@ describe("demo-ai-fix", () => {
       { n: number }[]
     >`select count(*)::int as n from knowledge.documents where tenant_id = ${w.B}`;
     expect(b?.n).toBe(0);
+  });
+  it("friendly-groups · demo: phòng ban tên thật, người dùng tên Việt (username giữ), không còn Beta testers; tenant khác không đụng", async () => {
+    await run(w.sql, true);
+    const g = await w.sql<
+      { key: string; vi: string }[]
+    >`select key, name ->> 'vi' as vi from admin.groups
+      where tenant_id = ${w.A} and key in ('pb-giam-doc', 'pb-kho-van', 'beta-testers') order by key`;
+    expect(g.map((x) => `${x.key}=${x.vi}`)).toEqual([
+      "pb-giam-doc=Ban Giám đốc",
+      "pb-kho-van=Kho vận",
+    ]);
+    const [u] = await w.sql<
+      { display_name: string; username: string; n: number }[]
+    >`select u.display_name, u.username,
+      (select count(*)::int from admin.group_members m join admin.groups g on g.id = m.group_id and g.key = 'pb-giam-doc' where m.user_id = u.id) as n
+      from admin.users u where u.id = ${w.boss}`;
+    expect(u?.display_name).toBe("Nguyễn Văn An – Giám đốc");
+    expect(u?.n).toBe(1);
+    expect(u?.username).not.toContain("Nguyễn");
   });
 });

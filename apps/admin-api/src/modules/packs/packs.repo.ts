@@ -61,13 +61,17 @@ export async function revokeEntitlements(
 /** 3 Group vai; trùng key (kể cả Group tenant tự tạo — readiness #16) ⇒ dùng lại. Trả số Group mới. */
 export async function insertRoleGroups(
   tx: Tx,
-  g: { tenantId: string; actorId: string; rows: readonly { key: string; name: unknown }[] },
+  g: {
+    tenantId: string;
+    actorId: string;
+    rows: readonly { key: string; name: unknown; description?: string }[];
+  },
 ): Promise<number> {
   const rows = await run<{ id: string }>(
     tx,
-    sql`insert into admin.groups (tenant_id, key, name, updated_by)
-      select ${g.tenantId}::uuid, x.key, x.name, ${g.actorId}::uuid
-      from jsonb_to_recordset(${JSON.stringify(g.rows)}::jsonb) as x(key text, name jsonb)
+    sql`insert into admin.groups (tenant_id, key, name, description, updated_by)
+      select ${g.tenantId}::uuid, x.key, x.name, x.description, ${g.actorId}::uuid
+      from jsonb_to_recordset(${JSON.stringify(g.rows)}::jsonb) as x(key text, name jsonb, description text)
       on conflict (tenant_id, key) do nothing
       returning id`,
   );
