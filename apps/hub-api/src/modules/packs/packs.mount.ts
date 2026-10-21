@@ -36,6 +36,7 @@ import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
+import { manageModule } from "./contracts/manage.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
 import { partnersModule } from "./contracts/partners.mount";
 import { priceScoutModule } from "./contracts/price-scout.mount";
@@ -203,6 +204,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf, guard: ai.guard }),
   );
   app.route(base, ai.routes); // HD2
+  app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
   app.route(base, ai.approval); // HD3
   if (fb)
     app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter

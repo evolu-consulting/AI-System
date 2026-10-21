@@ -1,13 +1,18 @@
 // HD-FR-24 · HD-FR-26 · S05: chi tiết HĐ (HD1), sửa trường (PATCH HD1, khoá `version`), mở tệp gốc (#220). Bearer + refresh
 // do web-kit lo.
 import type {
+  AssigneesResponse,
+  CommissionEditResponse,
   ContractDetail,
   ContractFieldKey,
+  HistoryResponse,
   ItemProductRequest,
   ItemProductResponse,
+  OwnerAssignResponse,
   PatchFieldsResponse,
   ReviewSaveRequest,
   ReviewSaveResponse,
+  SummaryResponse,
 } from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
 
@@ -48,6 +53,48 @@ export function putItemProduct(
     `${BASE}/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}/product`,
     { method: "PUT", body },
   );
+}
+
+const one = (id: string) => `${BASE}/${encodeURIComponent(id)}`;
+export const historyKey = (id: string) => ["contract", id, "history"] as const;
+export const ASSIGNEES_KEY = ["contracts", "assignees"] as const;
+
+/** gap-a1 #5: "AI đọc lại từ đầu" / thử lại sau khi đọc lỗi (đúng route trích lại có sẵn, 202). */
+export function extractContract(id: string): Promise<{ id: string; status: string }> {
+  return api<{ id: string; status: string }>(`${one(id)}/extract`, { method: "POST" });
+}
+
+/** gap-a1 #4: lịch sử thay đổi (theo luật thấy của người gọi). */
+export function fetchHistory(id: string, signal?: AbortSignal): Promise<HistoryResponse> {
+  return api<HistoryResponse>(`${one(id)}/history`, { signal });
+}
+
+/** gap-a1 #7: người có thể được giao (thành viên có quyền xem gói) + giao / bỏ giao. */
+export function fetchAssignees(signal?: AbortSignal): Promise<AssigneesResponse> {
+  return api<AssigneesResponse>("/pack/contracts/assignees", { signal });
+}
+export function assignOwner(id: string, owner: string | null): Promise<OwnerAssignResponse> {
+  return api<OwnerAssignResponse>(`${one(id)}/owner`, {
+    method: "PUT",
+    body: { owner_user_id: owner },
+  });
+}
+
+/** gap-a1 #16: sửa hoa hồng % của HĐ Giới thiệu sau khi lưu. */
+export function editCommission(
+  id: string,
+  version: number,
+  commission_pct: number | null,
+): Promise<CommissionEditResponse> {
+  return api<CommissionEditResponse>(`${one(id)}/commission`, {
+    method: "PUT",
+    body: { version, commission_pct },
+  });
+}
+
+/** gap-a1 #17: "Tạo tóm tắt bằng AI" (usage `contracts.summary`). */
+export function generateSummary(id: string): Promise<SummaryResponse> {
+  return api<SummaryResponse>(`${one(id)}/summary`, { method: "POST" });
 }
 
 /** Đường dẫn tệp gốc (`href` giữ như mgmt-app; bấm ⇒ `openOriginalFile`). */

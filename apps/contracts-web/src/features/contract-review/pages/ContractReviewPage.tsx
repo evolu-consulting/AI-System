@@ -23,6 +23,8 @@ import { contractKey, fetchContract, fileHref, openOriginalFile } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
 import { DetailLead } from "../components/DetailLead";
+import { HistoryPanel } from "../components/HistoryPanel";
+import { ManagePanel } from "../components/ManagePanel";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
 import { useInfoForm } from "../hooks/use-info-form";
 import { leadKey } from "../lib/review";
@@ -131,8 +133,9 @@ function ContractBody({
               </div>
             )}
             <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
+            <ManagePanel c={c} write={write} />
             {c.status === "extract_failed" ? (
-              <ExtractFailed file={file} />
+              <ExtractFailed file={file} id={id} write={write} />
             ) : (
               <DetailGrid
                 c={c}
@@ -154,6 +157,7 @@ function ContractBody({
             <AppendixPanel c={c} write={write} />
             <ContractSourcing c={c} write={write} />
             <ContractLog contractId={id} status={c.status} />
+            <HistoryPanel id={id} />
             {owner && c.status !== "extracting" && (
               <div className="mt-6 flex justify-end">
                 <DeleteContractButton id={id} />

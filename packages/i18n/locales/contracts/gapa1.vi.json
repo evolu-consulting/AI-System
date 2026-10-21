@@ -1,0 +1,68 @@
+{
+  "contracts": {
+    "gapa1": {
+      "manage": "Quản lý hợp đồng",
+      "owner": {
+        "label": "Giao cho",
+        "none": "Chưa giao",
+        "unknown": "(người đã nghỉ hoặc không xem được)",
+        "saved": "Đã đổi người phụ trách"
+      },
+      "commission": {
+        "label": "Hoa hồng (%)",
+        "invalid": "Nhập số từ 0 đến 100, tối đa 2 chữ số thập phân.",
+        "fixedNote": "Hợp đồng đang tính hoa hồng theo số tiền cố định; lưu % sẽ thay thế.",
+        "saved": "Đã lưu hoa hồng"
+      },
+      "reextract": {
+        "button": "AI đọc lại từ đầu",
+        "retry": "Thử lại",
+        "title": "Cho AI đọc lại từ đầu?",
+        "warn": "AI sẽ đọc lại toàn bộ văn bản và ghi đè kết quả đọc trước đó. Các ô bạn đã tự sửa được giữ nguyên.",
+        "confirm": "Đọc lại",
+        "running": "Đang gửi…",
+        "started": "Đã gửi yêu cầu đọc lại"
+      },
+      "summary": {
+        "button": "Tạo tóm tắt bằng AI",
+        "running": "Đang tóm tắt…",
+        "done": "Đã tạo tóm tắt"
+      },
+      "hist": {
+        "title": "Lịch sử thay đổi",
+        "loading": "Đang tải…",
+        "empty": "Chưa có thay đổi nào.",
+        "system": "Hệ thống"
+      },
+      "ev": {
+        "field_edited": "đã sửa thông tin",
+        "owner_assigned": "đã đổi người phụ trách",
+        "commission_edited": "đã sửa hoa hồng",
+        "summary_generated": "đã tạo tóm tắt bằng AI",
+        "review_saved": "đã xác nhận và lưu hợp đồng",
+        "item_product_set": "đã gắn sản phẩm cho dòng hàng",
+        "parent_changed": "đã đổi hợp đồng gốc",
+        "approval_started": "đã gửi duyệt",
+        "approved": "đã duyệt",
+        "feedback": "đã góp ý khi duyệt",
+        "extract_requested": "đã yêu cầu AI đọc lại",
+        "created_manual": "đã nhập hợp đồng bằng tay",
+        "handled": "đã ghi kết quả xử lý",
+        "schedule_set": "đã đặt lịch thanh toán",
+        "uploaded": "đã tải hợp đồng lên",
+        "other": "({{type}})"
+      },
+      "err": {
+        "busy": "Hợp đồng đang được AI đọc, chờ xong rồi thử lại.",
+        "notAllowed": "Hợp đồng đã qua bước kiểm, không đọc lại được nữa.",
+        "noSource": "Hợp đồng không có văn bản hoặc tệp để đọc.",
+        "aiUnavailable": "AI chưa sẵn sàng, thử lại sau.",
+        "summaryNotAllowed": "Hợp đồng đã có tóm tắt hoặc chưa có văn bản để tóm tắt.",
+        "cap": "Đã hết lượt dùng AI hôm nay, thử lại ngày mai.",
+        "ownerInvalid": "Người này không có quyền xem hợp đồng nên không giao được.",
+        "commissionNotAllowed": "Chỉ sửa hoa hồng cho hợp đồng Giới thiệu đã đọc xong.",
+        "stale": "Hợp đồng vừa được cập nhật, tải lại trang rồi thử lại."
+      }
+    }
+  }
+}

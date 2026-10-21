@@ -3,6 +3,7 @@
 import type { AiSummary as AiSummaryT, ContractDetail } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { useGenerateSummary } from "../hooks/use-manage";
 import { warningsOf } from "../lib/review";
 import { type SummaryInput, summaryRows } from "../lib/summary";
 
@@ -45,7 +46,35 @@ function AiSummary({ s }: { s: AiSummaryT }) {
   );
 }
 
-export function SummaryPanel({ c, partner }: { c: C; partner: string }) {
+/** gap-a1 #17: chưa có tóm tắt AI ⇒ nút "Tạo tóm tắt bằng AI" (usage `contracts.summary`). */
+function GenerateSummary({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const gen = useGenerateSummary(id);
+  return (
+    <div className="border-b border-rule-soft px-5 py-3">
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        data-testid="generate-summary"
+        disabled={gen.isPending}
+        onClick={() => gen.mutate(undefined)}
+      >
+        {t(gen.isPending ? "contracts.gapa1.summary.running" : "contracts.gapa1.summary.button")}
+      </button>
+    </div>
+  );
+}
+
+export function SummaryPanel({
+  c,
+  partner,
+  generateFor,
+}: {
+  c: C;
+  partner: string;
+  /** Id HĐ khi người dùng được ghi, HĐ đã đọc xong, có văn bản nguồn mà chưa có tóm tắt AI. */
+  generateFor?: string | undefined;
+}) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
   const rows = summaryRows(c, partner, {
@@ -68,7 +97,11 @@ export function SummaryPanel({ c, partner }: { c: C; partner: string }) {
       <div className="border-b border-rule-soft px-5 py-3.5">
         <h2 className="text-[15px] font-semibold">{L("summary")}</h2>
       </div>
-      {c.ai?.summary && <AiSummary s={c.ai.summary} />}
+      {c.ai?.summary ? (
+        <AiSummary s={c.ai.summary} />
+      ) : (
+        generateFor && <GenerateSummary id={generateFor} />
+      )}
       <dl className="grid grid-cols-2 gap-2 px-5 py-4 max-sm:grid-cols-1" data-testid="summary">
         {rows.map(([k, val]) => (
           <div key={k} className="rounded-[10px] bg-sunk px-3 py-2">

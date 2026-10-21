@@ -22,6 +22,7 @@ type Parts = readonly [
   Part,
   Part,
   Part,
+  Part,
 ];
 
 const loadEn = (): Promise<Parts> =>
@@ -41,6 +42,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/v2l.en.json"),
     import("../locales/contracts/v2m.en.json"),
     import("../locales/contracts/v2gaps.en.json"),
+    import("../locales/contracts/gapa1.en.json"),
   ]);
 
 const loadVi = (): Promise<Parts> =>
@@ -60,6 +62,7 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/v2l.vi.json"),
     import("../locales/contracts/v2m.vi.json"),
     import("../locales/contracts/v2gaps.vi.json"),
+    import("../locales/contracts/gapa1.vi.json"),
   ]);
 
 function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...rest]: Parts) {

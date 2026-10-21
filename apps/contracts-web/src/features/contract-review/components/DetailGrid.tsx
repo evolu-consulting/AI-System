@@ -88,7 +88,13 @@ export function DetailGrid({
         ) : (
           showTimeline && <Timeline c={c} partner={partner} write={write} today={today} />
         )}
-        <SummaryPanel c={c} partner={partner} />
+        <SummaryPanel
+          c={c}
+          partner={partner}
+          generateFor={
+            write && c.has_source && c.status !== "extracting" && !confirm ? c.id : undefined
+          }
+        />
       </div>
     </div>
   );

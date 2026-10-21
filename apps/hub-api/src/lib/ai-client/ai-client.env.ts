@@ -20,6 +20,7 @@ export const AI_FEATURES = [
   "knowledge.rerank",
   "knowledge.graph",
   "contracts.extract",
+  "contracts.summary",
   "contracts.partner-search",
   "contracts.price_search",
   "contracts.price_scout",

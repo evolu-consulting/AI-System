@@ -1,0 +1,68 @@
+{
+  "contracts": {
+    "gapa1": {
+      "manage": "Manage contract",
+      "owner": {
+        "label": "Assign to",
+        "none": "Unassigned",
+        "unknown": "(former member or not visible)",
+        "saved": "Owner changed"
+      },
+      "commission": {
+        "label": "Commission (%)",
+        "invalid": "Enter a number from 0 to 100 with at most 2 decimals.",
+        "fixedNote": "This contract uses a fixed commission amount; saving a % replaces it.",
+        "saved": "Commission saved"
+      },
+      "reextract": {
+        "button": "Re-read with AI from scratch",
+        "retry": "Try again",
+        "title": "Let AI re-read from scratch?",
+        "warn": "AI will read the whole text again and overwrite the previous result. Fields you edited by hand are kept.",
+        "confirm": "Re-read",
+        "running": "Sending…",
+        "started": "Re-read requested"
+      },
+      "summary": {
+        "button": "Create summary with AI",
+        "running": "Summarising…",
+        "done": "Summary created"
+      },
+      "hist": {
+        "title": "Change history",
+        "loading": "Loading…",
+        "empty": "No changes yet.",
+        "system": "System"
+      },
+      "ev": {
+        "field_edited": "edited fields",
+        "owner_assigned": "changed the owner",
+        "commission_edited": "edited the commission",
+        "summary_generated": "created an AI summary",
+        "review_saved": "confirmed and saved the contract",
+        "item_product_set": "linked a product to a line",
+        "parent_changed": "changed the parent contract",
+        "approval_started": "sent for approval",
+        "approved": "approved",
+        "feedback": "left approval feedback",
+        "extract_requested": "asked AI to re-read",
+        "created_manual": "entered the contract by hand",
+        "handled": "recorded a handling result",
+        "schedule_set": "set the payment schedule",
+        "uploaded": "uploaded the contract",
+        "other": "({{type}})"
+      },
+      "err": {
+        "busy": "AI is reading this contract; wait and try again.",
+        "notAllowed": "The contract has passed review and cannot be re-read.",
+        "noSource": "The contract has no text or file to read.",
+        "aiUnavailable": "AI is not ready, try again later.",
+        "summaryNotAllowed": "The contract already has a summary or has no text to summarise.",
+        "cap": "Today's AI allowance is used up, try again tomorrow.",
+        "ownerInvalid": "This person cannot view contracts, so they cannot be assigned.",
+        "commissionNotAllowed": "Commission can only be edited on a read Referral contract.",
+        "stale": "The contract was just updated; reload the page and try again."
+      }
+    }
+  }
+}

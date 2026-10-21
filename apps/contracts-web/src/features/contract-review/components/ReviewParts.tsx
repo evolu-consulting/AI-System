@@ -3,6 +3,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { ReextractButton } from "./ReextractButton";
 
 export type FileRef = { href: string; name: string; onOpen: () => void };
 
@@ -69,13 +70,23 @@ export function SaveNotice({ msg, err }: { msg: string | null; err: string | nul
   );
 }
 
-export function ExtractFailed({ file }: { file: FileRef | null }) {
+export function ExtractFailed({
+  file,
+  id,
+  write,
+}: {
+  file: FileRef | null;
+  id: string;
+  /** gap-a1 #5: vai có quyền ghi ⇒ nút "Thử lại" (đọc lại bằng AI). */
+  write: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <Panel className="mb-4 p-5">
       <p className="font-medium text-late">{t("contracts.review.failedTitle")}</p>
       <p className="mt-1 text-sm text-dim">{t("contracts.review.failedBody")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
+        {write && <ReextractButton id={id} retry />}
         {file && <FileLink file={file} />}
 
         <Link to="/contracts/new" className="btn btn-primary">
