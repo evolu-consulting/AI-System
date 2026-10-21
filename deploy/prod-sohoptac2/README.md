@@ -56,6 +56,21 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
 - Không cổng host. Trình duyệt tải qua link ký 10 phút `<web>/_fb/d/<id>?…`: nginx của `web` chỉ cho GET/HEAD tới `filebox:9100/d/<id>` (contracts :8081, chat :8083, hub :8084).
 - Dữ liệu FileBox cũ (kho chung `ai-system`) KHÔNG chuyển sang; file đã đính kèm trước đây phải gắn lại bằng `mgmt-import --filebox`.
 
+## Sao lưu + thử khôi phục (`backup.sh`, `restore-test.sh`; chạy TRÊN máy chủ, deploy.ps1 chép kèm kit)
+- `bash backup.sh` → `~/workspace/sohoptac2/backups/<UTC yyyymmddThhmmssZ>/` (700; file 600): `pg.dump` (-Fc) + `pg-globals.sql` (role),
+  `rowcounts.tsv` (số hàng mỗi bảng, khoảng min..max quanh lúc dump), `filebox-sample.tsv` (một object: id/version/size/sha256),
+  `fbminio.tar` + `fbdata.tar` (volume MinIO + sqlite FileBox; **filebox + filebox-minio dừng vài giây** cho nhất quán rồi tự chạy lại; `QUIESCE=0` = tar nóng),
+  `env`, `claude-home.tgz`, `admin-credentials.txt`, `MANIFEST.sha256`. Không in bí mật. Giữ 14 ngày + 8 tuần (bản mới nhất mỗi tuần). Lỗi ⇒ log `backups/backup.log`, exit ≠ 0.
+- Ngoài máy chủ: `OFFSITE_DIR=user@host:/path bash backup.sh` (rsync; thêm `OFFSITE_RSYNC_OPTS="-e 'ssh -i …'"`). Không đặt ⇒ in cảnh báo (bản sao chỉ nằm cùng máy).
+- `bash restore-test.sh` → khôi phục bản MỚI NHẤT vào project tạm `s2restore` (không cổng, volume `s2restore_*`), kiểm sha256, số hàng từng bảng khớp manifest,
+  một object FileBox đúng hash, rồi gỡ sạch. Không đụng project/volume `sohoptac2`. exit 0 = đạt; log `backups/restore-test.log`.
+- Crontab (chưa cài; `mkdir -p ~/workspace/sohoptac2/backups` trước, rồi `crontab -e` dưới user `evoc`):
+```
+30 2 * * * bash $HOME/workspace/sohoptac2/backup.sh >> $HOME/workspace/sohoptac2/backups/cron.log 2>&1
+30 4 * * 0 bash $HOME/workspace/sohoptac2/restore-test.sh >> $HOME/workspace/sohoptac2/backups/cron.log 2>&1
+```
+- Khôi phục thật (thảm hoạ): làm theo đúng các bước của `restore-test.sh` nhưng vào project `sohoptac2` với volume trống (thủ công, có người giám sát).
+
 ## Không làm ở đây
 Không nạp dữ liệu, không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
 Không đụng `aisystem`, `sohoptac`, `evotest`, `edge-proxy`, dify, `infra-*`.
