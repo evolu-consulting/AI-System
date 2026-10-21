@@ -15,7 +15,8 @@ import type { Db } from "../../lib/db";
 import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
-import { defaultRoute, type NoMatchPolicy } from "../agents/default-agent.rules";
+import type { AccessSubject } from "../agents/agent-access.rules";
+import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import { checkSendable } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import {
@@ -30,10 +31,16 @@ import {
   type MentionPlan,
 } from "../mention/mention.service";
 import { setFinalSeq } from "./close/cancel.repo";
-import { type Created, type CreateRunInput, createRunTx as insertRun } from "./create-run";
-import { planOf, type Untagged } from "./run-plan";
+import {
+  type Created,
+  type CreateRunInput,
+  flowBusy,
+  createRunTx as insertRun,
+  newRun,
+} from "./create-run";
+import { planOf, type Untagged, untaggedRoute } from "./run-plan";
 import { type ProcessPrep, type ProcessPrepOpts, prepareProcessRun } from "./run-process";
-import { lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
+import { emptyStream, lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
@@ -95,6 +102,7 @@ export type RunServiceDeps = {
   signal?: AbortSignal;
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
   maxConcurrentRuns?: number;
+  fastRoute?: boolean; // chat-fast · = `HUB_FAST_ROUTE=on`; vắng ⇒ tin không tag qua Orchestrator như trước
   /** X2b · gọi sau COMMIT kết thúc run (`SseWriter.finish`, tx1); vắng = C1. */
   onClosed?: (runId: string) => void;
 };
@@ -105,30 +113,6 @@ const QUOTA_OK = { state: "ok", pct: 0 } as const;
 const REBUILD_GRACE_MS = 2000;
 
 const ownerOf = (u: AuthUser): repo.Owner => ({ tenantId: u.tenantId, userId: u.userId });
-
-function flowBusy(err: unknown): boolean {
-  const e = err as { code?: unknown; constraint_name?: unknown; cause?: unknown } | null;
-  const pg = (e?.code === undefined ? e?.cause : e) as typeof e;
-  return pg?.code === "23505" && pg.constraint_name === repo.FLOW_RUNNING_UQ;
-}
-
-/** Id mới của run + tin (E12); `flowId` theo `req.flow_id` hoặc flow mới. */
-function newRun(
-  u: AuthUser,
-  conversationId: string,
-  req: SendMessageRequest,
-  locale: Created["locale"],
-): Created {
-  return {
-    id: crypto.randomUUID(),
-    ...ownerOf(u),
-    conversationId,
-    flowId: req.flow_id ?? crypto.randomUUID(),
-    answerMessageId: crypto.randomUUID(),
-    userMessageId: crypto.randomUUID(),
-    locale,
-  };
-}
 
 /**
  * X2b D6 · kết quả `prepare` (chưa ghi gì): id run/tin, ảnh cấu hình, Orchestrator đã chọn, agent `direct` đã kiểm lại
@@ -200,6 +184,20 @@ export class RunService {
     return !!flowId && (await this.#scoped(u, (tx, o) => repo.flowPendingAsk(tx, o, flowId)));
   }
 
+  /** CR-054 · tin không tag ⇒ agent mặc định (không quyền ⇒ 403); chat-fast · AU đúng 1 agent ⇒ run direct. */
+  async #untagged(
+    u: AuthUser,
+    req: SendMessageRequest,
+    requested: RunPlan | undefined,
+    x: { snapshot: ConfigSnapshot; who: AccessSubject; runId: string },
+  ) {
+    const untagged = requested?.kind === "untagged" && !(await this.#pendingAsk(u, req.flow_id));
+    const r = untaggedRoute(untagged, x.snapshot, x.who, this.d.fastRoute);
+    if (r.route?.kind === "forbidden") throw appError("DEFAULT_AGENT_FORBIDDEN");
+    if (r.fast) this.d.log.info("run-fast-route", { run_id: x.runId, rule: r.fast.rule });
+    return r;
+  }
+
   /** X2b D6 bước 1 · ảnh, locale, `directOnSnapshot`, `pickOrchestrator` — chưa ghi DB. */
   async prepare(
     u: AuthUser,
@@ -212,11 +210,9 @@ export class RunService {
     const run = newRun(u, conversationId, req, user?.locale ?? "vi");
     // REVIEW 1 #2: agent `direct` kiểm lại trên ảnh của run (ảnh `prepareMention` có thể cũ hơn) — trước khi ghi gì.
     const who = { ...ownerOf(u), groupIds: user?.groupIds ?? new Set<string>() };
-    // CR-054 · tin không tag: agent mặc định của tenant (vắng cấu hình ⇒ Orchestrator như trước); không quyền ⇒ 403.
-    const untagged = requested?.kind === "untagged" && !(await this.#pendingAsk(u, req.flow_id));
-    const route = untagged ? defaultRoute(snapshot, who) : undefined;
-    if (route?.kind === "forbidden") throw appError("DEFAULT_AGENT_FORBIDDEN");
-    const plan = planOf(route, requested, run.locale, req.content);
+    const x = { snapshot, who, runId: run.id };
+    const { route, fast } = await this.#untagged(u, req, requested, x);
+    const plan = planOf(fast ?? route, requested, run.locale, req.content);
     const command = plan?.kind === "command" ? plan : undefined;
     const direct =
       plan?.kind === "direct" ? directOnSnapshot(plan, snapshot, who, run.locale) : undefined;
@@ -234,7 +230,7 @@ export class RunService {
       log: this.d.log,
     };
     const scoped = plan?.kind === "orchestrated" ? plan : undefined;
-    const noMatch = route?.kind === "orchestrator" ? route.noMatch : undefined;
+    const noMatch = !fast && route?.kind === "orchestrator" ? route.noMatch : undefined;
     return {
       run,
       snapshot,
@@ -392,9 +388,4 @@ export class RunService {
       return null;
     }
   }
-}
-
-/** Stream SSE rỗng, đóng ngay. */
-function emptyStream(): ReadableStream<Uint8Array> {
-  return new ReadableStream<Uint8Array>({ start: (ctl) => ctl.close() });
 }

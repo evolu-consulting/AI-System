@@ -60,6 +60,32 @@ export type CreateRunInput = {
   log: Pick<Logger, "info">;
 };
 
+/** 23505 trên `FLOW_RUNNING_UQ` (flow đã có run chạy) — người gọi đổi thành 409 `FLOW_BUSY`. */
+export function flowBusy(err: unknown): boolean {
+  const e = err as { code?: unknown; constraint_name?: unknown; cause?: unknown } | null;
+  const pg = (e?.code === undefined ? e?.cause : e) as typeof e;
+  return pg?.code === "23505" && pg.constraint_name === repo.FLOW_RUNNING_UQ;
+}
+
+/** Id mới của run + tin (E12); `flowId` theo `req.flow_id` hoặc flow mới. */
+export function newRun(
+  u: repo.Owner,
+  conversationId: string,
+  req: SendMessageRequest,
+  locale: Created["locale"],
+): Created {
+  return {
+    id: crypto.randomUUID(),
+    tenantId: u.tenantId,
+    userId: u.userId,
+    conversationId,
+    flowId: req.flow_id ?? crypto.randomUUID(),
+    answerMessageId: crypto.randomUUID(),
+    userMessageId: crypto.randomUUID(),
+    locale,
+  };
+}
+
 const tooManyRuns = () =>
   appError("TOO_MANY_RUNS", undefined, {
     [RETRY_AFTER_HEADER]: String(TOO_MANY_RUNS_RETRY_AFTER_S),

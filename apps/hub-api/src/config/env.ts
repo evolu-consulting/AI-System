@@ -79,6 +79,9 @@ export const EnvSchema = z.object({
   // F1 (CR-095) · cờ module đóng băng (docs/platform/modules.md): `off` (mặc định) ⇒ không mount route công khai của quy trình,
   // phòng, nguồn, KH, DLC; engine quy trình vẫn chạy nội bộ khi `HUB_PROCESS_ENGINE=on` (gói hợp đồng dùng). Dev/test bật.
   HUB_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
+  // chat-fast · `on` ⇒ tin không tag mà người gửi chỉ thấy đúng 1 agent → chạy thẳng agent đó (bỏ job Orchestrator, cùng kiểm
+  // quyền). Mặc định `off` (test khoá giữ hành vi cũ); production bật trong compose.
+  HUB_FAST_ROUTE: z.enum(["on", "off"]).default("off"),
   // CR-081 · seed opt-in fixtures: "1"/"true" ⇒ `hub:seed` nạp THÊM `*.full.yaml` (16 agent vai, 7 mẫu quy trình, teams,
   // entitlements/grants, tenant_processes); vắng ⇒ seed TỐI GIẢN (orchestrator + assistant + dify-* + providers + workflows).
   HUB_SEED_FIXTURES: z.string().optional(),

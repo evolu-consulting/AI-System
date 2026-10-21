@@ -28,6 +28,7 @@ export type EnvAppDeps = Required<
     | "studioDist"
     | "processEngine"
     | "frozenModules"
+    | "fastRoute"
     | "notify"
   >;
 
@@ -74,6 +75,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
     frozenModules: env.HUB_FROZEN_MODULES === "on",
+    fastRoute: env.HUB_FAST_ROUTE === "on",
     notify: {
       mode: env.HUB_NOTIFY_MODE,
       worker: env.HUB_NOTIFY_MODE !== "off",

@@ -5,6 +5,11 @@ import type { Redis } from "../../lib/redis";
 import * as repo from "./runs.repo";
 import { isTerminalEvent, lastSseEntry, type SseEventBody } from "./sse/sse-writer";
 
+/** Stream SSE rỗng, đóng ngay (E13 khi client đã có sự kiện kết thúc). */
+export function emptyStream(): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({ start: (ctl) => ctl.close() });
+}
+
 /** Sự kiện kết thúc dựng từ cột `runs` + tin assistant (không gọi lại `runErrorText`, plan-errors §Ghi). */
 export async function terminalFromDb(
   tx: Tx,

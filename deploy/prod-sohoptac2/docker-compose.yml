@@ -76,6 +76,8 @@ services:
     # Claude CLI gói (ai-sub): bản sao đăng nhập riêng của project ở ./claude-home (KHÔNG phải ~/.claude của host).
     environment:
       HOME: /claude-home
+      # chat-fast: tin không tag, người gửi chỉ thấy 1 agent ⇒ chạy thẳng agent (bỏ job Orchestrator, cùng kiểm quyền).
+      HUB_FAST_ROUTE: "on"
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro

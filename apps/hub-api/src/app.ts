@@ -14,6 +14,7 @@ import {
 import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { mountDifyCredential, workflowJobs } from "./app.async";
+import type { AppDeps, HealthProbe } from "./app.deps";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
@@ -29,28 +30,24 @@ import {
   X2A_PROTECTED_PREFIXES,
   type X2aMounted,
 } from "./app.x2a";
-import type { KhConfig } from "./config/env";
 import { type AuthUser, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
-import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
+import { dbHubAudit } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
-import type { Redis } from "./lib/redis";
 import { closeUnreadBody } from "./lib/unread-body";
-import type { AttachmentDeps } from "./modules/attachments/storage";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
-import type { DlcEngine } from "./modules/dlc/dlc.engine";
 import { dlcRoutes } from "./modules/dlc/dlc.routes";
 import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
-import { mountNotify, type NotifyDeps } from "./modules/notify/notify.mount";
-import { mountPacks, PACK_PREFIX, type PacksDeps } from "./modules/packs/packs.mount";
+import { mountNotify } from "./modules/notify/notify.mount";
+import { mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
   mountProcesses,
@@ -61,10 +58,9 @@ import {
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
-import { type RunDriver, RunService } from "./modules/runs/runs.service";
+import { RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
-import type { SecretKey } from "./modules/secrets/secrets.crypto";
 import { SECRETS_PROTECTED_PREFIXES } from "./modules/secrets/secrets.mount";
 import { HubSecretReader } from "./modules/secrets/secrets.use";
 import type { ResolveBridge } from "./modules/sources/resolve.bridge";
@@ -75,68 +71,7 @@ export type AppVars = {
   Variables: { requestId: string; log: Logger; config?: ConfigCache; user: AuthUser };
 };
 export type AppConfig = { version: string; corsOrigins: string[] };
-/** Kiểm phụ thuộc cho /health; ném lỗi = không sẵn sàng → 503. Vắng (test khung) → luôn ok. */
-export type HealthProbe = () => Promise<void>;
-/**
- * Phụ thuộc của app (seam test ↔ hub-api: spec-decisions QW-A1, QW-A2). Mọi trường tuỳ chọn; vắng `db` ⇒ không có vòng nền
- * (test khung). Có `db` ⇒ vòng nền tự chạy ngay trong `createApp` và dừng khi `signal` abort.
- */
-export type AppDeps = {
-  probes?: HealthProbe[];
-  db?: Db;
-  redis?: Redis;
-  jwtPublicKey?: CryptoKey;
-  appEnv?: "development" | "test" | "production";
-  /** = `HUB_INSTANCE_ID` (chủ run/lease). */
-  instanceId?: string;
-  /** = `HUB_JOB_MAX_WAIT_S`. */
-  jobMaxWaitS?: number;
-  /** = `HUB_CONFIG_POLL_S` (mặc định 60). */
-  configPollS?: number;
-  signal?: AbortSignal;
-  /** Vòng chạy run. Vắng → vòng Orchestrator (B8) qua `JobAgentRunner` (B7). */
-  runDriver?: RunDriver;
-  /** H2a · = `SECRET_MASTER_KEY` (base64 32 byte, chung Admin); nạp bằng `loadMasterKey` (dify/credential.service). */
-  secretMasterKey?: string;
-  /** H4b-1 D11 · = `HUB_SECRETS_KEY` đã kiểm (server điền). Vắng ⇒ POST/PUT có `value` 409 `NOT_CONFIGURED` (test cũ). */
-  hubSecretsKey?: SecretKey | null;
-  /** H4b-2 plan §4 · `fetch` cho "Kiểm tra key" + `sleep` chờ probe subscription (test tiêm; vắng ⇒ global/`Bun.sleep`). */
-  fetch?: typeof fetch;
-  sleep?: (ms: number) => Promise<void>;
-  /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
-  internalToken?: string;
-  /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */
-  publicInternalUrl?: string;
-  /** H2a · = `HUB_DIFY_TIMEOUT_MAX_S` (mặc định 300). */
-  difyTimeoutMaxS?: number;
-  /** H2b · = `HUB_MAX_CONCURRENT_RUNS` (server điền, mặc định 2). Vắng ⇒ không giới hạn (L1: test khoá H1/H2a). */
-  maxConcurrentRuns?: number;
-  /** H2c · storage + hạn mức + sweeper (`HUB_ATTACH_*`, server điền). Vắng ⇒ không mount route file (PL14). */
-  attachments?: AttachmentDeps;
-  /** H3b · ghi `hub.audit_log` (grant/revoke/view_trace). Vắng ⇒ `dbHubAudit`; test tiêm lỗi giữa transaction (P12). */
-  hubAudit?: HubAuditWriter;
-  /** X2a · nhịp `: ping` của `/me/stream` (ms). Vắng ⇒ 15000; test truyền 500. */
-  pingMs?: number;
-  studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
-  /** P-a D15 · = `HUB_PROCESS_ENGINE==="on"`; vắng ⇒ false (không mount route quy trình, `!` là chữ thường). */
-  processEngine?: boolean;
-  /**
-   * F1 (CR-095) · module đóng băng (docs/platform/modules.md): `false` ⇒ KHÔNG mount route công khai của quy trình, phòng (`/rooms`), nguồn,
-   * KH (`/studio/api/kh*`) và `/dlc`; engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process
-   * giữ nguyên); `server.ts` luôn điền từ `HUB_FROZEN_MODULES` (mặc định off).
-   */
-  frozenModules?: boolean;
-  /** P-b C13 · = `HUB_SOURCE_CHECK_TIMEOUT_MS`; "Kiểm tra kết nối" chờ Runtime resolve (mặc định 60000). */
-  sourceCheckTimeoutMs?: number;
-  /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */
-  kh?: KhConfig;
-  /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
-  dlc?: DlcEngine;
-  /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
-  packs?: PacksDeps;
-  /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */
-  notify?: NotifyDeps;
-} & ProcessSeams;
+export type { AppDeps, HealthProbe };
 
 const DEFAULT_CONFIG_POLL_S = 60;
 /** Gốc các route cần JWT (E5–E15). Chặn ở gốc ⇒ 401 trước 404, kể cả route chưa mount; `/health` mở. */
