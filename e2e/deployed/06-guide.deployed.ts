@@ -29,7 +29,11 @@ test.describe("06 app-guide (AI thật, hướng dẫn dùng sản phẩm)", () 
     expect(r, "thiếu menu Hợp đồng").toMatch(/Hợp đồng/);
     expect(r, "thiếu nút Upload hợp đồng").toMatch(/Upload hợp đồng/);
     expect(r, "thiếu tên app Sổ Hợp Tác").toMatch(/Sổ Hợp Tác/);
-    expect(r, "câu trả lời phải là các bước đánh số").toMatch(/(^|\n)\s*1[.)]/);
+    // Markdown "1." hiện thành <ol> (số do trình duyệt vẽ, không có trong innerText) ⇒ đếm mục của danh sách đánh số.
+    expect(
+      await page.locator("main ol li").count(),
+      "câu trả lời phải là các bước đánh số",
+    ).toBeGreaterThanOrEqual(3);
   });
 
   test("Sổ Hợp Tác (khoang Trợ lý AI): xem điểm uy tín đối tác ở đâu ⇒ nêu menu Đối tác + Điểm uy tín", async ({
