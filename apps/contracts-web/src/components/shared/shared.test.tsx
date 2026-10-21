@@ -7,6 +7,7 @@ import { Chips, Empty, ErrorLine, Loading } from "./states";
 
 beforeAll(async () => {
   await initI18n();
+  await i18n.changeLanguage("en"); // mặc định app là vi (GAP-E #33); bộ test này khẳng định bản en
 });
 const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 
