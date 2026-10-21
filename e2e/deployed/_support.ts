@@ -1,10 +1,17 @@
 // e2e triển khai · hỗ trợ chung. Mật khẩu CHỈ qua env `DEMO_PW` (runner đọc từ máy chủ trong bộ nhớ) — không in, không ghi file.
 import { test as base, type ConsoleMessage, expect, type Page } from "@playwright/test";
 
-export const CW = process.env.DEP_CONTRACTS_URL ?? "http://localhost:18431";
-export const ADMIN = process.env.DEP_ADMIN_URL ?? "http://localhost:18432";
-export const CHAT = process.env.DEP_CHAT_URL ?? "http://localhost:18433";
-export const HUB = process.env.DEP_HUB_URL ?? "http://localhost:18434";
+// DEP_DOMAIN=evoluconsulting.com => chay qua https host thu nghiem (sohoptac2./ai2-admin./ai2./ai2-hub.<domain>) thay vi SSH tunnel;
+// DEP_*_URL van thang. Khong dat gi => localhost:1843x (tunnel).
+const DOM = process.env.DEP_DOMAIN?.trim();
+export const CW =
+  process.env.DEP_CONTRACTS_URL ?? (DOM ? `https://sohoptac2.${DOM}` : "http://localhost:18431");
+export const ADMIN =
+  process.env.DEP_ADMIN_URL ?? (DOM ? `https://ai2-admin.${DOM}` : "http://localhost:18432");
+export const CHAT =
+  process.env.DEP_CHAT_URL ?? (DOM ? `https://ai2.${DOM}` : "http://localhost:18433");
+export const HUB =
+  process.env.DEP_HUB_URL ?? (DOM ? `https://ai2-hub.${DOM}` : "http://localhost:18434");
 export const TENANT = "demo";
 export const USER = process.env.DEMO_USER ?? "demo-owner";
 export const TAG = "E2E-DEPLOY";

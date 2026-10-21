@@ -61,6 +61,38 @@ EOF
   echo "gen-env: đã tạo .env (600). SAO LƯU: mất SECRET_MASTER_KEY/HUB_SECRETS_KEY = mất mọi secret đã lưu."
 fi
 
+# --- Domain (S2_DOMAIN) -------------------------------------------------------------------------------------------------
+# S2_DOMAIN=evoluconsulting.com bash gen-env.sh  => URL cong khai = https://{sohoptac2,ai2-admin,ai2,ai2-hub}.<domain>; CORS gom CA https
+# lan localhost (tunnel van chay); TRUST_PROXY_HOPS=3 (host nginx -> edge-proxy -> web). S2_DOMAIN=none => ve che do tunnel. Khong dat
+# bien => giu che do da ghi trong .env (S2_DOMAIN=...). Chi sua cac khoa URL/CORS/hops, idempotent; sao luu .env.bak-domain MOT lan.
+# Cookie refresh da Secure (APP_ENV=production; Chrome van nhan Secure tren http://localhost) va nginx `web` giu X-Forwarded-Proto.
+# Sau khi doi: build lai web (PUBLIC_* nhung luc build) + `up -d` (deploy.ps1 -Domain lam het) + s2-app-urls.ts cho app_catalog.
+envget() { grep -m1 "^$1=" .env | cut -d= -f2- || true; }
+setkv() { local tmp; tmp=$(mktemp); awk -v k="$1" -v v="$2" 'BEGIN{FS=OFS="="} $1==k{print k "=" v; d=1; next} {print} END{if(!d) print k "=" v}' .env > "$tmp"; cat "$tmp" > .env; rm -f "$tmp"; }
+D_IN="${S2_DOMAIN-}"; D_OLD="$(envget S2_DOMAIN)"
+if [ "$D_IN" = "none" ]; then MODE=tunnel; D=""; elif [ -n "$D_IN" ]; then MODE=domain; D="$D_IN"; elif [ -n "$D_OLD" ]; then MODE=domain; D="$D_OLD"; else MODE=keep; D=""; fi
+LOCAL=""
+for k in CONTRACTS ADMIN CHAT HUB; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
+if [ "$MODE" != keep ]; then
+  [ -f .env.bak-domain ] || { cp -p .env .env.bak-domain; chmod 600 .env.bak-domain; }
+  if [ "$MODE" = domain ]; then
+    [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
+    U_C="https://sohoptac2.$D"; U_A="https://ai2-admin.$D"; U_H="https://ai2-hub.$D"; U_CH="https://ai2.$D"
+    setkv S2_DOMAIN "$D"; setkv TRUST_PROXY_HOPS 3
+    ORIG="$U_C,$U_A,$U_CH,$U_H,$LOCAL"
+  else
+    U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
+    U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"
+    setkv S2_DOMAIN ""; setkv TRUST_PROXY_HOPS 1
+    ORIG="$LOCAL"
+  fi
+  setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"
+  setkv CORS_ORIGINS "$ORIG"; setkv HUB_CORS_ORIGINS "$ORIG"; setkv ADMIN_WEB_URL "$U_A"; setkv HUB_NOTIFY_BASE_URL "$U_C"
+  echo "gen-env: che do $MODE ${D:+($D)} - da cap nhat URL/CORS/TRUST_PROXY_HOPS trong .env; can build lai web + up -d"
+elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then
+  setkv S2_PUBLIC_CONTRACTS_URL "http://localhost:$(envget S2_PORT_CONTRACTS)"
+fi
+chmod 600 .env
 # FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
 bash ./filebox-env.sh
 

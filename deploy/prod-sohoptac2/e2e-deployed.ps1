@@ -1,10 +1,11 @@
-﻿# e2e TRIEN KHAI tren sohoptac2 (tenant demo, du lieu gia): mo SSH tunnel -> doc mat khau demo tren may chu (trong bo nho) -> chay Playwright -> dong tunnel.
+# e2e TRIEN KHAI tren sohoptac2 (tenant demo, du lieu gia): mo SSH tunnel -> doc mat khau demo tren may chu (trong bo nho) -> chay Playwright -> dong tunnel.
 #   powershell -File deploy/prod-sohoptac2/e2e-deployed.ps1 [-Grep <regex>] [-Spec <file>] [-User demo-owner]
 # Mat khau KHONG in/ghi/commit: chi nam trong bien moi truong DEMO_PW cua tien trinh con. Khong dung nginx host/ten mien: web chia theo CONG.
 param(
   [string]$Grep = "",
   [string]$Spec = "",
   [string]$User = "demo-owner",
+  [string]$Domain = "",   # vd evoluconsulting.com: chay qua https host (DEP_DOMAIN), KHONG mo tunnel
   [string]$Key = "F:\workspace\id_evoc_key",
   [string]$Server = "evoc@149.202.83.5"
 )
@@ -15,6 +16,7 @@ try {
   # Tunnel: tham so tung phan tu, khong co dau nhay kep trong tham so ssh.
   $sshArgs = @("-i", $Key, "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=20",
     "-L", "18431:127.0.0.1:18431", "-L", "18432:127.0.0.1:18432", "-L", "18433:127.0.0.1:18433", "-L", "18434:127.0.0.1:18434", $Server)
+  if ($Domain) { $env:DEP_DOMAIN = $Domain } else {
   $tunnel = Start-Process -FilePath "ssh" -ArgumentList $sshArgs -WindowStyle Hidden -PassThru
   $ok = $false
   for ($i = 0; $i -lt 40 -and -not $ok; $i++) {
@@ -22,6 +24,7 @@ try {
     try { $c = New-Object Net.Sockets.TcpClient; $c.Connect("127.0.0.1", 18434); $c.Close(); $ok = $true } catch { Start-Sleep -Milliseconds 250 }
   }
   if (-not $ok) { throw "tunnel khong mo duoc" }
+  }
 
   # Mat khau demo: doc tren may chu, chi giu trong bien moi truong cua tien trinh nay.
   # [[:space:]] thay dau cach de khong can dau nhay kep trong tham so ssh (PowerShell 5.1 bo dau nhay).
