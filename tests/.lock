@@ -1303,6 +1303,7 @@ bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptan
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
 3af81b2d0ac3e498d4b444e575105e5f5c97de49711888a2e5fa8fe19b739c9c  tests/acceptance/my-activity/chat-history.perf.int.test.ts
 52c8be5303f8ed540ce52cc34910654c73577ef85635f1912ec8cff0b3b36000  tests/acceptance/my-activity/isolation.int.test.ts
+ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts
 205e7a26cb42ce5feb7c2f1ffe4edd8afda7c3b4cd07f2c1266927c6a8edc444  tests/contract/chat/_env.ts
 2254610aee2e3b5526d06a528a3c0f4b3924b7765b7657f0d6fd5c3fb9587b44  tests/contract/chat/auth.contract.test.ts
