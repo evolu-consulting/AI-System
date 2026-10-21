@@ -71,8 +71,89 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
 ```
 - Khôi phục thật (thảm hoạ): làm theo đúng các bước của `restore-test.sh` nhưng vào project `sohoptac2` với volume trống (thủ công, có người giám sát).
 
+## Nhập dữ liệu chị Tiên (sohoptac cũ → tenant `nitigroup`) — niti-import
+Chỉ dữ liệu của MỘT tài khoản cũ (Lê Thị Thuý Tiên): HĐ chị phụ trách / chưa giao mà chị tạo + phụ lục, hạng mục, đợt thanh toán/giao
+hàng, sổ đối tác (cả đánh giá chị ghi), file gốc → FileBox; mọi HĐ thuộc user `tien` (tạo trước bằng script tenant-owner; vắng ⇒ lỗi
+`OWNER_USER_NOT_FOUND`). Không tạo user, không gửi gì: mốc nhắc đã qua của HĐ nhập được đánh dấu "đã nhắc" trong cùng tx (vòng nhắc
+không gửi cho hạn cũ); mốc nhắc TƯƠNG LAI vẫn chạy như HĐ thường. Nhãn lô = `--source sohoptac-tien` (hoàn tác chỉ theo nhãn này).
+
+sohoptac cũ (project Docker `sohoptac`, CHỈ ĐỌC): dữ liệu ở OpenSearch (index không tiền tố: `contracts`, `obligations`,
+`partner_events`, `companies`, `state`, `users`…; cổng không publish ⇒ đọc qua mạng `sohoptac_default`, REST `_search` scroll), file
+gốc ở volume `sohoptac_apidata` → `/app/data/contract_files/<org>/<hđ>/<tên>` (mount `:ro`); Neo4j không cần. Mọi lệnh chạy TRÊN máy chủ:
+```
+cd ~/workspace/sohoptac2; dc() { docker compose -p sohoptac2 "$@"; }
+docker inspect sohoptac-api-1 --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'   # ⇒ sohoptac_apidata -> /app/data
+docker inspect sohoptac-opensearch-1 --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' # ⇒ sohoptac_default
+ACTOR=$(dc exec -T pg psql -U s2_owner -d ai_system -Atc "select id from admin.users where role='platform_admin' and username='admin'")
+dc exec -T pg psql -U s2_owner -d ai_system -Atc "select u.active from admin.users u join admin.tenants t on t.id=u.tenant_id where t.key='nitigroup' and u.username='tien'"   # ⇒ t
+mkdir -p import-out && chmod 700 import-out
+```
+**(a) Export chỉ-đọc.** Liệt kê chủ HĐ để lấy email cũ của chị Tiên, rồi export đã lọc đúng tài khoản đó (file 600):
+```
+EXP=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac_default -v "$PWD/import-out:/out"
+  -e MGMT_OPENSEARCH_URL=http://opensearch:9200 sohoptac2-app:latest bun apps/admin-api/src/modules/mgmt-import/mgmt-export.cli.ts)
+"${EXP[@]}" | jq '.owners'                       # tìm dòng tên "Lê Thị Thuý Tiên" ⇒ email; contracts ≈ 11
+TIEN_OLD='<email cũ của chị Tiên>'
+"${EXP[@]}" --owner-email "$TIEN_OLD" --out /out/tien-export.json > import-out/export.json
+jq '.export | {sha256, source_orgs, docs, excluded, not_imported}' import-out/export.json
+```
+⇒ `docs.contracts` = số HĐ + phụ lục của chị; `source_orgs` đúng 1 org; `not_imported` = bản ghi của chị ở phần KHÔNG nhập (CKS, tri
+thức, hẹn nhắc, chat…) — khác `{}` ⇒ dừng, báo người dùng.
+
+**(b) Dry-run** (không ghi, không tải file; exit 0 = sạch, 2 = có vấn đề):
+```
+IMP=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default
+  -v "$PWD/.env:/run/s2/app.env:ro" -v sohoptac_apidata:/mgmtdata:ro -v "$PWD/import-out:/out"
+  sohoptac2-app:latest bun --env-file=/run/s2/app.env apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts
+  --source sohoptac-tien --actor "$ACTOR" --into-tenant nitigroup --owner-email "$TIEN_OLD" --owner-username tien
+  --from-export /out/tien-export.json --files-dir /mgmtdata/contract_files --filebox)
+"${IMP[@]}" --report /out/dry.json > /dev/null; echo "exit=$?"
+jq '{counts, money, money_ok, files, partners, issues_by_code, unmapped_fields, excluded, not_imported}' import-out/dry.json
+jq -r '.contracts[] | [.kind, .number, .partner, .value, .signed_date, .start_date, .end_date, .has_file, .file_found] | @tsv' import-out/dry.json
+```
+⇒ `counts.*.source = planned`, `money_ok=true`, mỗi HĐ `has_file` ⇒ `file_found=true` (không thì `FILE_MISSING`), `unmapped_fields`
+= trường cũ không có chỗ ở app mới (đọc, báo người dùng). Danh sách HĐ so tay với app cũ.
+
+**(c) Apply** (sao lưu trước; MỘT tx mỗi HĐ; file → FileBox org `t_<tenant>` rồi đọc lại so sha256):
+```
+bash backup.sh
+"${IMP[@]}" --apply --report /out/apply.json > /dev/null; echo "exit=$?"
+jq '{counts, money, money_ok, files, tables, issues_by_code}' import-out/apply.json
+"${IMP[@]}" --apply --report /out/rerun.json > /dev/null; jq '[.tables[].inserted] | add, .files' import-out/rerun.json
+```
+⇒ exit 0; `counts.*`: source = planned = target; `money_ok=true`; `files.checksum_ok` = số file, `checksum_bad=0`; chạy lại: tổng
+`inserted = 0`, `uploaded = 0`. Đứt giữa chừng ⇒ chạy lại đúng lệnh (id tất định; HĐ đã có mà chưa file ⇒ chỉ gắn file).
+
+**(d) Kiểm tra:**
+```
+Q="select count(*) from hub.notifications n join admin.tenants t on t.id=n.tenant_id where t.key='nitigroup'"
+dc exec -T pg psql -U s2_owner -d ai_system -Atc "$Q"; sleep 150; dc exec -T pg psql -U s2_owner -d ai_system -Atc "$Q"   # ⇒ 0 và 0 (vòng nhắc 60 s)
+dc exec -T pg psql -U s2_owner -d ai_system -c "select c.kind, c.number, c.seller, c.buyer, c.value, c.end_date, c.action_deadline,
+  c.file_id is not null as has_file, u.username as owner from contracts.contracts c join admin.tenants t on t.id=c.tenant_id
+  join admin.users u on u.id=c.owner_user_id where t.key='nitigroup' and exists (select 1 from contracts.contract_events e
+  where e.contract_id=c.id and e.type='mgmt_import' and e.data->>'mgmt_source'='sohoptac-tien') order by c.kind, c.number"
+```
+⇒ đúng danh sách ở (b), owner = `tien`. HĐ có `action_deadline` sắp tới sẽ nhắc bình thường từ nay. Rồi mở contracts-web (tunnel
+:18431) bằng tài khoản `tien`, so từng HĐ/sổ/file với app cũ. Xong: `rm import-out/tien-export.json` (dữ liệu khách).
+
+**(e) Hoàn tác** (chỉ lô `sohoptac-tien` trong `nitigroup`; HĐ xoá qua `contracts.delete_contract` — đường xoá của app, một tx mỗi
+HĐ; sổ đối tác chỉ thêm ⇒ được HUỶ chứ không xoá; nhật ký xoá giữ ở `contracts.contract_delete_log`; có phụ lục tạo sau treo dưới HĐ
+của lô ⇒ từ chối `ROLLBACK_FOREIGN_CHILDREN`):
+```
+RB=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default -v "$PWD/.env:/run/s2/app.env:ro" -v "$PWD/import-out:/out"
+  sohoptac2-app:latest bun --env-file=/run/s2/app.env apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts
+  --source sohoptac-tien --actor "$ACTOR" --into-tenant nitigroup --rollback --from-export /out/tien-export.json)
+"${RB[@]}" --report /out/rb-dry.json > /dev/null; jq '{before, contracts, error}' import-out/rb-dry.json
+"${RB[@]}" --apply --report /out/rb.json > /dev/null; jq '{deleted_contracts, voided_events, after, files_kept, error}' import-out/rb.json
+```
+⇒ `after`: contracts/items/obligations/approvals/events/reminders/files = 0, `partner_events = partner_events_voided`. Hàng
+`contracts.files` + object FileBox của lô được GIỮ (app không xoá file; không HĐ nào trỏ tới). Nhập lại sau hoàn tác ⇒ dùng nhãn MỚI
+(`--source sohoptac-tien-2`; sự kiện sổ của nhãn cũ đã huỷ). Xoá hẳn hàng file (tuỳ chọn, role chủ):
+`dc exec -T pg psql -U s2_owner -d ai_system -c "delete from contracts.files f where f.id = any('{<files_kept>}'::uuid[]) and not exists (select 1 from contracts.contracts c where c.file_id = f.id)"`.
+Khôi phục toàn bộ (thảm hoạ): bản `backup.sh` chụp ngay trước (c).
+
 ## Không làm ở đây
-Không nạp dữ liệu, không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
+Không nạp dữ liệu (trừ mục niti-import ở trên, do người dùng chạy), không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
 Không đụng `aisystem`, `sohoptac`, `evotest`, `edge-proxy`, dify, `infra-*`.
 
 ## Domain thử nghiệm (ai-test / sohoptac-test / ai-test-admin / ai-test-hub .evoluconsulting.com) — KHÔNG đụng app cũ

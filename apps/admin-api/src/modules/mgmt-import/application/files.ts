@@ -73,7 +73,7 @@ async function place(c: Ctx, j: FileJob, now: ContractFileState, bytes: Uint8Arr
 
 export async function moveFiles(
   d: ImportDeps,
-  o: ImportOpts,
+  o: Pick<ImportOpts, "apply" | "batch">,
   plan: Plan,
   w: FileWork,
 ): Promise<FileStats> {

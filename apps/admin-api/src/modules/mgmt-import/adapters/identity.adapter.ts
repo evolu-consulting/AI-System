@@ -83,5 +83,13 @@ export function createIdentityAdapter(db: Db, actorId: string, batch?: number): 
         );
         return r ? { id: r.id, active: r.active, source: r.src, orgId: r.org } : null;
       }),
+    userByUsername: (tenantId, username) =>
+      withScope(db, PLATFORM, async (tx) => {
+        const [r] = await run<{ id: string; active: boolean }>(
+          tx,
+          sql`select id, active from admin.users where tenant_id = ${tenantId}::uuid and username = ${username}`,
+        );
+        return r ?? null;
+      }),
   };
 }

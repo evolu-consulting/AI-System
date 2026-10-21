@@ -200,10 +200,12 @@ function itemRow(it: Record<string, unknown>, ord: number, x: ItemCtx): Row | nu
 }
 
 /** Dữ liệu phụ không có cột riêng ⇒ một sự kiện `mgmt_import` (≤ 64 KB; lịch sử sửa cắt nếu quá). */
-function importEvent(d: SourceDoc, contractId: string): Row {
+function importEvent(d: SourceDoc, contractId: string, source: string): Row {
   const s = d.src;
   const data: Record<string, unknown> = {
     mgmt_id: d.id,
+    // niti-import: nhãn lô nhập (= `--source`) — hoàn tác chỉ xoá HĐ mang nhãn này
+    mgmt_source: source,
     origin: s.origin ?? null,
     cks: s.cks ?? null,
     parties: s.parties ?? null,
@@ -308,7 +310,7 @@ function mapOne(d: SourceDoc, t: TenantPlan, m: CMap): void {
   const total = (row.fields as Record<string, { value?: unknown } | undefined>).total_value?.value;
   addMoney(t, "contracts.total_value", typeof total === "number" ? total : null);
   mapItems(d, t, m, row.id as string);
-  push(t, "contracts.contract_events", importEvent(d, row.id as string));
+  push(t, "contracts.contract_events", importEvent(d, row.id as string, ctx.source));
   const job = fileJob(d, t, ctx, row);
   if (job) files.push(job);
 }

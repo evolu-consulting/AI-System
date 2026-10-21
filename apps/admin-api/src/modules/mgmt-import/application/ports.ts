@@ -76,6 +76,11 @@ export type IdentityPort = {
   tenantByKey(
     key: string,
   ): Promise<{ id: string; active: boolean; source: string | null; orgId: string | null } | null>;
+  /** niti-import: user đích theo username trong tenant (tạo trước bằng script tenant-owner). */
+  userByUsername(
+    tenantId: string,
+    username: string,
+  ): Promise<{ id: string; active: boolean } | null>;
 };
 
 /** Tuỳ chọn + phụ thuộc của use case (ở đây — không ở import.usecase — để reconcile không import ngược: hết vòng, review C). */
