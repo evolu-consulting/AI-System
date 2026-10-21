@@ -51,18 +51,20 @@ describe("portal-home · app mặc định", () => {
 
   it("mặc định công ty: chỉ tenant admin; member 403; áp cho thành viên chưa tự đặt, cá nhân thắng", async () => {
     expect((await put("acme", "an", "/me/tenant-default-app", "chat")).status).toBe(403);
-    expect((await put("acme", "binh", "/me/tenant-default-app", "contracts")).status).toBe(200);
-    // `an` không có quyền đọc Sổ Hợp Tác ⇒ effective null (không kẹt ở app không mở được)
+    expect((await put("acme", "binh", "/me/tenant-default-app", "chat")).status).toBe(200);
     const an = (await portal("acme", "an")).json as {
       default_app: { tenant: string; effective: string | null };
     };
-    expect(an.default_app.tenant).toBe("contracts");
-    expect(an.default_app.effective).toBeNull();
-    // admin của acme: thấy được Sổ Hợp Tác? (platform feature qua entitlement + grant) — dùng chat cho chắc
-    expect((await put("acme", "binh", "/me/default-app", "chat")).status).toBe(200);
+    expect(an.default_app.tenant).toBe("chat");
+    expect(an.default_app.effective).toBe("chat");
+    // cá nhân thắng công ty
+    expect((await put("acme", "binh", "/me/default-app", "admin")).status).toBe(200);
     const binh = (await portal("acme", "binh")).json as { default_app: { effective: string } };
-    expect(binh.default_app.effective).toBe("chat");
-    // globex không bị ảnh hưởng bởi mặc định của acme
+    expect(binh.default_app.effective).toBe("admin");
+    // mặc định công ty trỏ app không mở được với `an` (Sổ Hợp Tác, chưa được cấp quyền) ⇒ trang chủ, không kẹt
+    await env.owner`update admin.tenants set default_app = 'contracts' where id = ${TENANT_ID.acme}`;
+    const an2 = (await portal("acme", "an")).json as { default_app: { effective: unknown } };
+    expect(an2.default_app.effective).toBeNull(); // globex không bị ảnh hưởng bởi mặc định của acme
     const g = (await portal("globex", "an")).json as { default_app: { tenant: unknown } };
     expect(g.default_app.tenant).toBeNull();
   });
