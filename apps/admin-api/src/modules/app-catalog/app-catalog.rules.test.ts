@@ -24,7 +24,7 @@ const keys = (v: Parameters<typeof visibleApps>[1], rows = ROWS) =>
   visibleApps(rows, v).map((r) => r.key);
 
 describe("visibleApps", () => {
-  it("member không có gói: chỉ AI System; có feature: thêm Sổ Hợp Tác", () => {
+  it("member không có gói: chỉ Chat AI; có feature: thêm Sổ Hợp Tác", () => {
     expect(keys({ role: "member", features: new Set() })).toEqual(["chat"]);
     expect(keys({ role: "member", features: new Set(["contracts-read"]) })).toEqual([
       "chat",

@@ -8,7 +8,7 @@ keywords: sổ hợp tác tổng quan cần xử lý việc menu vai trò quản
 ---
 
 ## Sổ Hợp Tác dùng để làm gì và có những menu nào
-Sổ Hợp Tác là ứng dụng quản lý hợp đồng, đối tác, giá, thanh toán và chữ ký số. Mở từ AI System: bấm **Ứng dụng** > **Sổ Hợp Tác**. Thanh bên trái có 4 mục:
+Sổ Hợp Tác là ứng dụng quản lý hợp đồng, đối tác, giá, thanh toán và chữ ký số. Mở từ Chat AI: bấm **Ứng dụng** > **Sổ Hợp Tác**. Thanh bên trái có 4 mục:
 - **Tổng quan**: việc cần làm hôm nay và số liệu.
 - **Hợp đồng**: danh sách, tải lên, thêm, sửa, xoá hợp đồng.
 - **Đối tác**: danh sách đối tác và điểm uy tín.
@@ -26,7 +26,7 @@ Chọn **Kỳ xem** (**Tháng này**, **Quý này**, **12 tháng**) để đổi
 EN: Open Tổng quan; the "Cần xử lý" block lists overdue and upcoming work, each with Đã xong / Bỏ qua.
 
 ## Hỏi Trợ lý AI trong Sổ Hợp Tác
-Bấm **Trợ lý AI** (nút "Mở trợ lý AI" trên thanh trên) để mở khoang trợ lý bên phải. Gõ câu hỏi ở ô "Hỏi về hợp đồng, chữ ký số, thanh toán…" và bấm **Gửi** (Enter gửi, Shift+Enter xuống dòng). Đây là cùng một trợ lý (agent **Trợ lý**) bạn dùng ở AI System — chỉ khác là khi hỏi từ Sổ Hợp Tác, trợ lý biết bạn đang ở màn hình nào và đang xem hợp đồng / đối tác nào (nên có thể hỏi "hợp đồng này hết hạn khi nào?"). Trợ lý tra cứu hợp đồng, chữ ký số, sổ thanh toán bạn được xem và chỉ đọc, không sửa dữ liệu. Câu thử: "Hợp đồng nào sắp hết hạn trong 60 ngày?", "Có khoản thanh toán nào đang quá hạn không?". Nếu báo "Bạn chưa được dùng trợ lý AI", nhờ quản trị cấp quyền agent **Trợ lý** trong Quản trị > Agents.
+Bấm **Trợ lý AI** (nút "Mở trợ lý AI" trên thanh trên) để mở khoang trợ lý bên phải. Gõ câu hỏi ở ô "Hỏi về hợp đồng, chữ ký số, thanh toán…" và bấm **Gửi** (Enter gửi, Shift+Enter xuống dòng). Đây là cùng một trợ lý (agent **Trợ lý**) bạn dùng ở Chat AI — chỉ khác là khi hỏi từ Sổ Hợp Tác, trợ lý biết bạn đang ở màn hình nào và đang xem hợp đồng / đối tác nào (nên có thể hỏi "hợp đồng này hết hạn khi nào?"). Trợ lý tra cứu hợp đồng, chữ ký số, sổ thanh toán bạn được xem và chỉ đọc, không sửa dữ liệu. Câu thử: "Hợp đồng nào sắp hết hạn trong 60 ngày?", "Có khoản thanh toán nào đang quá hạn không?". Nếu báo "Bạn chưa được dùng trợ lý AI", nhờ quản trị cấp quyền agent **Trợ lý** trong Quản trị > Agents.
 
 EN: Click "Trợ lý AI" to open the assistant dock; it is read-only.
 

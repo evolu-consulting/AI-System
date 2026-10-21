@@ -10,27 +10,25 @@ import { FALLBACK_URLS } from "../lib/fallback-urls";
 
 export const CHAT_APP_KEY = "chat";
 
-export function AppSwitcher({ className }: { className?: string }) {
+export function AppSwitcher() {
   const { t, i18n } = useTranslation();
   const me = useSession((s) => s.me);
   return (
-    <span className={className}>
-      <SharedAppSwitcher
-        current={CHAT_APP_KEY}
-        label={t("shell.apps")}
-        locale={i18n.language}
-        reloadKey={me?.id}
-        fetchApps={() => session.myApps().then((r) => r.items)}
-        fallback={() => fallbackApps(FALLBACK_URLS, me?.role)}
-        handOff={(a) =>
-          handOffUrl({
-            authed: true,
-            grant: () => session.ssoGrant(a.key),
-            fallbackBase: a.url,
-            next: "/",
-          })
-        }
-      />
-    </span>
+    <SharedAppSwitcher
+      current={CHAT_APP_KEY}
+      label={t("shell.apps")}
+      locale={i18n.language}
+      reloadKey={me?.id}
+      fetchApps={() => session.myApps().then((r) => r.items)}
+      fallback={() => fallbackApps(FALLBACK_URLS, me?.role)}
+      handOff={(a) =>
+        handOffUrl({
+          authed: true,
+          grant: () => session.ssoGrant(a.key),
+          fallbackBase: a.url,
+          next: "/",
+        })
+      }
+    />
   );
 }

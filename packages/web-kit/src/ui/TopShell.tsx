@@ -1,4 +1,4 @@
-// app-catalog · thanh trên dùng chung (admin-web, studio-web): cùng chiều cao/viền/nền; slot trái (`start`), phải (`children`),
+// app-catalog · thanh trên dùng chung (chuẩn = thanh trên Sổ Hợp Tác 52px; admin/chat/studio-web): cùng chiều cao/viền/nền; slot trái (`start`), phải (`children`),
 // switcher "Ứng dụng" (`apps`) rồi `end` (menu tài khoản). Style nội tuyến + biến màu của app (xem AppSwitcher).
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 
@@ -6,14 +6,14 @@ const HEADER: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-  height: "var(--spacing-topbar, 60px)",
+  height: 52,
   flexShrink: 0,
-  padding: "0 16px",
-  borderBottom: "1px solid var(--border, #e5e5e5)",
-  background: "var(--card, #fff)",
+  padding: "0 20px",
+  borderBottom: "1px solid var(--rule, var(--border, #e5e5e5))",
+  background: "var(--panel, var(--card, #fff))",
   color: "var(--foreground, inherit)",
 };
-const RIGHT: CSSProperties = { marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 };
+const RIGHT: CSSProperties = { marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 };
 
 export function TopShell(p: {
   start?: ReactNode;

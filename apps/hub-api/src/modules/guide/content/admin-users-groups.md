@@ -8,7 +8,7 @@ keywords: quản trị admin user người dùng group nhóm phòng ban phân qu
 ---
 
 ## Mở trang Quản trị
-Trong AI System bấm **Ứng dụng** > **Quản trị** (Evolu Control). Menu bên trái gồm **Tổng quan**, **Agents**, và các nhóm **TRUY CẬP** (**Users**, **Groups**, **Phân quyền**), **CHỨC NĂNG** (**Features**, **Commands**), **HỆ THỐNG** (**Chi phí & quota**, **Nhật ký**...). Quản trị công ty (tenant_admin) chỉ thấy dữ liệu công ty mình.
+Trong Chat AI bấm **Ứng dụng** > **Quản trị** (Evolu Control). Menu bên trái gồm **Tổng quan**, **Agents**, và các nhóm **TRUY CẬP** (**Users**, **Groups**, **Phân quyền**), **CHỨC NĂNG** (**Features**, **Commands**), **HỆ THỐNG** (**Chi phí & quota**, **Nhật ký**...). Quản trị công ty (tenant_admin) chỉ thấy dữ liệu công ty mình.
 
 EN: Open Ứng dụng > Quản trị. Main menus: Users, Groups, Phân quyền, Features, Agents, Chi phí & quota.
 

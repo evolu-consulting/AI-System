@@ -7,7 +7,7 @@ import * as repo from "./app-catalog.repo";
 export const DEFAULT_APPS: readonly repo.DefaultApp[] = [
   {
     key: "chat",
-    name: { vi: "AI System", en: "AI System" },
+    name: { vi: "Chat AI", en: "AI Chat" },
     icon: "sparkles",
     audience: "all",
     requiredFeature: null,

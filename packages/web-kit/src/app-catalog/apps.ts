@@ -9,9 +9,36 @@ export function appLabel(app: MeApp, locale: string | undefined): string {
   return locale?.startsWith("en") && app.name.en ? app.name.en : app.name.vi;
 }
 
-/** Danh sách hiển thị: bỏ app hiện tại (đang ở đó rồi), giữ thứ tự server. */
+/** App mở được và không phải app hiện tại, giữ thứ tự server. */
 export function otherApps(apps: readonly MeApp[], current: string | undefined): MeApp[] {
   return apps.filter((a) => a.key !== current && a.url !== "");
+}
+
+/**
+ * Danh sách switcher: MỌI app người dùng mở được, gồm cả app đang chạy (đánh dấu "hiện tại", không bấm được). Server không
+ * trả app khi nó chưa có URL trong catalog ⇒ thêm bản dựng sẵn (url rỗng) theo thứ tự mặc định để luôn thấy mình đang ở đâu.
+ */
+export function withCurrent(apps: readonly MeApp[], current: string): MeApp[] {
+  if (apps.some((a) => a.key === current)) return [...apps];
+  const def = FALLBACK.find((d) => d.key === current);
+  if (!def) return [...apps];
+  const me: MeApp = { key: def.key, name: def.name, icon: def.icon, url: "", sso: def.sso };
+  const rank = (k: string) => FALLBACK.findIndex((d) => d.key === k);
+  const at = apps.findIndex((a) => rank(a.key) > rank(current));
+  return at < 0 ? [...apps, me] : [...apps.slice(0, at), me, ...apps.slice(at)];
+}
+
+/** Mô tả ngắn dưới tên app trong switcher (app tuỳ chỉnh do Admin thêm: không có mô tả). */
+const DESCRIPTIONS: Record<string, { vi: string; en: string }> = {
+  chat: { vi: "Hỏi AI, trò chuyện, tệp", en: "Ask AI, chat, files" },
+  contracts: { vi: "Hợp đồng, đối tác, thanh toán", en: "Contracts, partners, payments" },
+  studio: { vi: "Thiết kế agent và quy trình", en: "Design agents and workflows" },
+  admin: { vi: "Người dùng, phân quyền, quota", en: "Users, permissions, quota" },
+};
+
+export function appDescription(app: MeApp, locale: string | undefined): string {
+  const d = DESCRIPTIONS[app.key];
+  return d ? (locale?.startsWith("en") ? d.en : d.vi) : "";
 }
 
 type FallbackDef = {
@@ -27,7 +54,7 @@ type FallbackDef = {
 const FALLBACK: readonly FallbackDef[] = [
   {
     key: "chat",
-    name: { vi: "AI System", en: "AI System" },
+    name: { vi: "Chat AI", en: "AI Chat" },
     icon: "sparkles",
     sso: true,
     audience: "all",

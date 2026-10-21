@@ -65,6 +65,10 @@ test('HUB-FR-72 · E04 · khung: menu Studio có link Agents + Orchestrator + Mo
   // app-catalog: `/auth/me/apps` không được mock ⇒ switcher dùng dự phòng env (PUBLIC_ADMIN_WEB_URL) ⇒ mục "Quản trị".
   await page.getByRole("button", { name: "Ứng dụng" }).click();
   await expect(page.getByRole("menuitem", { name: "Quản trị" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /Studio/ })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
 });
 
 test('HUB-FR-72 · E05 · `/studio/` → /agents; đường dẫn lạ → "Không tìm thấy trang" + Về Agents [plan-frontend §2]', async ({

@@ -1,15 +1,18 @@
-// app-catalog · nút "Ứng dụng" dùng chung cho 4 web (admin, chat, studio, contracts): MỘT giao diện, MỘT nguồn dữ liệu
-// (`GET /me/apps` — admin-api đã lọc theo vai + gói; thêm app ở Admin là hiện, không build lại). API lỗi ⇒ `fallback()` (env build).
+// app-catalog · nút "Ứng dụng" (biểu tượng lưới, góc trên bên phải) dùng chung cho 4 web (admin, chat, studio, contracts): MỘT giao
+// diện, MỘT nguồn dữ liệu (`GET /me/apps` — admin-api đã lọc theo vai + gói; thêm app ở Admin là hiện, không build lại).
+// Danh sách = MỌI app mở được, kể cả app hiện tại (có dấu "hiện tại", không bấm được). API lỗi ⇒ `fallback()` (env build).
+// Bàn phím/ARIA: nút `aria-haspopup=menu`; mở ⇒ focus mục đầu bấm được; ↑/↓/Home/End di chuyển, Esc đóng và trả focus, Tab đóng.
 // Không phụ thuộc Tailwind/shadcn: style nội tuyến + biến màu của app (`--popover/--border/--muted…`) có giá trị dự phòng.
 import {
   type ReactElement,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   useEffect,
   useId,
   useRef,
   useState,
 } from "react";
-import { appLabel, type MeApp, otherApps } from "../app-catalog/apps";
+import { appDescription, appLabel, type MeApp, withCurrent } from "../app-catalog/apps";
 
 export type AppSwitcherProps = {
   /** Thường `() => session.myApps().then((r) => r.items)`. */
@@ -21,7 +24,7 @@ export type AppSwitcherProps = {
    * `sso`; trả `null`/lỗi ⇒ mở thẳng `app.url` (đích tự dội về đăng nhập). App không SSO luôn mở thẳng.
    */
   handOff: (app: MeApp) => Promise<string | null>;
-  /** Key của app đang chạy (không hiện trong danh sách). */
+  /** Key của app đang chạy (hiện trong danh sách, đánh dấu, không bấm được). */
   current: string;
   locale?: string;
   /** Nhãn nút (aria-label + tooltip), vd "Ứng dụng". */
@@ -59,13 +62,19 @@ function Icon({ name, size = 16 }: { name: string; size?: number }): ReactElemen
   );
 }
 
+// Cùng kích thước nút với thanh trên của Sổ Hợp Tác (40px, bo 10px); màu theo biến của từng app, sáng/tối đều có dự phòng.
 const CSS = `
 .ai-apps{position:relative;display:inline-flex}
-.ai-apps__btn{display:inline-grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted-foreground,#6b7280);cursor:pointer}
-.ai-apps__btn:hover,.ai-apps__btn:focus-visible{background:var(--muted,var(--sunk,#f5f5f5));color:var(--foreground,inherit)}
-.ai-apps__menu{position:absolute;top:36px;right:0;z-index:50;min-width:200px;padding:4px;border:1px solid var(--border,#e5e5e5);border-radius:10px;background:var(--popover,var(--card,#fff));color:var(--popover-foreground,var(--foreground,inherit));box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:14px}
-.ai-apps__item{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px;color:inherit;text-decoration:none;outline:none}
-.ai-apps__item:hover,.ai-apps__item:focus-visible{background:var(--muted,var(--sunk,#f5f5f5))}
+.ai-apps__btn{display:inline-grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--ink-2,var(--muted-foreground,#6b7280));cursor:pointer}
+.ai-apps__btn:hover,.ai-apps__btn:focus-visible{background:var(--sunk,var(--muted,#f5f5f5));color:var(--foreground,inherit)}
+.ai-apps__menu{position:absolute;top:44px;right:0;z-index:50;min-width:260px;padding:4px;border:1px solid var(--rule,var(--border,#e5e5e5));border-radius:10px;background:var(--panel,var(--popover,var(--card,#fff)));color:var(--popover-foreground,var(--foreground,inherit));box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:14px}
+.ai-apps__item{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:6px;color:inherit;text-decoration:none;outline:none}
+a.ai-apps__item:hover,a.ai-apps__item:focus-visible{background:var(--sunk,var(--muted,#f5f5f5))}
+.ai-apps__item[aria-disabled=true]{cursor:default;background:var(--sunk,var(--muted,#f5f5f5))}
+.ai-apps__txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.ai-apps__name{font-weight:600;line-height:1.25}
+.ai-apps__desc{font-size:12px;line-height:1.25;opacity:.7}
+.ai-apps__cur{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;opacity:.75;white-space:nowrap}
 `;
 
 /** Tải một lần mỗi `reloadKey`; trả `null` khi đang tải (nút ẩn, không nháy). */
@@ -77,8 +86,8 @@ function useApps(p: AppSwitcherProps): MeApp[] | null {
   useEffect(() => {
     let alive = true;
     latest.current.fetchApps().then(
-      (r) => alive && setApps(r),
-      () => alive && setApps(latest.current.fallback()),
+      (r) => alive && setApps(withCurrent(r, latest.current.current)),
+      () => alive && setApps(withCurrent(latest.current.fallback(), latest.current.current)),
     );
     return () => {
       alive = false;
@@ -99,60 +108,124 @@ async function go(
   window.location.assign(url ?? a.url);
 }
 
+const isVi = (locale: string | undefined): boolean => !locale?.startsWith("en");
+
 export function AppSwitcher(p: AppSwitcherProps): ReactElement | null {
   const apps = useApps(p);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  const close = (refocus: boolean) => {
+    setOpen(false);
+    if (refocus) btn.current?.focus();
+  };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `close` chỉ dùng setState/ref ổn định
   useEffect(() => {
     if (!open) return;
+    box.current?.querySelector<HTMLElement>("a[role=menuitem]")?.focus();
     const onDown = (e: MouseEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
-  const list = apps ? otherApps(apps, p.current) : [];
-  if (list.length === 0) return null;
+  const onMenuKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close(true);
+      return;
+    }
+    if (e.key === "Tab") return close(false);
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>("a[role=menuitem]")];
+    if (items.length === 0) return;
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const next: Record<string, number> = {
+      ArrowDown: (at + 1) % items.length,
+      ArrowUp: (at - 1 + items.length) % items.length,
+      Home: 0,
+      End: items.length - 1,
+    };
+    const to = next[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    items[to]?.focus();
+  };
+  if (!apps || apps.length === 0) return null;
   return (
     <div ref={box} className="ai-apps" data-testid="app-switcher">
       <style>{CSS}</style>
       <button
+        ref={btn}
         type="button"
         className="ai-apps__btn"
         aria-label={p.label}
         title={p.label}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={panelId}
+        aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" && !open) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
       >
         <Icon name="app" size={18} />
       </button>
       {open && (
-        <div id={panelId} role="menu" aria-label={p.label} className="ai-apps__menu">
-          {list.map((a) => (
-            <a
-              key={a.key}
-              role="menuitem"
-              href={a.url}
-              className="ai-apps__item"
-              onClick={(e) => {
-                setOpen(false);
-                void go(p, a, e);
-              }}
-            >
-              <Icon name={a.icon} />
-              {appLabel(a, p.locale)}
-            </a>
-          ))}
+        // biome-ignore lint/a11y/noStaticElementInteractions: menu ARIA; phím điều hướng bắt ở container
+        <div
+          id={panelId}
+          role="menu"
+          aria-label={p.label}
+          className="ai-apps__menu"
+          onKeyDown={onMenuKey}
+        >
+          {apps.map((a) => {
+            const body = (
+              <>
+                <Icon name={a.icon} />
+                <span className="ai-apps__txt">
+                  <span className="ai-apps__name">{appLabel(a, p.locale)}</span>
+                  {appDescription(a, p.locale) && (
+                    <span className="ai-apps__desc">{appDescription(a, p.locale)}</span>
+                  )}
+                </span>
+              </>
+            );
+            if (a.key === p.current) {
+              return (
+                <div
+                  key={a.key}
+                  role="menuitem"
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  aria-current="true"
+                  data-current="true"
+                  className="ai-apps__item"
+                >
+                  {body}
+                  <span className="ai-apps__cur">{isVi(p.locale) ? "Đang dùng" : "Current"}</span>
+                </div>
+              );
+            }
+            return (
+              <a
+                key={a.key}
+                role="menuitem"
+                href={a.url}
+                className="ai-apps__item"
+                onClick={(e) => {
+                  setOpen(false);
+                  void go(p, a, e);
+                }}
+              >
+                {body}
+              </a>
+            );
+          })}
         </div>
       )}
     </div>

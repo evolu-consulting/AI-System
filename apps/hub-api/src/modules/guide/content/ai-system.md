@@ -1,14 +1,14 @@
 ---
 id: ai-system
-title: AI System — Hỏi AI (chat)
-title_en: AI System — chat
+title: Chat AI — Hỏi AI
+title_en: AI Chat
 audience: all
 pack: none
 keywords: chat hỏi ai hội thoại flow agent tệp lịch sử ứng dụng
 ---
 
 ## Bắt đầu một hội thoại mới
-Trong AI System (Evolu Copilot), bấm nút **Hỏi AI** ở thanh bên trái (hoặc vào trang chào "Chào <tên>, hôm nay cần gì?").
+Trong Chat AI (Evolu Copilot), bấm nút **Hỏi AI** ở thanh bên trái (hoặc vào trang chào "Chào <tên>, hôm nay cần gì?").
 1. Bấm **Hỏi AI** ở thanh bên trái.
 2. Gõ câu hỏi vào ô **Hỏi điều mới…** (có thể bấm một thẻ gợi ý như "Soạn email", "Tóm tắt văn bản", "Dịch", "Lên dàn ý" để điền sẵn; thẻ chưa gửi ngay).
 3. Bấm **Gửi**. Mỗi câu hỏi mới mở một **flow** riêng trong hội thoại; đang có câu trả lời chạy thì chờ xong hoặc bấm **Dừng**.
@@ -53,9 +53,9 @@ Mục **Tin nhắn & Nhóm** ở thanh bên: tìm một người ở ô tìm đ�
 EN: "Tin nhắn & Nhóm" holds direct messages and groups ("Nhóm mới" creates one).
 
 ## Chuyển sang ứng dụng khác (Ứng dụng)
-Bấm **Ứng dụng** (bộ chuyển ứng dụng ở thanh bên) để mở **Sổ Hợp Tác** (hợp đồng, đối tác, thanh toán, chữ ký số) hoặc **Quản trị** (dành cho quản trị viên). Chỉ hiện những ứng dụng công ty bạn được dùng. Từ Sổ Hợp Tác, bộ chuyển **Ứng dụng** cũng đưa bạn về **AI System**.
+Bấm **Ứng dụng** (bộ chuyển ứng dụng ở thanh bên) để mở **Sổ Hợp Tác** (hợp đồng, đối tác, thanh toán, chữ ký số) hoặc **Quản trị** (dành cho quản trị viên). Chỉ hiện những ứng dụng công ty bạn được dùng. Từ Sổ Hợp Tác, bộ chuyển **Ứng dụng** cũng đưa bạn về **Chat AI**. Nút **Ứng dụng** (biểu tượng lưới ở góc trên bên phải, giống nhau ở cả 4 ứng dụng) liệt kê mọi ứng dụng bạn được mở, ứng dụng đang dùng có dấu "Đang dùng" và không bấm được. **Quản trị** chỉ hiện cho quản trị viên; **Studio** chỉ hiện cho quản trị nền tảng.
 
-EN: Use "Ứng dụng" to switch between AI System, Sổ Hợp Tác and Quản trị (admins only).
+EN: Use "Ứng dụng" to switch between AI Chat, Sổ Hợp Tác and Quản trị (admins only).
 
 ## Cài đặt, ngôn ngữ, giao diện
 Bấm **Cài đặt** (thanh bên): đổi **Ngôn ngữ** (Tiếng Việt / English), **Giao diện** (Sáng / Tối / Theo hệ thống) và **Đăng xuất**. Quản trị công ty không xem được nội dung hội thoại của bạn, chỉ xem mức sử dụng.

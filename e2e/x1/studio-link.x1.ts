@@ -14,15 +14,22 @@ test("X1-AC13 · platform_admin thấy mục Studio trong Ứng dụng, trỏ t�
   await loginAdmin(page);
   await apps(page).click();
   await expect(studio(page)).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /Quản trị/ })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
   await expect(studio(page)).toHaveAttribute("href", /^http:\/\/localhost:3200\/studio\/?$/);
 });
 
-test("X1-AC13 · tenant_admin (binh) KHÔNG thấy Studio (không có switcher nào để mở)", async ({
+test("X1-AC13 · tenant_admin (binh) KHÔNG thấy Studio; Quản trị là app hiện tại (đánh dấu, không bấm được)", async ({
   page,
 }) => {
   await loginAs(page, "acme", "binh");
-  await expect(apps(page)).toHaveCount(0);
+  await apps(page).click();
   await expect(studio(page)).toHaveCount(0);
+  const cur = page.getByRole("menuitem", { name: /Quản trị/ });
+  await expect(cur).toHaveAttribute("aria-disabled", "true");
+  await expect(cur).toHaveAttribute("aria-current", "true");
 });
 
 test("X1-AC13 · màn 600px: nút Ứng dụng vẫn có tên và mở được Studio", async ({ page }) => {

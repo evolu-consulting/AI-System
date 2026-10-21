@@ -12,7 +12,6 @@ import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow
 import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
 import { useProcessEngineOn } from "~/features/processes/shared/engine";
 import { frozenModulesOn } from "~/lib/frozen";
-import { AppSwitcher } from "./AppSwitcher";
 import { ConversationList } from "./ConversationList";
 import { RoomSections } from "./RoomSections";
 import { SidebarGroup } from "./SidebarGroup";
@@ -76,11 +75,10 @@ export function Sidebar(p: Props) {
           className="min-h-[62px] items-center"
           imgClassName="-ml-2.5 h-[62px] w-[200px] object-contain object-left"
         />
-        <div className="flex min-h-8 items-center justify-between gap-2 pl-1.5">
+        <div className="flex min-h-8 items-center pl-1.5">
           <span className="truncate text-xs text-muted-foreground">
             {t("shell.brand", { tenant: p.tenantName })}
           </span>
-          <AppSwitcher />
         </div>
       </div>
       <Link

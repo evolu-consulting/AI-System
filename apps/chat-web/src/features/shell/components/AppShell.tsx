@@ -1,4 +1,5 @@
 // CHAT-AC-18, CHAT-AC-23 · khung app: ≥ 1024 sidebar 260px cố định; < 1024 header 56px (☰) + sidebar trong Sheet trái.
+import { TopShell } from "@ai/web-kit/ui/TopShell";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import { useSettings } from "../hooks/use-settings";
 import { useShortcuts } from "../hooks/use-shortcuts";
 import { useSidebarCollapsed } from "../hooks/use-sidebar-collapsed";
 import { conversationIdOf, roomIdOf } from "../lib/conversation-path";
+import { AppSwitcher } from "./AppSwitcher";
 import { SettingsDialog } from "./SettingsDialog";
 import { Sidebar } from "./Sidebar";
 
@@ -92,23 +94,28 @@ export function AppShell() {
     <div className="flex h-dvh bg-background">
       {desktop && <div className="h-full">{sidebar()}</div>}
       <div className="flex min-w-0 flex-1 flex-col">
-        {!desktop && (
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-11"
-              aria-label={t("shell.openList")}
-              onClick={() => setSheetOpen(true)}
-            >
-              <Menu aria-hidden />
-            </Button>
-            <span className="truncate text-sm font-semibold">
-              {t("shell.brand", { tenant: tenantName })}
-            </span>
-          </header>
-        )}
+        <TopShell
+          start={
+            !desktop && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11"
+                  aria-label={t("shell.openList")}
+                  onClick={() => setSheetOpen(true)}
+                >
+                  <Menu aria-hidden />
+                </Button>
+                <span className="truncate text-sm font-semibold">
+                  {t("shell.brand", { tenant: tenantName })}
+                </span>
+              </>
+            )
+          }
+          apps={<AppSwitcher />}
+        />
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
         <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <Outlet />

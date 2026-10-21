@@ -302,22 +302,26 @@ test.describe
       });
     });
 
-    test("app switcher: AI System → Sổ Hợp Tác → AI System → Quản trị, không đăng nhập lại", async () => {
+    test("app switcher: Chat AI → Sổ Hợp Tác → Chat AI → Quản trị, không đăng nhập lại", async () => {
       await chat.goto(`${CHAT}/c/new`);
       await settle(chat);
       await chat.getByRole("button", { name: "Ứng dụng" }).click();
-      await chat.getByRole("menuitem", { name: "Sổ Hợp Tác" }).click();
+      await expect(chat.getByRole("menuitem", { name: /Chat AI/ })).toHaveAttribute(
+        "aria-current",
+        "true",
+      );
+      await chat.getByRole("menuitem", { name: /Sổ Hợp Tác/ }).click();
       await chat.waitForURL((u) => u.href.startsWith(CW) && !u.pathname.startsWith("/login"), {
         timeout: 45_000,
       });
       await expect(chat.getByRole("link", { name: "Tổng quan" }).first()).toBeVisible();
       await chat.getByRole("button", { name: "Ứng dụng" }).click();
-      await chat.getByRole("menuitem", { name: "AI System" }).click();
+      await chat.getByRole("menuitem", { name: /Chat AI/ }).click();
       await chat.waitForURL((u) => u.href.startsWith(CHAT), { timeout: 45_000 });
       await settle(chat);
       await expect(chat).not.toHaveURL(/\/login/);
       await chat.getByRole("button", { name: "Ứng dụng" }).click();
-      await chat.getByRole("menuitem", { name: "Quản trị" }).click();
+      await chat.getByRole("menuitem", { name: /Quản trị/ }).click();
       await chat.waitForURL((u) => u.href.startsWith(ADMIN) && !u.pathname.startsWith("/login"), {
         timeout: 45_000,
       });

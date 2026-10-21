@@ -192,11 +192,16 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  test("Nút Ứng dụng: về AI System không đăng nhập lại", async () => {
+  test("Nút Ứng dụng: về Chat AI không đăng nhập lại", async () => {
     await go("/overview");
     await page.getByRole("button", { name: "Ứng dụng" }).click();
-    await expect(page.getByRole("menuitem", { name: "AI System" })).toBeVisible();
-    await page.getByRole("menuitem", { name: "AI System" }).click();
+    // app hiện tại (Sổ Hợp Tác) hiện trong danh sách nhưng không bấm được
+    await expect(page.getByRole("menuitem", { name: /Sổ Hợp Tác/ })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(page.getByRole("menuitem", { name: /Chat AI/ })).toBeVisible();
+    await page.getByRole("menuitem", { name: /Chat AI/ }).click();
     await page.waitForURL((u) => u.href.startsWith(CHAT), { timeout: 30_000 });
     await settle(page);
     await expect(page).not.toHaveURL(/\/login/);
