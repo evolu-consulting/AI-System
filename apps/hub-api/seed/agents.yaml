@@ -1,7 +1,7 @@
 # HUB-FR-60, HUB-FR-62 · HUB-BR-08 · agent + cài đặt Orchestrator (plan H1 §3.1, §3.6). `profile: $HUB_SEED_PROFILE` = profile
 # chọn lúc seed (env HUB_SEED_PROFILE; trống → fake-1 khi development/test, khác → claude-sub-1). ai-tiers-rag:
 # `$HUB_SEED_PROFILE:<fast|std|deep>` → `claude-sub-<bậc>` (providers.yaml) khi profile seed là claude-sub-1; dev/test → fake-1.
-# Studio đổi được profile/model của từng agent (không cần code) — LƯU Ý: `hub:seed` (chạy mỗi lần deploy) ghi đè lại theo yaml.
+# Studio đổi được profile/model của từng agent (không cần code) — Trường đã đổi qua Studio được giữ (hub.agents.studio_overrides); `hub:seed` chỉ cập nhật trường chưa ai đổi.
 agents:
   - key: orchestrator
     name: { vi: Điều phối, en: Orchestrator }

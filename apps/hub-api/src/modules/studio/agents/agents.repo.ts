@@ -252,6 +252,15 @@ export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<A
       description = ${a.description}, agent_type_key = ${a.agentTypeKey}::text, profile_id = ${a.profileId}::uuid,
       model = ${a.model}::text, system_prompt = ${a.systemPrompt}, runtime_options = ${JSON.stringify(a.runtimeOptions)}::jsonb,
       timeout_s = ${a.timeoutS}::int, token_budget = ${a.tokenBudget}::int, enabled = ${a.enabled}::boolean,
+      studio_overrides = (select coalesce(array_agg(distinct f), '{}') from unnest(a.studio_overrides || array_remove(array[
+        case when a.name is distinct from ${JSON.stringify(a.name)}::jsonb then 'name' end,
+        case when a.description is distinct from ${a.description} then 'description' end,
+        case when a.profile_id is distinct from ${a.profileId}::uuid then 'profile_id' end,
+        case when a.system_prompt is distinct from ${a.systemPrompt} then 'system_prompt' end,
+        case when a.runtime_options is distinct from ${JSON.stringify(a.runtimeOptions)}::jsonb then 'runtime_options' end,
+        case when a.timeout_s is distinct from ${a.timeoutS}::int then 'timeout_s' end,
+        case when a.token_budget is distinct from ${a.tokenBudget}::int then 'token_budget' end,
+        case when a.enabled is distinct from ${a.enabled}::boolean then 'enabled' end], null)) as f),
       version = a.version + 1, updated_at = now()
     where a.id = ${id}::uuid
     returning ${AGENT_COLS}`);
@@ -261,7 +270,9 @@ export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<A
 
 export async function setAgentEnabled(tx: Tx, id: string, enabled: boolean): Promise<AgentDbRow> {
   const [r] = await tx.execute<RawAgent>(sql`update hub.agents as a
-    set enabled = ${enabled}::boolean, version = a.version + 1, updated_at = now()
+    set enabled = ${enabled}::boolean, version = a.version + 1, updated_at = now(),
+      studio_overrides = case when a.enabled is distinct from ${enabled}::boolean
+        then array(select distinct unnest(a.studio_overrides || array['enabled'])) else a.studio_overrides end
     where a.id = ${id}::uuid
     returning ${AGENT_COLS}`);
   if (!r) throw new Error("update hub.agents không trả hàng");

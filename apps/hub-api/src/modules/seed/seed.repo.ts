@@ -2,6 +2,7 @@
 // không đổi giữ nguyên `version`/`updated_at` (`IS DISTINCT FROM`). Chỉ ĐỌC `admin.*` (tenant/user/group, workflows H2a).
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
+import { mergeSeedAgent, SEED_AGENT_FIELDS, type SeedAgentFields } from "./seed.overrides";
 import { type OrchestratorTenantUpsert, parseSubject, type SeedPlan } from "./seed.rules";
 import type { ResolvedWorkflows, SeedCatalogWorkflow } from "./seed.workflows";
 
@@ -41,22 +42,42 @@ export async function upsertProfiles(tx: Tx, rows: SeedPlan["profiles"]): Promis
 
 export async function upsertAgents(tx: Tx, rows: SeedPlan["agents"]): Promise<void> {
   for (const a of rows) {
-    await tx`insert into hub.agents (key, name, description, runtime, profile_id, system_prompt, runtime_options,
-        timeout_s, token_budget, enabled)
-      select ${a.key}, ${tx.json(a.name)}, ${a.description}, ${a.runtime}, p.id, ${a.system_prompt},
-        ${tx.json(a.runtime_options as postgres.JSONValue)}, ${a.timeout_s}, ${a.token_budget}, ${a.enabled}
-      from hub.model_profiles p where p.key = ${a.profile}
-      on conflict (key) do update set name = excluded.name, description = excluded.description,
-        runtime = excluded.runtime, profile_id = excluded.profile_id, system_prompt = excluded.system_prompt,
-        runtime_options = excluded.runtime_options, timeout_s = excluded.timeout_s,
-        token_budget = excluded.token_budget, enabled = excluded.enabled,
-        version = hub.agents.version + 1, updated_at = now()
-      where (hub.agents.name, hub.agents.description, hub.agents.runtime, hub.agents.profile_id,
-             hub.agents.system_prompt, hub.agents.runtime_options, hub.agents.timeout_s, hub.agents.token_budget,
-             hub.agents.enabled)
-        is distinct from (excluded.name, excluded.description, excluded.runtime, excluded.profile_id,
-             excluded.system_prompt, excluded.runtime_options, excluded.timeout_s, excluded.token_budget,
-             excluded.enabled)`;
+    const [p] = await tx<
+      { id: string }[]
+    >`select id from hub.model_profiles where key = ${a.profile}`;
+    if (!p) continue;
+    const seedF: SeedAgentFields = {
+      name: a.name,
+      description: a.description,
+      runtime: a.runtime,
+      profile_id: p.id,
+      system_prompt: a.system_prompt,
+      runtime_options: a.runtime_options,
+      timeout_s: a.timeout_s,
+      token_budget: a.token_budget,
+      enabled: a.enabled,
+    };
+    const [cur] = await tx<
+      (SeedAgentFields & { studio_overrides: string[] })[]
+    >`select name, description, runtime, profile_id, system_prompt, runtime_options, timeout_s, token_budget,
+        enabled, studio_overrides from hub.agents where key = ${a.key} for update`;
+    if (!cur) {
+      await tx`insert into hub.agents (key, name, description, runtime, profile_id, system_prompt, runtime_options,
+          timeout_s, token_budget, enabled)
+        values (${a.key}, ${tx.json(a.name)}, ${a.description}, ${a.runtime}, ${p.id}, ${a.system_prompt},
+          ${tx.json(a.runtime_options as postgres.JSONValue)}, ${a.timeout_s}, ${a.token_budget}, ${a.enabled})`;
+      continue;
+    }
+    const m = mergeSeedAgent(cur, seedF, cur.studio_overrides);
+    const same = SEED_AGENT_FIELDS.every((f) => JSON.stringify(m[f]) === JSON.stringify(cur[f]));
+    if (same) continue;
+    await tx`update hub.agents set name = ${tx.json(m.name as postgres.JSONValue)}, description = ${m.description as string},
+        runtime = ${m.runtime as string}, profile_id = ${m.profile_id as string},
+        system_prompt = ${m.system_prompt as string},
+        runtime_options = ${tx.json(m.runtime_options as postgres.JSONValue)}, timeout_s = ${m.timeout_s as number},
+        token_budget = ${m.token_budget as number | null}, enabled = ${m.enabled as boolean},
+        version = version + 1, updated_at = now()
+      where key = ${a.key}`;
   }
 }
 
