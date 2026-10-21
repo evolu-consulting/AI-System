@@ -1,4 +1,4 @@
-// ADM-FR-42 · usage-analytics · Luật 4c: 1.000.000 dòng `hub.usage_logs` (90 ngày, 4 tenant, 200 user, 24 agent, 3 model,
+﻿// ADM-FR-42 · usage-analytics · Luật 4c: 1.000.000 dòng `hub.usage_logs` (90 ngày, 4 tenant, 1000 user, 24 agent (2/user), 3 model,
 // 5 app, 5% lỗi; dựng MỘT câu generate_series — trigger theo câu lệnh dựng `hub.usage_daily`) trên DB đầy đủ Admin + Hub,
 // role `admin_api` + scope thật. Ngưỡng p95 ≤ 300 ms mỗi lời gọi service (20 lần sau 2 lần làm nóng): analytics platform
 // 90 ngày/tuần, analytics một tenant 30 ngày lọc app, trang bản ghi platform 30 ngày. In số thật.
@@ -51,9 +51,11 @@ beforeAll(async () => {
       (array['chat', 'contracts', 'knowledge', 'process', 'rooms'])[1 + x.a % 5],
       'anthropic', (array['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'])[1 + x.a % 3], 'api',
       500 + g % 1000, 50 + g % 300, g % 100, 0.001 * (1 + g % 7), 200 + g % 4000,
-      case when g % 20 = 0 then 'error' else 'ok' end,
-      now() - make_interval(days => (g % 90)::int, secs => (g % 3600)::double precision)
-    from generate_series(1, ${N}::int) g, lateral (select g % 200 as u, ((g % 200) * 2 + g % 2) % 24 as a) x`;
+      case when (x.k + x.u) % 20 = 0 then 'error' else 'ok' end,
+      now() - make_interval(days => x.k % 90, secs => (g % 3600)::double precision)
+    from generate_series(0, ${N - 1}::int) g,
+      lateral (select g % 1000 as u, g / 1000 as k) y,
+      lateral (select y.u, y.k, (y.u * 2 + (y.k / 90) % 2) % 24 as a) x`;
   seedMs = performance.now() - t0;
   await owner`analyze hub.usage_daily`;
   const [r] = await owner<{ n: number }[]>`select count(*)::int as n from hub.usage_daily`;
