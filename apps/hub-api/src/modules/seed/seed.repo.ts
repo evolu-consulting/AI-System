@@ -2,7 +2,12 @@
 // không đổi giữ nguyên `version`/`updated_at` (`IS DISTINCT FROM`). Chỉ ĐỌC `admin.*` (tenant/user/group, workflows H2a).
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
-import { mergeSeedAgent, SEED_AGENT_FIELDS, type SeedAgentFields } from "./seed.overrides";
+import {
+  mergeSeedAgent,
+  SEED_AGENT_FIELDS,
+  type SeedAgentFields,
+  sameAgentValue,
+} from "./seed.overrides";
 import { type OrchestratorTenantUpsert, parseSubject, type SeedPlan } from "./seed.rules";
 import type { ResolvedWorkflows, SeedCatalogWorkflow } from "./seed.workflows";
 
@@ -69,7 +74,7 @@ export async function upsertAgents(tx: Tx, rows: SeedPlan["agents"]): Promise<vo
       continue;
     }
     const m = mergeSeedAgent(cur, seedF, cur.studio_overrides);
-    const same = SEED_AGENT_FIELDS.every((f) => JSON.stringify(m[f]) === JSON.stringify(cur[f]));
+    const same = SEED_AGENT_FIELDS.every((f) => sameAgentValue(m[f], cur[f]));
     if (same) continue;
     await tx`update hub.agents set name = ${tx.json(m.name as postgres.JSONValue)}, description = ${m.description as string},
         runtime = ${m.runtime as string}, profile_id = ${m.profile_id as string},

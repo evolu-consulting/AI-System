@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mergeSeedAgent, type SeedAgentFields } from "./seed.overrides";
+import { mergeSeedAgent, type SeedAgentFields, sameAgentValue } from "./seed.overrides";
 
 const base: SeedAgentFields = {
   name: { vi: "a", en: "a" },
@@ -22,5 +22,19 @@ describe("mergeSeedAgent", () => {
     const r = mergeSeedAgent(base, seed, ["profile_id"]);
     expect(r.profile_id).toBe("p-db");
     expect(r.system_prompt).toBe("yaml prompt");
+  });
+});
+
+describe("sameAgentValue", () => {
+  it("khong tinh thu tu khoa object (jsonb sap lai khoa), tinh thu tu mang va gia tri", () => {
+    expect(
+      sameAgentValue(
+        { allowed_tools: [], pack_tools: ["a", "b"], x: { vi: "v", en: "e" } },
+        { x: { en: "e", vi: "v" }, pack_tools: ["a", "b"], allowed_tools: [] },
+      ),
+    ).toBe(true);
+    expect(sameAgentValue({ p: ["a", "b"] }, { p: ["b", "a"] })).toBe(false);
+    expect(sameAgentValue(null, null)).toBe(true);
+    expect(sameAgentValue({ a: 1 }, { a: 2 })).toBe(false);
   });
 });

@@ -55,6 +55,7 @@ const names = async (schemas: string[]) =>
   ).map((r) => r.t);
 
 const ADMIN20 = [
+  "admin.app_catalog",
   "admin.audit_log",
   "admin.command_names",
   "admin.commands",
@@ -114,7 +115,7 @@ describe("ADM-NFR-06 · migration M3", () => {
     expect(n?.n).toBe(MAIN_COUNT);
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · đúng 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014) + 3 bảng hub.* (M4 Q2a K3)", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · đúng 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016) + 3 bảng hub.* (M4 Q2a K3)", async () => {
     expect(await names(["admin", "hub"])).toEqual([...ADMIN20, ...HUB3]);
   });
 
@@ -446,7 +447,7 @@ describe("ADM-NFR-06 · migration production M3", () => {
     await runMigrations({ url: URL, appEnv: "development" });
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016), 0 bảng hub.*", async () => {
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual(ADMIN20);

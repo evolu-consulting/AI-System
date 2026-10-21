@@ -37,3 +37,19 @@ export function mergeSeedAgent(
   }
   return out;
 }
+
+/** Khoa theo thu tu co dinh: jsonb cua Postgres sap lai khoa (do dai, roi byte) nen `JSON.stringify` thang khong so duoc. */
+const canon = (v: unknown): unknown =>
+  Array.isArray(v)
+    ? v.map(canon)
+    : v && typeof v === "object"
+      ? Object.fromEntries(
+          Object.entries(v as Record<string, unknown>)
+            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+            .map(([k, x]) => [k, canon(x)]),
+        )
+      : v;
+
+/** Hai gia tri cot agent bang nhau theo noi dung (khong tinh thu tu khoa object) — seed chay lai khong bump `version`. */
+export const sameAgentValue = (a: unknown, b: unknown): boolean =>
+  JSON.stringify(canon(a)) === JSON.stringify(canon(b));

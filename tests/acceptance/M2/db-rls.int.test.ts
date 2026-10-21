@@ -297,6 +297,7 @@ describe("ADM-NFR-07 · cấu hình RLS", () => {
     ]);
     expect(rows.some((r) => r.relforcerowsecurity)).toBe(false);
     expect(rows.map((r) => r.relname)).toEqual([
+      "app_catalog",
       "audit_log",
       "command_names",
       "commands",

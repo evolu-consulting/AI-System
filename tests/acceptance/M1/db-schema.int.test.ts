@@ -78,8 +78,9 @@ describe("ADM-NFR-06 · migration development", () => {
     expect(secondRun).toEqual({ main: 0, dev: 0 });
   });
 
-  it("ADM-NFR-06 · spec §4 · đúng 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014) và 3 bảng hub.*; users không có totp_secret (M4 Q2a K2)", async () => {
+  it("ADM-NFR-06 · spec §4 · đúng 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016) và 3 bảng hub.*; users không có totp_secret (M4 Q2a K2)", async () => {
     expect(await names(["admin", "hub"])).toEqual([
+      "admin.app_catalog",
       "admin.audit_log",
       "admin.command_names",
       "admin.commands",
@@ -292,11 +293,12 @@ describe("ADM-NFR-01 · ràng buộc refresh_tokens và features", () => {
 });
 
 describe("ADM-NFR-06 · migration production", () => {
-  it("ADM-NFR-06 · spec §4 · production: {main: <journal>, dev:0}; 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · spec §4 · production: {main: <journal>, dev:0}; 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016), 0 bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
+      "admin.app_catalog",
       "admin.audit_log",
       "admin.command_names",
       "admin.commands",

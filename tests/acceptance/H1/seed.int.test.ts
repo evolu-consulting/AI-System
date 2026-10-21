@@ -129,16 +129,17 @@ describe("A46 · hub-api không khởi động khi thiếu/tắt Orchestrator [H
 });
 
 describe("A42–A45, A47 · hub:seed [HUB-FR-89 · HUB-H1-AC-11 · H1-R16]", () => {
-  it("A44 · seed APP_ENV=production → không có provider fake-cli, agent dùng profile claude-sub-1 [plan §3.6 · §7]", async () => {
+  it("A44 · seed APP_ENV=production → không có provider fake-cli, agent theo bậc model (ai-tiers-rag: assistant → claude-sub-std, orchestrator → claude-sub-fast) [plan §3.6 · §7]", async () => {
     await runHubSeed({ url: OWNER_URL, dir: SEED_DIR, appEnv: "production" });
     const ps = await sql<{ key: string }[]>`select key from hub.providers order by key`;
     expect(ps.map((p) => p.key)).not.toContain("fake-cli");
     expect(ps.map((p) => p.key)).toContain("claude-sub");
     const ag = await sql<{ key: string; profile: string }[]>`select a.key, p.key as profile
       from hub.agents a join hub.model_profiles p on p.id = a.profile_id order by a.key`;
+    // order by a.key ⇒ assistant, orchestrator; bậc model theo docs/specs/ai-tiers-rag (std cho assistant, fast cho orchestrator).
     expect(
       ag.filter((a) => ["orchestrator", "assistant"].includes(a.key)).map((a) => a.profile),
-    ).toEqual(["claude-sub-1", "claude-sub-1"]);
+    ).toEqual(["claude-sub-std", "claude-sub-fast"]);
   });
 
   it("A42 · seed 2 lần → không trùng, hub_config_version +2, 2 NOTIFY hub_config_changed hợp contract [HUB-H1-AC-11]", async () => {

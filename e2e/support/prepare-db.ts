@@ -17,6 +17,28 @@ function need(name: string): string {
   return v;
 }
 
+type AppRow = Record<string, unknown>;
+
+async function saveAppCatalog(sql: postgres.Sql): Promise<AppRow[]> {
+  const [t] = await sql`select to_regclass('admin.app_catalog') as r`;
+  if (!t?.r) return [];
+  return sql<
+    AppRow[]
+  >`select key, name, icon, url, audience, required_feature, sso, sort_order, enabled, version
+    from admin.app_catalog`;
+}
+
+/** Hàng đã lưu quay lại (bảng rỗng sau TRUNCATE); `updated_by` để NULL vì users đã dựng lại. */
+async function restoreAppCatalog(sql: postgres.Sql, rows: AppRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  await sql`insert into admin.app_catalog (key, name, icon, url, audience, required_feature, sso, sort_order, enabled, version)
+    select x.key, x.name, x.icon, x.url, x.audience, x.required_feature, x.sso, x.sort_order, x.enabled, x.version
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+      as x(key text, name jsonb, icon text, url text, audience text, required_feature text, sso boolean, sort_order int,
+        enabled boolean, version int)
+    on conflict (key) do nothing`;
+}
+
 async function main(): Promise<void> {
   const url = need("TEST_DATABASE_URL");
   const adminUsername = need("SEED_ADMIN_USERNAME");
@@ -29,6 +51,9 @@ async function main(): Promise<void> {
   }
   const sql = postgres(url, { max: 1, onnotice: () => {} });
   try {
+    // app-catalog (0016): danh mục app toàn hệ thống (FK `updated_by` → users nên TRUNCATE users CASCADE xoá luôn); URL do admin-api điền
+    // lúc khởi động (APP_URL_*) ⇒ giữ nguyên qua lần reset để switcher "Ứng dụng" còn đủ dữ liệu.
+    const apps = resetOnly ? await saveAppCatalog(sql) : [];
     // M2: TRUNCATE tường minh cả danh mục (secrets/workflows/commands/features/hub.agent_workflows).
     if (resetOnly) await truncateCatalog(sql);
     // M4 (Q2a, test-plan §5 K12): usage của Hub không theo TRUNCATE tenants CASCADE → xoá tường minh. audit_log
@@ -57,6 +82,7 @@ async function main(): Promise<void> {
     // M3: group, thành viên, grant (test-plan §3). KHÔNG seed feature `phap-che` ở đây (làm lệch số đếm feature của e2e M2, TC-3);
     // spec nào cần thì gọi `seedPhapChe()`. `config_meta` không bị truncate.
     await seedPermissions(sql, { ...ALL_PERMISSIONS, phapChe: false });
+    await restoreAppCatalog(sql, apps);
   } finally {
     await sql.end();
   }

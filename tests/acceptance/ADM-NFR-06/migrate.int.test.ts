@@ -24,6 +24,7 @@ const HUB_TABLES = ["agent_grants", "agent_workflows", "usage_logs"];
 // M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4); M4 (Q2a, test-plan §5 K1): + 0007_m4_ops, 0008_admin_totp, dev 0002_usage_at_idx → 19 bảng admin.*; X1 (B1): + 0009_x1_workflow_side_effect (thêm cột, không bảng) → main 10; sắp collate "C" (không phụ thuộc collation DB).
 const ADMIN_TABLES = [
   "admin.app_catalog",
+  "admin.app_catalog",
   "admin.audit_log",
   "admin.command_names",
   "admin.commands",
@@ -59,7 +60,7 @@ async function tablesIn(schemas: string[]): Promise<string[]> {
 }
 
 describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
-  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014)", async () => {
+  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 3 });
@@ -179,7 +180,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
 });
 
 describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
-  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 23 bảng admin.* (M4 + P-d2 0012 + M1D 0014), không có bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 24 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
