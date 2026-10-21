@@ -81,7 +81,8 @@ async function planKnowledge(
     (select count(*)::int from hub.agents a left join hub.model_profiles p on p.id = a.profile_id
       where a.key = any(${Object.keys(TIERED_AGENTS)}::text[])
         and (p.key is distinct from 'claude-sub-' || (${JSON.stringify(TIERED_AGENTS)}::text::jsonb ->> a.key)
-          or not coalesce(a.runtime_options -> 'pack_tools' ? 'knowledge-search', false))) as stale`;
+          or (a.key <> 'orchestrator'
+            and not coalesce(a.runtime_options -> 'pack_tools' ? 'knowledge-search', false)))) as stale`;
   if (!r) throw new Error("demo-ai-fix: không đọc được hiện trạng tri thức");
   return {
     knowledgePack: r.feats < 3 ? -1 : r.missing,
