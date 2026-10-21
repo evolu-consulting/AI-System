@@ -23,14 +23,20 @@ afterAll(async () => {
 });
 
 describe("demo-ai-fix", () => {
-  it("--apply sửa tên công ty, điện thoại đối tác, thêm tri thức; chạy lại không đổi gì; không đụng tenant khác", async () => {
+  it("--apply sửa tên công ty, điện thoại đối tác, thêm tri thức (tài liệu demo + QC-TC-01); chạy lại không đổi gì; không đụng tenant khác", async () => {
     const dry = await run(w.sql, false);
-    expect(dry).toMatchObject({ company: true, doc: true });
+    expect(dry).toMatchObject({ company: true, doc: true, policyDoc: true });
     const [pre] = await w.sql<{ n: number }[]>`select count(*)::int as n from knowledge.documents`;
     expect(pre?.n).toBe(0);
     await run(w.sql, true);
     const again = await run(w.sql, true);
-    expect(again).toMatchObject({ company: false, doc: false, partners: 0, grants: 0 });
+    expect(again).toMatchObject({
+      company: false,
+      doc: false,
+      policyDoc: false,
+      partners: 0,
+      grants: 0,
+    });
     const [c] = await w.sql<
       { company_name: string }[]
     >`select company_name from contracts.company_settings where tenant_id = ${w.A}`;
@@ -39,7 +45,8 @@ describe("demo-ai-fix", () => {
       { n: number; t: number }[]
     >`select count(*)::int as n, (select count(*)::int from knowledge.chunks where tenant_id = ${w.A}) as t
       from knowledge.documents where tenant_id = ${w.A}`;
-    expect(d).toEqual({ n: 1, t: 3 });
+    // ai-tiers-rag: tài liệu demo (3 đoạn) + quy chế QC-TC-01 (3 đoạn) = 2 tài liệu, 6 đoạn.
+    expect(d).toEqual({ n: 2, t: 6 });
     const [b] = await w.sql<
       { n: number }[]
     >`select count(*)::int as n from knowledge.documents where tenant_id = ${w.B}`;

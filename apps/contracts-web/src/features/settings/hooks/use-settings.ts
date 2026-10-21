@@ -1,11 +1,22 @@
 // V2-L · nạp 3 nguồn cài đặt thành một trạng thái (đã lưu + mặc định) và áp nhận diện công ty lên cả app.
-import { useQuery } from "@tanstack/react-query";
+import type { BizPreviewIn, RepPreviewIn } from "@ai/contracts";
+import { ApiError } from "@ai/web-kit/http";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { applyTheme, ownTheme } from "~/features/shell/lib/theme";
-import { fetchBizConfig, fetchCompany, fetchRepConfig, settingsKeys } from "../api";
+import {
+  fetchBizConfig,
+  fetchCompany,
+  fetchRepConfig,
+  previewBiz,
+  previewRep,
+  saveChanged,
+  settingsKeys,
+} from "../api";
 import { applyBrandDom, type Brand, brandStore, effectiveTheme, useBrand } from "../lib/brand";
-import { buildState } from "../lib/data";
+import { buildState, type Changed } from "../lib/data";
+import type { SettingsData } from "../lib/types";
 
 export const brandOf = (c: {
   name: string | null;
@@ -79,5 +90,41 @@ export function useSettingsState(enabled: boolean) {
       void rep.refetch();
       void biz.refetch();
     },
+  };
+}
+
+/** Thử tính điểm uy tín (không ghi); `key` = JSON của bản nháp đã debounce, null = tắt. */
+export function useRepPreview(key: string | null) {
+  return useQuery({
+    queryKey: ["settings", "rep-preview", key],
+    queryFn: ({ signal }) => previewRep(JSON.parse(key as string) as RepPreviewIn, signal),
+    enabled: key !== null,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Thử tính điểm kinh doanh trên mẫu nhập tay. */
+export function useBizPreview(body: BizPreviewIn) {
+  return useQuery({
+    queryKey: ["settings", "biz-preview", JSON.stringify(body)],
+    queryFn: ({ signal }) => previewBiz(body, signal),
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Lưu phần đã đổi; luôn làm mới mọi truy vấn khi xong. Lỗi API ⇒ message của lỗi (nếu có). */
+export function useSaveSettings() {
+  const qc = useQueryClient();
+  return async (draft: SettingsData, parts: Changed) => {
+    try {
+      await saveChanged(draft, parts);
+      return { ok: true as const };
+    } catch (e) {
+      return { ok: false as const, message: e instanceof ApiError ? e.message : undefined };
+    } finally {
+      void qc.invalidateQueries();
+    }
   };
 }

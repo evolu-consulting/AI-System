@@ -60,6 +60,16 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
       "dify-tro-ly",
     ]);
     expect(p.agents).toHaveLength(6);
+    expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
+    expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
+    // grant assistant × acme/beta (access.yaml) vẫn ở seed tối giản.
+    expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
+  });
+});
+
+describe("HUB-FR-60 · seed yaml mặc định (trợ lý chat)", () => {
+  it("HUB-FR-60 · M2-chat · chat-fast2 · runtime_options và grant của trợ lý mgmt/assistant/dify", () => {
+    const p = buildSeedPlan(defaults(), { appEnv: "development" });
     // M2-chat · trợ lý app mgmt: Claude + tool ĐỌC gói contracts (không tool CLI/tệp).
     const mgmt = p.agents.find((a) => a.key === "mgmt-assistant");
     expect(mgmt?.runtime).toBe("agentic-cli");
@@ -95,12 +105,10 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
     expect(p.grants.filter((g) => g.agent === "mgmt-assistant").map((g) => g.subject)).toContain(
       "group:contracts-viewer",
     );
-    expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
-    expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
-    // grant assistant × acme/beta (access.yaml) vẫn ở seed tối giản.
-    expect(p.grants.map((g) => g.subject)).toContain("group:beta-testers");
   });
+});
 
+describe("HUB-FR-60 · seed yaml mặc định (fixtures)", () => {
   it("HUB-FR-60 · CR-081 · HUB_SEED_FIXTURES ⇒ nạp thêm processes.full.yaml: 20 agent", () => {
     const p = buildSeedPlan(full(), { appEnv: "development" });
     expect(p.agents.slice(0, 6).map((a) => a.key)).toEqual([

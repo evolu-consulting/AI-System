@@ -1,13 +1,12 @@
 // V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (V2-E `/reputation/partners`),
 // kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API uy tín chưa trả giá trị nên dùng số việc.)
 import type { RepPartnerRow, RepRole } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchRepPartners, partnerKeys } from "~/features/partners/api";
 import { RepBadge } from "~/features/partners/components/RepBadge";
+import { useRepPartners } from "~/features/partners/hooks/use-partner-rep";
 import { topPartners } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
@@ -44,10 +43,7 @@ function Col({ kind, rows }: { kind: RepRole; rows: RepPartnerRow[] }) {
 
 export function TopPartnersBlock() {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: partnerKeys.repList,
-    queryFn: ({ signal }) => fetchRepPartners(signal),
-  });
+  const q = useRepPartners();
   return (
     <Panel>
       <BlockHead

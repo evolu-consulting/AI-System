@@ -1,11 +1,10 @@
 // V2-I · DT-03 · biểu đồ diễn biến điểm 3 / 6 / 12 tháng: điểm các tháng đã chốt + hiện tại, hai đường ngưỡng KHÁ / TỐT (ngưỡng đang cấu
 // hình). SVG thuần theo mockup NITI (`chartSVG`); rê chuột / bàn phím không cần — mỗi điểm có `<title>`.
 import type { RepHistory, RepRole } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchRepHistory, partnerKeys } from "../api";
+import { useRepHistory } from "../hooks/use-partner-rep";
 import { chartOf, periodLabel, RANGES, type Range, seriesOf } from "../lib/partner-v2";
 import { SEG, segItem } from "./seg-style";
 
@@ -96,10 +95,7 @@ export function HistoryChart({
   range: Range;
 }) {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: partnerKeys.repHistory(party, role, range),
-    queryFn: ({ signal }) => fetchRepHistory(party, role, range, signal),
-  });
+  const q = useRepHistory(party, role, range);
   return (
     <section
       aria-label={t("contracts.pv2.chart.title")}

@@ -94,7 +94,9 @@ describe("chat-fast · fastRoute", () => {
     ];
     for (const s of cases) expect(fastRoute(s, who, LEGACY)).toBeNull();
   });
+});
 
+describe("chat-fast · fastRoute · nhiều agent và route", () => {
   test("AU ≥ 2 ⇒ null (cần Orchestrator chọn)", () => {
     const s = snap({
       agents: [agent("a"), agent("b")],
@@ -138,6 +140,9 @@ describe("chat-fast · untaggedRoute", () => {
   test("cờ bật + AU 1 ⇒ fast", () => {
     expect(untaggedRoute(true, one, who, true).fast?.agent.id).toBe("a");
   });
+});
+
+describe("chat-fast · untaggedRoute · agent mặc định", () => {
   const defaults = (id: string) => ({
     defaultAgentId: id,
     fallbackAgentId: null,

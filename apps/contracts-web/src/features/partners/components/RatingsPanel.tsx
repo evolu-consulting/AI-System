@@ -1,14 +1,13 @@
 // V2-I · DT-04 · BA §5.1i: đánh giá thủ công 1–5 sao từng tiêu chí (trộn vào điểm với tỷ trọng s). Lệch hơn `reason_gap` điểm so với dữ
 // liệu ⇒ bắt nhập lý do (máy chủ kiểm lại, 422). Mỗi tiêu chí lưu riêng; dưới là lịch sử đánh giá (mới nhất trước).
 import type { RepCellOut, RepCriterionOut, RepGroup, RepRatingRow, RepRole } from "@ai/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { fetchRepConfig, fetchRepDetail, fetchRepRatings, partnerKeys, rateRep } from "../api";
+import { useRateRep, useRepConfig, useRepDetail, useRepRatings } from "../hooks/use-partner-rep";
 import { dataPointOf, needsReason } from "../lib/partner-v2";
 import { Stars } from "./Stars";
 
@@ -31,27 +30,11 @@ function RatingRow({
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.review.${k}`, o);
-  const qc = useQueryClient();
   const [stars, setStars] = useState(mine?.stars ?? 0);
   const [reason, setReason] = useState("");
   const data = dataPointOf(c, cell);
   const must = stars > 0 && needsReason(stars, data, gap);
-  const save = useMutation({
-    mutationFn: () =>
-      rateRep({
-        party,
-        role,
-        group: cell.group as RepGroup,
-        criterion: c.key,
-        stars,
-        reason: reason.trim() || null,
-      }),
-    onSuccess: async () => {
-      setReason("");
-      await qc.invalidateQueries({ queryKey: ["partners"] });
-      toast(L("saved"));
-    },
-  });
+  const save = useRateRep({ onDone: () => setReason(""), onSaved: () => toast(L("saved")) });
   const unchanged = stars === (mine?.stars ?? 0);
   return (
     <div className="rounded-lg bg-sunk px-3 py-2.5 text-sm">
@@ -84,7 +67,16 @@ function RatingRow({
             type="button"
             className="btn btn-primary h-8"
             disabled={save.isPending || unchanged || (must && !reason.trim())}
-            onClick={() => save.mutate()}
+            onClick={() =>
+              save.mutate({
+                party,
+                role,
+                group: cell.group as RepGroup,
+                criterion: c.key,
+                stars,
+                reason: reason.trim() || null,
+              })
+            }
           >
             {save.isPending ? L("saving") : L("save")}
           </button>
@@ -103,19 +95,9 @@ export function RatingsPanel({ party, role }: { party: string; role: RepRole }) 
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.review.${k}`, o);
   const { write, user } = useMe();
-  const d = useQuery({
-    queryKey: partnerKeys.detail(party, role),
-    queryFn: ({ signal }) => fetchRepDetail(party, role, signal),
-    retry: false,
-  });
-  const r = useQuery({
-    queryKey: partnerKeys.repRatings(party, role),
-    queryFn: ({ signal }) => fetchRepRatings(party, role, signal),
-  });
-  const cfg = useQuery({
-    queryKey: partnerKeys.repConfig,
-    queryFn: ({ signal }) => fetchRepConfig(signal),
-  });
+  const d = useRepDetail(party, role);
+  const r = useRepRatings(party, role);
+  const cfg = useRepConfig();
   if (d.isLoading || r.isLoading) return <Loading />;
   if (r.error) return <ErrorLine error={r.error} />;
   const cells = d.data?.groups ?? [];

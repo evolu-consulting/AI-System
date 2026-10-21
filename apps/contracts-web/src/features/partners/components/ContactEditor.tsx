@@ -1,11 +1,10 @@
 // V2-GAPS · DT-01: sửa điện thoại + người liên hệ ngay ở đầu trang chi tiết đối tác (lưu lên danh bạ; để trống liên hệ ⇒ lấy người đại
 // diện bên đối tác ở HĐ mới nhất).
 import type { PartnerProfile } from "@ai/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { partnerKeys, saveProfile } from "../api";
+import { useSaveProfile } from "../hooks/use-partner-rep";
 
 export function ContactEditor({
   party,
@@ -18,16 +17,11 @@ export function ContactEditor({
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.vgaps.contact.${k}`);
-  const qc = useQueryClient();
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [contact, setContact] = useState(profile?.contact ?? "");
-  const save = useMutation({
-    mutationFn: () => saveProfile({ party, phone, contact }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: partnerKeys.profile(party) });
-      toast(L("saved"));
-      onClose();
-    },
+  const save = useSaveProfile(party, () => {
+    toast(L("saved"));
+    onClose();
   });
   return (
     <form
@@ -35,7 +29,7 @@ export function ContactEditor({
       className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-rule bg-panel px-5 py-4"
       onSubmit={(e) => {
         e.preventDefault();
-        save.mutate();
+        save.mutate({ phone, contact });
       }}
     >
       <label className="flex flex-col gap-1 text-[13px] text-dim">

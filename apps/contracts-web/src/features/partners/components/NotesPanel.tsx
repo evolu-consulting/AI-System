@@ -1,6 +1,5 @@
 // V2-I · DT-05 · ghi chú về đối tác: người viết + ngày, thêm / xoá (người viết hoặc quản lý). Dòng lưu từ "Tìm trên internet" có nhãn nguồn.
 import type { PartnerNote } from "@ai/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
@@ -9,28 +8,16 @@ import { ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
 import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { addNote, deleteNote, fetchNotes, partnerKeys } from "../api";
+import { useAddNote, useDeleteNote, useNotes } from "../hooks/use-partner-rep";
 
 export function NotesPanel({ party }: { party: string }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.notes.${k}`, o);
   const { write, owner, user } = useMe();
-  const qc = useQueryClient();
   const [text, setText] = useState("");
-  const q = useQuery({
-    queryKey: partnerKeys.notes(party),
-    queryFn: ({ signal }) => fetchNotes(party, signal),
-  });
-  const refresh = () => qc.invalidateQueries({ queryKey: partnerKeys.notes(party) });
-  const add = useMutation({
-    mutationFn: () => addNote({ party, body: text.trim() }),
-    onSuccess: async () => {
-      setText("");
-      await refresh();
-      toast(L("saved"));
-    },
-  });
-  const del = useMutation({ mutationFn: (id: string) => deleteNote(id), onSuccess: refresh });
+  const q = useNotes(party);
+  const add = useAddNote(party, { onDone: () => setText(""), onSaved: () => toast(L("saved")) });
+  const del = useDeleteNote(party);
   const remove = async (n: PartnerNote) => {
     const ok = await confirmDialog({
       title: L("deleteTitle"),
@@ -63,7 +50,7 @@ export function NotesPanel({ party }: { party: string }) {
                 type="button"
                 className="btn btn-quiet h-8"
                 disabled={add.isPending || !text.trim()}
-                onClick={() => add.mutate()}
+                onClick={() => add.mutate(text.trim())}
               >
                 {L("save")}
               </button>

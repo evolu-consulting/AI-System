@@ -7,8 +7,8 @@ import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { createDb } from "@ai/db";
 import { AppError } from "../../lib/errors";
-import { onboardTenant } from "./application/onboard.usecase";
-import { parseSpec } from "./domain/onboard.rules";
+import { parseSpec } from "./adapters/onboard.schema";
+import { onboardTenant } from "./tenant-onboard.run";
 
 const fail = (error: string, extra: Record<string, unknown> = {}): never => {
   process.stderr.write(`${JSON.stringify({ error, ...extra })}\n`);

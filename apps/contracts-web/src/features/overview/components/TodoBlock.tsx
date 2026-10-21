@@ -1,7 +1,6 @@
 // V2-N · "Cần xử lý" của Tổng quan (mockup NITI `todoPanel`): 8 nguồn từ `GET /my-work/todo`, 6 việc đầu + "Xem thêm", mỗi việc có Bỏ qua
 // (và Đã xong với "Liên hệ mời gia hạn"). Bấm việc ⇒ mở HĐ / SP / đối tác. Chỉ việc người dùng THẤY (API tự lọc).
 import type { TodoItem } from "@ai/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
 import { useState } from "react";
@@ -9,8 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag, type TagTone } from "~/components/shared/tag";
-import { toast } from "~/components/shared/toast";
-import { dismissTodo, fetchTodo, overviewKeys } from "../api";
+import { useDismissTodo, useTodo } from "../hooks/use-overview";
 import { todoCanDone, todoTarget, todoWhen, WORK_PREVIEW } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
@@ -101,24 +99,9 @@ function Row({ i, onAct }: { i: TodoItem; onAct: (a: "skip" | "done") => void })
 
 export function TodoBlock() {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const [all, setAll] = useState(false);
-  const q = useQuery({ queryKey: overviewKeys.todo, queryFn: ({ signal }) => fetchTodo(signal) });
-  const m = useMutation({
-    mutationFn: (v: { key: string; action: "skip" | "done" }) => dismissTodo(v.key, v.action),
-    onSuccess: async (_r, v) => {
-      toast(
-        t(
-          v.action === "done"
-            ? "contracts.overview.todo.toastDone"
-            : "contracts.overview.todo.toastSkip",
-        ),
-      );
-      await qc.invalidateQueries({ queryKey: overviewKeys.todo });
-      await qc.invalidateQueries({ queryKey: ["my-work"] });
-    },
-    onError: () => toast(t("contracts.errors.unknown"), "late"),
-  });
+  const q = useTodo();
+  const m = useDismissTodo();
   const items = q.data?.items ?? [];
   const shown = all ? items : items.slice(0, WORK_PREVIEW);
   const rest = items.length - WORK_PREVIEW;

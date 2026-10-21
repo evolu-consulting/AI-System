@@ -2,14 +2,11 @@
 // Điểm kinh doanh) cuộn riêng; mục khác mặc định có chấm cam. Chỉ chủ sở hữu (contracts-owner) sửa được; người khác xem (mọi ô khoá).
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
-import { ApiError } from "@ai/web-kit/http";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { saveChanged } from "../api";
-import { brandOf, useSettingsState } from "../hooks/use-settings";
+import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
 import { anyChanged, changedParts, firstIssue, repChanged, same } from "../lib/data";
@@ -24,7 +21,7 @@ const SECTIONS: readonly SectionId[] = ["co", "rep", "biz"];
 
 export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantName: string }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
+  const saveSettings = useSaveSettings();
   const open = useSettingsOpen();
   const { state, loading, error, retry } = useSettingsState(open);
   const [draft, setDraft] = useState<SettingsData | null>(null);
@@ -56,15 +53,10 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const save = async () => {
     if (!draft || !vsSaved || issue) return;
     setSaving(true);
-    try {
-      await saveChanged(draft, vsSaved);
-      toast(s("saved"));
-    } catch (e) {
-      toast(e instanceof ApiError ? e.message : s("saveFail"), "late");
-    } finally {
-      setSaving(false);
-      await qc.invalidateQueries();
-    }
+    const r = await saveSettings(draft, vsSaved);
+    if (r.ok) toast(s("saved"));
+    else toast(r.message ?? s("saveFail"), "late");
+    setSaving(false);
   };
   const dot = (k: SectionId) =>
     vsDef ? (k === "co" ? vsDef.company : k === "biz" ? vsDef.biz : repChanged(vsDef)) : false;

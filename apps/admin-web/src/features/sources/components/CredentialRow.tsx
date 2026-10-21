@@ -5,49 +5,21 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { FormField } from "@/components/shared/form/FormField";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDeleteCredential, useRotateCredential } from "../api";
-import { credentialTokenError } from "../lib/credential-schema";
-import { classifyCredentialError, sourceUsedByCount } from "../lib/errors";
+import { useCredentialRow } from "../hooks/use-credential-row";
+import { sourceUsedByCount } from "../lib/errors";
 
 type Props = { cred: HubSecret; tenantId: string | undefined };
 
 export function CredentialRow({ cred, tenantId }: Props) {
   const { t } = useTranslation();
-  const rotate = useRotateCredential(cred.id, tenantId);
-  const del = useDeleteCredential(tenantId);
-  const [token, setToken] = useState("");
-  const [rotating, setRotating] = useState(false);
-  const [err, setErr] = useState<string | undefined>();
+  const r = useCredentialRow(cred, tenantId);
+  const { token, setToken, rotating, setRotating, err } = r;
   const [delOpen, setDelOpen] = useState(false);
   const used = sourceUsedByCount(cred.used_by);
   const usedKeys = cred.used_by.filter((u) => u.type === "source").map((u) => u.key);
-
-  const submitRotate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const bad = credentialTokenError(token);
-    if (bad) return setErr(t(bad));
-    setErr(undefined);
-    try {
-      await rotate.mutateAsync({ version: cred.version, value: token });
-      notifySuccess(t("process.sources.credential.toast.rotated"));
-      setToken("");
-      setRotating(false);
-    } catch (e2) {
-      const f = classifyCredentialError(e2);
-      if (f.type === "field") setErr(t(f.key));
-      else if (f.type === "conflict") notifyError(t("process.sources.credential.conflict"));
-      else setErr(t(f.key));
-    }
-  };
-
-  const confirmDelete = async () => {
-    await del.mutateAsync({ id: cred.id, version: cred.version });
-    notifySuccess(t("process.sources.credential.toast.deleted"));
-  };
 
   return (
     <li className="space-y-2 rounded-md border border-border p-3">
@@ -67,7 +39,7 @@ export function CredentialRow({ cred, tenantId }: Props) {
         </>
       ) : null}
       {rotating ? (
-        <form onSubmit={submitRotate} noValidate className="space-y-2">
+        <form onSubmit={r.submitRotate} noValidate className="space-y-2">
           <FormField
             id={`cred-rotate-${cred.id}`}
             label={t("process.sources.credential.rotate.token")}
@@ -88,18 +60,10 @@ export function CredentialRow({ cred, tenantId }: Props) {
             )}
           </FormField>
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setRotating(false);
-                setToken("");
-                setErr(undefined);
-              }}
-            >
+            <Button type="button" variant="outline" onClick={r.cancelRotate}>
               {t("process.sources.credential.cancel")}
             </Button>
-            <Button type="submit" disabled={token === "" || rotate.isPending}>
+            <Button type="submit" disabled={token === "" || r.isPending}>
               {t("process.sources.credential.rotate.save")}
             </Button>
           </div>
@@ -127,7 +91,7 @@ export function CredentialRow({ cred, tenantId }: Props) {
         description={t("process.sources.credential.delete.body")}
         confirmLabel={t("process.sources.credential.delete")}
         destructive
-        onConfirm={confirmDelete}
+        onConfirm={r.confirmDelete}
       />
     </li>
   );

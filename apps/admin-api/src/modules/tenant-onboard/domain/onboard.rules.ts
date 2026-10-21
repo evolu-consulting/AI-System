@@ -1,65 +1,28 @@
 // niti-onboard · docs/specs/niti-onboard: luật thuần của onboarding tenant từ file khai báo (deploy/tenants/<key>.yaml) —
-// kiểm đầu vào (zod), dựng hàng Group/phòng ban (cây: gốc + con, cha phải khai TRƯỚC con ⇒ không vòng), gán thành viên theo email.
-import {
-  EmailSchema,
-  PackKeySchema,
-  TENANT_TZ_DEFAULT,
-  TenantKeySchema,
-  TenantNameSchema,
-  TenantProfileSchema,
-  TimezoneInputSchema,
-} from "@ai/contracts";
-import { z } from "zod";
+// dựng hàng Group/phòng ban (cây: gốc + con, cha phải khai TRƯỚC con ⇒ không vòng), gán thành viên theo email, marker importer.
+// Lớp 1 (ADR-0023): chỉ built-in ECMAScript; kiểm đầu vào bằng zod ở `adapters/onboard.schema.ts`.
 
-/** Khoá Group (= CHECK `groups_key_check`). */
-const GroupKey = z.string().regex(/^[a-z0-9-]{2,32}$/);
-const Label = z.string().trim().min(1).max(128);
-
-const DeptSchema = z.strictObject({
-  key: GroupKey,
-  vi: Label,
-  en: Label.optional(),
+export type DeptIn = {
+  key: string;
+  vi: string;
+  en?: string | undefined;
   /** Khoá phòng cha; vắng ⇒ dưới gốc. */
-  parent: GroupKey.optional(),
-  head: EmailSchema.optional(),
-  members: z.array(EmailSchema).max(1000).default([]),
-});
-export type DeptIn = z.infer<typeof DeptSchema>;
+  parent?: string | undefined;
+  head?: string | undefined;
+  members: string[];
+};
 
-export const OnboardSpecSchema = z.strictObject({
-  key: TenantKeySchema,
-  name: TenantNameSchema,
-  timezone: TimezoneInputSchema.default(TENANT_TZ_DEFAULT),
-  profile: TenantProfileSchema.default({}),
-  packs: z.array(PackKeySchema).max(10).default([]),
-  root: DeptSchema.omit({ parent: true }),
-  departments: z.array(DeptSchema).max(200).default([]),
+export type OnboardSpec = {
+  key: string;
+  name: string;
+  timezone: string;
+  profile: Record<string, unknown>;
+  packs: string[];
+  root: Omit<DeptIn, "parent">;
+  departments: DeptIn[];
   /** Gắn tenant với org mgmt-app cho importer I1 (marker `settings.mgmt_source/mgmt_org_id`); org null ⇒ chưa gắn. */
-  import: z
-    .strictObject({
-      source: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/),
-      org_id: z.string().min(1).max(128).nullable().default(null),
-    })
-    .optional(),
-});
-export type OnboardSpec = z.infer<typeof OnboardSpecSchema>;
-
-/** Đọc file khai báo (YAML; `.json` ⇒ JSON) + kiểm; `mgmtOrg`/`mgmtSource` ghi đè `import.org_id`/`import.source`. */
-export function parseSpec(
-  text: string,
-  o: { json?: boolean; mgmtOrg?: string; mgmtSource?: string } = {},
-):
-  | { ok: true; spec: OnboardSpec }
-  | { ok: false; issues: { path: PropertyKey[]; code: string }[] } {
-  const raw = (o.json ? JSON.parse(text) : Bun.YAML.parse(text)) as Record<string, unknown>;
-  if (o.mgmtOrg) raw.import = { ...((raw.import ?? {}) as object), org_id: o.mgmtOrg };
-  if (o.mgmtSource) raw.import = { ...((raw.import ?? {}) as object), source: o.mgmtSource };
-  const r = OnboardSpecSchema.safeParse(raw);
-  return r.success
-    ? { ok: true, spec: r.data }
-    : { ok: false, issues: r.error.issues.map((i) => ({ path: i.path, code: i.code })) };
-}
-
+  import?: { source: string; org_id: string | null } | undefined;
+};
 export type DeptRow = {
   key: string;
   name: { vi: string; en?: string };

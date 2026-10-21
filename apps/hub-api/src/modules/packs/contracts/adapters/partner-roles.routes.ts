@@ -43,6 +43,11 @@ const who = (c: Context<PackGuardVars>) => {
   return { tenantId: u.tenantId, userId: u.userId };
 };
 
+const isPackAdmin = async (view: PackAccessView, c: Context<PackGuardVars>) => {
+  const i = await packAccessInput(view, KEY, c.get("user"));
+  return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+};
+
 export function partnerRolesRoutes(
   view: PackAccessView,
   uc: PartnerRolesUsecase,
@@ -51,10 +56,7 @@ export function partnerRolesRoutes(
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
   const write = packGuard(view, KEY, "write");
-  const isAdmin = async (c: Context<PackGuardVars>) => {
-    const i = await packAccessInput(view, KEY, c.get("user"));
-    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
-  };
+  const isAdmin = (c: Context<PackGuardVars>) => isPackAdmin(view, c);
 
   r.get("/partners/roles", read, async (c) =>
     c.json(await run(uc.roles(who(c), parseQuery(c, PartnerRolesQuerySchema).party))),

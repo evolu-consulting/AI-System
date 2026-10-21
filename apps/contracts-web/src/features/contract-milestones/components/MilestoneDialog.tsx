@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { addMilestone, editMilestone, removeMilestone } from "../api";
+import { useMilestoneWrites } from "../hooks/use-milestone-writes";
 import { bodyOf, draftOfMilestone, type MsDraft, newDraft, withKind } from "../lib/milestone-form";
 import { KINDS, type MilestoneKind, MONEY_KINDS } from "../lib/timeline";
 
@@ -60,6 +60,7 @@ export function MilestoneDialog({
   onError,
 }: Props) {
   const { t } = useTranslation();
+  const { addMilestone, editMilestone, removeMilestone } = useMilestoneWrites();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
   const [d, setD] = useState<MsDraft>(() =>
     edit ? draftOfMilestone(edit) : newDraft(deal, today, L("kind.delivery")),

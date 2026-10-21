@@ -5,13 +5,13 @@
 import { type ConfigSink, type Db, type Tx, withConfigWrite, withScope } from "@ai/db";
 import { auditOf } from "../../../lib/audit/audit.write";
 import { publishConfigChanged } from "../../../lib/config/config-write";
-import { grantPackAgents, notifyHubConfig } from "../../packs/packs.repo";
 import {
   packFeatureKeys,
   packGroupKeys,
   roleGrantPairs,
   roleGroupRows,
 } from "../../packs/packs.rules";
+import { grantAgentsAndNotify } from "../../packs/packs.service";
 import type {
   GroupIds,
   ImportStore,
@@ -63,8 +63,7 @@ async function packForNew({ d, tx, ch }: W, tids: string[]): Promise<void> {
   const grp = await repo.insertRoleGroups(tx, tids, roleGroupRows(PACK), d.actorId);
   const grants = await repo.insertRoleGrants(tx, tids, roleGrantPairs(PACK), d.actorId);
   // UAT B4: trợ lý của gói cho tenant mới, cùng tx (như PUT /packs).
-  const hubVersion = await grantPackAgents(tx, { tenantIds: tids, key: PACK, actorId: d.actorId });
-  if (hubVersion !== null) await notifyHubConfig(tx, hubVersion);
+  await grantAgentsAndNotify(tx, { tenantIds: tids, key: PACK, actorId: d.actorId });
   const touched = new Set<string>();
   for (const [rows, entity] of [
     [ent, "entitlement"],

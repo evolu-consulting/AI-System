@@ -6,8 +6,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
+import { searchErrorKey, useInternetSearch } from "../hooks/use-partner-rep";
 import { ContactEditor } from "./ContactEditor";
-import { InternetResult, searchErrorKey, useInternetSearch } from "./InternetSearch";
+import { InternetResult } from "./InternetSearch";
 import { ScorePill } from "./RepBadge";
 
 const DASH = "—";

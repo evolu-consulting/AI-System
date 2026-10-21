@@ -2,13 +2,12 @@
 // thanh toán (các đợt chưa xong), ghi việc khác, sổ đối tác "Đã ghi gần đây" (gồm dòng Quá hạn do hệ thống ghi, gạch dòng đã huỷ).
 // Trên trang HĐ (`contractId`) chỉ đợt của HĐ đó. Viewer không thấy nút ghi.
 import type { PartnerEvent, PartnerRole } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { fetchInstalments, fetchPartnerEvents, ledgerKeys, voidEvent } from "../api";
+import { useLedgerWrites, usePartnerLedger } from "../hooks/use-ledger";
 import { answeredSet, recentOf, said, voidable } from "../lib/ledger";
 import { type Act, useAct } from "../lib/use-act";
 import { InstalmentRow } from "./InstalmentRow";
@@ -30,6 +29,7 @@ function RecentLine({
   act: Act;
 }) {
   const { t } = useTranslation();
+  const { voidEvent } = useLedgerWrites();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.ledger.${k}`, o);
   const answered = e.type === "overdue" && all.has(e.obligation_id);
   const red = e.type === "overdue" && !answered && e.party_late !== false;
@@ -79,14 +79,7 @@ export function PartnerLog({ party, role, contractId, onChange }: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.ledger.${k}`);
   const { write } = useMe();
-  const obs = useQuery({
-    queryKey: ledgerKeys.instalments(party, contractId),
-    queryFn: ({ signal }) => fetchInstalments(party, contractId, signal),
-  });
-  const evs = useQuery({
-    queryKey: ledgerKeys.events(party),
-    queryFn: ({ signal }) => fetchPartnerEvents(party, signal),
-  });
+  const { obs, evs } = usePartnerLedger(party, contractId);
   const { act, err, busy } = useAct(onChange);
   const all = evs.data ?? [];
   const answered = answeredSet(all);

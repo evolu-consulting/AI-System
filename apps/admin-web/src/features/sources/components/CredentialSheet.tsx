@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCredentials } from "../api";
+import { useCredentialList } from "../hooks/use-credential-list";
 import { CredentialDialog } from "./CredentialDialog";
 import { CredentialRow } from "./CredentialRow";
 
@@ -21,8 +21,8 @@ type Props = { tenantId: string | undefined; onClose: () => void };
 export default function CredentialSheet({ tenantId, onClose }: Props) {
   const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
-  const list = useCredentials(tenantId, true);
-  const items = list.data?.items ?? [];
+  const list = useCredentialList(tenantId);
+  const { items } = list;
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -53,12 +53,7 @@ export default function CredentialSheet({ tenantId, onClose }: Props) {
             <Alert variant="destructive">
               <AlertDescription className="flex items-center justify-between gap-2">
                 {t("process.sources.credential.loadError")}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void list.refetch()}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={list.refetch}>
                   {t("process.sources.retry")}
                 </Button>
               </AlertDescription>

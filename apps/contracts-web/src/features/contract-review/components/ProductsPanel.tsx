@@ -2,22 +2,15 @@
 // (Giới thiệu), bảng dòng + thành tiền + tổng.
 // V2-G: mỗi dòng có chọn SP danh mục (gắn / gắn lại) → `PUT /contracts/:id/items/:itemId/product`; dòng đã phát sinh kho ⇒ 409 `ITEM_LOCKED`.
 import type { ContractDeal, ContractItem } from "@ai/contracts";
-import { ApiError } from "@ai/web-kit/http";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
-import { toast } from "~/components/shared/toast";
-import { fetchProducts, PRODUCTS_KEY } from "~/features/contract-form/api";
 import { ProductPicker } from "~/features/contract-form/components/ProductPicker";
 import { STOCK_EFFECT } from "~/features/contract-form/lib/deal";
-import type { LineState } from "~/features/contract-form/lib/form-model";
-import { lineOfItem } from "~/features/contract-form/lib/review-model";
 import { stockTone } from "~/features/contract-form/lib/stock-label";
-import { contractKey, putItemProduct } from "../api";
-import { saveErrorText } from "../lib/save-error";
+import { useSavedItem } from "../hooks/use-saved-item";
 
 const lineSum = (it: ContractItem): number | null =>
   it.qty != null && it.unit_price != null ? Math.round(it.qty * it.unit_price) : null;
@@ -38,36 +31,8 @@ function SavedRow({
   write: boolean;
   onError: (m: string | null) => void;
 }) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const products = useQuery({
-    queryKey: PRODUCTS_KEY,
-    queryFn: ({ signal }) => fetchProducts(signal),
-    staleTime: 60_000,
-  });
-  const [line, setLine] = useState<LineState>(() => lineOfItem(it));
+  const { line, products, onPatch } = useSavedItem(it, contractId, onError);
   const s = lineSum(it);
-  const onPatch = async (p: Partial<LineState>) => {
-    const next = { ...line, ...p };
-    if (next.product_id === line.product_id && next.component_id === line.component_id) return;
-    setLine(next);
-    onError(null);
-    try {
-      await putItemProduct(contractId, it.id, {
-        product_id: next.product_id || null,
-        ...(next.product_id && next.component_id ? { component_ids: [next.component_id] } : {}),
-      });
-      toast(t("contracts.cdetail.attachSaved"));
-      await qc.invalidateQueries({ queryKey: contractKey(contractId) });
-    } catch (e) {
-      setLine(line);
-      onError(
-        e instanceof ApiError && e.status === 409
-          ? t("contracts.cdetail.itemLocked")
-          : saveErrorText(e, t),
-      );
-    }
-  };
   return (
     <>
       <tr className="border-t border-rule-soft">
@@ -85,7 +50,7 @@ function SavedRow({
               line={line}
               index={index}
               deal={deal}
-              products={products.data ?? []}
+              products={products}
               invalid={false}
               allowNew={false}
               onPatch={(p) => void onPatch(p)}

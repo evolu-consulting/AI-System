@@ -1,14 +1,13 @@
 // V2-I · DT-06 · tab "Hợp đồng · n": HĐ đã xác nhận của đối tác, lọc theo giai đoạn Chưa bắt đầu / Đang thực hiện / Đã xong
 // (giai đoạn do máy chủ suy từ mốc — cùng luật danh sách HĐ).
 import type { PartnerContractRow } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag, type TagTone } from "~/components/shared/tag";
-import { fetchPartnerContracts, partnerKeys } from "../api";
+import { usePartnerContracts } from "../hooks/use-partner-rep";
 import { byStage, STAGES, type StageFilter, stageCounts } from "../lib/partner-v2";
 import { SEG, segItem } from "./seg-style";
 
@@ -59,10 +58,7 @@ export function ContractsTab({ party }: { party: string }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.contracts.${k}`, o);
   const [filter, setFilter] = useState<StageFilter>("all");
-  const q = useQuery({
-    queryKey: partnerKeys.contracts(party),
-    queryFn: ({ signal }) => fetchPartnerContracts(party, signal),
-  });
+  const q = usePartnerContracts(party);
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorLine error={q.error} />;
   const rows = q.data ?? [];

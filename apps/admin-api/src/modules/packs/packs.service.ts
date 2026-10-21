@@ -60,6 +60,15 @@ export function listPacks(
   });
 }
 
+/** Trợ lý của gói cho các Group vai + NOTIFY Hub (giao khi commit), cùng tx — dùng chung enablePack và importer. */
+export async function grantAgentsAndNotify(
+  tx: Tx,
+  g: { tenantIds: readonly string[]; key: string; actorId: string },
+): Promise<void> {
+  const hubVersion = await repo.grantPackAgents(tx, g);
+  if (hubVersion !== null) await repo.notifyHubConfig(tx, hubVersion);
+}
+
 export function enablePack(c: PacksCall, tenantId: string, k: string): Promise<PackState> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
     const feats = await target(c, tx, tenantId, k);
@@ -72,8 +81,7 @@ export function enablePack(c: PacksCall, tenantId: string, k: string): Promise<P
     const grp = await repo.insertRoleGroups(tx, { tenantId, actorId, rows: roleGroupRows(k) });
     const grants = await repo.insertRoleGrants(tx, { tenantId, actorId, pairs: roleGrantPairs(k) });
     // UAT B4: trợ lý của gói cho 3 Group vai, cùng tx (không chờ `hub:seed`); NOTIFY Hub giao khi commit.
-    const hubVersion = await repo.grantPackAgents(tx, { tenantIds: [tenantId], key: k, actorId });
-    if (hubVersion !== null) await repo.notifyHubConfig(tx, hubVersion);
+    await grantAgentsAndNotify(tx, { tenantIds: [tenantId], key: k, actorId });
     if (ent > 0) ch.changed({ entity: "entitlement", tenantId });
     if (grp > 0) ch.changed({ entity: "group", tenantId });
     if (grants > 0) ch.changed({ entity: "grant", tenantId });

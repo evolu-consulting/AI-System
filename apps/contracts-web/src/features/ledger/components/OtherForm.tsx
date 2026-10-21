@@ -3,7 +3,7 @@
 import type { PartnerRole } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { recordEvent } from "../api";
+import { useLedgerWrites } from "../hooks/use-ledger";
 import { otherKinds, today } from "../lib/ledger";
 import type { Act } from "../lib/use-act";
 
@@ -17,6 +17,7 @@ type Props = {
 
 export function OtherForm({ party, role, contractId, busy, act }: Props) {
   const { t } = useTranslation();
+  const { recordEvent } = useLedgerWrites();
   const L = (k: string) => t(`contracts.ledger.${k}`);
   const kinds = otherKinds(role);
   const [type, setType] = useState(kinds[0]?.type ?? "complaint");

@@ -4,7 +4,7 @@ import type { Obligation } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
-import { postponeInstalment, remindInstalment, settleInstalment } from "../api";
+import { useLedgerWrites } from "../hooks/use-ledger";
 import { lateBy, today } from "../lib/ledger";
 import type { Act } from "../lib/use-act";
 
@@ -20,6 +20,7 @@ type T = (k: string, x?: Record<string, unknown>) => string;
 
 function PayForm({ o, busy, act, done }: FormProps) {
   const { t } = useTranslation();
+  const { settleInstalment } = useLedgerWrites();
   const L: T = (k, x) => t(`contracts.ledger.${k}`, x);
   const [at, setAt] = useState(today());
   const receive = o.direction === "receive";
@@ -57,6 +58,7 @@ function PayForm({ o, busy, act, done }: FormProps) {
 
 function LaterForm({ o, busy, act, done }: FormProps) {
   const { t } = useTranslation();
+  const { postponeInstalment } = useLedgerWrites();
   const L: T = (k, x) => t(`contracts.ledger.${k}`, x);
   const [to, setTo] = useState("");
   return (
@@ -101,6 +103,7 @@ function Buttons({
   setMode: (m: "pay" | "later" | null) => void;
   L: T;
 }) {
+  const { remindInstalment } = useLedgerWrites();
   const receive = o.direction === "receive";
   return (
     <span className="ml-auto flex gap-1.5">

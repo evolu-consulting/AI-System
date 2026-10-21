@@ -1,21 +1,17 @@
 // nav-v2 · khối "Đối tác cần xem lại" của Tổng quan: đối tác ở mức CHÚ Ý (điểm uy tín, API `GET /partners`). Bản đầu chỉ có mức CHÚ Ý —
 // "giảm từ 3 điểm trong 3 tháng" của mockup cần lịch sử điểm chưa có ở API, nên chưa làm.
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchRepPartners, partnerKeys } from "~/features/partners/api";
 import { RepBadge } from "~/features/partners/components/RepBadge";
+import { useRepPartners } from "~/features/partners/hooks/use-partner-rep";
 import { partnersToReview } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
 export function PartnersBlock() {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: partnerKeys.repList,
-    queryFn: ({ signal }) => fetchRepPartners(signal),
-  });
+  const q = useRepPartners();
   const rows = partnersToReview(q.data);
   return (
     <Panel>

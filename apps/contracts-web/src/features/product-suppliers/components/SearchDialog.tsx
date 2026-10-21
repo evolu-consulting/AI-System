@@ -1,22 +1,11 @@
 // V2-J2 · SP-05: "Tìm giá trên thị trường". AI tìm web CHỈ khi người dùng bấm "Tìm" (hộp thoại nói rõ chỉ gửi tên sản phẩm); kết quả
 // là gợi ý chưa lưu — người dùng tick dòng cần rồi "Lưu vào bảng so sánh". Thay `/cks/scans`.
 import type { SupplierSearchOut } from "@ai/contracts";
-import { ApiError } from "@ai/web-kit/http";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Spinner } from "~/components/shared/states";
-import { saveSupplierPrices, searchSuppliers, supplierKeys } from "../api";
-import { toSaveItems } from "../lib/suppliers";
-
-const KNOWN = [
-  "SEARCH_UNAVAILABLE",
-  "SEARCH_CAP",
-  "SEARCH_FAILED",
-  "ACTION_QUOTA",
-  "PACK_FORBIDDEN",
-];
+import { knownSupplierError, useSaveSuppliers, useSupplierSearch } from "../hooks/use-suppliers";
 
 export function SearchDialog({
   dlg,
@@ -29,42 +18,31 @@ export function SearchDialog({
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.psup.${k}`, o);
-  const qc = useQueryClient();
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [result, setResult] = useState<SupplierSearchOut | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const fail = (x: unknown) =>
-    setErr(
-      x instanceof ApiError && KNOWN.includes(x.code)
-        ? L(`errors.${x.code}`)
-        : t("contracts.errors.unknown"),
-    );
+  const fail = (x: unknown) => {
+    const code = knownSupplierError(x);
+    setErr(code ? L(`errors.${code}`) : t("contracts.errors.unknown"));
+  };
   const close = () => {
     setResult(null);
     setErr(null);
     dlg.current?.close();
   };
-  const search = useMutation({
-    mutationFn: () => searchSuppliers(productId),
-    onMutate: () => setErr(null),
-    onSuccess: (r) => {
+  const search = useSupplierSearch(productId, {
+    onStart: () => setErr(null),
+    onResult: (r) => {
       setResult(r);
       setPicked(new Set(r.items.map((_, i) => i)));
     },
-    onError: fail,
+    onFail: fail,
   });
-  const save = useMutation({
-    mutationFn: () =>
-      saveSupplierPrices(
-        productId,
-        toSaveItems((result?.items ?? []).filter((_, i) => picked.has(i))),
-      ),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: supplierKeys.overview(productId) });
-      close();
-    },
-    onError: fail,
-  });
+  const save = useSaveSuppliers(
+    productId,
+    () => (result?.items ?? []).filter((_, i) => picked.has(i)),
+    { onDone: close, onFail: fail },
+  );
   const toggle = (i: number) =>
     setPicked((s) => {
       const n = new Set(s);

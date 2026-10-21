@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCredentials } from "../api";
+import { useCredentialList } from "../hooks/use-credential-list";
 import { CredentialDialog } from "./CredentialDialog";
 
 const NONE = "__none__";
@@ -30,9 +30,8 @@ export function CredentialField({ id, tenantId, value, onChange, error }: Props)
   const { t } = useTranslation();
   const [dialog, setDialog] = useState(false);
   const [justCreated, setJustCreated] = useState<HubSecret | null>(null);
-  const list = useCredentials(tenantId, true);
+  const { items: creds } = useCredentialList(tenantId);
 
-  const creds = list.data?.items ?? [];
   const merged =
     justCreated && !creds.some((c) => c.id === justCreated.id) ? [justCreated, ...creds] : creds;
   const selected = merged.find((c) => c.id === value);

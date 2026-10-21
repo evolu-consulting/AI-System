@@ -1,15 +1,14 @@
 // V2-F · HD-04/HD-11 · mockup `timelineV2`: khối "Dòng thời gian" — tiến độ n/m mốc, các nút Ký HĐ → mốc → Hết hiệu lực, bước hiện tại được
 // đánh dấu + nút "Xác nhận xong", bút sửa trên mốc CHƯA xác nhận, "+ Thêm mốc". Viewer (không quyền ghi) chỉ xem.
 import type { ContractDetail, Milestone } from "@ai/contracts";
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
 import { dealOf, STAGE_TONE } from "~/features/contract-form/lib/deal";
-import { contractKey } from "~/features/contract-review/api";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
+import { useRefreshContract } from "../hooks/use-milestone-writes";
 import { buildTimeline, currentOverdue, progressOf } from "../lib/timeline";
 import { ConfirmBox } from "./ConfirmBox";
 import { MilestoneDialog } from "./MilestoneDialog";
@@ -64,7 +63,7 @@ export function Timeline({
   today: string;
 }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
+  const refreshContract = useRefreshContract(c.id);
   const L = (k: string) => t(`contracts.cdetail.${k}`);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ edit: Milestone | null } | null>(null);
@@ -72,8 +71,7 @@ export function Timeline({
   const over = currentOverdue(c, today);
   const refresh = async () => {
     setErr(null);
-    await qc.invalidateQueries({ queryKey: contractKey(c.id) });
-    await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+    await refreshContract();
   };
   const fail = (e: unknown) => setErr(saveErrorText(e, t));
   const box = (m: Milestone) =>

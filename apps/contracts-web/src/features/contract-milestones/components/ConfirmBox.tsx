@@ -4,7 +4,7 @@ import type { Milestone } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";
-import { type Fault, settleMilestone } from "../api";
+import { type Fault, useMilestoneWrites } from "../hooks/use-milestone-writes";
 import { daysBetween } from "../lib/timeline";
 
 const FAULTS: readonly Fault[] = ["partner", "ours", "unknown"];
@@ -26,6 +26,7 @@ export function ConfirmBox({
   onError: (e: unknown) => void;
 }) {
   const { t } = useTranslation();
+  const { settleMilestone } = useMilestoneWrites();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
   const [at, setAt] = useState(today);
   const [fault, setFault] = useState<Fault>("partner");

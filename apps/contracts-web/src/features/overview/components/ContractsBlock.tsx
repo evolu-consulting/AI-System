@@ -1,14 +1,13 @@
 // nav-v2 · khối "Hợp đồng" của Tổng quan: số hợp đồng theo nhóm trạng thái (facets) + HĐ sắp hết hiệu lực nhất. Dùng API danh sách HĐ sẵn có
 // (`GET /contracts/facets`, `GET /contracts`), người dùng chỉ thấy HĐ mình được xem (RLS).
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { FACETS_KEY, fetchFacets, fetchList, listKey } from "~/features/contracts-list/api";
 import { cn } from "~/lib/utils";
-import { CONTRACT_GROUPS, counterparty, daysLeft, EXPIRING_QS, groupCounts } from "../lib/overview";
+import { useContractFacets, useExpiringContracts } from "../hooks/use-overview";
+import { CONTRACT_GROUPS, counterparty, daysLeft, groupCounts } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
 const TILE: Record<(typeof CONTRACT_GROUPS)[number], string> = {
@@ -19,11 +18,8 @@ const TILE: Record<(typeof CONTRACT_GROUPS)[number], string> = {
 
 export function ContractsBlock({ today }: { today?: string }) {
   const { t } = useTranslation();
-  const facets = useQuery({ queryKey: FACETS_KEY, queryFn: ({ signal }) => fetchFacets(signal) });
-  const soon = useQuery({
-    queryKey: listKey(EXPIRING_QS),
-    queryFn: ({ signal }) => fetchList(EXPIRING_QS, signal),
-  });
+  const facets = useContractFacets();
+  const soon = useExpiringContracts();
   const { total, counts } = groupCounts(facets.data);
   const rows = soon.data?.items ?? [];
   return (

@@ -1,7 +1,6 @@
 // V2-J1 · SP-01: danh sách sản phẩm — tab Tất cả / Dịch vụ có hạn / Hàng hoá / Giới thiệu (số lượng mỗi tab), cột Tên · Loại · Đang nắm
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 import type { BizProductRow } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +8,7 @@ import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { bizKeys, fetchBizProducts } from "../api";
+import { useBizProducts } from "../hooks/use-business";
 import {
   CATALOG_TABS,
   type CatalogTab,
@@ -54,10 +53,7 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const list = useQuery({
-    queryKey: bizKeys.list,
-    queryFn: ({ signal }) => fetchBizProducts(signal),
-  });
+  const list = useBizProducts();
   if (list.isLoading) return <Loading />;
   if (list.error) return <ErrorLine error={list.error} />;
   const all = list.data?.items ?? [];

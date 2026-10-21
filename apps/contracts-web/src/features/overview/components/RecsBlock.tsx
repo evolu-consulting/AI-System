@@ -1,17 +1,16 @@
 // V2-N · "Sản phẩm: nên làm gì" (mockup `recPanel`): SP có điểm kinh doanh (V2-J1 `GET /business/products`) chia 3 cột theo đề xuất.
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { bizKeys, fetchBizProducts } from "~/features/products/api";
+import { useBizProducts } from "~/features/products/hooks/use-business";
 import { suggestColumns } from "../lib/overview";
 import { BlockHead } from "./BlockHead";
 
 export function RecsBlock() {
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: bizKeys.list, queryFn: ({ signal }) => fetchBizProducts(signal) });
+  const q = useBizProducts();
   const cols = suggestColumns(q.data?.items);
   return (
     <Panel>

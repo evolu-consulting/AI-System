@@ -1,14 +1,13 @@
 // V2-J1 · SP-02/07: chi tiết sản phẩm — tóm tắt (đang nắm giữ, đã bán 12 tháng, điểm + đề xuất + lý do, 3 thanh yếu tố) và các tab:
 // Lịch sử mua bán · (chỗ gắn của V2-H "Khách đang dùng", V2-J2 "NCC & giá": `lib/slots.ts`) · Hợp đồng · n. Tab trong URL `?ht=`.
 import type { BizDetailOut, BizFactor } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Panel, Stat } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { bizKeys, fetchBizDetail } from "../api";
+import { useBizDetail } from "../hooks/use-business";
 import { barTone, GROUP_TAG, SUGGEST_TONE } from "../lib/business";
 import { slotsFor } from "../lib/slots";
 import { ProductContracts } from "./ProductContracts";
@@ -105,10 +104,7 @@ function Summary({ d }: { d: BizDetailOut }) {
 
 export function ProductDetail({ id, ht }: { id: string; ht: string | undefined }) {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: bizKeys.detail(id),
-    queryFn: ({ signal }) => fetchBizDetail(id, signal),
-  });
+  const q = useBizDetail(id);
   if (q.isLoading) return <Loading />;
   if (q.error || !q.data) return <ErrorLine error={q.error} />;
   const d = q.data;

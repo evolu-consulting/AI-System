@@ -1,18 +1,14 @@
 // V2-J1 · SP-07: tab "Hợp đồng · n" của chi tiết sản phẩm — HĐ có dòng gắn SP (loại, đối tác, giá trị; Giới thiệu: hoa hồng nhận / phát sinh).
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { bizKeys, fetchBizContracts } from "../api";
+import { useBizContracts } from "../hooks/use-business";
 
 export function ProductContracts({ id }: { id: string }) {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: bizKeys.contracts(id),
-    queryFn: ({ signal }) => fetchBizContracts(id, signal),
-  });
+  const q = useBizContracts(id);
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorLine error={q.error} />;
   const items = q.data?.items ?? [];

@@ -10,11 +10,9 @@ import {
   type RunConfig,
   runMgmtImport,
 } from "../../../apps/admin-api/src/modules/mgmt-import/mgmt-import.run";
-import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/application/onboard.usecase";
-import {
-  type OnboardSpec,
-  parseSpec,
-} from "../../../apps/admin-api/src/modules/tenant-onboard/domain/onboard.rules";
+import { parseSpec } from "../../../apps/admin-api/src/modules/tenant-onboard/adapters/onboard.schema";
+import type { OnboardSpec } from "../../../apps/admin-api/src/modules/tenant-onboard/domain/onboard.rules";
+import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/tenant-onboard.run";
 import { T } from "../H1/_fixtures";
 import { fakeReader, fixtureSnapshot, ORG_A, ORG_B, SOURCE } from "../I1/_support/fixture";
 import { type CtxI1, startI1 } from "../I1/_support/i1";

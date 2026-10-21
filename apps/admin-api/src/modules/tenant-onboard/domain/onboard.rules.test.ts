@@ -2,15 +2,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  bindDecision,
-  deptRows,
-  memberPairs,
-  type OnboardSpec,
-  OnboardSpecSchema,
-  parseSpec,
-  sameJson,
-} from "./onboard.rules";
+import { OnboardSpecSchema, parseSpec } from "../adapters/onboard.schema";
+import { bindDecision, deptRows, memberPairs, type OnboardSpec, sameJson } from "./onboard.rules";
 
 const NITI = join(import.meta.dir, "../../../../../../deploy/tenants/nitigroup.yaml");
 const spec = (x: Record<string, unknown>): OnboardSpec =>

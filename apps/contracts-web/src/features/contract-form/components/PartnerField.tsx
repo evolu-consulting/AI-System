@@ -1,29 +1,17 @@
 // V2-F · HD-10 · BA 5.6: ô đối tác (nhãn theo loại HĐ) + trạng thái gợi ý từ `GET /partners/lookup` (V2-C): điểm uy tín theo vai,
 // "Đã có · thêm vai trò …", "Mới", hoặc "Đối tác mới · sẽ tạo khi lưu". Gõ ≥ 2 ký tự mới tra (debounce, không tra từng phím).
 import type { ContractDeal, PartnerLookup } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
-import { lookupKey, lookupPartner } from "../api";
+import { usePartnerLookup } from "../hooks/use-partner-lookup";
 import { PARTNER_ROLE } from "../lib/deal";
 
-const DEBOUNCE_MS = 300;
 const BAND_CLS = {
   good: "bg-ok-bg text-ok",
   fair: "bg-act-soft text-act",
   watch: "bg-soon-bg text-soon",
 } as const;
-
-function useDebounced<T>(v: T, ms: number): T {
-  const [d, setD] = useState(v);
-  useEffect(() => {
-    const id = setTimeout(() => setD(v), ms);
-    return () => clearTimeout(id);
-  }, [v, ms]);
-  return d;
-}
 
 export function PartnerStatus({
   look,
@@ -91,13 +79,7 @@ export function PartnerField({
   unsure?: boolean;
 }) {
   const { t } = useTranslation();
-  const q = useDebounced(name.trim(), DEBOUNCE_MS);
-  const look = useQuery({
-    queryKey: lookupKey(q, taxId, deal),
-    queryFn: ({ signal }) => lookupPartner(q, taxId, deal, signal),
-    enabled: q.length >= 2,
-    staleTime: 30_000,
-  });
+  const { q, look } = usePartnerLookup(name, taxId, deal);
   const label = t(`contracts.cform.partnerRole.${PARTNER_ROLE[deal]}`);
   return (
     <div className="flex flex-col gap-1 text-[13px]">

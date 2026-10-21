@@ -1,28 +1,11 @@
 // V2-I · DT-07 · intake Q8 · "Tìm trên internet": chỉ chạy khi người dùng bấm (nút ở đầu trang chi tiết); máy chủ chỉ gửi tên + MST
 // cho AI có tìm web qua gói. Kết quả là vài dòng chữ thuần; mỗi dòng có "Lưu vào ghi chú" (nguồn `internet`).
 import type { PartnerWebLine } from "@ai/contracts";
-import { ApiError } from "@ai/web-kit/http";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { toast } from "~/components/shared/toast";
-import { addNote, partnerKeys, searchInternet } from "../api";
-import { noteOfLine } from "../lib/partner-v2";
-
-/** Mã lỗi của máy chủ (`AGENT_UNAVAILABLE` 503 · `AI_CAP_EXCEEDED` 429) ⇒ khoá câu báo; còn lại ⇒ chung. */
-export const searchErrorKey = (e: unknown): "unavailable" | "cap" | "failed" => {
-  const code = e instanceof ApiError ? String(e.code) : "";
-  return code === "AGENT_UNAVAILABLE"
-    ? "unavailable"
-    : code === "AI_CAP_EXCEEDED"
-      ? "cap"
-      : "failed";
-};
-
-export function useInternetSearch(party: string) {
-  return useMutation({ mutationFn: () => searchInternet(party) });
-}
+import { useSaveWebLine } from "../hooks/use-partner-rep";
 
 export function InternetResult({
   party,
@@ -37,16 +20,10 @@ export function InternetResult({
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.pv2.web.${k}`);
-  const qc = useQueryClient();
   const [saved, setSaved] = useState<Set<number>>(new Set());
-  const save = useMutation({
-    mutationFn: (i: number) =>
-      addNote({ party, body: noteOfLine(lines[i] as PartnerWebLine), source: "internet" }),
-    onSuccess: async (_n, i) => {
-      setSaved((s) => new Set(s).add(i));
-      await qc.invalidateQueries({ queryKey: partnerKeys.notes(party) });
-      toast(L("saved"));
-    },
+  const save = useSaveWebLine(party, lines, {
+    onDone: (i) => setSaved((s) => new Set(s).add(i)),
+    onSaved: () => toast(L("saved")),
   });
   return (
     <Panel>

@@ -32,10 +32,10 @@ COPY --from=app /app/apps/chat-web/dist /srv/chat
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 FROM python:3.12-slim AS filebox
-# FileBox riêng: bản sao app của FileBox dùng chung (deploy/prod-sohoptac2/filebox/app.py) + phụ thuộc ghim theo venv của nó.
+# FileBox riêng: bản sao app của FileBox dùng chung (deploy/prod-sohoptac2/filebox/app.py + fb_core.py + fb_upload.py) + phụ thuộc ghim theo venv của nó.
 RUN pip install --no-cache-dir boto3==1.43.110 zstandard==0.25.0 fastapi==0.143.0 uvicorn==0.54.0 pydantic==2.14.0
 WORKDIR /srv/filebox
-COPY app/deploy/prod-sohoptac2/filebox/app.py app/deploy/prod-sohoptac2/filebox/web.html ./
+COPY app/deploy/prod-sohoptac2/filebox/app.py app/deploy/prod-sohoptac2/filebox/fb_core.py app/deploy/prod-sohoptac2/filebox/fb_upload.py app/deploy/prod-sohoptac2/filebox/web.html ./
 RUN mkdir /data && chmod 1777 /data && chmod -R a+rX /srv/filebox
 ENV PYTHONUNBUFFERED=1
 CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9100", "--workers", "2", "--no-access-log"]

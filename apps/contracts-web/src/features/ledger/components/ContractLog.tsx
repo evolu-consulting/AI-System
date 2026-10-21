@@ -1,11 +1,10 @@
 // HD7-FR-12 · S05: khối "Ghi việc với {tên} · khách hàng/nhà cung cấp" cuối trang HĐ đã duyệt — port `ContractPage.tsx:163-181`.
 // HĐ chưa biết đối tác ⇒ không hiện.
 import type { ContractStatus } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { fetchContractPartner, ledgerKeys } from "../api";
+import { useContractPartner } from "../hooks/use-ledger";
 import { PartnerLog } from "./PartnerLog";
 
 /** mgmt: mọi trạng thái trừ đang đọc / đọc lỗi / chờ kiểm. */
@@ -15,11 +14,7 @@ export const showsLog = (status: ContractStatus | string) =>
 export function ContractLog({ contractId, status }: { contractId: string; status: string }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.ledger.${k}`, o);
-  const p = useQuery({
-    queryKey: ledgerKeys.partner(contractId),
-    queryFn: ({ signal }) => fetchContractPartner(contractId, signal),
-    enabled: showsLog(status),
-  });
+  const p = useContractPartner(contractId, showsLog(status));
   const [open, setOpen] = useState(false);
   if (!showsLog(status) || !p.data?.party) return null;
   return (

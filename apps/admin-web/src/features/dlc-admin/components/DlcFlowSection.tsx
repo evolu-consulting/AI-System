@@ -5,7 +5,6 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { useDeleteDlcWorkflow, useDlcWorkflows, usePatchDlcWorkflow } from "../api";
+import { useDlcFlowItems, useDlcWorkflowRemove, useDlcWorkflowToggle } from "../hooks/use-dlc-flow";
 import { DlcWorkflowDialog } from "./DlcWorkflowDialog";
 
 type Editing = { workflow: DlcWorkflow | null } | null;
@@ -57,12 +56,7 @@ function Row({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
-  const patch = usePatchDlcWorkflow();
-  const toggle = (enabled: boolean) =>
-    patch.mutate(
-      { id: w.id, patch: { enabled, version: w.version } },
-      { onError: (e) => toast.error((e as Error).message) },
-    );
+  const { toggle, isPending } = useDlcWorkflowToggle(w);
   return (
     <tr className="border-t border-border">
       <td className="px-3 py-2.5">
@@ -81,7 +75,7 @@ function Row({
       <td className="px-3 py-2.5">
         <Switch
           checked={w.enabled}
-          disabled={patch.isPending}
+          disabled={isPending}
           aria-label={w.name}
           onCheckedChange={toggle}
         />
@@ -132,8 +126,8 @@ type TableProps = {
 /** `adding` do trang điều khiển (nút Thêm workflow ở PageHeader). */
 export function DlcFlowSection({ adding, onAdded }: { adding: boolean; onAdded: () => void }) {
   const { t } = useTranslation();
-  const list = useDlcWorkflows();
-  const del = useDeleteDlcWorkflow();
+  const items = useDlcFlowItems();
+  const remove = useDlcWorkflowRemove();
   const [editing, setEditing] = useState<Editing>(null);
   const [removing, setRemoving] = useState<DlcWorkflow | null>(null);
   const current = adding ? { workflow: null } : editing;
@@ -141,7 +135,6 @@ export function DlcFlowSection({ adding, onAdded }: { adding: boolean; onAdded: 
     setEditing(null);
     onAdded();
   };
-  const items = list.data?.items ?? [];
   return (
     <section className="mb-8 flex flex-col gap-3">
       <header>
@@ -167,10 +160,7 @@ export function DlcFlowSection({ adding, onAdded }: { adding: boolean; onAdded: 
         title={t("dlcAdmin.deleteConfirm", { name: removing?.name ?? "" })}
         confirmLabel={t("dlcAdmin.delete")}
         destructive
-        onConfirm={async () => {
-          if (removing) await del.mutateAsync(removing.id);
-          toast.success(t("dlcAdmin.deleted"));
-        }}
+        onConfirm={() => remove(removing)}
       />
     </section>
   );

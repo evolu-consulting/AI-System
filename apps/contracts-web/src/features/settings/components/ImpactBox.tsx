@@ -1,9 +1,8 @@
 // V2-L · "thử tính" trên dữ liệu thật: `POST /reputation/config/preview` (không ghi) — bao nhiêu đối tác đổi điểm/mức nếu lưu bản nháp.
 import type { RepPreviewIn } from "@ai/contracts";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { previewRep } from "../api";
+import { useRepPreview } from "../hooks/use-settings";
 import { Panel } from "./controls";
 
 function useDebounced<T>(v: T, ms: number): T {
@@ -18,13 +17,7 @@ function useDebounced<T>(v: T, ms: number): T {
 export function ImpactBox({ body }: { body: RepPreviewIn | null }) {
   const { t } = useTranslation();
   const key = useDebounced(body ? JSON.stringify(body) : null, 600);
-  const q = useQuery({
-    queryKey: ["settings", "rep-preview", key],
-    queryFn: ({ signal }) => previewRep(JSON.parse(key as string) as RepPreviewIn, signal),
-    enabled: key !== null,
-    staleTime: 30_000,
-    retry: false,
-  });
+  const q = useRepPreview(key);
   const s = (k: string, o?: Record<string, string | number>) =>
     t(`contracts.settings.impact.${k}`, o);
   if (!body)

@@ -3,9 +3,8 @@
 import type { ContractDeal, ProductOut } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
-import { matchProduct } from "../api";
+import { useProductSuggest } from "../hooks/use-product-suggest";
 import { autoTotal, type LineState, lineTotal } from "../lib/form-model";
-import { suggestionPatch } from "../lib/suggest";
 import { ProductPicker } from "./ProductPicker";
 
 type Props = {
@@ -43,17 +42,14 @@ function ItemRow({
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
   const total = lineTotal(line);
+  const matchLine = useProductSuggest(deal);
 
   /** Chưa chọn SP ⇒ xin gợi ý; kết quả đến muộn mà người dùng đã chọn tay thì cha giữ lựa chọn tay (`patchLine`). */
   async function suggest() {
     const text = line.name.trim();
     if (text.length < 2 || line.product_id) return;
-    try {
-      const patch = suggestionPatch(await matchProduct(text, deal), deal);
-      if (patch) onPatch(patch);
-    } catch {
-      /* gợi ý là phụ: lỗi mạng ⇒ người dùng tự chọn */
-    }
+    const patch = await matchLine(text);
+    if (patch) onPatch(patch);
   }
 
   return (

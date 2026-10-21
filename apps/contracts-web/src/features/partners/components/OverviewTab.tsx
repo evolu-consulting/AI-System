@@ -1,10 +1,8 @@
 // V2-I · DT-02/03 · tab Tổng quan: bảng tính điểm từng nhóm (bấm tiêu chí ⇒ các việc), các bước tới điểm cuối, biểu đồ 3/6/12 tháng.
 import type { RepRole } from "@ai/contracts";
-import { ApiError } from "@ai/web-kit/http";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchRepConfig, fetchRepDetail, partnerKeys } from "../api";
+import { isNotFound, useRepConfig, useRepDetail } from "../hooks/use-partner-rep";
 import type { Range } from "../lib/partner-v2";
 import { FinalSteps } from "./FinalSteps";
 import { HistoryChart } from "./HistoryChart";
@@ -25,19 +23,12 @@ export function OverviewTab({
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
-  const d = useQuery({
-    queryKey: partnerKeys.detail(party, role),
-    queryFn: ({ signal }) => fetchRepDetail(party, role, signal),
-    retry: false,
-  });
-  const cfg = useQuery({
-    queryKey: partnerKeys.repConfig,
-    queryFn: ({ signal }) => fetchRepConfig(signal),
-  });
+  const d = useRepDetail(party, role);
+  const cfg = useRepConfig();
   const body = () => {
     if (d.isLoading) return <Loading />;
     // 404 = đối tác chưa có việc/HĐ nào để chấm (nhãn MỚI) — không phải lỗi.
-    if (d.error instanceof ApiError && d.error.status === 404)
+    if (isNotFound(d.error))
       return <p className="px-5 py-4 text-label text-dim">{L("noScoreYet")}</p>;
     if (d.error) return <ErrorLine error={d.error} />;
     const x = d.data;

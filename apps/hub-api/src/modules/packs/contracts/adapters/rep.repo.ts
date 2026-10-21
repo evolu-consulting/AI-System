@@ -22,28 +22,29 @@ export function repRepo(tx: Tx, t: string) {
 }
 export type RepRepo = ReturnType<typeof repRepo>;
 
+/**
+ * V2-GAPS · C10: mốc CỦA MÌNH đã xong từ `from` (HĐ đã xác nhận người gọi thấy — RLS), gom theo (loại HĐ, đối tác); trễ =
+ * `done_at > due_date`. MỘT câu.
+ */
+const mineRows = (tx: Tx, t: string, from: string) =>
+  one<MineRaw[]>(
+    tx,
+    sql`select coalesce(json_agg(x), '[]'::json) as j from (
+        select c.deal, o.party_key as party, coalesce(co.short_name, co.name) as name, count(*)::int as total,
+          count(*) filter (where o.done_at > o.due_date)::int as late,
+          count(*) filter (where o.done_at > o.due_date and o.fault = 'ours')::int as fault_ours,
+          count(*) filter (where o.done_at > o.due_date and o.fault = 'partner')::int as fault_partner,
+          count(*) filter (where o.done_at > o.due_date and coalesce(o.fault, 'unknown') not in ('ours', 'partner'))::int as fault_unknown
+        from contracts.obligations o
+          join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id
+          left join contracts.companies co on co.tenant_id = o.tenant_id and co.party_key = o.party_key
+        where o.tenant_id = ${t}::uuid and o.owner = 'ours' and o.status = 'done' and o.done_at >= ${from}::date
+          and c.kind = 'contract' and c.status in (${CONFIRMED})
+        group by c.deal, o.party_key, coalesce(co.short_name, co.name)) x`,
+  );
 function scoreReads(tx: Tx, t: string) {
   return {
-    /**
-     * V2-GAPS · C10: mốc CỦA MÌNH đã xong từ `from` (HĐ đã xác nhận người gọi thấy — RLS), gom theo (loại HĐ, đối tác); trễ =
-     * `done_at > due_date`. MỘT câu.
-     */
-    mineRows: (from: string) =>
-      one<MineRaw[]>(
-        tx,
-        sql`select coalesce(json_agg(x), '[]'::json) as j from (
-            select c.deal, o.party_key as party, coalesce(co.short_name, co.name) as name, count(*)::int as total,
-              count(*) filter (where o.done_at > o.due_date)::int as late,
-              count(*) filter (where o.done_at > o.due_date and o.fault = 'ours')::int as fault_ours,
-              count(*) filter (where o.done_at > o.due_date and o.fault = 'partner')::int as fault_partner,
-              count(*) filter (where o.done_at > o.due_date and coalesce(o.fault, 'unknown') not in ('ours', 'partner'))::int as fault_unknown
-            from contracts.obligations o
-              join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id
-              left join contracts.companies co on co.tenant_id = o.tenant_id and co.party_key = o.party_key
-            where o.tenant_id = ${t}::uuid and o.owner = 'ours' and o.status = 'done' and o.done_at >= ${from}::date
-              and c.kind = 'contract' and c.status in (${CONFIRMED})
-            group by c.deal, o.party_key, coalesce(co.short_name, co.name)) x`,
-      ),
+    mineRows: (from: string) => mineRows(tx, t, from),
 
     scoreRows: (today: string, cells: CellParam[], party: string | null = null) =>
       scoreRows(tx, t, { today, cells, party }),

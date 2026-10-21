@@ -2,6 +2,7 @@
 // Chạy dưới `admin_api` scope platform (RLS bật); mọi câu ghi mang `tenant_id` tường minh.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import type { NewTenant, OnboardRepo, TenantNow } from "../application/ports";
 import type { DeptRow } from "../domain/onboard.rules";
 
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
@@ -16,15 +17,6 @@ export async function actorOk(tx: Tx, actorId: string): Promise<boolean> {
   );
   return r?.ok === true;
 }
-
-export type TenantNow = {
-  id: string;
-  name: string;
-  timezone: string;
-  profile: Record<string, unknown>;
-  src: string | null;
-  org: string | null;
-};
 
 /** Tenant theo key, khoá hàng (chạy đồng thời hai lần ⇒ tuần tự). */
 export async function lockTenant(tx: Tx, key: string): Promise<TenantNow | null> {
@@ -46,14 +38,6 @@ export async function orgTakenBy(tx: Tx, orgId: string, tenantId: string | null)
   return r?.key ?? null;
 }
 
-export type NewTenant = {
-  id: string;
-  key: string;
-  name: string;
-  timezone: string;
-  profile: unknown;
-  settings: Record<string, unknown>;
-};
 /** Key đã có (đua) ⇒ không trả hàng. Trigger `tenants_beta_group` chạy như tạo tenant qua API. */
 export async function insertTenant(tx: Tx, t: NewTenant, actorId: string): Promise<boolean> {
   const rows = await run<{ id: string }>(
@@ -167,3 +151,16 @@ export async function setHeads(
   );
   return r?.n ?? 0;
 }
+
+/** Nối các hàm SQL với một tx scope platform thành cổng `OnboardRepo` của use case. */
+export const onboardRepo = (tx: Tx): OnboardRepo => ({
+  actorOk: (a) => actorOk(tx, a),
+  lockTenant: (k) => lockTenant(tx, k),
+  orgTakenBy: (o, t) => orgTakenBy(tx, o, t),
+  insertTenant: (t, a) => insertTenant(tx, t, a),
+  updateTenant: (i, s, a) => updateTenant(tx, i, s, a),
+  upsertGroups: (t, r, a) => upsertGroups(tx, t, r, a),
+  upsertDepartments: (t, r) => upsertDepartments(tx, t, r),
+  addMembers: (t, p, a) => addMembers(tx, t, p, a),
+  setHeads: (t, h) => setHeads(tx, t, h),
+});

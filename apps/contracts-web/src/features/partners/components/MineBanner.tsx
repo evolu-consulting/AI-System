@@ -1,18 +1,14 @@
 // V2-GAPS · C10 · mockup "Uy tín của mình với khách": dải thông tin trên trang Đối tác — việc CỦA MÌNH đã xong trong 90 ngày qua, bao nhiêu
 // trễ, lỗi do ai, đối tác bị ghi lỗi nhiều nhất. Chỉ đọc; lỗi của mình KHÔNG trừ điểm đối tác (BA).
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { fetchRepMine, partnerKeys } from "../api";
+import { useRepMine } from "../hooks/use-partner-rep";
 
 const DAYS = 90;
 
 export function MineBanner() {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.vgaps.mine.${k}`, o);
-  const q = useQuery({
-    queryKey: partnerKeys.mine(DAYS),
-    queryFn: ({ signal }) => fetchRepMine(DAYS, signal),
-  });
+  const q = useRepMine(DAYS);
   const m = q.data;
   if (!m) return null;
   const detail =
