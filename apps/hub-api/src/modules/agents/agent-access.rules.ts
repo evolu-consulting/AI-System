@@ -1,7 +1,14 @@
 // HUB-FR-77 · HUB-BR-03 · HUB-BR-06 · Quyền thấy/delegate agent (plan §6.1, §6.4; spec H1-R05, R06).
 
 /** `description` tuỳ chọn để nhận cả `AgentConfig` của ảnh cấu hình lẫn hàng tối giản. */
-export type AgentRow = { id: string; key: string; enabled: boolean; description?: string };
+export type AgentRow = {
+  id: string;
+  key: string;
+  enabled: boolean;
+  description?: string;
+  /** agents-background: 'background' ⇒ không bao giờ vào danh sách chat/@mention (vắng = 'chat'). */
+  surface?: "chat" | "background";
+};
 export type EntitlementRow = { agentId: string; tenantId: string; revokedAt: Date | null };
 /** `subject` = uuid user, group, hoặc tenant (CR-054 "cả công ty"); uuid không trùng nên không cần `subject_type`. */
 export type GrantRow = { agentId: string; tenantId: string; subject: string };
@@ -60,7 +67,7 @@ export function accessInput(
   opts?: { onlyKeys?: ReadonlySet<string> },
 ): VisibleAgentsInput {
   return {
-    agents: s.agents.filter((a) => RUNNABLE_RUNTIMES.has(a.runtime)),
+    agents: s.agents.filter((a) => RUNNABLE_RUNTIMES.has(a.runtime) && a.surface !== "background"),
     entitlements: s.entitlements,
     grants: s.grants,
     orchestratorId: s.orchestrator?.agentId ?? "",

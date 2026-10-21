@@ -66,6 +66,7 @@ const toAgent = (a: AgentRow): ConfigSnapshot["agents"][number] => ({
   enabled: a.enabled,
   version: a.version,
   model: a.model,
+  surface: a.surface,
 });
 
 type OrchestratorConfig = NonNullable<ConfigSnapshot["orchestrator"]>;

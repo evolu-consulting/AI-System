@@ -20,6 +20,7 @@ import {
   blocksDisable,
   defaultsProblem,
   normalizeDefaults,
+  tierOf,
 } from "./agent-settings.rules";
 
 const scopeOf = (actor: AuthUser, tenantId: string): HubScope => ({
@@ -36,6 +37,7 @@ const stateOf = (r: repo.SettingsAgentRow): AgentState => ({
   enabled: r.enabled,
   entitled: r.entitled,
   isOrchestrator: r.is_orch,
+  background: r.surface === "background",
 });
 
 export class AgentSettingsService {
@@ -55,6 +57,9 @@ export class AgentSettingsService {
         defaults: await repo.readDefaults(tx, tenantId),
         agents: rows.map((r) => ({
           agent: { id: r.id, key: r.key, name: r.name },
+          surface: r.surface,
+          serves: r.surface === "background" ? r.serves : null,
+          tier: tierOf(r.profile_key),
           description: r.description,
           runtime: r.runtime,
           model: { value: r.model, display_name: r.model_name },
@@ -122,8 +127,14 @@ export class AgentSettingsService {
       if (!agent) throw appError("INVALID_REFERENCE", { field: "agent_id" });
       if (!entitled && blocksDisable(agentId, await repo.readDefaults(tx, tenantId)))
         throw appError("AGENT_IS_DEFAULT");
-      if (!(await repo.setEntitlement(tx, { tenantId, agentId, entitled, by: actor.userId })))
-        return { hub_config_version: locked };
+      const change = {
+        tenantId,
+        agentId,
+        entitled,
+        by: actor.userId,
+        defaultOn: repo.isDefaultOn(agent),
+      };
+      if (!(await repo.setEntitlement(tx, change))) return { hub_config_version: locked };
       const version = await bumpHubConfig(tx);
       await this.d.audit.insert(tx, {
         ...(await this.auditBase(tx, actor, tenantId, version)),

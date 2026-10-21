@@ -62,17 +62,22 @@ export async function upsertAgents(tx: Tx, rows: SeedPlan["agents"]): Promise<vo
       token_budget: a.token_budget,
       enabled: a.enabled,
     };
+    const sv = a.serves ? JSON.stringify(a.serves) : null;
     const [cur] = await tx<
       (SeedAgentFields & { studio_overrides: string[] })[]
     >`select name, description, runtime, profile_id, system_prompt, runtime_options, timeout_s, token_budget,
         enabled, studio_overrides from hub.agents where key = ${a.key} for update`;
     if (!cur) {
       await tx`insert into hub.agents (key, name, description, runtime, profile_id, system_prompt, runtime_options,
-          timeout_s, token_budget, enabled)
+          timeout_s, token_budget, enabled, surface, serves)
         values (${a.key}, ${tx.json(a.name)}, ${a.description}, ${a.runtime}, ${p.id}, ${a.system_prompt},
-          ${tx.json(a.runtime_options as postgres.JSONValue)}, ${a.timeout_s}, ${a.token_budget}, ${a.enabled})`;
+          ${tx.json(a.runtime_options as postgres.JSONValue)}, ${a.timeout_s}, ${a.token_budget}, ${a.enabled},
+          ${a.surface}, ${sv}::text::jsonb)`;
       continue;
     }
+    // agents-background · cờ phân loại do seed quyết (Studio không sửa) ⇒ luôn đồng bộ, không qua `studio_overrides`.
+    await tx`update hub.agents set surface = ${a.surface}, serves = ${sv}::text::jsonb
+      where key = ${a.key} and (surface is distinct from ${a.surface} or serves is distinct from ${sv}::text::jsonb)`;
     const m = mergeSeedAgent(cur, seedF, cur.studio_overrides);
     const same = SEED_AGENT_FIELDS.every((f) => sameAgentValue(m[f], cur[f]));
     if (same) continue;

@@ -32,6 +32,7 @@ const MESSAGES = {
   cap: ["SEARCH_CAP", "Daily AI token cap reached"],
   failed: ["SEARCH_FAILED", "Price search failed"],
   month_cap: ["SCOUT_MONTHLY_CAP", "Monthly price-scout limit reached for this company"],
+  disabled: ["SCOUT_AGENT_DISABLED", "Price scout is turned off for this company"],
   unsupported: ["QUOTE_UNSUPPORTED", "Quote file must be a PDF or a text file"],
   unreadable: ["QUOTE_UNREADABLE", "No text could be read from the quote file"],
   too_large: ["QUOTE_TOO_LARGE", "Quote file is too large"],

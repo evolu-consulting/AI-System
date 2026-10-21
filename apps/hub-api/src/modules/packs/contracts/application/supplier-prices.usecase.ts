@@ -35,6 +35,7 @@ export class SupplierFail extends Error {
       | "cap"
       | "failed"
       | "month_cap"
+      | "disabled"
       | "unsupported"
       | "unreadable"
       | "too_large",

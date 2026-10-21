@@ -7,7 +7,15 @@ export type AgentState = {
   enabled: boolean;
   entitled: boolean;
   isOrchestrator: boolean;
+  /** agents-background · agent chạy nền (không phải Orchestrator) không làm mặc định / dự phòng được. */
+  background?: boolean;
 };
+
+/** Bậc model từ khoá profile (`claude-sub-fast` ⇒ `fast`); profile không theo bậc ⇒ null. */
+export function tierOf(profileKey: string | null): string | null {
+  const m = /-(fast|std|deep)$/.exec(profileKey ?? "");
+  return m ? (m[1] ?? null) : null;
+}
 
 export type DefaultsProblem =
   | { code: "INVALID_REFERENCE"; field: "default_agent_id" | "fallback_agent_id" }
@@ -22,12 +30,13 @@ export function defaultsProblem(
   find: (id: string) => AgentState | undefined,
 ): DefaultsProblem | null {
   const def = find(d.default_agent_id);
-  if (!def?.enabled) return { code: "INVALID_REFERENCE", field: "default_agent_id" };
+  if (!def?.enabled || (def.background && !def.isOrchestrator))
+    return { code: "INVALID_REFERENCE", field: "default_agent_id" };
   if (!def.entitled) return { code: "NOT_ENTITLED", field: "default_agent_id" };
   if (!def.isOrchestrator || d.on_no_match !== "fallback" || d.fallback_agent_id === null)
     return null;
   const fb = find(d.fallback_agent_id);
-  if (!fb?.enabled || fb.isOrchestrator || fb.id === def.id)
+  if (!fb?.enabled || fb.isOrchestrator || fb.background || fb.id === def.id)
     return { code: "INVALID_REFERENCE", field: "fallback_agent_id" };
   if (!fb.entitled) return { code: "NOT_ENTITLED", field: "fallback_agent_id" };
   return null;

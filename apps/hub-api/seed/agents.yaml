@@ -7,6 +7,11 @@ agents:
     name: { vi: Điều phối, en: Orchestrator }
     description: Điều phối yêu cầu của người dùng tới agent phù hợp, hỏi lại khi mơ hồ.
     runtime: agentic-cli
+    # agents-background · agent chạy nền (không cấp quyền, không @mention); màn Agents liệt kê ở mục "Agent chạy nền của app".
+    surface: background
+    serves:
+      app: chat
+      label: { vi: "Chat AI › điều phối tin nhắn", en: "AI chat › message routing" }
     # ai-tiers-rag · bậc nhanh (haiku): chỉ quyết định giao việc / trả lời câu xã giao.
     profile: $HUB_SEED_PROFILE:fast
     system_prompt: >-
@@ -72,6 +77,11 @@ agents:
       VAT) và trả về danh sách giá có nguồn dạng JSON.
     runtime: agentic-cli
     profile: $HUB_SEED_PROFILE:std
+    # agents-background · agent chạy nền phục vụ Sổ Hợp Tác: không cấp quyền, không @mention; bật/tắt theo công ty ở màn Agents.
+    surface: background
+    serves:
+      app: contracts
+      label: { vi: "Sổ Hợp Tác › Dò giá thị trường", en: "Contract ledger › Price scout" }
     system_prompt: >-
       Bạn tra cứu giá bán của nhà cung cấp tại Việt Nam bằng công cụ tìm web. Tin nhắn người dùng là MỘT đối tượng JSON dữ
       liệu: product (tên sản phẩm), keywords (từ khoá tìm thêm), spec (quy cách cần so), unit (đơn vị quy đổi giá về),

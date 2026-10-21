@@ -482,6 +482,32 @@
     "error": {
       "isDefault": "Không tắt được agent đang là mặc định hoặc dự phòng. Đặt agent khác làm mặc định trước."
     },
+    "bg": {
+      "title": "Agent chạy nền của app",
+      "subtitle": "Agent không chat được: chạy thay cho một app hoặc tính năng (vd dò giá của Sổ Hợp Tác). Không cấp quyền cho người/nhóm và không hiện khi @tag trong chat.",
+      "empty": "Chưa có agent chạy nền nào.",
+      "col": {
+        "agent": "Agent",
+        "serves": "Phục vụ",
+        "model": "Model · bậc",
+        "usage": "Dùng tháng này",
+        "cap": "Trần tháng",
+        "actions": "Thao tác"
+      },
+      "tier": {
+        "fast": "Nhanh",
+        "std": "Chuẩn",
+        "deep": "Sâu"
+      },
+      "usage": "{calls} lượt · {tokens} token",
+      "usageLink": "Xem ở Usage",
+      "usageError": "Không tải được mức dùng",
+      "capIn": "Đặt trong {app}",
+      "capNone": "Không có trần riêng",
+      "offHint": "Đã tắt cho công ty này — tính năng gọi agent sẽ báo rõ là đã bị tắt.",
+      "openStudio": "Mở trong Studio",
+      "openStudioAria": "Mở {agent} trong Studio"
+    },
     "dlc": {
       "supervisor": "Supervisor AI SDLC",
       "team": "Đội AI SDLC",

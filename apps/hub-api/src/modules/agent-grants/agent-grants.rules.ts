@@ -27,7 +27,7 @@ export function targetTenant(
 
 /** H3b-R04 · thứ tự lỗi khi cấp (đầu vào đã đọc từ DB; null = cấp được). */
 export type GrantCheck = {
-  agent: { isOrchestrator: boolean; entitled: boolean } | null;
+  agent: { isOrchestrator: boolean; entitled: boolean; isBackground?: boolean } | null;
   subjectInTenant: boolean;
 };
 export type GrantProblem =
@@ -39,7 +39,7 @@ export type GrantProblem =
 /** Không nhận role: platform_admin cũng không được bỏ qua bước nào (R04). */
 export function grantProblem(c: GrantCheck): GrantProblem | null {
   if (c.agent === null) return "AGENT_NOT_FOUND_REF";
-  if (c.agent.isOrchestrator) return "AGENT_NOT_GRANTABLE";
+  if (c.agent.isOrchestrator || c.agent.isBackground) return "AGENT_NOT_GRANTABLE";
   if (!c.agent.entitled) return "NOT_ENTITLED";
   if (!c.subjectInTenant) return "SUBJECT_NOT_FOUND_REF";
   return null;

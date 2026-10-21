@@ -61,6 +61,8 @@ export type AgentConfig = {
   version: number;
   /** CR-054: model ghi đè bước profile của job `agent.cli` (vắng/null = theo profile). */
   model?: string | null;
+  /** agents-background: 'background' ⇒ không vào danh sách chat/@mention (vắng = 'chat'). */
+  surface?: "chat" | "background";
 };
 /** CR-054: agent mặc định của tenant ở Hỏi AI (`hub.tenant_agent_defaults`). */
 export type TenantAgentDefaults = {

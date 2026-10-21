@@ -62,6 +62,16 @@ export const SeedAgentSchema = z.strictObject({
   timeout_s: z.number().int().min(10).max(3600).default(600),
   token_budget: z.number().int().min(1).nullable().default(null),
   enabled: z.boolean().default(true),
+  /** agents-background · 'chat' (cấp quyền được) | 'background' (chạy nền cho app, không cấp quyền / @mention). */
+  surface: z.enum(["chat", "background"]).default("chat"),
+  /** Agent nền: app + nhãn tính năng phục vụ (hiện ở màn Agents). */
+  serves: z
+    .strictObject({
+      app: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/),
+      label: LocalizedNameSchema,
+    })
+    .nullable()
+    .default(null),
 });
 
 /** H2a plan-db §4: agent `dify-*` chỉ có `workflow_key` (key Admin, `CATALOG_KEY_RE`); thừa khoá → lỗi seed. */

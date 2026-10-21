@@ -30,7 +30,14 @@ import type { ScoutAgent, ScoutRepo } from "./price-scout.ports";
 
 export class ScoutFail extends Error {
   constructor(
-    readonly kind: "not_found" | "month_cap" | "unavailable" | "cap" | "failed" | "forbidden",
+    readonly kind:
+      | "not_found"
+      | "month_cap"
+      | "unavailable"
+      | "disabled"
+      | "cap"
+      | "failed"
+      | "forbidden",
   ) {
     super(kind);
   }
@@ -40,6 +47,8 @@ export type ScoutDeps = {
   uow: PackUow<{ scout: ScoutRepo }>;
   agent: ScoutAgent;
   quota: ActionQuota;
+  /** agents-background · agent dò giá còn bật cho công ty (false ⇒ `disabled`, không giữ lượt, không gọi agent). Vắng ⇒ bật. */
+  enabled?: (tenantId: string) => Promise<boolean>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   /** Trần lượt dò/tháng mặc định của hệ thống (khi tenant/platform chưa đặt). */
   systemSearches?: number;
@@ -66,7 +75,13 @@ function usageOut(
 
 const failOf = (code: string): ScoutFail =>
   new ScoutFail(
-    code === "CAP_EXCEEDED" ? "cap" : code === "UNAVAILABLE" ? "unavailable" : "failed",
+    code === "CAP_EXCEEDED"
+      ? "cap"
+      : code === "UNAVAILABLE"
+        ? "unavailable"
+        : code === "DISABLED"
+          ? "disabled"
+          : "failed",
   );
 
 function scoutCtx(d: ScoutDeps) {
@@ -132,6 +147,7 @@ async function scoutOnce(
   who: PackWho,
   id: string,
 ): Promise<SupplierSearchOut> {
+  if (d.enabled && !(await d.enabled(who.tenantId))) throw new ScoutFail("disabled");
   const day = await today(who);
   const m = monthStart(day);
   const p = await tx(who, async (r) => {
@@ -150,7 +166,9 @@ async function scoutOnce(
     signal: AbortSignal.timeout(d.timeoutMs ?? SCOUT_TIMEOUT_MS),
   });
   // Không tới nhà cung cấp (agent tắt / hết trần token ngày) ⇒ trả lượt đã giữ; tới rồi ⇒ cộng token.
-  const refund = !out.ok && (out.code === "UNAVAILABLE" || out.code === "CAP_EXCEEDED");
+  const refund =
+    !out.ok &&
+    (out.code === "UNAVAILABLE" || out.code === "CAP_EXCEEDED" || out.code === "DISABLED");
   const tokens = out.ok ? out.tokens : 0;
   if (refund || tokens > 0) await tx(who, (r) => r.settleManual(day, tokens, refund));
   if (!out.ok) throw failOf(out.code);

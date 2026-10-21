@@ -17,6 +17,8 @@ export type AgentCheckRow = {
   name: AgentName;
   isOrchestrator: boolean;
   entitled: boolean;
+  /** agents-background · agent chạy nền: không cấp quyền được. */
+  isBackground: boolean;
 };
 export type SubjectRow =
   | { type: "group"; id: string; key: string; name: { vi: string; en?: string } }
@@ -44,14 +46,22 @@ export async function agentCheck(
     name: AgentName;
     is_orch: boolean;
     entitled: boolean;
-  }>(sql`select a.id, a.key, a.name,
+    background: boolean;
+  }>(sql`select a.id, a.key, a.name, a.surface = 'background' as background,
       exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
       (e.agent_id is not null and e.revoked_at is null) as entitled
     from hub.agents a
     left join hub.agent_entitlements e on e.agent_id = a.id and e.tenant_id = ${tenantId}
     where a.id = ${agentId}`);
   if (!r) return null;
-  return { id: r.id, key: r.key, name: r.name, isOrchestrator: r.is_orch, entitled: r.entitled };
+  return {
+    id: r.id,
+    key: r.key,
+    name: r.name,
+    isOrchestrator: r.is_orch,
+    entitled: r.entitled,
+    isBackground: r.background,
+  };
 }
 
 /** SUBJECT_GROUP / SUBJECT_USER — subject phải thuộc T; tenant khác ≡ không có (không lộ tồn tại). */

@@ -55,6 +55,7 @@
         "SEARCH_CAP": "Today's AI allowance is used up. Try again tomorrow.",
         "SEARCH_FAILED": "AI returned nothing readable. Try again.",
         "ACTION_QUOTA": "Daily AI request limit reached.",
+        "SCOUT_AGENT_DISABLED": "Market price search is turned off for your company. Ask the platform administrator to turn it back on.",
         "SCOUT_MONTHLY_CAP": "The company's price-search allowance for this month is used up ({{used}}/{{limit}}). Ask a manager to raise the cap in Settings.",
         "PACK_FORBIDDEN": "You do not have permission to do this."
       }

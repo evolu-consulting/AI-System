@@ -27,6 +27,8 @@ export type ScoutSchedulerDeps = {
   finder: ScoutDueFinder;
   uow: PackSystemUow<{ schedule: ScoutScheduleRepo }>;
   agent: ScoutAgent;
+  /** agents-background · agent dò giá còn bật cho công ty; false ⇒ bỏ qua tenant (không nhận lô, lịch giữ nguyên). Vắng ⇒ bật. */
+  enabled?: (tenantId: string) => Promise<boolean>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   limits: ScheduleLimits;
   now: () => Date;
@@ -76,6 +78,7 @@ async function scoutOne(
 export function createScoutScheduler(d: ScoutSchedulerDeps) {
   /** Một lô của một tenant; trả số SP đã dò. */
   async function tenantOnce(tenantId: string): Promise<number> {
+    if (d.enabled && !(await d.enabled(tenantId))) return 0;
     const at = d.now();
     const day = localDate(at, await d.timeZoneOf(tenantId));
     const claimed = await d.uow.system(tenantId, (r) =>

@@ -9,6 +9,9 @@ import type {
 } from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HUB_KEYS } from "@/features/hub/api";
+import { fetchMyApps } from "@/features/shell/api";
+import { useAnalytics } from "@/features/usage-analytics/api";
+import { presetRange } from "@/features/usage-analytics/lib/view";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 import type { GrantChange } from "./lib/grant-draft";
@@ -103,6 +106,22 @@ export function usePutAgentEntitlement(tenantId: string | undefined) {
       void qc.invalidateQueries({ queryKey: AGENT_KEYS.all });
       void qc.invalidateQueries({ queryKey: HUB_KEYS.all });
     },
+  });
+}
+
+/** Mức dùng tháng này (ngày VN) của mọi agent: một lời gọi analytics, gộp theo agent ở `usageByAgent`. */
+export function useAgentMonthUsage(tenantId: string | undefined, enabled: boolean) {
+  const range = presetRange("month", new Date());
+  return useAnalytics({ tenantId, ...range, grain: "month" }, enabled);
+}
+
+/** App người dùng mở được (URL Studio / app phục vụ) — cùng nguồn với switcher "Ứng dụng". */
+export function useMyApps(enabled: boolean) {
+  return useQuery({
+    queryKey: ["agents", "my-apps"] as const,
+    enabled,
+    staleTime: 5 * 60_000,
+    queryFn: fetchMyApps,
   });
 }
 

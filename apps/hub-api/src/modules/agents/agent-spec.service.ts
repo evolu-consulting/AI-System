@@ -11,12 +11,21 @@ type Row = {
   runtime: string;
   system_prompt: string;
   model: string | null;
+  entitled: boolean;
 };
 
+/**
+ * agents-background · `tenantId` cho trước ⇒ thêm `entitled`: agent nền (`surface = 'background'`) bị tắt cho công ty khi có hàng
+ * `agent_entitlements` đã thu hồi; agent chat luôn `true` (quyền chat do cổng quyền khác lo).
+ */
 export function agentSpecOf(db: Db): AgentSpecOf {
-  return async (key): Promise<AgentSpec | null> => {
+  return async (key, tenantId): Promise<AgentSpec | null> => {
+    const t = tenantId ?? null;
     const [r] = await db.db.execute<Row>(sql`select a.id, a.enabled, a.runtime, a.system_prompt,
-        coalesce(a.model, p.steps -> 0 ->> 'model') as model
+        coalesce(a.model, p.steps -> 0 ->> 'model') as model,
+        not (a.surface = 'background' and ${t}::uuid is not null and exists (
+          select 1 from hub.agent_entitlements e
+          where e.agent_id = a.id and e.tenant_id = ${t}::uuid and e.revoked_at is not null)) as entitled
       from hub.agents a left join hub.model_profiles p on p.id = a.profile_id where a.key = ${key}`);
     return r
       ? {
@@ -25,6 +34,7 @@ export function agentSpecOf(db: Db): AgentSpecOf {
           runtime: r.runtime,
           systemPrompt: r.system_prompt,
           model: r.model,
+          entitled: r.entitled,
         }
       : null;
   };

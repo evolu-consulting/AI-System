@@ -130,6 +130,12 @@ export const agents = hub.table("agents", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
   /** CR-054 (0018): model ghi đè bước profile (alias `haiku`/`sonnet`/`opus` hoặc id); NULL = theo profile. */
   model: text("model"),
+  /** agents-background (0055): 'chat' (cấp quyền được) | 'background' (chạy nền cho app, không cấp quyền / @mention). */
+  surface: text("surface", { enum: ["chat", "background"] })
+    .notNull()
+    .default("chat"),
+  /** agents-background (0055): app + nhãn tính năng agent nền phục vụ; NULL với agent chat. */
+  serves: jsonb("serves").$type<{ app: string; label: { vi: string; en: string } } | null>(),
 });
 
 /** CR-054 (0018): agent mặc định của tenant ở Hỏi AI (vắng hàng ⇒ hành vi cũ). */

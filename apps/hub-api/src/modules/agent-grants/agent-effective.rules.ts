@@ -90,7 +90,12 @@ export function effectiveAgents(i: EffectiveInput): EffectiveAgentCalc[] {
   const idx = indexTenant(i);
   const orch = orchestratorIds(i.snapshot);
   return i.snapshot.agents
-    .filter((a) => !orch.has(a.id) && (idx.entitled.has(a.id) || idx.granted.has(a.id)))
+    .filter(
+      (a) =>
+        !orch.has(a.id) &&
+        a.surface !== "background" &&
+        (idx.entitled.has(a.id) || idx.granted.has(a.id)),
+    )
     .map((a) => {
       const reasons = idx.reasons.get(a.id) ?? [];
       const missing = missingOf(i, a, idx.entitled.has(a.id), reasons.length > 0);

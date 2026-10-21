@@ -482,6 +482,32 @@
     "error": {
       "isDefault": "Can't disable the default or fallback agent. Set another agent as default first."
     },
+    "bg": {
+      "title": "Background agents of apps",
+      "subtitle": "Agents that can't be chatted with: they run on behalf of an app or feature (e.g. price scout in the contract ledger). They can't be granted to people/groups and never show up in chat @mentions.",
+      "empty": "No background agents yet.",
+      "col": {
+        "agent": "Agent",
+        "serves": "Serves",
+        "model": "Model · tier",
+        "usage": "Usage this month",
+        "cap": "Monthly cap",
+        "actions": "Actions"
+      },
+      "tier": {
+        "fast": "Fast",
+        "std": "Standard",
+        "deep": "Deep"
+      },
+      "usage": "{calls} calls · {tokens} tokens",
+      "usageLink": "View in Usage",
+      "usageError": "Couldn't load usage",
+      "capIn": "Set in {app}",
+      "capNone": "No separate cap",
+      "offHint": "Turned off for this company — the feature that calls this agent will say clearly that it is off.",
+      "openStudio": "Open in Studio",
+      "openStudioAria": "Open {agent} in Studio"
+    },
     "dlc": {
       "supervisor": "AI SDLC supervisor",
       "team": "AI SDLC team",

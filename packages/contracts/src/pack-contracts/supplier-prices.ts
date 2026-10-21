@@ -14,6 +14,8 @@ export const SUPPLIER_PRICE_ERRORS = {
   SEARCH_FAILED: 502,
   /** price-scout · hết trần lượt dò giá (hoặc token) tháng này của tenant. */
   SCOUT_MONTHLY_CAP: 429,
+  /** agents-background · quản trị nền tảng đã tắt agent dò giá cho công ty này (Evolu Control → Agents). */
+  SCOUT_AGENT_DISABLED: 409,
   /** gap-d1 #21 · tải báo giá: tệp không phải PDF/văn bản · không đọc được chữ (PDF scan/hỏng) · quá lớn. */
   QUOTE_UNSUPPORTED: 415,
   QUOTE_UNREADABLE: 422,

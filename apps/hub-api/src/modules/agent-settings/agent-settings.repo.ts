@@ -18,7 +18,17 @@ export type SettingsAgentRow = {
   model_name: string | null;
   agent_type_key: string | null;
   runtime_options: Record<string, unknown> | null;
+  surface: "chat" | "background";
+  serves: { app: string; label: { vi: string; en: string } } | null;
+  profile_key: string | null;
 };
+
+/**
+ * agents-background · agent nền (trừ Orchestrator — nó theo luật entitlement cũ) mặc định BẬT cho công ty, chỉ TẮT khi có hàng
+ * entitlement đã thu hồi; mọi agent khác bật khi có hàng chưa thu hồi. Dùng chung SQL list / ghi (một sự thật).
+ */
+export const isDefaultOn = (r: { surface: string; is_orch: boolean }): boolean =>
+  r.surface === "background" && !r.is_orch;
 
 /** Tối đa = `AgentSettingsResponseSchema.agents`. */
 export const SETTINGS_AGENTS_MAX = 200;
@@ -36,23 +46,32 @@ export function listAgents(
   return tx.execute<SettingsAgentRow>(sql`
     with m as (
       select a.id, coalesce(a.model, p.steps -> 0 ->> 'model') as model,
-        p.steps -> 0 ->> 'provider_key' as provider_key
-      from hub.agents a left join hub.model_profiles p on p.id = a.profile_id)
-    select a.id, a.key, a.name, a.description, a.runtime, a.enabled, a.agent_type_key, a.runtime_options,
-      (e.agent_id is not null and e.revoked_at is null) as entitled,
-      exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
-      m.model,
-      (select pm.display_name from hub.provider_models pm where pm.value = m.model and pm.provider_key = m.provider_key
-        order by pm.position limit 1) as model_name
-    from hub.agents a
-    join m on m.id = a.id
-    left join hub.agent_entitlements e on e.agent_id = a.id and e.tenant_id = ${tenantId}
-    where not exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id
-        and o.id is distinct from (select r.id from hub.orchestrator_settings r
-          where r.tenant_id = ${tenantId} or r.tenant_id is null
-          order by r.tenant_id nulls last limit 1))
-      and (${scope} = 'catalog' or (e.agent_id is not null and e.revoked_at is null))
-    order by a.key limit ${SETTINGS_AGENTS_MAX}`);
+        p.steps -> 0 ->> 'provider_key' as provider_key, p.key as profile_key
+      from hub.agents a left join hub.model_profiles p on p.id = a.profile_id),
+    x as (
+      select a.id, a.key, a.name, a.description, a.runtime, a.enabled, a.agent_type_key, a.runtime_options,
+        a.surface, a.serves, m.profile_key,
+        exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
+        e.agent_id is not null as has_row, e.revoked_at is null as row_live,
+        m.model,
+        (select pm.display_name from hub.provider_models pm where pm.value = m.model and pm.provider_key = m.provider_key
+          order by pm.position limit 1) as model_name
+      from hub.agents a
+      join m on m.id = a.id
+      left join hub.agent_entitlements e on e.agent_id = a.id and e.tenant_id = ${tenantId}
+      where not exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id
+          and o.id is distinct from (select r.id from hub.orchestrator_settings r
+            where r.tenant_id = ${tenantId} or r.tenant_id is null
+            order by r.tenant_id nulls last limit 1)))
+    select x.id, x.key, x.name, x.description, x.runtime, x.enabled, x.agent_type_key, x.runtime_options,
+      x.surface, x.serves, x.profile_key, x.is_orch, x.model, x.model_name,
+      case when x.surface = 'background' and not x.is_orch then not (x.has_row and not x.row_live)
+        else (x.has_row and x.row_live) end as entitled
+    from x
+    where ${scope} = 'catalog'
+      or (case when x.surface = 'background' and not x.is_orch then not (x.has_row and not x.row_live)
+        else (x.has_row and x.row_live) end)
+    order by x.key limit ${SETTINGS_AGENTS_MAX}`);
 }
 
 type DefaultsRow = {
@@ -98,11 +117,13 @@ export type EntitlementChange = {
   agentId: string;
   entitled: boolean;
   by: string;
+  /** Agent nền mặc định bật: tắt ⇒ tạo hàng đã thu hồi khi chưa có hàng; bật ⇒ bỏ thu hồi (như thường). */
+  defaultOn?: boolean;
 };
 
 export async function setEntitlement(
   tx: Tx,
-  { tenantId, agentId, entitled, by }: EntitlementChange,
+  { tenantId, agentId, entitled, by, defaultOn }: EntitlementChange,
 ): Promise<boolean> {
   const rows = entitled
     ? await tx.execute(sql`
@@ -112,7 +133,14 @@ export async function setEntitlement(
           granted_at = now()
         where e.revoked_at is not null
         returning 1`)
-    : await tx.execute(sql`
+    : defaultOn
+      ? await tx.execute(sql`
+        insert into hub.agent_entitlements as e (agent_id, tenant_id, granted_by, revoked_at)
+        values (${agentId}, ${tenantId}, ${by}, now())
+        on conflict (agent_id, tenant_id) do update set revoked_at = now()
+        where e.revoked_at is null
+        returning 1`)
+      : await tx.execute(sql`
         update hub.agent_entitlements set revoked_at = now()
         where agent_id = ${agentId} and tenant_id = ${tenantId} and revoked_at is null
         returning 1`);

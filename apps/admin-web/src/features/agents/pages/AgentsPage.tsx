@@ -1,4 +1,5 @@
 // HUB-FR-77 · HUB-FR-78 · CR-054 · /agents (Evolu Control → Agents): agent của công ty, ai được dùng, đúng một agent mặc định.
+import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,12 +10,51 @@ import { TenantPicker } from "@/components/shared/TenantPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { hubConfigured } from "@/lib/hub";
+import { useAgentMonthUsage, useMyApps } from "../api";
 import { AgentsTable } from "../components/AgentsTable";
+import { BackgroundAgentsTable } from "../components/BackgroundAgentsTable";
 import { GrantSheet } from "../components/GrantSheet";
-import { useAgentActions } from "../hooks/use-agent-actions";
+import { type AgentActions, useAgentActions } from "../hooks/use-agent-actions";
 import { type AgentsView, useAgentsView } from "../hooks/use-agents-view";
 import { useGrantSheet } from "../hooks/use-grant-sheet";
 import { filterAgents } from "../lib/agents";
+import { splitBySurface, usageByAgent } from "../lib/background";
+
+/** Mục 2 "Agent chạy nền của app": ẩn khi công ty không có agent nền nào; usage tháng này lấy từ Usage analytics. */
+function BackgroundSection(p: {
+  items: AgentSettingsItem[] | undefined;
+  actions: AgentActions;
+  v: AgentsView;
+  hasAny: boolean;
+}) {
+  const { t } = useTranslation();
+  const usage = useAgentMonthUsage(p.v.tenantId, p.hasAny);
+  const apps = useMyApps(p.hasAny);
+  if (p.items && !p.hasAny) return null;
+  return (
+    <div className="space-y-3 pt-4">
+      <div>
+        <h2 id="agents-bg-h" className="text-h3 font-semibold">
+          {t("agents.bg.title")}
+        </h2>
+        <p className="text-label text-muted-foreground">{t("agents.bg.subtitle")}</p>
+      </div>
+      <BackgroundAgentsTable
+        items={p.items}
+        actions={p.actions}
+        isPlatform={p.v.isPlatform}
+        loading={p.items === undefined}
+        usage={{
+          loading: usage.isPending,
+          failed: usage.isError,
+          byAgent: usageByAgent(usage.data?.tree ?? []),
+        }}
+        tenantKey={p.v.tenantKey ?? null}
+        apps={apps.data ?? []}
+      />
+    </div>
+  );
+}
 
 function AgentsBody({ v }: { v: AgentsView }) {
   const { t, i18n } = useTranslation();
@@ -28,7 +68,8 @@ function AgentsBody({ v }: { v: AgentsView }) {
     return (
       <HubLoadError message={t("agents.loadError")} onRetry={() => void v.settings.refetch()} />
     );
-  const rows = data ? filterAgents(all, q, i18n.language) : undefined;
+  const { chat, background } = splitBySurface(all, data?.defaults?.default_agent_id ?? null);
+  const rows = data ? filterAgents(chat, q, i18n.language) : undefined;
   return (
     <section aria-labelledby="agents-list-h" className="space-y-3">
       {data && data.defaults === null ? (
@@ -53,6 +94,7 @@ function AgentsBody({ v }: { v: AgentsView }) {
         />
       </div>
       <AgentsTable
+        all={all}
         items={rows}
         defaults={data?.defaults ?? null}
         grantRows={v.grantRows}
@@ -62,6 +104,12 @@ function AgentsBody({ v }: { v: AgentsView }) {
         onGrant={(item) => sheet.show(item, v.grantRows.get(item.agent.id) ?? [])}
       />
       <p className="text-label text-muted-foreground">{t("agents.list.footnote")}</p>
+      <BackgroundSection
+        items={data ? background : undefined}
+        actions={actions}
+        v={v}
+        hasAny={background.length > 0}
+      />
       <GrantSheet s={sheet} />
     </section>
   );

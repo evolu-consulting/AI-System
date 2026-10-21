@@ -43,8 +43,25 @@ export const DlcAgentInfoSchema = z.strictObject({
 });
 export type DlcAgentInfo = z.infer<typeof DlcAgentInfoSchema>;
 
+/** agents-background · 'chat' = cấp quyền được; 'background' = chạy nền cho app/tính năng (không cấp quyền, không @mention). */
+export const AGENT_SURFACE_VALUES = ["chat", "background"] as const;
+export const AgentSurfaceSchema = z.enum(AGENT_SURFACE_VALUES);
+export type AgentSurface = z.infer<typeof AgentSurfaceSchema>;
+
+/** Agent nền: app + nhãn tính năng phục vụ (`app` = khoá app/usage, vd `contracts`). */
+export const AgentServesSchema = z.strictObject({
+  app: z.string().min(1).max(32),
+  label: z.strictObject({ vi: z.string().min(1).max(100), en: z.string().min(1).max(100) }),
+});
+export type AgentServes = z.infer<typeof AgentServesSchema>;
+
 export const AgentSettingsItemSchema = z.strictObject({
   agent: HubAgentRefSchema,
+  surface: AgentSurfaceSchema,
+  /** Chỉ agent nền; `null` với agent chat. */
+  serves: AgentServesSchema.nullable(),
+  /** Bậc model (`fast`/`std`/`deep`) suy từ khoá profile; `null` khi profile không theo bậc. */
+  tier: z.string().max(16).nullable(),
   description: z.string().max(HUB_AGENT_DESC_MAX),
   runtime: z.string().min(1).max(40),
   model: AgentModelSchema,

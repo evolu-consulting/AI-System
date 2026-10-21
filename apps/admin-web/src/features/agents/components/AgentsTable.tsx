@@ -9,6 +9,8 @@ import { AgentCell } from "./AgentCell";
 import { EntitledSwitch, ModelCell, RowActions, WhoCell } from "./AgentCells";
 
 type Props = {
+  /** Mọi agent của công ty (kể cả agent nền) — ô "Không khớp agent nào →" cần danh sách đủ. */
+  all?: AgentSettingsItem[];
   items: AgentSettingsItem[] | undefined;
   defaults: AgentDefaults | null;
   grantRows: ReadonlyMap<string, AgentGrantRow[]>;
@@ -24,7 +26,7 @@ type Tr = ReturnType<typeof useTranslation>["t"];
 
 /** Cột trái: Agent · Model · Chạy bằng. */
 function infoColumns(p: Props, t: Tr): Column<AgentSettingsItem>[] {
-  const all = p.items ?? [];
+  const all = p.all ?? p.items ?? [];
   return [
     {
       id: "agent",

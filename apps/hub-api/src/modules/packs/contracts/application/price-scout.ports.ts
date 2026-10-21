@@ -10,7 +10,7 @@ import type { SupplierSearchItem } from "../domain/supplier-prices.types";
 export type ScoutTrigger = "manual" | "schedule";
 export type ScoutAgentReply =
   | { ok: true; text: string; tokens: number }
-  | { ok: false; code: "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED" };
+  | { ok: false; code: "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED" | "DISABLED" };
 /** Một lượt agent dò giá (usage: app contracts, feature `contracts.price_scout`, agent, trigger, id SP). Không bao giờ ném. */
 export type ScoutAgent = (req: {
   tenantId: string;

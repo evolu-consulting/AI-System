@@ -18,7 +18,7 @@ import { scoutDueFinder, scoutScheduleRepo } from "./adapters/price-scout-schedu
 import type { ScheduleLimits } from "./application/price-scout.ports";
 import { priceScoutUsecase, SCOUT_TIMEOUT_MS } from "./application/price-scout.usecase";
 import { createScoutScheduler } from "./application/price-scout-schedule.usecase";
-import { SCOUT_MONTHLY_DEFAULT } from "./domain/price-scout.rules";
+import { SCOUT_AGENT, SCOUT_MONTHLY_DEFAULT } from "./domain/price-scout.rules";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
@@ -59,6 +59,7 @@ export function createPriceScoutScheduler(
     finder: scoutDueFinder(db, KEY),
     uow: { system: (tid, fn) => uow.system(tid, fn) },
     agent: scoutAgent(d.agents),
+    enabled: (t) => d.agents.enabledFor(SCOUT_AGENT, t),
     timeZoneOf: safeTimeZone(d.timeZoneOf),
     limits,
     now: d.now ?? (() => new Date()),
@@ -92,6 +93,7 @@ export function priceScoutModule(db: Db, view: PackAccessView, d: PriceScoutDeps
   const uc = priceScoutUsecase({
     uow,
     agent: scoutAgent(d.agents),
+    enabled: (t) => d.agents.enabledFor(SCOUT_AGENT, t),
     quota: d.quota,
     timeZoneOf: d.timeZoneOf,
     systemSearches: scoutLimitsFromEnv().systemSearches,

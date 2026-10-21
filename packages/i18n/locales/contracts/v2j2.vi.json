@@ -55,6 +55,7 @@
         "SEARCH_CAP": "Hôm nay đã dùng hết hạn mức AI. Thử lại ngày mai.",
         "SEARCH_FAILED": "AI không trả về kết quả đọc được. Thử lại.",
         "ACTION_QUOTA": "Đã hết số lượt dùng AI trong ngày.",
+        "SCOUT_AGENT_DISABLED": "Tính năng dò giá thị trường đang bị tắt cho công ty bạn. Liên hệ quản trị nền tảng để bật lại.",
         "SCOUT_MONTHLY_CAP": "Đã hết lượt dò giá tháng này của công ty ({{used}}/{{limit}}). Liên hệ quản lý để tăng trần trong Cài đặt.",
         "PACK_FORBIDDEN": "Bạn không có quyền thực hiện."
       }
