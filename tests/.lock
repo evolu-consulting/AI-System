@@ -969,6 +969,7 @@ eae3ec629d8271beb7f8e783f49d8022f6762d1b870950f0a15830adf5fb4c0b  tests/acceptan
 1b791684dadf22a8a0bbc263014ab68a7ac3cf81f74a2345dedaeb390c210991  tests/acceptance/N5/import.int.test.ts
 65973d817d0d2a69a7c588aacdba481ada8501ca95124a328ef6adc083ff44d8  tests/acceptance/N5/perf/import.perf.int.test.ts
 97efd5dc0e8db2faff2fa8f81bfe987a4de31ed8ca6e8cde94ba4f4a7b6fd8de  tests/acceptance/NITI/attach.int.test.ts
+e73b6398a50622c51ee5b86d172cc268652a8a89438cb3c0dd43516f2946e1ae  tests/acceptance/NITI/extras-import.int.test.ts
 2c84b5bf108e3d697e1b065c7851c91ff93a9cb7399382f8e5a15776aba1aa74  tests/acceptance/NITI/filebox.int.test.ts
 d1a80f4e36e530152e737dc74cdb904d68164d8c9da6978e86964f8de7f1c628  tests/acceptance/NITI/onboard.int.test.ts
 ebcdcff6ff5bb761bf3d7f61185a05eae48be46b655be45c6990f01a246c57aa  tests/acceptance/NITI/owner-import.int.test.ts
