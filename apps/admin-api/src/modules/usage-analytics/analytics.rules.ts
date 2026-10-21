@@ -41,15 +41,7 @@ export function previousFrom(from: string, to: string): string {
 }
 
 /** Thứ tự cột trong `grouping(...)` của câu breakdown (bit 1 = cột bị gộp, cột đầu = bit cao nhất). */
-export const GROUP_COLS = [
-  "app",
-  "agent_id",
-  "model",
-  "feature",
-  "user_id",
-  "tenant_id",
-  "outcome",
-] as const;
+export const GROUP_COLS = ["app", "agent_id", "model", "feature", "tenant_id", "outcome"] as const;
 export type GroupCol = (typeof GROUP_COLS)[number];
 export type GroupSet = GroupCol | "tree";
 const TREE: readonly GroupCol[] = ["app", "agent_id", "feature", "model"];

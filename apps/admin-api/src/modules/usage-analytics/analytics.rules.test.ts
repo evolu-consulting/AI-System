@@ -62,9 +62,9 @@ describe("ADM-FR-42 · usage-analytics rules", () => {
 describe("ADM-FR-42 · usage-analytics rules · gộp", () => {
   test("mặt nạ grouping → tập; cây app/agent/feature/model; mặt nạ lạ → null", () => {
     expect(setOf(maskOf(["app"]))).toBe("app");
-    expect(setOf(maskOf(["user_id"]))).toBe("user_id");
+    expect(setOf(maskOf(["tenant_id"]))).toBe("tenant_id");
     expect(setOf(maskOf(["app", "agent_id", "feature", "model"]))).toBe("tree");
-    expect(maskOf(["outcome"])).toBe(0b1111110);
+    expect(maskOf(["outcome"])).toBe(0b111110);
     expect(setOf(0)).toBeNull();
   });
 

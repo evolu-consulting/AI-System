@@ -101,7 +101,6 @@ function split(rows: readonly repo.GroupRow[]): Split {
     agent_id: [],
     model: [],
     feature: [],
-    user_id: [],
     tenant_id: [],
     outcome: [],
     tree: [],
@@ -186,7 +185,8 @@ async function build(
   const N = USAGE_BREAKDOWN_MAX;
   const platformAll = c.actor.role === "platform_admin" && f.tenantId === null;
   const byAgent = dim(s.agent_id, "agent_id", N);
-  const byUser = dim(s.user_id, "user_id", N);
+  const users = await repo.byUser(tx, f, { from: r.from, to: r.to }, N);
+  const byUser = users.map((u) => row(u.user_id, u.user_id, measuresOf(u)));
   const byTenant = platformAll ? dim(s.tenant_id, "tenant_id", N) : [];
   const tr = tree(s.tree);
   const l = await labelMaps(tx, {

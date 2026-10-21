@@ -86,6 +86,101 @@ FROM hub.usage_logs x
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 ON CONFLICT DO NOTHING;
 --> statement-breakpoint
+-- Bản gọn KHÔNG có user/provider (≈ 1/số-user dòng): báo cáo không lọc user đọc bảng này (perf 1M dòng); giữ đồng bộ từ
+-- `usage_daily` bằng trigger theo câu lệnh trên chính `usage_daily` (cộng phần chênh new − old).
+CREATE TABLE IF NOT EXISTS hub.usage_daily_dim (
+  tenant_id uuid NOT NULL,
+  day date NOT NULL,
+  app text NOT NULL,
+  feature text,
+  agent_id uuid,
+  model text,
+  billing text NOT NULL,
+  outcome text,
+  calls bigint NOT NULL DEFAULT 0,
+  runs bigint NOT NULL DEFAULT 0,
+  input_tokens bigint NOT NULL DEFAULT 0,
+  output_tokens bigint NOT NULL DEFAULT 0,
+  cache_read_tokens bigint NOT NULL DEFAULT 0,
+  cache_write_tokens bigint NOT NULL DEFAULT 0,
+  cost_usd numeric(18, 6) NOT NULL DEFAULT 0,
+  unpriced bigint NOT NULL DEFAULT 0,
+  latency_ms_sum bigint NOT NULL DEFAULT 0,
+  latency_n bigint NOT NULL DEFAULT 0
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS usage_daily_dim_key_uq ON hub.usage_daily_dim
+  (tenant_id, day, app, feature, agent_id, model, billing, outcome) NULLS NOT DISTINCT;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS usage_daily_dim_day_idx ON hub.usage_daily_dim (day);
+--> statement-breakpoint
+ALTER TABLE hub.usage_daily_dim ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+DROP POLICY IF EXISTS usage_daily_dim_admin_rw ON hub.usage_daily_dim;
+--> statement-breakpoint
+CREATE POLICY usage_daily_dim_admin_rw ON hub.usage_daily_dim FOR SELECT TO admin_rw
+  USING (current_setting('app.scope', true) = 'platform'
+         OR (current_setting('app.scope', true) = 'tenant'
+             AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid));
+--> statement-breakpoint
+GRANT SELECT ON hub.usage_daily_dim TO admin_rw;
+--> statement-breakpoint
+INSERT INTO hub.usage_daily_dim (tenant_id, day, app, feature, agent_id, model, billing, outcome, calls, runs,
+  input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, unpriced, latency_ms_sum, latency_n)
+SELECT tenant_id, day, app, feature, agent_id, model, billing, outcome, sum(calls), sum(runs), sum(input_tokens),
+  sum(output_tokens), sum(cache_read_tokens), sum(cache_write_tokens), sum(cost_usd), sum(unpriced),
+  sum(latency_ms_sum), sum(latency_n)
+FROM hub.usage_daily GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+ON CONFLICT DO NOTHING;
+--> statement-breakpoint
+-- Trigger trên `usage_daily` (INSERT / UPDATE của upsert, TRUNCATE) ⇒ cộng chênh lệch vào `usage_daily_dim`. DELETE trên
+-- `usage_daily` chỉ do dọn dòng đã về 0 (chênh lệch 0) ⇒ không cần trigger. Nhánh không chạy không được lập kế hoạch
+-- (plpgsql lười) nên mỗi trigger chỉ cần bảng chuyển tiếp của mình.
+CREATE OR REPLACE FUNCTION hub.usage_daily_dim_sync()
+  RETURNS trigger
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+  AS $$
+BEGIN
+  IF TG_OP = 'TRUNCATE' THEN
+    TRUNCATE hub.usage_daily_dim;
+  ELSIF TG_OP = 'INSERT' THEN
+    INSERT INTO hub.usage_daily_dim AS d (tenant_id, day, app, feature, agent_id, model, billing, outcome, calls, runs,
+      input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, unpriced, latency_ms_sum, latency_n)
+    SELECT x.tenant_id, x.day, x.app, x.feature, x.agent_id, x.model, x.billing, x.outcome, sum(x.calls), sum(x.runs),
+      sum(x.input_tokens), sum(x.output_tokens), sum(x.cache_read_tokens), sum(x.cache_write_tokens), sum(x.cost_usd),
+      sum(x.unpriced), sum(x.latency_ms_sum), sum(x.latency_n)
+    FROM new_rows x GROUP BY 1, 2, 3, 4, 5, 6, 7, 8 ORDER BY 1, 2, 3, 4, 5, 6, 7, 8
+    ON CONFLICT (tenant_id, day, app, feature, agent_id, model, billing, outcome) DO UPDATE SET
+      calls = d.calls + EXCLUDED.calls, runs = d.runs + EXCLUDED.runs,
+      input_tokens = d.input_tokens + EXCLUDED.input_tokens, output_tokens = d.output_tokens + EXCLUDED.output_tokens,
+      cache_read_tokens = d.cache_read_tokens + EXCLUDED.cache_read_tokens,
+      cache_write_tokens = d.cache_write_tokens + EXCLUDED.cache_write_tokens,
+      cost_usd = d.cost_usd + EXCLUDED.cost_usd, unpriced = d.unpriced + EXCLUDED.unpriced,
+      latency_ms_sum = d.latency_ms_sum + EXCLUDED.latency_ms_sum, latency_n = d.latency_n + EXCLUDED.latency_n;
+  ELSE
+    INSERT INTO hub.usage_daily_dim AS d (tenant_id, day, app, feature, agent_id, model, billing, outcome, calls, runs,
+      input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, unpriced, latency_ms_sum, latency_n)
+    SELECT x.tenant_id, x.day, x.app, x.feature, x.agent_id, x.model, x.billing, x.outcome, sum(x.s * x.calls),
+      sum(x.s * x.runs), sum(x.s * x.input_tokens), sum(x.s * x.output_tokens), sum(x.s * x.cache_read_tokens),
+      sum(x.s * x.cache_write_tokens), sum(x.s * x.cost_usd), sum(x.s * x.unpriced), sum(x.s * x.latency_ms_sum),
+      sum(x.s * x.latency_n)
+    FROM (SELECT -1 AS s, o.* FROM old_rows o UNION ALL SELECT 1, n.* FROM new_rows n) x
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+    HAVING sum(x.s * x.calls) <> 0 OR sum(x.s * x.input_tokens) <> 0 OR sum(x.s * x.output_tokens) <> 0
+      OR sum(x.s * x.cost_usd) <> 0 OR sum(x.s * x.runs) <> 0
+    ORDER BY 1, 2, 3, 4, 5, 6, 7, 8
+    ON CONFLICT (tenant_id, day, app, feature, agent_id, model, billing, outcome) DO UPDATE SET
+      calls = d.calls + EXCLUDED.calls, runs = d.runs + EXCLUDED.runs,
+      input_tokens = d.input_tokens + EXCLUDED.input_tokens, output_tokens = d.output_tokens + EXCLUDED.output_tokens,
+      cache_read_tokens = d.cache_read_tokens + EXCLUDED.cache_read_tokens,
+      cache_write_tokens = d.cache_write_tokens + EXCLUDED.cache_write_tokens,
+      cost_usd = d.cost_usd + EXCLUDED.cost_usd, unpriced = d.unpriced + EXCLUDED.unpriced,
+      latency_ms_sum = d.latency_ms_sum + EXCLUDED.latency_ms_sum, latency_n = d.latency_n + EXCLUDED.latency_n;
+  END IF;
+  RETURN NULL;
+END
+$$;
+--> statement-breakpoint
 -- Trigger THEO CÂU LỆNH: gộp các dòng của câu (±1) theo khoá rồi upsert theo thứ tự khoá (tránh deadlock). Một câu SQL mỗi
 -- lệnh ghi, không phụ thuộc số dòng. SECURITY DEFINER: writer (agent_runtime, hub_rw qua hàm) không cần quyền trên bảng.
 -- Dọn dòng tổng hợp về 0 (sau khi UPDATE dời nhóm / DELETE) theo (tenant, ngày) đã chạm — qua index (tenant_id, day, …).
@@ -93,7 +188,8 @@ CREATE OR REPLACE FUNCTION hub.usage_daily_prune(p_days date[], p_tenants uuid[]
   RETURNS void
   LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
   AS $$
-  DELETE FROM hub.usage_daily WHERE calls <= 0 AND tenant_id = ANY (p_tenants) AND day = ANY (p_days)
+  DELETE FROM hub.usage_daily WHERE calls <= 0 AND tenant_id = ANY (p_tenants) AND day = ANY (p_days);
+  DELETE FROM hub.usage_daily_dim WHERE calls <= 0 AND tenant_id = ANY (p_tenants) AND day = ANY (p_days);
 $$;
 --> statement-breakpoint
 REVOKE EXECUTE ON FUNCTION hub.usage_daily_prune(date[], uuid[]) FROM PUBLIC;
@@ -220,6 +316,22 @@ DROP TRIGGER IF EXISTS usage_logs_daily_trunc ON hub.usage_logs;
 --> statement-breakpoint
 CREATE TRIGGER usage_logs_daily_trunc AFTER TRUNCATE ON hub.usage_logs
   FOR EACH STATEMENT EXECUTE FUNCTION hub.usage_daily_del();
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS usage_daily_dim_ins ON hub.usage_daily;
+--> statement-breakpoint
+CREATE TRIGGER usage_daily_dim_ins AFTER INSERT ON hub.usage_daily REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION hub.usage_daily_dim_sync();
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS usage_daily_dim_upd ON hub.usage_daily;
+--> statement-breakpoint
+CREATE TRIGGER usage_daily_dim_upd AFTER UPDATE ON hub.usage_daily
+  REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION hub.usage_daily_dim_sync();
+--> statement-breakpoint
+DROP TRIGGER IF EXISTS usage_daily_dim_trunc ON hub.usage_daily;
+--> statement-breakpoint
+CREATE TRIGGER usage_daily_dim_trunc AFTER TRUNCATE ON hub.usage_daily
+  FOR EACH STATEMENT EXECUTE FUNCTION hub.usage_daily_dim_sync();
 --> statement-breakpoint
 -- AI client (lib/ai-client): như `hub.log_ai_usage_billed` (0044) + `outcome`. Giữ hàm cũ (gọi cũ vẫn chạy).
 CREATE OR REPLACE FUNCTION hub.log_ai_usage_v3(

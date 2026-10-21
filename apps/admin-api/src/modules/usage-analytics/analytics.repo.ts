@@ -35,6 +35,9 @@ export function dimWhere(f: Filter, app: SQL, t: string): SQL {
 const rollupWhere = (f: Filter, from: string, to: string) =>
   sql`${dimWhere(f, sql`d.app`, "d")} and d.day >= ${from}::date and d.day <= ${to}::date`;
 
+/** Không lọc user ⇒ bảng gọn `usage_daily_dim` (không user/provider, ít dòng hơn nhiều); lọc user ⇒ `usage_daily`. */
+const src = (f: Filter) => sql.raw(f.userId ? "hub.usage_daily d" : "hub.usage_daily_dim d");
+
 const MEASURES = sql`coalesce(sum(d.input_tokens), 0)::text as input_tokens,
   coalesce(sum(d.output_tokens), 0)::text as output_tokens,
   coalesce(sum(d.cache_read_tokens + d.cache_write_tokens), 0)::text as cache_tokens,
@@ -56,7 +59,7 @@ export function kpis(tx: Tx, f: Filter, r: { prevFrom: string; from: string; to:
     sql`select d.day >= ${r.from}::date as cur, ${MEASURES},
       coalesce(sum(d.unpriced), 0)::text as unpriced, coalesce(sum(d.latency_ms_sum), 0)::text as lat_sum,
       coalesce(sum(d.latency_n), 0)::text as lat_n
-    from hub.usage_daily d where ${rollupWhere(f, r.prevFrom, r.to)} group by 1`,
+    from ${src(f)} where ${rollupWhere(f, r.prevFrom, r.to)} group by 1`,
   );
 }
 
@@ -66,7 +69,8 @@ export function series(tx: Tx, f: Filter, r: { from: string; to: string; grain: 
   return run<SeriesRow>(
     tx,
     sql`select to_char(date_trunc(${r.grain}::text, d.day::timestamp), 'YYYY-MM-DD') as bucket, d.app, ${MEASURES}
-    from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)} group by 1, 2 having sum(d.calls) > 0 order by 1, 2`,
+    from ${src(f)} where ${rollupWhere(f, r.from, r.to)} group by 1, 2 having sum(d.calls) > 0
+    order by 1, 2`,
   );
 }
 
@@ -76,23 +80,36 @@ export type GroupRow = MeasureRow & {
   agent_id: string | null;
   model: string | null;
   feature: string | null;
-  user_id: string | null;
   tenant_id: string | null;
   outcome: string | null;
 };
 
 const G = sql.raw(GROUP_COLS.map((c) => `d.${c}`).join(", "));
 
-/** MỘT câu: mọi chiều đơn + cây (app, agent, feature, model). `g` = mặt nạ grouping (xem `setOf`). */
+/** MỘT câu: mọi chiều đơn (trừ user) + cây (app, agent, feature, model). `g` = mặt nạ grouping (xem `setOf`). */
 export function breakdown(tx: Tx, f: Filter, r: { from: string; to: string }) {
   return run<GroupRow>(
     tx,
     sql`select grouping(${G})::int as g, d.app, d.agent_id::text as agent_id, d.model, d.feature,
-      d.user_id::text as user_id, d.tenant_id::text as tenant_id, d.outcome, ${MEASURES}
-    from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)}
-    group by grouping sets ((d.app), (d.agent_id), (d.model), (d.feature), (d.user_id), (d.tenant_id), (d.outcome),
+      d.tenant_id::text as tenant_id, d.outcome, ${MEASURES}
+    from ${src(f)} where ${rollupWhere(f, r.from, r.to)}
+    group by grouping sets ((d.app), (d.agent_id), (d.model), (d.feature), (d.tenant_id), (d.outcome),
       (d.app, d.agent_id, d.feature, d.model))
     having sum(d.calls) > 0`,
+  );
+}
+
+export type UserRow = MeasureRow & { user_id: string | null };
+
+/** Top `limit` user theo token (bảng đủ chiều có user). */
+export function byUser(tx: Tx, f: Filter, r: { from: string; to: string }, limit: number) {
+  return run<UserRow>(
+    tx,
+    sql`select d.user_id::text as user_id, ${MEASURES}
+    from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)}
+    group by d.user_id having sum(d.calls) > 0
+    order by sum(d.input_tokens + d.output_tokens) desc, sum(d.calls) desc, d.user_id nulls last
+    limit ${limit}`,
   );
 }
 

@@ -176,6 +176,7 @@ const LATER_POLICY_TABLES = [
 const RUNTIME_POLICIES = [
   { t: "runs", roles: "agent_runtime" },
   { t: "usage_daily", roles: "admin_rw" }, // usage-analytics (hub 0049): tổng hợp ngày, admin đọc theo scope
+  { t: "usage_daily_dim", roles: "admin_rw" },
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
