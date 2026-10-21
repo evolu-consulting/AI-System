@@ -3,7 +3,10 @@
 import type { Page } from "@playwright/test";
 import { ADMIN, CW, expect, login, settle, TAG, test } from "./_support";
 
-const MSG = `${TAG} góp ý tự động ${Date.now()}`;
+const RUN = Date.now().toString(36);
+const MSG = `${TAG} góp ý tự động ${RUN}`;
+// phản hồi riêng mỗi lần chạy: góp ý E2E-DEPLOY của lần trước (đã Xong) vẫn còn trong "Đã gửi" với câu cũ
+const REPLY = `${TAG} đã nhận, đang xử lý ${RUN}`;
 
 /** Đặt Xong mọi góp ý E2E-DEPLOY còn mở ở admin-web (không còn "Mới" trong hộp thư admin). */
 async function closeFeedback(page: Page): Promise<void> {
@@ -46,7 +49,7 @@ test.describe("10 góp ý + hợp đồng gốc", () => {
       await page.getByRole("row", { name: new RegExp(MSG) }).click();
       const sheet = page.getByRole("dialog");
       await sheet.getByLabel("Trạng thái").selectOption("in_progress");
-      await sheet.getByLabel("Phản hồi").fill(`${TAG} đã nhận, đang xử lý`);
+      await sheet.getByLabel("Phản hồi").fill(REPLY);
       await sheet.getByRole("button", { name: "Lưu" }).click();
       await expect(page.getByRole("row", { name: new RegExp(MSG) })).toContainText("Đang xử lý");
 
@@ -54,7 +57,7 @@ test.describe("10 góp ý + hợp đồng gốc", () => {
       await settle(page);
       await page.getByRole("button", { name: "Góp ý về app" }).click();
       await page.getByRole("button", { name: "Đã gửi" }).click();
-      await expect(page.getByText(`${TAG} đã nhận, đang xử lý`)).toBeVisible();
+      await expect(page.getByText(REPLY)).toBeVisible();
     } finally {
       await closeFeedback(page).catch(() => {});
     }

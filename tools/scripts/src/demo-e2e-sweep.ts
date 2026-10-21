@@ -22,6 +22,8 @@ export type Found = {
   feedback: number;
   conversations: number;
   contracts: { id: string; title: string }[];
+  /** Sản phẩm gắn thẻ (spec 11) — không có API xoá ⇒ xoá thẳng; bỏ qua SP đã có dòng sổ kho hoặc dòng HĐ. */
+  products: { id: string; name: string; used: boolean }[];
 };
 
 const like = `${TAG}%`;
@@ -41,7 +43,14 @@ export async function find(sql: Sql, tenant: string): Promise<Found> {
     { id: string; title: string }[]
   >`select id, title from contracts.contracts
     where tenant_id = ${tenant} and title ilike ${like}`;
-  return { groups, feedback: f?.n ?? 0, conversations: c?.n ?? 0, contracts };
+  const products = await sql<{ id: string; name: string; used: boolean }[]>`
+    select p.id, p.name,
+      (exists (select 1 from contracts.contract_items i where i.tenant_id = p.tenant_id and i.product_id = p.id)
+       or exists (select 1 from contracts.product_components c join contracts.stock_moves m
+         on m.component_id = c.id and m.tenant_id = c.tenant_id
+         where c.tenant_id = p.tenant_id and c.product_id = p.id)) as used
+    from contracts.products p where p.tenant_id = ${tenant} and p.name ilike ${like} order by p.name`;
+  return { groups, feedback: f?.n ?? 0, conversations: c?.n ?? 0, contracts, products };
 }
 
 export async function apply(sql: Sql, tenant: string, found: Found): Promise<void> {
@@ -54,6 +63,10 @@ export async function apply(sql: Sql, tenant: string, found: Found): Promise<voi
       await tx`delete from admin.groups g where g.tenant_id = ${tenant} and g.id in ${tx(ids)}
         and not exists (select 1 from admin.group_members m where m.group_id = g.id and m.tenant_id = g.tenant_id)`;
     }
+    // Lô, nguồn, giá NCC, quy tắc, thành phần, cấu hình dò giá… đều ON DELETE CASCADE từ contracts.products.
+    const pids = found.products.filter((p) => !p.used).map((p) => p.id);
+    if (pids.length > 0)
+      await tx`delete from contracts.products where tenant_id = ${tenant} and id in ${tx(pids)}`;
     await tx`delete from admin.feedback where tenant_id = ${tenant} and message ilike ${like}`;
     await tx`update hub.conversations set deleted_at = now()
       where tenant_id = ${tenant} and deleted_at is null and title ilike ${like}`;
@@ -78,6 +91,8 @@ async function main(argv: readonly string[]): Promise<void> {
     console.log(
       `  góp ý: ${found.feedback} · hội thoại: ${found.conversations} · hợp đồng (chỉ liệt kê): ${found.contracts.length}`,
     );
+    for (const p of found.products)
+      console.log(`  sản phẩm ${p.id} ${p.name}${p.used ? " — BỎ QUA (đã dùng)" : ""}`);
     for (const c of found.contracts) console.log(`  hợp đồng ${c.id} ${c.title}`);
     console.log(`  tổng group xoá: ${found.groups.length - skip.length}`);
     if (doIt) await apply(sql, t.id, found);

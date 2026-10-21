@@ -171,18 +171,22 @@ test.describe("02 contracts-web", () => {
     // Bộ mẫu v2 (seed-demo-v2) cho Hưng Thịnh: điện thoại + người liên hệ — phải có đúng giá trị đã nạp; sửa xong trả lại như cũ.
     await expect(lead).toContainText("028 3910 2222");
     await expect(lead).toContainText("Phạm Hưng");
-    await page.getByRole("button", { name: "Sửa", exact: true }).click();
     const form = page.getByRole("form", { name: "Điện thoại và người liên hệ" });
-    const original = await form.getByLabel("Điện thoại").inputValue();
-    expect(original).toBe("028 3910 2222");
-    await form.getByLabel("Điện thoại").fill("028 3910 9999");
-    await form.getByRole("button", { name: "Lưu" }).click();
-    await expect(lead).toContainText("028 3910 9999");
-    await page.getByRole("button", { name: "Sửa", exact: true }).click();
-    await form.getByLabel("Điện thoại").fill(original);
-    await form.getByRole("button", { name: "Lưu" }).click();
+    // Sửa số điện thoại của người liên hệ đầu tiên (nhãn ô: "Điện thoại 1"); luôn trả lại giá trị cũ, kể cả khi kiểm giữa chừng lỗi.
+    const setPhone = async (v: string) => {
+      await page.getByRole("button", { name: "Sửa", exact: true }).click();
+      await form.getByLabel("Điện thoại 1", { exact: true }).fill(v);
+      await form.getByRole("button", { name: "Lưu" }).click();
+      await expect(form).toBeHidden();
+    };
+    try {
+      await setPhone("028 3910 9999");
+      await expect(lead).toContainText("028 3910 9999");
+    } finally {
+      await setPhone("028 3910 2222");
+    }
     await expect(lead).not.toContainText("028 3910 9999");
-    if (original) await expect(lead).toContainText(original);
+    await expect(lead).toContainText("028 3910 2222");
     expect(errs.list).toEqual([]);
   });
 
