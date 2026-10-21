@@ -126,10 +126,7 @@ export const users = admin.table(
     check("users_email_check", sql`char_length(${t.email}) <= 254`),
     check("users_display_name_check", sql`char_length(${t.displayName}) BETWEEN 1 AND 64`),
     check("users_role_check", sql`${t.role} IN ('platform_admin', 'tenant_admin', 'member')`),
-    check(
-      "users_tenant_admin_email_check",
-      sql`${t.role} <> 'tenant_admin' OR ${t.email} IS NOT NULL`,
-    ),
+    // tenant-owner (0020): bỏ `users_tenant_admin_email_check` — chủ tenant có thể không email; API vẫn bắt (isEmailRequired).
     check("users_locale_check", sql`${t.locale} IN ('vi', 'en')`),
     check("users_failed_logins_check", sql`${t.failedLogins} >= 0`),
     check("users_version_check", sql`${t.version} >= 1`),

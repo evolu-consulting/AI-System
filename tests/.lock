@@ -801,7 +801,7 @@ e56bd948975491f6f140b08b098373a0a605e348b4b497ab25cdba4c1172ea7b  tests/acceptan
 a7f3f82b944200561d0f7d75ea0b373836eb9a00f41d4398d3e3bead9a0b78ee  tests/acceptance/M1/auth-refresh.int.test.ts
 e7d208302c2d5d4d61999ffd0335832778a9c7bf32e46dc64f42dedc84e2f790  tests/acceptance/M1/db-guard.int.test.ts
 eaf9d32fdb584945f9487bcfc0b2d7a9b1528ae99dc081f69eb377db90483de6  tests/acceptance/M1/db-rls.int.test.ts
-886bd78dac913060a94cb47e68ea52daf599d57ea3f11f2a142e7fc54f657cc5  tests/acceptance/M1/db-schema.int.test.ts
+e51b7cebb981bc50b12887d643b6713add91961581122b04d34947b98b9947cd  tests/acceptance/M1/db-schema.int.test.ts
 ebf8501285a9546253b8769f3f8f7b40170a83f6920b5f0282e2935d503b773e  tests/acceptance/M1/error-codes.int.test.ts
 3adaf48e2b90e35ad0d043f7fb359a199b7e2c07ab68969115961f24662fd8a6  tests/acceptance/M1/i18n-labels.test.ts
 26bd440a16e7340e11531daba15bc239403c32a6160d03ab90f3b1a47c38b092  tests/acceptance/M1/middleware.int.test.ts
@@ -1317,6 +1317,7 @@ c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptan
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts
 be104da996df489b0844accf258809f3263770c1f704863bf763cb78e3c6d431  tests/acceptance/price-scout/price-scout.int.test.ts
 ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
+36c2a631d1923d6d57146327e45c8bbd9ba495c5b9b721737db2802429855fb4  tests/acceptance/tenant-owner/setup.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts
 205e7a26cb42ce5feb7c2f1ffe4edd8afda7c3b4cd07f2c1266927c6a8edc444  tests/contract/chat/_env.ts
 2254610aee2e3b5526d06a528a3c0f4b3924b7765b7657f0d6fd5c3fb9587b44  tests/contract/chat/auth.contract.test.ts

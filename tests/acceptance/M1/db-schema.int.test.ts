@@ -177,12 +177,13 @@ describe("ADM-FR-63 · ràng buộc users", () => {
     expect(await fail(user("01900000-0000-7000-8000-000000000014", T1, "u4"))).toBeNull();
   });
 
-  it("ADM-BR-05 · spec §4 · CHECK: role lạ, tenant_admin không email, locale 'fr', failed_logins < 0, username sai → 23514", async () => {
+  // tenant-owner (migration 0020): DB không còn bắt tenant_admin có email (chủ tenant không email); API vẫn bắt (isEmailRequired).
+  it("ADM-BR-05 · spec §4 · CHECK: role lạ, locale 'fr', failed_logins < 0, username sai → 23514; tenant_admin không email ok ở DB", async () => {
     await clean();
     await tenant(T1, "acme");
     const id = (n: number) => `01900000-0000-7000-8000-0000000001${String(n).padStart(2, "0")}`;
     expect((await fail(user(id(1), T1, "r1", { role: "superuser" })))?.code).toBe("23514");
-    expect((await fail(user(id(2), T1, "r2", { role: "tenant_admin" })))?.code).toBe("23514");
+    expect(await fail(user(id(2), T1, "r2", { role: "tenant_admin" }))).toBeNull();
     expect(
       await fail(user(id(3), T1, "r3", { role: "tenant_admin", email: "a@x.test" })),
     ).toBeNull();

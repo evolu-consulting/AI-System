@@ -132,10 +132,16 @@ async function insertAndRead(tx: Tx, u: repo.NewUser): Promise<User> {
   return toUser(row);
 }
 
-/** Tenant mới (FR-60): tenant_admin đầu tiên, `must_change_password=true`, cùng transaction với tenant. */
+/** FR-60: tenant_admin đầu tiên, must_change_password. `email: null` chỉ từ tenant-owner-setup (DB 0020; API vẫn bắt). */
 export function createFirstAdmin(
   tx: Tx,
-  input: { tenantId: string; username: string; displayName: string; email: string; locale: Locale },
+  input: {
+    tenantId: string;
+    username: string;
+    displayName: string;
+    email: string | null;
+    locale: Locale;
+  },
   passwordHash: string,
   actorId: string,
 ): Promise<User> {

@@ -87,14 +87,17 @@ export const TEMP_PASSWORD_ALPHABET =
 // 248 = 4·62: byte ≥ 248 bị bỏ để mọi ký tự có cùng xác suất.
 const REJECT_FROM = 4 * TEMP_PASSWORD_ALPHABET.length;
 
-/** 16 ký tự, lấy mẫu loại bỏ byte ≥ 248 để không lệch. */
-export function generateTempPassword(randomBytes: (n: number) => Uint8Array): string {
+/** `len` ký tự (mặc định 16), lấy mẫu loại bỏ byte ≥ 248 để không lệch. */
+export function generateTempPassword(
+  randomBytes: (n: number) => Uint8Array,
+  len: number = TEMP_PASSWORD_LEN,
+): string {
   let out = "";
-  while (out.length < TEMP_PASSWORD_LEN) {
-    for (const b of randomBytes(TEMP_PASSWORD_LEN * 2)) {
+  while (out.length < len) {
+    for (const b of randomBytes(len * 2)) {
       if (b >= REJECT_FROM) continue;
       out += TEMP_PASSWORD_ALPHABET[b % TEMP_PASSWORD_ALPHABET.length];
-      if (out.length === TEMP_PASSWORD_LEN) break;
+      if (out.length === len) break;
     }
   }
   return out;
