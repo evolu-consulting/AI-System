@@ -99,8 +99,8 @@ describe("Gap #8 · xuất danh sách", () => {
       "0",
     ]);
     const text = dec(bytes);
-    expect(text.charCodeAt(0)).toBe(0xfeff);
-    const lines = text.slice(1).trimEnd().split("\r\n");
+    expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]); // BOM (TextDecoder bỏ BOM khi giải mã)
+    const lines = text.trimEnd().split("\r\n");
     expect(lines[0]).toStartWith("STT,Số hợp đồng,Tên hợp đồng,");
     expect(lines).toHaveLength(3);
     expect(lines[1]).toContain("'=HĐ mười ngày");
