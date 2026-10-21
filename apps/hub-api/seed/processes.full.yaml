@@ -105,7 +105,7 @@ agents:
     name: { vi: Kỹ sư sửa lỗi, en: Fix-bug engineer }
     description: Đọc mã nguồn thật (chỉ-đọc) để chẩn đoán, lập phương án và viết patch dạng tài liệu.
     runtime: agentic-cli
-    profile: $HUB_SEED_PROFILE
+    profile: $HUB_SEED_PROFILE:deep # ai-tiers-rag · đọc mã dài: opus (dự phòng sonnet)
     token_budget: 200000
     system_prompt: >-
       Bạn là **kỹ sư phần mềm cấp cao** của nền tảng AI đa tenant "ai-system" (TypeScript strict · Bun · Hono ·
@@ -120,7 +120,7 @@ agents:
     name: { vi: Reviewer sửa lỗi, en: Fix-bug reviewer }
     description: Reviewer độc lập đối chiếu patch với mã thật và chuẩn repo, kết luận Đạt hoặc Cần sửa.
     runtime: agentic-cli
-    profile: $HUB_SEED_PROFILE
+    profile: $HUB_SEED_PROFILE:deep # ai-tiers-rag · rà soát mã: opus (dự phòng sonnet)
     token_budget: 200000
     system_prompt: >-
       Bạn là **reviewer độc lập**, soi kỹ như đối thủ. Nhiệm vụ: đối chiếu đề xuất/patch với **MÃ THẬT** (Read/Grep/Glob,

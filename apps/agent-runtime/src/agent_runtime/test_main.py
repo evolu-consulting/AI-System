@@ -129,5 +129,10 @@ def test_wrk_fr_10_registry_providers_by_app_env(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("AGENT_RT_PROVIDERS", "fake-cli,claude-sub,fake-cli")
-    assert registry_providers(_settings(monkeypatch, tmp_path)) == ["fake-cli", "claude-sub"]
+    # ai-tiers-rag: `claude-sub` kéo theo các làn model (provider_state riêng, cùng CLI)
+    lanes = ["claude-sub-haiku", "claude-sub-opus"]
+    assert registry_providers(_settings(monkeypatch, tmp_path)) == ["fake-cli", "claude-sub", *lanes]
     assert not is_available("fake-cli", "production") and is_available("claude-sub", "production")
+    assert all(is_available(k, "production") for k in lanes)
+    assert not is_available("claude-subx", "production")
+    assert not is_available("claude-sub-", "production")

@@ -2,6 +2,7 @@
 // (plan H1 §3.6; H2a plan-db §4: `agent_workflows`, `workflow_flags`, `runtime_options` agent `dify-*`). Không I/O.
 import type { z } from "zod";
 import {
+  SEED_PROFILE_TIER_RE,
   SEED_PROFILE_TOKEN,
   type SeedAgent,
   SeedFileSchema,
@@ -42,6 +43,26 @@ export const isDevEnv = (appEnv: string): boolean => appEnv === "development" ||
 export function defaultSeedProfile(appEnv: string, profile?: string): string {
   if (profile) return profile;
   return isDevEnv(appEnv) ? "fake-1" : "claude-sub-1";
+}
+
+const isSeedToken = (p: string): boolean =>
+  p === SEED_PROFILE_TOKEN || SEED_PROFILE_TIER_RE.test(p);
+
+/**
+ * ai-tiers-rag · profile của agent: `$HUB_SEED_PROFILE` ⇒ profile seed; `$HUB_SEED_PROFILE:<bậc>` ⇒ `<gốc>-<bậc>` (gốc = profile
+ * seed bỏ hậu tố `-<số>`, vd `claude-sub-1` ⇒ `claude-sub-fast`) khi profile đó dùng được, không thì profile seed (dev/test
+ * `fake-1` ⇒ `fake-1`). Key thường giữ nguyên.
+ */
+export function resolveSeedProfile(
+  profile: string,
+  seedProfile: string,
+  usable: ReadonlySet<string>,
+): string {
+  if (profile === SEED_PROFILE_TOKEN) return seedProfile;
+  const tier = SEED_PROFILE_TIER_RE.exec(profile)?.[1];
+  if (!tier) return profile;
+  const cand = `${seedProfile.replace(/-\d+$/, "")}-${tier}`;
+  return usable.has(cand) ? cand : seedProfile;
 }
 
 function valueAt(data: unknown, path: PropertyKey[]): unknown {
@@ -115,7 +136,7 @@ function checkRefs(m: Merged, issues: SeedIssue[]): void {
           value: s.provider_key,
         });
   for (const a of m.agents)
-    if (a.profile !== SEED_PROFILE_TOKEN && !profiles.has(a.profile))
+    if (!isSeedToken(a.profile) && !profiles.has(a.profile))
       issues.push({
         path: `agents.${a.key}.profile`,
         message: "profile không có trong seed",
@@ -181,7 +202,7 @@ export function buildSeedPlan(sources: SeedSource[], o: PlanOptions): SeedPlan {
   const usable = new Set(profiles.map((p) => p.key));
   const agents = m.agents.map((a) => ({
     ...a,
-    profile: a.profile === SEED_PROFILE_TOKEN ? seedProfile : a.profile,
+    profile: resolveSeedProfile(a.profile, seedProfile, usable),
   }));
   for (const a of agents)
     if (!usable.has(a.profile))

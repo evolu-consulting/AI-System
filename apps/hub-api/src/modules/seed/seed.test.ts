@@ -43,7 +43,13 @@ function patched(name: string, edit: (d: Record<string, unknown>) => void): Seed
 describe("HUB-FR-60 · seed yaml mặc định", () => {
   it("HUB-FR-60 · CR-081 · M2-chat · development tối giản: fake-cli + dify, đúng 6 agent, mọi agent fake-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "development" });
-    expect(p.providers.map((x) => x.key).sort()).toEqual(["claude-sub", "dify", "fake-cli"]);
+    expect(p.providers.map((x) => x.key).sort()).toEqual([
+      "claude-sub",
+      "claude-sub-haiku",
+      "claude-sub-opus",
+      "dify",
+      "fake-cli",
+    ]);
     // CR-081: mặc định bỏ `*.full.yaml` ⇒ chỉ agent của agents.yaml, không agent vai.
     expect(p.agents.map((a) => a.key)).toEqual([
       "orchestrator",
@@ -59,7 +65,18 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
     expect(mgmt?.runtime).toBe("agentic-cli");
     expect(mgmt?.runtime_options).toEqual({
       allowed_tools: [],
-      pack_tools: ["contracts-search", "contracts-get", "contracts-cks", "contracts-ledger"],
+      pack_tools: [
+        "contracts-search",
+        "contracts-get",
+        "contracts-cks",
+        "contracts-ledger",
+        "knowledge-search",
+        "knowledge-get",
+      ],
+    });
+    // ai-tiers-rag · trợ lý chung: tool tri thức, giữ công cụ đọc tệp (không khai allowed_tools).
+    expect(p.agents.find((a) => a.key === "assistant")?.runtime_options).toEqual({
+      pack_tools: ["knowledge-search", "knowledge-get"],
     });
     // M2-chat · cùng trợ lý, backend Dify (token chat ngắn hạn cho tool đọc).
     expect(p.agents.find((a) => a.key === "mgmt-assistant-dify")?.runtime_options).toEqual({
@@ -92,16 +109,37 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
 });
 
 describe("HUB-FR-60 · seed yaml mặc định (production, profile)", () => {
-  it("HUB-FR-61 · production: bỏ provider dev_only và profile hết step, agent dùng claude-sub-1", () => {
+  it("HUB-FR-61 · ai-tiers-rag · production: bỏ provider dev_only; agent theo bậc claude-sub-fast/std, còn lại claude-sub-1", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "production" });
-    expect(p.providers.map((x) => x.key)).toEqual(["claude-sub", "dify"]);
-    expect(p.profiles.map((x) => x.key)).toEqual(["claude-sub-1"]);
-    expect(new Set(p.agents.map((a) => a.profile))).toEqual(new Set(["claude-sub-1"]));
+    expect(p.providers.map((x) => x.key)).toEqual([
+      "claude-sub",
+      "claude-sub-haiku",
+      "claude-sub-opus",
+      "dify",
+    ]);
+    expect(p.profiles.map((x) => x.key)).toEqual([
+      "claude-sub-1",
+      "claude-sub-fast",
+      "claude-sub-std",
+      "claude-sub-deep",
+    ]);
+    const by = Object.fromEntries(p.agents.map((a) => [a.key, a.profile]));
+    expect(by).toMatchObject({
+      orchestrator: "claude-sub-fast",
+      assistant: "claude-sub-std",
+      "mgmt-assistant": "claude-sub-std",
+      "dify-tom": "claude-sub-1",
+    });
+    const deep = buildSeedPlan(full(), { appEnv: "production" }).agents;
+    expect(deep.find((a) => a.key === "fixbug-engineer")?.profile).toBe("claude-sub-deep");
   });
 
   it("HUB-FR-61 · HUB_SEED_PROFILE ghi đè mặc định; production + fake-1 → lỗi nêu profile", () => {
     const p = buildSeedPlan(defaults(), { appEnv: "test", profile: "claude-sub-1" });
-    expect(p.agents.every((a) => a.profile === "claude-sub-1")).toBe(true);
+    expect(p.agents.every((a) => a.profile.startsWith("claude-sub-"))).toBe(true);
+    // profile ghi đè không có bậc (vd fake-1) ⇒ mọi agent dùng đúng profile đó
+    const f = buildSeedPlan(full(), { appEnv: "test", profile: "fake-1" });
+    expect(f.agents.every((a) => a.profile === "fake-1")).toBe(true);
     const e = thrown(() => buildSeedPlan(defaults(), { appEnv: "production", profile: "fake-1" }));
     expect(e.message).toContain("fake-1");
     expect(defaultSeedProfile("test")).toBe("fake-1");

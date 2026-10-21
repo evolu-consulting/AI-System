@@ -29,7 +29,7 @@ from agent_runtime.db import agent_types_sql, jobs_sql
 from agent_runtime.db.pool import ListenConn, Pool, connect_listen, create_pool
 from agent_runtime.events.job_events import RunEvents, connect_redis
 from agent_runtime.log import get_logger
-from agent_runtime.providers.keys import is_available
+from agent_runtime.providers.keys import is_available, with_lanes
 from agent_runtime.queue.claimer import Claimer
 from agent_runtime.queue.cleanup import CleanupConfig, run_cleanup
 from agent_runtime.queue.heartbeat import Heartbeat
@@ -62,7 +62,7 @@ class UnknownProviders(ValueError):
 def registry_providers(settings: Settings) -> list[str]:
     """Provider claim được = `AGENT_RT_PROVIDERS` ∩ registry theo `APP_ENV` (WRK-FR-10); khoá lạ →
     `UnknownProviders` (không claim job mà job host sẽ không chạy được)."""
-    keys = list(dict.fromkeys(settings.providers))
+    keys = with_lanes(list(dict.fromkeys(settings.providers)))  # ai-tiers-rag: làn claude-sub-*
     unknown = [k for k in keys if k not in HTTP_PROVIDERS and not is_available(k, settings.app_env)]
     if unknown:
         raise UnknownProviders(unknown)

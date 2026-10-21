@@ -9,6 +9,8 @@ import { z } from "zod";
 
 /** Giá trị `profile` của agent được thay bằng profile seed (`HUB_SEED_PROFILE`, plan §3.6). */
 export const SEED_PROFILE_TOKEN = "$HUB_SEED_PROFILE";
+/** ai-tiers-rag · `$HUB_SEED_PROFILE:<bậc>` (fast/std/deep…): profile `<gốc>-<bậc>` nếu có, không thì profile seed. */
+export const SEED_PROFILE_TIER_RE = /^\$HUB_SEED_PROFILE:([a-z]{2,10})$/;
 export const PROVIDER_KINDS = ["subscription", "api"] as const;
 export const PROVIDER_VENDORS = ["anthropic", "openai", "google", "fake", "dify", "evolu"] as const;
 export const SEED_AGENT_RUNTIMES = [
@@ -50,7 +52,11 @@ export const SeedAgentSchema = z.strictObject({
   name: LocalizedNameSchema,
   description: z.string().min(20).max(400),
   runtime: z.enum(SEED_AGENT_RUNTIMES),
-  profile: z.union([AgentKeySchema, z.literal(SEED_PROFILE_TOKEN)]),
+  profile: z.union([
+    AgentKeySchema,
+    z.literal(SEED_PROFILE_TOKEN),
+    z.string().regex(SEED_PROFILE_TIER_RE),
+  ]),
   system_prompt: z.string().max(20_000).default(""),
   runtime_options: z.record(z.string(), z.unknown()).default({}),
   timeout_s: z.number().int().min(10).max(3600).default(600),
