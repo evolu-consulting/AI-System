@@ -176,7 +176,7 @@ d300a56ef2a99bfa99325afe5bb1c3bed9b23ec3b4f30966982466465a621377  e2e/conflict-c
 d57e1ce21f6e22874dc9cb8f4cf9275512e10b6328e0130661ca0692c2d9af9f  e2e/conflict-users.spec.ts
 8d8bb2876a228176b5117d8978a98c310cf3e188680446c968e2307e78496831  e2e/conflict-workflows.spec.ts
 2a3b0ca3dcf4265f7e2fda28e395114ce56387586bb1934983acb469713a2f71  e2e/contracts-web/DEVIATIONS.md
-0148473b47d71fdfd4f6c785a1271ab79fa6f7dffcd729baed006347035189b7  e2e/contracts-web/assistant.cw.ts
+0a23ad1c0a3296a10d400a149a40dbe4c18dba291736dbf9c99f0b0738ce9dbb  e2e/contracts-web/assistant.cw.ts
 33c1bf75d727d87ddaa3f6cd175f412ea02b1a9de970a095be878db152d61130  e2e/contracts-web/baseline/linux/overview-dark.json
 f93037506ba22a1941c3e110e313a44a80450b2d9052502c0b7bb44a0da97a99  e2e/contracts-web/baseline/linux/overview-dark.png
 33c1bf75d727d87ddaa3f6cd175f412ea02b1a9de970a095be878db152d61130  e2e/contracts-web/baseline/linux/overview-light.json
@@ -410,7 +410,7 @@ e482ceb75fdb8f75eb4bc6e498be7b888f947315c5c584225c39352ad9a7071e  e2e/contracts-
 a5417778f4f60d039837939fa8ea95f46840187c0bcd22cbecfda323373498ac  e2e/deployed/01-login-sso.deployed.ts
 24e3299e112f5872012b0b85f758598c7998712cd6d2a22d01c04f26907765f7  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
-caf9db5cd63aee2ddbf82bd03666657f08e58d5b2751348515a8cceaffb036e3  e2e/deployed/04-ai-system.deployed.ts
+e819e4e697a144bad370a6ebbf0d2cb323e8eebb5cf886f8a74abc5b504c7707  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
 b10cb49b5108f0efb5517b17f7f9d8fa35fcc608ff200340beb74c0070a8da3b  e2e/deployed/06-guide.deployed.ts
 d9e88f3dbdee37631fc5e569013d688bd1d9bc728b978ef5b5f488d0f9ead80e  e2e/deployed/07-usage.deployed.ts
@@ -959,7 +959,7 @@ eae3ec629d8271beb7f8e783f49d8022f6762d1b870950f0a15830adf5fb4c0b  tests/acceptan
 65973d817d0d2a69a7c588aacdba481ada8501ca95124a328ef6adc083ff44d8  tests/acceptance/N5/perf/import.perf.int.test.ts
 97efd5dc0e8db2faff2fa8f81bfe987a4de31ed8ca6e8cde94ba4f4a7b6fd8de  tests/acceptance/NITI/attach.int.test.ts
 2c84b5bf108e3d697e1b065c7851c91ff93a9cb7399382f8e5a15776aba1aa74  tests/acceptance/NITI/filebox.int.test.ts
-92d9f4aadfd18f1612b82a6cfc5c9f5871c5ca14ed91c966d4a37cb2e647b931  tests/acceptance/NITI/onboard.int.test.ts
+d1a80f4e36e530152e737dc74cdb904d68164d8c9da6978e86964f8de7f1c628  tests/acceptance/NITI/onboard.int.test.ts
 9073f33046cfe19449cd214396c70c7c754d1d981ce19c8e33c9262b9e64184d  tests/acceptance/P-a/_support/modules.ts
 2520342249feae08aecc88db9f385d0511b90167c858b0669acfe78f2eb4d7b7  tests/acceptance/P-a/_support/pa.ts
 4f538961e8540a2c6ff07614203b25a9ae00a22f95e46075e8b5e7eb536a7a4c  tests/acceptance/P-a/_support/parts.ts
@@ -1303,6 +1303,8 @@ bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptan
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
 3af81b2d0ac3e498d4b444e575105e5f5c97de49711888a2e5fa8fe19b739c9c  tests/acceptance/my-activity/chat-history.perf.int.test.ts
 52c8be5303f8ed540ce52cc34910654c73577ef85635f1912ec8cff0b3b36000  tests/acceptance/my-activity/isolation.int.test.ts
+15bf508a11b0bcf03bc7b7a5242694f08f3f9047fb393453e55f869824e09804  tests/acceptance/one-agent/context-migration.int.test.ts
+c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts
 205e7a26cb42ce5feb7c2f1ffe4edd8afda7c3b4cd07f2c1266927c6a8edc444  tests/contract/chat/_env.ts

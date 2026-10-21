@@ -29,7 +29,7 @@ describe("demo-ai-fix", () => {
     ])
       expect(all).toContain(fact);
     expect(POLICY_TITLE).toContain("QC-TC-01");
-    expect(Object.keys(TIERED_AGENTS)).toEqual(["orchestrator", "assistant", "mgmt-assistant"]);
+    expect(Object.keys(TIERED_AGENTS)).toEqual(["orchestrator", "assistant"]);
   });
   it("tên công ty mẫu là giả, không phải NITI; mọi đối tác có điện thoại + liên hệ", () => {
     expect(OWN.name).toBe("Công ty Demo");

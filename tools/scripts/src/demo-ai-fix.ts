@@ -61,7 +61,8 @@ export type Plan = {
 };
 
 /** Agent seed phải có bậc model + tool tri thức sau `hub:seed` của lát ai-tiers-rag. */
-export const TIERED_AGENTS = { orchestrator: "fast", assistant: "std", "mgmt-assistant": "std" };
+// one-agent: `mgmt-assistant` đã gộp vào `assistant` (hub 0051) — không còn kiểm bậc của nó.
+export const TIERED_AGENTS = { orchestrator: "fast", assistant: "std" };
 
 async function planKnowledge(tx: Tx, t: string): Promise<Pick<Plan, "policyDoc" | "agentsStale">> {
   const [r] = await tx<{ doc: boolean; stale: number }[]>`select
