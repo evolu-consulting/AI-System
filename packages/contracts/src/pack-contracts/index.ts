@@ -19,6 +19,7 @@ export * from "./mywork";
 export * from "./overview";
 export * from "./partner-roles";
 export * from "./partners";
+export * from "./price-scout";
 export * from "./products";
 export * from "./reputation";
 export * from "./review";

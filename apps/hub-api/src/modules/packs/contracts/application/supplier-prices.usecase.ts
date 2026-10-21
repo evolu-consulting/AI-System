@@ -2,22 +2,16 @@
 // tìm giá trên mạng (CHỈ khi người dùng bấm, CHỈ gửi tên SP, qua AI client gói `ai-sub`, có trần thao tác + trần token); `save` = lưu
 // kết quả vào bảng so sánh; `remove`. SP nhóm Giới thiệu không có tab ⇒ 404.
 
+// price-scout: `search` = lượt dò bấm tay của agent Hub `price-scout` (`price-scout.usecase.ts::scout`) — model/lệnh hệ thống ở Hub.
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { localDate } from "../domain/local-time.rules";
-import {
-  parseSearchReply,
-  SEARCH_FEATURE,
-  SEARCH_MODEL,
-  SEARCH_SYSTEM,
-  searchPrompt,
-} from "../domain/price-search.rules";
 import { buildOverview, type OverviewData } from "../domain/supplier-advice.rules";
 import type {
   SupplierOverviewOut,
   SupplierPriceInput,
   SupplierSearchOut,
 } from "../domain/supplier-prices.types";
-import type { ActionQuota, AiComplete } from "./ai.ports";
+import { ScoutFail } from "./price-scout.usecase";
 
 export type SuppliersRepo = {
   overview(productId: string): Promise<OverviewData | null>;
@@ -34,7 +28,7 @@ export type SuppliersRepo = {
 };
 
 export class SupplierFail extends Error {
-  constructor(readonly kind: "not_found" | "unavailable" | "cap" | "failed") {
+  constructor(readonly kind: "not_found" | "unavailable" | "cap" | "failed" | "month_cap") {
     super(kind);
   }
 }
@@ -42,18 +36,13 @@ export class SupplierFail extends Error {
 type Rep = { score: number | null; level: "good" | "fair" | "watch" | "new" };
 export type SuppliersDeps = {
   uow: PackUow<{ suppliers: SuppliersRepo }>;
-  ai: AiComplete;
-  /** Trần thao tác tốn AI/tenant/ngày (cùng bộ đếm với trích HĐ). */
-  quota: ActionQuota;
+  /** price-scout · lượt dò bấm tay (agent Hub, trần tháng + trần thao tác AI/ngày ở trong). */
+  scout: (who: PackWho, productId: string) => Promise<SupplierSearchOut>;
   /** Điểm uy tín vai NCC theo khoá đối tác (V2-E). */
   reputation: (who: PackWho) => Promise<ReadonlyMap<string, Rep>>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now?: () => Date;
-  /** Trần một lượt tìm web (ms). */
-  searchTimeoutMs?: number;
 };
-
-export const SEARCH_TIMEOUT_MS = 180_000;
 
 function suppliersCtx(d: SuppliersDeps) {
   const now = d.now ?? (() => new Date());
@@ -68,33 +57,20 @@ function suppliersCtx(d: SuppliersDeps) {
   }
   return { tx, today, product };
 }
-type SuppliersCtx = ReturnType<typeof suppliersCtx>;
 
+/** Lượt dò bấm tay; lỗi dò ⇒ lỗi tab NCC (mã API giữ như V2-J2 + `SCOUT_MONTHLY_CAP`). */
 async function searchPrices(
   d: SuppliersDeps,
-  c: SuppliersCtx,
   who: PackWho,
   id: string,
 ): Promise<SupplierSearchOut> {
-  const p = await c.product(who, id);
-  await d.quota(who.tenantId);
-  const out = await d.ai.complete({
-    tenantId: who.tenantId,
-    userId: who.userId,
-    feature: SEARCH_FEATURE,
-    model: process.env.CONTRACTS_PRICE_SEARCH_MODEL || SEARCH_MODEL,
-    system: SEARCH_SYSTEM,
-    prompt: searchPrompt(p.name), // CHỈ tên SP ra ngoài
-    webSearch: true,
-    signal: AbortSignal.timeout(d.searchTimeoutMs ?? SEARCH_TIMEOUT_MS),
-  });
-  if (!out.ok)
-    throw new SupplierFail(
-      out.code === "CAP_EXCEEDED" ? "cap" : out.code === "UNAVAILABLE" ? "unavailable" : "failed",
-    );
-  const items = parseSearchReply(out.text, await c.today(who));
-  if (!items) throw new SupplierFail("failed");
-  return { query: p.name, items };
+  try {
+    return await d.scout(who, id);
+  } catch (e) {
+    if (!(e instanceof ScoutFail)) throw e;
+    if (e.kind === "forbidden") throw e;
+    throw new SupplierFail(e.kind);
+  }
 }
 
 export function suppliersUsecase(d: SuppliersDeps) {
@@ -107,7 +83,7 @@ export function suppliersUsecase(d: SuppliersDeps) {
       return buildOverview(data, scores);
     },
 
-    search: (who: PackWho, id: string): Promise<SupplierSearchOut> => searchPrices(d, c, who, id),
+    search: (who: PackWho, id: string): Promise<SupplierSearchOut> => searchPrices(d, who, id),
 
     async save(who: PackWho, id: string, items: SupplierPriceInput[]): Promise<{ ids: string[] }> {
       await product(who, id);

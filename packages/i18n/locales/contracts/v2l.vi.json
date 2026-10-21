@@ -10,7 +10,9 @@
         "rep": "Điểm uy tín",
         "repHint": "Tiêu chí, thời gian, mức đánh giá",
         "biz": "Điểm kinh doanh",
-        "bizHint": "Trọng số, ngưỡng đề xuất"
+        "bizHint": "Trọng số, ngưỡng đề xuất",
+        "scout": "Dò giá thị trường",
+        "scoutHint": "Mặc định theo nhóm, trần lượt dò/tháng"
       },
       "unsaved": "Có thay đổi chưa lưu",
       "isDefault": "Đang dùng mặc định",

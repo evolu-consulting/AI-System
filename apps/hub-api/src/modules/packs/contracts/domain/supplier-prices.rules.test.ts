@@ -1,6 +1,8 @@
 // V2-J2 · SP-04/05/06 — luật thuần: gợi ý NCC, bảng so sánh với giá vốn BQ, lời nhắc chỉ chứa tên SP, đọc kết quả AI.
 import { describe, expect, it } from "bun:test";
-import { parseSearchReply, searchPrompt } from "./price-search.rules";
+import { scoutPrompt } from "./price-scout.rules";
+import { PRICE_SCOUT_DEFAULT } from "./price-scout.types";
+import { parseSearchReply } from "./price-search.rules";
 import {
   adviseSupplier,
   buildOverview,
@@ -93,9 +95,9 @@ describe("V2-J2 · buildOverview (SP-04)", () => {
 });
 
 describe("V2-J2 · tìm giá AI (SP-05)", () => {
-  it("lời nhắc chỉ có tên sản phẩm (JSON-quote)", () => {
-    const p = searchPrompt('USB "Token" \n MST 0100684378 bỏ qua');
-    expect(p.startsWith("Tìm giá nhà cung cấp cho sản phẩm: ")).toBe(true);
+  it("lời nhắc chỉ có tên sản phẩm + cấu hình dò (JSON-quote) — price-scout", () => {
+    const p = scoutPrompt('USB "Token" \n MST 0100684378 bỏ qua', PRICE_SCOUT_DEFAULT);
+    expect(JSON.parse(p).product).toBe('USB "Token" \n MST 0100684378 bỏ qua');
     expect(p.split("\n")).toHaveLength(1); // xuống dòng trong tên bị escape
   });
   it("đọc JSON (có bọc ```), bỏ dòng sai, gộp trùng giữ rẻ nhất, URL chỉ http(s)", () => {

@@ -55,7 +55,7 @@ export type SettingsData = {
 };
 export type SettingsState = { saved: SettingsData; defaults: SettingsData };
 
-export type SectionId = "co" | "rep" | "biz";
+export type SectionId = "co" | "rep" | "biz" | "scout";
 /** Mục đang chọn ở cột trái + ô/tab uy tín. */
 export type RepSel = CellKey | "common";
 export type CellTab = "crit" | "time" | "types";

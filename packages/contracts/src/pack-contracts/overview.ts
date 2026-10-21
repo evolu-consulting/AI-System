@@ -58,6 +58,8 @@ export const TODO_KINDS = [
   "rating",
   "rating_quarter",
   "missing_file",
+  // price-scout · "Giá thị trường thay đổi" (cảnh báo của lượt dò giá theo lịch).
+  "market_price",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
 export const TODO_ACTIONS = ["skip", "done"] as const;

@@ -5,6 +5,7 @@ import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Spinner } from "~/components/shared/states";
+import { useProductScout } from "../hooks/use-scout";
 import { knownSupplierError, useSaveSuppliers, useSupplierSearch } from "../hooks/use-suppliers";
 
 export function SearchDialog({
@@ -21,9 +22,14 @@ export function SearchDialog({
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [result, setResult] = useState<SupplierSearchOut | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const usage = useProductScout(productId).data?.usage;
   const fail = (x: unknown) => {
     const code = knownSupplierError(x);
-    setErr(code ? L(`errors.${code}`) : t("contracts.errors.unknown"));
+    const o = {
+      used: usage?.searches ?? "?",
+      limit: usage?.searches_limit ?? t("contracts.scout.unlimited"),
+    };
+    setErr(code ? L(`errors.${code}`, o) : t("contracts.errors.unknown"));
   };
   const close = () => {
     setResult(null);
@@ -118,6 +124,7 @@ export function SearchDialog({
             <button
               type="button"
               className="btn btn-primary"
+              data-testid="scout-search-run"
               disabled={search.isPending}
               onClick={() => search.mutate()}
             >

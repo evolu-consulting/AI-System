@@ -43,7 +43,7 @@
         "none": "For reference"
       },
       "dlgTitle": "Find market prices",
-      "dlgPrivacy": "AI will search the web for prices of \"{{name}}\". Only the product name is sent — no tax IDs, contracts or partner names.",
+      "dlgPrivacy": "AI will search the web for prices of \"{{name}}\". Only the product name and its price-scout settings (keywords, specification, sites, region, watched suppliers) are sent — no tax IDs, contracts or partner names.",
       "dlgHint": "Results are suggestions only. Pick the rows to keep and save them to the comparison table.",
       "run": "Search",
       "searching": "Searching, this can take a few dozen seconds…",
@@ -55,7 +55,66 @@
         "SEARCH_CAP": "Today's AI allowance is used up. Try again tomorrow.",
         "SEARCH_FAILED": "AI returned nothing readable. Try again.",
         "ACTION_QUOTA": "Daily AI request limit reached.",
+        "SCOUT_MONTHLY_CAP": "The company's price-search allowance for this month is used up ({{used}}/{{limit}}). Ask a manager to raise the cap in Settings.",
         "PACK_FORBIDDEN": "You do not have permission to do this."
+      }
+    },
+    "scout": {
+      "title": "Price scouting settings",
+      "hint": "What the AI searches for this product. Only the product name and these fields are sent out; never tax ID, contracts or partner names.",
+      "inherited": "group default",
+      "unlimited": "unlimited",
+      "usage": "Used {{used}}/{{limit}} searches this month",
+      "next": "Next scan: {{at}}",
+      "last": "Last scan: {{at}}",
+      "none": "none",
+      "status": "status: {{s}}",
+      "save": "Save",
+      "saved": "Saved",
+      "savedDefault": "Using group defaults",
+      "useDefault": "Use group defaults",
+      "forbidden": "Only managers can change this.",
+      "issue": {
+        "listMax": "Each list holds at most 10 items.",
+        "pct": "Alert percentage must be a whole number from 1 to 100."
+      },
+      "f": {
+        "enabled": "Scout market prices for this product",
+        "keywords": "Search keywords",
+        "include_sites": "Prefer these sites",
+        "exclude_sites": "Skip these sites",
+        "watched_suppliers": "Suppliers to watch",
+        "spec": "Specification",
+        "unit": "Unit",
+        "region": "Region",
+        "vat": "Price basis",
+        "schedule": "Automatic scan",
+        "alert_pct": "Alert when lowest market price differs from average cost by (%)",
+        "alert_watched": "Alert when a watched supplier changes price"
+      },
+      "ph": {
+        "keywords": "comma or new line, up to {{max}}",
+        "include_sites": "e.g. shopee.vn, fpt.com.vn",
+        "exclude_sites": "e.g. example.com",
+        "watched_suppliers": "public supplier names",
+        "alert_pct": "empty = no alert"
+      },
+      "vat": { "excl": "Excl. VAT", "incl": "Incl. VAT" },
+      "schedule": { "off": "Off (manual only)", "weekly": "Weekly", "monthly": "Monthly" },
+      "secTitle": "Market price scouting",
+      "secHint": "Defaults apply to products that have not customised their own scouting settings.",
+      "groupHint": "Per-product settings override these",
+      "group": { "service": "Term services", "goods": "Goods" },
+      "quota": {
+        "title": "Monthly cap",
+        "hint": "Empty = system default / unlimited",
+        "tokens": "{{n}} tokens used",
+        "empty": "system default",
+        "invalid": "Enter a whole number of 0 or more, or leave empty.",
+        "searches_month": "Max searches per month",
+        "tokens_month": "Max tokens per month",
+        "platform_searches_month": "Platform override: searches per month",
+        "platform_tokens_month": "Platform override: tokens per month"
       }
     }
   }

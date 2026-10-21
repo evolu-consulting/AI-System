@@ -104,7 +104,12 @@ const ratingSources = (t: string, w: TodoWindow, q: TodoWindow["quarter"]) => sq
       c.seller, c.buyer from contracts.contracts c
     where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.file_id is null
       and ${notDismissed(t, sql`${k("missing_file", "c.id", "(c.created_at at time zone 'UTC')::date")}`)}
-    order by c.created_at desc, c.id limit ${LIM}::int)`;
+    order by c.created_at desc, c.id limit ${LIM}::int),
+  pa as (select a.id, a.product_id, a.day, a.detail, a.supplier_name, a.price, p.name
+    from contracts.price_scout_alerts a join contracts.products p on p.tenant_id = ${t}::uuid and p.id = a.product_id
+    where a.tenant_id = ${t}::uuid and a.day >= ${w.today}::date - 30
+      and ${notDismissed(t, sql`${k("market_price", "a.id", "a.day")}`)}
+    order by a.day desc, a.id limit ${LIM}::int)`;
 
 /** Mọi nguồn ⇒ MỘT mảng hàng đồng dạng (`RawTodo`). */
 const payload = (
@@ -140,7 +145,10 @@ const payload = (
       'title', ${q?.prevStart ?? null}::text, 'sub', array_to_string(r.names, ', ')) from rq r where r.n > 0
   union all
   select jsonb_build_object('kind', 'missing_file', 'id', c.id, 'due', c.day, 'title', ${TITLE("c")},
-      'party', ${PARTY("c")}, 'contract_id', c.id) from mf c) x`;
+      'party', ${PARTY("c")}, 'contract_id', c.id) from mf c
+  union all
+  select jsonb_build_object('kind', 'market_price', 'id', a.id, 'due', a.day, 'title', a.name, 'sub', a.detail,
+      'party', a.supplier_name, 'amount', a.price, 'product_id', a.product_id) from pa a) x`;
 
 export function todoRepo(tx: Tx, t: string) {
   return {

@@ -9,6 +9,7 @@ import { useDeleteSupplierPrice, useSupplierOverview } from "../hooks/use-suppli
 import { supplierTabVisible } from "../lib/suppliers";
 import { ComparePanel } from "./ComparePanel";
 import { EvalPanel } from "./EvalPanel";
+import { ScoutConfigPanel } from "./ScoutConfigPanel";
 import { SearchDialog } from "./SearchDialog";
 
 export function SupplierPricesTab({ productId }: { productId: string }) {
@@ -31,6 +32,7 @@ export function SupplierPricesTab({ productId }: { productId: string }) {
         onDelete={(id) => del.mutate(id)}
       />
       <EvalPanel suppliers={data.suppliers} />
+      <ScoutConfigPanel productId={productId} write={write} />
       <SearchDialog dlg={dlg} productId={productId} productName={data.product.name} />
     </div>
   );

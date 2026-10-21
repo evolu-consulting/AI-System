@@ -43,7 +43,7 @@
         "none": "Tham khảo"
       },
       "dlgTitle": "Tìm giá trên thị trường",
-      "dlgPrivacy": "AI sẽ tìm trên web giá bán cho \"{{name}}\". Chỉ tên sản phẩm được gửi đi — không gửi mã số thuế, hợp đồng hay tên đối tác.",
+      "dlgPrivacy": "AI sẽ tìm trên web giá bán cho \"{{name}}\". Chỉ tên sản phẩm và cấu hình dò giá (từ khoá, quy cách, trang, khu vực, nhà cung cấp theo dõi) được gửi đi — không gửi mã số thuế, hợp đồng hay tên đối tác.",
       "dlgHint": "Kết quả chỉ là gợi ý. Chọn dòng cần giữ rồi lưu vào bảng so sánh.",
       "run": "Tìm",
       "searching": "Đang tìm giá, có thể mất vài chục giây…",
@@ -55,7 +55,66 @@
         "SEARCH_CAP": "Hôm nay đã dùng hết hạn mức AI. Thử lại ngày mai.",
         "SEARCH_FAILED": "AI không trả về kết quả đọc được. Thử lại.",
         "ACTION_QUOTA": "Đã hết số lượt dùng AI trong ngày.",
+        "SCOUT_MONTHLY_CAP": "Đã hết lượt dò giá tháng này của công ty ({{used}}/{{limit}}). Liên hệ quản lý để tăng trần trong Cài đặt.",
         "PACK_FORBIDDEN": "Bạn không có quyền thực hiện."
+      }
+    },
+    "scout": {
+      "title": "Cấu hình dò giá",
+      "hint": "AI dò gì cho sản phẩm này. Chỉ tên sản phẩm và các ô dưới đây được gửi đi — không bao giờ gửi mã số thuế, hợp đồng hay tên đối tác.",
+      "inherited": "theo mặc định nhóm",
+      "unlimited": "không giới hạn",
+      "usage": "Đã dùng {{used}}/{{limit}} lượt tháng này",
+      "next": "Lần dò kế tiếp: {{at}}",
+      "last": "Lần dò gần nhất: {{at}}",
+      "none": "chưa có",
+      "status": "trạng thái: {{s}}",
+      "save": "Lưu",
+      "saved": "Đã lưu",
+      "savedDefault": "Đã dùng mặc định nhóm",
+      "useDefault": "Dùng mặc định nhóm",
+      "forbidden": "Chỉ quản lý được thay đổi mục này.",
+      "issue": {
+        "listMax": "Mỗi danh sách tối đa 10 mục.",
+        "pct": "% cảnh báo phải là số nguyên từ 1 đến 100."
+      },
+      "f": {
+        "enabled": "Dò giá thị trường cho sản phẩm này",
+        "keywords": "Từ khoá tìm",
+        "include_sites": "Ưu tiên các trang",
+        "exclude_sites": "Bỏ qua các trang",
+        "watched_suppliers": "Nhà cung cấp theo dõi",
+        "spec": "Quy cách",
+        "unit": "Đơn vị",
+        "region": "Khu vực",
+        "vat": "Cách tính giá",
+        "schedule": "Tự động dò",
+        "alert_pct": "Báo khi giá thị trường thấp nhất lệch giá vốn bình quân (%)",
+        "alert_watched": "Báo khi nhà cung cấp theo dõi đổi giá"
+      },
+      "ph": {
+        "keywords": "cách nhau dấu phẩy hoặc xuống dòng, tối đa {{max}}",
+        "include_sites": "vd shopee.vn, fpt.com.vn",
+        "exclude_sites": "vd example.com",
+        "watched_suppliers": "tên nhà cung cấp công khai",
+        "alert_pct": "trống = không báo"
+      },
+      "vat": { "excl": "Chưa VAT", "incl": "Đã gồm VAT" },
+      "schedule": { "off": "Tắt (chỉ dò tay)", "weekly": "Hằng tuần", "monthly": "Hằng tháng" },
+      "secTitle": "Dò giá thị trường",
+      "secHint": "Mặc định áp cho sản phẩm chưa tự tuỳ chỉnh cấu hình dò giá.",
+      "groupHint": "Cấu hình riêng của sản phẩm sẽ thay thế",
+      "group": { "service": "Dịch vụ có hạn", "goods": "Hàng hoá" },
+      "quota": {
+        "title": "Trần mỗi tháng",
+        "hint": "Để trống = theo mặc định hệ thống / không giới hạn",
+        "tokens": "đã dùng {{n}} token",
+        "empty": "mặc định hệ thống",
+        "invalid": "Nhập số nguyên từ 0 trở lên, hoặc để trống.",
+        "searches_month": "Số lượt dò tối đa/tháng",
+        "tokens_month": "Token tối đa/tháng",
+        "platform_searches_month": "Nền tảng ghi đè: lượt dò/tháng",
+        "platform_tokens_month": "Nền tảng ghi đè: token/tháng"
       }
     }
   }

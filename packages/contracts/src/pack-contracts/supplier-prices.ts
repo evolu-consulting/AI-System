@@ -2,6 +2,7 @@
 // `GET /pack/contracts/products/:id/suppliers` (so sánh NCC với giá vốn BQ + gợi ý hợp tác), `POST .../suppliers/search` (AI tìm giá
 // trên mạng — chỉ khi người dùng bấm, chỉ gửi TÊN sản phẩm), `POST .../supplier-prices` (lưu kết quả vào bảng so sánh),
 // `DELETE .../supplier-prices/:priceId`. Thay `/cks/scans`. Tiền = số nguyên đồng (chưa VAT).
+// price-scout: lượt tìm nay qua agent Hub `price-scout`, gửi tên SP + cấu hình dò của SP (xem `price-scout.ts`).
 import { z } from "zod";
 
 export const SUPPLIER_PRICE_ERRORS = {
@@ -11,6 +12,8 @@ export const SUPPLIER_PRICE_ERRORS = {
   SEARCH_CAP: 429,
   /** AI trả lỗi / trả sai dạng. */
   SEARCH_FAILED: 502,
+  /** price-scout · hết trần lượt dò giá (hoặc token) tháng này của tenant. */
+  SCOUT_MONTHLY_CAP: 429,
 } as const;
 export type SupplierPriceErrorCode = keyof typeof SUPPLIER_PRICE_ERRORS;
 

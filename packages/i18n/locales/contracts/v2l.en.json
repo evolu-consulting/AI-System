@@ -10,7 +10,9 @@
         "rep": "Reputation score",
         "repHint": "Criteria, time, levels and ratings",
         "biz": "Business score",
-        "bizHint": "Weights and suggestion thresholds"
+        "bizHint": "Weights and suggestion thresholds",
+        "scout": "Market price scouting",
+        "scoutHint": "Group defaults, monthly search cap"
       },
       "unsaved": "Unsaved changes",
       "isDefault": "Using defaults",

@@ -29,6 +29,7 @@ const MESSAGES = {
   unavailable: ["SEARCH_UNAVAILABLE", "Price search is not available"],
   cap: ["SEARCH_CAP", "Daily AI token cap reached"],
   failed: ["SEARCH_FAILED", "Price search failed"],
+  month_cap: ["SCOUT_MONTHLY_CAP", "Monthly price-scout limit reached for this company"],
 } as const;
 
 const run = <T>(p: Promise<T>): Promise<T> =>

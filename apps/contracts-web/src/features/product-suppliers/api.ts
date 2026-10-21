@@ -1,12 +1,25 @@
 // V2-J2 · SP-04/05/06: tab "Nhà cung cấp & giá" của chi tiết sản phẩm (`/pack/contracts/products/:id/suppliers…`).
-import type { SupplierOverviewOut, SupplierPriceInput, SupplierSearchOut } from "@ai/contracts";
+import type {
+  PriceScoutOverride,
+  PriceScoutProductOut,
+  SupplierOverviewOut,
+  SupplierPriceInput,
+  SupplierSearchOut,
+} from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/products";
 
 export const supplierKeys = {
   overview: (id: string) => ["products", id, "suppliers"] as const,
+  scout: (id: string) => ["products", id, "price-scout"] as const,
 };
+
+/** price-scout · cấu hình dò giá của SP (`GET|PUT /products/:id/price-scout`); PUT `{}` = theo mặc định nhóm. */
+export const fetchProductScout = (id: string, signal?: AbortSignal) =>
+  api<PriceScoutProductOut>(`${BASE}/${id}/price-scout`, { signal });
+export const saveProductScout = (id: string, body: PriceScoutOverride) =>
+  api<PriceScoutProductOut>(`${BASE}/${id}/price-scout`, { method: "PUT", body });
 
 export const fetchSuppliers = (id: string, signal?: AbortSignal) =>
   api<SupplierOverviewOut>(`${BASE}/${id}/suppliers`, { signal });

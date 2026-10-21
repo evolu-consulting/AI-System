@@ -134,6 +134,8 @@ export function todoTarget(i: TodoItem): TodoTarget {
     return { to: "/partners", ...(i.party_key ? { party: i.party_key } : {}) };
   if (i.kind === "customers_expiring" && i.product_id)
     return { to: "/products", sp: i.product_id, ht: "users" };
+  if (i.kind === "market_price" && i.product_id)
+    return { to: "/products", sp: i.product_id, ht: "suppliers" };
   if ((i.kind === "commission" || i.kind === "renewal_contact") && i.product_id)
     return { to: "/products", sp: i.product_id };
   return i.contract_id ? { to: "/contracts/$id", id: i.contract_id } : null;

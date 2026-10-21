@@ -113,6 +113,9 @@ describe("A20–A23 · dữ liệu provider_state H3a [H3a-R05 · H3a-R20]", () 
       // usage-analytics (hub 0049): thêm cuối `app`, `outcome` (nullable; writer cũ không đổi).
       "app",
       "outcome",
+      // price-scout (hub 0052): thêm cuối `trigger_kind`, `subject_id` (nullable; writer cũ không đổi).
+      "trigger_kind",
+      "subject_id",
     ]);
   });
 });

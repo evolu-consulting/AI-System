@@ -210,7 +210,8 @@
           "commission": "Commission",
           "rating": "Rate",
           "rating_quarter": "Rate",
-          "missing_file": "Missing file"
+          "missing_file": "Missing file",
+          "market_price": "Market price changed"
         },
         "when": {
           "late": "{{n}} days late",

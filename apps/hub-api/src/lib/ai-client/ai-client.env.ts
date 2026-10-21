@@ -22,6 +22,7 @@ export const AI_FEATURES = [
   "contracts.extract",
   "contracts.partner-search",
   "contracts.price_search",
+  "contracts.price_scout",
 ] as const;
 
 type Env = Record<string, string | undefined>;

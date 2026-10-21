@@ -15,9 +15,41 @@ import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
 import { RepPane } from "./RepPane";
+import { ScoutPane } from "./ScoutPane";
 import { SettingsHeader } from "./SettingsHeader";
 
-const SECTIONS: readonly SectionId[] = ["co", "rep", "biz"];
+const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout"];
+
+/** Mục có chấm cam "đã khác mặc định"? Dò giá lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
+function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
+  if (!vsDef || k === "scout") return false;
+  return k === "co" ? vsDef.company : k === "biz" ? vsDef.biz : repChanged(vsDef);
+}
+
+function LoadState({
+  loading,
+  error,
+  retry,
+}: {
+  loading: boolean;
+  error: unknown;
+  retry: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {loading && <p className="text-dim">{t("contracts.common.loading")}</p>}
+      {error && (
+        <p role="alert" className="text-late">
+          {t("contracts.settings.loadFail")}{" "}
+          <button type="button" className="underline" onClick={retry}>
+            {t("contracts.common.retry")}
+          </button>
+        </p>
+      )}
+    </>
+  );
+}
 
 export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantName: string }) {
   const { t } = useTranslation();
@@ -58,8 +90,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
     else toast(r.message ?? s("saveFail"), "late");
     setSaving(false);
   };
-  const dot = (k: SectionId) =>
-    vsDef ? (k === "co" ? vsDef.company : k === "biz" ? vsDef.biz : repChanged(vsDef)) : false;
+  const dot = (k: SectionId) => sectionChanged(k, vsDef);
 
   return (
     <Dialog open={open} onOpenChange={(o) => settingsBus.set(o)}>
@@ -101,16 +132,10 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
             ))}
           </nav>
           <div className="min-w-0 overflow-y-auto p-5" id="settings-scroll">
-            {loading && <p className="text-dim">{t("contracts.common.loading")}</p>}
-            {error && (
-              <p role="alert" className="text-late">
-                {s("loadFail")}{" "}
-                <button type="button" className="underline" onClick={retry}>
-                  {t("contracts.common.retry")}
-                </button>
-              </p>
-            )}
-            {draft && saved && defaults && (
+            <LoadState loading={loading} error={error} retry={retry} />
+
+            {sec === "scout" && <ScoutPane />}
+            {sec !== "scout" && draft && saved && defaults && (
               <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
                 {sec === "co" && (
                   <>

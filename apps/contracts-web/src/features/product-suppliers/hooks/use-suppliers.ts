@@ -16,6 +16,7 @@ const KNOWN = [
   "SEARCH_CAP",
   "SEARCH_FAILED",
   "ACTION_QUOTA",
+  "SCOUT_MONTHLY_CAP",
   "PACK_FORBIDDEN",
 ];
 
@@ -44,13 +45,23 @@ export const useSupplierSearch = (
     onResult: (r: SupplierSearchOut) => void;
     onFail: (e: unknown) => void;
   },
-) =>
-  useMutation({
+) => {
+  const qc = useQueryClient();
+  // Dù thành công hay chạm trần, bộ đếm lượt dò tháng này đổi ⇒ tải lại.
+  const refresh = () => qc.invalidateQueries({ queryKey: supplierKeys.scout(productId) });
+  return useMutation({
     mutationFn: () => searchSuppliers(productId),
     onMutate: h.onStart,
-    onSuccess: h.onResult,
-    onError: h.onFail,
+    onSuccess: (r) => {
+      void refresh();
+      h.onResult(r);
+    },
+    onError: (e) => {
+      void refresh();
+      h.onFail(e);
+    },
   });
+};
 
 export function useSaveSuppliers(
   productId: string,

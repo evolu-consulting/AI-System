@@ -46,6 +46,13 @@ export type UsageRecord = {
   latencyMs: number;
   /** usage-analytics (hub 0049): kết quả lời gọi; vắng ⇒ không ghi (NULL). */
   outcome?: AiOutcome;
+} & AiCallTags;
+/** price-scout (hub 0052): chiều usage thêm của lời gọi agent — app, agent Hub, nguồn kích hoạt, id bản ghi nghiệp vụ. */
+export type AiCallTags = {
+  app?: string;
+  agentId?: string;
+  trigger?: "manual" | "schedule";
+  subjectId?: string;
 };
 export type AiOutcome = "ok" | "error" | "cancelled";
 /** Kết quả một lời gọi đã tới nhà cung cấp: thành công / bị huỷ (signal) / lỗi (kể cả REFUSED). */
@@ -88,7 +95,7 @@ export type AiCallRequest = {
   signal: AbortSignal;
   /** V2-I: lời gọi có tìm web (chỉ gói/CLI; xem `ModelRequest.webSearch`). */
   webSearch?: boolean;
-};
+} & AiCallTags;
 export type AiFailCode = "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED";
 export type AiCallResult =
   | { ok: true; text: string; model: string; usage: AiUsage }
@@ -183,6 +190,13 @@ async function settle(d: AiClientDeps, r: UsageRecord, holdId: string | null): P
       .catch(() => d.log?.warn("ai-token-release-failed", f));
 }
 
+const tagsOf = (r: AiCallTags): AiCallTags => ({
+  ...(r.app ? { app: r.app } : {}),
+  ...(r.agentId ? { agentId: r.agentId } : {}),
+  ...(r.trigger ? { trigger: r.trigger } : {}),
+  ...(r.subjectId ? { subjectId: r.subjectId } : {}),
+});
+
 export function createAiClient(d: AiClientDeps): AiClient {
   const now = d.now ?? (() => new Date());
   const pick = d.provider;
@@ -215,6 +229,7 @@ export function createAiClient(d: AiClientDeps): AiClient {
           costUsd: billing === "subscription" ? 0 : costUsd(model, usage),
           latencyMs: Math.round(performance.now() - t0),
           outcome: outcomeOf(reply.ok, req.signal.aborted),
+          ...tagsOf(req),
         },
         gate.holdId,
       );

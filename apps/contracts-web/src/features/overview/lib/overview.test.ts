@@ -140,6 +140,11 @@ describe("V2-N · định dạng & suy diễn (todo)", () => {
     expect(
       todoTarget(todo({ kind: "customers_expiring", product_id: "p1", contract_id: "c1" })),
     ).toEqual({ to: "/products", sp: "p1", ht: "users" });
+    expect(todoTarget(todo({ kind: "market_price", product_id: "p1" }))).toEqual({
+      to: "/products",
+      sp: "p1",
+      ht: "suppliers",
+    });
     expect(todoTarget(todo({ kind: "rating", party_key: "acme", contract_id: "c1" }))).toEqual({
       to: "/partners",
       party: "acme",
