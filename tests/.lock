@@ -1326,6 +1326,7 @@ c49712e02dea1cb8e2a98ef9460288a3810cdbcb335d075160ff2a1ab0791566  tests/acceptan
 c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts
 be104da996df489b0844accf258809f3263770c1f704863bf763cb78e3c6d431  tests/acceptance/price-scout/price-scout.int.test.ts
+07a9cbf7bacd96bebb47df1a3704a756f05a65563109c7d1bd1ea0a5ddbddf6a  tests/acceptance/studio-agents-list/list-flags.int.test.ts
 fe7cca220c9fb4b246085f5742be9919a6c1782565d1e5eb3212aa26416f7b5e  tests/acceptance/tenant-admin-scope/scope.int.test.ts
 ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
 36c2a631d1923d6d57146327e45c8bbd9ba495c5b9b721737db2802429855fb4  tests/acceptance/tenant-owner/setup.int.test.ts
