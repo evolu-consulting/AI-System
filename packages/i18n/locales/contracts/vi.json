@@ -81,6 +81,47 @@
       "ownerLine": "Phụ trách: {{name}}",
       "ownerUnknown": "(không rõ)",
       "uploadFailed": "Không tải lên được. Thử lại sau.",
+      "upload": {
+        "title": "Tải lên hợp đồng",
+        "drop": "Thả tệp vào đây để tải lên",
+        "close": "Đóng",
+        "retry": "Thử lại",
+        "state": {
+          "queued": "Đang chờ",
+          "uploading": "Đang tải…",
+          "done": "Đã tải",
+          "error": "Lỗi"
+        },
+        "badType": "Chỉ nhận PDF, DOCX, PNG, JPG hoặc Markdown (.md).",
+        "tooLarge": "Tệp quá 20 MB.",
+        "empty": "Tệp rỗng.",
+        "quota": "Đã hết lượt tải lên trong ngày.",
+        "busy": "Hệ thống đang bận chuyển file, thử lại sau ít giây."
+      },
+      "date": {
+        "label": "Lọc theo ngày",
+        "field": "Cột ngày",
+        "window": "Khoảng thời gian",
+        "fields": { "end_date": "Hiệu lực đến", "action_deadline": "Hạn chót xử lý" },
+        "any": "Mọi ngày",
+        "range": "Khoảng tuỳ chọn…",
+        "due": {
+          "overdue": "Quá hạn",
+          "30": "Trong 30 ngày tới",
+          "60": "Trong 60 ngày tới",
+          "90": "Trong 90 ngày tới"
+        },
+        "from": "Từ ngày",
+        "to": "Đến ngày"
+      },
+      "export": {
+        "xlsx": "Xuất Excel",
+        "csv": "Xuất CSV",
+        "busy": "Đang xuất…",
+        "done": "Đã xuất danh sách",
+        "failed": "Không xuất được. Thử lại sau.",
+        "truncated": "Đã xuất 50.000 dòng đầu trong {{total}} hợp đồng khớp — hãy lọc thêm để xuất đủ."
+      },
       "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị",
       "until": "đến {{date}}",
       "view": "Xem",

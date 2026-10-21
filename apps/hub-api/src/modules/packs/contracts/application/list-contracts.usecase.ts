@@ -18,8 +18,25 @@ export type ListContracts<Row> = (
 const arr = (xs: readonly string[] | undefined): readonly string[] | null =>
   xs && xs.length > 0 ? xs : null;
 
+/** `YYYY-MM-DD` + n ngày (lịch UTC thuần, không phụ thuộc múi giờ tiến trình). */
+export function addDays(iso: string, n: number): string {
+  const t = Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+/** Gap #10: cửa sổ ngày của bộ lọc (`due` thắng khoảng). `today` = ngày lịch tenant; `due` mà không có `today` ⇒ ngày UTC. */
+export function dateWindow(
+  q: Pick<ContractListInput, "due" | "date_from" | "date_to">,
+  today: string,
+): { from: string | null; to: string | null } {
+  if (q.due === "overdue") return { from: null, to: addDays(today, -1) };
+  if (q.due) return { from: today, to: addDays(today, Number(q.due)) };
+  return { from: q.date_from ?? null, to: q.date_to ?? null };
+}
+
 /** Thuần: đầu vào đã kiểm ⇒ bộ lọc SQL (`null` = không lọc). Signer chỉ có chức danh ⇒ `[]` (không khớp gì). */
-export function toListFilter(q: ContractListInput): ContractListFilter {
+export function toListFilter(q: ContractListInput, today?: string): ContractListFilter {
+  const win = dateWindow(q, today ?? new Date().toISOString().slice(0, 10));
   const signer = arr(q.signer);
   return {
     status: arr(q.status),
@@ -34,6 +51,9 @@ export function toListFilter(q: ContractListInput): ContractListFilter {
     kind: arr(q.kind),
     valueMin: q.value_min ?? null,
     valueMax: q.value_max ?? null,
+    dateField: q.date_field ?? "end_date",
+    dateFrom: win.from,
+    dateTo: win.to,
     like: q.q ? `%${likePattern(q.q)}%` : null,
     order: `${q.sort}:${q.dir}`,
     limit: q.page_size,
@@ -47,12 +67,13 @@ export function listContracts<Row>(d: {
   today?: (tenantId: string) => Promise<string>;
 }): ListContracts<Row> {
   return async (who, q) => {
-    const f = toListFilter(q);
     const want = q.include === "progress";
-    const today = want
-      ? await (d.today?.(who.tenantId) ?? new Date().toISOString().slice(0, 10))
-      : undefined;
-    const p = await d.uow.tenant(who, (r) => r.contracts.list(f, today));
+    const today =
+      want || q.due
+        ? await (d.today?.(who.tenantId) ?? new Date().toISOString().slice(0, 10))
+        : undefined;
+    const f = toListFilter(q, today);
+    const p = await d.uow.tenant(who, (r) => r.contracts.list(f, want ? today : undefined));
     return {
       items: p.items,
       total: p.total,

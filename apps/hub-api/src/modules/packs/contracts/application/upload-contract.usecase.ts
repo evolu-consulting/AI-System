@@ -7,7 +7,13 @@ import type { PackWho } from "../../kit/application/ports";
 import type { DocxConverter } from "../../kit/domain/docx.rules";
 import { fillFields } from "../domain/fields.rules";
 import { nextDayStart } from "../domain/quota-reset.rules";
-import { quotaVerdict, type SniffedType, sniffFileType, uploadDay } from "../domain/upload.rules";
+import {
+  markdownText,
+  quotaVerdict,
+  type SniffedType,
+  sniffFileType,
+  uploadDay,
+} from "../domain/upload.rules";
 import {
   type ContractFileStore,
   type ExtractionStarter,
@@ -25,6 +31,7 @@ export const UPLOAD_MIME: Record<SniffedType, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   jpeg: "image/jpeg",
   png: "image/png",
+  md: "text/markdown",
 };
 const ZIP_SIG = [0x50, 0x4b, 0x03, 0x04];
 
@@ -54,15 +61,18 @@ export type UploadContractResult = { id: string; status: UploadStatus; version: 
 export type UploadContract = (i: UploadContractInput) => Promise<UploadContractResult>;
 
 /** Loại tệp theo nội dung; zip chỉ đọc central directory khi 4 byte đầu là `PK\x03\x04`. */
-export function sniffUpload(bytes: Uint8Array, zipNames: (b: Uint8Array) => string[]) {
+export function sniffUpload(bytes: Uint8Array, zipNames: (b: Uint8Array) => string[], name = "") {
   const zip = ZIP_SIG.every((b, i) => bytes[i] === b);
-  return sniffFileType(bytes, zip ? zipNames(bytes) : undefined);
+  return (
+    sniffFileType(bytes, zip ? zipNames(bytes) : undefined) ??
+    (markdownText(bytes, name) !== null ? "md" : null)
+  );
 }
 
 export function createUploadContract(d: UploadContractDeps): UploadContract {
   const now = d.now ?? (() => new Date());
   return async (i) => {
-    const type = sniffUpload(i.bytes, d.zipNames);
+    const type = sniffUpload(i.bytes, d.zipNames, i.name);
     if (!type) throw new UploadError("FILE_TYPE");
     if ((i.kind === "appendix") !== (i.parentId !== null)) throw new UploadError("PARENT_INVALID");
     const at = now();
@@ -180,6 +190,7 @@ async function toText(
   type: SniffedType,
   i: UploadContractInput,
 ): Promise<Text> {
+  if (type === "md") return { ok: true, markdown: markdownText(i.bytes, i.name) };
   if (type !== "docx") return { ok: true, markdown: null };
   const r = await docx.toMarkdown(i.bytes, { tenantId: i.who.tenantId });
   if (r.ok) return { ok: true, markdown: r.markdown };

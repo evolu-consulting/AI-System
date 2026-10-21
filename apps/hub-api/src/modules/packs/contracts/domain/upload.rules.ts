@@ -1,6 +1,6 @@
 ﻿// HD-FR-08 · HD-AC10 · D-06 · D-09 · plan §4–§5: nhận dạng tệp theo magic bytes, ngày tải lên theo múi tenant, trần tải lên. Thuần.
 
-export type SniffedType = "pdf" | "docx" | "jpeg" | "png";
+export type SniffedType = "pdf" | "docx" | "jpeg" | "png" | "md";
 
 const startsWith = (head: Uint8Array, sig: readonly number[]): boolean =>
   head.length >= sig.length && sig.every((b, i) => head[i] === b);
@@ -16,6 +16,20 @@ export function sniffFileType(head: Uint8Array, zipNames?: readonly string[]): S
   if (startsWith(head, PNG)) return "png";
   if (startsWith(head, ZIP) && zipNames?.includes("word/document.xml")) return "docx";
   return null;
+}
+
+const MD_NAME = /\.(md|markdown)$/i;
+const utf8 = new TextDecoder("utf-8", { fatal: true });
+
+/** Gap #9: Markdown không có chữ ký ⇒ chỉ nhận khi tên khai báo `.md`/`.markdown` VÀ nội dung là UTF-8 hợp lệ, không có byte NUL
+ *  (tệp nhị phân đổi tên không lọt). Trả chữ (bỏ BOM) hoặc null. */
+export function markdownText(bytes: Uint8Array, name: string): string | null {
+  if (!MD_NAME.test(name) || bytes.length === 0 || bytes.includes(0)) return null;
+  try {
+    return utf8.decode(bytes).replace(/^\uFEFF/, "");
+  } catch {
+    return null;
+  }
 }
 
 /** YYYY-MM-DD của `now` theo múi `timeZone` (Intl, không phụ thuộc TZ tiến trình). */

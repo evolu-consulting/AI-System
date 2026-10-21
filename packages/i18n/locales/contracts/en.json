@@ -81,6 +81,47 @@
       "ownerLine": "Owner: {{name}}",
       "ownerUnknown": "(unknown)",
       "uploadFailed": "Could not upload. Try again later.",
+      "upload": {
+        "title": "Contract uploads",
+        "drop": "Drop files here to upload",
+        "close": "Close",
+        "retry": "Retry",
+        "state": {
+          "queued": "Queued",
+          "uploading": "Uploading…",
+          "done": "Uploaded",
+          "error": "Failed"
+        },
+        "badType": "Only PDF, DOCX, PNG, JPG or Markdown (.md) files are accepted.",
+        "tooLarge": "File is larger than 20 MB.",
+        "empty": "File is empty.",
+        "quota": "Daily upload limit reached.",
+        "busy": "The converter is busy, try again in a few seconds."
+      },
+      "date": {
+        "label": "Filter by date",
+        "field": "Date column",
+        "window": "Time window",
+        "fields": { "end_date": "Valid until", "action_deadline": "Action deadline" },
+        "any": "Any date",
+        "range": "Custom range…",
+        "due": {
+          "overdue": "Overdue",
+          "30": "Next 30 days",
+          "60": "Next 60 days",
+          "90": "Next 90 days"
+        },
+        "from": "From",
+        "to": "To"
+      },
+      "export": {
+        "xlsx": "Export Excel",
+        "csv": "Export CSV",
+        "busy": "Exporting…",
+        "done": "List exported",
+        "failed": "Export failed. Try again later.",
+        "truncated": "Exported the first 50,000 rows of {{total}} matching contracts — narrow the filters to export all."
+      },
       "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator",
       "until": "until {{date}}",
       "view": "View",

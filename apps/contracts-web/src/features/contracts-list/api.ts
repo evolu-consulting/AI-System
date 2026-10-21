@@ -8,7 +8,8 @@ import type {
   MembersResponse,
   UploadContractResponse,
 } from "@ai/contracts";
-import { api } from "@ai/web-kit/http";
+import { api, apiResponse } from "@ai/web-kit/http";
+import type { ExportFile } from "./lib/export-file";
 
 const BASE = "/pack/contracts";
 
@@ -37,4 +38,16 @@ export function uploadContract(file: File): Promise<UploadContractResponse> {
     method: "POST",
     rawBody: form as unknown as Blob,
   });
+}
+
+/** Gap #8 · `GET /pack/contracts/contracts/export?…` (Bearer qua web-kit): tệp xlsx/csv theo đúng bộ lọc đang hiện. */
+export async function exportContracts(qs: string, signal?: AbortSignal): Promise<ExportFile> {
+  const res = await apiResponse(`${BASE}/contracts/export?${qs}`, { signal });
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1];
+  return {
+    blob: await res.blob(),
+    filename: name ?? "hop-dong",
+    total: Number(res.headers.get("x-export-total") ?? 0),
+    truncated: res.headers.get("x-export-truncated") === "1",
+  };
 }

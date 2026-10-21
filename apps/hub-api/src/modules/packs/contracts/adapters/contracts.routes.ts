@@ -1,7 +1,7 @@
 // HD-FR-07 · HD-AC01 · HD-AC09 · D-03 · D-10 · D-13 · HD1 plan §2: route đọc gói hợp đồng (mount dưới `/pack/contracts`, sau
 // `requireAuth`). Guard `read` TRƯỚC kiểm tham số (403 trước 400, 0 SQL). Query lặp (`?status=a&status=b`) ⇒ mảng; khoá phạm vi
 // (`tenant_id`/`user_id`) bị bỏ — tenant/user chỉ từ token. `/contracts/facets` khai trước mọi `/contracts/:id` (T8).
-import { ContractListQuerySchema } from "@ai/contracts";
+import { ContractExportQuerySchema, ContractListQuerySchema } from "@ai/contracts";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -13,6 +13,7 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
+import type { ExportContracts } from "../application/export-contracts.usecase";
 import type { GetContract } from "../application/get-contract.usecase";
 import type { GetFacets } from "../application/get-facets.usecase";
 import type { GetFileLink } from "../application/get-file-link.usecase";
@@ -20,6 +21,7 @@ import type { GetSource } from "../application/get-source.usecase";
 import type { ListContracts } from "../application/list-contracts.usecase";
 import type { PatchFields } from "../application/patch-fields.usecase";
 import type { ContractDetailDto, ContractFacetsDto, ContractListRowDto } from "./contracts.mapper";
+import { exportResponse } from "./export.http";
 import { patchBody, patchReply } from "./patch-fields.http";
 
 export const CONTRACTS_KEY = "contracts";
@@ -27,6 +29,8 @@ export const CONTRACTS_KEY = "contracts";
 export type ContractsReadUseCases = {
   list: ListContracts<ContractListRowDto>;
   facets: GetFacets<ContractFacetsDto>;
+  /** Gap #8: xuất danh sách (xlsx/csv). */
+  export: ExportContracts;
   detail: GetContract<ContractDetailDto>;
   source: GetSource;
   fileLink: GetFileLink;
@@ -83,6 +87,11 @@ export function contractsRoutes(
   r.get("/contracts", read, async (c) => {
     const q = parseWith(ContractListQuerySchema, listQueryInput(c));
     return c.json(await uc.list(whoOf(c.get("user")), q));
+  });
+  // Gap #8: khai trước `/contracts/:id`. Cùng guard `read` + tx RLS của người gọi; thân phản hồi là luồng tệp.
+  r.get("/contracts/export", read, async (c) => {
+    const { format, ...q } = parseWith(ContractExportQuerySchema, listQueryInput(c));
+    return exportResponse(await uc.export(whoOf(c.get("user")), q), format);
   });
   r.get("/contracts/facets", read, async (c) => c.json(await uc.facets(whoOf(c.get("user")))));
   // T8 · HD-AC01: `:id` sai dạng ⇒ 400 trước SQL; id lạ / tenant khác ⇒ 404 `NOT_FOUND` giống hệt (không lộ tồn tại).

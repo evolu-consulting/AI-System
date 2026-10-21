@@ -11,6 +11,7 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
+  ContractExportRow,
   ContractFileRef,
   ContractListFilter,
   ContractsOwnRepos,
@@ -68,12 +69,12 @@ const progressOf = (
       from contracts.obligations o where o.tenant_id = ${tid}::uuid and o.contract_id = c.id and o.status = 'open'
       order by o.due_date, o.seq limit 1) nx on true), '[]'::json) end`;
 
-async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | undefined) {
+/** Gap #8/#10: điều kiện lọc dùng chung cho danh sách và xuất tệp — MỘT văn bản SQL cố định (mọi bộ lọc `($x is null or …)`). */
+function filterWhere(tid: string, f: ContractListFilter) {
   const a = pgTextArray;
   const cats = a(f.category);
-  const rows = await tx.execute<ListOut>(sql`with f as materialized (
-      select c.id, c.updated_at, c.value, c.end_date, c.title from contracts.contracts c
-      where c.tenant_id = ${tid}::uuid
+  const df = f.dateField;
+  return sql`c.tenant_id = ${tid}::uuid
         and (${a(f.status)}::text[] is null or c.status = any(${a(f.status)}::text[]))
         and (${a(f.owner)}::uuid[] is null or c.owner_user_id = any(${a(f.owner)}::uuid[]))
         and (${a(f.seller)}::text[] is null or c.seller = any(${a(f.seller)}::text[]))
@@ -83,9 +84,31 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
         and (${a(f.kind)}::text[] is null or c.kind = any(${a(f.kind)}::text[]))
         and (${f.valueMin}::bigint is null or c.value >= ${f.valueMin}::bigint)
         and (${f.valueMax}::bigint is null or c.value <= ${f.valueMax}::bigint)
+        and (${f.dateFrom}::date is null or (case when ${df}::text = 'action_deadline' then c.action_deadline
+             else c.end_date end) >= ${f.dateFrom}::date)
+        and (${f.dateTo}::date is null or (case when ${df}::text = 'action_deadline' then c.action_deadline
+             else c.end_date end) <= ${f.dateTo}::date)
         and (${f.like}::text is null or c.search_key like ${f.like}::text)
         and (${cats}::uuid[] is null or c.id in (select i.contract_id from contracts.contract_items i
-             where i.tenant_id = ${tid}::uuid and i.category_id = any(${cats}::uuid[])))),
+             where i.tenant_id = ${tid}::uuid and i.category_id = any(${cats}::uuid[])))`;
+}
+
+/** Nhánh CASE sắp xếp (một tham số `order`) — dùng chung danh sách + xuất tệp. */
+const orderBy = (f: ContractListFilter) => sql`
+        case when ${f.order}::text = 'updated_at:desc' then c.updated_at end desc,
+        case when ${f.order}::text = 'updated_at:asc' then c.updated_at end asc,
+        case when ${f.order}::text = 'value:desc' then c.value end desc nulls last,
+        case when ${f.order}::text = 'value:asc' then c.value end asc nulls last,
+        case when ${f.order}::text = 'end_date:desc' then c.end_date end desc nulls last,
+        case when ${f.order}::text = 'end_date:asc' then c.end_date end asc nulls last,
+        case when ${f.order}::text = 'title:desc' then c.title end desc,
+        case when ${f.order}::text = 'title:asc' then c.title end asc,
+        c.id desc`;
+
+async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | undefined) {
+  const rows = await tx.execute<ListOut>(sql`with f as materialized (
+      select c.id, c.updated_at, c.value, c.end_date, c.title from contracts.contracts c
+      where ${filterWhere(tid, f)}),
     p as (select f.id from f order by
         case when ${f.order}::text = 'updated_at:desc' then f.updated_at end desc,
         case when ${f.order}::text = 'updated_at:asc' then f.updated_at end asc,
@@ -116,6 +139,61 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
   const progress =
     today === undefined ? [] : parsed(out.progress ?? []).map((p) => toProgress(p, today));
   return { total: out.total, items: items.map(toContractListRow), parents, progress };
+}
+
+type ExportRaw = {
+  total: number;
+  number: string | null;
+  title: string;
+  kind: string;
+  type: string | null;
+  direction: string | null;
+  status: string;
+  seller: string | null;
+  buyer: string | null;
+  seller_signer: string | null;
+  buyer_signer: string | null;
+  value: string | number | null;
+  end_date: string | null;
+  action_deadline: string | null;
+  owner_user_id: string | null;
+  category_ids: string[] | null;
+  updated_at: Date | string;
+};
+
+/** Gap #8 · Luật 4c: xuất tệp = MỘT câu lọc (cùng `filterWhere` với danh sách, `count(*) over()` cho tổng) + MỘT câu tên loại hàng
+ *  của tenant (nhỏ, ≤ vài trăm) — không N+1; cột hẹp (không `fields`/`source_text`); trần `cap + 1` dòng. Ngày ép `::text` (không
+ *  lệch múi giờ qua driver). */
+async function exportRows(tx: Tx, tid: string, f: ContractListFilter, cap: number) {
+  const rows =
+    await tx.execute<ExportRaw>(sql`select count(*) over ()::int as total, c.number, c.title, c.kind, c.type,
+      c.direction, c.status, c.seller, c.buyer, c.seller_signer, c.buyer_signer, c.value, c.end_date::text as end_date,
+      c.action_deadline::text as action_deadline, c.owner_user_id, c.category_ids[1:50] as category_ids, c.updated_at
+    from contracts.contracts c where ${filterWhere(tid, f)}
+    order by ${orderBy(f)} limit ${cap + 1}::int`);
+  const cats = await tx.execute<{ id: string; name: string }>(
+    sql`select id, name from contracts.contract_categories where tenant_id = ${tid}::uuid`,
+  );
+  const name = new Map(cats.map((c) => [c.id, c.name]));
+  const out: ContractExportRow[] = rows.map((r) => ({
+    number: r.number,
+    title: r.title,
+    kind: r.kind,
+    type: r.type,
+    direction: r.direction,
+    status: r.status,
+    seller: r.seller,
+    buyer: r.buyer,
+    sellerSigner: r.seller_signer,
+    buyerSigner: r.buyer_signer,
+    value: r.value === null ? null : Number(r.value),
+    endDate: r.end_date,
+    actionDeadline: r.action_deadline,
+    ownerUserId: r.owner_user_id,
+    categories: (r.category_ids ?? []).flatMap((id) => name.get(id) ?? []),
+    updatedAt: new Date(r.updated_at),
+  }));
+  return { total: rows[0]?.total ?? 0, rows: out };
 }
 
 /** V2-A: mốc còn hiệu lực của HĐ `c` theo dòng thời gian (hạn, seq), tới trần chi tiết. */
@@ -235,6 +313,7 @@ export function contractsRepo(tx: Tx, tenantId: string): Repo {
   return {
     list: (f, today) => list(tx, tenantId, f, today),
     facets: () => facets(tx, tenantId),
+    exportRows: (f, cap) => exportRows(tx, tenantId, f, cap),
     detail: (id, today) => detail(tx, tenantId, id, today ?? new Date().toISOString().slice(0, 10)),
     source: (id) => source(tx, tenantId, id),
     fileOf: (id) => fileOf(tx, tenantId, id),

@@ -1,7 +1,7 @@
 // HD-FR-51 · S03: nhãn/tên rút gọn, lựa chọn lọc từ facets, truy vấn server từ bộ lọc.
 import { describe, expect, test } from "bun:test";
 import type { ContractFacets } from "@ai/contracts";
-import { filterMaps, listQueryString, personOf, shortName } from "./list-model";
+import { exportQueryString, filterMaps, listQueryString, personOf, shortName } from "./list-model";
 
 const facets = {
   status: [
@@ -93,5 +93,37 @@ describe("listQueryString", () => {
     expect(listQueryString({ ...base, conds: { status: { in: ["Không có"] } } })).toBe(
       "include=progress&page=1&page_size=20",
     );
+  });
+});
+
+describe("Gap #8/#10 · lọc ngày + xuất tệp (cùng bộ lọc với danh sách)", () => {
+  const base = {
+    q: "abc",
+    conds: { value: { min: 5 } },
+    maps: filterMaps(undefined, new Map()),
+    page: 3,
+    pageSize: 50,
+  };
+  test("lọc ngày vào danh sách: due thắng; khoảng; không lọc ⇒ không thêm tham số", () => {
+    expect(listQueryString(base)).not.toContain("date_");
+    expect(
+      listQueryString({ ...base, date: { field: "action_deadline", due: "overdue" } }),
+    ).toContain("date_field=action_deadline&due=overdue");
+    const r = listQueryString({
+      ...base,
+      date: { field: "end_date", from: "2026-01-01", to: "2026-02-01" },
+    });
+    expect(r).toContain("date_from=2026-01-01&date_to=2026-02-01");
+  });
+  test("xuất tệp: giữ q/giá trị/ngày, bỏ page/page_size/include, thêm format", () => {
+    const qs = exportQueryString({ ...base, date: { field: "end_date", due: "30" } }, "csv");
+    const u = new URLSearchParams(qs);
+    expect(Object.fromEntries(u)).toEqual({
+      q: "abc",
+      value_min: "5",
+      date_field: "end_date",
+      due: "30",
+      format: "csv",
+    });
   });
 });

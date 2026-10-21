@@ -22,6 +22,11 @@ export type ContractListInput = {
   kind?: readonly string[] | undefined;
   value_min?: number | undefined;
   value_max?: number | undefined;
+  /** Gap #10: lọc ngày (cột + cửa sổ tương đối + khoảng). */
+  date_field?: "end_date" | "action_deadline" | undefined;
+  due?: "overdue" | "30" | "60" | "90" | undefined;
+  date_from?: string | undefined;
+  date_to?: string | undefined;
   /** V2-A: `progress` ⇒ trả thêm giai đoạn + bước hiện tại. */
   include?: "progress" | undefined;
   sort: ContractSortKey;
@@ -43,6 +48,10 @@ export type ContractListFilter = {
   kind: readonly string[] | null;
   valueMin: number | null;
   valueMax: number | null;
+  /** Gap #10: cột ngày (`end_date` | `action_deadline`) + khoảng gồm hai đầu (`due` đã quy ra ngày ở use case); cả hai null = không lọc. */
+  dateField: "end_date" | "action_deadline";
+  dateFrom: string | null;
+  dateTo: string | null;
   /** Mẫu LIKE trên `search_key` (đã fold, thoát `% _ \`, bọc `%`). */
   like: string | null;
   /** `<sort>:<dir>` — một tham số chọn nhánh CASE. */
@@ -61,6 +70,26 @@ export type ContractListPage<Row> = {
   progress?: unknown[];
 };
 
+/** Gap #8: một hàng xuất tệp (cột hẹp, giá trị thô — định dạng ở domain `export.rules`); loại hàng đã quy ra tên. */
+export type ContractExportRow = {
+  number: string | null;
+  title: string;
+  kind: string;
+  type: string | null;
+  direction: string | null;
+  status: string;
+  seller: string | null;
+  buyer: string | null;
+  sellerSigner: string | null;
+  buyerSigner: string | null;
+  value: number | null;
+  endDate: string | null;
+  actionDeadline: string | null;
+  ownerUserId: string | null;
+  categories: string[];
+  updatedAt: Date;
+};
+
 /** Tệp gốc của HĐ ở FileBox (hàng `contracts.files` chưa xoá mềm) — chỉ dùng nội bộ để xin link, KHÔNG trả ra API. */
 export type ContractFileRef = { org: string; fileId: string };
 
@@ -69,6 +98,11 @@ export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
   /** V2-A: `today` (ngày lịch tenant) có ⇒ kèm `progress` (giai đoạn + quá hạn); vắng ⇒ không tính. */
   list(f: ContractListFilter, today?: string): Promise<ContractListPage<Row>>;
   facets(): Promise<Facets>;
+  /** Gap #8: mọi hàng khớp bộ lọc (bỏ phân trang), tối đa `cap + 1` (dòng thừa = báo cắt), `total` = số khớp. MỘT câu + một câu loại hàng. */
+  exportRows(
+    f: ContractListFilter,
+    cap: number,
+  ): Promise<{ total: number; rows: ContractExportRow[] }>;
   detail(id: string, today?: string): Promise<Detail | null>;
   /** `source_text` (Markdown); HĐ không có hoặc source rỗng (`null`) ⇒ `null`. */
   source(id: string): Promise<string | null>;

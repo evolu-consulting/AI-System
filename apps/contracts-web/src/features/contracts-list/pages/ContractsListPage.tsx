@@ -2,7 +2,7 @@
 // Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Thêm thủ công" +
 // "Upload hợp đồng" (cần quyền ghi). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { promptDialog } from "~/components/shared/dialog-bus";
@@ -11,7 +11,7 @@ import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, ColumnPicker, Pager, TableTools, useColumns } from "~/features/table";
-import { CATEGORIES_KEY, createCategory, uploadContract } from "../api";
+import { CATEGORIES_KEY, createCategory, exportContracts } from "../api";
 import {
   ActionsCell,
   COLUMN_KEYS,
@@ -20,8 +20,19 @@ import {
   MobileCard,
   type RowCtx,
 } from "../components/ContractCells";
+import { DateFilterControl } from "../components/DateFilterControl";
+import { ExportButtons } from "../components/ExportButtons";
+import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { useContractsList } from "../hooks/use-contracts-list";
-import { uploadErrorText } from "../list-upload-error";
+import { useUploadQueue } from "../hooks/use-upload-queue";
+import {
+  type DateFilter,
+  dateFilterOf,
+  isDateActive,
+  parseDateSearch,
+  toDateSearch,
+} from "../lib/date-filter";
+import { UPLOAD_ACCEPT } from "../lib/upload-queue";
 
 const errText = (e: unknown, t: (k: string) => string): string =>
   (e as { status?: number } | null)?.status === 409
@@ -35,9 +46,24 @@ export function ContractsListPage() {
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
-  const { t: table, list } = useContractsList(
-    write ? addCategoryButton(t, () => void addCategory()) : undefined,
+  // Gap #10: lọc ngày nằm trên URL (`?due=` `?dfield=` `?df=` `?dt=`).
+  const date = dateFilterOf(
+    parseDateSearch(useSearch({ strict: false }) as Record<string, unknown>),
   );
+  const {
+    t: table,
+    list,
+    exportQs,
+  } = useContractsList(write ? addCategoryButton(t, () => void addCategory()) : undefined, date);
+  const setDate = (f: DateFilter) => {
+    table.setPage(1);
+    void nav({
+      to: ".",
+      search: ((prev: object) => ({ ...prev, ...toDateSearch(f) })) as never,
+      replace: true,
+    });
+  };
+  const queue = useUploadQueue((id) => void nav({ to: "/contracts/$id", params: { id } }));
   const cols = useColumns(
     "contracts-v2",
     COLUMN_KEYS.map((key) => ({
@@ -74,55 +100,53 @@ export function ContractsListPage() {
     }
   }
 
-  async function onFile(f: File | undefined) {
-    if (!f) return;
-    setErr(null);
-    try {
-      const r = await uploadContract(f);
-      await nav({ to: "/contracts/$id", params: { id: r.id } });
-    } catch (e) {
-      setErr(uploadErrorText(e, t));
-    }
-  }
-
   const items = list.data?.items ?? [];
   const shown = COLUMN_KEYS.filter((k) => cols.shows(k));
   const row = (k: ColumnKey, r: (typeof items)[number]) => cell(k, r, ctx);
   return (
     // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55); khung list tự giữ cuộn (Shell `layoutOf` = board).
-    <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
+    <DropOverlay
+      enabled={!!write}
+      onFiles={queue.enqueue}
+      className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col"
+    >
       <PageHead
         title={t("contracts.contractsPage.title")}
         actions={
-          write && (
-            <>
-              <input
-                ref={file}
-                type="file"
-                hidden
-                accept=".pdf,.docx,.png,.jpg,.jpeg"
-                onChange={(e) => {
-                  const picked = e.target.files?.[0];
-                  e.target.value = "";
-                  void onFile(picked);
-                }}
-              />
-              <Link to="/contracts/new" className="btn btn-outline btn-sm">
-                <PlusIcon />
-                {t("contracts.list.manual")}
-              </Link>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => file.current?.click()}
-              >
-                <UploadIcon />
-                {t("contracts.list.add")}
-              </button>
-            </>
-          )
+          <>
+            <ExportButtons run={(f) => exportContracts(exportQs(f))} />
+            {write && (
+              <>
+                <input
+                  ref={file}
+                  type="file"
+                  hidden
+                  multiple
+                  accept={UPLOAD_ACCEPT}
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    queue.enqueue(picked);
+                  }}
+                />
+                <Link to="/contracts/new" className="btn btn-outline btn-sm">
+                  <PlusIcon />
+                  {t("contracts.list.manual")}
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => file.current?.click()}
+                >
+                  <UploadIcon />
+                  {t("contracts.list.add")}
+                </button>
+              </>
+            )}
+          </>
         }
       />
+      <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />
       {err && (
         <p role="alert" className="mb-3 text-sm text-late">
           {err}
@@ -135,6 +159,7 @@ export function ContractsListPage() {
         placeholder={t("contracts.list.search")}
       >
         <ColumnFilters filter={table.filter} />
+        <DateFilterControl value={date} onChange={setDate} />
         <span className="max-sm:hidden">
           <ColumnPicker cols={cols} />
         </span>
@@ -144,7 +169,7 @@ export function ContractsListPage() {
           <Loading />
         ) : list.error ? (
           <ErrorLine error={list.error} />
-        ) : !table.total && !hasFilters(table) ? (
+        ) : !table.total && !hasFilters(table) && !isDateActive(date) ? (
           <Empty title={t("contracts.list.emptyTitle")}>{t("contracts.list.emptyBody")}</Empty>
         ) : !items.length ? (
           <Empty title={t("contracts.list.noMatchTitle")}>{t("contracts.list.noMatchBody")}</Empty>
@@ -195,7 +220,7 @@ export function ContractsListPage() {
         )}
         <Pager t={table} />
       </Panel>
-    </div>
+    </DropOverlay>
   );
 }
 

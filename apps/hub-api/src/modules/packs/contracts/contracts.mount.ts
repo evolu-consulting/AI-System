@@ -1,9 +1,12 @@
 // HD-FR-07 · HD1 plan §2 §4 · N1 plan §9: nối gói `contracts` (lớp 4 của gói): `PackUow` (role `contracts_rw`) + use case +
 // route. `packs.mount.ts` quyết có mount (`deps.packs.contracts`, vắng ⇒ bật) và gắn dưới `/pack/contracts`; client FileBox
 // theo org (`t_<tenant>`) do `packs.mount.ts` tiêm (vắng ⇒ `/file` của HĐ có tệp ⇒ 5xx, fail-closed).
+
+import { CONTRACT_EXPORT_MAX_ROWS } from "@ai/contracts";
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
+import { memberNamesOf } from "../kit/adapters/member-names";
 import { packMembersRoutes } from "../kit/adapters/members.route";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
@@ -14,6 +17,7 @@ import { CONTRACTS_KEY, contractsRoutes } from "./adapters/contracts.routes";
 import { visibilityRoutes } from "./adapters/visibility.routes";
 import { attachParent, getPrices, suggestParentsFor } from "./application/appendix.usecase";
 import { createCategory, listCategories } from "./application/categories.usecase";
+import { exportContracts } from "./application/export-contracts.usecase";
 import { getContract } from "./application/get-contract.usecase";
 import { getFacets } from "./application/get-facets.usecase";
 import { getFileLink } from "./application/get-file-link.usecase";
@@ -51,6 +55,13 @@ export function contractsModule(
   const r = contractsRoutes(view, {
     list: listContracts({ uow, today }),
     facets: getFacets({ uow }),
+    export: exportContracts({
+      uow,
+      today,
+      timeZoneOf: async (tid) => clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ,
+      owners: memberNamesOf(db),
+      cap: CONTRACT_EXPORT_MAX_ROWS,
+    }),
     detail: getContract({ uow, today }),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),

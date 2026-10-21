@@ -14,7 +14,15 @@ import {
   listKey,
   MEMBERS_KEY,
 } from "../api";
-import { type FilterMaps, filterMaps, listQueryString, optionLabels } from "../lib/list-model";
+import type { DateFilter } from "../lib/date-filter";
+import {
+  exportQueryString,
+  type FilterMaps,
+  filterMaps,
+  type ListParams,
+  listQueryString,
+  optionLabels,
+} from "../lib/list-model";
 
 const DEBOUNCE_MS = 250;
 /** Danh bạ/facets/loại hàng ít đổi: dùng lại trong phiên. */
@@ -61,7 +69,7 @@ function useLookups() {
   return { facets, members, cats };
 }
 
-export function useContractsList(categoryExtra?: ReactNode) {
+export function useContractsList(categoryExtra?: ReactNode, date?: DateFilter) {
   const { t: tr } = useTranslation();
   const { facets, members, cats } = useLookups();
   const memberNames = useMemo(
@@ -81,13 +89,15 @@ export function useContractsList(categoryExtra?: ReactNode) {
   const [total, setTotal] = useState(0);
   const t = useTable<Row>(undefined, { text: () => "", filters, serverTotal: total });
   const q = useDebounced(t.q, DEBOUNCE_MS);
-  const qs = listQueryString({
+  const params: ListParams = {
     q,
     conds: t.filter.conds,
     maps,
     page: t.page,
     pageSize: t.pageSize,
-  });
+    ...(date ? { date } : {}),
+  };
+  const qs = listQueryString(params);
   const list = useQuery({
     queryKey: listKey(qs),
     queryFn: ({ signal }) => fetchList(qs, signal),
@@ -97,5 +107,7 @@ export function useContractsList(categoryExtra?: ReactNode) {
   useEffect(() => {
     if (serverTotal !== undefined) setTotal(serverTotal);
   }, [serverTotal]);
-  return { t, list, facets, memberNames, categories: cats.data?.items ?? [] };
+  /** Gap #8: chuỗi truy vấn xuất tệp = đúng bộ lọc đang hiện (dùng `q` đã debounce như danh sách). */
+  const exportQs = (format: "xlsx" | "csv") => exportQueryString(params, format);
+  return { t, list, facets, memberNames, categories: cats.data?.items ?? [], exportQs };
 }

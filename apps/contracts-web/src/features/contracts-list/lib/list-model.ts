@@ -2,6 +2,7 @@
 // của `useTable`. Thuần: không React, không fetch. Tuỳ chọn lọc lấy từ facets (cả tenant), không từ trang hiện tại.
 import type { ContractFacets, ContractStatus } from "@ai/contracts";
 import type { Cond } from "~/features/table";
+import { type DateFilter, dateParams } from "./date-filter";
 
 export type Tone = "late" | "soon" | "ok" | "dim" | "act";
 
@@ -104,10 +105,12 @@ export type ListParams = {
   maps: FilterMaps;
   page: number;
   pageSize: number;
+  /** Gap #10: lọc ngày (từ URL). */
+  date?: DateFilter;
 };
 
-/** `?status=a&status=b…` (tham số lặp). `q` < 2 ký tự bị bỏ (API từ chối). Lọc đã chọn nhưng chưa có giá trị khớp ⇒ không lọc thêm. */
-export function listQueryString(p: ListParams): string {
+/** Phần lọc dùng chung cho danh sách và xuất tệp (không phân trang): `q`, các lựa chọn, giá trị, ngày. `q` < 2 ký tự bị bỏ (API từ chối). */
+function filterParams(p: ListParams): URLSearchParams {
   const u = new URLSearchParams();
   const q = p.q.trim();
   if (q.length >= 2) u.set("q", q);
@@ -124,8 +127,22 @@ export function listQueryString(p: ListParams): string {
   const v = p.conds.value;
   if (v?.min != null) u.set("value_min", String(v.min));
   if (v?.max != null) u.set("value_max", String(v.max));
+  for (const [k, val] of p.date ? dateParams(p.date) : []) u.set(k, val);
+  return u;
+}
+
+/** `?status=a&status=b…` (tham số lặp). Lọc đã chọn nhưng chưa có giá trị khớp ⇒ không lọc thêm. */
+export function listQueryString(p: ListParams): string {
+  const u = filterParams(p);
   u.set("include", "progress"); // V2-F: giai đoạn + bước hiện tại + loại HĐ của từng HĐ trong trang
   u.set("page", String(p.page));
   u.set("page_size", String(p.pageSize));
+  return u.toString();
+}
+
+/** Gap #8: cùng bộ lọc với danh sách đang hiện, không phân trang, kèm định dạng tệp. */
+export function exportQueryString(p: ListParams, format: "xlsx" | "csv"): string {
+  const u = filterParams(p);
+  u.set("format", format);
   return u.toString();
 }

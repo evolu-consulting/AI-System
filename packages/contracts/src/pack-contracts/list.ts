@@ -23,6 +23,12 @@ export const CONTRACT_Q_MIN = 2;
 export const CONTRACT_Q_MAX = 100;
 export const CONTRACT_SORTS = ["updated_at", "value", "end_date", "title"] as const;
 export const CONTRACT_SORT_DIRS = ["asc", "desc"] as const;
+/** Gap #10: cột ngày lọc được; cửa sổ tương đối: quá hạn (< hôm nay), 30/60/90 ngày tới (hôm nay … +N). */
+export const CONTRACT_DATE_FIELDS = ["end_date", "action_deadline"] as const;
+export const CONTRACT_DUE_PRESETS = ["overdue", "30", "60", "90"] as const;
+/** Gap #8: xuất danh sách ra tệp (cùng bộ lọc, không phân trang), trần số dòng. */
+export const CONTRACT_EXPORT_FORMATS = ["xlsx", "csv"] as const;
+export const CONTRACT_EXPORT_MAX_ROWS = 50_000;
 /** Bộ lọc hướng: `unknown` = `direction IS NULL`. */
 export const CONTRACT_DIRECTION_FILTERS = [...CONTRACT_DIRECTIONS, "unknown"] as const;
 export const ContractDirectionFilterSchema = z.enum(CONTRACT_DIRECTION_FILTERS);
@@ -53,6 +59,12 @@ export const ContractListQuerySchema = z.strictObject({
   kind: repeated(ContractKindSchema, 2),
   value_min: valueBound(),
   value_max: valueBound(),
+  /** Gap #10: lọc theo ngày — cột (`end_date` hiệu lực đến | `action_deadline` hạn chót), cửa sổ tương đối `due` (so với ngày lịch tenant)
+   *  hoặc khoảng `date_from`…`date_to` (gồm cả hai đầu). `due` thắng khoảng. */
+  date_field: z.enum(CONTRACT_DATE_FIELDS).optional(),
+  due: z.enum(CONTRACT_DUE_PRESETS).optional(),
+  date_from: IsoDateSchema.optional(),
+  date_to: IsoDateSchema.optional(),
   /** V2-A: `include=progress` ⇒ thêm mảng `progress` (giai đoạn + bước hiện tại); vắng ⇒ hình phản hồi HD1 giữ nguyên. */
   include: z.enum(["progress"]).optional(),
   sort: z.enum(CONTRACT_SORTS).default("updated_at"),
@@ -66,6 +78,14 @@ export const ContractListQuerySchema = z.strictObject({
     .default(CONTRACT_PAGE_SIZE_DEFAULT),
 });
 export type ContractListQuery = z.infer<typeof ContractListQuerySchema>;
+
+/** Gap #8: `GET /contracts/export?format=xlsx|csv&…bộ lọc` — như danh sách, bỏ phân trang/include (sắp xếp giữ). */
+export const ContractExportQuerySchema = ContractListQuerySchema.omit({
+  page: true,
+  page_size: true,
+  include: true,
+}).extend({ format: z.enum(CONTRACT_EXPORT_FORMATS).default("xlsx") });
+export type ContractExportQuery = z.infer<typeof ContractExportQuerySchema>;
 
 /** Dòng tóm tắt = cột màn danh sách S03 (D-02); trống ⇒ null. */
 export const ContractListRowSchema = z.strictObject({
