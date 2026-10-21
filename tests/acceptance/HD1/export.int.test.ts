@@ -1,6 +1,6 @@
 // Gap #8/#9/#10 · GET /contracts/export (xlsx/csv, cùng bộ lọc, RLS của người gọi), lọc ngày của danh sách, tải lên .md.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { strFromU8, unzipSync } from "fflate";
+import { strFromU8, unzipSync } from "../../../apps/hub-api/node_modules/fflate"; // chỉ cài dưới hub-api (không hoist)
 import {
   arrange,
   CBASE,
