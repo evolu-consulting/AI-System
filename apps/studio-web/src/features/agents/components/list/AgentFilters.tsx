@@ -10,14 +10,16 @@ type Props = {
   onQuery: (q: string) => void;
   onRuntime: (r: AgentRuntime | undefined) => void;
   onStatus: (s: Filters["status"]) => void;
+  onSurface: (s: Filters["surface"]) => void;
 };
 
 const chip =
   "inline-flex min-h-8 cursor-pointer items-center rounded-full border border-input bg-card px-3 text-label text-foreground has-[input:checked]:border-transparent has-[input:checked]:bg-primary has-[input:checked]:text-primary-foreground has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/50";
 
-export function AgentFilters({ filters, onQuery, onRuntime, onStatus }: Props) {
+export function AgentFilters({ filters, onQuery, onRuntime, onStatus, onSurface }: Props) {
   const { t } = useTranslation();
   const options: (AgentRuntime | undefined)[] = [undefined, ...AGENT_RUNTIMES];
+  const surfaces: Filters["surface"][] = [undefined, "chat", "background"];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Input
@@ -43,6 +45,24 @@ export function AgentFilters({ filters, onQuery, onRuntime, onStatus }: Props) {
               onChange={() => onRuntime(r)}
             />
             {r ?? t("agents.filter.all")}
+          </label>
+        ))}
+      </div>
+      <div
+        role="radiogroup"
+        aria-label={t("agents.filter.surface")}
+        className="flex flex-wrap gap-2"
+      >
+        {surfaces.map((s) => (
+          <label key={s ?? "all"} className={chip}>
+            <input
+              type="radio"
+              name="agent-surface"
+              className="sr-only"
+              checked={filters.surface === s}
+              onChange={() => onSurface(s)}
+            />
+            {s ? t(`agents.filter.surface_${s}`) : t("agents.filter.all")}
           </label>
         ))}
       </div>

@@ -5,7 +5,7 @@ import { HrefLink } from "#/components/shared/HrefLink";
 import { Badge } from "#/components/ui/badge";
 import { Switch } from "#/components/ui/switch";
 import { TableCell, TableRow } from "#/components/ui/table";
-import { isOrchestrator } from "../../lib/status";
+import { isBackground, isOrchestrator, isRetired } from "../../lib/status";
 import { AgentRowMenu } from "./AgentRowMenu";
 
 export type RowActions = {
@@ -20,6 +20,9 @@ function Badges({ agent, overlap }: { agent: AgentListItem; overlap?: SimilarAge
   const tenants = agent.orchestrator_of.tenant_ids.length;
   return (
     <>
+      {agent.alias_of ? (
+        <Badge variant="off">{t("agents.badge.merged", { key: agent.alias_of.key })}</Badge>
+      ) : null}
       {agent.orchestrator_of.default ? (
         <Badge variant="info">{t("agents.badge.orch")}</Badge>
       ) : null}
@@ -39,6 +42,7 @@ export function AgentRow({ agent, locale, overlap, ...actions }: Props) {
   const { t } = useTranslation();
   const name = agent.name[locale];
   const locked = isOrchestrator(agent);
+  const retired = isRetired(agent);
   return (
     <TableRow>
       <TableCell>
@@ -61,17 +65,24 @@ export function AgentRow({ agent, locale, overlap, ...actions }: Props) {
       <TableCell className="font-mono text-caption">{agent.profile?.key ?? "—"}</TableCell>
       <TableCell>{agent.workflow_count}</TableCell>
       <TableCell>
-        {agent.entitled_tenant_count === 0 ? (
+        {isBackground(agent) ? (
+          <Badge variant="info">{t("agents.badge.background")}</Badge>
+        ) : retired ? (
+          "—"
+        ) : agent.entitled_tenant_count === 0 ? (
           <Badge variant="warn">{t("agents.badge.notGranted")}</Badge>
         ) : (
           agent.entitled_tenant_count
         )}
       </TableCell>
       <TableCell>
-        <span title={locked ? t("agents.orchLocked") : undefined} className="inline-flex">
+        <span
+          title={retired ? t("agents.retiredLocked") : locked ? t("agents.orchLocked") : undefined}
+          className="inline-flex"
+        >
           <Switch
             checked={agent.enabled}
-            disabled={locked}
+            disabled={locked || retired}
             aria-label={t("agents.switchLabel", { key: agent.key })}
             onCheckedChange={() => actions.onToggle(agent)}
           />

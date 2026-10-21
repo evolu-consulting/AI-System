@@ -45,6 +45,7 @@ export function useAgentFilters() {
     setQ,
     setRuntime: (runtime: AgentFilters["runtime"]) => go({ ...search, runtime }),
     setStatus: (status: AgentFilters["status"]) => go({ ...search, status }),
+    setSurface: (surface: AgentFilters["surface"]) => go({ ...search, surface }),
     clear: () => {
       setQ("");
       go({});

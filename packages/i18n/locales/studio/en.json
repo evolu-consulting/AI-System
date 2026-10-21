@@ -150,8 +150,11 @@
     "searchPlaceholder": "Search by name or key…",
     "filter": {
       "all": "All",
-      "off": "Disabled",
-      "runtime": "Filter by runtime"
+      "off": "Disabled / retired",
+      "runtime": "Filter by runtime",
+      "surface": "Filter by surface",
+      "surface_chat": "Chat",
+      "surface_background": "Background"
     },
     "tableLabel": "Agent list",
     "col": {
@@ -167,6 +170,8 @@
       "orch": "Orchestrator",
       "orchTenants": "Orchestrator · {n} tenants",
       "notGranted": "Not granted",
+      "background": "Background",
+      "merged": "Merged into {key}",
       "overlap": "Overlapping description"
     },
     "attention": {
@@ -182,6 +187,7 @@
     },
     "switchLabel": "Enable {key}",
     "rowMenu": "Actions for {key}",
+    "retiredLocked": "This agent was merged into another one and can't be enabled again.",
     "orchLocked": "This agent is the Orchestrator; it can't be disabled or deleted.",
     "toast": {
       "managed": "Managed by the system",

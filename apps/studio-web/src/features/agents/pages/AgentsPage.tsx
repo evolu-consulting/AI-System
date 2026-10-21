@@ -100,6 +100,7 @@ export function AgentsPage() {
           onQuery={f.setQ}
           onRuntime={f.setRuntime}
           onStatus={f.setStatus}
+          onSurface={f.setSurface}
         />
         <ListBody
           list={list}

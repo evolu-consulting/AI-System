@@ -150,8 +150,11 @@
     "searchPlaceholder": "Tìm theo tên hoặc key…",
     "filter": {
       "all": "Tất cả",
-      "off": "Đang tắt",
-      "runtime": "Lọc runtime"
+      "off": "Đang tắt / đã nghỉ",
+      "runtime": "Lọc runtime",
+      "surface": "Lọc theo nơi chạy",
+      "surface_chat": "Chat",
+      "surface_background": "Chạy nền"
     },
     "tableLabel": "Danh sách agent",
     "col": {
@@ -167,6 +170,8 @@
       "orch": "Orchestrator",
       "orchTenants": "Orchestrator · {n} tenant",
       "notGranted": "Chưa cấp",
+      "background": "Chạy nền",
+      "merged": "Đã gộp vào {key}",
       "overlap": "Mô tả trùng ý"
     },
     "attention": {
@@ -182,6 +187,7 @@
     },
     "switchLabel": "Bật {key}",
     "rowMenu": "Thao tác {key}",
+    "retiredLocked": "Agent này đã gộp vào agent khác nên không bật lại được.",
     "orchLocked": "Agent đang là Orchestrator, không tắt hoặc xoá được.",
     "toast": {
       "managed": "Do hệ thống quản lý",

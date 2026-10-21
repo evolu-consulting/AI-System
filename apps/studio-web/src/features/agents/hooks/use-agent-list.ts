@@ -3,7 +3,12 @@ import type { AgentListItem } from "@ai/contracts/studio";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { agentsQuery } from "../api";
-import { type AgentFilters, matchesFilters, toServerParams } from "../lib/filters";
+import {
+  type AgentFilters,
+  matchesFilters,
+  toServerParams,
+  visibleByDefault,
+} from "../lib/filters";
 import { overlapByAgent } from "../lib/overlap";
 
 /** `serverFilters`: bộ lọc đã debounce, chỉ dùng khi danh sách gốc bị cắt. */
@@ -18,7 +23,14 @@ export function useAgentList(filters: AgentFilters, serverFilters: AgentFilters)
 
   const source = truncated ? server.data?.items : base.data?.items;
   const items = useMemo<AgentListItem[]>(
-    () => (truncated ? (source ?? []) : (source ?? []).filter((a) => matchesFilters(a, filters))),
+    () =>
+      truncated
+        ? (source ?? []).filter(
+            (a) =>
+              visibleByDefault(a, filters) &&
+              (!filters.surface || (a.surface ?? "chat") === filters.surface),
+          )
+        : (source ?? []).filter((a) => matchesFilters(a, filters)),
     [source, truncated, filters],
   );
   // Trùng ý tính trên mọi agent đã biết (gốc ∪ kết quả máy chủ) để không mất đối tượng so sánh.

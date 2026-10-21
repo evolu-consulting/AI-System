@@ -136,6 +136,8 @@ export const agents = hub.table("agents", {
     .default("chat"),
   /** agents-background (0055): app + nhãn tính năng agent nền phục vụ; NULL với agent chat. */
   serves: jsonb("serves").$type<{ app: string; label: { vi: string; en: string } } | null>(),
+  /** studio-agents-list (0057): agent đã gộp vào agent này (mgmt-assistant → assistant); NULL = agent thường. */
+  aliasOf: uuid("alias_of"),
 });
 
 /** CR-054 (0018): agent mặc định của tenant ở Hỏi AI (vắng hàng ⇒ hành vi cũ). */

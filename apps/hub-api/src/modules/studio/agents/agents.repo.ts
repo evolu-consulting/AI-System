@@ -187,6 +187,11 @@ export type AgentListDbRow = {
   orchTenants: string[];
   /** K1 · số kết nối KH agent tick. */
   knowledgeCount: number;
+  /** studio-agents-list · 'chat' | 'background'. */
+  surface: string;
+  /** studio-agents-list · agent mà agent này đã gộp vào (retired); null = agent thường. */
+  aliasOfId: string | null;
+  aliasOfKey: string | null;
 };
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (m) => `\\${m}`);
@@ -226,8 +231,10 @@ export async function listAgents(
       coalesce((select array_agg(o.tenant_id::text order by o.tenant_id) from hub.orchestrator_settings o
         where o.agent_id = a.id and o.tenant_id is not null), '{}'::text[]) as "orchTenants",
       (select count(*) from hub.agent_kh k where k.agent_id = a.id)::int as "knowledgeCount",
+      a.surface, a.alias_of as "aliasOfId", al.key as "aliasOfKey",
       (count(*) over ())::int as total
     from hub.agents a left join hub.model_profiles p on p.id = a.profile_id
+      left join hub.agents al on al.id = a.alias_of
     where ${listWhere(f)}
     order by a.key
     limit ${f.limit} offset ${f.offset}`);

@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { withBase } from "#/lib/env";
-import { canSetAsOrchestrator, isOrchestrator } from "../../lib/status";
+import { canSetAsOrchestrator, isOrchestrator, isRetired } from "../../lib/status";
 
 type Props = {
   agent: AgentListItem;
@@ -57,7 +57,7 @@ export function AgentRowMenu({ agent, name, onToggle, onSetOrchestrator, onDelet
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={locked} onSelect={onToggle}>
+          <DropdownMenuItem disabled={locked || isRetired(agent)} onSelect={onToggle}>
             {agent.enabled ? t("agents.menu.disable") : t("agents.menu.enable")}
           </DropdownMenuItem>
           <DropdownMenuItem

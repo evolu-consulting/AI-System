@@ -107,6 +107,9 @@ export function toListItem(r: AgentListDbRow): AgentListItem {
     orchestrator_of: { default: r.orchDefault, tenant_ids: r.orchTenants },
     runnable: RUNNABLE_RUNTIMES.has(runtime),
     knowledge_count: r.knowledgeCount,
+    surface: r.surface === "background" ? "background" : "chat",
+    alias_of:
+      r.aliasOfId !== null && r.aliasOfKey !== null ? { id: r.aliasOfId, key: r.aliasOfKey } : null,
   };
 }
 

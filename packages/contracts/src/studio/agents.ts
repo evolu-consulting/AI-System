@@ -210,6 +210,10 @@ export const AgentListItemSchema = z.strictObject({
   runnable: z.boolean(),
   /** K1 · số kết nối KH đã tick. Vắng ở bản trước K1 (T5d luôn trả). */
   knowledge_count: z.number().int().min(0).max(5).optional(),
+  /** studio-agents-list · 'background' = chạy nền (không cấp quyền được). Vắng ⇒ 'chat'. */
+  surface: z.enum(["chat", "background"]).optional(),
+  /** studio-agents-list · agent đã gộp vào agent khác (đã nghỉ, chỉ còn alias + lịch sử). Vắng/null ⇒ agent thường. */
+  alias_of: z.strictObject({ id: UuidSchema, key: z.string() }).nullable().optional(),
 });
 export type AgentListItem = z.infer<typeof AgentListItemSchema>;
 export const AgentListSchema = listMetaSchema(AgentListItemSchema);

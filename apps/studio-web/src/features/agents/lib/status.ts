@@ -13,4 +13,12 @@ export const canSetAsOrchestrator = (a: AgentListItem): boolean =>
 
 /** Banner "Cần chú ý": agent bật nhưng chưa cấp tenant nào. */
 export const enabledButNotGranted = (items: readonly AgentListItem[]): AgentListItem[] =>
-  items.filter((a) => a.enabled && a.entitled_tenant_count === 0);
+  items.filter(
+    (a) => a.enabled && a.entitled_tenant_count === 0 && !isBackground(a) && !isRetired(a),
+  );
+
+/** studio-agents-list · agent chạy nền (`surface = 'background'`): không cấp quyền được theo thiết kế → không bị cảnh báo "chưa cấp". */
+export const isBackground = (a: AgentListItem): boolean => a.surface === "background";
+
+/** studio-agents-list · agent đã gộp vào agent khác (`alias_of`): chỉ còn alias + lịch sử, không bật lại được. */
+export const isRetired = (a: AgentListItem): boolean => a.alias_of != null;
