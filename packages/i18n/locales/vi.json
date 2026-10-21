@@ -208,6 +208,7 @@
     "sources": "Nguồn",
     "features": "Features",
     "secrets": "Secrets",
+    "apps": "Ứng dụng",
     "groups": "Groups",
     "access": "Phân quyền",
     "usage": "Chi phí & quota",
@@ -218,7 +219,7 @@
   },
   "topbar": {
     "platform": "Nền tảng",
-    "studio": "Agent Forge"
+    "apps": "Ứng dụng"
   },
   "account": {
     "menu": "Tài khoản của bạn",
@@ -852,6 +853,53 @@
       "openCheck": "Mở Kiểm tra quyền",
       "empty": "Người dùng này chỉ dùng được các command của feature core."
     }
+  },
+  "apps": {
+    "title": "Ứng dụng",
+    "subtitle": "Danh mục app web: switcher \"Ứng dụng\" và đích đăng nhập một lần của cả 4 web lấy từ đây — thêm/sửa không cần build lại.",
+    "create": "Thêm ứng dụng",
+    "edit": "Sửa ứng dụng",
+    "empty": "Chưa có ứng dụng nào",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "delete": "Xoá",
+    "col": {
+      "name": "Tên",
+      "key": "Khoá",
+      "url": "URL",
+      "audience": "Đối tượng",
+      "feature": "Gói/feature",
+      "sort": "Thứ tự",
+      "enabled": "Bật"
+    },
+    "audience": {
+      "all": "Mọi người dùng",
+      "admin": "Quản trị viên",
+      "platform": "Quản trị nền tảng"
+    },
+    "field": {
+      "key": "Khoá (a-z, 0-9, -)",
+      "nameVi": "Tên (Tiếng Việt)",
+      "nameEn": "Tên (English)",
+      "icon": "Biểu tượng",
+      "url": "URL gốc (https://…)",
+      "audience": "Ai được thấy",
+      "feature": "Feature bắt buộc (vd contracts-read, để trống nếu không cần)",
+      "sso": "Đăng nhập một lần (đích có trang /sso)",
+      "sort": "Thứ tự",
+      "enabled": "Đang bật"
+    },
+    "toast": {
+      "saved": "Đã lưu {name}",
+      "deleted": "Đã xoá {name}"
+    },
+    "error": {
+      "keyTaken": "Khoá đã tồn tại",
+      "invalid": "Dữ liệu chưa hợp lệ (kiểm tra khoá, tên, URL http/https)",
+      "generic": "Không lưu được"
+    },
+    "deleteTitle": "Xoá ứng dụng {name}?",
+    "deleteDesc": "App biến mất khỏi switcher của mọi người dùng."
   },
   "secrets": {
     "error": {

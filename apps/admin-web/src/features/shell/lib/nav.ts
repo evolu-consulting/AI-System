@@ -19,6 +19,7 @@ export type NavId =
   | "groups"
   | "access"
   | "secrets"
+  | "apps"
   | "usage"
   | "audit"
   | "transfer";
@@ -36,6 +37,7 @@ type NavTo =
   | "/sources"
   | "/workflows/steps"
   | "/secrets"
+  | "/apps"
   | "/usage"
   | "/audit"
   | "/transfer";
@@ -59,6 +61,7 @@ export type NavItem = {
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
+    | "nav.apps"
     | "nav.usage"
     | "nav.audit"
     | "nav.transfer";
@@ -90,6 +93,7 @@ const SOURCES = item("sources", "/sources");
 const GROUPS = item("groups", "/groups");
 const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
+const APPS = item("apps", "/apps");
 const USAGE = item("usage", "/usage");
 const AUDIT = item("audit", "/audit");
 const TRANSFER = item("transfer", "/transfer");
@@ -115,7 +119,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       { labelKey: null, items: [OVERVIEW] },
       {
         labelKey: "nav.group.features",
-        items: [AGENTS, FEATURES, ...(on ? [COMMANDS, WORKFLOWS] : []), ...proc],
+        items: [AGENTS, FEATURES, APPS, ...(on ? [COMMANDS, WORKFLOWS] : []), ...proc],
       },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
@@ -174,6 +178,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/access": [{ labelKey: "nav.access" }],
   "/sources": [{ labelKey: "nav.sources" }],
   "/secrets": [{ labelKey: "nav.secrets" }],
+  "/apps": [{ labelKey: "nav.apps" }],
   "/account/password": [{ labelKey: "account.changePassword" }],
   "/account/2fa": [{ labelKey: "account.twofa" }],
   "/usage": [{ labelKey: "nav.usage" }],

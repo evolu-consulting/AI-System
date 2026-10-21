@@ -1,8 +1,10 @@
 // CHAT-AC-01, CHAT-AC-03 · phiên web (rút gọn từ admin-web): access token CHỈ trong bộ nhớ, refresh bằng cookie httpOnly.
 // Không có bước đổi mật khẩu / 2FA: `password_change_required` / `totp_required` trả về cho trang đăng nhập của app.
 // N1 TF3: chuyển từ chat-web sang web-kit; tên app/kênh/khoá + việc dọn khi hết phiên do app truyền (`createSession`).
+
+import { MY_APPS_PATH, type MyAppsResponse } from "@ai/contracts";
 import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts/chat";
-import { ApiError, sendPublic, setAppName, setAuthHooks } from "../http";
+import { ApiError, api, sendPublic, setAppName, setAuthHooks } from "../http";
 import { type AuthChannel, type AuthMessage, createAuthChannel } from "./auth-channel";
 import { createRefresher, type Refresher, type RefreshResult } from "./refresh-lock";
 
@@ -127,22 +129,25 @@ async function login(ctx: Ctx, req: LoginRequest): Promise<LoginResponse> {
 }
 
 /** sso-switch · web nguồn (đã đăng nhập): xin mã một lần cho app đích. Token cũ ⇒ refresh một lần rồi thử lại. */
-async function ssoCode(ctx: Ctx, app: string): Promise<string> {
+async function ssoGrant(ctx: Ctx, app: string): Promise<{ code: string; target_url: string }> {
   const call = (token: string | null) =>
-    sendPublic<{ code: string }>("/auth/sso/code", {
+    sendPublic<{ code: string; target_url: string }>("/auth/sso/code", {
       method: "POST",
       body: { app },
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   try {
-    return (await call(ctx.state.accessToken)).code;
+    return await call(ctx.state.accessToken);
   } catch (err) {
     if (!(err instanceof ApiError) || err.status !== 401) throw err;
     const fresh = await refreshToken(ctx, ctx.state.accessToken);
     if (!fresh) throw err;
-    return (await call(fresh)).code;
+    return await call(fresh);
   }
 }
+
+/** sso-switch · web nguồn: chỉ mã (cho web chưa dùng `target_url`). */
+const ssoCode = async (ctx: Ctx, app: string): Promise<string> => (await ssoGrant(ctx, app)).code;
 
 /** sso-switch · web đích: đổi mã lấy phiên riêng (cookie `ai_rt_<app>` do admin-api đặt). */
 async function ssoRedeem(ctx: Ctx, code: string, tenantKey?: string): Promise<void> {
@@ -192,6 +197,10 @@ export function createSession(cfg: SessionConfig) {
     logout: (): Promise<void> => logout(ctx),
     applyGrant: (grant: TokenGrant): void => applyGrant(ctx, grant),
     ssoCode: (app: string): Promise<string> => ssoCode(ctx, app),
+    /** app-catalog · mã + `target_url` do admin-api lấy từ catalog (đã kiểm quyền người gọi với app đích). */
+    ssoGrant: (app: string) => ssoGrant(ctx, app),
+    /** app-catalog · app người gọi được mở (`GET /me/apps`, lọc theo vai + gói). */
+    myApps: (): Promise<MyAppsResponse> => api<MyAppsResponse>(MY_APPS_PATH),
     ssoRedeem: (code: string, tenantKey?: string): Promise<void> => ssoRedeem(ctx, code, tenantKey),
     /** Chỉ dùng cho test: giả thông điệp BroadcastChannel từ tab khác. */
     receive: (msg: AuthMessage): void => receive(ctx, msg),

@@ -9,6 +9,7 @@ export default defineConfig({
     "./src/schema/permissions.ts",
     "./src/schema/ops.ts",
     "./src/schema/totp.ts",
+    "./src/schema/app-catalog.ts",
   ],
   out: "./migrations",
   schemaFilter: ["admin"],

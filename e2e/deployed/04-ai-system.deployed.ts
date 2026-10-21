@@ -304,7 +304,7 @@ test.describe
       await chat.goto(`${CHAT}/c/new`);
       await settle(chat);
       await chat.getByRole("button", { name: "Ứng dụng" }).click();
-      await chat.getByRole("link", { name: "Sổ Hợp Tác" }).click();
+      await chat.getByRole("menuitem", { name: "Sổ Hợp Tác" }).click();
       await chat.waitForURL((u) => u.href.startsWith(CW) && !u.pathname.startsWith("/login"), {
         timeout: 45_000,
       });
@@ -315,7 +315,7 @@ test.describe
       await settle(chat);
       await expect(chat).not.toHaveURL(/\/login/);
       await chat.getByRole("button", { name: "Ứng dụng" }).click();
-      await chat.getByRole("link", { name: "Quản trị" }).click();
+      await chat.getByRole("menuitem", { name: "Quản trị" }).click();
       await chat.waitForURL((u) => u.href.startsWith(ADMIN) && !u.pathname.startsWith("/login"), {
         timeout: 45_000,
       });
@@ -350,7 +350,7 @@ test.describe("04 admin-web (chủ công ty)", () => {
       await login(page, CHAT);
       await settle(page);
       await page.getByRole("button", { name: "Ứng dụng" }).click();
-      await page.getByRole("link", { name: "Quản trị" }).click();
+      await page.getByRole("menuitem", { name: "Quản trị" }).click();
       await page.waitForURL((u) => u.href.startsWith(ADMIN) && !u.pathname.startsWith("/login"), {
         timeout: 45_000,
       });

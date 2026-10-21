@@ -208,6 +208,7 @@
     "sources": "Sources",
     "features": "Features",
     "secrets": "Secrets",
+    "apps": "Apps",
     "groups": "Groups",
     "access": "Access",
     "usage": "Usage & quota",
@@ -218,7 +219,7 @@
   },
   "topbar": {
     "platform": "Platform",
-    "studio": "Agent Forge"
+    "apps": "Apps"
   },
   "account": {
     "menu": "Your account",
@@ -852,6 +853,53 @@
       "openCheck": "Open access check",
       "empty": "This user can only use core commands."
     }
+  },
+  "apps": {
+    "title": "Apps",
+    "subtitle": "Web app catalog: the \"Apps\" switcher and single sign-on targets of all 4 web apps come from here — no rebuild needed.",
+    "create": "Add app",
+    "edit": "Edit app",
+    "empty": "No apps yet",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "col": {
+      "name": "Name",
+      "key": "Key",
+      "url": "URL",
+      "audience": "Audience",
+      "feature": "Pack/feature",
+      "sort": "Order",
+      "enabled": "On"
+    },
+    "audience": {
+      "all": "All users",
+      "admin": "Admins",
+      "platform": "Platform admins"
+    },
+    "field": {
+      "key": "Key (a-z, 0-9, -)",
+      "nameVi": "Name (Vietnamese)",
+      "nameEn": "Name (English)",
+      "icon": "Icon",
+      "url": "Base URL (https://…)",
+      "audience": "Who sees it",
+      "feature": "Required feature (e.g. contracts-read, empty if none)",
+      "sso": "Single sign-on (target has an /sso page)",
+      "sort": "Order",
+      "enabled": "Enabled"
+    },
+    "toast": {
+      "saved": "Saved {name}",
+      "deleted": "Deleted {name}"
+    },
+    "error": {
+      "keyTaken": "Key already exists",
+      "invalid": "Invalid data (check key, name, http/https URL)",
+      "generic": "Could not save"
+    },
+    "deleteTitle": "Delete app {name}?",
+    "deleteDesc": "The app disappears from every user's switcher."
   },
   "secrets": {
     "error": {

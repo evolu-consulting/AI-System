@@ -31,6 +31,11 @@ export const EnvSchema = z.object({
   MAIL_FROM: z.string().max(200).optional(),
   /** Gốc admin-web cho link trong mail cảnh báo quota (plan M4 §7). ADM-FR-41. */
   ADMIN_WEB_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3000"),
+  /** app-catalog · URL khởi tạo cho `admin.app_catalog` (chỉ điền hàng còn rỗng lúc khởi động); vắng ⇒ để trống. */
+  APP_URL_CHAT: z.url({ protocol: /^https?$/ }).optional(),
+  APP_URL_CONTRACTS: z.url({ protocol: /^https?$/ }).optional(),
+  APP_URL_STUDIO: z.url({ protocol: /^https?$/ }).optional(),
+  APP_URL_ADMIN: z.url({ protocol: /^https?$/ }).optional(),
   /** F1 (CR-095) · module đóng băng (workflows, workflow-tools, transfer, commands; docs/platform/modules.md): `off` (mặc định) ⇒ không mount route. Dev/test bật. */
   ADMIN_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
   /** Gốc Hub cho "Chạy thử" lệnh (ADM-FR-23, X1 §2.2). Không dùng tên `HUB_URL` (dành cho chat). Vắng ⇒ 503. */

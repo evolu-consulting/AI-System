@@ -23,6 +23,7 @@ afterAll(async () => {
 const HUB_TABLES = ["agent_grants", "agent_workflows", "usage_logs"];
 // M2 (Q2): thêm 0003_admin_catalog + 0004_catalog_rls → 10 bảng; M3 (Q2): thêm 0005_admin_permissions + 0006_permissions_rls → 14 bảng admin.* (spec M3 §4); M4 (Q2a, test-plan §5 K1): + 0007_m4_ops, 0008_admin_totp, dev 0002_usage_at_idx → 19 bảng admin.*; X1 (B1): + 0009_x1_workflow_side_effect (thêm cột, không bảng) → main 10; sắp collate "C" (không phụ thuộc collation DB).
 const ADMIN_TABLES = [
+  "admin.app_catalog",
   "admin.audit_log",
   "admin.command_names",
   "admin.commands",

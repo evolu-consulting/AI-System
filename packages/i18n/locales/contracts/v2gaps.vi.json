@@ -2,9 +2,7 @@
   "contracts": {
     "vgaps": {
       "apps": {
-        "title": "Ứng dụng",
-        "chat": "AI System",
-        "admin": "Quản trị"
+        "title": "Ứng dụng"
       },
       "contact": {
         "title": "Điện thoại và người liên hệ",

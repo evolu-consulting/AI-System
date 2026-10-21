@@ -105,6 +105,8 @@ export type SsoCodeRequest = z.infer<typeof SsoCodeRequestSchema>;
 export const SsoCodeResponseSchema = z.strictObject({
   code: z.string().min(1).max(TOKEN_MAX),
   expires_in: z.literal(SSO_CODE_TTL_S),
+  /** app-catalog · URL đích do admin-api lấy từ catalog (web nguồn chỉ dùng giá trị này, không tin env/query). */
+  target_url: z.string().min(1).max(300),
 });
 export type SsoCodeResponse = z.infer<typeof SsoCodeResponseSchema>;
 /** `tenant_key` (tuỳ chọn): web đích gắn với một công ty ⇒ mã của công ty khác bị từ chối. */

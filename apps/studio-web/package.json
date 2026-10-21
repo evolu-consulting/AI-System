@@ -12,6 +12,7 @@
     "check:bundle": "bun scripts/check-bundle.ts"
   },
   "dependencies": {
+    "@ai/web-kit": "workspace:*",
     "@ai/contracts": "workspace:*",
     "@ai/i18n": "workspace:*",
     "@fontsource-variable/jetbrains-mono": "5.3.0",

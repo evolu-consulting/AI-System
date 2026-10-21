@@ -53,7 +53,7 @@ export function Header({
         <IconSidebar />
       </button>
       <div className="ml-auto flex items-center gap-1">
-        <AppSwitcher role={user?.role} />
+        <AppSwitcher role={user?.role} userId={user?.username} />
         <ConnectedBell />
         <button
           type="button"

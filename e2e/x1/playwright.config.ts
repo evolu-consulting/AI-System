@@ -89,6 +89,8 @@ export default defineConfig({
         // B2: admin-api gọi Hub `/internal/test-run` bằng Bearer token; token chỉ ở server (X1-AC11).
         ADMIN_HUB_URL: HUB,
         HUB_INTERNAL_TOKEN: TOKEN,
+        // app-catalog: URL khởi tạo cho switcher "Ứng dụng" (Studio) — thay cho PUBLIC_STUDIO_URL lúc build.
+        APP_URL_STUDIO: STUDIO,
       },
     },
     {

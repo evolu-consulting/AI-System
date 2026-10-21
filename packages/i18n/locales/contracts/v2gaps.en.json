@@ -2,9 +2,7 @@
   "contracts": {
     "vgaps": {
       "apps": {
-        "title": "Apps",
-        "chat": "AI System",
-        "admin": "Admin"
+        "title": "Apps"
       },
       "contact": {
         "title": "Phone and contact person",

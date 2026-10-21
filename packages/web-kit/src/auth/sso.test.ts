@@ -1,6 +1,7 @@
 // sso-switch · luật URL chuyển phiên: next an toàn, mã chỉ ở fragment, chống vòng dội.
 import { describe, expect, it } from "bun:test";
 import {
+  handOffUrl,
   parseSsoFragment,
   safeNext,
   shouldTrySso,
@@ -35,5 +36,32 @@ describe("sso url rules", () => {
     expect(shouldTrySso(null, 1000)).toBe(true);
     expect(shouldTrySso(1000, 30_000)).toBe(false);
     expect(shouldTrySso(1000, 62_000)).toBe(true);
+  });
+});
+
+describe("handOffUrl", () => {
+  const grant = async () => ({ code: "c1", target_url: "https://so.x" });
+  it("có phiên ⇒ đích là target_url của server (không phải fallback)", async () => {
+    const url = await handOffUrl({
+      authed: true,
+      grant,
+      fallbackBase: "https://env.x",
+      next: "/a",
+    });
+    expect(url).toBe("https://so.x/sso#code=c1&next=%2Fa");
+  });
+  it("không phiên hoặc xin mã lỗi ⇒ form đăng nhập ở fallback; không fallback ⇒ null", async () => {
+    const bad = async () => {
+      throw new Error("403");
+    };
+    expect(
+      await handOffUrl({ authed: false, grant, fallbackBase: "https://env.x", next: "/" }),
+    ).toBe("https://env.x/login?sso=none&next=%2F");
+    expect(
+      await handOffUrl({ authed: true, grant: bad, fallbackBase: "https://env.x", next: "/" }),
+    ).toBe("https://env.x/login?sso=none&next=%2F");
+    expect(
+      await handOffUrl({ authed: true, grant: bad, fallbackBase: undefined, next: "/" }),
+    ).toBeNull();
   });
 });

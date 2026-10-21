@@ -26,7 +26,12 @@ export function ssoRoutes(d: SsoRouteDeps): Hono {
     const app = webApp(c);
     const s = await redeemSsoCode(
       d,
-      { code: input.code, app, tenantKey: input.tenant_key },
+      {
+        code: input.code,
+        app,
+        tenantKey: input.tenant_key,
+        origin: c.req.header("origin") ?? undefined,
+      },
       {
         client: "web",
         userAgent: c.req.header("user-agent") ?? null,

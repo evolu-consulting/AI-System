@@ -1,0 +1,7 @@
+// app-catalog · URL nhúng lúc build chỉ còn là DỰ PHÒNG khi `GET /me/apps` lỗi (danh sách thật do Admin quản lý, `@ai/web-kit/app-catalog/apps`).
+const trim = (u: string | undefined): string => (u ?? "").trim().replace(/\/+$/, "");
+
+export const FALLBACK_URLS: Readonly<Record<string, string>> = {
+  chat: trim(import.meta.env.PUBLIC_CHAT_WEB_URL) || trim(import.meta.env.PUBLIC_CHAT_APP_URL),
+  studio: trim(import.meta.env.PUBLIC_STUDIO_URL),
+};

@@ -7,6 +7,7 @@ import { refreshTokens, type Tx, withScope } from "@ai/db";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Actor } from "../../../lib/auth-middleware";
 import { appError } from "../../../lib/errors";
+import { redeemTargetAllowed, ssoTarget } from "../../app-catalog/app-catalog.service";
 import * as repo from "../auth.repo";
 import { canSignIn, normalizeLoginId } from "../auth.rules";
 import { type AuthCtx, type ClientMeta, issueSession, type Session } from "../auth.session";
@@ -24,6 +25,8 @@ export async function issueSsoCode(
   app: WebApp,
 ): Promise<SsoCodeResponse> {
   if (!actor.sid) throw denied();
+  // app-catalog: đích SSO chỉ là app trong catalog mà người gọi được mở (không tin tham số/ env phía web).
+  const targetUrl = await ssoTarget(ctx, actor, app);
   const code = randomBytes(32).toString("base64url");
   const exp = ctx.now().getTime() + TTL_MS;
   await ctx.ssoStore.put(
@@ -31,7 +34,7 @@ export async function issueSsoCode(
     { tid: actor.tenantId, sub: actor.userId, sid: actor.sid, app, exp },
     TTL_MS,
   );
-  return { code, expires_in: SSO_CODE_TTL_S };
+  return { code, expires_in: SSO_CODE_TTL_S, target_url: targetUrl };
 }
 
 /** Phiên nguồn còn sống: chuỗi `family_id` còn token chưa thu hồi, chưa hết hạn (giờ DB). */
@@ -51,7 +54,13 @@ async function familyActive(tx: Tx, tenantId: string, familyId: string): Promise
   return rows.length === 1;
 }
 
-export type RedeemInput = { code: string; app: WebApp | undefined; tenantKey?: string };
+export type RedeemInput = {
+  code: string;
+  app: WebApp | undefined;
+  tenantKey?: string;
+  /** Header `Origin` của request (trình duyệt luôn gửi cho POST fetch); phải khớp origin URL catalog của app đích. */
+  origin?: string;
+};
 
 export async function redeemSsoCode(
   ctx: SsoCtx,
@@ -62,6 +71,8 @@ export async function redeemSsoCode(
   const e = await ctx.ssoStore.take(keyOf(input.code));
   if (!e || e.exp <= ctx.now().getTime() || !input.app || e.app !== input.app) throw denied();
   return withScope(ctx.db, { kind: "tenant", tenantId: e.tid }, async (tx) => {
+    // app-catalog: app đích còn bật + có SSO trong catalog, và request đến từ đúng origin catalog.
+    if (!(await redeemTargetAllowed(tx, e.app, input.origin))) throw denied();
     await repo.lockUserShared(tx, e.tid, e.sub);
     const u = await repo.findUserById(tx, e.tid, e.sub);
     if (!u || !canSignIn(u, u.tenant.active)) throw denied();

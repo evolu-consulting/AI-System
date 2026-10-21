@@ -20,6 +20,7 @@
   "topbar": {
     "configBadge": "hub config v{n}",
     "toAdmin": "⇄ Evolu Control",
+    "apps": "Ứng dụng",
     "configBadgeLabel": "Phiên bản cấu hình Hub"
   },
   "notFound": {

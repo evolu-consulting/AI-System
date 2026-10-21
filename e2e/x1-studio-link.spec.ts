@@ -12,5 +12,7 @@ test("X1-AC13 · vắng PUBLIC_STUDIO_URL: platform_admin KHÔNG thấy link 'Ag
 }) => {
   await loginAdmin(page);
   await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Agent Forge" })).toHaveCount(0);
+  // app-catalog: catalog không có URL nào (admin-api không có APP_URL_*) ⇒ switcher "Ứng dụng" ẩn, không có mục Studio.
+  await expect(page.getByRole("button", { name: "Ứng dụng" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Studio" })).toHaveCount(0);
 });

@@ -10,6 +10,7 @@ describe("ADM-FR-60 · menu theo role", () => {
       "overview",
       "agents",
       "features",
+      "apps",
       "commands",
       "workflows",
       "tenants",

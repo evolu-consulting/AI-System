@@ -65,6 +65,11 @@ services:
         PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
     environment:
       HOME: /tmp
+      # app-catalog: giá trị khởi tạo cho `admin.app_catalog` (chỉ điền hàng còn rỗng; sau đó sửa ở Admin → Ứng dụng).
+      APP_URL_CHAT: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
+      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+      APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
+      APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro

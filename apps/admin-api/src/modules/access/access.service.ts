@@ -196,3 +196,37 @@ export async function commandTenantExtras(
   }
   return out;
 }
+
+/** Key feature hiệu lực của user (entitlement tenant + grant nhóm/user + beta), một lượt đọc. */
+export async function effectiveFeatureKeys(
+  tx: Tx,
+  actor: { userId: string; tenantId: string },
+): Promise<Set<string>> {
+  const head = await repo.userHead(tx, actor.tenantId, actor.userId);
+  if (!head) return new Set();
+  const groups = await repo.userGroups(tx, head);
+  const features = await repo.featuresFor(tx, head);
+  const r = computeEffectiveAccess({
+    user: {
+      id: head.id,
+      active: head.active,
+      lockedByTenant: head.locked_by_tenant,
+      tenantActive: head.tenant_active,
+      groupIds: groups.map((g) => g.id),
+    },
+    betaGroupId: head.beta_group_id,
+    features: features.map((f) => ({
+      id: f.id,
+      key: f.key,
+      status: f.status,
+      entitled: f.entitled,
+      grantGroupIds: f.grant_group_ids,
+      grantUser: f.grant_user,
+    })),
+    commands: [],
+  });
+  const keyOf = new Map(features.map((f) => [f.id, f.key]));
+  return new Set(
+    r.features.filter((x) => x.effective).map((x) => keyOf.get(x.featureId) as string),
+  );
+}

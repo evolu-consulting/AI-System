@@ -11,6 +11,7 @@ import { logger, setMinLevel } from "./lib/logger";
 import { createMailer } from "./lib/mailer";
 import { createRedis, type Redis } from "./lib/redis";
 import { parseMasterKey, selfTestSecretKey } from "./lib/secret-crypto";
+import { seedAppUrls } from "./modules/app-catalog/app-catalog.seed";
 import { createDummyHash } from "./modules/auth/auth.service";
 import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
 import { type LimitPolicy, policyFromEnv } from "./modules/auth/limit/limit.rules";
@@ -94,6 +95,10 @@ async function main(): Promise<void> {
     fail("secret-key", err);
   }
   const db = await connect(env.ADMIN_API_DATABASE_URL).catch((err) => fail("db", err));
+  await seedAppUrls(db, env).then(
+    (n) => n > 0 && logger.info("app-catalog-seeded", { apps: n }),
+    (err) => logger.warn("app-catalog-seed", { error: errMsg(err) }),
+  );
   const dummyHash = await createDummyHash();
   const limit = await startLoginLimiter(env);
   const app = createApp(

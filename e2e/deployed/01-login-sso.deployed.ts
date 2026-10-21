@@ -29,7 +29,7 @@ test.describe("01 đăng nhập + SSO", () => {
   test("app switcher trong AI System mở Sổ Hợp Tác", async ({ page }) => {
     await login(page, CHAT);
     await page.getByRole("button", { name: /Ứng dụng|Apps|Sổ Hợp Tác/ }).click();
-    await page.getByRole("link", { name: /Sổ Hợp Tác/ }).click();
+    await page.getByRole("menuitem", { name: /Sổ Hợp Tác/ }).click();
     await expect(page).toHaveURL(new RegExp(`^${CW}/(?!login)`));
     await expect(page.getByRole("link", { name: "Tổng quan" }).first()).toBeVisible();
   });
