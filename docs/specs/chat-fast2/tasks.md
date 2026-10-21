@@ -14,8 +14,8 @@ làm trợ lý chung; Orchestrator chỉ còn khi `@orchestrator`, chế độ "
 | 4 | `demo-ai-fix.ts` (8): agent mặc định demo = `assistant` (`on_no_match=answer`), idempotent, chỉ demo; báo `agentsStale` nếu `assistant` chưa có tool contracts (⇒ chạy hub seed) | ✅ |
 | 5 | Khoang hợp đồng giữ `@mgmt-assistant` (contracts-web gắn tag ⇒ run direct, không đi qua mặc định) — không đổi | ✅ |
 | 6 | Unit `fast-route.rules.test.ts` (+4 ca) · `seed.test.ts` cập nhật | ✅ local |
-| 7 | Int `tests/acceptance/chat-fast/default-route.int.test.ts`: được dùng ⇒ direct 1 job; không được dùng ⇒ Orchestrator + delegate `skipped not_allowed`; `@orchestrator` ⇒ Orchestrator | __INT__ |
-| 8 | Perf `dispatch.perf.int.test.ts` chạy lại | __PERF__ |
+| 7 | Int `tests/acceptance/chat-fast/default-route.int.test.ts`: được dùng ⇒ direct 1 job; không được dùng ⇒ Orchestrator + delegate `skipped not_allowed`; `@orchestrator` ⇒ Orchestrator | ✅ evotest 3/3 |
+| 8 | Perf `dispatch.perf.int.test.ts` chạy lại | ✅ evotest: fast p95 73 ms (≤ 150), Orchestrator p95 100 ms |
 
 ## Bảo mật
 Không đổi luật quyền: agent mặc định chỉ chạy thẳng khi nằm trong AU người gửi (`defaultRoute` → `visibleAgents`), `directOnSnapshot`
@@ -30,3 +30,6 @@ kiểm lại trên ảnh run; về Orchestrator thì mọi delegate qua `canDele
 
 ## Máy chủ (sohoptac2) sau merge
 `deploy.ps1` (build + `setup.sh`: migrate + hub seed) → `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/demo-ai-fix.ts --tenant demo --apply` → NitiGroup theo mục trên.
+
+## Ghi chú
+- `tests/acceptance/V2-O/demo-ai-fix.int.test.ts` (khoá) đỏ sẵn, không do lát này: mong 1 tài liệu/3 đoạn nhưng ai-tiers-rag (6) đã thêm tài liệu QC-TC-01 ⇒ 2/6. Cần qc sửa (Tranh chấp test).
