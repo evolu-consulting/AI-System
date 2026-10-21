@@ -27,7 +27,11 @@ async function ensureConversation(question: string): Promise<string> {
   return c.id;
 }
 
-export async function ask(question: string, errorText: (code?: string) => string): Promise<void> {
+export async function ask(
+  question: string,
+  errorText: (code?: string) => string,
+  instruction?: string,
+): Promise<void> {
   const q = question.trim();
   if (!q || state.msgs.some((m) => m.pending)) return;
   set((s) => ({
@@ -38,7 +42,7 @@ export async function ask(question: string, errorText: (code?: string) => string
     const convId = await ensureConversation(q);
     const loc = typeof location === "undefined" ? null : location;
     const dock = loc ? dockContext(loc.pathname, loc.search) : undefined;
-    const req = buildRequest(q, state.flowId, loc?.href ?? null, dock);
+    const req = buildRequest(q, state.flowId, loc?.href ?? null, dock, instruction);
     const sent = await sendAndStream(convId, req, (e) => {
       if (e.event === "run.started")
         set((s) => ({ ...s, flowId: e.data.flow_id, runId: e.data.run_id }));

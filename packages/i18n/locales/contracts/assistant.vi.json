@@ -16,7 +16,14 @@
       "stop": "Dừng trả lời",
       "errForbidden": "Bạn chưa được dùng trợ lý AI. Nhờ quản trị cấp quyền trong Agent Hub.",
       "errBusy": "Trợ lý đang bận với câu trước, thử lại sau giây lát.",
-      "errGeneric": "Không gửi được câu hỏi. Thử lại sau."
+      "errGeneric": "Không gửi được câu hỏi. Thử lại sau.",
+      "srcToggle": "📑 Văn bản gốc",
+      "srcTitle": "Văn bản gốc",
+      "srcSeeQuote": "Xem đoạn này trong văn bản gốc",
+      "srcNotFound": "Không tìm thấy nguyên văn đoạn trích trong văn bản (AI có thể đã diễn đạt lại). Toàn văn hiện bên dưới.",
+      "askTitle": "Hỏi về hợp đồng này",
+      "askHint": "Trợ lý chỉ trả lời từ văn bản và thông tin của hợp đồng này, kèm trích dẫn. Cuộc trò chuyện lưu trong lịch sử trợ lý của bạn.",
+      "askPlaceholder": "Hỏi về hợp đồng này: phạt vi phạm, thanh toán, thời hạn…"
     }
   }
 }

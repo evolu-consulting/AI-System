@@ -6,6 +6,7 @@ import {
   applyEvent,
   assistantAgent,
   buildRequest,
+  CONTRACT_QA_INSTRUCTION,
   dockContext,
   errorText,
   type Msg,
@@ -43,6 +44,13 @@ describe("M2-chat · chat.rules", () => {
       content: "@assistant x",
       context: { surface: "contracts", route: "/my-work" },
     });
+  });
+
+  test("gap-a2 · hỏi về HĐ: dặn đi trước câu hỏi, vẫn tag @assistant + ngữ cảnh HĐ", () => {
+    const dock = dockContext(`/contracts/${R}`, "");
+    const r = buildRequest(" Phạt chậm giao? ", null, null, dock, CONTRACT_QA_INSTRUCTION);
+    expect(r.content).toBe(`@assistant ${CONTRACT_QA_INSTRUCTION}\n\nCâu hỏi: Phạt chậm giao?`);
+    expect(r.context?.entity).toEqual({ kind: "contract", id: R });
   });
 
   test("delta ghép, step hiện nhãn, run.finished thay bằng content đủ và tắt chờ", () => {

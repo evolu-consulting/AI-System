@@ -35,6 +35,11 @@ export const ASSISTANT_AGENT = assistantAgent({
   PUBLIC_ASSISTANT_AGENT: import.meta.env?.PUBLIC_ASSISTANT_AGENT,
 });
 export const QUESTION_MAX = 4000;
+
+/** gap-a2 #6 · "Hỏi về hợp đồng này": cùng agent `assistant` (không agent mới), dặn chỉ dựa vào đúng HĐ đang xem (id lấy từ ngữ cảnh dock). */
+export const CONTRACT_QA_INSTRUCTION =
+  "Chỉ trả lời dựa trên văn bản và các trường của HỢP ĐỒNG đang xem (entity trong ngữ cảnh), không dùng hợp đồng khác. " +
+  "Mỗi ý kèm trích dẫn nguyên văn đặt trong dấu ngoặc kép “…”; văn bản không nói tới thì trả lời rõ: không thấy trong hợp đồng này.";
 const TITLE_MAX = 80;
 
 export type Msg = {
@@ -51,8 +56,12 @@ export function buildRequest(
   flowId: string | null,
   pageUrl: string | null,
   dock?: MessageContext,
+  instruction?: string,
 ): SendMessageRequest {
-  const body: SendMessageRequest = { content: `@${ASSISTANT_AGENT} ${question.trim()}` };
+  const q = question.trim();
+  const body: SendMessageRequest = {
+    content: `@${ASSISTANT_AGENT} ${instruction ? `${instruction}\n\nCâu hỏi: ${q}` : q}`,
+  };
   if (flowId) body.flow_id = flowId;
   const ctx: MessageContext = { ...(pageUrl ? { page_url: pageUrl } : {}), ...dock };
   if (Object.keys(ctx).length > 0) body.context = ctx;

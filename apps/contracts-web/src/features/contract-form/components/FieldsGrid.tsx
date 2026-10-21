@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
+import { QuoteLine } from "~/features/contract-source/components/QuoteLine";
 import { cn } from "~/lib/utils";
 import { autoTotal, type FormState, type RequiredKey, type TextKey } from "../lib/form-model";
 import { PartnerField } from "./PartnerField";
@@ -59,9 +60,7 @@ function Row({
       {badges
         ?.filter((b) => b.kind === "quote")
         .map((b) => (
-          <span key={b.text} className="text-[12px] text-dim italic">
-            “{b.text}”
-          </span>
+          <QuoteLine key={b.text} quote={b.text} />
         ))}
     </div>
   );

@@ -6,6 +6,7 @@ import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
 import type { FormState } from "~/features/contract-form/lib/form-model";
 import { fallbackDue, type MsRow } from "~/features/contract-form/lib/review-model";
+import { QuoteLine } from "~/features/contract-source/components/QuoteLine";
 
 export function AiMilestonesPanel({
   rows,
@@ -60,7 +61,7 @@ export function AiMilestonesPanel({
                   value={r.due_date ?? fallbackDue(form, today)}
                   onChange={(e) => onChange(i, { due_date: e.target.value || null })}
                 />
-                {r.quote && <span className="text-[12px] text-dim italic">“{r.quote}”</span>}
+                {r.quote && <QuoteLine quote={r.quote} />}
               </li>
             );
           })}

@@ -16,7 +16,14 @@
       "stop": "Stop answering",
       "errForbidden": "You can't use the AI assistant yet. Ask an admin to grant access in Agent Hub.",
       "errBusy": "The assistant is busy with the previous question. Try again in a moment.",
-      "errGeneric": "Couldn't send the question. Try again later."
+      "errGeneric": "Couldn't send the question. Try again later.",
+      "srcToggle": "📑 Source text",
+      "srcTitle": "Source text",
+      "srcSeeQuote": "See this passage in the source text",
+      "srcNotFound": "The exact quote wasn't found in the text (the AI may have reworded it). The full text is shown below.",
+      "askTitle": "Ask about this contract",
+      "askHint": "The assistant answers only from this contract's text and details, with quotes. The conversation is kept in your assistant history.",
+      "askPlaceholder": "Ask about this contract: penalties, payment, term…"
     }
   }
 }

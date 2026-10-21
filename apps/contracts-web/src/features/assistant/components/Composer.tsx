@@ -9,10 +9,12 @@ export function Composer({
   busy,
   onSend,
   onStop,
+  placeholder,
 }: {
   busy: boolean;
   onSend: (q: string) => void;
   onStop: () => void;
+  placeholder?: string;
 }) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
@@ -44,7 +46,7 @@ export function Composer({
           rows={1}
           value={text}
           maxLength={QUESTION_MAX}
-          placeholder={t("contracts.assistant.placeholder")}
+          placeholder={placeholder ?? t("contracts.assistant.placeholder")}
           aria-label={t("contracts.assistant.question")}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {

@@ -3,7 +3,7 @@
 // Bước xác nhận sau upload (`needs_review`) dùng thanh Hủy/Lưu dính như form nhập tay. Đang đọc ⇒ tải lại mỗi 2 s.
 import type { ContractDetail } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { AppendixPanel } from "~/features/appendix/AppendixPanel";
@@ -12,6 +12,9 @@ import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlineP
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { DeleteContractButton } from "~/features/contract-delete/components/DeleteContractButton";
 import { dealOf } from "~/features/contract-form/lib/deal";
+import { AskContractPanel } from "~/features/contract-source/components/AskContractPanel";
+import { SourceViewerContext } from "~/features/contract-source/components/QuoteLine";
+import { SourcePanel } from "~/features/contract-source/components/SourcePanel";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -85,48 +88,86 @@ function ContractBody({
   };
   const file = c.file ? { href: fileHref(id), name: c.file.name, onOpen: openFile } : null;
   const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
+  // gap-a2 #3: khoang văn bản gốc (mở bằng nút hoặc bằng "Xem đoạn này trong văn bản gốc" ở trích dẫn AI).
+  const [src, setSrc] = useState<{ quote: string | null; nonce: number } | null>(null);
+  const viewer = useMemo(
+    () =>
+      c.has_source
+        ? { show: (quote: string) => setSrc((s) => ({ quote, nonce: (s?.nonce ?? 0) + 1 })) }
+        : null,
+    [c.has_source],
+  );
+  const askable = c.status !== "extracting" && c.status !== "extract_failed";
   return (
-    // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó.
-    <div className="text-base leading-[1.55]">
-      <ContractHead
-        title={titleOf(c)}
-        lead={lead}
-        sticky={confirm && canSave}
-        file={file}
-        canSave={canSave}
-        dirty={info.dirty}
-        onReset={info.reset}
-        saveButton={saveButton}
-        approvalButtons={ap.buttons}
-        approvalBusy={ap.busy}
-      />
-      <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err ?? fileErr} />
-      {ap.section}
-      <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
-      {c.status === "extract_failed" ? (
-        <ExtractFailed file={file} />
-      ) : (
-        <DetailGrid
-          c={c}
-          f={info.f}
-          onSet={info.set}
-          canSave={canSave}
-          saveButton={confirm ? undefined : saveButton}
-          write={write}
-          partner={partnerOf(c)}
-          today={todayIso()}
-          info={info}
-        />
-      )}
-      <AppendixPanel c={c} write={write} />
-      <ContractSourcing c={c} write={write} />
-      <ContractLog contractId={id} status={c.status} />
-      {owner && c.status !== "extracting" && (
-        <div className="mt-6 flex justify-end">
-          <DeleteContractButton id={id} />
+    <SourceViewerContext.Provider value={viewer}>
+      <div className="flex items-start gap-4 max-lg:flex-col">
+        <div className="min-w-0 flex-1 max-lg:w-full">
+          {/* Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó. */}
+          <div className="text-base leading-[1.55]">
+            <ContractHead
+              title={titleOf(c)}
+              lead={lead}
+              sticky={confirm && canSave}
+              file={file}
+              canSave={canSave}
+              dirty={info.dirty}
+              onReset={info.reset}
+              saveButton={saveButton}
+              approvalButtons={ap.buttons}
+              approvalBusy={ap.busy}
+            />
+            <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err ?? fileErr} />
+            {ap.section}
+            {viewer && (
+              <div className="mb-3 flex justify-end">
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  aria-pressed={src !== null}
+                  onClick={() => setSrc((s) => (s ? null : { quote: null, nonce: 0 }))}
+                >
+                  {t("contracts.assistant.srcToggle")}
+                </button>
+              </div>
+            )}
+            <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
+            {c.status === "extract_failed" ? (
+              <ExtractFailed file={file} />
+            ) : (
+              <DetailGrid
+                c={c}
+                f={info.f}
+                onSet={info.set}
+                canSave={canSave}
+                saveButton={confirm ? undefined : saveButton}
+                write={write}
+                partner={partnerOf(c)}
+                today={todayIso()}
+                info={info}
+              />
+            )}
+            {askable && (
+              <div className="mt-4">
+                <AskContractPanel />
+              </div>
+            )}
+            <AppendixPanel c={c} write={write} />
+            <ContractSourcing c={c} write={write} />
+            <ContractLog contractId={id} status={c.status} />
+            {owner && c.status !== "extracting" && (
+              <div className="mt-6 flex justify-end">
+                <DeleteContractButton id={id} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
+        {src && viewer && (
+          <div className="sticky top-4 w-[420px] shrink-0 max-lg:static max-lg:w-full">
+            <SourcePanel id={id} quote={src.quote} nonce={src.nonce} onClose={() => setSrc(null)} />
+          </div>
+        )}
+      </div>
+    </SourceViewerContext.Provider>
   );
 }
 
