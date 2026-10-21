@@ -9,6 +9,7 @@ import {
   expect,
   login,
   settle,
+  sweepTaggedGroups,
   TAG,
   test,
   watchConsole,
@@ -34,6 +35,8 @@ test.beforeAll(async ({ browser }) => {
 });
 test.afterAll(async () => {
   await page.context().close();
+  // Quét cuối: Group E2E-DEPLOY còn sót (Bỏ phòng ban chỉ bỏ dấu, Group giữ nguyên — M1D) xoá qua API.
+  await sweepTaggedGroups();
 });
 
 test.describe("02 contracts-web", () => {
@@ -311,6 +314,8 @@ test.describe("02 contracts-web", () => {
           .catch(() => {});
       }
     }
+    // "Bỏ phòng ban" giữ Group (M1D) ⇒ xoá nốt Group E2E-DEPLOY rỗng qua API.
+    await sweepTaggedGroups();
     await expect(page.locator("article").filter({ hasText: TAG })).toHaveCount(0);
     expect(errs.list).toEqual([]);
   });

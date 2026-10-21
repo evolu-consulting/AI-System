@@ -1,5 +1,11 @@
 // e2e triển khai · hỗ trợ chung. Mật khẩu CHỈ qua env `DEMO_PW` (runner đọc từ máy chủ trong bộ nhớ) — không in, không ghi file.
-import { test as base, type ConsoleMessage, expect, type Page } from "@playwright/test";
+import {
+  test as base,
+  type ConsoleMessage,
+  expect,
+  type Page,
+  request as playwrightRequest,
+} from "@playwright/test";
 
 // DEP_DOMAIN=evoluconsulting.com => chay qua https host thu nghiem (sohoptac-test./ai-test-admin./ai-test./ai-test-hub.<domain>) thay vi SSH tunnel;
 // DEP_*_URL van thang. Khong dat gi => localhost:1843x (tunnel).
@@ -86,6 +92,36 @@ export async function chatTurn(page: Page, text: string): Promise<string> {
       "SERVER AI: ALL_PROVIDERS_EXHAUSTED (gói Claude trên sohoptac2 hết lượt/không dùng được) — không phải lỗi giao diện",
     );
   return after;
+}
+
+/** Dọn qua API ứng dụng (đăng nhập riêng, không đụng trang): xoá mọi Group gắn thẻ E2E-DEPLOY của tenant demo còn 0 thành viên
+ *  (quyền + dấu phòng ban đi theo FK cascade). Lỗi ⇒ nuốt (dọn là cố gắng tốt nhất, không làm đỏ test). Trả số Group đã xoá. */
+export async function sweepTaggedGroups(base: string = CW): Promise<number> {
+  const api = await playwrightRequest.newContext({ baseURL: base });
+  let n = 0;
+  try {
+    const lr = await api.post("/auth/login", {
+      data: { tenant_key: TENANT, username: USER, password: password() },
+      headers: { "X-App": "contracts" },
+    });
+    const token = ((await lr.json()) as { access_token?: string }).access_token;
+    if (!token) return 0;
+    const headers = { Authorization: `Bearer ${token}` };
+    const lst = await api.get(`/admin/groups?limit=200&q=${encodeURIComponent(TAG)}`, { headers });
+    const body = (await lst.json()) as {
+      items?: { id: string; key: string; member_count: number }[];
+    };
+    for (const g of body.items ?? []) {
+      if (!g.key.toLowerCase().startsWith("e2e-deploy") || g.member_count > 0) continue;
+      const r = await api.delete(`/admin/groups/${g.id}`, { headers });
+      if (r.status() === 204) n++;
+    }
+  } catch {
+    // dọn là cố gắng tốt nhất
+  } finally {
+    await api.dispose();
+  }
+  return n;
 }
 
 export const test = base;
