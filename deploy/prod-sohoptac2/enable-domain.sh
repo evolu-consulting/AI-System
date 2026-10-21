@@ -15,7 +15,7 @@ S2_NET="${S2_NET:-sohoptac2_default}"
 S2_WEB="${S2_WEB:-sohoptac2-web-1}"
 SRC="edge/sohoptac2.conf"
 DST="$EDGE_DIR/conf.d/sohoptac2.conf"
-HOSTS="ai2 sohoptac2 ai2-admin ai2-hub"
+HOSTS="ai-test sohoptac-test ai-test-admin ai-test-hub"
 
 [[ "$BASE" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "enable-domain: base-domain khong hop le: $BASE"; exit 2; }
 [ -f "$SRC" ] || { echo "enable-domain: thieu $SRC (chay tu thu muc kit)"; exit 2; }
@@ -108,6 +108,6 @@ fi
 
 echo "--- kiem tra (qua host nginx + wildcard TLS):"
 for h in $HOSTS; do echo "curl -sSI -o /dev/null -w '$h.$BASE %{http_code}\\n' https://$h.$BASE/"; done
-echo "curl -sS https://ai2-hub.$BASE/health ; echo ; curl -sS https://ai2-hub.$BASE/auth-health ; echo"
-echo "curl -sSI https://sohoptac2.$BASE/ | head -n1   # 200 = SPA contracts"
+echo "curl -sS https://ai-test-hub.$BASE/health ; echo ; curl -sS https://ai-test-hub.$BASE/auth-health ; echo"
+echo "curl -sSI https://sohoptac-test.$BASE/ | head -n1   # 200 = SPA contracts"
 echo "(bat 4 host: nho chay 'S2_DOMAIN=$BASE' deploy/gen-env + build lai web de URL PUBLIC_* tro https; xem README)"

@@ -11,9 +11,9 @@ describe("s2-app-urls", () => {
       { key: "other", url: "http://localhost:1" },
     ]);
     expect(plan.map((c) => [c.key, c.to])).toEqual([
-      ["chat", "https://ai2.evoluconsulting.com"],
-      ["contracts", "https://sohoptac2.evoluconsulting.com"],
-      ["studio", "https://ai2-hub.evoluconsulting.com/studio/"],
+      ["chat", "https://ai-test.evoluconsulting.com"],
+      ["contracts", "https://sohoptac-test.evoluconsulting.com"],
+      ["studio", "https://ai-test-hub.evoluconsulting.com/studio/"],
     ]);
     // Chạy lại sau khi đã áp dụng ⇒ không còn gì để đổi (idempotent).
     const after = plan.map((c) => ({ key: c.key, url: c.to }));

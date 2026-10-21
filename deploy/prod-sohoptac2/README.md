@@ -75,14 +75,14 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
 Không nạp dữ liệu, không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
 Không đụng `aisystem`, `sohoptac`, `evotest`, `edge-proxy`, dify, `infra-*`.
 
-## Domain thử nghiệm (ai2 / sohoptac2 / ai2-admin / ai2-hub .evoluconsulting.com) — KHÔNG đụng app cũ
+## Domain thử nghiệm (ai-test / sohoptac-test / ai-test-admin / ai-test-hub .evoluconsulting.com) — KHÔNG đụng app cũ
 Host nginx (TLS wildcard) → `edge-proxy` (127.0.0.1:8090) → container `sohoptac2-web-1` theo cổng nội bộ. Chỉ thêm **một** file vào `edge-proxy/conf.d/`.
 | Host | Cổng `web` | App |
 |---|---|---|
-| `ai2.<domain>` | 8083 | AI System portal + Chat AI (chat-web) |
-| `sohoptac2.<domain>` | 8081 | Sổ Hợp Tác (contracts-web) |
-| `ai2-admin.<domain>` | 8082 | Quản trị |
-| `ai2-hub.<domain>` | 8084 | Hub API + Studio (`/studio/`) |
+| `ai-test.<domain>` | 8083 | AI System portal + Chat AI (chat-web) |
+| `sohoptac-test.<domain>` | 8081 | Sổ Hợp Tác (contracts-web) |
+| `ai-test-admin.<domain>` | 8082 | Quản trị |
+| `ai-test-hub.<domain>` | 8084 | Hub API + Studio (`/studio/`) |
 
 Thứ tự (trên máy chủ, thư mục `~/workspace/sohoptac2`; các lệnh dưới do người dùng chạy):
 1. `powershell -File deploy/prod-sohoptac2/deploy.ps1 -Domain evoluconsulting.com` — kit kèm `enable-domain.sh`, `disable-domain.sh`, `edge/`; `gen-env.sh` nhận `S2_DOMAIN` (đổi `S2_PUBLIC_*`, `APP_URL_*` qua compose, `CORS_ORIGINS`/`HUB_CORS_ORIGINS` = 4 host https **và** 4 origin localhost của tunnel, `ADMIN_WEB_URL`, `HUB_NOTIFY_BASE_URL`, `TRUST_PROXY_HOPS=3`; sao lưu `.env.bak-domain` một lần), build lại web (URL `PUBLIC_*` nhúng lúc build) và `setup.sh`. `-Domain none` = về tunnel.
@@ -90,6 +90,6 @@ Thứ tự (trên máy chủ, thư mục `~/workspace/sohoptac2`; các lệnh d�
 3. `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain evoluconsulting.com` (chạy thử), thêm `--apply` để ghi: đổi `admin.app_catalog.url` (chat/contracts/studio/admin) sang https, **chỉ hàng còn trỏ localhost** (idempotent; hàng sửa tay giữ nguyên).
 Hoàn tác: `bash disable-domain.sh` (gỡ conf, reload, ngắt mạng, khôi phục compose từ bản sao lưu), rồi `deploy.ps1 -Domain none`.
 
-Ghi chú: cookie refresh đã `Secure` (APP_ENV=production; Chrome vẫn nhận trên `http://localhost`) và nginx `web` giữ `X-Forwarded-Proto` của edge. Cookie mỗi host riêng (`Path=/auth`, SameSite=Strict, cùng origin với web nên không cross-site); SSO giữa app đi qua `PUBLIC_SSO_URL` = `https://ai2.<domain>`. Qua tunnel vẫn đăng nhập được từng cổng (CORS có origin localhost) nhưng link chuyển app dẫn sang host https. Giới hạn body 110m, SSE `proxy_buffering off`, `proxy_read_timeout 600`. `TRUST_PROXY_HOPS=3` = host nginx + edge-proxy + web (đều nối `X-Forwarded-For`).
+Ghi chú: cookie refresh đã `Secure` (APP_ENV=production; Chrome vẫn nhận trên `http://localhost`) và nginx `web` giữ `X-Forwarded-Proto` của edge. Cookie mỗi host riêng (`Path=/auth`, SameSite=Strict, cùng origin với web nên không cross-site); SSO giữa app đi qua `PUBLIC_SSO_URL` = `https://ai-test.<domain>`. Qua tunnel vẫn đăng nhập được từng cổng (CORS có origin localhost) nhưng link chuyển app dẫn sang host https. Giới hạn body 110m, SSE `proxy_buffering off`, `proxy_read_timeout 600`. `TRUST_PROXY_HOPS=3` = host nginx + edge-proxy + web (đều nối `X-Forwarded-For`).
 
 e2e triển khai qua domain: `powershell -File deploy/prod-sohoptac2/e2e-deployed.ps1 -Domain evoluconsulting.com` (không mở tunnel) hoặc đặt `DEP_DOMAIN=evoluconsulting.com` (`e2e/deployed/_support.ts`; `DEP_*_URL` vẫn ghi đè từng host). Không đặt ⇒ localhost:1843x qua tunnel.

@@ -62,7 +62,7 @@ EOF
 fi
 
 # --- Domain (S2_DOMAIN) -------------------------------------------------------------------------------------------------
-# S2_DOMAIN=evoluconsulting.com bash gen-env.sh  => URL cong khai = https://{sohoptac2,ai2-admin,ai2,ai2-hub}.<domain>; CORS gom CA https
+# S2_DOMAIN=evoluconsulting.com bash gen-env.sh  => URL cong khai = https://{sohoptac-test,ai-test-admin,ai-test,ai-test-hub}.<domain>; CORS gom CA https
 # lan localhost (tunnel van chay); TRUST_PROXY_HOPS=3 (host nginx -> edge-proxy -> web). S2_DOMAIN=none => ve che do tunnel. Khong dat
 # bien => giu che do da ghi trong .env (S2_DOMAIN=...). Chi sua cac khoa URL/CORS/hops, idempotent; sao luu .env.bak-domain MOT lan.
 # Cookie refresh da Secure (APP_ENV=production; Chrome van nhan Secure tren http://localhost) va nginx `web` giu X-Forwarded-Proto.
@@ -77,7 +77,7 @@ if [ "$MODE" != keep ]; then
   [ -f .env.bak-domain ] || { cp -p .env .env.bak-domain; chmod 600 .env.bak-domain; }
   if [ "$MODE" = domain ]; then
     [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
-    U_C="https://sohoptac2.$D"; U_A="https://ai2-admin.$D"; U_H="https://ai2-hub.$D"; U_CH="https://ai2.$D"
+    U_C="https://sohoptac-test.$D"; U_A="https://ai-test-admin.$D"; U_H="https://ai-test-hub.$D"; U_CH="https://ai-test.$D"
     setkv S2_DOMAIN "$D"; setkv TRUST_PROXY_HOPS 3
     ORIG="$U_C,$U_A,$U_CH,$U_H,$LOCAL"
   else

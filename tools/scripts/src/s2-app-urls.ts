@@ -14,10 +14,10 @@ const BASE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 export function targetUrls(base: string): Record<string, string> {
   if (!BASE.test(base)) throw new Error(`base-domain không hợp lệ: ${base}`);
   return {
-    chat: `https://ai2.${base}`,
-    contracts: `https://sohoptac2.${base}`,
-    studio: `https://ai2-hub.${base}/studio/`,
-    admin: `https://ai2-admin.${base}`,
+    chat: `https://ai-test.${base}`,
+    contracts: `https://sohoptac-test.${base}`,
+    studio: `https://ai-test-hub.${base}/studio/`,
+    admin: `https://ai-test-admin.${base}`,
   };
 }
 
