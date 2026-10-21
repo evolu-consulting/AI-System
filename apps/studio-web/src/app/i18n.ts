@@ -1,21 +1,21 @@
 // HUB-FR-72 · i18next cho studio-web: namespace `studio` nạp động từng ngôn ngữ; CR-052: `studio.locale` đã lưu, không có thì en (không dò trình duyệt).
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { loadStudioLocale } from "@ai/i18n/studio-locales";
+import { LOCALE_KEY, resolvePrefs } from "@ai/web-kit/prefs/prefs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import { setRequestLanguage } from "#/lib/http";
 import { readLocal, writeLocal } from "#/lib/storage";
 
-export const LOCALE_STORAGE_KEY = "studio.locale";
+export const LOCALE_STORAGE_KEY = LOCALE_KEY;
 export const NAMESPACE = "studio";
 
 const isSupported = (v: string | null | undefined): v is Locale =>
   SUPPORTED_LOCALES.some((l) => l === v);
 
-/** Thứ tự: `studio.locale` đã lưu → `en` (CR-052: không dò ngôn ngữ trình duyệt). */
+/** prefs-sync · `ai.locale` (khoá chung 4 web) đã lưu → `vi`; không dò ngôn ngữ trình duyệt. Có phiên thì `/me` thắng. */
 export function resolveInitialLocale(saved: string | null): Locale {
-  if (isSupported(saved)) return saved;
-  return DEFAULT_LOCALE;
+  return resolvePrefs({ stored: { locale: saved } }).locale;
 }
 
 // `<html lang>` đi theo ngôn ngữ đang dùng (a11y §7).

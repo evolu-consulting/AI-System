@@ -3,10 +3,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { initI18n } from "./app/i18n";
+import { startPrefs } from "./app/prefs";
 import { Providers } from "./app/providers";
-import { watchTheme } from "./lib/theme";
 
-watchTheme();
+startPrefs();
 
 const el = document.getElementById("root");
 if (!el) throw new Error("Thiếu phần tử #root");

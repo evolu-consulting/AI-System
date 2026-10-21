@@ -1,5 +1,6 @@
 // PK-FR-10 · TF5 · S16 menu người dùng: tên, công ty, vai (viewer/editor/owner), Cài đặt (chỉ người ghi), Đăng xuất.
 
+import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -9,9 +10,8 @@ import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { openSettings } from "~/features/settings/lib/bus";
 
 import { canSeeSettings, type Role } from "../lib/nav";
-import { AccountLinks, LanguagePicker, LegalLinks } from "./AccountSection";
+import { AccountLinks, LegalLinks } from "./AccountSection";
 import { Popover } from "./Popover";
-import { ThemePicker } from "./ThemeMenu";
 
 export type ShellUser = {
   display_name: string;
@@ -52,8 +52,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
           {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
         </p>
       </div>
-      <ThemePicker />
-      <LanguagePicker />
+      <PrefsPanel />
       <AccountLinks role={user.role} close={close} />
       {canSeeSettings(role, user.role) && (
         <>

@@ -68,6 +68,7 @@ export function toMe(u: MockUser): Me {
     email: null,
     role: u.role ?? "member",
     locale: "vi",
+    theme: "light",
     must_change_password: false,
     totp_enabled: false,
     totp_enabled_at: null,

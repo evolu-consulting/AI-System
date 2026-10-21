@@ -4,15 +4,15 @@ import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, authenticate, requireAuth } from "../../lib/auth-middleware";
 import { parseJson } from "../../lib/http";
 import type { SelfChangeInput } from "./auth.routes";
-import { type AuthCtx, changePasswordSelf, getMe, updateMyLocale } from "./auth.service";
+import { type AuthCtx, changePasswordSelf, getMe, updateMyPrefs } from "./auth.service";
 
 export function meRoutes(d: AuthCtx & AuthDeps): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("/me", requireAuth(d));
   r.get("/me", async (c) => c.json(await getMe(d, c.get("actor"))));
   r.patch("/me", async (c) => {
-    const { locale } = await parseJson(c, MeUpdateRequestSchema);
-    return c.json(await updateMyLocale(d, c.get("actor"), locale));
+    const prefs = await parseJson(c, MeUpdateRequestSchema);
+    return c.json(await updateMyPrefs(d, c.get("actor"), prefs));
   });
   return r;
 }

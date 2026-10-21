@@ -2,8 +2,8 @@
 <html lang="vi">
   <head>
     <meta name="color-scheme" content="light dark" />
-    <!-- sáng trừ khi người dùng chọn tối hoặc "theo máy" (shell/lib/theme.ts); đặt trước lần vẽ đầu như mgmt-app -->
-    <script>var t = "light"; try { t = localStorage.getItem("theme") || "light"; } catch (e) {} if (t !== "auto") document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";</script>
+    <!-- prefs-sync: apply remembered theme (default light) before first paint; key ai.theme shared by the 4 web apps -->
+    <script>(()=> {var d=document.documentElement,t="light";try{t=localStorage.getItem("ai.theme")||"light"}catch{}var k=t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);d.classList.toggle("dark",k);d.dataset.theme=k?"dark":"light";d.style.colorScheme=k?"dark":"light"})();</script>
   </head>
   <body>
     <div id="root"></div>

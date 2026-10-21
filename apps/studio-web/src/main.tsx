@@ -3,7 +3,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { boot, renderBootError } from "./app/boot";
+import { startPrefs } from "./app/prefs";
 import { Providers } from "./app/providers";
+
+startPrefs();
 
 const el = document.getElementById("root");
 if (!el) throw new Error("Thiếu phần tử #root");

@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-06, ADM-NFR-07 · truy vấn auth. Luôn chạy trong withScope (RLS)
 // và vẫn lọc tenant_id tường minh. Thời gian của token dùng now() của DB (plan §10 G7).
-import type { Locale, Role } from "@ai/contracts";
+import type { Locale, Role, Theme } from "@ai/contracts";
 import { refreshTokens, type Tx, tenants, userBackupCodes, users, userTotp } from "@ai/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { LockState, RevokeReason } from "./auth.rules";
@@ -13,6 +13,7 @@ export type AuthUser = {
   email: string | null;
   role: Role;
   locale: Locale;
+  theme: Theme;
   active: boolean;
   lockedByTenant: boolean;
   mustChangePassword: boolean;
@@ -34,6 +35,7 @@ const userCols = {
   email: users.email,
   role: users.role,
   locale: users.locale,
+  theme: users.theme,
   active: users.active,
   lockedByTenant: users.lockedByTenant,
   mustChangePassword: users.mustChangePassword,
@@ -241,10 +243,15 @@ export async function lockPasswordRow(tx: Tx, tenantId: string, userId: string) 
 }
 
 /** PATCH /auth/me: ghi sau thắng, vẫn tăng version. */
-export async function updateLocale(tx: Tx, tenantId: string, userId: string, locale: Locale) {
+export async function updatePrefs(
+  tx: Tx,
+  tenantId: string,
+  userId: string,
+  prefs: { locale?: Locale; theme?: Theme },
+) {
   await tx
     .update(users)
-    .set({ locale, version: sql`${users.version} + 1`, updatedAt: sql`now()` })
+    .set({ ...prefs, version: sql`${users.version} + 1`, updatedAt: sql`now()` })
     .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)));
 }
 

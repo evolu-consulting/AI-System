@@ -96,6 +96,10 @@ export const users = admin.table(
     locale: text("locale", { enum: ["vi", "en"] })
       .notNull()
       .default("en"),
+    /** prefs-sync (0021): giao diện sáng/tối/theo máy của người dùng. */
+    theme: text("theme", { enum: ["light", "dark", "system"] })
+      .notNull()
+      .default("light"),
     active: boolean("active").notNull().default(true),
     lockedByTenant: boolean("locked_by_tenant").notNull().default(false),
     mustChangePassword: boolean("must_change_password").notNull().default(true),
@@ -128,6 +132,7 @@ export const users = admin.table(
     check("users_role_check", sql`${t.role} IN ('platform_admin', 'tenant_admin', 'member')`),
     // tenant-owner (0020): bỏ `users_tenant_admin_email_check` — chủ tenant có thể không email; API vẫn bắt (isEmailRequired).
     check("users_locale_check", sql`${t.locale} IN ('vi', 'en')`),
+    check("users_theme_check", sql`${t.theme} IN ('light', 'dark', 'system')`),
     check("users_failed_logins_check", sql`${t.failedLogins} >= 0`),
     check("users_version_check", sql`${t.version} >= 1`),
   ],

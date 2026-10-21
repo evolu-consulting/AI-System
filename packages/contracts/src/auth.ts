@@ -1,6 +1,7 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-06, ADM-FR-07 · contract /auth/* (spec M1 §3).
 import { z } from "zod";
 import {
+  DEFAULT_THEME,
   EmailSchema,
   IsoDateTime,
   LocaleSchema,
@@ -8,6 +9,7 @@ import {
   PASSWORD_MAX_LEN,
   RoleSchema,
   TenantKeySchema,
+  ThemeSchema,
   UsernameSchema,
   UuidSchema,
 } from "./common";
@@ -52,6 +54,8 @@ export const MeSchema = z.strictObject({
   email: EmailSchema.nullable(),
   role: RoleSchema,
   locale: LocaleSchema,
+  /** prefs-sync · vắng (server/mock cũ) ⇒ `light`. */
+  theme: ThemeSchema.default(DEFAULT_THEME),
   must_change_password: z.literal(false),
   totp_enabled: z.boolean(),
   totp_enabled_at: IsoDateTime.nullable(),
@@ -136,5 +140,8 @@ export const ChangePasswordRequestSchema = z.union([
 ]);
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
 
-export const MeUpdateRequestSchema = z.strictObject({ locale: LocaleSchema });
+/** prefs-sync · PATCH /auth/me: chỉ `locale` và/hoặc `theme` của chính mình; ít nhất một trường. */
+export const MeUpdateRequestSchema = z
+  .strictObject({ locale: LocaleSchema.optional(), theme: ThemeSchema.optional() })
+  .refine((v) => v.locale !== undefined || v.theme !== undefined, { message: "empty" });
 export type MeUpdateRequest = z.infer<typeof MeUpdateRequestSchema>;

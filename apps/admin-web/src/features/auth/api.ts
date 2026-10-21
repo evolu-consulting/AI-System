@@ -1,7 +1,6 @@
 // ADM-FR-01, ADM-FR-03, ADM-FR-06, ADM-FR-08 · gọi API /auth/* (nơi duy nhất ngoài lib/session).
 import type {
   BackupCodesResponse,
-  Locale,
   LoginRequest,
   LoginResponse,
   Me,
@@ -42,11 +41,6 @@ export function changePasswordSelf(currentPassword: string, newPassword: string)
     method: "POST",
     body: { current_password: currentPassword, new_password: newPassword },
   });
-}
-
-/** Đổi ngôn ngữ phiên (`PATCH /auth/me`), trả hồ sơ mới. */
-export function patchMyLocale(locale: Locale): Promise<Me> {
-  return api<Me>("/auth/me", { method: "PATCH", body: { locale } });
 }
 
 /** 2FA bước 0→1: xác thực lại bằng mật khẩu, nhận secret + QR (chỉ giữ trong bộ nhớ, D11). */

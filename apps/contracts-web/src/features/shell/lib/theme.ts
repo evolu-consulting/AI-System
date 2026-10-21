@@ -1,27 +1,14 @@
-// PK-FR-10 · TF5 · giao diện sáng / tối / theo máy (`html[data-theme]`), nhớ theo trình duyệt. Nguồn: mgmt-app theme.ts.
-import { useCallback, useEffect, useState } from "react";
-import { brandStore } from "~/features/settings/lib/brand";
+// PK-FR-10 · TF5 · giao diện sáng / tối / theo máy (`html[data-theme]`). prefs-sync: lựa chọn riêng của người dùng nằm ở kho dùng chung
+// (`@ai/web-kit/prefs`, khoá `ai.theme`, đồng bộ qua /auth/me); file này chỉ còn phần áp lên DOM cho nhận diện công ty (brand).
+import { isTheme, readStored } from "@ai/web-kit/prefs/prefs";
 
 export type Theme = "auto" | "light" | "dark";
-export const THEME_KEY = "theme";
 
-/** Lựa chọn riêng đã nhớ; chưa có ⇒ `fallback` (V2-L: giao diện mặc định của công ty, trước đó luôn sáng). */
-export function storedTheme(fallback: Theme = "light"): Theme {
-  try {
-    const v = localStorage.getItem(THEME_KEY);
-    return v === "dark" || v === "auto" || v === "light" ? v : fallback;
-  } catch {
-    return fallback;
-  }
-}
-/** Người dùng đã tự chọn giao diện (menu avatar) chưa. */
+/** Lựa chọn riêng đã nhớ (`system` của kho chung = `auto` ở đây); chưa có ⇒ null. */
 export function ownTheme(): Theme | null {
-  try {
-    const v = localStorage.getItem(THEME_KEY);
-    return v === "dark" || v === "auto" || v === "light" ? v : null;
-  } catch {
-    return null;
-  }
+  const v = readStored().theme;
+  if (!isTheme(v)) return null;
+  return v === "system" ? "auto" : v;
 }
 
 /** `auto` = theo máy: chỉ tối khi máy đang tối (không có thuộc tính ⇒ sáng; CSS gốc không có media query). */
@@ -30,18 +17,4 @@ export function applyTheme(t: Theme, root: HTMLElement = document.documentElemen
     typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
   if (t === "auto" && !dark) delete root.dataset.theme;
   else root.dataset.theme = t === "auto" ? "dark" : t;
-}
-
-export function useTheme(): [Theme, (t: Theme) => void] {
-  const [t, setT] = useState<Theme>(() => storedTheme(brandStore.get().theme));
-  useEffect(() => applyTheme(t), [t]);
-  const set = useCallback((x: Theme) => {
-    setT(x);
-    try {
-      localStorage.setItem(THEME_KEY, x);
-    } catch {
-      // không lưu được
-    }
-  }, []);
-  return [t, set];
 }

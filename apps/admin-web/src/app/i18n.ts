@@ -1,10 +1,11 @@
 // ADM-NFR-06, ADM-FR-01 · khởi tạo i18next; CR-052: `ai.locale` đã lưu, không có thì en (không dò trình duyệt), `<html lang>` đi theo ngôn ngữ đang dùng.
 import { DEFAULT_LOCALE, type Locale, loadLocale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { loadProcessLocale, toSingleBrace } from "@ai/i18n/process-locales";
+import { LOCALE_KEY, resolvePrefs } from "@ai/web-kit/prefs/prefs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
-export const LOCALE_STORAGE_KEY = "ai.locale";
+export const LOCALE_STORAGE_KEY = LOCALE_KEY;
 
 type DocLike = { documentElement: { lang: string } };
 type StorageLike = Pick<Storage, "getItem">;
@@ -17,13 +18,12 @@ export function syncDocument(doc: DocLike, lng: string): void {
 const isSupported = (v: string | null | undefined): v is (typeof SUPPORTED_LOCALES)[number] =>
   SUPPORTED_LOCALES.some((l) => l === v);
 
-/** Thứ tự: `ai.locale` đã lưu → `en` (CR-052: không dò ngôn ngữ trình duyệt). */
+/** prefs-sync · `ai.locale` đã lưu → `vi` (mặc định chung 4 web; không dò ngôn ngữ trình duyệt). Khi có phiên, `/me` thắng (prefs.reconcile). */
 export function resolveInitialLocale(
   storage: StorageLike | undefined,
 ): (typeof SUPPORTED_LOCALES)[number] {
   const saved = storage?.getItem(LOCALE_STORAGE_KEY);
-  if (isSupported(saved)) return saved;
-  return DEFAULT_LOCALE;
+  return resolvePrefs({ stored: { locale: saved } }).locale;
 }
 
 // Đăng ký trước `init` để lần init đầu cũng đặt `lang`; `bun test` không có `document`.

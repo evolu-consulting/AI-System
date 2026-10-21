@@ -43,6 +43,7 @@ export function toMe(u: AuthUser): Me {
     email: u.email,
     role: u.role,
     locale: u.locale,
+    theme: u.theme,
     must_change_password: false,
     totp_enabled: u.totpEnabledAt !== null,
     totp_enabled_at: u.totpEnabledAt ? u.totpEnabledAt.toISOString() : null,

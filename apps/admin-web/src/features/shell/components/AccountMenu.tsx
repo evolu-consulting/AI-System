@@ -1,5 +1,5 @@
-// ADM-FR-01, ADM-FR-03, ADM-FR-08 · menu avatar: Đổi mật khẩu · Xác thực hai bước (không cho member, AC12) · Ngôn ngữ (menuitemradio) · Đăng xuất.
-import type { Locale } from "@ai/contracts";
+// ADM-FR-01, ADM-FR-03, ADM-FR-08 · menu avatar: Đổi mật khẩu · Xác thực hai bước (không cho member, AC12) · Giao diện + Ngôn ngữ (PrefsPanel dùng chung) · Đăng xuất.
+import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -17,10 +15,10 @@ import { useSession } from "@/lib/auth/use-session";
 import { useAccountActions } from "../hooks/use-account-actions";
 
 export function AccountMenu() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const name = useSession((s) => s.me?.display_name ?? "");
   const role = useSession((s) => s.me?.role ?? "");
-  const { changeLocale, signOut } = useAccountActions();
+  const { signOut } = useAccountActions();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -48,16 +46,7 @@ export function AccountMenu() {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-caption text-muted-foreground">
-          {t("account.language")}
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={i18n.language}
-          onValueChange={(v) => void changeLocale(v as Locale)}
-        >
-          <DropdownMenuRadioItem value="vi">{t("auth.lang.vi")}</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="en">{t("auth.lang.en")}</DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
+        <PrefsPanel />
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void signOut()}>{t("auth.logout")}</DropdownMenuItem>
       </DropdownMenuContent>

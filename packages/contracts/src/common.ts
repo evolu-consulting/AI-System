@@ -29,6 +29,11 @@ export const RoleSchema = z.enum(ROLES);
 export type Role = z.infer<typeof RoleSchema>;
 export const LocaleSchema = z.enum(LOCALES);
 export type Locale = z.infer<typeof LocaleSchema>;
+/** prefs-sync · giao diện theo người dùng; mặc định `light`. */
+export const THEMES = ["light", "dark", "system"] as const;
+export const ThemeSchema = z.enum(THEMES);
+export type Theme = z.infer<typeof ThemeSchema>;
+export const DEFAULT_THEME: Theme = "light";
 export const EntityStatusSchema = z.enum(ENTITY_STATUSES);
 export type EntityStatus = z.infer<typeof EntityStatusSchema>;
 

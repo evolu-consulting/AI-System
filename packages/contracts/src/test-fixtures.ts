@@ -15,6 +15,7 @@ export const me: Me = {
   email: "an@acme.test",
   role: "member",
   locale: "vi",
+  theme: "light",
   must_change_password: false,
   totp_enabled: false,
   totp_enabled_at: null,

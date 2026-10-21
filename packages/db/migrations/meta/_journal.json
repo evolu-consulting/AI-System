@@ -148,6 +148,13 @@
       "when": 1793850400000,
       "tag": "0020_tenant_admin_no_email",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793936800000,
+      "tag": "0021_user_theme",
+      "breakpoints": true
     }
   ]
 }

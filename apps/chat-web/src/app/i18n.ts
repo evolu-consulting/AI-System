@@ -3,20 +3,19 @@ import { loadChatLocale } from "@ai/i18n/chat-locales";
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { loadProcessLocale } from "@ai/i18n/process-locales";
 import { setRequestLanguage } from "@ai/web-kit/http";
+import { LOCALE_KEY, resolvePrefs } from "@ai/web-kit/prefs/prefs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import { readLocal, writeLocal } from "~/lib/storage";
 
-export const LOCALE_STORAGE_KEY = "ai.locale";
+export const LOCALE_STORAGE_KEY = LOCALE_KEY;
 
 const isSupported = (v: string | null | undefined): v is Locale =>
   SUPPORTED_LOCALES.some((l) => l === v);
 
-/** Thứ tự: `ai.locale` đã lưu → `en` (CR-052: không dò ngôn ngữ trình duyệt). */
+/** prefs-sync · `ai.locale` đã lưu → `vi` (mặc định chung 4 web; không dò trình duyệt). Có phiên thì `/me` thắng. */
 export function resolveInitialLocale(storage: Pick<Storage, "getItem"> | undefined): Locale {
-  const saved = storage?.getItem(LOCALE_STORAGE_KEY);
-  if (isSupported(saved)) return saved;
-  return DEFAULT_LOCALE;
+  return resolvePrefs({ stored: { locale: storage?.getItem(LOCALE_STORAGE_KEY) } }).locale;
 }
 
 i18next.on("languageChanged", (lng) => {

@@ -2,15 +2,7 @@
 <html lang="vi">
   <head>
     <meta name="color-scheme" content="light dark" />
-    <script>
-      (() => {
-        var d = document.documentElement, m = "system";
-        try { m = localStorage.getItem("ai-chat-theme") || "system"; } catch {}
-        var dark = m === "dark" || (m !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-        if (dark) d.classList.add("dark");
-        d.style.colorScheme = dark ? "dark" : "light";
-      })();
-    </script>
+    <script>(() => { var d = document.documentElement, t = "light"; try { t = localStorage.getItem("ai.theme") || "light"; } catch {} var k = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches); d.classList.toggle("dark", k); d.dataset.theme = k ? "dark" : "light"; d.style.colorScheme = k ? "dark" : "light"; })();</script>
   </head>
   <body>
     <div id="root"></div>

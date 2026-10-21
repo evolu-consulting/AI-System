@@ -2,7 +2,7 @@
 
 Đăng nhập, đổi mật khẩu, trang member [ADM-FR-01] [ADM-FR-03].
 
-- `api.ts`: nơi duy nhất gọi `/auth/*` (hiện có `patchMyLocale`; FE3 thêm các lệnh còn lại).
+- `api.ts`: nơi duy nhất gọi `/auth/*` (đổi ngôn ngữ/giao diện đã chuyển sang web-kit `prefs`).
 - `pages/`: khung trang `LoginPage`, `MemberPage`, `SelfPasswordPage` (FE1b); FE3 thay bằng màn thật.
 
 ## 2FA TOTP (ADM-FR-08)

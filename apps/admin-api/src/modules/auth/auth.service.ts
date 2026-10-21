@@ -1,6 +1,13 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-07, ADM-NFR-01 · đăng nhập, refresh xoay vòng, đăng xuất (plan M1 §5).
 // Không biết HTTP: route quyết định cookie/body. Mỗi bước có DB = một withScope.
-import type { Locale, LoginRequest, Me, PasswordChangeRequired, TotpRequired } from "@ai/contracts";
+import type {
+  Locale,
+  LoginRequest,
+  Me,
+  PasswordChangeRequired,
+  Theme,
+  TotpRequired,
+} from "@ai/contracts";
 import { hashPassword, NIL_SCOPE, setScope, type Tx, verifyPassword, withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { appError } from "../../lib/errors";
@@ -318,10 +325,14 @@ export async function getMe(ctx: AuthCtx, actor: Actor): Promise<Me> {
   return toMe(u);
 }
 
-/** PATCH /auth/me: chỉ `locale`, ghi sau thắng (không cần version), vẫn tăng `users.version`. */
-export async function updateMyLocale(ctx: AuthCtx, actor: Actor, locale: Locale): Promise<Me> {
+/** PATCH /auth/me: chỉ `locale`/`theme` của chính mình, ghi sau thắng (không cần version), vẫn tăng `users.version`. */
+export async function updateMyPrefs(
+  ctx: AuthCtx,
+  actor: Actor,
+  prefs: { locale?: Locale; theme?: Theme },
+): Promise<Me> {
   const u = await withScope(ctx.db, tenantScope(actor.tenantId), async (tx) => {
-    await repo.updateLocale(tx, actor.tenantId, actor.userId, locale);
+    await repo.updatePrefs(tx, actor.tenantId, actor.userId, prefs);
     return repo.findUserById(tx, actor.tenantId, actor.userId);
   });
   if (!u) throw appError("UNAUTHORIZED");

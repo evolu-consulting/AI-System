@@ -1,10 +1,11 @@
 // PK-FR-10 · TF1 · khởi tạo i18next cho contracts-web: chuỗi `contracts.*` nạp động; `ai.locale` đã lưu, không có thì en (CR-052).
 import { loadContractsLocale } from "@ai/i18n/contracts-locales";
 import { type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
+import { LOCALE_KEY } from "@ai/web-kit/prefs/prefs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
-export const LOCALE_STORAGE_KEY = "ai.locale";
+export const LOCALE_STORAGE_KEY = LOCALE_KEY;
 
 /** GAP-E #33: sản phẩm tiếng Việt - lần đầu vào (chưa lưu `ai.locale`) hiển thị tiếng Việt. */
 export const DEFAULT_CONTRACTS_LOCALE: Locale = "vi";
