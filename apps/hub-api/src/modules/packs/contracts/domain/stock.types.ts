@@ -15,6 +15,8 @@ export type DeliveryMove = {
   milestoneId?: string | null;
   contractItemId?: string | null;
   supplierPartyKey?: string | null;
+  /** gap-d1: `manual` = nhập lô tay (không HĐ); vắng ⇒ `delivery`. */
+  reason?: "delivery" | "manual";
   /** Nhập gói suất: hạn gói = ngày kết thúc HĐ mua (bắt buộc với `quota`). */
   expiresOn?: string | null;
 };
@@ -26,7 +28,7 @@ export type PlannedMove = {
   componentId: string;
   lotId: string | null;
   direction: "in" | "out";
-  reason: "delivery" | "expire" | "reversal";
+  reason: "delivery" | "expire" | "reversal" | "manual";
   qty: string;
   unitCost: number;
   amount: number;

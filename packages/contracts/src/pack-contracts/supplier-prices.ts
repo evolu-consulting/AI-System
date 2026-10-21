@@ -14,6 +14,10 @@ export const SUPPLIER_PRICE_ERRORS = {
   SEARCH_FAILED: 502,
   /** price-scout · hết trần lượt dò giá (hoặc token) tháng này của tenant. */
   SCOUT_MONTHLY_CAP: 429,
+  /** gap-d1 #21 · tải báo giá: tệp không phải PDF/văn bản · không đọc được chữ (PDF scan/hỏng) · quá lớn. */
+  QUOTE_UNSUPPORTED: 415,
+  QUOTE_UNREADABLE: 422,
+  QUOTE_TOO_LARGE: 413,
 } as const;
 export type SupplierPriceErrorCode = keyof typeof SUPPLIER_PRICE_ERRORS;
 
@@ -74,6 +78,11 @@ export type SupplierSearchItem = {
   note: string | null;
 };
 export type SupplierSearchOut = { query: string; items: SupplierSearchItem[] };
+
+/** gap-d1 #21 · `POST /products/:id/supplier-prices/read-quote` (multipart `file`, PDF hoặc văn bản ≤ 5 MiB): AI đọc báo giá ⇒ dòng giá
+ *  CHƯA LƯU (người dùng chọn rồi "Lưu làm giá tham khảo" qua `POST /supplier-prices`, nguồn `quote`). */
+export const QUOTE_MAX_BYTES = 5 * 1024 * 1024;
+export type QuoteReadOut = { items: SupplierSearchItem[] };
 
 export type SupplierPriceRow = {
   /** Id dòng đã lưu; null = dòng suy ra từ sổ kho (`purchase`). */

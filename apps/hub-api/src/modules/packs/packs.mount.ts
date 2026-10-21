@@ -214,7 +214,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   app.route(base, contractsLedger(d, view, db)); // HD7
   app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 Â· Viá»‡c cá»§a tÃ´i
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 Â· Mua hÃ ng
-  app.route(base, productsModule(db, view)); // V2-B Â· danh má»¥c SP + kho
+  app.route(base, productsModule(db, view, { timeZoneOf })); // V2-B Â· danh má»¥c SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 Â· Ä‘iá»ƒm kinh doanh SP
   app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H Â· khÃ¡ch Ä‘ang dÃ¹ng
   app.route(base, deleteContractModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-M Â· xoÃ¡ HÄ
@@ -230,6 +230,7 @@ function mountContractsMore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
       scout: scout.scout,
       timeZoneOf,
       reputation: supplierScores(db, { timeZoneOf }),
+      quote: { ai: aiClient, pdf: createPdfConverter(), quota: cx.quota }, // gap-d1 #21 · tải báo giá lên
     }),
   ); // V2-J2 Â· tab NCC & giÃ¡ (thay /cks/scans)
   app.route(base, companyModule(db, view)); // V2-L Â· cÃ i Ä‘áº·t cÃ´ng ty + cá» duyá»‡t

@@ -2,6 +2,7 @@
 import type {
   PriceScoutOverride,
   PriceScoutProductOut,
+  QuoteReadOut,
   SupplierOverviewOut,
   SupplierPriceInput,
   SupplierSearchOut,
@@ -30,3 +31,16 @@ export const saveSupplierPrices = (id: string, items: SupplierPriceInput[]) =>
   api<{ ids: string[] }>(`${BASE}/${id}/supplier-prices`, { method: "POST", body: { items } });
 export const deleteSupplierPrice = (id: string, priceId: string) =>
   api<void>(`${BASE}/${id}/supplier-prices/${priceId}`, { method: "DELETE" });
+
+/** gap-d1 #21 · tải báo giá (PDF/văn bản): AI đọc ⇒ dòng giá chưa lưu. */
+export function readQuote(id: string, file: File): Promise<QuoteReadOut> {
+  const form = new FormData();
+  form.append("file", file);
+  return api<QuoteReadOut>(`${BASE}/${id}/supplier-prices/read-quote`, {
+    method: "POST",
+    rawBody: form as unknown as Blob,
+  });
+}
+/** gap-d1 #22 · thêm NCC vào danh bạ Đối tác (`POST /companies`). */
+export const addCompany = (body: { name: string; tax_id?: string }) =>
+  api<unknown>("/pack/contracts/companies", { method: "POST", body });

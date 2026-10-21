@@ -7,7 +7,7 @@ export const SEARCH_MAX_ITEMS = 10;
 const PRICE_MIN = 1_000;
 const PRICE_MAX = 1_000_000_000_000;
 
-const text = (v: unknown, max: number): string | null =>
+export const text = (v: unknown, max: number): string | null =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 
 function urlOf(v: unknown): string | null {
@@ -19,7 +19,7 @@ function urlOf(v: unknown): string | null {
     return null;
   }
 }
-const dateOf = (v: unknown, today: string): string | null =>
+export const dateOf = (v: unknown, today: string): string | null =>
   typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && v <= today ? v : null;
 
 function itemOf(raw: unknown, today: string): SupplierSearchItem | null {
@@ -48,7 +48,7 @@ function excluded(url: string | null, sites: readonly string[]): boolean {
 }
 
 /** JSON trong thân trả lời (có thể bọc ```). Hỏng ⇒ null. */
-function jsonOf(reply: string): unknown {
+export function jsonOf(reply: string): unknown {
   const m = /\{[\s\S]*\}/.exec(reply.replace(/```(?:json)?/gi, ""));
   if (!m) return null;
   try {

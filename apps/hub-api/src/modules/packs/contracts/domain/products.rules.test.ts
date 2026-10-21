@@ -26,6 +26,7 @@ const prod = (
   id,
   name,
   unit: null,
+  spec: null,
   group,
   main_supplier: null,
   created_from_contract_id: null,

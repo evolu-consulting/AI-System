@@ -27,7 +27,7 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
                 'best_price', min(m.unit_cost)) as j
               from contracts.stock_moves m
                 left join contracts.contracts k on k.id = m.contract_id and k.tenant_id = m.tenant_id
-              where m.tenant_id = p.tenant_id and m.component_id = ${MAIN} and m.direction = 'in' and m.reason = 'delivery'
+              where m.tenant_id = p.tenant_id and m.component_id = ${MAIN} and m.direction = 'in' and m.reason in ('delivery', 'manual')
                 and m.supplier_party_key is not null
               group by m.supplier_party_key limit 50) x), '[]'::jsonb),
           'saved', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'supplier_name', s.supplier_name,

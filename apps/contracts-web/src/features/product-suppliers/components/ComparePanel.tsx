@@ -6,6 +6,7 @@ import { viDate, vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { today } from "~/features/ledger/lib/ledger";
 import { hasRenew, isOld, rowsOfKind } from "../lib/suppliers";
+import { AddPartnerButton } from "./AddPartnerButton";
 
 const th = "px-4 py-3 text-left text-xs font-semibold text-dim bg-sunk";
 const td = "border-t border-rule-soft px-4 py-3 text-sm";
@@ -35,11 +36,15 @@ export function ComparePanel({
   data,
   write,
   onSearch,
+  onManual,
+  onQuote,
   onDelete,
 }: {
   data: SupplierOverviewOut;
   write: boolean;
   onSearch: () => void;
+  onManual: () => void;
+  onQuote: () => void;
   onDelete: (priceId: string) => void;
 }) {
   const { t } = useTranslation();
@@ -67,9 +72,27 @@ export function ComparePanel({
           </span>
         )}
         {write && (
-          <button type="button" className="btn btn-outline btn-sm ml-auto" onClick={onSearch}>
-            {L("search")}
-          </button>
+          <span className="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              data-testid="gd1-manual-open"
+              onClick={onManual}
+            >
+              {t("contracts.gapd1.manual.open")}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              data-testid="gd1-quote-open"
+              onClick={onQuote}
+            >
+              {t("contracts.gapd1.quote.open")}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={onSearch}>
+              {L("search")}
+            </button>
+          </span>
         )}
       </div>
       {data.own_avg_cost !== null && (
@@ -125,15 +148,18 @@ export function ComparePanel({
                   <td className={`${td} text-dim tnum`}>{viDate(r.on)}</td>
                   {write && (
                     <td className={`${td} text-right`}>
-                      {r.id && (
-                        <button
-                          type="button"
-                          className="btn btn-quiet btn-sm"
-                          onClick={() => onDelete(r.id as string)}
-                        >
-                          {L("remove")}
-                        </button>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        <AddPartnerButton row={r} />
+                        {r.id && (
+                          <button
+                            type="button"
+                            className="btn btn-quiet btn-sm"
+                            onClick={() => onDelete(r.id as string)}
+                          >
+                            {L("remove")}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

@@ -2,12 +2,13 @@
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 import type { BizProductRow } from "@ai/contracts";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
+import { useMe } from "~/features/pack-state/hooks/use-me";
 import { useBizProducts } from "../hooks/use-business";
 import {
   CATALOG_TABS,
@@ -17,6 +18,7 @@ import {
   heldView,
   SUGGEST_TONE,
 } from "../lib/business";
+import { AddProductDialog } from "./AddProductDialog";
 
 export function HeldCell({ p }: { p: BizProductRow }) {
   const { t } = useTranslation();
@@ -53,6 +55,8 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const { write } = useMe();
+  const addDlg = useRef<HTMLDialogElement>(null);
   const list = useBizProducts();
   if (list.isLoading) return <Loading />;
   if (list.error) return <ErrorLine error={list.error} />;
@@ -88,7 +92,18 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
           aria-label={t("contracts.catalog.search")}
           className="ml-auto h-9 w-56 rounded-lg border border-field bg-panel px-3 text-[14px]"
         />
+        {write && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            data-testid="gd1-add-product"
+            onClick={() => addDlg.current?.showModal()}
+          >
+            {t("contracts.gapd1.add.open")}
+          </button>
+        )}
       </div>
+      <AddProductDialog dlg={addDlg} />
       <Panel>
         {rows.length === 0 ? (
           <Empty title={t("contracts.catalog.emptyTitle")}>

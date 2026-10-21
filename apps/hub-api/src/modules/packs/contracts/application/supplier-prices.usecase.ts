@@ -28,7 +28,17 @@ export type SuppliersRepo = {
 };
 
 export class SupplierFail extends Error {
-  constructor(readonly kind: "not_found" | "unavailable" | "cap" | "failed" | "month_cap") {
+  constructor(
+    readonly kind:
+      | "not_found"
+      | "unavailable"
+      | "cap"
+      | "failed"
+      | "month_cap"
+      | "unsupported"
+      | "unreadable"
+      | "too_large",
+  ) {
     super(kind);
   }
 }

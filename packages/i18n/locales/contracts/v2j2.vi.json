@@ -116,6 +116,141 @@
         "platform_searches_month": "Nền tảng ghi đè: lượt dò/tháng",
         "platform_tokens_month": "Nền tảng ghi đè: token/tháng"
       }
+    },
+    "gapd1": {
+      "tab": { "sources": "Cách lấy hàng", "stock": "Kho & lô", "rules": "Nhận diện" },
+      "errors": {
+        "PRODUCT_EXISTS": "Sản phẩm (hoặc quy tắc) này đã có.",
+        "PRODUCT_INVALID": "Dữ liệu chưa hợp lệ — kiểm tra lại số lượng, giá, ngày.",
+        "SOURCE_EXISTS": "Nhà cung cấp này đã có trong cách lấy hàng của sản phẩm.",
+        "PACK_FORBIDDEN": "Bạn không có quyền ghi trong Sổ Hợp Tác."
+      },
+      "add": {
+        "open": "Thêm sản phẩm",
+        "title": "Thêm sản phẩm",
+        "name": "Tên sản phẩm",
+        "group": "Nhóm",
+        "unit": "Đơn vị tính",
+        "spec": "Quy cách",
+        "save": "Lưu sản phẩm"
+      },
+      "stock": {
+        "title": "Kho & lô",
+        "spec": "Quy cách: {{spec}}",
+        "addLot": "+ Nhập lô",
+        "col": {
+          "component": "Thành phần",
+          "mode": "Cách giữ hàng",
+          "onHand": "Tồn",
+          "avg": "Giá vốn BQ",
+          "value": "Giá trị kho"
+        },
+        "mode": {
+          "stock": "Kho lô",
+          "quota": "Gói suất có hạn",
+          "order": "Theo đơn",
+          "none": "Không giữ"
+        },
+        "lots": "Các lô",
+        "noLots": "Chưa có lô nào.",
+        "lotCol": {
+          "component": "Thành phần",
+          "received": "Ngày nhập",
+          "qty": "SL nhập",
+          "remaining": "Còn lại",
+          "expires": "Hết hạn"
+        }
+      },
+      "lot": {
+        "title": "Nhập lô mới",
+        "component": "Thành phần",
+        "date": "Ngày nhập",
+        "qty": "Số lượng",
+        "price": "Đơn giá (đ, chưa VAT)",
+        "expires": "Hết hạn dùng",
+        "supplier": "Nhà cung cấp",
+        "taxId": "MST nhà cung cấp",
+        "prev": "Giá vốn BQ mới dự kiến: {{avg}} đ",
+        "prevHint": "Nhập số lượng và đơn giá để xem giá vốn BQ mới.",
+        "cancel": "Huỷ",
+        "save": "Thêm lô",
+        "done": "Đã nhập lô"
+      },
+      "rules": {
+        "title": "Quy tắc nhận diện",
+        "hint": "Dòng hợp đồng có cụm chữ này sẽ được gợi ý gắn vào sản phẩm.",
+        "empty": "Chưa có quy tắc nào.",
+        "wholeProduct": "Cả sản phẩm",
+        "remove": "Xoá",
+        "pattern": "Cụm chữ nhận diện",
+        "component": "Thành phần",
+        "add": "Thêm quy tắc"
+      },
+      "src": {
+        "title": "Cách lấy hàng",
+        "add": "+ Thêm cách lấy hàng",
+        "addTitle": "Thêm cách lấy hàng",
+        "empty": "Chưa khai báo nguồn nào cho sản phẩm này.",
+        "supplier": "Nhà cung cấp",
+        "taxId": "MST (nếu có)",
+        "lead": "Thời gian giao (ngày)",
+        "moq": "SL tối thiểu",
+        "priceRef": "Giá tham chiếu (đ)",
+        "note": "Ghi chú",
+        "cancel": "Huỷ",
+        "save": "Lưu",
+        "remove": "Xoá",
+        "days": "{{n}} ngày",
+        "riskTitle": "Rủi ro phụ thuộc nhà cung cấp",
+        "riskEmpty": "Chưa có nhà cung cấp nào để đánh giá.",
+        "single": "Chỉ có một nhà cung cấp — hãy thêm nguồn dự phòng.",
+        "risk": {
+          "supplier": "Nhà cung cấp",
+          "share": "Tỉ trọng mua",
+          "declared": "Đã khai báo",
+          "lead": "Thời gian giao",
+          "level": "Rủi ro",
+          "yes": "Có",
+          "no": "Chưa",
+          "lv": { "high": "Cao", "medium": "Trung bình", "low": "Thấp" }
+        }
+      },
+      "manual": {
+        "open": "Nhập giá tay",
+        "title": "Nhập giá tay",
+        "supplier": "Nhà cung cấp",
+        "taxId": "MST (nếu có)",
+        "price": "Giá (đ)",
+        "kind": "Loại",
+        "unit": "Đơn vị",
+        "date": "Ngày thấy giá",
+        "note": "Ghi chú",
+        "exVat": "Nhập giá chưa VAT.",
+        "save": "Lưu giá"
+      },
+      "quote": {
+        "open": "Tải báo giá lên",
+        "title": "Tải báo giá lên",
+        "privacy": "Tệp được gửi cho AI để đọc giá của \"{{name}}\" và không được lưu lại. Kết quả chỉ là gợi ý — bạn chọn dòng cần rồi mới lưu.",
+        "file": "Tệp báo giá (PDF có chữ hoặc văn bản)",
+        "hint": "Tối đa 5 MB. Ảnh chụp và PDF scan chưa đọc được.",
+        "run": "Đọc báo giá",
+        "reading": "Đang đọc báo giá…",
+        "none": "Không tìm thấy giá phù hợp trong báo giá này.",
+        "preview": "Chọn các dòng muốn lưu làm giá tham khảo.",
+        "save": "Lưu làm giá tham khảo ({{n}})",
+        "errors": {
+          "QUOTE_UNSUPPORTED": "Chỉ đọc được tệp PDF có chữ hoặc tệp văn bản.",
+          "QUOTE_UNREADABLE": "Không đọc được chữ trong tệp này (có thể là bản scan).",
+          "QUOTE_TOO_LARGE": "Tệp quá lớn (tối đa 5 MB)."
+        }
+      },
+      "partner": {
+        "add": "Thêm vào Đối tác",
+        "added": "Đã có trong Đối tác",
+        "ok": "Đã thêm vào Đối tác",
+        "fail": "Chưa thêm được vào Đối tác"
+      }
     }
   }
 }

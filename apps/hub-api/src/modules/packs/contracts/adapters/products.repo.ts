@@ -16,7 +16,7 @@ import { json, one } from "./ledger-sql";
 
 /** JSON một SP (bí danh `p`) kèm thành phần + quy tắc. */
 const productJson =
-  sql.raw(`jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'group', p.grp,
+  sql.raw(`jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'spec', p.spec, 'group', p.grp,
   'main_supplier', case when p.main_supplier_party_key is null then null
     else jsonb_build_object('party_key', p.main_supplier_party_key, 'name', p.main_supplier_name) end,
   'created_from_contract_id', p.created_from_contract_id,
@@ -89,9 +89,9 @@ function createQ(t: string, p: ProductCreate, plan: ProductPlan) {
         where ${p.from_contract_id ?? null}::uuid is null or exists (select 1 from contracts.contracts k
           where k.tenant_id = ${t}::uuid and k.id = ${p.from_contract_id ?? null}::uuid)),
       p as (
-        insert into contracts.products (tenant_id, name, unit, grp, main_supplier_party_key, main_supplier_name,
+        insert into contracts.products (tenant_id, name, unit, spec, grp, main_supplier_party_key, main_supplier_name,
           created_from_contract_id)
-        select ${t}::uuid, ${p.name}, ${p.unit ?? null}, ${p.group},
+        select ${t}::uuid, ${p.name}, ${p.unit ?? null}, ${p.spec ?? null}, ${p.group},
           contracts.party_key(${p.main_supplier?.name ?? null}::text, ${p.main_supplier?.tax_id ?? null}::text),
           ${p.main_supplier?.name ?? null}, src.cid from src
         returning *),
@@ -106,7 +106,7 @@ function createQ(t: string, p: ProductCreate, plan: ProductPlan) {
         from p cross join jsonb_to_recordset(${json(plan.rules)}) as x(pattern text, component int)
           left join c on c.ord = x.component
         returning id, pattern, component_id, created_at)
-      select jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'group', p.grp,
+      select jsonb_build_object('id', p.id, 'name', p.name, 'unit', p.unit, 'spec', p.spec, 'group', p.grp,
         'main_supplier', case when p.main_supplier_party_key is null then null
           else jsonb_build_object('party_key', p.main_supplier_party_key, 'name', p.main_supplier_name) end,
         'created_from_contract_id', p.created_from_contract_id,

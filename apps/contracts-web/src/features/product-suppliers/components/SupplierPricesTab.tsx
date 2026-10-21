@@ -9,6 +9,8 @@ import { useDeleteSupplierPrice, useSupplierOverview } from "../hooks/use-suppli
 import { supplierTabVisible } from "../lib/suppliers";
 import { ComparePanel } from "./ComparePanel";
 import { EvalPanel } from "./EvalPanel";
+import { ManualPriceDialog } from "./ManualPriceDialog";
+import { QuoteDialog } from "./QuoteDialog";
 import { ScoutConfigPanel } from "./ScoutConfigPanel";
 import { SearchDialog } from "./SearchDialog";
 
@@ -16,6 +18,8 @@ export function SupplierPricesTab({ productId }: { productId: string }) {
   const { t } = useTranslation();
   const { write } = useMe();
   const dlg = useRef<HTMLDialogElement>(null);
+  const manualDlg = useRef<HTMLDialogElement>(null);
+  const quoteDlg = useRef<HTMLDialogElement>(null);
   const q = useSupplierOverview(productId);
   const del = useDeleteSupplierPrice(productId);
   if (q.isLoading) return <Loading />;
@@ -29,11 +33,15 @@ export function SupplierPricesTab({ productId }: { productId: string }) {
         data={data}
         write={write}
         onSearch={() => dlg.current?.showModal()}
+        onManual={() => manualDlg.current?.showModal()}
+        onQuote={() => quoteDlg.current?.showModal()}
         onDelete={(id) => del.mutate(id)}
       />
       <EvalPanel suppliers={data.suppliers} />
       <ScoutConfigPanel productId={productId} write={write} />
       <SearchDialog dlg={dlg} productId={productId} productName={data.product.name} />
+      <ManualPriceDialog dlg={manualDlg} productId={productId} />
+      <QuoteDialog dlg={quoteDlg} productId={productId} productName={data.product.name} />
     </div>
   );
 }

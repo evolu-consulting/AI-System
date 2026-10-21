@@ -114,7 +114,9 @@ export function ProductDetail({ id, ht }: { id: string; ht: string | undefined }
     ...slotsFor(g).map((s) => ({ key: s.key, label: t(s.labelKey) })),
     { key: "contracts", label: t("contracts.catalog.tabContracts", { n: d.contracts_count }) },
   ];
-  const cur = tabs.find((x) => x.key === ht) ?? (tabs[0] as { key: string });
+  // SP Giới thiệu: tab mặc định vẫn là "Hợp đồng" (tab Nhận diện của gap-d1 đứng trước nhưng không là điểm vào).
+  const first = (g === "referral" ? tabs.find((x) => x.key === "contracts") : tabs[0]) ?? tabs[0];
+  const cur = tabs.find((x) => x.key === ht) ?? (first as { key: string });
   const slot = slotsFor(g).find((s) => s.key === cur.key);
   return (
     <div>
@@ -128,7 +130,7 @@ export function ProductDetail({ id, ht }: { id: string; ht: string | undefined }
             <Link
               key={x.key}
               to="/products"
-              search={{ sp: id, ...(x.key === tabs[0]?.key ? {} : { ht: x.key }) }}
+              search={{ sp: id, ...(x.key === first?.key ? {} : { ht: x.key }) }}
               role="tab"
               aria-selected={cur.key === x.key}
               className="-mb-px border-b-2 border-transparent px-3.5 py-2.5 text-body whitespace-nowrap text-ink-2 hover:text-ink aria-selected:border-act aria-selected:font-semibold aria-selected:text-act"

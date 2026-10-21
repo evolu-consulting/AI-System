@@ -39,6 +39,8 @@ export const ProductRuleInputSchema = z.strictObject({
 export const ProductCreateSchema = z.strictObject({
   name,
   unit,
+  /** gap-d1 #18 · quy cách (thêm SP tay). */
+  spec: z.string().trim().min(1).max(500).nullish(),
   group: z.enum(PRODUCT_GROUPS),
   /** Không giữ hàng (BA §2): mọi thành phần mặc định `order`. */
   no_stock: z.boolean().optional(),
@@ -53,6 +55,34 @@ export const ProductCreateSchema = z.strictObject({
   from_contract_id: z.uuid().nullish(),
 });
 export type ProductCreate = z.infer<typeof ProductCreateSchema>;
+
+/** gap-d1 #18 · "Nhập lô" tay: nhập kho một lô (qua cùng đường `applyDelivery`: BQ + FIFO giữ nguyên). `component_id` bỏ trống = thành
+ *  phần chính (đầu tiên có kho). SL = chuỗi thập phân ≤ 4 số lẻ; `unit_price` = đồng/đơn vị chưa VAT; gói suất cần `expires_on`. */
+export const ProductLotCreateSchema = z.strictObject({
+  component_id: z.uuid().nullish(),
+  qty: z
+    .string()
+    .trim()
+    .regex(/^\d{1,14}(\.\d{1,4})?$/),
+  unit_price: z.number().int().min(0).max(1_000_000_000_000),
+  received_on: z.iso.date().nullish(),
+  expires_on: z.iso.date().nullish(),
+  supplier: z
+    .strictObject({
+      name: z.string().trim().min(1).max(300),
+      tax_id: z.string().trim().max(30).nullish(),
+    })
+    .nullish(),
+});
+export type ProductLotCreate = z.infer<typeof ProductLotCreateSchema>;
+/** Kho + giá vốn BQ của thành phần trước → sau khi nhập lô (BA 5.7d). */
+export type ProductLotResultOut = {
+  component_id: string;
+  on_hand_before: string;
+  on_hand_after: string;
+  avg_cost_before: number;
+  avg_cost_after: number;
+};
 
 export const ProductRuleCreateSchema = z.strictObject({
   pattern,
@@ -94,6 +124,7 @@ export type ProductOut = {
   id: string;
   name: string;
   unit: string | null;
+  spec: string | null;
   group: ProductGroup;
   main_supplier: { party_key: string; name: string | null } | null;
   created_from_contract_id: string | null;
@@ -113,7 +144,7 @@ export type StockMoveOut = {
   id: string;
   component_id: string;
   direction: "in" | "out";
-  reason: "delivery" | "expire" | "reversal";
+  reason: "delivery" | "expire" | "reversal" | "manual";
   qty: string;
   unit_cost: number;
   amount: number;

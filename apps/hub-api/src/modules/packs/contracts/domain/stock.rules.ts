@@ -145,6 +145,9 @@ function compOf(m: DeliveryMove, comps: ReadonlyMap<string, CompState>, i: numbe
 
 /** Hạn gói (chỉ `quota`, bắt buộc khi nhập, ≥ ngày giao) + id tham chiếu đúng dạng. */
 function checkRefs(m: DeliveryMove, c: CompState, on: string, i: number): void {
+  if (m.reason !== undefined && m.reason !== "delivery" && m.reason !== "manual")
+    bad(`dòng ${i}: lý do sai`);
+  if (m.reason === "manual" && m.direction !== "in") bad(`dòng ${i}: nhập tay chỉ có chiều nhập`);
   const exp = m.expiresOn ?? null;
   if (c.mode !== "quota" && exp !== null) bad(`dòng ${i}: chỉ gói suất có hạn`);
   const needExp = c.mode === "quota" && m.direction === "in";
@@ -274,7 +277,7 @@ function line(x: Ctx, o: Ok): void {
   const base = {
     ...ref,
     direction: o.m.direction,
-    reason: "delivery" as const,
+    reason: o.m.reason ?? ("delivery" as const),
     qty: fmtQty(o.qty),
   };
   if (s.mode === "order") {

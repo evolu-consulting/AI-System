@@ -18,6 +18,10 @@ export type SupplierSearchItem = {
 
 export type SupplierSearchOut = { query: string; items: SupplierSearchItem[] };
 
+/** gap-d1 #21 · tải báo giá lên: tệp ≤ 5 MiB; kết quả = dòng giá chưa lưu. */
+export const QUOTE_MAX_BYTES = 5 * 1024 * 1024;
+export type QuoteReadOut = { items: SupplierSearchItem[] };
+
 export type SupplierPriceRow = {
   id: string | null;
   supplier_name: string;

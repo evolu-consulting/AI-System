@@ -9,6 +9,7 @@ export type ProductCreate = {
   name: string;
   group: ProductGroup;
   unit?: string | null | undefined;
+  spec?: string | null | undefined;
   no_stock?: boolean | undefined;
   components?:
     | { name: string; unit?: string | null | undefined; mode?: ComponentMode | undefined }[]
@@ -16,6 +17,23 @@ export type ProductCreate = {
   rules?: { pattern: string; component?: number | null | undefined }[] | undefined;
   main_supplier?: { name: string; tax_id?: string | null | undefined } | null | undefined;
   from_contract_id?: string | null | undefined;
+};
+
+/** gap-d1 #18 · nhập lô tay (khớp `ProductLotCreateSchema`). */
+export type ProductLotCreate = {
+  component_id?: string | null | undefined;
+  qty: string;
+  unit_price: number;
+  received_on?: string | null | undefined;
+  expires_on?: string | null | undefined;
+  supplier?: { name: string; tax_id?: string | null | undefined } | null | undefined;
+};
+export type ProductLotResultOut = {
+  component_id: string;
+  on_hand_before: string;
+  on_hand_after: string;
+  avg_cost_before: number;
+  avg_cost_after: number;
 };
 
 export type ProductComponentOut = {
@@ -35,6 +53,7 @@ export type ProductOut = {
   id: string;
   name: string;
   unit: string | null;
+  spec: string | null;
   group: ProductGroup;
   main_supplier: { party_key: string; name: string | null } | null;
   created_from_contract_id: string | null;
@@ -55,7 +74,7 @@ export type StockMoveOut = {
   id: string;
   component_id: string;
   direction: "in" | "out";
-  reason: "delivery" | "expire" | "reversal";
+  reason: "delivery" | "expire" | "reversal" | "manual";
   qty: string;
   unit_cost: number;
   amount: number;

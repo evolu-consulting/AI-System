@@ -18,6 +18,9 @@ const KNOWN = [
   "ACTION_QUOTA",
   "SCOUT_MONTHLY_CAP",
   "PACK_FORBIDDEN",
+  "QUOTE_UNSUPPORTED",
+  "QUOTE_UNREADABLE",
+  "QUOTE_TOO_LARGE",
 ];
 
 /** Mã lỗi API đã biết (có chuỗi dịch riêng) hoặc null. */

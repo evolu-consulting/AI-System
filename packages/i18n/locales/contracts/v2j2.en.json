@@ -116,6 +116,141 @@
         "platform_searches_month": "Platform override: searches per month",
         "platform_tokens_month": "Platform override: tokens per month"
       }
+    },
+    "gapd1": {
+      "tab": { "sources": "Sourcing", "stock": "Stock & lots", "rules": "Matching" },
+      "errors": {
+        "PRODUCT_EXISTS": "This product (or rule) already exists.",
+        "PRODUCT_INVALID": "Invalid data — check quantity, price and dates.",
+        "SOURCE_EXISTS": "This supplier is already listed for the product.",
+        "PACK_FORBIDDEN": "You do not have write access in the Contracts book."
+      },
+      "add": {
+        "open": "Add product",
+        "title": "Add product",
+        "name": "Product name",
+        "group": "Group",
+        "unit": "Unit",
+        "spec": "Specification",
+        "save": "Save product"
+      },
+      "stock": {
+        "title": "Stock & lots",
+        "spec": "Specification: {{spec}}",
+        "addLot": "+ Add lot",
+        "col": {
+          "component": "Component",
+          "mode": "Stock mode",
+          "onHand": "On hand",
+          "avg": "Avg cost",
+          "value": "Stock value"
+        },
+        "mode": {
+          "stock": "Lot stock",
+          "quota": "Quota pack",
+          "order": "Per order",
+          "none": "Not held"
+        },
+        "lots": "Lots",
+        "noLots": "No lots yet.",
+        "lotCol": {
+          "component": "Component",
+          "received": "Received",
+          "qty": "Qty in",
+          "remaining": "Remaining",
+          "expires": "Expires"
+        }
+      },
+      "lot": {
+        "title": "New lot",
+        "component": "Component",
+        "date": "Received on",
+        "qty": "Quantity",
+        "price": "Unit price (VND, excl. VAT)",
+        "expires": "Expires on",
+        "supplier": "Supplier",
+        "taxId": "Supplier tax ID",
+        "prev": "Expected new average cost: {{avg}} VND",
+        "prevHint": "Enter quantity and unit price to preview the new average cost.",
+        "cancel": "Cancel",
+        "save": "Add lot",
+        "done": "Lot added"
+      },
+      "rules": {
+        "title": "Matching rules",
+        "hint": "Contract lines containing this text are suggested for this product.",
+        "empty": "No rules yet.",
+        "wholeProduct": "Whole product",
+        "remove": "Remove",
+        "pattern": "Matching text",
+        "component": "Component",
+        "add": "Add rule"
+      },
+      "src": {
+        "title": "Sourcing",
+        "add": "+ Add sourcing",
+        "addTitle": "Add sourcing",
+        "empty": "No sources listed for this product.",
+        "supplier": "Supplier",
+        "taxId": "Tax ID (optional)",
+        "lead": "Lead time (days)",
+        "moq": "Min. order qty",
+        "priceRef": "Reference price (VND)",
+        "note": "Note",
+        "cancel": "Cancel",
+        "save": "Save",
+        "remove": "Remove",
+        "days": "{{n}} days",
+        "riskTitle": "Supplier dependency risk",
+        "riskEmpty": "No suppliers to assess yet.",
+        "single": "Only one supplier — add a backup source.",
+        "risk": {
+          "supplier": "Supplier",
+          "share": "Share of purchases",
+          "declared": "Listed",
+          "lead": "Lead time",
+          "level": "Risk",
+          "yes": "Yes",
+          "no": "Not yet",
+          "lv": { "high": "High", "medium": "Medium", "low": "Low" }
+        }
+      },
+      "manual": {
+        "open": "Enter price",
+        "title": "Enter price manually",
+        "supplier": "Supplier",
+        "taxId": "Tax ID (optional)",
+        "price": "Price (VND)",
+        "kind": "Type",
+        "unit": "Unit",
+        "date": "Date seen",
+        "note": "Note",
+        "exVat": "Enter the price excluding VAT.",
+        "save": "Save price"
+      },
+      "quote": {
+        "open": "Upload quote",
+        "title": "Upload a quote",
+        "privacy": "The file is sent to AI to read the price of \"{{name}}\" and is not stored. Results are suggestions — pick the lines to save.",
+        "file": "Quote file (text PDF or plain text)",
+        "hint": "Up to 5 MB. Photos and scanned PDFs cannot be read yet.",
+        "run": "Read quote",
+        "reading": "Reading the quote…",
+        "none": "No matching price found in this quote.",
+        "preview": "Pick the lines to save as reference prices.",
+        "save": "Save as reference price ({{n}})",
+        "errors": {
+          "QUOTE_UNSUPPORTED": "Only text PDFs and plain text files can be read.",
+          "QUOTE_UNREADABLE": "No text could be read from this file (it may be a scan).",
+          "QUOTE_TOO_LARGE": "File too large (max 5 MB)."
+        }
+      },
+      "partner": {
+        "add": "Add to Partners",
+        "added": "In Partners",
+        "ok": "Added to Partners",
+        "fail": "Could not add to Partners"
+      }
     }
   }
 }

@@ -7,6 +7,7 @@ import type {
   SupplierPriceRow,
   SupplierSearchItem,
 } from "@ai/contracts";
+import { moneyOf } from "../../products/lib/catalog";
 
 /** Tab "Nhà cung cấp & giá" không hiện cho SP nhóm Giới thiệu (BA SP-04). Slot tab của trang chi tiết (V2-J1) dùng hàm này. */
 export const supplierTabVisible = (group: ProductGroup): boolean => group !== "referral";
@@ -26,8 +27,11 @@ export function isOld(on: string | null, today: string): boolean {
   return days > OLD_DAYS;
 }
 
-/** Dòng kết quả AI người dùng chọn ⇒ thân `POST /supplier-prices` (nguồn `market`). */
-export const toSaveItems = (items: readonly SupplierSearchItem[]): SupplierPriceInput[] =>
+/** Dòng kết quả AI người dùng chọn ⇒ thân `POST /supplier-prices` (nguồn `market`; báo giá tải lên ⇒ `quote`). */
+export const toSaveItems = (
+  items: readonly SupplierSearchItem[],
+  source: "market" | "quote" = "market",
+): SupplierPriceInput[] =>
   items.map((i) => ({
     supplier_name: i.supplier_name,
     kind: i.kind,
@@ -36,5 +40,40 @@ export const toSaveItems = (items: readonly SupplierSearchItem[]): SupplierPrice
     url: i.url,
     seen_on: i.seen_on,
     note: i.note,
-    source: "market" as const,
+    source,
   }));
+
+export type ManualPriceForm = {
+  supplier: string;
+  taxId: string;
+  kind: SupplierPriceKind;
+  price: string;
+  unit: string;
+  date: string;
+  note: string;
+};
+const txt = (s: string): string | null => (s.trim() === "" ? null : s.trim());
+/** gap-d1 #21 · "Nhập giá tay" ⇒ thân lưu (nguồn `manual`); cần NCC + giá nguyên dương. */
+export function manualPriceBody(f: ManualPriceForm): SupplierPriceInput | null {
+  const price = moneyOf(f.price);
+  if (!txt(f.supplier) || price === null || price < 1) return null;
+  return {
+    supplier_name: f.supplier.trim(),
+    supplier_tax_id: txt(f.taxId),
+    kind: f.kind,
+    price,
+    unit: txt(f.unit),
+    seen_on: txt(f.date),
+    note: txt(f.note),
+    source: "manual",
+  };
+}
+
+/** gap-d1 #22 · "Thêm vào Đối tác": thân `POST /companies` từ một dòng giá (khoá `tax:<MST>` ⇒ gửi MST; luôn gửi tên làm dự phòng). */
+export function companyBody(r: Pick<SupplierPriceRow, "supplier_name" | "party_key">): {
+  name: string;
+  tax_id?: string;
+} {
+  const tax = r.party_key?.startsWith("tax:") ? r.party_key.slice(4) : "";
+  return tax ? { name: r.supplier_name, tax_id: tax } : { name: r.supplier_name };
+}

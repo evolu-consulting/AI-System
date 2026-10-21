@@ -4,7 +4,10 @@
 import type { ProductGroup } from "@ai/contracts";
 import { createElement, type ReactNode } from "react";
 import { SupplierPricesTab } from "~/features/product-suppliers/components/SupplierPricesTab";
+import { RulesPanel } from "../components/RulesPanel";
 import { ServiceCustomersPanel } from "../components/ServiceCustomersPanel";
+import { SourcesPanel } from "../components/SourcesPanel";
+import { StockPanel } from "../components/StockPanel";
 
 export type DetailSlot = {
   /** Khoá trong URL `?ht=`. */
@@ -30,6 +33,25 @@ export const DETAIL_SLOTS: readonly DetailSlot[] = [
     labelKey: "contracts.psup.title",
     groups: ["service", "goods"],
     render: ({ productId }) => createElement(SupplierPricesTab, { productId }),
+  },
+  // gap-d1 #19: Cách lấy hàng + rủi ro phụ thuộc NCC · #18: Kho & lô (nhập lô tay) · #20: quy tắc nhận diện.
+  {
+    key: "sources",
+    labelKey: "contracts.gapd1.tab.sources",
+    groups: ["service", "goods"],
+    render: ({ productId }) => createElement(SourcesPanel, { productId }),
+  },
+  {
+    key: "stock",
+    labelKey: "contracts.gapd1.tab.stock",
+    groups: ["service", "goods"],
+    render: ({ productId }) => createElement(StockPanel, { productId }),
+  },
+  {
+    key: "rules",
+    labelKey: "contracts.gapd1.tab.rules",
+    groups: ["service", "goods", "referral"],
+    render: ({ productId }) => createElement(RulesPanel, { productId }),
   },
 ];
 
