@@ -34,6 +34,8 @@ export type PackToolDef = {
   side_effect: boolean;
   /** Security M2 · quyền gói người gọi cần (`/mcp`: user của job; stage: người bắt đầu). Vắng ⇒ `write`. */
   action?: "read" | "write";
+  /** Tool lõi (vd `app-guide`, không có gói/entitlement): bỏ qua cổng gói; tool tự lọc theo người gọi. Chỉ dùng với `action: read`. */
+  open?: boolean;
   params: readonly PackToolParam[];
   /** Chạy trong tx gói của `ctx.tenantId`; trả object JSON (= `output.fields` của stage). Ném ⇒ lỗi tool. */
   run(ctx: PackToolCtx, args: PackToolArgs): Promise<Record<string, unknown>>;

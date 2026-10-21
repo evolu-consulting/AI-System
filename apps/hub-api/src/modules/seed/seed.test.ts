@@ -72,11 +72,12 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
         "contracts-ledger",
         "knowledge-search",
         "knowledge-get",
+        "app-guide",
       ],
     });
     // ai-tiers-rag · trợ lý chung: tool tri thức, giữ công cụ đọc tệp (không khai allowed_tools).
     expect(p.agents.find((a) => a.key === "assistant")?.runtime_options).toEqual({
-      pack_tools: ["knowledge-search", "knowledge-get"],
+      pack_tools: ["knowledge-search", "knowledge-get", "app-guide"],
     });
     // M2-chat · cùng trợ lý, backend Dify (token chat ngắn hạn cho tool đọc).
     expect(p.agents.find((a) => a.key === "mgmt-assistant-dify")?.runtime_options).toEqual({

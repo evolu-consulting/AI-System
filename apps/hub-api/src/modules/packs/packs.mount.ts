@@ -15,6 +15,7 @@ import { FileboxClient } from "../attachments/filebox.client";
 import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
+import { mountGuide } from "../guide/guide.mount";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
@@ -104,7 +105,10 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       ...(d.packs?.knowledgeDsn ? { dsn: d.packs.knowledgeDsn } : {}),
       ...(d.signal ? { signal: d.signal } : {}),
     }); // N4 · R1 pool riêng
-  if (d.db) setChatUsageSink(chatUsageSink(d.db)); // M3 · usage chat (M2) ⇒ bảng usage chung của AI client
+  if (d.db) {
+    mountGuide(d.db, d.packTools, view); // app-guide · hướng dẫn dùng sản phẩm (tool lõi, chỉ đọc)
+    setChatUsageSink(chatUsageSink(d.db)); // M3 · usage chat (M2) ⇒ bảng usage chung của AI client
+  }
   rejectToolCollisions(d);
   return view;
 }

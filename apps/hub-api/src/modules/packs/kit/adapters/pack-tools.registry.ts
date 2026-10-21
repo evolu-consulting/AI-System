@@ -111,6 +111,7 @@ export class PackToolRegistry implements PackToolCatalog {
 
   async enabled(tenantId: string, key: string): Promise<boolean> {
     const t = this.#tools.get(key);
+    if (t?.open === true && t.action === "read") return true; // tool lõi: không gói/entitlement
     return t !== undefined && this.#view !== undefined && packEnabled(this.#view, t.pack, tenantId);
   }
 
@@ -125,6 +126,7 @@ export class PackToolRegistry implements PackToolCatalog {
   /** Security M2 · user có quyền gói đúng `action` của tool (mặc định `write`). */
   async canUse(who: { tenantId: string; userId: string }, key: string): Promise<boolean> {
     const t = this.#tools.get(key);
+    if (t?.open === true && t.action === "read") return true;
     if (!t || !this.#view) return false;
     const i = await packAccessInput(this.#view, t.pack, who);
     const granted = i.grantedByAction[t.action ?? "write"];
