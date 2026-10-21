@@ -17,7 +17,9 @@ import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { mountGuide } from "../guide/guide.mount";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
+import { mountMyHistory } from "../my-history/my-history.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
+import { contractsActivitySource } from "./contracts/activity.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
@@ -106,11 +108,22 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       ...(d.signal ? { signal: d.signal } : {}),
     }); // N4 · R1 pool riêng
   if (d.db) {
-    mountGuide(d.db, d.packTools, view); // app-guide · hướng dẫn dùng sản phẩm (tool lõi, chỉ đọc)
+    mountCoreTools({ ...d, db: d.db }, view);
     setChatUsageSink(chatUsageSink(d.db)); // M3 · usage chat (M2) ⇒ bảng usage chung của AI client
   }
   rejectToolCollisions(d);
   return view;
+}
+
+/** Tool lõi chỉ đọc (không entitlement, tự lọc theo người gọi): app-guide + my-activity / my-chat-history (my-activity-rag). */
+function mountCoreTools(d: PacksMountDeps & { db: Db }, view: PackAccessView): void {
+  mountGuide(d.db, d.packTools, view);
+  const contractsOn = d.packs?.contracts ?? true;
+  mountMyHistory(d.db, d.packTools, {
+    view,
+    timeZoneOf: tenantTz(d),
+    sources: contractsOn ? [contractsActivitySource(d.db)] : [],
+  });
 }
 
 /** Security L1 · sau khi mọi gói đăng ký: tool gói trùng khoá workflow catalog bị gỡ (ảnh catalog đầu tiên, cache). */

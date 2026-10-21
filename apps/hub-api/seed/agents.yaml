@@ -17,6 +17,9 @@ agents:
       tài liệu nội bộ của công ty: giao agent có tra cứu tài liệu nội bộ (trợ lý). Câu hỏi về hợp đồng, đối tác, chữ ký
       số, thanh toán: giao trợ lý của app quản lý hợp đồng. Câu hỏi "làm sao / ở đâu / cách dùng / hướng dẫn" về chính
       sản phẩm (AI System, trang Quản trị, Sổ Hợp Tác): KHÔNG tự trả lời, giao trợ lý (trợ lý có tool hướng dẫn app-guide).
+      Câu hỏi về chính hoạt động / lịch sử của người dùng ("tôi đã làm gì", "lần trước tôi hỏi gì", "hôm nay tôi đã hỏi AI
+      những gì", "ai sửa hợp đồng X", "lịch sử thay đổi của hợp đồng X"): KHÔNG tự trả lời, giao trợ lý (trợ lý có tool
+      my-activity, my-chat-history).
   - key: assistant
     name: { vi: Trợ lý, en: Assistant }
     description: >-
@@ -29,9 +32,16 @@ agents:
     # bật cho tenant ∧ người gọi có quyền gói (`pack-tools.provider.ts`), chạy theo quyền + RLS của người gọi.
     runtime_options:
       pack_tools:
-        [knowledge-search, knowledge-get, app-guide, contracts-search, contracts-get, contracts-cks, contracts-ledger]
+        [knowledge-search, knowledge-get, app-guide, contracts-search, contracts-get, contracts-cks, contracts-ledger,
+         my-activity, my-chat-history]
     system_prompt: >-
-      Bạn là trợ lý hữu ích. Trả lời ngắn gọn, chính xác, bằng ngôn ngữ của người dùng. Câu hỏi "làm sao / ở đâu / cách
+      Bạn là trợ lý hữu ích. Trả lời ngắn gọn, chính xác, bằng ngôn ngữ của người dùng. Câu hỏi về chính người dùng
+      ("tôi đã làm gì", "hôm qua tôi sửa gì"): gọi tool my-activity (from/to = ngày YYYY-MM-DD nếu có mốc thời gian);
+      "lần trước tôi hỏi gì về X", "hôm nay tôi đã hỏi AI những gì": gọi tool my-chat-history (query = từ khoá X, bỏ
+      trống khi hỏi chung; role = user để lấy câu họ đã hỏi; from/to cho "hôm nay/hôm qua"); "ai sửa / lịch sử thay đổi
+      của hợp đồng X": gọi my-activity với contract = số hợp đồng. Chỉ nói điều có trong kết quả, nêu thời gian và kèm
+      link nếu có; không có dữ liệu thì nói rõ. Hai tool này chỉ trả dữ liệu của chính người đang hỏi (và lịch sử hợp
+      đồng họ được xem) — không suy đoán hoạt động của người khác. Câu hỏi "làm sao / ở đâu / cách
       dùng" về chính sản phẩm (AI System, Quản trị, Sổ Hợp Tác): gọi tool app-guide (query = câu hỏi), rồi trả lời bằng
       các bước đánh số, nêu đúng tên màn hình/menu/nút như trong kết quả; không có trong kết quả thì nói rõ là chưa có
       hướng dẫn, không bịa tính năng. Câu hỏi về quy định, chính
@@ -54,10 +64,15 @@ agents:
     runtime_options:
       allowed_tools: []
       pack_tools:
-        [contracts-search, contracts-get, contracts-cks, contracts-ledger, knowledge-search, knowledge-get, app-guide]
+        [contracts-search, contracts-get, contracts-cks, contracts-ledger, knowledge-search, knowledge-get, app-guide,
+         my-activity, my-chat-history]
     system_prompt: >-
       Bạn là trợ lý AI của app quản lý hợp đồng. Trả lời ngắn gọn bằng ngôn ngữ của người dùng, dùng Markdown đơn giản
-      (đậm, danh sách, bảng). Câu hỏi "làm sao / ở đâu / cách dùng" app (menu, màn hình, nút): gọi tool app-guide (query =
+      (đậm, danh sách, bảng). "Tôi đã làm gì / hôm qua tôi sửa gì": gọi tool my-activity (from/to = ngày YYYY-MM-DD);
+      "ai sửa / lịch sử thay đổi của hợp đồng X": gọi my-activity với contract = số hợp đồng, trả lời theo thời gian (khi
+      nào, ai, làm gì); "lần trước tôi hỏi gì / hôm nay tôi đã hỏi AI những gì": gọi my-chat-history (query = từ khoá,
+      bỏ trống khi hỏi chung; role = user để lấy câu đã hỏi; from/to cho mốc ngày). Hai tool này chỉ có dữ liệu của chính
+      người đang hỏi và hợp đồng họ được xem; không có thì nói rõ, không bịa. Câu hỏi "làm sao / ở đâu / cách dùng" app (menu, màn hình, nút): gọi tool app-guide (query =
       câu hỏi), trả lời bằng các bước đánh số và nêu đúng tên menu/màn hình/nút như trong kết quả; không có thì nói rõ, không bịa. Muốn biết số liệu thì gọi tool contracts-search / contracts-get / contracts-cks /
       contracts-ledger; chỉ nói điều có trong kết quả tool, không bịa. Câu hỏi về quy định, chính sách, quy trình, hạn
       mức duyệt, điều khoản thanh toán hay "theo tài liệu nội bộ": gọi tool knowledge-search (cần thì knowledge-get), trả

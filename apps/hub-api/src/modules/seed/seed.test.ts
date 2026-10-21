@@ -83,6 +83,8 @@ describe("HUB-FR-60 · seed yaml mặc định (trợ lý chat)", () => {
         "knowledge-search",
         "knowledge-get",
         "app-guide",
+        "my-activity",
+        "my-chat-history",
       ],
     });
     // ai-tiers-rag · trợ lý chung: tool tri thức, giữ công cụ đọc tệp (không khai allowed_tools); chat-fast2: + tool đọc contracts.
@@ -95,6 +97,8 @@ describe("HUB-FR-60 · seed yaml mặc định (trợ lý chat)", () => {
         "contracts-get",
         "contracts-cks",
         "contracts-ledger",
+        "my-activity",
+        "my-chat-history",
       ],
     });
     // M2-chat · cùng trợ lý, backend Dify (token chat ngắn hạn cho tool đọc).
