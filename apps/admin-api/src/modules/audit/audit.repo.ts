@@ -4,7 +4,7 @@
 // `audit_log_actor_seq_idx` (actor), `audit_log_seq_uq` (all/system).
 import type { AuditAction, AuditEntity } from "@ai/contracts";
 import { auditLog, type Tx, tenants } from "@ai/db";
-import { and, desc, eq, gte, ilike, isNull, lt, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, isNull, lt, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer } from "../../lib/sql";
 import type { AuditFilter } from "./audit.rules";
 
@@ -62,6 +62,8 @@ const rowCols = {
 
 export type AuditListFilter = {
   scope: AuditFilter;
+  /** tenant_admin: chỉ các thực thể nghiệp vụ (`auditEntitiesFor`). */
+  entities?: readonly AuditEntity[];
   entity?: AuditEntity;
   action?: AuditAction;
   actorId?: string;
@@ -87,6 +89,7 @@ export async function listAudit(tx: Tx, f: AuditListFilter): Promise<AuditRow[]>
     .where(
       and(
         scopeWhere(f.scope),
+        f.entities ? inArray(auditLog.entity, [...f.entities]) : undefined,
         f.entity ? eq(auditLog.entity, f.entity) : undefined,
         f.action ? eq(auditLog.action, f.action) : undefined,
         f.actorId ? eq(auditLog.actorId, f.actorId) : undefined,
@@ -107,11 +110,18 @@ export async function getAudit(
   tx: Tx,
   scope: AuditFilter,
   id: string,
+  entities?: readonly AuditEntity[],
 ): Promise<AuditDetailRow | null> {
   const [row] = await tx
     .select({ ...rowCols, before: auditLog.before, after: auditLog.after })
     .from(auditLog)
-    .where(and(eq(auditLog.id, id), scopeWhere(scope)))
+    .where(
+      and(
+        eq(auditLog.id, id),
+        scopeWhere(scope),
+        entities ? inArray(auditLog.entity, [...entities]) : undefined,
+      ),
+    )
     .limit(1);
   return (row as AuditDetailRow | undefined) ?? null;
 }

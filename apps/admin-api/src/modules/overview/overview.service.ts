@@ -13,8 +13,9 @@ import {
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
+import { auditEntitiesFor } from "../audit/audit.rules";
 import { toAuditItem } from "../audit/audit.service";
-import { bannerFor, monthRange } from "../quotas/quotas.rules";
+import { bannerFor, monthRange, stripQuotaMoney } from "../quotas/quotas.rules";
 import { quotaStatuses } from "../quotas/quotas.service";
 import { worstByTenant } from "../usage/usage.tenants";
 import * as repo from "./overview.repo";
@@ -24,7 +25,12 @@ export type OverviewCtx = { db: Db; now: () => Date };
 export type OverviewCall = { ctx: OverviewCtx; actor: Actor; scope: DbScope };
 
 async function recent(tx: Tx, actor: Actor, tenantId: string | null) {
-  const rows = await repo.recentAudit(tx, tenantId, OVERVIEW_RECENT_MAX);
+  const rows = await repo.recentAudit(
+    tx,
+    tenantId,
+    OVERVIEW_RECENT_MAX,
+    auditEntitiesFor(actor.role),
+  );
   return rows.map((r) => toAuditItem(r, actor));
 }
 
@@ -39,8 +45,8 @@ function bannerOf(items: readonly QuotaStatus[]) {
       used: {
         runs: i.used.runs,
         tokens: i.used.tokens,
-        billableUsd: i.used.billable_usd,
-        unpricedRows: i.used.unpriced_rows,
+        billableUsd: i.used.billable_usd ?? "0",
+        unpricedRows: i.used.unpriced_rows ?? 0,
       },
     })),
   );
@@ -77,7 +83,7 @@ async function tenantOverview(
     runs_month: runs?.cur ?? null,
     runs_prev_month: runs?.prev ?? null,
     has_usage_data: has,
-    quotas: q.items,
+    quotas: q.items.map(stripQuotaMoney),
     banner: bannerOf(q.items),
     never_logged_in: never.map((u) => ({ ...u, created_at: new Date(u.created_at).toISOString() })),
     never_logged_in_total: counts.never_total,

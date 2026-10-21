@@ -35,11 +35,14 @@ export const UsageQuerySchema = z
   });
 export type UsageQuery = z.infer<typeof UsageQuerySchema>;
 
+// Bản Tenant (2026-10-21): chỉ lượt + token (không số thu/chi phí/định giá/vượt quota bằng tiền).
 const kpiBase = {
   runs: CountSchema,
   tokens: CountSchema,
   input_tokens: CountSchema,
   output_tokens: CountSchema,
+};
+const kpiMoney = {
   billable_usd: MoneyNonNegSchema,
   unpriced_rows: CountSchema,
   overage_runs: CountSchema,
@@ -48,15 +51,16 @@ const dayBase = {
   date: DateOnlySchema,
   runs: CountSchema,
   tokens: CountSchema,
-  billable_usd: MoneyNonNegSchema,
-  overage_billable_usd: MoneyNonNegSchema,
 };
+const dayMoney = { billable_usd: MoneyNonNegSchema, overage_billable_usd: MoneyNonNegSchema };
 const topFeatureBase = {
   feature_id: UuidSchema.nullable(),
   feature_key: z.string().nullable(),
   feature_name: LocalizedTextSchema(FEATURE_NAME_MAX).nullable(),
   runs: CountSchema,
   tokens: CountSchema,
+};
+const topFeatureMoney = {
   billable_usd: MoneyNonNegSchema,
   overage: z.boolean(),
   unpriced_rows: CountSchema,
@@ -67,23 +71,31 @@ const topUserBase = {
   display_name: z.string().nullable(),
   runs: CountSchema,
   tokens: CountSchema,
-  billable_usd: MoneyNonNegSchema,
-  unpriced_rows: CountSchema,
 };
+const topUserMoney = { billable_usd: MoneyNonNegSchema, unpriced_rows: CountSchema };
 const cost = { cost_usd: MoneyNonNegSchema };
 
 export const UsageKpiTenantSchema = z.strictObject(kpiBase);
 export const UsageKpiPlatformSchema = z.strictObject({
   ...kpiBase,
+  ...kpiMoney,
   ...cost,
   margin_usd: MoneySchema,
 });
 export const UsageDayTenantSchema = z.strictObject(dayBase);
-export const UsageDayPlatformSchema = z.strictObject({ ...dayBase, ...cost });
+export const UsageDayPlatformSchema = z.strictObject({ ...dayBase, ...dayMoney, ...cost });
 export const UsageTopFeatureTenantSchema = z.strictObject(topFeatureBase);
-export const UsageTopFeaturePlatformSchema = z.strictObject({ ...topFeatureBase, ...cost });
+export const UsageTopFeaturePlatformSchema = z.strictObject({
+  ...topFeatureBase,
+  ...topFeatureMoney,
+  ...cost,
+});
 export const UsageTopUserTenantSchema = z.strictObject(topUserBase);
-export const UsageTopUserPlatformSchema = z.strictObject({ ...topUserBase, ...cost });
+export const UsageTopUserPlatformSchema = z.strictObject({
+  ...topUserBase,
+  ...topUserMoney,
+  ...cost,
+});
 export const UsageTenantRowSchema = z.strictObject({
   tenant_id: UuidSchema,
   tenant_key: z.string(),

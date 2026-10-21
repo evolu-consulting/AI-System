@@ -124,13 +124,19 @@ describe("ADM-FR-42 · báo cáo platform", () => {
   it('ADM-FR-42 · M4-R08 · ADM-BR-09 · M4-AC03 · U5 · binh không tenant_id → acme; chuỗi body không có cost_usd/margin_usd/"tenants"; strict Tenant; không lẫn globex', async () => {
     const res = await binh(range());
     expect(res.status).toBe(200);
-    expect(res.text).not.toContain("cost_usd");
-    expect(res.text).not.toContain("margin_usd");
-    expect(res.text).not.toContain('"tenants"');
+    for (const k of [
+      "cost_usd",
+      "margin_usd",
+      "billable_usd",
+      "unpriced_rows",
+      "overage",
+      "max_usd",
+      '"tenants"',
+    ])
+      expect([k, res.text.includes(k)]).toEqual([k, false]);
     const b = parse4("UsageReportTenantSchema", res.json);
     expect(b.tenant_id).toBe(A);
     expect(b.kpi.runs).toBe(4);
-    expect(n(b.kpi.billable_usd)).toBe(0.4);
   });
 
   it("ADM-BR-09 · AC-A09 · U6 · binh tenant_id=globex → 404; admin tenant_id không tồn tại → 404; an → 403", async () => {

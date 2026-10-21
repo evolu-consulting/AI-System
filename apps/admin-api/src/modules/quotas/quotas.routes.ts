@@ -6,6 +6,7 @@ import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib
 import { appError } from "../../lib/errors";
 import { parseIdParam, parseJson } from "../../lib/http";
 import type { EvaluatorCtx } from "./quotas.evaluator";
+import { stripQuotaMoney } from "./quotas.rules";
 import { getQuotas, putQuotas, type QuotasCall, type QuotasCtx } from "./quotas.service";
 
 const PATH = "/:id/quotas";
@@ -22,7 +23,11 @@ export function quotasRoutes(d: AuthDeps & QuotasCtx & EvaluatorCtx): Hono<AppVa
     const id = parseIdParam(c);
     const a = c.get("actor");
     if (a.role === "tenant_admin" && a.tenantId !== id) throw appError("NOT_FOUND");
-    return c.json(await getQuotas(call(c), id));
+    const out = await getQuotas(call(c), id);
+    // tenant_admin (2026-10-21): chỉ lượt/token/%, không giới hạn hay số dùng bằng tiền.
+    return c.json(
+      a.role === "tenant_admin" ? { ...out, items: out.items.map(stripQuotaMoney) } : out,
+    );
   });
   r.put(PATH, requireAuth(d), requireRole("platform_admin"), async (c) => {
     const id = parseIdParam(c);

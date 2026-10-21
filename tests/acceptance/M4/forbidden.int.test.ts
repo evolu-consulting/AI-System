@@ -45,10 +45,10 @@ describe("ADM-BR-09 · M4-AC12 · quyền", () => {
       "FORBIDDEN",
     );
     expectErr4(await binh("POST", `/admin/audit/${ID4.unknown}/restore`, {}), "FORBIDDEN");
+    expectErr4(await binh("GET", `/admin/usage.csv?tenant_id=${G}`), "FORBIDDEN");
     for (const p of [
       `/admin/tenants/${G}/quotas`,
       `/admin/usage?tenant_id=${G}`,
-      `/admin/usage.csv?tenant_id=${G}`,
       `/admin/audit?tenant_id=${G}`,
     ]) {
       const r = await binh("GET", p);

@@ -14,7 +14,7 @@ type Feature = UsageReport["top_features"][number];
 type User = UsageReport["top_users"][number];
 type Props<T> = { rows?: T[]; loading?: boolean; error?: Err };
 
-function Head({ first }: { first: string }) {
+function Head({ first, money }: { first: string; money: boolean }) {
   const { t } = useTranslation();
   return (
     <thead>
@@ -22,11 +22,13 @@ function Head({ first }: { first: string }) {
         <th scope="col" className="pb-2 font-medium">
           {first}
         </th>
-        {(["runs", "tokens", "billable"] as const).map((c) => (
-          <th key={c} scope="col" className="pb-2 font-medium">
-            {t(`usage.col.${c}`)}
-          </th>
-        ))}
+        {(money ? (["runs", "tokens", "billable"] as const) : (["runs", "tokens"] as const)).map(
+          (c) => (
+            <th key={c} scope="col" className="pb-2 font-medium">
+              {t(`usage.col.${c}`)}
+            </th>
+          ),
+        )}
       </tr>
     </thead>
   );
@@ -48,13 +50,14 @@ type RowProps = {
   name: React.ReactNode;
   runs: number;
   tokens: number;
-  usd: string;
-  unpricedRows: number;
+  /** Vắng ⇒ không hiện cột tiền (tenant_admin). */
+  usd?: string;
+  unpricedRows?: number;
 };
 
-function Row({ name, runs, tokens, usd, unpricedRows }: RowProps) {
+function Row({ name, runs, tokens, usd, unpricedRows = 0 }: RowProps) {
   const { t, i18n } = useTranslation();
-  const mode = priceDisplay(unpricedRows, usd);
+  const mode = usd === undefined ? "amount" : priceDisplay(unpricedRows, usd);
   return (
     <tr className="border-t">
       <th scope="row" className="py-2 text-left font-medium">
@@ -62,19 +65,21 @@ function Row({ name, runs, tokens, usd, unpricedRows }: RowProps) {
       </th>
       <td className="py-2">{formatCount(runs, i18n.language)}</td>
       <td className="py-2">{formatCount(tokens, i18n.language)}</td>
-      <td className="py-2">
-        {mode === "unpriced" ? null : formatUsd(usd, i18n.language)}
-        {mode === "amount" ? null : (
-          <Badge
-            variant="warn"
-            className={mode === "partial" ? "ml-2" : undefined}
-            title={t("usage.unpriced")}
-          >
-            {t("usage.unpriced")}
-            {mode === "partial" ? ` (${formatCount(unpricedRows, i18n.language)})` : ""}
-          </Badge>
-        )}
-      </td>
+      {usd === undefined ? null : (
+        <td className="py-2">
+          {mode === "unpriced" ? null : formatUsd(usd, i18n.language)}
+          {mode === "amount" ? null : (
+            <Badge
+              variant="warn"
+              className={mode === "partial" ? "ml-2" : undefined}
+              title={t("usage.unpriced")}
+            >
+              {t("usage.unpriced")}
+              {mode === "partial" ? ` (${formatCount(unpricedRows, i18n.language)})` : ""}
+            </Badge>
+          )}
+        </td>
+      )}
     </tr>
   );
 }
@@ -86,7 +91,7 @@ export function TopFeatures({ rows, loading, error }: Props<Feature>) {
     <Panel title={t("usage.topFeature.title")} loading={loading} error={error}>
       {top.length ? (
         <table className="w-full text-body">
-          <Head first={t("usage.col.feature")} />
+          <Head first={t("usage.col.feature")} money={top.some((f) => "billable_usd" in f)} />
           <tbody>
             {top.map((f) => (
               <Row
@@ -94,13 +99,15 @@ export function TopFeatures({ rows, loading, error }: Props<Feature>) {
                 name={
                   <span className="flex flex-wrap items-center gap-2">
                     <FeatureName f={f} />
-                    {f.overage ? <Badge variant="err">{t("quota.badge.over")}</Badge> : null}
+                    {"overage" in f && f.overage ? (
+                      <Badge variant="err">{t("quota.badge.over")}</Badge>
+                    ) : null}
                   </span>
                 }
                 runs={f.runs}
                 tokens={f.tokens}
-                usd={f.billable_usd}
-                unpricedRows={f.unpriced_rows}
+                usd={"billable_usd" in f ? f.billable_usd : undefined}
+                unpricedRows={"unpriced_rows" in f ? f.unpriced_rows : undefined}
               />
             ))}
           </tbody>
@@ -118,7 +125,7 @@ export function TopUsers({ rows, loading, error }: Props<User>) {
     <Panel title={t("usage.topUser.title")} loading={loading} error={error}>
       {rows?.length ? (
         <table className="w-full text-body">
-          <Head first={t("usage.col.user")} />
+          <Head first={t("usage.col.user")} money={rows.some((u) => "billable_usd" in u)} />
           <tbody>
             {rows.map((u) => (
               <Row
@@ -126,8 +133,8 @@ export function TopUsers({ rows, loading, error }: Props<User>) {
                 name={u.display_name ?? u.username ?? "—"}
                 runs={u.runs}
                 tokens={u.tokens}
-                usd={u.billable_usd}
-                unpricedRows={u.unpriced_rows}
+                usd={"billable_usd" in u ? u.billable_usd : undefined}
+                unpricedRows={"unpriced_rows" in u ? u.unpriced_rows : undefined}
               />
             ))}
           </tbody>

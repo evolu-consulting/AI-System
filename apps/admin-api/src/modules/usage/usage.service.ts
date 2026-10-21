@@ -18,7 +18,7 @@ import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import { quotaStatuses } from "../quotas/quotas.service";
 import * as repo from "./usage.repo";
-import { csvColumns, resolveUsageTenant, stripCost, toCsv, usageRange } from "./usage.rules";
+import { csvColumns, resolveUsageTenant, stripMoney, toCsv, usageRange } from "./usage.rules";
 import { tenantQuotaLevels } from "./usage.tenants";
 
 export type UsageCtx = { db: Db; now: () => Date };
@@ -142,7 +142,7 @@ export async function getUsage(
   const r = resolve(c, q);
   const report = await inScope(c, (tx) => buildReport(tx, c, r));
   if (c.actor.role === "platform_admin") return UsageReportPlatformSchema.parse(report);
-  return UsageReportTenantSchema.parse(stripCost(c.actor.role, report));
+  return UsageReportTenantSchema.parse(stripMoney(c.actor.role, report));
 }
 
 const cell = (role: Role, x: repo.CsvRow): Record<string, string | number | null> => {

@@ -64,8 +64,9 @@ export type QuotaSetRequest = z.infer<typeof QuotaSetRequestSchema>;
 export const QuotaUsageSchema = z.strictObject({
   runs: CountSchema,
   tokens: CountSchema,
-  billable_usd: MoneyNonNegSchema,
-  unpriced_rows: CountSchema,
+  /** Tiền: tenant_admin không nhận (2026-10-21) — server bỏ khoá. */
+  billable_usd: MoneyNonNegSchema.optional(),
+  unpriced_rows: CountSchema.optional(),
 });
 export type QuotaUsage = z.infer<typeof QuotaUsageSchema>;
 
@@ -74,6 +75,8 @@ export const QuotaStatusSchema = z.strictObject({
   feature_key: z.string().nullable(),
   feature_name: LocalizedTextSchema(FEATURE_NAME_MAX).nullable(),
   ...limitsShape,
+  /** tenant_admin không nhận giới hạn tiền (khoá vắng). */
+  max_usd: MoneyLimitSchema.nullable().optional(),
   used: QuotaUsageSchema,
   pct: CountSchema.nullable(),
   level: QuotaLevelSchema,

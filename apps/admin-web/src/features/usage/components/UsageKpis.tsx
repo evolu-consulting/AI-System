@@ -60,7 +60,7 @@ export function UsageKpis({ report, prevMonth, ...common }: Props) {
   const count = (n: number | undefined) =>
     has && n !== undefined ? formatCount(n, i18n.language) : null;
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         title={t("usage.kpi.runs")}
         value={count(kpi?.runs)}
@@ -73,16 +73,18 @@ export function UsageKpis({ report, prevMonth, ...common }: Props) {
         note={delta(kpi?.tokens, prev?.tokens)}
         {...common}
       />
-      <KpiCard
-        title={t("usage.kpi.billable")}
-        value={has && kpi ? formatUsd(kpi.billable_usd, i18n.language) : null}
-        note={billableNote(
-          kpi && Number(kpi.billable_usd),
-          prev && Number(prev.billable_usd),
-          kpi?.unpriced_rows ?? 0,
-        )}
-        {...common}
-      />
+      {kpi && "billable_usd" in kpi ? (
+        <KpiCard
+          title={t("usage.kpi.billable")}
+          value={has ? formatUsd(kpi.billable_usd, i18n.language) : null}
+          note={billableNote(
+            Number(kpi.billable_usd),
+            prev && "billable_usd" in prev ? Number(prev.billable_usd) : undefined,
+            kpi.unpriced_rows,
+          )}
+          {...common}
+        />
+      ) : null}
       {kpi ? <CostKpis kpi={kpi} has={has} {...common} /> : null}
     </div>
   );

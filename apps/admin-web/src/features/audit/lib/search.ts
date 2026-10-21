@@ -19,6 +19,10 @@ export type AuditSearch = {
 
 /** "Loại" gồm 11 mục: mọi thực thể trừ `config` (Import lọc theo Hành động). */
 export const FILTER_ENTITIES = AUDIT_ENTITIES.filter((e) => e !== "config");
+/** tenant_admin (2026-10-21): chỉ thực thể nghiệp vụ — khớp `TENANT_AUDIT_ENTITIES` của admin-api. */
+export const TENANT_FILTER_ENTITIES = FILTER_ENTITIES.filter((e) =>
+  ["user", "group", "grant", "entitlement"].includes(e),
+);
 
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
 const oneOf = <T extends string>(list: readonly T[], v: unknown): T | undefined =>

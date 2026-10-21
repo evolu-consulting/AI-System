@@ -412,7 +412,7 @@ e482ceb75fdb8f75eb4bc6e498be7b888f947315c5c584225c39352ad9a7071e  e2e/contracts-
 32157196bc009ea085a02c9985e03d3f60bf7fb59e1a59d10e709163ef9dc7b0  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 dc1317e1f258daa0f9f75a6a1b72e963930dd2d4e186a91ede3284c3050891a4  e2e/deployed/01-login-sso.deployed.ts
-2e50769dddf993547ba2253e3ed1d134bbc331ffedc90b838d9b1da103efceba  e2e/deployed/02-contracts-pages.deployed.ts
+07527a486a298bd9851fb23a36e389b1f522bbc34627a33b63a1644c0995250f  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 7bd60bf690bda2afa0b73bd4df5fa469f5593a8aa2bc9569790cd943746b5950  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
@@ -420,9 +420,9 @@ b10cb49b5108f0efb5517b17f7f9d8fa35fcc608ff200340beb74c0070a8da3b  e2e/deployed/0
 d9e88f3dbdee37631fc5e569013d688bd1d9bc728b978ef5b5f488d0f9ead80e  e2e/deployed/07-usage.deployed.ts
 e0425b6d8c6ee95ebb46c21b9f353e280f8be45bb323da514ba7f929ca86c100  e2e/deployed/08-my-activity.deployed.ts
 eb34afd0bb8d81507e02326923bea4441e0da6dfabb2c2392bebbd854ee2a5cb  e2e/deployed/09-price-scout.deployed.ts
-4bffa7f659840200095618b24b008aaefb82b1d5ec9f94b3ce517f501c2ea1c8  e2e/deployed/10-feedback-original.deployed.ts
+80207c5201de00f6ab63e713e48abf72b38ea0d0a36e29e1bfac83dfd0d55376  e2e/deployed/10-feedback-original.deployed.ts
 b796e4cbd8377662d987127c7057868bc693374e01a1ce126cff2076972d3a2a  e2e/deployed/11-gap-d1.deployed.ts
-23a295a0eb10ae99d3f004fb74b9347e47668f13c35368f7f65fefec6c9ef046  e2e/deployed/_support.ts
+374e87e6891d95393454642161f4ed39be528413e305fa44e6dabdcdb249df2f  e2e/deployed/_support.ts
 1c63c4ad1250687114fe46b60911821123b8c5e7c559df3d42561e528f1bcee4  e2e/deployed/deployed.config.ts
 adf59fb675accb7eafd64aa118372adac461e020e2356098e0e2bb228b6ef081  e2e/features.spec.ts
 7f39e94231ea6da60be5fb1a7940af8b2b0ea82ff3fa85a5737f5fbad7f5c6be  e2e/groups-editor.spec.ts
@@ -900,7 +900,7 @@ bb5f025663f0beab15fcb3dd6f5b1f3a5b05c10fc34eee6cc42eedaaedb38d0a  tests/acceptan
 8f48f87f2847026f00dc6513fcbdcbc3a1f9a814a7347eaf8adc888828fdac74  tests/acceptance/M4/db-rls.int.test.ts
 50bf4c9293dc8c9338e4399dffe58eb84c299fa9f117ed353e9dfb72dcad2d07  tests/acceptance/M4/db-schema.int.test.ts
 760486c2a548467056153c5138d9af580c30be534e63495372beb6ec1f161f58  tests/acceptance/M4/export.int.test.ts
-85bfea307df0ef220efc777af49d32eb6048940fd9a89b2c8f33b65bf2216572  tests/acceptance/M4/forbidden.int.test.ts
+cfc0f203f44a749db5852fedec925a72ab62b2c9560f6d2bb902807da17328df  tests/acceptance/M4/forbidden.int.test.ts
 4b83ba3326d2ade6057752b398e8eac9fc33f23a57045f2c8a8c971b50f0d79c  tests/acceptance/M4/i18n-ab.test.ts
 8e6e813416866d8915a75ef6c82b675534f436f236164aba842ebf7e7fd30198  tests/acceptance/M4/import-apply.int.test.ts
 447e6d0ea6106c2f91065d47ccd6c044bfa65afbdad97f132241e6eda4aa448b  tests/acceptance/M4/import-dry-run.int.test.ts
@@ -925,8 +925,8 @@ a848c6ca744516a8f903fbdb9c748f6b11290c7773393e1077108458cc7d15bf  tests/acceptan
 852fecdb73ac5ffc412ee5736b781c5ca1b7b2e857b033c0d19b1c5b090fdda5  tests/acceptance/M4/totp-login.int.test.ts
 721f1ac7b51d1ef2615b332cfd51b8aaadc1d3caeda6208597fa978e5467d925  tests/acceptance/M4/totp-setup.int.test.ts
 77b90cc87ad9291fead0146e71810acf6b92c9a1311490115025d4272f6a8f43  tests/acceptance/M4/updated-by.int.test.ts
-f06b6fd8d17240f5f0955624328d22d3369a43c3e70d717ed3754f0134b4f6ff  tests/acceptance/M4/usage-csv.int.test.ts
-0c7fae54d58dd2886d6e8f1f56338d3a2fbb8b72bc3261bf599cf8b57e14ac8e  tests/acceptance/M4/usage.int.test.ts
+ae5456da6a71a95d078bf01cb19068ac49145b85f7d722746897b311896a33fc  tests/acceptance/M4/usage-csv.int.test.ts
+984e86e1ba8e7352f77b40b32ae08d61356acd0409c4d0ada343033bf9e789ea  tests/acceptance/M4/usage.int.test.ts
 9271b5f430a909df6ca2b9c45b8d20c1e50a99b0c3b7a62f0ec1a6182e685d95  tests/acceptance/N1/_support/load.ts
 2dd48d72ed43f98461b9a14122220cc580e3b226567709bd12767b689c4e1029  tests/acceptance/N1/_support/n1.ts
 d4175931dabdba7a8d8a792c475a54156da079392c839808080aef978cab53ca  tests/acceptance/N1/_support/zip.ts
@@ -1323,6 +1323,7 @@ c49712e02dea1cb8e2a98ef9460288a3810cdbcb335d075160ff2a1ab0791566  tests/acceptan
 c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts
 be104da996df489b0844accf258809f3263770c1f704863bf763cb78e3c6d431  tests/acceptance/price-scout/price-scout.int.test.ts
+fe7cca220c9fb4b246085f5742be9919a6c1782565d1e5eb3212aa26416f7b5e  tests/acceptance/tenant-admin-scope/scope.int.test.ts
 ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
 36c2a631d1923d6d57146327e45c8bbd9ba495c5b9b721737db2802429855fb4  tests/acceptance/tenant-owner/setup.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts

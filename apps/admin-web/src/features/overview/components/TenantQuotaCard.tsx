@@ -30,7 +30,14 @@ export function TenantQuotaCard({ quotas, loading, error }: Props) {
         <div className="space-y-3">
           <QuotaBar label="Run" kind="runs" used={row.used.runs} limit={row.max_runs} />
           <QuotaBar label="Token" kind="tokens" used={row.used.tokens} limit={row.max_tokens} />
-          <QuotaBar label="USD" kind="usd" used={row.used.billable_usd} limit={row.max_usd} />
+          {row.used.billable_usd !== undefined ? (
+            <QuotaBar
+              label="USD"
+              kind="usd"
+              used={row.used.billable_usd}
+              limit={row.max_usd ?? null}
+            />
+          ) : null}
         </div>
       ) : (
         <p className="text-body text-muted-foreground">{t("overview.quota.empty")}</p>

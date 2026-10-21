@@ -2,6 +2,15 @@
 // Tiền so bằng số nguyên micro-USD (`BigInt`), không `parseFloat`.
 import type { QuotaItemInput, Role } from "@ai/contracts";
 
+/** tenant_admin: bỏ giới hạn/mức dùng bằng tiền khỏi một dòng QuotaStatus (giữ lượt, token, %, mức). */
+export function stripQuotaMoney<T extends { used: object }>(
+  s: T,
+): Omit<T, "max_usd" | "used"> & { used: { runs: number; tokens: number } } {
+  const { max_usd: _m, used, ...rest } = s as T & { max_usd?: unknown };
+  const u = used as { runs: number; tokens: number };
+  return { ...rest, used: { runs: u.runs, tokens: u.tokens } };
+}
+
 export const QUOTA_TZ_OFFSET_MIN = 420; // Asia/Ho_Chi_Minh, không DST (M4-R01)
 export type Level = "none" | "warn" | "over";
 export type QuotaLimitsN = {

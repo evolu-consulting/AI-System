@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { entityKey } from "@/lib/audit-sentence";
-import { type AuditSearch, FILTER_ENTITIES } from "../lib/search";
+import { type AuditSearch, FILTER_ENTITIES, TENANT_FILTER_ENTITIES } from "../lib/search";
 import { AuditActorFilter } from "./AuditActorFilter";
 
 const ALL = "all";
@@ -73,7 +73,7 @@ export function AuditFilters(p: Props) {
         onChange={(v) => p.onChange({ entity: none(v) as AuditEntity | undefined })}
       >
         <SelectItem value={ALL}>{t("common.all")}</SelectItem>
-        {FILTER_ENTITIES.map((e) => (
+        {(p.platform ? FILTER_ENTITIES : TENANT_FILTER_ENTITIES).map((e) => (
           <SelectItem key={e} value={e}>
             {t(`audit.entityLabel.${entityKey(e)}`)}
           </SelectItem>

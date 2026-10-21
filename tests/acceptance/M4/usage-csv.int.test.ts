@@ -23,8 +23,6 @@ const FROM = () => vnDate(vnMonthStart(new Date()));
 const TO = () => vnDate(new Date(vnMonthStart(new Date(), 1).getTime() - 1000));
 const range = () => `from=${FROM()}&to=${TO()}`;
 const BOM = "﻿";
-const H_TENANT =
-  "date,tenant_key,feature_key,runs,input_tokens,output_tokens,billable_usd,overage_runs";
 const H_PLATFORM =
   "date,tenant_key,feature_key,runs,input_tokens,output_tokens,billable_usd,cost_usd,overage_runs";
 
@@ -87,24 +85,14 @@ describe("ADM-FR-42 · M4-AC16 · CSV", () => {
     expect(data.map((c) => c[8]).reduce((s, v) => s + Number(v), 0)).toBe(1);
   });
 
-  it("ADM-FR-42 · M4-R08 · M4-AC03 · C2 · binh: header không cost_usd; toàn văn không có 'cost_usd' hay '0.06'; filename usage-acme-…", async () => {
+  it("tenant-admin-scope · C2 · binh (tenant_admin) → 403 FORBIDDEN, không có CSV (2026-10-21)", async () => {
     const res = await csv(range(), "binh");
-    expect(res.status).toBe(200);
-    expect(rows(res.text)[0]?.join(",")).toBe(H_TENANT);
-    expect(res.text).not.toContain("cost_usd");
-    expect(res.text).not.toContain("0.06");
-    expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename="usage-acme-${FROM()}-${TO()}.csv"`,
-    );
-    expect(
-      rows(res.text)
-        .slice(1)
-        .every((c) => c[1] === "acme"),
-    ).toBe(true);
+    expectErr4(res, "FORBIDDEN");
+    expect(res.text).not.toContain("billable_usd");
   });
 
   it("ADM-BR-09 · C3 · binh tenant_id=globex → 404; admin không tenant → usage-all-…, có dòng globex", async () => {
-    expectErr4(await csv(`tenant_id=${G}`, "binh"), "NOT_FOUND");
+    expectErr4(await csv(`tenant_id=${G}`, "binh"), "FORBIDDEN");
     const res = await csv(range());
     expect(res.status).toBe(200);
     expect(res.headers.get("content-disposition")).toBe(

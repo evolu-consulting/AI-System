@@ -15,11 +15,13 @@ import { validationError } from "../../lib/http";
 import * as repo from "./audit.repo";
 import {
   type AuditFilter,
+  auditEntitiesFor,
   auditRange,
   canRestore,
   decodeCursor,
   encodeCursor,
   resolveAuditFilter,
+  TENANT_SUMMARY_KEYS,
 } from "./audit.rules";
 
 export type AuditCtx = { db: Db };
@@ -34,7 +36,28 @@ function pickSummary(s: Record<string, unknown>): AuditSummary {
   return out as AuditSummary;
 }
 
+/** tenant_admin: chỉ khoá summary nghiệp vụ (không file, restored, tenant_key, đếm import). */
+function tenantSummary(s: AuditSummary): AuditSummary {
+  const out: Record<string, unknown> = {};
+  for (const k of TENANT_SUMMARY_KEYS) if (s[k] !== undefined) out[k] = s[k];
+  return out as AuditSummary;
+}
+
 export function toAuditItem(r: repo.AuditRow, actor: Actor): AuditItem {
+  const full = fullItem(r, actor);
+  if (actor.role === "platform_admin") return full;
+  // Bản tenant: ai/cái gì/khi nào — không phiên bản nội bộ, không tenant_key, không khôi phục.
+  return {
+    ...full,
+    tenant_key: null,
+    config_version: null,
+    entity_version: null,
+    summary: tenantSummary(full.summary),
+    restorable: false,
+  };
+}
+
+function fullItem(r: repo.AuditRow, actor: Actor): AuditItem {
   return {
     id: r.id,
     at: r.at.toISOString(),
@@ -66,11 +89,16 @@ export async function listAudit(call: Call, q: AuditListQuery): Promise<AuditLis
   const scope = filterOf(call.actor, q.tenant_id);
   const range = auditRange(q, new Date());
   if (range === "invalid") throw badQuery("from", "from after to");
+  const entities = auditEntitiesFor(call.actor.role);
+  // tenant_admin lọc thực thể ngoài danh sách nghiệp vụ → rỗng (không lộ tồn tại).
+  if (entities && q.entity !== undefined && !entities.includes(q.entity))
+    return { items: [], next_cursor: null };
   const cursor = q.cursor === undefined ? null : decodeCursor(q.cursor);
   if (q.cursor !== undefined && cursor === null) throw badQuery("cursor", "invalid cursor");
   const rows = await withScope(call.ctx.db, call.scope, (tx) =>
     repo.listAudit(tx, {
       scope,
+      ...(entities ? { entities } : {}),
       entity: q.entity,
       action: q.action,
       actorId: q.actor_id,
@@ -91,7 +119,12 @@ export async function listAudit(call: Call, q: AuditListQuery): Promise<AuditLis
 
 export async function getAudit(call: Call, id: string): Promise<AuditDetail> {
   const scope = filterOf(call.actor, undefined);
-  const row = await withScope(call.ctx.db, call.scope, (tx) => repo.getAudit(tx, scope, id));
+  const row = await withScope(call.ctx.db, call.scope, (tx) =>
+    repo.getAudit(tx, scope, id, auditEntitiesFor(call.actor.role)),
+  );
   if (!row) throw appError("NOT_FOUND");
+  // tenant_admin không nhận snapshot before/after (payload kỹ thuật).
+  if (call.actor.role !== "platform_admin")
+    return { ...toAuditItem(row, call.actor), before: null, after: null };
   return { ...toAuditItem(row, call.actor), before: row.before, after: row.after };
 }

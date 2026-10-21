@@ -1,5 +1,5 @@
 // ADM-FR-42 · usage-analytics · `GET /admin/usage/analytics`, `/admin/usage/records`, `/admin/usage/records.csv`,
-// `/admin/usage/runs/:id` (mount ở `/admin`, guard theo route như `usage.routes`): platform_admin + tenant_admin; member 403.
+// `/admin/usage/runs/:id` (mount ở `/admin`, guard theo route như `usage.routes`): chỉ platform_admin; tenant_admin/member 403.
 import { UsageAnalyticsQuerySchema, UsageRecordsQuerySchema } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
@@ -14,7 +14,8 @@ export function usageAnalyticsRoutes(d: AuthDeps & AnalyticsCtx): Hono<AppVars> 
     actor: c.get("actor"),
     scope: c.get("scope"),
   });
-  const guard = [requireAuth(d), requireRole("platform_admin", "tenant_admin")] as const;
+  // 2026-10-21: phân tích chi tiết (model/agent/bản ghi thô/CSV/run) chỉ platform_admin; tenant_admin → 403.
+  const guard = [requireAuth(d), requireRole("platform_admin")] as const;
 
   r.get("/usage/analytics", ...guard, async (c) =>
     c.json(await getAnalytics(call(c), parseQuery(c, UsageAnalyticsQuerySchema))),

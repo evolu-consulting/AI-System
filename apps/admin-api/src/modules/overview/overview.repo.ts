@@ -143,8 +143,12 @@ export async function recentAudit(
   tx: Tx,
   tenantId: string | null,
   limit: number,
+  entities?: readonly string[],
 ): Promise<RecentAuditRow[]> {
-  const where = tenantId === null ? sql`true` : sql`a.tenant_id = ${tenantId}`;
+  const byTenant = tenantId === null ? sql`true` : sql`a.tenant_id = ${tenantId}`;
+  const where = entities
+    ? sql`${byTenant} and a.entity::text = any(${sql.raw(`array[${entities.map((e) => `'${e}'`).join(",")}]::text[]`)})`
+    : byTenant;
   const rows = await run<RecentAuditRow & { at: Date | string }>(
     tx,
     sql`select a.id, a.seq::text as seq, a.at, a.tenant_id as "tenantId",

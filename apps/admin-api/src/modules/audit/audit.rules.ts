@@ -24,6 +24,32 @@ export function resolveAuditFilter(
   return "not_found";
 }
 
+/**
+ * Người dùng chốt 2026-10-21: tenant_admin chỉ thấy sự kiện nghiệp vụ của tenant mình — người dùng, nhóm/phòng ban,
+ * quyền (grant/entitlement). Không có tenant/feature/workflow/command/secret/quota/config/2FA và không có dòng hệ thống.
+ */
+export const TENANT_AUDIT_ENTITIES: readonly AuditEntity[] = [
+  "user",
+  "group",
+  "grant",
+  "entitlement",
+];
+
+/** Khoá summary nghiệp vụ tenant_admin được thấy (không file, restored_*, tenant_key, đếm import…). */
+export const TENANT_SUMMARY_KEYS = [
+  "subject_type",
+  "subject_name",
+  "feature_key",
+  "added",
+  "removed",
+  "value_changed",
+  "password_reset",
+] as const;
+
+/** Mảng thực thể được phép đọc theo role; platform_admin → undefined (không giới hạn). */
+export const auditEntitiesFor = (role: Role): readonly AuditEntity[] | undefined =>
+  role === "platform_admin" ? undefined : TENANT_AUDIT_ENTITIES;
+
 const RESTORABLE_ENTITIES: ReadonlySet<AuditEntity> = new Set([
   "command",
   "workflow",

@@ -71,14 +71,16 @@ export function UsagePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" variant="outline" disabled={csv.isPending} onClick={exportCsv}>
-              <Download aria-hidden className="size-4" />
-              {t("usage.csv")}
-            </Button>
+            {v.platform ? (
+              <Button type="button" variant="outline" disabled={csv.isPending} onClick={exportCsv}>
+                <Download aria-hidden className="size-4" />
+                {t("usage.csv")}
+              </Button>
+            ) : null}
           </>
         }
       />
-      <UsageTabs />
+      {v.platform ? <UsageTabs /> : null}
       <div className="space-y-4">
         <UsageKpis report={report} prevMonth={v.prevMonth} loading={loading} error={err} />
         <UsageChart report={report} loading={loading} error={err} />

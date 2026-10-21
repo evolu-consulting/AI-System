@@ -32,12 +32,12 @@ function Bars({ q, scope }: { q: QuotaStatus; scope: string | null }) {
           limit={q.max_tokens}
         />
       ) : null}
-      {q.max_usd !== null || !scope ? (
+      {q.used.billable_usd !== undefined && (q.max_usd !== null || !scope) ? (
         <QuotaBar
           label={`${t("usage.unit.usd")}${suffix}`}
           kind="usd"
           used={q.used.billable_usd}
-          limit={q.max_usd}
+          limit={q.max_usd ?? null}
         />
       ) : null}
     </div>

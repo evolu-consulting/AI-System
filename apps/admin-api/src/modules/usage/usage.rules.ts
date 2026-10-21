@@ -109,6 +109,32 @@ function strip(v: unknown): unknown {
   return out;
 }
 
+// Người dùng chốt 2026-10-21: tenant_admin chỉ thấy lượt + token + % quota — không tiền dưới mọi tên.
+const MONEY_KEYS = new Set([
+  "cost_usd",
+  "margin_usd",
+  "tenants",
+  "billable_usd",
+  "unpriced_rows",
+  "overage_runs",
+  "overage_billable_usd",
+  "overage",
+  "max_usd",
+]);
+
+function stripKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(stripKeys);
+  if (v === null || typeof v !== "object") return v;
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(v)) if (!MONEY_KEYS.has(k)) out[k] = stripKeys(x);
+  return out;
+}
+
+/** Role ≠ platform_admin → xoá đệ quy mọi khoá tiền (cost/margin/billable/unpriced/overage/max_usd) và `tenants`. */
+export function stripMoney<T extends Record<string, unknown>>(role: Role, v: T): T {
+  return role === "platform_admin" ? v : (stripKeys(v) as T);
+}
+
 /** Role ≠ platform_admin → xoá đệ quy `cost_usd`, `margin_usd`, `tenants` (M4-R08, M4-AC03). */
 export function stripCost<T extends Record<string, unknown>>(role: Role, v: T): T {
   return role === "platform_admin" ? v : (strip(v) as T);
