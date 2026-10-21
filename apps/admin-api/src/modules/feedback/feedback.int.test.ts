@@ -89,7 +89,7 @@ describe("feedback", () => {
     ).toBe(404);
   });
 
-  it("tệp sai chữ ký ⇒ 422", async () => {
+  it("tệp sai chữ ký ⇒ 400 VALIDATION_ERROR", async () => {
     const res = await env.post("/auth/feedback", {
       token: await env.token("acme", "an"),
       body: {
@@ -101,6 +101,6 @@ describe("feedback", () => {
         ],
       },
     });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 });
