@@ -184,6 +184,38 @@ export function stockNotes(changes: readonly (ComponentChange & { name: string }
   return out;
 }
 
+/**
+ * gap-c #14 · thông báo cho người phụ trách HĐ sau khi xác nhận mốc giao: mỗi thành phần có kho/suất đổi một dòng
+ * "kho X: a → b" (+ "giá vốn X: c → d" khi đổi). Thành phần đặt theo khách (kho không đổi) bỏ qua; không còn dòng ⇒ null.
+ */
+export function deliveryNoticeOf(
+  stock: readonly {
+    name: string;
+    mode: string;
+    on_hand_before: string;
+    on_hand_after: string;
+    avg_cost_before: number;
+    avg_cost_after: number;
+  }[],
+  number: string | null,
+): { title: string; body: string } | null {
+  const lines: string[] = [];
+  for (const x of stock) {
+    if (x.mode === "order") continue;
+    lines.push(
+      `${x.mode === "quota" ? "suất" : "kho"} ${x.name}: ${x.on_hand_before} → ${x.on_hand_after}`,
+    );
+    if (x.avg_cost_before !== x.avg_cost_after)
+      lines.push(`giá vốn ${x.name}: ${money(x.avg_cost_before)} → ${money(x.avg_cost_after)}`);
+  }
+  if (lines.length === 0) return null;
+  const no = (number ?? "").trim().slice(0, 80);
+  return {
+    title: `Đã xác nhận giao hàng${no ? ` — hợp đồng ${no}` : ""}`.slice(0, 200),
+    body: lines.join("\n").slice(0, 2000),
+  };
+}
+
 /** SL chuỗi từ DB ("12.5000") ⇒ ×10⁴. */
 export const qtyOf = (s: string | null): bigint | null => {
   if (s === null) return null;

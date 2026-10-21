@@ -19,6 +19,9 @@ export function TopShell(p: {
   start?: ReactNode;
   children?: ReactNode;
   apps?: ReactNode;
+  /** Thứ tự phải: apps (lưới), bell (chuông thông báo), feedback (góp ý), end (tài khoản). */
+  bell?: ReactNode;
+  feedback?: ReactNode;
   end?: ReactNode;
 }): ReactElement {
   return (
@@ -27,6 +30,8 @@ export function TopShell(p: {
       <div style={RIGHT}>
         {p.children}
         {p.apps}
+        {p.bell}
+        {p.feedback}
         {p.end}
       </div>
     </header>

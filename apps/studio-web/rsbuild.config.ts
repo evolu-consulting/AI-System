@@ -23,7 +23,7 @@ export default defineConfig({
     base: "/studio",
     port: 3200,
     strictPort: true,
-    proxy: { "/auth": ADMIN_API_URL, "/studio/api": HUB_URL },
+    proxy: { "/auth": ADMIN_API_URL, "/studio/api": HUB_URL, "/notifications": HUB_URL },
   },
   tools: {
     rspack: {

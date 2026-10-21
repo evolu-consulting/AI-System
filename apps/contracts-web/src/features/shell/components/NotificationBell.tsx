@@ -1,31 +1,27 @@
 // PK-FR-10 · TF5 · N3-FR-09 · S16 chuông thông báo: khung trình bày thuần (không gọi API). Rỗng ⇒ đúng khung N1 (baseline khoá);
-// có thông báo ⇒ danh sách, "đánh dấu tất cả", tùy chọn kênh. Dữ liệu do `features/notifications` truyền vào.
-import type { Notification, NotifyPrefs } from "@ai/contracts";
+// có thông báo ⇒ danh sách, "đánh dấu tất cả"; chân luôn có "Xem tất cả" + "Cài đặt thông báo" (trang /notifications). Dữ liệu do `features/notifications` truyền vào.
+import type { Notification } from "@ai/contracts";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconBell } from "~/components/icons";
 import { NotificationItems } from "./NotificationItems";
-import { NotifyPrefsForm } from "./NotifyPrefsForm";
 import { Popover } from "./Popover";
 
 export type NotificationBellProps = {
   unread?: number;
   items?: Notification[];
-  prefs?: NotifyPrefs | null;
   /** Mở chuông ⇒ làm tươi danh sách. */
   onOpen?: () => void;
   onRead?: (id: string) => void;
   onReadAll?: () => void;
-  onPrefs?: (p: NotifyPrefs) => void;
 };
 
 export function NotificationBell({
   unread = 0,
   items = [],
-  prefs = null,
   onOpen,
   onRead,
   onReadAll,
-  onPrefs,
 }: NotificationBellProps) {
   const { t } = useTranslation();
   const label = unread
@@ -68,9 +64,15 @@ export function NotificationBell({
           ) : (
             <NotificationItems items={items} onRead={onRead} />
           )}
-          {items.length > 0 && prefs && onPrefs && (
-            <NotifyPrefsForm prefs={prefs} onChange={onPrefs} />
-          )}
+          {/* gap-c #13: chân luôn có — danh sách đầy đủ + form tùy chọn (kể cả khi chưa có thông báo). */}
+          <div className="flex items-center justify-between border-t border-rule px-4 py-3 text-micro font-medium">
+            <Link to="/notifications" className="text-act hover:underline">
+              {t("contracts.shell.notificationsViewAll")}
+            </Link>
+            <Link to="/notifications" hash="prefs" className="text-act hover:underline">
+              {t("contracts.shell.notificationsSettings")}
+            </Link>
+          </div>
         </>
       )}
     </Popover>

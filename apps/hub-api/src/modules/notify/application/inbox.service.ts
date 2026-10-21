@@ -1,6 +1,6 @@
 // N3-FR-04 · N3-FR-09 · nghiệp vụ chuông/tùy chọn của CHÍNH người dùng (tenant + user lấy từ token, không từ body/query).
 // Không biết HTTP. Mọi hàm là một lời gọi kho (một tx RLS theo user).
-import type { InboxStore, NotificationItem, Prefs, Who } from "./ports";
+import type { InboxStore, NotificationItem, PrefsInput, PrefsView, Who } from "./ports";
 
 export type InboxPage = { items: NotificationItem[]; unread: number; next_before: number | null };
 
@@ -18,12 +18,16 @@ export class InboxService {
     return this.store.markRead(who, ids);
   }
 
-  prefs(who: Who): Promise<Prefs> {
+  prefs(who: Who): Promise<PrefsView> {
     return this.store.prefs(who);
   }
 
-  setPrefs(who: Who, p: Prefs): Promise<Prefs> {
+  setPrefs(who: Who, p: PrefsInput): Promise<PrefsView> {
     return this.store.setPrefs(who, p);
+  }
+
+  sendTest(who: Who): Promise<number> {
+    return this.store.sendTest(who);
   }
 
   subscribe(who: Who, s: { endpoint: string; p256dh: string; auth: string }): Promise<void> {

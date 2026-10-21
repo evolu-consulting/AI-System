@@ -19,6 +19,17 @@ const item = (id: string, seq: number, title: string, read: boolean, link: strin
   read,
 });
 
+/** gap-c #11: GET prefs trả dạng "view" (mốc hiệu lực + mặc định tenant). */
+const PREFS = {
+  email: true,
+  push: false,
+  remind_days: [60, 30, 7, 1, 0],
+  remind_days_custom: false,
+  remind_days_default: [60, 30, 7, 1, 0],
+  price_alerts: true,
+  include_managed: false,
+};
+
 type Api = { posts: unknown[]; puts: unknown[]; unread: number; failList: boolean };
 
 type Json = (r: Route, status: number, body: unknown) => Promise<void>;
@@ -46,10 +57,10 @@ function notifyRoutes(api: Api): Record<string, (r: Route) => Promise<void>> {
       api.unread = b.all ? 0 : Math.max(0, api.unread - b.ids.length);
       return json(r, 200, { updated: 1 });
     },
-    "GET /notifications/prefs": (r) => json(r, 200, { email: true, push: true }),
+    "GET /notifications/prefs": (r) => json(r, 200, PREFS),
     "PUT /notifications/prefs": (r) => {
       api.puts.push(body(r));
-      return json(r, 200, body(r));
+      return json(r, 200, { ...PREFS, ...body(r) });
     },
   };
 }
@@ -112,26 +123,56 @@ test("N3-FR-09 · bấm một thông báo có liên kết ⇒ đánh dấu đã 
   expect(api.posts).toEqual([{ ids: [ID1] }]);
 });
 
-test("N3-FR-04 · tùy chọn kênh: tắt email ⇒ PUT đúng body, push giữ nguyên", async ({ page }) => {
-  const api = await install(page);
+test("gap-c #13 · chân chuông luôn có 'Xem tất cả' + 'Cài đặt thông báo' (kể cả chưa có thông báo) ⇒ mở trang /notifications", async ({
+  page,
+}) => {
+  const api = await install(page, 0);
+  api.failList = true; // chuông rỗng vẫn phải với tới được form tùy chọn
   await page.goto("/contracts");
   await bell(page).click();
+  const dialog = page.getByRole("dialog", { name: /Thông báo/ });
+  await expect(dialog.getByRole("link", { name: "Cài đặt thông báo" })).toBeVisible();
+  await dialog.getByRole("link", { name: "Xem tất cả" }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(page.getByRole("heading", { name: "Thông báo", level: 1 })).toBeVisible();
+});
+
+test("gap-c #13/#11 · trang /notifications: tắt email ⇒ PUT đúng body; bỏ 'mặc định công ty' ⇒ chọn mốc riêng", async ({
+  page,
+}) => {
+  const api = await install(page);
+  await page.goto("/notifications");
   const email = page.getByRole("checkbox", { name: "Email" });
   await expect(email).toBeChecked();
-  await expect(
-    page.getByRole("checkbox", { name: "Thông báo đẩy trên trình duyệt" }),
-  ).toBeChecked();
   const put = page.waitForRequest(
     (r) => r.method() === "PUT" && r.url().endsWith("/notifications/prefs"),
   );
-  // `uncheck()` kiểm trạng thái ngay sau khi bấm; ô controlled cập nhật lạc quan qua react-query (bất đồng bộ) nên
-  // `uncheck()` báo "did not change its state". Bấm rồi chờ trạng thái (assertion tự thử lại), không chờ giờ.
   await email.click();
-  await expect(email).not.toBeChecked();
   await put; // chờ đúng tín hiệu request, không chờ giờ
-  expect(api.puts).toEqual([{ email: false, push: true }]);
+  expect(api.puts[0]).toEqual({ email: false, push: false });
+  await page.getByRole("checkbox", { name: "Dùng mặc định của công ty" }).click();
+  expect(api.puts[1]).toEqual({ email: false, push: false, remind_days: [60, 30, 7, 1, 0] });
 });
 
+test("gap-c #12 · thông báo đẩy chỉ đăng ký khi người dùng tick (không tự xin quyền lúc tải trang)", async ({
+  page,
+}) => {
+  await install(page);
+  await page.addInitScript(() => {
+    (window as unknown as { __perm: number }).__perm = 0;
+    Object.defineProperty(window.Notification, "requestPermission", {
+      value: async () => {
+        (window as unknown as { __perm: number }).__perm++;
+        return "denied";
+      },
+    });
+  });
+  await page.goto("/notifications");
+  await expect(page.getByRole("checkbox", { name: "Email" })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __perm: number }).__perm)).toBe(0);
+  await page.getByRole("checkbox", { name: "Thông báo đẩy trên trình duyệt" }).click();
+  await expect(page.getByRole("status")).toContainText("chặn thông báo");
+});
 test("N3-FR-09 · API thông báo lỗi 500 ⇒ chuông vẫn dùng được, hiện trạng thái rỗng (không văng, không toast)", async ({
   page,
 }) => {

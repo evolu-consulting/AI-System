@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedModelsRouteImport } from './routes/_authed/models'
+import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
 import { Route as AuthedOrchestratorRouteImport } from './routes/_authed/orchestrator'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
@@ -49,6 +50,11 @@ const AuthedAccessRoute = AuthedAccessRouteImport.update({
 const AuthedModelsRoute = AuthedModelsRouteImport.update({
   id: '/models',
   path: '/models',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOrchestratorRoute = AuthedOrchestratorRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/access': typeof AuthedAccessRoute
   '/models': typeof AuthedModelsRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
   '/settings': typeof AuthedSettingsRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/access': typeof AuthedAccessRoute
   '/models': typeof AuthedModelsRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/orchestrator': typeof AuthedOrchestratorRoute
   '/secrets': typeof AuthedSecretsRoute
   '/settings': typeof AuthedSettingsRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/access': typeof AuthedAccessRoute
   '/_authed/models': typeof AuthedModelsRoute
+  '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/orchestrator': typeof AuthedOrchestratorRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/settings': typeof AuthedSettingsRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/access'
     | '/models'
+    | '/notifications'
     | '/orchestrator'
     | '/secrets'
     | '/settings'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/access'
     | '/models'
+    | '/notifications'
     | '/orchestrator'
     | '/secrets'
     | '/settings'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/access'
     | '/_authed/models'
+    | '/_authed/notifications'
     | '/_authed/orchestrator'
     | '/_authed/secrets'
     | '/_authed/settings'
@@ -216,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedModelsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/notifications': {
+      id: '/_authed/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthedNotificationsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/orchestrator': {
       id: '/_authed/orchestrator'
       path: '/orchestrator'
@@ -264,6 +283,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedModelsRoute: typeof AuthedModelsRoute
+  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedOrchestratorRoute: typeof AuthedOrchestratorRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedSettingsRoute: typeof AuthedSettingsRoute
@@ -276,6 +296,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccessRoute: AuthedAccessRoute,
   AuthedModelsRoute: AuthedModelsRoute,
+  AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedOrchestratorRoute: AuthedOrchestratorRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedSettingsRoute: AuthedSettingsRoute,

@@ -53,7 +53,7 @@ type SettleIn = { at?: string | null; amount?: number | null; fault?: Fault | nu
 /** Đã trả/thu một đợt. */
 async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
   const at = b.at ?? (await todayOf(d)(who));
-  return d.uow.tenant(who, async ({ ledger: r, delivery }) => {
+  return d.uow.tenant(who, async ({ ledger: r, delivery, notify }) => {
     const ob = await openObligation(r, id);
     const late = daysLate(at, ob.due_date);
     // V2-D · HD-05: mốc giao ⇒ SL đã giao + kho (cùng tx, sau khoá HĐ → mốc); lỗi ⇒ huỷ cả tx, mốc giữ mở.
@@ -70,6 +70,7 @@ async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
       fault: late > 0 ? (b.fault ?? "unknown") : null,
       delivered: dv?.rows ?? [],
     });
+    if (dv?.notice) await notify.enqueue([dv.notice]);
     return dv?.outcome ? { ...out, delivery: dv.outcome } : out;
   });
 }

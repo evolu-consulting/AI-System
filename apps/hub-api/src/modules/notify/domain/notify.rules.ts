@@ -160,3 +160,16 @@ export function mergePush(results: readonly SendResult[]): SendResult {
   if (retryable) return retryable;
   return failed[0] ?? { ok: false, permanent: true, code: "push_failed" };
 }
+
+// gap-c #11 · tùy chọn nhắc hạn: mốc hiệu lực = mốc riêng của người dùng, vắng thì mặc định của tenant (cùng luật SQL `notify.enqueue`).
+export const LEAD_GRID = [60, 30, 7, 1, 0] as const;
+export const effectiveLeadDays = (
+  own: readonly number[] | null,
+  tenantDefault: readonly number[] | null,
+): number[] => [...(own ?? tenantDefault ?? LEAD_GRID)].sort((a, b) => b - a);
+/** Mốc `lead` có được nhắc cho người này không (mốc rỗng = tắt nhắc hạn). */
+export const allowsLead = (
+  lead: number,
+  own: readonly number[] | null,
+  tenantDefault: readonly number[] | null,
+): boolean => effectiveLeadDays(own, tenantDefault).includes(lead);

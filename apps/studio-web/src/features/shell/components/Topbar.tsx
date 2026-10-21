@@ -2,9 +2,12 @@
 // `GET /auth/me/apps`, Admin quản lý), menu Tài khoản (chỉ khi có phiên).
 import { fallbackApps } from "@ai/web-kit/app-catalog/apps";
 import { handOffUrl } from "@ai/web-kit/auth/sso";
+import { splitHref } from "@ai/web-kit/notify/href";
 import { AppSwitcher } from "@ai/web-kit/ui/AppSwitcher";
 import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
+import { NotificationBell } from "@ai/web-kit/ui/NotificationBell";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
+import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { FALLBACK_URLS } from "#/lib/apps";
 import { session } from "#/lib/auth/session";
@@ -39,18 +42,32 @@ function Apps() {
   );
 }
 
-/** Client HTTP riêng của studio-web (kit không biết token của web này); không tải được tệp đính kèm. */
-const FEEDBACK_TRANSPORT = { request: api };
+/** Client HTTP riêng của studio-web (kit không biết token của web này). Dưới base `/studio`: API `/notifications` ở gốc origin. */
+const KIT_TRANSPORT = { request: api };
 
 export function Topbar() {
   const authed = useSession((s) => s.status === "authed");
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
   return (
-    <TopShell apps={authed ? <Apps /> : null} end={authed ? <UserMenu /> : null}>
+    <TopShell
+      apps={authed ? <Apps /> : null}
+      bell={
+        authed ? (
+          <NotificationBell
+            transport={KIT_TRANSPORT}
+            onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })}
+          />
+        ) : null
+      }
+      feedback={
+        authed ? (
+          <FeedbackButton app="studio" lang={i18n.language} transport={KIT_TRANSPORT} />
+        ) : null
+      }
+      end={authed ? <UserMenu /> : null}
+    >
       {authed ? <ConfigBadge /> : null}
-      {authed ? (
-        <FeedbackButton app="studio" lang={i18n.language} transport={FEEDBACK_TRANSPORT} />
-      ) : null}
     </TopShell>
   );
 }

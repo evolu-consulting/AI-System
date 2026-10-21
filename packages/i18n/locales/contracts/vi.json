@@ -254,6 +254,8 @@
       "notificationsUnread": "Thông báo, {{n}} chưa đọc",
       "notificationsEmpty": "Chưa có thông báo nào.",
       "notificationsReadAll": "Đánh dấu tất cả đã đọc",
+      "notificationsViewAll": "Xem tất cả",
+      "notificationsSettings": "Cài đặt thông báo",
       "notificationUnreadDot": "Chưa đọc",
       "notificationsChannels": "Nhận thông báo qua",
       "channelEmail": "Email",

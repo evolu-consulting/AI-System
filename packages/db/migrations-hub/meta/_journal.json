@@ -358,6 +358,13 @@
       "when": 1795900000000,
       "tag": "0052_price_scout_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1796200000000,
+      "tag": "0053_notify_prefs_v2",
+      "breakpoints": true
     }
   ]
 }

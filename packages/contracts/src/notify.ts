@@ -75,8 +75,46 @@ export type MarkReadBody = z.infer<typeof MarkReadBodySchema>;
 export const MarkReadResultSchema = z.object({ updated: z.number().int().min(0) }).strict();
 export type MarkReadResult = z.infer<typeof MarkReadResultSchema>;
 
-export const NotifyPrefsSchema = z.object({ email: z.boolean(), push: z.boolean() }).strict();
+/** Mốc nhắc hạn cho phép (ngày trước hạn) = lưới mốc của vòng nhắc HD4. */
+export const REMIND_LEAD_CHOICES = [60, 30, 7, 1, 0] as const;
+export const DEFAULT_REMIND_LEAD_DAYS: readonly number[] = REMIND_LEAD_CHOICES;
+const LeadDaysSchema = z
+  .array(z.union([z.literal(60), z.literal(30), z.literal(7), z.literal(1), z.literal(0)]))
+  .max(5)
+  .refine((a) => new Set(a).size === a.length, { message: "mốc trùng" });
+
+/**
+ * `PUT /notifications/prefs`. `email`/`push` bắt buộc; các trường còn lại vắng ⇒ giữ nguyên. `remind_days: null` ⇒ về mặc định
+ * của tenant; mảng ⇒ mốc riêng (rỗng = không nhắc hạn).
+ */
+export const NotifyPrefsSchema = z
+  .object({
+    email: z.boolean(),
+    push: z.boolean(),
+    remind_days: LeadDaysSchema.nullable().optional(),
+    price_alerts: z.boolean().optional(),
+    include_managed: z.boolean().optional(),
+  })
+  .strict();
 export type NotifyPrefs = z.infer<typeof NotifyPrefsSchema>;
+
+/** `GET /notifications/prefs` — `remind_days` là mốc HIỆU LỰC (riêng hoặc mặc định tenant). */
+export const NotifyPrefsViewSchema = z
+  .object({
+    email: z.boolean(),
+    push: z.boolean(),
+    remind_days: z.array(z.number().int()),
+    remind_days_custom: z.boolean(),
+    remind_days_default: z.array(z.number().int()),
+    price_alerts: z.boolean(),
+    include_managed: z.boolean(),
+  })
+  .strict();
+export type NotifyPrefsView = z.infer<typeof NotifyPrefsViewSchema>;
+
+/** `POST /notifications/push/test` — số thông báo thử mới tạo (0 = vừa gửi thử, chờ ít giây). */
+export const PushTestResultSchema = z.object({ created: z.number().int().min(0) }).strict();
+export type PushTestResult = z.infer<typeof PushTestResultSchema>;
 
 export const PushKeySchema = z.object({ public_key: z.string().nullable() }).strict();
 export type PushKey = z.infer<typeof PushKeySchema>;

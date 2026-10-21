@@ -1,8 +1,10 @@
 // N3-FR-05 · N3-FR-06 · N3-FR-07 · luật thuần cổng thông báo.
 import { describe, expect, test } from "bun:test";
 import {
+  allowsLead,
   BACKOFF_SEC,
   type Claimed,
+  effectiveLeadDays,
   emailOf,
   isUndeliverableEmail,
   MAX_ATTEMPTS,
@@ -109,5 +111,19 @@ describe("pushOf / mergePush", () => {
     expect(mergePush([fail(true, "a"), fail(true, "b")])).toEqual(fail(true, "a"));
     expect(mergePush([fail(true, "a"), fail(false, "b")])).toEqual(fail(false, "b"));
     expect(mergePush([])).toEqual({ ok: false, permanent: true, code: "no_subscription" });
+  });
+});
+
+describe("gap-c #11 · tùy chọn nhắc hạn → người nhận", () => {
+  test("mốc hiệu lực: riêng thắng mặc định tenant, vắng cả hai ⇒ lưới HD4; sắp lớn → nhỏ", () => {
+    expect(effectiveLeadDays(null, null)).toEqual([60, 30, 7, 1, 0]);
+    expect(effectiveLeadDays(null, [7, 30])).toEqual([30, 7]);
+    expect(effectiveLeadDays([0, 7], [60, 30])).toEqual([7, 0]);
+  });
+  test("allowsLead: mốc ngoài tập ⇒ không nhắc; mảng rỗng riêng ⇒ tắt nhắc hạn (khác null = mặc định)", () => {
+    expect(allowsLead(7, [7], null)).toBe(true);
+    expect(allowsLead(30, [7], null)).toBe(false);
+    expect(allowsLead(7, [], [60, 30, 7])).toBe(false);
+    expect(allowsLead(7, null, [60, 30, 7])).toBe(true);
   });
 });

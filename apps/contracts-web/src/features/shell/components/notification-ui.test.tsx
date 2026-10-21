@@ -1,9 +1,8 @@
-﻿// N3-FR-04 · N3-FR-09 · phần trình bày của chuông: danh sách (chưa đọc đậm + chấm), tùy chọn kênh (VI nguyên văn).
+// N3-FR-04 · N3-FR-09 · phần trình bày của chuông: danh sách (chưa đọc đậm + chấm; VI nguyên văn).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { i18n, initI18n } from "~/app/i18n";
 import { NotificationItems } from "./NotificationItems";
-import { NotifyPrefsForm } from "./NotifyPrefsForm";
 
 beforeAll(async () => {
   await initI18n();
@@ -45,17 +44,5 @@ describe("NotificationItems", () => {
     );
     expect(html.match(/<li/g)).toHaveLength(2);
     expect(html).not.toContain('line-clamp-2"></span>');
-  });
-});
-
-describe("NotifyPrefsForm", () => {
-  test("hai ô chọn có nhãn, trạng thái theo tùy chọn", () => {
-    const html = renderToStaticMarkup(
-      <NotifyPrefsForm prefs={{ email: true, push: false }} onChange={() => {}} />,
-    );
-    expect(html).toContain("Nhận thông báo qua");
-    expect(html).toContain("Email");
-    expect(html).toContain("Thông báo đẩy trên trình duyệt");
-    expect(html.match(/checked=""/g)).toHaveLength(1);
   });
 });

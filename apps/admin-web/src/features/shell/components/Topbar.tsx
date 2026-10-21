@@ -2,10 +2,12 @@
 
 import { fallbackApps } from "@ai/web-kit/app-catalog/apps";
 import { handOffUrl } from "@ai/web-kit/auth/sso";
+import { splitHref } from "@ai/web-kit/notify/href";
 import { AppSwitcher } from "@ai/web-kit/ui/AppSwitcher";
 import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
+import { NotificationBell } from "@ai/web-kit/ui/NotificationBell";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -76,8 +78,12 @@ function Apps() {
   );
 }
 
+/** Client HTTP + phiên riêng của admin-web (kit không biết token của web này). */
+const NOTIFY_TRANSPORT = { request: api };
+
 export function Topbar() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const role = useSession((s) => s.me?.role);
   const tenantName = useSession((s) => s.me?.tenant.name ?? "");
@@ -108,6 +114,13 @@ export function Topbar() {
         </>
       }
       apps={<Apps />}
+      bell={
+        <NotificationBell
+          transport={NOTIFY_TRANSPORT}
+          onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })}
+        />
+      }
+      feedback={<FeedbackButton app="admin" lang={i18n.language} transport={FEEDBACK_TRANSPORT} />}
       end={<AccountMenu />}
     >
       {role === "platform_admin" ? (
@@ -115,7 +128,6 @@ export function Topbar() {
       ) : (
         <span className="text-label text-muted-foreground">{tenantName}</span>
       )}
-      <FeedbackButton app="admin" lang={i18n.language} transport={FEEDBACK_TRANSPORT} />
     </TopShell>
   );
 }

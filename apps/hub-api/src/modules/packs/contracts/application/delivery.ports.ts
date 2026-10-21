@@ -26,6 +26,9 @@ export type DeliveryLoad = {
   deal: "buy" | "sell" | "referral" | null;
   end_date: string | null;
   supplier: string | null;
+  /** Người phụ trách HĐ + số HĐ (thông báo kho gửi cho người phụ trách). */
+  owner?: string | null;
+  number?: string | null;
   status: "open" | "done" | "cancelled";
   kind: string;
   /** SL chung cũ của mốc (V2-A). */

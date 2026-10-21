@@ -30,7 +30,7 @@ const itemsJson = (
 // theo dòng + bảng của mốc này cùng lượt quét), thành phần theo SP lấy từ chính `it`. Lọc HĐ bằng `= (select …)` (tham số
 // InitPlan) chứ không join CTE ⇒ kế hoạch CHUNG của câu chuẩn bị sẵn vẫn đi index (đo: join ⇒ Seq Scan `milestone_items`).
 const loadQ = (t: string, milestoneId: string) => sql`with k as materialized (
-            select o.id as mid, o.status, o.kind, o.qty, c.id, c.deal, c.end_date,
+            select o.id as mid, o.status, o.kind, o.qty, c.id, c.deal, c.end_date, c.owner_user_id, c.number,
               contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value') as supplier
             from contracts.obligations o
             join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = o.contract_id
@@ -46,7 +46,7 @@ const loadQ = (t: string, milestoneId: string) => sql`with k as materialized (
           dv as (select mi.contract_item_id, sum(mi.delivered) as n from mi where mi.delivered is not null
             group by mi.contract_item_id)
           select jsonb_build_object('contract_id', k.id, 'deal', k.deal, 'end_date', k.end_date, 'status', k.status,
-            'kind', k.kind, 'qty', k.qty::text, 'supplier', k.supplier,
+            'kind', k.kind, 'qty', k.qty::text, 'supplier', k.supplier, 'owner', k.owner_user_id, 'number', k.number,
             'items', coalesce((select jsonb_agg(jsonb_build_object('id', it.id, 'name', it.name, 'unit', it.unit,
                 'qty', it.qty::text, 'unit_price', it.unit_price, 'product_id', it.product_id,
                 'component_ids', it.component_ids, 'delivered', coalesce(dv.n, 0)::text) order by it.ord)

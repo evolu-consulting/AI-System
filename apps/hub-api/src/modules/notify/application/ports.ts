@@ -51,11 +51,29 @@ export type InboxStore = {
     before: number | null,
   ): Promise<{ items: NotificationItem[]; unread: number }>;
   markRead(who: Who, ids: readonly string[] | "all"): Promise<number>;
-  prefs(who: Who): Promise<Prefs>;
-  setPrefs(who: Who, p: Prefs): Promise<Prefs>;
+  prefs(who: Who): Promise<PrefsView>;
+  /** Trường vắng ⇒ giữ nguyên; `remind_days: null` ⇒ về mặc định tenant. */
+  setPrefs(who: Who, p: PrefsInput): Promise<PrefsView>;
+  /** Ghi MỘT thông báo thử cho chính người dùng (đi đường fanout/push thường); 0 = vừa thử, chờ ít giây. */
+  sendTest(who: Who): Promise<number>;
   subscribe(who: Who, s: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
   unsubscribe(who: Who, endpoint: string): Promise<number>;
 };
 
 export type Who = { tenantId: string; userId: string };
-export type Prefs = { email: boolean; push: boolean };
+export type PrefsInput = {
+  email: boolean;
+  push: boolean;
+  remind_days?: number[] | null;
+  price_alerts?: boolean;
+  include_managed?: boolean;
+};
+export type PrefsView = {
+  email: boolean;
+  push: boolean;
+  remind_days: number[];
+  remind_days_custom: boolean;
+  remind_days_default: number[];
+  price_alerts: boolean;
+  include_managed: boolean;
+};

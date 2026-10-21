@@ -135,18 +135,18 @@ describe("N3-FR-09 · đánh dấu đã đọc", () => {
 
 describe("N3-FR-04 · tùy chọn kênh", () => {
   it("mặc định bật cả hai; PUT lưu; người khác không bị ảnh hưởng; body lạ ⇒ 400", async () => {
-    expect((await as("lan", "GET", "/notifications/prefs")).json).toEqual({
+    expect((await as("lan", "GET", "/notifications/prefs")).json).toMatchObject({
       email: true,
       push: true,
     });
     expect(
       (await as("lan", "PUT", "/notifications/prefs", { email: false, push: true })).json,
-    ).toEqual({ email: false, push: true });
-    expect((await as("lan", "GET", "/notifications/prefs")).json).toEqual({
+    ).toMatchObject({ email: false, push: true });
+    expect((await as("lan", "GET", "/notifications/prefs")).json).toMatchObject({
       email: false,
       push: true,
     });
-    expect((await as("hoa", "GET", "/notifications/prefs")).json).toEqual({
+    expect((await as("hoa", "GET", "/notifications/prefs")).json).toMatchObject({
       email: true,
       push: true,
     });

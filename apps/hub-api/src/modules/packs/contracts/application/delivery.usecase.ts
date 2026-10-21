@@ -1,6 +1,7 @@
 // V2-D · HD-05 · BA §5.7a-d · §5.3b: xác nhận mốc giao ⇒ kho (gọi trong tx của `settle`, cùng khoá HĐ → mốc), bảng Trên HĐ · Đã giao ·
 // Giao lần này, kiểm tồn khi lưu HĐ bán (cảnh báo, không chặn). Lớp 2: không SQL — luật ở `domain/delivery.rules.ts`.
 
+import type { NotifyInput } from "../../kit/application/notify";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import {
   checkPlan,
@@ -10,6 +11,7 @@ import {
   type DItem,
   deliveryLines,
   deliveryMoves,
+  deliveryNoticeOf,
   qtyIn,
   qtyOf,
   stockNotes,
@@ -61,7 +63,12 @@ const failOf = (e: unknown): never => {
 
 /** SL ghi cùng câu xác nhận (dòng 0 của bảng SL cũng ghi để giữ trạng thái đã xác nhận). */
 export type DeliveredRow = { item_id: string; qty: string; planned: string | null };
-export type Confirmed = { rows: DeliveredRow[]; outcome: DeliveryOutcome | null };
+export type Confirmed = {
+  rows: DeliveredRow[];
+  outcome: DeliveryOutcome | null;
+  /** gap-c #14: thông báo kho cho người phụ trách HĐ (null = không có thay đổi kho hoặc HĐ chưa giao ai). */
+  notice: NotifyInput | null;
+};
 
 /** Trong tx `settle`, SAU khi đã khoá HĐ + mốc. Ném `DeliveryFail` (không ghi gì — người gọi huỷ tx). */
 export async function confirmDelivery(
@@ -89,9 +96,27 @@ export async function confirmDelivery(
     planned: l.planned === null ? null : fmtQty(l.planned),
   }));
   const given = rows.filter((x) => x.qty !== "0").map(({ item_id, qty }) => ({ item_id, qty }));
-  if (given.length === 0) return { rows, outcome: null };
+  if (given.length === 0) return { rows, outcome: null, notice: null };
   const res = moves.length ? await applied(r, moves, on, comps) : null;
-  return { rows, outcome: outcomeOf(given, res?.components ?? [], comps) };
+  const outcome = outcomeOf(given, res?.components ?? [], comps);
+  return { rows, outcome, notice: deliveryNotice(outcome, L, milestoneId) };
+}
+
+/** gap-c #14: "kho X: a → b" + giá vốn BQ trước → sau, gửi người phụ trách HĐ; khoá idempotency theo mốc (xác nhận lại không nhân đôi). */
+function deliveryNotice(
+  o: DeliveryOutcome,
+  L: DeliveryLoad,
+  milestoneId: string,
+): NotifyInput | null {
+  const text = L.owner ? deliveryNoticeOf(o.stock, L.number ?? null) : null;
+  if (!L.owner || !text) return null;
+  return {
+    user_id: L.owner,
+    kind: "contract.delivery",
+    ...text,
+    link: `/contracts/${L.contract_id}`,
+    dedup_key: `delivery:${milestoneId}`,
+  };
 }
 
 /** BA 5.7d: kho + giá vốn trước → sau theo thành phần (kèm tên) + câu thông báo. */

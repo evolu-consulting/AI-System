@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SsoRouteImport } from './routes/sso'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMyWorkRouteImport } from './routes/_authed/my-work'
+import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
 import { Route as AuthedOverviewRouteImport } from './routes/_authed/overview'
 import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedPricesRouteImport } from './routes/_authed/prices'
@@ -56,6 +57,11 @@ const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
 const AuthedMyWorkRoute = AuthedMyWorkRouteImport.update({
   id: '/my-work',
   path: '/my-work',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOverviewRoute = AuthedOverviewRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/sso': typeof SsoRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/overview': typeof AuthedOverviewRoute
   '/partners': typeof AuthedPartnersRoute
   '/prices': typeof AuthedPricesRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/sso': typeof SsoRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/overview': typeof AuthedOverviewRoute
   '/partners': typeof AuthedPartnersRoute
   '/prices': typeof AuthedPricesRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/sso': typeof SsoRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/my-work': typeof AuthedMyWorkRoute
+  '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/overview': typeof AuthedOverviewRoute
   '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/prices': typeof AuthedPricesRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/sso'
     | '/feedback'
     | '/my-work'
+    | '/notifications'
     | '/overview'
     | '/partners'
     | '/prices'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/sso'
     | '/feedback'
     | '/my-work'
+    | '/notifications'
     | '/overview'
     | '/partners'
     | '/prices'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/sso'
     | '/_authed/feedback'
     | '/_authed/my-work'
+    | '/_authed/notifications'
     | '/_authed/overview'
     | '/_authed/partners'
     | '/_authed/prices'
@@ -299,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/my-work'
       fullPath: '/my-work'
       preLoaderRoute: typeof AuthedMyWorkRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/notifications': {
+      id: '/_authed/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthedNotificationsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/overview': {
@@ -398,6 +417,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
   AuthedMyWorkRoute: typeof AuthedMyWorkRoute
+  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedOverviewRoute: typeof AuthedOverviewRoute
   AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedPricesRoute: typeof AuthedPricesRoute
@@ -416,6 +436,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFeedbackRoute: AuthedFeedbackRoute,
   AuthedMyWorkRoute: AuthedMyWorkRoute,
+  AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedOverviewRoute: AuthedOverviewRoute,
   AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedPricesRoute: AuthedPricesRoute,

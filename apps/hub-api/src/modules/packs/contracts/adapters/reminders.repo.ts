@@ -153,6 +153,7 @@ function applyQ(tenantId: string, batch: string) {
         select (select count(*) from upd)::int as changed, (select count(*) from rem)::int as reminded,
           notify.enqueue('contracts', coalesce((select jsonb_agg(jsonb_build_object('user_id', s.user_id,
             'kind', 'contract.deadline', 'title', s.title, 'body', s.body, 'link', s.link,
+            'lead', s.milestone, 'managed', true,
             'dedup_key', 'remind:' || s.id || ':' || to_char(s.deadline, 'YYYY-MM-DD') || ':' || s.milestone)) from sent s),
             '[]'::jsonb)) as notified,
           (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ev)

@@ -8,6 +8,7 @@ import {
   type DItem,
   deliveryLines,
   deliveryMoves,
+  deliveryNoticeOf,
   qtyIn,
   qtyOf,
   stockNotes,
@@ -191,5 +192,33 @@ describe("stockNotes + SL", () => {
   it("qtyOf / qtyIn", () => {
     expect([qtyOf("12.5000"), qtyOf("3"), qtyOf(null)]).toEqual([125_000n, 30_000n, null]);
     expect([qtyIn(0), qtyIn(2.5), qtyIn(40)]).toEqual([0n, 25_000n, 400_000n]);
+  });
+});
+
+describe("gap-c #14 · thông báo xác nhận giao hàng", () => {
+  const s = (o: Partial<Parameters<typeof deliveryNoticeOf>[0][number]>) => ({
+    name: "Thép D10",
+    mode: "stock",
+    on_hand_before: "100",
+    on_hand_after: "80",
+    avg_cost_before: 1000,
+    avg_cost_after: 1050,
+    ...o,
+  });
+  it("mỗi thành phần: 'kho X: a → b' + giá vốn trước → sau (chỉ khi đổi); số HĐ vào tiêu đề", () => {
+    const n = deliveryNoticeOf(
+      [s({}), s({ name: "Xi", mode: "quota", avg_cost_after: 1000 })],
+      "HD-01",
+    );
+    expect(n?.title).toBe("Đã xác nhận giao hàng — hợp đồng HD-01");
+    expect(n?.body.split("\n")).toEqual([
+      "kho Thép D10: 100 → 80",
+      "giá vốn Thép D10: 1.000 → 1.050",
+      "suất Xi: 100 → 80",
+    ]);
+  });
+  it("đặt theo khách (kho không đổi) hoặc không thành phần ⇒ không thông báo", () => {
+    expect(deliveryNoticeOf([s({ mode: "order" })], null)).toBeNull();
+    expect(deliveryNoticeOf([], "HD-01")).toBeNull();
   });
 });

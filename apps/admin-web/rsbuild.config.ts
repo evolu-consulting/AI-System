@@ -5,6 +5,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 
 // Backend admin-api: dev server và preview proxy `/auth`, `/admin` (cùng origin → cookie refresh không cần CORS).
 const ADMIN_API_URL = process.env.ADMIN_API_URL ?? "http://localhost:3001";
+const HUB_URL = process.env.HUB_URL || "http://localhost:4020";
 
 export default defineConfig({
   plugins: [pluginReact()],
@@ -20,7 +21,12 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    proxy: { "/auth": ADMIN_API_URL, "/admin": ADMIN_API_URL },
+    proxy: {
+      "/auth": ADMIN_API_URL,
+      "/admin": ADMIN_API_URL,
+      // gap-c #35: chuông thông báo dùng chung gọi /notifications của hub-api.
+      "/notifications": HUB_URL,
+    },
   },
   tools: {
     rspack: {

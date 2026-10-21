@@ -20,6 +20,7 @@ import { Route as AuthedAppsRouteImport } from './routes/_authed/apps'
 import { Route as AuthedAuditRouteRouteImport } from './routes/_authed/audit/route'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
+import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedSourcesRouteImport } from './routes/_authed/sources'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
@@ -102,6 +103,11 @@ const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
 const AuthedMemberRoute = AuthedMemberRouteImport.update({
   id: '/member',
   path: '/member',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/apps': typeof AuthedAppsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/apps': typeof AuthedAppsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
+  '/notifications': typeof AuthedNotificationsRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/_authed/apps': typeof AuthedAppsRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/member': typeof AuthedMemberRoute
+  '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/sources': typeof AuthedSourcesRoute
   '/_authed/transfer': typeof AuthedTransferRoute
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/apps'
     | '/feedback'
     | '/member'
+    | '/notifications'
     | '/secrets'
     | '/sources'
     | '/transfer'
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
     | '/apps'
     | '/feedback'
     | '/member'
+    | '/notifications'
     | '/secrets'
     | '/sources'
     | '/transfer'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/_authed/apps'
     | '/_authed/feedback'
     | '/_authed/member'
+    | '/_authed/notifications'
     | '/_authed/secrets'
     | '/_authed/sources'
     | '/_authed/transfer'
@@ -589,6 +601,13 @@ declare module '@tanstack/react-router' {
       path: '/member'
       fullPath: '/member'
       preLoaderRoute: typeof AuthedMemberRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/notifications': {
+      id: '/_authed/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthedNotificationsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/secrets': {
@@ -815,6 +834,7 @@ interface AuthedRouteChildren {
   AuthedAppsRoute: typeof AuthedAppsRoute
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
+  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedSourcesRoute: typeof AuthedSourcesRoute
   AuthedTransferRoute: typeof AuthedTransferRoute
@@ -853,6 +873,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAppsRoute: AuthedAppsRoute,
   AuthedFeedbackRoute: AuthedFeedbackRoute,
   AuthedMemberRoute: AuthedMemberRoute,
+  AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedSourcesRoute: AuthedSourcesRoute,
   AuthedTransferRoute: AuthedTransferRoute,

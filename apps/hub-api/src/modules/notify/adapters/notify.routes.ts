@@ -40,6 +40,7 @@ export function notifyRoutes(svc: InboxService, push: PushKeyView): Hono<AuthVar
     return c.json(await svc.setPrefs(who(c), b));
   });
 
+  r.post("/push/test", async (c) => c.json({ created: await svc.sendTest(who(c)) }));
   r.get("/push/key", (c) => c.json({ public_key: push.publicKey }));
   r.post("/push/subscriptions", async (c) => {
     const b = await parseJson(c, PushSubscriptionBodySchema);

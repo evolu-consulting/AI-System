@@ -1,5 +1,8 @@
 // CHAT-AC-18, CHAT-AC-23 · khung app: ≥ 1024 sidebar 260px cố định; < 1024 header 56px (☰) + sidebar trong Sheet trái.
+
+import { splitHref } from "@ai/web-kit/notify/href";
 import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
+import { NotificationBell } from "@ai/web-kit/ui/NotificationBell";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
@@ -116,9 +119,13 @@ export function AppShell() {
             )
           }
           apps={<AppSwitcher current="chat" />}
-        >
-          <FeedbackButton app="chat" lang={i18n.language} />
-        </TopShell>
+          bell={
+            <NotificationBell
+              onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })}
+            />
+          }
+          feedback={<FeedbackButton app="chat" lang={i18n.language} />}
+        />
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
         <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <Outlet />

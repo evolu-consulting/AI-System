@@ -254,6 +254,8 @@
       "notificationsUnread": "Notifications, {{n}} unread",
       "notificationsEmpty": "No notifications yet.",
       "notificationsReadAll": "Mark all as read",
+      "notificationsViewAll": "View all",
+      "notificationsSettings": "Notification settings",
       "notificationUnreadDot": "Unread",
       "notificationsChannels": "Receive notifications by",
       "channelEmail": "Email",
