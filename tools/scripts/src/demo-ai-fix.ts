@@ -15,6 +15,7 @@ import { POLICY_CHUNKS, POLICY_TITLE, policyHash } from "./demo-ai-fix.policy";
 import { DEMO_KEY } from "./seed-demo-v2";
 import { partyKeyOf } from "./seed-demo-v2.build";
 import { OWN, PARTNERS } from "./seed-demo-v2.specs";
+import { applyAiSetup, planAiSetup } from "./tenant-ai-setup";
 
 export function assertDemo(key: string | undefined): asserts key is typeof DEMO_KEY {
   if (key !== DEMO_KEY)
@@ -61,25 +62,9 @@ export type Plan = {
 
 /** Agent seed phải có bậc model + tool tri thức sau `hub:seed` của lát ai-tiers-rag. */
 export const TIERED_AGENTS = { orchestrator: "fast", assistant: "std", "mgmt-assistant": "std" };
-const KNOWLEDGE_FEATS = ["knowledge-read", "knowledge-write", "knowledge-admin"];
-const CONTRACTS_FEATS = ["contracts-read", "contracts-write", "contracts-admin"];
 
-async function planKnowledge(
-  tx: Tx,
-  t: string,
-): Promise<Pick<Plan, "knowledgePack" | "knowledgeGrants" | "policyDoc" | "agentsStale">> {
-  const [r] = await tx<
-    { feats: number; missing: number; grants: number; doc: boolean; stale: number }[]
-  >`select
-    (select count(*)::int from admin.features where key = any(${KNOWLEDGE_FEATS}::text[])) as feats,
-    (select count(*)::int from admin.features f where f.key = any(${KNOWLEDGE_FEATS}::text[])
-      and not exists (select 1 from admin.feature_entitlements e where e.feature_id = f.id and e.tenant_id = ${t}
-        and e.revoked_at is null)) as missing,
-    (select count(*)::int from admin.feature_grants g join admin.features c on c.id = g.feature_id
-      join admin.features k on k.key = replace(c.key, 'contracts-', 'knowledge-')
-      where g.tenant_id = ${t} and g.group_id is not null and c.key = any(${CONTRACTS_FEATS}::text[])
-        and not exists (select 1 from admin.feature_grants x where x.tenant_id = g.tenant_id and x.feature_id = k.id
-          and x.group_id = g.group_id)) as grants,
+async function planKnowledge(tx: Tx, t: string): Promise<Pick<Plan, "policyDoc" | "agentsStale">> {
+  const [r] = await tx<{ doc: boolean; stale: number }[]>`select
     not exists (select 1 from knowledge.documents where tenant_id = ${t} and content_hash = ${policyHash()}) as doc,
     (select count(*)::int from hub.agents a left join hub.model_profiles p on p.id = a.profile_id
       where a.key = any(${Object.keys(TIERED_AGENTS)}::text[])
@@ -89,38 +74,11 @@ async function planKnowledge(
           or (a.key = 'assistant'
             and not coalesce(a.runtime_options -> 'pack_tools' ? 'contracts-search', false)))) as stale`;
   if (!r) throw new Error("demo-ai-fix: không đọc được hiện trạng tri thức");
-  return {
-    knowledgePack: r.feats < 3 ? -1 : r.missing,
-    knowledgeGrants: r.grants,
-    policyDoc: r.doc,
-    agentsStale: r.stale,
-  };
+  return { policyDoc: r.doc, agentsStale: r.stale };
 }
 
-/** (5) bật gói knowledge + cấp Group như contracts; (6) tài liệu QC-TC-01. Mỗi bước một câu theo tập (Luật 4c). */
-async function applyKnowledge(tx: Tx, t: string, p: Plan): Promise<void> {
-  if (p.knowledgePack > 0 || p.knowledgeGrants > 0) {
-    await tx`insert into admin.feature_entitlements (feature_id, tenant_id, granted_by)
-      select f.id, ${t}::uuid, (select e.granted_by from admin.feature_entitlements e
-        join admin.features c on c.id = e.feature_id where e.tenant_id = ${t} and c.key = 'contracts-read' limit 1)
-      from admin.features f where f.key = any(${KNOWLEDGE_FEATS}::text[])
-      on conflict (feature_id, tenant_id) do update set revoked_at = null, granted_at = now()
-        where admin.feature_entitlements.revoked_at is not null`;
-    await tx`insert into admin.feature_grants (tenant_id, feature_id, group_id, granted_by)
-      select g.tenant_id, k.id, g.group_id, g.granted_by from admin.feature_grants g
-        join admin.features c on c.id = g.feature_id
-        join admin.features k on k.key = replace(c.key, 'contracts-', 'knowledge-')
-      where g.tenant_id = ${t} and g.group_id is not null and c.key = any(${CONTRACTS_FEATS}::text[])
-      on conflict (tenant_id, feature_id, group_id) where group_id is not null do nothing`;
-    const [v] = await tx<
-      { v: number }[]
-    >`insert into admin.config_meta (id, config_version, updated_at)
-      values (1, 1, now()) on conflict (id) do update
-        set config_version = admin.config_meta.config_version + 1, updated_at = now()
-      returning config_version as v`;
-    // Hub (ConfigCache) nạp lại quyền gói khi nhận `config_changed` (giao lúc commit)
-    await tx`select pg_notify('config_changed', ${JSON.stringify({ v: v?.v, entity: "batch", tenant_id: t })})`;
-  }
+/** (6) tài liệu QC-TC-01 giả (bật gói knowledge + grant đã do `tenant-ai-setup` làm). */
+async function applyPolicyDoc(tx: Tx, t: string, p: Plan): Promise<void> {
   if (!p.policyDoc) return;
   const [d] = await tx<{ id: string }[]>`insert into knowledge.documents
       (tenant_id, title, kind, source, content_hash, chunk_count)
@@ -135,19 +93,8 @@ async function applyKnowledge(tx: Tx, t: string, p: Plan): Promise<void> {
 
 async function plan(tx: Tx, t: string): Promise<Plan> {
   const [r] = await tx<
-    {
-      ent: boolean;
-      grants: number;
-      docs: number;
-      company: boolean;
-      partners: number;
-      def: boolean;
-    }[]
+    { grants: number; docs: number; company: boolean; partners: number }[]
   >`select
-    not exists (select 1 from hub.tenant_agent_defaults d join hub.agents a on a.id = d.default_agent_id
-      where d.tenant_id = ${t} and a.key = 'assistant') as def,
-    not exists (select 1 from hub.agent_entitlements e join hub.agents a on a.id = e.agent_id
-      where a.key = 'assistant' and e.tenant_id = ${t} and e.revoked_at is null) as ent,
     (select count(*)::int from hub.agent_grants g join hub.agents m on m.id = g.agent_id and m.key = 'mgmt-assistant'
       where g.tenant_id = ${t} and not exists (select 1 from hub.agent_grants x join hub.agents a on a.id = x.agent_id
         and a.key = 'assistant' where x.tenant_id = g.tenant_id and x.subject_type = g.subject_type and x.subject_id = g.subject_id)) as grants,
@@ -155,35 +102,32 @@ async function plan(tx: Tx, t: string): Promise<Plan> {
     exists (select 1 from contracts.company_settings where tenant_id = ${t} and company_name ilike '%niti%') as company,
     (select count(*)::int from contracts.companies where tenant_id = ${t} and (phone is null or contact_person is null)) as partners`;
   if (!r) throw new Error("demo-ai-fix: không đọc được hiện trạng");
+  const s = await planAiSetup(tx, t, { forceDefault: true });
   return {
-    entitlement: r.ent,
+    entitlement: s.entitlement,
     grants: r.grants,
     doc: r.docs === 0,
     company: r.company,
     partners: r.partners,
-    defaultAgent: r.def,
+    defaultAgent: s.defaultAgent,
+    knowledgePack: s.knowledgePack,
+    knowledgeGrants: s.knowledgeGrants,
     ...(await planKnowledge(tx, t)),
   };
 }
 
 async function apply(tx: Tx, t: string, p: Plan): Promise<void> {
+  // Phần AI chung (assistant + gói knowledge + agent mặc định) dùng chung với tenant-ai-setup; demo ghi đè agent mặc định.
+  await applyAiSetup(tx, t, await planAiSetup(tx, t, { forceDefault: true }));
   const [v] = await tx<
     { v: number }[]
   >`update hub.config_meta set hub_config_version = hub_config_version + 1
     where id = 1 returning hub_config_version as v`;
-  await tx`insert into hub.agent_entitlements (agent_id, tenant_id)
-    select id, ${t}::uuid from hub.agents where key = 'assistant' on conflict (agent_id, tenant_id) do update set revoked_at = null`;
   await tx`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
     select a.id, g.tenant_id, g.subject_type, g.subject_id from hub.agent_grants g
       join hub.agents m on m.id = g.agent_id and m.key = 'mgmt-assistant', hub.agents a
     where g.tenant_id = ${t} and a.key = 'assistant'
     on conflict (agent_id, tenant_id, subject_type, subject_id) do nothing`;
-  // chat-fast2 · agent mặc định = assistant (đã cấp như mgmt-assistant ở trên) ⇒ tin không tag ở AI System chạy thẳng 1 job.
-  if (p.defaultAgent)
-    await tx`insert into hub.tenant_agent_defaults (tenant_id, default_agent_id, fallback_agent_id, on_no_match)
-      select ${t}::uuid, id, null, 'answer' from hub.agents where key = 'assistant'
-      on conflict (tenant_id) do update set default_agent_id = excluded.default_agent_id,
-        fallback_agent_id = null, on_no_match = 'answer', updated_at = now()`;
   await tx`select pg_notify('hub_config_changed', ${JSON.stringify({ v: 1, version: v?.v })})`;
   if (p.doc) {
     await tx`select set_config('app.tenant_id', ${t}, true)`;
@@ -202,9 +146,8 @@ async function apply(tx: Tx, t: string, p: Plan): Promise<void> {
     if (x.phone)
       await tx`update contracts.companies set phone = coalesce(phone, ${x.phone}), contact_person = coalesce(contact_person, ${x.contact ?? null})
         where tenant_id = ${t} and party_key = ${partyKeyOf(x.key)}`;
-  await applyKnowledge(tx, t, p);
+  await applyPolicyDoc(tx, t, p);
 }
-
 export async function run(sql: Sql, doApply: boolean): Promise<Plan> {
   return sql.begin(async (tx) => {
     const [t] = await tx<
