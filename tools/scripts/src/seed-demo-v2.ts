@@ -145,10 +145,11 @@ async function loadPeople({ tx, tenant, a, today, shift }: Ctx): Promise<void> {
   await ins(tx, "score_lock_runs", runs);
 }
 
-/** Tên pháp nhân của mình (Cài đặt công ty) — để HĐ tự nhận Mua/Bán. Chỉ ghi khi hàng chưa có. */
+/** Tên pháp nhân của mình (Cài đặt công ty) — để HĐ tự nhận Mua/Bán. Luôn ghi đè tên giả của demo (không bao giờ tên thật của khách). */
 async function loadCompany(tx: Tx, tenant: string): Promise<void> {
   await tx`insert into contracts.company_settings (tenant_id, company_name, app_name, own_names, own_tax_ids)
-    values (${tenant}, ${OWN.name}, 'Sổ Hợp Tác', ${[OWN.name]}::text[], ${[OWN.tax]}::text[]) on conflict (tenant_id) do nothing`;
+    values (${tenant}, ${OWN.name}, 'Sổ Hợp Tác', ${[OWN.name]}::text[], ${[OWN.tax]}::text[])
+    on conflict (tenant_id) do update set company_name = excluded.company_name, own_names = excluded.own_names, own_tax_ids = excluded.own_tax_ids`;
 }
 
 const RENEWED = [

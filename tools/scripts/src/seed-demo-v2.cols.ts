@@ -8,6 +8,8 @@ export const COLS: Record<string, readonly Col[]> = {
     "tax_id text",
     "name text",
     "short_name text",
+    "phone text",
+    "contact_person text",
     "created_from text",
   ],
   products: [

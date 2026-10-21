@@ -165,10 +165,13 @@ test.describe("02 contracts-web", () => {
     await expect(page).toHaveURL(/party=/);
     const lead = page.locator("main").getByText(/MST/).first();
     await expect(lead).toContainText("MST");
-    // Giá trị hiện có (bộ mẫu v2 có thể chưa nạp ở demo ⇒ rỗng): ghi nhớ rồi trả lại đúng như cũ.
+    // Bộ mẫu v2 (seed-demo-v2) cho Hưng Thịnh: điện thoại + người liên hệ — phải có đúng giá trị đã nạp; sửa xong trả lại như cũ.
+    await expect(lead).toContainText("028 3910 2222");
+    await expect(lead).toContainText("Phạm Hưng");
     await page.getByRole("button", { name: "Sửa", exact: true }).click();
     const form = page.getByRole("form", { name: "Điện thoại và người liên hệ" });
     const original = await form.getByLabel("Điện thoại").inputValue();
+    expect(original).toBe("028 3910 2222");
     await form.getByLabel("Điện thoại").fill("028 3910 9999");
     await form.getByRole("button", { name: "Lưu" }).click();
     await expect(lead).toContainText("028 3910 9999");

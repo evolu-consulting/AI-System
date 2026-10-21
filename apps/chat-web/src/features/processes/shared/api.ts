@@ -1,6 +1,7 @@
 // HUB-FR-105…113 · P-a Bước 0: gọi API dùng chung (dò cờ, đọc run, đọc output). Mỗi PF có `api.ts` riêng cho phần của mình.
 import { ProcessOutputSchema, type ProcessRunView, ProcessRunViewSchema } from "@ai/contracts/chat";
 import { ApiError, api } from "@ai/web-kit/http";
+import { frozenModulesOn } from "~/lib/frozen";
 import type { EngineState } from "./types";
 
 /**
@@ -8,6 +9,8 @@ import type { EngineState } from "./types";
  * 200 ⇒ on; 404/403 (cờ tắt ⇒ route không mount) ⇒ off; lỗi khác ném (hook coi là `unknown`, thử lại sau).
  */
 export async function probeEngine(signal?: AbortSignal): Promise<EngineState> {
+  // Module đóng băng tắt (cờ build PUBLIC_FROZEN_MODULES) ⇒ Hub không mount route quy trình: không dò (tránh 404 trong console).
+  if (!frozenModulesOn) return "off";
   try {
     await api<unknown>("/processes", { signal });
     return "on";

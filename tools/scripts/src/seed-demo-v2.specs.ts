@@ -25,7 +25,7 @@ export type Partner = {
   contact?: string;
 };
 
-export const OWN = { name: "NITI GROUP", tax: "0109999999" } as const;
+export const OWN = { name: "Công ty Demo", tax: "0109999999" } as const;
 
 export const PARTNERS: readonly Partner[] = [
   {
@@ -76,8 +76,22 @@ export const PARTNERS: readonly Partner[] = [
     phone: "0912 333 444",
     contact: "Ông Minh",
   },
-  { key: "anphu", name: "Công ty CP An Phú", short: "An Phú", tax: "0101000007" },
-  { key: "binhminh", name: "Công ty CP Bình Minh", short: "Bình Minh", tax: "0101000008" },
+  {
+    key: "anphu",
+    name: "Công ty CP An Phú",
+    short: "An Phú",
+    tax: "0101000007",
+    phone: "0938 555 777",
+    contact: "Chị Phú",
+  },
+  {
+    key: "binhminh",
+    name: "Công ty CP Bình Minh",
+    short: "Bình Minh",
+    tax: "0101000008",
+    phone: "0277 3811 222",
+    contact: "Anh Minh",
+  },
   {
     key: "pvi",
     name: "PVI / Bảo Việt",
@@ -95,7 +109,14 @@ export const PARTNERS: readonly Partner[] = [
     phone: "024 3555 6666",
     contact: "Phòng đại lý",
   },
-  { key: "lekhach", name: "Khách lẻ · NITI Shop", short: "Khách lẻ", tax: "0101000011" },
+  {
+    key: "lekhach",
+    name: "Khách lẻ · Demo Shop",
+    short: "Khách lẻ",
+    tax: "0101000011",
+    phone: "0900 000 111",
+    contact: "Quầy bán lẻ",
+  },
 ];
 
 export type Grp = "service" | "goods" | "referral";

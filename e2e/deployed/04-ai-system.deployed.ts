@@ -236,21 +236,14 @@ test.describe
         `${TAG} Trong tệp đính kèm, mã dự án là gì và ngân sách phê duyệt bao nhiêu? Nêu nguồn.`,
       );
       expect(r).not.toMatch(ERR_UI);
-      // Tệp gửi đi được (chip còn trong tin) và có trả lời. Demo chỉ cấp agent `mgmt-assistant` (không có tool đọc tệp) ⇒ hiện
-      // Điều phối trả lời thật thà "chưa đọc được tệp". Chấp nhận: (a) nêu đúng dữ kiện trong tệp, hoặc (b) nói rõ chưa đọc được —
-      // KHÔNG chấp nhận bịa mã/ngân sách khác.
+      // Demo được cấp agent chung `assistant` (có Read/Grep) ⇒ phải đọc được tệp: nêu ĐÚNG mã + ngân sách trong tệp, kèm nguồn
+      // (tên tệp). Không chấp nhận "chưa đọc được" hay bịa số khác. (Cấp quyền: demo-ai-fix.ts trên máy chủ.)
       await expect(chat.locator("body")).toContainText(`${TAG}-bien-ban.txt`);
-      const read = r.includes(fact) && /987\.654\.321|987,654,321|987654321/.test(r);
-      const honest =
-        /chưa đọc được|không đọc được|không mở được|không có công cụ|không truy cập/i.test(r);
-      test.info().annotations.push({
-        type: "file-qa",
-        description: read ? "đọc được tệp" : "chưa đọc được tệp",
-      });
-      expect(
-        read || honest,
-        `trả lời không nêu dữ kiện cũng không nói chưa đọc được: ${r.slice(0, 300)}`,
-      ).toBe(true);
+      expect(r, "thiếu mã dự án trong tệp").toContain(fact);
+      expect(r, "thiếu ngân sách trong tệp").toMatch(/987\.654\.321|987,654,321|987654321/);
+      expect(r, "thiếu trích dẫn nguồn (tên tệp/biên bản)").toMatch(
+        /bien-ban|biên bản|tệp đính kèm|nguồn/i,
+      );
     });
 
     test("cùng MỘT agent: @mgmt-assistant gọi từ AI System và từ khoang trợ lý Sổ Hợp Tác đều do agent mgmt-assistant trả lời", async ({
