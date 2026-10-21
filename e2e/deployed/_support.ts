@@ -9,16 +9,15 @@ import {
 
 // DEP_DOMAIN=evoluconsulting.com => chay qua https host thu nghiem (sohoptac-test./ai-test-admin./ai-test./ai-test-hub.<domain>) thay vi SSH tunnel;
 // DEP_*_URL van thang. Khong dat gi => localhost:1843x (tunnel).
+// DEP_HOSTS=prod => sohoptac./ai-admin./ai./ai-hub.<domain>; test (mac dinh) => cac host -test.
+const SFX = process.env.DEP_HOSTS?.trim() === "prod" ? "" : "-test";
+const dom = (sub: string, local: string) =>
+  DOM ? `https://${sub.replace("@", SFX)}.${DOM}` : local;
 const DOM = process.env.DEP_DOMAIN?.trim();
-export const CW =
-  process.env.DEP_CONTRACTS_URL ??
-  (DOM ? `https://sohoptac-test.${DOM}` : "http://localhost:18431");
-export const ADMIN =
-  process.env.DEP_ADMIN_URL ?? (DOM ? `https://ai-test-admin.${DOM}` : "http://localhost:18432");
-export const CHAT =
-  process.env.DEP_CHAT_URL ?? (DOM ? `https://ai-test.${DOM}` : "http://localhost:18433");
-export const HUB =
-  process.env.DEP_HUB_URL ?? (DOM ? `https://ai-test-hub.${DOM}` : "http://localhost:18434");
+export const CW = process.env.DEP_CONTRACTS_URL ?? dom("sohoptac@", "http://localhost:18431");
+export const ADMIN = process.env.DEP_ADMIN_URL ?? dom("ai@-admin", "http://localhost:18432");
+export const CHAT = process.env.DEP_CHAT_URL ?? dom("ai@", "http://localhost:18433");
+export const HUB = process.env.DEP_HUB_URL ?? dom("ai@-hub", "http://localhost:18434");
 export const TENANT = "demo";
 export const USER = process.env.DEMO_USER ?? "demo-owner";
 export const TAG = "E2E-DEPLOY";

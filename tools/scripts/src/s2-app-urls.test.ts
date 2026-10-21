@@ -19,6 +19,25 @@ describe("s2-app-urls", () => {
     const after = plan.map((c) => ({ key: c.key, url: c.to }));
     expect(planUrlChanges("evoluconsulting.com", after)).toEqual([]);
   });
+  it("--hosts prod: đổi hàng localhost và -test sang host prod, giữ hàng khác", () => {
+    const plan = planUrlChanges(
+      "evoluconsulting.com",
+      [
+        { key: "chat", url: "https://ai-test.evoluconsulting.com" },
+        { key: "contracts", url: "http://localhost:18431" },
+        { key: "studio", url: "https://ai-test-hub.evoluconsulting.com/studio/" },
+        { key: "admin", url: "https://admin.custom.example" },
+      ],
+      "prod",
+    );
+    expect(plan.map((c) => [c.key, c.to])).toEqual([
+      ["chat", "https://ai.evoluconsulting.com"],
+      ["contracts", "https://sohoptac.evoluconsulting.com"],
+      ["studio", "https://ai-hub.evoluconsulting.com/studio/"],
+    ]);
+    const after = plan.map((c) => ({ key: c.key, url: c.to }));
+    expect(planUrlChanges("evoluconsulting.com", after, "prod")).toEqual([]);
+  });
   it("từ chối base-domain sai", () => {
     expect(() => targetUrls("x/../y")).toThrow();
   });

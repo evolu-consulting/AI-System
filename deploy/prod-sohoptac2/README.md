@@ -220,3 +220,21 @@ Hoàn tác: `bash disable-domain.sh` (gỡ conf, reload, ngắt mạng, khôi ph
 Ghi chú: cookie refresh đã `Secure` (APP_ENV=production; Chrome vẫn nhận trên `http://localhost`) và nginx `web` giữ `X-Forwarded-Proto` của edge. Cookie mỗi host riêng (`Path=/auth`, SameSite=Strict, cùng origin với web nên không cross-site); SSO giữa app đi qua `PUBLIC_SSO_URL` = `https://ai-test.<domain>`. Qua tunnel vẫn đăng nhập được từng cổng (CORS có origin localhost) nhưng link chuyển app dẫn sang host https. Giới hạn body 110m, SSE `proxy_buffering off`, `proxy_read_timeout 600`. `TRUST_PROXY_HOPS=3` = host nginx + edge-proxy + web (đều nối `X-Forwarded-For`).
 
 e2e triển khai qua domain: `powershell -File deploy/prod-sohoptac2/e2e-deployed.ps1 -Domain evoluconsulting.com` (không mở tunnel) hoặc đặt `DEP_DOMAIN=evoluconsulting.com` (`e2e/deployed/_support.ts`; `DEP_*_URL` vẫn ghi đè từng host). Không đặt ⇒ localhost:1843x qua tunnel.
+
+## Cutover: 4 ten mien production -> stack moi (sohoptac., ai., ai-admin., ai-hub. .evoluconsulting.com)
+| Host | Cong `web` | App |
+|---|---|---|
+| `sohoptac.<domain>` | 8081 | So Hop Tac moi (contracts-web) |
+| `ai-admin.<domain>` | 8082 | Quan tri |
+| `ai.<domain>` | 8083 | AI System portal + Chat AI |
+| `ai-hub.<domain>` | 8084 | Hub + Studio |
+
+Cac host `-test` van la alias vo hai (cung `server_name`, CORS van cho phep) nhung KHONG con duoc dung. App cu (`sohoptac`, `aisystem`) khong con ten mien cong khai:
+container giu nguyen chay, chi truy cap bang SSH tunnel; khong migrate du lieu cu. Cert `evoluconsulting` da co ca 4 ten prod => khong can certbot.
+Thu tu (tren may chu, thu muc `~/workspace/sohoptac2`; do nguoi dung chay):
+1. `powershell -File deploy/prod-sohoptac2/deploy.ps1 -Domain evoluconsulting.com -Hosts prod` — `gen-env.sh` nhan `S2_HOSTS=prod|test` (ghi vao `.env`): `PUBLIC_*`/`APP_URL_*`/`ADMIN_WEB_URL`/`HUB_NOTIFY_BASE_URL`/SSO dung host prod; `CORS_ORIGINS`/`HUB_CORS_ORIGINS` gom CA host prod, host `-test` va origin localhost cua tunnel. Build lai web.
+2. `bash enable-domain.sh` (neu chua chay: noi mang edge-proxy; chi cai ten `-test`, khong dung ten prod con thuoc app cu).
+3. `bash cutover.sh` — sao luu `conf.d` -> `conf.d.bak-<ts>` (+ marker `.s2-cutover-backup`), doi ten `aisystem.conf` va `sohoptac.conf` thanh `*.conf.disabled` (khong xoa), cai `sohoptac2.conf` (ten prod + `-test`), `nginx -t` -> reload; loi => khoi phuc ban sao luu, exit 1. Chay lai an toan (khong ghi de ban sao luu goc). In san lenh `curl` kiem.
+4. `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain evoluconsulting.com --hosts prod` (them `--apply` de ghi): doi `admin.app_catalog.url` con tro localhost hoac `-test` sang host prod; hang khac giu nguyen.
+Hoan tac: `bash rollback-cutover.sh` (khoi phuc `conf.d` tu ban sao luu goc: bat lai app cu, go ten prod khoi sohoptac2.conf, reload), roi `deploy.ps1 -Hosts test` neu muon URL ve -test.
+e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAIN` + `DEP_HOSTS=prod|test`).

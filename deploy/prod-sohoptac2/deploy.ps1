@@ -4,7 +4,8 @@
 # git archive <Ref> + bộ kit này -> scp -> giải nén vào build/app -> gen-env.sh (bí mật một lần, trên máy chủ) -> docker compose build
 # -> setup.sh (migrate, seed, chạy, /health). Không đụng project khác; không đổi routing/TLS của host; dữ liệu (volume pgdata,
 # data/, claude-home/, .env, ADMIN_CREDENTIALS.txt) giữ nguyên giữa các lần deploy.
-param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "")
+# -Hosts prod|test: bo hostname cong khai (prod = sohoptac./ai-admin./ai./ai-hub.; test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
+param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2"
@@ -13,8 +14,8 @@ $commit = (git -C $Repo rev-parse --short $Ref).Trim()
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $tmp = Join-Path $env:TEMP "sohoptac2-$stamp"
 if ($Domain -and $Domain -ne "none" -and $Domain -notmatch '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$') { throw "-Domain khong hop le: $Domain" }
-$envDomain = if ($Domain) { "S2_DOMAIN=$Domain " } else { "" }
-$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "backup.sh", "restore-test.sh", "smoke-ai.ts", "env.template", "README.md", "enable-domain.sh", "disable-domain.sh", "edge/sohoptac2.conf")
+$envDomain = $(if ($Domain) { "S2_DOMAIN=$Domain " } else { "" }) + $(if ($Hosts) { "S2_HOSTS=$Hosts " } else { "" })
+$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "backup.sh", "restore-test.sh", "smoke-ai.ts", "env.template", "README.md", "enable-domain.sh", "disable-domain.sh", "cutover.sh", "rollback-cutover.sh", "edge-lib.sh", "edge/sohoptac2.conf")
 
 if ($DryRun) { Write-Host "commit $commit ($Ref) -> ${Server}:$Dir"; return }
 New-Item -ItemType Directory -Force $tmp | Out-Null

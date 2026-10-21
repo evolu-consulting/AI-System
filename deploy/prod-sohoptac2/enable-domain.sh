@@ -35,7 +35,11 @@ LISTEN="${LISTEN:-80}"
 
 prev=""
 [ -f "$DST" ] && { prev="$(mktemp)"; cp -p "$DST" "$prev"; }
-sed -e "s/__BASE__/$BASE/g" -e "s/listen 80;/listen $LISTEN;/" "$SRC" > "$DST.new"
+. ./edge-lib.sh
+# Mac dinh chi host -test (ten prod con thuoc app cu cho toi khi chay cutover.sh).
+NAMES="${S2_EDGE_NAMES:-test}"
+[ ! -f "$EDGE_DIR/.s2-cutover-backup" ] || NAMES=both   # da cutover: chay lai khong duoc lam mat ten prod
+s2_render "$SRC" "$BASE" "$NAMES" "$LISTEN" > "$DST.new"
 mv "$DST.new" "$DST"
 echo "enable-domain: da chep $DST (base=$BASE, listen=$LISTEN)"
 

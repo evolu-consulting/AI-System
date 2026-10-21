@@ -71,24 +71,31 @@ envget() { grep -m1 "^$1=" .env | cut -d= -f2- || true; }
 setkv() { local tmp; tmp=$(mktemp); awk -v k="$1" -v v="$2" 'BEGIN{FS=OFS="="} $1==k{print k "=" v; d=1; next} {print} END{if(!d) print k "=" v}' .env > "$tmp"; cat "$tmp" > .env; rm -f "$tmp"; }
 D_IN="${S2_DOMAIN-}"; D_OLD="$(envget S2_DOMAIN)"
 if [ "$D_IN" = "none" ]; then MODE=tunnel; D=""; elif [ -n "$D_IN" ]; then MODE=domain; D="$D_IN"; elif [ -n "$D_OLD" ]; then MODE=domain; D="$D_OLD"; else MODE=keep; D=""; fi
+# S2_HOSTS=prod|test (cutover): prod = sohoptac./ai-admin./ai./ai-hub.<domain>; test = ...-test hosts (mac dinh, hoac giu gia tri da ghi trong .env).
+# CORS luon gom CA HAI bo host https + origin localhost (tunnel). Nho: doi S2_HOSTS can build lai web (PUBLIC_* nhung luc build).
+H_IN="${S2_HOSTS-}"; H_OLD="$(envget S2_HOSTS)"; H="${H_IN:-${H_OLD:-test}}"
+[[ "$H" == prod || "$H" == test ]] || { echo "gen-env: S2_HOSTS phai la prod|test"; exit 2; }
+[ -z "$H_IN" ] || [ "$MODE" = domain ] || { echo "gen-env: S2_HOSTS can che do domain (dat S2_DOMAIN)"; exit 2; }
 LOCAL=""
 for k in CONTRACTS ADMIN CHAT HUB; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
 if [ "$MODE" != keep ]; then
   [ -f .env.bak-domain ] || { cp -p .env .env.bak-domain; chmod 600 .env.bak-domain; }
   if [ "$MODE" = domain ]; then
     [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
-    U_C="https://sohoptac-test.$D"; U_A="https://ai-test-admin.$D"; U_H="https://ai-test-hub.$D"; U_CH="https://ai-test.$D"
-    setkv S2_DOMAIN "$D"; setkv TRUST_PROXY_HOPS 3
-    ORIG="$U_C,$U_A,$U_CH,$U_H,$LOCAL"
+    T_C="https://sohoptac-test.$D"; T_A="https://ai-test-admin.$D"; T_H="https://ai-test-hub.$D"; T_CH="https://ai-test.$D"
+    P_C="https://sohoptac.$D"; P_A="https://ai-admin.$D"; P_H="https://ai-hub.$D"; P_CH="https://ai.$D"
+    if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; fi
+    setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv TRUST_PROXY_HOPS 3
+    ORIG="$P_C,$P_A,$P_CH,$P_H,$T_C,$T_A,$T_CH,$T_H,$LOCAL"
   else
     U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
     U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"
-    setkv S2_DOMAIN ""; setkv TRUST_PROXY_HOPS 1
+    setkv S2_DOMAIN ""; setkv S2_HOSTS ""; setkv TRUST_PROXY_HOPS 1
     ORIG="$LOCAL"
   fi
   setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"
   setkv CORS_ORIGINS "$ORIG"; setkv HUB_CORS_ORIGINS "$ORIG"; setkv ADMIN_WEB_URL "$U_A"; setkv HUB_NOTIFY_BASE_URL "$U_C"
-  echo "gen-env: che do $MODE ${D:+($D)} - da cap nhat URL/CORS/TRUST_PROXY_HOPS trong .env; can build lai web + up -d"
+  echo "gen-env: che do $MODE ${D:+($D, hosts=$H)} - da cap nhat URL/CORS/TRUST_PROXY_HOPS trong .env; can build lai web + up -d"
 elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then
   setkv S2_PUBLIC_CONTRACTS_URL "http://localhost:$(envget S2_PORT_CONTRACTS)"
 fi

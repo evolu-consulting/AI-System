@@ -6,7 +6,8 @@ param(
   [string]$Spec = "",
   [string]$User = "demo-owner",
   [string]$Domain = "",   # vd evoluconsulting.com: chay qua https host (DEP_DOMAIN), KHONG mo tunnel
-  [string]$Key = "F:\workspace\id_evoc_key",
+  [ValidateSet("test", "prod")][string]$Hosts = "test",   # DEP_HOSTS: prod = sohoptac./ai./ai-admin./ai-hub. (dung voi -Domain)
+  [string]$Key ="F:\workspace\id_evoc_key",
   [string]$Server = "evoc@149.202.83.5"
 )
 $ErrorActionPreference = "Stop"
@@ -16,6 +17,7 @@ try {
   # Tunnel: tham so tung phan tu, khong co dau nhay kep trong tham so ssh.
   $sshArgs = @("-i", $Key, "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=20",
     "-L", "18431:127.0.0.1:18431", "-L", "18432:127.0.0.1:18432", "-L", "18433:127.0.0.1:18433", "-L", "18434:127.0.0.1:18434", $Server)
+  $env:DEP_HOSTS = $Hosts
   if ($Domain) { $env:DEP_DOMAIN = $Domain } else {
   $tunnel = Start-Process -FilePath "ssh" -ArgumentList $sshArgs -WindowStyle Hidden -PassThru
   $ok = $false
