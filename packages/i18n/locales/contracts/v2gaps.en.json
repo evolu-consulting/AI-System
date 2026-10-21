@@ -1,0 +1,28 @@
+{
+  "contracts": {
+    "vgaps": {
+      "apps": {
+        "title": "Apps",
+        "chat": "AI System",
+        "admin": "Admin"
+      },
+      "contact": {
+        "title": "Phone and contact person",
+        "edit": "Edit",
+        "phone": "Phone",
+        "person": "Contact person",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saved": "Contact saved",
+        "error": "Could not save, try again."
+      },
+      "mine": {
+        "title": "Our own reputation",
+        "none": "None of our own tasks were completed in the last {{days}} days.",
+        "allOnTime": "All {{total}} of our own tasks in the last {{days}} days were on time.",
+        "someLate": "{{late}} of {{total}} of our own tasks were late in the last {{days}} days ({{pct}}% on time). Fault: ours {{ours}}, partner {{partner}}, unknown {{unknown}}. Our own faults do not lower a partner's score.",
+        "blamed": "Partners blamed: {{list}}."
+      }
+    }
+  }
+}

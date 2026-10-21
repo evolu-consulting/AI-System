@@ -16,6 +16,7 @@ import type {
   RepConfigOut,
   RepDetail,
   RepHistory,
+  RepMine,
   RepPartnerRow,
   RepRatingIn,
   RepRatingRow,
@@ -46,6 +47,7 @@ export const partnerKeys = {
   repRatings: (party: string, role: RepRole) =>
     ["partners", "rep", "ratings", party, role] as const,
   profile: (party: string) => ["partners", "profile", party] as const,
+  mine: (days: number) => ["partners", "rep", "mine", days] as const,
   roles: (party: string) => ["partners", "roles", party] as const,
   contracts: (party: string) => ["partners", "contracts", party] as const,
   notes: (party: string) => ["partners", "notes", party] as const,
@@ -118,3 +120,9 @@ export const deleteNote = (id: string) =>
 /** Q8: chỉ chạy khi người dùng bấm; máy chủ chỉ gửi tên + MST. */
 export const searchInternet = (party: string) =>
   api<PartnerWebSearch>(`${BASE}/partners/internet-search`, { method: "POST", body: { party } });
+
+// ---------- V2-GAPS: điện thoại / liên hệ đối tác (DT-01) + "Uy tín của mình" (C10) ----------
+export const saveProfile = (b: { party: string; phone: string; contact: string }) =>
+  api<PartnerProfile>(`${BASE}/partners/profile`, { method: "PUT", body: b });
+export const fetchRepMine = (days: number, signal?: AbortSignal) =>
+  api<RepMine>(`${REP}/mine?days=${days}`, { signal });

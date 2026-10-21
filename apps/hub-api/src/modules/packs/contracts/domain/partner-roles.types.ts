@@ -46,6 +46,8 @@ export type PartnerNote = {
   at: string;
 };
 
+export type PartnerContactIn = { party: string; phone: string | null; contact: string | null };
+
 export type PartnerProfile = {
   party: string;
   name: string | null;

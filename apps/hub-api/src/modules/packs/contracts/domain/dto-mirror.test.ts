@@ -31,6 +31,7 @@ import { OVERVIEW_GROUPS, OVERVIEW_PERIODS } from "./overview.rules";
 import type * as PR from "./partner-roles.types";
 import { NEW_PARTNER_LABEL } from "./partner-roles.types";
 import type * as PD from "./products.types";
+import type * as RM from "./rep-mine.rules";
 import type * as RP from "./reputation.types";
 import type * as S from "./sourcing.types";
 import { SOURCING_CANDIDATES_MAX, SOURCING_PAGE_SIZE } from "./sourcing.types";
@@ -110,6 +111,7 @@ describe("ADR-0023 · bản sao DTO cho lớp 1–2 (sản phẩm, KD, đối t�
       same<PR.PartnerContractCount, C.PartnerContractCount>(true),
       same<PR.PartnerNote, C.PartnerNote>(true),
       same<PR.PartnerProfile, C.PartnerProfile>(true),
+      same<PR.PartnerContactIn, C.PartnerContactIn>(true),
       same<PR.PartnerRoleRow, C.PartnerRoleRow>(true),
       same<PR.PartnerWebLine, C.PartnerWebLine>(true),
       same<SP.SupplierOverviewOut, C.SupplierOverviewOut>(true),
@@ -128,6 +130,7 @@ describe("ADR-0023 · bản sao DTO cho lớp 1–2 (sản phẩm, KD, đối t�
       same<RP.RepRatingIn, C.RepRatingIn>(true),
       same<RP.RepPreviewIn, C.RepPreviewIn>(true),
       same<RP.RepJobTypesIn, C.RepJobTypesIn>(true),
+      same<RM.Mine, C.RepMine>(true),
     ];
     expect(checks.every(Boolean)).toBe(true);
   });

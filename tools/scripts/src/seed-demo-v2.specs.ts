@@ -14,21 +14,87 @@ export type PKey =
   | "pvi"
   | "fast"
   | "lekhach";
-export type Partner = { key: PKey; name: string; short: string; tax: string; manual?: boolean };
+export type Partner = {
+  key: PKey;
+  name: string;
+  short: string;
+  tax: string;
+  manual?: boolean;
+  /** V2-GAPS: điện thoại + người liên hệ lấy từ mockup (PINFO); Khách lẻ không có. */
+  phone?: string;
+  contact?: string;
+};
 
 export const OWN = { name: "NITI GROUP", tax: "0109999999" } as const;
 
 export const PARTNERS: readonly Partner[] = [
-  { key: "ncca", name: "Hãng NCCA", short: "Hãng NCCA", tax: "0101000001" },
-  { key: "viettel", name: "Viettel S-Invoice", short: "Viettel S-Invoice", tax: "0101000002" },
-  { key: "tanphat", name: "Cơ sở Tân Phát", short: "Tân Phát", tax: "0101000003" },
-  { key: "abc", name: "Công ty TNHH ABC", short: "ABC", tax: "0101000004" },
-  { key: "hungthinh", name: "Công ty CP Hưng Thịnh", short: "Hưng Thịnh", tax: "0101000005" },
-  { key: "minhphat", name: "DNTN Minh Phát", short: "Minh Phát", tax: "0101000006" },
+  {
+    key: "ncca",
+    name: "Hãng NCCA",
+    short: "Hãng NCCA",
+    tax: "0101000001",
+    phone: "024 3999 8888",
+    contact: "Nguyễn Văn A",
+  },
+  {
+    key: "viettel",
+    name: "Viettel S-Invoice",
+    short: "Viettel S-Invoice",
+    tax: "0101000002",
+    phone: "1800 8000",
+    contact: "Phòng kinh doanh",
+  },
+  {
+    key: "tanphat",
+    name: "Cơ sở Tân Phát",
+    short: "Tân Phát",
+    tax: "0101000003",
+    phone: "0903 111 222",
+    contact: "Anh Phát",
+  },
+  {
+    key: "abc",
+    name: "Công ty TNHH ABC",
+    short: "ABC",
+    tax: "0101000004",
+    phone: "028 3822 1111",
+    contact: "Trần B",
+  },
+  {
+    key: "hungthinh",
+    name: "Công ty CP Hưng Thịnh",
+    short: "Hưng Thịnh",
+    tax: "0101000005",
+    phone: "028 3910 2222",
+    contact: "Phạm Hưng",
+  },
+  {
+    key: "minhphat",
+    name: "DNTN Minh Phát",
+    short: "Minh Phát",
+    tax: "0101000006",
+    phone: "0912 333 444",
+    contact: "Ông Minh",
+  },
   { key: "anphu", name: "Công ty CP An Phú", short: "An Phú", tax: "0101000007" },
   { key: "binhminh", name: "Công ty CP Bình Minh", short: "Bình Minh", tax: "0101000008" },
-  { key: "pvi", name: "PVI / Bảo Việt", short: "PVI / Bảo Việt", tax: "0101000009" },
-  { key: "fast", name: "Hãng FAST", short: "Hãng FAST", tax: "0101000010", manual: true },
+  {
+    key: "pvi",
+    name: "PVI / Bảo Việt",
+    short: "PVI / Bảo Việt",
+    tax: "0101000009",
+    phone: "1900 545 458",
+    contact: "Trần Bảo",
+  },
+  {
+    key: "fast",
+    name: "Hãng FAST",
+    short: "Hãng FAST",
+    tax: "0101000010",
+    manual: true,
+    phone: "024 3555 6666",
+    contact: "Phòng đại lý",
+  },
   { key: "lekhach", name: "Khách lẻ · NITI Shop", short: "Khách lẻ", tax: "0101000011" },
 ];
 

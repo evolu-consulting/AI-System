@@ -11,6 +11,7 @@ import {
   lookupResult,
 } from "../domain/partner-roles.rules";
 import type {
+  PartnerContactIn,
   PartnerContractCount,
   PartnerContractRow,
   PartnerDeal,
@@ -132,6 +133,13 @@ async function partnerProfile(
   return p;
 }
 
+/** V2-GAPS · DT-01: sửa điện thoại / liên hệ; trả hồ sơ mới. Đối tác ngoài phạm vi ⇒ 404. */
+async function saveContact(d: PartnerRolesDeps, who: PackWho, b: PartnerContactIn) {
+  const r = await d.uow.tenant(who, (x) => x.roles.setContact(b.party, b.phone, b.contact));
+  if (!r) throw new PartnerRolesFail("not_found");
+  return partnerProfile(d, who, b.party);
+}
+
 /** DT-07 · Q8: chạy khi bấm; đối tác phải nằm trong phạm vi người dùng; chỉ tên + MST ra ngoài. */
 async function internetSearch(
   d: PartnerRolesDeps,
@@ -181,6 +189,7 @@ export function partnerRolesUsecase(d: PartnerRolesDeps) {
     ...noteCommands(d),
     profile: (who: PackWho, party: string): Promise<PartnerProfile> =>
       partnerProfile(d, who, party),
+    saveContact: (who: PackWho, b: PartnerContactIn) => saveContact(d, who, b),
     contracts: (who: PackWho, party: string): Promise<PartnerContractRow[]> =>
       partnerContracts(d, who, party),
     contractCounts: (who: PackWho): Promise<PartnerContractCount[]> =>

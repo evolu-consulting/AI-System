@@ -21,6 +21,7 @@ import {
   type RepRole,
   settingsProblem,
 } from "../domain/rep-config.rules";
+import { mineFrom, mineSummary } from "../domain/rep-mine.rules";
 import {
   normaliseCell,
   normaliseJobTypes,
@@ -222,6 +223,12 @@ async function previewDraft(c: RepCtx, who: PackWho, b: RepPreviewIn) {
   };
 }
 
+/** C10: "Uy tín của mình" — mốc của mình xong trong `days` ngày qua. */
+async function mineOf<A, B>(d: RepDeps<A, B>, c: RepCtx, who: PackWho, days: number) {
+  const from = mineFrom(await c.today(who), days);
+  return mineSummary(await d.uow.tenant(who, (r) => r.rep.mineRows(from)), days);
+}
+
 export function reputationUsecase<A, B>(d: RepDeps<A, B>) {
   const c = repCtx(d);
   const list = async (who: PackWho, role: RepRole | "all") => {
@@ -234,6 +241,7 @@ export function reputationUsecase<A, B>(d: RepDeps<A, B>) {
     one: (who: PackWho, party: string, role: RepRole) => oneScore(d, c, who, { party, role }),
     history: (who: PackWho, party: string, role: RepRole, months: number) =>
       historyOf(d, c, who, { party, role, months }),
+    mine: (who: PackWho, days: number) => mineOf(d, c, who, days),
     getConfig: (who: PackWho) => getConfigOf(c, who),
     ...configWrites(d),
     preview: (who: PackWho, b: RepPreviewIn) => previewDraft(c, who, b),

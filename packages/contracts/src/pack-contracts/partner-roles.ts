@@ -40,6 +40,17 @@ export const PartnerNoteCreateSchema = z.strictObject({
 export type PartnerNoteCreate = z.infer<typeof PartnerNoteCreateSchema>;
 /** V2-I: hồ sơ / hợp đồng / tìm internet của một đối tác (`?party=`). */
 export const PartnerPartyQuerySchema = z.strictObject({ party: Party });
+/** V2-GAPS · DT-01: sửa điện thoại + người liên hệ của đối tác (rỗng ⇒ xoá; liên hệ rỗng ⇒ rơi về người đại diện ở HĐ mới nhất). */
+const Contact = (max: number) =>
+  noNul(0, max)
+    .transform((v) => v.trim().normalize("NFC"))
+    .transform((v) => (v === "" ? null : v));
+export const PartnerContactSchema = z.strictObject({
+  party: Party,
+  phone: Contact(30),
+  contact: Contact(120),
+});
+export type PartnerContactIn = z.infer<typeof PartnerContactSchema>;
 
 // ---------- ra ----------
 export type PartnerRoleRow = {

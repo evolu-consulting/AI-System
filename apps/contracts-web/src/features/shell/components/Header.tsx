@@ -6,6 +6,7 @@ import { IconFeedback, IconSidebar } from "~/components/icons";
 import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import type { Role } from "../lib/nav";
+import { AppSwitcher } from "./AppSwitcher";
 import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
 
@@ -52,6 +53,7 @@ export function Header({
         <IconSidebar />
       </button>
       <div className="ml-auto flex items-center gap-1">
+        <AppSwitcher role={user?.role} />
         <ConnectedBell />
         <button
           type="button"

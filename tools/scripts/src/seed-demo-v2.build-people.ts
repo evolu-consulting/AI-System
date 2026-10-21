@@ -73,6 +73,8 @@ export const companyRows = (tenant: string): Row[] =>
     tax_id: p.tax,
     name: p.name,
     short_name: p.short,
+    phone: p.phone ?? null,
+    contact_person: p.contact ?? null,
     created_from: "seed",
   }));
 

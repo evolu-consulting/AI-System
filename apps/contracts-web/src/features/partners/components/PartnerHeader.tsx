@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
+import { ContactEditor } from "./ContactEditor";
 import { InternetResult, searchErrorKey, useInternetSearch } from "./InternetSearch";
 import { ScorePill } from "./RepBadge";
 
@@ -30,6 +31,7 @@ export function PartnerHeader({
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
   const search = useInternetSearch(party);
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState(false);
   return (
     <>
       <PageHead
@@ -51,6 +53,15 @@ export function PartnerHeader({
               {L("mst")} {profile?.tax_id ?? DASH} · {profile?.phone ?? DASH} ·{" "}
               {profile?.contact ?? DASH}
             </span>
+            {write && (
+              <button
+                type="button"
+                className="text-[13px] font-medium text-act hover:underline"
+                onClick={() => setEditing((v) => !v)}
+              >
+                {t("contracts.vgaps.contact.edit")}
+              </button>
+            )}
           </span>
         }
         actions={
@@ -69,6 +80,9 @@ export function PartnerHeader({
           )
         }
       />{" "}
+      {editing && (
+        <ContactEditor party={party} profile={profile} onClose={() => setEditing(false)} />
+      )}
       {show && (
         <div className="mb-4">
           {search.isPending && <Loading />}

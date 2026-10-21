@@ -3,6 +3,7 @@
 import type { Page } from "@playwright/test";
 import {
   bodyText,
+  CHAT,
   CW,
   type Errs,
   expect,
@@ -158,6 +159,47 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
+  test("Đối tác: đầu trang chi tiết hiện điện thoại + liên hệ (bộ mẫu v2) và sửa được", async () => {
+    await go("/partners");
+    await page.getByRole("link", { name: "Hưng Thịnh" }).first().click();
+    await expect(page).toHaveURL(/party=/);
+    const lead = page.locator("main").getByText(/MST/).first();
+    await expect(lead).toContainText("028 3910 2222");
+    await expect(lead).toContainText("Phạm Hưng");
+    // Sửa rồi trả lại giá trị cũ (không để lại dữ liệu thử).
+    await page.getByRole("button", { name: "Sửa", exact: true }).click();
+    const form = page.getByRole("form", { name: "Điện thoại và người liên hệ" });
+    await form.getByLabel("Điện thoại").fill("028 3910 9999");
+    await form.getByRole("button", { name: "Lưu" }).click();
+    await expect(lead).toContainText("028 3910 9999");
+    await page.getByRole("button", { name: "Sửa", exact: true }).click();
+    await form.getByLabel("Điện thoại").fill("028 3910 2222");
+    await form.getByRole("button", { name: "Lưu" }).click();
+    await expect(lead).toContainText("028 3910 2222");
+    expect(errs.list).toEqual([]);
+  });
+
+  test("Đối tác: dải 'Uy tín của mình' (C10) trên danh sách", async () => {
+    await go("/partners");
+    const box = page.getByRole("region", { name: "Uy tín của mình" });
+    await expect(box).toBeVisible();
+    await expect(box).toContainText(/việc của mình/);
+    expect(await bodyText(page)).not.toMatch(RAW_KEY);
+    expect(errs.list).toEqual([]);
+  });
+
+  test("Nút Ứng dụng: về AI System không đăng nhập lại", async () => {
+    await go("/overview");
+    await page.getByRole("button", { name: "Ứng dụng" }).click();
+    await expect(page.getByRole("menuitem", { name: "AI System" })).toBeVisible();
+    await page.getByRole("menuitem", { name: "AI System" }).click();
+    await page.waitForURL((u) => u.href.startsWith(CHAT), { timeout: 30_000 });
+    await settle(page);
+    await expect(page).not.toHaveURL(/\/login/);
+    await expect(page.getByLabel(/Mật khẩu|Password/)).toHaveCount(0);
+    // trở lại Sổ Hợp Tác để các test sau chạy tiếp trên cùng trang
+    await go("/overview");
+  });
   test("Sản phẩm & Giá: chi tiết sản phẩm dịch vụ có tab Lịch sử · NCC & giá · Khách đang dùng · Hợp đồng", async () => {
     await go("/products?g=service");
     const first = page.locator("main a[href*='sp=']").first();

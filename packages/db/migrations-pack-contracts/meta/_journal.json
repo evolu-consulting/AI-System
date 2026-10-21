@@ -239,6 +239,13 @@
       "when": 1796300000000,
       "tag": "0036_v2o_cks_readonly",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1796400000000,
+      "tag": "0037_v2gaps_partner_contact",
+      "breakpoints": true
     }
   ]
 }

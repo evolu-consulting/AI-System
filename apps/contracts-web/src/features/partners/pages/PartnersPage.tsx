@@ -12,6 +12,7 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools, useTable } from "~/features/table";
 import { cn } from "~/lib/utils";
 import { fetchContractCounts, fetchRepPartners, partnerKeys } from "../api";
+import { MineBanner } from "../components/MineBanner";
 import { RepBadge } from "../components/RepBadge";
 import { type PartyItem, partiesOf, ROLES } from "../lib/partner-v2";
 
@@ -131,6 +132,7 @@ export function PartnersPage() {
   return (
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHead title={L("title")} lead={L("lead")} />
+      <MineBanner />
       <TableTools q={tb.q} setQ={tb.setQ} total={tb.total} placeholder={L("search")}>
         <fieldset
           aria-label={L("roleFilter")}

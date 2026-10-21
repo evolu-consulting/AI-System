@@ -154,3 +154,16 @@ export const IconEyeOff = (p: P) => (
     <path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A10 10 0 0 1 12 5c7 0 10.5 7 10.5 7a18 18 0 0 1-3.3 4.3M6.1 6.1A18 18 0 0 0 1.5 12S5 19 12 19a10 10 0 0 0 3.3-.5" />
   </svg>
 );
+export const IconApps = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="6" cy="6" r="1.6" />
+    <circle cx="12" cy="6" r="1.6" />
+    <circle cx="18" cy="6" r="1.6" />
+    <circle cx="6" cy="12" r="1.6" />
+    <circle cx="12" cy="12" r="1.6" />
+    <circle cx="18" cy="12" r="1.6" />
+    <circle cx="6" cy="18" r="1.6" />
+    <circle cx="12" cy="18" r="1.6" />
+    <circle cx="18" cy="18" r="1.6" />
+  </svg>
+);

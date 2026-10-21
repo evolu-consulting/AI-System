@@ -6,6 +6,7 @@ import {
   RepHistoryQuerySchema,
   RepJobSchema,
   RepJobTypesSchema,
+  RepMineQuerySchema,
   RepPartnerQuerySchema,
   RepPartnersQuerySchema,
   RepPreviewSchema,
@@ -66,6 +67,9 @@ export function reputationRoutes(
     const q = parseQuery(c, RepPartnerQuerySchema);
     return c.json(await run(uc.one(who(c), q.party, q.role)));
   });
+  r.get(`${P}/mine`, read, async (c) =>
+    c.json(await run(uc.mine(who(c), Number(parseQuery(c, RepMineQuerySchema).days)))),
+  );
   r.get(`${P}/history`, read, async (c) => {
     const q = parseQuery(c, RepHistoryQuerySchema);
     return c.json(await run(uc.history(who(c), q.party, q.role, Number(q.months))));

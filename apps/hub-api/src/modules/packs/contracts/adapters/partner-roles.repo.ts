@@ -26,6 +26,7 @@ export function partnerRolesRepo(tx: Tx, t: string) {
     ...profileReads(tx, t),
     ...contractReads(tx, t),
     ...noteWrites(tx, t),
+    ...contactWrites(tx, t),
   };
 }
 export type PartnerRolesRepo = ReturnType<typeof partnerRolesRepo>;
@@ -95,14 +96,14 @@ function profileReads(tx: Tx, t: string) {
 
     /**
      * V2-I · DT-01: hồ sơ đầu trang chi tiết. Đối tác ngoài phạm vi M1 (không có vai/danh bạ mình thấy) ⇒ null. Liên hệ = người đại
-     * diện bên đối tác ở HĐ mới nhất; điện thoại chưa có nguồn trong dữ liệu (danh bạ không có cột) ⇒ null.
+     * diện bên đối tác ở HĐ mới nhất; điện thoại + liên hệ nhập tay lấy từ danh bạ (0037); liên hệ trống ⇒ người đại diện nói trên.
      */
     profile: (party: string) =>
       one<PartnerProfile | null>(
         tx,
         sql`select jsonb_build_object('party', k.party, 'name', coalesce(co.short_name, co.name, pr.name),
             'tax_id', coalesce(co.tax_id, case when k.party like 'tax:%' then substr(k.party, 5) end),
-            'phone', null, 'contact', lc.contact) as j
+            'phone', co.phone, 'contact', coalesce(co.contact_person, lc.contact)) as j
           from (select ${party}::text as party) k
           left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = k.party
           left join lateral (select p.name from contracts.partner_roles p
@@ -112,6 +113,30 @@ function profileReads(tx: Tx, t: string) {
             order by c.updated_at desc, c.id desc limit 1) lc on true
           where co.id is not null or exists (select 1 from contracts.partner_roles p
             where p.tenant_id = ${t}::uuid and p.party_key = k.party)`,
+      ),
+  };
+}
+
+function contactWrites(tx: Tx, t: string) {
+  return {
+    /**
+     * V2-GAPS · DT-01: lưu điện thoại + liên hệ lên danh bạ (tạo hàng danh bạ nếu đối tác mới chỉ có vai). Đối tác phải có vai/danh
+     * bạ mình thấy; không ⇒ null (404). MỘT câu.
+     */
+    setContact: (party: string, phone: string | null, contact: string | null) =>
+      one<{ ok: true } | null>(
+        tx,
+        sql`with up as (
+            insert into contracts.companies as co (tenant_id, party_key, tax_id, name, phone, contact_person, created_from)
+            select ${t}::uuid, ${party}, case when ${party}::text like 'tax:%' then substr(${party}::text, 5) end,
+              (select p.name from contracts.partner_roles p where p.tenant_id = ${t}::uuid and p.party_key = ${party}
+                and p.name is not null order by p.first_at limit 1), ${phone}, ${contact}, 'manual'
+            where exists (select 1 from contracts.partner_roles pr where pr.tenant_id = ${t}::uuid and pr.party_key = ${party})
+              or exists (select 1 from contracts.companies c0 where c0.tenant_id = ${t}::uuid and c0.party_key = ${party})
+            on conflict (tenant_id, party_key) do update set phone = excluded.phone, contact_person = excluded.contact_person,
+              updated_at = now()
+            returning 1)
+          select case when exists (select 1 from up) then jsonb_build_object('ok', true) end as j`,
       ),
   };
 }

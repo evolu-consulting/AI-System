@@ -1,0 +1,28 @@
+{
+  "contracts": {
+    "vgaps": {
+      "apps": {
+        "title": "Ứng dụng",
+        "chat": "AI System",
+        "admin": "Quản trị"
+      },
+      "contact": {
+        "title": "Điện thoại và người liên hệ",
+        "edit": "Sửa",
+        "phone": "Điện thoại",
+        "person": "Người liên hệ",
+        "save": "Lưu",
+        "cancel": "Huỷ",
+        "saved": "Đã lưu liên hệ",
+        "error": "Không lưu được, thử lại."
+      },
+      "mine": {
+        "title": "Uy tín của mình",
+        "none": "Chưa có việc nào của mình hoàn thành trong {{days}} ngày qua.",
+        "allOnTime": "Cả {{total}} việc của mình trong {{days}} ngày qua đều đúng hạn.",
+        "someLate": "{{late}} trong {{total}} việc của mình bị trễ trong {{days}} ngày qua ({{pct}}% đúng hạn). Lỗi do mình {{ours}}, do đối tác {{partner}}, chưa rõ {{unknown}}. Lỗi của mình không trừ điểm đối tác.",
+        "blamed": "Đối tác bị ghi lỗi: {{list}}."
+      }
+    }
+  }
+}

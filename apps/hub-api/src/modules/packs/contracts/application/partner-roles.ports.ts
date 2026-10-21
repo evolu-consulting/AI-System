@@ -35,6 +35,11 @@ export type PartnerRolesRepo = {
   contractCounts(): Promise<PartnerContractCount[]>;
   notes(party: string): Promise<PartnerNote[]>;
   profile(party: string): Promise<PartnerProfile | null>;
+  setContact(
+    party: string,
+    phone: string | null,
+    contact: string | null,
+  ): Promise<{ ok: true } | null>;
   roles(party: string | null): Promise<RoleCount[]>;
   find(key: string, fold: string | null): Promise<PartyHit | null>;
 };

@@ -1,6 +1,8 @@
 // V2-E · ADR-0023: cổng repo uy tín v2 (lớp 2 — chỉ kiểu); `adapters/rep.repo.ts` + `adapters/rep.sql.ts` cài. Hai phần đọc song
 // song `aggRows`/`factRows` là hình thô dạng cột của SQL ⇒ cổng generic `A`/`B`, chỉ `merge` (adapter `rowsOf`) hiểu.
+
 import type { CellParam, RepGroup, RepRole } from "../domain/rep-config.rules";
+import type { MineRaw } from "../domain/rep-mine.rules";
 import type { CellInput } from "../domain/rep-score.rules";
 
 export type StoredRep = {
@@ -68,6 +70,7 @@ export type RepRatingWrite = {
 };
 
 export type RepRepo<A = unknown, B = unknown> = {
+  mineRows(from: string): Promise<MineRaw[]>;
   ratings(party: string, role: RepRole): Promise<Record<string, unknown>[]>;
   lockHistory(party: string, role: RepRole, from: string): Promise<LockPoint[]>;
   lockedPeriods(from: string): Promise<string[]>;

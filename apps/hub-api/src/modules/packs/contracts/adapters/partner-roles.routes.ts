@@ -1,6 +1,7 @@
 // V2-C · KN-08 · HD-10 · DT-05: route vai đối tác / gợi ý đối tác / ghi chú dưới `/pack/contracts/partners/*`. Đọc = `read`, ghi =
 // `write` (guard trước thân); xoá ghi chú người khác cần `admin`. Đầu vào sai ⇒ 400; đối tác ngoài phạm vi ⇒ 404. Không đầu vào nào ra 500.
 import {
+  PartnerContactSchema,
   PartnerLookupQuerySchema,
   PartnerNoteCreateSchema,
   PartnerNotesQuerySchema,
@@ -71,6 +72,9 @@ export function partnerRolesRoutes(
   // V2-I: đầu trang chi tiết · tab Hợp đồng · số HĐ trên danh sách · "Tìm trên internet" (chạy khi bấm, tên + MST).
   r.get("/partners/profile", read, async (c) =>
     c.json(await run(uc.profile(who(c), parseQuery(c, PartnerPartyQuerySchema).party))),
+  );
+  r.put("/partners/profile", write, async (c) =>
+    c.json(await run(uc.saveContact(who(c), parseWith(PartnerContactSchema, await readJson(c))))),
   );
   r.get("/partners/contracts", read, async (c) =>
     c.json(await run(uc.contracts(who(c), parseQuery(c, PartnerPartyQuerySchema).party))),

@@ -24,6 +24,10 @@ export const RepPartnersQuerySchema = z.strictObject({
   role: z.enum(["all", ...REP_ROLES]).default("all"),
 });
 export const RepPartnerQuerySchema = z.strictObject({ party: Party, role: RepRoleSchema });
+/** V2-GAPS · C10: "Uy tín của mình" — khoảng ngày nhìn lại (mặc định 90 như mockup). */
+export const RepMineQuerySchema = z.strictObject({
+  days: z.enum(["30", "90", "180", "365"]).default("90"),
+});
 export const RepHistoryQuerySchema = z.strictObject({
   party: Party,
   role: RepRoleSchema,
@@ -193,3 +197,19 @@ export type RepSettingsOut = {
   lock_period: "month";
 };
 export type RepConfigOut = { settings: RepSettingsOut };
+
+/**
+ * V2-GAPS · C10 (mockup "Uy tín của mình với khách"): mốc việc CỦA MÌNH đã xong trong `days` ngày qua — đúng hạn / trễ, trễ do ai
+ * (`fault`), và đối tác bị ghi lỗi nhiều nhất. KHÔNG trừ điểm đối tác (BA: lỗi của mình chỉ ghi vào uy tín của mình).
+ */
+export type RepMine = {
+  days: number;
+  total: number;
+  late: number;
+  /** % mốc đúng hạn (null khi chưa có mốc nào). */
+  on_time_pct: number | null;
+  by_fault: { ours: number; partner: number; unknown: number };
+  by_deal: { deal: "buy" | "sell" | "referral"; total: number; late: number }[];
+  /** Đối tác bị ghi lỗi trong các lần mình trễ (nhiều nhất trước, ≤ 3). */
+  blamed: { party: string; name: string; late: number }[];
+};
