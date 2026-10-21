@@ -54,14 +54,19 @@ export type PartnerContactIn = z.infer<typeof PartnerContactSchema>;
 
 /** GAP-D2 · #24: nhiều người liên hệ của một đối tác (tên, chức vụ, điện thoại, email, người phụ trách bên mình). */
 export const PARTNER_CONTACTS_MAX = 20;
+/** Vắng khoá ⇒ null (thân gọn từ API/trợ lý). */
+const Opt = (max: number) =>
+  Contact(max)
+    .optional()
+    .transform((v) => v ?? null);
 export const PartnerContactPersonSchema = z.strictObject({
   name: noNul(0, 120)
     .transform((v) => v.trim().normalize("NFC"))
     .pipe(z.string().min(1)),
-  role: Contact(120),
-  phone: Contact(30),
-  email: Contact(200),
-  our_owner: Contact(120),
+  role: Opt(120),
+  phone: Opt(30),
+  email: Opt(200),
+  our_owner: Opt(120),
 });
 export const PartnerContactsPutSchema = z.strictObject({
   party: Party,
