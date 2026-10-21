@@ -3,8 +3,11 @@
 // (bẫy postgres.js CONVENTIONS §2). Cột tương quan viết tường minh `a.id` (alias), không `${table.col}`.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { changedOptionKeys } from "./agents.rules";
 
 const iso = (v: Date | string): string => new Date(v).toISOString();
+const textArr = (v: readonly string[]) =>
+  sql`${`{${v.map((s) => JSON.stringify(s)).join(",")}}`}::text[]`;
 const uuidArr = (ids: readonly string[]) => sql`${`{${ids.join(",")}}`}::uuid[]`;
 
 export type AgentDbRow = {
@@ -247,6 +250,10 @@ export type AgentUpdate = Omit<AgentInsert, "key" | "runtime">;
 
 /** PUT · `key`/`runtime` bất biến (QB5) — không nằm trong SET. */
 export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<AgentDbRow> {
+  const [o] = await tx.execute<{ runtime: string; opts: Record<string, unknown> }>(
+    sql`select runtime, runtime_options as opts from hub.agents where id = ${id}::uuid`,
+  );
+  const optKeys = o ? changedOptionKeys(o.runtime, o.opts, a.runtimeOptions) : [];
   const [r] =
     await tx.execute<RawAgent>(sql`update hub.agents as a set name = ${JSON.stringify(a.name)}::jsonb,
       description = ${a.description}, agent_type_key = ${a.agentTypeKey}::text, profile_id = ${a.profileId}::uuid,
@@ -257,10 +264,9 @@ export async function updateAgent(tx: Tx, id: string, a: AgentUpdate): Promise<A
         case when a.description is distinct from ${a.description} then 'description' end,
         case when a.profile_id is distinct from ${a.profileId}::uuid then 'profile_id' end,
         case when a.system_prompt is distinct from ${a.systemPrompt} then 'system_prompt' end,
-        case when a.runtime_options is distinct from ${JSON.stringify(a.runtimeOptions)}::jsonb then 'runtime_options' end,
         case when a.timeout_s is distinct from ${a.timeoutS}::int then 'timeout_s' end,
         case when a.token_budget is distinct from ${a.tokenBudget}::int then 'token_budget' end,
-        case when a.enabled is distinct from ${a.enabled}::boolean then 'enabled' end], null)) as f),
+        case when a.enabled is distinct from ${a.enabled}::boolean then 'enabled' end], null) || ${textArr(optKeys)}) as f),
       version = a.version + 1, updated_at = now()
     where a.id = ${id}::uuid
     returning ${AGENT_COLS}`);

@@ -109,3 +109,27 @@ export function agentWarnings(a: {
   }
   return out;
 }
+
+/** Mac dinh Studio dien vao runtime_options agentic-cli (CliOptionsSchema); khoa vang trong DB ma bang mac dinh khong tinh la admin doi. */
+const CLI_OPTION_DEFAULTS: Record<string, unknown> = {
+  cli: "claude",
+  allowed_tools: ["Read", "Grep"],
+  mcp: false,
+  cwd_mode: "job",
+};
+
+/** seed-keep-studio: cac khoa runtime_options that su doi (old -> next), dang `runtime_options.<k>`. */
+export function changedOptionKeys(
+  runtime: string,
+  old: Record<string, unknown>,
+  next: Record<string, unknown>,
+): string[] {
+  const defaults = runtime === "agentic-cli" ? CLI_OPTION_DEFAULTS : {};
+  const norm = (o: Record<string, unknown>, k: string) => (k in o ? o[k] : defaults[k]);
+  const eq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const keys = new Set([...Object.keys(old), ...Object.keys(next)]);
+  return [...keys]
+    .filter((k) => !eq(norm(old, k), norm(next, k)))
+    .sort()
+    .map((k) => `runtime_options.${k}`);
+}

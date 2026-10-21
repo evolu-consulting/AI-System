@@ -15,15 +15,15 @@ afterAll(async () => {
   await x?.stop();
 });
 
-const agent = (key: string, timeout: number, prompt: string) => `  - key: ${key}
+const agent = (key: string, timeout: number, prompt: string, packs = false) => `  - key: ${key}
     name: { vi: ${key}, en: ${key} }
     description: Agent thu cua test seed-keep-studio, khong dung that.
     runtime: agentic-cli
     profile: fake-1
     timeout_s: ${timeout}
-    system_prompt: ${prompt}
+    system_prompt: ${prompt}${packs ? "\n    runtime_options:\n      pack_tools: [knowledge-search]" : ""}
 `;
-const yaml = (timeout: number, prompt: string) => `providers:
+const yaml = (timeout: number, prompt: string, packs = false) => `providers:
   - key: fake-cli
     kind: subscription
     vendor: fake
@@ -36,13 +36,13 @@ model_profiles:
     steps:
       - provider_key: fake-cli
 agents:
-${agent("ks-a", timeout, prompt)}${agent("ks-b", timeout, prompt)}orchestrator:
+${agent("ks-a", timeout, prompt, packs)}${agent("ks-b", timeout, prompt, packs)}orchestrator:
   agent: ks-a
 `;
-async function seed(timeout: number, prompt: string): Promise<void> {
+async function seed(timeout: number, prompt: string, packs = false): Promise<void> {
   const dir = mkdtempSync(join(tmpdir(), "seed-keep-studio-"));
   try {
-    writeFileSync(join(dir, "00-base.yaml"), yaml(timeout, prompt));
+    writeFileSync(join(dir, "00-base.yaml"), yaml(timeout, prompt, packs));
     await runHubSeed({ url: OWNER_URL, dir, appEnv: "test" });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -79,7 +79,7 @@ describe("seed-keep-studio", () => {
     expect(after?.studio_overrides).toContain("profile_id");
     expect(after?.studio_overrides).not.toContain("timeout_s");
 
-    await seed(700, "prompt v2");
+    await seed(700, "prompt v2", true);
     const a2 = await agentByKey(x.sql, "ks-a");
     const b2 = await agentByKey(x.sql, "ks-b");
     expect(a2?.profile_id).toBe(profile2);
@@ -87,5 +87,8 @@ describe("seed-keep-studio", () => {
     expect(a2?.system_prompt).toBe("prompt v2");
     expect(b2?.timeout_s).toBe(700);
     expect(b2?.studio_overrides).toEqual([]);
+    // Studio luu lai options khong doi (chi them mac dinh cli) khong danh dau; khoa moi tu yaml van toi agent da luu qua Studio
+    expect(a2?.studio_overrides).not.toContain("runtime_options");
+    expect(a2?.runtime_options).toMatchObject({ pack_tools: ["knowledge-search"] });
   }, 60_000);
 });
