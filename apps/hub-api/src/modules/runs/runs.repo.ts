@@ -39,6 +39,7 @@ export async function touchConversation(
         ownedBy(c, o),
         eq(c.id, id),
         isNull(c.deletedAt),
+        isNull(c.archivedAt), // niti-import2: hội thoại lưu trữ (nhập từ app cũ) chỉ đọc — không chạy agent
         bg === "room" ? isNotNull(c.roomId) : isNull(c.roomId),
         bg === "process" ? isNotNull(c.processRunId) : isNull(c.processRunId),
       ),

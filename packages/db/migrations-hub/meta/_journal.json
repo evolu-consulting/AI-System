@@ -365,6 +365,13 @@
       "when": 1796200000000,
       "tag": "0053_notify_prefs_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1796300000000,
+      "tag": "0054_mgmt_import_history",
+      "breakpoints": true
     }
   ]
 }

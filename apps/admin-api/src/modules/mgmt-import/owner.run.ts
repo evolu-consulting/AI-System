@@ -1,9 +1,19 @@
 // niti-import · lớp 4: nối chế độ MỘT tài khoản (nhập / hoàn tác) với adapter thật — nguồn = file export (`--from-export`, mặc
 // định cho production) hoặc OpenSearch chỉ-đọc; đích = Postgres `hub_api`/`admin_api` (NOBYPASSRLS) + kho file (FileBox/thư mục).
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { TENANT_TZ_DEFAULT } from "@ai/contracts";
 import type { Db } from "@ai/db";
+import { createExtrasStore } from "./adapters/extras.repo";
+import { createDirSource } from "./adapters/files.adapter";
 import { createOwnerStore } from "./adapters/owner.repo";
+import {
+  type ExtrasReport,
+  type ExtrasRollbackReport,
+  runExtrasImport,
+  runExtrasRollback,
+} from "./application/extras.usecase";
+import type { ExtrasDeps } from "./application/extras-ports";
 import { exportReader } from "./application/owner-export";
 import { type OwnerReport, runOwnerImport } from "./application/owner-import.usecase";
 import type { ExportMeta, OwnerDeps } from "./application/owner-ports";
@@ -63,6 +73,57 @@ export async function runOwner(
     },
     d,
   );
+}
+
+export type ExtrasRunConfig = OwnerRunConfig & {
+  /** Nhãn lô chính (HĐ đã nhập) — nối chứng thư CKS ↔ HĐ bán. */
+  linkSource: string;
+  /** Org cũ của chủ (chỉ nhập bản ghi org này); vắng ⇒ org duy nhất của các HĐ của chủ. */
+  extrasOrg: string | null;
+  /** Thư mục dữ liệu mgmt-app (`<dataDir>/chat_files/<org>/<id>/<tên>`). */
+  dataDir: string | null;
+  /** Org FileBox của đính kèm hub (`FILEBOX_ORG`). */
+  hubFileOrg: string | null;
+};
+
+/** niti-import2 · `--include-extras`: phần còn lại của tài khoản (nhập / hoàn tác theo nhãn lô riêng). */
+export async function runExtras(
+  adminDb: Db,
+  hubDb: Db,
+  c: ExtrasRunConfig,
+  src?: { reader: SourceReader; meta: ExportMeta | null },
+): Promise<ExtrasReport | ExtrasRollbackReport> {
+  const { reader, meta } = src ?? (await source(c));
+  const base = buildDeps(adminDb, hubDb, c, reader);
+  const d: ExtrasDeps = {
+    reader,
+    identity: base.identity,
+    store: createExtrasStore(hubDb),
+    chatFiles: c.dataDir ? createDirSource(join(c.dataDir, "chat_files")) : null,
+    sink: base.files.sink,
+    now: base.now,
+    clock: c.now ?? (() => new Date()),
+  };
+  const o = {
+    source: c.source,
+    linkSource: c.linkSource,
+    apply: c.apply,
+    batch: c.batch,
+    tenantKey: c.tenantKey,
+    ownerEmail: c.ownerEmail ?? "",
+    ownerUsername: c.ownerUsername ?? "",
+    org: c.extrasOrg,
+    hubFileOrg: c.hubFileOrg,
+    meta,
+    rollback: c.rollback,
+  };
+  if (c.rollback) {
+    if (!c.ownerUsername) throw new Error("OWNER_ARGS");
+    return runExtrasRollback(o, d);
+  }
+  if (!c.ownerEmail || !c.ownerUsername) throw new Error("OWNER_ARGS");
+  if (c.apply && base.files.sink && !c.hubFileOrg) throw new Error("MISSING_FILEBOX_ORG");
+  return runExtrasImport(o, d);
 }
 
 /** exit 2: vấn đề hàng / lệch tiền / sai sha / hoàn tác bị từ chối. */

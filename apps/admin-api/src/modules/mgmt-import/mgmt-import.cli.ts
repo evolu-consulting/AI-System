@@ -7,14 +7,18 @@
 //     niti-import (MỘT tài khoản → tenant có sẵn; runbook deploy/prod-sohoptac2/README.md "Nhập dữ liệu chị Tiên"):
 //     --into-tenant <key> --owner-email <email cũ> --owner-username <username đích> [--from-export <file mgmt-export.cli>]
 //     --into-tenant <key> --rollback [--apply]   hoàn tác lô nhãn `--source` (dry-run mặc định)
+//     niti-import2 (phần còn lại của tài khoản, nhãn lô RIÊNG): --include-extras --link-source <nhãn lô chính> [--extras-org <org cũ>]
+//       [--data-dir <thư mục data mgmt-app, có chat_files/>] (+ --owner-email/--owner-username/--from-export/--filebox như trên;
+//       hoàn tác: --include-extras --rollback --owner-username <u> [--apply]); env FILEBOX_ORG = org đính kèm hub
 // Env: MGMT_OPENSEARCH_URL, [MGMT_INDEX_PREFIX], [MGMT_NEO4J_URL (HTTP :7474), MGMT_NEO4J_USER, MGMT_NEO4J_PASSWORD],
 //      ADMIN_API_DATABASE_URL (admin_api), HUB_DATABASE_URL (hub_api). Không dùng role chủ.
 // stdout = báo cáo JSON; exit 0 khớp · 2 có vấn đề hàng/lệch đối soát · 1 lỗi cấu hình/hệ thống (stderr chỉ mã lỗi).
 import { writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { createDb } from "@ai/db";
+import { createDb, type Db } from "@ai/db";
+import { extrasBad } from "./application/extras.usecase";
 import { type RunConfig, runMgmtImport } from "./mgmt-import.run";
-import { ownerBad, runOwner } from "./owner.run";
+import { ownerBad, runExtras, runOwner } from "./owner.run";
 
 const fail = (error: string, extra: Record<string, unknown> = {}): never => {
   process.stderr.write(`${JSON.stringify({ error, ...extra })}\n`);
@@ -37,6 +41,24 @@ function ownerArgs(v: {
   if (!/^[^@\s]{1,64}@[^@\s]{1,255}$/.test(email)) fail("BAD_OWNER_EMAIL");
 }
 
+/** niti-import2: `--include-extras` cần tenant + username đích + nhãn lô chính; nhãn riêng khác nhãn chính. */
+function extrasArgs(v: {
+  "include-extras"?: boolean;
+  "link-source"?: string;
+  "extras-org"?: string;
+  "owner-username"?: string;
+  "into-tenant"?: string;
+  source?: string;
+}): void {
+  if (!v["include-extras"]) return;
+  if (!v["into-tenant"]) fail("OWNER_NEEDS_INTO_TENANT");
+  if (!/^[a-z0-9._-]{2,32}$/.test(v["owner-username"] ?? "")) fail("BAD_OWNER_USERNAME");
+  const link = v["link-source"] ?? "";
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(link) || link === v.source) fail("BAD_LINK_SOURCE");
+  if (v["extras-org"] !== undefined && !/^[A-Za-z0-9-]{1,128}$/.test(v["extras-org"]))
+    fail("BAD_EXTRAS_ORG");
+}
+
 function args() {
   const { values: v } = parseArgs({
     options: {
@@ -57,6 +79,10 @@ function args() {
       "owner-username": { type: "string" },
       "from-export": { type: "string" },
       rollback: { type: "boolean", default: false },
+      "include-extras": { type: "boolean", default: false },
+      "link-source": { type: "string" },
+      "extras-org": { type: "string" },
+      "data-dir": { type: "string" },
     },
   });
   if (!v.source || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(v.source)) fail("BAD_SOURCE");
@@ -64,6 +90,7 @@ function args() {
   const into = v["into-tenant"];
   if (into !== undefined && !/^[a-z0-9-]{2,32}$/.test(into)) fail("BAD_INTO_TENANT");
   ownerArgs(v);
+  extrasArgs(v);
   const batch = /^\d{1,4}$/.test(v.batch ?? "") ? Number(v.batch) : 0;
   if (batch < 1 || batch > 2000) fail("BAD_BATCH");
   if (v.filebox && v["sink-dir"]) fail("SINK_CONFLICT");
@@ -112,31 +139,48 @@ function failWith(err: unknown): never {
   });
 }
 
+type V = ReturnType<typeof args>["v"];
+
+/** Chạy đúng chế độ; trả báo cáo + cờ "có vấn đề" (exit 2). */
+async function dispatch(adminDb: Db, hubDb: Db, v: V, cfg: RunConfig) {
+  const owner = {
+    ...cfg,
+    tenantKey: v["into-tenant"] as string,
+    ownerEmail: v["owner-email"] ?? null,
+    ownerUsername: v["owner-username"] ?? null,
+    exportFile: v["from-export"] ?? null,
+    rollback: v.rollback ?? false,
+  };
+  if (v["include-extras"]) {
+    // niti-import2: phần còn lại của tài khoản (chat, CKS, thông báo, báo giá, quét giá, lịch sử chấm điểm) — nhãn lô riêng
+    const r = await runExtras(adminDb, hubDb, {
+      ...owner,
+      linkSource: v["link-source"] as string,
+      extrasOrg: v["extras-org"] ?? null,
+      dataDir: v["data-dir"] ?? null,
+      hubFileOrg: process.env.FILEBOX_ORG || null,
+    });
+    return { report: r as unknown, bad: extrasBad(r) };
+  }
+  if (v["owner-email"] || v.rollback) {
+    // niti-import: MỘT tài khoản ⇒ tenant đã có (`--into-tenant`), user đích theo username; hoặc hoàn tác lô `--source`
+    const r = await runOwner(adminDb, hubDb, owner);
+    return { report: r as unknown, bad: ownerBad(r) };
+  }
+  const r = await runMgmtImport(adminDb, hubDb, cfg);
+  return {
+    report: r as unknown,
+    bad: Object.keys(r.issues_by_code).length > 0 || r.reconcile?.money_ok === false,
+  };
+}
+
 async function main(): Promise<void> {
   const { v, batch } = args();
   const cfg = config(v, batch);
   const adminDb = createDb(env("ADMIN_API_DATABASE_URL"), { max: 2 });
   const hubDb = createDb(env("HUB_DATABASE_URL"), { max: 2 });
   try {
-    let bad: boolean;
-    let report: unknown;
-    if (v["owner-email"] || v.rollback) {
-      // niti-import: MỘT tài khoản ⇒ tenant đã có (`--into-tenant`), user đích theo username; hoặc hoàn tác lô `--source`
-      const r = await runOwner(adminDb, hubDb, {
-        ...cfg,
-        tenantKey: v["into-tenant"] as string,
-        ownerEmail: v["owner-email"] ?? null,
-        ownerUsername: v["owner-username"] ?? null,
-        exportFile: v["from-export"] ?? null,
-        rollback: v.rollback ?? false,
-      });
-      report = r;
-      bad = ownerBad(r);
-    } else {
-      const r = await runMgmtImport(adminDb, hubDb, cfg);
-      report = r;
-      bad = Object.keys(r.issues_by_code).length > 0 || r.reconcile?.money_ok === false;
-    }
+    const { report, bad } = await dispatch(adminDb, hubDb, v, cfg);
     const text = JSON.stringify(report, (_k, x) => (typeof x === "bigint" ? x.toString() : x), 2);
     if (v.report) await writeFile(v.report, text);
     process.stdout.write(`${text}\n`);

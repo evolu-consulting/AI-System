@@ -98,7 +98,8 @@ TIEN_OLD='<email cũ của chị Tiên>'
 jq '.export | {sha256, source_orgs, docs, excluded, not_imported}' import-out/export.json
 ```
 ⇒ `docs.contracts` = số HĐ + phụ lục của chị; `source_orgs` đúng 1 org; `not_imported` = bản ghi của chị ở phần KHÔNG nhập (CKS, tri
-thức, hẹn nhắc, chat…) — khác `{}` ⇒ dừng, báo người dùng.
+thức, hẹn nhắc…) — khác `{}` ⇒ dừng, báo người dùng. Từ niti-import2: chat/CKS/thông báo/báo giá/quét giá/lịch sử chấm điểm nằm
+trong `docs` (nhập ở (f)); `{"feedback": n}` là bình thường (góp ý không nhập).
 
 **(b) Dry-run** (không ghi, không tải file; exit 0 = sạch, 2 = có vấn đề):
 ```
@@ -151,6 +152,51 @@ RB=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default -v
 (`--source sohoptac-tien-2`; sự kiện sổ của nhãn cũ đã huỷ). Xoá hẳn hàng file (tuỳ chọn, role chủ):
 `dc exec -T pg psql -U s2_owner -d ai_system -c "delete from contracts.files f where f.id = any('{<files_kept>}'::uuid[]) and not exists (select 1 from contracts.contracts c where c.file_id = f.id)"`.
 Khôi phục toàn bộ (thảm hoạ): bản `backup.sh` chụp ngay trước (c).
+
+### (f) Phần còn lại của tài khoản — niti-import2 (`--include-extras`, nhãn lô RIÊNG `sohoptac-tien-extras`)
+Chat trợ lý + file chat → hội thoại LƯU TRỮ chỉ đọc của `tien` (không run, không agent; my-chat-history tìm được; file → FileBox
+org `FILEBOX_ORG` của hub, gắn vào lượt nhắc tên file, file thừa gom ở hội thoại "Tệp đã tải lên ở app cũ"); văn bản ký + chứng thư
+→ module CKS chỉ đọc (`contracts.cks_*`, nối khách CKS + HĐ bán đã nhập ở lô `sohoptac-tien`; app cũ không giữ bytes văn bản ký ⇒
+không có file); thông báo → lịch sử ĐÃ ĐỌC (`fanout_at` đặt sẵn ⇒ không email/push); báo giá → `contracts.price_quotes`; quét giá →
+giá tham chiếu CKS kèm ngày (`cks_market_prices`) + bản ghi lượt quét; lịch sử chấm điểm → `contracts.legacy_records` (JSON chỉ thêm).
+CHỈ bản ghi của org `d963bf8c-e0dd-40e4-b6d5-56310e090514`; org khác ⇒ `excluded_other_org`, có "[E2E]" ⇒ `excluded_e2e`; góp ý
+KHÔNG nhập (dữ liệu thử). Cần migration hub `0054` + contracts `0045` (deploy bản mới trước). Export cũ không có phần này ⇒ export lại:
+```
+"${EXP[@]}" --owner-email "$TIEN_OLD" --out /out/tien-export.json > import-out/export.json
+jq '.export | {docs, not_imported}' import-out/export.json          # ⇒ not_imported chỉ còn {"feedback": 7}
+EXTRA=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default
+  -v "$PWD/.env:/run/s2/app.env:ro" -v sohoptac_apidata:/mgmtdata:ro -v "$PWD/import-out:/out"
+  sohoptac2-app:latest bun --env-file=/run/s2/app.env apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts
+  --source sohoptac-tien-extras --link-source sohoptac-tien --include-extras --actor "$ACTOR" --into-tenant nitigroup
+  --owner-email "$TIEN_OLD" --owner-username tien --extras-org d963bf8c-e0dd-40e4-b6d5-56310e090514
+  --from-export /out/tien-export.json --data-dir /mgmtdata --filebox)
+"${EXTRA[@]}" --report /out/x-dry.json > /dev/null; echo "exit=$?"
+jq '{counts, files, retention, notes, issues_by_code, not_imported}' import-out/x-dry.json
+```
+⇒ exit 0; mỗi `counts.<loại>`: `source_all = excluded_other_org + excluded_e2e + source`, `planned = source` (chats: số hội thoại;
+`conversations`/`messages` = tổng gồm hội thoại gom file); `files.found = files.jobs`, `files.unsupported` = file đuôi hub không nhận
+(báo người dùng); `retention.messages_older` > 0 ⇒ tin cũ hơn hạn lưu `chat_history_months` (mặc định 12) — my-chat-history không
+thấy chúng; báo người dùng trước khi apply. Apply (sao lưu trước) + chạy lại:
+```
+bash backup.sh
+"${EXTRA[@]}" --apply --report /out/x-apply.json > /dev/null; echo "exit=$?"
+jq '{counts, files, deliveries, notifications_unread, issues_by_code}' import-out/x-apply.json
+"${EXTRA[@]}" --apply --report /out/x-rerun.json > /dev/null; jq '{files, counts}' import-out/x-rerun.json
+dc exec -T pg psql -U s2_owner -d ai_system -Atc "select count(*) from hub.notification_deliveries d join admin.tenants t on t.id=d.tenant_id where t.key='nitigroup'"
+```
+⇒ `counts.*.target = planned`; `files.uploaded = files.jobs`, `checksum_ok = jobs`, `checksum_bad = 0`; `deliveries = 0`,
+`notifications_unread = 0`; chạy lại: `files.uploaded = 0`, `existing = jobs`, target không đổi; câu cuối ⇒ 0.
+Hoàn tác (CHỈ nhãn `sohoptac-tien-extras`: hội thoại + tin + đính kèm, thông báo, hàng gói theo sổ `contracts.import_rows`; lô HĐ
+chính và hàng app tạo không đụng; object FileBox giữ):
+```
+XRB=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default -v "$PWD/.env:/run/s2/app.env:ro" -v "$PWD/import-out:/out"
+  sohoptac2-app:latest bun --env-file=/run/s2/app.env apps/admin-api/src/modules/mgmt-import/mgmt-import.cli.ts
+  --source sohoptac-tien-extras --link-source sohoptac-tien --include-extras --rollback --actor "$ACTOR" --into-tenant nitigroup
+  --owner-username tien --from-export /out/tien-export.json)
+"${XRB[@]}" --report /out/x-rb-dry.json > /dev/null; jq '.before' import-out/x-rb-dry.json
+"${XRB[@]}" --apply --report /out/x-rb.json > /dev/null; jq '{deleted, after, error}' import-out/x-rb.json
+```
+⇒ `after`: `conversation_ids = []`, `messages = 0`, `attachments = []`, `notifications = 0`, `contracts = {}`. Xong: `rm import-out/tien-export.json`.
 
 ## Không làm ở đây
 Không nạp dữ liệu (trừ mục niti-import ở trên, do người dùng chạy), không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.

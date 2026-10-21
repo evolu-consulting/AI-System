@@ -2,6 +2,7 @@
 // `SourceReader`, rồi (a) không email ⇒ chỉ liệt kê chủ HĐ (tìm email của tài khoản cần nhập), (b) có email ⇒ file export đã lọc
 // đúng tài khoản đó (`scopeToOwner`) + số bản ghi bị loại/không nhập. Không ghi gì vào nguồn.
 import type { Snapshot } from "../domain/context";
+import { extrasFor } from "../domain/extras-scope.rules";
 import { contractOwners, scopeToOwner } from "../domain/owner-scope.rules";
 import { INDICES } from "./load";
 import type { ExportMeta } from "./owner-ports";
@@ -26,8 +27,25 @@ export async function loadIndices(
   return s;
 }
 
+/** niti-import2: gộp phần còn lại (chat, CKS, thông báo, báo giá, quét giá, lịch sử chấm điểm) vào `docs`; công ty gộp theo id. */
+function withExtras(main: Snapshot["docs"], s: Snapshot, email: string): Snapshot["docs"] {
+  const ex = extrasFor(s, email, new Set((main.contracts ?? []).map((d) => d.id)));
+  const out: Snapshot["docs"] = { ...main };
+  for (const [ix, docs] of Object.entries(ex)) {
+    if (ix === "companies") continue;
+    out[ix] = docs ?? [];
+  }
+  const seen = new Set((main.companies ?? []).map((d) => d.id));
+  out.companies = [
+    ...(main.companies ?? []),
+    ...(ex.companies ?? []).filter((d) => !seen.has(d.id)),
+  ];
+  return out;
+}
+
 export function exportFor(s: Snapshot, ownerEmail: string, now: Date): ExportFile {
   const scope = scopeToOwner(s, ownerEmail);
+  const email = ownerEmail.trim().toLowerCase();
   return {
     format: EXPORT_FORMAT,
     owner_email: ownerEmail.trim().toLowerCase(),
@@ -36,7 +54,7 @@ export function exportFor(s: Snapshot, ownerEmail: string, now: Date): ExportFil
     excluded: scope.excluded,
     not_imported: scope.not_imported,
     counts_all: Object.fromEntries(Object.entries(s.docs).map(([k, v]) => [k, v.length])),
-    docs: scope.snap.docs,
+    docs: withExtras(scope.snap.docs, s, email),
   };
 }
 

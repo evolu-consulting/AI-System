@@ -204,6 +204,9 @@ export const conversations = hub.table("conversations", {
   // 0014 (X2b D1): hội thoại nền ẩn của (phòng, user) — không lộ qua C1 (D2).
   roomId: uuid("room_id"),
   processRunId: uuid("process_run_id"), // 0019 (P-a D1): hội thoại nền ẩn của run
+  // 0054 (niti-import2): hội thoại nhập từ app cũ = lưu trữ chỉ đọc (không tạo run mới)
+  importSource: text("import_source"),
+  archivedAt: ts("archived_at"),
 });
 
 export const flows = hub.table("flows", {

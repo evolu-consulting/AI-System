@@ -3,6 +3,7 @@
 // được tham chiếu; khoá nhắc đã gửi của các HĐ đó. Mọi thứ khác (tài khoản thử/demo) bị loại và chỉ ĐẾM. Index không nhập ở chế
 // độ này (CKS, tri thức, hẹn nhắc…) ⇒ đếm bản ghi gắn với người đó vào `not_imported` để vận hành thấy còn sót gì. Thuần.
 import { docsOf, type Snapshot, type SourceDoc } from "./context";
+import { EXTRA_EXPORT_INDICES } from "./extras-scope.rules";
 import { parseRemindKey } from "./map-contracts.rules";
 import { lowerEmail, str } from "./values.rules";
 
@@ -63,7 +64,12 @@ function pickLedger(s: Snapshot, email: string, contracts: Set<string>) {
 function notImported(s: Snapshot, email: string, contracts: Set<string>): Record<string, number> {
   const out: Record<string, number> = {};
   for (const [ix, docs] of Object.entries(s.docs)) {
-    if (IDENTITY.has(ix) || (OWNER_INDICES as readonly string[]).includes(ix)) continue;
+    if (
+      IDENTITY.has(ix) ||
+      (OWNER_INDICES as readonly string[]).includes(ix) ||
+      EXTRA_EXPORT_INDICES.includes(ix) // niti-import2: có đường nhập riêng (`--include-extras`)
+    )
+      continue;
     const n = docs.filter(
       (d) =>
         PERSON_KEYS.some((k) => mine(email, d.src[k])) ||
