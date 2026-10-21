@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SsoRouteImport } from './routes/sso'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMyWorkRouteImport } from './routes/_authed/my-work'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
@@ -44,9 +46,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SsoRoute = SsoRouteImport.update({
   id: '/sso',
   path: '/sso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
@@ -133,7 +145,9 @@ const AuthedSettingsScoringRoute = AuthedSettingsScoringRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
+  '/terms': typeof TermsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
   '/notifications': typeof AuthedNotificationsRoute
@@ -154,7 +168,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
+  '/terms': typeof TermsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/my-work': typeof AuthedMyWorkRoute
   '/notifications': typeof AuthedNotificationsRoute
@@ -177,7 +193,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
+  '/terms': typeof TermsRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/my-work': typeof AuthedMyWorkRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
@@ -200,7 +218,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/privacy'
     | '/sso'
+    | '/terms'
     | '/feedback'
     | '/my-work'
     | '/notifications'
@@ -221,7 +241,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/privacy'
     | '/sso'
+    | '/terms'
     | '/feedback'
     | '/my-work'
     | '/notifications'
@@ -243,7 +265,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/login'
+    | '/privacy'
     | '/sso'
+    | '/terms'
     | '/_authed/feedback'
     | '/_authed/my-work'
     | '/_authed/notifications'
@@ -266,7 +290,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   SsoRoute: typeof SsoRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,11 +318,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sso': {
       id: '/sso'
       path: '/sso'
       fullPath: '/sso'
       preLoaderRoute: typeof SsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/feedback': {
@@ -459,7 +499,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   SsoRoute: SsoRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

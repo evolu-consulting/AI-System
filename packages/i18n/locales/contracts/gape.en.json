@@ -1,0 +1,73 @@
+{
+  "contracts": {
+    "gape": {
+      "status": {
+        "needs_review": "Awaiting confirmation",
+        "extracting": "Reading",
+        "extract_failed": "Read failed",
+        "active": "Active",
+        "expiring": "Expiring soon",
+        "expired": "Expired",
+        "renewed": "Handled",
+        "terminated": "Handled",
+        "rejected": "Rejected"
+      },
+      "direction": {
+        "sale": "Sales",
+        "purchase": "Purchases",
+        "unknown": "Unknown"
+      },
+      "ownerUnknown": "(unknown)",
+      "contractShort": "Contract",
+      "assistantTitle": "Assistant",
+      "accent": {
+        "indigo": "Indigo",
+        "blue": "Blue",
+        "teal": "Teal",
+        "green": "Green",
+        "orange": "Orange",
+        "rose": "Rose"
+      },
+      "account": {
+        "language": "Language",
+        "langVi": "Tiếng Việt",
+        "langEn": "English",
+        "changePassword": "Change password",
+        "twofa": "Two-factor authentication",
+        "openFail": "Could not open the account page. Please try again."
+      },
+      "legal": {
+        "terms": "Terms of use",
+        "privacy": "Privacy policy",
+        "back": "Back",
+        "updated": "Last updated: 21 Oct 2026",
+        "termsIntro": "By using the platform you agree to the terms below.",
+        "t1Title": "Scope of service",
+        "t1Body": "The platform provides contract management, partner management and AI assistant tools for your organisation. Features may vary by the plan your organisation subscribes to.",
+        "t2Title": "Account and security",
+        "t2Body": "You are responsible for keeping your password secret and for all activity under your account. Tell your administrator immediately if you suspect misuse.",
+        "t3Title": "Organisation data",
+        "t3Body": "Data you enter or upload belongs to your organisation. We process it only to provide the service and do not sell it to third parties.",
+        "t4Title": "AI-generated content",
+        "t4Body": "Results from the AI assistant are for reference only. Check them before using them for legal, financial or signing decisions.",
+        "t5Title": "Acceptable use",
+        "t5Body": "Do not use the platform to break the law, infringe others' rights, or try to gain unauthorised access to other organisations' systems and data.",
+        "t6Title": "Changes and contact",
+        "t6Body": "These terms may be updated; a new version takes effect when posted on this page. For questions, contact your organisation's administrator or the platform provider.",
+        "privacyIntro": "This policy describes how the platform collects and uses your information.",
+        "p1Title": "Information we process",
+        "p1Body": "Account information (name, username, email), contract and partner data you enter or upload, conversations with the AI assistant, and access logs for security.",
+        "p2Title": "How we use it",
+        "p2Body": "To provide and operate the service, protect accounts, send contract reminders and improve quality. We never use your organisation's data for another organisation.",
+        "p3Title": "Storage and protection",
+        "p3Body": "Data is separated per organisation, sent over encrypted channels and reachable only by authorised people in your organisation. We keep it while your organisation uses the service.",
+        "p4Title": "Sharing with third parties",
+        "p4Body": "We do not sell information. Content sent to AI models is used only to answer your request and as configured by your organisation.",
+        "p5Title": "Your rights",
+        "p5Body": "You may ask to view, correct or delete your personal information through your organisation's administrator.",
+        "p6Title": "Contact",
+        "p6Body": "Send privacy questions to your organisation's administrator or the platform provider."
+      }
+    }
+  }
+}

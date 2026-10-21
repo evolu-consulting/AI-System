@@ -21,7 +21,8 @@ export default function AssistantPanel({
   const { t } = useTranslation();
   const { msgs } = useAssistantChat();
   const busy = msgs.some((m) => m.pending);
-  const send = (q: string) => void ask(q, (code) => errorText(code, t));
+  const send = (q: string) =>
+    void ask(q, (code) => errorText(code, t), undefined, t("contracts.gape.assistantTitle"));
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-[58px] shrink-0 items-center gap-2.5 px-4">

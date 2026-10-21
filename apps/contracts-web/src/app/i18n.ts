@@ -1,10 +1,13 @@
 // PK-FR-10 · TF1 · khởi tạo i18next cho contracts-web: chuỗi `contracts.*` nạp động; `ai.locale` đã lưu, không có thì en (CR-052).
 import { loadContractsLocale } from "@ai/i18n/contracts-locales";
-import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
+import { type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
 export const LOCALE_STORAGE_KEY = "ai.locale";
+
+/** GAP-E #33: sản phẩm tiếng Việt - lần đầu vào (chưa lưu `ai.locale`) hiển thị tiếng Việt. */
+export const DEFAULT_CONTRACTS_LOCALE: Locale = "vi";
 
 const isSupported = (v: string | null | undefined): v is Locale =>
   SUPPORTED_LOCALES.some((l) => l === v);
@@ -17,7 +20,7 @@ export function resolveInitialLocale(read: (key: string) => string | null): Loca
   } catch {
     // storage bị chặn
   }
-  return DEFAULT_LOCALE;
+  return DEFAULT_CONTRACTS_LOCALE;
 }
 
 const readLocal = (key: string): string | null =>
@@ -25,6 +28,11 @@ const readLocal = (key: string): string | null =>
 
 i18next.on("languageChanged", (lng) => {
   if (typeof document !== "undefined") document.documentElement.lang = lng;
+  try {
+    if (typeof localStorage !== "undefined") localStorage.setItem(LOCALE_STORAGE_KEY, lng);
+  } catch {
+    // storage bị chặn
+  }
 });
 
 const lazyBackend = {
@@ -47,7 +55,7 @@ export const initI18n = (): Promise<unknown> =>
     .init({
       partialBundledLanguages: true,
       lng: resolveInitialLocale(readLocal),
-      fallbackLng: DEFAULT_LOCALE,
+      fallbackLng: DEFAULT_CONTRACTS_LOCALE,
       supportedLngs: [...SUPPORTED_LOCALES],
       interpolation: { escapeValue: false },
     });

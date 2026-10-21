@@ -4,17 +4,17 @@ import { resolveInitialLocale } from "./i18n";
 
 describe("resolveInitialLocale", () => {
   test("dùng ai.locale đã lưu", () => {
-    expect(resolveInitialLocale(() => "vi")).toBe("vi");
+    expect(resolveInitialLocale(() => "en")).toBe("en");
   });
-  test("không có hoặc không hỗ trợ ⇒ en", () => {
-    expect(resolveInitialLocale(() => null)).toBe("en");
-    expect(resolveInitialLocale(() => "fr")).toBe("en");
+  test("không có hoặc không hỗ trợ ⇒ vi (GAP-E #33)", () => {
+    expect(resolveInitialLocale(() => null)).toBe("vi");
+    expect(resolveInitialLocale(() => "fr")).toBe("vi");
   });
-  test("storage ném lỗi ⇒ en", () => {
+  test("storage ném lỗi ⇒ vi", () => {
     expect(
       resolveInitialLocale(() => {
         throw new Error("blocked");
       }),
-    ).toBe("en");
+    ).toBe("vi");
   });
 });

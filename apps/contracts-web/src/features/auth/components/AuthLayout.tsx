@@ -6,7 +6,7 @@ import { IconRobot } from "~/components/icons";
 import { AppPreview } from "./AppPreview";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="flex min-h-dvh bg-panel text-base leading-[1.55]">
       <main className="flex w-full flex-col px-6 py-8 sm:px-10 lg:w-[520px] lg:shrink-0 lg:px-14">
@@ -19,9 +19,30 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex w-full max-w-[384px] flex-1 flex-col justify-center gap-6 py-8">
           {children}
         </div>
-        <p className="text-[12px] text-dim">
-          Evolu Consulting · <span className="font-mono">Intelligent automation</span>
-        </p>
+        <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-dim">
+          <span>
+            Evolu Consulting · <span className="font-mono">Intelligent automation</span>
+          </span>
+          <a href="/terms" className="hover:text-ink hover:underline">
+            {t("contracts.gape.legal.terms")}
+          </a>
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            {t("contracts.gape.legal.privacy")}
+          </a>
+          <span className="ml-auto flex gap-2">
+            {(["vi", "en"] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                aria-pressed={i18n.language === l}
+                onClick={() => void i18n.changeLanguage(l)}
+                className={i18n.language === l ? "font-semibold text-ink" : "hover:text-ink"}
+              >
+                {t(l === "vi" ? "contracts.gape.account.langVi" : "contracts.gape.account.langEn")}
+              </button>
+            ))}
+          </span>
+        </footer>
       </main>
       <Showcase />
     </div>

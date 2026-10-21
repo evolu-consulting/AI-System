@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
-import { STATUS_VIEW, shortName } from "../lib/list-model";
+import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
 
 export type RowCtx = {
@@ -60,7 +60,7 @@ export function StageCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
                 : "grey"
         }
       >
-        {s.label}
+        {statusLabel(t, r.status)}
       </Tag>
     );
   }

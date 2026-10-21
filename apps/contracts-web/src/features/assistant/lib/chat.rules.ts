@@ -69,9 +69,9 @@ export function buildRequest(
 }
 
 /** Tiêu đề hội thoại Hub từ câu đầu (một dòng, ≤ 80 ký tự). */
-export function titleOf(question: string): string {
+export function titleOf(question: string, fallback = ""): string {
   const one = question.replace(/\s+/g, " ").trim();
-  return one.length > TITLE_MAX ? `${one.slice(0, TITLE_MAX - 1)}…` : one || "Trợ lý";
+  return one.length > TITLE_MAX ? `${one.slice(0, TITLE_MAX - 1)}…` : one || fallback;
 }
 
 /** Áp một sự kiện SSE vào tin trả lời. `run.finished.content` là bản đủ (thay phần delta đã ghép). */

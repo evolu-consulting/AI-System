@@ -20,9 +20,9 @@ export function resetAssistantChat(): void {
   set(() => ({ msgs: [], convId: null, flowId: null, runId: null }));
 }
 
-async function ensureConversation(question: string): Promise<string> {
+async function ensureConversation(question: string, fallbackTitle: string): Promise<string> {
   if (state.convId) return state.convId;
-  const c = await createConversation(titleOf(question));
+  const c = await createConversation(titleOf(question, fallbackTitle));
   set((s) => ({ ...s, convId: c.id }));
   return c.id;
 }
@@ -31,6 +31,7 @@ export async function ask(
   question: string,
   errorText: (code?: string) => string,
   instruction?: string,
+  fallbackTitle = "",
 ): Promise<void> {
   const q = question.trim();
   if (!q || state.msgs.some((m) => m.pending)) return;
@@ -39,7 +40,7 @@ export async function ask(
     msgs: [...s.msgs, { role: "user", text: q }, { role: "assistant", text: "", pending: true }],
   }));
   try {
-    const convId = await ensureConversation(q);
+    const convId = await ensureConversation(q, fallbackTitle);
     const loc = typeof location === "undefined" ? null : location;
     const dock = loc ? dockContext(loc.pathname, loc.search) : undefined;
     const req = buildRequest(q, state.flowId, loc?.href ?? null, dock, instruction);

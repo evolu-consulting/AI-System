@@ -7,23 +7,21 @@ import { type DateFilter, dateParams } from "./date-filter";
 export type Tone = "late" | "soon" | "ok" | "dim" | "act";
 
 /** Nhóm trạng thái hiển thị (một nhãn có thể gồm nhiều mã); thứ tự = thứ tự gợi ý trong bộ lọc. */
-export const STATUS_VIEW: Record<ContractStatus, { label: string; tone: Tone }> = {
-  needs_review: { label: "Chờ xác nhận", tone: "act" },
-  extracting: { label: "Đang đọc", tone: "dim" },
-  extract_failed: { label: "Đọc lỗi", tone: "late" },
-  active: { label: "Đang hiệu lực", tone: "dim" },
-  expiring: { label: "Sắp đáo hạn", tone: "soon" },
-  expired: { label: "Đã hết hạn", tone: "late" },
-  renewed: { label: "Đã xử lý", tone: "dim" },
-  terminated: { label: "Đã xử lý", tone: "dim" },
-  rejected: { label: "Bị từ chối", tone: "late" },
+export const STATUS_VIEW: Record<ContractStatus, { tone: Tone }> = {
+  needs_review: { tone: "act" },
+  extracting: { tone: "dim" },
+  extract_failed: { tone: "late" },
+  active: { tone: "dim" },
+  expiring: { tone: "soon" },
+  expired: { tone: "late" },
+  renewed: { tone: "dim" },
+  terminated: { tone: "dim" },
+  rejected: { tone: "late" },
 };
 
-export const DIRECTION_LABEL = {
-  sale: "Bán ra",
-  purchase: "Mua vào",
-  unknown: "Chưa rõ",
-} as const;
+/** Hàm dịch tối thiểu (GAP-E #34: nhãn qua i18n `contracts.gape.*`, không còn chuỗi cứng). */
+export type Tr = (key: string) => string;
+export const statusLabel = (t: Tr, s: ContractStatus): string => t(`contracts.gape.status.${s}`);
 
 /** "Nguyễn Văn A – Giám đốc" → "Nguyễn Văn A": lọc theo tên người, không theo chức danh. */
 export const personOf = (s: string): string => (s.split(/\s[–-]\s|,/)[0] ?? "").trim();
@@ -62,7 +60,7 @@ function group(pairs: [label: string, value: string][], sort = true): Choice[] {
   return sort ? out.sort(byLabel) : out;
 }
 
-export function filterMaps(f: ContractFacets | undefined, members: MemberNames): FilterMaps {
+export function filterMaps(f: ContractFacets | undefined, members: MemberNames, t: Tr): FilterMaps {
   const none: FilterMaps = {
     category: [],
     direction: [],
@@ -77,16 +75,16 @@ export function filterMaps(f: ContractFacets | undefined, members: MemberNames):
   const status = f.status
     .map((s) => s.v)
     .sort((a, b) => order.indexOf(a) - order.indexOf(b))
-    .map((v): [string, string] => [STATUS_VIEW[v].label, v]);
+    .map((v): [string, string] => [statusLabel(t, v), v]);
   return {
     category: group(f.category.map((c) => [c.label, c.v])),
     direction: group(
-      f.direction.map((d) => [DIRECTION_LABEL[d.v], d.v]),
+      f.direction.map((d) => [t(`contracts.gape.direction.${d.v}`), d.v]),
       false,
     ),
     seller: group(f.seller.map((s) => [shortName(s.v), s.v])),
     buyer: group(f.buyer.map((s) => [shortName(s.v), s.v])),
-    owner: group(f.owner.map((o) => [members.get(o.v) ?? "(không rõ)", o.v])),
+    owner: group(f.owner.map((o) => [members.get(o.v) ?? t("contracts.gape.ownerUnknown"), o.v])),
     signer: group(f.signer.map((s) => [personOf(s.label), s.label])),
     status: group(status, false),
   };

@@ -5,8 +5,9 @@
 import type { Locale } from "./locales";
 
 type Part = { default: { contracts: Record<string, unknown> } };
-/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps. */
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape. */
 type Parts = readonly [
+  Part,
   Part,
   Part,
   Part,
@@ -43,6 +44,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/v2m.en.json"),
     import("../locales/contracts/v2gaps.en.json"),
     import("../locales/contracts/gapa1.en.json"),
+    import("../locales/contracts/gape.en.json"),
   ]);
 
 const loadVi = (): Promise<Parts> =>
@@ -63,11 +65,12 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/v2m.vi.json"),
     import("../locales/contracts/v2gaps.vi.json"),
     import("../locales/contracts/gapa1.vi.json"),
+    import("../locales/contracts/gape.vi.json"),
   ]);
 
 function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...rest]: Parts) {
   const base = mod.default as { contracts: Record<string, unknown> };
-  const later = rest.map((p) => p.default.contracts); // V2-H svc, V2-I pv2, V2-J2 psup, V2-L settings, V2-M, V2-GAPS
+  const later = rest.map((p) => p.default.contracts); // V2-H svc, V2-I pv2, V2-J2 psup, V2-L settings, V2-M, V2-GAPS, GAP-E
   const f = v2f.default.contracts as { cform: object; cdetail: object };
   const g = v2g.default.contracts as { cform: object; cdetail: object };
   return {

@@ -104,7 +104,7 @@ export function CompanyPane({
                 className={`inline-flex h-9 items-center gap-2 rounded-full border bg-panel px-3 text-[13px] ${c.accent === a ? "border-[var(--sw)] shadow-[0_0_0_1px_var(--sw)]" : "border-rule"}`}
               >
                 <i className="h-5 w-5 rounded-full bg-[var(--sw)]" />
-                {ACCENTS[a].name}
+                {t(`contracts.gape.accent.${a}`)}
               </button>
             ))}
           </div>

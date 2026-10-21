@@ -18,7 +18,7 @@ const money = (n: number | null) =>
   );
 
 function label(c: SourceRef, t: (k: string) => string): string {
-  return `${c.supplier.name ?? "—"} · ${c.number ?? "HĐ"} · ${vnd(c.price)} đ${c.current ? "" : ` (${t("contracts.sourcing.ended")})`}`;
+  return `${c.supplier.name ?? "—"} · ${c.number ?? t("contracts.gape.contractShort")} · ${vnd(c.price)} đ${c.current ? "" : ` (${t("contracts.sourcing.ended")})`}`;
 }
 
 /** Ô "Mua từ": ô chọn nguồn (chỉ người có quyền ghi và khi có ứng viên) + nguồn đang dùng. */
@@ -61,7 +61,7 @@ function SourceCell({
             params={{ id: s.contract_id }}
             className="text-act hover:underline"
           >
-            {s.number ?? "HĐ"}
+            {s.number ?? t("contracts.gape.contractShort")}
           </Link>
           {s.end_date && <> · {t("contracts.sourcing.endsOn", { date: viDate(s.end_date) })}</>}
         </span>
@@ -126,7 +126,7 @@ export function SaleLines({
                     params={{ id: r.contract_id }}
                     className="font-mono font-medium text-act hover:underline"
                   >
-                    {r.number ?? "HĐ"}
+                    {r.number ?? t("contracts.gape.contractShort")}
                   </Link>
                   <span className="block text-dim">{r.customer.name ?? "—"}</span>
                 </td>

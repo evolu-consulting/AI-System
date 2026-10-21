@@ -76,7 +76,10 @@ export function useContractsList(categoryExtra?: ReactNode, date?: DateFilter) {
     () => new Map((members.data?.items ?? []).map((m) => [m.id, m.name])),
     [members.data],
   );
-  const maps = useMemo(() => filterMaps(facets.data, memberNames), [facets.data, memberNames]);
+  const maps = useMemo(
+    () => filterMaps(facets.data, memberNames, tr),
+    [facets.data, memberNames, tr],
+  );
   const filters: ColumnFilter<Row>[] = FILTERS.map((f) => ({
     key: f.key,
     label: tr(`contracts.list.filter.${f.key}`),

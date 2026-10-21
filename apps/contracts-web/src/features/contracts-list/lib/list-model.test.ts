@@ -1,7 +1,12 @@
 // HD-FR-51 · S03: nhãn/tên rút gọn, lựa chọn lọc từ facets, truy vấn server từ bộ lọc.
 import { describe, expect, test } from "bun:test";
 import type { ContractFacets } from "@ai/contracts";
+import vi from "../../../../../../packages/i18n/locales/contracts/gape.vi.json";
 import { exportQueryString, filterMaps, listQueryString, personOf, shortName } from "./list-model";
+
+/** `t` giả đọc đúng bản dịch vi (GAP-E #34). */
+const t = (key: string): string =>
+  key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], vi) as string;
 
 const facets = {
   status: [
@@ -38,7 +43,7 @@ describe("tên hiển thị", () => {
 });
 
 describe("filterMaps", () => {
-  const m = filterMaps(facets, new Map([["u1", "Lan"]]));
+  const m = filterMaps(facets, new Map([["u1", "Lan"]]), t);
   test("trạng thái cùng nhãn gộp (Đã xử lý = renewed + terminated), theo thứ tự trạng thái", () => {
     expect(m.status.map((s) => s.label)).toEqual(["Đang hiệu lực", "Đã xử lý"]);
     expect(m.status[1]?.values).toEqual(["renewed", "terminated"]);
@@ -55,15 +60,15 @@ describe("filterMaps", () => {
     expect(m.direction.map((d) => d.label)).toEqual(["Chưa rõ", "Mua vào"]);
     expect(m.owner).toEqual([{ label: "Lan", values: ["u1"] }]);
     expect(m.signer).toEqual([{ label: "Nguyễn Văn A", values: ["Nguyễn Văn A – Giám đốc"] }]);
-    expect(filterMaps(facets, new Map()).owner[0]?.label).toBe("(không rõ)");
+    expect(filterMaps(facets, new Map(), t).owner[0]?.label).toBe("(không rõ)");
   });
   test("chưa có facets ⇒ không lựa chọn", () => {
-    expect(filterMaps(undefined, new Map()).status).toEqual([]);
+    expect(filterMaps(undefined, new Map(), t).status).toEqual([]);
   });
 });
 
 describe("listQueryString", () => {
-  const maps = filterMaps(facets, new Map([["u1", "Lan"]]));
+  const maps = filterMaps(facets, new Map([["u1", "Lan"]]), t);
   const base = { q: "", conds: {}, maps, page: 1, pageSize: 20 };
   test("không lọc ⇒ chỉ include=progress (V2-F) + page/page_size", () => {
     expect(listQueryString(base)).toBe("include=progress&page=1&page_size=20");
@@ -100,7 +105,7 @@ describe("Gap #8/#10 · lọc ngày + xuất tệp (cùng bộ lọc với danh 
   const base = {
     q: "abc",
     conds: { value: { min: 5 } },
-    maps: filterMaps(undefined, new Map()),
+    maps: filterMaps(undefined, new Map(), t),
     page: 3,
     pageSize: 50,
   };

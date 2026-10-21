@@ -1,0 +1,73 @@
+{
+  "contracts": {
+    "gape": {
+      "status": {
+        "needs_review": "Chờ xác nhận",
+        "extracting": "Đang đọc",
+        "extract_failed": "Đọc lỗi",
+        "active": "Đang hiệu lực",
+        "expiring": "Sắp đáo hạn",
+        "expired": "Đã hết hạn",
+        "renewed": "Đã xử lý",
+        "terminated": "Đã xử lý",
+        "rejected": "Bị từ chối"
+      },
+      "direction": {
+        "sale": "Bán ra",
+        "purchase": "Mua vào",
+        "unknown": "Chưa rõ"
+      },
+      "ownerUnknown": "(không rõ)",
+      "contractShort": "HĐ",
+      "assistantTitle": "Trợ lý",
+      "accent": {
+        "indigo": "Chàm",
+        "blue": "Xanh dương",
+        "teal": "Xanh ngọc",
+        "green": "Xanh lá",
+        "orange": "Cam",
+        "rose": "Hồng"
+      },
+      "account": {
+        "language": "Ngôn ngữ",
+        "langVi": "Tiếng Việt",
+        "langEn": "English",
+        "changePassword": "Đổi mật khẩu",
+        "twofa": "Xác thực hai bước",
+        "openFail": "Không mở được trang tài khoản. Vui lòng thử lại."
+      },
+      "legal": {
+        "terms": "Điều khoản sử dụng",
+        "privacy": "Chính sách bảo mật",
+        "back": "Quay lại",
+        "updated": "Cập nhật lần cuối: 21/10/2026",
+        "termsIntro": "Khi sử dụng nền tảng, bạn đồng ý với các điều khoản dưới đây.",
+        "t1Title": "Phạm vi dịch vụ",
+        "t1Body": "Nền tảng cung cấp công cụ quản lý hợp đồng, đối tác và trợ lý AI cho tổ chức của bạn. Tính năng có thể thay đổi theo gói dịch vụ mà tổ chức đăng ký.",
+        "t2Title": "Tài khoản và bảo mật",
+        "t2Body": "Bạn chịu trách nhiệm giữ kín mật khẩu và mọi hoạt động dưới tài khoản của mình. Hãy báo ngay cho quản trị viên khi nghi ngờ tài khoản bị lạm dụng.",
+        "t3Title": "Dữ liệu của tổ chức",
+        "t3Body": "Dữ liệu bạn nhập hoặc tải lên thuộc về tổ chức của bạn. Chúng tôi chỉ xử lý dữ liệu để cung cấp dịch vụ và không bán dữ liệu cho bên thứ ba.",
+        "t4Title": "Nội dung do AI tạo ra",
+        "t4Body": "Kết quả từ trợ lý AI chỉ mang tính tham khảo. Bạn cần kiểm tra lại trước khi dùng cho quyết định pháp lý, tài chính hoặc ký kết.",
+        "t5Title": "Sử dụng hợp lệ",
+        "t5Body": "Không dùng nền tảng để vi phạm pháp luật, xâm phạm quyền của người khác, hoặc tìm cách truy cập trái phép vào hệ thống và dữ liệu của tổ chức khác.",
+        "t6Title": "Thay đổi và liên hệ",
+        "t6Body": "Điều khoản có thể được cập nhật; bản mới có hiệu lực khi đăng tại trang này. Mọi thắc mắc xin liên hệ quản trị viên của tổ chức hoặc đơn vị cung cấp nền tảng.",
+        "privacyIntro": "Chính sách này mô tả cách nền tảng thu thập và sử dụng thông tin của bạn.",
+        "p1Title": "Thông tin chúng tôi xử lý",
+        "p1Body": "Thông tin tài khoản (tên, tên đăng nhập, email), dữ liệu hợp đồng và đối tác bạn nhập hoặc tải lên, nội dung trao đổi với trợ lý AI, và nhật ký truy cập phục vụ an ninh.",
+        "p2Title": "Mục đích sử dụng",
+        "p2Body": "Cung cấp và vận hành dịch vụ, bảo vệ tài khoản, nhắc việc theo hợp đồng và cải thiện chất lượng. Chúng tôi không dùng dữ liệu của tổ chức bạn cho tổ chức khác.",
+        "p3Title": "Lưu trữ và bảo vệ",
+        "p3Body": "Dữ liệu được tách riêng theo từng tổ chức, truyền qua kênh mã hoá và chỉ người có quyền trong tổ chức mới truy cập được. Chúng tôi lưu dữ liệu trong thời gian tổ chức sử dụng dịch vụ.",
+        "p4Title": "Chia sẻ với bên thứ ba",
+        "p4Body": "Chúng tôi không bán thông tin. Nội dung gửi tới mô hình AI chỉ nhằm tạo câu trả lời cho yêu cầu của bạn và theo cấu hình mà tổ chức đã chọn.",
+        "p5Title": "Quyền của bạn",
+        "p5Body": "Bạn có thể yêu cầu xem, chỉnh sửa hoặc xoá thông tin cá nhân của mình thông qua quản trị viên của tổ chức.",
+        "p6Title": "Liên hệ",
+        "p6Body": "Mọi câu hỏi về quyền riêng tư xin gửi tới quản trị viên của tổ chức hoặc đơn vị cung cấp nền tảng."
+      }
+    }
+  }
+}

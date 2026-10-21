@@ -20,35 +20,29 @@ export const DEFAULT_BRAND: Brand = {
 };
 
 /** [act, act-hover, act-soft, act-line, grad-to] — sáng / tối (mockup NITI `ACCENTS`). */
-type Palette = { name: string; l: string[]; d: string[] };
+type Palette = { l: string[]; d: string[] };
 export const ACCENTS: Record<CompanyAccent, Palette> = {
   indigo: {
-    name: "Chàm",
     l: ["#4f46e5", "#4338ca", "#eef2ff", "#c7d2fe", "#a855f7"],
     d: ["#818cf8", "#a5b4fc", "#24264a", "#4b4f8f", "#a855f7"],
   },
   blue: {
-    name: "Xanh dương",
     l: ["#2563eb", "#1d4ed8", "#eff6ff", "#bfdbfe", "#06b6d4"],
     d: ["#60a5fa", "#93c5fd", "#172554", "#1e3a8a", "#22d3ee"],
   },
   teal: {
-    name: "Xanh ngọc",
     l: ["#0d9488", "#0f766e", "#f0fdfa", "#99f6e4", "#22c55e"],
     d: ["#2dd4bf", "#5eead4", "#10302d", "#115e59", "#4ade80"],
   },
   green: {
-    name: "Xanh lá",
     l: ["#16a34a", "#15803d", "#f0fdf4", "#bbf7d0", "#84cc16"],
     d: ["#4ade80", "#86efac", "#12301c", "#166534", "#a3e635"],
   },
   orange: {
-    name: "Cam",
     l: ["#ea580c", "#c2410c", "#fff7ed", "#fed7aa", "#f59e0b"],
     d: ["#fb923c", "#fdba74", "#3a1d0c", "#9a3412", "#fbbf24"],
   },
   rose: {
-    name: "Hồng",
     l: ["#e11d48", "#be123c", "#fff1f2", "#fecdd3", "#f97316"],
     d: ["#fb7185", "#fda4af", "#3b1219", "#9f1239", "#fb923c"],
   },

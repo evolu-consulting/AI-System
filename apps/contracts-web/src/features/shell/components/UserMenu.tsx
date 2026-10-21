@@ -9,6 +9,7 @@ import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { openSettings } from "~/features/settings/lib/bus";
 
 import { canSeeSettings, type Role } from "../lib/nav";
+import { AccountLinks, LanguagePicker, LegalLinks } from "./AccountSection";
 import { Popover } from "./Popover";
 import { ThemePicker } from "./ThemeMenu";
 
@@ -52,6 +53,8 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
         </p>
       </div>
       <ThemePicker />
+      <LanguagePicker />
+      <AccountLinks role={user.role} close={close} />
       {canSeeSettings(role, user.role) && (
         <>
           <button
@@ -94,6 +97,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
       >
         <IconLogout width={18} height={18} /> {t("contracts.shell.logout")}
       </button>
+      <LegalLinks close={close} />
     </>
   );
 }
