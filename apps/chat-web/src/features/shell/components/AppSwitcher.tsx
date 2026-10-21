@@ -10,23 +10,24 @@ import { FALLBACK_URLS } from "../lib/fallback-urls";
 
 export const CHAT_APP_KEY = "chat";
 
-export function AppSwitcher() {
+/** `current`: "chat" trong khung chat, "portal" ở trang chủ AI System (cùng origin). */
+export function AppSwitcher({ current = CHAT_APP_KEY }: { current?: "chat" | "portal" }) {
   const { t, i18n } = useTranslation();
   const me = useSession((s) => s.me);
   return (
     <SharedAppSwitcher
-      current={CHAT_APP_KEY}
+      current={current}
       label={t("shell.apps")}
       locale={i18n.language}
       reloadKey={me?.id}
       fetchApps={() => session.myApps().then((r) => r.items)}
       fallback={() => fallbackApps(FALLBACK_URLS, me?.role)}
-      handOff={(a) =>
+      handOff={(a, next) =>
         handOffUrl({
           authed: true,
           grant: () => session.ssoGrant(a.key),
           fallbackBase: a.url,
-          next: "/",
+          next,
         })
       }
     />

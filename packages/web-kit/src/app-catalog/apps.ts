@@ -9,6 +9,20 @@ export function appLabel(app: MeApp, locale: string | undefined): string {
   return locale?.startsWith("en") && app.name.en ? app.name.en : app.name.vi;
 }
 
+/** portal-home · khoá ảo của mục "Trang chủ AI System" trong switcher (không có trong catalog). */
+export const HOME_KEY = "portal";
+/** `?home=1` ở `/` của chat-web: vào trang chủ dù đã đặt app mặc định. */
+export const HOME_NEXT = "/?home=1";
+
+/** Chat AI nằm dưới `/chat` (gốc `/` của cùng origin là trang chủ); app khác mở ở gốc. `url` rỗng (app hiện tại) ⇒ đường dẫn tương đối. */
+export function entryUrl(app: MeApp): string {
+  return app.key === "chat" ? `${app.url}/chat` : app.url;
+}
+/** `next` khi chuyển phiên sang app: Chat AI → `/chat`, còn lại `/`. */
+export function entryNext(app: MeApp): string {
+  return app.key === "chat" ? "/chat" : "/";
+}
+
 /** App mở được và không phải app hiện tại, giữ thứ tự server. */
 export function otherApps(apps: readonly MeApp[], current: string | undefined): MeApp[] {
   return apps.filter((a) => a.key !== current && a.url !== "");
@@ -30,6 +44,7 @@ export function withCurrent(apps: readonly MeApp[], current: string): MeApp[] {
 
 /** Mô tả ngắn dưới tên app trong switcher (app tuỳ chỉnh do Admin thêm: không có mô tả). */
 const DESCRIPTIONS: Record<string, { vi: string; en: string }> = {
+  portal: { vi: "Tất cả ứng dụng của bạn", en: "All your apps" },
   chat: { vi: "Hỏi AI, trò chuyện, tệp", en: "Ask AI, chat, files" },
   contracts: { vi: "Hợp đồng, đối tác, thanh toán", en: "Contracts, partners, payments" },
   studio: { vi: "Thiết kế agent và quy trình", en: "Design agents and workflows" },

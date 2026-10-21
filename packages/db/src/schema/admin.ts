@@ -56,12 +56,18 @@ export const tenants = admin.table(
     processRunsMax: integer("process_runs_max").notNull().default(5),
     /** niti-onboard (0015): hồ sơ công ty (`TenantProfileSchema`); `{}` = chưa khai. */
     profile: jsonb("profile").notNull().default({}),
+    /** portal-home (0018): app mở sau đăng nhập mặc định của công ty; null = trang chủ AI System. */
+    defaultApp: text("default_app"),
   },
   (t) => [
     uniqueIndex("tenants_key_uq").on(t.key),
     check("tenants_process_runs_max_check", sql`${t.processRunsMax} BETWEEN 1 AND 1000`),
     check("tenants_timezone_check", sql`char_length(${t.timezone}) BETWEEN 1 AND 64`),
     check("tenants_key_check", sql`${t.key} ~ '^[a-z0-9-]{2,32}$'`),
+    check(
+      "tenants_default_app_check",
+      sql`${t.defaultApp} IS NULL OR ${t.defaultApp} ~ '^[a-z0-9-]{2,32}$'`,
+    ),
     check("tenants_name_check", sql`char_length(${t.name}) BETWEEN 1 AND 128`),
     check(
       "tenants_max_concurrent_sub_check",
@@ -100,6 +106,8 @@ export const users = admin.table(
     version: versionCol(),
     ...audit(),
     updatedBy: updatedBy(),
+    /** portal-home (0018): app mở sau đăng nhập của riêng người dùng; null = theo công ty, rồi trang chủ. */
+    defaultApp: text("default_app"),
   },
   (t) => [
     uniqueIndex("users_tenant_username_uq").on(t.tenantId, t.username),
@@ -110,6 +118,10 @@ export const users = admin.table(
       .where(sql`${t.email} IS NOT NULL`),
     index("users_tenant_role_active_idx").on(t.tenantId, t.role).where(sql`${t.active}`),
     index("users_username_idx").on(t.username, t.id),
+    check(
+      "users_default_app_check",
+      sql`${t.defaultApp} IS NULL OR ${t.defaultApp} ~ '^[a-z0-9-]{2,32}$'`,
+    ),
     check("users_username_check", sql`${t.username} ~ '^[a-z0-9._-]{2,32}$'`),
     check("users_email_check", sql`char_length(${t.email}) <= 254`),
     check("users_display_name_check", sql`char_length(${t.displayName}) BETWEEN 1 AND 64`),

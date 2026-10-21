@@ -355,6 +355,8 @@ test.describe("04 admin-web (chủ công ty)", () => {
     try {
       await login(page, CHAT);
       await settle(page);
+      // portal-home: đăng nhập vào trang chủ; Quản trị mở từ thẻ/switcher (số "người dùng mới" chỉ hiện với chủ công ty).
+      await expect(page.getByTestId("portal-tile-admin")).toBeVisible();
       await page.getByRole("button", { name: "Ứng dụng" }).click();
       await page.getByRole("menuitem", { name: "Quản trị" }).click();
       await page.waitForURL((u) => u.href.startsWith(ADMIN) && !u.pathname.startsWith("/login"), {

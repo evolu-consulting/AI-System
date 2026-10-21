@@ -2,12 +2,55 @@
 import { bodyText, CHAT, CW, expect, login, settle, test, watchConsole } from "./_support";
 
 test.describe("01 đăng nhập + SSO", () => {
-  test("đăng nhập chat-web (AI System) vào trang hỏi AI", async ({ page }) => {
+  // portal-home: đăng nhập AI System hạ cánh ở TRANG CHỦ (không còn vào thẳng chat) — trừ khi người dùng/công ty đã đặt app mặc định
+  // (tài khoản demo chưa đặt). Thẻ app theo /me/apps; Chat AI vẫn mở được.
+  test("đăng nhập chat-web (AI System) vào trang chủ có thẻ app, mở được Chat AI", async ({
+    page,
+  }) => {
     await login(page, CHAT);
     await settle(page);
-    await expect(page).toHaveURL(/\/c\//);
+    await expect(page).toHaveURL(new RegExp(`^${CHAT}/?(\\?.*)?$`));
+    await expect(page.getByTestId("portal-tiles")).toBeVisible();
+    await expect(page.getByTestId("portal-tile-chat")).toBeVisible();
+    await expect(page.getByTestId("portal-tile-contracts")).toBeVisible();
+    await expect(page.getByTestId("portal-ask")).toBeVisible();
+    expect(await bodyText(page)).toMatch(/Xin chào|Hello/);
+    await page.getByTestId("portal-tile-chat").getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/c\/new/);
     await expect(page.getByRole("textbox").last()).toBeVisible();
     expect(await bodyText(page)).toMatch(/Chào Demo|hôm nay cần gì/i);
+  });
+
+  test("portal: /chat và /c/new vẫn vào chat; Hỏi AI điền sẵn câu hỏi", async ({ page }) => {
+    await login(page, CHAT);
+    await page.goto(`${CHAT}/chat`);
+    await settle(page);
+    await expect(page).toHaveURL(/\/c\/new/);
+    await page.goto(`${CHAT}/`);
+    await page.getByTestId("portal-ask").fill("E2E-DEPLOY-portal xin chào");
+    await page.getByTestId("portal-ask").press("Enter");
+    await expect(page).toHaveURL(/\/c\/new/);
+    await expect(page.getByRole("textbox").last()).toHaveValue(/E2E-DEPLOY-portal/);
+  });
+
+  test("switcher: mục đầu tiên là Trang chủ AI System (cả từ app khác)", async ({ page }) => {
+    await login(page, CHAT);
+    await page.goto(`${CHAT}/c/new`);
+    await page.getByRole("button", { name: /Ứng dụng|Apps/ }).click();
+    await expect(page.getByRole("menuitem").first()).toContainText(
+      /Trang chủ AI System|AI System home/,
+    );
+    await page.getByRole("menuitem").first().click();
+    await expect(page).toHaveURL(new RegExp(`^${CHAT}/\\?home=1`));
+    await expect(page.getByTestId("portal-tiles")).toBeVisible();
+    // từ Sổ Hợp Tác quay về trang chủ qua SSO
+    await page.getByRole("button", { name: /Ứng dụng|Apps/ }).click();
+    await page.getByRole("menuitem", { name: /Sổ Hợp Tác/ }).click();
+    await expect(page).toHaveURL(new RegExp(`^${CW}/(?!login)`));
+    await page.getByRole("button", { name: /Ứng dụng|Apps/ }).click();
+    await page.getByRole("menuitem", { name: /Trang chủ AI System|AI System home/ }).click();
+    await expect(page).toHaveURL(new RegExp(`^${CHAT}/\\?home=1`));
+    await expect(page.getByTestId("portal-tiles")).toBeVisible();
   });
 
   test("đăng nhập sai mật khẩu ⇒ thông báo, không vào được", async ({ page }) => {
@@ -25,7 +68,7 @@ test.describe("01 đăng nhập + SSO", () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  // sso-switch: nút "Ứng dụng" ở thanh bên chat-web ⇒ link Sổ Hợp Tác (/sso?app=contracts ⇒ mã một lần) ⇒ contracts-web đã đăng nhập.
+  // sso-switch: nút "Ứng dụng" ở thanh trên chat-web (từ trang chủ hoặc khung chat) ⇒ link Sổ Hợp Tác (/sso?app=contracts ⇒ mã một lần) ⇒ contracts-web đã đăng nhập.
   test("app switcher trong AI System mở Sổ Hợp Tác", async ({ page }) => {
     await login(page, CHAT);
     await page.getByRole("button", { name: /Ứng dụng|Apps/ }).click();

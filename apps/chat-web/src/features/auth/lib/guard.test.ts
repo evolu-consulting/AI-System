@@ -1,4 +1,4 @@
-// CHAT-AC-01, CHAT-AC-04 · guard: tải trang refresh cookie một lần; không có phiên → /login?next=; đã đăng nhập vào /login → /c/new.
+// CHAT-AC-01, CHAT-AC-04 · guard: tải trang refresh cookie một lần; không có phiên → /login?next=; đã đăng nhập vào /login → /.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { Me, TokenGrant } from "@ai/contracts/chat";
 import { isRedirect } from "@tanstack/react-router";
@@ -62,11 +62,11 @@ describe("requireSession", () => {
 });
 
 describe("redirectIfAuthed", () => {
-  test("CHAT-AC-01 · đã đăng nhập → /c/new", async () => {
+  test("CHAT-AC-01 · đã đăng nhập → / (trang chủ)", async () => {
     mockRefresh(true);
     const e = await caught(redirectIfAuthed());
     expect(isRedirect(e)).toBe(true);
-    expect((e as { options: { to: string } }).options.to).toBe("/c/new");
+    expect((e as { options: { to: string } }).options.to).toBe("/");
   });
   test("CHAT-AC-04 · sau đăng xuất → ở lại /login", async () => {
     mockRefresh(true);

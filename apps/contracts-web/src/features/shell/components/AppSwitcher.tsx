@@ -19,12 +19,12 @@ export function AppSwitcher({ role, userId }: { role: string | undefined; userId
       reloadKey={userId}
       fetchApps={() => session.myApps().then((r) => r.items)}
       fallback={() => fallbackApps(FALLBACK_URLS, role)}
-      handOff={(a) =>
+      handOff={(a, next) =>
         handOffUrl({
           authed: true,
           grant: () => session.ssoGrant(a.key),
           fallbackBase: a.url,
-          next: "/",
+          next,
         })
       }
     />

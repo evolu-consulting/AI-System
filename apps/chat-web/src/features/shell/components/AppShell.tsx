@@ -114,7 +114,7 @@ export function AppShell() {
               </>
             )
           }
-          apps={<AppSwitcher />}
+          apps={<AppSwitcher current="chat" />}
         />
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
         <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">

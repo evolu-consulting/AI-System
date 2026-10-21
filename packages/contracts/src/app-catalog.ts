@@ -103,3 +103,29 @@ export const MeAppSchema = z.strictObject({
 export type MeApp = z.infer<typeof MeAppSchema>;
 export const MyAppsResponseSchema = z.strictObject({ items: z.array(MeAppSchema) });
 export type MyAppsResponse = z.infer<typeof MyAppsResponseSchema>;
+
+// portal-home · trang chủ AI System: app mặc định khi đăng nhập (cá nhân + công ty) và vài con số cho thẻ Quản trị.
+/** `GET /auth/me/portal`. */
+export const PORTAL_PATH = "/auth/me/portal";
+/** `PUT` body `{ app }` — người dùng tự đặt app mặc định của mình. */
+export const MY_DEFAULT_APP_PATH = "/auth/me/default-app";
+/** `PUT` body `{ app }` — tenant_admin/platform_admin đặt mặc định cho công ty mình. */
+export const TENANT_DEFAULT_APP_PATH = "/auth/me/tenant-default-app";
+
+/** `app: null` = bỏ đặt (về trang chủ / mặc định công ty). */
+export const DefaultAppRequestSchema = z.strictObject({ app: AppKeySchema.nullable() });
+export type DefaultAppRequest = z.infer<typeof DefaultAppRequestSchema>;
+
+export type PortalDefaultApp = {
+  /** Cá nhân đã đặt (null = chưa). */
+  user: string | null;
+  /** Mặc định công ty (null = chưa). */
+  tenant: string | null;
+  /** Nơi đăng nhập hạ cánh: user ?? tenant, chỉ khi app đó người gọi còn mở được; null = trang chủ. */
+  effective: string | null;
+};
+export type PortalResponse = {
+  default_app: PortalDefaultApp;
+  /** Chỉ tenant_admin/platform_admin; người khác null. */
+  admin: { new_users_7d: number } | null;
+};

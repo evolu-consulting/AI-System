@@ -1,5 +1,5 @@
 // CHAT-AC-01, CHAT-AC-02 · CR-052 phương án C · màn Đăng nhập: cột trái 520px (logo + tên app, EN|VI, tiêu đề, form, ©) +
-// cột phải showcase (≥ 1024px). Xong → `next` (đường nội bộ) hoặc `/c/new`.
+// cột phải showcase (≥ 1024px). Xong → `next` (đường nội bộ) hoặc `/` (trang chủ AI System / app mặc định).
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -51,7 +51,7 @@ export function LoginPage() {
     if (outcome.kind === "alert") return setAlert(outcome);
     const next = safeNext(search.next);
     if (next) router.history.replace(next);
-    else await router.navigate({ to: "/c/new", replace: true });
+    else await router.navigate({ to: "/", replace: true });
   };
 
   return (

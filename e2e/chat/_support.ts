@@ -41,10 +41,12 @@ export async function fillLogin(
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 }
 
-/** Đăng nhập `acme/minh` (hoặc user khác) và chờ `/c/new`. */
+/** Đăng nhập `acme/minh` (hoặc user khác) và vào `/c/new` (portal-home: đăng nhập hạ cánh ở trang chủ `/`, rồi mở chat). */
 export async function login(page: Page, user = "minh", tenant = "acme"): Promise<void> {
   await page.goto("/login");
   await fillLogin(page, tenant, user, PASSWORD);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  if (!/\/c\/new$/.test(new URL(page.url()).pathname)) await page.goto("/c/new");
   await page.waitForURL(/\/c\/new$/);
 }
 

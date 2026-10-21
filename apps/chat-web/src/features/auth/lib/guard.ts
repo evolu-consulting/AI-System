@@ -1,4 +1,4 @@
-// CHAT-AC-01, CHAT-AC-04 · guard route: `_authed` cần phiên (tải trang → refresh cookie một lần), `/login` đã đăng nhập → `/c/new`.
+// CHAT-AC-01, CHAT-AC-04 · guard route: `_authed` cần phiên (tải trang → refresh cookie một lần), `/login` đã đăng nhập → `/` (trang chủ AI System; app mặc định xử lý ở đó).
 import { redirect } from "@tanstack/react-router";
 import { session } from "~/lib/auth/session";
 
@@ -13,5 +13,5 @@ export async function requireSession(location: Loc): Promise<void> {
 
 export async function redirectIfAuthed(): Promise<void> {
   const status = await session.ensure();
-  if (status === "authed" && session.getState().me) throw redirect({ to: "/c/new" });
+  if (status === "authed" && session.getState().me) throw redirect({ to: "/" });
 }

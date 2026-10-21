@@ -68,7 +68,7 @@ export function deleteApp(ctx: AppCatalogCtx, actor: Actor, key: string): Promis
   });
 }
 
-async function openableIn(tx: Tx, actor: Actor): Promise<CatalogRow[]> {
+export async function openableIn(tx: Tx, actor: Actor): Promise<CatalogRow[]> {
   const rows = await repo.listAll(tx);
   const features = needsFeatures(rows, actor.role)
     ? await effectiveFeatureKeys(tx, actor)

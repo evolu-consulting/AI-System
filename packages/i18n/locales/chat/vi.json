@@ -100,6 +100,34 @@
     "confirm": "Xoá",
     "cancel": "Huỷ"
   },
+  "portal": {
+    "title": "AI System",
+    "greeting": "Xin chào, {{name}}",
+    "sub": "Chọn ứng dụng bạn muốn làm việc hôm nay.",
+    "appsFailed": "Không tải được danh sách ứng dụng. Hãy tải lại trang.",
+    "ask": {
+      "label": "Hỏi AI",
+      "placeholder": "Hỏi AI điều gì đó…",
+      "submit": "Hỏi AI"
+    },
+    "num": {
+      "todo": "cần xử lý",
+      "expiring30": "HĐ hết hạn trong 30 ngày",
+      "newUsers7d": "người dùng mới (7 ngày)"
+    },
+    "recent": {
+      "title": "Gần đây",
+      "none": "Chưa có hội thoại nào."
+    },
+    "defaults": {
+      "title": "Ứng dụng mở sau khi đăng nhập",
+      "mine": "Của tôi",
+      "tenant": "Mặc định cho cả công ty",
+      "home": "Trang chủ AI System",
+      "saved": "Đã lưu",
+      "failed": "Không lưu được. Thử lại sau."
+    }
+  },
   "welcome": {
     "greeting": "Chào {{name}}, hôm nay cần gì?",
     "hint": "Mỗi câu hỏi mở một flow riêng. Muốn hỏi tiếp việc nào, bấm Trả lời tiếp trên flow đó.",

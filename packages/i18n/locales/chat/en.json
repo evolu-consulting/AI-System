@@ -100,6 +100,34 @@
     "confirm": "Delete",
     "cancel": "Cancel"
   },
+  "portal": {
+    "title": "AI System",
+    "greeting": "Hello, {{name}}",
+    "sub": "Pick the app you want to work in today.",
+    "appsFailed": "Could not load your apps. Please reload the page.",
+    "ask": {
+      "label": "Ask AI",
+      "placeholder": "Ask AI anything…",
+      "submit": "Ask AI"
+    },
+    "num": {
+      "todo": "to handle",
+      "expiring30": "contracts expiring in 30 days",
+      "newUsers7d": "new users (7 days)"
+    },
+    "recent": {
+      "title": "Recent",
+      "none": "No conversations yet."
+    },
+    "defaults": {
+      "title": "App to open after sign-in",
+      "mine": "Mine",
+      "tenant": "Default for the whole company",
+      "home": "AI System home",
+      "saved": "Saved",
+      "failed": "Could not save. Try again later."
+    }
+  },
   "welcome": {
     "greeting": "Hi {{name}}, what do you need today?",
     "hint": "Each question opens its own flow. To follow up on one, click Reply in flow on it.",

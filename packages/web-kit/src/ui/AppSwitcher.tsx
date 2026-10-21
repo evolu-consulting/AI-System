@@ -12,7 +12,16 @@ import {
   useRef,
   useState,
 } from "react";
-import { appDescription, appLabel, type MeApp, withCurrent } from "../app-catalog/apps";
+import {
+  appDescription,
+  appLabel,
+  entryNext,
+  entryUrl,
+  HOME_KEY,
+  HOME_NEXT,
+  type MeApp,
+  withCurrent,
+} from "../app-catalog/apps";
 
 export type AppSwitcherProps = {
   /** Thường `() => session.myApps().then((r) => r.items)`. */
@@ -23,7 +32,7 @@ export type AppSwitcherProps = {
    * URL để mở `app` (thường `handOffUrl` của `auth/sso.ts`: xin mã một lần ⇒ `<target_url>/sso#code=…`). Chỉ gọi cho app có
    * `sso`; trả `null`/lỗi ⇒ mở thẳng `app.url` (đích tự dội về đăng nhập). App không SSO luôn mở thẳng.
    */
-  handOff: (app: MeApp) => Promise<string | null>;
+  handOff: (app: MeApp, next: string) => Promise<string | null>;
   /** Key của app đang chạy (hiện trong danh sách, đánh dấu, không bấm được). */
   current: string;
   locale?: string;
@@ -42,9 +51,11 @@ const ICONS: Record<string, string> = {
   settings:
     "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z M4 12h2 M18 12h2 M12 4v2 M12 18v2 M6.3 6.3l1.4 1.4 M16.3 16.3l1.4 1.4 M17.7 6.3l-1.4 1.4 M7.7 16.3l-1.4 1.4",
   app: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z",
+  home: "M3 11l9-8 9 8 M5 10v10h5v-6h4v6h5V10",
 };
 
-function Icon({ name, size = 16 }: { name: string; size?: number }): ReactElement {
+/** Biểu tượng app (dùng chung cho thẻ app ở trang chủ AI System). */
+export function Icon({ name, size = 16 }: { name: string; size?: number }): ReactElement {
   return (
     <svg
       width={size}
@@ -82,12 +93,14 @@ function useApps(p: AppSwitcherProps): MeApp[] | null {
   const [apps, setApps] = useState<MeApp[] | null>(null);
   const latest = useRef(p);
   latest.current = p;
+  // Trang chủ (`portal`) cùng origin với Chat AI: danh sách vẫn phải có Chat AI.
+  const appKey = () => (latest.current.current === HOME_KEY ? "chat" : latest.current.current);
   // biome-ignore lint/correctness/useExhaustiveDependencies: tải lại chỉ khi `reloadKey` đổi; hàm lấy từ ref
   useEffect(() => {
     let alive = true;
     latest.current.fetchApps().then(
-      (r) => alive && setApps(withCurrent(r, latest.current.current)),
-      () => alive && setApps(withCurrent(latest.current.fallback(), latest.current.current)),
+      (r) => alive && setApps(withCurrent(r, appKey())),
+      () => alive && setApps(withCurrent(latest.current.fallback(), appKey())),
     );
     return () => {
       alive = false;
@@ -99,13 +112,45 @@ function useApps(p: AppSwitcherProps): MeApp[] | null {
 /** Click thường ⇒ chuyển phiên; Ctrl/Cmd/Shift/giữa ⇒ để trình duyệt mở link `href` (= URL app) như bình thường. */
 async function go(
   p: AppSwitcherProps,
-  a: MeApp,
+  it: Entry,
   e: ReactMouseEvent<HTMLAnchorElement>,
 ): Promise<void> {
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || !a.sso) return;
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || !it.hand) return;
   e.preventDefault();
-  const url = await p.handOff(a).catch(() => null);
-  window.location.assign(url ?? a.url);
+  const url = await p.handOff(it.target, it.next).catch(() => null);
+  window.location.assign(url ?? it.href);
+}
+
+/** Một dòng menu: `app` để hiển thị, `target` là app cần xin mã SSO (Trang chủ ⇒ Chat AI), `href` là link thường. */
+type Entry = { app: MeApp; target: MeApp; next: string; href: string; hand: boolean };
+
+const HOME_LABEL = { vi: "Trang chủ AI System", en: "AI System home" };
+
+/**
+ * portal-home · mục đầu tiên "Trang chủ AI System" (trang chủ nằm trên origin của Chat AI, `/?home=1`). Đang ở chat-web/trang chủ ⇒ link
+ * cùng origin; app khác ⇒ chuyển phiên sang Chat AI với `next=/?home=1`. Không có Chat AI trong catalog (không đến được) ⇒ không hiện.
+ */
+function entriesOf(apps: readonly MeApp[], current: string): Entry[] {
+  // Đang ở origin của Chat AI/trang chủ: mục Chat AI và Trang chủ là link cùng origin, không xin mã SSO cho chính mình.
+  const local = current === "chat" || current === HOME_KEY;
+  const list: Entry[] = apps.map((a) => ({
+    app: a,
+    target: a,
+    next: entryNext(a),
+    href: entryUrl(a),
+    hand: a.sso && !(local && a.key === "chat"),
+  }));
+  const chat = apps.find((a) => a.key === "chat");
+  if (!chat || (!local && chat.url === "")) return list;
+  const home: MeApp = { key: HOME_KEY, name: HOME_LABEL, icon: "home", url: "", sso: false };
+  const entry: Entry = {
+    app: home,
+    target: chat,
+    next: HOME_NEXT,
+    href: `${local ? "" : chat.url}${HOME_NEXT}`,
+    hand: !local && chat.sso,
+  };
+  return [entry, ...list];
 }
 
 const isVi = (locale: string | undefined): boolean => !locale?.startsWith("en");
@@ -152,6 +197,7 @@ export function AppSwitcher(p: AppSwitcherProps): ReactElement | null {
     items[to]?.focus();
   };
   if (!apps || apps.length === 0) return null;
+  const entries = entriesOf(apps, p.current);
   return (
     <div ref={box} className="ai-apps" data-testid="app-switcher">
       <style>{CSS}</style>
@@ -183,7 +229,8 @@ export function AppSwitcher(p: AppSwitcherProps): ReactElement | null {
           className="ai-apps__menu"
           onKeyDown={onMenuKey}
         >
-          {apps.map((a) => {
+          {entries.map((it) => {
+            const a = it.app;
             const body = (
               <>
                 <Icon name={a.icon} />
@@ -215,11 +262,11 @@ export function AppSwitcher(p: AppSwitcherProps): ReactElement | null {
               <a
                 key={a.key}
                 role="menuitem"
-                href={a.url}
+                href={it.href}
                 className="ai-apps__item"
                 onClick={(e) => {
                   setOpen(false);
-                  void go(p, a, e);
+                  void go(p, it, e);
                 }}
               >
                 {body}

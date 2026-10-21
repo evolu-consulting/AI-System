@@ -57,12 +57,12 @@ function Apps() {
       reloadKey={me?.id}
       fetchApps={fetchMyApps}
       fallback={() => fallbackApps(FALLBACK_URLS, me?.role)}
-      handOff={(a) =>
+      handOff={(a, next) =>
         handOffUrl({
           authed: session.getState().status === "authed",
           grant: () => requestSsoGrant(a.key),
           fallbackBase: a.url,
-          next: "/",
+          next,
         })
       }
     />
