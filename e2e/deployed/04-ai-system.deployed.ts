@@ -330,7 +330,7 @@ test.describe
     });
   });
 
-// Trang quản trị chủ công ty (demo-owner) mở được (/features, /secrets, /workflows là việc của quản trị nền tảng ⇒ chủ công ty bị từ chối đúng): không về /login, không lỗi console / HTTP 5xx.
+// Trang quản trị chủ công ty (demo-owner) mở được (/features, /secrets, /workflows, /commands là việc của quản trị nền tảng ⇒ chủ công ty bị từ chối đúng): không về /login, không lỗi console / HTTP 5xx.
 const ADMIN_PAGES = [
   "/",
   "/users",
@@ -338,7 +338,6 @@ const ADMIN_PAGES = [
   "/access",
   "/agents",
   "/sources",
-  "/commands",
   "/processes",
   "/usage",
   "/audit",
