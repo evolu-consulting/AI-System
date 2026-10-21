@@ -165,6 +165,22 @@ export async function startJ2(): Promise<CtxJ2> {
   return ctx;
 }
 
+/** price-scout · agent Hub `price-scout` (lệnh hệ thống `system`) trên profile `fake-1` — "Tìm giá" chạy qua agent này. Trả id. */
+export async function seedScoutAgent(c: CtxJ2, system = "SYS-SCOUT"): Promise<string> {
+  await c.sql`insert into hub.model_profiles (key, steps)
+    values ('fake-1', ${JSON.stringify([{ provider_key: "fake-cli", model: null, on: [] }])}::text::jsonb)
+    on conflict (key) do nothing`;
+  const [a] = await c.sql<{ id: string }[]>`insert into hub.agents
+      (key, name, description, runtime, profile_id, system_prompt)
+    select 'price-scout', ${JSON.stringify({ vi: "Dò giá", en: "Price scout" })}::text::jsonb,
+      'Agent dò giá thị trường cho test tích hợp', 'agentic-cli', id, ${system} from hub.model_profiles
+    where key = 'fake-1'
+    on conflict (key) do update set system_prompt = excluded.system_prompt, enabled = true,
+      runtime = 'agentic-cli', model = null
+    returning id`;
+  return a?.id as string;
+}
+
 /** Dựng SP + thành phần chính (mode stock, giá vốn BQ) + một lần nhập kho từ NCC (owner, bỏ qua RLS). Trả id SP. */
 export async function seedProduct(
   c: CtxJ2,

@@ -1,13 +1,24 @@
 // V2-J2 · SP-04/05/06 qua hub-api THẬT: tab NCC & giá — so sánh với giá vốn BQ, AI tìm giá (chỉ khi bấm, chỉ gửi tên SP, AI giả),
 // lưu vào bảng so sánh, gợi ý; quyền (viewer đọc được, không tìm/lưu); tenant khác không thấy SP/giá; SP Giới thiệu không có tab.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { BASE, type CtxJ2, type Json, P, seedProduct, startJ2, T } from "./_support/v2j2";
+import {
+  BASE,
+  type CtxJ2,
+  type Json,
+  P,
+  seedProduct,
+  seedScoutAgent,
+  startJ2,
+  T,
+} from "./_support/v2j2";
 
 let c: CtxJ2;
 let pid: string;
 beforeAll(async () => {
   c = await startJ2();
   await c.sql`truncate contracts.products cascade`;
+  await c.sql`truncate contracts.price_scout_usage, contracts.price_scout_quota, contracts.price_scout_defaults`;
+  await seedScoutAgent(c, "SYS-SCOUT"); // price-scout: "Tìm giá" chạy qua agent Hub (model/prompt ở Hub)
   pid = await seedProduct(c, {
     tenant: T.acme,
     name: "USB Token ký số",
@@ -59,10 +70,24 @@ describe("V2-J2 · tab NCC & giá", () => {
       ["FPT IS", "renew", 90_000],
       ["Viettel", "new", 130_000],
     ]);
-    // Chỉ tên SP ra ngoài; bật tìm web; không khoá/MST/tên tenant trong lời nhắc.
+    // price-scout: lệnh hệ thống của agent Hub; lời nhắc = JSON dữ liệu, chỉ tên SP + cấu hình dò (SP chưa cấu hình ⇒ mặc định
+    // rỗng); bật tìm web; không MST / tên NCC đã mua / tên tenant trong lời nhắc.
     expect(c.ai.calls).toHaveLength(1);
     expect(c.ai.calls[0]?.webSearch).toBe(true);
-    expect(c.ai.calls[0]?.prompt).toBe('Tìm giá nhà cung cấp cho sản phẩm: "USB Token ký số"');
+    expect(c.ai.calls[0]?.system).toBe("SYS-SCOUT");
+    const prompt = c.ai.calls[0]?.prompt as string;
+    expect(JSON.parse(prompt)).toEqual({
+      product: "USB Token ký số",
+      keywords: [],
+      spec: null,
+      unit: null,
+      include_sites: [],
+      exclude_sites: [],
+      watched_suppliers: [],
+      region: null,
+      vat: "excl",
+    });
+    expect(prompt).not.toMatch(/0100684378|acme/i);
 
     const saved = await call(P.hoa, "POST", `/products/${pid}/supplier-prices`, {
       items: found.json.items.map((i: Json) => ({ ...i, source: "market" })),

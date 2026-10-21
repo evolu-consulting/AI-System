@@ -54,7 +54,8 @@ test.describe("09 price-scout", () => {
     expect([200, 429]).toContain(res.status());
     if (res.status() === 200) {
       const dlg = page.locator("dialog[open]");
-      await expect(dlg.getByText(/Lưu vào bảng so sánh|Không tìm thấy/)).toBeVisible({
+      // Nút lưu ghi số dòng ("Lưu n dòng vào bảng so sánh"); UI cập nhật ngay khi phản hồi về.
+      await expect(dlg.getByText(/Lưu \d+ dòng vào bảng so sánh|Không tìm thấy/)).toBeVisible({
         timeout: 30_000,
       });
       await dlg.getByRole("button", { name: "Đóng" }).click();
