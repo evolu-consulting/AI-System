@@ -36,7 +36,8 @@ test.describe("10 góp ý + hợp đồng gốc", () => {
         .or(page.getByRole("dialog"));
       await panel.getByLabel("Loại").selectOption("bug");
       await panel.getByLabel("Nội dung").fill(MSG);
-      await panel.getByRole("button", { name: "Gửi góp ý" }).click();
+      // tab "Gửi góp ý" cũng có tên này ⇒ chỉ nút gửi của biểu mẫu
+      await panel.locator("form").getByRole("button", { name: "Gửi góp ý" }).click();
       await expect(panel.getByText(/Cảm ơn/)).toBeVisible();
 
       await login(page, ADMIN);

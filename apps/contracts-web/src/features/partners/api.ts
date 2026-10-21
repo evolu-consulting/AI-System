@@ -30,6 +30,7 @@ import type {
   ScoringDraft,
 } from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
+import { wireOf } from "./lib/contacts";
 
 const BASE = "/pack/contracts";
 const enc = encodeURIComponent;
@@ -137,7 +138,7 @@ export const fetchContacts = (party: string, signal?: AbortSignal) =>
 export const saveContacts = (party: string, contacts: PartnerContactDraft[]) =>
   api<PartnerContactPerson[]>(`${BASE}/partners/contacts`, {
     method: "PUT",
-    body: { party, contacts },
+    body: { party, contacts: wireOf(contacts) },
   });
 /** Chỉ MST (tuỳ chọn tên/địa chỉ khi Cục Thuế chưa tra được) — máy chủ tra Cục Thuế chỉ bằng MST. */
 export const createCompany = (b: { tax_id?: string; name?: string; address?: string }) =>

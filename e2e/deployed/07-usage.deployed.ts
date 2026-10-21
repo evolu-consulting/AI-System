@@ -30,9 +30,20 @@ test.describe("07 usage-analytics (platform admin)", () => {
       await loginAdmin(page);
       await settle(page);
       await page.goto(`${ADMIN}/usage/analytics?preset=90d`);
-      await expect(page.getByRole("heading", { level: 1, name: "Phân tích token" })).toBeVisible({
-        timeout: 30_000,
+      // tenant-admin-scope (2026-10-21): phân tích token chỉ dành cho platform admin; tenant_admin (demo-owner) thấy trang "không có quyền".
+      const title = page.getByRole("heading", { level: 1, name: "Phân tích token" });
+      const denied = page.getByRole("heading", {
+        level: 1,
+        name: "Bạn không có quyền xem trang này",
       });
+      await expect(title.or(denied)).toBeVisible({ timeout: 30_000 });
+      if (await denied.isVisible()) {
+        await expect(page.locator("main")).toContainText("chỉ dành cho quản trị nền tảng");
+        test.skip(
+          true,
+          `${USER} là tenant_admin: đã kiểm trang bị chặn; cần -User <platform-admin> để kiểm token`,
+        );
+      }
       const picker = page.getByRole("combobox", { name: "Tenant" });
       test.skip(
         (await picker.count()) === 0,

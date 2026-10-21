@@ -28,7 +28,7 @@ function BackgroundSection(p: {
   hasAny: boolean;
 }) {
   const { t } = useTranslation();
-  const usage = useAgentMonthUsage(p.v.tenantId, p.hasAny);
+  const usage = useAgentMonthUsage(p.v.tenantId, p.hasAny && p.v.isPlatform);
   const apps = useMyApps(p.hasAny);
   if (p.items && !p.hasAny) return null;
   return (
@@ -45,6 +45,7 @@ function BackgroundSection(p: {
         isPlatform={p.v.isPlatform}
         loading={p.items === undefined}
         usage={{
+          available: p.v.isPlatform,
           loading: usage.isPending,
           failed: usage.isError,
           byAgent: usageByAgent(usage.data?.tree ?? []),

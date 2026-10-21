@@ -36,6 +36,12 @@ const orNull = (v: string): string | null => (v.trim() === "" ? null : v.trim())
 const filled = (r: ContactRow) =>
   [r.name, r.role, r.phone, r.email, r.our_owner].some((v) => v.trim() !== "");
 
+/** Thân PUT: hợp đồng API nhận chuỗi/vắng khoá (không nhận `null`) ⇒ bỏ khoá null (vắng ⇒ máy chủ lưu null). */
+export const wireOf = (ds: readonly PartnerContactDraft[]) =>
+  ds.map((d) => Object.fromEntries(Object.entries(d).filter(([, v]) => v !== null))) as Array<
+    { name: string } & Partial<Record<"role" | "phone" | "email" | "our_owner", string>>
+  >;
+
 /** Dòng nháp ⇒ thân PUT; dòng không có chữ bị bỏ; dòng có chữ mà thiếu tên ⇒ `missing_name` (chỉ số dòng). */
 export function draftsOf(
   rows: readonly ContactRow[],

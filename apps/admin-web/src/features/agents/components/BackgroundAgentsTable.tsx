@@ -17,6 +17,8 @@ import { type AgentUsage, studioAgentUrl } from "../lib/background";
 import { EntitledSwitch, ModelCell } from "./AgentCells";
 
 export type BackgroundUsage = {
+  /** Chỉ platform_admin gọi được analytics (tenant_admin 403) — công ty chủ thì ẩn cột này. */
+  available: boolean;
   loading: boolean;
   failed: boolean;
   byAgent: ReadonlyMap<string, AgentUsage>;
@@ -50,6 +52,7 @@ function NameCell({ row, lang }: { row: AgentSettingsItem; lang: string }) {
 }
 
 function UsageCell({ row, p, t }: { row: AgentSettingsItem; p: Props; t: Tr }) {
+  if (!p.usage.available) return NONE;
   if (p.usage.failed) return <span className="text-label">{t("agents.bg.usageError")}</span>;
   if (p.usage.loading) return NONE;
   const u = p.usage.byAgent.get(row.agent.id) ?? { calls: 0, tokens: 0 };

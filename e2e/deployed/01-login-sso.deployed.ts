@@ -17,8 +17,9 @@ test.describe("01 đăng nhập + SSO", () => {
     expect(await bodyText(page)).toMatch(/Xin chào|Hello/);
     await page.getByTestId("portal-tile-chat").getByRole("link").first().click();
     await expect(page).toHaveURL(/\/c\/new/);
+    // chờ trang chào của chat (route nạp lười): ô "Hỏi AI" của portal cũng là textbox nên không dùng để chờ.
+    await expect(page.getByRole("heading", { level: 1, name: /hôm nay cần gì/i })).toBeVisible();
     await expect(page.getByRole("textbox").last()).toBeVisible();
-    expect(await bodyText(page)).toMatch(/Chào Demo|hôm nay cần gì/i);
   });
 
   test("portal: /chat và /c/new vẫn vào chat; Hỏi AI điền sẵn câu hỏi", async ({ page }) => {

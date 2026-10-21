@@ -51,6 +51,7 @@ test.describe("11 gap-d1", () => {
     await page.getByTestId("gd1-m-sup").fill(`${TAG} NCC giá tay`);
     await page.getByTestId("gd1-m-price").fill("95000");
     await page.getByTestId("gd1-m-save").click();
-    await expect(page.getByText(`${TAG} NCC giá tay`)).toBeVisible();
+    // NCC hiện ở cả "So sánh giá" lẫn "Đánh giá nhà cung cấp" ⇒ lấy dòng đầu
+    await expect(page.getByRole("cell", { name: `${TAG} NCC giá tay` }).first()).toBeVisible();
   });
 });

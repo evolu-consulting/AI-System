@@ -1,9 +1,27 @@
 // GAP-D2 · luật thuần: liên hệ nhiều người (#24), MST/lỗi công ty (#23), cảnh báo bất thường + đường xu hướng (#27).
 import { describe, expect, it } from "bun:test";
 import type { RepDetailItem } from "@ai/contracts";
+import { PartnerContactsPutSchema } from "@ai/contracts";
 import { alertsOf, sparkOf } from "./alerts";
 import { companyErrKey, normalizeTax } from "./company";
-import { blankRow, draftsOf, rowsOf } from "./contacts";
+import { blankRow, draftsOf, rowsOf, wireOf } from "./contacts";
+
+describe("thân PUT liên hệ khớp hợp đồng API", () => {
+  it("không gửi null (API nhận chuỗi/vắng khoá)", () => {
+    const d = draftsOf([{ ...blankRow(), name: "Hưng", phone: "028" }]);
+    if (!("ok" in d)) throw new Error("draft");
+    const body = { party: "tax:0101000005", contacts: wireOf(d.ok) };
+    const r = PartnerContactsPutSchema.safeParse(body);
+    expect(r.success).toBe(true);
+    expect(r.data?.contacts[0]).toEqual({
+      name: "Hưng",
+      role: null,
+      phone: "028",
+      email: null,
+      our_owner: null,
+    });
+  });
+});
 
 describe("liên hệ nhiều người", () => {
   it("bỏ dòng trống, cắt chữ, rỗng ⇒ null, giữ thứ tự", () => {
