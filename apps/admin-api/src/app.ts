@@ -152,8 +152,9 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     "/admin/workflows",
     workflowsRoutes({ ...ctx, hooks, difyConsoleUrl: deps.difyConsoleUrl }),
   );
+  // commands-unfreeze: catalog lệnh (slash command gọi Dify) luôn mount; export/import (transfer) vẫn đóng băng.
+  app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
   if (frozenOn) {
-    app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
     app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
     app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
   }

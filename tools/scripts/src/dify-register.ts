@@ -111,7 +111,7 @@ async function apply(a: RegisterArgs, key: string, env: Env, log: (l: string) =>
   const admin: Client = makeClient(adminUrl, token);
   const c: RunCtx = { admin, log, plan: buildRegisterPlan(a) };
   const tenant = await findTenant(c);
-  const secrets = await ensureSecrets(c, new Map([["han-muc-duyet", key]]));
+  const secrets = await ensureSecrets(c, new Map(key ? [["han-muc-duyet", key]] : []));
   const feature = await ensureFeature(c);
   const wf = await ensureWorkflows(c, secrets);
   await ensureCommands(c, wf, feature);
@@ -136,9 +136,8 @@ export async function main(argv: string[], env: Env): Promise<number> {
     if ("error" in a) return fail(`Lỗi cờ: ${a.error}`);
     log(formatRegisterPlan(buildRegisterPlan(a), a));
     if (!a.apply) return 0;
-    const key = env.DIFY_APP_KEY?.trim();
-    if (!key) return fail("Thiếu env DIFY_APP_KEY (app API key của app Dify; không truyền qua cờ)");
-    await apply(a, key, env, log);
+    // DIFY_APP_KEY chỉ cần khi secret CHƯA có (hoặc xoay key); secret đã có ⇒ chạy lại không cần key.
+    await apply(a, env.DIFY_APP_KEY?.trim() ?? "", env, log);
     log(
       "dify-register xong. Thử: gõ /han-muc-duyet 600000000 Mua trong Chat AI (tenant " +
         a.tenant +

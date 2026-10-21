@@ -70,12 +70,12 @@ export async function ensureSecrets(
   const ids = new Map<string, string>();
   for (const s of c.plan.secrets) {
     const value = keys.get(s.app);
-    if (!value) throw new SeedStepError(`secret ${s.name}`, 0, "MISSING_KEY");
     const cur = await findExact(c.admin, `secret ${s.name}`, "/admin/secrets", {
       field: "name",
       value: s.name,
     });
     if (!cur) {
+      if (!value) throw new SeedStepError(`secret ${s.name}`, 0, "MISSING_KEY");
       const r = await c.admin.call(`secret ${s.name}`, {
         method: "POST",
         path: "/admin/secrets",
@@ -86,12 +86,14 @@ export async function ensureSecrets(
       continue;
     }
     ids.set(s.name, idOf(cur, `secret ${s.name}`));
-    if (c.plan.rotate_secrets)
+    if (c.plan.rotate_secrets) {
+      if (!value) throw new SeedStepError(`secret ${s.name}`, 0, "MISSING_KEY");
       await c.admin.call(`secret ${s.name}`, {
         method: "PUT",
         path: `/admin/secrets/${encodeURIComponent(s.name)}`,
         body: { value },
       });
+    }
     c.log(`secret ${s.name}: ${c.plan.rotate_secrets ? "xoay giá trị" : "giữ nguyên"}`);
   }
   return ids;

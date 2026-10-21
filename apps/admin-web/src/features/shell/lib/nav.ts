@@ -107,13 +107,13 @@ const TRANSFER = item("transfer", "/transfer");
 /** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
 export type NavOptions = {
   processes?: boolean;
-  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Commands, Workflows, Transfer, Quy trình, Nguồn). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
+  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Transfer, Quy trình, Nguồn, Workflow Steps; Commands + danh mục Workflows luôn hiện). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
   frozen?: boolean;
 };
 
 /** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
 // dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng; chỉ /workflows/steps (engine AI SDLC) bị gate.
-const FROZEN_PREFIXES = ["/commands", "/workflows/steps", "/transfer", "/processes", "/sources"];
+const FROZEN_PREFIXES = ["/workflows/steps", "/transfer", "/processes", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -130,7 +130,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
           AGENTS,
           FEATURES,
           APPS,
-          ...(on ? [COMMANDS, WORKFLOWS] : [WORKFLOWS_CATALOG]),
+          ...(on ? [COMMANDS, WORKFLOWS] : [COMMANDS, WORKFLOWS_CATALOG]),
           ...proc,
         ],
       },
