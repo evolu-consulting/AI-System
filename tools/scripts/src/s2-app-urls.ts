@@ -51,7 +51,7 @@ async function main(): Promise<void> {
     // Điều kiện url còn localhost lặp lại trong UPDATE để an toàn khi chạy song song.
     const n = await sql`
       update admin.app_catalog a set url = v.url, version = a.version + 1, updated_at = now()
-      from (select * from json_to_recordset(${JSON.stringify(changes.map((c) => ({ key: c.key, url: c.to })))}::json)
+      from (select * from json_to_recordset((${JSON.stringify(changes.map((c) => ({ key: c.key, url: c.to })))}::text)::json)
             as x(key text, url text)) v
       where a.key = v.key and a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'`;
     console.log(`s2-app-urls: đã ghi ${n.count} hàng`);
