@@ -113,7 +113,8 @@
     "num": {
       "todo": "to handle",
       "expiring30": "contracts expiring in 30 days",
-      "newUsers7d": "new users (7 days)"
+      "newUsers7d": "new users (7 days)",
+      "pendingFeedback": "unhandled feedback"
     },
     "recent": {
       "title": "Recent",

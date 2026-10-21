@@ -1,4 +1,5 @@
 // CHAT-AC-18, CHAT-AC-23 · khung app: ≥ 1024 sidebar 260px cố định; < 1024 header 56px (☰) + sidebar trong Sheet trái.
+import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
@@ -38,7 +39,7 @@ const InputsFormHost = lazy(() =>
 const SEARCH_DEBOUNCE_MS = 250;
 
 export function AppShell() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const inputsOpen = useInputsRequest() !== null;
   const navigate = useNavigate();
   const desktop = useIsDesktop();
@@ -115,7 +116,9 @@ export function AppShell() {
             )
           }
           apps={<AppSwitcher current="chat" />}
-        />
+        >
+          <FeedbackButton app="chat" lang={i18n.language} />
+        </TopShell>
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
         <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <Outlet />

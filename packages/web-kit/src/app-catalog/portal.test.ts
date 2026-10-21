@@ -50,8 +50,11 @@ describe("số trên thẻ", () => {
   });
   it("Quản trị chỉ khi server trả khối admin; app khác không có số", () => {
     expect(adminNumbers({ admin: null })).toBeNull();
-    const a = adminNumbers({ admin: { new_users_7d: 4 } });
-    expect(tileNumbers("admin", { admin: a })).toEqual([{ key: "newUsers7d", value: 4 }]);
+    const a = adminNumbers({ admin: { new_users_7d: 4, pending_feedback: 2 } });
+    expect(tileNumbers("admin", { admin: a })).toEqual([
+      { key: "newUsers7d", value: 4 },
+      { key: "pendingFeedback", value: 2 },
+    ]);
     expect(tileNumbers("studio", { admin: a })).toEqual([]);
     expect(tileNumbers("contracts", {})).toEqual([]);
   });

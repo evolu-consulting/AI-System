@@ -137,3 +137,11 @@ export function OriginalFileDialog({
     </Dialog>
   );
 }
+
+/** Chỉ dựng hộp thoại khi `open` (tách điều kiện khỏi trang để giữ độ phức tạp thấp). */
+export function OriginalFileHost({
+  open,
+  ...p
+}: { open: boolean } & Parameters<typeof OriginalFileDialog>[0]) {
+  return open ? <OriginalFileDialog {...p} /> : null;
+}

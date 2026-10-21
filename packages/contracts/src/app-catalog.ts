@@ -127,5 +127,5 @@ export type PortalDefaultApp = {
 export type PortalResponse = {
   default_app: PortalDefaultApp;
   /** Chỉ tenant_admin/platform_admin; người khác null. */
-  admin: { new_users_7d: number } | null;
+  admin: { new_users_7d: number; pending_feedback: number } | null;
 };

@@ -28,7 +28,12 @@ export function getPortal(ctx: AppCatalogCtx, actor: Actor): Promise<PortalRespo
         sql`SELECT count(*)::int AS n FROM admin.users
             WHERE tenant_id = ${actor.tenantId} AND created_at > now() - interval '7 days'`,
       )) as unknown as Cnt[];
-      admin = { new_users_7d: c[0]?.n ?? 0 };
+      // Góp ý chưa xử lý: RLS của feedback cần `app.fb_all` (admin xem hết trong phạm vi tenant; platform thấy hết).
+      await tx.execute(sql`SELECT set_config('app.fb_all', '1', true)`);
+      const f = (await tx.execute(
+        sql`SELECT count(*)::int AS n FROM admin.feedback WHERE status = 'new'`,
+      )) as unknown as Cnt[];
+      admin = { new_users_7d: c[0]?.n ?? 0, pending_feedback: f[0]?.n ?? 0 };
     }
     return {
       default_app: { user, tenant, effective: effectiveDefaultApp(user, tenant, keys) },

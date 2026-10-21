@@ -113,7 +113,8 @@
     "num": {
       "todo": "cần xử lý",
       "expiring30": "HĐ hết hạn trong 30 ngày",
-      "newUsers7d": "người dùng mới (7 ngày)"
+      "newUsers7d": "người dùng mới (7 ngày)",
+      "pendingFeedback": "góp ý chưa xử lý"
     },
     "recent": {
       "title": "Gần đây",

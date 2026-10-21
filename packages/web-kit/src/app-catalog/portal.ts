@@ -42,18 +42,24 @@ export function recentConversations<T extends { updated_at: string }>(
 /** Quản trị: người dùng mới 7 ngày (chỉ khi server trả khối `admin`). */
 export function adminNumbers(portal: Pick<PortalResponse, "admin"> | null | undefined): {
   newUsers7d: number;
+  pendingFeedback: number;
 } | null {
-  return portal?.admin ? { newUsers7d: portal.admin.new_users_7d } : null;
+  return portal?.admin
+    ? { newUsers7d: portal.admin.new_users_7d, pendingFeedback: portal.admin.pending_feedback }
+    : null;
 }
 
-export type TileNumber = { key: "todo" | "expiring30" | "newUsers7d"; value: number };
+export type TileNumber = {
+  key: "todo" | "expiring30" | "newUsers7d" | "pendingFeedback";
+  value: number;
+};
 
 /** Con số nên hiện trên thẻ, theo thứ tự; số 0 vẫn hiện (biết là "không có việc"). */
 export function tileNumbers(
   appKey: string,
   d: {
     contracts?: { todo: number; expiring30: number } | null;
-    admin?: { newUsers7d: number } | null;
+    admin?: { newUsers7d: number; pendingFeedback: number } | null;
   },
 ): TileNumber[] {
   if (appKey === "contracts" && d.contracts)
@@ -61,6 +67,10 @@ export function tileNumbers(
       { key: "todo", value: d.contracts.todo },
       { key: "expiring30", value: d.contracts.expiring30 },
     ];
-  if (appKey === "admin" && d.admin) return [{ key: "newUsers7d", value: d.admin.newUsers7d }];
+  if (appKey === "admin" && d.admin)
+    return [
+      { key: "newUsers7d", value: d.admin.newUsers7d },
+      { key: "pendingFeedback", value: d.admin.pendingFeedback },
+    ];
   return [];
 }

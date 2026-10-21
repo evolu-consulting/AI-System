@@ -19,16 +19,16 @@ import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ContractSourcing } from "~/features/sourcing/components/ContractSourcing";
-import { contractKey, fetchContract, fileHref, openOriginalFile } from "../api";
+import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
 import { DetailLead } from "../components/DetailLead";
 import { HistoryPanel } from "../components/HistoryPanel";
 import { ManagePanel } from "../components/ManagePanel";
+import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
 import { useInfoForm } from "../hooks/use-info-form";
 import { leadKey } from "../lib/review";
-import { saveErrorText } from "../lib/save-error";
 
 const READING_REFRESH_MS = 2000;
 
@@ -79,7 +79,7 @@ function ContractBody({
 }) {
   const { t } = useTranslation();
   const { write, owner } = useMe();
-  const [fileErr, setFileErr] = useState<string | null>(null);
+  const [origOpen, setOrigOpen] = useState(false);
   const confirm = c.status === "needs_review";
   const canSave = write && c.status !== "extracting";
   const key = leadKey(c.status);
@@ -117,7 +117,7 @@ function ContractBody({
               approvalButtons={ap.buttons}
               approvalBusy={ap.busy}
             />
-            <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err ?? fileErr} />
+            <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err} />
             {ap.section}
             {viewer && (
               <div className="mb-3 flex justify-end">
@@ -153,6 +153,13 @@ function ContractBody({
                 <AskContractPanel />
               </div>
             )}
+            <OriginalFileHost
+              open={origOpen}
+              contractId={id}
+              file={c.file}
+              appendices={c.appendices}
+              onClose={() => setOrigOpen(false)}
+            />
             <AppendixPanel c={c} write={write} />
             <ContractSourcing c={c} write={write} />
             <ContractLog contractId={id} status={c.status} />

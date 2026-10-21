@@ -3,6 +3,7 @@
 import { fallbackApps } from "@ai/web-kit/app-catalog/apps";
 import { handOffUrl } from "@ai/web-kit/auth/sso";
 import { AppSwitcher } from "@ai/web-kit/ui/AppSwitcher";
+import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
@@ -14,6 +15,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { FALLBACK_URLS } from "@/lib/apps";
 import { session } from "@/lib/auth/session";
 import { useSession } from "@/lib/auth/use-session";
+import { api, apiResponse } from "@/lib/http";
 import { fetchMyApps, requestSsoGrant } from "../hooks/use-apps";
 import { crumbsFor } from "../lib/nav";
 import { AccountMenu } from "./AccountMenu";
@@ -44,6 +46,11 @@ function Breadcrumbs() {
 }
 
 const ADMIN_APP_KEY = "admin";
+/** Client HTTP riêng của admin-web (kit không biết token của web này). */
+const FEEDBACK_TRANSPORT = {
+  request: api,
+  blob: async (path: string) => (await apiResponse(path)).blob(),
+};
 
 /** app-catalog · switcher dùng chung: danh sách từ `GET /me/apps`, chuyển phiên bằng mã một lần. */
 function Apps() {
@@ -74,6 +81,7 @@ export function Topbar() {
   const [open, setOpen] = useState(false);
   const role = useSession((s) => s.me?.role);
   const tenantName = useSession((s) => s.me?.tenant.name ?? "");
+  const { i18n } = useTranslation();
   return (
     <TopShell
       start={
@@ -107,6 +115,7 @@ export function Topbar() {
       ) : (
         <span className="text-label text-muted-foreground">{tenantName}</span>
       )}
+      <FeedbackButton app="admin" lang={i18n.language} transport={FEEDBACK_TRANSPORT} />
     </TopShell>
   );
 }
