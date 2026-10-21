@@ -23,9 +23,11 @@ export const API_URL_VAR = "DIFY_API_URL";
 export type Localized = { vi: string; en: string };
 export type WfInput = {
   name: string;
-  type: "text" | "file";
+  type: "text" | "file" | "number" | "select";
   required: boolean;
   description: string;
+  /** Bắt buộc khi type=select. */
+  options?: string[];
 };
 export type ArgFallback = "selection" | "page_url" | "page_text";
 /** Dạng đã chuẩn hoá như API trả về (default/fallback `null`, `rest` tường minh) để so sánh idempotent. */
@@ -48,6 +50,8 @@ export type WorkflowSpec = {
   app_type: "workflow" | "chat" | "agent";
   input_schema: WfInput[];
   output_field: string | null;
+  /** Mã app Dify (UUID trong URL console) — dify-register đặt; seed:dify bỏ qua. */
+  dify_app_id?: string | null;
 };
 export type CommandSpec = {
   name: string;

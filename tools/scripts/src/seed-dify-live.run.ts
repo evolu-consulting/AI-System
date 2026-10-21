@@ -1,7 +1,7 @@
 // ADM-FR-21 · HUB-FR-89 · X1-R14 · các bước `--apply` của `seed:dify` (plan X1 §5.4): mọi bước qua API, đọc trước rồi chỉ
 // ghi khi vắng/khác ⇒ chạy lại không sinh audit; KHÔNG bao giờ xoá. Key chỉ là `value` của bước secret, không in, không log.
 import { type Client, findExact, items, qs, SeedStepError } from "./seed-dify-live.api";
-import { SECRET_NOTE, type SeedApp } from "./seed-dify-live.apps";
+import { SECRET_NOTE } from "./seed-dify-live.apps";
 import {
   type CommandWant,
   commandPatch,
@@ -65,7 +65,7 @@ export async function ensureGroup(c: RunCtx, tenantId: string): Promise<string> 
 /** Bước 3: secret theo tên — vắng ⇒ tạo; có ∧ `--rotate-secrets` ⇒ thay giá trị; có ⇒ giữ. Trả `tên → id`. */
 export async function ensureSecrets(
   c: RunCtx,
-  keys: ReadonlyMap<SeedApp, string>,
+  keys: ReadonlyMap<string, string>,
 ): Promise<Map<string, string>> {
   const ids = new Map<string, string>();
   for (const s of c.plan.secrets) {

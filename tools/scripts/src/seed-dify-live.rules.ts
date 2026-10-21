@@ -43,7 +43,7 @@ export type SeedPlan = {
   group: { key: string; name: Localized; description: string; members: string[] };
   feature: { key: string; name: Localized };
   rotate_secrets: boolean;
-  secrets: { name: string; app: SeedApp }[];
+  secrets: { name: string; app: string }[];
   workflows: WorkflowWant[];
   commands: CommandWant[];
   agent: { key: string; workflow_key: string } | null;
@@ -229,6 +229,7 @@ const WF_MANAGED = [
   "input_schema",
   "output_field",
   "side_effect",
+  "dify_app_id", // chỉ khi `want` có (dify-register); seed:dify không đặt ⇒ không đụng
 ] as const;
 const CMD_MANAGED = ["description", "args", "input_map", "output", "mode", "timeout_s"] as const;
 
