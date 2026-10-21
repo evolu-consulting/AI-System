@@ -11,6 +11,12 @@ if (!BASE)
   throw new Error("HUB_TEST_DATABASE_URL/TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev`");
 const URL = process.env.HUB_TEST_DATABASE_URL ?? withDatabase(BASE, "ai_system_h1_test");
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
+/** Số migration main = số entry journal (thêm migration không phải sửa test). */
+const MAIN_N = (
+  JSON.parse(
+    readFileSync(new globalThis.URL("../migrations/meta/_journal.json", import.meta.url), "utf8"),
+  ) as { entries: unknown[] }
+).entries.length;
 /** Số migration Hub = số entry journal (thêm migration không phải sửa test). */
 const HUB_N = (
   JSON.parse(
@@ -62,6 +68,7 @@ const HUB_TABLES = [
   "cli_sessions",
   "config_meta",
   "conversations",
+  "dify_runs", // dify-workflows hub 0056
   "dlc_workflows",
   "flows",
   "jobs",
@@ -101,6 +108,8 @@ const HUB_TABLES = [
   "team_runs",
   "tenant_agent_defaults",
   "tool_confirmations",
+  "usage_daily", // hub 0049 · tổng hợp usage theo ngày
+  "usage_daily_dim",
   "usage_logs",
   "workflow_flags",
 ];
@@ -123,7 +132,7 @@ const code = (p: Promise<unknown>) =>
 
 /** DB stub M4 (test) có sẵn 1 grant + 1 usage_logs cũ, rồi migrate Hub. Trả tenant của dòng cũ. */
 async function migrateOverStub(): Promise<string> {
-  expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: 17, dev: 3 });
+  expect(await runMigrations({ url: URL, appEnv: "test" })).toEqual({ main: MAIN_N, dev: 3 });
   const tid = crypto.randomUUID();
   await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
     values (${crypto.randomUUID()}, ${tid}, 'user', ${crypto.randomUUID()})`;
@@ -141,8 +150,11 @@ const migrateAll = async (appEnv: "test" | "production") => {
 };
 
 describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
-  test("DB sạch (production): main → hub đủ 25 bảng (H3b + audit_log + 3 bảng phòng X2a), không hub-dev; lần 2 {0,0}", async () => {
-    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({ main: 17, dev: 0 });
+  test("DB sạch (production): main → hub đủ bảng (H3b + audit_log + 3 bảng phòng X2a), không hub-dev; lần 2 {0,0}", async () => {
+    expect(await runMigrations({ url: URL, appEnv: "production" })).toEqual({
+      main: MAIN_N,
+      dev: 0,
+    });
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: HUB_N,
       hubDev: 0,

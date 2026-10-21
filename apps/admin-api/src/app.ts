@@ -147,11 +147,12 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/me", meAppsRoutes(ctx));
   // Cùng handler dưới `/auth/*`: mọi web đã proxy `/auth` tới admin-api (studio-web/chat-web không proxy `/me`).
   app.route("/auth/me", meAppsRoutes(ctx));
+  // dify-workflows: catalog Workflow Dify + lịch sử chạy luôn mount (không phụ thuộc cờ đóng băng của engine quy trình).
+  app.route(
+    "/admin/workflows",
+    workflowsRoutes({ ...ctx, hooks, difyConsoleUrl: deps.difyConsoleUrl }),
+  );
   if (frozenOn) {
-    app.route(
-      "/admin/workflows",
-      workflowsRoutes({ ...ctx, hooks, difyConsoleUrl: deps.difyConsoleUrl }),
-    );
     app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
     app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
     app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));

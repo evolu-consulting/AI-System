@@ -27,7 +27,7 @@ const app = (frozenModules?: boolean) =>
       ...(frozenModules === undefined ? {} : { frozenModules }),
     },
   );
-const PATHS = ["/admin/workflows", "/admin/commands", "/admin/export", "/admin/import"];
+const PATHS = ["/admin/commands", "/admin/export", "/admin/import"];
 
 describe("F1 · ADMIN_FROZEN_MODULES", () => {
   test("env: mặc định off", () => {
@@ -49,6 +49,10 @@ describe("F1 · ADMIN_FROZEN_MODULES", () => {
       expect({ p, s: (await app(false).request(p)).status }).toEqual({ p, s: 404 });
       expect({ p, s: (await app().request(p)).status }).not.toEqual({ p, s: 404 });
     }
+  });
+
+  test("dify-workflows: catalog /admin/workflows luôn mount, kể cả frozenModules:false", async () => {
+    expect((await app(false).request("/admin/workflows")).status).not.toBe(404);
   });
 
   test("route hoạt động (users) vẫn mount khi đóng băng", async () => {

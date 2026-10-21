@@ -91,6 +91,8 @@ const WORKFLOWS: NavItem = {
   ...item("workflows", "/workflows"),
   children: [item("workflowSteps", "/workflows/steps"), item("workflowProcess", "/workflows")],
 };
+// Cờ đóng băng off: chỉ danh mục Workflow Dify, không có menu con của engine quy trình.
+const WORKFLOWS_CATALOG = item("workflows", "/workflows");
 const PROCESSES = item("processes", "/processes");
 const SOURCES = item("sources", "/sources");
 const GROUPS = item("groups", "/groups");
@@ -110,7 +112,8 @@ export type NavOptions = {
 };
 
 /** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
-const FROZEN_PREFIXES = ["/commands", "/workflows", "/transfer", "/processes", "/sources"];
+// dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng; chỉ /workflows/steps (engine AI SDLC) bị gate.
+const FROZEN_PREFIXES = ["/commands", "/workflows/steps", "/transfer", "/processes", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -123,7 +126,13 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       { labelKey: null, items: [OVERVIEW] },
       {
         labelKey: "nav.group.features",
-        items: [AGENTS, FEATURES, APPS, ...(on ? [COMMANDS, WORKFLOWS] : []), ...proc],
+        items: [
+          AGENTS,
+          FEATURES,
+          APPS,
+          ...(on ? [COMMANDS, WORKFLOWS] : [WORKFLOWS_CATALOG]),
+          ...proc,
+        ],
       },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { crumbsFor, isAllowedForRole, navGroups } from "./nav";
+import { crumbsFor, isAllowedForRole, isFrozenPath, navGroups } from "./nav";
 
 const ids = (role: Parameters<typeof navGroups>[0]) =>
   navGroups(role).flatMap((g) => g.items.map((i) => i.id));
@@ -121,5 +121,18 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
       { labelKey: "nav.processes", to: "/processes" },
       { labelKey: "nav.processesNew" },
     ]);
+  });
+});
+
+describe("dify-workflows · Workflows không bị cờ đóng băng", () => {
+  test("frozen=false: platform_admin vẫn có Workflows (không menu con), không có Commands; /workflows không bị gate", () => {
+    const items = navGroups("platform_admin", { frozen: false }).flatMap((g) => g.items);
+    const wf = items.find((i) => i.id === "workflows");
+    expect(wf?.children).toBeUndefined();
+    expect(items.some((i) => i.id === "commands")).toBe(false);
+    expect(isFrozenPath("/workflows")).toBe(false);
+    expect(isFrozenPath("/workflows/abc")).toBe(false);
+    expect(isFrozenPath("/workflows/steps")).toBe(true);
+    expect(isFrozenPath("/commands")).toBe(true);
   });
 });
