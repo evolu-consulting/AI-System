@@ -1,12 +1,17 @@
 // HUB-FR-72 · khung ứng dụng: skip-link, Sidebar, Topbar, <main id="main"> (Toaster ở __root).
+import { FeedbackFab } from "@ai/web-kit/ui/FeedbackFab";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "#/lib/http";
 import { OfflineBanner } from "./OfflineBanner";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
+/** Client HTTP riêng của studio-web (kit không biết token của web này); không tải được tệp đính kèm. */
+const FEEDBACK_TRANSPORT = { request: api };
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <>
       <a
@@ -31,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
+      <FeedbackFab app="studio" lang={i18n.language} transport={FEEDBACK_TRANSPORT} />
     </>
   );
 }

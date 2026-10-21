@@ -214,6 +214,7 @@
     "usage": "Usage & quota",
     "usageAnalytics": "Token analytics",
     "audit": "Audit log",
+    "feedback": "Feedback",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
     "workflowProcess": "Workflow Process"
@@ -854,6 +855,34 @@
       "openCheck": "Open access check",
       "empty": "This user can only use core commands."
     }
+  },
+  "feedbackAdmin": {
+    "title": "Feedback",
+    "subtitle": "User feedback about the apps. Change the status and reply; users see the reply in the feedback panel.",
+    "allTenants": "All tenants",
+    "allApps": "All apps",
+    "allKinds": "All types",
+    "allStatuses": "All statuses",
+    "col": {
+      "date": "Date",
+      "tenant": "Tenant",
+      "user": "Sender",
+      "app": "App",
+      "kind": "Type",
+      "message": "Message",
+      "status": "Status"
+    },
+    "kind": { "bug": "Bug", "idea": "Suggestion", "other": "Other" },
+    "status": { "new": "New", "in_progress": "In progress", "done": "Done" },
+    "version": "Version",
+    "page": "Page",
+    "reply": "Reply",
+    "replyHint": "The reply is shown to the sender",
+    "save": "Save",
+    "saved": "Feedback saved",
+    "empty": "No feedback yet.",
+    "prev": "Previous",
+    "next": "Next"
   },
   "apps": {
     "title": "Apps",

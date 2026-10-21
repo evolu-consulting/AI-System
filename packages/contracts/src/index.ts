@@ -16,6 +16,7 @@ export {
   ErrorResponseSchema,
 } from "./errors";
 export * from "./features";
+export * from "./feedback";
 export * from "./grants";
 export * from "./groups";
 export { type HealthResponse, HealthResponseSchema } from "./health";

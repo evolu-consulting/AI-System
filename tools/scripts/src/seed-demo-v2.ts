@@ -165,6 +165,79 @@ async function fixRenewals(tx: Tx, tenant: string): Promise<void> {
       where s.tenant_id = ${tenant} and s.contract_id = ${uid("contract", next)}`;
 }
 
+/** Tệp gốc mẫu của HĐ c1 (đã nằm trong FileBox của org `t_<tenant>`); vắng ⇒ demo không có HĐ nào có tệp gốc. */
+export type DemoFile = {
+  fileId: string;
+  versionId: string | null;
+  name: string;
+  mime: string;
+  size: number;
+};
+export const DEMO_FILE_NAME = "hop-dong-mau-NCCA.pdf";
+const FILE_CONTRACT = "c1";
+
+/** PDF một trang tối thiểu (chữ "DEMO", không phải hợp đồng thật) — đủ để khung xem PDF hiện được. */
+export function demoPdf(): Uint8Array {
+  const objs = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    "<< /Length 63 >>\nstream\nBT /F1 18 Tf 20 70 Td (DEMO - Hop dong mau, du lieu gia) Tj ET\nendstream",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let out = "%PDF-1.4\n";
+  const off: number[] = [];
+  objs.forEach((o, i) => {
+    off.push(out.length);
+    out += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${off.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return new TextEncoder().encode(out);
+}
+
+/** Đẩy PDF mẫu lên FileBox (chỉ khi có `SEED_FILEBOX_URL` + `SEED_FILEBOX_TOKEN`; org = `t_<tenant>`). Không có ⇒ bỏ qua (seed vẫn chạy). */
+export async function uploadDemoFile(tenantId: string): Promise<DemoFile | undefined> {
+  const base = process.env.SEED_FILEBOX_URL;
+  const token = process.env.SEED_FILEBOX_TOKEN;
+  if (!base || !token) {
+    console.log(
+      "seed-demo-v2: bỏ qua tệp gốc mẫu (đặt SEED_FILEBOX_URL + SEED_FILEBOX_TOKEN để nạp PDF mẫu cho HĐ c1)",
+    );
+    return undefined;
+  }
+  const bytes = demoPdf();
+  const res = await fetch(
+    `${base.replace(/\/$/, "")}/files?org=${encodeURIComponent(`t_${tenantId}`)}&name=${encodeURIComponent(DEMO_FILE_NAME)}`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/pdf" },
+      body: bytes,
+    },
+  );
+  if (!res.ok) throw new Error(`seed-demo-v2: FileBox từ chối tệp mẫu (${res.status})`);
+  const j = (await res.json()) as { file_id?: string; version_id?: string };
+  if (!j.file_id) throw new Error("seed-demo-v2: FileBox không trả file_id");
+  return {
+    fileId: j.file_id,
+    versionId: j.version_id ?? null,
+    name: DEMO_FILE_NAME,
+    mime: "application/pdf",
+    size: bytes.length,
+  };
+}
+
+/** Gắn tệp gốc mẫu vào HĐ c1 (bản ghi `contracts.files` + `contracts.file_id`). */
+async function attachFile(tx: Tx, tenant: string, owner: string, f: DemoFile): Promise<void> {
+  await tx`delete from contracts.files where tenant_id = ${tenant} and name = ${f.name}`;
+  const [row] = await tx<
+    { id: string }[]
+  >`insert into contracts.files (tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
+    values (${tenant}, ${`t_${tenant}`}, ${f.fileId}, ${f.versionId}, ${f.name}, ${f.mime}, ${f.size}, ${owner}) returning id`;
+  await tx`update contracts.contracts set file_id = ${row?.id ?? null} where tenant_id = ${tenant} and id = ${uid("contract", FILE_CONTRACT)}`;
+}
+
 export type SeedIds = { tenantId: string; tenantKey: string; owner: string; editor: string };
 
 /** Nạp lại bộ mẫu cho tenant `demo` trong MỘT tx. Từ chối khoá khác `demo` (kiểm cả trong DB). */
@@ -172,6 +245,7 @@ export async function seedDemo(
   sql: postgres.Sql,
   ids: SeedIds,
   today: string,
+  file?: DemoFile,
 ): Promise<Record<string, number>> {
   assertDemo(ids.tenantKey);
   const a: Actors = { owner: ids.owner, editor: ids.editor };
@@ -190,6 +264,7 @@ export async function seedDemo(
     await loadCatalog(ctx);
     await loadContracts(ctx);
     await loadPeople(ctx);
+    if (file) await attachFile(tx, ids.tenantId, a.owner, file);
     await fixRenewals(tx, ids.tenantId);
     return counts(tx, ids.tenantId);
   });
@@ -242,7 +317,12 @@ async function main(argv: readonly string[]): Promise<void> {
     }
     console.log(
       "seed-demo-v2: đã nạp",
-      await seedDemo(sql, ids, new Date().toISOString().slice(0, 10)),
+      await seedDemo(
+        sql,
+        ids,
+        new Date().toISOString().slice(0, 10),
+        await uploadDemoFile(ids.tenantId),
+      ),
     );
   } finally {
     await sql.end({ timeout: 2 });

@@ -84,11 +84,10 @@ function ContractBody({
   const canSave = write && c.status !== "extracting";
   const key = leadKey(c.status);
   const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
-  const openFile = () => {
-    setFileErr(null);
-    openOriginalFile(id).catch((e) => setFileErr(saveErrorText(e, t)));
-  };
-  const file = c.file ? { href: fileHref(id), name: c.file.name, onOpen: openFile } : null;
+  // Nút chỉ có khi HĐ có tệp gốc (nhập tay ⇒ không có); phụ lục có tệp riêng xem trong hộp thoại.
+  const file = c.file
+    ? { href: fileHref(id), name: c.file.name, onOpen: () => setOrigOpen(true) }
+    : null;
   const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
   // gap-a2 #3: khoang văn bản gốc (mở bằng nút hoặc bằng "Xem đoạn này trong văn bản gốc" ở trích dẫn AI).
   const [src, setSrc] = useState<{ quote: string | null; nonce: number } | null>(null);

@@ -116,22 +116,26 @@ test("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không g�
   expect(sent).toEqual([]);
 });
 
-test("HD2 #220 · S05 · «Xem file gốc» xin link qua API (Bearer) rồi mở ở tab mới", async ({
+test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) rồi xem tại chỗ trong hộp thoại (khung PDF + nút tải)", async ({
   page,
   context,
 }) => {
   await install(page);
   await context.route("https://files.e2e.test/**", (r) =>
-    r.fulfill({ status: 200, contentType: "text/plain", body: "PDF" }),
+    r.fulfill({
+      status: 200,
+      contentType: "application/pdf",
+      headers: { "access-control-allow-origin": "*" },
+      body: "%PDF-1.4",
+    }),
   );
   await page.goto(`/contracts/${contract.id}`);
   const linkReq = page.waitForRequest((q) =>
     q.url().endsWith(`/contracts/${contract.id}/file-link`),
   );
-  const [popup] = await Promise.all([
-    page.waitForEvent("popup"),
-    page.getByRole("link", { name: "📄 Xem file gốc" }).click(),
-  ]);
+  await page.getByRole("link", { name: "📄 Xem hợp đồng gốc" }).click();
   expect((await linkReq).headers().authorization).toBe("Bearer e2e.access.token");
-  await expect(popup).toHaveURL(FILE_URL);
+  const dlg = page.getByRole("dialog", { name: "Hợp đồng gốc" });
+  await expect(dlg.locator("iframe")).toBeVisible();
+  await expect(dlg.getByRole("link", { name: "Tải xuống" })).toBeVisible();
 });

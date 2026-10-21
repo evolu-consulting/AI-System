@@ -20,6 +20,7 @@ describe("ADM-FR-60 · menu theo role", () => {
       "secrets",
       "usage",
       "audit",
+      "feedback",
       "transfer",
     ]);
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
@@ -40,6 +41,7 @@ describe("ADM-FR-60 · menu theo role", () => {
       "access",
       "usage",
       "audit",
+      "feedback",
     ]);
   });
 

@@ -33,6 +33,8 @@ const ADMIN_TABLES = [
   "admin.feature_entitlements",
   "admin.feature_grants",
   "admin.features",
+  "admin.feedback",
+  "admin.feedback_files",
   "admin.group_members",
   "admin.groups",
   "admin.quota_alerts",

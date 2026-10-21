@@ -134,6 +134,13 @@
       "when": 1793664000000,
       "tag": "0018_portal_default_app",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793750400000,
+      "tag": "0019_feedback",
+      "breakpoints": true
     }
   ]
 }

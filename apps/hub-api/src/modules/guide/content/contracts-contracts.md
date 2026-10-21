@@ -12,7 +12,7 @@ Cần quyền ghi (vai trò Quản lý hoặc Nhân viên).
 1. Mở Sổ Hợp Tác, bấm **Hợp đồng** ở thanh bên trái.
 2. Bấm **Upload hợp đồng** và chọn file (PDF, DOCX hoặc ảnh PNG/JPG).
 3. Màn hình **Đang đọc hợp đồng…**: AI trích tên, đối tác, giá trị, ngày hiệu lực, sản phẩm, mốc và tóm tắt. Chờ xong.
-4. Màn hình kiểm tra ("Kiểm tra lại các trường rồi xác nhận."): sửa các trường AI đọc sai; trường AI chưa chắc có nhắc "AI chưa chắc, kiểm tra lại". Bấm **Xem file gốc** để đối chiếu. Xem **AI tóm tắt** và **Mốc AI tìm thấy** (bỏ chọn mốc không đúng).
+4. Màn hình kiểm tra ("Kiểm tra lại các trường rồi xác nhận."): sửa các trường AI đọc sai; trường AI chưa chắc có nhắc "AI chưa chắc, kiểm tra lại". Bấm **Xem hợp đồng gốc** để đối chiếu. Xem **AI tóm tắt** và **Mốc AI tìm thấy** (bỏ chọn mốc không đúng).
 5. Bấm **Xác nhận**. Nếu công ty bật bước duyệt, hợp đồng chờ **Ban giám đốc** bấm **Duyệt**; nếu tắt, lưu là có hiệu lực ngay ("Đã lưu — hợp đồng có hiệu lực").
 Nếu báo "Không đọc được hợp đồng này": file mờ hoặc là bản quét; xem lại file gốc, xoá và tải bản rõ hơn, hoặc bấm **Nhập tay**. Hết lượt AI trong ngày sẽ báo "Đã hết lượt thao tác AI hôm nay".
 

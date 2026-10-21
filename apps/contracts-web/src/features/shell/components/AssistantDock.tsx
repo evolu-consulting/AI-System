@@ -1,4 +1,5 @@
-// PK-FR-10 · TF5 · khoang phải: cạnh trái kéo được (280–560, nhớ độ rộng), ruột trợ lý nạp lazy; góp ý (S14) dùng chung khoang, rỗng ở N1.
+// PK-FR-10 · TF5 · khoang phải: cạnh trái kéo được (280–560, nhớ độ rộng), ruột trợ lý nạp lazy; góp ý (S14) dùng chung khoang (khung dùng chung web-kit).
+import { FeedbackPanel } from "@ai/web-kit/ui/FeedbackPanel";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -19,24 +20,9 @@ export function DockBody({
   onClose: () => void;
   closeLabel?: string;
 }) {
-  const { t } = useTranslation();
-  if (mode === "feedback") {
-    return (
-      <div className="flex h-full flex-col">
-        <div className="flex h-[58px] shrink-0 items-center border-b border-rule px-4">
-          <p className="text-body font-semibold">{t("contracts.shell.feedback")}</p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="ml-auto rounded-md px-2 py-1 text-label text-dim hover:bg-sunk"
-          >
-            {t("contracts.common.close")}
-          </button>
-        </div>
-        <p className="p-4 text-label text-dim">{t("contracts.shell.feedbackSoon")}</p>
-      </div>
-    );
-  }
+  const { i18n } = useTranslation();
+  if (mode === "feedback")
+    return <FeedbackPanel app="contracts" lang={i18n.language} onClose={onClose} />;
   return (
     <Suspense fallback={<Skeleton className="m-4 h-8" />}>
       <AssistantPanel onClose={onClose} closeLabel={closeLabel} />

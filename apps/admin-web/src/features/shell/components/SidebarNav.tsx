@@ -15,6 +15,7 @@ import {
   Library,
   ListTree,
   type LucideIcon,
+  MessageSquare,
   Package,
   ShieldCheck,
   Terminal,
@@ -48,6 +49,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   apps: LayoutGrid,
   usage: Coins,
   audit: History,
+  feedback: MessageSquare,
   transfer: ArrowLeftRight,
 };
 

@@ -63,6 +63,8 @@ services:
         # sso-switch: app switcher (chat → contracts) + SSO dội về AI System (chat-web).
         PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
         PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
+        # feedback: phiên bản app tự gắn vào góp ý (deploy.ps1 đặt = commit).
+        PUBLIC_APP_VERSION: ${S2_APP_VERSION:-dev}
     environment:
       HOME: /tmp
       # app-catalog: giá trị khởi tạo cho `admin.app_catalog` (chỉ điền hàng còn rỗng; sau đó sửa ở Admin → Ứng dụng).

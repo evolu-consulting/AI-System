@@ -104,6 +104,26 @@ export const fileHref = (id: string) => `${BASE}/${encodeURIComponent(id)}/file`
 export const isOpenableLink = (url: string): boolean =>
   /^https?:\/\//.test(url) || /^\/(?!\/)/.test(url);
 
+/** Xem tại chỗ: xin link FileBox ngắn hạn qua API (RLS ở server: HĐ không thấy ⇒ 404) rồi tải về Blob có đúng `mime` (cho khung PDF/ảnh + nút tải).
+ * Lỗi mạng/CORS khi tải Blob ⇒ nén về `openOriginalFile` ở tầng gọi. */
+export async function fetchOriginalBlob(
+  id: string,
+  mime: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const { url } = await api<{ url: string }>(`${BASE}/${encodeURIComponent(id)}/file-link`, {
+    signal,
+  });
+  if (!isOpenableLink(url)) throw new Error("bad link");
+  const res = await fetch(url, { signal, credentials: "omit" });
+  if (!res.ok) throw new Error(`file ${res.status}`);
+  return new Blob([await res.arrayBuffer()], { type: mime });
+}
+
+/** Xem được tại chỗ: PDF hoặc ảnh. */
+export const isPreviewable = (mime: string): boolean =>
+  mime === "application/pdf" || /^image\/(png|jpe?g|gif|webp)$/.test(mime);
+
 /** #220: điều hướng trình duyệt không mang Bearer ⇒ xin link FileBox ngắn hạn qua API rồi mở ở tab đã mở sẵn
  * (mở tab ngay trong lúc bấm để không bị chặn popup). Lỗi ⇒ đóng tab, ném cho trang báo. */
 export async function openOriginalFile(id: string): Promise<void> {

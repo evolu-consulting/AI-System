@@ -214,6 +214,7 @@
     "usage": "Chi phí & quota",
     "usageAnalytics": "Phân tích token",
     "audit": "Nhật ký",
+    "feedback": "Góp ý",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
     "workflowProcess": "Workflow Process"
@@ -854,6 +855,34 @@
       "openCheck": "Mở Kiểm tra quyền",
       "empty": "Người dùng này chỉ dùng được các command của feature core."
     }
+  },
+  "feedbackAdmin": {
+    "title": "Góp ý",
+    "subtitle": "Góp ý của người dùng về các app. Đổi trạng thái và trả lời; người dùng thấy phản hồi trong khung góp ý.",
+    "allTenants": "Tất cả tenant",
+    "allApps": "Tất cả app",
+    "allKinds": "Tất cả loại",
+    "allStatuses": "Tất cả trạng thái",
+    "col": {
+      "date": "Ngày",
+      "tenant": "Tenant",
+      "user": "Người gửi",
+      "app": "App",
+      "kind": "Loại",
+      "message": "Nội dung",
+      "status": "Trạng thái"
+    },
+    "kind": { "bug": "Lỗi", "idea": "Đề xuất", "other": "Khác" },
+    "status": { "new": "Mới", "in_progress": "Đang xử lý", "done": "Xong" },
+    "version": "Phiên bản",
+    "page": "Trang",
+    "reply": "Phản hồi",
+    "replyHint": "Nội dung trả lời sẽ hiện cho người gửi",
+    "save": "Lưu",
+    "saved": "Đã lưu góp ý",
+    "empty": "Chưa có góp ý nào.",
+    "prev": "Trước",
+    "next": "Sau"
   },
   "apps": {
     "title": "Ứng dụng",

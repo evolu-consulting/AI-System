@@ -31,7 +31,7 @@ try {
   $remote = "set -e; cd $Dir; tar xzf /tmp/s2-kit-$stamp.tgz; mkdir -p build; rm -rf build/app.new; mkdir build/app.new; " +
     "tar xzf /tmp/s2-app-$stamp.tgz -C build/app.new; rm -rf build/app; mv build/app.new build/app; cp Dockerfile nginx.conf build/; " +
     "unlink /tmp/s2-app-$stamp.tgz; unlink /tmp/s2-kit-$stamp.tgz; echo '$commit ($Ref)' > VERSION; " +
-    "${envDomain}bash gen-env.sh; docker compose -p sohoptac2 build 2>&1 | grep -E 'ERROR|error:|Built' || true; bash setup.sh 2>&1"
+    "${envDomain}bash gen-env.sh; S2_APP_VERSION='$commit' docker compose -p sohoptac2 build 2>&1 | grep -E 'ERROR|error:|Built' || true; bash setup.sh 2>&1"
   ssh @ssh $Server $remote
   Write-Host "sohoptac2: đã deploy $commit ($Ref). Tunnel: ssh -i $Key -N -L 18431:127.0.0.1:18431 -L 18432:127.0.0.1:18432 -L 18433:127.0.0.1:18433 -L 18434:127.0.0.1:18434 $Server"
 } finally {

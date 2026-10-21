@@ -71,7 +71,7 @@ const FAILED_ID = contract.id.replace(/1$/, "2");
 const reviewBoxes = {
   heading: "main h1",
   save: 'main button:text-is("Lưu")',
-  file: 'main a:has-text("Xem file gốc")',
+  file: 'main a:has-text("Xem hợp đồng gốc")',
   warnings: "main ul",
   firstField: "main input >> nth=0",
   quote: "main span.italic >> nth=0",

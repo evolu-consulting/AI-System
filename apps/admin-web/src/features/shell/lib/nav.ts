@@ -22,6 +22,7 @@ export type NavId =
   | "apps"
   | "usage"
   | "audit"
+  | "feedback"
   | "transfer";
 type NavTo =
   | "/"
@@ -40,6 +41,7 @@ type NavTo =
   | "/apps"
   | "/usage"
   | "/audit"
+  | "/feedback"
   | "/transfer";
 export type NavItem = {
   id: NavId;
@@ -64,6 +66,7 @@ export type NavItem = {
     | "nav.apps"
     | "nav.usage"
     | "nav.audit"
+    | "nav.feedback"
     | "nav.transfer";
 };
 export type NavGroup = {
@@ -96,6 +99,7 @@ const SECRETS = item("secrets", "/secrets");
 const APPS = item("apps", "/apps");
 const USAGE = item("usage", "/usage");
 const AUDIT = item("audit", "/audit");
+const FEEDBACK = item("feedback", "/feedback");
 const TRANSFER = item("transfer", "/transfer");
 
 /** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
@@ -123,7 +127,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
-      { labelKey: "nav.group.system", items: [USAGE, AUDIT, ...(on ? [TRANSFER] : [])] },
+      { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])] },
     ];
   }
   if (role === "tenant_admin") {
@@ -131,7 +135,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       { labelKey: null, items: [OVERVIEW] },
       { labelKey: "nav.group.features", items: [AGENTS, ...proc] },
       { labelKey: "nav.group.access", items: [USERS, GROUPS, ACCESS] },
-      { labelKey: "nav.group.system", items: [USAGE, AUDIT] },
+      { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK] },
     ];
   }
   return [];
@@ -186,6 +190,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/usage/analytics": [{ labelKey: "nav.usage", to: "/usage" }, { labelKey: "nav.usageAnalytics" }],
   "/transfer": [{ labelKey: "nav.transfer" }],
   "/audit": [{ labelKey: "nav.audit" }],
+  "/feedback": [{ labelKey: "nav.feedback" }],
   "/workflows/steps": [
     { labelKey: "nav.workflows", to: "/workflows" },
     { labelKey: "nav.workflowSteps" },
