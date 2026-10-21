@@ -408,7 +408,7 @@ e482ceb75fdb8f75eb4bc6e498be7b888f947315c5c584225c39352ad9a7071e  e2e/contracts-
 32157196bc009ea085a02c9985e03d3f60bf7fb59e1a59d10e709163ef9dc7b0  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 17a439b4865090a0efd80dbd017d6235089a63c7bc2bab2307671a54c0100149  e2e/deployed/01-login-sso.deployed.ts
-e1cbbc1c4d695aae9b6decc032e6235d8f04652b477ed6a21ebc07d5e344c0e9  e2e/deployed/02-contracts-pages.deployed.ts
+91c15f808487ec437ef5beb46e2737d0c5a5021e4aabbd93665b93d12f18f10f  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 ff508467c44ce9f1709069ec894be36d6b039233d22f82717d35359289df2f6c  e2e/deployed/_support.ts
 1c63c4ad1250687114fe46b60911821123b8c5e7c559df3d42561e528f1bcee4  e2e/deployed/deployed.config.ts
@@ -1204,6 +1204,7 @@ a23b7f1616bc9d8baa859541550282ab8dfcf58d9efabcd4eebf343441036302  tests/acceptan
 cb72ca4b6c19f7bb5bcf6158d1512c222727718a0a5d79a590b67ee25934b5f9  tests/acceptance/V2-G/review.int.test.ts
 edda6dbe137c1132a5ea00decabb448f75c128a4fec20540accf4e708eb2f924  tests/acceptance/V2-H/api.int.test.ts
 0ebec76a4fcb921bdf4c601fff42fdaf1867195c2f70a0a4a02b93a8162fc18b  tests/acceptance/V2-H/rls.int.test.ts
+8eaf7aa7347ec95832ddfec5607c4fe77b609941bd5432192d2e1ef2dbffdf0a  tests/acceptance/V2-I/partner-contact.int.test.ts
 1f7d78a6f8ba140d850c01ba5e9ed1139c7b91cb50c5f8641257be156fdeaed7  tests/acceptance/V2-I/partner-ui.int.test.ts
 582f6c55756ac070a52b8ff1ee21b8a66b2cee283dfb7e5b86e61c5d8a2f73f4  tests/acceptance/V2-J1/business.int.test.ts
 a1398c9e680097a62e04523c1921bf5f114b42d21db61039f6d8f6434b158ff6  tests/acceptance/V2-J2/_support/v2j2.ts
