@@ -66,7 +66,7 @@ export function series(tx: Tx, f: Filter, r: { from: string; to: string; grain: 
   return run<SeriesRow>(
     tx,
     sql`select to_char(date_trunc(${r.grain}::text, d.day::timestamp), 'YYYY-MM-DD') as bucket, d.app, ${MEASURES}
-    from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)} group by 1, 2 order by 1, 2`,
+    from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)} group by 1, 2 having sum(d.calls) > 0 order by 1, 2`,
   );
 }
 
@@ -91,7 +91,8 @@ export function breakdown(tx: Tx, f: Filter, r: { from: string; to: string }) {
       d.user_id::text as user_id, d.tenant_id::text as tenant_id, d.outcome, ${MEASURES}
     from hub.usage_daily d where ${rollupWhere(f, r.from, r.to)}
     group by grouping sets ((d.app), (d.agent_id), (d.model), (d.feature), (d.user_id), (d.tenant_id), (d.outcome),
-      (d.app, d.agent_id, d.feature, d.model))`,
+      (d.app, d.agent_id, d.feature, d.model))
+    having sum(d.calls) > 0`,
   );
 }
 

@@ -88,6 +88,16 @@ ON CONFLICT DO NOTHING;
 --> statement-breakpoint
 -- Trigger THEO CÂU LỆNH: gộp các dòng của câu (±1) theo khoá rồi upsert theo thứ tự khoá (tránh deadlock). Một câu SQL mỗi
 -- lệnh ghi, không phụ thuộc số dòng. SECURITY DEFINER: writer (agent_runtime, hub_rw qua hàm) không cần quyền trên bảng.
+-- Dọn dòng tổng hợp về 0 (sau khi UPDATE dời nhóm / DELETE) theo (tenant, ngày) đã chạm — qua index (tenant_id, day, …).
+CREATE OR REPLACE FUNCTION hub.usage_daily_prune(p_days date[], p_tenants uuid[])
+  RETURNS void
+  LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+  AS $$
+  DELETE FROM hub.usage_daily WHERE calls <= 0 AND tenant_id = ANY (p_tenants) AND day = ANY (p_days)
+$$;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION hub.usage_daily_prune(date[], uuid[]) FROM PUBLIC;
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.usage_daily_ins()
   RETURNS trigger
   LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
@@ -146,6 +156,8 @@ BEGIN
     cache_write_tokens = d.cache_write_tokens + EXCLUDED.cache_write_tokens,
     cost_usd = d.cost_usd + EXCLUDED.cost_usd, unpriced = d.unpriced + EXCLUDED.unpriced,
     latency_ms_sum = d.latency_ms_sum + EXCLUDED.latency_ms_sum, latency_n = d.latency_n + EXCLUDED.latency_n;
+  PERFORM hub.usage_daily_prune(array(SELECT DISTINCT ((o.at AT TIME ZONE 'UTC') + interval '420 minutes')::date
+    FROM old_rows o), array(SELECT DISTINCT o.tenant_id FROM old_rows o));
   RETURN NULL;
 END
 $$;
@@ -182,8 +194,8 @@ BEGIN
     AND d.feature IS NOT DISTINCT FROM g.feature AND d.agent_id IS NOT DISTINCT FROM g.agent_id
     AND d.model IS NOT DISTINCT FROM g.model AND d.provider_key IS NOT DISTINCT FROM g.provider_key
     AND d.outcome IS NOT DISTINCT FROM g.outcome AND d.user_id IS NOT DISTINCT FROM g.user_id;
-  DELETE FROM hub.usage_daily WHERE calls <= 0 AND day IN (SELECT DISTINCT ((at AT TIME ZONE 'UTC')
-    + interval '420 minutes')::date FROM old_rows);
+  PERFORM hub.usage_daily_prune(array(SELECT DISTINCT ((o.at AT TIME ZONE 'UTC') + interval '420 minutes')::date
+    FROM old_rows o), array(SELECT DISTINCT o.tenant_id FROM old_rows o));
   RETURN NULL;
 END
 $$;
