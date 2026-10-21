@@ -141,7 +141,7 @@ export async function main(argv: string[], env: Env): Promise<number> {
     log(
       "dify-register xong. Thử: gõ /han-muc-duyet 600000000 Mua trong Chat AI (tenant " +
         a.tenant +
-        ").",
+        "). Để trợ lý gọi workflow trong chat thường: chạy lại `hub:seed` (gắn dify-han-muc-duyet vào agent assistant, không ghi đè chỉnh Studio).",
     );
     return 0;
   } catch (e) {

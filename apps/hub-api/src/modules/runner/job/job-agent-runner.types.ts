@@ -89,7 +89,12 @@ export type JobAgentRunnerDeps = {
   log: Logger;
   pollMs?: number;
   /** H2a · MCP cho agent gắn workflow (R18): `url` = `HUB_PUBLIC_INTERNAL_URL + "/mcp"`; vắng → `mcp: null`. */
-  mcp?: { url: string; catalog: () => Promise<CatalogSnapshot> };
+  mcp?: {
+    url: string;
+    catalog: () => Promise<CatalogSnapshot>;
+    /** commands-unfreeze · quyền feature của người gọi (entitlement + grant); vắng ⇒ không lọc. */
+    gate?: (tenantId: string, userId: string) => Promise<(workflowId: string) => boolean>;
+  };
   /** K1 · `khPrepareJob` (KH của job stage); vắng ⇒ không `kh-query`. */
   kh?: KhJobPreparer;
   /** TD #252 · cửa trần token tenant (giữ chỗ trước khi đẩy job chat); vắng ⇒ không chặn (test). */

@@ -10,6 +10,9 @@
 # HUB-FR-109 · SC-2: giai đoạn `ghi-so` (real_action) của mẫu `hoa-don` do agent `hoa-don-doc` chạy — gắn workflow Admin
 # `ghi-so`. CR-081: agent `hoa-don-doc` là fixture opt-in ⇒ `agent_workflows` của nó chuyển sang `processes.full.yaml`
 # (chỉ nạp khi HUB_SEED_FIXTURES=1), tránh tham chiếu agent không có trong seed tối giản.
-agent_workflows: []
+# commands-unfreeze · workflow dify-han-muc-duyet (tạo bởi tools/scripts/src/dify-register.ts) là tool của ssistant (chat thường, không chỉ lệnh /).
+# Chưa có workflow trong admin.workflows ⇒ bỏ dòng + cảnh báo; chạy lại hub:seed sau dify-register. Upsert, không xoá (giữ chỉnh Studio).
+agent_workflows:
+  - { agent: assistant, workflow: dify-han-muc-duyet }
 workflow_flags:
   side_effect: []

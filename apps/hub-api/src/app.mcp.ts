@@ -5,7 +5,6 @@ import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import type { AttachmentStorage } from "./modules/attachments/storage";
-import type { CatalogSnapshot } from "./modules/config/catalog.rules";
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
@@ -17,7 +16,9 @@ import { confirmationGate } from "./modules/mcp/confirm.service";
 import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
 import { packMcpTools } from "./modules/mcp/pack-tools.provider";
+import { workflowGate } from "./modules/mcp/workflow-access";
 import type { PackToolCatalog } from "./modules/packs/kit/application/pack-tools.ports";
+import type { JobAgentRunnerDeps } from "./modules/runner/job/job-agent-runner.types";
 
 /** = `HUB_DIFY_TIMEOUT_MAX_S` mặc định (plan §8). */
 export const DEFAULT_DIFY_TIMEOUT_MAX_S = 300;
@@ -33,9 +34,13 @@ export function mcpUrlOf(publicInternalUrl: string): string {
 export function runnerMcp(
   publicInternalUrl: string | undefined,
   config: ConfigCache,
-): { url: string; catalog: () => Promise<CatalogSnapshot> } | undefined {
+): NonNullable<JobAgentRunnerDeps["mcp"]> | undefined {
   if (!publicInternalUrl) return undefined;
-  return { url: mcpUrlOf(publicInternalUrl), catalog: () => config.catalog() };
+  return {
+    url: mcpUrlOf(publicInternalUrl),
+    catalog: () => config.catalog(),
+    gate: (tenantId, userId) => workflowGate(config, tenantId, userId),
+  };
 }
 
 export type McpMountDeps = {

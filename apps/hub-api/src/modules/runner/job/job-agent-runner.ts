@@ -89,10 +89,15 @@ export function agentToolKeys(
   ids: ReadonlySet<string>,
   catalog: CatalogSnapshot,
   hasFiles?: boolean,
+  allow?: (workflowId: string) => boolean,
 ): string[] {
   const workflows = [...catalog.workflows.values()];
   const allowed = workflows.map((w) => w.key);
-  const input = { agentWorkflowIds: ids, workflows, allowed };
+  const input = {
+    agentWorkflowIds: allow ? new Set([...ids].filter(allow)) : ids,
+    workflows,
+    allowed,
+  };
   return mcpToolsFor(hasFiles === undefined ? input : { ...input, hasFiles })
     .map((t) => t.name)
     .slice(0, MCP_TOOLS_MAX);
@@ -144,7 +149,8 @@ export class JobAgentRunner implements AgentRunner {
     const ids = agentWorkflowIds(task.snapshot, task.agent.id);
     if (ids.size === 0) return [];
     try {
-      return agentToolKeys(ids, await m.catalog(), agentFiles(task).length > 0);
+      const allow = await m.gate?.(task.run.tenantId, task.run.userId);
+      return agentToolKeys(ids, await m.catalog(), agentFiles(task).length > 0, allow);
     } catch (err) {
       this.d.log.warn("job-mcp-unavailable", { run_id: task.run.id, ...safeErrorFields(err) });
       return [];

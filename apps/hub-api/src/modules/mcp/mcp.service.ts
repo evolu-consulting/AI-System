@@ -35,6 +35,7 @@ import {
 } from "./mcp.rules";
 import { notAttached, resolveToolFiles } from "./mcp-files";
 import type { PackMcpTools } from "./pack-tools.provider";
+import { workflowGate } from "./workflow-access";
 
 /** Ngữ cảnh của token (plan §6 Auth). `tools` = `payload.mcp.tools`. */
 export type McpContext = {
@@ -167,9 +168,12 @@ export class McpService {
       this.d.config.snapshot(),
       this.d.config.catalog(),
     ]);
+    // Quyền feature của người gọi (entitlement tenant + grant user): kiểm lại ở MỖI tools/list và tools/call.
+    const allowedWf = await workflowGate(this.d.config, ctx.tenantId, ctx.userId);
+    const attached = [...agentWorkflowIds(snapshot, ctx.agentId)].filter(allowedWf);
     return [
       ...mcpToolsFor({
-        agentWorkflowIds: agentWorkflowIds(snapshot, ctx.agentId),
+        agentWorkflowIds: new Set(attached),
         workflows: [...catalog.workflows.values()],
         allowed: ctx.tools,
         hasFiles: ctx.files.length > 0,
