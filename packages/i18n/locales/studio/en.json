@@ -4,6 +4,7 @@
   },
   "nav": {
     "label": "Studio menu",
+    "openMenu": "Open menu",
     "skip": "Skip navigation",
     "group": {
       "config": "Agent configuration",

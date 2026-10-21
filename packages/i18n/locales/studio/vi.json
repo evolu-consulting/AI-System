@@ -4,6 +4,7 @@
   },
   "nav": {
     "label": "Menu Studio",
+    "openMenu": "Mở menu",
     "skip": "Bỏ qua điều hướng",
     "group": {
       "config": "Cấu hình agent",

@@ -1,6 +1,6 @@
 // CHAT-AC-54…56 · PF3: đầu trang `/runs/$id` — tên quy trình (heading) + `!key` + badge trạng thái; đường quay lại và
 // "Mở luồng trong phòng" (chỉ `full`); nút "Huỷ lượt chạy" (PF1 `CancelRunButton`, chỉ `can_cancel`).
-import type { ProcessRunView } from "@ai/contracts/chat";
+import { PROCESS_RUN_ACTIVE, type ProcessRunView } from "@ai/contracts/chat";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CancelRunButton } from "../../run-block/components/CancelRunButton";
@@ -14,7 +14,9 @@ export function RunHeader({ view, onCancelled }: Props) {
   const full = view.access === "full" ? view : null;
   // Cần người quyết mà người xem quyết được ⇒ "Huỷ lượt chạy" đã là một lựa chọn của thẻ quyết (tránh hai nút trùng tên).
   const decides = full?.status === "needs_decision" && full.decision?.can_decide === true;
-  const canCancel = (full ? full.can_cancel : view.can_cancel) && !decides;
+  // TD #160: run đã kết thúc (done/cancelled/failed/expired) thì không còn nút huỷ, dù server chưa gỡ `can_cancel`.
+  const live = (PROCESS_RUN_ACTIVE as readonly string[]).includes(view.status);
+  const canCancel = (full ? full.can_cancel : view.can_cancel) && !decides && live;
 
   return (
     <header className="flex flex-col gap-2 border-b border-border px-4 py-3">

@@ -18,6 +18,10 @@ const VARIANT = { unchecked: "off", ok: "ok", error: "err" } as const satisfies 
   "off" | "ok" | "err"
 >;
 const COLS = ["name", "url", "key", "project", "status", "agents", "actions"] as const;
+/** TD #159: ở màn hẹp (< md) ẩn cột phụ để "Địa chỉ" không bị cột hành động che; hành động xuống dòng thay vì dính phải. */
+const NARROW_HIDDEN = "hidden md:table-cell";
+const ACTIONS_CELL =
+  "whitespace-nowrap max-md:space-y-1 md:sticky md:right-0 md:space-x-2 md:border-l md:border-border md:bg-card";
 
 type Actions = {
   checking: boolean;
@@ -33,8 +37,8 @@ function Row({ c, checking, onCheck, onEdit, onDelete }: Actions & { c: KhConnec
     <TableRow>
       <TableCell className="font-mono">{c.name}</TableCell>
       <TableCell className="font-mono break-all">{c.base_url}</TableCell>
-      <TableCell className="font-mono">{c.secret.name}</TableCell>
-      <TableCell className="font-mono">
+      <TableCell className={`font-mono ${NARROW_HIDDEN}`}>{c.secret.name}</TableCell>
+      <TableCell className={`font-mono ${NARROW_HIDDEN}`}>
         {c.summary_project ?? (
           <span className="font-sans text-muted-foreground">{t("knowledgehub.noProject")}</span>
         )}
@@ -42,8 +46,8 @@ function Row({ c, checking, onCheck, onEdit, onDelete }: Actions & { c: KhConnec
       <TableCell>
         <Badge variant={VARIANT[c.status]}>{t(`knowledgehub.status.${c.status}`)}</Badge>
       </TableCell>
-      <TableCell>{c.agents_count}</TableCell>
-      <TableCell className="sticky right-0 space-x-2 whitespace-nowrap border-l border-border bg-card">
+      <TableCell className={NARROW_HIDDEN}>{c.agents_count}</TableCell>
+      <TableCell className={ACTIONS_CELL}>
         <Button
           variant="outline"
           size="sm"
@@ -70,6 +74,13 @@ function Row({ c, checking, onCheck, onEdit, onDelete }: Actions & { c: KhConnec
   );
 }
 
+const headClass = (c: (typeof COLS)[number]): string | undefined =>
+  c === "actions"
+    ? "md:sticky md:right-0 md:border-l md:border-border md:bg-card"
+    : c === "key" || c === "project" || c === "agents"
+      ? NARROW_HIDDEN
+      : undefined;
+
 export const KhConnectionsTable = memo(function KhConnectionsTable({
   items,
   ...actions
@@ -81,12 +92,7 @@ export const KhConnectionsTable = memo(function KhConnectionsTable({
         <TableHeader>
           <TableRow>
             {COLS.map((c) => (
-              <TableHead
-                key={c}
-                className={
-                  c === "actions" ? "sticky right-0 border-l border-border bg-card" : undefined
-                }
-              >
+              <TableHead key={c} className={headClass(c)}>
                 <span className={c === "actions" ? "sr-only" : undefined}>
                   {t(`knowledgehub.col.${c}`)}
                 </span>
