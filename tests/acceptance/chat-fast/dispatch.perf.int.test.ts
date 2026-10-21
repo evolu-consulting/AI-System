@@ -1,6 +1,6 @@
 // HUB-FR-77 · Luật 4c · chat-fast: chi phí Hub mỗi tin (Runtime kịch bản trả ngay, không CLI/model) — đường Orchestrator (2 job:
 // Orchestrator delegate → agent) so với định tuyến nhanh (1 job agent). Đo E12 → job đầu `queued` (dispatch) và E12 → `run.finished`.
-// Ngưỡng: fast p95 tổng ≤ 400 ms và nhỏ hơn p95 đường Orchestrator (bỏ hẳn một job). Số in ra để ghi docs/specs/chat-fast/tasks.md.
+// Ngưỡng: fast p95 tổng ≤ 150 ms và nhỏ hơn p95 đường Orchestrator (bỏ hẳn một job). Số in ra để ghi docs/specs/chat-fast/tasks.md.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Redis } from "../../../apps/hub-api/src/lib/redis";
 import {
@@ -97,7 +97,7 @@ const stats = (xs: Sample[]) => ({
 });
 
 describe("chat-fast · chi phí Hub mỗi tin [Luật 4c]", () => {
-  it("HUB-FR-77 · fast (1 job) p95 tổng ≤ 400 ms và < đường Orchestrator (2 job)", async () => {
+  it("HUB-FR-77 · fast (1 job) p95 tổng ≤ 150 ms và < đường Orchestrator (2 job)", async () => {
     await once("tadmin", "khởi động", false); // làm nóng kết nối/cache
     await once("hoa", "khởi động", true);
     const orch: Sample[] = [];
@@ -112,7 +112,7 @@ describe("chat-fast · chi phí Hub mỗi tin [Luật 4c]", () => {
     console.log(
       `chat-fast perf (ms, N=${N}) orchestrated=${JSON.stringify(o)} fast=${JSON.stringify(f)}`,
     );
-    expect(f.total_p95).toBeLessThanOrEqual(400);
+    expect(f.total_p95).toBeLessThanOrEqual(150); // evotest 2026-10-21: 71 ms
     expect(f.total_p95).toBeLessThan(o.total_p95);
   }, 120_000);
 });
