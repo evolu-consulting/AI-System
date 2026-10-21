@@ -1312,6 +1312,7 @@ ed67abd328dc27f82e737e9c014f2484b748bf0ad3ed488803af9561ec2c9b9d  tests/acceptan
 e2d396d54a54d5fe3c608ba0f2e6c1e8d267e7789e868427d4af3faad6ac9095  tests/acceptance/X2b2/run-files.int.test.ts
 b99aff6d8838f02fb2590b509955602f2f4232478e65adf57e4c546c62b355d6  tests/acceptance/X2b2/send.int.test.ts
 bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptance/X2b2/withheld.int.test.ts
+bae5731b9aabdb8de905fcce7440fa242e2bef140e0c897e919c5b97053605cf  tests/acceptance/agents-background/background.int.test.ts
 71c3c3343878fd1f14e4388e8d88bab943788122b98e08614304ee530225deb2  tests/acceptance/chat-fast/default-route.int.test.ts
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
