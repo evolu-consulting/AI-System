@@ -1,5 +1,5 @@
 // M2-chat · e2e khoang trợ lý AI của contracts-web (app mgmt): mở bằng nút nổi, hỏi ⇒ tạo hội thoại Hub (E6) + gửi tin tag
-// `@mgmt-assistant` kèm trang đang mở (E12, stream SSE) ⇒ câu trả lời Markdown (đậm, bảng); câu thứ hai cùng flow; Hub từ chối
+// `@assistant` (trợ lý chung, one-agent) kèm trang đang mở + ngữ cảnh dock (E12, stream SSE) ⇒ câu trả lời Markdown (đậm, bảng); câu thứ hai cùng flow; Hub từ chối
 // agent (404 AGENT_NOT_FOUND) ⇒ câu "chưa được dùng". Backend giả bằng `page.route` (như `bell.cw.ts`).
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { asHub } from "./dataset";
@@ -64,7 +64,7 @@ async function install(page: Page, o: { forbidden?: boolean } = {}): Promise<Api
 
 const panel = (page: Page) => page.getByRole("complementary", { name: "Trợ lý AI" });
 
-test("M2-chat · mở trợ lý, hỏi ⇒ hội thoại Hub + tin @mgmt-assistant kèm trang; trả lời Markdown; câu sau cùng flow", async ({
+test("M2-chat · mở trợ lý, hỏi ⇒ hội thoại Hub + tin @assistant kèm trang; trả lời Markdown; câu sau cùng flow", async ({
   page,
 }) => {
   const api = await install(page);
@@ -77,9 +77,10 @@ test("M2-chat · mở trợ lý, hỏi ⇒ hội thoại Hub + tin @mgmt-assista
   await expect(p.getByRole("cell", { name: "HĐ Bao bì" })).toBeVisible();
   await expect(p.getByText("Sẵn sàng")).toBeVisible();
   expect(api.convs).toEqual([{ title: "Hợp đồng nào sắp hết hạn trong 60 ngày?" }]);
-  expect(api.sends[0]?.content).toBe("@mgmt-assistant Hợp đồng nào sắp hết hạn trong 60 ngày?");
-  const ctx = (api.sends[0]?.context ?? {}) as { page_url?: string };
+  expect(api.sends[0]?.content).toBe("@assistant Hợp đồng nào sắp hết hạn trong 60 ngày?");
+  const ctx = (api.sends[0]?.context ?? {}) as { page_url?: string; surface?: string };
   expect(ctx.page_url ?? "").toContain("/contracts");
+  expect(ctx.surface).toBe("contracts"); // one-agent · Hub dựng khối ngữ cảnh nơi gửi
   expect(api.sends[0]?.flow_id).toBeUndefined();
 
   const box = p.getByRole("textbox", { name: "Câu hỏi cho trợ lý" });
@@ -88,7 +89,7 @@ test("M2-chat · mở trợ lý, hỏi ⇒ hội thoại Hub + tin @mgmt-assista
   await expect(p.getByText("Còn hợp đồng mua?")).toBeVisible();
   await expect.poll(() => api.sends.length).toBe(2);
   expect(api.sends[1]).toMatchObject({
-    content: "@mgmt-assistant Còn hợp đồng mua?",
+    content: "@assistant Còn hợp đồng mua?",
     flow_id: FLOW,
   });
   expect(api.convs).toHaveLength(1);

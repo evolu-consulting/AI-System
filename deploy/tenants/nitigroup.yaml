@@ -19,7 +19,7 @@ profile:
     - { label: Báo giá, number: 076.99.55.688 }
     - { label: Kỹ thuật, number: 0768.139.688 }
 
-# Bật gói qua đường admin-web (PK-FR-05): entitlement + 3 Group vai + grant + trợ lý gói (mgmt-assistant).
+# Bật gói qua đường admin-web (PK-FR-05): entitlement + 3 Group vai + grant + trợ lý chung (assistant).
 packs: [contracts]
 
 # Cây phòng ban (M1 + admin 0015): mọi phòng nằm ngay dưới gốc (Phòng Giám đốc), thứ tự như khai.

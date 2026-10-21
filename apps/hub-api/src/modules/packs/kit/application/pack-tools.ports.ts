@@ -1,6 +1,7 @@
 // N2-FR-03 · N2-D02 · N2-D03 · plan N2 §4 (mở phần hoãn B6/HUB-BR-12, CR-087): tool của gói đăng ký vào Hub, chạy TRONG tx
 // gói (`withPackScope` qua `PackUow` của gói), gọi được từ stage `tool` và `/mcp`. Lớp 2 — chỉ kiểu (engine/MCP dùng
 // `PackToolCatalog` theo cấu trúc; registry cài đặt ở `kit/adapters/pack-tools.registry.ts`).
+import type { ContextLabeler } from "./context.ports";
 
 export type PackToolParam = {
   /** Tên tham số (`INPUT_NAME_RE`). */
@@ -71,4 +72,6 @@ export type PackToolCatalog = {
   ): Promise<PackToolCallResult>;
   /** User có quyền gói đúng `action` của tool (Group được cấp) — `/mcp` và stage (người bắt đầu). */
   canUse(who: { tenantId: string; userId: string }, key: string): Promise<boolean>;
+  /** one-agent · nhãn bản ghi đang xem (cổng `ContextLabeler`); vắng ở bản giả của test. */
+  contextLabel?: ContextLabeler["contextLabel"];
 };

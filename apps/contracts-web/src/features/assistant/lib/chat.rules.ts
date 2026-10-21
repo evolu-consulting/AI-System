@@ -1,9 +1,26 @@
-// M2-chat · luật thuần của khoang trợ lý: tin gửi Hub (tag `@mgmt-assistant` ⇒ chạy thẳng agent dùng chung, H2b), áp sự kiện
+// M2-chat · luật thuần của khoang trợ lý: tin gửi Hub (tag `@assistant` ⇒ chạy thẳng agent dùng chung, H2b), áp sự kiện
 // SSE vào tin trả lời đang chạy, tiêu đề hội thoại, câu lỗi. Không I/O.
-import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
+// one-agent · MỘT trợ lý chung `assistant` (như AI System); dock gửi kèm ngữ cảnh nơi gửi (surface=contracts, màn hình, id
+// HĐ / đối tác đang xem) — Hub kiểm RLS rồi mới chèn tên vào prompt.
+import type { ChatEvent, MessageContext, SendMessageRequest } from "@ai/contracts/chat";
 
-/** Agent mặc định của app mgmt ở Agent Hub (seed `apps/hub-api/seed/agents.yaml`, Claude + tool đọc). */
-export const DEFAULT_ASSISTANT_AGENT = "mgmt-assistant";
+/** Agent mặc định ở Agent Hub = trợ lý chung (seed `apps/hub-api/seed/agents.yaml`, Claude + tool đọc). */
+export const DEFAULT_ASSISTANT_AGENT = "assistant";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ROUTE_MAX = 200;
+const PARTY_MAX = 300;
+
+/** Ngữ cảnh dock từ URL: `/contracts/<uuid>` ⇒ HĐ; `/partners?party=<khoá>` ⇒ đối tác; còn lại chỉ màn hình. */
+export function dockContext(pathname: string, search: string): MessageContext {
+  const route = pathname.startsWith("/") ? pathname.slice(0, ROUTE_MAX) : "/";
+  const ctx: MessageContext = { surface: "contracts" };
+  if (/^\/[^\s<>]*$/.test(route)) ctx.route = route;
+  const id = /^\/contracts\/([^/]+)\/?$/.exec(pathname)?.[1];
+  if (id && UUID_RE.test(id)) return { ...ctx, entity: { kind: "contract", id } };
+  const party = pathname === "/partners" ? new URLSearchParams(search).get("party") : null;
+  if (party && party.length <= PARTY_MAX) return { ...ctx, entity: { kind: "partner", id: party } };
+  return ctx;
+}
 const AGENT_KEY_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 /**
@@ -28,15 +45,17 @@ export type Msg = {
   error?: string;
 };
 
-/** Tin E12: tag agent ở đầu, cùng flow sau câu đầu, kèm trang đang mở (ngữ cảnh cho trợ lý). */
+/** Tin E12: tag agent ở đầu, cùng flow sau câu đầu, kèm trang đang mở + ngữ cảnh dock (`dockContext`). */
 export function buildRequest(
   question: string,
   flowId: string | null,
   pageUrl: string | null,
+  dock?: MessageContext,
 ): SendMessageRequest {
   const body: SendMessageRequest = { content: `@${ASSISTANT_AGENT} ${question.trim()}` };
   if (flowId) body.flow_id = flowId;
-  if (pageUrl) body.context = { page_url: pageUrl };
+  const ctx: MessageContext = { ...(pageUrl ? { page_url: pageUrl } : {}), ...dock };
+  if (Object.keys(ctx).length > 0) body.context = ctx;
   return body;
 }
 

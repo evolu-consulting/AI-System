@@ -3,7 +3,8 @@
 // qua NOTIFY `config_changed` — 0 SQL khi nóng). Lỗi/hết hạn `run` ⇒ `failed` (`sent` = side_effect: không tự gọi lại,
 // D2-13). Review fix: hạn `timeoutS` + `signal` (Trung #1), quyền gói theo `action` (security M2), trùng khoá workflow
 // catalog bị từ chối (security L1).
-import { PROCESS_KEY_RE } from "@ai/contracts/chat";
+import { type ContextEntityKind, PROCESS_KEY_RE } from "@ai/contracts/chat";
+import type { ContextSource } from "../application/context.ports";
 import type {
   PackToolArgs,
   PackToolCallOpts,
@@ -66,6 +67,7 @@ async function runBounded(
 
 export class PackToolRegistry implements PackToolCatalog {
   readonly #tools = new Map<string, PackToolDef>();
+  readonly #contexts = new Map<ContextEntityKind, ContextSource>();
   #view: PackAccessView | undefined;
   #warn: Warn = () => {};
 
@@ -98,6 +100,35 @@ export class PackToolRegistry implements PackToolCatalog {
       this.#warn("pack-tool-key-collision", { tool_key: k });
     }
     return out;
+  }
+
+  /** one-agent · nguồn nhãn ngữ cảnh của gói (một nguồn mỗi loại bản ghi; trùng ⇒ ném lúc mount). */
+  registerContext(src: ContextSource): void {
+    for (const k of src.kinds) {
+      if (this.#contexts.has(k)) throw new Error(`context source duplicated: ${k}`);
+      this.#contexts.set(k, src);
+    }
+  }
+
+  /** Nhãn bản ghi người gọi thấy: gói bật ∧ quyền đọc gói ∧ RLS gói; lỗi/không thấy ⇒ null (fail-closed). */
+  async contextLabel(
+    who: { tenantId: string; userId: string },
+    kind: ContextEntityKind,
+    id: string,
+  ): Promise<string | null> {
+    const src = this.#contexts.get(kind);
+    if (!src || !this.#view) return null;
+    try {
+      const i = await packAccessInput(this.#view, src.pack, who);
+      if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.read }) !== "ok") return null;
+      return await src.label(who, kind, id);
+    } catch (err) {
+      this.#warn("context-label-failed", {
+        kind,
+        error_name: err instanceof Error ? err.name : "unknown",
+      });
+      return null;
+    }
   }
 
   has(key: string): boolean {

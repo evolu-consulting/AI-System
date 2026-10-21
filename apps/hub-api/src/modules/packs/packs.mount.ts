@@ -29,6 +29,7 @@ import { mountAssistantTools } from "./contracts/assistant.mount";
 import { businessModule } from "./contracts/business.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
 import { companyModule } from "./contracts/company.mount";
+import { mountContractsContext } from "./contracts/context.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
@@ -149,6 +150,7 @@ function mountContracts<E extends Env>(
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat · tool đọc của trợ lý
+  mountContractsContext(d.db, d.packTools); // one-agent · nhãn HĐ/đối tác đang xem (khối ngữ cảnh dock)
 }
 
 type ContractsCtx = ReturnType<typeof contractsCtx>;

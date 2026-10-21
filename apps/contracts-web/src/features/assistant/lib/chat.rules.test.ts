@@ -6,6 +6,7 @@ import {
   applyEvent,
   assistantAgent,
   buildRequest,
+  dockContext,
   errorText,
   type Msg,
   titleOf,
@@ -15,12 +16,33 @@ const ev = (e: unknown) => e as ChatEvent;
 const R = "01900000-0000-7000-8000-000000000001";
 
 describe("M2-chat · chat.rules", () => {
-  test("tin đầu: tag @mgmt-assistant + trang; tin sau: cùng flow", () => {
+  test("tin đầu: tag @assistant + trang; tin sau: cùng flow", () => {
     expect(buildRequest("  HĐ nào sắp hết hạn? ", null, "http://x/contracts")).toEqual({
       content: `@${ASSISTANT_AGENT} HĐ nào sắp hết hạn?`,
       context: { page_url: "http://x/contracts" },
     });
-    expect(buildRequest("tiếp", R, null)).toEqual({ content: "@mgmt-assistant tiếp", flow_id: R });
+    expect(buildRequest("tiếp", R, null)).toEqual({ content: "@assistant tiếp", flow_id: R });
+  });
+
+  test("one-agent · ngữ cảnh dock: HĐ (uuid), đối tác (?party=), màn hình khác; id sai dạng bỏ", () => {
+    expect(dockContext(`/contracts/${R}`, "")).toEqual({
+      surface: "contracts",
+      route: `/contracts/${R}`,
+      entity: { kind: "contract", id: R },
+    });
+    expect(dockContext("/partners", "?party=mst%3A0101&tab=review")).toEqual({
+      surface: "contracts",
+      route: "/partners",
+      entity: { kind: "partner", id: "mst:0101" },
+    });
+    expect(dockContext("/contracts/new", "")).toEqual({
+      surface: "contracts",
+      route: "/contracts/new",
+    });
+    expect(buildRequest("x", null, null, { surface: "contracts", route: "/my-work" })).toEqual({
+      content: "@assistant x",
+      context: { surface: "contracts", route: "/my-work" },
+    });
   });
 
   test("delta ghép, step hiện nhãn, run.finished thay bằng content đủ và tắt chờ", () => {
@@ -64,12 +86,12 @@ describe("M2-chat · chat.rules (lỗi, cờ, tiêu đề)", () => {
     expect(a.text).toBe("Năm nào?");
   });
 
-  test("cờ PUBLIC_ASSISTANT_AGENT chọn agent; vắng/sai dạng ⇒ mgmt-assistant", () => {
+  test("cờ PUBLIC_ASSISTANT_AGENT chọn agent; vắng/sai dạng ⇒ assistant", () => {
     expect(assistantAgent({ PUBLIC_ASSISTANT_AGENT: "mgmt-assistant-dify" })).toBe(
       "mgmt-assistant-dify",
     );
-    expect(assistantAgent({ PUBLIC_ASSISTANT_AGENT: "@evil x" })).toBe("mgmt-assistant");
-    expect(assistantAgent(undefined)).toBe("mgmt-assistant");
+    expect(assistantAgent({ PUBLIC_ASSISTANT_AGENT: "@evil x" })).toBe("assistant");
+    expect(assistantAgent(undefined)).toBe("assistant");
   });
 
   test("tiêu đề một dòng ≤ 80; câu lỗi theo mã", () => {

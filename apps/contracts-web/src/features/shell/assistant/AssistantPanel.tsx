@@ -1,5 +1,6 @@
 // PK-FR-10 · TF5 · M2-chat · khoang trợ lý — nạp lazy (chunk "assistant"). Chat tách khỏi app: hỏi agent dùng chung
-// `mgmt-assistant` của Agent Hub (`features/assistant`); đổi backend (Dify ↔ Claude) là cấu hình agent, không đổi khoang này.
+// chung `assistant` của Agent Hub (như AI System, one-agent) kèm ngữ cảnh dock (`features/assistant`); đổi backend (Dify ↔
+// Claude) là cấu hình agent, không đổi khoang này.
 // Bố cục/giao diện như mgmt-app `assistant/Panel.tsx`: đầu khoang (robot + trạng thái + Thu gọn), tin, gợi ý, ô hỏi.
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";

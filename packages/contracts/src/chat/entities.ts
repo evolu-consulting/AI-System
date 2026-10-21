@@ -6,6 +6,12 @@ import { IsoDateTime, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX, LIST_Q_MAX, UuidSchema
 import { ChatAgentKeySchema } from "./agents";
 import { ATTACH_PER_MESSAGE_MAX, AttachmentRefSchema } from "./attachments";
 import { CHAT_RUN_ERROR_CODES } from "./errors";
+import {
+  AI_SURFACES,
+  CONTEXT_ENTITY_ID_MAX,
+  CONTEXT_ENTITY_KINDS,
+  CONTEXT_ROUTE_MAX,
+} from "./surface";
 
 export const CHAT_CONTENT_MAX = 16_000;
 export const CHAT_ANSWER_MAX = 64_000;
@@ -224,6 +230,20 @@ export const MessageContextSchema = z.strictObject({
     .regex(/^https?:\/\//)
     .optional(),
   page_text: z.string().min(1).max(MESSAGE_PAGE_TEXT_MAX).optional(),
+  /** one-agent · nơi gửi (dock Sổ Hợp Tác / AI System) + màn hình + bản ghi đang xem ⇒ khối ngữ cảnh ngắn trong prompt. */
+  surface: z.enum(AI_SURFACES).optional(),
+  route: z
+    .string()
+    .max(CONTEXT_ROUTE_MAX)
+    .regex(/^\/[^\s<>]*$/)
+    .optional(),
+  /** Chỉ id (client không gửi tên): Hub kiểm người gọi thấy bản ghi qua RLS rồi mới chèn tên; không thấy ⇒ bỏ. */
+  entity: z
+    .strictObject({
+      kind: z.enum(CONTEXT_ENTITY_KINDS),
+      id: z.string().min(1).max(CONTEXT_ENTITY_ID_MAX),
+    })
+    .optional(),
 });
 export type MessageContext = z.infer<typeof MessageContextSchema>;
 

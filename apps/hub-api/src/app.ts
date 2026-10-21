@@ -47,6 +47,7 @@ import { mountSourceCredential } from "./modules/internal/source-credential.rout
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
+import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
 import { mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
@@ -137,6 +138,12 @@ const seamsOf = (d: AppDeps): ProcessSeams => ({
   onProcessHandles: d.onProcessHandles,
   ...{ packRuns: d.packRuns, packTools: d.packTools }, // N2-FR-01/03
 });
+
+/** one-agent · cổng nhãn ngữ cảnh từ registry tool gói (vắng ⇒ không nhắc bản ghi). */
+const contextLabelerOf = (t: AppDeps["packTools"]): ContextLabeler | undefined => {
+  const f = t?.contextLabel;
+  return f && t ? { contextLabel: f.bind(t) } : undefined;
+};
 
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
@@ -259,7 +266,12 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     resolveBridge,
     kh,
   });
-  const prepare = { command: h2a.prepareCommand, mention: h2b.prepareMention, processStart };
+  const prepare = {
+    command: h2a.prepareCommand,
+    mention: h2b.prepareMention,
+    processStart,
+    context: contextLabelerOf(deps.packTools), // one-agent · nhãn bản ghi đang xem (RLS gói)
+  };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));

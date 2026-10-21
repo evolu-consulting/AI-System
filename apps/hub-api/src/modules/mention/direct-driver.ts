@@ -106,6 +106,8 @@ async function runDirect(d: DirectDriverDeps, ctx: RunContext, plan: DirectRunSt
     agent: plan.agent,
     role: "agent" as const,
     prompt: plan.content,
+    // one-agent · khối ngữ cảnh nơi gửi (vắng ⇒ prompt của agent như cũ).
+    ...(ctx.systemNote && { systemPrompt: `${plan.agent.systemPrompt}\n\n${ctx.systemNote}` }),
     history,
     // H2c P9 · tập file của run → `payload.attachments` + khối file trong `prompt` (P10).
     files: ctx.files,

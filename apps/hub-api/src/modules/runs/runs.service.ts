@@ -38,6 +38,7 @@ import {
   createRunTx as insertRun,
   newRun,
 } from "./create-run";
+import type { RunContext, RunDriver } from "./run-context";
 import { type ForceOrchestrator, planOf, type Untagged, untaggedRoute } from "./run-plan";
 import { type ProcessPrep, type ProcessPrepOpts, prepareProcessRun } from "./run-process";
 import { noteRunSurface } from "./run-surface";
@@ -47,36 +48,7 @@ import { eventsExpired } from "./runs.rules";
 import { runEventStream, SseReader } from "./sse/sse-reader";
 import { appendExternal, RunRegistry, SseWriter } from "./sse/sse-writer";
 
-/** Ngữ cảnh một run cho vòng chạy: ghi sự kiện qua `writer`, kết thúc bằng `writer.finish`, dừng khi `writer.signal`. */
-export type RunContext = {
-  writer: SseWriter;
-  /** Ảnh cấu hình chụp lúc tạo run (H1-R15, HUB-BR-06). */
-  snapshot: ConfigSnapshot;
-  content: string;
-  /**
-   * H2b P7 · Orchestrator chọn lúc tạo run (`pickOrchestrator`, gọi cả cho `direct` để lấy `history_n`, P10); null = không
-   * có bản hợp lệ nào. Driver không chọn lại.
-   */
-  orchestrator: PickedOrchestrator | null;
-  /** H2b P10 · run `direct`: agent + nội dung R04 (driver `directDriver`); vắng = không phải run `direct`. */
-  direct?: DirectRunStart;
-  /** H2b R09 · run `orchestrated` nhiều tag: key agent được tag (thu hẹp `<agents>` + `canDelegate`); vắng = đủ AU. */
-  scope?: ReadonlySet<string>;
-  /** H2c-R14, P9 · tập file của run (`runs.attachment_ids`, chốt ở `createRunTx`); `[]` khi không file. */
-  files: RunFile[];
-  /**
-   * X2b D7 · ngữ cảnh phòng (cũ→mới, chụp trong tx gọi, cắt tại tin gọi): có ⇒ Orchestrator / `directDriver` dùng
-   * **thay** `flowHistory` (không đọc `hub.messages`); vắng = C1.
-   */
-  roomHistory?: readonly HistoryItem[];
-  /** CR-054 · tin không tag → Orchestrator là agent mặc định: xử lý khi không khớp (vắng = như trước, `answer`). */
-  noMatch?: NoMatchPolicy;
-  log: Logger;
-};
-/** Chỗ cắm B8 (Orchestrator, dùng runner B7). Không chờ: chạy nền, tự `finish`. */
-export interface RunDriver {
-  start(ctx: RunContext): void;
-}
+export type { RunContext, RunDriver } from "./run-context";
 
 /** H2a §5.1 bước 3 · run `kind=command` (R08): driver riêng đã gắn lệnh đã chuẩn bị; vắng = Orchestrator. */
 export type CommandRunStart = {
@@ -176,10 +148,11 @@ export class RunService {
     conversationId: string,
     req: SendMessageRequest,
     plan?: RunPlan,
+    opts?: Pick<RunContext, "systemNote">,
   ): Promise<StartedRun> {
     const p = await this.prepare(u, conversationId, req, plan);
     const files = await this.#create(u, p.input);
-    await this.launch(p, files);
+    await this.launch(p, files, opts?.systemNote ? { systemNote: opts.systemNote } : undefined);
     const { run } = p;
     const stream = this.#stream(u, run.id, 0);
     return { runId: run.id, flowId: run.flowId, messageId: run.userMessageId, stream };
@@ -274,7 +247,7 @@ export class RunService {
   async launch(
     p: PreparedRun,
     files: RunFile[],
-    opts?: { roomHistory?: readonly HistoryItem[]; driver?: RunDriver },
+    opts?: { roomHistory?: readonly HistoryItem[]; driver?: RunDriver; systemNote?: string },
   ): Promise<void> {
     const { run, direct, command, scoped } = p;
     const writer = new SseWriter(run, this.d);
@@ -292,6 +265,7 @@ export class RunService {
       files,
       ...(opts?.roomHistory && { roomHistory: opts.roomHistory }),
       ...(p.noMatch && { noMatch: p.noMatch }),
+      ...(opts?.systemNote && { systemNote: opts.systemNote }),
       log: this.d.log,
     });
   }

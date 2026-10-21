@@ -7,7 +7,13 @@ import { appError, isAppError } from "../../lib/errors";
 import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
 import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import { firstUnknownTag, type MentionLocale, responderOf, suggestAgents } from "./mention.rules";
+import {
+  aliasTags,
+  firstUnknownTag,
+  type MentionLocale,
+  responderOf,
+  suggestAgents,
+} from "./mention.rules";
 import type { MentionRouted } from "./mention-parse.rules";
 
 export type { MentionRouted };
@@ -38,8 +44,10 @@ const agentNotFound = (suggestions: string[]) => appError("AGENT_NOT_FOUND", { s
 
 /** §5.1 bước 1 (`mention`): tag so lower với key AU; agent ngoài AU (Orchestrator, runtime khác, tắt…) = không tồn tại. */
 export function prepareMention(i: PrepareMentionInput): MentionPlan {
-  const { routed, snapshot } = i;
-  if (routed.kind === "mention_error") throw agentNotFound([]);
+  const { snapshot } = i;
+  if (i.routed.kind === "mention_error") throw agentNotFound([]);
+  // one-agent · khoá agent đã gộp (`@mgmt-assistant` ⇒ `assistant`): flow cũ, bản build cũ của dock không 404.
+  const routed = { ...i.routed, tags: aliasTags(i.routed.tags) };
   const au = visibleAgents(accessInput(snapshot, i.who));
   const keys = au.map((a) => a.key);
   const unknown = firstUnknownTag(routed.tags, new Set(keys));

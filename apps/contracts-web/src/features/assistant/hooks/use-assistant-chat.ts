@@ -3,7 +3,7 @@
 import { ApiError } from "@ai/web-kit/http";
 import { useSyncExternalStore } from "react";
 import { cancelRun, createConversation, sendAndStream } from "../api";
-import { applyEvent, buildRequest, type Msg, titleOf } from "../lib/chat.rules";
+import { applyEvent, buildRequest, dockContext, type Msg, titleOf } from "../lib/chat.rules";
 
 type State = { msgs: Msg[]; convId: string | null; flowId: string | null; runId: string | null };
 let state: State = { msgs: [], convId: null, flowId: null, runId: null };
@@ -36,8 +36,10 @@ export async function ask(question: string, errorText: (code?: string) => string
   }));
   try {
     const convId = await ensureConversation(q);
-    const page = typeof location === "undefined" ? null : location.href;
-    const sent = await sendAndStream(convId, buildRequest(q, state.flowId, page), (e) => {
+    const loc = typeof location === "undefined" ? null : location;
+    const dock = loc ? dockContext(loc.pathname, loc.search) : undefined;
+    const req = buildRequest(q, state.flowId, loc?.href ?? null, dock);
+    const sent = await sendAndStream(convId, req, (e) => {
       if (e.event === "run.started")
         set((s) => ({ ...s, flowId: e.data.flow_id, runId: e.data.run_id }));
       patchLast((m) => applyEvent(m, e));

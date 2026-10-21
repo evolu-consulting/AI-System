@@ -1,5 +1,6 @@
 // UC-02, UC-04, UC-08 · gọi E12–E15 của Hub (nơi duy nhất feature `run` gọi API). Lỗi trước stream là JSON → `ApiError`.
 import {
+  AI_SURFACE_HEADER,
   FLOW_ID_HEADER,
   LAST_EVENT_ID_HEADER,
   MESSAGE_ID_HEADER,
@@ -10,6 +11,8 @@ import {
 import { ApiError, api, apiResponse } from "@ai/web-kit/http";
 
 const SSE_ACCEPT = { Accept: "text/event-stream" };
+/** one-agent · nơi gửi = AI System chat (khối ngữ cảnh của trợ lý chung; thống kê vẫn là `chat`). */
+const SEND_HEADERS = { ...SSE_ACCEPT, [AI_SURFACE_HEADER]: "chat" };
 
 export type SendAccepted = {
   runId: string;
@@ -38,7 +41,7 @@ export async function sendMessage(
   const res = await apiResponse(`/conversations/${encodeURIComponent(convId)}/messages`, {
     method: "POST",
     body: req,
-    headers: SSE_ACCEPT,
+    headers: SEND_HEADERS,
     signal,
   });
   try {

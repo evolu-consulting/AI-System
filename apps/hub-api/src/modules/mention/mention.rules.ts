@@ -18,6 +18,20 @@ export function suggestAgents(typed: string, keys: readonly string[]): string[] 
   );
 }
 
+/**
+ * one-agent · khoá agent đã gộp ⇒ khoá còn dùng. `mgmt-assistant` (trợ lý riêng của dock Sổ Hợp Tác) đã gộp vào `assistant`
+ * (hub 0051 tắt agent cũ); giữ để `@mgmt-assistant` của flow cũ / bản build cũ của dock vẫn chạy.
+ */
+export const AGENT_ALIASES: Readonly<Record<string, string>> = {
+  "mgmt-assistant": "assistant",
+};
+
+/** Đổi tag theo `AGENT_ALIASES` (so lower), bỏ trùng, giữ thứ tự. */
+export function aliasTags(tags: readonly string[]): string[] {
+  const out = tags.map((t) => AGENT_ALIASES[t.toLowerCase()] ?? t);
+  return out.filter((t, i) => out.indexOf(t) === i);
+}
+
 /** R02: tag đầu tiên không thuộc AU; null khi mọi tag hợp lệ. */
 export function firstUnknownTag(tags: readonly string[], au: ReadonlySet<string>): string | null {
   return tags.find((t) => !au.has(t)) ?? null;

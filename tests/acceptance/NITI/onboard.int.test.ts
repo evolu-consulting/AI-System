@@ -1,5 +1,5 @@
 // niti-onboard · onboarding tenant NitiGroup (deploy/tenants/nitigroup.yaml) trên DB thật (role admin_api, RLS bật): tạo tenant +
-// hồ sơ + 23 phòng ban (cây dưới Phòng Giám đốc, vi/en) + gói contracts (entitlement, Group vai, trợ lý `mgmt-assistant`) ·
+// hồ sơ + 23 phòng ban (cây dưới Phòng Giám đốc, vi/en) + gói contracts (entitlement, Group vai, trợ lý `assistant`) ·
 // chạy lại không ghi gì · RLS (tenant khác không thấy) · marker importer (ORG_REBIND/ORG_TAKEN) · importer `--into-tenant`
 // (I1, nguồn GIẢ): chỉ org đã gắn vào NitiGroup, org khác không tạo tenant, tiền khớp, chạy lại 0 hàng · gán phòng ban sau import.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
@@ -55,16 +55,16 @@ const cfg = (apply: boolean): RunConfig => ({
 const runInto = (apply: boolean) =>
   runMgmtImport(ctx.db, ctx.hub, cfg(apply), fakeReader(fixtureSnapshot()));
 
-/** Trợ lý gói `contracts` (`packs.pack_agents` → `mgmt-assistant`) phải có agent Hub để grant; mẫu DB chưa có ⇒ tạo tối thiểu. */
+/** Trợ lý gói `contracts` (`packs.pack_agents` → `assistant`, one-agent) phải có agent Hub để grant; mẫu DB chưa có ⇒ tạo tối thiểu. */
 async function ensureAssistant(): Promise<void> {
-  const [a] = await ctx.sql`select 1 from hub.agents where key = 'mgmt-assistant'`;
+  const [a] = await ctx.sql`select 1 from hub.agents where key = 'assistant'`;
   if (a) return;
   await ctx.sql`insert into hub.providers (key, kind, vendor, max_concurrency, enabled, dev_only)
     values ('niti-fake', 'subscription', 'fake', 1, true, true) on conflict do nothing`;
   const [p] = await ctx.sql<{ id: string }[]>`insert into hub.model_profiles (key, steps)
     values ('niti-fake-1', ${ctx.sql.json([{ provider_key: "niti-fake", model: null, on: [] }])}) returning id`;
   await ctx.sql`insert into hub.agents (key, name, description, runtime, profile_id)
-    values ('mgmt-assistant', ${ctx.sql.json({ vi: "Trợ lý", en: "Assistant" })},
+    values ('assistant', ${ctx.sql.json({ vi: "Trợ lý", en: "Assistant" })},
       'Trợ lý quản lý hợp đồng của gói contracts cho người dùng.', 'agentic-cli', ${p?.id as string})`;
 }
 
@@ -125,7 +125,7 @@ describe("niti-onboard · onboarding NitiGroup", () => {
         (select count(*) from admin.groups where tenant_id = ${tid} and key like 'contracts-%')::int as groups,
         (select count(*) from admin.feature_grants where tenant_id = ${tid})::int as grants,
         (select count(*) from hub.agent_grants g join hub.agents a on a.id = g.agent_id
-          where g.tenant_id = ${tid} and a.key = 'mgmt-assistant')::int as agent`,
+          where g.tenant_id = ${tid} and a.key = 'assistant')::int as agent`,
     );
     expect(pack).toEqual({ ent: 3, groups: 3, grants: 6, agent: 3 });
   });

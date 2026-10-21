@@ -246,21 +246,22 @@ test.describe
       );
     });
 
-    test("cùng MỘT agent: @mgmt-assistant gọi từ AI System và từ khoang trợ lý Sổ Hợp Tác đều do agent mgmt-assistant trả lời", async ({
+    test("one-agent · cùng MỘT agent: @assistant từ AI System và khoang trợ lý Sổ Hợp Tác đều do agent assistant trả lời", async ({
       browser,
     }) => {
-      // AI System: gắn thẻ agent trực tiếp.
+      // AI System: gắn thẻ agent trực tiếp (trợ lý chung; `@mgmt-assistant` cũ là alias của nó).
       await chat.goto(`${CHAT}/c/new`);
       const before = rec.runs.length;
       const r = await ask(
         chat,
-        `@mgmt-assistant ${TAG} có bao nhiêu hợp đồng của đối tác Thực phẩm Hưng Phát? Trả lời ngắn.`,
+        `@assistant ${TAG} có bao nhiêu hợp đồng của đối tác Thực phẩm Hưng Phát? Trả lời ngắn.`,
       );
       expect(r).not.toMatch(ERR_UI);
       const fromChat = agentKeys((await Promise.all(rec.runs.slice(before)))[0] ?? []);
-      expect(fromChat).toContain("mgmt-assistant");
+      expect(fromChat).toContain("assistant");
+      expect(fromChat).not.toContain("mgmt-assistant");
 
-      // Sổ Hợp Tác: khoang trợ lý (gửi `@mgmt-assistant …` mặc định).
+      // Sổ Hợp Tác: khoang trợ lý (gửi `@assistant …` + ngữ cảnh dock).
       const ctx = await browser.newContext({
         locale: "vi-VN",
         viewport: { width: 1440, height: 900 },
@@ -278,9 +279,10 @@ test.describe
         );
         expect(r2).not.toMatch(ERR_UI);
         const fromCw = agentKeys((await Promise.all(cwRec.runs))[0] ?? []);
-        expect(fromCw).toContain("mgmt-assistant");
-        expect(fromCw.filter((k) => k === "mgmt-assistant")).toEqual(
-          fromChat.filter((k) => k === "mgmt-assistant"),
+        expect(fromCw).toContain("assistant");
+        expect(fromCw).not.toContain("mgmt-assistant");
+        expect(fromCw.filter((k) => k === "assistant")).toEqual(
+          fromChat.filter((k) => k === "assistant"),
         );
       } finally {
         await ctx.close();

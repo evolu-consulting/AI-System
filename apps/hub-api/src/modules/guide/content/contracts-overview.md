@@ -26,7 +26,7 @@ Chọn **Kỳ xem** (**Tháng này**, **Quý này**, **12 tháng**) để đổi
 EN: Open Tổng quan; the "Cần xử lý" block lists overdue and upcoming work, each with Đã xong / Bỏ qua.
 
 ## Hỏi Trợ lý AI trong Sổ Hợp Tác
-Bấm **Trợ lý AI** (nút "Mở trợ lý AI" trên thanh trên) để mở khoang trợ lý bên phải. Gõ câu hỏi ở ô "Hỏi về hợp đồng, chữ ký số, thanh toán…" và bấm **Gửi** (Enter gửi, Shift+Enter xuống dòng). Trợ lý tra cứu hợp đồng, chữ ký số, sổ thanh toán bạn được xem và chỉ đọc, không sửa dữ liệu. Câu thử: "Hợp đồng nào sắp hết hạn trong 60 ngày?", "Có khoản thanh toán nào đang quá hạn không?". Nếu báo "Bạn chưa được dùng trợ lý AI", nhờ quản trị cấp quyền agent trong Quản trị > Agents.
+Bấm **Trợ lý AI** (nút "Mở trợ lý AI" trên thanh trên) để mở khoang trợ lý bên phải. Gõ câu hỏi ở ô "Hỏi về hợp đồng, chữ ký số, thanh toán…" và bấm **Gửi** (Enter gửi, Shift+Enter xuống dòng). Đây là cùng một trợ lý (agent **Trợ lý**) bạn dùng ở AI System — chỉ khác là khi hỏi từ Sổ Hợp Tác, trợ lý biết bạn đang ở màn hình nào và đang xem hợp đồng / đối tác nào (nên có thể hỏi "hợp đồng này hết hạn khi nào?"). Trợ lý tra cứu hợp đồng, chữ ký số, sổ thanh toán bạn được xem và chỉ đọc, không sửa dữ liệu. Câu thử: "Hợp đồng nào sắp hết hạn trong 60 ngày?", "Có khoản thanh toán nào đang quá hạn không?". Nếu báo "Bạn chưa được dùng trợ lý AI", nhờ quản trị cấp quyền agent **Trợ lý** trong Quản trị > Agents.
 
 EN: Click "Trợ lý AI" to open the assistant dock; it is read-only.
 
