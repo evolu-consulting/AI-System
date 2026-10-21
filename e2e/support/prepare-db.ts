@@ -33,7 +33,7 @@ async function restoreAppCatalog(sql: postgres.Sql, rows: AppRow[]): Promise<voi
   if (rows.length === 0) return;
   await sql`insert into admin.app_catalog (key, name, icon, url, audience, required_feature, sso, sort_order, enabled, version)
     select x.key, x.name, x.icon, x.url, x.audience, x.required_feature, x.sso, x.sort_order, x.enabled, x.version
-    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+    from jsonb_to_recordset(${JSON.stringify(rows)}::text::jsonb)
       as x(key text, name jsonb, icon text, url text, audience text, required_feature text, sso boolean, sort_order int,
         enabled boolean, version int)
     on conflict (key) do nothing`;
