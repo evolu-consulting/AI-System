@@ -62,6 +62,10 @@ export async function chatTurn(page: Page, text: string): Promise<string> {
   await box.fill(text);
   const before = (await bodyText(page)).length;
   await page.keyboard.press("Enter");
+  // Tin của mình phải hiện trong hội thoại (Enter bị chặn khi tệp còn đang tải ⇒ không gửi).
+  await expect
+    .poll(async () => (await bodyText(page)).includes(text.slice(0, 40)), { timeout: 30_000 })
+    .toBe(true);
   const stop = page.getByRole("button", { name: /^(Dừng|Stop)/ });
   await stop.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
   await stop.waitFor({ state: "detached", timeout: 300_000 }).catch(() => {});
