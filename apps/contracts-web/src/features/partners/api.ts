@@ -1,7 +1,9 @@
 // HD8-FR-01…06: đối tác + điểm uy tín + cách tính + so giá hàng hoá (`/pack/contracts/{partners,scoring,prices}`) — port
 // `mgmt-app/web/src/api/{partners,prices}.ts`. Đối tác = `party` (D7-04). Khoá truy vấn bắt đầu `partners`/`scoring`/`prices`.
 import type {
+  Company,
   GoodsCompare,
+  PartnerContactPerson,
   PartnerContractCount,
   PartnerContractRow,
   PartnerNote,
@@ -32,6 +34,9 @@ import { api } from "@ai/web-kit/http";
 const BASE = "/pack/contracts";
 const enc = encodeURIComponent;
 
+/** Một người liên hệ khi lưu (chưa có `id`; thứ tự mảng = thứ tự hiển thị). */
+export type PartnerContactDraft = Omit<PartnerContactPerson, "id">;
+
 export const partnerKeys = {
   list: (role: PartnerRole | "all") => ["partners", "list", role] as const,
   ratings: (party: string, role: PartnerRole) => ["partners", party, "ratings", role] as const,
@@ -47,6 +52,7 @@ export const partnerKeys = {
   repRatings: (party: string, role: RepRole) =>
     ["partners", "rep", "ratings", party, role] as const,
   profile: (party: string) => ["partners", "profile", party] as const,
+  contacts: (party: string) => ["partners", "contacts", party] as const,
   mine: (days: number) => ["partners", "rep", "mine", days] as const,
   roles: (party: string) => ["partners", "roles", party] as const,
   contracts: (party: string) => ["partners", "contracts", party] as const,
@@ -124,5 +130,19 @@ export const searchInternet = (party: string) =>
 // ---------- V2-GAPS: điện thoại / liên hệ đối tác (DT-01) + "Uy tín của mình" (C10) ----------
 export const saveProfile = (b: { party: string; phone: string; contact: string }) =>
   api<PartnerProfile>(`${BASE}/partners/profile`, { method: "PUT", body: b });
+
+// ---------- GAP-D2: nhiều người liên hệ (#24) + "Thêm công ty" tra Cục Thuế (#23) ----------
+export const fetchContacts = (party: string, signal?: AbortSignal) =>
+  api<PartnerContactPerson[]>(`${BASE}/partners/contacts?party=${enc(party)}`, { signal });
+export const saveContacts = (party: string, contacts: PartnerContactDraft[]) =>
+  api<PartnerContactPerson[]>(`${BASE}/partners/contacts`, {
+    method: "PUT",
+    body: { party, contacts },
+  });
+/** Chỉ MST (tuỳ chọn tên/địa chỉ khi Cục Thuế chưa tra được) — máy chủ tra Cục Thuế chỉ bằng MST. */
+export const createCompany = (b: { tax_id?: string; name?: string; address?: string }) =>
+  api<Company>(`${BASE}/companies`, { method: "POST", body: b });
+export const refreshCompany = (party: string) =>
+  api<Company>(`${BASE}/companies/refresh?party=${enc(party)}`, { method: "POST", body: {} });
 export const fetchRepMine = (days: number, signal?: AbortSignal) =>
   api<RepMine>(`${REP}/mine?days=${days}`, { signal });

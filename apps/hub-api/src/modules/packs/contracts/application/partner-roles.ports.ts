@@ -1,5 +1,7 @@
 // V2-C · V2-I · ADR-0023: cổng repo vai đối tác + ghi chú (lớp 2 — chỉ kiểu); `adapters/partner-roles.repo.ts` cài.
 import type {
+  PartnerContactPerson,
+  PartnerContactsPut,
   PartnerContractCount,
   PartnerNote,
   PartnerProfile,
@@ -40,6 +42,13 @@ export type PartnerRolesRepo = {
     phone: string | null,
     contact: string | null,
   ): Promise<{ ok: true } | null>;
+  /** GAP-D2 · #24: người liên hệ của đối tác (thứ tự đã lưu). */
+  contacts(party: string): Promise<PartnerContactPerson[]>;
+  /** Thay cả danh sách (MỘT câu); đối tác ngoài phạm vi ⇒ null. */
+  setContacts(
+    party: string,
+    rows: PartnerContactsPut["contacts"],
+  ): Promise<PartnerContactPerson[] | null>;
   roles(party: string | null): Promise<RoleCount[]>;
   find(key: string, fold: string | null): Promise<PartyHit | null>;
 };

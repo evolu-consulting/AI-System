@@ -1,6 +1,12 @@
 // V2-C · KN-08 · HD-10 · DT-05: câu SQL của vai đối tác + gợi ý đối tác + ghi chú — MỘT câu mỗi hàm (Luật 4c), lọc `tenant_id` tường
 // minh ngoài RLS; luật thấy M1 do policy của 0024 (vai/ghi chú của đối tác mình thấy hoặc do mình tạo).
-import type { PartnerContractCount, PartnerNote, PartnerProfile } from "@ai/contracts";
+import type {
+  PartnerContactPerson,
+  PartnerContactsPut,
+  PartnerContractCount,
+  PartnerNote,
+  PartnerProfile,
+} from "@ai/contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
@@ -103,22 +109,60 @@ function profileReads(tx: Tx, t: string) {
         tx,
         sql`select jsonb_build_object('party', k.party, 'name', coalesce(co.short_name, co.name, pr.name),
             'tax_id', coalesce(co.tax_id, case when k.party like 'tax:%' then substr(k.party, 5) end),
-            'phone', co.phone, 'contact', coalesce(co.contact_person, lc.contact)) as j
+            'phone', coalesce(pc.phone, co.phone), 'contact', coalesce(pc.name, co.contact_person, lc.contact)) as j
           from (select ${party}::text as party) k
           left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = k.party
+          left join lateral (select c.name, c.phone from contracts.partner_contacts c
+            where c.tenant_id = ${t}::uuid and c.party_key = k.party order by c.sort, c.created_at, c.id limit 1) pc on true
           left join lateral (select p.name from contracts.partner_roles p
             where p.tenant_id = ${t}::uuid and p.party_key = k.party and p.name is not null order by p.first_at limit 1) pr on true
           left join lateral (select case when c.direction = 'sale' then c.buyer_signer else c.seller_signer end as contact
             from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key = k.party
             order by c.updated_at desc, c.id desc limit 1) lc on true
-          where co.id is not null or exists (select 1 from contracts.partner_roles p
+          where co.id is not null or pc.name is not null or exists (select 1 from contracts.partner_roles p
             where p.tenant_id = ${t}::uuid and p.party_key = k.party)`,
       ),
   };
 }
 
+const CONTACT =
+  sql.raw(`jsonb_build_object('id', c.id, 'name', c.name, 'role', c.role, 'phone', c.phone,
+  'email', c.email, 'our_owner', c.our_owner)`);
+
 function contactWrites(tx: Tx, t: string) {
   return {
+    /** GAP-D2 · #24: người liên hệ của đối tác theo thứ tự đã lưu (RLS M1 của `partner_contacts`). */
+    contacts: (party: string) =>
+      one<PartnerContactPerson[]>(
+        tx,
+        sql`select coalesce(jsonb_agg(${CONTACT} order by c.sort, c.created_at, c.id), '[]'::jsonb) as j
+          from contracts.partner_contacts c where c.tenant_id = ${t}::uuid and c.party_key = ${party}`,
+      ),
+
+    /**
+     * GAP-D2 · #24: thay cả danh sách liên hệ của đối tác (xoá + thêm, MỘT câu). Đối tác phải có vai/danh bạ mình thấy; không ⇒ null
+     * (404). Xoá luôn điện thoại/liên hệ đơn cũ trên danh bạ để đọc hồ sơ không rơi về giá trị cũ khi danh sách rỗng.
+     */
+    setContacts: (party: string, rows: PartnerContactsPut["contacts"]) =>
+      one<PartnerContactPerson[] | null>(
+        tx,
+        sql`with ok as (
+            select 1 where exists (select 1 from contracts.partner_roles pr where pr.tenant_id = ${t}::uuid and pr.party_key = ${party})
+              or exists (select 1 from contracts.companies c0 where c0.tenant_id = ${t}::uuid and c0.party_key = ${party})),
+          d as (delete from contracts.partner_contacts c where c.tenant_id = ${t}::uuid and c.party_key = ${party}
+            and exists (select 1 from ok) returning 1),
+          o as (update contracts.companies co set phone = null, contact_person = null, updated_at = now()
+            where co.tenant_id = ${t}::uuid and co.party_key = ${party} and exists (select 1 from ok) returning 1),
+          i as (insert into contracts.partner_contacts as c (tenant_id, party_key, name, role, phone, email, our_owner, sort)
+            select ${t}::uuid, ${party}, x.v ->> 'name', x.v ->> 'role', x.v ->> 'phone', x.v ->> 'email', x.v ->> 'our_owner',
+              (x.ord - 1)::int
+            from jsonb_array_elements(${JSON.stringify(rows)}::jsonb) with ordinality as x(v, ord)
+            where exists (select 1 from ok)
+            returning c.id, c.name, c.role, c.phone, c.email, c.our_owner, c.sort, c.created_at)
+          select case when exists (select 1 from ok) then
+            coalesce((select jsonb_agg(${CONTACT} order by c.sort, c.id) from i c), '[]'::jsonb) end as j`,
+      ),
+
     /**
      * V2-GAPS · DT-01: lưu điện thoại + liên hệ lên danh bạ (tạo hàng danh bạ nếu đối tác mới chỉ có vai). Đối tác phải có vai/danh
      * bạ mình thấy; không ⇒ null (404). MỘT câu.

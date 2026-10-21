@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
-import { searchErrorKey, useInternetSearch } from "../hooks/use-partner-rep";
+import { searchErrorKey, useContacts, useInternetSearch } from "../hooks/use-partner-rep";
 import { ContactEditor } from "./ContactEditor";
 import { InternetResult } from "./InternetSearch";
 import { ScorePill } from "./RepBadge";
@@ -33,6 +33,7 @@ export function PartnerHeader({
   const search = useInternetSearch(party);
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState(false);
+  const contacts = useContacts(party);
   return (
     <>
       <PageHead
@@ -81,8 +82,29 @@ export function PartnerHeader({
           )
         }
       />{" "}
-      {editing && (
-        <ContactEditor party={party} profile={profile} onClose={() => setEditing(false)} />
+      {editing && contacts.data && (
+        <ContactEditor party={party} contacts={contacts.data} onClose={() => setEditing(false)} />
+      )}
+      {!editing && !!contacts.data?.length && (
+        <ul
+          aria-label={t("contracts.vgaps.contact.title")}
+          className="mb-4 flex flex-wrap gap-2 text-[13px]"
+        >
+          {contacts.data.map((c) => (
+            <li key={c.id} className="rounded-lg border border-rule bg-panel px-3 py-2">
+              <b className="font-semibold">{c.name}</b>
+              {c.role && <span className="text-dim"> · {c.role}</span>}
+              <span className="block text-dim">
+                {[c.phone, c.email].filter(Boolean).join(" · ") || DASH}
+              </span>
+              {c.our_owner && (
+                <span className="block text-dim">
+                  {t("contracts.vgaps.contact.ownerIs", { name: c.our_owner })}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
       {show && (
         <div className="mb-4">

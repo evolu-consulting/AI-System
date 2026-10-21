@@ -256,7 +256,14 @@ test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại 
     },
   ]);
   await log.getByRole("button", { name: "Huỷ" }).first().click();
+  // GAP-D2 · #25: huỷ phải kèm lý do (nút xác nhận tắt tới khi có chữ).
+  await expect(page.getByRole("button", { name: "Huỷ việc này" })).toBeDisabled();
+  await page.getByLabel("Lý do huỷ").fill("Ghi nhầm đối tác");
   await page.getByRole("button", { name: "Huỷ việc này" }).click();
   await expect.poll(() => sent.length).toBe(5);
-  expect(sent[4]).toEqual({ method: "POST", path: "/partner-events/105/void", body: {} });
+  expect(sent[4]).toEqual({
+    method: "POST",
+    path: "/partner-events/105/void",
+    body: { reason: "Ghi nhầm đối tác" },
+  });
 });

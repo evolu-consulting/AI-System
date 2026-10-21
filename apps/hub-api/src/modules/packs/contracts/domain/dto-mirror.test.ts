@@ -112,6 +112,8 @@ describe("ADR-0023 · bản sao DTO cho lớp 1–2 (sản phẩm, KD, đối t�
       same<PR.PartnerNote, C.PartnerNote>(true),
       same<PR.PartnerProfile, C.PartnerProfile>(true),
       same<PR.PartnerContactIn, C.PartnerContactIn>(true),
+      same<PR.PartnerContactPerson, C.PartnerContactPerson>(true),
+      same<PR.PartnerContactsPut, C.PartnerContactsPut>(true),
       same<PR.PartnerRoleRow, C.PartnerRoleRow>(true),
       same<PR.PartnerWebLine, C.PartnerWebLine>(true),
       same<SP.SupplierOverviewOut, C.SupplierOverviewOut>(true),

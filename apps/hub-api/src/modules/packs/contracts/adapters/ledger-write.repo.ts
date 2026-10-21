@@ -162,8 +162,9 @@ function voidEventQ(t: string, w: Parameters<LedgerWriteRepo["voidEvent"]>[0]) {
   const due = p && "due_date" in p ? p : null;
   const rem = p && "reminders" in p ? p.reminders : null;
   return sql`with v as (
-          insert into contracts.partner_event_voids (event_id, tenant_id, by_user)
-          values (${w.id}::bigint, ${t}::uuid, ${w.by}::uuid) on conflict (event_id, tenant_id) do nothing
+          insert into contracts.partner_event_voids (event_id, tenant_id, by_user, reason)
+          values (${w.id}::bigint, ${t}::uuid, ${w.by}::uuid, ${w.reason ?? null}::text)
+          on conflict (event_id, tenant_id) do nothing
           returning event_id, by_user, at),
         u as (
           update contracts.obligations o set

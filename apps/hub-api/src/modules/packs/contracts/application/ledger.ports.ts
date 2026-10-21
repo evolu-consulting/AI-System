@@ -81,6 +81,8 @@ export type LedgerWriteRepo = {
     by: string;
     obligationId: string | null;
     patch: UndoPatch | null;
+    /** GAP-D2: lý do huỷ (lưu cạnh hàng huỷ + audit); vắng ⇒ null. */
+    reason?: string | null;
   }): Promise<PartnerEvent>;
   /** Ghi tay; null = đối tác không có đợt/sự kiện nào trong tenant. */
   insertManual(w: PartnerEventCreate & { at: string; by: string }): Promise<PartnerEvent | null>;

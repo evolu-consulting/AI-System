@@ -7,12 +7,57 @@
       "contact": {
         "title": "Phone and contact person",
         "edit": "Edit",
+        "name": "Full name",
+        "role": "Job title",
         "phone": "Phone",
-        "person": "Contact person",
+        "email": "Email",
+        "our_owner": "Owner on our side",
+        "ownerIs": "Owner on our side: {{name}}",
+        "add": "+ Add contact person",
+        "remove": "Remove",
+        "needName": "Every contact person needs a name.",
+        "tooMany": "At most 20 contact people.",
         "save": "Save",
         "cancel": "Cancel",
         "saved": "Contact saved",
         "error": "Could not save, try again."
+      },
+      "company": {
+        "add": "Add company",
+        "title": "Add company",
+        "hint": "Type the tax code: the system checks it with the Tax Authority (only the tax code is sent) and saves the company to the directory.",
+        "mst": "Tax code",
+        "mstPh": "e.g. 0301234567 or 0301234567-001",
+        "name": "Company name",
+        "address": "Address",
+        "lookup": "Look up and add",
+        "looking": "Looking up…",
+        "saveFirst": "Save first",
+        "active": "Active per the Tax Authority",
+        "inactive": "Inactive per the Tax Authority ({{status}})",
+        "notChecked": "Not checked with the Tax Authority yet",
+        "refresh": "Look up again",
+        "close": "Done",
+        "error": {
+          "exists": "This company is already in the directory.",
+          "invalid": "Invalid tax code or not found at the Tax Authority (10, 13 or 12 digits).",
+          "unavailable": "The Tax Authority could not be reached. Enter the company name to save it first, then look up again.",
+          "failed": "Could not add, try again."
+        }
+      },
+      "alerts": {
+        "trend": "6-month trend",
+        "sparkAria": "Score line for the last {{n}} months",
+        "noTrend": "Not enough closed months to draw a trend.",
+        "title": "Unusual changes",
+        "none": "Nothing unusual.",
+        "scoreDrop": "Score dropped from {{from}} to {{to}} in {{period}}.",
+        "lateSpike": "Sudden rise in late work: {{recent}}% in the last 30 days ({{n}} milestones), {{base}}% before."
+      },
+      "pts": {
+        "tip": "Effect on {{name}}'s reputation score",
+        "mine": "Our own reputation",
+        "pending": "Not scored yet"
       },
       "mine": {
         "title": "Our own reputation",

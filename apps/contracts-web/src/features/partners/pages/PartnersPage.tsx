@@ -12,6 +12,7 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools, useTable } from "~/features/table";
 import { cn } from "~/lib/utils";
 import { fetchContractCounts, fetchRepPartners, partnerKeys } from "../api";
+import { AddCompanyDialog } from "../components/AddCompanyDialog";
 import { MineBanner } from "../components/MineBanner";
 import { RepBadge } from "../components/RepBadge";
 import { type PartyItem, partiesOf, ROLES } from "../lib/partner-v2";
@@ -93,6 +94,8 @@ export function PartnersPage() {
   });
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const { write } = useMe();
   const items = useMemo(
     () => partiesOf(q.data, new Map((counts.data ?? []).map((c) => [c.party, c.n]))),
     [q.data, counts.data],
@@ -131,7 +134,22 @@ export function PartnersPage() {
   };
   return (
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
-      <PageHead title={L("title")} lead={L("lead")} />
+      <PageHead
+        title={L("title")}
+        lead={L("lead")}
+        actions={
+          write && (
+            <button
+              type="button"
+              className="btn btn-outline h-9 text-[13px]"
+              onClick={() => setAdding(true)}
+            >
+              {t("contracts.vgaps.company.add")}
+            </button>
+          )
+        }
+      />
+      {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       <MineBanner />
       <TableTools q={tb.q} setQ={tb.setQ} total={tb.total} placeholder={L("search")}>
         <fieldset

@@ -48,6 +48,9 @@
       "voidTitle": "Void this entry?",
       "voidBody": "“{{what}}” on {{date}}. The reputation score will be recalculated.",
       "voidConfirm": "Void entry",
+      "voidReason": "Reason for voiding",
+      "voidReasonPh": "e.g. recorded against the wrong partner",
+      "voidAria": "Void job: {{what}}",
       "toast": {
         "reminded": "Reminder logged",
         "received": "Customer payment logged",

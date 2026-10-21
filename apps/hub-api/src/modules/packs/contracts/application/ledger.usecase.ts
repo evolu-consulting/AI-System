@@ -119,13 +119,13 @@ async function undoPatch(r: Repo, e: EventHead) {
 function eventCommands(d: Deps) {
   const today = todayOf(d);
   /** `partner_events.void` + `obligations.undo`: dòng hệ thống không huỷ; huỷ song song ⇒ chỉ một lần hoàn tác (D7-16). */
-  const voidEvent = (who: PackWho, id: string) =>
+  const voidEvent = (who: PackWho, id: string, reason: string | null = null) =>
     d.uow.tenant(who, async ({ ledger: r }) => {
       const e = await r.eventHead(id);
       if (!e) throw new LedgerFail("not_found");
       if (e.source === "system") throw new LedgerFail("system");
       const patch = await undoPatch(r, e);
-      return r.voidEvent({ id, by: who.userId, obligationId: e.obligation_id, patch });
+      return r.voidEvent({ id, by: who.userId, obligationId: e.obligation_id, patch, reason });
     });
 
   /** Ghi tay (`POST /partner-events`): loại ghi tay được; chỉnh tay ±10 có lý do, chỉ quản lý (`admin`). */

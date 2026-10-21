@@ -48,6 +48,9 @@
       "voidTitle": "Huỷ ghi việc này?",
       "voidBody": "“{{what}}” ngày {{date}}. Điểm uy tín sẽ được tính lại.",
       "voidConfirm": "Huỷ việc này",
+      "voidReason": "Lý do huỷ",
+      "voidReasonPh": "VD: ghi nhầm đối tác",
+      "voidAria": "Huỷ việc: {{what}}",
       "toast": {
         "reminded": "Đã ghi lượt nhắc",
         "received": "Đã ghi khách trả",

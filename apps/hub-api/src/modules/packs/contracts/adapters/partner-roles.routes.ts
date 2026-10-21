@@ -2,6 +2,7 @@
 // `write` (guard trước thân); xoá ghi chú người khác cần `admin`. Đầu vào sai ⇒ 400; đối tác ngoài phạm vi ⇒ 404. Không đầu vào nào ra 500.
 import {
   PartnerContactSchema,
+  PartnerContactsPutSchema,
   PartnerLookupQuerySchema,
   PartnerNoteCreateSchema,
   PartnerNotesQuerySchema,
@@ -77,6 +78,14 @@ export function partnerRolesRoutes(
   );
   r.put("/partners/profile", write, async (c) =>
     c.json(await run(uc.saveContact(who(c), parseWith(PartnerContactSchema, await readJson(c))))),
+  );
+  r.get("/partners/contacts", read, async (c) =>
+    c.json(await run(uc.contacts(who(c), parseQuery(c, PartnerPartyQuerySchema).party))),
+  );
+  r.put("/partners/contacts", write, async (c) =>
+    c.json(
+      await run(uc.saveContacts(who(c), parseWith(PartnerContactsPutSchema, await readJson(c)))),
+    ),
   );
   r.get("/partners/contracts", read, async (c) =>
     c.json(await run(uc.contracts(who(c), parseQuery(c, PartnerPartyQuerySchema).party))),

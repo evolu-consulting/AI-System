@@ -7,12 +7,57 @@
       "contact": {
         "title": "Điện thoại và người liên hệ",
         "edit": "Sửa",
+        "name": "Họ tên",
+        "role": "Chức vụ",
         "phone": "Điện thoại",
-        "person": "Người liên hệ",
+        "email": "Email",
+        "our_owner": "Phụ trách bên mình",
+        "ownerIs": "Phụ trách bên mình: {{name}}",
+        "add": "+ Thêm người liên hệ",
+        "remove": "Xoá",
+        "needName": "Mỗi người liên hệ cần có họ tên.",
+        "tooMany": "Tối đa 20 người liên hệ.",
         "save": "Lưu",
         "cancel": "Huỷ",
         "saved": "Đã lưu liên hệ",
         "error": "Không lưu được, thử lại."
+      },
+      "company": {
+        "add": "Thêm công ty",
+        "title": "Thêm công ty",
+        "hint": "Gõ mã số thuế: hệ thống tra Cục Thuế (chỉ gửi mã số thuế) rồi lưu công ty vào danh bạ.",
+        "mst": "Mã số thuế",
+        "mstPh": "VD 0301234567 hoặc 0301234567-001",
+        "name": "Tên công ty",
+        "address": "Địa chỉ",
+        "lookup": "Tra Cục Thuế và thêm",
+        "looking": "Đang tra Cục Thuế…",
+        "saveFirst": "Lưu trước",
+        "active": "Đang hoạt động theo Cục Thuế",
+        "inactive": "Ngừng hoạt động theo Cục Thuế ({{status}})",
+        "notChecked": "Chưa tra được Cục Thuế",
+        "refresh": "Tra lại Cục Thuế",
+        "close": "Xong",
+        "error": {
+          "exists": "Công ty này đã có trong danh bạ.",
+          "invalid": "Mã số thuế không hợp lệ hoặc không tồn tại theo Cục Thuế (10, 13 hoặc 12 chữ số).",
+          "unavailable": "Chưa tra được Cục Thuế. Nhập tên công ty để lưu trước, sau đó tra lại.",
+          "failed": "Không thêm được, thử lại."
+        }
+      },
+      "alerts": {
+        "trend": "Xu hướng 6 tháng",
+        "sparkAria": "Đường điểm {{n}} tháng gần nhất",
+        "noTrend": "Chưa đủ tháng chốt điểm để vẽ xu hướng.",
+        "title": "Cảnh báo bất thường",
+        "none": "Không có bất thường.",
+        "scoreDrop": "Điểm tụt từ {{from}} xuống {{to}} trong tháng {{period}}.",
+        "lateSpike": "Trễ hạn tăng đột ngột: {{recent}}% trong 30 ngày qua ({{n}} mốc), trước đó {{base}}%."
+      },
+      "pts": {
+        "tip": "Ảnh hưởng điểm uy tín của {{name}}",
+        "mine": "Uy tín của mình",
+        "pending": "Chưa tính điểm"
       },
       "mine": {
         "title": "Uy tín của mình",

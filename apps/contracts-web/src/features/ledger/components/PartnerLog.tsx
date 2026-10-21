@@ -3,11 +3,11 @@
 // Trên trang HĐ (`contractId`) chỉ đợt của HĐ đó. Viewer không thấy nút ghi.
 import type { PartnerEvent, PartnerRole } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
-import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { useLedgerWrites, usePartnerLedger } from "../hooks/use-ledger";
+import { usePartnerLedger } from "../hooks/use-ledger";
+import { useAskVoid } from "../hooks/use-void";
 import { answeredSet, recentOf, said, voidable } from "../lib/ledger";
 import { type Act, useAct } from "../lib/use-act";
 import { InstalmentRow } from "./InstalmentRow";
@@ -29,7 +29,7 @@ function RecentLine({
   act: Act;
 }) {
   const { t } = useTranslation();
-  const { voidEvent } = useLedgerWrites();
+  const askVoid = useAskVoid(act);
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.ledger.${k}`, o);
   const answered = e.type === "overdue" && all.has(e.obligation_id);
   const red = e.type === "overdue" && !answered && e.party_late !== false;
@@ -39,15 +39,7 @@ function RecentLine({
       : e.source === "assistant"
         ? L("viaAssistant", { by: e.by_name ?? "" })
         : (e.by_name ?? "");
-  const undo = async () => {
-    const ok = await confirmDialog({
-      title: L("voidTitle"),
-      body: L("voidBody", { what: said(e, t), date: viDate(e.at) }),
-      confirmLabel: L("voidConfirm"),
-      danger: true,
-    });
-    if (ok) void act(`void:${e.id}`, () => voidEvent(e.id), L("toast.voided"));
-  };
+  const undo = () => askVoid(e.id, said(e, t), viDate(e.at));
   return (
     <li
       className={`flex items-baseline gap-3 px-3 py-2 ${e.voided ? "text-dim line-through" : ""}`}

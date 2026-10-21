@@ -9,6 +9,7 @@ import { HistoryChart } from "./HistoryChart";
 import { RepBadge } from "./RepBadge";
 import { RoleSeg } from "./RoleSeg";
 import { ScoreTable } from "./ScoreTable";
+import { TrendPanel } from "./TrendPanel";
 
 export function OverviewTab({
   party,
@@ -63,7 +64,10 @@ export function OverviewTab({
         </div>
         {body()}
       </section>
-      <HistoryChart party={party} role={role} range={range} />
+      <div className="space-y-4">
+        <HistoryChart party={party} role={role} range={range} />
+        <TrendPanel party={party} role={role} />
+      </div>
     </div>
   );
 }

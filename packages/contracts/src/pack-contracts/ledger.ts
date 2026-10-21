@@ -78,6 +78,9 @@ export const PostponeRequestSchema = z.strictObject({
   note: nfcText(500).nullish(),
 });
 export const RemindRequestSchema = z.strictObject({});
+/** GAP-D2 · #25: huỷ một dòng sổ kèm lý do (màn hình bắt buộc nhập; thân `{}` cũ vẫn nhận). */
+export const VoidRequestSchema = z.strictObject({ reason: nfcText(500).nullish() });
+export type VoidRequest = z.infer<typeof VoidRequestSchema>;
 export const PartnerEventCreateSchema = z.strictObject({
   party: keyStr(300),
   role: z.enum(PARTNER_ROLES),

@@ -12,6 +12,7 @@ import {
   RemindRequestSchema,
   ScheduleRequestSchema,
   SettleRequestSchema,
+  VoidRequestSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -129,7 +130,8 @@ function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
   });
   r.post("/partner-events/:id/void", write, async (c) => {
     const id = eventId(c.req.param("id"));
-    return c.json(await run(d.cmd.voidEvent(who(c), id)));
+    const b = await body(c, VoidRequestSchema);
+    return c.json(await run(d.cmd.voidEvent(who(c), id, b.reason ?? null)));
   });
   r.post("/partner-events", write, async (c) => {
     const b = await body(c, PartnerEventCreateSchema);

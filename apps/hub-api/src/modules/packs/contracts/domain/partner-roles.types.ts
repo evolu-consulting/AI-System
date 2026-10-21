@@ -48,6 +48,19 @@ export type PartnerNote = {
 
 export type PartnerContactIn = { party: string; phone: string | null; contact: string | null };
 
+export type PartnerContactPerson = {
+  id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  our_owner: string | null;
+};
+export type PartnerContactsPut = {
+  party: string;
+  contacts: Omit<PartnerContactPerson, "id">[];
+};
+
 export type PartnerProfile = {
   party: string;
   name: string | null;

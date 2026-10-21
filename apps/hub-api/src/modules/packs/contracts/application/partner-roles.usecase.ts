@@ -12,6 +12,7 @@ import {
 } from "../domain/partner-roles.rules";
 import type {
   PartnerContactIn,
+  PartnerContactsPut,
   PartnerContractCount,
   PartnerContractRow,
   PartnerDeal,
@@ -140,6 +141,17 @@ async function saveContact(d: PartnerRolesDeps, who: PackWho, b: PartnerContactI
   return partnerProfile(d, who, b.party);
 }
 
+/** GAP-D2 · #24: người liên hệ; đối tác ngoài phạm vi ⇒ 404 (đọc dùng hồ sơ làm cổng phạm vi). */
+async function contactsOf(d: PartnerRolesDeps, who: PackWho, party: string) {
+  await partnerProfile(d, who, party);
+  return d.uow.tenant(who, (x) => x.roles.contacts(party));
+}
+async function saveContacts(d: PartnerRolesDeps, who: PackWho, b: PartnerContactsPut) {
+  const r = await d.uow.tenant(who, (x) => x.roles.setContacts(b.party, b.contacts));
+  if (!r) throw new PartnerRolesFail("not_found");
+  return r;
+}
+
 /** DT-07 · Q8: chạy khi bấm; đối tác phải nằm trong phạm vi người dùng; chỉ tên + MST ra ngoài. */
 async function internetSearch(
   d: PartnerRolesDeps,
@@ -190,6 +202,8 @@ export function partnerRolesUsecase(d: PartnerRolesDeps) {
     profile: (who: PackWho, party: string): Promise<PartnerProfile> =>
       partnerProfile(d, who, party),
     saveContact: (who: PackWho, b: PartnerContactIn) => saveContact(d, who, b),
+    contacts: (who: PackWho, party: string) => contactsOf(d, who, party),
+    saveContacts: (who: PackWho, b: PartnerContactsPut) => saveContacts(d, who, b),
     contracts: (who: PackWho, party: string): Promise<PartnerContractRow[]> =>
       partnerContracts(d, who, party),
     contractCounts: (who: PackWho): Promise<PartnerContractCount[]> =>

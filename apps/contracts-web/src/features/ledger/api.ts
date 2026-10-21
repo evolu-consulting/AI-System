@@ -51,10 +51,11 @@ export const postponeInstalment = (id: string, to: string) =>
   });
 export const recordEvent = (body: PartnerEventCreate) =>
   api<PartnerEvent>(`${BASE}/partner-events`, { method: "POST", body });
-export const voidEvent = (id: string) =>
+/** GAP-D2 · #25: huỷ kèm lý do (không lý do ⇒ thân `{}` như cũ). */
+export const voidEvent = (id: string, reason?: string) =>
   api<PartnerEvent>(`${BASE}/partner-events/${encodeURIComponent(id)}/void`, {
     method: "POST",
-    body: {},
+    body: reason ? { reason } : {},
   });
 
 export type { PartnerRole };

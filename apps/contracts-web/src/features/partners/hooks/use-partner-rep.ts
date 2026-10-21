@@ -4,7 +4,9 @@ import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addNote,
+  createCompany,
   deleteNote,
+  fetchContacts,
   fetchNotes,
   fetchPartnerContracts,
   fetchRepConfig,
@@ -13,8 +15,10 @@ import {
   fetchRepMine,
   fetchRepPartners,
   fetchRepRatings,
+  type PartnerContactDraft,
   partnerKeys,
   rateRep,
+  saveContacts,
   saveProfile,
   searchInternet,
 } from "../api";
@@ -125,6 +129,34 @@ export function useSaveProfile(party: string, onSaved: () => void) {
       await qc.invalidateQueries({ queryKey: partnerKeys.profile(party) });
       onSaved();
     },
+  });
+}
+
+/** GAP-D2 · #24: danh sách người liên hệ của đối tác. */
+export const useContacts = (party: string) =>
+  useQuery({
+    queryKey: partnerKeys.contacts(party),
+    queryFn: ({ signal }) => fetchContacts(party, signal),
+  });
+
+/** Thay cả danh sách; xong làm mới danh sách + hồ sơ (đầu trang lấy người đầu tiên). */
+export function useSaveContacts(party: string, onSaved: () => void) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: PartnerContactDraft[]) => saveContacts(party, rows),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["partners"] });
+      onSaved();
+    },
+  });
+}
+
+/** GAP-D2 · #23: thêm công ty theo MST (máy chủ tra Cục Thuế chỉ bằng MST) / tra lại. */
+export function useCreateCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { tax_id?: string; name?: string; address?: string }) => createCompany(b),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
   });
 }
 

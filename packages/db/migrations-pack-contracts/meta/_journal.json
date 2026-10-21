@@ -267,6 +267,13 @@
       "when": 1796700000000,
       "tag": "0040_price_scout",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1797200000000,
+      "tag": "0044_gap_d2_contacts_void_reason",
+      "breakpoints": true
     }
   ]
 }

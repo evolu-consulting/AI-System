@@ -52,6 +52,31 @@ export const PartnerContactSchema = z.strictObject({
 });
 export type PartnerContactIn = z.infer<typeof PartnerContactSchema>;
 
+/** GAP-D2 · #24: nhiều người liên hệ của một đối tác (tên, chức vụ, điện thoại, email, người phụ trách bên mình). */
+export const PARTNER_CONTACTS_MAX = 20;
+export const PartnerContactPersonSchema = z.strictObject({
+  name: noNul(0, 120)
+    .transform((v) => v.trim().normalize("NFC"))
+    .pipe(z.string().min(1)),
+  role: Contact(120),
+  phone: Contact(30),
+  email: Contact(200),
+  our_owner: Contact(120),
+});
+export const PartnerContactsPutSchema = z.strictObject({
+  party: Party,
+  contacts: z.array(PartnerContactPersonSchema).max(PARTNER_CONTACTS_MAX),
+});
+export type PartnerContactsPut = z.infer<typeof PartnerContactsPutSchema>;
+export type PartnerContactPerson = {
+  id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
+  our_owner: string | null;
+};
+
 // ---------- ra ----------
 export type PartnerRoleRow = {
   party: string;
