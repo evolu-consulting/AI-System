@@ -102,6 +102,7 @@ const ALLOW_HEADERS = [
   "Last-Event-ID",
   REQUEST_ID_HEADER,
   FILENAME_HEADER,
+  "X-Ai-Surface", // usage-analytics (AI_SURFACE_HEADER)
 ];
 
 function healthRoutes(cfg: AppConfig, probes: HealthProbe[]): Hono<AppVars> {

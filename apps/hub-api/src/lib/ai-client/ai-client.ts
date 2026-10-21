@@ -44,7 +44,13 @@ export type UsageRecord = {
   usage: AiUsage;
   costUsd: number | null;
   latencyMs: number;
+  /** usage-analytics (hub 0049): kết quả lời gọi; vắng ⇒ không ghi (NULL). */
+  outcome?: AiOutcome;
 };
+export type AiOutcome = "ok" | "error" | "cancelled";
+/** Kết quả một lời gọi đã tới nhà cung cấp: thành công / bị huỷ (signal) / lỗi (kể cả REFUSED). */
+export const outcomeOf = (ok: boolean, aborted: boolean): AiOutcome =>
+  ok ? "ok" : aborted ? "cancelled" : "error";
 export type TokenHoldRequest = {
   tenantId: string;
   since: Date;
@@ -208,6 +214,7 @@ export function createAiClient(d: AiClientDeps): AiClient {
           // Gói: không tính tiền theo lời gọi (như dòng `subscription` của runtime agent: cost 0); token vẫn vào trần.
           costUsd: billing === "subscription" ? 0 : costUsd(model, usage),
           latencyMs: Math.round(performance.now() - t0),
+          outcome: outcomeOf(reply.ok, req.signal.aborted),
         },
         gate.holdId,
       );

@@ -39,3 +39,4 @@ export * from "./processes-errors";
 export * from "./room-process";
 export * from "./rooms";
 export * from "./rules";
+export * from "./surface";

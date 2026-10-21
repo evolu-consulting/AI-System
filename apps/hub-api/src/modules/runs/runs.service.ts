@@ -40,6 +40,7 @@ import {
 } from "./create-run";
 import { type ForceOrchestrator, planOf, type Untagged, untaggedRoute } from "./run-plan";
 import { type ProcessPrep, type ProcessPrepOpts, prepareProcessRun } from "./run-process";
+import { noteRunSurface } from "./run-surface";
 import { emptyStream, lastEventIdOf, terminalFromDb, terminalSeqOf, toRun } from "./run-view";
 import * as repo from "./runs.repo";
 import { eventsExpired } from "./runs.rules";
@@ -308,6 +309,9 @@ export class RunService {
     }
     return picked;
   }
+
+  /** usage-analytics · bề mặt gửi lên run (hub 0049, `run-surface.ts`). */
+  noteSurface = (u: AuthUser, id: string, s: string) => noteRunSurface(this.d, u, id, s);
 
   /** H2c-R09, R10 · E12 sau body, trước router: file gửi được (404 `ATTACHMENT_NOT_FOUND{ids}`), theo thứ tự `ids`. */
   checkSendable(u: AuthUser, ids: readonly string[]): Promise<RunFile[]> {

@@ -147,7 +147,8 @@ export type Crumb = {
     | "commands.editor.titleNew"
     | "groups.editor.titleNew"
     | "features.editor.titleNew"
-    | "nav.processesNew";
+    | "nav.processesNew"
+    | "nav.usageAnalytics";
   to?: string;
 };
 
@@ -182,6 +183,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/account/password": [{ labelKey: "account.changePassword" }],
   "/account/2fa": [{ labelKey: "account.twofa" }],
   "/usage": [{ labelKey: "nav.usage" }],
+  "/usage/analytics": [{ labelKey: "nav.usage", to: "/usage" }, { labelKey: "nav.usageAnalytics" }],
   "/transfer": [{ labelKey: "nav.transfer" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/workflows/steps": [

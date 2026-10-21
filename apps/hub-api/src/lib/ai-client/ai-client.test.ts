@@ -53,6 +53,7 @@ describe("AI client chung", () => {
       tenantId: "t",
       feature: "contracts.extract",
       costUsd: 0.00014,
+      outcome: "ok", // usage-analytics
     });
     expect(c.since()?.toISOString()).toBe("2026-10-20T00:00:00.000Z");
   });
@@ -67,6 +68,7 @@ describe("AI client chung", () => {
     const c = client({ ok: false, code: "REFUSED", model: "claude-opus-5-5", usage });
     expect(await c.ai.complete(req)).toEqual({ ok: false, code: "REFUSED" });
     expect(c.records).toHaveLength(1);
+    expect(c.records[0]?.outcome).toBe("error");
     const f = client({ ok: true, text: "x", model: "m", usage }, { recordFails: true });
     expect((await f.ai.complete(req)).ok).toBe(true);
   });

@@ -110,6 +110,9 @@ describe("A20–A23 · dữ liệu provider_state H3a [H3a-R05 · H3a-R20]", () 
       "cache_write_tokens",
       // M3 (hub 0042, usage AI theo tenant): thêm cột cuối `feature`; cột cũ giữ nguyên thứ tự, Admin/M4 đọc không đổi.
       "feature",
+      // usage-analytics (hub 0049): thêm cuối `app`, `outcome` (nullable; writer cũ không đổi).
+      "app",
+      "outcome",
     ]);
   });
 });

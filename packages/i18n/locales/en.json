@@ -212,6 +212,7 @@
     "groups": "Groups",
     "access": "Access",
     "usage": "Usage & quota",
+    "usageAnalytics": "Token analytics",
     "audit": "Audit log",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
@@ -1947,6 +1948,128 @@
       "bar": "{date} · {amount}",
       "summary": "Revenue by day, total {total}, peak {max} on {date}"
     }
+  },
+  "usageAnalytics": {
+    "title": "Token analytics",
+    "subtitle": "Where AI tokens go: by app, agent, model and user · {from} → {to} (Vietnam time).",
+    "tabs": {
+      "label": "Cost & usage",
+      "overview": "Cost overview",
+      "analytics": "Token analytics"
+    },
+    "filter": {
+      "label": "Filters",
+      "all": "All",
+      "range": "Date range",
+      "grain": "Group by",
+      "app": "App",
+      "agent": "Agent",
+      "model": "Model",
+      "user": "User",
+      "outcome": "Outcome",
+      "clear": "Clear filters"
+    },
+    "preset": {
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "month": "This month",
+      "prevMonth": "Last month"
+    },
+    "grain": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "outcome": {
+      "ok": "Success",
+      "error": "Error",
+      "cancelled": "Cancelled"
+    },
+    "app": {
+      "chat": "AI System (chat)",
+      "contracts": "Sổ Hợp Tác",
+      "knowledge": "Knowledge",
+      "rooms": "Rooms",
+      "process": "Processes",
+      "dify": "Dify",
+      "other": "Other"
+    },
+    "tier": {
+      "opus": "Opus",
+      "sonnet": "Sonnet",
+      "haiku": "Haiku",
+      "openai": "OpenAI",
+      "other": "Other",
+      "unknown": "Unknown"
+    },
+    "kpi": {
+      "input": "Input tokens",
+      "output": "Output tokens",
+      "cost": "Estimated cost",
+      "calls": "AI calls",
+      "runs": "Runs",
+      "latency": "Average latency",
+      "errors": "Error rate",
+      "errorsNote": "{n} failed calls",
+      "delta": "{sign}{pct}% vs previous period",
+      "noPrev": "No data in previous period",
+      "unpriced": "{n} calls not priced"
+    },
+    "chart": {
+      "title": "Tokens over time (by app)",
+      "summary": "Tokens over time, {buckets} points, peak {max}"
+    },
+    "by": {
+      "app": "By app",
+      "agent": "By agent",
+      "tier": "By model tier",
+      "model": "By model",
+      "feature": "By feature",
+      "user": "By user",
+      "tenant": "By tenant"
+    },
+    "flow": {
+      "title": "Where tokens go (app → agent → model)"
+    },
+    "col": {
+      "bucket": "Period",
+      "agent": "Agent / feature",
+      "model": "Model",
+      "tokens": "Tokens",
+      "share": "Share",
+      "calls": "Calls",
+      "errors": "Errors",
+      "cost": "Cost"
+    },
+    "rcol": {
+      "at": "Time",
+      "tenant": "Tenant",
+      "user": "User",
+      "app": "App",
+      "feature": "Feature",
+      "agent": "Agent",
+      "model": "Model",
+      "outcome": "Outcome",
+      "input": "In",
+      "output": "Out",
+      "latency": "Latency",
+      "cost": "Cost",
+      "run": "Run"
+    },
+    "records": {
+      "title": "Detailed records",
+      "note": "One row per AI call, newest first.",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "run": {
+      "title": "Run details",
+      "line": "In {input} · out {output} · cache {cache} · {ms} ms"
+    },
+    "pick": "Filter by {name}",
+    "none": "No agent",
+    "empty": "No AI calls match these filters."
   },
   "transfer": {
     "title": "Import / Export",

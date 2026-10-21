@@ -330,6 +330,13 @@
       "when": 1795500000000,
       "tag": "0048_agent_studio_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795600000000,
+      "tag": "0049_usage_analytics",
+      "breakpoints": true
     }
   ]
 }

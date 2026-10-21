@@ -30,6 +30,7 @@ export * from "./tenants";
 export * from "./totp";
 export * from "./transfer";
 export * from "./usage";
+export * from "./usage-analytics";
 export * from "./users";
 export * from "./version-conflict";
 export * from "./workflow-tools";

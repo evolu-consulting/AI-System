@@ -7,6 +7,7 @@
 // H2c-R10: sau body, **trước** router → `attachment_ids` qua `checkSendable` (404 `ATTACHMENT_NOT_FOUND{ids}`, không ghi
 // gì); file gắn trong transaction tạo run (R11). Lệnh `/` nhận file của tin (`attachments`, R20).
 import {
+  AI_SURFACE_HEADER,
   FLOW_ID_HEADER,
   LAST_EVENT_ID_HEADER,
   LAST_EVENT_ID_QUERY,
@@ -17,6 +18,7 @@ import {
   type SendMessageRequest,
   SendMessageRequestSchema,
   SSE_CONTENT_TYPE,
+  surfaceOf,
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
@@ -114,6 +116,9 @@ export function sendMessageRoutes(
     const body = { ...parsed, content, ...(ids && { attachment_ids: ids }) };
     const files = ids ? await runs.checkSendable(u, ids) : [];
     const s = await startFor(runs, p, { u, id, body, files });
+    // usage-analytics · bề mặt gửi (dock Sổ Hợp Tác…) cho thống kê token; chỉ khi có header hợp lệ (1 câu SQL).
+    const surface = surfaceOf(c.req.header(AI_SURFACE_HEADER));
+    if (surface) await runs.noteSurface(u, s.runId, surface);
     return new Response(s.stream, {
       status: 200,
       headers: {

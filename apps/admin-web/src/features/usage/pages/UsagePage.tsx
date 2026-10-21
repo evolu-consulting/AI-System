@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UsageTabs } from "@/features/usage-analytics/components/UsageTabs";
 import { loadError } from "@/lib/load-error";
 import { useUsageCsv } from "../api";
 import { ByTenantTable } from "../components/ByTenantTable";
@@ -77,6 +78,7 @@ export function UsagePage() {
           </>
         }
       />
+      <UsageTabs />
       <div className="space-y-4">
         <UsageKpis report={report} prevMonth={v.prevMonth} loading={loading} error={err} />
         <UsageChart report={report} loading={loading} error={err} />

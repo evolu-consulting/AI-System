@@ -37,6 +37,7 @@ import { secretsRoutes } from "./modules/secrets/secrets.routes";
 import { tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { exportRoutes, importRoutes } from "./modules/transfer/transfer.routes";
 import { usageRoutes } from "./modules/usage/usage.routes";
+import { usageAnalyticsRoutes } from "./modules/usage-analytics/analytics.routes";
 import { usersRoutes } from "./modules/users/users.routes";
 import { mountWorkflowTools } from "./modules/workflow-tools/workflow-tools.mount";
 import { workflowsRoutes } from "./modules/workflows/workflows.routes";
@@ -149,6 +150,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   }
   app.route("/admin/audit", auditRoutes({ ...qctx, hooks }));
   app.route("/admin", usageRoutes(ctx));
+  app.route("/admin", usageAnalyticsRoutes(ctx)); // ADM-FR-42 · usage-analytics
   app.route("/admin", overviewRoutes(qctx));
 }
 

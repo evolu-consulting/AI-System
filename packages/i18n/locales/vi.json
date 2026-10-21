@@ -212,6 +212,7 @@
     "groups": "Groups",
     "access": "Phân quyền",
     "usage": "Chi phí & quota",
+    "usageAnalytics": "Phân tích token",
     "audit": "Nhật ký",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
@@ -1947,6 +1948,128 @@
       "bar": "Ngày {date} · {amount}",
       "summary": "Số thu theo ngày, tổng {total}, cao nhất {max} ngày {date}"
     }
+  },
+  "usageAnalytics": {
+    "title": "Phân tích token",
+    "subtitle": "Token AI đổ vào đâu: theo app, agent, model, người dùng · {from} → {to} (giờ Việt Nam).",
+    "tabs": {
+      "label": "Chi phí & usage",
+      "overview": "Tổng quan chi phí",
+      "analytics": "Phân tích token"
+    },
+    "filter": {
+      "label": "Bộ lọc",
+      "all": "Tất cả",
+      "range": "Khoảng thời gian",
+      "grain": "Gộp theo",
+      "app": "App",
+      "agent": "Agent",
+      "model": "Model",
+      "user": "Người dùng",
+      "outcome": "Kết quả",
+      "clear": "Xoá lọc"
+    },
+    "preset": {
+      "7d": "7 ngày qua",
+      "30d": "30 ngày qua",
+      "90d": "90 ngày qua",
+      "month": "Tháng này",
+      "prevMonth": "Tháng trước"
+    },
+    "grain": {
+      "day": "Ngày",
+      "week": "Tuần",
+      "month": "Tháng"
+    },
+    "outcome": {
+      "ok": "Thành công",
+      "error": "Lỗi",
+      "cancelled": "Đã huỷ"
+    },
+    "app": {
+      "chat": "AI System (chat)",
+      "contracts": "Sổ Hợp Tác",
+      "knowledge": "Tri thức",
+      "rooms": "Phòng",
+      "process": "Quy trình",
+      "dify": "Dify",
+      "other": "Khác"
+    },
+    "tier": {
+      "opus": "Opus",
+      "sonnet": "Sonnet",
+      "haiku": "Haiku",
+      "openai": "OpenAI",
+      "other": "Khác",
+      "unknown": "Chưa rõ"
+    },
+    "kpi": {
+      "input": "Token vào",
+      "output": "Token ra",
+      "cost": "Chi phí ước tính",
+      "calls": "Lượt gọi AI",
+      "runs": "Run",
+      "latency": "Độ trễ trung bình",
+      "errors": "Tỉ lệ lỗi",
+      "errorsNote": "{n} lượt lỗi",
+      "delta": "{sign}{pct}% so với kỳ trước",
+      "noPrev": "Kỳ trước chưa có dữ liệu",
+      "unpriced": "{n} lượt chưa định giá"
+    },
+    "chart": {
+      "title": "Token theo thời gian (theo app)",
+      "summary": "Token theo thời gian, {buckets} mốc, cao nhất {max}"
+    },
+    "by": {
+      "app": "Theo app",
+      "agent": "Theo agent",
+      "tier": "Theo hạng model",
+      "model": "Theo model",
+      "feature": "Theo tính năng",
+      "user": "Theo người dùng",
+      "tenant": "Theo tenant"
+    },
+    "flow": {
+      "title": "Token đổ vào đâu (app → agent → model)"
+    },
+    "col": {
+      "bucket": "Mốc",
+      "agent": "Agent / tính năng",
+      "model": "Model",
+      "tokens": "Token",
+      "share": "Tỉ trọng",
+      "calls": "Lượt gọi",
+      "errors": "Lỗi",
+      "cost": "Chi phí"
+    },
+    "rcol": {
+      "at": "Thời điểm",
+      "tenant": "Tenant",
+      "user": "Người dùng",
+      "app": "App",
+      "feature": "Tính năng",
+      "agent": "Agent",
+      "model": "Model",
+      "outcome": "Kết quả",
+      "input": "Vào",
+      "output": "Ra",
+      "latency": "Độ trễ",
+      "cost": "Chi phí",
+      "run": "Run"
+    },
+    "records": {
+      "title": "Bản ghi chi tiết",
+      "note": "Mỗi dòng là một lượt gọi AI, mới nhất trước.",
+      "prev": "Trước",
+      "next": "Sau"
+    },
+    "run": {
+      "title": "Chi tiết run",
+      "line": "Vào {input} · ra {output} · cache {cache} · {ms} ms"
+    },
+    "pick": "Lọc theo {name}",
+    "none": "Không qua agent",
+    "empty": "Không có lượt gọi AI nào trong bộ lọc này."
   },
   "transfer": {
     "title": "Import / Export",

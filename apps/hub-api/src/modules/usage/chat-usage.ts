@@ -16,6 +16,8 @@ export type ChatUsageRow = {
   outputTokens: number;
   costUsd: number | null;
   ok: boolean;
+  /** usage-analytics · job stage quy trình (app `process`, KHÔNG gắn feature `chat` — giữ ngữ nghĩa trần token). */
+  stage?: boolean;
 };
 export type ChatUsageSink = (row: ChatUsageRow) => void | Promise<void>;
 
@@ -48,9 +50,9 @@ type TaskLike = {
   stageRunId?: string | null;
 };
 
-/** Usage một bước agent của chat (bỏ job stage quy trình — không phải chat). */
+/** Usage một bước agent: chat, hoặc job stage quy trình (`stage`) — usage-analytics gắn app/outcome cho cả hai. */
 export function noteChatUsage(task: TaskLike, usage: TokenUsage | undefined, ok: boolean): void {
-  if (task.stageRunId || !usage) return;
+  if (!usage) return;
   recordChatUsage({
     tenantId: task.run.tenantId,
     userId: task.run.userId,
@@ -62,5 +64,6 @@ export function noteChatUsage(task: TaskLike, usage: TokenUsage | undefined, ok:
     outputTokens: usage.output_tokens,
     costUsd: (usage as { cost_usd?: number }).cost_usd ?? null,
     ok,
+    ...(task.stageRunId ? { stage: true } : {}),
   });
 }

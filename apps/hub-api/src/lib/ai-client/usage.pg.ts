@@ -12,11 +12,11 @@ const int = (n: number): number => Math.min(INT_MAX, Math.max(0, Math.floor(Numb
 /** Ghi một dòng usage (tenant, người, tính năng, model, token, chi phí). */
 export async function recordAiUsage(db: Db, r: UsageRecord): Promise<void> {
   const cost = r.costUsd === null || !Number.isFinite(r.costUsd) ? null : String(r.costUsd);
-  // ai-sub · `billing` theo nhà cung cấp (`api` | `subscription`, hub 0044)
-  await db.db.execute(sql`select hub.log_ai_usage_billed(${r.tenantId}::uuid, ${r.userId}::uuid, ${r.feature},
+  // ai-sub · `billing` theo nhà cung cấp (`api` | `subscription`, hub 0044); usage-analytics · `outcome` (hub 0049)
+  await db.db.execute(sql`select hub.log_ai_usage_v3(${r.tenantId}::uuid, ${r.userId}::uuid, ${r.feature},
     ${r.providerKey}, ${r.model}, ${int(r.usage.inputTokens)}::int, ${int(r.usage.outputTokens)}::int,
     ${int(r.usage.cacheReadTokens)}::int, ${int(r.usage.cacheWriteTokens)}::int, ${cost}::numeric,
-    ${int(r.latencyMs)}::int, ${r.billing ?? "api"})`);
+    ${int(r.latencyMs)}::int, ${r.billing ?? "api"}, ${r.outcome ?? null}::text)`);
 }
 
 export function pgUsageStore(db: Db): UsageStore {

@@ -1,6 +1,7 @@
 // M2-chat · trợ lý gọi Agent Hub (proxy cùng origin `/conversations`, `/runs` → hub-api): E6 tạo hội thoại, E12 gửi tin
 // (stream SSE), E15 dừng. Lỗi trước stream (4xx/5xx JSON) ⇒ `ApiError` của web-kit. Đọc SSE bằng `readEvents` (web-kit).
 import {
+  AI_SURFACE_HEADER,
   type ChatEvent,
   type Conversation,
   FLOW_ID_HEADER,
@@ -26,7 +27,8 @@ export async function sendAndStream(
   const res = await apiResponse(`/conversations/${encodeURIComponent(convId)}/messages`, {
     method: "POST",
     body: req,
-    headers: { Accept: "text/event-stream" },
+    // ADM-FR-42 · usage-analytics: token của dock tính cho app Sổ Hợp Tác
+    headers: { Accept: "text/event-stream", [AI_SURFACE_HEADER]: "contracts" },
     signal,
   });
   if (!res.body) throw new ApiError(res.status, "HTTP_ERROR", "Empty event stream");

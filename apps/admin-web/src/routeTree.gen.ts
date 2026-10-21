@@ -42,6 +42,7 @@ import { Route as AuthedProcessesNewRouteImport } from './routes/_authed/process
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
 import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
+import { Route as AuthedUsageAnalyticsRouteImport } from './routes/_authed/usage_.analytics'
 import { Route as AuthedWorkflowsIndexRouteImport } from './routes/_authed/workflows/index'
 import { Route as AuthedWorkflowsWorkflowIdRouteImport } from './routes/_authed/workflows/$workflowId'
 import { Route as AuthedWorkflowsNewRouteImport } from './routes/_authed/workflows/new'
@@ -213,6 +214,11 @@ const AuthedTenantsNewRoute = AuthedTenantsNewRouteImport.update({
   path: '/tenants/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedUsageAnalyticsRoute = AuthedUsageAnalyticsRouteImport.update({
+  id: '/usage_/analytics',
+  path: '/usage/analytics',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedWorkflowsIndexRoute = AuthedWorkflowsIndexRouteImport.update({
   id: '/workflows/',
   path: '/workflows/',
@@ -269,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/processes/new': typeof AuthedProcessesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
+  '/usage/analytics': typeof AuthedUsageAnalyticsRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
   '/workflows/steps': typeof AuthedWorkflowsStepsRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/processes/new': typeof AuthedProcessesNewRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
+  '/usage/analytics': typeof AuthedUsageAnalyticsRoute
   '/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/workflows/new': typeof AuthedWorkflowsNewRoute
   '/workflows/steps': typeof AuthedWorkflowsStepsRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/_authed/processes/new': typeof AuthedProcessesNewRoute
   '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
+  '/_authed/usage_/analytics': typeof AuthedUsageAnalyticsRoute
   '/_authed/workflows/$workflowId': typeof AuthedWorkflowsWorkflowIdRoute
   '/_authed/workflows/new': typeof AuthedWorkflowsNewRoute
   '/_authed/workflows/steps': typeof AuthedWorkflowsStepsRoute
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/processes/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
+    | '/usage/analytics'
     | '/workflows/$workflowId'
     | '/workflows/new'
     | '/workflows/steps'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/processes/new'
     | '/tenants/$tenantId'
     | '/tenants/new'
+    | '/usage/analytics'
     | '/workflows/$workflowId'
     | '/workflows/new'
     | '/workflows/steps'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/_authed/processes/new'
     | '/_authed/tenants/$tenantId'
     | '/_authed/tenants/new'
+    | '/_authed/usage_/analytics'
     | '/_authed/workflows/$workflowId'
     | '/_authed/workflows/new'
     | '/_authed/workflows/steps'
@@ -721,6 +733,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTenantsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/usage_/analytics': {
+      id: '/_authed/usage_/analytics'
+      path: '/usage/analytics'
+      fullPath: '/usage/analytics'
+      preLoaderRoute: typeof AuthedUsageAnalyticsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/workflows/': {
       id: '/_authed/workflows/'
       path: '/workflows'
@@ -794,6 +813,7 @@ interface AuthedRouteChildren {
   AuthedProcessesNewRoute: typeof AuthedProcessesNewRoute
   AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
+  AuthedUsageAnalyticsRoute: typeof AuthedUsageAnalyticsRoute
   AuthedWorkflowsWorkflowIdRoute: typeof AuthedWorkflowsWorkflowIdRoute
   AuthedWorkflowsNewRoute: typeof AuthedWorkflowsNewRoute
   AuthedWorkflowsStepsRoute: typeof AuthedWorkflowsStepsRoute
@@ -830,6 +850,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProcessesNewRoute: AuthedProcessesNewRoute,
   AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
+  AuthedUsageAnalyticsRoute: AuthedUsageAnalyticsRoute,
   AuthedWorkflowsWorkflowIdRoute: AuthedWorkflowsWorkflowIdRoute,
   AuthedWorkflowsNewRoute: AuthedWorkflowsNewRoute,
   AuthedWorkflowsStepsRoute: AuthedWorkflowsStepsRoute,

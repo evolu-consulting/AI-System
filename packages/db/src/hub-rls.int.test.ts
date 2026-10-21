@@ -173,7 +173,10 @@ const LATER_POLICY_TABLES = [
   "push_subscriptions",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
-const RUNTIME_POLICIES = [{ t: "runs", roles: "agent_runtime" }];
+const RUNTIME_POLICIES = [
+  { t: "runs", roles: "agent_runtime" },
+  { t: "usage_daily", roles: "admin_rw" }, // usage-analytics (hub 0049): tổng hợp ngày, admin đọc theo scope
+];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
