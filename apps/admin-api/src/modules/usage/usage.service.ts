@@ -17,6 +17,7 @@ import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import { quotaStatuses } from "../quotas/quotas.service";
+import { difyRunsReadable } from "../workflows/workflows.runs";
 import * as repo from "./usage.repo";
 import { csvColumns, resolveUsageTenant, stripMoney, toCsv, usageRange } from "./usage.rules";
 import { tenantQuotaLevels } from "./usage.tenants";
@@ -45,8 +46,16 @@ function resolve(c: UsageCall, q: UsageQuery): Resolved {
   // Bảng Hub không RLS: tenant_admin bắt buộc có tenant cụ thể (resolveUsageTenant bảo đảm).
   if (c.actor.role !== "platform_admin" && t.tenantId !== c.actor.tenantId)
     throw appError("NOT_FOUND");
+  // dify-workflows: lọc theo workflow chỉ cho platform_admin (tenant_admin → 403, trước mọi truy vấn).
+  if (q.workflow_id !== undefined && c.actor.role !== "platform_admin") throw appError("FORBIDDEN");
   return {
-    filter: { tenantId: t.tenantId, featureId: q.feature_id ?? null, from: r.from, to: r.to },
+    filter: {
+      tenantId: t.tenantId,
+      featureId: q.feature_id ?? null,
+      workflowId: q.workflow_id ?? null,
+      from: r.from,
+      to: r.to,
+    },
     prevFrom: r.prevFrom,
     days: r.days,
     from: r.days[0] as string,
@@ -113,8 +122,13 @@ function fillDays(days: readonly string[], rows: readonly repo.DayRow[]) {
   });
 }
 
+/** Hub chưa có hub.dify_runs ⇒ lọc workflow cho kết quả rỗng thay vì 42P01. */
+async function effectiveFilter(tx: Tx, f: repo.UsageFilter): Promise<repo.UsageFilter> {
+  return f.workflowId && !(await difyRunsReadable(tx)) ? { ...f, workflowId: "none" } : f;
+}
+
 async function buildReport(tx: Tx, c: UsageCall, r: Resolved): Promise<UsageReportPlatform> {
-  const f = r.filter;
+  const f = await effectiveFilter(tx, r.filter);
   await mustTenantKey(tx, f.tenantId);
   const k = await repo.kpis(tx, f, r.prevFrom);
   const feats = await repo.topFeatures(tx, f, USAGE_TOP_MAX);
@@ -168,7 +182,7 @@ export async function getUsageCsv(
   const r = resolve(c, q);
   const { key, rows } = await inScope(c, async (tx) => ({
     key: await mustTenantKey(tx, r.filter.tenantId),
-    rows: await repo.csvRows(tx, r.filter, CSV_MAX_ROWS),
+    rows: await repo.csvRows(tx, await effectiveFilter(tx, r.filter), CSV_MAX_ROWS),
   }));
   const role = c.actor.role;
   return {

@@ -1,6 +1,7 @@
 // ADM-FR-14 · AC-A13 · đầu trang editor Workflow: tên (hoặc "Workflow mới"), key mono, badge Chưa gắn/Bật/Tắt, link "Tạo command từ workflow này".
 import type { Workflow } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -15,11 +16,21 @@ export function WorkflowEditorHeader({ workflow }: { workflow?: Workflow }) {
         description={workflow?.key}
         actions={
           workflow ? (
-            <Button variant="outline" asChild>
-              <Link to="/commands/new" search={{ workflow: workflow.id }}>
-                {t("workflows.createCommandFrom")}
-              </Link>
-            </Button>
+            <>
+              {workflow.console_url ? (
+                <Button variant="outline" asChild>
+                  <a href={workflow.console_url} target="_blank" rel="noopener noreferrer">
+                    {t("workflows.menu.openDify")}
+                    <ExternalLink aria-hidden className="size-4" />
+                  </a>
+                </Button>
+              ) : null}
+              <Button variant="outline" asChild>
+                <Link to="/commands/new" search={{ workflow: workflow.id }}>
+                  {t("workflows.createCommandFrom")}
+                </Link>
+              </Button>
+            </>
           ) : null
         }
       />

@@ -131,6 +131,22 @@ export function WorkflowInfoSection({ mode, secrets }: Props) {
         )}
       </FormField>
       <FormField
+        id="wf-dify-app"
+        label={t("workflows.field.difyAppId")}
+        description={t("workflows.field.difyAppIdHint")}
+        error={msg(errors.dify_app_id?.message)}
+      >
+        {(p) => (
+          <Input
+            {...p}
+            {...register("dify_app_id")}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono"
+          />
+        )}
+      </FormField>
+      <FormField
         id="wf-desc"
         label={t("workflows.field.description")}
         description={`${t("workflows.field.descHint")} ${t("workflows.field.descCount", { n: desc.trim().length })}`}

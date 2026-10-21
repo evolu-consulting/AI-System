@@ -113,6 +113,7 @@ async function main(): Promise<void> {
       mailer: createMailer(env),
       adminWebUrl: env.ADMIN_WEB_URL,
       frozenModules: env.ADMIN_FROZEN_MODULES === "on",
+      difyConsoleUrl: env.DIFY_CONSOLE_URL,
       loginLimiter: limit?.limiter,
       // sso-switch: mã chuyển phiên dùng chung Redis của giới hạn đăng nhập (production bắt buộc có).
       ssoStore: limit ? redisSsoStore(limit.redis) : undefined,

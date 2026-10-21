@@ -87,6 +87,12 @@ export const WorkflowNameSchema = z.string().trim().min(1).max(NAME_MAX);
 export const WorkflowDescSchema = z.string().trim().min(WORKFLOW_DESC_MIN).max(WORKFLOW_DESC_MAX);
 export const OutputFieldSchema = z.string().trim().min(1).max(OUTPUT_FIELD_MAX).nullable();
 
+/** Mã app Dify (UUID trong URL console); khớp CHECK `workflows_dify_app_id_check`. */
+export const DifyAppIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9-]{1,64}$/);
+
 export const SecretRefSchema = z.strictObject({
   id: UuidSchema,
   name: z.string().regex(SECRET_NAME_RE),
@@ -118,6 +124,8 @@ const listItemShape = {
   version: VersionSchema,
   updated_at: IsoDateTime,
   updated_by: UpdatedBySchema,
+  /** dify-workflows · link mở editor app trong Dify console; null khi chưa cấu hình DIFY_CONSOLE_URL hoặc thiếu mã app. Không chứa app-key. */
+  console_url: z.string().nullable().optional(),
 };
 const unattachedMatches = (w: {
   unattached: boolean;
@@ -140,6 +148,7 @@ export const WorkflowSchema = z
     base_url: z.string().max(BASE_URL_MAX),
     input_schema: InputSchemaSchema,
     output_field: z.string().min(1).max(OUTPUT_FIELD_MAX).nullable(),
+    dify_app_id: DifyAppIdSchema.nullable().optional(),
     created_at: IsoDateTime,
   })
   .refine(unattachedMatches, unattachedIssue);
@@ -155,6 +164,7 @@ export const WorkflowCreateRequestSchema = z.strictObject({
   input_schema: InputSchemaSchema.default([]),
   output_field: OutputFieldSchema.default(null),
   enabled: z.boolean().default(true),
+  dify_app_id: DifyAppIdSchema.nullable().optional(),
   /** Không `.default` (giữ output parse của test khoá M2); vắng ⇒ service ghi `false`. */
   side_effect: z.boolean().optional(),
 });
@@ -171,6 +181,7 @@ export const WorkflowUpdateRequestSchema = z.strictObject({
   input_schema: InputSchemaSchema.optional(),
   output_field: OutputFieldSchema.optional(),
   enabled: z.boolean().optional(),
+  dify_app_id: DifyAppIdSchema.nullable().optional(),
   side_effect: z.boolean().optional(),
 });
 export type WorkflowUpdateRequest = z.infer<typeof WorkflowUpdateRequestSchema>;

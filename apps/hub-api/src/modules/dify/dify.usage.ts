@@ -4,7 +4,45 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "../../lib/db";
+import type { DifyRunOutcome } from "./dify.client";
 import type { DifyUsage } from "./dify.rules";
+
+/** dify-workflows · phần ghi `hub.dify_runs` đi kèm usage (lịch sử chạy trong Admin → Workflows). */
+export type DifyRunMeta = {
+  workflowId: string;
+  trigger: "command" | "agent" | "schedule";
+  status: "ok" | "failed" | "aborted";
+  /** Đã che secret (client Dify che app-key), cắt ≤ 500 ở hàm DB. */
+  error: string | null;
+  difyWorkflowRunId: string | null;
+  difyConversationId: string | null;
+  difyTaskId: string | null;
+};
+
+/** Kết cục client Dify → dòng lịch sử. Lỗi: thân lỗi upstream (đã che) → `HTTP <status>` → `<code>: <reason>`. */
+export function difyRunMeta(
+  out: DifyRunOutcome,
+  workflowId: string,
+  trigger: DifyRunMeta["trigger"],
+): DifyRunMeta {
+  const ids = {
+    difyWorkflowRunId: out.workflowRunId ?? null,
+    difyConversationId: out.conversationId,
+    difyTaskId: out.taskId,
+  };
+  if (out.kind === "finished") return { workflowId, trigger, status: "ok", error: null, ...ids };
+  if (out.kind === "aborted")
+    return { workflowId, trigger, status: "aborted", error: null, ...ids };
+  const http = out.httpStatus === null ? "" : `HTTP ${out.httpStatus}`;
+  const error = out.detail ?? (http || `${out.code}: ${out.reason}`);
+  return {
+    workflowId,
+    trigger,
+    status: "failed",
+    error: out.detail && http ? `${http} ${error}` : error,
+    ...ids,
+  };
+}
 
 export type DifyUsageRow = {
   tenantId: string;
@@ -17,6 +55,8 @@ export type DifyUsageRow = {
   agentId: string | null;
   usage: DifyUsage;
   latencyMs: number;
+  /** Có ⇒ cùng câu SQL ghi thêm `hub.dify_runs` (`hub.log_dify_run`). */
+  run?: DifyRunMeta;
 };
 
 const INT_MAX = 2_147_483_647;
@@ -31,10 +71,16 @@ export async function logDifyUsage(exec: Pick<Tx, "execute">, r: DifyUsageRow): 
 
 /** Câu `select hub.log_dify_usage(...)` (văn bản cố định) — ghép sau một CTE ghi được (T18-perf: đóng bước + usage). */
 export function difyUsageSelect(r: DifyUsageRow): SQL {
-  return sql`select hub.log_dify_usage(${r.tenantId}::uuid, ${r.runId}::uuid,
+  const usage = sql`select hub.log_dify_usage(${r.tenantId}::uuid, ${r.runId}::uuid,
     ${r.stepId}::uuid, ${r.userId}::uuid, ${r.featureId}::uuid, ${r.agentId}::uuid,
     ${int(r.usage.input_tokens)}::int, ${int(r.usage.output_tokens)}::int,
     ${money(r.usage.cost_usd)}::numeric, ${int(r.latencyMs)}::int)`;
+  const m = r.run;
+  if (!m) return usage;
+  return sql`${usage}, hub.log_dify_run(${r.tenantId}::uuid, ${r.userId}::uuid, ${m.workflowId}::uuid,
+    ${r.runId}::uuid, ${r.stepId}::uuid, ${m.trigger}::text, ${m.status}::text, ${int(r.latencyMs)}::int,
+    ${int(r.usage.input_tokens)}::int, ${int(r.usage.output_tokens)}::int, ${m.error}::text,
+    ${m.difyWorkflowRunId}::text, ${m.difyConversationId}::text, ${m.difyTaskId}::text)`;
 }
 
 /** Ghi ngoài transaction (vd sau khi stream Dify kết thúc). */

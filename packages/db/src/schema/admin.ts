@@ -253,6 +253,8 @@ export const workflows = admin.table(
       .references(() => secrets.id, { onDelete: "restrict" }),
     inputSchema: jsonb("input_schema").notNull().default([]),
     outputField: text("output_field"),
+    /** dify-workflows · mã app Dify để dựng link console; null ⇒ không có nút "Mở trong Dify". */
+    difyAppId: text("dify_app_id"),
     enabled: boolean("enabled").notNull().default(true),
     // X1 · HUB-FR-95: cờ tác dụng phụ (Hub đọc cột này thay hub.workflow_flags).
     sideEffect: boolean("side_effect").notNull().default(false),
@@ -273,6 +275,10 @@ export const workflows = admin.table(
     ),
     check("workflows_input_schema_check", sql`jsonb_typeof(${t.inputSchema}) = 'array'`),
     check("workflows_output_field_check", sql`char_length(${t.outputField}) BETWEEN 1 AND 128`),
+    check(
+      "workflows_dify_app_id_check",
+      sql`${t.difyAppId} IS NULL OR ${t.difyAppId} ~ '^[A-Za-z0-9-]{1,64}$'`,
+    ),
     check("workflows_version_check", sql`${t.version} >= 1`),
   ],
 );

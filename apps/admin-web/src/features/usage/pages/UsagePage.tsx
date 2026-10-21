@@ -59,6 +59,24 @@ export function UsagePage() {
             {v.platform ? (
               <TenantPicker tenants={v.tenants} value={v.tenantKey} onChange={v.setTenant} />
             ) : null}
+            {v.platform ? (
+              <Select
+                value={v.workflowId ?? "all"}
+                onValueChange={(id) => v.setWorkflow(id === "all" ? null : id)}
+              >
+                <SelectTrigger aria-label={t("usage.workflow.label")} className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("usage.workflow.all")}</SelectItem>
+                  {v.workflows.map((w) => (
+                    <SelectItem key={w.id} value={w.id} className="font-mono">
+                      {w.key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             <Select value={v.month} onValueChange={v.setPeriod}>
               <SelectTrigger aria-label={t("usage.period")} className="w-40">
                 <SelectValue />

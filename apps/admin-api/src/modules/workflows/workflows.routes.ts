@@ -1,6 +1,7 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-13, ADM-FR-14, ADM-FR-15 · /admin/workflows* (spec M2 §3). Chỉ platform_admin.
 // Không có route grant/quyền (BR-13), "Kiểm tra kết nối" hay "Lấy schema từ Dify" (A8).
 import {
+  DifyRunsQuerySchema,
   WorkflowCreateRequestSchema,
   WorkflowListQuerySchema,
   WorkflowUpdateRequestSchema,
@@ -8,6 +9,7 @@ import {
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
+import { listWorkflowRuns } from "./workflows.runs";
 import {
   type Call,
   createWorkflow,
@@ -36,6 +38,9 @@ export function workflowsRoutes(d: AuthDeps & WorkflowsCtx): Hono<AppVars> {
     return c.json(await createWorkflow(call(c), input), 201);
   });
   r.get("/:id", async (c) => c.json(await getWorkflow(call(c), parseIdParam(c))));
+  r.get("/:id/runs", async (c) =>
+    c.json(await listWorkflowRuns(call(c), parseIdParam(c), parseQuery(c, DifyRunsQuerySchema))),
+  );
   r.get("/:id/usages", async (c) => c.json(await getWorkflowUsages(call(c), parseIdParam(c))));
   r.patch("/:id", async (c) => {
     const id = parseIdParam(c);

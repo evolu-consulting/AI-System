@@ -20,6 +20,7 @@ export function Pagination({ offset, limit, total, onOffsetChange }: Props) {
         {t("common.pagination.range", { from, to, total })}
       </span>
       <Button
+        type="button"
         variant="outline"
         size="sm"
         disabled={offset <= 0}
@@ -28,6 +29,7 @@ export function Pagination({ offset, limit, total, onOffsetChange }: Props) {
         {t("common.pagination.prev")}
       </Button>
       <Button
+        type="button"
         variant="outline"
         size="sm"
         disabled={offset + limit >= total}

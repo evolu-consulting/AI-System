@@ -1065,6 +1065,7 @@
     },
     "unattached": "Chưa gắn",
     "menu": {
+      "openDify": "Mở trong Dify",
       "edit": "Sửa",
       "enable": "Bật",
       "disable": "Tắt",
@@ -1073,6 +1074,7 @@
     },
     "createCommandFrom": "Tạo command từ workflow này",
     "tab": {
+      "runs": "Lịch sử chạy",
       "info": "Thông tin",
       "input": "Input",
       "preview": "Model thấy gì",
@@ -1080,6 +1082,8 @@
       "hasError": "có lỗi"
     },
     "field": {
+      "difyAppId": "Mã app Dify",
+      "difyAppIdHint": "UUID trong URL Dify console (…/app/<mã>/workflow). Dùng cho nút “Mở trong Dify”; để trống thì nút ẩn.",
       "key": "Key",
       "name": "Tên",
       "type": "Loại",
@@ -1126,6 +1130,43 @@
     "preview": {
       "note": "Minh hoạ cách agent thấy workflow này; Hub có thể thêm trường khác."
     },
+    "runs": {
+      "title": "Lịch sử chạy",
+      "empty": "Chưa có lượt chạy nào khớp bộ lọc.",
+      "unavailable": "Hub chưa ghi lịch sử chạy Dify (chưa migrate).",
+      "total": "{n} lượt",
+      "prev": "Trang trước",
+      "next": "Trang sau",
+      "openDify": "Xem chi tiết trong Dify",
+      "allTenants": "Mọi tenant",
+      "allStatus": "Mọi trạng thái",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "tenant": "Tenant",
+      "col": {
+        "time": "Thời gian",
+        "tenant": "Tenant",
+        "user": "Người dùng",
+        "trigger": "Kích hoạt",
+        "status": "Trạng thái",
+        "duration": "Thời lượng",
+        "tokens": "Token",
+        "error": "Lỗi",
+        "ids": "Mã Dify"
+      },
+      "trigger": {
+        "command": "Lệnh",
+        "agent": "Agent",
+        "schedule": "Lịch"
+      },
+      "status": {
+        "ok": "Thành công",
+        "failed": "Lỗi",
+        "aborted": "Đã dừng"
+      },
+      "run": "run",
+      "conversation": "hội thoại"
+    },
     "usage": {
       "empty": "Chưa có command hay agent nào dùng workflow này.",
       "agent": "Agent …{id}",
@@ -1155,6 +1196,7 @@
       "text": "Chưa có workflow nào. Tạo workflow trên Dify (bằng Claude session) → dán app key vào secret → khai báo input và mô tả ở đây."
     },
     "error": {
+      "difyAppId": "Mã app chỉ gồm chữ, số và dấu - (tối đa 64 ký tự)",
       "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
       "keyTaken": "Key đã được dùng",
       "nameRequired": "Nhập tên workflow (tối đa 128 ký tự)",
@@ -1946,6 +1988,10 @@
     }
   },
   "usage": {
+    "workflow": {
+      "label": "Workflow",
+      "all": "Mọi workflow"
+    },
     "title": "Chi phí & quota",
     "subtitle": "{period}. Vượt quota không chặn, phần vượt được tính phí riêng.",
     "period": "Kỳ",

@@ -37,6 +37,8 @@ export type DifyFailReason = "upstream" | "invalid_output";
 type RunMeta = {
   taskId: string | null;
   conversationId: string | null;
+  /** dify-workflows · `workflow_run_id` của Dify (app workflow); null với app chat/agent. Vắng ở fake cũ ⇒ coi như null. */
+  workflowRunId?: string | null;
   usage: DifyUsage;
   ms: number;
 };
@@ -70,6 +72,7 @@ type RunState = {
   acc: string;
   taskId: string | null;
   conversationId: string | null;
+  workflowRunId: string | null;
   usage: DifyUsage;
   end: { status: string; outputs: Record<string, unknown> | null } | null;
   error: string | null | undefined;
@@ -78,7 +81,9 @@ type RunState = {
 /** `task_id`/`conversation_id` có ở mọi sự kiện Dify (kể cả `message` của app chat — không có `workflow_started`). */
 function takeIds(st: RunState, raw: unknown): void {
   if (typeof raw !== "object" || raw === null) return;
-  const r = raw as { task_id?: unknown; conversation_id?: unknown };
+  const r = raw as { task_id?: unknown; conversation_id?: unknown; workflow_run_id?: unknown };
+  if (!st.workflowRunId && typeof r.workflow_run_id === "string" && r.workflow_run_id)
+    st.workflowRunId = r.workflow_run_id;
   if (!st.taskId && typeof r.task_id === "string" && r.task_id) st.taskId = r.task_id;
   if (typeof r.conversation_id === "string" && r.conversation_id)
     st.conversationId = r.conversation_id;
@@ -155,6 +160,7 @@ export class DifyClient {
       acc: "",
       taskId: null,
       conversationId: req.conversationId,
+      workflowRunId: null,
       usage: ZERO,
       end: null,
       error: undefined,
@@ -162,6 +168,7 @@ export class DifyClient {
     const meta = (): RunMeta => ({
       taskId: st.taskId,
       conversationId: st.conversationId,
+      workflowRunId: st.workflowRunId,
       usage: st.usage,
       ms: Math.round(performance.now() - t0),
     });

@@ -16,7 +16,7 @@ export function ErrorState({ message, code, onRetry }: Props) {
         <AlertDescription>{t("state.error.body", { message, code })}</AlertDescription>
       </div>
       {onRetry ? (
-        <Button variant="outline" size="sm" onClick={onRetry}>
+        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
           {t("common.retry")}
         </Button>
       ) : null}

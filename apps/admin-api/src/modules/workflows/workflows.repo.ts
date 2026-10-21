@@ -30,6 +30,7 @@ export type WorkflowRow = {
   baseUrl: string;
   inputSchema: WorkflowInput[];
   outputField: string | null;
+  difyAppId: string | null;
   createdAt: Date;
 };
 
@@ -55,6 +56,7 @@ function cols(readable: boolean) {
     baseUrl: workflows.baseUrl,
     inputSchema: workflows.inputSchema,
     outputField: workflows.outputField,
+    difyAppId: workflows.difyAppId,
     createdAt: workflows.createdAt,
   };
 }
@@ -209,6 +211,7 @@ export type WorkflowValues = {
   secretId: string;
   inputSchema: WorkflowInput[];
   outputField: string | null;
+  difyAppId?: string | null;
   enabled: boolean;
   sideEffect: boolean;
 };

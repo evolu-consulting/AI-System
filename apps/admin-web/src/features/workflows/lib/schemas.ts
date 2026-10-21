@@ -34,6 +34,8 @@ export type WorkflowFormValues = {
   secret_id: string;
   base_url: string;
   output_field: string;
+  /** dify-workflows · mã app Dify (cho nút "Mở trong Dify"); rỗng ⇒ null. */
+  dify_app_id: string;
   description: string;
   enabled: boolean;
   /** X1 · HUB-FR-95: Chat hỏi Đồng ý/Huỷ trước khi chạy. */
@@ -105,6 +107,10 @@ export const workflowSchema = z
     secret_id: z.string().min(1, "workflows.error.secretRequired"),
     base_url: z.string().trim().refine(validBaseUrl, "workflows.error.baseUrl"),
     output_field: z.string().trim().max(OUTPUT_FIELD_MAX, "workflows.error.outputField"),
+    dify_app_id: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || /^[A-Za-z0-9-]{1,64}$/.test(v), "workflows.error.difyAppId"),
     description: z
       .string()
       .trim()
@@ -123,6 +129,7 @@ export const emptyWorkflowForm = (): WorkflowFormValues => ({
   secret_id: "",
   base_url: "",
   output_field: "",
+  dify_app_id: "",
   description: "",
   enabled: true,
   side_effect: false,
@@ -137,6 +144,7 @@ export function toFormValues(w: Workflow): WorkflowFormValues {
     secret_id: w.secret.id,
     base_url: w.base_url,
     output_field: w.output_field ?? "",
+    dify_app_id: w.dify_app_id ?? "",
     description: w.description,
     enabled: w.enabled,
     // Response cũ chưa có trường ⇒ coi `false` (plan-frontend §2.1).
@@ -172,6 +180,7 @@ export function toRequestBody(v: WorkflowFormValues): Omit<WorkflowCreateRequest
     secret_id: v.secret_id,
     input_schema: toInputSchema(v.input_schema),
     output_field: v.output_field.trim() === "" ? null : v.output_field.trim(),
+    dify_app_id: v.dify_app_id.trim() === "" ? null : v.dify_app_id.trim(),
     enabled: v.enabled,
     side_effect: v.side_effect,
   };

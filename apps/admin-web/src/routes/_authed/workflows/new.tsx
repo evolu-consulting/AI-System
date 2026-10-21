@@ -4,7 +4,7 @@ import { type EditorTab, WorkflowEditorPage } from "@/features/workflows/pages/W
 export type WorkflowEditorSearch = { tab?: EditorTab };
 
 export const parseEditorTab = (v: unknown): EditorTab | undefined =>
-  (["info", "input", "preview", "usage"] as const).find((t) => t === v);
+  (["info", "input", "preview", "usage", "runs"] as const).find((t) => t === v);
 
 function Page() {
   const { tab } = Route.useSearch();

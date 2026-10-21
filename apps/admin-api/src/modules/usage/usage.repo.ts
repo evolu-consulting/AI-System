@@ -13,6 +13,8 @@ const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as 
 export type UsageFilter = {
   tenantId: string | null;
   featureId: string | null;
+  /** dify-workflows · chỉ lượt gọi Dify của workflow (qua `hub.dify_runs.step_id`); "none" = Hub chưa có bảng ⇒ không hàng. */
+  workflowId?: string | null;
   from: Date;
   to: Date;
 };
@@ -22,9 +24,19 @@ const VN_DAY = sql.raw(
   `to_char((at at time zone 'UTC') + interval '${QUOTA_TZ_OFFSET_MIN} minutes', 'YYYY-MM-DD')`,
 );
 
+function withWorkflow(base: SQL, workflowId: string | null | undefined): SQL {
+  if (!workflowId) return base;
+  if (workflowId === "none") return sql`${base} and false`;
+  return sql`${base} and step_id in (select step_id from hub.dify_runs
+    where workflow_id = ${workflowId}::uuid and step_id is not null)`;
+}
+
 /** Điều kiện tenant/feature (không gồm thời gian). */
-function scopeWhere(f: Pick<UsageFilter, "tenantId" | "featureId">): SQL {
-  const t = f.tenantId === null ? sql`true` : sql`tenant_id = ${f.tenantId}`;
+function scopeWhere(f: Pick<UsageFilter, "tenantId" | "featureId" | "workflowId">): SQL {
+  const t = withWorkflow(
+    f.tenantId === null ? sql`true` : sql`tenant_id = ${f.tenantId}`,
+    f.workflowId,
+  );
   if (f.featureId === null) return t;
   if (f.featureId === "none") return sql`${t} and feature_id is null`;
   return sql`${t} and feature_id = ${f.featureId}`;

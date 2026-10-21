@@ -15,6 +15,7 @@ import type { ConfigCache } from "../../config/config.service";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser, maskInputs } from "../../dify/dify.rules";
+import { difyRunMeta } from "../../dify/dify.usage";
 import * as repo from "../mcp.repo";
 import { type ToolResult, toolError, toolText, toolTimeoutS } from "../mcp.rules";
 import { type StepCode, stepCodeOf } from "../mcp-call";
@@ -169,7 +170,7 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     const code = stepCodeOf(out, timeout.aborted);
     const upstream = out.kind === "failed" ? out.detail : null;
     const detail = { ...trace, inputs: o.inputs, code, ...(upstream ? { upstream } : {}) };
-    await this.#finishWithUsage(ctx, o.stepId, detail, out);
+    await this.#finishWithUsage(ctx, o.stepId, detail, out, wf.id);
     if (out.kind === "finished") return toolText(out.text);
     const mapped = code === "TIMEOUT" || code === "NOT_CONFIGURED" ? code : "UPSTREAM_ERROR";
     o.onFail?.(failureOf(out, code === "CANCELLED" ? code : mapped));
@@ -260,6 +261,7 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     stepId: string,
     detail: FinishDetail,
     out: DifyRunOutcome,
+    workflowId: string,
   ): Promise<void> {
     if (out.kind !== "finished" && !out.taskId) return this.#finishStep(ctx, stepId, detail);
     const status = detail.code ? "failed" : "ok";
@@ -273,6 +275,7 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
       agentId: ctx.agentId,
       usage: out.usage,
       latencyMs: out.ms,
+      run: difyRunMeta(out, workflowId, "agent"),
     };
     try {
       await withHubScope(this.d.db, { kind: "system" }, (tx) =>

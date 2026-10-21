@@ -26,6 +26,7 @@ const KEYS = [
   "secret_id",
   "input_schema",
   "output_field",
+  "dify_app_id", // dify-workflows: snapshot cũ thiếu ⇒ PATCH giữ nguyên, chèn lại ⇒ null
   "enabled",
   "side_effect", // X1: snapshot cũ thiếu ⇒ PATCH giữ giá trị hiện tại, chèn lại ⇒ false
 ] as const;

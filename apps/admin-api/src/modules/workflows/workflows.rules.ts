@@ -74,9 +74,11 @@ export type WorkflowState = {
   outputField: string | null;
   enabled: boolean;
   sideEffect: boolean;
+  difyAppId?: string | null;
 };
 
 const KEYS: (keyof WorkflowState)[] = [
+  "difyAppId",
   "name",
   "description",
   "appType",

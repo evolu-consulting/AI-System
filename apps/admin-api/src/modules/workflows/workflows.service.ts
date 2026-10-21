@@ -31,6 +31,7 @@ import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { lockSecretRef } from "../secrets/secrets.service";
 import { mapWorkflowConflict } from "./workflows.errors";
 import { agentIdsByWorkflow, hubAgentsReadable } from "./workflows.hub";
+import { difyEditorUrl } from "./workflows.links";
 import * as repo from "./workflows.repo";
 import {
   changedWorkflowFields,
@@ -43,15 +44,18 @@ import {
   type WorkflowState,
 } from "./workflows.rules";
 
-export type WorkflowsCtx = { db: Db; hooks?: TestHooks };
+export type WorkflowsCtx = { db: Db; hooks?: TestHooks; difyConsoleUrl?: string | null };
 export type Call = { ctx: WorkflowsCtx; actor: Actor; scope: DbScope };
 
 const fail = (e: RuleError | null): void => {
   if (e) throw appError(e.code, e.details);
 };
 
-export function toWorkflowItem(r: repo.WorkflowRow): WorkflowListItem {
+export function toWorkflowItem(r: repo.WorkflowRow, consoleBase?: string | null): WorkflowListItem {
   return {
+    ...(consoleBase !== undefined && {
+      console_url: difyEditorUrl(consoleBase, r.difyAppId, r.appType),
+    }),
     id: r.id,
     key: r.key,
     name: r.name,
@@ -69,9 +73,10 @@ export function toWorkflowItem(r: repo.WorkflowRow): WorkflowListItem {
   };
 }
 
-const toWorkflow = (r: repo.WorkflowRow): Workflow => ({
-  ...toWorkflowItem(r),
+const toWorkflow = (r: repo.WorkflowRow, consoleBase?: string | null): Workflow => ({
+  ...toWorkflowItem(r, consoleBase),
   base_url: r.baseUrl,
+  dify_app_id: r.difyAppId,
   input_schema: r.inputSchema,
   output_field: r.outputField,
   created_at: r.createdAt.toISOString(),
@@ -96,10 +101,10 @@ function workflowAudit(
   });
 }
 
-async function detail(tx: Tx, id: string): Promise<Workflow> {
+async function detail(tx: Tx, id: string, consoleBase?: string | null): Promise<Workflow> {
   const row = await repo.findWorkflow(tx, id, await hubAgentsReadable(tx));
   if (!row) throw appError("NOT_FOUND");
-  return toWorkflow(row);
+  return toWorkflow(row, consoleBase);
 }
 
 async function usagesOf(tx: Tx, id: string): Promise<WorkflowUsages> {
@@ -121,11 +126,15 @@ export async function listWorkflows(c: Call, q: WorkflowListQuery): Promise<Work
   const { rows, counts } = await withScope(c.ctx.db, c.scope, async (tx) =>
     repo.listWorkflows(tx, q, await hubAgentsReadable(tx)),
   );
-  return { items: rows.map(toWorkflowItem), total: rows[0]?.total ?? 0, counts };
+  return {
+    items: rows.map((r) => toWorkflowItem(r, c.ctx.difyConsoleUrl ?? null)),
+    total: rows[0]?.total ?? 0,
+    counts,
+  };
 }
 
 export function getWorkflow(c: Call, id: string): Promise<Workflow> {
-  return withScope(c.ctx.db, c.scope, (tx) => detail(tx, id));
+  return withScope(c.ctx.db, c.scope, (tx) => detail(tx, id, c.ctx.difyConsoleUrl ?? null));
 }
 
 export function getWorkflowUsages(c: Call, id: string): Promise<WorkflowUsages> {
@@ -162,6 +171,7 @@ export async function createWorkflowIn(
     secretId: input.secret_id,
     inputSchema: input.input_schema,
     outputField: input.output_field,
+    difyAppId: input.dify_app_id ?? null,
     enabled: input.enabled,
     sideEffect: input.side_effect ?? false,
   };
@@ -181,6 +191,7 @@ const stateOf = (r: repo.WorkflowRow): WorkflowState => ({
   secretId: r.secretId,
   inputSchema: r.inputSchema,
   outputField: r.outputField,
+  difyAppId: r.difyAppId,
   enabled: r.enabled,
   sideEffect: r.sideEffect,
 });
@@ -194,6 +205,7 @@ function mergeState(cur: WorkflowState, i: WorkflowUpdateRequest): WorkflowState
     secretId: i.secret_id ?? cur.secretId,
     inputSchema: i.input_schema ?? cur.inputSchema,
     outputField: i.output_field === undefined ? cur.outputField : i.output_field,
+    difyAppId: i.dify_app_id === undefined ? cur.difyAppId : i.dify_app_id,
     enabled: i.enabled ?? cur.enabled,
     sideEffect: i.side_effect ?? cur.sideEffect,
   };

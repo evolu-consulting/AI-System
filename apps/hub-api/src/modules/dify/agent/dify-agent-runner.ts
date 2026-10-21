@@ -29,7 +29,7 @@ import type { SseEventBody } from "../../runs/sse/sse-writer";
 import { type CredentialService, isCredentialError } from "../credential.service";
 import type { DifyClient, DifyRunOutcome } from "../dify.client";
 import { difyUser } from "../dify.rules";
-import { recordDifyUsage } from "../dify.usage";
+import { difyRunMeta, recordDifyUsage } from "../dify.usage";
 import * as repo from "./dify-agent.repo";
 import {
   type DifyAgentEnd,
@@ -70,6 +70,7 @@ type StreamCall = {
   req: DifyRequest;
   timeout: AbortSignal;
   access: ToolAccess | null;
+  workflowId: string; // dify-workflows: cho lịch sử chạy
 };
 type Resolved = {
   catalog: CatalogSnapshot;
@@ -192,7 +193,7 @@ export class DifyAgentRunner implements AgentRunner {
         conversationId: session,
         outputField: wf.outputField,
       };
-      return await this.#stream(task, { step, io, req, timeout, access });
+      return await this.#stream(task, { step, io, req, timeout, access, workflowId: wf.id });
     } finally {
       await access?.grant
         .revoke()
@@ -219,12 +220,12 @@ export class DifyAgentRunner implements AgentRunner {
     return grant ? { tokens, binding, grant } : null;
   }
   async #stream(task: AgentTask, c: StreamCall): Promise<Ran> {
-    const { step, io, req, timeout, access } = c;
+    const { step, io, req, timeout, access, workflowId } = c;
     const { agent, run: r } = task;
     const session = req.conversationId;
     const both = AbortSignal.any([io.signal, timeout]);
     let out = await this.d.dify.runStreaming(req, both, io.onDelta);
-    await this.#usage(task, step, out);
+    await this.#usage(task, step, out, workflowId);
     let resumed = session !== null;
     if (resumed && isStaleSession(out) && !both.aborted) {
       await this.#forget(task);
@@ -238,7 +239,7 @@ export class DifyAgentRunner implements AgentRunner {
         both,
         io.onDelta,
       );
-      await this.#usage(task, step, out);
+      await this.#usage(task, step, out, workflowId);
       resumed = false;
     }
     // plan-db §2: chỉ ghi phiên khi Dify xong và trả `conversation_id` (dify-workflow không có phiên).
@@ -278,7 +279,12 @@ export class DifyAgentRunner implements AgentRunner {
   }
 
   /** R15: một dòng `billing=dify` khi Dify xong hoặc đã cấp `task_id`; lỗi ghi chỉ cảnh báo. */
-  async #usage(task: AgentTask, step: Step, out: DifyRunOutcome): Promise<void> {
+  async #usage(
+    task: AgentTask,
+    step: Step,
+    out: DifyRunOutcome,
+    workflowId: string,
+  ): Promise<void> {
     if (out.kind !== "finished" && !out.taskId) return;
     const r = task.run;
     try {
@@ -291,6 +297,7 @@ export class DifyAgentRunner implements AgentRunner {
         agentId: task.agent.id,
         usage: out.usage,
         latencyMs: out.ms,
+        run: difyRunMeta(out, workflowId, "agent"),
       });
     } catch (err) {
       this.d.log.warn("dify-agent-usage-failed", { run_id: r.id, ...safeErrorFields(err) });

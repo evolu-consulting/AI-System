@@ -5,9 +5,12 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v !== 
 
 // `?tenant=<mã>&period=YYYY-MM` (tenant_admin: tenant bị ép tenant mình, xem use-usage-view).
 export const Route = createFileRoute("/_authed/usage")({
-  validateSearch: (s: Record<string, unknown>): { tenant?: string; period?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { tenant?: string; period?: string; workflow?: string } => ({
     tenant: str(s.tenant),
     period: str(s.period),
+    workflow: str(s.workflow),
   }),
   component: UsagePage,
 });

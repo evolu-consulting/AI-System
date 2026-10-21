@@ -17,11 +17,12 @@ import { SchemaEditor } from "../components/editor/SchemaEditor";
 import { ToolPreview } from "../components/editor/ToolPreview";
 import { WorkflowEditorHeader } from "../components/editor/WorkflowEditorHeader";
 import { WorkflowInfoSection } from "../components/editor/WorkflowInfoSection";
+import { WorkflowRunsTab } from "../components/editor/WorkflowRunsTab";
 import { WorkflowUsageTab } from "../components/editor/WorkflowUsageTab";
 import { WorkflowBlockedDialog } from "../components/list/WorkflowBlockedDialog";
 import { useWorkflowEditor } from "../hooks/use-workflow-editor";
 
-export type EditorTab = "info" | "input" | "preview" | "usage";
+export type EditorTab = "info" | "input" | "preview" | "usage" | "runs";
 type Props = { workflowId?: string; tab: EditorTab; onTab: (tab: EditorTab) => void };
 
 function ErrorDot() {
@@ -53,6 +54,7 @@ function EditorTabList({
       ) : null}
       <TabsTrigger value="preview">{t("workflows.tab.preview")}</TabsTrigger>
       {editing ? <TabsTrigger value="usage">{t("workflows.tab.usage")}</TabsTrigger> : null}
+      {editing ? <TabsTrigger value="runs">{t("workflows.tab.runs")}</TabsTrigger> : null}
     </TabsList>
   );
 }
@@ -63,7 +65,7 @@ function EditorBody({ workflow, tab, onTab }: { workflow?: Workflow } & Omit<Pro
   const ed = useWorkflowEditor(workflow);
   const { errors, isDirty } = ed.form.formState;
   const editing = !!workflow;
-  const active = !editing && (tab === "input" || tab === "usage") ? "info" : tab;
+  const active = !editing && (tab === "input" || tab === "usage" || tab === "runs") ? "info" : tab;
 
   return (
     <FormProvider {...ed.form}>
@@ -94,6 +96,11 @@ function EditorBody({ workflow, tab, onTab }: { workflow?: Workflow } & Omit<Pro
           <TabsContent value="usage" className="pt-4">
             <WorkflowUsageTab workflowId={workflow?.id} />
           </TabsContent>
+          {workflow ? (
+            <TabsContent value="runs" className="pt-4">
+              {active === "runs" ? <WorkflowRunsTab workflowId={workflow.id} /> : null}
+            </TabsContent>
+          ) : null}
         </Tabs>
         {ed.breaks ? <SchemaBreaksAlert commands={ed.breaks.commands} /> : null}
         <EditorSaveBar dirty={isDirty} pending={ed.pending} cancelTo="/workflows" />

@@ -22,7 +22,7 @@ import { stepLabel } from "../../conversations/conversations.rules";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser } from "../../dify/dify.rules";
-import { recordDifyUsage } from "../../dify/dify.usage";
+import { difyRunMeta, recordDifyUsage } from "../../dify/dify.usage";
 import { chunkText } from "../../orchestrator/orchestrator.rules";
 import type { RunContext, RunDriver } from "../../runs/runs.service";
 import type { SseWriter } from "../../runs/sse/sse-writer";
@@ -159,6 +159,7 @@ async function usageOf(l: Live, step: Step, res: DifyRunOutcome): Promise<void> 
       agentId: null,
       usage: res.usage,
       latencyMs: res.ms,
+      run: difyRunMeta(res, l.p.workflow.id, "command"),
     });
   } catch (err) {
     l.log.warn("command-usage-failed", safeErrorFields(err));

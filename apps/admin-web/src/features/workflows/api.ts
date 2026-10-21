@@ -1,5 +1,7 @@
 // ADM-FR-10, ADM-FR-13, ADM-FR-14, ADM-FR-15 · gọi API /admin/workflows* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
+  DifyRunsQuery,
+  DifyRunsResponse,
   SecretListResponse,
   Workflow,
   WorkflowCreateRequest,
@@ -26,6 +28,7 @@ export const WORKFLOW_KEYS = {
   list: (p: WorkflowListParams) => ["workflows", "list", p] as const,
   usages: (id: string) => ["workflows", "usages", id] as const,
   detail: (id: string) => ["workflows", "detail", id] as const,
+  runs: (id: string, p: RunsParams) => ["workflows", "runs", id, p] as const,
   secrets: ["workflows", "secret-options"] as const,
 };
 
@@ -47,6 +50,25 @@ export function useWorkflowList(params: WorkflowListParams, enabled: boolean) {
     enabled,
     placeholderData: keepPreviousData,
     queryFn: () => api<WorkflowListResponse>("/admin/workflows", { query: listQuery(params) }),
+  });
+}
+
+/** Bộ lọc lịch sử chạy (tenant theo id, ngày VN YYYY-MM-DD) + phân trang. */
+export type RunsParams = Pick<DifyRunsQuery, "tenant_id" | "status" | "from" | "to"> & {
+  offset: number;
+};
+export const RUNS_PAGE_SIZE = 20;
+
+/** Lịch sử chạy Dify của workflow (platform_admin); chỉ nạp khi mở tab. */
+export function useWorkflowRuns(id: string, params: RunsParams, enabled: boolean) {
+  return useQuery({
+    queryKey: WORKFLOW_KEYS.runs(id, params),
+    enabled,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      api<DifyRunsResponse>(`/admin/workflows/${id}/runs`, {
+        query: { ...params, offset: params.offset || undefined, limit: RUNS_PAGE_SIZE },
+      }),
   });
 }
 

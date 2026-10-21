@@ -33,6 +33,7 @@ export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>> = {
     "secret_id",
     "input_schema",
     "output_field",
+    "dify_app_id",
     "enabled",
     "side_effect",
     "version",

@@ -38,6 +38,8 @@ export const EnvSchema = z.object({
   APP_URL_ADMIN: z.url({ protocol: /^https?$/ }).optional(),
   /** F1 (CR-095) · module đóng băng (workflows, workflow-tools, transfer, commands; docs/platform/modules.md): `off` (mặc định) ⇒ không mount route. Dev/test bật. */
   ADMIN_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
+  /** dify-workflows · gốc Dify console (vd https://dify.example.com) cho nút "Mở trong Dify"; vắng ⇒ nút ẩn. */
+  DIFY_CONSOLE_URL: z.url({ protocol: /^https?$/ }).optional(),
   /** Gốc Hub cho "Chạy thử" lệnh (ADM-FR-23, X1 §2.2). Không dùng tên `HUB_URL` (dành cho chat). Vắng ⇒ 503. */
   ADMIN_HUB_URL: z.url({ protocol: /^https?$/ }).optional(),
   /** Token dịch vụ Hub `/internal/*` — chỉ server-side, cùng giá trị với hub-api. Vắng ⇒ 503. */

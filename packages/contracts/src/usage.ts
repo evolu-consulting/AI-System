@@ -22,6 +22,8 @@ export const UsageQuerySchema = z
   .strictObject({
     tenant_id: UuidSchema.optional(),
     feature_id: z.union([UuidSchema, z.literal("none")]).optional(),
+    /** dify-workflows · chỉ tính lượt gọi Dify của workflow này (platform_admin). */
+    workflow_id: UuidSchema.optional(),
     from: DateOnlySchema.optional(),
     to: DateOnlySchema.optional(),
   })

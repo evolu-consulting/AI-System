@@ -34,5 +34,6 @@ export * from "./usage";
 export * from "./usage-analytics";
 export * from "./users";
 export * from "./version-conflict";
+export * from "./workflow-runs";
 export * from "./workflow-tools";
 export * from "./workflows";

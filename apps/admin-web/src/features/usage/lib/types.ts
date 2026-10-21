@@ -2,4 +2,4 @@
 import type { UsageReportPlatform, UsageReportTenant } from "@ai/contracts";
 
 export type UsageReport = UsageReportPlatform | UsageReportTenant;
-export type UsageParams = { tenantId?: string; from: string; to: string };
+export type UsageParams = { tenantId?: string; workflowId?: string; from: string; to: string };

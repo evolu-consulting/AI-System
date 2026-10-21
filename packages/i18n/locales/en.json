@@ -1065,6 +1065,7 @@
     },
     "unattached": "Unattached",
     "menu": {
+      "openDify": "Open in Dify",
       "edit": "Edit",
       "enable": "Enable",
       "disable": "Disable",
@@ -1073,6 +1074,7 @@
     },
     "createCommandFrom": "Create a command from this workflow",
     "tab": {
+      "runs": "Run history",
       "info": "Details",
       "input": "Input",
       "preview": "What the model sees",
@@ -1080,6 +1082,8 @@
       "hasError": "has errors"
     },
     "field": {
+      "difyAppId": "Dify app ID",
+      "difyAppIdHint": "The UUID in the Dify console URL (…/app/<id>/workflow). Used for the “Open in Dify” button; leave empty to hide it.",
       "key": "Key",
       "name": "Name",
       "type": "Type",
@@ -1126,6 +1130,43 @@
     "preview": {
       "note": "An illustration of how an agent sees this workflow; Hub may add other fields."
     },
+    "runs": {
+      "title": "Run history",
+      "empty": "No runs match the filters.",
+      "unavailable": "The Hub has not recorded Dify run history yet (not migrated).",
+      "total": "{n} runs",
+      "prev": "Previous page",
+      "next": "Next page",
+      "openDify": "View details in Dify",
+      "allTenants": "All tenants",
+      "allStatus": "All statuses",
+      "from": "From",
+      "to": "To",
+      "tenant": "Tenant",
+      "col": {
+        "time": "Time",
+        "tenant": "Tenant",
+        "user": "User",
+        "trigger": "Trigger",
+        "status": "Status",
+        "duration": "Duration",
+        "tokens": "Tokens",
+        "error": "Error",
+        "ids": "Dify IDs"
+      },
+      "trigger": {
+        "command": "Command",
+        "agent": "Agent",
+        "schedule": "Schedule"
+      },
+      "status": {
+        "ok": "Succeeded",
+        "failed": "Failed",
+        "aborted": "Stopped"
+      },
+      "run": "run",
+      "conversation": "conversation"
+    },
     "usage": {
       "empty": "No command or agent uses this workflow yet.",
       "agent": "Agent …{id}",
@@ -1155,6 +1196,7 @@
       "text": "No workflows yet. Build a workflow on Dify (with a Claude session) → put the app key in a secret → declare inputs and description here."
     },
     "error": {
+      "difyAppId": "App ID may only contain letters, digits and - (max 64 characters)",
       "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
       "keyTaken": "Key is already in use",
       "nameRequired": "Enter a workflow name (at most 128 characters)",
@@ -1946,6 +1988,10 @@
     }
   },
   "usage": {
+    "workflow": {
+      "label": "Workflow",
+      "all": "All workflows"
+    },
     "title": "Usage & quota",
     "subtitle": "{period}. Going over quota doesn't block; overage is billed separately.",
     "period": "Period",

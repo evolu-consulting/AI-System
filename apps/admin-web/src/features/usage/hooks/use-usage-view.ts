@@ -3,10 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTenantOptions } from "@/features/tenants/api";
 import { useSession } from "@/lib/auth/use-session";
-import { useUsage } from "../api";
+import { useUsage, useWorkflowOptions } from "../api";
 import { currentMonth, isMonth, monthRange, previousMonth, recentMonths } from "../lib/months";
 
-export type UsageSearch = { tenant?: string; period?: string };
+export type UsageSearch = { tenant?: string; period?: string; workflow?: string };
 
 export function useUsageView(search: UsageSearch) {
   const navigate = useNavigate();
@@ -24,13 +24,15 @@ export function useUsageView(search: UsageSearch) {
   // tenant_admin: `?tenant=` khác tenant mình → 404 (BR-09).
   const foreign = !platform && !!search.tenant && search.tenant !== me?.tenant.key;
   const waiting = platform && tenantKey !== null && options.isPending;
-  const params = { tenantId, from: range.from, to: range.to };
+  const workflows = useWorkflowOptions(platform);
+  const workflowId = platform ? search.workflow : undefined;
+  const params = { tenantId, workflowId, from: range.from, to: range.to };
   const query = useUsage(params, !!me && !foreign && !unknownTenant && !waiting);
 
   const go = (next: UsageSearch) =>
     void navigate({
       to: "/usage",
-      search: { tenant: next.tenant, period: next.period },
+      search: { tenant: next.tenant, period: next.period, workflow: next.workflow },
       replace: true,
     });
   return {
@@ -44,7 +46,19 @@ export function useUsageView(search: UsageSearch) {
     query,
     notFound: foreign || unknownTenant,
     setTenant: (key: string | null) =>
-      go({ tenant: key ?? undefined, period: isMonth(search.period) ? search.period : undefined }),
-    setPeriod: (period: string) => go({ tenant: search.tenant, period }),
+      go({
+        tenant: key ?? undefined,
+        period: isMonth(search.period) ? search.period : undefined,
+        workflow: search.workflow,
+      }),
+    setPeriod: (period: string) => go({ tenant: search.tenant, period, workflow: search.workflow }),
+    workflows: workflows.data ?? [],
+    workflowId,
+    setWorkflow: (id: string | null) =>
+      go({
+        tenant: search.tenant,
+        period: isMonth(search.period) ? search.period : undefined,
+        workflow: id ?? undefined,
+      }),
   };
 }

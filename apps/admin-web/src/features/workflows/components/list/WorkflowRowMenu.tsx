@@ -1,7 +1,7 @@
 // ADM-FR-13, ADM-FR-14 · menu `⋯` của một workflow: Sửa · Bật/Tắt · Tạo command · Xoá.
 import type { WorkflowListItem } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
-import { MoreHorizontal } from "lucide-react";
+import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,23 @@ export function WorkflowRowMenu({ workflow, onToggle, onDelete }: Props) {
         <DropdownMenuItem asChild>
           <Link to="/workflows/$workflowId" params={{ workflowId: workflow.id }}>
             {t("workflows.menu.edit")}
+          </Link>
+        </DropdownMenuItem>
+        {workflow.console_url ? (
+          <DropdownMenuItem asChild>
+            <a href={workflow.console_url} target="_blank" rel="noopener noreferrer">
+              {t("workflows.menu.openDify")}
+              <ExternalLink aria-hidden className="ml-auto size-3.5" />
+            </a>
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuItem asChild>
+          <Link
+            to="/workflows/$workflowId"
+            params={{ workflowId: workflow.id }}
+            search={{ tab: "runs" }}
+          >
+            {t("workflows.tab.runs")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onToggle(workflow)}>

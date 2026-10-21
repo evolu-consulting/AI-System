@@ -64,6 +64,8 @@ export type AppDeps = {
   hub?: HubConfig;
   /** F1 (CR-095) · `false` ⇒ không mount `/admin/{workflows,commands,export,import}` + workflow-tools (đóng băng). Vắng ⇒ mount (test in-process); `server.ts` điền từ `ADMIN_FROZEN_MODULES` (mặc định off). */
   frozenModules?: boolean;
+  /** dify-workflows · gốc Dify console (`DIFY_CONSOLE_URL`) để dựng link "Mở trong Dify"; vắng ⇒ nút ẩn. */
+  difyConsoleUrl?: string;
   /** L1 (#224) · giới hạn đăng nhập (Redis). Vắng ⇒ không giới hạn — chỉ test in-process; server.ts bắt buộc ở production. */
   loginLimiter?: LoginLimiter;
   /** L1 · trần băm mật khẩu đồng thời; vắng ⇒ `defaultHashSlots()`. */
@@ -146,7 +148,10 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   // Cùng handler dưới `/auth/*`: mọi web đã proxy `/auth` tới admin-api (studio-web/chat-web không proxy `/me`).
   app.route("/auth/me", meAppsRoutes(ctx));
   if (frozenOn) {
-    app.route("/admin/workflows", workflowsRoutes({ ...ctx, hooks }));
+    app.route(
+      "/admin/workflows",
+      workflowsRoutes({ ...ctx, hooks, difyConsoleUrl: deps.difyConsoleUrl }),
+    );
     app.route("/admin/commands", commandsRoutes({ ...ctx, hooks, hub: deps.hub }));
     app.route("/admin/export", exportRoutes({ ...ctx, hooks }));
     app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
