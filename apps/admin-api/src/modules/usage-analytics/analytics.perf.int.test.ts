@@ -30,8 +30,8 @@ beforeAll(async () => {
       'anthropic', (array['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'])[1 + x.a % 3], 'api',
       500 + g % 1000, 50 + g % 300, g % 100, 0.001 * (1 + g % 7), 200 + g % 4000,
       case when g % 20 = 0 then 'error' else 'ok' end,
-      now() - make_interval(days => g % 90, secs => g % 3600)
-    from generate_series(1, ${N}) g, lateral (select g % 200 as u, ((g % 200) * 2 + g % 2) % 24 as a) x`;
+      now() - make_interval(days => (g % 90)::int, secs => (g % 3600)::double precision)
+    from generate_series(1, ${N}::int) g, lateral (select g % 200 as u, ((g % 200) * 2 + g % 2) % 24 as a) x`;
   seedMs = performance.now() - t0;
   const [r] = await env.owner<{ n: number }[]>`select count(*)::int as n from hub.usage_daily`;
   rollupRows = r?.n ?? 0;
