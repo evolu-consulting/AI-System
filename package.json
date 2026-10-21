@@ -90,11 +90,12 @@
     "db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create",
     "db:test:drop": "bun --env-file=.env.local packages/db/src/test-db-cli.ts drop",
     "depcruise": "bun tools/scripts/src/depcruise.ts",
+    "check:pack-sql": "bun tools/scripts/src/check-pack-sql.ts",
     "test:lock:verify": "bun tools/scripts/src/test-lock.ts verify",
     "test:lock:write": "bun tools/scripts/src/test-lock.ts write",
     "trace": "bun tools/scripts/src/trace.ts",
     "i18n:check": "bun tools/scripts/src/i18n-check.ts",
-    "check": "biome ci --changed --no-errors-on-unmatched && bun run check:size && bun run depcruise && bun run i18n:check && bun run check:fn",
+    "check": "biome ci --changed --no-errors-on-unmatched && bun run check:size && bun run depcruise && bun run check:pack-sql && bun run i18n:check && bun run check:fn",
     "combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts"
   },
   "devDependencies": {

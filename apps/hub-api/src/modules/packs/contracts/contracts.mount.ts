@@ -4,7 +4,6 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
-import { DEFAULT_TENANT_TZ } from "../../config/config.rules";
 import { packMembersRoutes } from "../kit/adapters/members.route";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
@@ -21,7 +20,7 @@ import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
 import { type PatchApprovalGuard, patchFields } from "./application/patch-fields.usecase";
-import { localDate } from "./domain/local-time.rules";
+import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 import { uploadDay } from "./domain/upload.rules";
 
 export { CONTRACTS_KEY };

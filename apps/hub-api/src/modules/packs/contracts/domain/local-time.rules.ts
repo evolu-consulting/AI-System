@@ -83,3 +83,6 @@ function computeAtLocal(date: string, time: string, tz: string): number {
   });
   return ok.length ? Math.min(...ok) : (cands[0] as number);
 }
+
+/** Mui gio mac dinh cua goi khi nen tang chua cap mui gio tenant (khong import module config cua hub). */
+export const DEFAULT_TENANT_TZ = "Asia/Ho_Chi_Minh";

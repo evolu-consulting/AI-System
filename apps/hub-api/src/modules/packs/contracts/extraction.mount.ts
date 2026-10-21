@@ -12,7 +12,6 @@ import type { Redis } from "ioredis";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
 import { safeErrorFields } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
-import { DEFAULT_TENANT_TZ } from "../../config/config.rules";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import type { PackUow } from "../kit/application/ports";
@@ -63,7 +62,7 @@ import { attachProduct, reviewSave } from "./application/review.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
-import { localDate } from "./domain/local-time.rules";
+import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 
 const KEY = "contracts";
 

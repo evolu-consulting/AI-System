@@ -104,6 +104,47 @@ module.exports = {
       },
     },
     {
+      name: "pack-ports-only-lib",
+      comment:
+        "pack-boundary: gói chỉ dùng cổng nền tảng ở `lib/` (errors, http, logger, loop, auth.middleware, redis, ai-client) — không import lib khác của hub; xem docs/platform/pack-boundary.md",
+      severity: "error",
+      from: { path: "modules/packs/(?!kit/)[^/]+/", pathNot: "\\.test\\.tsx?$" },
+      to: {
+        path: "apps/hub-api/src/lib/",
+        pathNot: "lib/(errors|http|logger|loop|auth\\.middleware|redis|ai-client/[^/]+)\\.ts$",
+      },
+    },
+    {
+      name: "pack-no-hub-modules-any-layer",
+      comment:
+        "pack-boundary: không file nào của gói (kể cả `*.mount.ts`) import module khác của hub (runs, agents, config, attachments…) — nối ở `packs.mount.ts` bằng cổng tiêm vào",
+      severity: "error",
+      from: { path: "modules/packs/(?!kit/)[^/]+/" },
+      to: { path: "apps/hub-api/src/modules/", pathNot: "modules/packs/" },
+    },
+    {
+      name: "pack-no-platform-db-internals",
+      comment:
+        "pack-boundary: gói không đọc bảng admin/ops/permissions/totp và không dùng `hub-scope` — chỉ `withPackScope` (pack-scope) và bảng của chính gói",
+      severity: "error",
+      from: { path: "modules/packs/(?!kit/)[^/]+/" },
+      to: {
+        path: [
+          "(^|/)packages/db/src/hub-scope",
+          "(^|/)packages/db/src/schema/(admin|ops|permissions|totp)",
+          "(^|/)@ai/db/schema/(admin|ops|permissions|totp)",
+        ],
+      },
+    },
+    {
+      name: "platform-no-pack-internals",
+      comment:
+        "pack-boundary: code nền tảng chỉ chạm gói qua `packs.mount.ts` và cổng `kit/` (ports, registry, guard, uow, converters) — không import `packs/<gói>/**`",
+      severity: "error",
+      from: { path: "apps/hub-api/src/", pathNot: "modules/packs/" },
+      to: { path: "modules/packs/(?!kit/|packs\\.mount)[^/]+/" },
+    },
+    {
       name: "pack-no-hub-schema",
       comment:
         "PK-FR-09 (N1 plan §9): module gói không đọc schema hub — chỉ bảng của gói qua `PackUow`",
