@@ -17,6 +17,7 @@ import {
   searchParents,
   suggestionsKey,
 } from "./api";
+import { searchView } from "./search-view";
 
 const LINK = "font-medium text-act hover:underline";
 
@@ -62,7 +63,15 @@ function Prices({ id }: { id: string }) {
   );
 }
 
-function Attach({ c, onDone }: { c: ContractDetail; onDone: (e?: string) => void }) {
+function Attach({
+  c,
+  onDone,
+  onCancel,
+}: {
+  c: ContractDetail;
+  onDone: (e?: string) => void;
+  onCancel: () => void;
+}) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
   const sug = useQuery({
@@ -93,6 +102,12 @@ function Attach({ c, onDone }: { c: ContractDetail; onDone: (e?: string) => void
       .filter((r) => r.id !== c.id)
       .map((r) => ({ id: r.id, title: r.title, number: r.number, why: "" })),
   ].filter((o, i, all) => all.findIndex((x) => x.id === o.id) === i);
+  const view = searchView({
+    text,
+    searching: found.isFetching,
+    suggesting: sug.isPending,
+    options: options.length,
+  });
   return (
     <div className="mt-3">
       <label className="flex flex-col gap-1 text-sm">
@@ -104,6 +119,17 @@ function Attach({ c, onDone }: { c: ContractDetail; onDone: (e?: string) => void
           className="h-9 max-w-sm rounded-lg border border-field bg-panel px-3 text-label text-ink"
         />
       </label>
+      <p className="mt-1 text-label text-dim">{t("contracts.appendix.searchHint")}</p>
+      {view === "loading" && (
+        <p role="status" className="mt-2 text-label text-dim">
+          {t("contracts.appendix.searching")}
+        </p>
+      )}
+      {view === "empty" && (
+        <p role="status" className="mt-2 text-label text-dim">
+          {t("contracts.appendix.noMatch", { q: text.trim() })}
+        </p>
+      )}
       <ul className="mt-2 flex flex-col gap-1">
         {options.map((o) => (
           <li key={o.id}>
@@ -115,6 +141,9 @@ function Attach({ c, onDone }: { c: ContractDetail; onDone: (e?: string) => void
           </li>
         ))}
       </ul>
+      <button type="button" className="btn btn-quiet mt-2" onClick={onCancel}>
+        {t("contracts.common.cancel")}
+      </button>
     </div>
   );
 }
@@ -184,7 +213,7 @@ export function AppendixPanel({ c, write }: { c: ContractDetail; write: boolean 
         )}
         {canAttach &&
           (open ? (
-            <Attach c={c} onDone={(e) => void refresh(e)} />
+            <Attach c={c} onDone={(e) => void refresh(e)} onCancel={() => setOpen(false)} />
           ) : (
             <button type="button" className={`${LINK} mt-2 text-sm`} onClick={() => setOpen(true)}>
               {t("contracts.appendix.attach")}

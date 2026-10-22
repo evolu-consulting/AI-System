@@ -18,3 +18,13 @@ export function leadKey(status: string): string | null {
   if (status === "needs_review") return "contracts.review.checkLead";
   return null;
 }
+
+/** Nút Lưu: chờ xác nhận ⇒ "Lưu nháp" (lưu chưa phải xác nhận). */
+export const saveLabelKey = (confirm: boolean): string =>
+  confirm ? "contracts.review.saveDraft" : "contracts.cform.saveChanges";
+
+/** Thông báo sau khi lưu thành công; chỉ HĐ vừa chuyển sang hiệu lực mới được báo "có hiệu lực". */
+export function savedNoticeKey(status: string, becameActive: boolean): string {
+  if (becameActive) return "contracts.cform.reviewSavedActive";
+  return status === "needs_review" ? "contracts.review.savedDraft" : "contracts.review.saved";
+}

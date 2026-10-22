@@ -1,4 +1,4 @@
-// HD-FR-26 · S05: luật thuần màn HĐ (cảnh báo, dòng phụ, câu lỗi lưu). V2-F: form + PATCH ↔ `fields` ở `contract-form/lib/*.test.ts`.
+﻿// HD-FR-26 · S05: luật thuần màn HĐ (cảnh báo, dòng phụ, câu lỗi lưu). V2-F: form + PATCH ↔ `fields` ở `contract-form/lib/*.test.ts`.
 import { describe, expect, it } from "bun:test";
 import { ApiError } from "@ai/web-kit/http";
 import { leadKey, warningsOf } from "./review";
@@ -22,5 +22,16 @@ describe("S05 · màn HĐ", () => {
       "contracts.errors.network",
     );
     expect(saveErrorText(new Error("SELECT * secret"), t)).toBe("contracts.errors.unknown");
+  });
+});
+
+describe("save wording (needs_review)", () => {
+  it("nhãn nút + thông báo", async () => {
+    const { saveLabelKey, savedNoticeKey } = await import("./review");
+    expect(saveLabelKey(true)).toBe("contracts.review.saveDraft");
+    expect(saveLabelKey(false)).toBe("contracts.cform.saveChanges");
+    expect(savedNoticeKey("needs_review", false)).toBe("contracts.review.savedDraft");
+    expect(savedNoticeKey("needs_review", true)).toBe("contracts.cform.reviewSavedActive");
+    expect(savedNoticeKey("active", false)).toBe("contracts.review.saved");
   });
 });

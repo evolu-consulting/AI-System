@@ -28,7 +28,7 @@ import { ManagePanel } from "../components/ManagePanel";
 import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
 import { useInfoForm } from "../hooks/use-info-form";
-import { leadKey } from "../lib/review";
+import { leadKey, saveLabelKey } from "../lib/review";
 
 const READING_REFRESH_MS = 2000;
 
@@ -53,7 +53,7 @@ type Approval = ReturnType<typeof useApprovalUi>;
 
 function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: boolean }) {
   const { t } = useTranslation();
-  const idle = t(confirm ? "contracts.common.save" : "contracts.cform.saveChanges");
+  const idle = t(saveLabelKey(confirm));
   return (
     <button
       type="button"
@@ -157,6 +157,7 @@ function ContractBody({
               open={origOpen}
               contractId={id}
               file={c.file}
+              hasSource={c.has_source}
               appendices={c.appendices}
               onClose={() => setOrigOpen(false)}
             />

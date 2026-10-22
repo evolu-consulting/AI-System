@@ -43,6 +43,7 @@ import {
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
 import { contractKey, patchContractFields, saveReview } from "../api";
+import { savedNoticeKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
 
 const SUGGEST_MAX = 50;
@@ -212,24 +213,20 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
         const out = await saveConfirm();
         await qc.invalidateQueries({ queryKey: contractKey(id) });
         await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
-        const m = t(
-          out?.status === "active"
-            ? "contracts.cform.reviewSavedActive"
-            : "contracts.cform.reviewSaved",
-        );
+        const m = t(savedNoticeKey(out?.status ?? "needs_review", out?.status === "active"));
         toast(m);
         setMsg(m);
       } else {
         await saveFirst();
         await qc.invalidateQueries({ queryKey: contractKey(id) });
-        setMsg(t("contracts.review.saved"));
+        setMsg(t(savedNoticeKey(c?.status ?? "", false)));
       }
     } catch (e) {
       setErr(e instanceof Error && !("status" in e) ? e.message : saveErrorText(e, t));
     } finally {
       setBusy(false);
     }
-  }, [confirm, saveConfirm, saveFirst, qc, id, t]);
+  }, [confirm, saveConfirm, saveFirst, qc, id, t, c?.status]);
   return { reset, save, saveFirst, busy, msg, err };
 }
 

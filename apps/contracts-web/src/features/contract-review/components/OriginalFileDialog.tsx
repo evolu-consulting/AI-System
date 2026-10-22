@@ -4,6 +4,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { fetchSourceText, sourceKey } from "~/features/contract-source/api";
 import {
   contractKey,
   fetchContract,
@@ -12,7 +13,13 @@ import {
   openOriginalFile,
 } from "../api";
 
-export type OriginalEntry = { id: string; label: string; name: string; mime: string };
+export type OriginalEntry = {
+  id: string;
+  label: string;
+  name: string;
+  mime: string;
+  hasSource?: boolean;
+};
 
 const APPENDIX_FILES_MAX = 20;
 
@@ -28,8 +35,47 @@ function useAppendixEntries(appendices: { id: string; title: string }[]): Origin
   });
   return list.flatMap((a, i) => {
     const f = results[i]?.data?.file;
-    return f ? [{ id: a.id, label: a.title, name: f.name, mime: f.mime }] : [];
+    return f
+      ? [
+          {
+            id: a.id,
+            label: a.title,
+            name: f.name,
+            mime: f.mime,
+            hasSource: results[i]?.data?.has_source === true,
+          },
+        ]
+      : [];
   });
+}
+
+/** Tá»‡p khÃ´ng xem trÆ°á»›c Ä‘Æ°á»£c (vd .docx) â‡’ hiá»‡n chá»¯ Ä‘Ã£ Ä‘á»c tá»« tá»‡p (cÃ¹ng nguá»“n vá»›i khoang "VÄƒn báº£n gá»‘c"); khÃ´ng cÃ³ â‡’ bÃ¡o nhÆ° cÅ©. */
+function NoPreview({ entry }: { entry: OriginalEntry }) {
+  const { t } = useTranslation();
+  const q = useQuery({
+    queryKey: sourceKey(entry.id),
+    queryFn: ({ signal }) => fetchSourceText(entry.id, signal),
+    staleTime: 60_000,
+    enabled: entry.hasSource === true,
+  });
+  if (!entry.hasSource || q.error || (q.data !== undefined && q.data.trim() === ""))
+    return <p className="p-4 text-label text-dim">{t("contracts.review.orig.noPreview")}</p>;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <p role="status" className="text-label text-dim">
+        {t("contracts.review.orig.noPreviewText")}
+      </p>
+      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-rule bg-sunk p-3 text-[13px] leading-relaxed">
+        {q.isPending ? (
+          <span className="text-dim">{t("contracts.review.orig.loading")}</span>
+        ) : (
+          <div className="whitespace-pre-wrap break-words" data-testid="orig-source-text">
+            {q.data}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function Viewer({ entry }: { entry: OriginalEntry }) {
@@ -62,7 +108,7 @@ function Viewer({ entry }: { entry: OriginalEntry }) {
         </a>
       </div>
       {!isPreviewable(entry.mime) ? (
-        <p className="p-4 text-label text-dim">{t("contracts.review.orig.noPreview")}</p>
+        <NoPreview entry={entry} />
       ) : entry.mime === "application/pdf" ? (
         <iframe
           title={entry.name}
@@ -81,10 +127,12 @@ function Viewer({ entry }: { entry: OriginalEntry }) {
 export function OriginalFileDialog({
   contractId,
   file,
+  hasSource,
   appendices,
   onClose,
 }: {
   contractId: string;
+  hasSource?: boolean;
   file: { name: string; mime: string } | null;
   appendices: { id: string; title: string }[];
   onClose: () => void;
@@ -99,6 +147,7 @@ export function OriginalFileDialog({
             label: t("contracts.review.orig.main"),
             name: file.name,
             mime: file.mime,
+            hasSource: hasSource === true,
           },
         ]
       : []),

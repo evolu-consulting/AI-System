@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { useGenerateSummary } from "../hooks/use-manage";
 import { warningsOf } from "../lib/review";
-import { type SummaryInput, summaryRows } from "../lib/summary";
+import { nonEmptyRows, type SummaryInput, summaryRows } from "../lib/summary";
 
 type C = SummaryInput & Pick<ContractDetail, "warnings" | "ai">;
 
@@ -28,20 +28,18 @@ function AiSummary({ s }: { s: AiSummaryT }) {
         <h3 className="text-[12.5px] font-semibold text-dim">{L("aiSumMain")}</h3>
         <p className="mt-0.5 text-[13.5px]">{s.main}</p>
       </section>
-      {lists.map(([k, xs]) => (
-        <section key={k} data-testid={`ai-sum-${k}`}>
-          <h3 className="text-[12.5px] font-semibold text-dim">{L(k)}</h3>
-          {xs.length === 0 ? (
-            <p className="mt-0.5 text-[13px] text-dim">—</p>
-          ) : (
+      {lists
+        .filter(([, xs]) => xs.length > 0)
+        .map(([k, xs]) => (
+          <section key={k} data-testid={`ai-sum-${k}`}>
+            <h3 className="text-[12.5px] font-semibold text-dim">{L(k)}</h3>
             <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-[13.5px]">
               {xs.map((x) => (
                 <li key={x}>{x}</li>
               ))}
             </ul>
-          )}
-        </section>
-      ))}
+          </section>
+        ))}
     </div>
   );
 }
@@ -77,20 +75,22 @@ export function SummaryPanel({
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
-  const rows = summaryRows(c, partner, {
-    labels: {
-      deal: L("sumDeal"),
-      partner: L("sumPartner"),
-      commission: L("sumCommission"),
-      value: L("sumValue"),
-      period: L("sumPeriod"),
-      progress: L("sumProgress"),
-      next: L("sumNext"),
-      lines: L("sumLines"),
-    },
-    dealName: (d) => t(`contracts.cform.dealName.${d}`),
-    progress: (done, total) => L("progressCount", { done, total }),
-  });
+  const rows = nonEmptyRows(
+    summaryRows(c, partner, {
+      labels: {
+        deal: L("sumDeal"),
+        partner: L("sumPartner"),
+        commission: L("sumCommission"),
+        value: L("sumValue"),
+        period: L("sumPeriod"),
+        progress: L("sumProgress"),
+        next: L("sumNext"),
+        lines: L("sumLines"),
+      },
+      dealName: (d) => t(`contracts.cform.dealName.${d}`),
+      progress: (done, total) => L("progressCount", { done, total }),
+    }),
+  );
   const warnings = warningsOf(c);
   return (
     <Panel>

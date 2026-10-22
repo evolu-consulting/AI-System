@@ -65,3 +65,10 @@ export function summaryRows(
     [tx.labels.lines, String(c.items.length)],
   ];
 }
+
+/** Giá trị "trống" của hàng tóm tắt (đối tác/giá trị/bước tới chưa có) — ẩn cả mục thay vì hiện một dấu "—". */
+export const isEmptyRow = ([, v]: [string, string]): boolean => v.trim() === "" || v === "—";
+
+export function nonEmptyRows(rows: [string, string][]): [string, string][] {
+  return rows.filter((r) => !isEmptyRow(r));
+}
