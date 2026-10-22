@@ -254,7 +254,9 @@ test.describe("lưu", () => {
     });
   });
 
-  test("«Tạo sản phẩm mới» ⇒ POST /products (NCC chính khi Mua) rồi POST /manual với id SP mới", async ({
+  // products-confirm (khách 2026-10-22): lưu KHÔNG tạo SP; HĐ còn chờ xác nhận ⇒ dòng "Tạo sản phẩm mới" gửi không kèm SP,
+  // SP chỉ tạo lúc xác nhận (hộp "Gắn sản phẩm") hoặc khi lưu ra `active` (`/product-links`, xem v2g-review).
+  test("«Tạo sản phẩm mới» + HĐ chờ xác nhận ⇒ KHÔNG POST /products, POST /manual không kèm SP", async ({
     page,
   }) => {
     const sent = await installV2f(page);
@@ -271,16 +273,12 @@ test.describe("lưu", () => {
     await page.getByLabel("Nhóm sản phẩm dòng 1").selectOption("goods");
     await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
     await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
-    const created = sent.find((s) => s.path === "/pack/contracts/products");
-    expect(created?.body).toEqual({
-      name: "Ổ cứng ngoài 1TB",
-      unit: "cái",
-      group: "goods",
-      main_supplier: { name: "Công ty TNHH Bao Bì Phương Nam", tax_id: null },
-    });
-    expect(manual(sent)?.body).toMatchObject({
-      items: [{ name: "Ổ cứng ngoài 1TB", product_id: "e1000000-0000-4000-8000-000000000099" }],
-    });
+    expect(sent.filter((s) => s.path === "/pack/contracts/products")).toEqual([]);
+    expect(sent.filter((s) => s.path.endsWith("/product-links"))).toEqual([]);
+    const body = manual(sent)?.body as { items: { name: string; product_id?: string | null }[] };
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]?.name).toBe("Ổ cứng ngoài 1TB");
+    expect(body.items[0]?.product_id ?? null).toBeNull();
   });
 
   test("Giới thiệu: gửi hoa hồng %, không gửi giá trị", async ({ page }) => {

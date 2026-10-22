@@ -159,15 +159,17 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
   await expect(page.getByRole("alert").first()).toContainText("đã phát sinh kho");
 });
 
-test("Tóm tắt hiện 5 mục AI viết", async ({ page }) => {
+test("Tóm tắt hiện các mục AI viết; mục trống (Thưởng) bị ẩn", async ({ page }) => {
   await installV2g(page);
   await page.goto(`/contracts/${ACTIVE_ID}`);
   const s = page.getByTestId("ai-summary");
   await expect(s.getByTestId("ai-sum-main")).toContainText("Hợp đồng bán bao bì");
   await expect(s.getByTestId("ai-sum-aiSumDeadlines")).toContainText("Giao đợt 1 trước 01/03/2026");
   await expect(s.getByTestId("ai-sum-aiSumPenalties")).toContainText("Phạt 0,05%/ngày");
-  await expect(s.getByTestId("ai-sum-aiSumBonuses")).toBeVisible();
   await expect(s.getByTestId("ai-sum-aiSumClauses")).toContainText("Điều 5");
-  for (const h of ["Nội dung chính", "Hạn quan trọng", "Phạt", "Thưởng", "Điều khoản chính"])
+  for (const h of ["Nội dung chính", "Hạn quan trọng", "Phạt", "Điều khoản chính"])
     await expect(s.getByRole("heading", { name: h, exact: true })).toBeVisible();
+  // review khách 2026-10-22: mục không có nội dung không hiện dòng "—"
+  await expect(s.getByTestId("ai-sum-aiSumBonuses")).toHaveCount(0);
+  await expect(s.getByRole("heading", { name: "Thưởng", exact: true })).toHaveCount(0);
 });

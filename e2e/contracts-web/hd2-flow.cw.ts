@@ -46,13 +46,17 @@ async function install(page: Page): Promise<Sent[]> {
   return sent;
 }
 
-test("HD-FR-26 · S05 · Lưu gửi PATCH chỉ ô đã đổi + version, báo «Đã lưu.»", async ({ page }) => {
+test("HD-FR-26 · S05 · Lưu nháp gửi PATCH chỉ ô đã đổi + version, nhắc còn chờ xác nhận", async ({
+  page,
+}) => {
   const sent = await install(page);
   await page.goto(`/contracts/${contract.id}`);
   const value = page.getByLabel("Giá trị");
   await value.fill("250.000.000");
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã lưu.");
+  await expect(page.getByRole("status")).toHaveText(
+    "Đã lưu nháp. Hợp đồng vẫn chờ xác nhận — bấm Xác nhận để hoàn tất.",
+  );
   expect(sent).toEqual([
     {
       method: "PATCH",
