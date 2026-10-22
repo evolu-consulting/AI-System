@@ -99,4 +99,7 @@ export type JobAgentRunnerDeps = {
   kh?: KhJobPreparer;
   /** TD #252 · cửa trần token tenant (giữ chỗ trước khi đẩy job chat); vắng ⇒ không chặn (test). */
   tokenGate?: ChatTokenGate;
+  /** Múi giờ tenant ⇒ dòng "Thời điểm hiện tại" cuối lời nhắc hệ thống của agent chat; vắng ⇒ không thêm. */
+  timeZoneOf?: (tenantId: string) => Promise<string>;
+  now?: () => Date;
 };

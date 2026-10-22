@@ -34,6 +34,7 @@ import {
 } from "../runner.rules";
 import { EventQueue, emitStep, JobFollower } from "./job-follow";
 import { chooseJobStep, type JobStep, stepProviderKeys } from "./job-step.rules";
+import { nowLine, withNowLine } from "./now-line.rules";
 import { withPackTools } from "./pack-tool-keys.rules";
 import * as repo from "./runner.repo";
 
@@ -186,6 +187,7 @@ export class JobAgentRunner implements AgentRunner {
     profile: ProfileConfig,
     ids: { jobId: string; stepId: string },
     { mcp, khItems }: JobMcp,
+    now: string | null,
   ): AgentCliJob | null {
     const attachments = jobAttachments(agentFiles(task));
     const block = agentFilesBlock(attachments);
@@ -200,7 +202,9 @@ export class JobAgentRunner implements AgentRunner {
       role: task.role,
       profile,
       prompt: block ? `${prompt}\n\n${block}` : prompt,
-      systemPrompt: task.systemPrompt ?? task.agent.systemPrompt,
+      systemPrompt: now
+        ? withNowLine(task.systemPrompt ?? task.agent.systemPrompt, now, SYSTEM_PROMPT_MAX)
+        : (task.systemPrompt ?? task.agent.systemPrompt),
       history: task.history,
       stream: task.stream !== undefined,
       attachments,
@@ -223,6 +227,20 @@ export class JobAgentRunner implements AgentRunner {
     return { ...payload, system_prompt: hint.text };
   }
 
+  /** Agent chat (không phải job stage) ⇒ dòng ngày giờ theo múi tenant; lỗi đọc múi ⇒ bỏ qua (không chặn lượt chat). */
+  async #nowLine(task: AgentTask): Promise<string | null> {
+    if (task.role !== "agent" || task.stageRunId || !this.d.timeZoneOf) return null;
+    try {
+      return nowLine(
+        (this.d.now ?? (() => new Date()))(),
+        await this.d.timeZoneOf(task.run.tenantId),
+      );
+    } catch (err) {
+      this.d.log.warn("now-line-skipped", { run_id: task.run.id, ...safeErrorFields(err) });
+      return null;
+    }
+  }
+
   /** TD #252 · trần token tenant: giữ chỗ trước khi đẩy job, trả chỗ khi xong (`gatedRun`); job stage không qua cửa chat. */
   run(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
     const gate = task.stageRunId ? undefined : this.d.tokenGate;
@@ -239,7 +257,8 @@ export class JobAgentRunner implements AgentRunner {
       yield syntheticFailed(jobId, { ...f, message: `no usable profile step: ${pick.reason}` });
       return;
     }
-    const payload = pick && this.#payload(task, pick.profile, { jobId, stepId }, jm);
+    const now = pick && (await this.#nowLine(task));
+    const payload = pick && this.#payload(task, pick.profile, { jobId, stepId }, jm, now ?? null);
     if (!payload) {
       this.d.log.error("job-payload-invalid", { run_id: task.run.id, agent_id: task.agent.id });
       const f = {

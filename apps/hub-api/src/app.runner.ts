@@ -8,6 +8,7 @@ import { pgUsageStore } from "./lib/ai-client/usage.pg";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
+import { DEFAULT_TENANT_TZ } from "./modules/config/config.rules";
 import type { ConfigCache } from "./modules/config/config.service";
 import { DifyAgentRunner } from "./modules/dify/agent/dify-agent-runner";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
@@ -70,6 +71,8 @@ export function agentRunner(d: AgentRunnerDeps): AgentRunner {
     kh: d.kh && khPrepareJob({ db: d.db, rt: d.kh, log: d.log }),
     // TD #252 · trần token tenant/ngày cho lượt chat (cùng trần + giữ chỗ với ai-client)
     tokenGate: chatTokenGate({ usage: pgUsageStore(d.db), cap: () => envDailyTokens() }),
+    // "hôm nay" của agent chat theo lịch tenant (không theo đồng hồ UTC của máy chạy CLI)
+    timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
   });
   const credentials = new CredentialService({
     db: d.db,
