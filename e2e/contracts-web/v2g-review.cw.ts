@@ -55,8 +55,8 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
 }) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Giữ mốc Giao hàng đợt 1").uncheck();
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã lưu hợp đồng");
+  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Đã lưu nháp");
   expect(review(sent)).toHaveLength(1);
   expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(1);
   expect(review(sent)[0]).toEqual({
@@ -98,7 +98,7 @@ test("đổi Bán → Mua: đối tác dựng lại theo bên bán, gửi deal=b
   await page.getByRole("radio", { name: /^Mua/ }).click();
   await expect(page.getByLabel(/^Nhà cung cấp/)).toHaveValue("Công ty TNHH Bao Bì Phương Nam");
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id); // gợi ý chạy lại theo loại mới
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("status")).toBeVisible();
   const b = review(sent)[0]?.body as { deal: string; fields?: unknown };
   expect(b.deal).toBe("buy");
@@ -116,7 +116,7 @@ test("Hủy = bỏ chỉnh sửa, KHÔNG gửi yêu cầu ghi nào", async ({ pa
 test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async ({ page }) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption("");
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("alert").first()).toContainText("chưa gắn sản phẩm");
   expect(review(sent)).toHaveLength(0);
 });
@@ -125,7 +125,7 @@ test("tenant tắt duyệt: Lưu trả `active` ⇒ trang chi tiết thường, 
   page,
 }) => {
   await openReview(page, { saveStatus: "active" });
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu — hợp đồng có hiệu lực");
   await expect(page.getByTestId("form-bar")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toBeVisible();

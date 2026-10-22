@@ -51,7 +51,7 @@ test("HD-FR-26 · S05 · Lưu gửi PATCH chỉ ô đã đổi + version, báo �
   await page.goto(`/contracts/${contract.id}`);
   const value = page.getByLabel("Giá trị");
   await value.fill("250.000.000");
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu.");
   expect(sent).toEqual([
     {
