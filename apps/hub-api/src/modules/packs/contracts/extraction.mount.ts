@@ -30,6 +30,7 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { productLinksRepo } from "./adapters/product-links.repo";
 import { reviewRepo } from "./adapters/review.repo";
 import { reviewRoutes } from "./adapters/review.routes";
 import {
@@ -56,6 +57,10 @@ import { handleExtractJob } from "./application/extract-job.usecase";
 import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
+import {
+  linkContractProducts,
+  type ProductLinksTxRepos,
+} from "./application/product-links.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
 import type { ReviewTxRepos } from "./application/review.ports";
 import { attachProduct, reviewSave } from "./application/review.usecase";
@@ -182,6 +187,7 @@ const packUow = (db: Db) =>
     approval: approvalRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
     review: reviewRepo(tx, tid),
+    links: productLinksRepo(tx, tid),
   }));
 
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
@@ -269,12 +275,13 @@ export function contractsAiModule(
 /** V2-G: Lưu màn xác nhận (tenant tắt duyệt ⇒ `active` ngay) + gắn lại SP cho dòng HĐ đã lưu. */
 function reviewModule(
   view: PackAccessView,
-  uow: PackUow<ReviewTxRepos>,
+  uow: PackUow<ReviewTxRepos & ProductLinksTxRepos>,
   tz: (tenantId: string) => Promise<string>,
 ) {
   return reviewRoutes(view, {
     save: reviewSave({ uow, today: async (tid) => localDate(new Date(), await tz(tid)) }),
     attach: attachProduct({ uow }),
+    link: linkContractProducts({ uow }),
   });
 }
 

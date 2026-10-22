@@ -1,5 +1,16 @@
 {
   "contracts": {
+    "plink": {
+      "title": "Link products to contract lines",
+      "desc": "The contract is about to be confirmed. For each line: use an existing product or create a new one. Products are only created/linked when you confirm.",
+      "useExisting": "Use existing product",
+      "createNew": "Create new product",
+      "pickAria": "Existing product for line {{name}}",
+      "newNameAria": "New product name for line {{name}}",
+      "groupAria": "New product group",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
     "app": {
       "name": "Cooperation Ledger",
       "tagline": "Contracts, partners, payments & digital signatures"

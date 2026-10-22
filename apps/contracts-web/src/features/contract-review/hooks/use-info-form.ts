@@ -42,6 +42,7 @@ import {
   unsureKeys,
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
+import { linkNewFormLines } from "~/features/product-links/api";
 import { contractKey, patchContractFields, saveReview } from "../api";
 import { savedNoticeKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
@@ -167,7 +168,7 @@ function useInfoDerived(
 
 type SaveCtx = { c: ContractDetail | undefined; id: string; confirm: boolean; f: FormState | null };
 
-/** Lưu ở bước xác nhận: tạo SP mới (nếu chọn) rồi MỘT `POST /review`; chặn lỗi ⇒ toast + ném. */
+/** Lưu ở bước xác nhận: MỘT `POST /review` (HĐ ra `active` ⇒ tạo SP mới đã chọn); chặn lỗi ⇒ toast + ném. */
 function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => void) {
   const { t } = useTranslation();
   const { c, f, id } = x;
@@ -178,11 +179,14 @@ function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => voi
       toast(stop, "late");
       throw new Error(stop);
     }
-    const productIds = await productIdsOf(f);
-    return saveReview(
+    const productIds = productIdsOf(f);
+    const out = await saveReview(
       id,
       reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
     );
+    // products-confirm: SP mới chỉ tạo khi lưu xong HĐ đã xác nhận (tenant tắt duyệt); chờ duyệt ⇒ hộp "Gắn sản phẩm" lúc duyệt.
+    await linkNewFormLines(id, out.status, f.items);
+    return out;
   }, [c, f, rows, id, t, setTried]);
 }
 

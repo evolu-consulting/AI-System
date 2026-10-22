@@ -1,6 +1,8 @@
 {
   "contracts": {
     "del": {
+      "orphansAsk": "Delete products no other contract uses?",
+      "orphansHint": "Tick the products to delete with this contract. Unticked ones are kept. Products used by another contract are never deleted.",
       "button": "Delete contract",
       "title": "Delete this contract?",
       "warn": "Permanent, cannot be undone. The following will change:",

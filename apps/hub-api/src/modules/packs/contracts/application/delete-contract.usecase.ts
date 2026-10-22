@@ -13,7 +13,10 @@ export type DeleteContractRepo = {
   /** Đảo kho của HĐ (V2-M `reverseContractStock`); trả số dòng đã đảo. Ném `StockError`. */
   reverseStock(contractId: string, on: string): Promise<number>;
   /** `contracts.delete_contract`; null = không thấy. Ném `DeleteContractFail` khi còn phụ lục / gắn CKS. */
-  remove(contractId: string): Promise<
+  remove(
+    contractId: string,
+    products: readonly string[],
+  ): Promise<
     | (Omit<DeleteResult, "deleted" | "impact"> & {
         milestones: number;
         stock_reversed: number;
@@ -51,7 +54,12 @@ export function deleteContractUsecases(d: Deps) {
       if (!out) throw new DeleteContractFail("not_found");
       return out;
     },
-    remove: async (who: PackWho, id: string): Promise<DeleteResult> => {
+    /** `removeProducts`: SP người xoá đã tick (products-confirm) — chỉ SP không còn HĐ khác dùng mới bị xoá. */
+    remove: async (
+      who: PackWho,
+      id: string,
+      removeProducts: readonly string[] = [],
+    ): Promise<DeleteResult> => {
       const on = localDate(d.now(), await d.timeZoneOf(who.tenantId));
       return d.uow.tenant(who, async (r) => {
         try {
@@ -61,7 +69,7 @@ export function deleteContractUsecases(d: Deps) {
             throw new DeleteContractFail("stock_blocked", e.detail, e.shortages);
           throw e;
         }
-        const x = await r.deleteContract.remove(id);
+        const x = await r.deleteContract.remove(id, removeProducts);
         if (!x) throw new DeleteContractFail("not_found");
         const { audit_id, ...impact } = x;
         return { deleted: true, audit_id, impact };

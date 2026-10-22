@@ -9,5 +9,9 @@ export const deleteImpactKey = (id: string) => ["contract", id, "delete-preview"
 export const fetchDeleteImpact = (id: string, signal?: AbortSignal) =>
   api<DeleteImpact>(`${BASE}/${encodeURIComponent(id)}/delete-preview`, { signal });
 
-export const deleteContract = (id: string) =>
-  api<DeleteResult>(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
+/** `removeProducts`: SP mồ côi người xoá đã tick (products-confirm); rỗng ⇒ không xoá SP nào. */
+export const deleteContract = (id: string, removeProducts: string[] = []) =>
+  api<DeleteResult>(`${BASE}/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    body: { remove_products: removeProducts },
+  });

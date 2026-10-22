@@ -1,6 +1,7 @@
 // HD-FR-31 · HD-FR-33 · HD-FR-34 · HD-FR-36 · HD-FR-37 · M3-decouple: flow duyệt HĐ là máy trạng thái của gói (không engine).
 // Mở lượt (tải lên / trích lại / nhập tay), xem thẻ duyệt, quyết bước (luật `decide` thuần), cài đặt tenant. Quyết trong MỘT tx
 // khoá hàng HĐ (FOR UPDATE) ⇒ `finalize` đánh giá lại ngưỡng trong câu UPDATE (D3-14). Lớp 2: chỉ cổng, lỗi trả mã (route dịch).
+import type { ProductLink } from "@ai/contracts";
 import type { PackWho } from "../../kit/application/ports";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { RunPhase } from "../domain/approval-edit.rules";
@@ -39,7 +40,12 @@ export type ApprovalDeps = {
   redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> };
 };
 export type ContractApproval = ReturnType<typeof approvalView>;
-export type ApprovalAction = { action: "approve" | "reject" | "redo"; feedback?: string };
+/** `products` (products-confirm): gắn/tạo SP cho dòng HĐ — áp TRONG tx chỉ khi bước này làm HĐ thành "đã xác nhận". */
+export type ApprovalAction = {
+  action: "approve" | "reject" | "redo";
+  feedback?: string;
+  products?: readonly ProductLink[];
+};
 export type ActOutcome =
   | ContractApproval
   | "not_found"
@@ -106,7 +112,12 @@ export function getApproval(d: ApprovalDeps) {
 async function apply(
   r: ApprovalTxRepos,
   who: PackWho,
-  c: { contractId: string; approvalId: string; feedback: string | undefined },
+  c: {
+    contractId: string;
+    approvalId: string;
+    feedback: string | undefined;
+    products?: readonly ProductLink[] | undefined;
+  },
   dec: Exclude<Decision, { kind: "error" }>,
 ): Promise<"ok" | "redo" | null> {
   const { contractId: cid, approvalId: id } = c;
@@ -126,12 +137,26 @@ async function apply(
 async function finalizeOrLevel2(
   r: ApprovalTxRepos,
   who: PackWho,
-  c: { contractId: string; approvalId: string },
+  c: { contractId: string; approvalId: string; products?: readonly ProductLink[] | undefined },
   level2Passed: boolean,
 ): Promise<"ok" | null> {
-  if (await r.approval.finalize(c.contractId, c.approvalId, who.userId, level2Passed)) return "ok";
+  if (await r.approval.finalize(c.contractId, c.approvalId, who.userId, level2Passed)) {
+    await linkOnConfirm(r, who, c);
+    return "ok";
+  }
   if (level2Passed) return null;
   return (await r.approval.toLevel2(c.approvalId, who.userId)) ? "ok" : null;
+}
+
+/** products-confirm: HĐ vừa thành "đã xác nhận" ⇒ gắn/tạo SP theo lựa chọn trong hộp xác nhận (cùng tx; lỗi ⇒ ROLLBACK cả bước). */
+async function linkOnConfirm(
+  r: ApprovalTxRepos,
+  who: PackWho,
+  c: { contractId: string; products?: readonly ProductLink[] | undefined },
+): Promise<void> {
+  if (!c.products?.length || !r.links) return;
+  const out = await r.links.link(c.contractId, c.products, who.userId);
+  if (out.kind !== "ok") throw new Error(`product-links on confirm: ${out.kind}`);
 }
 
 type Decided = { done: "ok" | "redo"; approvalId: string; error?: undefined };
@@ -167,7 +192,12 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
     });
     if (dec.kind === "error") return { error: dec.code };
     if ((await redoGate(d, who, dec)) === "unavailable") return "unavailable";
-    const c = { contractId: id, approvalId: st.approval.id, feedback: b.feedback };
+    const c = {
+      contractId: id,
+      approvalId: st.approval.id,
+      feedback: b.feedback,
+      products: b.products,
+    };
     const done = await apply(r, who, c, dec);
     if (done === null) return { error: "APPROVAL_NOT_OPEN" };
     if (done === "redo")

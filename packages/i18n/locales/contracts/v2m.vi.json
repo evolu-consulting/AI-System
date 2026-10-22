@@ -1,6 +1,8 @@
 {
   "contracts": {
     "del": {
+      "orphansAsk": "Xoá các sản phẩm không còn hợp đồng nào dùng?",
+      "orphansHint": "Chọn sản phẩm muốn xoá cùng hợp đồng. Không chọn ⇒ giữ lại. Sản phẩm còn hợp đồng khác dùng không bao giờ bị xoá.",
       "button": "Xoá hợp đồng",
       "title": "Xoá hợp đồng này?",
       "warn": "Xoá hẳn, không hoàn tác. Những thứ sau sẽ thay đổi:",

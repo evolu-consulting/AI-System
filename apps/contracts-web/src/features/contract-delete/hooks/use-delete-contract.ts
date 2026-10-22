@@ -16,7 +16,7 @@ export function useDeleteContract(id: string, open: boolean, close: () => void) 
     gcTime: 0,
   });
   const del = useMutation({
-    mutationFn: () => deleteContract(id),
+    mutationFn: (removeProducts: string[]) => deleteContract(id, removeProducts),
     onSuccess: async () => {
       toast(t("contracts.del.done"));
       close();

@@ -54,6 +54,7 @@ export type DeleteImpact = {
   stock: { product: string; component: string; direction: "out" | "in"; qty: string }[];
   service_customers: number;
   products: string[];
+  orphan_products: { id: string; name: string }[];
   partner_events: number;
   appendices: number;
   has_cks: boolean;

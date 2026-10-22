@@ -1,5 +1,16 @@
 {
   "contracts": {
+    "plink": {
+      "title": "Gắn sản phẩm cho các dòng hợp đồng",
+      "desc": "Hợp đồng sắp được xác nhận. Mỗi dòng: dùng sản phẩm có sẵn hoặc tạo sản phẩm mới. Sản phẩm chỉ được tạo/gắn khi bạn xác nhận.",
+      "useExisting": "Dùng sản phẩm có sẵn",
+      "createNew": "Tạo sản phẩm mới",
+      "pickAria": "Sản phẩm có sẵn cho dòng {{name}}",
+      "newNameAria": "Tên sản phẩm mới cho dòng {{name}}",
+      "groupAria": "Nhóm sản phẩm mới",
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận"
+    },
     "app": {
       "name": "Sổ Hợp Tác",
       "tagline": "Hợp đồng, đối tác, thanh toán & chữ ký số"

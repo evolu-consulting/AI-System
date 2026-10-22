@@ -3,6 +3,7 @@
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow } from "../../kit/application/ports";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
+import type { ProductLinksRepo } from "./product-links.usecase";
 
 export type ContractRunRef = {
   runId: string | null;
@@ -69,5 +70,6 @@ export type SweepRepo = {
   sweep(o: SweepOptions): Promise<SweepCounts>;
 };
 
-export type ApprovalTxRepos = { approval: ApprovalRepo } & KitTxRepos;
+/** `links` (products-confirm): gắn/tạo SP ở bước duyệt cuối; vắng (test cũ) ⇒ bỏ qua. */
+export type ApprovalTxRepos = { approval: ApprovalRepo; links?: ProductLinksRepo } & KitTxRepos;
 export type ApprovalUow = PackUow<ApprovalTxRepos>;

@@ -1,4 +1,6 @@
 // V2-M · HD-07: nút "Xoá hợp đồng" (chỉ vai quản lý) ⇒ hộp xác nhận liệt kê tác động (xem trước) ⇒ xoá hẳn, về danh sách.
+// products-confirm: SP gắn HĐ mà không còn HĐ nào khác dùng ⇒ ô chọn "Xoá các sản phẩm không còn hợp đồng nào dùng?" (mặc định không
+// chọn); chỉ SP được tick mới bị xoá theo.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,11 +12,12 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { useDeleteContract } from "../hooks/use-delete-contract";
-import { blockedReason, impactLines } from "../lib/impact";
+import { blockedReason, impactLines, pickedProducts } from "../lib/impact";
 
 export function DeleteContractButton({ id }: { id: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const { impact: q, del } = useDeleteContract(id, open, () => setOpen(false));
   const blocked = q.data ? blockedReason(q.data) : null;
   return (
@@ -23,7 +26,10 @@ export function DeleteContractButton({ id }: { id: string }) {
         type="button"
         className="btn btn-outline"
         data-testid="delete-contract"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPicked(new Set());
+          setOpen(true);
+        }}
       >
         {t("contracts.del.button")}
       </button>
@@ -48,6 +54,20 @@ export function DeleteContractButton({ id }: { id: string }) {
               <li>{t("contracts.del.keep")}</li>
             </ul>
           )}
+          {q.data && q.data.orphan_products.length > 0 && (
+            <OrphanProducts
+              items={q.data.orphan_products}
+              picked={picked}
+              onToggle={(id, on) =>
+                setPicked((s) => {
+                  const n = new Set(s);
+                  if (on) n.add(id);
+                  else n.delete(id);
+                  return n;
+                })
+              }
+            />
+          )}
           {blocked && (
             <p role="alert" className="text-sm" data-testid="delete-blocked">
               {t("contracts.del.blocked", { reason: blocked })}
@@ -62,7 +82,7 @@ export function DeleteContractButton({ id }: { id: string }) {
               className="btn btn-primary"
               data-testid="delete-confirm"
               disabled={!q.data || blocked !== null || del.isPending}
-              onClick={() => del.mutate()}
+              onClick={() => q.data && del.mutate(pickedProducts(q.data, picked))}
             >
               {del.isPending ? t("contracts.del.deleting") : t("contracts.del.confirm")}
             </button>
@@ -70,5 +90,33 @@ export function DeleteContractButton({ id }: { id: string }) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function OrphanProducts(o: {
+  items: { id: string; name: string }[];
+  picked: ReadonlySet<string>;
+  onToggle: (id: string, on: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <fieldset className="rounded-lg border border-rule p-3 text-sm" data-testid="delete-orphans">
+      <legend className="px-1 font-medium">{t("contracts.del.orphansAsk")}</legend>
+      <p className="mb-2 text-[12.5px] text-dim">{t("contracts.del.orphansHint")}</p>
+      <ul className="space-y-1">
+        {o.items.map((p) => (
+          <li key={p.id}>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={o.picked.has(p.id)}
+                onChange={(e) => o.onToggle(p.id, e.target.checked)}
+              />
+              {p.name}
+            </label>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
   );
 }

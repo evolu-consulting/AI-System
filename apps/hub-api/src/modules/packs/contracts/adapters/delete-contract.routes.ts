@@ -1,11 +1,11 @@
 // V2-M · HD-07 · C7: `GET /contracts/:id/delete-preview` (hộp xác nhận liệt kê tác động) và `DELETE /contracts/:id` (xoá hẳn, một tx).
 // CHỈ quyền `admin` (vai contracts-owner): guard TRƯỚC đọc tham số ⇒ editor/viewer 403; id sai dạng 400; HĐ không có / tenant khác /
 // không thấy ⇒ 404; còn phụ lục / gắn CKS / kho không đảo được ⇒ 409 (không xoá gì).
-import { DELETE_CONTRACT_ERRORS } from "@ai/contracts";
+import { DELETE_CONTRACT_ERRORS, DeleteContractRequestSchema } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
-import { parseWith } from "../../../../lib/http";
+import { parseWith, readJson } from "../../../../lib/http";
 import {
   type PackAccessView,
   type PackGuardVars,
@@ -44,6 +44,10 @@ export function deleteContractRoutes(
   r.get("/contracts/:id/delete-preview", admin, async (c) =>
     c.json(await run(uc.preview(who(c), id(c)))),
   );
-  r.delete("/contracts/:id", admin, async (c) => c.json(await run(uc.remove(who(c), id(c)))));
+  r.delete("/contracts/:id", admin, async (c) => {
+    const cid = id(c);
+    const b = parseWith(DeleteContractRequestSchema, await readJson(c));
+    return c.json(await run(uc.remove(who(c), cid, b.remove_products ?? [])));
+  });
   return r;
 }

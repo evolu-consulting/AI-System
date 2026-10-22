@@ -8,6 +8,8 @@ import {
   ItemProductRequestSchema,
   MILESTONE_ERRORS,
   PRODUCT_ERRORS,
+  PRODUCT_LINK_ERRORS,
+  ProductLinksRequestSchema,
   ReviewSaveRequestSchema,
 } from "@ai/contracts";
 import { Hono } from "hono";
@@ -20,6 +22,7 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
+import type { LinkContractProducts } from "../application/product-links.usecase";
 import type {
   AttachProduct,
   ReviewInput,
@@ -31,7 +34,12 @@ const KEY = "contracts";
 /** 500 dòng × ~700 byte + 23 trường × 2.000 + 200 mốc ≈ < 1 MiB. */
 export const REVIEW_BODY_MAX_BYTES = 1024 * 1024;
 
-export type ReviewRoutesDeps = { save: ReviewSave; attach: AttachProduct };
+/** `link` (products-confirm): `POST /contracts/:id/product-links` — gắn/tạo SP khi HĐ đã xác nhận. */
+export type ReviewRoutesDeps = {
+  save: ReviewSave;
+  attach: AttachProduct;
+  link?: LinkContractProducts;
+};
 
 const tooLarge = () => new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
 const whoOf = (u: { tenantId: string; userId: string }) => ({
@@ -112,5 +120,25 @@ export function reviewRoutes(view: PackAccessView, d: ReviewRoutesDeps): Hono<Pa
       );
     throw productInvalid();
   });
+  const link = d.link;
+  if (link)
+    r.post("/contracts/:id/product-links", write, async (c) => {
+      const id = parseWith(z.uuid(), c.req.param("id"));
+      const body = parseWith(ProductLinksRequestSchema, await readJson(c));
+      const out = await link(whoOf(c.get("user")), id, body.links).catch(productFail);
+      if (out.kind === "ok") return c.json({ created: out.created, linked: out.linked });
+      if (out.kind === "not_found") throw appError("NOT_FOUND");
+      if (out.kind === "locked")
+        throw new AppError(
+          "ITEM_LOCKED",
+          PRODUCT_LINK_ERRORS.ITEMS_LOCKED,
+          "Hợp đồng đã phát sinh kho, không đổi sản phẩm",
+        );
+      throw new AppError(
+        "CONTRACT_NOT_CONFIRMED",
+        PRODUCT_LINK_ERRORS.CONTRACT_NOT_CONFIRMED,
+        "Hợp đồng chưa xác nhận — chưa tạo/gắn sản phẩm",
+      );
+    });
   return r;
 }

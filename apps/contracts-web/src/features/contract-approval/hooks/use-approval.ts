@@ -49,5 +49,19 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
       setBusy(null);
     }
   };
-  return { approval: q.data, busy, msg, err, act };
+  /** products-confirm: việc chuẩn bị trước "Xác nhận" (lưu ô đã đổi, tải dòng HĐ cho hộp gắn SP); lỗi ⇒ câu lỗi, trả null. */
+  const prepare = async <T>(f: () => Promise<T>): Promise<T | null> => {
+    setErr(null);
+    setMsg(null);
+    setBusy("approve");
+    try {
+      return await f();
+    } catch (e) {
+      setErr(approvalErrorText(e, t));
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  };
+  return { approval: q.data, busy, msg, err, act, prepare };
 }

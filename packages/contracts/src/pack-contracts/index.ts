@@ -21,6 +21,7 @@ export * from "./overview";
 export * from "./partner-roles";
 export * from "./partners";
 export * from "./price-scout";
+export * from "./product-links";
 export * from "./product-sources";
 export * from "./products";
 export * from "./reputation";

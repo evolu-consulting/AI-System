@@ -15,7 +15,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { createManualContract } from "~/features/contract-new/api";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
-import { createProduct, fetchProducts, PRODUCTS_KEY } from "../api";
+import { linkNewFormLines } from "~/features/product-links/api";
+import { fetchProducts, PRODUCTS_KEY } from "../api";
 import { blockerMessage } from "../lib/blocker";
 import {
   EMPTY_FORM,
@@ -33,8 +34,6 @@ import {
 } from "../lib/form-model";
 import { useNoticeDefault } from "./use-notice-default";
 
-const orNull = (s: string) => (s.trim() ? s.trim() : null);
-
 /** Áp một phần sửa lên dòng: gợi ý đến muộn không đè lựa chọn tay; sửa tên sau khi chọn do gợi ý ⇒ chọn lại. */
 export function patchOneLine(l: LineState, p: Partial<LineState>): LineState {
   if (p.suggested && l.product_id) return l;
@@ -43,27 +42,12 @@ export function patchOneLine(l: LineState, p: Partial<LineState>): LineState {
   return { ...l, ...p };
 }
 
-/** Mỗi dòng có tên ⇒ id SP: chọn sẵn thì dùng, "tạo mới" thì tạo SP từ dòng trước (HĐ Mua: NCC chính = đối tác). */
-export async function productIdsOf(f: FormState): Promise<(string | null)[]> {
-  const ids: (string | null)[] = [];
-  for (const l of f.items.filter((x) => x.name.trim())) {
-    if (l.product_id !== NEW_PRODUCT) {
-      ids.push(l.product_id || null);
-      continue;
-    }
-    const supplier =
-      f.deal === "buy"
-        ? { main_supplier: { name: f.partner_name.trim(), tax_id: orNull(f.partner_tax_id) } }
-        : {};
-    const p = await createProduct({
-      name: l.new_name.trim(),
-      unit: orNull(l.unit),
-      group: f.deal === "referral" ? "referral" : l.new_group,
-      ...supplier,
-    });
-    ids.push(p.id);
-  }
-  return ids;
+/** Mỗi dòng có tên ⇒ id SP đã chọn sẵn; "tạo mới" ⇒ null. products-confirm: KHÔNG tạo SP lúc lưu — SP mới chỉ được tạo khi HĐ đã
+ *  xác nhận (`linkNewFormLines` sau khi lưu ra `active`, hoặc hộp "Gắn sản phẩm" lúc duyệt). */
+export function productIdsOf(f: FormState): (string | null)[] {
+  return f.items
+    .filter((x) => x.name.trim())
+    .map((l) => (l.product_id && l.product_id !== NEW_PRODUCT ? l.product_id : null));
 }
 
 type SetForm = Dispatch<SetStateAction<FormState>>;
@@ -116,7 +100,8 @@ function useSubmit(f: FormState, setTried: (v: boolean) => void) {
     if (stop) return setErr(stop);
     setBusy(true);
     try {
-      const rec = await createManualContract(toRequest(f, readNumbers(f), await productIdsOf(f)));
+      const rec = await createManualContract(toRequest(f, readNumbers(f), productIdsOf(f)));
+      await linkNewFormLines(rec.id, rec.status, f.items);
       await qc.invalidateQueries();
       toast(t("contracts.cform.saved"));
       await nav({ to: "/contracts/$id", params: { id: rec.id } });

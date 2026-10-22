@@ -2,6 +2,7 @@
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
 import { IsoDateTime } from "../common";
+import { ProductLinksSchema } from "./product-links";
 
 export const APPROVAL_STEPS = [
   "extract",
@@ -31,6 +32,8 @@ export const ApprovalActionRequestSchema = z.strictObject({
     .max(APPROVAL_FEEDBACK_MAX)
     .refine((v) => !CONTROL_CHARS.test(v), { message: "control characters are not allowed" })
     .optional(),
+  /** products-confirm: gắn/tạo SP cho dòng HĐ — chỉ áp khi `approve` làm HĐ thành "đã xác nhận" (cùng tx); bước khác bỏ qua. */
+  products: ProductLinksSchema.optional(),
 });
 export type ApprovalActionRequest = z.infer<typeof ApprovalActionRequestSchema>;
 

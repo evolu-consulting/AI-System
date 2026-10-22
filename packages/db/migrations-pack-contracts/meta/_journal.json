@@ -288,6 +288,13 @@
       "when": 1797400000000,
       "tag": "0045_niti_import_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1797500000000,
+      "tag": "0046_products_confirm_delete",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,15 @@
 // HD-FR-36 · S05: ghép thẻ duyệt cho trang kiểm/sửa — nút trên tiêu đề + khối dưới tiêu đề (ghi chú / lý do), giữ trang gọn.
 // `saveFirst` (trang cấp) lưu ô đã đổi trước khi "Xác nhận" như mgmt-app.
+// products-confirm: "Xác nhận"/"Duyệt" ⇒ (lưu ô đã đổi) ⇒ hộp "Gắn sản phẩm" cho dòng HĐ ⇒ gửi lựa chọn cùng `approve` (máy chủ chỉ
+// tạo/gắn SP khi bước này làm HĐ thành "đã xác nhận"). HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
+import type { ProductLink } from "@ai/contracts";
 import { type ReactNode, useState } from "react";
+import { fetchProducts } from "~/features/contract-form/api";
+import { fetchContract } from "~/features/contract-review/api";
+import {
+  ProductLinkDialog,
+  type ProductLinkTarget,
+} from "~/features/product-links/components/ProductLinkDialog";
 import { useApproval } from "../hooks/use-approval";
 import { approvalView } from "../lib/approval";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
@@ -13,6 +22,8 @@ export type ApprovalUi = {
   err: string | null;
 };
 
+type LinkStep = { target: ProductLinkTarget; label: string | undefined };
+
 export function useApprovalUi(o: {
   id: string;
   contractKey: readonly unknown[];
@@ -24,15 +35,28 @@ export function useApprovalUi(o: {
 }): ApprovalUi {
   const ap = useApproval(o.id, o.contractKey);
   const [ask, setAsk] = useState<"reject" | "redo" | null>(null);
+  const [link, setLink] = useState<LinkStep | null>(null);
   const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
+  const approve = async (before: (() => Promise<void>) | undefined, label?: string) => {
+    const got = await ap.prepare(async () => {
+      await before?.();
+      return Promise.all([fetchContract(o.id), fetchProducts()]);
+    });
+    if (!got) return;
+    const [c, products] = got;
+    if (c.items.length === 0) return void ap.act({ action: "approve" }, undefined, label);
+    setLink({ target: { items: c.items, products, deal: c.deal }, label });
+  };
+  const confirmLinks = async (products: ProductLink[]) => {
+    const label = link?.label;
+    if (await ap.act({ action: "approve", products }, undefined, label)) setLink(null);
+  };
   const buttons = (
     <ApprovalButtons
       v={v}
       busy={ap.busy}
-      onConfirm={() =>
-        void ap.act({ action: "approve" }, o.saveFirst, "contracts.approval.done.confirm")
-      }
-      onApprove={() => void ap.act({ action: "approve" })}
+      onConfirm={() => void approve(o.saveFirst, "contracts.approval.done.confirm")}
+      onApprove={() => void approve(undefined)}
       onAsk={setAsk}
     />
   );
@@ -51,6 +75,12 @@ export function useApprovalUi(o: {
           }}
         />
       )}
+      <ProductLinkDialog
+        target={link?.target ?? null}
+        busy={ap.busy !== null}
+        onCancel={() => setLink(null)}
+        onConfirm={(links) => void confirmLinks(links)}
+      />
     </>
   );
   return { buttons, section, busy: ap.busy !== null, msg: ap.msg, err: ap.err };

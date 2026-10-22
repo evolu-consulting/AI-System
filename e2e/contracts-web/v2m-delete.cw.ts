@@ -15,12 +15,14 @@ const impact = {
   stock: [{ product: "Hàng A", component: "Hàng A", direction: "out", qty: "4" }],
   service_customers: 1,
   products: ["Dịch vụ B"],
+  orphan_products: [{ id: "00000000-0000-4000-8000-0000000000b1", name: "Dịch vụ B" }],
   partner_events: 3,
   appendices: 0,
   has_cks: false,
   stock_blocked: null,
 };
 
+// products-confirm: SP mồ côi hiện ô chọn (mặc định không chọn); tick ⇒ thân DELETE mang `remove_products`.
 test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async ({ page }) => {
   await installV2f(page, { role: "owner" });
   const deletes: string[] = [];
@@ -28,17 +30,21 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   await page.route(`${url}/delete-preview`, (r) => json(r, 200, impact));
   await page.route(url, (r) => {
     if (r.request().method() !== "DELETE") return r.fallback();
-    deletes.push(r.request().url());
+    deletes.push(r.request().postData() ?? "");
     return json(r, 200, { deleted: true, audit_id: "1", impact: {} });
   });
   await page.goto(`/contracts/${ACTIVE_ID}`);
   await page.getByTestId("delete-contract").click();
   const list = page.getByTestId("delete-impact");
   await expect(list).toContainText("Hàng A");
-  await expect(list).toContainText("Dịch vụ B");
+  const orphans = page.getByTestId("delete-orphans");
+  await expect(orphans).toContainText("Xoá các sản phẩm không còn hợp đồng nào dùng?");
+  await orphans.getByRole("checkbox", { name: "Dịch vụ B" }).check();
   await page.getByTestId("delete-confirm").click();
   await expect(page).toHaveURL(/\/contracts$/);
-  expect(deletes).toHaveLength(1);
+  expect(deletes.map((b) => JSON.parse(b))).toEqual([
+    { remove_products: ["00000000-0000-4000-8000-0000000000b1"] },
+  ]);
 });
 
 test("editor: không có nút xoá", async ({ page }) => {

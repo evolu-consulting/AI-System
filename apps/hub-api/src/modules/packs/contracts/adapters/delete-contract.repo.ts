@@ -21,7 +21,18 @@ const familyOf = async (tx: Tx, t: string, id: string): Promise<string[]> => {
 /** Tác động (JSON) của việc xoá HĐ `ids[0]` + phụ lục; `ids` = mảng uuid dạng `{a,b}`. */
 const previewSql = (t: string, ids: string[]) => {
   const arr = sql`${`{${ids.join(",")}}`}::uuid[]`;
-  return sql`select jsonb_build_object(
+  // products-confirm: SP gắn HĐ (dòng HĐ hoặc sinh từ HĐ) mà không còn HĐ nào khác dùng (dòng HĐ / dòng kho) — người xoá chọn.
+  return sql`with orphans as (select p.id, p.name from contracts.products p
+        where p.tenant_id = ${t}::uuid
+          and (p.created_from_contract_id = any(${arr}) or exists (select 1 from contracts.contract_items i
+            where i.tenant_id = p.tenant_id and i.product_id = p.id and i.contract_id = any(${arr})))
+          and not exists (select 1 from contracts.contract_items i
+            where i.tenant_id = p.tenant_id and i.product_id = p.id and not i.contract_id = any(${arr}))
+          and not exists (select 1 from contracts.stock_moves m
+            join contracts.product_components pc on pc.tenant_id = m.tenant_id and pc.id = m.component_id
+            where pc.tenant_id = p.tenant_id and pc.product_id = p.id and m.contract_id is not null
+              and not m.contract_id = any(${arr})))
+    select jsonb_build_object(
       'contract', jsonb_build_object('id', c.id, 'number', c.number, 'title', c.title),
       'milestones', (select count(*)::int from contracts.obligations o
         where o.tenant_id = c.tenant_id and o.contract_id = any(${arr})),
@@ -37,14 +48,9 @@ const previewSql = (t: string, ids: string[]) => {
         '[]'::jsonb),
       'service_customers', (select count(*)::int from contracts.service_customers s
         where s.tenant_id = c.tenant_id and s.contract_id = any(${arr})),
-      'products', coalesce((select jsonb_agg(p.name order by p.name) from contracts.products p
-        where p.tenant_id = c.tenant_id and p.created_from_contract_id = any(${arr})
-          and not exists (select 1 from contracts.contract_items i
-            where i.tenant_id = c.tenant_id and i.product_id = p.id and not i.contract_id = any(${arr}))
-          and not exists (select 1 from contracts.stock_moves m
-            join contracts.product_components pc on pc.tenant_id = m.tenant_id and pc.id = m.component_id
-            where pc.tenant_id = c.tenant_id and pc.product_id = p.id and m.contract_id is not null
-              and not m.contract_id = any(${arr}))), '[]'::jsonb),
+      'products', coalesce((select jsonb_agg(o.name order by o.name) from orphans o), '[]'::jsonb),
+      'orphan_products', coalesce((select jsonb_agg(jsonb_build_object('id', o.id, 'name', o.name) order by o.name)
+        from orphans o), '[]'::jsonb),
       'partner_events', (select count(*)::int from contracts.partner_events e
         where e.tenant_id = c.tenant_id and e.contract_id = any(${arr})
           and not exists (select 1 from contracts.partner_event_voids v where v.event_id = e.id and v.tenant_id = e.tenant_id)),
@@ -65,6 +71,11 @@ export function deleteContractRepo(tx: Tx, t: string): DeleteContractRepo {
       return out ? { ...out, stock_blocked: await contractStockBlock(tx, t, fam, on) } : null;
     },
     reverseStock: async (id, on) => reverseContractStock(tx, t, await familyOf(tx, t, id), on),
-    remove: (id) => one(tx, sql`select contracts.delete_contract(${id}::uuid, ${t}::uuid) as j`),
+    // products-confirm (0046): chỉ xoá SP người xoá đã chọn VÀ không còn HĐ khác dùng (hàm kiểm lại trước khi xoá HĐ).
+    remove: (id, products) =>
+      one(
+        tx,
+        sql`select contracts.delete_contract(${id}::uuid, ${t}::uuid, ${`{${products.join(",")}}`}::uuid[]) as j`,
+      ),
   };
 }

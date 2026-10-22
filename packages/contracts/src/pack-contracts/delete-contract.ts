@@ -22,8 +22,10 @@ export const DeleteImpactSchema = z.object({
     }),
   ),
   service_customers: z.number().int(),
-  /** SP sinh từ HĐ này, chưa có giao dịch khác ⇒ xoá theo. */
+  /** Tên SP gắn với HĐ này mà không còn HĐ nào khác dùng (= tên của `orphan_products`). Không tự xoá. */
   products: z.array(z.string()),
+  /** products-confirm: SP gắn với HĐ (dòng HĐ / sinh từ HĐ) mà không HĐ nào khác dùng ⇒ người xoá chọn có xoá theo không. */
+  orphan_products: z.array(z.object({ id: z.uuid(), name: z.string() })),
   partner_events: z.number().int(),
   /** Số phụ lục xoá theo (cascade). */
   appendices: z.number().int(),
@@ -33,6 +35,12 @@ export const DeleteImpactSchema = z.object({
   stock_blocked: z.string().nullable(),
 });
 export type DeleteImpact = z.infer<typeof DeleteImpactSchema>;
+
+/** Thân (tuỳ chọn) của `DELETE /contracts/:id`: SP người xoá đã tick để xoá theo; chỉ SP thuộc `orphan_products` mới bị xoá. */
+export const DeleteContractRequestSchema = z.strictObject({
+  remove_products: z.array(z.uuid()).max(500).optional(),
+});
+export type DeleteContractRequest = z.infer<typeof DeleteContractRequestSchema>;
 
 export const DeleteResultSchema = z.object({
   deleted: z.literal(true),

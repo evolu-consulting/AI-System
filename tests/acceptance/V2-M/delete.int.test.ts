@@ -90,7 +90,9 @@ describe("V2-M · xoá hợp đồng (owner)", () => {
       ["Dịch vụ V2M"],
       1,
     ]);
-    await ok(call(c, P.lan, "DELETE", `/contracts/${svc}`));
+    // products-confirm: SP mồ côi chỉ xoá khi người xoá tick (mặc định giữ)
+    expect(pv3.orphan_products).toEqual([{ id: s.id, name: "Dịch vụ V2M" }]);
+    await ok(call(c, P.lan, "DELETE", `/contracts/${svc}`, { remove_products: [s.id] }));
     expect(await exists("contracts", "id", app)).toBe(0);
     expect(await exists("followups", "contract_id", svc)).toBe(0);
     expect(await exists("cks_lots", "purchase_contract_id", svc)).toBe(0);
