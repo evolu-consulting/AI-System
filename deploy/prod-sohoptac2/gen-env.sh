@@ -101,7 +101,7 @@ elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then
 fi
 chmod 600 .env
 # dify-demo-flow: gốc Dify console ⇒ Admin → Workflows hiện "Mở trong Dify" (chỉ đặt khi chưa có; sửa tay giữ nguyên).
-grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "https://dify.evoluconsulting.com"
+grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "http://149.202.83.5:4203" # web Dify gọi API qua http IP ⇒ mở bằng https bị chặn mixed content
 # FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
 bash ./filebox-env.sh
 
