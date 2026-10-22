@@ -41,6 +41,9 @@ export function overlap(line: string, name: string): number {
   return ws.filter((w) => have.has(w)).length / ws.length;
 }
 
+/** Đơn vị SP tối đa 40 ký tự (dòng HĐ cho tới 50). */
+const unitOf = (u: string | null): string | null => u?.trim().slice(0, 40) || null;
+
 export const MATCH_MIN = 0.5;
 const MATCH_MAX = 8;
 
@@ -102,7 +105,7 @@ export function toLinks(cs: readonly LinkChoice[]): ProductLink[] {
           item_id: c.item_id,
           new_product: {
             name: c.new_name.trim(),
-            unit: c.unit?.trim() || null,
+            unit: unitOf(c.unit),
             group: c.new_group,
           },
         },
@@ -124,7 +127,7 @@ export function newLinksOfForm(
       item_id: it.id,
       new_product: {
         name: l.new_name.trim(),
-        unit: l.unit.trim() || null,
+        unit: unitOf(l.unit),
         group: l.new_group,
       },
     });
