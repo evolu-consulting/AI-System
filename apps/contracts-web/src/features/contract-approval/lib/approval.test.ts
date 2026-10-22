@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts";
 import { ApiError } from "@ai/web-kit/http";
-import { approvalView, feedbackOk } from "./approval";
+import { approvalView, feedbackOk, showLinkDialog } from "./approval";
 import { approvalErrorText } from "./approval-error";
 
 const A = (o: Partial<ContractApproval>): ContractApproval => ({
@@ -84,5 +84,15 @@ describe("approvalErrorText", () => {
       'contracts.approval.errors.runLimit:{"max":7}',
     );
     expect(approvalErrorText(e("WHATEVER"), t)).toBe("contracts.errors.unknown");
+  });
+});
+
+describe("products-confirm · showLinkDialog", () => {
+  test("chỉ khi bước sẽ xác nhận HĐ và HĐ có dòng hàng", () => {
+    expect(showLinkDialog(A({ finalizes_on_approve: true }), 2)).toBe(true);
+    expect(showLinkDialog(A({ finalizes_on_approve: false }), 2)).toBe(false); // cấp 1 ⇒ cấp 2
+    expect(showLinkDialog(A({}), 2)).toBe(false); // hub cũ không báo
+    expect(showLinkDialog(A({ finalizes_on_approve: true }), 0)).toBe(false);
+    expect(showLinkDialog(undefined, 2)).toBe(false);
   });
 });

@@ -87,6 +87,11 @@ export async function installV2g(page: Page, init: Partial<V2gState> = {}) {
       milestones: 2,
     });
   });
+  // products-confirm: lưu ra `active` ⇒ tạo SP mới đã chọn qua `/product-links`.
+  await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/product-links`, (r) => {
+    rec(r);
+    return json(r, 200, { created: 1, linked: 1 });
+  });
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/approval`, (r) =>
     json(r, 200, {
       run_id: null,

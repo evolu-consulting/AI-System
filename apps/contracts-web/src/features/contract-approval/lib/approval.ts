@@ -46,5 +46,9 @@ export function approvalView(
   return NONE;
 }
 
+/** products-confirm: hộp "Gắn sản phẩm" chỉ khi máy chủ báo bước này sẽ xác nhận HĐ (hub cũ không báo ⇒ không hộp) và HĐ có dòng. */
+export const showLinkDialog = (a: ContractApproval | undefined, items: number): boolean =>
+  a?.finalizes_on_approve === true && items > 0;
+
 /** Lý do Từ chối / Đọc lại: bắt buộc, ≤ 4.000 ký tự (cùng luật engine `FEEDBACK_REQUIRED`). */
 export const feedbackOk = (s: string): boolean => s.trim().length > 0 && s.length <= 4000;

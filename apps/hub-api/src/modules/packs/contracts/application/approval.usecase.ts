@@ -95,7 +95,8 @@ export async function approvalActor(
 const actorOf = (d: ApprovalDeps, who: PackWho, s: ApprovalSettings) =>
   approvalActor(d.groups, who, s);
 
-const viewOf = (st: ApprovalState, actor: ApprovalActor) => approvalView(st.approval, actor);
+const viewOf = (st: ApprovalState, actor: ApprovalActor) =>
+  approvalView(st.approval, actor, { value: st.value, threshold: st.threshold });
 
 export function getApproval(d: ApprovalDeps) {
   return async (who: PackWho, id: string): Promise<ContractApproval | null> => {

@@ -15,7 +15,10 @@ const impact = {
   stock: [{ product: "Hàng A", component: "Hàng A", direction: "out", qty: "4" }],
   service_customers: 1,
   products: ["Dịch vụ B"],
-  orphan_products: [{ id: "00000000-0000-4000-8000-0000000000b1", name: "Dịch vụ B" }],
+  orphan_products: [
+    { id: "00000000-0000-4000-8000-0000000000b1", name: "Dịch vụ B" },
+    { id: "00000000-0000-4000-8000-0000000000b2", name: "Dịch vụ C" },
+  ],
   partner_events: 3,
   appendices: 0,
   has_cks: false,
@@ -39,6 +42,8 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   await expect(list).toContainText("Hàng A");
   const orphans = page.getByTestId("delete-orphans");
   await expect(orphans).toContainText("Xoá các sản phẩm không còn hợp đồng nào dùng?");
+  await expect(orphans.getByRole("checkbox", { name: "Dịch vụ B" })).not.toBeChecked();
+  await expect(orphans.getByRole("checkbox", { name: "Dịch vụ C" })).not.toBeChecked();
   await orphans.getByRole("checkbox", { name: "Dịch vụ B" }).check();
   await page.getByTestId("delete-confirm").click();
   await expect(page).toHaveURL(/\/contracts$/);

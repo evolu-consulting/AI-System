@@ -97,6 +97,7 @@ describe("thẻ duyệt + giai đoạn sửa", () => {
       can_act: true,
       feedback: null,
       block_reason: null,
+      finalizes_on_approve: true,
     });
     expect(approvalView({ ...a, status: "rejected", feedback: "Sai" }, owner(B))).toMatchObject({
       step: "rejected",
@@ -119,6 +120,20 @@ describe("thẻ duyệt + giai đoạn sửa", () => {
     expect(reason(l1, editor(B))).toBeNull();
     expect(reason(l2, owner(B))).toBeNull();
     expect(reason({ ...l1, status: "done" }, owner(B))).toBeNull();
+  });
+  test("products-confirm · finalizes_on_approve: cấp 2 / cấp 1 dưới ngưỡng ⇒ true; còn lại false", () => {
+    const l1 = { id: B, status: "level1", startedBy: A, feedback: null };
+    const fin = (a: typeof l1, actor: ReturnType<typeof editor>, value: unknown) =>
+      approvalView(a, actor, { value, threshold: 100 }).finalizes_on_approve;
+    expect(fin(l1, editor(B), 99)).toBe(true);
+    expect(fin(l1, editor(B), 100)).toBe(false); // ≥ ngưỡng ⇒ chuyển cấp 2
+    expect(fin(l1, editor(B), null)).toBe(false); // thiếu giá trị ⇒ cần cấp 2
+    expect(fin(l1, owner(B), 1)).toBe(false); // không quyết được
+    expect(fin({ ...l1, status: "level2" }, owner(B), 1000)).toBe(true);
+    expect(fin({ ...l1, status: "level2" }, both(A), 1)).toBe(false); // người gửi ở cấp 2
+    expect(fin({ ...l1, status: "done" }, both(B), 1)).toBe(false); // bước đóng
+    expect(approvalView(l1, editor(B)).finalizes_on_approve).toBe(false); // không có giá trị/ngưỡng
+    expect(approvalView(null, editor(B)).finalizes_on_approve).toBe(false);
   });
   test("phase: extracting/level1 ⇒ level1 (sửa được), level2 ⇒ later (409), khác ⇒ none", () => {
     expect([

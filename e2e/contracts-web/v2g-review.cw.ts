@@ -3,7 +3,7 @@
 // HĐ đã lưu gắn lại SP (PUT) và Tóm tắt hiện 5 mục AI. Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep.
 import { expect, type Page, test } from "@playwright/test";
 import { ACTIVE_ID, P_TOKEN } from "./dataset-v2f";
-import { ITEM1, ITEM2, NEW_PRODUCT_ID, P_USB, REVIEW_ID } from "./dataset-v2g";
+import { ITEM1, ITEM2, P_USB, REVIEW_ID } from "./dataset-v2g";
 import type { Sent } from "./v2f-support";
 import { installV2g } from "./v2g-support";
 
@@ -50,7 +50,8 @@ test("cột phải: mốc AI tìm thấy (giữ/bỏ, hạn theo ngày HĐ khi A
   );
 });
 
-test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại); SP mới tạo trước", async ({
+// products-confirm: HĐ còn chờ xác nhận ⇒ KHÔNG tạo SP lúc lưu; dòng "tạo mới" gửi không kèm product_id.
+test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại); chưa xác nhận ⇒ không tạo SP", async ({
   page,
 }) => {
   const { sent } = await openReview(page);
@@ -58,7 +59,8 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Đã lưu nháp");
   expect(review(sent)).toHaveLength(1);
-  expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(1);
+  expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
+  expect(sent.filter((s) => s.path.endsWith("/product-links"))).toHaveLength(0);
   expect(review(sent)[0]).toEqual({
     method: "POST",
     path: `/pack/contracts/contracts/${REVIEW_ID}/review`,
@@ -81,7 +83,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
           unit: "gói",
           qty: 1,
           unit_price: 5_000_000,
-          product_id: NEW_PRODUCT_ID,
+          product_id: null,
         },
       ],
       milestones: [
@@ -124,11 +126,20 @@ test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async (
 test("tenant tắt duyệt: Lưu trả `active` ⇒ trang chi tiết thường, hết thanh Huỷ/Lưu dính", async ({
   page,
 }) => {
-  await openReview(page, { saveStatus: "active" });
+  const { sent } = await openReview(page, { saveStatus: "active" });
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu — hợp đồng có hiệu lực");
   await expect(page.getByTestId("form-bar")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toBeVisible();
+  // products-confirm: HĐ đã có hiệu lực ⇒ dòng "tạo mới" thành SP qua /product-links (không POST /products)
+  expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
+  expect(sent.filter((s) => s.path.endsWith("/product-links")).map((s) => s.body)).toEqual([
+    {
+      links: [
+        { item_id: ITEM2, new_product: { name: "Phí dịch vụ lạ", unit: "gói", group: "goods" } },
+      ],
+    },
+  ]);
 });
 
 test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED báo câu riêng", async ({

@@ -46,6 +46,8 @@ export const ContractApprovalSchema = z.strictObject({
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
   /** Bước đang mở mà người xem không quyết được: vì sao (thẻ duyệt nói rõ thay vì chỉ "đang chờ"). Vắng ở hub cũ. */
   block_reason: z.enum(["not_reviewer", "starter"]).nullable().optional(),
+  /** products-confirm: "Xác nhận/Duyệt" của người xem sẽ làm HĐ thành "đã xác nhận" ⇒ hộp "Gắn sản phẩm". Vắng ở hub cũ. */
+  finalizes_on_approve: z.boolean().optional(),
 });
 export type ContractApproval = z.infer<typeof ContractApprovalSchema>;
 

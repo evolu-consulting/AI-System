@@ -105,10 +105,24 @@ const RUN_STATUS: Record<ApprovalStatus, string> = {
   failed: "failed",
 };
 
-/** Thẻ duyệt (contract `ContractApproval`, giữ nguyên hình dạng HD3). */
+/** products-confirm: "Xác nhận/Duyệt" của người xem sẽ làm HĐ thành "đã xác nhận" (cấp 2; hoặc cấp 1 khi giá trị HIỆN TẠI < ngưỡng)
+ *  ⇒ màn hình mở hộp "Gắn sản phẩm". Bước đóng / không quyết được / thiếu giá trị (cần cấp 2) ⇒ false. */
+export function finalizesOnApprove(
+  status: string,
+  can: boolean,
+  price: { value: unknown; threshold: number } | undefined,
+): boolean {
+  if (!can) return false;
+  if (status === "level2") return true;
+  return status === "level1" && price !== undefined && !needsLevel2(price.value, price.threshold);
+}
+
+/** Thẻ duyệt (contract `ContractApproval`, giữ nguyên hình dạng HD3). `price` = giá trị HĐ + ngưỡng (vắng ⇒ cấp 1 coi như chưa xác
+ *  nhận ngay). */
 export function approvalView(
   a: { id: string; status: string; startedBy: string; feedback: string | null } | null,
   actor: ApprovalActor,
+  price?: { value: unknown; threshold: number },
 ) {
   if (!a || !(APPROVAL_STATUSES as readonly string[]).includes(a.status))
     return {
@@ -119,6 +133,7 @@ export function approvalView(
       can_act: false,
       feedback: null,
       block_reason: null,
+      finalizes_on_approve: false,
     };
   const s = a.status as ApprovalStatus;
   const can = canAct(s, a.startedBy, actor);
@@ -130,6 +145,7 @@ export function approvalView(
     can_act: can,
     feedback: a.feedback,
     block_reason: isOpen(s) && !can ? blockReason(s, a.startedBy, actor) : null,
+    finalizes_on_approve: finalizesOnApprove(s, can, price),
   };
 }
 

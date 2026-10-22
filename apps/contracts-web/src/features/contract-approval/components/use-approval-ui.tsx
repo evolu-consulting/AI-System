@@ -1,7 +1,7 @@
 // HD-FR-36 · S05: ghép thẻ duyệt cho trang kiểm/sửa — nút trên tiêu đề + khối dưới tiêu đề (ghi chú / lý do), giữ trang gọn.
 // `saveFirst` (trang cấp) lưu ô đã đổi trước khi "Xác nhận" như mgmt-app.
-// products-confirm: "Xác nhận"/"Duyệt" ⇒ (lưu ô đã đổi) ⇒ hộp "Gắn sản phẩm" cho dòng HĐ ⇒ gửi lựa chọn cùng `approve` (máy chủ chỉ
-// tạo/gắn SP khi bước này làm HĐ thành "đã xác nhận"). HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
+// products-confirm: "Xác nhận"/"Duyệt" mà máy chủ báo sẽ xác nhận HĐ (`finalizes_on_approve`) ⇒ (lưu ô đã đổi) ⇒ hộp "Gắn sản phẩm"
+// ⇒ gửi lựa chọn cùng `approve`. Bước chỉ chuyển cấp 2 / HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
 import type { ProductLink } from "@ai/contracts";
 import { type ReactNode, useState } from "react";
 import { fetchProducts } from "~/features/contract-form/api";
@@ -11,7 +11,7 @@ import {
   type ProductLinkTarget,
 } from "~/features/product-links/components/ProductLinkDialog";
 import { useApproval } from "../hooks/use-approval";
-import { approvalView } from "../lib/approval";
+import { approvalView, showLinkDialog } from "../lib/approval";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 
 export type ApprovalUi = {
@@ -38,13 +38,16 @@ export function useApprovalUi(o: {
   const [link, setLink] = useState<LinkStep | null>(null);
   const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
   const approve = async (before: (() => Promise<void>) | undefined, label?: string) => {
+    // Bước này chưa xác nhận HĐ (cấp 1 ⇒ cấp 2) ⇒ duyệt thẳng, không hộp; người duyệt cấp 2 sẽ thấy hộp.
+    if (!showLinkDialog(ap.approval, 1)) return void ap.act({ action: "approve" }, before, label);
     const got = await ap.prepare(async () => {
       await before?.();
       return Promise.all([fetchContract(o.id), fetchProducts()]);
     });
     if (!got) return;
     const [c, products] = got;
-    if (c.items.length === 0) return void ap.act({ action: "approve" }, undefined, label);
+    if (!showLinkDialog(ap.approval, c.items.length))
+      return void ap.act({ action: "approve" }, undefined, label);
     setLink({ target: { items: c.items, products, deal: c.deal }, label });
   };
   const confirmLinks = async (products: ProductLink[]) => {
