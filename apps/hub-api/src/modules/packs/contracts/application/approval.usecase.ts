@@ -18,6 +18,8 @@ import type { ApprovalState, ApprovalTxRepos, ApprovalUow, OpenOutcome } from ".
 export type ApprovalGroups = {
   idsOf(tenantId: string, keys: readonly string[]): Promise<ReadonlyMap<string, string>>;
   userGroups(who: PackWho): Promise<ReadonlySet<string>>;
+  /** Quyền gói của user (read/write/admin) — dự phòng khi tenant chưa có Group duyệt. Vắng ⇒ không dự phòng. */
+  actionsOf?(who: PackWho): Promise<ReadonlySet<string>>;
 };
 export type ExtractJob = {
   tenantId: string;
@@ -59,17 +61,33 @@ export function startApproval(d: ApprovalDeps) {
   };
 }
 
-async function actorOf(d: ApprovalDeps, who: PackWho, s: ApprovalSettings): Promise<ApprovalActor> {
-  const [ids, mine] = await Promise.all([
-    d.groups.idsOf(who.tenantId, [s.level1GroupKey, s.level2GroupKey]),
-    d.groups.userGroups(who),
+const NO_ACTIONS: ReadonlySet<string> = new Set();
+
+/** Người duyệt theo Group cấu hình; Group đó KHÔNG có ở tenant (tenant bật feature tay, chưa có Group vai) ⇒ dựa quyền
+ *  gói: cấp 1 = `write`, cấp 2 = `admin`. Group có mà user không thuộc ⇒ không duyệt (không dự phòng). */
+export async function approvalActor(
+  g: ApprovalGroups,
+  who: PackWho,
+  s: ApprovalSettings,
+): Promise<ApprovalActor> {
+  const [ids, mine, acts] = await Promise.all([
+    g.idsOf(who.tenantId, [s.level1GroupKey, s.level2GroupKey]),
+    g.userGroups(who),
+    g.actionsOf ? g.actionsOf(who) : NO_ACTIONS,
   ]);
-  const has = (k: string) => {
-    const g = ids.get(k);
-    return g !== undefined && mine.has(g);
+  const has = (k: string, fallback: "write" | "admin") => {
+    const id = ids.get(k);
+    return id === undefined ? acts.has(fallback) : mine.has(id);
   };
-  return { userId: who.userId, inLevel1: has(s.level1GroupKey), inLevel2: has(s.level2GroupKey) };
+  return {
+    userId: who.userId,
+    inLevel1: has(s.level1GroupKey, "write"),
+    inLevel2: has(s.level2GroupKey, "admin"),
+  };
 }
+
+const actorOf = (d: ApprovalDeps, who: PackWho, s: ApprovalSettings) =>
+  approvalActor(d.groups, who, s);
 
 const viewOf = (st: ApprovalState, actor: ApprovalActor) => approvalView(st.approval, actor);
 

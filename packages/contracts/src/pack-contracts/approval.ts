@@ -41,6 +41,8 @@ export const ContractApprovalSchema = z.strictObject({
   task_id: z.uuid().nullable(),
   can_act: z.boolean(),
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
+  /** Bước đang mở mà người xem không quyết được: vì sao (thẻ duyệt nói rõ thay vì chỉ "đang chờ"). Vắng ở hub cũ. */
+  block_reason: z.enum(["not_reviewer", "starter"]).nullable().optional(),
 });
 export type ContractApproval = z.infer<typeof ContractApprovalSchema>;
 

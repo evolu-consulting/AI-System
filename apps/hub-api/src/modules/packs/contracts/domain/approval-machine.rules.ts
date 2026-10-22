@@ -118,14 +118,24 @@ export function approvalView(
       task_id: null,
       can_act: false,
       feedback: null,
+      block_reason: null,
     };
   const s = a.status as ApprovalStatus;
+  const can = canAct(s, a.startedBy, actor);
   return {
     run_id: a.id,
     run_status: RUN_STATUS[s],
     step: STEP[s],
     task_id: isOpen(s) ? a.id : null,
-    can_act: canAct(s, a.startedBy, actor),
+    can_act: can,
     feedback: a.feedback,
+    block_reason: isOpen(s) && !can ? blockReason(s, a.startedBy, actor) : null,
   };
+}
+
+/** Vì sao không quyết được bước đang mở: người gửi ở cấp 2 (dù thuộc Group 2) ⇒ `starter`; còn lại ⇒ `not_reviewer`. */
+function blockReason(s: "level1" | "level2", startedBy: string, a: ApprovalActor) {
+  return s === "level2" && a.inLevel2 && a.userId === startedBy
+    ? ("starter" as const)
+    : ("not_reviewer" as const);
 }

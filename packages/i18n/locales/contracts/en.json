@@ -410,6 +410,14 @@
       "redoReason": "What should be read again?",
       "waitLevel1": "Waiting for the person in charge to check and confirm.",
       "waitLevel2": "Waiting for management approval (you cannot approve this step).",
+      "blocked": {
+        "viewOnly": "You can only view contracts, so you cannot confirm or approve. Ask your company administrator for permission to edit contracts.",
+        "starter": "You submitted this contract, so you cannot approve it yourself. Another member of management must approve it.",
+        "notReviewer": {
+          "level1": "You are not allowed to confirm this contract: you are not in the confirming group (step 1). Ask your company administrator to add you to the group with permission to edit contracts.",
+          "level2": "This contract is at or above the approval limit and needs management approval. You are not in the approving group (step 2), so you cannot approve it."
+        }
+      },
       "working": "Processing the contract…",
       "rejectedWith": "Rejected: {{reason}}",
       "done": {

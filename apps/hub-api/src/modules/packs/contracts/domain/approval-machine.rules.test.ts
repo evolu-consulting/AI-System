@@ -96,6 +96,7 @@ describe("thẻ duyệt + giai đoạn sửa", () => {
       task_id: B,
       can_act: true,
       feedback: null,
+      block_reason: null,
     });
     expect(approvalView({ ...a, status: "rejected", feedback: "Sai" }, owner(B))).toMatchObject({
       step: "rejected",
@@ -104,6 +105,20 @@ describe("thẻ duyệt + giai đoạn sửa", () => {
       feedback: "Sai",
     });
     expect(approvalView(null, owner(B))).toMatchObject({ run_id: null, step: null });
+  });
+  test("block_reason: không quyết được bước đang mở ⇒ nói vì sao; quyết được / bước đóng ⇒ null", () => {
+    const l1 = { id: B, status: "level1", startedBy: A, feedback: null };
+    const l2 = { ...l1, status: "level2" };
+    const reason = (a: typeof l1, actor: ReturnType<typeof editor>) =>
+      approvalView(a, actor).block_reason;
+    expect(reason(l1, owner(B))).toBe("not_reviewer"); // cấp 1, không thuộc Group 1
+    expect(reason(l1, { userId: B, inLevel1: false, inLevel2: false })).toBe("not_reviewer");
+    expect(reason(l2, editor(B))).toBe("not_reviewer"); // cấp 2, không thuộc Group 2
+    expect(reason(l2, both(A))).toBe("starter"); // người gửi thuộc Group 2 vẫn bị chặn
+    expect(reason(l2, editor(A))).toBe("not_reviewer"); // người gửi KHÔNG thuộc Group 2: lý do là thiếu quyền
+    expect(reason(l1, editor(B))).toBeNull();
+    expect(reason(l2, owner(B))).toBeNull();
+    expect(reason({ ...l1, status: "done" }, owner(B))).toBeNull();
   });
   test("phase: extracting/level1 ⇒ level1 (sửa được), level2 ⇒ later (409), khác ⇒ none", () => {
     expect([

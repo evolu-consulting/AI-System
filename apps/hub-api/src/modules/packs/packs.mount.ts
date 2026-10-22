@@ -182,7 +182,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
     {
       // M3 Â· AI client chung (khoÃ¡ tá»« env; test tiÃªm `model` giáº£) + Group duyá»‡t (admin.groups + cache cáº¥u hÃ¬nh)
       ai: aiClient,
-      groups: packGroups(db, view),
+      groups: packGroups(db, view, CONTRACTS_KEY),
       ...(fb
         ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
         : {}),

@@ -410,6 +410,14 @@
       "redoReason": "Cần đọc lại điều gì?",
       "waitLevel1": "Đang chờ người phụ trách kiểm tra và xác nhận.",
       "waitLevel2": "Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này).",
+      "blocked": {
+        "viewOnly": "Bạn chỉ có quyền xem hợp đồng nên không xác nhận hay duyệt được. Hãy nhờ quản trị công ty cấp quyền sửa hợp đồng.",
+        "starter": "Bạn là người gửi hợp đồng này nên không thể tự duyệt. Cần một người khác trong Ban giám đốc duyệt.",
+        "notReviewer": {
+          "level1": "Bạn chưa được xác nhận hợp đồng này: bạn không thuộc nhóm xác nhận (bước 1). Hãy nhờ quản trị công ty thêm bạn vào nhóm có quyền sửa hợp đồng.",
+          "level2": "Hợp đồng có giá trị từ hạn mức trở lên nên cần Ban giám đốc duyệt. Bạn không thuộc nhóm duyệt (bước 2) nên không duyệt được."
+        }
+      },
       "working": "Đang xử lý hợp đồng…",
       "rejectedWith": "Bị từ chối: {{reason}}",
       "done": {

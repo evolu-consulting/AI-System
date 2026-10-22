@@ -19,6 +19,14 @@ const NONE: ApprovalView = {
   note: null,
 };
 
+/** Ghi chú khi người xem không quyết được bước đang mở: nói rõ VÌ SAO (chỉ xem / không thuộc nhóm duyệt / người gửi). */
+function blockedNote(step: "level1" | "level2", a: ContractApproval, write: boolean): string {
+  if (!write) return "contracts.approval.blocked.viewOnly";
+  if (a.block_reason === "starter") return "contracts.approval.blocked.starter";
+  if (a.block_reason === "not_reviewer") return `contracts.approval.blocked.notReviewer.${step}`;
+  return step === "level1" ? "contracts.approval.waitLevel1" : "contracts.approval.waitLevel2";
+}
+
 export function approvalView(
   a: ContractApproval | undefined,
   o: { write: boolean; hasSource: boolean },
@@ -28,11 +36,11 @@ export function approvalView(
   if (a.step === "level1")
     return act
       ? { confirm: true, approve: false, reject: true, redo: o.hasSource, note: null }
-      : { ...NONE, note: "contracts.approval.waitLevel1" };
+      : { ...NONE, note: blockedNote("level1", a, o.write) };
   if (a.step === "level2")
     return act
       ? { confirm: false, approve: true, reject: true, redo: false, note: null }
-      : { ...NONE, note: "contracts.approval.waitLevel2" };
+      : { ...NONE, note: blockedNote("level2", a, o.write) };
   if (a.step === "extract" || a.step === "value" || a.step === "finalize")
     return { ...NONE, note: "contracts.approval.working" };
   return NONE;

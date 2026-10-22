@@ -40,6 +40,28 @@ describe("approvalView", () => {
     expect(approvalView(A({ step: "done" }), W)).toMatchObject({ confirm: false, note: null });
     expect(approvalView(A({ step: "extract" }), W).note).toBe("contracts.approval.working");
   });
+  test("không quyết được ⇒ ghi chú nói rõ vì sao, không có nút", () => {
+    const note = (o: Partial<ContractApproval>, write = true) =>
+      approvalView(A({ can_act: false, ...o }), { ...W, write });
+    expect(note({ block_reason: "not_reviewer" })).toEqual({
+      confirm: false,
+      approve: false,
+      reject: false,
+      redo: false,
+      note: "contracts.approval.blocked.notReviewer.level1",
+    });
+    expect(note({ step: "level2", block_reason: "not_reviewer" }).note).toBe(
+      "contracts.approval.blocked.notReviewer.level2",
+    );
+    expect(note({ step: "level2", block_reason: "starter" }).note).toBe(
+      "contracts.approval.blocked.starter",
+    );
+    // chỉ xem: báo thiếu quyền sửa, kể cả khi hub báo can_act
+    expect(note({ can_act: true }, false).note).toBe("contracts.approval.blocked.viewOnly");
+    expect(note({ step: "level2" }, false).note).toBe("contracts.approval.blocked.viewOnly");
+    // hub cũ chưa gửi block_reason ⇒ giữ câu chờ cũ
+    expect(note({}).note).toBe("contracts.approval.waitLevel1");
+  });
   test("lý do bắt buộc, ≤ 4.000 ký tự", () => {
     expect(feedbackOk("  ")).toBe(false);
     expect(feedbackOk("Sai giá")).toBe(true);
