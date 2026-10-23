@@ -395,7 +395,7 @@ dc211ab745610af95d58521904bd68bc8570fe6e84555a339cc3535ebabdab3c  e2e/contracts-
 fb554236628cf2b859a2348fbd54336154543c81426d96bdc73049a81fb7650c  e2e/contracts-web/hd5-list.cw.ts
 15ef872a59649fb89464cbca27a3faa013884f54c03e6b187f4e077b4889e0e0  e2e/contracts-web/hd78-partners.cw.ts
 83df8323650bd7f07180418882f0391f3962b815970d7cd466a80f5e3c76b2a1  e2e/contracts-web/k2-versions.cw.ts
-43de92d620b618c25b6d01db51cb49b3db6a054d0e513c71da327453d251bb38  e2e/contracts-web/k3a-lock.cw.ts
+a77b4c30b983fa31ab2b94552084fd86e7b3ab1f19097e2ce52f605bd0a1fe7b  e2e/contracts-web/k3a-lock.cw.ts
 46e1f42ffdfc34b92fb06cf03335f1806c16949c753e74361dd0cbe73718edb3  e2e/contracts-web/org-visibility.cw.ts
 9039ee26813f7d64e0b8f4143fefbd01312c9c5c3709196c04b94c353049d5d9  e2e/contracts-web/overview.cw.ts
 26d96178d24630392b5a9fccdebe5e1dae3a895f5790d77b9d2e9020173f0ef4  e2e/contracts-web/playwright.config.ts
@@ -406,8 +406,8 @@ fb554236628cf2b859a2348fbd54336154543c81426d96bdc73049a81fb7650c  e2e/contracts-
 749ceb3c78c3d214a0e4ebac8572f4a4f6c243d12e9f47603cd94e3e219d2e5b  e2e/contracts-web/v2f-form.cw.ts
 49a4a4fcceb13df7b44971b48fa9b83189169b357618fd31749b4c3300155b40  e2e/contracts-web/v2f-list.cw.ts
 0998eff940edf7e8918b8dd69d7a8621c0ac2b5a1c223cc55922c87769b972cc  e2e/contracts-web/v2f-support.ts
-eaf50e2f1e6f0a5bfa5ab43410cd278028d97748455515409290e0f93f397ec2  e2e/contracts-web/v2g-review.cw.ts
-04cc6edd4f5481e3ae236382705746ec99fe9e9eb31755fbf68ec25da68988b2  e2e/contracts-web/v2g-support.ts
+0d5f5bb1705d38be4d9aadb90002635af4736c604f63542c3c62f98ae7a4e24a  e2e/contracts-web/v2g-review.cw.ts
+95a8ec1d40c2739a262e97c3026ac393c823b03deba60e6eefe6f33617140019  e2e/contracts-web/v2g-support.ts
 741d2e66a31fc40fcf782f1204db43aa12c802c740223a226f78b2d5e469f327  e2e/contracts-web/v2h-customers.cw.ts
 766c5e54de0026e67314cb92434cabce8458d89b4d5d0e1ee3446f48439bd28b  e2e/contracts-web/v2i-partners.cw.ts
 6eabeaceee60b0cf4a291d64c1936ed4c020ea9abf52e5f08c173f5473d31c42  e2e/contracts-web/v2j1-products.cw.ts
@@ -790,8 +790,9 @@ d32f3ba3d2d7918bde395bdd964c49c42900620761e3f888527b9b49e3c3349b  tests/acceptan
 fb16cefc5fef49f1c32d34388fdccf7592fcf862e9891b4870d9b0950b9f250e  tests/acceptance/K1/_k1.ts
 e5bf08f75e96a4883ddd1054f522f12c9cf0e503ed815d0fc975d0b0cc276bd1  tests/acceptance/K1/_khfake.ts
 74f6c925a90fe59d2ec26c4e580c588a4422aafb0f51dc4bf9b39574bea8b577  tests/acceptance/K1/_run.ts
+a024910f32a2e1fc4ca7fddde040024a57a55d0a8c1326136211bee04319d10f  tests/acceptance/K1/atomic-confirm.int.test.ts
 91840fd25f02748f95fba6ff0e3bbef8ecd35a2e6777b8affcb9fec5a2e44643  tests/acceptance/K1/check.int.test.ts
-7d76575399ab6275a7303bb68617d7a55aead6ec92139aa62dfcb2ef767804e9  tests/acceptance/K1/lock.int.test.ts
+1c733b5ba5fd03a501725f78ec1b8139ae225444482e7ed3c3096c75f8a62c5a  tests/acceptance/K1/lock.int.test.ts
 77110a7b472ac631138436c5800aab0818191949a2ba2d4967e431a7b71f8185  tests/acceptance/K1/noleak.int.test.ts
 67476890a0549b98f32c0b7be66f2268c421baa77ee896e1026981d40a70193d  tests/acceptance/K1/query.int.test.ts
 79183409ec7483aa2e9159575d57c6f50e99ee3086d955bb7addc5d59228a1ef  tests/acceptance/K1/rules/_rules.ts

@@ -37,7 +37,7 @@ function harness(finalizes: boolean) {
     links: {
       link: async (...a: unknown[]) => {
         calls.link.push(a);
-        return { kind: "ok", created: 1, linked: 1 };
+        return { kind: "ok", created: 1, linked: 1, matched: 1 };
       },
     },
     outbox: { enqueue: async () => undefined },

@@ -133,23 +133,32 @@ test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async (
   expect(review(sent)).toHaveLength(0);
 });
 
-test("tenant tắt duyệt: «Xác nhận và lưu» trả `active` ⇒ trang chi tiết thường, hết thanh Huỷ/Lưu dính", async ({
+test("tenant tắt duyệt: «Xác nhận và lưu» ⇒ nháp ⇒ hộp Gắn SP ⇒ MỘT POST /review mang products ⇒ `active`, hết thanh dính", async ({
   page,
 }) => {
   const { sent } = await openReview(page, { saveStatus: "active" });
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  // atomic-confirm: bước 1 ghi nháp (không khoá), rồi hộp "Gắn sản phẩm" như khi bật duyệt.
+  const dlg = page.getByTestId("product-link-dialog");
+  await expect(dlg).toBeVisible();
+  expect(review(sent)).toHaveLength(1);
+  expect(review(sent)[0]?.body).toMatchObject({ draft: true });
+  await page.getByTestId("product-link-confirm").click();
   await expect(toast(page)).toContainText("Đã lưu — hợp đồng có hiệu lực");
-  expect(review(sent)[0]?.body).not.toHaveProperty("draft");
+  await expect(dlg).toHaveCount(0);
   await expect(page.getByTestId("form-bar")).toHaveCount(0);
-  // products-confirm: HĐ đã có hiệu lực ⇒ dòng "tạo mới" thành SP qua /product-links (không POST /products)
+  // Lệnh xác nhận: chỉ version + products (xác nhận + gắn SP cùng tx); KHÔNG gọi /product-links, không POST /products.
+  expect(review(sent)).toHaveLength(2);
+  const b = review(sent)[1]?.body as { version: number; draft?: boolean; products: unknown[] };
+  expect(b.draft).toBeUndefined();
+  expect(b.version).toBe(3);
+  expect(b.products.map((p) => (p as { item_id: string }).item_id)).toEqual([ITEM1, ITEM2]);
+  expect(b.products[1]).toEqual({
+    item_id: ITEM2,
+    new_product: { name: "Phí dịch vụ lạ", unit: "gói", group: "goods" },
+  });
+  expect(sent.filter((s) => s.path.endsWith("/product-links"))).toHaveLength(0);
   expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
-  expect(sent.filter((s) => s.path.endsWith("/product-links")).map((s) => s.body)).toEqual([
-    {
-      links: [
-        { item_id: ITEM2, new_product: { name: "Phí dịch vụ lạ", unit: "gói", group: "goods" } },
-      ],
-    },
-  ]);
 });
 
 test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED báo câu riêng", async ({

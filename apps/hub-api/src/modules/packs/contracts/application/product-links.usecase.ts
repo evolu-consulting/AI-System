@@ -5,7 +5,8 @@ import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 
 export type ProductLinksOutcome =
-  | { kind: "ok"; created: number; linked: number }
+  /** `matched`: số link gửi lên trỏ đúng dòng của HĐ (dòng lạ bị bỏ qua — gọi nơi cần chặt thì so với số gửi). */
+  | { kind: "ok"; created: number; linked: number; matched: number }
   | { kind: "not_found" | "not_confirmed" | "locked" | "contract_locked" };
 
 export type ProductLinksRepo = {
@@ -14,7 +15,8 @@ export type ProductLinksRepo = {
     contractId: string,
     links: readonly ProductLink[],
     actor: string,
-    /** lock-strict: đường route (không phải bước duyệt) ⇒ HĐ đã khoá (`locked_at`) ⇒ `contract_locked`. */
+    /** lock-strict: đường route (không phải bước duyệt / lệnh xác nhận) ⇒ HĐ đã khoá (`locked_at`) ⇒ `contract_locked` (MỌI
+     *  link, kể cả gắn lần đầu — atomic-confirm). Bước duyệt cuối / POST /review xác nhận gọi không strict TRONG tx khoá. */
     strict?: boolean,
   ): Promise<ProductLinksOutcome>;
 };

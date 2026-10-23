@@ -1,6 +1,7 @@
 // V2-G · HD-02/HD-08 · §4.2 "Upload và xác nhận" · C3 · C12: "Lưu" ở màn xác nhận (MỘT tx: khoá HĐ → kiểm `version` → luật thuần
 // `planReview` → ghi trường + loại + dòng hàng + mốc → outbox) và gắn lại SP cho dòng HĐ đã lưu (một tx, một CTE). "Hủy" không có
 // lệnh: màn hình bỏ bản nháp, không gọi API. Tenant tắt duyệt ⇒ lưu = `active` ngay (V2-A để ngỏ); bật duyệt ⇒ vẫn `needs_review`.
+import type { ProductLink } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ContractFieldKey, FieldValue } from "../domain/fields.rules";
 import type { Deal } from "../domain/milestones.rules";
@@ -26,6 +27,8 @@ export type ReviewInput = {
     | undefined;
   milestones?: readonly ReviewMilestoneIn[] | undefined;
   draft?: boolean | undefined;
+  /** atomic-confirm: gắn/tạo SP trong cùng tx khi lệnh này xác nhận HĐ (tenant tắt duyệt). */
+  products?: readonly ProductLink[] | undefined;
 };
 export type ReviewResult =
   | {
@@ -99,8 +102,24 @@ async function reviewTx(
   const saved = await r.review.save(id, { plan, items, expected: cur.version, actor: who.userId });
   if (saved === "stale") return stale(cur);
   if (typeof saved === "string") throw new ReviewRollback(saved);
+  if (saved.status === "active") await linkOnConfirm(r, who, id, input.products);
   await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
   return { kind: "ok", out: { id, ...saved } };
+}
+
+/** atomic-confirm: HĐ vừa xác nhận (tắt duyệt) ⇒ gắn/tạo SP theo hộp "Gắn sản phẩm" TRONG tx này (cùng cổng với bước duyệt cuối,
+ *  không lock-strict vì cùng tx với lệnh khoá). Dòng không thuộc HĐ / HĐ có kho ⇒ ném ⇒ ROLLBACK (HĐ giữ chờ xác nhận, không SP). */
+async function linkOnConfirm(
+  r: ReviewTxRepos,
+  who: PackWho,
+  id: string,
+  products: readonly ProductLink[] | undefined,
+): Promise<void> {
+  if (!products?.length) return;
+  if (!r.links) throw new Error("review: products without links repo");
+  const out = await r.links.link(id, products, who.userId);
+  if (out.kind !== "ok" || out.matched !== products.length)
+    throw new ReviewRollback("item_unknown");
 }
 
 export function reviewSave(d: Deps): ReviewSave {

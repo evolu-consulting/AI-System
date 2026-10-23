@@ -2,6 +2,7 @@
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { Deal } from "../domain/milestones.rules";
 import type { ReviewPlan } from "../domain/review.rules";
+import type { ProductLinksRepo } from "./product-links.usecase";
 
 /** Hàng đã khoá của HĐ chờ xác nhận. */
 export type ReviewLocked = {
@@ -61,4 +62,5 @@ export type ReviewRepo = {
     actor: string,
   ): Promise<AttachOutcome>;
 };
-export type ReviewTxRepos = { review: ReviewRepo } & KitTxRepos;
+/** `links` (atomic-confirm): gắn/tạo SP trong CÙNG tx xác nhận (tenant tắt duyệt); vắng (test cũ) ⇒ `products` báo lỗi cấu hình. */
+export type ReviewTxRepos = { review: ReviewRepo; links?: ProductLinksRepo } & KitTxRepos;

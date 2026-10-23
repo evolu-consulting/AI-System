@@ -78,19 +78,22 @@ export async function installV2g(page: Page, init: Partial<V2gState> = {}) {
   );
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/review`, (r) => {
     rec(r);
-    if (st.saveStatus === "active") st.reviewStatus = "active";
+    // atomic-confirm: "Lưu nháp" (draft) giữ chờ xác nhận kể cả tenant tắt duyệt; chỉ lệnh xác nhận ra `active`.
+    const draft = (r.request().postDataJSON() as { draft?: boolean }).draft === true;
+    const status = draft ? "needs_review" : st.saveStatus;
+    if (status === "active") st.reviewStatus = "active";
     return json(r, 200, {
       id: REVIEW_ID,
-      status: st.saveStatus,
+      status,
       version: 4,
       items: 2,
       milestones: 2,
     });
   });
-  // products-confirm: lưu ra `active` ⇒ tạo SP mới đã chọn qua `/product-links`.
+  // atomic-confirm: không còn gọi `/product-links` sau xác nhận (HĐ đã khoá ⇒ 409); ghi lại để test chặn.
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/product-links`, (r) => {
     rec(r);
-    return json(r, 200, { created: 1, linked: 1 });
+    return json(r, 409, { error: { code: "CONTRACT_LOCKED", message: "locked" } });
   });
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/approval`, (r) =>
     json(r, 200, {

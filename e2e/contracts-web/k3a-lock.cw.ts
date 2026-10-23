@@ -78,9 +78,12 @@ test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ b�
   await page.goto(`/contracts/${ACTIVE_ID}`);
   await expect(page.getByRole("button", { name: "Lưu nháp", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  // atomic-confirm: HĐ có dòng ⇒ hộp "Gắn sản phẩm" ⇒ MỘT POST /review mang `products` (không gọi /product-links sau khoá).
+  await page.getByTestId("product-link-confirm").click();
   await expect(page.getByTestId("banner-locked")).toBeVisible();
   expect(posts).toHaveLength(1);
   expect(posts[0]).not.toHaveProperty("draft");
+  expect(posts[0]).toHaveProperty("products");
 });
 
 test("HĐ khoá, không phải owner (editor): không thấy «Mở lại»", async ({ page }) => {

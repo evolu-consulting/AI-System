@@ -10,6 +10,7 @@ import {
   MILESTONES_MAX,
   MilestoneKindSchema,
 } from "./milestones";
+import { ProductLinksSchema } from "./product-links";
 
 const REVIEW_ITEMS_MAX = 500;
 const COMPONENTS_MAX = 20;
@@ -65,10 +66,17 @@ export const ReviewSaveRequestSchema = z
     milestones: z.array(ReviewMilestoneSchema).max(MILESTONES_MAX).optional(),
     /** "Lưu nháp": chỉ ghi, HĐ giữ `needs_review` (không xác nhận / khoá) kể cả khi tenant tắt duyệt. */
     draft: z.boolean().optional(),
+    /** atomic-confirm: tenant tắt duyệt — gắn/tạo SP cho dòng HĐ (đã lưu) trong CÙNG tx xác nhận; lỗi ⇒ ROLLBACK cả lệnh.
+     *  Chỉ cho lệnh xác nhận (không `draft`); bật duyệt (HĐ còn chờ) ⇒ bỏ qua — SP gắn ở bước duyệt cuối. */
+    products: ProductLinksSchema.optional(),
   })
   .refine((b) => (b.commission_pct ?? null) === null || (b.commission_fixed ?? null) === null, {
     message: "chọn % hoặc số tiền cố định",
     path: ["commission_fixed"],
+  })
+  .refine((b) => !(b.draft && b.products?.length), {
+    message: "gắn sản phẩm chỉ khi xác nhận (không lưu nháp)",
+    path: ["products"],
   });
 export type ReviewSaveRequest = z.infer<typeof ReviewSaveRequestSchema>;
 

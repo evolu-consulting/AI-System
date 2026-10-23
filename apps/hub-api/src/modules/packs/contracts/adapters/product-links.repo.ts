@@ -13,6 +13,7 @@ type Row = {
   clocked: boolean;
   created: number;
   linked: number;
+  matched: number;
 };
 
 /** Dòng gửi vào SQL: SP có sẵn (`product_id`) hoặc SP mới (`name/unit/grp`). */
@@ -36,12 +37,8 @@ export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
           select c.id, c.deal, c.fields,
             c.status not in ('needs_review', 'extracting', 'extract_failed', 'rejected') as confirmed,
             exists (select 1 from contracts.stock_moves m where m.tenant_id = c.tenant_id and m.contract_id = c.id) as locked,
-            -- HĐ đã khoá: chỉ cho gắn SP LẦN ĐẦU (dòng chưa có SP — nối danh mục, không sửa văn bản HĐ; luồng "Xác nhận và
-            -- lưu" khi tắt duyệt gắn SP ngay SAU lúc khoá); đổi SP đã gắn ⇒ khoá.
-            (${strict}::boolean and c.locked_at is not null and exists (
-              select 1 from jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb) as q (item_id uuid)
-              join contracts.contract_items i on i.tenant_id = c.tenant_id and i.contract_id = c.id and i.id = q.item_id
-              where i.product_id is not null)) as clocked
+            -- lock-strict: HĐ đã khoá ⇒ MỌI link bị chặn (atomic-confirm: gắn SP lúc xác nhận đi trong tx của lệnh xác nhận).
+            (${strict}::boolean and c.locked_at is not null) as clocked
           from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
         ok as (select k.* from k where k.confirmed and not k.locked and not k.clocked),
         x as (select x.* from ok, jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb)
@@ -81,13 +78,14 @@ export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
             jsonb_build_object('item_id', u.id, 'product_id', u.product_id, 'on_confirm', true) from u)
       select exists (select 1 from k) as found, coalesce((select confirmed from k), false) as confirmed,
         coalesce((select locked from k), false) as locked, coalesce((select clocked from k), false) as clocked,
-        (select count(*) from pc)::int as created, (select count(*) from u)::int as linked`);
+        (select count(*) from pc)::int as created, (select count(*) from u)::int as linked,
+        (select count(*) from x)::int as matched`);
       const r = rows[0];
       if (!r?.found) return { kind: "not_found" };
       if (r.clocked) return { kind: "contract_locked" };
       if (!r.confirmed) return { kind: "not_confirmed" };
       if (r.locked) return { kind: "locked" };
-      return { kind: "ok", created: r.created, linked: r.linked };
+      return { kind: "ok", created: r.created, linked: r.linked, matched: r.matched };
     },
   };
 }

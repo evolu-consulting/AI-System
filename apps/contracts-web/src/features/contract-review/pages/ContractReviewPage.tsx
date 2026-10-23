@@ -21,6 +21,7 @@ import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
 import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
@@ -116,7 +117,7 @@ function ContractBody({
       className="btn btn-primary btn-sm"
       data-testid="confirm-save"
       disabled={info.busy || ap.busy}
-      onClick={() => void info.confirmAndSave()}
+      onClick={() => void info.confirmSave.start()}
     >
       {t("contracts.approval.confirmSave")}
     </button>
@@ -149,6 +150,13 @@ function ContractBody({
           <VersionsPanels id={id} versions={c.versions} sup={sup} />
           <SaveNotice err={info.err ?? ap.err} />
           {ap.section}
+          {/* atomic-confirm: "Xác nhận và lưu" (tắt duyệt) ⇒ hộp "Gắn sản phẩm" ⇒ một POST /review mang `products`. */}
+          <ProductLinkDialog
+            target={info.confirmSave.target}
+            busy={info.confirmSave.busy}
+            onCancel={info.confirmSave.cancel}
+            onConfirm={(links) => void info.confirmSave.confirmLinks(links)}
+          />
           <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
           <ManagePanel c={c} write={write} />
           {c.status === "extract_failed" ? (

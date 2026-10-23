@@ -45,8 +45,10 @@ async function confirmed(n: number): Promise<string> {
   return id;
 }
 
+// atomic-confirm (người dùng 2026-10-24): HĐ đã khoá ⇒ MỌI lời gọi product-links ⇒ 409 (kể cả gắn lần đầu). "Xác nhận và lưu" khi
+// tắt duyệt gửi `products` trong POST /review (một tx) — xem atomic-confirm.int.test.ts.
 describe("HD-FR-100 · gắn SP sau khoá (luồng 'Xác nhận và lưu' khi tắt duyệt, prod 2026-10-24)", () => {
-  it("HĐ đã khoá: gắn SP lần đầu cho dòng chưa có SP ⇒ 200; đổi SP đã gắn ⇒ 409 CONTRACT_LOCKED", async () => {
+  it("HĐ đã khoá: gắn SP lần đầu ⇒ 409 CONTRACT_LOCKED (không tạo SP); đổi SP đã gắn ⇒ 409 CONTRACT_LOCKED", async () => {
     const id = await confirmed(390);
     expect((await lockRow(id)).locked_at).not.toBeNull();
     const item = "e1000000-0000-4000-8000-000000000390";
@@ -60,15 +62,24 @@ describe("HD-FR-100 · gắn SP sau khoá (luồng 'Xác nhận và lưu' khi t�
         },
       ],
     });
-    expect({ status: first.status, linked: first.json?.linked }).toEqual({
-      status: 200,
-      linked: 1,
+    expect({ status: first.status, code: errCode(first) }).toEqual({
+      status: 409,
+      code: "CONTRACT_LOCKED",
     });
     const [p] = await c.sql<
-      { id: string }[]
+      { id: string | null }[]
     >`select product_id::text as id from contracts.contract_items
       where id = ${item}`;
-    expect(p?.id).toBeTruthy();
+    expect(p?.id ?? null).toBeNull();
+    const [np] = await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.products
+      where tenant_id = ${T.acme} and name = 'Thùng carton K1-390'`;
+    expect(np?.n).toBe(0);
+    // Dòng đã có SP (gắn trực tiếp ở DB) ⇒ đổi SP cũng 409.
+    const [ex] = await c.sql<
+      { id: string }[]
+    >`insert into contracts.products (tenant_id, name, unit, grp)
+      values (${T.acme}, 'SP có sẵn K1-390', 'cái', 'goods') returning id::text as id`;
+    await c.sql`update contracts.contract_items set product_id = ${ex?.id as string} where id = ${item}`;
     const again = await c.call("B", "POST", url, {
       links: [
         { item_id: item, new_product: { name: "SP khác K1-390", unit: "cái", group: "goods" } },
