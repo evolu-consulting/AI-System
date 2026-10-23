@@ -2,6 +2,7 @@
 // HĐ gắn SP (owner, bỏ RLS). Xác nhận mốc giao = `POST /obligations/:id/settle` THẬT. Đỏ NGAY nếu thiếu migration 0026.
 // Không chứa `it(...)`.
 import { expect } from "bun:test";
+import { unlockContract } from "../../HD1/_support/hd1";
 import {
   arrangeV2a,
   type CtxN1,
@@ -83,6 +84,7 @@ export async function item(
       (tenant_id, contract_id, ord, name, qty, unit_price, product_id, component_ids)
     values (${o.tenant ?? T.acme}, ${contractId}, ${++ord}, ${o.name ?? `Dòng ${ord}`}, ${o.qty ?? null},
       ${o.price ?? null}, ${o.productId ?? null}, ${o.componentIds ?? null}) returning id::text`;
+  await unlockContract(sql, contractId); // lock-strict: trigger có thể khoá lại khi dòng đổi HĐ
   return (r as { id: string }).id;
 }
 

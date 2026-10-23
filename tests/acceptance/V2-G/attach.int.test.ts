@@ -31,7 +31,7 @@ afterAll(async () => {
 const put = (cid: string, itemId: string, body: unknown, p: (typeof P)[keyof typeof P] = P.hoa) =>
   call(c, p, "PUT", `/contracts/${cid}/items/${itemId}/product`, body);
 
-async function world(status = "active") {
+async function world(status = "needs_review") {
   await arrangeV2a(c);
   await setApproval(c.sql, T.acme, false);
   await c.sql`truncate contracts.products cascade`;

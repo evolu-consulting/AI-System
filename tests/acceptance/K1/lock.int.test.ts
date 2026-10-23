@@ -89,12 +89,13 @@ describe("HD-FR-100 · xác nhận = khoá", () => {
     }
   }, 60_000);
 
-  it("đã khoá: PATCH trường pháp lý ⇒ 409 CONTRACT_LOCKED cho cả owner; trường vận hành (notice_days) ⇒ 200", async () => {
+  it("đã khoá tuyệt đối (lock-strict): PATCH mọi trường (cả notice_days) ⇒ 409 CONTRACT_LOCKED; thêm mốc / sửa / xoá mốc / gắn HĐ gốc ⇒ 409; xác nhận xong mốc ⇒ 200", async () => {
     const id = await confirmed(302);
     for (const [r, f] of [
       ["A", { total_value: 900_000_000 }],
       ["B", { payment_terms: "30 ngày" }],
       ["B", { buyer_tax_id: "0101010101" }],
+      ["B", { notice_days: 45 }],
     ] as const) {
       const res = await patch(r, id, f);
       expect({ f, status: res.status, code: errCode(res) }).toEqual({
@@ -103,11 +104,36 @@ describe("HD-FR-100 · xác nhận = khoá", () => {
         code: "CONTRACT_LOCKED",
       });
     }
-    expect((await patch("B", id, { notice_days: 45 })).status).toBe(200);
     expect((await lockRow(id)).status).toBe("active");
+    // mốc: thêm / sửa / xoá bị khoá; xác nhận xong (settle) vẫn cho
+    const [ob] = await c.sql<{ id: string }[]>`insert into contracts.obligations
+      (tenant_id, contract_id, direction, kind, seq, due_date, amount, source)
+      values (${T.acme}, ${id}, 'receive', 'payment', 1, '2026-12-01', 1000, 'manual') returning id`;
+    const mid = ob?.id as string;
+    const add = await c.call("B", "POST", `/pack/contracts/contracts/${id}/milestones`, {
+      kind: "collect",
+      due_date: "2026-12-31",
+      amount: 5,
+    });
+    const edit = await c.call("B", "PATCH", `/pack/contracts/milestones/${mid}`, { amount: 7 });
+    const del = await c.call("B", "DELETE", `/pack/contracts/milestones/${mid}`);
+    for (const r of [add, edit, del])
+      expect({ status: r.status, code: errCode(r) }).toEqual({
+        status: 409,
+        code: "CONTRACT_LOCKED",
+      });
+    const parent = await c.call("B", "PATCH", `${CBASE}/${id}/parent`, {
+      version: (await detail(id)).version,
+      parent_id: cid(303),
+    });
+    expect({ status: parent.status, code: errCode(parent) }).toEqual({
+      status: 409,
+      code: "CONTRACT_LOCKED",
+    });
+    const settle = await c.call("B", "POST", `/pack/contracts/obligations/${mid}/settle`, {});
+    expect(settle.status).toBe(200);
   }, 90_000);
 });
-
 describe("HD-FR-104 · owner mở lại có lý do", () => {
   it("editor ⇒ 403; owner thiếu lý do ⇒ 400; owner + lý do ⇒ Chờ duyệt, mở khoá, log; mở lại lần nữa ⇒ 409; duyệt lại ⇒ khoá lại", async () => {
     const id = await confirmed(310);

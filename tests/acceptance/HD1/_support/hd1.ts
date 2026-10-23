@@ -115,6 +115,13 @@ export async function insContract(sql: Sql, r: CRow): Promise<void> {
       ${J(sql, r.fields ?? {})}, ${r.fileId ?? null}, ${r.source ?? null},
       ${r.handled === undefined ? null : J(sql, r.handled)})`;
 }
+/** lock-strict (qc): DB luôn khoá HĐ đã xác nhận (trigger K1) — test thao tác mốc/SP/HĐ gốc cần HĐ "mở" thì gỡ khoá bằng cách tắt trigger trong MỘT tx. */
+export async function unlockContract(sql: Sql, ...ids: string[]): Promise<void> {
+  await sql.begin(async (tx) => {
+    await tx`set local session_replication_role = replica`;
+    await tx`update contracts.contracts set locked_at = null, locked_by = null where id = any(${sql.array(ids)}::uuid[])`;
+  });
+}
 export async function insCategory(sql: Sql, tid: string, id: string, name: string): Promise<void> {
   await sql`insert into contracts.contract_categories (id, tenant_id, name) values (${id}, ${tid}, ${name})`;
 }

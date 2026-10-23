@@ -3,9 +3,11 @@
 // "Mở lại" (về Chờ duyệt, có log) hoặc tải bản cập nhật (K2). Vận hành vẫn sửa ở endpoint riêng: người phụ trách, đã xử lý, ghi chú,
 // mốc/sổ (ghi việc với đối tác), gắn SP cho dòng hàng, tóm tắt AI. Trong nhóm 23 trường chỉ `notice_days` (số ngày báo trước — dùng
 // cho nhắc hạn HD4) là vận hành.
+// CR-097 lock-strict (2026-10-23): người dùng chốt KHOÁ TUYỆT ĐỐI — `notice_days` cũng chỉ đọc; thêm/sửa/xoá mốc, gắn SP, gắn HĐ gốc ⇒ 409.
+// Chỉ còn thao tác vận hành: giao việc, ghi nhận xử lý, xác nhận xong mốc, hoãn/nhắc, ghi việc với đối tác, tóm tắt AI.
 
 /** Trường của `fields` vẫn sửa được khi HĐ đã khoá. */
-export const LOCK_EDITABLE_FIELDS: ReadonlySet<string> = new Set(["notice_days"]);
+export const LOCK_EDITABLE_FIELDS: ReadonlySet<string> = new Set();
 
 export type LockVerdict = "ok" | "locked";
 

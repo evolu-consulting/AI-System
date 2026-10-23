@@ -29,6 +29,7 @@ import type {
   ReviewResult,
   ReviewSave,
 } from "../application/review.usecase";
+import { lockedError } from "./manage.routes";
 
 const KEY = "contracts";
 /** 500 dòng × ~700 byte + 23 trường × 2.000 + 200 mốc ≈ < 1 MiB. */
@@ -112,6 +113,7 @@ export function reviewRoutes(view: PackAccessView, d: ReviewRoutesDeps): Hono<Pa
     const out = await d.attach(whoOf(c.get("user")), id, itemId, body).catch(productFail);
     if (out.kind === "ok") return c.json(out.item);
     if (out.kind === "not_found") throw appError("NOT_FOUND");
+    if (out.kind === "contract_locked") throw lockedError();
     if (out.kind === "locked")
       throw new AppError(
         "ITEM_LOCKED",
@@ -128,6 +130,7 @@ export function reviewRoutes(view: PackAccessView, d: ReviewRoutesDeps): Hono<Pa
       const out = await link(whoOf(c.get("user")), id, body.links).catch(productFail);
       if (out.kind === "ok") return c.json({ created: out.created, linked: out.linked });
       if (out.kind === "not_found") throw appError("NOT_FOUND");
+      if (out.kind === "contract_locked") throw lockedError();
       if (out.kind === "locked")
         throw new AppError(
           "ITEM_LOCKED",

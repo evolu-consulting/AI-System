@@ -20,6 +20,7 @@ import { DeliveryFail } from "../application/delivery.ports";
 import { MilestoneFail } from "../application/milestones.ports";
 import type { MilestoneCommands } from "../application/milestones.usecase";
 import { deliveryError } from "./delivery.routes";
+import { lockedError } from "./manage.routes";
 import { toWrittenMilestone } from "./milestones.mapper";
 
 const KEY = "contracts";
@@ -33,6 +34,7 @@ function fail(e: unknown): never {
   if (e instanceof DeliveryFail) deliveryError(e); // V2-D: bảng SL vượt phần còn lại ⇒ DELIVERY_OVER
   if (!(e instanceof MilestoneFail)) throw e;
   if (e.kind === "not_found") throw appError("NOT_FOUND");
+  if (e.kind === "locked") throw lockedError();
   const code: MilestoneErrorCode =
     e.kind === "confirmed" ? "MILESTONE_CONFIRMED" : "MILESTONE_INVALID";
   throw new AppError(code, MILESTONE_ERRORS[code], MESSAGES[code]);

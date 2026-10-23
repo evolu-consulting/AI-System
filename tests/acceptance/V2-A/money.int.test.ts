@@ -87,7 +87,7 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
 
   it("HD-09 · CR-097 K1: tenant tắt duyệt: HĐ đã lưu (xác nhận) bị khoá ⇒ sửa giá trị 409 CONTRACT_LOCKED, vẫn active", async () => {
     await v2();
-    const out = await manual(c, { deal: "sell", total_value: 1_000 });
+    const out = await manual(c, { deal: "sell", total_value: 1_000, keepLocked: true });
     const x = await detail(c, out.id);
     const p = await call(c, P.hoa, "PATCH", `/contracts/${out.id}/fields`, {
       version: x.version,

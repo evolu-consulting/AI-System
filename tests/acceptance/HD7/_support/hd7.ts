@@ -20,6 +20,7 @@ import {
   type Sql,
   startHd1,
   T,
+  unlockContract,
 } from "../../HD1/_support/hd1";
 
 export type { CtxN1, Json, Res, Sql };
@@ -107,6 +108,7 @@ export async function deal(sql: Sql, o: Deal = {}): Promise<string> {
       signed_date: fv(x.signed ?? null),
     },
   });
+  await unlockContract(sql, id); // lock-strict: fixture "mở" (HĐ xác nhận bị khoá bởi trigger K1)
   return id;
 }
 

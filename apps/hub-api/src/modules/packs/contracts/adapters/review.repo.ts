@@ -165,11 +165,16 @@ function saveQ(tx: Tx, t: string): ReviewRepo["save"] {
 function attachQ(tx: Tx, t: string): ReviewRepo["attachProduct"] {
   return async (id, itemId, p, actor): Promise<AttachOutcome> => {
     const comps = p.component_ids ? pgTextArray(p.component_ids) : null;
-    const rows = await tx.execute<{ found: boolean; locked: boolean; ok: boolean }>(sql`with it as (
+    const rows = await tx.execute<{
+      found: boolean;
+      locked: boolean;
+      clocked: boolean;
+      ok: boolean;
+    }>(sql`with it as (
         select i.id from contracts.contract_items i
         where i.id = ${itemId}::uuid and i.contract_id = ${id}::uuid and i.tenant_id = ${t}::uuid),
       lk as (
-        select (c.status = 'extracting' or exists (select 1 from contracts.stock_moves m
+        select (c.locked_at is not null or c.status = 'extracting' or exists (select 1 from contracts.stock_moves m
           where m.tenant_id = ${t}::uuid and m.contract_id = c.id)) as locked
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid),
       ck as (
@@ -186,9 +191,11 @@ function attachQ(tx: Tx, t: string): ReviewRepo["attachProduct"] {
         select ${t}::uuid, ${id}::uuid, 'item_product_set', ${actor}::uuid,
           jsonb_build_object('item_id', u.id, 'product_id', u.product_id) from u)
       select exists (select 1 from it) as found, coalesce((select locked from lk), false) as locked,
+        coalesce((select c.locked_at is not null from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid), false) as clocked,
         (select ok from ck) as ok`);
     const r = rows[0];
     if (!r?.found) return { kind: "not_found" };
+    if (r.clocked) return { kind: "contract_locked" };
     if (r.locked) return { kind: "locked" };
     if (!r.ok) return { kind: "component_invalid" };
     return {

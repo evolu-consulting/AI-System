@@ -24,6 +24,8 @@ export type LockedForParent = {
   updatedAt: string;
   hasAppendices: boolean;
   parentKind: "contract" | "appendix" | null;
+  /** lock-strict: HĐ đã khoá ⇒ không gắn/gỡ HĐ gốc. */
+  locked?: boolean;
 };
 export type ParentSaved = {
   version: number;
@@ -54,6 +56,7 @@ export type AttachInput = { version: number; parent_id: string | null };
 export type AttachResult =
   | { kind: "ok"; out: { id: string } & ParentSaved }
   | { kind: "not_found" }
+  | { kind: "locked" }
   | { kind: "stale"; current: { version: number }; updated_at: string }
   | { kind: "invalid_parent"; reason: "self" | "not_a_contract" | "has_appendices" };
 
@@ -77,6 +80,7 @@ export function attachParent(d: { uow: Uow }): AttachParent {
       if (input.parent_id === id) return { kind: "invalid_parent", reason: "self" };
       const cur = await r.appendix.lockForParent(id, input.parent_id);
       if (!cur) return { kind: "not_found" };
+      if (cur.locked === true) return { kind: "locked" };
       const bad = attachVerdict(cur, input);
       if (bad) return bad;
       const same = {

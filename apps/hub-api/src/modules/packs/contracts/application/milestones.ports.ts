@@ -42,9 +42,11 @@ export type MilestoneWrite = {
 
 export type MilestonesRepo = {
   /** Khoá HĐ; null = không có (tenant khác/không tồn tại). `n` = số mốc còn hiệu lực. */
-  lockContract(contractId: string): Promise<{ deal: Deal | null; n: number } | null>;
+  lockContract(
+    contractId: string,
+  ): Promise<{ deal: Deal | null; n: number; locked: boolean } | null>;
   /** Khoá HĐ của mốc (mốc chưa bị gỡ); null = không có. */
-  lockContractOf(id: string): Promise<{ deal: Deal | null } | null>;
+  lockContractOf(id: string): Promise<{ deal: Deal | null; locked: boolean } | null>;
   /** Khoá + đọc lại mốc SAU khi đã khoá HĐ. */
   lockRow(id: string): Promise<MilestoneRow | null>;
   insert(contractId: string, w: MilestoneWrite, by: string): Promise<MilestoneWritten>;
@@ -55,7 +57,7 @@ export type MilestonesRepo = {
 export type MilestoneRepos = { milestones: MilestonesRepo; delivery: DeliveryRepo };
 
 export class MilestoneFail extends Error {
-  constructor(readonly kind: "not_found" | "confirmed" | "invalid") {
+  constructor(readonly kind: "not_found" | "confirmed" | "invalid" | "locked") {
     super(kind);
   }
 }

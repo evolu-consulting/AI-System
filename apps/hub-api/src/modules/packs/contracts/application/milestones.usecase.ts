@@ -90,6 +90,7 @@ export function mergeChange(deal: Deal, cur: MilestoneRow, p: MilestoneChange): 
 async function editable(r: MilestoneRepos["milestones"], id: string) {
   const c = await r.lockContractOf(id);
   if (!c) throw new MilestoneFail("not_found");
+  if (c.locked) throw new MilestoneFail("locked");
   const cur = await r.lockRow(id);
   if (!cur) throw new MilestoneFail("not_found");
   if (cur.status === "done") throw new MilestoneFail("confirmed");
@@ -124,13 +125,20 @@ const newWrite = (deal: Deal, b: MilestoneInput): MilestoneWrite =>
     amount: b.amount ?? null,
   });
 
+/** Thêm mốc: HĐ không có / đã khoá (lock-strict) / chưa rõ chiều / đủ trần ⇒ lỗi. */
+function addableDeal(c: { deal: Deal | null; n: number; locked: boolean } | null): Deal {
+  if (!c) throw new MilestoneFail("not_found");
+  if (c.locked) throw new MilestoneFail("locked");
+  if (!c.deal || c.n >= MILESTONES_PER_CONTRACT) throw new MilestoneFail("invalid");
+  return c.deal;
+}
+
 export function milestoneCommands(d: { uow: Uow }) {
   const add = (who: PackWho, contractId: string, b: MilestoneInput): Promise<MilestoneWritten> =>
     d.uow.tenant(who, async ({ milestones: r, delivery }) => {
       const c = await r.lockContract(contractId);
-      if (!c) throw new MilestoneFail("not_found");
-      if (!c.deal || c.n >= MILESTONES_PER_CONTRACT) throw new MilestoneFail("invalid");
-      const w = newWrite(c.deal, b);
+      const deal = addableDeal(c);
+      const w = newWrite(deal, b);
       const plan = b.items?.length ? await planOf(delivery, contractId, w.kind, b.items) : null;
       const out = await r.insert(contractId, w, who.userId);
       if (plan) await delivery.replacePlan(out.m.id, contractId, plan);

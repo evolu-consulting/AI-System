@@ -15,6 +15,7 @@ import {
   P,
   startHd1,
   T,
+  unlockContract,
 } from "../HD1/_support/hd1";
 import { afterReload, bumpConfig } from "../N1/_support/n1";
 
@@ -26,6 +27,14 @@ afterAll(async () => {
   await c?.stop();
 });
 const BASE = "/pack/contracts";
+/** lock-strict: HĐ dựng ở trạng thái xác nhận bị khoá ⇒ gỡ khoá để test gắn/gỡ HĐ gốc (ca bị khoá: K1/lock.int). */
+const insOpen = async (
+  sql: Parameters<typeof insContract>[0],
+  r: Parameters<typeof insContract>[1],
+) => {
+  await insContract(sql, r);
+  await unlockContract(sql, r.id);
+};
 const get = (p: (typeof P)[keyof typeof P], path: string) => c.hubCall(p, "GET", `${BASE}${path}`);
 const send = (p: (typeof P)[keyof typeof P], m: string, path: string, body?: unknown) =>
   c.hubCall(p, m, `${BASE}${path}`, body);
@@ -36,13 +45,13 @@ const err = (r: { status: number; json?: { error?: { code?: string } } }) => [
 
 async function family() {
   await arrange(c);
-  await insContract(c.sql, {
+  await insOpen(c.sql, {
     id: cid(1),
     tenant: T.acme,
     title: "HĐ gốc",
     fields: mkFields({ number: "01/2026/HĐMB-PN", supplier_name: "Công ty Minh Phát" }),
   });
-  await insContract(c.sql, {
+  await insOpen(c.sql, {
     id: cid(2),
     tenant: T.acme,
     title: "Phụ lục 1",
@@ -51,7 +60,7 @@ async function family() {
     fields: mkFields({ effective_date: "2026-07-01", number: "PL01" }),
     updatedAt: "2026-03-01T00:00:00Z",
   });
-  await insContract(c.sql, {
+  await insOpen(c.sql, {
     id: cid(3),
     tenant: T.acme,
     title: "Phụ lục chờ kiểm",
@@ -60,7 +69,7 @@ async function family() {
     status: "needs_review",
     fields: mkFields({ effective_date: "2026-08-01" }),
   });
-  await insContract(c.sql, {
+  await insOpen(c.sql, {
     id: cid(9),
     tenant: T.beta,
     title: "HĐ tenant khác",
@@ -103,7 +112,7 @@ describe("HD-FR-51 · danh sách + chi tiết có phụ lục", () => {
 describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
   it("editor gắn HĐ thành phụ lục: kind/parent_id đổi, version+1, event parent_changed, outbox; gỡ trả về HĐ", async () => {
     await family();
-    await insContract(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
+    await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
     const r = await send(P.hoa, "PATCH", `/contracts/${cid(4)}/parent`, {
       version: 1,
       parent_id: cid(1),
@@ -120,6 +129,7 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
     const [ob] =
       await c.sql`select entity, op from contracts.index_outbox where entity_id = ${cid(4)}`;
     expect(ob).toMatchObject({ entity: "contract", op: "upsert" });
+    await unlockContract(c.sql, cid(4)); // lock-strict: UPDATE khoá lại HĐ đã xác nhận
     const back = await send(P.lan, "PATCH", `/contracts/${cid(4)}/parent`, {
       version: 2,
       parent_id: null,
@@ -128,7 +138,7 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
   });
   it("viewer ⇒ 403; version cũ ⇒ 409 CONTRACT_STALE; không đổi DB", async () => {
     await family();
-    await insContract(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
+    await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
     const v = await send(P.tam, "PATCH", `/contracts/${cid(4)}/parent`, {
       version: 1,
       parent_id: cid(1),
@@ -144,7 +154,7 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
   });
   it("cha không hợp lệ ⇒ 422 PARENT_INVALID: chính nó, cha là phụ lục, HĐ đang có phụ lục, cha ở tenant khác / không tồn tại", async () => {
     await family();
-    await insContract(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
+    await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
     const body = (parent_id: string) => ({ version: 1, parent_id });
     const cases: [string, string][] = [
       [cid(4), cid(4)],
@@ -174,7 +184,7 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
   });
   it("gợi ý: số HĐ nêu trong văn bản ⇒ cited_number; tenant khác không lộ", async () => {
     await family();
-    await insContract(c.sql, {
+    await insOpen(c.sql, {
       id: cid(5),
       tenant: T.acme,
       title: "PL mới",
@@ -212,8 +222,8 @@ describe("HD-FR-54 · gắn HĐ gốc đồng thời (khoá hai hàng theo thứ
   it("A→B ∥ B→A (8 vòng): đúng một bên thành phụ lục, bên kia 422; không vòng", async () => {
     for (let round = 0; round < 8; round++) {
       await arrange(c);
-      await insContract(c.sql, { id: cid(1), tenant: T.acme, title: "A" });
-      await insContract(c.sql, { id: cid(2), tenant: T.acme, title: "B" });
+      await insOpen(c.sql, { id: cid(1), tenant: T.acme, title: "A" });
+      await insOpen(c.sql, { id: cid(2), tenant: T.acme, title: "B" });
       const rs = await Promise.all([patch(cid(1), cid(2)), patch(cid(2), cid(1))]);
       expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
       const rows = await kinds();
@@ -224,7 +234,7 @@ describe("HD-FR-54 · gắn HĐ gốc đồng thời (khoá hai hàng theo thứ
     for (let round = 0; round < 8; round++) {
       await arrange(c);
       for (const n of [1, 2, 3])
-        await insContract(c.sql, { id: cid(n), tenant: T.acme, title: `H${n}` });
+        await insOpen(c.sql, { id: cid(n), tenant: T.acme, title: `H${n}` });
       const rs = await Promise.all([patch(cid(3), cid(1)), patch(cid(1), cid(2))]);
       expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
       const rows = await kinds();

@@ -18,6 +18,7 @@ import {
 } from "../../kit/adapters/pack-guard.middleware";
 import type { AttachParent, GetPrices, SuggestParents } from "../application/appendix.usecase";
 import type { CreateCategory, ListCategories } from "../application/categories.usecase";
+import { lockedError } from "./manage.routes";
 
 export type AppendixUseCases = {
   listCategories: ListCategories;
@@ -93,6 +94,7 @@ function parentRoutes(r: Hono<PackGuardVars>, { read, write }: Guards, uc: Appen
 /** Kết quả gắn HĐ gốc ⇒ DTO; lỗi nghiệp vụ ⇒ AppError (404/409/422). */
 function attachedOut(res: Awaited<ReturnType<AttachParent>>) {
   if (res.kind === "not_found") throw appError("NOT_FOUND");
+  if (res.kind === "locked") throw lockedError();
   if (res.kind === "stale")
     throw new AppError("CONTRACT_STALE", CONTRACT_ERRORS.CONTRACT_STALE, "Contract was modified", {
       current: res.current,

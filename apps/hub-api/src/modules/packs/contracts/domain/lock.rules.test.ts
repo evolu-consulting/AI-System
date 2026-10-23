@@ -21,14 +21,17 @@ describe("HD-FR-100 · lockVerdict", () => {
     ])
       expect({ k, v: lockVerdict({ locked: true, changed: [k] }) }).toEqual({ k, v: "locked" });
   });
-  test("HĐ đã khoá ⇒ trường vận hành (số ngày báo trước — nhắc hạn) vẫn sửa được", () => {
-    expect(lockVerdict({ locked: true, changed: ["notice_days"] })).toBe("ok");
+  test("HĐ đã khoá ⇒ notice_days cũng bị khoá (lock-strict)", () => {
+    expect(lockVerdict({ locked: true, changed: ["notice_days"] })).toBe("locked");
   });
   test("lẫn trường vận hành + pháp lý ⇒ locked (không ghi một phần)", () => {
     expect(lockVerdict({ locked: true, changed: ["notice_days", "total_value"] })).toBe("locked");
   });
   test("không đổi gì ⇒ ok", () => {
     expect(lockVerdict({ locked: true, changed: [] })).toBe("ok");
+  });
+  test("lock-strict: danh sách trường sửa được khi khoá rỗng", () => {
+    expect(LOCK_EDITABLE_FIELDS.size).toBe(0);
   });
   test("danh sách trường sửa được khi khoá chỉ gồm khoá hợp lệ và KHÔNG có trường tiền/bên/ngày", () => {
     for (const k of LOCK_EDITABLE_FIELDS)

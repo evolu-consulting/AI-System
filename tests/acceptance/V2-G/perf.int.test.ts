@@ -74,7 +74,6 @@ describe("V2-G · Lưu: số câu SQL cố định (Luật 4c)", () => {
 
   it("chi tiết có `ai` + 200 dòng gắn SP vẫn MỘT câu đọc; gắn SP một dòng = số câu cố định", async () => {
     const { s, body } = await save(200, 5, false);
-    await ok(reviewOf(c, s.id, body));
     const get = () => ok(call(c, P.hoa, "GET", `/contracts/${s.id}`));
     await get();
     expect(await count(get)).toBe(TX + 1);
@@ -82,8 +81,9 @@ describe("V2-G · Lưu: số câu SQL cố định (Luật 4c)", () => {
     const first = (await get()).items[0].id;
     const attach = () =>
       ok(call(c, P.hoa, "PUT", `/contracts/${s.id}/items/${first}/product`, { product_id: p.id }));
-    await attach();
+    await attach(); // lock-strict: gắn SP chỉ khi HĐ chưa khoá ⇒ đo trước khi xác nhận
     expect(await count(attach)).toBeLessThanOrEqual(TX + 2);
+    await ok(reviewOf(c, s.id, body));
   });
 
   it("thời gian: Lưu 200 dòng + 50 mốc (tenant tắt duyệt) — p95 ≤ 250 ms trong mạng cục bộ", async () => {

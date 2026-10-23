@@ -27,7 +27,8 @@ function lockQ(tx: Tx, tenantId: string): AppendixRepo["lockForParent"] {
       updated_at: string | Date;
       has_appendices: boolean;
       parent_kind: Kind | null;
-    }>(sql`select c.version, c.kind, c.parent_id, c.updated_at,
+      locked: boolean;
+    }>(sql`select c.version, c.kind, c.parent_id, c.updated_at, c.locked_at is not null as locked,
           exists (select 1 from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id) as has_appendices,
           (select p.kind from contracts.contracts p where p.id = ${parentId}::uuid and p.tenant_id = c.tenant_id) as parent_kind
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update of c`);
@@ -40,6 +41,7 @@ function lockQ(tx: Tx, tenantId: string): AppendixRepo["lockForParent"] {
           updatedAt: iso(r.updated_at),
           hasAppendices: r.has_appendices,
           parentKind: r.parent_kind,
+          locked: r.locked,
         }
       : null;
   };

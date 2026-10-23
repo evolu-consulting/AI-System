@@ -2,7 +2,7 @@
 // gọi AI thật. Cờ duyệt đặt thẳng `approval_settings.approval_enabled` và TRẢ LẠI sau file. Đỏ NGAY nếu thiếu migration 0027.
 // Không chứa `it(...)`.
 import { expect } from "bun:test";
-import { startHd1 } from "../../HD1/_support/hd1";
+import { startHd1, unlockContract } from "../../HD1/_support/hd1";
 import { agentJson, C1_TEXT, CBASE, cid, insContract, startHd2 } from "../../HD2/_support/hd2";
 import {
   arrangeV2a,
@@ -129,6 +129,7 @@ export async function seedReview(
       values (${iid}, ${o.tenant ?? T.acme}, ${id}, ${ord}, ${it.name}, ${it.unit ?? null}, ${it.qty ?? null},
         ${it.unit_price ?? null}, true, false)`;
   }
+  await unlockContract(c.sql, id); // lock-strict: fixture "mở" để test gắn SP
   return { id, items: ids };
 }
 

@@ -55,20 +55,25 @@ const audit = (t: string, type: string, by: string, data: SQL) => sql`a as (
 export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
   return {
     lockContract: async (id) => {
-      const [r] = await tx.execute<{ deal: string | null; n: number }>(sql`select c.deal,
+      const [r] = await tx.execute<{
+        deal: string | null;
+        n: number;
+        locked: boolean;
+      }>(sql`select c.deal, c.locked_at is not null as locked,
           (select count(*)::int from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.contract_id = c.id and o.status <> 'replaced') as n
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid for no key update of c`);
-      return r ? { deal: r.deal as never, n: r.n } : null;
+      return r ? { deal: r.deal as never, n: r.n, locked: r.locked } : null;
     },
     lockContractOf: async (id) => {
       const [r] = await tx.execute<{
         deal: string | null;
-      }>(sql`select c.deal from contracts.contracts c
+        locked: boolean;
+      }>(sql`select c.deal, c.locked_at is not null as locked from contracts.contracts c
         where c.tenant_id = ${t}::uuid and c.id = (select o.contract_id from contracts.obligations o
           where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced')
         for no key update`);
-      return r ? { deal: r.deal as never } : null;
+      return r ? { deal: r.deal as never, locked: r.locked } : null;
     },
     lockRow: (id) =>
       one<MilestoneRow | null>(

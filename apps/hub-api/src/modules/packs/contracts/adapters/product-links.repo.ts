@@ -6,7 +6,14 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ProductLinksRepo } from "../application/product-links.usecase";
 
-type Row = { found: boolean; confirmed: boolean; locked: boolean; created: number; linked: number };
+type Row = {
+  found: boolean;
+  confirmed: boolean;
+  locked: boolean;
+  clocked: boolean;
+  created: number;
+  linked: number;
+};
 
 /** Dòng gửi vào SQL: SP có sẵn (`product_id`) hoặc SP mới (`name/unit/grp`). */
 export const linkRows = (links: readonly ProductLink[]) =>
@@ -24,13 +31,14 @@ export const linkRows = (links: readonly ProductLink[]) =>
 
 export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
   return {
-    link: async (contractId, links, actor) => {
+    link: async (contractId, links, actor, strict = false) => {
       const rows = await tx.execute<Row>(sql`with k as (
           select c.id, c.deal, c.fields,
             c.status not in ('needs_review', 'extracting', 'extract_failed', 'rejected') as confirmed,
-            exists (select 1 from contracts.stock_moves m where m.tenant_id = c.tenant_id and m.contract_id = c.id) as locked
+            exists (select 1 from contracts.stock_moves m where m.tenant_id = c.tenant_id and m.contract_id = c.id) as locked,
+            (${strict}::boolean and c.locked_at is not null) as clocked
           from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
-        ok as (select k.* from k where k.confirmed and not k.locked),
+        ok as (select k.* from k where k.confirmed and not k.locked and not k.clocked),
         x as (select x.* from ok, jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb)
             as x (item_id uuid, product_id uuid, name text, unit text, grp text)
           where exists (select 1 from contracts.contract_items i
@@ -67,10 +75,11 @@ export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
           select ${t}::uuid, ${contractId}::uuid, 'item_product_set', ${actor}::uuid,
             jsonb_build_object('item_id', u.id, 'product_id', u.product_id, 'on_confirm', true) from u)
       select exists (select 1 from k) as found, coalesce((select confirmed from k), false) as confirmed,
-        coalesce((select locked from k), false) as locked,
+        coalesce((select locked from k), false) as locked, coalesce((select clocked from k), false) as clocked,
         (select count(*) from pc)::int as created, (select count(*) from u)::int as linked`);
       const r = rows[0];
       if (!r?.found) return { kind: "not_found" };
+      if (r.clocked) return { kind: "contract_locked" };
       if (!r.confirmed) return { kind: "not_confirmed" };
       if (r.locked) return { kind: "locked" };
       return { kind: "ok", created: r.created, linked: r.linked };

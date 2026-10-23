@@ -45,7 +45,7 @@ export type ReviewSaveOutcome = ReviewSaved | "item_unknown" | "component_invali
 
 export type AttachOutcome =
   | { kind: "ok"; item: { id: string; product_id: string | null; component_ids: string[] | null } }
-  | { kind: "not_found" | "locked" | "component_invalid" };
+  | { kind: "not_found" | "locked" | "component_invalid" | "contract_locked" };
 
 export type ReviewRepo = {
   /** `SELECT … FOR UPDATE` theo PK + `tenant_id` (+ cờ duyệt); không có / tenant khác ⇒ null. */

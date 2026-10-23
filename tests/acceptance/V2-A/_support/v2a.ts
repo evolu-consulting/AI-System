@@ -2,7 +2,7 @@
 // Cờ duyệt (C3) đặt thẳng hàng `approval_settings.approval_enabled` của tenant và TRẢ LẠI sau file (không rò sang HD3). Đỏ NGAY
 // nếu thiếu migration 0022. Không chứa `it(...)`.
 import { expect } from "bun:test";
-import { insContract } from "../../HD1/_support/hd1";
+import { insContract, unlockContract } from "../../HD1/_support/hd1";
 import {
   arrangeHd7,
   type CtxN1,
@@ -66,6 +66,8 @@ export type Manual = {
   total_value?: number | null;
   commission_pct?: number | null;
   commission_fixed?: number | null;
+  /** lock-strict: giữ nguyên khoá sau xác nhận (mặc định gỡ khoá để test thao tác mốc). */
+  keepLocked?: boolean;
 };
 /** `POST /contracts/manual` (editor) — thân thô. CR-097: nhập tay đã ngừng ⇒ luôn 410 `MANUAL_CONTRACT_DISABLED`. */
 export const manualRaw = (c: CtxN1, b: Manual, p: Person = P.hoa) =>
@@ -101,7 +103,9 @@ export async function manual(c: CtxN1, b: Manual, p: Person = P.hoa): Promise<Js
   const body: Json = { version: 1, deal: dl };
   if (b.commission_pct !== undefined) body.commission_pct = b.commission_pct;
   if (b.commission_fixed !== undefined) body.commission_fixed = b.commission_fixed;
-  return ok(call(c, p, "POST", `/contracts/${id}/review`, body));
+  const saved = await ok(call(c, p, "POST", `/contracts/${id}/review`, body));
+  if (!b.keepLocked) await unlockContract(c.sql, id); // lock-strict: fixture "mở" để test thao tác mốc
+  return saved;
 }
 
 export const detail = (c: CtxN1, id: string, p: Person = P.hoa): Promise<Json> =>
