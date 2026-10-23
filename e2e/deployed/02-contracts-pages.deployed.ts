@@ -90,47 +90,31 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  test("Hợp đồng: form Thêm thủ công — bắt buộc điền, huỷ, không lưu", async () => {
+  // CR-097 K1/K3a: HĐ chỉ từ văn bản đã ký (không còn "Thêm thủ công"); HĐ đã xác nhận bị khoá. Không ghi dữ liệu.
+  test("Hợp đồng: không còn Thêm thủ công; /contracts/new chỉ cho tải lên văn bản", async () => {
     await go("/contracts");
-    await page.getByRole("link", { name: "Thêm thủ công" }).click();
-    await expect(page).toHaveURL(/\/contracts\/new/);
-    await page.locator("input[name=title]").fill(`${TAG} hợp đồng thử (không lưu)`);
-    await expect(page.getByRole("button", { name: "Lưu hợp đồng" })).toBeVisible();
-    await page
-      .getByRole("button", { name: "Huỷ" })
-      .or(page.getByRole("link", { name: "Huỷ" }))
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/contracts$/);
+    await expect(page.getByText("Thêm thủ công")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Upload hợp đồng/ }).first()).toBeVisible();
+    await go("/contracts/new");
+    expect(await bodyText(page)).toContain("Hợp đồng phải tải lên từ văn bản đã ký");
+    await expect(page.locator("input[name=title]")).toHaveCount(0);
+    expect(errs.list).toEqual([]);
   });
 
-  test("Hợp đồng: tạo + sửa + xoá (chủ sở hữu, có hộp xác nhận) hợp đồng E2E-DEPLOY", async () => {
-    await go("/contracts/new");
-    const title = `${TAG} ${Date.now().toString(36)}`;
-    await page.locator("input[name=title]").fill(title);
-    // Đối tác có sẵn trong dữ liệu mẫu ⇒ không sinh đối tác rác (đối tác không xoá theo hợp đồng).
-    await page.locator("#cf-partner").fill("Hưng Thịnh");
-    await page.locator("input[name=start_date]").fill("2026-01-01");
-    await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-    await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]{36}/, { timeout: 30_000 });
-    try {
-      const number = `E2E-${Date.now().toString(36)}`;
-      await page.locator("input[name=number]").fill(number);
-      await page.getByRole("button", { name: "Lưu thay đổi" }).click();
-      await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
-      await page.reload();
-      await settle(page);
-      await expect(page.locator("input[name=number]")).toHaveValue(number);
-    } finally {
-      // Xoá qua giao diện (V2-M): nút → hộp xác nhận kèm tác động → "Xoá hẳn" → về danh sách.
-      await page.getByTestId("delete-contract").click();
-      await expect(page.getByTestId("delete-impact")).toBeVisible();
-      await expect(page.getByTestId("delete-confirm")).toBeEnabled();
-      await page.getByTestId("delete-confirm").click();
-      await expect(page).toHaveURL(/\/contracts$/, { timeout: 30_000 });
-    }
-    await page.getByPlaceholder(/Tìm/).first().fill(title);
-    await expect(page.locator("table tbody tr").filter({ hasText: title })).toHaveCount(0);
+  test("Hợp đồng đã xác nhận: banner khoá, ô pháp lý chỉ đọc, có Tải bản cập nhật + Mở lại (chủ sở hữu)", async () => {
+    await go("/contracts");
+    await page
+      .locator("table tbody tr")
+      .filter({ has: page.getByTestId("row-lock") })
+      .first()
+      .getByRole("link", { name: /Xem/ })
+      .click();
+    await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]{36}/);
+    await expect(page.getByTestId("banner-locked")).toContainText("Đã xác nhận — đã khoá");
+    await expect(page.locator("input[name=number]")).toBeDisabled();
+    await expect(page.getByTestId("update-version")).toBeVisible();
+    await expect(page.getByText("Mở lại để sửa lỗi trích xuất")).toBeVisible();
+    expect(errs.list).toEqual([]);
   });
 
   test("Đối tác: danh sách điểm uy tín có dữ liệu, mở chi tiết", async () => {

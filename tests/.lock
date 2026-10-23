@@ -416,7 +416,7 @@ e482ceb75fdb8f75eb4bc6e498be7b888f947315c5c584225c39352ad9a7071e  e2e/contracts-
 12779629e24825cae088373c11ec34e1282c6437ca618f078f8415000ea26c5f  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 d704ce4d4bd14c2dc3f67bf0d7c83bde3eec51b47c89dfe46fc38b871969b8f5  e2e/deployed/01-login-sso.deployed.ts
-e7e73f0e1334d654bea9dba172c47bc21913435257b0fa37ddbb016af5000b3b  e2e/deployed/02-contracts-pages.deployed.ts
+f67467ff23cfe5aabf9db3bac0113e784994a10dc87fe013e4f2f40f6e468866  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 8ca4b839a1ebbf00977c9709befedec11cafe10b5eca026e0eb4bd25ec7d8ad5  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
