@@ -40,7 +40,7 @@ const bCte = sql`b as (
       c.fields -> 'effective_date' ->> 'value' as eff,
       c.fields -> 'supplier_name' ->> 'value' as pname, c.fields -> 'supplier_tax_id' ->> 'value' as ptax
     from contracts.contracts c
-    where ${confirmed("c")} and c.kind = 'contract' and c.direction is distinct from 'sale'
+    where ${confirmed("c")} and c.kind = 'contract' and c.direction is distinct from 'sale' and c.superseded_at is null
     union all
     select a.id, a.kind, a.status, a.parent_id, a.title, a.created_at, coalesce(a.direction, par.direction),
       a.fields -> 'effective_date' ->> 'value',
@@ -53,16 +53,17 @@ const bCte = sql`b as (
           par.fields -> (s0.sd || '_tax_id') ->> 'value') is not null then par.fields else a.fields end as f) src
     where ${confirmed("a")} and a.kind = 'appendix' and coalesce(a.direction, par.direction) is distinct from 'sale')`;
 
-/** `_facts` gom ngay trên `contracts` (HĐ gốc, không cần HĐ cha) theo (vai, tên, MST): số HĐ, ngày bắt đầu sớm nhất. */
+/** CR-097 K2: chuỗi phiên bản đếm MỘT HĐ (`root_id`), ngày bắt đầu sớm nhất gồm cả bản đã bị thay (decision 5: tenure từ v1).
+ *  `_facts` gom ngay trên `contracts` (HĐ gốc, không cần HĐ cha) theo (vai, tên, MST): số HĐ, ngày bắt đầu sớm nhất. */
 const factsJson = sql`coalesce((select json_agg(json_build_array(g.role, g.pname, g.ptax, g.n, g.first_start)
     order by g.first_at, g.pname, g.ptax) from (
-    select x.role, x.pname, x.ptax, count(*) as n, min(x.st) as first_start, min(x.created_at) as first_at
+    select x.role, x.pname, x.ptax, count(distinct x.root_id) as n, min(x.st) as first_start, min(x.created_at) as first_at
     from (select case when c.direction = 'sale' then 'customer' else 'supplier' end as role,
         c.fields -> (case when c.direction = 'sale' then 'buyer_name' else 'supplier_name' end) ->> 'value' as pname,
         c.fields -> (case when c.direction = 'sale' then 'buyer_tax_id' else 'supplier_tax_id' end) ->> 'value' as ptax,
         coalesce(case when c.fields -> 'start_date' ->> 'value' ~ ${ISO} then c.fields -> 'start_date' ->> 'value' end,
           case when c.fields -> 'signed_date' ->> 'value' ~ ${ISO} then c.fields -> 'signed_date' ->> 'value' end) as st,
-        c.created_at
+        c.created_at, c.root_id
       from contracts.contracts c where ${confirmed("c")} and c.kind = 'contract') x
     group by 1, 2, 3) g), '[]'::json)`;
 

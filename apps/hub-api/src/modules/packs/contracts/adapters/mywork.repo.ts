@@ -25,7 +25,8 @@ const sources = (t: string, w: Window) => sql`with ob as (
           dl as (
             select c.id, c.action_deadline, c.number, c.title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.handled is null
-              and c.status in ('active', 'expiring', 'expired') and c.action_deadline <= ${w.horizon}::date
+              and c.status in ('active', 'expiring', 'expired') and c.superseded_at is null
+              and c.action_deadline <= ${w.horizon}::date
               and (c.end_date is null or c.end_date >= ${w.archive}::date)
             order by c.action_deadline, c.id limit ${LIM}::int),
           fu as (
@@ -54,6 +55,7 @@ const sources = (t: string, w: Window) => sql`with ob as (
               join contracts.contracts c on c.tenant_id = r.tenant_id and c.id = r.contract_id
               where r.tenant_id = ${t}::uuid and r.user_id = ${ME} and r.sent_at >= now() - interval '14 days'
                 and r.deadline > ${w.horizon}::date and c.handled is null and c.status in ('active', 'expiring')
+                and c.superseded_at is null
                 and c.action_deadline = r.deadline
               order by r.contract_id, r.sent_at desc) x
             order by x.deadline, x.id limit ${LIM}::int)`;

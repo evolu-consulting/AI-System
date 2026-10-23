@@ -195,7 +195,7 @@ function contractReads(tx: Tx, t: string) {
             'value', c.value, 'start_date', c.start_date, 'end_date', c.end_date, 'n_req', a.n_req, 'n_req_done', a.n_req_done,
             'n_done', a.n_done, 'next', nx.j) order by c.updated_at desc, c.id desc), '[]'::json) as j
           from (select * from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract'
-              and c.partner_key = ${party}::text and c.status in (${CONFIRMED})
+              and c.partner_key = ${party}::text and c.status in (${CONFIRMED}) and c.superseded_at is null
             order by c.updated_at desc, c.id desc limit 200) c
           left join lateral (select count(*) filter (where o.kind <> 'renewal' and o.status <> 'cancelled')::int as n_req,
               count(*) filter (where o.kind <> 'renewal' and o.status = 'done')::int as n_req_done,
@@ -215,6 +215,7 @@ function contractReads(tx: Tx, t: string) {
         sql`select coalesce(json_agg(json_build_object('party', x.k, 'n', x.n)), '[]'::json) as j
           from (select c.partner_key as k, count(*)::int as n from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key is not null and c.status in (${CONFIRMED})
+              and c.superseded_at is null
             group by c.partner_key) x`,
       ),
   };

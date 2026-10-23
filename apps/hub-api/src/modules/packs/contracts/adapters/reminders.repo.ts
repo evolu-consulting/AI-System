@@ -64,19 +64,22 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
         from contracts.contracts c
         join contracts.contract_schedule s on s.contract_id = c.id and s.tenant_id = c.tenant_id
         where s.tenant_id = ${tenantId}::uuid and s.remind_at <= ${now.toISOString()}::timestamptz
+          and c.superseded_at is null
         order by s.remind_at limit ${limit}
         for no key update of c, s skip locked`);
       return rows.map(toDue);
     },
     async purgeOrphans(now) {
-      // Review m1: hàng lịch mất HĐ (trigger không chạy: replica, restore một phần) ⇒ xoá, tránh tìm-tenant rỗng mãi. Chỉ chạy
+      // Review m1: hàng lịch mất HĐ (trigger không chạy: replica, restore một phần) hoặc HĐ đã bị thay (CR-097 K2, `claim` bỏ qua)
+      // ⇒ xoá, tránh tìm-tenant rỗng mãi. Chỉ chạy
       // khi claim ra 0 hàng (đường hiếm), nên lô thường vẫn 3 câu.
       const r = await tx.execute<{ n: number }>(sql`
         with d as (
           delete from contracts.contract_schedule s where s.contract_id in (
             select s2.contract_id from contracts.contract_schedule s2
             where s2.tenant_id = ${tenantId}::uuid and s2.remind_at <= ${now.toISOString()}::timestamptz
-              and not exists (select 1 from contracts.contracts c where c.id = s2.contract_id and c.tenant_id = s2.tenant_id)
+              and not exists (select 1 from contracts.contracts c where c.id = s2.contract_id and c.tenant_id = s2.tenant_id
+                and c.superseded_at is null)
             limit 1000)
           returning 1)
         select count(*)::int as n from d`);

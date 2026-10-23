@@ -131,7 +131,7 @@ const cvCte = (party: string | null, w: Win) => sql`cv0 as materialized (
         when (c.fields -> 'total_value' ->> 'value') ~ '^[0-9]{1,16}(\\.[0-9]+)?$'
           then (c.fields -> 'total_value' ->> 'value')::float8 else 0 end as v
     from p, contracts.contracts c join ck on ck.k = c.rep_cell
-    where c.tenant_id = ${w.t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED})
+    where c.tenant_id = ${w.t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null
       and c.partner_key is not null${only("c.partner_key", party)}),
   cv as (select v.party collate "C" as party, v.cell, min(v.name) as name, sum(v.v)::float8 as value from cv0 v group by 1, 2)`;
 

@@ -58,6 +58,7 @@ const dueSources = (t: string, w: TodoWindow) => sql`
     order by o.due_date, o.id limit ${LIM}::int),
   ce as (select c.id, c.end_date, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from contracts.contracts c
     where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in ('active', 'expiring') and c.handled is null
+      and c.superseded_at is null
       and c.end_date between ${w.today}::date and ${w.today}::date + 3650
       and c.end_date - ${NOTICE("c", t)}::int <= ${w.today}::date
       and ${notDismissed(t, sql`${k("contract_expiring", "c.id", "c.end_date")}`)}
@@ -83,7 +84,8 @@ const ratingSources = (t: string, w: TodoWindow, q: TodoWindow["quarter"]) => sq
     group by o.contract_id),
   rt as (select c.id, c.partner_key, f.last, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from fin f
       join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = f.contract_id
-    where c.kind = 'contract' and c.status in (${CONFIRMED}) and c.partner_key is not null and ${REMIND(t, "end")}
+    where c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null and c.partner_key is not null
+      and ${REMIND(t, "end")}
       and not exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = c.id
         and o.status = 'open' and o.kind <> 'renewal')
       and not exists (select 1 from contracts.score_ratings r where r.tenant_id = ${t}::uuid and r.party_key = c.partner_key
@@ -103,6 +105,7 @@ const ratingSources = (t: string, w: TodoWindow, q: TodoWindow["quarter"]) => sq
   mf as (select c.id, (c.created_at at time zone 'UTC')::date as day, c.fields, c.number, c.title, c.direction,
       c.seller, c.buyer from contracts.contracts c
     where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.file_id is null
+      and c.superseded_at is null
       and ${notDismissed(t, sql`${k("missing_file", "c.id", "(c.created_at at time zone 'UTC')::date")}`)}
     order by c.created_at desc, c.id limit ${LIM}::int),
   pa as (select a.id, a.product_id, a.day, a.detail, a.supplier_name, a.price, p.name

@@ -23,7 +23,7 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
         sql`select concat_ws('|',
             (select count(*)::text || ':' || coalesce(max(c.updated_at)::text, '') || ':' || coalesce(sum(c.version), 0)::text
  || ':' || coalesce(sum(hashtext(c.id::text || c.status || coalesce(c.direction, ''))), 0)::text
-              from contracts.contracts c where c.tenant_id = ${t}::uuid and c.status in (${STATUSES})),
+              from contracts.contracts c where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) and c.superseded_at is null),
             (select count(*)::text || ':' || coalesce(max(s.chosen_at)::text, '')
               from contracts.sourcing_choices s where s.tenant_id = ${t}::uuid)) as j`,
       )) ?? "",
@@ -31,7 +31,7 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
       (await one<string[]>(
         tx,
         sql`select coalesce(json_agg(c.id), '[]'::json) as j from (select c.id from contracts.contracts c
-            where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) limit ${VISIBLE_MAX}::int) c`,
+            where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) and c.superseded_at is null limit ${VISIBLE_MAX}::int) c`,
       )) ?? [],
     load: async () => {
       const j = await one<{
@@ -75,7 +75,7 @@ function loadQ(t: string) {
               json_build_object('key', contracts.party_key(c.fields -> 'buyer_name' ->> 'value', c.fields -> 'buyer_tax_id' ->> 'value'),
                 'name', c.buyer) as buyer
             from contracts.contracts c
-            where c.tenant_id = ${t}::uuid and c.status in (${STATUSES})
+            where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) and c.superseded_at is null
             order by (c.kind = 'appendix'), c.created_at, c.id limit ${SOURCING_CONTRACTS_MAX + 1}::int),
           cs as (select * from c order by (c.kind = 'appendix'), c.created_at, c.id limit ${SOURCING_CONTRACTS_MAX}::int)
           select json_build_object(

@@ -157,10 +157,12 @@ function referralCtes(t: string) {
   return sql`oc as (select o.contract_id, sum(o.amount) filter (where o.status in ('open', 'done')) as total,
           sum(o.amount) filter (where o.status = 'done') as got
         from contracts.obligations o where o.tenant_id = ${t}::uuid and o.kind = 'commission' group by o.contract_id),
-      rc as (select distinct i.product_id, c.id as cid, coalesce(c.confirmed_at, c.created_at)::date as dt
+      -- CR-097 K2: một chuỗi phiên bản = một lần bán (bản hiện hành, ngày xác nhận của v1).
+      rc as (select distinct i.product_id, c.id as cid, coalesce(r.confirmed_at, r.created_at)::date as dt
         from contracts.contract_items i join contracts.contracts c on c.tenant_id = i.tenant_id and c.id = i.contract_id
+          join contracts.contracts r on r.tenant_id = c.tenant_id and r.id = c.root_id
         where i.tenant_id = ${t}::uuid and i.product_id in (select id from p where grp = 'referral')
-          and c.deal = 'referral' and c.kind = 'contract' and c.status in (${CONFIRMED})),
+          and c.deal = 'referral' and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null),
       rf as (select rc.product_id, count(*) filter (where rc.dt > d.t - 365)::float8 as sold12,
           count(*) filter (where rc.dt > d.t - 91)::float8 as l3,
           count(*) filter (where rc.dt <= d.t - 91 and rc.dt > d.t - 182)::float8 as p3,

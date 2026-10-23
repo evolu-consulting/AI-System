@@ -50,7 +50,9 @@ function moneyCtes(t: string, w: OverviewWindow) {
             count(*) filter (where o.amount is null) over ca as n,
             count(*) filter (where o.amount is null) over co - 1 as r
           from contracts.obligations o join k on k.id = o.contract_id
-          where o.tenant_id = ${t}::uuid and o.kind in ('payment', 'commission') and o.status in ('open', 'done')
+          -- CR-097 K2: mốc bị huỷ do cutover (cancel_reason) vẫn giữ suất chia ⇒ phần còn lại của bản bị thay không phình ra.
+          where o.tenant_id = ${t}::uuid and o.kind in ('payment', 'commission')
+            and (o.status in ('open', 'done') or o.cancel_reason is not null)
             and ((k.deal = 'sell' and o.kind = 'payment' and o.direction = 'receive') or (k.deal = 'referral' and o.kind = 'commission'))
           window co as (partition by o.contract_id order by o.due_date, o.seq, o.id rows unbounded preceding),
             ca as (partition by o.contract_id order by o.due_date, o.seq, o.id

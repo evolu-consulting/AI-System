@@ -801,6 +801,7 @@ d7cf316ae66576d50699255d5025e59864d72eaafd480eb689aa77dd4808db1c  tests/acceptan
 07c345dc1221423f02dd0488564be913ea7c4186f0e16cd4395301077651fbc3  tests/acceptance/K1/seed.int.test.ts
 71103009398bb4d0caca5f7ac9f8ead6edb10936b92110595242064cd6824fe4  tests/acceptance/K1/studio.int.test.ts
 9fd9b4ccc1fba679d297e13055cdc1310cfbb954fb7105508bff6c12bd182a9c  tests/acceptance/K1/worklog.int.test.ts
+06ed218ea4591bbfba080ec619d169f9a910d6c17ee4d89572f56348fb725047  tests/acceptance/K2/readers.int.test.ts
 99f52d938efaca460e990007c20a605425eb0546ec0b7080f942a15498710927  tests/acceptance/K2/versions.int.test.ts
 5a52876e49dc8cf4b8cbae3db581e95db6b8a110dc7a537ae0251fa1130fb736  tests/acceptance/M1-b2/b2.int.test.ts
 9a1cd5e022309a64a21e4d7abfa959df5e0e217829d4ef6a86dde10601f90663  tests/acceptance/M1-sec/visibility.int.test.ts

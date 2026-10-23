@@ -44,8 +44,26 @@ depends: K1 (e46976be)
 | `tests/acceptance/HD5/hd5.int.test.ts` | ListRow 20 ⇒ 22 khoá |
 | `apps/hub-api/.../upload-contract.usecase.test.ts`, `upload-review-fixes.test.ts` | repo giả thêm `insertVersion` (không dùng) |
 
+## K2b — màn đọc bỏ bản đã bị thay (tiếp, không migration)
+Luật: đọc theo HĐ (đếm HĐ, hạn HĐ, giá, việc theo HĐ) ⇒ thêm `c.superseded_at is null` (một điều kiện trong câu sẵn có, không thêm câu);
+đọc theo mốc/sổ (`obligations`, `confirmedOf`) giữ nguyên ⇒ mốc thật của bản bị thay (đã xong, hạn trước ngày hiệu lực v2, có kho) vẫn
+tính; mốc huỷ do cutover tự ra (status `cancelled`).
+- [x] Cần xử lý `todo.repo`: HĐ sắp hết (`ce`), nhắc đánh giá sau HĐ (`rt`), HĐ thiếu tệp (`mf`). Giữ `rq` (đánh giá quý: đối tác có HĐ chạy trong quý trước — đếm `distinct partner_key`, không đôi).
+- [x] Việc của tôi `mywork.repo`: hạn chót HĐ (`dl`), nhắc đã gửi (`rm`).
+- [x] Nhắc hạn HD4 `reminders.repo`: `claim` bỏ HĐ bị thay; `purgeOrphans` xoá lịch của HĐ bị thay (không đổi trigger/migration; vòng lô vẫn 3 câu).
+- [x] Tổng quan `overview.repo`: HĐ bị thay vẫn trong tập `k` (mốc thật của nó tính); chia 5.4a (`bx`) đếm cả mốc huỷ do cutover (`cancel_reason is not null`) ⇒ mốc trống còn lại giữ suất cũ, không phình.
+- [x] Đối tác HD8 `partners-data.repo`: `facts.n = count(distinct root_id)` (chuỗi = 1 HĐ), `first_start` = min cả bản bị thay (decision 5: tenure từ v1); HĐ mua để so giá chỉ bản hiện hành.
+- [x] V2-I `partner-roles.repo` (HĐ của đối tác, số HĐ), V2-E `rep.sql` (giá trị HĐ theo ô), V2-L `business.repo` (HĐ Giới thiệu theo SP: chỉ bản hiện hành, ngày bán = ngày xác nhận v1), W1 `sourcing.repo` (giá từ HĐ: chỉ bản hiện hành).
+- Không đổi: sổ đối tác/uy tín theo mốc (`partners-ledger.sql`, `rep.repo::mineRows`), `visible_party_keys()` (luật thấy), CKS (trạng thái riêng), tra theo id (context-label, followups, activity).
+- Test: int `tests/acceptance/K2/readers.int.test.ts` (Cần xử lý + Việc của tôi chỉ còn mốc thật của v1; Tổng quan 100 tr ⇒ 45 tr, không 80 tr).
+- Kết quả int (`test:int:par`): K2 5/5; V2-K, W1, HD4, HD8, V2-C, V2-I, V2-E, V2-L, M4, HD9, V2-H — 331 pass, 1 đỏ không liên quan:
+  `V2-I/partner-ui` "tìm internet" ⇒ 503 `AGENT_UNAVAILABLE` (máy không có CLI AI; đỏ cả khi chạy riêng, trước bước tìm internet các
+  ca HĐ/số HĐ đã xanh). Không test cũ nào phải sửa.
+- Perf (một lượt, so với nền `platform/gd0` cùng máy): W1 my-work p95 33.0 ms, sourcing ≤ 9.8 ms ✓; HD8 partners p95 47.1 / 41.5 /
+  33.1 / 42.3 ms ✓. ĐỎ CẢ Ở NỀN (không do K2b): V2-K overview month p95 103.1 ms (nền 95.8; nền 12m 116.4 ⇒ đỏ), HD4 lô 100 p95
+  64.4 / 99.9 ms (nền 74.2 / 74.1, ngưỡng 50), V2-E đếm câu SQL (8, nền cũng 8). Ghi nợ perf cho máy/đợt sau, không xử lý trong lát.
+
 ## Còn lại (ngoài lát)
-- Các màn/vòng đọc khác vẫn tính bản đã bị thay như HĐ đang chạy (trạng thái giữ `active`): mywork/todo (`mywork.repo`, `todo.repo`), tổng quan V2-K, nhắc hạn HD4 (`contract_schedule` của v1), sổ đối tác/uy tín (HĐ bị thay vẫn là sự kiện thật). Đề xuất K3/D1: thêm `superseded_at is null` vào mywork/todo/overview + bỏ lịch nhắc của bản bị thay trong trigger 0049 (một câu theo tập). Chưa làm vì ngoài phạm vi brief (danh sách/chi tiết).
 - UI (K3), e2e, `test:all` cuối đợt; review + security gộp cuối đợt.
 
 ## Kết quả
