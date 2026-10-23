@@ -8,7 +8,6 @@ import {
   CBASE,
   type CtxHd3,
   cid,
-  contractRow,
   errCode,
   seedContract,
   startHd3,
