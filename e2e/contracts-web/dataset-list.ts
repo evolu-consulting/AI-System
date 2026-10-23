@@ -155,6 +155,8 @@ function hubRow(r: Row) {
     updated_at: at,
     version: 1,
     locked: ["active", "expiring"].includes(r.status), // CR-097 K1: đã xác nhận ⇒ khoá
+    version_no: 1, // CR-097 K2
+    versions_count: 1,
   };
 }
 

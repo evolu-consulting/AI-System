@@ -19,24 +19,27 @@ export function versionKind(
 }
 
 /** Nút "Tải bản cập nhật": đã khoá, chưa bị thay, chưa có bản lớn hơn (nháp). */
+// Các trường phiên bản đều tuỳ chọn: Hub cũ / DTO thiếu ⇒ coi như một bản hiện hành duy nhất.
 export const canUploadUpdate = (c: {
   locked: boolean;
-  superseded_at: string | null;
-  version_no: number;
-  versions: readonly { version_no: number }[];
+  superseded_at?: string | null | undefined;
+  version_no?: number | undefined;
+  versions?: readonly { version_no: number }[] | undefined;
 }): boolean =>
-  c.locked && c.superseded_at == null && !c.versions.some((v) => v.version_no > c.version_no);
+  c.locked &&
+  c.superseded_at == null &&
+  !(c.versions ?? []).some((v) => v.version_no > (c.version_no ?? 1));
 
 /** Banner "Đã thay thế bởi Phiên bản N"; null khi không bị thay. */
 export function supersededInfo(c: {
-  superseded_at: string | null;
-  superseded_by: string | null;
-  current_id: string | null;
-  versions: readonly { id: string; version_no: number }[];
+  superseded_at?: string | null | undefined;
+  superseded_by?: string | null | undefined;
+  current_id?: string | null | undefined;
+  versions?: readonly { id: string; version_no: number }[] | undefined;
 }): { byNo: number | null; currentId: string | null } | null {
   if (!c.superseded_at) return null;
-  const by = c.versions.find((v) => v.id === c.superseded_by);
-  return { byNo: by?.version_no ?? null, currentId: c.current_id };
+  const by = (c.versions ?? []).find((v) => v.id === c.superseded_by);
+  return { byNo: by?.version_no ?? null, currentId: c.current_id ?? null };
 }
 
 /** Bản bị thay ⇒ chỉ đọc hoàn toàn (mất quyền ghi/owner); nút cập nhật cần quyền ghi. */
@@ -49,7 +52,8 @@ export function versionGate(
   return { sup, write, owner: me.owner && !sup, canUpdate: write && canUploadUpdate(c) };
 }
 
-export const showVersionBadge = (versionsCount: number): boolean => versionsCount > 1;
+export const showVersionBadge = (versionsCount: number | null | undefined): boolean =>
+  (versionsCount ?? 1) > 1;
 
 /** Mặc định so sánh: hai phiên bản lớn nhất (a = cũ hơn). */
 export function defaultPair(vs: readonly ContractVersionRef[]): [string, string] | null {

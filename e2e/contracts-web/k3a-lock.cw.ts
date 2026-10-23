@@ -24,8 +24,7 @@ test("HĐ khoá: ô pháp lý chỉ đọc, notice_days còn sửa, banner + nú
   await expect(banner).toContainText("Đã xác nhận — đã khoá");
   await expect(page.getByTestId("lock-badge")).toBeVisible();
   const upd = banner.getByRole("button", { name: "Tải bản cập nhật" });
-  await expect(upd).toBeDisabled();
-  await expect(upd).toHaveAttribute("title", "Sắp có");
+  await expect(upd).toBeEnabled(); // K3b: bật nút tải bản cập nhật
   await expect(page.getByLabel("Giá trị")).toBeDisabled();
   await expect(page.getByLabel("Tên hợp đồng")).toBeDisabled();
   await expect(page.getByLabel(/^Nhắc trước/)).toBeEnabled();

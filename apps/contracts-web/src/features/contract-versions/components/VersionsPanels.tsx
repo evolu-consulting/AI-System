@@ -6,13 +6,15 @@ import { VersionsBlock } from "./VersionsBlock";
 
 export function VersionsPanels({
   id,
-  versions,
+  versions: raw,
   sup,
 }: {
   id: string;
-  versions: readonly ContractVersionRef[];
+  /** Thiếu (Hub cũ / DTO một phần) ⇒ coi như một bản duy nhất. */
+  versions: readonly ContractVersionRef[] | undefined;
   sup: { byNo: number | null; currentId: string | null } | null;
 }) {
+  const versions = raw ?? [];
   return (
     <>
       {sup && <SupersededBanner byNo={sup.byNo} currentId={sup.currentId} />}

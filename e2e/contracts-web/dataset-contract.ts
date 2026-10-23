@@ -193,5 +193,24 @@ export function contractAsHub(status = contract.status) {
     locked_at: null as string | null,
     locked_by: null as string | null,
     has_document: true,
+    // CR-097 K2: chuỗi phiên bản — mặc định một bản hiện hành duy nhất.
+    version_no: 1,
+    versions_count: 1,
+    root_id: c.id,
+    current_id: c.id as string | null,
+    superseded_at: null as string | null,
+    superseded_by: null as string | null,
+    versions: [
+      {
+        id: c.id,
+        version_no: 1,
+        status,
+        superseded_at: null as string | null,
+        number: (c.fields.number?.value ?? null) as string | null,
+        effective_from: null as string | null,
+        effective_to: null as string | null,
+        total_value: null as number | null,
+      },
+    ],
   };
 }

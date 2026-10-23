@@ -1,7 +1,7 @@
 ﻿// CR-097 K3b: nhãn "vN" cạnh HĐ có nhiều phiên bản (versions_count > 1).
 import { showVersionBadge } from "../lib/versions";
 
-export function VersionBadge({ no, count }: { no: number; count: number }) {
+export function VersionBadge({ no, count }: { no: number | undefined; count: number | undefined }) {
   if (!showVersionBadge(count)) return null;
   return (
     <span
