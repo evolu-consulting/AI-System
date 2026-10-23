@@ -19,6 +19,8 @@ import type { ActionQuota } from "./adapters/action-quota";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRepo } from "./adapters/approval.repo";
 import { approvalRoutes } from "./adapters/approval.routes";
+import { approvalFlowRepo } from "./adapters/approval-flow.repo";
+import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import { sweepRepo } from "./adapters/approval-sweep.repo";
 import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRepo } from "./adapters/extraction.repo";
@@ -45,6 +47,13 @@ import {
   startApproval,
 } from "./application/approval.usecase";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
+import {
+  type ApprovalFlowTxRepos,
+  type FlowDefSync,
+  type FlowGroups,
+  readApprovalFlow,
+  saveApprovalFlow,
+} from "./application/approval-flow.usecase";
 import {
   QUEUED_STALE_MINUTES,
   type SweepDeps,
@@ -97,7 +106,9 @@ export type ContractsFlowDeps = {
   ai: AiClient;
   /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
   fileText?: SourceFileText;
-  groups: ApprovalGroups;
+  groups: ApprovalGroups & Pick<FlowGroups, "existingIds">;
+  /** contract-flow S3a · đồng bộ def engine khi lưu mẫu luồng; vắng ⇒ bỏ qua. */
+  flowDefSync?: FlowDefSync;
   redis?: Redis;
   quota: ActionQuota;
   tenants: SweepDeps["tenants"];
@@ -185,6 +196,7 @@ const packUow = (db: Db) =>
   createPackUow(db, KEY, (tx, tid) => ({
     extraction: extractionRepo(tx, tid),
     approval: approvalRepo(tx, tid),
+    approvalFlow: approvalFlowRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
     review: reviewRepo(tx, tid),
     links: productLinksRepo(tx, tid),
@@ -269,7 +281,22 @@ export function contractsAiModule(
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
   });
+  approval.route("/", flowTemplateRoutes(view, uow, flow));
   return { starter, routes, approval, guard: patchGuard(ad) };
+}
+
+/** contract-flow S2 · `GET|PUT /approval-flow` (mẫu luồng duyệt; đồng bộ def engine qua `flowDefSync` khi có — S3a). */
+function flowTemplateRoutes(
+  view: PackAccessView,
+  uow: PackUow<ApprovalFlowTxRepos>,
+  flow: ContractsFlowDeps,
+) {
+  const fd = {
+    uow,
+    groups: flow.groups,
+    ...(flow.flowDefSync ? { defSync: flow.flowDefSync } : {}),
+  };
+  return approvalFlowRoutes(view, { read: readApprovalFlow(fd), save: saveApprovalFlow(fd) });
 }
 
 /** V2-G: Lưu màn xác nhận (tenant tắt duyệt ⇒ `active` ngay) + gắn lại SP cho dòng HĐ đã lưu. */

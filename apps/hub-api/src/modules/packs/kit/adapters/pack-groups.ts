@@ -32,6 +32,15 @@ export function packGroups(
       cache.set(ck, { at: now(), ids });
       return ids;
     },
+    /** contract-flow S2 · id Group nào CÒN ở tenant (kiểm khi lưu mẫu luồng; đường lạnh, MỘT câu, không cache). */
+    async existingIds(tenantId: string, ids: readonly string[]): Promise<ReadonlySet<string>> {
+      if (ids.length === 0) return new Set();
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{ id: string }>(sql`select id::text as id from admin.groups
+          where tenant_id = ${tenantId}::uuid and id = any(${`{${ids.join(",")}}`}::uuid[])`),
+      );
+      return new Set(rows.map((r) => r.id));
+    },
     async userGroups(who: PackWho): Promise<ReadonlySet<string>> {
       await view.adminSettled?.();
       const u = await view.user(who.userId);
