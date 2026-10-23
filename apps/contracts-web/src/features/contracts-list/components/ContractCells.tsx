@@ -8,6 +8,7 @@ import { viDate, vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { VersionBadge } from "~/features/contract-versions/components/VersionBadge";
 import { cn } from "~/lib/utils";
+import { deleteAction } from "../lib/delete-action";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
 
@@ -16,6 +17,10 @@ export type RowCtx = {
   parents: ReadonlyMap<string, string>;
   /** Giai đoạn + bước hiện tại theo id HĐ (`progress` của API, V2-A). */
   progress: ReadonlyMap<string, ContractProgress>;
+  /** Vai quản lý (`useMe().owner`) ⇒ hiện nút Xoá. */
+  owner?: boolean;
+  /** Mở hộp xoá của HĐ `id`. */
+  onDelete?: (id: string) => void;
 };
 
 export const COLUMN_KEYS = ["title", "partner", "type", "value", "dates", "stage"] as const;
@@ -162,25 +167,71 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
   }
 }
 
-/** Cột "Thao tác": Xem (mở HĐ). Nút Xoá chưa hiện — chờ V2-M (đảo sổ kho/giá vốn khi xoá). */
-export function ActionsCell({ r }: { r: ContractListRow }) {
+/** Xem (mắt) + Xoá (thùng rác, chỉ vai quản lý) — nút biểu tượng không viền. Nhiều phiên bản ⇒ Xoá bị khoá kèm lý do. */
+function RowActions({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
+  const del = deleteAction(r, ctx.owner);
   return (
-    <td className="px-3 py-3 pr-5 text-right whitespace-nowrap">
+    <span className="inline-flex items-center gap-1">
       <Link
         to="/contracts/$id"
         params={{ id: r.id }}
-        className="btn btn-quiet btn-sm"
+        className="btn-icon-ghost"
         aria-label={t("contracts.list.viewContract")}
         title={t("contracts.list.viewContract")}
+        data-testid="row-view"
         data-contract={r.title}
         onClick={(e) => e.stopPropagation()}
       >
         <EyeIcon />
       </Link>
+      {del !== "hidden" && (
+        <button
+          type="button"
+          className="btn-icon-ghost"
+          aria-label={t("contracts.list.deleteContract")}
+          title={
+            del === "versions" ? t("contracts.del.hasVersions") : t("contracts.list.deleteContract")
+          }
+          data-testid="row-delete"
+          data-contract={r.title}
+          disabled={del === "versions"}
+          onClick={(e) => {
+            e.stopPropagation();
+            ctx.onDelete?.(r.id);
+          }}
+        >
+          <TrashIcon />
+        </button>
+      )}
+    </span>
+  );
+}
+
+/** Cột "Thao tác". */
+export function ActionsCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  return (
+    <td className="px-3 py-3 pr-5 text-right whitespace-nowrap">
+      <RowActions r={r} ctx={ctx} />
     </td>
   );
 }
+
+const TrashIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6" />
+  </svg>
+);
 
 const EyeIcon = () => (
   <svg
@@ -233,6 +284,9 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
           <StageCell r={r} ctx={ctx} />
         </span>
       </Link>
+      <div className="absolute right-2 bottom-2">
+        <RowActions r={r} ctx={ctx} />
+      </div>
     </li>
   );
 }

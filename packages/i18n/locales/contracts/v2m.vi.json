@@ -23,7 +23,8 @@
       "deleting": "Đang xoá…",
       "cancel": "Giữ lại",
       "done": "Đã xoá hợp đồng",
-      "failed": "Không xoá được hợp đồng"
+      "failed": "Không xoá được hợp đồng",
+      "hasVersions": "Hợp đồng có nhiều phiên bản — chỉ xoá được bản nháp mới nhất"
     }
   }
 }

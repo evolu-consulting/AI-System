@@ -23,7 +23,8 @@
       "deleting": "Deleting…",
       "cancel": "Keep it",
       "done": "Contract deleted",
-      "failed": "Could not delete the contract"
+      "failed": "Could not delete the contract",
+      "hasVersions": "This contract has multiple versions — only the latest draft can be deleted"
     }
   }
 }

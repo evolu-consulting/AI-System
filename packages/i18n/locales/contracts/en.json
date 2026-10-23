@@ -152,7 +152,8 @@
       "until": "until {{date}}",
       "view": "View",
       "viewAria": "View {{title}}",
-      "viewContract": "View contract"
+      "viewContract": "View contract",
+      "deleteContract": "Delete contract"
     },
     "table": {
       "columns": "Columns",

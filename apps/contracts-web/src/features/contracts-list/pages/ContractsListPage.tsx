@@ -25,6 +25,7 @@ import { ExportButtons } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { useContractsList } from "../hooks/use-contracts-list";
+import { useDeleteDialog } from "../hooks/use-delete-dialog";
 import { useUploadQueue } from "../hooks/use-upload-queue";
 import {
   type DateFilter,
@@ -42,7 +43,7 @@ const errText = (e: unknown, t: (k: string) => string): string =>
 
 export function ContractsListPage() {
   const { t } = useTranslation();
-  const { write } = useMe();
+  const { write, owner } = useMe();
   const nav = useNavigate();
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
@@ -73,12 +74,15 @@ export function ContractsListPage() {
       locked: key === "title" || key === "stage",
     })),
   );
+  const delDialog = useDeleteDialog();
   const ctx: RowCtx = useMemo(
     () => ({
       parents: new Map((list.data?.parents ?? []).map((p) => [p.id, p.title])),
       progress: new Map((list.data?.progress ?? []).map((p) => [p.id, p])),
+      owner,
+      onDelete: delDialog.open,
     }),
-    [list.data],
+    [list.data, owner, delDialog.open],
   );
 
   async function addCategory() {
@@ -143,6 +147,7 @@ export function ContractsListPage() {
           </>
         }
       />
+      {delDialog.node}
       <QueueExtractDialog items={queue.items} />
       <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />
       {err && (
@@ -203,7 +208,7 @@ export function ContractsListPage() {
                       {shown.map((k) => (
                         <Fragment key={k}>{row(k, r)}</Fragment>
                       ))}
-                      <ActionsCell r={r} />
+                      <ActionsCell r={r} ctx={ctx} />
                     </tr>
                   ))}
                 </tbody>

@@ -1,6 +1,7 @@
 // V2-M · HD-07 · Luật 4b: vai quản lý thấy "Xoá hợp đồng" ⇒ hộp xác nhận liệt kê tác động (xem trước) ⇒ "Xoá hẳn" ⇒ MỘT DELETE ⇒ về
 // danh sách; editor không thấy nút. Backend giả `page.route`; chờ phần tử, không sleep. (Viết trong lát, chạy ở cuối đợt — Luật 0b.)
 import { expect, type Route, test } from "@playwright/test";
+import { listAsHub, ROWS } from "./dataset-list";
 import { ACTIVE_ID } from "./dataset-v2f";
 import { installV2f } from "./v2f-support";
 
@@ -29,15 +30,20 @@ const impact = {
 test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async ({ page }) => {
   await installV2f(page, { role: "owner" });
   const deletes: string[] = [];
-  const url = `**/pack/contracts/contracts/${ACTIVE_ID}`;
+  const id = ROWS[0]?.id as string;
+  const url = `**/pack/contracts/contracts/${id}`;
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/contracts",
+    (r) => json(r, 200, listAsHub()),
+  );
   await page.route(`${url}/delete-preview`, (r) => json(r, 200, impact));
   await page.route(url, (r) => {
     if (r.request().method() !== "DELETE") return r.fallback();
     deletes.push(r.request().postData() ?? "");
     return json(r, 200, { deleted: true, audit_id: "1", impact: {} });
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
-  await page.getByTestId("delete-contract").click();
+  await page.goto("/contracts");
+  await page.locator(`[data-testid="row-delete"]`).first().click();
   const list = page.getByTestId("delete-impact");
   await expect(list).toContainText("Hàng A");
   const orphans = page.getByTestId("delete-orphans");
@@ -47,12 +53,49 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   await orphans.getByRole("checkbox", { name: "Dịch vụ B" }).check();
   await page.getByTestId("delete-confirm").click();
   await expect(page).toHaveURL(/\/contracts$/);
+  await expect(page.getByTestId("delete-confirm")).toHaveCount(0);
   expect(deletes.map((b) => JSON.parse(b))).toEqual([
     { remove_products: ["00000000-0000-4000-8000-0000000000b1"] },
   ]);
 });
 
-test("editor: không có nút xoá", async ({ page }) => {
+const listRoute = (page: import("@playwright/test").Page, versions = 1) =>
+  page.route(
+    (u) => u.pathname === "/pack/contracts/contracts",
+    (r) => {
+      const list = listAsHub() as { items: Record<string, unknown>[] };
+      list.items[0] = { ...list.items[0], versions_count: versions };
+      return json(r, 200, list);
+    },
+  );
+
+test("owner: danh sách có mắt + thùng rác, không viền", async ({ page }) => {
+  await installV2f(page, { role: "owner" });
+  await listRoute(page);
+  await page.goto("/contracts");
+  await expect(page.getByTestId("row-view").first()).toBeVisible();
+  await expect(page.getByTestId("row-delete").first()).toBeEnabled();
+  await expect(page.getByTestId("row-view").first()).toHaveCSS("border-top-width", "0px");
+});
+
+test("editor: danh sách chỉ có mắt, không thùng rác", async ({ page }) => {
+  await installV2f(page, { role: "editor" });
+  await listRoute(page);
+  await page.goto("/contracts");
+  await expect(page.getByTestId("row-view").first()).toBeVisible();
+  await expect(page.getByTestId("row-delete")).toHaveCount(0);
+});
+
+test("owner: nhiều phiên bản ⇒ thùng rác khoá kèm lý do", async ({ page }) => {
+  await installV2f(page, { role: "owner" });
+  await listRoute(page, 2);
+  await page.goto("/contracts");
+  const first = page.getByTestId("row-delete").first();
+  await expect(first).toBeDisabled();
+  await expect(first).toHaveAttribute("title", /nhiều phiên bản/);
+});
+
+test("trang chi tiết: editor không có nút xoá", async ({ page }) => {
   await installV2f(page, { role: "editor" });
   await page.goto(`/contracts/${ACTIVE_ID}`);
   await expect(page.getByRole("heading").first()).toBeVisible();

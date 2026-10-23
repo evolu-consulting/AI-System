@@ -419,6 +419,30 @@
   .btn-quiet:hover:not(:disabled) {
     background: var(--color-sunk);
   }
+  /* Nút biểu tượng không viền (thao tác dòng danh sách): nền khi rê chuột, vòng focus giữ nguyên. */
+  .btn-icon-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .btn-icon-ghost:hover:not(:disabled) {
+    background: var(--color-sunk);
+  }
+  .btn-icon-ghost:focus-visible {
+    outline: 2px solid var(--color-act);
+    outline-offset: 1px;
+  }
+  .btn-icon-ghost:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
   .chip {
     display: inline-flex;
     align-items: center;

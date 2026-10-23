@@ -152,7 +152,8 @@
       "until": "đến {{date}}",
       "view": "Xem",
       "viewAria": "Xem {{title}}",
-      "viewContract": "Xem hợp đồng"
+      "viewContract": "Xem hợp đồng",
+      "deleteContract": "Xoá hợp đồng"
     },
     "table": {
       "columns": "Cột",
