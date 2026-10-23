@@ -392,6 +392,28 @@
     "session": {
       "expired": "Your session has expired. Please sign in again."
     },
+    "lock": {
+      "badge": "Locked",
+      "bannerTitle": "Confirmed — locked",
+      "bannerBody": "Legal fields are read-only. Upload an update as a new version.",
+      "updateVersion": "Upload update",
+      "soon": "Coming soon",
+      "reopenLink": "Reopen to fix extraction errors",
+      "dialogTitle": "Reopen contract",
+      "dialogHint": "The contract goes back to Needs review to fix AI extraction errors; the reopening is logged.",
+      "reasonLabel": "Reason for reopening (required)",
+      "reopenConfirm": "Reopen",
+      "reopening": "Reopening…",
+      "reopened": "Reopened — the contract is back in Needs review.",
+      "pendingTitle": "Not confirmed",
+      "pendingBody": "Check the fields the AI was unsure about, then confirm to lock the contract.",
+      "noDocument": "No document",
+      "uploadOnly": "Contracts must be uploaded from the signed document",
+      "uploadOnlyHint": "Upload a PDF, DOCX or image; the AI reads it so you can review and confirm.",
+      "errLocked": "This contract is confirmed and locked — this field can't be edited. An owner can reopen it.",
+      "errNotLocked": "The contract is not locked — reload the page.",
+      "errForbidden": "Only an owner can reopen a contract."
+    },
     "errors": {
       "network": "Can't reach the server. Check your connection and try again.",
       "unknown": "Something went wrong. Please try again.",

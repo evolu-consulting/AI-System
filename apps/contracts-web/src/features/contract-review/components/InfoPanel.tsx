@@ -26,7 +26,10 @@ export function InfoPanel({
   disabled,
   saveButton,
   confirm,
+  lockedKeys,
 }: {
+  /** K3a: HĐ đã khoá ⇒ ô pháp lý chỉ đọc (chỉ `notice_days` sửa được). */
+  lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
   f: FormState;
   onSet: (k: TextKey, v: string) => void;
@@ -55,7 +58,7 @@ export function InfoPanel({
           invalid={confirm?.invalid ?? NONE}
           cols={2}
           disabled={disabled}
-          lockedKeys={confirm ? undefined : LOCKED_AFTER_SAVE}
+          lockedKeys={confirm ? undefined : (lockedKeys ?? LOCKED_AFTER_SAVE)}
           badges={badgesOf(c, t("contracts.cform.unsure"))}
           unsure={confirm?.unsure}
         />

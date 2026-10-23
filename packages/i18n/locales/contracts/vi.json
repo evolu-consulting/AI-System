@@ -392,6 +392,28 @@
     "session": {
       "expired": "Phiên đã hết hạn, vui lòng đăng nhập lại."
     },
+    "lock": {
+      "badge": "Đã khoá",
+      "bannerTitle": "Đã xác nhận — đã khoá",
+      "bannerBody": "Các trường pháp lý chỉ đọc. Có bản cập nhật mới thì tải lên làm phiên bản mới.",
+      "updateVersion": "Tải bản cập nhật",
+      "soon": "Sắp có",
+      "reopenLink": "Mở lại để sửa lỗi trích xuất",
+      "dialogTitle": "Mở lại hợp đồng",
+      "dialogHint": "Hợp đồng quay về Chờ duyệt để sửa lỗi AI trích xuất; việc mở lại được ghi vào lịch sử.",
+      "reasonLabel": "Lý do mở lại (bắt buộc)",
+      "reopenConfirm": "Mở lại",
+      "reopening": "Đang mở lại…",
+      "reopened": "Đã mở lại — hợp đồng quay về Chờ duyệt.",
+      "pendingTitle": "Chưa xác nhận",
+      "pendingBody": "Kiểm tra các trường AI chưa chắc rồi xác nhận để khoá hợp đồng.",
+      "noDocument": "Chưa có văn bản",
+      "uploadOnly": "Hợp đồng phải tải lên từ văn bản đã ký",
+      "uploadOnlyHint": "Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận.",
+      "errLocked": "Hợp đồng đã xác nhận và bị khoá — không sửa được trường này. Chủ sở hữu có thể mở lại.",
+      "errNotLocked": "Hợp đồng chưa bị khoá — tải lại trang.",
+      "errForbidden": "Chỉ chủ sở hữu mới được mở lại hợp đồng."
+    },
     "errors": {
       "network": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
       "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",

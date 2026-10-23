@@ -66,7 +66,8 @@ test("HD-FR-26 · S05 · Lưu nháp gửi PATCH chỉ ô đã đổi + version, 
   ]);
 });
 
-test("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán, SP danh mục) rồi mở HĐ mới", async ({
+// CR-097 K3a: nhập tay ngừng (POST /manual ⇒ 410, /contracts/new chỉ upload) — bỏ qua.
+test.skip("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán, SP danh mục) rồi mở HĐ mới", async ({
   page,
 }) => {
   const sent = await installV2f(page);
@@ -106,7 +107,7 @@ test("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán, SP 
   });
 });
 
-test("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không gửi", async ({ page }) => {
+test.skip("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không gửi", async ({ page }) => {
   const sent = await installV2f(page);
   await page.goto("/contracts/new");
   await page.getByLabel("Tên hợp đồng").fill("HĐ");

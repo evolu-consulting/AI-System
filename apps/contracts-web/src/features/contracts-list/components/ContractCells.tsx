@@ -22,6 +22,16 @@ export type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 const TD = "px-3 py-3";
 
+/** CR-097 K3a: 🔒 trước tên HĐ đã xác nhận (khoá). */
+function RowLock() {
+  const { t } = useTranslation();
+  return (
+    <span data-testid="row-lock" role="img" aria-label={t("contracts.lock.badge")}>
+      🔒{" "}
+    </span>
+  );
+}
+
 function SubLine({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
   const parent = r.parent_id ? ctx.parents.get(r.parent_id) : undefined;
@@ -114,6 +124,7 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
             title={r.title}
             onClick={(e) => e.stopPropagation()}
           >
+            {r.locked && <RowLock />}
             {r.title}
           </Link>
           <SubLine r={r} ctx={ctx} />
@@ -199,7 +210,10 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >
         <span className="flex items-center gap-2">
-          <span className="truncate font-semibold">{r.title}</span>
+          <span className="truncate font-semibold">
+            {r.locked && <RowLock />}
+            {r.title}
+          </span>
           <DealTag r={r} ctx={ctx} />
         </span>
         {parent && (

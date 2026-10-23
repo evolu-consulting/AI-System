@@ -83,6 +83,11 @@ export async function installV2f(page: Page, o: Opts = {}): Promise<Sent[]> {
       fields: {},
     });
   });
+  // CR-097 K1 · HD-FR-104: owner mở lại ⇒ 200 `{status: needs_review, locked: false}`.
+  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/reopen`, (r) => {
+    rec(r);
+    return json(r, 200, { id: ACTIVE_ID, status: "needs_review", version: 4, locked: false });
+  });
   await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/milestones`, (r) => {
     rec(r);
     return json(r, 201, { id: "d1000000-0000-4000-8000-0000000001ff" });

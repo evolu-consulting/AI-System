@@ -27,7 +27,9 @@ export function DetailGrid({
   partner,
   today,
   info,
+  lockedKeys,
 }: {
+  lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
   f: FormState;
   onSet: (k: TextKey, v: string) => void;
@@ -50,6 +52,7 @@ export function DetailGrid({
           f={f}
           onSet={onSet}
           disabled={!canSave}
+          lockedKeys={lockedKeys}
           saveButton={saveButton}
           confirm={
             confirm

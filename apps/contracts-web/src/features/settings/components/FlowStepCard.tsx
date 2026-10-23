@@ -11,7 +11,8 @@ const BTN = "h-8 rounded-lg border border-rule px-2 text-label hover:bg-sunk dis
 
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
+    // biome-ignore lint/a11y/noLabelWithoutControl: ô nhập là `children` (nhãn bao ngoài)
+    <label className="flex flex-col gap-1">
       <span className="text-caption text-dim">{label}</span>
       {children}
       {error && (
@@ -19,7 +20,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
           {error}
         </span>
       )}
-    </div>
+    </label>
   );
 }
 

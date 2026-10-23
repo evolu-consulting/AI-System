@@ -47,7 +47,9 @@ async function install(page: Page, role: Role, putStatus = 200, code = "APPROVAL
       /* storage bị chặn */
     }
   });
-  await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
+  // Menu Cài đặt chỉ hiện cho vai ≠ viewer hoặc quản trị công ty (`canSeeSettings`) ⇒ viewer của gói vào bằng tài khoản tenant_admin.
+  const grant = { ...d.grant, user: { ...d.grant.user, role: "tenant_admin" } };
+  await page.route("**/auth/refresh", (r) => json(r, 200, grant));
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
   await page.route("**/admin/org", (r) =>
     json(r, 200, {
@@ -105,7 +107,7 @@ async function open(page: Page) {
 test("owner: thấy huy hiệu mặc định, thêm bước, xem trước, Lưu gửi PUT", async ({ page }) => {
   const puts = await install(page, "owner");
   const dlg = await open(page);
-  await expect(dlg.getByText("Dùng mặc định")).toBeVisible();
+  await expect(dlg.getByText("Dùng mặc định", { exact: true })).toBeVisible();
   await expect(dlg.getByTestId("flow-step-1")).toBeVisible();
 
   // xem trước: giá trị trống vẫn cần Kế toán; 50 triệu thì bỏ qua
@@ -121,7 +123,7 @@ test("owner: thấy huy hiệu mặc định, thêm bước, xem trước, Lưu 
   await expect.poll(() => puts.length).toBe(1);
   expect((puts[0] as { steps: unknown[]; version: number }).steps).toHaveLength(3);
   expect((puts[0] as { version: number }).version).toBe(1);
-  await expect(dlg.getByText("Dùng mặc định")).toHaveCount(0);
+  await expect(dlg.getByText("Dùng mặc định", { exact: true })).toHaveCount(0);
 });
 
 test("owner: bước đầu không có nút xoá/điều kiện; thiếu tên khoá nút Lưu", async ({ page }) => {

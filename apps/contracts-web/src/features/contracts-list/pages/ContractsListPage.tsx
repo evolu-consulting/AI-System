@@ -1,8 +1,8 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI "Hợp đồng"): thanh tìm + lọc + chọn cột, bảng (desktop) / thẻ (điện thoại) với cột Hợp đồng,
-// Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Thêm thủ công" +
-// "Upload hợp đồng" (cần quyền ghi). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
+// Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Upload hợp đồng"
+// (cần quyền ghi; CR-097: bỏ "Thêm thủ công" — HĐ phải có văn bản đã ký). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { promptDialog } from "~/components/shared/dialog-bus";
@@ -130,10 +130,6 @@ export function ContractsListPage() {
                     queue.enqueue(picked);
                   }}
                 />
-                <Link to="/contracts/new" className="btn btn-outline btn-sm">
-                  <PlusIcon />
-                  {t("contracts.list.manual")}
-                </Link>
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
@@ -241,20 +237,6 @@ function addCategoryButton(t: (k: string) => string, onClick: () => void) {
   );
 }
 
-const PlusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
 const UploadIcon = () => (
   <svg
     width="16"

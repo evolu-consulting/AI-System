@@ -6,6 +6,7 @@ type T = (key: string) => string;
 
 export function saveErrorText(e: unknown, t: T): string {
   if (e instanceof ApiError) {
+    if ((e.code as string) === "CONTRACT_LOCKED") return t("contracts.lock.errLocked");
     if (e.status === 409) return t("contracts.errors.conflict");
     if (e.code === "NETWORK_ERROR") return t("contracts.errors.network");
   }

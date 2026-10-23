@@ -188,5 +188,10 @@ export function contractAsHub(status = contract.status) {
     milestones: [] as unknown[],
     // V2-G: phần AI đọc (null = nhập tay / bản đọc cũ ⇒ màn xác nhận giữ luồng PATCH của V2-F).
     ai: null as unknown,
+    // CR-097 K1: khoá cứng sau xác nhận + có văn bản gốc.
+    locked: false,
+    locked_at: null as string | null,
+    locked_by: null as string | null,
+    has_document: true,
   };
 }

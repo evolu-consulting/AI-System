@@ -154,6 +154,7 @@ function hubRow(r: Row) {
     category_ids: r.categories,
     updated_at: at,
     version: 1,
+    locked: ["active", "expiring"].includes(r.status), // CR-097 K1: đã xác nhận ⇒ khoá
   };
 }
 

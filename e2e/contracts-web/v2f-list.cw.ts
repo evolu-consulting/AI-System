@@ -8,10 +8,12 @@ test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
 const first = ROWS[0];
 
-test("hai nút thêm + cột theo mockup; không có nút Xoá", async ({ page }) => {
+test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; không có nút Xoá", async ({
+  page,
+}) => {
   await installV2f(page);
   await page.goto("/contracts");
-  await expect(page.getByRole("link", { name: "Thêm thủ công" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
   const heads = page.locator("main thead th");
   await expect(heads).toHaveText([
@@ -86,9 +88,7 @@ test("bấm hàng hoặc «Xem» mở hợp đồng", async ({ page }) => {
   await expect(page).toHaveURL(/\/contracts\/c1000000-0000-4000-8000-000000000013$/);
 });
 
-test("«Thêm thủ công» mở form; «Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ vừa tải", async ({
-  page,
-}) => {
+test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ vừa tải", async ({ page }) => {
   await installV2f(page);
   let uploaded = false;
   await page.route(
@@ -110,9 +110,6 @@ test("«Thêm thủ công» mở form; «Upload hợp đồng» chọn file ⇒ 
     },
   );
   await page.goto("/contracts");
-  await page.getByRole("link", { name: "Thêm thủ công" }).click();
-  await expect(page).toHaveURL(/\/contracts\/new$/);
-  await page.goBack();
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Upload hợp đồng" }).click();
   await (await chooser).setFiles({

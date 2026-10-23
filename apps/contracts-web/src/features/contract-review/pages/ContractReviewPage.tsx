@@ -12,6 +12,8 @@ import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlineP
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { DeleteContractButton } from "~/features/contract-delete/components/DeleteContractButton";
 import { dealOf } from "~/features/contract-form/lib/deal";
+import { LockBanner } from "~/features/contract-lock/components/LockBanner";
+import { lockView } from "~/features/contract-lock/lib/lock-view";
 import { SourceViewerContext } from "~/features/contract-source/components/QuoteLine";
 import { SourcePanel } from "~/features/contract-source/components/SourcePanel";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
@@ -81,6 +83,7 @@ function ContractBody({
   const { t } = useTranslation();
   const { write, owner } = useMe();
   const [origOpen, setOrigOpen] = useState(false);
+  const lock = lockView(c, owner);
   const confirm = c.status === "needs_review";
   const canSave = write && c.status !== "extracting";
   const key = leadKey(c.status);
@@ -121,6 +124,7 @@ function ContractBody({
               open={dialogOpen({ uploading: false, status: c.status })}
               name={c.file?.name ?? titleOf(c)}
             />
+            <LockBanner id={id} view={lock} />
             <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err} />
             {ap.section}
             {viewer && (
@@ -150,6 +154,7 @@ function ContractBody({
                 partner={partnerOf(c)}
                 today={todayIso()}
                 info={info}
+                lockedKeys={lock.lockedKeys}
               />
             )}
             {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
