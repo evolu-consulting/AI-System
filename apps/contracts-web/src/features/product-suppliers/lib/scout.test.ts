@@ -4,12 +4,14 @@ import { PRICE_SCOUT_DEFAULT } from "@ai/contracts";
 import {
   fromForm,
   inheritedKeys,
+  legacyInstructions,
   overrideOf,
   parseCap,
   parseList,
   parsePct,
   scoutIssue,
   toForm,
+  toProductForm,
   usageView,
 } from "./scout";
 
@@ -48,5 +50,35 @@ describe("price-scout · lib", () => {
     expect(parseCap("1.000")).toBe(1000);
     expect(parseCap("-1")).toBeUndefined();
     expect(parseCap("abc")).toBeUndefined();
+  });
+});
+
+describe("price-scout · yêu cầu tự do (màn SP)", () => {
+  test("legacyInstructions dựng câu đọc được từ ô cũ; rỗng khi mặc định", () => {
+    expect(legacyInstructions(PRICE_SCOUT_DEFAULT)).toBe("");
+    const c = {
+      ...PRICE_SCOUT_DEFAULT,
+      keywords: ["thùng carton"],
+      spec: "60x40x40",
+      include_sites: ["shopee.vn"],
+      exclude_sites: ["example.com"],
+      region: "TP.HCM",
+      vat: "incl" as const,
+      watched_suppliers: ["Bao Bì Minh Phát"],
+      alert_pct: 10,
+    };
+    expect(legacyInstructions(c)).toBe(
+      "thùng carton, quy cách 60x40x40, ưu tiên shopee.vn, bỏ qua example.com, khu vực TP.HCM, giá đã gồm VAT, theo dõi Bao Bì Minh Phát, báo khi giá thấp nhất lệch giá vốn 10%",
+    );
+  });
+  test("toProductForm: ưu tiên instructions đã lưu, không có ⇒ câu dựng; lưu giữ nguyên ô cũ", () => {
+    const old = { ...PRICE_SCOUT_DEFAULT, keywords: ["a"], alert_pct: 5 };
+    expect(toProductForm(old).instructions).toContain("báo khi giá thấp nhất lệch giá vốn 5%");
+    const saved = { ...old, instructions: "yêu cầu mới" };
+    const f = toProductForm(saved);
+    expect(f.instructions).toBe("yêu cầu mới");
+    expect(fromForm(f).alert_pct).toBe(5);
+    expect(overrideOf(f, PRICE_SCOUT_DEFAULT)).toMatchObject({ instructions: "yêu cầu mới" });
+    expect(scoutIssue({ ...f, instructions: "x".repeat(2001) })).toBe("instructions");
   });
 });

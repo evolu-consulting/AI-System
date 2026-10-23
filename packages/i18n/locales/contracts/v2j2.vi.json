@@ -88,7 +88,8 @@
       "forbidden": "Chỉ quản lý được thay đổi mục này.",
       "issue": {
         "listMax": "Mỗi danh sách tối đa 10 mục.",
-        "pct": "% cảnh báo phải là số nguyên từ 1 đến 100."
+        "pct": "% cảnh báo phải là số nguyên từ 1 đến 100.",
+        "instructions": "Yêu cầu dò giá tối đa 2000 ký tự."
       },
       "f": {
         "enabled": "Dò giá thị trường cho sản phẩm này",
@@ -102,14 +103,19 @@
         "vat": "Cách tính giá",
         "schedule": "Tự động dò",
         "alert_pct": "Báo khi giá thị trường thấp nhất lệch giá vốn bình quân (%)",
-        "alert_watched": "Báo khi nhà cung cấp theo dõi đổi giá"
+        "alert_watched": "Báo khi nhà cung cấp theo dõi đổi giá",
+        "instructions": "Yêu cầu dò giá"
       },
       "ph": {
         "keywords": "cách nhau dấu phẩy hoặc xuống dòng, tối đa {{max}}",
         "include_sites": "vd shopee.vn, fpt.com.vn",
         "exclude_sites": "vd example.com",
         "watched_suppliers": "tên nhà cung cấp công khai",
-        "alert_pct": "trống = không báo"
+        "alert_pct": "trống = không báo",
+        "instructions": "Thùng carton 5 lớp 60x40x40, ưu tiên shopee.vn, bỏ qua example.com, giá chưa VAT, khu vực TP.HCM, theo dõi Bao Bì Minh Phát, báo khi giá thấp hơn giá vốn 10%"
+      },
+      "help": {
+        "instructions": "Gõ điều bạn muốn AI dò: quy cách, trang ưu tiên/bỏ qua, giá có/chưa VAT, khu vực, nhà cung cấp cần theo dõi, ngưỡng báo lệch giá. Chỉ tên sản phẩm và nội dung này được gửi đi — không bao giờ gửi mã số thuế, hợp đồng hay tên đối tác."
       },
       "vat": { "excl": "Chưa VAT", "incl": "Đã gồm VAT" },
       "schedule": { "off": "Tắt (chỉ dò tay)", "weekly": "Hằng tuần", "monthly": "Hằng tháng" },

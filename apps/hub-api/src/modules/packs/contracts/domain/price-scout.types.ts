@@ -17,6 +17,7 @@ export type PriceScoutConfig = {
   schedule: PriceScoutSchedule;
   alert_pct: number | null;
   alert_watched: boolean;
+  instructions: string | null;
 };
 export type PriceScoutOverride = Partial<PriceScoutConfig>;
 
@@ -33,6 +34,7 @@ export const PRICE_SCOUT_DEFAULT: PriceScoutConfig = {
   schedule: "off",
   alert_pct: null,
   alert_watched: false,
+  instructions: null,
 };
 
 export type PriceScoutUsage = {

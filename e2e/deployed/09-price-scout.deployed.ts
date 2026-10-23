@@ -35,7 +35,7 @@ test.describe("09 price-scout", () => {
       timeout: 30_000,
     });
 
-    await page.getByTestId("scout-keywords").fill(`${TAG} giá bán`);
+    await page.getByTestId("scout-instructions").fill(`${TAG} giá bán`);
     await page.getByTestId("scout-schedule").selectOption("off");
     const saved = page.waitForResponse(
       (r) => r.url().includes("/price-scout") && r.request().method() === "PUT",

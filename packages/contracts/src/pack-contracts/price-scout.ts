@@ -39,6 +39,8 @@ export const PriceScoutConfigSchema = z.strictObject({
   alert_pct: z.number().int().min(1).max(100).nullable(),
   /** Báo khi giá của NCC theo dõi thay đổi. */
   alert_watched: z.boolean(),
+  /** Yêu cầu dò giá viết tự do (≤ 2000 ký tự) — gửi agent như DỮ LIỆU; thay các ô có cấu trúc ở màn SP (cột cũ giữ để tương thích). */
+  instructions: z.string().trim().max(2000).nullable().default(null),
 });
 export type PriceScoutConfig = z.infer<typeof PriceScoutConfigSchema>;
 
@@ -59,6 +61,7 @@ export const PRICE_SCOUT_DEFAULT: PriceScoutConfig = {
   schedule: "off",
   alert_pct: null,
   alert_watched: false,
+  instructions: null,
 };
 
 /** Đã dùng / trần lượt dò tháng này (theo lịch tenant). `limit` null = không trần. */

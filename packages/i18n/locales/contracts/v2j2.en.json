@@ -88,7 +88,8 @@
       "forbidden": "Only managers can change this.",
       "issue": {
         "listMax": "Each list holds at most 10 items.",
-        "pct": "Alert percentage must be a whole number from 1 to 100."
+        "pct": "Alert percentage must be a whole number from 1 to 100.",
+        "instructions": "Price search request is limited to 2000 characters."
       },
       "f": {
         "enabled": "Scout market prices for this product",
@@ -102,14 +103,19 @@
         "vat": "Price basis",
         "schedule": "Automatic scan",
         "alert_pct": "Alert when lowest market price differs from average cost by (%)",
-        "alert_watched": "Alert when a watched supplier changes price"
+        "alert_watched": "Alert when a watched supplier changes price",
+        "instructions": "Price search request"
       },
       "ph": {
         "keywords": "comma or new line, up to {{max}}",
         "include_sites": "e.g. shopee.vn, fpt.com.vn",
         "exclude_sites": "e.g. example.com",
         "watched_suppliers": "public supplier names",
-        "alert_pct": "empty = no alert"
+        "alert_pct": "empty = no alert",
+        "instructions": "5-ply carton 60x40x40, prefer shopee.vn, skip example.com, price excl. VAT, region HCMC, watch Bao Bi Minh Phat, alert when price is 10% below cost"
+      },
+      "help": {
+        "instructions": "Type what you want the AI to look for: spec, preferred/skipped sites, VAT, region, suppliers to watch, alert threshold. Only the product name and this text are sent out; never tax ID, contracts or partner names."
       },
       "vat": { "excl": "Excl. VAT", "incl": "Incl. VAT" },
       "schedule": { "off": "Off (manual only)", "weekly": "Weekly", "monthly": "Monthly" },

@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { toast } from "~/components/shared/toast";
 import { useProductScout, useSaveProductScout } from "../hooks/use-scout";
-import { inheritedKeys, overrideOf, type ScoutForm, scoutIssue, toForm } from "../lib/scout";
-import { ScoutFields } from "./ScoutFields";
+import { overrideOf, type ScoutForm, scoutIssue, toProductForm } from "../lib/scout";
+import { ScoutProductFields } from "./ScoutProductFields";
 import { ScanLine, UsageLine } from "./ScoutStatus";
 
 function Form({
@@ -22,9 +22,9 @@ function Form({
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.scout.${k}`);
   const save = useSaveProductScout(productId);
-  const [form, setForm] = useState<ScoutForm>(() => toForm(data.effective));
+  const [form, setForm] = useState<ScoutForm>(() => toProductForm(data.effective));
   // Dữ liệu máy chủ đổi (sau Lưu / về mặc định) ⇒ form theo giá trị đang áp.
-  useEffect(() => setForm(toForm(data.effective)), [data.effective]);
+  useEffect(() => setForm(toProductForm(data.effective)), [data.effective]);
   const issue = scoutIssue(form);
   const run = (body: Parameters<typeof save.mutate>[0], ok: string) =>
     save.mutate(body, {
@@ -33,13 +33,7 @@ function Form({
     });
   return (
     <div className="flex flex-col gap-3">
-      <ScoutFields
-        idp="scout"
-        form={form}
-        set={setForm}
-        disabled={!write || save.isPending}
-        inherited={inheritedKeys(form, data.defaults)}
-      />
+      <ScoutProductFields form={form} set={setForm} disabled={!write || save.isPending} />
       {issue && (
         <p role="alert" className="text-sm text-late">
           {t(`contracts.scout.issue.${issue}`)}
@@ -83,7 +77,6 @@ export function ScoutConfigPanel({ productId, write }: { productId: string; writ
         <h3 id="scout-title" className="text-base font-semibold">
           {t("contracts.scout.title")}
         </h3>
-        <p className="text-xs text-dim">{t("contracts.scout.hint")}</p>
       </header>
       {q.isLoading && <Loading />}
       {q.error && <ErrorLine error={q.error} />}

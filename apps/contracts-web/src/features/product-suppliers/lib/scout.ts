@@ -22,6 +22,7 @@ export const CONFIG_KEYS = [
   "schedule",
   "alert_pct",
   "alert_watched",
+  "instructions",
 ] as const satisfies readonly (keyof PriceScoutConfig)[];
 
 /** Form dạng chuỗi: danh sách = một chuỗi phân tách bằng dấu phẩy/xuống dòng, trống = null. */
@@ -38,6 +39,8 @@ export type ScoutForm = {
   schedule: PriceScoutConfig["schedule"];
   alert_pct: string;
   alert_watched: boolean;
+  /** Yêu cầu dò giá tự do (màn SP). */
+  instructions: string;
 };
 
 /** "a, b\nc" → ["a","b","c"] (bỏ trống, bỏ trùng không phân biệt hoa/thường). */
@@ -70,8 +73,33 @@ export function toForm(c: PriceScoutConfig): ScoutForm {
     schedule: c.schedule,
     alert_pct: c.alert_pct == null ? "" : String(c.alert_pct),
     alert_watched: c.alert_watched,
+    instructions: c.instructions ?? "",
   };
 }
+
+/** Câu đọc được dựng từ các ô cấu trúc cũ — điền sẵn ô "Yêu cầu dò giá" khi SP chưa có `instructions`. Không có gì ⇒ "". */
+export function legacyInstructions(c: PriceScoutConfig): string {
+  const parts: string[] = [];
+  if (c.keywords.length) parts.push(c.keywords.join(", "));
+  if (c.spec) parts.push(`quy cách ${c.spec}`);
+  if (c.unit) parts.push(`đơn vị ${c.unit}`);
+  if (c.include_sites.length) parts.push(`ưu tiên ${c.include_sites.join(", ")}`);
+  if (c.exclude_sites.length) parts.push(`bỏ qua ${c.exclude_sites.join(", ")}`);
+  if (c.region) parts.push(`khu vực ${c.region}`);
+  if (parts.length) parts.push(c.vat === "incl" ? "giá đã gồm VAT" : "giá chưa VAT");
+  if (c.watched_suppliers.length) parts.push(`theo dõi ${c.watched_suppliers.join(", ")}`);
+  if (c.alert_pct != null) parts.push(`báo khi giá thấp nhất lệch giá vốn ${c.alert_pct}%`);
+  if (c.alert_watched && c.watched_suppliers.length) parts.push("báo khi NCC theo dõi đổi giá");
+  return parts.join(", ");
+}
+
+/** Form màn SP: ô yêu cầu = `instructions` đã lưu, chưa có ⇒ câu dựng từ ô cũ. */
+export const toProductForm = (c: PriceScoutConfig): ScoutForm => ({
+  ...toForm(c),
+  instructions: c.instructions?.trim() ? c.instructions : legacyInstructions(c),
+});
+
+export const INSTRUCTIONS_MAX = 2000;
 
 const orNull = (s: string): string | null => s.trim() || null;
 
@@ -96,6 +124,7 @@ export function fromForm(f: ScoutForm): PriceScoutConfig {
     schedule: f.schedule,
     alert_pct: parsePct(f.alert_pct),
     alert_watched: f.alert_watched,
+    instructions: orNull(f.instructions),
   };
 }
 
@@ -119,7 +148,8 @@ export const inheritedKeys = (
 };
 
 /** Mã lỗi nhập (khoá i18n con) hoặc null: danh sách quá dài, % ngoài 1..100. */
-export function scoutIssue(form: ScoutForm): "listMax" | "pct" | null {
+export function scoutIssue(form: ScoutForm): "listMax" | "pct" | "instructions" | null {
+  if (form.instructions.length > INSTRUCTIONS_MAX) return "instructions";
   if (LIST_KEYS.some((k) => parseList(form[k]).length > LIST_MAX)) return "listMax";
   if (Number.isNaN(parsePct(form.alert_pct))) return "pct";
   return null;

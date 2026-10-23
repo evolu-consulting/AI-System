@@ -121,6 +121,7 @@ const SCOUT_CFG = {
   schedule: "off",
   alert_pct: null,
   alert_watched: false,
+  instructions: null,
 };
 const SCOUT = {
   product_id: PID,
@@ -245,4 +246,23 @@ test("giá từ HĐ mua hiện trong bảng so sánh; khối Giá bán & lãi c�
 test("SP Giới thiệu: không hiện tab", async ({ page }) => {
   await open(page, { ...OVERVIEW, product: { ...OVERVIEW.product, group: "referral" } });
   await expect(page.getByText("So sánh giá nhà cung cấp")).toHaveCount(0);
+});
+
+test("cấu hình dò giá: MỘT ô yêu cầu tự do; lưu gửi instructions (PUT), không còn các ô cấu trúc", async ({
+  page,
+}) => {
+  const sent = await open(page);
+  const panel = page.getByTestId("scout-panel");
+  await expect(panel.getByText(/Đã dùng 0\//)).toBeVisible();
+  await expect(panel.getByLabel("Yêu cầu dò giá")).toBeVisible();
+  await expect(panel.getByLabel("Tự động dò")).toBeVisible();
+  await expect(panel.getByText("Từ khoá tìm")).toHaveCount(0);
+  await expect(panel.getByText("theo mặc định nhóm")).toHaveCount(0);
+  await panel
+    .getByLabel("Yêu cầu dò giá")
+    .fill("Thùng carton 5 lớp, ưu tiên shopee.vn, giá chưa VAT");
+  await panel.getByTestId("scout-save").click();
+  await expect
+    .poll(() => sent.find((s) => s.method === "PUT" && s.path.endsWith("/price-scout"))?.body)
+    .toMatchObject({ instructions: "Thùng carton 5 lớp, ưu tiên shopee.vn, giá chưa VAT" });
 });

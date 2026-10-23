@@ -49,12 +49,17 @@ describe("price-scout", () => {
     const put = await call(P.hoa, "PUT", `/products/${pid}/price-scout`, {
       keywords: ["token kÃ½ sá»‘"],
       exclude_sites: ["bad.vn"],
+      instructions: "prefer shopee.vn, price excl VAT",
       region: "HÃ  Ná»™i",
     });
     expect(put.status).toBe(200);
     expect(put.json).toMatchObject({
       group: "goods",
-      override: { keywords: ["token kÃ½ sá»‘"], region: "HÃ  Ná»™i" },
+      override: {
+        instructions: "prefer shopee.vn, price excl VAT",
+        keywords: ["token kÃ½ sá»‘"],
+        region: "HÃ  Ná»™i",
+      },
       effective: { enabled: false, schedule: "off", vat: "excl", keywords: ["token kÃ½ sá»‘"] },
       next_at: null,
       usage: { searches: 0, searches_limit: 300 },
