@@ -64,7 +64,7 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
   await expect(ex).toContainText("Giá trị AI đọc được");
   await expect(ex).toContainText("“Tổng giá trị theo bảng giá đính kèm”");
   await page.getByLabel("Giá trị").fill("250.000.000");
-  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");
   expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
     [
@@ -102,7 +102,9 @@ test("HD-FR-34 · Từ chối: thiếu lý do ⇒ báo, không gửi; có lý do
     body: approvalAsHub("rejected", { feedback: "Sai đối tác" }),
   }));
   await page.goto(`/contracts/${contract.id}`);
-  await page.getByRole("button", { name: "Từ chối" }).click();
+  // ux-excel E4: "Từ chối" nằm trong menu ⋯.
+  await page.getByRole("button", { name: "Thêm thao tác" }).click();
+  await page.getByRole("menuitem", { name: "Từ chối" }).click();
   const form = page.locator("form[data-approval=reason]");
   await form.getByRole("button", { name: "Từ chối" }).click();
   await expect(form.getByRole("alert")).toHaveText("Vui lòng nhập lý do.");

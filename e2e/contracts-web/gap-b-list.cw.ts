@@ -77,7 +77,8 @@ test.describe("Gap #8 · xuất danh sách", () => {
     });
     await page.goto("/contracts?due=30");
     const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Xuất Excel" }).click();
+    await page.getByRole("button", { name: "Xuất", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Xuất Excel" }).click();
     expect((await download).suggestedFilename()).toBe("hop-dong-20261021.xlsx");
     expect(seen?.get("format")).toBe("xlsx");
     expect(seen?.get("due")).toBe("30");

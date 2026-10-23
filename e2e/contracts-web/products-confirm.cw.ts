@@ -77,7 +77,7 @@ test("cấp 1 sẽ xác nhận ⇒ hộp gắn SP: SP trùng chọn sẵn, một
 }) => {
   const approves = await install(page, approvalAsHub("level1", { finalizes_on_approve: true }));
   await page.goto(`/contracts/${contract.id}`);
-  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
   const dlg = page.getByTestId("product-link-dialog");
   await expect(dlg).toContainText("Gắn sản phẩm cho các dòng hợp đồng");
   const row1 = page.getByTestId("plink-row-0");
@@ -106,7 +106,7 @@ test("cấp 1 sẽ xác nhận ⇒ hộp gắn SP: SP trùng chọn sẵn, một
 test("cấp 1 sẽ chuyển cấp 2 ⇒ không hộp, approve không kèm SP", async ({ page }) => {
   const approves = await install(page, approvalAsHub("level1", { finalizes_on_approve: false }));
   await page.goto(`/contracts/${contract.id}`);
-  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
   await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");
   expect(approves).toEqual([{ action: "approve" }]);
   await expect(page.getByTestId("product-link-dialog")).toHaveCount(0);

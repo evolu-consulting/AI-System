@@ -110,7 +110,17 @@
         "tooLarge": "File is larger than 20 MB.",
         "empty": "File is empty.",
         "quota": "Daily upload limit reached.",
-        "busy": "The converter is busy, try again in a few seconds."
+        "busy": "The converter is busy, try again in a few seconds.",
+        "dialog": {
+          "title": "Upload contract",
+          "reading": "AI is reading {{name}}",
+          "hide": "Hide",
+          "steps": {
+            "extract": "Extract details",
+            "items": "Read line items",
+            "summary": "Summarise"
+          }
+        }
       },
       "date": {
         "label": "Filter by date",
@@ -129,6 +139,8 @@
         "to": "To"
       },
       "export": {
+        "menu": "Export",
+        "menuAria": "Choose export format",
         "xlsx": "Export Excel",
         "csv": "Export CSV",
         "busy": "Exporting…",
@@ -139,7 +151,8 @@
       "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator",
       "until": "until {{date}}",
       "view": "View",
-      "viewAria": "View {{title}}"
+      "viewAria": "View {{title}}",
+      "viewContract": "View contract"
     },
     "table": {
       "columns": "Columns",
@@ -415,6 +428,8 @@
       "extracted": "Value read by AI (decides whether management approval is needed): {{value}}",
       "editedByHand": "edited by hand",
       "confirm": "Confirm",
+      "confirmSave": "Confirm and save",
+      "more": "More actions",
       "confirming": "Confirming…",
       "approve": "Approve",
       "approving": "Approving…",

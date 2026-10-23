@@ -32,7 +32,8 @@ test("trích dẫn mốc AI ⇒ mở văn bản gốc, tô sáng đúng đoạn"
   await expect(page.getByTestId("source-hit")).toHaveText("Giao hàng đợt 1 trước ngày 01/03/2026");
 });
 
-test("Hỏi về hợp đồng này ⇒ POST tin tới @assistant kèm ngữ cảnh HĐ", async ({ page }) => {
+// ux-excel E3: panel "Hỏi về hợp đồng này" đã gỡ khỏi trang HĐ (trợ lý nổi còn) ⇒ bỏ qua.
+test.skip("Hỏi về hợp đồng này ⇒ POST tin tới @assistant kèm ngữ cảnh HĐ", async ({ page }) => {
   await installV2g(page);
   const sent: unknown[] = [];
   await page.route("**/chat/conversations**", (r) => {

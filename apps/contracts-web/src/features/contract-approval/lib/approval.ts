@@ -46,6 +46,15 @@ export function approvalView(
   return NONE;
 }
 
+/** ux-excel E4: ở bước "Xác nhận" (cấp 1) header chỉ còn nút chính "Xác nhận và lưu"; "Đọc lại" / "Từ chối" gom vào menu "⋯". */
+export const overflowOf = (v: ApprovalView): ("redo" | "reject")[] =>
+  v.confirm
+    ? [...(v.redo ? (["redo"] as const) : []), ...(v.reject ? (["reject"] as const) : [])]
+    : [];
+
+/** Nút "Lưu nháp" thứ cấp chỉ hiện khi người xem KHÔNG xác nhận được (còn lại "Xác nhận và lưu" đã lưu trước). */
+export const showDraftSave = (v: ApprovalView, canSave: boolean): boolean => canSave && !v.confirm;
+
 /** products-confirm: hộp "Gắn sản phẩm" chỉ khi máy chủ báo bước này sẽ xác nhận HĐ (hub cũ không báo ⇒ không hộp) và HĐ có dòng. */
 export const showLinkDialog = (a: ContractApproval | undefined, items: number): boolean =>
   a?.finalizes_on_approve === true && items > 0;

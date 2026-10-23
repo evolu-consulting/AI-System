@@ -81,7 +81,7 @@ test("B6 · Xác nhận cấp 1 → cấp 2 người gửi không quyết đư�
     return json(r, 200, contractAsHub());
   });
   await page.goto(`/contracts/${contract.id}`);
-  await page.getByRole("button", { name: "Xác nhận" }).click();
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
   await expect(
     page.getByText("Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này)."),
   ).toBeVisible();

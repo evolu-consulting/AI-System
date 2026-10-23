@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
+import { PopMenu } from "~/components/shared/pop-menu";
 import type { Busy } from "../hooks/use-approval";
-import { type ApprovalView, feedbackOk } from "../lib/approval";
+import { type ApprovalView, feedbackOk, overflowOf } from "../lib/approval";
 
 export function ApprovalButtons({
   v,
@@ -21,9 +22,10 @@ export function ApprovalButtons({
 }) {
   const { t } = useTranslation();
   const off = busy !== null;
+  const more = overflowOf(v);
   return (
     <>
-      {v.redo && (
+      {!v.confirm && v.redo && (
         <button
           type="button"
           data-approval="redo"
@@ -34,7 +36,7 @@ export function ApprovalButtons({
           {t("contracts.approval.redo")}
         </button>
       )}
-      {v.reject && (
+      {!v.confirm && v.reject && (
         <button
           type="button"
           data-approval="reject"
@@ -49,8 +51,22 @@ export function ApprovalButtons({
         <button type="button" className="btn btn-primary" disabled={off} onClick={onConfirm}>
           {busy === "approve"
             ? t("contracts.approval.confirming")
-            : t("contracts.approval.confirm")}
+            : t("contracts.approval.confirmSave")}
         </button>
+      )}
+      {more.length > 0 && (
+        <PopMenu
+          ariaLabel={t("contracts.approval.more")}
+          triggerClass="btn btn-outline"
+          disabled={off}
+          trigger={<span aria-hidden="true">⋯</span>}
+          items={more.map((k) => ({
+            key: k,
+            dataAttr: k,
+            label: t(`contracts.approval.${k}`),
+            onSelect: () => onAsk(k),
+          }))}
+        />
       )}
       {v.approve && (
         <button

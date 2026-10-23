@@ -110,7 +110,17 @@
         "tooLarge": "Tệp quá 20 MB.",
         "empty": "Tệp rỗng.",
         "quota": "Đã hết lượt tải lên trong ngày.",
-        "busy": "Hệ thống đang bận chuyển file, thử lại sau ít giây."
+        "busy": "Hệ thống đang bận chuyển file, thử lại sau ít giây.",
+        "dialog": {
+          "title": "Upload hợp đồng",
+          "reading": "AI đang đọc {{name}}",
+          "hide": "Ẩn",
+          "steps": {
+            "extract": "Trích thông tin",
+            "items": "Đọc danh sách hàng",
+            "summary": "Tóm tắt"
+          }
+        }
       },
       "date": {
         "label": "Lọc theo ngày",
@@ -129,6 +139,8 @@
         "to": "Đến ngày"
       },
       "export": {
+        "menu": "Xuất",
+        "menuAria": "Chọn định dạng xuất",
         "xlsx": "Xuất Excel",
         "csv": "Xuất CSV",
         "busy": "Đang xuất…",
@@ -139,7 +151,8 @@
       "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị",
       "until": "đến {{date}}",
       "view": "Xem",
-      "viewAria": "Xem {{title}}"
+      "viewAria": "Xem {{title}}",
+      "viewContract": "Xem hợp đồng"
     },
     "table": {
       "columns": "Cột",
@@ -415,6 +428,8 @@
       "extracted": "Giá trị AI đọc được (quyết định có cần Ban giám đốc duyệt): {{value}}",
       "editedByHand": "đã sửa tay",
       "confirm": "Xác nhận",
+      "confirmSave": "Xác nhận và lưu",
+      "more": "Thêm thao tác",
       "confirming": "Đang xác nhận…",
       "approve": "Duyệt",
       "approving": "Đang duyệt…",

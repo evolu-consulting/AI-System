@@ -22,6 +22,7 @@ import {
 } from "../components/ContractCells";
 import { DateFilterControl } from "../components/DateFilterControl";
 import { ExportButtons } from "../components/ExportButtons";
+import { QueueExtractDialog } from "../components/ExtractDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { useContractsList } from "../hooks/use-contracts-list";
 import { useUploadQueue } from "../hooks/use-upload-queue";
@@ -146,6 +147,7 @@ export function ContractsListPage() {
           </>
         }
       />
+      <QueueExtractDialog items={queue.items} />
       <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />
       {err && (
         <p role="alert" className="mb-3 text-sm text-late">

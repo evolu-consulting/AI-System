@@ -6,15 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
+import { showDraftSave } from "~/features/contract-approval/lib/approval";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { DeleteContractButton } from "~/features/contract-delete/components/DeleteContractButton";
 import { dealOf } from "~/features/contract-form/lib/deal";
-import { AskContractPanel } from "~/features/contract-source/components/AskContractPanel";
 import { SourceViewerContext } from "~/features/contract-source/components/QuoteLine";
 import { SourcePanel } from "~/features/contract-source/components/SourcePanel";
+import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
+import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -98,7 +99,6 @@ function ContractBody({
         : null,
     [c.has_source],
   );
-  const askable = c.status !== "extracting" && c.status !== "extract_failed";
   return (
     <SourceViewerContext.Provider value={viewer}>
       <div className="flex items-start gap-4 max-lg:flex-col">
@@ -113,9 +113,13 @@ function ContractBody({
               canSave={canSave}
               dirty={info.dirty}
               onReset={info.reset}
-              saveButton={saveButton}
+              saveButton={showDraftSave(ap.view, canSave) ? saveButton : null}
               approvalButtons={ap.buttons}
               approvalBusy={ap.busy}
+            />
+            <ExtractDialog
+              open={dialogOpen({ uploading: false, status: c.status })}
+              name={c.file?.name ?? titleOf(c)}
             />
             <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err} />
             {ap.section}
@@ -148,11 +152,7 @@ function ContractBody({
                 info={info}
               />
             )}
-            {askable && (
-              <div className="mt-4">
-                <AskContractPanel />
-              </div>
-            )}
+            {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
             <OriginalFileHost
               open={origOpen}
               contractId={id}
@@ -161,7 +161,7 @@ function ContractBody({
               appendices={c.appendices}
               onClose={() => setOrigOpen(false)}
             />
-            <AppendixPanel c={c} write={write} />
+            {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
             <ContractSourcing c={c} write={write} />
             <ContractLog contractId={id} status={c.status} />
             <HistoryPanel id={id} />

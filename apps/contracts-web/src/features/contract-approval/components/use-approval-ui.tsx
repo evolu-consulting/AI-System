@@ -11,7 +11,7 @@ import {
   type ProductLinkTarget,
 } from "~/features/product-links/components/ProductLinkDialog";
 import { useApproval } from "../hooks/use-approval";
-import { approvalView, showLinkDialog } from "../lib/approval";
+import { type ApprovalView, approvalView, showLinkDialog } from "../lib/approval";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 
 export type ApprovalUi = {
@@ -20,6 +20,7 @@ export type ApprovalUi = {
   busy: boolean;
   msg: string | null;
   err: string | null;
+  view: ApprovalView;
 };
 
 type LinkStep = { target: ProductLinkTarget; label: string | undefined };
@@ -86,5 +87,5 @@ export function useApprovalUi(o: {
       />
     </>
   );
-  return { buttons, section, busy: ap.busy !== null, msg: ap.msg, err: ap.err };
+  return { buttons, section, busy: ap.busy !== null, msg: ap.msg, err: ap.err, view: v };
 }

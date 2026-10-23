@@ -2,10 +2,13 @@
 // bằng thẻ `<a download>`.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PopMenu } from "~/components/shared/pop-menu";
 import { toast } from "~/components/shared/toast";
 import type { ExportFile } from "../lib/export-file";
 
 export type ExportFormat = "xlsx" | "csv";
+// ux-excel E1: MỘT nút "Xuất" + menu (Excel / CSV).
+const EXPORT_FORMATS: ExportFormat[] = ["xlsx", "csv"];
 
 function save(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -38,21 +41,23 @@ export function ExportButtons({ run }: { run: (f: ExportFormat) => Promise<Expor
     }
   }
   return (
-    <>
-      {(["xlsx", "csv"] as const).map((f) => (
-        <button
-          key={f}
-          type="button"
-          className="btn btn-outline btn-sm"
-          disabled={busy !== null}
-          aria-busy={busy === f}
-          onClick={() => void go(f)}
-        >
+    <PopMenu
+      ariaLabel={t("contracts.list.export.menu")}
+      triggerClass="btn btn-outline btn-sm"
+      disabled={busy !== null}
+      busy={busy !== null}
+      trigger={
+        <>
           <DownloadIcon />
-          {busy === f ? t("contracts.list.export.busy") : t(`contracts.list.export.${f}`)}
-        </button>
-      ))}
-    </>
+          {busy !== null ? t("contracts.list.export.busy") : t("contracts.list.export.menu")}
+        </>
+      }
+      items={EXPORT_FORMATS.map((f) => ({
+        key: f,
+        label: t(`contracts.list.export.${f}`),
+        onSelect: () => void go(f),
+      }))}
+    />
   );
 }
 
