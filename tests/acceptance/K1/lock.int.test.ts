@@ -2,7 +2,7 @@
 // Viết TRƯỚC code (làn đầy đủ: quyền, audit). Hạ tầng HD3 (hub-api THẬT, máy duyệt của gói, model giả). Người: A (editor + owner),
 // B (editor), H (owner). Tenant acme bật duyệt (mặc định HD3); ca "tắt duyệt" đặt cờ rồi trả lại.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { insContract } from "../HD1/_support/hd1";
+import { insContract, insItem } from "../HD1/_support/hd1";
 import {
   act,
   CBASE,
@@ -44,6 +44,42 @@ async function confirmed(n: number): Promise<string> {
   expect((await act(c, "B", id, "approve")).status).toBe(200);
   return id;
 }
+
+describe("HD-FR-100 · gắn SP sau khoá (luồng 'Xác nhận và lưu' khi tắt duyệt, prod 2026-10-24)", () => {
+  it("HĐ đã khoá: gắn SP lần đầu cho dòng chưa có SP ⇒ 200; đổi SP đã gắn ⇒ 409 CONTRACT_LOCKED", async () => {
+    const id = await confirmed(390);
+    expect((await lockRow(id)).locked_at).not.toBeNull();
+    const item = "e1000000-0000-4000-8000-000000000390";
+    await insItem(c.sql, T.acme, id, 1, { id: item, name: "Thùng carton K1-390" });
+    const url = `${CBASE}/${id}/product-links`;
+    const first = await c.call("B", "POST", url, {
+      links: [
+        {
+          item_id: item,
+          new_product: { name: "Thùng carton K1-390", unit: "thùng", group: "goods" },
+        },
+      ],
+    });
+    expect({ status: first.status, linked: first.json?.linked }).toEqual({
+      status: 200,
+      linked: 1,
+    });
+    const [p] = await c.sql<
+      { id: string }[]
+    >`select product_id::text as id from contracts.contract_items
+      where id = ${item}`;
+    expect(p?.id).toBeTruthy();
+    const again = await c.call("B", "POST", url, {
+      links: [
+        { item_id: item, new_product: { name: "SP khác K1-390", unit: "cái", group: "goods" } },
+      ],
+    });
+    expect({ status: again.status, code: errCode(again) }).toEqual({
+      status: 409,
+      code: "CONTRACT_LOCKED",
+    });
+  }, 90_000);
+});
 
 describe("HD-FR-100 · xác nhận = khoá", () => {
   it("bật duyệt: duyệt xong ⇒ locked_at/locked_by; DTO locked + has_document=false (không tệp)", async () => {

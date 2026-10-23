@@ -36,7 +36,12 @@ export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
           select c.id, c.deal, c.fields,
             c.status not in ('needs_review', 'extracting', 'extract_failed', 'rejected') as confirmed,
             exists (select 1 from contracts.stock_moves m where m.tenant_id = c.tenant_id and m.contract_id = c.id) as locked,
-            (${strict}::boolean and c.locked_at is not null) as clocked
+            -- HĐ đã khoá: chỉ cho gắn SP LẦN ĐẦU (dòng chưa có SP — nối danh mục, không sửa văn bản HĐ; luồng "Xác nhận và
+            -- lưu" khi tắt duyệt gắn SP ngay SAU lúc khoá); đổi SP đã gắn ⇒ khoá.
+            (${strict}::boolean and c.locked_at is not null and exists (
+              select 1 from jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb) as q (item_id uuid)
+              join contracts.contract_items i on i.tenant_id = c.tenant_id and i.contract_id = c.id and i.id = q.item_id
+              where i.product_id is not null)) as clocked
           from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
         ok as (select k.* from k where k.confirmed and not k.locked and not k.clocked),
         x as (select x.* from ok, jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb)
