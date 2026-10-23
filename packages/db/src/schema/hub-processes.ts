@@ -136,6 +136,8 @@ export const processDefs = hub.table("process_defs", {
   deletedAt: ts("deleted_at"),
   /** P-d1 (0036) · 1..365 ngày; NULL = run không hết hạn (PD-R24). */
   ttlDays: smallint("ttl_days").default(7),
+  /** contract-flow S1a (0058) · version def gói đã đồng bộ (`PackRunsPort.ensureDef`); NULL = def thường. */
+  packVersion: integer("pack_version"),
 });
 
 // ── Run (RLS T; không DELETE) ──
@@ -170,6 +172,9 @@ export const processRuns = hub.table("process_runs", {
   startedAt: ts("started_at").notNull().defaultNow(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
   finishedAt: ts("finished_at"),
+  /** contract-flow S1a (0058) · bản ghi gói của run (CHỈ `PackRunsPort.start` ghi; đã gắn thì không đổi). */
+  packKey: text("pack_key"),
+  packRecordId: uuid("pack_record_id"),
 });
 
 export const stageRuns = hub.table("stage_runs", {

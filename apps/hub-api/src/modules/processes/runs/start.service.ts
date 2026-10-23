@@ -10,6 +10,7 @@ import type {
 import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
@@ -168,7 +169,11 @@ export class StartService {
       inputs?: ProcessInputValue[];
     },
     /** N2-FR-01 · gói gắn run vào bản ghi trước rồi tự kick (`PackRuns.start`). */
-    o: { deferKick?: boolean } = {},
+    o: {
+      deferKick?: boolean;
+      /** contract-flow S1a · bản ghi gói của run — CHỈ `PackRunsPort.start` truyền (route công khai không). */
+      packRef?: { pack: string; recordId: string };
+    } = {},
   ): Promise<ProcessRunSummary> {
     const me = meOf(u);
     const userState = await this.d.config.user(u.userId);
@@ -183,6 +188,9 @@ export class StartService {
           input: req.input,
         });
         const r = await this.#insert(tx, u, { def, input: req.input, origin, inputs: req.inputs });
+        if (o.packRef)
+          await tx.execute(sql`update hub.process_runs set pack_key = ${o.packRef.pack},
+            pack_record_id = ${o.packRef.recordId} where id = ${r.runId} and tenant_id = ${u.tenantId}`);
         if (origin.originKind === "room") await this.#enqueueBlock(tx, r.runId, def);
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return {

@@ -8,7 +8,7 @@ const REQ = { process_key: "p", input: "x" };
 
 function harness(check: "ok" | "not_found" | "has_run", attach: boolean | Error) {
   const log: string[] = [];
-  const port: PackRunsPort = {
+  const port: Pick<PackRunsPort, "start" | "cancel" | "outcomes"> = {
     start: async () => {
       log.push("start");
       return { runId: "r1", kick: async () => void log.push("kick") };
@@ -17,7 +17,7 @@ function harness(check: "ok" | "not_found" | "has_run", attach: boolean | Error)
     outcomes: async () => [],
   };
   const d = {
-    bridge: { port },
+    bridge: { port: port as PackRunsPort },
     uow: { tenant: <T>(_w: unknown, fn: (r: null) => Promise<T>) => fn(null) },
     warn: () => {},
   };
