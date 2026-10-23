@@ -43,7 +43,8 @@ describe("HD-FR-31/32 · mở lượt duyệt + AI đọc bằng lời gọi mod
     });
     const a = await approval(c, "B", id);
     expect(a.json).toMatchObject({ run_id: runId, step: "level1", can_act: true });
-    expect((await approval(c, "H", id)).json?.can_act).toBe(false); // H chỉ thuộc owner (cấp 2)
+    // Người dùng 2026-10-23: H chỉ thuộc owner (cấp 2) cũng xác nhận được cấp 1 (Toàn quyền làm được cả bước 1).
+    expect((await approval(c, "H", id)).json?.can_act).toBe(true);
     const [u] = await c.sql<{ n: number; feature: string }[]>`select count(*)::int as n,
         min(feature) as feature from hub.usage_logs
       where tenant_id = ${T.acme} and user_id = ${PA.A.id} and feature = 'contracts.extract'`;

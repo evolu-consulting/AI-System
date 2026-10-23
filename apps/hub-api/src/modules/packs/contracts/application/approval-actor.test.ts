@@ -31,6 +31,21 @@ describe("approvalActor", () => {
     ).toMatchObject({ inLevel1: false, inLevel2: false });
   });
 
+  test("người thuộc Group cấp 2 (Toàn quyền) cũng xác nhận được cấp 1, dù không ở Group cấp 1", async () => {
+    const ids = { [L1]: "g1", [L2]: "g2" };
+    expect(await approvalActor(groups({ ids, mine: ["g2"], acts: [] }), who, S)).toMatchObject({
+      inLevel1: true,
+      inLevel2: true,
+    });
+    // phủ định: chỉ xem (không thuộc Group nào) vẫn không xác nhận được
+    expect(
+      await approvalActor(groups({ ids, mine: ["g9"], acts: ["read"] }), who, S),
+    ).toMatchObject({
+      inLevel1: false,
+      inLevel2: false,
+    });
+  });
+
   test("tenant chưa có Group duyệt ⇒ cấp 1 theo write, cấp 2 theo admin", async () => {
     const at = (acts: string[]) => approvalActor(groups({ acts }), who, S);
     expect(await at(["read", "write", "admin"])).toMatchObject({ inLevel1: true, inLevel2: true });
@@ -42,7 +57,8 @@ describe("approvalActor", () => {
 
   test("chỉ thiếu một Group ⇒ dự phòng đúng bước đó", async () => {
     const g = groups({ ids: { [L1]: "g1" }, mine: [], acts: ["read", "write", "admin"] });
-    expect(await approvalActor(g, who, S)).toMatchObject({ inLevel1: false, inLevel2: true });
+    // cấp 2 dự phòng theo admin ⇒ cũng xác nhận được cấp 1 (Toàn quyền làm được cả bước 1)
+    expect(await approvalActor(g, who, S)).toMatchObject({ inLevel1: true, inLevel2: true });
   });
 
   test("cổng không có actionsOf ⇒ không dự phòng (fail-closed)", async () => {

@@ -70,7 +70,8 @@ export function startApproval(d: ApprovalDeps) {
 const NO_ACTIONS: ReadonlySet<string> = new Set();
 
 /** Người duyệt theo Group cấu hình; Group đó KHÔNG có ở tenant (tenant bật feature tay, chưa có Group vai) ⇒ dựa quyền
- *  gói: cấp 1 = `write`, cấp 2 = `admin`. Group có mà user không thuộc ⇒ không duyệt (không dự phòng). */
+ *  gói: cấp 1 = `write`, cấp 2 = `admin`. Group có mà user không thuộc ⇒ không duyệt (không dự phòng). Người duyệt cấp 2
+ *  luôn được xác nhận cấp 1 (luật người gửi ở cấp 2 vẫn áp — `decide`). */
 export async function approvalActor(
   g: ApprovalGroups,
   who: PackWho,
@@ -85,11 +86,9 @@ export async function approvalActor(
     const id = ids.get(k);
     return id === undefined ? acts.has(fallback) : mine.has(id);
   };
-  return {
-    userId: who.userId,
-    inLevel1: has(s.level1GroupKey, "write"),
-    inLevel2: has(s.level2GroupKey, "admin"),
-  };
+  // Người dùng 2026-10-23: người duyệt cấp 2 ("Toàn quyền") cũng xác nhận được cấp 1 (không phải vào thêm Group cấp 1).
+  const inLevel2 = has(s.level2GroupKey, "admin");
+  return { userId: who.userId, inLevel1: has(s.level1GroupKey, "write") || inLevel2, inLevel2 };
 }
 
 const actorOf = (d: ApprovalDeps, who: PackWho, s: ApprovalSettings) =>
