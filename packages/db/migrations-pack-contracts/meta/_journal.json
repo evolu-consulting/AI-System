@@ -302,6 +302,13 @@
       "when": 1797600000000,
       "tag": "0047_cf_approval_flows",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1797700000000,
+      "tag": "0048_k1_contract_lock",
+      "breakpoints": true
     }
   ]
 }

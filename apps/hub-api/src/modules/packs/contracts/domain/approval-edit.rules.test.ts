@@ -1,4 +1,4 @@
-// Review HD3 S1: luật sửa trường trong / sau flow duyệt (thuần).
+// Review HD3 S1: luật sửa trường trong flow duyệt (thuần). CR-097 K1: HĐ đã duyệt do `lock.rules` khoá (D3-13 reopen bỏ).
 import { describe, expect, test } from "bun:test";
 import { editVerdict, needsRunPhase, DEFAULT_EDIT_POLICY as P } from "./approval-edit.rules";
 
@@ -10,17 +10,9 @@ const v = (
 ) => editVerdict({ status, changed, phase, policy });
 
 describe("editVerdict [S1]", () => {
-  test("Đã duyệt: trường tiền ⇒ reopen (D3-13, mặc định), locked khi chính sách khoá; trường khác ⇒ ok", () => {
-    expect(v("active", ["total_value"])).toBe("reopen");
-    expect(v("expiring", ["vat_rate"])).toBe("reopen");
-    expect(v("active", ["payment_terms"])).toBe("ok");
-    expect(v("active", ["total_value"], "none", { ...P, confirmed: "lock" })).toBe("locked");
-  });
-  test("M1d N-1 a · Đã duyệt: đổi tên/MST bên mua/bán ⇒ reopen (như trường tiền); khoá khi chính sách lock", () => {
-    for (const k of ["buyer_name", "buyer_tax_id", "supplier_name", "supplier_tax_id"])
-      expect(v("active", [k])).toBe("reopen");
-    expect(v("terminated", ["payment_terms", "buyer_tax_id"])).toBe("reopen");
-    expect(v("active", ["buyer_tax_id"], "none", { ...P, confirmed: "lock" })).toBe("locked");
+  test("CR-097 · HĐ đã duyệt: luật duyệt không còn mở lại (khoá cứng ở lock.rules) ⇒ ok", () => {
+    expect(v("active", ["total_value"])).toBe("ok");
+    expect(v("terminated", ["payment_terms", "buyer_tax_id"])).toBe("ok");
     expect(v("needs_review", ["buyer_tax_id"], "later")).toBe("ok");
   });
   test("trong flow: total_value sau cấp 1 ⇒ in_approval; ở cấp 1 ⇒ ok; run đã kết thúc ⇒ ok", () => {

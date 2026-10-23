@@ -19,9 +19,17 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
   return {
     lock: async (id): Promise<LockedContract | null> => {
       // V2-A · C3: cờ duyệt của tenant đọc cùng câu (không thêm câu) — tắt duyệt ⇒ sửa HĐ đã lưu không mở lại duyệt.
+      // CR-097 K1: cờ khoá (`locked_at`) đọc cùng câu.
       const rows = await tx.execute<
-        Raw & { fields: unknown; status: string; run_id: string | null; approval: boolean }
-      >(sql`select c.version, c.updated_at, c.fields, c.status, c.run_id, contracts.approval_on() as approval
+        Raw & {
+          fields: unknown;
+          status: string;
+          run_id: string | null;
+          approval: boolean;
+          locked: boolean;
+        }
+      >(sql`select c.version, c.updated_at, c.fields, c.status, c.run_id, contracts.approval_on() as approval,
+          c.locked_at is not null as locked
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`);
       const r = rows[0];
       return r
@@ -32,30 +40,19 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
             status: r.status,
             run_id: r.run_id,
             approval: r.approval,
+            locked: r.locked,
           }
         : null;
     },
     save: async (id, s): Promise<SavedContract> => {
-      // M1d · D3-13 · mở lại duyệt gộp trong CÙNG câu (HD-NFR-02 khoá: PATCH đúng 4 câu, kể cả khi đổi trường bên/tiền ⇒ reopen):
-      // lượt duyệt mới ở cấp 1 (người sửa = người bắt đầu) rồi gắn vào `run_id`. Không thêm event (HD1 đếm 1 `field_edited`).
-      const rows = await tx.execute<Raw>(sql`with a as (
-          insert into contracts.approvals (tenant_id, contract_id, status, started_by)
-          select ${tenantId}::uuid, ${id}::uuid, 'level1', ${s.actor}::uuid
-          where ${s.reopen === true} and not exists (select 1 from contracts.approvals x where x.tenant_id = ${tenantId}::uuid
-            and x.contract_id = ${id}::uuid and x.status in ('extracting', 'level1', 'level2'))
-          returning id),
-        u as (
-          update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now(),
-            -- HD3 D3-13 · mở lại duyệt: bỏ "Đã duyệt" + gỡ run cũ trong CÙNG câu (version tăng một lần)
-            status = case when ${s.reopen === true} then 'needs_review' else status end,
-            confirmed_at = case when ${s.reopen === true} then null else confirmed_at end,
-            confirmed_by = case when ${s.reopen === true} then null else confirmed_by end,
-            run_id = case when ${s.reopen === true} then (select a.id from a) else run_id end
+      // HD-NFR-02: PATCH đúng 4 câu. CR-097 K1: D3-13 (sửa ⇒ mở lại duyệt cùng câu) bỏ — mở lại là thao tác owner riêng.
+      const rows = await tx.execute<Raw>(sql`with u as (
+          update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now()
           where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and version = ${s.expected}::int
           returning id, version, updated_at),
         e as (
           insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-          select ${tenantId}::uuid, u.id, 'field_edited', ${s.actor}::uuid, ${JSON.stringify(s.reopen ? { ...editEventData(s.changes), approval_reopened: true } : editEventData(s.changes))}::jsonb
+          select ${tenantId}::uuid, u.id, 'field_edited', ${s.actor}::uuid, ${JSON.stringify(editEventData(s.changes))}::jsonb
           from u)
         select u.version, u.updated_at from u`);
       const r = rows[0];

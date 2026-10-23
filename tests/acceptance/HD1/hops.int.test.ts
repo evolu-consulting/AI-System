@@ -45,6 +45,7 @@ async function small() {
     id: cid(1),
     tenant: T.acme,
     title: "A",
+    status: "needs_review", // CR-097 K1: HĐ active bị khoá ⇒ PATCH đo trên HĐ Chờ duyệt
     fields: mkFields({ number: "N", notice_days: 30, buyer_representative: "Nguyễn Văn A" }),
     source: "# Điều 1",
   });

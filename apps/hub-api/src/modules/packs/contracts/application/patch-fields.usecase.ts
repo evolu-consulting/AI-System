@@ -3,7 +3,8 @@
 // ③ `applyEdits` trong RAM (giá trị y cũ ⇒ không đổi, trả bản hiện tại, không tăng version, không ghi) ④ một CTE UPDATE + INSERT
 // event `field_edited` ⑤ outbox `{contract, upsert}` = 4 câu cố định. Khoá `edited` giữ khi trích lại (`mergeFields`, HD2).
 // Review HD3 S1: luật `editVerdict` — trường rẽ nhánh khi HĐ đang qua duyệt sau cấp 1 ⇒ 409 `CONTRACT_IN_APPROVAL` (hỏi engine
-// giai đoạn run chỉ khi cần, +1 câu hub); trường tiền của HĐ đã duyệt ⇒ chính sách (mặc định 409 `CONTRACT_LOCKED`).
+// giai đoạn run chỉ khi cần, +1 câu hub). CR-097 K1 · HD-FR-100: HĐ đã khoá (`locked_at`) ⇒ trường pháp lý 409 `CONTRACT_LOCKED`
+// cho mọi người (`lockVerdict`, trước luật duyệt); chỉ trường vận hành (`notice_days`) sửa được. D3-13 (sửa ⇒ mở lại duyệt) bỏ.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import {
@@ -20,6 +21,7 @@ import {
   type FieldChange,
   type FieldValue,
 } from "../domain/fields.rules";
+import { lockVerdict } from "../domain/lock.rules";
 
 /** Hàng đã khoá: `fields` thô (jsonb) — `applyEdits` lấp đủ 23 khoá. */
 export type LockedContract = {
@@ -31,6 +33,8 @@ export type LockedContract = {
   run_id?: string | null;
   /** V2-A · C3: cờ duyệt của tenant (vắng ⇒ coi như bật). */
   approval?: boolean;
+  /** CR-097 K1 · `locked_at is not null` (vắng ⇒ chưa khoá). */
+  locked?: boolean;
 };
 export type SavedContract = { version: number; updated_at: string };
 
@@ -41,18 +45,8 @@ export type ContractFieldsRepo = {
   /** CTE: UPDATE `fields`, `version+1`, `updated_at=now()` (điều kiện `version = expected`) + INSERT event `field_edited`. */
   save(
     id: string,
-    s: {
-      fields: ContractFields;
-      changes: FieldChange[];
-      expected: number;
-      actor: string;
-      /** HD3 D3-13 · cùng câu: `needs_review`, bỏ `confirmed_*`, gỡ `run_id`; event `field_edited` có `approval_reopened`. */
-      reopen?: boolean;
-    },
+    s: { fields: ContractFields; changes: FieldChange[]; expected: number; actor: string },
   ): Promise<SavedContract>;
-  /** M3 · D3-13 · CÙNG tx sau `save(reopen)`: mở lượt duyệt mới ở cấp 1 (người sửa = người bắt đầu) + gắn `run_id` + event
-   *  `approval_started`. Vắng (fake cũ) ⇒ không mở. */
-  reopenApproval?(id: string, actor: string): Promise<void>;
 };
 
 export type PatchFieldsInput = {
@@ -71,12 +65,10 @@ export type PatchFieldsResult =
   | { kind: "stale"; current: { version: number }; updated_at: string }
   | { kind: "in_approval" | "locked" };
 
-/** HD3 · seam duyệt: giai đoạn run (engine) + chính sách + mở lại duyệt; vắng ⇒ hành vi HD1. */
+/** HD3 · seam duyệt: giai đoạn run (engine) + chính sách; vắng ⇒ hành vi HD1. */
 export type PatchApprovalGuard = {
   phase(who: PackWho, runId: string): Promise<RunPhase>;
   policy?: ApprovalEditPolicy;
-  /** Chính sách `reopen`: mở run duyệt mới sau COMMIT. */
-  restart?(who: PackWho, id: string): Promise<void>;
 };
 
 export type PatchFields = (
@@ -90,9 +82,10 @@ type Deps = {
   approval?: PatchApprovalGuard;
 };
 
-/** S1 · phán quyết sửa theo trạng thái + giai đoạn run (hỏi engine chỉ khi đổi trường rẽ nhánh trong flow). */
+/** K1 khoá cứng (mọi tenant) rồi S1 · phán quyết theo trạng thái + giai đoạn run (hỏi engine chỉ khi đổi trường rẽ nhánh). */
 async function verdictOf(d: Deps, who: PackWho, cur: LockedContract, changed: string[]) {
-  // V2-A · C3: tenant tắt duyệt ⇒ HĐ lưu là có hiệu lực, sửa thông tin không mở lại duyệt (HD-09).
+  if (lockVerdict({ locked: cur.locked === true, changed }) === "locked") return "locked";
+  // V2-A · C3: tenant tắt duyệt ⇒ không có lượt duyệt để lách.
   if (!d.approval || !cur.status || cur.approval === false) return "ok";
   const status = cur.status;
   const run = cur.run_id ?? null;
@@ -103,47 +96,33 @@ async function verdictOf(d: Deps, who: PackWho, cur: LockedContract, changed: st
 
 type Tx = KitTxRepos & { fields: ContractFieldsRepo };
 
-/** Phần trong tx: khoá → kiểm version → sửa trong RAM → luật duyệt → ghi (mở lại duyệt cùng câu nếu D3-13). */
+/** Phần trong tx: khoá hàng → kiểm version → sửa trong RAM → luật khoá + duyệt → ghi. */
 async function applyPatch(
   d: Deps,
   r: Tx,
   q: { who: PackWho; id: string; input: PatchFieldsInput },
-): Promise<{ res: PatchFieldsResult; reopened: boolean }> {
+): Promise<PatchFieldsResult> {
   const { who, id, input } = q;
   const cur = await r.fields.lock(id);
-  if (!cur) return { res: { kind: "not_found" }, reopened: false };
-  if (cur.version !== input.version) {
-    const res = {
-      kind: "stale" as const,
-      current: { version: cur.version },
-      updated_at: cur.updated_at,
-    };
-    return { res, reopened: false };
-  }
+  if (!cur) return { kind: "not_found" };
+  if (cur.version !== input.version)
+    return { kind: "stale", current: { version: cur.version }, updated_at: cur.updated_at };
   const { fields, changes } = applyEdits(cur.fields, input.fields);
-  if (changes.length === 0) {
-    const out = { id, version: cur.version, updated_at: cur.updated_at, fields };
-    return { res: { kind: "ok", out }, reopened: false };
-  }
-  const verdict = await verdictOf(
-    d,
-    who,
-    cur,
-    changes.map((c) => c.key),
-  );
-  if (verdict === "in_approval" || verdict === "locked")
-    return { res: { kind: verdict }, reopened: false };
-  const reopened = verdict === "reopen";
-  const s = { fields, changes, expected: cur.version, actor: who.userId };
-  const saved = await r.fields.save(id, reopened ? { ...s, reopen: true } : s);
-  if (reopened) await r.fields.reopenApproval?.(id, who.userId);
+  if (changes.length === 0)
+    return { kind: "ok", out: { id, version: cur.version, updated_at: cur.updated_at, fields } };
+  const changed = changes.map((c) => c.key);
+  const verdict = await verdictOf(d, who, cur, changed);
+  if (verdict !== "ok") return { kind: verdict };
+  const saved = await r.fields.save(id, {
+    fields,
+    changes,
+    expected: cur.version,
+    actor: who.userId,
+  });
   await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
-  return { res: { kind: "ok", out: { id, ...saved, fields } }, reopened };
+  return { kind: "ok", out: { id, ...saved, fields } };
 }
 
 export function patchFields(d: Deps): PatchFields {
-  return async (who, id, input) => {
-    const { res } = await d.uow.tenant(who, (r) => applyPatch(d, r, { who, id, input }));
-    return res;
-  };
+  return (who, id, input) => d.uow.tenant(who, (r) => applyPatch(d, r, { who, id, input }));
 }

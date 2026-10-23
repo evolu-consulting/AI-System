@@ -1,26 +1,10 @@
 // Review HD3 S1 (hard stop) · HD-FR-33/34: sửa trường không được lách duyệt cấp 2. Thuần (lớp 1).
 // - HĐ đang trong flow (run chưa kết thúc) đã qua cấp 1 ⇒ trường vào rẽ nhánh (`total_value`) bị khoá ⇒ `in_approval` (409).
 //   Ở cấp 1 (stage trích/kiểm) vẫn sửa được: rẽ nhánh đọc giá trị SAU cấp 1 (D3-02) — `allowLevel1` để điều phối đổi nếu cần.
-// - HĐ đã duyệt (active…) đổi trường tiền ⇒ chính sách `ConfirmedEditPolicy`. Người dùng chốt 2026-10-19 (D3-13): `reopen` = cho
-//   sửa, HĐ về `needs_review` (không còn "Đã duyệt"), mở run duyệt mới với giá trị mới; `lock` (409) giữ làm phương án dự phòng.
+// - CR-097 K1 (HD-FR-100): HĐ đã duyệt KHÔNG còn tự mở lại duyệt khi sửa trường tiền/bên (D3-13 bỏ) — khoá cứng do `lock.rules`
+//   quyết TRƯỚC luật này; muốn sửa thì owner "Mở lại" (HD-FR-104).
 
 export const BRANCH_FIELDS: ReadonlySet<string> = new Set(["total_value"]);
-export const MONEY_FIELDS: ReadonlySet<string> = new Set([
-  "total_value",
-  "vat_rate",
-  "vat_included",
-]);
-/**
- * M1d (security review N-1 a): trường bên (tên/MST bên mua, bên bán) quyết định đối tác người xem thấy (visible_party_keys) ⇒
- * đổi trên HĐ đã duyệt cũng mở lại duyệt như trường tiền (không tự đổi MST thành của đối tác khác mà giữ "Đã duyệt").
- */
-export const PARTY_FIELDS: ReadonlySet<string> = new Set([
-  "buyer_name",
-  "buyer_tax_id",
-  "supplier_name",
-  "supplier_tax_id",
-]);
-const REOPEN_FIELDS: ReadonlySet<string> = new Set([...MONEY_FIELDS, ...PARTY_FIELDS]);
 /** Trạng thái sau "Đã duyệt" (theo dõi hạn HD4). */
 export const CONFIRMED_STATUSES: ReadonlySet<string> = new Set([
   "active",
@@ -35,13 +19,12 @@ export const FLOW_STATUSES: ReadonlySet<string> = new Set([
   "needs_review",
 ]);
 
-export type ConfirmedEditPolicy = "lock" | "reopen";
-export type ApprovalEditPolicy = { confirmed: ConfirmedEditPolicy; allowLevel1: boolean };
-export const DEFAULT_EDIT_POLICY: ApprovalEditPolicy = { confirmed: "reopen", allowLevel1: true };
+export type ApprovalEditPolicy = { allowLevel1: boolean };
+export const DEFAULT_EDIT_POLICY: ApprovalEditPolicy = { allowLevel1: true };
 
 /** Giai đoạn run của HĐ: không có / đã kết thúc ⇒ `none`; ở stage cấp 1 ⇒ `level1`; còn lại ⇒ `later`. */
 export type RunPhase = "none" | "level1" | "later";
-export type EditVerdict = "ok" | "in_approval" | "locked" | "reopen";
+export type EditVerdict = "ok" | "in_approval";
 
 /** Có cần hỏi engine giai đoạn run không (tránh 1 câu thừa khi không đổi trường rẽ nhánh). */
 export const needsRunPhase = (status: string, hasRun: boolean, changed: readonly string[]) =>
@@ -53,8 +36,6 @@ export function editVerdict(i: {
   phase: RunPhase;
   policy: ApprovalEditPolicy;
 }): EditVerdict {
-  if (CONFIRMED_STATUSES.has(i.status) && i.changed.some((k) => REOPEN_FIELDS.has(k)))
-    return i.policy.confirmed === "lock" ? "locked" : "reopen";
   if (!FLOW_STATUSES.has(i.status) || !i.changed.some((k) => BRANCH_FIELDS.has(k))) return "ok";
   if (i.phase === "none") return "ok";
   if (i.phase === "level1" && i.policy.allowLevel1) return "ok";

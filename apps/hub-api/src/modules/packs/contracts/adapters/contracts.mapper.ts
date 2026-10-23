@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-AC12 · D-02 · D-10 · D-13 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 19 khoá, Facets, Detail).
+// HD-FR-07 · HD-AC12 · D-02 · D-10 · D-13 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 20 khoá — CR-097 thêm `locked`, Facets, Detail).
 // Thuần: không đọc DB. `bigint` về JSON là số (≤ 9e15 < 2^53); `timestamptz` về ISO UTC; facet lấy tới trần + 1 ⇒ cắt ở trần và
 // ghi `truncated`. Chi tiết: `fields` qua `fillFields` (đủ 23 khoá, bỏ khoá lạ khi ĐỌC).
 import type {
@@ -20,7 +20,9 @@ export type ContractFacetsDto = ContractFacets;
 export type ContractDetailDto = ContractDetail;
 
 /** Một phần tử `json_agg` của câu danh sách (thừa `ord`). */
-export type ListRowRaw = Omit<ContractListRow, "value" | "updated_at"> & {
+export type ListRowRaw = Omit<ContractListRow, "value" | "updated_at" | "locked"> & {
+  /** CR-097 K1 · vắng (hàng cũ / fake) ⇒ false. */
+  locked?: boolean;
   value: number | string | null;
   updated_at: string;
   ord?: number;
@@ -47,6 +49,7 @@ export function toContractListRow(r: ListRowRaw): ContractListRow {
     category_ids: r.category_ids ?? [],
     updated_at: new Date(r.updated_at).toISOString(),
     version: r.version,
+    locked: r.locked === true,
   };
 }
 
@@ -77,6 +80,9 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   milestones?: MilestoneRow[] | null;
   /** V2-G */
   ai_read?: ContractDetail["ai"] | null;
+  /** CR-097 K1 */
+  locked_at?: string | null;
+  locked_by?: string | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -131,6 +137,9 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     parent: r.parent ?? null,
     appendices: r.appendices ?? [],
     ai: r.ai_read ?? null,
+    locked_at: r.locked_at ? iso(r.locked_at) : null,
+    locked_by: r.locked_by ?? null,
+    has_document: r.file_id !== null,
   };
 }
 

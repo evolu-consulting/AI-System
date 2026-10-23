@@ -8,7 +8,9 @@ import { EXTRACT_MODEL } from "./adapters/ai-transport";
 import { packAssignees } from "./adapters/manage.members";
 import { manageRepo } from "./adapters/manage.repo";
 import { manageRoutes } from "./adapters/manage.routes";
+import { reopenRepo } from "./adapters/reopen.repo";
 import { assignOwner, editCommission, getHistory, summarize } from "./application/manage.usecase";
+import { reopenContract } from "./application/reopen-contract.usecase";
 
 const KEY = "contracts";
 
@@ -18,8 +20,10 @@ export function manageModule(
   d: { ai: AiClient; quota?: (tenantId: string) => Promise<void> },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, KEY, manageRepo));
+  const reopenUow = packTenantOnly(createPackUow(db, KEY, reopenRepo));
   const members = packAssignees(db, view, KEY);
   return manageRoutes(view, {
+    reopen: reopenContract({ uow: reopenUow }),
     history: getHistory({ uow }),
     assignees: members.list,
     assign: assignOwner({ uow, assignable: members.assignable }),

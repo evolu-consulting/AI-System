@@ -1,5 +1,5 @@
-// Review HD3 S1 · M1 · M2(a) · m4 · M3-decouple (luật giữ nguyên, kiểm trên máy trạng thái của gói): (1) D3-13 HĐ "Đã duyệt" sửa
-// trường tiền ⇒ mở lại duyệt (lượt mới, không còn "Đã duyệt"); trường khác không mở lại; (2) HĐ đang ở cấp 2 ⇒ PATCH `total_value`
+// Review HD3 S1 · M1 · M2(a) · m4 · M3-decouple (luật giữ nguyên, kiểm trên máy trạng thái của gói): (1) CR-097 K1 thay D3-13: HĐ
+// "Đã duyệt" bị khoá — sửa trường ⇒ 409 CONTRACT_LOCKED (owner mở lại: tests/acceptance/K1); (2) HĐ đang ở cấp 2 ⇒ PATCH `total_value`
 // 409 CONTRACT_IN_APPROVAL (ở cấp 1 vẫn sửa được — D3-02); (3) finalize đánh giá lại ngưỡng TRONG câu UPDATE: chưa qua cấp 2 mà
 // giá trị ≥ ngưỡng ⇒ không "Đã duyệt"; (4) đổi cài đặt duyệt ⇒ nhật ký trước/sau/người/lúc; (5) AC37b đổi Group cấp 2 ⇒ người
 // duyệt cấp 2 theo Group mới; (6) lỗi kỹ thuật lượt AI ⇒ `extract_failed`, không "Bị từ chối".
@@ -39,47 +39,27 @@ const settings = (body: Record<string, unknown>) =>
   c.call("A", "PUT", "/pack/contracts/approval-settings", body);
 
 describe("review S1 · sửa trường không lách cấp 2", () => {
-  it("D3-13 · HĐ Đã duyệt 245 tr sửa thành 900 tr ⇒ 200, về chờ duyệt, lượt mới (cấp 1 rồi BẮT BUỘC cấp 2); lịch sử duyệt cũ giữ", async () => {
+  it("CR-097 K1 (thay D3-13) · HĐ Đã duyệt sửa total_value / payment_terms ⇒ 409 CONTRACT_LOCKED; vẫn Đã duyệt, lượt cũ, không event", async () => {
     const id = await seedContract(c, 100);
     const { runId } = await toLevel1(c, id, 245_000_000);
     expect((await act(c, "B", id, "approve")).status).toBe(200);
     expect((await contractRow(c, id)).status).toBe("active");
-    const r = await patch(id, { total_value: 900_000_000 });
-    expect(r.status).toBe(200);
-    const row = await contractRow(c, id);
-    expect({
-      status: row.status,
-      confirmed: row.confirmed_at,
-      newRun: row.run_id !== runId && row.run_id !== null,
-    }).toEqual({ status: "needs_review", confirmed: null, newRun: true });
-    // Lượt cũ giữ nguyên "Đã duyệt"; lượt mới do người sửa (B) bắt đầu, ở cấp 1.
-    expect(await approvalRow(c, runId)).toMatchObject({ status: "done", decided_by: PA.B.id });
-    expect(await approvalRow(c, row.run_id as string)).toMatchObject({
-      status: "level1",
-      started_by: PA.B.id,
-    });
-    expect((await approval(c, "B", id)).json).toMatchObject({ step: "level1", can_act: true });
-    expect((await act(c, "B", id, "approve")).status).toBe(200);
-    expect((await approval(c, "H", id)).json).toMatchObject({ step: "level2", can_act: true });
-    expect((await contractRow(c, id)).status).toBe("needs_review"); // chưa "Đã duyệt" tới khi cấp 2 xong
-    const ev = await c.sql<{ type: string; reopened: boolean | null }[]>`select type,
-        (data->>'approval_reopened')::boolean as reopened from contracts.contract_events
-      where contract_id = ${id} and type in ('approved', 'field_edited', 'approval_started') order by id`;
-    expect(ev.map((e) => [e.type, e.reopened])).toEqual([
-      ["approval_started", null],
-      ["approved", null],
-      ["field_edited", true],
-    ]);
-  }, 90_000);
-
-  it("D3-13 · HĐ Đã duyệt sửa trường không phải tiền (payment_terms) ⇒ 200, vẫn active, không mở lại", async () => {
-    const id = await seedContract(c, 106);
-    const { runId } = await toLevel1(c, id, 245_000_000);
-    expect((await act(c, "B", id, "approve")).status).toBe(200);
-    expect((await patch(id, { payment_terms: "Thanh toán 30 ngày" })).status).toBe(200);
+    for (const f of [{ total_value: 900_000_000 }, { payment_terms: "Thanh toán 30 ngày" }]) {
+      const r = await patch(id, f);
+      expect({ f, status: r.status, code: errCode(r) }).toEqual({
+        f,
+        status: 409,
+        code: "CONTRACT_LOCKED",
+      });
+    }
     expect(await contractRow(c, id)).toMatchObject({ status: "active", run_id: runId });
+    expect(await approvalRow(c, runId)).toMatchObject({ status: "done", decided_by: PA.B.id });
+    const [ev] = await c.sql<
+      { n: number }[]
+    >`select count(*)::int as n from contracts.contract_events
+      where contract_id = ${id} and type = 'field_edited'`;
+    expect(ev?.n).toBe(0);
   }, 90_000);
-
   it("đang chờ cấp 2: PATCH total_value ⇒ 409 CONTRACT_IN_APPROVAL; ở cấp 1 ⇒ 200 (D3-02)", async () => {
     const id = await seedContract(c, 101);
     await toLevel1(c, id, 600_000_000);

@@ -417,7 +417,7 @@ describe("HD-AC05 · phân trang page/page_size/total (D-03; thay keyset cũ)", 
 });
 
 describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", () => {
-  it("HD-FR-07 · HĐ 1: 19 khoá ListRow, giá trị đúng; KHÔNG có fields/source_text/clauses/search_key/signer_keys", async () => {
+  it("HD-FR-07 · HĐ 1: 20 khoá ListRow (CR-097 thêm locked), giá trị đúng; KHÔNG có fields/source_text/clauses/search_key/signer_keys", async () => {
     await dataset();
     const row = (await listOf(c, P.tam, { q: "HD-001" })).json.items[0];
     expect(Object.keys(row).sort()).toEqual(
@@ -441,6 +441,7 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
         "updated_at",
         "value",
         "version",
+        "locked",
       ].sort(),
     );
     expect({ ...row, value: Number(row.value), updated_at: undefined }).toMatchObject({

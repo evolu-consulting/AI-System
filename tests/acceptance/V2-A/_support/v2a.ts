@@ -1,7 +1,8 @@
-// V2-A · hạ tầng int: như HD7 (DB sạch, hub-api THẬT, admin-api THẬT; HĐ dựng bằng owner hoặc qua `POST /contracts/manual`).
+// V2-A · hạ tầng int: như HD7 (DB sạch, hub-api THẬT, admin-api THẬT; HĐ dựng bằng owner; `manual` = HĐ chờ xác nhận + `POST /contracts/:id/review` từ CR-097).
 // Cờ duyệt (C3) đặt thẳng hàng `approval_settings.approval_enabled` của tenant và TRẢ LẠI sau file (không rò sang HD3). Đỏ NGAY
 // nếu thiếu migration 0022. Không chứa `it(...)`.
 import { expect } from "bun:test";
+import { insContract } from "../../HD1/_support/hd1";
 import {
   arrangeHd7,
   type CtxN1,
@@ -66,15 +67,42 @@ export type Manual = {
   commission_pct?: number | null;
   commission_fixed?: number | null;
 };
-/** `POST /contracts/manual` (editor) — thân thô (để test cả lỗi). */
+/** `POST /contracts/manual` (editor) — thân thô. CR-097: nhập tay đã ngừng ⇒ luôn 410 `MANUAL_CONTRACT_DISABLED`. */
 export const manualRaw = (c: CtxN1, b: Manual, p: Person = P.hoa) =>
   call(c, p, "POST", "/contracts/manual", {
     title: "HĐ V2-A",
     partner_name: "Đối tác V2",
     ...b,
   });
-export const manual = async (c: CtxN1, b: Manual, p: Person = P.hoa): Promise<Json> =>
-  ok(manualRaw(c, b, p));
+
+const fv = (value: unknown) => ({ value, quote: "", verified: true, edited: true });
+/** CR-097 (qc): HĐ dựng như HĐ tải lên chờ xác nhận (owner, `needs_review`, không tệp) rồi "Lưu" ở màn xác nhận
+ *  (`POST /contracts/:id/review` — cùng luật mốc mặc định / hoa hồng / cờ duyệt mà nhập tay dùng). Trả `{id, status, …}`. */
+export async function manual(c: CtxN1, b: Manual, p: Person = P.hoa): Promise<Json> {
+  const id = crypto.randomUUID();
+  const dl = b.deal ?? (b.direction === "purchase" ? "buy" : "sell");
+  const party = b.partner_name ?? "Đối tác V2";
+  await insContract(c.sql, {
+    id,
+    tenant: T.acme,
+    title: b.title ?? "HĐ V2-A",
+    status: "needs_review",
+    owner: p.id,
+    createdBy: p.id,
+    direction: dl === "buy" ? "purchase" : "sale",
+    fields: {
+      title: fv(b.title ?? "HĐ V2-A"),
+      [dl === "buy" ? "supplier_name" : "buyer_name"]: fv(party),
+      start_date: fv(b.start_date ?? null),
+      end_date: fv(b.end_date ?? null),
+      total_value: fv(b.total_value ?? null),
+    },
+  } as never);
+  const body: Json = { version: 1, deal: dl };
+  if (b.commission_pct !== undefined) body.commission_pct = b.commission_pct;
+  if (b.commission_fixed !== undefined) body.commission_fixed = b.commission_fixed;
+  return ok(call(c, p, "POST", `/contracts/${id}/review`, body));
+}
 
 export const detail = (c: CtxN1, id: string, p: Person = P.hoa): Promise<Json> =>
   ok(call(c, p, "GET", `/contracts/${id}`));

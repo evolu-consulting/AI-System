@@ -15,6 +15,7 @@ export * from "./followups";
 export * from "./handled";
 export * from "./ledger";
 export * from "./list";
+export * from "./lock";
 export * from "./manage";
 export * from "./milestones";
 export * from "./mywork";

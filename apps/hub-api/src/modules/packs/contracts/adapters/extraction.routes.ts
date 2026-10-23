@@ -1,7 +1,12 @@
 // HD-FR-24 · HD-FR-26 · HD2 plan: `POST /pack/contracts/contracts/:id/extract` (trích lại ⇒ 202) và
 // `POST /pack/contracts/contracts/manual` (nhập tay ⇒ 201). Guard `write` TRƯỚC đọc thân/tham số (viewer ⇒ 403, 0 SQL);
 // `:id` sai dạng ⇒ 400; tenant khác ⇒ 404 như không có; thân strict (khoá lạ như `tenant_id` ⇒ 400).
-import { CONTRACT_ERRORS, ManualContractRequestSchema, PRODUCT_ERRORS } from "@ai/contracts";
+import {
+  CONTRACT_ERRORS,
+  LOCK_ERRORS,
+  ManualContractRequestSchema,
+  PRODUCT_ERRORS,
+} from "@ai/contracts";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -23,6 +28,8 @@ export const MANUAL_BODY_MAX_BYTES = 512 * 1024;
 export type ExtractionRoutesDeps = {
   requestExtract: RequestExtract;
   createManual: CreateManual;
+  /** CR-097 decision 1: vắng/false ⇒ `POST /contracts/manual` 410 (mặc định). Không có cờ môi trường bật lại. */
+  manualEnabled?: boolean;
   /** HD3 · #221 · trần thao tác AI theo tenant/ngày (vắng ⇒ không giới hạn). */
   quota?: (tenantId: string) => Promise<void>;
 };
@@ -78,9 +85,20 @@ export function extractionRoutes(
   const r = new Hono<PackGuardVars>();
   const write = packGuard(view, KEY, "write");
   // Khai trước mọi `/contracts/:id` có cùng phương thức (không có) — `manual` không phải uuid nên không lẫn với `:id`.
+  // CR-097 decision 1: tạo HĐ nhập tay mới đã NGỪNG (HĐ phải có văn bản) ⇒ 410 `MANUAL_CONTRACT_DISABLED` sau guard quyền, trước
+  // đọc thân. Đường code `createManual` giữ cho lát Giao dịch (G1) — bật lại bằng `manualEnabled: true`.
   r.post(
     "/contracts/manual",
     write,
+    async (_c, next) => {
+      if (d.manualEnabled !== true)
+        throw new AppError(
+          "MANUAL_CONTRACT_DISABLED",
+          LOCK_ERRORS.MANUAL_CONTRACT_DISABLED,
+          "Hợp đồng phải có văn bản — nhập tay đã ngừng",
+        );
+      await next();
+    },
     bodyLimit({ maxSize: MANUAL_BODY_MAX_BYTES, onError: () => Promise.reject(tooLarge()) }),
     async (c) => {
       const body = parseWith(ManualContractRequestSchema, await readJson(c));

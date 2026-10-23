@@ -53,7 +53,11 @@ export function patchReply(res: PatchFieldsResult): PatchFieldsOk {
       "Contract is in approval; this field is locked",
     );
   if (res.kind === "locked")
-    throw new AppError("CONTRACT_LOCKED", 409, "Approved contract; money fields are locked");
+    throw new AppError(
+      "CONTRACT_LOCKED",
+      409,
+      "Confirmed contract is locked; only the owner can reopen it",
+    );
   if (res.kind !== "stale") throw appError("NOT_FOUND");
   throw new AppError("CONTRACT_STALE", CONTRACT_ERRORS.CONTRACT_STALE, "Contract was modified", {
     current: res.current,

@@ -333,19 +333,20 @@ describe("V2-G · lỗi ⇒ không ghi gì (một tx)", () => {
 });
 
 describe("V2-G · chi tiết trả product_id / component_ids từng dòng + `ai`", () => {
-  it("dòng đã gắn trả id SP + thành phần; HĐ nhập tay không có `ai`", async () => {
+  // CR-097 (qc): nhập tay đã ngừng ⇒ HĐ chưa AI đọc dựng bằng owner, gắn SP qua màn xác nhận.
+  it("dòng đã gắn trả id SP + thành phần; HĐ chưa AI đọc không có `ai`", async () => {
     await arrange(false);
     const tok = await makeProduct(c, P.hoa, { name: "USB Token", group: "goods" });
-    const out = await call(c, P.hoa, "POST", "/contracts/manual", {
-      title: "HĐ tay",
-      partner_name: "ĐT",
+    const s = await seedReview(c, 3, {
       deal: "sell",
-      items: [
-        { name: "Token", qty: 1, unit_price: 1, product_id: tok.id, component_ids: tok.comps },
-        { name: "Chưa gắn" },
-      ],
+      items: [{ name: "Token", qty: 1, unit_price: 1 }, { name: "Chưa gắn" }],
     });
-    const x = await detail(c, out.json.id);
+    const put = await call(c, P.hoa, "PUT", `/contracts/${s.id}/items/${s.items[0]}/product`, {
+      product_id: tok.id,
+      component_ids: tok.comps,
+    });
+    expect(put.status).toBe(200);
+    const x = await detail(c, s.id);
     expect(x.items.map((i: Json) => [i.product_id, i.component_ids])).toEqual([
       [tok.id, tok.comps],
       [null, null],

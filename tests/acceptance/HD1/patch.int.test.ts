@@ -31,10 +31,24 @@ const patch = (p: Who, id: string, body: unknown) =>
 const base = () =>
   mkFields({ total_value: 500_000_000, number: "HD-1", notice_days: 30 }, { quote: "Điều 5" });
 
+// CR-097 K1: HĐ đã xác nhận (active) bị khoá ⇒ PATCH trường pháp lý 409 (tests/acceptance/K1). Sửa tay ở đây là HĐ Chờ duyệt.
 async function arrangeOne(extra: Partial<CRow> = {}) {
   await arrange(c);
-  await insContract(c.sql, { id: cid(1), tenant: T.acme, title: "HĐ A", fields: base(), ...extra });
-  await insContract(c.sql, { id: cid(2), tenant: T.beta, title: "HĐ B", fields: base() });
+  await insContract(c.sql, {
+    id: cid(1),
+    tenant: T.acme,
+    title: "HĐ A",
+    status: "needs_review",
+    fields: base(),
+    ...extra,
+  });
+  await insContract(c.sql, {
+    id: cid(2),
+    tenant: T.beta,
+    title: "HĐ B",
+    status: "needs_review",
+    fields: base(),
+  });
 }
 type State = {
   version: number;

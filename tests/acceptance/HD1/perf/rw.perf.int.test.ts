@@ -47,6 +47,9 @@ function prepare(): Promise<void> {
       >`select id from contracts.contracts where tenant_id = ${T.acme} and kind = 'contract' order by id limit ${4 * W}`
     ).map((r) => r.id);
     expect(ids.length).toBe(4 * W);
+    // CR-097 K1: HĐ đã xác nhận bị khoá (PATCH 409) ⇒ cửa sổ đo về Chờ duyệt (không khoá) để đo đường ghi.
+    await c.sql`update contracts.contracts set status = 'needs_review', locked_at = null, locked_by = null
+      where tenant_id = ${T.acme} and id = any(${ids}::uuid[])`;
   })();
   return ready;
 }

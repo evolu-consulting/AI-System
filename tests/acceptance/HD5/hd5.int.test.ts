@@ -73,12 +73,12 @@ const item = (cidv: string, ord: number, name: string, price: number, code: stri
     values (${T.acme}, ${cidv}, ${ord}, ${code}, ${name}, ${price})`;
 
 describe("HD-FR-51 · danh sách + chi tiết có phụ lục", () => {
-  it("danh sách: hàng phụ lục có parent_id và `parents` liệt kê HĐ gốc một lần; ListRow vẫn 19 khoá", async () => {
+  it("danh sách: hàng phụ lục có parent_id và `parents` liệt kê HĐ gốc một lần; ListRow 20 khoá (CR-097 thêm locked)", async () => {
     await family();
     const r = await listOf(c, P.tam);
     expect(r.status).toBe(200);
     expect(r.json.parents).toEqual([{ id: cid(1), title: "HĐ gốc", number: "01/2026/HĐMB-PN" }]);
-    expect(Object.keys(r.json.items[0]).length).toBe(19);
+    expect(Object.keys(r.json.items[0]).length).toBe(20);
     const only = await listOf(c, P.tam, { kind: "contract" });
     expect(only.json.parents).toEqual([]);
   });

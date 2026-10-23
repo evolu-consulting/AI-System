@@ -68,7 +68,8 @@ describe("gap-a1 · sửa hoa hồng % sau khi lưu", () => {
   it("HĐ Giới thiệu: đổi % + event, version+1; version cũ ⇒ 409; không phải Giới thiệu ⇒ 422; viewer 403; tenant khác 404", async () => {
     await arrangeV2a(c);
     const r = await seedReview(c, 2, { deal: "referral" });
-    await c.sql`update contracts.contracts set commission_pct = 5, status = 'active' where id = ${r.id}`;
+    // CR-097 K1: hoa hồng sửa được khi HĐ chưa khoá (Chờ duyệt); HĐ đã xác nhận ⇒ 409 CONTRACT_LOCKED (cuối ca).
+    await c.sql`update contracts.contracts set commission_pct = 5 where id = ${r.id}`;
     const v = (await row(r.id)).version;
     const ok = await as(P.hoa, "PUT", `/contracts/${r.id}/commission`, {
       version: v,
@@ -116,6 +117,13 @@ describe("gap-a1 · sửa hoa hồng % sau khi lưu", () => {
         })
       ).status,
     ).toBe(404);
+    expect((await row(r.id)).pct).toBe(7.5);
+    await c.sql`update contracts.contracts set status = 'active' where id = ${r.id}`;
+    const locked = await as(P.hoa, "PUT", `/contracts/${r.id}/commission`, {
+      version: v + 1,
+      commission_pct: 2,
+    });
+    expect([locked.status, locked.json.error?.code]).toEqual([409, "CONTRACT_LOCKED"]);
     expect((await row(r.id)).pct).toBe(7.5);
   });
 });

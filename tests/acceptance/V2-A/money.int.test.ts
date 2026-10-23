@@ -85,7 +85,7 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
     expect((await rowsOf(c.sql, out.id)).length).toBe(0);
   });
 
-  it("HD-09 · tenant tắt duyệt: sửa giá trị HĐ đã lưu không mở lại duyệt (vẫn active)", async () => {
+  it("HD-09 · CR-097 K1: tenant tắt duyệt: HĐ đã lưu (xác nhận) bị khoá ⇒ sửa giá trị 409 CONTRACT_LOCKED, vẫn active", async () => {
     await v2();
     const out = await manual(c, { deal: "sell", total_value: 1_000 });
     const x = await detail(c, out.id);
@@ -93,9 +93,9 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
       version: x.version,
       fields: { total_value: 2_000 },
     });
-    expect(p.status).toBe(200);
+    expect([p.status, p.json?.error?.code]).toEqual([409, "CONTRACT_LOCKED"]);
     const y = await detail(c, out.id);
-    expect([y.status, y.value]).toEqual(["active", 2_000]);
+    expect([y.status, y.value, y.locked]).toEqual(["active", 1_000, true]);
   });
 });
 
@@ -121,7 +121,7 @@ describe("V2-A · 5.4c hoa hồng (Giới thiệu)", () => {
     ]);
   });
 
-  it("hoa hồng cho HĐ Bán / cả % lẫn cố định / deal lệch direction ⇒ 400, không tạo HĐ", async () => {
+  it("CR-097: nhập tay đã ngừng ⇒ mọi thân (kể cả sai) 410, không tạo HĐ", async () => {
     await v2();
     const r = [
       await manualRaw(c, { deal: "sell", commission_pct: 5 }),
@@ -130,7 +130,7 @@ describe("V2-A · 5.4c hoa hồng (Giới thiệu)", () => {
       await manualRaw(c, {}),
       await manualRaw(c, { deal: "referral", commission_pct: 12.345 }),
     ];
-    expect(r.map((x) => x.status)).toEqual([400, 400, 400, 400, 400]);
+    expect(r.map((x) => x.status)).toEqual([410, 410, 410, 410, 410]);
     const [n] = await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.contracts`;
     expect(n?.n).toBe(0);
   });

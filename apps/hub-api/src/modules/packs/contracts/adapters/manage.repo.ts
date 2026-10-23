@@ -43,9 +43,14 @@ export function manageRepo(tx: Tx, tenantId: string): { manage: ManageRepo } {
 
       lockCommission: async (id) => {
         const rows = await tx.execute<
-          Raw & { deal: string | null; status: string; commission_pct: string | number | null }
-        >(sql`select c.version, c.updated_at, c.deal, c.status, c.commission_pct from contracts.contracts c
-          where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`);
+          Raw & {
+            deal: string | null;
+            status: string;
+            commission_pct: string | number | null;
+            locked: boolean;
+          }
+        >(sql`select c.version, c.updated_at, c.deal, c.status, c.commission_pct, c.locked_at is not null as locked
+          from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`);
         const r = rows[0];
         return r
           ? {
@@ -54,6 +59,7 @@ export function manageRepo(tx: Tx, tenantId: string): { manage: ManageRepo } {
               deal: r.deal,
               status: r.status,
               commission_pct: num(r.commission_pct),
+              locked: r.locked,
             }
           : null;
       },

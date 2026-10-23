@@ -1,7 +1,7 @@
 // HD3 security re-verify (5cf3286d) · M3-decouple (luật giữ nguyên trên máy trạng thái của gói): (1) Medium TOCTOU — PATCH cấp 1
 // giữ khoá hàng và nâng `total_value` lên 900 tr trong lúc `finalize` chạy ⇒ finalize chờ khoá rồi đánh giá lại điều kiện cấp 2
-// trên hàng mới ⇒ 0 hàng, HĐ KHÔNG "Đã duyệt"; (2) Low — mở lại duyệt (D3-13) không bao giờ để HĐ mồ côi: lượt mới mở TRONG cùng tx
-// với PATCH (lỗi ⇒ cả PATCH rollback); (3) Low — quyết cấp 2 hợp lệ của người KHÁC người bắt đầu được tính là đã qua cấp 2, để
+// trên hàng mới ⇒ 0 hàng, HĐ KHÔNG "Đã duyệt"; (2) Low — mở lại (CR-097 K1 owner `reopen`, thay D3-13) không bao giờ để HĐ mồ côi: lượt mới
+// mở TRONG cùng câu với Mở lại (lỗi ⇒ cả Mở lại rollback); (3) Low — quyết cấp 2 hợp lệ của người KHÁC người bắt đầu được tính là đã qua cấp 2, để
 // finalize không từ chối nhầm HĐ ≥ ngưỡng.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Db } from "@ai/db";
@@ -76,13 +76,12 @@ describe("re-verify Medium · TOCTOU finalize ↔ PATCH", () => {
   }, 60_000);
 });
 
-describe("re-verify Low · mở lại duyệt không mồ côi (D3-13)", () => {
-  it("mở lượt mới lỗi giữa chừng ⇒ PATCH rollback (HĐ vẫn Đã duyệt, lượt cũ); hết lỗi ⇒ PATCH mở lượt cấp 1 do người sửa (B) bắt đầu", async () => {
+describe("re-verify Low · mở lại không mồ côi (CR-097 K1 thay D3-13: owner Mở lại)", () => {
+  it("mở lượt mới lỗi giữa chừng ⇒ Mở lại rollback (HĐ vẫn Đã duyệt + khoá, lượt cũ); hết lỗi ⇒ lượt cấp 1 do owner (A) bắt đầu", async () => {
     const id = await seedContract(c, 201);
     const { runId } = await toLevel1(c, id, 245_000_000);
     expect((await act(c, "B", id, "approve")).status).toBe(200);
-    const d = (await c.call("B", "GET", `${CBASE}/${id}`)).json;
-    const body = { version: d.version, fields: { total_value: 900_000_000 } };
+    const body = { reason: "Sai giá trị" };
     // Giả lập lỗi khi mở lượt duyệt mới (chèn hàng `approvals` hỏng).
     await c.sql.unsafe(`create or replace function contracts.m3_boom() returns trigger language plpgsql
       as $$ begin raise exception 'm3 boom'; end $$`);
@@ -90,13 +89,13 @@ describe("re-verify Low · mở lại duyệt không mồ côi (D3-13)", () => {
       "create trigger m3_boom before insert on contracts.approvals for each row execute function contracts.m3_boom()",
     );
     try {
-      const bad = await c.call("B", "PATCH", `${CBASE}/${id}/fields`, body);
+      const bad = await c.call("A", "POST", `${CBASE}/${id}/reopen`, body);
       expect(bad.status).toBe(500);
       expect(await contractRow(c, id)).toMatchObject({ status: "active", run_id: runId });
     } finally {
       await c.sql.unsafe("drop trigger if exists m3_boom on contracts.approvals");
     }
-    const p = await c.call("B", "PATCH", `${CBASE}/${id}/fields`, body);
+    const p = await c.call("A", "POST", `${CBASE}/${id}/reopen`, body);
     expect(p.status).toBe(200);
     const row = await contractRow(c, id);
     expect({
@@ -104,7 +103,7 @@ describe("re-verify Low · mở lại duyệt không mồ côi (D3-13)", () => {
       fresh: row.run_id !== runId,
       status: row.status,
     }).toEqual({ hasRun: true, fresh: true, status: "needs_review" });
-    expect((await approvalRow(c, row.run_id as string)).started_by).toBe(PA.B.id);
+    expect((await approvalRow(c, row.run_id as string)).started_by).toBe(PA.A.id);
     expect((await approval(c, "H", id)).json?.step).toBe("level1");
   }, 90_000);
 });

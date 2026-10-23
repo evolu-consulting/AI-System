@@ -84,6 +84,11 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   milestones: z.array(MilestoneSchema).max(MILESTONES_MAX),
   /** V2-G: phần AI đọc (loại đoán, trường chưa chắc, tóm tắt 5 mục, mốc tìm thấy); HĐ nhập tay / chưa đọc ⇒ null. */
   ai: AiReadSchema.nullable(),
+  /** CR-097 K1 · HD-FR-100: lúc/người khoá (= xác nhận); `locked` (từ ListRow) = `locked_at !== null`. */
+  locked_at: IsoDateTime.nullable(),
+  locked_by: z.uuid().nullable(),
+  /** CR-097 decision 1: HĐ có tệp văn bản gốc (`file_id`); false ⇒ HĐ nhập tay cũ, UI nhãn "Chưa có văn bản". */
+  has_document: z.boolean(),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

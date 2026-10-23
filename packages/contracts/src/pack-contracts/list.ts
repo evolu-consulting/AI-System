@@ -108,6 +108,8 @@ export const ContractListRowSchema = z.strictObject({
   category_ids: z.array(z.uuid()).max(50),
   updated_at: IsoDateTime,
   version: z.number().int().min(1),
+  /** CR-097 K1 · HD-FR-100: HĐ đã xác nhận ⇒ khoá (trường pháp lý chỉ đọc). ListRow 20 khoá. */
+  locked: z.boolean(),
 });
 export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 

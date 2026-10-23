@@ -22,6 +22,8 @@ export type CommissionLock = {
   deal: string | null;
   status: string;
   commission_pct: number | null;
+  /** CR-097 K1 · HĐ đã khoá ⇒ hoa hồng (điều khoản tiền) chỉ đọc. Vắng (fake cũ) ⇒ chưa khoá. */
+  locked?: boolean;
 };
 
 export type ManageRepo = {
@@ -63,6 +65,7 @@ export type CommissionResult =
   | { kind: "ok"; version: number; commission_pct: number | null }
   | { kind: "not_found" }
   | { kind: "not_allowed" }
+  | { kind: "locked" }
   | { kind: "stale"; current: { version: number }; updated_at: string };
 export type EditCommission = (
   who: PackWho,
@@ -76,6 +79,7 @@ export const editCommission =
       const c = await r.manage.lockCommission(id);
       if (!c) return { kind: "not_found" };
       if (c.deal !== "referral" || UNREADY.has(c.status)) return { kind: "not_allowed" };
+      if (c.locked === true) return { kind: "locked" };
       if (c.version !== input.version)
         return { kind: "stale", current: { version: c.version }, updated_at: c.updated_at };
       const s = await r.manage.saveCommission(

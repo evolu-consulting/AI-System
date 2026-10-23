@@ -124,7 +124,7 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
       coalesce((select json_agg(r order by r.ord) from (
         select c.id, c.kind, c.parent_id, c.title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
           c.seller_signer, c.buyer_signer, c.value, c.end_date, c.action_deadline, c.owner_user_id, c.updated_at, c.version,
-          c.category_ids[1:50] as category_ids,
+          c.category_ids[1:50] as category_ids, c.locked_at is not null as locked,
           pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
@@ -281,7 +281,8 @@ async function detail(
             from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id
             order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
       'deal', c.deal, 'commission_pct', c.commission_pct, 'commission_fixed', c.commission_fixed,
-      'start_date', c.start_date, 'milestones', ${milestonesOf}, 'ai_read', c.ai_read
+      'start_date', c.start_date, 'milestones', ${milestonesOf}, 'ai_read', c.ai_read,
+      'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by
     ) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
