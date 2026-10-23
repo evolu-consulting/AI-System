@@ -14,15 +14,16 @@ import type { CellTab, RepSel, SectionId, SettingsData } from "../lib/types";
 import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
+import { FlowPane } from "./FlowPane";
 import { RepPane } from "./RepPane";
 import { ScoutPane } from "./ScoutPane";
 import { SettingsHeader } from "./SettingsHeader";
 
-const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout"];
+const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
 
 /** Mục có chấm cam "đã khác mặc định"? Dò giá lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
-  if (!vsDef || k === "scout") return false;
+  if (!vsDef || k === "scout" || k === "flow") return false;
   return k === "co" ? vsDef.company : k === "biz" ? vsDef.biz : repChanged(vsDef);
 }
 
@@ -135,7 +136,8 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
             <LoadState loading={loading} error={error} retry={retry} />
 
             {sec === "scout" && <ScoutPane />}
-            {sec !== "scout" && draft && saved && defaults && (
+            {sec === "flow" && <FlowPane owner={owner} />}
+            {sec !== "scout" && sec !== "flow" && draft && saved && defaults && (
               <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
                 {sec === "co" && (
                   <>
