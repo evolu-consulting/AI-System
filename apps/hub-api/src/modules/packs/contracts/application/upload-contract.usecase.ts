@@ -17,6 +17,7 @@ import {
 import {
   type ContractFileStore,
   type ExtractionStarter,
+  type NewUploadedContract,
   type UploadCounter,
   type UploadDays,
   UploadError,
@@ -56,8 +57,17 @@ export type UploadContractInput = {
   title: string;
   kind: "contract" | "appendix";
   parentId: string | null;
+  /** CR-097 K2 · HD-FR-101: "Tải bản cập nhật" cho HĐ này ⇒ nháp v(n+1) cùng chuỗi (`kind`/`parentId` bỏ qua, lấy theo bản cũ). */
+  supersedes?: string;
 };
-export type UploadContractResult = { id: string; status: UploadStatus; version: number };
+export type UploadContractResult = {
+  id: string;
+  status: UploadStatus;
+  version: number;
+  version_no?: number;
+  root_id?: string;
+  supersedes_id?: string;
+};
 export type UploadContract = (i: UploadContractInput) => Promise<UploadContractResult>;
 
 /** Loại tệp theo nội dung; zip chỉ đọc central directory khi 4 byte đầu là `PK\x03\x04`. */
@@ -74,7 +84,8 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
   return async (i) => {
     const type = sniffUpload(i.bytes, d.zipNames, i.name);
     if (!type) throw new UploadError("FILE_TYPE");
-    if ((i.kind === "appendix") !== (i.parentId !== null)) throw new UploadError("PARENT_INVALID");
+    if (!i.supersedes && (i.kind === "appendix") !== (i.parentId !== null))
+      throw new UploadError("PARENT_INVALID");
     const at = now();
     const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
     await takeQuota(d, i, days, at);
@@ -135,7 +146,7 @@ function persist(
   s: Stored,
 ): Promise<UploadContractResult & { approvalId: string | null }> {
   return d.uow.tenant(i.who, async (r) => {
-    const out = await r.upload.insert({
+    const row: NewUploadedContract = {
       id: d.newId(),
       fileRowId: d.newId(),
       org: s.org,
@@ -153,7 +164,10 @@ function persist(
       sourceText: s.text.ok ? s.text.markdown : null,
       userId: i.who.userId,
       approvalId: s.text.ok ? s.approvalId : null,
-    });
+    };
+    const out = i.supersedes
+      ? await r.upload.insertVersion(row, i.supersedes)
+      : await r.upload.insert(row);
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
     return { ...out, approvalId: s.text.ok ? s.approvalId : null };
   });

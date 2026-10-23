@@ -1,4 +1,5 @@
-// HD-FR-07 · HD-AC12 · D-02 · D-10 · D-13 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 20 khoá — CR-097 thêm `locked`, Facets, Detail).
+// HD-FR-07 · HD-AC12 · D-02 · D-10 · D-13 · HD1 plan §1: hàng SQL (json) → DTO `@ai/contracts` (ListRow 22 khoá — CR-097 K1 `locked`, K2 `version_no` +
+// `versions_count`; Facets, Detail).
 // Thuần: không đọc DB. `bigint` về JSON là số (≤ 9e15 < 2^53); `timestamptz` về ISO UTC; facet lấy tới trần + 1 ⇒ cắt ở trần và
 // ghi `truncated`. Chi tiết: `fields` qua `fillFields` (đủ 23 khoá, bỏ khoá lạ khi ĐỌC).
 import type {
@@ -10,9 +11,11 @@ import type {
   ContractItem,
   ContractListRow,
   ContractParentRef,
+  ContractVersionRef,
 } from "@ai/contracts";
 import type { MilestoneRow } from "../application/milestones.ports";
 import { fillFields } from "../domain/fields.rules";
+import { currentOf } from "../domain/versions.rules";
 import { milestonesView } from "./milestones.mapper";
 
 export type ContractListRowDto = ContractListRow;
@@ -20,9 +23,15 @@ export type ContractFacetsDto = ContractFacets;
 export type ContractDetailDto = ContractDetail;
 
 /** Một phần tử `json_agg` của câu danh sách (thừa `ord`). */
-export type ListRowRaw = Omit<ContractListRow, "value" | "updated_at" | "locked"> & {
+export type ListRowRaw = Omit<
+  ContractListRow,
+  "value" | "updated_at" | "locked" | "version_no" | "versions_count"
+> & {
   /** CR-097 K1 · vắng (hàng cũ / fake) ⇒ false. */
   locked?: boolean;
+  /** CR-097 K2 · vắng ⇒ 1 (HĐ một phiên bản). */
+  version_no?: number;
+  versions_count?: number;
   value: number | string | null;
   updated_at: string;
   ord?: number;
@@ -50,6 +59,8 @@ export function toContractListRow(r: ListRowRaw): ContractListRow {
     updated_at: new Date(r.updated_at).toISOString(),
     version: r.version,
     locked: r.locked === true,
+    version_no: r.version_no ?? 1,
+    versions_count: r.versions_count ?? 1,
   };
 }
 
@@ -83,6 +94,13 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   /** CR-097 K1 */
   locked_at?: string | null;
   locked_by?: string | null;
+  /** CR-097 K2 */
+  root_id?: string;
+  superseded_at?: string | null;
+  superseded_by?: string | null;
+  versions?:
+    | (Omit<ContractVersionRef, "total_value"> & { total_value: number | string | null })[]
+    | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -140,6 +158,24 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     locked_at: r.locked_at ? iso(r.locked_at) : null,
     locked_by: r.locked_by ?? null,
     has_document: r.file_id !== null,
+    ...chainOf(r),
+  };
+}
+
+/** CR-097 K2: chuỗi phiên bản của chi tiết; bản hiện hành theo `currentOf` (bản chưa bị thay nhỏ nhất). */
+function chainOf(r: DetailRaw) {
+  const versions = (r.versions ?? []).map((v) => ({
+    ...v,
+    superseded_at: v.superseded_at ? iso(v.superseded_at) : null,
+    total_value: num(v.total_value),
+  }));
+  const cur = currentOf(versions.map((v) => ({ ...v, locked: false })));
+  return {
+    root_id: r.root_id ?? r.id,
+    current_id: cur?.id ?? null,
+    superseded_at: r.superseded_at ? iso(r.superseded_at) : null,
+    superseded_by: r.superseded_by ?? null,
+    versions,
   };
 }
 

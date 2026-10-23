@@ -27,6 +27,7 @@ import {
   MILESTONES_MAX,
   MilestoneSchema,
 } from "./milestones";
+import { CONTRACT_VERSIONS_MAX, ContractVersionRefSchema } from "./versions";
 
 export const CONTRACT_EVENTS_MAX = 50;
 export const CONTRACT_ITEMS_MAX = 500;
@@ -89,6 +90,13 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   locked_by: z.uuid().nullable(),
   /** CR-097 decision 1: HĐ có tệp văn bản gốc (`file_id`); false ⇒ HĐ nhập tay cũ, UI nhãn "Chưa có văn bản". */
   has_document: z.boolean(),
+  /** CR-097 K2 · HD-FR-102: chuỗi phiên bản. `root_id` = id v1; `current_id` = bản hiện hành (≠ `id` ⇒ UI "Đã thay thế bởi phiên
+   *  bản N" + "Mở bản hiện hành"); `superseded_*` khác null ⇒ bản này chỉ đọc. `versions` = các bản thấy được, tăng dần. */
+  root_id: z.uuid(),
+  current_id: z.uuid().nullable(),
+  superseded_at: IsoDateTime.nullable(),
+  superseded_by: z.uuid().nullable(),
+  versions: z.array(ContractVersionRefSchema).max(CONTRACT_VERSIONS_MAX),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

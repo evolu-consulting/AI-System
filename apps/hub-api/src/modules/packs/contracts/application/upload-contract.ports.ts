@@ -40,9 +40,22 @@ export type NewUploadedContract = {
 };
 export type UploadStatus = "extracting" | "extract_failed";
 
+/** CR-097 K2 · kết quả ghi phiên bản mới (chuỗi của bản `supersedesId`). */
+export type InsertedVersion = {
+  id: string;
+  status: UploadStatus;
+  version: number;
+  version_no: number;
+  root_id: string;
+  supersedes_id: string;
+};
+
 /** Repo trong tx: một câu (CTE files → contracts → events). Cha không hợp lệ ⇒ `UploadError("PARENT_INVALID")`. */
 export type UploadContractRepo = {
   insert(row: NewUploadedContract): Promise<{ id: string; status: UploadStatus; version: number }>;
+  /** CR-097 K2 · HD-FR-101: nháp v(n+1) của chuỗi chứa `supersedesId` (kế thừa loại/phụ trách/luật thấy) — MỘT câu; điều kiện
+   *  (thấy, HĐ, hiện hành, đã khoá, chưa có nháp) kiểm trong câu ⇒ `UploadError` mã tương ứng, không ghi gì. */
+  insertVersion(row: NewUploadedContract, supersedesId: string): Promise<InsertedVersion>;
 };
 export type UploadTxRepos = { upload: UploadContractRepo } & KitTxRepos;
 export type UploadUow = PackUow<UploadTxRepos>;
@@ -61,7 +74,13 @@ export type UploadErrorCode =
   | "PARENT_INVALID"
   | "UPLOAD_QUOTA"
   | "UPLOAD_QUOTA_UNAVAILABLE"
-  | "DOCX_BUSY";
+  | "DOCX_BUSY"
+  // CR-097 K2 · tải bản cập nhật
+  | "NOT_FOUND"
+  | "VERSION_NOT_ALLOWED"
+  | "CONTRACT_SUPERSEDED"
+  | "CONTRACT_NOT_LOCKED"
+  | "VERSION_DRAFT_EXISTS";
 
 export class UploadError extends Error {
   constructor(

@@ -15,18 +15,22 @@ export function reopenRepo(tx: Tx, tenantId: string): { reopen: ReopenRepo } {
           found: boolean;
           locked: boolean;
           version: number | null;
+          draft: boolean;
         }>(sql`with
-          c as (select id, status, locked_at is not null as locked from contracts.contracts
-            where id = ${id}::uuid and tenant_id = ${t}::uuid for update),
+          -- CR-097 K2: chuỗi đang có nháp cập nhật ⇒ không mở lại bản hiện hành (bỏ nháp trước); bản đã bị thay ⇒ trigger 0049 (409).
+          c as (select k.id, k.status, k.locked_at is not null as locked, exists (select 1 from contracts.contracts v
+              where v.tenant_id = k.tenant_id and v.root_id = k.root_id and v.version_no > k.version_no
+                and v.superseded_at is null) as draft
+            from contracts.contracts k where k.id = ${id}::uuid and k.tenant_id = ${t}::uuid for update of k),
           a as (insert into contracts.approvals (tenant_id, contract_id, status, started_by)
             select ${t}::uuid, c.id, 'level1', ${actor}::uuid from c
-            where c.locked and contracts.approval_on() and not exists (select 1 from contracts.approvals x
+            where c.locked and not c.draft and contracts.approval_on() and not exists (select 1 from contracts.approvals x
               where x.tenant_id = ${t}::uuid and x.contract_id = c.id and x.status in ('extracting', 'level1', 'level2'))
             returning id, contract_id),
           u as (update contracts.contracts k set status = 'needs_review', locked_at = null, locked_by = null,
               confirmed_at = null, confirmed_by = null, run_id = coalesce((select a.id from a), k.run_id),
               version = k.version + 1, updated_at = now()
-            from c where k.id = c.id and k.tenant_id = ${t}::uuid and c.locked
+            from c where k.id = c.id and k.tenant_id = ${t}::uuid and c.locked and not c.draft
             returning k.id, k.version, c.status as prev),
           e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
             select ${t}::uuid, u.id, 'reopened', ${actor}::uuid, jsonb_build_object('reason', ${reason}::text,
@@ -35,11 +39,12 @@ export function reopenRepo(tx: Tx, tenantId: string): { reopen: ReopenRepo } {
             select ${t}::uuid, a.contract_id, 'approval_started', ${actor}::uuid,
               jsonb_build_object('run_id', a.id::text, 'reopened', true) from a)
           select exists (select 1 from c) as found, coalesce((select locked from c), false) as locked,
-            (select version from u) as version`);
+            (select version from u) as version, coalesce((select draft from c), false) as draft`);
         return {
           found: r?.found === true,
           locked: r?.locked === true,
           version: r?.version ?? null,
+          draft: r?.draft === true,
         };
       },
     },

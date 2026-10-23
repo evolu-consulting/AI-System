@@ -145,7 +145,24 @@ export function mapError(err: unknown): {
     const body = toErrorBody(err.code, err.message, err.details);
     return { status: err.status, body, ...(err.headers && { headers: err.headers }) };
   }
+  const guard = dbGuardCode(err);
+  if (guard) return { status: 409, body: toErrorBody(guard, "Conflict") };
   return { status: 500, body: toErrorBody("INTERNAL_ERROR", ERROR_MESSAGES.INTERNAL_ERROR) };
+}
+
+/** SQLSTATE `EK409` = trigger gói chặn ghi (vd CR-097 K2 `contracts_k2_ro`: bản HĐ đã bị thay) ⇒ 409 với mã = message
+ *  (`[A-Z_]{3,40}`, hằng trong migration, không dữ liệu người dùng). Tìm trong chuỗi `cause` (Drizzle bọc lỗi postgres.js). */
+export function dbGuardCode(err: unknown): string | null {
+  for (
+    let e = err, i = 0;
+    e && typeof e === "object" && i < 5;
+    e = (e as { cause?: unknown }).cause, i++
+  ) {
+    const x = e as { code?: unknown; message?: unknown };
+    if (x.code === "EK409" && typeof x.message === "string" && /^[A-Z_]{3,40}$/.test(x.message))
+      return x.message;
+  }
+  return null;
 }
 
 /** Trường an toàn để log: tên + message, bỏ SQL/tham số (DrizzleQueryError mang câu SQL, lỗi gốc ở `cause`). */

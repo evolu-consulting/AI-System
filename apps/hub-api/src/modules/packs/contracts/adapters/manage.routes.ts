@@ -9,6 +9,7 @@ import {
   MANAGE_ERRORS,
   OwnerAssignRequestSchema,
   ReopenRequestSchema,
+  VERSION_ERRORS,
 } from "@ai/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -113,6 +114,12 @@ export function manageRoutes(view: PackAccessView, d: ManageRoutesDeps): Hono<Pa
           "CONTRACT_NOT_LOCKED",
           LOCK_ERRORS.CONTRACT_NOT_LOCKED,
           "Contract is not locked",
+        );
+      if (out.kind === "draft_exists")
+        throw new AppError(
+          "VERSION_DRAFT_EXISTS",
+          VERSION_ERRORS.VERSION_DRAFT_EXISTS,
+          "An updated version is pending; discard it before reopening",
         );
       return c.json({ id, status: "needs_review", version: out.version, locked: false });
     });

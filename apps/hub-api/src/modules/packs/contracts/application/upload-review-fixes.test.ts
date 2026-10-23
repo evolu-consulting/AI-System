@@ -16,7 +16,12 @@ function setup(starter: ExtractionStarter) {
     uow: {
       tenant: (_w, fn) =>
         fn({
-          upload: { insert: async (r) => ({ id: r.id, status: r.status, version: 1 }) },
+          upload: {
+            insert: async (r) => ({ id: r.id, status: r.status, version: 1 }),
+            insertVersion: async () => {
+              throw new Error("not used");
+            },
+          },
           outbox: { enqueue: async () => undefined },
         }) as never,
     },

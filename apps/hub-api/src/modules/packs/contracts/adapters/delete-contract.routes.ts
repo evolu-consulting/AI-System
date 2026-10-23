@@ -1,7 +1,7 @@
 // V2-M · HD-07 · C7: `GET /contracts/:id/delete-preview` (hộp xác nhận liệt kê tác động) và `DELETE /contracts/:id` (xoá hẳn, một tx).
 // CHỈ quyền `admin` (vai contracts-owner): guard TRƯỚC đọc tham số ⇒ editor/viewer 403; id sai dạng 400; HĐ không có / tenant khác /
 // không thấy ⇒ 404; còn phụ lục / gắn CKS / kho không đảo được ⇒ 409 (không xoá gì).
-import { DELETE_CONTRACT_ERRORS, DeleteContractRequestSchema } from "@ai/contracts";
+import { DELETE_CONTRACT_ERRORS, DeleteContractRequestSchema, VERSION_ERRORS } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
@@ -28,6 +28,12 @@ const run = <T>(p: Promise<T>): Promise<T> =>
   p.catch((e) => {
     if (!(e instanceof DeleteContractFail)) throw e;
     if (e.kind === "not_found") throw appError("NOT_FOUND");
+    if (e.kind === "has_versions")
+      throw new AppError(
+        "CONTRACT_HAS_VERSIONS",
+        VERSION_ERRORS.CONTRACT_HAS_VERSIONS,
+        "Confirmed contract version in a version chain cannot be deleted",
+      );
     const [code, msg] = MSG;
     throw new AppError(code, DELETE_CONTRACT_ERRORS[code], `${msg} (${e.detail})`, {
       shortages: e.shortages,

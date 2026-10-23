@@ -31,6 +31,9 @@ function fakeRepos(st: St): UploadTxRepos {
         st.inserted.push(r);
         return { id: r.id, status: r.status, version: 1 };
       },
+      insertVersion: async () => {
+        throw new Error("not used");
+      },
     },
     outbox: { enqueue: async (rows) => void st.log.push(`outbox:${rows.length}`) },
   };

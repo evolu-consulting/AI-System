@@ -6,8 +6,11 @@ import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { DeleteImpact, DeleteResult } from "../domain/delivery.types";
 import { localDate } from "../domain/local-time.rules";
 import { StockError } from "../domain/stock.rules";
+import { deleteVerdict } from "../domain/versions.rules";
 
 export type DeleteContractRepo = {
+  /** CR-097 K2: chuỗi phiên bản của HĐ (không thấy ⇒ null). */
+  chain(contractId: string): Promise<{ versions: number; draft: boolean } | null>;
   /** Tác động của việc xoá (một câu); HĐ không có / không thấy ⇒ null. */
   preview(contractId: string, on: string): Promise<DeleteImpact | null>;
   /** Đảo kho của HĐ (V2-M `reverseContractStock`); trả số dòng đã đảo. Ném `StockError`. */
@@ -32,7 +35,7 @@ export type DeleteContractRepos = { deleteContract: DeleteContractRepo };
 
 export class DeleteContractFail extends Error {
   constructor(
-    readonly kind: "not_found" | "stock_blocked",
+    readonly kind: "not_found" | "stock_blocked" | "has_versions",
     readonly detail: string = kind,
     readonly shortages: { componentId: string; need: string; have: string }[] = [],
   ) {
@@ -46,11 +49,20 @@ type Deps = {
   now: () => Date;
 };
 
+/** CR-097b (X5): trong chuỗi nhiều phiên bản chỉ xoá được bản nháp mở; HĐ không thấy ⇒ để bước sau trả 404. */
+async function guardChain(r: DeleteContractRepos, id: string): Promise<void> {
+  const ch = await r.deleteContract.chain(id);
+  if (ch && deleteVerdict(ch) !== "ok") throw new DeleteContractFail("has_versions");
+}
+
 export function deleteContractUsecases(d: Deps) {
   return {
     preview: async (who: PackWho, id: string): Promise<DeleteImpact> => {
       const on = localDate(d.now(), await d.timeZoneOf(who.tenantId));
-      const out = await d.uow.tenant(who, (r) => r.deleteContract.preview(id, on));
+      const out = await d.uow.tenant(who, async (r) => {
+        await guardChain(r, id);
+        return r.deleteContract.preview(id, on);
+      });
       if (!out) throw new DeleteContractFail("not_found");
       return out;
     },
@@ -62,6 +74,7 @@ export function deleteContractUsecases(d: Deps) {
     ): Promise<DeleteResult> => {
       const on = localDate(d.now(), await d.timeZoneOf(who.tenantId));
       return d.uow.tenant(who, async (r) => {
+        await guardChain(r, id);
         try {
           await r.deleteContract.reverseStock(id, on);
         } catch (e) {

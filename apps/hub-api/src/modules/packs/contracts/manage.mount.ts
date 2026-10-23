@@ -9,8 +9,10 @@ import { packAssignees } from "./adapters/manage.members";
 import { manageRepo } from "./adapters/manage.repo";
 import { manageRoutes } from "./adapters/manage.routes";
 import { reopenRepo } from "./adapters/reopen.repo";
+import { versionDiffRepo, versionsRoutes } from "./adapters/versions.routes";
 import { assignOwner, editCommission, getHistory, summarize } from "./application/manage.usecase";
 import { reopenContract } from "./application/reopen-contract.usecase";
+import { versionDiff } from "./application/version-diff.usecase";
 
 const KEY = "contracts";
 
@@ -22,7 +24,8 @@ export function manageModule(
   const uow = packTenantOnly(createPackUow(db, KEY, manageRepo));
   const reopenUow = packTenantOnly(createPackUow(db, KEY, reopenRepo));
   const members = packAssignees(db, view, KEY);
-  return manageRoutes(view, {
+  const diffUow = packTenantOnly(createPackUow(db, KEY, versionDiffRepo));
+  const r = manageRoutes(view, {
     reopen: reopenContract({ uow: reopenUow }),
     history: getHistory({ uow }),
     assignees: members.list,
@@ -36,4 +39,7 @@ export function manageModule(
     }),
     ...(d.quota ? { quota: d.quota } : {}),
   });
+  // CR-097 K2 · UC-04 so sánh hai phiên bản.
+  r.route("/", versionsRoutes(view, versionDiff({ uow: diffUow })));
+  return r;
 }

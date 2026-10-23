@@ -64,6 +64,15 @@ const previewSql = (t: string, ids: string[]) => {
 
 export function deleteContractRepo(tx: Tx, t: string): DeleteContractRepo {
   return {
+    // CR-097 K2 · CR-097b: số phiên bản của chuỗi + bản này có phải nháp mở (còn bản trước chưa bị thay) — một câu theo PK/index chuỗi.
+    chain: async (id) => {
+      const [r] = await tx.execute<{ versions: number; draft: boolean }>(sql`select
+          (select count(*)::int from contracts.contracts v where v.tenant_id = c.tenant_id and v.root_id = c.root_id) as versions,
+          (c.superseded_at is null and exists (select 1 from contracts.contracts p where p.tenant_id = c.tenant_id
+            and p.root_id = c.root_id and p.superseded_at is null and p.version_no < c.version_no)) as draft
+        from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid`);
+      return r ?? null;
+    },
     preview: async (id, on) => {
       const fam = await familyOf(tx, t, id);
       if (fam.length === 0) return null;

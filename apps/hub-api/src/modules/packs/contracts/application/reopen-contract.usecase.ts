@@ -9,13 +9,20 @@ import { reopenVerdict } from "../domain/lock.rules";
 export type ReopenOutcome =
   | { kind: "ok"; version: number }
   | { kind: "not_found" }
-  | { kind: "not_locked" };
+  | { kind: "not_locked" }
+  | { kind: "draft_exists" };
 
 export type ReopenRepo = {
   /** MỘT câu (CTE): khoá hàng FOR UPDATE ⇒ (nếu đang khoá) mở lượt duyệt khi tenant bật duyệt + UPDATE + event `reopened`. */
   reopen(id: string, reason: string, actor: string): Promise<ReopenRepoOut>;
 };
-export type ReopenRepoOut = { found: boolean; locked: boolean; version: number | null };
+export type ReopenRepoOut = {
+  found: boolean;
+  locked: boolean;
+  version: number | null;
+  /** CR-097 K2: chuỗi đang có nháp cập nhật ⇒ không mở lại. */
+  draft?: boolean;
+};
 
 export type ReopenContract = (who: PackWho, id: string, reason: string) => Promise<ReopenOutcome>;
 
@@ -25,6 +32,7 @@ export const reopenContract =
     d.uow.tenant(who, async (r): Promise<ReopenOutcome> => {
       const out = await r.reopen.reopen(id, reason, who.userId);
       if (!out.found) return { kind: "not_found" };
+      if (out.draft && out.locked) return { kind: "draft_exists" };
       if (reopenVerdict({ locked: out.locked }) === "not_locked" || out.version === null)
         return { kind: "not_locked" };
       await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);

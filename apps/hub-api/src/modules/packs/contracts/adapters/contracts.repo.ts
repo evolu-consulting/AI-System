@@ -6,6 +6,7 @@ import {
   CONTRACT_APPENDICES_MAX,
   CONTRACT_EVENTS_MAX,
   CONTRACT_ITEMS_MAX,
+  CONTRACT_VERSIONS_MAX,
   MILESTONES_MAX,
 } from "@ai/contracts";
 import type { Tx } from "@ai/db";
@@ -41,6 +42,10 @@ export function pgTextArray(xs: readonly string[] | null): string | null {
   return `{${xs.map((x) => `"${x.replace(/(["\\])/g, "\\$1")}"`).join(",")}}`;
 }
 
+/** CR-097 K2: số phiên bản của chuỗi hàng `c` (index `contracts_chain_no_uq`; chỉ cho hàng của trang / chi tiết). */
+const versionsCount = sql`(select count(*)::int from contracts.contracts v
+          where v.tenant_id = c.tenant_id and v.root_id = c.root_id)`;
+
 type ListOut = {
   total: number;
   items: ListRowRaw[] | string;
@@ -74,7 +79,8 @@ function filterWhere(tid: string, f: ContractListFilter) {
   const a = pgTextArray;
   const cats = a(f.category);
   const df = f.dateField;
-  return sql`c.tenant_id = ${tid}::uuid
+  // CR-097 K2 · R18: chỉ bản chưa bị thay (index partial `contracts_current_list_idx`).
+  return sql`c.tenant_id = ${tid}::uuid and c.superseded_at is null
         and (${a(f.status)}::text[] is null or c.status = any(${a(f.status)}::text[]))
         and (${a(f.owner)}::uuid[] is null or c.owner_user_id = any(${a(f.owner)}::uuid[]))
         and (${a(f.seller)}::text[] is null or c.seller = any(${a(f.seller)}::text[]))
@@ -124,8 +130,8 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
       coalesce((select json_agg(r order by r.ord) from (
         select c.id, c.kind, c.parent_id, c.title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
           c.seller_signer, c.buyer_signer, c.value, c.end_date, c.action_deadline, c.owner_user_id, c.updated_at, c.version,
-          c.category_ids[1:50] as category_ids, c.locked_at is not null as locked,
-          pp.ord
+          c.category_ids[1:50] as category_ids, c.locked_at is not null as locked, c.version_no,
+          ${versionsCount} as versions_count, pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
       coalesce((select json_agg(json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number) order by pc.id)
@@ -202,6 +208,13 @@ const milestonesOf = sql`(select json_agg(m.j order by m.due_date, m.seq, m.id) 
       where o.contract_id = c.id and o.tenant_id = c.tenant_id and o.status <> 'replaced'
       order by o.due_date, o.seq, o.id limit ${MILESTONES_MAX}::int) m)`;
 
+/** CR-097 K2: các phiên bản thấy được của chuỗi (RLS), tăng dần, tới trần. */
+const versionsOf = sql`(select json_agg(json_build_object('id', v.id, 'version_no', v.version_no, 'status', v.status,
+      'superseded_at', v.superseded_at, 'number', v.number, 'effective_from', v.start_date, 'effective_to', v.end_date,
+      'total_value', v.value) order by v.version_no)
+    from (select v.* from contracts.contracts v where v.tenant_id = c.tenant_id and v.root_id = c.root_id
+      order by v.version_no limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
+
 const FACET_CAP = 500;
 const CATEGORY_CAP = 200;
 
@@ -228,7 +241,7 @@ async function facets(tx: Tx, tid: string): Promise<ContractFacetsDto> {
           case when cardinality(c.signer_keys) = 2 or c.buyer_signer is null then c.seller_signer
                when c.seller_signer is null then c.buyer_signer end as l1,
           c.buyer_signer as l2, c.value, c.category_ids as cats
-        from contracts.contracts c where c.tenant_id = ${tid}::uuid) c
+        from contracts.contracts c where c.tenant_id = ${tid}::uuid and c.superseded_at is null) c
       group by grouping sets ((c.status, c.direction, c.kind, c.owner), (c.seller, c.buyer), (c.k1, c.l1, c.k2, c.l2),
         (c.cats), ())),
     sg as (select x.k as v, sum(x.n)::int as n, coalesce(min(x.l), x.k) as label from (
@@ -282,7 +295,9 @@ async function detail(
             order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
       'deal', c.deal, 'commission_pct', c.commission_pct, 'commission_fixed', c.commission_fixed,
       'start_date', c.start_date, 'milestones', ${milestonesOf}, 'ai_read', c.ai_read,
-      'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by
+      'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by,
+      'root_id', c.root_id, 'version_no', c.version_no, 'versions_count', ${versionsCount},
+      'superseded_at', c.superseded_at, 'superseded_by', c.superseded_by, 'versions', ${versionsOf}
     ) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;

@@ -309,6 +309,13 @@
       "when": 1797700000000,
       "tag": "0048_k1_contract_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1797800000000,
+      "tag": "0049_k2_contract_versions",
+      "breakpoints": true
     }
   ]
 }
