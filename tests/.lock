@@ -411,7 +411,7 @@ eaf50e2f1e6f0a5bfa5ab43410cd278028d97748455515409290e0f93f397ec2  e2e/contracts-
 741d2e66a31fc40fcf782f1204db43aa12c802c740223a226f78b2d5e469f327  e2e/contracts-web/v2h-customers.cw.ts
 766c5e54de0026e67314cb92434cabce8458d89b4d5d0e1ee3446f48439bd28b  e2e/contracts-web/v2i-partners.cw.ts
 6eabeaceee60b0cf4a291d64c1936ed4c020ea9abf52e5f08c173f5473d31c42  e2e/contracts-web/v2j1-products.cw.ts
-3b0b4bce55b91d3d44196c4b8196ef88b4c923bc17b46147596f4670b49feeb5  e2e/contracts-web/v2j2-suppliers.cw.ts
+4cfadbdd9e69786a9967cea47c8f6e7ed01814e5838bcf9c9ad21d5c4fa00288  e2e/contracts-web/v2j2-suppliers.cw.ts
 e482ceb75fdb8f75eb4bc6e498be7b888f947315c5c584225c39352ad9a7071e  e2e/contracts-web/v2l-settings.cw.ts
 2f5c49e16e1ecbbd4dd043aedd4885772217ec51a0dccf6f8bdef211b5e4badb  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
@@ -423,7 +423,7 @@ b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/0
 b10cb49b5108f0efb5517b17f7f9d8fa35fcc608ff200340beb74c0070a8da3b  e2e/deployed/06-guide.deployed.ts
 47c601ceb8ee7205b6024fb5c624fe7b183fa4619b4fd51e32095782bf9f9761  e2e/deployed/07-usage.deployed.ts
 e0425b6d8c6ee95ebb46c21b9f353e280f8be45bb323da514ba7f929ca86c100  e2e/deployed/08-my-activity.deployed.ts
-eb34afd0bb8d81507e02326923bea4441e0da6dfabb2c2392bebbd854ee2a5cb  e2e/deployed/09-price-scout.deployed.ts
+69ad509252dd536d86a66f8b59ad831bfe140005bf27862062f08d63950e9cc4  e2e/deployed/09-price-scout.deployed.ts
 dad0322f4859b4f1d64bce547f32e2733df5454fb347830aa3f847f39f2ab1a1  e2e/deployed/10-feedback-original.deployed.ts
 36ab29139cf82226a521faf22d13a5e7a15a9e5b5bb82d2f08958a67b512a2dc  e2e/deployed/11-gap-d1.deployed.ts
 1618f0ea7689e22603d289f8a98689c2606928b642024e95a4047fe77aeaaf29  e2e/deployed/12-han-muc-duyet.deployed.ts
@@ -1239,6 +1239,7 @@ edda6dbe137c1132a5ea00decabb448f75c128a4fec20540accf4e708eb2f924  tests/acceptan
 1f7d78a6f8ba140d850c01ba5e9ed1139c7b91cb50c5f8641257be156fdeaed7  tests/acceptance/V2-I/partner-ui.int.test.ts
 582f6c55756ac070a52b8ff1ee21b8a66b2cee283dfb7e5b86e61c5d8a2f73f4  tests/acceptance/V2-J1/business.int.test.ts
 86b5fb4031ad166c23a2d1d98d68faf3727d195bf153512e57864f05154496df  tests/acceptance/V2-J2/_support/v2j2.ts
+ace11b8e583e56e4a0e66aad9c55be849fa5acd2f5268ac27e7f6592315d37f3  tests/acceptance/V2-J2/contract-prices.int.test.ts
 05119e8177d4309488a6ba7edcc51518e2256f9b164e927fcd97b6b9a9fcdb8d  tests/acceptance/V2-J2/suppliers.int.test.ts
 06fbd1f326928703bd66e55bc2738d2546b378498a1ebe13affb2a046e432dc6  tests/acceptance/V2-K/_support/v2k.ts
 d50e147e39a0d66ee1a4ecf079a0e90792e3d2b6d892cbfd54ec0c945091514d  tests/acceptance/V2-K/overview.int.test.ts
@@ -1334,7 +1335,7 @@ c49712e02dea1cb8e2a98ef9460288a3810cdbcb335d075160ff2a1ab0791566  tests/acceptan
 15bf508a11b0bcf03bc7b7a5242694f08f3f9047fb393453e55f869824e09804  tests/acceptance/one-agent/context-migration.int.test.ts
 c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts
-be104da996df489b0844accf258809f3263770c1f704863bf763cb78e3c6d431  tests/acceptance/price-scout/price-scout.int.test.ts
+96dc9a244177186e9e90747ffce4c01f8564fa8803952aeb381bfc97dc04466f  tests/acceptance/price-scout/price-scout.int.test.ts
 385ed13a7cafe0fdc2889e6f220d90bbcfbb4f0eb3ea3e730a5c9a67d2b6dcef  tests/acceptance/products-confirm/delete-orphans.int.test.ts
 7a0c2b723170207d1f8839bb569dcb154d478a816046c4b22ca92926ff2884f6  tests/acceptance/products-confirm/links.int.test.ts
 07a9cbf7bacd96bebb47df1a3704a756f05a65563109c7d1bd1ea0a5ddbddf6a  tests/acceptance/studio-agents-list/list-flags.int.test.ts
