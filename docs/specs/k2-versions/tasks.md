@@ -51,4 +51,4 @@ depends: K1 (e46976be)
 ## Kết quả
 - Unit: `versions.rules.test.ts` 19 pass; gói contracts unit xanh.
 - Int (`test:int:par`): K2 4/4; HD1 (cả thư mục), HD2, HD5, HD7, K1, HD3 reverify/guard, V2-D service/rls, V2-H, V2-M, products-confirm, V2-G review — xanh sau khi sửa 2 test đếm khoá ListRow.
-- Perf danh sách `HD1/perf/list.perf.int.test.ts`: xem mục Perf bên dưới.
+- Perf danh sách `HD1/perf/list.perf.int.test.ts` (3 × 10.000 HĐ + nền 70.000, n=200): 45/45 pass, SQL=2, không Seq Scan. Danh sách p95 cao nhất 28.84 ms (page_size 100, sau ANALYZE; trước ANALYZE 27.72 ms); facets p95 45.74 ms trước / 44.64 ms sau ANALYZE (ngưỡng 50 — sát ngưỡng, chưa có số trước K2 cùng máy để so).
