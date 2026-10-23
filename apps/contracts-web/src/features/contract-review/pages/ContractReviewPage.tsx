@@ -16,6 +16,8 @@ import { LockBanner } from "~/features/contract-lock/components/LockBanner";
 import { lockView } from "~/features/contract-lock/lib/lock-view";
 import { SourceViewerContext } from "~/features/contract-source/components/QuoteLine";
 import { SourcePanel } from "~/features/contract-source/components/SourcePanel";
+import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
+import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
 import { shortName } from "~/features/contracts-list/lib/list-model";
@@ -81,7 +83,9 @@ function ContractBody({
   ap: Approval;
 }) {
   const { t } = useTranslation();
-  const { write, owner } = useMe();
+  const me = useMe();
+  // K3b: bản đã bị thay chỉ đọc hoàn toàn.
+  const { sup, write, owner, canUpdate } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
   const lock = lockView(c, owner);
   const confirm = c.status === "needs_review";
@@ -124,7 +128,8 @@ function ContractBody({
               open={dialogOpen({ uploading: false, status: c.status })}
               name={c.file?.name ?? titleOf(c)}
             />
-            <LockBanner id={id} view={lock} />
+            <LockBanner id={id} view={lock} canUpdate={canUpdate} />
+            <VersionsPanels id={id} versions={c.versions} sup={sup} />
             <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err} />
             {ap.section}
             {viewer && (

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
+import { VersionBadge } from "~/features/contract-versions/components/VersionBadge";
 import { cn } from "~/lib/utils";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
@@ -126,6 +127,7 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
           >
             {r.locked && <RowLock />}
             {r.title}
+            <VersionBadge no={r.version_no} count={r.versions_count} />
           </Link>
           <SubLine r={r} ctx={ctx} />
         </td>
@@ -213,6 +215,7 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
           <span className="truncate font-semibold">
             {r.locked && <RowLock />}
             {r.title}
+            <VersionBadge no={r.version_no} count={r.versions_count} />
           </span>
           <DealTag r={r} ctx={ctx} />
         </span>

@@ -39,6 +39,16 @@ export function supersededInfo(c: {
   return { byNo: by?.version_no ?? null, currentId: c.current_id };
 }
 
+/** Bản bị thay ⇒ chỉ đọc hoàn toàn (mất quyền ghi/owner); nút cập nhật cần quyền ghi. */
+export function versionGate(
+  c: Parameters<typeof canUploadUpdate>[0] & Parameters<typeof supersededInfo>[0],
+  me: { write: boolean; owner: boolean },
+) {
+  const sup = supersededInfo(c);
+  const write = me.write && !sup;
+  return { sup, write, owner: me.owner && !sup, canUpdate: write && canUploadUpdate(c) };
+}
+
 export const showVersionBadge = (versionsCount: number): boolean => versionsCount > 1;
 
 /** Mặc định so sánh: hai phiên bản lớn nhất (a = cũ hơn). */

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { contractKey } from "~/features/contract-review/api";
+import { UploadVersionPanel } from "~/features/contract-versions/components/UploadVersionPanel";
 import { reopenContract } from "../api";
 import { type LockView, lockErrorKey } from "../lib/lock-view";
 
@@ -84,7 +85,16 @@ function ReopenDialog({ id, open, onClose }: { id: string; open: boolean; onClos
 }
 
 /** Nhãn 🔒 / "Chưa có văn bản" + banner trạng thái. */
-export function LockBanner({ id, view }: { id: string; view: LockView }) {
+export function LockBanner({
+  id,
+  view,
+  canUpdate = false,
+}: {
+  id: string;
+  view: LockView;
+  /** K3b: bật nút "Tải bản cập nhật" (đã khoá, chưa bị thay, chưa có nháp, có quyền ghi). */
+  canUpdate?: boolean;
+}) {
   return (
     <>
       {(view.locked || view.noDocument) && (
@@ -93,14 +103,15 @@ export function LockBanner({ id, view }: { id: string; view: LockView }) {
           {view.noDocument && <NoDocumentTag />}
         </div>
       )}
-      <BannerBox id={id} view={view} />
+      <BannerBox id={id} view={view} canUpdate={canUpdate} />
     </>
   );
 }
 
-function BannerBox({ id, view }: { id: string; view: LockView }) {
+function BannerBox({ id, view, canUpdate }: { id: string; view: LockView; canUpdate: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [upOpen, setUpOpen] = useState(false);
   if (view.banner === null) return null;
   if (view.banner === "pending")
     return (
@@ -123,8 +134,8 @@ function BannerBox({ id, view }: { id: string; view: LockView }) {
         type="button"
         className="btn btn-primary btn-sm"
         data-testid="update-version"
-        disabled
-        title={t("contracts.lock.soon")}
+        disabled={!canUpdate}
+        onClick={() => setUpOpen(true)}
       >
         {t("contracts.lock.updateVersion")}
       </button>
@@ -139,6 +150,7 @@ function BannerBox({ id, view }: { id: string; view: LockView }) {
         </button>
       )}
       <ReopenDialog id={id} open={open} onClose={() => setOpen(false)} />
+      <UploadVersionPanel contractId={id} open={upOpen} onClose={() => setUpOpen(false)} />
     </div>
   );
 }

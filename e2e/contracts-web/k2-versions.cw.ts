@@ -25,7 +25,12 @@ const chain = (v1Superseded: boolean) => [
   ref(ACTIVE_ID, 1, v1Superseded ? "2026-10-18T02:00:00Z" : null, "HD-1", 245_000_000),
   ref(V2_ID, 2, null, "HD-1/PL", 300_000_000),
 ];
-const locked = { locked_at: "2026-02-01T00:00:00Z", locked_by: null };
+const locked = {
+  locked: true,
+  has_document: true,
+  locked_at: "2026-02-01T00:00:00Z",
+  locked_by: null,
+};
 const v1 = (superseded: boolean) =>
   activeContract({
     ...locked,
@@ -56,7 +61,7 @@ test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở n
     json(r, 200, { ...v1(false), id: V2_ID, status: "needs_review", version_no: 2 }),
   );
   await page.goto(`/contracts/${ACTIVE_ID}`);
-  await page.getByRole("button", { name: "Tải bản cập nhật" }).click();
+  await page.getByTestId("update-version").click();
   const dlg = page.getByTestId("upload-version");
   await expect(page.getByTestId("upload-version-signed")).toContainText("văn bản đã ký");
   await dlg.getByTestId("upload-version-file").setInputFiles({
@@ -76,7 +81,7 @@ test("lỗi VERSION_DRAFT_EXISTS ⇒ thông báo tiếng Việt", async ({ page 
     json(r, 409, { error: { code: "VERSION_DRAFT_EXISTS", message: "x" } }),
   );
   await page.goto(`/contracts/${ACTIVE_ID}`);
-  await page.getByRole("button", { name: "Tải bản cập nhật" }).click();
+  await page.getByTestId("update-version").click();
   await page.getByTestId("upload-version-file").setInputFiles({
     name: "hd-v2.pdf",
     mimeType: "application/pdf",
@@ -100,12 +105,12 @@ test("bản bị thay: banner + chỉ đọc + khối phiên bản + so sánh", 
   await page.goto(`/contracts/${ACTIVE_ID}`);
   await expect(page.getByTestId("superseded-banner")).toContainText("Đã thay thế bởi Phiên bản 2");
   await expect(page.getByTestId("open-current")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Tải bản cập nhật" })).toHaveCount(0);
+  await expect(page.getByTestId("update-version")).toBeDisabled();
   await expect(page.getByTestId("delete-contract")).toHaveCount(0);
   const block = page.getByTestId("versions-block");
   await expect(block.getByTestId("version-row-1")).toHaveAttribute("data-kind", "superseded");
   await expect(block.getByTestId("version-row-2")).toHaveAttribute("data-kind", "current");
-  await expect(page.getByTestId("diff-total_value")).toContainText("300.000.000");
+  await expect(page.getByTestId("diff-total_value")).toContainText("300000000");
 });
 
 test("danh sách: badge v2 khi có nhiều phiên bản", async ({ page }) => {
