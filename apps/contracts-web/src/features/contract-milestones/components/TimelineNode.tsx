@@ -74,6 +74,8 @@ type Props = {
   node: Extract<Node, { type: "milestone" }>;
   partner: string;
   write: boolean;
+  /** lock-strict: HĐ đã khoá ⇒ chỉ còn "Xác nhận xong", không có bút sửa mốc. */
+  locked?: boolean;
   confirming: boolean;
   onConfirm: () => void;
   onEdit: () => void;
@@ -157,6 +159,7 @@ export function MilestoneNode({
   node,
   partner,
   write,
+  locked = false,
   confirming,
   onConfirm,
   onEdit,
@@ -169,6 +172,7 @@ export function MilestoneNode({
     .filter(Boolean)
     .join(" · ");
   const editable = write && !m.confirmed && !confirming;
+  const canEdit = editable && !locked;
   return (
     <li
       data-node="milestone"
@@ -192,7 +196,7 @@ export function MilestoneNode({
               {t("contracts.cdetail.confirmDone")}
             </button>
           )}
-          <EditButton title={m.title} onEdit={onEdit} />
+          {canEdit && <EditButton title={m.title} onEdit={onEdit} />}
         </div>
       )}
     </li>

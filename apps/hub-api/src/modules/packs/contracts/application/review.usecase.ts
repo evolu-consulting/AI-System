@@ -25,6 +25,7 @@ export type ReviewInput = {
       }[]
     | undefined;
   milestones?: readonly ReviewMilestoneIn[] | undefined;
+  draft?: boolean | undefined;
 };
 export type ReviewResult =
   | {

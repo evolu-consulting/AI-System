@@ -54,12 +54,15 @@ export function Timeline({
   c,
   partner,
   write,
+  locked = false,
   today,
 }: {
   c: C;
   /** Tên ngắn của đối tác (nhãn mốc của đối tác). */
   partner: string;
   write: boolean;
+  /** lock-strict: HĐ đã khoá ⇒ không thêm / sửa mốc (còn "Xác nhận xong"). */
+  locked?: boolean;
   today: string;
 }) {
   const { t } = useTranslation();
@@ -95,7 +98,7 @@ export function Timeline({
         <Tag tone={over ? "late" : STAGE_TONE[c.stage]}>
           {over ? L("stageOver") : L(`stage.${c.stage}`)}
         </Tag>
-        {write && (
+        {write && !locked && (
           <button
             type="button"
             className="btn btn-outline btn-sm ml-auto"
@@ -119,6 +122,7 @@ export function Timeline({
               node={n}
               partner={partner}
               write={write}
+              locked={locked}
               confirming={confirming === n.m.id}
               onConfirm={() => setConfirming(n.m.id)}
               onEdit={() => setDialog({ edit: n.m })}

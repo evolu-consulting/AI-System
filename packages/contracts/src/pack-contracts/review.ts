@@ -63,6 +63,8 @@ export const ReviewSaveRequestSchema = z
     fields: z.strictObject(PATCH_SHAPE).optional(),
     items: z.array(ReviewItemSchema).max(REVIEW_ITEMS_MAX).optional(),
     milestones: z.array(ReviewMilestoneSchema).max(MILESTONES_MAX).optional(),
+    /** "Lưu nháp": chỉ ghi, HĐ giữ `needs_review` (không xác nhận / khoá) kể cả khi tenant tắt duyệt. */
+    draft: z.boolean().optional(),
   })
   .refine((b) => (b.commission_pct ?? null) === null || (b.commission_fixed ?? null) === null, {
     message: "chọn % hoặc số tiền cố định",

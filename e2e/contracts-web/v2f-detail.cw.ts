@@ -28,7 +28,7 @@ test.describe("Thông tin", () => {
     await page.getByLabel("Giá trị").fill("250.000.000");
     await expect(save).toBeEnabled();
     await save.click();
-    await expect(page.getByRole("status")).toHaveText("Đã lưu.");
+    await expect(page.locator("[data-sonner-toast]").first()).toHaveText("Đã lưu.");
     expect(sent).toEqual([
       {
         method: "PATCH",

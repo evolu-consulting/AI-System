@@ -21,6 +21,9 @@ export type ApprovalUi = {
   msg: string | null;
   err: string | null;
   view: ApprovalView;
+  /** Đã tải trạng thái duyệt + bước hiện tại (null = tenant tắt duyệt / chưa có lượt) — cho luật nút đầu trang. */
+  loaded: boolean;
+  step: string | null;
 };
 
 type LinkStep = { target: ProductLinkTarget; label: string | undefined };
@@ -87,5 +90,14 @@ export function useApprovalUi(o: {
       />
     </>
   );
-  return { buttons, section, busy: ap.busy !== null, msg: ap.msg, err: ap.err, view: v };
+  return {
+    buttons,
+    section,
+    busy: ap.busy !== null,
+    msg: ap.msg,
+    err: ap.err,
+    view: v,
+    loaded: ap.approval !== undefined,
+    step: ap.approval?.step ?? null,
+  };
 }

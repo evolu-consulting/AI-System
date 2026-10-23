@@ -9,6 +9,8 @@ import { installV2g } from "./v2g-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
+/** Thông báo thành công hiện bằng toast (sonner), không còn dòng inline giữ chỗ. */
+const toast = (page: Page) => page.locator("[data-sonner-toast]").first();
 const writes = (sent: Sent[]) => sent.filter((s) => s.method !== "GET");
 const review = (sent: Sent[]) => sent.filter((s) => s.path.endsWith("/review"));
 
@@ -57,7 +59,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
   const { sent } = await openReview(page);
   await page.getByLabel("Giữ mốc Giao hàng đợt 1").uncheck();
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Đã lưu nháp");
+  await expect(toast(page)).toContainText("Đã lưu nháp");
   expect(review(sent)).toHaveLength(1);
   expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
   expect(sent.filter((s) => s.path.endsWith("/product-links"))).toHaveLength(0);
@@ -67,6 +69,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
     body: {
       version: 3,
       deal: "sell",
+      draft: true, // lock-strict: "Lưu nháp" chỉ ghi, không xác nhận / khoá
       items: [
         {
           id: ITEM1,
@@ -101,7 +104,7 @@ test("đổi Bán → Mua: đối tác dựng lại theo bên bán, gửi deal=b
   await expect(page.getByLabel(/^Nhà cung cấp/)).toHaveValue("Công ty TNHH Bao Bì Phương Nam");
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id); // gợi ý chạy lại theo loại mới
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
-  await expect(page.getByRole("status")).toBeVisible();
+  await expect(toast(page)).toBeVisible();
   const b = review(sent)[0]?.body as { deal: string; fields?: unknown };
   expect(b.deal).toBe("buy");
   expect(b.fields).toBeUndefined();
@@ -115,6 +118,13 @@ test("Hủy = bỏ chỉnh sửa, KHÔNG gửi yêu cầu ghi nào", async ({ pa
   expect(writes(sent)).toEqual([]);
 });
 
+test("Huỷ khi chưa sửa gì ⇒ về danh sách hợp đồng (không gửi gì, giữ nháp)", async ({ page }) => {
+  const { sent } = await openReview(page);
+  await page.getByRole("button", { name: "Huỷ" }).click();
+  await expect(page).toHaveURL(/\/contracts$/);
+  expect(writes(sent)).toEqual([]);
+});
+
 test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async ({ page }) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption("");
@@ -123,14 +133,14 @@ test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async (
   expect(review(sent)).toHaveLength(0);
 });
 
-test("tenant tắt duyệt: Lưu trả `active` ⇒ trang chi tiết thường, hết thanh Huỷ/Lưu dính", async ({
+test("tenant tắt duyệt: «Xác nhận và lưu» trả `active` ⇒ trang chi tiết thường, hết thanh Huỷ/Lưu dính", async ({
   page,
 }) => {
   const { sent } = await openReview(page, { saveStatus: "active" });
-  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã lưu — hợp đồng có hiệu lực");
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await expect(toast(page)).toContainText("Đã lưu — hợp đồng có hiệu lực");
+  expect(review(sent)[0]?.body).not.toHaveProperty("draft");
   await expect(page.getByTestId("form-bar")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toBeVisible();
   // products-confirm: HĐ đã có hiệu lực ⇒ dòng "tạo mới" thành SP qua /product-links (không POST /products)
   expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
   expect(sent.filter((s) => s.path.endsWith("/product-links")).map((s) => s.body)).toEqual([

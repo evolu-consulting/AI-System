@@ -52,15 +52,10 @@ export function ReviewActions({
   );
 }
 
-/** Thông báo sau "Lưu" (`ContractPage.tsx:118-119`). */
-export function SaveNotice({ msg, err }: { msg: string | null; err: string | null }) {
+/** Lỗi sau "Lưu". Thành công báo bằng toast (không khối giữ chỗ giữa banner khoá và "Hạn chót"); không có lỗi ⇒ không render gì. */
+export function SaveNotice({ err }: { err: string | null }) {
   return (
     <>
-      {msg && (
-        <p role="status" className="mb-3 text-sm text-ok">
-          {msg}
-        </p>
-      )}
       {err && (
         <p role="alert" className="mb-3 text-sm text-late">
           {err}

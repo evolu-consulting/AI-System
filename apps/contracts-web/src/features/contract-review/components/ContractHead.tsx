@@ -14,9 +14,11 @@ type Props = {
   sticky: boolean;
   file: FileRef | null;
   canSave: boolean;
-  dirty: boolean;
-  onReset: () => void;
+  /** Huỷ: có sửa ⇒ bỏ sửa; chưa sửa ⇒ về danh sách (luôn làm gì đó). */
+  onCancel: () => void;
   saveButton: ReactNode;
+  /** "Xác nhận và lưu" của trang (tenant tắt duyệt). */
+  confirmButton: ReactNode;
   approvalButtons: ReactNode;
   approvalBusy: boolean;
 };
@@ -38,7 +40,7 @@ export function ContractHead(p: Props) {
         title={p.title}
         lead={p.lead}
         cancel={
-          <button type="button" className="btn btn-quiet" disabled={!p.dirty} onClick={p.onReset}>
+          <button type="button" className="btn btn-quiet" onClick={p.onCancel}>
             {t("contracts.common.cancel")}
           </button>
         }
@@ -46,6 +48,7 @@ export function ContractHead(p: Props) {
           <>
             {fileLink}
             {p.saveButton}
+            {p.confirmButton}
             {p.approvalButtons}
           </>
         }

@@ -7,7 +7,7 @@ export type LockBanner = "locked" | "pending" | null;
 export type LockView = {
   banner: LockBanner;
   locked: boolean;
-  /** Ô thông tin chỉ đọc khi khoá (chỉ `notice_days` — vận hành — còn sửa được). */
+  /** Ô thông tin chỉ đọc khi khoá (tất cả). */
   lockedKeys: ReadonlySet<TextKey> | undefined;
   /** Owner mới thấy link "Mở lại để sửa lỗi trích xuất". */
   canReopen: boolean;
@@ -30,10 +30,8 @@ const ALL_KEYS: readonly TextKey[] = [
   "commission_fixed",
 ];
 
-/** K1-03: trong 23 trường chỉ `notice_days` sửa được sau khi khoá. */
-export const LOCKED_LEGAL_KEYS: ReadonlySet<TextKey> = new Set(
-  ALL_KEYS.filter((k) => k !== "notice_days"),
-);
+/** lock-strict (2026-10-23): sau khi khoá KHÔNG trường nào sửa được (cả `notice_days`). */
+export const LOCKED_LEGAL_KEYS: ReadonlySet<TextKey> = new Set(ALL_KEYS);
 
 export function lockView(
   c: Pick<ContractDetail, "locked" | "status" | "has_document">,

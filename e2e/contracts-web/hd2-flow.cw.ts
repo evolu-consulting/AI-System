@@ -54,7 +54,7 @@ test("HD-FR-26 · S05 · Lưu nháp gửi PATCH chỉ ô đã đổi + version, 
   const value = page.getByLabel("Giá trị");
   await value.fill("250.000.000");
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText(
+  await expect(page.locator("[data-sonner-toast]").first()).toHaveText(
     "Đã lưu nháp. Hợp đồng vẫn chờ xác nhận — bấm Xác nhận để hoàn tất.",
   );
   expect(sent).toEqual([

@@ -15,7 +15,7 @@ const locked = (over: object = {}) =>
     ...over,
   });
 
-test("HĐ khoá: ô pháp lý chỉ đọc, notice_days còn sửa, banner + nút Tải bản cập nhật tắt", async ({
+test("HĐ khoá tuyệt đối: mọi ô (cả notice_days) chỉ đọc, ẩn Lưu thay đổi / + Thêm mốc / Sửa mốc, không khoảng trống giữa banner và Hạn chót", async ({
   page,
 }) => {
   await installV2f(page, { role: "editor", contract: () => locked() });
@@ -27,8 +27,60 @@ test("HĐ khoá: ô pháp lý chỉ đọc, notice_days còn sửa, banner + nú
   await expect(upd).toBeEnabled(); // K3b: bật nút tải bản cập nhật
   await expect(page.getByLabel("Giá trị")).toBeDisabled();
   await expect(page.getByLabel("Tên hợp đồng")).toBeDisabled();
-  await expect(page.getByLabel(/^Nhắc trước/)).toBeEnabled();
+  await expect(page.getByLabel(/^Nhắc trước/)).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "+ Thêm mốc" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Sửa mốc/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Văn bản gốc" })).toHaveCount(0);
   await expect(page.getByTestId("reopen-link")).toHaveCount(0);
+  // F: không còn khối thông báo rỗng / giữ chỗ giữa banner khoá và "Hạn chót hành động".
+  await expect(page.locator("p[role=status], p[role=alert]")).toHaveCount(0);
+});
+
+test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ bấm ⇒ POST /review (không draft) ⇒ khoá lại", async ({
+  page,
+}) => {
+  let confirmed = false;
+  const posts: unknown[] = [];
+  await installV2f(page, {
+    role: "owner",
+    contract: () => (confirmed ? locked() : activeContract({ status: "needs_review" })),
+  });
+  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/approval`, (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        run_id: null,
+        run_status: null,
+        step: null,
+        task_id: null,
+        can_act: false,
+        feedback: null,
+      }),
+    }),
+  );
+  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/review`, (r) => {
+    posts.push(r.request().postDataJSON());
+    confirmed = true;
+    return r.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: ACTIVE_ID,
+        status: "active",
+        version: 5,
+        items: 0,
+        milestones: 0,
+      }),
+    });
+  });
+  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await expect(page.getByRole("button", { name: "Lưu nháp", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await expect(page.getByTestId("banner-locked")).toBeVisible();
+  expect(posts).toHaveLength(1);
+  expect(posts[0]).not.toHaveProperty("draft");
 });
 
 test("HĐ khoá, không phải owner (editor): không thấy «Mở lại»", async ({ page }) => {

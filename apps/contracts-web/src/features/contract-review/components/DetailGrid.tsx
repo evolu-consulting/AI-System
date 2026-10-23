@@ -76,7 +76,12 @@ export function DetailGrid({
             onRemove={info.removeLine}
           />
         ) : (
-          <ProductsPanel items={c.items} deal={dealOf(c)} contractId={c.id} write={write} />
+          <ProductsPanel
+            items={c.items}
+            deal={dealOf(c)}
+            contractId={c.id}
+            write={write && !c.locked}
+          />
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-4">
@@ -89,7 +94,9 @@ export function DetailGrid({
             onChange={info.setRow}
           />
         ) : (
-          showTimeline && <Timeline c={c} partner={partner} write={write} today={today} />
+          showTimeline && (
+            <Timeline c={c} partner={partner} write={write} locked={c.locked} today={today} />
+          )
         )}
         <SummaryPanel
           c={c}

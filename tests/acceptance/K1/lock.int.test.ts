@@ -182,6 +182,35 @@ describe("HD-FR-104 · owner mở lại có lý do", () => {
   }, 30_000);
 });
 
+describe("lock-strict · Lưu nháp không xác nhận (tenant tắt duyệt)", () => {
+  it("POST /review draft ⇒ vẫn needs_review, không khoá; không draft ⇒ active + khoá", async () => {
+    const [had] = await c.sql<{ v: boolean | null }[]>`select approval_enabled as v
+      from contracts.approval_settings where tenant_id = ${T.acme}`;
+    await c.sql`insert into contracts.approval_settings (tenant_id, approval_enabled) values (${T.acme}, false)
+      on conflict (tenant_id) do update set approval_enabled = false`;
+    try {
+      const id = cid(330);
+      await insContract(c.sql, {
+        id,
+        tenant: T.acme,
+        status: "needs_review",
+        createdBy: PA.B.id,
+        owner: PA.B.id,
+      } as never);
+      const d = await c.call("B", "POST", `${CBASE}/${id}/review`, { version: 1, draft: true });
+      expect({ status: d.status, s: d.json?.status }).toEqual({ status: 200, s: "needs_review" });
+      const row = await lockRow(id);
+      expect({ s: row.status, at: row.locked_at }).toEqual({ s: "needs_review", at: null });
+      const v = (await detail(id)).version;
+      const k = await c.call("B", "POST", `${CBASE}/${id}/review`, { version: v });
+      expect({ status: k.status, s: k.json?.status }).toEqual({ status: 200, s: "active" });
+      expect((await lockRow(id)).locked_at).not.toBeNull();
+    } finally {
+      await c.sql`update contracts.approval_settings set approval_enabled = ${had?.v ?? null}
+        where tenant_id = ${T.acme}`;
+    }
+  }, 60_000);
+});
 describe("decision 1 · chặn tạo HĐ nhập tay", () => {
   it("POST /contracts/manual ⇒ 410 MANUAL_CONTRACT_DISABLED, không tạo hàng", async () => {
     const [n0] = await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.contracts`;

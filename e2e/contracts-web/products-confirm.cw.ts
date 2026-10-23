@@ -107,7 +107,9 @@ test("cấp 1 sẽ chuyển cấp 2 ⇒ không hộp, approve không kèm SP", a
   const approves = await install(page, approvalAsHub("level1", { finalizes_on_approve: false }));
   await page.goto(`/contracts/${contract.id}`);
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");
+  await expect(page.locator("[data-sonner-toast]").first()).toHaveText(
+    "Đã lưu và xác nhận hợp đồng.",
+  );
   expect(approves).toEqual([{ action: "approve" }]);
   await expect(page.getByTestId("product-link-dialog")).toHaveCount(0);
 });

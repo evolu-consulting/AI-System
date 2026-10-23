@@ -65,7 +65,9 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
   await expect(ex).toContainText("“Tổng giá trị theo bảng giá đính kèm”");
   await page.getByLabel("Giá trị").fill("250.000.000");
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã lưu và xác nhận hợp đồng.");
+  await expect(page.locator("[data-sonner-toast]").first()).toHaveText(
+    "Đã lưu và xác nhận hợp đồng.",
+  );
   expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
     [
       "PATCH",
@@ -111,7 +113,7 @@ test("HD-FR-34 · Từ chối: thiếu lý do ⇒ báo, không gửi; có lý do
   expect(sent).toEqual([]);
   await page.getByLabel("Lý do từ chối").fill("Sai đối tác");
   await form.getByRole("button", { name: "Từ chối" }).click();
-  await expect(page.getByRole("status")).toHaveText("Đã từ chối hợp đồng.");
+  await expect(page.locator("[data-sonner-toast]").first()).toHaveText("Đã từ chối hợp đồng.");
   expect(sent).toEqual([
     { method: "POST", path: approvalPath, body: { action: "reject", feedback: "Sai đối tác" } },
   ]);

@@ -3,19 +3,17 @@
 // Bước xác nhận sau upload (`needs_review`) dùng thanh Hủy/Lưu dính như form nhập tay. Đang đọc ⇒ tải lại mỗi 2 s.
 import type { ContractDetail } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
+import { toast } from "~/components/shared/toast";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
-import { showDraftSave } from "~/features/contract-approval/lib/approval";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
-import { DeleteContractButton } from "~/features/contract-delete/components/DeleteContractButton";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { LockBanner } from "~/features/contract-lock/components/LockBanner";
 import { lockView } from "~/features/contract-lock/lib/lock-view";
-import { SourceViewerContext } from "~/features/contract-source/components/QuoteLine";
-import { SourcePanel } from "~/features/contract-source/components/SourcePanel";
 import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
 import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
@@ -33,6 +31,7 @@ import { ManagePanel } from "../components/ManagePanel";
 import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
 import { useInfoForm } from "../hooks/use-info-form";
+import { headRule } from "../lib/head-rule";
 import { leadKey, saveLabelKey } from "../lib/review";
 
 const READING_REFRESH_MS = 2000;
@@ -63,7 +62,7 @@ function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: 
     <button
       type="button"
       className="btn btn-primary btn-sm"
-      disabled={info.busy || ap.busy || !info.dirty}
+      disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
       onClick={() => void info.save()}
     >
       {info.busy ? t("contracts.review.saving") : idle}
@@ -88,8 +87,22 @@ function ContractBody({
   const { sup, write, owner, canUpdate } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
   const lock = lockView(c, owner);
+  const nav = useNavigate();
+  // Thông báo thành công của thẻ duyệt ⇒ toast (không còn khối giữ chỗ trong trang).
+  useEffect(() => {
+    if (ap.msg) toast(ap.msg);
+  }, [ap.msg]);
+  const rule = headRule({
+    status: c.status,
+    locked: c.locked,
+    write,
+    approvalLoaded: ap.loaded,
+    approvalStep: ap.step,
+    approvalConfirm: ap.view.confirm,
+    edited: info.edited,
+  });
   const confirm = c.status === "needs_review";
-  const canSave = write && c.status !== "extracting";
+  const { canSave } = rule;
   const key = leadKey(c.status);
   const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
   // Nút chỉ có khi HĐ có tệp gốc (nhập tay ⇒ không có); phụ lục có tệp riêng xem trong hộp thoại.
@@ -97,98 +110,81 @@ function ContractBody({
     ? { href: fileHref(id), name: c.file.name, onOpen: () => setOrigOpen(true) }
     : null;
   const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
-  // gap-a2 #3: khoang văn bản gốc (mở bằng nút hoặc bằng "Xem đoạn này trong văn bản gốc" ở trích dẫn AI).
-  const [src, setSrc] = useState<{ quote: string | null; nonce: number } | null>(null);
-  const viewer = useMemo(
-    () =>
-      c.has_source
-        ? { show: (quote: string) => setSrc((s) => ({ quote, nonce: (s?.nonce ?? 0) + 1 })) }
-        : null,
-    [c.has_source],
-  );
+  // "Xác nhận và lưu" khi tenant tắt duyệt (bật duyệt dùng nút của thẻ duyệt).
+  const confirmButton = rule.confirmSave ? (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      data-testid="confirm-save"
+      disabled={info.busy || ap.busy}
+      onClick={() => void info.confirmAndSave()}
+    >
+      {t("contracts.approval.confirmSave")}
+    </button>
+  ) : null;
+  // Người dùng 2026-10-23: bỏ nút + khoang "Văn bản gốc" khỏi trang (code `contract-source` giữ lại, chỉ không render).
   return (
-    <SourceViewerContext.Provider value={viewer}>
-      <div className="flex items-start gap-4 max-lg:flex-col">
-        <div className="min-w-0 flex-1 max-lg:w-full">
-          {/* Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó. */}
-          <div className="text-base leading-[1.55]">
-            <ContractHead
-              title={titleOf(c)}
-              lead={lead}
-              sticky={confirm && canSave}
-              file={file}
+    <div className="flex items-start gap-4 max-lg:flex-col">
+      <div className="min-w-0 flex-1 max-lg:w-full">
+        {/* Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó. */}
+        <div className="text-base leading-[1.55]">
+          <ContractHead
+            title={titleOf(c)}
+            lead={lead}
+            sticky={rule.sticky}
+            file={file}
+            canSave={canSave}
+            onCancel={() =>
+              rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts" })
+            }
+            saveButton={rule.draftSave ? saveButton : null}
+            confirmButton={confirmButton}
+            approvalButtons={ap.buttons}
+            approvalBusy={ap.busy}
+          />
+          <ExtractDialog
+            open={dialogOpen({ uploading: false, status: c.status })}
+            name={c.file?.name ?? titleOf(c)}
+          />
+          <LockBanner id={id} view={lock} canUpdate={canUpdate} />
+          <VersionsPanels id={id} versions={c.versions} sup={sup} />
+          <SaveNotice err={info.err ?? ap.err} />
+          {ap.section}
+          <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
+          <ManagePanel c={c} write={write} />
+          {c.status === "extract_failed" ? (
+            <ExtractFailed file={file} id={id} write={write} />
+          ) : (
+            <DetailGrid
+              c={c}
+              f={info.f}
+              onSet={info.set}
               canSave={canSave}
-              dirty={info.dirty}
-              onReset={info.reset}
-              saveButton={showDraftSave(ap.view, canSave) ? saveButton : null}
-              approvalButtons={ap.buttons}
-              approvalBusy={ap.busy}
+              saveButton={confirm ? undefined : saveButton}
+              write={write}
+              partner={partnerOf(c)}
+              today={todayIso()}
+              info={info}
+              lockedKeys={lock.lockedKeys}
             />
-            <ExtractDialog
-              open={dialogOpen({ uploading: false, status: c.status })}
-              name={c.file?.name ?? titleOf(c)}
-            />
-            <LockBanner id={id} view={lock} canUpdate={canUpdate} />
-            <VersionsPanels id={id} versions={c.versions} sup={sup} />
-            <SaveNotice msg={info.msg ?? ap.msg} err={info.err ?? ap.err} />
-            {ap.section}
-            {viewer && (
-              <div className="mb-3 flex justify-end">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  aria-pressed={src !== null}
-                  onClick={() => setSrc((s) => (s ? null : { quote: null, nonce: 0 }))}
-                >
-                  {t("contracts.assistant.srcToggle")}
-                </button>
-              </div>
-            )}
-            <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
-            <ManagePanel c={c} write={write} />
-            {c.status === "extract_failed" ? (
-              <ExtractFailed file={file} id={id} write={write} />
-            ) : (
-              <DetailGrid
-                c={c}
-                f={info.f}
-                onSet={info.set}
-                canSave={canSave}
-                saveButton={confirm ? undefined : saveButton}
-                write={write}
-                partner={partnerOf(c)}
-                today={todayIso()}
-                info={info}
-                lockedKeys={lock.lockedKeys}
-              />
-            )}
-            {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
-            <OriginalFileHost
-              open={origOpen}
-              contractId={id}
-              file={c.file}
-              hasSource={c.has_source}
-              appendices={c.appendices}
-              onClose={() => setOrigOpen(false)}
-            />
-            {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
-            <ContractSourcing c={c} write={write} />
-            <ContractLog contractId={id} status={c.status} />
-            <HistoryPanel id={id} />
-            {owner && c.status !== "extracting" && (
-              <div className="mt-6 flex justify-end">
-                <DeleteContractButton id={id} />
-              </div>
-            )}
-          </div>
+          )}
+          {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
+          <OriginalFileHost
+            open={origOpen}
+            contractId={id}
+            file={c.file}
+            hasSource={c.has_source}
+            appendices={c.appendices}
+            onClose={() => setOrigOpen(false)}
+          />
+          {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
+          <ContractSourcing c={c} write={write} />
+          <ContractLog contractId={id} status={c.status} />
+          <HistoryPanel id={id} />
+          {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}
         </div>
-        {src && viewer && (
-          <div className="sticky top-4 w-[420px] shrink-0 max-lg:static max-lg:w-full">
-            <SourcePanel id={id} quote={src.quote} nonce={src.nonce} onClose={() => setSrc(null)} />
-          </div>
-        )}
       </div>
-    </SourceViewerContext.Provider>
+    </div>
   );
 }
 

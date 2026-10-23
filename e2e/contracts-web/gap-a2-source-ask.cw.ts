@@ -10,7 +10,10 @@ test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 const SOURCE =
   "# Điều 1\nBên A giao hàng.\n\nGiao hàng đợt 1 trước ngày 01/03/2026 tại kho bên B.\n\n# Điều 2\nThanh toán 50% giá trị hợp đồng.";
 
-test("trích dẫn mốc AI ⇒ mở văn bản gốc, tô sáng đúng đoạn", async ({ page }) => {
+// Người dùng 2026-10-23: bỏ nút + khoang "Văn bản gốc" và link "Xem đoạn này trong văn bản gốc" khỏi trang HĐ (code giữ lại).
+test("trang HĐ không còn nút «Văn bản gốc», khoang văn bản gốc, link «Xem đoạn này…»; quote AI vẫn hiện", async ({
+  page,
+}) => {
   await installV2g(page);
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}`, (r) =>
     r.fulfill({
@@ -26,10 +29,10 @@ test("trích dẫn mốc AI ⇒ mở văn bản gốc, tô sáng đúng đoạn"
     r.fulfill({ status: 200, contentType: "text/markdown; charset=utf-8", body: SOURCE }),
   );
   await page.goto(`/contracts/${REVIEW_ID}`);
-  const list = page.getByTestId("ai-milestones");
-  await list.getByRole("button", { name: "Xem đoạn này trong văn bản gốc" }).first().click();
-  await expect(page.getByTestId("source-panel")).toBeVisible();
-  await expect(page.getByTestId("source-hit")).toHaveText("Giao hàng đợt 1 trước ngày 01/03/2026");
+  await expect(page.getByTestId("ai-milestones")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Văn bản gốc" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Xem đoạn này trong văn bản gốc" })).toHaveCount(0);
+  await expect(page.getByTestId("source-panel")).toHaveCount(0);
 });
 
 // ux-excel E3: panel "Hỏi về hợp đồng này" đã gỡ khỏi trang HĐ (trợ lý nổi còn) ⇒ bỏ qua.

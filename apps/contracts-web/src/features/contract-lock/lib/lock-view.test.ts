@@ -5,12 +5,12 @@ import { LOCKED_LEGAL_KEYS, lockErrorKey, lockView } from "./lock-view";
 const base = { locked: false, status: "active", has_document: true } as const;
 
 describe("HD-FR-100 lockView", () => {
-  test("khoá ⇒ banner locked, ô pháp lý chỉ đọc, notice_days còn sửa", () => {
+  test("khoá ⇒ banner locked, mọi ô chỉ đọc (cả notice_days)", () => {
     const v = lockView({ ...base, locked: true }, false);
     expect(v.banner).toBe("locked");
     expect(v.lockedKeys?.has("total_value")).toBe(true);
     expect(v.lockedKeys?.has("commission_pct")).toBe(true);
-    expect(v.lockedKeys?.has("notice_days")).toBe(false);
+    expect(v.lockedKeys?.has("notice_days")).toBe(true);
     expect(LOCKED_LEGAL_KEYS.has("title")).toBe(true);
   });
   test("HD-FR-104 chỉ owner thấy mở lại, và chỉ khi khoá", () => {

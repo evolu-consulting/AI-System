@@ -33,6 +33,8 @@ export type ReviewIn = {
   commission_fixed?: number | null | undefined;
   fields?: Partial<Record<ContractFieldKey, FieldValue>> | undefined;
   milestones?: readonly ReviewMilestoneIn[] | undefined;
+  /** "Lưu nháp": không xác nhận dù tenant tắt duyệt. */
+  draft?: boolean | undefined;
 };
 export type ReviewCur = {
   status: string;
@@ -131,7 +133,8 @@ export function planReview(
   if (!referral && (input.commission_pct != null || input.commission_fixed != null))
     return "commission_kind";
   const { fields, changes } = applyEdits(cur.fields, input.fields ?? {});
-  const milestones = plannedMilestones({ deal, fields, approvalOn: cur.approvalOn, today }, input);
+  const holdOn = cur.approvalOn || input.draft === true; // nháp ⇒ chưa sinh mốc mặc định (chưa xác nhận)
+  const milestones = plannedMilestones({ deal, fields, approvalOn: holdOn, today }, input);
   if (milestones === "invalid") return "milestone_invalid";
   return {
     fields,
@@ -141,6 +144,6 @@ export function planReview(
     commissionPct: referral ? pct : null,
     commissionFixed: referral ? fixed : null,
     milestones,
-    activate: !cur.approvalOn,
+    activate: !cur.approvalOn && input.draft !== true,
   };
 }

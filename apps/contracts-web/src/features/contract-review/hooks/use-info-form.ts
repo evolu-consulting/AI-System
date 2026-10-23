@@ -57,11 +57,14 @@ function useInfoLoad(c: ContractDetail | undefined, confirm: boolean) {
   const [rows, setRows] = useState<MsRow[]>([]);
   const [tried, setTried] = useState(false);
   const [sug, setSug] = useState(0);
+  /** Người dùng đã sửa gì chưa (bước xác nhận luôn "bẩn" về mặt dữ liệu nên cần cờ riêng cho nút Huỷ). */
+  const [touched, setTouched] = useState(false);
   const load = useCallback(() => {
     if (!c) return;
     setF(c.status === "needs_review" && c.ai !== null ? formOfConfirm(c) : formOfDetail(c));
     setRows(msRowsOf(c));
     setTried(false);
+    setTouched(false);
     setSug((n) => n + 1);
   }, [c]);
   useEffect(load, [load]);
@@ -71,7 +74,7 @@ function useInfoLoad(c: ContractDetail | undefined, confirm: boolean) {
   useEffect(() => {
     if (confirm) setF((s) => (s ? withNoticeDefault(s, notice) : s));
   }, [confirm, notice, sug]);
-  return { f, setF, rows, setRows, tried, setTried, sug, setSug, load };
+  return { f, setF, rows, setRows, tried, setTried, sug, setSug, load, touched, setTouched };
 }
 
 /** Gợi ý SP cho dòng chưa gắn (quy tắc nhận diện ⇒ trùng từ ⇒ "Tạo sản phẩm mới" + thành phần): song song, tối đa 50 dòng. */
@@ -169,25 +172,29 @@ function useInfoDerived(
 type SaveCtx = { c: ContractDetail | undefined; id: string; confirm: boolean; f: FormState | null };
 
 /** Lưu ở bước xác nhận: MỘT `POST /review` (HĐ ra `active` ⇒ tạo SP mới đã chọn); chặn lỗi ⇒ toast + ném. */
+/** `draft` ⇒ chỉ ghi, HĐ giữ chờ xác nhận (không khoá) kể cả khi tenant tắt duyệt. */
 function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => void) {
   const { t } = useTranslation();
   const { c, f, id } = x;
-  return useCallback(async () => {
-    if (!c || !f) return null;
-    const stop = blockerMessage(f, t, () => setTried(true));
-    if (stop) {
-      toast(stop, "late");
-      throw new Error(stop);
-    }
-    const productIds = productIdsOf(f);
-    const out = await saveReview(
-      id,
-      reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
-    );
-    // products-confirm: SP mới chỉ tạo khi lưu xong HĐ đã xác nhận (tenant tắt duyệt); chờ duyệt ⇒ hộp "Gắn sản phẩm" lúc duyệt.
-    await linkNewFormLines(id, out.status, f.items);
-    return out;
-  }, [c, f, rows, id, t, setTried]);
+  return useCallback(
+    async (draft: boolean) => {
+      if (!c || !f) return null;
+      const stop = blockerMessage(f, t, () => setTried(true));
+      if (stop) {
+        toast(stop, "late");
+        throw new Error(stop);
+      }
+      const productIds = productIdsOf(f);
+      const out = await saveReview(id, {
+        ...reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
+        ...(draft ? { draft: true } : {}),
+      });
+      // products-confirm: SP mới chỉ tạo khi lưu xong HĐ đã xác nhận (tenant tắt duyệt); chờ duyệt ⇒ hộp "Gắn sản phẩm" lúc duyệt.
+      await linkNewFormLines(id, out.status, f.items);
+      return out;
+    },
+    [c, f, rows, id, t, setTried],
+  );
 }
 
 /** Lưu + trạng thái (busy/msg/err) + hủy. `saveFirst` chỉ ghi khi có gì để ghi (luồng "Xác nhận"). */
@@ -205,7 +212,7 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
     setMsg(null);
   }, [L.load]);
   const saveFirst = useCallback(async () => {
-    if (confirm) await saveConfirm();
+    if (confirm) await saveConfirm(false);
     else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
   }, [confirm, saveConfirm, c, patch, id]);
   const save = useCallback(async () => {
@@ -214,7 +221,7 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
     setBusy(true);
     try {
       if (confirm) {
-        const out = await saveConfirm();
+        const out = await saveConfirm(true);
         await qc.invalidateQueries({ queryKey: contractKey(id) });
         await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
         const m = t(savedNoticeKey(out?.status ?? "needs_review", out?.status === "active"));
@@ -223,7 +230,7 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
       } else {
         await saveFirst();
         await qc.invalidateQueries({ queryKey: contractKey(id) });
-        setMsg(t(savedNoticeKey(c?.status ?? "", false)));
+        toast(t(savedNoticeKey(c?.status ?? "", false)));
       }
     } catch (e) {
       setErr(e instanceof Error && !("status" in e) ? e.message : saveErrorText(e, t));
@@ -231,7 +238,29 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
       setBusy(false);
     }
   }, [confirm, saveConfirm, saveFirst, qc, id, t, c?.status]);
-  return { reset, save, saveFirst, busy, msg, err };
+  /** Tenant tắt duyệt: ghi rồi xác nhận (⇒ active + khoá). Bật duyệt dùng thẻ duyệt, không qua đây. */
+  const confirmAndSave = useCallback(async () => {
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
+    try {
+      if (confirm) await saveConfirm(false);
+      else if (c) {
+        const v = Object.keys(patch).length
+          ? (await patchContractFields(id, c.version, patch)).version
+          : c.version;
+        await saveReview(id, { version: v });
+      }
+      await qc.invalidateQueries({ queryKey: contractKey(id) });
+      await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+      toast(t(savedNoticeKey("active", true)));
+    } catch (e) {
+      setErr(e instanceof Error && !("status" in e) ? e.message : saveErrorText(e, t));
+    } finally {
+      setBusy(false);
+    }
+  }, [confirm, saveConfirm, c, patch, id, qc, t]);
+  return { reset, save, saveFirst, confirmAndSave, busy, msg, err };
 }
 
 export function useInfoForm(c: ContractDetail | undefined, id: string) {
@@ -247,7 +276,22 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
   useProductSuggest(confirm, L.f, L.setF, L.sug);
   const patch = useMemo(() => (c && L.f && !confirm ? patchOfForm(c, L.f) : {}), [c, L.f, confirm]);
   const dirty = confirm ? true : Object.keys(patch).length > 0;
-  const editors = useInfoEditors(c, L);
+  const raw = useInfoEditors(c, L);
+  // Mỗi thao tác sửa đánh dấu "đã sửa" (cho nút Huỷ).
+  const mark =
+    <A extends unknown[]>(fn: (...a: A) => void) =>
+    (...a: A) => {
+      L.setTouched(true);
+      fn(...a);
+    };
+  const editors = {
+    set: mark(raw.set),
+    setDeal: mark(raw.setDeal),
+    patchLine: mark(raw.patchLine),
+    addLine: mark(raw.addLine),
+    removeLine: mark(raw.removeLine),
+    setRow: mark(raw.setRow),
+  };
   const derived = useInfoDerived(c, L.f, L.tried, confirm);
   const saving = useInfoSave({ c, id, confirm, f: L.f }, L, patch);
   return {
@@ -258,6 +302,8 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     ...derived,
     products: products.data ?? [],
     dirty,
+    /** Có sửa chưa lưu (cho Huỷ): bước xác nhận theo cờ đã chạm, còn lại theo bản vá. */
+    edited: confirm ? L.touched : dirty,
     ...saving,
   };
 }
