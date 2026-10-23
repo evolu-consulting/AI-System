@@ -1,12 +1,20 @@
 // contract-flow S5 · mục "Quy trình duyệt" trong Cài đặt: mọi người có quyền đọc gói đều xem; chỉ chủ sở hữu (owner) sửa + lưu.
 // Danh sách bước (≤ 8, bước 1 cố định) · xem trước đường đi · Lưu ⇒ PUT, lỗi server hiện theo trường.
 // TODO: nút "Thêm bước Dify" ẩn tới khi có API liệt kê workflow catalog (xem docs/specs/contract-flow/tasks.md).
+
+import { APPROVAL_FLOW_STEPS_MAX as FLOW_MAX_STEPS } from "@ai/contracts";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { FLOW_MAX_STEPS, type FlowStep } from "../api-flow";
+import type { FlowStep } from "../api-flow";
 import { useDepartments, useFlow, useSaveFlow } from "../hooks/use-flow";
-import { type FlowIssue, flowReducer, serverIssues, validateFlow } from "../lib/flow-state";
+import {
+  errCode,
+  type FlowIssue,
+  flowReducer,
+  serverIssues,
+  validateFlow,
+} from "../lib/flow-state";
 import { FlowPreview } from "./FlowPreview";
 import { FlowStepCard } from "./FlowStepCard";
 
@@ -20,6 +28,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
   const save = useSaveFlow();
   const [steps, dispatch] = useReducer(flowReducer, [] as FlowStep[]);
   const [server, setServer] = useState<FlowIssue[]>([]);
+  const [conflict, setConflict] = useState(false);
   const version = useRef<number | null>(null);
 
   useEffect(() => {
@@ -47,19 +56,25 @@ export function FlowPane({ owner }: { owner: boolean }) {
 
   const onSave = () => {
     if (local.length) return;
-    save.mutate(steps, {
-      onSuccess: (d) => {
-        version.current = d.version;
-        dispatch({ type: "load", steps: d.steps });
-        setServer([]);
-        toast(f("saved"));
+    setConflict(false);
+    save.mutate(
+      { version: q.data.version, steps },
+      {
+        onSuccess: (d) => {
+          version.current = d.version;
+          dispatch({ type: "load", steps: d.steps });
+          setServer([]);
+          toast(f("saved"));
+        },
+        onError: (e) => {
+          if (errCode(e) === "VERSION_CONFLICT") return setConflict(true);
+          const got = serverIssues(e);
+          setServer(got);
+          const msg = errCode(e) === "APPROVAL_GROUP_MISSING" ? f("groupMissing") : null;
+          toast(msg ?? (got.length ? f("saveInvalid") : f("saveFail")), "late");
+        },
       },
-      onError: (e) => {
-        const got = serverIssues(e);
-        setServer(got);
-        toast(got.length ? f("saveInvalid") : ((e as Error).message ?? f("saveFail")), "late");
-      },
-    });
+    );
   };
   const general = issues.filter((i) => i.index === null);
 
@@ -76,6 +91,22 @@ export function FlowPane({ owner }: { owner: boolean }) {
         {!owner && <span className="text-caption text-dim">{f("readOnly")}</span>}
       </div>
       <p className="mb-3 text-dim">{f("lead")}</p>
+      {conflict && (
+        <p role="alert" className="mb-3 text-late">
+          {f("conflict")}{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => {
+              version.current = null;
+              setConflict(false);
+              void q.refetch();
+            }}
+          >
+            {f("reload")}
+          </button>
+        </p>
+      )}
       {depts.isError && <p className="mb-3 text-caption text-dim">{f("deptsFail")}</p>}
       <fieldset disabled={!owner || save.isPending} className="min-w-0 border-0 p-0">
         <ol className="mb-3 flex flex-col gap-3">

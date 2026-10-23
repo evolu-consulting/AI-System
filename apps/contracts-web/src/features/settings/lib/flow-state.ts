@@ -1,15 +1,19 @@
 // contract-flow S5 · trạng thái soạn mẫu luồng (reducer thuần) + kiểm sơ bộ + đọc lỗi trường từ server.
 import {
-  type DifyStep,
-  FLOW_MAX_STEPS,
-  type FlowStep,
-  type ReviewStep,
-  type StepWhen,
-} from "../api-flow";
+  APPROVAL_FLOW_DUE_H,
+  APPROVAL_FLOW_REMIND_H,
+  APPROVAL_FLOW_STEPS_MAX,
+} from "@ai/contracts";
+import type { FlowDifyStep, FlowReviewStep, FlowStep, FlowWhen } from "../api-flow";
+
+const FLOW_MAX_STEPS = APPROVAL_FLOW_STEPS_MAX;
+type ReviewStep = FlowReviewStep;
+type DifyStep = FlowDifyStep;
+type StepWhen = FlowWhen;
 
 export type FlowAction =
   | { type: "load"; steps: FlowStep[] }
-  | { type: "addReview"; department_group_id?: string }
+  | { type: "addReview"; department_group_id?: string | null }
   | { type: "addDify"; workflow_key: string; name: string }
   | { type: "remove"; index: number }
   | { type: "move"; index: number; dir: -1 | 1 }
@@ -23,14 +27,17 @@ function freshKey(steps: readonly FlowStep[], prefix: string): string {
   return `${prefix}${n}`;
 }
 
-export function newReview(steps: readonly FlowStep[], department_group_id = ""): ReviewStep {
+export function newReview(
+  steps: readonly FlowStep[],
+  department_group_id: string | null = null,
+): ReviewStep {
   return {
     kind: "review",
     key: freshKey(steps, "s"),
     name: "",
     department_group_id,
     head_only: false,
-    due_h: 24,
+    due_h: 72,
     remind_every_h: null,
     escalate_group_id: null,
     exclude_starter: false,
@@ -79,31 +86,35 @@ export function flowReducer(steps: FlowStep[], a: FlowAction): FlowStep[] {
 
 export type FlowIssue = { index: number | null; field: string; code: string; message?: string };
 
-export const REMIND_MIN = 4;
-export const REMIND_MAX = 168;
-export const DUE_MAX = 720;
+export const REMIND_MIN = APPROVAL_FLOW_REMIND_H.min;
+export const REMIND_MAX = APPROVAL_FLOW_REMIND_H.max;
+export const DUE_MIN = APPROVAL_FLOW_DUE_H.min;
+export const DUE_MAX = APPROVAL_FLOW_DUE_H.max;
 
+/** Mã lỗi client dùng chung tên luật server (`APPROVAL_FLOW_RULES`) khi trùng nghĩa. */
 function reviewIssues(s: ReviewStep, i: number): FlowIssue[] {
   const out: FlowIssue[] = [];
   const bad = (field: string, code: string) => out.push({ index: i, field, code });
   if (!s.name.trim()) bad("name", "nameEmpty");
-  if (!s.department_group_id) bad("department_group_id", "deptEmpty");
-  if (!Number.isInteger(s.due_h) || s.due_h < 1 || s.due_h > DUE_MAX) bad("due_h", "dueRange");
+  if (!s.department_group_id) bad("department_group_id", "GROUP_REQUIRED");
+  if (!Number.isInteger(s.due_h) || s.due_h < DUE_MIN || s.due_h > DUE_MAX)
+    bad("due_h", "DUE_RANGE");
   const r = s.remind_every_h;
   if (r !== null && (!Number.isInteger(r) || r < REMIND_MIN || r > REMIND_MAX))
-    bad("remind_every_h", "remindRange");
+    bad("remind_every_h", "REMIND_RANGE");
   if (s.escalate_group_id && s.escalate_group_id === s.department_group_id)
-    bad("escalate_group_id", "escalateSame");
-  if (i === 0 && s.when) bad("when", "firstWhen");
+    bad("escalate_group_id", "ESCALATE_SAME_GROUP");
+  if (i === 0 && s.when) bad("when", "FIRST_CONDITIONAL");
   return [...out, ...whenIssues(s.when, i)];
 }
 
 function whenIssues(w: StepWhen | null, i: number): FlowIssue[] {
   if (!w) return [];
   const out: FlowIssue[] = [];
-  if (!(w.deal?.length || w.value)) out.push({ index: i, field: "when", code: "whenEmpty" });
-  if (w.value && !(Number.isFinite(w.value.amount) && w.value.amount >= 0))
-    out.push({ index: i, field: "when.value", code: "amountInvalid" });
+  if (w.conds.length === 0) out.push({ index: i, field: "when", code: "whenEmpty" });
+  for (const c of w.conds)
+    if (c.field === "total_value" && !(Number.isInteger(c.value) && c.value >= 0))
+      out.push({ index: i, field: "when", code: "amountInvalid" });
   return out;
 }
 
@@ -111,14 +122,17 @@ function whenIssues(w: StepWhen | null, i: number): FlowIssue[] {
 export function validateFlow(steps: readonly FlowStep[]): FlowIssue[] {
   const out: FlowIssue[] = [];
   if (steps.length === 0 || steps[0]?.kind !== "review")
-    out.push({ index: 0, field: "kind", code: "firstReview" });
-  if (steps.length > FLOW_MAX_STEPS) out.push({ index: null, field: "steps", code: "tooMany" });
+    out.push({ index: 0, field: "kind", code: "FIRST_NOT_REVIEW" });
+  if (steps.length > FLOW_MAX_STEPS) out.push({ index: null, field: "steps", code: "STEPS_MAX" });
   const keys = new Set<string>();
   steps.forEach((s, i) => {
-    if (keys.has(s.key)) out.push({ index: i, field: "key", code: "dupKey" });
+    if (keys.has(s.key)) out.push({ index: i, field: "key", code: "KEY_DUP" });
     keys.add(s.key);
     if (s.kind === "review") out.push(...reviewIssues(s, i));
     else if (!s.workflow_key) out.push({ index: i, field: "workflow_key", code: "difyEmpty" });
+    const prev = steps[i - 1];
+    if (prev?.kind === "dify" && s.kind === "review" && s.when)
+      out.push({ index: i, field: "when", code: "AFTER_DIFY_CONDITIONAL" });
   });
   return out;
 }
@@ -126,21 +140,17 @@ export function validateFlow(steps: readonly FlowStep[]): FlowIssue[] {
 export const issueOf = (issues: readonly FlowIssue[], index: number, field: string) =>
   issues.find((x) => x.index === index && (x.field === field || x.field.startsWith(`${field}.`)));
 
-/** Lỗi trường từ server: `details.issues[{path:["steps",1,"due_h"],message}]` hoặc `details.fields{"steps.1.due_h":msg}`. */
+/** Lỗi 422 `APPROVAL_FLOW_INVALID`: `details.issues[{path:"steps.1.due_h", rule}]` ⇒ trường của bước. */
 export function serverIssues(err: unknown): FlowIssue[] {
-  const d = (err as { details?: unknown } | null)?.details as
-    | {
-        issues?: { path?: (string | number)[]; message?: string }[];
-        fields?: Record<string, string>;
-      }
-    | undefined;
-  const raw: [string, string][] = [];
-  for (const it of d?.issues ?? []) raw.push([(it.path ?? []).join("."), it.message ?? ""]);
-  for (const [k, v] of Object.entries(d?.fields ?? {})) raw.push([k, String(v)]);
-  return raw.map(([path, message]) => {
+  const d = (err as { details?: { issues?: { path?: string; rule?: string }[] } } | null)?.details;
+  return (d?.issues ?? []).map((it) => {
+    const path = it.path ?? "steps";
+    const code = it.rule ?? "server";
     const m = /^steps\.(\d+)\.?(.*)$/.exec(path);
     return m
-      ? { index: Number(m[1]), field: m[2] || "step", code: "server", message }
-      : { index: null, field: path || "steps", code: "server", message };
+      ? { index: Number(m[1]), field: m[2] || "step", code }
+      : { index: null, field: path, code };
   });
 }
+
+export const errCode = (e: unknown): string | undefined => (e as { code?: string } | null)?.code;

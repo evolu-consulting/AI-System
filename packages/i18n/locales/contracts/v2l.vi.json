@@ -304,20 +304,24 @@
       "runs": "chạy",
       "skipped": "bỏ qua",
       "unnamed": "(chưa đặt tên)",
+      "groupShort": "Nhóm",
+      "groupMissing": "Nhóm phòng ban không còn tồn tại, hãy chọn lại.",
+      "conflict": "Luồng đã được người khác sửa, tải lại.",
+      "reload": "Tải lại",
       "err": {
         "nameEmpty": "Nhập tên bước.",
-        "deptEmpty": "Chọn phòng ban.",
-        "dueRange": "Hạn xử lý phải là số giờ nguyên từ 1 đến 720.",
-        "remindRange": "Nhắc lại phải từ {{min}} đến {{max}} giờ.",
-        "escalateSame": "Nhóm chuyển cấp phải khác phòng ban duyệt.",
-        "firstWhen": "Bước đầu không có điều kiện.",
-        "firstReview": "Bước đầu phải là bước soạn và kiểm tra.",
+        "GROUP_REQUIRED": "Chọn phòng ban.",
+        "DUE_RANGE": "Hạn xử lý phải là số giờ nguyên từ 4 đến 2160.",
+        "REMIND_RANGE": "Nhắc lại phải từ {{min}} đến {{max}} giờ.",
+        "ESCALATE_SAME_GROUP": "Nhóm chuyển cấp phải khác phòng ban duyệt.",
+        "FIRST_CONDITIONAL": "Bước đầu không có điều kiện.",
+        "FIRST_NOT_REVIEW": "Bước đầu phải là bước soạn và kiểm tra.",
         "whenEmpty": "Chọn loại hợp đồng hoặc giá trị, hoặc bỏ điều kiện.",
         "amountInvalid": "Số tiền phải là số không âm.",
-        "tooMany": "Tối đa 8 bước.",
-        "dupKey": "Mã bước bị trùng.",
-        "difyEmpty": "Chưa chọn quy trình Dify.",
-        "server": "Máy chủ từ chối giá trị này."
+        "STEPS_MAX": "Tối đa 8 bước.",
+        "KEY_DUP": "Mã bước bị trùng.",
+        "AFTER_DIFY_CONDITIONAL": "Bước sau bước Dify không được có điều kiện.",
+        "difyEmpty": "Chưa chọn quy trình Dify."
       }
     }
   }

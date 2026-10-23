@@ -17,22 +17,26 @@ const review = (key: string, name: string, dept: string, when: unknown = null) =
   name,
   department_group_id: dept,
   head_only: false,
-  due_h: 24,
+  due_h: 72,
   remind_every_h: null,
   escalate_group_id: null,
   exclude_starter: false,
   when,
 });
 const FLOW = {
-  version: 3,
+  version: 1,
   is_default: true,
+  updated_at: null,
   steps: [
     review("s0", "Soạn & kiểm tra", D1),
-    review("s1", "Kế toán", D2, { op: "and", value: { cmp: "gte", amount: 100000000 } }),
+    review("s1", "Kế toán", D2, {
+      op: "and",
+      conds: [{ field: "total_value", op: "ge", value: 100000000 }],
+    }),
   ],
 };
 
-async function install(page: Page, role: Role, putStatus = 200) {
+async function install(page: Page, role: Role, putStatus = 200, code = "APPROVAL_FLOW_INVALID") {
   const d = asHub(role);
   const puts: unknown[] = [];
   await page.addInitScript(() => {
@@ -58,15 +62,28 @@ async function install(page: Page, role: Role, putStatus = 200) {
     if (r.request().method() === "PUT") {
       const body = r.request().postDataJSON();
       puts.push(body);
-      if (putStatus !== 200)
-        return json(r, 400, {
+      if (putStatus === 409)
+        return json(r, 409, {
           error: {
-            code: "VALIDATION_ERROR",
-            message: "bad",
-            details: { issues: [{ path: ["steps", 1, "due_h"], message: "Hạn quá dài" }] },
+            code: "VERSION_CONFLICT",
+            message: "x",
+            details: { current: { ...FLOW, version: 2 } },
           },
         });
-      return json(r, 200, { version: 4, is_default: false, steps: body.steps });
+      if (putStatus !== 200)
+        return json(r, putStatus, {
+          error: {
+            code,
+            message: "bad",
+            details: { issues: [{ path: "steps.1.due_h", rule: "DUE_RANGE" }] },
+          },
+        });
+      return json(r, 200, {
+        version: 2,
+        is_default: false,
+        steps: body.steps,
+        updated_at: "2026-10-23T00:00:00.000Z",
+      });
     }
     return json(r, 200, FLOW);
   });
@@ -102,7 +119,8 @@ test("owner: thấy huy hiệu mặc định, thêm bước, xem trước, Lưu 
   await step.getByLabel("Phòng ban").selectOption(D1);
   await dlg.getByRole("button", { name: "Lưu quy trình" }).click();
   await expect.poll(() => puts.length).toBe(1);
-  expect((puts[0] as { steps: unknown[] }).steps).toHaveLength(3);
+  expect((puts[0] as { steps: unknown[]; version: number }).steps).toHaveLength(3);
+  expect((puts[0] as { version: number }).version).toBe(1);
   await expect(dlg.getByText("Dùng mặc định")).toHaveCount(0);
 });
 
@@ -119,11 +137,13 @@ test("owner: bước đầu không có nút xoá/điều kiện; thiếu tên kh
 });
 
 test("lỗi server hiện theo trường của bước", async ({ page }) => {
-  await install(page, "owner", 400);
+  await install(page, "owner", 422);
   const dlg = await open(page);
   await dlg.getByTestId("flow-step-1").getByLabel("Hạn xử lý (giờ)").fill("48");
   await dlg.getByRole("button", { name: "Lưu quy trình" }).click();
-  await expect(dlg.getByTestId("flow-step-1").getByText("Hạn quá dài")).toBeVisible();
+  await expect(
+    dlg.getByTestId("flow-step-1").getByText("Hạn xử lý phải là số giờ nguyên từ 4 đến 2160."),
+  ).toBeVisible();
 });
 
 test("viewer: xem được nhưng không sửa", async ({ page }) => {
@@ -133,4 +153,13 @@ test("viewer: xem được nhưng không sửa", async ({ page }) => {
   await expect(dlg.getByRole("button", { name: "Lưu quy trình" })).toHaveCount(0);
   await expect(dlg.getByRole("button", { name: "Thêm bước duyệt" })).toHaveCount(0);
   await expect(dlg.getByTestId("flow-step-1").getByLabel("Tên bước")).toBeDisabled();
+});
+
+test("409 VERSION_CONFLICT: báo luồng đã bị sửa + nút Tải lại", async ({ page }) => {
+  await install(page, "owner", 409);
+  const dlg = await open(page);
+  await dlg.getByTestId("flow-step-1").getByLabel("Hạn xử lý (giờ)").fill("48");
+  await dlg.getByRole("button", { name: "Lưu quy trình" }).click();
+  await expect(dlg.getByText("Luồng đã được người khác sửa, tải lại.")).toBeVisible();
+  await expect(dlg.getByRole("button", { name: "Tải lại" })).toBeVisible();
 });

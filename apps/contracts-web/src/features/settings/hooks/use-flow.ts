@@ -24,7 +24,7 @@ export const useDepartments = (enabled: boolean) =>
 export function useSaveFlow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (steps: FlowStep[]) => saveFlow({ steps }),
+    mutationFn: (v: { version: number; steps: FlowStep[] }) => saveFlow(v),
     onSuccess: (d) => qc.setQueryData(flowKeys.flow, d),
   });
 }

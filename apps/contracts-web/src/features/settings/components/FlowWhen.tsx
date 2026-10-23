@@ -1,17 +1,24 @@
-// contract-flow S5 · điều kiện áp dụng của một bước: loại HĐ (nhiều) AND/OR giá trị (≥ / <).
+// contract-flow S5 · điều kiện áp dụng của một bước: loại HĐ (nhiều) AND/OR giá trị (≥ > ≤ <).
 import { useTranslation } from "react-i18next";
-import type { DealKind, StepWhen } from "../api-flow";
+import type { DealKind, ValueOp, FlowWhen as When } from "../api-flow";
+import { buildWhen, whenParts } from "../lib/flow-path";
 import { FIELD, Seg } from "./controls";
 
 const DEALS: readonly DealKind[] = ["buy", "sell", "referral"];
+const OPS: readonly [ValueOp, string][] = [
+  ["ge", "≥"],
+  ["gt", ">"],
+  ["le", "≤"],
+  ["lt", "<"],
+];
 
 export function FlowWhen({
   when,
   onChange,
   error,
 }: {
-  when: StepWhen | null;
-  onChange: (w: StepWhen | null) => void;
+  when: When | null;
+  onChange: (w: When | null) => void;
   error?: string;
 }) {
   const { t } = useTranslation();
@@ -23,28 +30,28 @@ export function FlowWhen({
         <button
           type="button"
           className="underline"
-          onClick={() => onChange({ op: "and", deal: [] })}
+          onClick={() => onChange({ op: "and", conds: [] })}
         >
           {f("addCond")}
         </button>
       </div>
     );
-  const deals = when.deal ?? [];
-  const toggle = (d: DealKind) => {
-    const next = deals.includes(d) ? deals.filter((x) => x !== d) : [...deals, d];
-    onChange({ ...when, deal: next });
-  };
-  const setValue = (on: boolean) => {
-    const { value: _drop, ...rest } = when;
-    onChange(on ? { ...rest, value: { cmp: "gte", amount: 0 } } : rest);
-  };
+  const { deal, value } = whenParts(when);
+  const set = (d: readonly DealKind[], v: typeof value, op = when.op) =>
+    onChange(buildWhen(op, d, v));
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-caption text-dim">{f("dealKind")}</span>
         {DEALS.map((d) => (
           <label key={d} className="flex items-center gap-1">
-            <input type="checkbox" checked={deals.includes(d)} onChange={() => toggle(d)} />
+            <input
+              type="checkbox"
+              checked={deal.includes(d)}
+              onChange={() =>
+                set(deal.includes(d) ? deal.filter((x) => x !== d) : [...deal, d], value)
+              }
+            />
             {f(`deal.${d}`)}
           </label>
         ))}
@@ -56,48 +63,38 @@ export function FlowWhen({
           ["and", f("opAnd")],
           ["or", f("opOr")],
         ]}
-        onChange={(op) => onChange({ ...when, op })}
+        onChange={(op) => set(deal, value, op)}
       />
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1">
           <input
             type="checkbox"
-            checked={!!when.value}
-            onChange={(e) => setValue(e.target.checked)}
+            checked={!!value}
+            onChange={(e) => set(deal, e.target.checked ? { op: "ge", value: 0 } : null)}
           />
           {f("valueCond")}
         </label>
-        {when.value && (
+        {value && (
           <>
             <select
               aria-label={f("cmp")}
               className={`${FIELD} !w-24`}
-              value={when.value.cmp}
-              onChange={(e) =>
-                onChange({
-                  ...when,
-                  value: {
-                    amount: when.value?.amount ?? 0,
-                    cmp: e.target.value === "lt" ? "lt" : "gte",
-                  },
-                })
-              }
+              value={value.op}
+              onChange={(e) => set(deal, { ...value, op: e.target.value as ValueOp })}
             >
-              <option value="gte">≥</option>
-              <option value="lt">&lt;</option>
+              {OPS.map(([o, label]) => (
+                <option key={o} value={o}>
+                  {label}
+                </option>
+              ))}
             </select>
             <input
               type="number"
               min={0}
               aria-label={f("amount")}
               className={`${FIELD} !w-44`}
-              value={when.value.amount}
-              onChange={(e) =>
-                onChange({
-                  ...when,
-                  value: { cmp: when.value?.cmp ?? "gte", amount: Number(e.target.value) },
-                })
-              }
+              value={value.value}
+              onChange={(e) => set(deal, { ...value, value: Math.trunc(Number(e.target.value)) })}
             />
             <span className="text-caption text-dim">{f("emptyValueNote")}</span>
           </>

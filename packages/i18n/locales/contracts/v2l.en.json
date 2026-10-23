@@ -304,20 +304,24 @@
       "runs": "runs",
       "skipped": "skipped",
       "unnamed": "(unnamed)",
+      "groupShort": "Group",
+      "groupMissing": "The department group no longer exists, choose again.",
+      "conflict": "The flow was changed by someone else, reload.",
+      "reload": "Reload",
       "err": {
         "nameEmpty": "Enter a step name.",
-        "deptEmpty": "Select a department.",
-        "dueRange": "Deadline must be a whole number of hours from 1 to 720.",
-        "remindRange": "Reminder must be between {{min}} and {{max}} hours.",
-        "escalateSame": "The escalation group must differ from the approving department.",
-        "firstWhen": "The first step has no condition.",
-        "firstReview": "The first step must be draft and check.",
+        "GROUP_REQUIRED": "Select a department.",
+        "DUE_RANGE": "Deadline must be a whole number of hours from 4 to 2160.",
+        "REMIND_RANGE": "Reminder must be between {{min}} and {{max}} hours.",
+        "ESCALATE_SAME_GROUP": "The escalation group must differ from the approving department.",
+        "FIRST_CONDITIONAL": "The first step has no condition.",
+        "FIRST_NOT_REVIEW": "The first step must be draft and check.",
         "whenEmpty": "Choose a contract type or value, or remove the condition.",
         "amountInvalid": "Amount must be a non-negative number.",
-        "tooMany": "Maximum 8 steps.",
-        "dupKey": "Duplicate step key.",
-        "difyEmpty": "No Dify workflow selected.",
-        "server": "The server rejected this value."
+        "STEPS_MAX": "Maximum 8 steps.",
+        "KEY_DUP": "Duplicate step key.",
+        "AFTER_DIFY_CONDITIONAL": "The step after a Dify step cannot have a condition.",
+        "difyEmpty": "No Dify workflow selected."
       }
     }
   }

@@ -1,8 +1,8 @@
 // contract-flow S5 · một bước của mẫu luồng: bước duyệt (phòng, trưởng phòng, hạn, nhắc, chuyển cấp, điều kiện) hoặc bước Dify.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { FlowStep, ReviewStep } from "../api-flow";
-import { type FlowIssue, issueOf, REMIND_MAX, REMIND_MIN } from "../lib/flow-state";
+import type { FlowStep, FlowReviewStep as ReviewStep } from "../api-flow";
+import { DUE_MIN, type FlowIssue, issueOf, REMIND_MAX, REMIND_MIN } from "../lib/flow-state";
 import { FIELD } from "./controls";
 import { FlowWhen } from "./FlowWhen";
 
@@ -23,6 +23,15 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
+const SHOWN = new Set([
+  "name",
+  "department_group_id",
+  "due_h",
+  "remind_every_h",
+  "escalate_group_id",
+  "when",
+]);
+
 type Props = {
   step: FlowStep;
   index: number;
@@ -42,11 +51,13 @@ export function FlowStepCard(p: Props) {
   const { step, index } = p;
   const err = (field: string) => {
     const i = issueOf(p.issues, index, field);
-    return i ? (i.message ?? f(`err.${i.code}`, { min: REMIND_MIN, max: REMIND_MAX })) : undefined;
+    return i ? f(`err.${i.code}`, { min: REMIND_MIN, max: REMIND_MAX }) : undefined;
   };
   const first = index === 0;
-  const deptOpts = (cur: string) =>
-    p.depts.some((d) => d.id === cur) || !cur ? p.depts : [...p.depts, { id: cur, name: cur }];
+  const deptOpts = (cur: string | null) =>
+    p.depts.some((d) => d.id === cur) || !cur
+      ? p.depts
+      : [...p.depts, { id: cur, name: `${f("groupShort")} ${cur.slice(0, 8)}` }];
 
   return (
     <li className="rounded-xl border border-rule bg-panel p-4" data-testid={`flow-step-${index}`}>
@@ -81,6 +92,13 @@ export function FlowStepCard(p: Props) {
           </span>
         )}
       </div>
+      {p.issues
+        .filter((x) => x.index === index && !SHOWN.has(x.field.split(".")[0] ?? ""))
+        .map((x) => (
+          <p key={`${x.field}${x.code}`} role="alert" className="mb-2 text-caption text-late">
+            {f(`err.${x.code}`, { min: REMIND_MIN, max: REMIND_MAX })}
+          </p>
+        ))}
       {step.kind === "dify" ? (
         <p className="text-dim">{f("difyInfo", { name: step.name || step.workflow_key })}</p>
       ) : (
@@ -95,8 +113,8 @@ export function FlowStepCard(p: Props) {
           <Field label={f("dept")} error={err("department_group_id")}>
             <select
               className={FIELD}
-              value={step.department_group_id}
-              onChange={(e) => p.onPatch({ department_group_id: e.target.value })}
+              value={step.department_group_id ?? ""}
+              onChange={(e) => p.onPatch({ department_group_id: e.target.value || null })}
             >
               <option value="">{f("pick")}</option>
               {deptOpts(step.department_group_id).map((d) => (
@@ -109,7 +127,7 @@ export function FlowStepCard(p: Props) {
           <Field label={f("dueH")} error={err("due_h")}>
             <input
               type="number"
-              min={1}
+              min={DUE_MIN}
               className={FIELD}
               value={step.due_h}
               onChange={(e) => p.onPatch({ due_h: Number(e.target.value) })}
