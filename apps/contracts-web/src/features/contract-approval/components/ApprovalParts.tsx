@@ -18,24 +18,14 @@ export function ApprovalButtons({
   busy: Busy;
   onConfirm: () => void;
   onApprove: () => void;
-  onAsk: (kind: "reject" | "redo") => void;
+  onAsk: (kind: "reject") => void;
 }) {
   const { t } = useTranslation();
   const off = busy !== null;
+  // confirm-flow (người dùng 2026-10-23): nút "Đọc lại" (trích lại kèm lý do) ẩn; trích lại chỉ qua "AI đọc lại từ đầu".
   const more = overflowOf(v);
   return (
     <>
-      {!v.confirm && v.redo && (
-        <button
-          type="button"
-          data-approval="redo"
-          className="btn btn-quiet"
-          disabled={off}
-          onClick={() => onAsk("redo")}
-        >
-          {t("contracts.approval.redo")}
-        </button>
-      )}
       {!v.confirm && v.reject && (
         <button
           type="button"
@@ -83,7 +73,7 @@ export function ApprovalButtons({
   );
 }
 
-/** Hộp lý do cho "Từ chối" / "Đọc lại" (bắt buộc). */
+/** Hộp lý do cho "Từ chối" (bắt buộc). "Đọc lại" ẩn (confirm-flow) — giữ nhánh `redo` cho khi bật lại. */
 export function ReasonForm({
   kind,
   busy,

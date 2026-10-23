@@ -46,11 +46,30 @@ export function approvalView(
   return NONE;
 }
 
-/** ux-excel E4: ở bước "Xác nhận" (cấp 1) header chỉ còn nút chính "Xác nhận và lưu"; "Đọc lại" / "Từ chối" gom vào menu "⋯". */
-export const overflowOf = (v: ApprovalView): ("redo" | "reject")[] =>
-  v.confirm
-    ? [...(v.redo ? (["redo"] as const) : []), ...(v.reject ? (["reject"] as const) : [])]
-    : [];
+/** ux-excel E4: ở bước "Xác nhận" (cấp 1) header chỉ còn nút chính "Xác nhận và lưu"; "Từ chối" gom vào menu "⋯".
+ *  confirm-flow (người dùng 2026-10-23): "Đọc lại" (trích lại kèm lý do) ẩn — chỉ còn "AI đọc lại từ đầu" ở khối Quản lý. */
+export const overflowOf = (v: ApprovalView): "reject"[] =>
+  v.confirm && v.reject ? ["reject"] : [];
+
+/** Kết quả một lần quyết bước duyệt (hook `useApproval.act`). */
+export type ActResult = { ok: true; step: string | null } | { ok: false; code: string | null };
+
+/** confirm-flow: sau "Xác nhận" trong hộp "Gắn sản phẩm" — thành công (mọi bước) ⇒ đóng hộp + tải lại; cấp 1 chuyển cấp 2 ⇒ báo chờ
+ *  Ban giám đốc. Bước không còn mở (đua / đã đọc lại) ⇒ đóng hộp, tải lại, câu rõ ràng (không kẹt hộp). Lỗi khác ⇒ giữ hộp để thử lại. */
+export function afterConfirm(r: ActResult): {
+  close: boolean;
+  refetch: boolean;
+  toast: string | null;
+} {
+  if (r.ok)
+    return {
+      close: true,
+      refetch: true,
+      toast: r.step === "level2" ? "contracts.approval.done.toLevel2" : null,
+    };
+  const gone = r.code === "APPROVAL_NOT_OPEN" || r.code === "REVIEW_TASK_CLOSED";
+  return { close: gone, refetch: gone, toast: null };
+}
 
 /** Nút "Lưu nháp" thứ cấp chỉ hiện khi người xem KHÔNG xác nhận được (còn lại "Xác nhận và lưu" đã lưu trước). */
 export const showDraftSave = (v: ApprovalView, canSave: boolean): boolean => canSave && !v.confirm;

@@ -98,13 +98,12 @@ export function ManagePanel({ c, write }: { c: ContractDetail; write: boolean })
   return (
     <Panel className="mb-4 flex flex-col gap-3 px-5 py-4">
       <h2 className="text-[15px] font-semibold">{t("contracts.gapa1.manage")}</h2>
-      <OwnerRow c={c} write={write} />
+      {/* confirm-flow: "AI đọc lại từ đầu" cùng hàng "Giao cho" (bên phải; màn hẹp thì xuống dòng). */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <OwnerRow c={c} write={write} />
+        {showReextract && <ReextractButton id={c.id} />}
+      </div>
       {showCommission && <CommissionRow key={`${c.id}:${c.version}`} c={c} />}
-      {showReextract && (
-        <div>
-          <ReextractButton id={c.id} />
-        </div>
-      )}
     </Panel>
   );
 }

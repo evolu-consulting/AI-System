@@ -476,6 +476,7 @@
       "rejectedWith": "Rejected: {{reason}}",
       "done": {
         "confirm": "Contract saved and confirmed.",
+        "toLevel2": "Confirmed — waiting for the Board of Directors to approve",
         "approve": "Contract approved.",
         "reject": "Contract rejected.",
         "redo": "Contract sent to be read again."
@@ -485,6 +486,7 @@
         "notReviewer": "You cannot approve this step.",
         "reason": "Please enter a reason.",
         "notOpen": "The approval step has changed — reload the page to see the latest status.",
+        "changedReloaded": "The approval step has changed (someone acted on it or AI is re-reading) — the latest status is now shown.",
         "quota": "Today's AI actions are used up ({{limit}} per day). Try again tomorrow.",
         "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again."
       }

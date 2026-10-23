@@ -4,14 +4,23 @@
 // ⇒ gửi lựa chọn cùng `approve`. Bước chỉ chuyển cấp 2 / HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
 import type { ProductLink } from "@ai/contracts";
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "~/components/shared/toast";
 import { fetchProducts } from "~/features/contract-form/api";
 import { fetchContract } from "~/features/contract-review/api";
 import {
   ProductLinkDialog,
   type ProductLinkTarget,
 } from "~/features/product-links/components/ProductLinkDialog";
+import { fetchApproval } from "../api";
 import { useApproval } from "../hooks/use-approval";
-import { type ApprovalView, approvalView, showLinkDialog } from "../lib/approval";
+import {
+  type ActResult,
+  type ApprovalView,
+  afterConfirm,
+  approvalView,
+  showLinkDialog,
+} from "../lib/approval";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 
 export type ApprovalUi = {
@@ -38,26 +47,10 @@ export function useApprovalUi(o: {
   extracted?: { value: unknown; quote: string; edited: boolean } | undefined;
 }): ApprovalUi {
   const ap = useApproval(o.id, o.contractKey);
-  const [ask, setAsk] = useState<"reject" | "redo" | null>(null);
-  const [link, setLink] = useState<LinkStep | null>(null);
+  // confirm-flow: "Đọc lại" (trích lại kèm lý do) ẩn theo người dùng 2026-10-23 ⇒ hộp lý do chỉ còn "Từ chối".
+  const [ask, setAsk] = useState<"reject" | null>(null);
   const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
-  const approve = async (before: (() => Promise<void>) | undefined, label?: string) => {
-    // Bước này chưa xác nhận HĐ (cấp 1 ⇒ cấp 2) ⇒ duyệt thẳng, không hộp; người duyệt cấp 2 sẽ thấy hộp.
-    if (!showLinkDialog(ap.approval, 1)) return void ap.act({ action: "approve" }, before, label);
-    const got = await ap.prepare(async () => {
-      await before?.();
-      return Promise.all([fetchContract(o.id), fetchProducts()]);
-    });
-    if (!got) return;
-    const [c, products] = got;
-    if (!showLinkDialog(ap.approval, c.items.length))
-      return void ap.act({ action: "approve" }, undefined, label);
-    setLink({ target: { items: c.items, products, deal: c.deal }, label });
-  };
-  const confirmLinks = async (products: ProductLink[]) => {
-    const label = link?.label;
-    if (await ap.act({ action: "approve", products }, undefined, label)) setLink(null);
-  };
+  const { link, setLink, approve, confirmLinks } = useConfirmFlow(o.id, ap);
   const buttons = (
     <ApprovalButtons
       v={v}
@@ -78,7 +71,7 @@ export function useApprovalUi(o: {
           busy={ap.busy}
           onCancel={() => setAsk(null)}
           onSubmit={async (feedback) => {
-            if (await ap.act({ action: ask, feedback })) setAsk(null);
+            if ((await ap.act({ action: ask, feedback })).ok) setAsk(null);
           }}
         />
       )}
@@ -100,4 +93,50 @@ export function useApprovalUi(o: {
     loaded: ap.approval !== undefined,
     step: ap.approval?.step ?? null,
   };
+}
+
+/** "Xác nhận và lưu" / "Duyệt" ⇒ (lưu ô đã đổi) ⇒ (hộp "Gắn sản phẩm") ⇒ `approve`; kết quả đóng hộp + tải lại + báo. */
+function useConfirmFlow(id: string, ap: ReturnType<typeof useApproval>) {
+  const { t } = useTranslation();
+  const [link, setLink] = useState<LinkStep | null>(null);
+  /** Kết quả "Xác nhận"/"Duyệt" ⇒ đóng hộp, tải lại, báo (cấp 2 ⇒ chờ BGĐ; bước đã đổi ⇒ câu rõ ràng). */
+  const settle = async (r: ActResult) => {
+    const next = afterConfirm(r);
+    if (next.close) setLink(null);
+    if (next.toast) {
+      ap.setMsg(t(next.toast));
+      toast(t(next.toast));
+    }
+    if (!r.ok && next.refetch) {
+      ap.setErr(t("contracts.approval.errors.changedReloaded"));
+      await ap.refresh();
+    }
+  };
+  const approve = async (before: (() => Promise<void>) | undefined, label?: string) => {
+    // Bước này chưa xác nhận HĐ (cấp 1 ⇒ cấp 2) ⇒ duyệt thẳng, không hộp; người duyệt cấp 2 sẽ thấy hộp.
+    if (!showLinkDialog(ap.approval, 1))
+      return settle(await ap.act({ action: "approve" }, before, label));
+    // Lưu ô đã đổi (KHÔNG mở lại lượt / đọc lại — sửa ở cấp 1 giữ lượt đang mở, D3-14) rồi đọc lại trạng thái duyệt MỚI: giá trị vừa
+    // sửa có thể làm bước này chuyển cấp 2 thay vì xác nhận HĐ.
+    const step0 = ap.approval?.step;
+    const got = await ap.prepare(async () => {
+      await before?.();
+      return Promise.all([fetchContract(id), fetchProducts(), fetchApproval(id)]);
+    });
+    if (!got) return;
+    // Đã lưu ⇒ nạp lại HĐ (version mới cho form; Huỷ hộp rồi bấm lại không bị "đã bị sửa").
+    if (before) await ap.refresh();
+    const [c, products, fresh] = got;
+    if (fresh.step !== step0 || !fresh.can_act)
+      return settle({ ok: false, code: "APPROVAL_NOT_OPEN" });
+    if (!showLinkDialog(fresh, c.items.length))
+      return settle(await ap.act({ action: "approve" }, undefined, label));
+    setLink({ target: { items: c.items, products, deal: c.deal }, label });
+  };
+  const confirmLinks = async (products: ProductLink[]) => {
+    const r = await ap.act({ action: "approve", products }, undefined, link?.label);
+    if (!r.ok && r.code === "IN_FLIGHT") return;
+    await settle(r);
+  };
+  return { link, setLink, approve, confirmLinks };
 }

@@ -476,6 +476,7 @@
       "rejectedWith": "Bị từ chối: {{reason}}",
       "done": {
         "confirm": "Đã lưu và xác nhận hợp đồng.",
+        "toLevel2": "Đã xác nhận — chờ Ban giám đốc duyệt",
         "approve": "Đã duyệt hợp đồng.",
         "reject": "Đã từ chối hợp đồng.",
         "redo": "Đã gửi đọc lại hợp đồng."
@@ -485,6 +486,7 @@
         "notReviewer": "Bạn không thể duyệt bước này.",
         "reason": "Vui lòng nhập lý do.",
         "notOpen": "Bước duyệt đã thay đổi — tải lại trang để xem trạng thái mới.",
+        "changedReloaded": "Bước duyệt đã thay đổi (đã có người xử lý hoặc AI đang đọc lại) — đã tải trạng thái mới.",
         "quota": "Đã hết lượt thao tác AI hôm nay ({{limit}} lượt/ngày). Thử lại vào ngày mai.",
         "runLimit": "Công ty đang có {{max}} quy trình chạy cùng lúc (tối đa). Chờ một quy trình xong rồi thử lại."
       }
