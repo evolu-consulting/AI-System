@@ -45,9 +45,27 @@ export function errorKind(raw: unknown): ErrorKind {
   if (err.status === 401) return "unauthorized";
   if (code === "PACK_DISABLED") return "disabled";
   if (code === "PACK_FORBIDDEN") return "forbidden";
-  if (err.status === 409) return "conflict";
+  // Chỉ xung đột phiên bản mới là "người khác vừa cập nhật"; 409 nghiệp vụ (thiếu tồn, đã khoá…) do màn hình tự báo.
+  if (err.status === 409 && !BUSINESS_409.has(code)) return "conflict";
   return "other";
 }
+
+/** 409 mang lỗi nghiệp vụ (không phải phiên bản cũ) — không bật toast "người khác vừa cập nhật". */
+const BUSINESS_409: ReadonlySet<string> = new Set([
+  "STOCK_INSUFFICIENT",
+  "DELIVERY_OVER",
+  "DELIVERY_INVALID",
+  "DELIVERY_LOCKED",
+  "OBLIGATION_DONE",
+  "MILESTONE_CONFIRMED",
+  "CONTRACT_LOCKED",
+  "CONTRACT_SUPERSEDED",
+  "CONTRACT_HAS_VERSIONS",
+  "VERSION_DRAFT_EXISTS",
+  "ITEM_LOCKED",
+  "ITEMS_LOCKED",
+  "DELETE_STOCK_BLOCKED",
+]);
 
 /** Key i18n của câu lỗi khi nạp `/me` hỏng (trang có nút "Thử lại"). */
 export const loadErrorKey = (err: unknown): string =>

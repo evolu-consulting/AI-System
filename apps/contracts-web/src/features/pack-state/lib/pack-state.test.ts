@@ -40,6 +40,8 @@ describe("errorKind", () => {
     expect(errorKind(apiErr(403, "PACK_DISABLED"))).toBe("disabled");
     expect(errorKind(apiErr(403, "PACK_FORBIDDEN"))).toBe("forbidden");
     expect(errorKind(apiErr(409, "CONTRACT_STALE"))).toBe("conflict");
+    // 409 nghiệp vụ (thiếu tồn khi xác nhận giao) không bật toast "người khác vừa cập nhật"
+    expect(errorKind(apiErr(409, "STOCK_INSUFFICIENT"))).toBe("other");
     expect(errorKind(apiErr(500, "INTERNAL_ERROR"))).toBe("other");
     expect(errorKind(new Error("x"))).toBe("other");
     expect(errorKind(null)).toBe("other");

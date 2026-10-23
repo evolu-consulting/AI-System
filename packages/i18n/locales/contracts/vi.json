@@ -418,7 +418,9 @@
     "errors": {
       "network": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
       "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
-      "conflict": "Dữ liệu vừa được người khác cập nhật — tải lại để xem."
+      "conflict": "Dữ liệu vừa được người khác cập nhật — tải lại để xem.",
+      "alreadyDone": "Mốc này đã được xác nhận trước đó — tải lại trang để xem.",
+      "stockHint": "Nhập kho cho các sản phẩm này ở Sản phẩm & Giá › Nhập lô rồi xác nhận giao lại."
     },
     "packState": {
       "forbidden": {

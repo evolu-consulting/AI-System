@@ -13,6 +13,23 @@ describe("S05 · màn HĐ", () => {
     expect(leadKey("needs_review")).toBe("contracts.review.checkLead");
     expect(leadKey("active")).toBeNull();
   });
+  it("409 nghiệp vụ không bị báo 'người khác cập nhật': thiếu tồn ⇒ câu máy chủ + gợi ý; mốc đã xác nhận ⇒ câu riêng", () => {
+    const t = (k: string) => k;
+    const stock = new ApiError(
+      409,
+      "STOCK_INSUFFICIENT" as never,
+      "Không đủ tồn: Thùng carton cần 8000, còn 0",
+    );
+    expect(saveErrorText(stock, t)).toBe(
+      "Không đủ tồn: Thùng carton cần 8000, còn 0. contracts.errors.stockHint",
+    );
+    expect(saveErrorText(new ApiError(409, "OBLIGATION_DONE" as never, "done"), t)).toBe(
+      "contracts.errors.alreadyDone",
+    );
+    expect(saveErrorText(new ApiError(409, "CONTRACT_STALE" as never, "stale"), t)).toBe(
+      "contracts.errors.conflict",
+    );
+  });
   it("câu lỗi lưu: 409 ⇒ conflict, mạng ⇒ network, còn lại ⇒ unknown (không lộ thông điệp máy chủ)", () => {
     const t = (k: string) => k;
     expect(saveErrorText(new ApiError(409, "HTTP_ERROR", "stale"), t)).toBe(
