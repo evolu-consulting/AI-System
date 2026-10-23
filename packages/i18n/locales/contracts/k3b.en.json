@@ -1,0 +1,61 @@
+{
+  "contracts": {
+    "versions": {
+      "title": "Contract versions",
+      "view": "View",
+      "kind": { "superseded": "superseded", "draft": "draft", "current": "current" },
+      "superseded": "Superseded by version {{n}}",
+      "supersededNoNo": "Superseded by a newer version",
+      "readOnly": "This version is read-only.",
+      "openCurrent": "Open current version",
+      "upload": {
+        "title": "Upload update",
+        "signedOnly": "Must be the signed document, not typed in by hand.",
+        "hint": "The update becomes a new draft version. Once you confirm it, it replaces the current one.",
+        "submit": "Upload",
+        "cancel": "Cancel"
+      },
+      "err": {
+        "superseded": "This contract has been replaced by a newer version. Open the current one.",
+        "draftExists": "An update is already awaiting confirmation. Finish or discard it first.",
+        "hasVersions": "Cannot delete: the contract has several versions. Only a draft update can be discarded.",
+        "notAllowed": "Appendices have no versions. Upload the update on the main contract.",
+        "notLocked": "The contract is not confirmed yet, so it cannot be updated.",
+        "generic": "Could not upload the update. Please try again."
+      },
+      "diff": {
+        "title": "Compare versions",
+        "from": "From version",
+        "to": "To version",
+        "field": "Field",
+        "same": "The two versions have no differences in legal fields.",
+        "failed": "Could not compare."
+      },
+      "field": {
+        "number": "Contract number",
+        "title": "Contract title",
+        "type": "Contract type",
+        "supplier_name": "Seller",
+        "supplier_tax_id": "Seller tax ID",
+        "supplier_address": "Seller address",
+        "supplier_representative": "Seller representative",
+        "buyer_name": "Buyer",
+        "buyer_tax_id": "Buyer tax ID",
+        "buyer_representative": "Buyer representative",
+        "signed_date": "Signed date",
+        "start_date": "Start date",
+        "end_date": "End date",
+        "effective_date": "Effective date",
+        "auto_renew": "Auto-renew",
+        "notice_days": "Notice days",
+        "total_value": "Value",
+        "vat_rate": "VAT rate",
+        "vat_included": "VAT included",
+        "payment_terms": "Payment",
+        "delivery_terms": "Delivery",
+        "warranty": "Warranty",
+        "penalty": "Penalty"
+      }
+    }
+  }
+}

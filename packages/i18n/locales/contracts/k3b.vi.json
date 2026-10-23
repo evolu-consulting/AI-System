@@ -1,0 +1,61 @@
+{
+  "contracts": {
+    "versions": {
+      "title": "Phiên bản hợp đồng",
+      "view": "Xem",
+      "kind": { "superseded": "đã thay thế", "draft": "nháp", "current": "hiện hành" },
+      "superseded": "Đã thay thế bởi Phiên bản {{n}}",
+      "supersededNoNo": "Đã thay thế bởi phiên bản mới",
+      "readOnly": "Bản này chỉ để xem, không sửa được.",
+      "openCurrent": "Mở bản hiện hành",
+      "upload": {
+        "title": "Tải bản cập nhật",
+        "signedOnly": "Phải là văn bản đã ký, không nhập tay.",
+        "hint": "Bản cập nhật sẽ thành phiên bản mới (nháp). Sau khi bạn xác nhận, nó thay thế bản hiện tại.",
+        "submit": "Tải lên",
+        "cancel": "Huỷ"
+      },
+      "err": {
+        "superseded": "Hợp đồng này đã được thay bằng phiên bản mới. Hãy mở bản hiện hành.",
+        "draftExists": "Đang có một bản cập nhật chưa xác nhận. Hãy hoàn tất hoặc bỏ bản đó trước.",
+        "hasVersions": "Không xoá được vì hợp đồng có nhiều phiên bản. Chỉ bỏ được bản nháp cập nhật.",
+        "notAllowed": "Phụ lục không có phiên bản. Hãy tải bản cập nhật cho hợp đồng chính.",
+        "notLocked": "Hợp đồng chưa xác nhận nên chưa tải được bản cập nhật.",
+        "generic": "Không tải được bản cập nhật. Vui lòng thử lại."
+      },
+      "diff": {
+        "title": "So sánh phiên bản",
+        "from": "Từ phiên bản",
+        "to": "Đến phiên bản",
+        "field": "Trường",
+        "same": "Hai phiên bản không khác nhau ở các trường pháp lý.",
+        "failed": "Không so sánh được."
+      },
+      "field": {
+        "number": "Số hợp đồng",
+        "title": "Tên hợp đồng",
+        "type": "Loại hợp đồng",
+        "supplier_name": "Bên bán",
+        "supplier_tax_id": "MST bên bán",
+        "supplier_address": "Địa chỉ bên bán",
+        "supplier_representative": "Đại diện bên bán",
+        "buyer_name": "Bên mua",
+        "buyer_tax_id": "MST bên mua",
+        "buyer_representative": "Đại diện bên mua",
+        "signed_date": "Ngày ký",
+        "start_date": "Ngày bắt đầu",
+        "end_date": "Ngày kết thúc",
+        "effective_date": "Ngày hiệu lực",
+        "auto_renew": "Tự gia hạn",
+        "notice_days": "Số ngày báo trước",
+        "total_value": "Giá trị",
+        "vat_rate": "Thuế VAT",
+        "vat_included": "Đã gồm VAT",
+        "payment_terms": "Thanh toán",
+        "delivery_terms": "Giao hàng",
+        "warranty": "Bảo hành",
+        "penalty": "Phạt vi phạm"
+      }
+    }
+  }
+}
