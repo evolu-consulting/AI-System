@@ -23,6 +23,14 @@ export function entryNext(app: MeApp): string {
   return app.key === "chat" ? "/chat" : "/";
 }
 
+/**
+ * app-perm · switcher có mục "Trang chủ AI System" không: cần Chat AI (trang chủ nằm trên origin của nó) VÀ người dùng mở được
+ * từ 2 app trở lên (chỉ một app ⇒ trang chủ thừa, vd công ty chỉ dùng Sổ Hợp Tác).
+ */
+export function showsHome(apps: readonly MeApp[]): boolean {
+  return apps.length > 1 && apps.some((a) => a.key === "chat");
+}
+
 /** App mở được và không phải app hiện tại, giữ thứ tự server. */
 export function otherApps(apps: readonly MeApp[], current: string | undefined): MeApp[] {
   return apps.filter((a) => a.key !== current && a.url !== "");

@@ -5,7 +5,7 @@ import { withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
-import { type AppCatalogCtx, openableIn } from "./app-catalog.service";
+import { type AppCatalogCtx, openableIn, portalAppsIn } from "./app-catalog.service";
 import { canSetTenantDefault, effectiveDefaultApp } from "./portal.rules";
 
 type One = { v: string | null };
@@ -19,7 +19,8 @@ export function getPortal(ctx: AppCatalogCtx, actor: Actor): Promise<PortalRespo
     const t = (await tx.execute(
       sql`SELECT default_app AS v FROM admin.tenants WHERE id = ${actor.tenantId}`,
     )) as unknown as One[];
-    const keys = (await openableIn(tx, actor)).map((r) => r.key);
+    const view = await portalAppsIn(tx, actor);
+    const keys = view.apps.map((r) => r.key);
     const user = u[0]?.v ?? null;
     const tenant = t[0]?.v ?? null;
     let admin: PortalResponse["admin"] = null;
@@ -36,8 +37,9 @@ export function getPortal(ctx: AppCatalogCtx, actor: Actor): Promise<PortalRespo
       admin = { new_users_7d: c[0]?.n ?? 0, pending_feedback: f[0]?.n ?? 0 };
     }
     return {
-      default_app: { user, tenant, effective: effectiveDefaultApp(user, tenant, keys) },
+      default_app: { user, tenant, effective: effectiveDefaultApp(user, tenant, keys, view.chat) },
       admin,
+      chat: view.chat,
     };
   });
 }

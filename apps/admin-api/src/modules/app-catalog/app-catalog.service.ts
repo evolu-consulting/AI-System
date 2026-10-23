@@ -11,9 +11,16 @@ import type {
 import { type Db, type Tx, withScope } from "@ai/db";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
-import { effectiveFeatureKeys } from "../access/access.service";
+import { featureKeyView } from "../access/access.service";
 import * as repo from "./app-catalog.repo";
-import { type CatalogRow, needsFeatures, redeemTargetOk, visibleApps } from "./app-catalog.rules";
+import {
+  type CatalogRow,
+  chatAllowed,
+  needsFeatures,
+  redeemTargetOk,
+  type Viewer,
+  visibleApps,
+} from "./app-catalog.rules";
 
 export type AppCatalogCtx = { db: Db };
 
@@ -68,12 +75,35 @@ export function deleteApp(ctx: AppCatalogCtx, actor: Actor, key: string): Promis
   });
 }
 
-export async function openableIn(tx: Tx, actor: Actor): Promise<CatalogRow[]> {
+/** Catalog + người xem (feature hiệu lực / tenant được cấp / đang có) — một lượt đọc quyền. */
+async function catalogView(tx: Tx, actor: Actor): Promise<{ rows: CatalogRow[]; viewer: Viewer }> {
   const rows = await repo.listAll(tx);
-  const features = needsFeatures(rows, actor.role)
-    ? await effectiveFeatureKeys(tx, actor)
-    : new Set<string>();
-  return visibleApps(rows, { role: actor.role, features });
+  if (!needsFeatures(rows, actor.role))
+    return { rows, viewer: { role: actor.role, features: new Set<string>() } };
+  const k = await featureKeyView(tx, actor);
+  return {
+    rows,
+    viewer: {
+      role: actor.role,
+      features: k.effective,
+      tenantFeatures: k.tenant,
+      knownFeatures: k.known,
+    },
+  };
+}
+
+export async function openableIn(tx: Tx, actor: Actor): Promise<CatalogRow[]> {
+  const { rows, viewer } = await catalogView(tx, actor);
+  return visibleApps(rows, viewer);
+}
+
+/** app-perm · app mở được + Chat AI có dùng được không (theo quyền, bỏ qua URL) — cho `GET /me/portal`. */
+export async function portalAppsIn(
+  tx: Tx,
+  actor: Actor,
+): Promise<{ apps: CatalogRow[]; chat: boolean }> {
+  const { rows, viewer } = await catalogView(tx, actor);
+  return { apps: visibleApps(rows, viewer), chat: chatAllowed(rows, viewer) };
 }
 
 const toMeApp = (r: CatalogRow): MeApp => ({

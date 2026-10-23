@@ -20,6 +20,7 @@ import {
   HOME_KEY,
   HOME_NEXT,
   type MeApp,
+  showsHome,
   withCurrent,
 } from "../app-catalog/apps";
 
@@ -128,7 +129,8 @@ const HOME_LABEL = { vi: "Trang chủ AI System", en: "AI System home" };
 
 /**
  * portal-home · mục đầu tiên "Trang chủ AI System" (trang chủ nằm trên origin của Chat AI, `/?home=1`). Đang ở chat-web/trang chủ ⇒ link
- * cùng origin; app khác ⇒ chuyển phiên sang Chat AI với `next=/?home=1`. Không có Chat AI trong catalog (không đến được) ⇒ không hiện.
+ * cùng origin; app khác ⇒ chuyển phiên sang Chat AI với `next=/?home=1`. Không có Chat AI trong catalog (không đến được) hoặc chỉ
+ * một app ⇒ không hiện (`showsHome`).
  */
 function entriesOf(apps: readonly MeApp[], current: string): Entry[] {
   // Đang ở origin của Chat AI/trang chủ: mục Chat AI và Trang chủ là link cùng origin, không xin mã SSO cho chính mình.
@@ -141,7 +143,7 @@ function entriesOf(apps: readonly MeApp[], current: string): Entry[] {
     hand: a.sso && !(local && a.key === "chat"),
   }));
   const chat = apps.find((a) => a.key === "chat");
-  if (!chat || (!local && chat.url === "")) return list;
+  if (!chat || !showsHome(apps) || (!local && chat.url === "")) return list;
   const home: MeApp = { key: HOME_KEY, name: HOME_LABEL, icon: "home", url: "", sso: false };
   const entry: Entry = {
     app: home,

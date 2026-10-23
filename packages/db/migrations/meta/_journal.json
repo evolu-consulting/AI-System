@@ -169,6 +169,13 @@
       "when": 1794123200000,
       "tag": "0023_workflow_dify_app_id",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794223200000,
+      "tag": "0024_chat_app_feature",
+      "breakpoints": true
     }
   ]
 }

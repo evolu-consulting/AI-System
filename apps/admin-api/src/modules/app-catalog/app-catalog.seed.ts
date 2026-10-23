@@ -10,7 +10,8 @@ export const DEFAULT_APPS: readonly repo.DefaultApp[] = [
     name: { vi: "Chat AI", en: "AI Chat" },
     icon: "sparkles",
     audience: "all",
-    requiredFeature: null,
+    // app-perm (0024): theo công ty — feature chưa tồn tại ⇒ vẫn mở (app-catalog.rules `TENANT_APP_FEATURES`).
+    requiredFeature: "chat-app",
     sso: true,
     sortOrder: 10,
   },

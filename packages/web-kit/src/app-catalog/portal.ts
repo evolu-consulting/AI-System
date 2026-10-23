@@ -12,10 +12,25 @@ export function landingFor(
   effective: string | null | undefined,
   apps: readonly MeApp[],
   home: boolean,
+  chat = true,
 ): Landing {
+  if (!chat) return noChatLanding(effective, apps);
   if (home || !effective || effective === HOME_KEY) return { kind: "portal" };
   if (effective === "chat") return { kind: "chat" };
   const app = apps.find((a) => a.key === effective && a.url !== "");
+  return app ? { kind: "app", app } : { kind: "portal" };
+}
+
+/**
+ * app-perm · người dùng KHÔNG dùng được Chat AI (công ty bị thu hồi `chat-app`): trang chủ/chat trên origin Chat AI là ngõ cụt
+ * ⇒ bỏ qua `?home=1`, vào app mặc định nếu mở được, không thì app đầu tiên mở được (vd Sổ Hợp Tác). Không có app nào ⇒ trang chủ.
+ */
+export function noChatLanding(
+  effective: string | null | undefined,
+  apps: readonly MeApp[],
+): Landing {
+  const usable = apps.filter((a) => a.key !== "chat" && a.url !== "");
+  const app = usable.find((a) => a.key === effective) ?? usable[0];
   return app ? { kind: "app", app } : { kind: "portal" };
 }
 

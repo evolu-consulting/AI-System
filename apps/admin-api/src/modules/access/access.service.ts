@@ -202,8 +202,19 @@ export async function effectiveFeatureKeys(
   tx: Tx,
   actor: { userId: string; tenantId: string },
 ): Promise<Set<string>> {
+  return (await featureKeyView(tx, actor)).effective;
+}
+
+/**
+ * app-perm · cùng một lượt đọc: `effective` (như trên), `tenant` = feature tenant được cấp (entitlement còn hiệu lực, feature
+ * không `off`), `known` = mọi key feature đang có. Dùng cho app gắn feature theo công ty (Chat AI ↔ `chat-app`).
+ */
+export async function featureKeyView(
+  tx: Tx,
+  actor: { userId: string; tenantId: string },
+): Promise<{ effective: Set<string>; tenant: Set<string>; known: Set<string> }> {
   const head = await repo.userHead(tx, actor.tenantId, actor.userId);
-  if (!head) return new Set();
+  if (!head) return { effective: new Set(), tenant: new Set(), known: new Set() };
   const groups = await repo.userGroups(tx, head);
   const features = await repo.featuresFor(tx, head);
   const r = computeEffectiveAccess({
@@ -226,7 +237,11 @@ export async function effectiveFeatureKeys(
     commands: [],
   });
   const keyOf = new Map(features.map((f) => [f.id, f.key]));
-  return new Set(
-    r.features.filter((x) => x.effective).map((x) => keyOf.get(x.featureId) as string),
-  );
+  return {
+    effective: new Set(
+      r.features.filter((x) => x.effective).map((x) => keyOf.get(x.featureId) as string),
+    ),
+    tenant: new Set(features.filter((f) => f.entitled && f.status !== "off").map((f) => f.key)),
+    known: new Set(features.map((f) => f.key)),
+  };
 }

@@ -9,8 +9,11 @@ export function effectiveDefaultApp(
   user: string | null,
   tenant: string | null,
   openable: readonly string[],
+  chat = true,
 ): string | null {
   for (const k of [user, tenant]) if (k && openable.includes(k)) return k;
+  // app-perm · không dùng được Chat AI ⇒ trang chủ (trên origin Chat AI) là ngõ cụt: vào app đầu tiên mở được (vd Sổ Hợp Tác).
+  if (!chat) return openable.find((k) => k !== "chat") ?? null;
   return null;
 }
 

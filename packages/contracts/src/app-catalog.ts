@@ -128,4 +128,9 @@ export type PortalResponse = {
   default_app: PortalDefaultApp;
   /** Chỉ tenant_admin/platform_admin; người khác null. */
   admin: { new_users_7d: number; pending_feedback: number } | null;
+  /**
+   * app-perm · người gọi dùng được Chat AI (theo quyền: feature `chat-app` của công ty). `false` ⇒ chat-web chuyển sang
+   * `default_app.effective` (server đã chọn app đầu tiên mở được khi chưa đặt). Vắng (server cũ) ⇒ coi như `true`.
+   */
+  chat?: boolean;
 };
