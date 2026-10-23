@@ -1,6 +1,8 @@
 // V2-J2 · BA v2 §3.3 SP-04/05/06: so sánh giá NCC với giá vốn BQ của mình + 4 gợi ý hợp tác. Thuần (không DB/mạng).
 // Gợi ý theo ba yếu tố: đã mua bao nhiêu (tỉ trọng chi tiêu), giá (chênh so với nơi rẻ nhất), uy tín (V2-E vai NCC).
 import type {
+  ProductPricing,
+  SellPriceRow,
   SupplierAdvice,
   SupplierOverviewOut,
   SupplierPriceKind,
@@ -34,16 +36,91 @@ export type SavedPrice = {
   kind: SupplierPriceKind;
   price: number;
   unit: string | null;
-  source: Exclude<SupplierPriceSource, "purchase">;
+  source: Exclude<SupplierPriceSource, "purchase" | "contract">;
   url: string | null;
   seen_on: string;
+};
+/** Dòng hàng của HĐ đã xác nhận (bản hiện hành) gắn SP: `deal` mua/bán, đối tác = bên kia. */
+export type ContractLine = {
+  deal: "buy" | "sell";
+  contract_id: string;
+  number: string | null;
+  status: string;
+  party_key: string | null;
+  party_name: string | null;
+  price: number;
+  unit: string | null;
+  on: string | null;
 };
 export type OverviewData = {
   product: SupplierOverviewOut["product"];
   components: { mode: string; avg_cost: number }[];
   purchases: PurchaseAgg[];
   saved: SavedPrice[];
+  contract_lines?: ContractLine[];
 };
+
+/** HĐ còn hiệu lực cho giá (khớp `sourcing.rules::LIVE`). */
+const LIVE = new Set(["active", "expiring", "renewed"]);
+const SELL_SHOWN = 5;
+
+/** Dòng giá từ HĐ mua đã xác nhận: giá theo đơn vị của dòng HĐ, `current` = HĐ còn hiệu lực. */
+function contractRows(
+  d: OverviewData,
+  own: number | null,
+  scores: ReadonlyMap<string, NonNullable<Rep>>,
+): SupplierPriceRow[] {
+  return (d.contract_lines ?? [])
+    .filter((l) => l.deal === "buy")
+    .map((l) => ({
+      id: null,
+      supplier_name: l.party_name ?? (l.party_key ? nameOf(l.party_key) : "—"),
+      party_key: l.party_key,
+      kind: "new" as const,
+      price: l.price,
+      unit: l.unit ?? d.product.unit,
+      source: "contract" as const,
+      url: null,
+      on: l.on,
+      vs_own_pct: pctOver(l.price, own),
+      reputation: repOf(scores, l.party_key),
+      contract_id: l.contract_id,
+      contract_number: l.number,
+      current: LIVE.has(l.status),
+    }));
+}
+
+/** Khối "Giá bán & lãi": giá bán gần nhất (ưu tiên HĐ còn hiệu lực), giá vốn = HĐ mua rẻ nhất còn hiệu lực, không thì giá vốn BQ kho. */
+export function buildPricing(d: OverviewData, own: number | null): ProductPricing {
+  const lines = d.contract_lines ?? [];
+  const byDate = (a: ContractLine, b: ContractLine) => (b.on ?? "").localeCompare(a.on ?? "");
+  const sells = lines.filter((l) => l.deal === "sell").sort(byDate);
+  const sales: SellPriceRow[] = sells.slice(0, SELL_SHOWN).map((l) => ({
+    contract_id: l.contract_id,
+    number: l.number,
+    customer: l.party_name,
+    price: l.price,
+    unit: l.unit,
+    on: l.on,
+    current: LIVE.has(l.status),
+  }));
+  const sellRef = sells.find((l) => LIVE.has(l.status)) ?? sells[0];
+  const buys = lines.filter((l) => l.deal === "buy");
+  const live = buys.filter((l) => LIVE.has(l.status)).sort((a, b) => a.price - b.price);
+  const contractCost = live[0]?.price ?? null;
+  const cost = contractCost ?? own;
+  const sell = sellRef?.price ?? null;
+  const margin = sell !== null && cost !== null ? sell - cost : null;
+  return {
+    sales,
+    sell_price: sell,
+    buy_cost: cost,
+    buy_basis: contractCost !== null ? "contract" : own !== null ? "stock" : null,
+    margin,
+    margin_pct: margin !== null && sell ? Math.round((margin / sell) * 1000) / 10 : null,
+    has_buy: buys.length > 0 || own !== null || d.purchases.length > 0,
+  };
+}
 
 /** Giá vốn BQ của SP = BQ của thành phần chính (thành phần đầu có cách lấy hàng ≠ `none`); chưa có kho (0) ⇒ null. */
 export function ownAvgCost(components: OverviewData["components"]): number | null {
@@ -132,9 +209,11 @@ export function buildOverview(
   scores: ReadonlyMap<string, NonNullable<Rep>>,
 ): SupplierOverviewOut {
   const own = ownAvgCost(d.components);
-  const rows = [...purchaseRows(d, own, scores), ...savedRows(d, own, scores)].sort(
-    (a, b) => a.price - b.price || (b.on ?? "").localeCompare(a.on ?? ""),
-  );
+  const rows = [
+    ...purchaseRows(d, own, scores),
+    ...contractRows(d, own, scores),
+    ...savedRows(d, own, scores),
+  ].sort((a, b) => a.price - b.price || (b.on ?? "").localeCompare(a.on ?? ""));
   const bought = new Map(d.purchases.map((p) => [p.party_key, p]));
   const totalSpend = d.purchases.reduce((s, p) => s + p.amount, 0);
   const low = rows.length ? Math.min(...rows.map((r) => r.price)) : null;
@@ -164,5 +243,5 @@ export function buildOverview(
     };
   });
   suppliers.sort((a, b) => b.bought_amount - a.bought_amount || a.best_price - b.best_price);
-  return { product: d.product, own_avg_cost: own, rows, suppliers };
+  return { product: d.product, own_avg_cost: own, rows, suppliers, pricing: buildPricing(d, own) };
 }

@@ -11,10 +11,21 @@
       "exVat": "chưa VAT",
       "equal": "bằng",
       "old": "Cũ",
+      "current": "đang áp dụng",
+      "pricing": {
+        "title": "Giá bán & lãi",
+        "sell": "Giá bán",
+        "cost": "Giá mua (HĐ mua rẻ nhất)",
+        "costStock": "Giá vốn bình quân (kho)",
+        "margin": "Lãi / đơn vị",
+        "marginPct": "Lãi %",
+        "current": "đang áp dụng"
+      },
       "remove": "Xoá",
       "noRep": "Chưa giao dịch",
       "level": { "good": "Tốt", "fair": "Khá", "watch": "Chú ý", "new": "Mới" },
       "source": {
+        "contract": "Hợp đồng mua",
         "purchase": "Đã mua (kho)",
         "market": "Giá thị trường",
         "quote": "Báo giá",

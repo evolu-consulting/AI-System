@@ -11,10 +11,21 @@
       "exVat": "excl. VAT",
       "equal": "equal",
       "old": "Old",
+      "current": "in effect",
+      "pricing": {
+        "title": "Sell price & margin",
+        "sell": "Sell price",
+        "cost": "Buy price (cheapest purchase contract)",
+        "costStock": "Average cost (stock)",
+        "margin": "Margin / unit",
+        "marginPct": "Margin %",
+        "current": "in effect"
+      },
       "remove": "Remove",
       "noRep": "No dealings yet",
       "level": { "good": "Good", "fair": "Fair", "watch": "Watch", "new": "New" },
       "source": {
+        "contract": "Purchase contract",
         "purchase": "Bought (stock)",
         "market": "Market price",
         "quote": "Quote",

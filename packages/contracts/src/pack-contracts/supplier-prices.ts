@@ -26,8 +26,14 @@ export type SupplierPriceErrorCode = keyof typeof SUPPLIER_PRICE_ERRORS;
 /** Mua mới / Gia hạn (BA SP-04). */
 export const SUPPLIER_PRICE_KINDS = ["new", "renew"] as const;
 export type SupplierPriceKind = (typeof SUPPLIER_PRICE_KINDS)[number];
-/** Nguồn giá trong bảng: `purchase` = giá đã nhập kho (sổ kho); `market` = AI tìm; `quote` = báo giá; `manual` = nhập tay. */
-export const SUPPLIER_PRICE_SOURCES = ["purchase", "market", "quote", "manual"] as const;
+/** Nguồn giá trong bảng: `purchase` = giá đã nhập kho (sổ kho); `market` = AI tìm; `quote` = báo giá; `manual` = nhập tay; `contract` = đơn giá dòng HĐ mua đã xác nhận. */
+export const SUPPLIER_PRICE_SOURCES = [
+  "purchase",
+  "market",
+  "quote",
+  "manual",
+  "contract",
+] as const;
 export type SupplierPriceSource = (typeof SUPPLIER_PRICE_SOURCES)[number];
 /** 4 gợi ý (BA SP-06). */
 export const SUPPLIER_ADVICE = ["keep", "backup", "replace", "trial"] as const;
@@ -102,6 +108,31 @@ export type SupplierPriceRow = {
   vs_own_pct: number | null;
   /** Uy tín NCC (V2-E vai NCC); null khi chưa có việc nào. */
   reputation: { score: number | null; level: "good" | "fair" | "watch" | "new" } | null;
+  /** Nguồn contract: HĐ mua chứa giá, số HĐ, và HĐ còn hiệu lực (đang áp dụng). */
+  contract_id?: string | null;
+  contract_number?: string | null;
+  current?: boolean;
+};
+/** Một dòng giá bán từ HĐ bán đã xác nhận của SP. */
+export type SellPriceRow = {
+  contract_id: string;
+  number: string | null;
+  customer: string | null;
+  price: number;
+  unit: string | null;
+  on: string | null;
+  current: boolean;
+};
+/** Khối Giá bán & lãi: giá bán gần đây, giá vốn tham chiếu (HĐ mua rẻ nhất còn hiệu lực, không thì giá vốn BQ kho), lãi/đơn vị. */
+export type ProductPricing = {
+  sales: SellPriceRow[];
+  sell_price: number | null;
+  buy_cost: number | null;
+  buy_basis: "contract" | "stock" | null;
+  margin: number | null;
+  margin_pct: number | null;
+  /** Không có HĐ mua và không có giá vốn kho ⇒ dịch vụ tự làm? */
+  has_buy: boolean;
 };
 export type SupplierSummaryRow = {
   supplier_name: string;
@@ -131,4 +162,5 @@ export type SupplierOverviewOut = {
   own_avg_cost: number | null;
   rows: SupplierPriceRow[];
   suppliers: SupplierSummaryRow[];
+  pricing: ProductPricing;
 };

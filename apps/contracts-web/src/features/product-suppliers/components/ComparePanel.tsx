@@ -1,5 +1,6 @@
 // V2-J2 · SP-04: "So sánh giá nhà cung cấp" — Mua mới / Gia hạn, giá vốn BQ của mình, nguồn giá, uy tín, ngày (mockup-niti `cmpPanel`).
 import type { SupplierOverviewOut, SupplierPriceKind, SupplierPriceRow } from "@ai/contracts";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
@@ -29,6 +30,32 @@ function Delta({ pct }: { pct: number | null }) {
     <span className="text-ok">▼ {-pct}%</span>
   ) : (
     <span className="text-late">▲ {pct}%</span>
+  );
+}
+
+/** Nguồn giá: HĐ mua ⇒ link số HĐ (+ "đang áp dụng"); có link ngoài ⇒ link; còn lại nhãn nguồn. */
+function SourceLabel({ r }: { r: SupplierPriceRow }) {
+  const { t } = useTranslation();
+  const label = t(`contracts.psup.source.${r.source}`);
+  if (r.contract_id)
+    return (
+      <>
+        <Link
+          to="/contracts/$id"
+          params={{ id: r.contract_id }}
+          className="link"
+          data-testid="psup-contract-link"
+        >
+          {r.contract_number ?? t("contracts.gape.contractShort")}
+        </Link>
+        {r.current && <span className="tag ml-2 text-[11px]">{t("contracts.psup.current")}</span>}
+      </>
+    );
+  if (!r.url) return <>{label}</>;
+  return (
+    <a href={r.url} target="_blank" rel="noreferrer noopener" className="link">
+      {label}
+    </a>
   );
 }
 
@@ -133,13 +160,7 @@ export function ComparePanel({
                     <Delta pct={r.vs_own_pct} />
                   </td>
                   <td className={td}>
-                    {r.url ? (
-                      <a href={r.url} target="_blank" rel="noreferrer noopener" className="link">
-                        {L(`source.${r.source}`)}
-                      </a>
-                    ) : (
-                      L(`source.${r.source}`)
-                    )}
+                    <SourceLabel r={r} />
                     {isOld(r.on, day) && <span className="tag ml-2 text-[11px]">{L("old")}</span>}
                   </td>
                   <td className={td}>

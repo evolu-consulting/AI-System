@@ -10,6 +10,7 @@ import { supplierTabVisible } from "../lib/suppliers";
 import { ComparePanel } from "./ComparePanel";
 import { EvalPanel } from "./EvalPanel";
 import { ManualPriceDialog } from "./ManualPriceDialog";
+import { PricingPanel } from "./PricingPanel";
 import { QuoteDialog } from "./QuoteDialog";
 import { ScoutConfigPanel } from "./ScoutConfigPanel";
 import { SearchDialog } from "./SearchDialog";
@@ -37,6 +38,7 @@ export function SupplierPricesTab({ productId }: { productId: string }) {
         onQuote={() => quoteDlg.current?.showModal()}
         onDelete={(id) => del.mutate(id)}
       />
+      <PricingPanel pricing={data.pricing} />
       <EvalPanel suppliers={data.suppliers} />
       <ScoutConfigPanel productId={productId} write={write} />
       <SearchDialog dlg={dlg} productId={productId} productName={data.product.name} />

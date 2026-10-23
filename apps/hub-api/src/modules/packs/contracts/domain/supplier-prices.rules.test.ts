@@ -123,3 +123,73 @@ describe("V2-J2 · tìm giá AI (SP-05)", () => {
     expect(parseSearchReply('{"items":[]}', "2026-10-20")).toEqual([]);
   });
 });
+
+describe("Giá từ HĐ đã xác nhận + khối Giá bán & lãi", () => {
+  const withContracts: OverviewData = {
+    ...data,
+    contract_lines: [
+      {
+        deal: "buy",
+        contract_id: "b1",
+        number: "HDM-1",
+        status: "active",
+        party_key: "tax:9",
+        party_name: "Giấy A",
+        price: 9_000,
+        unit: "cái",
+        on: "2026-09-01",
+      },
+      {
+        deal: "buy",
+        contract_id: "b2",
+        number: "HDM-0",
+        status: "expired",
+        party_key: "tax:8",
+        party_name: "Giấy B",
+        price: 7_000,
+        unit: "cái",
+        on: "2025-01-01",
+      },
+      {
+        deal: "sell",
+        contract_id: "s1",
+        number: "HDB-1",
+        status: "active",
+        party_key: null,
+        party_name: "NitiGroup",
+        price: 14_500,
+        unit: "cái",
+        on: "2026-10-01",
+      },
+    ],
+  };
+  it("dòng HĐ mua vào bảng so sánh (đang áp dụng theo trạng thái); giá vốn = HĐ còn hiệu lực rẻ nhất", () => {
+    const o = buildOverview(withContracts, new Map());
+    const rows = o.rows.filter((r) => r.source === "contract");
+    expect(rows.map((r) => [r.supplier_name, r.price, r.current, r.contract_id])).toEqual([
+      ["Giấy B", 7_000, false, "b2"],
+      ["Giấy A", 9_000, true, "b1"],
+    ]);
+    expect(o.pricing).toMatchObject({
+      sell_price: 14_500,
+      buy_cost: 9_000,
+      buy_basis: "contract",
+      margin: 5_500,
+      margin_pct: 37.9,
+      has_buy: true,
+    });
+    expect(o.pricing.sales[0]?.customer).toBe("NitiGroup");
+  });
+  it("không HĐ mua: dùng giá vốn kho; không cả hai ⇒ has_buy false", () => {
+    const sellOnly = [withContracts.contract_lines?.[2]] as NonNullable<
+      OverviewData["contract_lines"]
+    >;
+    const stock = buildOverview({ ...withContracts, contract_lines: sellOnly }, new Map());
+    expect(stock.pricing).toMatchObject({ buy_cost: 100_000, buy_basis: "stock", margin: -85_500 });
+    const none = buildOverview(
+      { ...data, components: [], purchases: [], saved: [], contract_lines: sellOnly },
+      new Map(),
+    );
+    expect(none.pricing).toMatchObject({ buy_cost: null, margin: null, has_buy: false });
+  });
+});

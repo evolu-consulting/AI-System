@@ -6,7 +6,9 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { SuppliersRepo } from "../application/supplier-prices.usecase";
 import type { OverviewData } from "../domain/supplier-advice.rules";
-import { json, one } from "./ledger-sql";
+import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
+
+const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 
 /** Thành phần chính của SP (bí danh `p`): ord nhỏ nhất có mode ≠ none. */
 const MAIN =
@@ -30,6 +32,19 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
               where m.tenant_id = p.tenant_id and m.component_id = ${MAIN} and m.direction = 'in' and m.reason in ('delivery', 'manual')
                 and m.supplier_party_key is not null
               group by m.supplier_party_key limit 50) x), '[]'::jsonb),
+          'contract_lines', coalesce((select jsonb_agg(jsonb_build_object('deal', k.deal, 'contract_id', k.id,
+              'number', coalesce(k.number, k.title), 'status', k.status, 'price', i.unit_price::float8, 'unit', i.unit,
+              'on', k.dt, 'party_name', case when k.deal = 'buy' then k.seller else k.buyer end,
+              'party_key', case when k.deal = 'buy'
+                then contracts.party_key(k.fields -> 'supplier_name' ->> 'value', k.fields -> 'supplier_tax_id' ->> 'value') end)
+              order by k.dt desc nulls last, k.id)
+            from (select i0.* from contracts.contract_items i0 where i0.tenant_id = p.tenant_id and i0.product_id = p.id
+                and i0.unit_price is not null limit 300) i
+              join (select c.id, c.deal, c.number, c.title, c.status, c.seller, c.buyer, c.fields,
+                  coalesce(c.start_date, c.created_at::date) as dt
+                from contracts.contracts c where c.tenant_id = p.tenant_id and c.kind = 'contract'
+                  and c.deal in ('buy', 'sell') and c.status in (${CONFIRMED}) and c.superseded_at is null) k
+                on k.id = i.contract_id), '[]'::jsonb),
           'saved', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'supplier_name', s.supplier_name,
               'party_key', s.supplier_party_key, 'kind', s.kind, 'price', s.price, 'unit', s.unit, 'source', s.source,
               'url', s.url, 'seen_on', s.seen_on) order by s.seen_on desc, s.created_at desc)

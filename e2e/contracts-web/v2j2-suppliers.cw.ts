@@ -15,7 +15,42 @@ const json = (r: Route, status: number, body: unknown) =>
 const OVERVIEW: SupplierOverviewOut = {
   product: { id: PID, name: "USB Token ký số", unit: "cái", group: "goods" },
   own_avg_cost: 100_000,
+  pricing: {
+    sales: [
+      {
+        contract_id: "00000000-0000-4000-8000-0000000000b2",
+        number: "HDB-01",
+        customer: "NitiGroup",
+        price: 14_500,
+        unit: "cái",
+        on: "2026-10-01",
+        current: true,
+      },
+    ],
+    sell_price: 14_500,
+    buy_cost: 9_000,
+    buy_basis: "contract",
+    margin: 5_500,
+    margin_pct: 37.9,
+    has_buy: true,
+  },
   rows: [
+    {
+      id: null,
+      supplier_name: "Giấy An Phát",
+      party_key: "tax:0109999999",
+      kind: "new",
+      price: 9_000,
+      unit: "cái",
+      source: "contract",
+      url: null,
+      on: "2026-09-01",
+      vs_own_pct: -91,
+      reputation: null,
+      contract_id: "00000000-0000-4000-8000-0000000000b1",
+      contract_number: "HDM-01",
+      current: true,
+    },
     {
       id: "p1",
       supplier_name: "FPT IS",
@@ -193,6 +228,18 @@ test("tìm giá: chỉ chạy khi bấm Tìm (nói rõ chỉ gửi tên SP); lư
     items: { supplier_name: string; source: string }[];
   };
   expect(body.items).toMatchObject([{ supplier_name: "Viettel", source: "market" }]);
+});
+
+test("giá từ HĐ mua hiện trong bảng so sánh; khối Giá bán & lãi có giá bán, giá mua, lãi", async ({
+  page,
+}) => {
+  await open(page);
+  const link = page.getByTestId("psup-contract-link");
+  await expect(link).toHaveText("HDM-01");
+  await expect(page.getByText("đang áp dụng").first()).toBeVisible();
+  await expect(page.getByTestId("psup-pricing")).toBeVisible();
+  await expect(page.getByTestId("psup-sale")).toContainText("NitiGroup");
+  await expect(page.getByTestId("psup-margin-pct")).toHaveText("37.9%");
 });
 
 test("SP Giới thiệu: không hiện tab", async ({ page }) => {

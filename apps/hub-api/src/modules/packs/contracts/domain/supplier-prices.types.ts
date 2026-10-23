@@ -3,7 +3,7 @@
 import type { ProductGroup } from "./products.types";
 
 export type SupplierPriceKind = "new" | "renew";
-export type SupplierPriceSource = "quote" | "manual" | "purchase" | "market";
+export type SupplierPriceSource = "quote" | "manual" | "purchase" | "market" | "contract";
 export type SupplierAdvice = "keep" | "backup" | "replace" | "trial";
 
 export type SupplierSearchItem = {
@@ -34,6 +34,29 @@ export type SupplierPriceRow = {
   on: string | null;
   vs_own_pct: number | null;
   reputation: { score: number | null; level: "good" | "fair" | "watch" | "new" } | null;
+  contract_id?: string | null;
+  contract_number?: string | null;
+  current?: boolean;
+};
+
+export type SellPriceRow = {
+  contract_id: string;
+  number: string | null;
+  customer: string | null;
+  price: number;
+  unit: string | null;
+  on: string | null;
+  current: boolean;
+};
+
+export type ProductPricing = {
+  sales: SellPriceRow[];
+  sell_price: number | null;
+  buy_cost: number | null;
+  buy_basis: "contract" | "stock" | null;
+  margin: number | null;
+  margin_pct: number | null;
+  has_buy: boolean;
 };
 
 export type SupplierSummaryRow = {
@@ -55,6 +78,7 @@ export type SupplierOverviewOut = {
   own_avg_cost: number | null;
   rows: SupplierPriceRow[];
   suppliers: SupplierSummaryRow[];
+  pricing: ProductPricing;
 };
 
 export type SupplierPriceInput = {
