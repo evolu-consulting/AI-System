@@ -42,7 +42,7 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
           queue.current = [];
           const text = uploadErrorText(e, t);
           setItems((all) => stopOnQuota(all, job.key, text));
-          setQuota((cur) => (quotaShown.current ? cur : q));
+          if (!quotaShown.current) setQuota(q);
           quotaShown.current = true;
           return QUOTA;
         }
