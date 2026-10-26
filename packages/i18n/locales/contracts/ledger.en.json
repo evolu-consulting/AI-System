@@ -40,7 +40,7 @@
       "lateAria": "Days late",
       "complaintNote": "Complaint details",
       "notePlaceholder": "Note (optional)",
-      "noteAria": "Note",
+      "noteAria": "Entry note",
       "system": "Logged by the system",
       "viaAssistant": "Via assistant · {{by}}",
       "voidedMark": " · voided",

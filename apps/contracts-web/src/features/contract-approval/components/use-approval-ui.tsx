@@ -68,11 +68,10 @@ export function useApprovalUi(o: {
   const rejected = ap.approval?.step === "rejected" ? ap.approval.feedback : null;
   // Run engine kết thúc bất thường (`needs_reopen`, lý do `ENGINE_RUN_*`): lượt GIỮ chế độ engine, chờ owner/admin mở lại.
   const stalled = ap.approval?.needs_reopen === true;
-  const note =
-    v.note ??
-    (stalled
-      ? (releaseNoteKey(ap.approval?.feedback) ?? "contracts.approval.engine.release.OTHER")
-      : null);
+  // Lý do dừng bất thường ưu tiên hơn câu "đang chờ người duyệt" (run đã chết, không ai duyệt được).
+  const note = stalled
+    ? (releaseNoteKey(ap.approval?.feedback) ?? "contracts.approval.engine.release.OTHER")
+    : v.note;
   const section = (
     <>
       {ap.approval && <ApprovalTimeline a={ap.approval} />}

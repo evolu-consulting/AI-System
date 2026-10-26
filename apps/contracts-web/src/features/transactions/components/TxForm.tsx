@@ -34,7 +34,12 @@ function Row({
     <div className="flex flex-col gap-1 text-[13px]">
       <label htmlFor={id}>
         {label}
-        {req && <span className="text-late"> *</span>}
+        {req && (
+          <span className="text-late" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        )}
       </label>
       {children}
     </div>

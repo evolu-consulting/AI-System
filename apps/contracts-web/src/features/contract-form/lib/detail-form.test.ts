@@ -107,7 +107,7 @@ const product = (mode: "stock" | "order", onHand = "10", n = 1): ProductOut =>
       avg_cost: 0,
       stock_value: 0,
     })),
-  }) as ProductOut;
+  }) as unknown as ProductOut;
 
 describe("5.7e · tồn + Bán vượt tồn", () => {
   it("chỉ HĐ Bán mới cảnh báo; thành phần không giữ hàng ⇒ không nói tới tồn", () => {

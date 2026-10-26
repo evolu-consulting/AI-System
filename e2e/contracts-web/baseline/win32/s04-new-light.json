@@ -1,34 +1,22 @@
 {
-  "text": "← Hợp đồng Thêm hợp đồng Huỷ Lưu hợp đồng Thông tin hợp đồng Loại hợp đồng Mua Mình mua từ nhà cung cấp Bán Mình bán cho khách Giới thiệu Hưởng hoa hồng Tên hợp đồng * Số hợp đồng Nhà cung cấp * Mã số thuế đối tác Giá trị đ Hiệu lực từ * Đến Nhắc trước khi hết hạn ngày Người ký bên mình Người ký bên đối tác Thanh toán Sản phẩm Nhập kho Dòng trên hợp đồng Số lượng Đơn vị Đơn giá (đ) Thành tiền — × ↳ Sản phẩm trong danh mục Chọn sản phẩm… USB Token Chữ ký số 1 năm Bảo hiểm xe ＋ Tạo sản phẩm mới + Thêm dòng Tổng —",
+  "text": "← Hợp đồng Thêm hợp đồng Hợp đồng phải tải lên từ văn bản đã ký Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận. Upload hợp đồng",
   "boxes": {
     "heading": {
       "x": 282,
-      "y": 100,
-      "w": 896.125,
+      "y": 104,
+      "w": 181.5625,
       "h": 40.296875
     },
-    "form": {
-      "x": 282,
-      "y": 52,
-      "w": 1100,
-      "h": 978.296875
-    },
-    "title": {
+    "lead": {
       "x": 303,
-      "y": 375.890625,
-      "w": 1058,
-      "h": 40
+      "y": 189.296875,
+      "w": 257.0625,
+      "h": 23.25
     },
-    "items": {
-      "x": 283,
-      "y": 838.703125,
-      "w": 1098,
-      "h": 190.59375
-    },
-    "submit": {
-      "x": 1262.703125,
-      "y": 100.296875,
-      "w": 119.296875,
+    "upload": {
+      "x": 303,
+      "y": 256.546875,
+      "w": 139.46875,
       "h": 40
     }
   }

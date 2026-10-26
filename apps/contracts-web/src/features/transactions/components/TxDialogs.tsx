@@ -77,7 +77,7 @@ export function StockResultDialog({
           </table>
         )}
         <DialogFooter>
-          <Button type="button" onClick={onClose}>
+          <Button type="button" data-testid="stock-close" onClick={onClose}>
             {t("contracts.common.close")}
           </Button>
         </DialogFooter>

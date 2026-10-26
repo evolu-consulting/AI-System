@@ -36,12 +36,11 @@ const LOG = 'section[aria-label="Ghi việc với đối tác"]';
 const listBoxes = { panel: "main section >> nth=0", firstRow: "main li >> nth=0" };
 const partnersReady = (p: Page) => p.getByText("Kế toán Phương Nam");
 const openRow = (what: string) => async (p: Page) => {
-  await p.getByRole("button", { name: what }).nth(1).click();
+  // U3: danh sách xếp «Cần chú ý» lên đầu ⇒ chọn dòng Bếp Việt theo tên, không theo thứ tự.
+  const bv = p.locator("main li").filter({ hasText: "Bếp Việt" }).first();
+  await bv.getByRole("button", { name: what }).first().click();
   await expect(
-    p
-      .locator("main li")
-      .nth(1)
-      .getByText(what === "Chấm điểm" ? "Thái độ hợp tác" : "giao thiếu 2 suất"),
+    bv.getByText(what === "Chấm điểm" ? "Thái độ hợp tác" : "giao thiếu 2 suất"),
   ).toBeVisible();
 };
 const LOG_PANEL = "main section:has(h2:has-text('Ghi việc với'))";
@@ -225,7 +224,8 @@ test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại 
   await prepare(page, SCENES.find((s) => s.name === "p02-partners-log") as Scene);
   const sent = await recordWrites(page);
   const [first] = partnerData.instalments;
-  const row = page.locator("main li").nth(1).locator("li").first();
+  // U3: danh sách xếp «Cần chú ý» lên đầu ⇒ chọn dòng theo tên đối tác, không theo thứ tự.
+  const row = page.locator("main li").filter({ hasText: "Bếp Việt" }).first().locator("li").first();
   await row.getByRole("button", { name: "Đã thu" }).click();
   await expect(row.getByText("trễ 8 ngày")).toBeVisible();
   await row.getByRole("button", { name: "Ghi" }).click();

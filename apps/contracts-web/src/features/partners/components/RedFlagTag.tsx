@@ -14,6 +14,7 @@ export function RedFlagTag({ flags }: { flags: readonly Flag[] }) {
       {t("contracts.pv2.flag.tag")}
       {flags.map((f) => (
         <span key={f.type} className="font-normal">
+          {" "}
           · {t(`contracts.pv2.flag.type.${f.type}`)}
           {f.n > 1 ? ` ×${f.n}` : ""}
         </span>

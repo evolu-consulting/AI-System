@@ -326,7 +326,7 @@ test("DT-05 · ghi chú gửi đúng API (tab Sổ việc & ghi chú, không cò
   const sent = await install(page);
   await openDetail(page, "&tab=review");
   await expect(page.getByRole("radio", { name: /sao/ })).toHaveCount(0);
-  await page.getByRole("textbox", { name: "Ghi chú" }).fill("Gọi lại thứ Hai");
+  await page.getByRole("textbox", { name: "Ghi chú", exact: true }).fill("Gọi lại thứ Hai");
   await page.getByRole("button", { name: "Lưu ghi chú" }).click();
   await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toEqual({

@@ -143,18 +143,32 @@ test("bước chỉ trưởng phòng, người xem không phải trưởng phòn
   await expect(page.locator("[data-approval=reject]")).toHaveCount(0);
 });
 
-test("lượt bị trả về máy cũ do ENGINE_RUN_FAILED: nói rõ lý do", async ({ page }) => {
-  await install(page, {
-    mode: "machine",
-    run_id: G1,
-    run_status: "running",
-    step: "level1",
-    task_id: TASK,
-    can_act: true,
+// fix-review: run engine lỗi KHÔNG trả về máy cũ; lượt giữ engine + `needs_reopen`, nhãn lỗi + nút "Mở lại quy trình" cho owner.
+const STALLED = () =>
+  card([step(0, "Soạn & kiểm tra", "passed"), step(1, "Kế toán", "open")], {
+    run_status: "failed",
+    can_act: false,
+    task_id: null,
     feedback: "ENGINE_RUN_FAILED",
-  });
+    needs_reopen: true,
+  } as Partial<ContractApproval>);
+
+test("run engine ENGINE_RUN_FAILED: nói rõ lý do, owner có nút Mở lại quy trình", async ({
+  page,
+}) => {
+  await install(page, STALLED(), "owner");
   await page.goto(`/contracts/${contract.id}`);
   await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
+  await expect(page.locator("[data-approval=reopen]")).toHaveText("Mở lại quy trình");
+});
+
+test("run engine ENGINE_RUN_FAILED: người không phải owner chỉ thấy lý do, không có nút Mở lại", async ({
+  page,
+}) => {
+  await install(page, STALLED(), "editor");
+  await page.goto(`/contracts/${contract.id}`);
+  await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
+  await expect(page.locator("[data-approval=reopen]")).toHaveCount(0);
 });
 
 test("chỉnh luồng: phòng lấy từ /groups (không /admin/org), sửa hạn rồi Lưu ⇒ PUT", async ({

@@ -70,19 +70,18 @@ const loginBoxes = {
 const FAILED_ID = contract.id.replace(/1$/, "2");
 const reviewBoxes = {
   heading: "main h1",
-  save: 'main button:text-is("Lưu")',
+  save: 'main button:text-is("Xác nhận và lưu")',
   file: 'main a:has-text("Xem hợp đồng gốc")',
   warnings: "main ul",
   firstField: "main input >> nth=0",
   quote: "main span.italic >> nth=0",
   items: "main table",
 };
+// CR-097: «Thêm hợp đồng» chỉ còn tải văn bản đã ký lên (bỏ form nhập tay ⇒ bỏ cảnh v2f-new-sell-*).
 const newBoxes = {
   heading: "main h1",
-  form: "main form",
-  title: 'main input[name="title"]',
-  items: "main table",
-  submit: 'main button[type="submit"]',
+  lead: "main p >> nth=0",
+  upload: 'main button:text-is("Upload hợp đồng")',
 };
 const mainReady = (p: Page) => p.locator("main h1");
 const HD2_SCENES: Scene[] = [
@@ -203,48 +202,6 @@ const V2F_SCENES: Scene[] = [
       await p.getByRole("button", { name: "Xác nhận xong" }).click();
       await expect(p.getByText("Mốc trễ 8 ngày — lỗi của ai?")).toBeVisible();
     },
-  },
-  ...(["light", "dark"] as const).map(
-    (theme): Scene => ({
-      name: `v2f-new-sell-${theme}`,
-      signedIn: true,
-      path: "/contracts/new",
-      size: D,
-      theme,
-      text: ["main"],
-      boxes: {
-        ...newBoxes,
-        bar: 'main [data-testid="form-bar"]',
-        tiles: 'main [role="radiogroup"] >> nth=0',
-        link: 'main [data-testid="link-0"]',
-      },
-      mask: [],
-      ready: mainReady,
-      act: async (p) => {
-        await p.getByRole("radio", { name: /^Bán/ }).click();
-        await p.getByLabel(/^Khách hàng/).fill("Công ty Hoàn Toàn Mới");
-        await expect(p.getByText("Đối tác mới · sẽ tạo khi lưu")).toBeVisible();
-        await p.getByLabel("Tên hàng").fill("USB Token trắng");
-        await p.getByLabel("Số lượng", { exact: true }).fill("50");
-        await p.getByLabel("Tên hàng").blur();
-        await expect(p.getByTestId("oversell")).toBeVisible();
-      },
-    }),
-  ),
-  {
-    name: "v2f-new-sell-mobile",
-    signedIn: true,
-    path: "/contracts/new",
-    size: M,
-    theme: "light",
-    text: ["main"],
-    boxes: {
-      heading: "main h1",
-      bar: 'main [data-testid="form-bar"]',
-      tiles: 'main [role="radiogroup"] >> nth=0',
-    },
-    mask: [],
-    ready: mainReady,
   },
 ];
 

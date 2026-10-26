@@ -192,7 +192,7 @@ test("lọc trạng thái + loại gửi đúng query lên máy chủ", async ({
 test("tạo nháp: chọn SP, nhập SL/đơn giá ⇒ POST đúng thân, mở chi tiết nháp", async ({ page }) => {
   const { sent } = await installTx(page);
   await page.goto("/transactions/new");
-  await page.getByLabel("Đối tác", { exact: true }).fill("Công ty An Phát");
+  await page.getByRole("textbox", { name: "Đối tác", exact: true }).fill("Công ty An Phát");
   await page.getByLabel("Sản phẩm dòng 1").selectOption(P_TOKEN.id);
   await expect(page.getByLabel("Tên dòng 1")).toHaveValue("USB Token");
   await page.getByLabel("Số lượng dòng 1").fill("3");
@@ -269,7 +269,8 @@ test("điều chỉnh và huỷ cần lý do (≥ 3 ký tự) rồi hiện kho �
   };
   expect(adj.reason).toBe("Sai số lượng");
   expect(adj.lines[0]?.qty).toBe("2");
-  await page.getByRole("button", { name: "Đóng" }).click();
+  // Hộp có hai nút "Đóng" (X chuẩn của Dialog + nút chân hộp): bấm nút chân hộp.
+  await page.getByTestId("stock-close").click();
 
   await page.getByTestId("tx-cancel").click();
   const go = page.getByTestId("tx-cancel-submit");

@@ -69,7 +69,7 @@ describe("previewPath / nextApplicable", () => {
     const w = steps[2] as FlowReviewStep;
     const p = whenParts(w.when as NonNullable<typeof w.when>);
     expect(p).toEqual({ deal: ["referral"], value: { op: "ge", value: 100 } });
-    expect(buildWhen("or", p.deal, p.value)).toEqual(w.when as object);
+    expect(buildWhen("or", p.deal, p.value)).toEqual(w.when as NonNullable<typeof w.when>);
     expect(buildWhen("and", [], null).conds).toEqual([]);
   });
 });
