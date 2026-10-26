@@ -26,15 +26,16 @@ import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
 
-/** V2-C gợi ý đối tác: điểm HD8 hiện hành (khách/NCC); đối tác chưa có điểm / vai bên trả HH ⇒ null (V2-E thay engine). */
+/** V2-C gợi ý đối tác: điểm HD8 hiện hành (khách/NCC); vai bên trả hoa hồng tính như Khách hàng (CR-097a Q3); chưa có điểm ⇒ null. */
 const scoreOf =
   (uc: ReturnType<typeof partnersUsecase>): ScoreOf =>
   async (who, party, role) => {
-    if (role === "commission_payer") return null;
-    const p = await uc.one(who, party, role).catch((e: unknown) => {
-      if (e instanceof PartnersFail && e.kind === "not_found") return null;
-      throw e;
-    });
+    const p = await uc
+      .one(who, party, role === "commission_payer" ? "customer" : role)
+      .catch((e: unknown) => {
+        if (e instanceof PartnersFail && e.kind === "not_found") return null;
+        throw e;
+      });
     return p ? { score: p.score, band: p.band } : null;
   };
 
@@ -51,18 +52,40 @@ export type PartnersModuleDeps = {
   ai?: AiClient | null;
 };
 
-export function partnersModule(
-  db: Db,
-  view: PackAccessView,
-  d: PartnersModuleDeps,
-): Hono<PackGuardVars> {
-  const uow = packTenantOnly(
+const partnersUow = (db: Db) =>
+  packTenantOnly(
     createPackUow(db, KEY, (tx: Tx, t: string) => ({
       partners: partnersRepo(tx, t),
       companies: companiesRepo(tx, t),
       roles: partnerRolesRepo(tx, t),
     })),
   );
+
+/** CR-097a (U1) · điểm uy tín vai NCC theo khoá đối tác (engine HD8, tính khi đọc) cho tab "Nhà cung cấp & giá" của SP;
+ *  điểm null (chưa đủ sự kiện) ⇒ mức `new`. */
+export function supplierScores(db: Db, d: Pick<PartnersModuleDeps, "timeZoneOf" | "now">) {
+  const uc = partnersUsecase({
+    uow: partnersUow(db),
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    now: d.now ?? (() => new Date()),
+    inspect: createInspect(),
+    combine: partnerDataOf,
+  });
+  return async (who: { tenantId: string; userId: string }) =>
+    new Map(
+      (await uc.list(who, "supplier")).map((p) => [
+        p.party,
+        { score: p.score, level: p.band ?? ("new" as const) },
+      ]),
+    );
+}
+
+export function partnersModule(
+  db: Db,
+  view: PackAccessView,
+  d: PartnersModuleDeps,
+): Hono<PackGuardVars> {
+  const uow = partnersUow(db);
   const uc = partnersUsecase({
     uow,
     timeZoneOf: safeTimeZone(d.timeZoneOf),

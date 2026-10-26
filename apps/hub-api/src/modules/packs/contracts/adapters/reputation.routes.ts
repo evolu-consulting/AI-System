@@ -1,4 +1,5 @@
-// V2-E · DT-01..04 · CD-02..05 · HD-06 · CR-096 Q1: route uy tín v2 dưới `/pack/contracts/reputation`. Guard quyền gói TRƯỚC đọc thân
+// V2-E · DT-01..04 · CD-02..05 · HD-06 · CR-096 Q1 → CR-097a (U1): route uy tín v2 dưới `/pack/contracts/reputation` CHỈ ĐỌC (đóng băng; điểm hiện hành = engine HD8
+// `/partners`, `/scoring`): ghi (sao, việc, cấu hình) ⇒ 410 sau guard quyền/thân/admin. Guard quyền gói TRƯỚC đọc thân
 // (viewer ghi ⇒ 403, 0 SQL); cấu hình chỉ quản lý (`admin`); ô lạ ⇒ 404; thân/tham số sai ⇒ 400; luật sai ⇒ 422. Không đầu vào nào 500.
 import {
   RepCellConfigSchema,
@@ -30,6 +31,13 @@ import type { ReputationWriteUsecase } from "../application/reputation-write.use
 
 const KEY = "contracts";
 const P = "/reputation";
+/** CR-097a (U1): uy tín v2 đóng băng — dữ liệu cũ vẫn đọc được, không ghi mới. */
+const frozen = () =>
+  new AppError(
+    "REPUTATION_READ_ONLY",
+    410,
+    "Uy tín v2 chỉ đọc (CR-097a) — dùng cách tính điểm /scoring",
+  );
 
 function fail(e: unknown): never {
   if (!(e instanceof RepFail)) throw e;
@@ -78,12 +86,14 @@ export function reputationRoutes(
     const q = parseQuery(c, RepPartnerQuerySchema);
     return c.json(await run(wr.ratings(who(c), q.party, q.role)));
   });
-  r.post(`${P}/ratings`, write, async (c) =>
-    c.json(await run(wr.rate(who(c), await body(c, RepRatingSchema))), 201),
-  );
-  r.post(`${P}/jobs`, write, async (c) =>
-    c.json(await run(wr.logJob(who(c), await body(c, RepJobSchema))), 201),
-  );
+  r.post(`${P}/ratings`, write, async (c) => {
+    await body(c, RepRatingSchema);
+    throw frozen();
+  });
+  r.post(`${P}/jobs`, write, async (c) => {
+    await body(c, RepJobSchema);
+    throw frozen();
+  });
   configRoutes(r, view, uc);
   return r;
 }
@@ -102,16 +112,19 @@ function configRoutes(r: Hono<PackGuardVars>, view: PackAccessView, uc: Reputati
     c.json(await run(uc.preview(who(c), await body(c, RepPreviewSchema)))),
   );
   r.put(`${P}/config/cells/:group/:role`, write, async (c) => {
-    const [g, role] = cellOf(c);
+    cellOf(c);
     await admin(c);
-    return c.json(await run(uc.saveCell(who(c), g, role, await body(c, RepCellConfigSchema))));
+    await body(c, RepCellConfigSchema);
+    throw frozen();
   });
   r.put(`${P}/config/settings`, write, async (c) => {
     await admin(c);
-    return c.json(await run(uc.saveSettings(who(c), await body(c, RepSettingsSchema))));
+    await body(c, RepSettingsSchema);
+    throw frozen();
   });
   r.put(`${P}/config/job-types`, write, async (c) => {
     await admin(c);
-    return c.json(await run(uc.saveJobTypes(who(c), await body(c, RepJobTypesSchema))));
+    await body(c, RepJobTypesSchema);
+    throw frozen();
   });
 }

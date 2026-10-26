@@ -66,6 +66,9 @@ const cfgOf = (stored: StoredConfig | undefined, role: Role) =>
 /** Bản nháp ⇒ cấu hình chuẩn hoá; sai ⇒ 422 với đúng câu của mgmt (`_draft`). */
 function draftOf(role: Role, b: ScoringDraft): Cfg {
   const criteria = normalise(b.criteria);
+  // CR-097a (R41): không có tiêu chí chấm tay chủ quan trong cách tính.
+  if (criteria.some((c) => c.kind === "manual"))
+    throw new PartnersFail("invalid", "Không dùng tiêu chí tự chấm (BA R41)");
   const msg = problem(role, criteria, b.rules);
   if (msg) throw new PartnersFail("invalid", msg);
   return { criteria, rules: b.rules };

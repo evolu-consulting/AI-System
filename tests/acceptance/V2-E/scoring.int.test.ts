@@ -160,7 +160,7 @@ const cellBody = (cfg: Json, f: (x: Json) => Json = (x) => x) => ({
 });
 
 describe("V2-E CD-02..05 · cấu hình chỉ quản lý; thử tính không ghi; đổi cấu hình chỉ đổi điểm hiện tại", () => {
-  it("mặc định BA; editor 403; tổng ≠ 100 ⇒ 422; thử tính trả đổi + mẫu độ cũ; lưu ⇒ điểm đổi", async () => {
+  it("CR-097a chỉ đọc: mặc định BA v2; editor 403; lưu ⇒ 410; thử tính vẫn chạy, không ghi; điểm cũ giữ nguyên", async () => {
     await world();
     const cfg = await ok(call(c, P.tam, "GET", `${R}/config`));
     expect(cfg.cells["goods:customer"].criteria.map((x: Json) => [x.key, x.weight])).toEqual([
@@ -196,10 +196,7 @@ describe("V2-E CD-02..05 · cấu hình chỉ quản lý; thử tính không ghi
       path,
       cellBody(svc, (x) => (x.key === "serial" ? { ...x, weight: 1 } : x)),
     );
-    expect([bad.status, bad.json?.error?.message]).toEqual([
-      422,
-      "Tổng trọng số tiêu chí bật phải đúng 100%",
-    ]);
+    expect([bad.status, bad.json?.error?.code]).toEqual([410, "REPUTATION_READ_ONLY"]); // CR-097a: đóng băng
     expect(
       (await call(c, P.lan, "PUT", `${R}/config/cells/goods/commission_payer`, draft)).status,
     ).toBe(404);
@@ -221,42 +218,30 @@ describe("V2-E CD-02..05 · cấu hình chỉ quản lý; thử tính không ghi
     ]);
     expect(pv.sample.jobs.map((j: Json) => j.h)).toEqual([1, 0.5, 0.2]);
     expect((await ok(call(c, P.lan, "GET", `${R}/config`))).versions["service:supplier"]).toBe(0);
-    const saved = await ok(call(c, P.lan, "PUT", path, draft));
-    expect([saved.scope, saved.version]).toEqual(["service:supplier", 1]);
+    const saved = await call(c, P.lan, "PUT", path, draft);
+    expect([saved.status, saved.json?.error?.code]).toEqual([410, "REPUTATION_READ_ONLY"]);
+    expect((await ok(call(c, P.lan, "GET", `${R}/config`))).versions["service:supplier"]).toBe(0);
     const a = (await board(c)).find((r: Json) => r.party === A);
-    expect([a.score, a.level]).toEqual([71, "fair"]);
+    expect([a.score, a.level]).toEqual([94, "good"]); // điểm cũ không đổi (chỉ đọc)
   });
 
-  it("cài đặt chung (ngưỡng, s ≤ 50%) + danh mục loại việc; sai ⇒ 400/422", async () => {
+  it("cài đặt chung + danh mục loại việc: thân sai ⇒ 400, thân đúng ⇒ 410 (chỉ đọc)", async () => {
     await world();
     const cfg = await ok(call(c, P.lan, "GET", `${R}/config`));
     const s = { ...cfg.settings, good_from: 95 };
     expect(
       (await call(c, P.lan, "PUT", `${R}/config/settings`, { ...s, manual_share: 60 })).status,
     ).toBe(400);
-    const bad = await call(c, P.lan, "PUT", `${R}/config/settings`, { ...s, fair_from: 95 });
-    expect([bad.status, bad.json?.error?.message]).toEqual([422, "Ngưỡng: 0 ≤ KHÁ < TỐT ≤ 100"]);
-    await ok(call(c, P.lan, "PUT", `${R}/config/settings`, s));
-    expect((await board(c)).find((r: Json) => r.party === A).level).toBe("fair");
+    const put = await call(c, P.lan, "PUT", `${R}/config/settings`, s);
+    expect([put.status, put.json?.error?.code]).toEqual([410, "REPUTATION_READ_ONLY"]);
+    expect((await board(c)).find((r: Json) => r.party === A).level).toBe("good"); // không đổi
     const items = cfg.job_types.map(({ ord: _o, ...j }: Json) => j);
-    const dup = await call(c, P.lan, "PUT", `${R}/config/job-types`, {
-      items: [...items, items[0]],
+    const jt = await call(c, P.lan, "PUT", `${R}/config/job-types`, {
+      items: [
+        ...items,
+        { key: "late_docs", name: "Chậm giấy tờ", criterion: "quality", score: 50 },
+      ],
     });
-    expect([dup.status, dup.json?.error?.message]).toEqual([422, "Loại việc trùng khoá"]);
-    const jt = await ok(
-      call(c, P.lan, "PUT", `${R}/config/job-types`, {
-        items: [
-          ...items,
-          { key: "late_docs", name: "Chậm giấy tờ", criterion: "quality", score: 50 },
-        ],
-      }),
-    );
-    expect(jt.config.at(-1)).toEqual({
-      key: "late_docs",
-      name: "Chậm giấy tờ",
-      criterion: "quality",
-      score: 50,
-      ord: items.length,
-    });
+    expect(jt.status).toBe(410);
   });
 });

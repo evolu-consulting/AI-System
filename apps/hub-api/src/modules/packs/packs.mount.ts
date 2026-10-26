@@ -38,11 +38,11 @@ import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
-import { partnersModule } from "./contracts/partners.mount";
+import { partnersModule, supplierScores } from "./contracts/partners.mount";
 import { priceScoutModule } from "./contracts/price-scout.mount";
 import { productsModule } from "./contracts/products.mount";
 import { type ContractsRemindDeps, contractsRemindModule } from "./contracts/reminders.mount";
-import { reputationModule, supplierScores } from "./contracts/reputation.mount";
+import { reputationModule } from "./contracts/reputation.mount";
 import { serviceCustomersModule } from "./contracts/service-customers.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { supplierPricesModule } from "./contracts/supplier-prices.mount";

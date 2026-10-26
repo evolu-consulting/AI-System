@@ -1,5 +1,5 @@
-// HD8-FR-01…04 · HD8-AC01…AC04 · HD8-NFR-02: đối tác + điểm uy tín + cách tính qua hub-api thật — đọc như mgmt-app
-// `tests/test_scoring_routes.py`. CR-096 Q1 (V2-E): engine cũ CHỈ ĐỌC — lưu cách tính / chấm tay ⇒ 410 (uy tín v2: `/reputation`).
+// HD8-FR-01…04 · HD8-AC01…AC04 · HD8-NFR-02: đối tác + điểm uy tín + cách tính qua hub-api thật — đọc + lưu cách tính như mgmt-app
+// `tests/test_scoring_routes.py`. CR-097a (U1): engine HD8 bật lại làm điểm hiện hành; chấm tay theo tiêu chí ⇒ 410 (R41).
 // Quyền: viewer chỉ đọc; tenant khác không thấy gì. Không đầu vào nào ra 500.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -107,34 +107,63 @@ const body = (cfg: Json) => ({
   rules: cfg.rules,
 });
 
-// CR-096 Q1 (V2-E, qc khoá lại): engine HD8 thay bằng uy tín v2 — cấu hình + chấm tay cũ CHỈ ĐỌC. Lưu cách tính / chấm tay cũ ⇒
-// 410 (quyền + thân vẫn kiểm trước: 403 / 400); đọc + xem trước vẫn chạy, không ghi gì. Parity mgmt (`agg-parity`) đã gỡ.
-describe("HD8-AC02 · cách tính cũ chỉ đọc (CR-096 Q1); xem trước không ghi", () => {
-  it("xem trước chạy; editor/viewer 403; quản lý lưu ⇒ 410, version giữ 0, không ảnh chụp; vai lạ 404", async () => {
+// CR-097a (U1): engine HD8 là điểm hiện hành (đảo CR-096 Q1) — quản lý lưu cách tính (version + lịch sử + ảnh chụp điểm), xem
+// trước không ghi; chấm tay theo tiêu chí đóng (BA R41: không ô "cho X sao" chủ quan).
+describe("HD8-AC02 · chỉ quản lý lưu cách tính đúng 100%; xem trước không ghi (R45/R46)", () => {
+  it("xem trước, 403, 422 đúng chữ, lưu ⇒ version 1 + lịch sử + ảnh chụp; vai tách riêng; vai lạ 404", async () => {
     await world();
     const cfg = await ok(call(c, P.lan, "GET", "/scoring/customer"));
     expect(cfg.version).toBe(0);
     expect(cfg.criteria.reduce((s: number, x: Json) => s + x.weight, 0)).toBe(100);
+    expect([cfg.rules.good_from, cfg.rules.fair_from, cfg.rules.recency_boost]).toEqual([
+      80,
+      60,
+      true,
+    ]);
     const b = body(cfg);
     const pv = await ok(call(c, P.lan, "POST", "/scoring/customer/preview", b));
     expect(pv.total).toBe(2);
+    expect((await ok(call(c, P.lan, "GET", "/scoring/customer"))).version).toBe(0);
     expect((await call(c, P.hoa, "PUT", "/scoring/customer", b)).status).toBe(403);
     expect((await call(c, P.tam, "PUT", "/scoring/customer", b)).status).toBe(403);
-    const r = await call(c, P.lan, "PUT", "/scoring/customer", b);
-    expect([r.status, r.json?.error?.code]).toEqual([410, "SCORING_READ_ONLY"]);
-    expect((await ok(call(c, P.lan, "GET", "/scoring/customer"))).version).toBe(0);
-    expect(await ok(call(c, P.tam, "GET", "/scoring/customer/history"))).toEqual([]);
+    const bad = {
+      ...b,
+      criteria: b.criteria.map((x: Json, i: number) =>
+        i === 0 ? { ...x, weight: x.weight + 1 } : x,
+      ),
+    };
+    const r = await call(c, P.lan, "PUT", "/scoring/customer", bad);
+    expect([r.status, r.json?.error?.message]).toEqual([422, "Tổng trọng số phải đúng 100%"]);
+    const saved = await ok(call(c, P.lan, "PUT", "/scoring/customer", b));
+    expect(saved.version).toBe(1);
+    const hist: Json[] = await ok(call(c, P.tam, "GET", "/scoring/customer/history"));
+    expect(hist[0].version).toBe(1);
+    expect((await ok(call(c, P.lan, "GET", "/scoring/supplier"))).version).toBe(0);
     expect((await call(c, P.lan, "GET", "/scoring/nobody")).status).toBe(404);
     const [snap] = await c.sql<
       { n: number }[]
-    >`select count(*)::int as n from contracts.score_snapshots where tenant_id = ${T.acme}`;
-    expect(snap?.n).toBe(0);
+    >`select count(*)::int as n from contracts.score_snapshots
+      where tenant_id = ${T.acme} and role = 'customer' and config_version = 1`;
+    expect(snap?.n).toBe(2);
   });
 });
 
-describe("HD8-AC03 · chấm tay cũ chỉ đọc (CR-096 Q1)", () => {
-  it("PUT /partners/ratings ⇒ viewer 403, editor 410 (không ghi sổ); GET ratings vẫn đọc", async () => {
+describe("HD8-AC03 · không chấm tay chủ quan (CR-097a R41)", () => {
+  it("tiêu chí tự chấm ⇒ 422; PUT /partners/ratings ⇒ viewer 403, editor 410 (không ghi sổ); GET ratings vẫn đọc", async () => {
     await world();
+    const cfg = await ok(call(c, P.lan, "GET", "/scoring/customer"));
+    const withManual = {
+      criteria: [
+        ...cfg.criteria.map((x: Json) => (x.key === "payment_on_time" ? { ...x, weight: 15 } : x)),
+        { kind: "manual", label: "Thái độ hợp tác", enabled: true, weight: 20 },
+      ],
+      rules: cfg.rules,
+    };
+    const m = await call(c, P.lan, "PUT", "/scoring/customer", withManual);
+    expect([m.status, m.json?.error?.message]).toEqual([
+      422,
+      "Không dùng tiêu chí tự chấm (BA R41)",
+    ]);
     const rate = { party: PN, role: "customer", criterion: "custom:x", value: 40, note: "x" };
     expect((await call(c, P.tam, "PUT", "/partners/ratings", rate)).status).toBe(403);
     expect((await call(c, P.hoa, "PUT", "/partners/ratings", rate)).status).toBe(410);
@@ -148,7 +177,6 @@ describe("HD8-AC03 · chấm tay cũ chỉ đọc (CR-096 Q1)", () => {
     expect(rt.history).toEqual([]);
   });
 });
-
 describe("HD8-NFR-02 · không đầu vào nào ra 500", () => {
   it("thân/tham số rác ⇒ 400/404/422, không 5xx", async () => {
     await world();

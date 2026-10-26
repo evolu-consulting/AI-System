@@ -1,10 +1,8 @@
-// V2-E · CR-096 Q1 (lớp 4 của gói): nối uy tín v2 — `PackUow` role `contracts_rw` (phạm vi người dùng) + repo + use case + route;
-// vòng chốt tháng (`PackSystemUow` theo tenant) chỉ khi `worker`: `drain` chạy hết việc rồi mới trả ⇒ `startLoop` chỉ ngủ giữa
-// các lượt (mặc định 6 giờ; kỳ đã chốt không tính lại nên lượt thừa chỉ tốn một câu đọc mỗi tenant).
+// V2-E · CR-096 Q1 → CR-097a U1 (CHỈ ĐỌC; lớp 4 của gói): nối uy tín v2 — `PackUow` role `contracts_rw` (phạm vi người dùng) + repo + use case + route;
+// vòng chốt tháng (`createRepLock`, `PackSystemUow` theo tenant) giữ làm hàm cho test nhưng KHÔNG còn chạy nền.
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
-import { startLoop } from "../../../lib/loop";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import { repRepo } from "./adapters/rep.repo";
@@ -18,7 +16,6 @@ import { safeTimeZone } from "./reminders.mount";
 export type { RepLockSweep };
 
 const KEY = "contracts";
-const DEFAULT_EVERY_MS = 6 * 3_600_000;
 
 export type RepLockDeps = {
   timeZoneOf: (tenantId: string) => Promise<string>;
@@ -38,36 +35,12 @@ export function createRepLock(db: Db, d: RepLockDeps): RepLockSweep {
   });
 }
 
-/** V2-J2 · điểm uy tín vai NCC theo khoá đối tác (bảng điểm V2-E, tính khi đọc) cho tab "Nhà cung cấp & giá" của SP. */
-export function supplierScores(db: Db, d: Pick<RepLockDeps, "timeZoneOf" | "now">) {
-  const uow = packTenantOnly(createPackUow(db, KEY, (tx, t) => ({ rep: repRepo(tx, t) })));
-  const uc = reputationUsecase({
-    uow,
-    timeZoneOf: safeTimeZone(d.timeZoneOf),
-    now: d.now ?? (() => new Date()),
-    merge: rowsOf,
-  });
-  return async (who: { tenantId: string; userId: string }) =>
-    new Map(
-      (await uc.list(who, "supplier")).map((p) => [p.party, { score: p.score, level: p.level }]),
-    );
-}
-
 export function reputationModule(
   db: Db,
   view: PackAccessView,
   d: RepLockDeps & { worker?: boolean; everyMs?: number; signal?: AbortSignal },
 ): Hono<PackGuardVars> {
-  if (d.worker) {
-    const s = createRepLock(db, d);
-    startLoop({
-      name: "contracts-rep-lock",
-      everyMs: d.everyMs ?? DEFAULT_EVERY_MS,
-      tick: () => s.drain(),
-      log: logger,
-      ...(d.signal ? { signal: d.signal } : {}),
-    });
-  }
+  // CR-097a (U1): uy tín v2 đóng băng ⇒ KHÔNG chạy vòng chốt tháng (`worker`/`everyMs`/`signal` giữ cho tương thích). Điểm hiện hành = HD8.
   const uow = packTenantOnly(createPackUow(db, KEY, (tx, t) => ({ rep: repRepo(tx, t) })));
   const deps = {
     uow,
