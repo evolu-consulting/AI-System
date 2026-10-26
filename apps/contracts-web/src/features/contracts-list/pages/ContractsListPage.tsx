@@ -23,6 +23,7 @@ import {
 import { DateFilterControl } from "../components/DateFilterControl";
 import { ExportButtons } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
+import { QuotaDialog } from "../components/QuotaDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { useContractsList } from "../hooks/use-contracts-list";
 import { useDeleteDialog } from "../hooks/use-delete-dialog";
@@ -148,6 +149,7 @@ export function ContractsListPage() {
         }
       />
       {delDialog.node}
+      <QuotaDialog notice={queue.quota} onClose={queue.dismissQuota} />
       <QueueExtractDialog items={queue.items} />
       <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />
       {err && (

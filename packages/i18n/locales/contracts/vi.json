@@ -110,6 +110,13 @@
         "tooLarge": "Tệp quá 20 MB.",
         "empty": "Tệp rỗng.",
         "quota": "Đã hết lượt tải lên trong ngày.",
+        "quotaPopup": {
+          "title": "Đã hết lượt tải hợp đồng hôm nay",
+          "tenant": "Công ty đã dùng hết {{limit}} lượt tải lên trong ngày. Lượt tải mở lại lúc {{time}} ngày {{date}}. Cần thêm lượt, liên hệ quản trị hệ thống.",
+          "global": "Hệ thống đã hết lượt tải lên chung trong ngày (giới hạn {{limit}} lượt). Lượt tải mở lại lúc {{time}} ngày {{date}}. Cần thêm lượt, liên hệ quản trị hệ thống.",
+          "generic": "Đã hết lượt tải hợp đồng trong ngày. Vui lòng thử lại sau hoặc liên hệ quản trị hệ thống.",
+          "ok": "Đã hiểu"
+        },
         "busy": "Hệ thống đang bận chuyển file, thử lại sau ít giây.",
         "dialog": {
           "title": "Upload hợp đồng",

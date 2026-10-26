@@ -123,7 +123,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
     await expect(page).toHaveURL(/\/contracts$/); // nhiều tệp ⇒ ở lại danh sách
   });
 
-  test("một tệp lỗi máy chủ ⇒ báo lỗi riêng tệp đó + nút Thử lại; tệp còn lại vẫn xong", async ({
+  test("hết lượt (429 UPLOAD_QUOTA) ⇒ popup một lần, dừng hàng đợi: không POST tệp sau, mọi tệp lỗi không có Thử lại", async ({
     page,
   }) => {
     await install(page);
@@ -134,13 +134,17 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
       async (r) => {
         if (r.request().method() !== "POST") return r.fallback();
         n++;
-        return n === 1
-          ? json(r, { error: { code: "UPLOAD_QUOTA", message: "quota" } }, 429)
-          : json(
-              r,
-              { id: "c2000000-0000-4000-8000-000000000009", status: "extracting", version: 1 },
-              201,
-            );
+        return json(
+          r,
+          {
+            error: {
+              code: "UPLOAD_QUOTA",
+              message: "quota",
+              details: { scope: "tenant", limit: 20, resets_at: "2026-10-28T00:00:00Z" },
+            },
+          },
+          429,
+        );
       },
     );
     await page.goto("/contracts");
@@ -149,8 +153,12 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
       { name: "b.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 b") },
     ]);
     const panel = page.getByRole("region", { name: "Tải lên hợp đồng" });
-    await expect(panel.getByText("Đã hết lượt tải lên trong ngày.")).toBeVisible();
-    await expect(panel.locator('li[data-state="done"]')).toHaveCount(1);
-    await expect(panel.getByRole("button", { name: "Thử lại" })).toBeVisible();
+    const dialog = page.getByRole("dialog", { name: "Đã hết lượt tải hợp đồng hôm nay" });
+    await expect(dialog).toContainText("Công ty đã dùng hết 20 lượt tải lên trong ngày");
+    await dialog.getByRole("button", { name: "Đã hiểu" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(panel.locator('li[data-state="error"]')).toHaveCount(2);
+    await expect(panel.getByRole("button", { name: "Thử lại" })).toHaveCount(0);
+    expect(n).toBe(1);
   });
 });

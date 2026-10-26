@@ -5,8 +5,10 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uploadContract } from "../api";
 import { checkFile, type UploadItem } from "../lib/upload-queue";
+import { type QuotaNotice, quotaNotice, stopOnQuota } from "../lib/upload-quota";
 import { uploadErrorText } from "../list-upload-error";
 
+const QUOTA = Symbol("quota");
 const CHECK_KEY = { type: "badType", size: "tooLarge", empty: "empty" } as const;
 type Job = { key: number; file: File };
 
@@ -18,13 +20,15 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
   const files = useRef(new Map<number, File>());
   const queue = useRef<Job[]>([]);
   const running = useRef(false);
+  const [quota, setQuota] = useState<QuotaNotice | null>(null);
+  const quotaShown = useRef(false);
   const patch = useCallback((key: number, p: Partial<UploadItem>) => {
     setItems((all) => all.map((i) => (i.key === key ? { ...i, ...p } : i)));
   }, []);
 
   /** Một tệp: lên máy chủ, ghi trạng thái; trả mã HĐ khi xong. */
   const uploadOne = useCallback(
-    async (job: Job): Promise<string | null> => {
+    async (job: Job): Promise<string | null | typeof QUOTA> => {
       patch(job.key, { state: "uploading" });
       try {
         const r = await uploadContract(job.file);
@@ -32,6 +36,16 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
         files.current.delete(job.key);
         return r.id;
       } catch (e) {
+        const q = quotaNotice(e);
+        if (q) {
+          // Hết lượt: dừng cả hàng đợi (tệp còn lại báo cùng câu), popup một lần mỗi lô.
+          queue.current = [];
+          const text = uploadErrorText(e, t);
+          setItems((all) => stopOnQuota(all, job.key, text));
+          setQuota((cur) => (quotaShown.current ? cur : q));
+          quotaShown.current = true;
+          return QUOTA;
+        }
         patch(job.key, { state: "error", error: uploadErrorText(e, t), retryable: true });
         return null;
       }
@@ -48,7 +62,7 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
       for (let job = queue.current.shift(); job; job = queue.current.shift()) {
         total++;
         const id = await uploadOne(job);
-        if (id) ids.push(id);
+        if (typeof id === "string") ids.push(id); // QUOTA đã xoá hàng đợi ⇒ vòng tự dừng
       }
     } finally {
       running.current = false;
@@ -57,11 +71,12 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
     // Một tệp duy nhất và thành công ⇒ mở thẳng màn kiểm như trước.
     if (total === 1 && ids[0]) onSingleDone(ids[0]);
   }, [onSingleDone, qc, uploadOne]);
-  return { items, setItems, files, queue, running, patch, pump, t };
+  return { items, setItems, files, queue, running, patch, pump, t, quota, setQuota, quotaShown };
 }
 
 export function useUploadQueue(onSingleDone: (id: string) => void) {
-  const { items, setItems, files, queue, running, patch, pump, t } = useUploadRunner(onSingleDone);
+  const { items, setItems, files, queue, running, patch, pump, t, quota, setQuota, quotaShown } =
+    useUploadRunner(onSingleDone);
   const seq = useRef(0);
 
   const enqueue = useCallback(
@@ -77,11 +92,12 @@ export function useUploadQueue(onSingleDone: (id: string) => void) {
         queue.current.push({ key, file: f });
         return { ...base, state: "queued" };
       });
-      // Lô mới khi đang rảnh thay danh sách cũ; đang chạy ⇒ nối thêm.
+      // Lô mới khi đang rảnh thay danh sách cũ (và cho phép popup hết lượt hiện lại); đang chạy ⇒ nối thêm.
+      if (!running.current) quotaShown.current = false;
       setItems((all) => (running.current ? [...all, ...fresh] : fresh));
       void pump();
     },
-    [pump, t, files, queue, running, setItems],
+    [pump, t, files, queue, running, setItems, quotaShown],
   );
 
   const retry = useCallback(
@@ -94,5 +110,12 @@ export function useUploadQueue(onSingleDone: (id: string) => void) {
     },
     [patch, pump, files, queue],
   );
-  return { items, enqueue, retry, clear: () => setItems([]) };
+  return {
+    items,
+    enqueue,
+    retry,
+    clear: () => setItems([]),
+    quota,
+    dismissQuota: () => setQuota(null),
+  };
 }

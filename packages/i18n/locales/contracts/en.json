@@ -110,6 +110,13 @@
         "tooLarge": "File is larger than 20 MB.",
         "empty": "File is empty.",
         "quota": "Daily upload limit reached.",
+        "quotaPopup": {
+          "title": "Today's contract upload limit is used up",
+          "tenant": "Your company has used all {{limit}} uploads for today. Uploads reopen at {{time}} on {{date}}. For more uploads, contact the system administrator.",
+          "global": "The system has used up its shared upload allowance for today (limit {{limit}}). Uploads reopen at {{time}} on {{date}}. For more uploads, contact the system administrator.",
+          "generic": "The daily contract upload limit is reached. Please try again later or contact the system administrator.",
+          "ok": "Got it"
+        },
         "busy": "The converter is busy, try again in a few seconds.",
         "dialog": {
           "title": "Upload contract",
