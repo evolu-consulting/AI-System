@@ -234,7 +234,7 @@ test.describe("15 lỗi người dùng báo", () => {
     await expect(row.getByTestId("row-delete")).toBeEnabled();
   });
 
-  test("[lỗi: «v3 không del được»] tải bản cập nhật (v2) ⇒ xoá bản v2 bằng thùng rác ở danh sách được", async () => {
+  test("[luật K2: chuỗi nhiều phiên bản] HĐ có bản cập nhật: thùng rác khoá + tooltip, API DELETE ⇒ 409 CONTRACT_HAS_VERSIONS", async () => {
     test.setTimeout(480_000);
     test.skip(itemIds.length === 0, "HĐ chưa được xác nhận/khoá ở test trước");
     const up = await api.post(`${P}/contracts/${cid}/versions`, {
@@ -250,22 +250,53 @@ test.describe("15 lỗi người dùng báo", () => {
     });
     expect(up.status()).toBe(201);
     const v2 = ((await up.json()) as { id: string }).id;
-    toClean.push(v2);
+    toClean.push(v2); // dọn: bản nháp v2 xoá trước, rồi v1 (nếu server không xoá được chuỗi, HĐ vẫn mang tiêu đề/tên E2E-DEPLOY để nhận ra)
     await waitRead(v2);
+    // API: HĐ v1 (đã xác nhận, thuộc chuỗi nhiều bản) không xoá được.
+    const del = await api.delete(`${P}/contracts/${cid}`, { headers: auth, data: {} });
+    expect(del.status()).toBe(409);
+    expect(JSON.stringify(await del.json())).toContain("CONTRACT_HAS_VERSIONS");
+    // UI: hàng nào của chuỗi hiện trong danh sách và có nhiều phiên bản ⇒ thùng rác bị khoá kèm tooltip.
+    await page.goto(`${CW}/contracts`);
+    await settle(page);
+    await page.getByPlaceholder(/Tìm/).first().fill(TAG);
+    const rows = page
+      .locator("table tbody tr")
+      .filter({ has: page.locator(`a[href="/contracts/${cid}"], a[href="/contracts/${v2}"]`) });
+    await expect(rows.first()).toBeVisible();
+    const trash = rows.first().getByTestId("row-delete");
+    await expect(trash).toBeDisabled();
+    await expect(trash).toHaveAttribute("title", /nhiều phiên bản/);
+  });
+
+  test("[xoá HĐ một phiên bản] HĐ mới tải lên (một bản) xoá được bằng thùng rác ở danh sách", async () => {
+    test.setTimeout(420_000);
+    const up = await api.post(`${P}/contracts`, {
+      headers: auth,
+      multipart: {
+        file: {
+          name: `${TAG}-xoa-mot-ban-${RUN}.md`,
+          mimeType: "text/markdown",
+          buffer: Buffer.from(CONTRACT_MD, "utf8"),
+        },
+      },
+    });
+    expect(up.status()).toBe(201);
+    const one = ((await up.json()) as { id: string }).id;
+    toClean.push(one);
+    await waitRead(one);
     await page.goto(`${CW}/contracts`);
     await settle(page);
     await page.getByPlaceholder(/Tìm/).first().fill(TAG);
     const row = page
       .locator("table tbody tr")
-      .filter({ has: page.locator(`a[href="/contracts/${v2}"]`) });
+      .filter({ has: page.locator(`a[href="/contracts/${one}"]`) });
     await expect(row).toHaveCount(1);
-    const trash = row.getByTestId("row-delete");
-    await expect(trash).toBeEnabled();
-    await trash.click();
+    await expect(row.getByTestId("row-delete")).toBeEnabled();
+    await row.getByTestId("row-delete").click();
     await page.getByTestId("delete-confirm").click();
-    await expect(page.locator(`a[href="/contracts/${v2}"]`)).toHaveCount(0, { timeout: 30_000 });
-    const gone = await api.get(`${P}/contracts/${v2}`, { headers: auth });
-    expect(gone.status()).toBe(404);
+    await expect(page.locator(`a[href="/contracts/${one}"]`)).toHaveCount(0, { timeout: 30_000 });
+    expect((await api.get(`${P}/contracts/${one}`, { headers: auth })).status()).toBe(404);
   });
 
   test.skip("[lỗi: 409 nghiệp vụ hiện «Dữ liệu vừa được cập nhật»] giao hàng vượt tồn kho hiện đúng thông điệp", () => {
