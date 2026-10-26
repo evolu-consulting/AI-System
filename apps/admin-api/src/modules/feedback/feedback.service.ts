@@ -14,8 +14,15 @@ import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import * as repo from "./feedback.repo";
 import { decodeFiles, seesAll } from "./feedback.rules";
+import { type FetchFn, pushFeedbackToTrello, type TrelloConfig } from "./feedback.trello";
 
-export type FeedbackCtx = { db: Db };
+export type FeedbackCtx = {
+  db: Db;
+  /** `TRELLO_*` đủ ba biến ⇒ đẩy thẻ Trello sau khi lưu; vắng ⇒ chỉ lưu. */
+  trello?: TrelloConfig;
+  /** Chỉ để test. */
+  trelloFetch?: FetchFn;
+};
 
 const MINE_LIMIT = 50;
 
@@ -40,7 +47,7 @@ export async function createFeedback(
     throw validationError([
       { path: ["files", dec.index], code: "invalid_file", message: "Invalid attachment" },
     ]);
-  return scoped(ctx, actor, async (tx) => {
+  const row = await scoped(ctx, actor, async (tx) => {
     const id = await repo.insertFeedback(
       tx,
       {
@@ -54,10 +61,13 @@ export async function createFeedback(
       },
       dec.files,
     );
-    const row = await repo.findOne(tx, id);
-    if (!row) throw appError("NOT_FOUND");
-    return row;
+    const created = await repo.findOne(tx, id);
+    if (!created) throw appError("NOT_FOUND");
+    return created;
   });
+  // Sau COMMIT, không chờ: lỗi Trello không ảnh hưởng góp ý (pushFeedbackToTrello không ném).
+  if (ctx.trello) void pushFeedbackToTrello(ctx.trello, row, dec.files, ctx.trelloFetch);
+  return row;
 }
 
 export function listMine(ctx: FeedbackCtx, actor: Actor): Promise<{ items: FeedbackItem[] }> {

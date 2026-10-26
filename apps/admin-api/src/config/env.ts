@@ -40,6 +40,10 @@ export const EnvSchema = z.object({
   ADMIN_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
   /** dify-workflows · gốc Dify console (vd https://dify.example.com) cho nút "Mở trong Dify"; vắng ⇒ nút ẩn. */
   DIFY_CONSOLE_URL: z.url({ protocol: /^https?$/ }).optional(),
+  /** feedback · đẩy góp ý thành thẻ Trello; cần đủ cả ba, thiếu một ⇒ tắt. Secret: không log. */
+  TRELLO_API_KEY: z.string().min(1).optional(),
+  TRELLO_TOKEN: z.string().min(1).optional(),
+  TRELLO_FEEDBACK_LIST_ID: z.string().min(1).optional(),
   /** Gốc Hub cho "Chạy thử" lệnh (ADM-FR-23, X1 §2.2). Không dùng tên `HUB_URL` (dành cho chat). Vắng ⇒ 503. */
   ADMIN_HUB_URL: z.url({ protocol: /^https?$/ }).optional(),
   /** Token dịch vụ Hub `/internal/*` — chỉ server-side, cùng giá trị với hub-api. Vắng ⇒ 503. */

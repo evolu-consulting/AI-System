@@ -25,6 +25,7 @@ import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { feedbackAdminRoutes, feedbackUserRoutes } from "./modules/feedback/feedback.routes";
+import type { TrelloConfig } from "./modules/feedback/feedback.trello";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
@@ -66,6 +67,8 @@ export type AppDeps = {
   frozenModules?: boolean;
   /** dify-workflows · gốc Dify console (`DIFY_CONSOLE_URL`) để dựng link "Mở trong Dify"; vắng ⇒ nút ẩn. */
   difyConsoleUrl?: string;
+  /** feedback · đẩy góp ý sang Trello (`TRELLO_*`); vắng ⇒ chỉ lưu trong app. */
+  trello?: TrelloConfig;
   /** L1 (#224) · giới hạn đăng nhập (Redis). Vắng ⇒ không giới hạn — chỉ test in-process; server.ts bắt buộc ở production. */
   loginLimiter?: LoginLimiter;
   /** L1 · trần băm mật khẩu đồng thời; vắng ⇒ `defaultHashSlots()`. */
@@ -143,7 +146,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/features", featuresRoutes({ ...ctx, hooks }));
   app.route("/admin/apps", appCatalogRoutes(ctx)); // app-catalog
   app.route("/admin/feedback", feedbackAdminRoutes(ctx)); // feedback: admin lọc/đổi trạng thái/trả lời
-  app.route("/auth/feedback", feedbackUserRoutes(ctx)); // feedback: user gửi/xem của mình (mọi web proxy /auth)
+  app.route("/auth/feedback", feedbackUserRoutes({ ...ctx, trello: deps.trello })); // feedback: user gửi/xem của mình (mọi web proxy /auth)
   app.route("/me", meAppsRoutes(ctx));
   // Cùng handler dưới `/auth/*`: mọi web đã proxy `/auth` tới admin-api (studio-web/chat-web không proxy `/me`).
   app.route("/auth/me", meAppsRoutes(ctx));

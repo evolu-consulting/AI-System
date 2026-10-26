@@ -16,6 +16,7 @@ import { createDummyHash } from "./modules/auth/auth.service";
 import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
 import { type LimitPolicy, policyFromEnv } from "./modules/auth/limit/limit.rules";
 import { redisSsoStore } from "./modules/auth/sso/sso.store";
+import { trelloFromEnv } from "./modules/feedback/feedback.trello";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -114,6 +115,7 @@ async function main(): Promise<void> {
       adminWebUrl: env.ADMIN_WEB_URL,
       frozenModules: env.ADMIN_FROZEN_MODULES === "on",
       difyConsoleUrl: env.DIFY_CONSOLE_URL,
+      trello: trelloFromEnv(env),
       loginLimiter: limit?.limiter,
       // sso-switch: mã chuyển phiên dùng chung Redis của giới hạn đăng nhập (production bắt buộc có).
       ssoStore: limit ? redisSsoStore(limit.redis) : undefined,
