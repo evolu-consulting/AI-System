@@ -8,6 +8,7 @@ import { viDate } from "~/components/shared/format";
 import { PageHead } from "~/components/shared/layout";
 import { cn } from "~/lib/utils";
 import { fetchOverview, overviewKeys } from "../api";
+import { ApprovalTasksBlock } from "../components/ApprovalTasksBlock";
 import { ContractsBlock } from "../components/ContractsBlock";
 import { GroupsBlock } from "../components/GroupsBlock";
 import { KpiBlock } from "../components/KpiBlock";
@@ -58,6 +59,7 @@ export function OverviewPage() {
       </div>
       <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
+          <ApprovalTasksBlock />
           <TodoBlock />
           {q.data && <GroupsBlock data={q.data} />}
           <PartnersBlock />

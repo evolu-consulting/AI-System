@@ -1,12 +1,16 @@
 // HD-FR-36 · S05: luật hiển thị thẻ duyệt (thuần). "Xác nhận" (cấp 1, như mgmt-app `ContractPage.tsx:102`) / "Duyệt" (cấp 2) /
 // "Từ chối" / "Đọc lại" chỉ khi engine báo `can_act`; đang chờ bước mà người xem không quyết được ⇒ một dòng ghi chú.
 import type { ContractApproval } from "@ai/contracts";
+import { engineApprovalView } from "./engine-card";
 
 export type ApprovalView = {
   confirm: boolean;
   approve: boolean;
   reject: boolean;
   redo: boolean;
+  /** S4 · chỉ thẻ engine ở bước ≥ 1: "Đạt" / "Trả lại" (máy cũ không có ⇒ vắng). */
+  pass?: boolean;
+  back?: boolean;
   /** Khoá i18n dòng ghi chú (null ⇒ không hiện). */
   note: string | null;
 };
@@ -32,6 +36,7 @@ export function approvalView(
   o: { write: boolean; hasSource: boolean },
 ): ApprovalView {
   if (!a?.step) return NONE;
+  if (a.mode === "engine") return engineApprovalView(a, o);
   const act = o.write && a.can_act;
   if (a.step === "level1")
     return act

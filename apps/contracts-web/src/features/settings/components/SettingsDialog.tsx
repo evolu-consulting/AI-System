@@ -91,6 +91,12 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
     else toast(r.message ?? s("saveFail"), "late");
     setSaving(false);
   };
+  // Mở từ nơi khác với mục chỉ định (vd thẻ duyệt ⇒ "Quy trình duyệt").
+  useEffect(() => {
+    if (!open) return;
+    const want = settingsBus.takeSection();
+    if (want) setSec(want);
+  }, [open]);
   const dot = (k: SectionId) => sectionChanged(k, vsDef);
 
   return (

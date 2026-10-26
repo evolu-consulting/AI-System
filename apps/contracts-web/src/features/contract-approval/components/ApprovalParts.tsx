@@ -18,7 +18,7 @@ export function ApprovalButtons({
   busy: Busy;
   onConfirm: () => void;
   onApprove: () => void;
-  onAsk: (kind: "reject") => void;
+  onAsk: (kind: "reject" | "return") => void;
 }) {
   const { t } = useTranslation();
   const off = busy !== null;
@@ -58,6 +58,28 @@ export function ApprovalButtons({
           }))}
         />
       )}
+      {v.back && (
+        <button
+          type="button"
+          data-approval="return"
+          className="btn btn-outline"
+          disabled={off}
+          onClick={() => onAsk("return")}
+        >
+          {t("contracts.approval.return")}
+        </button>
+      )}
+      {v.pass && (
+        <button
+          type="button"
+          data-approval="pass"
+          className="btn btn-primary"
+          disabled={off}
+          onClick={onApprove}
+        >
+          {busy === "approve" ? t("contracts.approval.approving") : t("contracts.approval.pass")}
+        </button>
+      )}
       {v.approve && (
         <button
           type="button"
@@ -73,14 +95,25 @@ export function ApprovalButtons({
   );
 }
 
-/** Hộp lý do cho "Từ chối" (bắt buộc). "Đọc lại" ẩn (confirm-flow) — giữ nhánh `redo` cho khi bật lại. */
+const REASON_LABEL = {
+  reject: "contracts.approval.rejectReason",
+  redo: "contracts.approval.redoReason",
+  return: "contracts.approval.returnReason",
+} as const;
+const SUBMIT_LABEL = {
+  reject: "contracts.approval.reject",
+  redo: "contracts.approval.redo",
+  return: "contracts.approval.return",
+} as const;
+
+/** Hộp lý do cho "Từ chối" / "Trả lại" (bắt buộc). "Đọc lại" ẩn (confirm-flow) — giữ nhánh `redo` cho khi bật lại. */
 export function ReasonForm({
   kind,
   busy,
   onSubmit,
   onCancel,
 }: {
-  kind: "reject" | "redo";
+  kind: "reject" | "redo" | "return";
   busy: Busy;
   onSubmit: (reason: string) => void;
   onCancel: () => void;
@@ -88,9 +121,7 @@ export function ReasonForm({
   const { t } = useTranslation();
   const [text, setText] = useState("");
   const [bad, setBad] = useState(false);
-  const label = t(
-    kind === "reject" ? "contracts.approval.rejectReason" : "contracts.approval.redoReason",
-  );
+  const label = t(REASON_LABEL[kind]);
   return (
     <form
       data-approval="reason"
@@ -122,7 +153,7 @@ export function ReasonForm({
       )}
       <div className="flex gap-2">
         <button type="submit" className="btn btn-primary" disabled={busy !== null}>
-          {t(kind === "reject" ? "contracts.approval.reject" : "contracts.approval.redo")}
+          {t(SUBMIT_LABEL[kind])}
         </button>
         <button type="button" className="btn btn-quiet" onClick={onCancel}>
           {t("contracts.common.cancel")}

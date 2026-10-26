@@ -21,7 +21,9 @@ import {
   approvalView,
   showLinkDialog,
 } from "../lib/approval";
+import { releaseNoteKey } from "../lib/engine-card";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
+import { ApprovalTimeline } from "./ApprovalTimeline";
 
 export type ApprovalUi = {
   buttons: ReactNode;
@@ -48,7 +50,7 @@ export function useApprovalUi(o: {
 }): ApprovalUi {
   const ap = useApproval(o.id, o.contractKey);
   // confirm-flow: "Đọc lại" (trích lại kèm lý do) ẩn theo người dùng 2026-10-23 ⇒ hộp lý do chỉ còn "Từ chối".
-  const [ask, setAsk] = useState<"reject" | null>(null);
+  const [ask, setAsk] = useState<"reject" | "return" | null>(null);
   const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
   const { link, setLink, approve, confirmLinks } = useConfirmFlow(o.id, ap);
   const buttons = (
@@ -61,9 +63,13 @@ export function useApprovalUi(o: {
     />
   );
   const rejected = ap.approval?.step === "rejected" ? ap.approval.feedback : null;
+  // Lượt bị trả về máy cũ vì engine hỏng/hết hạn (`ENGINE_RUN_*`): nói rõ vì sao thay vì im lặng.
+  const note =
+    v.note ?? (ap.approval?.mode === "engine" ? null : releaseNoteKey(ap.approval?.feedback));
   const section = (
     <>
-      <ApprovalNote note={v.note} rejected={rejected} />
+      {ap.approval && <ApprovalTimeline a={ap.approval} />}
+      <ApprovalNote note={note} rejected={rejected} />
       {v.confirm && o.extracted && <ExtractedValue {...o.extracted} />}
       {ask && (
         <ReasonForm
@@ -127,7 +133,7 @@ function useConfirmFlow(id: string, ap: ReturnType<typeof useApproval>) {
     // Đã lưu ⇒ nạp lại HĐ (version mới cho form; Huỷ hộp rồi bấm lại không bị "đã bị sửa").
     if (before) await ap.refresh();
     const [c, products, fresh] = got;
-    if (fresh.step !== step0 || !fresh.can_act)
+    if (fresh.step !== step0 || !fresh.can_act || fresh.task_id !== ap.approval?.task_id)
       return settle({ ok: false, code: "APPROVAL_NOT_OPEN" });
     if (!showLinkDialog(fresh, c.items.length))
       return settle(await ap.act({ action: "approve" }, undefined, label));

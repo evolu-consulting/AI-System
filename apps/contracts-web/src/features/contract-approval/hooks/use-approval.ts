@@ -18,6 +18,7 @@ const DONE_KEY: Record<ApprovalActionRequest["action"], string> = {
   approve: "contracts.approval.done.approve",
   reject: "contracts.approval.done.reject",
   redo: "contracts.approval.done.redo",
+  return: "contracts.approval.done.return",
 };
 
 const codeOf = (e: unknown): string | null => (e instanceof ApiError ? (e.code as string) : null);

@@ -58,7 +58,7 @@ export function FlowStepCard(p: Props) {
   const deptOpts = (cur: string | null) =>
     p.depts.some((d) => d.id === cur) || !cur
       ? p.depts
-      : [...p.depts, { id: cur, name: `${f("groupShort")} ${cur.slice(0, 8)}` }];
+      : [...p.depts, { id: cur, name: f("groupGone") }];
 
   return (
     <li className="rounded-xl border border-rule bg-panel p-4" data-testid={`flow-step-${index}`}>

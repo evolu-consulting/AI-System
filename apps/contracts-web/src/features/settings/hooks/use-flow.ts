@@ -1,6 +1,6 @@
-// contract-flow S5 · truy vấn/ghi mẫu luồng duyệt + danh sách phòng ban (hook của features/org).
+// contract-flow S5/S4 · truy vấn/ghi mẫu luồng duyệt + danh sách phòng (Group) qua `/groups`.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchOrg, orgKeys } from "~/features/org/api";
+import { useGroups } from "~/features/contract-approval/hooks/use-groups";
 import type { FlowStep } from "../api-flow";
 import { fetchFlow, flowKeys, saveFlow } from "../api-flow";
 
@@ -12,14 +12,8 @@ export const useFlow = (enabled: boolean) =>
     retry: false,
   });
 
-export const useDepartments = (enabled: boolean) =>
-  useQuery({
-    queryKey: orgKeys.org,
-    queryFn: ({ signal }) => fetchOrg(signal),
-    enabled,
-    retry: false,
-    select: (o) => o.departments.map((d) => ({ id: d.group_id, name: d.name })),
-  });
+/** Phòng/Group chọn cho bước duyệt: `GET /pack/contracts/groups` (mọi người có quyền đọc gói; không cần quyền admin). */
+export const useDepartments = (enabled: boolean) => useGroups(enabled);
 
 export function useSaveFlow() {
   const qc = useQueryClient();

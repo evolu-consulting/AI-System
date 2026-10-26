@@ -212,6 +212,12 @@
         "less": "Thu gọn",
         "empty": "Không có việc cần xử lý."
       },
+      "approvals": {
+        "title": "Chờ tôi duyệt",
+        "untitled": "(hợp đồng chưa đặt tên)",
+        "due": "hạn {{date}}",
+        "late": "quá hạn {{date}}"
+      },
       "period": {
         "label": "Kỳ xem",
         "month": "Tháng này",
@@ -462,6 +468,41 @@
       "redo": "Đọc lại",
       "rejectReason": "Lý do từ chối",
       "redoReason": "Cần đọc lại điều gì?",
+      "pass": "Đạt",
+      "return": "Trả lại",
+      "returnReason": "Cần sửa gì? (góp ý gửi lại người soạn)",
+      "engine": {
+        "title": "Các bước duyệt",
+        "editFlow": "Chỉnh quy trình duyệt",
+        "headOnly": "chỉ trưởng phòng",
+        "decidedBy": "Quyết bởi {{name}}",
+        "overdue": "quá hạn {{n}} giờ",
+        "left": "còn {{n}} giờ",
+        "escalated": "đã chuyển cấp {{group}}",
+        "escalatedShort": "đã chuyển cấp",
+        "waiting": "Đang chờ người duyệt bước này.",
+        "status": {
+          "pending": "Chưa đến",
+          "open": "Đang chờ duyệt",
+          "passed": "Đã đạt",
+          "skipped": "Bỏ qua",
+          "returned": "Đã trả lại",
+          "rejected": "Đã từ chối"
+        },
+        "blocked": {
+          "starter": "Bạn là người gửi hợp đồng này nên không thể tự duyệt. Cần một người khác trong nhóm duyệt.",
+          "notReviewer": "Bạn không thuộc nhóm duyệt bước này nên không duyệt được.",
+          "headOnly": "Bước này chỉ trưởng phòng duyệt được. Bạn không phải trưởng phòng của nhóm duyệt."
+        },
+        "release": {
+          "MISSING": "Quy trình duyệt tự động bị mất, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
+          "FAILED": "Quy trình duyệt tự động gặp lỗi, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
+          "CANCELLED": "Quy trình duyệt tự động đã bị huỷ, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
+          "EXPIRED": "Quy trình duyệt tự động đã hết hạn, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
+          "COMPLETED": "Quy trình duyệt tự động đã kết thúc nhưng chưa ghi nhận, hợp đồng quay về cách duyệt hai bước.",
+          "OTHER": "Quy trình duyệt tự động dừng bất thường, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp."
+        }
+      },
       "waitLevel1": "Đang chờ người phụ trách kiểm tra và xác nhận.",
       "waitLevel2": "Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này).",
       "blocked": {
@@ -479,7 +520,8 @@
         "toLevel2": "Đã xác nhận — chờ Ban giám đốc duyệt",
         "approve": "Đã duyệt hợp đồng.",
         "reject": "Đã từ chối hợp đồng.",
-        "redo": "Đã gửi đọc lại hợp đồng."
+        "redo": "Đã gửi đọc lại hợp đồng.",
+        "return": "Đã trả lại người soạn."
       },
       "errors": {
         "starter": "Bạn đã gửi hợp đồng này nên không thể duyệt bước này.",

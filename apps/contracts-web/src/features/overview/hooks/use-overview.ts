@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { FACETS_KEY, fetchFacets, fetchList, listKey } from "~/features/contracts-list/api";
-import { dismissTodo, fetchTodo, overviewKeys } from "../api";
+import { dismissTodo, fetchMyWork, fetchTodo, overviewKeys } from "../api";
 import { EXPIRING_QS } from "../lib/overview";
 
 export const useTodo = () =>
   useQuery({ queryKey: overviewKeys.todo, queryFn: ({ signal }) => fetchTodo(signal) });
+
+export const useMyApprovals = () =>
+  useQuery({ queryKey: overviewKeys.approvals, queryFn: ({ signal }) => fetchMyWork(signal) });
 
 export function useDismissTodo() {
   const { t } = useTranslation();

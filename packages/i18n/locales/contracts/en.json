@@ -212,6 +212,12 @@
         "less": "Show less",
         "empty": "Nothing needs your attention."
       },
+      "approvals": {
+        "title": "Waiting for my approval",
+        "untitled": "(untitled contract)",
+        "due": "due {{date}}",
+        "late": "overdue since {{date}}"
+      },
       "period": {
         "label": "Period",
         "month": "This month",
@@ -462,6 +468,41 @@
       "redo": "Read again",
       "rejectReason": "Reason for rejection",
       "redoReason": "What should be read again?",
+      "pass": "Pass",
+      "return": "Send back",
+      "returnReason": "What needs fixing? (feedback for the drafter)",
+      "engine": {
+        "title": "Approval steps",
+        "editFlow": "Edit approval flow",
+        "headOnly": "department head only",
+        "decidedBy": "Decided by {{name}}",
+        "overdue": "{{n}} h overdue",
+        "left": "{{n}} h left",
+        "escalated": "escalated to {{group}}",
+        "escalatedShort": "escalated",
+        "waiting": "Waiting for the reviewer of this step.",
+        "status": {
+          "pending": "Not yet",
+          "open": "Awaiting review",
+          "passed": "Passed",
+          "skipped": "Skipped",
+          "returned": "Sent back",
+          "rejected": "Rejected"
+        },
+        "blocked": {
+          "starter": "You submitted this contract, so you cannot approve it yourself. Someone else in the reviewing group must.",
+          "notReviewer": "You are not in the reviewing group of this step, so you cannot approve it.",
+          "headOnly": "Only the department head can approve this step, and you are not the head of the reviewing group."
+        },
+        "release": {
+          "MISSING": "The automatic approval run was lost; the contract fell back to the two-step approval. You can continue.",
+          "FAILED": "The automatic approval run failed; the contract fell back to the two-step approval. You can continue.",
+          "CANCELLED": "The automatic approval run was cancelled; the contract fell back to the two-step approval. You can continue.",
+          "EXPIRED": "The automatic approval run expired; the contract fell back to the two-step approval. You can continue.",
+          "COMPLETED": "The automatic approval run ended without being recorded; the contract fell back to the two-step approval.",
+          "OTHER": "The automatic approval run stopped unexpectedly; the contract fell back to the two-step approval. You can continue."
+        }
+      },
       "waitLevel1": "Waiting for the person in charge to check and confirm.",
       "waitLevel2": "Waiting for management approval (you cannot approve this step).",
       "blocked": {
@@ -479,7 +520,8 @@
         "toLevel2": "Confirmed — waiting for the Board of Directors to approve",
         "approve": "Contract approved.",
         "reject": "Contract rejected.",
-        "redo": "Contract sent to be read again."
+        "redo": "Contract sent to be read again.",
+        "return": "Sent back to the drafter."
       },
       "errors": {
         "starter": "You submitted this contract, so you cannot approve this step.",
