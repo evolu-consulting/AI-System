@@ -17,8 +17,10 @@ import {
   APPROVAL_PROCESS_KEY,
   compileDef,
   defaultFlowFromSettings,
+  difyRunInputs,
   type FlowStep,
   flowGroupIds,
+  hasDifyStep,
   routeNext,
 } from "../domain/approval-flow.rules";
 import type {
@@ -57,8 +59,14 @@ async function compiled(
   f: { steps: readonly FlowStep[] },
 ) {
   const have = await d.groups.existingIds(tenantId, flowGroupIds(f.steps));
+  // cf-dify · bước Dify: tham số workflow lấy từ catalog hiện hành của tenant (workflow đã gỡ ⇒ compile ném ⇒ null).
+  const catalog = hasDifyStep(f.steps) ? ((await d.bridge.port?.workflowsOf(tenantId)) ?? []) : [];
   try {
-    return compileDef(f, new Set(have)) as unknown as Record<string, unknown>;
+    return compileDef(
+      f,
+      new Set(have),
+      new Map(catalog.map((w) => [w.key, w])),
+    ) as unknown as Record<string, unknown>;
   } catch {
     return null;
   }
@@ -102,10 +110,16 @@ async function openRun(
   c: { id: string; flow: Flow },
 ): Promise<EngineStartOutcome> {
   const u = callerOf(who);
+  const facts = hasDifyStep(c.flow.steps)
+    ? await d.uow.tenant(who, (r) => r.approvalEngine.difyFacts(c.id))
+    : null;
   const req = {
     process_key: APPROVAL_PROCESS_KEY,
     input: c.id,
-    inputs: [{ type: "text" as const, key: "contract-id", text: c.id }],
+    inputs: [
+      { type: "text" as const, key: "contract-id", text: c.id },
+      ...(facts ? difyRunInputs(facts) : []),
+    ],
     ref: { pack: "contracts", record_id: c.id },
   };
   const { runId, kick } = await port.start(u, req);

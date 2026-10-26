@@ -27,6 +27,8 @@ export const APPROVAL_FLOW_RULES = [
   "ESCALATE_SAME_GROUP",
   "DUE_RANGE",
   "REMIND_RANGE",
+  "DIFY_WORKFLOW_UNKNOWN",
+  "DIFY_PARAM_UNSUPPORTED",
 ] as const;
 export type ApprovalFlowRule = (typeof APPROVAL_FLOW_RULES)[number];
 
@@ -98,6 +100,17 @@ export const ApprovalFlowResponseSchema = z.strictObject({
   updated_at: IsoDateTime.nullable(),
 });
 export type ApprovalFlowResponse = z.infer<typeof ApprovalFlowResponseSchema>;
+
+/** cf-dify · `GET /pack/contracts/dify-workflows`: workflow Dify tenant được dùng làm bước Dify (đã bật ở catalog). */
+export const DifyWorkflowItemSchema = z.strictObject({
+  key: ProcessKeySchema,
+  name: z.string().min(1).max(128),
+});
+export type DifyWorkflowItem = z.infer<typeof DifyWorkflowItemSchema>;
+export const DifyWorkflowsResponseSchema = z.strictObject({
+  items: z.array(DifyWorkflowItemSchema).max(200),
+});
+export type DifyWorkflowsResponse = z.infer<typeof DifyWorkflowsResponseSchema>;
 
 /** `version` = version đang thấy (khoá lạc quan; lệch ⇒ 409 VERSION_CONFLICT, `details.current` = bản mới nhất). */
 export const ApprovalFlowPutSchema = z.strictObject({

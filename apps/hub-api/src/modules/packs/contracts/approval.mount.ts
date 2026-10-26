@@ -14,6 +14,7 @@ import {
   type ApprovalFlowTxRepos,
   type FlowDefSync,
   type FlowGroups,
+  listDifyWorkflows,
   readApprovalFlow,
   saveApprovalFlow,
 } from "./application/approval-flow.usecase";
@@ -59,11 +60,16 @@ export function flowTemplateRoutes(
     uow,
     groups: flow.groups,
     ...(flow.flowDefSync ? { defSync: flow.flowDefSync } : {}),
+    // cf-dify · catalog workflow của tenant qua cổng engine (lười, như `approvalEngine`); engine không nối ⇒ không kiểm.
+    ...(flow.engine
+      ? { workflows: async (t: string) => (await flow.engine?.port?.workflowsOf(t)) ?? [] }
+      : {}),
   };
   const list = flow.groups.list?.bind(flow.groups);
   return approvalFlowRoutes(view, {
     read: readApprovalFlow(fd),
     save: saveApprovalFlow(fd),
+    difyWorkflows: listDifyWorkflows(fd),
     ...(list ? { groups: list } : {}),
   });
 }

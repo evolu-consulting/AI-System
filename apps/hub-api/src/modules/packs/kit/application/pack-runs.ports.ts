@@ -39,7 +39,15 @@ export type PackReviewAct = {
 export type PackActTarget = { task_id: string } | { stage: string };
 
 /** S1a · trạng thái một stage cho thẻ duyệt của gói. */
-export type PackStepStatus = "pending" | "open" | "passed" | "skipped" | "returned" | "rejected";
+export type PackStepStatus =
+  | "pending"
+  | "open"
+  | "passed"
+  | "skipped"
+  | "returned"
+  | "rejected"
+  | "running" // cf-dify · bước Dify đang chạy
+  | "failed"; // cf-dify · bước Dify lỗi hết lượt (needs_decision)
 export type PackStepView = {
   idx: number;
   key: string;
@@ -78,6 +86,13 @@ export type PackOpenTask = {
   /** Hạn = mốc chuyển cấp của task; null khi stage không chuyển cấp. */
   due_at: string | null;
   escalated: boolean;
+};
+
+/** cf-dify · một workflow catalog cho gói: khoá, tên, tham số (`input_schema`). */
+export type PackWorkflow = {
+  key: string;
+  name: string;
+  params: { name: string; type: string; required: boolean }[];
 };
 
 export type PackRunsPort = {
@@ -120,6 +135,9 @@ export type PackRunsPort = {
   groupIdsOf(tenantId: string, keys: readonly string[]): Promise<Map<string, string>>;
   /** S1a · dòng thời gian stage cho người xem (scope user, ≤ 2 câu SQL); run không thấy trong tenant ⇒ null. */
   stepsView(u: PackRunCaller, runId: string): Promise<PackStepsView | null>;
+  /** cf-dify · workflow trong catalog mà tenant được dùng (`admin.workflows` enabled ∧ công tắc tenant còn hiệu lực),
+   *  scope system, MỘT câu lọc `tenant_id` tường minh; ≤ 200, theo khoá. Không gồm tool của gói. */
+  workflowsOf(tenantId: string): Promise<PackWorkflow[]>;
   /** S1b · task duyệt MỞ của run gói `packKey` (tenant người gọi) mà `u` quyết được — cùng luật `canAct` (Group duyệt,
    *  head_only, Group chuyển cấp, exclude_starter). MỘT câu SQL, scope user; thứ tự tạo task. */
   openTasksOf(u: PackRunCaller, packKey: string): Promise<PackOpenTask[]>;

@@ -487,7 +487,9 @@
           "passed": "Passed",
           "skipped": "Skipped",
           "returned": "Sent back",
-          "rejected": "Rejected"
+          "rejected": "Rejected",
+          "running": "Running automatically",
+          "failed": "Failed, needs attention"
         },
         "blocked": {
           "starter": "You submitted this contract, so you cannot approve it yourself. Someone else in the reviewing group must.",

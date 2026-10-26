@@ -6,9 +6,12 @@ import type { ApprovalSettings } from "../domain/approval-def.rules";
 import {
   type ApprovalFlowIssue,
   type ApprovalFlowResponse,
+  type DifyWorkflow,
   defaultFlowFromSettings,
   type FlowStep,
   flowGroupIds,
+  hasDifyStep,
+  validateDifyCatalog,
   validateFlow,
 } from "../domain/approval-flow.rules";
 
@@ -34,11 +37,23 @@ export type FlowGroups = {
 export type FlowDefSync = {
   sync(who: PackWho, flow: { version: number; steps: readonly FlowStep[] }): Promise<void>;
 };
+/** cf-dify · workflow Dify trong catalog mà tenant được dùng (admin.workflows ∧ công tắc tenant). */
+export type FlowWorkflows = (tenantId: string) => Promise<DifyWorkflow[]>;
 export type ApprovalFlowDeps = {
   uow: PackUow<ApprovalFlowTxRepos>;
   groups: FlowGroups;
   defSync?: FlowDefSync;
+  /** Vắng ⇒ không kiểm catalog (engine không nối). */
+  workflows?: FlowWorkflows;
 };
+
+/** `GET /dify-workflows`: danh sách chọn cho bước Dify (chỉ khoá + tên). */
+export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
+  return async (who: PackWho): Promise<{ items: { key: string; name: string }[] }> => {
+    const all = d.workflows ? await d.workflows(who.tenantId) : [];
+    return { items: all.map((w) => ({ key: w.key, name: w.name })) };
+  };
+}
 
 export type SaveFlowOutcome =
   | { kind: "ok"; flow: ApprovalFlowResponse }
@@ -73,6 +88,8 @@ export function saveApprovalFlow(d: ApprovalFlowDeps) {
     body: { version: number; steps: FlowStep[] },
   ): Promise<SaveFlowOutcome> => {
     const issues = validateFlow(body.steps);
+    if (d.workflows && hasDifyStep(body.steps))
+      issues.push(...validateDifyCatalog(body.steps, await d.workflows(who.tenantId)));
     if (issues.length > 0) return { kind: "invalid", issues };
     const want = flowGroupIds(body.steps);
     const have = await d.groups.existingIds(who.tenantId, want);

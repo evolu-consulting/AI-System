@@ -18,6 +18,13 @@ describe("S1a · stepStatusOf", () => {
     [{ stageStatus: "pending", round: 1, task: closed("fail") }, "returned"],
     [{ stageStatus: "cancelled", round: 1, task: closed("reject") }, "rejected"],
     [{ stageStatus: "waiting_review", round: 2, task: open }, "open"],
+    // cf-dify · stage tự chạy (bước Dify): đang chạy / lỗi hết lượt; xong vẫn `passed`; chưa tới ⇒ pending.
+    [{ stageStatus: "running", round: 1, task: null, auto: true }, "running"],
+    [{ stageStatus: "queued", round: 1, task: null, auto: true }, "running"],
+    [{ stageStatus: "needs_decision", round: 1, task: null, auto: true }, "failed"],
+    [{ stageStatus: "done", round: 1, task: null, auto: true }, "passed"],
+    [{ stageStatus: "pending", round: 1, task: null, auto: true }, "pending"],
+    [{ stageStatus: "needs_decision", round: 1, task: null }, "pending"],
   ] as const)("%o ⇒ %s", (f, want) => {
     expect(stepStatusOf(f)).toBe(want);
   });

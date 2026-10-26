@@ -11,11 +11,14 @@ import {
 import { needsLevel2 } from "./approval-def.rules";
 import {
   compileDef,
+  type DifyWorkflow,
   defaultFlowFromSettings,
+  difyRunInputs,
   engineStepOf,
   nextApplicable,
   requiredSteps,
   routeNext,
+  validateDifyCatalog,
   validateFlow,
   whenHolds,
 } from "./approval-flow.rules";
@@ -62,6 +65,23 @@ const dify = (key: string): FlowStep => ({
   workflow_key: "risk-scan",
   after: "auto",
 });
+
+const p = (name: string, type: string, required: boolean) => ({ name, type, required });
+const wf = (params: ReturnType<typeof p>[], key = "risk-scan"): DifyWorkflow => ({
+  key,
+  name: key,
+  params,
+});
+const WFS = new Map([
+  [
+    "risk-scan",
+    wf([
+      p("contract_id", "text", true),
+      p("total_value", "number", false),
+      p("khac", "text", false),
+    ]),
+  ],
+]);
 
 /** 4 phòng: Kinh doanh → Pháp chế → Kế toán (không cho giới thiệu) → Giám đốc (≥ 1 tỷ hoặc mua). */
 const FOUR: FlowStep[] = [
@@ -198,6 +218,32 @@ describe("validateFlow", () => {
   });
 });
 
+describe("cf-dify · catalog bước Dify", () => {
+  const steps = [review("a", G.l1), dify("d")];
+  it("khoá không có trong catalog ⇒ DIFY_WORKFLOW_UNKNOWN; tham số bắt buộc lạ / sai kiểu ⇒ DIFY_PARAM_UNSUPPORTED; hợp lệ ⇒ rỗng", () => {
+    expect(validateDifyCatalog(steps, [])).toEqual([
+      { path: "steps.1.workflow_key", rule: "DIFY_WORKFLOW_UNKNOWN" },
+    ]);
+    const bad = (params: ReturnType<typeof p>[]) =>
+      validateDifyCatalog(steps, [wf(params)]).map((i) => i.rule);
+    expect(bad([p("tong_tien", "number", true)])).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
+    expect(bad([p("title", "select", true)])).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
+    expect(bad([p("title", "number", true)])).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
+    expect(bad([p("tong_tien", "number", false), p("title", "text", true)])).toEqual([]);
+    expect(validateDifyCatalog([review("a", G.l1)], [])).toEqual([]);
+  });
+  it("input run: văn bản cắt trần, giá trị không hợp lệ ⇒ 0", () => {
+    const base = { title: "HĐ", deal: null, partner: "B" };
+    const val = (v: unknown) => difyRunInputs({ ...base, totalValue: v }).at(-1);
+    expect(val(1500)).toEqual({ type: "number", key: "contract-value", value: "1500" });
+    expect(val(null)).toMatchObject({ value: "0" });
+    expect(val(-5)).toMatchObject({ value: "0" });
+    const big = difyRunInputs({ ...base, title: "x".repeat(5000), totalValue: 1 })[0];
+    expect(big).toMatchObject({ type: "text", key: "contract-title" });
+    expect((big as { text: string }).text.length).toBe(2000);
+  });
+});
+
 describe("bước kế áp dụng", () => {
   it("giới thiệu nhỏ: bỏ Kế toán + Giám đốc ⇒ sau Pháp chế ghi Đã duyệt; mua: đủ 4", () => {
     const ref = { deal: "referral" as const, total_value: 10 };
@@ -229,7 +275,7 @@ describe("compileDef ⇒ def engine", () => {
   });
   it("luồng 4 phòng + Dify + chuyển cấp: rẽ next eq j → goto j, Trả lại về bước 0; qua bộ kiểm engine", () => {
     const steps = [...FOUR.slice(0, 2), dify("scan"), ...FOUR.slice(2)];
-    const def = compileDef({ steps }, ALL);
+    const def = compileDef({ steps }, ALL, WFS);
     expect(def.stages.length).toBe(7);
     const legal = def.stages[2]?.after as Record<string, unknown>;
     expect(legal).toMatchObject({
@@ -239,8 +285,33 @@ describe("compileDef ⇒ def engine", () => {
       remind_every_h: 24,
     });
     expect((legal.branch as { goto_step: number }[]).map((b) => b.goto_step)).toEqual([4, 5, 6]);
-    expect(def.stages[3]?.executor).toEqual({ kind: "tool", tool_key: "risk-scan", args: {} });
+    // cf-dify · args = tham số workflow thoả được từ dữ liệu HĐ (input run), tham số tuỳ chọn lạ bị bỏ.
+    expect(def.stages[3]?.executor).toEqual({
+      kind: "tool",
+      tool_key: "risk-scan",
+      args: {
+        contract_id: { from: "input", key: "contract-id" },
+        total_value: { from: "input", key: "contract-value" },
+      },
+    });
+    expect(def.inputs.map((i) => i.key)).toEqual([
+      "contract-id",
+      "contract-title",
+      "contract-deal",
+      "contract-value",
+      "contract-partner",
+    ]);
     expect(engineIssues(def)).toEqual([]);
+  });
+  it("cf-dify · workflow thiếu / tham số bắt buộc không thoả ⇒ compile ném; không bước Dify ⇒ chỉ input contract-id", () => {
+    const steps = [review("a", G.l1), dify("scan")];
+    expect(() => compileDef({ steps }, ALL)).toThrow("approval-flow-dify-missing");
+    expect(() =>
+      compileDef({ steps }, ALL, new Map([["risk-scan", wf([p("x", "text", true)])]])),
+    ).toThrow("approval-flow-dify-params");
+    expect(compileDef({ steps: [review("a", G.l1)] }, ALL).inputs.map((i) => i.key)).toEqual([
+      "contract-id",
+    ]);
   });
   it("S3b · head_only vào stage review (chỉ khi bật), qua bộ kiểm engine", () => {
     const a = { ...review("a", G.l1), head_only: true } as FlowStep;

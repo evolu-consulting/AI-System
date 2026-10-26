@@ -15,7 +15,9 @@ import type {
   PackRunOutcome,
   PackRunOutcomeSys,
   PackRunsPort,
+  PackWorkflow,
 } from "../../packs/kit/application/pack-runs.ports";
+import { availableToolRows, paramsOf } from "../adapters/tools/tool-switch.repo";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
@@ -128,6 +130,16 @@ function sysReads(d: ProcessDeps) {
         where process_run_id = ${runId} and tenant_id = ${tenantId} and kind = 'review' and result = 'pass'
           and decided_by is not null order by decided_at desc limit 1`);
       return r?.by ?? null;
+    },
+    /** cf-dify · cùng nguồn "tool khả dụng của tenant" với editor quy trình; bỏ workflow có tác dụng phụ (stage không `real_action`). */
+    async workflowsOf(tenantId: string): Promise<PackWorkflow[]> {
+      if (!UUID.test(tenantId)) return [];
+      return withHubScope(d.db, SYS, async (tx) => {
+        const rows = await availableToolRows(tx, tenantId);
+        return rows
+          .filter((r) => r.side_effect !== true)
+          .map((r) => ({ key: r.key, name: r.name, params: [...paramsOf(r.input_schema)] }));
+      });
     },
     async groupIdsOf(tenantId: string, keys: readonly string[]) {
       if (keys.length === 0 || !UUID.test(tenantId)) return new Map<string, string>();

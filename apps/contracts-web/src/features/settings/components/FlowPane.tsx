@@ -1,13 +1,13 @@
 // contract-flow S5 · mục "Quy trình duyệt" trong Cài đặt: mọi người có quyền đọc gói đều xem; chỉ chủ sở hữu (owner) sửa + lưu.
 // Danh sách bước (≤ 8, bước 1 cố định) · xem trước đường đi · Lưu ⇒ PUT, lỗi server hiện theo trường.
-// TODO: nút "Thêm bước Dify" ẩn tới khi có API liệt kê workflow catalog (xem docs/specs/contract-flow/tasks.md).
+// cf-dify: "Thêm bước Dify" chọn từ `GET /pack/contracts/dify-workflows` (chỉ owner thấy).
 
 import { APPROVAL_FLOW_STEPS_MAX as FLOW_MAX_STEPS } from "@ai/contracts";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import type { FlowStep } from "../api-flow";
-import { useDepartments, useFlow, useSaveFlow } from "../hooks/use-flow";
+import { useDepartments, useDifyWorkflows, useFlow, useSaveFlow } from "../hooks/use-flow";
 import {
   errCode,
   type FlowIssue,
@@ -15,6 +15,7 @@ import {
   serverIssues,
   validateFlow,
 } from "../lib/flow-state";
+import { FlowDifyAdd } from "./FlowDifyAdd";
 import { FlowPreview } from "./FlowPreview";
 import { FlowStepCard } from "./FlowStepCard";
 
@@ -25,6 +26,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
   const f = (k: string) => t(`contracts.flow.${k}`);
   const q = useFlow(true);
   const depts = useDepartments(true);
+  const dify = useDifyWorkflows(owner);
   const save = useSaveFlow();
   const [steps, dispatch] = useReducer(flowReducer, [] as FlowStep[]);
   const [server, setServer] = useState<FlowIssue[]>([]);
@@ -135,6 +137,14 @@ export function FlowPane({ owner }: { owner: boolean }) {
           >
             {f("addStep")}
           </button>
+        )}
+        {owner && (
+          <FlowDifyAdd
+            items={dify.data?.items}
+            failed={dify.isError}
+            full={steps.length >= FLOW_MAX_STEPS}
+            onAdd={(w) => dispatch({ type: "addDify", workflow_key: w.key, name: w.name })}
+          />
         )}
         {steps.length >= FLOW_MAX_STEPS && (
           <span className="ml-3 text-caption text-dim">{f("maxReached")}</span>

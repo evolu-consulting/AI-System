@@ -2,12 +2,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGroups } from "~/features/contract-approval/hooks/use-groups";
 import type { FlowStep } from "../api-flow";
-import { fetchFlow, flowKeys, saveFlow } from "../api-flow";
+import { fetchDifyWorkflows, fetchFlow, flowKeys, saveFlow } from "../api-flow";
 
 export const useFlow = (enabled: boolean) =>
   useQuery({
     queryKey: flowKeys.flow,
     queryFn: ({ signal }) => fetchFlow(signal),
+    enabled,
+    retry: false,
+  });
+
+/** Workflow Dify chọn cho bước Dify: `GET /pack/contracts/dify-workflows` (quyền admin gói ⇒ chỉ bật cho owner). */
+export const useDifyWorkflows = (enabled: boolean) =>
+  useQuery({
+    queryKey: flowKeys.dify,
+    queryFn: ({ signal }) => fetchDifyWorkflows(signal),
     enabled,
     retry: false,
   });

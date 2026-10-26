@@ -272,6 +272,11 @@
       "reviewStep": "Bước duyệt",
       "difyStep": "Bước Dify",
       "difyInfo": "Chạy quy trình tự động: {{name}}",
+      "addDify": "Thêm bước Dify",
+      "difyPick": "Chọn quy trình Dify…",
+      "difyNone": "Công ty chưa có quy trình Dify nào được bật cho bước này.",
+      "difyListFail": "Không tải được danh sách quy trình Dify.",
+      "difyGone": "(quy trình không còn trong danh mục)",
       "up": "Lên",
       "down": "Xuống",
       "remove": "Xoá bước",
@@ -322,7 +327,9 @@
         "STEPS_MAX": "Tối đa 8 bước.",
         "KEY_DUP": "Mã bước bị trùng.",
         "AFTER_DIFY_CONDITIONAL": "Bước sau bước Dify không được có điều kiện.",
-        "difyEmpty": "Chưa chọn quy trình Dify."
+        "difyEmpty": "Chưa chọn quy trình Dify.",
+        "DIFY_WORKFLOW_UNKNOWN": "Quy trình Dify này không còn trong danh mục của công ty.",
+        "DIFY_PARAM_UNSUPPORTED": "Quy trình Dify này có tham số bắt buộc mà hợp đồng không cung cấp được."
       }
     }
   }

@@ -8,6 +8,7 @@ import type {
   PackReviewAct,
   PackRunOutcomeSys,
   PackStepsView,
+  PackWorkflow,
 } from "../../kit/application/pack-runs.ports";
 import type { PackUow } from "../../kit/application/ports";
 import type { FlowStep } from "../domain/approval-flow.types";
@@ -20,7 +21,10 @@ export type EngineRunRef = { pack: string; record_id: string };
 export type EngineStartRequest = {
   process_key: string;
   input: string;
-  inputs: { type: "text"; key: string; text: string }[];
+  inputs: (
+    | { type: "text"; key: string; text: string }
+    | { type: "number"; key: string; value: string }
+  )[];
   ref: EngineRunRef;
 };
 
@@ -61,6 +65,8 @@ export type ApprovalEnginePort = {
   ): Promise<PackRunOutcomeSys[]>;
   /** S3b · "Việc của tôi": task duyệt mở của run gói `packKey` mà người gọi quyết được. */
   openTasksOf(u: EngineCaller, packKey: string): Promise<PackOpenTask[]>;
+  /** cf-dify · workflow catalog mà tenant được dùng (cho bước Dify). */
+  workflowsOf(tenantId: string): Promise<PackWorkflow[]>;
 };
 /** Cầu nối dựng lúc mount; engine tắt ⇒ `port` vắng. */
 export type ApprovalEngineBridge = { port?: ApprovalEnginePort };
@@ -83,7 +89,16 @@ export type EngineStartRow = {
   mode: string | null;
   engineRunId: string | null;
 };
+/** cf-dify · dữ liệu HĐ gửi workflow Dify (`openRun` điền input run). */
+export type EngineDifyFacts = {
+  title: string;
+  deal: string | null;
+  totalValue: unknown;
+  partner: string;
+};
 export type ApprovalEngineRepo = {
+  /** cf-dify · tiêu đề, loại, giá trị, đối tác của HĐ (một câu); không thấy ⇒ null. */
+  difyFacts(contractId: string): Promise<EngineDifyFacts | null>;
   /** Lượt engine có `engine_run_id = runId` của tenant (`lock` ⇒ FOR UPDATE HĐ); không có ⇒ null. */
   byRun(runId: string, o: { lock: boolean }): Promise<EngineRunRow | null>;
   /** HĐ của tenant + lượt đang gắn; không thấy HĐ ⇒ null. */

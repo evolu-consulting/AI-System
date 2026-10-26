@@ -84,7 +84,12 @@ function stepOf(r: Row, canActOf: (r: Row, stage: StageSnap) => boolean): PackSt
     idx,
     key: m.key,
     name: m.name,
-    status: stepStatusOf({ stageStatus: r.stage_status, round: Number(r.round), task }),
+    status: stepStatusOf({
+      stageStatus: r.stage_status,
+      round: Number(r.round),
+      task,
+      auto: stage?.after?.kind === "auto",
+    }),
     group_id: r.assignee_group_id ?? m.groupId,
     escalated_group_id: escalated ? r.escalate_group_id : null,
     due_at: task ? dueOf(r.escalate_at) : null,

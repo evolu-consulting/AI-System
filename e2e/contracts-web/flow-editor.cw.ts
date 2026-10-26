@@ -58,6 +58,10 @@ async function install(page: Page, role: Role, putStatus = 200, code = "APPROVAL
       { id: D2, name: "Kế toán" },
     ]),
   );
+  // cf-dify: catalog workflow Dify của tenant cho "Thêm bước Dify" (chỉ owner gọi).
+  await page.route("**/pack/contracts/dify-workflows", (r) =>
+    json(r, 200, { items: [{ key: "risk-scan", name: "Quét rủi ro hợp đồng" }] }),
+  );
   await page.route("**/pack/contracts/approval-flow", (r) => {
     if (r.request().method() === "PUT") {
       const body = r.request().postDataJSON();
@@ -122,6 +126,28 @@ test("owner: thấy huy hiệu mặc định, thêm bước, xem trước, Lưu 
   expect((puts[0] as { steps: unknown[]; version: number }).steps).toHaveLength(3);
   expect((puts[0] as { version: number }).version).toBe(1);
   await expect(dlg.getByText("Dùng mặc định", { exact: true })).toHaveCount(0);
+});
+
+test("owner: Thêm bước Dify chọn từ catalog ⇒ bước Dify vào luồng, Lưu gửi workflow_key", async ({
+  page,
+}) => {
+  const puts = await install(page, "owner");
+  const dlg = await open(page);
+  const add = dlg.getByTestId("flow-dify-add");
+  await expect(add.getByRole("button", { name: "Thêm bước Dify" })).toBeDisabled();
+  await add.getByLabel("Thêm bước Dify").selectOption("risk-scan");
+  await add.getByRole("button", { name: "Thêm bước Dify" }).click();
+  await expect(dlg.getByTestId("flow-step-2")).toContainText("Quét rủi ro hợp đồng");
+  await dlg.getByRole("button", { name: "Lưu quy trình" }).click();
+  await expect.poll(() => puts.length).toBe(1);
+  const steps = (puts[0] as { steps: { kind: string; workflow_key?: string }[] }).steps;
+  expect(steps[2]).toMatchObject({ kind: "dify", workflow_key: "risk-scan", after: "auto" });
+});
+
+test("viewer: không thấy Thêm bước Dify", async ({ page }) => {
+  await install(page, "viewer");
+  const dlg = await open(page);
+  await expect(dlg.getByTestId("flow-dify-add")).toHaveCount(0);
 });
 
 test("owner: bước đầu không có nút xoá/điều kiện; thiếu tên khoá nút Lưu", async ({ page }) => {

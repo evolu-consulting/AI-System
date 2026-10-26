@@ -15,12 +15,17 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
-import type { readApprovalFlow, saveApprovalFlow } from "../application/approval-flow.usecase";
+import type {
+  listDifyWorkflows,
+  readApprovalFlow,
+  saveApprovalFlow,
+} from "../application/approval-flow.usecase";
 
 const KEY = "contracts";
 export type ApprovalFlowRoutesDeps = {
   read: ReturnType<typeof readApprovalFlow>;
   save: ReturnType<typeof saveApprovalFlow>;
+  difyWorkflows: ReturnType<typeof listDifyWorkflows>;
   /** S3b · Group của tenant (`GET /groups`). */
   groups?: (tenantId: string) => Promise<{ id: string; name: string }[]>;
 };
@@ -37,6 +42,10 @@ export function approvalFlowRoutes(
   // S3b · tên phòng ban cho UI luồng: scope tenant của token, ai đọc được gói đều gọi được.
   r.get("/groups", packGuard(view, KEY, "read"), async (c) =>
     c.json(d.groups ? await d.groups(c.get("user").tenantId) : []),
+  );
+  // cf-dify · workflow Dify chọn được cho bước Dify: người sửa luồng (quyền gói `admin`), scope tenant của token.
+  r.get("/dify-workflows", packGuard(view, KEY, "admin"), async (c) =>
+    c.json(await d.difyWorkflows(who(c.get("user")))),
   );
   r.put("/approval-flow", packGuard(view, KEY, "admin"), async (c) => {
     const b = parseWith(ApprovalFlowPutSchema, await readJson(c));

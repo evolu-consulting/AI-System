@@ -11,7 +11,11 @@ import { mapError } from "../../../../lib/errors";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { createPackUow } from "../../kit/adapters/pack-uow";
-import { readApprovalFlow, saveApprovalFlow } from "../application/approval-flow.usecase";
+import {
+  listDifyWorkflows,
+  readApprovalFlow,
+  saveApprovalFlow,
+} from "../application/approval-flow.usecase";
 import { approvalFlowRepo } from "./approval-flow.repo";
 import { approvalFlowRoutes } from "./approval-flow.routes";
 
@@ -51,7 +55,14 @@ function app(user: string, groups: string[]) {
     c.set("user", { userId: user, tenantId: A, role: "member" } as never);
     await next();
   });
-  h.route("/", approvalFlowRoutes(view, { read: readApprovalFlow(d), save: saveApprovalFlow(d) }));
+  h.route(
+    "/",
+    approvalFlowRoutes(view, {
+      read: readApprovalFlow(d),
+      save: saveApprovalFlow(d),
+      difyWorkflows: listDifyWorkflows({}),
+    }),
+  );
   h.onError((e, c) => {
     const m = mapError(e);
     return c.json(m.body, m.status);

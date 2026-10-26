@@ -14,6 +14,8 @@ const DOT: Record<TimelineRow["status"], string> = {
   skipped: "border-rule bg-sunk",
   returned: "border-soon bg-soon",
   rejected: "border-late bg-late",
+  running: "border-act bg-act-soft animate-pulse",
+  failed: "border-late bg-late",
 };
 
 function When({ r, now }: { r: TimelineRow; now: number }) {

@@ -69,6 +69,7 @@ function txRepos(w: World): ApprovalEngineTxRepos {
     },
     setPendingLinks: async () => true,
     labels: async () => [],
+    difyFacts: async () => ({ title: "HĐ A", deal: "buy", totalValue: 5000, partner: "Cty B" }),
   };
   return {
     approvalEngine: repo,
@@ -107,6 +108,7 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
     stepsView: async () => null,
     outcomesOf: async () => [],
     openTasksOf: async () => [],
+    workflowsOf: async () => [],
     ...port,
   };
   return {

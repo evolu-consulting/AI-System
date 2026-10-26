@@ -10,13 +10,32 @@ import {
   APPROVAL_FLOW_STEPS_MAX,
   type ApprovalFlowIssue,
   type ApprovalFlowRule,
+  type DifyWorkflow,
   type FlowCond,
   type FlowDeal,
   type FlowStep,
   type FlowWhen,
 } from "./approval-flow.types";
+import {
+  DIFY_CONTRACT_INPUTS,
+  type DifyParamName,
+  difyArgsOf,
+  hasDifyStep,
+} from "./approval-flow-dify.rules";
 
-export type { ApprovalFlowIssue, ApprovalFlowResponse, FlowStep } from "./approval-flow.types";
+export type {
+  ApprovalFlowIssue,
+  ApprovalFlowResponse,
+  DifyWorkflow,
+  FlowStep,
+} from "./approval-flow.types";
+export {
+  DIFY_CONTRACT_INPUTS,
+  difyArgsOf,
+  difyRunInputs,
+  hasDifyStep,
+  validateDifyCatalog,
+} from "./approval-flow-dify.rules";
 
 export const APPROVAL_PROCESS_KEY = "contracts-approval";
 export const FLOW_TOOL_KEYS = { route: "contracts-route", finalize: "contracts-finalize" } as const;
@@ -206,7 +225,21 @@ function groupOf(id: string | null, groupIds: ReadonlySet<string>): string {
   return id;
 }
 
-function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySet<string>) {
+function difyArgs(wf: DifyWorkflow | undefined) {
+  if (!wf) throw new Error("approval-flow-dify-missing");
+  const a = difyArgsOf(wf);
+  if (!a.ok) throw new Error("approval-flow-dify-params");
+  return Object.fromEntries(
+    a.names.map((n) => [n, { from: "input", key: DIFY_CONTRACT_INPUTS[n].key }]),
+  );
+}
+
+function stageOfStep(
+  steps: readonly FlowStep[],
+  i: number,
+  groupIds: ReadonlySet<string>,
+  wfs: ReadonlyMap<string, DifyWorkflow>,
+) {
   const s = steps[i] as FlowStep;
   const step = engineStepOf(i);
   if (s.kind === "dify") {
@@ -216,7 +249,7 @@ function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySe
       name: s.name,
       step,
       tool: s.workflow_key,
-      args: {},
+      args: difyArgs(wfs.get(s.workflow_key)),
       fields: [],
       after,
       timeoutS: 600,
@@ -249,12 +282,29 @@ function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySe
   });
 }
 
+/** Input run: `contract-id` bắt buộc; có bước Dify ⇒ thêm dữ liệu HĐ (tuỳ chọn, `openRun` điền). */
+function defInputs(withDify: boolean) {
+  const names = Object.keys(DIFY_CONTRACT_INPUTS) as DifyParamName[];
+  return names
+    .filter((k) => withDify || k === "contract_id")
+    .map((k) => ({
+      key: DIFY_CONTRACT_INPUTS[k].key,
+      label: DIFY_CONTRACT_INPUTS[k].label,
+      type: DIFY_CONTRACT_INPUTS[k].type,
+      required: k === "contract_id",
+    }));
+}
+
 /**
  * Def `contracts-approval` (= body `POST /process-defs`): `s0` (route + review bước 0) → `route` (tự rẽ theo `next`) →
  * `s1..sn` (tool + review/Dify + rẽ) → `finalize` (tool `contracts-finalize`). `groupIds` = Group hiện có của tenant; mẫu trỏ
  * Group không còn ⇒ ném `approval-flow-group-missing` (người gọi rơi về mẫu mặc định / báo lỗi).
  */
-export function compileDef(flow: { steps: readonly FlowStep[] }, groupIds: ReadonlySet<string>) {
+export function compileDef(
+  flow: { steps: readonly FlowStep[] },
+  groupIds: ReadonlySet<string>,
+  workflows: ReadonlyMap<string, DifyWorkflow> = new Map(),
+) {
   const { steps } = flow;
   const n = steps.length;
   const route = toolStage({
@@ -277,7 +327,7 @@ export function compileDef(flow: { steps: readonly FlowStep[] }, groupIds: Reado
     after: { kind: "auto", branch: [] },
     timeoutS: 60,
   });
-  const [first, ...rest] = steps.map((_, i) => stageOfStep(steps, i, groupIds));
+  const [first, ...rest] = steps.map((_, i) => stageOfStep(steps, i, groupIds, workflows));
   if (!first) throw new Error("approval-flow-empty");
   return {
     key: APPROVAL_PROCESS_KEY,
@@ -288,7 +338,7 @@ export function compileDef(flow: { steps: readonly FlowStep[] }, groupIds: Reado
     token_budget: null,
     enabled: true,
     sources: [] as string[],
-    inputs: [{ key: "contract-id", label: "Hợp đồng", type: "text" as const, required: true }],
+    inputs: defInputs(hasDifyStep(steps)),
     ttl_days: null,
     stages: [first, route, ...rest, finalize],
   };

@@ -5,7 +5,15 @@
 import { finalizesOnApprove } from "./approval-engine.rules";
 import type { FlowFacts, FlowStep } from "./approval-flow.rules";
 
-export type CardStepStatus = "pending" | "open" | "passed" | "skipped" | "returned" | "rejected";
+export type CardStepStatus =
+  | "pending"
+  | "open"
+  | "passed"
+  | "skipped"
+  | "returned"
+  | "rejected"
+  | "running"
+  | "failed";
 /** Một stage engine (khớp `PackStepView` — chỉ trường dùng). */
 export type EngineStageView = {
   key: string;

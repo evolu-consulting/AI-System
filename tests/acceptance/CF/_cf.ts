@@ -47,7 +47,7 @@ function fakeModel(): FakeModel & { provider: unknown } {
 
 type Handles = { sweepOnce: () => Promise<SweepOut>; reclaimOnce: () => Promise<number> };
 
-export async function startCf(): Promise<CtxCf> {
+export async function startCf(extraDeps: Record<string, unknown> = {}): Promise<CtxCf> {
   let h: Handles | null = null;
   const waiters = new Map<string, ((o: string) => void)[]>();
   const model = fakeModel();
@@ -67,7 +67,11 @@ export async function startCf(): Promise<CtxCf> {
   };
   const c = await startPd({
     processRunsPerTenant: 200,
-    extraDeps: { packRuns: bridge, packs: { pkdemo: false, contracts: true, contractsAi } },
+    extraDeps: {
+      packRuns: bridge,
+      packs: { pkdemo: false, contracts: true, contractsAi },
+      ...extraDeps,
+    },
   });
   if (!bridge.port) throw new Error("engine chưa gắn PackRunsPort (packRuns bridge)");
   const admin = await startAdminN1(c.k);

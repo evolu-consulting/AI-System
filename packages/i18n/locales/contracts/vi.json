@@ -487,7 +487,9 @@
           "passed": "Đã đạt",
           "skipped": "Bỏ qua",
           "returned": "Đã trả lại",
-          "rejected": "Đã từ chối"
+          "rejected": "Đã từ chối",
+          "running": "Đang chạy tự động",
+          "failed": "Lỗi, cần xử lý"
         },
         "blocked": {
           "starter": "Bạn là người gửi hợp đồng này nên không thể tự duyệt. Cần một người khác trong nhóm duyệt.",

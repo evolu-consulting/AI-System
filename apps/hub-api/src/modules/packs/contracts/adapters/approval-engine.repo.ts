@@ -125,8 +125,27 @@ function labelsQ(tx: Tx, tid: string): ApprovalEngineRepo["labels"] {
   };
 }
 
+function difyFactsQ(tx: Tx, tid: string): ApprovalEngineRepo["difyFacts"] {
+  return async (id) => {
+    const [r] = await tx.execute<{
+      title: string | null;
+      deal: string | null;
+      v: unknown;
+      partner: string | null;
+    }>(sql`
+      select c.title, c.deal, c.fields -> 'total_value' -> 'value' as v,
+        case c.deal when 'sell' then c.buyer when 'buy' then c.seller
+          else concat_ws(' / ', c.seller, c.buyer) end as partner
+      from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
+    return r
+      ? { title: r.title ?? "", deal: r.deal, totalValue: json(r.v), partner: r.partner ?? "" }
+      : null;
+  };
+}
+
 export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo {
   return {
+    difyFacts: difyFactsQ(tx, tenantId),
     setPendingLinks: pendingQ(tx, tenantId),
     labels: labelsQ(tx, tenantId),
     byRun: byRunQ(tx, tenantId),

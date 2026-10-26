@@ -46,6 +46,9 @@ export const APPROVAL_STEP_STATUSES = [
   "skipped",
   "returned",
   "rejected",
+  /** cf-dify · bước Dify: đang chạy / lỗi hết lượt retry (cần người xử lý). */
+  "running",
+  "failed",
 ] as const;
 export const ApprovalCardStepSchema = z.strictObject({
   /** Chỉ số bước người dùng trong mẫu chụp (0 = bước soạn). */
