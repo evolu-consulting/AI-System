@@ -10,6 +10,8 @@ export type MsDraft = {
   due: string;
   owner: "ours" | "partner";
   qty: string;
+  /** Đợt giao theo % (chỉ Giao hàng; có % thì không nhập SL chung). */
+  pct: string;
   amount: string;
 };
 
@@ -20,6 +22,7 @@ export function newDraft(deal: ContractDeal, today: string, title: string): MsDr
     due: today,
     owner: defaultOwner("delivery", deal),
     qty: "",
+    pct: "",
     amount: "",
   };
 }
@@ -31,6 +34,7 @@ export function draftOfMilestone(m: Milestone): MsDraft {
     due: m.due_date,
     owner: m.owner,
     qty: m.qty == null ? "" : String(m.qty).replace(".", ","),
+    pct: m.pct == null ? "" : String(m.pct).replace(".", ","),
     amount: m.amount == null ? "" : String(m.amount),
   };
 }
@@ -49,6 +53,7 @@ export function withKind(
     owner: defaultOwner(kind, deal),
     title: titleEdited ? d.title : kindTitle,
     qty: kind === "delivery" ? d.qty : "",
+    pct: kind === "delivery" ? d.pct : "",
     amount: MONEY_KINDS.has(kind) ? d.amount : "",
   };
 }
@@ -59,17 +64,47 @@ export type MsBody = {
   due_date: string;
   owner: "ours" | "partner";
   qty: number | null;
+  /** Chỉ gửi khi có % (thêm mốc) hoặc khi sửa mốc (null = bỏ %). */
+  pct?: number | null;
   amount: number | null;
 };
 
-/** Thân gửi API từ bản nháp; lỗi ⇒ khoá i18n (`needTitleDue` | `badNumber`). */
-export function bodyOf(d: MsDraft): { ok: MsBody } | { err: "needTitleDue" | "badNumber" } {
+/** % đợt giao: 0 < % ≤ 100, tối đa 2 số lẻ ("30", "33,33"); rỗng ⇒ null; sai ⇒ NaN. */
+export function parsePct(s: string): number | null {
+  const v = parseQty(s);
+  if (v === null) return null;
+  return Number.isNaN(v) ||
+    v <= 0 ||
+    v > 100 ||
+    Math.round(v * 100) !== Number((v * 100).toFixed(6))
+    ? Number.NaN
+    : v;
+}
+
+/** Thân gửi API từ bản nháp; lỗi ⇒ khoá i18n (`needTitleDue` | `badNumber`). Có % thì bỏ SL chung (đi một trong hai). */
+export function bodyOf(
+  d: MsDraft,
+  forEdit = false,
+): { ok: MsBody } | { err: "needTitleDue" | "badNumber" } {
   if (!d.title.trim() || !d.due) return { err: "needTitleDue" };
-  const qty = d.kind === "delivery" ? parseQty(d.qty) : null;
+  const pct = d.kind === "delivery" ? parsePct(d.pct) : null;
+  const qty = d.kind === "delivery" && pct === null ? parseQty(d.qty) : null;
   const amount = MONEY_KINDS.has(d.kind) ? parseMoney(d.amount) : null;
-  if ((qty !== null && Number.isNaN(qty)) || (amount !== null && Number.isNaN(amount)))
+  if (
+    (qty !== null && Number.isNaN(qty)) ||
+    (pct !== null && Number.isNaN(pct)) ||
+    (amount !== null && Number.isNaN(amount))
+  )
     return { err: "badNumber" };
   return {
-    ok: { kind: d.kind, title: d.title.trim(), due_date: d.due, owner: d.owner, qty, amount },
+    ok: {
+      kind: d.kind,
+      title: d.title.trim(),
+      due_date: d.due,
+      owner: d.owner,
+      qty,
+      ...(pct !== null || (forEdit && d.kind === "delivery") ? { pct } : {}),
+      amount,
+    },
   };
 }

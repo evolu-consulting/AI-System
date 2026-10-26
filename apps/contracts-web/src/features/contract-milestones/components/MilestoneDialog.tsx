@@ -84,7 +84,7 @@ export function MilestoneDialog({
     }
   }
   function save() {
-    const r = bodyOf(d);
+    const r = bodyOf(d, !!edit);
     if ("err" in r) return setBad(L(r.err));
     void run(() => (edit ? editMilestone(edit.id, r.ok) : addMilestone(contractId, r.ok)));
   }
@@ -147,11 +147,25 @@ export function MilestoneDialog({
             </div>
           </div>
           {d.kind === "delivery" && (
+            <Field id="ms-pct" label={L("pctLabel")}>
+              <input
+                id="ms-pct"
+                inputMode="decimal"
+                value={d.pct}
+                onChange={(e) => set({ pct: e.target.value, qty: e.target.value ? "" : d.qty })}
+                placeholder={L("pctPh")}
+                className="field font-mono"
+              />
+              <span className="text-caption text-dim">{L("pctHint")}</span>
+            </Field>
+          )}
+          {d.kind === "delivery" && (
             <Field id="ms-qty" label={L("qtyLabel")}>
               <input
                 id="ms-qty"
                 inputMode="decimal"
                 value={d.qty}
+                disabled={d.pct.trim() !== ""}
                 onChange={(e) => set({ qty: e.target.value })}
                 placeholder={L("qtyPh")}
                 className="field font-mono"

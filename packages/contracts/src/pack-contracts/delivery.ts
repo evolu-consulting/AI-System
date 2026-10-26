@@ -45,7 +45,15 @@ export type DeliveryViewRow = {
   /** Còn được giao = Trên HĐ − Đã giao (trần của "Giao lần này"; null = dòng không ghi SL). */
   remaining: string | null;
 };
-export type DeliveryView = { milestone_id: string; status: string; rows: DeliveryViewRow[] };
+export type DeliveryView = {
+  milestone_id: string;
+  status: string;
+  rows: DeliveryViewRow[];
+  /** Đợt giao theo % của mốc (null = không ghi %): "Giao lần này" mặc định = làm tròn(% × SL HĐ); đợt cuối lấy phần còn lại. */
+  pct: number | null;
+  /** Cài đặt tenant "cho phép giao vượt tồn" (mặc định tắt). */
+  allow_negative: boolean;
+};
 
 /** Phần thêm vào phản hồi xác nhận mốc giao (chỉ khi mốc có dòng HĐ được giao). */
 export type DeliveryOutcome = {
@@ -62,6 +70,8 @@ export type DeliveryOutcome = {
   }[];
   /** BA 5.7d: "kho Băng keo 5cm: 320 → 620", "giá vốn …: a → b". */
   notes: string[];
+  /** Giao vượt tồn (cài đặt cho phép): thành phần thiếu kho nhưng vẫn giao ("giao vượt tồn N"). */
+  overdrawn?: { component_id: string; name: string; need: string; have: string }[];
 };
 
 export const StockCheckRequestSchema = z.strictObject({

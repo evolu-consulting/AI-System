@@ -15,7 +15,7 @@ import { one } from "./ledger-sql";
 export const msJson = (o: string) =>
   sql.raw(`jsonb_build_object('id', ${o}.id, 'contract_id', ${o}.contract_id, 'kind', ${o}.kind,
     'direction', ${o}.direction, 'title', ${o}.title, 'seq', ${o}.seq, 'due_date', ${o}.due_date, 'owner', ${o}.owner,
-    'qty', ${o}.qty, 'amount', ${o}.amount, 'status', ${o}.status, 'done_at', ${o}.done_at, 'fault', ${o}.fault,
+    'qty', ${o}.qty, 'delivery_pct', ${o}.delivery_pct, 'amount', ${o}.amount, 'status', ${o}.status, 'done_at', ${o}.done_at, 'fault', ${o}.fault,
     'postponed_to', ${o}.postponed_to, 'source', ${o}.source)`);
 /** Phần 5.4a của một mốc (đủ để chia giá trị). */
 const peerJson = (o: string) =>
@@ -105,9 +105,9 @@ function insertQ(t: string, contractId: string, w: MilestoneWrite, by: string): 
       from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
     u as (
       insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, amount,
-        qty, title, owner, source)
+        qty, delivery_pct, title, owner, source)
       select ${t}::uuid, k.id, k.party, ${w.direction}, ${w.kind}, k.top + 1, ${w.due_date}::date, ${w.amount}::bigint,
-        ${w.qty}::numeric, ${w.title}, ${w.owner}, 'manual' from k
+        ${w.qty}::numeric, ${w.pct ?? null}::numeric, ${w.title}, ${w.owner}, 'manual' from k
       returning *),
     ${audit(t, "milestone_added", by, sql`jsonb_build_object('milestone_id', u.id, 'kind', u.kind)`)}
     ${written(t)}`;
@@ -116,7 +116,7 @@ function insertQ(t: string, contractId: string, w: MilestoneWrite, by: string): 
 function updateQ(t: string, id: string, w: MilestoneWrite & { moved: boolean }, by: string): SQL {
   return sql`with u as (
       update contracts.obligations o set kind = ${w.kind}, direction = ${w.direction}, title = ${w.title},
-        owner = ${w.owner}, due_date = ${w.due_date}::date, qty = ${w.qty}::numeric, amount = ${w.amount}::bigint,
+        owner = ${w.owner}, due_date = ${w.due_date}::date, qty = ${w.qty}::numeric, delivery_pct = ${w.pct ?? null}::numeric, amount = ${w.amount}::bigint,
         updated_at = now()
       where o.tenant_id = ${t}::uuid and o.id = ${id}::uuid and o.status in ('open', 'cancelled')
       returning o.*),

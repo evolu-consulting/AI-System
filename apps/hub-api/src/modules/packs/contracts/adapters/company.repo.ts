@@ -34,11 +34,7 @@ export function companyRepo(tx: Tx, tid: string) {
     );
 
   /** Cờ hiệu lực (hàng cài đặt > mặc định theo tenant) và mặc định. */
-  const approval = (): Promise<ApprovalFlag> =>
-    one<ApprovalFlag>(
-      tx,
-      sql`select jsonb_build_object('enabled', contracts.approval_on(), 'by_default', contracts.approval_default()) as j`,
-    );
+  const approval = () => approvalFlag(tx, tid);
 
   /** Ghi cờ + nhật ký trước/sau (cùng bảng nhật ký với ngưỡng duyệt) trong MỘT câu. */
   const saveApproval = async (enabled: boolean, actor: string): Promise<void> => {
@@ -53,6 +49,40 @@ export function companyRepo(tx: Tx, tid: string) {
           jsonb_build_object('approval_enabled', up.approval_enabled) from up`);
   };
 
-  return { company, saveCompany, approval, saveApproval };
+  return {
+    company,
+    saveCompany,
+    approval,
+    saveApproval,
+    saveAllowNegative: (allow: boolean, actor: string) =>
+      saveAllowNegativeStock(tx, tid, allow, actor),
+  };
 }
 export type CompanyRepo = ReturnType<typeof companyRepo>;
+
+const approvalFlag = (tx: Tx, tid: string): Promise<ApprovalFlag> =>
+  one<ApprovalFlag>(
+    tx,
+    sql`select jsonb_build_object('enabled', contracts.approval_on(), 'by_default', contracts.approval_default(),
+      'allow_negative', coalesce((select s.allow_negative_stock from contracts.approval_settings s
+        where s.tenant_id = ${tid}::uuid), false)) as j`,
+  );
+
+/** Cài đặt "cho phép giao vượt tồn" + nhật ký trước/sau trong MỘT câu. */
+async function saveAllowNegativeStock(
+  tx: Tx,
+  tid: string,
+  allow: boolean,
+  actor: string,
+): Promise<void> {
+  await tx.execute(sql`with old as (select coalesce((select s.allow_negative_stock from contracts.approval_settings s
+        where s.tenant_id = ${tid}::uuid), false) as v),
+      up as (insert into contracts.approval_settings (tenant_id, allow_negative_stock, updated_by)
+        values (${tid}::uuid, ${allow}, ${actor}::uuid)
+        on conflict (tenant_id) do update set allow_negative_stock = excluded.allow_negative_stock,
+          updated_by = excluded.updated_by, updated_at = now()
+        returning allow_negative_stock)
+    insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+      select ${tid}::uuid, ${actor}::uuid, jsonb_build_object('allow_negative_stock', (select v from old)),
+        jsonb_build_object('allow_negative_stock', up.allow_negative_stock) from up`);
+}

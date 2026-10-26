@@ -43,12 +43,15 @@ export const CompanySchema = z.strictObject({
   own_tax_ids: z.array(z.string().regex(MST_RE)).max(10),
   /** Bật/tắt bước duyệt hợp đồng (V2-A). */
   approval_enabled: z.boolean(),
+  /** Cho phép giao vượt tồn kho (mặc định tắt); vắng ⇒ giữ nguyên. Bật ⇒ xác nhận giao không chặn khi thiếu kho, tồn có thể âm. */
+  allow_negative_stock: z.boolean().optional(),
 });
 export type CompanyIn = z.infer<typeof CompanySchema>;
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "approval_enabled">;
+  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock">;
   approval_enabled: boolean;
+  allow_negative_stock: boolean;
   /** Mặc định của tenant (cờ duyệt theo khoá tenant). */
   defaults: CompanyIn;
   version: number;

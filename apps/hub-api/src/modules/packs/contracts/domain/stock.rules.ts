@@ -72,6 +72,8 @@ export type NewLot = {
   id: string;
   componentId: string;
   qty: bigint;
+  /** Còn lại ngay khi nhập (vắng ⇒ = qty); nhỏ hơn qty khi hàng nhập bù tồn âm. */
+  remaining?: bigint;
   receivedOn: string;
   expiresOn: string | null;
 };
@@ -290,31 +292,66 @@ function line(x: Ctx, o: Ok): void {
     );
     return;
   }
-  if (o.m.direction === "in") {
+  if (o.m.direction === "in") lineIn(x, s, o, base);
+  else lineOut(x, s, o, base);
+}
+
+type Base = ReturnType<typeof refOf> & {
+  direction: "in" | "out";
+  reason: "delivery" | "manual";
+  qty: string;
+};
+
+function lineIn(x: Ctx, s: CompState, o: Ok, base: Base): void {
+  {
     const price = o.price as bigint;
     const amount = amountOf(o.qty, price);
+    // Tồn đang âm (giao vượt tồn): hàng nhập trước hết bù phần thiếu, chỉ phần dư mới thành lô còn hàng + giá trị tồn.
+    const deficit = s.onHand < 0n ? -s.onHand : 0n;
+    const keep = o.qty > deficit ? o.qty - deficit : 0n;
     const lot: NewLot = {
       id: x.newId(),
       componentId: s.id,
       qty: o.qty,
+      remaining: keep,
       receivedOn: x.on,
       expiresOn: o.m.expiresOn ?? null,
     };
     emit(x, s, { ...base, lotId: lot.id, unitCost: n(price), amount: n(amount) }, () => {
       x.plan.lots.push(lot);
       s.onHand += o.qty;
-      s.value += amount;
+      s.value += keep > 0n ? amountOf(keep, price) : 0n;
       s.avg = avgOf(s.value, s.onHand, s.avg);
     });
-    return;
   }
-  const cost = costOut(o.qty, s.onHand, s.value);
-  emit(x, s, { ...base, lotId: null, unitCost: n(s.avg), amount: n(cost) }, () => {
-    takeLots(x.lots.get(s.id) ?? [], o.qty, x.plan.takes);
+}
+
+function lineOut(x: Ctx, s: CompState, o: Ok, base: Base): void {
+  // Xuất: lấy tối đa phần tồn dương; phần vượt (chỉ khi cho phép giao vượt tồn) làm tồn âm, giá vốn theo BQ, không đụng giá trị tồn.
+  const avail = s.onHand > 0n ? s.onHand : 0n;
+  const take = o.qty < avail ? o.qty : avail;
+  const over = o.qty - take;
+  const cost = take > 0n ? costOut(take, s.onHand, s.value) : 0n;
+  const amount = cost + (over > 0n ? amountOf(over, s.avg) : 0n);
+  const mv = { ...base, lotId: null, unitCost: n(s.avg), amount: n(amount) };
+  emit(x, s, over > 0n ? { ...mv, overdrawn: fmtQty(over) } : mv, () => {
+    if (take > 0n) takeLots(x.lots.get(s.id) ?? [], take, x.plan.takes);
     s.onHand -= o.qty;
     s.value -= cost;
   });
 }
+
+const changeOf = (b: CompState, a: CompState): ComponentChange => ({
+  componentId: b.id,
+  productId: b.productId,
+  mode: b.mode,
+  onHandBefore: fmtQty(b.onHand),
+  onHandAfter: fmtQty(a.onHand),
+  valueBefore: n(b.value),
+  valueAfter: n(a.value),
+  avgCostBefore: n(b.avg),
+  avgCostAfter: n(a.avg),
+});
 
 /**
  * Kế hoạch một lần giao: kiểm dòng ⇒ hết hạn gói ⇒ chặn vượt tồn (cộng dồn theo thành phần, báo mọi thành phần thiếu) ⇒ nhập/xuất
@@ -326,6 +363,8 @@ export function planDelivery(input: {
   comps: ReadonlyMap<string, CompState>;
   lots: readonly OpenLot[];
   newId: () => string;
+  /** Cài đặt tenant "cho phép giao vượt tồn": thiếu kho không chặn, tồn đi âm (báo `result.overdrawn`). */
+  allowNegative?: boolean;
 }): DeliveryPlan {
   const ok = checkMoves(input.on, input.moves, input.comps);
   const order = [...new Set(ok.map((o) => o.c.id))];
@@ -346,23 +385,16 @@ export function planDelivery(input: {
   for (const id of order)
     if ((st.get(id) as CompState).mode === "quota") expire(x, st.get(id) as CompState);
   const short = shortages(x, ok);
-  if (short.length) throw new StockError("stock_insufficient", "bán vượt tồn", short);
+  if (short.length && !input.allowNegative)
+    throw new StockError("stock_insufficient", "bán vượt tồn", short);
   for (const o of ok) line(x, o);
-  const components: ComponentChange[] = order.map((id) => {
-    const b = input.comps.get(id) as CompState;
-    const a = st.get(id) as CompState;
-    return {
-      componentId: id,
-      productId: b.productId,
-      mode: b.mode,
-      onHandBefore: fmtQty(b.onHand),
-      onHandAfter: fmtQty(a.onHand),
-      valueBefore: n(b.value),
-      valueAfter: n(a.value),
-      avgCostBefore: n(b.avg),
-      avgCostAfter: n(a.avg),
-    };
-  });
-  x.plan.result = { components, moves: x.plan.moves };
+  const components = order.map((id) =>
+    changeOf(input.comps.get(id) as CompState, st.get(id) as CompState),
+  );
+  x.plan.result = {
+    components,
+    moves: x.plan.moves,
+    ...(short.length ? { overdrawn: short } : {}),
+  };
   return x.plan;
 }

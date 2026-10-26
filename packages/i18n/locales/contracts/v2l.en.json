@@ -57,7 +57,11 @@
         "approvalTitle": "Contract approval",
         "approval": "Contract approval step",
         "approvalOn": "On: contracts go through approval before they take effect.",
-        "approvalOff": "Off: saving a contract makes it effective immediately."
+        "approvalOff": "Off: saving a contract makes it effective immediately.",
+        "stockTitle": "Stock & delivery",
+        "stockOver": "Allow delivery beyond stock",
+        "stockOverOn": "On: confirming a delivery is not blocked when stock is short; stock may go negative and a \"delivered beyond stock\" warning is shown.",
+        "stockOverOff": "Off: a delivery cannot be confirmed when stock is short."
       },
       "biz": {
         "title": "Business score",

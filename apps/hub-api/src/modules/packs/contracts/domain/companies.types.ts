@@ -27,11 +27,13 @@ export type CompanyIn = {
   own_names: string[];
   own_tax_ids: string[];
   approval_enabled: boolean;
+  allow_negative_stock?: boolean | undefined;
 };
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "approval_enabled">;
+  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock">;
   approval_enabled: boolean;
+  allow_negative_stock: boolean;
   defaults: CompanyIn;
   version: number;
   updated_at: string | null;

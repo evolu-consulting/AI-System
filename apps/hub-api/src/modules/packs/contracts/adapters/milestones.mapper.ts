@@ -54,6 +54,7 @@ export function toMilestone(r: MilestoneRow, effective: Map<string, number | nul
     due_date: r.due_date,
     owner: r.owner,
     qty: num(r.qty),
+    pct: num(r.delivery_pct),
     amount: num(r.amount),
     amount_effective: effective.get(r.id) ?? null,
     status: r.status,

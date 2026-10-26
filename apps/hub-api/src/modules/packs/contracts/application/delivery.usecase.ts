@@ -12,6 +12,8 @@ import {
   deliveryLines,
   deliveryMoves,
   deliveryNoticeOf,
+  overdrawNotes,
+  pctOf,
   qtyIn,
   qtyOf,
   stockNotes,
@@ -46,6 +48,8 @@ const ctxOf = (L: DeliveryLoad, milestoneId: string): DCtx => ({
   endDate: L.end_date,
   supplierKey: L.supplier,
   milestoneQty: qtyOf(L.qty),
+  pct: pctOf(L.pct),
+  pctBefore: pctOf(L.pct_before) ?? 0n,
 });
 const compsOf = (L: DeliveryLoad): DComp[] =>
   L.comps.map((x) => ({
@@ -98,7 +102,7 @@ export async function confirmDelivery(
   const given = rows.filter((x) => x.qty !== "0").map(({ item_id, qty }) => ({ item_id, qty }));
   if (given.length === 0) return { rows, outcome: null, notice: null };
   const res = moves.length ? await applied(r, moves, on, comps) : null;
-  const outcome = outcomeOf(given, res?.components ?? [], comps);
+  const outcome = outcomeOf(given, res?.components ?? [], comps, res?.overdrawn ?? []);
   return { rows, outcome, notice: deliveryNotice(outcome, L, milestoneId) };
 }
 
@@ -124,12 +128,18 @@ function outcomeOf(
   items: DeliveryOutcome["items"],
   changes: DeliveryResult["components"],
   comps: DComp[],
+  over: DeliveryResult["overdrawn"] = [],
 ): DeliveryOutcome {
-  const named = changes.map((x) => ({
-    ...x,
-    name: comps.find((y) => y.id === x.componentId)?.name ?? "",
+  const nameOf = (id: string) => comps.find((y) => y.id === id)?.name ?? "";
+  const named = changes.map((x) => ({ ...x, name: nameOf(x.componentId) }));
+  const overdrawn = over.map((s) => ({
+    component_id: s.componentId,
+    name: nameOf(s.componentId),
+    need: s.need,
+    have: s.have,
   }));
   return {
+    ...(overdrawn.length ? { overdrawn } : {}),
     items,
     stock: named.map((x) => ({
       component_id: x.componentId,
@@ -141,7 +151,7 @@ function outcomeOf(
       avg_cost_before: x.avgCostBefore,
       avg_cost_after: x.avgCostAfter,
     })),
-    notes: stockNotes(named),
+    notes: [...stockNotes(named), ...overdrawNotes(overdrawn)],
   };
 }
 
@@ -203,7 +213,13 @@ export function viewOf(L: DeliveryLoad, milestoneId: string): DeliveryView {
       remaining: i.qty === null ? null : fmtQty(i.qty - before),
     };
   });
-  return { milestone_id: milestoneId, status: L.status, rows };
+  return {
+    milestone_id: milestoneId,
+    status: L.status,
+    rows,
+    pct: L.pct == null ? null : Number(L.pct),
+    allow_negative: L.allow_negative === true,
+  };
 }
 
 /** Như lúc xác nhận nhưng không ném: SL vượt vẫn hiện (người dùng sửa trước khi xác nhận). */

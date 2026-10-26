@@ -21,7 +21,12 @@ export type DeliveryMove = {
   expiresOn?: string | null;
 };
 
-export type DeliveryCtx = { tenantId: string; on: string };
+export type DeliveryCtx = {
+  tenantId: string;
+  on: string;
+  /** Ép cho phép/cấm giao vượt tồn; vắng ⇒ đọc cài đặt tenant khi thiếu kho (cùng tx). */
+  allowNegative?: boolean;
+};
 
 export type PlannedMove = {
   id: string;
@@ -44,6 +49,8 @@ export type PlannedMove = {
   supplierPartyKey: string | null;
   /** V2-M: id dòng sổ bị đảo (chỉ `reason = "reversal"`). */
   reverses?: string | null;
+  /** delivery-opts: SL phần giao vượt tồn (tồn đi âm); vắng = không vượt. */
+  overdrawn?: string | null;
 };
 
 /** Kho trước → sau, giá vốn trước → sau của một thành phần (BA 5.7d). */
@@ -59,6 +66,11 @@ export type ComponentChange = {
   avgCostAfter: number;
 };
 
-export type DeliveryResult = { components: ComponentChange[]; moves: PlannedMove[] };
+export type DeliveryResult = {
+  components: ComponentChange[];
+  moves: PlannedMove[];
+  /** Thành phần giao vượt tồn (chỉ khi cài đặt cho phép); trống = không vượt. */
+  overdrawn?: StockShortage[];
+};
 
 export type StockShortage = { componentId: string; need: string; have: string };

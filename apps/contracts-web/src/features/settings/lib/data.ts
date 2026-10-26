@@ -7,7 +7,11 @@ import type { SettingsState } from "./types";
 export function buildState(co: CompanyOut, biz: BizConfigOut): SettingsState {
   return {
     saved: {
-      company: { ...co.company, approval_enabled: co.approval_enabled },
+      company: {
+        ...co.company,
+        approval_enabled: co.approval_enabled,
+        allow_negative_stock: co.allow_negative_stock,
+      },
       biz: structuredClone(biz.config),
     },
     defaults: { company: co.defaults, biz: structuredClone(biz.defaults) },

@@ -1,11 +1,14 @@
 // V2-F · HD-04 · mockup `confirmBox`: "Xác nhận xong" hỏi NGÀY thực tế; mốc trễ hạn (ngày thực tế > hạn) hỏi thêm LỖI của ai
 // (đối tác / mình / chưa rõ) — chỉ lỗi đối tác trừ điểm (V2-E). Gửi `POST /obligations/:id/settle`.
-import type { Milestone } from "@ai/contracts";
+import type { ContractDeal, Milestone } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";
+import { toast } from "~/components/shared/toast";
 import { type Fault, useMilestoneWrites } from "../hooks/use-milestone-writes";
+import type { LinesEdit } from "../lib/delivery-lines";
 import { daysBetween } from "../lib/timeline";
+import { DeliveryLines } from "./DeliveryLines";
 
 const FAULTS: readonly Fault[] = ["partner", "ours", "unknown"];
 
@@ -13,12 +16,18 @@ export function ConfirmBox({
   m,
   today,
   partner,
+  deal,
+  editable = true,
   onDone,
   onCancel,
   onError,
 }: {
   m: Milestone;
   today: string;
+  /** Loại HĐ (bảng "Giao đợt này" + kiểm tồn cho HĐ Bán). */
+  deal?: ContractDeal;
+  /** HĐ đã khoá ⇒ không sửa được bảng SL. */
+  editable?: boolean;
   /** Tên ngắn của đối tác (nhãn lựa chọn lỗi). */
   partner: string;
   onDone: () => void;
@@ -26,17 +35,30 @@ export function ConfirmBox({
   onError: (e: unknown) => void;
 }) {
   const { t } = useTranslation();
-  const { settleMilestone } = useMilestoneWrites();
+  const { settleMilestone, editMilestone } = useMilestoneWrites();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
+  const [edit, setEdit] = useState<LinesEdit | null>(null);
   const [at, setAt] = useState(today);
   const [fault, setFault] = useState<Fault>("partner");
   const [busy, setBusy] = useState(false);
   const late = at ? daysBetween(m.due_date, at) : 0;
   async function go() {
-    if (!at) return;
+    if (!at || edit?.bad) return;
     setBusy(true);
     try {
-      await settleMilestone(m.id, { at, ...(late > 0 ? { fault } : {}) });
+      // SL đã sửa so với bản tính sẵn ⇒ lưu bảng SL của mốc trước, rồi xác nhận (server dùng đúng bảng đó).
+      if (edit?.dirty) await editMilestone(m.id, { items: edit.items });
+      const res = (await settleMilestone(m.id, { at, ...(late > 0 ? { fault } : {}) })) as {
+        delivery?: { overdrawn?: { name: string; need: string; have: string }[] };
+      } | null;
+      const over = res?.delivery?.overdrawn;
+      if (over?.length)
+        toast(
+          L("overdrawnDone", {
+            list: over.map((x) => `${x.name} (${x.need} / ${x.have})`).join("; "),
+          }),
+          "late",
+        );
       onDone();
     } catch (e) {
       onError(e);
@@ -49,6 +71,9 @@ export function ConfirmBox({
       className="mt-2.5 flex flex-col gap-3 rounded-[10px] border border-rule bg-panel p-3.5"
       data-testid="confirm-box"
     >
+      {m.kind === "delivery" && deal && (
+        <DeliveryLines id={m.id} deal={deal} editable={editable} onEdit={setEdit} />
+      )}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1 text-[13px]">
           <label htmlFor={`done-${m.id}`}>{L("doneDate")}</label>
@@ -84,7 +109,7 @@ export function ConfirmBox({
         <button
           type="button"
           className="btn btn-primary btn-sm"
-          disabled={busy || !at}
+          disabled={busy || !at || edit?.bad === true}
           onClick={() => void go()}
         >
           {L("confirmOk")}

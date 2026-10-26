@@ -15,6 +15,8 @@ export type DeliveryOutcome = {
     avg_cost_after: number;
   }[];
   notes: string[];
+  /** Giao vượt tồn (cài đặt cho phép): thành phần thiếu kho nhưng vẫn giao. */
+  overdrawn?: { component_id: string; name: string; need: string; have: string }[];
 };
 
 export type DeliveryViewRow = {
@@ -28,7 +30,15 @@ export type DeliveryViewRow = {
   remaining: string | null;
 };
 
-export type DeliveryView = { milestone_id: string; status: string; rows: DeliveryViewRow[] };
+export type DeliveryView = {
+  milestone_id: string;
+  status: string;
+  rows: DeliveryViewRow[];
+  /** Đợt giao theo % của mốc (null = không ghi %). */
+  pct: number | null;
+  /** Cài đặt tenant "cho phép giao vượt tồn". */
+  allow_negative: boolean;
+};
 
 export type StockCheckOut = {
   over_stock: boolean;

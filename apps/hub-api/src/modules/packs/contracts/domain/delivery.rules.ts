@@ -2,7 +2,7 @@
 // (Mua ⇒ nhập kho / nhập suất gói, hạn gói = ngày kết thúc HĐ; Bán ⇒ xuất; đặt theo khách ⇒ kho không đổi) · §5.7d (thông báo kho
 // trước → sau, giá vốn trước → sau) · §5.7f (theo thành phần đã gắn). THUẦN: SL ×10⁴ (bigint), tiền đồng. Không I/O.
 import type { ComponentChange, DeliveryMove, StockMode } from "./stock.rules";
-import { fmtQty, parseQty, Q } from "./stock.rules";
+import { divRound, fmtQty, parseQty, Q } from "./stock.rules";
 
 export type DeliveryDeal = "buy" | "sell" | "referral" | null;
 export type DItem = {
@@ -28,7 +28,37 @@ export type DCtx = {
   supplierKey: string | null;
   /** SL chung cũ của mốc (V2-A `obligations.qty`) — chỉ dùng khi HĐ đúng một dòng có SL và mốc không có bảng SL. */
   milestoneQty: bigint | null;
+  /** Đợt giao theo %: phần trăm ×100 (30% = 3000n); null = mốc không ghi %. */
+  pct?: bigint | null;
+  /** Σ % các đợt giao khác của HĐ đã xác nhận (×100) — đủ 100% ⇒ đợt này lấy phần còn lại. */
+  pctBefore?: bigint;
 };
+
+export const PCT_FULL = 10_000n;
+/** % đầu vào API/DB ("30" | "33.33") ⇒ ×100. */
+export const pctOf = (s: string | number | null | undefined): bigint | null =>
+  s === null || s === undefined ? null : BigInt(Math.round(Number(s) * 100));
+
+/**
+ * Đợt giao theo %: mỗi dòng có SL = làm tròn(% × SL HĐ) (SL nguyên ⇒ làm tròn đơn vị; SL lẻ ⇒ 4 số lẻ), không quá phần còn lại.
+ * Đợt cuối (Σ % các đợt đã xác nhận + % này ≥ 100) lấy đúng phần còn lại để tổng khớp 100%. Dòng không ghi SL bỏ qua.
+ */
+export function splitByPct(
+  items: readonly DItem[],
+  pct: bigint,
+  pctBefore: bigint,
+): { itemId: string; qty: bigint }[] {
+  const last = pctBefore + pct >= PCT_FULL;
+  return items
+    .filter((i) => i.qty !== null)
+    .map((i) => {
+      const rest = maxZero(left(i));
+      if (last) return { itemId: i.id, qty: rest };
+      const exact = divRound((i.qty ?? 0n) * pct, PCT_FULL);
+      const q = (i.qty ?? 0n) % Q === 0n ? divRound(exact, Q) * Q : exact;
+      return { itemId: i.id, qty: q > rest ? rest : q };
+    });
+}
 export type DLine = { itemId: string; qty: bigint; planned: bigint | null };
 
 export class DeliveryError extends Error {
@@ -79,6 +109,10 @@ export function deliveryLines(items: readonly DItem[], plan: DPlan, ctx: DCtx): 
         return { itemId: i.id, qty: planned ?? maxZero(left(i)), planned };
       });
   }
+  if (ctx.pct !== null && ctx.pct !== undefined)
+    return splitByPct(items, ctx.pct, ctx.pctBefore ?? 0n)
+      .filter((l) => l.qty > 0n)
+      .map((l) => ({ ...l, planned: null }));
   if (ctx.milestoneQty !== null) {
     const withQty = items.filter((i) => i.qty !== null);
     const one = withQty[0];
@@ -166,6 +200,18 @@ export function deliveryMoves(
 }
 
 const money = (n: number): string => n.toLocaleString("vi-VN");
+
+/** Cảnh báo giao vượt tồn (cài đặt cho phép): "giao vượt tồn 30: Băng keo (cần 50, còn 20)" — số vượt = cần − còn. */
+export function overdrawNotes(
+  over: readonly { name: string; need: string; have: string }[],
+): string[] {
+  return over.map((s) => {
+    const neg = s.have.startsWith("-");
+    const have = parseQty(neg ? s.have.slice(1) : s.have) ?? 0n;
+    const n = (parseQty(s.need) ?? 0n) - (neg ? -have : have);
+    return `giao vượt tồn ${fmtQty(n)}: ${s.name} (cần ${s.need}, còn ${s.have})`;
+  });
+}
 
 /** BA 5.7d: "kho Băng keo 5cm: 320 → 620" (+ "giá vốn …: a → b" khi BQ đổi); gói suất ⇒ "suất …". */
 export function stockNotes(changes: readonly (ComponentChange & { name: string })[]): string[] {

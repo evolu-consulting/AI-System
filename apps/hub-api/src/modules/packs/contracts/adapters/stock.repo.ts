@@ -107,8 +107,10 @@ async function writePlan(
   await tx.execute(sql`with p as (select ${json(w)} as j),
     nl as (
       insert into contracts.stock_lots (id, tenant_id, component_id, qty, remaining, received_on, expires_on)
-      select x.id, ${t}::uuid, x."componentId", x.qty::numeric / 10000, x.qty::numeric / 10000, x."receivedOn", x."expiresOn"
-      from p, jsonb_to_recordset(p.j -> 'lots') as x(id uuid, "componentId" uuid, qty bigint, "receivedOn" date, "expiresOn" date)
+      select x.id, ${t}::uuid, x."componentId", x.qty::numeric / 10000, coalesce(x.remaining, x.qty)::numeric / 10000,
+        x."receivedOn", x."expiresOn"
+      from p, jsonb_to_recordset(p.j -> 'lots') as x(id uuid, "componentId" uuid, qty bigint, remaining bigint,
+        "receivedOn" date, "expiresOn" date)
       returning id),
     tk as (
       update contracts.stock_lots l set remaining = l.remaining - x.q
@@ -119,20 +121,45 @@ async function writePlan(
       returning l.id)
     insert into contracts.stock_moves (id, tenant_id, component_id, lot_id, direction, reason, qty, unit_cost, amount,
       on_hand_before, on_hand_after, value_before, value_after, avg_before, avg_after, moved_on, contract_id, milestone_id,
-      contract_item_id, supplier_party_key, reverses, transaction_id)
+      contract_item_id, supplier_party_key, reverses, transaction_id, overdrawn)
     select m.id, ${t}::uuid, m."componentId", m."lotId", m.direction, m.reason, m.qty, m."unitCost", m.amount,
       m."onHandBefore", m."onHandAfter", m."valueBefore", m."valueAfter", m."avgBefore", m."avgAfter", ${on}::date,
-      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey", m.reverses, ${txId}::uuid
+      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey", m.reverses, ${txId}::uuid, m.overdrawn
     from p, jsonb_to_recordset(p.j -> 'moves') as m(id uuid, "componentId" uuid, "lotId" uuid, direction text,
       reason text, qty numeric, "unitCost" bigint, amount bigint, "onHandBefore" numeric, "onHandAfter" numeric,
       "valueBefore" bigint, "valueAfter" bigint, "avgBefore" bigint, "avgAfter" bigint, "contractId" uuid, "milestoneId" uuid,
-      "contractItemId" uuid, "supplierPartyKey" text, reverses uuid, ord bigint)
+      "contractItemId" uuid, "supplierPartyKey" text, reverses uuid, ord bigint, overdrawn numeric)
     order by m.ord`);
   await tx.execute(sql`update contracts.product_components pc
     set on_hand = u."onHand"::numeric / 10000, stock_value = u.value, avg_cost = u.avg, last_move_id = u."lastMoveId",
       updated_at = now()
     from jsonb_to_recordset(${json(plan.updates)}) as u(id uuid, "onHand" bigint, value bigint, avg bigint, "lastMoveId" uuid)
     where pc.tenant_id = ${t}::uuid and pc.id = any(${pgArr(ids)}::uuid[]) and pc.id = u.id`);
+}
+
+/** Cài đặt tenant "cho phép giao vượt tồn" (mặc định tắt) — đọc cùng tx, sau khi đã khoá thành phần. */
+async function allowNegativeStock(tx: Tx, t: string): Promise<boolean> {
+  const rows = await tx.execute<{ v: boolean }>(
+    sql`select allow_negative_stock as v from contracts.approval_settings where tenant_id = ${t}::uuid`,
+  );
+  return [...rows][0]?.v === true;
+}
+
+/** Lập kế hoạch; thiếu kho ⇒ (chỉ lúc đó) đọc cài đặt: bật ⇒ lập lại cho phép tồn âm, tắt ⇒ giữ lỗi `stock_insufficient`. */
+async function planAllowingOverdraw(
+  tx: Tx,
+  t: string,
+  input: Parameters<typeof planDelivery>[0],
+  force: boolean | undefined,
+): Promise<DeliveryPlan> {
+  if (force !== undefined) return planDelivery({ ...input, allowNegative: force });
+  try {
+    return planDelivery(input);
+  } catch (e) {
+    if (!(e instanceof StockError) || e.code !== "stock_insufficient") throw e;
+    if (!(await allowNegativeStock(tx, t))) throw e;
+    return planDelivery({ ...input, allowNegative: true });
+  }
 }
 
 /**
@@ -152,7 +179,8 @@ export async function applyDelivery(
   ].sort();
   const comps = await lockComps(tx, t, ids);
   const lots = await openLots(tx, t, ids);
-  const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
+  const input = { on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() };
+  const plan = await planAllowingOverdraw(tx, t, input, ctx.allowNegative);
   await writePlan(tx, { t, on: ctx.on, ids, txId: ctx.transactionId ?? null }, plan);
   return plan.result;
 }

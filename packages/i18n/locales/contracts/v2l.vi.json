@@ -57,7 +57,11 @@
         "approvalTitle": "Duyệt hợp đồng",
         "approval": "Bước duyệt hợp đồng",
         "approvalOn": "Bật: hợp đồng đi qua lượt duyệt rồi mới có hiệu lực.",
-        "approvalOff": "Tắt: lưu hợp đồng là có hiệu lực ngay."
+        "approvalOff": "Tắt: lưu hợp đồng là có hiệu lực ngay.",
+        "stockTitle": "Kho & giao hàng",
+        "stockOver": "Cho phép giao vượt tồn kho",
+        "stockOverOn": "Bật: xác nhận giao hàng không chặn khi thiếu kho; tồn kho được phép âm và có cảnh báo \"giao vượt tồn\".",
+        "stockOverOff": "Tắt: thiếu kho thì không xác nhận được đợt giao."
       },
       "biz": {
         "title": "Điểm kinh doanh",

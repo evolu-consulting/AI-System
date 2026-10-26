@@ -32,6 +32,8 @@ export type MilestoneInput = {
   due_date: string;
   owner?: Owner | null | undefined;
   qty?: number | null | undefined;
+  /** Đợt giao theo % (chỉ Giao hàng; không đi cùng SL chung). */
+  pct?: number | null | undefined;
   amount?: number | null | undefined;
   /** V2-D · 5.7a: bảng "Giao lần này" (chỉ mốc Giao hàng). */
   items?: PlanInput | null | undefined;
@@ -43,6 +45,7 @@ export type MilestoneChange = {
   due_date?: string | undefined;
   owner?: Owner | undefined;
   qty?: number | null | undefined;
+  pct?: number | null | undefined;
   amount?: number | null | undefined;
   /** V2-D: thay cả bảng SL (null/[] = giao hết phần còn lại). */
   items?: PlanInput | null | undefined;
@@ -58,6 +61,8 @@ function toWrite(
 ): MilestoneWrite {
   if (checkMilestone({ kind: m.kind, qty: m.qty, amount: m.amount }) !== "ok")
     throw new MilestoneFail("invalid");
+  if (m.pct !== null && (m.kind !== "delivery" || m.qty !== null))
+    throw new MilestoneFail("invalid");
   const db = toDb(m.kind, deal);
   return {
     ...db,
@@ -65,8 +70,18 @@ function toWrite(
     owner: m.owner,
     due_date: m.due_date,
     qty: m.qty,
+    pct: m.pct,
     amount: m.amount,
   };
+}
+
+/** SL chung / % của mốc sau khi sửa: giữ giá trị cũ (chỉ Giao hàng); gửi SL chung ⇒ bỏ %, gửi % ⇒ bỏ SL chung. */
+function mergeQtyPct(delivery: boolean, cur: MilestoneRow, p: MilestoneChange) {
+  const keepQty = delivery ? num(cur.qty) : null;
+  const keepPct = delivery ? num(cur.delivery_pct ?? null) : null;
+  const qty = p.qty !== undefined ? p.qty : p.pct != null ? null : keepQty;
+  const pct = p.pct !== undefined ? p.pct : p.qty != null ? null : keepPct;
+  return { qty, pct };
 }
 
 /** Sửa: khoá rỗng giữ giá trị cũ; đổi loại mà không gửi SL/tiền ⇒ bỏ SL/tiền không hợp loại mới, việc của ai theo loại mới. */
@@ -74,14 +89,15 @@ export function mergeChange(deal: Deal, cur: MilestoneRow, p: MilestoneChange): 
   const was = fromDb(cur.kind, cur.direction);
   const kind = p.kind ?? was;
   const switched = kind !== was;
-  const keepQty = kind === "delivery" ? num(cur.qty) : null;
+  const { qty, pct } = mergeQtyPct(kind === "delivery", cur, p);
   const keepAmount = ["collect", "pay", "commission"].includes(kind) ? num(cur.amount) : null;
   return toWrite(deal, {
     kind,
     title: p.title ?? cur.title ?? MILESTONE_TITLES[kind],
     due_date: p.due_date ?? cur.due_date,
     owner: p.owner ?? (switched ? defaultOwner(kind, deal) : cur.owner),
-    qty: p.qty !== undefined ? p.qty : keepQty,
+    qty,
+    pct,
     amount: p.amount !== undefined ? p.amount : keepAmount,
   });
 }
@@ -122,6 +138,7 @@ const newWrite = (deal: Deal, b: MilestoneInput): MilestoneWrite =>
     due_date: b.due_date,
     owner: b.owner ?? defaultOwner(b.kind, deal),
     qty: b.qty ?? null,
+    pct: b.pct ?? null,
     amount: b.amount ?? null,
   });
 

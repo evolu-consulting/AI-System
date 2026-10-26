@@ -14,6 +14,8 @@ export type MilestoneRow = {
   due_date: string;
   owner: Owner;
   qty: number | string | null;
+  /** Đợt giao theo % (obligations.delivery_pct). */
+  delivery_pct?: number | string | null;
   amount: number | string | null;
   status: "open" | "done" | "cancelled";
   done_at: string | null;
@@ -37,6 +39,7 @@ export type MilestoneWrite = {
   owner: Owner;
   due_date: string;
   qty: number | null;
+  pct?: number | null;
   amount: number | null;
 };
 

@@ -39,6 +39,12 @@ const qty = z
   .min(0)
   .max(MILESTONE_QTY_MAX)
   .refine((v) => Math.round(v * 10_000) === v * 10_000, "tối đa 4 chữ số thập phân");
+/** Đợt giao theo %: 0 < % ≤ 100, tối đa 2 số lẻ (chỉ mốc Giao hàng; không đi cùng `qty`). */
+const pct = z
+  .number()
+  .gt(0)
+  .max(100)
+  .refine((v) => Math.round(v * 100) === Number((v * 100).toFixed(6)), "tối đa 2 chữ số thập phân");
 const title = nfcText(MILESTONE_TITLE_MAX).min(1);
 
 // ---------- vào ----------
@@ -48,6 +54,8 @@ export const MilestoneCreateSchema = z.strictObject({
   due_date: IsoDay,
   owner: z.enum(MILESTONE_OWNERS).nullish(),
   qty: qty.nullish(),
+  /** Đợt giao theo % (vd 30): xác nhận ⇒ SL mỗi dòng = làm tròn(% × SL HĐ); đợt cuối (Σ % ≥ 100) lấy phần còn lại. */
+  pct: pct.nullish(),
   amount: LedgerMoney.nullish(),
   /** V2-D · 5.7a: bảng "Giao lần này" (chỉ mốc Giao hàng). Bỏ trống = giao hết phần còn lại mọi dòng. */
   items: MilestonePlanSchema.nullish(),
@@ -60,6 +68,7 @@ export const MilestonePatchSchema = z
     due_date: IsoDay.optional(),
     owner: z.enum(MILESTONE_OWNERS).optional(),
     qty: qty.nullable().optional(),
+    pct: pct.nullable().optional(),
     amount: LedgerMoney.nullable().optional(),
     /** V2-D: thay cả bảng SL (null/[] = giao hết phần còn lại). */
     items: MilestonePlanSchema.nullable().optional(),
@@ -77,6 +86,8 @@ export const MilestoneSchema = z.strictObject({
   due_date: IsoDay,
   owner: z.enum(MILESTONE_OWNERS),
   qty: z.number().nullable(),
+  /** Đợt giao theo % (null/vắng = không ghi %). */
+  pct: z.number().nullable().optional(),
   /** Số tiền đã ghi trên mốc (null = để trống). */
   amount: z.number().int().nullable(),
   /** 5.4a: số tiền dùng để tính (trống ⇒ chia đều phần còn lại của giá trị HĐ / hoa hồng cho mốc tiền chính). */

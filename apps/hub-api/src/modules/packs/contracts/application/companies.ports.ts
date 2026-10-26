@@ -16,15 +16,17 @@ export type CompaniesRepo = {
 };
 
 export type StoredCompany = {
-  company: Omit<CompanyIn, "approval_enabled">;
+  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock">;
   version: number;
   updated_at: string;
 } | null;
-export type ApprovalFlag = { enabled: boolean; by_default: boolean };
+export type ApprovalFlag = { enabled: boolean; by_default: boolean; allow_negative?: boolean };
 
 export type CompanyRepo = {
   company(): Promise<StoredCompany>;
   saveCompany(c: CompanyIn): Promise<NonNullable<StoredCompany>>;
   approval(): Promise<ApprovalFlag>;
   saveApproval(enabled: boolean, actor: string): Promise<void>;
+  /** Cài đặt "cho phép giao vượt tồn" + nhật ký trước/sau trong MỘT câu. */
+  saveAllowNegative(allow: boolean, actor: string): Promise<void>;
 };

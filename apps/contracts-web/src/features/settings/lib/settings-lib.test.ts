@@ -28,7 +28,8 @@ const state = () =>
     {
       company: co,
       approval_enabled: true,
-      defaults: { ...co, approval_enabled: true },
+      allow_negative_stock: false,
+      defaults: { ...co, approval_enabled: true, allow_negative_stock: false },
       version: 0,
       updated_at: null,
     },

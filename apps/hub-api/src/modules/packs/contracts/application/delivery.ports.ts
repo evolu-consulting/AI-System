@@ -33,6 +33,10 @@ export type DeliveryLoad = {
   kind: string;
   /** SL chung cũ của mốc (V2-A). */
   qty: string | null;
+  /** Đợt giao theo %: % của mốc này ("30.00"), Σ % các đợt khác đã xác nhận, cài đặt cho phép giao vượt tồn. */
+  pct?: string | null;
+  pct_before?: string | null;
+  allow_negative?: boolean;
   items: DeliveryItemRow[];
   /** Bảng SL của mốc: `qty` = Giao lần này (null = phần còn lại), `delivered` = đã giao khi xác nhận. */
   plan: { item_id: string; qty: string | null; delivered: string | null }[];

@@ -161,6 +161,20 @@ export function CompanyPane({
           </div>
         </Row>
       </Panel>
+      <Panel title={s("stockTitle")}>
+        <Row label={s("stockOver")}>
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={c.allow_negative_stock ?? false}
+              onChange={(v) => set({ ...c, allow_negative_stock: v })}
+              label={s("stockOver")}
+            />
+            <span className="text-caption text-dim">
+              {c.allow_negative_stock ? s("stockOverOn") : s("stockOverOff")}
+            </span>
+          </div>
+        </Row>
+      </Panel>
     </>
   );
 }

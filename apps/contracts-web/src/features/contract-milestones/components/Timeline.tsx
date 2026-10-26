@@ -83,6 +83,8 @@ export function Timeline({
         m={m}
         today={today}
         partner={partner}
+        deal={dealOf(c)}
+        editable={!locked}
         onCancel={() => setConfirming(null)}
         onError={fail}
         onDone={() => {

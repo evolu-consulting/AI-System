@@ -5,7 +5,7 @@ import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { CompanyIn, CompanyOut } from "../domain/companies.types";
 import type { CompanyRepo } from "./companies.ports";
 
-export const DEFAULT_COMPANY: Omit<CompanyIn, "approval_enabled"> = {
+export const DEFAULT_COMPANY: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock"> = {
   name: null,
   app_name: null,
   logo: null,
@@ -38,7 +38,12 @@ export function companyUsecase(d: { uow: PackUow<{ company: CompanyRepo }> }) {
   ): CompanyOut => ({
     company: s?.company ?? DEFAULT_COMPANY,
     approval_enabled: flag.enabled,
-    defaults: { ...DEFAULT_COMPANY, approval_enabled: flag.by_default },
+    allow_negative_stock: flag.allow_negative ?? false,
+    defaults: {
+      ...DEFAULT_COMPANY,
+      approval_enabled: flag.by_default,
+      allow_negative_stock: false,
+    },
     version: s?.version ?? 0,
     updated_at: s?.updated_at ?? null,
   });
@@ -48,12 +53,15 @@ export function companyUsecase(d: { uow: PackUow<{ company: CompanyRepo }> }) {
     async save(who: PackWho, c: CompanyIn): Promise<CompanyOut> {
       const msg = companyProblem(c);
       if (msg) throw new CompanyFail(msg);
-      const { approval_enabled, ...rest } = c;
+      const { approval_enabled, allow_negative_stock, ...rest } = c;
       return tx(who, async (r) => {
         const before = await r.approval();
         if (before.enabled !== approval_enabled) await r.saveApproval(approval_enabled, who.userId);
+        const allow = allow_negative_stock ?? before.allow_negative ?? false;
+        if (allow !== (before.allow_negative ?? false))
+          await r.saveAllowNegative(allow, who.userId);
         const saved = await r.saveCompany({ ...rest, approval_enabled });
-        return out(saved, { ...before, enabled: approval_enabled });
+        return out(saved, { ...before, enabled: approval_enabled, allow_negative: allow });
       });
     },
   };
