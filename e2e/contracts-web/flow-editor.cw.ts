@@ -51,14 +51,12 @@ async function install(page: Page, role: Role, putStatus = 200, code = "APPROVAL
   const grant = { ...d.grant, user: { ...d.grant.user, role: "tenant_admin" } };
   await page.route("**/auth/refresh", (r) => json(r, 200, grant));
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
-  await page.route("**/admin/org", (r) =>
-    json(r, 200, {
-      members: [],
-      departments: [
-        { group_id: D1, key: "kd", name: "Kinh doanh", head_user_id: null, member_ids: [] },
-        { group_id: D2, key: "kt", name: "Kế toán", head_user_id: null, member_ids: [] },
-      ],
-    }),
+  // S4: phòng ban lấy từ `/pack/contracts/groups` (không còn `/admin/org`).
+  await page.route("**/pack/contracts/groups", (r) =>
+    json(r, 200, [
+      { id: D1, name: "Kinh doanh" },
+      { id: D2, name: "Kế toán" },
+    ]),
   );
   await page.route("**/pack/contracts/approval-flow", (r) => {
     if (r.request().method() === "PUT") {

@@ -376,6 +376,7 @@ c72f02d1550076ccf7ada13a95b6e9236992de5a54d505e3a70555729ce7e59a  e2e/contracts-
 c85dc6b7a8d92232d0b6283b9a339b523bfbc0dede2eeaecba9e3c1fe1e8a0e4  e2e/contracts-web/baseline/win32/v2f-new-sell-mobile.json
 19817007457fe5af6abcf99b1fb75b40c28da44a35a03dfe276a92c5f9de03e7  e2e/contracts-web/baseline/win32/v2f-new-sell-mobile.png
 0daa18b9e62073a88bf481083d9c2089f48259aaaf89264352d8dbb48e45d2a6  e2e/contracts-web/bell.cw.ts
+ddb336e896fca1ada8bb69c508ca86f2c83b3bb9233f9d8e25fd93d93b4b012f  e2e/contracts-web/contract-flow.cw.ts
 f52191026f2d31acac0b18d8b53ed7cf35b6296f95f288ce7bbbe97066ae3b5d  e2e/contracts-web/dataset-approval.ts
 79bb89a541d5b98d6fce798e0496a526a1ae38aee89145d11a2eb6346601f7d9  e2e/contracts-web/dataset-contract.ts
 31ef35706c3a9140005f17744224ade06b3c354dd16b3b34c4f6abb75cadfb0d  e2e/contracts-web/dataset-list.ts
@@ -384,7 +385,7 @@ fcbf68894c0bcec953bd230b686209bb13c12e94b856b787cd7852de1b7995e0  e2e/contracts-
 9c78dfc0739e132b0c858fc0803db0c69bf8f31f912d1147718f14e25ea0fe23  e2e/contracts-web/dataset-v2f.ts
 adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-web/dataset-v2g.ts
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts
-dd4ccdbd38d7816329cb10ea8cf328180be6c9169297ef0bc0e156f6933bc7e4  e2e/contracts-web/flow-editor.cw.ts
+07f9e5897381b6238ce9006d80b4b12b3d6d6bf9f24a27020a813b2d28b91fbf  e2e/contracts-web/flow-editor.cw.ts
 62e310a506f44c0991b85d1e4ca299324b0c5592e04de6565022ba26986ea442  e2e/contracts-web/gap-a2-source-ask.cw.ts
 c548b1c2851c09f0acb9ec2d9f0d1e5fc1ee1f837809a6103a95b6e68de28d58  e2e/contracts-web/gap-b-list.cw.ts
 49b14adca31309147a50b3c35b6b3f3b6c202885d3d134971fa36b757c14a2fa  e2e/contracts-web/gap-d2.cw.ts
@@ -500,6 +501,12 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 77dd3d58d8d0ba5b4f740040743f7337bebd1b0b167e8590faf3b0c9d3fb7a64  tests/acceptance/C1/i18n-chat.test.ts
 067ec50ab263762facc1417a07e9e7fbb4f99de1bfb66dc39f6b3c7892852ecc  tests/acceptance/C1/no-hub-url.test.ts
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
+602bf502e03d7f43b19fff5afc496eb4e480b9fa9a2851f114a3ee0f552b7e4a  tests/acceptance/CF/_cf.ts
+9abc41566ba18ac30a222495fc138110a18d86cae4ea3c6d59d5ea89dbb73152  tests/acceptance/CF/approval-card.int.test.ts
+c828802b8684b5155dfea4dcff783d040a9eb8fe4ca0d0252109abb7cf9bf182  tests/acceptance/CF/approval-engine-off.int.test.ts
+bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptance/CF/approval-engine.int.test.ts
+9e51899f59e421a726d21a6b42c8239559e49c1560c72f82a1b59486772d9a11  tests/acceptance/CF/head-only-bells.int.test.ts
+fe5b7da92635c949fe143b54f48e0b36484ece9a8fced83a12fa8f329006485d  tests/acceptance/CF/pack-runs-v2.int.test.ts
 cd6e259e02e4d31e734422168b67d0c3538e10146bb07e7800c457e66658c052  tests/acceptance/CR-050/flow-read.int.test.ts
 d32d5e7806b90ce16cb08ccb15df8d897cef438ca16f03cd87f84a28fb87d241  tests/acceptance/CR-051/flows-desc.int.test.ts
 5360151c6bea610bac774880f185a8aa6c6f4ce2f95ba81f9571f8ae3c6e1cdf  tests/acceptance/CR-053/per-app-session.int.test.ts
