@@ -21,7 +21,7 @@ describe("V2-O · seed demo v2", () => {
     const one = await seedDemo(w.sql, ids, TODAY);
     const two = await seedDemo(w.sql, ids, TODAY);
     expect(two).toEqual(one);
-    expect(one).toMatchObject({ products: 7, contracts: 16 });
+    expect(one).toMatchObject({ products: 7, contracts: 17 }); // D1: +1 HĐ (chuỗi phiên bản c6 v1 → v2)
     expect(one.partner_roles).toBeGreaterThanOrEqual(10);
     expect(one.service_customers).toBeGreaterThanOrEqual(5);
     const bAfter =

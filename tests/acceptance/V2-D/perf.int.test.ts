@@ -26,7 +26,7 @@ afterAll(async () => {
 });
 
 const TX = 1;
-const STMTS = 8; // lockContractOf + lockObligation + nạp + 4 applyDelivery + ghi
+const STMTS = 9; // lockContractOf + lockObligation + nạp + 4 applyDelivery + ghi + notify.enqueue (gap-c: một câu cố định mỗi lô, không theo số dòng)
 
 async function contractWith(n: number, sale: boolean, products: string[]): Promise<string> {
   const k = await deal(c.sql, { sale, end: d(365) });

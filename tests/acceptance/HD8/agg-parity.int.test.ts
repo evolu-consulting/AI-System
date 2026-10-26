@@ -238,9 +238,9 @@ describe("HD8-NFR-01 · gom SQL ≡ engine trên từng dòng (sổ ngẫu nhiê
           first_start: seed % 2 ? "2024-01-15" : null,
           price_gap_pct: role === "supplier" ? seed * 1.25 : null,
         };
-        expect({ key, s: scoreAgg(got, cfg[role], TODAY, role, facts) }).toEqual({
+        expect({ key, s: scoreAgg(got, cfg[role], { today: TODAY, role, facts }) }).toEqual({
           key,
-          s: score(evs, cfg[role], TODAY, role, facts),
+          s: score(evs, cfg[role], { today: TODAY, role, facts }),
         });
       }
     }, 60_000);
@@ -284,14 +284,12 @@ describe("HD8-NFR-01 · gom SQL ≡ engine trên từng dòng (sổ ngẫu nhiê
       { packKey: "contracts", tenantId: T.acme, userId: P.lan.id },
       (tx) => partnerData(tx, T.acme, TODAY),
     );
-    const s = scoreAgg(
-      data.aggs.get(aggKey(party, "customer")) ?? emptyAgg(),
-      cfg,
-      TODAY,
-      "customer",
-      { contracts: 2 },
-    );
+    const s = scoreAgg(data.aggs.get(aggKey(party, "customer")) ?? emptyAgg(), cfg, {
+      today: TODAY,
+      role: "customer",
+      facts: { contracts: 2 },
+    });
     expect(s.breakdown.reminders?.value).toBe(62);
-    expect(scoreAgg(emptyAgg(), cfg, TODAY, "customer", {}).score).toBeNull();
+    expect(scoreAgg(emptyAgg(), cfg, { today: TODAY, role: "customer" }).score).toBeNull();
   }, 60_000);
 });

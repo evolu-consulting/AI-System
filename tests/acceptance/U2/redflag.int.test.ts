@@ -70,7 +70,7 @@ describe("U2-R39 · cờ đỏ (không giao / gian lận)", () => {
       403,
     );
     const bad = await call(c, P.hoa, "POST", "/partner-events", body);
-    expect([bad.status, bad.json?.code]).toEqual([422, "SEVERE_REASON"]);
+    expect([bad.status, bad.json?.error?.code]).toEqual([422, "SEVERE_REASON"]);
     const ev = await ok(
       call(c, P.hoa, "POST", "/partner-events", { ...body, note: "Giả mạo chữ ký" }),
     );
@@ -100,7 +100,7 @@ describe("U2-R39 · cờ đỏ (không giao / gian lận)", () => {
       (await call(c, P.hoa, "POST", `/partner-events/${ev.id}/void`, { reason: "nhầm" })).status,
     ).toBe(403);
     const noReason = await call(c, P.lan, "POST", `/partner-events/${ev.id}/void`, {});
-    expect([noReason.status, noReason.json?.code]).toEqual([422, "SEVERE_REASON"]);
+    expect([noReason.status, noReason.json?.error?.code]).toEqual([422, "SEVERE_REASON"]);
     await ok(
       call(c, P.lan, "POST", `/partner-events/${ev.id}/void`, { reason: "Đã xác minh nhầm lẫn" }),
     );

@@ -199,7 +199,7 @@ describe("V2-E CD-02..05 · cấu hình chỉ quản lý; thử tính không ghi
     expect([bad.status, bad.json?.error?.code]).toEqual([410, "REPUTATION_READ_ONLY"]); // CR-097a: đóng băng
     expect(
       (await call(c, P.lan, "PUT", `${R}/config/cells/goods/commission_payer`, draft)).status,
-    ).toBe(404);
+    ).toBe(410); // CR-097a: mọi ghi /reputation → 410 trước cả kiểm ô hợp lệ
     const pv = await ok(
       call(c, P.hoa, "POST", `${R}/config/preview`, {
         cell: { group: "service", role: "supplier", config: draft },

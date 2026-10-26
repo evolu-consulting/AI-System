@@ -3,8 +3,8 @@
 // `contracts.partner-search` billing subscription), lưu dòng vào ghi chú (nguồn `internet`). Đối tác ngoài phạm vi ⇒ 404.
 // CLI giả = script bun có shebang (Linux/evotest); KHÔNG gọi AI thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   arrangeV2e,
@@ -40,18 +40,33 @@ console.log(JSON.stringify({ type: "result", subtype: "success", is_error: false
   result: ${JSON.stringify(JSON.stringify(REPLY))}, usage: { input_tokens: 120, output_tokens: 80 } }));
 `;
 
+/** bun thật (PATH của `bun test` có thể trỏ shim tạm `bun-node`, không chạy được script con). */
+function bunExe(): string {
+  const home = join(homedir(), ".bun", "bin", "bun.exe");
+  return existsSync(home) ? home : (Bun.which("bun") ?? process.execPath);
+}
+
 let c: CtxN1;
 const saved = { cli: process.env.AI_SUB_CLI_PATH, mode: process.env.AI_PROVIDER };
 beforeAll(async () => {
   mkdirSync(DIR, { recursive: true });
-  const cli = join(DIR, "claude");
+  let cli = join(DIR, "claude");
   writeFileSync(cli, FAKE);
   chmodSync(cli, 0o755);
+  if (process.platform === "win32") {
+    // Windows không chạy shebang (và .cmd vỡ với ký tự đặc biệt trong đối số): biên dịch CLI giả thành .exe.
+    const js = join(DIR, "claude.ts");
+    writeFileSync(js, FAKE.replace(/^#!.*\n/, ""));
+    cli = join(DIR, "claude.exe");
+    const b = Bun.spawnSync([bunExe(), "build", "--compile", js, "--outfile", cli]);
+    if (b.exitCode !== 0) throw new Error(`build CLI giả: ${b.stderr.toString()}`);
+  }
   process.env.AI_SUB_CLI_PATH = cli; // chọn gói thay vì `off` của APP_ENV=test (đọc lúc dựng hub)
   c = await startHd1();
 }, 120_000);
 afterAll(async () => {
   await c?.stop();
+  rmSync(DIR, { recursive: true, force: true }); // .exe biên dịch (Windows) khá nặng
   if (saved.cli === undefined) delete process.env.AI_SUB_CLI_PATH;
   else process.env.AI_SUB_CLI_PATH = saved.cli;
 });
