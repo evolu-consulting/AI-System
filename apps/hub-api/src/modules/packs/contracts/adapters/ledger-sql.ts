@@ -20,11 +20,12 @@ export const CONFIRMED_STATUSES = [
  * UAT CR-095 B5: đợt của bí danh `o` thuộc HĐ đã xác nhận — HĐ chờ xác nhận (needs_review, kể cả vừa mở lại do sửa MST) chưa có việc
  * tiền, như mgmt-app (đợt chỉ sinh khi HĐ được xác nhận). Luật 4c: HĐ chưa xác nhận là số ít ⇒ gom id của chúng MỘT lần (InitPlan,
  * index `contracts_status_idx`) rồi loại bằng `<> all(mảng)` — không semi-join từng đợt vào bảng HĐ (RLS HĐ chạy mỗi hàng: /payments
- * 10.000 đợt p95 32 → 105 ms). Không thêm câu SQL.
+ * 10.000 đợt p95 32 → 105 ms). Không thêm câu SQL. CR-097 G1: đợt của Giao dịch (`contract_id` null) chưa lên bảng Thanh toán HĐ
+ * (`null <> all('{}')` = true nên loại tường minh) — đưa vào ở lát sau cùng contract `PaymentRow.contract_id` nullable.
  */
 const CONFIRMED_SQL = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 export const confirmedOf = (o: string, t: string) =>
-  sql`${sql.raw(o)}.contract_id <> all (coalesce((select array_agg(ck.id) from contracts.contracts ck
+  sql`${sql.raw(o)}.contract_id is not null and ${sql.raw(o)}.contract_id <> all (coalesce((select array_agg(ck.id) from contracts.contracts ck
     where ck.tenant_id = ${t}::uuid and ck.status not in (${CONFIRMED_SQL})), '{}'::uuid[]))`;
 
 /** JSON một đợt từ bí danh `o` (cột của `contracts.obligations`). */

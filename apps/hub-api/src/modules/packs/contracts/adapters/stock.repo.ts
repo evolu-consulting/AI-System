@@ -8,7 +8,7 @@
 //      hoạch CHUNG (câu chuẩn bị sẵn) vẫn đi index khoá chính, không Seq Scan `stock_lots` (đo V2-D);
 //   4. cập nhật tồn/giá trị/BQ + `last_move_id` (trigger đối chiếu dòng sổ vừa ghi).
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import {
   type CompState,
   type DeliveryCtx,
@@ -94,10 +94,11 @@ async function openLots(tx: Tx, t: string, ids: string[]): Promise<OpenLot[]> {
 /** Ghi kế hoạch (lô mới + trừ lô + dòng sổ, rồi tồn/BQ) — 2 câu SQL cố định; dùng chung cho giao hàng và đảo kho (V2-M). */
 async function writePlan(
   tx: Tx,
-  at: { t: string; on: string; ids: string[] },
+  at: { t: string; on: string; ids: string[]; txId?: string | null },
   plan: Pick<DeliveryPlan, "lots" | "takes" | "moves" | "updates">,
 ): Promise<void> {
   const { t, on, ids } = at;
+  const txId = at.txId ?? null;
   const w = {
     lots: plan.lots,
     takes: plan.takes,
@@ -118,10 +119,10 @@ async function writePlan(
       returning l.id)
     insert into contracts.stock_moves (id, tenant_id, component_id, lot_id, direction, reason, qty, unit_cost, amount,
       on_hand_before, on_hand_after, value_before, value_after, avg_before, avg_after, moved_on, contract_id, milestone_id,
-      contract_item_id, supplier_party_key, reverses)
+      contract_item_id, supplier_party_key, reverses, transaction_id)
     select m.id, ${t}::uuid, m."componentId", m."lotId", m.direction, m.reason, m.qty, m."unitCost", m.amount,
       m."onHandBefore", m."onHandAfter", m."valueBefore", m."valueAfter", m."avgBefore", m."avgAfter", ${on}::date,
-      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey", m.reverses
+      m."contractId", m."milestoneId", m."contractItemId", m."supplierPartyKey", m.reverses, ${txId}::uuid
     from p, jsonb_to_recordset(p.j -> 'moves') as m(id uuid, "componentId" uuid, "lotId" uuid, direction text,
       reason text, qty numeric, "unitCost" bigint, amount bigint, "onHandBefore" numeric, "onHandAfter" numeric,
       "valueBefore" bigint, "valueAfter" bigint, "avgBefore" bigint, "avgAfter" bigint, "contractId" uuid, "milestoneId" uuid,
@@ -141,7 +142,7 @@ async function writePlan(
 export async function applyDelivery(
   tx: Tx,
   moves: readonly DeliveryMove[],
-  ctx: DeliveryCtx,
+  ctx: DeliveryCtx & { transactionId?: string | null },
 ): Promise<DeliveryResult> {
   const t = ctx.tenantId;
   const ids = [
@@ -152,7 +153,7 @@ export async function applyDelivery(
   const comps = await lockComps(tx, t, ids);
   const lots = await openLots(tx, t, ids);
   const plan = planDelivery({ on: ctx.on, moves, comps, lots, newId: () => crypto.randomUUID() });
-  await writePlan(tx, { t, on: ctx.on, ids }, plan);
+  await writePlan(tx, { t, on: ctx.on, ids, txId: ctx.transactionId ?? null }, plan);
   return plan.result;
 }
 
@@ -186,14 +187,14 @@ const origOf = (r: OrigRow) => ({
   supplierPartyKey: r.supplier_party_key,
 });
 /**
- * V2-M · đảo kho của MỘT HĐ trước khi xoá (cùng tx): mọi dòng sổ `delivery` chưa đảo ⇒ dòng `reversal` + trả/trừ lô + tồn/BQ tính
+ * V2-M · đảo kho (của MỘT HĐ trước khi xoá / một giao dịch — bộ lọc `of`, cùng tx): mọi dòng sổ `delivery` chưa đảo ⇒ dòng `reversal` + trả/trừ lô + tồn/BQ tính
  * lại (`planReversal`). Số câu SQL cố định (khoá, đọc dòng, đọc lô, 2 câu ghi). Thiếu hàng để trừ ⇒ `StockError` TRƯỚC khi ghi.
  * Trả số dòng đã đảo.
  */
-async function planContractReversal(
+async function planReversalOf(
   tx: Tx,
   t: string,
-  contractIds: readonly string[],
+  of: SQL,
   on: string,
 ): Promise<{ plan: ReversalPlan; ids: string[] } | null> {
   const rows =
@@ -201,7 +202,7 @@ async function planContractReversal(
       m.qty::text, m.unit_cost::text, m.amount::text, m.contract_id::text, m.milestone_id::text, m.contract_item_id::text,
       m.supplier_party_key
     from contracts.stock_moves m
-    where m.tenant_id = ${t}::uuid and m.contract_id = any(${pgArr(contractIds)}::uuid[]) and m.reason = 'delivery'
+    where m.tenant_id = ${t}::uuid and ${of} and m.reason = 'delivery'
       and not exists (select 1 from contracts.stock_moves r where r.tenant_id = m.tenant_id and r.reverses = m.id)`);
   const orig = [...rows];
   if (orig.length === 0) return null;
@@ -230,6 +231,26 @@ async function planContractReversal(
     newId: () => crypto.randomUUID(),
   });
   return { plan, ids };
+}
+
+const ofContracts = (ids: readonly string[]) => sql`m.contract_id = any(${pgArr(ids)}::uuid[])`;
+const planContractReversal = (tx: Tx, t: string, ids: readonly string[], on: string) =>
+  planReversalOf(tx, t, ofContracts(ids), on);
+
+/**
+ * CR-097 G1 · GD-FR-04/05: đảo kho của MỘT giao dịch (điều chỉnh / huỷ, cùng tx) — đúng đường đảo của V2-M, lọc theo
+ * `transaction_id`; dòng đảo mang lại `transaction_id`. Thiếu hàng để trừ (đã bán nơi khác) ⇒ `StockError` trước khi ghi.
+ */
+export async function reverseTransactionStock(
+  tx: Tx,
+  t: string,
+  transactionId: string,
+  on: string,
+): Promise<number> {
+  const r = await planReversalOf(tx, t, sql`m.transaction_id = ${transactionId}::uuid`, on);
+  if (!r) return 0;
+  await writePlan(tx, { t, on, ids: r.ids, txId: transactionId }, r.plan);
+  return r.plan.moves.length;
 }
 
 /** Ghi đảo kho của HĐ + phụ lục (cùng tx). Trả số dòng đã đảo. */

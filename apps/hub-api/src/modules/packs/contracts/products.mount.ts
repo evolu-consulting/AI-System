@@ -13,6 +13,7 @@ import { lotsUsecase } from "./application/product-lots.usecase";
 import { sourcesUsecase } from "./application/product-sources.usecase";
 import { productsUsecases } from "./application/products.usecase";
 import { DEFAULT_TENANT_TZ } from "./domain/local-time.rules";
+import { transactionsModule } from "./transactions.mount";
 
 const KEY = "contracts";
 const repos = (tx: Tx, t: string) => ({
@@ -39,6 +40,14 @@ export function productsModule(
         timeZoneOf: d.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ),
         ...(d.now ? { now: d.now } : {}),
       }),
+    }),
+  );
+  // CR-097 G1 · Giao dịch dùng danh mục SP + kho lô chung (intake Câu 7) ⇒ gắn cùng module SP (packs.mount.ts chạm trần 400 dòng).
+  r.route(
+    "/",
+    transactionsModule(db, view, {
+      timeZoneOf: d.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ),
+      ...(d.now ? { now: d.now } : {}),
     }),
   );
   return r;

@@ -123,6 +123,51 @@ export const v2Tables: RlsTable[] = [
       ),
   },
 ];
+// CR-097 G1 · Giao dịch (0051): giao dịch + dòng (khoá id) + vết (id bigint identity ⇒ INSERT không mang id).
+const txIns = `insert into contracts.transactions (id, tenant_id, deal, occurred_on, partner_name, created_by)
+  values ($1, $2, 'sell', '2026-10-01', 'Khách', $3)`;
+v2Tables.push(
+  {
+    name: "transactions",
+    seed: (o, t) =>
+      one(
+        o,
+        "insert into contracts.transactions (tenant_id, deal, occurred_on, partner_name, created_by) values ($1, 'sell', '2026-10-01', 'Khách', $2)",
+        [t, who],
+      ),
+    insert: (tx, t, pk) => tx.unsafe(txIns, [rnd(pk), t, who]),
+  },
+  {
+    name: "transaction_lines",
+    seed: async (o, t) =>
+      one(
+        o,
+        `insert into contracts.transaction_lines (tenant_id, transaction_id, ord, name, qty, unit_price, amount)
+         values ($1, $2, 0, 'Hàng', 1, 1, 1)`,
+        [t, await parent(o, "contracts.transactions", t)],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        `insert into contracts.transaction_lines (id, tenant_id, transaction_id, ord, name, qty, unit_price, amount)
+         values ($1, $2, $3, 0, 'Hàng', 1, 1, 1)`,
+        [rnd(pk), t, crypto.randomUUID()],
+      ),
+  },
+  {
+    name: "transaction_events",
+    seed: async (o, t) =>
+      one(
+        o,
+        "insert into contracts.transaction_events (tenant_id, transaction_id, type, actor_user_id) values ($1, $2, 'created', $3)",
+        [t, await parent(o, "contracts.transactions", t), who],
+      ),
+    insert: (tx, t) =>
+      tx.unsafe(
+        "insert into contracts.transaction_events (tenant_id, transaction_id, type, actor_user_id) values ($1, $2, 'created', $3)",
+        [t, crypto.randomUUID(), who],
+      ),
+  },
+);
 /** Bảng khoá = tenant (V2-H business_settings, V2-L company_settings), như visibility_settings. */
 const tenantPk = (name: string): RlsTable => ({
   name,

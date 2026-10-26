@@ -31,4 +31,5 @@ export * from "./review";
 export * from "./service-customers";
 export * from "./sourcing";
 export * from "./supplier-prices";
+export * from "./transactions";
 export * from "./versions";
