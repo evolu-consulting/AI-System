@@ -203,6 +203,5 @@ export function contractsListAsHub(search: URLSearchParams) {
   return { ...all, items, total: items.length };
 }
 
-/** `GET /reputation/partners?role=all` của bộ chung (Bếp Việt ở mức CHÚ Ý). */
-export const partnersForOverview = (search: URLSearchParams) =>
-  partnersAsHub("/reputation/partners", search);
+/** `GET /partners?role=` của bộ chung (Bếp Việt ở mức CHÚ Ý) — U3: Tổng quan đọc engine HD8, không còn `/reputation/partners`. */
+export const partnersForOverview = (search: URLSearchParams) => partnersAsHub("/partners", search);

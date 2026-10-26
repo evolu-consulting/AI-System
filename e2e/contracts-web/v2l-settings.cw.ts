@@ -1,5 +1,6 @@
-// V2-L · CD-01..06: hộp thoại Cài đặt mở từ avatar — 3 mục ở cột trái, đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt, chấm cam khi khác
-// mặc định, đổi màu/tên áp ngay, lưu gửi đúng PUT; chủ sở hữu mới sửa được. Backend giả `page.route`; không sleep.
+// V2-L · U3 · CD-01..06: hộp thoại Cài đặt mở từ avatar — 3 mục ở cột trái, đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt, chấm cam khi khác
+// mặc định, đổi màu/tên áp ngay, lưu gửi đúng PUT; chủ sở hữu mới sửa được. "Điểm uy tín" (CR-097a) = cách tính engine HD8 theo vai
+// (`/scoring/:role`, lưu riêng, version + lịch sử). Backend giả `page.route`; không sleep.
 // Viết sẵn, CHƯA chạy (Luật 0b: e2e chạy một lần ở cuối đợt).
 import { expect, type Page, test } from "@playwright/test";
 import type { Role } from "./dataset";
@@ -13,43 +14,33 @@ const json = (body: unknown, status = 200) => ({
   contentType: "application/json",
   body: JSON.stringify(body),
 });
-const crit = (key: string, label: string, kind: string, weight: number, milestone?: string) => ({
+const crit = (key: string, label: string, weight: number, enabled = true) => ({
   key,
   label,
-  kind,
-  ...(milestone ? { milestone } : {}),
+  kind: "auto",
+  enabled,
   weight,
-  enabled: true,
-  custom: false,
 });
-const CELL = {
-  criteria: [
-    crit("on_time_delivery", "Giao đúng hạn", "ontime", 50, "delivery"),
-    crit("quality", "Chất lượng", "jobs", 50),
-  ],
+const RULES = {
+  good_from: 80,
+  fair_from: 60,
+  min_events: 3,
   window_months: 12,
-  decay: { months: [6, 12], factors: [1, 0.5, 0.2] },
-  late_per_day: 2,
+  recency_boost: true,
+  recency_months: 3,
+  manual_adjust: true,
 };
-const KEYS = [
-  "service:supplier",
-  "service:customer",
-  "goods:supplier",
-  "goods:customer",
-  "referral:commission_payer",
-];
-const CELLS = Object.fromEntries(KEYS.map((k) => [k, CELL]));
-const SETTINGS = {
-  good_from: 85,
-  fair_from: 70,
-  min_jobs: 3,
-  manual_share: 20,
-  reason_gap: 25,
-  lock_period: "month",
-};
-const JOBS = [
-  { key: "complaint", name: "Khiếu nại vô lý", criterion: "quality", score: 0, ord: 0 },
-];
+const scoringOf = (role: string, version = 4) => ({
+  role,
+  version,
+  criteria: [crit("on_time", "Đúng hạn", 60), crit("reminders", "Ít phải nhắc", 40)],
+  rules: RULES,
+  updated_by: "Lan",
+  updated_at: "2026-10-01T02:00:00Z",
+  restorable: [],
+  manual_choices: [],
+});
+const HISTORY = [{ version: 4, at: "2026-10-01T02:00:00Z", by: "Lan", summary: "Mức Tốt 85 → 80" }];
 const BIZ = {
   w: { rot: 40, margin: 35, trend: 25 },
   buyDays: 45,
@@ -99,40 +90,34 @@ async function install(page: Page, role: Role) {
       }),
     );
   });
-  await page.route(`**${P}/reputation/config`, (r) =>
-    r.fulfill(
-      json({
-        cells: CELLS,
-        settings: SETTINGS,
-        job_types: JOBS,
-        versions: {},
-        defaults: { cells: CELLS, settings: SETTINGS, job_types: JOBS },
-      }),
-    ),
-  );
-  await page.route(`**${P}/reputation/config/cells/**`, (r) => {
-    rec("PUT", new URL(r.request().url()).pathname, body(r));
-    return r.fulfill(json({}));
-  });
-  await page.route(`**${P}/reputation/config/preview`, (r) =>
-    r.fulfill(
+  await page.route(`**${P}/scoring/*/history`, (r) => r.fulfill(json(HISTORY)));
+  await page.route(`**${P}/scoring/*/preview`, (r) => {
+    rec("POST", new URL(r.request().url()).pathname, body(r));
+    return r.fulfill(
       json({
         total: 3,
+        changed_band: 1,
         changes: [
           {
             party: "tax:1",
             name: "Công ty A",
-            role: "supplier",
-            old: 80,
-            new: 72,
-            old_level: "fair",
-            new_level: "fair",
+            old: 70,
+            new: 58,
+            band_old: "fair",
+            band_new: "watch",
           },
         ],
-        sample: null,
       }),
-    ),
-  );
+    );
+  });
+  await page.route(`**${P}/scoring/customer`, (r) => {
+    if (r.request().method() === "PUT") {
+      rec("PUT", new URL(r.request().url()).pathname, body(r));
+      return r.fulfill(json(scoringOf("customer", 5)));
+    }
+    return r.fulfill(json(scoringOf("customer")));
+  });
+  await page.route(`**${P}/scoring/supplier`, (r) => r.fulfill(json(scoringOf("supplier"))));
   await page.route(`**${P}/business/config`, (r) =>
     r.fulfill(json({ config: BIZ, defaults: BIZ, version: 0, updated_at: null })),
   );
@@ -178,37 +163,46 @@ test("đổi màu chủ đạo: chấm cam ở mục Công ty, nút Lưu mở; L
     .toMatchObject({ accent: "teal" });
 });
 
-test("điểm uy tín: 5 ô × 3 tab + Mức & đánh giá; đổi trọng số có thử tính", async ({ page }) => {
+test("điểm uy tín: hai vai Khách hàng / Nhà cung cấp, phiên bản + lịch sử; đổi trọng số ⇒ xem trước N đối tác đổi mức", async ({
+  page,
+}) => {
   const sent = await install(page, "owner");
   const dlg = await open(page);
   await dlg
     .getByRole("button", { name: /Điểm uy tín/ })
     .first()
     .click();
-  for (const n of ["Nhà cung cấp", "Khách hàng", "Bên trả hoa hồng", "Mức & đánh giá"])
-    await expect(dlg.getByRole("tab", { name: new RegExp(n) }).first()).toBeVisible();
-  for (const n of ["Tiêu chí", "Thời gian", "Loại việc"])
-    await expect(dlg.getByRole("tab", { name: n })).toBeVisible();
-  await dlg.getByLabel("Trọng số Giao đúng hạn").fill("10");
-  await expect(dlg.getByTestId("try-result")).toBeVisible();
-  await expect(dlg.getByTestId("impact-count")).toBeVisible();
-  await dlg.getByRole("button", { name: "Lưu cài đặt" }).click();
+  for (const n of ["Khách hàng", "Nhà cung cấp"])
+    await expect(dlg.getByRole("radio", { name: n })).toBeVisible();
+  await expect(dlg.getByText("Phiên bản 4").first()).toBeVisible();
+  await expect(dlg.getByTestId("scoring-history")).toContainText("Mức Tốt 85 → 80");
+  await expect(dlg.getByTestId("score-sum")).toContainText("100/100");
+  await dlg.getByLabel("Trọng số Đúng hạn").fill("50");
+  await expect(dlg.getByTestId("score-sum")).toContainText("90/100");
+  await expect(dlg.getByRole("alert")).toContainText("đúng 100%");
+  await expect(dlg.getByTestId("scoring-save")).toBeDisabled();
+  await dlg.getByLabel("Trọng số Ít phải nhắc").fill("50");
+  await expect(dlg.getByTestId("score-impact")).toContainText("1 đối tác đổi mức (trên 3)");
+  await dlg.getByTestId("scoring-save").click();
   await expect
-    .poll(() => sent.find((s) => s.path.endsWith("/cells/service/supplier")))
-    .toBeTruthy();
+    .poll(() => sent.find((s) => s.method === "PUT" && s.path.endsWith("/scoring/customer"))?.body)
+    .toMatchObject({
+      criteria: [
+        { key: "on_time", weight: 50, enabled: true },
+        { key: "reminders", weight: 50, enabled: true },
+      ],
+      rules: { good_from: 80, fair_from: 60, min_events: 3 },
+    });
+  // Không còn ghi `/reputation/*` (410).
+  expect(sent.some((s) => s.path.includes("/reputation/"))).toBe(false);
 });
 
-test("HD8-FR-03 (chuyển từ /settings/scoring): trọng số gửi lên tổng đúng 100; máy chủ 422 ⇒ hiện đúng câu, ô vẫn giữ nháp", async ({
+test("HD8-FR-03: máy chủ 422 khi lưu cách tính ⇒ hiện đúng câu, bản nháp còn nguyên; đổi sang Nhà cung cấp tải cách tính riêng", async ({
   page,
 }) => {
-  const sent = await install(page, "owner");
-  await page.route(`**${P}/reputation/config/cells/service/supplier`, (r) => {
+  await install(page, "owner");
+  await page.route(`**${P}/scoring/customer`, (r) => {
     if (r.request().method() !== "PUT") return r.fallback();
-    sent.push({
-      method: "PUT",
-      path: new URL(r.request().url()).pathname,
-      body: r.request().postDataJSON(),
-    });
     return r.fulfill(
       json({ error: { code: "SCORING_INVALID", message: "Mức Tốt phải cao hơn mức Khá" } }, 422),
     );
@@ -218,16 +212,27 @@ test("HD8-FR-03 (chuyển từ /settings/scoring): trọng số gửi lên tổn
     .getByRole("button", { name: /Điểm uy tín/ })
     .first()
     .click();
-  await dlg.getByLabel("Trọng số Giao đúng hạn").fill("30");
-  await dlg.getByRole("button", { name: "Lưu cài đặt" }).click();
+  await dlg.getByLabel("Mức Tốt từ (điểm)").fill("70");
+  await dlg.getByLabel("Mức Khá từ (điểm)").fill("60");
+  await dlg.getByTestId("scoring-save").click();
   await expect(page.getByText("Mức Tốt phải cao hơn mức Khá")).toBeVisible();
-  const put = sent.find((s) => s.path.endsWith("/cells/service/supplier"));
-  const body = put?.body as { criteria: { key: string; weight: number }[] };
-  expect(body.criteria.reduce((a, c) => a + c.weight, 0)).toBe(100);
-  expect(body.criteria.map((c) => c.key)).toEqual(["on_time_delivery", "quality"]);
-  await expect(dlg.getByRole("button", { name: "Lưu cài đặt" })).toBeEnabled();
+  await expect(dlg.getByTestId("scoring-save")).toBeEnabled();
+  await dlg.getByRole("radio", { name: "Nhà cung cấp" }).click();
+  await expect(dlg.getByTestId("scoring-supplier")).toBeVisible();
 });
 
+test("người không phải chủ sở hữu: cách tính điểm chỉ xem (ô khoá, không có nút Lưu & tính lại)", async ({
+  page,
+}) => {
+  await install(page, "editor");
+  const dlg = await open(page);
+  await dlg
+    .getByRole("button", { name: /Điểm uy tín/ })
+    .first()
+    .click();
+  await expect(dlg.getByLabel("Trọng số Đúng hạn")).toBeDisabled();
+  await expect(dlg.getByTestId("scoring-save")).toHaveCount(0);
+});
 test("điểm kinh doanh: thử tính hiện điểm + đề xuất từ API", async ({ page }) => {
   await install(page, "owner");
   const dlg = await open(page);

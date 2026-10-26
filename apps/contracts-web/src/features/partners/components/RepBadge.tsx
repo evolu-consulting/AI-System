@@ -1,33 +1,35 @@
-// V2-I · DT-01 · huy hiệu điểm uy tín v2: TỐT/KHÁ/CHÚ Ý như HD8, thêm MỚI (chưa đủ số việc tối thiểu) kèm nhãn vai bên dưới.
-import type { RepLevel, RepRole } from "@ai/contracts";
+// V2-I · U3 · huy hiệu điểm đối tác theo engine HD8: TỐT/KHÁ/CHÚ Ý (xanh/xám/cam), "MỚI · tạm tính" (điểm tạm, nét đứt) khi chưa đủ số việc,
+// "–" khi chưa có việc nào; nhãn vai bên dưới. Cờ đỏ tách khỏi điểm: `RedFlagTag`.
+import type { PartnerRole, PartnerRow } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
+import { type Badge, badgeOf } from "../lib/partner-score";
 import { ScoreBadge } from "./ScoreBadge";
 
-export function RepBadge({
-  score,
-  level,
-  role,
-}: {
-  score: number | null;
-  level: RepLevel;
-  role?: RepRole;
-}) {
+type Row = Pick<PartnerRow, "score" | "band" | "provisional" | "provisional_score">;
+
+function Tile({ b }: { b: Badge }) {
   const { t } = useTranslation();
-  const tile =
-    level === "new" || score === null ? (
-      <span
-        className="flex h-12 w-[54px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-field text-dim"
-        role="img"
-        aria-label={t("contracts.pv2.newTip")}
-      >
-        <span className="tnum text-lg leading-none">{score ?? "–"}</span>
-        <span className="mt-0.5 text-[10px] font-semibold tracking-wide">
+  if (b.level === "good" || b.level === "fair" || b.level === "watch")
+    return <ScoreBadge score={b.shown} band={b.level} />;
+  return (
+    <span
+      className="flex h-12 w-[54px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-field text-dim"
+      role="img"
+      aria-label={t(b.provisional ? "contracts.pv2.newTip" : "contracts.pv2.noDataTip")}
+    >
+      <span className="tnum text-lg leading-none">{b.shown ?? "–"}</span>
+      {b.provisional && (
+        <span className="mt-0.5 text-[9px] leading-tight font-semibold tracking-wide">
           {t("contracts.pv2.badge.new")}
         </span>
-      </span>
-    ) : (
-      <ScoreBadge score={score} band={level} />
-    );
+      )}
+    </span>
+  );
+}
+
+export function RepBadge({ row, role }: { row: Row; role?: PartnerRole }) {
+  const { t } = useTranslation();
+  const tile = <Tile b={badgeOf(row)} />;
   if (!role) return tile;
   return (
     <span className="flex flex-col items-center gap-0.5">
@@ -37,31 +39,28 @@ export function RepBadge({
   );
 }
 
-const PILL: Record<RepLevel, string> = {
+const PILL: Record<Badge["level"], string> = {
   good: "bg-ok-bg text-ok",
   fair: "bg-idle-bg text-ink-2",
   watch: "bg-soon-bg text-soon",
   new: "bg-sunk text-dim",
+  none: "bg-sunk text-dim",
 };
 
-/** Mockup NITI `.scorepill`: điểm + tên vai gọn một viên (đầu trang chi tiết). */
-export function ScorePill({
-  score,
-  level,
-  role,
-}: {
-  score: number | null;
-  level: RepLevel;
-  role: RepRole;
-}) {
+/** Mockup NITI `.scorepill`: điểm + tên vai gọn một viên (đầu trang chi tiết); điểm tạm kèm "MỚI · tạm tính". */
+export function ScorePill({ row, role }: { row: Row; role: PartnerRole }) {
   const { t } = useTranslation();
+  const b = badgeOf(row);
   return (
     <span
-      className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[13px] ${PILL[level]}`}
-      title={t(`contracts.pv2.level.${level}`)}
+      className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[13px] ${PILL[b.level]}`}
+      title={t(`contracts.pv2.level.${b.level}`)}
     >
-      <b className="tnum">{score ?? "—"}</b>
+      <b className="tnum">{b.shown ?? "—"}</b>
       {t(`contracts.pv2.roleWord.${role}`)}
+      {b.provisional && (
+        <span className="text-[11px] font-semibold">{t("contracts.pv2.badge.new")}</span>
+      )}
     </span>
   );
 }

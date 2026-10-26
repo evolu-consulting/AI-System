@@ -8,22 +8,14 @@ import type {
   PartnerContractRow,
   PartnerNote,
   PartnerProfile,
-  PartnerRatings,
   PartnerRole,
   PartnerRoleRow,
   PartnerRow,
+  PartnerScore,
   PartnerWebSearch,
   PriceProduct,
   QuoteCreate,
-  RepConfigOut,
-  RepDetail,
-  RepHistory,
   RepMine,
-  RepPartnerRow,
-  RepRatingIn,
-  RepRatingRow,
-  RepRatings,
-  RepRole,
   ScoreConfigOut,
   ScoreHistoryRow,
   ScorePreview,
@@ -40,18 +32,11 @@ export type PartnerContactDraft = Omit<PartnerContactPerson, "id">;
 
 export const partnerKeys = {
   list: (role: PartnerRole | "all") => ["partners", "list", role] as const,
-  ratings: (party: string, role: PartnerRole) => ["partners", party, "ratings", role] as const,
   scoring: (role: PartnerRole) => ["scoring", role] as const,
   history: (role: PartnerRole) => ["scoring", role, "history"] as const,
-  // V2-I (khoá bắt đầu `partners` ⇒ mọi thao tác ghi đối tác làm mới cả danh sách v2 lẫn chi tiết)
-  repList: ["partners", "rep", "list"] as const,
+  // V2-I (khoá bắt đầu `partners` ⇒ mọi thao tác ghi đối tác làm mới cả danh sách lẫn chi tiết)
   counts: ["partners", "counts"] as const,
-  repConfig: ["partners", "rep", "config"] as const,
-  detail: (party: string, role: RepRole) => ["partners", "rep", "detail", party, role] as const,
-  repHistory: (party: string, role: RepRole, months: number) =>
-    ["partners", "rep", "history", party, role, months] as const,
-  repRatings: (party: string, role: RepRole) =>
-    ["partners", "rep", "ratings", party, role] as const,
+  score: (party: string, role: PartnerRole) => ["partners", "score", party, role] as const,
   profile: (party: string) => ["partners", "profile", party] as const,
   contacts: (party: string) => ["partners", "contacts", party] as const,
   mine: (days: number) => ["partners", "rep", "mine", days] as const,
@@ -64,15 +49,8 @@ export const partnerKeys = {
 
 export const fetchPartners = (role: PartnerRole | "all", signal?: AbortSignal) =>
   api<PartnerRow[]>(`${BASE}/partners?role=${role}`, { signal });
-export const fetchRatings = (party: string, role: PartnerRole, signal?: AbortSignal) =>
-  api<PartnerRatings>(`${BASE}/partners/ratings?party=${enc(party)}&role=${role}`, { signal });
-export const ratePartner = (b: {
-  party: string;
-  role: PartnerRole;
-  criterion: string;
-  value: number;
-  note?: string;
-}) => api(`${BASE}/partners/ratings`, { method: "PUT", body: b });
+export const fetchPartnerScore = (party: string, role: PartnerRole, signal?: AbortSignal) =>
+  api<PartnerScore>(`${BASE}/partners/score?party=${enc(party)}&role=${role}`, { signal });
 
 export const fetchScoring = (role: PartnerRole, signal?: AbortSignal) =>
   api<ScoreConfigOut>(`${BASE}/scoring/${role}`, { signal });
@@ -90,25 +68,8 @@ export const fetchCompare = (product: string, signal?: AbortSignal) =>
 export const addQuote = (q: QuoteCreate) =>
   api<{ id: string }>(`${BASE}/prices/quotes`, { method: "POST", body: q });
 
-// ---------- V2-I · Đối tác UI v2: `/reputation/**` (V2-E) + `/partners/{profile,contracts,contract-counts,notes,internet-search}` ----------
+// ---------- V2-I · hồ sơ đối tác: `/partners/{profile,contracts,contract-counts,notes,internet-search}`; `/reputation/mine` chỉ đọc (V2-E đóng băng, CR-097a) ----------
 const REP = `${BASE}/reputation`;
-export const fetchRepPartners = (signal?: AbortSignal) =>
-  api<RepPartnerRow[]>(`${REP}/partners?role=all`, { signal });
-export const fetchRepDetail = (party: string, role: RepRole, signal?: AbortSignal) =>
-  api<RepDetail>(`${REP}/partner?party=${enc(party)}&role=${role}`, { signal });
-export const fetchRepHistory = (
-  party: string,
-  role: RepRole,
-  months: number,
-  signal?: AbortSignal,
-) =>
-  api<RepHistory>(`${REP}/history?party=${enc(party)}&role=${role}&months=${months}`, { signal });
-export const fetchRepRatings = (party: string, role: RepRole, signal?: AbortSignal) =>
-  api<RepRatings>(`${REP}/ratings?party=${enc(party)}&role=${role}`, { signal });
-export const rateRep = (b: RepRatingIn) =>
-  api<RepRatingRow>(`${REP}/ratings`, { method: "POST", body: b });
-export const fetchRepConfig = (signal?: AbortSignal) =>
-  api<RepConfigOut>(`${REP}/config`, { signal });
 
 export const fetchProfile = (party: string, signal?: AbortSignal) =>
   api<PartnerProfile>(`${BASE}/partners/profile?party=${enc(party)}`, { signal });

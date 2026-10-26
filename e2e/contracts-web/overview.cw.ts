@@ -60,8 +60,17 @@ async function install(page: Page, o: Opts = {}) {
     },
   );
   await page.route(
-    (u) => u.pathname === "/pack/contracts/reputation/partners",
-    (r) => json(r, 200, o.partners ?? partnersForOverview(new URL(r.request().url()).searchParams)),
+    (u) => u.pathname === "/pack/contracts/partners",
+    (r) => {
+      const q = new URL(r.request().url()).searchParams;
+      // U3: Tổng quan đọc `GET /partners?role=` (engine HD8); bộ ghi đè `o.partners` lọc theo vai như máy chủ.
+      const rows = o.partners
+        ? (o.partners as { role: string }[]).filter(
+            (x) => !q.get("role") || x.role === q.get("role"),
+          )
+        : partnersForOverview(q);
+      return json(r, 200, rows);
+    },
   );
 }
 
@@ -201,7 +210,7 @@ test("«Hợp đồng»: không có HĐ sắp hết hiệu lực ⇒ thông báo
   await expect(page).toHaveURL(/\/contracts$/);
 });
 
-test("«Đối tác cần xem lại»: chỉ đối tác mức CHÚ Ý; mức khác không hiện", async ({ page }) => {
+test("«Đối tác cần xem lại»: đối tác mức CHÚ Ý; mức khác không hiện", async ({ page }) => {
   await install(page);
   await page.goto("/overview");
   const list = page.getByTestId("review-partners");
@@ -217,10 +226,60 @@ test("«Đối tác cần xem lại»: API không trả đối tác nào (không
 }) => {
   await install(page, { partners: [] });
   await page.goto("/overview");
-  await expect(page.getByText("Không có đối tác ở mức CHÚ Ý.")).toBeVisible();
+  await expect(page.getByText("Không có đối tác nào có cờ đỏ hoặc ở mức CHÚ Ý.")).toBeVisible();
   await expect(page.getByTestId("review-partners")).toHaveCount(0);
 });
 
+const P = (
+  name: string,
+  role: "customer" | "supplier",
+  o: Record<string, unknown> = {},
+): Record<string, unknown> => ({
+  party: `name:${name.toLowerCase()}`,
+  name,
+  role,
+  roles: [role],
+  score: 90,
+  band: "good",
+  reason: "",
+  event_count: 8,
+  adjust: 0,
+  contracts: 1,
+  ...o,
+});
+
+test("U3 · «Đối tác cần xem lại»: cờ đỏ hiện kể cả điểm cao, lên đầu; MỚI · tạm tính không hiện; link mở đúng đối tác", async ({
+  page,
+}) => {
+  await install(page, {
+    partners: [
+      P("Beta Watch", "customer", { score: 50, band: "watch" }),
+      P("Gamma Gian Lận", "supplier", {
+        red_flag: true,
+        red_flags: [{ type: "fraud", n: 1 }],
+      }),
+      P("Delta Mới", "customer", {
+        score: null,
+        band: null,
+        provisional: true,
+        provisional_score: 20,
+        event_count: 1,
+      }),
+      P("Eps Tốt", "customer"),
+    ],
+  });
+  await page.goto("/overview");
+  const list = page.getByTestId("review-partners");
+  const items = list.getByRole("listitem");
+  await expect(items).toHaveCount(2);
+  await expect(items.first()).toContainText("Gamma Gian Lận");
+  await expect(items.first().getByTestId("red-flag")).toContainText("Cờ đỏ · Gian lận");
+  await expect(items.nth(1)).toContainText("Beta Watch");
+  await expect(list).not.toContainText("Delta Mới");
+  await expect(list).not.toContainText("Eps Tốt");
+  await items.first().getByRole("link", { name: "Gamma Gian Lận" }).click();
+  await expect(page).toHaveURL(/\/partners\?party=name%3Agamma/);
+});
 test("người xem (viewer): thấy cùng dữ liệu API trả, không có nút ghi sổ/HĐ", async ({ page }) => {
   await install(page, { role: "viewer" });
   await page.goto("/overview");

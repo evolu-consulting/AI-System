@@ -71,7 +71,9 @@
         "cks_renewed": "Signature renewed",
         "cks_lapsed": "Signature customer lost",
         "manual_adjust": "Manual score adjustment",
-        "rating": "Rating"
+        "rating": "Rating",
+        "no_delivery": "No delivery (red flag)",
+        "fraud": "Fraud (red flag)"
       },
       "other": {
         "delivered": "Delivery",
@@ -95,7 +97,8 @@
         "EVENT_TYPE": "This kind of event cannot be logged by hand",
         "ADJUST_INVALID": "Manual adjustment must be -10 to +10 points with a reason",
         "PACK_FORBIDDEN": "You are not allowed to log this",
-        "NOT_FOUND": "Not found; it may have been replaced by a new schedule"
+        "NOT_FOUND": "Not found; it may have been replaced by a new schedule",
+        "SEVERE_REASON": "A red flag needs a reason; only managers can clear it"
       }
     }
   }

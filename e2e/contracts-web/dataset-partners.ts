@@ -273,17 +273,6 @@ export function partnersAsHub(path: string, s: URLSearchParams): unknown {
     return partners.filter(
       (x) => s.get("role") === "all" || !s.get("role") || x.role === s.get("role"),
     );
-  // V2-I: danh sách đối tác đọc `/reputation/partners` (V2-E) + số HĐ từ `/partners/contract-counts`; cùng dữ liệu, hình v2.
-  if (p === "/reputation/partners")
-    return partners.map((x) => ({
-      party: x.party,
-      name: x.name,
-      role: x.role,
-      score: x.score,
-      level: x.band ?? "new",
-      jobs: x.event_count,
-      groups: [],
-    }));
   if (p === "/partners/contract-counts")
     return partners.map((x) => ({ party: x.party, n: x.contracts }));
   if (p === "/partners/ratings") return ratings;

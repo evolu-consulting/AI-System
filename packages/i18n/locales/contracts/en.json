@@ -126,14 +126,17 @@
         "label": "Filter by date",
         "field": "Date column",
         "window": "Time window",
-        "fields": { "end_date": "Valid until", "action_deadline": "Action deadline" },
+        "fields": {
+          "end_date": "Valid until",
+          "action_deadline": "Action deadline"
+        },
         "any": "Any date",
         "range": "Custom range…",
         "due": {
-          "overdue": "Overdue",
           "30": "Next 30 days",
           "60": "Next 60 days",
-          "90": "Next 90 days"
+          "90": "Next 90 days",
+          "overdue": "Overdue"
         },
         "from": "From",
         "to": "To"
@@ -309,8 +312,8 @@
       },
       "partners": {
         "title": "Partners to review",
-        "lead": "WATCH level",
-        "none": "No partners at WATCH level.",
+        "lead": "red flag or WATCH level",
+        "none": "No partners with a red flag or at WATCH level.",
         "all": "View all partners"
       }
     },

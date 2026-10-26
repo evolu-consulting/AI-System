@@ -1,16 +1,16 @@
-// V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (V2-E `/reputation/partners`),
-// kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API uy tín chưa trả giá trị nên dùng số việc.)
-import type { RepPartnerRow, RepRole } from "@ai/contracts";
+// V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (engine HD8 `GET /partners`),
+// kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API chưa trả giá trị nên dùng số việc.)
+import type { PartnerRole, PartnerRow } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { RepBadge } from "~/features/partners/components/RepBadge";
-import { useRepPartners } from "~/features/partners/hooks/use-partner-rep";
-import { topPartners } from "../lib/overview";
+import { usePartnerRows } from "~/features/partners/hooks/use-partner-scores";
+import { topPartners } from "~/features/partners/lib/partner-score";
 import { BlockHead } from "./BlockHead";
 
-function Col({ kind, rows }: { kind: RepRole; rows: RepPartnerRow[] }) {
+function Col({ kind, rows }: { kind: PartnerRole; rows: PartnerRow[] }) {
   const { t } = useTranslation();
   return (
     <div data-role={kind}>
@@ -30,10 +30,10 @@ function Col({ kind, rows }: { kind: RepRole; rows: RepPartnerRow[] }) {
             <span className="min-w-0 flex-1">
               <b className="block truncate text-body">{p.name}</b>
               <span className="block text-[12px] text-dim">
-                {t("contracts.overview.top.jobs", { n: p.jobs })}
+                {t("contracts.overview.top.jobs", { n: p.event_count })}
               </span>
             </span>
-            <RepBadge score={p.score} level={p.level} />
+            <RepBadge row={p} />
           </Link>
         ))
       )}
@@ -43,7 +43,7 @@ function Col({ kind, rows }: { kind: RepRole; rows: RepPartnerRow[] }) {
 
 export function TopPartnersBlock() {
   const { t } = useTranslation();
-  const q = useRepPartners();
+  const q = usePartnerRows();
   return (
     <Panel>
       <BlockHead

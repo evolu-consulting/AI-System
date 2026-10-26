@@ -19,12 +19,14 @@ function RecentLine({
   e,
   all,
   write,
+  owner,
   busy,
   act,
 }: {
   e: PartnerEvent;
   all: Set<string | null>;
   write: boolean;
+  owner: boolean;
   busy: string | null;
   act: Act;
 }) {
@@ -53,7 +55,7 @@ function RecentLine({
           {e.voided ? L("voidedMark") : ""}
         </span>
       </span>
-      {voidable(e, write) && (
+      {voidable(e, write, owner) && (
         <button
           type="button"
           className="shrink-0 text-[12.5px] text-late hover:underline"
@@ -70,7 +72,7 @@ function RecentLine({
 export function PartnerLog({ party, role, contractId, onChange }: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.ledger.${k}`);
-  const { write } = useMe();
+  const { write, owner } = useMe();
   const { obs, evs } = usePartnerLedger(party, contractId);
   const { act, err, busy } = useAct(onChange);
   const all = evs.data ?? [];
@@ -118,7 +120,15 @@ export function PartnerLog({ party, role, contractId, onChange }: Props) {
         ) : (
           <ul className="divide-y divide-rule-soft rounded-lg border border-rule-soft">
             {recent.map((e) => (
-              <RecentLine key={e.id} e={e} all={answered} write={write} busy={busy} act={act} />
+              <RecentLine
+                key={e.id}
+                e={e}
+                all={answered}
+                write={write}
+                owner={owner}
+                busy={busy}
+                act={act}
+              />
             ))}
           </ul>
         )}

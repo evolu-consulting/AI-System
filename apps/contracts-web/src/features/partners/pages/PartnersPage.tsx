@@ -1,6 +1,6 @@
 // V2-I · DT-01 · S-p02 `/partners` v2 — mockup NITI: mỗi đối tác một dòng (tên, các vai, điểm từng vai, số hợp đồng), tìm + lọc vai /
-// "Cần chú ý"; bấm tên mở trang chi tiết. Dữ liệu từ `/reputation/partners` (V2-E) thay `GET /partners` cũ; "+ Ghi việc" (sổ HD7) giữ lại.
-import type { PartnerRole, RepRole } from "@ai/contracts";
+// "Cần chú ý"; bấm tên mở trang chi tiết. Điểm từ engine HD8 `GET /partners` (CR-097a): huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
+import type { PartnerRole } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -11,32 +11,34 @@ import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools, useTable } from "~/features/table";
 import { cn } from "~/lib/utils";
-import { fetchContractCounts, fetchRepPartners, partnerKeys } from "../api";
+import { fetchContractCounts, partnerKeys } from "../api";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
 import { MineBanner } from "../components/MineBanner";
+import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
-import { type PartyItem, partiesOf, ROLES } from "../lib/partner-v2";
+import { usePartnerRows } from "../hooks/use-partner-scores";
+import { type PartyItem, partiesOf } from "../lib/partner-score";
+import { ROLES } from "../lib/partner-v2";
 
-type Filter = "all" | RepRole | "watch";
-const FILTERS: readonly Filter[] = ["all", ...ROLES, "watch"];
-const LOGGABLE = (r: RepRole): r is PartnerRole => r === "customer" || r === "supplier";
+type Filter = "all" | PartnerRole | "watch" | "flag";
+const FILTERS: readonly Filter[] = ["all", ...ROLES, "watch", "flag"];
 
 function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: boolean) => void }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
   const { write } = useMe();
-  const loggable = p.roles.find((r) => LOGGABLE(r.role));
+  const loggable = p.roles[0];
   return (
     <li
       className={cn(
         "border-b border-rule-soft last:border-0",
-        p.worst === "watch" && "bg-soon-bg/50",
+        p.red_flag ? "bg-late-bg/40" : p.worst === "watch" && "bg-soon-bg/50",
       )}
     >
       <div className="flex flex-wrap items-center gap-4 px-5 py-3.5">
         <span className="flex shrink-0 gap-2">
           {p.roles.map((r) => (
-            <RepBadge key={r.role} score={r.score} level={r.level} role={r.role} />
+            <RepBadge key={r.role} row={r} role={r.role} />
           ))}
         </span>
         <span className="min-w-0 flex-1 basis-56">
@@ -47,6 +49,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
           >
             {p.name}
           </Link>
+          {p.red_flag && <RedFlagTag flags={p.red_flags} />}
           <span className="block truncate text-[13px] text-dim">
             {p.roles.map((r) => L(`roleWord.${r.role}`)).join(" · ")} ·{" "}
             {L("contractsN", { n: p.contracts })}
@@ -74,7 +77,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
       </div>
       {open && loggable && (
         <div className="px-5 pb-4">
-          <PartnerLog party={p.party} role={loggable.role as PartnerRole} />
+          <PartnerLog party={p.party} role={loggable.role} />
         </div>
       )}
     </li>
@@ -84,10 +87,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
 export function PartnersPage() {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
-  const q = useQuery({
-    queryKey: partnerKeys.repList,
-    queryFn: ({ signal }) => fetchRepPartners(signal),
-  });
+  const q = usePartnerRows();
   const counts = useQuery({
     queryKey: partnerKeys.counts,
     queryFn: ({ signal }) => fetchContractCounts(signal),
@@ -107,7 +107,9 @@ export function PartnersPage() {
           ? true
           : filter === "watch"
             ? p.worst === "watch"
-            : p.roles.some((r) => r.role === filter),
+            : filter === "flag"
+              ? p.red_flag
+              : p.roles.some((r) => r.role === filter),
       ),
     [items, filter],
   );
@@ -120,7 +122,7 @@ export function PartnersPage() {
     if (!items.length) return <Empty title={L("emptyTitle")}>{L("emptyBody")}</Empty>;
     if (!tb.total) return <Empty title={L("noMatchTitle")}>{L("noMatchBody")}</Empty>;
     return (
-      <ul className="md:min-h-0 md:flex-1 md:overflow-auto">
+      <ul data-testid="partner-list" className="md:min-h-0 md:flex-1 md:overflow-auto">
         {tb.shown.map((p) => (
           <Row
             key={p.party}

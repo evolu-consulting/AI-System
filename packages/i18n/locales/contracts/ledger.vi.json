@@ -71,7 +71,9 @@
         "cks_renewed": "Gia hạn chữ ký số",
         "cks_lapsed": "Mất khách chữ ký số",
         "manual_adjust": "Chỉnh tay điểm",
-        "rating": "Chấm điểm"
+        "rating": "Chấm điểm",
+        "no_delivery": "Không giao hàng (cờ đỏ)",
+        "fraud": "Gian lận (cờ đỏ)"
       },
       "other": {
         "delivered": "Giao hàng",
@@ -95,7 +97,8 @@
         "EVENT_TYPE": "Loại sự kiện không ghi tay được",
         "ADJUST_INVALID": "Chỉnh tay từ -10 đến +10 điểm và phải ghi lý do",
         "PACK_FORBIDDEN": "Bạn không có quyền ghi việc này",
-        "NOT_FOUND": "Không tìm thấy, có thể đã bị thay bằng lịch mới"
+        "NOT_FOUND": "Không tìm thấy, có thể đã bị thay bằng lịch mới",
+        "SEVERE_REASON": "Báo cờ đỏ phải ghi lý do; chỉ quản lý được gỡ cờ"
       }
     }
   }

@@ -1,6 +1,6 @@
 // HD7-FR-12 · luật thuần của khối "Ghi việc" — port `mgmt-app/web/src/pages/partners/PartnerLog.tsx:14-41,70-75`: câu đọc một dòng
 // sổ (`said`), dòng "Quá hạn" đã được trả lời, 15 dòng gần nhất, việc khác theo vai, số ngày trễ khi ghi.
-import type { PartnerEvent, PartnerRole } from "@ai/contracts";
+import { type PartnerEvent, type PartnerRole, SEVERE_EVENT_TYPES } from "@ai/contracts";
 import { vnd } from "~/components/shared/format";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 
@@ -32,7 +32,13 @@ const WORDS = new Set([
   "cks_lapsed",
   "manual_adjust",
   "rating",
+  "no_delivery",
+  "fraud",
 ]);
+
+/** U2 · R39: việc nghiêm trọng (cờ đỏ) — gỡ chỉ quản lý. */
+export const isSevere = (type: string): boolean =>
+  (SEVERE_EVENT_TYPES as readonly string[]).includes(type);
 
 /** `said`: một dòng sổ đọc thành câu (dòng quá hạn nói ai chưa trả/giao, đợt mấy, bao nhiêu, hạn ngày nào). */
 export function said(e: PartnerEvent, t: T, answered = false): string {
@@ -95,9 +101,14 @@ export function recentOf(all: readonly PartnerEvent[], contractId?: string): Par
     .slice(0, 15);
 }
 
-/** Có nút Huỷ: người ghi được, chưa huỷ, không phải dòng hệ thống / chấm điểm / CKS. */
-export const voidable = (e: PartnerEvent, write: boolean) =>
-  write && !e.voided && e.source !== "system" && e.type !== "rating" && !e.type.startsWith("cks_");
+/** Có nút Huỷ: người ghi được, chưa huỷ, không phải dòng hệ thống / chấm điểm / CKS; cờ đỏ chỉ quản lý (`admin`). */
+export const voidable = (e: PartnerEvent, write: boolean, admin = false) =>
+  write &&
+  !e.voided &&
+  e.source !== "system" &&
+  e.type !== "rating" &&
+  !e.type.startsWith("cks_") &&
+  (!isSevere(e.type) || admin);
 
 /** "trễ N ngày" khi ghi trả: số ngày từ hạn tới ngày trả (mgmt làm tròn theo 86 400 000 ms). */
 export const lateBy = (at: string, due: string): number =>
@@ -110,6 +121,7 @@ export const LEDGER_ERRORS = [
   "EVENT_SYSTEM",
   "EVENT_TYPE",
   "ADJUST_INVALID",
+  "SEVERE_REASON",
   "PACK_FORBIDDEN",
   "NOT_FOUND",
 ];

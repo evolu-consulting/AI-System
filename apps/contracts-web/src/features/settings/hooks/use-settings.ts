@@ -1,19 +1,11 @@
-// V2-L · nạp 3 nguồn cài đặt thành một trạng thái (đã lưu + mặc định) và áp nhận diện công ty lên cả app.
-import type { BizPreviewIn, RepPreviewIn } from "@ai/contracts";
+// V2-L · nạp 2 nguồn cài đặt (công ty · điểm kinh doanh) thành một trạng thái (đã lưu + mặc định) và áp nhận diện công ty lên cả app.
+import type { BizPreviewIn } from "@ai/contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { applyTheme, ownTheme } from "~/features/shell/lib/theme";
-import {
-  fetchBizConfig,
-  fetchCompany,
-  fetchRepConfig,
-  previewBiz,
-  previewRep,
-  saveChanged,
-  settingsKeys,
-} from "../api";
+import { fetchBizConfig, fetchCompany, previewBiz, saveChanged, settingsKeys } from "../api";
 import { applyBrandDom, type Brand, brandStore, effectiveTheme, useBrand } from "../lib/brand";
 import { buildState, type Changed } from "../lib/data";
 import type { SettingsData } from "../lib/types";
@@ -59,17 +51,12 @@ export function useBrandSync(): void {
   }, []);
 }
 
-/** Chỉ khi hộp thoại mở: đủ 3 nguồn mới có trạng thái. */
+/** Chỉ khi hộp thoại mở: đủ 2 nguồn mới có trạng thái. */
 export function useSettingsState(enabled: boolean) {
   const o = { enabled, retry: false, staleTime: 0, refetchOnWindowFocus: false } as const;
   const co = useQuery({
     queryKey: settingsKeys.company,
     queryFn: ({ signal }) => fetchCompany(signal),
-    ...o,
-  });
-  const rep = useQuery({
-    queryKey: settingsKeys.rep,
-    queryFn: ({ signal }) => fetchRepConfig(signal),
     ...o,
   });
   const biz = useQuery({
@@ -78,30 +65,18 @@ export function useSettingsState(enabled: boolean) {
     ...o,
   });
   const state = useMemo(
-    () => (co.data && rep.data && biz.data ? buildState(co.data, rep.data, biz.data) : null),
-    [co.data, rep.data, biz.data],
+    () => (co.data && biz.data ? buildState(co.data, biz.data) : null),
+    [co.data, biz.data],
   );
   return {
     state,
-    loading: co.isPending || rep.isPending || biz.isPending,
-    error: co.isError || rep.isError || biz.isError,
+    loading: co.isPending || biz.isPending,
+    error: co.isError || biz.isError,
     retry: () => {
       void co.refetch();
-      void rep.refetch();
       void biz.refetch();
     },
   };
-}
-
-/** Thử tính điểm uy tín (không ghi); `key` = JSON của bản nháp đã debounce, null = tắt. */
-export function useRepPreview(key: string | null) {
-  return useQuery({
-    queryKey: ["settings", "rep-preview", key],
-    queryFn: ({ signal }) => previewRep(JSON.parse(key as string) as RepPreviewIn, signal),
-    enabled: key !== null,
-    staleTime: 30_000,
-    retry: false,
-  });
 }
 
 /** Thử tính điểm kinh doanh trên mẫu nhập tay. */

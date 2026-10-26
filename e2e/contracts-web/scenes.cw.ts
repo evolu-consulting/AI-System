@@ -462,7 +462,7 @@ async function installHub(page: Page, signedIn: boolean) {
     json(r, 200, overviewAsHub(new URL(r.request().url()).searchParams.get("period") ?? "month")),
   );
   await page.route(at("business/products"), (r) => json(r, 200, bizListAsHub()));
-  await page.route(at("reputation/partners"), (r) =>
+  await page.route(at("partners"), (r) =>
     json(r, 200, partnersForOverview(new URL(r.request().url()).searchParams)),
   );
   await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));

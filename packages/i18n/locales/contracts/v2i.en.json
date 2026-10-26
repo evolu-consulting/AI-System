@@ -2,15 +2,15 @@
   "contracts": {
     "pv2": {
       "title": "Partners",
-      "lead": "Reputation scores are computed from logged jobs and contract deadlines, separately for each role.",
+      "lead": "Reputation score is computed from recorded events (on time, late, reminders, complaints…), separately for customers and suppliers.",
       "search": "Search by partner name…",
       "roleFilter": "Filter by role",
       "filter": {
         "all": "All roles",
         "supplier": "Supplier",
         "customer": "Customer",
-        "commission_payer": "Commission payer",
-        "watch": "Needs attention"
+        "watch": "Needs attention",
+        "flag": "Red flag"
       },
       "roleWord": {
         "supplier": "Supplier",
@@ -22,9 +22,17 @@
         "customer": "Customer",
         "commission_payer": "Commission"
       },
-      "badge": { "new": "NEW" },
-      "newTip": "New — not enough jobs to score yet",
-      "level": { "good": "Good", "fair": "Fair", "watch": "Needs attention", "new": "New" },
+      "badge": {
+        "new": "NEW · provisional"
+      },
+      "newTip": "New — not enough jobs yet; this is a provisional score",
+      "level": {
+        "good": "Good",
+        "fair": "Fair",
+        "watch": "Watch",
+        "new": "New · provisional",
+        "none": "Not enough data"
+      },
       "contractsN": "{{n}} contracts",
       "close": "Close",
       "log": "+ Log a job",
@@ -33,7 +41,7 @@
       "emptyBody": "Partners appear automatically once a contract exists.",
       "noMatchTitle": "No matching partners",
       "noMatchBody": "Try another keyword or clear the filter.",
-      "foot": "Scores are recomputed each time the page opens, using the rules of each product group and role.",
+      "foot": "Scores are recomputed each time the page opens, per role (customer, supplier). Red flags are separate from the score.",
       "howLink": "⚙ How scores work",
       "mst": "Tax ID",
       "noRole": "This partner has no role yet.",
@@ -41,13 +49,11 @@
       "tab": {
         "overview": "Overview",
         "contracts": "Contracts · {{n}}",
-        "review": "Reviews & notes"
+        "review": "Log & notes"
       },
       "roleSeg": "Choose role",
       "noScoreYet": "No jobs or contracts to score this role yet.",
-      "jobsTotal": "{{n}} scored jobs",
       "scoreTitle": "Reputation score",
-      "group": { "service": "Services", "goods": "Goods", "referral": "Referral" },
       "web": {
         "button": "Search the internet",
         "searching": "Searching…",
@@ -67,42 +73,8 @@
       "table": {
         "criterion": "Criterion",
         "score": "Score",
-        "weight": "Weight",
-        "gives": "Contribution",
         "data": "Data",
-        "noData": "none yet",
-        "dataScore": "Data score",
-        "stars": "star reviews",
-        "jobsN": "{{n}} jobs"
-      },
-      "jobs": {
-        "title": "Jobs behind “{{name}}”",
-        "manual": "This criterion comes from star reviews (Reviews & notes tab).",
-        "none": "No jobs in the scoring window yet.",
-        "contract": "Contract",
-        "late": "{{n}} days late · fault: {{fault}}",
-        "onTime": "On time",
-        "manualJob": "Logged by hand",
-        "fault": { "partner": "partner", "ours": "ours", "unknown": "unknown" },
-        "hTip": "Age factor: older jobs count less",
-        "h": "×{{h}}"
-      },
-      "steps": {
-        "title": "Steps to the final score",
-        "group": "{{group}} group:",
-        "starsOnly": "no data yet, using star score {{stars}} → {{score}}",
-        "dataOnly": "data score {{data}} (sum of Contribution), no star review yet → {{score}}",
-        "blend": "data score {{data}}; avg {{stars}} ★ = {{starsScore}}; blend {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
-        "role": "Role score = average of the groups weighted by transaction value: {{parts}} → {{score}}",
-        "foot": "Final role score: {{score}}"
-      },
-      "chart": {
-        "title": "Reputation trend",
-        "empty": "Not enough data to draw the chart.",
-        "aria": "Reputation score over {{n}} months",
-        "good": "GOOD",
-        "fair": "FAIR",
-        "range": { "3": "3 months", "6": "6 months", "12": "1 year" }
+        "noData": "none yet"
       },
       "contracts": {
         "title": "Related contracts",
@@ -123,27 +95,13 @@
           "period": "Valid",
           "stage": "Stage"
         },
-        "deal": { "buy": "Buy", "sell": "Sell", "referral": "Referral" },
+        "deal": {
+          "buy": "Buy",
+          "sell": "Sell",
+          "referral": "Referral"
+        },
         "overdue": "Overdue",
         "view": "View"
-      },
-      "review": {
-        "title": "Manual review",
-        "share": "{{s}}% of the score",
-        "noCriteria": "No criteria to review yet.",
-        "history": "Review history",
-        "historyNone": "No reviews yet.",
-        "starsN": "{{n}} stars",
-        "starsFor": "Review {{name}}",
-        "noData": "no data yet",
-        "data": "data {{n}}",
-        "reasonRequired": "Differs from the data by more than {{gap}} points — a reason is required",
-        "reasonOptional": "Reason (optional)",
-        "reasonFor": "Reason for the {{name}} review",
-        "save": "Save review",
-        "saving": "Saving…",
-        "saved": "Review saved",
-        "failed": "Could not save the review. Check the reason and try again."
       },
       "notes": {
         "title": "Notes",
@@ -157,6 +115,32 @@
         "deleteTitle": "Delete this note?",
         "deleteBody": "The note will be removed from this partner.",
         "deleteAria": "Delete note"
+      },
+      "noDataTip": "Not enough data",
+      "provisionalNote": "NEW · provisional: score {{n}} so far, not enough jobs for an official score.",
+      "noData": "– · Not enough data",
+      "eventsN": "{{n}} scored events",
+      "adjust": "manual {{n}}",
+      "howPre": "Score is computed from recorded events using this role's scoring rules.",
+      "flag": {
+        "tag": "Red flag",
+        "type": {
+          "no_delivery": "No delivery",
+          "fraud": "Fraud"
+        },
+        "title": "Red flags",
+        "lead": "Severe events do not change the score but always show a warning. Only managers can clear a flag.",
+        "none": "This partner has no red flags.",
+        "voidedMark": " · cleared",
+        "clear": "Clear flag",
+        "report": "Report a red flag",
+        "kind": "Flag type",
+        "role": "Role",
+        "reason": "Reason",
+        "reasonPh": "Reason for the flag (required)",
+        "send": "Report",
+        "saving": "Saving…",
+        "reported": "Red flag reported"
       }
     }
   }

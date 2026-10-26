@@ -1,8 +1,6 @@
 // GAP-D2 · luật thuần: liên hệ nhiều người (#24), MST/lỗi công ty (#23), cảnh báo bất thường + đường xu hướng (#27).
 import { describe, expect, it } from "bun:test";
-import type { RepDetailItem } from "@ai/contracts";
 import { PartnerContactsPutSchema } from "@ai/contracts";
-import { alertsOf, sparkOf } from "./alerts";
 import { companyErrKey, normalizeTax } from "./company";
 import { blankRow, draftsOf, rowsOf, wireOf } from "./contacts";
 
@@ -59,67 +57,5 @@ describe("thêm công ty", () => {
     expect(companyErrKey("COMPANY_INVALID")).toBe("invalid");
     expect(companyErrKey("TAX_UNAVAILABLE")).toBe("unavailable");
     expect(companyErrKey("X")).toBe("failed");
-  });
-});
-
-const ms = (at: string, late: number, fault: string | null = "partner"): RepDetailItem => ({
-  source: "milestone",
-  id: at + late,
-  group: "goods",
-  criterion: "ontime",
-  at,
-  score: 50,
-  h: 1,
-  label: "m",
-  late_days: late,
-  fault,
-  contract_id: null,
-});
-
-describe("cảnh báo bất thường", () => {
-  const TODAY = "2026-10-20";
-  it("điểm tụt ≥ 10 so với tháng trước ⇒ score_drop; tụt ít ⇒ không", () => {
-    const s = (a: number, b: number) => [
-      { period: "2026-09", score: a },
-      { period: "2026-10", score: b },
-    ];
-    expect(alertsOf(s(90, 78), [], TODAY)).toEqual([
-      { kind: "score_drop", from: 90, to: 78, period: "2026-10" },
-    ]);
-    expect(alertsOf(s(90, 82), [], TODAY)).toEqual([]);
-  });
-  it("tỷ lệ trễ 30 ngày gần nhất tăng đột ngột so với 90 ngày trước ⇒ late_spike", () => {
-    const base = [
-      ms("2026-08-01", 0),
-      ms("2026-08-10", 0),
-      ms("2026-08-20", 0),
-      ms("2026-08-25", 2),
-    ];
-    const recent = [
-      ms("2026-10-05", 4),
-      ms("2026-10-10", 6),
-      ms("2026-10-15", 1),
-      ms("2026-10-16", 0),
-    ];
-    expect(alertsOf([], [...base, ...recent], TODAY)).toEqual([
-      { kind: "late_spike", recent: 75, base: 25, n: 4 },
-    ]);
-  });
-  it("ít mốc, lỗi của mình hoặc việc ghi tay không tính ⇒ không cảnh báo", () => {
-    expect(alertsOf([], [ms("2026-10-05", 4), ms("2026-10-10", 6)], TODAY)).toEqual([]);
-    const ours = [1, 2, 3].map((d) => ms(`2026-10-0${d}`, 5, "ours"));
-    expect(alertsOf([], ours, TODAY)).toEqual([]);
-  });
-});
-
-describe("đường xu hướng", () => {
-  it("cần ≥ 2 điểm; điểm cuối là điểm mới nhất", () => {
-    expect(sparkOf([{ period: "2026-10", score: 80 }])).toBeNull();
-    const s = sparkOf([
-      { period: "2026-09", score: 70 },
-      { period: "2026-10", score: 90 },
-    ]);
-    expect(s?.path.split(" ")).toHaveLength(2);
-    expect(s?.last.x).toBeCloseTo(157);
   });
 });

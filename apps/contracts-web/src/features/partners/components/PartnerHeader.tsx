@@ -1,14 +1,16 @@
 // V2-I · DT-01 · DT-07 · đầu trang chi tiết đối tác (mockup NITI): tên, vai, MST · điện thoại · liên hệ, điểm từng vai và nút
 // "Tìm trên internet" (chỉ chạy khi bấm; kết quả hiện ngay dưới đầu trang, mỗi dòng lưu được vào ghi chú).
-import type { PartnerProfile, RepPartnerRow, RepRole } from "@ai/contracts";
+import type { PartnerProfile, PartnerRole, PartnerRow } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
 import { searchErrorKey, useContacts, useInternetSearch } from "../hooks/use-partner-rep";
+import { flagsOf } from "../lib/partner-score";
 import { ContactEditor } from "./ContactEditor";
 import { InternetResult } from "./InternetSearch";
+import { RedFlagTag } from "./RedFlagTag";
 import { ScorePill } from "./RepBadge";
 
 const DASH = "—";
@@ -23,8 +25,8 @@ export function PartnerHeader({
 }: {
   party: string;
   name: string;
-  roles: readonly RepRole[];
-  rows: readonly RepPartnerRow[];
+  roles: readonly PartnerRole[];
+  rows: readonly PartnerRow[];
   profile: PartnerProfile | undefined;
   write: boolean;
 }) {
@@ -48,9 +50,16 @@ export function PartnerHeader({
             {roles.map((r) => {
               const x = rows.find((y) => y.role === r);
               return (
-                <ScorePill key={r} score={x?.score ?? null} level={x?.level ?? "new"} role={r} />
+                <ScorePill
+                  key={r}
+                  row={
+                    x ?? { score: null, band: null, provisional: false, provisional_score: null }
+                  }
+                  role={r}
+                />
               );
             })}
+            <RedFlagTag flags={flagsOf(rows)} />
             <span>
               {L("mst")} {profile?.tax_id ?? DASH} · {profile?.phone ?? DASH} ·{" "}
               {profile?.contact ?? DASH}

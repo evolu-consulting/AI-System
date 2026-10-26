@@ -1,6 +1,6 @@
 // nav-v2 · Tổng quan: luật thuần — nhóm trạng thái, số ngày còn lại, đối tác CHÚ Ý.
 import { describe, expect, test } from "bun:test";
-import type { BizProductRow, ContractFacets, RepPartnerRow, TodoItem } from "@ai/contracts";
+import type { BizProductRow, ContractFacets, TodoItem } from "@ai/contracts";
 import {
   barHeights,
   changeView,
@@ -10,19 +10,15 @@ import {
   groupCounts,
   inPeriod,
   moneyShort,
-  partnersToReview,
   pctOf,
   suggestColumns,
   todoCanDone,
   todoTarget,
   todoWhen,
-  topPartners,
   WORK_PREVIEW,
 } from "./overview";
 
 const facets = (status: { v: string; n: number }[]) => ({ status }) as unknown as ContractFacets;
-const partner = (name: string, score: number | null, level: RepPartnerRow["level"]) =>
-  ({ name, score, level, party: name, role: "customer", jobs: 5, groups: [] }) as RepPartnerRow;
 
 describe("groupCounts", () => {
   test("gộp 9 trạng thái vào 3 nhóm và cộng tổng", () => {
@@ -66,19 +62,6 @@ describe("counterparty", () => {
     expect(counterparty({ direction: "purchase", seller: "A", buyer: "B" })).toBe("A");
     expect(counterparty({ direction: null, seller: null, buyer: "B" })).toBe("B");
     expect(counterparty({ direction: null, seller: null, buyer: null })).toBe("");
-  });
-});
-
-describe("partnersToReview", () => {
-  test("chỉ mức CHÚ Ý, điểm thấp trước", () => {
-    const rows = [
-      partner("Beta", 63, "watch"),
-      partner("Alpha", 80, "good"),
-      partner("Gamma", 55, "watch"),
-      partner("Delta", null, "new"),
-    ];
-    expect(partnersToReview(rows).map((p) => p.name)).toEqual(["Gamma", "Beta"]);
-    expect(partnersToReview(undefined)).toEqual([]);
   });
 });
 
@@ -174,19 +157,5 @@ describe("V2-N · định dạng & suy diễn (cột gợi ý, đối tác)", ()
       p("d", 10, "stop"),
     ]);
     expect(cols.map((c) => c.rows.map((r) => r.id))).toEqual([["b", "a"], [], ["d"]]);
-  });
-  test("topPartners: theo vai, nhiều việc trước, tối đa 3", () => {
-    const r = (name: string, role: RepPartnerRow["role"], jobs: number) =>
-      ({ name, party: name, role, jobs, score: 50, level: "fair", groups: [] }) as RepPartnerRow;
-    const rows = [
-      r("a", "supplier", 2),
-      r("b", "supplier", 9),
-      r("c", "supplier", 5),
-      r("d", "supplier", 7),
-      r("e", "customer", 3),
-      r("f", "supplier", 0),
-    ];
-    expect(topPartners(rows, "supplier").map((p) => p.name)).toEqual(["b", "d", "c"]);
-    expect(topPartners(rows, "customer").map((p) => p.name)).toEqual(["e"]);
   });
 });

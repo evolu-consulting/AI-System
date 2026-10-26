@@ -9,22 +9,24 @@ import { Dialog, DialogContent } from "~/components/ui/dialog";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
-import { anyChanged, changedParts, firstIssue, repChanged, same } from "../lib/data";
-import type { CellTab, RepSel, SectionId, SettingsData } from "../lib/types";
+import { anyChanged, changedParts, firstIssue, same } from "../lib/data";
+import type { SectionId, SettingsData } from "../lib/types";
 import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
 import { FlowPane } from "./FlowPane";
-import { RepPane } from "./RepPane";
+import { ScoringPane } from "./ScoringPane";
 import { ScoutPane } from "./ScoutPane";
 import { SettingsHeader } from "./SettingsHeader";
 
+/** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
+const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
 const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
 
-/** Mục có chấm cam "đã khác mặc định"? Dò giá lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
+/** Mục có chấm cam "đã khác mặc định"? Điểm uy tín / dò giá / quy trình lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
-  if (!vsDef || k === "scout" || k === "flow") return false;
-  return k === "co" ? vsDef.company : k === "biz" ? vsDef.biz : repChanged(vsDef);
+  if (!vsDef || k === "scout" || k === "flow" || k === "rep") return false;
+  return k === "co" ? vsDef.company : vsDef.biz;
 }
 
 function LoadState({
@@ -59,8 +61,6 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const { state, loading, error, retry } = useSettingsState(open);
   const [draft, setDraft] = useState<SettingsData | null>(null);
   const [sec, setSec] = useState<SectionId>("co");
-  const [sel, setSel] = useState<RepSel>("service:supplier");
-  const [tab, setTab] = useState<CellTab>("crit");
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
 
@@ -143,7 +143,8 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
 
             {sec === "scout" && <ScoutPane />}
             {sec === "flow" && <FlowPane owner={owner} />}
-            {sec !== "scout" && sec !== "flow" && draft && saved && defaults && (
+            {sec === "rep" && <ScoringPane owner={owner} />}
+            {isDraftSection(sec) && draft && saved && defaults && (
               <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
                 {sec === "co" && (
                   <>
@@ -154,18 +155,6 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
                       set={(company) => setDraft({ ...draft, company })}
                     />
                   </>
-                )}
-                {sec === "rep" && (
-                  <RepPane
-                    data={draft}
-                    saved={saved}
-                    defaults={defaults}
-                    sel={sel}
-                    tab={tab}
-                    onSel={setSel}
-                    onTab={setTab}
-                    set={setDraft}
-                  />
                 )}
                 {sec === "biz" && (
                   <BizPane

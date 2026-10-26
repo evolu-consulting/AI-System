@@ -7,8 +7,6 @@ import type {
   ContractStatus,
   OverviewGroupRow,
   OverviewPeriod,
-  RepPartnerRow,
-  RepRole,
   TodoItem,
 } from "@ai/contracts";
 
@@ -58,20 +56,11 @@ export function daysLeft(end: string | null | undefined, today: string | null | 
 export const counterparty = (r: Pick<ContractListRow, "direction" | "seller" | "buyer">): string =>
   (r.direction === "sale" ? (r.buyer ?? r.seller) : (r.seller ?? r.buyer)) ?? "";
 
-/** Đối tác cần xem lại = mức CHÚ Ý, điểm thấp lên trước (cùng điểm: theo tên). */
-export function partnersToReview(rows: readonly RepPartnerRow[] | undefined): RepPartnerRow[] {
-  return (rows ?? [])
-    .filter((p) => p.level === "watch")
-    .sort((a, b) => (a.score ?? 0) - (b.score ?? 0) || a.name.localeCompare(b.name, "vi"));
-}
-
 // ---------- V2-N · Tổng quan nối dữ liệu V2-K / V2-E / V2-J1 (thuần) ----------
 
 export const PERIODS: readonly OverviewPeriod[] = ["month", "quarter", "12m"];
 /** Số tháng của kỳ (cột đậm của biểu đồ nhóm = N tháng cuối). */
 export const PERIOD_MONTHS: Record<OverviewPeriod, number> = { month: 1, quarter: 3, "12m": 12 };
-/** Top đối tác theo vai: nhà cung cấp / khách hàng, mỗi vai tối đa 3. */
-export const TOP_MAX = 3;
 
 /** Tiền gọn kiểu mockup: ≥ 1 tỷ "1,25 tỷ", ≥ 1 triệu "236,0 tr", còn lại số đồng. */
 export function moneyShort(v: number): string {
@@ -159,18 +148,4 @@ export function suggestColumns(rows: readonly BizProductRow[] | undefined) {
       .filter((p) => (c.items as readonly string[]).includes(p.business.suggestion as string))
       .sort((a, b) => (b.business.score ?? 0) - (a.business.score ?? 0)),
   }));
-}
-
-/** Top đối tác theo vai (nhà cung cấp / khách) — nhiều việc đã ghi nhất, cùng số việc: điểm cao hơn trước. */
-export function topPartners(
-  rows: readonly RepPartnerRow[] | undefined,
-  role: RepRole,
-): RepPartnerRow[] {
-  return (rows ?? [])
-    .filter((p) => p.role === role && p.jobs > 0)
-    .sort(
-      (a, b) =>
-        b.jobs - a.jobs || (b.score ?? 0) - (a.score ?? 0) || a.name.localeCompare(b.name, "vi"),
-    )
-    .slice(0, TOP_MAX);
 }

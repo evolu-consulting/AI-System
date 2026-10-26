@@ -126,14 +126,17 @@
         "label": "Lọc theo ngày",
         "field": "Cột ngày",
         "window": "Khoảng thời gian",
-        "fields": { "end_date": "Hiệu lực đến", "action_deadline": "Hạn chót xử lý" },
+        "fields": {
+          "end_date": "Hiệu lực đến",
+          "action_deadline": "Hạn chót xử lý"
+        },
         "any": "Mọi ngày",
         "range": "Khoảng tuỳ chọn…",
         "due": {
-          "overdue": "Quá hạn",
           "30": "Trong 30 ngày tới",
           "60": "Trong 60 ngày tới",
-          "90": "Trong 90 ngày tới"
+          "90": "Trong 90 ngày tới",
+          "overdue": "Quá hạn"
         },
         "from": "Từ ngày",
         "to": "Đến ngày"
@@ -309,8 +312,8 @@
       },
       "partners": {
         "title": "Đối tác cần xem lại",
-        "lead": "mức CHÚ Ý",
-        "none": "Không có đối tác ở mức CHÚ Ý.",
+        "lead": "có cờ đỏ hoặc mức CHÚ Ý",
+        "none": "Không có đối tác nào có cờ đỏ hoặc ở mức CHÚ Ý.",
         "all": "Xem tất cả đối tác"
       }
     },

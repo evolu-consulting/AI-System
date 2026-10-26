@@ -2,25 +2,37 @@
   "contracts": {
     "pv2": {
       "title": "Đối tác",
-      "lead": "Điểm uy tín tự tính từ việc đã ghi và hạn trong hợp đồng, tách riêng theo từng vai trò.",
+      "lead": "Điểm uy tín tự tính từ sự kiện đã ghi (đúng hạn, trễ, nhắc, khiếu nại…), tách riêng khách hàng và nhà cung cấp.",
       "search": "Tìm theo tên đối tác…",
       "roleFilter": "Lọc theo vai trò",
       "filter": {
         "all": "Mọi vai trò",
         "supplier": "Nhà cung cấp",
         "customer": "Khách hàng",
-        "commission_payer": "Bên trả hoa hồng",
-        "watch": "Cần chú ý"
+        "watch": "Cần chú ý",
+        "flag": "Có cờ đỏ"
       },
       "roleWord": {
         "supplier": "Nhà cung cấp",
         "customer": "Khách hàng",
         "commission_payer": "Bên trả hoa hồng"
       },
-      "roleShort": { "supplier": "NCC", "customer": "Khách", "commission_payer": "Hoa hồng" },
-      "badge": { "new": "MỚI" },
-      "newTip": "Mới — chưa đủ số việc tối thiểu để chấm",
-      "level": { "good": "Tốt", "fair": "Khá", "watch": "Cần chú ý", "new": "Mới" },
+      "roleShort": {
+        "supplier": "NCC",
+        "customer": "Khách",
+        "commission_payer": "Hoa hồng"
+      },
+      "badge": {
+        "new": "MỚI · tạm tính"
+      },
+      "newTip": "Mới — chưa đủ số việc tối thiểu, đây là điểm tạm tính",
+      "level": {
+        "good": "Tốt",
+        "fair": "Khá",
+        "watch": "Cần chú ý",
+        "new": "Mới · tạm tính",
+        "none": "Chưa đủ dữ liệu"
+      },
       "contractsN": "{{n}} hợp đồng",
       "close": "Đóng",
       "log": "+ Ghi việc",
@@ -29,7 +41,7 @@
       "emptyBody": "Đối tác tự xuất hiện khi có hợp đồng.",
       "noMatchTitle": "Không có đối tác khớp",
       "noMatchBody": "Thử từ khoá khác hoặc bỏ bộ lọc.",
-      "foot": "Điểm tính lại mỗi lần mở trang, theo cách tính của từng nhóm sản phẩm và vai trò.",
+      "foot": "Điểm tính lại mỗi lần mở trang theo cách tính của từng vai (khách hàng, nhà cung cấp). Cờ đỏ tách khỏi điểm.",
       "howLink": "⚙ Cách tính điểm",
       "mst": "MST",
       "noRole": "Đối tác này chưa có vai trò nào.",
@@ -37,13 +49,11 @@
       "tab": {
         "overview": "Tổng quan",
         "contracts": "Hợp đồng · {{n}}",
-        "review": "Đánh giá & ghi chú"
+        "review": "Sổ việc & ghi chú"
       },
       "roleSeg": "Chọn vai trò",
       "noScoreYet": "Chưa có việc hoặc hợp đồng nào để chấm điểm vai trò này.",
-      "jobsTotal": "{{n}} việc có tính điểm",
       "scoreTitle": "Điểm uy tín",
-      "group": { "service": "Dịch vụ", "goods": "Hàng hoá", "referral": "Giới thiệu" },
       "web": {
         "button": "Tìm trên internet",
         "searching": "Đang tìm…",
@@ -63,42 +73,8 @@
       "table": {
         "criterion": "Tiêu chí",
         "score": "Điểm",
-        "weight": "Trọng số",
-        "gives": "Góp",
         "data": "Dữ liệu",
-        "noData": "chưa có",
-        "dataScore": "Điểm dữ liệu",
-        "stars": "đánh giá sao",
-        "jobsN": "{{n}} việc"
-      },
-      "jobs": {
-        "title": "Việc góp điểm “{{name}}”",
-        "manual": "Tiêu chí này lấy từ đánh giá sao (tab Đánh giá & ghi chú).",
-        "none": "Chưa có việc nào trong khoảng tính điểm.",
-        "contract": "Hợp đồng",
-        "late": "Trễ {{n}} ngày · lỗi {{fault}}",
-        "onTime": "Đúng hạn",
-        "manualJob": "Ghi tay",
-        "fault": { "partner": "đối tác", "ours": "của mình", "unknown": "chưa rõ" },
-        "hTip": "Hệ số độ cũ: việc càng cũ càng ít tính",
-        "h": "×{{h}}"
-      },
-      "steps": {
-        "title": "Các bước tới điểm cuối",
-        "group": "Nhóm {{group}}:",
-        "starsOnly": "chưa có dữ liệu, lấy điểm sao {{stars}} → {{score}}",
-        "dataOnly": "điểm dữ liệu {{data}} (tổng cột Góp), chưa có đánh giá sao → {{score}}",
-        "blend": "điểm dữ liệu {{data}}; sao TB {{stars}} ★ = {{starsScore}}; trộn {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
-        "role": "Điểm vai = bình quân các nhóm theo giá trị giao dịch: {{parts}} → {{score}}",
-        "foot": "Điểm cuối của vai: {{score}}"
-      },
-      "chart": {
-        "title": "Diễn biến điểm uy tín",
-        "empty": "Chưa đủ dữ liệu để vẽ biểu đồ.",
-        "aria": "Điểm uy tín {{n}} tháng",
-        "good": "TỐT",
-        "fair": "KHÁ",
-        "range": { "3": "3 tháng", "6": "6 tháng", "12": "1 năm" }
+        "noData": "chưa có"
       },
       "contracts": {
         "title": "Hợp đồng liên quan",
@@ -119,27 +95,13 @@
           "period": "Hiệu lực",
           "stage": "Giai đoạn"
         },
-        "deal": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
+        "deal": {
+          "buy": "Mua",
+          "sell": "Bán",
+          "referral": "Giới thiệu"
+        },
         "overdue": "Quá hạn",
         "view": "Xem"
-      },
-      "review": {
-        "title": "Đánh giá thủ công",
-        "share": "chiếm {{s}}% điểm",
-        "noCriteria": "Chưa có tiêu chí để đánh giá.",
-        "history": "Lịch sử đánh giá",
-        "historyNone": "Chưa có đánh giá nào.",
-        "starsN": "{{n}} sao",
-        "starsFor": "Đánh giá {{name}}",
-        "noData": "chưa có dữ liệu",
-        "data": "dữ liệu {{n}}",
-        "reasonRequired": "Lệch hơn {{gap}} điểm so với dữ liệu — cần ghi lý do",
-        "reasonOptional": "Lý do (không bắt buộc)",
-        "reasonFor": "Lý do đánh giá {{name}}",
-        "save": "Lưu đánh giá",
-        "saving": "Đang lưu…",
-        "saved": "Đã lưu đánh giá",
-        "failed": "Không lưu được đánh giá. Kiểm tra lý do rồi thử lại."
       },
       "notes": {
         "title": "Ghi chú",
@@ -153,6 +115,32 @@
         "deleteTitle": "Xoá ghi chú?",
         "deleteBody": "Ghi chú sẽ bị xoá khỏi đối tác này.",
         "deleteAria": "Xoá ghi chú"
+      },
+      "noDataTip": "Chưa đủ dữ liệu",
+      "provisionalNote": "MỚI · tạm tính: điểm tạm {{n}}, chưa đủ số việc tối thiểu để chấm điểm chính thức.",
+      "noData": "– · Chưa đủ dữ liệu",
+      "eventsN": "{{n}} việc tính điểm",
+      "adjust": "chỉnh tay {{n}}",
+      "howPre": "Điểm tính từ sự kiện đã ghi theo cách tính của vai này.",
+      "flag": {
+        "tag": "Cờ đỏ",
+        "type": {
+          "no_delivery": "Không giao",
+          "fraud": "Gian lận"
+        },
+        "title": "Cờ đỏ",
+        "lead": "Việc nghiêm trọng không đổi điểm nhưng luôn hiện cảnh báo. Chỉ quản lý được gỡ cờ.",
+        "none": "Đối tác chưa có cờ đỏ.",
+        "voidedMark": " · đã gỡ",
+        "clear": "Gỡ cờ",
+        "report": "Báo cờ đỏ",
+        "kind": "Loại cờ",
+        "role": "Vai trò",
+        "reason": "Lý do",
+        "reasonPh": "Lý do báo cờ (bắt buộc)",
+        "send": "Báo cờ",
+        "saving": "Đang ghi…",
+        "reported": "Đã báo cờ đỏ"
       }
     }
   }

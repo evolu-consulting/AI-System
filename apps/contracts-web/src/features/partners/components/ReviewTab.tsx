@@ -1,28 +1,17 @@
-// V2-I · DT-04/05 · tab "Đánh giá & ghi chú": đánh giá sao từng tiêu chí (theo vai) + lịch sử đánh giá + ghi chú về đối tác.
-import type { RepRole } from "@ai/contracts";
+// U3 · tab "Ghi chú & sổ việc": ghi chú về đối tác + sổ việc đã ghi (HD7 `PartnerLog`, gồm cờ đỏ). Điểm không còn ô sao/chấm tay (R41).
+import type { PartnerRole } from "@ai/contracts";
+import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { NotesPanel } from "./NotesPanel";
-import { RatingsPanel } from "./RatingsPanel";
-import { RoleSeg } from "./RoleSeg";
 
-export function ReviewTab({
-  party,
-  role,
-  roles,
-}: {
-  party: string;
-  role: RepRole | null;
-  roles: readonly RepRole[];
-}) {
+export function ReviewTab({ party, roles }: { party: string; roles: readonly PartnerRole[] }) {
+  const role = roles[0];
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="space-y-2">
-        {role && (
-          <div className="flex justify-end">
-            <RoleSeg party={party} roles={roles} role={role} tab="review" />
-          </div>
-        )}
-        {role && <RatingsPanel party={party} role={role} />}
-      </div>
+      {role && (
+        <section className="rounded-xl border border-rule bg-panel p-5">
+          <PartnerLog party={party} role={role} />
+        </section>
+      )}
       <NotesPanel party={party} />
     </div>
   );

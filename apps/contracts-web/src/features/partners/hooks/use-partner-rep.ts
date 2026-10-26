@@ -1,5 +1,5 @@
 // V2-I · truy vấn/ghi uy tín đối tác (chi tiết · cấu hình · đánh giá · lịch sử · hợp đồng · ghi chú · liên hệ · tìm internet).
-import type { PartnerWebLine, RepRatingIn, RepRole } from "@ai/contracts";
+import type { PartnerWebLine } from "@ai/contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,48 +9,17 @@ import {
   fetchContacts,
   fetchNotes,
   fetchPartnerContracts,
-  fetchRepConfig,
-  fetchRepDetail,
-  fetchRepHistory,
   fetchRepMine,
-  fetchRepPartners,
-  fetchRepRatings,
   type PartnerContactDraft,
   partnerKeys,
-  rateRep,
   saveContacts,
   saveProfile,
   searchInternet,
 } from "../api";
-import { noteOfLine, type Range } from "../lib/partner-v2";
+import { noteOfLine } from "../lib/partner-v2";
 
-export const useRepPartners = () =>
-  useQuery({ queryKey: partnerKeys.repList, queryFn: ({ signal }) => fetchRepPartners(signal) });
-
-export const useRepDetail = (party: string, role: RepRole) =>
-  useQuery({
-    queryKey: partnerKeys.detail(party, role),
-    queryFn: ({ signal }) => fetchRepDetail(party, role, signal),
-    retry: false,
-  });
-
-/** 404 = đối tác chưa có việc/HĐ nào để chấm (nhãn MỚI) — không phải lỗi. */
+/** 404 = đối tác chưa có việc/HĐ nào ở vai này để chấm — không phải lỗi. */
 export const isNotFound = (e: unknown): boolean => e instanceof ApiError && e.status === 404;
-
-export const useRepConfig = () =>
-  useQuery({ queryKey: partnerKeys.repConfig, queryFn: ({ signal }) => fetchRepConfig(signal) });
-
-export const useRepRatings = (party: string, role: RepRole) =>
-  useQuery({
-    queryKey: partnerKeys.repRatings(party, role),
-    queryFn: ({ signal }) => fetchRepRatings(party, role, signal),
-  });
-
-export const useRepHistory = (party: string, role: RepRole, range: Range) =>
-  useQuery({
-    queryKey: partnerKeys.repHistory(party, role, range),
-    queryFn: ({ signal }) => fetchRepHistory(party, role, range, signal),
-  });
 
 export const useRepMine = (days: number) =>
   useQuery({
@@ -69,19 +38,6 @@ export const useNotes = (party: string) =>
     queryKey: partnerKeys.notes(party),
     queryFn: ({ signal }) => fetchNotes(party, signal),
   });
-
-/** Đánh giá 1 tiêu chí: `onDone` chạy ngay khi ghi xong, `onSaved` sau khi làm mới dữ liệu. */
-export function useRateRep(h: { onDone: () => void; onSaved: () => void }) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (b: RepRatingIn) => rateRep(b),
-    onSuccess: async () => {
-      h.onDone();
-      await qc.invalidateQueries({ queryKey: ["partners"] });
-      h.onSaved();
-    },
-  });
-}
 
 export function useAddNote(party: string, h: { onDone: () => void; onSaved: () => void }) {
   const qc = useQueryClient();

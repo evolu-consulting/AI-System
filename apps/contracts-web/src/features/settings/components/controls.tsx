@@ -124,8 +124,10 @@ export function Num({
   suffix,
   step = 1,
   className,
+  label,
 }: {
   id?: string;
+  label?: string;
   value: number;
   onChange: (v: number) => void;
   min: number;
@@ -138,6 +140,7 @@ export function Num({
     <span className={cn("relative inline-flex items-center", className)}>
       <input
         id={id}
+        aria-label={label}
         type="number"
         inputMode="decimal"
         min={min}

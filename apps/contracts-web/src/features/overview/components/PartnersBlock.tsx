@@ -1,17 +1,18 @@
-// nav-v2 · khối "Đối tác cần xem lại" của Tổng quan: đối tác ở mức CHÚ Ý (điểm uy tín, API `GET /partners`). Bản đầu chỉ có mức CHÚ Ý —
+// nav-v2 · U3 · khối "Đối tác cần xem lại" của Tổng quan: đối tác có cờ đỏ (R39) hoặc mức CHÚ Ý (engine HD8, `GET /partners`). Cờ đỏ lên đầu.
 // "giảm từ 3 điểm trong 3 tháng" của mockup cần lịch sử điểm chưa có ở API, nên chưa làm.
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
+import { RedFlagTag } from "~/features/partners/components/RedFlagTag";
 import { RepBadge } from "~/features/partners/components/RepBadge";
-import { useRepPartners } from "~/features/partners/hooks/use-partner-rep";
-import { partnersToReview } from "../lib/overview";
+import { usePartnerRows } from "~/features/partners/hooks/use-partner-scores";
+import { flagsOf, partnersToReview } from "~/features/partners/lib/partner-score";
 import { BlockHead } from "./BlockHead";
 
 export function PartnersBlock() {
   const { t } = useTranslation();
-  const q = useRepPartners();
+  const q = usePartnerRows();
   const rows = partnersToReview(q.data);
   return (
     <Panel>
@@ -45,11 +46,12 @@ export function PartnersBlock() {
                 >
                   {p.name}
                 </Link>
-                <span className="block truncate text-[12.5px] text-dim">
+                <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-dim">
                   {t(`contracts.pv2.roleWord.${p.role}`)}
+                  {p.red_flag && <RedFlagTag flags={flagsOf([p])} />}
                 </span>
               </span>
-              <RepBadge score={p.score} level={p.level} />
+              <RepBadge row={p} />
             </li>
           ))}
         </ul>
