@@ -160,6 +160,9 @@ export function defaultFlowFromSettings(
 
 // ── Dịch ⇒ def engine ────────────────────────────────────────────────────────────────────────────────────────────────
 const ARGS = { contract_id: { from: "input", key: "contract-id" } } as const;
+/** S3a · tham số `from_step` (= bước người dùng của stage) cho `contracts-route`: tool không biết stage đang chạy. */
+export const FROM_STEP_ARG = "from_step";
+const routeArgs = (from: number) => ({ ...ARGS, [FROM_STEP_ARG]: { from: "const", value: from } });
 const NEXT_FIELDS = [{ key: NEXT_FIELD, type: "number" as const, required: true }];
 
 /** Luật rẽ của stage ở bước người dùng `from`: `next eq E(j) ⇒ goto E(j)` cho mọi đích xa hơn bước kế (bước kế = mặc định). */
@@ -220,6 +223,7 @@ function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySe
     });
   }
   const group = groupOf(s.department_group_id, groupIds);
+  // TODO S3b: `head_only: s.head_only` khi S1b đã thêm trường vào schema stage engine (strict — chưa có thì lưu def bị từ chối).
   const after = {
     kind: "review",
     group_id: group,
@@ -238,7 +242,7 @@ function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySe
     name: s.name,
     step,
     tool,
-    args: ARGS,
+    args: routeArgs(i),
     fields: NEXT_FIELDS,
     after,
     timeoutS: 60,
@@ -258,7 +262,7 @@ export function compileDef(flow: { steps: readonly FlowStep[] }, groupIds: Reado
     name: "Chọn bước kế",
     step: 1,
     tool: FLOW_TOOL_KEYS.route,
-    args: ARGS,
+    args: routeArgs(0),
     fields: NEXT_FIELDS,
     after: { kind: "auto", branch: branchFrom(n, 0) },
     timeoutS: 60,

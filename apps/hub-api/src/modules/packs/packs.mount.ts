@@ -153,6 +153,7 @@ function mountContracts<E extends Env>(
   fb: PackFb | null,
 ): void {
   const cx = contractsCtx(d, view, fb);
+  for (const t of cx.ai.tools) d.packTools?.register(t); // contract-flow S3a · tool engine duyệt HĐ (cờ bật)
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
@@ -188,6 +189,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
         : {}),
       ...(d.redis ? { redis: d.redis } : {}),
       quota,
+      ...(d.packRuns ? { engine: d.packRuns } : {}), // contract-flow S3a · duyệt trên engine (cờ CONTRACTS_APPROVAL_ENGINE)
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
       timeZoneOf, // V2-A Â· ngÃ y lá»‹ch tenant cho má»‘c máº·c Ä‘á»‹nh

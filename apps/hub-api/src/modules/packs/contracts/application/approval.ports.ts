@@ -13,7 +13,14 @@ export type ContractRunRef = {
 };
 /** HĐ + lượt duyệt hiện tại + giá trị + ngưỡng tenant (MỘT câu; `lock` ⇒ FOR UPDATE HĐ). */
 export type ApprovalState = ContractRunRef & {
-  approval: { id: string; status: string; startedBy: string; feedback: string | null } | null;
+  /** `mode` (contract-flow S3a): `engine` ⇒ lượt chạy trên engine — máy cũ không quyết (S3b mở API act cho engine). */
+  approval: {
+    id: string;
+    status: string;
+    startedBy: string;
+    feedback: string | null;
+    mode?: string;
+  } | null;
   value: unknown;
   threshold: number;
 };

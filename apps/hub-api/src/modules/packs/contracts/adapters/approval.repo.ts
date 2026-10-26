@@ -46,6 +46,7 @@ type StateRow = {
   a_status: string | null;
   a_by: string | null;
   a_fb: string | null;
+  a_mode: string | null;
   v: unknown;
   threshold: string | number | null;
 };
@@ -56,7 +57,13 @@ const toState = (r: StateRow): ApprovalState => ({
   version: Number(r.version),
   approval:
     r.run_id && r.a_status
-      ? { id: r.run_id, status: r.a_status, startedBy: r.a_by as string, feedback: r.a_fb }
+      ? {
+          id: r.run_id,
+          status: r.a_status,
+          startedBy: r.a_by as string,
+          feedback: r.a_fb,
+          mode: r.a_mode ?? "machine",
+        }
       : null,
   value: json(r.v),
   threshold: Number(r.threshold ?? APPROVAL_DEFAULTS.threshold),
@@ -67,7 +74,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
     const lock = o.lock ? sql`for update of c` : sql``;
     const [r] = await tx.execute<StateRow>(sql`
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
-        a.status as a_status, a.started_by as a_by, a.feedback as a_fb, c.fields -> 'total_value' -> 'value' as v,
+        a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c
       left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id

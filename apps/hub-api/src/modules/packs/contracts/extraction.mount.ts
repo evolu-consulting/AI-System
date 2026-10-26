@@ -14,11 +14,14 @@ import { safeErrorFields } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import type { PackUow } from "../kit/application/ports";
 import type { ActionQuota } from "./adapters/action-quota";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRepo } from "./adapters/approval.repo";
 import { approvalRoutes } from "./adapters/approval.routes";
+import { approvalEngineRepo } from "./adapters/approval-engine.repo";
+import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRepo } from "./adapters/approval-flow.repo";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import { sweepRepo } from "./adapters/approval-sweep.repo";
@@ -38,6 +41,7 @@ import { reviewRoutes } from "./adapters/review.routes";
 import {
   type ApprovalGroups,
   actApproval,
+  type EngineStart,
   type ExtractJob,
   type ExtractJobs,
   getApproval,
@@ -46,6 +50,8 @@ import {
   saveApprovalSettings,
   startApproval,
 } from "./application/approval.usecase";
+import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
+import { engineFlowDefSync, startEngineApproval } from "./application/approval-engine.usecase";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
 import {
   type ApprovalFlowTxRepos,
@@ -93,6 +99,8 @@ export type ContractsAiDeps = {
     sweepOnce: () => ReturnType<typeof sweepApprovalsOnce>;
     reclaimOnce: () => Promise<number>;
   }) => void;
+  /** contract-flow S3a · ghi đè cờ `CONTRACTS_APPROVAL_ENGINE=on` (test). */
+  approvalEngine?: boolean;
 };
 
 export type ContractsAi = {
@@ -101,6 +109,8 @@ export type ContractsAi = {
   approval: Hono<PackGuardVars>;
   /** Review S1 · seam cho PATCH trường (HD1): giai đoạn lượt duyệt. */
   guard: PatchApprovalGuard;
+  /** contract-flow S3a · tool engine (`contracts-route`/`contracts-finalize`) khi cờ engine bật; tắt ⇒ rỗng. */
+  tools: PackToolDef[];
 };
 export type ContractsFlowDeps = {
   ai: AiClient;
@@ -109,6 +119,8 @@ export type ContractsFlowDeps = {
   groups: ApprovalGroups & Pick<FlowGroups, "existingIds">;
   /** contract-flow S3a · đồng bộ def engine khi lưu mẫu luồng; vắng ⇒ bỏ qua. */
   flowDefSync?: FlowDefSync;
+  /** contract-flow S3a · cầu engine quy trình (`packRuns`, cổng gắn lúc engine mount); vắng ⇒ không chạy duyệt trên engine. */
+  engine?: ApprovalEngineBridge;
   redis?: Redis;
   quota: ActionQuota;
   tenants: SweepDeps["tenants"];
@@ -197,13 +209,19 @@ const packUow = (db: Db) =>
     extraction: extractionRepo(tx, tid),
     approval: approvalRepo(tx, tid),
     approvalFlow: approvalFlowRepo(tx, tid),
+    approvalEngine: approvalEngineRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
     review: reviewRepo(tx, tid),
     links: productLinksRepo(tx, tid),
   }));
 
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
-function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<typeof packUow>) {
+function extractionRunner(
+  d: AiDeps,
+  flow: ContractsFlowDeps,
+  pack: ReturnType<typeof packUow>,
+  engine: EngineStart | undefined,
+) {
   const uow = packTenantOnly(pack);
   // Tra lại MST hẹn giờ (cổng Cục Thuế) — hàng trong tiến trình, chỉ cho việc `tax`.
   let taxQueue: ExtractionQueue | null = null;
@@ -232,6 +250,7 @@ function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<t
     uow,
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
+    ...(engine ? { engine } : {}),
   });
   return { handle, schedule };
 }
@@ -244,14 +263,21 @@ export function contractsAiModule(
 ): ContractsAi {
   const pack = packUow(db);
   const uow = packTenantOnly(pack);
-  const { handle, schedule } = extractionRunner(d, flow, pack);
+  const eng = approvalEngine(d, flow, uow);
+  const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
     concurrency: d.concurrency ?? 2,
     ready,
   });
   // Review B #27/#28: quota + kiểm AI sẵn sàng của "Trích lại" chạy SAU `decide`, chỉ khi thật sự trích lại.
-  const ad = { uow, groups: flow.groups, jobs, redo: { ready, quota: flow.quota } };
+  const ad = {
+    uow,
+    groups: flow.groups,
+    jobs,
+    redo: { ready, quota: flow.quota },
+    ...(eng ? { engine: eng.start } : {}),
+  };
   const start = startApproval(ad);
   const tz = flow.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ);
   const manual = createManual({
@@ -275,14 +301,49 @@ export function contractsAiModule(
     quota: flow.quota,
   });
   routes.route("/", reviewModule(view, uow, tz));
+  const approval = approvalModule(view, { ad, uow, flow, engineSync: eng?.defSync });
+  return { starter, routes, approval, guard: patchGuard(ad), tools: eng?.tools ?? [] };
+}
+
+/** Thẻ duyệt + cài đặt + mẫu luồng (S2; đồng bộ def engine khi cờ bật — S3a). */
+function approvalModule(
+  view: PackAccessView,
+  o: {
+    ad: Parameters<typeof getApproval>[0];
+    uow: PackUow<ApprovalFlowTxRepos>;
+    flow: ContractsFlowDeps;
+    engineSync: FlowDefSync | undefined;
+  },
+) {
+  const { ad, flow } = o;
   const approval = approvalRoutes(view, {
     get: getApproval(ad),
     act: actApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
   });
-  approval.route("/", flowTemplateRoutes(view, uow, flow));
-  return { starter, routes, approval, guard: patchGuard(ad) };
+  const defSync = flow.flowDefSync ?? o.engineSync;
+  const f = { ...flow, ...(defSync ? { flowDefSync: defSync } : {}) };
+  approval.route("/", flowTemplateRoutes(view, o.uow, f));
+  return approval;
+}
+
+/** contract-flow S3a · duyệt trên engine: cờ `CONTRACTS_APPROVAL_ENGINE=on` (hoặc seam test) + cầu engine có + chế độ flow (không
+ *  seam HD2). Tắt ⇒ null (máy 2 bước cũ y nguyên). Cổng engine đọc lười từ cầu mỗi lời gọi (engine gắn sau). */
+function approvalEngine(d: AiDeps, flow: ContractsFlowDeps, uow: ApprovalEngineUow) {
+  const on = d.approvalEngine ?? process.env.CONTRACTS_APPROVAL_ENGINE === "on";
+  if (!on || !flow.engine || d.transport !== undefined) return null;
+  const ed = {
+    bridge: flow.engine,
+    uow,
+    groups: flow.groups,
+    warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
+  };
+  return {
+    start: startEngineApproval(ed),
+    defSync: engineFlowDefSync(ed),
+    tools: approvalEngineTools(ed),
+  };
 }
 
 /** contract-flow S2 · `GET|PUT /approval-flow` (mẫu luồng duyệt; đồng bộ def engine qua `flowDefSync` khi có — S3a). */

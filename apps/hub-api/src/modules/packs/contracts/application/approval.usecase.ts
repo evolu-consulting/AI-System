@@ -38,7 +38,10 @@ export type ApprovalDeps = {
   /** "Trích lại" (review B #27/#28): AI sẵn sàng + trần thao tác tenant — chỉ áp khi phán quyết thật sự trích lại (sau
    *  kiểm người duyệt/bước/nguồn). `quota` ném 429/503 ⇒ tx ROLLBACK. Vắng ⇒ không kiểm. */
   redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> };
+  /** contract-flow S3a · cờ engine bật: lượt vừa vào `level1` (đã COMMIT) ⇒ mở run engine. Vắng ⇒ máy 2 bước cũ. Không ném. */
+  engine?: EngineStart;
 };
+export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
 export type ContractApproval = ReturnType<typeof approvalView>;
 /** `products` (products-confirm): gắn/tạo SP cho dòng HĐ — áp TRONG tx chỉ khi bước này làm HĐ thành "đã xác nhận". */
 export type ApprovalAction = {
@@ -63,6 +66,7 @@ export function startApproval(d: ApprovalDeps) {
     const out = await d.uow.tenant(who, (r) => r.approval.open(id, aid, who.userId, initial));
     if (out === "ok" && initial === "extracting")
       await d.jobs.enqueue({ ...who, contractId: id, approvalId: aid });
+    if (out === "ok" && initial === "level1" && d.engine) await d.engine(who, id);
     return out;
   };
 }
@@ -179,7 +183,8 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
   return async (r: ApprovalTxRepos, actor: ApprovalActor): Promise<TxOutcome> => {
     const st = await r.approval.state(id, { lock: true });
     if (!st) return "not_found";
-    if (!st.approval) return { error: "APPROVAL_NOT_OPEN" };
+    // contract-flow S3a: lượt chạy trên engine không quyết bằng máy cũ (S3b: act qua engine).
+    if (!st.approval || st.approval.mode === "engine") return { error: "APPROVAL_NOT_OPEN" };
     const dec = decide({
       status: st.approval.status,
       startedBy: st.approval.startedBy,

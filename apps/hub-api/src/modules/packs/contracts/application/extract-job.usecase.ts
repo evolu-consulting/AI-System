@@ -4,7 +4,7 @@
 // M3c (review B #7): trước lượt đọc đánh dấu lượt "đã bắt đầu" (hết xếp hàng) ⇒ STALE tính từ lúc chạy; lỗi đánh dấu chỉ log.
 
 import type { ApprovalUow } from "./approval.ports";
-import type { ExtractJob } from "./approval.usecase";
+import type { EngineStart, ExtractJob } from "./approval.usecase";
 import type { ExtractionOutcome, RunExtraction } from "./run-extraction.usecase";
 
 type Log = { warn(msg: string, f?: Record<string, unknown>): void };
@@ -13,6 +13,8 @@ export type ExtractJobDeps = {
   uow: ApprovalUow;
   log?: Log;
   onSettled?: (contractId: string, outcome: ExtractionOutcome | "error") => void;
+  /** contract-flow S3a · lượt vào `level1` ⇒ mở run engine (cờ bật); không ném. */
+  engine?: EngineStart;
 };
 
 const errName = (e: unknown) => (e instanceof Error ? e.name : "unknown");
@@ -37,7 +39,10 @@ export function handleExtractJob(d: ExtractJobDeps) {
     try {
       if (aid) await markStarted(d, job, aid);
       out = await d.run(who, job.contractId);
-      if (aid) await d.uow.tenant(who, (r) => r.approval.afterExtraction(job.contractId, aid));
+      const st = aid
+        ? await d.uow.tenant(who, (r) => r.approval.afterExtraction(job.contractId, aid))
+        : null;
+      if (st === "level1" && d.engine) await d.engine(who, job.contractId); // contract-flow S3a
     } catch (e) {
       d.log?.warn("contract-extraction-failed", {
         contract_id: job.contractId,
