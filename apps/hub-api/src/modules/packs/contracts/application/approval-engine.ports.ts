@@ -88,6 +88,8 @@ export type EngineStartRow = {
   approvalStatus: string | null;
   mode: string | null;
   engineRunId: string | null;
+  /** Người bắt đầu lượt (run mở luôn mang người này — không phải người kích job/Đọc lại). */
+  startedBy: string | null;
 };
 /** cf-dify · dữ liệu HĐ gửi workflow Dify (`openRun` điền input run). */
 export type EngineDifyFacts = {
@@ -103,11 +105,12 @@ export type ApprovalEngineRepo = {
   byRun(runId: string, o: { lock: boolean }): Promise<EngineRunRow | null>;
   /** HĐ của tenant + lượt đang gắn; không thấy HĐ ⇒ null. */
   startState(contractId: string): Promise<EngineStartRow | null>;
-  /** Gắn run: lượt `level1` chế độ máy chưa có run ⇒ `engine` + `engine_run_id` + `flow_version` + `flow_steps`. */
+  /** Gắn run (khoá HĐ FOR UPDATE trước): lượt `level1` chế độ máy chưa có run ⇒ `engine` + `engine_run_id` + `flow_version` +
+   *  `flow_steps`; `replaces` ⇒ mở lại: lượt `engine` đang giữ run `replaces` (đã kết thúc bất thường) đổi sang run mới. */
   attach(
     contractId: string,
     approvalId: string,
-    a: { runId: string; version: number; steps: readonly FlowStep[] },
+    a: { runId: string; version: number; steps: readonly FlowStep[]; replaces?: string | null },
   ): Promise<boolean>;
   /** `needs_review → active` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của run engine). */
   finalize(
@@ -117,7 +120,11 @@ export type ApprovalEngineRepo = {
     by: string | null,
   ): Promise<boolean>;
   /** S3b · lưu gắn SP chờ (duyệt cuối) cho lượt engine còn `level1`; áp trong tx `finalize` của tool. */
-  setPendingLinks(approvalId: string, runId: string, links: readonly unknown[]): Promise<boolean>;
+  setPendingLinks(
+    approvalId: string,
+    runId: string,
+    links: readonly unknown[] | null,
+  ): Promise<boolean>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

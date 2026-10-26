@@ -25,7 +25,7 @@ function run(o: { n: number; outs: Record<string, object>; healed?: SweepCounts[
       items = i;
       return {
         rejected: i.filter((x) => x.kind === "reject").length,
-        released: i.filter((x) => x.kind === "release").length,
+        stalled: i.filter((x) => x.kind === "stalled").length,
       };
     },
   };
@@ -61,11 +61,17 @@ describe("sweep · reconcile run engine", () => {
     const x = run({ n: 100, outs }); // r3.. không có trong kết quả ⇒ mất ⇒ release
     const r = await x.go();
     expect(x.calls).toEqual(["sweep", "engineRuns:100", "outcomesOf:100", "reconcile"]);
-    expect([r.rejected, r.released]).toEqual([1, 98]);
-    expect(x.items()[0]).toEqual({ approvalId: "a0", kind: "reject", feedback: "sai" });
+    expect([r.rejected, r.stalled]).toEqual([1, 98]);
+    expect(x.items()[0]).toEqual({
+      approvalId: "a0",
+      runId: "r0",
+      kind: "reject",
+      feedback: "sai",
+    });
     expect(x.items()[1]).toEqual({
       approvalId: "a1",
-      kind: "release",
+      runId: "r1",
+      kind: "stalled",
       reason: "ENGINE_RUN_FAILED",
     });
     expect(x.items().some((i) => i.approvalId === "a2")).toBe(false);

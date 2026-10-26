@@ -133,7 +133,7 @@ function toLevel2Q(tx: Tx, tid: string): ApprovalRepo["toLevel2"] {
       id: string;
     }>(sql`update contracts.approvals set status = 'level2',
         level1_by = ${actor}::uuid, level1_at = now(), updated_at = now()
-      where id = ${aid}::uuid and tenant_id = ${tid}::uuid and status = 'level1' returning id`);
+      where id = ${aid}::uuid and tenant_id = ${tid}::uuid and status = 'level1' and mode = 'machine' returning id`);
     return rows.length > 0;
   };
 }
@@ -148,6 +148,8 @@ function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
           version = c.version + 1, updated_at = now()
         where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = ${runId}::uuid
           and c.status = 'needs_review'
+          and not exists (select 1 from contracts.approvals m where m.id = ${runId}::uuid and m.tenant_id = ${tid}::uuid
+            and m.mode = 'engine')
           and ((${level2Passed}::boolean and exists (select 1 from contracts.approvals y
               where y.id = ${runId}::uuid and y.tenant_id = ${tid}::uuid and y.status = 'level2'
                 and y.started_by <> ${by}::uuid))
@@ -157,7 +159,8 @@ function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
         returning c.id),
       a as (update contracts.approvals x set status = 'done', decided_by = ${by}::uuid, decided_at = now(),
           level1_by = coalesce(x.level1_by, ${by}::uuid), level1_at = coalesce(x.level1_at, now()), updated_at = now()
-        from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ('level1', 'level2')),
+        from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.mode = 'machine'
+          and x.status in ('level1', 'level2')),
       e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${tid}::uuid, u.id, 'approved', ${by}::uuid, jsonb_build_object('run_id', ${runId}::text) from u)
       select id from u`);
@@ -231,6 +234,16 @@ function statusQ(tx: Tx, tid: string): ApprovalRepo["statusOf"] {
   };
 }
 
+function engineRunQ(tx: Tx, tid: string): ApprovalRepo["engineRunOf"] {
+  return async (runId) => {
+    const [r] = await tx.execute<{
+      run: string | null;
+    }>(sql`select engine_run_id as run from contracts.approvals
+      where id = ${runId}::uuid and tenant_id = ${tid}::uuid and mode = 'engine'`);
+    return r?.run ?? null;
+  };
+}
+
 export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
   const s = settingsRepo(tx, tenantId);
   return {
@@ -244,6 +257,7 @@ export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
     afterExtraction: afterQ(tx, tenantId),
     markStarted: startedQ(tx, tenantId),
     statusOf: statusQ(tx, tenantId),
+    engineRunOf: engineRunQ(tx, tenantId),
     settings: s.settings,
     saveSettings: s.saveSettings,
   };

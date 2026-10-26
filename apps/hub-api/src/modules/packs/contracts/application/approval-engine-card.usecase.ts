@@ -24,7 +24,7 @@ type Repos = {
     markExtracting(id: string, runId: string): Promise<boolean>;
   };
   approvalEngine: {
-    setPendingLinks(aid: string, runId: string, links: readonly unknown[]): Promise<boolean>;
+    setPendingLinks(aid: string, runId: string, links: readonly unknown[] | null): Promise<boolean>;
   };
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
 };
@@ -141,19 +141,25 @@ export function engineAct(d: EngineCardDeps) {
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;
 
-/** Đạt duyệt cuối kèm SP ⇒ lưu `pending_links` TRONG tx gói TRƯỚC khi act (tool finalize áp cùng tx khoá). */
+/** Đạt duyệt cuối ⇒ LUÔN ghi đè `pending_links` (kể cả null) TRONG tx gói TRƯỚC khi act (tool finalize áp cùng tx khoá) — không để
+ *  SP sót của lần Đạt trước; act thất bại / not_open ⇒ xoá lại (không để SP chờ của người không duyệt được). */
 async function pass(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx, p: Plan) {
   const a = c.st.approval as NonNullable<ApprovalState["approval"]>;
-  const links = c.b.products;
-  if (p.kind === "pass" && p.finalizes && links?.length) {
-    const saved = await d.uow.tenant(c.who, (r) =>
-      r.approvalEngine.setPendingLinks(a.id, c.runId, links),
-    );
-    if (!saved) return { error: "APPROVAL_NOT_OPEN" as const };
-  }
-  return decide(port, c, { task_id: p.taskId }, { result: "pass" });
+  const save = (links: readonly unknown[] | null) =>
+    d.uow.tenant(c.who, (r) => r.approvalEngine.setPendingLinks(a.id, c.runId, links));
+  if (p.kind !== "pass" || !p.finalizes)
+    return decide(port, c, { task_id: p.taskId }, { result: "pass" });
+  const links = c.b.products?.length ? c.b.products : null;
+  if (!(await save(links))) return { error: "APPROVAL_NOT_OPEN" as const };
+  const out = await decide(port, c, { task_id: p.taskId }, { result: "pass" }).catch(
+    async (e: unknown) => {
+      await save(null).catch(() => false);
+      throw e;
+    },
+  );
+  if (out !== "ok") await save(null).catch(() => false);
+  return out;
 }
-
 async function exec(
   d: EngineCardDeps,
   port: ApprovalEnginePort,
@@ -166,11 +172,22 @@ async function exec(
   const fb = c.b.feedback ? { feedback: c.b.feedback } : {};
   return decide(port, c, { task_id: p.taskId }, { result: "fail", ...fb, back_to_step: 0 });
 }
+/** fix-review · chỉ số bước người dùng ĐANG MỞ của run (null: không bước mở / run không thấy) — luật sửa trường: chỉ s0 mới sửa được. */
+export function openStepIdx(d: EngineCardDeps) {
+  return async (who: PackWho, runId: string): Promise<number | null> => {
+    const sv = await d.port()?.stepsView(callerOf(who), runId);
+    const open = sv?.steps.find((s) => s.status === "open" && /^s\d+$/.test(s.key));
+    return open ? Number(open.key.slice(1)) : null;
+  };
+}
+
 export type EngineCard = {
   view: ReturnType<typeof engineView>;
   act: ReturnType<typeof engineAct>;
+  openStepIdx: ReturnType<typeof openStepIdx>;
 };
 export const engineCard = (d: EngineCardDeps): EngineCard => ({
   view: engineView(d),
   act: engineAct(d),
+  openStepIdx: openStepIdx(d),
 });

@@ -106,17 +106,19 @@ export const engineDefVersion = (
 ): number => (f.isDefault ? 1 + Math.max(0, Math.trunc(rev)) : ENGINE_STORED_BASE + f.version);
 
 const TERMINAL_RUN: ReadonlySet<string> = new Set(["done", "failed", "cancelled", "expired"]);
+export const isTerminalRun = (status: string): boolean => TERMINAL_RUN.has(status);
 export type RunOutcomeLite = { status: string; rejected: boolean; feedback: string | null };
 export type Reconcile =
   | { kind: "none" }
   | { kind: "reject"; feedback: string | null }
-  | { kind: "release"; reason: string };
+  | { kind: "stalled"; reason: string };
 
 /** Lượt `engine` còn `level1` mà run đã kết thúc ⇒ đồng bộ HĐ: Từ chối ⇒ HĐ rejected; còn lại (huỷ ngoài luồng, lỗi, mất, hết hạn,
- *  xong mà lượt chưa ghi) ⇒ trả lượt về máy cũ (`release`, ghi lý do) để người dùng xử lý được. Run còn chạy ⇒ không làm gì. */
+ *  xong mà lượt chưa ghi) ⇒ `stalled`: GIỮ chế độ engine (không bao giờ về máy cũ — máy cũ lách head_only/luồng), ghi lý do, chờ
+ *  owner/admin "Mở lại quy trình". Run còn chạy ⇒ không làm gì. */
 export function reconcileOf(o: RunOutcomeLite | undefined): Reconcile {
-  if (!o) return { kind: "release", reason: "ENGINE_RUN_MISSING" };
+  if (!o) return { kind: "stalled", reason: "ENGINE_RUN_MISSING" };
   if (!TERMINAL_RUN.has(o.status)) return { kind: "none" };
   if (o.rejected) return { kind: "reject", feedback: o.feedback };
-  return { kind: "release", reason: `ENGINE_RUN_${o.status.toUpperCase()}` };
+  return { kind: "stalled", reason: `ENGINE_RUN_${o.status.toUpperCase()}` };
 }

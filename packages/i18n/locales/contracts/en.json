@@ -496,13 +496,15 @@
           "notReviewer": "You are not in the reviewing group of this step, so you cannot approve it.",
           "headOnly": "Only the department head can approve this step, and you are not the head of the reviewing group."
         },
+        "reopen": "Reopen approval",
+        "reopened": "The approval has been reopened.",
         "release": {
-          "MISSING": "The automatic approval run was lost; the contract fell back to the two-step approval. You can continue.",
-          "FAILED": "The automatic approval run failed; the contract fell back to the two-step approval. You can continue.",
-          "CANCELLED": "The automatic approval run was cancelled; the contract fell back to the two-step approval. You can continue.",
-          "EXPIRED": "The automatic approval run expired; the contract fell back to the two-step approval. You can continue.",
-          "COMPLETED": "The automatic approval run ended without being recorded; the contract fell back to the two-step approval.",
-          "OTHER": "The automatic approval run stopped unexpectedly; the contract fell back to the two-step approval. You can continue."
+          "MISSING": "The automatic approval run was lost; the contract is waiting for an admin to reopen the approval.",
+          "FAILED": "The automatic approval run failed; the contract is waiting for an admin to reopen the approval.",
+          "CANCELLED": "The automatic approval run was cancelled; the contract is waiting for an admin to reopen the approval.",
+          "EXPIRED": "The automatic approval run expired; the contract is waiting for an admin to reopen the approval.",
+          "COMPLETED": "The automatic approval run ended without being recorded; the contract is waiting for an admin to reopen the approval.",
+          "OTHER": "The automatic approval run stopped unexpectedly; the contract is waiting for an admin to reopen the approval."
         }
       },
       "waitLevel1": "Waiting for the person in charge to check and confirm.",

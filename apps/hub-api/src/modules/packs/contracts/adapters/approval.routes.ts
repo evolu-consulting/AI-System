@@ -23,6 +23,7 @@ import type {
   actApproval,
   getApproval,
   readApprovalSettings,
+  reopenApproval,
   saveApprovalSettings,
 } from "../application/approval.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
@@ -32,6 +33,7 @@ const KEY = "contracts";
 export type ApprovalRoutesDeps = {
   get: ReturnType<typeof getApproval>;
   act: ReturnType<typeof actApproval>;
+  reopen: ReturnType<typeof reopenApproval>;
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
 };
@@ -78,6 +80,16 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
         "Extraction agent unavailable",
       );
     if ("error" in out) throw approvalError(out.error);
+    return c.json(out);
+  });
+  // fix-review · Mở lại quy trình (run kết thúc bất thường): owner/admin của gói; KHÔNG về máy cũ.
+  r.post("/contracts/:id/approval/reopen", admin, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const out = await d.reopen(who(c.get("user")), id);
+    if (out === "not_found") throw appError("NOT_FOUND");
+    if (out === "not_stalled") throw approvalError("APPROVAL_NOT_OPEN");
+    if (out === "failed")
+      throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
     return c.json(out);
   });
   r.get("/approval-settings", read, async (c) =>

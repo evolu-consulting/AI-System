@@ -53,8 +53,9 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
       a_status: string | null;
       mode: string | null;
       engine_run_id: string | null;
+      started_by: string | null;
     }>(sql`
-      select a.id as approval_id, a.status as a_status, a.mode, a.engine_run_id
+      select a.id as approval_id, a.status as a_status, a.mode, a.engine_run_id, a.started_by
       from contracts.contracts c
       left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
       where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
@@ -64,6 +65,7 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
       approvalStatus: r.a_status,
       mode: r.mode,
       engineRunId: r.engine_run_id,
+      startedBy: r.started_by,
     };
     return out;
   };
@@ -71,13 +73,19 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
 
 function attachQ(tx: Tx, tid: string): ApprovalEngineRepo["attach"] {
   return async (id, aid, a) => {
-    const rows = await tx.execute<{ id: string }>(sql`update contracts.approvals x
+    // Khoá hàng HĐ TRƯỚC khi ghi (cùng thứ tự với `decideInTx` của máy cũ: HĐ rồi lượt) ⇒ không đua máy cũ vs gắn run.
+    const rep = a.replaces ?? null;
+    const rows = await tx.execute<{ id: string }>(sql`with c as (
+        select id from contracts.contracts
+        where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${aid}::uuid for update)
+      update contracts.approvals x
       set mode = 'engine', engine_run_id = ${a.runId}::uuid, flow_version = ${a.version}::int,
-        flow_steps = ${JSON.stringify(a.steps)}::jsonb, updated_at = now()
-      from contracts.contracts c
+        flow_steps = ${JSON.stringify(a.steps)}::jsonb, feedback = null, updated_at = now()
+      from c
       where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${id}::uuid
-        and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null
-        and c.id = x.contract_id and c.tenant_id = ${tid}::uuid and c.run_id = x.id
+        and x.status = 'level1' and c.id = x.contract_id
+        and ((${rep}::uuid is null and x.mode = 'machine' and x.engine_run_id is null)
+          or (${rep}::uuid is not null and x.mode = 'engine' and x.engine_run_id = ${rep}::uuid))
       returning x.id`);
     return rows.length > 0;
   };
@@ -108,7 +116,7 @@ function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
 function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
   return async (aid, runId, links) => {
     const rows = await tx.execute<{ id: string }>(sql`update contracts.approvals set
-        pending_links = ${JSON.stringify(links)}::jsonb, updated_at = now()
+        pending_links = ${links === null ? null : JSON.stringify(links)}::jsonb, updated_at = now()
       where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
         and mode = 'engine' and status = 'level1' returning id`);
     return rows.length > 0;

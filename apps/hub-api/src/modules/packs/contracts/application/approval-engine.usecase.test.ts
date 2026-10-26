@@ -14,6 +14,7 @@ import type {
 import {
   type ApprovalEngineDeps,
   finalizeRun,
+  reopenEngineApproval,
   routeStep,
   startEngineApproval,
 } from "./approval-engine.usecase";
@@ -39,9 +40,17 @@ type World = {
   links: ProductLinksOutcome;
   calls: string[];
   groups: string[];
+  starters: string[];
+  replaces: (string | null | undefined)[];
 };
 const world = (o: Partial<World> = {}): World => ({
-  st: { approvalId: AID, approvalStatus: "level1", mode: "machine", engineRunId: null },
+  st: {
+    approvalId: AID,
+    approvalStatus: "level1",
+    mode: "machine",
+    engineRunId: null,
+    startedBy: U,
+  },
   flow: null,
   run: null,
   attachOk: true,
@@ -49,6 +58,8 @@ const world = (o: Partial<World> = {}): World => ({
   links: { kind: "ok", created: 1, linked: 1, matched: 1 },
   calls: [],
   groups: [G1, G2],
+  starters: [],
+  replaces: [],
   ...o,
 });
 
@@ -61,6 +72,7 @@ function txRepos(w: World): ApprovalEngineTxRepos {
     startState: async () => w.st,
     attach: async (_id, _aid, a) => {
       w.calls.push(`attach:${a.runId}:v${a.version}:${a.steps.length}`);
+      w.replaces.push(a.replaces);
       return w.attachOk;
     },
     finalize: async (_id, _aid, _run, by) => {
@@ -96,7 +108,8 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
       w.calls.push(`ensureDef:${key}:v${v}`);
       return "created";
     },
-    start: async (_u, req) => {
+    start: async (u, req) => {
+      w.starters.push(u.userId);
       w.calls.push(`start:${req.ref.pack}:${req.ref.record_id}`);
       return { runId: RUN, kick: async () => void w.calls.push("kick") };
     },
@@ -192,7 +205,13 @@ describe("startEngineApproval", () => {
     expect(await startEngineApproval(deps(w))(who, C)).toBe("machine");
     expect(w.calls).toEqual(["warn:contract-engine-flow-invalid"]);
     const w2 = world({
-      st: { approvalId: AID, approvalStatus: "level1", mode: "engine", engineRunId: RUN },
+      st: {
+        approvalId: AID,
+        approvalStatus: "level1",
+        mode: "engine",
+        engineRunId: RUN,
+        startedBy: U,
+      },
     });
     expect(await startEngineApproval(deps(w2))(who, C)).toBe("skipped");
     expect(w2.calls).toEqual([]);
@@ -202,6 +221,47 @@ describe("startEngineApproval", () => {
     const d = deps(w, { start: async () => Promise.reject(new Error("boom")) });
     expect(await startEngineApproval(d)(who, C)).toBe("machine");
     expect(w.calls.at(-1)).toBe("warn:contract-engine-start-failed");
+  });
+});
+
+const OTHER = "00000000-0000-4000-8000-0000000000b9";
+describe("fix-review · run mở dưới người bắt đầu lượt", () => {
+  it("job/Đọc lại do người khác kích ⇒ run + def vẫn mang started_by (exclude_starter còn nghĩa)", async () => {
+    const w = world();
+    const d = deps(w);
+    expect(await startEngineApproval(d)({ tenantId: T, userId: OTHER }, C)).toBe("started");
+    expect(w.starters).toEqual([U]);
+  });
+});
+
+describe("fix-review · Mở lại quy trình", () => {
+  const stalled = () =>
+    world({
+      st: {
+        approvalId: AID,
+        approvalStatus: "level1",
+        mode: "engine",
+        engineRunId: RUN,
+        startedBy: U,
+      },
+    });
+  const out =
+    (status: string, rejected = false) =>
+    async () => [{ run_id: RUN, tenant_id: T, stage_key: null, status, rejected, feedback: null }];
+  it("run huỷ/lỗi ⇒ run mới dưới started_by, attach thay run cũ (không về máy cũ)", async () => {
+    const w = stalled();
+    const d = deps(w, { outcomesOf: out("cancelled") });
+    expect(await reopenEngineApproval(d)({ tenantId: T, userId: OTHER }, C)).toBe("ok");
+    expect(w.starters).toEqual([U]);
+    expect(w.replaces).toEqual([RUN]);
+  });
+  it("run còn chạy / bị Từ chối / lượt không ở engine ⇒ không mở run", async () => {
+    for (const o of [out("waiting_review"), out("cancelled", true)]) {
+      const w = stalled();
+      expect(await reopenEngineApproval(deps(w, { outcomesOf: o }))(who, C)).toBe("not_stalled");
+      expect(w.starters).toEqual([]);
+    }
+    expect(await reopenEngineApproval(deps(world()))(who, C)).toBe("not_found");
   });
 });
 

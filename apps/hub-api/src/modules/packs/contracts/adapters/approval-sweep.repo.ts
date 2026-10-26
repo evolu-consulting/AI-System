@@ -26,40 +26,41 @@ function engineRunsQ(tx: Tx, tid: string): SweepRepo["engineRuns"] {
   };
 }
 
-/** contract-flow S3b · đồng bộ HĐ theo run đã kết thúc, MỘT câu UPDATE theo tập (dữ liệu lô qua một tham số JSON): Từ chối ⇒ HĐ
- *  `rejected` + lượt `rejected` + event; release ⇒ lượt về `machine` (xoá run, ghi lý do vào `feedback`) để người dùng duyệt tiếp. */
+/** contract-flow S3b · đồng bộ HĐ theo run đã kết thúc, MỘT câu UPDATE theo tập (dữ liệu lô qua một tham số JSON), khớp CẢ lượt lẫn
+ *  `engine_run_id` (run đã được mở lại ⇒ bỏ qua): Từ chối ⇒ HĐ `rejected` + lượt `rejected` + event; stalled ⇒ GIỮ `mode='engine'`
+ *  (KHÔNG về máy cũ — lách head_only/luồng), ghi lý do vào `feedback`, chờ owner/admin mở lại. Chạy lại vô hại. */
 function reconcileQ(tx: Tx, tid: string): SweepRepo["reconcile"] {
   return async (items) => {
-    if (items.length === 0) return { rejected: 0, released: 0 };
+    if (items.length === 0) return { rejected: 0, stalled: 0 };
     const json = JSON.stringify(
       items.map((i) => ({
         id: i.approvalId,
+        run: i.runId,
         kind: i.kind,
         text: i.kind === "reject" ? i.feedback : i.reason,
       })),
     );
-    const [r] = await tx.execute<{ rejected: number; released: number }>(sql`with
-      v as (select (x->>'id')::uuid as id, x->>'kind' as kind, x->>'text' as text
+    const [r] = await tx.execute<{ rejected: number; stalled: number }>(sql`with
+      v as (select (x->>'id')::uuid as id, (x->>'run')::uuid as run, x->>'kind' as kind, x->>'text' as text
         from jsonb_array_elements(${json}::jsonb) x),
-      a as (select y.id, y.contract_id, v.kind, v.text from contracts.approvals y join v on v.id = y.id
+      a as (select y.id, y.contract_id, v.kind, v.text from contracts.approvals y
+        join v on v.id = y.id and y.engine_run_id = v.run
         where y.tenant_id = ${tid}::uuid and y.mode = 'engine' and y.status = 'level1' for update of y skip locked),
       rc as (update contracts.contracts c set status = 'rejected', version = c.version + 1, updated_at = now()
         from a where a.kind = 'reject' and c.id = a.contract_id and c.tenant_id = ${tid}::uuid and c.run_id = a.id
           and c.status in ('extracting', 'extract_failed', 'needs_review') returning c.id, c.run_id, a.text),
       ra as (update contracts.approvals x set status = 'rejected', feedback = rc.text, decided_at = now(), updated_at = now()
         from rc where x.id = rc.run_id and x.tenant_id = ${tid}::uuid and x.status = 'level1' returning x.id),
-      rel as (update contracts.approvals x set mode = 'machine', engine_run_id = null, feedback = a.text,
-          updated_at = now()
-        from a where a.kind = 'release' and x.id = a.id and x.tenant_id = ${tid}::uuid and x.mode = 'engine'
-          and x.status = 'level1' returning x.id),
+      st as (update contracts.approvals x set feedback = a.text, updated_at = now()
+        from a where a.kind = 'stalled' and x.id = a.id and x.tenant_id = ${tid}::uuid and x.mode = 'engine'
+          and x.status = 'level1' and x.feedback is distinct from a.text returning x.id),
       ev as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
         select ${tid}::uuid, rc.id, 'rejected', jsonb_build_object('run_id', rc.run_id::text, 'feedback', rc.text)
         from rc)
-      select (select count(*) from ra)::int as rejected, (select count(*) from rel)::int as released`);
-    return { rejected: Number(r?.rejected ?? 0), released: Number(r?.released ?? 0) };
+      select (select count(*) from ra)::int as rejected, (select count(*) from st)::int as stalled`);
+    return { rejected: Number(r?.rejected ?? 0), stalled: Number(r?.stalled ?? 0) };
   };
 }
-
 export function sweepRepo(tx: Tx, tid: string): SweepRepo {
   return {
     async sweep({ staleMinutes, queuedMinutes, limit }) {

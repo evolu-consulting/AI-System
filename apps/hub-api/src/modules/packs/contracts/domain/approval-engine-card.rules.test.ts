@@ -93,6 +93,15 @@ describe("engineCardView", () => {
     expect(none.steps.map((s) => s.status)).toEqual(["pending", "pending"]);
     expect(none.run_status).toBeNull();
   });
+  it("needs_reopen: run đã kết thúc mà lượt còn level1 ⇒ true, không task/can_act", () => {
+    const base = input({ open: "s0" });
+    const dead = {
+      ...base,
+      sv: { ...(base.sv as NonNullable<typeof base.sv>), status: "cancelled" },
+    };
+    expect(engineCardView(dead).needs_reopen).toBe(true);
+    expect(engineCardView(base).needs_reopen).toBe(false);
+  });
 });
 
 describe("planEngineAct", () => {
@@ -168,11 +177,11 @@ describe("engineDefVersion · reconcileOf", () => {
       kind: "reject",
       feedback: "sai giá",
     });
-    expect(reconcileOf(o("failed"))).toEqual({ kind: "release", reason: "ENGINE_RUN_FAILED" });
+    expect(reconcileOf(o("failed"))).toEqual({ kind: "stalled", reason: "ENGINE_RUN_FAILED" });
     expect(reconcileOf(o("cancelled"))).toEqual({
-      kind: "release",
+      kind: "stalled",
       reason: "ENGINE_RUN_CANCELLED",
     });
-    expect(reconcileOf(undefined)).toEqual({ kind: "release", reason: "ENGINE_RUN_MISSING" });
+    expect(reconcileOf(undefined)).toEqual({ kind: "stalled", reason: "ENGINE_RUN_MISSING" });
   });
 });

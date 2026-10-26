@@ -196,7 +196,7 @@ function ContractBody({
 }
 
 export function ContractReviewPage({ id }: { id: string }) {
-  const { write } = useMe();
+  const { write, owner } = useMe();
   const q = useQuery({
     queryKey: contractKey(id),
     queryFn: ({ signal }) => fetchContract(id, signal),
@@ -207,6 +207,7 @@ export function ContractReviewPage({ id }: { id: string }) {
     id,
     contractKey: contractKey(id),
     write,
+    owner,
     hasSource: q.data?.has_source ?? false,
     saveFirst: info.saveFirst,
     extracted: extractedOf(q.data),

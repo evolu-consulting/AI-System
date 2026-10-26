@@ -45,6 +45,7 @@ import {
   getApproval,
   patchGuard,
   readApprovalSettings,
+  reopenApproval,
   saveApprovalSettings,
   startApproval,
 } from "./application/approval.usecase";
@@ -281,6 +282,7 @@ export function contractsAiModule(
       ? {
           engine: eng.start,
           onSettingsSaved: eng.settingsSync,
+          reopen: eng.reopen,
           card: engineCard({ port: () => flow.engine?.port, uow, jobs, redo }),
         }
       : {}),
@@ -333,6 +335,7 @@ function approvalModule(
   const approval = approvalRoutes(view, {
     get: getApproval(ad),
     act: actApproval(ad),
+    reopen: reopenApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
   });

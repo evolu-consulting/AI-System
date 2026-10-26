@@ -98,8 +98,8 @@ function setup(o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean
       },
     },
     approvalEngine: {
-      setPendingLinks: async (_a: string, _r: string, l: readonly unknown[]) => {
-        calls.push(`links:${l.length}`);
+      setPendingLinks: async (_a: string, _r: string, l: readonly unknown[] | null) => {
+        calls.push(`links:${l === null ? "null" : l.length}`);
         return true;
       },
     },
@@ -134,6 +134,15 @@ describe("engineAct", () => {
     const r = await engineAct(d)(who, C, body("approve", { products: [{}, {}] }), state());
     expect(r).toBe("ok");
     expect(calls).toEqual(["links:2", 'act:{"task_id":"t-s0"}:{"result":"pass"}']);
+  });
+  it("Đạt duyệt cuối KHÔNG kèm SP ⇒ ghi đè null (xoá SP sót); act not_open ⇒ xoá lại", async () => {
+    const a = setup();
+    await engineAct(a.d)(who, C, body("approve"), state());
+    expect(a.calls).toEqual(["links:null", 'act:{"task_id":"t-s0"}:{"result":"pass"}']);
+    const b = setup({ act: "not_open" });
+    const r = await engineAct(b.d)(who, C, body("approve", { products: [{}] }), state());
+    expect(r).toEqual({ error: "APPROVAL_NOT_OPEN" });
+    expect(b.calls.filter((c) => c.startsWith("links:"))).toEqual(["links:1", "links:null"]);
   });
   it("Đạt không phải bước cuối ⇒ bỏ products (không lưu)", async () => {
     const { d, calls } = setup();

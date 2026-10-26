@@ -45,6 +45,11 @@ export type ApprovalDeps = {
   card?: EngineCard;
   /** S3b · cài đặt duyệt đổi (tenant chưa lưu mẫu) ⇒ đồng bộ lại def engine. Không ném. */
   onSettingsSaved?: (who: PackWho) => Promise<unknown>;
+  /** fix-review · "Mở lại quy trình" (route owner/admin): lượt engine mà run kết thúc bất thường ⇒ run mới dưới người bắt đầu. */
+  reopen?: (
+    who: PackWho,
+    contractId: string,
+  ) => Promise<"ok" | "not_found" | "not_stalled" | "failed">;
 };
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
 export type ContractApproval =
@@ -243,6 +248,18 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
   };
 }
 
+/** fix-review · Mở lại quy trình (lượt engine kẹt vì run kết thúc bất thường); trả thẻ mới. Không bao giờ về máy cũ. */
+export function reopenApproval(d: ApprovalDeps) {
+  return async (
+    who: PackWho,
+    id: string,
+  ): Promise<ContractApproval | "not_found" | "not_stalled" | "failed"> => {
+    const out = d.reopen ? await d.reopen(who, id) : "failed";
+    if (out !== "ok") return out;
+    return (await getApproval(d)(who, id)) ?? "not_found";
+  };
+}
+
 /** S3b · quyết trên engine (ngoài tx khoá HĐ) rồi trả thẻ mới. */
 async function actOnEngine(
   d: ApprovalDeps,
@@ -290,10 +307,18 @@ export function readApprovalSettings(d: Pick<ApprovalDeps, "uow">) {
 }
 
 /** Seam sửa trường (review S1): giai đoạn lượt duyệt (cấp 1 sửa được, cấp 2 khoá — D3-02). */
-export function patchGuard(d: Pick<ApprovalDeps, "uow">) {
+export function patchGuard(d: Pick<ApprovalDeps, "uow" | "card">) {
   return {
     async phase(who: PackWho, runId: string): Promise<RunPhase> {
-      return phaseOf(await d.uow.tenant(who, (r) => r.approval.statusOf(runId)));
+      const got = await d.uow.tenant(who, async (r) => {
+        const status = await r.approval.statusOf(runId);
+        return { status, run: status === "level1" ? await r.approval.engineRunOf(runId) : null };
+      });
+      const phase = phaseOf(got.status);
+      if (phase !== "level1" || got.run === null) return phase;
+      // fix-review · lượt engine giữ `level1` suốt các bước ⇒ chỉ sửa được khi bước mở là s0 (soạn / đã Trả lại về s0).
+      const idx = d.card ? await d.card.openStepIdx(who, got.run) : null;
+      return idx === 0 ? phase : "later";
     },
   };
 }

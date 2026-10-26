@@ -29,13 +29,14 @@ export type SweepResult = {
   read: number;
   closed: number;
   healed: number;
-  /** S3b · lượt engine đã đồng bộ (Từ chối ⇒ HĐ rejected) / trả về máy cũ (run lỗi, huỷ ngoài luồng). */
+  /** S3b · lượt engine đã đồng bộ (Từ chối ⇒ HĐ rejected) / run kết thúc bất thường (giữ engine, chờ owner mở lại). */
   rejected: number;
-  released: number;
+  stalled: number;
 };
 
 /** Lô đồng bộ run engine mỗi tenant mỗi lượt (1 select + 1 outcomesOf + 1 UPDATE). */
 export const RECONCILE_BATCH = 100;
+export const HEAL_OPEN_MAX = 20;
 
 const PARALLEL = 4;
 export const STALE_MINUTES = 15;
@@ -58,9 +59,9 @@ async function pooled<T, R>(xs: readonly T[], n: number, fn: (x: T) => Promise<R
 /** S3b · lượt `engine` còn `level1` mà run đã kết thúc ⇒ đồng bộ HĐ (3 câu cố định mỗi lô, không phụ thuộc số lượt). */
 async function reconcileTenant(d: SweepDeps, t: string, limit: number) {
   const port = d.engine?.port();
-  if (!port) return { rejected: 0, released: 0 };
+  if (!port) return { rejected: 0, stalled: 0 };
   const refs = await d.uow.system(t, (r) => r.sweep.engineRuns(limit));
-  if (refs.length === 0) return { rejected: 0, released: 0 };
+  if (refs.length === 0) return { rejected: 0, stalled: 0 };
   const outs = new Map(
     (
       await port.outcomesOf(
@@ -73,16 +74,22 @@ async function reconcileTenant(d: SweepDeps, t: string, limit: number) {
   for (const x of refs) {
     const c = reconcileOf(outs.get(x.runId));
     if (c.kind === "reject")
-      items.push({ approvalId: x.approvalId, kind: "reject", feedback: c.feedback });
-    else if (c.kind === "release")
-      items.push({ approvalId: x.approvalId, kind: "release", reason: c.reason });
+      items.push({
+        approvalId: x.approvalId,
+        runId: x.runId,
+        kind: "reject",
+        feedback: c.feedback,
+      });
+    else if (c.kind === "stalled")
+      items.push({ approvalId: x.approvalId, runId: x.runId, kind: "stalled", reason: c.reason });
   }
   return d.uow.system(t, (r) => r.sweep.reconcile(items));
 }
 
 /** S3b · heal `extracting → level1` chưa có run ⇒ mở run (`startEngineApproval` tự kiểm điều kiện, không ném). */
 async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLevel1"]) {
-  for (const h of healed ?? [])
+  // Giới hạn số HĐ mở run mỗi tenant mỗi lượt (phần dư: lượt quét sau không còn `extracting` ⇒ do owner mở lại / đường nhập tay).
+  for (const h of (healed ?? []).slice(0, HEAL_OPEN_MAX))
     await d.engine?.start({ tenantId: t, userId: h.userId }, h.contractId);
 }
 
@@ -91,7 +98,7 @@ async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["swe
   // Lỗi engine không làm hỏng lượt quét STALE của tenant (lượt sau thử lại; ghi có điều kiện).
   const rc = await reconcileTenant(d, t, RECONCILE_BATCH).catch(() => ({
     rejected: 0,
-    released: 0,
+    stalled: 0,
   }));
   await openHealed(d, t, base.healedLevel1).catch(() => undefined);
   return { ...base, ...rc };
@@ -105,7 +112,7 @@ export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
     limit: d.limit ?? 500,
   };
   const rows = await pooled(tenants, PARALLEL, (t) => sweepTenant(d, t, o));
-  const sum = (k: "read" | "closed" | "healed" | "rejected" | "released") =>
+  const sum = (k: "read" | "closed" | "healed" | "rejected" | "stalled") =>
     rows.reduce((a, b) => a + b[k], 0);
   return {
     tenants: tenants.length,
@@ -113,7 +120,7 @@ export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
     closed: sum("closed"),
     healed: sum("healed"),
     rejected: sum("rejected"),
-    released: sum("released"),
+    stalled: sum("stalled"),
   };
 }
 

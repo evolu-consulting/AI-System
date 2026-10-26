@@ -8,6 +8,7 @@ import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/appr
 import {
   engineFlowDefSync,
   engineSettingsSync,
+  reopenEngineApproval,
   startEngineApproval,
 } from "./application/approval-engine.usecase";
 import {
@@ -45,6 +46,7 @@ export function approvalEngine(
     start: startEngineApproval(ed),
     defSync: engineFlowDefSync(ed),
     settingsSync: engineSettingsSync(ed),
+    reopen: reopenEngineApproval(ed),
     tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
   };

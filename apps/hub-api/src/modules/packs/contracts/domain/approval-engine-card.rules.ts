@@ -2,7 +2,7 @@
 // người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
-import { finalizesOnApprove } from "./approval-engine.rules";
+import { finalizesOnApprove, isTerminalRun } from "./approval-engine.rules";
 import type { FlowFacts, FlowStep } from "./approval-flow.rules";
 
 export type CardStepStatus =
@@ -118,6 +118,8 @@ export function engineCardView(i: EngineCardInput) {
         : null,
     finalizes_on_approve:
       live && can && open ? finalizesOnApprove(i.flow, i.facts, open.idx) : false,
+    /** Run đã kết thúc mà lượt còn `level1` (huỷ ngoài luồng / lỗi): chờ owner/admin "Mở lại quy trình". */
+    needs_reopen: live && i.sv !== null && isTerminalRun(i.sv.status),
     steps,
   };
 }

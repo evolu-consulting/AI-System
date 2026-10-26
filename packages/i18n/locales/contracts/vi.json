@@ -496,13 +496,15 @@
           "notReviewer": "Bạn không thuộc nhóm duyệt bước này nên không duyệt được.",
           "headOnly": "Bước này chỉ trưởng phòng duyệt được. Bạn không phải trưởng phòng của nhóm duyệt."
         },
+        "reopen": "Mở lại quy trình",
+        "reopened": "Đã mở lại quy trình duyệt.",
         "release": {
-          "MISSING": "Quy trình duyệt tự động bị mất, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
-          "FAILED": "Quy trình duyệt tự động gặp lỗi, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
-          "CANCELLED": "Quy trình duyệt tự động đã bị huỷ, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
-          "EXPIRED": "Quy trình duyệt tự động đã hết hạn, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp.",
-          "COMPLETED": "Quy trình duyệt tự động đã kết thúc nhưng chưa ghi nhận, hợp đồng quay về cách duyệt hai bước.",
-          "OTHER": "Quy trình duyệt tự động dừng bất thường, hợp đồng quay về cách duyệt hai bước. Bạn có thể duyệt tiếp."
+          "MISSING": "Quy trình duyệt tự động bị mất, hợp đồng đang chờ quản trị viên mở lại quy trình.",
+          "FAILED": "Quy trình duyệt tự động gặp lỗi, hợp đồng đang chờ quản trị viên mở lại quy trình.",
+          "CANCELLED": "Quy trình duyệt tự động đã bị huỷ, hợp đồng đang chờ quản trị viên mở lại quy trình.",
+          "EXPIRED": "Quy trình duyệt tự động đã hết hạn, hợp đồng đang chờ quản trị viên mở lại quy trình.",
+          "COMPLETED": "Quy trình duyệt tự động đã kết thúc nhưng chưa ghi nhận; hợp đồng đang chờ quản trị viên mở lại quy trình.",
+          "OTHER": "Quy trình duyệt tự động dừng bất thường, hợp đồng đang chờ quản trị viên mở lại quy trình."
         }
       },
       "waitLevel1": "Đang chờ người phụ trách kiểm tra và xác nhận.",

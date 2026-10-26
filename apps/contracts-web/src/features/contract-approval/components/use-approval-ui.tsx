@@ -43,11 +43,14 @@ export function useApprovalUi(o: {
   id: string;
   contractKey: readonly unknown[];
   write: boolean;
+  /** Owner/admin của gói: được "Mở lại quy trình" khi run engine kết thúc bất thường. */
+  owner?: boolean;
   hasSource: boolean;
   saveFirst: () => Promise<void>;
   /** Giá trị HĐ AI đọc (trường `total_value`) — hiện ở cấp 1 cùng trích dẫn (review m8). */
   extracted?: { value: unknown; quote: string; edited: boolean } | undefined;
 }): ApprovalUi {
+  const { t } = useTranslation();
   const ap = useApproval(o.id, o.contractKey);
   // confirm-flow: "Đọc lại" (trích lại kèm lý do) ẩn theo người dùng 2026-10-23 ⇒ hộp lý do chỉ còn "Từ chối".
   const [ask, setAsk] = useState<"reject" | "return" | null>(null);
@@ -63,13 +66,28 @@ export function useApprovalUi(o: {
     />
   );
   const rejected = ap.approval?.step === "rejected" ? ap.approval.feedback : null;
-  // Lượt bị trả về máy cũ vì engine hỏng/hết hạn (`ENGINE_RUN_*`): nói rõ vì sao thay vì im lặng.
+  // Run engine kết thúc bất thường (`needs_reopen`, lý do `ENGINE_RUN_*`): lượt GIỮ chế độ engine, chờ owner/admin mở lại.
+  const stalled = ap.approval?.needs_reopen === true;
   const note =
-    v.note ?? (ap.approval?.mode === "engine" ? null : releaseNoteKey(ap.approval?.feedback));
+    v.note ??
+    (stalled
+      ? (releaseNoteKey(ap.approval?.feedback) ?? "contracts.approval.engine.release.OTHER")
+      : null);
   const section = (
     <>
       {ap.approval && <ApprovalTimeline a={ap.approval} />}
       <ApprovalNote note={note} rejected={rejected} />
+      {stalled && o.owner && (
+        <button
+          type="button"
+          data-approval="reopen"
+          className="btn btn-primary btn-sm mb-3"
+          disabled={ap.busy !== null}
+          onClick={() => void ap.reopen()}
+        >
+          {t("contracts.approval.engine.reopen")}
+        </button>
+      )}
       {v.confirm && o.extracted && <ExtractedValue {...o.extracted} />}
       {ask && (
         <ReasonForm

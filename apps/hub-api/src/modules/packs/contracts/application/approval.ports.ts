@@ -65,6 +65,8 @@ export type ApprovalRepo = {
   markStarted(id: string, runId: string): Promise<boolean>;
   /** Trạng thái lượt duyệt (luật sửa trường); không có ⇒ null. */
   statusOf(runId: string): Promise<string | null>;
+  /** fix-review · run engine của lượt (`mode = 'engine'`); máy cũ / không có ⇒ null — luật sửa trường theo bước đang mở. */
+  engineRunOf(runId: string): Promise<string | null>;
   settings(): Promise<ApprovalSettings>;
   saveSettings(s: ApprovalSettings, actor: string): Promise<ApprovalSettings>;
 };
@@ -86,15 +88,15 @@ export type SweepCounts = {
 };
 /** S3b · lượt engine còn `level1` + run gắn (reconcile). */
 export type EngineApprovalRef = { approvalId: string; runId: string };
-/** S3b · việc đồng bộ một lượt: Từ chối ⇒ HĐ rejected; release ⇒ trả lượt về máy cũ kèm lý do. */
+/** S3b · việc đồng bộ một lượt (khớp theo CẢ lượt lẫn run): Từ chối ⇒ HĐ rejected; stalled ⇒ giữ engine, ghi lý do vào `feedback`. */
 export type ReconcileItem =
-  | { approvalId: string; kind: "reject"; feedback: string | null }
-  | { approvalId: string; kind: "release"; reason: string };
+  | { approvalId: string; runId: string; kind: "reject"; feedback: string | null }
+  | { approvalId: string; runId: string; kind: "stalled"; reason: string };
 export type SweepRepo = {
   /** S3b · MỘT câu: ≤ `limit` lượt `engine` còn `level1` (ngẫu nhiên — không đói khi > limit). */
   engineRuns(limit: number): Promise<EngineApprovalRef[]>;
   /** S3b · MỘT câu UPDATE theo tập (có điều kiện `mode='engine' + level1`; chạy lại vô hại). Trả (rejected, released). */
-  reconcile(items: readonly ReconcileItem[]): Promise<{ rejected: number; released: number }>;
+  reconcile(items: readonly ReconcileItem[]): Promise<{ rejected: number; stalled: number }>;
   /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed` +
    *  lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi) ⇒ `level1`/`failed` (review B #12). */
   sweep(o: SweepOptions): Promise<SweepCounts>;

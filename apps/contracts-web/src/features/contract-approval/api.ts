@@ -18,6 +18,14 @@ export function actApproval(id: string, body: ApprovalActionRequest): Promise<Co
   });
 }
 
+/** fix-review · Mở lại quy trình (run engine kết thúc bất thường): owner/admin của gói. */
+export function reopenApproval(id: string): Promise<ContractApproval> {
+  return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval/reopen`, {
+    method: "POST",
+    body: {},
+  });
+}
+
 export const groupsKey = ["contract-groups"] as const;
 /** S3b · Group của tenant (id + tên) cho tên phòng ở thẻ duyệt + chọn phòng ở mẫu luồng (mọi người có quyền đọc gói). */
 export function fetchGroups(signal?: AbortSignal): Promise<ContractGroup[]> {

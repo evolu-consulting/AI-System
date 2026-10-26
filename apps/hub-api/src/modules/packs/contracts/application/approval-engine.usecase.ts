@@ -11,6 +11,7 @@ import {
   engineStartable,
   factsOf,
   finalizeReady,
+  reconcileOf,
   routeFrom,
 } from "../domain/approval-engine.rules";
 import {
@@ -30,6 +31,7 @@ import type {
   ApprovalEngineUow,
   EngineCaller,
   EngineRunRow,
+  EngineStartRow,
 } from "./approval-engine.ports";
 import type { FlowDefSync, FlowGroups } from "./approval-flow.usecase";
 import type { ProductLinksRepo } from "./product-links.usecase";
@@ -72,15 +74,21 @@ async function compiled(
   }
 }
 
-/** Mẫu hiện hành của tenant + trạng thái lượt của HĐ (một tx); mặc định ⇒ Group theo khoá đọc sau tx (cache). */
-async function loadStart(d: ApprovalEngineDeps, who: PackWho, id: string) {
+/** Mẫu hiện hành của tenant + trạng thái lượt của HĐ (một tx); mặc định ⇒ Group theo khoá đọc sau tx (cache). `ok` quyết lượt có
+ *  mở/mở lại được không. Trả thêm NGƯỜI BẮT ĐẦU của lượt: run luôn mở dưới người này (không phải người kích job / bấm Đọc lại). */
+async function loadStart(
+  d: ApprovalEngineDeps,
+  who: PackWho,
+  id: string,
+  ok: (st: EngineStartRow) => boolean = engineStartable,
+) {
   const got = await d.uow.tenant(who, async (r) => {
     const st = await r.approvalEngine.startState(id);
-    if (!st || !engineStartable(st)) return null;
-    return readFlow(r);
+    if (!st?.startedBy || !ok(st)) return null;
+    return { st, read: await readFlow(r) };
   });
   if (!got) return null;
-  return flowOf(d, who, got);
+  return { flow: await flowOf(d, who, got.read), starter: got.st.startedBy as string, st: got.st };
 }
 
 type FlowRead = Awaited<ReturnType<typeof readFlow>>;
@@ -107,9 +115,10 @@ async function openRun(
   d: ApprovalEngineDeps,
   port: ApprovalEnginePort,
   who: PackWho,
-  c: { id: string; flow: Flow },
+  c: { id: string; flow: Flow; starter: string; replaces?: string | null },
 ): Promise<EngineStartOutcome> {
-  const u = callerOf(who);
+  // started_by của run = người bắt đầu lượt duyệt (exclude_starter phải còn nghĩa sau Đọc lại / heal do người khác kích).
+  const u = callerOf({ tenantId: who.tenantId, userId: c.starter });
   const facts = hasDifyStep(c.flow.steps)
     ? await d.uow.tenant(who, (r) => r.approvalEngine.difyFacts(c.id))
     : null;
@@ -127,8 +136,14 @@ async function openRun(
   try {
     attached = await d.uow.tenant(who, async (r) => {
       const st = await r.approvalEngine.startState(c.id);
-      if (!st?.approvalId || !engineStartable(st)) return false;
-      const a = { runId, version: c.flow.version, steps: c.flow.steps };
+      const ok = c.replaces ? stalledRef(st, c.replaces) : !!st && engineStartable(st);
+      if (!st?.approvalId || !ok) return false;
+      const a = {
+        runId,
+        version: c.flow.version,
+        steps: c.flow.steps,
+        replaces: c.replaces ?? null,
+      };
       return r.approvalEngine.attach(c.id, st.approvalId, a);
     });
   } finally {
@@ -148,15 +163,16 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
     const port = d.bridge.port;
     if (!port) return "machine";
     try {
-      const flow = await loadStart(d, who, id);
-      if (!flow) return "skipped";
+      const got = await loadStart(d, who, id);
+      if (!got) return "skipped";
+      const { flow, starter } = got;
       const def = await compiled(d, who.tenantId, flow);
       if (!def) {
         d.warn("contract-engine-flow-invalid", { contract_id: id });
         return "machine";
       }
       await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
-      return await openRun(d, port, who, { id, flow });
+      return await openRun(d, port, who, { id, flow, starter });
     } catch (e) {
       d.warn("contract-engine-start-failed", {
         contract_id: id,
@@ -167,6 +183,58 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
   };
 }
 
+/** Lượt đang giữ đúng run `run` ở chế độ engine, còn `level1` (điều kiện mở lại). */
+const stalledRef = (st: EngineStartRow | null, run: string): boolean =>
+  st?.approvalStatus === "level1" && st.mode === "engine" && st.engineRunId === run;
+
+export type ReopenOutcome = "ok" | "not_found" | "not_stalled" | "failed";
+
+/** fix-review · Mở lại quy trình cho lượt engine mà run đã kết thúc bất thường (huỷ ngoài luồng / lỗi / mất): chỉ gọi ở route
+ *  owner/admin của gói. KHÔNG trả lượt về máy cũ; run mới mở dưới người bắt đầu lượt (`started_by`) với mẫu HIỆN HÀNH. Kiểm run thật sự
+ *  kết thúc bất thường bằng `outcomesOf` (không tin cờ từ client). Không vòng lặp tự động: mỗi lần là một thao tác của owner. */
+type Stalled = { got: NonNullable<Awaited<ReturnType<typeof loadStart>>>; run: string };
+/** Lượt engine có run đã kết thúc bất thường? (kiểm bằng `outcomesOf` — không tin cờ từ client). */
+async function findStalled(
+  d: ApprovalEngineDeps,
+  port: ApprovalEnginePort,
+  who: PackWho,
+  id: string,
+): Promise<Stalled | "not_found" | "not_stalled"> {
+  const got = await loadStart(
+    d,
+    who,
+    id,
+    (s) => s.mode === "engine" && s.approvalStatus === "level1",
+  );
+  if (!got) return "not_found";
+  const run = got.st.engineRunId;
+  if (!run) return "not_stalled";
+  const [o] = await port.outcomesOf(who.tenantId, [run]);
+  return reconcileOf(o).kind === "stalled" ? { got, run } : "not_stalled";
+}
+
+export function reopenEngineApproval(d: ApprovalEngineDeps) {
+  return async (who: PackWho, id: string): Promise<ReopenOutcome> => {
+    const port = d.bridge.port;
+    if (!port) return "failed";
+    try {
+      const s = await findStalled(d, port, who, id);
+      if (typeof s === "string") return s;
+      const def = await compiled(d, who.tenantId, s.got.flow);
+      if (!def) return "failed";
+      const caller = callerOf({ tenantId: who.tenantId, userId: s.got.starter });
+      await port.ensureDef(caller, APPROVAL_PROCESS_KEY, def, s.got.flow.defVersion);
+      const out = await openRun(d, port, who, { id, ...s.got, replaces: s.run });
+      return out === "started" ? "ok" : "not_stalled";
+    } catch (e) {
+      d.warn("contract-engine-reopen-failed", {
+        contract_id: id,
+        error: e instanceof Error ? e.name : "unknown",
+      });
+      return "failed";
+    }
+  };
+}
 /** S2 seam `FlowDefSync`: lưu mẫu ⇒ đẩy def version mới (lỗi chỉ log — lần mở duyệt kế đồng bộ lại). */
 export function engineFlowDefSync(d: ApprovalEngineDeps): FlowDefSync {
   return {

@@ -88,6 +88,8 @@ export const ContractApprovalSchema = z.strictObject({
   /** S3b · `engine` ⇒ lượt chạy trên engine quy trình (có `steps`); vắng ⇒ máy 2 bước cũ. */
   mode: z.enum(["machine", "engine"]).optional(),
   steps: z.array(ApprovalCardStepSchema).optional(),
+  /** fix-review · run đã kết thúc bất thường, lượt còn mở: owner/admin bấm "Mở lại quy trình" (POST .../approval/reopen). */
+  needs_reopen: z.boolean().optional(),
 });
 export type ContractApproval = z.infer<typeof ContractApprovalSchema>;
 

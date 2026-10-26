@@ -6,7 +6,7 @@ import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { actApproval, approvalKey, fetchApproval } from "../api";
+import { actApproval, approvalKey, fetchApproval, reopenApproval } from "../api";
 import type { ActResult } from "../lib/approval";
 import { approvalErrorText } from "../lib/approval-error";
 
@@ -83,5 +83,18 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         return null;
       }
     });
-  return { approval: q.data, busy, msg, setMsg, err, setErr, act, prepare, refresh };
+  /** Mở lại quy trình (owner/admin): lỗi ⇒ câu lỗi, không ném. */
+  const reopen = async (): Promise<boolean> =>
+    (await once("redo", async () => {
+      try {
+        await reopenApproval(id);
+        setMsg(t("contracts.approval.engine.reopened"));
+        await refresh();
+        return true;
+      } catch (e) {
+        setErr(approvalErrorText(e, t));
+        return false;
+      }
+    })) ?? false;
+  return { approval: q.data, busy, msg, setMsg, err, setErr, act, prepare, refresh, reopen };
 }

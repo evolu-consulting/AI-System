@@ -1,6 +1,6 @@
 // contract-flow S3b · thẻ duyệt + hành động trên engine (cờ bật, hub THẬT): GET approval `mode=engine` có `steps[]`; đi 2 bước (giá trị ≥
 // ngưỡng ⇒ cấp 2, người gửi bị chặn), Trả lại về bước 0, Từ chối ⇒ HĐ rejected, duyệt cuối + gắn SP (pending_links), reconcile run
-// huỷ/lỗi ⇒ lượt về máy cũ có lý do; GET /groups; "Việc của tôi" có `approvals`. Theo điều phối: CHƯA chạy trong lát (chạy một lần cuối đợt).
+// huỷ/lỗi ⇒ giữ engine + lý do; GET /groups; "Việc của tôi" có `approvals`. Theo điều phối: CHƯA chạy trong lát (chạy một lần cuối đợt).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { insItem } from "../HD1/_support/hd1";
 import { act, approval, CBASE, contractRow, errCode, seedContract, toLevel1 } from "../HD3/_hd3";
@@ -108,22 +108,22 @@ describe("contract-flow S3b · thẻ duyệt trên engine", () => {
     expect((await engineRun(aid2)).status).toBe("rejected");
   }, 60_000);
 
-  it("reconcile: run bị huỷ ngoài luồng ⇒ vòng quét trả lượt về máy cũ + ghi lý do; HĐ không kẹt", async () => {
+  it("reconcile: run bị huỷ ngoài luồng ⇒ vòng quét GIỮ engine + ghi lý do (không về máy cũ)", async () => {
     const id3 = await seedContract(c, 713);
     const aid3 = (await toLevel1(c, id3, BIG)).runId;
     const run = (await engineRun(aid3)).run as string;
     await stepIs(id3, 0, "open");
     expect(await c.port.cancelSys(T.acme, run)).toBe(true);
-    const s = (await c.sweepOnce()) as unknown as { released: number };
-    expect(s.released).toBeGreaterThanOrEqual(1);
+    const s = (await c.sweepOnce()) as unknown as { stalled: number };
+    expect(s.stalled).toBeGreaterThanOrEqual(1);
     const a = await engineRun(aid3);
     expect({ mode: a.mode, status: a.status, why: a.feedback }).toEqual({
-      mode: "machine",
+      mode: "engine",
       status: "level1",
       why: "ENGINE_RUN_CANCELLED",
     });
-    // máy cũ quyết được lượt vừa trả về
-    expect((await act(c, "B", id3, "approve")).status).toBe(200);
+    // máy cũ KHÔNG quyết được (không lách luồng): cần owner mở lại quy trình
+    expect(errCode(await act(c, "B", id3, "approve"))).toBe("APPROVAL_NOT_OPEN");
   }, 60_000);
 
   it("GET /pack/contracts/groups trả {id, name} của tenant; Việc của tôi có approvals cho người quyết được", async () => {
