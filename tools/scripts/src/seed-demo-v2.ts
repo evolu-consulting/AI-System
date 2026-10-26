@@ -25,6 +25,15 @@ import {
   ratingRows,
 } from "./seed-demo-v2.build-people";
 import { COLS } from "./seed-demo-v2.cols";
+import {
+  D1_WIPE,
+  d1EventRows,
+  loadTxObligation,
+  loadVersionChain,
+  txEventRows,
+  txLineRows,
+  txRows,
+} from "./seed-demo-v2.d1";
 import { OWN } from "./seed-demo-v2.specs";
 import { type StockPlan, stockPlan } from "./seed-demo-v2.stock";
 
@@ -70,6 +79,7 @@ export const WIPE = [
   "approvals",
   "followups",
   "sourcing_choices",
+  ...D1_WIPE,
   "partner_event_voids",
   "partner_events",
   "partner_roles",
@@ -135,14 +145,38 @@ async function loadContracts({ tx, tenant, a, shift, stock }: Ctx): Promise<void
   );
 }
 
+/** 0052 (U2) viết lại CHECK loại sổ KHÔNG có `job` của V2-E; DB như vậy không nhận dòng việc ghi tay ⇒ bỏ (cảnh báo), không vỡ seed. */
+async function jobTypeAllowed(tx: Tx): Promise<boolean> {
+  const [r] = await tx<
+    { ok: boolean | null }[]
+  >`select pg_get_constraintdef(oid) like '%''job''%' as ok
+    from pg_constraint where conname = 'partner_events_type_ck' and conrelid = 'contracts.partner_events'::regclass`;
+  const ok = r?.ok !== false;
+  if (!ok)
+    console.warn(
+      "seed-demo-v2: partner_events_type_ck không có 'job' (0052) — bỏ việc ghi tay V2-E của demo",
+    );
+  return ok;
+}
+
 async function loadPeople({ tx, tenant, a, today, shift }: Ctx): Promise<void> {
   await ins(tx, "partner_roles", manualRoleRows(tenant, a), "on conflict do nothing");
-  await ins(tx, "partner_events", jobRows(tenant, a, shift));
+  const jobs = (await jobTypeAllowed(tx)) ? jobRows(tenant, a, shift) : [];
+  await ins(tx, "partner_events", [...jobs, ...d1EventRows(tenant, a, today)]);
   await ins(tx, "score_ratings", ratingRows(tenant, a, shift));
   await ins(tx, "partner_notes", noteRows(tenant, a, shift));
   const { locks, runs } = lockRows(tenant, today);
   await ins(tx, "score_locks", locks);
   await ins(tx, "score_lock_runs", runs);
+}
+
+/** CR-097 D1: dữ liệu minh hoạ tính năng mới (chuỗi phiên bản, Giao dịch nháp/đã ghi sổ). Sự kiện sổ (MỚI · tạm tính, cờ đỏ) ở loadPeople. */
+async function loadD1({ tx, tenant, a, today }: Ctx): Promise<void> {
+  await ins(tx, "transactions", txRows(tenant, a, today));
+  await ins(tx, "transaction_lines", txLineRows(tenant));
+  await ins(tx, "transaction_events", txEventRows(tenant, a, today));
+  await loadTxObligation(tx, tenant, today);
+  await loadVersionChain(tx, tenant, today);
 }
 
 /** Tên pháp nhân của mình (Cài đặt công ty) — để HĐ tự nhận Mua/Bán. Luôn ghi đè tên giả của demo (không bao giờ tên thật của khách). */
@@ -264,6 +298,7 @@ export async function seedDemo(
     await loadCatalog(ctx);
     await loadContracts(ctx);
     await loadPeople(ctx);
+    await loadD1(ctx);
     if (file) await attachFile(tx, ids.tenantId, a.owner, file);
     await fixRenewals(tx, ids.tenantId);
     return counts(tx, ids.tenantId);
