@@ -6,7 +6,11 @@ import type { NoticeKind, ProcessRunStatus, TaskKind, TaskResult } from "@ai/con
 import type { Tx } from "@ai/db";
 import { processNotices } from "@ai/db/schema/hub-processes";
 import { sql } from "drizzle-orm";
+import { headGateSql } from "../core/head-gate.sql";
 import type { ViewerCtx } from "../core/task-view";
+
+/** contract-flow S1b · stage `head_only` + phòng có trưởng ⇒ người nhận phía Group duyệt chỉ là trưởng phòng. */
+const NOTICE_GATE = headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "t.tenant_id");
 
 type Ts = Date | string;
 const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;
@@ -140,6 +144,8 @@ export type NoticeTask = {
   userIds: string[];
   /** Thành viên hiện tại của group được giao (plan §11; `admin.group_members` đọc được qua hub_ro). */
   groupMemberIds: string[];
+  /** contract-flow S1b · run gắn bản ghi gói ⇒ notifier ghi thêm chuông gói. */
+  pack: boolean;
 };
 
 const idsOf = (x: unknown): string[] => (Array.isArray(x) ? x.map(String) : []);
@@ -160,17 +166,21 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     stage_name: string | null;
     user_ids: unknown;
     member_ids: unknown;
+    pack: boolean;
   }>(sql`
     select t.tenant_id, t.process_run_id, t.kind, t.assignee_group_id as group_id, t.decided_by, t.result,
       pr.snapshot->>'name' as process_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
       array(select distinct a.user_id from hub.review_task_assignees a
         where a.task_id = t.id and a.tenant_id = t.tenant_id and a.user_id is not null) as user_ids,
-      array(select gm.user_id from admin.group_members gm
-        where gm.group_id = t.assignee_group_id and gm.tenant_id = t.tenant_id) as member_ids
+      case when t.kind = 'review' and hg.gate is not null then array[hg.gate]
+        else array(select gm.user_id from admin.group_members gm
+          where gm.group_id = t.assignee_group_id and gm.tenant_id = t.tenant_id) end as member_ids,
+      pr.pack_key is not null as pack
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
+    cross join lateral (select ${NOTICE_GATE} as gate) hg
     where t.id = ${taskId}`);
   if (!r) return null;
   return {
@@ -184,22 +194,29 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     stageName: r.stage_name,
     userIds: idsOf(r.user_ids),
     groupMemberIds: idsOf(r.member_ids),
+    pack: r.pack === true,
   };
 }
 
 export async function loadRunForNotice(
   tx: Tx,
   runId: string,
-): Promise<{ tenantId: string; startedBy: string; processName: string } | null> {
+): Promise<{ tenantId: string; startedBy: string; processName: string; pack: boolean } | null> {
   const [r] = await tx.execute<{
     tenant_id: string;
     started_by: string;
     process_name: string | null;
+    pack: boolean;
   }>(sql`
-    select tenant_id, started_by, snapshot->>'name' as process_name
+    select tenant_id, started_by, snapshot->>'name' as process_name, pack_key is not null as pack
     from hub.process_runs where id = ${runId}`);
   return r
-    ? { tenantId: r.tenant_id, startedBy: r.started_by, processName: r.process_name ?? "" }
+    ? {
+        tenantId: r.tenant_id,
+        startedBy: r.started_by,
+        processName: r.process_name ?? "",
+        pack: r.pack === true,
+      }
     : null;
 }
 

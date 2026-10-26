@@ -23,7 +23,36 @@ export type TaskFacts = {
   extraGroupIds?: readonly string[];
   /** N2-FR-05 · task duyệt của stage `exclude_starter` ⇒ người bắt đầu không quyết. Vắng ⇒ hành vi cũ. */
   starterExcluded?: boolean;
+  /** contract-flow S1b · cửa trưởng phòng của stage `head_only` (= `headGate`); null/vắng ⇒ cả Group duyệt. */
+  headGate?: string | null;
 };
+
+/**
+ * contract-flow S1b · cửa trưởng phòng: stage `after.head_only` + Group duyệt có trưởng phòng ⇒ id trưởng phòng; còn lại
+ * (không head_only, không Group, phòng không có trưởng) ⇒ null = cả nhóm như cũ.
+ */
+export function headGate(
+  after: { kind?: string; group_id?: string | null; head_only?: boolean } | undefined | null,
+  headUserId: string | null,
+): string | null {
+  if (after?.kind !== "review" || after.head_only !== true || !after.group_id) return null;
+  return headUserId ?? null;
+}
+
+/**
+ * contract-flow S1b · người xem thuộc "Group duyệt" của task: có cửa trưởng phòng ⇒ chỉ đúng trưởng phòng (kể cả khi trưởng
+ * phòng không nằm trong `group_members`); không cửa ⇒ thành viên Group. Group chuyển cấp KHÔNG qua hàm này (không bị head_only).
+ */
+export function inReviewGroup(
+  userId: string,
+  groupIds: ReadonlySet<string>,
+  groupId: string | null,
+  gate: string | null | undefined,
+): boolean {
+  if (groupId === null) return false;
+  if (gate) return gate === userId;
+  return groupIds.has(groupId);
+}
 
 /**
  * N2-FR-05 · N2-D06 · stage `after.review.exclude_starter` (snapshot cũ vắng ⇒ false): người bắt đầu run không được quyết
@@ -73,11 +102,13 @@ export function canAct(
   if (t.status !== "open" || isTerminal(r.status)) return false;
   if (t.starterExcluded === true && r.startedBy === v.userId && starterGated(t.kind, t.reason))
     return false;
+  // S1b · cửa trưởng phòng chỉ áp cho task duyệt/decision của stage (ask có người trả lời riêng).
+  const gate = t.kind === "ask" ? null : t.headGate;
   if (t.kind === "decision") {
-    const reviewGroupMember = t.reviewGroupId !== null && v.groupIds.has(t.reviewGroupId);
+    const reviewGroupMember = inReviewGroup(v.userId, v.groupIds, t.reviewGroupId, gate);
     // Lý do vắng (dữ liệu hỏng) ⇒ chỉ người bắt đầu/admin: `interrupted` không mở quyền group.
     return canDecide(v, { ...r, reason: t.reason ?? "interrupted", reviewGroupMember });
   }
-  if (t.userIds.has(v.userId) || (t.groupId !== null && v.groupIds.has(t.groupId))) return true;
+  if (t.userIds.has(v.userId) || inReviewGroup(v.userId, v.groupIds, t.groupId, gate)) return true;
   return (t.extraGroupIds ?? []).some((g) => v.groupIds.has(g));
 }

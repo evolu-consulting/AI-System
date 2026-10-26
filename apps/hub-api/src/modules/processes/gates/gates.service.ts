@@ -50,6 +50,7 @@ import {
   snapOf,
 } from "./gates.effects";
 import * as g from "./gates.repo";
+import { assertHeadGate, reviewGroupMember } from "./head-gate.check";
 import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
@@ -131,8 +132,10 @@ function assertMayDecide(
   const users = new Set(task.user_ids ?? []);
   const inGroup = (id: string | null) => id !== null && groupIds.has(id);
   // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
+  // contract-flow S1b · trưởng phòng (có thể ngoài `group_members`) qua cửa sơ bộ; `assertHeadGate` chốt sau khi khoá run.
+  const head = task.group_head != null && task.group_head === v.userId;
   if (!users.has(v.userId) && !inGroup(task.assignee_group_id) && !inGroup(task.escalated_group_id))
-    throw notFound();
+    if (!head) throw notFound();
   if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
   if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
 }
@@ -180,7 +183,7 @@ export class GateService {
       core.runRecipients(tx, task.process_run_id, task.tenant_id),
       stageRowOf(tx, task.process_run_id, idx),
     ]);
-    if (!run) throw notFound();
+    assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
@@ -249,9 +252,8 @@ export class GateService {
     const reason = (open.find((o) => o.stageIdx === idx)?.reason ??
       (run.decision as { reason?: DecisionReason } | null)?.reason ??
       "interrupted") as DecisionReason;
-    const reviewGroup = def?.after.kind === "review" ? def.after.group_id : null;
     const facts = await this.#facts(tx, run, groupIds, v.userId);
-    const member = reviewGroup !== null && groupIds.has(reviewGroup);
+    const member = await reviewGroupMember(tx, run, def?.after, req);
     if (!canDecide(v, { ...facts, reason, reviewGroupMember: member }))
       throw runAccess(v, facts) ? processError("NOT_PROCESS_DECIDER") : notFound();
     assertDecisionAllowed(run, idx, v.userId, { reason, option: b.option }); // N2-D06 · D3-07 · 403 trước khi ghi

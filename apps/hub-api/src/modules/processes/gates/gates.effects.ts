@@ -34,7 +34,9 @@ export type Locked = core.RunHead;
 export type Stage = Awaited<ReturnType<typeof stageRowOf>>;
 export type SnapStage = {
   step?: number; // P-b2 · vắng (def cũ) ⇒ mỗi stage một bước
-  after: { kind: "review"; group_id: string | null; exclude_starter?: boolean } | { kind: "auto" };
+  after:
+    | { kind: "review"; group_id: string | null; exclude_starter?: boolean; head_only?: boolean }
+    | { kind: "auto" };
 };
 /** Ngữ cảnh hiệu ứng sau khi đã khoá + chuyển trạng thái. */
 export type Eff = {

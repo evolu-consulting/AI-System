@@ -203,6 +203,8 @@ export const ProcessStageDefSchema = z.strictObject({
       branch: AfterBranchSchema,
       /** N2-FR-05 · người bắt đầu run không được quyết task duyệt của stage này (vắng ở snapshot cũ ⇒ false). */
       exclude_starter: z.boolean().default(false),
+      /** contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm; chuyển cấp không bị giới hạn). */
+      head_only: z.boolean().optional(),
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),

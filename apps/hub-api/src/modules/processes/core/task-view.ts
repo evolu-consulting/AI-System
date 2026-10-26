@@ -15,7 +15,7 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
-import { canAct } from "../domain/tasks/task-access.rules";
+import { canAct, headGate } from "../domain/tasks/task-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
 
 export type TaskRow = {
@@ -119,6 +119,10 @@ type TaskSql = {
   back_rounds: number;
   back_limit: number;
   remind_count: number;
+  /** contract-flow S1b · trưởng phòng của Group duyệt (task review: Group assignee; decision: Group stage). */
+  group_head?: string | null;
+  /** S1b · cửa trưởng phòng (`headGate`) tính ở `withStage`; null = cả Group duyệt. */
+  head_gate?: string | null;
 };
 type GrantSql = {
   task_id: string;
@@ -133,9 +137,11 @@ type GrantSql = {
 type StageSnap = {
   name?: string | null;
   after?: {
+    kind?: string;
     group_id?: string | null;
     back_to_steps?: number[] | null;
     exclude_starter?: boolean;
+    head_only?: boolean;
   } | null;
 } | null;
 
@@ -150,6 +156,7 @@ const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
     review_group_id: st?.after?.group_id ?? null,
     back_steps: Array.isArray(back) ? back : null,
     starter_excluded: st?.after?.exclude_starter === true,
+    head_gate: headGate(st?.after, r.group_head ?? null), // contract-flow S1b
   };
 };
 
@@ -160,6 +167,9 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       pr.snapshot->'stages'->(s.stage_idx::int) as stage,
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
       t.remind_count::int as remind_count,
+      (select d.head_user_id from admin.departments d where d.tenant_id = t.tenant_id
+        and d.group_id = coalesce(t.assignee_group_id,
+          nullif(pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id', '')::uuid)) as group_head,
       case when pr.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
         when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${v.userId}
@@ -221,9 +231,19 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   const extraGroupIds = escalatedGroupId ? [escalatedGroupId] : [];
   const facts = { kind: r.kind, status: r.status, reason: r.reason, userIds, groupId: r.group_id };
   const starterExcluded = r.starter_excluded === true; // N2-FR-05
-  const task = { ...facts, reviewGroupId: r.review_group_id, extraGroupIds, starterExcluded };
+  const task = {
+    ...facts,
+    reviewGroupId: r.review_group_id,
+    extraGroupIds,
+    starterExcluded,
+    headGate: r.head_gate ?? null, // contract-flow S1b
+  };
   const inGroup = (g: string | null) => g !== null && v.groupIds.has(g);
-  const assignee = userIds.has(v.userId) || inGroup(r.group_id) || inGroup(escalatedGroupId);
+  const assignee =
+    userIds.has(v.userId) ||
+    inGroup(r.group_id) ||
+    inGroup(escalatedGroupId) ||
+    r.head_gate === v.userId;
   const run = { tenantId: r.tenant_id, startedBy: r.started_by, originRoom: r.origin_room };
   const forwards = mine
     .filter((g) => g.via === "forward" && g.from_user_id && g.user_id)

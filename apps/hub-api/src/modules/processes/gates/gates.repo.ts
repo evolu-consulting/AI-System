@@ -1,6 +1,5 @@
-// HUB-FR-107 · §3.4 · §10 · PF1 · repo cổng kiểm: đọc/khoá task + run, đóng task (first-wins ở `core.closeTask`), đóng
-// các task còn mở, ghi `passed_by`/`feedback`/`redo_sections`, huỷ `hub.runs` stage đang chạy (persist: `runs/step-persist`).
-// Chạy trong tx `withHubScope(user)` người thao tác của GateService; mọi câu lọc `tenant_id` tường minh (RLS T là lưới). Không log nội dung.
+// HUB-FR-107 · §3.4 · §10 · PF1 · repo cổng kiểm: đọc/khoá task + run, đóng task (first-wins `core.closeTask`), ghi passed_by/
+// feedback/redo_sections, huỷ `hub.runs` stage chạy. Tx user của GateService; lọc `tenant_id` tường minh (RLS là lưới). Không log.
 import type {
   DecisionReason,
   StageRunStatus,
@@ -12,6 +11,7 @@ import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { runErrorText } from "../../runs/run-errors";
+import { groupHeadSql } from "../core/head-gate.sql";
 
 export type GateTask = {
   id: string;
@@ -25,8 +25,9 @@ export type GateTask = {
   /** PD-R21 · Group chuyển cấp (assignee `via='escalated'`) — thành viên cũng quyết được. */
   escalated_group_id: string | null;
   reason: DecisionReason | null;
-  /** T19-perf · user assignee (= `assigneeUserIds`) đọc cùng câu `loadTask` — bớt một round-trip ở đường Đạt. */
+  /** T19-perf · user assignee đọc cùng câu `loadTask`; S1b · `group_head` = trưởng phòng Group duyệt. */
   user_ids?: string[] | null;
+  group_head?: string | null;
 };
 
 /** PD-R21 · Group `via='escalated'` của task (khớp `tenant_id` task; index `review_task_assignees` theo task). */
@@ -40,7 +41,7 @@ export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null>
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
       t.assignee_group_id, ${escalatedGroup}, t.reason,
       array(select a.user_id from hub.review_task_assignees a where a.task_id = t.id and a.tenant_id = t.tenant_id
-        and a.user_id is not null)::text[] as user_ids
+        and a.user_id is not null)::text[] as user_ids, ${groupHeadSql("t")} as group_head
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     where t.id = ${taskId}`);

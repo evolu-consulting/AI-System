@@ -7,7 +7,7 @@ import type { UserEvent } from "../../../lib/user-stream";
 import { processNotice, reviewTaskClosed, reviewTaskCreated } from "../core/events";
 import type { FinishedRun, ProcessNotifier } from "../core/ports";
 import { noticeRecipients } from "../domain/notify/remind.rules";
-import { unreadKey, writeNotices } from "./batch.repo";
+import { enqueuePackBells, unreadKey, writeNotices } from "./batch.repo";
 import {
   type InsertedNotice,
   insertNotices,
@@ -33,6 +33,13 @@ export type NoticeMeta = {
   group?: { id: string; name: string };
   afterH?: number;
 };
+
+/** contract-flow S1b · notice vừa chèn ⇒ nguồn chuông gói (id notice = khoá chống trùng). */
+const bellRows = (
+  inserted: readonly InsertedNotice[],
+  processRunId: string,
+  payload: Record<string, unknown>,
+) => inserted.map((n) => ({ id: n.id, userId: n.userId, processRunId, payload }));
 
 /** Dựng `ProcessNotice` cho sự kiện `process.notice` (dùng lại ở `remindOnce`). Không chứa nội dung output/câu hỏi. */
 export function buildNotice(n: InsertedNotice, kind: NoticeKind, m: NoticeMeta): ProcessNotice {
@@ -91,6 +98,7 @@ async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
     stageName: t.stageName,
   };
   const kind = OPEN_NOTICE[t.kind];
+  const payload = { process_name: t.processName, stage_name: t.stageName };
   // INSERT ∥ đếm chưa đọc gửi liền (pipeline; câu đếm chạy SAU câu chèn cùng tx ⇒ đã tính notice mới).
   const [inserted, unread] = await Promise.all([
     insertNotices(tx, {
@@ -98,11 +106,12 @@ async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
       kind,
       processRunId: t.processRunId,
       taskId,
-      payload: { process_name: t.processName, stage_name: t.stageName },
+      payload,
       userIds: recipients,
     }),
     unreadByUser(tx, t.tenantId, recipients),
   ]);
+  if (t.pack) await enqueuePackBells(tx, kind, bellRows(inserted, t.processRunId, payload));
   return [
     ...reviewTaskCreated(recipients, {
       task_id: taskId,
@@ -129,6 +138,7 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
       stageName: t.stageName,
       result,
     };
+    const payload = { process_name: t.processName, stage_name: t.stageName, result };
     // T19-perf · INSERT ∥ đếm chưa đọc gửi liền (pipeline): câu đếm chạy SAU câu chèn trên cùng tx ⇒ đã tính notice mới.
     const [inserted, unread] = await Promise.all([
       insertNotices(tx, {
@@ -136,11 +146,13 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
         kind: "task_closed",
         processRunId: t.processRunId,
         taskId,
-        payload: { process_name: t.processName, stage_name: t.stageName, result },
+        payload,
         userIds: noticed,
       }),
       unreadByUser(tx, t.tenantId, noticed),
     ]);
+    if (t.pack)
+      await enqueuePackBells(tx, "task_closed", bellRows(inserted, t.processRunId, payload));
     events.push(...noticeEventsOf(inserted, "task_closed", meta, unread));
   }
   return events;
@@ -155,14 +167,16 @@ async function onRunFinished(tx: Tx, runId: string): Promise<UserEvent[]> {
     processName: r.processName,
     stageName: null,
   };
+  const payload = { process_name: r.processName, stage_name: null };
   const inserted = await insertNotices(tx, {
     tenantId: r.tenantId,
     kind: "run_finished",
     processRunId: runId,
     taskId: null,
-    payload: { process_name: r.processName, stage_name: null },
+    payload,
     userIds: [r.startedBy],
   });
+  if (r.pack) await enqueuePackBells(tx, "run_finished", bellRows(inserted, runId, payload));
   return noticeEvents(tx, { tenantId: r.tenantId, inserted, kind: "run_finished", meta });
 }
 

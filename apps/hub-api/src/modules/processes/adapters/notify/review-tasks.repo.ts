@@ -13,6 +13,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ClaimedReminder, ReminderBatch, ReminderMark } from "../../application/ports";
+import { headGateSql } from "../../core/head-gate.sql";
 import {
   addEscalatedGroups,
   auditEscalations,
@@ -56,11 +57,14 @@ type ReminderRow = {
  * Group). Người nhận qua subquery tương quan theo index (`= any(array)`), khớp `tenant_id` task nguồn (K3 lô). Không ghi —
  * `markRemindedMany` áp mốc kế do lớp 1 tính.
  */
+/** contract-flow S1b · stage `head_only` + phòng có trưởng ⇒ phía Group duyệt chỉ nhắc trưởng phòng (Group chuyển cấp giữ). */
+const REMIND_GATE = headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "c.tenant_id");
+
 export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promise<ReminderBatch> {
   const q = sql`
     with c0 as (
       select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, t.assignee_group_id, t.remind_at, t.reminded_at,
-        t.remind_every_h, t.remind_count, t.escalate_group_id, t.escalated_at
+        t.remind_every_h, t.remind_count, t.escalate_group_id, t.escalated_at, t.kind
       from hub.review_tasks t
       where ${remindDue("t", now)}
       order by t.remind_at asc, t.id asc
@@ -80,14 +84,17 @@ export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promi
       array(select a.user_id::text from hub.review_task_assignees a
         where a.task_id = c.id and a.tenant_id = c.tenant_id and a.user_id is not null) as user_ids,
       array(select gm.user_id::text from admin.group_members gm
-        where gm.tenant_id = c.tenant_id and gm.group_id = any(array[c.assignee_group_id,
-          case when c.escalated_at is not null then c.escalate_group_id end])) as member_ids,
+        where gm.tenant_id = c.tenant_id and gm.group_id = any(array[
+          case when hg.gate is null then c.assignee_group_id end,
+          case when c.escalated_at is not null then c.escalate_group_id end]))
+        || case when hg.gate is not null then array[hg.gate::text] else '{}'::text[] end as member_ids,
       exists (select 1 from hub.review_tasks t2
         where ${remindDue("t2", now)} and not exists (select 1 from c where c.id = t2.id)) as more
     from (select count(*)::int as claimed from c0) n
     left join c on true
     left join hub.stage_runs s on s.id = c.stage_run_id and s.tenant_id = c.tenant_id
     left join hub.process_runs pr on pr.id = c.process_run_id and pr.tenant_id = c.tenant_id
+    left join lateral (select case when c.kind = 'review' then ${REMIND_GATE} end as gate) hg on true
     order by c.remind_at asc, c.id asc`;
   const all = await tx.execute<ReminderRow>(q);
   // Luôn ≥ 1 hàng (`claimed`); hàng `id` null = không còn task nào sau khi bỏ task có run đang bị giữ.

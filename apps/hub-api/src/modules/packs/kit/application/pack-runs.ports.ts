@@ -67,6 +67,19 @@ export type PackStepsView = {
   steps: PackStepView[];
 };
 
+/** contract-flow S1b · một task duyệt đang mở mà người gọi quyết được ("Việc của tôi"). */
+export type PackOpenTask = {
+  task_id: string;
+  run_id: string;
+  /** `pack_record_id` của run (bản ghi gói). */
+  record_id: string;
+  stage_key: string;
+  stage_name: string;
+  /** Hạn = mốc chuyển cấp của task; null khi stage không chuyển cấp. */
+  due_at: string | null;
+  escalated: boolean;
+};
+
 export type PackRunsPort = {
   /** Mở run (kiểm def bật + Group chạy + trần + inputs) và COMMIT nhưng CHƯA kick; người gọi `kick()` sau khi gắn run.
    *  S1a · `ref` ⇒ ghi `pack_key/pack_record_id` cùng tx tạo run. */
@@ -107,6 +120,9 @@ export type PackRunsPort = {
   groupIdsOf(tenantId: string, keys: readonly string[]): Promise<Map<string, string>>;
   /** S1a · dòng thời gian stage cho người xem (scope user, ≤ 2 câu SQL); run không thấy trong tenant ⇒ null. */
   stepsView(u: PackRunCaller, runId: string): Promise<PackStepsView | null>;
+  /** S1b · task duyệt MỞ của run gói `packKey` (tenant người gọi) mà `u` quyết được — cùng luật `canAct` (Group duyệt,
+   *  head_only, Group chuyển cấp, exclude_starter). MỘT câu SQL, scope user; thứ tự tạo task. */
+  openTasksOf(u: PackRunCaller, packKey: string): Promise<PackOpenTask[]>;
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */

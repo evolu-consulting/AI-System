@@ -25,7 +25,7 @@ import type { ProcessRunStatus } from "../domain/types";
 import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
-import { openTaskFor, stepsView, UUID } from "./pack-runs-view";
+import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
 import { StartService } from "./start.service";
 
 const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
@@ -198,5 +198,6 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
     cancelSys: (tenantId, runId) => cancelSys(d, tenantId, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),
+    openTasksOf: (u, packKey) => openTasksOf(d, u, packKey),
   };
 }

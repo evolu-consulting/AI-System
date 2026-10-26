@@ -5,6 +5,7 @@
 import type { NoticeKind } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { type BellSource, packBellsOf } from "../domain/notify/pack-bell.rules";
 import type { InsertedNotice } from "./inbox.repo";
 
 export type NoticeRow = {
@@ -49,7 +50,9 @@ export async function writeNotices(
       payload: n.row.payload,
     })),
   );
-  const res = await noticeStatement(tx, kind, json, createdAt.toISOString());
+  // contract-flow S1b · chuông gói cho run gắn bản ghi gói — CÙNG câu (không thêm round-trip; SQL bỏ run không gắn gói).
+  const bells = bellsJson(kind, candidates);
+  const res = await noticeStatement(tx, kind, { json, bells }, createdAt.toISOString());
   // T6c · hàng có user ngoài tenant của hàng bị câu bỏ ⇒ chỉ hàng chèn thật mới có unread/sự kiện.
   const ids = new Set(res.ids);
   const inserted = candidates.filter((n) => ids.has(n.id));
@@ -66,6 +69,22 @@ export async function writeNotices(
   return { inserted, unread };
 }
 
+const bellsJson = (
+  kind: NoticeKind,
+  ns: readonly { id: string; userId: string; row: NoticeRow }[],
+) =>
+  JSON.stringify(
+    packBellsOf(
+      kind,
+      ns.map((n) => ({
+        id: n.id,
+        userId: n.userId,
+        processRunId: n.row.processRunId,
+        payload: n.row.payload,
+      })),
+    ),
+  );
+
 type UnreadRow = { tenant_id: string; user_id: string; n: number | string };
 type NoticeResult = { ids: string[]; unread: UnreadRow[] };
 const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as T) : v);
@@ -78,7 +97,7 @@ const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) 
 async function noticeStatement(
   tx: Tx,
   kind: NoticeKind,
-  json: string,
+  { json, bells }: { json: string; bells: string },
   createdAt: string,
 ): Promise<NoticeResult> {
   const rows = await tx.execute<{ ids: string[] | null; unread: UnreadRow[] | string | null }>(sql`
@@ -97,12 +116,27 @@ async function noticeStatement(
         select n.tenant_id, n.user_id, count(*)::int as n from hub.process_notices n
         where n.user_id = any(array(select distinct user_id from x))
           and n.tenant_id = any(array(select distinct tenant_id from x)) and n.read_at is null
-        group by n.tenant_id, n.user_id) g) as unread`);
+        group by n.tenant_id, n.user_id) g) as unread,
+      notify.enqueue_pack_runs(${bells}::jsonb) as bells`);
   const r = rows[0];
   return { ids: r?.ids ?? [], unread: r?.unread ? parsed(r.unread) : [] };
 }
 
+/**
+ * contract-flow S1b · chuông gói cho notice vừa chèn ở đường một task (`insertNotices`) — người gọi chỉ gọi khi run gắn bản
+ * ghi gói (`pack`), MỘT câu cho mọi người nhận. Tenant/nguồn/link do `notify.enqueue_pack_runs` lấy từ hàng run.
+ */
+export async function enqueuePackBells(
+  tx: Tx,
+  kind: NoticeKind,
+  rows: readonly BellSource[],
+): Promise<void> {
+  if (rows.length === 0) return;
+  const bells = JSON.stringify(packBellsOf(kind, rows));
+  await tx.execute(sql`select notify.enqueue_pack_runs(${bells}::jsonb) as n`);
+}
+
 /** Làm nóng: chạy câu chèn notice với lô rỗng (không ghi hàng nào) trên kết nối của `tx`. */
 export async function warmNotices(tx: Tx): Promise<void> {
-  await noticeStatement(tx, "reminder", "[]", new Date(0).toISOString());
+  await noticeStatement(tx, "reminder", { json: "[]", bells: "[]" }, new Date(0).toISOString());
 }

@@ -5,17 +5,26 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type {
   PackActTarget,
+  PackOpenTask,
   PackRunCaller,
   PackStepsView,
   PackStepView,
 } from "../../packs/kit/application/pack-runs.ports";
+import { headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
-import { canAct } from "../domain/tasks/task-access.rules";
+import { canAct, headGate } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 
 type Ts = Date | string;
-type StageSnap = Parameters<typeof stageMeta>[0] & { after?: { exclude_starter?: boolean } | null };
+type StageSnap = Parameters<typeof stageMeta>[0] & {
+  after?: {
+    kind?: string;
+    group_id?: string | null;
+    exclude_starter?: boolean;
+    head_only?: boolean;
+  } | null;
+};
 type Row = {
   run_status: string;
   started_by: string;
@@ -34,6 +43,8 @@ type Row = {
   escalate_at: Ts | null;
   escalated_at: Ts | null;
   escalate_group_id: string | null;
+  /** S1b · trưởng phòng của Group assignee task (null = không có). */
+  group_head: string | null;
 };
 type Grant = { task_id: string; user_id: string | null; group_id: string | null; via: string };
 
@@ -52,7 +63,9 @@ const rowsSql = (runId: string, tenantId: string) => sql`
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
-    t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id
+    t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id,
+    (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
+      and d.tenant_id = r.tenant_id) as group_head
   from hub.process_runs r
   join hub.stage_runs s on s.process_run_id = r.id and s.tenant_id = r.tenant_id
   left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id
@@ -101,9 +114,14 @@ function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: reado
       reviewGroupId: stageMeta(stage, 0).groupId,
       extraGroupIds: extra,
       starterExcluded: stage?.after?.exclude_starter === true,
+      headGate: headGate(stage?.after, r.group_head), // S1b
     };
     const inGroup = (g: string | null) => g !== null && groupIds.has(g);
-    const assignee = userIds.has(u.userId) || inGroup(r.assignee_group_id) || extra.some(inGroup);
+    const assignee =
+      userIds.has(u.userId) ||
+      inGroup(r.assignee_group_id) ||
+      extra.some(inGroup) ||
+      task.headGate === u.userId;
     const run = { tenantId: u.tenantId, startedBy: r.started_by, originRoom: "none" as const };
     const status = r.run_status as ProcessRunStatus;
     return canAct(v, task, { ...run, taskAssignee: assignee, status });
@@ -140,6 +158,64 @@ export async function stepsView(
     };
   });
 }
+
+const OPEN_GATE = headGateSql("x.st", "t.tenant_id");
+
+/**
+ * contract-flow S1b · "Việc của tôi": task review MỞ của run gói `packKey` mà `u` quyết được — cùng luật `canAct` (grant
+ * user/chuyển tiếp ∪ Group duyệt có cửa trưởng phòng ∪ Group chuyển cấp; trừ người bắt đầu ở stage `exclude_starter`; run
+ * chưa kết thúc). MỘT câu, scope user (RLS T) + lọc `tenant_id` tường minh; vào qua index một phần `process_runs_pack_ref_idx`.
+ */
+export async function openTasksOf(
+  d: ProcessDeps,
+  u: PackRunCaller,
+  packKey: string,
+): Promise<PackOpenTask[]> {
+  if (!/^[a-z][a-z0-9-]{0,39}$/.test(packKey) || !UUID.test(u.tenantId)) return [];
+  const groupIds = [...((await d.config.user(u.userId))?.groupIds ?? [])].filter((g) =>
+    UUID.test(g),
+  );
+  const groups = `{${groupIds.join(",")}}`;
+  const rows = await withHubScope(d.db, userScope(u), (tx) =>
+    tx.execute<OpenRow>(sql`
+      select t.id as task_id, r.id as run_id, r.pack_record_id as record_id, x.st->>'key' as stage_key,
+        x.st->>'name' as stage_name, t.escalate_at as due_at, (t.escalated_at is not null) as escalated
+      from hub.process_runs r
+      join hub.review_tasks t on t.process_run_id = r.id and t.tenant_id = r.tenant_id
+        and t.kind = 'review' and t.status = 'open'
+      join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+      cross join lateral (select r.snapshot->'stages'->(s.stage_idx::int) as st offset 0) x
+      cross join lateral (select ${OPEN_GATE} as gate) hg
+      where r.tenant_id = ${u.tenantId} and r.pack_key = ${packKey} and r.pack_record_id is not null
+        and r.status not in ('done', 'failed', 'cancelled', 'expired')
+        and not (x.st->'after'->>'exclude_starter' = 'true' and r.started_by = ${u.userId})
+        and (exists (select 1 from hub.review_task_assignees a where a.task_id = t.id
+                and a.tenant_id = t.tenant_id and a.user_id = ${u.userId})
+          or (hg.gate is null and t.assignee_group_id = any(${groups}::uuid[]))
+          or hg.gate = ${u.userId}::uuid
+          or (t.escalated_at is not null and t.escalate_group_id = any(${groups}::uuid[])))
+      order by t.created_at, t.id`),
+  );
+  return [...rows].map((r) => ({
+    task_id: r.task_id,
+    run_id: r.run_id,
+    record_id: r.record_id,
+    stage_key: r.stage_key ?? "",
+    stage_name: r.stage_name ?? "",
+    due_at: iso(r.due_at),
+    escalated: r.escalated === true,
+  }));
+}
+
+type OpenRow = {
+  task_id: string;
+  run_id: string;
+  record_id: string;
+  stage_key: string | null;
+  stage_name: string | null;
+  due_at: Ts | null;
+  escalated: boolean;
+};
 
 /** S1a · task review MỞ của run khớp đích (id task hoặc khoá stage), scope user người quyết; không có ⇒ null. */
 export async function openTaskFor(
