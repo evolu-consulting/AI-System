@@ -6,6 +6,7 @@
 //   `engine_run_id = ctx.processRunId`. Finalize kiểm lại stage đã Đạt phủ đủ bước bắt buộc theo giá trị HIỆN TẠI (khoá HĐ) + mẫu
 //   chụp, ghi "Đã duyệt" (`confirmed_by` = người Đạt gần nhất) rồi áp `pending_links` CÙNG tx — lỗi gắn SP ⇒ ROLLBACK, không khoá.
 import type { PackWho } from "../../kit/application/ports";
+import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import {
   engineDefVersion,
   engineStartable,
@@ -63,20 +64,28 @@ export function engineErrMeta(e: unknown): Record<string, string> {
 /** `defVersion` = version def engine (`pack_version`; S3b: đổi cài đặt khi chưa lưu mẫu ⇒ tăng ⇒ ensureDef ghi đè). */
 type Flow = { version: number; steps: readonly FlowStep[]; defVersion: number };
 
+/** prod-fix2 · Group "Toàn quyền" của gói còn ở tenant: Group cấp 2 của cài đặt + Group vai owner (quyền gói `admin`). */
+async function ownerGroupIds(d: ApprovalEngineDeps, who: PackWho): Promise<string[]> {
+  const s = await d.uow.tenant(who, (r) => r.approvalFlow.settings());
+  const ids = await d.groups.idsOf(who.tenantId, [s.level2GroupKey, PACK_OWNER_GROUP_KEY]);
+  return [...new Set(ids.values())];
+}
+
 /** Def theo mẫu; Group mẫu trỏ không còn ở tenant / mẫu rỗng ⇒ null (giữ chế độ máy). */
-async function compiled(
-  d: ApprovalEngineDeps,
-  tenantId: string,
-  f: { steps: readonly FlowStep[] },
-) {
-  const have = await d.groups.existingIds(tenantId, flowGroupIds(f.steps));
+async function compiled(d: ApprovalEngineDeps, who: PackWho, f: { steps: readonly FlowStep[] }) {
+  const tenantId = who.tenantId;
+  const [have, owners] = await Promise.all([
+    d.groups.existingIds(tenantId, flowGroupIds(f.steps)),
+    ownerGroupIds(d, who),
+  ]);
   // cf-dify · bước Dify: tham số workflow lấy từ catalog hiện hành của tenant (workflow đã gỡ ⇒ compile ném ⇒ null).
   const catalog = hasDifyStep(f.steps) ? ((await d.bridge.port?.workflowsOf(tenantId)) ?? []) : [];
   try {
     return compileDef(
       f,
-      new Set(have),
+      new Set([...have, ...owners]),
       new Map(catalog.map((w) => [w.key, w])),
+      owners,
     ) as unknown as Record<string, unknown>;
   } catch {
     return null;
@@ -175,7 +184,7 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
       const got = await loadStart(d, who, id);
       if (!got) return "skipped";
       const { flow, starter } = got;
-      const def = await compiled(d, who.tenantId, flow);
+      const def = await compiled(d, who, flow);
       if (!def) {
         d.warn("contract-engine-flow-invalid", { contract_id: id });
         return "machine";
@@ -226,7 +235,7 @@ export function reopenEngineApproval(d: ApprovalEngineDeps) {
     try {
       const s = await findStalled(d, port, who, id);
       if (typeof s === "string") return s;
-      const def = await compiled(d, who.tenantId, s.got.flow);
+      const def = await compiled(d, who, s.got.flow);
       if (!def) return "failed";
       const caller = callerOf({ tenantId: who.tenantId, userId: s.got.starter });
       await port.ensureDef(caller, APPROVAL_PROCESS_KEY, def, s.got.flow.defVersion);
@@ -245,7 +254,7 @@ export function engineFlowDefSync(d: ApprovalEngineDeps): FlowDefSync {
       const port = d.bridge.port;
       if (!port) return;
       try {
-        const def = await compiled(d, who.tenantId, flow);
+        const def = await compiled(d, who, flow);
         const v = engineDefVersion({ version: flow.version, isDefault: false }, 0);
         if (def) await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, v);
       } catch (e) {
@@ -267,7 +276,7 @@ export function engineSettingsSync(d: ApprovalEngineDeps) {
       const got = await d.uow.tenant(who, (r) => readFlow(r));
       if (got.f) return;
       const flow = await flowOf(d, who, got);
-      const def = await compiled(d, who.tenantId, flow);
+      const def = await compiled(d, who, flow);
       if (def) await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
     } catch (e) {
       d.warn("contract-engine-settings-sync-failed", {

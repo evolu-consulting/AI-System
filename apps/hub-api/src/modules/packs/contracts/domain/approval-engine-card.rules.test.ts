@@ -163,7 +163,9 @@ describe("planEngineAct", () => {
 describe("engineDefVersion · reconcileOf", () => {
   it("mẫu lưu luôn lớn hơn mọi mẫu mặc định; mặc định tăng theo rev", () => {
     const d = (rev: number) => engineDefVersion({ version: 1, isDefault: true }, rev);
-    expect([d(0), d(5)]).toEqual([1, 6]);
+    // prod-fix2 · + ENGINE_SHAPE (dạng def mới ⇒ def cũ ≤ 100 tr + version bị ghi đè).
+    expect([d(0), d(5)]).toEqual([200_000_001, 200_000_006]);
+    expect(d(0)).toBeGreaterThan(100_000_000 + 1_000);
     expect(engineDefVersion({ version: 2, isDefault: false }, 99)).toBeGreaterThan(d(5_000_000));
   });
   it("run kết thúc ⇒ đồng bộ; còn chạy ⇒ không làm gì", () => {

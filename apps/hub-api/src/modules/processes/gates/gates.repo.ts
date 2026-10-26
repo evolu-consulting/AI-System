@@ -1,52 +1,14 @@
 // HUB-FR-107 · §3.4 · §10 · PF1 · repo cổng kiểm: đọc/khoá task + run, đóng task (first-wins `core.closeTask`), ghi passed_by/
 // feedback/redo_sections, huỷ `hub.runs` stage chạy. Tx user của GateService; lọc `tenant_id` tường minh (RLS là lưới). Không log.
-import type {
-  DecisionReason,
-  StageRunStatus,
-  TaskKind,
-  TaskResult,
-  TaskStatus,
-} from "@ai/contracts/chat";
+import type { DecisionReason, StageRunStatus, TaskResult } from "@ai/contracts/chat";
 import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { runErrorText } from "../../runs/run-errors";
-import { groupHeadSql } from "../core/head-gate.sql";
+import { escalatedGroup, type GateTask } from "./gate-task.repo";
 
-export type GateTask = {
-  id: string;
-  tenant_id: string;
-  process_run_id: string;
-  stage_run_id: string;
-  stage_idx: number;
-  kind: TaskKind;
-  status: TaskStatus;
-  assignee_group_id: string | null;
-  /** PD-R21 · Group chuyển cấp (assignee `via='escalated'`) — thành viên cũng quyết được. */
-  escalated_group_id: string | null;
-  reason: DecisionReason | null;
-  /** T19-perf · user assignee đọc cùng câu `loadTask`; S1b · `group_head` = trưởng phòng Group duyệt. */
-  user_ids?: string[] | null;
-  group_head?: string | null;
-};
-
-/** PD-R21 · Group `via='escalated'` của task (khớp `tenant_id` task; index `review_task_assignees` theo task). */
-const escalatedGroup = sql`(select a.group_id from hub.review_task_assignees a
-  where a.task_id = t.id and a.tenant_id = t.tenant_id and a.via = 'escalated' and a.group_id is not null
-  limit 1) as escalated_group_id`;
-
-/** Task + stage_idx (không khoá — service khoá `process_runs` FOR UPDATE sau). null = không thấy (RLS/tenant). */
-export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null> {
-  const [r] = await tx.execute<GateTask>(sql`
-    select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
-      t.assignee_group_id, ${escalatedGroup}, t.reason,
-      array(select a.user_id from hub.review_task_assignees a where a.task_id = t.id and a.tenant_id = t.tenant_id
-        and a.user_id is not null)::text[] as user_ids, ${groupHeadSql("t")} as group_head
-    from hub.review_tasks t
-    join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
-    where t.id = ${taskId}`);
-  return r ?? null;
-}
+// prod-fix2 · `GateTask`/`loadTask` tách sang `gate-task.repo.ts` (file ≤ 400 dòng); xuất lại để `g.loadTask` giữ nguyên.
+export { type GateTask, loadTask } from "./gate-task.repo";
 
 /** Task `decision` đang mở của run: `stageIdx` có ⇒ của stage đó (P-b2 D9); vắng ⇒ mở gần nhất. */
 export async function openDecisionTask(

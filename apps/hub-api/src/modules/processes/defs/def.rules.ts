@@ -67,6 +67,10 @@ function stageRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
 
 /** PD-R23 · Group chuyển cấp phải thuộc tenant của def (`refs.groupIds`) — không lộ tồn tại (cùng thông điệp REF_INVALID). */
 function escalateRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
+  // prod-fix2 · Group "cũng quyết" phải thuộc tenant của def.
+  const also = s.after.kind === "review" ? (s.after.also_group_ids ?? []) : [];
+  const j = also.findIndex((g) => !refs.groupIds.has(g));
+  if (j >= 0) return { path: `stages.${i}.after.also_group_ids.${j}`, ref: "group" };
   const esc = s.after.kind === "review" ? (s.after.escalate ?? null) : null;
   const shape = { escalate: esc ? { afterH: esc.after_h, groupId: esc.group_id } : null };
   const miss = escalateGroupRefs([shape]).find((r) => !refs.groupIds.has(r.groupId));

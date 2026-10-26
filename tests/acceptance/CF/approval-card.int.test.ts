@@ -37,7 +37,7 @@ describe("contract-flow S3b · thẻ duyệt trên engine", () => {
   let id = "";
   let aid = "";
 
-  it("GET: mode engine, 2 bước, bước 0 mở; B (Group cấp 1) quyết được, H thì không", async () => {
+  it("GET: mode engine, 2 bước, bước 0 mở; B (Group cấp 1) và H (Toàn quyền — prod-fix2) quyết được", async () => {
     id = await seedContract(c, 711);
     aid = (await toLevel1(c, id, BIG)).runId;
     const e = await engineRun(aid);
@@ -51,10 +51,8 @@ describe("contract-flow S3b · thẻ duyệt trên engine", () => {
     const asB = (await approval(c, "B", id)).json as Json;
     expect({ can: asB.can_act, task: typeof asB.task_id }).toEqual({ can: true, task: "string" });
     const asH = (await approval(c, "H", id)).json as Json;
-    expect({ can: asH.can_act, why: asH.block_reason }).toEqual({
-      can: false,
-      why: "not_reviewer",
-    });
+    // prod-fix2 · người dùng: "Toàn quyền xác nhận được bước 1" (như máy cũ) ⇒ H (Group owner, ngoài Group cấp 1) quyết được.
+    expect({ can: asH.can_act, why: asH.block_reason }).toEqual({ can: true, why: null });
   }, 60_000);
 
   it("Đạt bước 0 ⇒ bước 1 mở; người gửi (A) bị chặn, H duyệt được", async () => {

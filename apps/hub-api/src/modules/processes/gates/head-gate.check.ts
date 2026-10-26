@@ -2,7 +2,7 @@
 // sau khi khoá run (snapshot đã khoá ⇒ không đổi giữa chừng). Luật thuần: `headGate`/`inReviewGroup` (domain/tasks/task-access).
 import type { Tx } from "@ai/db";
 import { headOf } from "../core/head-gate.sql";
-import { headGate, inReviewGroup } from "../domain/tasks/task-access.rules";
+import { alsoGroupsOf, headGate, inReviewGroup } from "../domain/tasks/task-access.rules";
 import { type Locked, notFound, snapOf } from "./gates.effects";
 import type { GateTask } from "./gates.repo";
 
@@ -21,12 +21,14 @@ export function assertHeadGate(
   { v, groupIds }: Req,
 ): asserts run is Locked {
   if (!run) throw notFound();
-  const gate = headGate(snapOf(run).stages[idx]?.after, task.group_head ?? null);
+  const after = snapOf(run).stages[idx]?.after;
+  const gate = headGate(after, task.group_head ?? null);
   const esc = task.escalated_group_id;
   const ok =
     (task.user_ids ?? []).includes(v.userId) ||
     inReviewGroup(v.userId, groupIds, task.assignee_group_id, gate) ||
-    (esc !== null && groupIds.has(esc));
+    (esc !== null && groupIds.has(esc)) ||
+    alsoGroupsOf(after).some((g) => groupIds.has(g)); // prod-fix2 · không bị head_only
   if (!ok) throw notFound();
 }
 

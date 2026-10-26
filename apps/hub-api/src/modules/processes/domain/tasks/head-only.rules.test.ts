@@ -1,7 +1,7 @@
 // contract-flow S1b · luật thuần: cửa trưởng phòng (`head_only`) trong `canAct` + tiêu đề/khoá chuông gói.
 import { describe, expect, test } from "bun:test";
 import { packBellsOf, packBellTitle } from "../notify/pack-bell.rules";
-import { canAct, headGate, inReviewGroup } from "./task-access.rules";
+import { alsoGroupsOf, canAct, headGate, inReviewGroup } from "./task-access.rules";
 
 const G = "g-review";
 const ESC = "g-esc";
@@ -81,6 +81,46 @@ describe("S1b · canAct với head_only", () => {
   });
   test("ask không bị cửa trưởng phòng", () => {
     expect(canAct(viewer("member", [G]), { ...task, kind: "ask" as const }, run)).toBe(true);
+  });
+});
+
+describe("prod-fix2 · Group cũng quyết (`also_group_ids`)", () => {
+  const OWN = "g-owner";
+  test("alsoGroupsOf: chỉ stage review có mảng; còn lại []", () => {
+    expect(alsoGroupsOf({ kind: "review", also_group_ids: [OWN] })).toEqual([OWN]);
+    expect(alsoGroupsOf({ kind: "review" })).toEqual([]);
+    expect(alsoGroupsOf({ kind: "auto", also_group_ids: [OWN] })).toEqual([]);
+    expect(alsoGroupsOf(undefined)).toEqual([]);
+  });
+  const run = {
+    tenantId: "t",
+    startedBy: "starter",
+    originRoom: "none" as const,
+    taskAssignee: true,
+    status: "waiting_review" as const,
+  };
+  const v = (userId: string, gs: string[]) => ({
+    userId,
+    tenantId: "t",
+    role: "member" as const,
+    groupIds: new Set(gs),
+  });
+  const task = {
+    kind: "review" as const,
+    status: "open" as const,
+    reason: null,
+    userIds: new Set<string>(),
+    groupId: G,
+    reviewGroupId: G,
+    headGate: "head",
+    extraGroupIds: [OWN],
+  };
+  test("thành viên Group cũng quyết quyết được (không bị head_only); ngoài cả hai ⇒ không", () => {
+    expect(canAct(v("owner", [OWN]), task, run)).toBe(true);
+    expect(canAct(v("other", ["g-x"]), task, run)).toBe(false);
+  });
+  test("exclude_starter vẫn chặn người gửi dù thuộc Group cũng quyết", () => {
+    expect(canAct(v("starter", [OWN]), { ...task, starterExcluded: true }, run)).toBe(false);
   });
 });
 

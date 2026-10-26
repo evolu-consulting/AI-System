@@ -149,7 +149,6 @@ export const StageEscalateSchema = z.strictObject({
   group_id: UuidSchema,
 });
 export type StageEscalate = z.infer<typeof StageEscalateSchema>;
-
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
@@ -205,6 +204,7 @@ export const ProcessStageDefSchema = z.strictObject({
       exclude_starter: z.boolean().default(false),
       /** contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm; chuyển cấp không bị giới hạn). */
       head_only: z.boolean().optional(),
+      also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),

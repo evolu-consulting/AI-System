@@ -129,11 +129,16 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
     bridge: port === null ? {} : { port: full },
     uow: { tenant: async (_w, fn) => fn(r) },
     groups: {
+      // Như thật: chỉ Group còn ở tenant (prod-fix2 · Group Toàn quyền cũng tra qua đây).
       idsOf: async () =>
-        new Map([
-          ["k1", G1],
-          ["k2", G2],
-        ]),
+        new Map(
+          (
+            [
+              ["k1", G1],
+              ["k2", G2],
+            ] as const
+          ).filter(([, g]) => w.groups.includes(g)),
+        ),
       existingIds: async () => new Set(w.groups),
     },
     warn: (m) => void w.calls.push(`warn:${m}`),
@@ -183,7 +188,7 @@ describe("startEngineApproval", () => {
     const w = world();
     expect(await startEngineApproval(deps(w))(who, C)).toBe("started");
     expect(w.calls).toEqual([
-      "ensureDef:contracts-approval:v1",
+      "ensureDef:contracts-approval:v200000001",
       `start:contracts:${C}`,
       `attach:${RUN}:v1:2`,
       "kick",
@@ -194,7 +199,7 @@ describe("startEngineApproval", () => {
     const w = world({ flow: { version: 5, steps, updatedAt: "x" }, attachOk: false });
     expect(await startEngineApproval(deps(w))(who, C)).toBe("skipped");
     expect(w.calls).toEqual([
-      "ensureDef:contracts-approval:v100000005",
+      "ensureDef:contracts-approval:v300000005",
       `start:contracts:${C}`,
       `attach:${RUN}:v5:2`,
       `cancel:${RUN}`,

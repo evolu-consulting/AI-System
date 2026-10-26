@@ -7,6 +7,8 @@ export const APPROVAL_DEFAULTS = {
   level1GroupKey: "contracts-editor",
   level2GroupKey: "contracts-owner",
 } as const;
+/** prod-fix2 · Group vai owner của gói (= quyền gói `admin`, "Toàn quyền") — quyết được mọi bước duyệt trên engine. */
+export const PACK_OWNER_GROUP_KEY = "contracts-owner";
 export type ApprovalSettings = {
   threshold: number;
   level1GroupKey: string;

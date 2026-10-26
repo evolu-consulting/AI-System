@@ -100,10 +100,11 @@ export const factsOf = (deal: string | null, totalValue: unknown): FlowFacts => 
  *  `1 + rev` với `rev` = phút từ 2020-01-01 tới lần lưu cài đặt gần nhất (đổi cài đặt ⇒ ensureDef ghi đè). Mọi mẫu lưu luôn lớn hơn
  *  mọi mẫu mặc định (rev < STORED_BASE tới năm ~2210). */
 export const ENGINE_STORED_BASE = 100_000_000;
-export const engineDefVersion = (
-  f: { version: number; isDefault: boolean },
-  rev: number,
-): number => (f.isDefault ? 1 + Math.max(0, Math.trunc(rev)) : ENGINE_STORED_BASE + f.version);
+/** prod-fix2 · dạng def đổi (thêm `also_group_ids`) ⇒ cộng `ENGINE_SHAPE` cho MỌI version để def cũ đã đồng bộ (≤ 100 tr + version)
+ *  bị ghi đè ở lần mở duyệt kế; thứ tự mặc định < đã lưu giữ nguyên. Đổi dạng lần sau ⇒ tăng thêm một bậc 200 tr. */
+export const ENGINE_SHAPE = 200_000_000;
+export const engineDefVersion = (f: { version: number; isDefault: boolean }, rev: number): number =>
+  ENGINE_SHAPE + (f.isDefault ? 1 + Math.max(0, Math.trunc(rev)) : ENGINE_STORED_BASE + f.version);
 
 const TERMINAL_RUN: ReadonlySet<string> = new Set(["done", "failed", "cancelled", "expired"]);
 export const isTerminalRun = (status: string): boolean => TERMINAL_RUN.has(status);

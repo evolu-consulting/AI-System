@@ -40,6 +40,18 @@ export function headGate(
 }
 
 /**
+ * contract-flow prod-fix2 · Group "cũng quyết" task duyệt của stage (`after.also_group_ids`, vd "Toàn quyền" của gói): như Group
+ * chuyển cấp — thành viên quyết được, KHÔNG qua cửa trưởng phòng (head_only chỉ áp cho Group chính), vẫn chịu `exclude_starter`
+ * (`canAct` kiểm trước). Stage không phải review / snapshot cũ ⇒ [].
+ */
+export function alsoGroupsOf(
+  after: { kind?: string; also_group_ids?: readonly string[] | null } | undefined | null,
+): string[] {
+  if (after?.kind !== "review" || !Array.isArray(after.also_group_ids)) return [];
+  return after.also_group_ids.filter((g): g is string => typeof g === "string");
+}
+
+/**
  * contract-flow S1b · người xem thuộc "Group duyệt" của task: có cửa trưởng phòng ⇒ chỉ đúng trưởng phòng (kể cả khi trưởng
  * phòng không nằm trong `group_members`); không cửa ⇒ thành viên Group. Group chuyển cấp KHÔNG qua hàm này (không bị head_only).
  */

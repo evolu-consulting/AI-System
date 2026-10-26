@@ -234,11 +234,18 @@ function difyArgs(wf: DifyWorkflow | undefined) {
   );
 }
 
+/** prod-fix2 · Group "cũng quyết" của bước = Group Toàn quyền của gói còn ở tenant, trừ chính Group của bước; rỗng ⇒ không ghi. */
+function alsoOf(group: string, owners: readonly string[], groupIds: ReadonlySet<string>) {
+  const also = [...new Set(owners)].filter((g) => g !== group && groupIds.has(g));
+  return also.length ? { also_group_ids: also } : {};
+}
+
 function stageOfStep(
   steps: readonly FlowStep[],
   i: number,
   groupIds: ReadonlySet<string>,
   wfs: ReadonlyMap<string, DifyWorkflow>,
+  owners: readonly string[] = [],
 ) {
   const s = steps[i] as FlowStep;
   const step = engineStepOf(i);
@@ -268,6 +275,7 @@ function stageOfStep(
         : { after_h: s.due_h, group_id: groupOf(s.escalate_group_id, groupIds) },
     branch: i === 0 ? [] : branchFrom(steps.length, i),
     exclude_starter: s.exclude_starter,
+    ...alsoOf(group, owners, groupIds),
   };
   const tool = FLOW_TOOL_KEYS.route;
   return toolStage({
@@ -298,12 +306,15 @@ function defInputs(withDify: boolean) {
 /**
  * Def `contracts-approval` (= body `POST /process-defs`): `s0` (route + review bước 0) → `route` (tự rẽ theo `next`) →
  * `s1..sn` (tool + review/Dify + rẽ) → `finalize` (tool `contracts-finalize`). `groupIds` = Group hiện có của tenant; mẫu trỏ
- * Group không còn ⇒ ném `approval-flow-group-missing` (người gọi rơi về mẫu mặc định / báo lỗi).
+ * Group không còn ⇒ ném `approval-flow-group-missing` (người gọi rơi về mẫu mặc định / báo lỗi). prod-fix2 · `owners` = Group
+ * "Toàn quyền" của gói (Group cấp 2 của cài đặt + Group vai owner): thành viên quyết được MỌI bước duyệt (`also_group_ids` của
+ * engine — như máy cũ "người duyệt cấp 2 xác nhận được cấp 1"), vẫn chịu `exclude_starter`.
  */
 export function compileDef(
   flow: { steps: readonly FlowStep[] },
   groupIds: ReadonlySet<string>,
   workflows: ReadonlyMap<string, DifyWorkflow> = new Map(),
+  owners: readonly string[] = [],
 ) {
   const { steps } = flow;
   const n = steps.length;
@@ -327,7 +338,7 @@ export function compileDef(
     after: { kind: "auto", branch: [] },
     timeoutS: 60,
   });
-  const [first, ...rest] = steps.map((_, i) => stageOfStep(steps, i, groupIds, workflows));
+  const [first, ...rest] = steps.map((_, i) => stageOfStep(steps, i, groupIds, workflows, owners));
   if (!first) throw new Error("approval-flow-empty");
   return {
     key: APPROVAL_PROCESS_KEY,

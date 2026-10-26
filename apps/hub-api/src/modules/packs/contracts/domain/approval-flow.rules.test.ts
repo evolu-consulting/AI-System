@@ -273,6 +273,16 @@ describe("compileDef ⇒ def engine", () => {
     expect({ key: def.key, ttl: def.ttl_days }).toEqual({ key: "contracts-approval", ttl: null });
     expect(engineIssues(def)).toEqual([]);
   });
+  it("prod-fix2 · Group Toàn quyền ⇒ `also_group_ids` ở mọi bước duyệt (trừ chính Group bước, Group không còn); qua bộ kiểm", () => {
+    const steps = defaultFlowFromSettings(SETTINGS, KEYS);
+    const gone = "00000000-0000-4000-8000-0000000000ff";
+    const def = compileDef({ steps }, ALL, new Map(), [G.l2, G.l2, gone]);
+    const also = def.stages.map((s) => (s.after as { also_group_ids?: string[] }).also_group_ids);
+    expect(also).toEqual([[G.l2], undefined, undefined, undefined]);
+    expect(engineIssues(def)).toEqual([]);
+    const plain = compileDef({ steps }, ALL);
+    expect(plain.stages.some((s) => "also_group_ids" in s.after)).toBe(false);
+  });
   it("luồng 4 phòng + Dify + chuyển cấp: rẽ next eq j → goto j, Trả lại về bước 0; qua bộ kiểm engine", () => {
     const steps = [...FOUR.slice(0, 2), dify("scan"), ...FOUR.slice(2)];
     const def = compileDef({ steps }, ALL, WFS);

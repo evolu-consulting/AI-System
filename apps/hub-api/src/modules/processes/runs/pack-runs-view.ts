@@ -13,7 +13,7 @@ import type {
 import { headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
-import { canAct, headGate } from "../domain/tasks/task-access.rules";
+import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 
 type Ts = Date | string;
@@ -23,6 +23,7 @@ type StageSnap = Parameters<typeof stageMeta>[0] & {
     group_id?: string | null;
     exclude_starter?: boolean;
     head_only?: boolean;
+    also_group_ids?: string[];
   } | null;
 };
 type Row = {
@@ -109,7 +110,10 @@ function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: reado
   return (r: Row, stage: StageSnap): boolean => {
     const mine = grants.filter((g) => g.task_id === r.task_id);
     const userIds = new Set(mine.flatMap((g) => (g.user_id ? [g.user_id] : [])));
-    const extra = mine.flatMap((g) => (g.via === "escalated" && g.group_id ? [g.group_id] : []));
+    const extra = [
+      ...mine.flatMap((g) => (g.via === "escalated" && g.group_id ? [g.group_id] : [])),
+      ...alsoGroupsOf(stage?.after), // prod-fix2 · Group "cũng quyết" của stage
+    ];
     const task = {
       kind: "review" as const,
       status: "open" as const,
@@ -199,7 +203,8 @@ export async function openTasksOf(
                 and a.tenant_id = t.tenant_id and a.user_id = ${u.userId})
           or (hg.gate is null and t.assignee_group_id = any(${groups}::uuid[]))
           or hg.gate = ${u.userId}::uuid
-          or (t.escalated_at is not null and t.escalate_group_id = any(${groups}::uuid[])))
+          or (t.escalated_at is not null and t.escalate_group_id = any(${groups}::uuid[]))
+          or coalesce(x.st->'after'->'also_group_ids', '[]'::jsonb) ?| ${groups}::text[])
       order by t.created_at, t.id`),
   );
   return [...rows].map((r) => ({

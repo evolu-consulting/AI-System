@@ -134,8 +134,10 @@ function assertMayDecide(
   // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
   // contract-flow S1b · trưởng phòng (có thể ngoài `group_members`) qua cửa sơ bộ; `assertHeadGate` chốt sau khi khoá run.
   const head = task.group_head != null && task.group_head === v.userId;
+  // prod-fix2 · Group "cũng quyết" của stage (vd "Toàn quyền" của gói) như Group chuyển cấp.
+  const also = (task.also_group_ids ?? []).some(inGroup);
   if (!users.has(v.userId) && !inGroup(task.assignee_group_id) && !inGroup(task.escalated_group_id))
-    if (!head) throw notFound();
+    if (!head && !also) throw notFound();
   if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
   if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
 }

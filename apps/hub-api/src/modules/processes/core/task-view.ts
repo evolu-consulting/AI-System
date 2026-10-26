@@ -15,7 +15,7 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
-import { canAct, headGate } from "../domain/tasks/task-access.rules";
+import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
 
 export type TaskRow = {
@@ -124,6 +124,8 @@ type TaskSql = {
   group_head?: string | null;
   /** S1b · cửa trưởng phòng (`headGate`) tính ở `withStage`; null = cả Group duyệt. */
   head_gate?: string | null;
+  /** prod-fix2 · Group "cũng quyết" của stage (`after.also_group_ids`). */
+  also_group_ids?: string[];
 };
 type GrantSql = {
   task_id: string;
@@ -143,6 +145,7 @@ type StageSnap = {
     back_to_steps?: number[] | null;
     exclude_starter?: boolean;
     head_only?: boolean;
+    also_group_ids?: string[];
   } | null;
 } | null;
 
@@ -158,6 +161,7 @@ const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
     back_steps: Array.isArray(back) ? back : null,
     starter_excluded: st?.after?.exclude_starter === true,
     head_gate: headGate(st?.after, r.group_head ?? null), // contract-flow S1b
+    also_group_ids: alsoGroupsOf(st?.after), // prod-fix2
   };
 };
 
@@ -230,7 +234,9 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   const userIds = new Set(mine.flatMap((g) => (g.user_id ? [g.user_id] : [])));
   // PD-R21 · Group chuyển cấp (assignee `via='escalated'`) cũng quyết được.
   const escalatedGroupId = mine.find((g) => g.via === "escalated" && g.group_id)?.group_id ?? null;
-  const extraGroupIds = escalatedGroupId ? [escalatedGroupId] : [];
+  // prod-fix2 · Group "cũng quyết" của stage (chỉ task duyệt) như Group chuyển cấp.
+  const also = r.kind === "review" ? (r.also_group_ids ?? []) : [];
+  const extraGroupIds = [...(escalatedGroupId ? [escalatedGroupId] : []), ...also];
   const facts = { kind: r.kind, status: r.status, reason: r.reason, userIds, groupId: r.group_id };
   const starterExcluded = r.starter_excluded === true; // N2-FR-05
   const task = {
@@ -244,7 +250,7 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   const assignee =
     userIds.has(v.userId) ||
     inGroup(r.group_id) ||
-    inGroup(escalatedGroupId) ||
+    extraGroupIds.some(inGroup) ||
     r.head_gate === v.userId;
   const run = {
     tenantId: r.tenant_id,
