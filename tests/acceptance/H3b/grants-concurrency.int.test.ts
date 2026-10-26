@@ -131,6 +131,12 @@ function seedDir(): string {
       "    description: Tra cứu và tổng hợp hoá đơn của doanh nghiệp.",
       "    runtime: agentic-cli",
       "    profile: fake-1",
+      // workflows.yaml (bản sao seed) gắn agent_workflows vào `assistant` (one-agent) ⇒ phải có trong agents.yaml thử.
+      "  - key: assistant",
+      "    name: { vi: Trợ lý, en: Assistant }",
+      "    description: Trợ lý chung (seed thử H3b).",
+      "    runtime: agentic-cli",
+      "    profile: fake-1",
       "orchestrator:",
       "  agent: orchestrator",
       "  max_steps: 5",

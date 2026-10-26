@@ -36,7 +36,9 @@ const ctx = (r: "Adm" | "Db" | "P" | "A", qs = "") =>
   c.call(r, "GET", `/process-editor/context${qs}`);
 const body = (res: { status: number; json: Json }) => ({
   status: res.status,
-  json: res.status === 200 ? res.json : { code: res.json?.error?.code ?? null },
+  // Context nay con `tools` (catalog; tool nen tang app-guide/my-*) — test nay chi kiem `timezone` theo tenant.
+  json:
+    res.status === 200 ? { timezone: res.json?.timezone } : { code: res.json?.error?.code ?? null },
 });
 
 describe("AC-H46 · HUB-FR-144 · ngữ cảnh editor (múi giờ tenant)", () => {

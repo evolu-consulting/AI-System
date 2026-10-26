@@ -1,4 +1,4 @@
-﻿// AC-H47 · HUB-FR-146 · TT-R04…R08 · plan-d2 §10 S2/S9/S10 (hard stop) · test-plan-d2 §3.2 PD2-I20…I27 + I15 (I15/I22/I27: T15b): công tắc tool theo tenant +
+// AC-H47 · HUB-FR-146 · TT-R04…R08 · plan-d2 §10 S2/S9/S10 (hard stop) · test-plan-d2 §3.2 PD2-I20…I27 + I15 (I15/I22/I27: T15b): công tắc tool theo tenant +
 // cách ly 2 tenant. `hub_ro` policy `USING (true)` ⇒ lọc `tenant_id = run.tenant_id` tường minh là rào DUY NHẤT: bật ở beta,
 // chạy ở acme ⇒ `tool_failed`, Dify 0 lời gọi. Kiểm `canRun` NGAY trước gọi (S10). Chờ tool-driver bằng `handles.settled()`.
 // Thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2` ("chưa có tính năng: … (T17|T18a)").
@@ -64,6 +64,10 @@ async function runToTool(key: string, beforeS0Done?: () => Promise<void>): Promi
   await settled(c);
   return runId;
 }
+/** Tool nen tang (guide/my-history) hien o moi tenant, khong theo cong tac workflow => loai khoi so sanh catalog workflow. */
+const PLATFORM_TOOLS = new Set(["app-guide", "my-activity", "my-chat-history"]);
+const toolKeys = (json: { tools?: { key: string }[] } | null | undefined): string[] =>
+  (json?.tools ?? []).map((t) => t.key).filter((k) => !PLATFORM_TOOLS.has(k));
 async function prep(): Promise<void> {
   await needD2(c);
   await insertWorkflows(c.sql, c.dify.baseUrl);
@@ -75,9 +79,9 @@ describe("AC-H47 · catalog + lưu def theo tenant [TT-R04]", () => {
     await prep();
     await setSwitch(c.sql, "W", ACME, true);
     const a = await c.call("Adm", "GET", "/process-editor/context");
-    expect(((a.json?.tools ?? []) as { key: string }[]).map((t) => t.key)).toEqual([WF.W.key]);
+    expect(toolKeys(a.json)).toEqual([WF.W.key]);
     const b = await c.call("Db", "GET", "/process-editor/context");
-    expect(b.json?.tools ?? []).toEqual([]);
+    expect(toolKeys(b.json)).toEqual([]);
     const res = await c.call(
       "Db",
       "POST",
@@ -219,7 +223,7 @@ describe("AC-H47 · TT-R04 · catalog editor theo tenant (T15b)", () => {
     const keys = async (r: "Adm" | "Db" | "P") => {
       const res = await c.call(r, "GET", "/process-editor/context");
       expect({ role: r, status: res.status }).toEqual({ role: r, status: 200 });
-      return ((res.json?.tools ?? []) as { key: string }[]).map((t) => t.key);
+      return toolKeys(res.json);
     };
     expect({ acme: await keys("Adm"), beta: await keys("Db"), mau: await keys("P") }).toEqual({
       acme: [WF.W.key],
