@@ -1,8 +1,14 @@
 # STATE — trạng thái hiện tại
 
-Cập nhật: 2026-10-20 · Người cập nhật: docs-architect (đóng đợt CR-095)
+Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-10-27 Đóng đợt CR-097 (đợt 1–3) + contract-flow + góp ý Trello + giao theo % — deploy production `9b7a5e1d`, e2e trên server xong, KHÔNG push** (nhánh `platform/gd0`; chưa có remote; [CR-097](CHANGE-REQUESTS.md), [CR-098](CHANGE-REQUESTS.md), [CR-099](CHANGE-REQUESTS.md), [CR-100](CHANGE-REQUESTS.md); quyết định [ADR-0030](adr/0030-contract-approval-on-engine.md)).
+  - **Lát đã xong:** K1/K2/K3 (HĐ từ văn bản, khoá khi xác nhận, chuỗi phiên bản); contract-flow S1a, S1b, S3a, S3b, S4 + sửa fix-review engine (`8b85e3a9`, `712288d4`: run gắn `started_by`, không trả về máy cũ, chuông theo lô) + cf-dify (bước Dify, `8468f996`); G1 `4e6b3aa6`, G2 `9e44b0fa`; U1 `446abc65`, U2 `11d41af4`/`b32c2aa0`, U3 `f68179df`; D1 `77236a7d`; góp ý → Trello `e219bff2`/`f5a0e546`; giao theo % + giao vượt tồn `86515f8c`; e2e deployed `1212c80b`…`5f875240`.
+  - **Migration mới:** hub `0058_pack_run_ref`, `0059_pack_run_bells`, `0060_pack_runs_fix`; pack contracts `0050_cf_approval_flow_steps`, `0051_g1_transactions`, `0052_u2_red_flag`, `0053_delivery_opts`.
+  - **Cờ bật trên server:** `CONTRACTS_APPROVAL_ENGINE=on` và `HUB_PROCESS_ENGINE` (ADR-0030); ba biến Trello (`TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_FEEDBACK_LIST_ID`) đặt trong `.env` server.
+  - **Deploy production `9b7a5e1d` + e2e trên server:** 57 pass; 2 đỏ đã sửa test (ca 2: bật duyệt xanh, tắt duyệt là lỗi code thật, ca 3–7 chạy thay vì skip); 10 skip. Bộ 15 lỗi người dùng báo (`1212c80b`) đã viết test; còn các lỗi đang sửa bên dưới.
+  - **Việc còn lại:** (1) lỗi prod đang sửa: engine không start đúng lúc, và khi tenant tắt duyệt vẫn mở lượt; (2) baseline e2e linux chưa chụp; (3) `OFFSITE_DIR` chưa đặt; (4) đổi mật khẩu admin; (5) push chưa làm, repo chưa có remote; (6) ca e2e 8 và 12 đang skip, cần xem lại.
 - **2026-10-21 CR-096 V2-O (dữ liệu demo v2 + dọn trang cũ) XONG trên nhánh slice/v2-o, CHƯA merge/KHÔNG push:** script `bun tools/scripts/src/seed-demo-v2.ts --tenant demo [--apply]` (chỉ khoá `demo`, từ chối nitigroup; xoá + nạp lại gói contracts của demo theo mockup NITI: 16 HĐ/45 mốc, 7 SP, kho BQ, giá NCC, 6 khách đang dùng, đối tác + sao + điểm đã chốt) — **CHƯA chạy trên sohoptac2**; CKS chỉ đọc toàn cục (migration `0036_v2o_cks_readonly`); gỡ trang cũ (Mua hàng, So sánh giá, CKS, Cài đặt/Điểm uy tín, Việc của tôi) — route cũ chuyển hướng; cổng `check:fn`/`depcruise`/typecheck contracts-web xanh (tách ports/types theo ADR-0023). Việc còn lại: `test:all` + UAT một lần cuối đợt; chạy script trên máy chủ (người dùng duyệt).
 - **2026-10-20 CR-095 ĐỢT ĐÓNG (docs) — chờ ai-sub + người dùng đăng nhập subscription** (nhánh `platform/gd0`, KHÔNG push; HEAD `01e87283` lúc đóng docs; lý do đổi kế hoạch: [CR-095](CHANGE-REQUESTS.md)).
   - **Lát đã xong + merge:** M1, M1b, M2, F1, G1, R1, M3, I1, L1, L1b, W1, W1b, HD78.
