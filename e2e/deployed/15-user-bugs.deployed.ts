@@ -2,7 +2,7 @@
 // Dữ liệu tạo ra: hợp đồng + bản v2 tải lên có tên tệp/tiêu đề gắn E2E-DEPLOY (kèm SP tạo từ dòng HĐ, tên dòng cũng gắn thẻ) — dọn trong
 // afterAll qua API xoá HĐ (kèm SP mồ côi); góp ý E2E-DEPLOY đặt "Xong" ở admin-web. KHÔNG lưu luồng duyệt, KHÔNG gọi Trello (thẻ Trello
 // kiểm bằng log server: `docker logs` admin-api tìm "trello"), KHÔNG gửi email. Chỉ tenant demo (DEMO_USER, mật khẩu DEMO_PW).
-// Các test 1–6 chạy NỐI TIẾP trên cùng một HĐ vừa tải lên (describe serial). Cần AI đọc được tệp (gói Claude còn lượt).
+// Ca 2b (bật duyệt tạm thời) tạo HĐ khoá dùng cho ca 3–7; ca 2a (đường tắt duyệt) ở cuối file. Cài đặt duyệt demo được KHÔI PHỤC trong finally/afterAll.
 // Chạy: powershell -File deploy/prod-sohoptac2/e2e-deployed.ps1 -Spec e2e/deployed/15-user-bugs.deployed.ts
 import { type APIRequestContext, type Page, request as playwrightRequest } from "@playwright/test";
 import {
@@ -54,7 +54,6 @@ let auth: Record<string, string> = {};
 let cid = ""; // HĐ v1 tải lên bằng UI
 let cidTitle = "";
 let itemIds: string[] = [];
-let tenantOff = true; // tenant demo tắt duyệt (có nút "Xác nhận và lưu" của trang)
 const toClean: string[] = []; // id HĐ cần xoá cuối cùng (mới nhất trước)
 
 type Detail = {
@@ -104,6 +103,53 @@ async function sweepContracts(): Promise<void> {
   }
 }
 
+let origCompany: Record<string, unknown> | null = null; // cài đặt công ty demo trước khi đổi (để khôi phục)
+type CompanyGet = {
+  company: Record<string, unknown>;
+  approval_enabled: boolean;
+  allow_negative_stock: boolean;
+};
+
+/** Bật/tắt duyệt của tenant demo qua PUT /company (cùng API màn Cài đặt). Lần đầu nhớ giá trị cũ để `restoreApproval`. */
+async function setApproval(on: boolean): Promise<void> {
+  const g = await api.get(`${P}/company`, { headers: auth });
+  expect(g.status()).toBe(200);
+  const j = (await g.json()) as CompanyGet;
+  origCompany ??= {
+    ...j.company,
+    approval_enabled: j.approval_enabled,
+    allow_negative_stock: j.allow_negative_stock,
+  };
+  const r = await api.put(`${P}/company`, {
+    headers: auth,
+    data: { ...origCompany, approval_enabled: on },
+  });
+  expect(r.status()).toBe(200);
+}
+
+/** Khôi phục cài đặt demo về đúng giá trị đọc được trước khi đổi (idempotent). */
+async function restoreApproval(): Promise<void> {
+  if (!origCompany) return;
+  const r = await api.put(`${P}/company`, { headers: auth, data: origCompany });
+  expect(r.status(), "khôi phục cài đặt duyệt của tenant demo").toBe(200);
+  origCompany = null;
+}
+/** Tải HĐ mẫu lên bằng giao diện (như người dùng), chờ AI đọc xong (needs_review); đăng ký dọn. */
+async function uploadContract(name: string): Promise<string> {
+  await page.goto(`${CW}/contracts`);
+  await settle(page);
+  await page.locator('input[type="file"]').setInputFiles({
+    name,
+    mimeType: "text/markdown",
+    buffer: Buffer.from(CONTRACT_MD, "utf8"),
+  });
+  await page.waitForURL(UUID, { timeout: 60_000 });
+  const id = UUID.exec(page.url())?.[1] ?? "";
+  expect(id).not.toBe("");
+  toClean.push(id);
+  expect(await waitRead(id)).toBe("needs_review");
+  return id;
+}
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ browser }) => {
@@ -123,6 +169,7 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
+  await restoreApproval().catch((e) => console.error("KHÔI PHỤC CÀI ĐẶT DEMO THẤT BẠI", e));
   for (const id of [...toClean].reverse()) await removeContract(id);
   await sweepContracts();
   await page.context().close();
@@ -153,36 +200,65 @@ test.describe("15 lỗi người dùng báo", () => {
     await expect(page).toHaveURL(/\/contracts$/);
   });
 
-  test("[lỗi: SP trống sau xác nhận + hộp «Gắn sản phẩm» không tắt khi bấm liên tục] Xác nhận và lưu ⇒ hộp ⇒ Xác nhận ⇒ hộp đóng; F5 ⇒ đã khoá, dòng có SP", async () => {
-    test.setTimeout(180_000);
-    test.skip(!cid, "không có HĐ từ test trước");
-    await page.goto(`${CW}/contracts/${cid}`);
-    await settle(page);
-    // Tenant demo BẬT duyệt (không có nút «Xác nhận và lưu» của trang) ⇒ không đi được đường tenant tắt duyệt; ghi chú: đường bật duyệt
-    // (nút của thẻ duyệt) có cùng hộp «Gắn sản phẩm» nhưng cần người duyệt cấp 2 ⇒ không tự động hoá ở đây (không đổi cấu hình demo).
-    const confirm = page.getByTestId("confirm-save");
-    tenantOff = (await confirm.count()) > 0;
-    test.skip(!tenantOff, "tenant demo đang bật duyệt: không có nút «Xác nhận và lưu» của trang");
-    await confirm.click();
-    const dlg = page.getByTestId("product-link-dialog");
-    await expect(dlg).toContainText("Gắn sản phẩm");
-    const ok = page.getByTestId("product-link-confirm");
-    await ok.click();
-    // bấm liên tục: lần 2 có thể đã không còn nút (hộp đã đóng) — không được lỗi/treo
-    await ok.click({ timeout: 1500 }).catch(() => {});
-    await expect(dlg).toHaveCount(0, { timeout: 30_000 });
-    await expect(page.getByTestId("banner-locked")).toBeVisible({ timeout: 30_000 });
-    await page.reload();
-    await settle(page);
-    await expect(page.getByTestId("banner-locked")).toBeVisible();
-    await expect(page.getByText("Chưa gắn sản phẩm")).toHaveCount(0);
-    const d = await getDetail(cid);
-    expect(d.locked).toBe(true);
-    expect(d.items.length).toBeGreaterThan(0);
-    itemIds = d.items.map((i) => i.id);
-    expect(d.items.filter((i) => i.product_id === null)).toEqual([]);
+  test("[lỗi: SP trống sau xác nhận] 2b · đường bật duyệt: Xác nhận và lưu của thẻ duyệt ⇒ hộp «Gắn sản phẩm» ⇒ Xác nhận ⇒ HĐ khoá + có SP", async () => {
+    test.setTimeout(480_000);
+    await setApproval(true); // bật duyệt cho tenant demo; luôn khôi phục ở finally (và afterAll)
+    try {
+      const id2 = await uploadContract(`${TAG}-bat-duyet-${RUN}.md`);
+      await page.goto(`${CW}/contracts/${id2}`);
+      await settle(page);
+      const ap = (await (
+        await api.get(`${P}/contracts/${id2}/approval`, { headers: auth })
+      ).json()) as {
+        steps?: unknown[];
+        can_act?: boolean;
+      };
+      const engine = Array.isArray(ap.steps);
+      if (engine) {
+        await expect(
+          page.locator("[data-approval=timeline]"),
+          "thẻ engine có dòng thời gian",
+        ).toBeVisible();
+        await expect(page.getByTestId("approval-step-0")).toBeVisible();
+      }
+      expect(ap.can_act, "tài khoản demo phải duyệt được bước 1 (người gửi được Đạt bước 1)").toBe(
+        true,
+      );
+      const dlg = page.getByTestId("product-link-dialog");
+      const btn = page.getByRole("button", { name: "Xác nhận và lưu", exact: true });
+      const pass = page.locator("[data-approval=pass], [data-approval=approve]").first();
+      // Bước soạn: Xác nhận và lưu; (engine) các bước duyệt kế: Đạt; bước cuối mở hộp Gắn SP.
+      for (let i = 0; i < 4 && !(await getDetail(id2)).locked; i++) {
+        const b = btn.or(pass).first();
+        await expect(b).toBeVisible({ timeout: 30_000 });
+        await b.click();
+        if (
+          await dlg.waitFor({ timeout: 8000 }).then(
+            () => true,
+            () => false,
+          )
+        ) {
+          await expect(dlg).toContainText("Gắn sản phẩm");
+          await page.getByTestId("product-link-confirm").click();
+          await expect(dlg).toHaveCount(0, { timeout: 30_000 });
+          break;
+        }
+        await settle(page);
+      }
+      await page.reload();
+      await settle(page);
+      await expect(page.getByTestId("banner-locked")).toBeVisible({ timeout: 30_000 });
+      const d = await getDetail(id2);
+      expect(d.locked).toBe(true);
+      expect(d.items.length).toBeGreaterThan(0);
+      expect(d.items.filter((i) => i.product_id === null)).toEqual([]);
+      cid = id2;
+      cidTitle = d.title;
+      itemIds = d.items.map((i) => i.id);
+    } finally {
+      await restoreApproval();
+    }
   });
-
   test("[lỗ hổng: gắn SP sau khoá] gắn sản phẩm trên HĐ đã khoá qua API ⇒ 409", async () => {
     test.skip(itemIds.length === 0, "HĐ chưa được xác nhận/khoá ở test trước");
     const d = await getDetail(cid);
@@ -406,6 +482,47 @@ test.describe("15 app-perm · người dùng chỉ có Sổ Hợp Tác", () => {
     await p.getByRole("button", { name: /Ứng dụng|Apps/ }).click();
     await expect(p.getByRole("menuitem", { name: /Sổ Hợp Tác|Cooperation Ledger/ })).toBeVisible();
     await expect(p.getByRole("menuitem", { name: /Chat AI|AI Chat/ })).toHaveCount(0);
+  });
+});
+
+test.describe("15 lỗi người dùng báo · đường tắt duyệt", () => {
+  test("[lỗi: SP trống sau xác nhận + hộp «Gắn sản phẩm» không tắt khi bấm liên tục] 2a · đường tắt duyệt: Xác nhận và lưu ⇒ hộp ⇒ Xác nhận (bấm nhanh 2 lần) ⇒ hộp đóng; F5 ⇒ đã khoá, dòng có SP", async () => {
+    test.setTimeout(300_000);
+    await setApproval(false); // tắt duyệt cho tenant demo; luôn khôi phục ở finally (và afterAll)
+    try {
+      // HĐ phải tải lên SAU khi tắt duyệt (HĐ tải lúc bật duyệt đã có lượt engine, không đi đường tắt được).
+      const idA = await uploadContract(`${TAG}-tat-duyet-${RUN}.md`);
+      cid = idA;
+      cidTitle = (await getDetail(idA)).title;
+      await page.goto(`${CW}/contracts/${cid}`);
+      await settle(page);
+      // Nút của trang (testid confirm-save, khi không có lượt duyệt) hoặc của thẻ duyệt cấp 1 (lượt máy cũ vẫn mở khi tenant tắt duyệt).
+      const confirm = page
+        .getByTestId("confirm-save")
+        .or(page.getByRole("button", { name: "Xác nhận và lưu", exact: true }))
+        .first();
+      await expect(confirm, "có nút «Xác nhận và lưu»").toBeVisible({ timeout: 30_000 });
+      await confirm.click();
+      const dlg = page.getByTestId("product-link-dialog");
+      await expect(dlg).toContainText("Gắn sản phẩm");
+      const ok = page.getByTestId("product-link-confirm");
+      await ok.click();
+      // bấm nhanh lần 2: có thể đã không còn nút (hộp đã đóng) — không được lỗi/treo
+      await ok.click({ timeout: 1500 }).catch(() => {});
+      await expect(dlg).toHaveCount(0, { timeout: 30_000 });
+      await expect(page.getByTestId("banner-locked")).toBeVisible({ timeout: 30_000 });
+      await page.reload();
+      await settle(page);
+      await expect(page.getByTestId("banner-locked")).toBeVisible();
+      await expect(page.getByText("Chưa gắn sản phẩm")).toHaveCount(0);
+      const d = await getDetail(cid);
+      expect(d.locked).toBe(true);
+      expect(d.items.length).toBeGreaterThan(0);
+      itemIds = d.items.map((i) => i.id);
+      expect(d.items.filter((i) => i.product_id === null)).toEqual([]);
+    } finally {
+      await restoreApproval();
+    }
   });
 });
 
