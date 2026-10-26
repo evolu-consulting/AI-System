@@ -5,7 +5,7 @@ ALTER TABLE contracts.partner_events DROP CONSTRAINT IF EXISTS partner_events_ty
 --> statement-breakpoint
 ALTER TABLE contracts.partner_events ADD CONSTRAINT partner_events_type_ck CHECK (type IN ('paid', 'received', 'postponed',
   'appointment_kept', 'appointment_missed', 'delivered', 'reminded', 'complaint', 'cks_renewed', 'cks_lapsed', 'manual_adjust',
-  'rating', 'overdue', 'no_delivery', 'fraud'));
+  'rating', 'overdue', 'job', 'no_delivery', 'fraud'));
 --> statement-breakpoint
 ALTER TABLE contracts.partner_events DROP CONSTRAINT IF EXISTS partner_events_severe_reason_ck;
 --> statement-breakpoint
