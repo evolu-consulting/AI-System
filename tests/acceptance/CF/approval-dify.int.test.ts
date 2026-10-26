@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { encryptSecret, parseMasterKey } from "../../../apps/admin-api/src/lib/secret-crypto";
 import { TEST_MASTER_KEY_B64 } from "../H2a/_h2a";
-import { CBASE, groupId, seedContract, toLevel1 } from "../HD3/_hd3";
+import { groupId, seedContract, toLevel1 } from "../HD3/_hd3";
 import { type Json, PA, T, waitStatus } from "../P-d/_support/pd";
 import { type FakeDify, startFakeDify } from "../P-d/d2/_d2";
 import { type CtxCf, caller, startCf } from "./_cf";
@@ -22,12 +22,12 @@ beforeAll(async () => {
   c = await startCf({ secretMasterKey: TEST_MASTER_KEY_B64, difyTimeoutMaxS: 300 });
   const key = parseMasterKey(TEST_MASTER_KEY_B64);
   const good = [
-    { name: "contract_id", type: "text", required: true },
-    { name: "title", type: "text", required: false },
-    { name: "total_value", type: "number", required: false },
-    { name: "khac", type: "text", required: false },
+    { name: "contract_id", type: "text", required: true, description: "Tham số thử" },
+    { name: "title", type: "text", required: false, description: "Tham số thử" },
+    { name: "total_value", type: "number", required: false, description: "Tham số thử" },
+    { name: "khac", type: "text", required: false, description: "Tham số thử" },
   ];
-  const bad = [{ name: "tong_tien", type: "number", required: true }];
+  const bad = [{ name: "tong_tien", type: "number", required: true, description: "Tham số thử" }];
   for (const [i, w] of [
     { id: WFID, key: KEY, schema: good },
     { id: BADID, key: BAD, schema: bad },
@@ -75,23 +75,23 @@ const difyStep = (key: string, wf: string): Json => ({
 
 describe("cf-dify · bước Dify", () => {
   it("GET /dify-workflows: owner thấy workflow đã bật cho tenant; editor 403; chưa bật ⇒ rỗng", async () => {
-    const none = await c.call("A", "GET", `${CBASE}/dify-workflows`);
+    const none = await c.call("A", "GET", `/pack/contracts/dify-workflows`);
     expect({ s: none.status, items: (none.json as Json).items }).toEqual({ s: 200, items: [] });
     await sw(WFID, true);
     await sw(BADID, true);
     await c.sql`update hub.config_meta set hub_config_version = hub_config_version + 1 where id = 1`;
-    const ok = await c.call("A", "GET", `${CBASE}/dify-workflows`);
+    const ok = await c.call("A", "GET", `/pack/contracts/dify-workflows`);
     const keys = ((ok.json as Json).items as { key: string }[]).map((i) => i.key).sort();
     expect({ s: ok.status, keys }).toEqual({ s: 200, keys: [BAD, KEY].sort() });
     // Editor thuần (B không thuộc nhóm owner) không có quyền admin gói.
-    expect((await c.call("B", "GET", `${CBASE}/dify-workflows`)).status).toBe(403);
+    expect((await c.call("B", "GET", `/pack/contracts/dify-workflows`)).status).toBe(403);
   }, 60_000);
 
   it("PUT approval-flow: khoá lạ ⇒ 422 DIFY_WORKFLOW_UNKNOWN; tham số bắt buộc không thoả ⇒ DIFY_PARAM_UNSUPPORTED; hợp lệ ⇒ 200", async () => {
     const gE = await groupId(c, "editor");
     const gO = await groupId(c, "owner");
     const put = async (steps: Json[], version = 1) =>
-      c.call("A", "PUT", `${CBASE}/approval-flow`, { version, steps });
+      c.call("A", "PUT", `/pack/contracts/approval-flow`, { version, steps });
     const unk = await put([review("s0", gE), difyStep("d", "khong-co"), review("s2", gO)]);
     expect({ s: unk.status, i: (unk.json as Json).error?.details?.issues }).toEqual({
       s: 422,
@@ -116,7 +116,7 @@ describe("cf-dify · bước Dify", () => {
     await waitStatus(c.sql, run, "waiting_review");
     expect(await c.port.act(caller(PA.B), run, { stage: "s0" }, { result: "pass" })).toBe("ok");
     await dify.arrived(1, async () => {
-      await waitStatus(c.sql, run, "failed");
+      await waitStatus(c.sql, run, "needs_decision");
     });
     expect(dify.calls[0]?.inputs).toMatchObject({ contract_id: id });
     await waitStatus(c.sql, run, "waiting_review");
