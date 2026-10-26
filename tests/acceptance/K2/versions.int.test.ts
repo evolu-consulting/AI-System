@@ -7,6 +7,13 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { CBASE, type Json, pdf } from "../HD1/_support/hd1";
 import { arrangeHd7, type CtxN1, d, deal, P, startHd1, T } from "../HD7/_support/hd7";
 
+/** Fixture HD7 `deal` mở khoá HĐ đã xác nhận (lock-strict); K2 cần HĐ ĐÃ khoá (CONTRACT_NOT_LOCKED nếu không) ⇒ khoá lại như lúc xác nhận. */
+async function lockedDeal(sql: CtxN1["sql"], o: Parameters<typeof deal>[1]): Promise<string> {
+  const id = await deal(sql, o);
+  await sql`update contracts.contracts set locked_at = now() where id = ${id}`;
+  return id;
+}
+
 let c: CtxN1;
 type Person = (typeof P)[keyof typeof P];
 
@@ -74,7 +81,7 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
   it("v2 nháp kế thừa phụ trách; xác nhận ⇒ v1 superseded, nghĩa vụ cutover, list chỉ v2 (versions_count 2)", async () => {
     await arrangeHd7(c);
     await approvalOff();
-    const v1 = await deal(c.sql, { start: d(-90), end: d(300), number: "HĐ-V1" });
+    const v1 = await lockedDeal(c.sql, { start: d(-90), end: d(300), number: "HĐ-V1" });
     const [v1Before] = await c.sql<
       { fields: Json }[]
     >`select fields from contracts.contracts where id = ${v1}`;
@@ -218,7 +225,7 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
 
   it("bản nháp mới nhất trong chuỗi xoá được (bỏ bản cập nhật) ⇒ v1 vẫn hiện hành, tải lại được", async () => {
     await arrangeHd7(c);
-    const v1 = await deal(c.sql, { number: "HĐ-DEL" });
+    const v1 = await lockedDeal(c.sql, { number: "HĐ-DEL" });
     const up = await uploadVersion(P.lan, v1);
     expect(up.status).toBe(201);
     const del = await c.hubCall(P.lan, "DELETE", `${CBASE}/${up.json.id}`, {});
@@ -230,7 +237,7 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
 describe("cách ly · RLS chuỗi phiên bản", () => {
   it("chéo tenant: owner beta tải bản cập nhật cho HĐ acme ⇒ 404, không tạo hàng", async () => {
     await arrangeHd7(c);
-    const v1 = await deal(c.sql, { number: "HĐ-X" });
+    const v1 = await lockedDeal(c.sql, { number: "HĐ-X" });
     const r = await uploadVersion(P.an, v1);
     expect(r.status).toBe(404);
     const [n] = await c.sql<
@@ -241,7 +248,7 @@ describe("cách ly · RLS chuỗi phiên bản", () => {
 
   it("chế độ org: hoa không thấy v1 (của lan) ⇒ không tạo được v2 (404) và không thấy v2 lan tải", async () => {
     await arrangeHd7(c);
-    const v1 = await deal(c.sql, { number: "HĐ-RLS" });
+    const v1 = await lockedDeal(c.sql, { number: "HĐ-RLS" });
     await c.sql`insert into contracts.visibility_settings (tenant_id, mode) values (${T.acme}, 'org')
       on conflict (tenant_id) do update set mode = 'org'`;
     try {

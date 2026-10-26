@@ -251,3 +251,119 @@ export const v2IgnoreTables = [
   "stock_moves",
   "todo_dismissals",
 ] as const;
+
+// D1/D2/niti-import · bảng id (product_sources, partner_contacts, price_scout_alerts) + bảng khoá ghép (dò theo một cột).
+const alertIns = `insert into contracts.price_scout_alerts (id, tenant_id, product_id, day, kind, detail)
+  values ($1, $2, $3, '2026-10-01', 'threshold', 'x')`;
+const srcIns = `insert into contracts.product_sources (id, tenant_id, product_id, supplier_name, supplier_party_key)
+  values ($1, $2, $3, 'NCC', $4)`;
+const impIns =
+  "insert into contracts.import_rows (tenant_id, source, tbl, row_key) values ($1, 'src', 'abc', $2)";
+v2Tables.push(
+  {
+    name: "product_sources",
+    seed: async (o, t) =>
+      one(
+        o,
+        "insert into contracts.product_sources (tenant_id, product_id, supplier_name, supplier_party_key) values ($1, $2, 'NCC', $3)",
+        [t, await parent(o, "contracts.products", t), `tax:${crypto.randomUUID()}`],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(srcIns, [rnd(pk), t, crypto.randomUUID(), `tax:${crypto.randomUUID()}`]),
+  },
+  {
+    name: "partner_contacts",
+    seed: (o, t) =>
+      one(
+        o,
+        "insert into contracts.partner_contacts (tenant_id, party_key, name, created_by) values ($1, $2, 'LH', $3)",
+        [t, `tax:${crypto.randomUUID()}`, who],
+      ),
+    insert: (tx, t, pk) =>
+      tx.unsafe(
+        "insert into contracts.partner_contacts (id, tenant_id, party_key, name) values ($1, $2, $3, 'LH')",
+        [rnd(pk), t, `tax:${crypto.randomUUID()}`],
+      ),
+  },
+  {
+    name: "price_scout_alerts",
+    seed: async (o, t) =>
+      one(
+        o,
+        "insert into contracts.price_scout_alerts (tenant_id, product_id, day, kind, detail) values ($1, $2, '2026-10-01', 'threshold', 'x')",
+        [t, await parent(o, "contracts.products", t)],
+      ),
+    insert: (tx, t, pk) => tx.unsafe(alertIns, [rnd(pk), t, crypto.randomUUID()]),
+  },
+  {
+    name: "price_scout_quota", // khoá = tenant
+    pk: "tenant_id",
+    seed: async (o, t) => {
+      await o.unsafe("insert into contracts.price_scout_quota (tenant_id) values ($1)", [t]);
+      return t;
+    },
+    insert: (tx, t) =>
+      tx.unsafe("insert into contracts.price_scout_quota (tenant_id) values ($1)", [t]),
+  },
+  {
+    name: "price_scout_usage", // khoá ghép (tenant_id, day) ⇒ dò theo day
+    pk: "day",
+    seed: async (o, t) => {
+      const day = pick(PERIODS, t);
+      await o.unsafe("insert into contracts.price_scout_usage (tenant_id, day) values ($1, $2)", [
+        t,
+        day,
+      ]);
+      return day;
+    },
+    insert: (tx, t) =>
+      tx.unsafe(
+        "insert into contracts.price_scout_usage (tenant_id, day) values ($1, '2026-09-01')",
+        [t],
+      ),
+  },
+  {
+    name: "price_scout_defaults", // khoá ghép (tenant_id, grp) ⇒ dò theo grp
+    pk: "grp",
+    seed: async (o, t) => {
+      const grp = pick(["goods", "service"] as const, t);
+      await o.unsafe(
+        "insert into contracts.price_scout_defaults (tenant_id, grp) values ($1, $2)",
+        [t, grp],
+      );
+      return grp;
+    },
+    insert: (tx, t) =>
+      tx.unsafe(
+        "insert into contracts.price_scout_defaults (tenant_id, grp) values ($1, 'goods')",
+        [t],
+      ),
+  },
+  {
+    name: "price_scout_configs", // khoá ghép (tenant_id, product_id) ⇒ dò theo product_id
+    pk: "product_id",
+    seed: async (o, t) => {
+      const pid = await parent(o, "contracts.products", t);
+      await o.unsafe(
+        "insert into contracts.price_scout_configs (tenant_id, product_id) values ($1, $2)",
+        [t, pid],
+      );
+      return pid;
+    },
+    insert: (tx, t) =>
+      tx.unsafe(
+        "insert into contracts.price_scout_configs (tenant_id, product_id) values ($1, $2)",
+        [t, crypto.randomUUID()],
+      ),
+  },
+  {
+    name: "import_rows", // khoá ghép (tenant_id, source, tbl, row_key) ⇒ dò theo row_key
+    pk: "row_key",
+    seed: async (o, t) => {
+      const k = `k-${crypto.randomUUID()}`;
+      await o.unsafe(impIns, [t, k]);
+      return k;
+    },
+    insert: (tx, t, pk) => tx.unsafe(impIns, [t, pk ?? `k-${crypto.randomUUID()}`]),
+  },
+);
