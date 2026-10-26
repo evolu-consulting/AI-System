@@ -71,7 +71,8 @@ describe("contract-flow S3a · duyệt trên engine", () => {
     expect(r).toEqual({ pack_key: "contracts", rec: id, t: T.acme });
     await waitStatus(c.sql, run, "waiting_review");
     // Máy 2 bước cũ không quyết lượt chạy trên engine.
-    const m = await act(c, "B", id, "approve");
+    // S3b: lượt engine quyết qua engine (không còn chặn). Kiểm không đổi trạng thái: Trả lại ở bước soạn ⇒ APPROVAL_NOT_OPEN.
+    const m = await act(c, "B", id, "return", "x");
     expect(errCode(m)).toBe("APPROVAL_NOT_OPEN");
   }, 60_000);
 
