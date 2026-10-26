@@ -407,7 +407,7 @@ f62f8dd47e33ac625bd246c0607f619d26889543ffcf8533b8101a30d0503a13  e2e/contracts-
 2f5c49e16e1ecbbd4dd043aedd4885772217ec51a0dccf6f8bdef211b5e4badb  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 d704ce4d4bd14c2dc3f67bf0d7c83bde3eec51b47c89dfe46fc38b871969b8f5  e2e/deployed/01-login-sso.deployed.ts
-f67467ff23cfe5aabf9db3bac0113e784994a10dc87fe013e4f2f40f6e468866  e2e/deployed/02-contracts-pages.deployed.ts
+c291e053c718c986c926b8bddf622e65936c66da796d7093916eb272cd89edb8  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 8ca4b839a1ebbf00977c9709befedec11cafe10b5eca026e0eb4bd25ec7d8ad5  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
@@ -420,7 +420,7 @@ dad0322f4859b4f1d64bce547f32e2733df5454fb347830aa3f847f39f2ab1a1  e2e/deployed/1
 1618f0ea7689e22603d289f8a98689c2606928b642024e95a4047fe77aeaaf29  e2e/deployed/12-han-muc-duyet.deployed.ts
 39a729b78d82532b0a3b7d033a0732130898f1a3c4f1acee724e5aaf369ade4b  e2e/deployed/13-chat-dify-tool.deployed.ts
 a8d34055841f7db2f7c423ddf3c082d2ad61db8b667443352e1fe10fa81db534  e2e/deployed/14-app-perm-demo.deployed.ts
-b59e731121bab257fda803eadaf6e4dd97a1f66fe5149df4839d1d9f9a7bdee3  e2e/deployed/15-user-bugs.deployed.ts
+e8a410b26c21fd0d218d93ea74f4046a05cf57a36cdaf3bb79b60a425c2e7fad  e2e/deployed/15-user-bugs.deployed.ts
 2475e7d568b76dd74a40bea6f31eef0b3f52a3cb9465e8ee9452e526da12e3e6  e2e/deployed/_support.ts
 1c63c4ad1250687114fe46b60911821123b8c5e7c559df3d42561e528f1bcee4  e2e/deployed/deployed.config.ts
 adf59fb675accb7eafd64aa118372adac461e020e2356098e0e2bb228b6ef081  e2e/features.spec.ts
