@@ -7,7 +7,14 @@ import type {
   PackRunsBridge,
   PackRunsPort,
 } from "../../../apps/hub-api/src/modules/packs/kit/application/pack-runs.ports";
-import { addRole, type CtxHd3, type FakeModel, type ModelCall, untilActions } from "../HD3/_hd3";
+import {
+  addRole,
+  type CtxHd3,
+  type FakeModel,
+  type ModelCall,
+  type SweepOut,
+  untilActions,
+} from "../HD3/_hd3";
 import { packsPath, startAdminN1 } from "../N1/_support/n1";
 import { PA, startPd, T } from "../P-d/_support/pd";
 
@@ -38,7 +45,10 @@ function fakeModel(): FakeModel & { provider: unknown } {
   return m;
 }
 
+type Handles = { sweepOnce: () => Promise<SweepOut>; reclaimOnce: () => Promise<number> };
+
 export async function startCf(): Promise<CtxCf> {
+  let h: Handles | null = null;
   const waiters = new Map<string, ((o: string) => void)[]>();
   const model = fakeModel();
   const bridge: PackRunsBridge = {};
@@ -51,7 +61,9 @@ export async function startCf(): Promise<CtxCf> {
       waiters.delete(id);
       for (const f of w) f(out);
     },
-    onHandles: () => undefined,
+    onHandles: (x: Handles) => {
+      h = x;
+    },
   };
   const c = await startPd({
     processRunsPerTenant: 200,
@@ -66,8 +78,8 @@ export async function startCf(): Promise<CtxCf> {
     port: bridge.port,
     extracted: (id: string) =>
       new Promise<string>((res) => waiters.set(id, [...(waiters.get(id) ?? []), res])),
-    sweepOnce: async () => ({ tenants: 0, read: 0, closed: 0 }),
-    reclaimOnce: async () => 0,
+    sweepOnce: () => (h as unknown as Handles).sweepOnce(),
+    reclaimOnce: () => (h as unknown as Handles).reclaimOnce(),
     stop: async () => {
       await admin.close();
       await c.stop();

@@ -4,7 +4,7 @@
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { addDays, localDate } from "../domain/local-time.rules";
 import { buildMyWork, type RawMyWork } from "../domain/mywork.rules";
-import { MYWORK_AHEAD_DAYS, type MyWorkOut } from "../domain/mywork.types";
+import { MYWORK_AHEAD_DAYS, type MyWorkApproval, type MyWorkOut } from "../domain/mywork.types";
 
 /** Hạn "còn cho vào danh sách": đọc HĐ đã hết hạn quá 60 ngày thì bỏ (mgmt `ARCHIVE_AFTER_DAYS`). */
 export const ARCHIVE_AFTER_DAYS = 60;
@@ -28,6 +28,8 @@ type Deps = {
   uow: PackUow<MyWorkRepos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
+  /** contract-flow S3b · việc duyệt HĐ trên engine (cờ bật); vắng ⇒ không có trường `approvals`. */
+  approvals?: (who: PackWho) => Promise<MyWorkApproval[]>;
 };
 
 export function myWorkWindow(now: Date, tz: string): MyWorkWindow {
@@ -44,7 +46,8 @@ export function myWork(d: Deps) {
   const list = async (who: PackWho): Promise<MyWorkOut> => {
     const w = myWorkWindow(d.now(), await d.timeZoneOf(who.tenantId));
     const raw = await d.uow.tenant(who, ({ mywork: r }) => r.list(w));
-    return buildMyWork(raw, w.today);
+    const out = buildMyWork(raw, w.today);
+    return d.approvals ? { ...out, approvals: await d.approvals(who) } : out;
   };
   const done = async (who: PackWho, id: string): Promise<{ ok: true }> => {
     if (!(await d.uow.tenant(who, ({ mywork: r }) => r.doneFollowup(id))))

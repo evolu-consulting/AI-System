@@ -25,9 +25,19 @@ export type MyWorkItem = {
   milestone: number | null;
   subject: "renewal" | "customer" | "obligation" | "contract" | "company" | null;
 };
+export type MyWorkApproval = {
+  task_id: string;
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  stage_name: string;
+  due_at: string | null;
+  escalated: boolean;
+};
 export type MyWorkOut = {
   today: string;
   items: MyWorkItem[];
   counts: { late: number; today: number; upcoming: number };
   truncated: boolean;
+  approvals?: MyWorkApproval[];
 };

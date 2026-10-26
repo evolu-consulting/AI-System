@@ -4,6 +4,7 @@ import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackWho } from "../kit/application/ports";
 import { followupsRepo } from "./adapters/followups.repo";
 import { myWorkRepo } from "./adapters/mywork.repo";
 import { myWorkRoutes } from "./adapters/mywork.routes";
@@ -13,6 +14,7 @@ import { todoRepo } from "./adapters/todo.repo";
 import { followupsUsecases } from "./application/followups.usecase";
 import { myWork } from "./application/mywork.usecase";
 import { overviewUsecase } from "./application/overview.usecase";
+import type { MyWorkApproval } from "./domain/mywork.types";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
@@ -26,7 +28,12 @@ const repos = (tx: Tx, t: string) => ({
 export function myWorkModule(
   db: Db,
   view: PackAccessView,
-  d: { timeZoneOf: (tenantId: string) => Promise<string>; now?: () => Date },
+  d: {
+    timeZoneOf: (tenantId: string) => Promise<string>;
+    now?: () => Date;
+    /** contract-flow S3b · việc duyệt HĐ trên engine (`ContractsAi.myApprovals`). */
+    approvals?: (who: PackWho) => Promise<MyWorkApproval[]>;
+  },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, KEY, repos));
   const tz = safeTimeZone(d.timeZoneOf);
@@ -37,6 +44,7 @@ export function myWorkModule(
       uow,
       timeZoneOf: safeTimeZone(d.timeZoneOf),
       now,
+      ...(d.approvals ? { approvals: d.approvals } : {}),
     }),
   });
   // V2-K · Tổng quan + Cần xử lý 8 nguồn (cùng PackUow).

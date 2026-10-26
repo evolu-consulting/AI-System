@@ -10,6 +10,7 @@ import type {
   OpenOutcome,
 } from "../application/approval.ports";
 import { APPROVAL_DEFAULTS, type ApprovalSettings } from "../domain/approval-def.rules";
+import type { FlowStep } from "../domain/approval-flow.types";
 import { settingsRepo } from "./approval-settings.repo";
 
 /** Trạng thái HĐ còn trong flow (chưa "Đã duyệt"/"Bị từ chối"/theo dõi). */
@@ -47,6 +48,9 @@ type StateRow = {
   a_by: string | null;
   a_fb: string | null;
   a_mode: string | null;
+  a_run: string | null;
+  a_steps: unknown;
+  deal: string | null;
   v: unknown;
   threshold: string | number | null;
 };
@@ -63,8 +67,11 @@ const toState = (r: StateRow): ApprovalState => ({
           startedBy: r.a_by as string,
           feedback: r.a_fb,
           mode: r.a_mode ?? "machine",
+          engineRunId: r.a_run,
+          flowSteps: (json(r.a_steps) ?? null) as FlowStep[] | null,
         }
       : null,
+  deal: r.deal,
   value: json(r.v),
   threshold: Number(r.threshold ?? APPROVAL_DEFAULTS.threshold),
 });
@@ -74,7 +81,8 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
     const lock = o.lock ? sql`for update of c` : sql``;
     const [r] = await tx.execute<StateRow>(sql`
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
-        a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, c.fields -> 'total_value' -> 'value' as v,
+        a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
+        c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c
       left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
@@ -180,7 +188,8 @@ function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
         update contracts.contracts set status = 'extracting', error = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid
           and status in ('needs_review', 'extract_failed') returning id),
-      a as (update contracts.approvals x set status = 'extracting', queued_at = now(), updated_at = now()
+      a as (update contracts.approvals x set status = 'extracting', queued_at = now(), updated_at = now(),
+          mode = 'machine', engine_run_id = null, pending_links = null
         from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ('level1', 'level2'))
       select id from u`);
     return rows.length > 0;

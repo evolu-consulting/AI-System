@@ -67,11 +67,14 @@ function txRepos(w: World): ApprovalEngineTxRepos {
       w.calls.push(`finalize:${by}`);
       return w.finalized;
     },
+    setPendingLinks: async () => true,
+    labels: async () => [],
   };
   return {
     approvalEngine: repo,
     approvalFlow: {
       settings: async () => SETTINGS,
+      settingsRev: async () => 0,
       flow: async () => w.flow,
       save: async () => null,
     },
@@ -99,6 +102,11 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
     cancel: async (_u, id) => void w.calls.push(`cancel:${id}`),
     passedStages: async () => ["s0"],
     lastApprover: async () => U,
+    act: async () => "ok",
+    cancelSys: async () => true,
+    stepsView: async () => null,
+    outcomesOf: async () => [],
+    openTasksOf: async () => [],
     ...port,
   };
   return {
@@ -170,7 +178,7 @@ describe("startEngineApproval", () => {
     const w = world({ flow: { version: 5, steps, updatedAt: "x" }, attachOk: false });
     expect(await startEngineApproval(deps(w))(who, C)).toBe("skipped");
     expect(w.calls).toEqual([
-      "ensureDef:contracts-approval:v5",
+      "ensureDef:contracts-approval:v100000005",
       `start:contracts:${C}`,
       `attach:${RUN}:v5:2`,
       `cancel:${RUN}`,

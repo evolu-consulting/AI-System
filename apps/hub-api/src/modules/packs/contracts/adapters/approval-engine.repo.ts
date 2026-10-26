@@ -105,8 +105,30 @@ function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
   };
 }
 
+function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
+  return async (aid, runId, links) => {
+    const rows = await tx.execute<{ id: string }>(sql`update contracts.approvals set
+        pending_links = ${JSON.stringify(links)}::jsonb, updated_at = now()
+      where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
+        and mode = 'engine' and status = 'level1' returning id`);
+    return rows.length > 0;
+  };
+}
+
+function labelsQ(tx: Tx, tid: string): ApprovalEngineRepo["labels"] {
+  return async (ids) => {
+    if (ids.length === 0) return [];
+    const rows = await tx.execute<{ id: string; number: string | null; title: string | null }>(sql`
+      select c.id, c.number, c.title from contracts.contracts c
+      where c.tenant_id = ${tid}::uuid and c.id = any(${`{${ids.join(",")}}`}::uuid[])`);
+    return [...rows];
+  };
+}
+
 export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo {
   return {
+    setPendingLinks: pendingQ(tx, tenantId),
+    labels: labelsQ(tx, tenantId),
     byRun: byRunQ(tx, tenantId),
     startState: startStateQ(tx, tenantId),
     attach: attachQ(tx, tenantId),

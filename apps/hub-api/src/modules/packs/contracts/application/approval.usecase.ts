@@ -14,6 +14,7 @@ import {
   phaseOf,
 } from "../domain/approval-machine.rules";
 import type { ApprovalState, ApprovalTxRepos, ApprovalUow, OpenOutcome } from "./approval.ports";
+import type { EngineCard } from "./approval-engine-card.usecase";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -40,12 +41,18 @@ export type ApprovalDeps = {
   redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> };
   /** contract-flow S3a · cờ engine bật: lượt vừa vào `level1` (đã COMMIT) ⇒ mở run engine. Vắng ⇒ máy 2 bước cũ. Không ném. */
   engine?: EngineStart;
+  /** contract-flow S3b · thẻ + hành động cho lượt `mode = 'engine'`. Vắng ⇒ lượt engine hiện thẻ rỗng, không quyết được. */
+  card?: EngineCard;
+  /** S3b · cài đặt duyệt đổi (tenant chưa lưu mẫu) ⇒ đồng bộ lại def engine. Không ném. */
+  onSettingsSaved?: (who: PackWho) => Promise<unknown>;
 };
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
-export type ContractApproval = ReturnType<typeof approvalView>;
+export type ContractApproval =
+  | ReturnType<typeof approvalView>
+  | Awaited<ReturnType<NonNullable<ApprovalDeps["card"]>["view"]>>;
 /** `products` (products-confirm): gắn/tạo SP cho dòng HĐ — áp TRONG tx chỉ khi bước này làm HĐ thành "đã xác nhận". */
 export type ApprovalAction = {
-  action: "approve" | "reject" | "redo";
+  action: "approve" | "reject" | "redo" | "return";
   feedback?: string;
   products?: readonly ProductLink[];
 };
@@ -101,14 +108,26 @@ const actorOf = (d: ApprovalDeps, who: PackWho, s: ApprovalSettings) =>
 const viewOf = (st: ApprovalState, actor: ApprovalActor) =>
   approvalView(st.approval, actor, { value: st.value, threshold: st.threshold });
 
+const NOBODY = { userId: "", inLevel1: false, inLevel2: false };
+async function engineViewOf(
+  d: ApprovalDeps,
+  who: PackWho,
+  st: ApprovalState,
+): Promise<ContractApproval> {
+  if (d.card) return d.card.view(who, st);
+  return { ...approvalView(st.approval, NOBODY), mode: "engine" as const, steps: [] };
+}
+
 export function getApproval(d: ApprovalDeps) {
   return async (who: PackWho, id: string): Promise<ContractApproval | null> => {
-    const got = await d.uow.tenant(who, async (r) => ({
-      st: await r.approval.state(id, { lock: false }),
-      s: await r.approval.settings(),
-    }));
+    const got = await d.uow.tenant(who, async (r) => {
+      const st = await r.approval.state(id, { lock: false });
+      // S3b · lượt engine: quyền do engine quyết ⇒ không cần cài đặt cấp 1/2 (≤ 1 SQL của gói).
+      return { st, s: st && st.approval?.mode !== "engine" ? await r.approval.settings() : null };
+    });
     if (!got.st) return null;
-    return viewOf(got.st, await actorOf(d, who, got.s));
+    if (got.st.approval?.mode === "engine") return engineViewOf(d, who, got.st);
+    return viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
   };
 }
 
@@ -164,7 +183,12 @@ async function linkOnConfirm(
 }
 
 type Decided = { done: "ok" | "redo"; approvalId: string; error?: undefined };
-type TxOutcome = Decided | "not_found" | "unavailable" | { error: ApprovalErrorCode };
+type TxOutcome =
+  | Decided
+  | "not_found"
+  | "unavailable"
+  | { error: ApprovalErrorCode }
+  | { engine: ApprovalState };
 
 /** Trích lại thật sự (sau `decide`): AI chưa sẵn sàng ⇒ `unavailable`; trừ quota (ném ⇒ ROLLBACK). */
 async function redoGate(
@@ -178,18 +202,26 @@ async function redoGate(
   return null;
 }
 
+/** S3b · lượt engine quyết qua engine (ngoài tx này, scope người quyết); máy cũ không có "Trả lại"; không có lượt ⇒ không mở. */
+function beforeMachine(st: ApprovalState, b: ApprovalAction): TxOutcome | null {
+  if (!st.approval) return { error: "APPROVAL_NOT_OPEN" };
+  if (st.approval.mode === "engine") return { engine: st };
+  return b.action === "return" ? { error: "APPROVAL_NOT_OPEN" } : null;
+}
+
 /** Trong tx khoá HĐ: đọc trạng thái → `decide` → cổng trích lại → ghi. */
 function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction) {
   return async (r: ApprovalTxRepos, actor: ApprovalActor): Promise<TxOutcome> => {
     const st = await r.approval.state(id, { lock: true });
     if (!st) return "not_found";
-    // contract-flow S3a: lượt chạy trên engine không quyết bằng máy cũ (S3b: act qua engine).
-    if (!st.approval || st.approval.mode === "engine") return { error: "APPROVAL_NOT_OPEN" };
+    const pre = beforeMachine(st, b);
+    if (pre) return pre;
+    if (!st.approval) return { error: "APPROVAL_NOT_OPEN" };
     const dec = decide({
       status: st.approval.status,
       startedBy: st.approval.startedBy,
       actor,
-      action: b.action,
+      action: b.action as Exclude<ApprovalAction["action"], "return">,
       feedback: b.feedback,
       value: st.value,
       threshold: st.threshold,
@@ -211,6 +243,20 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
   };
 }
 
+/** S3b · quyết trên engine (ngoài tx khoá HĐ) rồi trả thẻ mới. */
+async function actOnEngine(
+  d: ApprovalDeps,
+  who: PackWho,
+  id: string,
+  b: ApprovalAction,
+  st: ApprovalState,
+): Promise<ActOutcome> {
+  const res = d.card ? await d.card.act(who, id, b, st) : { error: "APPROVAL_NOT_OPEN" as const };
+  if (res === "unavailable") return res;
+  if (res !== "ok") return { error: res.error };
+  return (await getApproval(d)(who, id)) ?? "not_found";
+}
+
 /** Quyết bước đang mở: quyền Group + người bắt đầu + lý do theo `decide`; ghi trong tx khoá HĐ. */
 export function actApproval(d: ApprovalDeps) {
   const get = getApproval(d);
@@ -220,6 +266,7 @@ export function actApproval(d: ApprovalDeps) {
     const inTx = decideInTx(d, who, id, b);
     const out = await d.uow.tenant(who, (r) => inTx(r, actor));
     if (out === "not_found" || out === "unavailable") return out;
+    if ("engine" in out) return actOnEngine(d, who, id, b, out.engine);
     if (out.error !== undefined) return { error: out.error };
     if (out.done === "redo")
       await d.jobs.enqueue({ ...who, contractId: id, approvalId: out.approvalId });
@@ -232,7 +279,9 @@ export function saveApprovalSettings(d: ApprovalDeps) {
   return async (who: PackWho, s: ApprovalSettings): Promise<ApprovalSettings | "group_missing"> => {
     const ids = await d.groups.idsOf(who.tenantId, [s.level1GroupKey, s.level2GroupKey]);
     if (!ids.has(s.level1GroupKey) || !ids.has(s.level2GroupKey)) return "group_missing";
-    return d.uow.tenant(who, (r) => r.approval.saveSettings(s, who.userId));
+    const saved = await d.uow.tenant(who, (r) => r.approval.saveSettings(s, who.userId));
+    await d.onSettingsSaved?.(who);
+    return saved;
   };
 }
 

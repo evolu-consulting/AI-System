@@ -15,6 +15,8 @@ import {
 export type StoredFlow = { version: number; steps: FlowStep[]; updatedAt: string };
 export type ApprovalFlowRepo = {
   settings(): Promise<ApprovalSettings>;
+  /** S3b · phút từ 2020-01-01 tới lần lưu cài đặt duyệt gần nhất (0 khi chưa lưu) — version def của mẫu mặc định. */
+  settingsRev(): Promise<number>;
   flow(): Promise<StoredFlow | null>;
   /** Khoá lạc quan: `expected` lệch ⇒ null. */
   save(steps: readonly FlowStep[], expected: number, actor: string): Promise<StoredFlow | null>;
@@ -25,6 +27,8 @@ export type ApprovalFlowTxRepos = { approvalFlow: ApprovalFlowRepo };
 export type FlowGroups = {
   idsOf(tenantId: string, keys: readonly string[]): Promise<ReadonlyMap<string, string>>;
   existingIds(tenantId: string, ids: readonly string[]): Promise<ReadonlySet<string>>;
+  /** S3b · Group của tenant (id + tên) cho `GET /pack/contracts/groups`. */
+  list?(tenantId: string): Promise<{ id: string; name: string }[]>;
 };
 /** Seam S3a: đẩy def engine `contracts-approval` khi version đổi (`port.ensureDef`). */
 export type FlowDefSync = {

@@ -3,6 +3,7 @@
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow } from "../../kit/application/ports";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
+import type { FlowStep } from "../domain/approval-flow.types";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
 export type ContractRunRef = {
@@ -20,7 +21,12 @@ export type ApprovalState = ContractRunRef & {
     startedBy: string;
     feedback: string | null;
     mode?: string;
+    /** S3b · lượt `mode = 'engine'`: run engine + mẫu chụp lúc mở run. */
+    engineRunId?: string | null;
+    flowSteps?: FlowStep[] | null;
   } | null;
+  /** S3b · loại HĐ (facts rẽ/`finalizes_on_approve`). */
+  deal?: string | null;
   value: unknown;
   threshold: number;
 };
@@ -70,8 +76,25 @@ export type SweepOptions = {
   queuedMinutes: number;
   limit: number;
 };
-export type SweepCounts = { read: number; closed: number; healed: number };
+/** S3b · HĐ vừa heal `extracting → level1` (mở run engine sau) — người mở = người bắt đầu lượt. */
+export type HealedLevel1 = { contractId: string; userId: string };
+export type SweepCounts = {
+  read: number;
+  closed: number;
+  healed: number;
+  healedLevel1?: HealedLevel1[];
+};
+/** S3b · lượt engine còn `level1` + run gắn (reconcile). */
+export type EngineApprovalRef = { approvalId: string; runId: string };
+/** S3b · việc đồng bộ một lượt: Từ chối ⇒ HĐ rejected; release ⇒ trả lượt về máy cũ kèm lý do. */
+export type ReconcileItem =
+  | { approvalId: string; kind: "reject"; feedback: string | null }
+  | { approvalId: string; kind: "release"; reason: string };
 export type SweepRepo = {
+  /** S3b · MỘT câu: ≤ `limit` lượt `engine` còn `level1` (ngẫu nhiên — không đói khi > limit). */
+  engineRuns(limit: number): Promise<EngineApprovalRef[]>;
+  /** S3b · MỘT câu UPDATE theo tập (có điều kiện `mode='engine' + level1`; chạy lại vô hại). Trả (rejected, released). */
+  reconcile(items: readonly ReconcileItem[]): Promise<{ rejected: number; released: number }>;
   /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed` +
    *  lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi) ⇒ `level1`/`failed` (review B #12). */
   sweep(o: SweepOptions): Promise<SweepCounts>;

@@ -42,10 +42,23 @@ export type MyWorkItem = {
   subject: "renewal" | "customer" | "obligation" | "contract" | "company" | null;
 };
 
+/** contract-flow S3b · task duyệt HĐ (engine) đang chờ người xem quyết; chỉ có khi cờ duyệt trên engine bật. */
+export type MyWorkApproval = {
+  task_id: string;
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  stage_name: string;
+  due_at: string | null;
+  escalated: boolean;
+};
+
 export type MyWorkOut = {
   today: string;
   items: MyWorkItem[];
   counts: { late: number; today: number; upcoming: number };
   /** Một nguồn vượt MYWORK_SOURCE_MAX hoặc tổng vượt MYWORK_MAX ⇒ danh sách bị cắt. */
   truncated: boolean;
+  /** S3b · việc duyệt HĐ trên engine (vắng khi duyệt engine tắt). */
+  approvals?: MyWorkApproval[];
 };

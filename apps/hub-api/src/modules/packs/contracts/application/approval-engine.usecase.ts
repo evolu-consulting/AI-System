@@ -7,6 +7,7 @@
 //   chụp, ghi "Đã duyệt" (`confirmed_by` = người Đạt gần nhất) rồi áp `pending_links` CÙNG tx — lỗi gắn SP ⇒ ROLLBACK, không khoá.
 import type { PackWho } from "../../kit/application/ports";
 import {
+  engineDefVersion,
   engineStartable,
   factsOf,
   finalizeReady,
@@ -46,10 +47,15 @@ const DEFAULT_FLOW_VERSION = 1;
 /** Cổng engine dùng ở đây (ensureDef/start/cancel) không xét vai trò; người gọi = người mở duyệt. */
 const callerOf = (who: PackWho): EngineCaller => ({ ...who, role: "member" });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type Flow = { version: number; steps: readonly FlowStep[] };
+/** `defVersion` = version def engine (`pack_version`; S3b: đổi cài đặt khi chưa lưu mẫu ⇒ tăng ⇒ ensureDef ghi đè). */
+type Flow = { version: number; steps: readonly FlowStep[]; defVersion: number };
 
 /** Def theo mẫu; Group mẫu trỏ không còn ở tenant / mẫu rỗng ⇒ null (giữ chế độ máy). */
-async function compiled(d: ApprovalEngineDeps, tenantId: string, f: Flow) {
+async function compiled(
+  d: ApprovalEngineDeps,
+  tenantId: string,
+  f: { steps: readonly FlowStep[] },
+) {
   const have = await d.groups.existingIds(tenantId, flowGroupIds(f.steps));
   try {
     return compileDef(f, new Set(have)) as unknown as Record<string, unknown>;
@@ -63,14 +69,29 @@ async function loadStart(d: ApprovalEngineDeps, who: PackWho, id: string) {
   const got = await d.uow.tenant(who, async (r) => {
     const st = await r.approvalEngine.startState(id);
     if (!st || !engineStartable(st)) return null;
-    const f = await r.approvalFlow.flow();
-    return { f, s: f ? null : await r.approvalFlow.settings() };
+    return readFlow(r);
   });
   if (!got) return null;
-  if (got.f) return { version: got.f.version, steps: got.f.steps } satisfies Flow;
+  return flowOf(d, who, got);
+}
+
+type FlowRead = Awaited<ReturnType<typeof readFlow>>;
+/** Mẫu đã lưu, hoặc (chưa lưu) cài đặt + `rev` (lần lưu cài đặt gần nhất) để dựng mẫu mặc định. */
+async function readFlow(r: ApprovalEngineTxRepos) {
+  const f = await r.approvalFlow.flow();
+  if (f) return { f, s: null, rev: 0 };
+  return { f: null, s: await r.approvalFlow.settings(), rev: await r.approvalFlow.settingsRev() };
+}
+
+async function flowOf(d: ApprovalEngineDeps, who: PackWho, got: FlowRead): Promise<Flow> {
+  if (got.f) {
+    const defVersion = engineDefVersion({ version: got.f.version, isDefault: false }, 0);
+    return { version: got.f.version, steps: got.f.steps, defVersion };
+  }
   const s = got.s as NonNullable<typeof got.s>;
   const ids = await d.groups.idsOf(who.tenantId, [s.level1GroupKey, s.level2GroupKey]);
-  return { version: DEFAULT_FLOW_VERSION, steps: defaultFlowFromSettings(s, ids) } satisfies Flow;
+  const defVersion = engineDefVersion({ version: DEFAULT_FLOW_VERSION, isDefault: true }, got.rev);
+  return { version: DEFAULT_FLOW_VERSION, steps: defaultFlowFromSettings(s, ids), defVersion };
 }
 
 /** Mở run (COMMIT, chưa kick) → gắn vào lượt dưới RLS → kick; gắn hụt (đua / lượt đã đổi) ⇒ huỷ bù. */
@@ -120,7 +141,7 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
         d.warn("contract-engine-flow-invalid", { contract_id: id });
         return "machine";
       }
-      await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.version);
+      await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
       return await openRun(d, port, who, { id, flow });
     } catch (e) {
       d.warn("contract-engine-start-failed", {
@@ -140,13 +161,34 @@ export function engineFlowDefSync(d: ApprovalEngineDeps): FlowDefSync {
       if (!port) return;
       try {
         const def = await compiled(d, who.tenantId, flow);
-        if (def) await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.version);
+        const v = engineDefVersion({ version: flow.version, isDefault: false }, 0);
+        if (def) await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, v);
       } catch (e) {
         d.warn("contract-engine-def-sync-failed", {
           error: e instanceof Error ? e.name : "unknown",
         });
       }
     },
+  };
+}
+
+/** S3b · cài đặt duyệt (ngưỡng/Group) đổi: tenant CHƯA lưu mẫu ⇒ đồng bộ lại def mặc định (version mới theo lần lưu cài đặt).
+ *  Đã lưu mẫu ⇒ không làm gì (mẫu quyết). Không ném: lỗi chỉ log — lần mở duyệt kế đồng bộ lại. */
+export function engineSettingsSync(d: ApprovalEngineDeps) {
+  return async (who: PackWho): Promise<void> => {
+    const port = d.bridge.port;
+    if (!port) return;
+    try {
+      const got = await d.uow.tenant(who, (r) => readFlow(r));
+      if (got.f) return;
+      const flow = await flowOf(d, who, got);
+      const def = await compiled(d, who.tenantId, flow);
+      if (def) await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
+    } catch (e) {
+      d.warn("contract-engine-settings-sync-failed", {
+        error: e instanceof Error ? e.name : "unknown",
+      });
+    }
   };
 }
 

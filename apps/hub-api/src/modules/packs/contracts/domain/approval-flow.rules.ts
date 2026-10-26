@@ -223,10 +223,10 @@ function stageOfStep(steps: readonly FlowStep[], i: number, groupIds: ReadonlySe
     });
   }
   const group = groupOf(s.department_group_id, groupIds);
-  // TODO S3b: `head_only: s.head_only` khi S1b đã thêm trường vào schema stage engine (strict — chưa có thì lưu def bị từ chối).
   const after = {
     kind: "review",
     group_id: group,
+    ...(s.head_only ? { head_only: true } : {}),
     back_to_steps: i === 0 ? [] : [0],
     remind_every_h: s.remind_every_h,
     escalate:

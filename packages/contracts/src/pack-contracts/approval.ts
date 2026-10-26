@@ -18,7 +18,8 @@ export const ApprovalStepSchema = z.enum(APPROVAL_STEPS);
 export type ApprovalStep = z.infer<typeof ApprovalStepSchema>;
 
 export const APPROVAL_FEEDBACK_MAX = 4000;
-export const APPROVAL_ACTIONS = ["approve", "reject", "redo"] as const;
+/** `return` (Trả lại về bước soạn) chỉ có ở lượt chạy trên engine (`mode = 'engine'`); máy cũ ⇒ 409 APPROVAL_NOT_OPEN. */
+export const APPROVAL_ACTIONS = ["approve", "reject", "redo", "return"] as const;
 // biome-ignore lint/suspicious/noControlCharactersInRegex: chặn đúng các ký tự điều khiển
 const CONTROL_CHARS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
 
@@ -37,6 +38,39 @@ export const ApprovalActionRequestSchema = z.strictObject({
 });
 export type ApprovalActionRequest = z.infer<typeof ApprovalActionRequestSchema>;
 
+/** contract-flow S3b · một bước của thẻ duyệt trên engine (chỉ bước người dùng của luồng; không gồm stage rẽ/ghi). */
+export const APPROVAL_STEP_STATUSES = [
+  "pending",
+  "open",
+  "passed",
+  "skipped",
+  "returned",
+  "rejected",
+] as const;
+export const ApprovalCardStepSchema = z.strictObject({
+  /** Chỉ số bước người dùng trong mẫu chụp (0 = bước soạn). */
+  idx: z.number().int().min(0),
+  key: z.string().max(64),
+  name: z.string().max(200),
+  kind: z.enum(["review", "dify"]),
+  status: z.enum(APPROVAL_STEP_STATUSES),
+  /** Group (phòng) duyệt; null ở bước Dify. UI đổi ra tên qua `GET /pack/contracts/groups`. */
+  group_id: z.uuid().nullable(),
+  /** Chỉ trưởng phòng của Group quyết được. */
+  head_only: z.boolean(),
+  escalated_group_id: z.uuid().nullable(),
+  due_at: IsoDateTime.nullable(),
+  escalated: z.boolean(),
+  decided_by: z.strictObject({ id: z.uuid(), name: z.string() }).nullable(),
+  decided_at: IsoDateTime.nullable(),
+  feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
+});
+export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
+
+/** `GET /pack/contracts/groups` · Group của tenant (id + tên) cho UI luồng duyệt. */
+export const ContractGroupSchema = z.strictObject({ id: z.uuid(), name: z.string() });
+export type ContractGroup = z.infer<typeof ContractGroupSchema>;
+
 export const ContractApprovalSchema = z.strictObject({
   run_id: z.uuid().nullable(),
   run_status: z.string().max(32).nullable(),
@@ -48,6 +82,9 @@ export const ContractApprovalSchema = z.strictObject({
   block_reason: z.enum(["not_reviewer", "starter"]).nullable().optional(),
   /** products-confirm: "Xác nhận/Duyệt" của người xem sẽ làm HĐ thành "đã xác nhận" ⇒ hộp "Gắn sản phẩm". Vắng ở hub cũ. */
   finalizes_on_approve: z.boolean().optional(),
+  /** S3b · `engine` ⇒ lượt chạy trên engine quy trình (có `steps`); vắng ⇒ máy 2 bước cũ. */
+  mode: z.enum(["machine", "engine"]).optional(),
+  steps: z.array(ApprovalCardStepSchema).optional(),
 });
 export type ContractApproval = z.infer<typeof ContractApprovalSchema>;
 

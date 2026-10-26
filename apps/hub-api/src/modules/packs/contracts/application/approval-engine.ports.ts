@@ -2,6 +2,13 @@
 // kit `PackRunsPort` (S1a: ensureDef / start có ref / cancel / passedStages / lastApprover) bằng một adapter mỏng lúc mount.
 // Repo `approvalEngine` chạy trong tx `PackUow` (role `contracts_rw`, RLS FORCE) + `tenant_id` tường minh; mỗi hàm MỘT câu.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
+import type {
+  PackActTarget,
+  PackOpenTask,
+  PackReviewAct,
+  PackRunOutcomeSys,
+  PackStepsView,
+} from "../../kit/application/pack-runs.ports";
 import type { PackUow } from "../../kit/application/ports";
 import type { FlowStep } from "../domain/approval-flow.types";
 import type { ApprovalFlowRepo } from "./approval-flow.usecase";
@@ -36,6 +43,24 @@ export type ApprovalEnginePort = {
   passedStages(tenantId: string, runId: string): Promise<string[]>;
   /** Người Đạt review gần nhất của run (null khi chưa có). */
   lastApprover(tenantId: string, runId: string): Promise<string | null>;
+  /** S3b · quyết task duyệt mở của run (scope user người quyết); không có task mở ⇒ "not_open". */
+  act(
+    u: EngineCaller,
+    runId: string,
+    at: PackActTarget,
+    b: PackReviewAct,
+  ): Promise<"ok" | "not_open">;
+  /** S3b · huỷ run ở scope system ("Đọc lại"); đã kết thúc / không có ⇒ false. */
+  cancelSys(tenantId: string, runId: string): Promise<boolean>;
+  /** S3b · dòng thời gian stage cho người xem (≤ 2 câu SQL); không thấy run ⇒ null. */
+  stepsView(u: EngineCaller, runId: string): Promise<PackStepsView | null>;
+  /** S3b · kết quả nhiều run (scope system, một câu lọc tenant). */
+  outcomesOf(
+    tenantIds: string | readonly string[],
+    runIds: readonly string[],
+  ): Promise<PackRunOutcomeSys[]>;
+  /** S3b · "Việc của tôi": task duyệt mở của run gói `packKey` mà người gọi quyết được. */
+  openTasksOf(u: EngineCaller, packKey: string): Promise<PackOpenTask[]>;
 };
 /** Cầu nối dựng lúc mount; engine tắt ⇒ `port` vắng. */
 export type ApprovalEngineBridge = { port?: ApprovalEnginePort };
@@ -76,6 +101,12 @@ export type ApprovalEngineRepo = {
     runId: string,
     by: string | null,
   ): Promise<boolean>;
+  /** S3b · lưu gắn SP chờ (duyệt cuối) cho lượt engine còn `level1`; áp trong tx `finalize` của tool. */
+  setPendingLinks(approvalId: string, runId: string, links: readonly unknown[]): Promise<boolean>;
+  /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
+  labels(
+    ids: readonly string[],
+  ): Promise<{ id: string; number: string | null; title: string | null }[]>;
 };
 
 export type ApprovalEngineTxRepos = {

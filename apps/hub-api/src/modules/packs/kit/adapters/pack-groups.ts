@@ -41,6 +41,15 @@ export function packGroups(
       );
       return new Set(rows.map((r) => r.id));
     },
+    /** contract-flow S3b · Group của tenant (id + tên) cho UI luồng duyệt (đường lạnh, MỘT câu, ≤ 500). */
+    async list(tenantId: string): Promise<{ id: string; name: string }[]> {
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{ id: string; name: string }>(sql`select id::text as id,
+            coalesce(name->>'vi', name->>'en', key) as name
+          from admin.groups where tenant_id = ${tenantId}::uuid order by 2, id limit 500`),
+      );
+      return rows.map((r) => ({ id: r.id, name: r.name }));
+    },
     async userGroups(who: PackWho): Promise<ReadonlySet<string>> {
       await view.adminSettled?.();
       const u = await view.user(who.userId);

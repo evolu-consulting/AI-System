@@ -214,7 +214,13 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
   app.route(base, contractsLedger(d, view, db)); // HD7
-  app.route(base, myWorkModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 Â· Viá»‡c cá»§a tÃ´i
+  app.route(
+    base,
+    myWorkModule(db, view, {
+      timeZoneOf: tenantTz(d),
+      ...(ai.myApprovals ? { approvals: ai.myApprovals } : {}), // contract-flow S3b
+    }),
+  ); // W1 Â· Viá»‡c cá»§a tÃ´i
   app.route(base, sourcingModule(db, view, { timeZoneOf: tenantTz(d) })); // W1 Â· Mua hÃ ng
   app.route(base, productsModule(db, view, { timeZoneOf })); // V2-B Â· danh má»¥c SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 Â· Ä‘iá»ƒm kinh doanh SP

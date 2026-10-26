@@ -21,9 +21,7 @@ import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRepo } from "./adapters/approval.repo";
 import { approvalRoutes } from "./adapters/approval.routes";
 import { approvalEngineRepo } from "./adapters/approval-engine.repo";
-import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRepo } from "./adapters/approval-flow.repo";
-import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import { sweepRepo } from "./adapters/approval-sweep.repo";
 import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRepo } from "./adapters/extraction.repo";
@@ -50,15 +48,13 @@ import {
   saveApprovalSettings,
   startApproval,
 } from "./application/approval.usecase";
-import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
-import { engineFlowDefSync, startEngineApproval } from "./application/approval-engine.usecase";
+import type { ApprovalEngineBridge } from "./application/approval-engine.ports";
+import { engineCard } from "./application/approval-engine-card.usecase";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
-import {
-  type ApprovalFlowTxRepos,
-  type FlowDefSync,
-  type FlowGroups,
-  readApprovalFlow,
-  saveApprovalFlow,
+import type {
+  ApprovalFlowTxRepos,
+  FlowDefSync,
+  FlowGroups,
 } from "./application/approval-flow.usecase";
 import {
   QUEUED_STALE_MINUTES,
@@ -71,6 +67,7 @@ import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
 import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
+import type { myApprovals } from "./application/mywork-approvals.usecase";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import {
   linkContractProducts,
@@ -82,6 +79,7 @@ import { attachProduct, reviewSave } from "./application/review.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
+import { approvalEngine, flowTemplateRoutes } from "./approval.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 
 const KEY = "contracts";
@@ -111,12 +109,14 @@ export type ContractsAi = {
   guard: PatchApprovalGuard;
   /** contract-flow S3a · tool engine (`contracts-route`/`contracts-finalize`) khi cờ engine bật; tắt ⇒ rỗng. */
   tools: PackToolDef[];
+  /** contract-flow S3b · việc duyệt HĐ trên engine cho "Việc của tôi" (cờ bật); tắt ⇒ vắng. */
+  myApprovals?: ReturnType<typeof myApprovals>;
 };
 export type ContractsFlowDeps = {
   ai: AiClient;
   /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
   fileText?: SourceFileText;
-  groups: ApprovalGroups & Pick<FlowGroups, "existingIds">;
+  groups: ApprovalGroups & Pick<FlowGroups, "existingIds" | "list">;
   /** contract-flow S3a · đồng bộ def engine khi lưu mẫu luồng; vắng ⇒ bỏ qua. */
   flowDefSync?: FlowDefSync;
   /** contract-flow S3a · cầu engine quy trình (`packRuns`, cổng gắn lúc engine mount); vắng ⇒ không chạy duyệt trên engine. */
@@ -263,7 +263,7 @@ export function contractsAiModule(
 ): ContractsAi {
   const pack = packUow(db);
   const uow = packTenantOnly(pack);
-  const eng = approvalEngine(d, flow, uow);
+  const eng = approvalEngine({ on: d.approvalEngine, hd2: d.transport !== undefined }, flow, uow);
   const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
@@ -271,12 +271,19 @@ export function contractsAiModule(
     ready,
   });
   // Review B #27/#28: quota + kiểm AI sẵn sàng của "Trích lại" chạy SAU `decide`, chỉ khi thật sự trích lại.
+  const redo = { ready, quota: flow.quota };
   const ad = {
     uow,
     groups: flow.groups,
     jobs,
-    redo: { ready, quota: flow.quota },
-    ...(eng ? { engine: eng.start } : {}),
+    redo,
+    ...(eng
+      ? {
+          engine: eng.start,
+          onSettingsSaved: eng.settingsSync,
+          card: engineCard({ port: () => flow.engine?.port, uow, jobs, redo }),
+        }
+      : {}),
   };
   const start = startApproval(ad);
   const tz = flow.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ);
@@ -292,7 +299,7 @@ export function contractsAiModule(
     start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),
   };
   const starter = legacy ? legacyStarter : flowStarter({ jobs, log: logger });
-  startSweep(d, flow, pack, reclaimOnce);
+  startSweep(d, flow, pack, reclaimOnce, eng);
   const routes = extractionRoutes(view, {
     requestExtract: legacy
       ? requestExtract({ uow, starter, available: true })
@@ -302,7 +309,14 @@ export function contractsAiModule(
   });
   routes.route("/", reviewModule(view, uow, tz));
   const approval = approvalModule(view, { ad, uow, flow, engineSync: eng?.defSync });
-  return { starter, routes, approval, guard: patchGuard(ad), tools: eng?.tools ?? [] };
+  return {
+    starter,
+    routes,
+    approval,
+    guard: patchGuard(ad),
+    tools: eng?.tools ?? [],
+    ...(eng ? { myApprovals: eng.myApprovals } : {}),
+  };
 }
 
 /** Thẻ duyệt + cài đặt + mẫu luồng (S2; đồng bộ def engine khi cờ bật — S3a). */
@@ -328,38 +342,6 @@ function approvalModule(
   return approval;
 }
 
-/** contract-flow S3a · duyệt trên engine: cờ `CONTRACTS_APPROVAL_ENGINE=on` (hoặc seam test) + cầu engine có + chế độ flow (không
- *  seam HD2). Tắt ⇒ null (máy 2 bước cũ y nguyên). Cổng engine đọc lười từ cầu mỗi lời gọi (engine gắn sau). */
-function approvalEngine(d: AiDeps, flow: ContractsFlowDeps, uow: ApprovalEngineUow) {
-  const on = d.approvalEngine ?? process.env.CONTRACTS_APPROVAL_ENGINE === "on";
-  if (!on || !flow.engine || d.transport !== undefined) return null;
-  const ed = {
-    bridge: flow.engine,
-    uow,
-    groups: flow.groups,
-    warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
-  };
-  return {
-    start: startEngineApproval(ed),
-    defSync: engineFlowDefSync(ed),
-    tools: approvalEngineTools(ed),
-  };
-}
-
-/** contract-flow S2 · `GET|PUT /approval-flow` (mẫu luồng duyệt; đồng bộ def engine qua `flowDefSync` khi có — S3a). */
-function flowTemplateRoutes(
-  view: PackAccessView,
-  uow: PackUow<ApprovalFlowTxRepos>,
-  flow: ContractsFlowDeps,
-) {
-  const fd = {
-    uow,
-    groups: flow.groups,
-    ...(flow.flowDefSync ? { defSync: flow.flowDefSync } : {}),
-  };
-  return approvalFlowRoutes(view, { read: readApprovalFlow(fd), save: saveApprovalFlow(fd) });
-}
-
 /** V2-G: Lưu màn xác nhận (tenant tắt duyệt ⇒ `active` ngay) + gắn lại SP cho dòng HĐ đã lưu. */
 function reviewModule(
   view: PackAccessView,
@@ -379,12 +361,14 @@ function startSweep(
   flow: ContractsFlowDeps,
   pack: SweepDeps["uow"],
   reclaimOnce: () => Promise<number>,
+  eng: { start: EngineStart } | null,
 ): void {
   const sd: SweepDeps = {
     uow: pack,
     tenants: flow.tenants,
     staleMinutes: staleMinutesFor(claimIdleMs()),
     queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
+    ...(eng ? { engine: { port: () => flow.engine?.port, start: eng.start } } : {}),
   };
   if (d.onHandles) {
     d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd), reclaimOnce });

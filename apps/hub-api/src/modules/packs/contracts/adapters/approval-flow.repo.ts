@@ -20,6 +20,13 @@ const toFlow = (r: Row | undefined): StoredFlow | null =>
 export function approvalFlowRepo(tx: Tx, tid: string) {
   return {
     settings: () => settingsRepo(tx, tid).settings(),
+    async settingsRev(): Promise<number> {
+      const [r] = await tx.execute<{
+        rev: number;
+      }>(sql`select (extract(epoch from updated_at) / 60)::bigint
+        - 26297280 as rev from contracts.approval_settings where tenant_id = ${tid}::uuid`);
+      return Math.max(0, Number(r?.rev ?? 0));
+    },
     async flow(): Promise<StoredFlow | null> {
       const [r] = await tx.execute<Row>(sql`select version, steps, updated_at
         from contracts.approval_flows where tenant_id = ${tid}::uuid`);

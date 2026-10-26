@@ -242,6 +242,15 @@ describe("compileDef ⇒ def engine", () => {
     expect(def.stages[3]?.executor).toEqual({ kind: "tool", tool_key: "risk-scan", args: {} });
     expect(engineIssues(def)).toEqual([]);
   });
+  it("S3b · head_only vào stage review (chỉ khi bật), qua bộ kiểm engine", () => {
+    const a = { ...review("a", G.l1), head_only: true } as FlowStep;
+    const b = { ...review("b", G.l1), head_only: false } as FlowStep;
+    const def = compileDef({ steps: [a, b] }, ALL);
+    const after = (i: number) => def.stages[i]?.after as unknown as Record<string, unknown>;
+    expect(after(0).head_only).toBe(true);
+    expect(Object.keys(after(2))).not.toContain("head_only");
+    expect(engineIssues(def)).toEqual([]);
+  });
   it("8 bước (tối đa) và 1 bước: vẫn ≤ 10 stage, qua bộ kiểm engine", () => {
     const eight = Array.from({ length: 8 }, (_, i) => review(`k${i}`, G.l1));
     expect(compileDef({ steps: eight }, ALL).stages.length).toBe(10);

@@ -21,6 +21,8 @@ const KEY = "contracts";
 export type ApprovalFlowRoutesDeps = {
   read: ReturnType<typeof readApprovalFlow>;
   save: ReturnType<typeof saveApprovalFlow>;
+  /** S3b · Group của tenant (`GET /groups`). */
+  groups?: (tenantId: string) => Promise<{ id: string; name: string }[]>;
 };
 const who = (u: AuthUser) => ({ userId: u.userId, tenantId: u.tenantId });
 
@@ -31,6 +33,10 @@ export function approvalFlowRoutes(
   const r = new Hono<PackGuardVars>();
   r.get("/approval-flow", packGuard(view, KEY, "read"), async (c) =>
     c.json(await d.read(who(c.get("user")))),
+  );
+  // S3b · tên phòng ban cho UI luồng: scope tenant của token, ai đọc được gói đều gọi được.
+  r.get("/groups", packGuard(view, KEY, "read"), async (c) =>
+    c.json(d.groups ? await d.groups(c.get("user").tenantId) : []),
   );
   r.put("/approval-flow", packGuard(view, KEY, "admin"), async (c) => {
     const b = parseWith(ApprovalFlowPutSchema, await readJson(c));
