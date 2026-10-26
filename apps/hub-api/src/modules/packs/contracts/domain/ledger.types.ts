@@ -10,6 +10,8 @@ export const MANUAL_EVENT_TYPES = [
   "delivered",
   "complaint",
   "manual_adjust",
+  "no_delivery",
+  "fraud",
 ] as const;
 
 /** Đầu vào đã qua zod ở route (`ScheduleRequestSchema`). */

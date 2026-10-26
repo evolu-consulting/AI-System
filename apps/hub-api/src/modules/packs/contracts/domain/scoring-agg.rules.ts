@@ -52,12 +52,19 @@ export type Agg = {
   adjust: number;
   counted: number;
   rated: Record<string, Rated>;
+  /** U2 · R39: số dòng nghiêm trọng CHƯA huỷ trong khoảng tính theo loại (không tính vào điểm) — cờ đỏ. */
+  severe: Partial<Record<SevereType, number>>;
 };
+/** U2 · R39: loại sự kiện nghiêm trọng ⇒ cờ đỏ (tách khỏi điểm, hiện bất kể min_events). */
+export const SEVERE_TYPES = ["no_delivery", "fraud"] as const;
+export type SevereType = (typeof SEVERE_TYPES)[number];
+export const isSevere = (t: string): t is SevereType =>
+  (SEVERE_TYPES as readonly string[]).includes(t);
 /** Ranh giới khoảng tính của một vai: `start` ≤ at ≤ `today`; `recent` = mốc "gần đây". */
 export type Window = { start: string; recent: string; today: string };
 
 const SETTLED = new Set(["paid", "received", "delivered"]);
-const NOT_COUNTED = new Set(["manual_adjust", "rating", "overdue"]);
+const NOT_COUNTED = new Set(["manual_adjust", "rating", "overdue", ...SEVERE_TYPES]);
 const DEALINGS = new Set(["received", "paid", "delivered", "postponed", "reminded"]);
 
 /** `window_start` + mốc gần đây (`round(m × 30,44)` ngày, `round` của Python). */
@@ -85,7 +92,13 @@ export const emptyAgg = (): Agg => ({
   adjust: 0,
   counted: 0,
   rated: {},
+  severe: {},
 });
+
+/** U2 · R39: cộng `n` dòng nghiêm trọng của loại `type` (loại khác bỏ qua). */
+function addSevere(a: Agg, type: string, n: number): void {
+  if (isSevere(type)) a.severe[type] = (a.severe[type] ?? 0) + n;
+}
 
 /** Điểm một lần gia hạn CKS (`engine._criteria`): mất/không qua mình 0; đúng hạn 100; trễ trừ 10/ngày. */
 export function renewValue(e: Ev): number {
@@ -122,6 +135,7 @@ function laterRating(had: Ev | undefined, e: Ev): boolean {
   return (e.rated_at ?? "") >= (had.rated_at ?? "");
 }
 function countType(a: Agg, e: Ev): void {
+  addSevere(a, e.type, 1);
   if (DEALINGS.has(e.type)) a.dealings = true;
   if (e.type === "reminded") a.reminded += 1;
   else if (e.type === "appointment_kept") a.kept += 1;
@@ -188,6 +202,7 @@ export function addGroup(a: Agg, g: Group, role: Role): void {
     b.on += g.on;
     b.late += g.late;
   }
+  addSevere(a, g.type, g.n);
   if (!NOT_COUNTED.has(g.type)) a.counted += g.n;
   if (DEALINGS.has(g.type) && g.n > 0) a.dealings = true;
   if (g.type === "reminded") a.reminded += g.n;

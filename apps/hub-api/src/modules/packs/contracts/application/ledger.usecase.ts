@@ -11,6 +11,7 @@ import {
 } from "../domain/ledger.types";
 import { localDate } from "../domain/local-time.rules";
 import type { Fault } from "../domain/milestones.rules";
+import { isSevere } from "../domain/scoring-agg.rules";
 import { confirmDelivery } from "./delivery.usecase";
 import {
   type EventHead,
@@ -35,10 +36,19 @@ async function openObligation(r: Repo, id: string): Promise<LockedObligation> {
   return ob;
 }
 
+/** U2 · R39: ghi/gỡ cờ đỏ phải nêu lý do (ghi tay: người có quyền `write`; gỡ: chỉ `admin`). */
+function needReason(text: string | null | undefined, kind: "severe_reason"): void {
+  if (!(text ?? "").trim()) throw new LedgerFail(kind);
+}
+
 /** `partner_events.create` + `events.record`: loại ghi tay; chỉnh tay chỉ quản lý, delta nguyên ≠ 0 trong ±10, có lý do. */
 function checkManual(b: PartnerEventCreate, isAdmin: boolean): void {
   if (!(MANUAL_EVENT_TYPES as readonly string[]).includes(b.type))
     throw new LedgerFail("event_type");
+  if (isSevere(b.type)) {
+    needReason(b.note, "severe_reason");
+    return;
+  }
   if (b.type !== "manual_adjust") return;
   if (!isAdmin) throw new LedgerFail("forbidden");
   const delta = b.delta ?? 0;
@@ -120,11 +130,14 @@ async function undoPatch(r: Repo, e: EventHead) {
 function eventCommands(d: Deps) {
   const today = todayOf(d);
   /** `partner_events.void` + `obligations.undo`: dòng hệ thống không huỷ; huỷ song song ⇒ chỉ một lần hoàn tác (D7-16). */
-  const voidEvent = (who: PackWho, id: string, reason: string | null = null) =>
+  const voidEvent = (who: PackWho, id: string, reason: string | null = null, isAdmin = false) =>
     d.uow.tenant(who, async ({ ledger: r }) => {
       const e = await r.eventHead(id);
       if (!e) throw new LedgerFail("not_found");
       if (e.source === "system") throw new LedgerFail("system");
+      // U2 · R39: gỡ cờ đỏ = huỷ dòng nghiêm trọng — chỉ quản lý (`admin`), có lý do; vết ở `partner_event_voids` + nhật ký.
+      if (isSevere(e.type) && !isAdmin) throw new LedgerFail("flag_admin");
+      if (isSevere(e.type)) needReason(reason, "severe_reason");
       const patch = await undoPatch(r, e);
       return r.voidEvent({ id, by: who.userId, obligationId: e.obligation_id, patch, reason });
     });

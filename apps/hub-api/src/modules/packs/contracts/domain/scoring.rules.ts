@@ -32,6 +32,9 @@ export type ScoreOut = {
   breakdown: Breakdown;
   adjust: number;
   event_count: number;
+  /** U2 · R36: 1 … min_events−1 việc ⇒ `score` null + điểm tạm (`provisional_score`) kèm nhãn "MỚI · tạm tính"; 0 việc ⇒ không có. */
+  provisional: boolean;
+  provisional_score: number | null;
 };
 type Cfg = { criteria: readonly Criterion[]; rules: Rules };
 /** Ngày tính + vai + vài sự thật từ HĐ (vắng ⇒ `{}`). */
@@ -167,12 +170,14 @@ export function scoreAgg(a: Agg, cfg: Cfg, at: ScoreAt): ScoreOut {
   );
   const adjust = rules.manual_adjust ? Math.max(-10, Math.min(10, a.adjust)) : 0;
   const ratedAny = on.some((c) => c.kind === "manual");
-  let value: number | null = null;
-  if (!((a.counted < rules.min_events && !ratedAny) || !on.length)) {
+  const tooFew = a.counted < rules.min_events && !ratedAny;
+  const formula = () => {
     const total = on.reduce((s, c) => s + c.weight, 0);
     const sum = on.reduce((s, c) => s + (crit[c.key]?.value as number) * c.weight, 0);
-    value = clamp(sum / total + adjust);
-  }
+    return clamp(sum / total + adjust);
+  };
+  const value = tooFew || !on.length ? null : formula();
+  const provisional = tooFew && a.counted > 0 && on.length > 0;
   const b = band(value, rules);
   const breakdown: Breakdown = {};
   for (const c of cfg.criteria)
@@ -184,6 +189,8 @@ export function scoreAgg(a: Agg, cfg: Cfg, at: ScoreAt): ScoreOut {
     breakdown,
     adjust,
     event_count: a.counted,
+    provisional,
+    provisional_score: provisional ? formula() : null,
   };
 }
 

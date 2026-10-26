@@ -33,7 +33,7 @@ import { deliveryError } from "./delivery.routes";
 const KEY = "contracts";
 const FAIL: Record<
   Exclude<LedgerFail["kind"], "locked">,
-  LedgerErrorCode | "NOT_FOUND" | "FORBIDDEN"
+  LedgerErrorCode | "NOT_FOUND" | "FORBIDDEN" | "FLAG_ADMIN"
 > = {
   not_found: "NOT_FOUND",
   done: "OBLIGATION_DONE",
@@ -42,6 +42,8 @@ const FAIL: Record<
   event_type: "EVENT_TYPE",
   adjust: "ADJUST_INVALID",
   forbidden: "FORBIDDEN",
+  severe_reason: "SEVERE_REASON",
+  flag_admin: "FLAG_ADMIN",
 };
 const MESSAGES: Record<LedgerErrorCode, string> = {
   OBLIGATION_DONE: "Đợt này đã xong",
@@ -50,6 +52,7 @@ const MESSAGES: Record<LedgerErrorCode, string> = {
     "Dòng do hệ thống tự ghi không huỷ được; trả rồi thì ghi Đã thu/Đã trả với đúng ngày",
   EVENT_TYPE: "Loại sự kiện không ghi tay được",
   ADJUST_INVALID: "Chỉnh tay từ -10 đến +10 điểm và phải ghi lý do",
+  SEVERE_REASON: "Cờ đỏ (không giao, gian lận) phải ghi lý do",
 };
 
 function ledgerError(e: unknown): never {
@@ -58,6 +61,7 @@ function ledgerError(e: unknown): never {
   if (e.kind === "locked") deliveryError(new DeliveryFail("locked"));
   const code = FAIL[e.kind];
   if (code === "NOT_FOUND") throw appError("NOT_FOUND");
+  if (code === "FLAG_ADMIN") throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được gỡ cờ đỏ");
   if (code === "FORBIDDEN")
     throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh tay điểm");
   throw new AppError(code, LEDGER_ERRORS[code], MESSAGES[code]);
@@ -107,6 +111,12 @@ function readRoutes(r: R, read: ReturnType<typeof packGuard>, reads: LedgerReads
   );
 }
 
+/** Quyền `admin` của gói (mgmt `owner`): chỉnh tay điểm, gỡ cờ đỏ. */
+async function isAdmin(view: PackAccessView, c: Context<PackGuardVars>): Promise<boolean> {
+  const i = await packAccessInput(view, KEY, c.get("user"));
+  return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+}
+
 function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
   const write = packGuard(view, KEY, "write");
   const d = { cmd };
@@ -131,12 +141,10 @@ function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
   r.post("/partner-events/:id/void", write, async (c) => {
     const id = eventId(c.req.param("id"));
     const b = await body(c, VoidRequestSchema);
-    return c.json(await run(d.cmd.voidEvent(who(c), id, b.reason ?? null)));
+    return c.json(await run(d.cmd.voidEvent(who(c), id, b.reason ?? null, await isAdmin(view, c))));
   });
   r.post("/partner-events", write, async (c) => {
     const b = await body(c, PartnerEventCreateSchema);
-    const i = await packAccessInput(view, KEY, c.get("user"));
-    const admin = checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
-    return c.json(await run(d.cmd.record(who(c), b, admin)), 201);
+    return c.json(await run(d.cmd.record(who(c), b, await isAdmin(view, c))), 201);
   });
 }

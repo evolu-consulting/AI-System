@@ -12,7 +12,7 @@ import {
   scoreAgg,
   windowStart,
 } from "./scoring.rules";
-import { emptyAgg } from "./scoring-agg.rules";
+import { emptyAgg, SEVERE_TYPES, type SevereType } from "./scoring-agg.rules";
 import type { Criterion, Role, Rules } from "./scoring-config.rules";
 
 export type Cfg = { criteria: readonly Criterion[]; rules: Rules };
@@ -48,7 +48,29 @@ export type PartnerOut = {
   breakdown: ScoreOut["breakdown"];
   adjust: number;
   contracts: number;
+  /** U2 · R36: "MỚI · tạm tính" — `score` null nhưng có điểm tạm. */
+  provisional: boolean;
+  provisional_score: number | null;
+  /** U2 · R39: cờ đỏ của ĐỐI TÁC (mọi vai đã đọc): còn dòng nghiêm trọng chưa huỷ trong khoảng tính; tách khỏi điểm. */
+  red_flag: boolean;
+  red_flags: { type: SevereType; n: number }[];
 };
+
+/** Cờ đỏ của một đối tác: cộng dòng nghiêm trọng của các vai (khách + NCC) có trong `aggs`. */
+export function redFlagsOf(
+  aggs: ReadonlyMap<string, Agg>,
+  party: string,
+): { type: SevereType; n: number }[] {
+  const out: { type: SevereType; n: number }[] = [];
+  for (const type of SEVERE_TYPES) {
+    const n = (["customer", "supplier"] as const).reduce(
+      (s, r) => s + (aggs.get(k(party, r))?.severe[type] ?? 0),
+      0,
+    );
+    if (n > 0) out.push({ type, n });
+  }
+  return out;
+}
 
 /** Khoá nhóm (đối tác, vai). */
 export const aggKey = (party: string, role: Role) => `${role}|${party}`;
@@ -59,6 +81,11 @@ function pushTo<K, V>(m: Map<K, V[]>, key: K, v: V): void {
   const a = m.get(key);
   if (a) a.push(v);
   else m.set(key, [v]);
+}
+
+function flagsOf(aggs: ReadonlyMap<string, Agg>, party: string) {
+  const red_flags = redFlagsOf(aggs, party);
+  return { red_flag: red_flags.length > 0, red_flags };
 }
 
 /** `_facts`: (đối tác, vai) → số HĐ, ngày bắt đầu sớm nhất, tên (HĐ đầu), % chênh giá (NCC). Chỉ HĐ loại `contract`. */
@@ -132,6 +159,9 @@ export function partnersOf(i: {
       breakdown: s.breakdown,
       adjust: s.adjust,
       contracts: f.contracts,
+      provisional: s.provisional,
+      provisional_score: s.provisional_score,
+      ...flagsOf(i.aggs, f.party),
     });
   }
   return rows.sort(

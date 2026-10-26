@@ -28,7 +28,11 @@ export const MANUAL_EVENT_TYPES = [
   "delivered",
   "complaint",
   "manual_adjust",
+  "no_delivery",
+  "fraud",
 ] as const;
+/** U2 · R39: loại nghiêm trọng ⇒ cờ đỏ; ghi có lý do bắt buộc (`note`), gỡ cờ = huỷ dòng (chỉ quản lý). */
+export const SEVERE_EVENT_TYPES = ["no_delivery", "fraud"] as const;
 
 /** Mã lỗi riêng sổ thanh toán → HTTP (như mgmt-app). */
 export const LEDGER_ERRORS = {
@@ -37,6 +41,7 @@ export const LEDGER_ERRORS = {
   EVENT_SYSTEM: 422,
   EVENT_TYPE: 422,
   ADJUST_INVALID: 422,
+  SEVERE_REASON: 422,
 } as const;
 export type LedgerErrorCode = keyof typeof LEDGER_ERRORS;
 

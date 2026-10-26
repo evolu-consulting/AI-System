@@ -105,6 +105,12 @@ export type PartnerRow = {
   event_count: number;
   adjust: number;
   contracts: number;
+  /** U2 · R36: "MỚI · tạm tính" — `score` null nhưng có điểm tạm (`provisional_score`). Vắng ⇒ false/null. */
+  provisional?: boolean;
+  provisional_score?: number | null;
+  /** U2 · R39: cờ đỏ của đối tác (dòng nghiêm trọng chưa huỷ trong khoảng tính), tách khỏi điểm. Vắng ⇒ không cờ. */
+  red_flag?: boolean;
+  red_flags?: { type: "no_delivery" | "fraud"; n: number }[];
 };
 export type BreakdownItem = {
   value: number | null;

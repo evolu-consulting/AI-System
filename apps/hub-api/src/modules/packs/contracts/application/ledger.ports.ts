@@ -121,6 +121,8 @@ export class LedgerFail extends Error {
       | "event_type"
       | "adjust"
       | "forbidden"
+      | "severe_reason"
+      | "flag_admin"
       | "locked",
   ) {
     super(kind);
