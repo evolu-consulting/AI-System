@@ -47,7 +47,11 @@ function fakeModel(): FakeModel & { provider: unknown } {
 
 type Handles = { sweepOnce: () => Promise<SweepOut>; reclaimOnce: () => Promise<number> };
 
-export async function startCf(extraDeps: Record<string, unknown> = {}): Promise<CtxCf> {
+export async function startCf(
+  extraDeps: Record<string, unknown> = {},
+  /** prod-fix · trần run/tenant (mặc định 200 ⇒ không chạm trần). */
+  o: { runsCap?: number } = {},
+): Promise<CtxCf> {
   let h: Handles | null = null;
   const waiters = new Map<string, ((o: string) => void)[]>();
   const model = fakeModel();
@@ -66,7 +70,7 @@ export async function startCf(extraDeps: Record<string, unknown> = {}): Promise<
     },
   };
   const c = await startPd({
-    processRunsPerTenant: 200,
+    processRunsPerTenant: o.runsCap ?? 200,
     extraDeps: {
       packRuns: bridge,
       packs: { pkdemo: false, contracts: true, contractsAi },

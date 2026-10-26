@@ -51,6 +51,15 @@ const DEFAULT_FLOW_VERSION = 1;
 /** Cổng engine dùng ở đây (ensureDef/start/cancel) không xét vai trò; người gọi = người mở duyệt. */
 const callerOf = (who: PackWho): EngineCaller => ({ ...who, role: "member" });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CODE = /^[A-Z][A-Z0-9_]{1,63}$/;
+/** prod-fix · trường log của lỗi engine: tên + `code` (AppError của engine, vd `TOO_MANY_PROCESS_RUNS`) + câu ngắn CHỈ khi có mã
+ *  (câu của AppError là câu cố định theo mã; lỗi khác — vd lỗi SQL kèm tham số — không ghi câu). */
+export function engineErrMeta(e: unknown): Record<string, string> {
+  if (!(e instanceof Error)) return { error: "unknown" };
+  const code = (e as { code?: unknown }).code;
+  if (typeof code !== "string" || !CODE.test(code)) return { error: e.name };
+  return { error: e.name, code, message: e.message.slice(0, 120) };
+}
 /** `defVersion` = version def engine (`pack_version`; S3b: đổi cài đặt khi chưa lưu mẫu ⇒ tăng ⇒ ensureDef ghi đè). */
 type Flow = { version: number; steps: readonly FlowStep[]; defVersion: number };
 
@@ -174,10 +183,7 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
       await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
       return await openRun(d, port, who, { id, flow, starter });
     } catch (e) {
-      d.warn("contract-engine-start-failed", {
-        contract_id: id,
-        error: e instanceof Error ? e.name : "unknown",
-      });
+      d.warn("contract-engine-start-failed", { contract_id: id, ...engineErrMeta(e) });
       return "machine";
     }
   };
@@ -227,10 +233,7 @@ export function reopenEngineApproval(d: ApprovalEngineDeps) {
       const out = await openRun(d, port, who, { id, ...s.got, replaces: s.run });
       return out === "started" ? "ok" : "not_stalled";
     } catch (e) {
-      d.warn("contract-engine-reopen-failed", {
-        contract_id: id,
-        error: e instanceof Error ? e.name : "unknown",
-      });
+      d.warn("contract-engine-reopen-failed", { contract_id: id, ...engineErrMeta(e) });
       return "failed";
     }
   };

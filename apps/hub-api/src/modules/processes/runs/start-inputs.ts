@@ -29,24 +29,10 @@ export type RunOrigin = {
   originConversationId: string | null;
 };
 
-/**
- * HUB-FR-105/HUB-FR-124 · tạo run: validate inputs (C19) + dựng `snapshot.sources` + chiếm slot (≤ 5/tenant) + `insertRun`.
- * `pinned_sources` = NULL khi có nguồn (chờ resolve), `[]` khi không (ghim ngay). Trong tx scope người bắt đầu.
- */
-export async function createRun(
-  tx: Tx,
-  u: AuthUser,
-  p: { def: StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
-  cfg: { runsPerTenant?: number; now: () => Date; kh?: KhRuntime },
-): Promise<{ runId: string; flowId: string }> {
-  const inputs = p.inputs ?? [];
-  await validateRunInputs(tx, u, p.def.inputs ?? [], inputs);
-  const sources = await buildRunSources(tx, u, p.def, inputs);
-  const khPlan = await khStartPlan(tx, p.def.stages, cfg.kh); // K1 · đích `## Tóm tắt` (HUB-FR-133)
-  await repo.lockTenant(tx, u.tenantId);
-  // N2-FR-04 · N2-D11 · trần = seam test ?? cấu hình tenant ?? mặc định (0 câu thêm: đếm + trần cùng câu).
-  const { n, max } = await repo.activeAndCap(tx, u.tenantId);
-  const cap = cfg.runsPerTenant ?? max ?? PROCESS_RUNS_PER_TENANT;
+/** N2-FR-04 · N2-D11 · trần = seam test ?? cấu hình tenant ?? mặc định (0 câu thêm: đếm + trần cùng câu). */
+async function checkCap(tx: Tx, tenantId: string, seam: number | undefined): Promise<void> {
+  const { n, max } = await repo.activeAndCap(tx, tenantId);
+  const cap = seam ?? max ?? PROCESS_RUNS_PER_TENANT;
   if (n >= cap)
     throw processError(
       "TOO_MANY_PROCESS_RUNS",
@@ -55,6 +41,30 @@ export async function createRun(
         "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
       },
     );
+}
+
+/**
+ * HUB-FR-105/HUB-FR-124 · tạo run: validate inputs (C19) + dựng `snapshot.sources` + chiếm slot (≤ 5/tenant) + `insertRun`.
+ * `pinned_sources` = NULL khi có nguồn (chờ resolve), `[]` khi không (ghim ngay). Trong tx scope người bắt đầu.
+ */
+export async function createRun(
+  tx: Tx,
+  u: AuthUser,
+  p: { def: StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
+  cfg: {
+    runsPerTenant?: number;
+    now: () => Date;
+    kh?: KhRuntime;
+    /** contract-flow prod-fix · run gắn bản ghi gói (`packRef`, chỉ `PackRunsPort.start`): không chịu trần (và không tính trần). */
+    packBound?: boolean;
+  },
+): Promise<{ runId: string; flowId: string }> {
+  const inputs = p.inputs ?? [];
+  await validateRunInputs(tx, u, p.def.inputs ?? [], inputs);
+  const sources = await buildRunSources(tx, u, p.def, inputs);
+  const khPlan = await khStartPlan(tx, p.def.stages, cfg.kh); // K1 · đích `## Tóm tắt` (HUB-FR-133)
+  await repo.lockTenant(tx, u.tenantId);
+  if (!cfg.packBound) await checkCap(tx, u.tenantId, cfg.runsPerTenant);
   const startedAt = cfg.now();
   const runId = crypto.randomUUID();
   const flowId = crypto.randomUUID();

@@ -199,15 +199,22 @@ function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
   };
 }
 
+/** prod-fix · tenant TẮT duyệt (`approval_on()` đọc trong câu): đọc xong ⇒ KHÔNG mở cấp 1 — lượt (chỉ để theo dõi lượt đọc) đóng
+ *  `cancelled` và HĐ bỏ `run_id` ⇒ thẻ duyệt rỗng (bước = null), trang dùng "Xác nhận và lưu" (atomic-confirm). */
 function afterQ(tx: Tx, tid: string): ApprovalRepo["afterExtraction"] {
   return async (id, runId) => {
-    const [r] = await tx.execute<{ status: string }>(sql`update contracts.approvals x set
-        status = case c.status when 'needs_review' then 'level1' else 'failed' end, updated_at = now()
-      from contracts.contracts c
-      where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status = 'extracting'
-        and c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = x.id
-        and c.status in ('needs_review', 'extract_failed')
-      returning x.status`);
+    const [r] = await tx.execute<{ status: string }>(sql`with
+      x as (update contracts.approvals x set updated_at = now(), queued_at = null,
+          status = case when c.status = 'extract_failed' then 'failed'
+            when contracts.approval_on() then 'level1' else 'cancelled' end
+        from contracts.contracts c
+        where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status = 'extracting'
+          and c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = x.id
+          and c.status in ('needs_review', 'extract_failed')
+        returning x.id, x.status),
+      u as (update contracts.contracts c set run_id = null from x
+        where x.status = 'cancelled' and c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = x.id)
+      select status from x`);
     return r?.status ?? null;
   };
 }

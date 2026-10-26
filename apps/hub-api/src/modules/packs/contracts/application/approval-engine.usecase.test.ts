@@ -13,6 +13,7 @@ import type {
 } from "./approval-engine.ports";
 import {
   type ApprovalEngineDeps,
+  engineErrMeta,
   finalizeRun,
   reopenEngineApproval,
   routeStep,
@@ -315,5 +316,24 @@ describe("contracts-finalize", () => {
     ).rejects.toThrow();
     const w2 = world({ run: null });
     await expect(finalizeRun(deps(w2))(ctx, { contract_id: C })).rejects.toThrow("not in run");
+  });
+});
+
+describe("prod-fix · trường log lỗi engine", () => {
+  it("lỗi có mã (AppError engine) ⇒ name + code + câu ngắn; lỗi khác ⇒ chỉ name (không câu — có thể chứa dữ liệu)", () => {
+    const app = Object.assign(new Error("Too many running processes"), {
+      name: "AppError",
+      code: "TOO_MANY_PROCESS_RUNS",
+    });
+    expect(engineErrMeta(app)).toEqual({
+      error: "AppError",
+      code: "TOO_MANY_PROCESS_RUNS",
+      message: "Too many running processes",
+    });
+    expect(engineErrMeta(new Error("insert ... values ('secret')"))).toEqual({ error: "Error" });
+    expect(engineErrMeta(Object.assign(new Error("x"), { code: "23505" }))).toEqual({
+      error: "Error",
+    });
+    expect(engineErrMeta("boom")).toEqual({ error: "unknown" });
   });
 });

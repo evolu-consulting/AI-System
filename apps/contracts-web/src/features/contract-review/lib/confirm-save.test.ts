@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { afterConfirmSave, confirmSaveBody, needsLinkDialog } from "./confirm-save";
+import { afterConfirmSave, confirmSaveBody, firstSaveMode, needsLinkDialog } from "./confirm-save";
 
 const ITEM = "e2000000-0000-4000-8000-000000000001";
 
@@ -11,6 +11,10 @@ describe("atomic-confirm · Xác nhận và lưu (tắt duyệt)", () => {
     expect(confirmSaveBody(7, links)).toEqual({ version: 7, products: links });
     expect(confirmSaveBody(7, [])).toEqual({ version: 7 });
     expect("draft" in confirmSaveBody(7, links)).toBe(false);
+  });
+  test("prod-fix · lưu trước khi xác nhận ở màn xác nhận luôn là nháp (không chốt HĐ trước hộp Gắn SP)", () => {
+    expect(firstSaveMode(true)).toBe("draft");
+    expect(firstSaveMode(false)).toBe("patch");
   });
   test("hộp Gắn SP chỉ khi HĐ có dòng", () => {
     expect(needsLinkDialog(0)).toBe(false);

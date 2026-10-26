@@ -9,6 +9,12 @@ export const confirmSaveBody = (
   products: readonly ProductLink[],
 ): ReviewSaveRequest => (products.length ? { version, products: [...products] } : { version });
 
+/** prod-fix · bước "lưu trước" của MỌI nút xác nhận (thẻ duyệt lẫn "Xác nhận và lưu"): màn xác nhận sau AI đọc ⇒ CHỈ ghi nháp
+ *  (không bao giờ chốt/khoá HĐ — kể cả khi tenant tắt duyệt mà máy chủ còn lượt duyệt cũ); chốt chỉ ở lệnh sau hộp "Gắn sản phẩm".
+ *  HĐ thường ⇒ PATCH ô đã đổi. */
+export const firstSaveMode = (confirmStep: boolean): "draft" | "patch" =>
+  confirmStep ? "draft" : "patch";
+
 /** HĐ không có dòng ⇒ xác nhận thẳng, không hộp. */
 export const needsLinkDialog = (items: number): boolean => items > 0;
 

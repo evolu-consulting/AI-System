@@ -3,7 +3,8 @@
 // `extract_failed STALE` + event + lượt duyệt `failed`. Ghi có điều kiện ⇒ chạy lại / nhiều instance không đổi thêm gì.
 // M3c (review B #7): job còn XẾP HÀNG (lượt `queued_at` có giá trị — worker chưa nhận) không bị STALE theo `staleMinutes`, chỉ
 // đóng khi chờ quá `queuedMinutes` (entry Redis mất); job đã chạy tính hạn từ `updated_at` (worker chạm lúc bắt đầu).
-// Review B #12: lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi sau khi ghi kết quả) ⇒ `level1`/`failed`.
+// Review B #12: lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi sau khi ghi kết quả) ⇒ `level1`/`failed`
+// (prod-fix: tenant tắt duyệt ⇒ `cancelled` + HĐ bỏ `run_id`, không mở cấp 1 / run engine).
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { HealedLevel1, SweepRepo } from "../application/approval.ports";
@@ -93,9 +94,13 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
           where x.tenant_id = ${tid}::uuid and x.status = 'extracting' and c.status in ('needs_review', 'extract_failed')
           limit ${limit}::int),
         h as (update contracts.approvals x set queued_at = null, updated_at = now(),
-            status = case done.status when 'needs_review' then 'level1' else 'failed' end
+            status = case when done.status = 'extract_failed' then 'failed'
+              when contracts.approval_on() then 'level1' else 'cancelled' end
           from done where x.id = done.id and x.tenant_id = ${tid}::uuid and x.status = 'extracting'
-          returning x.id, x.contract_id, x.started_by, x.status)
+          returning x.id, x.contract_id, x.started_by, x.status),
+        -- prod-fix · tắt duyệt ⇒ không mở cấp 1 (như afterExtraction): HĐ bỏ run_id ⇒ không còn lượt duyệt.
+        hc as (update contracts.contracts c set run_id = null from h
+          where h.status = 'cancelled' and c.id = h.contract_id and c.tenant_id = ${tid}::uuid and c.run_id = h.id)
         select (select count(*) from flow where run_id is not null)::int as read,
           (select count(*) from u)::int as closed, (select count(*) from h)::int as healed,
           (select coalesce(jsonb_agg(jsonb_build_object('id', h.contract_id, 'by', h.started_by)), '[]'::jsonb)

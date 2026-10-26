@@ -187,7 +187,13 @@ export class StartService {
           key: req.process_key,
           input: req.input,
         });
-        const r = await this.#insert(tx, u, { def, input: req.input, origin, inputs: req.inputs });
+        // prod-fix · run gắn bản ghi gói (lượt duyệt HĐ chờ người nhiều ngày) không chịu/không tính trần run/tenant.
+        const r = await this.#insert(
+          tx,
+          u,
+          { def, input: req.input, origin, inputs: req.inputs },
+          !!o.packRef,
+        );
         if (o.packRef)
           await tx.execute(sql`update hub.process_runs set pack_key = ${o.packRef.pack},
             pack_record_id = ${o.packRef.recordId} where id = ${r.runId} and tenant_id = ${u.tenantId}`);
@@ -358,8 +364,9 @@ export class StartService {
     tx: Tx,
     u: AuthUser,
     p: { def: repo.StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
+    packBound = false,
   ): Promise<{ runId: string; flowId: string }> {
-    const cfg = { runsPerTenant: this.d.runsPerTenant, now: this.d.now, kh: this.d.kh };
+    const cfg = { runsPerTenant: this.d.runsPerTenant, now: this.d.now, kh: this.d.kh, packBound };
     return createRun(tx, u, p, cfg);
   }
 

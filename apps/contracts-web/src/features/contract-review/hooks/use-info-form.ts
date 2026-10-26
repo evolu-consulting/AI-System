@@ -43,6 +43,7 @@ import {
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
 import { contractKey, patchContractFields, saveReview } from "../api";
+import { firstSaveMode } from "../lib/confirm-save";
 import { savedNoticeKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
 import { useConfirmSave } from "./use-confirm-save";
@@ -208,8 +209,10 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
     setErr(null);
     setMsg(null);
   }, [L.load]);
+  /** Lưu trước khi xác nhận (thẻ duyệt + "Xác nhận và lưu"): màn xác nhận ⇒ CHỈ nháp (prod-fix: không chốt HĐ trước hộp Gắn SP);
+   *  HĐ thường ⇒ PATCH ô đã đổi. Xác nhận + gắn SP là lệnh riêng sau hộp. */
   const saveFirst = useCallback(async () => {
-    if (confirm) await saveConfirm(false);
+    if (firstSaveMode(confirm) === "draft") await saveConfirm(true);
     else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
   }, [confirm, saveConfirm, c, patch, id]);
   const save = useCallback(async () => {
@@ -235,13 +238,8 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
       setBusy(false);
     }
   }, [confirm, saveConfirm, saveFirst, qc, id, t, c?.status]);
-  /** atomic-confirm · tenant tắt duyệt: bước 1 của "Xác nhận và lưu" — ghi NHÁP (HĐ chưa khoá); xác nhận + gắn SP ở
-   *  `useConfirmSave` (MỘT `POST /review` mang `products`). Bật duyệt dùng thẻ duyệt, không qua đây. */
-  const prepareConfirm = useCallback(async () => {
-    if (confirm) await saveConfirm(true);
-    else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
-  }, [confirm, saveConfirm, c, patch, id]);
-  const cs = useConfirmSave(id, prepareConfirm);
+  // atomic-confirm · tenant tắt duyệt: bước 1 của "Xác nhận và lưu" = `saveFirst` (nháp); xác nhận + gắn SP ở `useConfirmSave`.
+  const cs = useConfirmSave(id, saveFirst);
   return {
     reset,
     save,

@@ -492,7 +492,7 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 77dd3d58d8d0ba5b4f740040743f7337bebd1b0b167e8590faf3b0c9d3fb7a64  tests/acceptance/C1/i18n-chat.test.ts
 067ec50ab263762facc1417a07e9e7fbb4f99de1bfb66dc39f6b3c7892852ecc  tests/acceptance/C1/no-hub-url.test.ts
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
-ce147ffbe25865e8da6aa48739cad045ff7444586ba776bbe16c7b930fab949e  tests/acceptance/CF/_cf.ts
+4eb0133db37de2aac037288a8bd24c8c8bf038d8916d71ef38ea30f10e73413a  tests/acceptance/CF/_cf.ts
 7e94fba5b2aa6243556ecd731ff3d1a913d96ba81e833b6cc850a0850c5d2bd7  tests/acceptance/CF/approval-card.int.test.ts
 eab20c562ecadbb4b90a57e074459477df92a156c4a1d728b4e55647de97da5a  tests/acceptance/CF/approval-dify.int.test.ts
 c828802b8684b5155dfea4dcff783d040a9eb8fe4ca0d0252109abb7cf9bf182  tests/acceptance/CF/approval-engine-off.int.test.ts
@@ -502,6 +502,7 @@ bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptan
 8c1d4ea5f3d2ba0a967bef10ba6f29ad2f40ed819cd196451d83397911e70ac3  tests/acceptance/CF/fix-pack.int.test.ts
 9e51899f59e421a726d21a6b42c8239559e49c1560c72f82a1b59486772d9a11  tests/acceptance/CF/head-only-bells.int.test.ts
 fe5b7da92635c949fe143b54f48e0b36484ece9a8fced83a12fa8f329006485d  tests/acceptance/CF/pack-runs-v2.int.test.ts
+a2cf21f501a2ec280c2d7db93dd61ecd056d05137d47675ed0ea6cc8f5269ff4  tests/acceptance/CF/prod-fix.int.test.ts
 cd6e259e02e4d31e734422168b67d0c3538e10146bb07e7800c457e66658c052  tests/acceptance/CR-050/flow-read.int.test.ts
 d32d5e7806b90ce16cb08ccb15df8d897cef438ca16f03cd87f84a28fb87d241  tests/acceptance/CR-051/flows-desc.int.test.ts
 5360151c6bea610bac774880f185a8aa6c6f4ce2f95ba81f9571f8ae3c6e1cdf  tests/acceptance/CR-053/per-app-session.int.test.ts

@@ -80,13 +80,15 @@ export async function countActive(tx: Tx, tenantId: string): Promise<number> {
   return r?.n ?? 0;
 }
 
-/** N2-FR-04 · MỘT câu: số run tính trần + trần của tenant (`admin.tenants.process_runs_max`, hub_ro đọc; vắng ⇒ null). */
+/** N2-FR-04 · MỘT câu: số run tính trần + trần của tenant (`admin.tenants.process_runs_max`, hub_ro đọc; vắng ⇒ null).
+ *  contract-flow prod-fix · run gắn bản ghi gói (`pack_key`, vd lượt duyệt HĐ chờ người duyệt nhiều ngày) KHÔNG tính trần. */
 export async function activeAndCap(
   tx: Tx,
   tenantId: string,
 ): Promise<{ n: number; max: number | null }> {
   const [r] = await tx.execute<{ n: number; max: number | null }>(sql`select
-      (select count(*)::int from hub.process_runs where tenant_id = ${tenantId} and status in ${activeList()}) as n,
+      (select count(*)::int from hub.process_runs where tenant_id = ${tenantId} and status in ${activeList()}
+        and pack_key is null) as n,
       (select process_runs_max from admin.tenants where id = ${tenantId}) as max`);
   return { n: Number(r?.n ?? 0), max: r?.max == null ? null : Number(r.max) };
 }
