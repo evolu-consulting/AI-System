@@ -100,15 +100,34 @@ const OUTCOME_SYS = (tenantIds: readonly string[], runIds: readonly string[]) =>
     and t.tenant_id = r.tenant_id and t.result = 'reject' limit 1) rj on true
   where r.id = any(${uuids(runIds)}::uuid[]) and r.tenant_id = any(${uuids(tenantIds)}::uuid[])`;
 
-/** Stage `done` mà quyết gần nhất (review/decision) là Đạt — stage bị quay lại rồi chưa xong không tính. */
+/**
+ * Stage `done` mà task REVIEW đóng gần nhất là Đạt (`pass`) — stage bị quay lại rồi chưa xong không tính. fix-review: decision
+ * `use_current` (coi như Đạt, không ai trong Group duyệt quyết) KHÔNG tính.
+ */
 const PASSED = (tenantId: string, runId: string) => sql`
   select r.snapshot->'stages'->(s.stage_idx::int)->>'key' as k
   from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
   where s.process_run_id = ${runId} and s.tenant_id = ${tenantId} and s.status = 'done'
     and (select t.result from hub.review_tasks t where t.stage_run_id = s.id and t.tenant_id = s.tenant_id
-      and t.kind in ('review', 'decision') and t.status = 'closed'
-      order by t.decided_at desc nulls last, t.created_at desc limit 1) in ('pass', 'use_current')
+      and t.kind = 'review' and t.status = 'closed'
+      order by t.decided_at desc nulls last, t.created_at desc limit 1) = 'pass'
   order by s.stage_idx`;
+
+/**
+ * Huỷ bù của gói (`PackRunsPort.cancel`): run gắn gói không huỷ được qua API process-runs (fix-review) ⇒ người bắt đầu huỷ
+ * run gắn gói của CHÍNH mình qua `cancelSys` (lọc tenant + `started_by`); run không gắn gói ⇒ như cũ (`GateService.cancel`).
+ */
+async function cancelOwn(d: ProcessDeps, gates: GateService, u: PackRunCaller, runId: string) {
+  if (!UUID.test(runId) || !UUID.test(u.tenantId)) return;
+  const [r] = await withHubScope(d.db, SYS, (tx) =>
+    tx.execute<{
+      own: boolean;
+    }>(sql`select (started_by = ${u.userId}::uuid) as own from hub.process_runs
+      where id = ${runId} and tenant_id = ${u.tenantId} and pack_key is not null`),
+  );
+  if (r?.own === true) await cancelSys(d, u.tenantId, runId);
+  else await gates.cancel(asUser(u), runId);
+}
 
 function sysReads(d: ProcessDeps) {
   const read = <T extends Record<string, unknown>>(q: ReturnType<typeof sql>) =>
@@ -173,9 +192,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       );
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
-    async cancel(u, runId) {
-      await gates.cancel(asUser(u), runId);
-    },
+    cancel: (u, runId) => cancelOwn(d, gates, u, runId),
     async outcomes(u, runIds) {
       const ids = runIds.filter((x) => UUID.test(x));
       if (ids.length === 0) return [];

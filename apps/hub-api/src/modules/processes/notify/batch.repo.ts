@@ -85,6 +85,16 @@ const bellsJson = (
     ),
   );
 
+/**
+ * fix-review · chỉ mục chuông của run GẮN gói vào cổng `notify.enqueue_pack_runs` (lô nhắc/chuyển cấp đa số run thường):
+ * tra run theo PK một lần mỗi run khác nhau (≤ số task lô), giữ thứ tự mảng. Rỗng ⇒ `[]` (hàm trả 0 ngay).
+ */
+const PACK_ONLY = (bells: string) => sql`select coalesce(jsonb_agg(b.e order by b.i), '[]'::jsonb)
+  from jsonb_array_elements(${bells}::jsonb) with ordinality as b(e, i)
+  where (b.e->>'run_id')::uuid = any(array(select pr.id from hub.process_runs pr
+    where pr.id = any(array(select distinct (e->>'run_id')::uuid from jsonb_array_elements(${bells}::jsonb) e))
+      and pr.pack_key is not null))`;
+
 type UnreadRow = { tenant_id: string; user_id: string; n: number | string };
 type NoticeResult = { ids: string[]; unread: UnreadRow[] };
 const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as T) : v);
@@ -117,7 +127,7 @@ async function noticeStatement(
         where n.user_id = any(array(select distinct user_id from x))
           and n.tenant_id = any(array(select distinct tenant_id from x)) and n.read_at is null
         group by n.tenant_id, n.user_id) g) as unread,
-      notify.enqueue_pack_runs(${bells}::jsonb) as bells`);
+      notify.enqueue_pack_runs((${PACK_ONLY(bells)})) as bells`);
   const r = rows[0];
   return { ids: r?.ids ?? [], unread: r?.unread ? parsed(r.unread) : [] };
 }

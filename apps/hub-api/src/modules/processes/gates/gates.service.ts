@@ -337,6 +337,7 @@ export class GateService {
       startedBy: run.startedBy,
       originRoom,
       taskAssignee: myIds.length > 0,
+      packBound: run.packKey != null, // fix-review · run gắn gói chỉ gói huỷ
     };
   }
 

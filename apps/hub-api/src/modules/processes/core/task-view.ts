@@ -105,6 +105,7 @@ type TaskSql = {
   review_group_id: string | null;
   tenant_id: string;
   started_by: string;
+  pack_bound?: boolean;
   run_status: ProcessRunStatus;
   origin_room: RunFacts["originRoom"];
   o_id: string | null;
@@ -166,6 +167,7 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       t.assignee_group_id as group_id, s.current_output_id is not null as has_output,
       pr.snapshot->'stages'->(s.stage_idx::int) as stage,
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
+      pr.pack_key is not null as pack_bound,
       t.remind_count::int as remind_count,
       (select d.head_user_id from admin.departments d where d.tenant_id = t.tenant_id
         and d.group_id = coalesce(t.assignee_group_id,
@@ -244,7 +246,12 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
     inGroup(r.group_id) ||
     inGroup(escalatedGroupId) ||
     r.head_gate === v.userId;
-  const run = { tenantId: r.tenant_id, startedBy: r.started_by, originRoom: r.origin_room };
+  const run = {
+    tenantId: r.tenant_id,
+    startedBy: r.started_by,
+    originRoom: r.origin_room,
+    packBound: r.pack_bound === true, // fix-review · người gửi không quyết decision run gói
+  };
   const forwards = mine
     .filter((g) => g.via === "forward" && g.from_user_id && g.user_id)
     .map((g) => ({

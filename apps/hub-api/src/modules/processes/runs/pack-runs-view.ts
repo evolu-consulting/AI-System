@@ -169,7 +169,8 @@ const OPEN_GATE = headGateSql("x.st", "t.tenant_id");
 /**
  * contract-flow S1b · "Việc của tôi": task review MỞ của run gói `packKey` mà `u` quyết được — cùng luật `canAct` (grant
  * user/chuyển tiếp ∪ Group duyệt có cửa trưởng phòng ∪ Group chuyển cấp; trừ người bắt đầu ở stage `exclude_starter`; run
- * chưa kết thúc). MỘT câu, scope user (RLS T) + lọc `tenant_id` tường minh; vào qua index một phần `process_runs_pack_ref_idx`.
+ * chưa kết thúc). MỘT câu, scope user (RLS T) + lọc `tenant_id` tường minh; fix-review · vào qua index một phần run gói CHƯA
+ * kết thúc `process_runs_pack_open_idx` (0060; điều kiện status khớp vị từ index) ⇒ không quét lịch sử run đã xong.
  */
 export async function openTasksOf(
   d: ProcessDeps,
@@ -192,7 +193,7 @@ export async function openTasksOf(
       cross join lateral (select r.snapshot->'stages'->(s.stage_idx::int) as st offset 0) x
       cross join lateral (select ${OPEN_GATE} as gate) hg
       where r.tenant_id = ${u.tenantId} and r.pack_key = ${packKey} and r.pack_record_id is not null
-        and r.status not in ('done', 'failed', 'cancelled', 'expired')
+        and r.status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision', 'waiting_timer')
         and not (x.st->'after'->>'exclude_starter' = 'true' and r.started_by = ${u.userId})
         and (exists (select 1 from hub.review_task_assignees a where a.task_id = t.id
                 and a.tenant_id = t.tenant_id and a.user_id = ${u.userId})

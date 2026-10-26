@@ -12,6 +12,8 @@ export type RunFacts = {
   startedBy: string;
   originRoom: "none" | "deleted" | "member" | "outside";
   taskAssignee: boolean;
+  /** contract-flow fix-review · run gắn bản ghi gói (`pack_key`) ⇒ chỉ gói huỷ (`cancelSys`); vắng ⇒ false. */
+  packBound?: boolean;
 };
 export type RunAccess = "full" | "task";
 
@@ -39,6 +41,8 @@ export function canReadThread(v: Viewer, r: RunFacts): boolean {
 
 /** Người bắt đầu (kể cả đã rời phòng, U5) ∨ tenant_admin cùng tenant ∨ platform_admin. */
 export function canCancel(v: Viewer, r: RunFacts): boolean {
+  // fix-review · run gắn gói: huỷ qua API process-runs (kể cả người bắt đầu/admin) sẽ lách bước duyệt của gói ⇒ chỉ gói huỷ.
+  if (r.packBound === true) return false;
   return isStarter(v, r) || isAdmin(v, r);
 }
 
@@ -48,12 +52,16 @@ export const REVIEW_GROUP_REASONS: ReadonlySet<DecisionReason> = new Set([
   "back_limit",
 ]);
 
-/** M5 · như `canCancel`; thêm thành viên Group duyệt khi lý do `redo_limit` / `back_limit` (P-b2 D8). */
+/**
+ * M5 · như `canCancel`; thêm thành viên Group duyệt khi lý do `redo_limit` / `back_limit` (P-b2 D8). fix-review · run gắn
+ * gói: người bắt đầu (= người gửi HĐ) KHÔNG quyết decision; admin vẫn quyết (lỗi kỹ thuật không kẹt run) — `use_current`
+ * của admin không tính là Đạt ở `passedStages` (chỉ review `pass`).
+ */
 export function canDecide(
   v: Viewer,
   r: RunFacts & { reason: DecisionReason; reviewGroupMember: boolean },
 ): boolean {
-  if (canCancel(v, r)) return true;
+  if (r.packBound === true ? isAdmin(v, r) : canCancel(v, r)) return true;
   return REVIEW_GROUP_REASONS.has(r.reason) && r.reviewGroupMember && sameTenant(v, r);
 }
 

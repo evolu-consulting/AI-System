@@ -52,6 +52,7 @@ type RunRow = repo.RunSummaryRow & {
   origin_room: RunFacts["originRoom"];
   back_rounds: number;
   back_limit: number;
+  pack_bound?: boolean;
 };
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 const vrole = (role: AuthUser["role"]): Viewer["role"] =>
@@ -66,6 +67,7 @@ const factsOf = (r: RunRow): RunFacts => ({
   startedBy: r.started_by,
   originRoom: r.origin_room,
   taskAssignee: false,
+  packBound: r.pack_bound === true,
 });
 
 async function viewerCtx(d: ViewDeps, u: AuthUser): Promise<ViewerCtx> {
@@ -86,7 +88,7 @@ async function runRow(tx: Tx, runId: string, viewerId: string): Promise<RunRow |
     select r.id, r.tenant_id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.current_step, r.origin_kind,
       r.origin_room_id, r.origin_conversation_id, r.started_by, u.display_name as started_by_name, r.decision,
       r.input, r.flow_id, r.back_rounds, r.back_limit, ${iso("r.started_at")} as started_at, ${iso("r.updated_at")} as updated_at,
-      ${iso("r.finished_at")} as finished_at,
+      ${iso("r.finished_at")} as finished_at, r.pack_key is not null as pack_bound,
       case when r.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
         when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${viewerId}
