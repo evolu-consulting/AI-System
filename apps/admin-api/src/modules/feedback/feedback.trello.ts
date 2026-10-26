@@ -1,4 +1,4 @@
-// feedback · adapter Trello (app cũ mgmt-app đẩy mỗi góp ý thành một thẻ trong list "Mới"). Chạy SAU khi góp ý đã commit,
+﻿// feedback · adapter Trello (app cũ mgmt-app đẩy mỗi góp ý thành một thẻ trong list "Mới"). Chạy SAU khi góp ý đã commit,
 // không chặn người dùng, lỗi chỉ log cảnh báo (không có key/token). Thiếu cấu hình ⇒ bỏ qua. Key/token nằm trong body, không trong URL.
 import type { FeedbackItem } from "@ai/contracts";
 import { logger } from "../../lib/logger";
@@ -29,25 +29,61 @@ export function cardName(f: Pick<FeedbackItem, "kind" | "message">): string {
   return name.length <= NAME_MAX ? name : `${name.slice(0, NAME_MAX - 1)}…`;
 }
 
+/** Chỉ origin + path: bỏ query/fragment (có thể chứa token/ID) trước khi gửi ra ngoài. */
+export function safePage(u: string): string {
+  try {
+    const p = new URL(u);
+    return `${p.origin === "null" ? `${p.protocol}` : p.origin}${p.pathname}`;
+  } catch {
+    return (u.split(/[?#]/)[0] ?? "").trim();
+  }
+}
+
 /** Mô tả thẻ: nội dung + công ty/người gửi + app/trang/phiên bản. */
 export function cardDesc(f: FeedbackItem): string {
   const meta = [
     `Công ty: ${f.tenant_name}`,
     `Người gửi: ${f.user_name}`,
     `App: ${f.app}`,
-    f.page_url ? `Trang: ${f.page_url}` : "",
+    safePage(f.page_url) ? `Trang: ${safePage(f.page_url)}` : "",
     f.app_version ? `Phiên bản: ${f.app_version}` : "",
     `Mã góp ý: ${f.id}`,
   ].filter(Boolean);
   return `${f.message}\n\n---\n${meta.join("\n")}`;
 }
 
+const MAX_CONCURRENT = 2;
+const MAX_QUEUE = 50;
+let active = 0;
+const waiting: Array<() => void> = [];
+
+/** Tối đa 2 lời gọi Trello cùng lúc trong tiến trình; hàng đợi > 50 ⇒ bỏ qua (ném, được log ở nơi gọi). */
+async function acquire(): Promise<void> {
+  if (active < MAX_CONCURRENT) {
+    active++;
+    return;
+  }
+  if (waiting.length >= MAX_QUEUE) throw new Error("Trello queue full");
+  await new Promise<void>((r) => waiting.push(r)); // slot được chuyển thẳng, không đổi `active`
+}
+function release(): void {
+  const next = waiting.shift();
+  if (next) next();
+  else active--;
+}
+
 async function post(fetchFn: FetchFn, path: string, body: URLSearchParams | FormData) {
-  const res = await fetchFn(`${API}${path}`, {
-    method: "POST",
-    body,
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  await acquire();
+  let res: Response;
+  try {
+    res = await fetchFn(`${API}${path}`, {
+      method: "POST",
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } finally {
+    release();
+  }
   if (!res.ok) throw new Error(`Trello HTTP ${res.status}`);
   return res;
 }
@@ -74,6 +110,10 @@ export async function pushFeedbackToTrello(
     logger.warn("feedback-trello-card-failed", { feedback_id: item.id, error: errName(err) });
     return null;
   }
+  if (!card.id) {
+    logger.warn("feedback-trello-no-card-id", { feedback_id: item.id });
+    return card.shortUrl ?? card.url ?? null;
+  }
   for (const f of files) {
     try {
       const fd = new FormData();
@@ -92,6 +132,6 @@ export async function pushFeedbackToTrello(
 
 /** Chỉ tên lỗi/HTTP status — không đưa message gốc (có thể chứa URL/giá trị lạ) vào log. */
 function errName(err: unknown): string {
-  if (err instanceof Error) return err.message.startsWith("Trello HTTP") ? err.message : err.name;
+  if (err instanceof Error) return err.message.startsWith("Trello ") ? err.message : err.name;
   return "unknown";
 }

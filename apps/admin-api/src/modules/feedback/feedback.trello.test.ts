@@ -1,7 +1,13 @@
-// feedback · unit adapter Trello: dựng thẻ (name/desc), bỏ qua khi thiếu env, lỗi không ném, không lộ key/token.
+﻿// feedback · unit adapter Trello: dựng thẻ (name/desc), bỏ qua khi thiếu env, lỗi không ném, không lộ key/token.
 import { describe, expect, it } from "bun:test";
 import type { FeedbackItem } from "@ai/contracts";
-import { cardDesc, cardName, pushFeedbackToTrello, trelloFromEnv } from "./feedback.trello";
+import {
+  cardDesc,
+  cardName,
+  pushFeedbackToTrello,
+  safePage,
+  trelloFromEnv,
+} from "./feedback.trello";
 
 const item: FeedbackItem = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -96,5 +102,53 @@ describe("trello · adapter", () => {
         : new Response("", { status: 500 }),
     );
     expect(r).toBe("https://t/c");
+  });
+});
+
+describe("trello · sửa review", () => {
+  it("thiếu id thẻ ⇒ không gọi attachments", async () => {
+    const urls: string[] = [];
+    await pushFeedbackToTrello(cfg, item, [file], async (url) => {
+      urls.push(url);
+      return new Response(JSON.stringify({ shortUrl: "https://t/c" }));
+    });
+    expect(urls).toEqual(["https://api.trello.com/1/cards"]);
+    expect(urls.join()).not.toContain("undefined");
+  });
+
+  it("page_url chỉ giữ origin + path", () => {
+    expect(safePage("https://x.test/a/b?token=SECRET&x=1#frag")).toBe("https://x.test/a/b");
+    expect(safePage("/a/b?t=1#h")).toBe("/a/b");
+    expect(cardDesc({ ...item, page_url: "https://x.test/p?k=SECRET" })).not.toContain("SECRET");
+  });
+
+  it("tối đa 2 lời gọi đồng thời; hàng đợi > 50 bị bỏ qua", async () => {
+    let cur = 0;
+    let max = 0;
+    const gates: Array<() => void> = [];
+    const fetchFn = async () => {
+      cur++;
+      max = Math.max(max, cur);
+      await new Promise<void>((r) => gates.push(r));
+      cur--;
+      return new Response(JSON.stringify({ id: "c", shortUrl: "https://t/c" }));
+    };
+    const runs = Array.from({ length: 60 }, () => pushFeedbackToTrello(cfg, item, [], fetchFn));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(max).toBe(2);
+    // 2 đang chạy + 50 xếp hàng; 8 cuối bị bỏ qua ngay (null). Mở cổng dần tới khi xong hết.
+    let done = false;
+    const all = Promise.all(runs).then((r) => {
+      done = true;
+      return r;
+    });
+    while (!done) {
+      for (const g of gates.splice(0)) g();
+      await new Promise<void>((r) => queueMicrotask(r));
+    }
+    const res = await all;
+    expect(res.filter((r) => r === null).length).toBe(8);
+    expect(max).toBe(2);
   });
 });
