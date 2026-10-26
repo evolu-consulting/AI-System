@@ -39,7 +39,7 @@ beforeAll(async () => {
       on conflict do nothing`;
     await c.sql`insert into admin.workflows (id, key, name, description, app_type, base_url, secret_id,
         input_schema, output_field, enabled, side_effect) values
-      (${w.id}, ${w.key}, ${`Phân tích ${w.key}`}, 'cf-dify', 'workflow', ${dify.baseUrl}, ${sid},
+      (${w.id}, ${w.key}, ${`Phân tích ${w.key}`}, 'cf-dify: workflow giả cho int bước Dify', 'workflow', ${dify.baseUrl}, ${sid},
        ${c.sql.json(w.schema as never)}, 'result', true, false) on conflict (id) do nothing`;
   }
 }, 180_000);
