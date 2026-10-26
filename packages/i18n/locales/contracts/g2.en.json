@@ -1,0 +1,152 @@
+{
+  "contracts": {
+    "txn": {
+      "title": "Transactions",
+      "new": "New transaction",
+      "filters": "Transaction filters",
+      "saved": "Transaction saved",
+      "deleted": "Draft deleted",
+      "saveDraft": "Save draft",
+      "rev": "rev {{n}}",
+      "openContract": "Open linked contract",
+      "cancelReason": "Cancel reason: {{reason}}",
+      "reason": "Reason (at least 3 characters)",
+      "events": "Timeline",
+      "eventLines": "{{n}} lines",
+      "emptyTitle": "No transactions yet",
+      "emptyBody": "Manual purchases/sales outside a contract show up here. Click “New transaction” to add one.",
+      "noMatchTitle": "No matching transactions",
+      "noMatchBody": "Try removing some filters.",
+      "filter": {
+        "search": "Search by partner name",
+        "status": "Status",
+        "anyStatus": "Any status",
+        "deal": "Type",
+        "anyDeal": "Buy and sell",
+        "contract": "Contract",
+        "anyContract": "Any contract",
+        "from": "From",
+        "to": "To",
+        "clear": "Clear filters"
+      },
+      "status": { "draft": "Draft", "posted": "Posted", "cancelled": "Cancelled" },
+      "deal": { "sell": "Sell", "buy": "Buy" },
+      "col": {
+        "date": "Date",
+        "deal": "Type",
+        "partner": "Partner",
+        "total": "Total (excl. VAT)",
+        "status": "Status"
+      },
+      "form": {
+        "deal": "Transaction type",
+        "partner": "Partner",
+        "taxId": "Tax ID",
+        "occurredOn": "Date",
+        "dueOn": "Payment due",
+        "contract": "Linked contract",
+        "noContract": "Not linked to a contract",
+        "note": "Note",
+        "lines": "Lines",
+        "total": "Total"
+      },
+      "line": {
+        "productAria": "Product of line {{n}}",
+        "noProduct": "No product (line does not touch stock)",
+        "componentAria": "Component of line {{n}}",
+        "removeAria": "Remove line {{n}}",
+        "remove": "Remove",
+        "nameAria": "Name of line {{n}}",
+        "namePh": "Goods / service name",
+        "unitAria": "Unit of line {{n}}",
+        "unit": "Unit",
+        "qtyAria": "Quantity of line {{n}}",
+        "qty": "Quantity",
+        "priceAria": "Unit price of line {{n}}",
+        "price": "Unit price",
+        "add": "+ Add line",
+        "name": "Goods / service",
+        "amount": "Amount"
+      },
+      "formError": {
+        "partner": "Enter the partner name.",
+        "date": "Pick the transaction date.",
+        "noLines": "At least one line is required.",
+        "line": {
+          "name": "Line {{n}}: enter a name.",
+          "qty": "Line {{n}}: quantity must be above 0 (up to 4 decimals).",
+          "price": "Line {{n}}: enter a unit price."
+        }
+      },
+      "errors": {
+        "state": "The transaction changed state, so this action is not possible. Reload the page.",
+        "forbidden": "You are not allowed to do this.",
+        "notFound": "Transaction not found."
+      },
+      "event": {
+        "created": "Draft created",
+        "edited": "Draft edited",
+        "posted": "Posted",
+        "described": "Described",
+        "adjusted": "Adjusted",
+        "cancelled": "Cancelled"
+      },
+      "stock": {
+        "lead": "Stock before → after:",
+        "none": "This transaction does not change stock.",
+        "reversed": "{{n}} stock ledger rows reversed.",
+        "item": "Product",
+        "before": "Before",
+        "after": "After"
+      },
+      "obligations": {
+        "title": "Payment obligations",
+        "none": "No payment obligations.",
+        "receive": "Receive",
+        "pay": "Pay",
+        "seq": "Instalment",
+        "readonly": "View only — marking as received/paid will arrive in the Payments table."
+      },
+      "describe": {
+        "title": "Description",
+        "holder": "Holder",
+        "lot": "Lot label",
+        "save": "Save description",
+        "saved": "Description saved"
+      },
+      "post": {
+        "title": "Post this transaction?",
+        "body": "Posting {{n}} lines, total {{total}} ₫: stock is updated by the delivery rule and payment obligations are created. After posting you can only adjust (with a reason) or cancel.",
+        "ok": "Post",
+        "button": "Post",
+        "saveFirst": "Save the draft before posting",
+        "done": "Posted — stock"
+      },
+      "delete": {
+        "title": "Delete this draft?",
+        "body": "The draft is deleted for good.",
+        "ok": "Delete draft",
+        "button": "Delete draft"
+      },
+      "adjust": {
+        "title": "Adjust transaction",
+        "body": "The new figures replace the current revision (the old one stays in the timeline) and stock is recalculated. Partner, type and linked contract stay fixed — cancel and create a new one to change them.",
+        "submit": "Adjust",
+        "button": "Adjust",
+        "done": "Adjusted — stock"
+      },
+      "cancel": {
+        "title": "Cancel transaction",
+        "body": "The transaction is cancelled (not deleted): stock is restored and open payment obligations are cancelled.",
+        "submit": "Cancel transaction",
+        "button": "Cancel transaction",
+        "done": "Cancelled — stock"
+      },
+      "contractBlock": {
+        "title": "Linked transactions",
+        "open": "View transactions",
+        "add": "New transaction for this contract"
+      }
+    }
+  }
+}

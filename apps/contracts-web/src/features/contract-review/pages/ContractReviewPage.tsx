@@ -22,6 +22,7 @@ import { shortName } from "~/features/contracts-list/lib/list-model";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
+import { ContractTxBlock } from "~/features/transactions/components/ContractTxBlock";
 import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
@@ -187,6 +188,7 @@ function ContractBody({
           {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
           {/* Bỏ "Nguồn hàng & lãi" khỏi chi tiết HĐ (người dùng 2026-10-23); feature `sourcing` giữ nguyên, chưa gắn. */}
           <ContractLog contractId={id} status={c.status} />
+          <ContractTxBlock contractId={id} write={write} />
           <HistoryPanel id={id} />
           {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}
         </div>

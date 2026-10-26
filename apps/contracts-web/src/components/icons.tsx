@@ -23,6 +23,12 @@ export const IconContract = (p: P) => (
     <path d="M14 3v5h5M9 13h6M9 17h4" />
   </svg>
 );
+export const IconTransaction = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 8h14M14 4l4 4-4 4" />
+    <path d="M20 16H6M10 12l-4 4 4 4" />
+  </svg>
+);
 export const IconOverview = (p: P) => (
   <svg {...base(p)}>
     <rect x="3.5" y="3.5" width="7" height="7" rx="1.6" />

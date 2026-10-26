@@ -193,6 +193,7 @@
     "nav": {
       "overview": "Overview",
       "contracts": "Contracts",
+      "transactions": "Transactions",
       "partners": "Partners",
       "products": "Products & Prices"
     },

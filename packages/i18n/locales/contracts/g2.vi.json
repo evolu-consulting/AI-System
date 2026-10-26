@@ -1,0 +1,152 @@
+{
+  "contracts": {
+    "txn": {
+      "title": "Giao dịch",
+      "new": "Tạo giao dịch",
+      "filters": "Bộ lọc giao dịch",
+      "saved": "Đã lưu giao dịch",
+      "deleted": "Đã xoá giao dịch nháp",
+      "saveDraft": "Lưu nháp",
+      "rev": "bản {{n}}",
+      "openContract": "Xem hợp đồng liên kết",
+      "cancelReason": "Lý do huỷ: {{reason}}",
+      "reason": "Lý do (tối thiểu 3 ký tự)",
+      "events": "Dòng thời gian",
+      "eventLines": "{{n}} dòng",
+      "emptyTitle": "Chưa có giao dịch",
+      "emptyBody": "Giao dịch nhập tay (mua/bán không qua hợp đồng) hiện ở đây. Bấm “Tạo giao dịch” để thêm.",
+      "noMatchTitle": "Không có giao dịch khớp",
+      "noMatchBody": "Thử bỏ bớt bộ lọc.",
+      "filter": {
+        "search": "Tìm theo tên đối tác",
+        "status": "Trạng thái",
+        "anyStatus": "Mọi trạng thái",
+        "deal": "Loại",
+        "anyDeal": "Mua và bán",
+        "contract": "Hợp đồng",
+        "anyContract": "Mọi hợp đồng",
+        "from": "Từ",
+        "to": "Đến",
+        "clear": "Xoá lọc"
+      },
+      "status": { "draft": "Nháp", "posted": "Đã ghi sổ", "cancelled": "Đã huỷ" },
+      "deal": { "sell": "Bán", "buy": "Mua" },
+      "col": {
+        "date": "Ngày",
+        "deal": "Loại",
+        "partner": "Đối tác",
+        "total": "Tổng (chưa VAT)",
+        "status": "Trạng thái"
+      },
+      "form": {
+        "deal": "Loại giao dịch",
+        "partner": "Đối tác",
+        "taxId": "Mã số thuế",
+        "occurredOn": "Ngày phát sinh",
+        "dueOn": "Hạn thanh toán",
+        "contract": "Hợp đồng liên kết",
+        "noContract": "Không liên kết hợp đồng",
+        "note": "Ghi chú",
+        "lines": "Dòng hàng",
+        "total": "Tổng cộng"
+      },
+      "line": {
+        "productAria": "Sản phẩm dòng {{n}}",
+        "noProduct": "Không chọn sản phẩm (dòng không đụng kho)",
+        "componentAria": "Thành phần dòng {{n}}",
+        "removeAria": "Xoá dòng {{n}}",
+        "remove": "Xoá dòng",
+        "nameAria": "Tên dòng {{n}}",
+        "namePh": "Tên hàng / dịch vụ",
+        "unitAria": "Đơn vị dòng {{n}}",
+        "unit": "ĐVT",
+        "qtyAria": "Số lượng dòng {{n}}",
+        "qty": "Số lượng",
+        "priceAria": "Đơn giá dòng {{n}}",
+        "price": "Đơn giá",
+        "add": "＋ Thêm dòng",
+        "name": "Hàng hoá / dịch vụ",
+        "amount": "Thành tiền"
+      },
+      "formError": {
+        "partner": "Nhập tên đối tác.",
+        "date": "Chọn ngày phát sinh.",
+        "noLines": "Cần ít nhất một dòng hàng.",
+        "line": {
+          "name": "Dòng {{n}}: nhập tên hàng.",
+          "qty": "Dòng {{n}}: số lượng phải lớn hơn 0 (tối đa 4 số lẻ).",
+          "price": "Dòng {{n}}: nhập đơn giá."
+        }
+      },
+      "errors": {
+        "state": "Giao dịch đã đổi trạng thái, không thực hiện được thao tác này. Hãy tải lại trang.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "notFound": "Không tìm thấy giao dịch."
+      },
+      "event": {
+        "created": "Tạo nháp",
+        "edited": "Sửa nháp",
+        "posted": "Ghi sổ",
+        "described": "Mô tả",
+        "adjusted": "Điều chỉnh",
+        "cancelled": "Huỷ"
+      },
+      "stock": {
+        "lead": "Tồn kho trước → sau:",
+        "none": "Giao dịch này không làm đổi tồn kho.",
+        "reversed": "Đã đảo {{n}} dòng sổ kho.",
+        "item": "Sản phẩm",
+        "before": "Tồn trước",
+        "after": "Tồn sau"
+      },
+      "obligations": {
+        "title": "Nghĩa vụ thanh toán",
+        "none": "Chưa có nghĩa vụ thanh toán.",
+        "receive": "Thu",
+        "pay": "Chi",
+        "seq": "Đợt",
+        "readonly": "Chỉ xem — đánh dấu đã thu/chi sẽ có ở bảng Thanh toán."
+      },
+      "describe": {
+        "title": "Mô tả",
+        "holder": "Người giữ",
+        "lot": "Nhãn lô",
+        "save": "Lưu mô tả",
+        "saved": "Đã lưu mô tả"
+      },
+      "post": {
+        "title": "Ghi sổ giao dịch?",
+        "body": "Ghi sổ {{n}} dòng, tổng {{total}} ₫: cập nhật tồn kho theo luật giao hàng, tạo nghĩa vụ thanh toán. Sau khi ghi sổ chỉ sửa được bằng điều chỉnh có lý do hoặc huỷ.",
+        "ok": "Ghi sổ",
+        "button": "Ghi sổ",
+        "saveFirst": "Lưu nháp trước khi ghi sổ",
+        "done": "Đã ghi sổ — tồn kho"
+      },
+      "delete": {
+        "title": "Xoá giao dịch nháp?",
+        "body": "Nháp bị xoá hẳn, không khôi phục được.",
+        "ok": "Xoá nháp",
+        "button": "Xoá nháp"
+      },
+      "adjust": {
+        "title": "Điều chỉnh giao dịch",
+        "body": "Số liệu mới thay bản hiện hành (bản cũ vẫn lưu trong dòng thời gian); tồn kho được tính lại. Bên, loại và hợp đồng liên kết không đổi — cần đổi thì huỷ rồi tạo mới.",
+        "submit": "Điều chỉnh",
+        "button": "Điều chỉnh",
+        "done": "Đã điều chỉnh — tồn kho"
+      },
+      "cancel": {
+        "title": "Huỷ giao dịch",
+        "body": "Giao dịch được huỷ (không xoá): hoàn tồn kho và huỷ các nghĩa vụ thanh toán chưa xong.",
+        "submit": "Huỷ giao dịch",
+        "button": "Huỷ giao dịch",
+        "done": "Đã huỷ — tồn kho"
+      },
+      "contractBlock": {
+        "title": "Giao dịch liên kết",
+        "open": "Xem giao dịch",
+        "add": "Tạo giao dịch cho hợp đồng này"
+      }
+    }
+  }
+}

@@ -27,10 +27,17 @@ describe("vai theo quyền gói", () => {
 
 describe("menu (nav-v2)", () => {
   test("đúng 4 mục, đúng thứ tự: Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá", () => {
-    expect(NAV.map((n) => n.to)).toEqual(["/overview", "/contracts", "/partners", "/products"]);
+    expect(NAV.map((n) => n.to)).toEqual([
+      "/overview",
+      "/contracts",
+      "/transactions",
+      "/partners",
+      "/products",
+    ]);
     expect(NAV.map((n) => n.labelKey)).toEqual([
       "contracts.nav.overview",
       "contracts.nav.contracts",
+      "contracts.nav.transactions",
       "contracts.nav.partners",
       "contracts.nav.products",
     ]);
