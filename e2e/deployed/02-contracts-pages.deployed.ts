@@ -125,7 +125,7 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  test("Đối tác: bấm tên mở chi tiết, 3 tab Tổng quan · Hợp đồng · Đánh giá & ghi chú", async () => {
+  test("Đối tác: bấm tên mở chi tiết, 3 tab Tổng quan · Hợp đồng · Sổ việc & ghi chú (U3)", async () => {
     await go("/partners");
     await page.getByRole("link", { name: "Hưng Thịnh" }).first().click();
     await expect(page).toHaveURL(/party=/);
@@ -138,9 +138,9 @@ test.describe("02 contracts-web", () => {
     await tabs.getByRole("tab", { name: /^Hợp đồng · \d+$/ }).click();
     await expect(page).toHaveURL(/tab=contracts/);
     await expect(page.locator("main a[href^='/contracts/']").first()).toBeVisible();
-    await tabs.getByRole("tab", { name: /Đánh giá/ }).click();
+    await tabs.getByRole("tab", { name: /Sổ việc/ }).click();
     await expect(page).toHaveURL(/tab=review/);
-    await expect(tabs.getByRole("tab", { name: /Đánh giá/ })).toHaveAttribute(
+    await expect(tabs.getByRole("tab", { name: /Sổ việc/ })).toHaveAttribute(
       "aria-selected",
       "true",
     );
