@@ -527,6 +527,7 @@ f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptan
 cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptance/D1/backfill.int.test.ts
 9b53803010b468048b6061382b05acde964b69ee4d3514e894097fc443720e29  tests/acceptance/DOC-deals/deals.int.test.ts
 bc8e69c50e73c89383503093af75d7395985e6e8fcf2a8f85aec8d321c5d0ab4  tests/acceptance/DOC-deals/migrate.int.test.ts
+88c03d31ce17556562bee80b542c006cfed21cdd1e144265170652cd644245ef  tests/acceptance/DOC-legal/legal.int.test.ts
 33e10ae4e09e45be719c400d7e021dd1057e98302242fe834b45b642a9aab395  tests/acceptance/DOC-model/doc-model.int.test.ts
 ffe096bf1386418554a9279c602cff1cfcd69ef316733f169e797049e2d877c2  tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts
 50ac7867889f650dc720f36e1a383c721a2747945b62e05e91fc1b1bb84460fe  tests/acceptance/FB1/_fb1.ts

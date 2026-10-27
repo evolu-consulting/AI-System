@@ -56,6 +56,7 @@ export function companyRepo(tx: Tx, tid: string) {
     saveApproval,
     saveAllowNegative: (allow: boolean, actor: string) =>
       saveAllowNegativeStock(tx, tid, allow, actor),
+    saveLegalThreshold: (v: number, actor: string) => saveLegalThreshold(tx, tid, v, actor),
   };
 }
 export type CompanyRepo = ReturnType<typeof companyRepo>;
@@ -65,7 +66,9 @@ const approvalFlag = (tx: Tx, tid: string): Promise<ApprovalFlag> =>
     tx,
     sql`select jsonb_build_object('enabled', contracts.approval_on(), 'by_default', contracts.approval_default(),
       'allow_negative', coalesce((select s.allow_negative_stock from contracts.approval_settings s
-        where s.tenant_id = ${tid}::uuid), false)) as j`,
+        where s.tenant_id = ${tid}::uuid), false),
+      'legal_warn_threshold', coalesce((select s.legal_warn_threshold from contracts.approval_settings s
+        where s.tenant_id = ${tid}::uuid), 5000000)) as j`,
   );
 
 /** Cài đặt "cho phép giao vượt tồn" + nhật ký trước/sau trong MỘT câu. */
@@ -85,4 +88,18 @@ async function saveAllowNegativeStock(
     insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
       select ${tid}::uuid, ${actor}::uuid, jsonb_build_object('allow_negative_stock', (select v from old)),
         jsonb_build_object('allow_negative_stock', up.allow_negative_stock) from up`);
+}
+
+/** DOC-legal: ngưỡng cảnh báo pháp lý (đồng) + nhật ký trước/sau trong MỘT câu. */
+async function saveLegalThreshold(tx: Tx, tid: string, v: number, actor: string): Promise<void> {
+  await tx.execute(sql`with old as (select coalesce((select s.legal_warn_threshold from contracts.approval_settings s
+        where s.tenant_id = ${tid}::uuid), 5000000) as v),
+      up as (insert into contracts.approval_settings (tenant_id, legal_warn_threshold, updated_by)
+        values (${tid}::uuid, ${v}::bigint, ${actor}::uuid)
+        on conflict (tenant_id) do update set legal_warn_threshold = excluded.legal_warn_threshold,
+          updated_by = excluded.updated_by, updated_at = now()
+        returning legal_warn_threshold)
+    insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+      select ${tid}::uuid, ${actor}::uuid, jsonb_build_object('legal_warn_threshold', (select v from old)),
+        jsonb_build_object('legal_warn_threshold', up.legal_warn_threshold) from up`);
 }

@@ -15,6 +15,7 @@ import type {
 } from "@ai/contracts";
 import type { MilestoneRow } from "../application/milestones.ports";
 import { fillFields } from "../domain/fields.rules";
+import { LEGAL_WARN_DEFAULT, legalWarning } from "../domain/legal-warn.rules";
 import { currentOf } from "../domain/versions.rules";
 import { type DocRaw, toContractDoc } from "./doc-types.mapper";
 import { milestonesView } from "./milestones.mapper";
@@ -104,6 +105,8 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
     | null;
   /** CR-101 DOC-model */
   doc?: DocRaw;
+  /** CR-101 DOC-legal: ngưỡng của tenant (chưa có hàng cài đặt ⇒ null ⇒ mặc định). */
+  legal_threshold?: number | string | null;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -131,10 +134,29 @@ function v2aOf(r: DetailRaw, today: string) {
   };
 }
 
+/** CR-101 DOC-legal: cảnh báo pháp lý từ hàng + mốc đã dựng (không thêm câu SQL). */
+function legalOf(r: DetailRaw, v: ReturnType<typeof v2aOf>) {
+  const moneyKinds = ["collect", "pay", "commission"];
+  return legalWarning({
+    doc_type: r.doc?.doc_type ?? "contract",
+    frame_root_id: r.doc?.frame_root_id ?? null,
+    deal: v.deal,
+    value: num(r.value),
+    commission_pct: v.commission_pct,
+    commission_fixed: v.commission_fixed,
+    open_money_milestones: v.milestones.filter(
+      (m) => m.status === "open" && moneyKinds.includes(m.kind),
+    ).length,
+    threshold: num(r.legal_threshold) ?? LEGAL_WARN_DEFAULT,
+  });
+}
+
 export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
   const { category_ids: _c, ...row } = toContractListRow({ ...r, category_ids: [] });
+  const v2a = v2aOf(r, today);
   return {
-    ...v2aOf(r, today),
+    ...v2a,
+    legal_warning: legalOf(r, v2a),
     ...row,
     error: r.error,
     created_by: r.created_by,

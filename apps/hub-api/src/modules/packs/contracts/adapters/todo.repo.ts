@@ -35,7 +35,24 @@ const k = (kind: string, id: string, day: string) =>
 
 export type { TodoWindow };
 
-const sources = (t: string, w: TodoWindow) => sql`with ${dueSources(t, w)}, ${fileSources(t, w)}`;
+const sources = (t: string, w: TodoWindow) =>
+  sql`with ${dueSources(t, w)}, ${fileSources(t, w)}, ${legalSource(t)}`;
+
+/** CR-101 DOC-legal (Câu 8): giao dịch đứng riêng (deal, không thuộc HĐ NT) có tổng ≥ ngưỡng Cài đặt (0 = tắt) mà còn mốc tiền mở.
+ *  Điều kiện PHẢI khớp `legalWarning` (domain/legal-warn.rules.ts). Khoá Bỏ qua = `legal:<id>:<ngày tạo>`. */
+const legalSource = (t: string) => sql`
+  lg as (select c.id, (c.created_at at time zone 'UTC')::date as day, c.fields, c.number, c.title, c.direction,
+      c.seller, c.buyer, c.total from (select c.*, case when c.deal = 'referral'
+          then coalesce(c.commission_fixed, round(c.value * c.commission_pct / 100)) else c.value end as total,
+        coalesce((select s.legal_warn_threshold from contracts.approval_settings s where s.tenant_id = ${t}::uuid),
+          5000000) as thr
+        from contracts.contracts c where c.tenant_id = ${t}::uuid) c
+    where c.doc_type = 'deal' and c.frame_root_id is null and c.kind = 'contract' and c.status in (${CONFIRMED})
+      and c.superseded_at is null and c.thr > 0 and c.total >= c.thr
+      and exists (select 1 from contracts.obligations o where o.tenant_id = c.tenant_id and o.contract_id = c.id
+        and o.status = 'open' and o.kind in ('payment', 'commission'))
+      and ${notDismissed(t, sql`${k("legal", "c.id", "(c.created_at at time zone 'UTC')::date")}`)}
+    order by c.created_at desc, c.id limit ${LIM}::int)`;
 
 /** Nguồn hạn: mốc, hoa hồng, HĐ sắp hết, khách sắp hết, liên hệ gia hạn. */
 const dueSources = (t: string, w: TodoWindow) => sql`
@@ -109,6 +126,9 @@ const payload = (t: string) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) 
   union all
   select jsonb_build_object('kind', 'missing_file', 'id', c.id, 'due', c.day, 'title', ${TITLE("c")},
       'party', ${PARTY("c")}, 'contract_id', c.id) from mf c
+  union all
+  select jsonb_build_object('kind', 'legal', 'id', c.id, 'due', c.day, 'title', ${TITLE("c")},
+      'party', ${PARTY("c")}, 'amount', c.total, 'contract_id', c.id) from lg c
   union all
   select jsonb_build_object('kind', 'market_price', 'id', a.id, 'due', a.day, 'title', a.name, 'sub', a.detail,
       'party', a.supplier_name, 'amount', a.price, 'product_id', a.product_id) from pa a) x`;

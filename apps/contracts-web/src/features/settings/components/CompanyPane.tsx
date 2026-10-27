@@ -175,6 +175,27 @@ export function CompanyPane({
           </div>
         </Row>
       </Panel>
+      <Panel title={t("contracts.legal.title")}>
+        <Row label={t("contracts.legal.threshold")} htmlFor="co-legal">
+          <div className="flex flex-col gap-1">
+            <input
+              id="co-legal"
+              type="number"
+              min={0}
+              step={100000}
+              className={FIELD}
+              value={c.legal_warn_threshold ?? 5000000}
+              onChange={(e) =>
+                set({
+                  ...c,
+                  legal_warn_threshold: Math.max(0, Math.trunc(Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <span className="text-caption text-dim">{t("contracts.legal.thresholdHint")}</span>
+          </div>
+        </Row>
+      </Panel>
     </>
   );
 }

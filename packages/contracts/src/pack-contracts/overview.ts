@@ -60,6 +60,8 @@ export const TODO_KINDS = [
   "missing_file",
   // price-scout · "Giá thị trường thay đổi" (cảnh báo của lượt dò giá theo lịch).
   "market_price",
+  // CR-101 DOC-legal · giao dịch đứng riêng giá trị lớn còn mốc tiền mở (cần kế toán xác nhận).
+  "legal",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
 export const TODO_ACTIONS = ["skip", "done"] as const;

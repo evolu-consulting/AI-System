@@ -298,7 +298,8 @@
           "rating": "Đánh giá",
           "rating_quarter": "Đánh giá",
           "missing_file": "Thiếu file",
-          "market_price": "Giá thị trường thay đổi"
+          "market_price": "Giá thị trường thay đổi",
+          "legal": "Pháp lý"
         },
         "when": {
           "late": "trễ {{n}} ngày",

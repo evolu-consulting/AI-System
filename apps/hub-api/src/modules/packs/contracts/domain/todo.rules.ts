@@ -16,6 +16,7 @@ export const TODO_KINDS = [
   "rating_quarter",
   "missing_file",
   "market_price",
+  "legal",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
 export const TODO_ACTIONS = ["skip", "done"] as const;
@@ -30,8 +31,10 @@ export type RawKind =
   | "rating"
   | "rating_quarter"
   | "missing_file"
-  | "market_price";
+  | "market_price"
+  | "legal";
 export const RAW_KINDS: readonly RawKind[] = [
+  "legal",
   "milestone",
   "commission",
   "contract_expiring",
@@ -97,6 +100,7 @@ const PRI: Record<TodoKind, number> = {
   rating: 2,
   rating_quarter: 2,
   market_price: 2,
+  legal: 2,
   missing_file: 3,
 };
 
@@ -158,7 +162,11 @@ export function todoItem(r: RawTodo, today: string): TodoItem {
 /** Quá hạn đầu (trễ lâu nhất trước); rồi theo mức, hạn gần trước; Đánh giá / Thiếu file mới nhất trước. */
 export function compareTodo(a: TodoItem, b: TodoItem): number {
   const backward = (k: TodoKind) =>
-    k === "rating" || k === "rating_quarter" || k === "missing_file" || k === "market_price";
+    k === "rating" ||
+    k === "rating_quarter" ||
+    k === "missing_file" ||
+    k === "market_price" ||
+    k === "legal";
   return (
     PRI[a.kind] - PRI[b.kind] ||
     (backward(a.kind) ? b.due.localeCompare(a.due) : a.due.localeCompare(b.due)) ||

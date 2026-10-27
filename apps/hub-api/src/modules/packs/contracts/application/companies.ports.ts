@@ -16,11 +16,16 @@ export type CompaniesRepo = {
 };
 
 export type StoredCompany = {
-  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock">;
+  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock" | "legal_warn_threshold">;
   version: number;
   updated_at: string;
 } | null;
-export type ApprovalFlag = { enabled: boolean; by_default: boolean; allow_negative?: boolean };
+export type ApprovalFlag = {
+  enabled: boolean;
+  by_default: boolean;
+  allow_negative?: boolean;
+  legal_warn_threshold?: number;
+};
 
 export type CompanyRepo = {
   company(): Promise<StoredCompany>;
@@ -29,4 +34,6 @@ export type CompanyRepo = {
   saveApproval(enabled: boolean, actor: string): Promise<void>;
   /** Cài đặt "cho phép giao vượt tồn" + nhật ký trước/sau trong MỘT câu. */
   saveAllowNegative(allow: boolean, actor: string): Promise<void>;
+  /** DOC-legal: ngưỡng cảnh báo pháp lý + nhật ký trước/sau trong MỘT câu. */
+  saveLegalThreshold(v: number, actor: string): Promise<void>;
 };

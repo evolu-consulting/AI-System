@@ -45,13 +45,16 @@ export const CompanySchema = z.strictObject({
   approval_enabled: z.boolean(),
   /** Cho phép giao vượt tồn kho (mặc định tắt); vắng ⇒ giữ nguyên. Bật ⇒ xác nhận giao không chặn khi thiếu kho, tồn có thể âm. */
   allow_negative_stock: z.boolean().optional(),
+  /** DOC-legal · Câu 8: ngưỡng (đồng) cảnh báo pháp lý cho giao dịch đứng riêng; 0 = tắt; vắng ⇒ giữ nguyên. */
+  legal_warn_threshold: z.number().int().min(0).max(1_000_000_000_000_000).optional(),
 });
 export type CompanyIn = z.infer<typeof CompanySchema>;
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock">;
+  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock" | "legal_warn_threshold">;
   approval_enabled: boolean;
   allow_negative_stock: boolean;
+  legal_warn_threshold: number;
   /** Mặc định của tenant (cờ duyệt theo khoá tenant). */
   defaults: CompanyIn;
   version: number;

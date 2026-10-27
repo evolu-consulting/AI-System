@@ -100,6 +100,11 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   versions: z.array(ContractVersionRefSchema).max(CONTRACT_VERSIONS_MAX),
   /** CR-101 DOC-model: loại chứng từ, cha (HĐ NT) / con + tổng hợp HĐ NT. Hub luôn trả; optional để fixture cũ còn hợp lệ. */
   doc: ContractDocSchema.optional(),
+  /** CR-101 DOC-legal (Câu 8): cảnh báo pháp lý của giao dịch đứng riêng (chỉ cảnh báo, không chặn); không có ⇒ null. */
+  legal_warning: z
+    .strictObject({ threshold: z.number().int().min(1), reason: z.string() })
+    .nullable()
+    .optional(),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

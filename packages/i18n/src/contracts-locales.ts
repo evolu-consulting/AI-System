@@ -5,8 +5,9 @@
 import type { Locale } from "./locales";
 
 type Part = { default: { contracts: Record<string, unknown> } };
-/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, docframe, rep3 (rep3 luôn CUỐI: gộp sâu). */
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, docframe, rep3 (rep3 luôn CUỐI: gộp sâu). */
 type Parts = readonly [
+  Part,
   Part,
   Part,
   Part,
@@ -53,6 +54,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/k3b.en.json"),
     import("../locales/contracts/g2.en.json"),
     import("../locales/contracts/esign.en.json"),
+    import("../locales/contracts/legal.en.json"),
     import("../locales/contracts/docframe.en.json"),
     import("../locales/contracts/rep3.en.json"),
   ]);
@@ -79,6 +81,7 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/k3b.vi.json"),
     import("../locales/contracts/g2.vi.json"),
     import("../locales/contracts/esign.vi.json"),
+    import("../locales/contracts/legal.vi.json"),
     import("../locales/contracts/docframe.vi.json"),
     import("../locales/contracts/rep3.vi.json"),
   ]);

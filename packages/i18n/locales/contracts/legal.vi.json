@@ -1,0 +1,12 @@
+{
+  "contracts": {
+    "legal": {
+      "title": "Pháp lý",
+      "accountantNote": "Cần kế toán xác nhận.",
+      "reason": "Giao dịch đứng riêng giá trị lớn, còn mốc thu/trả chưa xong.",
+      "threshold": "Ngưỡng cảnh báo pháp lý (đồng)",
+      "thresholdHint": "Giao dịch đứng riêng (không thuộc hợp đồng nguyên tắc) từ mức này trở lên mà còn mốc thu/trả chưa xong sẽ có cảnh báo. Chỉ cảnh báo, không chặn. 0 = tắt. Mức 5.000.000 đ là cách hiểu quy định thuế, cần kế toán xác nhận.",
+      "thresholdOwnerOnly": "Chỉ quản lý được đổi."
+    }
+  }
+}

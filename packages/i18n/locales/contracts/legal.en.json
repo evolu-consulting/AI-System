@@ -1,0 +1,12 @@
+{
+  "contracts": {
+    "legal": {
+      "title": "Legal",
+      "accountantNote": "Needs accountant confirmation.",
+      "reason": "Large standalone deal with collection/payment milestones still open.",
+      "threshold": "Legal warning threshold (VND)",
+      "thresholdHint": "Standalone deals (not under a framework contract) at or above this amount with collection/payment milestones still open show a warning. Warning only, never blocks. 0 = off. The 5,000,000 VND default is an interpretation of tax rules and needs accountant confirmation.",
+      "thresholdOwnerOnly": "Managers only."
+    }
+  }
+}

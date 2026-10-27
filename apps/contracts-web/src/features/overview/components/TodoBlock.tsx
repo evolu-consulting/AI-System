@@ -23,6 +23,7 @@ const TONE: Record<TodoItem["kind"], TagTone> = {
   rating_quarter: "act",
   missing_file: "grey",
   market_price: "act",
+  legal: "act",
 };
 
 function Body({ i }: { i: TodoItem }) {

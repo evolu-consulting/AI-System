@@ -312,7 +312,8 @@ async function detail(
       'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by,
       'root_id', c.root_id, 'version_no', c.version_no, 'versions_count', ${versionsCount},
       'superseded_at', c.superseded_at, 'superseded_by', c.superseded_by, 'versions', ${versionsOf}
-    )::jsonb || jsonb_build_object('doc', ${docOf})) as d
+    )::jsonb || jsonb_build_object('doc', ${docOf}, 'legal_threshold', (select s.legal_warn_threshold
+      from contracts.approval_settings s where s.tenant_id = c.tenant_id))) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
   if (!d) return null;
