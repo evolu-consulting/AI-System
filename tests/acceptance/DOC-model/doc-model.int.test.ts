@@ -163,6 +163,14 @@ describe("CR-101 DOC-model · đường chính HĐ nguyên tắc", () => {
     expect(s).toEqual({ t: "framework", sup: true });
     const det2 = await c.hubCall(P.lan, "GET", `${CBASE}/${v2.json.id}`);
     expect(det2.json?.doc?.summary?.children).toBe(3);
+    // DOC-ui-gaps: `docs` trả `root_id` (v2 có id khác root_id) + `source` null với HĐ — UI khớp `children.frame_root_id` theo root_id.
+    const nested = (await c.hubCall(P.lan, "GET", `${CBASE}?nest=1&page_size=100`)).json;
+    const d2 = nested.docs.find((x: Json) => x.id === v2.json.id);
+    expect({
+      root: d2?.root_id,
+      source: d2?.source,
+      kids: nested.children.filter((k: Json) => k.frame_root_id === d2?.root_id).length,
+    }).toEqual({ root: f, source: null, kids: 3 });
 
     // Gỡ liên kết ⇒ con đứng riêng.
     const det1 = await c.hubCall(P.lan, "DELETE", `${CBASE}/${c1}/frame`);

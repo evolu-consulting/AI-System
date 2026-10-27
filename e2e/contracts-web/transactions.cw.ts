@@ -28,6 +28,27 @@ async function install(page: Page, settleError: string | null = null) {
       settle_error: settleError,
     });
   });
+  // Ngưỡng cảnh báo pháp lý + nhận diện công ty (Shell cũng đọc /company).
+  const co = {
+    name: "Acme",
+    app_name: null,
+    logo: null,
+    accent: "indigo",
+    theme: "light",
+    own_names: [],
+    own_tax_ids: [],
+  };
+  await page.route("**/pack/contracts/company", (r) =>
+    json(r, 200, {
+      company: co,
+      approval_enabled: false,
+      allow_negative_stock: false,
+      legal_warn_threshold: 5_000_000,
+      defaults: { ...co, name: null, theme: "auto", approval_enabled: false },
+      version: 1,
+      updated_at: null,
+    }),
+  );
   await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/attach`, (r) => {
     sent.push({
       method: "POST",
@@ -149,4 +170,31 @@ test("/transactions/new và /transactions/<id> chuyển hướng", async ({ page
   await expect(page).toHaveURL(/\/contracts\/new\?type=deal/);
   await page.goto(`/transactions/${ACTIVE_ID}`);
   await expect(page).toHaveURL(new RegExp(`/contracts/${ACTIVE_ID}$`));
+});
+
+test("cảnh báo pháp lý (Câu 8): đứng riêng, giá trị ≥ ngưỡng, còn mốc mở ⇒ cảnh báo, không chặn lưu; có HĐ NT / đã giao ngay ⇒ không", async ({
+  page,
+}) => {
+  const sent = await install(page);
+  await page.goto("/contracts/new?type=deal");
+  await fillDeal(page);
+  const warn = page.getByTestId("legal-warning");
+  await expect(warn).toHaveCount(0); // 1.500.000 < 5.000.000
+  await page.getByLabel("Giá trị").fill("6000000");
+  await expect(warn).toContainText("Cần kế toán xác nhận");
+  await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).check();
+  await expect(warn).toHaveCount(0);
+  await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).uncheck();
+  await expect(warn).toBeVisible();
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click(); // chỉ cảnh báo, không chặn
+  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  expect(deals(sent)?.body).toMatchObject({ total_value: 6_000_000 });
+});
+
+test("cảnh báo pháp lý không áp khi giao dịch thuộc HĐ nguyên tắc (?frame=)", async ({ page }) => {
+  await install(page);
+  await page.goto(`/contracts/new?type=deal&frame=${ACTIVE_ID}`);
+  await fillDeal(page);
+  await page.getByLabel("Giá trị").fill("6000000");
+  await expect(page.getByTestId("legal-warning")).toHaveCount(0);
 });

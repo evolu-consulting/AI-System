@@ -70,6 +70,7 @@
         "title": "Hợp đồng",
         "partner": "Đối tác",
         "type": "Loại",
+        "source": "Nguồn",
         "value": "Giá trị",
         "dates": "Hiệu lực",
         "stage": "Giai đoạn",

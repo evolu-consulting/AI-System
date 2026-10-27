@@ -1,4 +1,4 @@
-﻿import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import type { ContractListResponse } from "@ai/contracts";
 import { buildRows, countQuery, docTypeParams, parseDocFilter } from "./doc-list";
 import { exportQueryString, type ListParams, listQueryString } from "./list-model";
@@ -10,6 +10,8 @@ const doc = (n: number, doc_type: "contract" | "framework" | "deal") => ({
   id: id(n),
   doc_type,
   frame_root_id: null,
+  root_id: id(n),
+  source: null,
   frame_restricted: false,
 });
 const kid = (parent: number, n: number) => ({
@@ -98,6 +100,17 @@ describe("buildRows", () => {
       id(3),
     ]);
     expect(rows.every((r) => r.kind === "item" || !r.orphan)).toBe(true);
+  });
+  test("HĐ NT phiên bản 2 (id ≠ root_id): con khớp theo root_id", () => {
+    const v2 = { ...doc(2, "framework"), root_id: id(7) };
+    const rows = buildRows(
+      resp({ items: [item(2)], docs: [v2], children: [kid(7, 4), kid(2, 5)] }),
+    );
+    expect(rows.map((r) => (r.kind === "item" ? "item" : `${r.child.id}:${r.orphan}`))).toEqual([
+      "item",
+      `${id(4)}:false`,
+      `${id(5)}:true`,
+    ]);
   });
   test("con không khớp hàng cha nào ⇒ cuối danh sách, đánh dấu orphan (không mất dòng)", () => {
     const rows = buildRows(

@@ -117,6 +117,7 @@ test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ v�
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4"),
   });
+  await page.getByTestId("upload-confirm").click(); // DOC-ui-gaps: chọn loại chứng từ (mặc định HĐ kinh tế)
   await expect(page).toHaveURL(/\/contracts\/c1000000-0000-4000-8000-0000000000b2$/);
   expect(uploaded).toBe(true);
 });

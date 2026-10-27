@@ -9,6 +9,24 @@
         "contract": "Contracts",
         "deal": "Transactions"
       },
+      "upload": {
+        "title": "Upload documents",
+        "files": "{{count}} file(s). The chosen type applies to the whole batch.",
+        "type": { "contract": "Economic contract", "framework": "Framework contract" },
+        "hint": {
+          "contract": "A specific contract; may belong to a framework contract.",
+          "framework": "Master agreement: prices, credit limit, ordering terms; child documents attach later."
+        },
+        "credit": "Credit limit (VND, optional)",
+        "creditPh": "E.g. 400,000,000",
+        "terms": "Ordering terms (optional)",
+        "termsPh": "E.g. order by email, deliver within 3 days",
+        "go": "Upload",
+        "err": {
+          "credit": "Credit limit is not a number, e.g. 400.000.000.",
+          "terms": "Ordering terms are too long."
+        }
+      },
       "addDeal": "Add transaction",
       "back": "← Contracts & transactions",
       "newDealTitle": "Add transaction",

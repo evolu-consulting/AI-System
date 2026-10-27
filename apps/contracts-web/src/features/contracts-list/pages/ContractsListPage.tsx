@@ -15,9 +15,9 @@ import { CATEGORIES_KEY, createCategory, exportContracts } from "../api";
 import { ChildCard, ChildRowCells } from "../components/ChildRows";
 import {
   ActionsCell,
-  COLUMN_KEYS,
   type ColumnKey,
   cell,
+  columnKeysOf,
   MobileCard,
   type RowCtx,
 } from "../components/ContractCells";
@@ -27,6 +27,7 @@ import { ExportButtons } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
 import { QuotaDialog } from "../components/QuotaDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
+import { UploadTypeGate } from "../components/UploadTypeDialog";
 import { useContractsList } from "../hooks/use-contracts-list";
 import { useDeleteDialog } from "../hooks/use-delete-dialog";
 import { useUploadQueue } from "../hooks/use-upload-queue";
@@ -82,10 +83,13 @@ export function ContractsListPage() {
       replace: true,
     });
   };
+  // DOC-ui-gaps: tệp vừa chọn/thả chờ chọn loại chứng từ rồi mới vào hàng đợi.
+  const [pending, setPending] = useState<File[] | null>(null);
   const queue = useUploadQueue((id) => void nav({ to: "/contracts/$id", params: { id } }));
+  const keys = columnKeysOf(docType);
   const cols = useColumns(
     "contracts-v2",
-    COLUMN_KEYS.map((key) => ({
+    keys.map((key) => ({
       key,
       label: t(`contracts.list.col.${key}`),
       locked: key === "title" || key === "stage",
@@ -97,6 +101,7 @@ export function ContractsListPage() {
       parents: new Map((list.data?.parents ?? []).map((p) => [p.id, p.title])),
       progress: new Map((list.data?.progress ?? []).map((p) => [p.id, p])),
       docs: new Map((list.data?.docs ?? []).map((d) => [d.id, d.doc_type])),
+      sources: new Map((list.data?.docs ?? []).map((d) => [d.id, d.source])),
       owner,
       onDelete: delDialog.open,
     }),
@@ -126,13 +131,13 @@ export function ContractsListPage() {
 
   const items = list.data?.items ?? [];
   const hasRows = rows.length > 0;
-  const shown = COLUMN_KEYS.filter((k) => cols.shows(k));
+  const shown = keys.filter((k) => cols.shows(k));
   const row = (k: ColumnKey, r: (typeof items)[number]) => cell(k, r, ctx);
   return (
     // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55); khung list tự giữ cuộn (Shell `layoutOf` = board).
     <DropOverlay
       enabled={!!write}
-      onFiles={queue.enqueue}
+      onFiles={(fs) => fs.length && setPending(fs)}
       className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col"
     >
       <PageHead
@@ -151,7 +156,7 @@ export function ContractsListPage() {
                   onChange={(e) => {
                     const picked = Array.from(e.target.files ?? []);
                     e.target.value = "";
-                    queue.enqueue(picked);
+                    if (picked.length) setPending(picked);
                   }}
                 />
                 <Link
@@ -176,6 +181,14 @@ export function ContractsListPage() {
         }
       />
       {delDialog.node}
+      <UploadTypeGate
+        files={pending}
+        onCancel={() => setPending(null)}
+        onConfirm={(meta) => {
+          if (pending) queue.enqueue(pending, meta);
+          setPending(null);
+        }}
+      />
       <QuotaDialog notice={queue.quota} onClose={queue.dismissQuota} />
       <QueueExtractDialog items={queue.items} />
       <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />

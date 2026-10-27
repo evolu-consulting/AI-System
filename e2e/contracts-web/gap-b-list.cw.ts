@@ -116,6 +116,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
       { name: "hd.md", mimeType: "text/markdown", buffer: Buffer.from("# Điều 1") },
       { name: "virus.exe", mimeType: "application/octet-stream", buffer: Buffer.from("MZ") },
     ]);
+    await page.getByTestId("upload-confirm").click(); // DOC-ui-gaps: chọn loại chứng từ (mặc định HĐ kinh tế)
     const panel = page.getByRole("region", { name: "Tải lên hợp đồng" });
     await expect(panel.getByText("Chỉ nhận PDF, DOCX, PNG, JPG hoặc Markdown")).toBeVisible();
     await expect(panel.locator('li[data-state="done"]')).toHaveCount(2);
@@ -152,6 +153,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
       { name: "a.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 a") },
       { name: "b.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 b") },
     ]);
+    await page.getByTestId("upload-confirm").click();
     const panel = page.getByRole("region", { name: "Tải lên hợp đồng" });
     const dialog = page.getByRole("dialog", { name: "Đã hết lượt tải hợp đồng hôm nay" });
     await expect(dialog).toContainText("Công ty đã dùng hết 20 lượt tải lên trong ngày");

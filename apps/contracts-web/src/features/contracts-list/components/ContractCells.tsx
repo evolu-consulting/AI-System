@@ -1,6 +1,6 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI `renderCList`): ô bảng — Hợp đồng (tên + số / phụ lục của), Đối tác, Loại, Giá trị, Hiệu lực,
 // Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem; Xoá ẩn tới V2-M). Thẻ điện thoại: một thẻ mỗi HĐ.
-import type { ContractListRow, ContractProgress, DocType } from "@ai/contracts";
+import type { ContractListRow, ContractProgress, DealSource, DocType } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ import { cn } from "~/lib/utils";
 import { deleteAction } from "../lib/delete-action";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
-import { DocTypeTag, EyeIcon } from "./ChildRows";
+import { DocTypeTag, EyeIcon, SourceName } from "./ChildRows";
 
 export type RowCtx = {
   /** Tiêu đề HĐ gốc của hàng phụ lục trong trang (`parents` của API). */
@@ -20,6 +20,8 @@ export type RowCtx = {
   progress: ReadonlyMap<string, ContractProgress>;
   /** DOC-ui-list: loại chứng từ theo id hàng (`docs` của API); vắng ⇒ HĐ kinh tế. */
   docs?: ReadonlyMap<string, DocType>;
+  /** DOC-ui-gaps: nguồn giao dịch theo id hàng (`docs[].source`). */
+  sources?: ReadonlyMap<string, DealSource | null>;
   /** Vai quản lý (`useMe().owner`) ⇒ hiện nút Xoá. */
   owner?: boolean;
   /** Mở hộp xoá của HĐ `id`. */
@@ -27,7 +29,19 @@ export type RowCtx = {
 };
 
 export const COLUMN_KEYS = ["title", "partner", "type", "value", "dates", "stage"] as const;
-export type ColumnKey = (typeof COLUMN_KEYS)[number];
+/** DOC-ui-gaps: cột "Nguồn" chỉ hiện khi lọc Giao dịch (HĐ không có nguồn); chèn sau "Loại". */
+export const COLUMN_KEYS_DEAL = [
+  "title",
+  "partner",
+  "type",
+  "source",
+  "value",
+  "dates",
+  "stage",
+] as const;
+export type ColumnKey = (typeof COLUMN_KEYS_DEAL)[number];
+export const columnKeysOf = (docType: string): readonly ColumnKey[] =>
+  docType === "deal" ? COLUMN_KEYS_DEAL : COLUMN_KEYS;
 
 const TD = "px-3 py-3";
 
@@ -155,6 +169,14 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
           <DealTag r={r} ctx={ctx} />
         </td>
       );
+    case "source": {
+      const s = ctx.sources?.get(r.id);
+      return (
+        <td className={cn("whitespace-nowrap", TD)} data-testid="source-cell">
+          {s ? <SourceName source={s} /> : <span className="text-dim">—</span>}
+        </td>
+      );
+    }
     case "value":
       return (
         <td className={cn("text-right font-mono whitespace-nowrap", TD)}>

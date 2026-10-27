@@ -48,13 +48,15 @@ function takeChildren(kids: Map<string, ListFrameChild[]>, id: string | null): D
 }
 
 /**
- * Hàng hiển thị theo thứ tự trang: mỗi hàng cha, kế đó con của nó (khớp `frame_root_id` = id hàng HĐ NT). Phản hồi cũ không có `docs`
- * ⇒ mọi hàng là HĐ kinh tế. Con không khớp hàng cha nào trong trang (API chưa trả `root_id` của HĐ NT từ phiên bản 2 trở đi) ⇒ cuối
+ * Hàng hiển thị theo thứ tự trang: mỗi hàng cha, kế đó con của nó (khớp `frame_root_id` = `root_id` của hàng HĐ NT). Phản hồi cũ không có `docs`
+ * ⇒ mọi hàng là HĐ kinh tế. Con không khớp hàng cha nào trong trang (cha ở trang khác / dữ liệu lệch) ⇒ cuối
  * danh sách, đánh dấu `orphan`, để không mất dòng nào.
  */
 export function buildRows(r: ContractListResponse | undefined): DocRow[] {
   if (!r) return [];
   const docOf = new Map((r.docs ?? []).map((d) => [d.id, d.doc_type]));
+  // `children.frame_root_id` = `root_id` của HĐ NT (phiên bản ≥ 2 có id ≠ root_id); phản hồi không có `root_id` ⇒ dùng id hàng.
+  const rootOf = new Map((r.docs ?? []).map((d) => [d.id, d.root_id]));
   const kids = new Map<string, ListFrameChild[]>();
   for (const k of r.children ?? [])
     kids.set(k.frame_root_id, [...(kids.get(k.frame_root_id) ?? []), k]);
@@ -62,7 +64,7 @@ export function buildRows(r: ContractListResponse | undefined): DocRow[] {
   for (const item of r.items) {
     const doc = docOf.get(item.id) ?? "contract";
     out.push({ kind: "item", item, doc });
-    out.push(...takeChildren(kids, doc === "framework" ? item.id : null));
+    out.push(...takeChildren(kids, doc === "framework" ? (rootOf.get(item.id) ?? item.id) : null));
   }
   for (const group of kids.values())
     for (const child of group) out.push({ kind: "child", child, orphan: true });

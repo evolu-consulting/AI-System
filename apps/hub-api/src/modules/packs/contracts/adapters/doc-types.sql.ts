@@ -21,12 +21,14 @@ export const docOf = sql`jsonb_build_object('doc_type', c.doc_type, 'frame_root_
         from (select k.* from contracts.contracts k where k.tenant_id = c.tenant_id and k.frame_root_id = c.root_id
           and ${currentRow("k")} order by k.start_date nulls last, k.id limit ${FRAME_CHILDREN_MAX}::int) k) end)`;
 
-/** Danh sách: loại chứng từ từng hàng trang `p` (cùng thứ tự `items`); `frame_restricted` = có cha mà RLS không cho thấy. */
+/** Danh sách: loại chứng từ từng hàng trang `p` (cùng thứ tự `items`) + `root_id` (khoá `children.frame_root_id` của HĐ NT mọi phiên bản)
+ *  + `source` (nguồn giao dịch; null với HĐ); `frame_restricted` = có cha mà RLS không cho thấy. */
 export const docsOf = (
   tid: string,
   want: boolean,
 ) => sql`case when ${want}::boolean then coalesce((select json_agg(
       json_build_object('id', c.id, 'doc_type', c.doc_type, 'frame_root_id', c.frame_root_id,
+        'root_id', c.root_id, 'source', c.source,
         'frame_restricted', c.frame_root_id is not null and not exists (select 1 from contracts.contracts fv
           where fv.tenant_id = c.tenant_id and fv.id = c.frame_root_id)) order by pp.ord)
     from (select p.id, row_number() over () as ord from p) pp

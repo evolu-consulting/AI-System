@@ -101,6 +101,10 @@ export const ListDocRefSchema = z.strictObject({
   id: z.uuid(),
   doc_type: DocTypeSchema,
   frame_root_id: z.uuid().nullable(),
+  /** Gốc chuỗi phiên bản của hàng: `children.frame_root_id` của HĐ NT khớp theo khoá này (phiên bản ≥ 2 có `id` ≠ `root_id`). */
+  root_id: z.uuid(),
+  /** Nguồn của giao dịch (`DEAL_SOURCES`); HĐ/HĐ NT ⇒ null. */
+  source: z.enum(["invoice", "verbal", "message", "quote", "other"]).nullable(),
   frame_restricted: z.boolean(),
 });
 export const ListFrameChildSchema = z.strictObject({

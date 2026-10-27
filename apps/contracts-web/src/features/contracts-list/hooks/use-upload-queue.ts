@@ -4,20 +4,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uploadContract } from "../api";
+import type { UploadMeta } from "../lib/upload-meta";
 import { checkFile, type UploadItem } from "../lib/upload-queue";
 import { type QuotaNotice, quotaNotice, stopOnQuota } from "../lib/upload-quota";
 import { uploadErrorText } from "../list-upload-error";
 
 const QUOTA = Symbol("quota");
 const CHECK_KEY = { type: "badType", size: "tooLarge", empty: "empty" } as const;
-type Job = { key: number; file: File };
+type Job = { key: number; file: File; meta?: UploadMeta };
 
 /** Trạng thái + vòng chạy tuần tự: hàng đợi `queue`, tệp giữ lại để thử lại `files`, `pump` chạy tới khi hết việc. */
 function useUploadRunner(onSingleDone: (id: string) => void) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [items, setItems] = useState<UploadItem[]>([]);
-  const files = useRef(new Map<number, File>());
+  const files = useRef(new Map<number, { file: File; meta?: UploadMeta }>());
   const queue = useRef<Job[]>([]);
   const running = useRef(false);
   const [quota, setQuota] = useState<QuotaNotice | null>(null);
@@ -31,7 +32,7 @@ function useUploadRunner(onSingleDone: (id: string) => void) {
     async (job: Job): Promise<string | null | typeof QUOTA> => {
       patch(job.key, { state: "uploading" });
       try {
-        const r = await uploadContract(job.file);
+        const r = await uploadContract(job.file, job.meta);
         patch(job.key, { state: "done", id: r.id });
         files.current.delete(job.key);
         return r.id;
@@ -80,7 +81,7 @@ export function useUploadQueue(onSingleDone: (id: string) => void) {
   const seq = useRef(0);
 
   const enqueue = useCallback(
-    (list: File[]) => {
+    (list: File[], meta?: UploadMeta) => {
       if (!list.length) return;
       const fresh: UploadItem[] = list.map((f) => {
         const key = ++seq.current;
@@ -88,8 +89,8 @@ export function useUploadQueue(onSingleDone: (id: string) => void) {
         const base = { key, name: f.name, size: f.size };
         if (bad !== "ok")
           return { ...base, state: "error", error: t(`contracts.list.upload.${CHECK_KEY[bad]}`) };
-        files.current.set(key, f);
-        queue.current.push({ key, file: f });
+        files.current.set(key, { file: f, ...(meta ? { meta } : {}) });
+        queue.current.push({ key, file: f, ...(meta ? { meta } : {}) });
         return { ...base, state: "queued" };
       });
       // Lô mới khi đang rảnh thay danh sách cũ (và cho phép popup hết lượt hiện lại); đang chạy ⇒ nối thêm.
@@ -102,9 +103,9 @@ export function useUploadQueue(onSingleDone: (id: string) => void) {
 
   const retry = useCallback(
     (key: number) => {
-      const file = files.current.get(key);
-      if (!file) return;
-      queue.current.push({ key, file });
+      const kept = files.current.get(key);
+      if (!kept) return;
+      queue.current.push({ key, ...kept });
       patch(key, { state: "queued", retryable: false });
       void pump();
     },

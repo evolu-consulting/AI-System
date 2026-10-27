@@ -13,14 +13,18 @@ const DEAL = base[2];
 const CHILD_ID = "c1000000-0000-4000-8000-0000000000c1";
 const COUNTS: Record<string, number> = { framework: 1, contract: 4, deal: 7 };
 
+/** HĐ NT ở phiên bản 2: `id` ≠ `root_id`; con gắn theo `root_id` (DOC-ui-gaps). */
+const FRAME_ROOT = "c1000000-0000-4000-8000-0000000000f0";
 const doc = (id: string | undefined, doc_type: string) => ({
   id,
   doc_type,
   frame_root_id: null,
+  root_id: doc_type === "framework" ? FRAME_ROOT : id,
+  source: doc_type === "deal" ? "invoice" : null,
   frame_restricted: false,
 });
 const child = {
-  frame_root_id: FRAME?.id,
+  frame_root_id: FRAME_ROOT,
   id: CHILD_ID,
   doc_type: "deal",
   title: "Giao dịch lô 1",
@@ -124,6 +128,107 @@ test("mở thẳng ?type=framework ⇒ chọn sẵn bộ lọc, gửi doc_type=f
   const main = reqs.find((q) => q.get("page_size") === "20");
   expect(main?.getAll("doc_type")).toEqual(["framework"]);
   expect(main?.get("nest")).toBe("1");
+});
+
+test("HĐ NT phiên bản 2 (id ≠ root_id): con vẫn thụt dưới cha, không bị đẩy xuống cuối", async ({
+  page,
+}) => {
+  await installV2f(page);
+  await installList(page);
+  await page.goto("/contracts");
+  await expect(page.getByTestId("child-row")).toHaveCount(1);
+  await expect(page.getByTestId("child-orphan")).toHaveCount(0);
+});
+
+test("cột «Nguồn» chỉ hiện khi lọc Giao dịch; hiện tên nguồn từ docs.source", async ({ page }) => {
+  await installV2f(page);
+  await installList(page);
+  await page.goto("/contracts");
+  await expect(page.locator("main thead th", { hasText: "Nguồn" })).toHaveCount(0);
+  await page.goto("/contracts?type=deal");
+  await expect(page.locator("main thead th", { hasText: "Nguồn" })).toHaveCount(1);
+  await expect(page.getByTestId("source-cell")).toHaveText("Hoá đơn");
+});
+
+async function postedForm(page: Page, pick: () => Promise<void>): Promise<string> {
+  await installV2f(page);
+  await installList(page);
+  let body = "";
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/contracts",
+    (r) => {
+      if (r.request().method() !== "POST") return r.fallback();
+      body = r.request().postData() ?? "";
+      return r.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: CHILD_ID, status: "extracting", version: 1 }),
+      });
+    },
+  );
+  await page.goto("/contracts");
+  await page
+    .locator(`input[type="file"]`)
+    .setInputFiles([
+      { name: "hd.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 x") },
+    ]);
+  await pick();
+  await page.getByTestId("upload-confirm").click();
+  await expect.poll(() => body).not.toBe("");
+  return body;
+}
+
+test("tải lên chọn HĐ nguyên tắc: gửi doc_type + hạn mức + cách đặt hàng (số kiểu Việt)", async ({
+  page,
+}) => {
+  const body = await postedForm(page, async () => {
+    const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+    await dlg.getByRole("radio", { name: /Hợp đồng nguyên tắc/ }).check();
+    await dlg.getByLabel(/^Hạn mức công nợ/).fill("400.000.000");
+    await dlg.getByLabel(/^Cách đặt hàng/).fill("Đặt qua email");
+  });
+  expect(body).toContain(`name="doc_type"\r\n\r\nframework`);
+  expect(body).toContain(`name="credit_limit"\r\n\r\n400000000`);
+  expect(body).toContain(`name="order_terms"\r\n\r\nĐặt qua email`);
+  expect(body).not.toContain("frame_root_id");
+});
+
+test("tải lên HĐ kinh tế thuộc HĐ nguyên tắc: gửi frame_root_id; mặc định chỉ doc_type=contract", async ({
+  page,
+}) => {
+  const body = await postedForm(page, async () => {
+    const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+    await dlg.getByTestId("frame-options").getByRole("button").first().click();
+  });
+  expect(body).toContain(`name="doc_type"\r\n\r\ncontract`);
+  expect(body).toContain(`name="frame_root_id"\r\n\r\n${FRAME?.id}`);
+});
+
+test("tải lên: hạn mức không phải số ⇒ báo lỗi, không gửi; Huỷ ⇒ đóng hộp", async ({ page }) => {
+  await installV2f(page);
+  await installList(page);
+  let posted = false;
+  await page.route(
+    (u) => u.pathname === "/pack/contracts/contracts",
+    (r) => {
+      if (r.request().method() === "POST") posted = true;
+      return r.fallback();
+    },
+  );
+  await page.goto("/contracts");
+  await page
+    .locator(`input[type="file"]`)
+    .setInputFiles([
+      { name: "hd.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 x") },
+    ]);
+  const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+  await dlg.getByRole("radio", { name: /Hợp đồng nguyên tắc/ }).check();
+  await dlg.getByLabel(/^Hạn mức công nợ/).fill("abc");
+  await dlg.getByTestId("upload-confirm").click();
+  await expect(dlg.getByRole("alert")).toContainText("Hạn mức không đọc được");
+  expect(posted).toBe(false);
+  await dlg.getByRole("button", { name: "Huỷ" }).click();
+  await expect(dlg).toBeHidden();
 });
 
 test("nút «Thêm giao dịch» mở form Giao dịch; menu còn 4 mục", async ({ page }) => {

@@ -2,7 +2,7 @@
 // (loại Mua/Bán/Giới thiệu, ô thông tin, bảng dòng SP gắn danh mục) với nhãn "Tên giao dịch / Số chứng từ / Ngày giao dịch", thêm Nguồn,
 // ô "Đã giao / đã thanh toán ngay", "Thuộc HĐ nguyên tắc". Lưu ⇒ `POST /contracts/deals` ⇒ mở giao dịch; "xác nhận ngay" dừng giữa chừng
 // (`settle_error`) ⇒ ở lại báo lý do kèm nút mở giao dịch (giao dịch ĐÃ lưu).
-// TODO(DOC-legal): cảnh báo pháp lý ở form — chờ trường API; chưa hiển thị. Ghi chú (note): API tạo giao dịch chưa có trường.
+// Cảnh báo pháp lý (Câu 8): `legal-warn.ts`, ngưỡng từ GET /company; chỉ cảnh báo. Ghi chú (note): API tạo giao dịch chưa có trường.
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect } from "react";
@@ -17,8 +17,11 @@ import { ItemTable } from "~/features/contract-form/components/ItemTable";
 import { useContractForm } from "~/features/contract-form/hooks/use-contract-form";
 import { STOCK_EFFECT } from "~/features/contract-form/lib/deal";
 import { DEAL_SOURCES, settleErrorKey } from "~/features/contract-form/lib/deal-form";
+import { autoTotal, readNumbers } from "~/features/contract-form/lib/form-model";
+import { legalTotal, showLegalWarning } from "~/features/contract-form/lib/legal-warn";
 import { stockTone } from "~/features/contract-form/lib/stock-label";
 import { contractKey, fetchContract } from "~/features/contract-review/api";
+import { fetchCompany } from "~/features/settings/api";
 import { cn } from "~/lib/utils";
 
 /** `frameId` (`/contracts/new?type=deal&frame=<id>`, từ menu "Thêm HĐ/Giao dịch" của HĐ nguyên tắc): điền sẵn "Thuộc HĐ nguyên tắc". */
@@ -41,6 +44,19 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
       );
   }, [frameTitle, frameId, setExtra]);
   const effect = STOCK_EFFECT[f.deal];
+  const threshold = useQuery({
+    queryKey: ["settings", "company"],
+    queryFn: ({ signal }) => fetchCompany(signal),
+    staleTime: 60_000,
+    retry: false,
+  }).data?.legal_warn_threshold;
+  const legal = showLegalWarning({
+    threshold,
+    deal: f.deal,
+    total: legalTotal(f.deal, readNumbers(f), autoTotal(f.items)),
+    frameId: extra.frame?.id ?? null,
+    settledNow: extra.settledNow,
+  });
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     void form.submit();
@@ -140,6 +156,16 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
                 />
               </div>
             </div>
+            {legal && (
+              <p
+                role="note"
+                data-testid="legal-warning"
+                className="rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-[13.5px]"
+              >
+                <b>{t("contracts.legal.title")}.</b> {t("contracts.legal.reason")}{" "}
+                {t("contracts.legal.accountantNote")}
+              </p>
+            )}
             <label className="flex items-start gap-2 text-[14px]" htmlFor="cf-settled">
               <input
                 id="cf-settled"

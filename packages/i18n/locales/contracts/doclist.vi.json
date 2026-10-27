@@ -9,6 +9,24 @@
         "contract": "HĐ kinh tế",
         "deal": "Giao dịch"
       },
+      "upload": {
+        "title": "Tải lên chứng từ",
+        "files": "{{count}} tệp. Chọn loại chứng từ áp cho cả lô.",
+        "type": { "contract": "Hợp đồng kinh tế", "framework": "Hợp đồng nguyên tắc" },
+        "hint": {
+          "contract": "Hợp đồng cụ thể; có thể thuộc một hợp đồng nguyên tắc.",
+          "framework": "Hợp đồng khung: giá, hạn mức, cách đặt hàng; các chứng từ con gắn vào sau."
+        },
+        "credit": "Hạn mức công nợ (đ, tuỳ chọn)",
+        "creditPh": "VD: 400.000.000",
+        "terms": "Cách đặt hàng (tuỳ chọn)",
+        "termsPh": "VD: đặt qua email, giao trong 3 ngày",
+        "go": "Tải lên",
+        "err": {
+          "credit": "Hạn mức không đọc được — nhập số, ví dụ 400.000.000.",
+          "terms": "Cách đặt hàng quá dài."
+        }
+      },
       "addDeal": "Thêm giao dịch",
       "back": "← Hợp đồng & giao dịch",
       "newDealTitle": "Thêm giao dịch",

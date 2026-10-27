@@ -86,6 +86,14 @@ describe("CR-101 DOC-deals · đường chính giao dịch", () => {
     >`select doc_type, source,
       locked_at is not null as locked from contracts.contracts where id = ${A}`;
     expect(row).toEqual({ doc_type: "deal", source: "invoice", locked: false });
+    // DOC-ui-gaps: danh sách trả `source` của giao dịch trong `docs`.
+    const listed = (await call(c, P.hoa, "GET", "/contracts?doc_type=deal&page_size=100")).json;
+    const dd = listed.docs.find((x: Json) => x.id === A);
+    expect({ type: dd?.doc_type, source: dd?.source, root: dd?.root_id }).toEqual({
+      type: "deal",
+      source: "invoice",
+      root: A,
+    });
     const ms = await milestones(A);
     expect(ms.map((m) => [m.kind, m.status])).toEqual([
       ["delivery", "open"],

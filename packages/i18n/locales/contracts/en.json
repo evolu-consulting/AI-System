@@ -70,6 +70,7 @@
         "title": "Contract",
         "partner": "Partner",
         "type": "Type",
+        "source": "Source",
         "value": "Value",
         "dates": "Effective",
         "stage": "Stage",

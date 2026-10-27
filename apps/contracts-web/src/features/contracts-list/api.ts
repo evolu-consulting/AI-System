@@ -10,6 +10,7 @@ import type {
 } from "@ai/contracts";
 import { api, apiResponse } from "@ai/web-kit/http";
 import type { ExportFile } from "./lib/export-file";
+import { metaFields, type UploadMeta } from "./lib/upload-meta";
 
 const BASE = "/pack/contracts";
 
@@ -31,8 +32,9 @@ export const createCategory = (name: string): Promise<ContractCategory> =>
   api<ContractCategory>(`${BASE}/categories`, { method: "POST", body: { name } });
 
 /** `POST /pack/contracts/contracts` (multipart `file`); HĐ vào hàng đợi đọc, trả id để mở màn kiểm. */
-export function uploadContract(file: File): Promise<UploadContractResponse> {
+export function uploadContract(file: File, meta?: UploadMeta): Promise<UploadContractResponse> {
   const form = new FormData();
+  for (const [k, v] of metaFields(meta)) form.append(k, v); // trường chữ trước tệp
   form.append("file", file);
   return api<UploadContractResponse>(`${BASE}/contracts`, {
     method: "POST",
