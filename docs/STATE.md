@@ -3,6 +3,12 @@
 Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-10-27 (chiều) Đợt cấu hình hệ thống — deploy production `f94b4316`, e2e server 67 pass / 5 skip, KHÔNG push.** Lát (mỗi lát `docs/specs/<lát>/tasks.md`):
+  `tenant-quotas` (hạn mức ngày theo công ty + "Đặt lại hôm nay" ở Admin, admin 0025), `engine-flag-tenant` (feature `contracts-approval-engine`, admin 0026; prod: chỉ demo),
+  `approval-inbox` (nhóm chủ nhận chuông bước duyệt, hub 0061), `chat-api-gate` (+fix: hub-api 403 `CHAT_APP_DISABLED`; dock Sổ Hợp Tác chỉ văn bản vào hội thoại surface=contracts, hub 0062),
+  `tenant-default-app`, `trello-config-ui` (secret mã hoá, admin 0027), `upload-quota-popup`, `e2e-case8-gap10`. Review+security cuối đợt: 1 Trung + 4 Thấp đã sửa.
+  Vận hành: đổi mật khẩu platform admin (`rotate-admin-pw.sh`), `pull-backup.ps1` + `uptime-check.ps1` (lịch Windows người dùng tự đăng ký — README). Ca lỗi người dùng 1–12 đều chạy trên server (ca 8 spec 17, ca 12 tạm thu hồi chat-app demo).
+  Còn: e2e contracts-web local đỏ sẵn 3 ca (bell.cw.ts ×2, gap-d2 #24 — có trước đợt); typecheck admin-web `agents.test.ts:17` + agent-runtime đỏ sẵn; dock trợ lý vẫn đi agent mặc định của tenant.
 - **2026-10-27 Đóng đợt CR-097 (đợt 1–3) + contract-flow + góp ý Trello + giao theo % — deploy production `9b7a5e1d`, e2e trên server xong, KHÔNG push** (nhánh `platform/gd0`; chưa có remote; [CR-097](CHANGE-REQUESTS.md), [CR-098](CHANGE-REQUESTS.md), [CR-099](CHANGE-REQUESTS.md), [CR-100](CHANGE-REQUESTS.md); quyết định [ADR-0030](adr/0030-contract-approval-on-engine.md)).
   - **Lát đã xong:** K1/K2/K3 (HĐ từ văn bản, khoá khi xác nhận, chuỗi phiên bản); contract-flow S1a, S1b, S3a, S3b, S4 + sửa fix-review engine (`8b85e3a9`, `712288d4`: run gắn `started_by`, không trả về máy cũ, chuông theo lô) + cf-dify (bước Dify, `8468f996`); G1 `4e6b3aa6`, G2 `9e44b0fa`; U1 `446abc65`, U2 `11d41af4`/`b32c2aa0`, U3 `f68179df`; D1 `77236a7d`; góp ý → Trello `e219bff2`/`f5a0e546`; giao theo % + giao vượt tồn `86515f8c`; e2e deployed `1212c80b`…`5f875240`.
   - **Migration mới:** hub `0058_pack_run_ref`, `0059_pack_run_bells`, `0060_pack_runs_fix`; pack contracts `0050_cf_approval_flow_steps`, `0051_g1_transactions`, `0052_u2_red_flag`, `0053_delivery_opts`.
