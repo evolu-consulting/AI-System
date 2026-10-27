@@ -1,0 +1,258 @@
+{
+  "contracts": {
+    "pv2": {
+      "filter": {
+        "commission_payer": "Bên trả hoa hồng"
+      },
+      "jobsTotal": "{{n}} việc có tính điểm",
+      "group": {
+        "service": "Dịch vụ",
+        "goods": "Hàng hoá",
+        "referral": "Giới thiệu"
+      },
+      "table": {
+        "weight": "Trọng số",
+        "gives": "Góp",
+        "dataScore": "Điểm dữ liệu",
+        "stars": "đánh giá sao",
+        "jobsN": "{{n}} việc"
+      },
+      "jobs": {
+        "title": "Việc góp điểm “{{name}}”",
+        "manual": "Tiêu chí này lấy từ đánh giá sao (tab Đánh giá & ghi chú).",
+        "none": "Chưa có việc nào trong khoảng tính điểm.",
+        "contract": "Hợp đồng",
+        "late": "Trễ {{n}} ngày · lỗi {{fault}}",
+        "onTime": "Đúng hạn",
+        "manualJob": "Ghi tay",
+        "fault": {
+          "partner": "đối tác",
+          "ours": "của mình",
+          "unknown": "chưa rõ"
+        },
+        "hTip": "Hệ số độ cũ: việc càng cũ càng ít tính",
+        "h": "×{{h}}"
+      },
+      "steps": {
+        "title": "Các bước tới điểm cuối",
+        "group": "Nhóm {{group}}:",
+        "starsOnly": "chưa có dữ liệu, lấy điểm sao {{stars}} → {{score}}",
+        "dataOnly": "điểm dữ liệu {{data}} (tổng cột Góp), chưa có đánh giá sao → {{score}}",
+        "blend": "điểm dữ liệu {{data}}; sao TB {{stars}} ★ = {{starsScore}}; trộn {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
+        "role": "Điểm vai = bình quân các nhóm theo giá trị giao dịch: {{parts}} → {{score}}",
+        "foot": "Điểm cuối của vai: {{score}}"
+      },
+      "chart": {
+        "title": "Diễn biến điểm uy tín",
+        "empty": "Chưa đủ dữ liệu để vẽ biểu đồ.",
+        "aria": "Điểm uy tín {{n}} tháng",
+        "good": "TỐT",
+        "fair": "KHÁ",
+        "range": {
+          "3": "3 tháng",
+          "6": "6 tháng",
+          "12": "1 năm"
+        }
+      },
+      "review": {
+        "title": "Đánh giá thủ công",
+        "share": "chiếm {{s}}% điểm",
+        "noCriteria": "Chưa có tiêu chí để đánh giá.",
+        "history": "Lịch sử đánh giá",
+        "historyNone": "Chưa có đánh giá nào.",
+        "starsN": "{{n}} sao",
+        "starsFor": "Đánh giá {{name}}",
+        "noData": "chưa có dữ liệu",
+        "data": "dữ liệu {{n}}",
+        "reasonRequired": "Lệch hơn {{gap}} điểm so với dữ liệu — cần ghi lý do",
+        "reasonOptional": "Lý do (không bắt buộc)",
+        "reasonFor": "Lý do đánh giá {{name}}",
+        "save": "Lưu đánh giá",
+        "saving": "Đang lưu…",
+        "saved": "Đã lưu đánh giá",
+        "failed": "Không lưu được đánh giá. Kiểm tra lý do rồi thử lại."
+      }
+    },
+    "settings": {
+      "cell": {
+        "needOne": "Cần ít nhất một tiêu chí bật có trọng số",
+        "decayMonths": "Mốc tháng phải tăng dần và nằm trong khoảng tính điểm",
+        "decayFactor": "Tỷ lệ tính phải trong khoảng 1–100%"
+      },
+      "impact": {
+        "title": "Ảnh hưởng tới đối tác hiện có",
+        "sub": "Tính thử trên dữ liệu thật, chưa ghi gì",
+        "none": "Chưa có thay đổi chưa lưu ở phần này.",
+        "loading": "Đang tính…",
+        "error": "Không tính thử được (kiểm tra lại cài đặt).",
+        "same": "Không đối tác nào đổi điểm hoặc mức ({{n}} đối tác).",
+        "count": "{{n}} / {{total}} đối tác đổi điểm hoặc mức:"
+      },
+      "rep": {
+        "title": "Điểm uy tín",
+        "sub": "Mỗi nhóm sản phẩm và vai trò có cách tính riêng.",
+        "payer": "Bên trả hoa hồng",
+        "common": "Mức & đánh giá",
+        "group": {
+          "service": "Dịch vụ có hạn",
+          "goods": "Hàng hoá",
+          "referral": "Giới thiệu",
+          "common": "Chung"
+        },
+        "role": {
+          "supplier": "Nhà cung cấp",
+          "customer": "Khách hàng"
+        },
+        "tab": {
+          "crit": "Tiêu chí",
+          "time": "Thời gian",
+          "types": "Loại việc"
+        },
+        "critTitle": "Tiêu chí & trọng số",
+        "addCrit": "+ Thêm tiêu chí",
+        "custom": "Tự thêm",
+        "remove": "Xoá",
+        "off": "Đang tắt",
+        "use": "Dùng {{name}}",
+        "weight": "Trọng số {{name}}",
+        "how": {
+          "ontime": "Tỷ lệ mốc đúng hạn; trễ do đối tác trừ thêm điểm mỗi ngày.",
+          "bad_count": "100 trừ mức trừ × số việc xấu trên 10 giao dịch.",
+          "manual": "Số sao người dùng chấm × 20.",
+          "jobs": "Bình quân điểm các việc ghi tay thuộc tiêu chí.",
+          "on_time_delivery": "% lần giao đúng hạn, trừ thêm điểm cho mỗi ngày trễ do nhà cung cấp.",
+          "serial": "% lần cấp serial / kích hoạt đúng hạn.",
+          "incident": "Điểm các việc xử lý sự cố đã ghi.",
+          "price_hold": "Điểm các việc giữ giá đã ghi.",
+          "quality": "Điểm các việc chất lượng đã ghi.",
+          "on_time_payment": "% lần thanh toán đúng hạn, trừ thêm điểm mỗi ngày trễ do đối tác.",
+          "renew_via_us": "Điểm các lần gia hạn qua mình đã ghi.",
+          "reminders": "Ít phải nhắc: trừ điểm theo số lần phải nhắc trên 10 giao dịch.",
+          "debt": "Công nợ: trừ điểm theo số lần nợ trên 10 giao dịch.",
+          "complaints": "Ít khiếu nại vô lý: trừ điểm theo số lần trên 10 giao dịch.",
+          "on_time_commission": "% lần trả hoa hồng đúng hạn.",
+          "reconcile": "Điểm các lần gửi đối soát đã ghi.",
+          "referral_support": "Điểm các việc hỗ trợ khách giới thiệu đã ghi."
+        },
+        "newName": "Tên tiêu chí mới",
+        "newKind": "Kiểu tiêu chí",
+        "kindBad": "Đếm việc xấu",
+        "kindOntime": "Tỷ lệ đúng hạn",
+        "kindManual": "Chấm tay (sao)",
+        "newMilestone": "Loại mốc",
+        "ms": {
+          "delivery": "Giao hàng",
+          "payment": "Thanh toán",
+          "serial": "Cấp serial",
+          "commission": "Hoa hồng"
+        },
+        "perTen": "điểm / lần",
+        "add": "Thêm",
+        "f": {
+          "crit1": "Mỗi tiêu chí ra điểm 0–100 theo cách tính ghi dưới tên tiêu chí.",
+          "crit2": "Điểm dữ liệu = Σ (điểm tiêu chí × trọng số) ÷ Σ trọng số.",
+          "crit3": "Điểm cuối = {{a}}% điểm dữ liệu + {{b}}% điểm đánh giá (sao × 20).",
+          "crit3off": "Điểm cuối = điểm dữ liệu (đánh giá thủ công đang tắt).",
+          "levels": "Mức: TỐT từ {{good}}, KHÁ từ {{fair}}, dưới đó là CHÚ Ý."
+        },
+        "tCrit": "Tiêu chí",
+        "tSample": "Điểm mẫu",
+        "tWeight": "Trọng số",
+        "tPart": "Góp",
+        "tStars": "Sao trung bình",
+        "tResult": "Điểm uy tín",
+        "level": {
+          "good": "TỐT",
+          "fair": "KHÁ",
+          "watch": "CHÚ Ý"
+        }
+      },
+      "time": {
+        "window": "Tính điểm trên",
+        "months": "{{m}} tháng",
+        "decay": "Việc cũ tính nhẹ dần",
+        "step": "Bậc thang",
+        "none": "Không giảm",
+        "ratio": "Tỷ lệ tính",
+        "under": "Dưới {{m}} tháng",
+        "between": "{{a}}–{{b}} tháng",
+        "over": "Trên {{m}} tháng",
+        "edge": "Mốc {{n}}",
+        "monthUnit": "tháng",
+        "late": "Trừ mỗi ngày trễ",
+        "perDay": "điểm / ngày",
+        "f1": "Mỗi việc được tính theo độ cũ: hệ số = % theo cài đặt ở trên. Việc ngoài khoảng tính điểm có hệ số 0.",
+        "f2": "Điểm tiêu chí = Σ (điểm việc × hệ số) ÷ Σ hệ số.",
+        "f3": "Nhờ vậy việc gần đây ảnh hưởng nhiều hơn việc cũ.",
+        "job": "Việc",
+        "age": "Cách đây (tháng)",
+        "score": "Điểm việc",
+        "factor": "Hệ số",
+        "jobN": "Việc {{n}}",
+        "allOut": "Cả 3 việc đều ngoài khoảng tính điểm",
+        "result": "Điểm tiêu chí",
+        "plain": "Nếu không giảm theo độ cũ (trung bình thường): {{v}}"
+      },
+      "types": {
+        "title": "Loại việc",
+        "hint": "Việc ghi tay gắn với tiêu chí của ô này; điểm 0 = việc xấu được đếm.",
+        "add": "+ Thêm loại việc",
+        "empty": "Ô này chưa có loại việc nào.",
+        "name": "Tên loại việc",
+        "criterion": "Tiêu chí",
+        "points": "điểm",
+        "remove": "Xoá",
+        "newName": "Loại việc mới"
+      },
+      "common": {
+        "levels": "Ngưỡng mức",
+        "good": "TỐT từ",
+        "fair": "KHÁ từ",
+        "order": "Ngưỡng TỐT phải lớn hơn ngưỡng KHÁ",
+        "minJobs": "Đối tác mới, chấm khi có từ",
+        "jobs": "việc",
+        "manual": "Người dùng tự đánh giá",
+        "share": "Tỷ trọng trong điểm",
+        "gap": "Bắt ghi lý do khi lệch hơn",
+        "points": "điểm",
+        "lock": "Lưu điểm",
+        "lockLabel": "Chốt điểm",
+        "monthly": "Hằng tháng",
+        "lockHint": "Cuối mỗi tháng app lưu điểm lúc đó; điểm đã chốt không tính lại.",
+        "f1": "Điểm đánh giá = số sao trung bình × 20 (5 sao = 100).",
+        "f2": "Điểm cuối = {{a}}% điểm dữ liệu + {{b}}% điểm đánh giá. Chưa có đánh giá thì dùng 100% điểm dữ liệu.",
+        "f2off": "Đánh giá thủ công đang tắt: điểm cuối = điểm dữ liệu.",
+        "f3": "Khi điểm đánh giá lệch điểm dữ liệu hơn {{gap}} điểm thì bắt người đánh giá ghi lý do.",
+        "f4": "Mức: TỐT từ {{good}}, KHÁ từ {{fair}}, còn lại CHÚ Ý.",
+        "tData": "Điểm dữ liệu",
+        "tStars": "Sao trung bình",
+        "needReason": "Lệch quá {{gap}} điểm: phải ghi lý do",
+        "tResult": "Điểm uy tín"
+      }
+    },
+    "rep3": {
+      "attention": {
+        "title": "Cần chú ý",
+        "lead": "Đối tác ở mức CHÚ Ý, có cờ đỏ, hoặc giảm từ 3 điểm trong 3 tháng",
+        "none": "Chưa có đối tác nào cần chú ý.",
+        "watch": "Mức CHÚ Ý",
+        "drop": "Giảm {{n}} điểm (3 tháng trước: {{before}})"
+      },
+      "preview": {
+        "title": "Xem trước: chuyển sang điểm theo vai × nhóm sản phẩm",
+        "subHd8": "Điểm hiện hành đang là HD8. Màn này cho biết bao nhiêu đối tác đổi mức nếu chuyển sang điểm theo BA v2.0 (vai × nhóm sản phẩm).",
+        "subV2e": "Điểm hiện hành đã là theo vai × nhóm sản phẩm. Số dưới đây so mức HD8 với mức hiện hành.",
+        "loading": "Đang tính…",
+        "fail": "Không tải được số xem trước.",
+        "count": "{{partners}} đối tác đổi mức ({{changed}} trên {{total}} dòng đối tác × vai)",
+        "note": "Chỉ xem, không ghi gì. Bật hay tắt cách tính này là việc của quản trị hệ thống (cờ cấu hình trên máy chủ), không làm trên màn hình này."
+      },
+      "level": {
+        "good": "TỐT",
+        "fair": "KHÁ",
+        "watch": "CHÚ Ý",
+        "new": "MỚI"
+      }
+    }
+  }
+}

@@ -1,16 +1,16 @@
 // V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (engine HD8 `GET /partners`),
 // kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API chưa trả giá trị nên dùng số việc.)
-import type { PartnerRole, PartnerRow } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { RepBadge } from "~/features/partners/components/RepBadge";
 import { usePartnerRows } from "~/features/partners/hooks/use-partner-scores";
-import { topPartners } from "~/features/partners/lib/partner-score";
+import { type ScoreRow, topPartners } from "~/features/partners/lib/partner-score";
 import { BlockHead } from "./BlockHead";
 
-function Col({ kind, rows }: { kind: PartnerRole; rows: PartnerRow[] }) {
+function Col({ kind, rows }: { kind: PartnerRole; rows: ScoreRow[] }) {
   const { t } = useTranslation();
   return (
     <div data-role={kind}>

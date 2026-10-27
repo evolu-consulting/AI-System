@@ -1,6 +1,6 @@
 // V2-I · DT-01 · S-p02 `/partners` v2 — mockup NITI: mỗi đối tác một dòng (tên, các vai, điểm từng vai, số hợp đồng), tìm + lọc vai /
 // "Cần chú ý"; bấm tên mở trang chi tiết. Điểm từ engine HD8 `GET /partners` (CR-097a): huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -18,16 +18,24 @@ import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
 import { usePartnerRows } from "../hooks/use-partner-scores";
 import { type PartyItem, partiesOf } from "../lib/partner-score";
-import { ROLES } from "../lib/partner-v2";
+import { REP_ROLE_ORDER, ROLES } from "../lib/partner-v2";
 
-type Filter = "all" | PartnerRole | "watch" | "flag";
-const FILTERS: readonly Filter[] = ["all", ...ROLES, "watch", "flag"];
+type Filter = "all" | RepRole | "watch" | "flag";
+/** HD8: hai vai có điểm; V2-E: thêm bên trả hoa hồng (R23). */
+const filtersOf = (v2e: boolean): readonly Filter[] => [
+  "all",
+  ...(v2e ? REP_ROLE_ORDER : ROLES),
+  "watch",
+  "flag",
+];
+const isLoggable = (r: { role: RepRole }): r is { role: PartnerRole } =>
+  r.role === "customer" || r.role === "supplier";
 
 function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: boolean) => void }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
   const { write } = useMe();
-  const loggable = p.roles[0];
+  const loggable = p.roles.find(isLoggable);
   return (
     <li
       className={cn(
@@ -77,7 +85,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
       </div>
       {open && loggable && (
         <div className="px-5 pb-4">
-          <PartnerLog party={p.party} role={loggable.role} />
+          <PartnerLog party={p.party} role={loggable.role as PartnerRole} />
         </div>
       )}
     </li>
@@ -158,7 +166,7 @@ export function PartnersPage() {
           aria-label={L("roleFilter")}
           className="m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0"
         >
-          {FILTERS.map((f) => (
+          {filtersOf(q.engine === "v2e").map((f) => (
             <button
               key={f}
               type="button"

@@ -1,13 +1,13 @@
 // V2-I · DT-01 · DT-07 · đầu trang chi tiết đối tác (mockup NITI): tên, vai, MST · điện thoại · liên hệ, điểm từng vai và nút
 // "Tìm trên internet" (chỉ chạy khi bấm; kết quả hiện ngay dưới đầu trang, mỗi dòng lưu được vào ghi chú).
-import type { PartnerProfile, PartnerRole, PartnerRow } from "@ai/contracts";
+import type { PartnerProfile, RepRole } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
 import { searchErrorKey, useContacts, useInternetSearch } from "../hooks/use-partner-rep";
-import { flagsOf } from "../lib/partner-score";
+import { flagsOf, type ScoreRow } from "../lib/partner-score";
 import { ContactEditor } from "./ContactEditor";
 import { InternetResult } from "./InternetSearch";
 import { RedFlagTag } from "./RedFlagTag";
@@ -25,8 +25,8 @@ export function PartnerHeader({
 }: {
   party: string;
   name: string;
-  roles: readonly PartnerRole[];
-  rows: readonly PartnerRow[];
+  roles: readonly RepRole[];
+  rows: readonly ScoreRow[];
   profile: PartnerProfile | undefined;
   write: boolean;
 }) {

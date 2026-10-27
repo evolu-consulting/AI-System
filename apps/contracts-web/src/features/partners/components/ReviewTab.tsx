@@ -1,10 +1,10 @@
 // U3 · tab "Ghi chú & sổ việc": ghi chú về đối tác + sổ việc đã ghi (HD7 `PartnerLog`, gồm cờ đỏ). Điểm không còn ô sao/chấm tay (R41).
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts";
 import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { NotesPanel } from "./NotesPanel";
 
-export function ReviewTab({ party, roles }: { party: string; roles: readonly PartnerRole[] }) {
-  const role = roles[0];
+export function ReviewTab({ party, roles }: { party: string; roles: readonly RepRole[] }) {
+  const role = roles.find((r): r is PartnerRole => r === "customer" || r === "supplier");
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {role && (

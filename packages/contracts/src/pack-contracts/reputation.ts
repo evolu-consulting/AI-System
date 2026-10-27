@@ -222,7 +222,7 @@ export type RepSettingsOut = {
   reason_gap: number;
   lock_period: "month";
 };
-export type RepConfigOut = { settings: RepSettingsOut };
+export type RepConfigOut = { settings: RepSettingsOut; engine: RepEngine };
 
 /**
  * V2-GAPS · C10 (mockup "Uy tín của mình với khách"): mốc việc CỦA MÌNH đã xong trong `days` ngày qua — đúng hạn / trễ, trễ do ai

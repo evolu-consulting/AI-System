@@ -7,10 +7,12 @@ import { ErrorLine, Loading } from "~/components/shared/states";
 import { RedFlagTag } from "~/features/partners/components/RedFlagTag";
 import { RepBadge } from "~/features/partners/components/RepBadge";
 import { usePartnerRows } from "~/features/partners/hooks/use-partner-scores";
+import { useEngine } from "~/features/partners/hooks/use-rep-v2e";
 import { flagsOf, partnersToReview } from "~/features/partners/lib/partner-score";
+import { AttentionBlock } from "./AttentionBlock";
 import { BlockHead } from "./BlockHead";
 
-export function PartnersBlock() {
+function Hd8Block() {
   const { t } = useTranslation();
   const q = usePartnerRows();
   const rows = partnersToReview(q.data);
@@ -58,4 +60,10 @@ export function PartnersBlock() {
       )}
     </Panel>
   );
+}
+
+/** REP-v3-ui: HD8 = "Đối tác cần xem lại" (cờ đỏ hoặc CHÚ Ý); V2-E = "Cần chú ý" TQ-04 (`GET /reputation/attention`, có "giảm ≥ 3 điểm / 3 tháng"). */
+export function PartnersBlock() {
+  const { engine } = useEngine();
+  return engine === "v2e" ? <AttentionBlock /> : <Hd8Block />;
 }

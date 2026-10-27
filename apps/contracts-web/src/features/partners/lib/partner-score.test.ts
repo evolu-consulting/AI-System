@@ -1,9 +1,11 @@
 // U3 · R36 · R39 · R44–R46: mức/huy hiệu (MỚI · tạm tính), cờ đỏ tách khỏi điểm, gộp vai, "cần xem lại", top, kiểm sơ bộ cách tính.
 import { describe, expect, test } from "bun:test";
-import type { PartnerRole, PartnerRow } from "@ai/contracts";
+import type { PartnerRole, PartnerRow, RepAttentionRow, RepPartnerRow } from "@ai/contracts";
 import {
   badgeOf,
   flagsOf,
+  fromAttention,
+  fromRep,
   partiesOf,
   partnersToReview,
   roleRows,
@@ -140,5 +142,64 @@ describe("U3 · cách tính điểm", () => {
     expect(scoringIssue(cs, { ...rules, min_events: 101 })).toBe("min");
     expect(scoringIssue(cs, { ...rules, recency_months: 13 })).toBe("window");
     expect(scoringIssue(cs, { ...rules, window_months: 0 })).toBe("window");
+  });
+});
+
+// ---------- REP-v3-ui · engine V2-E ----------
+const rep = (o: Partial<RepPartnerRow> = {}): RepPartnerRow => ({
+  party: "p1",
+  name: "P1",
+  role: "supplier",
+  score: 90,
+  level: "good",
+  jobs: 6,
+  groups: [],
+  ...o,
+});
+
+describe("REP-v3-ui · quy đổi dòng V2-E về dòng chung", () => {
+  test("TỐT/KHÁ/CHÚ Ý giữ điểm + mức; MỚI có điểm ⇒ MỚI · tạm tính; MỚI không điểm ⇒ –", () => {
+    expect(badgeOf(fromRep(rep()))).toEqual({ level: "good", shown: 90, provisional: false });
+    expect(badgeOf(fromRep(rep({ score: 72, level: "fair" }))).level).toBe("fair");
+    expect(badgeOf(fromRep(rep({ score: 40, level: "watch" }))).level).toBe("watch");
+    expect(badgeOf(fromRep(rep({ score: 55, level: "new", jobs: 1 })))).toEqual({
+      level: "new",
+      shown: 55,
+      provisional: true,
+    });
+    expect(badgeOf(fromRep(rep({ score: null, level: "new", jobs: 0 }))).level).toBe("none");
+  });
+  test("cờ đỏ tách khỏi điểm: giữ nguyên, không đổi mức; vai bên trả hoa hồng giữ nguyên", () => {
+    const r = fromRep(
+      rep({ role: "commission_payer", red_flag: true, red_flags: [{ type: "fraud", n: 2 }] }),
+    );
+    expect(r.role).toBe("commission_payer");
+    expect(r.red_flag).toBe(true);
+    expect(flagsOf([r])).toEqual([{ type: "fraud", n: 2 }]);
+    expect(badgeOf(r).level).toBe("good");
+    expect(fromRep(rep()).red_flag).toBe(false);
+  });
+  test("gộp vai: cờ đỏ lên đầu, vai sắp supplier → customer → commission_payer", () => {
+    const rows = [
+      fromRep(rep({ party: "a", name: "A", role: "commission_payer" })),
+      fromRep(rep({ party: "a", name: "A", role: "customer" })),
+      fromRep(
+        rep({ party: "b", name: "B", red_flag: true, red_flags: [{ type: "no_delivery", n: 1 }] }),
+      ),
+    ];
+    const l = partiesOf(rows, new Map());
+    expect(l.map((p) => p.party)).toEqual(["b", "a"]);
+    expect(l[1]?.roles.map((r) => r.role)).toEqual(["customer", "commission_payer"]);
+  });
+  test("TQ-04: dòng CHÚ Ý mang lý do + số điểm đã giảm", () => {
+    const a: RepAttentionRow = {
+      ...rep({ score: 70, level: "fair" }),
+      reasons: ["drop"],
+      before: 76,
+      drop: 6,
+    };
+    const x = fromAttention(a);
+    expect(x.reasons).toEqual(["drop"]);
+    expect([x.before, x.drop, x.score]).toEqual([76, 6, 70]);
   });
 });

@@ -15,7 +15,17 @@ import type {
   PartnerWebSearch,
   PriceProduct,
   QuoteCreate,
+  RepAttentionRow,
+  RepConfigOut,
+  RepDetail,
+  RepHistory,
   RepMine,
+  RepPartnerRow,
+  RepRatingIn,
+  RepRatingRow,
+  RepRatings,
+  RepRole,
+  RepSwitchPreview,
   ScoreConfigOut,
   ScoreHistoryRow,
   ScorePreview,
@@ -40,6 +50,16 @@ export const partnerKeys = {
   profile: (party: string) => ["partners", "profile", party] as const,
   contacts: (party: string) => ["partners", "contacts", party] as const,
   mine: (days: number) => ["partners", "rep", "mine", days] as const,
+  // REP-v3-ui · V2-E
+  engine: ["reputation", "engine"] as const,
+  repList: ["partners", "rep", "list"] as const,
+  attention: ["partners", "rep", "attention"] as const,
+  switchPreview: ["reputation", "switch-preview"] as const,
+  detail: (party: string, role: RepRole) => ["partners", "rep", "detail", party, role] as const,
+  repHistory: (party: string, role: RepRole, months: number) =>
+    ["partners", "rep", "history", party, role, months] as const,
+  repRatings: (party: string, role: RepRole) =>
+    ["partners", "rep", "ratings", party, role] as const,
   roles: (party: string) => ["partners", "roles", party] as const,
   contracts: (party: string) => ["partners", "contracts", party] as const,
   notes: (party: string) => ["partners", "notes", party] as const,
@@ -108,3 +128,26 @@ export const refreshCompany = (party: string) =>
   api<Company>(`${BASE}/companies/refresh?party=${enc(party)}`, { method: "POST", body: {} });
 export const fetchRepMine = (days: number, signal?: AbortSignal) =>
   api<RepMine>(`${REP}/mine?days=${days}`, { signal });
+
+// ---------- REP-v3-ui · engine V2-E (BA v2.0 §5.1): chỉ gọi khi `GET /reputation/config` báo `engine = v2e` ----------
+export const fetchRepEngine = (signal?: AbortSignal) =>
+  api<RepConfigOut>(`${REP}/config`, { signal });
+export const fetchRepPartners = (signal?: AbortSignal) =>
+  api<RepPartnerRow[]>(`${REP}/partners?role=all`, { signal });
+export const fetchRepAttention = (signal?: AbortSignal) =>
+  api<RepAttentionRow[]>(`${REP}/attention`, { signal });
+export const fetchSwitchPreview = (signal?: AbortSignal) =>
+  api<RepSwitchPreview>(`${REP}/switch-preview`, { signal });
+export const fetchRepDetail = (party: string, role: RepRole, signal?: AbortSignal) =>
+  api<RepDetail>(`${REP}/partner?party=${enc(party)}&role=${role}`, { signal });
+export const fetchRepHistory = (
+  party: string,
+  role: RepRole,
+  months: number,
+  signal?: AbortSignal,
+) =>
+  api<RepHistory>(`${REP}/history?party=${enc(party)}&role=${role}&months=${months}`, { signal });
+export const fetchRepRatings = (party: string, role: RepRole, signal?: AbortSignal) =>
+  api<RepRatings>(`${REP}/ratings?party=${enc(party)}&role=${role}`, { signal });
+export const rateRep = (b: RepRatingIn) =>
+  api<RepRatingRow>(`${REP}/ratings`, { method: "POST", body: b });

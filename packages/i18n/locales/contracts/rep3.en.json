@@ -1,0 +1,258 @@
+{
+  "contracts": {
+    "pv2": {
+      "filter": {
+        "commission_payer": "Commission payer"
+      },
+      "jobsTotal": "{{n}} scored jobs",
+      "group": {
+        "service": "Services",
+        "goods": "Goods",
+        "referral": "Referral"
+      },
+      "table": {
+        "weight": "Weight",
+        "gives": "Contribution",
+        "dataScore": "Data score",
+        "stars": "star reviews",
+        "jobsN": "{{n}} jobs"
+      },
+      "jobs": {
+        "title": "Jobs behind “{{name}}”",
+        "manual": "This criterion comes from star reviews (Reviews & notes tab).",
+        "none": "No jobs in the scoring window yet.",
+        "contract": "Contract",
+        "late": "{{n}} days late · fault: {{fault}}",
+        "onTime": "On time",
+        "manualJob": "Logged by hand",
+        "fault": {
+          "partner": "partner",
+          "ours": "ours",
+          "unknown": "unknown"
+        },
+        "hTip": "Age factor: older jobs count less",
+        "h": "×{{h}}"
+      },
+      "steps": {
+        "title": "Steps to the final score",
+        "group": "{{group}} group:",
+        "starsOnly": "no data yet, using star score {{stars}} → {{score}}",
+        "dataOnly": "data score {{data}} (sum of Contribution), no star review yet → {{score}}",
+        "blend": "data score {{data}}; avg {{stars}} ★ = {{starsScore}}; blend {{rest}}% × {{data}} + {{s}}% × {{starsScore}} → {{score}}",
+        "role": "Role score = average of the groups weighted by transaction value: {{parts}} → {{score}}",
+        "foot": "Final role score: {{score}}"
+      },
+      "chart": {
+        "title": "Reputation trend",
+        "empty": "Not enough data to draw the chart.",
+        "aria": "Reputation score over {{n}} months",
+        "good": "GOOD",
+        "fair": "FAIR",
+        "range": {
+          "3": "3 months",
+          "6": "6 months",
+          "12": "1 year"
+        }
+      },
+      "review": {
+        "title": "Manual review",
+        "share": "{{s}}% of the score",
+        "noCriteria": "No criteria to review yet.",
+        "history": "Review history",
+        "historyNone": "No reviews yet.",
+        "starsN": "{{n}} stars",
+        "starsFor": "Review {{name}}",
+        "noData": "no data yet",
+        "data": "data {{n}}",
+        "reasonRequired": "Differs from the data by more than {{gap}} points — a reason is required",
+        "reasonOptional": "Reason (optional)",
+        "reasonFor": "Reason for the {{name}} review",
+        "save": "Save review",
+        "saving": "Saving…",
+        "saved": "Review saved",
+        "failed": "Could not save the review. Check the reason and try again."
+      }
+    },
+    "settings": {
+      "cell": {
+        "needOne": "At least one enabled criterion with a weight is required",
+        "decayMonths": "Month marks must increase and stay inside the scoring window",
+        "decayFactor": "Rates must be between 1 and 100%"
+      },
+      "impact": {
+        "title": "Effect on existing partners",
+        "sub": "Calculated on real data, nothing is saved",
+        "none": "No unsaved change in this part.",
+        "loading": "Calculating…",
+        "error": "Could not calculate (check the settings).",
+        "same": "No partner changes score or level ({{n}} partners).",
+        "count": "{{n}} / {{total}} partners change score or level:"
+      },
+      "rep": {
+        "title": "Reputation score",
+        "sub": "Each product group and role has its own way of scoring.",
+        "payer": "Commission payer",
+        "common": "Levels & ratings",
+        "group": {
+          "service": "Term services",
+          "goods": "Goods",
+          "referral": "Referral",
+          "common": "General"
+        },
+        "role": {
+          "supplier": "Supplier",
+          "customer": "Customer"
+        },
+        "tab": {
+          "crit": "Criteria",
+          "time": "Time",
+          "types": "Job types"
+        },
+        "critTitle": "Criteria & weights",
+        "addCrit": "+ Add criterion",
+        "custom": "Custom",
+        "remove": "Remove",
+        "off": "Off",
+        "use": "Use {{name}}",
+        "weight": "Weight of {{name}}",
+        "how": {
+          "ontime": "Share of milestones on time; partner-caused delays cost extra points per day.",
+          "bad_count": "100 minus the penalty × bad jobs per 10 transactions.",
+          "manual": "Stars given by users × 20.",
+          "jobs": "Average score of manually logged jobs for the criterion.",
+          "on_time_delivery": "% of deliveries on time, minus points for each day late caused by the supplier.",
+          "serial": "% of serial / activation issued on time.",
+          "incident": "Score of logged incident handling.",
+          "price_hold": "Score of logged price-holding jobs.",
+          "quality": "Score of logged quality jobs.",
+          "on_time_payment": "% of payments on time, minus points for each day late caused by the partner.",
+          "renew_via_us": "Score of logged renewals through us.",
+          "reminders": "Few reminders: points lost per reminder per 10 transactions.",
+          "debt": "Debt: points lost per debt case per 10 transactions.",
+          "complaints": "Few unreasonable complaints: points lost per case per 10 transactions.",
+          "on_time_commission": "% of commissions paid on time.",
+          "reconcile": "Score of logged reconciliation reports.",
+          "referral_support": "Score of logged referred-customer support jobs."
+        },
+        "newName": "New criterion name",
+        "newKind": "Criterion type",
+        "kindBad": "Count bad jobs",
+        "kindOntime": "On-time rate",
+        "kindManual": "Manual (stars)",
+        "newMilestone": "Milestone type",
+        "ms": {
+          "delivery": "Delivery",
+          "payment": "Payment",
+          "serial": "Serial",
+          "commission": "Commission"
+        },
+        "perTen": "points / case",
+        "add": "Add",
+        "f": {
+          "crit1": "Each criterion scores 0–100 as described under its name.",
+          "crit2": "Data score = Σ (criterion score × weight) ÷ Σ weights.",
+          "crit3": "Final score = {{a}}% data score + {{b}}% rating score (stars × 20).",
+          "crit3off": "Final score = data score (manual rating is off).",
+          "levels": "Levels: GOOD from {{good}}, FAIR from {{fair}}, below that WATCH."
+        },
+        "tCrit": "Criterion",
+        "tSample": "Sample score",
+        "tWeight": "Weight",
+        "tPart": "Part",
+        "tStars": "Average stars",
+        "tResult": "Reputation score",
+        "level": {
+          "good": "GOOD",
+          "fair": "FAIR",
+          "watch": "WATCH"
+        }
+      },
+      "time": {
+        "window": "Score over",
+        "months": "{{m}} months",
+        "decay": "Older jobs count less",
+        "step": "Steps",
+        "none": "No decay",
+        "ratio": "Counted at",
+        "under": "Under {{m}} months",
+        "between": "{{a}}–{{b}} months",
+        "over": "Over {{m}} months",
+        "edge": "Mark {{n}}",
+        "monthUnit": "months",
+        "late": "Penalty per late day",
+        "perDay": "points / day",
+        "f1": "Each job counts by age: factor = the % set above. Jobs outside the scoring window have factor 0.",
+        "f2": "Criterion score = Σ (job score × factor) ÷ Σ factors.",
+        "f3": "So recent jobs weigh more than old ones.",
+        "job": "Job",
+        "age": "Age (months)",
+        "score": "Job score",
+        "factor": "Factor",
+        "jobN": "Job {{n}}",
+        "allOut": "All 3 jobs are outside the scoring window",
+        "result": "Criterion score",
+        "plain": "Without decay (plain average): {{v}}"
+      },
+      "types": {
+        "title": "Job types",
+        "hint": "Manually logged jobs tied to this cell's criteria; score 0 = a counted bad job.",
+        "add": "+ Add job type",
+        "empty": "No job types in this cell yet.",
+        "name": "Job type name",
+        "criterion": "Criterion",
+        "points": "points",
+        "remove": "Remove",
+        "newName": "New job type"
+      },
+      "common": {
+        "levels": "Level thresholds",
+        "good": "GOOD from",
+        "fair": "FAIR from",
+        "order": "The GOOD threshold must be higher than the FAIR threshold",
+        "minJobs": "New partners are scored from",
+        "jobs": "jobs",
+        "manual": "User ratings",
+        "share": "Share of the score",
+        "gap": "Require a reason when it differs by more than",
+        "points": "points",
+        "lock": "Score history",
+        "lockLabel": "Lock scores",
+        "monthly": "Monthly",
+        "lockHint": "At the end of each month the app stores that month's score; locked scores are not recalculated.",
+        "f1": "Rating score = average stars × 20 (5 stars = 100).",
+        "f2": "Final score = {{a}}% data score + {{b}}% rating score. Without ratings, 100% data score is used.",
+        "f2off": "Manual rating is off: final score = data score.",
+        "f3": "When the rating differs from the data score by more than {{gap}} points the rater must give a reason.",
+        "f4": "Levels: GOOD from {{good}}, FAIR from {{fair}}, the rest WATCH.",
+        "tData": "Data score",
+        "tStars": "Average stars",
+        "needReason": "Differs by more than {{gap}} points: a reason is required",
+        "tResult": "Reputation score"
+      }
+    },
+    "rep3": {
+      "attention": {
+        "title": "Needs attention",
+        "lead": "Partners at WATCH level, with a red flag, or down 3+ points in 3 months",
+        "none": "No partner needs attention.",
+        "watch": "WATCH level",
+        "drop": "Down {{n}} points (3 months ago: {{before}})"
+      },
+      "preview": {
+        "title": "Preview: switching to role × product-group scoring",
+        "subHd8": "The current engine is HD8. This shows how many partners change level if scoring switches to BA v2.0 (role × product group).",
+        "subV2e": "Scoring already uses role × product group. The figures compare HD8 levels with the current ones.",
+        "loading": "Calculating…",
+        "fail": "Could not load the preview.",
+        "count": "{{partners}} partners change level ({{changed}} of {{total}} partner × role rows)",
+        "note": "Read-only; nothing is written. Turning this scoring on or off is a system administrator task (a server configuration flag), not done on this screen."
+      },
+      "level": {
+        "good": "GOOD",
+        "fair": "FAIR",
+        "watch": "WATCH",
+        "new": "NEW"
+      }
+    }
+  }
+}

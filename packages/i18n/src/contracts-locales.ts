@@ -5,8 +5,9 @@
 import type { Locale } from "./locales";
 
 type Part = { default: { contracts: Record<string, unknown> } };
-/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign. */
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, rep3. */
 type Parts = readonly [
+  Part,
   Part,
   Part,
   Part,
@@ -51,6 +52,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/k3b.en.json"),
     import("../locales/contracts/g2.en.json"),
     import("../locales/contracts/esign.en.json"),
+    import("../locales/contracts/rep3.en.json"),
   ]);
 
 const loadVi = (): Promise<Parts> =>
@@ -75,14 +77,30 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/k3b.vi.json"),
     import("../locales/contracts/g2.vi.json"),
     import("../locales/contracts/esign.vi.json"),
+    import("../locales/contracts/rep3.vi.json"),
   ]);
 
-function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...rest]: Parts) {
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const deepMerge = (a: unknown, b: unknown): unknown =>
+  isObj(a) && isObj(b)
+    ? Object.fromEntries(
+        [...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => [
+          k,
+          k in b ? deepMerge(a[k], b[k]) : a[k],
+        ]),
+      )
+    : b;
+
+function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...tail]: Parts) {
+  // REP-v3-ui: phần cuối (`rep3`) gộp SÂU vào các nhánh đã có (`pv2`, `settings`…) thay vì ghi đè cả nhánh.
+  const rep3 = tail[tail.length - 1] as Part;
+  const rest = tail.slice(0, -1);
   const base = mod.default as { contracts: Record<string, unknown> };
   const later = rest.map((p) => p.default.contracts); // V2-H svc, V2-I pv2, V2-J2 psup, V2-L settings, V2-M, V2-GAPS, GAP-E
   const f = v2f.default.contracts as { cform: object; cdetail: object };
   const g = v2g.default.contracts as { cform: object; cdetail: object };
-  return {
+  const merged = {
     ...base,
     contracts: {
       ...base.contracts,
@@ -99,6 +117,7 @@ function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...r
       cdetail: { ...f.cdetail, ...g.cdetail },
     },
   };
+  return { ...merged, contracts: deepMerge(merged.contracts, rep3.default.contracts) };
 }
 
 /** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */

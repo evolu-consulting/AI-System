@@ -393,6 +393,7 @@ c095414a6a55748ee249538524c3b95847131f686fc31124260eb0c62fffb5b0  e2e/contracts-
 f62f8dd47e33ac625bd246c0607f619d26889543ffcf8533b8101a30d0503a13  e2e/contracts-web/overview.cw.ts
 26d96178d24630392b5a9fccdebe5e1dae3a895f5790d77b9d2e9020173f0ef4  e2e/contracts-web/playwright.config.ts
 04bfde18b1193ff5410f3ef961830311af2cdcaea844aa18d9b32103c188eea3  e2e/contracts-web/products-confirm.cw.ts
+7e864846d5d92a8ea91221eb2fd2d0fe4e24afc0fc158091c6b8e79ad1d3ee06  e2e/contracts-web/rep3-engine.cw.ts
 6dda3549cce2d35884441bf9b67d285f33be076a52644b792c4d560c6266f019  e2e/contracts-web/scenes.cw.ts
 44d3d8d2cbe0b0fd950fb7cb66b753685303b8f3544f9353e85aeb9ba282d8f4  e2e/contracts-web/transactions.cw.ts
 6050390b87cd4c4b3a0c8fb1a6a737730c9c47017e142be52c443cd455faca4f  e2e/contracts-web/ui-gating.cw.ts

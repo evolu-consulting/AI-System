@@ -1,8 +1,8 @@
 // V2-I · chọn vai trên trang chi tiết (đối tác nhiều vai): liên kết đổi `?role=` — giữ tab và khoảng biểu đồ.
-import type { PartnerRole } from "@ai/contracts";
+import type { RepRole } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import type { Tab } from "../lib/partner-v2";
+import type { Range, Tab } from "../lib/partner-v2";
 import { SEG, segItem } from "./seg-style";
 
 export function RoleSeg({
@@ -10,11 +10,14 @@ export function RoleSeg({
   roles,
   role,
   tab,
+  range,
 }: {
   party: string;
-  roles: readonly PartnerRole[];
-  role: PartnerRole;
+  roles: readonly RepRole[];
+  role: RepRole;
   tab?: Tab;
+  /** V2-E: giữ khoảng biểu đồ (3/6/12 tháng) khi đổi vai. */
+  range?: Range;
 }) {
   const { t } = useTranslation();
   if (roles.length < 2) return null;
@@ -28,6 +31,7 @@ export function RoleSeg({
             party,
             role: r,
             ...(tab && tab !== "overview" ? { tab } : {}),
+            ...(range && range !== 12 ? { range } : {}),
           }}
           role="tab"
           aria-selected={r === role}
