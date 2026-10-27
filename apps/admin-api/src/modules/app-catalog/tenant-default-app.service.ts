@@ -12,9 +12,11 @@ import type { AppCatalogCtx } from "./app-catalog.service";
 
 type Row = { id: string; key: string; v: string | null };
 
-async function lockTenant(tx: Tx, id: string): Promise<Row> {
+async function readTenant(tx: Tx, id: string, lock: boolean): Promise<Row> {
   const rows = (await tx.execute(
-    sql`SELECT id, key, default_app AS v FROM admin.tenants WHERE id = ${id} FOR UPDATE`,
+    lock
+      ? sql`SELECT id, key, default_app AS v FROM admin.tenants WHERE id = ${id} FOR UPDATE`
+      : sql`SELECT id, key, default_app AS v FROM admin.tenants WHERE id = ${id}`,
   )) as unknown as Row[];
   const row = rows[0];
   if (!row) throw appError("NOT_FOUND");
@@ -27,7 +29,7 @@ export function getTenantDefaultApp(
   tenantId: string,
 ): Promise<TenantDefaultAppResponse> {
   return withScope(ctx.db, scopeOf(actor), async (tx) => ({
-    app: (await lockTenant(tx, tenantId)).v,
+    app: (await readTenant(tx, tenantId, false)).v,
   }));
 }
 
@@ -38,7 +40,7 @@ export function setTenantDefaultAppFor(
   b: DefaultAppRequest,
 ): Promise<TenantDefaultAppResponse> {
   return withScope(ctx.db, scopeOf(actor), async (tx) => {
-    const t = await lockTenant(tx, tenantId);
+    const t = await readTenant(tx, tenantId, true);
     if (b.app !== null && !(await repo.findOne(tx, b.app))) throw appError("INVALID_REFERENCE");
     if (t.v === b.app) return { app: b.app };
     await tx.execute(sql`UPDATE admin.tenants SET default_app = ${b.app} WHERE id = ${t.id}`);
