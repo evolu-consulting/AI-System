@@ -29,6 +29,8 @@ export const DeleteImpactSchema = z.object({
   partner_events: z.number().int(),
   /** Số phụ lục xoá theo (cascade). */
   appendices: z.number().int(),
+  /** CR-101 R36: xoá HĐ nguyên tắc ⇒ số chứng từ con thấy được (bản hiện hành) được giữ và thành đứng riêng. */
+  frame_children: z.number().int().optional(),
   /** Có liên kết CKS ⇒ gỡ liên kết (không chặn). */
   has_cks: z.boolean(),
   /** Lý do KHÔNG xoá được (kho không đảo được) — null = xoá được. */

@@ -152,19 +152,21 @@ export function mapError(err: unknown): {
   }
   const guard = dbGuardCode(err);
   if (guard) return { status: 409, body: toErrorBody(guard, "Conflict") };
+  const invalid = dbGuardCode(err, "EK422");
+  if (invalid) return { status: 422, body: toErrorBody(invalid, "Unprocessable") };
   return { status: 500, body: toErrorBody("INTERNAL_ERROR", ERROR_MESSAGES.INTERNAL_ERROR) };
 }
 
-/** SQLSTATE `EK409` = trigger gói chặn ghi (vd CR-097 K2 `contracts_k2_ro`: bản HĐ đã bị thay) ⇒ 409 với mã = message
+/** CR-101: `EK422` = trigger gói từ chối dữ liệu (vd 0055 `FRAME_PARTNER_MISMATCH`) ⇒ 422 cùng cách. SQLSTATE `EK409` = trigger gói chặn ghi (vd CR-097 K2 `contracts_k2_ro`: bản HĐ đã bị thay) ⇒ 409 với mã = message
  *  (`[A-Z_]{3,40}`, hằng trong migration, không dữ liệu người dùng). Tìm trong chuỗi `cause` (Drizzle bọc lỗi postgres.js). */
-export function dbGuardCode(err: unknown): string | null {
+export function dbGuardCode(err: unknown, sqlState: "EK409" | "EK422" = "EK409"): string | null {
   for (
     let e = err, i = 0;
     e && typeof e === "object" && i < 5;
     e = (e as { cause?: unknown }).cause, i++
   ) {
     const x = e as { code?: unknown; message?: unknown };
-    if (x.code === "EK409" && typeof x.message === "string" && /^[A-Z_]{3,40}$/.test(x.message))
+    if (x.code === sqlState && typeof x.message === "string" && /^[A-Z_]{3,40}$/.test(x.message))
       return x.message;
   }
   return null;

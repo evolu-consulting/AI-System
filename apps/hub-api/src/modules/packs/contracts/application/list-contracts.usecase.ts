@@ -49,6 +49,9 @@ export function toListFilter(q: ContractListInput, today?: string): ContractList
       : null,
     direction: arr(q.direction),
     kind: arr(q.kind),
+    docType: arr(q.doc_type),
+    nest: q.nest === "1",
+    docs: q.nest === "1" || arr(q.doc_type) !== null,
     valueMin: q.value_min ?? null,
     valueMax: q.value_max ?? null,
     dateField: q.date_field ?? "end_date",
@@ -79,6 +82,7 @@ export function listContracts<Row>(d: {
       total: p.total,
       parents: p.parents,
       ...(want ? { progress: p.progress ?? [] } : {}),
+      ...(f.docs ? { docs: p.docs ?? [], children: p.children ?? [] } : {}),
       page: q.page,
       page_size: q.page_size,
     };

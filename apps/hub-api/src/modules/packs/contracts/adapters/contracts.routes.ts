@@ -46,6 +46,7 @@ const REPEATED = new Set([
   "signer",
   "direction",
   "kind",
+  "doc_type",
 ]);
 
 /** Query thô cho zod: khoá lặp ⇒ mọi giá trị, khoá đơn ⇒ giá trị đầu; bỏ `tenant_id`/`user_id`. */

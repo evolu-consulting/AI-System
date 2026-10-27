@@ -20,6 +20,7 @@ import {
   type NewUploadedContract,
   type UploadCounter,
   type UploadDays,
+  type UploadDoc,
   UploadError,
   type UploadStatus,
   type UploadUow,
@@ -61,6 +62,8 @@ export type UploadContractInput = {
   parentId: string | null;
   /** CR-097 K2 · HD-FR-101: "Tải bản cập nhật" cho HĐ này ⇒ nháp v(n+1) cùng chuỗi (`kind`/`parentId` bỏ qua, lấy theo bản cũ). */
   supersedes?: string;
+  /** CR-101 DOC-model: loại chứng từ + HĐ NT cha (vắng ⇒ HĐ kinh tế đứng riêng). */
+  doc?: UploadDoc;
 };
 export type UploadContractResult = {
   id: string;
@@ -166,6 +169,7 @@ function persist(
       sourceText: s.text.ok ? s.text.markdown : null,
       userId: i.who.userId,
       approvalId: s.text.ok ? s.approvalId : null,
+      ...(i.doc ? { doc: i.doc } : {}),
     };
     const out = i.supersedes
       ? await r.upload.insertVersion(row, i.supersedes)

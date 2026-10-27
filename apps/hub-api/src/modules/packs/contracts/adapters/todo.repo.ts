@@ -50,7 +50,7 @@ const dueSources = (t: string, w: TodoWindow) => sql`
     order by o.due_date, o.id limit ${LIM}::int),
   ce as (select c.id, c.end_date, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from contracts.contracts c
     where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in ('active', 'expiring') and c.handled is null
-      and c.superseded_at is null
+      and c.superseded_at is null and c.doc_type <> 'framework' -- CR-101: HĐ NT nhắc qua reminders
       and c.end_date between ${w.today}::date and ${w.today}::date + 3650
       and c.end_date - ${NOTICE("c", t)}::int <= ${w.today}::date
       and ${notDismissed(t, sql`${k("contract_expiring", "c.id", "c.end_date")}`)}

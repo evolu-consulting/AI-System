@@ -67,6 +67,8 @@ export type DeleteImpact = {
   orphan_products: { id: string; name: string }[];
   partner_events: number;
   appendices: number;
+  /** CR-101 R36: con của HĐ NT (thấy được, bản hiện hành) giữ lại, thành đứng riêng. */
+  frame_children?: number;
   has_cks: boolean;
   stock_blocked: string | null;
 };

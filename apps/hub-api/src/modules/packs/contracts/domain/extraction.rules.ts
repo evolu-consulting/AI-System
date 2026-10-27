@@ -1,6 +1,7 @@
 // HD-FR-21 · HD-FR-22 · HD-FR-24 · HD-BR-01: áp bản trích của agent lên HĐ (port `R/api/app/contracts/ingest.py:81-98`):
 // kiểm từng trường/dòng, `effective_date` chỉ cho phụ lục, gộp giữ trường `edited`, dòng hàng chỉ ghi khi HĐ chưa có dòng
 // nào (D-08: `contract_items` không DELETE ở HD1/HD2), chủ đề điều khoản theo số điều. Thuần.
+import { parseDocTypeSuggest } from "./doc-types.rules";
 import type { AiMilestone, AiRead, AiSummary, AiUnsureKey } from "./extraction.types";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
 import type { Deal } from "./milestones.rules";
@@ -38,6 +39,8 @@ export type RawExtraction = {
   unsure?: readonly AiUnsureKey[] | undefined;
   summary?: AiSummary | null | undefined;
   milestones?: readonly AiMilestone[] | undefined;
+  /** CR-101 Câu 9: AI gợi ý loại chứng từ (người dùng chọn lại được). */
+  doc_type_suggest?: string | null | undefined;
 };
 export type ExtractedItemRow = RawItem & { ord: number; verified: boolean; edited: false };
 export type Clause = { number: string; topic: string };
@@ -73,7 +76,14 @@ export function aiReadOf(
   fields: Record<ContractFieldKey, VerifiedField>,
   src: ReturnType<typeof prepareSource>,
 ): AiRead | null {
-  if (raw.deal === undefined && !raw.unsure && !raw.summary && !raw.milestones) return null;
+  if (
+    raw.deal === undefined &&
+    !raw.unsure &&
+    !raw.summary &&
+    !raw.milestones &&
+    raw.doc_type_suggest === undefined
+  )
+    return null;
   const said = new Set<AiUnsureKey>(raw.unsure ?? []);
   const unsure: AiUnsureKey[] = (Object.keys(fields) as ContractFieldKey[]).filter(
     (k) => said.has(k) || (fields[k].value !== null && !fields[k].verified),
@@ -88,6 +98,9 @@ export function aiReadOf(
       ...m,
       verified: m.quote.trim() !== "" && quoteFound(m.quote, src),
     })),
+    ...(raw.doc_type_suggest !== undefined
+      ? { doc_type_suggest: parseDocTypeSuggest(raw.doc_type_suggest) }
+      : {}),
   };
 }
 

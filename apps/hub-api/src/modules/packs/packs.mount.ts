@@ -34,6 +34,7 @@ import { companyModule } from "./contracts/company.mount";
 import { mountContractsContext } from "./contracts/context.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
+import { docFrameModule } from "./contracts/doc-frame.mount";
 import { esignUserRoutes } from "./contracts/esign.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
@@ -240,6 +241,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   app.route(base, productsModule(db, view, { timeZoneOf })); // V2-B Â· danh má»¥c SP + kho
   app.route(base, businessModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-J1 Â· Ä‘iá»ƒm kinh doanh SP
   app.route(base, serviceCustomersModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-H Â· khÃ¡ch Ä‘ang dÃ¹ng
+  app.route(base, docFrameModule(db, view)); // CR-101 DOC-model · gắn/gỡ chứng từ con của HĐ NT
   app.route(base, deleteContractModule(db, view, { timeZoneOf: tenantTz(d) })); // V2-M Â· xoÃ¡ HÄ
 }
 

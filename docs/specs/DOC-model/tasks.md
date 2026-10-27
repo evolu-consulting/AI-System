@@ -35,5 +35,21 @@ Unit `doc-types.rules.test.ts`; MỘT int đường chính (tạo HĐ NT → g�
 ## Quyết định (mặc định đã chốt)
 Câu 9: con theo chuỗi `root_id`; HĐ NT không có giá trị riêng (= Σ con), hạn mức tuỳ chọn. RLS: con thấy được mà cha không ⇒ API trả `frame: {restricted:true}`.
 
+## Quyết định trong lúc làm (2026-10-27)
+- FK `contracts_frame_fk (frame_root_id, tenant_id) → contracts(id, tenant_id) ON DELETE SET NULL (frame_root_id)`: `root_id` không unique nên FK trỏ `id` của v1 (= `root_id` chuỗi); trigger kiểm cha là v1 + `doc_type = framework`. Xoá HĐ NT chỉ được khi chuỗi một phiên bản (X5 giữ nguyên) ⇒ FK SET NULL = "con giữ, đứng riêng" (chạy quyền chủ bảng ⇒ cả con người xoá không thấy).
+- R43 kiểm trong DB (`contracts.doc_frame_check`, SQLSTATE `EK422` ⇒ Hub 422 mã = message) khi GẮN (INSERT/đổi `frame_root_id`) và khi con được XÁC NHẬN (khoá); KHÔNG kiểm lúc AI đọc (bên chưa chắc, luồng đọc không được vỡ). Bên/hướng trống ở một phía ⇒ cho qua. Đối tác = cột sinh `partner_key`, hướng = `direction`; cha so theo bản hiện hành của chuỗi HĐ NT.
+- Mốc HĐ NT: brief ghi `renewal_reminder` — DB gọi là `renewal`; cho `renewal` + `other`. Mốc tự sinh (`default`/`ai`/`cks`) cho HĐ NT bị BỎ QUA (trigger BEFORE trả NULL, không làm hỏng lệnh duyệt); ghi tay ⇒ 422 `FRAME_MILESTONE_KIND`.
+- HĐ NT còn con ⇒ không đổi `doc_type` (409 `FRAME_HAS_CHILDREN`).
+- Gắn: `POST /contracts/:id/attach {ids}` (`:id` = bản bất kỳ của HĐ NT; con gắn cả chuỗi phiên bản); gỡ: `DELETE /contracts/:id/frame` (`:id` = con). Quyền `write`. HĐ NT không thấy/tenant khác ⇒ 404; con không thấy/không hợp lệ ⇒ 422 `FRAME_INVALID`. Event `frame_attached`/`frame_detached` trên bản hiện hành.
+- Tải lên: `doc_type`, `frame_root_id` (id bản bất kỳ, repo quy về `root_id`), `credit_limit`, `order_terms` (chỉ HĐ NT). Không thấy cha / tenant khác ⇒ 422 `FRAME_INVALID` (không lộ tồn tại). Bản cập nhật (K2, `insertVersion`) kế thừa 4 cột từ bản cũ — chạm `upload-contract.repo.ts` (chủ duy nhất theo bảng trên), KHÔNG chạm `upload-version*`.
+- ListRow giữ 22 khoá (test khoá HD1/HD5): thông tin chứng từ đi ở `docs` (cùng thứ tự `items`) + `children`, chỉ khi `nest=1` hoặc lọc `doc_type` (phản hồi cũ không đổi). `nest=1`: con có HĐ NT THẤY ĐƯỢC không đứng riêng; cha không thấy ⇒ con đứng riêng + `frame_restricted: true`. Con của các HĐ NT trong trang lấy trong CÙNG câu danh sách (`frame_root_id = any(array(...))`) ⇒ số câu SQL không đổi (2).
+- Chi tiết: thêm khoá `doc` (optional trong zod để fixture cũ hợp lệ; Hub luôn trả): `frame` (`{restricted:true}` khi RLS không cho thấy cha), `summary` (giai đoạn theo hiệu lực, giá trị = Σ con bản hiện hành trừ `rejected`, % hạn mức), `children` (≤ 500, `outside_frame` theo ngày bắt đầu con). `json_build_object` đã đủ 100 tham số ⇒ nối `jsonb ||`.
+- Loại HĐ NT (mỗi chỗ một điều kiện, không thêm câu): `overview.repo` (k), `business.repo` (rc, contracts_count), `rep.sql` (cv0), `partners-data.repo` (bCte, facts), `mywork.repo` (dl), `sourcing.repo` (loadQ), `todo.repo` (ce), xuất tệp (`exportRows`). `reminders.repo` không đổi (vẫn nhắc gia hạn HĐ NT).
+- AI gợi ý: `doc_type_suggest` (tuỳ chọn) trong đầu ra agent + `ai_read`; chuẩn hoá bằng `parseDocTypeSuggest`; UI tô vàng/chọn lại ở DOC-ui-*.
+- Test chéo tenant cho cột/FK mới đặt trong `tests/acceptance/DOC-model/doc-model.int.test.ts` (bộ `rls-packs-v2.ts` là theo BẢNG — 0055 không thêm bảng; `contracts` đã có trong bộ RLS).
+
 ## Việc còn lại
-- [ ] 1–8 ở trên.
+- [x] 1–8 (backend). Perf: `tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts` (số đo trong báo cáo lát).
+- [ ] DOC-deals: hàng `doc_type = 'deal'` (file tuỳ chọn, Lưu là có hiệu lực, nâng thành HĐ giữ id) — cột/CHECK/trigger 0055 đã cho `deal` làm con HĐ NT; cần thêm luật mốc/kho cho deal + chuyển G1.
+- [ ] UI (DOC-ui-list, DOC-ui-frame): dùng `nest=1`/`docs`/`children`, `detail.doc`, `POST …/attach`, `DELETE …/frame`, `ai.doc_type_suggest`, `delete-preview.frame_children`.
+- [ ] Review cuối đợt: trigger `doc_frame_check` khi xác nhận con mà cha đổi đối tác sau khi gắn ⇒ 422 lúc xác nhận (thông báo lỗi ở màn duyệt cần mã `FRAME_PARTNER_MISMATCH`).

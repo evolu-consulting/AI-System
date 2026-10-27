@@ -2,6 +2,7 @@
 // cảnh báo, trích lại, nhập tay. Khoá/kiểu = `R/api/app/contracts/{fields,extract,manual}.py`.
 import { z } from "zod";
 import { VersionSchema } from "../common";
+import { DocTypeSchema } from "./doc-types";
 import {
   CONTRACT_DAYS_MAX,
   CONTRACT_FIELD_KEYS,
@@ -131,6 +132,8 @@ export const ExtractionOutputSchema = z.strictObject({
   unsure: z.array(z.enum(AI_UNSURE_KEYS)).max(AI_UNSURE_KEYS.length).optional(),
   summary: AiSummarySchema.nullable().optional(),
   milestones: z.array(AiMilestoneSchema).max(AI_MILESTONES_MAX).optional(),
+  /** CR-101 Câu 9: AI gợi ý loại chứng từ (HĐ kinh tế / HĐ nguyên tắc / giao dịch). */
+  doc_type_suggest: DocTypeSchema.nullable().optional(),
 });
 export type ExtractionOutput = z.infer<typeof ExtractionOutputSchema>;
 
@@ -141,6 +144,8 @@ export const AiReadSchema = z.strictObject({
   unsure: z.array(z.enum(AI_UNSURE_KEYS)).max(AI_UNSURE_KEYS.length),
   summary: AiSummarySchema.nullable(),
   milestones: z.array(AiMilestoneSchema.extend({ verified: z.boolean() })).max(AI_MILESTONES_MAX),
+  /** CR-101 Câu 9: ô "Loại chứng từ" tô vàng "AI" khi có; người dùng chọn lại được. */
+  doc_type_suggest: DocTypeSchema.nullable().optional(),
 });
 export type AiRead = z.infer<typeof AiReadSchema>;
 

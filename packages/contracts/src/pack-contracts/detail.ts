@@ -6,6 +6,7 @@ import {
   ContractAppendixRefSchema,
   ContractParentRefSchema,
 } from "./appendix";
+import { ContractDocSchema } from "./doc-types";
 import { AiReadSchema } from "./extract";
 import {
   CONTRACT_EVENT_TYPE_RE,
@@ -97,6 +98,8 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   superseded_at: IsoDateTime.nullable(),
   superseded_by: z.uuid().nullable(),
   versions: z.array(ContractVersionRefSchema).max(CONTRACT_VERSIONS_MAX),
+  /** CR-101 DOC-model: loại chứng từ, cha (HĐ NT) / con + tổng hợp HĐ NT. Hub luôn trả; optional để fixture cũ còn hợp lệ. */
+  doc: ContractDocSchema.optional(),
 });
 export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 

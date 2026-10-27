@@ -48,4 +48,6 @@ export type AiRead = {
   unsure: AiUnsureKey[];
   summary: AiSummary | null;
   milestones: (AiMilestone & { verified: boolean })[];
+  /** CR-101 Câu 9: loại chứng từ AI gợi ý (vắng ở bản trích cũ). */
+  doc_type_suggest?: "contract" | "framework" | "deal" | null;
 };

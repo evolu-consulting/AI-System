@@ -76,6 +76,7 @@ function loadQ(t: string) {
                 'name', c.buyer) as buyer
             from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) and c.superseded_at is null
+              and c.doc_type <> 'framework' -- CR-101: bảng giá thoả thuận không là nguồn hàng (không kho)
             order by (c.kind = 'appendix'), c.created_at, c.id limit ${SOURCING_CONTRACTS_MAX + 1}::int),
           cs as (select * from c order by (c.kind = 'appendix'), c.created_at, c.id limit ${SOURCING_CONTRACTS_MAX}::int)
           select json_build_object(

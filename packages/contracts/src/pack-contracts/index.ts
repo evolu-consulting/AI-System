@@ -8,6 +8,7 @@ export * from "./company";
 export * from "./delete-contract";
 export * from "./delivery";
 export * from "./detail";
+export * from "./doc-types";
 export * from "./errors";
 export * from "./esign";
 export * from "./extract";

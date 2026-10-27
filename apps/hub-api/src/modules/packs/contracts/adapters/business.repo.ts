@@ -162,7 +162,8 @@ function referralCtes(t: string) {
         from contracts.contract_items i join contracts.contracts c on c.tenant_id = i.tenant_id and c.id = i.contract_id
           join contracts.contracts r on r.tenant_id = c.tenant_id and r.id = c.root_id
         where i.tenant_id = ${t}::uuid and i.product_id in (select id from p where grp = 'referral')
-          and c.deal = 'referral' and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null),
+          and c.deal = 'referral' and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null
+          and c.doc_type <> 'framework'),
       rf as (select rc.product_id, count(*) filter (where rc.dt > d.t - 365)::float8 as sold12,
           count(*) filter (where rc.dt > d.t - 91)::float8 as l3,
           count(*) filter (where rc.dt <= d.t - 91 and rc.dt > d.t - 182)::float8 as p3,
@@ -214,7 +215,7 @@ function extrasQ(t: string, id: string, today: string) {
             'profit', case when s.unit_price is null or s.cost is null then null else (s.qty * s.unit_price)::bigint - s.cost end)
             order by s.done_at desc, s.cid) from (select * from sales order by done_at desc limit 100) s), '[]'::jsonb),
         'contracts_count', (select count(*)::int from contracts.contracts k where k.tenant_id = ${t}::uuid and k.kind = 'contract'
-          and exists (select 1 from contracts.contract_items i where i.tenant_id = k.tenant_id and i.contract_id = k.id
+          and k.doc_type <> 'framework' and exists (select 1 from contracts.contract_items i where i.tenant_id = k.tenant_id and i.contract_id = k.id
             and i.product_id = ${id}::uuid))) as j`;
 }
 

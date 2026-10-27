@@ -55,6 +55,8 @@ const previewSql = (t: string, ids: string[]) => {
         where e.tenant_id = c.tenant_id and e.contract_id = any(${arr})
           and not exists (select 1 from contracts.partner_event_voids v where v.event_id = e.id and v.tenant_id = e.tenant_id)),
       'appendices', ${ids.length - 1}::int,
+      'frame_children', (select count(*)::int from contracts.contracts k
+        where k.tenant_id = c.tenant_id and k.frame_root_id = c.root_id and k.superseded_at is null),
       'has_cks', exists (select 1 from contracts.cks_lots l where l.tenant_id = c.tenant_id and l.purchase_contract_id = any(${arr}))
         or exists (select 1 from contracts.cks_certificates x where x.tenant_id = c.tenant_id and x.sale_contract_id = any(${arr}))
         or exists (select 1 from contracts.cks_renewals r where r.tenant_id = c.tenant_id

@@ -14,14 +14,16 @@ import { newVersionVerdict } from "../domain/versions.rules";
 type Out = { id: string; status: UploadStatus; version: number };
 
 /** Lỗi PG trong chuỗi `cause` (Drizzle bọc lỗi postgres.js). */
-function pgError(err: unknown): { code?: string; constraint_name?: string } | null {
+function pgError(
+  err: unknown,
+): { code?: string; constraint_name?: string; message?: string } | null {
   for (
     let e = err, i = 0;
     e && typeof e === "object" && i < 5;
     e = (e as { cause?: unknown }).cause, i++
   )
     if ("code" in e && typeof (e as { code: unknown }).code === "string")
-      return e as { code?: string; constraint_name?: string };
+      return e as { code?: string; constraint_name?: string; message?: string };
   return null;
 }
 
@@ -47,9 +49,10 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
   const approvalId = r.status === "extracting" ? (r.approvalId ?? null) : null;
   let rows: VersionOut[];
   try {
+    // CR-101 DOC-model: v(n+1) kế thừa loại chứng từ, HĐ NT cha, hạn mức, cách đặt hàng của bản cũ.
     rows = await tx.execute<VersionOut>(sql`with b as (
         select c.id, c.kind, c.title, c.root_id, c.version_no, c.owner_user_id, c.created_by, c.locked_at is not null as locked,
-          c.superseded_at is not null as superseded
+          c.superseded_at is not null as superseded, c.doc_type, c.frame_root_id, c.credit_limit, c.order_terms
         from contracts.contracts c where c.id = ${base}::uuid and c.tenant_id = ${tenantId}::uuid for update),
       k as (select b.*, exists (select 1 from contracts.contracts v where v.tenant_id = ${tenantId}::uuid
             and v.root_id = b.root_id and v.version_no > b.version_no) as draft,
@@ -64,10 +67,11 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
         returning id),
       c as (
         insert into contracts.contracts (id, tenant_id, kind, title, status, error, owner_user_id, created_by, fields, file_id,
-          source_text, run_id, root_id, version_no, supersedes_id)
+          source_text, run_id, root_id, version_no, supersedes_id, doc_type, frame_root_id, credit_limit, order_terms)
         select ${r.id}::uuid, ${tenantId}::uuid, 'contract', coalesce(nullif(${r.title}, ''), ok.title), ${r.status}, ${r.error},
           ok.owner_user_id, case when ok.owner_user_id is null then ok.created_by else ${r.userId}::uuid end,
-          ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText}, ${approvalId}::uuid, ok.root_id, ok.no, ok.id
+          ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText}, ${approvalId}::uuid, ok.root_id, ok.no, ok.id,
+          ok.doc_type, ok.frame_root_id, ok.credit_limit, ok.order_terms
         from ok, f
         returning id, status, version, version_no, root_id, supersedes_id),
       a as (
@@ -112,18 +116,28 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
       const approvalId = r.status === "extracting" ? (r.approvalId ?? null) : null;
+      const doc = r.doc ?? {
+        docType: "contract",
+        frameId: null,
+        creditLimit: null,
+        orderTerms: null,
+      };
       try {
-        const rows = await tx.execute<Out>(sql`with f as (
+        // CR-101: `frameId` (bản bất kỳ của chuỗi HĐ NT, thấy được) ⇒ `root_id`; không thấy ⇒ giữ id ⇒ FK/trigger 0055 từ chối.
+        const rows = await tx.execute<Out>(sql`with fr as (
+            select coalesce((select k.root_id from contracts.contracts k
+              where k.tenant_id = ${tenantId}::uuid and k.id = ${doc.frameId}::uuid), ${doc.frameId}::uuid) as root),
+          f as (
             insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
             values (${r.fileRowId}::uuid, ${tenantId}::uuid, ${r.org}, ${r.fileId}, ${r.versionId}, ${r.name}, ${r.mime},
               ${r.size}, ${r.userId}::uuid)
             returning id),
           c as (
             insert into contracts.contracts (id, tenant_id, kind, parent_id, title, status, error, owner_user_id, created_by,
-              fields, file_id, source_text, run_id)
+              fields, file_id, source_text, run_id, doc_type, frame_root_id, credit_limit, order_terms)
             select ${r.id}::uuid, ${tenantId}::uuid, ${r.kind}, ${r.parentId}::uuid, ${r.title}, ${r.status}, ${r.error},
               ${r.userId}::uuid, ${r.userId}::uuid, ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText},
-              ${approvalId}::uuid from f
+              ${approvalId}::uuid, ${doc.docType}, fr.root, ${doc.creditLimit}::bigint, ${doc.orderTerms} from f, fr
             returning id, status, version),
           a as (
             -- M3 · lượt duyệt mở trong CÙNG câu (chế độ flow): giữ "1 tx 3 câu" của tải lên (HD-NFR-03).
@@ -138,11 +152,18 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
         if (!out) throw new Error("upload insert returned no row");
         return out;
       } catch (e) {
-        const pg = pgError(e);
-        if (pg?.code === "23503" && pg.constraint_name === "contracts_parent_fk")
-          throw new UploadError("PARENT_INVALID");
-        throw e;
+        throw insertError(e);
       }
     },
   };
+}
+
+/** Cha không có / tenant khác ⇒ `PARENT_INVALID`; HĐ NT không có / không thấy / tenant khác (CR-101) ⇒ `FRAME_INVALID`. */
+function insertError(e: unknown): unknown {
+  const pg = pgError(e);
+  const fk = pg?.code === "23503" ? pg.constraint_name : null;
+  if (fk === "contracts_parent_fk") return new UploadError("PARENT_INVALID");
+  if (fk === "contracts_frame_fk" || (pg?.code === "EK422" && pg.message === "FRAME_INVALID"))
+    return new UploadError("FRAME_INVALID");
+  return e;
 }

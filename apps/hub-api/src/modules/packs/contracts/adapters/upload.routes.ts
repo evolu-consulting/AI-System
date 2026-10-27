@@ -3,8 +3,10 @@
 // `Content-Length` (413 `FILE_TOO_LARGE`), kiểm lại kích thước tệp sau khi parse. Không tin đuôi/mime khai báo (magic bytes).
 import {
   CONTRACT_ERRORS,
+  DOC_ERRORS,
   LOCK_ERRORS,
   UploadContractFormSchema,
+  UploadDocFormSchema,
   VERSION_ERRORS,
 } from "@ai/contracts";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
@@ -17,7 +19,7 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
-import { UploadError } from "../application/upload-contract.ports";
+import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
 import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";
 
 const CONTRACTS_KEY = "contracts";
@@ -38,6 +40,7 @@ const MESSAGES: Record<UploadError["code"], string> = {
   FILE_TOO_LARGE: "File too large",
   FILE_TYPE: "File type not allowed",
   PARENT_INVALID: "Invalid parent contract",
+  FRAME_INVALID: "Invalid framework contract",
   UPLOAD_QUOTA: "Upload quota exceeded",
   UPLOAD_QUOTA_UNAVAILABLE: "Upload quota unavailable",
   DOCX_BUSY: "Document converter busy",
@@ -51,6 +54,7 @@ const STATUS = {
   ...CONTRACT_ERRORS,
   ...VERSION_ERRORS,
   CONTRACT_NOT_LOCKED: LOCK_ERRORS.CONTRACT_NOT_LOCKED,
+  FRAME_INVALID: DOC_ERRORS.FRAME_INVALID,
   DOCX_BUSY: 503,
   NOT_FOUND: 404,
 } as const;
@@ -131,6 +135,26 @@ function formFields(form: FormData) {
   return p.data;
 }
 
+/** CR-101 DOC-model: `doc_type`, `frame_root_id`, `credit_limit`, `order_terms`; HĐ NT / con không là phụ lục. */
+function docFields(form: FormData, kind: "contract" | "appendix"): UploadDoc {
+  const pick: Record<string, string> = {};
+  for (const k of ["doc_type", "frame_root_id", "credit_limit", "order_terms"]) {
+    const v = form.get(k);
+    if (typeof v === "string" && v !== "") pick[k] = v;
+  }
+  const p = UploadDocFormSchema.safeParse(pick);
+  if (!p.success) throw appError("VALIDATION_ERROR");
+  const d = p.data;
+  if (kind === "appendix" && (d.doc_type !== "contract" || d.frame_root_id))
+    throw appError("VALIDATION_ERROR");
+  return {
+    docType: d.doc_type,
+    frameId: d.frame_root_id ?? null,
+    creditLimit: d.credit_limit ?? null,
+    orderTerms: d.order_terms ?? null,
+  };
+}
+
 /** FileBox chưa cấu hình ⇒ tải lên trả 503 `FILE_STORAGE_UNAVAILABLE` (thay vì 404 do route không được gắn). Guard `write` trước. */
 export function uploadUnavailableRoutes(view: PackAccessView): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
@@ -176,12 +200,14 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
   r.post("/contracts", write, limit, async (c) => {
     const x = await readUpload(c, d.maxBytes);
     const f = formFields(x.form);
+    const doc = docFields(x.form, f.kind);
     const { form: _f, ...rest } = x;
     return run(c, {
       ...rest,
       title: f.title ?? defaultTitle(x.name),
       kind: f.kind,
       parentId: f.parent_id ?? null,
+      doc,
     });
   });
   // CR-097 K2 · HD-FR-101 "Tải bản cập nhật": cùng đường tải lên/AI đọc; HĐ phải thấy + hiện hành + đã khoá (kiểm trong câu ghi).

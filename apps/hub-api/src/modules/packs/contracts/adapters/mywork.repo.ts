@@ -26,6 +26,7 @@ const sources = (t: string, w: Window) => sql`with ob as (
             select c.id, c.action_deadline, c.number, c.title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.handled is null
               and c.status in ('active', 'expiring', 'expired') and c.superseded_at is null
+              and c.doc_type <> 'framework' -- CR-101: HĐ NT nhắc gia hạn qua reminders
               and c.action_deadline <= ${w.horizon}::date
               and (c.end_date is null or c.end_date >= ${w.archive}::date)
             order by c.action_deadline, c.id limit ${LIM}::int),

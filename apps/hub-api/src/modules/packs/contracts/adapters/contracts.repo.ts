@@ -32,6 +32,7 @@ import {
   toContractFacets,
   toContractListRow,
 } from "./contracts.mapper";
+import { childrenOf, docOf, docsOf, listChildren } from "./doc-types.sql";
 import { type ProgressRaw, toProgress } from "./milestones.mapper";
 import { msJson } from "./milestones.repo";
 import { contractFieldsRepo } from "./patch-fields.repo";
@@ -51,6 +52,8 @@ type ListOut = {
   items: ListRowRaw[] | string;
   parents: ListParentRef[] | string;
   progress: ProgressRaw[] | string | null;
+  docs?: unknown[] | string | null;
+  children?: { value: number | string | null }[] | string | null;
 };
 const parsed = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as T) : v);
 
@@ -88,6 +91,9 @@ function filterWhere(tid: string, f: ContractListFilter) {
         and (${a(f.signerKeys)}::text[] is null or c.signer_keys && ${a(f.signerKeys)}::text[])
         and (${a(f.direction)}::text[] is null or coalesce(c.direction, 'unknown') = any(${a(f.direction)}::text[]))
         and (${a(f.kind)}::text[] is null or c.kind = any(${a(f.kind)}::text[]))
+        and (${a(f.docType ?? null)}::text[] is null or c.doc_type = any(${a(f.docType ?? null)}::text[]))
+        and (not ${f.nest === true}::boolean or c.frame_root_id is null or not exists (select 1 from contracts.contracts fv
+             where fv.tenant_id = c.tenant_id and fv.id = c.frame_root_id))
         and (${f.valueMin}::bigint is null or c.value >= ${f.valueMin}::bigint)
         and (${f.valueMax}::bigint is null or c.value <= ${f.valueMax}::bigint)
         and (${f.dateFrom}::date is null or (case when ${df}::text = 'action_deadline' then c.action_deadline
@@ -138,13 +144,20 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
         from contracts.contracts pc where pc.tenant_id = ${tid}::uuid
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
             where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
-      ${progressOf(tid, today !== undefined)} as progress`);
+      ${progressOf(tid, today !== undefined)} as progress,
+      ${docsOf(tid, f.docs === true)} as docs, ${childrenOf(tid, f.docs === true)} as children`);
   const out = rows[0] as ListOut;
   const items = parsed(out.items);
   const parents = parsed(out.parents);
   const progress =
     today === undefined ? [] : parsed(out.progress ?? []).map((p) => toProgress(p, today));
-  return { total: out.total, items: items.map(toContractListRow), parents, progress };
+  return {
+    total: out.total,
+    items: items.map(toContractListRow),
+    parents,
+    progress,
+    ...(f.docs ? { docs: parsed(out.docs ?? []), children: listChildren(out.children) } : {}),
+  };
 }
 
 type ExportRaw = {
@@ -175,7 +188,7 @@ async function exportRows(tx: Tx, tid: string, f: ContractListFilter, cap: numbe
     await tx.execute<ExportRaw>(sql`select count(*) over ()::int as total, c.number, c.title, c.kind, c.type,
       c.direction, c.status, c.seller, c.buyer, c.seller_signer, c.buyer_signer, c.value, c.end_date::text as end_date,
       c.action_deadline::text as action_deadline, c.owner_user_id, c.category_ids[1:50] as category_ids, c.updated_at
-    from contracts.contracts c where ${filterWhere(tid, f)}
+    from contracts.contracts c where ${filterWhere(tid, f)} and c.doc_type <> 'framework' -- CR-101: xuất tệp không gồm HĐ NT
     order by ${orderBy(f)} limit ${cap + 1}::int`);
   const cats = await tx.execute<{ id: string; name: string }>(
     sql`select id, name from contracts.contract_categories where tenant_id = ${tid}::uuid`,
@@ -268,7 +281,8 @@ async function detail(
   id: string,
   today: string,
 ): Promise<ContractDetailDto | null> {
-  const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select json_build_object(
+  // json_build_object đã đủ 100 tham số ⇒ phần CR-101 nối bằng `jsonb ||`.
+  const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select (json_build_object(
       'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', c.title, 'number', c.number, 'type', c.type,
       'direction', c.direction, 'status', c.status, 'seller', c.seller, 'buyer', c.buyer, 'seller_signer', c.seller_signer,
       'buyer_signer', c.buyer_signer, 'value', c.value, 'end_date', c.end_date, 'action_deadline', c.action_deadline,
@@ -298,7 +312,7 @@ async function detail(
       'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by,
       'root_id', c.root_id, 'version_no', c.version_no, 'versions_count', ${versionsCount},
       'superseded_at', c.superseded_at, 'superseded_by', c.superseded_by, 'versions', ${versionsOf}
-    ) as d
+    )::jsonb || jsonb_build_object('doc', ${docOf})) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
   if (!d) return null;

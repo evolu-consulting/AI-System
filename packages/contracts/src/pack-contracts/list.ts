@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { CountSchema, IsoDateTime } from "../common";
 import { ContractParentRefSchema } from "./appendix";
+import { DocTypeSchema, ListDocRefSchema, ListFrameChildSchema } from "./doc-types";
 import {
   CONTRACT_DIRECTIONS,
   CONTRACT_STATUSES,
@@ -57,6 +58,10 @@ export const ContractListQuerySchema = z.strictObject({
   signer: repeated(nameText(300), 20),
   direction: repeated(ContractDirectionFilterSchema, CONTRACT_DIRECTION_FILTERS.length),
   kind: repeated(ContractKindSchema, 2),
+  /** CR-101 DOC-model: lọc loại chứng từ. */
+  doc_type: repeated(DocTypeSchema, 3),
+  /** CR-101 DOC-model: `nest=1` ⇒ phân trang theo dòng cha (con có cha thấy được không đứng riêng) + `docs` + `children`. */
+  nest: z.enum(["0", "1"]).optional(),
   value_min: valueBound(),
   value_max: valueBound(),
   /** Gap #10: lọc theo ngày — cột (`end_date` hiệu lực đến | `action_deadline` hạn chót), cửa sổ tương đối `due` (so với ngày lịch tenant)
@@ -84,6 +89,7 @@ export const ContractExportQuerySchema = ContractListQuerySchema.omit({
   page: true,
   page_size: true,
   include: true,
+  nest: true,
 }).extend({ format: z.enum(CONTRACT_EXPORT_FORMATS).default("xlsx") });
 export type ContractExportQuery = z.infer<typeof ContractExportQuerySchema>;
 
@@ -124,6 +130,13 @@ export const ContractListResponseSchema = z.strictObject({
   /** V2-A (chỉ khi `include=progress`): loại HĐ + giai đoạn + bước hiện tại từng HĐ của trang (cùng thứ tự `items`; ListRow
    *  đã khoá giữ 19 khoá). */
   progress: z.array(ContractProgressSchema).max(CONTRACT_PAGE_SIZE_MAX).optional(),
+  /** CR-101 DOC-model (chỉ khi `nest=1` hoặc lọc `doc_type`): loại chứng từ từng hàng (cùng thứ tự `items`) + con của HĐ NT
+   *  trong trang (chỉ bản hiện hành, thấy được). */
+  docs: z.array(ListDocRefSchema).max(CONTRACT_PAGE_SIZE_MAX).optional(),
+  children: z
+    .array(ListFrameChildSchema)
+    .max(CONTRACT_PAGE_SIZE_MAX * 50)
+    .optional(),
   page: z.number().int().min(1),
   page_size: z.number().int().min(1).max(CONTRACT_PAGE_SIZE_MAX),
 });

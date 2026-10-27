@@ -16,6 +16,7 @@ import type {
 import type { MilestoneRow } from "../application/milestones.ports";
 import { fillFields } from "../domain/fields.rules";
 import { currentOf } from "../domain/versions.rules";
+import { type DocRaw, toContractDoc } from "./doc-types.mapper";
 import { milestonesView } from "./milestones.mapper";
 
 export type ContractListRowDto = ContractListRow;
@@ -101,6 +102,8 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   versions?:
     | (Omit<ContractVersionRef, "total_value"> & { total_value: number | string | null })[]
     | null;
+  /** CR-101 DOC-model */
+  doc?: DocRaw;
 };
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -159,6 +162,9 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     locked_by: r.locked_by ?? null,
     has_document: r.file_id !== null,
     ...chainOf(r),
+    ...(r.doc
+      ? { doc: toContractDoc(r.doc, { start: r.start_date ?? null, end: r.end_date }, today) }
+      : {}),
   };
 }
 

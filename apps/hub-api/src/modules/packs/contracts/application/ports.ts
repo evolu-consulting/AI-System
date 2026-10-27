@@ -29,6 +29,9 @@ export type ContractListInput = {
   date_to?: string | undefined;
   /** V2-A: `progress` ⇒ trả thêm giai đoạn + bước hiện tại. */
   include?: "progress" | undefined;
+  /** CR-101 DOC-model: loại chứng từ; `nest = "1"` ⇒ phân trang theo dòng cha + `docs`/`children`. */
+  doc_type?: readonly string[] | undefined;
+  nest?: "0" | "1" | undefined;
   sort: ContractSortKey;
   dir: ContractSortDir;
   page: number;
@@ -46,6 +49,11 @@ export type ContractListFilter = {
   signerKeys: readonly string[] | null;
   direction: readonly string[] | null;
   kind: readonly string[] | null;
+  /** CR-101 DOC-model: lọc loại chứng từ; `nest` ⇒ con có HĐ NT thấy được không đứng riêng (hiện dưới cha qua `children`);
+   *  `docs` ⇒ trả `docs` + `children`. Vắng (fake/test cũ) ⇒ như false/null. */
+  docType?: readonly string[] | null;
+  nest?: boolean;
+  docs?: boolean;
   valueMin: number | null;
   valueMax: number | null;
   /** Gap #10: cột ngày (`end_date` | `action_deadline`) + khoảng gồm hai đầu (`due` đã quy ra ngày ở use case); cả hai null = không lọc. */
@@ -68,6 +76,9 @@ export type ContractListPage<Row> = {
   items: Row[];
   parents: ListParentRef[];
   progress?: unknown[];
+  /** CR-101 DOC-model (khi `filter.docs`). */
+  docs?: unknown[];
+  children?: unknown[];
 };
 
 /** Gap #8: một hàng xuất tệp (cột hẹp, giá trị thô — định dạng ở domain `export.rules`); loại hàng đã quy ra tên. */

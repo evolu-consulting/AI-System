@@ -6,6 +6,18 @@ import type { ContractListFilter, ContractListInput } from "./ports";
 const base: ContractListInput = { sort: "updated_at", dir: "desc", page: 1, page_size: 20 };
 
 describe("toListFilter", () => {
+  it("CR-101: doc_type ⇒ lọc + docs; nest=1 ⇒ nest + docs", () => {
+    const a = toListFilter({ ...base, doc_type: ["framework"] });
+    const b = toListFilter({ ...base, nest: "1" });
+    expect([a.docType, a.nest, a.docs, b.docType, b.nest, b.docs]).toEqual([
+      ["framework"],
+      false,
+      true,
+      null,
+      true,
+      true,
+    ]);
+  });
   it("không lọc ⇒ mọi bộ lọc null; trang 1 ⇒ offset 0", () => {
     expect(toListFilter(base)).toEqual({
       status: null,
@@ -16,6 +28,9 @@ describe("toListFilter", () => {
       signerKeys: null,
       direction: null,
       kind: null,
+      docType: null,
+      nest: false,
+      docs: false,
       valueMin: null,
       valueMax: null,
       dateField: "end_date",

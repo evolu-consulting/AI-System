@@ -37,6 +37,15 @@ export type NewUploadedContract = {
   userId: string;
   /** M3 · chế độ flow: id lượt duyệt mở CÙNG câu CTE (HĐ `extracting`); null ⇒ không mở. */
   approvalId?: string | null;
+  /** CR-101 DOC-model: loại chứng từ (vắng ⇒ HĐ kinh tế). Bản cập nhật (K2) kế thừa từ bản cũ, bỏ qua giá trị này. */
+  doc?: UploadDoc;
+};
+/** CR-101 · `frameId` = id bản bất kỳ của chuỗi HĐ NT (repo quy về `root_id`). */
+export type UploadDoc = {
+  docType: "contract" | "framework" | "deal";
+  frameId: string | null;
+  creditLimit: number | null;
+  orderTerms: string | null;
 };
 export type UploadStatus = "extracting" | "extract_failed";
 
@@ -72,6 +81,8 @@ export type UploadErrorCode =
   | "FILE_TOO_LARGE"
   | "FILE_TYPE"
   | "PARENT_INVALID"
+  // CR-101 · HĐ NT gắn không có / không thấy / tenant khác (FK `contracts_frame_fk`)
+  | "FRAME_INVALID"
   | "UPLOAD_QUOTA"
   | "UPLOAD_QUOTA_UNAVAILABLE"
   | "DOCX_BUSY"

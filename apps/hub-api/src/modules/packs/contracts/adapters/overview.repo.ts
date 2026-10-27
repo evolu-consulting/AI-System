@@ -41,6 +41,7 @@ function moneyCtes(t: string, w: OverviewWindow) {
             floor((c.value::numeric * round(c.commission_pct * 100) + 5000) / 10000)::bigint) else c.value end as base
         from contracts.contracts c
         where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED})
+          and c.doc_type <> 'framework' -- CR-101: HĐ NT không tính doanh thu/đếm HĐ
           and c.deal is not null and c.id in (select contract_id from w)),
       -- 5.4a: mốc chính của HĐ trong k — MỘT lượt cửa sổ (Σ số tiền đã ghi, số mốc trống, hạng mốc trống); tách gom/sắp thành CTE
       -- riêng (đo: ước lượng 1 hàng ⇒ nested loop, 4 s) nên giữ một câu con.
