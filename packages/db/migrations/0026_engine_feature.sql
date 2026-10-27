@@ -6,7 +6,6 @@ INSERT INTO admin.features (key, name, description, icon, status)
 SELECT 'contracts-approval-engine', '{"vi": "Duyệt hợp đồng bằng quy trình", "en": "Contract approval on workflow engine"}'::jsonb,
        '{"vi": "Duyệt hợp đồng chạy trên engine quy trình (theo công ty)", "en": "Contract approval runs on the workflow engine (per company)"}'::jsonb,
        'workflow', 'on'
-WHERE EXISTS (SELECT 1 FROM admin.tenants)
 ON CONFLICT (key) DO NOTHING;
 --> statement-breakpoint
 INSERT INTO admin.feature_entitlements (feature_id, tenant_id)
