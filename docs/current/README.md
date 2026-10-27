@@ -3,7 +3,8 @@
 Mục đích: một chỗ sạch mô tả **hệ thống làm gì ngay bây giờ** (trên `platform/gd0`), để agent đọc thay vì lần qua nhiều spec/CR cũ. Đây là nguồn sự thật cho agent khi hỏi "hành vi hiện hành là gì". Không ghi kế hoạch, không ghi lịch sử.
 
 - **Lịch sử và lý do** nằm ở `docs/CHANGE-REQUESTS.md` (CR) và `docs/specs/<lát>/tasks.md` (quyết định trong lúc làm). Mỗi mục ở đây ghi nguồn (lát/CR) để truy ngược.
-- **Code thắng tài liệu.** Mục nào lệch code ⇒ sửa tài liệu này; chỗ chưa kiểm được ghi ở mục "Chưa rõ" cuối file, không đoán.
+- **Spec thắng (như OpenSpec).** Đây là hành vi đã duyệt; chỉ đổi qua Delta của lát hoặc CR. Code lệch ⇒ không tự sửa bên nào: đánh dấu `⚠ Lệch code: <file:dòng>` tại mục và đưa vào báo cáo cuối đợt để người dùng chốt (lỗi ⇒ sửa code; quyết định mới ⇒ Delta/CR). Chỗ chưa kiểm được ghi ở mục "Chưa rõ" cuối file, không đoán.
+- Ngoại lệ một lần: bản đầu (2026-10-27) được viết ngược từ code, nên phản ánh code tại thời điểm đó.
 - **Cách cập nhật:** mỗi lát có mục `## Delta (so với docs/current)` trong `tasks.md`; cuối đợt `docs-architect` gộp Delta vào đây và đánh dấu lát đã gộp (`docs/WORKFLOW.md` "Gộp docs/current cuối đợt"). Không sửa tay giữa đợt trừ khi sửa lỗi sự thật.
 - File ≤ 400 dòng; dài hơn thì tách theo khu vực.
 
