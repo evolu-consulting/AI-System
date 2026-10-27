@@ -1,6 +1,7 @@
 // Gap #10 · lọc ngày trong thanh công cụ: cột (hiệu lực đến | hạn chót) + cửa sổ (quá hạn, 30/60/90 ngày, khoảng tuỳ chọn). Trạng thái do
 // trang giữ trên URL; component chỉ hiển thị và gọi `onChange`.
 import { CONTRACT_DUE_PRESETS } from "@ai/contracts";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   type DateField,
@@ -24,8 +25,12 @@ export function DateFilterControl({
   onChange: (f: DateFilter) => void;
 }) {
   const { t } = useTranslation();
-  const mode = modeOf(value);
+  // "Khoảng tuỳ chọn" chưa có ngày nào không biểu diễn được trên URL ⇒ giữ cờ mở ở state cục bộ, nếu không ô Từ/Đến ngày không bao giờ hiện.
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const urlMode = modeOf(value);
+  const mode: Mode = urlMode === "" && rangeOpen ? "range" : urlMode;
   const setMode = (m: Mode) => {
+    setRangeOpen(m === "range");
     if (m === "") return onChange({ field: value.field });
     if (m === "range")
       return onChange({ field: value.field, from: value.from ?? "", to: value.to ?? "" });

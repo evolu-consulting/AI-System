@@ -374,6 +374,7 @@ a09ddb05443e744fa3e61bf7f7a533357553cb7b38859cae61e0699f71871f70  e2e/contracts-
 adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-web/dataset-v2g.ts
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts
 4227bd2a36bee3859d54a94298c4f56d5661b7d11029a1f54373d13029c4f04b  e2e/contracts-web/delivery-opts.cw.ts
+70e7bf79c52bcc520116c3a04cd64cda17d20085f0e8ec576ed5e91593fe8563  e2e/contracts-web/delivery-stock-409.cw.ts
 898475201c3dfcbe5e21da1134a72d447184a26dd256dff68a1e06bd24b47d9d  e2e/contracts-web/flow-editor.cw.ts
 62e310a506f44c0991b85d1e4ca299324b0c5592e04de6565022ba26986ea442  e2e/contracts-web/gap-a2-source-ask.cw.ts
 2c7484346642627c3d190d4b653d0123f64cbeeebe27fe9e015463b654059aac  e2e/contracts-web/gap-b-list.cw.ts
