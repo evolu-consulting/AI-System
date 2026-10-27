@@ -45,6 +45,6 @@ Unit rules (bảng §5.1 đã có V2-E, chỉ chỉnh); một int đường chí
 
 ## Việc còn lại
 - [x] 1 (theo cờ) · [x] 2 (`supplierScores`, gợi ý, TQ-04 API) · [x] 3 (không migration) · [x] 4 (theo cờ) · [x] 5 (`/reputation/switch-preview`) · [~] 6 (đo xong, ngưỡng 100 ms chưa đạt — có sẵn trước lát)
-- [ ] 7 nguồn Cần xử lý "Đánh giá đối tác" — sau DOC-legal.
+- [x] 7 nguồn Cần xử lý "Đánh giá đối tác" — làm ở lát MS-impact (`ratingSources` trong `todo.repo.ts`, bật theo cờ `v2e`).
 - [ ] Điều phối: gọi `GET /pack/contracts/reputation/switch-preview` (quản lý) trên prod, báo người dùng `changed`/`partners` TRƯỚC khi đặt `REPUTATION_ENGINE=v2e`.
 - [ ] Web (REP-v3-ui) chuyển Tổng quan khối đối tác sang `/reputation/attention` và bảng đối tác sang `/reputation/partners` khi `config.engine = v2e`.

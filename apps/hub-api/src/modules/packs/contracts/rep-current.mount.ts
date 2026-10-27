@@ -37,7 +37,8 @@ export function v2eReads(db: Db, d: Pick<RepCurrentDeps, "timeZoneOf" | "now">) 
   });
 }
 
-function hd8Reads(db: Db, d: Pick<RepCurrentDeps, "timeZoneOf" | "now">) {
+/** Use case đọc HD8 (phạm vi người dùng, RLS) — MS-impact dùng `editedScore`. */
+export function hd8Reads(db: Db, d: Pick<RepCurrentDeps, "timeZoneOf" | "now">) {
   return partnersUsecase({
     uow: packTenantOnly(createPackUow(db, KEY, (tx, t) => ({ partners: partnersRepo(tx, t) }))),
     timeZoneOf: safeTimeZone(d.timeZoneOf),

@@ -1,5 +1,6 @@
 // V2-F · HD-04 · mockup `confirmBox`: "Xác nhận xong" hỏi NGÀY thực tế; mốc trễ hạn (ngày thực tế > hạn) hỏi thêm LỖI của ai
-// (đối tác / mình / chưa rõ) — chỉ lỗi đối tác trừ điểm (V2-E). Gửi `POST /obligations/:id/settle`.
+// (đối tác / mình / chưa rõ) — chỉ lỗi đối tác trừ điểm (V2-E). Gửi `POST /obligations/:id/settle`. MS-impact: khối tác động thật
+// (`GET /obligations/:id/impact`) theo ngày + lỗi đang chọn.
 import type { ContractDeal, Milestone } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +10,7 @@ import { type Fault, useMilestoneWrites } from "../hooks/use-milestone-writes";
 import type { LinesEdit } from "../lib/delivery-lines";
 import { daysBetween } from "../lib/timeline";
 import { DeliveryLines } from "./DeliveryLines";
+import { ImpactPreview } from "./ImpactPreview";
 
 const FAULTS: readonly Fault[] = ["partner", "ours", "unknown"];
 
@@ -105,6 +107,8 @@ export function ConfirmBox({
             ? L("impactEarly", { n: -late })
             : L("impactOnTime")}
       </p>
+      {/* MS-impact: tác động THẬT do máy chủ tính (uy tín · kho · công nợ) trước khi bấm xác nhận. */}
+      <ImpactPreview id={m.id} at={at} fault={late > 0 ? fault : undefined} partner={partner} />
       <div className="flex gap-2">
         <button
           type="button"

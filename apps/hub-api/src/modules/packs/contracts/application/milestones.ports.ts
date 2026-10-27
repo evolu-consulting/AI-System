@@ -1,5 +1,6 @@
 // V2-A · HD-11: cổng repo mốc HĐ (lớp 2 — chỉ kiểu). Mỗi hàm = MỘT câu SQL trong tx `PackUow` (RLS tenant). Thứ tự khoá như
 // HD7 D7-15: hàng HĐ (`FOR NO KEY UPDATE`) TRƯỚC hàng mốc (`FOR UPDATE`).
+import type { RepDelta } from "@ai/contracts";
 import type { DbKind, Deal, Fault, Owner } from "../domain/milestones.rules";
 import type { DeliveryRepo } from "./delivery.ports";
 
@@ -22,6 +23,8 @@ export type MilestoneRow = {
   fault: Fault | null;
   postponed_to: string | null;
   source: "manual" | "ai" | "default" | "cks";
+  /** MS-impact: delta uy tín lưu trên dòng sổ xong đợt (null = chưa lưu / mốc mở). */
+  rep_delta?: RepDelta | null;
 };
 /** Mốc vừa ghi + đủ dữ liệu tính 5.4a (các mốc còn hiệu lực của HĐ + giá trị/hoa hồng) — cùng câu ghi. */
 export type MilestoneWritten = {

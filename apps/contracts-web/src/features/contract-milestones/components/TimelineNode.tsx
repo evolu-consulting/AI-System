@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
-import { milestonePoints, signed } from "../lib/points";
 import { type MilestoneState, metaOf, type TimelineNode as Node } from "../lib/timeline";
 
 /** Đường dọc nối các chấm (mockup `li::before`): nút đầu bắt đầu ở chấm, nút cuối dừng ở chấm. */
@@ -101,26 +100,23 @@ function Tags({ m, state, partner }: { m: Milestone; state: MilestoneState; part
   );
 }
 
-/** GAP-D2 · #15: điểm uy tín (+/−) của mốc đã xác nhận (mockup `.dl up|dn|z`). */
+/** MS-impact (thay ước lượng client GAP-D2): uy tín đối tác trước → sau do máy chủ tính lúc xác nhận (`rep_delta`); chưa lưu ⇒ không hiện. */
 function Points({ m, partner }: { m: Milestone; partner: string }) {
   const { t } = useTranslation();
-  const p = milestonePoints(m);
-  if (!p) return null;
-  if (p.kind === "pts") {
-    const tone = p.value > 0 ? "text-ok" : p.value < 0 ? "text-late" : "text-dim";
-    return (
-      <span
-        data-points={p.value}
-        title={t("contracts.vgaps.pts.tip", { name: partner })}
-        className={cn("tnum ml-auto rounded-md px-1.5 text-[12.5px] font-semibold", tone)}
-      >
-        {signed(p.value)}
-      </span>
-    );
-  }
+  const r = m.rep_delta;
+  if (!m.confirmed || !r) return null;
+  const a = r.before.score;
+  const b = r.after.score;
+  const d = (b ?? 0) - (a ?? 0);
+  const tone = d > 0 ? "text-ok" : d < 0 ? "text-late" : "text-dim";
+  const txt = (v: number | null) => (v === null ? "—" : String(v));
   return (
-    <span data-points={p.kind} className="ml-auto text-[12px] text-dim">
-      {t(p.kind === "mine" ? "contracts.vgaps.pts.mine" : "contracts.vgaps.pts.pending")}
+    <span
+      data-points={d}
+      title={t("contracts.msimpact.deltaTip", { name: partner, a: txt(a), b: txt(b) })}
+      className={cn("tnum ml-auto rounded-md px-1.5 text-[12.5px] font-semibold", tone)}
+    >
+      {txt(a)} → {txt(b)}
     </span>
   );
 }

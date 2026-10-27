@@ -10,6 +10,7 @@ import { compareGoods, priceGaps, priceLines, productList } from "../domain/good
 import type { Inspect } from "../domain/link-check.rules";
 import { localDate } from "../domain/local-time.rules";
 import {
+  aggKey,
   type Cfg,
   factsOf,
   onePerParty,
@@ -19,6 +20,7 @@ import {
   ratingsOf,
 } from "../domain/partners.rules";
 import type { QuoteCreate, RatingRequest, ScoringDraft } from "../domain/reputation.types";
+import { type Agg, emptyAgg, type Window, windowOf } from "../domain/scoring-agg.rules";
 import {
   defaultConfig,
   MANUAL_CHOICES,
@@ -111,10 +113,15 @@ function partnersCtx<L, F>(d: PartnersDeps<L, F>) {
       customer: cfgOf(stored.get("customer"), "customer"),
       supplier: cfgOf(stored.get("supplier"), "supplier"),
     };
-    const partners = (role: Role | null, over: Partial<Record<Role, Cfg>> = {}, all = false) =>
+    const partners = (
+      role: Role | null,
+      over: Partial<Record<Role, Cfg>> = {},
+      all = false,
+      aggs: PartnerData["aggs"] = data.aggs,
+    ) =>
       partnersOf({
         facts,
-        aggs: data.aggs,
+        aggs,
         names: data.names,
         cfgs: { ...cfgs, ...over },
         today: day,
@@ -150,6 +157,24 @@ function scoreReads<L, F>(d: PartnersDeps<L, F>, c: PartnersCtx) {
     return p;
   };
 
+  /**
+   * MS-impact: điểm HD8 của MỘT (đối tác, vai) trước → sau khi `edit` sửa đầu vào đã gom (xem trước xác nhận mốc). Cùng ba câu song song
+   * của `one` (HD8-NFR-01); không thấy đối tác ⇒ null hai phía.
+   */
+  const editedScore = async (
+    who: PackWho,
+    party: string,
+    role: Role,
+    edit: (a: Agg, w: Window) => Agg,
+  ) => {
+    const l = await c.load(who, undefined, [role]);
+    const key = aggKey(party, role);
+    const aggs = new Map(l.data.aggs);
+    aggs.set(key, edit(l.data.aggs.get(key) ?? emptyAgg(), windowOf(l.cfgs[role].rules, l.day)));
+    const pick = (rows: PartnerOut[]) => rows.find((p) => p.party === party) ?? null;
+    return { before: pick(l.partners(role)), after: pick(l.partners(role, {}, false, aggs)) };
+  };
+
   const ratings = async (who: PackWho, party: string, role: Role) => {
     const l = await c.load(who);
     if (!l.vis.parties.has(party)) throw new PartnersFail("not_found");
@@ -169,7 +194,7 @@ function scoreReads<L, F>(d: PartnersDeps<L, F>, c: PartnersCtx) {
       return e;
     });
   };
-  return { list, byRole, one, ratings, rate };
+  return { list, byRole, one, editedScore, ratings, rate };
 }
 
 /** `save_config`: chỉ quản lý (route kiểm `admin`); tăng version, lịch sử + ảnh chụp điểm mọi đối tác của vai (cả tenant). */

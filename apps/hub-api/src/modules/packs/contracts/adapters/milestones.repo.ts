@@ -16,7 +16,13 @@ export const msJson = (o: string) =>
   sql.raw(`jsonb_build_object('id', ${o}.id, 'contract_id', ${o}.contract_id, 'kind', ${o}.kind,
     'direction', ${o}.direction, 'title', ${o}.title, 'seq', ${o}.seq, 'due_date', ${o}.due_date, 'owner', ${o}.owner,
     'qty', ${o}.qty, 'delivery_pct', ${o}.delivery_pct, 'amount', ${o}.amount, 'status', ${o}.status, 'done_at', ${o}.done_at, 'fault', ${o}.fault,
-    'postponed_to', ${o}.postponed_to, 'source', ${o}.source)`);
+    'postponed_to', ${o}.postponed_to, 'source', ${o}.source,
+    'rep_delta', case when ${o}.status = 'done' then (select e.data -> 'impact' from contracts.partner_events e
+      where e.tenant_id = ${o}.tenant_id and e.obligation_id = ${o}.id and e.type in ('delivered', 'received', 'paid')
+        and e.data ? 'impact'
+        and not exists (select 1 from contracts.partner_event_voids v where v.tenant_id = e.tenant_id and v.event_id = e.id)
+      order by e.id desc limit 1) end)`);
+/* MS-impact: `rep_delta` = delta uy tín lưu trên dòng sổ xong đợt (chỉ mục `partner_events_obligation_idx`; mốc mở ⇒ không dò). */
 /** Phần 5.4a của một mốc (đủ để chia giá trị). */
 const peerJson = (o: string) =>
   sql.raw(`jsonb_build_object('id', ${o}.id, 'kind', ${o}.kind, 'direction', ${o}.direction, 'amount', ${o}.amount,

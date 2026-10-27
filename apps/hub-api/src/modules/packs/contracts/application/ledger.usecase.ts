@@ -24,6 +24,13 @@ type Deps = {
   uow: PackUow<LedgerRepos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
+  /** MS-impact: delta uy tín (trước → sau, engine hiện hành) tính NGAY trước tx xác nhận, lưu trên dòng sổ; vắng ⇒ không lưu. */
+  repDelta?: (
+    who: PackWho,
+    id: string,
+    at: string,
+    fault: Fault | null | undefined,
+  ) => Promise<unknown>;
 };
 type Repo = LedgerRepos["ledger"];
 
@@ -63,6 +70,8 @@ type SettleIn = { at?: string | null; amount?: number | null; fault?: Fault | nu
 /** Đã trả/thu một đợt. */
 async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
   const at = b.at ?? (await todayOf(d)(who));
+  // Luật 4c: tính delta (các tx chỉ đọc, thấy đợt còn mở vì tx này chưa commit) CHỒNG với khoá + kho; chờ ngay trước câu ghi.
+  const impactP = d.repDelta ? d.repDelta(who, id, at, b.fault) : Promise.resolve(null);
   return d.uow.tenant(who, async ({ ledger: r, delivery, notify }) => {
     const ob = await openObligation(r, id);
     const late = daysLate(at, ob.due_date);
@@ -79,6 +88,7 @@ async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
       // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
       fault: late > 0 ? (b.fault ?? "unknown") : null,
       delivered: dv?.rows ?? [],
+      impact: await impactP,
     });
     if (dv?.notice) await notify.enqueue([dv.notice]);
     return dv?.outcome ? { ...out, delivery: dv.outcome } : out;

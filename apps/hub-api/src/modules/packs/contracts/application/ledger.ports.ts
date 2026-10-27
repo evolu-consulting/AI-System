@@ -48,6 +48,8 @@ export type SettleWrite = {
   fault: Fault | null;
   /** V2-D: SL đã giao theo dòng HĐ, ghi CÙNG câu (`milestone_items.delivered`); [] = không có. */
   delivered: { item_id: string; qty: string; planned: string | null }[];
+  /** MS-impact: điểm uy tín trước → sau do máy chủ tính lúc xác nhận (lưu ở `partner_events.data.impact`); null = không có. */
+  impact?: unknown;
 };
 export type PostponeWrite = {
   id: string;

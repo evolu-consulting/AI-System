@@ -106,6 +106,22 @@ export async function confirmDelivery(
   return { rows, outcome, notice: deliveryNotice(outcome, L, milestoneId) };
 }
 
+/** MS-impact: dòng nhập/xuất mà `confirmDelivery` SẼ ghi (xem trước, không ghi); bảng SL sai/vượt ⇒ [] (lệnh xác nhận báo lỗi). */
+export function plannedMoves(
+  L: DeliveryLoad,
+  milestoneId: string,
+): ReturnType<typeof deliveryMoves> {
+  try {
+    const items = L.items.map(toItem);
+    const plan = new Map(L.plan.map((p) => [p.item_id, qtyOf(p.qty)]));
+    const ctx = ctxOf(L, milestoneId);
+    return deliveryMoves(deliveryLines(items, plan, ctx), items, compsOf(L), ctx);
+  } catch (e) {
+    if (e instanceof DeliveryError) return [];
+    throw e;
+  }
+}
+
 /** gap-c #14: "kho X: a → b" + giá vốn BQ trước → sau, gửi người phụ trách HĐ; khoá idempotency theo mốc (xác nhận lại không nhân đôi). */
 function deliveryNotice(
   o: DeliveryOutcome,

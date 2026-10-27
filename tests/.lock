@@ -391,6 +391,7 @@ dc211ab745610af95d58521904bd68bc8570fe6e84555a339cc3535ebabdab3c  e2e/contracts-
 83df8323650bd7f07180418882f0391f3962b815970d7cd466a80f5e3c76b2a1  e2e/contracts-web/k2-versions.cw.ts
 283d0f120fba32e3ad11fcdefd5537db42e427335a4b29b87546220bbfdd4b3b  e2e/contracts-web/k3a-lock.cw.ts
 c095414a6a55748ee249538524c3b95847131f686fc31124260eb0c62fffb5b0  e2e/contracts-web/k4-reopen.cw.ts
+854ef2ec90d6e8ac511ce5112b0f6752f748de75212dea3f67fc8dd8b68b2fb6  e2e/contracts-web/ms-impact.cw.ts
 e19e4cd3751801dad5faf7998d3305e65247a3ad56944921b58928abb55d3a1c  e2e/contracts-web/org-visibility.cw.ts
 6d66139c75fd2f00954eefbd50d195fe70d4f8b8fcc8035806f2a7e437055151  e2e/contracts-web/overview.cw.ts
 26d96178d24630392b5a9fccdebe5e1dae3a895f5790d77b9d2e9020173f0ef4  e2e/contracts-web/playwright.config.ts
@@ -965,6 +966,8 @@ a848c6ca744516a8f903fbdb9c748f6b11290c7773393e1077108458cc7d15bf  tests/acceptan
 77b90cc87ad9291fead0146e71810acf6b92c9a1311490115025d4272f6a8f43  tests/acceptance/M4/updated-by.int.test.ts
 ae5456da6a71a95d078bf01cb19068ac49145b85f7d722746897b311896a33fc  tests/acceptance/M4/usage-csv.int.test.ts
 984e86e1ba8e7352f77b40b32ae08d61356acd0409c4d0ada343033bf9e789ea  tests/acceptance/M4/usage.int.test.ts
+a045e5e5a89c7017e6965c9675589cbb586b9e53600fcdd37cc3b0062c85845e  tests/acceptance/MS-impact/impact.int.test.ts
+cc318ac5958e3392bf4783d68d4b3227aa09843750f4bb563541d635b4283f86  tests/acceptance/MS-impact/perf/impact.perf.int.test.ts
 9271b5f430a909df6ca2b9c45b8d20c1e50a99b0c3b7a62f0ec1a6182e685d95  tests/acceptance/N1/_support/load.ts
 2dd48d72ed43f98461b9a14122220cc580e3b226567709bd12767b689c4e1029  tests/acceptance/N1/_support/n1.ts
 d4175931dabdba7a8d8a792c475a54156da079392c839808080aef978cab53ca  tests/acceptance/N1/_support/zip.ts

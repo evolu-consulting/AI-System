@@ -31,6 +31,7 @@ import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
 import { DetailLead } from "../components/DetailLead";
 import { HistoryPanel } from "../components/HistoryPanel";
+import { LegalBanner } from "../components/LegalBanner";
 import { ManagePanel } from "../components/ManagePanel";
 import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
@@ -165,6 +166,8 @@ function ContractBody({
           />
           {/* CR-101 DOC-ui-frame: HĐ nguyên tắc ⇒ khối "Chứng từ con"; giao dịch ⇒ nút "Nâng thành hợp đồng". */}
           <FramePanel c={c} write={write} />
+          {/* MS-impact phụ · DOC-legal: cảnh báo pháp lý (chỉ cảnh báo, không chặn). */}
+          <LegalBanner warning={c.legal_warning} />
           {c.doc?.doc_type === "deal" && write && !sup && (
             <div className="mb-4 flex justify-end">
               <PromoteDeal id={id} />

@@ -22,6 +22,7 @@ export * from "./lock";
 export * from "./manage";
 export * from "./milestones";
 export * from "./mywork";
+export * from "./obligation-impact";
 export * from "./overview";
 export * from "./partner-roles";
 export * from "./partners";

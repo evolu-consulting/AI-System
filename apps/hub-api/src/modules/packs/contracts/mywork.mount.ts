@@ -16,6 +16,7 @@ import { myWork } from "./application/mywork.usecase";
 import { overviewUsecase } from "./application/overview.usecase";
 import type { MyWorkApproval } from "./domain/mywork.types";
 import { safeTimeZone } from "./reminders.mount";
+import { envRepEngine } from "./rep-current.mount";
 
 const KEY = "contracts";
 const repos = (tx: Tx, t: string) => ({
@@ -48,6 +49,10 @@ export function myWorkModule(
     }),
   });
   // V2-K · Tổng quan + Cần xử lý 8 nguồn (cùng PackUow).
-  r.route("/", overviewRoutes(view, overviewUsecase({ uow, timeZoneOf: tz, now })));
+  // REP-v3 mục 7: cờ `REPUTATION_ENGINE` (đọc mỗi yêu cầu) bật nguồn "Đánh giá đối tác".
+  r.route(
+    "/",
+    overviewRoutes(view, overviewUsecase({ uow, timeZoneOf: tz, now, engine: envRepEngine })),
+  );
   return r;
 }

@@ -62,6 +62,8 @@ export const TODO_KINDS = [
   "market_price",
   // CR-101 DOC-legal · giao dịch đứng riêng giá trị lớn còn mốc tiền mở (cần kế toán xác nhận).
   "legal",
+  // MS-impact · Câu 11 · mốc trễ xác nhận lỗi "Chưa rõ" ⇒ xác minh sau 3 ngày.
+  "verify_fault",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
 export const TODO_ACTIONS = ["skip", "done"] as const;

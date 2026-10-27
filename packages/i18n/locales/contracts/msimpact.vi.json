@@ -1,0 +1,20 @@
+{
+  "contracts": {
+    "msimpact": {
+      "title": "Tác động khi xác nhận",
+      "loading": "Đang tính tác động…",
+      "failed": "Chưa tính được tác động — vẫn xác nhận được.",
+      "rep": "Uy tín {{name}}: {{a}} → {{b}}",
+      "notCounted": "Ngày này ngoài khoảng tính điểm — uy tín không đổi.",
+      "pendingFault": "Lỗi chưa rõ: chưa trừ điểm; sẽ nhắc xác minh sau 3 ngày.",
+      "stock": "Kho {{name}}: {{a}} → {{b}}",
+      "debt": {
+        "receive": "Còn phải thu của HĐ: {{a}} → {{b}} đ",
+        "pay": "Còn phải trả của HĐ: {{a}} → {{b}} đ"
+      },
+      "level": { "good": "TỐT", "fair": "KHÁ", "watch": "CHÚ Ý", "new": "MỚI" },
+      "noScore": "chưa có điểm",
+      "deltaTip": "Uy tín {{name}} lúc xác nhận: {{a}} → {{b}} (máy chủ tính)"
+    }
+  }
+}

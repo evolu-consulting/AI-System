@@ -40,5 +40,5 @@ Unit `legal-warn.rules.test.ts` (bảng điều kiện); một int (deal 6 tri�
 
 ## Việc còn lại
 - [x] 1–5 (backend + ô ngưỡng CompanyPane). Ghi chú: ngưỡng 5 triệu là diễn giải luật thuế, cần kế toán xác nhận (nằm trong UI chữ).
-- [ ] UI hiển thị `legal_warning` (contract-detail) + nhãn danh sách: lát UI khác.
+- [~] UI hiển thị `legal_warning`: banner chi tiết xong ở MS-impact (`contract-review/components/LegalBanner.tsx`); nhãn danh sách: lát UI khác.
 - [ ] e2e ô ngưỡng Cài đặt (cuối đợt).

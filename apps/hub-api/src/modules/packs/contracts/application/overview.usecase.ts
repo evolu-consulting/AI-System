@@ -9,6 +9,7 @@ import {
   type OverviewPeriod,
   overviewRange,
 } from "../domain/overview.rules";
+import type { RepEngine } from "../domain/rep-current.rules";
 import {
   buildTodo,
   parseTodoKey,
@@ -31,6 +32,8 @@ type Deps = {
   uow: PackUow<OverviewRepos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
+  /** REP-v3 mục 7: `v2e` ⇒ bật nguồn "Đánh giá đối tác"; vắng ⇒ `hd8` (tắt). */
+  engine?: () => RepEngine;
 };
 
 export function overviewUsecase(d: Deps) {
@@ -54,6 +57,7 @@ export function overviewUsecase(d: Deps) {
         horizon: addDays(today, MYWORK_AHEAD_DAYS),
         tz,
         quarter: quarterWindow(today),
+        rating: d.engine?.() === "v2e",
       }),
     );
     return buildTodo(raw ?? [], today);

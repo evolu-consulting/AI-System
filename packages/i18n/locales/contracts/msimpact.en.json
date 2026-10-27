@@ -1,0 +1,20 @@
+{
+  "contracts": {
+    "msimpact": {
+      "title": "Impact of confirming",
+      "loading": "Calculating impact…",
+      "failed": "Impact unavailable — you can still confirm.",
+      "rep": "{{name}} reputation: {{a}} → {{b}}",
+      "notCounted": "This date is outside the scoring window — reputation unchanged.",
+      "pendingFault": "Fault unknown: no points deducted; a verification reminder follows in 3 days.",
+      "stock": "Stock {{name}}: {{a}} → {{b}}",
+      "debt": {
+        "receive": "Still to collect on this contract: {{a}} → {{b}} VND",
+        "pay": "Still to pay on this contract: {{a}} → {{b}} VND"
+      },
+      "level": { "good": "GOOD", "fair": "FAIR", "watch": "WATCH", "new": "NEW" },
+      "noScore": "no score",
+      "deltaTip": "{{name}} reputation at confirmation: {{a}} → {{b}} (server-computed)"
+    }
+  }
+}

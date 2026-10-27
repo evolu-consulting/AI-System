@@ -4,6 +4,7 @@ import { z } from "zod";
 import { MilestonePlanSchema } from "./delivery";
 import { nfcText } from "./fields";
 import { IsoDay, LedgerMoney } from "./ledger";
+import { RepDeltaSchema } from "./obligation-impact";
 
 export const CONTRACT_DEALS = ["buy", "sell", "referral"] as const;
 export const ContractDealSchema = z.enum(CONTRACT_DEALS);
@@ -99,6 +100,8 @@ export const MilestoneSchema = z.strictObject({
   fault: z.enum(MILESTONE_FAULTS).nullable(),
   postponed_to: IsoDay.nullable(),
   source: z.enum(["manual", "ai", "default", "cks"]),
+  /** MS-impact: điểm uy tín đối tác trước → sau do máy chủ tính lúc xác nhận (vắng/null = chưa lưu, vd mốc xác nhận trước lát). */
+  rep_delta: RepDeltaSchema.nullable().optional(),
 });
 export type Milestone = z.infer<typeof MilestoneSchema>;
 

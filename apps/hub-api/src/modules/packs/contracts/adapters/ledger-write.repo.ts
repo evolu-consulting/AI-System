@@ -97,7 +97,7 @@ function obligationWrites(
         from u, jsonb_to_recordset(${json(w.delivered)}) as x(item_id uuid, qty text, planned text)
         on conflict (tenant_id, milestone_id, contract_item_id) do update set delivered = excluded.delivered,
           updated_at = now()),
-      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, ...(w.fault ? { data: { fault: w.fault } } : {}) })},
+      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, data: { ...(w.fault ? { fault: w.fault } : {}), ...(w.impact ? { impact: w.impact } : {}) } })},
       ${auditCte(t, "obligation_settled", w.by, sql`jsonb_build_object('obligation_id', u.id, 'at', ${w.at}::text, 'amount', ${w.amount}::bigint)`)}
       select ${obJson("u")} as j from u`,
     );

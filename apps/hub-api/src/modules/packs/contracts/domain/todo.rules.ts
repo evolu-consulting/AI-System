@@ -17,6 +17,7 @@ export const TODO_KINDS = [
   "missing_file",
   "market_price",
   "legal",
+  "verify_fault",
 ] as const;
 export type TodoKind = (typeof TODO_KINDS)[number];
 export const TODO_ACTIONS = ["skip", "done"] as const;
@@ -32,7 +33,8 @@ export type RawKind =
   | "rating_quarter"
   | "missing_file"
   | "market_price"
-  | "legal";
+  | "legal"
+  | "verify_fault";
 export const RAW_KINDS: readonly RawKind[] = [
   "legal",
   "milestone",
@@ -44,6 +46,7 @@ export const RAW_KINDS: readonly RawKind[] = [
   "rating_quarter",
   "missing_file",
   "market_price",
+  "verify_fault",
 ];
 
 export type RawTodo = {
@@ -101,6 +104,7 @@ const PRI: Record<TodoKind, number> = {
   rating_quarter: 2,
   market_price: 2,
   legal: 2,
+  verify_fault: 2,
   missing_file: 3,
 };
 

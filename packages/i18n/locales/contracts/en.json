@@ -299,7 +299,8 @@
           "rating_quarter": "Rate",
           "missing_file": "Missing file",
           "market_price": "Market price changed",
-          "legal": "Legal"
+          "legal": "Legal",
+          "verify_fault": "Verify late-milestone fault"
         },
         "when": {
           "late": "{{n}} days late",

@@ -63,6 +63,7 @@ export function toMilestone(r: MilestoneRow, effective: Map<string, number | nul
     fault: r.fault,
     postponed_to: r.postponed_to,
     source: r.source,
+    rep_delta: r.rep_delta ?? null,
   };
 }
 

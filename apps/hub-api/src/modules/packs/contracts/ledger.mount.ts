@@ -14,11 +14,13 @@ import { ledgerReadRepo } from "./adapters/ledger-read.repo";
 import { ledgerWriteRepo } from "./adapters/ledger-write.repo";
 import { milestonesRepo } from "./adapters/milestones.repo";
 import { milestonesRoutes } from "./adapters/milestones.routes";
+import { obligationImpactRoutes } from "./adapters/obligation-impact.routes";
 import { overdueRepo } from "./adapters/overdue.repo";
 import { deliveryReads } from "./application/delivery.usecase";
 import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
 import { milestoneCommands } from "./application/milestones.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
+import { obligationImpactOf } from "./obligation-impact.mount";
 import { safeTimeZone } from "./reminders.mount";
 import { envRepEngine } from "./rep-current.mount";
 
@@ -73,7 +75,15 @@ export function ledgerModule(
     });
   }
   const uow = packTenantOnly(createPackUow(db, KEY, ledgerRepos));
-  const deps = { uow, timeZoneOf: safeTimeZone(d.timeZoneOf), now: d.now ?? (() => new Date()) };
+  const now = d.now ?? (() => new Date());
+  // MS-impact: xem trước tác động + delta uy tín lưu trên dòng sổ khi xác nhận (engine hiện hành).
+  const impact = obligationImpactOf(db, { timeZoneOf: d.timeZoneOf, now });
+  const deps = {
+    uow,
+    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    now,
+    repDelta: impact.deltaFor,
+  };
   const r = ledgerRoutes(view, {
     cmd: ledgerCommands(deps),
     reads: ledgerReads(deps),
@@ -81,5 +91,6 @@ export function ledgerModule(
   });
   r.route("/", milestonesRoutes(view, milestoneCommands({ uow }))); // V2-A · thêm/sửa/xoá mốc
   r.route("/", deliveryRoutes(view, deliveryReads({ uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
+  r.route("/", obligationImpactRoutes(view, impact)); // MS-impact · xem trước tác động xác nhận mốc
   return r;
 }

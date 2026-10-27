@@ -36,7 +36,66 @@ const k = (kind: string, id: string, day: string) =>
 export type { TodoWindow };
 
 const sources = (t: string, w: TodoWindow) =>
-  sql`with ${dueSources(t, w)}, ${fileSources(t, w)}, ${legalSource(t)}`;
+  sql`with ${dueSources(t, w)}, ${fileSources(t, w)}, ${legalSource(t)}, ${ratingSources(t, w)}, ${verifyFaultSource(t, w)}`;
+
+/** CD-05 "Nhắc đánh giá khi": `score_configs_v2` phạm vi `settings`, khoá `rating_remind` (mảng end|quarter); vắng ⇒ cả hai (mockup). */
+const REMIND = (
+  t: string,
+  on: string,
+) => sql`coalesce((select s.config -> 'rating_remind' from contracts.score_configs_v2 s
+    where s.tenant_id = ${t}::uuid and s.scope = 'settings'), '["end", "quarter"]'::jsonb) ? ${on}`;
+
+/**
+ * REP-v3 mục 7 (CR-101b, BA v2.0 §5.1 chấm sao bật lại): "Đánh giá đối tác" — sau HĐ (mốc cuối xong ≤ 30 ngày, chưa chấm từ đó) và
+ * sau quý (30 ngày đầu quý). Chỉ khi `w.rating` (engine `v2e`; `hd8` ⇒ ghi sao 410 ⇒ tắt). Văn bản SQL cố định (cờ là tham số).
+ * Khôi phục nguyên văn V2-K (gỡ ở U3 f68179df).
+ */
+const ratingSources = (t: string, w: TodoWindow) => {
+  const q = w.quarter;
+  const on = w.rating === true;
+  return sql`
+  fin as (select o.contract_id, max(o.done_at) as last from contracts.obligations o
+    where ${on}::boolean and o.tenant_id = ${t}::uuid and o.status = 'done' and o.done_at >= ${w.today}::date - 30
+      and o.kind <> 'renewal'
+    group by o.contract_id),
+  rt as (select c.id, c.partner_key, f.last, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from fin f
+      join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = f.contract_id
+    where c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null and c.partner_key is not null
+      and c.doc_type <> 'framework' and ${REMIND(t, "end")}
+      and not exists (select 1 from contracts.obligations o where o.tenant_id = ${t}::uuid and o.contract_id = c.id
+        and o.status = 'open' and o.kind <> 'renewal')
+      and not exists (select 1 from contracts.score_ratings r where r.tenant_id = ${t}::uuid and r.party_key = c.partner_key
+        and r.by_user = ${ME} and r.at >= f.last::timestamptz)
+      and ${notDismissed(t, sql`${k("rating", "c.id", "f.last")}`)}
+    order by f.last desc, c.id limit ${LIM}::int),
+  rq as (select count(distinct c.partner_key)::int as n,
+      (array_agg(distinct ${PARTY("c")}) filter (where ${PARTY("c")} is not null))[1:3] as names
+    from contracts.contracts c
+    where ${on && q !== null}::boolean and ${REMIND(t, "quarter")} and c.tenant_id = ${t}::uuid and c.kind = 'contract'
+      and c.status in (${CONFIRMED}) and c.partner_key is not null and c.doc_type <> 'framework'
+      and coalesce(c.start_date, c.confirmed_at::date, c.created_at::date) <= ${q?.prevEnd ?? null}::date
+      and coalesce(c.end_date, c.start_date, c.confirmed_at::date, c.created_at::date) >= ${q?.prevStart ?? null}::date
+      and not exists (select 1 from contracts.score_ratings r where r.tenant_id = ${t}::uuid and r.party_key = c.partner_key
+        and r.by_user = ${ME} and r.at >= ${q?.start ?? null}::date::timestamptz)
+      and ${notDismissed(t, sql`'rating_quarter:' || ${ME}::text || ':' || ${q?.start ?? null}::text`)})`;
+};
+
+/** Ngày nhắc xác minh lỗi "Chưa rõ" sau khi xác nhận mốc trễ (Câu 11). */
+export const VERIFY_FAULT_AFTER_DAYS = 3;
+/** Cửa sổ quét (ngày xác nhận) — việc cũ hơn coi như đã bỏ (giữ câu theo chỉ mục ngày, Luật 4c). */
+export const VERIFY_FAULT_WINDOW_DAYS = 90;
+/**
+ * MS-impact · Câu 11: mốc trễ xác nhận với lỗi "Chưa rõ" (chưa trừ điểm) ⇒ việc "Xác minh lỗi mốc trễ" hiện SAU 3 ngày kể từ ngày xác
+ * nhận (hạn = ngày xong + 3). Khoá Bỏ qua/Đã xong = `verify_fault:<id mốc>:<ngày xong + 3>`.
+ */
+const verifyFaultSource = (t: string, w: TodoWindow) => sql`
+  vf as (select o.id, o.contract_id, o.title, o.done_at, o.done_at + ${VERIFY_FAULT_AFTER_DAYS}::int as due
+    from contracts.obligations o
+    where o.tenant_id = ${t}::uuid and o.status = 'done' and o.fault = 'unknown'
+      and o.done_at <= ${w.today}::date - ${VERIFY_FAULT_AFTER_DAYS}::int
+      and o.done_at >= ${w.today}::date - ${VERIFY_FAULT_WINDOW_DAYS}::int
+      and ${confirmedOf("o", t)} and ${notDismissed(t, sql`${k("verify_fault", "o.id", `(o.done_at + ${VERIFY_FAULT_AFTER_DAYS})`)}`)}
+    order by o.done_at desc, o.id limit ${LIM}::int)`;
 
 /** CR-101 DOC-legal (Câu 8): giao dịch đứng riêng (deal, không thuộc HĐ NT) có tổng ≥ ngưỡng Cài đặt (0 = tắt) mà còn mốc tiền mở.
  *  Điều kiện PHẢI khớp `legalWarning` (domain/legal-warn.rules.ts). Khoá Bỏ qua = `legal:<id>:<ngày tạo>`. */
@@ -86,7 +145,7 @@ const dueSources = (t: string, w: TodoWindow) => sql`
     where g.tenant_id = ${t}::uuid and g.user_id = ${ME} and g.status <> 'done' and g.subject_kind = 'renewal'
     order by g.due_at, g.id limit ${LIM}::int)`;
 
-/** HĐ thiếu file + cảnh báo giá. CR-097 U3: bỏ việc "Đánh giá đối tác" (hết ô chấm sao, R41). */
+/** HĐ thiếu file + cảnh báo giá. ("Đánh giá đối tác" gỡ ở U3 — bật lại theo cờ ở `ratingSources`, REP-v3 mục 7.) */
 const fileSources = (t: string, w: TodoWindow) => sql`
   mf as (select c.id, (c.created_at at time zone 'UTC')::date as day, c.fields, c.number, c.title, c.direction,
       c.seller, c.buyer from contracts.contracts c
@@ -101,7 +160,10 @@ const fileSources = (t: string, w: TodoWindow) => sql`
     order by a.day desc, a.id limit ${LIM}::int)`;
 
 /** Mọi nguồn ⇒ MỘT mảng hàng đồng dạng (`RawTodo`). */
-const payload = (t: string) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) as j from (
+const payload = (
+  t: string,
+  w: TodoWindow,
+) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) as j from (
   select jsonb_build_object('kind', 'milestone', 'id', m.id, 'due', m.due_date, 'title', coalesce(m.title, ${TITLE("c")}),
       'sub', ${TITLE("c")}, 'party', ${PARTY("c")}, 'amount', m.amount, 'contract_id', m.contract_id, 'milestone_id', m.id,
       'direction', m.direction) as j
@@ -131,11 +193,21 @@ const payload = (t: string) => sql`select coalesce(jsonb_agg(x.j), '[]'::jsonb) 
       'party', ${PARTY("c")}, 'amount', c.total, 'contract_id', c.id) from lg c
   union all
   select jsonb_build_object('kind', 'market_price', 'id', a.id, 'due', a.day, 'title', a.name, 'sub', a.detail,
-      'party', a.supplier_name, 'amount', a.price, 'product_id', a.product_id) from pa a) x`;
+      'party', a.supplier_name, 'amount', a.price, 'product_id', a.product_id) from pa a
+  union all
+  select jsonb_build_object('kind', 'rating', 'id', c.id, 'due', c.last, 'title', ${PARTY("c")}, 'sub', ${TITLE("c")},
+      'party', ${PARTY("c")}, 'party_key', c.partner_key, 'contract_id', c.id) from rt c
+  union all
+  select jsonb_build_object('kind', 'rating_quarter', 'id', ${ME}, 'due', ${w.quarter?.start ?? null}::date, 'count', r.n,
+      'title', ${w.quarter?.prevStart ?? null}::text, 'sub', array_to_string(r.names, ', ')) from rq r where r.n > 0
+  union all
+  select jsonb_build_object('kind', 'verify_fault', 'id', v.id, 'due', v.due, 'title', coalesce(v.title, ${TITLE("c")}),
+      'sub', ${TITLE("c")}, 'party', ${PARTY("c")}, 'contract_id', v.contract_id, 'milestone_id', v.id)
+    from vf v left join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = v.contract_id) x`;
 
 export function todoRepo(tx: Tx, t: string) {
   return {
-    list: (w: TodoWindow) => one<RawTodo[]>(tx, sql`${sources(t, w)} ${payload(t)}`),
+    list: (w: TodoWindow) => one<RawTodo[]>(tx, sql`${sources(t, w)} ${payload(t, w)}`),
     /** Bỏ qua / Đã xong: việc suy ra ⇒ ghi khoá của riêng mình (đặt lại = cập nhật). */
     dismiss: async (key: string, action: TodoAction) => {
       await tx.execute(sql`insert into contracts.todo_dismissals (tenant_id, user_id, item_key, action)

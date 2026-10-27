@@ -13,6 +13,8 @@ export type TodoWindow = {
   horizon: string;
   tz: string;
   quarter: { start: string; prevStart: string; prevEnd: string } | null;
+  /** REP-v3 mục 7: nguồn "Đánh giá đối tác" (sau HĐ + sau quý) chỉ khi engine `v2e` (chấm sao mở); vắng ⇒ tắt. */
+  rating?: boolean;
 };
 export type TodoRepo = {
   list(w: TodoWindow): Promise<RawTodo[]>;

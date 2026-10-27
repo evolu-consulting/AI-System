@@ -4,6 +4,7 @@ import type {
   DeliveryView,
   MilestoneCreate,
   MilestonePatch,
+  ObligationImpact,
   StockCheckOut,
   StockCheckRequest,
 } from "@ai/contracts";
@@ -28,5 +29,16 @@ export const checkStock = (body: StockCheckRequest) =>
   api<StockCheckOut>(`${BASE}/stock/check`, { method: "POST", body });
 
 export type Fault = "partner" | "ours" | "unknown";
+/** MS-impact: xem trước tác động THẬT (máy chủ tính, không ghi) theo ngày thực tế + lỗi. */
+export const getImpact = (
+  id: string,
+  q: { at: string; fault?: Fault | undefined },
+  signal?: AbortSignal,
+) => {
+  const p = new URLSearchParams({ actual_on: q.at, ...(q.fault ? { fault: q.fault } : {}) });
+  return api<ObligationImpact>(`${BASE}/obligations/${encodeURIComponent(id)}/impact?${p}`, {
+    ...(signal ? { signal } : {}),
+  });
+};
 export const settleMilestone = (id: string, body: { at: string; fault?: Fault }) =>
   api<unknown>(`${BASE}/obligations/${encodeURIComponent(id)}/settle`, { method: "POST", body });

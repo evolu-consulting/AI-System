@@ -24,6 +24,7 @@ const TONE: Record<TodoItem["kind"], TagTone> = {
   missing_file: "grey",
   market_price: "act",
   legal: "act",
+  verify_fault: "soon", // MS-impact · Câu 11
 };
 
 function Body({ i }: { i: TodoItem }) {
