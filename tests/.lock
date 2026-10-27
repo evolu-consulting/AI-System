@@ -523,6 +523,8 @@ f857603f22fa521cdd7a58f936b351583f33e4a8a128f8d7b19371fd76ef35a1  tests/acceptan
 d434e09c410726267a31ac21af6f154373050beee54f8e1e58c0ed25f67d2e3c  tests/acceptance/CR-055/commands-features.int.test.ts
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptance/D1/backfill.int.test.ts
+33e10ae4e09e45be719c400d7e021dd1057e98302242fe834b45b642a9aab395  tests/acceptance/DOC-model/doc-model.int.test.ts
+ffe096bf1386418554a9279c602cff1cfcd69ef316733f169e797049e2d877c2  tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts
 50ac7867889f650dc720f36e1a383c721a2747945b62e05e91fc1b1bb84460fe  tests/acceptance/FB1/_fb1.ts
 9275fa0236540e3666b6f5e0738e35359042d7ad82bea355ae6b1e1b3652ceb4  tests/acceptance/FB1/_fb1room.ts
 b481f4e21ecc4879f886290fc1e4d30811f5cf63d8f1dd9e8e3e28fa20a0147f  tests/acceptance/FB1/_fbfake.ts
