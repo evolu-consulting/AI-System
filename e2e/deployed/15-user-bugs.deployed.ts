@@ -143,6 +143,7 @@ async function uploadContract(name: string): Promise<string> {
     mimeType: "text/markdown",
     buffer: Buffer.from(CONTRACT_MD, "utf8"),
   });
+  await page.getByTestId("upload-confirm").click(); // CR-101 DOC-ui-gaps: hộp chọn loại chứng từ (mặc định HĐ kinh tế)
   await page.waitForURL(UUID, { timeout: 60_000 });
   const id = UUID.exec(page.url())?.[1] ?? "";
   expect(id).not.toBe("");
@@ -186,6 +187,7 @@ test.describe("15 lỗi người dùng báo", () => {
       mimeType: "text/markdown",
       buffer: Buffer.from(CONTRACT_MD, "utf8"),
     });
+    await page.getByTestId("upload-confirm").click(); // CR-101 DOC-ui-gaps: hộp chọn loại chứng từ
     await page.waitForURL(UUID, { timeout: 60_000 });
     cid = UUID.exec(page.url())?.[1] ?? "";
     expect(cid).not.toBe("");

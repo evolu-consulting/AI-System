@@ -427,8 +427,8 @@ dad0322f4859b4f1d64bce547f32e2733df5454fb347830aa3f847f39f2ab1a1  e2e/deployed/1
 1618f0ea7689e22603d289f8a98689c2606928b642024e95a4047fe77aeaaf29  e2e/deployed/12-han-muc-duyet.deployed.ts
 39a729b78d82532b0a3b7d033a0732130898f1a3c4f1acee724e5aaf369ade4b  e2e/deployed/13-chat-dify-tool.deployed.ts
 a8d34055841f7db2f7c423ddf3c082d2ad61db8b667443352e1fe10fa81db534  e2e/deployed/14-app-perm-demo.deployed.ts
-e8a410b26c21fd0d218d93ea74f4046a05cf57a36cdaf3bb79b60a425c2e7fad  e2e/deployed/15-user-bugs.deployed.ts
-00402e7b5dac8c884b85bbba7d99a7a30a36fef62a131595c2edf853c9794934  e2e/deployed/16-upload-quota-popup.deployed.ts
+20b3e44fdc4b75fa93236b2488831bcfd177fe319ebd71943fc161bfcfd598b8  e2e/deployed/15-user-bugs.deployed.ts
+d0099bff71699c0e7c9979a4310b55e9a0b872cfd869115a26487fc6a342175a  e2e/deployed/16-upload-quota-popup.deployed.ts
 0c0a73abae021decea50c050b4b048b83d805a004c069b5dffbfcea465f84def  e2e/deployed/17-delivery-stock-409.deployed.ts
 2475e7d568b76dd74a40bea6f31eef0b3f52a3cb9465e8ee9452e526da12e3e6  e2e/deployed/_support.ts
 1c63c4ad1250687114fe46b60911821123b8c5e7c559df3d42561e528f1bcee4  e2e/deployed/deployed.config.ts

@@ -31,6 +31,7 @@ test("[popup hết lượt] 429 UPLOAD_QUOTA ⇒ popup một lần, dừng hàng
     { name: `${TAG}-a.pdf`, mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 a") },
     { name: `${TAG}-b.pdf`, mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 b") },
   ]);
+  await page.getByTestId("upload-confirm").click(); // CR-101 DOC-ui-gaps: hộp chọn loại chứng từ
   const dialog = page.getByRole("dialog", { name: "Đã hết lượt tải hợp đồng hôm nay" });
   await expect(dialog).toContainText("Công ty đã dùng hết 30 lượt tải lên trong ngày");
   await dialog.getByRole("button", { name: "Đã hiểu" }).click();
