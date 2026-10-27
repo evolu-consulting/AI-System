@@ -20,9 +20,12 @@ import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
 import { shortName } from "~/features/contracts-list/lib/list-model";
+import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
+import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
+import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
 import { ContractTxBlock } from "~/features/transactions/components/ContractTxBlock";
 import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
@@ -161,6 +164,13 @@ function ContractBody({
             onCancel={info.confirmSave.cancel}
             onConfirm={(links) => void info.confirmSave.confirmLinks(links)}
           />
+          {/* CR-101 DOC-ui-frame: HĐ nguyên tắc ⇒ khối "Chứng từ con"; giao dịch ⇒ nút "Nâng thành hợp đồng". */}
+          <FramePanel c={c} write={write} />
+          {c.doc?.doc_type === "deal" && write && !sup && (
+            <div className="mb-4 flex justify-end">
+              <PromoteDeal id={id} />
+            </div>
+          )}
           <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
           <ManagePanel c={c} write={write} />
           {c.status === "extract_failed" ? (
@@ -191,6 +201,7 @@ function ContractBody({
           {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
           {/* Bỏ "Nguồn hàng & lãi" khỏi chi tiết HĐ (người dùng 2026-10-23); feature `sourcing` giữ nguyên, chưa gắn. */}
           <ContractLog contractId={id} status={c.status} />
+          {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
           <ContractTxBlock contractId={id} write={write} />
           <HistoryPanel id={id} />
           {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}

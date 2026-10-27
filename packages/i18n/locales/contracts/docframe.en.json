@@ -1,0 +1,72 @@
+{
+  "contracts": {
+    "docframe": {
+      "type": { "contract": "Contract", "framework": "Framework agreement", "deal": "Deal" },
+      "belongs": "under framework agreement",
+      "restricted": "Framework agreement (no access)",
+      "fileSigned": "Signed file:",
+      "fileDeal": "File:",
+      "noFile": "none",
+      "children": "Child documents",
+      "stage": { "not_started": "Not yet effective", "active": "In effect", "expired": "Expired" },
+      "value": "Total ordered (sum of children)",
+      "count": "Documents",
+      "limit": "Credit limit",
+      "noLimit": "No limit set",
+      "used": "{{pct}}% of limit used",
+      "overLimit": "over limit",
+      "outside": "Outside term",
+      "outsideHint": "This document's date is outside the framework agreement term (warning only)",
+      "outsideWarn": "{{n}} child documents have dates outside the framework agreement term.",
+      "empty": "No child documents yet. Use \"Add to timeline\" to add or attach existing ones.",
+      "detach": "Detach",
+      "add": "Add to timeline",
+      "addContract": "Contract (upload, auto-attached)",
+      "addDeal": "Deal (prefilled from framework)",
+      "attachExisting": "Attach existing document",
+      "attachTitle": "Attach existing documents",
+      "attachHint": "Pick one or more. They must have the same partner and direction as the framework agreement.",
+      "attachSearch": "Search by name or number (2+ characters)",
+      "attachNone": "No matching documents.",
+      "attachSubmit": "Attach",
+      "diary": "Timeline",
+      "diaryEmpty": "Nothing yet.",
+      "milestoneDone": "Done",
+      "priceList": "Agreed price list",
+      "promote": {
+        "button": "Promote to contract",
+        "title": "Promote to contract",
+        "hint": "Choose the signed contract file and enter the contract number. The deal keeps its id, milestones and stock; the contract is locked afterwards.",
+        "file": "Signed contract file",
+        "number": "Contract number",
+        "submit": "Promote to contract",
+        "done": "Promoted to contract"
+      },
+      "log": {
+        "title": "Edit history",
+        "field": {
+          "title": "Title",
+          "number": "Number",
+          "source": "Source",
+          "partner_name": "Partner",
+          "start_date": "Start date",
+          "end_date": "End date",
+          "total_value": "Value",
+          "payment_terms": "Payment terms",
+          "doc_type": "Document type",
+          "file_id": "File"
+        }
+      },
+      "err": {
+        "invalid": "This document cannot be attached (framework agreements and appendices cannot, or you cannot see it).",
+        "partnerMismatch": "The document must have the same partner and direction (buy/sell) as the framework agreement.",
+        "milestoneKind": "A framework agreement only has \"Renewal reminder\" and \"Other\" milestones.",
+        "hasChildren": "The framework agreement still has child documents, so its type cannot change. Detach them first.",
+        "needsFile": "Choose the signed contract file.",
+        "needsNumber": "Enter the contract number.",
+        "notADeal": "This document is not a deal, so it cannot be promoted.",
+        "forbidden": "You do not have permission to do this."
+      }
+    }
+  }
+}

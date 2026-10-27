@@ -26,6 +26,8 @@ type Props = {
   onClose: () => void;
   onSaved: () => void;
   onError: (e: unknown) => void;
+  /** DOC-ui-frame R44: loại mốc cho phép (HĐ nguyên tắc chỉ Nhắc gia hạn + Khác); vắng ⇒ đủ 7 loại. */
+  kinds?: readonly MilestoneKind[];
 };
 
 function Field({
@@ -58,13 +60,17 @@ export function MilestoneDialog({
   onClose,
   onSaved,
   onError,
+  kinds = KINDS,
 }: Props) {
   const { t } = useTranslation();
   const { addMilestone, editMilestone, removeMilestone } = useMilestoneWrites();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cdetail.${k}`, o);
-  const [d, setD] = useState<MsDraft>(() =>
-    edit ? draftOfMilestone(edit) : newDraft(deal, today, L("kind.delivery")),
-  );
+  const [d, setD] = useState<MsDraft>(() => {
+    if (edit) return draftOfMilestone(edit);
+    const d0 = newDraft(deal, today, L("kind.delivery"));
+    const k0 = kinds[0];
+    return k0 && !kinds.includes(d0.kind) ? withKind(d0, k0, deal, L(`kind.${k0}`), false) : d0;
+  });
   const [titleEdited, setTitleEdited] = useState(!!edit);
   const [busy, setBusy] = useState(false);
   const [bad, setBad] = useState<string | null>(null);
@@ -107,7 +113,7 @@ export function MilestoneDialog({
               }}
               className="field"
             >
-              {KINDS.map((k) => (
+              {kinds.map((k) => (
                 <option key={k} value={k}>
                   {L(`kind.${k}`)}
                 </option>

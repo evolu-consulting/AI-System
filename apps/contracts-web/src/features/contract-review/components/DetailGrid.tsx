@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";
 import { Timeline } from "~/features/contract-milestones/components/Timeline";
+import { FrameDiary } from "~/features/frame-panel/components/FrameDiary";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { AiMilestonesPanel } from "./AiMilestonesPanel";
 import { InfoPanel } from "./InfoPanel";
@@ -81,6 +82,7 @@ export function DetailGrid({
             deal={dealOf(c)}
             contractId={c.id}
             write={write && !c.locked}
+            priceList={c.doc?.doc_type === "framework"}
           />
         )}
       </div>
@@ -93,6 +95,8 @@ export function DetailGrid({
             disabled={!canSave}
             onChange={info.setRow}
           />
+        ) : c.doc?.doc_type === "framework" ? (
+          <FrameDiary c={c} partner={partner} write={write} today={today} />
         ) : (
           showTimeline && (
             <Timeline c={c} partner={partner} write={write} locked={c.locked} today={today} />

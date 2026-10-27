@@ -67,11 +67,14 @@ export function ProductsPanel({
   deal,
   contractId,
   write,
+  priceList = false,
 }: {
   items: readonly ContractItem[];
   deal: ContractDeal;
   contractId: string;
   write: boolean;
+  /** DOC-ui-frame R47: HĐ nguyên tắc ⇒ "Bảng giá thoả thuận · Không ảnh hưởng kho". */
+  priceList?: boolean;
 }) {
   const { t } = useTranslation();
   const [err, setErr] = useState<string | null>(null);
@@ -82,8 +85,12 @@ export function ProductsPanel({
   return (
     <Panel>
       <div className="flex flex-wrap items-center gap-3 border-b border-rule-soft px-5 py-3.5">
-        <h2 className="text-[15px] font-semibold">{L("products")}</h2>
-        <Tag tone={stockTone(effect)}>{t(`contracts.cform.stock.${effect}`)}</Tag>
+        <h2 className="text-[15px] font-semibold">
+          {priceList ? t("contracts.docframe.priceList") : L("products")}
+        </h2>
+        <Tag tone={stockTone(priceList ? "none" : effect)}>
+          {t(`contracts.cform.stock.${priceList ? "none" : effect}`)}
+        </Tag>
         <span className="text-[12.5px] text-dim">{L("lineCount", { n: items.length })}</span>
       </div>
       {err && (

@@ -29,5 +29,17 @@ Danh sách/nav/form chung (DOC-ui-list), cảnh báo pháp lý (DOC-legal hiển
 ## Test tối thiểu
 Unit lib thuần (tổng, % hạn mức, trộn dòng thời gian, lọc loại mốc); e2e viết không chạy.
 
+## Quyết định trong lúc làm (2026-10-27)
+- Trang chi tiết thật nằm ở `features/contract-review` (không có `features/contract-detail`): sửa `DetailLead` (nhãn loại + liên kết «thuộc HĐ nguyên tắc» / «HĐ nguyên tắc (không có quyền xem)» + dòng File ký / Tệp), `DetailGrid` (HĐ NT: `FrameDiary` thay `Timeline`, `ProductsPanel priceList`), `ContractReviewPage` (gắn `FramePanel`, `PromoteDeal`, `EditLogPanel`). `MilestoneDialog` thêm prop `kinds` (mặc định đủ 7 loại; HĐ NT = Nhắc gia hạn + Khác); DOC-legal gắn `LegalBanner` ở cùng trang ⇒ merge lát này trước.
+- `frame-panel/`: luật thuần `lib/frame-view.ts` (% hạn mức + vượt ⇒ cảnh báo không chặn, `mergeDiary` xen mốc/con theo ngày, `kindsFor`, `attachCandidates`, `docErrorText` ánh xạ FRAME_*/PROMOTE_*/NOT_A_DEAL ⇒ câu tiếng Việt, KHÔNG hiện thông điệp thô). `FramePanel` (giá trị Σ con, số chứng từ, hạn mức + thanh %, cảnh báo ngoài hiệu lực, gỡ liên kết `DELETE /:id/frame`), `AttachDialog` (tìm `nest=1`, chọn nhiều, `POST /:id/attach`; cùng đối tác + hướng do máy chủ kiểm ⇒ 422 hiện câu).
+- Diễn biến HĐ NT: danh sách chỉ đọc xen mốc + con; mốc sửa bằng bút (chỉ chưa xác nhận); KHÔNG có nút «Xác nhận xong» cho mốc nhắc gia hạn (chưa có yêu cầu).
+- `promote-deal/`: `PromoteDeal` (hộp: file ký + số HĐ bắt buộc ⇒ multipart `POST /:id/promote`, xong làm tươi chi tiết ⇒ HĐ khoá), `EditLogPanel` (dòng thời gian từ `GET /:id/edit-log`, nhãn trường). Sửa trực tiếp giao dịch dùng lại PATCH `/fields` sẵn có của trang (giao dịch không bị khoá).
+- Menu «Thêm vào diễn biến»: HĐ kinh tế / Giao dịch chỉ là liên kết `/contracts/new?frame=<id>&type=contract|deal`; form + đọc tham số `frame`/`type` thuộc DOC-ui-list. Gắn có sẵn + Mốc làm trọn ở lát này.
+- i18n: `locales/contracts/docframe.{vi,en}.json` đăng ký trong `packages/i18n/src/contracts-locales.ts` (chạm 1 chỗ chung; lát khác cũng thêm tệp sẽ xung đột nhẹ, ghép tay).
+
 ## Việc còn lại
-- [ ] 1–5.
+- [x] 1–3, 5 (UI + unit `frame-view.test.ts`, `edit-log.test.ts`; e2e `e2e/contracts-web/doc-frame.cw.ts` 5 ca xanh).
+- [x] 4 Mốc HĐ NT chỉ Nhắc gia hạn + Khác (lọc trong `MilestoneDialog` qua `kinds`).
+- [ ] TODO (API thiếu): «Nguồn» của giao dịch (`source`) không có trong `detail.doc` ⇒ dòng Tệp chỉ hiện tên tệp; «tổng đã thanh toán» của HĐ NT chưa có trường ⇒ chỉ hiện tổng đã đặt + số chứng từ. Cần DOC-model bổ sung `doc.source` / `summary.paid`.
+- [ ] TODO (DOC-legal): cảnh báo pháp lý chờ trường API; `LegalBanner.tsx` do lát DOC-legal gắn.
+- [ ] TODO (DOC-ui-list): trang `/contracts/new` đọc `?frame=&type=`; gỡ `ContractTxBlock` (G1 chỉ đọc).

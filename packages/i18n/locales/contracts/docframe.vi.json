@@ -1,0 +1,80 @@
+{
+  "contracts": {
+    "docframe": {
+      "type": {
+        "contract": "Hợp đồng kinh tế",
+        "framework": "Hợp đồng nguyên tắc",
+        "deal": "Giao dịch"
+      },
+      "belongs": "thuộc HĐ nguyên tắc",
+      "restricted": "HĐ nguyên tắc (không có quyền xem)",
+      "fileSigned": "File ký:",
+      "fileDeal": "Tệp:",
+      "noFile": "chưa có",
+      "children": "Chứng từ con",
+      "stage": {
+        "not_started": "Chưa hiệu lực",
+        "active": "Đang hiệu lực",
+        "expired": "Hết hiệu lực"
+      },
+      "value": "Tổng giá trị đã đặt (Σ chứng từ con)",
+      "count": "Số chứng từ",
+      "limit": "Hạn mức",
+      "noLimit": "Không đặt hạn mức",
+      "used": "Đã dùng {{pct}}% hạn mức",
+      "overLimit": "vượt hạn mức",
+      "outside": "Ngoài hiệu lực",
+      "outsideHint": "Ngày của chứng từ này nằm ngoài thời hạn HĐ nguyên tắc (chỉ cảnh báo, không chặn)",
+      "outsideWarn": "{{n}} chứng từ con có ngày nằm ngoài thời hạn hiệu lực của HĐ nguyên tắc.",
+      "empty": "Chưa có chứng từ con. Dùng \"Thêm vào diễn biến\" để thêm hoặc gắn chứng từ có sẵn.",
+      "detach": "Gỡ",
+      "add": "Thêm vào diễn biến",
+      "addContract": "Hợp đồng kinh tế (tải lên, tự gắn)",
+      "addDeal": "Giao dịch (điền sẵn từ HĐ nguyên tắc)",
+      "attachExisting": "Gắn chứng từ có sẵn",
+      "attachTitle": "Gắn chứng từ có sẵn",
+      "attachHint": "Chọn một hoặc nhiều chứng từ. Phải cùng đối tác và cùng hướng với HĐ nguyên tắc.",
+      "attachSearch": "Tìm theo tên hoặc số (từ 2 ký tự)",
+      "attachNone": "Không có chứng từ phù hợp.",
+      "attachSubmit": "Gắn",
+      "diary": "Diễn biến",
+      "diaryEmpty": "Chưa có diễn biến.",
+      "milestoneDone": "Đã xong",
+      "priceList": "Bảng giá thoả thuận",
+      "promote": {
+        "button": "Nâng thành hợp đồng",
+        "title": "Nâng thành hợp đồng",
+        "hint": "Chọn file hợp đồng đã ký và nhập số hợp đồng. Giao dịch giữ nguyên mã, mốc và kho; sau khi nâng hợp đồng được khoá.",
+        "file": "File hợp đồng đã ký",
+        "number": "Số hợp đồng",
+        "submit": "Nâng thành hợp đồng",
+        "done": "Đã nâng thành hợp đồng"
+      },
+      "log": {
+        "title": "Lịch sử sửa",
+        "field": {
+          "title": "Tên",
+          "number": "Số",
+          "source": "Nguồn",
+          "partner_name": "Đối tác",
+          "start_date": "Ngày bắt đầu",
+          "end_date": "Ngày kết thúc",
+          "total_value": "Giá trị",
+          "payment_terms": "Điều khoản thanh toán",
+          "doc_type": "Loại chứng từ",
+          "file_id": "Tệp"
+        }
+      },
+      "err": {
+        "invalid": "Chứng từ không hợp lệ để gắn (HĐ nguyên tắc không gắn được, phụ lục không gắn được, hoặc bạn không xem được).",
+        "partnerMismatch": "Chứng từ phải cùng đối tác và cùng hướng (mua/bán) với HĐ nguyên tắc.",
+        "milestoneKind": "HĐ nguyên tắc chỉ có mốc \"Nhắc gia hạn\" và \"Khác\".",
+        "hasChildren": "HĐ nguyên tắc còn chứng từ con nên không đổi loại được. Hãy gỡ các chứng từ con trước.",
+        "needsFile": "Cần chọn file hợp đồng đã ký.",
+        "needsNumber": "Cần nhập số hợp đồng.",
+        "notADeal": "Chứng từ này không phải giao dịch nên không nâng thành hợp đồng được.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này."
+      }
+    }
+  }
+}
