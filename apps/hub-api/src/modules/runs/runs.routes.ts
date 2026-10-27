@@ -21,11 +21,12 @@ import {
   surfaceOf,
 } from "@ai/contracts/chat";
 import { Hono } from "hono";
-import type { AuthUser, AuthVars } from "../../lib/auth.middleware";
+import type { AuthUser, AuthVars, ChatDock } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
 import { parseIdParam, parseJson } from "../../lib/http";
 import { normalizeAttachmentIds } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
+import { dockMessageAllowed } from "../chat-gate/chat-gate.rules";
 import type { ConversationService } from "../conversations/conversations.service";
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
 import { routeMessage } from "../mention/mention-parse.rules";
@@ -96,6 +97,19 @@ async function startFor(
   return runs.start(u, id, body, await p.mention(u, msg), o);
 }
 
+/** Tin dock bị giới hạn: `@`/`/`/`!`/file hoặc hội thoại không có dấu dock ⇒ 403 `CHAT_APP_DISABLED` (không ghi gì). */
+async function dockSendGuard(
+  dock: ChatDock | undefined,
+  conversations: ConversationService,
+  { u, id, body }: { u: AuthUser; id: string; body: SendMessageRequest },
+): Promise<void> {
+  if (!dock?.restricted) return;
+  const ok =
+    dockMessageAllowed(body.content, body.attachment_ids?.length ?? 0) &&
+    (await conversations.isDock(u, id));
+  if (!ok) throw appError("CHAT_APP_DISABLED");
+}
+
 /** E12 · mount dưới `/conversations` (cạnh route E5–E11). Kiểm sở hữu hội thoại trước khi parse body (404 trước 400). */
 export function sendMessageRoutes(
   conversations: ConversationService,
@@ -108,6 +122,8 @@ export function sendMessageRoutes(
     await conversations.get(c.var.user, id);
     const parsed = await parseJson(c, SendMessageRequestSchema);
     const u = c.var.user;
+    // chat-api-gate-fix · qua cổng NHỜ dock (công ty không có Chat AI): chỉ văn bản thường vào hội thoại tạo qua dock.
+    await dockSendGuard(c.var.chatDock, conversations, { u, id, body: parsed });
     // P-a D14 · `!key`/`!` sai ⇒ 202 `{process_run}` (không SSE, không lưu tin); `!!` ⇒ tin thường bỏ một `!`.
     const bang = p.processStart ? classifyBang(parsed.content) : NO_BANG;
     if (p.processStart && (bang.kind === "process" || bang.kind === "invalid")) {

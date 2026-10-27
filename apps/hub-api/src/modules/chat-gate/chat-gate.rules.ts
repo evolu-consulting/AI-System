@@ -2,6 +2,8 @@
 // `app-catalog.rules` (`TENANT_APP_FEATURES`: feature theo CÔNG TY, không theo nhóm/user; feature chưa tồn tại ⇒ mở;
 // platform_admin luôn được). Không I/O: đọc ảnh catalog trong cache cấu hình (0 SQL mỗi request).
 import type { Role } from "@ai/contracts";
+import { routeMessage } from "../mention/mention-parse.rules";
+import { classifyBang } from "../processes/core/bang.rules";
 
 /** Trùng `CHAT_APP_FEATURE` của admin-api (`app-catalog.rules.ts`). */
 export const CHAT_APP_FEATURE = "chat-app";
@@ -56,6 +58,18 @@ export function chatRouteKind(method: string, path: string): ChatRouteKind {
   if (method === "GET" && OPEN_RE.some((r) => r.test(path))) return "open";
   if (method === "POST" && DOCK_RE.some((r) => r.test(path))) return "dock";
   return "chat";
+}
+
+/**
+ * chat-api-gate-fix · tin dock của công ty không có Chat AI: CHỈ văn bản thường, không file. Từ chối `@tag`, `/lệnh`, `!quy
+ * trình` (kể cả `!` sai) — các lối này mở agent/lệnh/quy trình ngoài phạm vi trợ lý dock. Chuỗi thoát (`@@`, `//`, `!!`) là
+ * văn bản ⇒ cho qua.
+ */
+export function dockMessageAllowed(content: string, attachmentCount: number): boolean {
+  if (attachmentCount > 0) return false;
+  const b = classifyBang(content);
+  if (b.kind === "process" || b.kind === "invalid") return false;
+  return routeMessage(b.kind === "escaped" ? b.content : content).kind === "text";
 }
 
 /** Header `X-Ai-Surface` của dock trợ lý Sổ Hợp Tác. */

@@ -136,3 +136,58 @@ describe("chat-api-gate · chặn API Chat AI theo entitlement công ty", () => 
     expect(res.status).toBe(200);
   });
 });
+
+describe("chat-api-gate-fix · dock không là cửa sau của Chat AI", () => {
+  const dockConv = async (token: string): Promise<string> => {
+    const c = await call(hub, "POST", "/conversations", {
+      token,
+      body: { title: "Dock" },
+      headers: DOCK,
+    });
+    expect(c.status).toBe(201);
+    return c.json.id as string;
+  };
+
+  it("hội thoại tạo qua dock được đánh dấu surface=contracts", async () => {
+    const id = await dockConv(await sign(k, USERS.an));
+    const [row] = await sql`select surface from hub.conversations where id = ${id}`;
+    expect(row?.surface).toBe("contracts");
+  });
+
+  it("bypass cũ ⇒ 403: @agent, /lệnh, !quy trình, file đính kèm, hội thoại không phải dock", async () => {
+    const an = await sign(k, USERS.an);
+    const id = await dockConv(an);
+    for (const body of [
+      { content: "@helper soạn email" },
+      { content: "/han-muc-duyet 1 Mua X" },
+      { content: "!quy-trinh làm đi" },
+      { content: "Xem file", attachment_ids: [UNKNOWN] },
+    ]) {
+      const res = await call(hub, "POST", `/conversations/${id}/messages`, {
+        token: an,
+        body,
+        headers: DOCK,
+      });
+      expect({ body, ...errorOf(res) }).toEqual({ body, ...DISABLED });
+    }
+    // Hội thoại thường (không tạo qua dock) — header dock không mở được.
+    const plain = await call(hub, "POST", `/conversations/${R.anConv}/messages`, {
+      token: an,
+      body: { content: "Xin chào" },
+      headers: DOCK,
+    });
+    expect(errorOf(plain)).toEqual(DISABLED);
+  });
+
+  it("văn bản thường vào hội thoại dock ⇒ qua cổng (không 403)", async () => {
+    const an = await sign(k, USERS.an);
+    const id = await dockConv(an);
+    const res = await call(hub, "POST", `/conversations/${id}/messages`, {
+      token: an,
+      body: { content: "Tóm tắt hợp đồng đang xem" },
+      headers: DOCK,
+    });
+    expect(res.status).not.toBe(403);
+    expect(res.status).toBeLessThan(500);
+  });
+});

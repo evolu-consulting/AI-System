@@ -183,10 +183,13 @@ export function conversationService(db: Db) {
     get: (u: AuthUser, id: string): Promise<Conversation> =>
       scoped(u, async (tx, o) => toConversation(await requireLive(tx, o, id))),
     /** E6 */
-    create: (u: AuthUser, title: string): Promise<Conversation> =>
+    create: (u: AuthUser, title: string, surface?: "contracts"): Promise<Conversation> =>
       scoped(u, async (tx, o) =>
-        toConversation(await repo.insertConversation(tx, o, titled(title))),
+        toConversation(await repo.insertConversation(tx, o, { ...titled(title), surface })),
       ),
+    /** chat-api-gate-fix · hội thoại của người gọi tạo qua dock Sổ Hợp Tác. */
+    isDock: (u: AuthUser, id: string): Promise<boolean> =>
+      scoped(u, (tx, o) => repo.isDockConversation(tx, o, id)),
     /** E8 · không đổi tiêu đề flow (C1 plan §2.6). */
     rename: (u: AuthUser, id: string, title: string): Promise<Conversation> =>
       scoped(u, async (tx, o) => {

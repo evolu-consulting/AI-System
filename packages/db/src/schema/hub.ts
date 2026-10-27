@@ -215,6 +215,8 @@ export const conversations = hub.table("conversations", {
   // 0054 (niti-import2): hội thoại nhập từ app cũ = lưu trữ chỉ đọc (không tạo run mới)
   importSource: text("import_source"),
   archivedAt: ts("archived_at"),
+  // 0062 (chat-api-gate-fix): `contracts` = tạo qua dock trợ lý Sổ Hợp Tác; NULL = chat thường.
+  surface: text("surface"),
 });
 
 export const flows = hub.table("flows", {

@@ -47,7 +47,19 @@ Vòng nền (Orchestrator, runner, engine quy trình, worker) không đi qua HTT
 - Hằng `chat-app` lặp ở hub-api (`CHAT_APP_FEATURE`) — admin-api và hub-api không import chéo app; ghi chú trỏ nguồn.
 - `tenant_admin` của công ty bị thu hồi cũng bị chặn (như UI: chỉ còn Sổ Hợp Tác + Quản trị).
 
+## Sửa sau review (lát `chat-api-gate-fix`, lỗi Trung: dock là bypass)
+Header dock do client đặt ⇒ người có quyền đọc gói tạo hội thoại rồi gửi `@agent`, `/lệnh`, `!quy trình`, file. Sửa:
+- [x] Migration hub `0062_conv_surface`: `hub.conversations.surface` (NULL | `contracts`, CHECK).
+- [x] Cổng gắn `chatDock` khi route dock + header `contracts`: `POST /conversations` ⇒ hội thoại `surface='contracts'`;
+      qua cổng NHỜ dock (`restricted`) ⇒ `POST /conversations/:id/messages` chỉ nhận khi hội thoại có dấu dock (1 câu
+      theo PK) ∧ `dockMessageAllowed` (văn bản thường, không `@`/`/`/`!`, không file; chuỗi thoát `@@ // !!` là văn bản).
+      Sai ⇒ 403 `CHAT_APP_DISABLED`, không ghi gì. Công ty còn Chat AI: không giới hạn (chỉ đánh dấu).
+- Tin văn bản thường của dock đi đường không tag (agent mặc định/Orchestrator của tenant) như trước — đúng năng lực dock.
+- `POST /runs/:id/cancel` qua dock giữ như cũ: chỉ huỷ run của chính người gọi, không mở năng lực mới.
+
 ## Test
+- Unit fix: `dockMessageAllowed` (11 ca). Int fix: hội thoại dock có `surface`; bypass cũ (`@`, `/`, `!`, file, hội thoại
+  thường) ⇒ 403; văn bản thường vào hội thoại dock ⇒ qua cổng.
 - Unit: `chat-gate.rules.test.ts` (10 ca: luật entitlement, phân loại route chặn/không chặn/dock, verdict).
 - Int: `chat-gate.int.test.ts` (5 ca): tenant bị thu hồi ⇒ 403 trên 11 route chat chính, không ghi gì; tenant còn quyền ⇒
   200/201 như cũ; `/pack/contracts/me` + dock vẫn chạy cho tenant bị thu hồi; header dock không mở cho user ngoài nhóm gói;

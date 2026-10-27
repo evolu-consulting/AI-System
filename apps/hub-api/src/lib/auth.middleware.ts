@@ -10,8 +10,15 @@ import type { Logger } from "./logger";
 
 /** `exp` (giây epoch, optional — X2a D14) chỉ `/me/stream` dùng để đóng stream đúng lúc token hết hạn. */
 export type AuthUser = { userId: string; tenantId: string; role: Role; exp?: number };
+/**
+ * chat-api-gate-fix · cổng chat gắn khi request đi route dock với `X-Ai-Surface: contracts`: hội thoại tạo ra mang dấu
+ * `surface=contracts`; `restricted` = công ty không có Chat AI ⇒ chỉ gửi văn bản thường vào hội thoại có dấu đó.
+ */
+export type ChatDock = { restricted: boolean };
 /** Biến context middleware cần/gắn (AppVars của app là tập cha). */
-export type AuthVars = { Variables: { log: Logger; config?: ConfigCache; user: AuthUser } };
+export type AuthVars = {
+  Variables: { log: Logger; config?: ConfigCache; user: AuthUser; chatDock?: ChatDock };
+};
 
 const BEARER_RE = /^Bearer ([A-Za-z0-9._-]+)$/;
 

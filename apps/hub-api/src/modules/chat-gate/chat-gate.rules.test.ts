@@ -7,6 +7,7 @@ import {
   chatAppAllowed,
   chatGateVerdict,
   chatRouteKind,
+  dockMessageAllowed,
   isDockSurface,
 } from "./chat-gate.rules";
 
@@ -98,6 +99,19 @@ describe("chatGateVerdict", () => {
     expect(chatGateVerdict("chat", false, true)).toBe(false);
     expect(chatGateVerdict("dock", false, true)).toBe(true);
     expect(chatGateVerdict("dock", false, false)).toBe(false);
+  });
+  it("dock chỉ nhận văn bản thường không file (chặn @, /, !, file)", () => {
+    expect(dockMessageAllowed("Tóm tắt HĐ", 0)).toBe(true);
+    expect(dockMessageAllowed("@@không phải tag", 0)).toBe(true);
+    expect(dockMessageAllowed("//không phải lệnh", 0)).toBe(true);
+    expect(dockMessageAllowed("!!không phải quy trình", 0)).toBe(true);
+    expect(dockMessageAllowed("@helper x", 0)).toBe(false);
+    expect(dockMessageAllowed("@ x", 0)).toBe(false);
+    expect(dockMessageAllowed("/lenh x", 0)).toBe(false);
+    expect(dockMessageAllowed("!quy-trinh x", 0)).toBe(false);
+    expect(dockMessageAllowed("!", 0)).toBe(false);
+    expect(dockMessageAllowed("!!/lenh", 0)).toBe(true);
+    expect(dockMessageAllowed("Xem file", 1)).toBe(false);
   });
   it("chỉ header bề mặt `contracts` mới là dock", () => {
     expect(isDockSurface("contracts")).toBe(true);

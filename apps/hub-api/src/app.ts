@@ -30,7 +30,7 @@ import {
   X2A_PROTECTED_PREFIXES,
   type X2aMounted,
 } from "./app.x2a";
-import { type AuthUser, requireAuth } from "./lib/auth.middleware";
+import { type AuthUser, type ChatDock, requireAuth } from "./lib/auth.middleware";
 import { keepBlobBody } from "./lib/blob-body";
 import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
@@ -73,7 +73,13 @@ import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sourc
 
 /** `config` có khi app dựng kèm `db` (cache cấu hình, plan §4); `user` chỉ có sau `requireAuth` (`PROTECTED_PREFIXES`). */
 export type AppVars = {
-  Variables: { requestId: string; log: Logger; config?: ConfigCache; user: AuthUser };
+  Variables: {
+    requestId: string;
+    log: Logger;
+    config?: ConfigCache;
+    user: AuthUser;
+    chatDock?: ChatDock;
+  };
 };
 export type AppConfig = { version: string; corsOrigins: string[] };
 export type { AppDeps, HealthProbe };

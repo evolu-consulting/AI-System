@@ -67,10 +67,19 @@ export async function findConversation(
   return r ?? null;
 }
 
+/** chat-api-gate-fix · hội thoại còn sống của chủ có dấu dock `surface='contracts'` (một câu theo PK). */
+export async function isDockConversation(tx: Tx, o: Owner, id: string): Promise<boolean> {
+  const [r] = await tx
+    .select({ id: c.id })
+    .from(c)
+    .where(and(live(o), eq(c.id, id), eq(c.surface, "contracts")));
+  return r !== undefined;
+}
+
 export async function insertConversation(
   tx: Tx,
   o: Owner,
-  v: { title: string; titleNorm: string },
+  v: { title: string; titleNorm: string; surface?: "contracts" },
 ): Promise<ConversationRow> {
   const [r] = await tx
     .insert(c)
