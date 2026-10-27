@@ -62,6 +62,17 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
   `fbminio.tar` + `fbdata.tar` (volume MinIO + sqlite FileBox; **filebox + filebox-minio dừng vài giây** cho nhất quán rồi tự chạy lại; `QUIESCE=0` = tar nóng),
   `env`, `claude-home.tgz`, `admin-credentials.txt`, `MANIFEST.sha256`. Không in bí mật. Giữ 14 ngày + 8 tuần (bản mới nhất mỗi tuần). Lỗi ⇒ log `backups/backup.log`, exit ≠ 0.
 - Ngoài máy chủ: `OFFSITE_DIR=user@host:/path bash backup.sh` (rsync; thêm `OFFSITE_RSYNC_OPTS="-e 'ssh -i …'"`). Không đặt ⇒ in cảnh báo (bản sao chỉ nằm cùng máy).
+  Đích không nhận kết nối vào (máy Windows dev) ⇒ KÉO về: `pull-backup.ps1` (bản mới nhất → `F:\backups\sohoptac2`, giữ 14, thư mục chỉ user hiện tại đọc;
+  log `F:\workspace\tools\_logs\pull-backup.log`). Đặt lịch hằng ngày 10:15 giờ VN (sau backup 02:30 UTC) bằng Task Scheduler (xem "Lịch Windows" dưới).
+- Theo dõi từ ngoài: `uptime-check.ps1` (GET sohoptac./ai./ai-admin.; lỗi 2 lượt liền ⇒ cửa sổ `msg` + `F:\workspace\tools\_logs\uptime.log`), lịch mỗi 5 phút.
+  Máy chủ tự khởi động lại 00:16 UTC mỗi ngày (~3 phút) ⇒ có thể báo một lần rồi "hồi phục".
+- Lịch Windows (người dùng tự chạy một lần, PowerShell thường):
+```
+$d='F:\workspace\evolu-platform\deploy\prod-sohoptac2'
+Register-ScheduledTask sohoptac2-pull-backup -Action (New-ScheduledTaskAction powershell.exe "-NoProfile -WindowStyle Hidden -File `"$d\pull-backup.ps1`"") -Trigger (New-ScheduledTaskTrigger -Daily -At 10:15) -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable)
+Register-ScheduledTask sohoptac2-uptime -Action (New-ScheduledTaskAction powershell.exe "-NoProfile -WindowStyle Hidden -File `"$d\uptime-check.ps1`"") -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)) -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew)
+```
+- Đổi mật khẩu platform admin: `bash rotate-admin-pw.sh` trên máy chủ (sinh ngẫu nhiên, đổi qua /auth/change-password, ghi ADMIN_CREDENTIALS.txt 600, thử đăng nhập lại; không in). Đã chạy 2026-10-27.
 - `bash restore-test.sh` → khôi phục bản MỚI NHẤT vào project tạm `s2restore` (không cổng, volume `s2restore_*`), kiểm sha256, số hàng từng bảng khớp manifest,
   một object FileBox đúng hash, rồi gỡ sạch. Không đụng project/volume `sohoptac2`. exit 0 = đạt; log `backups/restore-test.log`.
 - Crontab (đã cài 2026-10-21 dưới user `evoc`; backup đầu 20261021T060509Z + restore-test đạt; cài lại: `crontab -e`):
