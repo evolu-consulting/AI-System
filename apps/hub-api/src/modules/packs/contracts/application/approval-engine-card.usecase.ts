@@ -78,6 +78,8 @@ export function engineView(d: EngineCardDeps) {
       a?.esignReason,
       may,
       a?.esignStale === true,
+      // esign-sweep2 · hạn ký / quá hạn / đã nhắc tính ở server (giờ server, không tin đồng hồ máy khách).
+      { at: a?.esignAt ?? null, remindedAt: a?.esignRemindedAt ?? null, now: new Date() },
     );
     return { ...engineCardView(await input(d, who, st)), esign };
   };

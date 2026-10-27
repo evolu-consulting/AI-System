@@ -22,11 +22,13 @@ import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
+import { esignSyncClaim } from "./adapters/esign-sync.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
 import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
 import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-sweep";
+import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 
@@ -90,8 +92,9 @@ export function esignModule(
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
+  const providers = registryOf(d.esign);
   const u = esignUsecase({
-    providers: registryOf(d.esign),
+    providers,
     uow,
     files: d.files,
     me: selfContactOf(db),
@@ -136,14 +139,19 @@ export function esignModule(
     flow,
     bindWriters,
     bindView: (v) => bindWriters(packWriters(db, v, "contracts")),
-    startSweep: esignSweepStarter(db, d.signal),
+    startSweep: esignSweepStarter(db, d.signal, esignSyncOf(db, providers, u)),
   };
 }
 type Writers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
 
 /** esign-sweep · phụ thuộc vòng nền bước Ký số (test gọi `sweepEsignOnce` trực tiếp với đồng hồ giả). */
-export function esignSweepDeps(db: Db, tenants: () => Promise<readonly string[]>): EsignSweepDeps {
+export function esignSweepDeps(
+  db: Db,
+  tenants: () => Promise<readonly string[]>,
+  sync?: EsignSyncDeps,
+): EsignSweepDeps {
   return {
+    ...(sync ? { sync } : {}),
     uow: createPackUow(db, "contracts", (tx: Tx, t: string) => ({
       esignSweep: esignSweepRepo(tx, t),
     })),
@@ -164,7 +172,7 @@ async function contractsTenants(view: PackAccessView): Promise<string[]> {
 
 /** esign-sweep · vòng nền mỗi `CONTRACTS_ESIGN_SWEEP_EVERY_MS` (mặc định 5'); chỉ ở `APP_ENV` development/production và
  *  `CONTRACTS_ESIGN_SWEEP` ≠ off (test gọi `sweepEsignOnce` trực tiếp). Trả hàm bật một lần khi có cổng quyền (`view`). */
-function esignSweepStarter(db: Db, signal: AbortSignal | undefined) {
+function esignSweepStarter(db: Db, signal: AbortSignal | undefined, sync: EsignSyncDeps) {
   let started = false;
   return (view: PackAccessView) => {
     const env = process.env.APP_ENV;
@@ -175,10 +183,28 @@ function esignSweepStarter(db: Db, signal: AbortSignal | undefined) {
     started = true;
     const every = Number(process.env.CONTRACTS_ESIGN_SWEEP_EVERY_MS);
     startEsignSweeper({
-      ...esignSweepDeps(db, () => contractsTenants(view)),
+      ...esignSweepDeps(db, () => contractsTenants(view), sync),
       everyMs: Number.isInteger(every) && every >= 1000 ? every : 300_000,
       ...(signal ? { signal } : {}),
     });
+  };
+}
+
+/** esign-sweep2 · pha đồng bộ nền: chọn phong bì của nhà cung cấp KHẢ DỤNG không demo (MỘT câu, role `contracts_job`) rồi đồng bộ qua
+ *  đường webhook/làm mới (`syncEnvelope`). Giới hạn theo env `CONTRACTS_ESIGN_SYNC_MAX` / `CONTRACTS_ESIGN_SYNC_MIN`. */
+export function esignSyncOf(
+  db: Db,
+  providers: ESignRegistry,
+  u: Pick<ESignUsecase, "syncEnvelope">,
+  env: Record<string, string | undefined> = process.env,
+): EsignSyncDeps {
+  const keys = providers.entries
+    .filter((e) => e.available && providers.get(e.key)?.demo === false)
+    .map((e) => e.key);
+  return {
+    ...esignSyncEnv(env),
+    claim: esignSyncClaim(db, () => keys),
+    run: u.syncEnvelope,
   };
 }
 

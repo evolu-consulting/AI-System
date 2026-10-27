@@ -57,6 +57,28 @@ const REASONS = new Set<string>([
   "VOIDED",
 ]);
 
+/** esign-sweep2 · mốc của lần gửi hiện tại (`esign_at`) + lần nhắc cuối (`esign_reminded_at`) + giờ server. */
+export type EsignTimes = { at: string | null; remindedAt: string | null; now: Date };
+
+/** esign-sweep2 · hạn ký = `esign_at + due_h` (chỉ khi phong bì đã gửi chờ ký); quá hạn khi `now ≥ hạn`; "đã nhắc" chỉ tính lần nhắc
+ *  của LẦN gửi hiện tại (mốc nhắc cũ hơn `esign_at` ⇒ của lần gửi trước, bỏ). */
+export function esignDue(
+  s: Pick<FlowEsignStep, "due_h">,
+  st: EsignStatus,
+  t: EsignTimes | undefined,
+): { due_at: string | null; overdue: boolean; reminded_at: string | null } {
+  const at = t?.at ? Date.parse(t.at) : Number.NaN;
+  if (!t || st !== "sent" || Number.isNaN(at))
+    return { due_at: null, overdue: false, reminded_at: null };
+  const due = at + s.due_h * 3_600_000;
+  const rem = t.remindedAt ? Date.parse(t.remindedAt) : Number.NaN;
+  return {
+    due_at: new Date(due).toISOString(),
+    overdue: t.now.getTime() >= due,
+    reminded_at: !Number.isNaN(rem) && rem >= at ? new Date(rem).toISOString() : null,
+  };
+}
+
 /** Ô bước Ký số trên thẻ duyệt: mẫu chụp không có bước ký ⇒ null; chưa tới ⇒ `pending`. "Gửi lại" chỉ khi cần quyết. */
 export function esignCard(
   steps: readonly FlowStep[] | null | undefined,
@@ -64,6 +86,7 @@ export function esignCard(
   reason: string | null | undefined,
   mayResend: boolean,
   stale = false,
+  times?: EsignTimes,
 ) {
   const s = esignStepOf(steps);
   if (!s) return null;
@@ -74,6 +97,7 @@ export function esignCard(
     status: st,
     reason: (reason && REASONS.has(reason) ? reason : null) as EsignReason | null,
     can_resend: (st === "needs_decision" || (st === "sending" && stale)) && mayResend,
+    ...esignDue(s, st, times),
   };
 }
 

@@ -50,7 +50,10 @@
         "resend": "Resend",
         "resent": "Sent for signature again.",
         "stillBlocked": "Not sent yet, see the reason on the e-signature step.",
-        "resendFail": "Could not resend."
+        "resendFail": "Could not resend.",
+        "dueAt": "Due: {{at}}",
+        "overdue": "Overdue",
+        "remindedAt": "Reminded at {{at}}"
       }
     }
   }

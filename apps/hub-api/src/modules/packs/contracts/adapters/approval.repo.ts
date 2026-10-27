@@ -18,6 +18,9 @@ import { settingsRepo } from "./approval-settings.repo";
 const OPEN = sql`('extracting', 'extract_failed', 'needs_review')`;
 const LIVE = sql`('extracting', 'level1', 'level2')`;
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
+/** Mốc giờ ⇒ ISO UTC (chuỗi, không phụ thuộc kiểu trả của driver). */
+const ISO = (col: string) =>
+  sql.raw(`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`);
 
 function runOfQ(tx: Tx, tid: string): ApprovalRepo["runOf"] {
   return async (id) => {
@@ -54,6 +57,8 @@ type StateRow = {
   a_es?: string | null;
   a_er?: string | null;
   a_est?: boolean | null;
+  a_eat?: string | null;
+  a_erm?: string | null;
   owner?: string | null;
   deal: string | null;
   v: unknown;
@@ -77,6 +82,8 @@ const toState = (r: StateRow): ApprovalState => ({
           esignStatus: r.a_es ?? null,
           esignReason: r.a_er ?? null,
           esignStale: r.a_est === true,
+          esignAt: r.a_eat ?? null,
+          esignRemindedAt: r.a_erm ?? null,
         }
       : null,
   owner: r.owner ?? null,
@@ -93,6 +100,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
         a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
         (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
+        ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm,
         c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c

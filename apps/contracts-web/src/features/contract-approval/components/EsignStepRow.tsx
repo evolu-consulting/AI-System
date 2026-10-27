@@ -1,5 +1,5 @@
 // esign-flow · dòng "Ký số" cuối tiến trình duyệt: chờ duyệt xong / đang gửi / đã gửi chờ ký / đã ký xong / cần quyết (lý do) +
-// "Gửi lại" cho người phụ trách HĐ khi cần quyết (hoặc mở lại HĐ ở trang chi tiết).
+// "Gửi lại" cho người phụ trách HĐ khi cần quyết (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
 import type { ContractApproval } from "@ai/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,9 @@ const DOT: Record<Esign["status"], string> = {
   completed: "border-ok bg-ok",
   needs_decision: "border-late bg-late",
 };
+
+/** esign-sweep2 · mốc giờ (ISO từ server) theo giờ máy người xem. */
+const when = (iso: string) => new Date(iso).toLocaleString();
 
 export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
   const { t } = useTranslation();
@@ -45,6 +48,28 @@ export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
           <b>{e.name}</b>
           <span className="text-caption text-dim">{k(`status.${e.status}`)}</span>
         </div>
+        {(e.due_at || e.reminded_at) && (
+          <div className="flex flex-wrap items-center gap-x-2 text-caption text-dim">
+            {e.due_at && (
+              <span data-esign="due-at">
+                {t("contracts.approval.esign.dueAt", { at: when(e.due_at) })}
+              </span>
+            )}
+            {e.overdue && (
+              <span
+                data-esign="overdue"
+                className="rounded border border-late px-1 font-medium text-late"
+              >
+                {k("overdue")}
+              </span>
+            )}
+            {e.reminded_at && (
+              <span data-esign="reminded-at">
+                {t("contracts.approval.esign.remindedAt", { at: when(e.reminded_at) })}
+              </span>
+            )}
+          </div>
+        )}
         {e.reason && (
           <div role="alert" className="text-caption text-late">
             {k(`reason.${e.reason}`)}

@@ -116,6 +116,12 @@ export const ContractApprovalSchema = z.strictObject({
       reason: z.enum(ESIGN_FLOW_REASONS).nullable(),
       /** Người xem bấm được "Gửi lại" (người phụ trách HĐ / owner gói) khi bước cần quyết. */
       can_resend: z.boolean(),
+      /** esign-sweep2 · hạn ký (`esign_at + due_h`, ISO) khi phong bì đã gửi chờ ký; vắng/null ⇒ không hiện. */
+      due_at: z.string().max(40).nullable().optional(),
+      /** esign-sweep2 · đã gửi chờ ký mà quá hạn (giờ server). */
+      overdue: z.boolean().optional(),
+      /** esign-sweep2 · lần nhắc người ký gần nhất của lần gửi hiện tại (ISO). */
+      reminded_at: z.string().max(40).nullable().optional(),
     })
     .nullable()
     .optional(),

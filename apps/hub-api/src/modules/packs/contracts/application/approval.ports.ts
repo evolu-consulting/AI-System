@@ -29,6 +29,9 @@ export type ApprovalState = ContractRunRef & {
     esignReason?: string | null;
     /** esign-flow-fix · `sending` kẹt quá hạn (Gửi lại được). */
     esignStale?: boolean;
+    /** esign-sweep2 · mốc lần gửi hiện tại + lần nhắc cuối (ISO UTC) ⇒ hạn ký / quá hạn / đã nhắc trên thẻ. */
+    esignAt?: string | null;
+    esignRemindedAt?: string | null;
   } | null;
   /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
   owner?: string | null;

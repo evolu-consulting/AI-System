@@ -3,10 +3,12 @@
 // SEND_FAILED — KHÔNG tự gửi lại (tiến trình cũ có thể đã gửi phong bì); (b) phong bì `sent` đến hạn nhắc ⇒ mốc `esign_reminded_at`;
 // (c) quá `due_h` ⇒ mốc `esign_escalated_at` (một lần mỗi lần gửi). Rồi (khi có chuyển cấp kèm Group) MỘT câu danh bạ + MỘT câu chuông
 // cho cả lô — chuông ghi trong tx của tenant ⇒ đúng tenant HĐ. Không gọi mạng nhà cung cấp (Luật 4c: chỉ trạng thái DB). Ngủ CHỈ
-// giữa các lượt. Chạy lại / nhiều instance: ghi có điều kiện ⇒ không nhắc/chuyển cấp trùng.
+// giữa các lượt. Chạy lại / nhiều instance: ghi có điều kiện ⇒ không nhắc/chuyển cấp trùng. esign-sweep2 · sau phần SQL, pha đồng bộ
+// phong bì với nhà cung cấp (`esign-sync.ts`, ngoài tx, có giới hạn) khi `d.sync` có.
 import type { NotifyInput, NotifyTxRepos } from "../../kit/application/notify";
 import type { PackSystemUow } from "../../kit/application/ports";
 import { ESIGN_SENDING_STALE_MIN } from "./esign-flow.usecase";
+import { type EsignSyncDeps, syncEsignOnce } from "./esign-sync";
 
 export type EsignSweptRow = {
   approvalId: string;
@@ -34,6 +36,8 @@ export type EsignSweepDeps = {
   now?: () => Date;
   limit?: number;
   warn?: (m: string, meta: Record<string, unknown>) => void;
+  /** esign-sweep2 · pha đồng bộ phong bì với nhà cung cấp (ngoài tx, sau phần SQL); vắng ⇒ không đồng bộ. */
+  sync?: EsignSyncDeps;
 };
 export type EsignSweepResult = {
   tenants: number;
@@ -41,6 +45,9 @@ export type EsignSweepResult = {
   reminded: number;
   escalated: number;
   bells: number;
+  /** esign-sweep2 · số phong bì đã hỏi nhà cung cấp / lỗi. */
+  synced: number;
+  syncFailed: number;
 };
 
 export const ESIGN_SWEEP_LIMIT = 200;
@@ -111,7 +118,15 @@ async function sweepTenant(d: EsignSweepDeps, t: string, now: Date) {
 export async function sweepEsignOnce(d: EsignSweepDeps, at?: Date): Promise<EsignSweepResult> {
   const now = at ?? d.now?.() ?? new Date();
   const ts = await d.tenants();
-  const sum = { tenants: ts.length, stale: 0, reminded: 0, escalated: 0, bells: 0 };
+  const sum = {
+    tenants: ts.length,
+    stale: 0,
+    reminded: 0,
+    escalated: 0,
+    bells: 0,
+    synced: 0,
+    syncFailed: 0,
+  };
   for (let i = 0; i < ts.length; i += PARALLEL) {
     const part = await Promise.all(
       ts.slice(i, i + PARALLEL).map((t) =>
@@ -130,6 +145,16 @@ export async function sweepEsignOnce(d: EsignSweepDeps, at?: Date): Promise<Esig
       sum.escalated += p.escalated;
       sum.bells += p.bells;
     }
+  }
+  if (d.sync) {
+    const s = await syncEsignOnce(d.sync, ts, now, d.warn).catch((e: unknown) => {
+      d.warn?.("contract-esign-sync-claim-failed", {
+        error: e instanceof Error ? e.name : "unknown",
+      });
+      return { checked: 0, failed: 0 };
+    });
+    sum.synced = s.checked;
+    sum.syncFailed = s.failed;
   }
   return sum;
 }

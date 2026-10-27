@@ -1,8 +1,7 @@
 // cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
 // duyệt xong/khoá + PDF; nhà cung cấp chỉ định hoặc mặc định công ty), xem trạng thái, "Ký ngay" (embedded, chỉ người ký công ty),
-// làm mới (một lần, không poll nền), huỷ, webhook (nhà cung cấp tự xác thực; map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào
-// FileBox idempotent. Mọi lệnh sau gửi dùng `provider` LƯU trên envelope (đổi mặc định không làm hỏng phong bì đang mở). Gọi mạng
-// NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
+// làm mới, huỷ, webhook + đồng bộ nền esign-sweep2 (map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào FileBox idempotent. Lệnh sau
+// gửi dùng `provider` LƯU trên envelope. Gọi mạng NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
 import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contracts";
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
 import { defaultSigners, type ESignStatus, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
@@ -245,6 +244,14 @@ export function esignUsecase(d: ESignDeps) {
     return pick?.mode === "text" ? pick.anchors : null;
   };
 
+  /** esign-sweep2 · đồng bộ MỘT phong bì đã biết tenant (webhook + vòng đồng bộ nền) qua cùng đường `sync` (hook `onStatus` khi xong). */
+  const syncEnvelope = async (tid: string, key: string, envelopeId: string): Promise<boolean> => {
+    const run: Run = (fn) => d.uow.system(tid, fn);
+    const row = await run((r) => r.esign.byEnvelope(envelopeId));
+    if (!row || row.provider !== key) return false;
+    await sync(tid, row, run);
+    return true;
+  };
   return {
     settings,
     state,
@@ -385,12 +392,9 @@ export function esignUsecase(d: ESignDeps) {
       if (!chk.envelopeId) return "ignored";
       const tid = await d.tenantOf(p.key, chk.envelopeId);
       if (!tid) return "ignored";
-      const run: Run = (fn) => d.uow.system(tid, fn);
-      const row = await run((r) => r.esign.byEnvelope(chk.envelopeId as string));
-      if (!row || row.provider !== p.key) return "ignored";
-      await sync(tid, row, run);
-      return "ok";
+      return (await syncEnvelope(tid, p.key, chk.envelopeId)) ? "ok" : "ignored";
     },
+    syncEnvelope,
   };
 }
 export type ESignUsecase = ReturnType<typeof esignUsecase>;

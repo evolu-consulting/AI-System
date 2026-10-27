@@ -1,7 +1,10 @@
 // esign-flow · Cài đặt › Quy trình duyệt: thêm bước "Ký số" (cuối luồng, một lần), chọn người ký cụ thể + đối tác ký trước, chọn
 // người duyệt cụ thể ở bước duyệt, Lưu gửi PUT đúng hình dạng; lỗi server USER_NOT_MEMBER hiện theo trường. Backend giả `page.route`.
+// esign-sweep2 · thẻ duyệt: bước Ký số đã gửi hiện "Hạn ký", nhãn "Quá hạn" và "Đã nhắc lúc" (VIẾT, CHƯA CHẠY — e2e chạy cuối đợt).
+import type { ContractApproval } from "@ai/contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
+import { contract, contractAsHub } from "./dataset-contract";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -138,4 +141,90 @@ test("owner: server từ chối người ký không thuộc công ty ⇒ lỗi t
   await expect(
     sign.getByText("Người này không thuộc công ty hoặc không có quyền sửa hợp đồng."),
   ).toBeVisible();
+});
+
+const SIGN_CARD = (e: Partial<NonNullable<ContractApproval["esign"]>>): ContractApproval => ({
+  mode: "engine",
+  run_id: D1,
+  run_status: "completed",
+  step: "done",
+  task_id: null,
+  can_act: false,
+  feedback: null,
+  steps: [
+    {
+      idx: 0,
+      key: "s0",
+      name: "Soạn & kiểm tra",
+      kind: "review",
+      status: "passed",
+      group_id: D1,
+      head_only: false,
+      escalated_group_id: null,
+      due_at: null,
+      escalated: false,
+      decided_by: null,
+      decided_at: null,
+      feedback: null,
+    },
+  ],
+  esign: {
+    key: "sign",
+    name: "Ký số hợp đồng",
+    status: "sent",
+    reason: null,
+    can_resend: false,
+    ...e,
+  },
+});
+
+async function installCard(page: Page, state: ContractApproval) {
+  const d = asHub("editor");
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("ai.locale", "vi");
+      localStorage.setItem("assistant:open", "0");
+    } catch {
+      /* storage bị chặn */
+    }
+  });
+  await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
+  await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
+  await page.route("**/pack/contracts/groups", (r) => json(r, 200, []));
+  await page.route("**/pack/contracts/contracts/**", (r) => {
+    const path = new URL(r.request().url()).pathname;
+    if (path.endsWith("/approval")) return json(r, 200, state);
+    return json(r, 200, contractAsHub());
+  });
+}
+
+test("thẻ duyệt: bước Ký số đã gửi quá hạn ⇒ Hạn ký + nhãn Quá hạn + Đã nhắc lúc", async ({
+  page,
+}) => {
+  await installCard(
+    page,
+    SIGN_CARD({
+      due_at: "2026-10-23T00:00:00.000Z",
+      overdue: true,
+      reminded_at: "2026-10-22T00:00:00.000Z",
+    }),
+  );
+  await page.goto(`/contracts/${contract.id}`);
+  const row = page.getByTestId("approval-step-esign");
+  await expect(row).toHaveAttribute("data-status", "sent");
+  await expect(row.locator("[data-esign=due-at]")).toContainText("Hạn ký:");
+  await expect(row.locator("[data-esign=overdue]")).toHaveText("Quá hạn");
+  await expect(row.locator("[data-esign=reminded-at]")).toContainText("Đã nhắc lúc");
+});
+
+test("thẻ duyệt: bước Ký số chưa quá hạn, chưa nhắc ⇒ chỉ Hạn ký", async ({ page }) => {
+  await installCard(
+    page,
+    SIGN_CARD({ due_at: "2099-01-01T00:00:00.000Z", overdue: false, reminded_at: null }),
+  );
+  await page.goto(`/contracts/${contract.id}`);
+  const row = page.getByTestId("approval-step-esign");
+  await expect(row.locator("[data-esign=due-at]")).toBeVisible();
+  await expect(row.locator("[data-esign=overdue]")).toHaveCount(0);
+  await expect(row.locator("[data-esign=reminded-at]")).toHaveCount(0);
 });

@@ -50,7 +50,10 @@
         "resend": "Gửi lại",
         "resent": "Đã gửi ký lại.",
         "stillBlocked": "Chưa gửi được, xem lý do ở bước Ký số.",
-        "resendFail": "Không gửi lại được."
+        "resendFail": "Không gửi lại được.",
+        "dueAt": "Hạn ký: {{at}}",
+        "overdue": "Quá hạn",
+        "remindedAt": "Đã nhắc lúc {{at}}"
       }
     }
   }
