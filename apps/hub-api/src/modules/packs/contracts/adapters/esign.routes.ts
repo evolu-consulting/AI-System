@@ -1,11 +1,11 @@
 // cf-esign-docusign · route ký số dưới `/pack/contracts` (trung lập nhà cung cấp). Quyền: xem trạng thái/tải bản đã ký = `read`
 // (ai đọc được HĐ — RLS M1); gửi ký/"Ký ngay"/làm mới/huỷ = `write` (owner/editor); bật/tắt ở Cài đặt = `admin` (owner).
-//   GET  /esign/settings                     {configured, enabled, provider, demo}
-//   PUT  /esign/settings                     {enabled}
+//   GET  /esign/settings                     {configured, enabled, provider, demo, providers[], default_provider}
+//   PUT  /esign/settings                     {enabled?, default_provider?} (esign-multi: default phải khả dụng ⇒ 422)
 //   GET  /contracts/:id/esign                trạng thái + người ký gợi ý
-//   POST /contracts/:id/esign                gửi ký {signers[]} (tuần tự)
+//   POST /contracts/:id/esign                gửi ký {signers[], provider?} (tuần tự; company = tài khoản gửi)
 //   POST /contracts/:id/esign/refresh        làm mới trạng thái (một lần)
-//   POST /contracts/:id/esign/sign-url       "Ký ngay" {return_url} ⇒ {url}
+//   POST /contracts/:id/esign/sign-url       "Ký ngay" {return_url, provider?} ⇒ {url} (chỉ người ký công ty, khác ⇒ 403)
 //   POST /contracts/:id/esign/void           huỷ {reason}
 //   GET  /contracts/:id/esign/signed-link    {url} của "Bản đã ký"
 // Webhook (KHÔNG JWT, gắn trước auth ở `app.ts`): POST /pack/contracts/esign/webhook/:provider.
@@ -62,13 +62,13 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
   r.get("/esign/settings", read, async (c) => c.json(await run(u.settings(who(c)))));
   r.put("/esign/settings", admin, async (c) => {
     const b = parseWith(ESignSettingsSchema, await readJson(c));
-    return c.json(await run(u.saveSettings(who(c), b.enabled)));
+    return c.json(await run(u.saveSettings(who(c), b)));
   });
   r.get("/contracts/:id/esign", read, async (c) => c.json(await run(u.state(who(c), idOf(c)))));
   r.post("/contracts/:id/esign", write, async (c) => {
     const id = idOf(c);
     const b = parseWith(ESignSendSchema, await readJson(c));
-    return c.json(await run(u.send(who(c), id, b.signers)), 201);
+    return c.json(await run(u.send(who(c), id, b.signers, b.provider)), 201);
   });
   // esign-fix · làm mới có GHI (trạng thái, FileBox, files) ⇒ `write` như gửi ký.
   r.post("/contracts/:id/esign/refresh", write, async (c) =>
@@ -78,7 +78,7 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
     const id = idOf(c);
     const b = parseWith(ESignSignUrlSchema, await readJson(c));
     c.header("cache-control", "no-store");
-    return c.json(await run(u.signUrl(who(c), id, b.return_url)));
+    return c.json(await run(u.signUrl(who(c), id, b.return_url, b.provider)));
   });
   r.post("/contracts/:id/esign/void", write, async (c) => {
     const id = idOf(c);

@@ -7,7 +7,7 @@ import {
   ESignProviderError,
 } from "../application/esign.ports";
 import type { ESignConfig } from "../domain/esign.rules";
-import { envelopeIdOfWebhook, signaturePagePdf, signTabAt } from "../domain/esign.rules";
+import { envelopeIdOfWebhook, signAnchors, signaturePageHtml } from "../domain/esign.rules";
 import { connectHmacOk, docusignJwt } from "./docusign.crypto";
 
 const TIMEOUT_MS = 15_000;
@@ -31,6 +31,15 @@ async function errorCodeOf(res: Response): Promise<string> {
     return "";
   }
 }
+
+/** Tab đặt theo anchor ẩn của trang ký (`signaturePageHtml`); thiếu anchor ⇒ DocuSign báo lỗi (không bỏ qua). */
+const anchorTab = (anchorString: string, yOffset: string) => ({
+  anchorString,
+  anchorUnits: "pixels",
+  anchorXOffset: "0",
+  anchorYOffset: yOffset,
+  anchorIgnoreIfNotPresent: "false",
+});
 
 export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider {
   const http = d.fetch ?? fetch;
@@ -122,11 +131,20 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
             fileExtension: "pdf",
             documentBase64: b64(i.document.bytes),
           },
+          // esign-multi · trang ký cuối = HTML UTF-8 (DocuSign tự chuyển PDF, giữ dấu); ô ký/ngày đặt theo anchor ẩn.
           {
             documentId: "2",
-            name: "signatures.pdf",
-            fileExtension: "pdf",
-            documentBase64: b64(signaturePagePdf(i.subject)),
+            name: "trang-ky.html",
+            fileExtension: "html",
+            documentBase64: b64(
+              new TextEncoder().encode(
+                signaturePageHtml({
+                  title: i.title,
+                  number: i.number,
+                  signers: i.signers.map((s) => ({ role: s.role, name: s.name, email: s.email })),
+                }),
+              ),
+            ),
           },
         ],
         recipients: {
@@ -137,22 +155,8 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
             routingOrder: String(s.order),
             ...(s.clientUserId ? { clientUserId: s.clientUserId } : {}),
             tabs: {
-              signHereTabs: [
-                {
-                  documentId: "2",
-                  pageNumber: "1",
-                  xPosition: String(signTabAt(n).x),
-                  yPosition: String(signTabAt(n).y),
-                },
-              ],
-              dateSignedTabs: [
-                {
-                  documentId: "2",
-                  pageNumber: "1",
-                  xPosition: String(signTabAt(n).x + 260),
-                  yPosition: String(signTabAt(n).y + 20),
-                },
-              ],
+              signHereTabs: [anchorTab(signAnchors(n).sign, "-20")],
+              dateSignedTabs: [anchorTab(signAnchors(n).date, "-5")],
             },
           })),
         },

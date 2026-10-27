@@ -121,7 +121,7 @@ describe("cf-esign · đường chính (DocuSign giả)", () => {
           return_url: `http://localhost:3100/contracts/${id}`,
         })
       ).status,
-    ).toBe(409); // hoa không phải người ký nhúng
+    ).toBe(403); // esign-multi · hoa không phải người ký công ty ⇒ ESIGN_NOT_SIGNER (trước: 409)
 
     c.ds.fake.complete(env);
     const body = JSON.stringify({

@@ -49,6 +49,7 @@ const toRow = (r: Raw | undefined): EnvelopeRow | null =>
 type CRaw = {
   id: string;
   title: string;
+  number: string | null;
   locked: boolean;
   org: string | null;
   file_id: string | null;
@@ -61,26 +62,34 @@ type CRaw = {
 
 export function esignRepo(tx: Tx, t: string): ESignRepo {
   return {
-    enabled: async () => {
-      const [r] = await tx.execute<{ on: boolean }>(sql`select coalesce((select s.esign_enabled
-        from contracts.approval_settings s where s.tenant_id = ${t}::uuid), false) as on`);
-      return r?.on === true;
+    settings: async () => {
+      const [r] = await tx.execute<{ on: boolean; dp: string | null }>(sql`select
+          coalesce(s.esign_enabled, false) as on, s.esign_default_provider as dp
+        from (select 1) one left join contracts.approval_settings s on s.tenant_id = ${t}::uuid`);
+      return { enabled: r?.on === true, defaultProvider: r?.dp ?? null };
     },
-    saveEnabled: async (enabled, actor) => {
-      await tx.execute(sql`with old as (select coalesce((select s.esign_enabled from contracts.approval_settings s
-            where s.tenant_id = ${t}::uuid), false) as v),
-          up as (insert into contracts.approval_settings (tenant_id, esign_enabled, updated_by)
-            values (${t}::uuid, ${enabled}, ${actor}::uuid)
-            on conflict (tenant_id) do update set esign_enabled = excluded.esign_enabled,
+    // esign-multi · vắng trường ⇒ giữ giá trị cũ (null ⇒ coalesce với cũ); audit before/after cả hai trường.
+    saveSettings: async (p, actor) => {
+      const en = p.enabled ?? null;
+      const dp = p.defaultProvider ?? null;
+      await tx.execute(sql`with old as (select coalesce(s.esign_enabled, false) as en, s.esign_default_provider as dp
+            from (select 1) one left join contracts.approval_settings s on s.tenant_id = ${t}::uuid),
+          up as (insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, updated_by)
+            values (${t}::uuid, coalesce(${en}::boolean, false), ${dp}::text, ${actor}::uuid)
+            on conflict (tenant_id) do update set
+              esign_enabled = coalesce(${en}::boolean, contracts.approval_settings.esign_enabled),
+              esign_default_provider = coalesce(${dp}::text, contracts.approval_settings.esign_default_provider),
               updated_by = excluded.updated_by, updated_at = now()
-            returning esign_enabled)
+            returning esign_enabled, esign_default_provider)
         insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
-          select ${t}::uuid, ${actor}::uuid, jsonb_build_object('esign_enabled', (select v from old)),
-            jsonb_build_object('esign_enabled', up.esign_enabled) from up`);
+          select ${t}::uuid, ${actor}::uuid,
+            (select jsonb_build_object('esign_enabled', en, 'esign_default_provider', dp) from old),
+            jsonb_build_object('esign_enabled', up.esign_enabled, 'esign_default_provider', up.esign_default_provider)
+          from up`);
     },
     contract: async (id) => {
       const [r] =
-        await tx.execute<CRaw>(sql`select c.id, c.title, c.locked_at is not null as locked,
+        await tx.execute<CRaw>(sql`select c.id, c.title, c.number, c.locked_at is not null as locked,
           f.org, f.file_id, f.mime, f.name, p.name as partner_name, pc.email as partner_email,
           p.party_key is not null as has_partner
         from contracts.contracts c
@@ -142,6 +151,7 @@ function contractOf(r: CRaw): ContractForSign {
   return {
     id: r.id,
     title: r.title,
+    number: r.number,
     locked: r.locked,
     file:
       r.org && r.file_id

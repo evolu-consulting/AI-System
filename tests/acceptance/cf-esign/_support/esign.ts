@@ -39,6 +39,8 @@ type Person = (typeof P)[keyof typeof P];
 export type FakeDs = {
   origin: string;
   fake: FakeESign;
+  /** esign-multi · thân POST /envelopes đã nhận (kiểm documents/tabs). */
+  creates: DsCreate[];
   tokenCalls: () => number;
   close: () => Promise<void>;
 };
@@ -46,6 +48,7 @@ export type FakeDs = {
 /** DocuSign giả: `/oauth/token` (kiểm assertion RS256) + `/restapi/v2.1/accounts/acc-1/envelopes…` dựa trên `fakeESign`. */
 export function startFakeDocusign(publicKey: string): FakeDs {
   const fake = fakeESign();
+  const creates: DsCreate[] = [];
   let tokens = 0;
   const j = (b: unknown, status = 200) => Response.json(b, { status });
   const server = Bun.serve({
@@ -68,7 +71,7 @@ export function startFakeDocusign(publicKey: string): FakeDs {
         u.pathname,
       );
       if (!m) return j({ errorCode: "NOT_FOUND" }, 404);
-      return route(fake, req, m[1], m[2] ?? "").catch(() =>
+      return route(fake, creates, req, m[1], m[2] ?? "").catch(() =>
         j({ errorCode: "ENVELOPE_DOES_NOT_EXIST" }, 400),
       );
     },
@@ -76,6 +79,7 @@ export function startFakeDocusign(publicKey: string): FakeDs {
   return {
     origin: `http://localhost:${server.port}`,
     fake,
+    creates,
     tokenCalls: () => tokens,
     close: async () => {
       await server.stop(true);
@@ -83,26 +87,38 @@ export function startFakeDocusign(publicKey: string): FakeDs {
   };
 }
 
-type DsSigner = { email: string; name: string; routingOrder: string; clientUserId?: string };
+type DsSigner = {
+  email: string;
+  name: string;
+  routingOrder: string;
+  clientUserId?: string;
+  tabs?: Record<string, { anchorString?: string }[]>;
+};
+export type DsCreate = {
+  emailSubject: string;
+  documents: { documentId: string; documentBase64: string; name: string; fileExtension: string }[];
+  recipients: { signers: DsSigner[] };
+};
 async function route(
   fake: FakeESign,
+  creates: DsCreate[],
   req: Request,
   id: string | undefined,
   rest: string,
 ): Promise<Response> {
   if (!id && req.method === "POST") {
-    const b = (await req.json()) as {
-      emailSubject: string;
-      documents: { documentBase64: string; name: string }[];
-      recipients: { signers: DsSigner[] };
-    };
+    const b = (await req.json()) as DsCreate;
+    creates.push(b);
     const r = await fake.createEnvelope({
       subject: b.emailSubject,
+      title: "",
+      number: null,
       document: {
         name: b.documents[0]?.name ?? "",
         bytes: Buffer.from(b.documents[0]?.documentBase64 ?? "", "base64"),
       },
       signers: b.recipients.signers.map((s) => ({
+        role: s.clientUserId ? ("company" as const) : ("partner" as const),
         name: s.name,
         email: s.email,
         order: Number(s.routingOrder),
@@ -153,6 +169,7 @@ async function startHub(
   fbOrigin: string,
   fbToken: string,
   provider: ESignProvider | null,
+  extra: ESignProvider[] = [],
 ): Promise<HubN1> {
   const db = connectDb(HUB_API_URL, 4);
   const redis = createRedis(REDIS_TEST_URL);
@@ -169,7 +186,11 @@ async function startHub(
     pingMs: 500,
     jobMaxWaitS: 30,
     maxConcurrentRuns: 2,
-    packs: { contracts: true, filebox: { url: fbOrigin, token: fbToken }, esign: { provider } },
+    packs: {
+      contracts: true,
+      filebox: { url: fbOrigin, token: fbToken },
+      esign: extra.length > 0 && provider ? { providers: [provider, ...extra] } : { provider },
+    },
   } as HubDeps & Record<string, unknown>;
   const app = createHubApp({ version: "0.0.0-test", corsOrigins: ["http://localhost:3100"] }, deps);
   const server = Bun.serve({ port: 0, fetch: app.fetch, idleTimeout: 0 });
@@ -187,8 +208,9 @@ async function startHub(
   };
 }
 
-/** Hub có DocuSign (server giả) + hub thứ hai KHÔNG cấu hình ký số (`provider: null`). */
-export async function startEsign(): Promise<EsignCtx> {
+/** Hub có DocuSign (server giả) + hub thứ hai KHÔNG cấu hình ký số (`provider: null`). esign-multi: `extra` = nhà cung cấp song song
+ *  (vd ký thử selfsign) sau DocuSign. */
+export async function startEsign(extra: ESignProvider[] = []): Promise<EsignCtx> {
   const sql = await setupX2a();
   const k = await makeKeys();
   const fb = startFbFake();
@@ -210,7 +232,7 @@ export async function startEsign(): Promise<EsignCtx> {
     },
     { readKey: async () => kp.privateKey },
   );
-  const hub = await startHub(k, fb.origin, fb.token, provider);
+  const hub = await startHub(k, fb.origin, fb.token, provider, extra);
   const offHub = await startHub(k, fb.origin, fb.token, null);
   const admin: AdminN1 = await startAdminN1(k);
   const tok = (p: Person) => sign(k, p);

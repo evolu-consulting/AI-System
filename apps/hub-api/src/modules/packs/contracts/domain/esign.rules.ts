@@ -1,5 +1,5 @@
 // cf-esign-docusign · luật thuần ký số: map trạng thái envelope DocuSign, cấu hình env (thiếu ⇒ tắt), envelopeId từ webhook Connect,
-// người ký mặc định, trang ký cuối tài liệu (PDF một trang tự sinh, chữ ASCII, toạ độ ô ký cố định).
+// người ký mặc định, trang ký cuối tài liệu (esign-multi: HTML UTF-8 + anchor ẩn, thay PDF ASCII toạ độ cố định).
 /** Trạng thái lưu của envelope (khớp `ESIGN_STATUSES` của contract + CHECK 0054). */
 export type ESignStatus = "sent" | "delivered" | "completed" | "declined" | "voided";
 
@@ -32,14 +32,6 @@ export const mapEnvelopeStatus = (s: string | null | undefined): ESignStatus | n
 export const isOpen = (s: ESignStatus): boolean => s === "sent" || s === "delivered";
 
 const v = (x: string | undefined) => (x && x.trim() !== "" ? x.trim() : null);
-
-export type ESignKind = "none" | "selfsign" | "docusign";
-
-/** `ESIGN_PROVIDER` (none | selfsign | docusign), mặc định / lạ ⇒ none (tắt). */
-export function esignKindOf(env: Record<string, string | undefined>): ESignKind {
-  const k = v(env.ESIGN_PROVIDER)?.toLowerCase();
-  return k === "selfsign" || k === "docusign" ? k : "none";
-}
 
 /** Env DocuSign ⇒ cấu hình; thiếu biến bắt buộc ⇒ null (tính năng tắt, UI báo "Chưa cấu hình ký số"). */
 export function docusignConfigOf(env: Record<string, string | undefined>): ESignConfig | null {
@@ -82,37 +74,35 @@ export function defaultSigners(o: {
   ];
 }
 
-/** Toạ độ ô ký (điểm PDF, gốc trên-trái theo DocuSign) trên trang ký cuối cho người ký thứ `i`. */
-export const signTabAt = (i: number) => ({ x: 72, y: 170 + i * 120 });
+/** esign-multi · anchor ẩn (chữ trắng) trên trang ký HTML cho người ký thứ `i` (0-based) — DocuSign đặt ô ký/ngày theo chuỗi. */
+export const signAnchors = (i: number) => ({ sign: `\\s${i + 1}\\`, date: `\\d${i + 1}\\` });
 
-const ascii = (s: string) =>
-  s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[đĐ]/g, (c) => (c === "đ" ? "d" : "D"))
-    .replace(/[^\x20-\x7e]/g, "?")
-    .replace(/[()\\]/g, " ")
-    .slice(0, 80);
+const esc = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
 
-/** PDF A4 một trang "SIGNATURES" (Helvetica, ASCII) nối cuối envelope để đặt ô ký — không phụ thuộc số trang HĐ gốc. */
-export function signaturePagePdf(title: string): Uint8Array {
-  const text = `BT /F1 16 Tf 72 780 Td (SIGNATURES / CHU KY) Tj 0 -24 Td /F1 10 Tf (${ascii(title)}) Tj ET`;
-  const objs = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${text.length} >>\nstream\n${text}\nendstream`,
-  ];
-  let out = "%PDF-1.4\n";
-  const offs: number[] = [];
-  objs.forEach((o, i) => {
-    offs.push(out.length);
-    out += `${i + 1} 0 obj\n${o}\nendobj\n`;
-  });
-  const xref = out.length;
-  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
-  for (const o of offs) out += `${String(o).padStart(10, "0")} 00000 n \n`;
-  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
-  return new TextEncoder().encode(out);
+export type SignPageSigner = { role: "company" | "partner"; name: string; email: string };
+
+/** esign-multi · trang ký cuối dạng HTML UTF-8 (DocuSign tự chuyển PDF, giữ dấu tiếng Việt): tiêu đề, tên + số HĐ, bảng người ký
+ *  (Bên A = công ty, Bên B… = đối tác theo thứ tự), mỗi người một ô có anchor ẩn `\sN\` (chữ ký) và `\dN\` (ngày). Escape mọi trường. */
+export function signaturePageHtml(o: {
+  title: string;
+  number: string | null;
+  signers: SignPageSigner[];
+}): string {
+  let partner = 0;
+  const party = (r: SignPageSigner["role"]) => {
+    const l = r === "company" ? "A" : String.fromCharCode(66 + partner++);
+    return `Bên ${l} / Party ${l}`;
+  };
+  const rows = o.signers
+    .map((s, i) => {
+      const a = signAnchors(i);
+      return `<tr><td>${esc(party(s.role))}</td><td>${esc(s.name)}<br><small>${esc(s.email)}</small></td><td class="box"><span class="a">${a.sign}</span></td><td class="date"><span class="a">${a.date}</span></td></tr>`;
+    })
+    .join("");
+  const num = o.number ? `<p>Số / No.: ${esc(o.number)}</p>` : "";
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:40px}h1{font-size:18pt;text-align:center}table{width:100%;border-collapse:collapse;margin-top:24px}td,th{border:1px solid #888;padding:8px;vertical-align:top}td.box{height:90px;width:35%}td.date{width:20%}.a{color:#ffffff;font-size:8pt}</style></head><body><h1>TRANG KÝ / SIGNATURE PAGE</h1><p>Hợp đồng / Contract: <b>${esc(o.title)}</b></p>${num}<table><tr><th>Bên / Party</th><th>Người ký / Signer</th><th>Chữ ký / Signature</th><th>Ngày / Date</th></tr>${rows}</table></body></html>`;
 }

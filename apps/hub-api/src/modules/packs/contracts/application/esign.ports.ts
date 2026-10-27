@@ -3,6 +3,8 @@
 import type { ESignStatus } from "../domain/esign.rules";
 
 export type ESignRecipient = {
+  /** esign-multi · vai (trang ký: Bên A = công ty, Bên B… = đối tác). */
+  role: "company" | "partner";
   name: string;
   email: string;
   /** Thứ tự ký (1, 2, … — tuần tự). */
@@ -32,6 +34,9 @@ export type ESignProvider = {
   webhook?: (raw: Uint8Array, header: (name: string) => string | undefined) => ESignWebhookCheck;
   createEnvelope(i: {
     subject: string;
+    /** esign-multi · tên + số HĐ cho trang ký. */
+    title: string;
+    number: string | null;
     document: { name: string; bytes: Uint8Array };
     signers: ESignRecipient[];
   }): Promise<{ envelopeId: string }>;
@@ -61,6 +66,22 @@ export type StoredSigner = {
   client_user_id: string | null;
   status: string | null;
   signed_at: string | null;
+  /** esign-multi · nhà cung cấp/chứng thư người này dùng khi ký (phong bì loại "ca"); vắng ở hàng cũ ⇒ null. */
+  provider?: string | null;
+  certificate_ref?: string | null;
+};
+
+/** esign-multi · registry nhà cung cấp: danh sách theo env (cả không khả dụng) + adapter của nhà cung cấp KHẢ DỤNG. */
+export type ESignProviderEntry = {
+  key: string;
+  label: string;
+  kind: "envelope" | "ca";
+  legal: boolean;
+  available: boolean;
+};
+export type ESignRegistry = {
+  entries: ESignProviderEntry[];
+  get(key: string): ESignProvider | null;
 };
 
 export type EnvelopeRow = {
@@ -80,6 +101,7 @@ export type EnvelopeRow = {
 export type ContractForSign = {
   id: string;
   title: string;
+  number: string | null;
   locked: boolean;
   file: { org: string; fileId: string; mime: string; name: string } | null;
   partner: { name: string | null; email: string | null } | null;
@@ -96,8 +118,10 @@ export type SignedFileNew = {
 };
 
 export type ESignRepo = {
-  enabled(): Promise<boolean>;
-  saveEnabled(enabled: boolean, actor: string): Promise<void>;
+  /** Cờ bật + nhà cung cấp mặc định đã chọn (chưa kiểm khả dụng). */
+  settings(): Promise<{ enabled: boolean; defaultProvider: string | null }>;
+  /** Lưu trường có mặt (vắng = giữ) + audit before/after. */
+  saveSettings(p: { enabled?: boolean; defaultProvider?: string }, actor: string): Promise<void>;
   /** HĐ thấy được (RLS + M1) hoặc null. */
   contract(id: string): Promise<ContractForSign | null>;
   latest(contractId: string): Promise<EnvelopeRow | null>;

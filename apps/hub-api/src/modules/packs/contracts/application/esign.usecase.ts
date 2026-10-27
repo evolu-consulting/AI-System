@@ -1,40 +1,36 @@
-// cf-esign-docusign · use case ký số HĐ, trung lập nhà cung cấp: gửi ký (HĐ đã duyệt xong/khoá + PDF), xem trạng thái, "Ký ngay"
-// (embedded), làm mới (một lần, không poll nền), huỷ, webhook (nhà cung cấp tự xác thực; map envelope ⇒ tenant qua bảng), lưu "Bản
-// đã ký" vào FileBox idempotent theo envelope. Gọi mạng (nhà cung cấp, FileBox) NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
-import type {
-  ESignEnvelopeOut,
-  ESignErrorCode,
-  ESignSettingsOut,
-  ESignSignerIn,
-  ESignStateOut,
-  ESignStatus,
-} from "@ai/contracts";
+// cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
+// duyệt xong/khoá + PDF; nhà cung cấp chỉ định hoặc mặc định công ty), xem trạng thái, "Ký ngay" (embedded, chỉ người ký công ty),
+// làm mới (một lần, không poll nền), huỷ, webhook (nhà cung cấp tự xác thực; map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào
+// FileBox idempotent. Mọi lệnh sau gửi dùng `provider` LƯU trên envelope (đổi mặc định không làm hỏng phong bì đang mở). Gọi mạng
+// NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
+import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contracts";
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
 import { defaultSigners, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
+import {
+  ESignFail,
+  envelopeOut,
+  kindOf,
+  labelOf,
+  mergeSigners,
+  sendableFile,
+  settingsOut,
+  storedSigners,
+} from "./esign.helpers";
 import type {
-  ContractForSign,
   EnvelopeRow,
   ESignEnvelopeInfo,
   ESignFiles,
   ESignProvider,
+  ESignRegistry,
   ESignRepo,
-  StoredSigner,
 } from "./esign.ports";
 
-export class ESignFail extends Error {
-  constructor(
-    readonly code: ESignErrorCode | "NOT_FOUND" | "VALIDATION",
-    readonly detail: string,
-  ) {
-    super(detail);
-    this.name = "ESignFail";
-  }
-}
+export { ESignFail } from "./esign.helpers";
 
 type R = { esign: ESignRepo };
 export type ESignDeps = {
-  /** null ⇒ chưa cấu hình (`ESIGN_PROVIDER=none` hoặc thiếu biến) ⇒ tính năng tắt. */
-  provider: ESignProvider | null;
+  /** Registry nhà cung cấp (`ESIGN_PROVIDERS`); không nhà cung cấp khả dụng ⇒ tính năng tắt. */
+  providers: ESignRegistry;
   uow: PackUow<R> & PackSystemUow<R>;
   files: ESignFiles | null;
   me: (who: PackWho) => Promise<{ name: string; email: string | null }>;
@@ -44,77 +40,24 @@ export type ESignDeps = {
 };
 type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
-const envelopeOut = (e: EnvelopeRow, demo: boolean): ESignEnvelopeOut => ({
-  id: e.id,
-  provider: e.provider,
-  demo,
-  status: e.status,
-  signers: e.signers.map((s) => ({
-    role: s.role,
-    name: s.name,
-    email: s.email,
-    order: s.order,
-    embedded: s.client_user_id !== null,
-    status: s.status,
-    signed_at: s.signed_at,
-  })),
-  reason: e.reason,
-  completed_at: e.completedAt,
-  created_at: e.createdAt,
-  has_signed_file: e.signedFileId !== null,
-});
-
-/** Trạng thái người ký theo email từ nhà cung cấp; ký xong cả envelope mà không có chi tiết ⇒ coi mọi người đã ký. */
-function mergeSigners(s: StoredSigner[], info: ESignEnvelopeInfo, st: ESignStatus): StoredSigner[] {
-  return s.map((x) => {
-    const r = info.recipients.find((y) => y.email.toLowerCase() === x.email);
-    if (r) return { ...x, status: r.status, signed_at: r.signedAt };
-    return st === "completed" ? { ...x, status: "completed", signed_at: info.completedAt } : x;
-  });
-}
-
-/** Gửi ký được: HĐ thấy được + đã duyệt xong (khoá) + chưa có envelope đang chờ + tệp PDF ⇒ tệp. */
-function sendableFile(c: ContractForSign | null, e: EnvelopeRow | null) {
-  if (!c) throw new ESignFail("NOT_FOUND", "contract");
-  if (!c.locked) throw new ESignFail("ESIGN_STATE", "not-approved");
-  if (e && isOpen(e.status)) throw new ESignFail("ESIGN_STATE", "already-open");
-  if (!c.file || c.file.mime !== "application/pdf")
-    throw new ESignFail("ESIGN_UNSUPPORTED_FILE", c.file ? "not-pdf" : "no-file");
-  return c.file;
-}
-
-/** Thứ tự ký = thứ tự gửi; đại diện công ty trùng email user hiện tại ⇒ ký nhúng (clientUserId = user). */
-function storedSigners(
-  signers: ESignSignerIn[],
-  userId: string,
-  email: string | null,
-): StoredSigner[] {
-  const mine = email?.toLowerCase() ?? null;
-  return signers.map((x, i) => ({
-    ...x,
-    order: i + 1,
-    client_user_id: x.role === "company" && mine !== null && x.email === mine ? userId : null,
-    status: null,
-    signed_at: null,
-  }));
-}
-
 const baseName = (n: string) => n.replace(/\.pdf$/i, "").slice(0, 150);
 const RETURN_PATH = (id: string) => new RegExp(`/contracts/${id}/?$`);
 
 export function esignUsecase(d: ESignDeps) {
-  const on = (): ESignProvider | null => (d.provider && d.files ? d.provider : null);
+  /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */
+  const avail = (key: string | null | undefined): ESignProvider | null =>
+    key && d.files ? d.providers.get(key) : null;
   const tenantRun =
     (who: PackWho): Run =>
     (fn) =>
       d.uow.tenant(who, fn);
-  const demoOf = (key: string) => key === "selfsign";
-
-  const settings = async (who: PackWho): Promise<ESignSettingsOut> => {
-    const enabled = await d.uow.tenant(who, (r) => r.esign.enabled());
-    const p = on();
-    return { configured: p !== null, enabled, provider: p?.key ?? null, demo: p?.demo ?? false };
-  };
+  const demoOf = (key: string) => d.providers.get(key)?.demo ?? key === "selfsign";
+  const out = (s: { enabled: boolean; defaultProvider: string | null }) =>
+    settingsOut(d.providers.entries, d.files !== null, s, demoOf);
+  const settings = async (who: PackWho): Promise<ESignSettingsOut> =>
+    out(await d.uow.tenant(who, (r) => r.esign.settings()));
+  const rowOut = (e: EnvelopeRow) =>
+    envelopeOut(e, demoOf(e.provider), labelOf(d.providers.entries, e.provider));
 
   /** Lưu "Bản đã ký" (nhà cung cấp ⇒ PDF đã ký; ký thử ⇒ PDF gốc) — mất đua ⇒ xoá tệp vừa đẩy. */
   const storeSigned = async (
@@ -140,28 +83,27 @@ export function esignUsecase(d: ESignDeps) {
       sizeBytes: bytes.byteLength,
       createdBy: row.sentBy,
     };
-    const ok = await run((r) => r.esign.attachSigned(row.envelopeId, f)).catch(async (e) => {
-      await files(org)
+    const drop = () =>
+      files(org)
         .deleteFile(up.fileId)
         .catch(() => null);
+    const ok = await run((r) => r.esign.attachSigned(row.envelopeId, f)).catch(async (e) => {
+      await drop();
       throw e;
     });
-    if (!ok)
-      await files(org)
-        .deleteFile(up.fileId)
-        .catch(() => null);
+    if (!ok) await drop();
   };
 
-  /** Một lần GET trạng thái từ nhà cung cấp ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent). */
-  /** `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
+  /** Một lần GET trạng thái từ nhà cung cấp CỦA ENVELOPE ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent).
+   *  `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
   const sync = async (
     tid: string,
     row: EnvelopeRow,
     run: Run,
     given?: ESignEnvelopeInfo,
   ): Promise<void> => {
-    const p = on();
-    if (!p || !d.files || p.key !== row.provider) return;
+    const p = avail(row.provider);
+    if (!p || !d.files) return;
     if (!isOpen(row.status) && !(row.status === "completed" && row.signedFileId === null)) return;
     const info = given ?? (await p.getEnvelope(row.envelopeId));
     const st = mapEnvelopeStatus(info.status) ?? row.status;
@@ -189,7 +131,7 @@ export function esignUsecase(d: ESignDeps) {
     return {
       ...s,
       ready: got.c.locked && got.c.file?.mime === "application/pdf",
-      envelope: got.e ? envelopeOut(got.e, demoOf(got.e.provider)) : null,
+      envelope: got.e ? rowOut(got.e) : null,
       defaults: defaultSigners({ me, partner: got.c.partner }),
     };
   };
@@ -203,30 +145,61 @@ export function esignUsecase(d: ESignDeps) {
     return e;
   };
 
+  /** Nhà cung cấp người ký chọn lúc "Ký ngay": chỉ phong bì loại "ca" (khả dụng, cùng loại); loại "envelope" chỉ nhận đúng khoá. */
+  const signerProvider = (e: EnvelopeRow, key: string | undefined): string | null => {
+    if (key === undefined || key === e.provider) return null;
+    const ok =
+      kindOf(d.providers.entries, e.provider) === "ca" &&
+      kindOf(d.providers.entries, key) === "ca" &&
+      avail(key) !== null;
+    if (!ok) throw new ESignFail("ESIGN_PROVIDER_UNAVAILABLE", "signer-provider");
+    return key;
+  };
+
   return {
     settings,
     state,
-    saveSettings: async (who: PackWho, enabled: boolean): Promise<ESignSettingsOut> => {
-      await d.uow.tenant(who, (r) => r.esign.saveEnabled(enabled, who.userId));
+    async saveSettings(
+      who: PackWho,
+      b: { enabled?: boolean | undefined; default_provider?: string | undefined },
+    ): Promise<ESignSettingsOut> {
+      if (b.default_provider !== undefined && !avail(b.default_provider))
+        throw new ESignFail("ESIGN_PROVIDER_UNAVAILABLE", "default_provider");
+      const patch = {
+        ...(b.enabled !== undefined ? { enabled: b.enabled } : {}),
+        ...(b.default_provider !== undefined ? { defaultProvider: b.default_provider } : {}),
+      };
+      await d.uow.tenant(who, (r) => r.esign.saveSettings(patch, who.userId));
       return settings(who);
     },
 
-    async send(who: PackWho, id: string, signers: ESignSignerIn[]): Promise<ESignStateOut> {
-      const p = on();
+    async send(
+      who: PackWho,
+      id: string,
+      signers: ESignSignerIn[],
+      providerKey?: string,
+    ): Promise<ESignStateOut> {
       const s = await settings(who);
-      if (!p || !d.files || !s.enabled) throw new ESignFail("ESIGN_DISABLED", "disabled");
+      if (!d.files || !s.configured || !s.enabled)
+        throw new ESignFail("ESIGN_DISABLED", "disabled");
+      const p = avail(providerKey ?? s.default_provider);
+      if (!p) throw new ESignFail("ESIGN_PROVIDER_UNAVAILABLE", "provider");
       const got = await d.uow.tenant(who, async (r) => ({
         c: await r.esign.contract(id),
         e: await r.esign.latest(id),
       }));
       const file = sendableFile(got.c, got.e);
+      const stored = storedSigners(signers, who.userId, await d.me(who));
       const bytes = await d.files(file.org).getContent(file.fileId);
       if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "file-unavailable");
-      const stored = storedSigners(signers, who.userId, (await d.me(who)).email);
+      const title = got.c?.title ?? "";
       const { envelopeId } = await p.createEnvelope({
-        subject: `Ky hop dong: ${got.c?.title ?? ""}`.slice(0, 100),
+        subject: `Ky hop dong: ${title}`.slice(0, 100),
+        title,
+        number: got.c?.number ?? null,
         document: { name: file.name, bytes },
         signers: stored.map((x) => ({
+          role: x.role,
           name: x.name,
           email: x.email,
           order: x.order,
@@ -258,15 +231,29 @@ export function esignUsecase(d: ESignDeps) {
       return state(who, id);
     },
 
-    async signUrl(who: PackWho, id: string, returnUrl: string): Promise<{ url: string }> {
+    async signUrl(
+      who: PackWho,
+      id: string,
+      returnUrl: string,
+      providerKey?: string,
+    ): Promise<{ url: string }> {
       const u = new URL(returnUrl);
       if (!/^https?:$/.test(u.protocol) || !RETURN_PATH(id).test(u.pathname))
         throw new ESignFail("VALIDATION", "return_url");
-      const p = on();
-      if (!p) throw new ESignFail("ESIGN_DISABLED", "disabled");
       const e = await openOf(who, id);
-      const me = e.signers.find((s) => s.client_user_id === who.userId);
-      if (!me || e.provider !== p.key) throw new ESignFail("ESIGN_STATE", "not-embedded-signer");
+      const me = e.signers.find((s) => s.role === "company" && s.client_user_id === who.userId);
+      if (!me) throw new ESignFail("ESIGN_NOT_SIGNER", "not-company-signer");
+      const p = avail(e.provider);
+      if (!p) throw new ESignFail("ESIGN_DISABLED", "provider-unavailable");
+      const chosen = signerProvider(e, providerKey);
+      const row: EnvelopeRow = chosen
+        ? {
+            ...e,
+            signers: e.signers.map((s) =>
+              s === me ? { ...s, provider: chosen, certificate_ref: null } : s,
+            ),
+          }
+        : e;
       u.searchParams.set("esign", "return");
       const url = await p.recipientView(
         e.envelopeId,
@@ -275,21 +262,26 @@ export function esignUsecase(d: ESignDeps) {
       );
       // esign-fix · ký thử: CHỈ người ký nhúng bấm "Ký ngay" mới hoàn tất (làm mới chỉ đọc trạng thái "đang chờ").
       if (p.demo) {
-        const done = {
-          status: "completed",
-          reason: null,
-          completedAt: (d.now?.() ?? new Date()).toISOString(),
-        };
-        await sync(who.tenantId, e, tenantRun(who), { ...done, recipients: [] });
+        const at = (d.now?.() ?? new Date()).toISOString();
+        const done = { status: "completed", reason: null, completedAt: at, recipients: [] };
+        await sync(who.tenantId, row, tenantRun(who), done);
+      } else if (chosen) {
+        await d.uow.tenant(who, (r) =>
+          r.esign.update(e.envelopeId, {
+            status: e.status,
+            reason: e.reason,
+            completedAt: e.completedAt,
+            signers: row.signers,
+          }),
+        );
       }
       return { url };
     },
 
     async voidIt(who: PackWho, id: string, reason: string): Promise<ESignStateOut> {
-      const p = on();
-      if (!p) throw new ESignFail("ESIGN_DISABLED", "disabled");
       const e = await openOf(who, id);
-      if (e.provider !== p.key) throw new ESignFail("ESIGN_STATE", "provider-changed");
+      const p = avail(e.provider);
+      if (!p) throw new ESignFail("ESIGN_DISABLED", "provider-unavailable");
       await p.voidEnvelope(e.envelopeId, reason);
       await d.uow.tenant(who, (r) =>
         r.esign.update(e.envelopeId, {
@@ -314,8 +306,8 @@ export function esignUsecase(d: ESignDeps) {
       raw: Uint8Array,
       header: (n: string) => string | undefined,
     ): Promise<"ok" | "ignored"> {
-      const p = on();
-      if (!p || p.key !== key || !p.webhook) throw new ESignFail("NOT_FOUND", "provider");
+      const p = avail(key);
+      if (!p?.webhook) throw new ESignFail("NOT_FOUND", "provider");
       const chk = p.webhook(raw, header);
       if (!chk.ok) throw new ESignFail("ESIGN_WEBHOOK_REJECTED", "signature");
       if (!chk.envelopeId) return "ignored";
@@ -323,7 +315,7 @@ export function esignUsecase(d: ESignDeps) {
       if (!tid) return "ignored";
       const run: Run = (fn) => d.uow.system(tid, fn);
       const row = await run((r) => r.esign.byEnvelope(chk.envelopeId as string));
-      if (!row) return "ignored";
+      if (!row || row.provider !== p.key) return "ignored";
       await sync(tid, row, run);
       return "ok";
     },

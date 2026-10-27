@@ -24,7 +24,6 @@ import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-q
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
-import type { ESignProvider } from "./contracts/application/esign.ports";
 import type { ESignUsecase } from "./contracts/application/esign.usecase";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
@@ -35,7 +34,7 @@ import { mountContractsContext } from "./contracts/context.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { docFrameModule } from "./contracts/doc-frame.mount";
-import { esignUserRoutes } from "./contracts/esign.mount";
+import { type ESignSeam, esignUserRoutes } from "./contracts/esign.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
@@ -82,8 +81,8 @@ export type PacksDeps = {
   contractsPriceScout?: { worker?: boolean };
   /** R1 Â· DSN pool riÃªng cá»§a module tri thá»©c (server: `KNOWLEDGE_DATABASE_URL` â€– `HUB_DATABASE_URL`); váº¯ng â‡’ dÃ¹ng `db` chung. */
   knowledgeDsn?: string;
-  /** cf-esign-docusign · nhà cung cấp ký số (test tiêm DocuSign trỏ server giả); vắng ⇒ env `ESIGN_PROVIDER`. */
-  esign?: { provider: ESignProvider | null };
+  /** cf-esign-docusign · nhà cung cấp ký số (test tiêm DocuSign trỏ server giả); vắng ⇒ env `ESIGN_PROVIDERS` (esign-multi). */
+  esign?: ESignSeam;
 };
 
 export type PacksMountDeps = {

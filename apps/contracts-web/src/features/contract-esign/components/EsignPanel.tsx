@@ -142,6 +142,11 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
             {t(hk)}
           </span>
         )}
+        {e?.provider_label && (
+          <span className="text-dim" data-testid="esign-provider">
+            {e.provider_label}
+          </span>
+        )}
         {v.demo && <DemoTag />}
         <span className="flex-1" />
         <Actions
@@ -166,10 +171,12 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
       <EsignSendDialog
         open={open}
         defaults={s.defaults}
+        providers={s.providers ?? []}
+        defaultProvider={s.default_provider ?? null}
         busy={es.busy}
         err={es.err}
         onClose={() => setOpen(false)}
-        onSend={(rows) => void es.send(rows).then((ok) => ok && setOpen(false))}
+        onSend={(rows, p) => void es.send(rows, p).then((ok) => ok && setOpen(false))}
       />
     </section>
   );

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import type { ESignEnvelopeOut, ESignStateOut } from "@ai/contracts";
-import { esignView, returnedFromSigning } from "./esign-view";
+import type { ESignEnvelopeOut, ESignProviderOut, ESignStateOut } from "@ai/contracts";
+import {
+  esignErrKey,
+  esignView,
+  pickDefaultProvider,
+  returnedFromSigning,
+  showProviderPicker,
+} from "./esign-view";
 
 const st = (o: Partial<ESignStateOut> = {}): ESignStateOut => ({
   configured: true,
@@ -10,11 +16,14 @@ const st = (o: Partial<ESignStateOut> = {}): ESignStateOut => ({
   ready: true,
   envelope: null,
   defaults: [],
+  providers: [],
+  default_provider: "docusign",
   ...o,
 });
 const env = (o: Partial<ESignEnvelopeOut> = {}): ESignEnvelopeOut => ({
   id: "e",
   provider: "docusign",
+  provider_label: "DocuSign",
   demo: false,
   status: "sent",
   signers: [
@@ -26,6 +35,8 @@ const env = (o: Partial<ESignEnvelopeOut> = {}): ESignEnvelopeOut => ({
       embedded: true,
       status: null,
       signed_at: null,
+      provider: null,
+      certificate_ref: null,
     },
   ],
   reason: null,
@@ -33,6 +44,32 @@ const env = (o: Partial<ESignEnvelopeOut> = {}): ESignEnvelopeOut => ({
   created_at: "2026-10-27T00:00:00Z",
   has_signed_file: false,
   ...o,
+});
+
+const P = (key: string, available = true, legal = true): ESignProviderOut => ({
+  key,
+  label: key,
+  kind: "envelope",
+  available,
+  legal,
+});
+
+describe("provider helpers", () => {
+  it("dropdown chỉ khi > 1 khả dụng", () => {
+    expect(showProviderPicker([P("docusign"), P("selfsign", true, false)])).toBe(true);
+    expect(showProviderPicker([P("docusign"), P("selfsign", false)])).toBe(false);
+    expect(showProviderPicker(undefined)).toBe(false);
+  });
+  it("chọn sẵn mặc định nếu khả dụng, không thì khả dụng đầu tiên", () => {
+    const ps = [P("a", false), P("b"), P("c")];
+    expect(pickDefaultProvider(ps, "c")).toBe("c");
+    expect(pickDefaultProvider(ps, "a")).toBe("b");
+    expect(pickDefaultProvider([], null)).toBe("");
+  });
+  it("mã lỗi mới có khoá riêng, lạ ⇒ unknown", () => {
+    expect(esignErrKey("ESIGN_NOT_SIGNER")).toBe("contracts.esign.err.ESIGN_NOT_SIGNER");
+    expect(esignErrKey("X")).toBe("contracts.esign.err.unknown");
+  });
 });
 
 describe("esignView", () => {

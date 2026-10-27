@@ -4,10 +4,10 @@ import {
   defaultSigners,
   docusignConfigOf,
   envelopeIdOfWebhook,
-  esignKindOf,
   isOpen,
   mapEnvelopeStatus,
-  signaturePagePdf,
+  signAnchors,
+  signaturePageHtml,
 } from "./esign.rules";
 
 describe("mapEnvelopeStatus", () => {
@@ -27,15 +27,6 @@ describe("mapEnvelopeStatus", () => {
     expect(isOpen("delivered")).toBe(true);
     expect(isOpen("completed")).toBe(false);
     expect(isOpen("declined")).toBe(false);
-  });
-});
-
-describe("esignKindOf (ESIGN_PROVIDER)", () => {
-  it("none mặc định; selfsign/docusign; lạ ⇒ none", () => {
-    expect(esignKindOf({})).toBe("none");
-    expect(esignKindOf({ ESIGN_PROVIDER: "selfsign" })).toBe("selfsign");
-    expect(esignKindOf({ ESIGN_PROVIDER: "DocuSign" })).toBe("docusign");
-    expect(esignKindOf({ ESIGN_PROVIDER: "vnpt" })).toBe("none");
   });
 });
 
@@ -101,14 +92,29 @@ describe("defaultSigners", () => {
   });
 });
 
-describe("signaturePagePdf", () => {
-  it("PDF một trang hợp lệ (đầu %PDF-, có xref, kết %%EOF), chữ ASCII", () => {
-    const b = signaturePagePdf("Hợp đồng số 01");
-    const s = Buffer.from(b).toString("latin1");
-    expect(s.startsWith("%PDF-1.4")).toBe(true);
-    expect(s).toContain("/Type /Page ");
-    expect(s).toContain("xref");
-    expect(s.trimEnd().endsWith("%%EOF")).toBe(true);
-    expect(/[^\n\x20-\x7e]/.test(s)).toBe(false);
+describe("signaturePageHtml (esign-multi)", () => {
+  const signers = [
+    { role: "company" as const, name: "Nguyễn Lan", email: "lan@a.vn" },
+    { role: "partner" as const, name: "<b>Đối tác</b> & Co", email: "b@p.vn" },
+  ];
+  it("Unicode giữ dấu, escape trường người dùng, đủ anchor theo số người ký", () => {
+    const h = signaturePageHtml({ title: 'HĐ "mua" <script>', number: "01/2026", signers });
+    expect(h).toContain("TRANG KÝ / SIGNATURE PAGE");
+    expect(h).toContain("Nguyễn Lan");
+    expect(h).toContain("&lt;b&gt;Đối tác&lt;/b&gt; &amp; Co");
+    expect(h).toContain("HĐ &quot;mua&quot; &lt;script&gt;");
+    expect(h).not.toContain("<script>");
+    expect(h).toContain("01/2026");
+    expect(h).toContain("Bên A / Party A");
+    expect(h).toContain("Bên B / Party B");
+    for (const i of [0, 1]) {
+      expect(h).toContain(signAnchors(i).sign);
+      expect(h).toContain(signAnchors(i).date);
+    }
+    expect(h).not.toContain(signAnchors(2).sign);
+  });
+  it("anchor dạng \\sN\\ / \\dN\\; vắng số HĐ ⇒ không dòng số", () => {
+    expect(signAnchors(0)).toEqual({ sign: "\\s1\\", date: "\\d1\\" });
+    expect(signaturePageHtml({ title: "x", number: null, signers })).not.toContain("Số / No.");
   });
 });

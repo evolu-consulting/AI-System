@@ -14,9 +14,7 @@ import {
   signUrl,
   voidEsign,
 } from "../api";
-import { returnedFromSigning } from "../lib/esign-view";
-
-const ERR = new Set(["ESIGN_DISABLED", "ESIGN_STATE", "ESIGN_UNSUPPORTED_FILE", "ESIGN_PROVIDER"]);
+import { esignErrKey, returnedFromSigning } from "../lib/esign-view";
 
 export function useEsign(id: string) {
   const { t } = useTranslation();
@@ -28,10 +26,7 @@ export function useEsign(id: string) {
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const msgOf = (e: unknown) =>
-    t(
-      `contracts.esign.err.${e instanceof ApiError && e.code && ERR.has(e.code) ? e.code : "unknown"}`,
-    );
+  const msgOf = (e: unknown) => t(esignErrKey(e instanceof ApiError ? e.code : null));
 
   const run = async (
     fn: () => Promise<ESignStateOut | undefined>,
@@ -70,7 +65,8 @@ export function useEsign(id: string) {
     busy,
     err,
     clearErr: () => setErr(null),
-    send: (s: ESignSignerIn[]) => run(() => sendEsign(id, s), t("contracts.esign.sent")),
+    send: (s: ESignSignerIn[], provider?: string) =>
+      run(() => sendEsign(id, s, provider), t("contracts.esign.sent")),
     refresh: () => run(() => refreshEsign(id)),
     cancel: (reason: string) => run(() => voidEsign(id, reason)),
     signNow: () =>

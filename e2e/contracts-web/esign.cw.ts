@@ -93,7 +93,7 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
   expect(posts).toEqual([
     {
       signers: [
-        { role: "company", name: "Nguyễn Lan", email: "lan@acme.vn" },
+        { role: "company" }, // esign-multi · người ký công ty = tài khoản (server lấy tên/email)
         { role: "partner", name: "Công ty B", email: "b@partner.vn" },
       ],
     },

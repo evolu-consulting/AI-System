@@ -1,5 +1,5 @@
 // cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
-import type { ESignStateOut } from "@ai/contracts";
+import type { ESignProviderOut, ESignStateOut } from "@ai/contracts";
 
 export type EsignMode =
   | "hidden"
@@ -81,6 +81,37 @@ const HINT: Partial<Record<EsignMode, string>> = {
   notReady: "contracts.esign.notReady",
 };
 export const hintKey = (v: EsignView): string | null => HINT[v.mode] ?? null;
+
+/** esign-multi · nhà cung cấp chọn được (khả dụng). */
+export function availableProviders(providers: ESignProviderOut[] | undefined): ESignProviderOut[] {
+  return (providers ?? []).filter((p) => p.available);
+}
+
+/** Dropdown chọn nhà cung cấp ở hộp Gửi ký chỉ hiện khi có > 1 nhà cung cấp khả dụng. */
+export const showProviderPicker = (providers: ESignProviderOut[] | undefined): boolean =>
+  availableProviders(providers).length > 1;
+
+/** Nhà cung cấp chọn sẵn: mặc định hiệu lực nếu còn khả dụng, không thì khả dụng đầu tiên, không có ⇒ "". */
+export function pickDefaultProvider(
+  providers: ESignProviderOut[] | undefined,
+  def: string | null | undefined,
+): string {
+  const av = availableProviders(providers);
+  return av.find((p) => p.key === def)?.key ?? av[0]?.key ?? "";
+}
+
+/** Mã lỗi ký số có thông báo riêng (còn lại ⇒ "unknown"). */
+export const ESIGN_ERR_CODES = new Set([
+  "ESIGN_DISABLED",
+  "ESIGN_STATE",
+  "ESIGN_UNSUPPORTED_FILE",
+  "ESIGN_PROVIDER",
+  "ESIGN_PROVIDER_UNAVAILABLE",
+  "ESIGN_SIGNER_NO_EMAIL",
+  "ESIGN_NOT_SIGNER",
+]);
+export const esignErrKey = (code: string | undefined | null): string =>
+  `contracts.esign.err.${code && ESIGN_ERR_CODES.has(code) ? code : "unknown"}`;
 
 /** Bỏ `?esign=return` (DocuSign/ký thử quay về) khỏi URL sau khi đã làm mới một lần. */
 export function returnedFromSigning(search: string): boolean {

@@ -215,6 +215,13 @@ Trung lập nhà cung cấp; chọn bằng `ESIGN_PROVIDER` trong `.env`: `none`
 "Ký thử – không có giá trị pháp lý"), `docusign` (DocuSign eSignature REST v2.1). CA Việt Nam (VNPT SmartCA / Viettel MySign…) sẽ là
 adapter mới cùng cổng `ESignProvider`. Sau khi đặt env: owner gói bật ô "Ký số hợp đồng" ở Cài đặt › Quy trình duyệt (theo công ty).
 
+**Nhiều nhà cung cấp song song (esign-multi):** `ESIGN_PROVIDERS=docusign,selfsign` (danh sách theo thứ tự; đặt thì thắng
+`ESIGN_PROVIDER`; chỉ có `ESIGN_PROVIDER=x` ⇒ coi như `ESIGN_PROVIDERS=x`, cấu hình cũ chạy nguyên). Mỗi nhà cung cấp chỉ khả dụng
+khi đủ cấu hình (docusign: đủ `DOCUSIGN_*`; selfsign: luôn; misa: chưa có adapter). Owner chọn **nhà cung cấp mặc định** ở cùng ô Cài
+đặt (vắng ⇒ khả dụng đầu tiên theo thứ tự env); người gửi đổi được trong hộp "Gửi ký" khi có > 1 khả dụng. Phong bì đã gửi luôn dùng
+nhà cung cấp lưu trên phong bì (đổi mặc định không ảnh hưởng). Người ký phía công ty = chính tài khoản bấm "Gửi ký" (cần có email).
+Nhà cung cấp liệt kê mà thiếu cấu hình ⇒ log `esign-provider-not-configured` (chỉ tên nhà cung cấp, không lộ giá trị).
+
 ### Cài DocuSign sandbox (developer, KHÔNG phải tài khoản thật)
 1. Tạo tài khoản developer tại `https://developers.docusign.com` (môi trường demo: REST `https://demo.docusign.net/restapi`,
    OAuth `account-d.docusign.com`).
@@ -240,7 +247,8 @@ adapter mới cùng cổng `ESignProvider`. Sau khi đặt env: owner gói bật
    DOCUSIGN_PRIVATE_KEY_FILE=/run/s2/secrets/docusign.pem
    DOCUSIGN_CONNECT_HMAC_KEY=<khoá HMAC Connect>
    ```
-   Khởi động lại hub-api. Thiếu biến bắt buộc ⇒ log `esign-docusign-not-configured` (không lộ giá trị) và tính năng tắt, không lỗi 500.
+   Khởi động lại hub-api. Thiếu biến bắt buộc ⇒ log `esign-provider-not-configured` (không lộ giá trị) và docusign không khả dụng,
+   không lỗi 500. Muốn chạy song song ký thử: thêm `ESIGN_PROVIDERS=docusign,selfsign` (giữ DocuSign đứng đầu = mặc định).
 7. Thử: HĐ đã duyệt xong (đã khoá, tệp PDF) › "Gửi ký" › người ký 1 = mình ("Ký ngay", ký nhúng), người ký 2 = email đối tác (nhận
    email từ DocuSign demo) › ký xong ⇒ webhook (hoặc "Làm mới trạng thái") ⇒ "Đã ký số" + "Tải bản đã ký".
    Lên production DocuSign thật: qua Go-Live review của DocuSign, đổi `DOCUSIGN_BASE_URI` (theo base URI của tài khoản) và
