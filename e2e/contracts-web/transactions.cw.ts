@@ -1,291 +1,152 @@
-// CR-097 G2 · GD-FR-01…05 · Luật 4b: màn Giao dịch của contracts-web — menu, danh sách + lọc, tạo nháp, ghi sổ (kho trước → sau,
-// lỗi TRANSACTION_STOCK), chi tiết đã ghi sổ (mô tả, điều chỉnh/huỷ cần lý do, dòng thời gian, nghĩa vụ), khối "Giao dịch liên kết"
-// ở trang HĐ. Backend giả `page.route` (không máy chủ thật); không sleep. File này CHỈ được viết, chưa chạy trong lát G2.
+// DOC-ui-list · R5–R10 · Câu 3, 4 · Luật 4b: Giao dịch là chứng từ — form dùng chung (`/contracts/new?type=deal`) gọi `POST /contracts/deals`
+// (nguồn, ô «Đã giao / đã thanh toán ngay», `settle_error`), gắn HĐ nguyên tắc qua `?frame=` + `/attach`; `/transactions*` chuyển hướng.
+// Thay bản G2 cũ (đã gỡ cùng trang Giao dịch riêng). Backend giả `page.route`; không sleep.
 import { expect, type Page, type Route, test } from "@playwright/test";
-import { ACTIVE_ID, P_TOKEN } from "./dataset-v2f";
+import { ACTIVE_ID, activeContract, NEW_ID, P_TOKEN } from "./dataset-v2f";
 import { installV2f, type Sent } from "./v2f-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
-const TX_DRAFT = "f1000000-0000-4000-8000-000000000001";
-const TX_POSTED = "f1000000-0000-4000-8000-000000000002";
-const COMP = P_TOKEN.components[0]?.id ?? "";
-
-const line = {
-  id: "f2000000-0000-4000-8000-000000000001",
-  ord: 0,
-  name: "USB Token",
-  product_id: P_TOKEN.id,
-  component_ids: [COMP],
-  unit: "cái",
-  qty: "3",
-  unit_price: 500_000,
-  amount: 1_500_000,
-};
-const summary = (id: string, status: string, over: object = {}) => ({
-  id,
-  deal: "sell",
-  status,
-  rev: 1,
-  occurred_on: "2026-10-18",
-  due_on: "2026-11-18",
-  partner_name: "Công ty An Phát",
-  party_key: null,
-  contract_id: null,
-  total: 1_500_000,
-  lot_label: null,
-  updated_at: "2026-10-18T03:00:00Z",
-  ...over,
-});
-const detail = (id: string, status: string, over: object = {}) => ({
-  ...summary(id, status),
-  valid_until: null,
-  partner_tax_id: null,
-  product_group: "goods",
-  note: null,
-  holder: null,
-  created_by: null,
-  created_at: "2026-10-18T02:00:00Z",
-  posted_at: status === "posted" ? "2026-10-18T03:00:00Z" : null,
-  cancelled_at: null,
-  cancel_reason: null,
-  lines: [line],
-  obligations:
-    status === "posted"
-      ? [
-          {
-            id: "f3000000-0000-4000-8000-000000000001",
-            direction: "receive",
-            seq: 1,
-            due_date: "2026-11-18",
-            amount: 1_500_000,
-            status: "open",
-            cancel_reason: null,
-          },
-        ]
-      : [],
-  events: [
-    {
-      id: "ev1",
-      type: "created",
-      actor_user_id: null,
-      reason: null,
-      data: { total: 1_500_000, lines: 1 },
-      at: "2026-10-18T02:00:00Z",
-    },
-    ...(status === "posted"
-      ? [
-          {
-            id: "ev2",
-            type: "posted",
-            actor_user_id: null,
-            reason: null,
-            data: {},
-            at: "2026-10-18T03:00:00Z",
-          },
-        ]
-      : []),
-  ],
-  ...over,
-});
-const stock = [
-  {
-    component_id: COMP,
-    on_hand_before: "10",
-    on_hand_after: "7",
-    avg_cost_before: 100_000,
-    avg_cost_after: 100_000,
-  },
-];
-
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+const deals = (sent: Sent[]) => sent.find((s) => s.path === "/pack/contracts/contracts/deals");
 
-type Opts = { postError?: boolean; linked?: boolean };
-type Reply = [status: number, body: unknown] | null;
-const STOCK_ERR = {
-  error: { code: "TRANSACTION_STOCK", message: "Kho USB Token không đủ: cần 3, còn 2" },
-};
-const act = (tx: unknown, reversed = 1): Reply => [
-  200,
-  { transaction: tx, stock, stock_reversed: reversed },
-];
-
-function listReply(u: URL, o: Opts): Reply {
-  const cid = u.searchParams.get("contract_id");
-  const items =
-    cid && !o.linked
-      ? []
-      : [
-          summary(TX_DRAFT, "draft", cid ? { contract_id: cid } : {}),
-          summary(TX_POSTED, "posted", { deal: "buy", partner_name: "Bao Bì Phương Nam" }),
-        ];
-  return [200, { items, total: items.length, page: 1, limit: 20 }];
-}
-
-/** Bảng trả lời theo `METHOD /đường-dẫn` (sau `/transactions`). */
-function reply(method: string, path: string, u: URL, o: Opts): Reply {
-  const table: Record<string, () => Reply> = {
-    "GET ": () => listReply(u, o),
-    "POST ": () => [201, detail(TX_DRAFT, "draft")],
-    [`POST /${TX_DRAFT}/post`]: () =>
-      o.postError ? [409, STOCK_ERR] : act(detail(TX_DRAFT, "posted"), 0),
-    [`POST /${TX_POSTED}/adjust`]: () => act(detail(TX_POSTED, "posted", { rev: 2 })),
-    [`POST /${TX_POSTED}/cancel`]: () => act(detail(TX_POSTED, "cancelled")),
-    [`PATCH /${TX_POSTED}/describe`]: () => [200, detail(TX_POSTED, "posted", { holder: "Kho A" })],
-    [`GET /${TX_DRAFT}`]: () => [200, detail(TX_DRAFT, "draft")],
-    [`GET /${TX_POSTED}`]: () => [200, detail(TX_POSTED, "posted")],
-    [`DELETE /${TX_DRAFT}`]: () => [204, null],
-  };
-  return table[`${method} ${path}`]?.() ?? [404, { error: { code: "NOT_FOUND", message: "x" } }];
-}
-
-const bodyOf = (r: Route): unknown => {
-  try {
-    return r.request().postDataJSON();
-  } catch {
-    return null;
-  }
-};
-
-/** Backend giả Giao dịch: danh sách (ghi lại query), chi tiết nháp/đã ghi sổ, và mọi thao tác ghi (ghi lại thân). */
-async function installTx(page: Page, o: Opts = {}): Promise<{ sent: Sent[]; queries: string[] }> {
+async function install(page: Page, settleError: string | null = null) {
   const sent = await installV2f(page);
-  const queries: string[] = [];
-  await page.route("**/pack/contracts/transactions**", (r) => {
-    const method = r.request().method();
-    const u = new URL(r.request().url());
-    const path = u.pathname.replace("/pack/contracts/transactions", "");
-    if (method !== "GET") sent.push({ method, path: u.pathname, body: bodyOf(r) });
-    if (method === "GET" && path === "") queries.push(u.search);
-    const [status, body] = reply(method, path, u, o) ?? [404, null];
-    return status === 204 ? r.fulfill({ status }) : json(r, status, body);
+  await page.route("**/pack/contracts/contracts/deals", (r) => {
+    sent.push({
+      method: "POST",
+      path: new URL(r.request().url()).pathname,
+      body: r.request().postDataJSON(),
+    });
+    return json(r, 201, {
+      id: NEW_ID,
+      doc_type: "deal",
+      status: "active",
+      version: 1,
+      settled: [],
+      settle_error: settleError,
+    });
   });
-  return { sent, queries };
+  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/attach`, (r) => {
+    sent.push({
+      method: "POST",
+      path: new URL(r.request().url()).pathname,
+      body: r.request().postDataJSON(),
+    });
+    return json(r, 200, { frame_root_id: ACTIVE_ID, attached: [NEW_ID] });
+  });
+  // Sau khi lưu, form đọc chi tiết giao dịch mới để gắn SP mới (không có dòng SP mới ⇒ không gọi thêm).
+  await page.route(`**/pack/contracts/contracts/${NEW_ID}`, (r) =>
+    json(r, 200, { ...activeContract(), id: NEW_ID, items: [] }),
+  );
+  return sent;
 }
 
-test("menu có mục Giao dịch cạnh Hợp đồng; danh sách hiện hàng + nhãn trạng thái", async ({
+async function fillDeal(page: Page, source: string | null = "invoice") {
+  await page.getByLabel(/^Tên giao dịch/).fill("Bán token tháng 10");
+  await page.getByLabel(/^Nhà cung cấp/).fill("Công ty TNHH Bao Bì Phương Nam");
+  await page.getByLabel(/^Ngày giao dịch/).fill("2026-10-18");
+  await page.getByLabel("Tên hàng").first().fill("USB Token");
+  await page.getByLabel("Số lượng", { exact: true }).first().fill("3");
+  await page.getByLabel("Đơn giá", { exact: true }).first().fill("500000");
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_TOKEN.id);
+  if (source) await page.getByLabel(/^Nguồn giao dịch/).selectOption(source);
+}
+
+test("form Giao dịch: nhãn riêng, không có ô chỉ của HĐ (kết thúc, nhắc hạn, người ký)", async ({
   page,
 }) => {
-  await installTx(page);
-  await page.goto("/transactions");
-  await expect(page.getByRole("link", { name: "Giao dịch" }).first()).toBeVisible();
-  const rows = page.getByTestId("tx-row");
-  await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("Công ty An Phát");
-  await expect(rows.nth(0)).toContainText("Nháp");
-  await expect(rows.nth(1)).toContainText("Đã ghi sổ");
-  await expect(rows.nth(1)).toContainText("Mua");
+  await install(page);
+  await page.goto("/contracts/new?type=deal");
+  await expect(page.getByLabel(/^Tên giao dịch/)).toBeVisible();
+  await expect(page.getByLabel("Số chứng từ")).toBeVisible();
+  await expect(page.getByLabel(/^Ngày giao dịch/)).toBeVisible();
+  await expect(page.getByLabel(/^Nguồn giao dịch/)).toBeVisible();
+  await expect(page.getByLabel(/^Đã giao \/ đã thanh toán ngay/)).not.toBeChecked();
+  await expect(page.getByLabel("Hiệu lực đến")).toHaveCount(0);
+  await expect(page.getByLabel("Tên hợp đồng")).toHaveCount(0);
 });
 
-test("lọc trạng thái + loại gửi đúng query lên máy chủ", async ({ page }) => {
-  const { queries } = await installTx(page);
-  await page.goto("/transactions");
-  await expect(page.getByTestId("tx-row")).toHaveCount(2);
-  await page.getByLabel("Trạng thái").selectOption("draft");
-  await page.getByLabel("Loại", { exact: true }).selectOption("buy");
-  await expect.poll(() => queries.at(-1) ?? "").toContain("status=draft");
-  expect(queries.at(-1)).toContain("deal=buy");
-  expect(queries.at(-1)).toContain("page=1");
-});
-
-test("tạo nháp: chọn SP, nhập SL/đơn giá ⇒ POST đúng thân, mở chi tiết nháp", async ({ page }) => {
-  const { sent } = await installTx(page);
-  await page.goto("/transactions/new");
-  await page.getByRole("textbox", { name: "Đối tác", exact: true }).fill("Công ty An Phát");
-  await page.getByLabel("Sản phẩm dòng 1").selectOption(P_TOKEN.id);
-  await expect(page.getByLabel("Tên dòng 1")).toHaveValue("USB Token");
-  await page.getByLabel("Số lượng dòng 1").fill("3");
-  await page.getByLabel("Đơn giá dòng 1").fill("500.000");
-  await expect(page.getByTestId("tx-amount-0")).toHaveText("1.500.000");
-  await page.getByTestId("tx-save").click();
-  await expect(page).toHaveURL(new RegExp(`/transactions/${TX_DRAFT}$`));
-  const post = sent.find((s) => s.method === "POST" && s.path.endsWith("/transactions"));
-  expect(post?.body).toMatchObject({
-    deal: "sell",
-    partner_name: "Công ty An Phát",
-    lines: [{ name: "USB Token", qty: "3", unit_price: 500000, product_id: P_TOKEN.id }],
+test("lưu: POST /contracts/deals với deal + source + settled_now, xong mở giao dịch", async ({
+  page,
+}) => {
+  const sent = await install(page);
+  await page.goto("/contracts/new?type=deal");
+  await fillDeal(page);
+  await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).check();
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click();
+  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  expect(deals(sent)?.body).toMatchObject({
+    deal: "buy",
+    source: "invoice",
+    settled_now: true,
+    title: "Bán token tháng 10",
+    partner_name: "Công ty TNHH Bao Bì Phương Nam",
+    start_date: "2026-10-18",
+    end_date: null,
+    notice_days: null,
+    total_value: 1_500_000,
   });
+  expect(sent.some((s) => s.path.endsWith("/manual"))).toBe(false);
 });
 
-test("form thiếu đối tác ⇒ báo lỗi, không gọi máy chủ", async ({ page }) => {
-  const { sent } = await installTx(page);
-  await page.goto("/transactions/new");
-  await page.getByTestId("tx-save").click();
-  await expect(page.getByTestId("tx-form-error")).toHaveText("Nhập tên đối tác.");
-  expect(sent.some((s) => s.path.endsWith("/transactions"))).toBe(false);
+test("không tích «đã giao» ⇒ không gửi settled_now", async ({ page }) => {
+  const sent = await install(page);
+  await page.goto("/contracts/new?type=deal");
+  await fillDeal(page, "verbal");
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click();
+  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  const body = deals(sent)?.body as Record<string, unknown>;
+  expect(body.source).toBe("verbal");
+  expect("settled_now" in body).toBe(false);
 });
 
-test("ghi sổ nháp: xác nhận ⇒ hộp kho trước → sau theo dữ liệu máy chủ", async ({ page }) => {
-  const { sent } = await installTx(page);
-  await page.goto(`/transactions/${TX_DRAFT}`);
-  await page.getByTestId("tx-post").click();
-  await page.getByRole("button", { name: "Ghi sổ", exact: true }).last().click();
-  const table = page.getByTestId("stock-table");
-  await expect(table).toContainText("USB Token");
-  await expect(table).toContainText("10");
-  await expect(table).toContainText("7");
-  expect(sent.some((s) => s.path.endsWith(`/${TX_DRAFT}/post`))).toBe(true);
+test("thiếu nguồn ⇒ chặn lưu, báo, viền đỏ; không gửi", async ({ page }) => {
+  const sent = await install(page);
+  await page.goto("/contracts/new?type=deal");
+  await fillDeal(page, null);
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Chọn nguồn giao dịch.");
+  await expect(page.getByLabel(/^Nguồn giao dịch/)).toHaveAttribute("aria-invalid", "true");
+  expect(deals(sent)).toBeUndefined();
 });
 
-test("ghi sổ lỗi TRANSACTION_STOCK ⇒ hiện thông điệp máy chủ, nháp giữ nguyên", async ({
+test("xác nhận ngay dừng giữa chừng (settle_error) ⇒ ở lại báo lý do, giao dịch đã lưu, có nút mở", async ({
   page,
 }) => {
-  await installTx(page, { postError: true });
-  await page.goto(`/transactions/${TX_DRAFT}`);
-  await page.getByTestId("tx-post").click();
-  await page.getByRole("button", { name: "Ghi sổ", exact: true }).last().click();
-  await expect(page.getByTestId("tx-form-error")).toHaveText(
-    "Kho USB Token không đủ: cần 3, còn 2",
+  await install(page, "STOCK_INSUFFICIENT");
+  await page.goto("/contracts/new?type=deal");
+  await fillDeal(page);
+  await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).check();
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click();
+  const err = page.getByTestId("settle-error");
+  await expect(err).toContainText("Giao dịch đã được lưu");
+  await expect(err).toContainText("Không đủ tồn kho");
+  await expect(page).toHaveURL(/\/contracts\/new/);
+  await expect(page.getByRole("link", { name: "Mở giao dịch" })).toHaveAttribute(
+    "href",
+    `/contracts/${NEW_ID}`,
   );
-  await expect(page.getByTestId("tx-post")).toBeVisible();
 });
 
-test("giao dịch đã ghi sổ: nghĩa vụ, dòng thời gian, mô tả sửa trực tiếp", async ({ page }) => {
-  const { sent } = await installTx(page);
-  await page.goto(`/transactions/${TX_POSTED}`);
-  await expect(page.getByTestId("tx-obligations")).toContainText("Thu");
-  await expect(page.getByTestId("tx-event")).toHaveCount(2);
-  await page.getByLabel("Người giữ").fill("Kho A");
-  await page.getByTestId("tx-describe-save").click();
-  const body = sent.find((s) => s.path.endsWith("/describe"))?.body;
-  expect(body).toMatchObject({ holder: "Kho A" });
+test("?frame=<id> điền sẵn HĐ nguyên tắc; lưu xong gắn qua POST /attach", async ({ page }) => {
+  const sent = await install(page);
+  await page.goto(`/contracts/new?type=deal&frame=${ACTIVE_ID}`);
+  const picked = page.getByTestId("frame-picked");
+  await expect(picked).toBeVisible();
+  await expect(picked).not.toHaveText("");
+  await fillDeal(page);
+  await page.getByRole("button", { name: "Lưu giao dịch" }).click();
+  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  const attach = sent.find((s) => s.path.endsWith(`/${ACTIVE_ID}/attach`));
+  expect(attach?.body).toEqual({ ids: [NEW_ID] });
 });
 
-test("điều chỉnh và huỷ cần lý do (≥ 3 ký tự) rồi hiện kho đã đảo", async ({ page }) => {
-  const { sent } = await installTx(page);
-  await page.goto(`/transactions/${TX_POSTED}`);
-  await page.getByTestId("tx-adjust").click();
-  const submit = page.getByTestId("tx-adjust-submit");
-  await expect(submit).toBeDisabled();
-  await page.getByLabel(/^Lý do/).fill("Sai số lượng");
-  await page.getByLabel("Số lượng dòng 1").fill("2");
-  await expect(submit).toBeEnabled();
-  await submit.click();
-  await expect(page.getByTestId("stock-table")).toBeVisible();
-  const adj = sent.find((s) => s.path.endsWith("/adjust"))?.body as {
-    reason: string;
-    lines: { qty: string }[];
-  };
-  expect(adj.reason).toBe("Sai số lượng");
-  expect(adj.lines[0]?.qty).toBe("2");
-  // Hộp có hai nút "Đóng" (X chuẩn của Dialog + nút chân hộp): bấm nút chân hộp.
-  await page.getByTestId("stock-close").click();
-
-  await page.getByTestId("tx-cancel").click();
-  const go = page.getByTestId("tx-cancel-submit");
-  await expect(go).toBeDisabled();
-  await page.getByLabel(/^Lý do/).fill("Khách huỷ đơn");
-  await go.click();
-  expect(sent.find((s) => s.path.endsWith("/cancel"))?.body).toEqual({ reason: "Khách huỷ đơn" });
-});
-
-test("trang HĐ: khối Giao dịch liên kết + link sang danh sách đã lọc theo HĐ", async ({ page }) => {
-  const { queries } = await installTx(page, { linked: true });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
-  const block = page.getByTestId("contract-tx-block");
-  await expect(block).toContainText("Giao dịch liên kết");
-  await page.getByTestId("contract-tx-all").click();
-  await expect(page).toHaveURL(new RegExp(`/transactions\\?contract=${ACTIVE_ID}`));
-  await expect.poll(() => queries.at(-1) ?? "").toContain(`contract_id=${ACTIVE_ID}`);
+test("/transactions/new và /transactions/<id> chuyển hướng", async ({ page }) => {
+  await install(page);
+  await page.goto("/transactions/new");
+  await expect(page).toHaveURL(/\/contracts\/new\?type=deal/);
+  await page.goto(`/transactions/${ACTIVE_ID}`);
+  await expect(page).toHaveURL(new RegExp(`/contracts/${ACTIVE_ID}$`));
 });

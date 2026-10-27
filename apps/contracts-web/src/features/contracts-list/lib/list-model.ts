@@ -3,6 +3,7 @@
 import type { ContractFacets, ContractStatus } from "@ai/contracts";
 import type { Cond } from "~/features/table";
 import { type DateFilter, dateParams } from "./date-filter";
+import { type DocFilter, docTypeParams } from "./doc-list";
 
 export type Tone = "late" | "soon" | "ok" | "dim" | "act";
 
@@ -105,6 +106,8 @@ export type ListParams = {
   pageSize: number;
   /** Gap #10: lọc ngày (từ URL). */
   date?: DateFilter;
+  /** DOC-ui-list: bộ lọc loại chứng từ; vắng ⇒ không gửi tham số loại (phản hồi HD1 cũ). */
+  docType?: DocFilter;
 };
 
 /** Phần lọc dùng chung cho danh sách và xuất tệp (không phân trang): `q`, các lựa chọn, giá trị, ngày. `q` < 2 ký tự bị bỏ (API từ chối). */
@@ -132,6 +135,7 @@ function filterParams(p: ListParams): URLSearchParams {
 /** `?status=a&status=b…` (tham số lặp). Lọc đã chọn nhưng chưa có giá trị khớp ⇒ không lọc thêm. */
 export function listQueryString(p: ListParams): string {
   const u = filterParams(p);
+  if (p.docType) for (const [k, v] of docTypeParams(p.docType)) u.set(k, v);
   u.set("include", "progress"); // V2-F: giai đoạn + bước hiện tại + loại HĐ của từng HĐ trong trang
   u.set("page", String(p.page));
   u.set("page_size", String(p.pageSize));
@@ -141,6 +145,8 @@ export function listQueryString(p: ListParams): string {
 /** Gap #8: cùng bộ lọc với danh sách đang hiện, không phân trang, kèm định dạng tệp. */
 export function exportQueryString(p: ListParams, format: "xlsx" | "csv"): string {
   const u = filterParams(p);
+  // Xuất tệp không có `nest`: chỉ giữ lọc loại (`doc_type`).
+  if (p.docType) for (const [k, v] of docTypeParams(p.docType)) if (k === "doc_type") u.set(k, v);
   u.set("format", format);
   return u.toString();
 }

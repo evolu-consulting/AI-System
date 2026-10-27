@@ -1,0 +1,53 @@
+{
+  "contracts": {
+    "doclist": {
+      "type": { "framework": "HĐ nguyên tắc", "deal": "Giao dịch" },
+      "filterLabel": "Loại chứng từ",
+      "filter": {
+        "all": "Tất cả",
+        "framework": "HĐ nguyên tắc",
+        "contract": "HĐ kinh tế",
+        "deal": "Giao dịch"
+      },
+      "addDeal": "Thêm giao dịch",
+      "back": "← Hợp đồng & giao dịch",
+      "newDealTitle": "Thêm giao dịch",
+      "infoTitle": "Thông tin giao dịch",
+      "f": {
+        "title": "Tên giao dịch",
+        "titlePlaceholder": "VD: Bán lô hàng tháng 10 cho Công ty An Phát",
+        "number": "Số chứng từ",
+        "startDate": "Ngày giao dịch"
+      },
+      "source": "Nguồn giao dịch",
+      "sourcePick": "Chọn nguồn…",
+      "sourceName": {
+        "invoice": "Hoá đơn",
+        "verbal": "Thoả thuận miệng",
+        "message": "Tin nhắn / email",
+        "quote": "Báo giá",
+        "other": "Khác"
+      },
+      "sourceRequired": "Chọn nguồn giao dịch.",
+      "frame": "Thuộc HĐ nguyên tắc",
+      "frameSearch": "Tìm HĐ nguyên tắc theo tên hoặc số (tuỳ chọn)",
+      "frameNone": "Không có HĐ nguyên tắc nào khớp.",
+      "frameClear": "Bỏ chọn",
+      "settledNow": "Đã giao / đã thanh toán ngay",
+      "settledNowHint": "Xác nhận luôn các mốc giao hàng và thanh toán mặc định khi lưu (kho chạy theo luật giao hàng).",
+      "save": "Lưu giao dịch",
+      "saved": "Đã lưu giao dịch",
+      "savedTitle": "Đã lưu giao dịch",
+      "openDeal": "Mở giao dịch",
+      "settleStopped": "Giao dịch đã được lưu, nhưng việc xác nhận ngay đã dừng lại.",
+      "settle": {
+        "STOCK_INSUFFICIENT": "Không đủ tồn kho để xuất hàng. Điều chỉnh tồn kho hoặc số lượng rồi xác nhận giao hàng trong giao dịch.",
+        "DELIVERY_OVER": "Số lượng giao vượt số lượng đã đặt. Mở giao dịch để xác nhận lại.",
+        "DELIVERY_INVALID": "Thông tin giao hàng chưa hợp lệ. Mở giao dịch để xác nhận lại.",
+        "DELIVERY_LOCKED": "Mốc giao hàng đang bị khoá. Mở giao dịch để xử lý.",
+        "other": "Không xác nhận được (mã {{code}}). Mở giao dịch để xác nhận các mốc còn lại."
+      },
+      "attachFailed": "Không gắn được vào HĐ nguyên tắc (cần cùng đối tác và cùng hướng mua/bán)."
+    }
+  }
+}

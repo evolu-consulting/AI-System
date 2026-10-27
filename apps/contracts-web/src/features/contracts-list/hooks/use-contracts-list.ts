@@ -1,6 +1,6 @@
 // HD-FR-51 · S03: dữ liệu danh sách phía server — truy vấn theo q/lọc/trang (có debounce chữ tìm), lựa chọn lọc từ facets,
 // tên phụ trách từ danh bạ, tên loại hàng. Giữ trang cũ khi đổi bộ lọc (không nhấp nháy).
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type ColumnFilter, useTable } from "~/features/table";
@@ -15,6 +15,7 @@ import {
   MEMBERS_KEY,
 } from "../api";
 import type { DateFilter } from "../lib/date-filter";
+import { COUNTED_TYPES, countQuery, type DocFilter } from "../lib/doc-list";
 import {
   exportQueryString,
   type FilterMaps,
@@ -69,7 +70,30 @@ function useLookups() {
   return { facets, members, cats };
 }
 
-export function useContractsList(categoryExtra?: ReactNode, date?: DateFilter) {
+/** DOC-ui-list: số chứng từ theo loại (ô đếm trên bộ lọc loại): mỗi loại một truy vấn `page_size=1`, chỉ đọc `total`. */
+function useDocCounts(): Partial<Record<DocFilter, number>> {
+  const res = useQueries({
+    queries: COUNTED_TYPES.map((ty) => ({
+      queryKey: listKey(countQuery(ty)),
+      queryFn: ({ signal }: { signal: AbortSignal }) => fetchList(countQuery(ty), signal),
+      staleTime: STALE_MS,
+    })),
+  });
+  const out: Partial<Record<DocFilter, number>> = {};
+  COUNTED_TYPES.forEach((ty, i) => {
+    const n = res[i]?.data?.total;
+    if (n !== undefined) out[ty] = n;
+  });
+  if (COUNTED_TYPES.every((ty) => out[ty] !== undefined))
+    out.all = COUNTED_TYPES.reduce((s, ty) => s + (out[ty] ?? 0), 0);
+  return out;
+}
+
+export function useContractsList(
+  categoryExtra?: ReactNode,
+  date?: DateFilter,
+  docType?: DocFilter,
+) {
   const { t: tr } = useTranslation();
   const { facets, members, cats } = useLookups();
   const memberNames = useMemo(
@@ -99,6 +123,7 @@ export function useContractsList(categoryExtra?: ReactNode, date?: DateFilter) {
     page: t.page,
     pageSize: t.pageSize,
     ...(date ? { date } : {}),
+    ...(docType ? { docType } : {}),
   };
   const qs = listQueryString(params);
   const list = useQuery({
@@ -112,5 +137,6 @@ export function useContractsList(categoryExtra?: ReactNode, date?: DateFilter) {
   }, [serverTotal]);
   /** Gap #8: chuỗi truy vấn xuất tệp = đúng bộ lọc đang hiện (dùng `q` đã debounce như danh sách). */
   const exportQs = (format: "xlsx" | "csv") => exportQueryString(params, format);
-  return { t, list, facets, memberNames, categories: cats.data?.items ?? [], exportQs };
+  const counts = useDocCounts();
+  return { t, list, facets, memberNames, categories: cats.data?.items ?? [], exportQs, counts };
 }

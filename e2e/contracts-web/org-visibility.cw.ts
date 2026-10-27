@@ -157,7 +157,9 @@ async function install(page: Page): Promise<Fake> {
 async function listAs(page: Page, f: Fake, who: Who): Promise<string[]> {
   f.who = who;
   await page.goto("/contracts");
-  await expect(page.getByRole("heading", { name: "Hợp đồng", exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Hợp đồng & giao dịch", exact: true }).first(),
+  ).toBeVisible();
   await expect(
     page.getByText(new RegExp(`${[BAO_BI, GIA_VI, VAN_CHUYEN].join("|")}`)).first(),
   ).toBeVisible();

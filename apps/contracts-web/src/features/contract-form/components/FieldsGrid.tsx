@@ -23,6 +23,8 @@ type Props = {
   badges?: Partial<Record<TextKey, readonly FieldBadge[]>>;
   /** V2-G: ô AI chưa chắc và người chưa sửa ⇒ tô vàng (`data-unsure`). */
   unsure?: ReadonlySet<TextKey>;
+  /** DOC-ui-list: form Giao dịch — nhãn "Tên giao dịch / Số chứng từ / Ngày giao dịch", bỏ ô chỉ của HĐ (kết thúc, nhắc hạn, người ký). */
+  dealMode?: boolean;
 };
 
 function Row({
@@ -147,9 +149,11 @@ export function FieldsGrid({
   lockedKeys,
   badges,
   unsure,
+  dealMode,
 }: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
+  const D = (k: string) => t(`contracts.doclist.f.${k}`);
   const sum = autoTotal(f.items);
   const text = (k: TextKey, label: string, o: TextOpts = {}) => (
     <TextField
@@ -172,13 +176,13 @@ export function FieldsGrid({
         cols === 3 ? "grid-cols-3 max-lg:grid-cols-2" : "grid-cols-2",
       )}
     >
-      {text("title", L("title"), {
+      {text("title", dealMode ? D("title") : L("title"), {
         req: true,
         bad: invalid.has("title"),
         span: true,
-        ph: L("titlePlaceholder"),
+        ph: dealMode ? D("titlePlaceholder") : L("titlePlaceholder"),
       })}
-      {text("number", L("number"), { ph: L("numberPlaceholder") })}
+      {text("number", dealMode ? D("number") : L("number"), { ph: L("numberPlaceholder") })}
       <PartnerField
         deal={f.deal}
         name={f.partner_name}
@@ -211,15 +215,15 @@ export function FieldsGrid({
           ph: sum !== null ? t("contracts.cform.autoSum", { value: vnd(sum) }) : L("totalValuePh"),
         })
       )}
-      {text("start_date", L("startDate"), {
+      {text("start_date", dealMode ? D("startDate") : L("startDate"), {
         req: true,
         bad: invalid.has("start_date"),
         type: "date",
       })}
-      {text("end_date", L("endDate"), { type: "date" })}
-      {text("notice_days", L("noticeDays"), { mono: true, suffix: L("days") })}
-      {text("our_signer", L("ourSigner"), { ph: L("signerPlaceholder") })}
-      {text("partner_signer", L("partnerSigner"), { ph: L("signerPlaceholder") })}
+      {!dealMode && text("end_date", L("endDate"), { type: "date" })}
+      {!dealMode && text("notice_days", L("noticeDays"), { mono: true, suffix: L("days") })}
+      {!dealMode && text("our_signer", L("ourSigner"), { ph: L("signerPlaceholder") })}
+      {!dealMode && text("partner_signer", L("partnerSigner"), { ph: L("signerPlaceholder") })}
       {text("payment_terms", referral ? L("paymentTermsRef") : L("paymentTerms"), {
         span: cols === 2,
         ph: referral ? L("paymentTermsRefPh") : L("paymentTermsPh"),

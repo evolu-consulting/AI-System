@@ -26,7 +26,6 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
 import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
-import { ContractTxBlock } from "~/features/transactions/components/ContractTxBlock";
 import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
@@ -202,7 +201,6 @@ function ContractBody({
           {/* Bỏ "Nguồn hàng & lãi" khỏi chi tiết HĐ (người dùng 2026-10-23); feature `sourcing` giữ nguyên, chưa gắn. */}
           <ContractLog contractId={id} status={c.status} />
           {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
-          <ContractTxBlock contractId={id} write={write} />
           <HistoryPanel id={id} />
           {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}
         </div>

@@ -13,11 +13,12 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { createManualContract } from "~/features/contract-new/api";
+import { attachToFrame, createDeal, createManualContract } from "~/features/contract-new/api";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
 import { linkNewFormLines } from "~/features/product-links/api";
 import { fetchProducts, PRODUCTS_KEY } from "../api";
 import { blockerMessage } from "../lib/blocker";
+import { type DealExtra, EMPTY_EXTRA, toDealRequest } from "../lib/deal-form";
 import {
   EMPTY_FORM,
   EMPTY_LINE,
@@ -82,8 +83,35 @@ function useFormEditors(setF: SetForm) {
   return { set, setDeal, patchLine, addLine, removeLine };
 }
 
-/** Lưu: chặn lỗi ⇒ câu báo; ổn ⇒ tạo HĐ rồi mở HĐ mới. */
-function useSubmit(f: FormState, setTried: (v: boolean) => void) {
+/** Tạo Giao dịch, gắn HĐ nguyên tắc (nếu chọn; lỗi gắn không làm mất giao dịch đã lưu), gắn SP mới. */
+async function saveDeal(
+  f: FormState,
+  deal: DealExtra & { source: Exclude<DealExtra["source"], ""> },
+  t: (k: string) => string,
+): Promise<DealSaved> {
+  const res = await createDeal(toDealRequest(f, readNumbers(f), productIdsOf(f), deal));
+  let attachError: string | null = null;
+  if (deal.frame) {
+    try {
+      await attachToFrame(deal.frame.id, [res.id]);
+    } catch (x) {
+      attachError = saveErrorText(x, t);
+    }
+  }
+  await linkNewFormLines(res.id, res.status, f.items);
+  return { id: res.id, settleError: res.settle_error, attachError };
+}
+
+/** Kết quả lưu Giao dịch khi cần ở lại màn hình báo: "xác nhận ngay" dừng giữa chừng và/hoặc gắn HĐ nguyên tắc lỗi. */
+export type DealSaved = { id: string; settleError: string | null; attachError: string | null };
+
+/** Lưu: chặn lỗi ⇒ câu báo; ổn ⇒ tạo HĐ (hoặc Giao dịch, `deal`) rồi mở bản mới. */
+function useSubmit(
+  f: FormState,
+  setTried: (v: boolean) => void,
+  deal: DealExtra | undefined,
+  setSaved: (s: DealSaved) => void,
+) {
   const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
@@ -98,8 +126,16 @@ function useSubmit(f: FormState, setTried: (v: boolean) => void) {
       (msg) => toast(msg, "late"),
     );
     if (stop) return setErr(stop);
+    if (deal && !deal.source) return setErr(t("contracts.doclist.sourceRequired"));
     setBusy(true);
     try {
+      if (deal?.source) {
+        const s = await saveDeal(f, { ...deal, source: deal.source }, t);
+        await qc.invalidateQueries();
+        toast(t("contracts.doclist.saved"));
+        if (s.settleError || s.attachError) return setSaved(s);
+        return void (await nav({ to: "/contracts/$id", params: { id: s.id } }));
+      }
       const rec = await createManualContract(toRequest(f, readNumbers(f), productIdsOf(f)));
       await linkNewFormLines(rec.id, rec.status, f.items);
       await qc.invalidateQueries();
@@ -114,9 +150,14 @@ function useSubmit(f: FormState, setTried: (v: boolean) => void) {
   return { err, busy, submit };
 }
 
-export function useContractForm() {
+export function useContractForm(mode: "contract" | "deal" = "contract", frameId?: string) {
   // V2-H: "Nhắc trước khi hết hạn" để trống tới khi đọc xong Cài đặt rồi điền sẵn (người đã gõ thì giữ).
   const [f, setF] = useState<FormState>({ ...EMPTY_FORM, notice_days: "" });
+  // DOC-ui-list: phần riêng của Giao dịch (nguồn, đã giao/đã thanh toán ngay, HĐ nguyên tắc chủ) + kết quả lưu cần ở lại báo.
+  const [extra, setExtra] = useState<DealExtra>(
+    frameId ? { ...EMPTY_EXTRA, frame: { id: frameId, title: "" } } : EMPTY_EXTRA,
+  );
+  const [saved, setSaved] = useState<DealSaved | null>(null);
   const notice = useNoticeDefault();
   useEffect(() => setF((s) => withNoticeDefault(s, notice)), [notice]);
   const [tried, setTried] = useState(false);
@@ -134,6 +175,24 @@ export function useContractForm() {
     [tried, f],
   );
   const editors = useFormEditors(setF);
-  const { err, busy, submit } = useSubmit(f, setTried);
-  return { f, ...editors, invalid, unlinked, err, busy, submit, products: products.data ?? [] };
+  const { err, busy, submit } = useSubmit(
+    f,
+    setTried,
+    mode === "deal" ? extra : undefined,
+    setSaved,
+  );
+  return {
+    f,
+    ...editors,
+    invalid,
+    unlinked,
+    err,
+    busy,
+    submit,
+    products: products.data ?? [],
+    extra,
+    setExtra,
+    saved,
+    sourceMissing: tried && mode === "deal" && !extra.source,
+  };
 }

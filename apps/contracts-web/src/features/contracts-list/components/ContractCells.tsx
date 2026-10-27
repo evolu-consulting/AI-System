@@ -1,6 +1,6 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI `renderCList`): ô bảng — Hợp đồng (tên + số / phụ lục của), Đối tác, Loại, Giá trị, Hiệu lực,
 // Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem; Xoá ẩn tới V2-M). Thẻ điện thoại: một thẻ mỗi HĐ.
-import type { ContractListRow, ContractProgress } from "@ai/contracts";
+import type { ContractListRow, ContractProgress, DocType } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,12 +11,15 @@ import { cn } from "~/lib/utils";
 import { deleteAction } from "../lib/delete-action";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
+import { DocTypeTag, EyeIcon } from "./ChildRows";
 
 export type RowCtx = {
   /** Tiêu đề HĐ gốc của hàng phụ lục trong trang (`parents` của API). */
   parents: ReadonlyMap<string, string>;
   /** Giai đoạn + bước hiện tại theo id HĐ (`progress` của API, V2-A). */
   progress: ReadonlyMap<string, ContractProgress>;
+  /** DOC-ui-list: loại chứng từ theo id hàng (`docs` của API); vắng ⇒ HĐ kinh tế. */
+  docs?: ReadonlyMap<string, DocType>;
   /** Vai quản lý (`useMe().owner`) ⇒ hiện nút Xoá. */
   owner?: boolean;
   /** Mở hộp xoá của HĐ `id`. */
@@ -52,10 +55,16 @@ function SubLine({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
 export function DealTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
   const deal = dealOfRow(r, ctx.progress.get(r.id));
-  return deal ? (
-    <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
-  ) : (
-    <span className="text-dim">—</span>
+  const doc = ctx.docs?.get(r.id);
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <DocTypeTag doc={doc} />
+      {deal ? (
+        <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
+      ) : doc === "framework" || doc === "deal" ? null : (
+        <span className="text-dim">—</span>
+      )}
+    </span>
   );
 }
 
@@ -230,23 +239,6 @@ const TrashIcon = () => (
     aria-hidden="true"
   >
     <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6" />
-  </svg>
-);
-
-const EyeIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-    <circle cx="12" cy="12" r="3" />
   </svg>
 );
 

@@ -1,0 +1,53 @@
+{
+  "contracts": {
+    "doclist": {
+      "type": { "framework": "Framework contract", "deal": "Transaction" },
+      "filterLabel": "Document type",
+      "filter": {
+        "all": "All",
+        "framework": "Framework contracts",
+        "contract": "Contracts",
+        "deal": "Transactions"
+      },
+      "addDeal": "Add transaction",
+      "back": "← Contracts & transactions",
+      "newDealTitle": "Add transaction",
+      "infoTitle": "Transaction details",
+      "f": {
+        "title": "Transaction name",
+        "titlePlaceholder": "E.g. October shipment to An Phat Co.",
+        "number": "Document number",
+        "startDate": "Transaction date"
+      },
+      "source": "Transaction source",
+      "sourcePick": "Choose a source…",
+      "sourceName": {
+        "invoice": "Invoice",
+        "verbal": "Verbal agreement",
+        "message": "Message / email",
+        "quote": "Quotation",
+        "other": "Other"
+      },
+      "sourceRequired": "Choose the transaction source.",
+      "frame": "Under framework contract",
+      "frameSearch": "Search framework contracts by name or number (optional)",
+      "frameNone": "No matching framework contract.",
+      "frameClear": "Clear",
+      "settledNow": "Already delivered / paid",
+      "settledNowHint": "Confirm the default delivery and payment milestones on save (stock follows the delivery rules).",
+      "save": "Save transaction",
+      "saved": "Transaction saved",
+      "savedTitle": "Transaction saved",
+      "openDeal": "Open transaction",
+      "settleStopped": "The transaction was saved, but confirming it right away stopped.",
+      "settle": {
+        "STOCK_INSUFFICIENT": "Not enough stock to ship. Adjust stock or quantity, then confirm delivery in the transaction.",
+        "DELIVERY_OVER": "Delivered quantity exceeds the ordered quantity. Open the transaction to confirm again.",
+        "DELIVERY_INVALID": "Delivery details are not valid. Open the transaction to confirm again.",
+        "DELIVERY_LOCKED": "The delivery milestone is locked. Open the transaction to handle it.",
+        "other": "Could not confirm (code {{code}}). Open the transaction to confirm the remaining milestones."
+      },
+      "attachFailed": "Could not attach to the framework contract (same partner and same buy/sell direction required)."
+    }
+  }
+}
