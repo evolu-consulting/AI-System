@@ -24,6 +24,7 @@ import type {
   ESignRegistry,
   ESignRepo,
 } from "./esign.ports";
+import type { ESignAnchors } from "./esign-anchor.usecase";
 
 export { ESignFail } from "./esign.helpers";
 
@@ -37,6 +38,8 @@ export type ESignDeps = {
   tenantOf: (provider: string, envelopeId: string) => Promise<string | null>;
   newId: () => string;
   now?: () => Date;
+  /** esign-anchor · chọn vị trí ô ký trong văn bản HĐ; vắng ⇒ luôn trang ký cuối. */
+  anchors?: ESignAnchors;
 };
 type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
@@ -156,9 +159,32 @@ export function esignUsecase(d: ESignDeps) {
     return key;
   };
 
+  /** esign-anchor · cụm trong văn bản cho từng người ký (chỉ nhà cung cấp loại "envelope"); không đặt được ⇒ null (trang ký cuối).
+   *  Lỗi đọc chữ không chặn gửi ký. */
+  const anchorsFor = async (
+    who: PackWho,
+    id: string,
+    p: ESignProvider,
+    stored: { role: "company" | "partner" }[],
+    bytes: Uint8Array,
+  ): Promise<string[] | null> => {
+    if (!d.anchors || kindOf(d.providers.entries, p.key) !== "envelope") return null;
+    const pick = await d.anchors
+      .pick(
+        who,
+        id,
+        stored.map((s) => s.role),
+        bytes,
+      )
+      .catch(() => null);
+    return pick?.mode === "text" ? pick.anchors : null;
+  };
+
   return {
     settings,
     state,
+    /** esign-anchor · vị trí ô ký (route Cài đặt cụm + xem trước); vắng ⇒ không có route. */
+    anchors: d.anchors ?? null,
     async saveSettings(
       who: PackWho,
       b: { enabled?: boolean | undefined; default_provider?: string | undefined },
@@ -193,7 +219,9 @@ export function esignUsecase(d: ESignDeps) {
       const bytes = await d.files(file.org).getContent(file.fileId);
       if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "file-unavailable");
       const title = got.c?.title ?? "";
+      const anchors = await anchorsFor(who, id, p, stored, bytes);
       const { envelopeId } = await p.createEnvelope({
+        anchors,
         subject: `Ky hop dong: ${title}`.slice(0, 100),
         title,
         number: got.c?.number ?? null,

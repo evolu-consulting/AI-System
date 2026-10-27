@@ -1,0 +1,15 @@
+{
+  "contracts": {
+    "esignAnchor": {
+      "title": "Vị trí ô ký trong văn bản hợp đồng",
+      "hint": "Khi gửi ký, hệ thống tìm các cụm dưới đây ở khối chữ ký cuối hợp đồng (mỗi dòng một cụm, ưu tiên từ trên xuống) và đặt ô ký ngay dưới cụm. Không tìm thấy ⇒ dùng trang ký cuối.",
+      "a": "Bên A (công ty)",
+      "b": "Bên B (đối tác)",
+      "save": "Lưu danh sách cụm",
+      "saveErr": "Không lưu được danh sách cụm, kiểm tra lại (mỗi bên ít nhất một cụm, 2–60 ký tự).",
+      "placement": "Vị trí ký",
+      "inText": "trong văn bản",
+      "lastPage": "trang ký cuối"
+    }
+  }
+}

@@ -8,13 +8,18 @@ import { logger } from "../../../lib/logger";
 import { selfContactOf } from "../kit/adapters/member-names";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow } from "../kit/adapters/pack-uow";
+import { createPdfConverter } from "../kit/adapters/pdf";
+import type { PdfConverter } from "../kit/domain/pdf.rules";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { docusignProvider } from "./adapters/docusign.provider";
 import { esignRepo, tenantOfEnvelope } from "./adapters/esign.repo";
 import { ESIGN_WEBHOOK_PATH, esignRoutes, esignWebhookRoutes } from "./adapters/esign.routes";
 import { selfsignProvider } from "./adapters/esign.selfsign";
+import { esignAnchorRepo } from "./adapters/esign-anchor.repo";
+import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
+import { esignAnchors } from "./application/esign-anchor.usecase";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 
@@ -73,11 +78,32 @@ export function esignModule(
     me: selfContactOf(db),
     tenantOf: tenantOfEnvelope(db),
     newId: () => Bun.randomUUIDv7(),
+    // esign-anchor · vị trí ô ký trong văn bản HĐ (PDF không có `source_text` ⇒ đọc lớp chữ; worker tạo lười khi cần).
+    anchors: esignAnchors({
+      uow: createPackUow(db, "contracts", (tx: Tx, t: string) => ({
+        anchor: esignAnchorRepo(tx, t),
+      })),
+      files: d.files,
+      pdf: lazyPdf(),
+    }),
   });
 }
 
-export const esignUserRoutes = (view: PackAccessView, u: ESignUsecase): Hono<PackGuardVars> =>
-  esignRoutes(view, u);
+const lazyPdf = (): Pick<PdfConverter, "toText"> => {
+  let c: PdfConverter | null = null;
+  return {
+    toText: (b, o) => {
+      c ??= createPdfConverter({ maxPending: 1 });
+      return c.toText(b, o);
+    },
+  };
+};
+
+export const esignUserRoutes = (view: PackAccessView, u: ESignUsecase): Hono<PackGuardVars> => {
+  const r = esignRoutes(view, u);
+  if (u.anchors) r.route("/", esignAnchorRoutes(view, u.anchors));
+  return r;
+};
 
 /** Gắn webhook `/pack/contracts/esign/webhook/:provider` — gọi TRƯỚC `requireAuth` (không JWT; nhà cung cấp tự xác thực) — và
  *  trả use case dùng chung cho route người dùng. Gói contracts tắt / không db ⇒ undefined. */

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { useEsignPlacement } from "../anchor-api";
 import { availableProviders, pickDefaultProvider, showProviderPicker } from "../lib/esign-view";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,7 +47,21 @@ function ProviderPick({
   );
 }
 
+/** esign-anchor · "Vị trí ký: trong văn bản / trang ký cuối" (xem trước của server; lỗi ⇒ không hiện). */
+function PlacementNote({ id, open }: { id: string | undefined; open: boolean }) {
+  const { t } = useTranslation();
+  const q = useEsignPlacement(id, open);
+  if (!q.data) return null;
+  return (
+    <p className="text-[12.5px] text-dim" data-testid="esign-placement">
+      {t("contracts.esignAnchor.placement")}:{" "}
+      <b>{t(`contracts.esignAnchor.${q.data.placement === "text" ? "inText" : "lastPage"}`)}</b>
+    </p>
+  );
+}
+
 export function EsignSendDialog({
+  contractId,
   open,
   defaults,
   providers,
@@ -56,6 +71,8 @@ export function EsignSendDialog({
   onClose,
   onSend,
 }: {
+  /** esign-anchor · HĐ (xem trước vị trí ký); vắng ⇒ không hiện. */
+  contractId?: string;
   open: boolean;
   defaults: Row[];
   providers: ESignProviderOut[];
@@ -98,6 +115,8 @@ export function EsignSendDialog({
           <DialogDescription>{t("contracts.esign.dialogHint")}</DialogDescription>
         </DialogHeader>
         {picker && <ProviderPick providers={providers} value={prov} onChange={setProv} />}
+        <PlacementNote id={contractId} open={open} />
+
         {cur && !cur.legal && (
           <p className="text-[12.5px] text-soon" data-testid="esign-dialog-demo">
             {t("contracts.esign.demo")}

@@ -1,11 +1,14 @@
 // cf-esign-docusign · adapter `ESignProvider` cho DocuSign eSignature REST v2.1. Auth: JWT Grant (RS256 tự ký, `docusign.crypto.ts`),
 // token cache tới hết hạn (trừ 60 s), 401 ⇒ bỏ cache. Khoá PEM đọc lười một lần từ `DOCUSIGN_PRIVATE_KEY_FILE`. Không log token/khoá/
 // thân; lỗi chỉ mang status + `errorCode` của DocuSign. `oauthHost`/`baseUri` có thể mang scheme (test: server giả http cục bộ).
+
+import { logger } from "../../../../lib/logger";
 import {
   type ESignEnvelopeInfo,
   type ESignProvider,
   ESignProviderError,
 } from "../application/esign.ports";
+import { TEXT_TAB_OFFSET } from "../domain/esign.anchor";
 import type { ESignConfig } from "../domain/esign.rules";
 import {
   envelopeIdOfWebhook,
@@ -22,6 +25,8 @@ type Deps = {
   readKey?: (path: string) => Promise<string>;
   fetch?: typeof fetch;
   nowS?: () => number;
+  /** esign-anchor · log (test bắt cảnh báo fallback). */
+  log?: { warn: (msg: string, f: Record<string, unknown>) => void };
 };
 
 const oauthUrl = (host: string) => (host.includes("://") ? host : `https://${host}`);
@@ -45,6 +50,68 @@ const anchorTab = (anchorString: string, off: { x: string; y: string }) => ({
   anchorYOffset: off.y,
   anchorIgnoreIfNotPresent: "false",
 });
+/** esign-anchor · tab theo cụm trong văn bản HĐ: nguyên từ, không phân biệt hoa thường; thiếu ⇒ lỗi (để gửi lại bằng trang ký). */
+const textTab = (anchorString: string, off: { x: string; y: string }) => ({
+  ...anchorTab(anchorString, off),
+  anchorMatchWholeWord: "true",
+  anchorCaseSensitive: "false",
+});
+
+type CreateIn = Parameters<ESignProvider["createEnvelope"]>[0];
+const b64 = (b: Uint8Array) => Buffer.from(b).toString("base64");
+
+/** Thân POST /envelopes. `anchors` (cụm văn bản cho từng người ký) ⇒ chỉ tài liệu HĐ, ô ký dưới cụm (quyết định: BỎ trang ký cuối
+ *  khi đặt được mọi người ký — tránh trang thừa và tránh cụm lặp lại trên trang thông tin). null ⇒ HĐ + trang ký cuối (anchor ẩn). */
+export function envelopeBody(i: CreateIn, anchors: string[] | null) {
+  const doc = {
+    documentId: "1",
+    name: i.document.name,
+    fileExtension: "pdf",
+    documentBase64: b64(i.document.bytes),
+  };
+  // esign-multi · trang ký cuối = HTML UTF-8 (DocuSign tự chuyển PDF, giữ dấu); ô ký/ngày đặt theo anchor ẩn.
+  const page = {
+    documentId: "2",
+    name: "trang-ky.html",
+    fileExtension: "html",
+    documentBase64: b64(
+      new TextEncoder().encode(
+        signaturePageHtml({
+          title: i.title,
+          number: i.number,
+          signers: i.signers.map((s) => ({ role: s.role, name: s.name, email: s.email })),
+        }),
+      ),
+    ),
+  };
+  const tabsOf = (n: number) => {
+    const a = anchors?.[n];
+    return a
+      ? {
+          signHereTabs: [textTab(a, TEXT_TAB_OFFSET.sign)],
+          dateSignedTabs: [textTab(a, TEXT_TAB_OFFSET.date)],
+        }
+      : {
+          signHereTabs: [anchorTab(signAnchors(n).sign, SIGN_TAB_OFFSET.sign)],
+          dateSignedTabs: [anchorTab(signAnchors(n).date, SIGN_TAB_OFFSET.date)],
+        };
+  };
+  return {
+    emailSubject: i.subject.slice(0, 100),
+    status: "sent",
+    documents: anchors ? [doc] : [doc, page],
+    recipients: {
+      signers: i.signers.map((s, n) => ({
+        email: s.email,
+        name: s.name,
+        recipientId: String(n + 1),
+        routingOrder: String(s.order),
+        ...(s.clientUserId ? { clientUserId: s.clientUserId } : {}),
+        tabs: tabsOf(n),
+      })),
+    },
+  };
+}
 
 export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider {
   const http = d.fetch ?? fetch;
@@ -125,50 +192,22 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
       }
     },
     async createEnvelope(i) {
-      const b64 = (b: Uint8Array) => Buffer.from(b).toString("base64");
-      const res = await api("POST", "/envelopes", {
-        emailSubject: i.subject.slice(0, 100),
-        status: "sent",
-        documents: [
-          {
-            documentId: "1",
-            name: i.document.name,
-            fileExtension: "pdf",
-            documentBase64: b64(i.document.bytes),
-          },
-          // esign-multi · trang ký cuối = HTML UTF-8 (DocuSign tự chuyển PDF, giữ dấu); ô ký/ngày đặt theo anchor ẩn.
-          {
-            documentId: "2",
-            name: "trang-ky.html",
-            fileExtension: "html",
-            documentBase64: b64(
-              new TextEncoder().encode(
-                signaturePageHtml({
-                  title: i.title,
-                  number: i.number,
-                  signers: i.signers.map((s) => ({ role: s.role, name: s.name, email: s.email })),
-                }),
-              ),
-            ),
-          },
-        ],
-        recipients: {
-          signers: i.signers.map((s, n) => ({
-            email: s.email,
-            name: s.name,
-            recipientId: String(n + 1),
-            routingOrder: String(s.order),
-            ...(s.clientUserId ? { clientUserId: s.clientUserId } : {}),
-            tabs: {
-              signHereTabs: [anchorTab(signAnchors(n).sign, SIGN_TAB_OFFSET.sign)],
-              dateSignedTabs: [anchorTab(signAnchors(n).date, SIGN_TAB_OFFSET.date)],
-            },
-          })),
-        },
-      });
-      const j = (await res.json()) as { envelopeId?: string };
-      if (!j.envelopeId) throw new ESignProviderError("create no-envelope-id");
-      return { envelopeId: j.envelopeId };
+      const post = async (anchors: string[] | null) => {
+        const res = await api("POST", "/envelopes", envelopeBody(i, anchors));
+        const j = (await res.json()) as { envelopeId?: string };
+        if (!j.envelopeId) throw new ESignProviderError("create no-envelope-id");
+        return j.envelopeId;
+      };
+      const anchors = i.anchors && i.anchors.length === i.signers.length ? i.anchors : null;
+      if (!anchors) return { envelopeId: await post(null), placement: "page" };
+      try {
+        return { envelopeId: await post(anchors), placement: "text" };
+      } catch (e) {
+        // esign-anchor · PDF lưu chữ khác dạng ⇒ DocuSign không thấy cụm ⇒ gửi lại MỘT lần bằng trang ký cuối. Log không PII.
+        if (!(e instanceof ESignProviderError) || !/ANCHOR/i.test(e.detail)) throw e;
+        (d.log ?? logger).warn("esign-anchor-fallback", { detail: e.detail });
+        return { envelopeId: await post(null), placement: "page" };
+      }
     },
     async getEnvelope(id): Promise<ESignEnvelopeInfo> {
       const j = (await (await api("GET", `${env(id)}?include=recipients`)).json()) as {

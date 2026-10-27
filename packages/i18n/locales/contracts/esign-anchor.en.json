@@ -1,0 +1,15 @@
+{
+  "contracts": {
+    "esignAnchor": {
+      "title": "Signature position in the contract text",
+      "hint": "When sending for signature, the system looks for these phrases in the contract's final signature block (one per line, top first) and places the signature field right below. Not found ⇒ a signature page is appended.",
+      "a": "Party A (company)",
+      "b": "Party B (partner)",
+      "save": "Save phrases",
+      "saveErr": "Could not save the phrases (each party needs at least one phrase, 2–60 characters).",
+      "placement": "Signature position",
+      "inText": "in the contract text",
+      "lastPage": "appended signature page"
+    }
+  }
+}

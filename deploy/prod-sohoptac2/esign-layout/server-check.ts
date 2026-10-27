@@ -39,16 +39,20 @@ const H = { authorization: `Bearer ${tok.access_token}`, "content-type": "applic
 const A = `${base}/v2.1/accounts/${acct}`;
 
 const html = readFileSync("/tmp/sign.html", "utf8");
+// esign-anchor: offset.json có `mode` ("page" = trang ký cuối, anchor ẩn; "text" = HĐ mẫu, anchor = cụm trong văn bản `anchors[i]`,
+// nguyên từ, không phân biệt hoa thường — như `docusign.provider.ts`).
 const off = JSON.parse(readFileSync("/tmp/offset.json", "utf8")) as Record<
   "sign" | "date",
   { x: string; y: string }
->;
+> & { mode?: "page" | "text"; anchors?: string[] };
+const text = off.mode === "text" && Array.isArray(off.anchors);
 const tab = (s: string, o: { x: string; y: string }) => ({
   anchorString: s,
   anchorUnits: "pixels",
   anchorXOffset: o.x,
   anchorYOffset: o.y,
   anchorIgnoreIfNotPresent: "false",
+  ...(text ? { anchorMatchWholeWord: "true", anchorCaseSensitive: "false" } : {}),
 });
 const signers = [0, 1].map((i) => ({
   recipientId: String(i + 1),
@@ -56,8 +60,8 @@ const signers = [0, 1].map((i) => ({
   name: `Kiểm bố cục ${i + 1}`,
   email: `layout-check-${i + 1}@example.invalid`,
   tabs: {
-    signHereTabs: [tab(`\\s${i + 1}\\`, off.sign)],
-    dateSignedTabs: [tab(`\\d${i + 1}\\`, off.date)],
+    signHereTabs: [tab(text ? (off.anchors?.[i] as string) : `\\s${i + 1}\\`, off.sign)],
+    dateSignedTabs: [tab(text ? (off.anchors?.[i] as string) : `\\d${i + 1}\\`, off.date)],
   },
 }));
 const cr = await fetch(`${A}/envelopes`, {
@@ -83,21 +87,26 @@ if (!env.envelopeId) {
   process.exit(1);
 }
 const id = env.envelopeId;
-const img = Buffer.from(
-  await (
-    await fetch(`${A}/envelopes/${id}/documents/1/pages/1/page_image?dpi=72`, { headers: H })
-  ).arrayBuffer(),
-);
-const tabs: unknown[] = [];
+const tabs: { recipient: string; sign: unknown; date: unknown }[] = [];
 for (const s of signers) {
   const t = (await (
     await fetch(`${A}/envelopes/${id}/recipients/${s.recipientId}/tabs`, { headers: H })
   ).json()) as Record<string, unknown>;
   tabs.push({ recipient: s.recipientId, sign: t.signHereTabs, date: t.dateSignedTabs });
 }
+// Ảnh của trang có ô ký đầu tiên (chế độ text: khối chữ ký có thể không ở trang 1).
+const first = (tabs[0]?.sign as { pageNumber?: string }[] | undefined)?.[0];
+const page = first?.pageNumber ?? "1";
+const img = Buffer.from(
+  await (
+    await fetch(`${A}/envelopes/${id}/documents/1/pages/${page}/page_image?dpi=72`, { headers: H })
+  ).arrayBuffer(),
+);
 await fetch(`${A}/folders/recyclebin`, {
   method: "PUT",
   headers: H,
   body: JSON.stringify({ envelopeIds: [id] }),
 });
-console.log(`LAYOUT ${JSON.stringify({ envelopeId: id, tabs, png: img.toString("base64") })}`);
+console.log(
+  `LAYOUT ${JSON.stringify({ envelopeId: id, mode: off.mode ?? "page", page, tabs, png: img.toString("base64") })}`,
+);

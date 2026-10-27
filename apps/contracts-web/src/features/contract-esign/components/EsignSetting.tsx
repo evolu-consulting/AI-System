@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { useEsignSettings } from "../hooks/use-esign-settings";
 import { esignErrKey } from "../lib/esign-view";
+import { EsignAnchorSetting } from "./EsignAnchorSetting";
 
 function ProviderSelect({
   providers,
@@ -87,6 +88,7 @@ export function EsignSetting({ owner }: { owner: boolean }) {
           onChange={(key) => m.mutate({ default_provider: key })}
         />
       )}
+      {s.configured && <EsignAnchorSetting owner={owner} />}
     </div>
   );
 }

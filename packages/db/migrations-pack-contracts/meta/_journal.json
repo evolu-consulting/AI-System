@@ -393,6 +393,13 @@
       "when": 1799500000000,
       "tag": "0061_esign_multi",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1799700000000,
+      "tag": "0063_esign_anchor",
+      "breakpoints": true
     }
   ]
 }

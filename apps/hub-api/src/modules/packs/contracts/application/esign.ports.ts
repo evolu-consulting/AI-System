@@ -39,7 +39,10 @@ export type ESignProvider = {
     number: string | null;
     document: { name: string; bytes: Uint8Array };
     signers: ESignRecipient[];
-  }): Promise<{ envelopeId: string }>;
+    /** esign-anchor · cụm trong văn bản HĐ cho từng người ký (cùng thứ tự `signers`) ⇒ ô ký ngay dưới cụm, không nối trang ký;
+     *  vắng/null ⇒ trang ký cuối. Nhà cung cấp không hỗ trợ ⇒ bỏ qua. */
+    anchors?: string[] | null;
+  }): Promise<{ envelopeId: string; placement?: "text" | "page" }>;
   getEnvelope(envelopeId: string): Promise<ESignEnvelopeInfo>;
   recipientView(
     envelopeId: string,

@@ -169,6 +169,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
         </p>
       )}
       <EsignSendDialog
+        contractId={id}
         open={open}
         defaults={s.defaults}
         providers={s.providers ?? []}
