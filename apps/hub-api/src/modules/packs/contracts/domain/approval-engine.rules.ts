@@ -82,6 +82,16 @@ export function routeFrom(v: unknown, n: number): number | null {
 }
 
 /** Mở run engine chỉ cho lượt `level1` còn chế độ máy, chưa gắn run. */
+/** Feature (admin.features) cấp theo công ty để HĐ của công ty đó duyệt trên engine. */
+export const ENGINE_FEATURE_KEY = "contracts-approval-engine";
+
+/** engine-flag-tenant · env `CONTRACTS_APPROVAL_ENGINE`: ≠ `on` (kể cả `off`/vắng) ⇒ tắt hết (công tắc khẩn); `on` ⇒ chỉ tenant
+ *  có entitlement `contracts-approval-engine` còn hiệu lực. Lượt đã chạy engine không phụ thuộc hàm này (chạy nốt). */
+export const engineAllowedForTenant = (i: {
+  env: string | undefined;
+  entitled: boolean;
+}): boolean => i.env === "on" && i.entitled;
+
 export const engineStartable = (r: {
   approvalStatus: string | null;
   mode: string | null;

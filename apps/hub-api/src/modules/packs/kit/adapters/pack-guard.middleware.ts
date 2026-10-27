@@ -85,6 +85,19 @@ export async function packEnabled(
   return read !== undefined && !read.off && cat.entitled.has(`${tenantId}:${read.id}`);
 }
 
+/** engine-flag-tenant · feature theo công ty (khoá tuỳ ý, vd `contracts-approval-engine`): tenant có entitlement còn hiệu lực ∧
+ *  feature tồn tại và không `off` (fail-closed: thiếu feature ⇒ false). Cache cấu hình, 0 SQL. */
+export async function tenantFeatureOn(
+  view: PackAccessView,
+  featureKey: string,
+  tenantId: string,
+): Promise<boolean> {
+  await view.adminSettled?.();
+  const cat = await view.catalog();
+  const f = featureIndex(cat).get(featureKey);
+  return f !== undefined && !f.off && cat.entitled.has(`${tenantId}:${f.id}`);
+}
+
 const MESSAGES = { PACK_DISABLED: "Pack is not enabled", PACK_FORBIDDEN: "Forbidden" } as const;
 
 /** Chặn route gói cần `action`: 403 `PACK_DISABLED` / `PACK_FORBIDDEN` (plan §2). Đặt SAU `requireAuth`. */

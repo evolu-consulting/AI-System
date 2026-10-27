@@ -100,6 +100,8 @@ export type ContractsAiDeps = {
   }) => void;
   /** contract-flow S3a · ghi đè cờ `CONTRACTS_APPROVAL_ENGINE=on` (test). */
   approvalEngine?: boolean;
+  /** engine-flag-tenant · test: bật cổng theo công ty cả khi seam `approvalEngine` ghi đè env. */
+  approvalEngineTenantGate?: boolean;
 };
 
 export type ContractsAi = {
@@ -264,7 +266,14 @@ export function contractsAiModule(
 ): ContractsAi {
   const pack = packUow(db);
   const uow = packTenantOnly(pack);
-  const eng = approvalEngine({ on: d.approvalEngine, hd2: d.transport !== undefined }, flow, uow);
+  // engine-flag-tenant · env `on` ⇒ cổng theo công ty; seam test `approvalEngine` ghi đè env, cổng chỉ khi `approvalEngineTenantGate`.
+  const gate = d.approvalEngine === undefined || d.approvalEngineTenantGate === true;
+  const eng = approvalEngine(
+    { on: d.approvalEngine, hd2: d.transport !== undefined, gate },
+    flow,
+    uow,
+    view,
+  );
   const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {

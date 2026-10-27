@@ -50,7 +50,7 @@ type Handles = { sweepOnce: () => Promise<SweepOut>; reclaimOnce: () => Promise<
 export async function startCf(
   extraDeps: Record<string, unknown> = {},
   /** prod-fix · trần run/tenant (mặc định 200 ⇒ không chạm trần). */
-  o: { runsCap?: number } = {},
+  o: { runsCap?: number; contractsAi?: Record<string, unknown> } = {},
 ): Promise<CtxCf> {
   let h: Handles | null = null;
   const waiters = new Map<string, ((o: string) => void)[]>();
@@ -68,6 +68,7 @@ export async function startCf(
     onHandles: (x: Handles) => {
       h = x;
     },
+    ...o.contractsAi,
   };
   const c = await startPd({
     processRunsPerTenant: o.runsCap ?? 200,
