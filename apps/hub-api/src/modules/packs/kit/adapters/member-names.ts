@@ -5,6 +5,20 @@ import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 
+/** cf-esign-docusign · tên + email của CHÍNH user gọi (người ký mặc định bên mình). Một câu, lọc tenant tường minh. */
+export const selfContactOf =
+  (db: Db) =>
+  async (who: {
+    tenantId: string;
+    userId: string;
+  }): Promise<{ name: string; email: string | null }> => {
+    const rows = await withHubScope(db, { kind: "user", ...who }, (tx) =>
+      tx.execute<{ name: string; email: string | null }>(sql`select u.display_name as name, u.email
+        from admin.users u where u.tenant_id = ${who.tenantId}::uuid and u.id = ${who.userId}::uuid`),
+    );
+    return { name: rows[0]?.name ?? "", email: rows[0]?.email ?? null };
+  };
+
 export const memberNamesOf =
   (db: Db) =>
   async (who: { tenantId: string; userId: string }): Promise<Map<string, string>> => {

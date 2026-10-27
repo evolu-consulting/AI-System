@@ -209,6 +209,43 @@ XRB=(docker run --rm -i --user "$(id -u):$(id -g)" --network sohoptac2_default -
 ```
 ⇒ `after`: `conversation_ids = []`, `messages = 0`, `attachments = []`, `notifications = 0`, `contracts = {}`. Xong: `rm import-out/tien-export.json`.
 
+## Ký số hợp đồng — chọn nhà cung cấp (cf-esign-docusign)
+Trung lập nhà cung cấp; chọn bằng `ESIGN_PROVIDER` trong `.env`: `none` (mặc định, tắt — UI báo "Chưa cấu hình ký số"),
+`selfsign` (KÝ THỬ để demo luồng: không gọi mạng, không chứng thư, "Bản đã ký" = bản PDF gốc đổi tên `-ky-thu.pdf`; UI ghi rõ
+"Ký thử – không có giá trị pháp lý"), `docusign` (DocuSign eSignature REST v2.1). CA Việt Nam (VNPT SmartCA / Viettel MySign…) sẽ là
+adapter mới cùng cổng `ESignProvider`. Sau khi đặt env: owner gói bật ô "Ký số hợp đồng" ở Cài đặt › Quy trình duyệt (theo công ty).
+
+### Cài DocuSign sandbox (developer, KHÔNG phải tài khoản thật)
+1. Tạo tài khoản developer tại `https://developers.docusign.com` (môi trường demo: REST `https://demo.docusign.net/restapi`,
+   OAuth `account-d.docusign.com`).
+2. Admin (`https://admindemo.docusign.com`) › **Apps and Keys** › **Add App and Integration Key** → ghi **Integration Key**.
+   Trong app: **Service Integration › Generate RSA** → lưu khoá riêng (chỉ hiện một lần) thành `~/workspace/sohoptac2/secrets/docusign.pem`
+   trên máy chủ (`chmod 600`, thư mục `secrets/` mount chỉ đọc vào hub-api tại `/run/s2/secrets`). **Additional settings › Redirect URIs**:
+   thêm `https://sohoptac.evoluconsulting.com/`.
+3. Cũng ở **Apps and Keys**: ghi **User ID** (GUID của user API sẽ mạo danh) và **API Account ID**.
+4. Cấp consent JWT một lần (đăng nhập bằng user ở bước 3, bấm Accept; trang chuyển về sohoptac là xong):
+   `https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=<INTEGRATION_KEY>&redirect_uri=https://sohoptac.evoluconsulting.com/`
+5. **Connect** (Settings › Connect › Add Configuration › Custom): URL `https://sohoptac.evoluconsulting.com/pack/contracts/esign/webhook/docusign`,
+   định dạng **JSON (SIM)**, sự kiện envelope Sent/Delivered/Completed/Declined/Voided, **bật Include HMAC Signature** và tạo khoá HMAC
+   (Settings › Connect › Connect Keys) → đặt vào `DOCUSIGN_CONNECT_HMAC_KEY`. Thiếu khoá ⇒ webhook bị từ chối (401); vẫn dùng được nút
+   "Làm mới trạng thái". nginx của contracts-web đã proxy `/pack` sang hub-api (không cần sửa).
+6. `.env` (không commit giá trị; mẫu khoá ở `env.template`):
+   ```
+   ESIGN_PROVIDER=docusign
+   DOCUSIGN_INTEGRATION_KEY=<Integration Key>
+   DOCUSIGN_USER_ID=<User ID>
+   DOCUSIGN_ACCOUNT_ID=<API Account ID>
+   DOCUSIGN_BASE_URI=https://demo.docusign.net/restapi        # mặc định, có thể bỏ
+   DOCUSIGN_OAUTH_HOST=account-d.docusign.com                 # mặc định, có thể bỏ
+   DOCUSIGN_PRIVATE_KEY_FILE=/run/s2/secrets/docusign.pem
+   DOCUSIGN_CONNECT_HMAC_KEY=<khoá HMAC Connect>
+   ```
+   Khởi động lại hub-api. Thiếu biến bắt buộc ⇒ log `esign-docusign-not-configured` (không lộ giá trị) và tính năng tắt, không lỗi 500.
+7. Thử: HĐ đã duyệt xong (đã khoá, tệp PDF) › "Gửi ký" › người ký 1 = mình ("Ký ngay", ký nhúng), người ký 2 = email đối tác (nhận
+   email từ DocuSign demo) › ký xong ⇒ webhook (hoặc "Làm mới trạng thái") ⇒ "Đã ký số" + "Tải bản đã ký".
+   Lên production DocuSign thật: qua Go-Live review của DocuSign, đổi `DOCUSIGN_BASE_URI` (theo base URI của tài khoản) và
+   `DOCUSIGN_OAUTH_HOST=account.docusign.com`, consent lại.
+
 ## Không làm ở đây
 Không nạp dữ liệu (trừ mục niti-import ở trên, do người dùng chạy), không tạo tenant khách (NitiGroup = lát khác). Không đổi edge-proxy/nginx host/tên miền/TLS.
 Không đụng `aisystem`, `sohoptac`, `evotest`, `edge-proxy`, dify, `infra-*`.

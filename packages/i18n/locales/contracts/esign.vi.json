@@ -1,0 +1,46 @@
+{
+  "contracts": {
+    "esign": {
+      "title": "Ký số",
+      "notConfigured": "Chưa cấu hình ký số",
+      "notEnabled": "Công ty chưa bật ký số (Cài đặt › Quy trình duyệt).",
+      "notReady": "Chỉ gửi ký được khi hợp đồng đã duyệt xong và có tệp PDF.",
+      "demo": "Ký thử – không có giá trị pháp lý",
+      "send": "Gửi ký",
+      "resend": "Gửi lại",
+      "pending": "Đang chờ ký",
+      "signed": "Đã ký số",
+      "signedAt": "Đã ký số lúc {{at}}",
+      "declined": "Bị từ chối ký",
+      "voided": "Đã huỷ ký",
+      "reason": "Lý do: {{reason}}",
+      "signNow": "Ký ngay",
+      "refresh": "Làm mới trạng thái",
+      "cancel": "Huỷ ký",
+      "cancelReason": "Lý do huỷ",
+      "download": "Tải bản đã ký",
+      "order": "Thứ tự ký",
+      "roleCompany": "Đại diện công ty",
+      "rolePartner": "Đối tác",
+      "name": "Họ tên",
+      "email": "Email",
+      "dialogTitle": "Gửi hợp đồng đi ký số",
+      "dialogHint": "Người ký ký lần lượt theo thứ tự. Người ký nội bộ ký ngay trong app; đối tác nhận email từ nhà cung cấp ký số.",
+      "sending": "Đang gửi…",
+      "close": "Đóng",
+      "sent": "Đã gửi ký",
+      "signerDone": "đã ký",
+      "settingLabel": "Ký số hợp đồng",
+      "settingHint": "Cho phép gửi hợp đồng đã duyệt đi ký số.",
+      "settingOn": "Bật",
+      "settingOff": "Tắt",
+      "err": {
+        "ESIGN_DISABLED": "Ký số chưa được bật hoặc chưa cấu hình.",
+        "ESIGN_STATE": "Trạng thái hợp đồng không cho phép thao tác này.",
+        "ESIGN_UNSUPPORTED_FILE": "Chỉ hỗ trợ ký tệp PDF (DOCX/ảnh chưa hỗ trợ).",
+        "ESIGN_PROVIDER": "Nhà cung cấp ký số không phản hồi, thử lại sau.",
+        "unknown": "Không thực hiện được, thử lại sau."
+      }
+    }
+  }
+}

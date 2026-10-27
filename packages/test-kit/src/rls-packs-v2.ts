@@ -168,6 +168,21 @@ v2Tables.push(
       ),
   },
 );
+// cf-esign-docusign · envelope ký số (0054): đọc/ghi chéo tenant bị chặn như mọi bảng gói.
+const envIns = `insert into contracts.esign_envelopes (id, tenant_id, contract_id, provider, envelope_id, signers, sent_by)
+  values ($1, $2, $3, 'fake', $4, '[{"role":"company","name":"A","email":"a@x.vn","order":1}]', $5)`;
+v2Tables.push({
+  name: "esign_envelopes",
+  seed: async (o, t) =>
+    one(
+      o,
+      `insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, signers, sent_by)
+       values ($1, $2, 'fake', $3, '[{"role":"company","name":"A","email":"a@x.vn","order":1}]', $4)`,
+      [t, await parent(o, "contracts.contracts", t), `env-${crypto.randomUUID()}`, who],
+    ),
+  insert: (tx, t, pk) =>
+    tx.unsafe(envIns, [rnd(pk), t, crypto.randomUUID(), `env-${crypto.randomUUID()}`, who]),
+});
 /** Bảng khoá = tenant (V2-H business_settings, V2-L company_settings), như visibility_settings. */
 const tenantPk = (name: string): RlsTable => ({
   name,

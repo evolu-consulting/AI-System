@@ -13,8 +13,6 @@ import { logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
 import { agentSpecOf } from "../agents/agent-spec.service";
-import { FileboxClient } from "../attachments/filebox.client";
-import { envFileboxToken } from "../attachments/filebox-token";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
 import { mountGuide } from "../guide/guide.mount";
@@ -26,6 +24,8 @@ import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-q
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
+import type { ESignProvider } from "./contracts/application/esign.ports";
+import type { ESignUsecase } from "./contracts/application/esign.usecase";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
 import { businessModule } from "./contracts/business.mount";
@@ -34,6 +34,7 @@ import { companyModule } from "./contracts/company.mount";
 import { mountContractsContext } from "./contracts/context.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
+import { esignUserRoutes } from "./contracts/esign.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
@@ -56,8 +57,11 @@ import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
 import { createPdfConverter } from "./kit/adapters/pdf";
 import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
+import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
+
+export { mountEsignWebhook } from "./contracts/esign.mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
 
 export const PACK_PREFIX = "/pack";
 
@@ -77,6 +81,8 @@ export type PacksDeps = {
   contractsPriceScout?: { worker?: boolean };
   /** R1 Â· DSN pool riÃªng cá»§a module tri thá»©c (server: `KNOWLEDGE_DATABASE_URL` â€– `HUB_DATABASE_URL`); váº¯ng â‡’ dÃ¹ng `db` chung. */
   knowledgeDsn?: string;
+  /** cf-esign-docusign · nhà cung cấp ký số (test tiêm DocuSign trỏ server giả); vắng ⇒ env `ESIGN_PROVIDER`. */
+  esign?: { provider: ESignProvider | null };
 };
 
 export type PacksMountDeps = {
@@ -92,6 +98,8 @@ export type PacksMountDeps = {
   packTools?: PackToolRegistry;
   /** HD4 Â· dá»«ng vÃ²ng nháº¯c khi server táº¯t. */
   signal?: AbortSignal;
+  /** cf-esign-docusign · use case ký số dựng sẵn bởi `mountEsignWebhook` (trước JWT) — dùng chung cho route người dùng. */
+  esign?: ESignUsecase | undefined;
 };
 
 /** Review m-04 Â· `pkdemo` chá»‰ má»Ÿ khi `APP_ENV` khai bÃ¡o rÃµ `development`/`test`; váº¯ng hoáº·c giÃ¡ trá»‹ láº¡ â‡’ táº¯t (fail-closed). */
@@ -260,6 +268,7 @@ function mountContractsMore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     }),
   ); // HD8 (engine cÅ© chá»‰ Ä‘á»c â€” CR-096 Q1)
   app.route(base, contractsReputation(d, view, db)); // V2-E Â· uy tÃ­n v2
+  if (d.esign) app.route(base, esignUserRoutes(view, d.esign)); // cf-esign-docusign · ký số
 }
 /** price-scout Â· agent Hub `price-scout` qua cá»•ng `AgentCaller` (AI client chung + cáº¥u hÃ¬nh agent Hub/Studio); vÃ²ng dÃ² theo lá»‹ch
  *  báº­t cÃ¹ng Ä‘iá»u kiá»‡n vÃ²ng nháº¯c HD4 (`worker`, `CONTRACTS_PRICE_SCOUT` â‰  off). */
@@ -361,24 +370,6 @@ function contractsUpload(
     tenantLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null, // tenant-quotas
     starter,
   });
-}
-
-/** Client FileBox theo org `t_<tenant>` (má»—i lá»i gá»i má»™t org, PK-FR-06). */
-function fileboxClients(fb: PackFb) {
-  const token = envFileboxToken(fb.token);
-  return (org: string) =>
-    new FileboxClient({ ...fb, org, token, timeoutMs: 10_000, retryDelaysMs: [200], log: logger });
-}
-
-/** T5f Â· FileBox cá»§a gÃ³i: `deps.packs.filebox` Æ°u tiÃªn, váº¯ng â‡’ env FB1 (`FILEBOX_URL` + `FILEBOX_TOKEN`, CA `FILEBOX_CA`). */
-type PackFb = { url: string; token: string; caPath?: string; publicPath?: string };
-function packFilebox(p: PacksDeps | undefined): PackFb | null {
-  if (p?.filebox) return p.filebox;
-  const { FILEBOX_URL: url, FILEBOX_TOKEN: token, FILEBOX_CA: caPath } = process.env;
-  const publicPath = process.env.FILEBOX_PUBLIC_PATH?.replace(/\/+$/, "");
-  return url && token
-    ? { url, token, ...(caPath ? { caPath } : {}), ...(publicPath ? { publicPath } : {}) }
-    : null;
 }
 
 /** T5f Â· route file gÃ³i `/files/:id/content` â€” client FileBox dá»±ng theo org `t_<tenant>` má»—i lá»i gá»i (PK-FR-06). */

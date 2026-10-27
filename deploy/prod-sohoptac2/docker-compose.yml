@@ -91,6 +91,8 @@ services:
       - ./data/attachments:/data/attachments
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro
+      # cf-esign-docusign · khoá RSA riêng của app DocuSign (DOCUSIGN_PRIVATE_KEY_FILE=/run/s2/secrets/docusign.pem), chmod 600.
+      - ./secrets:/run/s2/secrets:ro
     depends_on:
       pg: { condition: service_healthy }
       redis: { condition: service_healthy }

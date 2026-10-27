@@ -6,6 +6,7 @@ import { APPROVAL_FLOW_STEPS_MAX as FLOW_MAX_STEPS } from "@ai/contracts";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
+import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
 import type { FlowStep } from "../api-flow";
 import { useDepartments, useDifyWorkflows, useFlow, useSaveFlow } from "../hooks/use-flow";
 import {
@@ -181,6 +182,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
           </button>
         </div>
       )}
+      <EsignSetting owner={owner} />
     </div>
   );
 }

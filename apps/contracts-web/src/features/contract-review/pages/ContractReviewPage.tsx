@@ -11,6 +11,7 @@ import { toast } from "~/components/shared/toast";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { LockBanner } from "~/features/contract-lock/components/LockBanner";
 import { lockView, reopenRight } from "~/features/contract-lock/lib/lock-view";
@@ -148,6 +149,8 @@ function ContractBody({
             name={c.file?.name ?? titleOf(c)}
           />
           <LockBanner id={id} view={lock} canUpdate={canUpdate} />
+          {/* cf-esign-docusign · ký số sau khi duyệt xong (đã khoá). */}
+          <EsignPanel id={id} locked={c.locked === true} write={write} />
           <VersionsPanels id={id} versions={c.versions} sup={sup} />
           <SaveNotice err={info.err ?? ap.err} />
           {ap.section}

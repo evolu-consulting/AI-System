@@ -375,6 +375,7 @@ adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts
 4227bd2a36bee3859d54a94298c4f56d5661b7d11029a1f54373d13029c4f04b  e2e/contracts-web/delivery-opts.cw.ts
 70e7bf79c52bcc520116c3a04cd64cda17d20085f0e8ec576ed5e91593fe8563  e2e/contracts-web/delivery-stock-409.cw.ts
+807f9d111bacedb74ff3c96c6e31c259ad66e726ad48cc5bcc8e117312acb2fd  e2e/contracts-web/esign.cw.ts
 898475201c3dfcbe5e21da1134a72d447184a26dd256dff68a1e06bd24b47d9d  e2e/contracts-web/flow-editor.cw.ts
 62e310a506f44c0991b85d1e4ca299324b0c5592e04de6565022ba26986ea442  e2e/contracts-web/gap-a2-source-ask.cw.ts
 2c7484346642627c3d190d4b653d0123f64cbeeebe27fe9e015463b654059aac  e2e/contracts-web/gap-b-list.cw.ts
@@ -1345,6 +1346,8 @@ e2d396d54a54d5fe3c608ba0f2e6c1e8d267e7789e868427d4af3faad6ac9095  tests/acceptan
 b99aff6d8838f02fb2590b509955602f2f4232478e65adf57e4c546c62b355d6  tests/acceptance/X2b2/send.int.test.ts
 bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptance/X2b2/withheld.int.test.ts
 bae5731b9aabdb8de905fcce7440fa242e2bef140e0c897e919c5b97053605cf  tests/acceptance/agents-background/background.int.test.ts
+10c376bbbb3d23789beac8c3617f7d37e65271dbba722cf710c96c852bd6cd04  tests/acceptance/cf-esign/_support/esign.ts
+fe6c2b4bb228a41896317248311115c28d579b9ba04c2a0107e2c32ad742e0a9  tests/acceptance/cf-esign/esign.int.test.ts
 71c3c3343878fd1f14e4388e8d88bab943788122b98e08614304ee530225deb2  tests/acceptance/chat-fast/default-route.int.test.ts
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts

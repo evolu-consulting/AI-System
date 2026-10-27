@@ -52,7 +52,7 @@ import { mountNotify } from "./modules/notify/notify.mount";
 import { packAccessInput } from "./modules/packs/kit/adapters/pack-guard.middleware";
 import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
 import { checkPackAccess } from "./modules/packs/kit/domain/pack-access.rules";
-import { mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
+import { mountEsignWebhook, mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
   mountProcesses,
@@ -355,8 +355,10 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   app.use(corsOf(cfg));
 
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
+  // cf-esign-docusign · webhook ký số gắn TRƯỚC JWT `/pack/*` (nhà cung cấp tự xác thực, map envelope ⇒ tenant qua bảng).
+  const esign = mountEsignWebhook(app, deps); // vắng db (⇔ vắng config) ⇒ undefined
   const kh = mountProtected(app, deps, config);
-  if (config) mountPacks(app, { ...deps, config }); // N1 · `/pack/:k/me` + route gói (pkdemo)
+  if (config) mountPacks(app, { ...deps, config, esign }); // N1 · `/pack/:k/me` + route gói (pkdemo)
   if (deps.db) mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
