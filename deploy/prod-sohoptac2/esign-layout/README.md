@@ -16,7 +16,8 @@ có khối "ĐẠI DIỆN BÊN A / ĐẠI DIỆN BÊN B" (HTML làm document 1 �
 `{mode:"text", sign, date, anchors}` (cụm do `pickAnchors` chọn, offset = `TEXT_TAB_OFFSET` trong `domain/esign.anchor.ts`).
 Các bước scp/ssh/overlay giữ nguyên; `server-check.ts` đặt tab theo cụm (nguyên từ, không phân biệt hoa thường) và chụp trang
 có ô ký đầu tiên. Đạt khi ô ký đỏ nằm ngay dưới dòng "(Ký, ghi rõ họ tên…)" của đúng cột, không đè chữ; lệch ⇒ sửa
-`TEXT_TAB_OFFSET` rồi đo lại. Chưa đo (điều phối chạy).
+`TEXT_TAB_OFFSET` rồi đo lại. Đo 2026-10-27: y=36 đè dòng "(Ký, ghi rõ…)" ⇒ đổi sign y=50: ô ký 279–323 ngay dưới dòng đó
+(~271), ô ngày 335 ngay trên tên người ký (357), đúng cột Bên A / Bên B.
 
 Kết quả 2026-10-27 (sign y=32, date y=8): ô ký nằm trong khung hàng (hàng 1: 187–252, ô 201–245; hàng 2: 253–318, ô 267–311).
 Lưu ý PowerShell 5.1: đọc/ghi file UTF-8 bằng `[IO.File]::ReadAllText(..., UTF8)`, không dùng `Get-Content` mặc định (hỏng dấu).
