@@ -37,6 +37,8 @@ import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { dbHubAudit } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
 import { closeUnreadBody } from "./lib/unread-body";
+import { chatGate } from "./modules/chat-gate/chat-gate.middleware";
+import { CHAT_GATED_PREFIXES } from "./modules/chat-gate/chat-gate.rules";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
@@ -47,7 +49,9 @@ import { mountSourceCredential } from "./modules/internal/source-credential.rout
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
+import { packAccessInput } from "./modules/packs/kit/adapters/pack-guard.middleware";
 import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
+import { checkPackAccess } from "./modules/packs/kit/domain/pack-access.rules";
 import { mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {
@@ -145,6 +149,14 @@ const contextLabelerOf = (t: AppDeps["packTools"]): ContextLabeler | undefined =
   return f && t ? { contextLabel: f.bind(t) } : undefined;
 };
 
+/** chat-api-gate · dock trợ lý Sổ Hợp Tác mở cho user có quyền `read` gói `contracts` (cùng luật cổng gói, đọc cache). */
+const contractsReader =
+  (config: ConfigCache) =>
+  async (u: AuthUser): Promise<boolean> => {
+    const i = await packAccessInput(config, "contracts", u);
+    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.read }) === "ok";
+  };
+
 /** `runs.owner` của instance (= `HUB_INSTANCE_ID`; test khung vắng → host:pid). */
 const instanceOwner = (deps: AppDeps): string => deps.instanceId ?? `${hostname()}:${process.pid}`;
 
@@ -229,6 +241,11 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache) {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
+  if (config) {
+    // chat-api-gate · SAU auth: công ty bị thu hồi `chat-app` ⇒ 403 CHAT_APP_DISABLED (trừ dock Sổ Hợp Tác có quyền đọc gói).
+    const gate = chatGate({ view: config, dockAllowed: contractsReader(config) });
+    for (const p of CHAT_GATED_PREFIXES) app.use(`${p}/*`, gate);
+  }
   const kh = mountH4a(app, { ...deps, log: logger });
   if (!deps.db) return kh;
   const { signal } = deps;

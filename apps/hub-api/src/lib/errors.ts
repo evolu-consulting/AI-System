@@ -3,12 +3,14 @@
 // (H3b, HUB-FR-78 — API quản trị, không thuộc contract chat). Status lấy từ contract (một nguồn).
 import {
   CHAT_API_ERRORS,
+  CHAT_APP_ERRORS,
   CHAT_ATTACHMENT_ERRORS,
   CHAT_COMMAND_ERRORS,
   CHAT_DEFAULT_AGENT_ERRORS,
   CHAT_ROOM_AGENT_ERRORS,
   CHAT_ROOM_ERRORS,
   CHAT_ROUTING_ERRORS,
+  type ChatAppErrorCode,
   type ChatAttachmentErrorCode,
   type ChatCommandErrorCode,
   type ChatDefaultAgentErrorCode,
@@ -51,6 +53,7 @@ export type HubErrorCode =
   | ChatCommandErrorCode
   | ChatRoutingErrorCode
   | ChatDefaultAgentErrorCode
+  | ChatAppErrorCode
   | ChatAttachmentErrorCode
   | ChatRoomErrorCode
   | ChatRoomAgentErrorCode
@@ -62,6 +65,7 @@ const HUB_ERRORS: Record<HubErrorCode, ContentfulStatusCode> = {
   ...CHAT_COMMAND_ERRORS,
   ...CHAT_ROUTING_ERRORS,
   ...CHAT_DEFAULT_AGENT_ERRORS,
+  ...CHAT_APP_ERRORS,
   ...CHAT_ATTACHMENT_ERRORS,
   ...CHAT_ROOM_ERRORS,
   ...CHAT_ROOM_AGENT_ERRORS,
@@ -83,6 +87,7 @@ export const ERROR_MESSAGES: Record<HubErrorCode, string> = {
   AGENT_NOT_FOUND: "Agent not found",
   TOO_MANY_RUNS: "Too many running requests",
   DEFAULT_AGENT_FORBIDDEN: "You cannot use your company's default agent",
+  CHAT_APP_DISABLED: "AI Chat is not enabled for your company",
   ATTACHMENT_NOT_FOUND: "Attachment not found",
   ATTACHMENT_QUOTA_EXCEEDED: "Storage quota exceeded",
   ATTACHMENT_TOO_LARGE: "File too large",

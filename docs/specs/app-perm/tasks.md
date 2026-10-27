@@ -38,7 +38,7 @@ Một công ty có thể bị giới hạn để switcher CHỈ có "Sổ Hợp 
 6. Bật lại Chat AI: Features › `chat-app` › Cấp lại cho công ty.
 
 ## Còn lại / rủi ro
-- Chặn chỉ ở UI/điều hướng: hub-api (API chat) chưa kiểm `chat-app` — người biết API vẫn gọi được. Chặn ở Hub: lát sau.
+- ~~Chặn chỉ ở UI/điều hướng~~ — đã chặn ở hub-api: lát `chat-api-gate` (403 `CHAT_APP_DISABLED`, xem `docs/specs/chat-api-gate/tasks.md`).
 - chat-web `_authed` gọi thêm `GET /auth/me/portal` một lần mỗi tab (đã cache theo user).
 - Không có app nào mở được (vd member chưa vào nhóm Sổ Hợp Tác) ⇒ vẫn hiện trang chủ (trống).
 - e2e chưa chạy (chạy cuối đợt).

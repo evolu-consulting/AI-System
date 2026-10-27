@@ -74,6 +74,12 @@ export const CHAT_DEFAULT_AGENT_ERRORS = {
 } as const satisfies Record<string, 403>;
 export type ChatDefaultAgentErrorCode = keyof typeof CHAT_DEFAULT_AGENT_ERRORS;
 
+/** chat-api-gate · công ty không có entitlement `chat-app` (Chat AI) còn hiệu lực ⇒ mọi route chat của người dùng cuối 403. */
+export const CHAT_APP_ERRORS = {
+  CHAT_APP_DISABLED: 403,
+} as const satisfies Record<string, 403>;
+export type ChatAppErrorCode = keyof typeof CHAT_APP_ERRORS;
+
 export const AgentNotFoundDetailsSchema = z.strictObject({
   suggestions: z.array(z.string()).max(AGENT_SUGGESTIONS_MAX),
 });
