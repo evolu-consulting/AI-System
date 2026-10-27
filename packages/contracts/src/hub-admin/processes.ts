@@ -196,8 +196,7 @@ export const ProcessStageDefSchema = z.strictObject({
         .max(REMIND_EVERY_H.max)
         .nullable()
         .default(null),
-      /** P-d1 · PD-R18/R20 · chuyển cấp thêm Group sau `after_h` giờ (1 lần/task). */
-      escalate: StageEscalateSchema.nullable().default(null),
+      escalate: StageEscalateSchema.nullable().default(null), // P-d1 · PD-R18/R20 · chuyển cấp sau after_h (1 lần/task)
       /** P-d2 · PD2-R12 · rẽ nhánh sau Đạt (luật `branchStageIssues`). */
       branch: AfterBranchSchema,
       /** N2-FR-05 · người bắt đầu run không được quyết task duyệt của stage này (vắng ở snapshot cũ ⇒ false). */
@@ -205,6 +204,7 @@ export const ProcessStageDefSchema = z.strictObject({
       /** contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm; chuyển cấp không bị giới hạn). */
       head_only: z.boolean().optional(),
       also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)
+      approver_user_id: UuidSchema.optional(), // esign-flow · người duyệt cụ thể (cửa như head_only)
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),

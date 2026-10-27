@@ -80,7 +80,7 @@ import { attachProduct, reviewSave } from "./application/review.usecase";
 import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
-import { approvalEngine, flowTemplateRoutes } from "./approval.mount";
+import { approvalEngine, type EsignHooks, flowTemplateRoutes } from "./approval.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 
 const KEY = "contracts";
@@ -117,7 +117,7 @@ export type ContractsAi = {
   /** CR-101 DOC-deals-fix: mở lượt duyệt cấp 1 cho HĐ vừa về Chờ duyệt (nâng giao dịch khi bật duyệt). */
   startReview?: (who: PackWho, id: string) => Promise<unknown>;
 };
-export type ContractsFlowDeps = {
+export type ContractsFlowDeps = EsignHooks & {
   ai: AiClient;
   /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
   fileText?: SourceFileText;

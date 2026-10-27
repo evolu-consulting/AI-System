@@ -29,6 +29,14 @@ export const APPROVAL_FLOW_RULES = [
   "REMIND_RANGE",
   "DIFY_WORKFLOW_UNKNOWN",
   "DIFY_PARAM_UNSUPPORTED",
+  /** esign-flow · tối đa 1 bước Ký số, phải là bước cuối. */
+  "ESIGN_MULTI",
+  "ESIGN_NOT_LAST",
+  /** esign-flow · người ký công ty `dept_head` thiếu phòng / `user` thiếu người. */
+  "SIGNER_GROUP_REQUIRED",
+  "SIGNER_USER_REQUIRED",
+  /** esign-flow · người (duyệt/ký) không thuộc công ty hoặc không có quyền gói hợp đồng. */
+  "USER_NOT_MEMBER",
 ] as const;
 export type ApprovalFlowRule = (typeof APPROVAL_FLOW_RULES)[number];
 
@@ -72,8 +80,42 @@ export const FlowReviewStepSchema = z.strictObject({
   exclude_starter: z.boolean(),
   /** `null` = luôn cần bước. */
   when: FlowWhenSchema.nullable(),
+  /** esign-flow · người duyệt cụ thể (thay cho phòng khi đặt): user của tenant có quyền gói; vắng/null ⇒ theo phòng. */
+  approver_user_id: UuidSchema.nullable().optional(),
 });
 export type FlowReviewStep = z.infer<typeof FlowReviewStepSchema>;
+export const ESIGN_SIGNER_MODES = ["owner", "dept_head", "user"] as const;
+/** esign-flow · người ký phía công ty: người phụ trách HĐ / trưởng phòng của Group / người cụ thể. */
+export const FlowEsignSignerSchema = z.strictObject({
+  mode: z.enum(ESIGN_SIGNER_MODES),
+  department_group_id: UuidSchema.nullable().optional(),
+  user_id: UuidSchema.nullable().optional(),
+});
+export type FlowEsignSigner = z.infer<typeof FlowEsignSignerSchema>;
+/** esign-flow · bước Ký số (bước cuối): duyệt xong ⇒ tự gửi ký; ký xong ⇒ luồng kết thúc; từ chối/huỷ ⇒ cần quyết. */
+export const FlowEsignStepSchema = z.strictObject({
+  kind: z.literal("esign"),
+  key: StepKeySchema,
+  name: StepNameSchema,
+  company_signer: FlowEsignSignerSchema,
+  /** Đối tác ký (email từ liên hệ đối tác của HĐ; thiếu ⇒ bước dừng "cần quyết"). */
+  partner_signs: z.boolean(),
+  order: z.enum(["company_first", "partner_first"]),
+  /** Khoá nhà cung cấp; null = mặc định công ty. */
+  provider: z
+    .string()
+    .regex(/^[a-z0-9-]{1,32}$/)
+    .nullable(),
+  due_h: z.number().int().min(APPROVAL_FLOW_DUE_H.min).max(APPROVAL_FLOW_DUE_H.max),
+  remind_every_h: z
+    .number()
+    .int()
+    .min(APPROVAL_FLOW_REMIND_H.min)
+    .max(APPROVAL_FLOW_REMIND_H.max)
+    .nullable(),
+  escalate_group_id: UuidSchema.nullable(),
+});
+export type FlowEsignStep = z.infer<typeof FlowEsignStepSchema>;
 export const FlowDifyStepSchema = z.strictObject({
   kind: z.literal("dify"),
   key: StepKeySchema,
@@ -87,6 +129,7 @@ export type FlowDifyStep = z.infer<typeof FlowDifyStepSchema>;
 export const FlowStepSchema = z.discriminatedUnion("kind", [
   FlowReviewStepSchema,
   FlowDifyStepSchema,
+  FlowEsignStepSchema,
 ]);
 export type FlowStep = z.infer<typeof FlowStepSchema>;
 export const FlowStepsSchema = z.array(FlowStepSchema).min(1).max(APPROVAL_FLOW_STEPS_MAX);

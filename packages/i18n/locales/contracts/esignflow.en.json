@@ -1,0 +1,57 @@
+{
+  "contracts": {
+    "flow": {
+      "esignStep": "E-signature",
+      "addEsign": "Add e-signature step",
+      "approver": "Specific approver",
+      "approverByDept": "By department (no person)",
+      "esign": {
+        "defaultName": "Sign contract",
+        "signer": "Company signer",
+        "mode": {
+          "owner": "Contract owner",
+          "dept_head": "Department head",
+          "user": "Specific person"
+        },
+        "signerDept": "Signer's department",
+        "signerUser": "Signer",
+        "partnerSigns": "Partner also signs (email from partner contacts)",
+        "order": "Signing order",
+        "companyFirst": "Company signs first",
+        "partnerFirst": "Partner signs first",
+        "provider": "E-signature provider",
+        "providerDefault": "Company default",
+        "info": "Once approved, the contract is sent for signature automatically. Signing completes the flow; if declined or voided, the owner is notified to resend or reopen the contract."
+      },
+      "err": {
+        "ESIGN_MULTI": "Only one e-signature step is allowed.",
+        "ESIGN_NOT_LAST": "The e-signature step must be last.",
+        "SIGNER_GROUP_REQUIRED": "Choose the signer's department.",
+        "SIGNER_USER_REQUIRED": "Choose the signer.",
+        "USER_NOT_MEMBER": "This person is not in the company or cannot edit contracts."
+      }
+    },
+    "approval": {
+      "esign": {
+        "status": {
+          "pending": "Waiting for approval",
+          "sending": "Sending for signature",
+          "sent": "Sent, awaiting signatures",
+          "completed": "Signed",
+          "needs_decision": "Needs decision"
+        },
+        "reason": {
+          "NO_PARTNER_EMAIL": "Partner has no contact email. Add one, then resend.",
+          "NO_SIGNER": "Company signer could not be determined.",
+          "SEND_FAILED": "Sending for signature failed.",
+          "DECLINED": "A signer declined.",
+          "VOIDED": "The envelope was voided."
+        },
+        "resend": "Resend",
+        "resent": "Sent for signature again.",
+        "stillBlocked": "Not sent yet, see the reason on the e-signature step.",
+        "resendFail": "Could not resend."
+      }
+    }
+  }
+}

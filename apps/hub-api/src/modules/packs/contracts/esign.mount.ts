@@ -17,14 +17,17 @@ import { ESIGN_WEBHOOK_PATH, esignRoutes, esignWebhookRoutes } from "./adapters/
 import { selfsignProvider } from "./adapters/esign.selfsign";
 import { esignAnchorRepo } from "./adapters/esign-anchor.repo";
 import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
+import { deptHeadOf, esignFlowRepo } from "./adapters/esign-flow.repo";
+import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
+import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 
 type EnvMap = Record<string, string | undefined>;
-const repos = (tx: Tx, t: string) => ({ esign: esignRepo(tx, t) });
+const repos = (tx: Tx, t: string) => ({ esign: esignRepo(tx, t), esignFlow: esignFlowRepo(tx, t) });
 
 /** Adapter của nhà cung cấp KHẢ DỤNG (đã kiểm ở `providerEntriesOf`). */
 function adapterOf(key: string, env: EnvMap): ESignProvider | null {
@@ -67,13 +70,18 @@ const registryOf = (s: ESignSeam | undefined): ESignRegistry => {
   return envESignRegistry(process.env);
 };
 
+/** esign-flow · use case ký số + bước Ký số của luồng duyệt (gắn hai chiều: gửi ký ⇄ hook trạng thái phong bì). */
+export type ESignModule = ESignUsecase & { flow: EsignFlow };
+
 export function esignModule(
   db: Db,
   d: { esign?: ESignSeam | undefined; files: ESignFiles | null },
-): ESignUsecase {
-  return esignUsecase({
+): ESignModule {
+  const uow = createPackUow(db, "contracts", repos);
+  let flow: EsignFlow | null = null;
+  const u = esignUsecase({
     providers: registryOf(d.esign),
-    uow: createPackUow(db, "contracts", repos),
+    uow,
     files: d.files,
     me: selfContactOf(db),
     tenantOf: tenantOfEnvelope(db),
@@ -86,7 +94,15 @@ export function esignModule(
       files: d.files,
       pdf: lazyPdf(),
     }),
+    onStatus: async (tid, id, st) => flow?.onStatus(tid, id, st),
   });
+  flow = esignFlow({
+    uow,
+    send: u.sendSystem,
+    deptHead: deptHeadOf(db),
+    warn: (m, meta) => logger.warn(m, meta),
+  });
+  return { ...u, flow };
 }
 
 const lazyPdf = (): Pick<PdfConverter, "toText"> => {
@@ -99,10 +115,11 @@ const lazyPdf = (): Pick<PdfConverter, "toText"> => {
   };
 };
 
-export const esignUserRoutes = (view: PackAccessView, u: ESignUsecase): Hono<PackGuardVars> => {
+/** Route ký số + esign-anchor (cụm/ô ký) + esign-flow "Gửi lại" bước Ký số. */
+export const esignUserRoutes = (view: PackAccessView, u: ESignModule): Hono<PackGuardVars> => {
   const r = esignRoutes(view, u);
   if (u.anchors) r.route("/", esignAnchorRoutes(view, u.anchors));
-  return r;
+  return r.route("/", esignFlowRoutes(view, u.flow));
 };
 
 /** Gắn webhook `/pack/contracts/esign/webhook/:provider` — gọi TRƯỚC `requireAuth` (không JWT; nhà cung cấp tự xác thực) — và
@@ -119,7 +136,7 @@ export function mountEsignWebhook<E extends Env>(
         }
       | undefined;
   },
-): ESignUsecase | undefined {
+): ESignModule | undefined {
   if (!d.db || !(d.packs?.contracts ?? true)) return undefined;
   const fb = packFilebox(d.packs);
   const u = esignModule(d.db, { esign: d.packs?.esign, files: fb ? fileboxClients(fb) : null });

@@ -21,10 +21,10 @@ import { mountMyHistory } from "../my-history/my-history.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { contractsActivitySource } from "./contracts/activity.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
+import { packWriters } from "./contracts/adapters/esign-flow.repo";
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
 import { pdfSourceText } from "./contracts/adapters/source-file-text";
 import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
-import type { ESignUsecase } from "./contracts/application/esign.usecase";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
 import { businessModule } from "./contracts/business.mount";
@@ -34,7 +34,7 @@ import { mountContractsContext } from "./contracts/context.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { docFrameModule } from "./contracts/doc-frame.mount";
-import { type ESignSeam, esignUserRoutes } from "./contracts/esign.mount";
+import { type ESignModule, type ESignSeam, esignUserRoutes } from "./contracts/esign.mount";
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
@@ -99,7 +99,7 @@ export type PacksMountDeps = {
   /** HD4 Â· dá»«ng vÃ²ng nháº¯c khi server táº¯t. */
   signal?: AbortSignal;
   /** cf-esign-docusign · use case ký số dựng sẵn bởi `mountEsignWebhook` (trước JWT) — dùng chung cho route người dùng. */
-  esign?: ESignUsecase | undefined;
+  esign?: ESignModule | undefined;
 };
 
 /** Review m-04 Â· `pkdemo` chá»‰ má»Ÿ khi `APP_ENV` khai bÃ¡o rÃµ `development`/`test`; váº¯ng hoáº·c giÃ¡ trá»‹ láº¡ â‡’ táº¯t (fail-closed). */
@@ -199,11 +199,13 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
       // M3 Â· AI client chung (khoÃ¡ tá»« env; test tiÃªm `model` giáº£) + Group duyá»‡t (admin.groups + cache cáº¥u hÃ¬nh)
       ai: aiClient,
       groups: packGroups(db, view, CONTRACTS_KEY),
+      members: packWriters(db, view, CONTRACTS_KEY), // esign-flow · người duyệt/ký cụ thể thuộc tenant + quyền gói
       ...(fb
         ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
         : {}),
       ...(d.redis ? { redis: d.redis } : {}),
       quota,
+      ...(d.esign ? { afterApproved: d.esign.flow.afterApproved } : {}), // esign-flow · bước Ký số sau Đã duyệt
       ...(d.packRuns ? { engine: d.packRuns } : {}), // contract-flow S3a · duyệt trên engine (cờ CONTRACTS_APPROVAL_ENGINE)
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
@@ -221,7 +223,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     contractsModule(db, view, fb ? fileboxClients(fb) : null, { timeZoneOf, guard: ai.guard }),
   );
   app.route(base, ai.routes); // HD2
-  app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
+  app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota, esign: d.esign })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
   app.route(base, ai.approval); // HD3
   if (fb)
     app.route(
@@ -272,7 +274,7 @@ function mountContractsMore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     }),
   ); // HD8 (engine cÅ© chá»‰ Ä‘á»c â€” CR-096 Q1)
   app.route(base, contractsReputation(d, view, db)); // V2-E Â· uy tÃ­n v2
-  if (d.esign) app.route(base, esignUserRoutes(view, d.esign)); // cf-esign-docusign · ký số
+  if (d.esign) app.route(base, esignUserRoutes(view, d.esign)); // cf-esign-docusign · ký số + esign-flow Gửi lại
 }
 /** price-scout Â· agent Hub `price-scout` qua cá»•ng `AgentCaller` (AI client chung + cáº¥u hÃ¬nh agent Hub/Studio); vÃ²ng dÃ² theo lá»‹ch
  *  báº­t cÃ¹ng Ä‘iá»u kiá»‡n vÃ²ng nháº¯c HD4 (`worker`, `CONTRACTS_PRICE_SCOUT` â‰  off). */

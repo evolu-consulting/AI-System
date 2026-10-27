@@ -31,3 +31,11 @@ export const groupsKey = ["contract-groups"] as const;
 export function fetchGroups(signal?: AbortSignal): Promise<ContractGroup[]> {
   return api<ContractGroup[]>("/pack/contracts/groups", { signal });
 }
+
+/** esign-flow · "Gửi lại" bước Ký số đang cần quyết (người phụ trách HĐ / owner gói). */
+export function resendEsignStep(id: string): Promise<{ result: "sent" | "needs_decision" }> {
+  return api<{ result: "sent" | "needs_decision" }>(
+    `${BASE}/${encodeURIComponent(id)}/approval/esign-resend`,
+    { method: "POST", body: {} },
+  );
+}

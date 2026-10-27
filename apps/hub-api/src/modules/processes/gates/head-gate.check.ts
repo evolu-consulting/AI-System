@@ -41,7 +41,8 @@ export async function reviewGroupMember(
 ): Promise<boolean> {
   const group = after?.kind === "review" ? after.group_id : null;
   if (group === null) return false;
+  const approver = after?.kind === "review" ? (after.approver_user_id ?? null) : null;
   const gated = after?.kind === "review" && after.head_only === true;
-  const head = gated ? await headOf(tx, run.tenantId, group) : null;
+  const head = approver ?? (gated ? await headOf(tx, run.tenantId, group) : null);
   return inReviewGroup(v.userId, groupIds, group, head);
 }

@@ -1,9 +1,10 @@
 // contract-flow S5 · một bước của mẫu luồng: bước duyệt (phòng, trưởng phòng, hạn, nhắc, chuyển cấp, điều kiện) hoặc bước Dify.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { FlowStep, FlowReviewStep as ReviewStep } from "../api-flow";
+import type { FlowEsignStep, FlowStep, FlowReviewStep as ReviewStep } from "../api-flow";
 import { DUE_MIN, type FlowIssue, issueOf, REMIND_MAX, REMIND_MIN } from "../lib/flow-state";
 import { FIELD } from "./controls";
+import { FlowEsignFields } from "./FlowEsignFields";
 import { FlowWhen } from "./FlowWhen";
 
 export type Dept = { id: string; name: string };
@@ -31,6 +32,8 @@ const SHOWN = new Set([
   "remind_every_h",
   "escalate_group_id",
   "when",
+  "approver_user_id",
+  "company_signer",
 ]);
 
 type Props = {
@@ -38,9 +41,11 @@ type Props = {
   index: number;
   count: number;
   depts: Dept[];
+  /** esign-flow · người có thể chọn làm người duyệt/ký cụ thể. */
+  people: Dept[];
   issues: FlowIssue[];
   editable: boolean;
-  onPatch: (p: Partial<ReviewStep>) => void;
+  onPatch: (p: Partial<ReviewStep> | Partial<FlowEsignStep>) => void;
   onWhen: (w: ReviewStep["when"]) => void;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
@@ -64,10 +69,16 @@ export function FlowStepCard(p: Props) {
     <li className="rounded-xl border border-rule bg-panel p-4" data-testid={`flow-step-${index}`}>
       <div className="mb-3 flex items-center gap-2">
         <b className="text-label">
-          {index + 1}.{" "}
-          {first ? f("firstName") : step.kind === "dify" ? f("difyStep") : f("reviewStep")}
+          {index + 1}. {first ? f("firstName") : f(`${step.kind}Step`)}
         </b>
-        {p.editable && !first && (
+        {p.editable && !first && step.kind === "esign" && (
+          <span className="ml-auto">
+            <button type="button" className={BTN} aria-label={f("remove")} onClick={p.onRemove}>
+              {f("remove")}
+            </button>
+          </span>
+        )}
+        {p.editable && !first && step.kind !== "esign" && (
           <span className="ml-auto flex gap-1">
             <button
               type="button"
@@ -100,7 +111,15 @@ export function FlowStepCard(p: Props) {
             {f(`err.${x.code}`, { min: REMIND_MIN, max: REMIND_MAX })}
           </p>
         ))}
-      {step.kind === "dify" ? (
+      {step.kind === "esign" ? (
+        <FlowEsignFields
+          step={step}
+          depts={p.depts}
+          people={p.people}
+          err={err}
+          onPatch={p.onPatch}
+        />
+      ) : step.kind === "dify" ? (
         <p className="text-dim">{f("difyInfo", { name: step.name || step.workflow_key })}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
@@ -119,6 +138,21 @@ export function FlowStepCard(p: Props) {
             >
               <option value="">{f("pick")}</option>
               {deptOpts(step.department_group_id).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={f("approver")} error={err("approver_user_id")}>
+            <select
+              className={FIELD}
+              aria-label={f("approver")}
+              value={step.approver_user_id ?? ""}
+              onChange={(e) => p.onPatch({ approver_user_id: e.target.value || null })}
+            >
+              <option value="">{f("approverByDept")}</option>
+              {p.people.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>

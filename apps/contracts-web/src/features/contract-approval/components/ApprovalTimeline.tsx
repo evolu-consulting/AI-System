@@ -6,6 +6,7 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { openSettings } from "~/features/settings/lib/bus";
 import { useGroups } from "../hooks/use-groups";
 import { hoursLeft, type TimelineRow, timelineRows } from "../lib/engine-card";
+import { EsignStepRow } from "./EsignStepRow";
 
 const DOT: Record<TimelineRow["status"], string> = {
   pending: "border-rule bg-transparent",
@@ -77,11 +78,12 @@ function Row({ r, now }: { r: TimelineRow; now: number }) {
   );
 }
 
-export function ApprovalTimeline({ a }: { a: ContractApproval }) {
+export function ApprovalTimeline({ id, a }: { id: string; a: ContractApproval }) {
   const { t } = useTranslation();
   const { owner } = useMe();
   const groups = useGroups(a.mode === "engine");
   if (a.mode !== "engine" || !a.steps?.length) return null;
+  const esign = a.esign ?? null;
   const now = Date.now();
   const rows = timelineRows(a.steps, groups.data ?? [], now);
   return (
@@ -103,6 +105,7 @@ export function ApprovalTimeline({ a }: { a: ContractApproval }) {
         {rows.map((r) => (
           <Row key={r.idx} r={r} now={now} />
         ))}
+        {esign && <EsignStepRow id={id} e={esign} />}
       </ol>
     </section>
   );

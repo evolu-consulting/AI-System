@@ -50,6 +50,9 @@ type StateRow = {
   a_mode: string | null;
   a_run: string | null;
   a_steps: unknown;
+  a_es?: string | null;
+  a_er?: string | null;
+  owner?: string | null;
   deal: string | null;
   v: unknown;
   threshold: string | number | null;
@@ -69,8 +72,11 @@ const toState = (r: StateRow): ApprovalState => ({
           mode: r.a_mode ?? "machine",
           engineRunId: r.a_run,
           flowSteps: (json(r.a_steps) ?? null) as FlowStep[] | null,
+          esignStatus: r.a_es ?? null,
+          esignReason: r.a_er ?? null,
         }
       : null,
+  owner: r.owner ?? null,
   deal: r.deal,
   value: json(r.v),
   threshold: Number(r.threshold ?? APPROVAL_DEFAULTS.threshold),
@@ -82,6 +88,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
     const [r] = await tx.execute<StateRow>(sql`
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
+        a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
         c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c

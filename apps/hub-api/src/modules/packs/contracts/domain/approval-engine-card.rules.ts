@@ -3,7 +3,7 @@
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
 import { finalizesOnApprove, isTerminalRun } from "./approval-engine.rules";
-import type { FlowFacts, FlowStep } from "./approval-flow.rules";
+import type { FlowEngineStep, FlowFacts, FlowStep } from "./approval-flow.rules";
 
 export type CardStepStatus =
   | "pending"
@@ -47,7 +47,8 @@ export type CardStep = {
 /** Các bước người dùng của mẫu chụp ghép với stage engine cùng khoá (thiếu stage ⇒ `pending`). */
 export function cardSteps(flow: readonly FlowStep[], sv: EngineStepsView | null): CardStep[] {
   const byKey = new Map((sv?.steps ?? []).map((s) => [s.key, s]));
-  return flow.map((s, i) => {
+  const own = flow.filter((s): s is FlowEngineStep => s.kind !== "esign"); // esign-flow · Ký số không là stage
+  return own.map((s, i) => {
     const st = byKey.get(`s${i}`);
     const head = s.kind === "review";
     return {

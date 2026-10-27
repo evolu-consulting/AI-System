@@ -19,7 +19,12 @@ export type ApprovalFlowRule =
   | "DUE_RANGE"
   | "REMIND_RANGE"
   | "DIFY_WORKFLOW_UNKNOWN"
-  | "DIFY_PARAM_UNSUPPORTED";
+  | "DIFY_PARAM_UNSUPPORTED"
+  | "ESIGN_MULTI"
+  | "ESIGN_NOT_LAST"
+  | "SIGNER_GROUP_REQUIRED"
+  | "SIGNER_USER_REQUIRED"
+  | "USER_NOT_MEMBER";
 
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (khoá, tên, tham số khai trong `input_schema`). */
 export type DifyParam = { name: string; type: string; required: boolean };
@@ -42,6 +47,8 @@ export type FlowReviewStep = {
   escalate_group_id: string | null;
   exclude_starter: boolean;
   when: FlowWhen | null;
+  /** esign-flow · người duyệt cụ thể (thay phòng khi đặt). */
+  approver_user_id?: string | null | undefined;
 };
 export type FlowDifyStep = {
   kind: "dify";
@@ -50,7 +57,27 @@ export type FlowDifyStep = {
   workflow_key: string;
   after: "auto";
 };
-export type FlowStep = FlowReviewStep | FlowDifyStep;
+export type FlowEsignSigner = {
+  mode: "owner" | "dept_head" | "user";
+  department_group_id?: string | null | undefined;
+  user_id?: string | null | undefined;
+};
+/** esign-flow · bước Ký số (cuối luồng, không phải stage engine — gói tự chạy sau khi duyệt xong). */
+export type FlowEsignStep = {
+  kind: "esign";
+  key: string;
+  name: string;
+  company_signer: FlowEsignSigner;
+  partner_signs: boolean;
+  order: "company_first" | "partner_first";
+  provider: string | null;
+  due_h: number;
+  remind_every_h: number | null;
+  escalate_group_id: string | null;
+};
+export type FlowStep = FlowReviewStep | FlowDifyStep | FlowEsignStep;
+/** Bước chạy trên engine (review + Dify); bước Ký số do gói chạy sau "Đã duyệt". */
+export type FlowEngineStep = FlowReviewStep | FlowDifyStep;
 export type ApprovalFlowResponse = {
   version: number;
   is_default: boolean;

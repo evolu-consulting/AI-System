@@ -18,7 +18,7 @@ export const hasCondition = (when: FlowWhen | null): boolean => !!when && when.c
 
 /** Bước này cần chạy với hồ sơ này không. */
 export function applies(step: FlowStep, facts: Facts): boolean {
-  if (step.kind === "dify") return true;
+  if (step.kind === "dify" || step.kind === "esign") return true; // esign-flow · Ký số luôn chạy sau duyệt xong
   const w = step.when;
   if (!w || w.conds.length === 0) return true;
   const hits = w.conds.map((c) => condHit(c, facts));

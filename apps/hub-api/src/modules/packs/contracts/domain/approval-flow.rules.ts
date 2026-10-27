@@ -13,6 +13,7 @@ import {
   type DifyWorkflow,
   type FlowCond,
   type FlowDeal,
+  type FlowEngineStep,
   type FlowStep,
   type FlowWhen,
 } from "./approval-flow.types";
@@ -22,11 +23,14 @@ import {
   difyArgsOf,
   hasDifyStep,
 } from "./approval-flow-dify.rules";
+import { esignIssues } from "./approval-flow-esign.rules";
 
 export type {
   ApprovalFlowIssue,
   ApprovalFlowResponse,
   DifyWorkflow,
+  FlowEngineStep,
+  FlowEsignStep,
   FlowStep,
 } from "./approval-flow.types";
 export {
@@ -36,6 +40,7 @@ export {
   hasDifyStep,
   validateDifyCatalog,
 } from "./approval-flow-dify.rules";
+export { esignCard, esignIssues, esignStepOf, flowUserIds } from "./approval-flow-esign.rules";
 
 export const APPROVAL_PROCESS_KEY = "contracts-approval";
 export const FLOW_TOOL_KEYS = { route: "contracts-route", finalize: "contracts-finalize" } as const;
@@ -71,9 +76,13 @@ export function whenHolds(w: FlowWhen | null, f: FlowFacts): boolean {
     : w.conds.some((c) => condHolds(c, f));
 }
 
-/** Bước Dify luôn chạy (không điều kiện); bước review theo `when`. */
+/** Bước Dify luôn chạy (không điều kiện); bước review theo `when`. Bước Ký số không là bước engine (lọc bằng `engineSteps`). */
 export const stepApplies = (s: FlowStep, f: FlowFacts): boolean =>
-  s.kind === "dify" || whenHolds(s.when, f);
+  s.kind === "dify" || (s.kind === "review" && whenHolds(s.when, f));
+
+/** esign-flow · các bước chạy trên engine (review + Dify). Bước Ký số luôn ở CUỐI ⇒ chỉ số bước engine không đổi. */
+export const engineSteps = (steps: readonly FlowStep[]): FlowEngineStep[] =>
+  steps.filter((s): s is FlowEngineStep => s.kind !== "esign");
 
 /** Chỉ số bước người dùng áp dụng kế sau `from`; không còn ⇒ `steps.length` (= ghi "Đã duyệt"). */
 export function nextApplicable(steps: readonly FlowStep[], f: FlowFacts, from: number): number {
@@ -100,7 +109,8 @@ const inRange = (v: number, r: { min: number; max: number }) =>
 function reviewIssues(s: Extract<FlowStep, { kind: "review" }>, i: number): ApprovalFlowIssue[] {
   const out: ApprovalFlowIssue[] = [];
   const add = (f: string, rule: ApprovalFlowRule) => out.push({ path: `steps.${i}.${f}`, rule });
-  if (s.department_group_id === null) add("department_group_id", "GROUP_REQUIRED");
+  if (s.department_group_id === null && !s.approver_user_id)
+    add("department_group_id", "GROUP_REQUIRED");
   if (s.escalate_group_id !== null && s.escalate_group_id === s.department_group_id)
     add("escalate_group_id", "ESCALATE_SAME_GROUP");
   if (!inRange(s.due_h, APPROVAL_FLOW_DUE_H)) add("due_h", "DUE_RANGE");
@@ -128,16 +138,18 @@ export function validateFlow(steps: readonly FlowStep[]): ApprovalFlowIssue[] {
       out.push({ path: `steps.${i}.when`, rule: "AFTER_DIFY_CONDITIONAL" });
     if (s.kind === "review") out.push(...reviewIssues(s, i));
   });
+  out.push(...esignIssues(steps));
   return out;
 }
 
-/** Nhóm (duyệt + chuyển cấp) mà mẫu tham chiếu. */
+/** Nhóm (duyệt + chuyển cấp + phòng người ký) mà mẫu tham chiếu. */
 export function flowGroupIds(steps: readonly FlowStep[]): string[] {
   const ids = new Set<string>();
   for (const s of steps) {
-    if (s.kind !== "review") continue;
-    if (s.department_group_id) ids.add(s.department_group_id);
+    if (s.kind === "dify") continue;
     if (s.escalate_group_id) ids.add(s.escalate_group_id);
+    const g = s.kind === "review" ? s.department_group_id : s.company_signer.department_group_id;
+    if (g) ids.add(g);
   }
   return [...ids];
 }
@@ -240,14 +252,38 @@ function alsoOf(group: string, owners: readonly string[], groupIds: ReadonlySet<
   return also.length ? { also_group_ids: also } : {};
 }
 
+/** esign-flow · Group gắn task của bước: phòng của bước; người duyệt cụ thể mà không phòng ⇒ Group Toàn quyền đầu tiên (cửa
+ *  `approver_user_id` chỉ cho người đó quyết phía Group chính; Group Toàn quyền vẫn quyết qua `also_group_ids`). */
+function reviewGroupOf(
+  s: Extract<FlowStep, { kind: "review" }>,
+  groupIds: ReadonlySet<string>,
+  owners: readonly string[],
+): string {
+  if (!s.approver_user_id || (s.department_group_id && groupIds.has(s.department_group_id)))
+    return groupOf(s.department_group_id, groupIds);
+  return groupOf(owners.find((g) => groupIds.has(g)) ?? null, groupIds);
+}
+
+/** Cửa người duyệt cụ thể + Group "cũng quyết": có người cụ thể ⇒ Group Toàn quyền giữ quyền cả khi là Group gắn task. */
+function gateAfter(
+  s: Extract<FlowStep, { kind: "review" }>,
+  group: string,
+  owners: readonly string[],
+  groupIds: ReadonlySet<string>,
+) {
+  if (!s.approver_user_id) return alsoOf(group, owners, groupIds);
+  const also = [...new Set(owners)].filter((g) => groupIds.has(g));
+  return { approver_user_id: s.approver_user_id, ...(also.length ? { also_group_ids: also } : {}) };
+}
+
 function stageOfStep(
-  steps: readonly FlowStep[],
+  steps: readonly FlowEngineStep[],
   i: number,
   groupIds: ReadonlySet<string>,
   wfs: ReadonlyMap<string, DifyWorkflow>,
   owners: readonly string[] = [],
 ) {
-  const s = steps[i] as FlowStep;
+  const s = steps[i] as FlowEngineStep;
   const step = engineStepOf(i);
   if (s.kind === "dify") {
     const after = { kind: "auto", branch: [] };
@@ -262,11 +298,11 @@ function stageOfStep(
       timeoutS: 600,
     });
   }
-  const group = groupOf(s.department_group_id, groupIds);
+  const group = reviewGroupOf(s, groupIds, owners);
   const after = {
     kind: "review",
     group_id: group,
-    ...(s.head_only ? { head_only: true } : {}),
+    ...(s.head_only && !s.approver_user_id ? { head_only: true } : {}),
     back_to_steps: i === 0 ? [] : [0],
     remind_every_h: s.remind_every_h,
     escalate:
@@ -275,7 +311,7 @@ function stageOfStep(
         : { after_h: s.due_h, group_id: groupOf(s.escalate_group_id, groupIds) },
     branch: i === 0 ? [] : branchFrom(steps.length, i),
     exclude_starter: s.exclude_starter,
-    ...alsoOf(group, owners, groupIds),
+    ...gateAfter(s, group, owners, groupIds),
   };
   const tool = FLOW_TOOL_KEYS.route;
   return toolStage({
@@ -316,7 +352,7 @@ export function compileDef(
   workflows: ReadonlyMap<string, DifyWorkflow> = new Map(),
   owners: readonly string[] = [],
 ) {
-  const { steps } = flow;
+  const steps = engineSteps(flow.steps); // esign-flow · bước Ký số do gói chạy sau finalize
   const n = steps.length;
   const route = toolStage({
     key: ROUTE_STAGE,

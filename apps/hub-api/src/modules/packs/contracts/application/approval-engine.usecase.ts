@@ -20,6 +20,7 @@ import {
   compileDef,
   defaultFlowFromSettings,
   difyRunInputs,
+  engineSteps,
   type FlowStep,
   flowGroupIds,
   hasDifyStep,
@@ -42,6 +43,8 @@ export type ApprovalEngineDeps = {
   uow: ApprovalEngineUow;
   groups: FlowGroups;
   warn: (msg: string, meta: Record<string, unknown>) => void;
+  /** esign-flow · sau khi ghi "Đã duyệt" (đã COMMIT): chạy bước Ký số của mẫu chụp. Vắng ⇒ không có bước ký tự động. */
+  afterApproved?: ((tenantId: string, contractId: string) => Promise<unknown>) | undefined;
 };
 /** Danh tính lời gọi tool (cấu trúc khớp `PackToolCtx`). */
 export type EngineToolCtx = { tenantId: string; userId: string; processRunId?: string | null };
@@ -304,9 +307,10 @@ export function routeStep(d: Pick<ApprovalEngineDeps, "uow">) {
     const row = await d.uow.tenant(t.who, (r) => r.approvalEngine.byRun(t.run, { lock: false }));
     if (!inRun(row, t.id) || row.approvalStatus !== "level1")
       throw new Error("contracts tool: contract not in run");
-    const from = routeFrom(args.from_step, row.flowSteps.length);
+    const steps = engineSteps(row.flowSteps); // esign-flow · bước Ký số không là stage engine
+    const from = routeFrom(args.from_step, steps.length);
     if (from === null) throw new Error("contracts tool: bad from_step");
-    return { next: routeNext(row.flowSteps, factsOf(row.deal, row.totalValue), from) };
+    return { next: routeNext(steps, factsOf(row.deal, row.totalValue), from) };
   };
 }
 
@@ -336,15 +340,18 @@ async function finalizeInTx(
   if (!inRun(row, t.id)) throw new Error("contracts tool: contract not in run");
   if (row.approvalStatus === "done") return; // đã ghi ở lần gọi trước (tool chạy lại)
   const facts = factsOf(row.deal, row.totalValue);
-  if (!o.by || !finalizeReady(row.flowSteps, facts, o.passed))
+  if (!o.by || !finalizeReady(engineSteps(row.flowSteps), facts, o.passed))
     throw new Error("contracts tool: required steps not passed");
   if (!(await r.approvalEngine.finalize(t.id, row.approvalId, t.run, o.by)))
     throw new Error("contracts tool: approval not open");
   await applyPendingLinks(r, t, row, o.by);
 }
 
-/** Tool `contracts-finalize`: kiểm lại dưới khoá HĐ, ghi "Đã duyệt" + gắn SP chờ trong CÙNG tx. Gọi lại sau khi đã ghi ⇒ ok. */
-export function finalizeRun(d: Pick<ApprovalEngineDeps, "uow" | "bridge">) {
+/** Tool `contracts-finalize`: kiểm lại dưới khoá HĐ, ghi "Đã duyệt" + gắn SP chờ trong CÙNG tx. Gọi lại sau khi đã ghi ⇒ ok.
+ *  esign-flow · SAU commit: bước Ký số (nếu mẫu chụp có) tự gửi ký — idempotent (claim trên lượt), lỗi chỉ log, không làm hỏng tool. */
+export type FinalizeDeps = Pick<ApprovalEngineDeps, "uow" | "bridge" | "afterApproved"> &
+  Partial<Pick<ApprovalEngineDeps, "warn">>;
+export function finalizeRun(d: FinalizeDeps) {
   return async (ctx: EngineToolCtx, args: Readonly<Record<string, unknown>>) => {
     const t = target(ctx, args);
     const port = d.bridge.port;
@@ -354,6 +361,12 @@ export function finalizeRun(d: Pick<ApprovalEngineDeps, "uow" | "bridge">) {
       port.lastApprover(t.who.tenantId, t.run),
     ]);
     await d.uow.tenant(t.who, (r) => finalizeInTx(r, t, { passed, by }));
+    if (d.afterApproved)
+      await d
+        .afterApproved(t.who.tenantId, t.id)
+        .catch((e: unknown) =>
+          d.warn?.("contract-esign-flow-failed", { contract_id: t.id, ...engineErrMeta(e) }),
+        );
     return {};
   };
 }

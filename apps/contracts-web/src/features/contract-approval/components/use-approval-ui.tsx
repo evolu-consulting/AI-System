@@ -74,7 +74,7 @@ export function useApprovalUi(o: {
     : v.note;
   const section = (
     <>
-      {ap.approval && <ApprovalTimeline a={ap.approval} />}
+      {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
       <ApprovalNote note={note} rejected={rejected} />
       {stalled && o.owner && (
         <button

@@ -7,6 +7,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
+import { useAssignees } from "~/features/contract-review/hooks/use-manage";
 import type { FlowStep } from "../api-flow";
 import { useDepartments, useDifyWorkflows, useFlow, useSaveFlow } from "../hooks/use-flow";
 import {
@@ -28,6 +29,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
   const q = useFlow(true);
   const depts = useDepartments(true);
   const dify = useDifyWorkflows(owner);
+  const people = useAssignees(owner); // esign-flow · người duyệt/ký cụ thể
   const save = useSaveFlow();
   const [steps, dispatch] = useReducer(flowReducer, [] as FlowStep[]);
   const [server, setServer] = useState<FlowIssue[]>([]);
@@ -120,6 +122,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
               index={i}
               count={steps.length}
               depts={list}
+              people={people.data?.items ?? []}
               issues={issues}
               editable={owner}
               onPatch={(patch) => dispatch({ type: "patch", index: i, patch })}
@@ -146,6 +149,16 @@ export function FlowPane({ owner }: { owner: boolean }) {
             full={steps.length >= FLOW_MAX_STEPS}
             onAdd={(w) => dispatch({ type: "addDify", workflow_key: w.key, name: w.name })}
           />
+        )}
+        {owner && !steps.some((s) => s.kind === "esign") && (
+          <button
+            type="button"
+            className={`${BTN} ml-2 mt-2`}
+            disabled={steps.length >= FLOW_MAX_STEPS}
+            onClick={() => dispatch({ type: "addEsign", name: f("esign.defaultName") })}
+          >
+            {f("addEsign")}
+          </button>
         )}
         {steps.length >= FLOW_MAX_STEPS && (
           <span className="ml-3 text-caption text-dim">{f("maxReached")}</span>

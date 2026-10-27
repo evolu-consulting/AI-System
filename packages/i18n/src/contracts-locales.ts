@@ -5,8 +5,9 @@
 import type { Locale } from "./locales";
 
 type Part = { default: { contracts: Record<string, unknown> } };
-/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, doclist, msimpact, esign-anchor, docframe, rep3 (rep3 luôn CUỐI: gộp sâu). */
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, doclist, msimpact, esign-anchor, esignflow, docframe, rep3 (rep3 luôn CUỐI: gộp sâu; esignflow gộp sâu vào flow + approval). */
 type Parts = readonly [
+  Part,
   Part,
   Part,
   Part,
@@ -61,6 +62,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/doclist.en.json"),
     import("../locales/contracts/msimpact.en.json"),
     import("../locales/contracts/esign-anchor.en.json"),
+    import("../locales/contracts/esignflow.en.json"),
     import("../locales/contracts/docframe.en.json"),
     import("../locales/contracts/rep3.en.json"),
   ]);
@@ -91,6 +93,7 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/doclist.vi.json"),
     import("../locales/contracts/msimpact.vi.json"),
     import("../locales/contracts/esign-anchor.vi.json"),
+    import("../locales/contracts/esignflow.vi.json"),
     import("../locales/contracts/docframe.vi.json"),
     import("../locales/contracts/rep3.vi.json"),
   ]);
@@ -111,6 +114,8 @@ function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...t
   // REP-v3-ui: phần cuối (`rep3`) gộp SÂU vào các nhánh đã có (`pv2`, `settings`…) thay vì ghi đè cả nhánh.
   const rep3 = tail[tail.length - 1] as Part;
   const rest = tail.slice(0, -1);
+  // esign-flow: phần `esignflow` (ngay trước `docframe`) thêm khoá vào nhánh `flow`/`approval` đã có ⇒ gộp SÂU, không ghi đè nhánh.
+  const [esignflow] = rest.splice(rest.length - 2, 1) as [Part];
   const base = mod.default as { contracts: Record<string, unknown> };
   const later = rest.map((p) => p.default.contracts); // V2-H svc, V2-I pv2, V2-J2 psup, V2-L settings, V2-M, V2-GAPS, GAP-E
   const f = v2f.default.contracts as { cform: object; cdetail: object };
@@ -132,7 +137,8 @@ function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...t
       cdetail: { ...f.cdetail, ...g.cdetail },
     },
   };
-  return { ...merged, contracts: deepMerge(merged.contracts, rep3.default.contracts) };
+  const withEf = deepMerge(merged.contracts, esignflow.default.contracts);
+  return { ...merged, contracts: deepMerge(withEf, rep3.default.contracts) };
 }
 
 /** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */

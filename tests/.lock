@@ -378,6 +378,7 @@ adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-
 52397ec7abec9d895b289240b949ec335368546399b35af6fc7ab5fefd2fd2fa  e2e/contracts-web/doc-frame.cw.ts
 2fee363ef6105fe78057923df75827e3a2f87aa2f0291c84d56350d12adad8b6  e2e/contracts-web/doc-list.cw.ts
 128d95ffc6816fb79bc314999a27e6bc690d553ae30cfbd17522c24145733308  e2e/contracts-web/esign-anchor.cw.ts
+bb39c719e812382bf24e21c73b3239656a1edb94bddf9bcec89e111f2c635e14  e2e/contracts-web/esign-flow.cw.ts
 662033a65fdfde2d67ec6b961589e8aa13f1803d9aa03dc38455378836693e40  e2e/contracts-web/esign-multi.cw.ts
 0ab16a5cb40e5bd5d0cd61b821e4f4cd154f1a48ef36f621a4239135273be587  e2e/contracts-web/esign.cw.ts
 898475201c3dfcbe5e21da1134a72d447184a26dd256dff68a1e06bd24b47d9d  e2e/contracts-web/flow-editor.cw.ts
@@ -1369,6 +1370,8 @@ d8c064b7d2884140d3ceaf3c9102727d50ddb9bf16382d2f6e88fac1b00e0b53  tests/acceptan
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
 9a5709f44007377c721ccca74f0576e4f08c8539972f7845f3033230af15fd1c  tests/acceptance/delivery-opts/delivery-opts.int.test.ts
 a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptance/esign-anchor/esign-anchor.int.test.ts
+7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
+15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 b115745687d389ceff77b54aa7c52db3b53961dccd6a6e37ca71dcbd019a689d  tests/acceptance/gap-c/notify-prefs.int.test.ts
 16d415d9f736f2ee700077f4a8dc6e8f9e90fa995449d65920427c25ab0688af  tests/acceptance/gap-d1/gap-d1.int.test.ts

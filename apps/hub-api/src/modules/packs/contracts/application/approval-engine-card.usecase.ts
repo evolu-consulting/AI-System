@@ -11,6 +11,7 @@ import {
   engineCardView,
   planEngineAct,
 } from "../domain/approval-engine-card.rules";
+import { engineSteps, esignCard } from "../domain/approval-flow.rules";
 import type { ApprovalState } from "./approval.ports";
 import type { ApprovalEnginePort, EngineCaller } from "./approval-engine.ports";
 
@@ -56,7 +57,7 @@ async function input(d: EngineCardDeps, who: PackWho, st: ApprovalState) {
   const sv = port && a.engineRunId ? await port.stepsView(callerOf(who), a.engineRunId) : null;
   return {
     approval: { id: a.id, status: a.status, startedBy: a.startedBy, feedback: a.feedback },
-    flow: a.flowSteps ?? [],
+    flow: engineSteps(a.flowSteps ?? []), // esign-flow · bước Ký số không là stage engine
     facts: factsOf(st.deal ?? null, st.value),
     sv,
     viewerId: who.userId,
@@ -65,7 +66,11 @@ async function input(d: EngineCardDeps, who: PackWho, st: ApprovalState) {
 
 /** Thẻ duyệt của lượt engine (không có cổng engine ⇒ thẻ không bước, không quyết được). */
 export function engineView(d: EngineCardDeps) {
-  return async (who: PackWho, st: ApprovalState) => engineCardView(await input(d, who, st));
+  return async (who: PackWho, st: ApprovalState) => {
+    const a = st.approval;
+    const esign = esignCard(a?.flowSteps, a?.esignStatus, a?.esignReason, st.owner === who.userId);
+    return { ...engineCardView(await input(d, who, st)), esign };
+  };
 }
 
 type Ctx = { who: PackWho; id: string; st: ApprovalState; runId: string; b: EngineActBody };

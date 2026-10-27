@@ -50,6 +50,23 @@ export const APPROVAL_STEP_STATUSES = [
   "running",
   "failed",
 ] as const;
+/** esign-flow · trạng thái bước Ký số: chờ duyệt xong / đang gửi / đã gửi chờ ký / ký xong / cần quyết. */
+export const ESIGN_FLOW_STATUSES = [
+  "pending",
+  "sending",
+  "sent",
+  "completed",
+  "needs_decision",
+] as const;
+export const ESIGN_FLOW_REASONS = [
+  "NO_PARTNER_EMAIL",
+  "NO_SIGNER",
+  "SEND_FAILED",
+  "DECLINED",
+  "VOIDED",
+] as const;
+export type EsignFlowStatus = (typeof ESIGN_FLOW_STATUSES)[number];
+export type EsignFlowReason = (typeof ESIGN_FLOW_REASONS)[number];
 export const ApprovalCardStepSchema = z.strictObject({
   /** Chỉ số bước người dùng trong mẫu chụp (0 = bước soạn). */
   idx: z.number().int().min(0),
@@ -90,6 +107,18 @@ export const ContractApprovalSchema = z.strictObject({
   steps: z.array(ApprovalCardStepSchema).optional(),
   /** fix-review · run đã kết thúc bất thường, lượt còn mở: owner/admin bấm "Mở lại quy trình" (POST .../approval/reopen). */
   needs_reopen: z.boolean().optional(),
+  /** esign-flow · bước Ký số cuối luồng (vắng/null ⇒ luồng không có bước ký). */
+  esign: z
+    .strictObject({
+      key: z.string().max(64),
+      name: z.string().max(200),
+      status: z.enum(ESIGN_FLOW_STATUSES),
+      reason: z.enum(ESIGN_FLOW_REASONS).nullable(),
+      /** Người xem bấm được "Gửi lại" (người phụ trách HĐ / owner gói) khi bước cần quyết. */
+      can_resend: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 export type ContractApproval = z.infer<typeof ContractApprovalSchema>;
 

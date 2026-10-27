@@ -3,7 +3,7 @@
 import type { DecisionReason, TaskKind, TaskStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { groupHeadSql } from "../core/head-gate.sql";
+import { approverSql, groupHeadSql } from "../core/head-gate.sql";
 
 export type GateTask = {
   id: string;
@@ -35,7 +35,8 @@ export async function loadTask(tx: Tx, taskId: string): Promise<GateTask | null>
     select t.id, t.tenant_id, t.process_run_id, t.stage_run_id, s.stage_idx, t.kind, t.status,
       t.assignee_group_id, ${escalatedGroup}, t.reason,
       array(select a.user_id from hub.review_task_assignees a where a.task_id = t.id and a.tenant_id = t.tenant_id
-        and a.user_id is not null)::text[] as user_ids, ${groupHeadSql("t")} as group_head,
+        and a.user_id is not null)::text[] as user_ids,
+      coalesce(${approverSql("pr.snapshot->'stages'->(s.stage_idx::int)")}, ${groupHeadSql("t")}) as group_head,
       array(select jsonb_array_elements_text(case when jsonb_typeof(x.ag) = 'array' then x.ag end))::text[]
         as also_group_ids
     from hub.review_tasks t

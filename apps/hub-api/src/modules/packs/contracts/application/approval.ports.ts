@@ -24,7 +24,12 @@ export type ApprovalState = ContractRunRef & {
     /** S3b · lượt `mode = 'engine'`: run engine + mẫu chụp lúc mở run. */
     engineRunId?: string | null;
     flowSteps?: FlowStep[] | null;
+    /** esign-flow · trạng thái + lý do bước Ký số của lượt (null = chưa tới / không có). */
+    esignStatus?: string | null;
+    esignReason?: string | null;
   } | null;
+  /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
+  owner?: string | null;
   /** S3b · loại HĐ (facts rẽ/`finalizes_on_approve`). */
   deal?: string | null;
   value: unknown;

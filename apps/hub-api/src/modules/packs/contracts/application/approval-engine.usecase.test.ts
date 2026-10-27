@@ -342,3 +342,44 @@ describe("prod-fix · trường log lỗi engine", () => {
     expect(engineErrMeta("boom")).toEqual({ error: "unknown" });
   });
 });
+
+describe("esign-flow · finalize ⇒ bước Ký số", () => {
+  const esign = {
+    kind: "esign" as const,
+    key: "sign",
+    name: "Ký số",
+    company_signer: { mode: "owner" as const },
+    partner_signs: true,
+    order: "company_first" as const,
+    provider: null,
+    due_h: 72,
+    remind_every_h: null,
+    escalate_group_id: null,
+  };
+  it("mẫu chụp có bước Ký số cuối: finalize vẫn đủ bước (Ký số không là stage) rồi gọi bước Ký số SAU commit", async () => {
+    const base = runRow();
+    const w = world({ run: { ...base, flowSteps: [...base.flowSteps, esign] } });
+    const seen: string[] = [];
+    const d = {
+      ...deps(w),
+      afterApproved: async (t: string, id: string) => {
+        seen.push(`${t}:${id}:${w.calls.length}`);
+        return "sent";
+      },
+    };
+    expect(await finalizeRun(d)(ctx, { contract_id: C })).toEqual({});
+    expect(seen).toEqual([`${T}:${C}:2`]);
+  });
+  it("bước Ký số lỗi ⇒ chỉ log, tool vẫn ok (HĐ đã khoá)", async () => {
+    const w = world({ run: runRow() });
+    const d = { ...deps(w), afterApproved: async () => Promise.reject(new Error("x")) };
+    expect(await finalizeRun(d)(ctx, { contract_id: C })).toEqual({});
+    expect(w.calls).toContain("warn:contract-esign-flow-failed");
+  });
+  it("route bỏ bước Ký số: từ bước 0 không còn bước ⇒ finalize", async () => {
+    const base = runRow();
+    const w = world({ run: { ...base, flowSteps: [base.flowSteps[0] as never, esign] } });
+    const out = await routeStep(deps(w))(ctx, { contract_id: C, from_step: 0 });
+    expect(out).toEqual({ next: 2 }); // = engineStepOf(1) = stage finalize của luồng 1 bước engine
+  });
+});

@@ -32,9 +32,19 @@ export type TaskFacts = {
  * (không head_only, không Group, phòng không có trưởng) ⇒ null = cả nhóm như cũ.
  */
 export function headGate(
-  after: { kind?: string; group_id?: string | null; head_only?: boolean } | undefined | null,
+  after:
+    | {
+        kind?: string;
+        group_id?: string | null;
+        head_only?: boolean;
+        approver_user_id?: string | null;
+      }
+    | undefined
+    | null,
   headUserId: string | null,
 ): string | null {
+  // esign-flow · người duyệt cụ thể của stage thay cả Group duyệt (thắng head_only).
+  if (after?.kind === "review" && after.approver_user_id) return after.approver_user_id;
   if (after?.kind !== "review" || after.head_only !== true || !after.group_id) return null;
   return headUserId ?? null;
 }

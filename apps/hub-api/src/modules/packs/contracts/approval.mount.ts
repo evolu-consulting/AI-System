@@ -15,6 +15,7 @@ import {
   type ApprovalFlowTxRepos,
   type FlowDefSync,
   type FlowGroups,
+  type FlowMembers,
   listDifyWorkflows,
   readApprovalFlow,
   saveApprovalFlow,
@@ -22,7 +23,13 @@ import {
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { ENGINE_FEATURE_KEY, engineAllowedForTenant } from "./domain/approval-engine.rules";
 
-type FlowDeps = {
+/** esign-flow · bước Ký số sau "Đã duyệt" (tool finalize; vắng ⇒ không tự gửi ký); người cụ thể (duyệt/ký) thuộc tenant + quyền
+ *  `write` gói (kiểm khi lưu mẫu). */
+export type EsignHooks = {
+  afterApproved?: ((tenantId: string, contractId: string) => Promise<unknown>) | undefined;
+  members?: FlowMembers | undefined;
+};
+type FlowDeps = EsignHooks & {
   engine?: ApprovalEngineBridge | undefined;
   groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list">;
   flowDefSync?: FlowDefSync | undefined;
@@ -56,6 +63,7 @@ export function approvalEngine(
     uow,
     groups: flow.groups,
     warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
+    afterApproved: flow.afterApproved,
   };
   const startRaw = startEngineApproval(ed);
   // Mở lượt MỚI chỉ cho công ty có entitlement; không có ⇒ "machine" (máy 2 bước cũ). Lượt đã engine vẫn chạy nốt (tool/reopen không cổng).
@@ -82,6 +90,7 @@ export function flowTemplateRoutes(
     uow,
     groups: flow.groups,
     ...(flow.flowDefSync ? { defSync: flow.flowDefSync } : {}),
+    ...(flow.members ? { members: flow.members } : {}),
     // cf-dify · catalog workflow của tenant qua cổng engine (lười, như `approvalEngine`); engine không nối ⇒ không kiểm.
     ...(flow.engine
       ? { workflows: async (t: string) => (await flow.engine?.port?.workflowsOf(t)) ?? [] }

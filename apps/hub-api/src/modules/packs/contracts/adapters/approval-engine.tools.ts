@@ -2,16 +2,12 @@
 // `side_effect: false` (S2: `finalize` biên dịch `real_action: false`; an toàn nằm ở kiểm lại trong `contracts-finalize`). Chỉ chạm
 // HĐ có `engine_run_id = ctx.processRunId`; `/mcp` (không run) ⇒ từ chối. Không log nội dung.
 import type { PackToolDef } from "../../kit/application/pack-tools.ports";
-import {
-  type ApprovalEngineDeps,
-  finalizeRun,
-  routeStep,
-} from "../application/approval-engine.usecase";
+import { type FinalizeDeps, finalizeRun, routeStep } from "../application/approval-engine.usecase";
 import { FLOW_TOOL_KEYS, FROM_STEP_ARG } from "../domain/approval-flow.rules";
 
 const CONTRACT = { name: "contract_id", type: "text", required: true, description: "Mã hợp đồng" };
 
-export function approvalEngineTools(d: Pick<ApprovalEngineDeps, "uow" | "bridge">): PackToolDef[] {
+export function approvalEngineTools(d: FinalizeDeps): PackToolDef[] {
   const base = { pack: "contracts", side_effect: false, action: "write" as const };
   return [
     {

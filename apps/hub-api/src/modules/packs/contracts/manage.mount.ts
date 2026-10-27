@@ -4,6 +4,7 @@ import type { Hono } from "hono";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackWho } from "../kit/application/ports";
 import { EXTRACT_MODEL } from "./adapters/ai-transport";
 import { packAssignees } from "./adapters/manage.members";
 import { manageRepo } from "./adapters/manage.repo";
@@ -11,7 +12,7 @@ import { manageRoutes } from "./adapters/manage.routes";
 import { reopenRepo } from "./adapters/reopen.repo";
 import { versionDiffRepo, versionsRoutes } from "./adapters/versions.routes";
 import { assignOwner, editCommission, getHistory, summarize } from "./application/manage.usecase";
-import { reopenContract } from "./application/reopen-contract.usecase";
+import { type ReopenContract, reopenContract } from "./application/reopen-contract.usecase";
 import { versionDiff } from "./application/version-diff.usecase";
 
 const KEY = "contracts";
@@ -19,14 +20,28 @@ const KEY = "contracts";
 export function manageModule(
   db: Db,
   view: PackAccessView,
-  d: { ai: AiClient; quota?: (tenantId: string) => Promise<void> },
+  d: {
+    ai: AiClient;
+    quota?: (tenantId: string) => Promise<void>;
+    /** esign-flow · K4 mở lại HĐ ⇒ huỷ phong bì đang mở. */
+    esign?: { voidOpen(who: PackWho, id: string): Promise<boolean> } | undefined;
+  },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, KEY, manageRepo));
   const reopenUow = packTenantOnly(createPackUow(db, KEY, reopenRepo));
   const members = packAssignees(db, view, KEY);
   const diffUow = packTenantOnly(createPackUow(db, KEY, versionDiffRepo));
+  const reopenBase = reopenContract({ uow: reopenUow });
+  const esign = d.esign;
+  const reopen: ReopenContract = esign
+    ? async (who, id, reason, o) => {
+        const out = await reopenBase(who, id, reason, o);
+        if (out.kind === "ok") await esign.voidOpen(who, id).catch(() => false);
+        return out;
+      }
+    : reopenBase;
   const r = manageRoutes(view, {
-    reopen: reopenContract({ uow: reopenUow }),
+    reopen,
     history: getHistory({ uow }),
     assignees: members.list,
     assign: assignOwner({ uow, assignable: members.assignable }),

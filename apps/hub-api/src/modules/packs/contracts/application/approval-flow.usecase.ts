@@ -10,6 +10,7 @@ import {
   defaultFlowFromSettings,
   type FlowStep,
   flowGroupIds,
+  flowUserIds,
   hasDifyStep,
   validateDifyCatalog,
   validateFlow,
@@ -45,7 +46,10 @@ export type ApprovalFlowDeps = {
   defSync?: FlowDefSync;
   /** Vắng ⇒ không kiểm catalog (engine không nối). */
   workflows?: FlowWorkflows;
+  /** esign-flow · người cụ thể thuộc tenant + quyền `write` gói (trả tập id hợp lệ). */
+  members?: FlowMembers;
 };
+export type FlowMembers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
 
 /** `GET /dify-workflows`: danh sách chọn cho bước Dify (chỉ khoá + tên). */
 export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
@@ -53,6 +57,19 @@ export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
     const all = d.workflows ? await d.workflows(who.tenantId) : [];
     return { items: all.map((w) => ({ key: w.key, name: w.name })) };
   };
+}
+
+/** esign-flow · người cụ thể (duyệt/ký) phải thuộc tenant + có quyền `write` gói; không có cổng ⇒ mọi người cụ thể bị từ chối
+ *  (fail-closed). */
+async function userIssues(
+  d: ApprovalFlowDeps,
+  who: PackWho,
+  steps: readonly FlowStep[],
+): Promise<ApprovalFlowIssue[]> {
+  const refs = flowUserIds(steps);
+  if (refs.length === 0) return [];
+  const ok = d.members ? await d.members(who, [...new Set(refs.map((r) => r.id))]) : new Set();
+  return refs.filter((r) => !ok.has(r.id)).map((r) => ({ path: r.path, rule: "USER_NOT_MEMBER" }));
 }
 
 export type SaveFlowOutcome =
@@ -90,6 +107,7 @@ export function saveApprovalFlow(d: ApprovalFlowDeps) {
     const issues = validateFlow(body.steps);
     if (d.workflows && hasDifyStep(body.steps))
       issues.push(...validateDifyCatalog(body.steps, await d.workflows(who.tenantId)));
+    issues.push(...(await userIssues(d, who, body.steps)));
     if (issues.length > 0) return { kind: "invalid", issues };
     const want = flowGroupIds(body.steps);
     const have = await d.groups.existingIds(who.tenantId, want);

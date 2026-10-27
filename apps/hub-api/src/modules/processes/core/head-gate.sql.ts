@@ -8,9 +8,17 @@ import { type SQL, sql } from "drizzle-orm";
 export function headGateSql(stage: string, tenant: string): SQL {
   const st = sql.raw(stage);
   const tid = sql.raw(tenant);
-  return sql`(select d.head_user_id from admin.departments d
+  // esign-flow · `after.approver_user_id` (người duyệt cụ thể) thắng cửa trưởng phòng.
+  return sql`coalesce(${approverSql(stage)}, (select d.head_user_id from admin.departments d
     where (${st}->'after'->>'kind') = 'review' and (${st}->'after'->>'head_only') = 'true'
-      and d.group_id = nullif(${st}->'after'->>'group_id', '')::uuid and d.tenant_id = ${tid})`;
+      and d.group_id = nullif(${st}->'after'->>'group_id', '')::uuid and d.tenant_id = ${tid}))`;
+}
+
+/** esign-flow · người duyệt cụ thể của stage review (`after.approver_user_id`); vắng ⇒ NULL. */
+export function approverSql(stage: string): SQL {
+  const st = sql.raw(stage);
+  return sql`(case when (${st}->'after'->>'kind') = 'review'
+    then nullif(${st}->'after'->>'approver_user_id', '')::uuid end)`;
 }
 
 /** Trưởng phòng của Group assignee của task (alias `t` của `hub.review_tasks`), cùng tenant; null = không có. */

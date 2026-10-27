@@ -4,13 +4,14 @@ import type {
   ApprovalFlowResponse,
   FlowCond,
   FlowDifyStep,
+  FlowEsignStep,
   FlowReviewStep,
   FlowStep,
   FlowWhen,
 } from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
 
-export type { FlowCond, FlowDifyStep, FlowReviewStep, FlowStep, FlowWhen };
+export type { FlowCond, FlowDifyStep, FlowEsignStep, FlowReviewStep, FlowStep, FlowWhen };
 export type FlowOut = ApprovalFlowResponse;
 export type DealKind = "buy" | "sell" | "referral";
 export type ValueOp = "ge" | "gt" | "le" | "lt";

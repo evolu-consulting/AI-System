@@ -1,0 +1,57 @@
+{
+  "contracts": {
+    "flow": {
+      "esignStep": "Ký số",
+      "addEsign": "Thêm bước Ký số",
+      "approver": "Người duyệt cụ thể",
+      "approverByDept": "Theo phòng (không chọn người)",
+      "esign": {
+        "defaultName": "Ký số hợp đồng",
+        "signer": "Người ký phía công ty",
+        "mode": {
+          "owner": "Người phụ trách hợp đồng",
+          "dept_head": "Trưởng phòng",
+          "user": "Người cụ thể"
+        },
+        "signerDept": "Phòng của người ký",
+        "signerUser": "Người ký",
+        "partnerSigns": "Đối tác cùng ký (email lấy từ liên hệ đối tác)",
+        "order": "Thứ tự ký",
+        "companyFirst": "Công ty ký trước",
+        "partnerFirst": "Đối tác ký trước",
+        "provider": "Nhà cung cấp ký số",
+        "providerDefault": "Mặc định của công ty",
+        "info": "Duyệt xong, hệ thống tự gửi ký. Ký xong thì quy trình kết thúc; nếu bị từ chối hoặc huỷ, người phụ trách nhận chuông để gửi lại hoặc mở lại hợp đồng."
+      },
+      "err": {
+        "ESIGN_MULTI": "Chỉ được một bước Ký số.",
+        "ESIGN_NOT_LAST": "Bước Ký số phải là bước cuối.",
+        "SIGNER_GROUP_REQUIRED": "Chọn phòng của người ký.",
+        "SIGNER_USER_REQUIRED": "Chọn người ký.",
+        "USER_NOT_MEMBER": "Người này không thuộc công ty hoặc không có quyền sửa hợp đồng."
+      }
+    },
+    "approval": {
+      "esign": {
+        "status": {
+          "pending": "Chờ duyệt xong",
+          "sending": "Đang gửi ký",
+          "sent": "Đã gửi, chờ ký",
+          "completed": "Đã ký xong",
+          "needs_decision": "Cần quyết"
+        },
+        "reason": {
+          "NO_PARTNER_EMAIL": "Đối tác chưa có email liên hệ. Thêm email rồi gửi lại.",
+          "NO_SIGNER": "Chưa xác định được người ký phía công ty.",
+          "SEND_FAILED": "Gửi ký không thành công.",
+          "DECLINED": "Có người từ chối ký.",
+          "VOIDED": "Phong bì ký đã bị huỷ."
+        },
+        "resend": "Gửi lại",
+        "resent": "Đã gửi ký lại.",
+        "stillBlocked": "Chưa gửi được, xem lý do ở bước Ký số.",
+        "resendFail": "Không gửi lại được."
+      }
+    }
+  }
+}

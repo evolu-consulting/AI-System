@@ -4,20 +4,48 @@ import {
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
 } from "@ai/contracts";
-import type { FlowDifyStep, FlowReviewStep, FlowStep, FlowWhen } from "../api-flow";
+import type { FlowDifyStep, FlowEsignStep, FlowReviewStep, FlowStep, FlowWhen } from "../api-flow";
 
 const FLOW_MAX_STEPS = APPROVAL_FLOW_STEPS_MAX;
 type ReviewStep = FlowReviewStep;
 type DifyStep = FlowDifyStep;
+type EsignStep = FlowEsignStep;
+
+/** esign-flow · bước Ký số mới (người ký = người phụ trách, đối tác ký sau, nhà cung cấp mặc định công ty). */
+export function newEsign(steps: readonly FlowStep[], name: string): EsignStep {
+  return {
+    kind: "esign",
+    key: freshKey(steps, "k"),
+    name,
+    company_signer: { mode: "owner" },
+    partner_signs: true,
+    order: "company_first",
+    provider: null,
+    due_h: 72,
+    remind_every_h: null,
+    escalate_group_id: null,
+  };
+}
+const hasEsign = (steps: readonly FlowStep[]) => steps.some((s) => s.kind === "esign");
+/** Thêm bước trước bước Ký số (Ký số luôn cuối). */
+function insert(steps: FlowStep[], s: FlowStep): FlowStep[] {
+  const i = steps.findIndex((x) => x.kind === "esign");
+  return i < 0 ? [...steps, s] : [...steps.slice(0, i), s, ...steps.slice(i)];
+}
 type StepWhen = FlowWhen;
 
 export type FlowAction =
   | { type: "load"; steps: FlowStep[] }
   | { type: "addReview"; department_group_id?: string | null }
   | { type: "addDify"; workflow_key: string; name: string }
+  | { type: "addEsign"; name: string }
   | { type: "remove"; index: number }
   | { type: "move"; index: number; dir: -1 | 1 }
-  | { type: "patch"; index: number; patch: Partial<ReviewStep> | Partial<DifyStep> }
+  | {
+      type: "patch";
+      index: number;
+      patch: Partial<ReviewStep> | Partial<DifyStep> | Partial<EsignStep>;
+    }
   | { type: "setWhen"; index: number; when: StepWhen | null };
 
 function freshKey(steps: readonly FlowStep[], prefix: string): string {
@@ -45,6 +73,16 @@ export function newReview(
   };
 }
 
+/** Đổi chỗ bước `index` với bước kề; bước 0 đứng yên, bước Ký số luôn cuối. */
+function move(steps: FlowStep[], index: number, dir: -1 | 1): FlowStep[] {
+  const j = index + dir;
+  if (index < 1 || j < 1 || j >= steps.length) return steps;
+  if (steps[index]?.kind === "esign" || steps[j]?.kind === "esign") return steps;
+  const next = [...steps];
+  [next[index], next[j]] = [next[j] as FlowStep, next[index] as FlowStep];
+  return next;
+}
+
 export function flowReducer(steps: FlowStep[], a: FlowAction): FlowStep[] {
   switch (a.type) {
     case "load":
@@ -52,29 +90,25 @@ export function flowReducer(steps: FlowStep[], a: FlowAction): FlowStep[] {
     case "addReview":
       return steps.length >= FLOW_MAX_STEPS
         ? steps
-        : [...steps, newReview(steps, a.department_group_id)];
+        : insert(steps, newReview(steps, a.department_group_id));
     case "addDify":
       return steps.length >= FLOW_MAX_STEPS
         ? steps
-        : [
-            ...steps,
-            {
-              kind: "dify",
-              key: freshKey(steps, "d"),
-              name: a.name,
-              workflow_key: a.workflow_key,
-              after: "auto",
-            },
-          ];
+        : insert(steps, {
+            kind: "dify",
+            key: freshKey(steps, "d"),
+            name: a.name,
+            workflow_key: a.workflow_key,
+            after: "auto",
+          });
+    case "addEsign":
+      return steps.length >= FLOW_MAX_STEPS || hasEsign(steps)
+        ? steps
+        : [...steps, newEsign(steps, a.name)];
     case "remove":
       return a.index <= 0 ? steps : steps.filter((_, i) => i !== a.index);
-    case "move": {
-      const j = a.index + a.dir;
-      if (a.index < 1 || j < 1 || j >= steps.length) return steps; // bước 0 đứng yên
-      const next = [...steps];
-      [next[a.index], next[j]] = [next[j] as FlowStep, next[a.index] as FlowStep];
-      return next;
-    }
+    case "move":
+      return move(steps, a.index, a.dir);
     case "patch":
       return steps.map((s, i) => (i === a.index ? ({ ...s, ...a.patch } as FlowStep) : s));
     case "setWhen":
@@ -96,7 +130,7 @@ function reviewIssues(s: ReviewStep, i: number): FlowIssue[] {
   const out: FlowIssue[] = [];
   const bad = (field: string, code: string) => out.push({ index: i, field, code });
   if (!s.name.trim()) bad("name", "nameEmpty");
-  if (!s.department_group_id) bad("department_group_id", "GROUP_REQUIRED");
+  if (!s.department_group_id && !s.approver_user_id) bad("department_group_id", "GROUP_REQUIRED");
   if (!Number.isInteger(s.due_h) || s.due_h < DUE_MIN || s.due_h > DUE_MAX)
     bad("due_h", "DUE_RANGE");
   const r = s.remind_every_h;
@@ -106,6 +140,24 @@ function reviewIssues(s: ReviewStep, i: number): FlowIssue[] {
     bad("escalate_group_id", "ESCALATE_SAME_GROUP");
   if (i === 0 && s.when) bad("when", "FIRST_CONDITIONAL");
   return [...out, ...whenIssues(s.when, i)];
+}
+
+/** esign-flow · bước Ký số: cuối luồng, người ký đủ, hạn trong giới hạn. */
+function esignIssues(s: EsignStep, i: number, n: number): FlowIssue[] {
+  const out: FlowIssue[] = [];
+  const bad = (field: string, code: string) => out.push({ index: i, field, code });
+  if (!s.name.trim()) bad("name", "nameEmpty");
+  if (i !== n - 1) bad("step", "ESIGN_NOT_LAST");
+  const c = s.company_signer;
+  if (c.mode === "dept_head" && !c.department_group_id)
+    bad("company_signer.department_group_id", "SIGNER_GROUP_REQUIRED");
+  if (c.mode === "user" && !c.user_id) bad("company_signer.user_id", "SIGNER_USER_REQUIRED");
+  if (!Number.isInteger(s.due_h) || s.due_h < DUE_MIN || s.due_h > DUE_MAX)
+    bad("due_h", "DUE_RANGE");
+  const r = s.remind_every_h;
+  if (r !== null && (!Number.isInteger(r) || r < REMIND_MIN || r > REMIND_MAX))
+    bad("remind_every_h", "REMIND_RANGE");
+  return out;
 }
 
 function whenIssues(w: StepWhen | null, i: number): FlowIssue[] {
@@ -129,6 +181,7 @@ export function validateFlow(steps: readonly FlowStep[]): FlowIssue[] {
     if (keys.has(s.key)) out.push({ index: i, field: "key", code: "KEY_DUP" });
     keys.add(s.key);
     if (s.kind === "review") out.push(...reviewIssues(s, i));
+    else if (s.kind === "esign") out.push(...esignIssues(s, i, steps.length));
     else if (!s.workflow_key) out.push({ index: i, field: "workflow_key", code: "difyEmpty" });
     const prev = steps[i - 1];
     if (prev?.kind === "dify" && s.kind === "review" && s.when)
