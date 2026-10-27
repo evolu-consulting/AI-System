@@ -20,7 +20,9 @@ import {
 import {
   DIFY_CONTRACT_INPUTS,
   type DifyParamName,
-  difyArgsOf,
+  type DifySelectBinding,
+  difyArgs,
+  difySelectBindings,
   hasDifyStep,
 } from "./approval-flow-dify.rules";
 import { esignIssues } from "./approval-flow-esign.rules";
@@ -35,8 +37,11 @@ export type {
 } from "./approval-flow.types";
 export {
   DIFY_CONTRACT_INPUTS,
+  type DifySelectBinding,
+  difyArgs,
   difyArgsOf,
   difyRunInputs,
+  difySelectBindings,
   hasDifyStep,
   validateDifyCatalog,
 } from "./approval-flow-dify.rules";
@@ -237,16 +242,6 @@ function groupOf(id: string | null, groupIds: ReadonlySet<string>): string {
   return id;
 }
 
-/** Args stage tool: mỗi tham số ánh xạ (hoặc khớp cùng tên) ⇒ input run của trường HĐ tương ứng. */
-export function difyArgs(wf: DifyWorkflow | undefined, inputs?: Readonly<Record<string, string>>) {
-  if (!wf) throw new Error("approval-flow-dify-missing");
-  const a = difyArgsOf(wf, inputs);
-  if (!a.ok) throw new Error("approval-flow-dify-params");
-  return Object.fromEntries(
-    a.pairs.map(([p, f]) => [p, { from: "input", key: DIFY_CONTRACT_INPUTS[f].key }]),
-  );
-}
-
 /** prod-fix2 · Group "cũng quyết" của bước = Group Toàn quyền của gói còn ở tenant, trừ chính Group của bước; rỗng ⇒ không ghi. */
 function alsoOf(group: string, owners: readonly string[], groupIds: ReadonlySet<string>) {
   const also = [...new Set(owners)].filter((g) => g !== group && groupIds.has(g));
@@ -293,7 +288,7 @@ function stageOfStep(
       name: s.name,
       step,
       tool: s.workflow_key,
-      args: difyArgs(wfs.get(s.workflow_key), s.inputs),
+      args: difyArgs(wfs.get(s.workflow_key), s.inputs, i),
       fields: [],
       after,
       timeoutS: 600,
@@ -328,9 +323,9 @@ function stageOfStep(
 }
 
 /** Input run: `contract-id` bắt buộc; có bước Dify ⇒ thêm dữ liệu HĐ (tuỳ chọn, `openRun` điền). */
-function defInputs(withDify: boolean) {
+function defInputs(withDify: boolean, selects: readonly DifySelectBinding[] = []) {
   const names = Object.keys(DIFY_CONTRACT_INPUTS) as DifyParamName[];
-  return names
+  const base = names
     .filter((k) => withDify || k === "contract_id")
     .map((k) => ({
       key: DIFY_CONTRACT_INPUTS[k].key,
@@ -338,6 +333,8 @@ function defInputs(withDify: boolean) {
       type: DIFY_CONTRACT_INPUTS[k].type,
       required: k === "contract_id",
     }));
+  const extra = selects.map((s) => ({ key: s.key, label: s.key, type: "text", required: false }));
+  return [...base, ...extra];
 }
 
 /**
@@ -386,7 +383,7 @@ export function compileDef(
     token_budget: null,
     enabled: true,
     sources: [] as string[],
-    inputs: defInputs(hasDifyStep(steps)),
+    inputs: defInputs(hasDifyStep(steps), difySelectBindings(steps, [...workflows.values()])),
     ttl_days: null,
     stages: [first, route, ...rest, finalize],
   };

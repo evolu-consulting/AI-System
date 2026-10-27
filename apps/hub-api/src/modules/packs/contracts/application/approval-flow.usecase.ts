@@ -54,7 +54,13 @@ export type FlowMembers = (who: PackWho, ids: readonly string[]) => Promise<Read
 export type DifyWorkflowListItem = {
   key: string;
   name: string;
-  inputs: { name: string; type: string; required: boolean; description?: string }[];
+  inputs: {
+    name: string;
+    type: string;
+    required: boolean;
+    description?: string;
+    options?: string[];
+  }[];
 };
 /** `GET /dify-workflows`: danh sách chọn cho bước Dify (khoá, tên, tham số để ánh xạ trường HĐ). */
 export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
@@ -69,6 +75,7 @@ export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
           type: p.type,
           required: p.required,
           ...(p.description ? { description: p.description.slice(0, 500) } : {}),
+          ...(p.options ? { options: [...p.options] } : {}),
         })),
       })),
     };

@@ -173,6 +173,7 @@ function sysReads(d: ProcessDeps) {
                 type: p.type,
                 required: p.required,
                 ...(d ? { description: d } : {}),
+                ...(p.options ? { options: [...p.options] } : {}),
               };
             }),
           }));

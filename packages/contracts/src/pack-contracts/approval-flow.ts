@@ -52,6 +52,29 @@ export const FLOW_CONTRACT_FIELDS = [
 ] as const;
 export type FlowContractField = (typeof FLOW_CONTRACT_FIELDS)[number];
 
+/** dify-input-map · nhãn loại HĐ chấp nhận cho tham số `select` (so khớp không phân biệt hoa thường / dấu). */
+export const FLOW_DEAL_LABELS = {
+  buy: ["mua", "mua hang", "buy", "purchase"],
+  sell: ["ban", "ban hang", "sell", "sale"],
+  referral: ["gioi thieu", "referral"],
+} as const;
+const normLabel = (s: string) =>
+  s.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/gi, "d").trim().toLowerCase();
+/** Loại HĐ ⇒ lựa chọn tương ứng của tham số `select`; thiếu một loại ⇒ null (không ánh xạ được). Mirror ở domain hub-api. */
+export function flowDealOptionMap(
+  options: readonly string[] | undefined,
+): Record<"buy" | "sell" | "referral", string> | null {
+  const out: Partial<Record<"buy" | "sell" | "referral", string>> = {};
+  for (const d of ["buy", "sell", "referral"] as const) {
+    const hit = (options ?? []).find((o) =>
+      (FLOW_DEAL_LABELS[d] as readonly string[]).includes(normLabel(o)),
+    );
+    if (hit === undefined) return null;
+    out[d] = hit;
+  }
+  return out as Record<"buy" | "sell" | "referral", string>;
+}
+
 const StepKeySchema = z.string().regex(/^[a-z0-9-]{1,24}$/);
 const StepNameSchema = z.string().trim().min(1).max(80);
 
@@ -167,6 +190,8 @@ export const DifyWorkflowInputSchema = z.strictObject({
   type: z.string().min(1).max(32),
   required: z.boolean(),
   description: z.string().max(500).optional(),
+  /** Lựa chọn của tham số `select`. */
+  options: z.array(z.string().max(200)).max(100).optional(),
 });
 export type DifyWorkflowInput = z.infer<typeof DifyWorkflowInputSchema>;
 export const DifyWorkflowItemSchema = z.strictObject({

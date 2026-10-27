@@ -2,7 +2,7 @@
 import type { FlowContractField } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import type { DifyWorkflowItem, FlowDifyStep } from "../api-flow";
-import { effectiveField, fieldsFor, setMapping } from "../lib/flow-dify-map";
+import { dealHint, effectiveField, fieldsFor, setMapping } from "../lib/flow-dify-map";
 import { FIELD } from "./controls";
 
 type Props = {
@@ -46,12 +46,19 @@ export function FlowDifyInputs({ step, workflow, err, onPatch }: Props) {
                 }
               >
                 <option value="">{p.required ? f("pick") : f("difyNoSend")}</option>
-                {fieldsFor(p.type).map((c) => (
+                {fieldsFor(p.type, p.options).map((c) => (
                   <option key={c} value={c}>
                     {f(`contractField.${c}`)}
                   </option>
                 ))}
               </select>
+              {p.type === "select" && cur === "deal" && (
+                <span className="text-caption text-dim" data-testid="flow-dify-hint">
+                  {dealHint(p.options)
+                    .map(([d, o]) => `${f(`deal.${d}`)} → ${o}`)
+                    .join(", ")}
+                </span>
+              )}
               {e && (
                 <span role="alert" className="text-caption text-late">
                   {e}

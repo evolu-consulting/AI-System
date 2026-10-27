@@ -15,6 +15,7 @@ import {
   defaultFlowFromSettings,
   difyArgs,
   difyRunInputs,
+  difySelectBindings,
   engineStepOf,
   nextApplicable,
   requiredSteps,
@@ -30,6 +31,7 @@ import {
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
 } from "./approval-flow.types";
+import { dealOptionMap } from "./approval-flow-dify.rules";
 
 const G = {
   l1: "00000000-0000-4000-8000-000000000001",
@@ -260,6 +262,69 @@ describe("cf-dify · catalog bước Dify", () => {
     );
     const st = def.stages.find((s) => s.executor.tool_key === "risk-scan");
     expect(st?.executor.args).toEqual(difyArgs(han, full));
+  });
+  it("dify-input-map · schema prod dify-han-muc-duyet: select ← deal, run input = nhãn lựa chọn", () => {
+    const prod: DifyWorkflow = {
+      key: "dify-han-muc-duyet",
+      name: "Hạn mức",
+      params: [
+        p("contract_value", "number", true),
+        {
+          ...p("contract_type", "select", true),
+          options: ["Mua", "Bán", "Giới thiệu"],
+        },
+        p("partner_name", "text", false),
+      ],
+    };
+    const inputs = {
+      contract_value: "total_value",
+      contract_type: "deal",
+      partner_name: "partner",
+    };
+    const steps = [
+      review("a", G.l1),
+      { ...dify("d"), workflow_key: prod.key, inputs },
+    ] as FlowStep[];
+    expect(validateDifyCatalog(steps, [prod])).toEqual([]);
+    const def = compileDef({ steps }, new Set([G.l1]), new Map([[prod.key, prod]]));
+    const st = def.stages.find((s) => s.executor.tool_key === prod.key);
+    expect(st?.executor.args).toEqual({
+      contract_value: { from: "input", key: "contract-value" },
+      contract_type: { from: "input", key: "dify-sel-1-1" },
+      partner_name: { from: "input", key: "contract-partner" },
+    });
+    expect(def.inputs.map((i) => i.key)).toContain("dify-sel-1-1");
+    const sel = difySelectBindings(steps, [prod]);
+    const run = (deal: string | null) =>
+      difyRunInputs({ title: "t", deal, totalValue: 5, partner: "ACME" }, sel);
+    expect(run("sell")).toContainEqual({ type: "text", key: "dify-sel-1-1", text: "Bán" });
+    expect(run("buy")).toContainEqual({ type: "text", key: "dify-sel-1-1", text: "Mua" });
+    expect(run("sell")).toContainEqual({ type: "text", key: "contract-partner", text: "ACME" });
+    // select không có đủ nhãn khớp / ánh xạ từ trường khác ⇒ không hỗ trợ; nhãn thô buy/sell/referral gửi thô.
+    const sw = (options: string[]) => ({
+      ...prod,
+      params: [{ ...p("contract_type", "select", true), options }],
+    });
+    const rule = (w: DifyWorkflow, m: Record<string, string>) =>
+      validateDifyCatalog(
+        [review("a", G.l1), { ...dify("d"), workflow_key: w.key, inputs: m }] as FlowStep[],
+        [w],
+      ).map((i) => i.rule);
+    expect(rule(sw(["Mua", "Bán"]), { contract_type: "deal" })).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
+    expect(rule(prod, { ...inputs, contract_type: "title" })).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
+    expect(dealOptionMap(["buy", "sell", "referral"])).toEqual({
+      buy: "buy",
+      sell: "sell",
+      referral: "referral",
+    });
+    expect(dealOptionMap(["MUA HÀNG", "Bán hàng", "Giới Thiệu"])).toEqual({
+      buy: "MUA HÀNG",
+      sell: "Bán hàng",
+      referral: "Giới Thiệu",
+    });
+    expect(C.flowDealOptionMap(["MUA HÀNG", "Bán hàng", "Giới Thiệu"])).toEqual(
+      dealOptionMap(["MUA HÀNG", "Bán hàng", "Giới Thiệu"]),
+    );
   });
   it("input run: văn bản cắt trần, giá trị không hợp lệ ⇒ 0", () => {
     const base = { title: "HĐ", deal: null, partner: "B" };

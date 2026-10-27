@@ -1,5 +1,5 @@
 // dify-input-map · ánh xạ tham số workflow Dify ⇒ trường hợp đồng (logic thuần của UI bước Dify).
-import { FLOW_CONTRACT_FIELDS, type FlowContractField } from "@ai/contracts";
+import { FLOW_CONTRACT_FIELDS, type FlowContractField, flowDealOptionMap } from "@ai/contracts";
 import type { DifyWorkflowItem, FlowStep } from "../api-flow";
 import type { FlowIssue } from "./flow-state";
 
@@ -18,15 +18,18 @@ const ALIASES: Record<FlowContractField, readonly string[]> = {
 };
 
 /** Trường HĐ nhận được vào tham số kiểu `type`: số chỉ nhận giá trị HĐ; văn bản nhận mọi trường; kiểu khác không nhận. */
-export function fieldsFor(type: string): readonly FlowContractField[] {
+export function fieldsFor(type: string, options?: readonly string[]): readonly FlowContractField[] {
   if (type === "number") return ["total_value"];
+  if (type === "select") return flowDealOptionMap(options) ? ["deal"] : [];
   return type === "text" || type === "paragraph" ? CONTRACT_FIELDS : [];
 }
 
 /** Gợi ý trường cho một tham số: trùng tên trường HĐ, rồi tới bí danh; không phù hợp kiểu ⇒ undefined. */
-export function guessField(p: Pick<DifyInputDef, "name" | "type">): FlowContractField | undefined {
+export function guessField(
+  p: Pick<DifyInputDef, "name" | "type" | "options">,
+): FlowContractField | undefined {
   const n = p.name.toLowerCase();
-  const ok = fieldsFor(p.type);
+  const ok = fieldsFor(p.type, p.options);
   const exact = ok.find((f) => f === n);
   if (exact) return exact;
   return ok.find((f) => ALIASES[f].includes(n));
@@ -45,12 +48,12 @@ export function defaultMapping(inputs: readonly DifyInputDef[]): DifyMap {
 /** Trường đang hiệu lực của tham số (đúng như server: ánh xạ tường minh, không thì cùng tên trường HĐ). */
 export function effectiveField(
   step: { inputs?: DifyMap | undefined },
-  p: Pick<DifyInputDef, "name" | "type">,
+  p: Pick<DifyInputDef, "name" | "type" | "options">,
 ): FlowContractField | undefined {
   const m = step.inputs?.[p.name];
   if (m) return m;
   const same = FLOW_CONTRACT_FIELDS.find((f) => f === p.name);
-  return same && fieldsFor(p.type).includes(same) ? same : undefined;
+  return same && fieldsFor(p.type, p.options).includes(same) ? same : undefined;
 }
 
 /** Đặt/bỏ một ánh xạ; bỏ hết ⇒ `undefined` (không gửi khoá `inputs`). */
@@ -64,6 +67,12 @@ export function setMapping(
   else delete next[name];
   return Object.keys(next).length ? next : undefined;
 }
+
+/** Gợi ý ánh xạ loại HĐ ⇒ lựa chọn của tham số `select`, vd [["buy","Mua"],["sell","Bán"],["referral","Giới thiệu"]]. */
+export const dealHint = (options: readonly string[] | undefined) => {
+  const m = flowDealOptionMap(options);
+  return m ? (["buy", "sell", "referral"] as const).map((d) => [d, m[d]] as const) : [];
+};
 
 /** Tham số bắt buộc chưa ánh xạ được ⇒ lỗi tại `inputs.<tên>` (cùng mã luật server `DIFY_PARAM_UNSUPPORTED`). */
 export function difyInputIssues(

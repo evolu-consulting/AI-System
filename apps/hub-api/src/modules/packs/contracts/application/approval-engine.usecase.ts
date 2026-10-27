@@ -20,6 +20,7 @@ import {
   compileDef,
   defaultFlowFromSettings,
   difyRunInputs,
+  difySelectBindings,
   engineSteps,
   type FlowStep,
   flowGroupIds,
@@ -143,12 +144,16 @@ async function openRun(
   const facts = hasDifyStep(c.flow.steps)
     ? await d.uow.tenant(who, (r) => r.approvalEngine.difyFacts(c.id))
     : null;
+  // dify-input-map · tham số `select` lấy từ loại HĐ ⇒ input run phụ theo catalog hiện hành (một lần gọi, không theo hàng).
+  const selects = facts
+    ? difySelectBindings(c.flow.steps, await port.workflowsOf(who.tenantId))
+    : [];
   const req = {
     process_key: APPROVAL_PROCESS_KEY,
     input: c.id,
     inputs: [
       { type: "text" as const, key: "contract-id", text: c.id },
-      ...(facts ? difyRunInputs(facts) : []),
+      ...(facts ? difyRunInputs(facts, selects) : []),
     ],
     ref: { pack: "contracts", record_id: c.id },
   };

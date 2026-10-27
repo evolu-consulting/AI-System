@@ -29,7 +29,14 @@ export type ApprovalFlowRule =
 
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (khoá, tên, tham số khai trong `input_schema`). */
 export type FlowContractField = "contract_id" | "title" | "deal" | "total_value" | "partner";
-export type DifyParam = { name: string; type: string; required: boolean; description?: string };
+export type DifyParam = {
+  name: string;
+  type: string;
+  required: boolean;
+  description?: string;
+  /** Lựa chọn của tham số `select`. */
+  options?: readonly string[];
+};
 export type DifyWorkflow = { key: string; name: string; params: readonly DifyParam[] };
 export type ApprovalFlowIssue = { path: string; rule: ApprovalFlowRule };
 

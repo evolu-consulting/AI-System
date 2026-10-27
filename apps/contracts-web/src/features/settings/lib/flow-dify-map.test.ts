@@ -2,6 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import type { FlowStep } from "../api-flow";
 import {
+  dealHint,
   defaultMapping,
   difyInputIssues,
   effectiveField,
@@ -22,6 +23,17 @@ describe("flow-dify-map", () => {
     expect(guessField(p("value", "select"))).toBeUndefined();
     expect(guessField(p("xyz", "text"))).toBeUndefined();
     expect(fieldsFor("number")).toEqual(["total_value"]);
+  });
+  it("select: chỉ nhận loại HĐ khi đủ nhãn khớp; gợi ý hiển thị nhãn", () => {
+    const sel = { ...p("contract_type", "select"), options: ["Mua", "Bán", "Giới thiệu"] };
+    expect(fieldsFor("select", sel.options)).toEqual(["deal"]);
+    expect(fieldsFor("select", ["Mua", "Bán"])).toEqual([]);
+    expect(guessField(sel)).toBe("deal");
+    expect(dealHint(sel.options)).toEqual([
+      ["buy", "Mua"],
+      ["sell", "Bán"],
+      ["referral", "Giới thiệu"],
+    ]);
   });
   it("mặc định khi thêm bước; hiệu lực = ánh xạ tường minh hoặc cùng tên; bỏ hết ⇒ undefined", () => {
     const inputs = [
