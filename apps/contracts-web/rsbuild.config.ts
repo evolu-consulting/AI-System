@@ -9,12 +9,22 @@ import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 const ADMIN_API_URL = process.env.ADMIN_API_URL || "http://localhost:3001";
 const HUB_URL = process.env.HUB_URL || "http://localhost:4000";
 
+// gap-c #13: `/notifications` vừa là API vừa là route SPA (trang "Tất cả thông báo") ⇒ tải trang bằng trình duyệt
+// (GET, Accept text/html) phải nhận index.html chứ không chuyển sang hub-api.
+const spaNavigation = {
+  target: HUB_URL,
+  bypass: (req: { method?: string; headers: Record<string, string | string[] | undefined> }) =>
+    req.method === "GET" && String(req.headers.accept ?? "").includes("text/html")
+      ? "/index.html"
+      : null,
+};
+
 export const proxy = {
   "/auth": ADMIN_API_URL,
   // M1D · Thành viên & phòng ban: `/admin/org*`, `/admin/groups*` (route SPA không dùng tiền tố này).
   "/admin": ADMIN_API_URL,
   "/pack": HUB_URL,
-  "/notifications": HUB_URL,
+  "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
   "/conversations": HUB_URL,
   "/runs": HUB_URL,

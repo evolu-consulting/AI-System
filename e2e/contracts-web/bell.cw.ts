@@ -75,6 +75,8 @@ async function install(page: Page, initialUnread = 2): Promise<Api> {
   await page.route(
     (u) => u.pathname.startsWith("/notifications"),
     (r) => {
+      // Điều hướng thẳng tới trang SPA /notifications là document, không phải API ⇒ để dev server trả index.html.
+      if (r.request().resourceType() === "document") return r.fallback();
       const key = `${r.request().method()} ${new URL(r.request().url()).pathname}`;
       return (
         table[key] ?? ((x: Route) => json(x, 404, { error: { code: "NOT_FOUND", message: "x" } }))

@@ -145,7 +145,8 @@ test("#24 · nhiều người liên hệ: hiện danh sách, thêm người, lư
           email: "lan@x.vn",
           our_owner: "Hoa",
         },
-        { name: "Anh Minh", role: null, phone: null, email: "minh@x.vn", our_owner: null },
+        // d8de93e1: thân PUT bỏ khoá null (hợp đồng API không nhận null) ⇒ vắng khoá.
+        { name: "Anh Minh", email: "minh@x.vn" },
       ],
     },
   });

@@ -16,6 +16,9 @@ import {
 const id = (n: number) => `e4a0e000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const agent = (n: number, o: Partial<AgentSettingsItem> = {}): AgentSettingsItem => ({
   agent: { id: id(n), key: `a${n}`, name: { vi: `Agent ${n}`, en: `Agent ${n} EN` } },
+  surface: "chat",
+  serves: null,
+  tier: null,
   description: `mô tả ${n}`,
   runtime: "agentic-cli",
   model: { value: null, display_name: null },
