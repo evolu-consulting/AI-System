@@ -1,4 +1,4 @@
-// tenant-quotas · đọc/xoá bộ đếm ngày của hub-api trên Redis (cùng `REDIS_URL`). Đọc: một MGET; đặt lại: một DEL.
+// tenant-quotas · đọc/đặt lại bộ đếm ngày của hub-api trên Redis (cùng `REDIS_URL`). Đọc: một MGET; đặt lại: một SET 0 KEEPTTL.
 import type { Redis } from "../../lib/redis";
 
 export type DailyCounterStore = {
@@ -18,8 +18,9 @@ export function redisDailyCounter(redis: Redis): DailyCounterStore {
         return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
       });
     },
+    // Về 0 nhưng giữ khoá + TTL (không DEL): lượt đang giữ rồi hoàn (DECR) không tạo khoá mới không hạn / không âm.
     reset: async (key) => {
-      await redis.del(key);
+      await redis.set(key, "0", "KEEPTTL");
     },
   };
 }

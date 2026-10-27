@@ -11,6 +11,15 @@ const keysOf = (tenantId: string, d: UploadDays): [string, string] => [
   `${QUOTA_KEY_PREFIX}g:${d.global}`,
 ];
 
+/** DECR từng khoá; xuống dưới 0 ⇒ đặt 0 (giữ TTL). Trả giá trị sau hoàn. */
+export const REFUND_CLAMPED = `local out = {}
+for i, k in ipairs(KEYS) do
+  local v = redis.call('DECR', k)
+  if v < 0 then redis.call('SET', k, '0', 'KEEPTTL'); v = 0 end
+  out[i] = v
+end
+return out`;
+
 type ExecOut = [Error | null, unknown][] | null;
 function counts(out: ExecOut): { tenant: number; global: number } {
   if (!out) throw new Error("redis pipeline aborted");
@@ -31,9 +40,9 @@ export function redisUploadCounter(redis: Redis): UploadCounter {
         .exec();
       return counts(out);
     },
+    // tenant-quotas-fix: hoàn kẹp ≥ 0 (một EVAL) — Admin "Đặt lại hôm nay" đưa khoá về 0 trong lúc một lượt đang giữ.
     refund: async (tenantId, days) => {
-      const [t, g] = keysOf(tenantId, days);
-      counts(await redis.pipeline().decr(t).decr(g).exec());
+      await redis.eval(REFUND_CLAMPED, 2, ...keysOf(tenantId, days));
     },
   };
 }

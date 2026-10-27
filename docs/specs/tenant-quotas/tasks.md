@@ -34,3 +34,8 @@ Mục tiêu: platform_admin chỉnh 3 hạn mức NGÀY cho từng công ty ở 
 - Chạy e2e `e2e/tenant-daily-limits.spec.ts` ở lượt e2e cuối đợt.
 - Review + security cuối đợt (RLS bảng mới, quyền platform_admin, DEL Redis từ admin-api).
 - Typecheck admin-web có lỗi sẵn ở `src/features/agents/lib/agents.test.ts` (không thuộc lát này).
+
+## tenant-quotas-fix (sau review)
+- Đặt lại lượt tải/thao tác: `SET key 0 KEEPTTL` (không DEL), chạy SAU khi commit audit; Redis lỗi sau commit ⇒ 503, bấm lại vô hại.
+- hub `upload-counter.redis` hoàn lượt bằng một EVAL kẹp ≥ 0 (giữ TTL) — lượt giữ trước "Đặt lại" rồi hoàn không làm bộ đếm âm. Int Redis thật `upload-counter.redis.int.test.ts`.
+- e2e: ô nhập lấy theo `getByRole("textbox")` (nhãn nút "Đặt lại hôm nay: <loại>" cũng chứa tên loại ⇒ `getByLabel` khớp 2). Đã chạy xanh.

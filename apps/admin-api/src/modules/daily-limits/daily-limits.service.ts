@@ -166,15 +166,17 @@ export async function resetDailyLimit(
   }
   const counter = c.counter;
   if (!counter) throw unavailable();
-  await withScope(c.ctx.db, c.scope, async (tx) => {
+  // Audit commit trước, rồi mới đưa bộ đếm về 0 (SET 0 KEEPTTL, không DEL ⇒ lượt hoàn sau đó không làm âm — hub kẹp ≥ 0).
+  // Redis lỗi sau commit ⇒ 503: nhật ký ghi "đã yêu cầu đặt lại", admin bấm lại được (thao tác lặp vô hại).
+  const day = await withScope(c.ctx.db, c.scope, async (tx) => {
     const t = await readLimits(tx, tenantId);
     if (!t) throw appError("NOT_FOUND");
-    const day = tenantLocalDay(at, t.timezone);
-    // Audit trước, DEL là bước cuối: DEL lỗi ⇒ ném ⇒ rollback audit (không ghi audit cho việc chưa xảy ra).
-    await recordAudit(tx, { ...resetAudit(tenantId, kind, day), actorId: c.actor.userId });
-    await counter.reset(dailyCounterKey(kind, tenantId, day)).catch(() => {
-      throw unavailable();
-    });
+    const d = tenantLocalDay(at, t.timezone);
+    await recordAudit(tx, { ...resetAudit(tenantId, kind, d), actorId: c.actor.userId });
+    return d;
+  });
+  await counter.reset(dailyCounterKey(kind, tenantId, day)).catch(() => {
+    throw unavailable();
   });
   return getDailyLimits(c, tenantId);
 }

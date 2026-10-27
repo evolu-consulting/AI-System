@@ -83,7 +83,7 @@ test("tenant-quotas · platform_admin đặt lượt tải 50/ngày, thấy đã
   await expect(card.getByTestId("daily-used-uploads")).toContainText("12");
   await expect(card.getByTestId("daily-used-uploads")).toContainText("30");
 
-  await card.getByLabel("Lượt tải hợp đồng/ngày").fill("50");
+  await card.getByRole("textbox", { name: "Lượt tải hợp đồng/ngày" }).fill("50");
   await card.getByRole("button", { name: "Lưu" }).click();
   await expect(page.getByText("Đã lưu hạn mức theo ngày")).toBeVisible();
   await expect(card.getByTestId("daily-used-uploads")).toContainText("50");
