@@ -604,6 +604,13 @@
       "createdAt": "Tạo lúc {date}",
       "userCount": "{users} user"
     },
+    "defaultApp": {
+      "title": "App mặc định",
+      "label": "App mở sau khi đăng nhập",
+      "none": "Không đặt (Trang chủ AI System)",
+      "hint": "Áp cho thành viên chưa tự chọn app mặc định. Người dùng chưa có quyền với app này sẽ vào Trang chủ.",
+      "saved": "Đã lưu app mặc định của {tenant}"
+    },
     "profile": {
       "title": "Hồ sơ công ty",
       "legalName": "Tên pháp lý",

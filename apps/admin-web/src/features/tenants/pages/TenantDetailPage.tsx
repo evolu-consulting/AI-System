@@ -21,6 +21,7 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
+import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
 import { TenantInfoForm } from "../components/TenantInfoForm";
 import { TenantProfileCard } from "../components/TenantProfileCard";
 import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
@@ -172,6 +173,7 @@ export function TenantDetailPage() {
             onSubmit={save}
           />
           <TenantProfileCard profile={tenant.profile} />
+          <TenantDefaultAppCard tenant={tenant} />
         </TabsContent>
         <TabsContent value="features" className="pt-4">
           <UnavailableTab body="tenants.tab.unavailableBody" />

@@ -604,6 +604,13 @@
       "createdAt": "Created {date}",
       "userCount": "{users} users"
     },
+    "defaultApp": {
+      "title": "Default app",
+      "label": "App opened after sign-in",
+      "none": "Not set (AI System home)",
+      "hint": "Applies to members who have not picked their own default app. Users without access to this app land on the home page.",
+      "saved": "Saved the default app of {tenant}"
+    },
     "profile": {
       "title": "Company profile",
       "legalName": "Legal name",

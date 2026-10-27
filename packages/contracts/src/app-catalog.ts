@@ -115,6 +115,8 @@ export const TENANT_DEFAULT_APP_PATH = "/auth/me/tenant-default-app";
 /** `app: null` = bỏ đặt (về trang chủ / mặc định công ty). */
 export const DefaultAppRequestSchema = z.strictObject({ app: AppKeySchema.nullable() });
 export type DefaultAppRequest = z.infer<typeof DefaultAppRequestSchema>;
+/** platform_admin · `GET|PUT /admin/tenants/:id/default-app` — app mặc định hiện tại của công ty (null = Trang chủ / chưa đặt). */
+export type TenantDefaultAppResponse = { app: string | null };
 
 export type PortalDefaultApp = {
   /** Cá nhân đã đặt (null = chưa). */

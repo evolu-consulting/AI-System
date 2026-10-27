@@ -13,7 +13,11 @@ import type { SecretKey } from "./lib/secret-crypto";
 import { Semaphore } from "./lib/semaphore";
 import type { TestHooks } from "./lib/test-hooks";
 import { accessRoutes } from "./modules/access/access.routes";
-import { appCatalogRoutes, meAppsRoutes } from "./modules/app-catalog/app-catalog.routes";
+import {
+  appCatalogRoutes,
+  meAppsRoutes,
+  tenantDefaultAppRoutes,
+} from "./modules/app-catalog/app-catalog.routes";
 import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
@@ -135,6 +139,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
+  app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
   const frozenOn = deps.frozenModules !== false;
   if (frozenOn) mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));

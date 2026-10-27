@@ -6,6 +6,7 @@ import {
   DefaultAppRequestSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
+import { z } from "zod";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
 import { parseJson } from "../../lib/http";
@@ -18,6 +19,7 @@ import {
   updateApp,
 } from "./app-catalog.service";
 import { getPortal, setMyDefaultApp, setTenantDefaultApp } from "./portal.service";
+import { getTenantDefaultApp, setTenantDefaultAppFor } from "./tenant-default-app.service";
 
 export function appCatalogRoutes(d: AuthDeps & AppCatalogCtx): Hono<AppVars> {
   const r = new Hono<AppVars>();
@@ -38,6 +40,31 @@ export function appCatalogRoutes(d: AuthDeps & AppCatalogCtx): Hono<AppVars> {
     await deleteApp(d, c.get("actor"), key(c));
     return c.body(null, 204);
   });
+  return r;
+}
+
+/** `/admin/tenants/:id/default-app` (chỉ platform_admin) — mount cạnh các route `/admin/tenants` khác. */
+export function tenantDefaultAppRoutes(d: AuthDeps & AppCatalogCtx): Hono<AppVars> {
+  const r = new Hono<AppVars>();
+  const id = (c: Context<AppVars>): string => {
+    const k = z.uuid().safeParse(c.req.param("id"));
+    if (!k.success) throw appError("NOT_FOUND");
+    return k.data;
+  };
+  const guard = [requireAuth(d), requireRole("platform_admin")] as const;
+  r.get("/:id/default-app", ...guard, async (c) =>
+    c.json(await getTenantDefaultApp(d, c.get("actor"), id(c))),
+  );
+  r.put("/:id/default-app", ...guard, async (c) =>
+    c.json(
+      await setTenantDefaultAppFor(
+        d,
+        c.get("actor"),
+        id(c),
+        await parseJson(c, DefaultAppRequestSchema),
+      ),
+    ),
+  );
   return r;
 }
 
