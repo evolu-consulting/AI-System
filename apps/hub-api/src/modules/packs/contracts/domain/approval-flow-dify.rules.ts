@@ -20,22 +20,58 @@ export type DifyParamName = keyof typeof DIFY_CONTRACT_INPUTS;
 const TEXT_PARAM_TYPES: ReadonlySet<string> = new Set(["text", "paragraph"]);
 const VALUE_PARAM_TYPES: ReadonlySet<string> = new Set(["number", "text", "paragraph"]);
 
-const paramFits = (name: string, type: string): name is DifyParamName =>
-  name in DIFY_CONTRACT_INPUTS &&
-  (name === "total_value" ? VALUE_PARAM_TYPES : TEXT_PARAM_TYPES).has(type);
+const isField = (f: unknown): f is DifyParamName =>
+  typeof f === "string" && Object.hasOwn(DIFY_CONTRACT_INPUTS, f);
 
-/** Tham số workflow thoả được từ dữ liệu HĐ; `ok=false` khi có tham số bắt buộc không thoả. */
-export function difyArgsOf(wf: DifyWorkflow): { ok: boolean; names: DifyParamName[] } {
-  const names: DifyParamName[] = [];
-  let ok = true;
-  for (const p of wf.params) {
-    if (paramFits(p.name, p.type)) names.push(p.name);
-    else if (p.required) ok = false;
-  }
-  return { ok, names };
+/** Trường HĐ `field` đưa được vào tham số kiểu `type` (số chỉ nhận giá trị HĐ; còn lại nhận văn bản). */
+const fieldFits = (field: DifyParamName, type: string): boolean =>
+  (field === "total_value" ? VALUE_PARAM_TYPES : TEXT_PARAM_TYPES).has(type);
+
+type FlowInputs = Readonly<Record<string, string>> | undefined;
+
+/** Trường HĐ của tham số: ánh xạ tường minh (explicit), không thì cùng tên trường HĐ; giá trị ánh xạ lạ ⇒ null. */
+function fieldOf(
+  name: string,
+  inputs: FlowInputs,
+): { field: DifyParamName | null; explicit: boolean } {
+  const explicit = inputs !== undefined && Object.hasOwn(inputs, name);
+  const v = explicit ? inputs[name] : name;
+  return { field: isField(v) ? v : null, explicit };
 }
 
-/** Bước Dify phải trỏ workflow có trong catalog của tenant và thoả được tham số bắt buộc. */
+/**
+ * dify-input-map · ánh xạ hiệu lực tham số ⇒ trường HĐ: `inputs` do người sửa luồng chọn; tham số không ánh xạ mà trùng tên
+ * trường HĐ ⇒ khớp cùng tên (như cũ). `ok=false` khi có tham số bắt buộc không thoả; `unknown` = khoá `inputs` không có trong
+ * workflow (hoặc giá trị không phải trường HĐ); `misfit` = ánh xạ sai kiểu.
+ */
+export function difyArgsOf(
+  wf: DifyWorkflow,
+  inputs?: FlowInputs,
+): {
+  ok: boolean;
+  pairs: [string, DifyParamName][];
+  unknown: string[];
+  misfit: string[];
+} {
+  const pairs: [string, DifyParamName][] = [];
+  const misfit: string[] = [];
+  let ok = true;
+  const names = new Set(wf.params.map((p) => p.name));
+  const unknown = Object.entries(inputs ?? {})
+    .filter(([k, v]) => !names.has(k) || !isField(v))
+    .map(([k]) => k);
+  for (const p of wf.params) {
+    const r = fieldOf(p.name, inputs);
+    if (r.field && fieldFits(r.field, p.type)) pairs.push([p.name, r.field]);
+    else {
+      if (r.field && r.explicit) misfit.push(p.name);
+      if (p.required) ok = false;
+    }
+  }
+  return { ok, pairs, unknown, misfit };
+}
+
+/** Bước Dify phải trỏ workflow có trong catalog của tenant, ánh xạ hợp lệ và thoả được tham số bắt buộc. */
 export function validateDifyCatalog(
   steps: readonly FlowStep[],
   catalog: readonly DifyWorkflow[],
@@ -46,8 +82,16 @@ export function validateDifyCatalog(
     if (s.kind !== "dify") return;
     const wf = by.get(s.workflow_key);
     const path = `steps.${i}.workflow_key`;
-    if (!wf) out.push({ path, rule: "DIFY_WORKFLOW_UNKNOWN" });
-    else if (!difyArgsOf(wf).ok) out.push({ path, rule: "DIFY_PARAM_UNSUPPORTED" });
+    if (!wf) {
+      out.push({ path, rule: "DIFY_WORKFLOW_UNKNOWN" });
+      return;
+    }
+    const a = difyArgsOf(wf, s.inputs);
+    for (const k of a.unknown)
+      out.push({ path: `steps.${i}.inputs.${k}`, rule: "DIFY_INPUT_UNKNOWN" });
+    for (const k of a.misfit)
+      out.push({ path: `steps.${i}.inputs.${k}`, rule: "DIFY_PARAM_UNSUPPORTED" });
+    if (!a.ok && a.misfit.length === 0) out.push({ path, rule: "DIFY_PARAM_UNSUPPORTED" });
   });
   return out;
 }

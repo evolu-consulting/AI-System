@@ -1,9 +1,16 @@
 // contract-flow S5 · một bước của mẫu luồng: bước duyệt (phòng, trưởng phòng, hạn, nhắc, chuyển cấp, điều kiện) hoặc bước Dify.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { FlowEsignStep, FlowStep, FlowReviewStep as ReviewStep } from "../api-flow";
+import type {
+  DifyWorkflowItem,
+  FlowDifyStep,
+  FlowEsignStep,
+  FlowStep,
+  FlowReviewStep as ReviewStep,
+} from "../api-flow";
 import { DUE_MIN, type FlowIssue, issueOf, REMIND_MAX, REMIND_MIN } from "../lib/flow-state";
 import { FIELD } from "./controls";
+import { FlowDifyInputs } from "./FlowDifyInputs";
 import { FlowEsignFields } from "./FlowEsignFields";
 import { FlowWhen } from "./FlowWhen";
 
@@ -34,6 +41,7 @@ const SHOWN = new Set([
   "when",
   "approver_user_id",
   "company_signer",
+  "inputs",
 ]);
 
 type Props = {
@@ -45,7 +53,9 @@ type Props = {
   people: Dept[];
   issues: FlowIssue[];
   editable: boolean;
-  onPatch: (p: Partial<ReviewStep> | Partial<FlowEsignStep>) => void;
+  /** dify-input-map · catalog workflow (tham số để ánh xạ trường HĐ). */
+  workflows?: DifyWorkflowItem[] | undefined;
+  onPatch: (p: Partial<ReviewStep> | Partial<FlowEsignStep> | Partial<FlowDifyStep>) => void;
   onWhen: (w: ReviewStep["when"]) => void;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
@@ -120,7 +130,15 @@ export function FlowStepCard(p: Props) {
           onPatch={p.onPatch}
         />
       ) : step.kind === "dify" ? (
-        <p className="text-dim">{f("difyInfo", { name: step.name || step.workflow_key })}</p>
+        <div>
+          <p className="text-dim">{f("difyInfo", { name: step.name || step.workflow_key })}</p>
+          <FlowDifyInputs
+            step={step}
+            workflow={p.workflows?.find((w) => w.key === step.workflow_key)}
+            err={err}
+            onPatch={p.onPatch}
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
           <Field label={f("name")} error={err("name")}>

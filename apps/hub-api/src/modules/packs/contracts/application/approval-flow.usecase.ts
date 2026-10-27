@@ -51,11 +51,27 @@ export type ApprovalFlowDeps = {
 };
 export type FlowMembers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
 
-/** `GET /dify-workflows`: danh sách chọn cho bước Dify (chỉ khoá + tên). */
+export type DifyWorkflowListItem = {
+  key: string;
+  name: string;
+  inputs: { name: string; type: string; required: boolean; description?: string }[];
+};
+/** `GET /dify-workflows`: danh sách chọn cho bước Dify (khoá, tên, tham số để ánh xạ trường HĐ). */
 export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
-  return async (who: PackWho): Promise<{ items: { key: string; name: string }[] }> => {
+  return async (who: PackWho): Promise<{ items: DifyWorkflowListItem[] }> => {
     const all = d.workflows ? await d.workflows(who.tenantId) : [];
-    return { items: all.map((w) => ({ key: w.key, name: w.name })) };
+    return {
+      items: all.map((w) => ({
+        key: w.key,
+        name: w.name,
+        inputs: w.params.map((p) => ({
+          name: p.name,
+          type: p.type,
+          required: p.required,
+          ...(p.description ? { description: p.description.slice(0, 500) } : {}),
+        })),
+      })),
+    };
   };
 }
 

@@ -20,6 +20,7 @@ export type ApprovalFlowRule =
   | "REMIND_RANGE"
   | "DIFY_WORKFLOW_UNKNOWN"
   | "DIFY_PARAM_UNSUPPORTED"
+  | "DIFY_INPUT_UNKNOWN"
   | "ESIGN_MULTI"
   | "ESIGN_NOT_LAST"
   | "SIGNER_GROUP_REQUIRED"
@@ -27,7 +28,8 @@ export type ApprovalFlowRule =
   | "USER_NOT_MEMBER";
 
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (khoá, tên, tham số khai trong `input_schema`). */
-export type DifyParam = { name: string; type: string; required: boolean };
+export type FlowContractField = "contract_id" | "title" | "deal" | "total_value" | "partner";
+export type DifyParam = { name: string; type: string; required: boolean; description?: string };
 export type DifyWorkflow = { key: string; name: string; params: readonly DifyParam[] };
 export type ApprovalFlowIssue = { path: string; rule: ApprovalFlowRule };
 
@@ -55,6 +57,8 @@ export type FlowDifyStep = {
   key: string;
   name: string;
   workflow_key: string;
+  /** dify-input-map · tham số workflow ⇒ trường HĐ (vắng ⇒ khớp cùng tên). */
+  inputs?: Record<string, FlowContractField> | undefined;
   after: "auto";
 };
 export type FlowEsignSigner = {

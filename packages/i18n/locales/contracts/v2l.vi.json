@@ -243,7 +243,17 @@
         "AFTER_DIFY_CONDITIONAL": "Bước sau bước Dify không được có điều kiện.",
         "difyEmpty": "Chưa chọn quy trình Dify.",
         "DIFY_WORKFLOW_UNKNOWN": "Quy trình Dify này không còn trong danh mục của công ty.",
-        "DIFY_PARAM_UNSUPPORTED": "Quy trình Dify này có tham số bắt buộc mà hợp đồng không cung cấp được."
+        "DIFY_PARAM_UNSUPPORTED": "Quy trình Dify này có tham số bắt buộc mà hợp đồng không cung cấp được.",
+        "DIFY_INPUT_UNKNOWN": "Tham số này không có trong quy trình Dify."
+      },
+      "difyFrom": "Lấy từ trường hợp đồng",
+      "difyNoSend": "— Không gửi —",
+      "contractField": {
+        "contract_id": "Mã hợp đồng",
+        "title": "Tên hợp đồng",
+        "deal": "Loại hợp đồng (mua/bán/giới thiệu)",
+        "total_value": "Giá trị hợp đồng",
+        "partner": "Đối tác"
       }
     }
   }

@@ -92,7 +92,7 @@ export type PackOpenTask = {
 export type PackWorkflow = {
   key: string;
   name: string;
-  params: { name: string; type: string; required: boolean }[];
+  params: { name: string; type: string; required: boolean; description?: string }[];
 };
 
 export type PackRunsPort = {

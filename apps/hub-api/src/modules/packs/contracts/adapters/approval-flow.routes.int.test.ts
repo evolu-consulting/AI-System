@@ -29,7 +29,16 @@ let gA: Record<string, string> = {};
 let gB: Record<string, string> = {};
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
 
-function app(user: string, groups: string[]) {
+const HAN_MUC = {
+  key: "dify-han-muc-duyet",
+  name: "Hạn mức duyệt",
+  params: [
+    { name: "contract_value", type: "number", required: true },
+    { name: "contract_type", type: "text", required: true },
+  ],
+};
+
+function app(user: string, groups: string[], workflows: unknown[] = []) {
   const view: PackAccessView = {
     catalog: async () => ({
       features: [
@@ -49,7 +58,11 @@ function app(user: string, groups: string[]) {
   const uow = createPackUow(db, "contracts", (tx, tid) => ({
     approvalFlow: approvalFlowRepo(tx, tid),
   }));
-  const d = { uow, groups: packGroups(db, view, "contracts") };
+  const d = {
+    uow,
+    groups: packGroups(db, view, "contracts"),
+    ...(workflows.length ? { workflows: async () => workflows as never } : {}),
+  };
   const h = new Hono<PackGuardVars>();
   h.use("*", async (c, next) => {
     c.set("user", { userId: user, tenantId: A, role: "member" } as never);
@@ -60,7 +73,7 @@ function app(user: string, groups: string[]) {
     approvalFlowRoutes(view, {
       read: readApprovalFlow(d),
       save: saveApprovalFlow(d),
-      difyWorkflows: listDifyWorkflows({}),
+      difyWorkflows: listDifyWorkflows(d),
     }),
   );
   h.onError((e, c) => {
@@ -184,4 +197,46 @@ it("editor (không admin gói) PUT ⇒ 403 PACK_FORBIDDEN; GET vẫn đọc đư
   const r = await call(editor, "PUT", { version: 2, steps: [step("x", gA.owner as string)] });
   expect(err(r)).toEqual({ status: 403, code: "PACK_FORBIDDEN" });
   expect((await call(editor, "GET")).status).toBe(200);
+});
+
+it("dify-input-map · tham số bắt buộc khác tên nhận được khi ánh xạ; khoá ánh xạ lạ ⇒ 422 DIFY_INPUT_UNKNOWN", async () => {
+  const owner = app(own, ["g-own"], [HAN_MUC]);
+  const dify = (inputs?: Record<string, string>) => ({
+    kind: "dify",
+    key: "d1",
+    name: "Hạn mức",
+    workflow_key: HAN_MUC.key,
+    ...(inputs ? { inputs } : {}),
+    after: "auto",
+  });
+  const body = (inputs?: Record<string, string>) => ({
+    version: 2,
+    steps: [step("sales", gA.editor as string), dify(inputs)],
+  });
+  const none = await call(owner, "PUT", body());
+  expect({ ...err(none), issues: none.json.error?.details?.issues }).toEqual({
+    status: 422,
+    code: "APPROVAL_FLOW_INVALID",
+    issues: [{ path: "steps.1.workflow_key", rule: "DIFY_PARAM_UNSUPPORTED" }],
+  });
+  const unknown = await call(
+    owner,
+    "PUT",
+    body({ contract_value: "total_value", contract_type: "deal", nope: "title" }),
+  );
+  expect(unknown.json.error?.details?.issues).toEqual([
+    { path: "steps.1.inputs.nope", rule: "DIFY_INPUT_UNKNOWN" },
+  ]);
+  const ok = await call(
+    owner,
+    "PUT",
+    body({ contract_value: "total_value", contract_type: "deal" }),
+  );
+  expect(ok.status).toBe(200);
+  const g = await call(owner, "GET");
+  expect(JSON.stringify(g.json.steps[1])).toContain('"contract_value":"total_value"');
+  const list = (await (await owner.request("/dify-workflows")).json()) as {
+    items: { inputs: { name: string }[] }[];
+  };
+  expect(list.items[0]?.inputs.map((i) => i.name)).toEqual(["contract_value", "contract_type"]);
 });

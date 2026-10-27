@@ -10,6 +10,7 @@ import { EsignSetting } from "~/features/contract-esign/components/EsignSetting"
 import { useAssignees } from "~/features/contract-review/hooks/use-manage";
 import type { FlowStep } from "../api-flow";
 import { useDepartments, useDifyWorkflows, useFlow, useSaveFlow } from "../hooks/use-flow";
+import { defaultMapping, difyInputIssues } from "../lib/flow-dify-map";
 import {
   errCode,
   type FlowIssue,
@@ -54,7 +55,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
     );
   if (!q.data) return <p className="text-dim">{t("contracts.common.loading")}</p>;
 
-  const local = validateFlow(steps);
+  const local = [...validateFlow(steps), ...difyInputIssues(steps, dify.data?.items)];
   const issues = [...local, ...server];
   const dirty = JSON.stringify(steps) !== JSON.stringify(q.data.steps);
   const list = depts.data ?? [];
@@ -123,6 +124,7 @@ export function FlowPane({ owner }: { owner: boolean }) {
               count={steps.length}
               depts={list}
               people={people.data?.items ?? []}
+              workflows={dify.data?.items}
               issues={issues}
               editable={owner}
               onPatch={(patch) => dispatch({ type: "patch", index: i, patch })}
@@ -147,7 +149,14 @@ export function FlowPane({ owner }: { owner: boolean }) {
             items={dify.data?.items}
             failed={dify.isError}
             full={steps.length >= FLOW_MAX_STEPS}
-            onAdd={(w) => dispatch({ type: "addDify", workflow_key: w.key, name: w.name })}
+            onAdd={(w) =>
+              dispatch({
+                type: "addDify",
+                workflow_key: w.key,
+                name: w.name,
+                inputs: defaultMapping(w.inputs),
+              })
+            }
           />
         )}
         {owner && !steps.some((s) => s.kind === "esign") && (

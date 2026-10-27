@@ -22,7 +22,11 @@ export const flowKeys = {
   dify: ["settings", "flow", "dify"] as const,
 };
 
-export type DifyWorkflowItem = { key: string; name: string };
+export type DifyWorkflowItem = {
+  key: string;
+  name: string;
+  inputs: { name: string; type: string; required: boolean; description?: string }[];
+};
 export const fetchDifyWorkflows = (signal?: AbortSignal) =>
   api<{ items: DifyWorkflowItem[] }>("/pack/contracts/dify-workflows", { signal });
 

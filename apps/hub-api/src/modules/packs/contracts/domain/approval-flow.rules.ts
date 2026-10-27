@@ -237,12 +237,13 @@ function groupOf(id: string | null, groupIds: ReadonlySet<string>): string {
   return id;
 }
 
-function difyArgs(wf: DifyWorkflow | undefined) {
+/** Args stage tool: mỗi tham số ánh xạ (hoặc khớp cùng tên) ⇒ input run của trường HĐ tương ứng. */
+export function difyArgs(wf: DifyWorkflow | undefined, inputs?: Readonly<Record<string, string>>) {
   if (!wf) throw new Error("approval-flow-dify-missing");
-  const a = difyArgsOf(wf);
+  const a = difyArgsOf(wf, inputs);
   if (!a.ok) throw new Error("approval-flow-dify-params");
   return Object.fromEntries(
-    a.names.map((n) => [n, { from: "input", key: DIFY_CONTRACT_INPUTS[n].key }]),
+    a.pairs.map(([p, f]) => [p, { from: "input", key: DIFY_CONTRACT_INPUTS[f].key }]),
   );
 }
 
@@ -292,7 +293,7 @@ function stageOfStep(
       name: s.name,
       step,
       tool: s.workflow_key,
-      args: difyArgs(wfs.get(s.workflow_key)),
+      args: difyArgs(wfs.get(s.workflow_key), s.inputs),
       fields: [],
       after,
       timeoutS: 600,

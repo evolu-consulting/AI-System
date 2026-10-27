@@ -13,6 +13,7 @@ import {
   compileDef,
   type DifyWorkflow,
   defaultFlowFromSettings,
+  difyArgs,
   difyRunInputs,
   engineStepOf,
   nextApplicable,
@@ -231,6 +232,34 @@ describe("cf-dify · catalog bước Dify", () => {
     expect(bad([p("title", "number", true)])).toEqual(["DIFY_PARAM_UNSUPPORTED"]);
     expect(bad([p("tong_tien", "number", false), p("title", "text", true)])).toEqual([]);
     expect(validateDifyCatalog([review("a", G.l1)], [])).toEqual([]);
+  });
+  it("dify-input-map · ánh xạ tham số ⇒ trường HĐ: hợp lệ, khoá lạ, sai kiểu, args runtime", () => {
+    const han = wf([p("contract_value", "number", true), p("contract_type", "text", true)]);
+    const withMap = (inputs?: Record<string, string>) =>
+      [review("a", G.l1), { ...dify("d"), inputs }] as FlowStep[];
+    const rules = (inputs?: Record<string, string>) =>
+      validateDifyCatalog(withMap(inputs), [han]).map((i) => `${i.path}:${i.rule}`);
+    const full = { contract_value: "total_value", contract_type: "deal" };
+    expect(rules()).toEqual(["steps.1.workflow_key:DIFY_PARAM_UNSUPPORTED"]);
+    expect(rules(full)).toEqual([]);
+    expect(rules({ ...full, nope: "title" })).toEqual(["steps.1.inputs.nope:DIFY_INPUT_UNKNOWN"]);
+    expect(rules({ ...full, contract_value: "title" })).toEqual([
+      "steps.1.inputs.contract_value:DIFY_PARAM_UNSUPPORTED",
+    ]);
+    // runtime: mỗi tham số lấy input run của trường được ánh xạ; tham số cùng tên vẫn gửi như cũ.
+    expect(difyArgs(han, full)).toEqual({
+      contract_value: { from: "input", key: "contract-value" },
+      contract_type: { from: "input", key: "contract-deal" },
+    });
+    const same = wf([p("partner", "text", true), p("note", "text", false)]);
+    expect(difyArgs(same)).toEqual({ partner: { from: "input", key: "contract-partner" } });
+    const def = compileDef(
+      { steps: withMap(full) },
+      new Set([G.l1]),
+      new Map([["risk-scan", han]]),
+    );
+    const st = def.stages.find((s) => s.executor.tool_key === "risk-scan");
+    expect(st?.executor.args).toEqual(difyArgs(han, full));
   });
   it("input run: văn bản cắt trần, giá trị không hợp lệ ⇒ 0", () => {
     const base = { title: "HĐ", deal: null, partner: "B" };

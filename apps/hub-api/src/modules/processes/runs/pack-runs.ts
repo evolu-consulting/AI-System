@@ -34,6 +34,12 @@ const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
 const uuids = (xs: readonly string[]) => `{${xs.filter((x) => UUID.test(x)).join(",")}}`;
 const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 const SYS = { kind: "system" as const };
+/** dify-input-map · mô tả tham số từ `input_schema` (chuỗi không rỗng), để UI ánh xạ trường HĐ. */
+function descOf(schema: unknown, name: string): string | undefined {
+  if (!Array.isArray(schema)) return undefined;
+  const p = (schema as { name?: unknown; description?: unknown }[]).find((x) => x?.name === name);
+  return typeof p?.description === "string" && p.description ? p.description : undefined;
+}
 /** Lỗi engine coi như "đã có người làm trước" (đua) — không ném cho gói. */
 const raced = (e: unknown, code: string) => e instanceof AppError && e.code === code;
 
@@ -157,7 +163,19 @@ function sysReads(d: ProcessDeps) {
         const rows = await availableToolRows(tx, tenantId);
         return rows
           .filter((r) => r.side_effect !== true)
-          .map((r) => ({ key: r.key, name: r.name, params: [...paramsOf(r.input_schema)] }));
+          .map((r) => ({
+            key: r.key,
+            name: r.name,
+            params: paramsOf(r.input_schema).map((p) => {
+              const d = descOf(r.input_schema, p.name);
+              return {
+                name: p.name,
+                type: p.type,
+                required: p.required,
+                ...(d ? { description: d } : {}),
+              };
+            }),
+          }));
       });
     },
     async groupIdsOf(tenantId: string, keys: readonly string[]) {

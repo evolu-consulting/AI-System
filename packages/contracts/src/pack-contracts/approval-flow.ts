@@ -5,7 +5,7 @@
 // (`approval-flow.rules.ts`, lỗi 422 `APPROVAL_FLOW_INVALID` kèm `issues`).
 import { z } from "zod";
 import { ESCALATE_AFTER_H, ProcessKeySchema, REMIND_EVERY_H } from "../chat/processes";
-import { IsoDateTime, UuidSchema } from "../common";
+import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../common";
 import { CONTRACT_DEALS } from "./milestones";
 
 /** Tối đa 8 bước người dùng thấy (engine ≤ 10 stage: + `route` + `finalize`). */
@@ -29,6 +29,8 @@ export const APPROVAL_FLOW_RULES = [
   "REMIND_RANGE",
   "DIFY_WORKFLOW_UNKNOWN",
   "DIFY_PARAM_UNSUPPORTED",
+  /** dify-input-map · khoá `inputs` không có trong input_schema của workflow. */
+  "DIFY_INPUT_UNKNOWN",
   /** esign-flow · tối đa 1 bước Ký số, phải là bước cuối. */
   "ESIGN_MULTI",
   "ESIGN_NOT_LAST",
@@ -39,6 +41,16 @@ export const APPROVAL_FLOW_RULES = [
   "USER_NOT_MEMBER",
 ] as const;
 export type ApprovalFlowRule = (typeof APPROVAL_FLOW_RULES)[number];
+
+/** dify-input-map · dữ liệu HĐ có thể gán cho tham số workflow Dify. */
+export const FLOW_CONTRACT_FIELDS = [
+  "contract_id",
+  "title",
+  "deal",
+  "total_value",
+  "partner",
+] as const;
+export type FlowContractField = (typeof FLOW_CONTRACT_FIELDS)[number];
 
 const StepKeySchema = z.string().regex(/^[a-z0-9-]{1,24}$/);
 const StepNameSchema = z.string().trim().min(1).max(80);
@@ -122,6 +134,11 @@ export const FlowDifyStepSchema = z.strictObject({
   name: StepNameSchema,
   /** Khoá workflow trong catalog đã bật cho tenant. */
   workflow_key: ProcessKeySchema,
+  /** dify-input-map · tham số workflow ⇒ trường HĐ; vắng ⇒ khớp theo cùng tên (như cũ). */
+  inputs: z
+    .record(z.string().regex(INPUT_NAME_RE), z.enum(FLOW_CONTRACT_FIELDS))
+    .refine((m) => Object.keys(m).length <= INPUT_SCHEMA_MAX, { message: "too many keys" })
+    .optional(),
   /** Sau khi chạy: `auto` = sang bước kế (bước kế phải không điều kiện). */
   after: z.literal("auto"),
 });
@@ -145,9 +162,18 @@ export const ApprovalFlowResponseSchema = z.strictObject({
 export type ApprovalFlowResponse = z.infer<typeof ApprovalFlowResponseSchema>;
 
 /** cf-dify · `GET /pack/contracts/dify-workflows`: workflow Dify tenant được dùng làm bước Dify (đã bật ở catalog). */
+export const DifyWorkflowInputSchema = z.strictObject({
+  name: z.string().regex(INPUT_NAME_RE),
+  type: z.string().min(1).max(32),
+  required: z.boolean(),
+  description: z.string().max(500).optional(),
+});
+export type DifyWorkflowInput = z.infer<typeof DifyWorkflowInputSchema>;
 export const DifyWorkflowItemSchema = z.strictObject({
   key: ProcessKeySchema,
   name: z.string().min(1).max(128),
+  /** dify-input-map · tham số khai trong input_schema (để UI ánh xạ trường HĐ). */
+  inputs: z.array(DifyWorkflowInputSchema).max(INPUT_SCHEMA_MAX),
 });
 export type DifyWorkflowItem = z.infer<typeof DifyWorkflowItemSchema>;
 export const DifyWorkflowsResponseSchema = z.strictObject({

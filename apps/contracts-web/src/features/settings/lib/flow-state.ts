@@ -37,7 +37,12 @@ type StepWhen = FlowWhen;
 export type FlowAction =
   | { type: "load"; steps: FlowStep[] }
   | { type: "addReview"; department_group_id?: string | null }
-  | { type: "addDify"; workflow_key: string; name: string }
+  | {
+      type: "addDify";
+      workflow_key: string;
+      name: string;
+      inputs?: NonNullable<FlowDifyStep["inputs"]> | undefined;
+    }
   | { type: "addEsign"; name: string }
   | { type: "remove"; index: number }
   | { type: "move"; index: number; dir: -1 | 1 }
@@ -73,6 +78,21 @@ export function newReview(
   };
 }
 
+function newDify(
+  steps: readonly FlowStep[],
+  a: Extract<FlowAction, { type: "addDify" }>,
+): DifyStep {
+  const inputs = a.inputs && Object.keys(a.inputs).length ? { inputs: a.inputs } : {};
+  return {
+    kind: "dify",
+    key: freshKey(steps, "d"),
+    name: a.name,
+    workflow_key: a.workflow_key,
+    ...inputs,
+    after: "auto",
+  };
+}
+
 /** Đổi chỗ bước `index` với bước kề; bước 0 đứng yên, bước Ký số luôn cuối. */
 function move(steps: FlowStep[], index: number, dir: -1 | 1): FlowStep[] {
   const j = index + dir;
@@ -92,15 +112,7 @@ export function flowReducer(steps: FlowStep[], a: FlowAction): FlowStep[] {
         ? steps
         : insert(steps, newReview(steps, a.department_group_id));
     case "addDify":
-      return steps.length >= FLOW_MAX_STEPS
-        ? steps
-        : insert(steps, {
-            kind: "dify",
-            key: freshKey(steps, "d"),
-            name: a.name,
-            workflow_key: a.workflow_key,
-            after: "auto",
-          });
+      return steps.length >= FLOW_MAX_STEPS ? steps : insert(steps, newDify(steps, a));
     case "addEsign":
       return steps.length >= FLOW_MAX_STEPS || hasEsign(steps)
         ? steps

@@ -243,7 +243,17 @@
         "AFTER_DIFY_CONDITIONAL": "The step after a Dify step cannot have a condition.",
         "difyEmpty": "No Dify workflow selected.",
         "DIFY_WORKFLOW_UNKNOWN": "This Dify workflow is no longer in the company catalog.",
-        "DIFY_PARAM_UNSUPPORTED": "This Dify workflow needs a required input the contract cannot provide."
+        "DIFY_PARAM_UNSUPPORTED": "This Dify workflow needs a required input the contract cannot provide.",
+        "DIFY_INPUT_UNKNOWN": "This input does not exist in the Dify workflow."
+      },
+      "difyFrom": "Take from contract field",
+      "difyNoSend": "— Do not send —",
+      "contractField": {
+        "contract_id": "Contract ID",
+        "title": "Contract title",
+        "deal": "Contract type (buy/sell/referral)",
+        "total_value": "Contract value",
+        "partner": "Partner"
       }
     }
   }
