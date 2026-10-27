@@ -5,7 +5,14 @@ import { z } from "zod";
 const Phrase = z
   .string()
   .transform((v) => v.normalize("NFC").replace(/\s+/g, " ").trim())
-  .pipe(z.string().min(2).max(60));
+  // esign-anchor-fix · chặn ký tự điều khiển (\u0000 ⇒ jsonb lỗi 500); xuống dòng/tab đã gộp thành khoảng trắng ở trên.
+  .pipe(
+    z
+      .string()
+      .min(2)
+      .max(60)
+      .regex(/^[^\p{Cc}]+$/u),
+  );
 
 /** Mỗi bên 1–8 cụm, theo thứ tự ưu tiên (cụm cụ thể trước, vd "ĐẠI DIỆN BÊN A" rồi "BÊN A"). */
 export const ESignAnchorsSchema = z.strictObject({
@@ -21,6 +28,7 @@ export type ESignAnchorsOut = {
   is_default: boolean;
 };
 
-/** "text" = ô ký đặt ngay dưới cụm trong văn bản HĐ; "page" = trang ký cuối (nối thêm). */
-export type ESignPlacement = "text" | "page";
+/** "text" = ô ký đặt ngay dưới cụm trong văn bản HĐ; "page" = trang ký cuối (nối thêm); "unknown" = xem trước bận (đọc PDF), chưa
+ *  xác định — lúc gửi vẫn tự chọn. */
+export type ESignPlacement = "text" | "page" | "unknown";
 export type ESignPlacementOut = { placement: ESignPlacement };

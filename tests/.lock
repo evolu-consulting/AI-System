@@ -1369,6 +1369,7 @@ d8c064b7d2884140d3ceaf3c9102727d50ddb9bf16382d2f6e88fac1b00e0b53  tests/acceptan
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
 9a5709f44007377c721ccca74f0576e4f08c8539972f7845f3033230af15fd1c  tests/acceptance/delivery-opts/delivery-opts.int.test.ts
+00a0572c72b3fe4834a19c1230290ab289a611261de216bcb53064675c8059a5  tests/acceptance/esign-anchor/esign-anchor-fix.int.test.ts
 a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptance/esign-anchor/esign-anchor.int.test.ts
 7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
 15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts

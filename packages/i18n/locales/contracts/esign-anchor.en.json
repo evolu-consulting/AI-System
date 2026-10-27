@@ -9,7 +9,8 @@
       "saveErr": "Could not save the phrases (each party needs at least one phrase, 2–60 characters).",
       "placement": "Signature position",
       "inText": "in the contract text",
-      "lastPage": "appended signature page"
+      "lastPage": "appended signature page",
+      "unknown": "not determined yet (chosen when sending)"
     }
   }
 }

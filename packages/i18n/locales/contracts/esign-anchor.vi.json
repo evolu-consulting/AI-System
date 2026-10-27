@@ -9,7 +9,8 @@
       "saveErr": "Không lưu được danh sách cụm, kiểm tra lại (mỗi bên ít nhất một cụm, 2–60 ký tự).",
       "placement": "Vị trí ký",
       "inText": "trong văn bản",
-      "lastPage": "trang ký cuối"
+      "lastPage": "trang ký cuối",
+      "unknown": "chưa xác định (sẽ tự chọn khi gửi)"
     }
   }
 }

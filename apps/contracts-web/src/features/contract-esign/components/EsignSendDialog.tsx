@@ -47,7 +47,9 @@ function ProviderPick({
   );
 }
 
-/** esign-anchor · "Vị trí ký: trong văn bản / trang ký cuối" (xem trước của server; lỗi ⇒ không hiện). */
+const PLACEMENT_KEY = { text: "inText", page: "lastPage", unknown: "unknown" } as const;
+
+/** esign-anchor · "Vị trí ký: trong văn bản / trang ký cuối / chưa xác định" (xem trước của server; lỗi ⇒ không hiện). */
 function PlacementNote({ id, open }: { id: string | undefined; open: boolean }) {
   const { t } = useTranslation();
   const q = useEsignPlacement(id, open);
@@ -55,7 +57,7 @@ function PlacementNote({ id, open }: { id: string | undefined; open: boolean }) 
   return (
     <p className="text-[12.5px] text-dim" data-testid="esign-placement">
       {t("contracts.esignAnchor.placement")}:{" "}
-      <b>{t(`contracts.esignAnchor.${q.data.placement === "text" ? "inText" : "lastPage"}`)}</b>
+      <b>{t(`contracts.esignAnchor.${PLACEMENT_KEY[q.data.placement]}`)}</b>
     </p>
   );
 }

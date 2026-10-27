@@ -92,7 +92,9 @@ export function esignModule(
         anchor: esignAnchorRepo(tx, t),
       })),
       files: d.files,
-      pdf: lazyPdf(),
+      pdf: lazyPdf(2),
+      // esign-anchor-fix · xem trước (quyền read) dùng worker/hàng chờ RIÊNG ⇒ gọi dồn không làm lần gửi thật bị PDF_BUSY.
+      previewPdf: lazyPdf(1),
     }),
     onStatus: async (tid, id, st) => flow?.onStatus(tid, id, st),
   });
@@ -105,11 +107,11 @@ export function esignModule(
   return { ...u, flow };
 }
 
-const lazyPdf = (): Pick<PdfConverter, "toText"> => {
+const lazyPdf = (maxPending: number): Pick<PdfConverter, "toText"> => {
   let c: PdfConverter | null = null;
   return {
     toText: (b, o) => {
-      c ??= createPdfConverter({ maxPending: 1 });
+      c ??= createPdfConverter({ maxPending });
       return c.toText(b, o);
     },
   };
