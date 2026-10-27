@@ -9,7 +9,7 @@ export type LockView = {
   locked: boolean;
   /** Ô thông tin chỉ đọc khi khoá (tất cả). */
   lockedKeys: ReadonlySet<TextKey> | undefined;
-  /** Owner mới thấy link "Mở lại để sửa lỗi trích xuất". */
+  /** Owner gói hoặc người phụ trách (CR-101a) thấy link "Mở lại để sửa lỗi trích xuất". */
   canReopen: boolean;
   noDocument: boolean;
 };
@@ -33,6 +33,12 @@ const ALL_KEYS: readonly TextKey[] = [
 /** lock-strict (2026-10-23): sau khi khoá KHÔNG trường nào sửa được (cả `notice_days`). */
 export const LOCKED_LEGAL_KEYS: ReadonlySet<TextKey> = new Set(ALL_KEYS);
 
+/** CR-101a (Câu 6): link "Mở lại" cho owner gói HOẶC người phụ trách HĐ (có quyền ghi) — khớp luật server `canReopen`. */
+export const reopenRight = (
+  c: Pick<ContractDetail, "owner_user_id">,
+  me: { owner: boolean; write: boolean; userId: string | null | undefined },
+): boolean => me.owner || (me.write && !!me.userId && c.owner_user_id === me.userId);
+
 export function lockView(
   c: Pick<ContractDetail, "locked" | "status" | "has_document">,
   owner: boolean,
@@ -51,6 +57,7 @@ export function lockView(
 export function lockErrorKey(status: number | undefined, code: string | undefined): string | null {
   if (code === "CONTRACT_LOCKED") return "contracts.lock.errLocked";
   if (code === "CONTRACT_NOT_LOCKED") return "contracts.lock.errNotLocked";
+  if (code === "USE_VERSIONS") return "contracts.lock.errUseVersions";
   if (status === 403) return "contracts.lock.errForbidden";
   return null;
 }

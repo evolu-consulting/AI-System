@@ -173,9 +173,10 @@ describe("HD-FR-100 · xác nhận = khoá", () => {
       version: (await detail(id)).version,
       parent_id: cid(303),
     });
+    // CR-101a (Câu 5): gắn làm phụ lục đã ngừng cho MỌI HĐ ⇒ 410 USE_VERSIONS (trước kiểm khoá).
     expect({ status: parent.status, code: errCode(parent) }).toEqual({
-      status: 409,
-      code: "CONTRACT_LOCKED",
+      status: 410,
+      code: "USE_VERSIONS",
     });
     const settle = await c.call("B", "POST", `/pack/contracts/obligations/${mid}/settle`, {});
     expect(settle.status).toBe(200);

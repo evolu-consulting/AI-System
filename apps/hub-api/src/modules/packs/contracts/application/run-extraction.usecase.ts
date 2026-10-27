@@ -13,6 +13,7 @@ import {
 } from "../domain/extraction.rules";
 import { fillFields } from "../domain/fields.rules";
 import { NO_OWN, type OwnParties, ownDeal } from "../domain/own-side.rules";
+import { prefillVersionNumber } from "../domain/version-number.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
 import type {
   ExtractionAgent,
@@ -131,7 +132,11 @@ export function withOwnDeal(out: ApplyOutput, own: OwnParties): ApplyOutput {
 async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutcome> {
   let cur: ExtractionSource | null = s.cur;
   for (let i = 0; i < SAVE_ATTEMPTS && cur?.status === "extracting"; i++) {
-    const out = withOwnDeal(mergeExtraction(s.verified, cur.fields, cur.items.length > 0), s.own);
+    const merged = withOwnDeal(
+      mergeExtraction(s.verified, cur.fields, cur.items.length > 0),
+      s.own,
+    );
+    const out = { ...merged, fields: prefillVersionNumber(merged.fields, cur.chain ?? null) };
     const items = out.items ?? cur.items;
     const warnings = ruleWarnings(out.fields, items, null, partiesOf(out.fields, s.hits));
     const expected = cur.version;

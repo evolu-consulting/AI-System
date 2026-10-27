@@ -7,6 +7,8 @@ import { installV2f } from "./v2f-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
+/** CR-101a: người phụ trách khác người đang xem (editor phụ trách thấy «Mở lại» — xem k4-reopen.cw.ts). */
+const OTHER = "a1000000-0000-4000-8000-000000000099";
 const locked = (over: object = {}) =>
   activeContract({
     locked: true,
@@ -18,7 +20,7 @@ const locked = (over: object = {}) =>
 test("HĐ khoá tuyệt đối: mọi ô (cả notice_days) chỉ đọc, ẩn Lưu thay đổi / + Thêm mốc / Sửa mốc, không khoảng trống giữa banner và Hạn chót", async ({
   page,
 }) => {
-  await installV2f(page, { role: "editor", contract: () => locked() });
+  await installV2f(page, { role: "editor", contract: () => locked({ owner_user_id: OTHER }) });
   await page.goto(`/contracts/${ACTIVE_ID}`);
   const banner = page.getByTestId("banner-locked");
   await expect(banner).toContainText("Đã xác nhận — đã khoá");
@@ -86,8 +88,8 @@ test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ b�
   expect(posts[0]).toHaveProperty("products");
 });
 
-test("HĐ khoá, không phải owner (editor): không thấy «Mở lại»", async ({ page }) => {
-  await installV2f(page, { role: "editor", contract: () => locked() });
+test("HĐ khoá, editor không phụ trách, không phải owner: không thấy «Mở lại»", async ({ page }) => {
+  await installV2f(page, { role: "editor", contract: () => locked({ owner_user_id: OTHER }) });
   await page.goto(`/contracts/${ACTIVE_ID}`);
   await expect(page.getByTestId("banner-locked")).toBeVisible();
   await expect(page.getByText("Mở lại để sửa lỗi trích xuất")).toHaveCount(0);

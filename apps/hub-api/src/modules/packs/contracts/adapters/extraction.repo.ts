@@ -24,6 +24,8 @@ type SourceRow = {
   mime: string | null;
   p_fields: unknown;
   p_items: unknown;
+  version_no: number | null;
+  root_number: string | null;
 };
 
 function toSource(r: SourceRow): ExtractionSource {
@@ -49,6 +51,10 @@ function toSource(r: SourceRow): ExtractionSource {
             items: pItems.map((i) => ({ ...i, unit_price: num(i.unit_price) })),
           }
         : null,
+    chain:
+      r.version_no !== null && r.version_no > 1
+        ? { versionNo: r.version_no, rootNumber: r.root_number }
+        : null,
   };
 }
 
@@ -64,7 +70,9 @@ function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
         f.org, f.file_id, f.mime, p.fields as p_fields,
         (select coalesce(jsonb_agg(jsonb_build_object('code', i.code, 'name', i.name, 'unit', i.unit,
             'unit_price', i.unit_price) order by i.ord), '[]'::jsonb)
-          from contracts.contract_items i where i.contract_id = p.id and i.tenant_id = ${tenantId}::uuid) as p_items
+          from contracts.contract_items i where i.contract_id = p.id and i.tenant_id = ${tenantId}::uuid) as p_items,
+        c.version_no, (select g.number from contracts.contracts g where g.id = c.root_id and g.tenant_id = ${tenantId}::uuid
+          and c.version_no > 1) as root_number
       from contracts.contracts c
       left join contracts.files f on f.id = c.file_id and f.tenant_id = ${tenantId}::uuid
       left join contracts.contracts p on p.id = c.parent_id and p.tenant_id = ${tenantId}::uuid

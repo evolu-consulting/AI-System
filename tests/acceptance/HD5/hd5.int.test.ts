@@ -109,71 +109,44 @@ describe("HD-FR-51 · danh sách + chi tiết có phụ lục", () => {
   });
 });
 
-describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
-  it("editor gắn HĐ thành phụ lục: kind/parent_id đổi, version+1, event parent_changed, outbox; gỡ trả về HĐ", async () => {
+// CR-101a (Câu 5, 2026-10-27): ngừng tạo phụ lục mới — gắn làm phụ lục ⇒ 410 USE_VERSIONS (sau guard quyền + đọc thân); phụ lục cũ
+// chỉ đọc; gỡ phụ lục cũ (`parent_id: null`) vẫn được. Ca gắn thành công / cha không hợp lệ / gắn đồng thời của HD5 đã bỏ (đảo CR-097 Q9).
+describe("HD-FR-54 · gắn / gỡ HĐ gốc (CR-101a)", () => {
+  it("editor gắn HĐ thành phụ lục ⇒ 410 USE_VERSIONS, không đổi DB, không event", async () => {
     await family();
     await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
     const r = await send(P.hoa, "PATCH", `/contracts/${cid(4)}/parent`, {
       version: 1,
       parent_id: cid(1),
     });
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ id: cid(4), kind: "appendix", parent_id: cid(1), version: 2 });
-    const [ev] =
-      await c.sql`select type, data, actor_user_id from contracts.contract_events where contract_id = ${cid(4)}`;
-    expect(ev).toMatchObject({
-      type: "parent_changed",
-      data: { from: null, to: cid(1) },
-      actor_user_id: P.hoa.id,
-    });
-    const [ob] =
-      await c.sql`select entity, op from contracts.index_outbox where entity_id = ${cid(4)}`;
-    expect(ob).toMatchObject({ entity: "contract", op: "upsert" });
-    await unlockContract(c.sql, cid(4)); // lock-strict: UPDATE khoá lại HĐ đã xác nhận
-    const back = await send(P.lan, "PATCH", `/contracts/${cid(4)}/parent`, {
-      version: 2,
+    expect(err(r)).toEqual([410, "USE_VERSIONS"]);
+    const [row] =
+      await c.sql`select kind, parent_id, version from contracts.contracts where id = ${cid(4)}`;
+    expect(row).toMatchObject({ kind: "contract", parent_id: null, version: 1 });
+    const ev = await c.sql`select 1 from contracts.contract_events where contract_id = ${cid(4)}`;
+    expect(ev.length).toBe(0);
+  });
+  it("gỡ phụ lục cũ ⇒ 200, trả về HĐ; viewer ⇒ 403; version cũ ⇒ 409 CONTRACT_STALE", async () => {
+    await family();
+    const v = await send(P.tam, "PATCH", `/contracts/${cid(2)}/parent`, {
+      version: 1,
       parent_id: null,
     });
-    expect(back.json).toMatchObject({ kind: "contract", parent_id: null, version: 3 });
-  });
-  it("viewer ⇒ 403; version cũ ⇒ 409 CONTRACT_STALE; không đổi DB", async () => {
-    await family();
-    await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
-    const v = await send(P.tam, "PATCH", `/contracts/${cid(4)}/parent`, {
-      version: 1,
-      parent_id: cid(1),
-    });
     expect(err(v)).toEqual([403, "PACK_FORBIDDEN"]);
-    const s = await send(P.hoa, "PATCH", `/contracts/${cid(4)}/parent`, {
+    const s = await send(P.hoa, "PATCH", `/contracts/${cid(2)}/parent`, {
       version: 7,
-      parent_id: cid(1),
+      parent_id: null,
     });
     expect(err(s)).toEqual([409, "CONTRACT_STALE"]);
-    const [row] = await c.sql`select kind, version from contracts.contracts where id = ${cid(4)}`;
-    expect(row).toMatchObject({ kind: "contract", version: 1 });
-  });
-  it("cha không hợp lệ ⇒ 422 PARENT_INVALID: chính nó, cha là phụ lục, HĐ đang có phụ lục, cha ở tenant khác / không tồn tại", async () => {
-    await family();
-    await insOpen(c.sql, { id: cid(4), tenant: T.acme, title: "Rời" });
-    const body = (parent_id: string) => ({ version: 1, parent_id });
-    const cases: [string, string][] = [
-      [cid(4), cid(4)],
-      [cid(4), cid(2)],
-      [cid(1), cid(4)],
-      [cid(4), cid(9)],
-      [cid(4), GHOST],
-    ];
-    for (const [id, parent] of cases) {
-      const r = await send(P.hoa, "PATCH", `/contracts/${id}/parent`, body(parent));
-      expect([id, err(r)]).toEqual([id, [422, "PARENT_INVALID"]]);
-    }
-    const [row] =
-      await c.sql`select count(*)::int as n from contracts.contracts where kind = 'appendix'`;
-    expect(row?.n).toBe(2);
+    const back = await send(P.lan, "PATCH", `/contracts/${cid(2)}/parent`, {
+      version: 1,
+      parent_id: null,
+    });
+    expect(back.json).toMatchObject({ kind: "contract", parent_id: null, version: 2 });
   });
   it("id lạ / tenant khác ⇒ 404 giống nhau; id sai dạng ⇒ 400", async () => {
     await family();
-    const body = { version: 1, parent_id: cid(1) };
+    const body = { version: 1, parent_id: null };
     const a = await send(P.hoa, "PATCH", `/contracts/${GHOST}/parent`, body);
     const b = await send(P.hoa, "PATCH", `/contracts/${cid(9)}/parent`, body);
     expect([err(a), err(b)]).toEqual([
@@ -207,41 +180,6 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc", () => {
       404,
       "NOT_FOUND",
     ]);
-  });
-});
-
-describe("HD-FR-54 · gắn HĐ gốc đồng thời (khoá hai hàng theo thứ tự id)", () => {
-  const patch = (id: string, parent: string) =>
-    send(P.hoa, "PATCH", `/contracts/${id}/parent`, { version: 1, parent_id: parent });
-  const kinds = async () =>
-    (await c.sql`select id, kind, parent_id from contracts.contracts where tenant_id = ${T.acme} order by id`) as unknown as {
-      id: string;
-      kind: string;
-      parent_id: string | null;
-    }[];
-  it("A→B ∥ B→A (8 vòng): đúng một bên thành phụ lục, bên kia 422; không vòng", async () => {
-    for (let round = 0; round < 8; round++) {
-      await arrange(c);
-      await insOpen(c.sql, { id: cid(1), tenant: T.acme, title: "A" });
-      await insOpen(c.sql, { id: cid(2), tenant: T.acme, title: "B" });
-      const rs = await Promise.all([patch(cid(1), cid(2)), patch(cid(2), cid(1))]);
-      expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
-      const rows = await kinds();
-      expect(rows.filter((r) => r.kind === "appendix")).toHaveLength(1);
-    }
-  });
-  it("C→A ∥ A→B (8 vòng): không có phụ lục của phụ lục", async () => {
-    for (let round = 0; round < 8; round++) {
-      await arrange(c);
-      for (const n of [1, 2, 3])
-        await insOpen(c.sql, { id: cid(n), tenant: T.acme, title: `H${n}` });
-      const rs = await Promise.all([patch(cid(3), cid(1)), patch(cid(1), cid(2))]);
-      expect(rs.map((r) => r.status).sort()).toEqual([200, 422]);
-      const rows = await kinds();
-      const apps = rows.filter((r) => r.kind === "appendix");
-      expect(apps).toHaveLength(1);
-      expect(rows.find((r) => r.id === apps[0]?.parent_id)?.kind).toBe("contract");
-    }
   });
 });
 

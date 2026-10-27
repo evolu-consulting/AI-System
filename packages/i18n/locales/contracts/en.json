@@ -29,6 +29,7 @@
     },
     "appendix": {
       "title": "Appendices and prices",
+      "readOnly": "Legacy appendix — read only. To amend the contract, use \"Upload update\".",
       "parentOf": "Appendix of contract",
       "detach": "Detach from parent contract",
       "attach": "Attach as an appendix of another contract…",
@@ -430,7 +431,8 @@
       "uploadOnlyHint": "Upload a PDF, DOCX or image; the AI reads it so you can review and confirm.",
       "errLocked": "This contract is confirmed and locked — this field can't be edited. An owner can reopen it.",
       "errNotLocked": "The contract is not locked — reload the page.",
-      "errForbidden": "Only an owner can reopen a contract."
+      "errForbidden": "Only the contract's person in charge or an owner can reopen it.",
+      "errUseVersions": "New appendices are no longer created — use \"Upload update\"."
     },
     "errors": {
       "network": "Can't reach the server. Check your connection and try again.",

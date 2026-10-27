@@ -29,6 +29,7 @@
     },
     "appendix": {
       "title": "Phụ lục và giá",
+      "readOnly": "Phụ lục cũ — chỉ đọc. Sửa đổi hợp đồng: dùng \"Tải bản cập nhật\".",
       "parentOf": "Phụ lục của hợp đồng",
       "detach": "Gỡ khỏi hợp đồng gốc",
       "attach": "Gắn làm phụ lục của hợp đồng khác…",
@@ -430,7 +431,8 @@
       "uploadOnlyHint": "Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận.",
       "errLocked": "Hợp đồng đã xác nhận và bị khoá — không sửa được trường này. Chủ sở hữu có thể mở lại.",
       "errNotLocked": "Hợp đồng chưa bị khoá — tải lại trang.",
-      "errForbidden": "Chỉ chủ sở hữu mới được mở lại hợp đồng."
+      "errForbidden": "Chỉ người phụ trách hợp đồng hoặc chủ sở hữu mới được mở lại.",
+      "errUseVersions": "Không tạo phụ lục mới nữa — dùng \"Tải bản cập nhật\"."
     },
     "errors": {
       "network": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",

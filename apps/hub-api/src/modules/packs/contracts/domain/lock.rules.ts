@@ -17,8 +17,14 @@ export function lockVerdict(i: { locked: boolean; changed: readonly string[] }):
   return i.changed.every((k) => LOCK_EDITABLE_FIELDS.has(k)) ? "ok" : "locked";
 }
 
-export type ReopenVerdict = "ok" | "not_locked";
+export type ReopenVerdict = "ok" | "not_locked" | "forbidden";
 
-/** Chỉ HĐ đang khoá mới mở lại được (quyền owner do route chặn, lý do do schema). */
-export const reopenVerdict = (i: { locked: boolean }): ReopenVerdict =>
-  i.locked ? "ok" : "not_locked";
+/** CR-101a (Câu 6): người mở lại được = owner gói HOẶC người phụ trách HĐ. */
+export const canReopen = (i: { admin: boolean; actor: string; owner: string | null }): boolean =>
+  i.admin || (i.owner !== null && i.owner === i.actor);
+
+/** Không có quyền ⇒ `forbidden` (trước mọi kiểm khác); chỉ HĐ đang khoá mới mở lại được (lý do do schema). */
+export const reopenVerdict = (i: { locked: boolean; allowed?: boolean }): ReopenVerdict => {
+  if (i.allowed === false) return "forbidden";
+  return i.locked ? "ok" : "not_locked";
+};

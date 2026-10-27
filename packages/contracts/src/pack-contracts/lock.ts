@@ -11,10 +11,14 @@ export const LOCK_ERRORS = {
   CONTRACT_NOT_LOCKED: 409,
   /** Tạo HĐ nhập tay đã ngừng (HĐ phải có văn bản; nhập tay chuyển sang Giao dịch). */
   MANUAL_CONTRACT_DISABLED: 410,
+  /** CR-101a: mở lại HĐ mà không phải người phụ trách cũng không phải owner gói. */
+  REOPEN_FORBIDDEN: 403,
+  /** CR-101a (Câu 5): ngừng tạo phụ lục mới — sửa đổi qua "Tải bản cập nhật" (phiên bản). */
+  USE_VERSIONS: 410,
 } as const;
 
 export const REOPEN_REASON_MAX = 500;
-/** `POST /pack/contracts/contracts/:id/reopen` — chỉ owner gói (`admin`); lý do bắt buộc (trim, ≥ 1 ký tự). */
+/** `POST /pack/contracts/contracts/:id/reopen` — CR-101a: người phụ trách HĐ hoặc owner gói; lý do bắt buộc (trim, ≥ 1 ký tự). */
 export const ReopenRequestSchema = z.strictObject({
   reason: nfcText(REOPEN_REASON_MAX).min(1),
 });

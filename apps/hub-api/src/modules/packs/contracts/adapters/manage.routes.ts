@@ -18,9 +18,11 @@ import { parseWith, readJson } from "../../../../lib/http";
 import {
   type PackAccessView,
   type PackGuardVars,
+  packAccessInput,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
 import type { PackWho } from "../../kit/application/ports";
+import { checkPackAccess } from "../../kit/domain/pack-access.rules";
 import type {
   AssignOwner,
   EditCommission,
@@ -101,14 +103,23 @@ export function manageRoutes(view: PackAccessView, d: ManageRoutesDeps): Hono<Pa
     });
   });
 
-  // CR-097 K1 · HD-FR-104: chỉ owner gói (`admin`) — guard TRƯỚC đọc thân (editor ⇒ 403, 0 SQL); lý do bắt buộc (400).
+  // CR-097 K1 · HD-FR-104 · CR-101a (Câu 6): người phụ trách HĐ HOẶC owner gói (`admin`). Guard `write` TRƯỚC đọc thân (viewer ⇒
+  // 403, 0 SQL); lý do bắt buộc (400); `admin` từ cache quyền (0 SQL); không phụ trách, không owner ⇒ 403 `REOPEN_FORBIDDEN`.
   const reopen = d.reopen;
   if (reopen)
-    r.post("/contracts/:id/reopen", packGuard(view, KEY, "admin"), async (c) => {
+    r.post("/contracts/:id/reopen", write, async (c) => {
       const id = idOf(c.req.param("id"));
       const body = parseWith(ReopenRequestSchema, await readJson(c));
-      const out = await reopen(whoOf(c.get("user")), id, body.reason);
+      const i = await packAccessInput(view, KEY, c.get("user"));
+      const admin = checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+      const out = await reopen(whoOf(c.get("user")), id, body.reason, { admin });
       if (out.kind === "not_found") throw appError("NOT_FOUND");
+      if (out.kind === "forbidden")
+        throw new AppError(
+          "REOPEN_FORBIDDEN",
+          LOCK_ERRORS.REOPEN_FORBIDDEN,
+          "Only the contract owner or a pack owner can reopen it",
+        );
       if (out.kind === "not_locked")
         throw new AppError(
           "CONTRACT_NOT_LOCKED",

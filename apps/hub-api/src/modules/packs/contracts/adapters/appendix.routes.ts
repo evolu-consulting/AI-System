@@ -5,6 +5,7 @@ import {
   CONTRACT_ERRORS,
   CreateCategoryRequestSchema,
   IsoDateSchema,
+  LOCK_ERRORS,
 } from "@ai/contracts";
 import type { Context } from "hono";
 import { Hono } from "hono";
@@ -73,6 +74,13 @@ function parentRoutes(r: Hono<PackGuardVars>, { read, write }: Guards, uc: Appen
     if (Number(c.req.header("content-length") ?? 0) > BODY_MAX)
       throw new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large");
     const body = parseWith(AttachParentRequestSchema, await readJson(c));
+    // CR-101a (Câu 5): ngừng tạo phụ lục mới (sửa đổi = "Tải bản cập nhật"); gỡ phụ lục cũ (`parent_id: null`) vẫn được.
+    if (body.parent_id !== null)
+      throw new AppError(
+        "USE_VERSIONS",
+        LOCK_ERRORS.USE_VERSIONS,
+        "Appendices are no longer created — upload an updated version instead",
+      );
     return c.json(attachedOut(await uc.attachParent(whoOf(c.get("user")), id, body)));
   });
   r.get("/contracts/:id/parent-suggestions", read, async (c) => {

@@ -15,6 +15,7 @@ import type { ManualItem } from "../domain/manual.rules";
 import type { Deal } from "../domain/milestones.rules";
 import type { OwnParties } from "../domain/own-side.rules";
 import type { TaxLookup } from "../domain/party.rules";
+import type { VersionChain } from "../domain/version-number.rules";
 import type { ItemNumbers, Warning } from "../domain/warnings.rules";
 import type { MilestoneWrite } from "./milestones.ports";
 
@@ -70,6 +71,8 @@ export type ExtractionSource = {
   version: number;
   /** Số liệu dòng hàng hiện có (cảnh báo tổng lệch khi giữ dòng cũ — D2-08). */
   items: ItemNumbers[];
+  /** CR-101a · R14: phiên bản trong chuỗi (số gốc của v1) — điền sẵn "số gốc-SĐn" khi AI không đọc được số; vắng ⇒ không điền. */
+  chain?: VersionChain | null;
 };
 export type ExtractionResult = {
   fields: ContractFields;

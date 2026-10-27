@@ -13,7 +13,7 @@ import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlineP
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { LockBanner } from "~/features/contract-lock/components/LockBanner";
-import { lockView } from "~/features/contract-lock/lib/lock-view";
+import { lockView, reopenRight } from "~/features/contract-lock/lib/lock-view";
 import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
 import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
@@ -87,7 +87,7 @@ function ContractBody({
   // K3b: bản đã bị thay chỉ đọc hoàn toàn.
   const { sup, write, owner, canUpdate } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
-  const lock = lockView(c, owner);
+  const lock = lockView(c, !sup && reopenRight(c, { owner, write, userId: me.user?.id }));
   const nav = useNavigate();
   // Thông báo thành công của thẻ duyệt ⇒ toast (không còn khối giữ chỗ trong trang).
   useEffect(() => {

@@ -1,6 +1,6 @@
 // CR-097 K3a · HD-FR-100 · HD-FR-104: luật thuần màn khoá.
 import { describe, expect, test } from "bun:test";
-import { LOCKED_LEGAL_KEYS, lockErrorKey, lockView } from "./lock-view";
+import { LOCKED_LEGAL_KEYS, lockErrorKey, lockView, reopenRight } from "./lock-view";
 
 const base = { locked: false, status: "active", has_document: true } as const;
 
@@ -32,5 +32,19 @@ describe("HD-FR-100 lockView", () => {
     expect(lockErrorKey(409, "CONTRACT_NOT_LOCKED")).toBe("contracts.lock.errNotLocked");
     expect(lockErrorKey(403, "FORBIDDEN")).toBe("contracts.lock.errForbidden");
     expect(lockErrorKey(500, undefined)).toBeNull();
+    expect(lockErrorKey(410, "USE_VERSIONS")).toBe("contracts.lock.errUseVersions");
+  });
+});
+
+describe("CR-101a reopenRight — owner gói hoặc người phụ trách", () => {
+  const c = { owner_user_id: "u1" };
+  test("ma trận", () => {
+    expect(reopenRight(c, { owner: true, write: true, userId: "u9" })).toBe(true);
+    expect(reopenRight(c, { owner: false, write: true, userId: "u1" })).toBe(true);
+    expect(reopenRight(c, { owner: false, write: true, userId: "u9" })).toBe(false);
+    expect(reopenRight(c, { owner: false, write: false, userId: "u1" })).toBe(false);
+    expect(reopenRight({ owner_user_id: null }, { owner: false, write: true, userId: null })).toBe(
+      false,
+    );
   });
 });

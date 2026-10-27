@@ -383,10 +383,11 @@ d82c07adbeb2354736befe7c1bfe715f77669f71dcbc2390a835dd31eec8e407  e2e/contracts-
 d729385e5c2bea6976bf4bb4f333e5709c63bd39fc4267b8ccdf12c2bcdba812  e2e/contracts-web/hd2-flow.cw.ts
 dc211ab745610af95d58521904bd68bc8570fe6e84555a339cc3535ebabdab3c  e2e/contracts-web/hd3-flow.cw.ts
 342c6e3416839ae32859fc702c5b09f9b8ecc0968e6be320d03086b9745b6c47  e2e/contracts-web/hd4-deadline.cw.ts
-fb554236628cf2b859a2348fbd54336154543c81426d96bdc73049a81fb7650c  e2e/contracts-web/hd5-list.cw.ts
+3d3ab5cd1686e2ba35ce0500a47f7551994833aab5b15efcea01e1bcd381c9a3  e2e/contracts-web/hd5-list.cw.ts
 2e8c8a51a111cb6f5ce991d7a642a24aee6adb4826a1553ca5e9590da0314e1e  e2e/contracts-web/hd78-partners.cw.ts
 83df8323650bd7f07180418882f0391f3962b815970d7cd466a80f5e3c76b2a1  e2e/contracts-web/k2-versions.cw.ts
-a77b4c30b983fa31ab2b94552084fd86e7b3ab1f19097e2ce52f605bd0a1fe7b  e2e/contracts-web/k3a-lock.cw.ts
+283d0f120fba32e3ad11fcdefd5537db42e427335a4b29b87546220bbfdd4b3b  e2e/contracts-web/k3a-lock.cw.ts
+c095414a6a55748ee249538524c3b95847131f686fc31124260eb0c62fffb5b0  e2e/contracts-web/k4-reopen.cw.ts
 46e1f42ffdfc34b92fb06cf03335f1806c16949c753e74361dd0cbe73718edb3  e2e/contracts-web/org-visibility.cw.ts
 f62f8dd47e33ac625bd246c0607f619d26889543ffcf8533b8101a30d0503a13  e2e/contracts-web/overview.cw.ts
 26d96178d24630392b5a9fccdebe5e1dae3a895f5790d77b9d2e9020173f0ef4  e2e/contracts-web/playwright.config.ts
@@ -772,7 +773,7 @@ c5742abdaed1985f2a3cc623bf0aeba7015274f930ee2223a03312d327247700  tests/acceptan
 6a6fc434cf78ef4ec97188c6c9870feab3ab620d82d557cdc7f17c66560aac87  tests/acceptance/HD4/locks.int.test.ts
 9fc396d672bcdfc4cd07fd4514eca8f590ca85116c51eedf4eaa9f50f852dde9  tests/acceptance/HD4/perf/remind.perf.int.test.ts
 1ffde379e601b0a3c5a4fbc9460264f230f2e890ad035fe199ee79047686bb16  tests/acceptance/HD4/remind.int.test.ts
-e9e7b5f59eb82bd6934991ade58d3d60e24d349954885646902aec2a496d0701  tests/acceptance/HD5/hd5.int.test.ts
+05800f80f4a7dda93add3f147e26044929b3b1c52c018171544a12d0899bb9c2  tests/acceptance/HD5/hd5.int.test.ts
 26994b140cb6bbcf1c442b92e7e2f5ea97ace8288732f97178bd0d0d1e7166d4  tests/acceptance/HD5/perf/hd5.perf.int.test.ts
 53218da3a569dbefba31fd97d8616de76ac318da47a7dad8bc51b007b080b35e  tests/acceptance/HD7/_support/hd7.ts
 325f69adeaaec87d6c43cb50d302a647cf956bd9bb329ca215889eb55d63a634  tests/acceptance/HD7/access.int.test.ts
@@ -807,7 +808,7 @@ e5bf08f75e96a4883ddd1054f522f12c9cf0e503ed815d0fc975d0b0cc276bd1  tests/acceptan
 74f6c925a90fe59d2ec26c4e580c588a4422aafb0f51dc4bf9b39574bea8b577  tests/acceptance/K1/_run.ts
 a024910f32a2e1fc4ca7fddde040024a57a55d0a8c1326136211bee04319d10f  tests/acceptance/K1/atomic-confirm.int.test.ts
 91840fd25f02748f95fba6ff0e3bbef8ecd35a2e6777b8affcb9fec5a2e44643  tests/acceptance/K1/check.int.test.ts
-1c733b5ba5fd03a501725f78ec1b8139ae225444482e7ed3c3096c75f8a62c5a  tests/acceptance/K1/lock.int.test.ts
+398359b0ca30b1d73e9c0410d8a6525f4c1b3deccbe179f56ed46c1526b9580c  tests/acceptance/K1/lock.int.test.ts
 77110a7b472ac631138436c5800aab0818191949a2ba2d4967e431a7b71f8185  tests/acceptance/K1/noleak.int.test.ts
 67476890a0549b98f32c0b7be66f2268c421baa77ee896e1026981d40a70193d  tests/acceptance/K1/query.int.test.ts
 79183409ec7483aa2e9159575d57c6f50e99ee3086d955bb7addc5d59228a1ef  tests/acceptance/K1/rules/_rules.ts
@@ -822,6 +823,7 @@ d7cf316ae66576d50699255d5025e59864d72eaafd480eb689aa77dd4808db1c  tests/acceptan
 9fd9b4ccc1fba679d297e13055cdc1310cfbb954fb7105508bff6c12bd182a9c  tests/acceptance/K1/worklog.int.test.ts
 06ed218ea4591bbfba080ec619d169f9a910d6c17ee4d89572f56348fb725047  tests/acceptance/K2/readers.int.test.ts
 59c515fcee2041d258b6447d20a8cd164fc76c43b8cc913f93daaab8d8064278  tests/acceptance/K2/versions.int.test.ts
+4345c3f9045f676fecdaba35e29d5c9fa3f50660347069eee162b110258f3969  tests/acceptance/K4/reopen.int.test.ts
 5a52876e49dc8cf4b8cbae3db581e95db6b8a110dc7a537ae0251fa1130fb736  tests/acceptance/M1-b2/b2.int.test.ts
 9a1cd5e022309a64a21e4d7abfa959df5e0e217829d4ef6a86dde10601f90663  tests/acceptance/M1-sec/visibility.int.test.ts
 a1e6dac9b14049e80037e8985afb11e57dd68f84d4809ad56b4d0bf3ec07e84a  tests/acceptance/M1/_data.ts

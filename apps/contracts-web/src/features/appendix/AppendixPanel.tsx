@@ -1,23 +1,12 @@
 // HD-FR-54 · HD-FR-55 · S05 (không có trong mgmt-app web ⇒ lệch có chủ ý, ẩn ở so ảnh: `data-hd5`): HĐ gốc / các phụ lục /
-// gắn làm phụ lục (gợi ý + tìm tay) / bảng giá hiện hành sau khi áp phụ lục.
+// bảng giá hiện hành sau khi áp phụ lục. CR-101a: bỏ gắn/gỡ phụ lục (chỉ đọc).
 import type { ContractDetail } from "@ai/contracts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
-import { contractKey } from "~/features/contract-review/api";
-import { saveErrorText } from "~/features/contract-review/lib/save-error";
-import {
-  attachParent,
-  fetchPrices,
-  fetchSuggestions,
-  pricesKey,
-  searchParents,
-  suggestionsKey,
-} from "./api";
-import { searchView } from "./search-view";
+import { fetchPrices, pricesKey } from "./api";
 
 const LINK = "font-medium text-act hover:underline";
 
@@ -63,136 +52,23 @@ function Prices({ id }: { id: string }) {
   );
 }
 
-function Attach({
-  c,
-  onDone,
-  onCancel,
-}: {
-  c: ContractDetail;
-  onDone: (e?: string) => void;
-  onCancel: () => void;
-}) {
+/** CR-101a (Câu 5): phụ lục cũ CHỈ ĐỌC — không gắn/gỡ, không tạo mới; sửa đổi HĐ qua "Tải bản cập nhật" (phiên bản). */
+export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
   const { t } = useTranslation();
-  const [text, setText] = useState("");
-  const sug = useQuery({
-    queryKey: suggestionsKey(c.id),
-    queryFn: ({ signal }) => fetchSuggestions(c.id, signal),
-  });
-  const found = useQuery({
-    queryKey: ["contract", c.id, "parent-search", text],
-    queryFn: ({ signal }) => searchParents(text.trim(), signal),
-    enabled: text.trim().length >= 2,
-  });
-  const pick = async (parentId: string) => {
-    try {
-      await attachParent(c.id, c.version, parentId);
-      onDone();
-    } catch (e) {
-      onDone(saveErrorText(e, t));
-    }
-  };
-  const options = [
-    ...(sug.data?.items ?? []).map((s) => ({
-      id: s.id,
-      title: s.title,
-      number: s.number,
-      why: t(`contracts.appendix.why.${s.reason}`),
-    })),
-    ...(found.data?.items ?? [])
-      .filter((r) => r.id !== c.id)
-      .map((r) => ({ id: r.id, title: r.title, number: r.number, why: "" })),
-  ].filter((o, i, all) => all.findIndex((x) => x.id === o.id) === i);
-  const view = searchView({
-    text,
-    searching: found.isFetching,
-    suggesting: sug.isPending,
-    options: options.length,
-  });
-  return (
-    <div className="mt-3">
-      <label className="flex flex-col gap-1 text-sm">
-        {t("contracts.appendix.attachLabel")}
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={t("contracts.appendix.search")}
-          className="h-9 max-w-sm rounded-lg border border-field bg-panel px-3 text-label text-ink"
-        />
-      </label>
-      <p className="mt-1 text-label text-dim">{t("contracts.appendix.searchHint")}</p>
-      {view === "loading" && (
-        <p role="status" className="mt-2 text-label text-dim">
-          {t("contracts.appendix.searching")}
-        </p>
-      )}
-      {view === "empty" && (
-        <p role="status" className="mt-2 text-label text-dim">
-          {t("contracts.appendix.noMatch", { q: text.trim() })}
-        </p>
-      )}
-      <ul className="mt-2 flex flex-col gap-1">
-        {options.map((o) => (
-          <li key={o.id}>
-            <button type="button" className={`${LINK} text-left`} onClick={() => void pick(o.id)}>
-              {o.title}
-              {o.number ? ` · ${o.number}` : ""}
-            </button>
-            {o.why && <span className="ml-2 text-label text-dim">{o.why}</span>}
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="btn btn-quiet mt-2" onClick={onCancel}>
-        {t("contracts.common.cancel")}
-      </button>
-    </div>
-  );
-}
-
-export function AppendixPanel({ c, write }: { c: ContractDetail; write: boolean }) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const [err, setErr] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-  const refresh = async (e?: string) => {
-    setErr(e ?? null);
-    setOpen(false);
-    await qc.invalidateQueries({ queryKey: contractKey(c.id) });
-    await qc.invalidateQueries({ queryKey: ["contract", c.id] });
-  };
-  const detach = async () => {
-    try {
-      await attachParent(c.id, c.version, null);
-      await refresh();
-    } catch (e) {
-      await refresh(saveErrorText(e, t));
-    }
-  };
-  const canAttach = write && !c.parent && c.appendices.length === 0 && c.status !== "extracting";
-  if (!c.parent && c.appendices.length === 0 && !canAttach) return null;
+  if (!c.parent && c.appendices.length === 0) return null;
   return (
     <section data-hd5="appendix" className="mt-5">
       <Panel className="p-5">
         <h2 className="text-base font-semibold">{t("contracts.appendix.title")}</h2>
-        {err && (
-          <p role="alert" className="mt-2 text-sm text-late">
-            {err}
-          </p>
-        )}
+        <p data-testid="appendix-readonly" className="mt-1 text-label text-dim">
+          {t("contracts.appendix.readOnly")}
+        </p>
         {c.parent && (
           <p className="mt-2 text-sm">
             {t("contracts.appendix.parentOf")}{" "}
             <Link to="/contracts/$id" params={{ id: c.parent.id }} className={LINK}>
               {c.parent.title}
             </Link>
-            {write && (
-              <button
-                type="button"
-                className="ml-3 text-label text-dim hover:underline"
-                onClick={() => void detach()}
-              >
-                {t("contracts.appendix.detach")}
-              </button>
-            )}
           </p>
         )}
         {c.appendices.length > 0 && (
@@ -211,15 +87,7 @@ export function AppendixPanel({ c, write }: { c: ContractDetail; write: boolean 
             ))}
           </ul>
         )}
-        {canAttach &&
-          (open ? (
-            <Attach c={c} onDone={(e) => void refresh(e)} onCancel={() => setOpen(false)} />
-          ) : (
-            <button type="button" className={`${LINK} mt-2 text-sm`} onClick={() => setOpen(true)}>
-              {t("contracts.appendix.attach")}
-            </button>
-          ))}
-        {(c.appendices.length > 0 || c.parent) && <Prices id={c.id} />}
+        <Prices id={c.id} />
       </Panel>
     </section>
   );

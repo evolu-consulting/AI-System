@@ -152,43 +152,16 @@ test.describe
       await expect(panel.getByText(/đã bị thay/)).toBeVisible();
     });
 
-    test("HĐ chưa gắn: editor chọn gợi ý ⇒ PATCH parent với version hiện tại", async ({ page }) => {
+    // CR-101a (Câu 5): phụ lục cũ chỉ đọc — không còn nút gắn/gỡ (sửa đổi qua "Tải bản cập nhật").
+    test("phụ lục cũ chỉ đọc: có nhãn chỉ đọc, không nút «Gắn làm phụ lục» / «Gỡ»", async ({
+      page,
+    }) => {
       await install(page);
-      await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
-        json(r, contractAsHub()),
-      );
-      await page.route(`**/pack/contracts/contracts/${contract.id}/parent-suggestions`, (r) =>
-        json(r, {
-          items: [
-            {
-              id: "c1000000-0000-4000-8000-000000000077",
-              title: "HĐ khung 2025",
-              number: "K-01",
-              seller: null,
-              buyer: null,
-              reason: "cited_number",
-            },
-          ],
-        }),
-      );
-      let sent: unknown = null;
-      await page.route(`**/pack/contracts/contracts/${contract.id}/parent`, (r) => {
-        sent = r.request().postDataJSON();
-        return json(r, {
-          id: contract.id,
-          kind: "appendix",
-          parent_id: "c1000000-0000-4000-8000-000000000077",
-          version: 4,
-          updated_at: "2026-10-18T02:00:00.000Z",
-        });
-      });
       await page.goto(`/contracts/${contract.id}`);
-      await page.getByRole("button", { name: /Gắn làm phụ lục/ }).click();
-      await expect(page.getByText("văn bản nêu số hợp đồng này")).toBeVisible();
-      await page.getByRole("button", { name: /HĐ khung 2025/ }).click();
-      await expect
-        .poll(() => sent)
-        .toEqual({ version: 3, parent_id: "c1000000-0000-4000-8000-000000000077" });
+      const panel = page.locator("[data-hd5=appendix]");
+      await expect(panel.getByTestId("appendix-readonly")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Gắn làm phụ lục/ })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /Gỡ khỏi hợp đồng gốc/ })).toHaveCount(0);
     });
   });
 
