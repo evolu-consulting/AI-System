@@ -31,6 +31,8 @@ export type UploadMountDeps = {
   /** Client FileBox theo org (mỗi lời gọi một org `t_<tenant>`). */
   filebox: (org: string) => PackFileboxClient;
   timeZoneOf: (tenantId: string) => Promise<string>;
+  /** tenant-quotas · lượt tải/ngày riêng của tenant (Admin); null ⇒ env `CONTRACTS_UPLOADS_TENANT_DAY`. */
+  tenantLimitOf?: (tenantId: string) => Promise<number | null>;
   /** HD2 · hàng đợi trích (`contractsAiModule`); gọi SAU commit, không chặn tải lên. */
   starter: ExtractionStarter;
 };
@@ -71,6 +73,7 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       tenant: envInt("CONTRACTS_UPLOADS_TENANT_DAY", CONTRACT_UPLOAD_TENANT_DAILY),
       global: envInt("CONTRACTS_UPLOADS_GLOBAL_DAY", CONTRACT_UPLOAD_GLOBAL_DAILY),
     },
+    ...(d.tenantLimitOf ? { tenantLimitOf: d.tenantLimitOf } : {}),
     newId: () => Bun.randomUUIDv7(),
     log: logger,
   });

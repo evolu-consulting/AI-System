@@ -1,5 +1,8 @@
 // ADM-FR-60, ADM-FR-61, ADM-FR-40 · gọi API /admin/tenants* (nơi duy nhất) dưới dạng hook TanStack Query.
 import type {
+  DailyLimitKind,
+  DailyLimitsPut,
+  DailyLimitsResponse,
   GrantMatrix,
   PackListResponse,
   PackState,
@@ -182,5 +185,44 @@ export function useSetTenantTool(id: string) {
         body: on ? {} : undefined,
       }),
     onSettled: () => qc.invalidateQueries({ queryKey: TOOL_KEYS.list(id) }),
+  });
+}
+
+const DAILY_KEYS = { limits: (id: string) => ["tenants", "daily-limits", id] as const };
+
+/** tenant-quotas · hạn mức ngày theo công ty (riêng/env/hiệu lực/đã dùng hôm nay); chỉ platform_admin. */
+export function useTenantDailyLimits(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: DAILY_KEYS.limits(id),
+    enabled,
+    queryFn: () => api<DailyLimitsResponse>(`/admin/tenants/${id}/daily-limits`),
+  });
+}
+
+/** PUT thay cả bộ (null = mặc định env); thành công ⇒ ghi kết quả vào cache + làm mới nhật ký. */
+export function useSetTenantDailyLimits(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DailyLimitsPut) =>
+      api<DailyLimitsResponse>(`/admin/tenants/${id}/daily-limits`, { method: "PUT", body }),
+    onSuccess: (res) => {
+      qc.setQueryData(DAILY_KEYS.limits(id), res);
+      void qc.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+/** "Đặt lại hôm nay" một loại hạn mức. */
+export function useResetTenantDailyLimit(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: DailyLimitKind) =>
+      api<DailyLimitsResponse>(`/admin/tenants/${id}/daily-limits/${kind}/reset`, {
+        method: "POST",
+      }),
+    onSuccess: (res) => {
+      qc.setQueryData(DAILY_KEYS.limits(id), res);
+      void qc.invalidateQueries({ queryKey: ["audit"] });
+    },
   });
 }

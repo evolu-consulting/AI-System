@@ -27,6 +27,8 @@ import { memorySsoStore, type SsoCodeStore } from "./modules/auth/sso/sso.store"
 import { totpRoutes } from "./modules/auth/totp/totp.routes";
 import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
+import type { DailyCounterStore } from "./modules/daily-limits/daily-limits.counter";
+import { dailyLimitsRoutes } from "./modules/daily-limits/daily-limits.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { feedbackAdminRoutes, feedbackUserRoutes } from "./modules/feedback/feedback.routes";
 import type { FetchFn, TrelloConfig } from "./modules/feedback/feedback.trello";
@@ -84,6 +86,8 @@ export type AppDeps = {
   trustProxyHops?: number;
   /** sso-switch · kho mã chuyển phiên (Redis ở production); vắng ⇒ Map trong bộ nhớ (một tiến trình). */
   ssoStore?: SsoCodeStore;
+  /** tenant-quotas · bộ đếm ngày của hub-api trên Redis (đọc "đã dùng", "Đặt lại hôm nay"); vắng ⇒ đã dùng = null, đặt lại 503. */
+  dailyCounter?: DailyCounterStore;
 };
 
 /** Trần mặc định: số lõi (≥ 2) phép băm cùng lúc, hàng đợi 100 — vượt ⇒ 503 AUTH_UNAVAILABLE. */
@@ -140,6 +144,14 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   if (deps.mailer) startQuotaListener(qctx);
   app.route("/admin/quota-banner", quotaBannerRoutes(qctx));
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
+  app.route(
+    "/admin/tenants",
+    dailyLimitsRoutes({
+      ...ctx,
+      hooks,
+      ...(deps.dailyCounter ? { counter: deps.dailyCounter } : {}),
+    }),
+  ); // tenant-quotas
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app

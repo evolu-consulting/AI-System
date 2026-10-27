@@ -56,6 +56,7 @@ import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
 import { createPdfConverter } from "./kit/adapters/pdf";
 import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
+import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
 export const PACK_PREFIX = "/pack";
@@ -111,6 +112,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db && (d.packs?.contracts ?? true)) mountContracts(app, { ...d, db: d.db }, view, fb);
   if (d.db)
     mountKnowledge(d.db, d.packTools, {
+      limitsOf: tenantLimits(d), // tenant-quotas · trần token AI riêng của tenant
       ...(d.packs?.knowledgeDsn ? { dsn: d.packs.knowledgeDsn } : {}),
       ...(d.signal ? { signal: d.signal } : {}),
     }); // N4 Â· R1 pool riÃªng
@@ -170,10 +172,15 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
     (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
   const { model, ...aiDeps } = d.packs?.contractsAi ?? {};
   const tax = aiDeps.tax === undefined ? envTaxRegistry() : aiDeps.tax;
-  const aiClient = createHubAiClient(db, model === undefined ? {} : { provider: model }); // M3 Â· dÃ¹ng chung trÃ­ch HÄ + V2-I tÃ¬m web
+  const limitsOf = tenantLimits(d);
+  const aiClient = createHubAiClient(db, {
+    limitsOf,
+    ...(model === undefined ? {} : { provider: model }),
+  }); // M3 Â· dÃ¹ng chung trÃ­ch HÄ + V2-I tÃ¬m web
   const quota = actionQuota({
     ...(d.redis ? { redis: d.redis } : {}),
     limit: envInt("CONTRACTS_ACTIONS_TENANT_DAY", ACTIONS_TENANT_DAILY),
+    limitOf: async (tid) => (await limitsOf(tid))?.actions ?? null, // tenant-quotas
     timeZoneOf,
   });
   const ai = contractsAiModule(
@@ -307,10 +314,6 @@ function contractsReputation(d: PacksMountDeps, view: PackAccessView, db: Db) {
   });
 }
 
-/** BR-6 (HD9) Â· mÃºi giá» tenant tá»« `ConfigCache` (0 SQL khi nÃ³ng), váº¯ng â‡’ máº·c Ä‘á»‹nh. */
-const tenantTz = (d: PacksMountDeps) => async (tid: string) =>
-  (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ;
-
 /** HD4 Â· nháº¯c háº¡n + káº¿t quáº£ xá»­ lÃ½; mÃºi tenant tá»« `ConfigCache` (0 SQL). Test báº­t vÃ²ng báº±ng `packs.contractsRemind.worker`. */
 function contractsRemind(d: PacksMountDeps, view: PackAccessView, db: Db) {
   const r = d.packs?.contractsRemind ?? {};
@@ -327,12 +330,6 @@ function contractsRemind(d: PacksMountDeps, view: PackAccessView, db: Db) {
     ...(d.signal ? { signal: d.signal } : {}),
   });
 }
-
-/** Env sá»‘ nguyÃªn dÆ°Æ¡ng, sai/váº¯ng â‡’ máº·c Ä‘á»‹nh. */
-const envInt = (k: string, def: number): number => {
-  const n = Number(process.env[k]);
-  return Number.isInteger(n) && n > 0 ? n : def;
-};
 
 /** HD3 Â· tenant cÃ³ entitlement `<k>-read` (cache cáº¥u hÃ¬nh, 0 SQL) â€” táº­p quÃ©t cá»§a vÃ²ng flow duyá»‡t. */
 async function packTenants(view: PackAccessView, key: string): Promise<string[]> {
@@ -361,6 +358,7 @@ function contractsUpload(
     ...(d.redis ? { redis: d.redis } : {}),
     filebox: fileboxClients(fb),
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
+    tenantLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null, // tenant-quotas
     starter,
   });
 }

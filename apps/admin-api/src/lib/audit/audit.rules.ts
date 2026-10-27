@@ -54,7 +54,7 @@ export const AUDIT_FIELDS: Readonly<Record<AuditEntity, readonly string[]>> = {
     "version",
   ],
   secret: ["name", "note"],
-  quota: ["items"],
+  quota: ["items", "daily_limits"], // tenant-quotas · hạn mức ngày theo công ty
   config: ["from_config_version", "added", "updated", "secrets_created", "truncated"],
 };
 

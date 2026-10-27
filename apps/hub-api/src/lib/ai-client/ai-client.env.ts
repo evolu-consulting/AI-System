@@ -7,9 +7,10 @@
 // đặt rõ `AI_SUB_CLI_PATH` (test không bao giờ gọi AI thật). API: `ANTHROPIC_API_KEY` (vắng ⇒ `UNAVAILABLE`),
 // `ANTHROPIC_BASE_URL` (tuỳ chọn). Trần: `AI_TENANT_DAILY_TOKENS` (token/tenant/ngày UTC, mặc định 5.000.000; `0` ⇒ không
 // trần) — áp cho CẢ gói lẫn API. Test tiêm `provider` giả qua seam.
+import { aiTokensSince, effectiveDailyLimit } from "@ai/contracts";
 import type { Db } from "../db";
 import { logger } from "../logger";
-import { type AiClient, createAiClient, type ModelProvider } from "./ai-client";
+import { type AiCaps, type AiClient, createAiClient, type ModelProvider } from "./ai-client";
 import { anthropicProvider } from "./anthropic.provider";
 import { type CliRun, claudeCliProvider } from "./claude-cli.provider";
 import { pgUsageStore } from "./usage.pg";
@@ -115,9 +116,28 @@ export function envProviderRouter(
   return { pick, anyReady };
 }
 
+/** tenant-quotas · hạn mức ngày riêng của tenant từ cache cấu hình (vắng ⇒ env). */
+export type TenantLimitsOf = (
+  tenantId: string,
+) => Promise<{ aiTokens: number | null; aiTokensResetAt: Date | null } | undefined>;
+
+/** Trần token/ngày: riêng của tenant (Admin) thắng env; mốc đếm = max(00:00 UTC, lúc "Đặt lại hôm nay"). */
+export function hubAiCaps(cap: number | null, limitsOf?: TenantLimitsOf): AiCaps {
+  if (!limitsOf) return { dailyTokens: async () => cap };
+  return {
+    dailyTokens: async (tid) => effectiveDailyLimit((await limitsOf(tid))?.aiTokens, cap),
+    since: async (tid, at) => aiTokensSince(at, (await limitsOf(tid))?.aiTokensResetAt ?? null),
+  };
+}
+
 export function createHubAiClient(
   db: Db,
-  o: { provider?: ModelProvider | null; env?: Env; sub?: SubOptions } = {},
+  o: {
+    provider?: ModelProvider | null;
+    env?: Env;
+    sub?: SubOptions;
+    limitsOf?: TenantLimitsOf;
+  } = {},
 ): AiClient {
   const env = o.env ?? process.env;
   const cap = envDailyTokens(env);
@@ -126,7 +146,7 @@ export function createHubAiClient(
     provider: routed ? routed.pick : (o.provider ?? null),
     ...(routed ? { anyReady: routed.anyReady } : {}),
     usage: pgUsageStore(db),
-    caps: { dailyTokens: async () => cap },
+    caps: hubAiCaps(cap, o.limitsOf),
     log: logger,
   });
 }

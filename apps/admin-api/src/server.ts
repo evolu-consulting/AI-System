@@ -16,6 +16,7 @@ import { createDummyHash } from "./modules/auth/auth.service";
 import { type LoginLimiter, redisLoginLimiter } from "./modules/auth/limit/limit.redis";
 import { type LimitPolicy, policyFromEnv } from "./modules/auth/limit/limit.rules";
 import { redisSsoStore } from "./modules/auth/sso/sso.store";
+import { redisDailyCounter } from "./modules/daily-limits/daily-limits.counter";
 import { trelloFromEnv } from "./modules/feedback/feedback.trello";
 
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -119,6 +120,8 @@ async function main(): Promise<void> {
       loginLimiter: limit?.limiter,
       // sso-switch: mã chuyển phiên dùng chung Redis của giới hạn đăng nhập (production bắt buộc có).
       ssoStore: limit ? redisSsoStore(limit.redis) : undefined,
+      // tenant-quotas: đọc/đặt lại bộ đếm ngày của hub-api (cùng REDIS_URL).
+      dailyCounter: limit ? redisDailyCounter(limit.redis) : undefined,
       trustProxyHops: env.TRUST_PROXY_HOPS,
       hashSlots: defaultHashSlots(env.LOGIN_HASH_CONCURRENCY),
       hub:

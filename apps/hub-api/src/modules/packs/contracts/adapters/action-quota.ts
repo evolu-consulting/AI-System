@@ -16,6 +16,8 @@ export type { ActionQuota };
 export function actionQuota(o: {
   redis?: Redis;
   limit: number;
+  /** tenant-quotas · hạn mức riêng của tenant (Admin); null ⇒ `limit` (env). */
+  limitOf?: (tenantId: string) => Promise<number | null>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now?: () => Date;
 }): ActionQuota {
@@ -23,6 +25,7 @@ export function actionQuota(o: {
   return async (tenantId) => {
     if (!o.redis) throw new AppError("UPLOAD_QUOTA_UNAVAILABLE", 503, "Quota counter unavailable");
     const tz = await o.timeZoneOf(tenantId);
+    const limit = (o.limitOf ? await o.limitOf(tenantId) : null) ?? o.limit;
     const at = now();
     const key = `${QUOTA_KEY_PREFIX}a:${tenantId}:${uploadDay(at, tz)}`;
     let n: number;
@@ -33,13 +36,13 @@ export function actionQuota(o: {
     } catch {
       throw new AppError("UPLOAD_QUOTA_UNAVAILABLE", 503, "Quota counter unavailable");
     }
-    if (n > o.limit)
+    if (n > limit)
       throw new AppError(
         "ACTION_QUOTA",
         CONTRACT_APPROVAL_ERRORS.ACTION_QUOTA,
         "Daily action limit reached",
         {
-          limit: o.limit,
+          limit,
           resets_at: nextDayStart(at, tz).toISOString(),
         },
       );

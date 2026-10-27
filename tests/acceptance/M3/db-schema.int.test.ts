@@ -72,6 +72,7 @@ const ADMIN20 = [
   "admin.quota_alerts",
   "admin.refresh_tokens",
   "admin.secrets",
+  "admin.tenant_daily_limits",
   "admin.tenant_quotas",
   "admin.tenant_workflow_tools",
   "admin.tenants",

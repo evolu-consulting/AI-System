@@ -8,6 +8,7 @@ export * from "./command-test";
 export * from "./commands";
 export * from "./common";
 export * from "./config";
+export * from "./daily-limits";
 export { dropEmptyEnv } from "./env-source";
 export {
   BASE_ERROR_CODES,

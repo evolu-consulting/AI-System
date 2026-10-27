@@ -44,6 +44,8 @@ export type UploadContractDeps = {
   starter: ExtractionStarter;
   zipNames: (bytes: Uint8Array) => string[];
   limits: { tenant: number; global: number };
+  /** tenant-quotas · hạn mức lượt tải/ngày riêng của tenant (Admin); vắng/null ⇒ `limits.tenant` (env). */
+  tenantLimitOf?: (tenantId: string) => Promise<number | null>;
   newId: () => string;
   now?: () => Date;
   log?: { warn(msg: string, fields?: Record<string, unknown>): void };
@@ -185,13 +187,15 @@ async function takeQuota(
   } catch {
     throw new UploadError("UPLOAD_QUOTA_UNAVAILABLE");
   }
-  const v = quotaVerdict(c, d.limits);
+  const own = d.tenantLimitOf ? await d.tenantLimitOf(i.who.tenantId).catch(() => null) : null;
+  const limits = own === null ? d.limits : { ...d.limits, tenant: own };
+  const v = quotaVerdict(c, limits);
   if (v === "ok") return;
   await d.counter.refund(i.who.tenantId, days).catch(() => undefined);
   const tz = v === "tenant" ? i.timeZone : "UTC";
   throw new UploadError("UPLOAD_QUOTA", {
     scope: v,
-    limit: d.limits[v],
+    limit: limits[v],
     resets_at: nextDayStart(at, tz).toISOString(),
   });
 }

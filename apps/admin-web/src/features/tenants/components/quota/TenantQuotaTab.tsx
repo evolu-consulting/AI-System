@@ -13,6 +13,7 @@ import { useQuotaTab } from "../../hooks/use-quota-tab";
 import { QUOTA_FIELDS, type QuotaField } from "../../lib/quota-draft";
 import { AddQuotaFeature } from "./AddQuotaFeature";
 import { QuotaRowView } from "./QuotaRowView";
+import { TenantDailyLimits } from "./TenantDailyLimits";
 
 type Props = {
   tenant: TenantDetail;
@@ -64,6 +65,9 @@ export function TenantQuotaTab(props: Props) {
 
   return (
     <>
+      <div className="mb-6">
+        <TenantDailyLimits tenantId={props.tenant.id} />
+      </div>
       <form
         noValidate
         onSubmit={(e) => {

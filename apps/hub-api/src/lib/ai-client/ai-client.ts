@@ -81,7 +81,11 @@ export type UsageStore = {
   release?(holdId: string, tenantId: string): Promise<void>;
 };
 /** Trần token/ngày của tenant; null ⇒ không giới hạn. */
-export type AiCaps = { dailyTokens(tenantId: string): Promise<number | null> };
+export type AiCaps = {
+  dailyTokens(tenantId: string): Promise<number | null>;
+  /** tenant-quotas · mốc bắt đầu đếm hôm nay (sau "Đặt lại hôm nay"); vắng ⇒ 00:00 UTC. */
+  since?(tenantId: string, at: Date): Promise<Date>;
+};
 
 export type AiCallRequest = {
   tenantId: string;
@@ -145,7 +149,7 @@ async function admit(d: AiClientDeps, req: AiCallRequest, at: Date): Promise<Adm
   try {
     const cap = await d.caps.dailyTokens(req.tenantId);
     if (cap === null) return { kind: "ok", maxTokens: want, holdId: null };
-    const since = utcDayStart(at);
+    const since = d.caps.since ? await d.caps.since(req.tenantId, at) : utcDayStart(at);
     if (!d.usage.reserve)
       return (await d.usage.tokensSince(req.tenantId, since)) < cap
         ? { kind: "ok", maxTokens: want, holdId: null }

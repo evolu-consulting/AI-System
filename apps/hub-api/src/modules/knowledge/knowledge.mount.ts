@@ -5,7 +5,7 @@
 // `KNOWLEDGE_RERANK=on` + nhà cung cấp AI (ai-sub: gói Claude mặc định, `AI_PROVIDER*`; vắng ⇒ thứ tự FTS/RRF). Tìm liên kết KnowledgeHub khi đủ `KNOWLEDGE_KH_*`.
 import { createDb, type Db } from "@ai/db";
 import type { AiClient } from "../../lib/ai-client/ai-client";
-import { createHubAiClient } from "../../lib/ai-client/ai-client.env";
+import { createHubAiClient, type TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
 import { logger } from "../../lib/logger";
 import { createDocxConverter } from "../packs/kit/adapters/docx";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
@@ -174,13 +174,23 @@ export function knowledgeDb(
 export function mountKnowledge(
   db: Db,
   tools: { register(t: PackToolDef): void } | undefined,
-  o: { dsn?: string; env?: EnvMap; signal?: AbortSignal; aiClient?: AiClient | null } = {},
+  o: {
+    dsn?: string;
+    env?: EnvMap;
+    signal?: AbortSignal;
+    aiClient?: AiClient | null;
+    /** tenant-quotas · trần token AI riêng của tenant (cache cấu hình). */
+    limitsOf?: TenantLimitsOf;
+  } = {},
 ): void {
   if (!tools) return;
   const env = o.env ?? process.env;
   const kdb = knowledgeDb(o.dsn, env, db, o.signal);
   // F-07: usage/trần token ghi qua pool Hub chung (`db`, role hub_api) — pool tri thức chỉ SET ROLE knowledge_rw
-  const aiClient = o.aiClient === undefined ? createHubAiClient(db) : o.aiClient;
+  const aiClient =
+    o.aiClient === undefined
+      ? createHubAiClient(db, o.limitsOf ? { limitsOf: o.limitsOf } : {})
+      : o.aiClient;
   const svc = knowledgeService(kdb, { env, aiClient });
   for (const t of knowledgeTools(svc)) tools.register(t);
   for (const t of graphTools(graphService(kdb))) tools.register(t); // G1 · đồ thị tri thức (cùng pool riêng)

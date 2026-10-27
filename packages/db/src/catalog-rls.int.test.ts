@@ -159,6 +159,7 @@ describe("ADM-FR-31 · RLS admin.feature_entitlements", () => {
       "quota_alerts",
       "refresh_tokens",
       "secrets",
+      "tenant_daily_limits",
       "tenant_quotas",
       "tenant_workflow_tools",
       "tenants",

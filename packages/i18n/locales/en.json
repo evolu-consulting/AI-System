@@ -729,6 +729,26 @@
       "change": "Change time zone",
       "search": "Search time zones",
       "value": "{tz} ({offset})"
+    },
+    "dailyLimits": {
+      "title": "Daily limits",
+      "hint": "Leave empty to use the system default. Counters restart at 00:00 (uploads/actions in the company time zone, AI tokens in UTC).",
+      "kind": {
+        "uploads": "Contract uploads/day",
+        "actions": "AI actions/day",
+        "ai_tokens": "AI tokens/day"
+      },
+      "defaultValue": "Default: {value}",
+      "unlimited": "Unlimited",
+      "usedToday": "Used today {used} / {limit}",
+      "unknown": "—",
+      "reset": "Reset today",
+      "resetTitle": "Reset today's counter?",
+      "resetBody": "The company's \"{kind}\" counter goes back to 0 for {day}. This action is audited.",
+      "resetDone": "Today's counter was reset",
+      "saved": "Daily limits saved",
+      "invalid": "Enter a whole number above 0 or leave empty",
+      "unavailable": "Counter unavailable (Redis not ready)"
     }
   },
   "quota": {

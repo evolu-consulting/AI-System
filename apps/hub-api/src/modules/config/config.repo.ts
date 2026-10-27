@@ -1,6 +1,14 @@
 // HUB-FR-02, HUB-FR-03 · đọc cấu hình `admin` + `hub` cho cache (role hub_api, chỉ SELECT; plan H1 §4 Cache, §3.1, §3.4).
 // Bảng cấu hình không RLS, toàn hệ thống (không lọc tenant); `admin.users` chỉ đọc cột hub_ro được GRANT.
-import { agentGrants, agentWorkflows, configMeta, groupMembers, tenants, users } from "@ai/db";
+import {
+  agentGrants,
+  agentWorkflows,
+  configMeta,
+  groupMembers,
+  tenantDailyLimits,
+  tenants,
+  users,
+} from "@ai/db";
 import {
   agentEntitlements,
   agents,
@@ -173,17 +181,30 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
   );
 }
 
-/** HD1 D-16: kèm `timezone` (kiểm một lần ở đây — 0 SQL thêm mỗi request). */
+/**
+ * HD1 D-16: kèm `timezone` (kiểm một lần ở đây — 0 SQL thêm mỗi request). tenant-quotas: kèm hạn mức ngày riêng
+ * (LEFT JOIN `admin.tenant_daily_limits`, cùng một câu) — ghi qua `configWrite` bump `config_version` ⇒ nạp lại.
+ */
 export async function loadTenants(db: Db): Promise<TenantState[]> {
+  const l = tenantDailyLimits;
   const rows = await db.db
     .select({
       id: tenants.id,
       active: tenants.active,
       maxConcurrentSub: tenants.maxConcurrentSub,
       timezone: tenants.timezone,
+      uploads: l.uploadsDay,
+      actions: l.actionsDay,
+      aiTokens: l.aiTokensDay,
+      aiTokensResetAt: l.aiTokensResetAt,
     })
-    .from(tenants);
-  return rows.map((t) => ({ ...t, timezone: tenantTimeZone(t.timezone) }));
+    .from(tenants)
+    .leftJoin(l, eq(l.tenantId, tenants.id));
+  return rows.map(({ uploads, actions, aiTokens, aiTokensResetAt, ...t }) => ({
+    ...t,
+    timezone: tenantTimeZone(t.timezone),
+    dailyLimits: { uploads, actions, aiTokens, aiTokensResetAt },
+  }));
 }
 
 /** User theo id (kèm nhóm). Rỗng `ids` → []. Id không tồn tại → không có trong kết quả. */

@@ -33,6 +33,7 @@ export {
   users,
   workflows,
 } from "./schema/admin";
+export { tenantDailyLimits } from "./schema/daily-limits";
 export { agentGrants, agentWorkflows, hub, usageLogs } from "./schema/hub-readonly";
 export {
   AUDIT_ACTION_VALUES,

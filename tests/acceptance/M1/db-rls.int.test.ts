@@ -260,6 +260,7 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
       ["quota_alerts", true, false],
       ["refresh_tokens", true, false],
       ["secrets", true, false],
+      ["tenant_daily_limits", true, false],
       ["tenant_quotas", true, false],
       ["tenant_workflow_tools", true, false],
       ["tenants", true, false],

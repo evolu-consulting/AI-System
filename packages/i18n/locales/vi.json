@@ -729,6 +729,26 @@
       "change": "Đổi múi giờ",
       "search": "Tìm múi giờ",
       "value": "{tz} ({offset})"
+    },
+    "dailyLimits": {
+      "title": "Hạn mức theo ngày",
+      "hint": "Để trống = dùng mặc định hệ thống. Đếm lại từ 00:00 mỗi ngày (lượt tải/thao tác theo múi giờ công ty, token AI theo UTC).",
+      "kind": {
+        "uploads": "Lượt tải hợp đồng/ngày",
+        "actions": "Lượt thao tác AI/ngày",
+        "ai_tokens": "Token AI/ngày"
+      },
+      "defaultValue": "Mặc định: {value}",
+      "unlimited": "Không giới hạn",
+      "usedToday": "Hôm nay đã dùng {used} / {limit}",
+      "unknown": "—",
+      "reset": "Đặt lại hôm nay",
+      "resetTitle": "Đặt lại bộ đếm hôm nay?",
+      "resetBody": "Bộ đếm \"{kind}\" của công ty về 0 cho ngày {day}. Thao tác được ghi nhật ký.",
+      "resetDone": "Đã đặt lại bộ đếm hôm nay",
+      "saved": "Đã lưu hạn mức theo ngày",
+      "invalid": "Nhập số nguyên lớn hơn 0 hoặc để trống",
+      "unavailable": "Không đọc/đặt lại được bộ đếm (Redis chưa sẵn sàng)"
     }
   },
   "quota": {

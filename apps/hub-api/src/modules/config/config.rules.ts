@@ -11,6 +11,15 @@ export type TenantState = {
   active: boolean;
   maxConcurrentSub: number | null;
   timezone?: string;
+  /** tenant-quotas · hạn mức ngày riêng (`admin.tenant_daily_limits`); vắng/null từng ô ⇒ env. */
+  dailyLimits?: TenantDailyLimits;
+};
+
+export type TenantDailyLimits = {
+  uploads: number | null;
+  actions: number | null;
+  aiTokens: number | null;
+  aiTokensResetAt: Date | null;
 };
 
 export const DEFAULT_TENANT_TZ = "Asia/Ho_Chi_Minh";
