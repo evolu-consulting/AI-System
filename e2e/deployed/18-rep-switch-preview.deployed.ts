@@ -19,5 +19,17 @@ test("[REP-v3] switch-preview trả số đối tác đổi mức (chỉ đọc)
   console.log(
     `SWITCH-PREVIEW demo: changed=${b.changed} partners=${b.partners} moves=${JSON.stringify(b.moves ?? []).slice(0, 600)}`,
   );
+  // Engine hiện hành (sau khi bật cờ trên prod 2026-10-27 phải là v2e; env DEP_REP_ENGINE để đổi kỳ vọng).
+  const cfg = await api.get("/pack/contracts/reputation/config", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(cfg.status()).toBe(200);
+  const engine = ((await cfg.json()) as { engine?: string }).engine;
+  console.log(`REP-ENGINE demo: ${engine}`);
+  expect(engine).toBe(process.env.DEP_REP_ENGINE ?? "v2e");
+  const partners = await api.get("/pack/contracts/reputation/partners", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(partners.status()).toBe(200);
   await api.dispose();
 });

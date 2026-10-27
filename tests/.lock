@@ -414,7 +414,7 @@ f30891fa26eec7d42cb54df91f16da128c92508fee8a2d4b8cda54456480f36b  e2e/contracts-
 2f5c49e16e1ecbbd4dd043aedd4885772217ec51a0dccf6f8bdef211b5e4badb  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 d704ce4d4bd14c2dc3f67bf0d7c83bde3eec51b47c89dfe46fc38b871969b8f5  e2e/deployed/01-login-sso.deployed.ts
-c291e053c718c986c926b8bddf622e65936c66da796d7093916eb272cd89edb8  e2e/deployed/02-contracts-pages.deployed.ts
+93b7409c576ff6c4591e2c575f365660a730a446940d3ec497a8867ce194d029  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 8ca4b839a1ebbf00977c9709befedec11cafe10b5eca026e0eb4bd25ec7d8ad5  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
@@ -430,7 +430,7 @@ a8d34055841f7db2f7c423ddf3c082d2ad61db8b667443352e1fe10fa81db534  e2e/deployed/1
 20b3e44fdc4b75fa93236b2488831bcfd177fe319ebd71943fc161bfcfd598b8  e2e/deployed/15-user-bugs.deployed.ts
 d0099bff71699c0e7c9979a4310b55e9a0b872cfd869115a26487fc6a342175a  e2e/deployed/16-upload-quota-popup.deployed.ts
 0c0a73abae021decea50c050b4b048b83d805a004c069b5dffbfcea465f84def  e2e/deployed/17-delivery-stock-409.deployed.ts
-e71b4d5b1899ce8b2c431019171364ffed508062a563e606768b1909a0378ba1  e2e/deployed/18-rep-switch-preview.deployed.ts
+ab92b78a97dc168b79a7d73a6455ff0b9188e56be880c43a585664d54c5bb9a9  e2e/deployed/18-rep-switch-preview.deployed.ts
 2475e7d568b76dd74a40bea6f31eef0b3f52a3cb9465e8ee9452e526da12e3e6  e2e/deployed/_support.ts
 1c63c4ad1250687114fe46b60911821123b8c5e7c559df3d42561e528f1bcee4  e2e/deployed/deployed.config.ts
 adf59fb675accb7eafd64aa118372adac461e020e2356098e0e2bb228b6ef081  e2e/features.spec.ts

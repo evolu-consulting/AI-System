@@ -42,8 +42,12 @@ test.afterAll(async () => {
 test.describe("02 contracts-web", () => {
   test("Tổng quan: khối Cần xử lý + Hợp đồng + Đối tác cần xem lại có dữ liệu", async () => {
     await go("/overview");
-    for (const h of ["Tổng quan", "Cần xử lý", "Hợp đồng", "Đối tác cần xem lại"])
+    for (const h of ["Tổng quan", "Cần xử lý", "Hợp đồng"])
       await expect(page.getByRole("heading", { name: h }).first()).toBeVisible();
+    // CR-101b: khối đối tác theo engine uy tín — HD8 "Đối tác cần xem lại", V2-E "Cần chú ý" (TQ-04).
+    await expect(
+      page.getByRole("heading", { name: /^(Đối tác cần xem lại|Cần chú ý)$/ }).first(),
+    ).toBeVisible();
     expect(await bodyText(page)).toMatch(/\d+ việc/);
     await expect(page.locator("main a[href^='/contracts/']").first()).toBeVisible();
     expect(errs.list).toEqual([]);
