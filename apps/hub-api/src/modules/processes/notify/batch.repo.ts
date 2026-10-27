@@ -146,6 +146,20 @@ export async function enqueuePackBells(
   await tx.execute(sql`select notify.enqueue_pack_runs(${bells}::jsonb) as n`);
 }
 
+/**
+ * approval-inbox · bước xong/huỷ ⇒ chuông gói của task đánh dấu đã đọc cho mọi người nhận (`notify.resolve_pack_tasks`,
+ * migrations-hub/0061). Người gọi chỉ gọi khi run gắn bản ghi gói.
+ */
+export async function resolvePackBells(tx: Tx, taskIds: readonly string[]): Promise<void> {
+  if (taskIds.length === 0) return;
+  await tx.execute(
+    sql`select notify.resolve_pack_tasks(array[${sql.join(
+      taskIds.map((i) => sql`${i}`),
+      sql`, `,
+    )}]::uuid[]) as n`,
+  );
+}
+
 /** Làm nóng: chạy câu chèn notice với lô rỗng (không ghi hàng nào) trên kết nối của `tx`. */
 export async function warmNotices(tx: Tx): Promise<void> {
   await noticeStatement(tx, "reminder", { json: "[]", bells: "[]" }, new Date(0).toISOString());

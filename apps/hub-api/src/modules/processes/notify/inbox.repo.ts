@@ -144,6 +144,8 @@ export type NoticeTask = {
   userIds: string[];
   /** Thành viên hiện tại của group được giao (plan §11; `admin.group_members` đọc được qua hub_ro). */
   groupMemberIds: string[];
+  /** approval-inbox · thành viên Group `after.also_group_ids` của stage review (nhóm chủ HĐ/Toàn quyền) — không qua head_only. */
+  alsoMemberIds: string[];
   /** contract-flow S1b · run gắn bản ghi gói ⇒ notifier ghi thêm chuông gói. */
   pack: boolean;
 };
@@ -166,6 +168,7 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     stage_name: string | null;
     user_ids: unknown;
     member_ids: unknown;
+    also_member_ids: unknown;
     pack: boolean;
   }>(sql`
     select t.tenant_id, t.process_run_id, t.kind, t.assignee_group_id as group_id, t.decided_by, t.result,
@@ -176,11 +179,17 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
       case when t.kind = 'review' and hg.gate is not null then array[hg.gate]
         else array(select gm.user_id from admin.group_members gm
           where gm.group_id = t.assignee_group_id and gm.tenant_id = t.tenant_id) end as member_ids,
+      array(select gm.user_id from admin.group_members gm
+        where t.kind = 'review' and gm.tenant_id = t.tenant_id
+          and gm.group_id = any(array(select jsonb_array_elements_text(ag.v)::uuid))) as also_member_ids,
       pr.pack_key is not null as pack
     from hub.review_tasks t
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
     cross join lateral (select ${NOTICE_GATE} as gate) hg
+    cross join lateral (select case
+      when jsonb_typeof(pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'also_group_ids') = 'array'
+      then pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'also_group_ids' else '[]'::jsonb end as v) ag
     where t.id = ${taskId}`);
   if (!r) return null;
   return {
@@ -194,6 +203,7 @@ export async function loadNoticeTask(tx: Tx, taskId: string): Promise<NoticeTask
     stageName: r.stage_name,
     userIds: idsOf(r.user_ids),
     groupMemberIds: idsOf(r.member_ids),
+    alsoMemberIds: idsOf(r.also_member_ids),
     pack: r.pack === true,
   };
 }

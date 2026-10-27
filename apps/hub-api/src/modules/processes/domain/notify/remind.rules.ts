@@ -10,10 +10,15 @@ const HOUR_MS = 3_600_000;
  * tác không cần tự báo). Thứ tự giữ ổn định (users trước, rồi member mới).
  */
 export function noticeRecipients(
-  t: { userIds: readonly string[]; groupMemberIds: readonly string[] },
+  t: {
+    userIds: readonly string[];
+    groupMemberIds: readonly string[];
+    /** approval-inbox · thành viên Group `also_group_ids` (nhóm chủ HĐ); vắng ⇒ hành vi cũ. */
+    alsoMemberIds?: readonly string[];
+  },
   exclude?: string,
 ): string[] {
-  const out = new Set<string>([...t.userIds, ...t.groupMemberIds]);
+  const out = new Set<string>([...t.userIds, ...t.groupMemberIds, ...(t.alsoMemberIds ?? [])]);
   if (exclude !== undefined) out.delete(exclude);
   return [...out];
 }
