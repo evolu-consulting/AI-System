@@ -43,7 +43,7 @@ describe("V2-E · bảng điểm v2 1.000 đối tác × 3 vai", () => {
     console.log(
       `V2-E /reputation/partners: ${queries.length} câu SQL · ${(r.text.length / 1024).toFixed(0)} KB`,
     );
-    expect(queries.length).toBe(6);
+    expect(queries.length).toBe(8); // REP-v3 · CR-101b: + 1 tx cờ đỏ U2 song song (set_config + 1)
     // Thời gian từng CÂU (role gói + RLS thật, JIT tắt như `withPackScope`) để tách khỏi TS/JSON/HTTP.
     const agg = queries.find((q) => q.text.includes("ms0 as materialized")) as Cap;
     const facts = queries.find((q) => q.text.includes("cv0 as materialized")) as Cap;
@@ -72,6 +72,10 @@ describe("V2-E · bảng điểm v2 1.000 đối tác × 3 vai", () => {
     };
     await sqlOf(agg, "gom việc");
     await sqlOf(facts, "HĐ + sao + danh bạ");
+    await sqlOf(
+      queries.find((q) => q.text.includes("'no_delivery', 'fraud'")) as Cap,
+      "cờ đỏ (REP-v3)",
+    );
     for (const path of paths) {
       const st = await measure(c, () => getWith(c, token, `${BASE_R}${path}`), { n: 60 });
       console.log(

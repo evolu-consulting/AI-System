@@ -28,6 +28,7 @@ import { checkPackAccess } from "../../kit/domain/pack-access.rules";
 import { DeliveryFail } from "../application/delivery.ports";
 import { LedgerFail } from "../application/ledger.ports";
 import type { LedgerCommands, LedgerReads } from "../application/ledger.usecase";
+import type { RepEngine } from "../domain/rep-current.rules";
 import { deliveryError } from "./delivery.routes";
 
 const KEY = "contracts";
@@ -79,11 +80,11 @@ const body = async <S extends z.ZodType>(c: Context, s: S): Promise<z.output<S>>
 
 export function ledgerRoutes(
   view: PackAccessView,
-  d: { cmd: LedgerCommands; reads: LedgerReads },
+  d: { cmd: LedgerCommands; reads: LedgerReads; engine?: () => RepEngine },
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   readRoutes(r, packGuard(view, KEY, "read"), d.reads);
-  writeRoutes(r, view, d.cmd);
+  writeRoutes(r, view, d.cmd, d.engine ?? (() => "hd8"));
   return r;
 }
 
@@ -117,7 +118,12 @@ async function isAdmin(view: PackAccessView, c: Context<PackGuardVars>): Promise
   return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
 }
 
-function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
+function writeRoutes(
+  r: R,
+  view: PackAccessView,
+  cmd: LedgerCommands,
+  engine: () => RepEngine,
+): void {
   const write = packGuard(view, KEY, "write");
   const d = { cmd };
   r.put("/contracts/:id/schedule", write, async (c) => {
@@ -145,6 +151,9 @@ function writeRoutes(r: R, view: PackAccessView, cmd: LedgerCommands): void {
   });
   r.post("/partner-events", write, async (c) => {
     const b = await body(c, PartnerEventCreateSchema);
+    // REP-v3 · CR-101b: BA v2.0 không có chỉnh tay ±10 ⇒ cờ `v2e` đóng ghi mới (dòng cũ giữ chỉ đọc).
+    if (b.type === "manual_adjust" && engine() === "v2e")
+      throw new AppError("ADJUST_REMOVED", 410, "Không còn chỉnh tay điểm ±10 (BA v2.0, CR-101b)");
     return c.json(await run(d.cmd.record(who(c), b, await isAdmin(view, c))), 201);
   });
 }

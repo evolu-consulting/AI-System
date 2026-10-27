@@ -1226,6 +1226,7 @@ b32a052b31c0e9d898899c294cac505ab9ecbc62a217f8c501fbde2382bc77b9  tests/acceptan
 ec654edea5082c7341e30165872e034bc8bcc4d750ac6ae172732b7367096bc1  tests/acceptance/R1/lexemes-lock.int.test.ts
 0ed0f81fe9549caa9abebeeb4f77cf84443e23ae39cd48c714ef42440a5a0c75  tests/acceptance/R1/pool-role.int.test.ts
 41963c14dab6fff63fc3ce5cca3857c532d1553d0b8b5dfb7b8164c88aad9e64  tests/acceptance/R1/search-definer.int.test.ts
+feefcd07669442083e5c7280f7d1d3cf5b6671be2984a18a0f967d33cdd6faac  tests/acceptance/REP-v3/engine-switch.int.test.ts
 0c8933c85176dfe7addee6352d11cfeaef2d6a1b5b2318bc03270c6633868fbd  tests/acceptance/U2/redflag.int.test.ts
 ef90747f281b41eb7076bbea7ccbfbb97f5c7fb6dcb21e21c441deb954abde41  tests/acceptance/V2-A/_support/v2a.ts
 d22f13b2b59bfde608f33f8d41e084f4c5fa47d3fc908b02107a7c4e71f9f4a7  tests/acceptance/V2-A/access.int.test.ts
@@ -1246,10 +1247,10 @@ e97a190070848850dd1292da2cf786e9e754c5731d262c280abe55dc35bc4299  tests/acceptan
 72460600e15cd906573520833d57f8322a384dc44f03dc066faea9bcfd03bbad  tests/acceptance/V2-D/service.int.test.ts
 5513ad8398bccc4063f0fac3850d3f6b9fc658619df87cfe1e139f6f4dee12f6  tests/acceptance/V2-E/_support/seed.ts
 1b08dedf23b2945cb5066b8c79854a4537b8dc81ef95f3a097d68384a7a0b68c  tests/acceptance/V2-E/_support/v2e.ts
-a03265e5682b95cd64bdbd398f86f31bb28b1f7b49297cc7966c789b28cda07a  tests/acceptance/V2-E/perf/reputation.perf.int.test.ts
+87a09841b32f58fc8795fc51edf48ab4dd02b9b59d8f4ecdd503375403e7ae48  tests/acceptance/V2-E/perf/reputation.perf.int.test.ts
 9895610c93f0042ea9ec3d335a85a6fa15469dce1e32a201cd3a2d32c5af7ce6  tests/acceptance/V2-E/ratings-locks.int.test.ts
 9dbdc83b105dc2b763fc1912b249869d0cae312d46273c513e2abe9ba349706b  tests/acceptance/V2-E/scoring.int.test.ts
-94cac8a1be6b683a9447406f348ba954971d15087284b9597baf7d9344262191  tests/acceptance/V2-E/sqlcount.int.test.ts
+657ac5bc77710b57382c5c7e5ca0f83e19367f82dd0f6738d30325696435d956  tests/acceptance/V2-E/sqlcount.int.test.ts
 e7cad92ff67848f061bdcc9b367104efb7cc8488d0cee25a1087d549d7853f04  tests/acceptance/V2-F/manual-items.int.test.ts
 36a8b5ba7ca3d78fa4479ccfe306e391846b3a84f1037ad7cd23723e75e9d50c  tests/acceptance/V2-G/_support/v2g.ts
 52e458c226f0f06cdbd2f5b85ce3363c5dbdb58da2bcfee1727e40df7516f81c  tests/acceptance/V2-G/ai-read.int.test.ts

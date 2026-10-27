@@ -21,6 +21,13 @@ import {
   type RepRole,
   settingsProblem,
 } from "../domain/rep-config.rules";
+import {
+  ATTENTION_MONTHS,
+  attentionOf,
+  flagsByParty,
+  periodBefore,
+  withFlags,
+} from "../domain/rep-current.rules";
 import { mineFrom, mineSummary } from "../domain/rep-mine.rules";
 import {
   normaliseCell,
@@ -28,7 +35,7 @@ import {
   type Resolved,
   resolveConfig,
 } from "../domain/rep-normalise.rules";
-import { decaySample, roleScore } from "../domain/rep-score.rules";
+import { decaySample, monthsBefore, roleScore } from "../domain/rep-score.rules";
 import type {
   RepCellConfigIn,
   RepJobTypesIn,
@@ -229,6 +236,36 @@ async function mineOf<A, B>(d: RepDeps<A, B>, c: RepCtx, who: PackWho, days: num
   return mineSummary(await d.uow.tenant(who, (r) => r.rep.mineRows(from)), days);
 }
 
+/**
+ * REP-v3 · bảng điểm + cờ đỏ U2 (tách khỏi điểm): câu cờ chạy SONG SONG với hai câu chấm (Luật 4c: độ trễ = câu chậm nhất; +1 câu
+ * cố định). TQ-04 thêm câu điểm chốt kỳ 3 tháng trước, cũng song song.
+ */
+function flaggedReads<A, B>(d: RepDeps<A, B>, c: RepCtx) {
+  const flags = (who: PackWho, day: string) =>
+    d.uow
+      .tenant(who, (r) => r.rep.flagRows(monthsBefore(day, FLAG_MONTHS), day))
+      .then(flagsByParty);
+  const listFlagged = async (who: PackWho, role: RepRole | "all") => {
+    const roles = role === "all" ? REP_ROLES : [role];
+    const day = await c.today(who);
+    const [s, f] = await Promise.all([c.scored(who, roles, null), flags(who, day)]);
+    return withFlags(board(s.rows, s.cfg, roles), f);
+  };
+  const attention = async (who: PackWho) => {
+    const day = await c.today(who);
+    const [s, f, old] = await Promise.all([
+      c.scored(who, REP_ROLES, null),
+      flags(who, day),
+      d.uow.tenant(who, (r) => r.rep.lockScoresAt(periodBefore(day, ATTENTION_MONTHS))),
+    ]);
+    const before = new Map(old.map(([p, role, score]) => [`${p}\u0001${role}`, score]));
+    return attentionOf(withFlags(board(s.rows, s.cfg, REP_ROLES), f), before);
+  };
+  return { listFlagged, attention };
+}
+/** Cờ đỏ: khoảng 12 tháng (≡ `window_months` mặc định HD8 mà U2 dùng). */
+const FLAG_MONTHS = 12;
+
 export function reputationUsecase<A, B>(d: RepDeps<A, B>) {
   const c = repCtx(d);
   const list = async (who: PackWho, role: RepRole | "all") => {
@@ -236,8 +273,15 @@ export function reputationUsecase<A, B>(d: RepDeps<A, B>) {
     const s = await c.scored(who, roles, null);
     return board(s.rows, s.cfg, roles);
   };
+  /** REP-v3 · gợi ý đối tác (V2-C): điểm vai của MỘT đối tác (hai câu chấm lọc đối tác); không có ⇒ null. */
+  const scoreOne = async (who: PackWho, party: string, role: RepRole) => {
+    const s = await c.scored(who, [role], party);
+    return board(s.rows, s.cfg, [role]).find((p) => p.party === party) ?? null;
+  };
   return {
     list,
+    scoreOne,
+    ...flaggedReads(d, c),
     one: (who: PackWho, party: string, role: RepRole) => oneScore(d, c, who, { party, role }),
     history: (who: PackWho, party: string, role: RepRole, months: number) =>
       historyOf(d, c, who, { party, role, months }),

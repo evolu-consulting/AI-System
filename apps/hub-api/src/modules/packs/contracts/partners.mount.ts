@@ -1,6 +1,6 @@
 // HD8-FR-01…09 (lớp 4 của gói): nối đối tác / điểm uy tín / so giá hàng hoá / kiểm link báo giá / danh bạ công ty — `PackUow` role
 // `contracts_rw` (chỉ phạm vi người dùng, D8-04) + repo + use case + route. Múi tenant qua `safeTimeZone` của HD4; tra MST qua cổng
-// `TaxRegistry` của HD2 (null ⇒ "chưa tra được").
+// `TaxRegistry` của HD2 (null ⇒ "chưa tra được"). REP-v3: điểm gợi ý đối tác + NCC lấy engine hiện hành theo cờ (`rep-current.mount.ts`).
 import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
 import type { Redis } from "ioredis";
@@ -19,25 +19,14 @@ import { partnersRoutes } from "./adapters/partners.routes";
 import { partnerDataOf } from "./adapters/partners-data.repo";
 import { companiesUsecase } from "./application/companies.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
-import { partnerRolesUsecase, type ScoreOf } from "./application/partner-roles.usecase";
-import { PartnersFail, partnersUsecase } from "./application/partners.usecase";
+import { partnerRolesUsecase } from "./application/partner-roles.usecase";
+import { partnersUsecase } from "./application/partners.usecase";
 import type { Inspect } from "./domain/link-check.rules";
+import type { RepEngine } from "./domain/rep-current.rules";
 import { safeTimeZone } from "./reminders.mount";
+import { repCurrent } from "./rep-current.mount";
 
 const KEY = "contracts";
-
-/** V2-C gợi ý đối tác: điểm HD8 hiện hành (khách/NCC); vai bên trả hoa hồng tính như Khách hàng (CR-097a Q3); chưa có điểm ⇒ null. */
-const scoreOf =
-  (uc: ReturnType<typeof partnersUsecase>): ScoreOf =>
-  async (who, party, role) => {
-    const p = await uc
-      .one(who, party, role === "commission_payer" ? "customer" : role)
-      .catch((e: unknown) => {
-        if (e instanceof PartnersFail && e.kind === "not_found") return null;
-        throw e;
-      });
-    return p ? { score: p.score, band: p.band } : null;
-  };
 
 export type PartnersModuleDeps = {
   timeZoneOf: (tenantId: string) => Promise<string>;
@@ -50,6 +39,8 @@ export type PartnersModuleDeps = {
   linkChecksPerMinute?: number;
   /** V2-I · Q8: AI client chung cho "Tìm trên internet" (vắng ⇒ 503 AGENT_UNAVAILABLE). */
   ai?: AiClient | null;
+  /** REP-v3 · cờ engine điểm (vắng ⇒ env `REPUTATION_ENGINE`). */
+  engine?: () => RepEngine;
 };
 
 const partnersUow = (db: Db) =>
@@ -61,24 +52,9 @@ const partnersUow = (db: Db) =>
     })),
   );
 
-/** CR-097a (U1) · điểm uy tín vai NCC theo khoá đối tác (engine HD8, tính khi đọc) cho tab "Nhà cung cấp & giá" của SP;
- *  điểm null (chưa đủ sự kiện) ⇒ mức `new`. */
-export function supplierScores(db: Db, d: Pick<PartnersModuleDeps, "timeZoneOf" | "now">) {
-  const uc = partnersUsecase({
-    uow: partnersUow(db),
-    timeZoneOf: safeTimeZone(d.timeZoneOf),
-    now: d.now ?? (() => new Date()),
-    inspect: createInspect(),
-    combine: partnerDataOf,
-  });
-  return async (who: { tenantId: string; userId: string }) =>
-    new Map(
-      (await uc.list(who, "supplier")).map((p) => [
-        p.party,
-        { score: p.score, level: p.band ?? ("new" as const) },
-      ]),
-    );
-}
+/** V2-J2 · điểm uy tín vai NCC cho tab "NCC & giá" — engine hiện hành theo cờ (REP-v3, `rep-current.mount.ts`). */
+export const supplierScores = (db: Db, d: Pick<PartnersModuleDeps, "timeZoneOf" | "now">) =>
+  repCurrent(db, d).supplierScores;
 
 export function partnersModule(
   db: Db,
@@ -98,7 +74,8 @@ export function partnersModule(
     ...(d.redis ? { redis: d.redis } : {}),
     limit: d.linkChecksPerMinute ?? LINK_CHECKS_PER_MINUTE,
   });
-  r.route("/", partnersRoutes(view, uc, limit));
+  const cur = repCurrent(db, d);
+  r.route("/", partnersRoutes(view, uc, limit, cur.engine));
   r.route("/", companiesRoutes(view, companiesUsecase({ uow, tax: d.tax ?? null })));
   const search = d.ai
     ? partnerWebSearch(d.ai, {
@@ -107,7 +84,7 @@ export function partnersModule(
     : null;
   const roles = partnerRolesUsecase({
     uow,
-    scoreOf: scoreOf(uc),
+    scoreOf: cur.scoreOf, // REP-v3: engine hiện hành theo cờ
     timeZoneOf: safeTimeZone(d.timeZoneOf),
     now: d.now ?? (() => new Date()),
     webSearch: search,

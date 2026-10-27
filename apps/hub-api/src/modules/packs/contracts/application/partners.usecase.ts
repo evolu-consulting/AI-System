@@ -135,6 +135,15 @@ function scoreReads<L, F>(d: PartnersDeps<L, F>, c: PartnersCtx) {
     return (role === "all" ? onePerParty(rows) : rows).map(strip);
   };
 
+  /** REP-v3 · xem trước bật V2-E: điểm HD8 của cả hai vai từ MỘT lượt đọc (ba câu song song). */
+  const byRole = async (who: PackWho) => {
+    const l = await c.load(who);
+    return {
+      customer: l.partners("customer").map(strip),
+      supplier: l.partners("supplier").map(strip),
+    };
+  };
+
   const one = async (who: PackWho, party: string, role: Role) => {
     const p = (await c.load(who, undefined, [role])).partners(role).find((x) => x.party === party);
     if (!p) throw new PartnersFail("not_found");
@@ -160,7 +169,7 @@ function scoreReads<L, F>(d: PartnersDeps<L, F>, c: PartnersCtx) {
       return e;
     });
   };
-  return { list, one, ratings, rate };
+  return { list, byRole, one, ratings, rate };
 }
 
 /** `save_config`: chỉ quản lý (route kiểm `admin`); tăng version, lịch sử + ảnh chụp điểm mọi đối tác của vai (cả tenant). */

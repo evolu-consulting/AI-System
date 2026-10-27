@@ -20,6 +20,7 @@ import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
 import { milestoneCommands } from "./application/milestones.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
 import { safeTimeZone } from "./reminders.mount";
+import { envRepEngine } from "./rep-current.mount";
 
 export type { OverdueSweep };
 
@@ -73,7 +74,11 @@ export function ledgerModule(
   }
   const uow = packTenantOnly(createPackUow(db, KEY, ledgerRepos));
   const deps = { uow, timeZoneOf: safeTimeZone(d.timeZoneOf), now: d.now ?? (() => new Date()) };
-  const r = ledgerRoutes(view, { cmd: ledgerCommands(deps), reads: ledgerReads(deps) });
+  const r = ledgerRoutes(view, {
+    cmd: ledgerCommands(deps),
+    reads: ledgerReads(deps),
+    engine: envRepEngine, // REP-v3: cờ `v2e` ⇒ đóng chỉnh tay ±10
+  });
   r.route("/", milestonesRoutes(view, milestoneCommands({ uow }))); // V2-A · thêm/sửa/xoá mốc
   r.route("/", deliveryRoutes(view, deliveryReads({ uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
   return r;

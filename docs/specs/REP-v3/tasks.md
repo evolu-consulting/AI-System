@@ -32,5 +32,19 @@ UI (REP-v3-ui), hộp xác nhận mốc (MS-impact), xoá HD8 hay `score_ratings
 ## Test tối thiểu
 Unit rules (bảng §5.1 đã có V2-E, chỉ chỉnh); một int đường chính (ghi sao → điểm đổi; chốt tháng → lịch sử); một test chéo tenant bảng V2-E (đã có, chạy lại); perf lô theo ngưỡng cũ; preview đếm đúng trên fixture. Không chạy e2e.
 
+## Quyết định trong lúc làm (2026-10-27)
+- **Cờ** `REPUTATION_ENGINE` (env, đọc MỖI yêu cầu — đổi không cần dựng lại module): `v2e` bật; vắng/lạ ⇒ `hd8` (fail-closed). Cờ quyết định TOÀN BỘ: tắt = y hệt U1 (V2-E ghi 410, HD8 lưu được, ±10 còn, vòng chốt không chốt); bật = BA v2.0 (V2-E ghi mở, `PUT /scoring/:role` 410 `SCORING_READ_ONLY`, `POST /partner-events` `manual_adjust` 410 `ADJUST_REMOVED`, vòng chốt chạy). `PUT /partners/ratings` 410 ở cả hai (HD8 không còn chấm tay).
+- Nguồn chung `rep-current.mount.ts` (`supplierScores`, `scoreOf` gợi ý V2-C, `switchPreview`); không import `partners.mount`/`reputation.mount` (tránh vòng). V2-E: bên trả HH là vai riêng (R23); HD8: như Khách (U1 Q3). Mức V2-E `new` ⇒ band null ở gợi ý.
+- **Xem trước** `GET /reputation/switch-preview` (chỉ quản lý `admin`, cả hai trạng thái cờ, KHÔNG ghi): HD8 hai vai từ MỘT lượt đọc (`partners.usecase.byRole`, 3 câu) ∥ V2-E bảng (3 câu) ⇒ `{engine,total,changed,partners,moves,items}`; HD8 chưa đủ việc ⇒ `new`; bên trả HH V2-E so với Khách HD8; chạy dưới RLS người gọi (quản lý thấy cả tenant).
+- **Cờ đỏ U2 giữ** trên bảng V2-E: `GET /reputation/partners` thêm `red_flag` (+ `red_flags` khi có), câu cờ riêng chạy SONG SONG (chỉ mục một phần `partner_events_severe_idx`), khoảng 12 tháng (≡ `window_months` mặc định HD8 U2 dùng), không đổi điểm/mức. Chi tiết `/partner` chưa gắn cờ (UI lấy từ dòng bảng).
+- **TQ-04** `GET /reputation/attention`: CHÚ Ý ∨ cờ đỏ ∨ giảm ≥ 3 điểm so với điểm vai đã chốt kỳ (tháng hiện tại − 3) trong `score_locks`; cờ đỏ lên đầu. `GET /reputation/config` trả thêm `engine`.
+- **Không migration** (bảng V2-E + `score_locks` đủ cho lịch sử) ⇒ không dùng 0059.
+- **Test khoá đổi** (buộc, do +1 tx cờ đỏ): `V2-E/sqlcount.int.test.ts` bảng điểm 6 ⇒ 8 câu; `V2-E/perf/reputation.perf.int.test.ts` 6 ⇒ 8 câu + đo câu cờ. Đã `test:lock:write`. Test U1/HD8/V2-E 410 cũ giữ nguyên (đúng khi cờ tắt).
+- **Perf (đo thật, 1.000 đối tác × 3 vai, cùng máy):** `GET /reputation/partners` p95 trước 106,3 ms → sau 100,7 / 103,5 ms (hai lần); câu cờ đỏ p95 2,4 ms song song; JSON 624 → 674 KB. Ngưỡng 100 ms **chưa đạt cả trước khi sửa** (câu "gom việc" p95 72–74 ms chiếm phần lớn; nợ có sẵn, không do REP-v3).
+- Mục 7 (todo "Đánh giá đối tác") **chưa làm**: DOC-legal chưa merge (tasks yêu cầu thêm SAU DOC-legal).
+
 ## Việc còn lại
-- [ ] 1–7; gửi số xem trước cho điều phối.
+- [x] 1 (theo cờ) · [x] 2 (`supplierScores`, gợi ý, TQ-04 API) · [x] 3 (không migration) · [x] 4 (theo cờ) · [x] 5 (`/reputation/switch-preview`) · [~] 6 (đo xong, ngưỡng 100 ms chưa đạt — có sẵn trước lát)
+- [ ] 7 nguồn Cần xử lý "Đánh giá đối tác" — sau DOC-legal.
+- [ ] Điều phối: gọi `GET /pack/contracts/reputation/switch-preview` (quản lý) trên prod, báo người dùng `changed`/`partners` TRƯỚC khi đặt `REPUTATION_ENGINE=v2e`.
+- [ ] Web (REP-v3-ui) chuyển Tổng quan khối đối tác sang `/reputation/attention` và bảng đối tác sang `/reputation/partners` khi `config.engine = v2e`.

@@ -150,6 +150,30 @@ function lockOps(tx: Tx, t: string) {
             and l.role = ${role}::text and l.period >= ${from}::date`,
       ),
 
+    /** REP-v3 · TQ-04: điểm vai đã chốt của MỘT kỳ (`all`), hàng `[party, role, score]`. MỘT câu qua khoá (tenant, kỳ). */
+    lockScoresAt: (period: string) =>
+      one<[string, RepRole, number][]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_array(l.party_key, l.role, l.score)), '[]'::json) as j
+          from contracts.score_locks l where l.tenant_id = ${t}::uuid and l.period = ${period}::date and l.grp = 'all'
+            and l.score is not null`,
+      ),
+
+    /**
+     * REP-v3 · U2 (R39, giữ khi V2-E bật): cờ đỏ — dòng `no_delivery`/`fraud` chưa huỷ trong (`from`, `today`], gom theo (đối tác,
+     * loại), hàng `[party, type, n]`. MỘT câu qua chỉ mục một phần `partner_events_severe_idx`; RLS M1 của sổ áp nguyên.
+     */
+    flagRows: (from: string, today: string) =>
+      one<[string, string, number][]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_array(x.party_key, x.type, x.n)), '[]'::json) as j from (
+            select e.party_key, e.type, count(*)::int as n from contracts.partner_events e
+            where e.tenant_id = ${t}::uuid and e.type in ('no_delivery', 'fraud') and e.at > ${from}::date
+              and e.at <= ${today}::date
+              and not exists (select 1 from contracts.partner_event_voids v where v.tenant_id = e.tenant_id and v.event_id = e.id)
+            group by 1, 2) x`,
+      ),
+
     /** Kỳ đã chốt (có lượt chạy) từ `from`. */
     lockedPeriods: (from: string) =>
       one<string[]>(

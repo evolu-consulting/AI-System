@@ -1,5 +1,6 @@
-// V2-E · DT-01..04 · CD-02..05 · HD-06 · CR-096 Q1 → CR-097a (U1): route uy tín v2 dưới `/pack/contracts/reputation` CHỈ ĐỌC (đóng băng; điểm hiện hành = engine HD8
-// `/partners`, `/scoring`): ghi (sao, việc, cấu hình) ⇒ 410 sau guard quyền/thân/admin. Guard quyền gói TRƯỚC đọc thân
+// V2-E · DT-01..04 · CD-02..05 · HD-06 · CR-096 Q1 → CR-097a (U1) → CR-101b (REP-v3): route uy tín v2 dưới `/pack/contracts/reputation`.
+// Cờ `REPUTATION_ENGINE` (đọc mỗi yêu cầu): `v2e` ⇒ ghi (sao, việc, cấu hình) mở lại; tắt (`hd8`, mặc định) ⇒ ghi 410 sau guard
+// quyền/thân/admin như U1. Đọc + `/attention` (TQ-04) + `/switch-preview` (quản lý; "N đối tác đổi mức nếu bật") chạy ở cả hai. Guard quyền gói TRƯỚC đọc thân
 // (viewer ghi ⇒ 403, 0 SQL); cấu hình chỉ quản lý (`admin`); ô lạ ⇒ 404; thân/tham số sai ⇒ 400; luật sai ⇒ 422. Không đầu vào nào 500.
 import {
   RepCellConfigSchema,
@@ -28,10 +29,11 @@ import {
 import { checkPackAccess } from "../../kit/domain/pack-access.rules";
 import { RepFail, type ReputationUsecase } from "../application/reputation.usecase";
 import type { ReputationWriteUsecase } from "../application/reputation-write.usecase";
+import type { RepEngine } from "../domain/rep-current.rules";
 
 const KEY = "contracts";
 const P = "/reputation";
-/** CR-097a (U1): uy tín v2 đóng băng — dữ liệu cũ vẫn đọc được, không ghi mới. */
+/** Cờ tắt (CR-097a U1): uy tín v2 đóng băng — dữ liệu cũ vẫn đọc được, không ghi mới. */
 const frozen = () =>
   new AppError(
     "REPUTATION_READ_ONLY",
@@ -60,17 +62,30 @@ const cellOf = (c: Context) => {
   return [g.data, r.data] as const;
 };
 
-export function reputationRoutes(
-  view: PackAccessView,
-  uc: ReputationUsecase,
-  wr: ReputationWriteUsecase,
-): Hono<PackGuardVars> {
+export type RepRouteDeps = {
+  uc: ReputationUsecase;
+  wr: ReputationWriteUsecase;
+  engine: () => RepEngine;
+  switchPreview: (who: { tenantId: string; userId: string }) => Promise<unknown>;
+};
+
+export function reputationRoutes(view: PackAccessView, d: RepRouteDeps): Hono<PackGuardVars> {
+  const { uc, wr } = d;
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
   const write = packGuard(view, KEY, "write");
+  /** Cờ tắt ⇒ 410 (sau guard + kiểm thân). */
+  const open = () => {
+    if (d.engine() !== "v2e") throw frozen();
+  };
   r.get(`${P}/partners`, read, async (c) =>
-    c.json(await run(uc.list(who(c), parseQuery(c, RepPartnersQuerySchema).role))),
+    c.json(await run(uc.listFlagged(who(c), parseQuery(c, RepPartnersQuerySchema).role))),
   );
+  r.get(`${P}/attention`, read, async (c) => c.json(await run(uc.attention(who(c)))));
+  r.get(`${P}/switch-preview`, read, async (c) => {
+    await admin(view, c);
+    return c.json(await d.switchPreview(who(c)));
+  });
   r.get(`${P}/partner`, read, async (c) => {
     const q = parseQuery(c, RepPartnerQuerySchema);
     return c.json(await run(uc.one(who(c), q.party, q.role)));
@@ -87,44 +102,59 @@ export function reputationRoutes(
     return c.json(await run(wr.ratings(who(c), q.party, q.role)));
   });
   r.post(`${P}/ratings`, write, async (c) => {
-    await body(c, RepRatingSchema);
-    throw frozen();
+    const b = await body(c, RepRatingSchema);
+    open();
+    return c.json(await run(wr.rate(who(c), b)), 201);
   });
   r.post(`${P}/jobs`, write, async (c) => {
-    await body(c, RepJobSchema);
-    throw frozen();
+    const b = await body(c, RepJobSchema);
+    open();
+    return c.json(await run(wr.logJob(who(c), b)), 201);
   });
-  configRoutes(r, view, uc);
+  configRoutes(r, view, { uc, open, engine: d.engine });
   return r;
 }
 
+/** Quyền `admin` của gói (quản lý). */
+async function admin(view: PackAccessView, c: Context<PackGuardVars>) {
+  const i = await packAccessInput(view, KEY, c.get("user"));
+  if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) !== "ok")
+    throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
+}
+
 /** Cấu hình điểm: đọc/xem trước theo quyền đọc; lưu cần `admin` (quản lý). */
-function configRoutes(r: Hono<PackGuardVars>, view: PackAccessView, uc: ReputationUsecase): void {
+function configRoutes(
+  r: Hono<PackGuardVars>,
+  view: PackAccessView,
+  d: { uc: ReputationUsecase; open: () => void; engine: () => RepEngine },
+): void {
+  const { uc, open } = d;
   const read = packGuard(view, KEY, "read");
   const write = packGuard(view, KEY, "write");
-  const admin = async (c: Context<PackGuardVars>) => {
-    const i = await packAccessInput(view, KEY, c.get("user"));
-    if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) !== "ok")
-      throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
-  };
-  r.get(`${P}/config`, read, async (c) => c.json(await run(uc.getConfig(who(c)))));
+  // `engine`: UI biết engine nào đang hiện hành (REP-v3).
+  r.get(`${P}/config`, read, async (c) =>
+    c.json({ ...(await run(uc.getConfig(who(c)))), engine: d.engine() }),
+  );
   r.post(`${P}/config/preview`, read, async (c) =>
     c.json(await run(uc.preview(who(c), await body(c, RepPreviewSchema)))),
   );
   r.put(`${P}/config/cells/:group/:role`, write, async (c) => {
-    cellOf(c);
-    await admin(c);
-    await body(c, RepCellConfigSchema);
-    throw frozen();
+    const [g, role] = cellOf(c);
+    await admin(view, c);
+    const b = await body(c, RepCellConfigSchema);
+    open();
+    return c.json(await run(uc.saveCell(who(c), g, role, b)));
   });
   r.put(`${P}/config/settings`, write, async (c) => {
-    await admin(c);
-    await body(c, RepSettingsSchema);
-    throw frozen();
+    await admin(view, c);
+    const b = await body(c, RepSettingsSchema);
+    open();
+    return c.json(await run(uc.saveSettings(who(c), b)));
   });
   r.put(`${P}/config/job-types`, write, async (c) => {
-    await admin(c);
-    await body(c, RepJobTypesSchema);
-    throw frozen();
+    await admin(view, c);
+    const b = await body(c, RepJobTypesSchema);
+    open();
+    return c.json(await run(uc.saveJobTypes(who(c), b)));
   });
 }

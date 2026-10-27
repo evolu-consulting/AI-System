@@ -126,6 +126,32 @@ export type RepPartnerRow = {
   level: RepLevel;
   jobs: number;
   groups: RepGroupOut[];
+  /** REP-v3 · U2 (R39): cờ đỏ cấp đối tác (tách khỏi điểm) — có ở `GET /reputation/partners`. */
+  red_flag?: boolean;
+  red_flags?: { type: "no_delivery" | "fraud"; n: number }[];
+};
+/** REP-v3 · cờ `REPUTATION_ENGINE`: engine điểm hiện hành (`GET /reputation/config` trả `engine`). */
+export type RepEngine = "v2e" | "hd8";
+/** REP-v3 · TQ-04 (R71) `GET /reputation/attention`: CHÚ Ý, cờ đỏ, hoặc giảm ≥ 3 điểm so với kỳ chốt 3 tháng trước. */
+export type RepAttentionRow = RepPartnerRow & {
+  reasons: ("red_flag" | "watch" | "drop")[];
+  before: number | null;
+  drop: number | null;
+};
+/** REP-v3 `GET /reputation/switch-preview` (quản lý): mức HD8 hiện hành vs V2-E — "N đối tác đổi mức nếu bật". */
+export type RepSwitchPreview = {
+  engine: RepEngine;
+  total: number;
+  changed: number;
+  partners: number;
+  moves: { from: RepLevel; to: RepLevel; n: number }[];
+  items: {
+    party: string;
+    name: string;
+    role: RepRole;
+    hd8: { score: number | null; level: RepLevel };
+    v2e: { score: number | null; level: RepLevel };
+  }[];
 };
 export type RepCriterionOut = {
   key: string;

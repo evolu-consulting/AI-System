@@ -35,7 +35,7 @@ async function counts() {
 }
 
 describe("V2-E · số câu SQL cố định (Luật 4c)", () => {
-  it("5 đối tác × 2 mốc ⇒ 200 đối tác × 8 mốc: cùng số câu; bảng điểm = 3 tx × (set_config + 1)", async () => {
+  it("5 đối tác × 2 mốc ⇒ 200 đối tác × 8 mốc: cùng số câu; bảng điểm = 4 tx × (set_config + 1) (REP-v3: + câu cờ đỏ U2 song song)", async () => {
     await arrangeV2e(c);
     await seedBoard(c.sql, T.acme, 5, 2);
     const small = await counts();
@@ -44,7 +44,7 @@ describe("V2-E · số câu SQL cố định (Luật 4c)", () => {
     const big = await counts();
     console.log(`V2-E số câu SQL: nhỏ ${JSON.stringify(small)} · lớn ${JSON.stringify(big)}`);
     expect(big).toEqual(small);
-    expect(big.list).toBe(6);
+    expect(big.list).toBe(8); // REP-v3 · CR-101b: 3 tx chấm/cấu hình + 1 tx cờ đỏ U2 (song song, số câu cố định)
     const rows = await ok(call(c, P.hoa, "GET", `${R}/partners`));
     expect(rows.length).toBe(600);
   }, 120_000);

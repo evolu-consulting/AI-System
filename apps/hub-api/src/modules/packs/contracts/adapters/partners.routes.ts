@@ -23,6 +23,7 @@ import {
 } from "../../kit/adapters/pack-guard.middleware";
 import { checkPackAccess } from "../../kit/domain/pack-access.rules";
 import { PartnersFail, type PartnersUsecase } from "../application/partners.usecase";
+import type { RepEngine } from "../domain/rep-current.rules";
 import type { LinkCheckLimit } from "./link-check-limit.redis";
 
 const KEY = "contracts";
@@ -32,6 +33,14 @@ const readOnly = () =>
     "SCORING_READ_ONLY",
     410,
     "Không chấm tay theo tiêu chí (BA R41) — điểm tính từ sự kiện; chỉnh tay ±10 ghi ở sổ đối tác",
+  );
+
+/** REP-v3 · CR-101b: V2-E là engine hiện hành ⇒ cách tính HD8 chỉ đọc (cấu hình mới ở `/reputation/config/**`). */
+const hd8ReadOnly = () =>
+  new AppError(
+    "SCORING_READ_ONLY",
+    410,
+    "Cách tính điểm cũ chỉ đọc (CR-101b) — cấu hình uy tín ở /reputation/config",
   );
 
 function fail(e: unknown): never {
@@ -58,11 +67,13 @@ export function partnersRoutes(
   view: PackAccessView,
   uc: PartnersUsecase,
   limit: LinkCheckLimit,
+  engine: () => RepEngine = () => "hd8",
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const g: Routes = {
     r,
     uc,
+    engine,
     read: packGuard(view, KEY, "read"),
     write: packGuard(view, KEY, "write"),
     isAdmin: async (c) => {
@@ -80,6 +91,7 @@ type Guard = ReturnType<typeof packGuard>;
 type Routes = {
   r: Hono<PackGuardVars>;
   uc: PartnersUsecase;
+  engine: () => RepEngine;
   read: Guard;
   write: Guard;
   isAdmin: (c: Context<PackGuardVars>) => Promise<boolean>;
@@ -104,7 +116,7 @@ function partnerRoutes({ r, uc, read, write }: Routes): void {
   });
 }
 
-function scoringRoutes({ r, uc, read, write, isAdmin }: Routes): void {
+function scoringRoutes({ r, uc, engine, read, write, isAdmin }: Routes): void {
   r.get("/scoring/:role", read, async (c) =>
     c.json(await run(uc.getConfig(who(c), roleOf(c.req.param("role"))))),
   );
@@ -119,8 +131,10 @@ function scoringRoutes({ r, uc, read, write, isAdmin }: Routes): void {
     const role = roleOf(c.req.param("role"));
     if (!(await isAdmin(c)))
       throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được chỉnh cách tính điểm");
-    // CR-097a (R45): engine HD8 là cấu hình hiện hành — lưu tăng version + lịch sử + ảnh chụp điểm.
-    return c.json(await run(uc.save(who(c), role, await body(c, ScoringDraftSchema))));
+    const b = await body(c, ScoringDraftSchema);
+    // REP-v3: cờ `v2e` ⇒ HD8 chỉ đọc (410). Cờ tắt (CR-097a R45): HD8 hiện hành — lưu tăng version + lịch sử + ảnh chụp điểm.
+    if (engine() === "v2e") throw hd8ReadOnly();
+    return c.json(await run(uc.save(who(c), role, b)));
   });
 }
 

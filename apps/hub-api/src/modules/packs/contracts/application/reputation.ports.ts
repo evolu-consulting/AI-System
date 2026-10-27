@@ -74,6 +74,10 @@ export type RepRepo<A = unknown, B = unknown> = {
   ratings(party: string, role: RepRole): Promise<Record<string, unknown>[]>;
   lockHistory(party: string, role: RepRole, from: string): Promise<LockPoint[]>;
   lockedPeriods(from: string): Promise<string[]>;
+  /** REP-v3: điểm vai đã chốt của một kỳ `[party, role, score]`. */
+  lockScoresAt(period: string): Promise<[string, RepRole, number][]>;
+  /** REP-v3 · U2: cờ đỏ chưa huỷ trong (from, today] `[party, type, n]`. */
+  flagRows(from: string, today: string): Promise<[string, string, number][]>;
   insertLocks(period: string, rows: LockRow[]): Promise<number>;
   insertJob(w: RepJobWrite): Promise<Record<string, unknown> | null>;
   insertRating(w: RepRatingWrite): Promise<Record<string, unknown> | null>;
