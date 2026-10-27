@@ -50,7 +50,6 @@ import {
   startApproval,
 } from "./application/approval.usecase";
 import type { ApprovalEngineBridge } from "./application/approval-engine.ports";
-import { engineCard } from "./application/approval-engine-card.usecase";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
 import type {
   ApprovalFlowTxRepos,
@@ -294,7 +293,7 @@ export function contractsAiModule(
           engine: eng.start,
           onSettingsSaved: eng.settingsSync,
           reopen: eng.reopen,
-          card: engineCard({ port: () => flow.engine?.port, uow, jobs, redo }),
+          card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),
         }
       : {}),
   };

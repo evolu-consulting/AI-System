@@ -2,6 +2,7 @@
 // ngược `ESIGN_PROVIDER=x`), mỗi nhà cung cấp khả dụng khi đủ cấu hình — seam test `provider`/`providers` ưu tiên; repo trong `PackUow`
 // (tenant + system), FileBox theo org tenant, tên/email user hiện tại (`admin.users` qua hub scope), map webhook envelope ⇒ tenant (role
 // `contracts_job`). Webhook gắn TRƯỚC JWT (`app.ts`). Thêm nhà cung cấp (MISA…) = adapter + một nhánh `adapterOf` + mục `PROVIDER_META`.
+import { ESignSignerSchema } from "@ai/contracts";
 import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
@@ -9,6 +10,7 @@ import { selfContactOf } from "../kit/adapters/member-names";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import { createPdfConverter } from "../kit/adapters/pdf";
+import type { PackWho } from "../kit/application/ports";
 import type { PdfConverter } from "../kit/domain/pdf.rules";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { docusignProvider } from "./adapters/docusign.provider";
@@ -17,7 +19,7 @@ import { ESIGN_WEBHOOK_PATH, esignRoutes, esignWebhookRoutes } from "./adapters/
 import { selfsignProvider } from "./adapters/esign.selfsign";
 import { esignAnchorRepo } from "./adapters/esign-anchor.repo";
 import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
-import { deptHeadOf, esignFlowRepo } from "./adapters/esign-flow.repo";
+import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
@@ -71,7 +73,12 @@ const registryOf = (s: ESignSeam | undefined): ESignRegistry => {
 };
 
 /** esign-flow · use case ký số + bước Ký số của luồng duyệt (gắn hai chiều: gửi ký ⇄ hook trạng thái phong bì). */
-export type ESignModule = ESignUsecase & { flow: EsignFlow };
+export type ESignModule = ESignUsecase & {
+  flow: EsignFlow;
+  /** esign-flow-fix · gắn kiểm quyền ghi gói của người ký công ty (cần cổng quyền của `packs.mount`). */
+  bindWriters(w: Writers): void;
+  bindView(view: PackAccessView): void;
+};
 
 export function esignModule(
   db: Db,
@@ -97,15 +104,32 @@ export function esignModule(
       previewPdf: lazyPdf(1),
     }),
     onStatus: async (tid, id, st) => flow?.onStatus(tid, id, st),
+    warn: (m, meta) => logger.warn(m, meta),
   });
+  // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
+  let writers: Writers | null = null;
+  const active = activeUserOf(db);
   flow = esignFlow({
     uow,
     send: u.sendSystem,
     deptHead: deptHeadOf(db),
+    signerOk: async (t, uid) =>
+      (await active(t, uid)) &&
+      (writers ? (await writers({ tenantId: t, userId: uid }, [uid])).has(uid) : true),
+    parsePartner: (name, email) => {
+      const p = ESignSignerSchema.safeParse({ role: "partner", name, email });
+      return p.success && p.data.role === "partner"
+        ? { name: p.data.name, email: p.data.email }
+        : null;
+    },
     warn: (m, meta) => logger.warn(m, meta),
   });
-  return { ...u, flow };
+  const bindWriters = (w: Writers) => {
+    writers = w;
+  };
+  return { ...u, flow, bindWriters, bindView: (v) => bindWriters(packWriters(db, v, "contracts")) };
 }
+type Writers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
 
 const lazyPdf = (maxPending: number): Pick<PdfConverter, "toText"> => {
   let c: PdfConverter | null = null;
@@ -119,6 +143,7 @@ const lazyPdf = (maxPending: number): Pick<PdfConverter, "toText"> => {
 
 /** Route ký số + esign-anchor (cụm/ô ký) + esign-flow "Gửi lại" bước Ký số. */
 export const esignUserRoutes = (view: PackAccessView, u: ESignModule): Hono<PackGuardVars> => {
+  u.bindView(view); // esign-flow-fix · người ký công ty còn quyền ghi gói (cổng quyền theo cache cấu hình)
   const r = esignRoutes(view, u);
   if (u.anchors) r.route("/", esignAnchorRoutes(view, u.anchors));
   return r.route("/", esignFlowRoutes(view, u.flow));

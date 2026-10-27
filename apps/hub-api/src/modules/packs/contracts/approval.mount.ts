@@ -1,7 +1,12 @@
 // contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
-import { type PackAccessView, tenantFeatureOn } from "../kit/adapters/pack-guard.middleware";
-import type { PackUow } from "../kit/application/ports";
+import {
+  type PackAccessView,
+  packAccessInput,
+  tenantFeatureOn,
+} from "../kit/adapters/pack-guard.middleware";
+import type { PackUow, PackWho } from "../kit/application/ports";
+import { checkPackAccess } from "../kit/domain/pack-access.rules";
 import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
@@ -11,6 +16,7 @@ import {
   reopenEngineApproval,
   startEngineApproval,
 } from "./application/approval-engine.usecase";
+import { type EngineCardDeps, engineCard } from "./application/approval-engine-card.usecase";
 import {
   type ApprovalFlowTxRepos,
   type FlowDefSync,
@@ -65,6 +71,10 @@ export function approvalEngine(
     warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
     afterApproved: flow.afterApproved,
   };
+  const isAdmin = async (who: PackWho) => {
+    const i = await packAccessInput(view, "contracts", who);
+    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+  };
   const startRaw = startEngineApproval(ed);
   // Mở lượt MỚI chỉ cho công ty có entitlement; không có ⇒ "machine" (máy 2 bước cũ). Lượt đã engine vẫn chạy nốt (tool/reopen không cổng).
   const start: typeof startRaw = gate
@@ -77,6 +87,8 @@ export function approvalEngine(
     reopen: reopenEngineApproval(ed),
     tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
+    // esign-flow-fix · thẻ duyệt engine; owner gói (quyền `admin`) cũng Gửi lại bước Ký số.
+    card: (c: Omit<EngineCardDeps, "isAdmin">) => engineCard({ ...c, isAdmin }),
   };
 }
 

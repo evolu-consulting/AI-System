@@ -9,6 +9,7 @@ import type {
   ContractRunRef,
   OpenOutcome,
 } from "../application/approval.ports";
+import { ESIGN_SENDING_STALE_MIN } from "../application/esign-flow.usecase";
 import { APPROVAL_DEFAULTS, type ApprovalSettings } from "../domain/approval-def.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import { settingsRepo } from "./approval-settings.repo";
@@ -52,6 +53,7 @@ type StateRow = {
   a_steps: unknown;
   a_es?: string | null;
   a_er?: string | null;
+  a_est?: boolean | null;
   owner?: string | null;
   deal: string | null;
   v: unknown;
@@ -74,6 +76,7 @@ const toState = (r: StateRow): ApprovalState => ({
           flowSteps: (json(r.a_steps) ?? null) as FlowStep[] | null,
           esignStatus: r.a_es ?? null,
           esignReason: r.a_er ?? null,
+          esignStale: r.a_est === true,
         }
       : null,
   owner: r.owner ?? null,
@@ -89,6 +92,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
         a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
+        (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
         c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c

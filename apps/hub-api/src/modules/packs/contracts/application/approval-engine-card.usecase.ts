@@ -31,6 +31,8 @@ type Repos = {
 };
 export type EngineCardDeps = {
   port: () => ApprovalEnginePort | undefined;
+  /** esign-flow-fix · người xem là owner gói (quyền `admin`, cache — 0 SQL). */
+  isAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
   uow: { tenant<T>(who: PackWho, fn: (r: Repos) => Promise<T>): Promise<T> };
   jobs: {
     enqueue(j: {
@@ -68,7 +70,15 @@ async function input(d: EngineCardDeps, who: PackWho, st: ApprovalState) {
 export function engineView(d: EngineCardDeps) {
   return async (who: PackWho, st: ApprovalState) => {
     const a = st.approval;
-    const esign = esignCard(a?.flowSteps, a?.esignStatus, a?.esignReason, st.owner === who.userId);
+    // esign-flow-fix · Gửi lại: người phụ trách HOẶC owner gói (như route); kẹt `sending` quá hạn cũng Gửi lại được.
+    const may = st.owner === who.userId || ((await d.isAdmin?.(who)) ?? false);
+    const esign = esignCard(
+      a?.flowSteps,
+      a?.esignStatus,
+      a?.esignReason,
+      may,
+      a?.esignStale === true,
+    );
     return { ...engineCardView(await input(d, who, st)), esign };
   };
 }

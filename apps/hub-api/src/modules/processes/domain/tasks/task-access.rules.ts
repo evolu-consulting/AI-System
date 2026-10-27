@@ -43,8 +43,10 @@ export function headGate(
     | null,
   headUserId: string | null,
 ): string | null {
-  // esign-flow · người duyệt cụ thể của stage thay cả Group duyệt (thắng head_only).
-  if (after?.kind === "review" && after.approver_user_id) return after.approver_user_id;
+  // esign-flow · người duyệt cụ thể thay cả Group duyệt (thắng head_only) — CHỈ khi SQL đã xác nhận hợp lệ (`headUserId` = người đó:
+  // cùng tenant, active, không khoá); không hợp lệ ⇒ rơi về cửa trưởng phòng / cả Group như stage thường.
+  if (after?.kind === "review" && after.approver_user_id && headUserId === after.approver_user_id)
+    return headUserId;
   if (after?.kind !== "review" || after.head_only !== true || !after.group_id) return null;
   return headUserId ?? null;
 }

@@ -29,12 +29,15 @@ const viewer = (userId: string, groups: string[], tenantId = T) => ({
 });
 
 describe("esign-flow · approver_user_id", () => {
-  test("headGate: người cụ thể thắng trưởng phòng", () => {
-    expect(headGate(after, "head-id")).toBe(U);
+  test("headGate: người cụ thể (SQL xác nhận hợp lệ) thắng trưởng phòng; không hợp lệ ⇒ rơi về cửa trưởng phòng / cả Group", () => {
+    expect(headGate(after, U)).toBe(U);
+    // esign-flow-fix · SQL không xác nhận (khoá/khác tenant) ⇒ `headUserId` = trưởng phòng ⇒ luật head_only như thường.
+    expect(headGate(after, "head-id")).toBe("head-id");
+    expect(headGate({ ...after, head_only: false }, null)).toBeNull();
     expect(headGate({ ...after, approver_user_id: undefined }, "head-id")).toBe("head-id");
   });
   test("canAct: người cụ thể quyết (kể cả ngoài Group); thành viên Group khác không; Group cũng quyết vẫn được", () => {
-    const g = headGate(after, null);
+    const g = headGate(after, U);
     expect(canAct(viewer(U, []), task(g), run as never)).toBe(true);
     expect(canAct(viewer(M, [G]), task(g), run as never)).toBe(false);
     expect(canAct(viewer(M, [OWN]), task(g), run as never)).toBe(true);

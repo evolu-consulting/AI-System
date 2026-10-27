@@ -1,7 +1,7 @@
 // contract-flow S1b · cửa trưởng phòng (`after.head_only`) ở cổng quyết của engine (`GateService`). Chạy TRONG tx quyết định,
 // sau khi khoá run (snapshot đã khoá ⇒ không đổi giữa chừng). Luật thuần: `headGate`/`inReviewGroup` (domain/tasks/task-access).
 import type { Tx } from "@ai/db";
-import { headOf } from "../core/head-gate.sql";
+import { approverOf, headOf } from "../core/head-gate.sql";
 import { alsoGroupsOf, headGate, inReviewGroup } from "../domain/tasks/task-access.rules";
 import { type Locked, notFound, snapOf } from "./gates.effects";
 import type { GateTask } from "./gates.repo";
@@ -41,7 +41,9 @@ export async function reviewGroupMember(
 ): Promise<boolean> {
   const group = after?.kind === "review" ? after.group_id : null;
   if (group === null) return false;
-  const approver = after?.kind === "review" ? (after.approver_user_id ?? null) : null;
+  // esign-flow-fix · người duyệt cụ thể chỉ là cửa khi còn hợp lệ ở tenant (active, không khoá).
+  const raw = after?.kind === "review" ? after.approver_user_id : null;
+  const approver = await approverOf(tx, run.tenantId, raw);
   const gated = after?.kind === "review" && after.head_only === true;
   const head = approver ?? (gated ? await headOf(tx, run.tenantId, group) : null);
   return inReviewGroup(v.userId, groupIds, group, head);

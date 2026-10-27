@@ -25,6 +25,7 @@ import type {
   ESignRepo,
 } from "./esign.ports";
 import type { ESignAnchors } from "./esign-anchor.usecase";
+import { errName, VOID_PENDING, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
 
@@ -42,6 +43,8 @@ export type ESignDeps = {
   anchors?: ESignAnchors;
   /** esign-flow · phong bì sang trạng thái cuối (webhook/làm mới/ký thử) ⇒ cập nhật bước Ký số của luồng duyệt. */
   onStatus?: (tenantId: string, contractId: string, status: ESignStatus) => Promise<void>;
+  /** esign-flow-fix · log cảnh báo (không thân/khoá). */
+  warn?: (msg: string, meta: Record<string, unknown>) => void;
 };
 type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
@@ -51,6 +54,7 @@ const RETURN_PATH = (id: string) => new RegExp(`/contracts/${id}/?$`);
 
 export function esignUsecase(d: ESignDeps) {
   /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */
+  const voidAt = voidForReopen(d.warn);
   const avail = (key: string | null | undefined): ESignProvider | null =>
     key && d.files ? d.providers.get(key) : null;
   const tenantRun =
@@ -110,6 +114,8 @@ export function esignUsecase(d: ESignDeps) {
   ): Promise<void> => {
     const p = avail(row.provider);
     if (!p || !d.files) return;
+    // esign-flow-fix · huỷ lần trước (mở lại HĐ) hụt ở nhà cung cấp ⇒ thử huỷ lại trước; vẫn hụt ⇒ đồng bộ như thường.
+    if (isOpen(row.status) && row.reason === VOID_PENDING && (await voidAt(p, row, run))) return;
     if (!isOpen(row.status) && !(row.status === "completed" && row.signedFileId === null)) return;
     const info = given ?? (await p.getEnvelope(row.envelopeId));
     const st = mapEnvelopeStatus(info.status) ?? row.status;
@@ -130,7 +136,11 @@ export function esignUsecase(d: ESignDeps) {
   /** esign-flow · trạng thái cuối MỚI ⇒ bước Ký số của luồng duyệt (xong / cần quyết). Lỗi hook không làm hỏng đồng bộ phong bì. */
   const finalHook = async (tid: string, row: EnvelopeRow, st: ESignStatus) => {
     if (st === row.status || !FINAL.has(st)) return;
-    await d.onStatus?.(tid, row.contractId, st).catch(() => null);
+    await d
+      .onStatus?.(tid, row.contractId, st)
+      .catch((e: unknown) =>
+        d.warn?.("esign-flow-hook-failed", { contract_id: row.contractId, error: errName(e) }),
+      );
   };
 
   /** Gửi ký trong `run` (tenant của người bấm, hoặc hệ thống cho bước Ký số tự động); người ký công ty = `who.userId`. */
@@ -281,11 +291,7 @@ export function esignUsecase(d: ESignDeps) {
     async voidOpen(who: PackWho, id: string): Promise<boolean> {
       const e = await d.uow.tenant(who, (r) => r.esign.latest(id)).catch(() => null);
       if (!e || !isOpen(e.status)) return false;
-      const p = avail(e.provider);
-      if (p) await p.voidEnvelope(e.envelopeId, "contract-reopened").catch(() => null);
-      const p2 = { status: "voided" as const, reason: "contract-reopened", completedAt: null };
-      await d.uow.tenant(who, (r) => r.esign.update(e.envelopeId, { ...p2, signers: e.signers }));
-      return true;
+      return voidAt(avail(e.provider), e, tenantRun(who));
     },
 
     async refresh(who: PackWho, id: string): Promise<ESignStateOut> {

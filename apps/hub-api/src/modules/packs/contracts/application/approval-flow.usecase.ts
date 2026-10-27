@@ -2,7 +2,7 @@
 // (`is_default`, version 1). Lưu: luật chéo bước → nhóm (duyệt + chuyển cấp) phải có ở tenant → ghi có khoá lạc quan (version +1)
 // → đồng bộ def engine qua cổng `FlowDefSync` (S3a; vắng ⇒ bỏ qua). Lớp 2: chỉ cổng.
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { ApprovalSettings } from "../domain/approval-def.rules";
+import { type ApprovalSettings, PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import {
   type ApprovalFlowIssue,
   type ApprovalFlowResponse,
@@ -72,6 +72,23 @@ async function userIssues(
   return refs.filter((r) => !ok.has(r.id)).map((r) => ({ path: r.path, rule: "USER_NOT_MEMBER" }));
 }
 
+/** esign-flow-fix · bước người duyệt cụ thể KHÔNG phòng gắn task vào Group Toàn quyền (cấp 2 cài đặt / `contracts-owner`); tenant không
+ *  còn Group nào ⇒ def không biên dịch được ⇒ báo lúc lưu (`GROUP_REQUIRED` ở phòng của bước). */
+async function ownerGroupIssues(
+  d: ApprovalFlowDeps,
+  who: PackWho,
+  steps: readonly FlowStep[],
+): Promise<ApprovalFlowIssue[]> {
+  const idx = steps.flatMap((s, i) =>
+    s.kind === "review" && s.approver_user_id && !s.department_group_id ? [i] : [],
+  );
+  if (idx.length === 0) return [];
+  const s = await d.uow.tenant(who, (r) => r.approvalFlow.settings());
+  const ids = await d.groups.idsOf(who.tenantId, [s.level2GroupKey, PACK_OWNER_GROUP_KEY]);
+  if (ids.size > 0) return [];
+  return idx.map((i) => ({ path: `steps.${i}.department_group_id`, rule: "GROUP_REQUIRED" }));
+}
+
 export type SaveFlowOutcome =
   | { kind: "ok"; flow: ApprovalFlowResponse }
   | { kind: "invalid"; issues: ApprovalFlowIssue[] }
@@ -108,6 +125,7 @@ export function saveApprovalFlow(d: ApprovalFlowDeps) {
     if (d.workflows && hasDifyStep(body.steps))
       issues.push(...validateDifyCatalog(body.steps, await d.workflows(who.tenantId)));
     issues.push(...(await userIssues(d, who, body.steps)));
+    if (issues.length === 0) issues.push(...(await ownerGroupIssues(d, who, body.steps)));
     if (issues.length > 0) return { kind: "invalid", issues };
     const want = flowGroupIds(body.steps);
     const have = await d.groups.existingIds(who.tenantId, want);

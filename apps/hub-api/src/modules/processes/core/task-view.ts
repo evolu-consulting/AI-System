@@ -17,6 +17,7 @@ import { sql } from "drizzle-orm";
 import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
 import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
+import { approverSql } from "./head-gate.sql";
 
 export type TaskRow = {
   id: string;
@@ -173,9 +174,9 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
       pr.pack_key is not null as pack_bound,
       t.remind_count::int as remind_count,
-      (select d.head_user_id from admin.departments d where d.tenant_id = t.tenant_id
+      coalesce(${approverSql("pr.snapshot->'stages'->(s.stage_idx::int)", "t.tenant_id")}, (select d.head_user_id from admin.departments d where d.tenant_id = t.tenant_id
         and d.group_id = coalesce(t.assignee_group_id,
-          nullif(pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id', '')::uuid)) as group_head,
+          nullif(pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id', '')::uuid))) as group_head,
       case when pr.origin_kind <> 'room' then 'none'
         when rm.id is null or rm.deleted_at is not null then 'deleted'
         when exists (select 1 from hub.room_members m where m.room_id = rm.id and m.user_id = ${v.userId}

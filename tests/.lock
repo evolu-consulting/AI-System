@@ -1371,7 +1371,9 @@ d8c064b7d2884140d3ceaf3c9102727d50ddb9bf16382d2f6e88fac1b00e0b53  tests/acceptan
 9a5709f44007377c721ccca74f0576e4f08c8539972f7845f3033230af15fd1c  tests/acceptance/delivery-opts/delivery-opts.int.test.ts
 00a0572c72b3fe4834a19c1230290ab289a611261de216bcb53064675c8059a5  tests/acceptance/esign-anchor/esign-anchor-fix.int.test.ts
 a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptance/esign-anchor/esign-anchor.int.test.ts
+8e877ab60b14fff18ac51b41b03c29cccdd7b848c8a225ac00147848fe7f0296  tests/acceptance/esign-flow/approver-guard.int.test.ts
 7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
+966fbca12160ce21685c2d91d29a20c3da4ede72561a1f37a08ad2632c42b1c5  tests/acceptance/esign-flow/esign-flow-fix.int.test.ts
 15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 b115745687d389ceff77b54aa7c52db3b53961dccd6a6e37ca71dcbd019a689d  tests/acceptance/gap-c/notify-prefs.int.test.ts

@@ -27,6 +27,8 @@ export type ApprovalState = ContractRunRef & {
     /** esign-flow · trạng thái + lý do bước Ký số của lượt (null = chưa tới / không có). */
     esignStatus?: string | null;
     esignReason?: string | null;
+    /** esign-flow-fix · `sending` kẹt quá hạn (Gửi lại được). */
+    esignStale?: boolean;
   } | null;
   /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
   owner?: string | null;

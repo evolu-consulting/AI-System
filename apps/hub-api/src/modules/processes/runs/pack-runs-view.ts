@@ -10,7 +10,7 @@ import type {
   PackStepsView,
   PackStepView,
 } from "../../packs/kit/application/pack-runs.ports";
-import { headGateSql } from "../core/head-gate.sql";
+import { approverSql, headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
 import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
@@ -65,8 +65,8 @@ const rowsSql = (runId: string, tenantId: string) => sql`
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
     t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id,
-    (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
-      and d.tenant_id = r.tenant_id) as group_head
+    coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
+      and d.tenant_id = r.tenant_id)) as group_head
   from hub.process_runs r
   join hub.stage_runs s on s.process_run_id = r.id and s.tenant_id = r.tenant_id
   left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id

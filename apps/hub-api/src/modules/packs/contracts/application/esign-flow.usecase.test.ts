@@ -28,7 +28,15 @@ const step = (o: Partial<FlowEsignStep> = {}): FlowEsignStep => ({
 });
 
 function harness(
-  o: { step?: FlowEsignStep; partnerEmail?: string | null; sendFails?: boolean } = {},
+  o: {
+    step?: FlowEsignStep;
+    partnerEmail?: string | null;
+    sendFails?: boolean;
+    /** esign-flow-fix · người ký không còn hợp lệ / không thấy HĐ. */
+    signerBad?: string;
+    hidden?: string;
+    stale?: boolean;
+  } = {},
 ) {
   const st = {
     status: null as string | null,
@@ -40,8 +48,10 @@ function harness(
   const s = o.step ?? step();
   const repo: EsignFlowRepo = {
     claim: async (_id, resend) => {
-      const from = resend ? "needs_decision" : null;
-      if (st.status !== from) return null;
+      const ok = resend
+        ? st.status === "needs_decision" || (st.status === "sending" && o.stale === true)
+        : st.status === null;
+      if (!ok) return null;
       st.status = "sending";
       return { approvalId: "ap-1", step: s, owner: OWNER };
     },
@@ -55,7 +65,14 @@ function harness(
       status: st.status,
       owner: OWNER,
       signer: st.signer,
+      stale: st.status === "sending" && o.stale === true,
     }),
+    finish: async (_id, to) => {
+      if (st.status !== "sent") return null;
+      st.status = to.status;
+      st.reason = to.reason;
+      return { approvalId: "ap-1", owner: OWNER, label: "HD-1" };
+    },
   };
   const contract: ContractForSign = {
     id: C,
@@ -75,7 +92,8 @@ function harness(
     },
   };
   const uow = {
-    tenant: async <X>(_w: unknown, fn: (x: typeof r) => Promise<X>) => fn(r),
+    tenant: async <X>(w: { userId: string }, fn: (x: typeof r) => Promise<X>) =>
+      fn(w.userId === o.hidden ? { ...r, esign: { contract: async () => null } as never } : r),
     system: async <X>(_t: string, fn: (x: typeof r) => Promise<X>) => fn(r),
   };
   const f = esignFlow({
@@ -85,6 +103,9 @@ function harness(
       sends.push({ signer, signers, provider });
     },
     deptHead: async (_t, g) => (g === G ? HEAD : null),
+    signerOk: async (_t, u) => u !== o.signerBad,
+    parsePartner: (name, email) =>
+      /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? { name, email } : null,
     warn: () => undefined,
   });
   return { f, st, bells, sends };
@@ -166,5 +187,39 @@ describe("esign-flow · trạng thái phong bì + Gửi lại", () => {
     const done = harness();
     await done.f.afterApproved(T, C);
     expect(await done.f.resend({ tenantId: T, userId: OWNER }, C, false)).toBe("not_needed");
+  });
+});
+
+describe("esign-flow-fix · kẹt sending, người ký hợp lệ, đối tác sai, trạng thái cuối", () => {
+  it("người ký mất quyền / bị khoá ⇒ NO_SIGNER; người ký không thấy HĐ ⇒ NO_SIGNER; không gửi", async () => {
+    const a = harness({ signerBad: OWNER });
+    expect(await a.f.afterApproved(T, C)).toBe("needs_decision");
+    expect(a.st.reason).toBe("NO_SIGNER");
+    const b = harness({ hidden: OWNER });
+    expect(await b.f.afterApproved(T, C)).toBe("needs_decision");
+    expect(b.st.reason).toBe("NO_SIGNER");
+    expect([...a.sends, ...b.sends]).toEqual([]);
+  });
+  it("email đối tác sai định dạng ⇒ NO_PARTNER_EMAIL", async () => {
+    const h = harness({ partnerEmail: "khong-phai-email" });
+    expect(await h.f.afterApproved(T, C)).toBe("needs_decision");
+    expect(h.st.reason).toBe("NO_PARTNER_EMAIL");
+  });
+  it("kẹt sending quá hạn ⇒ Gửi lại nhận; chưa quá hạn ⇒ not_needed", async () => {
+    const fresh = harness();
+    fresh.st.status = "sending";
+    expect(await fresh.f.resend({ tenantId: T, userId: OWNER }, C, false)).toBe("not_needed");
+    const stuck = harness({ stale: true });
+    stuck.st.status = "sending";
+    expect(await stuck.f.resend({ tenantId: T, userId: OWNER }, C, false)).toBe("sent");
+  });
+  it("trạng thái cuối chỉ đổi khi đang sent; chuông cần quyết có nhãn HĐ", async () => {
+    const h = harness();
+    await h.f.onStatus(T, C, "declined");
+    expect(h.st.status).toBeNull();
+    await h.f.afterApproved(T, C);
+    await h.f.onStatus(T, C, "voided");
+    expect(h.st).toMatchObject({ status: "needs_decision", reason: "VOIDED" });
+    expect(h.bells.at(-1)?.title).toContain("HD-1");
   });
 });

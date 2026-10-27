@@ -7,15 +7,23 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { type PackAccessView, packAccessInput } from "../../kit/adapters/pack-guard.middleware";
 import type { PackWho } from "../../kit/application/ports";
-import type { EsignFlowCurrent, EsignFlowRepo } from "../application/esign-flow.usecase";
+import {
+  ESIGN_SENDING_STALE_MIN,
+  type EsignFlowCurrent,
+  type EsignFlowRepo,
+} from "../application/esign-flow.usecase";
 import type { FlowEsignStep } from "../domain/approval-flow.types";
 
+const STALE = sql.raw(`a.esign_at < now() - interval '${ESIGN_SENDING_STALE_MIN} minutes'`);
 const json = <T>(v: unknown): T => (typeof v === "string" ? JSON.parse(v) : v) as T;
 
 export function esignFlowRepo(tx: Tx, t: string): EsignFlowRepo {
   return {
     claim: async (contractId, resend) => {
-      const from = resend ? sql`a.esign_status = 'needs_decision'` : sql`a.esign_status is null`;
+      // esign-flow-fix · Gửi lại nhận cả `sending` kẹt quá hạn (tiến trình chết giữa claim và ghi kết quả).
+      const from = resend
+        ? sql`(a.esign_status = 'needs_decision' or (a.esign_status = 'sending' and ${STALE}))`
+        : sql`a.esign_status is null`;
       const [r] = await tx.execute<{ id: string; step: unknown; owner: string | null }>(sql`
         update contracts.approvals a set esign_status = 'sending', esign_reason = null, esign_at = now(), updated_at = now()
         from contracts.contracts c
@@ -36,7 +44,9 @@ export function esignFlowRepo(tx: Tx, t: string): EsignFlowRepo {
         st: string | null;
         owner: string | null;
         signer: string | null;
-      }>(sql`select a.id, a.esign_status as st, c.owner_user_id as owner, a.esign_signer as signer
+        stale: boolean;
+      }>(sql`select a.id, a.esign_status as st, c.owner_user_id as owner, a.esign_signer as signer,
+          (a.esign_status = 'sending' and ${STALE}) as stale
         from contracts.contracts c join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
         where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid`);
       return r
@@ -45,8 +55,19 @@ export function esignFlowRepo(tx: Tx, t: string): EsignFlowRepo {
             status: r.st,
             owner: r.owner,
             signer: r.signer,
+            stale: r.stale === true,
           } satisfies EsignFlowCurrent)
         : null;
+    },
+    finish: async (contractId, to) => {
+      const [r] = await tx.execute<{ id: string; owner: string | null; label: string | null }>(sql`
+        update contracts.approvals a set esign_status = ${to.status}, esign_reason = ${to.reason}, esign_at = now(),
+          updated_at = now()
+        from contracts.contracts c
+        where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid and a.id = c.run_id and a.tenant_id = c.tenant_id
+          and a.esign_status = 'sent'
+        returning a.id, c.owner_user_id as owner, coalesce(c.number, c.title) as label`);
+      return r ? { approvalId: r.id, owner: r.owner, label: (r.label ?? "").slice(0, 120) } : null;
     },
   };
 }
@@ -82,3 +103,14 @@ export function packWriters(db: Db, view: PackAccessView, packKey: string) {
     return new Set(rows.map((r) => r.id));
   };
 }
+
+/** esign-flow-fix · user còn dùng được của tenant (active, không bị khoá) — người ký công ty kiểm lại ngay trước khi gửi. */
+export const activeUserOf =
+  (db: Db) =>
+  async (tenantId: string, userId: string): Promise<boolean> => {
+    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute<{ id: string }>(sql`select id from admin.users
+        where tenant_id = ${tenantId}::uuid and id = ${userId}::uuid and active and not locked_by_tenant`),
+    );
+    return rows.length === 1;
+  };

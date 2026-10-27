@@ -71,6 +71,10 @@ function escalateRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
   const also = s.after.kind === "review" ? (s.after.also_group_ids ?? []) : [];
   const j = also.findIndex((g) => !refs.groupIds.has(g));
   if (j >= 0) return { path: `stages.${i}.after.also_group_ids.${j}`, ref: "group" };
+  // esign-flow-fix · người duyệt cụ thể phải là user còn dùng được của tenant def (không lộ tồn tại).
+  const ap = s.after.kind === "review" ? (s.after.approver_user_id ?? null) : null;
+  if (ap !== null && !refs.userIds.has(ap))
+    return { path: `stages.${i}.after.approver_user_id`, ref: "user" };
   const esc = s.after.kind === "review" ? (s.after.escalate ?? null) : null;
   const shape = { escalate: esc ? { afterH: esc.after_h, groupId: esc.group_id } : null };
   const miss = escalateGroupRefs([shape]).find((r) => !refs.groupIds.has(r.groupId));

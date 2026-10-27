@@ -14,7 +14,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approvals_esign_ck') THEN
     ALTER TABLE contracts.approvals ADD CONSTRAINT approvals_esign_ck CHECK (
       (esign_status IS NULL OR esign_status IN ('sending', 'sent', 'completed', 'needs_decision'))
-      AND (esign_reason IS NULL OR esign_reason IN ('NO_PARTNER_EMAIL', 'NO_SIGNER', 'SEND_FAILED', 'DECLINED', 'VOIDED')));
+      AND (esign_reason IS NULL OR esign_reason IN ('NO_PARTNER_EMAIL', 'NO_SIGNER', 'SEND_FAILED', 'DECLINED', 'VOIDED')))
+      NOT VALID;
   END IF;
 END
 $$;
+--> statement-breakpoint
+-- esign-flow-fix · NOT VALID + VALIDATE: thêm CHECK không khoá ghi bảng lâu (VALIDATE chỉ SHARE UPDATE EXCLUSIVE).
+ALTER TABLE contracts.approvals VALIDATE CONSTRAINT approvals_esign_ck;

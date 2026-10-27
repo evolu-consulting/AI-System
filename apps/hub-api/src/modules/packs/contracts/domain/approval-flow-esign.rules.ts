@@ -63,6 +63,7 @@ export function esignCard(
   status: string | null | undefined,
   reason: string | null | undefined,
   mayResend: boolean,
+  stale = false,
 ) {
   const s = esignStepOf(steps);
   if (!s) return null;
@@ -72,7 +73,7 @@ export function esignCard(
     name: s.name,
     status: st,
     reason: (reason && REASONS.has(reason) ? reason : null) as EsignReason | null,
-    can_resend: st === "needs_decision" && mayResend,
+    can_resend: (st === "needs_decision" || (st === "sending" && stale)) && mayResend,
   };
 }
 

@@ -9,16 +9,32 @@ export function headGateSql(stage: string, tenant: string): SQL {
   const st = sql.raw(stage);
   const tid = sql.raw(tenant);
   // esign-flow · `after.approver_user_id` (người duyệt cụ thể) thắng cửa trưởng phòng.
-  return sql`coalesce(${approverSql(stage)}, (select d.head_user_id from admin.departments d
+  return sql`coalesce(${approverSql(stage, tenant)}, (select d.head_user_id from admin.departments d
     where (${st}->'after'->>'kind') = 'review' and (${st}->'after'->>'head_only') = 'true'
       and d.group_id = nullif(${st}->'after'->>'group_id', '')::uuid and d.tenant_id = ${tid}))`;
 }
 
-/** esign-flow · người duyệt cụ thể của stage review (`after.approver_user_id`); vắng ⇒ NULL. */
-export function approverSql(stage: string): SQL {
+/** esign-flow · người duyệt cụ thể của stage review (`after.approver_user_id`) CHỈ khi là user cùng tenant, còn dùng được (active,
+ *  không bị khoá); vắng / không thấy ⇒ NULL (rơi về cửa trưởng phòng / cả Group). Một subquery theo PK `admin.users`. */
+export function approverSql(stage: string, tenant: string): SQL {
   const st = sql.raw(stage);
-  return sql`(case when (${st}->'after'->>'kind') = 'review'
-    then nullif(${st}->'after'->>'approver_user_id', '')::uuid end)`;
+  const tid = sql.raw(tenant);
+  return sql`(select u.id from admin.users u
+    where (${st}->'after'->>'kind') = 'review'
+      and u.id = nullif(${st}->'after'->>'approver_user_id', '')::uuid
+      and u.tenant_id = ${tid} and u.active and not u.locked_by_tenant)`;
+}
+
+/** esign-flow · như `approverSql` cho cổng quyết (TS): người duyệt cụ thể còn hợp lệ ở tenant hoặc null. */
+export async function approverOf(
+  tx: Tx,
+  tenantId: string,
+  id: string | null | undefined,
+): Promise<string | null> {
+  if (!id) return null;
+  const [r] = await tx.execute<{ id: string }>(sql`select id from admin.users
+    where id = ${id} and tenant_id = ${tenantId} and active and not locked_by_tenant`);
+  return r?.id ?? null;
 }
 
 /** Trưởng phòng của Group assignee của task (alias `t` của `hub.review_tasks`), cùng tenant; null = không có. */
