@@ -5,6 +5,9 @@ import type {
   FeedbackListResponse,
   FeedbackStatus,
   FeedbackUpdateRequest,
+  TrelloCheckResponse,
+  TrelloConfigSaveRequest,
+  TrelloConfigView,
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiResponse } from "@/lib/http";
@@ -41,6 +44,40 @@ export function useUpdateFeedback() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
+
+// trello-config-ui · `/admin/integrations/trello*` (platform_admin). Key/token chỉ có ở body request; mutation `gcTime: 0`.
+const TRELLO = "/admin/integrations/trello";
+const TRELLO_KEY = ["integrations", "trello"] as const;
+
+export const useTrelloConfig = (enabled: boolean) =>
+  useQuery({
+    queryKey: TRELLO_KEY,
+    enabled,
+    queryFn: () => api<TrelloConfigView>(TRELLO),
+  });
+
+export function useSaveTrello() {
+  const qc = useQueryClient();
+  return useMutation({
+    gcTime: 0,
+    mutationFn: (body: TrelloConfigSaveRequest) =>
+      api<TrelloConfigView>(TRELLO, { method: "PUT", body }),
+    onSuccess: (v) => qc.setQueryData(TRELLO_KEY, v),
+  });
+}
+
+export function useClearTrello() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<undefined>(TRELLO, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TRELLO_KEY }),
+  });
+}
+
+export const useCheckTrello = () =>
+  useMutation({
+    mutationFn: () => api<TrelloCheckResponse>(`${TRELLO}/check`, { method: "POST" }),
+  });
 
 /** Tải tệp đính kèm (Bearer) về máy. */
 export async function downloadAttachment(feedbackId: string, fileId: string, name: string) {

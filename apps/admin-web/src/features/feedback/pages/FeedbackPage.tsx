@@ -20,6 +20,7 @@ import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { type FeedbackFilters, PAGE_SIZE, useFeedbackList } from "../api";
 import { FeedbackDetail } from "../components/FeedbackDetail";
+import { TrelloConfigCard } from "../components/TrelloConfigCard";
 
 const APPS = ["chat", "contracts", "studio", "admin"] as const;
 const SELECT = "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground";
@@ -40,6 +41,7 @@ export function FeedbackPage() {
   return (
     <>
       <PageHeader title={t("feedbackAdmin.title")} description={t("feedbackAdmin.subtitle")} />
+      <TrelloConfigCard enabled={platform} />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {platform ? (
           <select

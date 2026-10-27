@@ -12,17 +12,29 @@ import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
+import type { SecretKey } from "../../lib/secret-crypto";
 import * as repo from "./feedback.repo";
+import type { DecodedFile } from "./feedback.rules";
 import { decodeFiles, seesAll } from "./feedback.rules";
 import { type FetchFn, pushFeedbackToTrello, type TrelloConfig } from "./feedback.trello";
+import { effectiveTrello } from "./trello-config.service";
 
 export type FeedbackCtx = {
   db: Db;
-  /** `TRELLO_*` đủ ba biến ⇒ đẩy thẻ Trello sau khi lưu; vắng ⇒ chỉ lưu. */
+  /** Khoá giải mã cấu hình Trello lưu trong DB (trello-config-ui); vắng ⇒ chỉ dùng env. */
+  secretKey?: SecretKey;
+  /** `TRELLO_*` đủ ba biến ⇒ dự phòng khi DB không có cấu hình; cả hai vắng ⇒ chỉ lưu. */
   trello?: TrelloConfig;
   /** Chỉ để test. */
   trelloFetch?: FetchFn;
 };
+
+/** Sau COMMIT, không chờ: cấu hình DB ⇒ env; lỗi không ảnh hưởng góp ý (không ném). */
+async function pushAfterCommit(ctx: FeedbackCtx, row: FeedbackItem, files: DecodedFile[]) {
+  if (!ctx.secretKey && !ctx.trello) return;
+  const { cfg } = await effectiveTrello(ctx);
+  if (cfg) await pushFeedbackToTrello(cfg, row, files, ctx.trelloFetch);
+}
 
 const MINE_LIMIT = 50;
 
@@ -65,8 +77,8 @@ export async function createFeedback(
     if (!created) throw appError("NOT_FOUND");
     return created;
   });
-  // Sau COMMIT, không chờ: lỗi Trello không ảnh hưởng góp ý (pushFeedbackToTrello không ném).
-  if (ctx.trello) void pushFeedbackToTrello(ctx.trello, row, dec.files, ctx.trelloFetch);
+  // Sau COMMIT, không chờ: lỗi Trello không ảnh hưởng góp ý (effectiveTrello/pushFeedbackToTrello không ném).
+  void pushAfterCommit(ctx, row, dec.files).catch(() => {});
   return row;
 }
 

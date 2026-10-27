@@ -130,6 +130,53 @@ export async function pushFeedbackToTrello(
   return card.shortUrl ?? card.url ?? null;
 }
 
+export type TrelloCheck = {
+  ok: boolean;
+  list_name: string | null;
+  error: "unauthorized" | "not_found" | "http" | "network" | null;
+};
+
+/**
+ * trello-config-ui · "Kiểm tra kết nối": chỉ GET `/lists/:id` (không tạo thẻ). Key/token ở header `Authorization: OAuth …`,
+ * không ở URL. Không bao giờ ném; không log.
+ */
+export async function checkTrelloList(
+  cfg: TrelloConfig,
+  fetchFn: FetchFn = fetch,
+): Promise<TrelloCheck> {
+  const fail = (error: NonNullable<TrelloCheck["error"]>): TrelloCheck => ({
+    ok: false,
+    list_name: null,
+    error,
+  });
+  let res: Response;
+  try {
+    await acquire();
+    try {
+      res = await fetchFn(`${API}/lists/${encodeURIComponent(cfg.listId)}?fields=name`, {
+        method: "GET",
+        headers: {
+          Authorization: `OAuth oauth_consumer_key="${cfg.apiKey}", oauth_token="${cfg.token}"`,
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } finally {
+      release();
+    }
+  } catch {
+    return fail("network");
+  }
+  if (res.status === 401 || res.status === 403) return fail("unauthorized");
+  if (res.status === 404 || res.status === 400) return fail("not_found");
+  if (!res.ok) return fail("http");
+  try {
+    const j = (await res.json()) as { name?: unknown };
+    return { ok: true, list_name: typeof j.name === "string" ? j.name : null, error: null };
+  } catch {
+    return fail("http");
+  }
+}
+
 /** Chỉ tên lỗi/HTTP status — không đưa message gốc (có thể chứa URL/giá trị lạ) vào log. */
 function errName(err: unknown): string {
   if (err instanceof Error) return err.message.startsWith("Trello ") ? err.message : err.name;

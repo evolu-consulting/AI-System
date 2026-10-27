@@ -915,7 +915,39 @@
     "saved": "Feedback saved",
     "empty": "No feedback yet.",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "trello": {
+      "title": "Integrations › Trello",
+      "hint": "Each new feedback becomes a card in a Trello list. Settings saved here take precedence over the TRELLO_* environment variables.",
+      "source": {
+        "db": "Using saved settings",
+        "env": "Using environment variables",
+        "none": "Not configured"
+      },
+      "apiKey": "API key",
+      "token": "Token",
+      "listId": "List ID",
+      "keep": "Leave blank to keep",
+      "savedEnding": "Saved, ends with …{{last4}}",
+      "notSet": "Not saved",
+      "save": "Save settings",
+      "saved": "Trello settings saved",
+      "saveFailed": "Could not save Trello settings",
+      "check": "Test connection",
+      "checkOk": "Connected to list \"{{name}}\"",
+      "checkErr": {
+        "not_configured": "Trello is not configured",
+        "unauthorized": "Trello rejected the API key/token",
+        "not_found": "List not found",
+        "http": "Trello returned an error",
+        "network": "Could not reach Trello"
+      },
+      "clear": "Remove settings",
+      "clearTitle": "Remove Trello settings?",
+      "clearToEnv": "Feedback will use the TRELLO_* environment variables again.",
+      "clearToNone": "Feedback will only be stored in the app (not sent to Trello).",
+      "cleared": "Trello settings removed"
+    }
   },
   "apps": {
     "title": "Apps",

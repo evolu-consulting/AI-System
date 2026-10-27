@@ -915,7 +915,39 @@
     "saved": "Đã lưu góp ý",
     "empty": "Chưa có góp ý nào.",
     "prev": "Trước",
-    "next": "Sau"
+    "next": "Sau",
+    "trello": {
+      "title": "Tích hợp › Trello",
+      "hint": "Mỗi góp ý mới được tạo thành một thẻ trong list Trello. Cấu hình ở đây được ưu tiên hơn biến môi trường TRELLO_*.",
+      "source": {
+        "db": "Đang dùng cấu hình đã lưu",
+        "env": "Đang dùng biến môi trường",
+        "none": "Chưa cấu hình"
+      },
+      "apiKey": "API key",
+      "token": "Token",
+      "listId": "List ID",
+      "keep": "Để trống = giữ nguyên",
+      "savedEnding": "Đã lưu, kết thúc bằng …{{last4}}",
+      "notSet": "Chưa lưu",
+      "save": "Lưu cấu hình",
+      "saved": "Đã lưu cấu hình Trello",
+      "saveFailed": "Không lưu được cấu hình Trello",
+      "check": "Kiểm tra kết nối",
+      "checkOk": "Kết nối được list \"{{name}}\"",
+      "checkErr": {
+        "not_configured": "Chưa có cấu hình Trello",
+        "unauthorized": "Trello từ chối API key/token",
+        "not_found": "Không tìm thấy list",
+        "http": "Trello trả lỗi",
+        "network": "Không kết nối được Trello"
+      },
+      "clear": "Xoá cấu hình",
+      "clearTitle": "Xoá cấu hình Trello?",
+      "clearToEnv": "Góp ý sẽ dùng lại biến môi trường TRELLO_*.",
+      "clearToNone": "Góp ý sẽ chỉ được lưu trong app (không đẩy sang Trello).",
+      "cleared": "Đã xoá cấu hình Trello"
+    }
   },
   "apps": {
     "title": "Ứng dụng",

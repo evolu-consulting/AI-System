@@ -30,6 +30,7 @@ export * from "./secrets";
 export * from "./tenants";
 export * from "./totp";
 export * from "./transfer";
+export * from "./trello-config";
 export * from "./usage";
 export * from "./usage-analytics";
 export * from "./users";
