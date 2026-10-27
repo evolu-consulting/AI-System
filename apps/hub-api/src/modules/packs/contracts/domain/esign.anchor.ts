@@ -23,7 +23,8 @@ export const SIDE_ANCHORS = {
 } as const;
 
 /** Độ lệch (pixel) của ô ký/ngày so với góc trên-trái của cụm trong văn bản: ô nằm DƯỚI cụm (chừa dòng "(Ký, ghi rõ họ tên)").
- *  Chưa đo trên DocuSign thật — đo bằng `deploy/prod-sohoptac2/esign-layout` chế độ `text`. */
+ *  Đã đo trên DocuSign thật 2026-10-27 (`deploy/prod-sohoptac2/esign-layout` chế độ `text`, xem README): sign y=50 ⇒ ô ký ngay dưới
+ *  dòng "(Ký, ghi rõ…)", ô ngày ngay trên tên người ký, đúng cột Bên A / Bên B. Đổi giá trị ⇒ đo lại. */
 export const TEXT_TAB_OFFSET = {
   sign: { x: "0", y: "50" },
   date: { x: "0", y: "84" },

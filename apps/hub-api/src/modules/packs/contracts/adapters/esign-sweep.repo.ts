@@ -1,7 +1,8 @@
 // esign-sweep · MỘT câu CTE của vòng nền bước Ký số (tx `PackSystemUow`, role gói + RLS tenant, lọc `tenant_id` tường minh): chọn bước
 // mở của LƯỢT hiện tại (`contracts.run_id`) theo index một phần `approvals_esign_open_idx`, khoá `FOR UPDATE SKIP LOCKED` ≤ `limit`;
 // `sending` quá hạn ⇒ `needs_decision` SEND_FAILED; `sent` ⇒ đặt mốc nhắc / chuyển cấp — vị từ ≡ `domain/esign-sweep.rules.ts`
-// (`esignDueOf`). Một hàng chỉ bị MỘT nhánh UPDATE chạm (trạng thái loại trừ nhau). Văn bản cố định; mốc giờ là tham số `now`.
+// (`esignDueOf`). esign-remind-fix · nhánh nhắc join phong bì mở của HĐ (index một phần `esign_envelopes_open_uq`) ⇒ `wait` ≡
+// `remindTargetOf` = "owner" (không tới lượt người ký công ty); không có phong bì mở ⇒ nhắc người ký như cũ. Một hàng chỉ bị MỘT nhánh UPDATE chạm (trạng thái loại trừ nhau). Văn bản cố định; mốc giờ là tham số `now`.
 // Danh bạ chuyển cấp đọc `admin.*` qua hub scope (như `deptHeadOf`).
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -18,8 +19,14 @@ type Row = {
   stale: boolean;
   remind: boolean;
   overdue: boolean;
+  wait: boolean;
 };
 const MEMBERS_MAX = 50;
+/** Người ký `x` (phần tử `signers` jsonb) đã ký ≡ `signerDone` trong `domain/esign-sweep.rules.ts`. */
+const done = (x: "m" | "p") =>
+  sql.raw(
+    `((${x}->>'signed_at') is not null or lower(coalesce(${x}->>'status', '')) in ('completed', 'signed'))`,
+  );
 
 export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
   return {
@@ -27,7 +34,7 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
       const at = now.toISOString();
       const rows = await tx.execute<Row>(sql`with
         o as (select a.id, a.esign_at, a.esign_signer, c.id as cid, c.owner_user_id as owner,
-            coalesce(c.number, c.title) as label, f.grp, z.stale, z.remind, z.overdue
+            coalesce(c.number, c.title) as label, f.grp, z.stale, z.remind, z.overdue, w.wait
           from contracts.approvals a
           join contracts.contracts c on c.id = a.contract_id and c.tenant_id = a.tenant_id and c.run_id = a.id
           cross join lateral (select (a.flow_steps->-1->>'due_h')::int as due_h,
@@ -40,6 +47,13 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
                   <= ${at}::timestamptz) as remind,
               (a.esign_status = 'sent' and (a.esign_escalated_at is null or a.esign_escalated_at < a.esign_at)
                 and a.esign_at + make_interval(hours => coalesce(f.due_h, 0)) <= ${at}::timestamptz) as overdue) z
+          cross join lateral (select coalesce((select not exists (select 1 from jsonb_array_elements(e.signers) m
+                where m->>'role' = 'company' and not ${done("m")}
+                  and not exists (select 1 from jsonb_array_elements(e.signers) p
+                    where (p->>'order')::int < (m->>'order')::int and not ${done("p")}))
+              from contracts.esign_envelopes e
+              where z.remind and e.tenant_id = ${t}::uuid and e.contract_id = c.id
+                and e.status in ('sent', 'delivered')), false) as wait) w
           where a.tenant_id = ${t}::uuid and a.esign_status in ('sending', 'sent') and a.esign_at is not null
             and a.flow_steps->-1->>'kind' = 'esign' and (z.stale or z.remind or z.overdue)
           order by a.esign_at, a.id limit ${limit}::int
@@ -53,7 +67,7 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
             esign_escalated_at = case when o.overdue then ${at}::timestamptz else x.esign_escalated_at end
           from o where (o.remind or o.overdue) and x.id = o.id and x.tenant_id = ${t}::uuid and x.esign_status = 'sent'
           returning x.id)
-        select o.id, o.cid, o.owner, o.esign_signer as signer, o.label, o.grp, o.stale, o.remind, o.overdue
+        select o.id, o.cid, o.owner, o.esign_signer as signer, o.label, o.grp, o.stale, o.remind, o.overdue, o.wait
         from o where o.id in (select id from s union all select id from u)
         order by o.esign_at, o.id`);
       return rows.map(
@@ -67,6 +81,7 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
           stale: r.stale === true,
           remind: r.remind === true,
           overdue: r.overdue === true,
+          waitPartner: r.wait === true,
         }),
       );
     },

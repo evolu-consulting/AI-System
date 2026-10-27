@@ -21,6 +21,9 @@ export type EsignSweptRow = {
   stale: boolean;
   remind: boolean;
   overdue: boolean;
+  /** esign-remind-fix · phong bì mở mà không tới lượt người ký công ty (đã ký / đối tác ký trước) ⇒ nhắc người phụ trách
+   *  "đang chờ đối tác ký" thay vì người ký (`remindTargetOf` = "owner"). */
+  waitPartner: boolean;
 };
 export type EsignSweepRepo = {
   /** MỘT câu: đánh dấu các hàng đến hạn lúc `now` (lô ≤ `limit`), trả hàng đã đổi. */
@@ -61,7 +64,27 @@ const bell = (user: string, id: string, title: string, body: string): NotifyInpu
   link: `/contracts/${id}`,
 });
 
-/** Chuông của lô (thuần): kẹt ⇒ người phụ trách; nhắc ⇒ người ký công ty; quá hạn ⇒ người phụ trách + người nhận chuyển cấp. */
+/** Chuông nhắc (khi `remind`): tới lượt công ty ⇒ người ký; chờ đối tác ⇒ người phụ trách; thiếu người nhận ⇒ không chuông. */
+function remindBell(r: EsignSweptRow): NotifyInput[] {
+  if (!r.remind) return [];
+  if (!r.waitPartner)
+    return r.signer
+      ? [bell(r.signer, r.contractId, `Nhắc ký số HĐ ${r.label}`, "Hợp đồng đang chờ bạn ký số.")]
+      : [];
+  return r.owner
+    ? [
+        bell(
+          r.owner,
+          r.contractId,
+          `Ký số HĐ ${r.label} đang chờ đối tác ký`,
+          "Phía công ty đã ký hoặc chưa tới lượt; phong bì đang chờ đối tác ký.",
+        ),
+      ]
+    : [];
+}
+
+/** Chuông của lô (thuần): kẹt ⇒ người phụ trách; nhắc ⇒ người ký công ty khi tới lượt, không thì người phụ trách
+ *  ("đang chờ đối tác ký"); quá hạn ⇒ người phụ trách + người nhận chuyển cấp. */
 export function esignSweepBells(
   rows: readonly EsignSweptRow[],
   to: Map<string, string[]>,
@@ -78,8 +101,7 @@ export function esignSweepBells(
           "Lý do: gửi ký không thành công. Gửi lại hoặc mở lại HĐ.",
         ),
       );
-    if (r.remind && r.signer)
-      out.push(bell(r.signer, k, `Nhắc ký số HĐ ${r.label}`, "Hợp đồng đang chờ bạn ký số."));
+    out.push(...remindBell(r));
     if (!r.overdue) continue;
     const users = new Set([
       ...(r.owner ? [r.owner] : []),

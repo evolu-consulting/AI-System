@@ -1,6 +1,11 @@
 // esign-sweep · luật thuần chọn hàng đến hạn (đồng hồ giả, không sleep) + chuông của lô.
 import { describe, expect, it } from "bun:test";
-import { type EsignOpenRow, esignDueOf } from "../domain/esign-sweep.rules";
+import {
+  type EsignOpenRow,
+  type EsignTurnSigner,
+  esignDueOf,
+  remindTargetOf,
+} from "../domain/esign-sweep.rules";
 import { type EsignSweptRow, esignSweepBells } from "./esign-sweep";
 
 const T0 = new Date("2026-10-01T00:00:00Z");
@@ -53,7 +58,32 @@ const row = (o: Partial<EsignSweptRow>): EsignSweptRow => ({
   stale: false,
   remind: false,
   overdue: false,
+  waitPartner: false,
   ...o,
+});
+
+describe("esign-remind-fix · remindTargetOf (ai nhận nhắc theo lượt ký)", () => {
+  const s = (role: "company" | "partner", order: number, signed = false): EsignTurnSigner => ({
+    role,
+    order,
+    status: signed ? "completed" : "sent",
+    signed_at: null,
+  });
+  it("công ty chưa ký và mọi người order nhỏ hơn đã ký ⇒ người ký", () => {
+    expect(remindTargetOf([s("company", 1), s("partner", 2)])).toBe("signer");
+    expect(remindTargetOf([s("partner", 1, true), s("company", 2)])).toBe("signer");
+    expect(remindTargetOf(null)).toBe("signer"); // không có phong bì mở ⇒ như cũ
+  });
+  it("công ty đã ký / chưa tới lượt ⇒ người phụ trách", () => {
+    expect(remindTargetOf([s("company", 1, true), s("partner", 2)])).toBe("owner");
+    expect(remindTargetOf([s("partner", 1), s("company", 2)])).toBe("owner");
+    expect(
+      remindTargetOf([
+        { role: "company", order: 1, status: "sent", signed_at: "2026-10-01T00:00:00Z" },
+        s("partner", 2),
+      ]),
+    ).toBe("owner");
+  });
 });
 
 describe("esign-sweep · esignSweepBells", () => {
@@ -71,6 +101,12 @@ describe("esign-sweep · esignSweepBells", () => {
       ["sig", "/contracts/k2", "Nhắc ký số HĐ HĐ-1"],
       ["own", "/contracts/k3", "Ký số HĐ HĐ-1 quá hạn"],
       ["boss", "/contracts/k3", "Ký số HĐ HĐ-1 quá hạn"],
+    ]);
+  });
+  it("nhắc khi chờ đối tác ⇒ người phụ trách, không chuông người ký", () => {
+    const b = esignSweepBells([row({ remind: true, waitPartner: true })], new Map());
+    expect(b.map((x) => [x.user_id, x.title])).toEqual([
+      ["own", "Ký số HĐ HĐ-1 đang chờ đối tác ký"],
     ]);
   });
   it("thiếu người nhận ⇒ bỏ qua", () => {
