@@ -237,7 +237,7 @@ describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 3 câ
       [],
     ]);
   });
-  it("HD-NFR-03 · 429 vượt hạn mức: 0 SQL, 0 FileBox; 2 pipeline Redis (INCR… rồi DECR hoàn)", async () => {
+  it("HD-NFR-03 · 429 vượt hạn mức: 0 SQL, 0 FileBox; 1 pipeline Redis (INCR… rồi 1 EVAL hoàn kẹp ≥ 0 — tenant-quotas-fix)", async () => {
     await arrange(c);
     for (let i = 0; i < 30; i++) await upload(c, P.hoa, { bytes: pdf(), name: `f${i}.pdf` });
     c.fb.reset();
@@ -249,8 +249,8 @@ describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 3 câ
     expect([h.r.r.status, h.sql, h.r.pipelines.length, h.r.single, h.httpExt]).toEqual([
       429,
       0,
-      2,
-      [],
+      1,
+      ["eval"],
       [],
     ]);
   });
