@@ -2,7 +2,7 @@
 // ngược `ESIGN_PROVIDER=x`), mỗi nhà cung cấp khả dụng khi đủ cấu hình — seam test `provider`/`providers` ưu tiên; repo trong `PackUow`
 // (tenant + system), FileBox theo org tenant, tên/email user hiện tại (`admin.users` qua hub scope), map webhook envelope ⇒ tenant (role
 // `contracts_job`). Webhook gắn TRƯỚC JWT (`app.ts`). Thêm nhà cung cấp (MISA…) = adapter + một nhánh `adapterOf` + mục `PROVIDER_META`.
-import { ESignSignerSchema } from "@ai/contracts";
+import { ESignSignerSchema, packFeatureKey } from "@ai/contracts";
 import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
@@ -21,10 +21,12 @@ import { esignAnchorRepo } from "./adapters/esign-anchor.repo";
 import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
+import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
 import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
+import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-sweep";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 
@@ -78,11 +80,13 @@ export type ESignModule = ESignUsecase & {
   /** esign-flow-fix · gắn kiểm quyền ghi gói của người ký công ty (cần cổng quyền của `packs.mount`). */
   bindWriters(w: Writers): void;
   bindView(view: PackAccessView): void;
+  /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
+  startSweep(view: PackAccessView): void;
 };
 
 export function esignModule(
   db: Db,
-  d: { esign?: ESignSeam | undefined; files: ESignFiles | null },
+  d: { esign?: ESignSeam | undefined; files: ESignFiles | null; signal?: AbortSignal | undefined },
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
@@ -127,9 +131,56 @@ export function esignModule(
   const bindWriters = (w: Writers) => {
     writers = w;
   };
-  return { ...u, flow, bindWriters, bindView: (v) => bindWriters(packWriters(db, v, "contracts")) };
+  return {
+    ...u,
+    flow,
+    bindWriters,
+    bindView: (v) => bindWriters(packWriters(db, v, "contracts")),
+    startSweep: esignSweepStarter(db, d.signal),
+  };
 }
 type Writers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
+
+/** esign-sweep · phụ thuộc vòng nền bước Ký số (test gọi `sweepEsignOnce` trực tiếp với đồng hồ giả). */
+export function esignSweepDeps(db: Db, tenants: () => Promise<readonly string[]>): EsignSweepDeps {
+  return {
+    uow: createPackUow(db, "contracts", (tx: Tx, t: string) => ({
+      esignSweep: esignSweepRepo(tx, t),
+    })),
+    tenants,
+    escalateTo: escalateTargetsOf(db),
+    warn: (m, meta) => logger.warn(m, meta),
+  };
+}
+
+/** Tenant có entitlement `contracts-read` (cache cấu hình, 0 SQL) — như `packTenants` của `packs.mount`. */
+async function contractsTenants(view: PackAccessView): Promise<string[]> {
+  const cat = await view.catalog();
+  const f = cat.features.find((x) => x.key === packFeatureKey("contracts", "read"));
+  if (!f) return [];
+  const suffix = `:${f.id}`;
+  return [...cat.entitled].filter((e) => e.endsWith(suffix)).map((e) => e.slice(0, -suffix.length));
+}
+
+/** esign-sweep · vòng nền mỗi `CONTRACTS_ESIGN_SWEEP_EVERY_MS` (mặc định 5'); chỉ ở `APP_ENV` development/production và
+ *  `CONTRACTS_ESIGN_SWEEP` ≠ off (test gọi `sweepEsignOnce` trực tiếp). Trả hàm bật một lần khi có cổng quyền (`view`). */
+function esignSweepStarter(db: Db, signal: AbortSignal | undefined) {
+  let started = false;
+  return (view: PackAccessView) => {
+    const env = process.env.APP_ENV;
+    const on =
+      (env === "development" || env === "production") &&
+      process.env.CONTRACTS_ESIGN_SWEEP !== "off";
+    if (started || !on) return;
+    started = true;
+    const every = Number(process.env.CONTRACTS_ESIGN_SWEEP_EVERY_MS);
+    startEsignSweeper({
+      ...esignSweepDeps(db, () => contractsTenants(view)),
+      everyMs: Number.isInteger(every) && every >= 1000 ? every : 300_000,
+      ...(signal ? { signal } : {}),
+    });
+  };
+}
 
 const lazyPdf = (maxPending: number): Pick<PdfConverter, "toText"> => {
   let c: PdfConverter | null = null;
@@ -144,6 +195,7 @@ const lazyPdf = (maxPending: number): Pick<PdfConverter, "toText"> => {
 /** Route ký số + esign-anchor (cụm/ô ký) + esign-flow "Gửi lại" bước Ký số. */
 export const esignUserRoutes = (view: PackAccessView, u: ESignModule): Hono<PackGuardVars> => {
   u.bindView(view); // esign-flow-fix · người ký công ty còn quyền ghi gói (cổng quyền theo cache cấu hình)
+  u.startSweep(view); // esign-sweep · kẹt gửi / nhắc / quá hạn bước Ký số (vòng nền, tắt được)
   const r = esignRoutes(view, u);
   if (u.anchors) r.route("/", esignAnchorRoutes(view, u.anchors));
   return r.route("/", esignFlowRoutes(view, u.flow));
@@ -155,6 +207,7 @@ export function mountEsignWebhook<E extends Env>(
   app: Hono<E>,
   d: {
     db?: Db | undefined;
+    signal?: AbortSignal | undefined;
     packs?:
       | {
           contracts?: boolean;
@@ -166,7 +219,11 @@ export function mountEsignWebhook<E extends Env>(
 ): ESignModule | undefined {
   if (!d.db || !(d.packs?.contracts ?? true)) return undefined;
   const fb = packFilebox(d.packs);
-  const u = esignModule(d.db, { esign: d.packs?.esign, files: fb ? fileboxClients(fb) : null });
+  const u = esignModule(d.db, {
+    esign: d.packs?.esign,
+    files: fb ? fileboxClients(fb) : null,
+    signal: d.signal,
+  });
   app.route(ESIGN_WEBHOOK_PATH, esignWebhookRoutes(u));
   return u;
 }
