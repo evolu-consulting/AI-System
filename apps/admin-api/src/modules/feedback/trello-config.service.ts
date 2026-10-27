@@ -4,6 +4,7 @@ import type { TrelloCheckResponse, TrelloConfigSaveRequest, TrelloConfigView } f
 import { type Db, type Tx, withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";
+import { AppError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import { logger } from "../../lib/logger";
 import type { SecretKey } from "../../lib/secret-crypto";
@@ -31,8 +32,10 @@ export type TrelloCtx = {
 const PLATFORM = { kind: "platform" } as const;
 const ENTITY_NAME = "integration.trello";
 
+/** Thiếu SECRET_MASTER_KEY ⇒ 503 `SECRET_KEY_UNAVAILABLE` (lỗi cấu hình máy chủ, không phải lỗi người dùng). */
 function requireKey(ctx: TrelloCtx): SecretKey {
-  if (!ctx.secretKey) throw new Error("secret key not configured");
+  if (!ctx.secretKey)
+    throw new AppError("SECRET_KEY_UNAVAILABLE", 503, "Secret key is not configured");
   return ctx.secretKey;
 }
 

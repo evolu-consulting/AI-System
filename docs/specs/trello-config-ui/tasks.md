@@ -31,6 +31,11 @@ Làn: **đầy đủ một vòng** (secrets) — Luật 0b. Test phần secret v
 | 3 | Contract + repo/service/routes admin-api | đầy đủ | [x] |
 | 4 | admin-web khối Trello + i18n + e2e mock (không chạy) | nhanh | [x] |
 
+## Lát sửa `trello-config-fix`
+- e2e đỏ "Đã lưu, kết thúc bằng …1234": lỗi UI — chuỗi i18n dùng `{{x}}` trong khi admin-web cấu hình `{x}` (`app/i18n.ts`) ⇒ hiện "…{1234}". Sửa `savedEnding`/`checkOk` (vi/en).
+- Thiếu SECRET_MASTER_KEY ⇒ `AppError` 503 `SECRET_KEY_UNAVAILABLE` (mã cục bộ như `HUB_NOT_CONFIGURED`, không thêm vào API_ERRORS).
+- `api_key`/`token`: chuỗi trống (giữ nguyên) hoặc `^[A-Za-z0-9]+$` — chặn chèn tham số header OAuth.
+
 ## Còn lại
 - e2e `e2e/trello-config.spec.ts` chưa chạy (chạy cuối đợt).
 - Review + security cuối đợt.

@@ -9,8 +9,8 @@ test.beforeAll(() => {
   resetFixture();
 });
 
-const SECRET_KEY = "E2E-KEY-LEAK-1234";
-const SECRET_TOKEN = "E2E-TOK-LEAK-5678";
+const SECRET_KEY = "E2EKEYLEAK1234";
+const SECRET_TOKEN = "E2ETOKLEAK5678";
 
 type View = {
   source: "db" | "env" | "none";

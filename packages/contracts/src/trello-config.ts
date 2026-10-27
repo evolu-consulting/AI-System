@@ -32,10 +32,20 @@ export type TrelloConfigView = z.infer<typeof TrelloConfigViewSchema>;
 
 export const TRELLO_LIST_ID_RE = /^[A-Za-z0-9]{1,64}$/;
 
+/** Key/token Trello chỉ gồm chữ + số — chặn chèn tham số vào header `Authorization: OAuth …`. */
+export const TRELLO_SECRET_RE = /^[A-Za-z0-9]+$/;
+/** Chuỗi trống (sau trim) = giữ nguyên; còn lại phải khớp `TRELLO_SECRET_RE`. */
+const trelloSecret = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .refine((v) => v === "" || TRELLO_SECRET_RE.test(v), { message: "invalid" });
+
 /** Trống hoặc thiếu `api_key`/`token` = giữ nguyên giá trị đã lưu (lần lưu đầu bắt buộc cả hai). */
 export const TrelloConfigSaveRequestSchema = z.strictObject({
-  api_key: z.string().trim().max(256).optional(),
-  token: z.string().trim().max(512).optional(),
+  api_key: trelloSecret(256).optional(),
+  token: trelloSecret(512).optional(),
   list_id: z.string().trim().regex(TRELLO_LIST_ID_RE),
 });
 export type TrelloConfigSaveRequest = z.infer<typeof TrelloConfigSaveRequestSchema>;

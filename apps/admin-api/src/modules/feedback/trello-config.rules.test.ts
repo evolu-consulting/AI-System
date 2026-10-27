@@ -2,6 +2,10 @@
 // "Kiểm tra kết nối" chỉ GET list (không tạo thẻ, key/token không nằm trong URL).
 import { describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
+import { TrelloConfigSaveRequestSchema } from "@ai/contracts";
+import type { Db } from "@ai/db";
+import type { Actor } from "../../lib/auth-middleware";
+import { AppError } from "../../lib/errors";
 import { parseMasterKey } from "../../lib/secret-crypto";
 import { checkTrelloList } from "./feedback.trello";
 import {
@@ -11,6 +15,7 @@ import {
   type TrelloRowMeta,
   trelloView,
 } from "./trello-config.rules";
+import { saveTrello } from "./trello-config.service";
 
 const DB = { apiKey: "DB-KEY-SECRET-1234", token: "DB-TOK-SECRET-5678", listId: "dbList" };
 const ENV = { apiKey: "ENV-KEY-SECRET", token: "ENV-TOK-SECRET", listId: "envList" };
@@ -74,6 +79,33 @@ describe("trello-config · mã hoá theo trường", () => {
     const a = sealTrelloField(key, "token", "same");
     const b = sealTrelloField(key, "token", "same");
     expect(Buffer.from(a.iv).equals(Buffer.from(b.iv))).toBe(false);
+  });
+});
+
+describe("trello-config-fix · schema + khoá", () => {
+  const ok = (b: unknown) => TrelloConfigSaveRequestSchema.safeParse(b).success;
+  it("key/token chỉ chữ + số; trống = giữ nguyên; chèn tham số OAuth ⇒ từ chối", () => {
+    expect(ok({ api_key: "abc123", token: "XYZ9", list_id: "l1" })).toBe(true);
+    expect(ok({ api_key: "", token: "  ", list_id: "l1" })).toBe(true);
+    expect(ok({ list_id: "l1" })).toBe(true);
+    expect(ok({ api_key: 'k", oauth_token="x', list_id: "l1" })).toBe(false);
+    expect(ok({ token: "a b", list_id: "l1" })).toBe(false);
+    expect(ok({ token: "a,b", list_id: "l1" })).toBe(false);
+  });
+  it("thiếu SECRET_MASTER_KEY ⇒ AppError 503 SECRET_KEY_UNAVAILABLE (trước khi chạm DB)", async () => {
+    const actor = {
+      userId: "u",
+      tenantId: "t",
+      tenantKey: "platform",
+      role: "platform_admin",
+      sid: null,
+    };
+    const err = await saveTrello({ db: {} as Db }, actor as Actor, { list_id: "l1" }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(AppError);
+    expect(err).toMatchObject({ status: 503, code: "SECRET_KEY_UNAVAILABLE" });
   });
 });
 

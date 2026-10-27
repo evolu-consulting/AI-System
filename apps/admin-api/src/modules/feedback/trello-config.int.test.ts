@@ -14,8 +14,8 @@ import { loadJwtKeys } from "../../lib/jwt";
 import { parseMasterKey } from "../../lib/secret-crypto";
 
 const ENV_CFG = { apiKey: "ENV-KEY-LEAK-aaaa", token: "ENV-TOK-LEAK-bbbb", listId: "envList" };
-const KEY = "DB-KEY-LEAK-1234";
-const TOK = "DB-TOK-LEAK-5678";
+const KEY = "DBKEYLEAK1234";
+const TOK = "DBTOKLEAK5678";
 const PATH = "/admin/integrations/trello";
 
 type Seen = { url: string; method: string; body: string; auth: string };
@@ -125,6 +125,14 @@ describe("trello-config · platform_admin", () => {
       });
       // lần đầu thiếu token ⇒ 400
       expect((await call("PUT", PATH, plat, { api_key: KEY, list_id: "dbList" })).status).toBe(400);
+      // trello-config-fix: chèn tham số OAuth vào token ⇒ 400, không echo input
+      const inj = await call("PUT", PATH, plat, {
+        api_key: "abc",
+        token: 'LEAK", oauth_x="1',
+        list_id: "dbList",
+      });
+      expect(inj.status).toBe(400);
+      expect(inj.text).not.toContain("LEAK");
 
       const saved = await call("PUT", PATH, plat, { api_key: KEY, token: TOK, list_id: "dbList" });
       expect(saved.status).toBe(200);
