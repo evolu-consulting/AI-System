@@ -1,5 +1,5 @@
-// cf-esign-docusign · route ký số dưới `/pack/contracts` (trung lập nhà cung cấp). Quyền: xem trạng thái/làm mới/tải bản đã ký = `read`
-// (ai đọc được HĐ — RLS M1); gửi ký/"Ký ngay"/huỷ = `write` (owner/editor); bật/tắt ở Cài đặt = `admin` (owner).
+// cf-esign-docusign · route ký số dưới `/pack/contracts` (trung lập nhà cung cấp). Quyền: xem trạng thái/tải bản đã ký = `read`
+// (ai đọc được HĐ — RLS M1); gửi ký/"Ký ngay"/làm mới/huỷ = `write` (owner/editor); bật/tắt ở Cài đặt = `admin` (owner).
 //   GET  /esign/settings                     {configured, enabled, provider, demo}
 //   PUT  /esign/settings                     {enabled}
 //   GET  /contracts/:id/esign                trạng thái + người ký gợi ý
@@ -17,6 +17,7 @@ import {
   ESignVoidSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
@@ -69,7 +70,8 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
     const b = parseWith(ESignSendSchema, await readJson(c));
     return c.json(await run(u.send(who(c), id, b.signers)), 201);
   });
-  r.post("/contracts/:id/esign/refresh", read, async (c) =>
+  // esign-fix · làm mới có GHI (trạng thái, FileBox, files) ⇒ `write` như gửi ký.
+  r.post("/contracts/:id/esign/refresh", write, async (c) =>
     c.json(await run(u.refresh(who(c), idOf(c)))),
   );
   r.post("/contracts/:id/esign/sign-url", write, async (c) => {
@@ -95,10 +97,13 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
 /** Webhook nhà cung cấp — không JWT; xác thực do adapter (DocuSign: HMAC). Thân thô ≤ 256 KiB. Không log thân. */
 export function esignWebhookRoutes(u: ESignUsecase): Hono {
   const r = new Hono();
-  r.post("/:provider", async (c) => {
+  // esign-fix · chặn thân lớn TRƯỚC khi đọc (Content-Length lẫn thân stream) — route không đăng nhập.
+  const limit = bodyLimit({
+    maxSize: MAX_WEBHOOK_BYTES,
+    onError: () => Promise.reject(new AppError("PAYLOAD_TOO_LARGE", 413, "Payload too large")),
+  });
+  r.post("/:provider", limit, async (c) => {
     const raw = new Uint8Array(await c.req.arrayBuffer());
-    if (raw.byteLength > MAX_WEBHOOK_BYTES)
-      throw new AppError("PAYLOAD_TOO_LARGE", 413, "too large");
     const key = c.req.param("provider");
     const res = await run(u.webhook(key, raw, (n) => c.req.header(n)));
     return c.json({ ok: true, result: res });

@@ -379,6 +379,13 @@
       "when": 1799300000000,
       "tag": "0059_ms_impact",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1799400000000,
+      "tag": "0060_esign_delete",
+      "breakpoints": true
     }
   ]
 }

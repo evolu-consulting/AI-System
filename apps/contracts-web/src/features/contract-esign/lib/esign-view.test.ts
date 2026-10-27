@@ -68,6 +68,7 @@ describe("esignView", () => {
     expect(esignView(st({ envelope: env() }), { locked: true, write: false })).toMatchObject({
       canSignNow: false,
       canCancel: false,
+      canRefresh: false, // esign-fix · viewer không làm mới (có ghi)
     });
   });
   it("đã ký: tải bản đã ký; ký thử giữ cờ demo", () => {

@@ -152,11 +152,33 @@ describe("cf-esign · đường chính (DocuSign giả)", () => {
       (await c.hubCall(P.hoa, "POST", `${CBASE}/${id}/esign`, { signers: SIGNERS })).status,
     ).toBe(201);
     c.ds.fake.decline(lastEnvelope(), "Sai đơn giá");
-    const r = await c.hubCall(P.tam, "POST", `${CBASE}/${id}/esign/refresh`);
+    // esign-fix · làm mới có ghi ⇒ viewer 403 (trạng thái không đổi), editor làm mới được.
+    expect((await c.hubCall(P.tam, "POST", `${CBASE}/${id}/esign/refresh`)).status).toBe(403);
+    const r = await c.hubCall(P.hoa, "POST", `${CBASE}/${id}/esign/refresh`);
     expect(r.json.envelope).toMatchObject({ status: "declined", reason: "Sai đơn giá" });
     expect(
       (await c.hubCall(P.hoa, "POST", `${CBASE}/${id}/esign`, { signers: SIGNERS })).status,
     ).toBe(201);
+  });
+});
+
+describe("esign-fix · webhook thân lớn + xoá HĐ", () => {
+  it("webhook thân > 256 KiB ⇒ 413 trước khi đọc/xác thực", async () => {
+    const big = JSON.stringify({ data: { envelopeId: "x" }, pad: "a".repeat(300 * 1024) });
+    const r = await hook(big, signed(big));
+    expect(r.status).toBe(413);
+  });
+
+  it("owner xoá HĐ ⇒ không còn hàng esign_envelopes của HĐ (cùng tx)", async () => {
+    const id = await setup();
+    expect(
+      (await c.hubCall(P.hoa, "POST", `${CBASE}/${id}/esign`, { signers: SIGNERS })).status,
+    ).toBe(201);
+    const del = await c.hubCall(P.lan, "DELETE", `${CBASE}/${id}`, {});
+    expect({ s: del.status, t: del.status >= 300 ? del.text : "" }).toEqual({ s: 200, t: "" });
+    const [n] = await c.sql<{ n: number }[]>`select count(*)::int as n
+      from contracts.esign_envelopes where contract_id = ${id}`;
+    expect(n?.n).toBe(0);
   });
 });
 

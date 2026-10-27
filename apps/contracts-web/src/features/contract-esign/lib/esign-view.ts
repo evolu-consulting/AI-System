@@ -44,7 +44,7 @@ export function esignView(
       ...none,
       mode: "pending",
       demo,
-      canRefresh: true,
+      canRefresh: o.write, // esign-fix · làm mới có ghi ⇒ cần quyền ghi
       canSignNow: o.write && e.signers.some((x) => x.embedded && x.signed_at === null),
       canCancel: o.write,
     };
@@ -54,7 +54,7 @@ export function esignView(
       mode: "signed",
       demo,
       canDownload: e.has_signed_file,
-      canRefresh: !e.has_signed_file,
+      canRefresh: o.write && !e.has_signed_file,
     };
   return idleView(s, o.write, e !== null, demo);
 }

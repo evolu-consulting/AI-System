@@ -40,6 +40,7 @@ export type ESignDeps = {
   me: (who: PackWho) => Promise<{ name: string; email: string | null }>;
   tenantOf: (provider: string, envelopeId: string) => Promise<string | null>;
   newId: () => string;
+  now?: () => Date;
 };
 type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
@@ -152,11 +153,17 @@ export function esignUsecase(d: ESignDeps) {
   };
 
   /** Một lần GET trạng thái từ nhà cung cấp ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent). */
-  const sync = async (tid: string, row: EnvelopeRow, run: Run): Promise<void> => {
+  /** `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
+  const sync = async (
+    tid: string,
+    row: EnvelopeRow,
+    run: Run,
+    given?: ESignEnvelopeInfo,
+  ): Promise<void> => {
     const p = on();
     if (!p || !d.files || p.key !== row.provider) return;
     if (!isOpen(row.status) && !(row.status === "completed" && row.signedFileId === null)) return;
-    const info = await p.getEnvelope(row.envelopeId);
+    const info = given ?? (await p.getEnvelope(row.envelopeId));
     const st = mapEnvelopeStatus(info.status) ?? row.status;
     const signers = mergeSigners(row.signers, info, st);
     await run((r) =>
@@ -266,6 +273,15 @@ export function esignUsecase(d: ESignDeps) {
         { name: me.name, email: me.email, clientUserId: who.userId },
         u.toString(),
       );
+      // esign-fix · ký thử: CHỈ người ký nhúng bấm "Ký ngay" mới hoàn tất (làm mới chỉ đọc trạng thái "đang chờ").
+      if (p.demo) {
+        const done = {
+          status: "completed",
+          reason: null,
+          completedAt: (d.now?.() ?? new Date()).toISOString(),
+        };
+        await sync(who.tenantId, e, tenantRun(who), { ...done, recipients: [] });
+      }
       return { url };
     },
 

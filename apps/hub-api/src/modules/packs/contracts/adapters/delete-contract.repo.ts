@@ -83,10 +83,14 @@ export function deleteContractRepo(tx: Tx, t: string): DeleteContractRepo {
     },
     reverseStock: async (id, on) => reverseContractStock(tx, t, await familyOf(tx, t, id), on),
     // products-confirm (0046): chỉ xoá SP người xoá đã chọn VÀ không còn HĐ khác dùng (hàm kiểm lại trước khi xoá HĐ).
-    remove: (id, products) =>
-      one(
+    remove: async (id, products) => {
+      // esign-fix (0060) · dọn envelope ký số của HĐ + phụ lục (không FK) trong cùng tx, một câu theo tập.
+      await tx.execute(sql`delete from contracts.esign_envelopes e where e.tenant_id = ${t}::uuid
+        and e.contract_id = any(${`{${(await familyOf(tx, t, id)).join(",")}}`}::uuid[])`);
+      return one(
         tx,
         sql`select contracts.delete_contract(${id}::uuid, ${t}::uuid, ${`{${products.join(",")}}`}::uuid[]) as j`,
-      ),
+      );
+    },
   };
 }

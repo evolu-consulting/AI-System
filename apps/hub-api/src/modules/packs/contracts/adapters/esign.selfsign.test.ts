@@ -1,12 +1,12 @@
-// cf-esign-docusign · unit: ký thử (selfsign) — demo, không mạng, ký xong ở lần đọc đầu, "Ký ngay" quay thẳng về HĐ, không giữ PDF;
+// cf-esign-docusign · unit: ký thử (selfsign) — demo, không mạng, đọc trạng thái không hoàn tất (esign-fix), "Ký ngay" quay thẳng về HĐ, không giữ PDF;
 // chọn nhà cung cấp theo `ESIGN_PROVIDER` (mặc định none ⇒ tắt; docusign thiếu biến ⇒ tắt).
 import { describe, expect, it } from "bun:test";
 import { envESignProvider } from "../esign.mount";
 import { selfsignProvider } from "./esign.selfsign";
 
 describe("selfsignProvider", () => {
-  it("demo, envelope ký xong khi đọc, view = returnUrl, combinedPdf null", async () => {
-    const p = selfsignProvider({ now: () => new Date("2026-10-27T01:00:00Z") });
+  it("demo, đọc trạng thái luôn 'sent' (làm mới không hoàn tất), view = returnUrl, combinedPdf null", async () => {
+    const p = selfsignProvider();
     expect({ key: p.key, demo: p.demo, webhook: p.webhook }).toEqual({
       key: "selfsign",
       demo: true,
@@ -18,10 +18,7 @@ describe("selfsignProvider", () => {
       signers: [],
     });
     expect(envelopeId).toMatch(/^selfsign-/);
-    expect(await p.getEnvelope(envelopeId)).toMatchObject({
-      status: "completed",
-      completedAt: "2026-10-27T01:00:00.000Z",
-    });
+    expect(await p.getEnvelope(envelopeId)).toMatchObject({ status: "sent", completedAt: null });
     expect(
       await p.recipientView(
         envelopeId,

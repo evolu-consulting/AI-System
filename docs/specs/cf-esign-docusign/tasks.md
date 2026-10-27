@@ -45,3 +45,10 @@ route, nhãn UI trung lập; thêm adapter `selfsign` (ký thử demo); chọn b
 - Chọn CA Việt Nam ⇒ thêm adapter mới (cùng cổng, cột `provider` đã mở regex).
 - depcruise `ca-application-inward-only` cho `esign.usecase.ts → @ai/contracts` (DTO ra) — cùng khuôn các use case gói hiện có (nợ chung).
 - Lỗi typecheck có sẵn ở `apps/contracts-web/scripts/deploy-proxy.test.ts` (tsconfig.node, từ 6695db10) — ngoài lát.
+
+## esign-fix (review cuối đợt)
+- Webhook: `bodyLimit` 256 KiB trước handler (413 trước khi đọc thân).
+- `POST /contracts/:id/esign/refresh` cần `write` (có ghi trạng thái/FileBox/files); UI ẩn "Làm mới" với viewer.
+- Ký thử `selfsign`: đọc trạng thái luôn "sent"; CHỈ "Ký ngay" của người ký nhúng hoàn tất (use case, cờ `demo`).
+- Xoá HĐ (V2-M) dọn `esign_envelopes` của HĐ + phụ lục trong cùng tx (migration `0060_esign_delete`: GRANT DELETE cho `contracts_rw`;
+  số 0060/when 1799400000000 TỰ CHỌN — cần điều phối xác nhận không trùng lát khác). Tệp "Bản đã ký" (hàng `files` + FileBox) chưa dọn.

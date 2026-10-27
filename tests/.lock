@@ -1358,7 +1358,7 @@ b99aff6d8838f02fb2590b509955602f2f4232478e65adf57e4c546c62b355d6  tests/acceptan
 bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptance/X2b2/withheld.int.test.ts
 bae5731b9aabdb8de905fcce7440fa242e2bef140e0c897e919c5b97053605cf  tests/acceptance/agents-background/background.int.test.ts
 10c376bbbb3d23789beac8c3617f7d37e65271dbba722cf710c96c852bd6cd04  tests/acceptance/cf-esign/_support/esign.ts
-fe6c2b4bb228a41896317248311115c28d579b9ba04c2a0107e2c32ad742e0a9  tests/acceptance/cf-esign/esign.int.test.ts
+e892f6b8c77baa73f957ef994905538a70de2ba4e349c8d46eb7cbcbba1d2e36  tests/acceptance/cf-esign/esign.int.test.ts
 71c3c3343878fd1f14e4388e8d88bab943788122b98e08614304ee530225deb2  tests/acceptance/chat-fast/default-route.int.test.ts
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
