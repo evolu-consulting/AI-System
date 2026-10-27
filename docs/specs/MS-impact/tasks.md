@@ -3,7 +3,7 @@ id: MS-impact
 lát: B3 (backend + UI hộp xác nhận)
 cr: CR-101b (Intake 2026-10-27 R18, R19, R34; Câu 11)
 làn: đầy đủ (ngưỡng perf, đọc điểm khách)
-migration: không dự kiến (nếu cần lưu delta: xin số mới từ điều phối, KHÔNG dùng 0059 của REP-v3)
+migration: 0059_ms_impact (journal idx 55, when 1799300000000 — điều phối giao, REP-v3 không dùng): chỉ mục mốc đã xong theo đối tác
 phụ thuộc: REP-v3 đã merge (engine hiện hành); DOC-legal đã merge (cùng `todo.repo.ts`)
 ---
 # MS-impact — Xác nhận mốc hiện tác động thật
@@ -33,8 +33,9 @@ Unit tính delta từ trạng thái trước/sau; một int preview (không ghi)
 - **Không công thức riêng**: dựng đúng phần `settle` sẽ ghi rồi để engine hiện hành chấm lại — V2-E: thêm một việc vào nguồn `m:<loại>`/`tx` của ô `rep_cell` (≡ `rep.sql.ts` ms0) rồi `board`; HD8: `addGroup` dòng `delivered|received|paid` + bớt dòng "Quá hạn" treo của đợt khỏi `pend` (≡ `pendJson`) rồi `partnersOf` (thêm `partners.usecase.editedScore`, tham số `aggs` tuỳ chọn của `partners()`). Luật: `domain/obligation-impact.rules.ts`.
 - **Câu SQL**: 5 cố định mỗi engine (múi giờ + đầu đợt một câu [đợt + công nợ mở + quá hạn treo, chỉ mục `obligation_idx`] + engine: V2-E cấu hình + 2 câu lọc MỘT đối tác; HD8 3 câu song song của `partners.one` lọc theo vai) + 2 câu kho khi mốc giao.
 - **Perf (đo thật, nền V2-E 1.000 đối tác × 3 vai × 5 mốc, acme + beta)**: V2-E p50 6,6 / p95 19,1 ms; HD8 p50 48,1 / p95 83,1 ms (đạt ≤ 100 ms). HD8 vẫn đọc sổ/HĐ/giá cả tenant theo vai (không lọc đối tác — kiến trúc `partners.one` sẵn có; nợ, xem dưới).
-- **Lưu delta**: `partner_events.data.impact = {engine, role, before, after}` cùng câu ghi `settle` (cột có sẵn, không migration ⇒ không dùng 0059). Delta tính CHỒNG với khoá + kho trong tx xác nhận. **Chỉ khi cờ `v2e`**: HD8 đặt trên đường xác nhận phá ngưỡng V2-D (`confirm.perf` p95 ≤ 50 ms, không Seq Scan) ⇒ cờ `hd8` không lưu (dòng thời gian không hiện số; hộp xác nhận vẫn xem trước). Đo lại V2-D confirm (hd8): p95 44,4 / 30,9 ms (trước/sau ANALYZE) — xanh.
-- **Nợ (chưa đạt)**: dưới cờ `v2e`, V2-D `confirm.perf` đỏ ở kiểm Seq Scan (22 dòng từ 2 câu chấm V2-E lọc đối tác trên nền 2.000 HĐ `fields = {}`) — cần chỉ mục `obligations(tenant_id, party_key, done_at)` / `contracts(tenant_id, partner_key)` hoặc rà kế hoạch câu `ms0`/`cv0` khi một đối tác. Phải xử lý TRƯỚC khi bật `REPUTATION_ENGINE=v2e` trên prod.
+- **Lưu delta**: `partner_events.data.impact = {engine, role, before, after}` cùng câu ghi `settle` (cột có sẵn). Delta tính trong tx xác nhận (xem mục "Sửa" dưới). **Chỉ khi cờ `v2e`**: HD8 đặt trên đường xác nhận phá ngưỡng V2-D (`confirm.perf` p95 ≤ 50 ms, không Seq Scan) ⇒ cờ `hd8` không lưu (dòng thời gian không hiện số; hộp xác nhận vẫn xem trước). Đo lại V2-D confirm (hd8): p95 44,4 / 30,9 ms (trước/sau ANALYZE) — xanh.
+- **Sửa (điều phối, sau rebase doc-ui-list)**: delta V2-E tính TRONG tx `settle` (cùng kết nối, tuần tự, sau khoá đợt; đầu mốc lấy từ câu khoá — `lockObligation` thêm `owner`, `rep_cell`): 3 câu (cấu hình + 2 câu chấm lọc một đối tác) bọc `plan_cache_mode = force_generic_plan` (`set_config` cục bộ, bật/tắt quanh đoạn chấm — lập kế hoạch câu gom ~28 ms > chạy ~4 ms). Bản đầu (tx đọc song song ngoài tx xác nhận) mở thêm kết nối ⇒ driver dò `pg_type` + Seq Scan. MG `0059_ms_impact` (idx 55, when 1799300000000): `obligations_party_done_idx (tenant_id, party_key, done_at) WHERE status = 'done'`. V2-D `confirm.perf` (p95 trước/sau ANALYZE, không Seq Scan): `v2e` 66,6 / 59,7 ms đỏ (+ Seq Scan) → 43,5 / 32,5 và 37,8 / 25,0 ms xanh; `hd8` 44,4 / 30,9 → 39,3 / 20,7 ms xanh.
+- Lỗi SQL khi chấm delta trong tx ⇒ huỷ cả lệnh xác nhận (tx Postgres đã hỏng, không nuốt được) — chấp nhận: câu đọc theo chỉ mục, cùng văn bản với bảng điểm.
 - **Dòng thời gian**: `Milestone.rep_delta` (đọc `data->'impact'` của dòng sổ xong đợt chưa huỷ, sub-select trong `msJson`, chỉ mốc `done`); UI hiện "a → b". Bỏ `lib/points.ts` (ước lượng client) + test của nó.
 - **Lỗi "Chưa rõ"**: engine KHÔNG đổi (V2-E coi = 100, không trừ) ⇒ xem trước `pending_fault: true` + câu "chưa trừ điểm; nhắc xác minh sau 3 ngày". Câu 11: nguồn mới `vf` trong `todo.repo.ts` (hàm `verifyFaultSource`, không sửa `lg`): mốc `done`, `fault = 'unknown'`, xong ≥ 3 ngày và ≤ 90 ngày; `kind = verify_fault` (nhãn "Xác minh lỗi mốc trễ"), hạn = ngày xong + 3, khoá `verify_fault:<id>:<ngày xong + 3>`. Xử lý = Bỏ qua/Đã xong (đổi lỗi mốc đã xác nhận: huỷ dòng sổ rồi xác nhận lại — đã có).
 - **REP-v3 mục 7** (làm ở đây): khôi phục nguyên văn nguồn "Đánh giá đối tác" V2-K (`rating` sau HĐ, `rating_quarter` sau quý; hàm `ratingSources`) bật theo cờ `v2e` (`TodoWindow.rating`, `overviewUsecase.engine`); thêm loại trừ HĐ NT. Cờ `hd8` ⇒ tắt (ghi sao 410).
@@ -44,5 +45,5 @@ Unit tính delta từ trạng thái trước/sau; một int preview (không ghi)
 
 ## Việc còn lại
 - [x] 1–4 · Câu 11 · REP-v3 mục 7 · banner pháp lý.
-- [ ] Trước khi bật `v2e` trên prod: hết Seq Scan của câu chấm V2-E một đối tác trên đường xác nhận (V2-D confirm.perf dưới cờ `v2e`).
+- [x] V2-D confirm.perf xanh với cả `hd8` và `v2e` (0059 + chấm trong tx + kế hoạch chung).
 - [ ] Chụp lại baseline `v2f-detail-confirm-box` (e2e cuối đợt).

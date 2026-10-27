@@ -2,6 +2,7 @@
 // use case + route; vòng quá hạn (`PackSystemUow` theo tenant) chỉ khi `worker`: `drain` chạy tới hết việc rồi mới trả ⇒ `startLoop`
 // chỉ ngủ giữa các lượt (mặc định 1 giờ như `connectors/poll.py`). Múi tenant qua `safeTimeZone` của HD4 (không nhân bản).
 import type { Db, Tx } from "@ai/db";
+import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
@@ -16,10 +17,15 @@ import { milestonesRepo } from "./adapters/milestones.repo";
 import { milestonesRoutes } from "./adapters/milestones.routes";
 import { obligationImpactRoutes } from "./adapters/obligation-impact.routes";
 import { overdueRepo } from "./adapters/overdue.repo";
+import { repRepo } from "./adapters/rep.repo";
+import { rowsOf } from "./adapters/rep.sql";
 import { deliveryReads } from "./application/delivery.usecase";
+import type { LockedObligation } from "./application/ledger.ports";
 import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
 import { milestoneCommands } from "./application/milestones.usecase";
+import { v2eDeltaIn } from "./application/obligation-impact.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
+import { localDate } from "./domain/local-time.rules";
 import { obligationImpactOf } from "./obligation-impact.mount";
 import { safeTimeZone } from "./reminders.mount";
 import { envRepEngine } from "./rep-current.mount";
@@ -34,7 +40,16 @@ export const ledgerRepos = (tx: Tx, t: string) => ({
   ledger: { ...ledgerWriteRepo(tx, t), ...ledgerReadRepo(tx, t) },
   milestones: milestonesRepo(tx, t), // V2-A · HD-11
   delivery: deliveryRepo(tx, t), // V2-D · HD-05 (mốc giao ⇒ kho)
+  rep: repRepo(tx, t), // MS-impact · delta uy tín V2-E trong tx xác nhận
+  /** MS-impact · Luật 4c: câu chấm V2-E lập kế hoạch ~25 ms; kế hoạch CHUNG (một lần mỗi kết nối) cho riêng đoạn chấm trong tx. */
+  planGeneric: async (on: boolean) => {
+    await tx.execute(
+      sql`select set_config('plan_cache_mode', ${on ? "force_generic_plan" : "auto"}, true)`,
+    );
+  },
 });
+type TxRepos = ReturnType<typeof ledgerRepos>;
+const deltaIn = v2eDeltaIn(rowsOf);
 
 export type OverdueSweepDeps = {
   timeZoneOf: (tenantId: string) => Promise<string>;
@@ -78,11 +93,20 @@ export function ledgerModule(
   const now = d.now ?? (() => new Date());
   // MS-impact: xem trước tác động + delta uy tín lưu trên dòng sổ khi xác nhận (engine hiện hành).
   const impact = obligationImpactOf(db, { timeZoneOf: d.timeZoneOf, now });
+  const tz = safeTimeZone(d.timeZoneOf);
   const deps = {
     uow,
-    timeZoneOf: safeTimeZone(d.timeZoneOf),
+    timeZoneOf: tz,
     now,
-    repDelta: impact.deltaFor,
+    // Cờ `hd8` ⇒ không lưu (HD8 đọc cả tenant theo vai — phá ngưỡng V2-D); `v2e` ⇒ 4 câu trong tx, lọc một đối tác.
+    repDelta: async (
+      who: { tenantId: string },
+      repos: unknown,
+      q: { head: LockedObligation; at: string; fault: "partner" | "ours" | "unknown" | null },
+    ) =>
+      envRepEngine() === "v2e"
+        ? deltaIn(repos as TxRepos, { ...q, today: localDate(now(), await tz(who.tenantId)) })
+        : null,
   };
   const r = ledgerRoutes(view, {
     cmd: ledgerCommands(deps),

@@ -2,6 +2,7 @@
 // (1) đầu đợt + công nợ + quá hạn treo — một câu; rồi SONG SONG (2) uy tín theo engine hiện hành — V2-E: cấu hình + 2 câu chấm lọc
 // đối tác; HD8: 3 câu của `partners.one` (lọc theo vai) — và (3) kho (mốc giao: 2 câu). Engine chấm lại đầu vào đã thêm đúng phần mà
 // `settle` sẽ ghi (luật ở `domain/obligation-impact.rules.ts`) ⇒ cùng số với bảng điểm sau khi xác nhận. Lớp 2: không SQL.
+import type { RepDelta } from "@ai/contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import { localDate } from "../domain/local-time.rules";
 import {
@@ -21,11 +22,13 @@ import {
 import { board, type Rows } from "../domain/rep-board.rules";
 import { cellKey, REP_CELLS } from "../domain/rep-config.rules";
 import type { RepEngine } from "../domain/rep-current.rules";
+import { type Resolved, resolveConfig } from "../domain/rep-normalise.rules";
 import type { Agg, Window } from "../domain/scoring-agg.rules";
 import type { Role } from "../domain/scoring-config.rules";
 import type { DeliveryRepo } from "./delivery.ports";
 import { plannedMoves } from "./delivery.usecase";
-import type { ReputationUsecase } from "./reputation.usecase";
+import type { RepRepo } from "./reputation.ports";
+import { cellsOf, type ReputationUsecase } from "./reputation.usecase";
 
 export class ImpactFail extends Error {
   constructor(readonly kind: "not_found" | "done") {
@@ -54,11 +57,25 @@ export type ImpactDeps = {
 };
 type Ctx = { who: PackWho; h: ImpactHead; party: string; at: string; fault: Fault | null };
 
+type Scored = { day: string; cfg: Resolved; rows: Rows };
+type CtxX = {
+  h: Pick<ImpactHead, "owner" | "kind" | "due_date" | "rep_cell">;
+  party: string;
+  at: string;
+  fault: Fault | null;
+};
+
 async function v2eImpact(d: ImpactDeps, x: Ctx): Promise<RepImpact | null> {
   const cell = x.h.rep_cell ? REP_CELLS[x.h.rep_cell - 1] : undefined;
   if (!cell) return null;
+  return v2eScore(x, await d.v2e.scored(x.who, [cell[1]], x.party));
+}
+
+/** Chấm lại V2-E trên kết quả đọc (`scored`) sau khi thêm phần góp của mốc. */
+function v2eScore(x: CtxX, s: Scored): RepImpact | null {
+  const cell = x.h.rep_cell ? REP_CELLS[x.h.rep_cell - 1] : undefined;
+  if (!cell) return null;
   const [grp, role] = cell;
-  const s = await d.v2e.scored(x.who, [role], x.party);
   const cfg = s.cfg.cells[cellKey(grp, role)];
   if (!cfg) return null;
   const pick = (rows: Rows) => board(rows, s.cfg, [role]).find((p) => p.party === x.party);
@@ -146,23 +163,47 @@ export function obligationImpact(d: ImpactDeps) {
       debt: debtAfter(h),
     };
   };
-  /**
-   * Delta lưu trên dòng sổ khi xác nhận (lỗi đọc ⇒ null: không chặn xác nhận). CHỈ engine `v2e` (đọc lọc một đối tác, ~5 câu theo chỉ
-   * mục): HD8 đọc sổ/HĐ/giá cả tenant theo vai ⇒ đặt trên đường xác nhận phá ngưỡng V2-D (p95 ≤ 50 ms, không Seq Scan) ⇒ không lưu.
-   */
-  const deltaFor = async (
-    who: PackWho,
-    id: string,
-    at: string,
-    fault: Fault | null | undefined,
-  ) => {
-    if (d.engine() !== "v2e") return null;
-    const out = await preview(who, id, { actual_on: at, fault: fault ?? undefined }).catch(
-      () => null,
-    );
-    const r = out?.reputation;
-    return r ? { engine: r.engine, role: r.role, before: r.before, after: r.after } : null;
-  };
-  return { preview, deltaFor };
+  return { preview };
 }
 export type ObligationImpact = ReturnType<typeof obligationImpact>;
+
+/** Repo dùng TRONG tx xác nhận (cùng kết nối, tuần tự — không mở thêm kết nối/tx trên đường nóng). */
+export type DeltaRepos<A, B> = {
+  rep: Pick<RepRepo<A, B>, "configs" | "aggRows" | "factRows">;
+  /** Bật/tắt kế hoạch chung cho đoạn chấm (lập kế hoạch câu gom tốn hơn chạy — Luật 4c). */
+  planGeneric?: (on: boolean) => Promise<void>;
+};
+/** Đầu mốc đã có từ câu khoá đợt của `settle` (không đọc thêm). */
+export type ScoreHead = {
+  owner?: ImpactHead["owner"] | undefined;
+  kind: string;
+  due_date: string;
+  rep_cell?: number | null | undefined;
+  party: string | null;
+};
+
+/**
+ * Delta uy tín lưu trên dòng sổ khi xác nhận — CHỈ engine `v2e`, tính trong CHÍNH tx `settle` sau khi khoá đợt: 3 câu tuần tự lọc MỘT
+ * đối tác (cấu hình, 2 câu chấm; đầu mốc lấy từ câu khoá). HD8 đọc sổ/HĐ/giá cả tenant theo vai ⇒ không lưu (phá ngưỡng V2-D).
+ */
+export function v2eDeltaIn<A, B>(merge: (a: A, b: B) => Rows) {
+  return async (
+    r: DeltaRepos<A, B>,
+    q: { head: ScoreHead; at: string; fault: Fault | null; today: string },
+  ): Promise<RepDelta | null> => {
+    const h = { ...q.head, owner: q.head.owner ?? null, rep_cell: q.head.rep_cell ?? null };
+    const cell = h.rep_cell ? REP_CELLS[h.rep_cell - 1] : undefined;
+    if (!h.party || !cell) return null;
+    await r.planGeneric?.(true);
+    const cfg = resolveConfig(await r.rep.configs());
+    const cells = cellsOf(cfg, [cell[1]]);
+    const a = await r.rep.aggRows(q.today, cells, h.party);
+    const rows = merge(a, await r.rep.factRows(q.today, cells, h.party));
+    await r.planGeneric?.(false);
+    const out = v2eScore(
+      { h, party: h.party, at: q.at, fault: q.fault },
+      { day: q.today, cfg, rows },
+    );
+    return out && { engine: out.engine, role: out.role, before: out.before, after: out.after };
+  };
+}

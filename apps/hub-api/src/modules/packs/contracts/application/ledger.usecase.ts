@@ -24,12 +24,14 @@ type Deps = {
   uow: PackUow<LedgerRepos>;
   timeZoneOf: (tenantId: string) => Promise<string>;
   now: () => Date;
-  /** MS-impact: delta uy tín (trước → sau, engine hiện hành) tính NGAY trước tx xác nhận, lưu trên dòng sổ; vắng ⇒ không lưu. */
+  /**
+   * MS-impact: delta uy tín (trước → sau) tính TRONG tx xác nhận (cùng kết nối, sau khoá đợt, trước câu ghi), lưu trên dòng sổ; trả
+   * null ⇒ không lưu (vd cờ `hd8`); vắng ⇒ không lưu.
+   */
   repDelta?: (
     who: PackWho,
-    id: string,
-    at: string,
-    fault: Fault | null | undefined,
+    repos: LedgerRepos,
+    q: { head: LockedObligation; at: string; fault: Fault | null },
   ) => Promise<unknown>;
 };
 type Repo = LedgerRepos["ledger"];
@@ -70,13 +72,15 @@ type SettleIn = { at?: string | null; amount?: number | null; fault?: Fault | nu
 /** Đã trả/thu một đợt. */
 async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
   const at = b.at ?? (await todayOf(d)(who));
-  // Luật 4c: tính delta (các tx chỉ đọc, thấy đợt còn mở vì tx này chưa commit) CHỒNG với khoá + kho; chờ ngay trước câu ghi.
-  const impactP = d.repDelta ? d.repDelta(who, id, at, b.fault) : Promise.resolve(null);
-  return d.uow.tenant(who, async ({ ledger: r, delivery, notify }) => {
+  return d.uow.tenant(who, async (repos) => {
+    const { ledger: r, delivery, notify } = repos;
     const ob = await openObligation(r, id);
     const late = daysLate(at, ob.due_date);
     // V2-D · HD-05: mốc giao ⇒ SL đã giao + kho (cùng tx, sau khoá HĐ → mốc); lỗi ⇒ huỷ cả tx, mốc giữ mở.
     const dv = ob.kind === "delivery" ? await confirmDelivery(delivery, id, at) : null;
+    const fault = late > 0 ? (b.fault ?? "unknown") : null;
+    // MS-impact · Luật 4c: cùng tx/kết nối, tuần tự (không mở thêm kết nối trên đường nóng).
+    const impact = d.repDelta ? await d.repDelta(who, repos, { head: ob, at, fault }) : null;
     const out = await r.settle({
       id,
       at,
@@ -86,9 +90,9 @@ async function settleOne(d: Deps, who: PackWho, id: string, b: SettleIn) {
       late,
       amount: b.amount ?? ob.amount,
       // V2-A · BA §2: chỉ mốc trễ mới có "lỗi do ai"; không chọn ⇒ chưa rõ.
-      fault: late > 0 ? (b.fault ?? "unknown") : null,
+      fault,
       delivered: dv?.rows ?? [],
-      impact: await impactP,
+      impact,
     });
     if (dv?.notice) await notify.enqueue([dv.notice]);
     return dv?.outcome ? { ...out, delivery: dv.outcome } : out;

@@ -18,6 +18,9 @@ export type LockedObligation = {
   id: string;
   contract_id: string;
   party: string | null;
+  /** MS-impact: việc của ai + ô uy tín V2-E (chỉ câu khoá đọc; chấm delta trong tx xác nhận không cần thêm câu). */
+  owner?: "partner" | "ours" | null;
+  rep_cell?: number | null;
   direction: Direction;
   kind: ObligationKind;
   status: "open" | "done" | "cancelled";

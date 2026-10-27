@@ -36,7 +36,8 @@ function ledgerLocks(
   const lockObligation: LedgerWriteRepo["lockObligation"] = (id) =>
     one<LockedObligation | null>(
       tx,
-      sql`select ${obJson("o")} as j from contracts.obligations o
+      sql`select ${obJson("o")} || jsonb_build_object('owner', o.owner, 'rep_cell', o.rep_cell) as j
+        from contracts.obligations o
         where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced' for update`,
     );
   return { lockContract, lockContractOf, lockObligation };
