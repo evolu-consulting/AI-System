@@ -105,6 +105,23 @@ Nhiều lát song song: mỗi agent commit qua `GIT_INDEX_FILE` tạm chỉ ch�
 
 **Cổng lát và cổng đợt (TS1, 2026-10-19).** Cổng LÁT = `bun run test:affected [--base=<commit trước lát>]`: đồ thị import (`lib/import-graph.ts`) → bao đóng ngược của file đổi so với `base` (mặc định merge-base với `main`, hoặc chỉ thay đổi chưa commit khi đang ở `main`) → chỉ chạy unit, int (`test:int:par`) và cấu hình e2e dính tới diff, cùng `check` + `lock` + `typecheck` (turbo `...[base]`); `--dry-run` chỉ in kế hoạch, `--e2e=wide` thêm mọi cấu hình nối tới mã backend đổi. Cổng ĐỢT = `bun run test:all` (mọi bước; int/e2e chạy song song, DB/Redis/cổng riêng mỗi việc): chạy khi đóng mốc/đợt, không thay bằng `test:affected`. **Module đóng băng (F1, CR-095):** suite của module trong `docs/platform/modules.md` (danh sách ở `tools/scripts/src/frozen.rules.ts`) KHÔNG nằm trong cổng lát (`test:affected` bỏ unit/int/e2e đóng băng) và cổng hằng ngày trên server (`run-tests.ps1` mặc định chạy `test:all --no-frozen`); chạy theo yêu cầu bằng `bun run test:frozen [--no-e2e]` (khi sửa mã module đóng băng hoặc nâng cấp); `bun run test:all` (không cờ) và `run-tests.ps1 -All` vẫn chạy hết — dùng cho kiểm tra nâng cấp hằng tháng. Cấu hình e2e mới đặt dưới `e2e/**/playwright*.config.ts` và khai DB/Redis trong `META` của `test-e2e-par.rules.ts` (không khai ⇒ nhận DB riêng, không Redis).
 
+### Mẫu `tasks.md` của lát (Luật 0b) và `docs/current` (người dùng duyệt 2026-10-27; thử trước ở Sổ Hợp Tác)
+`docs/current/` mô tả hành vi **đang chạy** (nguồn sự thật cho agent; lịch sử ở CR + `specs/`). Mỗi lát (Luật 0b) có đúng một `docs/specs/<lát>/tasks.md` theo khuôn:
+```
+frontmatter (id · lát · cr · làn · migration · phụ thuộc)
+## Plan (ngắn)            ≤ 1 trang
+## Làm                    bảng việc
+## Không làm / ## Chạm    phạm vi, file lát khác KHÔNG sửa
+## Test tối thiểu
+## Quyết định trong lúc làm
+## Delta (so với docs/current)   ← BẮT BUỘC khi lát đổi hành vi nhìn thấy được
+## Việc còn lại
+```
+Mục **Delta**: ba nhóm `Thêm` / `Sửa` / `Bỏ`, mỗi dòng một thay đổi hành vi **kèm trỏ file+mục trong `docs/current`** (vd `Sửa — sht/chung-tu.md §4 "Mở lại": người phụ trách hoặc owner`; `Thêm — sht/chung-tu.md (mục mới "Gắn HĐ NT")`; `Bỏ — sht/chung-tu.md §4 "Phụ lục": bỏ nút tạo`). Lát thuần hạ tầng/test/nhãn không đổi hành vi ghi `Delta: không`. Delta viết cho người đọc `docs/current`, không chép lại plan. Khi lát xong ghi ở đầu mục: `Trạng thái gộp: chưa gộp`.
+Dùng được cho khu vực chưa có `docs/current/<khu vực>/`: ghi `Thêm — <khu vực mới>` và docs-architect tạo file khi gộp.
+
+**Gộp cuối đợt (docs-architect, một lần/đợt, ngay sau review cuối đợt):** (1) liệt kê các lát đã merge trong đợt có `Trạng thái gộp: chưa gộp`; (2) áp lần lượt Delta vào đúng file `docs/current/**` — chỗ nào Delta mâu thuẫn code thì **code thắng** (Grep kiểm), không chắc ⇒ ghi mục "Chưa rõ" của file đó; (3) đổi dòng đầu mục Delta thành `Trạng thái gộp: đã gộp <YYYY-MM-DD> (đợt <tên>)`; (4) file `current` > 400 dòng ⇒ tách và sửa `docs/current/README.md` + `docs/INDEX.md`; (5) ghi một dòng vào `docs/STATE.md` ("gộp current: N lát, M mục Chưa rõ"). Lát nào chưa merge/chưa xong giữ nguyên `chưa gộp`. Điều phối kiểm: `grep -rl "Trạng thái gộp: chưa gộp" docs/specs` chỉ được còn lát chưa xong (lát cũ không có mục Delta thì bỏ qua).
+
 ## Vòng một mốc
 
 ```
@@ -122,7 +139,7 @@ Nhiều lát song song: mỗi agent commit qua `GIT_INDEX_FILE` tạm chỉ ch�
    (mốc lớn / nhiều session: Bước 0 + nhánh theo feature, xem "Làm song song nhiều session")
 8. qc               chạy toàn bộ, báo độ phủ theo FR; test sai → mục Tranh chấp
 9. reviewer         review; Blocker/Major → trả agent code sửa (tối đa 2 vòng/task)
-10. docs-architect  cập nhật CODEMAP, TRACE, STATE, README module → báo cáo cuối cho người dùng
+10. docs-architect  cập nhật CODEMAP, TRACE, STATE, README module + GỘP Delta của các lát vào docs/current (xem "Gộp cuối đợt") → báo cáo cuối cho người dùng
 11. điều phối       đo token (mục "Đo token mỗi mốc") → ghi STATE.md → /handoff, /clear
 ```
 Bước 4 lần 2 trở đi: spec-readiness chỉ kiểm **phần đã đổi** (`git diff` thư mục spec từ lần trước) + lỗ hổng còn mở trong `readiness.md`, không đọc lại toàn bộ.

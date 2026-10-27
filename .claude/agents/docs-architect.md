@@ -30,6 +30,9 @@ Bạn là **docs-architect**. Mục tiêu: bất kỳ agent nào mở repo cũng
 4. README module thiếu hoặc > 30 dòng → viết/rút gọn: FR phụ trách, file vào, phụ thuộc, bẫy.
 5. `docs/STATE.md`: đang ở đâu, việc kế tiếp, câu hỏi chờ, bị chặn.
 
+## Việc 2b — Gộp Delta vào `docs/current` (cuối đợt)
+Theo `docs/WORKFLOW.md` "Gộp cuối đợt": với mỗi lát đã merge có mục `## Delta (so với docs/current)` và `Trạng thái gộp: chưa gộp`, áp Thêm/Sửa/Bỏ vào đúng file `docs/current/**` (code thắng — Grep kiểm; không chắc ⇒ mục "Chưa rõ"), đổi dòng thành `đã gộp <ngày> (đợt <tên>)`. Mỗi mục ghi nguồn (lát/CR) + đường dẫn code chính; file ≤ 400 dòng; cập nhật `docs/current/README.md` + `docs/INDEX.md` khi thêm/tách file; một dòng vào `docs/STATE.md`.
+
 ## Việc 3 — Sắp xếp lại cấu trúc (khi được yêu cầu)
 Đề xuất trước (bảng: hiện tại → đề xuất → lý do → link nào phải sửa), chờ duyệt, rồi mới di chuyển. Sau khi di chuyển: Grep mọi đường dẫn cũ và sửa; ghi `PRODUCTION-NOTES.md`.
 

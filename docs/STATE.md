@@ -3,6 +3,7 @@
 Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-10-27 `docs/current` (mượn ý OpenSpec, không đổi công cụ):** tạo `docs/current/` (README + 6 file `sht/`, 24 mục "Chưa rõ" cuối từng file), mẫu `tasks.md` thêm mục `## Delta (so với docs/current)`, `WORKFLOW.md` thêm bước "Gộp cuối đợt" cho docs-architect; chưa push.
 - **2026-10-27 (chiều) Đợt cấu hình hệ thống — deploy production `f94b4316`, e2e server 67 pass / 5 skip, KHÔNG push.** Lát (mỗi lát `docs/specs/<lát>/tasks.md`):
   `tenant-quotas` (hạn mức ngày theo công ty + "Đặt lại hôm nay" ở Admin, admin 0025), `engine-flag-tenant` (feature `contracts-approval-engine`, admin 0026; prod: chỉ demo),
   `approval-inbox` (nhóm chủ nhận chuông bước duyệt, hub 0061), `chat-api-gate` (+fix: hub-api 403 `CHAT_APP_DISABLED`; dock Sổ Hợp Tác chỉ văn bản vào hội thoại surface=contracts, hub 0062),

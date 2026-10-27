@@ -11,6 +11,13 @@
 | `ROADMAP.md` | Mốc M0–M5, C1, H1–H4, FR thuộc mốc nào |
 | `STATE.md` | Đang làm gì, việc kế tiếp (tự chèn đầu phiên bằng hook) |
 | `CHANGE-REQUESTS.md` | Nhật ký thay đổi yêu cầu `CR-xxx` |
+| `current/README.md` | **Hành vi đang chạy** (nguồn sự thật cho agent; lịch sử ở CR + specs). Mỗi lát ghi Delta vào `tasks.md`, cuối đợt gộp vào đây (`WORKFLOW.md` "Mẫu tasks.md của lát") |
+| `current/sht/chung-tu.md` | Sổ Hợp Tác: HĐ / HĐ nguyên tắc / Giao dịch, phiên bản, mở lại, phụ lục chỉ đọc, xoá, danh sách |
+| `current/sht/mot-moc-kho-cong-no.md` | Sổ Hợp Tác: mốc, giao theo %, vượt tồn, xác nhận + xem trước tác động |
+| `current/sht/duyet-ky-so.md` | Sổ Hợp Tác: duyệt (máy 2 bước / engine), khoá, ký số |
+| `current/sht/doi-tac-uy-tin.md` | Sổ Hợp Tác: điểm uy tín HD8 / V2-E (cờ `REPUTATION_ENGINE`), cờ đỏ |
+| `current/sht/cai-dat-va-quyen.md` | Sổ Hợp Tác: quyền, màn Cài đặt, cờ/công tắc |
+| `current/sht/phap-ly-va-can-xu-ly.md` | Sổ Hợp Tác: cảnh báo pháp lý, nguồn Cần xử lý |
 
 ## Thiết kế (nguồn chân lý nghiệp vụ, v0.4) — `design/`
 | Phạm vi | BA | UI/UX |
