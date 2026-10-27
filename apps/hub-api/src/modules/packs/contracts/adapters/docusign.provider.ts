@@ -7,7 +7,12 @@ import {
   ESignProviderError,
 } from "../application/esign.ports";
 import type { ESignConfig } from "../domain/esign.rules";
-import { envelopeIdOfWebhook, signAnchors, signaturePageHtml } from "../domain/esign.rules";
+import {
+  envelopeIdOfWebhook,
+  SIGN_TAB_OFFSET,
+  signAnchors,
+  signaturePageHtml,
+} from "../domain/esign.rules";
 import { connectHmacOk, docusignJwt } from "./docusign.crypto";
 
 const TIMEOUT_MS = 15_000;
@@ -33,11 +38,11 @@ async function errorCodeOf(res: Response): Promise<string> {
 }
 
 /** Tab đặt theo anchor ẩn của trang ký (`signaturePageHtml`); thiếu anchor ⇒ DocuSign báo lỗi (không bỏ qua). */
-const anchorTab = (anchorString: string, yOffset: string) => ({
+const anchorTab = (anchorString: string, off: { x: string; y: string }) => ({
   anchorString,
   anchorUnits: "pixels",
-  anchorXOffset: "0",
-  anchorYOffset: yOffset,
+  anchorXOffset: off.x,
+  anchorYOffset: off.y,
   anchorIgnoreIfNotPresent: "false",
 });
 
@@ -155,8 +160,8 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
             routingOrder: String(s.order),
             ...(s.clientUserId ? { clientUserId: s.clientUserId } : {}),
             tabs: {
-              signHereTabs: [anchorTab(signAnchors(n).sign, "-20")],
-              dateSignedTabs: [anchorTab(signAnchors(n).date, "-5")],
+              signHereTabs: [anchorTab(signAnchors(n).sign, SIGN_TAB_OFFSET.sign)],
+              dateSignedTabs: [anchorTab(signAnchors(n).date, SIGN_TAB_OFFSET.date)],
             },
           })),
         },

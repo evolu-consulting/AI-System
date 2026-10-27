@@ -77,6 +77,13 @@ export function defaultSigners(o: {
 /** esign-multi · anchor ẩn (chữ trắng) trên trang ký HTML cho người ký thứ `i` (0-based) — DocuSign đặt ô ký/ngày theo chuỗi. */
 export const signAnchors = (i: number) => ({ sign: `\\s${i + 1}\\`, date: `\\d${i + 1}\\` });
 
+/** Độ lệch (pixel) của ô ký/ngày so với anchor — anchor nằm góc trên-trái trong khung `.slot` (96px) nên ô phải nằm DƯỚI anchor.
+ *  Đo bằng `tools/scripts/src/esign-layout-check.ts` (phong bì nháp, không gửi email). */
+export const SIGN_TAB_OFFSET = {
+  sign: { x: "0", y: "32" },
+  date: { x: "0", y: "8" },
+} as const;
+
 const esc = (s: string) =>
   s.replace(
     /[&<>"']/g,
@@ -100,9 +107,9 @@ export function signaturePageHtml(o: {
   const rows = o.signers
     .map((s, i) => {
       const a = signAnchors(i);
-      return `<tr><td>${esc(party(s.role))}</td><td>${esc(s.name)}<br><small>${esc(s.email)}</small></td><td class="box"><span class="a">${a.sign}</span></td><td class="date"><span class="a">${a.date}</span></td></tr>`;
+      return `<tr><td>${esc(party(s.role))}</td><td>${esc(s.name)}<br><small>${esc(s.email)}</small></td><td class="box"><div class="slot"><span class="a">${a.sign}</span></div></td><td class="date"><div class="slot"><span class="a">${a.date}</span></div></td></tr>`;
     })
     .join("");
   const num = o.number ? `<p>Số / No.: ${esc(o.number)}</p>` : "";
-  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:40px}h1{font-size:18pt;text-align:center}table{width:100%;border-collapse:collapse;margin-top:24px}td,th{border:1px solid #888;padding:8px;vertical-align:top}td.box{height:90px;width:35%}td.date{width:20%}.a{color:#ffffff;font-size:8pt}</style></head><body><h1>TRANG KÝ / SIGNATURE PAGE</h1><p>Hợp đồng / Contract: <b>${esc(o.title)}</b></p>${num}<table><tr><th>Bên / Party</th><th>Người ký / Signer</th><th>Chữ ký / Signature</th><th>Ngày / Date</th></tr>${rows}</table></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:40px}h1{font-size:18pt;text-align:center}table{width:100%;border-collapse:collapse;margin-top:24px}td,th{border:1px solid #888;padding:8px;vertical-align:top}td.box{width:38%}td.date{width:20%}.slot{height:96px;position:relative}.a{position:absolute;top:6px;left:6px;color:#ffffff;font-size:8pt;line-height:1}</style></head><body><h1>TRANG KÝ / SIGNATURE PAGE</h1><p>Hợp đồng / Contract: <b>${esc(o.title)}</b></p>${num}<table><tr><th>Bên / Party</th><th>Người ký / Signer</th><th>Chữ ký / Signature</th><th>Ngày / Date</th></tr>${rows}</table></body></html>`;
 }
