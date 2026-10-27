@@ -56,7 +56,8 @@ Xác nhận xong = khoá cứng (tenant tắt duyệt: bấm xác nhận là kho
 - Nguồn chữ: `contracts.source_text` (trích lúc tải lên), không có ⇒ lớp chữ PDF của bytes đang gửi (`PdfConverter`, worker tạo lười). Chữ trích cache trong bộ nhớ theo `(tenant, file_id)` (FIFO trần 200; chỉ lưu kết quả cuối chữ/scan/hỏng; bận hoặc lỗi tải không lưu; không ghi `source_text`).
 - API: `GET /esign/anchors` (`read`), `PUT /esign/anchors` (`admin` = owner; `Phrase` cấm ký tự điều khiển ⇒ 400), `GET /contracts/:id/esign/placement` (`read`; xem trước `text|page|unknown`, dùng converter RIÊNG maxPending 1; bận `PDF_BUSY` ⇒ `"unknown"`, UI "chưa xác định (sẽ tự chọn khi gửi)"; lúc gửi dùng converter riêng maxPending 2). UI: Cài đặt › Quy trình duyệt › Ký số (hai ô, mỗi dòng một cụm) + hộp Gửi ký hiện "Vị trí ký".
 - Code: `H/domain/esign.anchor.ts`, `H/application/esign-anchor.usecase.ts`, `H/adapters/esign-anchor.{repo,routes}.ts`, `C/esign-anchor.ts`, `W/features/contract-esign/{anchor-api.ts,EsignAnchorSetting.tsx,EsignSendDialog.tsx}`; công cụ đo bố cục: `deploy/prod-sohoptac2/esign-layout/`.
-- ⚠ Chưa kiểm: `TEXT_TAB_OFFSET` (sign y=36, date y=84; `esign.anchor.ts:27`) chưa đo trên DocuSign thật (xem "Chưa rõ").
+- `TEXT_TAB_OFFSET` (sign y=50, date y=84; `esign.anchor.ts`) đo trên phong bì nháp DocuSign sandbox 2026-10-27: ô ký ngay dưới dòng "(Ký, ghi rõ họ tên…)", ô ngày trên tên người ký.
+- Nhắc ký (esign-remind-fix): người ký công ty chưa ký và đã tới lượt (mọi `order` nhỏ hơn đã ký) ⇒ chuông người ký; công ty đã ký / đối tác ký trước ⇒ chuông người phụ trách "đang chờ đối tác ký". Trạng thái từng người ký theo webhook/đồng bộ nền (trễ ≤ 15 phút ⇒ có thể thừa một lần nhắc).
 
 ### 4d. UI chọn nhà cung cấp (esign-multi)
 Cài đặt: chọn mặc định (nhãn + mức pháp lý), công ty chỉ-đọc. Hộp Gửi ký: dropdown khi > 1 nhà cung cấp khả dụng; phong bì hiện tên nhà cung cấp. i18n vi/en. Log thiếu cấu hình: `esign-provider-not-configured {provider}`.
@@ -65,7 +66,7 @@ Cài đặt: chọn mặc định (nhãn + mức pháp lý), công ty chỉ-đ�
 1. Trạng thái bật `CONTRACTS_APPROVAL_ENGINE` trên prod và công ty nào có feature `contracts-approval-engine`: STATE ghi "prod: chỉ demo" (2026-10-27), chưa kiểm env thật.
 2. DocuSign: prod đang dùng sandbox (deploy 2026-10-27); định dạng Connect giả định JSON (`data.envelopeId`). CA Việt Nam: adapter MISA chưa có (chờ Client ID); lát `esign-cks` ("Chữ ký số của tôi", ký PAdES nối tiếp cho phong bì loại `ca`, điền `certificate_ref`) chưa làm.
 3. HĐ bị xoá để lại envelope mồ côi (vô hại, chưa dọn). (Mở lại HĐ đã huỷ phong bì đang mở — §4b.)
-7. ⚠ `TEXT_TAB_OFFSET` (ô ký đặt theo anchor) chưa đo trên DocuSign thật; mốc nhắc/quá hạn của bước Ký số chưa có `*.perf.int.test.ts` (lô 200/tenant/lượt; tồn đọng lớn xả dần); thẻ HĐ chưa hiện lần kiểm nhà cung cấp gần nhất; review security cuối đợt nên xem quyền mới của role `contracts_job` (UPDATE một cột + policy UPDATE).
+7. Mốc nhắc/quá hạn của bước Ký số chưa có `*.perf.int.test.ts` (lô 200/tenant/lượt; tồn đọng lớn xả dần); thẻ HĐ chưa hiện lần kiểm nhà cung cấp gần nhất. Quyền mới của role `contracts_job` (0065) đã qua review security cuối đợt 2026-10-27.
 4. Chuông/inbox hub "cần duyệt" không gửi thêm cho Group "toàn quyền" (thẻ + Việc của tôi của gói đã có); mẫu đã lưu không tự đồng bộ khi đổi Group cấp 2 ở cài đặt tới lần lưu mẫu kế.
 5. Thẻ duyệt chưa có hành động "Thử lại" cho bước Dify lỗi (xử lý ở màn quy trình).
 6. Tên phòng ở thẻ duyệt cho người không phải admin dựa vào `GET /groups`; không resolve tên trưởng phòng.
