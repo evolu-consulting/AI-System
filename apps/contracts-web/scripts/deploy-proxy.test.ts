@@ -16,11 +16,16 @@ const upstream = (loc: string): string | undefined =>
 
 describe("proxy contracts-web (/admin → admin-api)", () => {
   test("dev (rsbuild): /admin cùng đích với /auth (admin-api), khác /pack (hub-api)", () => {
-    const p = proxy as Record<string, string>;
-    expect(p["/admin"]).toBe(p["/auth"]);
-    expect(p["/admin"]).not.toBe(p["/pack"]);
+    // /notifications là object { target, bypass } (route SPA trả index.html khi mở trang) — so theo target.
+    const p = proxy as Record<string, string | { target: string }>;
+    const to = (k: string) => {
+      const v = p[k];
+      return typeof v === "string" ? v : v?.target;
+    };
+    expect(to("/admin")).toBe(to("/auth"));
+    expect(to("/admin")).not.toBe(to("/pack"));
     for (const k of ["/pack", "/notifications", "/conversations", "/runs"])
-      expect(p[k]).toBe(p["/pack"]);
+      expect(to(k)).toBe(to("/pack"));
   });
 
   test("production: mẫu nginx trong deploy.md có vhost contracts-web; /admin, /auth → 3001; các route hub → 4000", () => {
