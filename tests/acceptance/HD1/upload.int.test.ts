@@ -246,21 +246,19 @@ describe("PARENT_INVALID · phụ lục", () => {
     expect(c.fb.ids()).toEqual([]); // tệp đã put (nếu có) phải được gỡ
     expect((await quotaOf(c.hub.redis, "t", T.acme)).n).toBe(0); // quota hoàn
   };
-  it("plan §1 · kind=appendix không có parent_id ⇒ 422 PARENT_INVALID, không để lại gì", async () => {
+  // CR-101a (K4, Câu 5): ngừng tạo phụ lục mới ⇒ tải lên `kind=appendix` (có/không cha, cha hợp lệ hay không) ⇒ 410 USE_VERSIONS,
+  // trước quota/FileBox — không để lại gì. Phụ lục sửa đổi đi "Tải bản cập nhật" (`/contracts/:id/versions`).
+  it("CR-101a · kind=appendix (không cha / cha tenant khác / cha hợp lệ) ⇒ 410 USE_VERSIONS, không để lại gì", async () => {
     await arrangeParent();
-    const r = await upload(c, P.hoa, { fields: { kind: "appendix" } });
-    expect([r.status, r.json?.error?.code]).toEqual([422, "PARENT_INVALID"]);
-    await noNew();
-  });
-  it("HD-AC02 · phụ lục trỏ HĐ cha của tenant KHÁC / cha không tồn tại ⇒ 422 PARENT_INVALID; tệp đã lưu bị gỡ, quota hoàn", async () => {
-    await arrangeParent();
-    const a = await upload(c, P.hoa, { fields: { kind: "appendix", parent_id: cid(2) } });
-    const b = await upload(c, P.hoa, { fields: { kind: "appendix", parent_id: cid(77) } });
-    expect([a.status, a.json?.error?.code, b.status, b.json?.error?.code]).toEqual([
-      422,
-      "PARENT_INVALID",
-      422,
-      "PARENT_INVALID",
+    const r = await Promise.all([
+      upload(c, P.hoa, { fields: { kind: "appendix" } }),
+      upload(c, P.hoa, { fields: { kind: "appendix", parent_id: cid(2) } }),
+      upload(c, P.hoa, { fields: { kind: "appendix", parent_id: cid(1) } }),
+    ]);
+    expect(r.map((x) => [x.status, x.json?.error?.code])).toEqual([
+      [410, "USE_VERSIONS"],
+      [410, "USE_VERSIONS"],
+      [410, "USE_VERSIONS"],
     ]);
     await noNew();
   });
@@ -269,14 +267,6 @@ describe("PARENT_INVALID · phụ lục", () => {
     const r = await upload(c, P.hoa, { fields: { parent_id: cid(1) } });
     expect([r.status, r.json?.error?.code]).toEqual([422, "PARENT_INVALID"]);
     await noNew();
-  });
-  it("HD-FR-01 · phụ lục với cha hợp lệ cùng tenant ⇒ 201, kind='appendix', parent_id đúng", async () => {
-    await arrangeParent();
-    const r = await upload(c, P.hoa, { fields: { kind: "appendix", parent_id: cid(1) } });
-    expect(r.status).toBe(201);
-    const [row] =
-      await c.sql`select kind, parent_id from contracts.contracts where id = ${r.json.id}`;
-    expect(row).toEqual({ kind: "appendix", parent_id: cid(1) });
   });
   it("plan §1 · kind lạ ('folder') ⇒ 400", async () => {
     await arrangeParent();

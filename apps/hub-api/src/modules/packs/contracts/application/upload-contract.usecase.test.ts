@@ -1,4 +1,4 @@
-﻿// HD-FR-08 · D-06 · D-09 · plan §5: use case tải lên với cổng giả — thứ tự kiểm, hoàn quota, gỡ tệp, DOCX.
+// HD-FR-08 · D-06 · D-09 · plan §5: use case tải lên với cổng giả — thứ tự kiểm, hoàn quota, gỡ tệp, DOCX.
 import { describe, expect, it } from "bun:test";
 import type { DocxResult } from "../../kit/domain/docx.rules";
 import {
@@ -101,10 +101,11 @@ describe("upload-contract use case", () => {
     expect(s.inserted[0]).toMatchObject({ mime: "application/pdf", sourceText: null, error: null });
     expect(Object.keys(s.inserted[0]?.fields ?? {})).toHaveLength(23);
   });
-  it("magic bytes sai ⇒ FILE_TYPE trước quota; kind/parent lệch ⇒ PARENT_INVALID trước quota", async () => {
+  it("magic bytes sai ⇒ FILE_TYPE; phụ lục mới ⇒ USE_VERSIONS (CR-101a); kind/parent lệch ⇒ PARENT_INVALID — trước quota", async () => {
     const s = setup();
     expect(await codeOf(s.input(enc.encode("MZ....")))).toBe("FILE_TYPE");
-    expect(await codeOf(s.input(PDF, { kind: "appendix" }))).toBe("PARENT_INVALID");
+    expect(await codeOf(s.input(PDF, { kind: "appendix" }))).toBe("USE_VERSIONS");
+    expect(await codeOf(s.input(PDF, { kind: "appendix", parentId: T }))).toBe("USE_VERSIONS");
     expect(await codeOf(s.input(PDF, { parentId: T }))).toBe("PARENT_INVALID");
     expect(s.log).toEqual([]);
   });
@@ -154,7 +155,7 @@ describe("upload-contract use case · quota + hoàn tác", () => {
     expect(a.log.slice(1)).toEqual([`put:t_${T}`, "refund"]);
     const b = setup();
     b.st.failTx = new UploadError("PARENT_INVALID");
-    expect(await codeOf(b.input(PDF, { kind: "appendix", parentId: T }))).toBe("PARENT_INVALID");
+    expect(await codeOf(b.input(PDF))).toBe("PARENT_INVALID");
     expect(b.log.slice(1)).toEqual([`put:t_${T}`, "refund", `remove:t_${T}:f1`]);
   });
 });

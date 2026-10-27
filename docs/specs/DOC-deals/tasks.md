@@ -50,3 +50,13 @@ Unit `deal.rules.test.ts`; int đường chính: tạo deal → xác nhận mố
 - [ ] Prod: chạy dry-run `--tenant demo --tenant titi-group-company` (chỉ đọc) gửi số cho điều phối trước `--apply` (hard stop dữ liệu khách). DB local: 0 giao dịch G1, 0 HĐ không file.
 - [ ] UI (DOC-ui-list / DOC-ui-frame): form giao dịch → `POST /contracts/deals` (`source`, `settled_now`, hiển thị `settle_error`); nút "Nâng thành hợp đồng" → multipart `/promote`; Diễn biến đọc `/edit-log`; gỡ G2 (`apps/contracts-web/src/features/transactions/*`, route `/transactions*` chuyển hướng) — e2e `e2e/contracts-web/transactions.cw.ts` sẽ đỏ (ghi 410) tới khi gỡ.
 - [ ] Review cuối đợt: trigger `contract_edit_log` chạy SECURITY INVOKER — vai nền khác `contracts_rw` (vd `contracts_job`) sửa trường giao dịch sẽ thiếu quyền INSERT (hiện không có đường nào như vậy).
+
+## Sửa sau review cuối đợt (doc-deals-fix, 2026-10-27)
+- (1) Nâng khi tenant BẬT duyệt ⇒ HĐ về `needs_review` (không khoá) + mở lượt duyệt cấp 1 bằng `startApproval` của nhập tay (engine nếu công ty có entitlement, máy cũ nếu không); TẮT ⇒ `confirmed_*` = người nâng ⇒ K1 khoá ngay, `locked_by` = người nâng. Không đổi trigger 0056 (đủ bằng câu UPDATE). Phản hồi `/promote` thêm `status`, `locked` thành boolean.
+- (2) Seed demo: giao dịch = 2 chứng từ `deal` (mốc mở + đã giao), bỏ ghi bảng G1; `V2-O/seed-demo` 17 → 19 HĐ.
+- (3) Nâng: kiểm thấy-được + là giao dịch hiện hành TRƯỚC FileBox; trừ hạn mức tải lên/ngày (dùng chung `takeQuota`), hoàn khi không nâng được.
+- (4) Tải lên multipart `doc_type=deal` ⇒ 400 `DEAL_USE_DEALS_ENDPOINT`.
+- (5) "Đã giao / đã thanh toán ngay" dùng `ledgerDeps` chung với route sổ ⇒ `repDelta` (cờ v2e) lưu như xác nhận thường.
+- (6a) KHÔNG đổi: gắn HĐ NT lên HĐ đã khoá là chủ ý của DOC-model (R30 "gắn chứng từ có sẵn" — chứng từ có sẵn thường đã xác nhận; test DOC-model khoá con trước khi gắn); liên kết khung là quan hệ tổ chức, không phải trường pháp lý K1.
+- (6b) KHÔNG phải lỗi: xoá V2-M giao dịch đã huỷ chuyển từ G1 chỉ đảo dòng `delivery` chưa có dòng đảo ⇒ kho giữ số ròng (int tái hiện xanh).
+- K4 (CR-101a): tải lên `kind=appendix` ⇒ 410 `USE_VERSIONS` trước quota/FileBox (`upload-contract.usecase.ts`); HD1 upload int ca phụ lục viết lại.

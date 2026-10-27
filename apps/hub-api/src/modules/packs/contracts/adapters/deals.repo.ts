@@ -24,18 +24,36 @@ export function promoteRepo(tx: Tx, t: string): PromoteRepo {
             ${w.size}::bigint, ${w.userId}::uuid
           from cur where cur.doc_type = 'deal' and not cur.superseded
           returning id),
+        -- Review cuối đợt (lách duyệt): tenant BẬT duyệt ⇒ HĐ về needs_review (không khoá; người gọi mở lượt duyệt cấp 1 —
+        -- engine/máy như nhập tay); TẮT ⇒ confirmed_* = người nâng ⇒ K1 (BEFORE) khoá ngay, locked_by = người nâng.
+        s as (select contracts.approval_on() as on),
         u as (
           update contracts.contracts c set doc_type = 'contract', file_id = f.id,
-            fields = c.fields || jsonb_build_object('number', ${fv(w.number)}), version = c.version + 1, updated_at = now()
-          from f where c.tenant_id = ${t}::uuid and c.id = ${w.id}::uuid
-          returning c.id, c.version, c.locked_at is not null as locked),
+            fields = c.fields || jsonb_build_object('number', ${fv(w.number)}), version = c.version + 1, updated_at = now(),
+            status = case when s.on then 'needs_review' else c.status end,
+            confirmed_at = case when s.on then null else now() end,
+            confirmed_by = case when s.on then null else ${w.userId}::uuid end
+          from f, s where c.tenant_id = ${t}::uuid and c.id = ${w.id}::uuid
+          returning c.id, c.version, c.status, c.locked_at is not null as locked),
         e as (
           insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
           select ${t}::uuid, u.id, 'promoted', ${w.userId}::uuid,
             jsonb_build_object('file_id', ${w.fileRowId}::uuid, 'number', ${w.number}::text) from u)
-        select cur.doc_type, coalesce(cur.superseded, false) as superseded, u.version, coalesce(u.locked, false) as locked
+        select cur.doc_type, coalesce(cur.superseded, false) as superseded, u.version, u.status,
+          coalesce(u.locked, false) as locked
         from (select 1) one left join cur on true left join u on true`);
-      return rows[0] ?? { doc_type: null, superseded: false, version: null, locked: false };
+      return (
+        rows[0] ?? { doc_type: null, superseded: false, version: null, status: null, locked: false }
+      );
+    },
+    async check(id) {
+      const rows = await tx.execute<{
+        doc_type: string;
+        superseded: boolean;
+      }>(sql`select c.doc_type,
+          c.superseded_at is not null as superseded
+        from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${id}::uuid`);
+      return rows[0] ?? null;
     },
   };
 }

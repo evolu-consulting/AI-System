@@ -21,7 +21,11 @@ describe("V2-O · seed demo v2", () => {
     const one = await seedDemo(w.sql, ids, TODAY);
     const two = await seedDemo(w.sql, ids, TODAY);
     expect(two).toEqual(one);
-    expect(one).toMatchObject({ products: 7, contracts: 17 }); // D1: +1 HĐ (chuỗi phiên bản c6 v1 → v2)
+    // D1: +1 HĐ (chuỗi phiên bản c6 v1 → v2); CR-101 DOC-deals: +2 giao dịch (chứng từ `deal`, thay bảng G1 chỉ đọc)
+    expect(one).toMatchObject({ products: 7, contracts: 19 });
+    const [deals] = await w.sql<{ n: number }[]>`select count(*)::int as n from contracts.contracts
+      where tenant_id = ${w.A} and doc_type = 'deal' and locked_at is null`;
+    expect(deals?.n).toBe(2);
     expect(one.partner_roles).toBeGreaterThanOrEqual(10);
     expect(one.service_customers).toBeGreaterThanOrEqual(5);
     const bAfter =

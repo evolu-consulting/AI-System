@@ -4,6 +4,7 @@
 // · chéo tenant cho `contract_edit_log` (bảng mới). Viết TRƯỚC code của phần kho/tenant. Hạ tầng V2-D (HD1 + FileBox giả).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { CBASE, pdf } from "../HD1/_support/hd1";
+import { restoreApproval, setApproval } from "../V2-A/_support/v2a";
 import {
   arrangeV2d,
   type CtxN1,
@@ -28,11 +29,14 @@ beforeAll(async () => {
   c = await startHd1();
   await arrangeV2d(c);
   await c.sql`truncate contracts.contract_edit_log`;
+  // Đường chính khoá ngay khi nâng ⇒ tenant TẮT duyệt (bật duyệt: promote-approval.int.test.ts).
+  await setApproval(c.sql, T.acme, false);
   const p = await product(c.sql, { name: "Băng keo 5cm", grp: "goods" });
   pid = p.id;
   cid = p.comps[0] as string;
 }, 120_000);
 afterAll(async () => {
+  if (c) await restoreApproval(c.sql);
   await c?.stop();
 });
 

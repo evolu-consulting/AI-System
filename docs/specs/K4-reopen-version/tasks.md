@@ -38,4 +38,4 @@ Phụ lục kiểu mới, đổi cơ chế gia hạn, đổi khoá K1, chuyển 
 
 ## Việc còn lại
 - [x] 1–4.
-- [ ] Tải lên `kind=appendix` ⇒ 410 `USE_VERSIONS` trong `upload-contract.usecase.ts` (sau khi DOC-model merge; sửa kèm HD1 upload int ca phụ lục).
+- [x] (doc-deals-fix) Tải lên `kind=appendix` ⇒ 410 `USE_VERSIONS` trong `upload-contract.usecase.ts` (sau khi DOC-model merge; sửa kèm HD1 upload int ca phụ lục).

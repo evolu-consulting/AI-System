@@ -56,11 +56,13 @@ const MESSAGES: Record<UploadError["code"], string> = {
   CONTRACT_SUPERSEDED: "Contract version has been superseded",
   CONTRACT_NOT_LOCKED: "Contract is not confirmed",
   VERSION_DRAFT_EXISTS: "An updated version is already pending",
+  USE_VERSIONS: "Appendices are no longer created — upload an updated version",
 };
 const STATUS = {
   ...CONTRACT_ERRORS,
   ...VERSION_ERRORS,
   CONTRACT_NOT_LOCKED: LOCK_ERRORS.CONTRACT_NOT_LOCKED,
+  USE_VERSIONS: LOCK_ERRORS.USE_VERSIONS,
   FRAME_INVALID: DOC_ERRORS.FRAME_INVALID,
   DOCX_BUSY: 503,
   NOT_FOUND: 404,
@@ -152,6 +154,13 @@ function docFields(form: FormData, kind: "contract" | "appendix"): UploadDoc {
   const p = UploadDocFormSchema.safeParse(pick);
   if (!p.success) throw appError("VALIDATION_ERROR");
   const d = p.data;
+  // CR-101 DOC-deals-fix: giao dịch không tạo qua tải lên (file tuỳ chọn, có nguồn) ⇒ 400 mã riêng, chỉ đường `/contracts/deals`.
+  if (d.doc_type === "deal")
+    throw new AppError(
+      "DEAL_USE_DEALS_ENDPOINT",
+      400,
+      "Giao dịch tạo qua POST /contracts/deals (không qua tải lên)",
+    );
   if (kind === "appendix" && (d.doc_type !== "contract" || d.frame_root_id))
     throw appError("VALIDATION_ERROR");
   return {
@@ -234,17 +243,18 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       supersedes: id,
     });
   });
-  if (d.promote) r.route("/", promoteRoute(d.promote, write, limit, d.maxBytes));
+  if (d.promote) r.route("/", promoteRoute(d.promote, write, limit, d.maxBytes, d.timeZoneOf));
   return r;
 }
 
-/** CR-101 DOC-deals · R10 · `POST /contracts/:id/promote` (multipart `file` ký + `number`): giữ id/mốc/kho, khoá ngay. Chứng từ
+/** CR-101 DOC-deals · R10 · `POST /contracts/:id/promote` (multipart `file` ký + `number`): giữ id/mốc/kho; tắt duyệt ⇒ khoá ngay, bật ⇒ về Chờ duyệt + lượt duyệt. Chứng từ
  *  không thấy ⇒ 404; không phải giao dịch hiện hành ⇒ 409 `NOT_A_DEAL`; thiếu số ⇒ 400; thiếu file ⇒ 400 (đọc multipart). */
 function promoteRoute(
   promote: PromoteContract,
   write: MiddlewareHandler,
   limit: MiddlewareHandler,
   maxBytes: number,
+  timeZoneOf: (tenantId: string) => Promise<string>,
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   r.post("/contracts/:id/promote", write, limit, async (c) => {
@@ -252,14 +262,19 @@ function promoteRoute(
     const x = await readUpload(c, maxBytes);
     const n = x.form.get("number");
     const f = parseWith(PromoteFormSchema, { number: typeof n === "string" ? n : undefined });
-    const out = await promote(x.who, { id, name: x.name, bytes: x.bytes, number: f.number }).catch(
-      (e) => {
-        if (e instanceof UploadError) throw toAppError(e);
-        const code = dealDbCode(e) as DealErrorCode | null;
-        if (code && code in DEAL_ERRORS) throw new AppError(code, DEAL_ERRORS[code], code);
-        throw e;
-      },
-    );
+    const timeZone = await timeZoneOf(x.who.tenantId);
+    const out = await promote(x.who, {
+      id,
+      name: x.name,
+      bytes: x.bytes,
+      number: f.number,
+      timeZone,
+    }).catch((e) => {
+      if (e instanceof UploadError) throw toAppError(e);
+      const code = dealDbCode(e) as DealErrorCode | null;
+      if (code && code in DEAL_ERRORS) throw new AppError(code, DEAL_ERRORS[code], code);
+      throw e;
+    });
     if (out.kind !== "ok")
       throw out.kind === "not_found"
         ? appError("NOT_FOUND")
@@ -272,6 +287,7 @@ function promoteRoute(
       {
         id: out.id,
         doc_type: "contract",
+        status: out.status,
         locked: out.locked,
         version: out.version,
         file_id: out.file_id,

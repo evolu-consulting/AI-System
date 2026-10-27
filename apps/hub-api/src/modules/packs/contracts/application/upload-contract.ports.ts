@@ -91,7 +91,9 @@ export type UploadErrorCode =
   | "VERSION_NOT_ALLOWED"
   | "CONTRACT_SUPERSEDED"
   | "CONTRACT_NOT_LOCKED"
-  | "VERSION_DRAFT_EXISTS";
+  | "VERSION_DRAFT_EXISTS"
+  // CR-101a (K4): ngừng tạo phụ lục mới (410)
+  | "USE_VERSIONS";
 
 export class UploadError extends Error {
   constructor(

@@ -67,7 +67,9 @@ export type PromoteForm = z.infer<typeof PromoteFormSchema>;
 export const PromoteResponseSchema = z.strictObject({
   id: z.uuid(),
   doc_type: z.literal("contract"),
-  locked: z.literal(true),
+  /** Tenant bật duyệt ⇒ `needs_review` (lượt duyệt cấp 1 đã mở, chưa khoá); tắt ⇒ `active` + khoá (K1). */
+  status: z.enum(["active", "needs_review"]),
+  locked: z.boolean(),
   version: VersionSchema,
   file_id: z.uuid(),
 });

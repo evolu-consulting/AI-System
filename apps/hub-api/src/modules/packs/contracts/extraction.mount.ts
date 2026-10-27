@@ -15,7 +15,7 @@ import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import type { PackToolDef } from "../kit/application/pack-tools.ports";
-import type { PackUow } from "../kit/application/ports";
+import type { PackUow, PackWho } from "../kit/application/ports";
 import type { ActionQuota } from "./adapters/action-quota";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRepo } from "./adapters/approval.repo";
@@ -114,6 +114,8 @@ export type ContractsAi = {
   tools: PackToolDef[];
   /** contract-flow S3b · việc duyệt HĐ trên engine cho "Việc của tôi" (cờ bật); tắt ⇒ vắng. */
   myApprovals?: ReturnType<typeof myApprovals>;
+  /** CR-101 DOC-deals-fix: mở lượt duyệt cấp 1 cho HĐ vừa về Chờ duyệt (nâng giao dịch khi bật duyệt). */
+  startReview?: (who: PackWho, id: string) => Promise<unknown>;
 };
 export type ContractsFlowDeps = {
   ai: AiClient;
@@ -324,6 +326,8 @@ export function contractsAiModule(
     starter,
     routes,
     approval,
+    // CR-101 DOC-deals-fix: nâng giao dịch khi bật duyệt ⇒ mở lượt cấp 1 như nhập tay (engine nếu có entitlement, máy cũ nếu không).
+    startReview: (who: PackWho, id: string) => start(who, id, "level1"),
     guard: patchGuard(ad),
     tools: eng?.tools ?? [],
     ...(eng ? { myApprovals: eng.myApprovals } : {}),

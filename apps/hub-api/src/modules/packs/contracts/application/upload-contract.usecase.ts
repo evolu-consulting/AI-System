@@ -84,13 +84,20 @@ export function sniffUpload(bytes: Uint8Array, zipNames: (b: Uint8Array) => stri
   );
 }
 
+/** Trước quota/FileBox. CR-101a (K4, Câu 5): ngừng tạo phụ lục mới (sửa đổi đi "Tải bản cập nhật") ⇒ `USE_VERSIONS`;
+ *  HĐ kinh tế có `parent_id` ⇒ `PARENT_INVALID`. Bản cập nhật (`supersedes`) lấy loại theo bản cũ ⇒ bỏ qua. */
+function precheckKind(i: UploadContractInput): void {
+  if (i.supersedes) return;
+  if (i.kind === "appendix") throw new UploadError("USE_VERSIONS");
+  if (i.parentId !== null) throw new UploadError("PARENT_INVALID");
+}
+
 export function createUploadContract(d: UploadContractDeps): UploadContract {
   const now = d.now ?? (() => new Date());
   return async (i) => {
     const type = sniffUpload(i.bytes, d.zipNames, i.name);
     if (!type) throw new UploadError("FILE_TYPE");
-    if (!i.supersedes && (i.kind === "appendix") !== (i.parentId !== null))
-      throw new UploadError("PARENT_INVALID");
+    precheckKind(i);
     const at = now();
     const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
     await takeQuota(d, i, days, at);
@@ -179,9 +186,10 @@ function persist(
   });
 }
 
-async function takeQuota(
-  d: UploadContractDeps,
-  i: UploadContractInput,
+/** Hạn mức tải lên/ngày (dùng chung: tải lên, nâng giao dịch thành HĐ — DOC-deals). Vượt ⇒ hoàn + `UPLOAD_QUOTA`. */
+export async function takeQuota(
+  d: Pick<UploadContractDeps, "counter" | "limits" | "tenantLimitOf">,
+  i: { who: PackWho; timeZone: string },
   days: UploadDays,
   at: Date,
 ): Promise<void> {

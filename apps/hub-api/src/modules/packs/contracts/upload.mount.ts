@@ -14,6 +14,7 @@ import { createDocxConverter } from "../kit/adapters/docx";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackWho } from "../kit/application/ports";
 import { promoteRepo } from "./adapters/deals.repo";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
@@ -21,7 +22,8 @@ import { redisUploadCounter, unavailableUploadCounter } from "./adapters/upload-
 import { zipNames } from "./adapters/zip-names";
 import { createPromoteContract } from "./application/promote-contract.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
-import { createUploadContract } from "./application/upload-contract.usecase";
+import { createUploadContract, takeQuota } from "./application/upload-contract.usecase";
+import { uploadDay } from "./domain/upload.rules";
 
 const KEY = "contracts";
 const MiB = 1024 * 1024;
@@ -37,6 +39,8 @@ export type UploadMountDeps = {
   tenantLimitOf?: (tenantId: string) => Promise<number | null>;
   /** HD2 · hàng đợi trích (`contractsAiModule`); gọi SAU commit, không chặn tải lên. */
   starter: ExtractionStarter;
+  /** CR-101 DOC-deals-fix: nâng giao dịch khi tenant bật duyệt ⇒ mở lượt duyệt cấp 1 (engine/máy, như nhập tay). */
+  review?: (who: PackWho, id: string) => Promise<unknown>;
 };
 
 /** Env số nguyên dương, sai/vắng ⇒ mặc định (plan §5: `CONTRACTS_MAX_MB`, `CONTRACTS_UPLOADS_*_DAY`). */
@@ -64,18 +68,21 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   const uow = packTenantOnly(
     createPackUow(d.db, KEY, (tx, tid) => ({ upload: uploadContractRepo(tx, tid) })),
   );
-  const upload = createUploadContract({
-    uow,
+  const q = {
     counter: d.redis ? redisUploadCounter(d.redis) : unavailableUploadCounter,
-    files: fileStore(d.filebox),
-    docx: createDocxConverter(),
-    starter: d.starter,
-    zipNames,
     limits: {
       tenant: envInt("CONTRACTS_UPLOADS_TENANT_DAY", CONTRACT_UPLOAD_TENANT_DAILY),
       global: envInt("CONTRACTS_UPLOADS_GLOBAL_DAY", CONTRACT_UPLOAD_GLOBAL_DAILY),
     },
     ...(d.tenantLimitOf ? { tenantLimitOf: d.tenantLimitOf } : {}),
+  };
+  const upload = createUploadContract({
+    uow,
+    ...q,
+    files: fileStore(d.filebox),
+    docx: createDocxConverter(),
+    starter: d.starter,
+    zipNames,
     newId: () => Bun.randomUUIDv7(),
     log: logger,
   });
@@ -86,6 +93,14 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     files: fileStore(d.filebox),
     zipNames,
     newId: () => Bun.randomUUIDv7(),
+    // Cùng hạn mức tải lên/ngày (trừ trước FileBox, hoàn khi không nâng được).
+    quota: async (who, timeZone) => {
+      const at = new Date();
+      const days = { tenant: uploadDay(at, timeZone), global: uploadDay(at, "UTC") };
+      await takeQuota(q, { who, timeZone }, days, at);
+      return () => q.counter.refund(who.tenantId, days);
+    },
+    ...(d.review ? { review: d.review } : {}),
   });
   return uploadRoutes(d.view, { upload, promote, maxBytes, timeZoneOf: d.timeZoneOf });
 }

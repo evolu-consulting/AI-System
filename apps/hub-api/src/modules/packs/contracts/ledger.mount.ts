@@ -74,6 +74,29 @@ export function createOverdueSweep(db: Db, d: OverdueSweepDeps): OverdueSweep {
 /** Seam `PacksDeps.contractsOverdue`: `worker` ⇒ dựng vòng nền. */
 export type ContractsOverdueDeps = { worker?: boolean; everyMs?: number };
 
+/** Deps chung của lệnh sổ (route sổ HD7 + "đã giao/đã thanh toán ngay" của giao dịch — DOC-deals): cùng `repDelta` ⇒ xác nhận ở
+ *  đâu cũng lưu delta uy tín như nhau (cờ `v2e`). */
+export function ledgerDeps(
+  db: Db,
+  d: { timeZoneOf: (tenantId: string) => Promise<string>; now: () => Date },
+) {
+  const tz = safeTimeZone(d.timeZoneOf);
+  return {
+    uow: packTenantOnly(createPackUow(db, KEY, ledgerRepos)),
+    timeZoneOf: tz,
+    now: d.now,
+    // Cờ `hd8` ⇒ không lưu (HD8 đọc cả tenant theo vai — phá ngưỡng V2-D); `v2e` ⇒ 4 câu trong tx, lọc một đối tác.
+    repDelta: async (
+      who: { tenantId: string },
+      repos: unknown,
+      q: { head: LockedObligation; at: string; fault: "partner" | "ours" | "unknown" | null },
+    ) =>
+      envRepEngine() === "v2e"
+        ? deltaIn(repos as TxRepos, { ...q, today: localDate(d.now(), await tz(who.tenantId)) })
+        : null,
+  };
+}
+
 export function ledgerModule(
   db: Db,
   view: PackAccessView,
@@ -89,32 +112,17 @@ export function ledgerModule(
       ...(d.signal ? { signal: d.signal } : {}),
     });
   }
-  const uow = packTenantOnly(createPackUow(db, KEY, ledgerRepos));
   const now = d.now ?? (() => new Date());
   // MS-impact: xem trước tác động + delta uy tín lưu trên dòng sổ khi xác nhận (engine hiện hành).
   const impact = obligationImpactOf(db, { timeZoneOf: d.timeZoneOf, now });
-  const tz = safeTimeZone(d.timeZoneOf);
-  const deps = {
-    uow,
-    timeZoneOf: tz,
-    now,
-    // Cờ `hd8` ⇒ không lưu (HD8 đọc cả tenant theo vai — phá ngưỡng V2-D); `v2e` ⇒ 4 câu trong tx, lọc một đối tác.
-    repDelta: async (
-      who: { tenantId: string },
-      repos: unknown,
-      q: { head: LockedObligation; at: string; fault: "partner" | "ours" | "unknown" | null },
-    ) =>
-      envRepEngine() === "v2e"
-        ? deltaIn(repos as TxRepos, { ...q, today: localDate(now(), await tz(who.tenantId)) })
-        : null,
-  };
+  const deps = ledgerDeps(db, { timeZoneOf: d.timeZoneOf, now });
   const r = ledgerRoutes(view, {
     cmd: ledgerCommands(deps),
     reads: ledgerReads(deps),
     engine: envRepEngine, // REP-v3: cờ `v2e` ⇒ đóng chỉnh tay ±10
   });
-  r.route("/", milestonesRoutes(view, milestoneCommands({ uow }))); // V2-A · thêm/sửa/xoá mốc
-  r.route("/", deliveryRoutes(view, deliveryReads({ uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
+  r.route("/", milestonesRoutes(view, milestoneCommands({ uow: deps.uow }))); // V2-A · thêm/sửa/xoá mốc
+  r.route("/", deliveryRoutes(view, deliveryReads({ uow: deps.uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
   r.route("/", obligationImpactRoutes(view, impact)); // MS-impact · xem trước tác động xác nhận mốc
   return r;
 }

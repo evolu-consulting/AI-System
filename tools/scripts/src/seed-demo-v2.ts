@@ -25,15 +25,7 @@ import {
   ratingRows,
 } from "./seed-demo-v2.build-people";
 import { COLS } from "./seed-demo-v2.cols";
-import {
-  D1_WIPE,
-  d1EventRows,
-  loadTxObligation,
-  loadVersionChain,
-  txEventRows,
-  txLineRows,
-  txRows,
-} from "./seed-demo-v2.d1";
+import { d1EventRows, loadDeals, loadVersionChain } from "./seed-demo-v2.d1";
 import { OWN } from "./seed-demo-v2.specs";
 import { type StockPlan, stockPlan } from "./seed-demo-v2.stock";
 
@@ -79,7 +71,7 @@ export const WIPE = [
   "approvals",
   "followups",
   "sourcing_choices",
-  ...D1_WIPE,
+  "contract_edit_log",
   "partner_event_voids",
   "partner_events",
   "partner_roles",
@@ -172,10 +164,7 @@ async function loadPeople({ tx, tenant, a, today, shift }: Ctx): Promise<void> {
 
 /** CR-097 D1: dữ liệu minh hoạ tính năng mới (chuỗi phiên bản, Giao dịch nháp/đã ghi sổ). Sự kiện sổ (MỚI · tạm tính, cờ đỏ) ở loadPeople. */
 async function loadD1({ tx, tenant, a, today }: Ctx): Promise<void> {
-  await ins(tx, "transactions", txRows(tenant, a, today));
-  await ins(tx, "transaction_lines", txLineRows(tenant));
-  await ins(tx, "transaction_events", txEventRows(tenant, a, today));
-  await loadTxObligation(tx, tenant, today);
+  await loadDeals(tx, tenant, a, today); // CR-101 DOC-deals: giao dịch = chứng từ `deal` (G1 chỉ đọc)
   await loadVersionChain(tx, tenant, today);
 }
 

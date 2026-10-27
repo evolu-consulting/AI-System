@@ -11,7 +11,7 @@ import { extractionRepo } from "./adapters/extraction.repo";
 import { createManual } from "./application/create-manual.usecase";
 import { ledgerCommands } from "./application/ledger.usecase";
 import { localDate } from "./domain/local-time.rules";
-import { ledgerRepos } from "./ledger.mount";
+import { ledgerDeps } from "./ledger.mount";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
@@ -34,11 +34,8 @@ export function transactionsModule(
     newId: () => Bun.randomUUIDv7(),
     today: async (tid) => localDate(now(), await tz(tid)),
   });
-  const cmd = ledgerCommands({
-    uow: packTenantOnly(createPackUow(db, KEY, ledgerRepos)),
-    timeZoneOf: tz,
-    now,
-  });
+  // Cùng deps với route sổ (repDelta ⇒ delta uy tín lưu như xác nhận thường, cờ v2e).
+  const cmd = ledgerCommands(ledgerDeps(db, { timeZoneOf: d.timeZoneOf, now }));
   return dealsRoutes(view, {
     create,
     settle: (w, id) => cmd.settle(w, id, {}),

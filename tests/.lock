@@ -527,8 +527,9 @@ f857603f22fa521cdd7a58f936b351583f33e4a8a128f8d7b19371fd76ef35a1  tests/acceptan
 d434e09c410726267a31ac21af6f154373050beee54f8e1e58c0ed25f67d2e3c  tests/acceptance/CR-055/commands-features.int.test.ts
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptance/D1/backfill.int.test.ts
-80ca03136815da914547dcbfd524e6bc50270197aec9b7c0900f610a6b6972a8  tests/acceptance/DOC-deals/deals.int.test.ts
+751acccc84963749b393ac43157c4d25ef92a4877d9c12594d9ffccf3e1a9b6b  tests/acceptance/DOC-deals/deals.int.test.ts
 bc8e69c50e73c89383503093af75d7395985e6e8fcf2a8f85aec8d321c5d0ab4  tests/acceptance/DOC-deals/migrate.int.test.ts
+9569a1501168d3b0354544a52c844c7a1eecede8d628a8cf6efc8338085ce027  tests/acceptance/DOC-deals/promote-approval.int.test.ts
 88c03d31ce17556562bee80b542c006cfed21cdd1e144265170652cd644245ef  tests/acceptance/DOC-legal/legal.int.test.ts
 f4bb8d99f7fbebd30c530ae2c20479f61b29e52ec1aa653e645293331bed5992  tests/acceptance/DOC-model/doc-model.int.test.ts
 ffe096bf1386418554a9279c602cff1cfcd69ef316733f169e797049e2d877c2  tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts
@@ -763,7 +764,7 @@ eea9e296535b67bfd995e65695493cf880c068c0af44399759c3e2a6d7e0c31d  tests/acceptan
 d9b155f6b8b69688ab02197453a52fe045309c0687dd372b1897465f79de038c  tests/acceptance/HD1/rules/fields.rules.test.ts
 583bab2224241adcd0da6958299b63ac197ae843dfe38c3a5adf47f4b10a4945  tests/acceptance/HD1/rules/fold.rules.test.ts
 639485fe5398d5990d19572889382193f3140c18a580fd403d26e6ec01c9c7f0  tests/acceptance/HD1/rules/upload.rules.test.ts
-2d1994827c95792c2ca8c08fec908b0633de6cb201fcbe4d16e28b3a0283d8a4  tests/acceptance/HD1/upload.int.test.ts
+13e2d333c47b5c4574a839d0a2e81ee0c2be342c8517abc0e7aadbef0515edf7  tests/acceptance/HD1/upload.int.test.ts
 0058d55793ffc26affe4f3fd14012cf4dab0c002f5e55b22aba116032a57cf14  tests/acceptance/HD2/_support/hd2.ts
 f04342017eac1078da1e185f45e27bec66bfae36ae2a14b88903c63aeb5e441e  tests/acceptance/HD2/extract.int.test.ts
 0fbaf887aa268f91a7c7c89e233329551636d8f152e584d19bf99d6517d90d1a  tests/acceptance/HD2/manual.int.test.ts
@@ -1282,7 +1283,7 @@ b72e6416703837a6a67c0882799fdabbab1774427fd84416e406707aa3e9a600  tests/acceptan
 bfb6b7b7c05016ea11f811fea7b7f4d619e9bec883c12547806e4744ca78b829  tests/acceptance/V2-M/deny.int.test.ts
 0647175b8b6c9c757fc9ee486337850c49f86b327df0e8ff2532e339e45d7336  tests/acceptance/V2-O/demo-ai-fix.int.test.ts
 790702162d4fb9d369985ed6659c7345798f5e0604507f59f9bcd53526d9bdef  tests/acceptance/V2-O/friendly-groups.int.test.ts
-c7f0826477674b62ff4639dfc50eb7ccddb11fc8e0ab6c336c595a807d1d7842  tests/acceptance/V2-O/seed-demo.int.test.ts
+abd0154d249e37176b6c0bc7a5bb0e368c69da14f914d21e0aafa6897b705c3e  tests/acceptance/V2-O/seed-demo.int.test.ts
 6ee54f2a015a491e8a7732b3c45fa2755398b1478be0d2dda747599ed44b146f  tests/acceptance/W1/_support/w1.ts
 2593428431e43b7040fd7b04a3948e436e2d98ba6312ef37a7c3417e8e545296  tests/acceptance/W1/mywork.int.test.ts
 741abc6aeaacc7054f5a565192c8eed35194136ec445b8d702311e1fadb2d5df  tests/acceptance/W1/perf/w1.perf.int.test.ts

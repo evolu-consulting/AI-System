@@ -1,17 +1,9 @@
-// CR-097 D1 · dữ liệu minh hoạ tính năng mới của demo (thuần, không DB): khớp nhau, id ổn định, đúng ràng buộc đã biết của 0051/0052.
+// CR-097 D1 · dữ liệu minh hoạ tính năng mới của demo (thuần, không DB): khớp nhau, id ổn định, đúng ràng buộc đã biết của 0052/0056.
 import { describe, expect, it } from "bun:test";
 import { WIPE } from "./seed-demo-v2";
 import { uid } from "./seed-demo-v2.build";
 import { CONTRACTS } from "./seed-demo-v2.contracts";
-import {
-  CHAIN,
-  D1_WIPE,
-  d1EventRows,
-  TX_IDS,
-  txEventRows,
-  txLineRows,
-  txRows,
-} from "./seed-demo-v2.d1";
+import { CHAIN, DEAL_IDS, d1EventRows, dealSeeds } from "./seed-demo-v2.d1";
 
 const A = {
   owner: "00000000-0000-4000-8000-000000000001",
@@ -21,32 +13,22 @@ const T = "00000000-0000-4000-8000-0000000000aa";
 const TODAY = "2026-10-27";
 
 describe("D1 seed demo · mới", () => {
-  it("giao dịch: một nháp (rev 0, chưa ghi sổ) + một đã ghi sổ; tổng = Σ dòng; dòng thuộc giao dịch", () => {
-    const tx = txRows(T, A, TODAY);
-    const lines = txLineRows(T);
-    expect(tx.map((t) => t.status).sort()).toEqual(["draft", "posted"]);
-    for (const t of tx) {
-      const sum = lines
-        .filter((l) => l.transaction_id === t.id)
-        .reduce((n, l) => n + (l.amount as number), 0);
-      expect(sum).toBe(t.total as number);
-      expect((t.status === "draft") === (t.posted_at === null)).toBe(true);
-      if (t.status === "draft") expect(t.rev).toBe(0);
+  it("giao dịch (CR-101): chứng từ deal, mốc giao/tiền, tổng = SL × đơn giá, thành phần ⇒ có SP; một đã giao", () => {
+    const s = dealSeeds(T, A, TODAY);
+    expect(s.map((x) => x.contract.id)).toEqual(Object.values(DEAL_IDS));
+    for (const x of s) {
+      const total = (x.item.qty as number) * (x.item.unit_price as number);
+      expect((x.contract.fields as Record<string, { value: unknown }>).total_value?.value).toBe(
+        total,
+      );
+      expect(x.milestones.map((m) => m.kind)).toEqual(["delivery", "payment"]);
+      expect(x.milestones.every((m) => m.contract_id === x.contract.id)).toBe(true);
+      if (x.item.component_ids !== null) expect(x.item.product_id).not.toBeNull();
+      for (const m of x.milestones)
+        expect((m.status === "done") === (m.done_at !== null)).toBe(true);
     }
-    for (const l of lines) {
-      expect(l.amount).toBe((l.qty as number) * (l.unit_price as number));
-      // CHECK transaction_lines_components_ck: có thành phần ⇒ phải có product_id
-      if (l.component_ids !== null) expect(l.product_id).not.toBeNull();
-    }
+    expect(s.flatMap((x) => x.milestones).filter((m) => m.status === "done")).toHaveLength(1);
   });
-
-  it("sự kiện giao dịch: mọi giao dịch có 'created'; đã ghi sổ có 'posted'", () => {
-    const ev = txEventRows(T, A, TODAY);
-    for (const id of Object.values(TX_IDS))
-      expect(ev.some((e) => e.transaction_id === id && e.type === "created")).toBe(true);
-    expect(ev.some((e) => e.transaction_id === TX_IDS.posted && e.type === "posted")).toBe(true);
-  });
-
   it("chuỗi phiên bản: c6 tồn tại, mọi mốc đã xong (cutover không huỷ gì); id v2 ổn định", () => {
     const c = CONTRACTS.find((x) => x.key === CHAIN.base);
     expect(c).toBeDefined();
@@ -66,7 +48,9 @@ describe("D1 seed demo · mới", () => {
     for (const e of ev) expect(e.tenant_id).toBe(T);
   });
 
-  it("nạp lại xoá cả bảng giao dịch (idempotent)", () => {
-    for (const t of D1_WIPE) expect(WIPE as readonly string[]).toContain(t);
+  it("nạp lại không ghi bảng G1 chỉ đọc (0056); xoá lịch sử sửa giao dịch", () => {
+    for (const t of ["transactions", "transaction_lines", "transaction_events"])
+      expect(WIPE as readonly string[]).not.toContain(t);
+    expect(WIPE as readonly string[]).toContain("contract_edit_log");
   });
 });

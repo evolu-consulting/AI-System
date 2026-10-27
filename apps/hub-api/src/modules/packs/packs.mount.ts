@@ -48,7 +48,7 @@ import { reputationModule } from "./contracts/reputation.mount";
 import { serviceCustomersModule } from "./contracts/service-customers.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { supplierPricesModule } from "./contracts/supplier-prices.mount";
-import { uploadModule } from "./contracts/upload.mount";
+import { type UploadMountDeps, uploadModule } from "./contracts/upload.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
@@ -225,7 +225,10 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
   app.route(base, ai.approval); // HD3
   if (fb)
-    app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
+    app.route(
+      base,
+      contractsUpload(d, view, { db, fb, starter: ai.starter, review: ai.startReview }),
+    ); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
@@ -361,7 +364,12 @@ function envTaxRegistry() {
 function contractsUpload(
   d: PacksMountDeps,
   view: PackAccessView,
-  { db, fb, starter }: { db: Db; fb: PackFb; starter: ExtractionStarter },
+  {
+    db,
+    fb,
+    starter,
+    review,
+  }: { db: Db; fb: PackFb; starter: ExtractionStarter; review: UploadMountDeps["review"] },
 ) {
   return uploadModule({
     db,
@@ -371,6 +379,7 @@ function contractsUpload(
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
     tenantLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null, // tenant-quotas
     starter,
+    ...(review ? { review } : {}), // DOC-deals-fix: nâng giao dịch khi bật duyệt
   });
 }
 
