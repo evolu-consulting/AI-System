@@ -1,6 +1,6 @@
 # esign-flow · Bước Ký số trong luồng duyệt HĐ + người duyệt cụ thể
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 Nhánh: `slice/esign-flow` · Làn: **đầy đủ** (engine + quyền + tenant) · Luật 0b (một agent làm trọn).
 
 ## Plan ngắn

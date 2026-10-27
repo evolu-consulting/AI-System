@@ -3,6 +3,8 @@
 Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-10-27 (tối) Đợt ký số — production ở `85da6c48` (deploy 2026-10-27), e2e server 68 passed / 6 skipped, KHÔNG push.** Lát `esign-multi`, `esign-anchor`(+fix), `esign-flow`(+fix), `esign-sweep`, `esign-sweep2` (migration gói 0061–0065); Delta đã gộp vào [`current/sht/duyet-ky-so.md`](current/sht/duyet-ky-so.md) §1b/§4 + `cai-dat-va-quyen.md`. Prod: DocuSign sandbox, `REPUTATION_ENGINE=v2e`, `ESIGN_PROVIDERS=docusign,selfsign`; env vòng nền mới `CONTRACTS_ESIGN_SWEEP`, `_SWEEP_EVERY_MS`, `CONTRACTS_ESIGN_SYNC_MAX`, `_SYNC_MIN`.
+  **Việc kế tiếp:** (1) adapter MISA (chờ Client ID); (2) lát `esign-cks` ("Chữ ký số của tôi", PAdES); (3) lịch Windows (`pull-backup.ps1`, `uptime-check.ps1`) + backup ngoài máy chủ (`OFFSITE_DIR`); (4) perf test vòng nền ký số (`*.perf.int.test.ts` cho `esign-sweep`/`esign-sync`); (5) đo `TEXT_TAB_OFFSET` trên DocuSign thật; (6) review security quyền `contracts_job` (UPDATE một cột).
 - **2026-10-27 `docs/current` (mượn ý OpenSpec, không đổi công cụ):** tạo `docs/current/` (README + 6 file `sht/`, 24 mục "Chưa rõ" cuối từng file), mẫu `tasks.md` thêm mục `## Delta (so với docs/current)`, `WORKFLOW.md` thêm bước "Gộp cuối đợt" cho docs-architect; chưa push.
 - **2026-10-27 (chiều) Đợt cấu hình hệ thống — deploy production `f94b4316`, e2e server 67 pass / 5 skip, KHÔNG push.** Lát (mỗi lát `docs/specs/<lát>/tasks.md`):
   `tenant-quotas` (hạn mức ngày theo công ty + "Đặt lại hôm nay" ở Admin, admin 0025), `engine-flag-tenant` (feature `contracts-approval-engine`, admin 0026; prod: chỉ demo),

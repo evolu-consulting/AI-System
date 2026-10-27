@@ -1,6 +1,6 @@
 # esign-anchor-fix — 2 lỗi Thấp từ review esign-anchor
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 
 | Làn | Phạm vi |
 |---|---|

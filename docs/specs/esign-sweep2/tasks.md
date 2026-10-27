@@ -1,6 +1,6 @@
 # esign-sweep2 · thẻ bước Ký số (hạn/quá hạn/đã nhắc) + đồng bộ phong bì nền
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 Nhánh: `slice/esign-sweep2` (từ `platform/gd0` @ ac94ad6d) · Làn: **đầy đủ** cho phần quyền role `contracts_job` + migration; còn lại làn nhanh.
 
 ## Plan

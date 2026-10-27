@@ -1,6 +1,6 @@
 # esign-sweep · vòng nền bước Ký số
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 Nhánh: `slice/esign-sweep` (từ `platform/gd0` @ c8d268fc) · Làn: **đầy đủ** (vòng nền scope hệ thống quét mọi tenant + migration).
 
 ## Plan

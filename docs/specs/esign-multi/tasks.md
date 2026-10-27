@@ -37,7 +37,7 @@ Trỏ: `docs/current/sht/duyet-ky-so.md` §4 Ký số.
 - Mã lỗi mới: `ESIGN_PROVIDER_UNAVAILABLE` 422, `ESIGN_SIGNER_NO_EMAIL` 422, `ESIGN_NOT_SIGNER` 403. Envelope out thêm `provider_label`; signer out thêm `provider`, `certificate_ref`.
 - Trang ký cuối DocuSign: HTML Unicode + anchor (thay PDF ASCII toạ độ cố định).
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 
 ## Việc còn lại
 - Lát `esign-cks`: "Chữ ký số của tôi" (mỗi người nhiều CKS: MISA, VNPT SmartCA, Viettel MySign…), chọn chứng thư lúc ký, ký PAdES nối tiếp cho phong bì loại "ca", điền `certificate_ref`; UI chọn chứng thư ở "Ký ngay".

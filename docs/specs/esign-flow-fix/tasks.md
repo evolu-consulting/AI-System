@@ -1,6 +1,6 @@
 # esign-flow-fix · Sửa review cuối lát esign-flow
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-27 (đợt ký số) — Đã gộp vào docs/current 2026-10-27
 Nhánh: `slice/esign-flow-fix` · Làn: **đầy đủ** (engine + quyền + tenant).
 
 ## Đã sửa
