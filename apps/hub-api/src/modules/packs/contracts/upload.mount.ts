@@ -14,10 +14,12 @@ import { createDocxConverter } from "../kit/adapters/docx";
 import type { PackFileboxClient } from "../kit/adapters/pack-files.filebox";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { promoteRepo } from "./adapters/deals.repo";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
 import { redisUploadCounter, unavailableUploadCounter } from "./adapters/upload-counter.redis";
 import { zipNames } from "./adapters/zip-names";
+import { createPromoteContract } from "./application/promote-contract.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
 import { createUploadContract } from "./application/upload-contract.usecase";
 
@@ -78,5 +80,12 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     log: logger,
   });
   const maxBytes = contractsMaxBytes();
-  return uploadRoutes(d.view, { upload, maxBytes, timeZoneOf: d.timeZoneOf });
+  // CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (file ký + số), cùng kho tệp + kiểm loại tệp với tải lên.
+  const promote = createPromoteContract({
+    uow: packTenantOnly(createPackUow(d.db, KEY, (tx, tid) => ({ promote: promoteRepo(tx, tid) }))),
+    files: fileStore(d.filebox),
+    zipNames,
+    newId: () => Bun.randomUUIDv7(),
+  });
+  return uploadRoutes(d.view, { upload, promote, maxBytes, timeZoneOf: d.timeZoneOf });
 }

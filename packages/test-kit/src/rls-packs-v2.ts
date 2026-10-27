@@ -123,51 +123,22 @@ export const v2Tables: RlsTable[] = [
       ),
   },
 ];
-// CR-097 G1 · Giao dịch (0051): giao dịch + dòng (khoá id) + vết (id bigint identity ⇒ INSERT không mang id).
-const txIns = `insert into contracts.transactions (id, tenant_id, deal, occurred_on, partner_name, created_by)
-  values ($1, $2, 'sell', '2026-10-01', 'Khách', $3)`;
-v2Tables.push(
-  {
-    name: "transactions",
-    seed: (o, t) =>
-      one(
-        o,
-        "insert into contracts.transactions (tenant_id, deal, occurred_on, partner_name, created_by) values ($1, 'sell', '2026-10-01', 'Khách', $2)",
-        [t, who],
-      ),
-    insert: (tx, t, pk) => tx.unsafe(txIns, [rnd(pk), t, who]),
-  },
-  {
-    name: "transaction_lines",
-    seed: async (o, t) =>
-      one(
-        o,
-        `insert into contracts.transaction_lines (tenant_id, transaction_id, ord, name, qty, unit_price, amount)
-         values ($1, $2, 0, 'Hàng', 1, 1, 1)`,
-        [t, await parent(o, "contracts.transactions", t)],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into contracts.transaction_lines (id, tenant_id, transaction_id, ord, name, qty, unit_price, amount)
-         values ($1, $2, $3, 0, 'Hàng', 1, 1, 1)`,
-        [rnd(pk), t, crypto.randomUUID()],
-      ),
-  },
-  {
-    name: "transaction_events",
-    seed: async (o, t) =>
-      one(
-        o,
-        "insert into contracts.transaction_events (tenant_id, transaction_id, type, actor_user_id) values ($1, $2, 'created', $3)",
-        [t, await parent(o, "contracts.transactions", t), who],
-      ),
-    insert: (tx, t) =>
-      tx.unsafe(
-        "insert into contracts.transaction_events (tenant_id, transaction_id, type, actor_user_id) values ($1, $2, 'created', $3)",
-        [t, crypto.randomUUID(), who],
-      ),
-  },
-);
+// CR-101 DOC-deals (0056): bảng G1 `transactions*` CHỈ ĐỌC (app không còn quyền ghi, trigger chặn) ⇒ vào `v2IgnoreTables`.
+// Lịch sử sửa giao dịch (id bigint identity ⇒ INSERT không mang id; thấy theo chứng từ thấy được).
+v2Tables.push({
+  name: "contract_edit_log",
+  seed: async (o, t) =>
+    one(
+      o,
+      "insert into contracts.contract_edit_log (tenant_id, contract_id, field) values ($1, $2, 'title')",
+      [t, await parent(o, "contracts.contracts", t)],
+    ),
+  insert: (tx, t) =>
+    tx.unsafe(
+      "insert into contracts.contract_edit_log (tenant_id, contract_id, field) values ($1, $2, 'title')",
+      [t, crypto.randomUUID()],
+    ),
+});
 // cf-esign-docusign · envelope ký số (0054): đọc/ghi chéo tenant bị chặn như mọi bảng gói.
 const envIns = `insert into contracts.esign_envelopes (id, tenant_id, contract_id, provider, envelope_id, signers, sent_by)
   values ($1, $2, $3, 'fake', $4, '[{"role":"company","name":"A","email":"a@x.vn","order":1}]', $5)`;
@@ -265,6 +236,9 @@ export const v2IgnoreTables = [
   "stock_lots",
   "stock_moves",
   "todo_dismissals",
+  "transactions",
+  "transaction_lines",
+  "transaction_events",
 ] as const;
 
 // D1/D2/niti-import · bảng id (product_sources, partner_contacts, price_scout_alerts) + bảng khoá ghép (dò theo một cột).

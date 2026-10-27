@@ -62,7 +62,7 @@ function extractError(
 }
 
 /** V2-F · 5.5a: dòng gắn SP không có / của tenant khác ⇒ FK kép `contract_items_product_fk` (23503) ⇒ 422 `PRODUCT_INVALID`. */
-function productFail(e: unknown): never {
+export function productFail(e: unknown): never {
   const o = e as {
     code?: string;
     constraint_name?: string;

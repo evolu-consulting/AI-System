@@ -100,6 +100,8 @@ export type NewManualContract = {
   items: ManualItem[];
   warnings: Warning[];
   userId: string;
+  /** CR-101 DOC-deals: giao dịch (`doc_type = 'deal'` + nguồn) ⇒ luôn `active` + mốc mặc định (không qua duyệt, không khoá). */
+  deal_doc?: { source: "invoice" | "verbal" | "message" | "quote" | "other" };
 };
 
 /** Repo trong tx `PackUow` (RLS tenant): mỗi hàm MỘT câu SQL. */

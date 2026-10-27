@@ -173,15 +173,18 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
   return async (m) => {
     const items = m.items;
     // V2-A · C3: cờ duyệt đọc TRONG câu (`approval_on()`, RLS tenant) ⇒ tắt duyệt: HĐ `active` + mốc mặc định cùng câu.
+    // CR-101 DOC-deals: giao dịch bỏ qua cờ duyệt (lưu là có hiệu lực) — `doc_type = 'deal'` + nguồn.
+    const src = m.deal_doc?.source ?? null;
     const rows = await tx.execute<{
       id: string;
       version: number;
       status: "needs_review" | "active";
-    }>(sql`with s as (select contracts.approval_on() as on),
+    }>(sql`with s as (select contracts.approval_on() and ${src}::text is null as on),
       c as (
-        insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, commission_pct, commission_fixed,
-          status, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
-        select ${m.id}::uuid, ${tenantId}::uuid, 'contract', ${m.title}, ${m.direction}, ${m.deal},
+        insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, direction, deal, commission_pct,
+          commission_fixed, status, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
+        select ${m.id}::uuid, ${tenantId}::uuid, 'contract',
+          case when ${src}::text is null then 'contract' else 'deal' end, ${src}::text, ${m.title}, ${m.direction}, ${m.deal},
           ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint,
           case when s.on then 'needs_review' else 'active' end,
           ${m.userId}::uuid, ${m.userId}::uuid, ${JSON.stringify(m.fields)}::jsonb, ${JSON.stringify(m.warnings)}::jsonb,
@@ -207,8 +210,9 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
           as x (ord int, name text, unit text, qty numeric, unit_price bigint, product_id uuid, component_ids jsonb)),
       e as (
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${tenantId}::uuid, c.id, 'created_manual', ${m.userId}::uuid,
-          jsonb_build_object('items', ${items.length}::int, 'deal', ${m.deal}::text, 'status', c.status) from c)
+        select ${tenantId}::uuid, c.id, case when ${src}::text is null then 'created_manual' else 'created_deal' end,
+          ${m.userId}::uuid, jsonb_build_object('items', ${items.length}::int, 'deal', ${m.deal}::text, 'status', c.status,
+            'source', ${src}::text) from c)
       select id, version, status from c`);
     const r = rows[0];
     if (!r) throw new Error("insert-manual: no row");

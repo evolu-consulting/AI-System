@@ -358,6 +358,13 @@
       "when": 1798900000000,
       "tag": "0055_doc_model",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1799000000000,
+      "tag": "0056_doc_deals",
+      "breakpoints": true
     }
   ]
 }

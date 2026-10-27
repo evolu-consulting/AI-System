@@ -3,8 +3,11 @@
 // `Content-Length` (413 `FILE_TOO_LARGE`), kiểm lại kích thước tệp sau khi parse. Không tin đuôi/mime khai báo (magic bytes).
 import {
   CONTRACT_ERRORS,
+  DEAL_ERRORS,
+  type DealErrorCode,
   DOC_ERRORS,
   LOCK_ERRORS,
+  PromoteFormSchema,
   UploadContractFormSchema,
   UploadDocFormSchema,
   VERSION_ERRORS,
@@ -19,8 +22,10 @@ import {
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
+import type { PromoteContract } from "../application/promote-contract.usecase";
 import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
 import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";
+import { dealDbCode } from "../domain/deal.rules";
 
 const CONTRACTS_KEY = "contracts";
 /** Phần dư cho khung multipart (ranh giới, header phần, trường chữ). */
@@ -32,6 +37,8 @@ const DRAIN_CAP = 64 * 1024 * 1024;
 
 export type UploadRoutesDeps = {
   upload: UploadContract;
+  /** CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (vắng ⇒ route không gắn). */
+  promote?: PromoteContract;
   maxBytes: number;
   timeZoneOf: (tenantId: string) => Promise<string>;
 };
@@ -226,6 +233,51 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       parentId: null,
       supersedes: id,
     });
+  });
+  if (d.promote) r.route("/", promoteRoute(d.promote, write, limit, d.maxBytes));
+  return r;
+}
+
+/** CR-101 DOC-deals · R10 · `POST /contracts/:id/promote` (multipart `file` ký + `number`): giữ id/mốc/kho, khoá ngay. Chứng từ
+ *  không thấy ⇒ 404; không phải giao dịch hiện hành ⇒ 409 `NOT_A_DEAL`; thiếu số ⇒ 400; thiếu file ⇒ 400 (đọc multipart). */
+function promoteRoute(
+  promote: PromoteContract,
+  write: MiddlewareHandler,
+  limit: MiddlewareHandler,
+  maxBytes: number,
+): Hono<PackGuardVars> {
+  const r = new Hono<PackGuardVars>();
+  r.post("/contracts/:id/promote", write, limit, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const x = await readUpload(c, maxBytes);
+    const n = x.form.get("number");
+    const f = parseWith(PromoteFormSchema, { number: typeof n === "string" ? n : undefined });
+    const out = await promote(x.who, { id, name: x.name, bytes: x.bytes, number: f.number }).catch(
+      (e) => {
+        if (e instanceof UploadError) throw toAppError(e);
+        const code = dealDbCode(e) as DealErrorCode | null;
+        if (code && code in DEAL_ERRORS) throw new AppError(code, DEAL_ERRORS[code], code);
+        throw e;
+      },
+    );
+    if (out.kind !== "ok")
+      throw out.kind === "not_found"
+        ? appError("NOT_FOUND")
+        : new AppError(
+            "NOT_A_DEAL",
+            DEAL_ERRORS.NOT_A_DEAL,
+            "Chỉ giao dịch hiện hành mới nâng được",
+          );
+    return c.json(
+      {
+        id: out.id,
+        doc_type: "contract",
+        locked: out.locked,
+        version: out.version,
+        file_id: out.file_id,
+      },
+      200,
+    );
   });
   return r;
 }

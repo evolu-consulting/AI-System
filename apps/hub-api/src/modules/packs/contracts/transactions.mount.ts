@@ -1,27 +1,50 @@
-// CR-097 G1 · nối Giao dịch (lớp 4 của gói): `PackUow` (role `contracts_rw`, RLS tenant + luật thấy M1) + repo + use case + route,
-// gắn dưới `/pack/contracts` ở `packs.mount.ts`. Múi giờ tenant cho "hôm nay" (chặn ngày tương lai, ngày đảo kho); `now` để test tiêm.
+// CR-101 DOC-deals · nối Giao dịch là chứng từ (lớp 4 của gói; thay G1): tạo giao dịch = `createManual` với `doc_type = 'deal'`
+// (không qua duyệt), xác nhận ngay = lệnh xác nhận mốc của sổ HD7/V2-D (kho chạy theo luật giao hàng), lịch sử sửa, lớp tương thích
+// đọc `/transactions`. `PackUow` (role `contracts_rw`, RLS tenant + M1). Gắn dưới `/pack/contracts` ở `products.mount.ts`.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow } from "../kit/adapters/pack-uow";
-import { transactionsRepo } from "./adapters/transactions.repo";
-import { transactionsRoutes } from "./adapters/transactions.routes";
-import { transactionsUsecase } from "./application/transactions.usecase";
+import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { dealsRepo } from "./adapters/deals.repo";
+import { dealsRoutes } from "./adapters/deals.routes";
+import { extractionRepo } from "./adapters/extraction.repo";
+import { createManual } from "./application/create-manual.usecase";
+import { ledgerCommands } from "./application/ledger.usecase";
+import { localDate } from "./domain/local-time.rules";
+import { ledgerRepos } from "./ledger.mount";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
-const repos = (tx: Tx, t: string) => ({ transactions: transactionsRepo(tx, t) });
+const repos = (tx: Tx, t: string) => ({
+  extraction: extractionRepo(tx, t),
+  deals: dealsRepo(tx, t),
+});
 
 export function transactionsModule(
   db: Db,
   view: PackAccessView,
   d: { timeZoneOf: (tenantId: string) => Promise<string>; now?: () => Date },
 ): Hono<PackGuardVars> {
-  return transactionsRoutes(view, {
-    transactions: transactionsUsecase({
-      uow: createPackUow(db, KEY, repos),
-      timeZoneOf: safeTimeZone(d.timeZoneOf),
-      ...(d.now ? { now: d.now } : {}),
-    }),
+  const tz = safeTimeZone(d.timeZoneOf);
+  const now = d.now ?? (() => new Date());
+  const uow = packTenantOnly(createPackUow(db, KEY, repos));
+  const create = createManual({
+    uow,
+    tax: null,
+    newId: () => Bun.randomUUIDv7(),
+    today: async (tid) => localDate(now(), await tz(tid)),
+  });
+  const cmd = ledgerCommands({
+    uow: packTenantOnly(createPackUow(db, KEY, ledgerRepos)),
+    timeZoneOf: tz,
+    now,
+  });
+  return dealsRoutes(view, {
+    create,
+    settle: (w, id) => cmd.settle(w, id, {}),
+    milestones: (w, id) => uow.tenant(w, (r) => r.deals.milestones(id)),
+    editLog: (w, id, n) => uow.tenant(w, (r) => r.deals.editLog(id, n)),
+    legacyList: (w, q) => uow.tenant(w, (r) => r.deals.legacyList(q)),
+    legacyDetail: (w, id) => uow.tenant(w, (r) => r.deals.legacyDetail(id)),
   });
 }

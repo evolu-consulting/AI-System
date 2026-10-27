@@ -28,7 +28,7 @@ const KEY = "contracts";
 export const OVERDUE_BATCH = 500;
 const DEFAULT_EVERY_MS = 3_600_000;
 
-const ledgerRepos = (tx: Tx, t: string) => ({
+export const ledgerRepos = (tx: Tx, t: string) => ({
   ledger: { ...ledgerWriteRepo(tx, t), ...ledgerReadRepo(tx, t) },
   milestones: milestonesRepo(tx, t), // V2-A · HD-11
   delivery: deliveryRepo(tx, t), // V2-D · HD-05 (mốc giao ⇒ kho)

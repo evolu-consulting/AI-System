@@ -5,6 +5,7 @@ export * from "./approval-flow";
 export * from "./business";
 export * from "./cks";
 export * from "./company";
+export * from "./deals";
 export * from "./delete-contract";
 export * from "./delivery";
 export * from "./detail";

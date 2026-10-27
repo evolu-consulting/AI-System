@@ -19,6 +19,8 @@ import { partiesOf, prefetchTax, retryAtOf, type TaxRetryScheduler } from "./tax
 export type CreateManual = (
   who: PackWho,
   input: ManualInput,
+  /** CR-101 DOC-deals: có ⇒ tạo GIAO DỊCH (`doc_type = 'deal'` + nguồn), luôn `active` + mốc mặc định, không khoá. */
+  deal?: { source: "invoice" | "verbal" | "message" | "quote" | "other" },
 ) => Promise<{ id: string; status: "needs_review" | "active"; version: number }>;
 
 /** Mốc mặc định của HĐ nhập tay ⇒ hàng ghi (tiền để trống: 5.4a tính từ giá trị khi đọc). */
@@ -49,7 +51,7 @@ export function createManual(d: {
   /** MST đối tác chưa tra được vì cổng hẹn giờ ⇒ hẹn tra lại (review Trung 4). */
   schedule?: TaxRetryScheduler;
 }): CreateManual {
-  return async (who, input) => {
+  return async (who, input, dealDoc) => {
     const fields = manualFields(input);
     const items = manualItems(input.items);
     const { deal, direction } = dealAndDirection(input);
@@ -69,6 +71,7 @@ export function createManual(d: {
         items,
         warnings,
         userId: who.userId,
+        ...(dealDoc ? { deal_doc: dealDoc } : {}),
       });
       await r.outbox.enqueue([{ entity: "contract", entity_id: row.id, op: "upsert" }]);
       return row;
