@@ -1,5 +1,7 @@
 # U3 · UI Đối tác + Cấu hình (CR-097 đợt 3 · CR-097a) — làn nhanh
 
+> **CR-101b (2026-10-27) — ĐẢO MỘT PHẦN:** biểu đồ điểm, ô sao, bấm tiêu chí xem việc, Cài đặt 5 ô × 3 tab, TQ-04, nguồn "Đánh giá đối tác" quay lại — xem [`REP-v3-ui`](../REP-v3-ui/tasks.md). Các quyết định "bỏ biểu đồ V2-E", "bỏ Đánh giá đối tác", `ScoringPane` hai tab dưới đây hết hiệu lực khi REP-v3-ui xong. Lịch sử giữ nguyên.
+
 Nguồn: intake `2026-10-23-ba-hop-dong-doi-tac.md` R44–R46, overview "đối tác cần xem lại"; việc U1/U2 để lại. Chỉ web + một mục backend (todo).
 
 ## Plan

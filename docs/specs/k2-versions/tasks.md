@@ -6,6 +6,8 @@ lane: đầy đủ (tiền/kho, RLS, dữ liệu khách) — test cutover + RLS 
 migration: 0049_k2_contract_versions (journal when 1797800000000)
 depends: K1 (e46976be)
 ---
+
+> **CR-101a (2026-10-27) — GHI CHÚ ĐẢO MỘT PHẦN:** phụ lục sửa đổi = phiên bản mới (ngừng tạo phụ lục mới; K2-06 phụ lục ⇒ 422 giữ), số phiên bản điền sẵn "-SĐn", mở lại cho người phụ trách hoặc owner — xem [`K4-reopen-version`](../K4-reopen-version/tasks.md). HĐ nguyên tắc có phiên bản: con theo `root_id` ([`DOC-model`](../DOC-model/tasks.md)). Lịch sử bên dưới giữ nguyên.
 # K2 — Chuỗi phiên bản + cutover
 
 ## Plan (đã làm)

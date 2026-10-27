@@ -7,6 +7,8 @@ inputs: docs/platform/ba-v2/so-hop-tac-ba-v2.pdf (20 trang, @Chieucasmen, 2026-1
 base: platform/gd0 @ f0d9d331 · gói contracts (hub-api packs/contracts, contracts-web, migrations-pack-contracts 0001–0021)
 status: chốt theo mặc định (điều phối 2026-10-20: người dùng muốn app khớp CẢ BA lẫn mockup; không chặn ở câu hỏi — mặc định đề xuất = quyết định áp dụng)
 ---
+
+> **CR-101 / CR-101b (2026-10-27):** BA Sổ Hợp Tác v2.0 (25/10/2026) thay BA v2 (20/10). Quyết định C1 (uy tín V2-E) được **khôi phục** (BA v2.0 §5.1) — đảo CR-097a; 3 loại chứng từ và Giao dịch hợp nhất theo [CR-101](../../CHANGE-REQUESTS.md); Intake `docs/intake/2026-10-27-sht-ba.md`. Lịch sử bên dưới giữ nguyên.
 # Intake BA v2 — Sổ Hợp Tác
 
 Ngoài phạm vi intake này: lát **nav-v2** (đang chạy) — khung 4 trang + avatar/Cài đặt mở từ avatar + Tổng quan bản đầu + thiết kế

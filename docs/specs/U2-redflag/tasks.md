@@ -1,5 +1,7 @@
 # U2 · Cờ đỏ + "MỚI · tạm tính" (CR-097 đợt 3) — làn đầy đủ (loại sự kiện mới, migration)
 
+> **CR-101b (2026-10-27):** cờ đỏ U2 **giữ** (tách khỏi điểm, nhãn MỚI · tạm tính) khi engine V2-E bật lại ([`REP-v3`](../REP-v3/tasks.md)); chỉnh tay ±10 bị bỏ.
+
 Nguồn: intake `2026-10-23-ba-hop-dong-doi-tac.md` R36, R39 (Câu 4, Câu 6 mặc định), UT-FR-10/12/13. Việc U1 để lại.
 
 ## Plan

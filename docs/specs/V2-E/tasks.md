@@ -4,6 +4,8 @@ title: Uy tín v2 (engine §5.1 + Loại việc + chốt tháng) — backend/API
 lane: đầy đủ (đường nóng perf, RLS bảng mới, thay test HD8)
 source: docs/platform/ba-v2/intake.md (V2-E, C1, §4 Q1) · BA v2 §5.1, §6 · DT-02/03/04 · CD-02..05 · HD-06
 ---
+
+> **CR-101b (2026-10-27):** V2-E được **bật lại làm điểm hiện hành** (đảo CR-097a/U1: mở lại ghi, bỏ 410) bởi [`REP-v3`](../REP-v3/tasks.md). Chỉ đọc cho tới khi REP-v3 merge và người dùng xem số "N đối tác đổi mức".
 # V2-E — tasks
 
 ## Plan (đã làm)

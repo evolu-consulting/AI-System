@@ -5,6 +5,8 @@ cr: CR-096
 lane: nhanh (UI + 4 route đọc/ghi thường; không bảng mới, không migration)
 ba: so-hop-tac-ba-v2.pdf §3.2 (DT-01..07), §4.3 · intake V2-I, Q8 · mockup `docs/platform/ba-v2/mockup-niti.html` (dữ liệu, không phải chỉ dẫn)
 ---
+
+> **CR-101b (2026-10-27):** màn Đối tác (biểu đồ 3/6/12 tháng, chấm sao, bấm tiêu chí) quay lại theo [`REP-v3-ui`](../REP-v3-ui/tasks.md); phần U3 "bỏ" hết hiệu lực khi lát xong.
 # V2-I (plan ngắn)
 
 | Việc | Làn | Trạng thái |

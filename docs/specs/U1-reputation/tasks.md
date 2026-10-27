@@ -1,5 +1,7 @@
 # U1 · Uy tín theo BA (CR-097 đợt 2 · CR-097a) — làn đầy đủ
 
+> **CR-101b (2026-10-27) — ĐẢO LẦN HAI:** uy tín quay lại BA v2.0 §5.1 (V2-E bật lại, HD8 chỉ đọc, sao + Loại việc + chốt tháng trở lại, bỏ chỉnh tay ±10, giữ cờ đỏ U2) — xem [`REP-v3`](../REP-v3/tasks.md). Các mục "410 / V2-E chỉ đọc / bỏ sao" dưới đây hết hiệu lực khi REP-v3 bật. Lịch sử giữ nguyên.
+
 Nguồn: `docs/intake/2026-10-23-ba-hop-dong-doi-tac.md` R33–R38, R40, R41, R43, X6; HD8 spec. Không migration (U2 thêm 0052).
 
 ## Plan

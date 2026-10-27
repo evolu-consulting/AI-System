@@ -1,5 +1,7 @@
 # nav-v2 — contracts-web: cấu trúc trang + giao diện theo mockup NITI (người dùng chốt 2026-10-20)
 
+> **CR-101 (2026-10-27):** menu về 4 mục (Tổng quan, Hợp đồng & giao dịch, Đối tác, SP & Giá); mục "Giao dịch" của G2 bỏ, `/transactions*` chuyển hướng — xem [`DOC-ui-list`](../DOC-ui-list/tasks.md). Ghi chú cũ về 4 trang giữ nguyên hiệu lực.
+
 Làn: nhanh (UI, không RLS/tiền/migration; không đổi API). Nhánh `slice/nav-v2`. Thay quy tắc D-02 "giống hệt mgmt-app" cho điều hướng và bố cục.
 Nguồn: `docs/platform/ba-v2/so-hop-tac-ba-v2.pdf` §4, `docs/platform/ba-v2/mockup-niti.html` (dữ liệu tham khảo, chỉ đọc bố cục/màu/chữ).
 

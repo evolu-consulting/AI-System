@@ -6,6 +6,8 @@ fr: GD-FR-01…05
 làn: G1 đầy đủ (tiền/kho, Opus) · G2 nhanh
 migration: 0051_g1_transactions (journal idx 47, when 1798000000000)
 ---
+
+> **CR-101 (2026-10-27) — THAY THẾ MỘT PHẦN.** Giao dịch hợp nhất vào `contracts` (`doc_type='deal'`), sửa trực tiếp không nháp/ghi sổ, mốc + kho như HĐ, xoá theo luồng HĐ, nâng thành HĐ giữ id; bảng G1 `transactions*` thành chỉ đọc và hàng được chuyển (giữ id) bởi [`DOC-deals`](../DOC-deals/tasks.md). **Bị thay:** D2 (kho không `contract_id`), D3 (ghi sổ), D4 (một đợt thanh toán), D5, D6 (điều chỉnh `rev+1`), D7 (huỷ/xoá nháp), toàn bộ UI G2 (`/transactions*` chuyển hướng; xem [`DOC-ui-list`](../DOC-ui-list/tasks.md)). **Còn hiệu lực:** D1 (hướng buy/sell, thêm referral), D8, tái dùng `deliveryMoves`/`applyDelivery`. Lịch sử bên dưới giữ nguyên.
 # Giao dịch — tasks
 
 ## Plan G1 (xong)

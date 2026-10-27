@@ -4,6 +4,8 @@ title: Hộp thoại Cài đặt (Công ty · Điểm uy tín · Điểm kinh do
 lane: nhanh (UI) + phần ghi cấu hình công ty/cờ duyệt (bảng mới có RLS, quyền chủ sở hữu) — int + một test chéo tenant
 source: docs/platform/ba-v2/intake.md (V2-L: CD-01..06) · BA v2 §3.5, §4.5 · mockup-niti.html (chỉ đọc bố cục/màu/chữ; đã render bằng Playwright)
 ---
+
+> **CR-101b (2026-10-27):** Cài đặt uy tín quay lại 5 ô nhóm × vai, 3 tab (Tiêu chí · Thời gian · Loại việc) theo [`REP-v3-ui`](../REP-v3-ui/tasks.md); Cài đặt › Công ty thêm ngưỡng pháp lý ([`DOC-legal`](../DOC-legal/tasks.md)).
 # V2-L — tasks
 
 ## Plan
