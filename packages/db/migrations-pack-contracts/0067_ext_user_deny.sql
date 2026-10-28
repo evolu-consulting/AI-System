@@ -6,6 +6,9 @@
 DO $$
 DECLARE r record;
 BEGIN
+  -- review TB-5: CREATE POLICY cần ACCESS EXCLUSIVE trên từng bảng — chờ khoá tối đa 5 s rồi lỗi (chạy lại vô hại) thay vì xếp hàng
+  -- chặn mọi truy vấn của gói sau một tx dài.
+  SET LOCAL lock_timeout = '5s';
   FOR r IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
            WHERE n.nspname = 'contracts' AND c.relkind IN ('r', 'p') AND c.relrowsecurity LOOP
     EXECUTE format('DROP POLICY IF EXISTS ext_deny ON contracts.%I', r.relname);

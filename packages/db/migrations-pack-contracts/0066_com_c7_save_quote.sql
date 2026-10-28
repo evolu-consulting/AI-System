@@ -32,7 +32,12 @@ GRANT UPDATE (replaced_at, removed_at) ON contracts.product_supplier_prices TO c
 --> statement-breakpoint
 DROP POLICY IF EXISTS product_supplier_prices_upd ON contracts.product_supplier_prices;
 --> statement-breakpoint
+-- Nhánh `quote` (review TB-4): người khác CHỈ được đánh dấu "đã thay" (replaced_at) trên dòng Báo giá còn sống; gỡ (removed_at) vẫn
+-- chỉ người tạo / người thấy hết.
 CREATE POLICY product_supplier_prices_upd ON contracts.product_supplier_prices AS RESTRICTIVE FOR UPDATE TO contracts_rw
   USING ((SELECT contracts.sees_all())
     OR created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
-    OR source = 'quote');
+    OR (source = 'quote' AND removed_at IS NULL))
+  WITH CHECK ((SELECT contracts.sees_all())
+    OR created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+    OR (source = 'quote' AND removed_at IS NULL AND replaced_at IS NOT NULL));
