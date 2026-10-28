@@ -1,11 +1,12 @@
 // `bun run slice:new|slice:merge|slice:rm <tên>` — mỗi lát một worktree + nhánh riêng (CLAUDE.md Luật 0b).
 //   slice:new <tên>   tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ platform/gd0, bun install,
 //                     chép .env*.local, kiểm hook.
-//   slice:merge <tên> [--no-test]  rebase lên platform/gd0, test:affected, rồi ff (hoặc merge) vào platform/gd0
+//   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên platform/gd0,
+//                     test:affected, rồi ff (hoặc merge) vào platform/gd0
 //                     ở checkout chính (checkout chính phải đang ở platform/gd0).
 //   slice:rm <tên> [--force]       gỡ worktree + xoá nhánh (nhánh chưa merge cần --force).
 // Không bao giờ push. Hook: tools/hooks qua core.hooksPath (xem setup-hooks.ts).
-import { copyFileSync, existsSync, readdirSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const BASE = "platform/gd0";
@@ -56,6 +57,49 @@ function verifyHooks(dir: string): void {
   console.log("slice: hook pre-commit OK");
 }
 
+/** Khuôn tasks.md của lát (docs/WORKFLOW.md "Mẫu tasks.md"; Delta kiểu OpenSpec, ADR-0032). */
+const TASKS_TEMPLATE = (name: string) => `---
+id: ${name}
+lát: ${name}
+cr:
+làn: nhanh
+migration: không
+phụ thuộc:
+---
+## Plan (ngắn)
+
+## Làm
+
+## Không làm / Chạm
+
+## Test tối thiểu
+
+## Quyết định trong lúc làm
+
+## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
+Xoá khối mẫu dưới đây rồi điền thật (kiểm bằng \`bun run openspec:check\`). Lát không đổi hành vi: thay bằng
+một dòng \`Không thay đổi hành vi (lý do: …)\`.
+\`\`\`
+### MODIFIED sht/chung-tu.md
+#### Yêu cầu: <tên>
+<mô tả hành vi mới>
+- Kịch bản: khi … thì …
+(### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
+\`\`\`
+
+## Việc còn lại
+`;
+
+function writeTasksTemplate(dir: string, name: string): void {
+  const f = join(dir, "docs", "specs", name, "tasks.md");
+  if (existsSync(f)) return;
+  mkdirSync(dirname(f), { recursive: true });
+  writeFileSync(f, TASKS_TEMPLATE(name));
+  console.log(`slice: tạo khuôn ${f} (điền Delta trước khi slice:merge)`);
+}
+
 function cmdNew(name: string | undefined): void {
   const { main, dir, branch } = paths(name);
   if (existsSync(dir)) fail(`đã có ${dir}`);
@@ -64,13 +108,18 @@ function cmdNew(name: string | undefined): void {
   copyEnv(main, dir);
   if (!run(dir, ["bun", "install"], true).ok) fail("bun install lỗi");
   verifyHooks(dir);
+  writeTasksTemplate(dir, name as string);
   console.log(`slice: sẵn sàng ${dir} (nhánh ${branch})`);
 }
 
-function cmdMerge(name: string | undefined, noTest: boolean): void {
+function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean): void {
   const { main, dir, branch } = paths(name);
   if (!existsSync(dir)) fail(`chưa có worktree ${dir}`);
   if (git(dir, "status", "--porcelain").out) fail("worktree còn thay đổi chưa commit");
+  if (noOpenspec)
+    console.warn("slice: CẢNH BÁO --no-openspec: bỏ qua kiểm Delta (chỉ dùng khi khẩn cấp)");
+  else if (!run(dir, ["bun", "tools/scripts/src/openspec.ts", "check", name as string], true).ok)
+    fail("openspec:check đỏ — sửa Delta trong tasks.md (hoặc --no-openspec khi khẩn cấp)");
   const rb = git(dir, "rebase", BASE);
   if (!rb.ok) fail(`rebase lỗi (gỡ conflict trong ${dir}, rồi chạy lại):\n${rb.out}`);
   if (
@@ -104,6 +153,7 @@ function cmdRm(name: string | undefined, force: boolean): void {
 
 const [cmd, name, ...flags] = process.argv.slice(2);
 if (cmd === "new") cmdNew(name);
-else if (cmd === "merge") cmdMerge(name, flags.includes("--no-test"));
+else if (cmd === "merge")
+  cmdMerge(name, flags.includes("--no-test"), flags.includes("--no-openspec"));
 else if (cmd === "rm") cmdRm(name, flags.includes("--force"));
 else fail("dùng: slice new|merge|rm <tên>");

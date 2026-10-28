@@ -8,6 +8,21 @@ Mục đích: một chỗ sạch mô tả **hệ thống làm gì ngay bây gi�
 - **Cách cập nhật:** mỗi lát có mục `## Delta (so với docs/current)` trong `tasks.md`; cuối đợt `docs-architect` gộp Delta vào đây và đánh dấu lát đã gộp (`docs/WORKFLOW.md` "Gộp docs/current cuối đợt"). Không sửa tay giữa đợt trừ khi sửa lỗi sự thật.
 - File ≤ 400 dòng; dài hơn thì tách theo khu vực.
 
+## Định dạng Delta (ADR-0032)
+Trong `## Delta (so với docs/current)` của `tasks.md`:
+```
+Trạng thái gộp: chưa gộp            (sau gộp: đã gộp YYYY-MM-DD (đợt <tên>))
+
+### MODIFIED sht/chung-tu.md          (hoặc ADDED <file mới> / REMOVED <file>)
+#### Yêu cầu: Mở lại chứng từ
+Người phụ trách hoặc owner được mở lại.
+- Kịch bản: khi người phụ trách bấm "Mở lại" thì chứng từ về Nháp
+```
+- Mỗi khối `###` trỏ **một file trong `docs/current`** (đường dẫn tương đối). MODIFIED/REMOVED yêu cầu file đã có; ADDED được tạo file mới.
+- Mỗi `#### Yêu cầu: <tên>` (ADDED/MODIFIED) có mô tả và **≥ 1** dòng `- Kịch bản: khi … thì …`. REMOVED chỉ cần dòng `Lý do: …`.
+- Lát không đổi hành vi (hạ tầng/test/nhãn): thay các khối bằng đúng một dòng `Không thay đổi hành vi (lý do: …)`.
+- Lệnh: `bun run openspec:check [lát…]` (kiểm; `slice:merge` tự chạy), `bun run openspec:pending` (lát chưa gộp + file đích, dùng khi gộp cuối đợt), `bun run openspec:archive <lát> [--dot <tên>]` (chỉ ghi sổ "đã gộp"; việc gộp văn xuôi vào đây vẫn do docs-architect).
+
 Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/contracts-web/src`, `C` = `packages/contracts/src/pack-contracts`, `MG` = `packages/db/migrations-pack-contracts`, `T` = `tests/acceptance`.
 
 ## Mục lục
