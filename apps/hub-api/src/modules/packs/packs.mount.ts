@@ -167,7 +167,7 @@ function mountContracts<E extends Env>(
   for (const t of cx.ai.tools) d.packTools?.register(t); // contract-flow S3a · tool engine duyệt HĐ (cờ bật)
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
-  mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d) }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
+  mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
   mountContractsContext(d.db, d.packTools); // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
 }
 

@@ -13,6 +13,8 @@ Unit bóc tách văn bản (bảng mẫu); một int đường chính; một int
 
 ## Quyết định trong lúc làm
 <!-- agent điền -->
+- C10a (tra giá/so sánh/tìm NCC): 3 tool `contracts-price-lookup|price-compare|find-suppliers` (action read) trên `HostBookReader` (reader kiểm nội bộ + quyền đọc gói; ngoài/không quyền ⇒ forbidden). Tìm NCC theo SP (tên/tiền tố), chưa theo nhóm hàng/khu vực (chưa có dữ liệu khu vực). So sánh: mỗi NCC giá mới nhất, khác đơn vị không quy đổi, VAT không đồng nhất ⇒ cảnh báo. Rỗng ⇒ "chưa có giá". Chưa có `kind` trên `PackToolCtx` (đọc nếu có).
+
 
 ## Delta (so với docs/current)
 Gộp vào `current/community/nghiep-vu.md` §11 cuối đợt.
