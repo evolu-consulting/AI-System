@@ -195,10 +195,10 @@ describe("C6 sửa / xoá / ẩn bình luận", () => {
     ).toBe(404);
   });
 
-  it("Nhắn riêng: chủ quản mở luồng với công ty trong audience (201), ngoài audience ⇒ 422; xoá bình luận của chính chủ quản", async () => {
+  it("Nhắn riêng: chủ quản mở luồng với công ty trong audience (201), ngoài audience ⇒ 404 (kiểm của C3); xoá bình luận của chính chủ quản", async () => {
     expect(
       (await call("hA", "POST", `/posts/${post}/comments`, { text: "Riêng", orgId: c.B1 })).status,
-    ).toBe(422);
+    ).toBe(404);
     const t = await ok(
       ThreadSchema,
       call("hA", "POST", `/posts/${post}/comments`, { text: "Riêng", orgId: c.S2 }),
