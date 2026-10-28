@@ -33,6 +33,12 @@ import {
   ensureOwnerInGroup,
   OWNER_GROUP,
 } from "./seed-community-demo.dev-fixture";
+import {
+  EDITOR_GROUP,
+  grantGroup,
+  OWNER_GROUP_KEY,
+  parseUserList,
+} from "./seed-community-demo.grant";
 import { seedGuard } from "./seed-community-demo.guard";
 import { partyKeyOf } from "./seed-demo-v2.build";
 
@@ -47,12 +53,19 @@ export type SeedOpts = {
   /** Pool vai hub_api (RLS gói). Vắng ⇒ dùng `db`. */
   hubDb?: Db;
   log?: (s: string) => void;
+  /** Username NỘI BỘ thêm vào Group community-owner / community-editor (sau enablePack, chỉ khi --apply). */
+  grantOwner?: readonly string[];
+  grantEditor?: readonly string[];
 };
 export type SeedResult = {
   orgs: { created: number; existing: number };
   users: { created: number; existing: number };
   mapFile: string | null;
   passwordsFile: string | null;
+  /** Username mới được thêm vào nhóm (đã có ⇒ không liệt kê). */
+  granted: { owner: string[]; editor: string[] };
+  /** Username đối tác mới tạo (không kèm mật khẩu). */
+  createdUsers: string[];
   posts: { created: number; existing: number; comments: number };
 };
 export type MapRow = {
@@ -134,11 +147,15 @@ async function ensureUser(
   return { id: r.user.id, temp: r.temp_password };
 }
 
-function planLines(tenantKey: string): string[] {
+function planLines(tenantKey: string, o: SeedOpts): string[] {
   const head = `seed-community-demo: chạy thử — tenant "${tenantKey}", ${PARTNER_SEEDS.length} công ty (thêm --apply để ghi)`;
   return [
     head,
     "  - bật gói community cho tenant (service admin enablePack)",
+    ...(o.grantOwner?.length
+      ? [`  - thêm vào ${OWNER_GROUP_KEY}: ${o.grantOwner.join(", ")}`]
+      : []),
+    ...(o.grantEditor?.length ? [`  - thêm vào ${EDITOR_GROUP}: ${o.grantEditor.join(", ")}`] : []),
     ...PARTNER_SEEDS.map(
       (p) =>
         `  - ${p.name} [${p.labels.join("+")}] user ${p.username} · SHT ${partyKey(p) ?? "(chưa có)"} · ${p.categories.join(", ")}`,
@@ -179,10 +196,12 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     users: { created: 0, existing: 0 },
     mapFile: null,
     passwordsFile: null,
+    granted: { owner: [], editor: [] },
+    createdUsers: [],
     posts: { created: 0, existing: 0, comments: 0 },
   };
   if (!o.apply) {
-    for (const l of planLines(o.tenantKey)) log(l);
+    for (const l of planLines(o.tenantKey, o)) log(l);
     return res;
   }
   const c = await resolveCall(db, o.tenantKey);
@@ -193,7 +212,10 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     const org = await ensureOrg(c, p);
     res.orgs[org.created ? "created" : "existing"] += 1;
     const { id: userId, temp } = await ensureUser(c, org.id, p);
-    if (temp) pw[p.username] = temp;
+    if (temp) {
+      pw[p.username] = temp;
+      res.createdUsers.push(p.username);
+    }
     res.users[temp ? "created" : "existing"] += 1;
     partners.set(p.username, { userId, orgId: org.id, orgName: p.name });
     rows.push({
@@ -208,6 +230,7 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   writeOut(res.mapFile, { tenant: o.tenantKey, partners: rows });
   res.passwordsFile = writePasswords(o, pw);
   await enableCommunityPack(db, c.actor.tenantId, c.actor.userId);
+  res.granted = await applyGrants(db, o);
   const cc: CommunityCtx = {
     hub: o.hubDb ?? db,
     admin: db,
@@ -222,10 +245,26 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     existing: pr.postsExisting,
     comments: pr.commentsCreated,
   };
-  log(
-    `seed-community-demo: bài +${pr.postsCreated}/=${pr.postsExisting}, bình luận +${pr.commentsCreated}; công ty +${res.orgs.created}/=${res.orgs.existing}, user +${res.users.created}/=${res.users.existing}; mật khẩu: ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`,
-  );
+  log(summaryLine(res));
   return res;
+}
+
+const list = (a: readonly string[]) => a.join(", ") || "(không)";
+
+/** Dòng tóm tắt cuối — CHỈ username + đường dẫn file (không bao giờ có mật khẩu). */
+function summaryLine(res: SeedResult): string {
+  const { posts: p, orgs, users, granted } = res;
+  return `seed-community-demo: bài +${p.created}/=${p.existing}, bình luận +${p.comments}; công ty +${orgs.created}/=${orgs.existing}, user +${users.created}/=${users.existing}; user mới: ${list(res.createdUsers)}; thêm owner: ${list(granted.owner)}; thêm editor: ${list(granted.editor)}; file mật khẩu (không in nội dung): ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`;
+}
+
+/** Sau enablePack: đưa user nội bộ vào Group owner/editor (idempotent). */
+async function applyGrants(db: Db, o: SeedOpts): Promise<SeedResult["granted"]> {
+  const g: SeedResult["granted"] = { owner: [], editor: [] };
+  if (o.grantOwner?.length)
+    g.owner = await grantGroup(db, o.tenantKey, OWNER_GROUP_KEY, o.grantOwner);
+  if (o.grantEditor?.length)
+    g.editor = await grantGroup(db, o.tenantKey, EDITOR_GROUP, o.grantEditor);
+  return g;
 }
 
 /** `--dev-fixture` (máy dev): tạo tenant demo + demo-owner nếu chưa có — để seed chạy được trên DB local mới. */
@@ -238,6 +277,17 @@ async function devFixture(db: Db, urls: readonly string[], o: SeedOpts): Promise
   if (!o.apply) return console.log("  - (dev-fixture) tạo tenant demo + demo-owner nếu chưa có");
   const r = await ensureDemoTenant(db, ownerPw as string);
   console.log(`seed-community-demo: dev-fixture tenant ${r.tenant}, demo-owner ${r.owner}`);
+}
+
+/** `--grant-owner a,b` / `--grant-editor c` ⇒ { grantOwner, grantEditor } (vắng cờ ⇒ không có khoá). */
+export function grantArgs(argv: readonly string[]): Pick<SeedOpts, "grantOwner" | "grantEditor"> {
+  const val = (k: string) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : undefined);
+  const r: Pick<SeedOpts, "grantOwner" | "grantEditor"> = {};
+  if (argv.includes("--grant-owner"))
+    r.grantOwner = parseUserList("--grant-owner", val("--grant-owner"));
+  if (argv.includes("--grant-editor"))
+    r.grantEditor = parseUserList("--grant-editor", val("--grant-editor"));
+  return r;
 }
 
 async function main(argv: readonly string[]): Promise<void> {
@@ -258,6 +308,7 @@ async function main(argv: readonly string[]): Promise<void> {
     apply: argv.includes("--apply"),
     forceTenant: argv.includes("--force-tenant"),
     out: out as string,
+    ...grantArgs(argv),
   };
   assertTenant(opts.tenantKey, opts.forceTenant);
   const db = createDb(url, { max: 2 });

@@ -111,4 +111,29 @@ describe("com-c12 · seed-community-demo", () => {
     const tp = map.partners.find((p: { org_name: string }) => p.org_name === "Cơ sở Tân Phát");
     expect(tp.party_key).toBe("tax:0101000003");
   });
+
+  it("--grant-owner/--grant-editor: thêm user nội bộ (idempotent, audit actor hệ thống), từ chối user ngoài", async () => {
+    const [u] = await sql<{ username: string }[]>`select username from admin.users
+      where tenant_id = ${tenantId}::uuid and kind = 'internal' order by created_at limit 1`;
+    const name = (u as { username: string }).username;
+    const members = (g: string) =>
+      count(`select count(*)::int n from admin.group_members m join admin.groups g on g.id = m.group_id
+        join admin.users u on u.id = m.user_id
+        where g.tenant_id = '${tenantId}' and g.key = '${g}' and u.username = '${name}'`);
+    const a = await runSeed(admin, opts({ grantOwner: [name], grantEditor: [name] }));
+    expect(a.granted).toEqual({ owner: [name], editor: [name] });
+    const b = await runSeed(admin, opts({ grantOwner: [name] }));
+    expect(b.granted.owner).toEqual([]);
+    expect(await members("community-owner")).toBe(1);
+    expect(await members("community-editor")).toBe(1);
+    expect(
+      await count(
+        `select count(*)::int n from admin.group_members where tenant_id = '${tenantId}' and added_by is not null
+          and user_id = (select id from admin.users where tenant_id = '${tenantId}' and username = '${name}')`,
+      ),
+    ).toBe(0); // actor hệ thống
+    const ext = (PARTNER_SEEDS[0] as (typeof PARTNER_SEEDS)[0]).username;
+    await expect(runSeed(admin, opts({ grantOwner: [ext] }))).rejects.toThrow(/ngoài/);
+    expect(await members("community-owner")).toBe(1);
+  });
 });

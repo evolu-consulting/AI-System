@@ -2,7 +2,7 @@
 // (com-fix-community-login; đối tác không qua chat-web), tenant demo.
 // Mật khẩu KHÔNG nằm trong repo: đối tác lấy từ file `--out` của seed (`COMMUNITY_SEED_PW_FILE`, trường `users`) hoặc env
 // `CS_PW_<USERNAME>`; chủ quản từ `DEMO_OWNER_PW`. Lần đăng nhập đầu của đối tác bị buộc đổi mật khẩu ⇒ đặt `CS_NEW_PW`.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
 export const TENANT = process.env.COMMUNITY_TENANT ?? "demo";
@@ -61,9 +61,24 @@ export async function loginAs(page: Page, who: Who): Promise<void> {
     const fields = page.locator("input[type=password]");
     for (let i = 0; i < (await fields.count()); i++) await fields.nth(i).fill(NEW_PW);
     await page.locator("button[type=submit]").first().click();
+    await expect(post).toBeVisible({ timeout: 45_000 });
+    persistNewPw(who); // chạy lại được: file cred giữ mật khẩu mới
+    return;
   }
   await expect(post).toBeVisible({ timeout: 45_000 });
 }
+
+/** Deployed e2e (`CS_CRED_FILE`): sau lần đổi mật khẩu bắt buộc, ghi NEW_PW vào đúng file cred (không in). Dev/stack: không làm gì. */
+function persistNewPw(who: Who): void {
+  const file = process.env.CS_CRED_WRITEBACK;
+  if (!file || who === "host") return;
+  const j = JSON.parse(readFileSync(file, "utf8")) as { users?: Record<string, string> };
+  j.users = { ...j.users, [USERNAME[who]]: NEW_PW };
+  writeFileSync(file, `${JSON.stringify(j, null, 2)}\n`, { mode: 0o600 });
+}
+
+/** Chạy trên production (`CS_READONLY=1`): test không được tạo/sửa/xoá dữ liệu. */
+export const READONLY = process.env.CS_READONLY === "1";
 
 /** Một context riêng (cookie riêng) mỗi vai, đã đăng nhập. */
 export async function openAs(

@@ -1,7 +1,7 @@
 // CR-102 · C12b · 3 vai trên stack thật + seed demo (docs/current/community/hien-thi.md): ai thấy bài nào, che liên hệ,
 // luồng riêng từng công ty, dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
 import { expect, test } from "@playwright/test";
-import { MASK_PHONE, ORG, openAs, postByTitle } from "./_stack";
+import { MASK_PHONE, ORG, openAs, postByTitle, READONLY } from "./_stack";
 
 test.describe("community-web · 3 vai (stack thật)", () => {
   test("chủ quản: thấy mọi bài, số điện thoại NCC bị tô (raw), luồng theo từng công ty, đánh dấu bài đối tác", async ({
@@ -54,11 +54,13 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(th).not.toContainText("0903");
     await expect(th).toContainText(MASK_PHONE);
     await expect(phi.getByRole("tab")).toHaveCount(0);
-    // tên công ty khác bị che khi viết bình luận
-    await th.getByLabel("Viết bình luận").fill(`Báo giá cho ${ORG.buyer}: 0912 345 678`);
-    await th.getByRole("button", { name: "Gửi bình luận" }).click();
-    await expect(th).toContainText(MASK_PHONE);
-    await expect(th).not.toContainText("0912");
+    // tên công ty khác bị che khi viết bình luận (ghi dữ liệu ⇒ bỏ qua khi chạy deployed/prod: CS_READONLY=1)
+    if (!READONLY) {
+      await th.getByLabel("Viết bình luận").fill(`Báo giá cho ${ORG.buyer}: 0912 345 678`);
+      await th.getByRole("button", { name: "Gửi bình luận" }).click();
+      await expect(th).toContainText(MASK_PHONE);
+      await expect(th).not.toContainText("0912");
+    }
     await ctx.close();
   });
 

@@ -24,3 +24,21 @@ Seed chạy được trên DB trống + DB đã có demo (chạy lại không l�
 ## Delta (so với docs/current)
 Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Không (chỉ ghi bộ seed vào `current/community/README.md` nếu đổi).
+
+## com-prod-seed — seed/grant + e2e deployed trên PRODUCTION (đợt chuẩn bị Community, ab5935f0)
+Quyết định: (1) container `tool` đã nạp `/run/s2/app.env` có `DATABASE_URL` (s2_owner), `HUB_DATABASE_URL` (hub_api), `APP_ENV=production` ⇒ KHÔNG đổi compose. (2) `--grant-owner/--grant-editor <u1,u2>` (`seed-community-demo.grant.ts`): sau enablePack, thêm user NỘI BỘ vào Group `community-owner`/`community-editor` bằng một configWrite (audit `membersAudit`, actor hệ thống = actor_id null, config_changed ⇒ Hub nạp lại); idempotent; user ngoài hoặc không tồn tại ⇒ từ chối cả lô. (3) Dòng cuối chỉ in username mới tạo + đường dẫn file; mật khẩu chỉ ở file `--out` (0600); đối tác vẫn must_change_password. (4) e2e deployed: `e2e/community-web/playwright.deployed.config.ts` + `deployed.support.ts`, `CS_READONLY=1` bỏ bước đăng bình luận của test NCC, trace/screenshot/video tắt, mật khẩu mới ghi ngược vào file cred; `test-all.discover` loại `*.deployed.config.ts`.
+
+### Runbook (CHỈ chạy khi người dùng xác nhận)
+1. Dry-run trên prod (không ghi): 
+   `ssh -i F:\workspace\id_evoc_key evoc@149.202.83.5 "cd ~/workspace/sohoptac2 && docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/seed-community-demo.ts --out /claude-home/community-demo-partners.json --i-know-prod --grant-owner demo-owner --grant-editor demo-editor"`
+2. Áp thật: như trên, thêm `--apply` (lặp lại được; chỉ user mới có mật khẩu). `/claude-home` = `~/workspace/sohoptac2/claude-home` trên host.
+3. Lấy file về máy (PowerShell), rồi xoá bản trên server:
+   `scp -i F:\workspace\id_evoc_key evoc@149.202.83.5:workspace/sohoptac2/claude-home/community-demo-partners.json F:\workspace\secrets\community-demo-partners.txt`
+   `ssh -i F:\workspace\id_evoc_key evoc@149.202.83.5 "shred -u ~/workspace/sohoptac2/claude-home/community-demo-partners.json ~/workspace/sohoptac2/claude-home/community-demo-partners.json.community.json"`
+   (file định dạng JSON `{tenant, users:{username:mật khẩu}}`; đuôi .txt không quan trọng — chỉ cần cùng định dạng khi đọc.)
+4. e2e deployed (local, chỉ đọc):
+   `$env:CS_CRED_FILE='F:\workspace\secrets\community-demo-partners.txt'; $env:CS_NEW_PW='<mật khẩu mới, ≥ tối thiểu của hệ thống>'; $env:CS_OWNER_CRED_FILE='F:\workspace\secrets\DEMO_CREDENTIALS.txt'`
+   `bun tools/scripts/src/run-playwright.ts e2e/community-web/playwright.deployed.config.ts`
+   (hoặc `$env:CS_OWNER_PW` thay `CS_OWNER_CRED_FILE`). Sau lần chạy đầu, file cred giữ mật khẩu mới của đối tác ⇒ chạy lại được; sau đó xoá `Remove-Item Env:CS_NEW_PW,Env:CS_OWNER_PW`.
+Việc chưa làm trong lát: e2e deployed chưa chạy (cần prod đã seed); `demo-editor` phải là username thật của tenant demo (dry-run/apply báo lỗi nếu không có).
+Kiểm: unit `seed-community-demo.grant.test.ts`, `community-deployed-support.test.ts`; int `seed-community-demo.int.test.ts` (grant idempotent + từ chối ngoài) xanh; qc relock xong (`test:lock:verify` OK).
