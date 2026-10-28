@@ -994,7 +994,7 @@ a57bc159b44139ceafef9b27e1103578371b0ff5bca1fb96b49122a8300c85e9  tests/acceptan
 4ef2db483426aaef85f19a01383faf71cbc94cc72b44e212359e9579a7cf9fe8  tests/acceptance/N1/perf/docx.perf.int.test.ts
 5295b5ae287c3bee6749e2b7a2dcaa141ab5ec8a32d6da95229db1682793d828  tests/acceptance/N1/perf/guard.perf.int.test.ts
 4fb2431872d50ae638482e8790a3b4e8a2f2fd94596914f4f037cf8858bf2355  tests/acceptance/N1/perf/pkdemo.perf.int.test.ts
-ff4c370a2edc5c27d261935f91c1d8bfea9db4b7ca08918ea866e473509fad81  tests/acceptance/N1/rls.int.test.ts
+062ed2d2a9119f9e33bbb113b42087a6cb766476ac47ca65e842e94196125174  tests/acceptance/N1/rls.int.test.ts
 75b81061d04f88b91c93e62bf382e564b008f105cadff67a4059eeab47e1844f  tests/acceptance/N1/rules/docx.rules.test.ts
 1985922898bd7e877270b568e2a79be9277e7b9a13b60e1f4ffdba6804f77575  tests/acceptance/N1/rules/layers.test.ts
 0e6bc1e9fe4aabfa940582f5f92b15fe88ba7d36733bd96304a0b5d35dba81e2  tests/acceptance/N1/rules/pack-access.rules.test.ts
