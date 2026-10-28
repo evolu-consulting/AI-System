@@ -1,13 +1,12 @@
 // com-fix-community-login · fixture CHỈ MÁY DEV cho `seed-community-demo --dev-fixture`: DB local mới tạo chưa có tenant `demo`
 // + chủ quản `demo-owner` (tenant_admin, email demo-owner@example.invalid) ⇒ tạo (idempotent, không đổi user đã có). Mật khẩu chủ
-// quản lấy từ env `DEMO_OWNER_PW` (không in, không ghi file). Từ chối khi APP_ENV=production hoặc DB host ngoài localhost/test —
+// quản lấy từ env `DEMO_OWNER_PW` (không in, không ghi file). Từ chối khi APP_ENV ≠ development|test hoặc DB host ngoài loopback/*.localhost/*.test —
 // KHÔNG có cờ vượt (khác seed chính có `--i-know-prod`): production đã có tenant demo thật.
 import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
-import { type Db, hashPassword, withScope } from "@ai/db";
+import { type Db, hashPassword, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { configWrite } from "../../../apps/admin-api/src/lib/config/config-write";
+import { publishConfigChanged } from "../../../apps/admin-api/src/lib/config/config-write";
 import { membersAudit } from "../../../apps/admin-api/src/modules/groups/groups.service";
-import { isLocalDbHost } from "./seed-community-demo.guard";
 
 export const DEMO_TENANT = { key: "demo", name: "Demo Sổ Hợp Tác" } as const;
 export const DEMO_OWNER = {
@@ -16,14 +15,28 @@ export const DEMO_OWNER = {
   displayName: "Nguyễn Văn An",
 } as const;
 
-/** Lý do TỪ CHỐI tạo fixture (null = được). Thuần. */
+/** Host DB của fixture: CHỈ loopback, `*.localhost`, `*.test` — chặt hơn seed chính (không nhận tên dịch vụ `postgres`/`db`). */
+export function isDevFixtureHost(url: string): boolean {
+  let h: string;
+  try {
+    h = new URL(url).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  } catch {
+    return false;
+  }
+  return (
+    ["localhost", "127.0.0.1", "::1"].includes(h) || h.endsWith(".localhost") || h.endsWith(".test")
+  );
+}
+
+/** Lý do TỪ CHỐI tạo fixture (null = được). Thuần. Cần APP_ENV development|test VÀ host dev. */
 export function devFixtureGuard(o: {
   appEnv: string | undefined;
   urls: readonly string[];
   ownerPw: string | undefined;
 }): string | null {
-  if (o.appEnv === "production") return "--dev-fixture chỉ cho máy dev (APP_ENV=production)";
-  if (o.urls.some((u) => !isLocalDbHost(u)))
+  if (o.appEnv !== "development" && o.appEnv !== "test")
+    return `--dev-fixture chỉ cho máy dev (APP_ENV=${o.appEnv ?? "(vắng)"}, cần development|test)`;
+  if (o.urls.some((u) => !isDevFixtureHost(u)))
     return "--dev-fixture chỉ cho DB localhost/test (không có cờ vượt)";
   const n = o.ownerPw?.length ?? 0;
   if (n < PASSWORD_MIN_LEN || n > PASSWORD_MAX_LEN)
@@ -87,17 +100,23 @@ export async function ensureOwnerInGroup(db: Db): Promise<"added" | "exists"> {
       `dev-fixture: thiếu demo-owner hoặc Group ${OWNER_GROUP} (gói community chưa bật?)`,
     );
   if (r.member) return "exists";
-  const call = { ctx: { db }, scope: { kind: "platform" as const }, actor: { userId: r.uid } };
-  await configWrite(call, "group.members", async (tx, ch) => {
-    await tx.execute(sql`insert into admin.group_members (tenant_id, group_id, user_id, added_by)
-      values (${r.tid}::uuid, ${r.gid}::uuid, ${r.uid}::uuid, ${r.uid}::uuid) on conflict do nothing`);
-    ch.changed({ entity: "group", tenantId: r.tid });
-    ch.audit(
-      membersAudit(
-        { id: r.gid, tenantId: r.tid, key: OWNER_GROUP },
-        { added: [DEMO_OWNER.username] },
-      ),
-    );
-  });
+  // Actor audit = HỆ THỐNG (actor_id null, như audit của bộ giới hạn đăng nhập) — không ghi demo-owner tự thêm mình.
+  const w = await withConfigWrite(
+    db,
+    { kind: "platform" },
+    async (tx, ch) => {
+      await tx.execute(sql`insert into admin.group_members (tenant_id, group_id, user_id, added_by)
+        values (${r.tid}::uuid, ${r.gid}::uuid, ${r.uid}::uuid, null) on conflict do nothing`);
+      ch.changed({ entity: "group", tenantId: r.tid });
+      ch.audit(
+        membersAudit(
+          { id: r.gid, tenantId: r.tid, key: OWNER_GROUP },
+          { added: [DEMO_OWNER.username] },
+        ),
+      );
+    },
+    { actorId: null },
+  );
+  if (w.version !== null) await publishConfigChanged(db, w.version, w.events);
   return "added";
 }
