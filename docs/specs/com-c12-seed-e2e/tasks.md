@@ -13,6 +13,8 @@ Seed chạy được trên DB trống + DB đã có demo (chạy lại không l�
 
 ## Quyết định trong lúc làm
 <!-- agent điền -->
+- C12a (seed đối tác): `tools/scripts/src/seed-community-demo.ts` (+ `.data.ts`, int test). Gọi service admin-api (`createOrg`/`createOrgUser`) qua import tương đối, actor = demo-owner (hoặc tenant_admin đầu tiên). Dry-run mặc định; `--apply`; `--tenant` mặc định demo, khác demo cần `--force-tenant`; `--out` mật khẩu (mặc định thư mục tạm, 0600, không in). Chỉ user MỚI có mật khẩu (chạy lại không reset; file được gộp).
+- C12a: Hưng Thịnh Logistics gắn party_key của `Công ty CP Hưng Thịnh` (SHT demo) — cần xác nhận cùng pháp nhân; Bao bì Phương Nam chưa có trong SHT (null).
 - C12b: seed bật gói `community` bằng `enablePack` của admin-api (scope platform, actor = demo-owner); nhãn/nhóm hàng/party_key ghi vào `partner_companies` qua `upsertPartner` (một tx); bài + bình luận qua `post.service`/`thread.service` của hub-api (che liên hệ, RLS, audience D2 chạy thật). Cần `HUB_DATABASE_URL` (vai hub_api) cho phần gói.
 - Idempotent: bài định danh (người đăng, tiêu đề); bình luận (luồng, người, nội dung). Dry-run mặc định vẫn chỉ in kế hoạch.
 - Bài Thùng phi 200L gửi audience nhóm hàng "Thùng phi" ⇒ chỉ Tân Phát; hai bình luận NCC đều của Tân Phát (đúng ánh xạ C12a, không đổi nhóm hàng). Bài CKS của chủ quản ⇒ người mua nhóm CKS (Hưng Thịnh).
