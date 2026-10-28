@@ -61,6 +61,27 @@ export function asyncChunkSizes(distDir: string): [string, number][] {
     .map((f): [string, number] => [f, Bun.gzipSync(readFileSync(join(dir, f))).byteLength]);
 }
 
+/** Dấu dữ liệu mẫu của adapter mock (`src/api/seed.ts`) — bản build production không được chứa (review Thấp-12). */
+export const MOCK_MARKERS = ["hungthinh", "tanphat"];
+
+/** Mọi file JS trong `dist/static/js` (kể cả async) có chứa dấu mock ⇒ tên file. */
+export function mockLeaks(distDir: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    if (!existsSync(dir)) return;
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith(".js")) {
+        const s = readFileSync(p, "utf8");
+        if (MOCK_MARKERS.some((m) => s.includes(m))) out.push(e.name);
+      }
+    }
+  };
+  walk(join(distDir, "static", "js"));
+  return out;
+}
+
 export function checkBundle(distDir: string): BundleReport {
   const indexPath = join(distDir, "index.html");
   if (!existsSync(indexPath)) {
@@ -86,6 +107,8 @@ export function checkBundle(distDir: string): BundleReport {
       errors.push(`check:bundle chunk ${name} ${toKb(bytes)} KB > 50 KB`);
     }
   }
+  for (const f of mockLeaks(distDir))
+    errors.push(`check:bundle ${f} chứa adapter mock/dữ liệu mẫu`);
   const maxChunkKb = toKb(Math.max(0, ...chunks.map(([, b]) => b)));
   return { jsKb, cssKb, maxChunkKb, errors };
 }

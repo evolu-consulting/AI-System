@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { apiMode, createApi } from "../api";
+import { type Api, apiMode } from "../api";
 import { bounceToSso, redeemFromLocation, SSO_URL, session } from "../api/session";
 import { ChatDock } from "./ChatDock";
 import { AppProvider, useApp } from "./ctx";
@@ -7,8 +7,6 @@ import { FeedPage } from "./Feed";
 import { ProfilePage } from "./Profile";
 import { SettingsPage } from "./Settings";
 import { TopBar } from "./TopBar";
-
-const boot = createApi();
 
 function Shell() {
   const { route } = useApp();
@@ -59,7 +57,7 @@ function AuthGate({ children }: { children: ReactNode }) {
   );
 }
 
-export function App() {
+export function App({ boot }: { boot: Api }) {
   const app = (
     <AppProvider boot={boot}>
       <Shell />

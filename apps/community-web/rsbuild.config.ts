@@ -14,13 +14,23 @@ export const proxy = {
   "/runs": HUB_URL,
 };
 
-export default defineConfig({
+/** Adapter mock có trong bản dựng? `PUBLIC_COMMUNITY_API` = mock ⇒ có; http ⇒ không; vắng ⇒ chỉ khi dev (review Thấp-12). */
+const mockOn = (command: string): boolean => {
+  const f = process.env.PUBLIC_COMMUNITY_API;
+  return f === "mock" || (f !== "http" && command === "dev");
+};
+
+export default defineConfig(({ command }) => ({
   plugins: [pluginReact()],
-  source: { entry: { index: "./src/main.tsx" } },
+  source: {
+    entry: { index: "./src/main.tsx" },
+    // hằng lúc build ⇒ nhánh `import("./mock")` bị bỏ hẳn khỏi bản production
+    define: { __COMMUNITY_MOCK__: JSON.stringify(mockOn(command)) },
+  },
   html: { template: "./index.html", title: "Sổ Hợp Tác · Community" },
   server: { port: 3400, strictPort: true, proxy },
   output: {
     distPath: { root: process.env.E2E_DIST_DIR || "dist" },
     overrideBrowserslist: ["chrome >= 111", "edge >= 111", "firefox >= 128", "safari >= 16.4"],
   },
-});
+}));
