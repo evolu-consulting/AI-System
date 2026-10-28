@@ -21,7 +21,12 @@ export const selfContactOf =
 
 export const memberNamesOf =
   (db: Db) =>
-  async (who: { tenantId: string; userId: string }): Promise<Map<string, string>> => {
+  async (who: {
+    tenantId: string;
+    userId: string;
+    userKind?: "internal" | "external";
+  }): Promise<Map<string, string>> => {
+    if (who.userKind === "external") return new Map(); // CR-102a · com-c2: đối tác không tra tên nhân viên
     const rows = await withHubScope(
       db,
       { kind: "user", tenantId: who.tenantId, userId: who.userId },
@@ -30,7 +35,7 @@ export const memberNamesOf =
           id: string;
           name: string;
         }>(sql`select u.id, u.display_name as name from admin.users u
-          where u.tenant_id = ${who.tenantId}::uuid order by u.id limit ${MEMBERS_MAX * 4}::int`),
+          where u.tenant_id = ${who.tenantId}::uuid and u.kind = 'internal' order by u.id limit ${MEMBERS_MAX * 4}::int`),
     );
     return new Map(rows.map((x) => [x.id, x.name]));
   };

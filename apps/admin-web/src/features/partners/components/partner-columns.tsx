@@ -17,6 +17,8 @@ export type PartnerColumnOpts = {
   onOpen: (o: ExternalOrg) => void;
   onRename: (o: ExternalOrg) => void;
   onDeactivate: (o: ExternalOrg) => void;
+  /** com-c2 · mở lại công ty đã vô hiệu (tài khoản cũ vẫn vô hiệu). */
+  onReactivate: (o: ExternalOrg) => void;
 };
 
 function RowMenu({
@@ -25,6 +27,7 @@ function RowMenu({
   onOpen,
   onRename,
   onDeactivate,
+  onReactivate,
 }: PartnerColumnOpts & { org: ExternalOrg }) {
   return (
     <DropdownMenu>
@@ -44,7 +47,11 @@ function RowMenu({
               {t("partners.menu.deactivate")}
             </DropdownMenuItem>
           </>
-        ) : null}
+        ) : (
+          <DropdownMenuItem onSelect={() => onReactivate(org)}>
+            {t("partners.menu.reactivate")}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

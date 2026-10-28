@@ -15,13 +15,21 @@ type Props = {
   onOpen: (o: ExternalOrg) => void;
   onRename: (o: ExternalOrg) => void;
   onDeactivate: (o: ExternalOrg) => void;
+  onReactivate: (o: ExternalOrg) => void;
 };
 
-export function PartnerTable({ orgs, onOpen, onRename, onDeactivate, ...rest }: Props) {
+export function PartnerTable({
+  orgs,
+  onOpen,
+  onRename,
+  onDeactivate,
+  onReactivate,
+  ...rest
+}: Props) {
   const { t } = useTranslation();
   const columns = useMemo(
-    () => partnerColumns({ t, onOpen, onRename, onDeactivate }),
-    [t, onOpen, onRename, onDeactivate],
+    () => partnerColumns({ t, onOpen, onRename, onDeactivate, onReactivate }),
+    [t, onOpen, onRename, onDeactivate, onReactivate],
   );
   return (
     <DataTable

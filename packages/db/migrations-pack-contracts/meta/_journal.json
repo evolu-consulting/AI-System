@@ -428,6 +428,13 @@
       "when": 1800000000000,
       "tag": "0066_com_c7_save_quote",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1800050000000,
+      "tag": "0067_ext_user_deny",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,9 @@ export class AgentsService {
       this.config.user(u.userId),
     ]);
     const groupIds = user?.groupIds ?? new Set<string>();
-    return { items: agentMenu(snapshot, { tenantId: u.tenantId, userId: u.userId, groupIds }) };
+    const external = u.userKind === "external" || user?.external === true; // CR-102a · com-c2
+    return {
+      items: agentMenu(snapshot, { tenantId: u.tenantId, userId: u.userId, groupIds, external }),
+    };
   }
 }

@@ -63,6 +63,14 @@ export async function findOrg(
   return row ?? null;
 }
 
+/** com-c2 · tenant có `key='platform'` (tenant nhà vận hành). Tenant lạ ⇒ false (insert sau đó trả 404 qua FK). */
+export async function isPlatformTenant(tx: Tx, tenantId: string): Promise<boolean> {
+  const r = (await tx.execute(
+    sql`select 1 as x from admin.tenants where id = ${tenantId}::uuid and key = 'platform'`,
+  )) as unknown as { x: number }[];
+  return r.length > 0;
+}
+
 export async function insertOrg(
   tx: Tx,
   o: { tenantId: string; name: string; by: string },

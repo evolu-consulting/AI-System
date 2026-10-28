@@ -31,8 +31,9 @@ export type ChatGateCatalog = {
 /** Tenant được dùng Chat AI: feature chưa có ⇒ mở; có ⇒ không `off` ∧ entitlement còn hiệu lực. */
 export function chatAppAllowed(
   cat: ChatGateCatalog,
-  who: { tenantId: string; role: Role },
+  who: { tenantId: string; role: Role; userKind?: "internal" | "external" },
 ): boolean {
+  if (who.userKind === "external") return false; // CR-102a · com-c2: đối tác không có Chat AI (GĐ1), kể cả dock
   if (who.role === "platform_admin") return true;
   const f = cat.features.find((x) => x.key === CHAT_APP_FEATURE);
   if (!f) return true;

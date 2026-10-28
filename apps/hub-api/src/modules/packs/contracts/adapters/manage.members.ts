@@ -16,7 +16,7 @@ export function packAssignees(db: Db, view: PackAccessView, packKey: string) {
     if (groups.length === 0) return [];
     return withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, (tx) =>
       tx.execute<Member>(sql`select u.id, u.display_name as name from admin.users u
-        where u.tenant_id = ${who.tenantId}::uuid and u.active and not u.locked_by_tenant
+        where u.tenant_id = ${who.tenantId}::uuid and u.active and not u.locked_by_tenant and u.kind = 'internal'
           and (${only ?? null}::uuid is null or u.id = ${only ?? null}::uuid)
           and exists (select 1 from admin.group_members gm where gm.tenant_id = u.tenant_id and gm.user_id = u.id
             and gm.group_id = any(array(select jsonb_array_elements_text(${JSON.stringify(groups)}::jsonb))::uuid[]))

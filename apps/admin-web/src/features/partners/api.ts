@@ -89,6 +89,16 @@ export function useDeactivateOrg() {
   });
 }
 
+/** com-c2 · mở lại công ty đã vô hiệu (tài khoản đã vô hiệu giữ nguyên). */
+export function useReactivateOrg() {
+  const refresh = useRefreshPartners();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ExternalOrg>(`/admin/external-orgs/${id}/reactivate`, { method: "POST" }),
+    onSuccess: refresh,
+  });
+}
+
 export function useOrgUsers(orgId: string, q: string, offset: number) {
   return useQuery({
     queryKey: PARTNER_KEYS.users(orgId, q, offset),

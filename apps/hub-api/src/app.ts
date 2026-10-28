@@ -49,6 +49,7 @@ import { mountSourceCredential } from "./modules/internal/source-credential.rout
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
+import { externalFirewall } from "./modules/packs/kit/adapters/external-firewall.middleware";
 import { packAccessInput } from "./modules/packs/kit/adapters/pack-guard.middleware";
 import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
 import { checkPackAccess } from "./modules/packs/kit/domain/pack-access.rules";
@@ -247,6 +248,9 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache) {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
+  // CR-102a · com-c2-ext-deny: đối tác chỉ qua gói `EXTERNAL_PACKS` + chuông; còn lại 403 (từ chối mặc định).
+  const firewall = externalFirewall();
+  for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, firewall);
   if (config) {
     // chat-api-gate · SAU auth: công ty bị thu hồi `chat-app` ⇒ 403 CHAT_APP_DISABLED (trừ dock Sổ Hợp Tác có quyền đọc gói).
     const gate = chatGate({ view: config, dockAllowed: contractsReader(config) });

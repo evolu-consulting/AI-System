@@ -11,7 +11,7 @@ import { type Db, type DbScope, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
-import { appError } from "../../lib/errors";
+import { appError, extOrgError } from "../../lib/errors";
 import { checkViolation, foreignKeyViolation } from "../../lib/pg-errors";
 import type { TestHooks } from "../../lib/test-hooks";
 import { type Actor, resolveTenantScope } from "../users/users.rules";
@@ -84,6 +84,8 @@ export function setManager(
         .catch((err) => {
           if (foreignKeyViolation(err) === "user_managers_manager_fk") throw appError("NOT_FOUND");
           const ck = checkViolation(err);
+          // CR-102a · com-c2 (TB-1): trigger 0029 — đối tác không quản lý/được quản lý.
+          if (ck === "user_managers_internal_ck") throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
           if (ck === "user_managers_cycle_ck" || ck === "user_managers_self_ck")
             throw appError("VALIDATION_ERROR", { reason: "manager_cycle" });
           throw err;
@@ -134,6 +136,9 @@ export function setDepartment(
         )
         .catch((err) => {
           if (foreignKeyViolation(err) === "departments_head_fk") throw appError("NOT_FOUND");
+          // CR-102a · com-c2 (TB-1): trigger 0029 — đối tác không làm trưởng phòng.
+          if (checkViolation(err) === "departments_head_internal_ck")
+            throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
           throw err;
         });
     }

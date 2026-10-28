@@ -786,7 +786,12 @@
     "empty": { "text": "Chưa có công ty đối tác nào." },
     "col": { "name": "Tên công ty", "accounts": "Số tài khoản", "status": "Trạng thái" },
     "status": { "active": "Đang hoạt động", "inactive": "Đã vô hiệu" },
-    "menu": { "open": "Xem tài khoản", "rename": "Đổi tên", "deactivate": "Vô hiệu" },
+    "menu": {
+      "open": "Xem tài khoản",
+      "rename": "Đổi tên",
+      "deactivate": "Vô hiệu",
+      "reactivate": "Mở lại"
+    },
     "field": { "name": "Tên công ty" },
     "createTitle": "Thêm công ty đối tác",
     "renameTitle": "Đổi tên công ty",
@@ -804,6 +809,7 @@
       "created": "Đã thêm công ty {name}",
       "renamed": "Đã đổi tên thành {name}",
       "deactivated": "Đã vô hiệu công ty {name}",
+      "reactivated": "Đã mở lại công ty {name} (tài khoản cũ vẫn vô hiệu)",
       "userCreated": "Đã tạo tài khoản {username}",
       "userLocked": "Đã khoá {username}",
       "userUnlocked": "Đã mở khoá {username}",

@@ -36,8 +36,9 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
   const orchestrator = settings && snapshot.agents.find((a) => a.id === settings.agentId);
   if (!settings || !orchestrator) return null;
   const r = writer.run;
-  const groupIds = (await d.users.user(r.userId))?.groupIds ?? new Set<string>();
-  const who = { tenantId: r.tenantId, userId: r.userId, groupIds };
+  const us = await d.users.user(r.userId);
+  const groupIds = us?.groupIds ?? new Set<string>();
+  const who = { tenantId: r.tenantId, userId: r.userId, groupIds, external: us?.external === true };
   const access = accessInput(snapshot, who, scope ? { onlyKeys: scope } : undefined);
   const { flow, history } = await withHubScope(d.db, { kind: "system" }, async (tx) => ({
     flow: await repo.flowState(tx, r),

@@ -1,5 +1,5 @@
 // PK-FR-03 · PK-FR-09 · D-06 · N1 plan §4: transaction của module gói trên pool `hub_api` sẵn có (không pool mới). Câu đầu
-// DUY NHẤT đặt role gói `<k>_rw` + `app.tenant_id` + `app.user_id` (transaction-local ⇒ hết tx role trở lại `hub_api`, không rò
+// DUY NHẤT đặt role gói `<k>_rw` + `app.tenant_id` + `app.user_id` + `app.user_kind` (CR-102a) (transaction-local ⇒ hết tx role trở lại `hub_api`, không rò
 // sang request sau). Kiểm khoá gói (`PackKeySchema`) và tenant (uuid) TRƯỚC khi mở tx. Thử lại 40P01/40001 như `withHubScope`.
 import { PackKeySchema } from "@ai/contracts";
 import { sql } from "drizzle-orm";
@@ -78,8 +78,12 @@ export async function withPackScope<T>(
         // HD78 · Luật 4c: tắt JIT trong tx gói (cùng câu, không thêm câu). Policy RESTRICTIVE của M1 (subplan EXISTS) đẩy ước lượng
         // chi phí câu danh sách vượt `jit_above_cost` ⇒ Postgres biên dịch JIT ~70 ms cho câu chạy ~30 ms (đo: GET /payments
         // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
+        // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu, đặt TRƯỚC khi đổi role
+        // (đọc `admin.users` bằng quyền `hub_api`); việc nền / user lạ ⇒ ''. RLS phòng thủ của gói (vd contracts 0067) chặn 'external'.
         await tx.execute(
-          sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
+          sql`select set_config('app.user_kind', coalesce((select u.kind from admin.users u
+              where u.id = nullif(${uid}, '')::uuid), ''), true),
+            set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
             set_config('app.user_id', ${uid}, true), set_config('jit', 'off', true)`,
         );
         return fn(tx);

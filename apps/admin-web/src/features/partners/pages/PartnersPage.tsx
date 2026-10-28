@@ -64,6 +64,7 @@ export function PartnersPage() {
         onOpen={openOrg}
         onRename={actions.rename}
         onDeactivate={actions.deactivate}
+        onReactivate={actions.reactivate}
       />
       <div className="mt-4">
         <Pagination

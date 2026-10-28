@@ -270,6 +270,7 @@ export class RoomRunService {
       tenantId: u.tenantId,
       userId: u.userId,
       groupIds: user?.groupIds ?? new Set<string>(),
+      external: u.userKind === "external" || user?.external === true, // CR-102a · com-c2
     };
     const au = new Set(visibleAgents(accessInput(snapshot, who)).map((a) => a.id));
     return pendingAgents.some((id) => !confirmStillAllowed(id, au));

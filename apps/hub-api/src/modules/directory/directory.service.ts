@@ -3,6 +3,7 @@ import type { DirectoryQuery, DirectoryResponse } from "@ai/contracts/chat";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
+import { appError } from "../../lib/errors";
 import { searchUsers } from "./directory.repo";
 import { likePattern } from "./directory.rules";
 
@@ -10,6 +11,8 @@ export class DirectoryService {
   constructor(private readonly db: Db) {}
 
   async search(user: AuthUser, q: DirectoryQuery): Promise<DirectoryResponse> {
+    // CR-102a · com-c2: đối tác không xem danh bạ (lớp sau tường lửa — gọi service trực tiếp cũng bị chặn).
+    if (user.userKind === "external") throw appError("FORBIDDEN");
     const scope = { kind: "user", tenantId: user.tenantId, userId: user.userId } as const;
     const rows = await withHubScope(this.db, scope, (tx) =>
       searchUsers(tx, {

@@ -22,6 +22,7 @@ import {
   getOrg,
   listOrgs,
   listUsersOfOrg,
+  reactivateOrg,
   renameOrg,
 } from "./external-orgs.service";
 
@@ -64,6 +65,7 @@ export function externalOrgsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<Ap
     return c.json(await renameOrg(call(c), id, input));
   });
   r.post("/:id/deactivate", async (c) => c.json(await deactivateOrg(call(c), parseIdParam(c))));
+  r.post("/:id/reactivate", async (c) => c.json(await reactivateOrg(call(c), parseIdParam(c)))); // com-c2
   r.get("/:id/users", async (c) => {
     const id = parseIdParam(c);
     const q = { ...UserListQuerySchema.parse({}), ...parseQuery(c, OrgUsersQuery) };

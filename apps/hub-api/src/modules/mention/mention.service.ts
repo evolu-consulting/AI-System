@@ -93,7 +93,12 @@ export class MentionService {
       this.config.snapshot(),
       this.config.user(u.userId),
     ]);
-    const who = { tenantId: u.tenantId, userId: u.userId, groupIds: user?.groupIds ?? new Set() };
+    const who = {
+      tenantId: u.tenantId,
+      userId: u.userId,
+      groupIds: user?.groupIds ?? new Set<string>(),
+      external: u.userKind === "external" || user?.external === true, // CR-102a · com-c2
+    };
     return prepareMention({ routed, snapshot, who, locale: user?.locale ?? "vi" });
   }
 

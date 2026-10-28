@@ -78,12 +78,14 @@ export function deleteApp(ctx: AppCatalogCtx, actor: Actor, key: string): Promis
 /** Catalog + người xem (feature hiệu lực / tenant được cấp / đang có) — một lượt đọc quyền. */
 async function catalogView(tx: Tx, actor: Actor): Promise<{ rows: CatalogRow[]; viewer: Viewer }> {
   const rows = await repo.listAll(tx);
+  const external = actor.userKind === "external"; // CR-102a · com-c2: chỉ `EXTERNAL_APPS`
   if (!needsFeatures(rows, actor.role))
-    return { rows, viewer: { role: actor.role, features: new Set<string>() } };
+    return { rows, viewer: { role: actor.role, features: new Set<string>(), external } };
   const k = await featureKeyView(tx, actor);
   return {
     rows,
     viewer: {
+      external,
       role: actor.role,
       features: k.effective,
       tenantFeatures: k.tenant,

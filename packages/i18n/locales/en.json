@@ -786,7 +786,12 @@
     "empty": { "text": "No partner companies yet." },
     "col": { "name": "Company name", "accounts": "Accounts", "status": "Status" },
     "status": { "active": "Active", "inactive": "Deactivated" },
-    "menu": { "open": "View accounts", "rename": "Rename", "deactivate": "Deactivate" },
+    "menu": {
+      "open": "View accounts",
+      "rename": "Rename",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate"
+    },
     "field": { "name": "Company name" },
     "createTitle": "Add partner company",
     "renameTitle": "Rename company",
@@ -804,6 +809,7 @@
       "created": "Added company {name}",
       "renamed": "Renamed to {name}",
       "deactivated": "Deactivated company {name}",
+      "reactivated": "Reactivated company {name} (old accounts stay deactivated)",
       "userCreated": "Created account {username}",
       "userLocked": "Locked {username}",
       "userUnlocked": "Unlocked {username}",

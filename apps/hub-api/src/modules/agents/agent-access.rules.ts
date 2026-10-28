@@ -34,6 +34,8 @@ export type VisibleAgentsInput = {
   excludeIds?: ReadonlySet<string>;
   /** H2b-R09: thu hẹp theo tag (so đúng `key`); chỉ thu hẹp, không mở rộng ngoài AU. */
   onlyKeys?: ReadonlySet<string>;
+  /** CR-102a · com-c2: đối tác ⇒ không thấy/không delegate agent nào. */
+  external?: boolean;
 };
 
 /** Runtime H1 (job `agent.cli`, plan §2.2). */
@@ -54,7 +56,13 @@ export type AccessSnapshot = {
   /** H2b-R13: bản Orchestrator theo tenant (khoá = `tenant_id`). */
   orchestratorTenants?: ReadonlyMap<string, { agentId: string }>;
 };
-export type AccessSubject = { tenantId: string; userId: string; groupIds: ReadonlySet<string> };
+export type AccessSubject = {
+  tenantId: string;
+  userId: string;
+  groupIds: ReadonlySet<string>;
+  /** CR-102a · com-c2: đối tác ⇒ AU rỗng (kể cả grant `tenant` "cả công ty", agent mặc định/dự phòng). Vắng ⇒ nội bộ. */
+  external?: boolean;
+};
 
 /**
  * HUB-BR-06: quyền tính trên ảnh run giữ lúc bắt đầu, không đọc ảnh mới giữa run. Chỉ agent `RUNNABLE_RUNTIMES` vào
@@ -93,6 +101,7 @@ export function orchestratorIds(s: {
  * H2b: ∧ ∉ `excludeIds` (R15) ∧ (`onlyKeys` vắng ∨ `key` ∈ `onlyKeys`) (R09).
  */
 export function visibleAgents(i: VisibleAgentsInput): HubAgentRef[] {
+  if (i.external) return []; // CR-102a · com-c2: đối tác không bao giờ có agent (grant user/group/tenant đều bỏ qua)
   const entitled = new Set<string>();
   for (const e of i.entitlements) {
     if (e.tenantId === i.tenantId && e.revokedAt === null) entitled.add(e.agentId);

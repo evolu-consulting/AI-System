@@ -188,7 +188,11 @@ export class RunService {
     const user = await this.d.config.user(u.userId);
     const run = newRun(u, conversationId, req, user?.locale ?? "vi");
     // REVIEW 1 #2: agent `direct` kiểm lại trên ảnh của run (ảnh `prepareMention` có thể cũ hơn) — trước khi ghi gì.
-    const who = { ...ownerOf(u), groupIds: user?.groupIds ?? new Set<string>() };
+    const who = {
+      ...ownerOf(u),
+      groupIds: user?.groupIds ?? new Set<string>(),
+      external: u.userKind === "external" || user?.external === true, // CR-102a · com-c2
+    };
     const x = { snapshot, who, runId: run.id };
     const { route, fast } = await this.#untagged(u, req, requested, x);
     const plan = planOf(fast ?? route, requested, run.locale, req.content);

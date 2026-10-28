@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { canSignIn } from "../modules/auth/auth.rules";
 import { appError } from "./errors";
+import { externalRouteAllowed } from "./external-guard";
 import { type JwtKeys, verifyAccessToken } from "./jwt";
 
 export type Actor = {
@@ -77,6 +78,9 @@ export async function authenticate(c: Context, d: AuthDeps): Promise<Actor> {
 export function requireAuth(d: AuthDeps): MiddlewareHandler<AppVars> {
   return async (c, next) => {
     const actor = await authenticate(c, d);
+    // CR-102a · com-c2: đối tác chỉ qua danh sách cho phép (một chỗ, mọi route cần đăng nhập).
+    if (actor.userKind === "external" && !externalRouteAllowed(c.req.method, c.req.path))
+      throw appError("FORBIDDEN");
     c.set("actor", actor);
     c.set("scope", scopeOf(actor));
     await next();

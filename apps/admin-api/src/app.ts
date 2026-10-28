@@ -4,11 +4,11 @@ import type { AppEnv, Db } from "@ai/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { AppVars } from "./lib/auth-middleware";
-import { AppError, toErrorBody } from "./lib/errors";
+import { AppError, extOrgError, toErrorBody } from "./lib/errors";
 import type { JwtKeys } from "./lib/jwt";
 import { logger } from "./lib/logger";
 import type { Mailer } from "./lib/mailer";
-import { safeErrorFields } from "./lib/pg-errors";
+import { externalGuardViolation, safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
 import { Semaphore } from "./lib/semaphore";
 import type { TestHooks } from "./lib/test-hooks";
@@ -234,6 +234,11 @@ export function createApp(cfg: AppConfig, deps?: AppDeps): Hono<AppVars> {
   app.onError((err, c) => {
     if (err instanceof AppError) {
       return c.json(toErrorBody(err.code, err.message, err.details), err.status, err.headers);
+    }
+    // CR-102a · com-c2: trigger chặn user ngoài lọt tới (import identity/mgmt, đường ghi chưa tự kiểm) ⇒ 422 rõ, không 500.
+    if (externalGuardViolation(err)) {
+      const e = extOrgError("EXTERNAL_USER_NOT_ALLOWED");
+      return c.json(toErrorBody(e.code, e.message), e.status);
     }
     logger.error("unhandled", { request_id: c.get("requestId"), ...safeErrorFields(err) });
     return c.json(toErrorBody("INTERNAL_ERROR", "Internal server error"), 500);

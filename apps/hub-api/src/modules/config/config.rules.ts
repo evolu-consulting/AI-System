@@ -41,6 +41,8 @@ export type UserState = {
   lockedByTenant: boolean;
   locale: "vi" | "en";
   groupIds: ReadonlySet<string>;
+  /** CR-102a · com-c2: `admin.users.kind='external'` (đối tác) — không agent, không Group, chỉ `EXTERNAL_PACKS`. Vắng ⇒ nội bộ. */
+  external?: boolean;
 };
 
 export type ProviderConfig = {

@@ -53,7 +53,8 @@ export async function prepareProcessRun(
     const start: DirectRunStart = {
       ...{ kind: "direct", agent, responder: responderOf(agent, locale), content: x.req.content },
     };
-    const who = { ...o, groupIds: user?.groupIds ?? new Set<string>() };
+    const external = u.userKind === "external" || user?.external === true; // CR-102a · com-c2
+    const who = { ...o, groupIds: user?.groupIds ?? new Set<string>(), external };
     direct = opts.skipGrant ? start : directOnSnapshot(start, snapshot, who, locale);
   }
   const input: CreateRunInput = {

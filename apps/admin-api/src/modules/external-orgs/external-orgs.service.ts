@@ -100,6 +100,8 @@ export function createOrg(
   if ("code" in r) throw appError(r.code);
   const tenantId = r.tenantId as string;
   return configWrite(c, "user.save", async (tx, ch) => {
+    // com-c2 (Thấp-3): tenant `platform` (nhà vận hành) không có đối tác ⇒ không có công ty ⇒ không có user ngoài.
+    if (await repo.isPlatformTenant(tx, tenantId)) throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
     const ins = { tenantId, name: input.name, by: c.actor.userId };
     // Savepoint: 23505 (tên trùng) / 23503 (tenant không có) không làm hỏng transaction ngoài trước khi dịch.
     const id = await tx
@@ -137,6 +139,21 @@ export function deactivateOrg(c: Call, id: string): Promise<ExternalOrg> {
     const n = await deactivateOrgUsersTx(tx, ch, { tenantId: t.tenantId, orgId: id, by });
     const after = toOrg(await mustFindOrg(c, tx, id));
     orgAudit(ch, "update", before, after, `deactivate:${n}`);
+    return after;
+  });
+}
+
+/**
+ * com-c2 · mở lại công ty đã vô hiệu: chỉ công ty (`active=true`). User đã vô hiệu GIỮ vô hiệu (C1: không mở khoá lại) —
+ * admin tạo tài khoản mới cho người cần dùng. Lặp lại ⇒ không ghi.
+ */
+export function reactivateOrg(c: Call, id: string): Promise<ExternalOrg> {
+  return configWrite(c, "user.save", async (tx, ch) => {
+    const before = toOrg(await mustFindOrg(c, tx, id, "no key update"));
+    if (before.active) return before;
+    await repo.updateOrg(tx, { tenantId: before.tenant_id, id }, { active: true });
+    const after = toOrg(await mustFindOrg(c, tx, id));
+    orgAudit(ch, "update", before, after, "reactivate");
     return after;
   });
 }

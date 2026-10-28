@@ -21,6 +21,8 @@ export type Viewer = {
   tenantFeatures?: ReadonlySet<string>;
   /** app-perm · mọi key feature đang tồn tại (feature theo công ty chưa tạo ⇒ coi như mở). */
   knownFeatures?: ReadonlySet<string>;
+  /** CR-102a · com-c2: user ngoài ⇒ chỉ `EXTERNAL_APPS`. Vắng ⇒ nội bộ. */
+  external?: boolean;
 };
 
 /** app-perm · feature của Chat AI: gắn theo CÔNG TY (đủ entitlement, không cần grant nhóm/user). */
@@ -38,8 +40,23 @@ function hasFeature(f: string, v: Viewer): boolean {
   return v.features.has(f);
 }
 
+/**
+ * CR-102a · com-c2: app user ngoài (đối tác) được mở — dữ liệu, không if theo tên ở nơi khác. Đối tác không có Group ⇒ feature
+ * của app xét theo entitlement CÔNG TY (gói tenant đã bật), không theo grant. Mọi app khác (Chat, Sổ Hợp Tác, Studio, Admin) ⇒ không.
+ */
+export const EXTERNAL_APPS: ReadonlySet<string> = new Set(["community"]);
+
+function externalMayUse(row: Pick<CatalogRow, "key" | "audience" | "requiredFeature">, v: Viewer) {
+  if (!EXTERNAL_APPS.has(row.key) || row.audience !== "all") return false;
+  return !row.requiredFeature || (v.tenantFeatures?.has(row.requiredFeature) ?? false);
+}
+
 /** Đúng đối tượng + đủ feature (bỏ qua bật/URL): người xem có QUYỀN dùng app. */
-export function mayUse(row: Pick<CatalogRow, "audience" | "requiredFeature">, v: Viewer): boolean {
+export function mayUse(
+  row: Pick<CatalogRow, "key" | "audience" | "requiredFeature">,
+  v: Viewer,
+): boolean {
+  if (v.external) return externalMayUse(row, v);
   if (row.audience === "admin" && !isAdmin(v.role)) return false;
   if (row.audience === "platform" && v.role !== "platform_admin") return false;
   return !row.requiredFeature || hasFeature(row.requiredFeature, v);
@@ -56,6 +73,7 @@ export function canOpen(row: CatalogRow, v: Viewer): boolean {
  * URL rỗng vẫn chat được như cũ). Catalog không có hàng `chat` ⇒ dùng được (hành vi cũ).
  */
 export function chatAllowed(rows: readonly CatalogRow[], v: Viewer): boolean {
+  if (v.external) return false; // CR-102a · com-c2: đối tác không có Chat AI (GĐ1)
   const chat = rows.find((r) => r.key === "chat");
   return !chat || mayUse(chat, v);
 }
@@ -70,6 +88,10 @@ export function visibleApps(rows: readonly CatalogRow[], v: Viewer): CatalogRow[
 /** Có hàng nào đòi feature mà người xem cần tra (tránh tải quyền khi không cần). */
 export const needsFeatures = (rows: readonly CatalogRow[], role: Viewer["role"]): boolean =>
   role !== "platform_admin" && rows.some((r) => r.enabled && r.requiredFeature !== null);
+
+/** Rút gọn: user ngoài dùng được app `key` (quyền, bỏ qua bật/URL)? — cho `default_app`. */
+export const externalAppAllowed = (key: string | null): boolean =>
+  key === null || EXTERNAL_APPS.has(key);
 
 /** Origin của URL catalog (`null` nếu hỏng). */
 export function originOf(url: string): string | null {

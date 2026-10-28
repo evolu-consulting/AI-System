@@ -29,6 +29,15 @@ export function checkViolation(err: unknown): string | null {
   return c?.code === "23514" && typeof c.constraint_name === "string" ? c.constraint_name : null;
 }
 
+/** CR-102a · com-c2: trigger chặn user ngoài (0028 Group, 0029 quản lý/trưởng phòng) — mọi đường ghi (kể cả import). */
+const EXTERNAL_GUARD_CK: ReadonlySet<string> = new Set([
+  "group_members_internal_ck",
+  "user_managers_internal_ck",
+  "departments_head_internal_ck",
+]);
+export const externalGuardViolation = (err: unknown): boolean =>
+  EXTERNAL_GUARD_CK.has(checkViolation(err) ?? "");
+
 const isDrizzleWrapper = (err: unknown): boolean =>
   !!err && typeof err === "object" && "query" in (err as object);
 

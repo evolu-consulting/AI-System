@@ -32,7 +32,12 @@ export function chatGate(d: ChatGateDeps): MiddlewareHandler<AuthVars> {
     await d.view.adminSettled?.();
     const chatOk = chatAppAllowed(await d.view.catalog(), u);
     const dockReq = kind === "dock" && isDockSurface(c.req.header(AI_SURFACE_HEADER));
-    const dockOk = !chatOk && dockReq && d.dockAllowed !== undefined && (await d.dockAllowed(u));
+    const dockOk =
+      !chatOk &&
+      dockReq &&
+      u.userKind !== "external" && // CR-102a · com-c2: đối tác không dùng dock trợ lý
+      d.dockAllowed !== undefined &&
+      (await d.dockAllowed(u));
     if (!chatGateVerdict(kind, chatOk, dockOk)) throw appError("CHAT_APP_DISABLED");
     // fix: dấu dock cho route sau — tạo hội thoại ⇒ `surface=contracts`; qua cổng NHỜ dock ⇒ gửi tin bị giới hạn (routes kiểm).
     if (dockReq) c.set("chatDock", { restricted: !chatOk });

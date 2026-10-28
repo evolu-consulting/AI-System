@@ -308,12 +308,15 @@ export async function lockUserRow(tx: Tx, tenantId: string, id: string): Promise
 export async function deactivateOrgUsers(
   tx: Tx,
   t: { tenantId: string; orgId: string; by: string },
-): Promise<string[]> {
-  const rows = (await tx.execute(sql`update admin.users
+): Promise<{ id: string; username: string; version: number }[]> {
+  return (await tx.execute(sql`update admin.users
     set active = false, deactivated_at = now(), version = version + 1, updated_at = now(), updated_by = ${t.by}
     where tenant_id = ${t.tenantId} and external_org_id = ${t.orgId} and deactivated_at is null
-    returning id`)) as unknown as { id: string }[];
-  return rows.map((r) => r.id);
+    returning id, username, version`)) as unknown as {
+    id: string;
+    username: string;
+    version: number;
+  }[];
 }
 
 /** Thu hồi refresh token đang sống của một tập user (một câu, `= any(array)`). */

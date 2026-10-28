@@ -6,6 +6,7 @@ import { PACK_ACTIONS, type PackAction, packFeatureKey } from "@ai/contracts";
 import type { MiddlewareHandler } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";
+import { externalPackActions } from "../domain/external-access.rules";
 import {
   checkPackAccess,
   type PackActionsInput,
@@ -25,7 +26,9 @@ export type PackAccessView = {
   /** Chờ lần nạp lại đang chạy (nếu có) — 0 SQL; vắng = không chờ. */
   adminSettled?(): Promise<void>;
   catalog(): Promise<PackCatalogView>;
-  user(id: string): Promise<{ tenantId: string; groupIds: ReadonlySet<string> } | undefined>;
+  user(
+    id: string,
+  ): Promise<{ tenantId: string; groupIds: ReadonlySet<string>; external?: boolean } | undefined>;
 };
 export type PackGuardVars = { Variables: { user: AuthUser } };
 
@@ -51,7 +54,7 @@ const NONE: readonly string[] = [];
 export async function packAccessInput(
   view: PackAccessView,
   packKey: string,
-  who: Pick<AuthUser, "userId" | "tenantId">,
+  who: Pick<AuthUser, "userId" | "tenantId" | "userKind">,
 ): Promise<PackActionsInput> {
   await view.adminSettled?.();
   const [cat, u] = await Promise.all([view.catalog(), view.user(who.userId)]);
@@ -59,19 +62,27 @@ export async function packAccessInput(
   const usable = (f: FeatureRef | undefined): f is FeatureRef =>
     f !== undefined && !f.off && cat.entitled.has(`${who.tenantId}:${f.id}`);
   const read = idx.get(packFeatureKey(packKey, "read"));
+  const external = who.userKind === "external" || u?.external === true;
   const granted = {} as Record<RulesAction, readonly string[]>;
   for (const a of SAME) {
     const f = idx.get(packFeatureKey(packKey, a));
-    granted[a] = usable(f) ? (cat.grantGroups.get(`${who.tenantId}:${f.id}`) ?? NONE) : NONE;
+    if (external) granted[a] = externalGrant(packKey, a, usable(f));
+    else granted[a] = usable(f) ? (cat.grantGroups.get(`${who.tenantId}:${f.id}`) ?? NONE) : NONE;
   }
   const sameTenant = u !== undefined && u.tenantId === who.tenantId;
   return {
     entitled: read !== undefined && cat.entitled.has(`${who.tenantId}:${read.id}`),
     featureOff: read?.off ?? false,
-    userGroupIds: sameTenant ? u.groupIds : new Set(),
+    userGroupIds: external ? EXTERNAL_SUBJECT : sameTenant ? u.groupIds : new Set(),
     grantedByAction: granted,
   };
 }
+
+/** CR-102a · com-c2: chủ thể giả cho đối tác — Group KHÔNG BAO GIỜ tính (kể cả hàng lọt vào DB); chỉ `EXTERNAL_PACKS`. */
+const EXTERNAL_SUBJECT_ID = "external:partner";
+const EXTERNAL_SUBJECT: ReadonlySet<string> = new Set([EXTERNAL_SUBJECT_ID]);
+const externalGrant = (packKey: string, a: RulesAction, featureUsable: boolean) =>
+  featureUsable && externalPackActions(packKey).includes(a) ? [EXTERNAL_SUBJECT_ID] : NONE;
 
 /** N2-FR-03 · gói bật cho tenant (không xét user): entitlement `<k'>-read` còn hiệu lực ∧ feature không `off`. */
 export async function packEnabled(

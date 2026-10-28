@@ -52,6 +52,7 @@ function orchestratorRoute(
 }
 
 export function defaultRoute(s: ConfigSnapshot, who: AccessSubject): DefaultRoute {
+  if (who.external) return { kind: "forbidden" }; // CR-102a · com-c2: đối tác không dùng agent mặc định/dự phòng/Orchestrator
   const d = s.tenantDefaults?.get(who.tenantId);
   if (!d) return { kind: "legacy" };
   const agent = s.agents.find((a) => a.id === d.defaultAgentId);

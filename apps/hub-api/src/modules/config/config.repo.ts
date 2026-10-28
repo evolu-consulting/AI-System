@@ -218,6 +218,7 @@ export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserSta
       active: users.active,
       lockedByTenant: users.lockedByTenant,
       locale: users.locale,
+      external: sql<boolean>`(${users.kind} = 'external')`,
       groupIds: sql<string[]>`coalesce((select array_agg(${groupMembers.groupId})::text[]
         from ${groupMembers} where ${groupMembers.userId} = ${users.id}
           and ${groupMembers.tenantId} = ${users.tenantId}), '{}'::text[])`,
