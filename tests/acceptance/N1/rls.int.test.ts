@@ -238,7 +238,10 @@ describe("PK-NFR-04 · guard khuôn cho MỌI schema trong packs.registry", () =
       where c.contype = 'f' and c.confrelid::regclass::text like r.key || '.%'
         and not ((select a.attnum from pg_attribute a where a.attrelid = c.conrelid and a.attname = 'tenant_id') = any(c.conkey)
              and (select a.attnum from pg_attribute a where a.attrelid = c.confrelid and a.attname = 'tenant_id') = any(c.confkey))`;
-    expect([...bad]).toEqual([]);
+    // CR-102 0004: ngoại lệ duy nhất, có chủ đích — FK đơn cột comment_id để dùng ON DELETE SET NULL (comment_id)
+    // (không xoá tenant_id của hàng). Bảng đã có RLS + post_fk kép nên không mở đường chéo tenant.
+    const allowed = new Set(["community.quote_saves/quote_saves_comment_fk"]);
+    expect(bad.filter((b) => !allowed.has(`${b.tbl}/${b.con}`))).toEqual([]);
   });
   it("PK-NFR-04 · 2 tenant × mọi bảng khuôn: đọc/sửa chéo 0 hàng (files), ghi chéo bị chặn 42501 (outbox INSERT-only)", async () => {
     await seed();

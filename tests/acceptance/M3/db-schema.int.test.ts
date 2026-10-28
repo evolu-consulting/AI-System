@@ -61,6 +61,7 @@ const ADMIN20 = [
   "admin.commands",
   "admin.config_meta",
   "admin.departments",
+  "admin.external_orgs",
   "admin.feature_commands",
   "admin.feature_entitlements",
   "admin.feature_grants",
@@ -119,7 +120,7 @@ describe("ADM-NFR-06 · migration M3", () => {
     expect(n?.n).toBe(MAIN_COUNT);
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · đúng 28 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback + tenant_daily_limits 0025 + trello_config 0027) + 3 bảng hub.* (M4 Q2a K3)", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · đúng 29 bảng admin.* (CR-102 external_orgs 0028 + M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback + tenant_daily_limits 0025 + trello_config 0027) + 3 bảng hub.* (M4 Q2a K3)", async () => {
     expect(await names(["admin", "hub"])).toEqual([...ADMIN20, ...HUB3]);
   });
 
@@ -451,7 +452,7 @@ describe("ADM-NFR-06 · migration production M3", () => {
     await runMigrations({ url: URL, appEnv: "development" });
   });
 
-  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 28 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback + tenant_daily_limits 0025 + trello_config 0027), 0 bảng hub.*", async () => {
+  it("ADM-NFR-06 · spec M3 §4 · production: {main: <journal>, dev:0}; 29 bảng admin.* (CR-102 external_orgs 0028 + M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback + tenant_daily_limits 0025 + trello_config 0027), 0 bảng hub.*", async () => {
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual(ADMIN20);

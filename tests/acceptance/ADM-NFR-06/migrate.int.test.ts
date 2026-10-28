@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "bun:test";
+﻿import { afterAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { runMigrations } from "@ai/db";
 import postgres from "postgres";
@@ -29,6 +29,7 @@ const ADMIN_TABLES = [
   "admin.commands",
   "admin.config_meta",
   "admin.departments",
+  "admin.external_orgs",
   "admin.feature_commands",
   "admin.feature_entitlements",
   "admin.feature_grants",
@@ -63,7 +64,7 @@ async function tablesIn(schemas: string[]): Promise<string[]> {
 }
 
 describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
-  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 28 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027)", async () => {
+  it("ADM-NFR-06 · M0-AC03 · có đúng 3 bảng hub.* và 29 bảng admin.* (CR-102 external_orgs 0028 + M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027)", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "development" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 3 });
@@ -183,7 +184,7 @@ describe("ADM-NFR-06 · M0-AC03 · db:migrate (development)", () => {
 });
 
 describe("ADM-NFR-06 · M0-AC04 · db:migrate (production)", () => {
-  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 28 bảng admin.* (M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027), không có bảng hub.*; không có bảng theo dõi dev", async () => {
+  it("ADM-NFR-06 · M0-AC04 · có schema admin, hub; 29 bảng admin.* (CR-102 external_orgs 0028 + M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027), không có bảng hub.*; không có bảng theo dõi dev", async () => {
     await resetTestDb(URL);
     const r = await runMigrations({ url: URL, appEnv: "production" });
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });

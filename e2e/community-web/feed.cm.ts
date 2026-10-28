@@ -39,7 +39,7 @@ test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá
   await expect(page.getByTestId("post").filter({ hasText: "Chữ ký số HSM" })).toHaveCount(0); // audience chỉ người mua
 });
 
-test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bị khoá", async ({
+test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bật và mở form (C7b)", async ({
   page,
 }) => {
   await page.goto("/#/feed");
@@ -51,12 +51,15 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
   await expect(post.getByRole("tab", { name: /Hưng Thịnh/ })).toBeVisible();
   await expect(post.getByRole("tab", { name: /ABC/ })).toBeVisible();
   const tp = page.locator('[data-post-id="p5"]');
-  await expect(tp.getByRole("button", { name: /Lưu báo giá/ })).toBeDisabled();
+  const saveBtn = tp.getByRole("button", { name: /Lưu báo giá/ });
+  await expect(saveBtn).toBeEnabled(); // C7b: chủ quản được lưu báo giá của NCC
+  await saveBtn.click();
+  await expect(tp.getByTestId("quote-form")).toBeVisible();
 });
 
 test("thông báo, hồ sơ, cài đặt màu chủ đạo", async ({ page }) => {
   await page.goto("/#/feed");
-  await page.getByRole("button", { name: "Thông báo" }).click();
+  await page.locator('button.iconbtn[aria-label="Thông báo"]').click(); // chuông; chip lọc "Thông báo" cùng tên nên không dùng getByRole
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toBeVisible();
   await page.getByRole("button", { name: "Đánh dấu đã đọc" }).click();
   await page.getByRole("button", { name: "Cài đặt" }).first().click();

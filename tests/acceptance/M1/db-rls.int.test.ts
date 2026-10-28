@@ -238,7 +238,7 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
     expect(owned?.n).toBe(0);
   });
 
-  it("ADM-NFR-07 · spec §4 · RLS bật cho 21 bảng (8 bảng M1–M3 + audit_log/quota_alerts/tenant_quotas/user_totp/user_backup_codes của M4 + tenant_workflow_tools của P-d2 0012 + 3 bảng M1D 0014 + 2 bảng feedback 0017 + tenant_daily_limits 0025 + trello_config 0027; không FORCE); 7 bảng còn lại không bật (gồm app_catalog 0016)", async () => {
+  it("ADM-NFR-07 · spec §4 · RLS bật cho 22 bảng (CR-102 external_orgs 0028 + 8 bảng M1–M3 + audit_log/quota_alerts/tenant_quotas/user_totp/user_backup_codes của M4 + tenant_workflow_tools của P-d2 0012 + 3 bảng M1D 0014 + 2 bảng feedback 0017 + tenant_daily_limits 0025 + trello_config 0027; không FORCE); 7 bảng còn lại không bật (gồm app_catalog 0016)", async () => {
     const rows = await env.owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
@@ -249,6 +249,7 @@ describe("ADM-NFR-07 · thuộc tính role và bảng", () => {
       ["commands", false, false],
       ["config_meta", false, false],
       ["departments", true, false],
+      ["external_orgs", true, false],
       ["feature_commands", false, false],
       ["feature_entitlements", true, false],
       ["feature_grants", true, false],

@@ -24,6 +24,8 @@ export default defineConfig({
   webServer: {
     command: `bun run --filter @ai/community-web build && bun run --filter @ai/community-web preview --port ${PORT}`,
     cwd: "../..",
+    // Review Thấp-12: bản build mặc định (production) = http, không có mock ⇒ e2e mock phải bật cờ lúc build.
+    env: { PUBLIC_COMMUNITY_API: "mock" },
     url: URL,
     reuseExistingServer: false,
     timeout: 180_000,

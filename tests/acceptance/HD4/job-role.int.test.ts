@@ -110,6 +110,8 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
     expect([...pols]).toEqual([
       { name: "contract_schedule_job", roles: [JOB_ROLE] },
       { name: "contract_schedule_tenant", roles: ["contracts_rw"] },
+      // CR-102 0067: policy restrictive chặn tài khoản ngoài tổ chức, chỉ gắn contracts_rw
+      { name: "ext_deny", roles: ["contracts_rw"] },
     ]);
     const n = await asRole(
       "contracts_rw",
