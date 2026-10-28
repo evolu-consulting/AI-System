@@ -27,7 +27,12 @@ import {
   seedPosts,
 } from "./seed-community-demo.apply";
 import { PARTNER_SEEDS, type PartnerSeed, POST_SAMPLES } from "./seed-community-demo.data";
-import { devFixtureGuard, ensureDemoTenant } from "./seed-community-demo.dev-fixture";
+import {
+  devFixtureGuard,
+  ensureDemoTenant,
+  ensureOwnerInGroup,
+  OWNER_GROUP,
+} from "./seed-community-demo.dev-fixture";
 import { seedGuard } from "./seed-community-demo.guard";
 import { partyKeyOf } from "./seed-demo-v2.build";
 
@@ -260,6 +265,10 @@ async function main(argv: readonly string[]): Promise<void> {
   try {
     if (argv.includes("--dev-fixture")) await devFixture(db, hubUrl ? [url, hubUrl] : [url], opts);
     const r = await runSeed(db, { ...opts, hubDb });
+    if (opts.apply && argv.includes("--dev-fixture"))
+      console.log(
+        `seed-community-demo: dev-fixture demo-owner ∈ ${OWNER_GROUP}: ${await ensureOwnerInGroup(db)}`,
+      );
     if (r.passwordsFile)
       console.warn(
         `seed-community-demo: CẢNH BÁO — ${r.passwordsFile} chứa mật khẩu tạm; phát cho đối tác rồi XOÁ file ngay.`,

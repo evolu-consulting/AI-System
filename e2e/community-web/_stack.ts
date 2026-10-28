@@ -47,7 +47,15 @@ export async function loginAs(page: Page, who: Who): Promise<void> {
   // Đối tác mới: form đặt mật khẩu bắt buộc (mới + nhập lại) — chờ form đó HOẶC bảng tin (màn SPA, không tải lại trang).
   const change = page.getByRole("heading", { name: "Đặt mật khẩu mới" });
   const post = page.getByTestId("post").first();
-  await expect(change.or(post)).toBeVisible({ timeout: 45_000 });
+  const alert = page.getByRole("alert");
+  await expect(change.or(post).or(alert)).toBeVisible({ timeout: 45_000 });
+  // Đối tác đã đổi mật khẩu ở test trước (mật khẩu tạm trong file không còn đúng) ⇒ đăng nhập lại bằng NEW_PW.
+  if (who !== "host" && (await alert.isVisible())) {
+    await pw.fill(NEW_PW);
+    await page.getByRole("button", { name: /^(Đăng nhập|Sign in)$/ }).click();
+    await expect(post).toBeVisible({ timeout: 45_000 });
+    return;
+  }
   if (await change.isVisible()) {
     const fields = page.locator("input[type=password]");
     for (let i = 0; i < (await fields.count()); i++) await fields.nth(i).fill(NEW_PW);

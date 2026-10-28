@@ -5,6 +5,8 @@
 import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
 import { type Db, hashPassword, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { configWrite } from "../../../apps/admin-api/src/lib/config/config-write";
+import { membersAudit } from "../../../apps/admin-api/src/modules/groups/groups.service";
 import { isLocalDbHost } from "./seed-community-demo.guard";
 
 export const DEMO_TENANT = { key: "demo", name: "Demo Sổ Hợp Tác" } as const;
@@ -54,4 +56,48 @@ export async function ensureDemoTenant(
       on conflict (tenant_id, username) do nothing returning id`)) as unknown as { id: string }[];
     return { tenant: ins.length ? "created" : "exists", owner: u.length ? "created" : "exists" };
   });
+}
+
+/** Group gói giữ quyền chủ quản đầy đủ (do `enablePack` tạo). */
+export const OWNER_GROUP = "community-owner";
+
+/**
+ * Sau `enablePack`: demo-owner vào Group `community-owner` (nội bộ vào gói theo Group — thiếu thì 403 PACK_FORBIDDEN). Như
+ * tenant-owner-setup: một configWrite (audit + config_changed để Hub nạp lại). Đã là thành viên ⇒ không đổi.
+ */
+export async function ensureOwnerInGroup(db: Db): Promise<"added" | "exists"> {
+  const [r] = await withScope(
+    db,
+    { kind: "platform" },
+    async (tx) =>
+      (await tx.execute(sql`select t.id as tid, u.id as uid, g.id as gid,
+        exists (select 1 from admin.group_members m where m.group_id = g.id and m.user_id = u.id) as member
+      from admin.tenants t
+      join admin.users u on u.tenant_id = t.id and u.username = ${DEMO_OWNER.username}
+      join admin.groups g on g.tenant_id = t.id and g.key = ${OWNER_GROUP}
+      where t.key = ${DEMO_TENANT.key}`)) as unknown as {
+        tid: string;
+        uid: string;
+        gid: string;
+        member: boolean;
+      }[],
+  );
+  if (!r)
+    throw new Error(
+      `dev-fixture: thiếu demo-owner hoặc Group ${OWNER_GROUP} (gói community chưa bật?)`,
+    );
+  if (r.member) return "exists";
+  const call = { ctx: { db }, scope: { kind: "platform" as const }, actor: { userId: r.uid } };
+  await configWrite(call, "group.members", async (tx, ch) => {
+    await tx.execute(sql`insert into admin.group_members (tenant_id, group_id, user_id, added_by)
+      values (${r.tid}::uuid, ${r.gid}::uuid, ${r.uid}::uuid, ${r.uid}::uuid) on conflict do nothing`);
+    ch.changed({ entity: "group", tenantId: r.tid });
+    ch.audit(
+      membersAudit(
+        { id: r.gid, tenantId: r.tid, key: OWNER_GROUP },
+        { added: [DEMO_OWNER.username] },
+      ),
+    );
+  });
+  return "added";
 }
