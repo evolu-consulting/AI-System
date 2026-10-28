@@ -12,7 +12,17 @@ App mới `apps/community-web` (Rsbuild + React + Tailwind, Câu 6; build + `che
 Unit logic thuần (hạn, lọc). Một int mỗi endpoint mới (đường chính). e2e **viết, không chạy**. Typecheck + build + check:bundle của community-web.
 
 ## Quyết định trong lúc làm
-<!-- agent điền; chốt Chưa rõ nghiep-vu #5 (SSO sang contracts-web) -->
+Đợt 1 (2026-10-28, **contract-first, backend C3 chưa có**):
+- Contract zod ở `packages/contracts/src/pack-community/*` (import `@ai/contracts/community`, không export từ root để khỏi trùng tên): `PostView` (server tính `actions[]`: edit/archive/unarchive/done/delete/hide/unhide/saveQuote; **saveQuote/hidden/hits/audience không có trong JSON user ngoài**), `FeedQuery/Response` (tab all|sell|buy|note|archived + cat/area/authorOrgId/q/mine, counts + facets), `Thread` theo (bài × công ty), `CommunityNotification`, `PartnerOrg`, `CommunityViewer` {role host_admin|host_member|partner, orgId, labels, cats}, settings (accent + bật/tắt thông báo).
+- Route đề xuất cho C3 ghi ở `apps/community-web/src/api/client.ts` (mỗi hàm một route `/pack/community/*`). Adapter `http` là stub; `mock` (in-memory, seed demo, đổi persona A/M/S1/S2/B1/X ở thanh trên) chọn bằng `PUBLIC_COMMUNITY_API=mock|http` (mặc định mock).
+- UI bám mockup: CSS chép nguyên từ `mockup-main.dc.html` (`styles/mockup.css`; màu nhấn → biến `--accent*`), 5 màu chủ đạo (Chàm, Xanh dương, Xanh ngọc, Xanh lá, Cam; bỏ Hồng của mockup công ty theo yêu cầu), Tailwind chỉ nạp theme + utilities (không preflight, giữ reset của mockup). Định tuyến hash (`#/feed|profile[/orgId]|settings`), không dùng TanStack Router (3 màn).
+- Không i18n (chuỗi tiếng Việt trực tiếp) và không đăng nhập thật ở đợt này: "auth shell" = `getViewer()` của adapter; HTTP adapter sẽ dùng phiên cookie giống contracts-web (C3).
+- Quy tắc hiển thị của mock ở `lib/visibility.ts` + `api/mock.ts` theo hien-thi.md; HT-30 (đối tác thấy bài mình bị ẩn) và HT-46 (bình luận bị ẩn không còn thấy) theo mặc định đề xuất. Che liên hệ (`lib/mask.ts`) chỉ là bản mô phỏng; C4 cài thật.
+- Chưa rõ #5 (SSO sang contracts-web): nút "Mở Sổ Hợp Tác" là liên kết `shtUrl` do API trả (mock: `/contracts`, cùng origin ⇒ chung cookie); chốt cơ chế khi C3/C7 có.
+- Soạn bài: người đăng sửa trên nội dung API trả; với đối tác đó là bản đã che (HT-52) ⇒ **vấn đề mở cho C3/C4**: cần endpoint trả raw cho chính tác giả khi sửa, hoặc chỉ sửa trường không bị che.
+- Ảnh/video: chỉ nhãn giữ chỗ (≤ 10 ảnh, 2 video đã kiểm); Filebox nối ở lát sau.
+- Placeholder "sắp có": nút Lưu báo giá (C7), gợi ý Sổ Hợp Tác dưới bài (C8), Trợ lý giá (C10; đối tác không có). Chưa làm: tự hết hạn 30 ngày/hỏi gia hạn (server C3, UI chỉ hiện nhãn "Hết hạn sau N ngày"), gợi ý đăng trùng (COULD), nút gia hạn.
+- Việc còn lại: nối adapter http khi C3 xong; chạy `e2e/community-web/feed.cm.ts` một lần cuối đợt (đã viết, chưa chạy); int mỗi endpoint thuộc C3.
 
 ## Delta (so với docs/current)
-Gộp vào `current/community/nghiep-vu.md` §4–5 cuối đợt.
+Gộp vào `current/community/nghiep-vu.md` §4–5 cuối đợt. Đợt 1: thêm app `apps/community-web` (cổng dev 3400) + contract `@ai/contracts/community`; mock chạy được toàn bộ luồng; chưa nối backend.

@@ -1,0 +1,153 @@
+/* CR-102 · C5 · theme community-web: CSS mockup `docs/design/community/mockup-main.dc.html` (mockup.css, màu nhấn → biến) + phần thêm của app.
+   Tailwind: chỉ theme + utilities (không preflight, để giữ nguyên reset của mockup). */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@fontsource/roboto/latin-400.css";
+@import "@fontsource/roboto/latin-500.css";
+@import "@fontsource/roboto/latin-700.css";
+@import "@fontsource/roboto/vietnamese-400.css";
+@import "@fontsource/roboto/vietnamese-500.css";
+@import "@fontsource/roboto/vietnamese-700.css";
+@import "./mockup.css";
+
+:root,
+[data-accent="indigo"] {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-ink: #3730a3;
+}
+[data-accent="blue"] {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --accent-ink: #1e40af;
+}
+[data-accent="teal"] {
+  --accent: #0891b2;
+  --accent-hover: #0e7490;
+  --accent-soft: #ecfeff;
+  --accent-ink: #155e75;
+}
+[data-accent="green"] {
+  --accent: #16a34a;
+  --accent-hover: #15803d;
+  --accent-soft: #f0fdf4;
+  --accent-ink: #166534;
+}
+[data-accent="orange"] {
+  --accent: #ea580c;
+  --accent-hover: #c2410c;
+  --accent-soft: #fff7ed;
+  --accent-ink: #9a3412;
+}
+
+/* Thêm ngoài mockup (cùng giá trị thiết kế) */
+fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  margin: 0;
+}
+fieldset.chips {
+  margin: 16px 0;
+}
+fieldset.chips.tight {
+  margin: 0 0 14px;
+}
+.app select.field {
+  padding-right: 8px;
+}
+.app button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.hl {
+  background: #fde8e8;
+  color: #9b1c1c;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #8a4306;
+  background: #fdf0df;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.persona select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  max-width: 230px;
+}
+.soonpill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a4306;
+  background: #fdf0df;
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-left: 6px;
+}
+.ferr {
+  color: #9b1c1c;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.fgroup {
+  display: flex;
+  flex-direction: column;
+}
+.audbox {
+  margin-top: 10px;
+  border: 1px solid #e5e5ec;
+  border-radius: 10px;
+  background: #f9f9fc;
+  padding: 10px 12px;
+}
+.audbox .chips {
+  margin: 8px 0 0;
+}
+.audprev {
+  font-size: 12.5px;
+  color: #45465a;
+  margin-top: 8px;
+}
+.selrow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  align-items: center;
+}
+.selrow .field {
+  width: auto;
+  min-width: 150px;
+  height: 36px;
+}
+.threadtabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: #0f1020;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+.wsmain .feedcol {
+  max-width: 720px;
+}

@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./chat": "./src/chat/index.ts",
+    "./community": "./src/pack-community/index.ts",
     "./hub": "./src/hub/index.ts",
     "./hub-internal": "./src/hub-internal/index.ts",
     "./hub-admin": "./src/hub-admin/index.ts",
