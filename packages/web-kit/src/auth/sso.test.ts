@@ -85,3 +85,21 @@ describe("ssoResumeLoginUrl", () => {
     expect(ssoResumeLoginUrl("../x", "/")).toBe("/login");
   });
 });
+
+describe("safeNext · ký tự điều khiển + độ dài", () => {
+  it("từ chối tab/CR/LF thật, dạng mã hoá %09/%0a, `/%2F` và chuỗi > 2048", () => {
+    for (const bad of [
+      "/\t/evil.com",
+      "/\n/evil.com",
+      "/%09/evil.com",
+      "/%0a/evil.com",
+      "/%2F/evil.com",
+      "/%5Cevil.com",
+      "/%E0%A4%A",
+      `/${"a".repeat(2048)}`,
+    ])
+      expect(safeNext(bad)).toBe("/");
+    expect(safeNext("/feed?x=%20y")).toBe("/feed?x=%20y");
+    expect(safeNext(`/${"a".repeat(2047)}`)).toHaveLength(2048);
+  });
+});

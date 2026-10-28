@@ -5,10 +5,29 @@
 // URL đích chỉ lấy từ catalog do admin-api trả (	arget_url của POST /auth/sso/code, đã kiểm quyền + app có trong catalog;
 // env build chỉ là dự phòng cho nhánh quay về form đăng nhập) — không từ query ⇒ không thành open redirect.
 
-/** `next` chỉ nhận đường dẫn cùng origin: bắt đầu `/`, không `//` hay `/\` (URL tuyệt đối trá hình). */
+const NEXT_MAX = 2048;
+
+/** Có ký tự điều khiển (C0/DEL) — trình duyệt gỡ tab/CR/LF khi phân tích URL ⇒ `/\t/evil.com` thành `//evil.com`. */
+function hasControlChar(s: string): boolean {
+  for (const ch of s) {
+    const c = ch.charCodeAt(0);
+    if (c <= 0x1f || c === 0x7f) return true;
+  }
+  return false;
+}
+
+/** `next` chỉ nhận đường dẫn cùng origin: bắt đầu `/`, không `//` hay `/\` (URL tuyệt đối trá hình), không ký tự điều
+ *  khiển (kể cả dạng `%09` đã giải mã ra), ≤ 2048 ký tự (như chat-web `features/auth/lib/next.ts`). */
 export function safeNext(next: string | null | undefined, fallback = "/"): string {
-  const ok = typeof next === "string" && /^\/(?![/\\])/.test(next);
-  return ok ? next : fallback;
+  if (typeof next !== "string" || next.length > NEXT_MAX) return fallback;
+  if (!/^\/(?![/\\])/.test(next) || hasControlChar(next)) return fallback;
+  let decoded = next;
+  try {
+    decoded = decodeURIComponent(next);
+  } catch {
+    return fallback;
+  }
+  return /^\/(?![/\\])/.test(decoded) && !hasControlChar(decoded) ? next : fallback;
 }
 
 const trimBase = (base: string): string => base.replace(/\/+$/, "");
