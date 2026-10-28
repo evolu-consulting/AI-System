@@ -93,8 +93,7 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const postId = parseIdParam(c);
     const input = parseWith(CreateCommentInputSchema, await readJson(c));
     const text = storeComment(input.text, otherOrgNames(a));
-    const org = await threads.add(d.uow, a, postId, { text, orgId: input.orgId });
-    await notifyComment(evt(a, "added", postId, org));
+    const org = await threads.add(d.uow, a, postId, { text, orgId: input.orgId }, d.events); // C9: chuông phát trong cùng tx
     if (text.hits.length > 0) c.header("X-Contact-Detected", "1");
     return c.json(await readThread(d, a, postId, org), 201);
   });

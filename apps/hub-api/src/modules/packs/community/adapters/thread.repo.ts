@@ -65,18 +65,20 @@ export type NewComment = {
 };
 
 /** Mở luồng nếu chưa có + thêm bình luận: MỘT câu. RLS chặn luồng công ty khác / bài không thấy (42501). */
-export async function insertComment(tx: Tx, c: NewComment): Promise<void> {
+export async function insertComment(tx: Tx, c: NewComment): Promise<string> {
   // Hai câu (không CTE): policy `comments_insert` (0002) kiểm luồng bằng EXISTS — luồng vừa tạo trong cùng câu không thấy.
   const t = await tx.execute<{ id: string }>(sql`
     insert into community.threads (tenant_id, post_id, ext_org_id)
     values (${c.tenantId}::uuid, ${c.postId}::uuid, ${c.threadOrg}::uuid)
     on conflict (post_id, ext_org_id) do update set last_at = now()
     returning id::text as id`);
-  await tx.execute(sql`
+  const ins = await tx.execute<{ id: string }>(sql`
     insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id, author_name, author_org,
       text_raw, text_masked, hits)
     values (${c.tenantId}::uuid, ${c.postId}::uuid, ${t[0]?.id ?? null}::uuid, ${c.threadOrg}::uuid, ${c.userId}::uuid,
-      ${c.authorName}, ${c.authorOrg}::uuid, ${c.text.raw}, ${c.text.masked}, ${JSON.stringify(c.text.hits)}::jsonb)`);
+      ${c.authorName}, ${c.authorOrg}::uuid, ${c.text.raw}, ${c.text.masked}, ${JSON.stringify(c.text.hits)}::jsonb)
+    returning id::text as id`);
+  return ins[0]?.id as string;
 }
 
 /** Review Thấp1: công ty `org` được có luồng trên bài? Bài đối tác ⇒ chỉ công ty đăng; bài chủ quản ⇒ trong audience (D2). */

@@ -2,9 +2,11 @@
 // lực); đối tác luôn luồng công ty mình. RLS chặn ghi (42501) ⇒ 404 như không thấy.
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
+import type { NotifyTxRepos } from "../../kit/application/notify";
 import type { PackUow } from "../../kit/application/ports";
 import type { StoredText } from "../domain/content.rules";
 import type { Access } from "./community-access";
+import type { CommunityEvents } from "./notify.events";
 import { postState } from "./post-write.repo";
 import {
   type CommentRow,
@@ -14,7 +16,7 @@ import {
   threadSummaries,
 } from "./thread.repo";
 
-type Uow = PackUow<{ tx: Tx }>;
+type Uow = PackUow<{ tx: Tx } & NotifyTxRepos>;
 
 function rlsDenied(e: unknown): boolean {
   for (let x = e, i = 0; x && i < 5; x = (x as { cause?: unknown }).cause, i++)
@@ -49,16 +51,18 @@ export function add(
   a: Access,
   postId: string,
   input: { text: StoredText; orgId: string | undefined },
+  events?: CommunityEvents,
 ): Promise<string> {
   return uow
-    .tenant(a.who, async ({ tx }) => {
+    .tenant(a.who, async (r) => {
+      const { tx } = r;
       const st = await postState(tx, postId);
       if (!st) throw appError("NOT_FOUND");
       const target = threadOrg(a, input.orgId ?? st.author_org ?? undefined);
       if (!target)
         throw new AppError("THREAD_REQUIRED", 422, "Choose the partner thread to reply in");
       if (a.org === null && !(await orgMaySee(tx, postId, target))) throw appError("NOT_FOUND");
-      await insertComment(tx, {
+      const commentId = await insertComment(tx, {
         tenantId: a.who.tenantId,
         postId,
         threadOrg: target,
@@ -66,6 +70,14 @@ export function add(
         authorName: a.dir.userName,
         authorOrg: a.org,
         text: input.text,
+      });
+      await events?.emitComment(r, {
+        tenantId: a.who.tenantId,
+        postId,
+        threadOrg: target,
+        commentId,
+        actor: { userId: a.who.userId, name: a.dir.userName },
+        inactiveOrgs: a.dir.orgs.filter((o) => !o.active).map((o) => o.id),
       });
       return target;
     })
