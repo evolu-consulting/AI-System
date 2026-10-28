@@ -36,6 +36,13 @@
       "when": 1794900400000,
       "tag": "0005_r1_lexemes_lock_order",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1800300000000,
+      "tag": "0006_scope_grants",
+      "breakpoints": true
     }
   ]
 }

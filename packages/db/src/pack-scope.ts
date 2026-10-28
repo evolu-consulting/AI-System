@@ -78,15 +78,18 @@ export async function withPackScope<T>(
         // HD78 · Luật 4c: tắt JIT trong tx gói (cùng câu, không thêm câu). Policy RESTRICTIVE của M1 (subplan EXISTS) đẩy ước lượng
         // chi phí câu danh sách vượt `jit_above_cost` ⇒ Postgres biên dịch JIT ~70 ms cho câu chạy ~30 ms (đo: GET /payments
         // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
-        // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu, đặt TRƯỚC khi đổi role
-        // (đọc `admin.users` bằng quyền `hub_api`); việc nền / user lạ ⇒ ''. RLS phòng thủ của gói (vd contracts 0067) chặn 'external'.
-        // CR-102 · com-c3: `app.ext_org_id` (kit 0006 `packs.scope_ext_org`: ''/'internal'/uuid công ty/'denied') cũng trong câu này.
+        // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu; việc nền / user lạ ⇒ ''.
+        // RLS phòng thủ của gói (vd contracts 0067) chặn 'external'. CR-102 · com-c3: `app.ext_org_id` (kit 0006
+        // `packs.scope_ext_org`: ''/'internal'/uuid công ty/'denied') cũng trong câu này. Cả hai qua hàm SECURITY DEFINER (kit
+        // 0008 `packs.scope_user_kind`) — không đọc thẳng `admin.users` ⇒ pool riêng của gói (R1 `knowledge_api`, không USAGE
+        // `admin`) chạy được. `set_config('role'…)` ĐỨNG ĐẦU câu (đếm câu HD1/N1 neo vào đó): quyền EXECUTE kiểm lúc khởi tạo
+        // câu bằng role đăng nhập (hub_api / knowledge_api), thân hàm chạy bằng chủ hàm ⇒ role gói không cần quyền gì thêm.
         await tx.execute(
-          sql`select set_config('app.user_kind', coalesce((select u.kind from admin.users u
-              where u.id = nullif(${uid}, '')::uuid), ''), true),
+          sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
+            set_config('app.user_id', ${uid}, true),
+            set_config('app.user_kind', packs.scope_user_kind(${uid}), true),
             set_config('app.ext_org_id', packs.scope_ext_org(${tid}, ${uid}), true),
-            set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
-            set_config('app.user_id', ${uid}, true), set_config('jit', 'off', true)`,
+            set_config('jit', 'off', true)`,
         );
         return fn(tx);
       }, config);
