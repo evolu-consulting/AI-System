@@ -1,6 +1,7 @@
 // com-c12a · CR-102 · seed cộng đồng đối tác cho tenant `demo` — LẶP LẠI ĐƯỢC. Công ty ngoài + 1 user ngoài mỗi công ty, tạo qua
 // CHÍNH service của admin-api (createOrg/createOrgUser: luật tên trùng, role member, must_change_password, audit, NOTIFY) — không SQL tắt.
 //   bun tools/scripts/src/seed-community-demo.ts --out <file> [--tenant demo] [--apply] [--force-tenant] [--i-know-prod]
+//   [--dev-fixture]  (chỉ máy dev: DB local mới ⇒ tạo tenant demo + demo-owner, mật khẩu = env DEMO_OWNER_PW)
 // Mặc định chạy thử (chỉ in kế hoạch). Mật khẩu tạm CHỈ ghi vào file `--out` (BẮT BUỘC, quyền 600, không commit, không in; xoá sau
 // khi dùng). Từ chối khi APP_ENV=production hoặc DB host ngoài localhost/test, trừ `--i-know-prod`.
 // Cạnh đó ghi `<out>.community.json`: ánh xạ công ty → party_key Sổ Hợp Tác + nhãn/nhóm hàng (C3/C12b áp bằng applyCommunityLabels).
@@ -26,6 +27,7 @@ import {
   seedPosts,
 } from "./seed-community-demo.apply";
 import { PARTNER_SEEDS, type PartnerSeed, POST_SAMPLES } from "./seed-community-demo.data";
+import { devFixtureGuard, ensureDemoTenant } from "./seed-community-demo.dev-fixture";
 import { seedGuard } from "./seed-community-demo.guard";
 import { partyKeyOf } from "./seed-demo-v2.build";
 
@@ -221,6 +223,18 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   return res;
 }
 
+/** `--dev-fixture` (máy dev): tạo tenant demo + demo-owner nếu chưa có — để seed chạy được trên DB local mới. */
+async function devFixture(db: Db, urls: readonly string[], o: SeedOpts): Promise<void> {
+  const ownerPw = process.env.DEMO_OWNER_PW;
+  const why = devFixtureGuard({ appEnv: process.env.APP_ENV, urls, ownerPw });
+  if (why) throw new Error(`seed-community-demo: từ chối — ${why}`);
+  if (o.tenantKey !== DEMO_KEY)
+    throw new Error("seed-community-demo: --dev-fixture chỉ cho tenant demo");
+  if (!o.apply) return console.log("  - (dev-fixture) tạo tenant demo + demo-owner nếu chưa có");
+  const r = await ensureDemoTenant(db, ownerPw as string);
+  console.log(`seed-community-demo: dev-fixture tenant ${r.tenant}, demo-owner ${r.owner}`);
+}
+
 async function main(argv: readonly string[]): Promise<void> {
   const arg = (k: string) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : undefined);
   const url = process.env.DATABASE_URL;
@@ -244,6 +258,7 @@ async function main(argv: readonly string[]): Promise<void> {
   const db = createDb(url, { max: 2 });
   const hubDb = hubUrl ? createDb(hubUrl, { max: 2 }) : undefined;
   try {
+    if (argv.includes("--dev-fixture")) await devFixture(db, hubUrl ? [url, hubUrl] : [url], opts);
     const r = await runSeed(db, { ...opts, hubDb });
     if (r.passwordsFile)
       console.warn(
