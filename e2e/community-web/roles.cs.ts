@@ -14,10 +14,11 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     // hai bài Chữ ký số (của chủ quản + của ABC) và hai bài Băng keo (Tân Phát bán, Hưng Thịnh mua)
     await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toHaveCount(2);
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(2);
-    // bài của đối tác: nhãn "Chỉ chủ quản" + "Lưu báo giá" (bị khoá — C7 chưa có) chỉ ở bài Cần bán của đối tác
+    // bài của đối tác: nhãn "Chỉ chủ quản" + "Lưu báo giá" (C7: bật cho chủ quản) mở form báo giá điền sẵn nhà cung cấp
     const tp = postByTitle(page, "Băng keo 5cm").filter({ hasText: ORG.supplier });
     await expect(tp).toContainText("Chỉ chủ quản");
-    await expect(tp.getByRole("button", { name: /Lưu báo giá/ })).toBeDisabled();
+    await tp.getByRole("button", { name: /Lưu báo giá/ }).click();
+    await expect(tp.locator("#q-sup")).toHaveValue(ORG.supplier);
     await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).not.toContainText("Chỉ chủ quản");
     // luồng riêng: bài Thùng phi có tab công ty Tân Phát, thấy số điện thoại gốc trong luồng
     const phi = postByTitle(page, "Thùng phi 200L");
@@ -41,7 +42,9 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     const mine = postByTitle(page, "Băng keo 5cm");
     await expect(mine).not.toContainText("0903");
     await expect(mine).not.toContainText("zalo.me");
-    await expect(mine.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
+    // thẻ bài của đối tác ghi "Chỉ chủ quản"; nhắc ở ô soạn bài (Composer) cho đối tác
+    await expect(mine).toContainText("Chỉ chủ quản");
+    await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     // luồng riêng của mình: số điện thoại trong bình luận chính mình cũng bị che; không có tab công ty khác
     const phi = postByTitle(page, "Thùng phi 200L");
@@ -68,9 +71,8 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(postByTitle(page, "Thùng phi 200L")).toHaveCount(0); // Cần mua gửi NCC, ABC chỉ là người mua
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(0); // bài Tân Phát/Hưng Thịnh: chỉ chủ quản
     await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toHaveCount(1); // bài Cần mua của chính ABC
-    await expect(
-      postByTitle(page, "Chữ ký số DN – USB Token").getByTestId("partner-note"),
-    ).toHaveText("Chỉ chủ quản thấy bài này");
+    await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toContainText("Chỉ chủ quản");
+    await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Mở trợ lý giá" })).toHaveCount(0);
     // không có tab luồng công ty khác: ABC chỉ có luồng riêng với chủ quản

@@ -15,7 +15,8 @@ export const USERNAME: Record<Who, string> = {
 };
 /** Nhãn hiển thị trong luồng/thẻ bài. */
 export const ORG = { supplier: "Cơ sở Tân Phát", buyer: "Công ty TNHH ABC" } as const;
-export const MASK_PHONE = "[SỐ ĐIỆN THOẠI]";
+/** Placeholder che của server (com-c4 `mask.rules.ts`); adapter mock dùng nhãn khác. */
+export const MASK_PHONE = "[đã ẩn: số điện thoại]";
 
 function pwOf(who: Who): string {
   const u = USERNAME[who];
