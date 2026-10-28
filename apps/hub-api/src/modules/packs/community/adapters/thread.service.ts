@@ -4,7 +4,6 @@ import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
 import type { PackUow } from "../../kit/application/ports";
 import type { StoredText } from "../domain/content.rules";
-import { mayStartThread } from "./comment.repo";
 import type { Access } from "./community-access";
 import { postState } from "./post-write.repo";
 import {
