@@ -26,6 +26,8 @@ Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODUL
 | studio-web: Cài đặt KnowledgeHub (`/settings`) | đóng băng | Ẩn nav + redirect | hub |
 | auth, tenants, users, groups, access, audit, quotas, secrets, identity-import, packs (gồm contracts), agents, agent-grants, conversations, runs/runner, mcp, dify, knowledge, notify, attachments, stream/me-stream, studio, seed, config | đang dùng | Lõi chung + sản phẩm hợp đồng + chat qua Agent Hub/Dify | core |
 
+CR-102 (Community): gói mới `community` (đang dùng khi có) và user ngoài `admin.users.kind='external'`. `/directory`, `/me/stream`, kit members, pack guard, chat-gate, agent-grants, portal catalog phải lọc/chặn user ngoài (lát C2) — sửa lọc nhỏ, không mở lại module đóng băng (`processes`/`rooms`/`dlc`); không cần `test:frozen`. Cổng gói↔gói: ADR-0031.
+
 Test: suite đóng băng ở `tools/scripts/src/frozen.rules.ts`. `test:affected` và `test:all --no-frozen` (cổng hằng ngày trên server) bỏ chúng; `bun run test:frozen` chạy theo yêu cầu; `bun run test:all` / `run-tests.ps1 -All` chạy hết. Sửa mã module đóng băng (hoặc engine quy trình khi làm M3) ⇒ chạy `test:frozen` trước khi xong lát.
 
 ## Nâng cấp hằng tháng (3 dòng)

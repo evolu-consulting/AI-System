@@ -1,0 +1,428 @@
+Oct 28, 2026 · @Chieucasmen
+App là n ơ i ch ủ  qu ả n (công ty trung gian, ví dụ NITI GROUP) thu thập giá t ừ  ng ườ i bán và 
+nhu cầu t ừ  ng ườ i mua, rồ i t ự  đ ư a giá cho ng ườ i cần và ăn chênh lệ ch hoặ c hoa hồng.
+Ba nguyên tắ c quyết định mọi tính năng:
+1. Mọi thông tin ch ả y về  ch ủ  qu ả n. Ng ườ i bán và ng ườ i mua ch ỉ  nói chuyện v ớ i ch ủ  qu ả n, 
+không thấy nhau, không liên hệ  tr ự c tiếp đ ượ c v ớ i nhau.
+2. L ư u giá ph ả i nhanh h ơ n chép t ừ  Zalo. Thấy bài cần bán c ủ a nhà cung cấp, ch ủ  qu ả n 
+bấm L ư u báo giá là giá vào S ả n ph ẩ m & Giá c ủ a S ổ  H ợ p Tác, không gõ lại.
+3. H ỏ i là có câu tr ả  l ờ i. Chatbot tr ả  l ờ i ngay "giá X là bao nhiêu, c ủ a ai, ghi nhận khi nào" t ừ  
+S ả n ph ẩ m & Giá.
+Đo thành công bằng 3 số: số  báo giá l ư u đ ượ c mỗ i tuần, t ỷ  lệ  bài cần bán c ủ a nhà cung cấp 
+đ ượ c l ư u giá, và số  câu h ỏ i giá chatbot tr ả  l ờ i đ ượ c.
+Mỗ i tài kho ả n thuộ c một công ty; quyền gắn v ớ i công ty, không gắn v ớ i cá nhân, đ ể  nhân 
+viên ngh ỉ  việ c không mang theo khách.
+Community App · Nghiệ p vụ
+Mục tiêu và kim ch ỉ  nam
+Vai trò và quyề n
+Vai trò Là ai Đ ượ c làm Không đ ượ c làm
+Admin ch ủ  
+qu ả n
+Ch ủ  công ty trung gian Mọi th ứ : tạo tài kho ả n 
+thành viên và đố i tác, l ư u 
+báo giá, dùng S ổ  H ợ p Tác, 
+cài đặt
+—
+Thành viên 
+ch ủ  qu ả n
+Nhân viên kinh doanh, 
+mua hàng
+Đăng bài, bình luận, l ư u 
+báo giá, h ỏ i chatbot, dùng 
+S ổ  H ợ p Tác theo quyền 
+đ ượ c giao
+Xóa đố i tác; xuất danh 
+sách đố i tác hay S ả n 
+ph ẩ m & Giá
+Nhà cung 
+cấp
+Công ty bán hàng (ví dụ 
+C ơ  s ở  Tân Phát)
+Đăng bài cần bán, bình 
+luận trên bài ch ủ  qu ả n, 
+xem bài c ủ a ch ủ  qu ả n
+Thấy nhà cung cấp khác 
+hoặ c ng ườ i mua; kết bạn; 
+thấy giá ch ủ  qu ả n đã l ư u 
+hay đi ể m uy tín
+Ng ườ i mua Công ty có nhu cầu (ví 
+dụ Công ty TNHH ABC)
+Đăng bài cần mua, bình 
+luận trên bài ch ủ  qu ả n, 
+Thấy nhà cung cấp hoặ c 
+ng ườ i mua khác; kết bạn; 
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 1/10
+
+=====PAGE=====
+Một công ty có th ể  v ừ a là nhà cung cấp v ừ a là ng ườ i mua (ví dụ Tân Phát bán thùng phi 
+nh ư ng cũng mua lại). Vai trò đ ượ c xác định theo t ừ ng bài đăng, không cố  định theo công ty.
+Nhà cung cấp và ng ườ i mua cũng có th ể  có nhiều tài kho ả n nhân viên trong cùng công ty; 
+tất c ả  cùng nhìn một luồng trao đ ổ i v ớ i ch ủ  qu ả n.
+Ch ỉ  ch ủ  qu ả n đ ượ c kết bạn, nên mạng l ướ i luôn là hình sao: mọi kết nố i đều nố i về  ch ủ  qu ả n.
+Quy tắ c hi ể n thị
+xem bài c ủ a ch ủ  qu ả n thấy giá vốn
+Mô hình kế t nố i
+Mọi thông tin đi qua ch ủ  qu ả n; ng ườ i bán và ng ườ i mua không thấ y nhau
+G ử i giá · tr ả  l ờ i h ỏ i giá G ử i nhu cầu · nhận báo giá
+Ch ủ  qu ả n
+s ổ  giá · ghép cầu · báo giá
+Nhà cung cấ p A
+Nhà cung cấ p B
+Nhà cung cấ p C
+Ng ườ i mua X
+Ng ườ i mua Y
+Ng ườ i mua Z
+Không thấy nhau, không nhắn, không kết bạn đ ượ c
+Nộ i dung Ch ủ  
+qu ả n
+Nhà cung cấ p Ng ườ i mua
+Bài c ủ a ch ủ  qu ả n Thấy Thấy nếu là bạn bè và đ ượ c 
+chia s ẻ
+Thấy nếu là bạn bè và đ ượ c 
+chia s ẻ
+Bài c ủ a nhà cung 
+cấp
+Thấy Ch ỉ  bài c ủ a mình Không
+Bài c ủ a ng ườ i mua Thấy Không Ch ỉ  bài c ủ a mình
+Bình luận trên bài 
+ch ủ  qu ả n
+Thấy tất 
+c ả
+Ch ỉ  bình luận c ủ a mình và câu 
+tr ả  l ờ i cho mình
+Ch ỉ  bình luận c ủ a mình và câu 
+tr ả  l ờ i cho mình
+Danh sách bạn bè Thấy tất 
+c ả
+Không Không
+Hồ  s ơ  công ty Mọi hồ  
+s ơ
+Ch ỉ  hồ  s ơ  ch ủ  qu ả n Ch ỉ  hồ  s ơ  ch ủ  qu ả n
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 2/10
+
+=====PAGE=====
+Kế t bạn
+Giai đoạn này ch ư a có l ờ i m ờ i qua số  điện thoại, email hay link. Admin tạo tài kho ả n cho 
+công ty đố i tác trong trang qu ả n trị (admin app): tên công ty, ng ườ i dùng, tên đăng 
+nhập, mật kh ẩ u tạm.
+Khi tạo, admin gắn nhãn: nhà cung cấp, ng ườ i mua hoặ c c ả  hai, kèm nhóm hàng quan 
+tâm. Nhãn quyết định ai nhận bài nào.
+Tạo xong, tài kho ả n là bạn bè c ủ a ch ủ  qu ả n ngay, không có b ướ c m ờ i hay chấp nhận. 
+Admin t ự  g ử i thông tin đăng nhập cho đố i tác ngoài app; lần đầu đăng nhập, đố i tác đ ổ i 
+mật kh ẩ u.
+Admin tạm khóa hoặ c xóa tài kho ả n đố i tác; giá đã l ư u t ừ  bài c ủ a họ vẫn gi ữ .
+Nhà cung cấp và ng ườ i mua không có nút kết bạn. Ch ư a làm kết nố i tr ự c tiếp gi ữ a đố i 
+tác.
+Giai đoạn này community ch ỉ  có một cách thu giá: l ư u báo giá t ừ  bài cần bán c ủ a nhà cung 
+cấp vào S ả n ph ẩ m & Giá c ủ a S ổ  H ợ p Tác, đúng cách S ổ  H ợ p Tác đang ghi một giá có nguồn 
+"Báo giá".
+Nút L ư u báo giá nằm ở  góc trên bên ph ả i bài, cạnh nhãn "Cần bán".
+Ch ỉ  hiện trên bài cần bán c ủ a nhà cung cấp, và ch ỉ  ch ủ  qu ả n thấy. Không có trên bài 
+cần mua, bài c ủ a chính ch ủ  qu ả n, và đố i tác không bao gi ờ  thấy nút này.
+1. Ch ủ  qu ả n bấm L ư u báo giá trên bài.
+2. Form m ở  ngay d ướ i nộ i dung bài, điền sẵn t ừ  bài: s ả n ph ẩ m (g ợ i ý s ả n ph ẩ m kh ớ p trong 
+danh mục), nhà cung cấp, giá, đ ơ n vị, VAT, loại (Mua m ớ i / Gia hạn), ngày.
+3. Ch ủ  qu ả n s ử a nếu cần: đ ổ i s ả n ph ẩ m, s ử a giá, hoặ c chọn "Tạo s ả n ph ẩ m m ớ i".
+4. Form so v ớ i các giá đã ghi nhận c ủ a s ả n ph ẩ m đó: bằng, r ẻ  h ơ n hay đắt h ơ n bao nhiêu; 
+hoặ c báo đây là giá đầu tiên.
+5. Bấm L ư u: giá vào danh sách "Các giá đã ghi nhận" c ủ a s ả n ph ẩ m, nguồn Báo giá, kèm 
+link về  bài đăng. Bài hiện dòng "Đã l ư u báo giá vào S ả n ph ẩ m & Giá" và nút Xem.
+Ai đ ượ c l ư u: mọi tài kho ả n c ủ a công ty ch ủ  qu ả n (Admin và thành viên). Đố i tác không 
+thấy nút này.
+L ư u báo giá t ừ  b ả ng tin
+Nút nằ m ở  đâu
+Luồ ng
+Quy tắ c
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 3/10
+
+=====PAGE=====
+y y
+Nhà cung cấp không đ ượ c biết bài c ủ a mình đã đ ượ c l ư u giá: không thông báo, không 
+dấu hiệu gì trên bài phía họ.
+Giá l ư u không có hạn mặ c định. Ng ườ i dùng t ự  đặt ngày hết hạn nếu muốn, hoặ c g ỡ  giá 
+bất c ứ  lúc nào. Giá quá ngày hết hạn hiện nhãn "Đã hết hạn" và chatbot không dùng đ ể  
+tr ả  l ờ i; giá bị g ỡ  vẫn nằm trong lịch s ử .
+Một bài nhiều mặt hàng: l ư u t ừ ng mặt hàng; nút đ ổ i thành "L ư u thêm báo giá".
+Cùng nhà cung cấp, cùng s ả n ph ẩ m đã có giá nguồn Báo giá: giá m ớ i thay giá cũ, giá cũ 
+vẫn nằm trong lịch s ử .
+Nhà cung cấp ch ư a có trong Đố i tác: tạo đố i tác m ớ i vai trò Nhà cung cấp, đi ể m M Ớ I.
+L ư u báo giá không đ ổ i kho, giá vốn hay đi ể m uy tín; ch ỉ  h ợ p đồng và mố c trong S ổ  H ợ p 
+Tác m ớ i làm việ c đó.
+Bài bị s ử a giá sau khi đã l ư u: ch ủ  qu ả n đ ượ c báo đ ể  l ư u lại. Bài bị xóa: giá đã l ư u gi ữ  
+nguyên, link ghi "bài đã xóa".
+Ngoài b ả ng tin, ch ủ  qu ả n dán tin nhắn Zalo hoặ c ả nh báo giá cho chatbot; chatbot bóc 
+tách rồ i đi qua cùng form này.
+B ả ng tin là trang đầu tiên; v ớ i ch ủ  qu ả n, đây là b ả ng cung cầu t ổ ng h ợ p t ừ  mọi bạn bè, v ớ i 
+đố i tác là n ơ i xem bài c ủ a ch ủ  qu ả n và đăng nhu cầu c ủ a mình.
+Khi ch ủ  qu ả n đăng bài, chọn ng ườ i xem: tất c ả  bạn bè, ch ỉ  nhà cung cấp, ch ỉ  ng ườ i mua, 
+theo nhóm hàng, hoặ c t ừ ng công ty. Mặ c định: bài cần bán g ử i ng ườ i mua quan tâm nhóm 
+hàng đó, bài cần mua g ử i nhà cung cấp nhóm hàng đó.
+Tạo: form ngắn + nộ i dung t ự  do + tố i đa 10 ả nh và 2 video. Hoặ c dán một đoạn mô t ả , AI 
+t ự điề f
+B ả ng tin và bài đăng
+Loại bài
+Loại Ai đăng Tr ườ ng bắ t buộ c Ai thấ y
+Cần bán Ch ủ  qu ả n, nhà 
+cung cấp
+S ả n ph ẩ m, số  l ượ ng, giá 
+hoặ c "liên hệ "
+Bài ch ủ  qu ả n: bạn bè đ ượ c chọn; bài 
+NCC: ch ỉ  ch ủ  qu ả n
+Cần mua Ch ủ  qu ả n, ng ườ i 
+mua
+S ả n ph ẩ m, số  l ượ ng, khu 
+v ự c, ngày cần
+Bài ch ủ  qu ả n: bạn bè đ ượ c chọn; bài 
+ng ườ i mua: ch ỉ  ch ủ  qu ả n
+Thông 
+báo
+Ch ủ  qu ả n Nộ i dung Bạn bè đ ượ c chọn (ví dụ b ả ng giá 
+m ớ i, ngh ỉ  lễ )
+Thao tác v ớ i bài
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 4/10
+
+=====PAGE=====
+t ự  điên form.
+S ử a: ng ườ i đăng s ử a đ ượ c mọi tr ườ ng; bài đã s ử a hiện nhãn "đã s ử a". Nếu ch ủ  qu ả n đã 
+l ư u báo giá t ừ  bài, ch ủ  qu ả n đ ượ c báo giá trên bài đã đ ổ i.
+L ư u tr ữ: ẩ n bài kh ỏ i b ả ng tin c ủ a ng ườ i khác, gi ữ  bình luận; b ỏ  l ư u tr ữ  đ ượ c. Dùng khi 
+hết hàng hoặ c đã mua đ ủ .
+Đánh dấ u đã xong: bài cần mua đã có hàng, bài cần bán đã bán hết; t ự  l ư u tr ữ .
+Xóa: xóa vĩnh viễn bài và bình luận, có b ướ c xác nhận. Giá đã l ư u t ừ  bài vào S ả n ph ẩ m & 
+Giá vẫn gi ữ .
+T ự  hế t hạn: bài có hạn (mặ c định 30 ngày); tr ướ c 3 ngày app h ỏ i ng ườ i đăng gia hạn hay 
+l ư u tr ữ .
+L ư u báo giá: ch ủ  qu ả n l ư u giá trên bài cần bán c ủ a nhà cung cấp (xem phần L ư u báo 
+giá t ừ  b ả ng tin).
+Ch ủ  qu ả n ẩ n đ ượ c bài c ủ a đố i tác (spam, sai nộ i dung) nh ư ng không s ử a nộ i dung c ủ a 
+họ.
+Bình luận riêng theo đố i tác: trên bài ch ủ  qu ả n, mỗ i đố i tác ch ỉ  thấy cuộ c trao đ ổ i c ủ a 
+mình v ớ i ch ủ  qu ả n, nh ư  nhắn tin riêng gắn vào bài.
+Ch ủ  qu ả n h ỏ i thêm giá, số  l ượ ng ngay trong bình luận; giá nhà cung cấp tr ả  l ờ i trong 
+bình luận cũng l ư u đ ượ c qua chatbot.
+Bình luận ch ứ a số  điện thoại, email, link Zalo hoặ c tên công ty khác bị che t ự  động v ớ i 
+đố i tác (xem phần B ả o mật).
+Ng ườ i viết s ử a hoặ c xóa bình luận c ủ a mình; ch ủ  qu ả n ẩ n đ ượ c mọi bình luận trên bài 
+c ủ a mình.
+Lọc theo Cần bán / Cần mua / Đã l ư u tr ữ , nhóm hàng, khu v ự c, kho ả ng giá, ng ườ i đăng. Tìm 
+theo tên s ả n ph ẩ m, k ể  c ả  cách gọi khác (AI ghép).
+Bấm icon user m ở  trang c ủ a công ty mình: S ổ  H ợ p Tác (ch ỉ  ch ủ  qu ả n) và Bài đăng c ủ a tôi, 
+n ơ i tạo, s ử a, l ư u tr ữ , xóa bài và tr ả  l ờ i bình luận nh ư  trên b ả ng tin. Đố i tác có trang cá nhân 
+gồm hồ  s ơ  công ty, bài đăng c ủ a họ và bình luận c ủ a họ.
+Chatbot là lố i tắt đ ể  tra và l ư u giá: h ỏ i bằng tiếng Việt th ườ ng, tr ả  l ờ i t ừ  S ả n ph ẩ m & Giá và 
+b ả ng tin, luôn kèm nguồn và ngày.
+Bình luậ n
+Lọc và tìm trên b ả ng tin
+Trang cá nhân
+Chatbot
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 5/10
+
+=====PAGE=====
+Nhà cung cấ p: "Đăng bán băng keo 3.800đ/cuộn, t ừ  100 cuộn" → tạo bài cần bán; "Bài 
+c ủ a tôi có ai h ỏ i ch ư a?".
+Ng ườ i mua: "Tôi cần 200 thùng nh ự a 60L giao Th ủ  Đ ứ c" → tạo bài cần mua; h ỏ i s ả n 
+ph ẩ m ch ủ  qu ả n đang bán.
+Không bao gi ờ  tr ả  l ờ i về  đố i tác khác, giá vốn, giá đã l ư u hay S ả n ph ẩ m & Giá; câu h ỏ i 
+ngoài phạm vi chuy ể n cho ch ủ  qu ả n.
+Mọi con số  chatbot đ ư a ra đều có nguồn và ngày ghi nhận; không có d ữ  liệu thì nói rõ 
+"ch ư a có giá", không đoán.
+Chatbot ch ỉ  soạn; việ c l ư u giá hay đăng bài luôn cần ng ườ i dùng bấm xác nhận.
+Chatbot m ở  đ ượ c t ừ  mọi trang (nút n ổ i góc ph ả i) và biết ng ữ  c ả nh trang đang m ở  
+(đang xem bài nào, s ả n ph ẩ m nào).
+Thông báo ch ỉ  g ử i trong app (chuông), không g ử i qua Zalo, SMS hay email.
+Chatbot c ủ a ch ủ  qu ả n
+Loại việ c Ví dụ câu h ỏ i Chatbot làm gì
+Tra giá "Giá ch ữ  ký số  USB Token?" Liệt kê các giá đã ghi nhận: nhà cung cấp, 
+giá, nguồn (Đã mua / Báo giá / Giá thị 
+tr ườ ng), ngày, uy tín
+So sánh "So giá Tân Phát v ớ i Ch ợ  Kim Biên cho 
+băng keo"
+B ả ng so sánh cùng đ ơ n vị, ghi rõ VAT
+L ư u báo 
+giá
+Dán tin nhắn Zalo hoặ c g ử i ả nh báo giá Bóc tách s ả n ph ẩ m, nhà cung cấp, giá; m ở  
+form L ư u báo giá đã điền sẵn; ch ủ  qu ả n bấm 
+l ư u
+Tóm tắt "Hôm nay có gì m ớ i?" Bài cần mua m ớ i, bài cần bán c ủ a nhà cung 
+cấp ch ư a l ư u báo giá
+Tìm đố i 
+tác
+"Ai bán pallet nh ự a ở  Long An?" Danh sách nhà cung cấp theo nhóm hàng, 
+khu v ự c, uy tín
+Chatbot c ủ a đố i tác (gi ớ i hạn)
+Quy tắ c chung
+Thông báo
+S ự kî Ai ĥ M̆ đị h
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 6/10
+
+=====PAGE=====
+Bấm thông báo m ở  đúng chỗ: bài v ớ i bình luận đã m ở  hoặ c form L ư u báo giá. Mỗ i ng ườ i t ự  
+bật tắt t ừ ng loại trong Cài đặt.
+Nghiệp vụ S ổ  H ợ p Tác gi ữ  nguyên; community ch ỉ  là n ơ i m ở  nó.
+Bấm icon user c ủ a ch ủ  qu ả n → trang c ủ a công ty hiện S ổ  H ợ p Tác: T ổ ng quan, H ợ p 
+đồng & giao dịch, Đố i tác, S ả n ph ẩ m & Giá, Cài đặt.
+Ch ỉ  ch ủ  qu ả n (theo quyền t ừ ng thành viên) thấy S ổ  H ợ p Tác. Đố i tác không có S ổ  H ợ p 
+Tác trên trang c ủ a họ.
+Community ch ỉ  ghi vào S ổ  H ợ p Tác qua một chỗ: L ư u báo giá, dùng đúng flow ghi nhận 
+giá sẵn có c ủ a S ả n ph ẩ m & Giá (nguồn Báo giá). Không thêm màn hình hay nghiệp vụ 
+m ớ i trong S ổ  H ợ p Tác.
+Community đọc t ừ  S ổ  H ợ p Tác (hàng đang nắm gi ữ , giá vốn bình quân, giá đã ghi nhận, 
+đi ể m uy tín) đ ể  g ợ i ý d ướ i bài đăng và cho chatbot; ch ỉ  ch ủ  qu ả n thấy.
+Giá trị c ủ a ch ủ  qu ả n nằm ở  chỗ  hai bên không biết nhau, nên app ph ả i chặn mọi đ ườ ng lộ  
+danh tính trong phạm vi app.
+Thông tin mậ t, ch ỉ  ch ủ  qu ả n thấ y
+Danh tính và liên hệ  c ủ a nhà cung cấp khi nói v ớ i ng ườ i mua, và ng ượ c lại.
+S ả n ph ẩ m & Giá, giá đã l ư u, giá vốn, biên l ợ i nhuận.
+Danhsáchbạnbèđi ể muytínnhãnvàghichúvề đố itác
+S ự  kiẹn Ai nhạn Mạc định
+Có bình luận trên bài c ủ a mình Ng ườ i đăng Bật
+Có ng ườ i tr ả  l ờ i bình luận c ủ a mình Ng ườ i bình 
+luận
+Bật
+Nhà cung cấp đăng bài cần bán m ớ i Ch ủ  qu ả n Bật
+Ng ườ i mua đăng bài cần mua m ớ i Ch ủ  qu ả n Bật
+Bài cần mua kh ớ p s ả n ph ẩ m đang có Ch ủ  qu ả n Bật
+Nhà cung cấp s ử a giá trên bài đã l ư u báo giá Ch ủ  qu ả n Bật
+Bài sắp t ự  hết hạn Ng ườ i đăng Bật
+T ổ ng h ợ p hằng ngày (bài m ớ i, bài cần bán ch ư a 
+l ư u báo giá)
+Ch ủ  qu ả n Tắt, bật đ ượ c (trong app, 
+8:00)
+S ổ  H ợ p Tác trong trang user
+B ả o mậ t thông tin và chố ng đi tắ t
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 7/10
+
+=====PAGE=====
+Danh sách bạn bè, đi ể m uy tín, nhãn và ghi chú vê đôi tác.
+Cách chặ n lộ
+1. Bài và bình luận c ủ a đố i tác đ ượ c quét số  điện thoại, email, link Zalo/Facebook, 
+website, mã số  thuế; phần này ch ỉ  hiện cho ch ủ  qu ả n.
+2. Ả nh c ủ a nhà cung cấp đ ượ c AI ki ể m tra logo, tên, số  điện thoại in trên ả nh; ch ủ  qu ả n 
+đ ượ c c ả nh báo tr ướ c khi dùng ả nh đó trong bài c ủ a mình.
+3. Ch ủ  qu ả n không chia s ẻ  hoặ c chuy ể n tiếp nguyên bài c ủ a đố i tác; ch ỉ  có nút "Đăng lại 
+d ướ i tên mình": nộ i dung chu ẩ n hóa, không có tên ng ườ i đăng gố c, giá do ch ủ  qu ả n đặt.
+4. Nút L ư u báo giá, dòng "Đã l ư u báo giá" và g ợ i ý d ướ i bài (giá vốn, uy tín, hàng đang có) 
+ch ỉ  hiện v ớ i ch ủ  qu ả n, không bao gi ờ  v ớ i đố i tác.
+5. Thành viên ch ủ  qu ả n không xuất đ ượ c S ả n ph ẩ m & Giá hay danh sách đố i tác nếu 
+Admin không cho phép; mọi lần xuất đều đ ượ c ghi lại.
+6. Khi một thành viên bị g ỡ , họ mất quyền ngay; bạn bè, bài và giá đã l ư u vẫn thuộ c về  
+công ty.
+Ngoài app (giao hàng, hóa đ ơ n, tài xế ) là quy trình c ủ a ch ủ  qu ả n, ngoài phạm vi tài liệu này.
+Mỗ i dòng là một tình huống app ph ả i x ử  lý đ ượ c; thiết kế  UI cần có trạng thái cho t ừ ng 
+dòng.
+Các case và ngoại lệ
+Nhóm Tình huố ng App x ử  lý
+Kết bạn Đố i tác quên mật kh ẩ u Admin đặt lại mật kh ẩ u tạm trong trang 
+qu ả n trị
+Kết bạn Đố i tác ch ư a đăng nhập sau 7 ngày k ể  t ừ  
+khi tạo tài kho ả n
+Nhắ c admin liên hệ  đố i tác
+Kết bạn Đố i tác xin ngh ỉ  / ch ủ  qu ả n h ủ y kết bạn Đố i tác mất quyền xem bài; giá đã l ư u 
+phía ch ủ  qu ả n gi ữ  nguyên
+Kết bạn Một công ty v ừ a bán v ừ a mua Gắn c ả  hai nhãn; vai trò theo t ừ ng bài
+Bài đăng Bài cần bán thiếu giá ("liên hệ ") Vẫn đăng; nút L ư u báo giá vẫn có, ch ủ  
+qu ả n t ự  nhập giá sau khi h ỏ i trong bình 
+luận
+Bài đăng Ng ườ i đăng ghi số  điện thoại trong nộ i 
+dungowr đ
+Che v ớ i mọi ng ườ i tr ừ  ch ủ  qu ả n; nhắ c 
+ng ườ i đăng
+Bài đăng Cùng nhà cung cấp đăng trùng một hàng 
+nhiều lần
+G ợ i ý cập nhật bài cũ thay vì tạo bài m ớ i
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 8/10
+
+=====PAGE=====
+Ng ườ i tr ả  tiền là ch ủ  qu ả n, vì app giúp họ thu giá nhanh h ơ n và chốt nhiều deal h ơ n; nhà 
+cung cấp và ng ườ i mua dùng miễn phí.
+Thuêbaotheocôngtych ủ qu ả nchiagóitheosốthànhviênvàsố bạnbè
+Bài đăng Bài đã l ư u báo giá bị xóa Xóa bài và bình luận; giá đã l ư u gi ữ  lại, ghi 
+"bài đã xóa"
+Bài đăng Nhà cung cấp s ử a giá sau khi đã l ư u Báo ch ủ  qu ả n; giá cũ gi ữ  đến khi ch ủ  qu ả n 
+l ư u lại
+L ư u báo 
+giá
+Một bài nhiều mặt hàng L ư u t ừ ng mặt hàng, mỗ i mặt hàng một giá
+L ư u báo 
+giá
+Tên hàng trên bài khác tên trong danh 
+mục
+G ợ i ý s ả n ph ẩ m kh ớ p nhất; ch ủ  qu ả n chọn 
+hoặ c tạo s ả n ph ẩ m m ớ i
+L ư u báo 
+giá
+Đ ơ n vị khác (thùng / lố c / kg) Ch ủ  qu ả n s ử a đ ơ n vị trong form; giai đoạn 
+này ch ư a t ự  quy đ ổ i
+L ư u báo 
+giá
+Giá có VAT và ch ư a VAT lẫn nhau Ghi rõ VAT trên t ừ ng giá; form c ả nh báo 
+khi so v ớ i giá khác VAT
+L ư u báo 
+giá
+Đã có giá nguồn Báo giá c ủ a cùng nhà 
+cung cấp
+Giá m ớ i thay giá cũ, giá cũ vào lịch s ử
+L ư u báo 
+giá
+Nhà cung cấp ch ư a có trong Đố i tác Tạo đố i tác m ớ i vai trò Nhà cung cấp, 
+đi ể m M Ớ I
+L ư u báo 
+giá
+Giá lệ ch h ơ n 30% so v ớ i giá đang có Form c ả nh báo tr ướ c khi l ư u
+L ư u báo 
+giá
+Hai thành viên cùng l ư u một bài Ng ườ i sau thấy "đã l ư u b ở i … lúc …", vẫn 
+l ư u đè đ ượ c
+Chatbot H ỏ i s ả n ph ẩ m ch ư a có giá Nói rõ ch ư a có giá, không đoán
+Chatbot Bóc tách tin nhắn không chắ c Đánh dấu tr ườ ng ch ư a chắ c trong form 
+L ư u báo giá
+Chatbot Đố i tác h ỏ i về  đố i tác khác hoặ c giá vốn T ừ  chố i lịch s ự , chuy ể n câu h ỏ i cho ch ủ  
+qu ả n
+Tài kho ả n Nhân viên ch ủ  qu ả n ngh ỉ  việ c G ỡ  quyền ngay; bài và giá đã l ư u thuộ c 
+công ty
+Tài kho ả n Nhân viên c ủ a đố i tác thay đ ổ i Công ty đố i tác t ự  qu ả n lý thành viên; 
+luồng trao đ ổ i thuộ c công ty
+Mô hình thu tiề n và lộ  trình
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 9/10
+
+=====PAGE=====
+Thuê bao theo công ty ch ủ  qu ả n, chia gói theo sô thành viên và sô bạn bè.
+AI theo l ượ ng dùng (tuỳ chọn): gói l ượ t bóc tách ả nh/PDF và câu h ỏ i chatbot.
+Kế t nố i tr ự c tiế p: ch ư a làm, ch ỉ  ghi lại ý t ưở ng (đố i tác tr ả  phí đ ể  liên hệ  th ẳ ng nhau khi 
+ch ủ  qu ả n cho phép).
+Giai đoạn 1 chạy v ớ i một ch ủ  qu ả n thật (NITI GROUP) và một ngành hẹp tr ướ c khi m ở  rộng.
+Ch ứ ng minh v ớ i mộ t ch ủ  qu ả n tr ướ c, rồ i m ớ i m ở  cho nhiề u ch ủ  qu ả n
+1 · MVP cho mộ t ch ủ  qu ả n
+B ả ng tin, kết bạn hình sao
+Bài có form, bình luận riêng
+L ư u báo giá vào S ổ  H ợ p Tác
+Thông báo
+Chatbot tra giá
+2 · AI thu giá nhanh
+L ư u giá t ừ  Zalo, ả nh, PDF
+T ự  ghép tên s ả n ph ẩ m
+H ỏ i giá nhiều NCC cùng lúc
+Chatbot cho đố i tác
+G ử i báo giá cho khách
+3 · Nhiề u ch ủ  qu ả n
+Mỗ i ch ủ  qu ả n một không gian
+Thu phí thuê bao theo công ty
+Kết nố i tr ự c tiếp tr ả  phí,
+ch ủ  qu ả n quyết định m ở
+C ổ ng: ch ủ  qu ả n l ư u giá qua
+app thay vì chép t ừ  Zalo
+C ổ ng: phần l ớ n giá vào s ổ
+mà không ph ả i gõ tay
+Câu h ỏ i cầ n chố t
+Nàhhà h i iđ 1 h ữ kýố/ ̂ đó ói ủ NITIh b bì h ?
+10/28/26, 4:14 PM Community App · Nghiệp vụ
+https://claude.ai/artifact/9ocC3ie9Jyx35C4TF7Jx9y#a839275f-67e8 10/10

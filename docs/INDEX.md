@@ -18,6 +18,8 @@
 | `current/sht/doi-tac-uy-tin.md` | Sổ Hợp Tác: điểm uy tín HD8 / V2-E (cờ `REPUTATION_ENGINE`), cờ đỏ |
 | `current/sht/cai-dat-va-quyen.md` | Sổ Hợp Tác: quyền, màn Cài đặt, cờ/công tắc |
 | `current/sht/phap-ly-va-can-xu-ly.md` | Sổ Hợp Tác: cảnh báo pháp lý, nguồn Cần xử lý |
+| `current/community/README.md` | Community App (gói `community`, CR-102): nghiệp vụ, ma trận hiển thị thành ca test, Chưa rõ. **Đã duyệt, chưa có code** |
+| `adr/0031-pack-to-pack-ports.md` | Cổng gói↔gói: gói khai port, `packs.mount.ts` tiêm usecase gói kia |
 
 ## Thiết kế (nguồn chân lý nghiệp vụ, v0.4) — `design/`
 | Phạm vi | BA | UI/UX |

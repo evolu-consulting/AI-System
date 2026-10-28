@@ -25,5 +25,8 @@ Mọi thứ khác gói cần (múi giờ tenant, config, egress HTTP như tra MS
 ## Nền tảng KHÔNG ĐƯỢC
 - import `packs/<gói>/**` — chỉ `packs.mount.ts` và cổng `packs/kit/**` (ports, registry, guard, uow, converters) (`platform-no-pack-internals`).
 
+## Cổng gói↔gói (ADR-0031, CR-102; chưa có code)
+Gói cần dữ liệu/hành động của gói khác (vd `community` ghi giá vào `contracts`) **không import** gói kia. Gói cần khai một **port** trong `application/*.ports.ts` của mình (vd `SupplierQuoteWriter` do community khai, `HostBookReader` đọc SHT); `packs.mount.ts` — điểm nối duy nhất — dựng usecase của gói cung cấp (contracts) và tiêm vào gói cần. `pack-no-cross-pack` của depcruise giữ nguyên; thêm kiểm tra: chỉ `packs.mount.ts` được thấy cả hai gói. Port chỉ mang kiểu thuần (DTO tự khai), không kiểu của gói kia; usecase phía cung cấp tự kiểm quyền/RLS trong transaction của người gọi (cùng `PackUow`). Port chỉ có ở phía người dùng (kind=internal, vai chủ quản); user ngoài không bao giờ tới port.
+
 ## Nợ đã biết
 Migration `contracts` 0009/0010/0015/0022 (đọc `admin.*`), 0011 (`hub.process_runs`), 0021 (`packs.pack_agents`) vi phạm; giữ baseline trong `KNOWN_DEBT` của `tools/scripts/src/check-pack-sql.ts` — xem `docs/TECH-DEBT.md` #255. Thêm vi phạm mới ⇒ check đỏ.
