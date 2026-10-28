@@ -27,6 +27,8 @@ type Props = {
   defaults: UserCreateValues;
   /** Hàng của chính mình: không đổi được role (M1-AC05). */
   selfRole: boolean;
+  /** CR-102a: tài khoản đối tác luôn là `member` — không có ô role. */
+  external?: boolean;
   serverErrors: UserFormErrors;
   onDirtyChange: (dirty: boolean) => void;
   onSubmit: (values: UserCreateValues) => void;
@@ -38,6 +40,7 @@ export function UserForm({
   tenantKey,
   defaults,
   selfRole,
+  external = false,
   serverErrors,
   onDirtyChange,
   onSubmit,
@@ -106,25 +109,27 @@ export function UserForm({
       >
         {(p) => <Input {...p} {...form.register("email")} type="email" autoComplete="off" />}
       </FormField>
-      <FormField
-        id={`${formId}-role`}
-        label={t("users.field.role")}
-        description={selfRole ? t("users.field.selfRole") : undefined}
-        error={serverErrors.role}
-      >
-        {(p) => (
-          <RadioGroup
-            {...p}
-            value={role}
-            onValueChange={(v) => form.setValue("role", v as Role, { shouldDirty: true })}
-            className="gap-2"
-          >
-            {roleItem("member")}
-            {roleItem("tenant_admin")}
-            {tenantKey === "platform" ? roleItem("platform_admin", true) : null}
-          </RadioGroup>
-        )}
-      </FormField>
+      {external ? null : (
+        <FormField
+          id={`${formId}-role`}
+          label={t("users.field.role")}
+          description={selfRole ? t("users.field.selfRole") : undefined}
+          error={serverErrors.role}
+        >
+          {(p) => (
+            <RadioGroup
+              {...p}
+              value={role}
+              onValueChange={(v) => form.setValue("role", v as Role, { shouldDirty: true })}
+              className="gap-2"
+            >
+              {roleItem("member")}
+              {roleItem("tenant_admin")}
+              {tenantKey === "platform" ? roleItem("platform_admin", true) : null}
+            </RadioGroup>
+          )}
+        </FormField>
+      )}
       <FormField id={`${formId}-locale`} label={t("users.field.locale")}>
         {(p) => (
           <Select

@@ -2,8 +2,16 @@
 // (repo trong tx của gói); adapter `pack-uow.ts` mở tx qua `withPackScope` (role `<k>_rw` + `app.tenant_id`, RLS FORCE).
 // Lớp 2 — chỉ kiểu, không import gì ngoài domain/application.
 
-/** Ai gọi: lấy từ JWT (không bao giờ từ body/query — PK-AC10). */
-export type PackWho = { tenantId: string; userId: string };
+/**
+ * Ai gọi: lấy từ JWT (không bao giờ từ body/query — PK-AC10). CR-102a: `userKind`/`extOrgId` từ claim JWT (khớp DB, bất biến);
+ * vắng (vòng nền, PackWho dựng tay) ⇒ nội bộ. Identity của user KHÁC: cổng `ExternalOrgResolver` (`ext-org.ports.ts`).
+ */
+export type PackWho = {
+  tenantId: string;
+  userId: string;
+  userKind?: "internal" | "external";
+  extOrgId?: string | null;
+};
 
 /** Request người dùng: một tx RLS theo tenant của token; repo `R` dựng trong tx đó. */
 export type PackUow<R> = {

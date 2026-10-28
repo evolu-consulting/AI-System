@@ -101,3 +101,8 @@ const VERSIONED_FIELDS = new Set([
 export function bumpsVersion(changedFields: readonly string[]): boolean {
   return changedFields.some((f) => VERSIONED_FIELDS.has(f));
 }
+
+/** CR-102a · user ngoài chỉ được là `member` (DB CHECK `users_external_member_check` là lưới cuối). */
+export function externalRoleAllowed(kind: "internal" | "external", role: Role): boolean {
+  return kind !== "external" || role === "member";
+}

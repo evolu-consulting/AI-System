@@ -9,6 +9,7 @@ export type NavId =
   | "agents"
   | "tenants"
   | "users"
+  | "partners"
   | "features"
   | "commands"
   | "workflows"
@@ -29,6 +30,7 @@ type NavTo =
   | "/agents"
   | "/tenants"
   | "/users"
+  | "/partners"
   | "/groups"
   | "/access"
   | "/features"
@@ -53,6 +55,7 @@ export type NavItem = {
     | "nav.agents"
     | "nav.tenants"
     | "nav.users"
+    | "nav.partners"
     | "nav.features"
     | "nav.commands"
     | "nav.workflows"
@@ -83,6 +86,7 @@ const item = (id: NavId, to: NavTo): NavItem => ({ id, to, labelKey: `nav.${id}`
 const OVERVIEW = item("overview", "/");
 const TENANTS = item("tenants", "/tenants");
 const USERS = item("users", "/users");
+const PARTNERS = item("partners", "/partners");
 const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
@@ -134,7 +138,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
           ...proc,
         ],
       },
-      { labelKey: "nav.group.access", items: [TENANTS, USERS, GROUPS, ACCESS] },
+      { labelKey: "nav.group.access", items: [TENANTS, USERS, PARTNERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])] },
     ];
@@ -143,7 +147,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
     return [
       { labelKey: null, items: [OVERVIEW] },
       { labelKey: "nav.group.features", items: [AGENTS, ...proc] },
-      { labelKey: "nav.group.access", items: [USERS, GROUPS, ACCESS] },
+      { labelKey: "nav.group.access", items: [USERS, PARTNERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK] },
     ];
   }
@@ -188,6 +192,7 @@ function catalogCrumbs(pathname: string): Crumb[] {
 const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/": [{ labelKey: "nav.overview" }],
   "/users": [{ labelKey: "nav.users" }],
+  "/partners": [{ labelKey: "nav.partners" }],
   "/agents": [{ labelKey: "nav.agents" }],
   "/access": [{ labelKey: "nav.access" }],
   "/sources": [{ labelKey: "nav.sources" }],

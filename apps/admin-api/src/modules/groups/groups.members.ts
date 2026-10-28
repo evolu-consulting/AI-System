@@ -12,7 +12,7 @@ import {
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { configWrite } from "../../lib/config/config-write";
-import { appError } from "../../lib/errors";
+import { appError, extOrgError } from "../../lib/errors";
 import { likeArg, pgArray } from "../../lib/sql";
 import { afterLock } from "../../lib/test-hooks";
 import * as repo from "./groups.repo";
@@ -96,10 +96,11 @@ async function insertMembers(
 }
 
 async function lookup(tx: Tx, tenantId: string, groupId: string, names: string[]) {
-  const found = (await tx.execute(sql`select id, username from admin.users
+  const found = (await tx.execute(sql`select id, username, kind from admin.users
     where tenant_id = ${tenantId} and username = any(${pgArray(names, "text")})`)) as unknown as {
     id: string;
     username: string;
+    kind: string;
   }[];
   const ids = found.map((f) => f.id);
   const existing = (await tx.execute(sql`select user_id from admin.group_members
@@ -120,6 +121,10 @@ export function addMembers(
     if (!g) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "group.members", "locked");
     const { found, existing } = await lookup(tx, g.tenantId, g.id, input.usernames);
+    // CR-102a: user ngoài (đối tác) không vào Group — từ chối cả lô, kể cả dry_run (trigger DB là lưới cuối).
+    const external = found.filter((f) => f.kind === "external").map((f) => f.username);
+    if (external.length > 0)
+      throw extOrgError("EXTERNAL_USER_NOT_ALLOWED", { usernames: external });
     const plan = planMemberAdd(input.usernames, found, existing);
     const out = { added: plan.added, not_found: plan.not_found, already: plan.already };
     if (input.dry_run) return out;

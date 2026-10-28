@@ -142,3 +142,24 @@ describe("ADM-FR-37 · lỗi Hub `/agent-grants*` → key `hubErrors.*`", () => 
     expect(describeHubError(new Error("x")).key).toBe("hubErrors.network");
   });
 });
+
+describe("CR-102a · mã lỗi user ngoài (EXTERNAL_ORG_ERRORS)", () => {
+  const code = (c: string, details?: unknown) =>
+    new ApiError(422, c as ApiErrorCode, `msg-${c}`, details);
+
+  test("EXTERNAL_USER_NOT_ALLOWED nêu usernames khi có, không thì câu chung", () => {
+    expect(describeError(code("EXTERNAL_USER_NOT_ALLOWED", { usernames: ["a", "b"] }))).toEqual({
+      key: "errors.externalNotAllowed",
+      params: { names: "a, b" },
+    });
+    expect(describeError(code("EXTERNAL_USER_NOT_ALLOWED")).key).toBe(
+      "errors.externalNotAllowedGeneric",
+    );
+  });
+
+  test("EXTERNAL_ORG_INACTIVE, USER_DEACTIVATED, NAME_TAKEN có key tĩnh", () => {
+    expect(describeError(code("EXTERNAL_ORG_INACTIVE")).key).toBe("errors.externalOrgInactive");
+    expect(describeError(code("USER_DEACTIVATED")).key).toBe("errors.userDeactivated");
+    expect(describeError(code("NAME_TAKEN")).key).toBe("partners.error.nameTaken");
+  });
+});

@@ -61,3 +61,11 @@ describe("ADM-FR-08 · menu Tắt 2FA", () => {
     expect(rowActions({ ...base, totp_enabled: true }, false, now).disable2fa).toBe(true);
   });
 });
+
+describe("CR-102a · tài khoản đối tác đã vô hiệu", () => {
+  test("không còn hành động nào trong menu", () => {
+    const dead = { ...base, active: false, deactivated_at: "2026-09-30T00:00:00.000Z" };
+    const a = rowActions(dead, false, now);
+    expect(Object.values(a).some(Boolean)).toBe(false);
+  });
+});

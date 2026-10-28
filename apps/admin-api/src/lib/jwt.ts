@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-06, ADM-NFR-01 · JWT EdDSA (spec M1 §3 "Token", M1-R02): access token + change_token.
 // Hai loại tách bằng `aud` nên không dùng lẫn được. iat/exp theo giờ thật (plan §10 G7).
-import { type Role, UuidSchema } from "@ai/contracts";
+import { type Role, type UserKind, UuidSchema } from "@ai/contracts";
 import { importPKCS8, importSPKI, jwtVerify, SignJWT } from "jose";
 
 export type JwtKeys = { privateKey: CryptoKey; publicKey: CryptoKey; kid: string };
@@ -14,8 +14,19 @@ const ACCESS_TTL_S = 900;
 const CHANGE_TTL_S = 300;
 const TOTP_TTL_S = 300;
 
-/** `sid` = family_id của phiên; token thiếu `sid` vẫn hợp lệ (Hub bỏ qua), khi đó `sid=null`. */
-export type AccessClaims = { sub: string; tid: string; role: Role; sid: string | null };
+/**
+ * `sid` = family_id của phiên; token thiếu `sid` vẫn hợp lệ (Hub bỏ qua), khi đó `sid=null`.
+ * CR-102a: `kind`/`extOrgId` — chỉ user ngoài mới có claim `kind:"external"` + `xorg` (giữ token nhỏ); thiếu claim
+ * (user nội bộ, token cũ trước 0028) ⇒ `internal`. kind/org bất biến ở DB nên claim không cũ đi trong TTL.
+ */
+export type AccessClaims = {
+  sub: string;
+  tid: string;
+  role: Role;
+  sid: string | null;
+  kind?: UserKind;
+  extOrgId?: string | null;
+};
 export type ChangeClaims = { sub: string; tid: string; pwc: number };
 /** Bước 2 đăng nhập (M4, plan-cd §7): `pwc` = password_changed_at ms, `tte` = user_totp.enabled_at ms. */
 export type TotpClaims = ChangeClaims & { tte: number };
@@ -60,7 +71,19 @@ function sign(
 }
 
 export function signAccessToken(keys: JwtKeys, c: AccessClaims): Promise<string> {
-  return sign(keys, { tid: c.tid, role: c.role, sid: c.sid }, c.sub, ACCESS_AUDIENCE, ACCESS_TTL_S);
+  const ext = c.kind === "external" ? { kind: "external", xorg: c.extOrgId } : {};
+  const claims = { tid: c.tid, role: c.role, sid: c.sid, ...ext };
+  return sign(keys, claims, c.sub, ACCESS_AUDIENCE, ACCESS_TTL_S);
+}
+
+/** CR-102a: claim `kind`/`xorg` → identity. Vắng ⇒ internal; `external` thiếu/hỏng `xorg`, hay kind lạ ⇒ null (token hỏng). */
+export function kindOfClaims(
+  p: Record<string, unknown>,
+): { kind: UserKind; extOrgId: string | null } | null {
+  if (p.kind === undefined)
+    return p.xorg === undefined ? { kind: "internal", extOrgId: null } : null;
+  if (p.kind === "external" && isUuid(p.xorg)) return { kind: "external", extOrgId: p.xorg };
+  return null;
 }
 
 export function signChangeToken(keys: JwtKeys, c: ChangeClaims): Promise<string> {
@@ -93,7 +116,9 @@ export async function verifyAccessToken(
 ): Promise<AccessClaims | null> {
   const p = await verify(keys, token, ACCESS_AUDIENCE);
   if (!p || !isUuid(p.sub) || !isUuid(p.tid) || !isStr(p.role)) return null;
-  return { sub: p.sub, tid: p.tid, role: p.role as Role, sid: isStr(p.sid) ? p.sid : null };
+  const k = kindOfClaims(p);
+  if (!k) return null;
+  return { sub: p.sub, tid: p.tid, role: p.role as Role, sid: isStr(p.sid) ? p.sid : null, ...k };
 }
 
 export async function verifyChangeToken(

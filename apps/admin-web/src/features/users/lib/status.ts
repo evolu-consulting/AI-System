@@ -8,7 +8,8 @@ export type UserStatusView =
   | { kind: "tempLocked"; until: string }
   | { kind: "active" };
 
-type StatusFields = Pick<User, "active" | "locked_by_tenant" | "locked_until">;
+type StatusFields = Pick<User, "active" | "locked_by_tenant" | "locked_until"> &
+  Partial<Pick<User, "deactivated_at">>;
 
 /** `Đã khoá` nếu `!active || locked_by_tenant`; `Tạm khoá đến …` nếu `locked_until` còn hiệu lực; còn lại hoạt động. */
 export function userStatusView(u: StatusFields, now: Date): UserStatusView {
@@ -35,7 +36,8 @@ export function rowActions(
   isSelf: boolean,
   now: Date,
 ): RowActions {
-  if (isSelf) {
+  // CR-102a: tài khoản đối tác đã vô hiệu không còn hành động nào (không mở khoá lại được).
+  if (isSelf || u.deactivated_at) {
     return {
       resetPassword: false,
       lock: false,

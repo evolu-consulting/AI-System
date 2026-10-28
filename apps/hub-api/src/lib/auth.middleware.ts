@@ -9,7 +9,15 @@ import { verifyAccessToken } from "./jwt";
 import type { Logger } from "./logger";
 
 /** `exp` (giây epoch, optional — X2a D14) chỉ `/me/stream` dùng để đóng stream đúng lúc token hết hạn. */
-export type AuthUser = { userId: string; tenantId: string; role: Role; exp?: number };
+export type AuthUser = {
+  userId: string;
+  tenantId: string;
+  role: Role;
+  exp?: number;
+  /** CR-102a: từ claim JWT (vắng ⇒ internal). Tên `userKind` (không `kind`): AuthUser hay được trải vào `{ kind: "user", ...u }` của scope. */
+  userKind?: "internal" | "external";
+  extOrgId?: string | null;
+};
 /**
  * chat-api-gate-fix · cổng chat gắn khi request đi route dock với `X-Ai-Surface: contracts`: hội thoại tạo ra mang dấu
  * `surface=contracts`; `restricted` = công ty không có Chat AI ⇒ chỉ gửi văn bản thường vào hội thoại có dấu đó.
@@ -33,7 +41,14 @@ export async function authenticate(
   // Fail-closed: không có cache (app dựng không kèm db) ⇒ không xác minh được trạng thái ⇒ từ chối.
   const usable = await c.var.config?.accountUsable(claims.tid, claims.sub);
   if (usable !== true) throw appError("AUTH_EXPIRED");
-  return { userId: claims.sub, tenantId: claims.tid, role: claims.role, exp: claims.exp };
+  return {
+    userId: claims.sub,
+    tenantId: claims.tid,
+    role: claims.role,
+    exp: claims.exp,
+    userKind: claims.kind,
+    extOrgId: claims.extOrgId,
+  };
 }
 
 /** `key` vắng (test khung) ⇒ mọi request vào route được bảo vệ đều 401. */

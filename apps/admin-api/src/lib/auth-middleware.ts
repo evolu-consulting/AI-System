@@ -1,7 +1,7 @@
 // ADM-FR-01, ADM-BR-05, ADM-BR-09, ADM-NFR-07 · xác thực Bearer + scope RLS (plan M1 §5 "Middleware").
 // Đọc lại user từ DB mỗi request: khoá/hạ role có hiệu lực ngay ở Admin. Scope `platform` chỉ khi role trong DB
 // là platform_admin VÀ thuộc tenant `platform` — claim `role` trong token không bao giờ được tin.
-import type { Role } from "@ai/contracts";
+import type { Role, UserKind } from "@ai/contracts";
 import { type Db, type DbScope, tenants, users, withScope } from "@ai/db";
 import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
@@ -16,6 +16,9 @@ export type Actor = {
   role: Role;
   /** family_id của phiên (claim `sid`), null nếu token không có. */
   sid: string | null;
+  /** CR-102a: đọc từ DB mỗi request (không tin claim); vắng (Actor dựng tay trong test) ⇒ internal. */
+  userKind?: UserKind;
+  extOrgId?: string | null;
 };
 export type AppVars = { Variables: { requestId: string; actor: Actor; scope: DbScope } };
 export type AuthDeps = { db: Db; keys: JwtKeys };
@@ -34,6 +37,8 @@ async function loadActor(db: Db, tid: string, userId: string) {
     const [row] = await tx
       .select({
         role: users.role,
+        kind: users.kind,
+        externalOrgId: users.externalOrgId,
         active: users.active,
         lockedByTenant: users.lockedByTenant,
         tenantKey: tenants.key,
@@ -54,12 +59,18 @@ export async function authenticate(c: Context, d: AuthDeps): Promise<Actor> {
   if (!claims) throw appError("UNAUTHORIZED");
   const row = await loadActor(d.db, claims.tid, claims.sub);
   if (!row || !canSignIn(row, row.tenantActive)) throw appError("UNAUTHORIZED");
+  // CR-102a: claim kind/xorg phải khớp DB (bất biến) — lệch = token không đúng người ⇒ 401.
+  if ((claims.kind ?? "internal") !== row.kind || (claims.extOrgId ?? null) !== row.externalOrgId) {
+    throw appError("UNAUTHORIZED");
+  }
   return {
     userId: claims.sub,
     tenantId: claims.tid,
     tenantKey: row.tenantKey,
     role: row.role,
     sid: claims.sid,
+    userKind: row.kind,
+    extOrgId: row.externalOrgId,
   };
 }
 

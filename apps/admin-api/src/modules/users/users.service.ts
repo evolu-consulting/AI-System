@@ -2,33 +2,26 @@
 // Hành động ghi = một `configWrite` (transaction + scope + bump/NOTIFY sau commit, plan M3 §5.1–5.2), hành động đọc = một
 // withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
 import { randomBytes } from "node:crypto";
-import {
-  BETA_GROUP_KEY,
-  GROUP_NAME_MAX,
-  type GroupRef,
-  type Locale,
-  LocalizedTextSchema,
-  type User,
-  type UserCreateRequest,
-  type UserCreateResponse,
-  type UserListQuery,
-  type UserListResponse,
-  type UserUpdateRequest,
+import type {
+  Locale,
+  User,
+  UserCreateRequest,
+  UserCreateResponse,
+  UserListQuery,
+  UserListResponse,
+  UserUpdateRequest,
 } from "@ai/contracts";
 import {
   type AuditActionValue,
-  type AuditInput,
   type Db,
   type DbScope,
   hashPassword,
   type Tx,
   withScope,
 } from "@ai/db";
-import { z } from "zod";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { type ConfigSink, configWrite } from "../../lib/config/config-write";
-import { appError } from "../../lib/errors";
-import { uniqueViolation } from "../../lib/pg-errors";
+import { appError, extOrgError } from "../../lib/errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { generateTempPassword } from "../auth/auth.rules";
 import { revokeUserSessions } from "../auth/auth.service";
@@ -37,6 +30,7 @@ import { auditLockClear, clearAccountLock } from "../auth/limit/limit.service";
 import { canResetTotpFor } from "../auth/totp/totp.rules";
 import { adminResetTotp } from "../auth/totp/totp.service";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
+import { mapUserConflict, toUser, userAudit } from "./users.dto";
 import type { UserRow } from "./users.repo";
 import * as repo from "./users.repo";
 import {
@@ -46,79 +40,18 @@ import {
   checkRoleAssignment,
   checkRoleChange,
   checkSelfAction,
+  externalRoleAllowed,
   isAdminRole,
   isEmailRequired,
   type Role,
   type RuleError,
   resolveTenantScope,
-  userStatus,
 } from "./users.rules";
 
 export type UsersCtx = { db: Db; hooks?: TestHooks; limiter?: LoginLimiter; now?: () => Date };
 export type Call = { ctx: UsersCtx; actor: Actor; scope: DbScope };
 
-const iso = (d: Date | null) => (d ? d.toISOString() : null);
-
-const GroupsJson = z.array(
-  z.object({ id: z.string(), key: z.string(), name: LocalizedTextSchema(GROUP_NAME_MAX) }),
-);
-
-/** jsonb từ subquery (users.repo) → GroupRef[] (validate ở biên đọc DB, CONVENTIONS §5). */
-function userGroups(raw: unknown): GroupRef[] {
-  return GroupsJson.parse(raw).map((g) => ({ ...g, is_beta: g.key === BETA_GROUP_KEY }));
-}
-
-export function toUser(u: UserRow): User {
-  return {
-    id: u.id,
-    tenant_id: u.tenantId,
-    tenant_key: u.tenantKey,
-    username: u.username,
-    display_name: u.displayName,
-    email: u.email,
-    role: u.role,
-    locale: u.locale,
-    status: userStatus(u),
-    active: u.active,
-    locked_by_tenant: u.lockedByTenant,
-    locked_until: iso(u.lockedUntil),
-    must_change_password: u.mustChangePassword,
-    last_login_at: iso(u.lastLoginAt),
-    created_at: u.createdAt.toISOString(),
-    updated_at: u.updatedAt.toISOString(),
-    version: u.version,
-    updated_by: u.updatedBy,
-    groups: userGroups(u.groups),
-    group_count: u.groupCount,
-    totp_enabled: u.totpEnabled,
-  };
-}
-
-/** Hàng audit `user` (plan M4 §4.2): DTO đầy đủ, allowlist lọc trong `auditOf`; snapshot false. */
-export function userAudit(
-  action: AuditActionValue,
-  before: User | null,
-  after: User,
-  summary?: Record<string, unknown>,
-): AuditInput {
-  return auditOf(action, "user", {
-    entityId: after.id,
-    entityName: after.username,
-    tenantId: after.tenant_id,
-    before,
-    after,
-    entityVersion: after.version,
-    summary,
-  });
-}
-
-/** Dịch 23505 theo tên constraint (plan §5): username / email trùng trong tenant. */
-export function mapUserConflict(err: unknown): never {
-  const c = uniqueViolation(err);
-  if (c === "users_tenant_username_uq") throw appError("USERNAME_TAKEN");
-  if (c === "users_tenant_email_uq") throw appError("EMAIL_TAKEN");
-  throw err;
-}
+export { mapUserConflict, toUser, userAudit };
 
 const fail = (e: RuleError | null): void => {
   if (e) throw appError(e.code, e.details);
@@ -206,7 +139,7 @@ async function guardLastAdmin(
 export async function listUsers(c: Call, q: UserListQuery): Promise<UserListResponse> {
   const r = resolveTenantScope(c.actor, q.tenant_id, "read");
   if ("code" in r) throw appError(r.code);
-  const f = { ...q, tenantId: r.tenantId };
+  const f = { ...q, tenantId: r.tenantId, externalOrgId: q.external_org_id };
   const { rows, counts } = await withScope(c.ctx.db, c.scope, (tx) => repo.listUsers(tx, f));
   return {
     items: rows.map(({ total: _t, ...u }) => toUser(u)),
@@ -232,13 +165,38 @@ export async function createUser(
 ): Promise<UserCreateResponse> {
   const r = resolveTenantScope(c.actor, queryTenantId, "write");
   if ("code" in r) throw appError(r.code);
-  const tenantId = r.tenantId as string;
+  return createUserIn(c, r.tenantId as string, input);
+}
+
+/**
+ * CR-102a · user ngoài: role luôn `member`, `kind=external`, `external_org_id` = công ty. `guard` chạy trong cùng
+ * transaction SAU khoá tenant (khoá + kiểm công ty còn active, cùng tenant) — do module external-orgs cấp.
+ */
+export function createExternalUser(
+  c: Call,
+  org: { id: string; tenantId: string },
+  input: Omit<UserCreateRequest, "role">,
+  guard: (tx: Tx) => Promise<void>,
+): Promise<UserCreateResponse> {
+  const ext = { orgId: org.id, guard };
+  return createUserIn(c, org.tenantId, { ...input, role: "member" }, ext);
+}
+
+type ExtCreate = { orgId: string; guard: (tx: Tx) => Promise<void> };
+
+async function createUserIn(
+  c: Call,
+  tenantId: string,
+  input: UserCreateRequest,
+  ext?: ExtCreate,
+): Promise<UserCreateResponse> {
   const temp = await newTempPassword();
   const user = await configWrite(c, "user.save", async (tx, ch) => {
     // FOR SHARE: tenant không bị khoá/mở khoá giữa lúc đọc `active` và lúc chèn user (locked_by_tenant đúng).
     const t = await repo.findTenantBrief(tx, tenantId, { lock: "share" });
     await afterLock(c.ctx.hooks, "user.save", "locked");
     if (!t) throw appError("NOT_FOUND");
+    if (ext) await ext.guard(tx);
     fail(checkRoleAssignment(c.actor, t.key === PLATFORM_TENANT_KEY, input.role));
     const email = input.email ?? null;
     if (isEmailRequired(input.role) && !email) throw appError("EMAIL_REQUIRED");
@@ -252,6 +210,7 @@ export async function createUser(
       passwordHash: temp.hash,
       lockedByTenant: !t.active,
       updatedBy: c.actor.userId,
+      ...(ext ? { kind: "external" as const, externalOrgId: ext.orgId } : {}),
     });
     ch.changed({ entity: "user", tenantId });
     ch.audit(userAudit("create", null, created));
@@ -274,6 +233,9 @@ function diffUser(u: UserRow, input: UserUpdateRequest): repo.UserSet {
 }
 
 function checkUpdate(c: Call, u: UserRow, set: repo.UserSet): void {
+  if (set.role && !externalRoleAllowed(u.kind, set.role)) {
+    throw extOrgError("EXTERNAL_USER_NOT_ALLOWED");
+  }
   if (set.role) {
     fail(checkRoleChange(c.actor, u, set.role));
     fail(checkRoleAssignment(c.actor, u.tenantKey === PLATFORM_TENANT_KEY, set.role));
@@ -337,6 +299,7 @@ export function lockUser(c: Call, id: string): Promise<User> {
 export function unlockUser(c: Call, id: string): Promise<User> {
   return configWrite(c, "user.save", async (tx, ch) => {
     const u = await lockTarget(tx, c.actor, await mustFindUser(tx, c.actor, id));
+    if (u.deactivatedAt !== null) throw extOrgError("USER_DEACTIVATED");
     const clear = { failedLogins: 0, lockedUntil: null };
     const now = c.ctx.now?.() ?? new Date();
     const redisLocked = await clearAccountLock(c.ctx.limiter, u, now);
@@ -395,5 +358,23 @@ export function disableUserTotp(c: Call, id: string): Promise<User> {
     const e = auditOf("delete", "user_totp", { ...target, before, after: null });
     await recordAudit(tx, { ...e, actorId: c.actor.userId });
     return reread(tx, u);
+  });
+}
+
+/**
+ * CR-102a · vô hiệu user ngoài (câu 9: không xoá cứng): `active=false` + `deactivated_at` + thu hồi phiên. User phải
+ * thuộc đúng công ty `orgId` (route đối tác) — user nội bộ / công ty khác ⇒ 404. Lặp lại ⇒ trả bản hiện tại.
+ */
+export function deactivateExternalUser(c: Call, orgId: string, id: string): Promise<User> {
+  return configWrite(c, "user.save", async (tx, ch) => {
+    const seen = await mustFindUser(tx, c.actor, id);
+    if (seen.kind !== "external" || seen.externalOrgId !== orgId) throw appError("NOT_FOUND");
+    const u = await lockTarget(tx, c.actor, seen);
+    if (u.deactivatedAt !== null) return toUser(u);
+    const set = { active: false, deactivatedAt: new Date() };
+    await repo.updateUser(tx, u, set, { by: c.actor.userId });
+    await revokeUserSessions(tx, { tenantId: u.tenantId, userId: u.id, reason: "user_locked" });
+    ch.changed({ entity: "user", tenantId: u.tenantId });
+    return rereadAudited(tx, ch, "lock", u);
   });
 }

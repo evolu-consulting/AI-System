@@ -6,6 +6,7 @@ export default defineConfig({
   dialect: "postgresql",
   schema: [
     "./src/schema/admin.ts",
+    "./src/schema/tenant-workflow-tools.ts",
     "./src/schema/permissions.ts",
     "./src/schema/ops.ts",
     "./src/schema/totp.ts",

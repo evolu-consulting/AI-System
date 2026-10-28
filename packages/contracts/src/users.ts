@@ -20,6 +20,7 @@ import {
   VersionSchema,
 } from "./common";
 import { GroupRefSchema, USER_GROUPS_MAX } from "./groups";
+import { UserKindSchema } from "./user-kind";
 
 /** `status = "locked"` ⇔ `!active || locked_by_tenant`; `locked_until` = khoá tạm FR-07. */
 export const UserSchema = z
@@ -45,6 +46,11 @@ export const UserSchema = z
     groups: z.array(GroupRefSchema).max(USER_GROUPS_MAX),
     group_count: CountSchema,
     totp_enabled: z.boolean(),
+    /** CR-102a: vắng (server/mock cũ) ⇒ `internal`. User ngoài: `external_org_id` = công ty đối tác. */
+    kind: UserKindSchema.optional(),
+    external_org_id: UuidSchema.nullable().optional(),
+    /** CR-102a: vô hiệu (không xoá cứng) — đã vô hiệu thì không mở khoá lại. */
+    deactivated_at: IsoDateTime.nullable().optional(),
   })
   .refine((u) => (u.status === "locked") === (!u.active || u.locked_by_tenant), {
     message: "status must be 'locked' iff !active || locked_by_tenant",
@@ -60,6 +66,9 @@ export const UserListQuerySchema = ListQueryBase.extend({
   login: z.literal("never").optional(),
   /** Chỉ lọc hàng (không lọc `counts`); group không thấy được → rỗng. */
   group: UuidSchema.optional(),
+  /** CR-102a: lọc user nội bộ / đối tác; `external_org_id` = user của một công ty đối tác. */
+  kind: UserKindSchema.optional(),
+  external_org_id: UuidSchema.optional(),
 });
 export type UserListQuery = z.infer<typeof UserListQuerySchema>;
 

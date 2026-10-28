@@ -29,6 +29,12 @@ export const ERROR_MESSAGE_KEYS = [
   "tenants.error.keyTaken",
   "common.tenantPicker.required",
   "errors.platformTenantLocked",
+  // CR-102a (`EXTERNAL_ORG_ERRORS` + NAME_TAKEN của công ty đối tác)
+  "errors.externalNotAllowed",
+  "errors.externalNotAllowedGeneric",
+  "errors.externalOrgInactive",
+  "errors.userDeactivated",
+  "partners.error.nameTaken",
   "errors.versionConflict",
   "toast.saveFailed",
   // M2 (plan-frontend §8)
@@ -83,6 +89,21 @@ function lastAdminKey(details: unknown): string {
   return scope === "platform" ? "users.error.lastPlatformAdmin" : "users.error.lastAdmin";
 }
 
+/** CR-102a · 422 `EXTERNAL_USER_NOT_ALLOWED {usernames?}`: nêu tên các tài khoản đối tác bị từ chối khi có. */
+function externalNotAllowed(details: unknown): MessageSpec {
+  const names = asList((details as { usernames?: unknown } | null | undefined)?.usernames);
+  return names.length
+    ? { key: "errors.externalNotAllowed", params: { names: names.join(", ") } }
+    : { key: "errors.externalNotAllowedGeneric" };
+}
+
+/** Mã lỗi mà câu hiển thị phụ thuộc `details` (scope của LAST_ADMIN, usernames của user ngoài). */
+function detailedSpec(err: ApiError): MessageSpec | null {
+  const code = err.code as string;
+  if (code === "LAST_ADMIN") return { key: lastAdminKey(err.details) };
+  return code === "EXTERNAL_USER_NOT_ALLOWED" ? externalNotAllowed(err.details) : null;
+}
+
 const STATIC_KEYS: Partial<Record<string, string>> = {
   NETWORK_ERROR: "auth.error.network",
   INVALID_CREDENTIALS: "auth.error.invalid",
@@ -99,6 +120,9 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   KEY_TAKEN: "tenants.error.keyTaken",
   TENANT_REQUIRED: "common.tenantPicker.required",
   PLATFORM_TENANT_LOCKED: "errors.platformTenantLocked",
+  EXTERNAL_ORG_INACTIVE: "errors.externalOrgInactive",
+  USER_DEACTIVATED: "errors.userDeactivated",
+  NAME_TAKEN: "partners.error.nameTaken",
   VERSION_CONFLICT: "errors.versionConflict",
   SECRET_NAME_TAKEN: "secrets.error.nameTaken",
   SECRET_IN_USE: "secrets.delete.blocked",
@@ -158,7 +182,8 @@ export function describeError(
   if (err.code === "KEY_TAKEN" && opts?.keyTaken) return { key: opts.keyTaken };
   if (err.code === "CORE_FEATURE_PROTECTED" && opts?.coreProtected)
     return { key: opts.coreProtected };
-  if (err.code === "LAST_ADMIN") return { key: lastAdminKey(err.details) };
+  const detailed = detailedSpec(err);
+  if (detailed) return detailed;
   if (err.code === "COMMAND_NAME_TAKEN") {
     return { key: "commands.error.nameTaken", params: { name: detailString(err.details, "name") } };
   }

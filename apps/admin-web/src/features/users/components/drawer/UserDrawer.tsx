@@ -3,6 +3,7 @@ import type { User } from "@ai/contracts";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -88,6 +89,7 @@ function DrawerBody(p: BodyProps) {
       tenantKey={p.tenantKey}
       defaults={toDefaults(p.user)}
       selfRole={p.mode === "edit" && p.isSelf}
+      external={p.user?.kind === "external"}
       serverErrors={p.serverErrors}
       onDirtyChange={p.onDirtyChange}
       onSubmit={p.onSubmit}
@@ -157,7 +159,14 @@ export function UserDrawer(props: Props) {
           className="w-full gap-0 sm:max-w-[520px]"
         >
           <SheetHeader>
-            <SheetTitle>{title}</SheetTitle>
+            <SheetTitle>
+              {title}
+              {props.user?.kind === "external" ? (
+                <StatusBadge tone="info" className="ml-2 align-middle">
+                  {t("partners.badge")}
+                </StatusBadge>
+              ) : null}
+            </SheetTitle>
             <SheetDescription className="sr-only">{title}</SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-4 pb-4">

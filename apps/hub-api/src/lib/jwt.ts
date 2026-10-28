@@ -16,7 +16,20 @@ export type AccessClaims = {
   role: Role;
   sid: string | null;
   exp: number;
+  /** CR-102a: claim `kind:"external"` + `xorg` chỉ có ở user ngoài; vắng (nội bộ / token cũ trước 0028) ⇒ internal. */
+  kind: "internal" | "external";
+  extOrgId: string | null;
 };
+
+/** CR-102a (chép luật của admin-api `kindOfClaims`): `external` thiếu/hỏng `xorg`, `xorg` lẻ, kind lạ ⇒ null (token hỏng). */
+export function kindOfClaims(
+  p: Record<string, unknown>,
+): Pick<AccessClaims, "kind" | "extOrgId"> | null {
+  if (p.kind === undefined)
+    return p.xorg === undefined ? { kind: "internal", extOrgId: null } : null;
+  if (p.kind === "external" && isUuid(p.xorg)) return { kind: "external", extOrgId: p.xorg };
+  return null;
+}
 
 /** PEM SPKI Ed25519 (`JWT_PUBLIC_KEY`) → CryptoKey. Sai định dạng → ném (server exit 1). */
 export function importJwtPublicKey(pem: string): Promise<CryptoKey> {
@@ -46,5 +59,14 @@ export async function verifyAccessToken(
   }
   if (!isUuid(p.sub) || !isUuid(p.tid) || !isRole(p.role)) return null;
   if (typeof p.exp !== "number") return null;
-  return { sub: p.sub, tid: p.tid, role: p.role, sid: isStr(p.sid) ? p.sid : null, exp: p.exp };
+  const k = kindOfClaims(p);
+  if (!k) return null;
+  return {
+    sub: p.sub,
+    tid: p.tid,
+    role: p.role,
+    sid: isStr(p.sid) ? p.sid : null,
+    exp: p.exp,
+    ...k,
+  };
 }

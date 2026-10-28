@@ -196,6 +196,7 @@
     },
     "tenants": "Tenants",
     "users": "Users",
+    "partners": "Partners",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
     "openMenu": "Open menu",
@@ -378,6 +379,10 @@
     "discard": "Discard"
   },
   "errors": {
+    "externalNotAllowed": "Partner accounts cannot join groups or change role: {names}",
+    "externalNotAllowedGeneric": "Partner accounts cannot join groups or change role.",
+    "externalOrgInactive": "This partner company is deactivated.",
+    "userDeactivated": "This account is deactivated and cannot be unlocked.",
     "selfAction": "You can't lock or demote yourself.",
     "platformTenantLocked": "The platform tenant can't be locked.",
     "versionConflict": "Someone just saved a newer version. Reload to see the latest.",
@@ -771,6 +776,83 @@
       "overPct": "Over by {pct}%"
     }
   },
+  "partners": {
+    "title": "Partners",
+    "subtitle": "Partner companies and their accounts — {tenant}",
+    "search": "Search companies…",
+    "create": "+ Add partner company",
+    "badge": "Partner",
+    "selectTenant": "Select a tenant to see its partner companies.",
+    "empty": { "text": "No partner companies yet." },
+    "col": { "name": "Company name", "accounts": "Accounts", "status": "Status" },
+    "status": { "active": "Active", "inactive": "Deactivated" },
+    "menu": { "open": "View accounts", "rename": "Rename", "deactivate": "Deactivate" },
+    "field": { "name": "Company name" },
+    "createTitle": "Add partner company",
+    "renameTitle": "Rename company",
+    "error": {
+      "nameRequired": "Enter the company name",
+      "nameMax": "Company name is at most 200 characters",
+      "nameTaken": "A company with this name already exists"
+    },
+    "deactivate": {
+      "title": "Deactivate {name}?",
+      "body": "Deactivating this company deactivates all of its accounts. This cannot be undone.",
+      "submit": "Deactivate"
+    },
+    "toast": {
+      "created": "Added company {name}",
+      "renamed": "Renamed to {name}",
+      "deactivated": "Deactivated company {name}",
+      "userCreated": "Created account {username}",
+      "userLocked": "Locked {username}",
+      "userUnlocked": "Unlocked {username}",
+      "userDeactivated": "Deactivated account {username}"
+    },
+    "drawer": {
+      "title": "Accounts of {name}",
+      "search": "Search accounts…",
+      "empty": "This company has no accounts yet."
+    },
+    "user": {
+      "add": "+ Add account",
+      "submit": "Create account",
+      "tableLabel": "Accounts",
+      "addTitle": "Add account",
+      "created": "Account {username} created",
+      "optional": "optional",
+      "col": {
+        "username": "Username",
+        "displayName": "Display name",
+        "email": "Email",
+        "status": "Status",
+        "lastLogin": "Last sign-in"
+      },
+      "status": { "active": "Active", "locked": "Locked", "deactivated": "Deactivated" },
+      "menu": {
+        "resetPassword": "Reset password",
+        "lock": "Lock",
+        "unlock": "Unlock",
+        "deactivate": "Deactivate"
+      },
+      "reset": {
+        "title": "Reset password for {username}?",
+        "body": "The old password stops working; the user must change it at next sign-in.",
+        "submit": "Reset password"
+      },
+      "lock": {
+        "title": "Lock {username}?",
+        "body": "The account cannot sign in until it is unlocked.",
+        "submit": "Lock"
+      },
+      "deactivate": {
+        "title": "Deactivate {username}?",
+        "body": "The account is permanently deactivated and can no longer sign in. This cannot be undone.",
+        "submit": "Deactivate"
+      }
+    }
+  },
+
   "tempPassword": {
     "titleTenant": "Tenant {key} created",
     "body": "Send these details through a private channel. The temporary password is shown only once.",

@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { generateKeyPairSync } from "node:crypto";
 import { decodeJwt, decodeProtectedHeader } from "jose";
 import {
+  kindOfClaims,
   loadJwtKeys,
   signAccessToken,
   signChangeToken,
@@ -31,7 +32,33 @@ describe("ADM-FR-01 · jwt", () => {
     expect(decodeProtectedHeader(t)).toEqual({ alg: "EdDSA", kid: "kid-1" });
     const c = decodeJwt(t);
     expect([c.iss, c.aud, (c.exp ?? 0) - (c.iat ?? 0)]).toEqual(["admin", "ai-system", 900]);
-    expect(await verifyAccessToken(keys, t)).toEqual(claims);
+    expect(await verifyAccessToken(keys, t)).toEqual({
+      ...claims,
+      kind: "internal",
+      extOrgId: null,
+    });
+  });
+
+  test("CR-102a · user ngoài: claim kind+xorg; user nội bộ không có claim; claim hỏng → token hỏng", async () => {
+    const keys = await loadJwtKeys(pair());
+    const ORG = "01900000-0000-7000-8000-0000000000aa";
+    const ext = await signAccessToken(keys, { ...claims, kind: "external", extOrgId: ORG });
+    expect(decodeJwt(ext)).toMatchObject({ kind: "external", xorg: ORG });
+    expect(await verifyAccessToken(keys, ext)).toEqual({
+      ...claims,
+      kind: "external",
+      extOrgId: ORG,
+    });
+    const int = decodeJwt(
+      await signAccessToken(keys, { ...claims, kind: "internal", extOrgId: null }),
+    );
+    expect(int.kind).toBeUndefined();
+    expect(int.xorg).toBeUndefined();
+    expect(kindOfClaims({})).toEqual({ kind: "internal", extOrgId: null });
+    expect(kindOfClaims({ kind: "external" })).toBeNull();
+    expect(kindOfClaims({ kind: "external", xorg: "abc" })).toBeNull();
+    expect(kindOfClaims({ kind: "guest" })).toBeNull();
+    expect(kindOfClaims({ xorg: ORG })).toBeNull();
   });
 
   test("ADM-FR-06 · change token không dùng làm access token và ngược lại", async () => {

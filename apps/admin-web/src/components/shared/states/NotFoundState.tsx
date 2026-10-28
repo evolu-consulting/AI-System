@@ -9,6 +9,7 @@ type Props = {
     | "/"
     | "/tenants"
     | "/users"
+    | "/partners"
     | "/secrets"
     | "/workflows"
     | "/commands"

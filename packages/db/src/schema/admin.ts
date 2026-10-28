@@ -112,6 +112,13 @@ export const users = admin.table(
     updatedBy: updatedBy(),
     /** portal-home (0018): app mở sau đăng nhập của riêng người dùng; null = theo công ty, rồi trang chủ. */
     defaultApp: text("default_app"),
+    /** CR-102a (0028): `internal` | `external` (đối tác). Bất biến sau khi tạo (trigger). CHECK/FK kép ở SQL 0028. */
+    kind: text("kind", { enum: ["internal", "external"] })
+      .notNull()
+      .default("internal"),
+    externalOrgId: uuid("external_org_id"),
+    /** CR-102a (0028): vô hiệu (không xoá cứng) ⇒ `active=false`, không mở khoá lại. */
+    deactivatedAt: tsz("deactivated_at"),
   },
   (t) => [
     uniqueIndex("users_tenant_username_uq").on(t.tenantId, t.username),
@@ -372,28 +379,6 @@ export const featureEntitlements = admin.table(
     primaryKey({ name: "feature_entitlements_pkey", columns: [t.featureId, t.tenantId] }),
     index("feature_entitlements_tenant_active_idx")
       .on(t.tenantId, t.featureId)
-      .where(sql`${t.revokedAt} IS NULL`),
-  ],
-);
-
-/** ADM-FR-73 · TT-R01 công tắc tool theo tenant: bật ⇔ hàng `revoked_at IS NULL` (mẫu `feature_entitlements`). */
-export const tenantWorkflowTools = admin.table(
-  "tenant_workflow_tools",
-  {
-    workflowId: uuid("workflow_id")
-      .notNull()
-      .references(() => workflows.id, { onDelete: "cascade" }),
-    tenantId: uuid("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
-    grantedAt: tsz("granted_at").notNull().defaultNow(),
-    revokedAt: tsz("revoked_at"),
-  },
-  (t) => [
-    primaryKey({ name: "tenant_workflow_tools_pkey", columns: [t.workflowId, t.tenantId] }),
-    index("tenant_workflow_tools_tenant_active_idx")
-      .on(t.tenantId, t.workflowId)
       .where(sql`${t.revokedAt} IS NULL`),
   ],
 );

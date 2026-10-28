@@ -15,9 +15,10 @@ import { UncopiedConfirm } from "../drawer/UncopiedConfirm";
 
 export type ResetResult = { tenantKey: string; username: string; password: string };
 
-type Props = { result: ResetResult; onClose: () => void };
+/** `title`: tiêu đề khác mặc định (vd "Tài khoản … đã được tạo"). */
+type Props = { result: ResetResult; title?: string; onClose: () => void };
 
-export function ResetPasswordDialog({ result, onClose }: Props) {
+export function ResetPasswordDialog({ result, title, onClose }: Props) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -27,7 +28,9 @@ export function ResetPasswordDialog({ result, onClose }: Props) {
       <Dialog open onOpenChange={(open) => !open && requestClose()}>
         <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>{t("users.reset.done", { username: result.username })}</DialogTitle>
+            <DialogTitle>
+              {title ?? t("users.reset.done", { username: result.username })}
+            </DialogTitle>
             <DialogDescription>{t("tempPassword.body")}</DialogDescription>
           </DialogHeader>
           <TempPasswordPanel

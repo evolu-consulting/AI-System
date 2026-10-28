@@ -29,6 +29,7 @@ import type { HubConfig } from "./modules/commands/commands.hub-client";
 import { commandsRoutes } from "./modules/commands/commands.routes";
 import type { DailyCounterStore } from "./modules/daily-limits/daily-limits.counter";
 import { dailyLimitsRoutes } from "./modules/daily-limits/daily-limits.routes";
+import { externalOrgsRoutes } from "./modules/external-orgs/external-orgs.routes";
 import { featuresRoutes } from "./modules/features/features.routes";
 import { feedbackAdminRoutes, feedbackUserRoutes } from "./modules/feedback/feedback.routes";
 import type { FetchFn, TrelloConfig } from "./modules/feedback/feedback.trello";
@@ -160,6 +161,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));
+  app.route("/admin/external-orgs", externalOrgsRoutes({ ...ctx, hooks })); // CR-102a · com-c1
   app.route("/admin/org", orgRoutes({ ...ctx, hooks })); // M1D
   app.route("/admin/grants", grantsRoutes({ ...ctx, hooks }));
   app.route("/admin/secrets", secretsRoutes({ ...ctx, secretKey: deps.secretKey, hooks }));

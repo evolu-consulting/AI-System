@@ -16,6 +16,7 @@ export {
   type ErrorResponse,
   ErrorResponseSchema,
 } from "./errors";
+export * from "./external-orgs";
 export * from "./features";
 export * from "./feedback";
 export * from "./grants";

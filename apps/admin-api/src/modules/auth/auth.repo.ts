@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-06, ADM-NFR-07 · truy vấn auth. Luôn chạy trong withScope (RLS)
 // và vẫn lọc tenant_id tường minh. Thời gian của token dùng now() của DB (plan §10 G7).
-import type { Locale, Role, Theme } from "@ai/contracts";
+import type { Locale, Role, Theme, UserKind } from "@ai/contracts";
 import { refreshTokens, type Tx, tenants, userBackupCodes, users, userTotp } from "@ai/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { LockState, RevokeReason } from "./auth.rules";
@@ -24,6 +24,9 @@ export type AuthUser = {
   /** 2FA (M4): `enabled_at` của `user_totp` (NULL = chưa bật/đang setup) và số mã dự phòng chưa dùng. */
   totpEnabledAt: Date | null;
   backupCodesLeft: number;
+  /** CR-102a: `external` ⇒ `externalOrgId` = công ty đối tác (claim `kind`/`xorg` + /me). */
+  kind: UserKind;
+  externalOrgId: string | null;
   tenant: { id: string; key: string; name: string; active: boolean };
 };
 
@@ -43,6 +46,8 @@ const userCols = {
   lockedUntil: users.lockedUntil,
   passwordHash: users.passwordHash,
   passwordChangedAt: users.passwordChangedAt,
+  kind: users.kind,
+  externalOrgId: users.externalOrgId,
   // Subquery theo PK user_totp / index một phần user_backup_codes_unused_idx; RLS cùng scope tenant.
   totpEnabledAt: sql<Date | null>`(select ${userTotp.enabledAt} from ${userTotp}
     where ${userTotp.userId} = ${users.id} and ${userTotp.tenantId} = ${users.tenantId})`.mapWith(

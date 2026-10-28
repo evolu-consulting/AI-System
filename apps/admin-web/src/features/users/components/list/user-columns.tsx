@@ -19,6 +19,10 @@ import { UserGroupChips } from "./UserGroupChips";
 function StatusCell({ user }: { user: User }) {
   const { t } = useTranslation();
   const view = userStatusView(user, new Date());
+  // CR-102a: tài khoản đã vô hiệu (không hoàn tác) khác "Đã khoá".
+  if (user.deactivated_at) {
+    return <StatusBadge tone="off">{t("partners.user.status.deactivated")}</StatusBadge>;
+  }
   if (view.kind === "locked") {
     return (
       <StatusBadge
@@ -104,6 +108,11 @@ function identityColumns({ t, selfId, showTenant }: ColumnOpts): Column<User>[] 
         <span className="font-mono">
           {u.username}
           {u.id === selfId ? <> {t("common.you")}</> : null}
+          {u.kind === "external" ? (
+            <StatusBadge tone="info" className="ml-2 font-sans">
+              {t("partners.badge")}
+            </StatusBadge>
+          ) : null}
         </span>
       ),
     },

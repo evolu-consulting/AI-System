@@ -14,6 +14,7 @@ import {
   UuidSchema,
 } from "./common";
 import { BACKUP_CODE_COUNT, TotpRequiredSchema } from "./totp";
+import { UserKindSchema } from "./user-kind";
 
 /** Header chọn kiểu client; chỉ đúng chuỗi `extension` mới nhận/trả refresh token trong body. */
 export const X_CLIENT_HEADER = "X-Client";
@@ -60,6 +61,9 @@ export const MeSchema = z.strictObject({
   totp_enabled: z.boolean(),
   totp_enabled_at: IsoDateTime.nullable(),
   backup_codes_left: z.number().int().min(0).max(BACKUP_CODE_COUNT),
+  /** CR-102a · vắng (server/mock cũ) ⇒ `internal`; `ext_org_id` = công ty đối tác của user ngoài. */
+  kind: UserKindSchema.optional(),
+  ext_org_id: UuidSchema.nullable().optional(),
 });
 export type Me = z.infer<typeof MeSchema>;
 

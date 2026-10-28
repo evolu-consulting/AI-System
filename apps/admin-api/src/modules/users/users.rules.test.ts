@@ -1,6 +1,11 @@
 // ADM-BR-08, ADM-BR-05 · biên luật users (plan M1 §8).
 import { describe, expect, test } from "bun:test";
-import { checkLastAdmin, checkRoleAssignment, checkRoleChange } from "./users.rules";
+import {
+  checkLastAdmin,
+  checkRoleAssignment,
+  checkRoleChange,
+  externalRoleAllowed,
+} from "./users.rules";
 
 const pa = { userId: "p", tenantId: "t0", role: "platform_admin" as const };
 
@@ -21,5 +26,14 @@ describe("ADM-BR-05 · role", () => {
     });
     expect(checkRoleChange(pa, { id: "x", role: "member" }, "member")).toBeNull();
     expect(checkRoleAssignment(pa, false, "member")).toBeNull();
+  });
+});
+
+describe("CR-102a · externalRoleAllowed", () => {
+  test("user ngoài chỉ member; user nội bộ mọi role", () => {
+    expect(externalRoleAllowed("external", "member")).toBe(true);
+    expect(externalRoleAllowed("external", "tenant_admin")).toBe(false);
+    expect(externalRoleAllowed("external", "platform_admin")).toBe(false);
+    expect(externalRoleAllowed("internal", "tenant_admin")).toBe(true);
   });
 });

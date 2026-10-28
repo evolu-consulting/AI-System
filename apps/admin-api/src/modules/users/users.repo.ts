@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-NFR-07, ADM-FR-62 · truy vấn users (M3: `groups`/`group_count`, `?group`). Luôn trong withScope (RLS) và lọc tenant_id tường minh.
-import { type Locale, type Role, USER_GROUPS_MAX } from "@ai/contracts";
+import { type Locale, type Role, USER_GROUPS_MAX, type UserKind } from "@ai/contracts";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, isNull, ne, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, pgArray } from "../../lib/sql";
@@ -28,6 +28,10 @@ export type UserRow = {
   groupCount: number;
   /** ADM-FR-08: có hàng `user_totp` đã bật (`enabled_at` not null); pending không tính. */
   totpEnabled: boolean;
+  /** CR-102a: loại user + công ty đối tác + thời điểm vô hiệu. */
+  kind: UserKind;
+  externalOrgId: string | null;
+  deactivatedAt: Date | null;
 };
 
 // Tham chiếu admin.users.id viết tay (subquery tương quan; Drizzle không in tên bảng cho cột trong select).
@@ -69,6 +73,9 @@ export const userRowCols = {
   groups: groupsJson,
   groupCount,
   totpEnabled,
+  kind: users.kind,
+  externalOrgId: users.externalOrgId,
+  deactivatedAt: users.deactivatedAt,
 };
 
 /** `tenantId` null = mọi tenant (chỉ platform scope, RLS vẫn áp). */
@@ -98,6 +105,9 @@ export type NewUser = {
   lockedByTenant: boolean;
   /** Người tạo (M4-R17). */
   updatedBy: string;
+  /** CR-102a: vắng ⇒ internal (DB default). */
+  kind?: UserKind;
+  externalOrgId?: string | null;
 };
 
 /** Luôn `must_change_password=true` (M1-R17). 23505 do service dịch theo tên constraint. */
@@ -138,6 +148,9 @@ export type UserFilter = {
   login?: "never";
   /** M3-R13: chỉ lọc hàng, không lọc `counts`. */
   group?: string;
+  /** CR-102a: lọc loại user / công ty đối tác. */
+  kind?: UserKind;
+  externalOrgId?: string;
   limit: number;
   offset: number;
 };
@@ -154,6 +167,8 @@ function baseWhere(f: UserFilter): SQL | undefined {
       : undefined,
     f.role ? eq(users.role, f.role) : undefined,
     f.login === "never" ? isNull(users.lastLoginAt) : undefined,
+    f.kind ? eq(users.kind, f.kind) : undefined,
+    f.externalOrgId ? eq(users.externalOrgId, f.externalOrgId) : undefined,
   );
 }
 
@@ -253,6 +268,7 @@ export type UserSet = Partial<{
   lockedUntil: Date | null;
   passwordHash: string;
   mustChangePassword: boolean;
+  deactivatedAt: Date;
 }>;
 
 /**
@@ -282,4 +298,27 @@ export async function lockUserRow(tx: Tx, tenantId: string, id: string): Promise
     sql`select 1 from admin.users where tenant_id = ${tenantId} and id = ${id} for no key update`,
   );
   return (rows as unknown as unknown[]).length === 1;
+}
+
+/**
+ * CR-102a · vô hiệu mọi user còn chưa vô hiệu của một công ty đối tác (theo tập, một câu): `active=false`,
+ * `deactivated_at=now()`, tăng version. Trả id đã đổi (để thu hồi phiên ở câu sau — câu riêng để thấy token do
+ * refresh vừa xoay trong lúc chờ khoá hàng user).
+ */
+export async function deactivateOrgUsers(
+  tx: Tx,
+  t: { tenantId: string; orgId: string; by: string },
+): Promise<string[]> {
+  const rows = (await tx.execute(sql`update admin.users
+    set active = false, deactivated_at = now(), version = version + 1, updated_at = now(), updated_by = ${t.by}
+    where tenant_id = ${t.tenantId} and external_org_id = ${t.orgId} and deactivated_at is null
+    returning id`)) as unknown as { id: string }[];
+  return rows.map((r) => r.id);
+}
+
+/** Thu hồi refresh token đang sống của một tập user (một câu, `= any(array)`). */
+export async function revokeUsersTokens(tx: Tx, tenantId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await tx.execute(sql`update admin.refresh_tokens set revoked_at = now(), revoked_reason = 'user_locked'
+    where tenant_id = ${tenantId} and revoked_at is null and user_id = any(${pgArray(ids, "uuid")})`);
 }

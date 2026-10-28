@@ -196,6 +196,7 @@
     },
     "tenants": "Tenants",
     "users": "Users",
+    "partners": "Đối tác",
     "collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng thanh bên",
     "openMenu": "Mở menu",
@@ -378,6 +379,10 @@
     "discard": "Bỏ thay đổi"
   },
   "errors": {
+    "externalNotAllowed": "Tài khoản đối tác không được vào Group hay đổi role: {names}",
+    "externalNotAllowedGeneric": "Tài khoản đối tác không được vào Group hay đổi role.",
+    "externalOrgInactive": "Công ty đối tác đã bị vô hiệu.",
+    "userDeactivated": "Tài khoản đã bị vô hiệu, không thể mở khoá.",
     "selfAction": "Bạn không thể tự khoá hoặc hạ role của chính mình.",
     "platformTenantLocked": "Không thể khoá tenant nền tảng.",
     "versionConflict": "Có người vừa lưu bản mới hơn. Tải lại để xem bản mới nhất.",
@@ -771,6 +776,83 @@
       "overPct": "Vượt {pct}%"
     }
   },
+  "partners": {
+    "title": "Đối tác",
+    "subtitle": "Công ty đối tác và tài khoản của họ — {tenant}",
+    "search": "Tìm công ty…",
+    "create": "+ Thêm công ty đối tác",
+    "badge": "Đối tác",
+    "selectTenant": "Chọn một tenant để xem công ty đối tác.",
+    "empty": { "text": "Chưa có công ty đối tác nào." },
+    "col": { "name": "Tên công ty", "accounts": "Số tài khoản", "status": "Trạng thái" },
+    "status": { "active": "Đang hoạt động", "inactive": "Đã vô hiệu" },
+    "menu": { "open": "Xem tài khoản", "rename": "Đổi tên", "deactivate": "Vô hiệu" },
+    "field": { "name": "Tên công ty" },
+    "createTitle": "Thêm công ty đối tác",
+    "renameTitle": "Đổi tên công ty",
+    "error": {
+      "nameRequired": "Nhập tên công ty",
+      "nameMax": "Tên công ty tối đa 200 ký tự",
+      "nameTaken": "Tên công ty này đã tồn tại"
+    },
+    "deactivate": {
+      "title": "Vô hiệu {name}?",
+      "body": "Vô hiệu công ty này sẽ vô hiệu mọi tài khoản của công ty. Không hoàn tác được.",
+      "submit": "Vô hiệu"
+    },
+    "toast": {
+      "created": "Đã thêm công ty {name}",
+      "renamed": "Đã đổi tên thành {name}",
+      "deactivated": "Đã vô hiệu công ty {name}",
+      "userCreated": "Đã tạo tài khoản {username}",
+      "userLocked": "Đã khoá {username}",
+      "userUnlocked": "Đã mở khoá {username}",
+      "userDeactivated": "Đã vô hiệu tài khoản {username}"
+    },
+    "drawer": {
+      "title": "Tài khoản của {name}",
+      "search": "Tìm tài khoản…",
+      "empty": "Công ty chưa có tài khoản nào."
+    },
+    "user": {
+      "add": "+ Thêm tài khoản",
+      "submit": "Tạo tài khoản",
+      "tableLabel": "Tài khoản",
+      "addTitle": "Thêm tài khoản",
+      "created": "Tài khoản {username} đã được tạo",
+      "optional": "không bắt buộc",
+      "col": {
+        "username": "Tên đăng nhập",
+        "displayName": "Tên hiển thị",
+        "email": "Email",
+        "status": "Trạng thái",
+        "lastLogin": "Đăng nhập gần nhất"
+      },
+      "status": { "active": "Hoạt động", "locked": "Đã khoá", "deactivated": "Đã vô hiệu" },
+      "menu": {
+        "resetPassword": "Đặt lại mật khẩu",
+        "lock": "Khoá",
+        "unlock": "Mở khoá",
+        "deactivate": "Vô hiệu"
+      },
+      "reset": {
+        "title": "Đặt lại mật khẩu của {username}?",
+        "body": "Mật khẩu cũ hết hiệu lực, người dùng phải đổi mật khẩu ở lần đăng nhập tới.",
+        "submit": "Đặt lại mật khẩu"
+      },
+      "lock": {
+        "title": "Khoá {username}?",
+        "body": "Tài khoản không đăng nhập được cho tới khi mở khoá.",
+        "submit": "Khoá"
+      },
+      "deactivate": {
+        "title": "Vô hiệu {username}?",
+        "body": "Tài khoản bị vô hiệu vĩnh viễn và không đăng nhập được nữa. Không hoàn tác được.",
+        "submit": "Vô hiệu"
+      }
+    }
+  },
+
   "tempPassword": {
     "titleTenant": "Đã tạo tenant {key}",
     "body": "Gửi thông tin sau cho khách qua kênh riêng. Mật khẩu tạm chỉ hiện một lần.",

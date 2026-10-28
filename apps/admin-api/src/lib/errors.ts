@@ -1,5 +1,11 @@
 // ADM-NFR-06, ADM-FR-01, ADM-FR-10 · lỗi có mã (CONVENTIONS §5, spec M0 §3.1, M1 §3). Status lấy từ API_ERRORS (một nguồn).
-import { API_ERRORS, type ErrorCode, type ErrorResponse } from "@ai/contracts";
+import {
+  API_ERRORS,
+  type ErrorCode,
+  type ErrorResponse,
+  EXTERNAL_ORG_ERRORS,
+  type ExternalOrgErrorCode,
+} from "@ai/contracts";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {
@@ -69,6 +75,17 @@ const MESSAGES: Record<ErrorCode, string> = {
 
 export function appError(code: ErrorCode, details?: unknown): AppError {
   return new AppError(code, API_ERRORS[code] as ContentfulStatusCode, MESSAGES[code], details);
+}
+
+const EXT_MESSAGES: Record<ExternalOrgErrorCode, string> = {
+  EXTERNAL_USER_NOT_ALLOWED: "This action is not allowed for partner (external) users",
+  EXTERNAL_ORG_INACTIVE: "The partner company is deactivated",
+  USER_DEACTIVATED: "The user is deactivated",
+};
+
+/** CR-102a · mã lỗi user ngoài (khối riêng `EXTERNAL_ORG_ERRORS`, không thuộc `API_ERRORS` khoá 46). */
+export function extOrgError(code: ExternalOrgErrorCode, details?: unknown): AppError {
+  return new AppError(code, EXTERNAL_ORG_ERRORS[code], EXT_MESSAGES[code], details);
 }
 
 export function isAppError(err: unknown, code?: ErrorCode): err is AppError {

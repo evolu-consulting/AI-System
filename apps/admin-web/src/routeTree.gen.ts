@@ -26,6 +26,7 @@ import { Route as AuthedSourcesRouteImport } from './routes/_authed/sources'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
 import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
+import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
 import { Route as AuthedAuditAuditIdRouteImport } from './routes/_authed/audit/$auditId'
@@ -133,6 +134,11 @@ const AuthedUsageRoute = AuthedUsageRouteImport.update({
 const AuthedUsersRoute = AuthedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAccount2faRoute = AuthedAccount2faRouteImport.update({
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
+  '/partners': typeof AuthedPartnersRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/audit/$auditId': typeof AuthedAuditAuditIdRoute
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
+  '/partners': typeof AuthedPartnersRoute
   '/': typeof AuthedIndexRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/_authed/transfer': typeof AuthedTransferRoute
   '/_authed/usage': typeof AuthedUsageRoute
   '/_authed/users': typeof AuthedUsersRoute
+  '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/2fa': typeof AuthedAccount2faRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/transfer'
     | '/usage'
     | '/users'
+    | '/partners'
     | '/account/2fa'
     | '/account/password'
     | '/audit/$auditId'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/transfer'
     | '/usage'
     | '/users'
+    | '/partners'
     | '/'
     | '/account/2fa'
     | '/account/password'
@@ -490,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authed/transfer'
     | '/_authed/usage'
     | '/_authed/users'
+    | '/_authed/partners'
     | '/_authed/'
     | '/_authed/account/2fa'
     | '/_authed/account/password'
@@ -643,6 +655,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthedUsersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/partners': {
+      id: '/_authed/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthedPartnersRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/account/2fa': {
@@ -840,6 +859,7 @@ interface AuthedRouteChildren {
   AuthedTransferRoute: typeof AuthedTransferRoute
   AuthedUsageRoute: typeof AuthedUsageRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
+  AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccount2faRoute: typeof AuthedAccount2faRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
@@ -879,6 +899,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedTransferRoute: AuthedTransferRoute,
   AuthedUsageRoute: AuthedUsageRoute,
   AuthedUsersRoute: AuthedUsersRoute,
+  AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccount2faRoute: AuthedAccount2faRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,

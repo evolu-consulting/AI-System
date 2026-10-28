@@ -48,6 +48,8 @@ export function toMe(u: AuthUser): Me {
     totp_enabled: u.totpEnabledAt !== null,
     totp_enabled_at: u.totpEnabledAt ? u.totpEnabledAt.toISOString() : null,
     backup_codes_left: u.totpEnabledAt ? u.backupCodesLeft : 0,
+    kind: u.kind,
+    ext_org_id: u.externalOrgId,
   };
 }
 
@@ -76,6 +78,8 @@ export async function issueSession(
     tid: u.tenantId,
     role: u.role,
     sid: familyId,
+    kind: u.kind,
+    extOrgId: u.externalOrgId,
   });
   return {
     refreshToken,

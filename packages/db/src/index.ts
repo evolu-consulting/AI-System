@@ -29,11 +29,11 @@ export {
   refreshTokens,
   secrets,
   tenants,
-  tenantWorkflowTools,
   users,
   workflows,
 } from "./schema/admin";
 export { tenantDailyLimits } from "./schema/daily-limits";
+export { externalOrgs } from "./schema/external-orgs";
 export { agentGrants, agentWorkflows, hub, usageLogs } from "./schema/hub-readonly";
 export {
   AUDIT_ACTION_VALUES,
@@ -44,5 +44,6 @@ export {
   tenantQuotas,
 } from "./schema/ops";
 export { configMeta, featureGrants, groupMembers, groups } from "./schema/permissions";
+export { tenantWorkflowTools } from "./schema/tenant-workflow-tools";
 export { userBackupCodes, userTotp } from "./schema/totp";
 export { type DbScope, NIL_SCOPE, NIL_TENANT_ID, setScope, type Tx, withScope } from "./scope";
