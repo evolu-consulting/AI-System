@@ -1,0 +1,1786 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sổ Hợp Tác Community</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#f4f4f9}
+a{color:#4f46e5}a:hover{color:#4338ca}
+.app{font-family:"Roboto","Segoe UI",system-ui,sans-serif;color:#0f1020;font-size:14px;line-height:1.55;background:#f4f4f9;min-height:100vh;position:relative}
+.app *{box-sizing:border-box}
+.app button{font-family:inherit;cursor:pointer}
+.top{position:sticky;top:0;z-index:20;height:60px;display:flex;align-items:center;gap:8px;padding:0 20px;background:#fff;border-bottom:1px solid #e5e5ec}
+.brand{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;color:#0f1020}
+.logo{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#4f46e5;color:#fff;font-weight:700;font-size:15px}
+.brand b{font-size:16px;font-weight:700;display:block;line-height:1.15;text-align:left}
+.brand small{font-size:11px;color:#6b6c80;display:block;line-height:1.1;text-align:left}
+.search{flex:1;max-width:440px;margin-left:16px;position:relative}
+.search input{width:100%;height:40px;border-radius:999px;border:1px solid #d4d4dc;background:#f6f6fa;padding:0 14px 0 38px;font:inherit;color:#0f1020}
+.search svg{position:absolute;left:13px;top:12px;color:#6b6c80}
+.sp{flex:1}
+.navtab{height:40px;padding:0 14px;border-radius:10px;border:0;background:none;color:#45465a;font-weight:500;display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.navtab:hover{background:#f1f1f7}
+.navtab.on{background:#eef2ff;color:#4f46e5;font-weight:600}
+.iconbtn{width:44px;height:44px;border-radius:10px;border:0;background:none;color:#45465a;display:grid;place-items:center;position:relative}
+.iconbtn:hover{background:#f1f1f7}
+.iconbtn.on{background:#eef2ff;color:#4f46e5}
+.badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#c81e1e;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.avbtn{border:0;background:none;padding:2px;border-radius:999px;box-shadow:0 0 0 2px transparent;margin-left:4px}
+.avbtn.on{box-shadow:0 0 0 2px #4f46e5}
+.av{width:36px;height:36px;border-radius:999px;display:grid;place-items:center;font-size:13px;font-weight:700;flex-shrink:0}
+.av.sm{width:30px;height:30px;font-size:11.5px}
+.av.lg{width:44px;height:44px;font-size:15px}
+.t1{background:#4f46e5;color:#fff}.t2{background:#dff3f8;color:#0e5f76}.t3{background:#ffedd5;color:#9a3412}.t4{background:#dcfce7;color:#166534}.t5{background:#f3e8ff;color:#6b21a8}.t6{background:#fde8e8;color:#9b1c1c}.t7{background:#e0e7ff;color:#3730a3}
+.page{max-width:1280px;margin:0 auto;padding:24px 20px 48px}
+.feedgrid{max-width:680px;margin:0 auto}
+.ws{display:flex;align-items:stretch;min-height:calc(100vh - 60px)}
+.wsside{width:252px;flex-shrink:0;background:#fff;border-right:1px solid #e5e5ec;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;display:flex;flex-direction:column}
+.wsside .sidegroup.bottom{margin-top:auto;border-top:1px solid #efeff4;border-bottom:0}
+.wsmain{flex:1;min-width:0;padding:24px 32px 48px;max-width:1240px}
+.wshead{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.wshead h1{margin:0;font-size:24px;font-weight:600;line-height:1.25}
+.wshead p{margin:2px 0 0;color:#6b6c80;font-size:13.5px}
+@media(max-width:780px){.search{display:none}.navlabel{display:none}.ws{flex-direction:column}.wsside{position:static;width:100%;height:auto;border-right:0;border-bottom:1px solid #e5e5ec}.wsmain{padding:20px 16px 40px}}
+.card{background:#fff;border:1px solid #e5e5ec;border-radius:14px}
+.pad{padding:16px}
+.mini{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #efeff4}
+.mini b{display:block;font-size:14.5px;line-height:1.25}.mini span{font-size:12px;color:#6b6c80}
+.sidelink{width:100%;display:flex;align-items:center;gap:10px;height:42px;padding:0 16px;border:0;background:none;color:#45465a;font-size:14px;text-align:left}
+.sidelink:hover{background:#f6f6fa}
+.sidelink.on{color:#4f46e5;font-weight:600;background:#eef2ff}
+.sidegroup{padding:8px 0;border-bottom:1px solid #efeff4}
+.sidecap{font-size:11px;font-weight:700;letter-spacing:.05em;color:#6b6c80;padding:8px 16px 4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.cnt{margin-left:auto;font-size:12px;color:#45465a;background:#f1f1f4;border-radius:999px;padding:1px 8px;font-weight:500}
+.cnt.warn{background:#fde8e8;color:#9b1c1c;font-weight:600}
+.lock{font-size:10.5px;font-weight:600;color:#45465a;background:#f1f1f4;border-radius:5px;padding:1px 6px;letter-spacing:0;text-transform:none}
+.composer textarea,.field{width:100%;border:1px solid #d4d4dc;border-radius:10px;padding:10px 12px;font:inherit;color:#0f1020;background:#fff;resize:vertical}
+.composer textarea{min-height:76px}
+.field{height:40px;padding:0 12px}
+.cfields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+@media(max-width:640px){.cfields{grid-template-columns:1fr}}
+.cbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.seg{display:inline-flex;border:1px solid #d4d4dc;border-radius:999px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:0 14px;height:36px;font-size:13px;color:#45465a}
+.seg button.on{background:#eef2ff;color:#4f46e5;font-weight:600}
+.ghost{height:36px;padding:0 12px;border:1px solid #d4d4dc;background:#fff;border-radius:8px;color:#0f1020;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ghost:hover{background:#f6f6fa}
+.primary{height:40px;padding:0 18px;border:0;border-radius:8px;background:#4f46e5;color:#fff;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.primary:hover{background:#4338ca}
+.primary.sm{height:36px;padding:0 14px;font-size:13px}
+.outline{height:36px;padding:0 14px;border:1.5px solid #4f46e5;background:#fff;color:#4f46e5;border-radius:8px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.outline:hover{background:#eef2ff}
+.danger{height:36px;padding:0 14px;border:0;border-radius:8px;background:#c81e1e;color:#fff;font-weight:600;font-size:13px}
+.attachrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.attach{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 4px 0 10px;border-radius:8px;background:#f1f1f7;font-size:12.5px;color:#45465a}
+.attach button{width:26px;height:26px;border:0;background:none;color:#6b6c80;border-radius:6px;display:grid;place-items:center}
+.prefill{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#3730a3;background:#eef2ff;border-radius:8px;padding:6px 10px;margin-bottom:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.chips.tight{margin:0 0 14px}
+.chip{height:36px;padding:0 14px;border:1px solid #d4d4dc;border-radius:999px;background:#fff;color:#0f1020;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.chip .n{font-size:11.5px;color:#6b6c80}
+.chip.on{background:#eef2ff;border-color:transparent;color:#4f46e5;font-weight:600}
+.chip.on .n{color:#4f46e5}
+.post{margin-bottom:14px;position:relative}
+.ph{display:flex;align-items:flex-start;gap:10px;padding:16px 16px 0}
+.ph .who{min-width:0;flex:1}
+.ph .who b{font-size:14.5px;display:block;line-height:1.3}
+.meta{font-size:12px;color:#6b6c80;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag.sell,.tag.ind{background:#eef2ff;color:#3730a3}
+.tag.buy{background:#fdf0df;color:#8a4306}
+.tag.grey{background:#f1f1f4;color:#45465a}
+.tag.ok{background:#e3f4ec;color:#05603f}
+.tag.soon{background:#fdf0df;color:#8a4306}
+.tag.late{background:#fde8e8;color:#9b1c1c}
+.tag.sm{height:20px;font-size:11px;padding:0 6px}
+.menu{position:absolute;right:12px;top:52px;z-index:5;width:200px;background:#fff;border:1px solid #e5e5ec;border-radius:10px;box-shadow:0 10px 30px rgba(15,16,32,.12);padding:6px}
+.menu button{width:100%;height:40px;border:0;background:none;border-radius:6px;display:flex;align-items:center;gap:10px;padding:0 10px;font-size:13.5px;color:#0f1020;text-align:left}
+.menu button:hover{background:#f6f6fa}
+.menu button.red{color:#b91c1c}
+.pbody{padding:10px 16px 0}
+.pbody h3{margin:0 0 4px;font-size:16px;font-weight:600;line-height:1.35}
+.pbody p{margin:0;color:#2c2d40;white-space:pre-line}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#efeff4;border:1px solid #efeff4;border-radius:10px;overflow:hidden;margin:12px 16px 0}
+.fact{background:#f9f9fc;padding:8px 12px}
+.fact span{display:block;font-size:11.5px;color:#6b6c80}
+.fact b{font-size:13.5px;font-weight:600}
+.media{display:grid;gap:6px;margin:12px 16px 0}
+.media.n1{grid-template-columns:1fr}.media.n2{grid-template-columns:repeat(2,minmax(0,1fr))}.media.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mbox{height:170px;border-radius:10px;background:#e8eaf3;color:#45465a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;text-align:center;padding:8px}
+.media.n1 .mbox{height:220px}
+.mbox.vid{background:#1f2033;color:#e5e5f0}
+.play{width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.match{margin:12px 16px 0;border:1px solid #c7d2fe;background:#eef2ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#3730a3;font-size:13px}
+.match.warn{border-color:#f5cf9a;background:#fdf0df;color:#8a4306}
+.match b{font-weight:600}
+.pact{display:flex;align-items:center;gap:4px;padding:8px 10px;margin-top:12px;border-top:1px solid #efeff4}
+.pact button{height:40px;padding:0 12px;border:0;background:none;border-radius:8px;color:#45465a;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
+.pact button:hover{background:#f6f6fa}
+.pact button.on{color:#4f46e5;font-weight:600}
+.cmts{border-top:1px solid #efeff4;padding:12px 16px 16px;background:#fbfbfd;border-radius:0 0 14px 14px}
+.cnote{font-size:12px;color:#6b6c80;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.cmt{display:flex;gap:8px;margin-bottom:10px}
+.bubble{background:#f1f1f7;border-radius:12px;padding:8px 12px;max-width:100%}
+.bubble b{font-size:13px;display:block}
+.bubble p{margin:0;font-size:13.5px}
+.ctime{font-size:11.5px;color:#6b6c80;margin:2px 0 0 12px}
+.cinput{display:flex;gap:8px;align-items:center}
+.cinput input{flex:1;height:40px;border-radius:999px;border:1px solid #d4d4dc;padding:0 14px;font:inherit;background:#fff}
+.sendbtn{width:40px;height:40px;border-radius:999px;border:0;background:#4f46e5;color:#fff;display:grid;place-items:center}
+.confirm{margin:12px 16px 0;padding:12px;border-radius:10px;background:#fde8e8;border:1px solid #f6b8b8;color:#9b1c1c;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px}
+.info{font-size:12.5px;color:#45465a;background:#fff;border:1px solid #e5e5ec;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start}
+.info svg{flex-shrink:0;margin-top:2px;color:#4f46e5}
+.empty{padding:40px 16px;text-align:center;color:#6b6c80}
+.pop{position:absolute;right:16px;top:64px;z-index:30;width:400px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #e5e5ec;border-radius:14px;box-shadow:0 18px 40px rgba(15,16,32,.16);overflow:hidden}
+.pophead{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #efeff4}
+.pophead h3{margin:0;font-size:16px;font-weight:600}
+.linkbtn{border:0;background:none;color:#4f46e5;font-size:13px;font-weight:500;height:36px;padding:0 8px;border-radius:6px;white-space:nowrap}
+.linkbtn:hover{background:#eef2ff}
+.nitem{width:100%;display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border:0;background:#fff;text-align:left;border-bottom:1px solid #f3f3f7;color:#0f1020;font-size:13.5px}
+.nitem:hover{background:#f6f6fa}
+.nitem.unread{background:#f5f6ff}
+.nitem .txt{flex:1;min-width:0}
+.nitem .txt span{display:block;font-size:12px;color:#6b6c80;margin-top:2px}
+.udot{width:9px;height:9px;border-radius:999px;background:#4f46e5;margin-top:6px;flex-shrink:0}
+.cover{height:110px;border-radius:14px 14px 0 0;background:#e0e7ff}
+.phero{padding:0 24px 18px;margin-top:-36px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.biglogo{width:88px;height:88px;border-radius:18px;background:#4f46e5;color:#fff;font-size:30px;font-weight:700;display:grid;place-items:center;border:4px solid #fff}
+.phero h1{margin:0;font-size:24px;font-weight:600}
+.phero .sub{color:#6b6c80;font-size:13.5px}
+.pchips{display:flex;gap:8px;flex-wrap:wrap;padding:0 24px 18px}
+.pchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;background:#f6f6fa;font-size:12.5px;color:#45465a}
+.hstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #efeff4}
+@media(max-width:640px){.hstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hstat{padding:14px 24px;border-right:1px solid #efeff4}
+.hstat:last-child{border-right:0}
+.hstat b{display:block;font-size:22px;font-weight:600}
+.hstat span{font-size:12.5px;color:#6b6c80}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:#fff;border:1px solid #e5e5ec;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .l{font-size:12.5px;color:#6b6c80}
+.kpi b{font-size:24px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:#6b6c80}
+.kbar{height:6px;border-radius:999px;background:#efeff4;overflow:hidden}
+.kbar i{display:block;height:100%;background:#4f46e5;border-radius:999px}
+.up{color:#05603f;font-weight:600}
+.dashgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1000px){.dashgrid{grid-template-columns:1fr}}
+.vstack{display:flex;flex-direction:column;gap:16px}
+.sect-h{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f9f9fc;border-bottom:1px solid #efeff4;border-radius:14px 14px 0 0;flex-wrap:wrap}
+.sect-h h3{margin:0;font-size:15px;font-weight:600}
+.sect-h .sub{font-size:12.5px;color:#6b6c80}
+.todo{width:100%;display:flex;align-items:center;gap:12px;padding:11px 16px;border:0;border-top:1px solid #efeff4;background:#fff;text-align:left;color:#0f1020;font-size:13.5px}
+.todo:first-of-type{border-top:0}
+.todo:hover{background:#f9f9fc}
+.todo .t{flex:1;min-width:0}
+.todo .t b{display:block;font-weight:500}
+.todo .t span{font-size:12.5px;color:#6b6c80}
+.todo .r{font-size:12.5px;white-space:nowrap}
+.lrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid #efeff4;font-size:13.5px}
+.lrow:first-of-type{border-top:0}
+.lrow .t{flex:1;min-width:0}
+.lrow .t span{display:block;font-size:12px;color:#6b6c80}
+.gm{padding:8px 16px 12px}
+.gmr{display:grid;grid-template-columns:170px 120px minmax(0,1fr);gap:12px;align-items:end;padding:10px 0;border-top:1px solid #efeff4}
+.gmr:first-child{border-top:0}
+.gmr.gax{border-top:0;padding-top:0}
+.gml{display:flex;gap:8px;align-items:flex-start}
+.gml b{display:block;font-weight:600;font-size:13.5px}
+.gml .sub{font-size:12px;color:#6b6c80}
+.gdot{width:10px;height:10px;border-radius:3px;margin-top:5px;flex-shrink:0}
+.gmv b{display:block;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.gmv .up{font-size:12px}
+.gbars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:52px}
+.gbars .gb{display:block;border-radius:3px 3px 0 0;min-height:2px;opacity:.35}
+.gbars .gb.cur{opacity:1}
+.gbars.lbls{height:auto;font-size:10.5px;color:#6b6c80;text-align:center}
+@media(max-width:640px){.gmr{grid-template-columns:1fr 1fr}.gbars{grid-column:1/-1}.gmr.gax span{display:none}}
+.pipe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid #efeff4}
+.pipe div{padding:12px 16px;border-right:1px solid #efeff4}
+.pipe div:last-child{border-right:0}
+.pipe b{display:block;font-size:22px;font-weight:600}
+.pipe span{font-size:12.5px;color:#6b6c80}
+.r.late{color:#9b1c1c;font-weight:600}
+.cntb{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#c81e1e;color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+@media(max-width:960px){.split{grid-template-columns:1fr}}
+.qitem{width:100%;display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border:0;border-top:1px solid #efeff4;background:#fff;text-align:left;font:inherit;color:#0f1020}
+.qitem:first-of-type{border-top:0}
+.qitem:hover{background:#f9f9fc}
+.qitem.on{background:#eef2ff}
+.qitem .t{flex:1;min-width:0}
+.qitem .t b{display:block;font-weight:600}
+.qitem .t span{font-size:12.5px;color:#6b6c80}
+.preview{border:1px dashed #a5b4fc;border-radius:12px;padding:14px 16px;background:#fbfbff}
+.preview .ph2{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mgin{width:90px;height:36px;border:1px solid #d4d4dc;border-radius:8px;padding:0 10px;font:inherit;text-align:right}
+.warnline.ok{color:#05603f;background:#e3f4ec}
+.old td{color:#6b6c80}
+.aib{font-size:10.5px;font-weight:700;color:#8a4306;background:#fdf0df;border-radius:4px;padding:1px 5px;margin-left:4px}
+.fab{position:fixed;right:24px;bottom:24px;z-index:40;height:52px;padding:0 18px 0 14px;border-radius:999px;border:0;background:#4f46e5;color:#fff;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(79,70,229,.35)}
+.fab:hover{background:#4338ca}
+.chat{position:fixed;right:24px;bottom:88px;z-index:41;width:390px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 120px);background:#fff;border:1px solid #e5e5ec;border-radius:16px;box-shadow:0 20px 48px rgba(15,16,32,.2);display:flex;flex-direction:column;overflow:hidden}
+.chat .hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #efeff4}
+.chat .hd b{display:block;font-size:14.5px}
+.chat .hd span{font-size:12px;color:#6b6c80}
+.chat .msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#fbfbfd}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13.5px;white-space:pre-line}
+.msg.bot{background:#fff;border:1px solid #e5e5ec;align-self:flex-start}
+.msg.me{background:#4f46e5;color:#fff;align-self:flex-end}
+.msg .src{display:block;font-size:11.5px;color:#6b6c80;margin-top:6px}
+.msg .act{margin-top:8px}
+.chat .qp{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px;border-top:1px solid #efeff4}
+.chat .qp button{border:1px solid #d4d4dc;background:#fff;border-radius:999px;font-size:12px;padding:6px 10px;color:#2c2d40;min-height:32px}
+.chat .qp button:hover{background:#f6f6fa}
+.chat .in{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #efeff4}
+.chat .in input{flex:1;height:40px;border-radius:999px;border:1px solid #d4d4dc;padding:0 14px;font:inherit}
+.grpcap{font-size:11.5px;font-weight:700;color:#6b6c80;padding:10px 16px 2px;letter-spacing:.03em;text-transform:uppercase}
+.scroll{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{background:#f6f6fa;text-align:left;font-size:12px;font-weight:600;color:#6b6c80;padding:11px 14px;white-space:nowrap}
+.tbl td{border-top:1px solid #efeff4;padding:12px 14px;vertical-align:middle}
+.tbl .sub{font-size:12px;color:#6b6c80}
+.tbl tr.child td{background:#fbfbfd}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nowrap{white-space:nowrap}
+.rowtitle{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#0f1020;text-align:left}
+.rowtitle:hover{color:#4f46e5;text-decoration:underline}
+.ind-arrow{color:#6b6c80;margin-right:4px}
+.mscore{display:inline-grid;place-items:center;min-width:30px;height:20px;padding:0 5px;border-radius:5px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px}
+.good{background:#e3f4ec;color:#05603f}.fair{background:#f1f1f4;color:#45465a}.watch{background:#fdf0df;color:#8a4306}.new{background:#eef2ff;color:#3730a3}
+.score{width:54px;height:44px;border-radius:9px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;vertical-align:middle}
+.score .n{font-size:17px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.score .w{font-size:10px;font-weight:700;margin-top:3px}
+.tiles{display:flex;gap:6px;flex-wrap:wrap}
+.tile{display:flex;flex-direction:column;align-items:center}
+.tile .rl{font-size:10.5px;color:#6b6c80;margin-top:2px}
+.flag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#9b1c1c;background:#fde8e8;border-radius:6px;padding:3px 8px;margin-top:6px;font-weight:500}
+.breakdown{background:#f9f9fc;padding:14px 16px}
+.breakdown .fx{font-size:12.5px;color:#45465a;margin-top:8px}
+.crumb{border:0;background:none;padding:0;color:#6b6c80;font-size:13px;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;height:32px}
+.crumb:hover{color:#4f46e5}
+.banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:13.5px}
+.banner svg{flex-shrink:0}
+.banner .t{flex:1;min-width:240px}
+.banner .t b{display:block}
+.banner.locked{background:#f6f6fa;border:1px solid #e5e5ec;color:#2c2d40}
+.banner.draft{background:#fdf0df;border:1px solid #f5cf9a;color:#8a4306}
+.banner.deal{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3}
+.warnline{font-size:12.5px;color:#8a4306;background:#fdf0df;border-radius:8px;padding:8px 12px;margin-bottom:14px}
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#efeff4}
+@media(max-width:780px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dcell{background:#fff;padding:12px 16px}
+.dcell span{display:block;font-size:12px;color:#6b6c80}
+.dcell b{font-size:14px;font-weight:600}
+.dnote{padding:10px 16px;font-size:12.5px;color:#6b6c80;border-top:1px solid #efeff4}
+.cdgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1000px){.cdgrid{grid-template-columns:1fr}}
+.tl{list-style:none;margin:0;padding:6px 0}
+.tl li{display:flex;gap:12px;padding:10px 16px;position:relative}
+.tl .dot{width:12px;height:12px;border-radius:999px;margin-top:5px;flex-shrink:0;border:2px solid #c4c4ce;background:#fff}
+.tl .done .dot{background:#05603f;border-color:#05603f}
+.tl .late .dot{background:#d97706;border-color:#d97706}
+.tl .free .dot{background:#c81e1e;border-color:#c81e1e}
+.tl .cur .dot{border-color:#4f46e5;box-shadow:0 0 0 3px #e0e7ff}
+.tl .over .dot{border-color:#c81e1e;box-shadow:0 0 0 3px #fde8e8}
+.tl .sys .dot{background:#45465a;border-color:#45465a;width:10px;height:10px;margin-top:6px}
+.tl .b{flex:1;min-width:0}
+.tl .b b{font-weight:500}
+.tl .b .when{font-size:12.5px;color:#6b6c80}
+.tl .b .when.red{color:#9b1c1c;font-weight:500}
+.tl .rt{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.dl{font-weight:700;font-variant-numeric:tabular-nums;font-size:13px}
+.dl.plus{color:#05603f}.dl.minus{color:#9b1c1c}
+.cbox{margin-top:10px;border:1px solid #e5e5ec;border-radius:10px;background:#f9f9fc;padding:12px}
+.cbox .impact{font-size:13px;color:#2c2d40;margin-top:10px;background:#fff;border-radius:8px;padding:8px 10px;border:1px solid #efeff4}
+.cbox .xf{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.terms{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.kv2{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-top:1px dashed #e5e5ec}
+.kv2 span{color:#6b6c80}
+.kv2 b{font-weight:600;text-align:right}
+.mypost{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid #efeff4;flex-wrap:wrap}
+.mypost:first-child{border-top:0}
+.mypost .t{flex:1;min-width:200px}
+.mypost .t b{display:block;font-size:14px}
+.mypost .t span{font-size:12px;color:#6b6c80}
+.setbody{padding:24px;max-width:860px}
+.setbody h2{margin:0 0 4px;font-size:18px;font-weight:600}
+.setbody .lead{margin:0 0 20px;color:#6b6c80;font-size:13.5px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:640px){.form{grid-template-columns:1fr}}
+.form label,.flabel{font-size:13px;font-weight:500;display:block;margin-bottom:5px}
+.full{grid-column:1/-1}
+.row{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid #efeff4}
+.row .t{flex:1}
+.row .t b{display:block;font-size:14px;font-weight:500}
+.row .t span{font-size:12.5px;color:#6b6c80}
+.sw{width:46px;height:28px;border-radius:999px;border:0;background:#c4c4ce;position:relative;padding:0;flex-shrink:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.sw[aria-pressed="true"]{background:#4f46e5}
+.sw[aria-pressed="true"]::after{left:21px}
+.sw:disabled{opacity:.55;cursor:not-allowed}
+.soonpill{font-size:11px;font-weight:700;color:#8a4306;background:#fdf0df;border-radius:5px;padding:2px 7px;margin-left:6px}
+.sfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:36px;height:36px;border-radius:10px;border:2px solid transparent;padding:0}
+.swatch.on{border-color:#0f1020}
+.srcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:780px){.srcgrid{grid-template-columns:1fr}}
+.srcgrid ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:#2c2d40}
+.fxbox{font-size:12.5px;color:#45465a;background:#f9f9fc;border-radius:10px;padding:12px 14px;margin-top:14px}
+</style>
+</helmet>
+<div class="app">
+
+<header class="top">
+<button type="button" class="brand" onClick="{{goFeed}}" aria-label="Về bảng tin">
+<span class="logo">S</span>
+<span><b>Sổ Hợp Tác</b><small>Community</small></span>
+</button>
+<div class="search">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<input type="search" placeholder="Tìm bài đăng, hàng hoá, đối tác…" aria-label="Tìm kiếm">
+</div>
+<div class="sp"></div>
+<button type="button" class="{{feedTabClass}}" onClick="{{goFeed}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
+<span class="navlabel">Bảng tin</span>
+</button><button type="button" class="{{bellClass}}" onClick="{{toggleNotif}}" aria-label="Thông báo">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+<sc-if value="{{hasUnread}}" hint-placeholder-val="{{ true }}"><span class="badge">{{unreadCount}}</span></sc-if>
+</button>
+<button type="button" class="{{gearClass}}" onClick="{{goSettings}}" aria-label="Cài đặt">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg>
+</button>
+<button type="button" class="{{avClass}}" onClick="{{goProfile}}" aria-label="Hồ sơ NITI GROUP và Sổ Hợp Tác">
+<span class="av t1">NG</span>
+</button>
+</header>
+
+<sc-if value="{{notifOpen}}" hint-placeholder-val="{{ false }}">
+<div class="pop" role="dialog" aria-label="Thông báo">
+<div class="pophead">
+<h3>Thông báo</h3>
+<div class="sp"></div>
+<button type="button" class="linkbtn" onClick="{{markAll}}">Đánh dấu đã đọc</button>
+</div>
+<sc-for list="{{notifs}}" as="n" hint-placeholder-count="3">
+<button type="button" class="{{n.cls}}" onClick="{{n.open}}">
+<span class="av sm {{n.tone}}">{{n.initials}}</span>
+<span class="txt"><b>{{n.who}}</b> {{n.text}}<span>{{n.time}}</span></span>
+<sc-if value="{{n.unread}}" hint-placeholder-val="{{ true }}"><span class="udot" aria-label="Chưa đọc"></span></sc-if>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isFeed}}" hint-placeholder-val="{{ true }}">
+<div class="page">
+<div class="feedgrid">
+<div class="card pad composer">
+<sc-if value="{{hasPrefill}}" hint-placeholder-val="{{ false }}">
+<div class="prefill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"></path></svg>Điền sẵn từ Sổ Hợp Tác · {{prefillName}}</div>
+</sc-if>
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span class="av t1">NG</span>
+<div style="flex: 1; min-width: 0">
+<label for="draft" style="position: absolute; left: -9999px">Nội dung bài đăng</label>
+<textarea id="draft" placeholder="NITI GROUP đang có hàng cần bán hay nhu cầu cần mua?" value="{{draft}}" onChange="{{onDraft}}"></textarea>
+<div class="cfields">
+<input class="field" aria-label="Hàng hoá" placeholder="Hàng hoá" value="{{dProduct}}" onChange="{{onDProduct}}">
+<input class="field" aria-label="Số lượng" placeholder="Số lượng" value="{{dQty}}" onChange="{{onDQty}}">
+<input class="field" aria-label="Giá" placeholder="Giá / ngân sách" value="{{dPrice}}" onChange="{{onDPrice}}">
+</div>
+<sc-if value="{{hasAttach}}" hint-placeholder-val="{{ false }}">
+<div class="attachrow">
+<sc-for list="{{attach}}" as="a" hint-placeholder-count="2">
+<span class="attach">{{a.label}}<button type="button" onClick="{{a.remove}}" aria-label="Bỏ tệp đính kèm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+</sc-for>
+</div>
+</sc-if>
+<div class="cbar">
+<div class="seg" role="group" aria-label="Loại bài">
+<button type="button" class="{{sellSegClass}}" onClick="{{setSell}}">Cần bán</button>
+<button type="button" class="{{buySegClass}}" onClick="{{setBuy}}">Cần mua</button>
+</div>
+<button type="button" class="ghost" onClick="{{addImg}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m21 16-5-5-9 9"></path></svg>Ảnh</button>
+<button type="button" class="ghost" onClick="{{addVid}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"></rect><path d="m16 10 5-3v10l-5-3z"></path></svg>Video</button>
+<div class="sp"></div>
+<span class="meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Chỉ bạn bè</span>
+<button type="button" class="primary" onClick="{{publish}}">Đăng bài</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="chips" role="group" aria-label="Lọc bài đăng">
+<sc-for list="{{filters}}" as="c" hint-placeholder-count="4">
+<button type="button" class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}} <span class="n">{{c.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-if value="{{noPosts}}" hint-placeholder-val="{{ false }}">
+<div class="card empty">Không có bài đăng nào trong mục này.</div>
+</sc-if>
+
+<sc-for list="{{posts}}" as="p" hint-placeholder-count="3">
+<article class="card post">
+<div class="ph">
+<span class="av {{p.tone}}">{{p.initials}}</span>
+<div class="who">
+<b>{{p.author}}</b>
+<div class="meta">{{p.person}} · {{p.time}} ·
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Bạn bè
+<sc-if value="{{p.hasRep}}" hint-placeholder-val="{{ false }}"><span class="mscore {{p.repCls}}" title="Điểm uy tín trong Sổ Hợp Tác, chỉ NITI GROUP thấy">{{p.repText}}</span></sc-if>
+<sc-if value="{{p.archived}}" hint-placeholder-val="{{ false }}"><span class="tag grey sm">Đã lưu trữ</span></sc-if>
+</div>
+</div>
+<span class="{{p.tagCls}}">{{p.typeLabel}}</span>
+<sc-if value="{{p.canSave}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="{{p.saveBtnCls}}" onClick="{{p.openSave}}" style="margin-top: -6px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><path d="M17 21v-8H7v8M7 3v5h8"></path></svg>{{p.saveBtnLabel}}</button>
+</sc-if>
+<sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="iconbtn" onClick="{{p.toggleMenu}}" aria-label="Tuỳ chọn bài đăng" style="width: 40px; height: 40px; margin-top: -6px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+</button>
+</sc-if>
+</div>
+
+<sc-if value="{{p.showMenu}}" hint-placeholder-val="{{ false }}">
+<div class="menu" role="menu">
+<button type="button" role="menuitem" onClick="{{p.edit}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Sửa bài</button>
+<button type="button" role="menuitem" onClick="{{p.archive}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"></path></svg>{{p.archiveLabel}}</button>
+<button type="button" role="menuitem" class="red" onClick="{{p.askDelete}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>Xoá bài</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.confirming}}" hint-placeholder-val="{{ false }}">
+<div class="confirm">
+<span>Xoá vĩnh viễn bài đăng này? Bình luận cũng sẽ bị xoá.</span>
+<span class="sp"></span>
+<button type="button" class="ghost" onClick="{{p.cancelDelete}}">Huỷ</button>
+<button type="button" class="danger" onClick="{{p.del}}">Xoá</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.isEditing}}" hint-placeholder-val="{{ false }}">
+<div class="pbody composer">
+<label for="edit-box" style="position: absolute; left: -9999px">Sửa nội dung</label>
+<textarea id="edit-box" value="{{editText}}" onChange="{{onEditText}}"></textarea>
+<div class="cbar">
+<div class="sp"></div>
+<button type="button" class="ghost" onClick="{{cancelEdit}}">Huỷ</button>
+<button type="button" class="primary sm" onClick="{{p.saveEdit}}">Lưu thay đổi</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{p.notEditing}}" hint-placeholder-val="{{ true }}">
+<div class="pbody">
+<h3>{{p.title}}</h3>
+<p>{{p.body}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasFacts}}" hint-placeholder-val="{{ true }}">
+<div class="facts">
+<sc-for list="{{p.facts}}" as="fd" hint-placeholder-count="4">
+<div class="fact"><span>{{fd.k}}</span><b>{{fd.v}}</b></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasMedia}}" hint-placeholder-val="{{ false }}">
+<div class="{{p.mediaCls}}">
+<sc-for list="{{p.media}}" as="m" hint-placeholder-count="2">
+<div class="{{m.cls}}">
+<sc-if value="{{m.isVideo}}" hint-placeholder-val="{{ false }}">
+<span class="play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span>
+</sc-if>
+<sc-if value="{{m.isImg}}" hint-placeholder-val="{{ true }}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m21 16-5-5-9 9"></path></svg>
+</sc-if>
+<span>{{m.label}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasMatch}}" hint-placeholder-val="{{ false }}">
+<div class="{{p.matchCls}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg>
+<span style="flex: 1; min-width: 200px"><b>{{p.matchLabel}}</b> {{p.matchText}}</span>
+<button type="button" class="primary sm" onClick="{{p.matchGo}}">{{p.matchCta}}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasSaved}}" hint-placeholder-val="{{ false }}">
+<div class="match" style="background: #e3f4ec; border-color: #bfe5d2; color: #05603f">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4L19 7"></path></svg>
+<span style="flex: 1; min-width: 200px"><b>Đã lưu báo giá vào Sản phẩm &amp; Giá:</b> {{p.savedText}}</span>
+<button type="button" class="ghost" onClick="{{p.goSaved}}">Xem</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.saveOpen}}" hint-placeholder-val="{{ false }}">
+<div class="cbox" style="margin: 12px 16px 0">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px"><b style="flex: 1">Lưu báo giá vào Sản phẩm &amp; Giá</b><span class="tag ind sm">Nguồn: Báo giá</span></div>
+<div class="form">
+<div><label for="q-prod">Sản phẩm trong danh mục</label><select id="q-prod" class="field" value="{{p.qProd}}" onChange="{{p.onQProd}}"><sc-for list="{{p.qOptList}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.v}}</option></sc-for><option value="new">＋ Tạo sản phẩm mới</option></select></div>
+<div><label for="q-sup">Nhà cung cấp</label><input id="q-sup" class="field" value="{{p.author}}" readonly></div>
+<div><label for="q-price">Giá (đ / {{p.qUnit}})</label><input id="q-price" class="field" value="{{p.qPrice}}" onChange="{{p.onQPrice}}"></div>
+<div><label for="q-meta">Loại · VAT · ngày</label><input id="q-meta" class="field" value="{{p.qKind}} · {{p.qVat}} · 19/10/2024" readonly></div>
+</div>
+<div class="impact">{{p.qCmp}}</div>
+<div class="xf"><button type="button" class="ghost" onClick="{{p.cancelSave}}">Huỷ</button><button type="button" class="primary sm" onClick="{{p.saveQuote}}">Lưu báo giá</button></div>
+</div>
+</sc-if>
+
+<div class="pact">
+<button type="button" class="{{p.cBtnCls}}" onClick="{{p.toggleComments}}" aria-expanded="{{p.open}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>
+Bình luận ({{p.commentCount}})</button>
+</div>
+
+<sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}">
+<div class="cmts">
+<div class="cnote"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>{{p.commentNote}}</div>
+<sc-for list="{{p.comments}}" as="cm" hint-placeholder-count="2">
+<div class="cmt">
+<span class="av sm {{cm.tone}}">{{cm.initials}}</span>
+<div><div class="bubble"><b>{{cm.who}}</b><p>{{cm.text}}</p></div><div class="ctime">{{cm.time}}</div></div>
+</div>
+</sc-for>
+<div class="cinput">
+<span class="av sm t1">NG</span>
+<input aria-label="Viết bình luận" placeholder="Viết bình luận…" value="{{p.cText}}" onChange="{{p.onCText}}">
+<button type="button" class="sendbtn" onClick="{{p.sendC}}" aria-label="Gửi bình luận"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4z"></path></svg></button>
+</div>
+</div>
+</sc-if>
+</article>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isProfile}}" hint-placeholder-val="{{ false }}">
+<div class="ws">
+<nav class="wsside" aria-label="Hồ sơ và Sổ Hợp Tác">
+<div class="mini">
+<span class="av lg t1">NG</span>
+<div><b>NITI GROUP</b><span>Lê Thị Thuý Tiên · Admin</span></div>
+</div>
+<div class="sidegroup">
+<div class="sidecap">Sổ Hợp Tác</div>
+<button type="button" class="{{sbDash}}" onClick="{{goDash}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tổng quan<span class="cnt warn">{{todoCount}}</span></button>
+<button type="button" class="{{sbContracts}}" onClick="{{goContracts}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg>Hợp đồng &amp; giao dịch<span class="cnt">{{docCount}}</span></button>
+<button type="button" class="{{sbPartners}}" onClick="{{goPartners}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17.5" cy="9" r="2.5"></circle><path d="M17 14.5a5 5 0 0 1 4.5 5"></path></svg>Đối tác<span class="cnt">{{partnerCount}}</span></button>
+<button type="button" class="{{sbProducts}}" onClick="{{goProducts}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg>Sản phẩm &amp; Giá<span class="cnt">{{productCount}}</span></button>
+</div>
+<div class="sidegroup">
+<div class="sidecap">Community</div>
+<button type="button" class="{{sbPosts}}" onClick="{{goProfilePosts}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Bài đăng của tôi<span class="cnt">{{myPostCount}}</span></button>
+</div>
+<div class="sidegroup bottom">
+<button type="button" class="sidelink" onClick="{{goSettingsSht}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg>Cài đặt</button>
+</div>
+</nav>
+
+<main class="wsmain">
+
+<sc-if value="{{tabPosts}}" hint-placeholder-val="{{ false }}">
+<div style="max-width: 720px">
+<div class="card">
+<div class="cover" style="height: 90px"></div>
+<div class="phero">
+<span class="biglogo">NG</span>
+<div style="flex: 1; min-width: 220px; padding-bottom: 4px">
+<h1>NITI GROUP</h1>
+<div class="sub">Lê Thị Thuý Tiên · Admin · Trung gian chữ ký số, hoá đơn điện tử, vật tư đóng gói</div>
+</div>
+<button type="button" class="ghost" onClick="{{goSetCompany}}">Chỉnh sửa hồ sơ</button>
+</div>
+<div class="hstats">
+<div class="hstat"><b>{{myActiveCount}}</b><span>Bài đang đăng</span></div>
+<div class="hstat"><b>{{myArchivedCount}}</b><span>Đã lưu trữ</span></div>
+<div class="hstat"><b>{{myCommentCount}}</b><span>Bình luận nhận được</span></div>
+<div class="hstat"><b>{{friendCount}}</b><span>Bạn bè</span></div>
+</div>
+</div>
+
+<div class="card pad composer" style="margin-top: 16px">
+<div style="display: flex; gap: 10px; align-items: flex-start">
+<span class="av t1">NG</span>
+<div style="flex: 1; min-width: 0">
+<label for="draft2" style="position: absolute; left: -9999px">Nội dung bài đăng</label>
+<textarea id="draft2" placeholder="NITI GROUP đang có hàng cần bán hay nhu cầu cần mua?" value="{{draft}}" onChange="{{onDraft}}"></textarea>
+<div class="cfields">
+<input class="field" aria-label="Hàng hoá" placeholder="Hàng hoá" value="{{dProduct}}" onChange="{{onDProduct}}">
+<input class="field" aria-label="Số lượng" placeholder="Số lượng" value="{{dQty}}" onChange="{{onDQty}}">
+<input class="field" aria-label="Giá" placeholder="Giá / ngân sách" value="{{dPrice}}" onChange="{{onDPrice}}">
+</div>
+<sc-if value="{{hasAttach}}" hint-placeholder-val="{{ false }}">
+<div class="attachrow">
+<sc-for list="{{attach}}" as="a" hint-placeholder-count="2">
+<span class="attach">{{a.label}}<button type="button" onClick="{{a.remove}}" aria-label="Bỏ tệp đính kèm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></span>
+</sc-for>
+</div>
+</sc-if>
+<div class="cbar">
+<div class="seg" role="group" aria-label="Loại bài">
+<button type="button" class="{{sellSegClass}}" onClick="{{setSell}}">Cần bán</button>
+<button type="button" class="{{buySegClass}}" onClick="{{setBuy}}">Cần mua</button>
+</div>
+<button type="button" class="ghost" onClick="{{addImg}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m21 16-5-5-9 9"></path></svg>Ảnh</button>
+<button type="button" class="ghost" onClick="{{addVid}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"></rect><path d="m16 10 5-3v10l-5-3z"></path></svg>Video</button>
+<div class="sp"></div>
+<button type="button" class="primary" onClick="{{publishMine}}">Đăng bài</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="chips" role="group" aria-label="Lọc bài của tôi">
+<sc-for list="{{myFilters}}" as="c" hint-placeholder-count="2">
+<button type="button" class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}} <span class="n">{{c.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-if value="{{noMyPosts}}" hint-placeholder-val="{{ false }}">
+<div class="card empty">Chưa có bài nào trong mục này.</div>
+</sc-if>
+
+<sc-for list="{{myFeed}}" as="p" hint-placeholder-count="2">
+<article class="card post">
+<div class="ph">
+<span class="av {{p.tone}}">{{p.initials}}</span>
+<div class="who">
+<b>{{p.author}}</b>
+<div class="meta">{{p.person}} · {{p.time}} · Bạn bè
+<sc-if value="{{p.archived}}" hint-placeholder-val="{{ false }}"><span class="tag grey sm">Đã lưu trữ · bạn bè không thấy</span></sc-if>
+</div>
+</div>
+<span class="{{p.tagCls}}">{{p.typeLabel}}</span>
+<button type="button" class="iconbtn" onClick="{{p.toggleMenu}}" aria-label="Tuỳ chọn bài đăng" style="width: 40px; height: 40px; margin-top: -6px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+</button>
+</div>
+
+<sc-if value="{{p.showMenu}}" hint-placeholder-val="{{ false }}">
+<div class="menu" role="menu">
+<button type="button" role="menuitem" onClick="{{p.edit}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Sửa bài</button>
+<button type="button" role="menuitem" onClick="{{p.archive}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"></path></svg>{{p.archiveLabel}}</button>
+<button type="button" role="menuitem" class="red" onClick="{{p.askDelete}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>Xoá bài</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.confirming}}" hint-placeholder-val="{{ false }}">
+<div class="confirm">
+<span>Xoá vĩnh viễn bài đăng này? Bình luận cũng sẽ bị xoá.</span>
+<span class="sp"></span>
+<button type="button" class="ghost" onClick="{{p.cancelDelete}}">Huỷ</button>
+<button type="button" class="danger" onClick="{{p.del}}">Xoá</button>
+</div>
+</sc-if>
+
+<sc-if value="{{p.isEditing}}" hint-placeholder-val="{{ false }}">
+<div class="pbody composer">
+<label for="edit-box2" style="position: absolute; left: -9999px">Sửa nội dung</label>
+<textarea id="edit-box2" value="{{editText}}" onChange="{{onEditText}}"></textarea>
+<div class="cbar">
+<div class="sp"></div>
+<button type="button" class="ghost" onClick="{{cancelEdit}}">Huỷ</button>
+<button type="button" class="primary sm" onClick="{{p.saveEdit}}">Lưu thay đổi</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{p.notEditing}}" hint-placeholder-val="{{ true }}">
+<div class="pbody">
+<h3>{{p.title}}</h3>
+<p>{{p.body}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasFacts}}" hint-placeholder-val="{{ true }}">
+<div class="facts">
+<sc-for list="{{p.facts}}" as="fd" hint-placeholder-count="4">
+<div class="fact"><span>{{fd.k}}</span><b>{{fd.v}}</b></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{p.hasMedia}}" hint-placeholder-val="{{ false }}">
+<div class="{{p.mediaCls}}">
+<sc-for list="{{p.media}}" as="m" hint-placeholder-count="2">
+<div class="{{m.cls}}">
+<sc-if value="{{m.isVideo}}" hint-placeholder-val="{{ false }}">
+<span class="play"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg></span>
+</sc-if>
+<sc-if value="{{m.isImg}}" hint-placeholder-val="{{ true }}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m21 16-5-5-9 9"></path></svg>
+</sc-if>
+<span>{{m.label}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<div class="pact">
+<button type="button" class="{{p.cBtnCls}}" onClick="{{p.toggleComments}}" aria-expanded="{{p.open}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>
+Bình luận ({{p.commentCount}})</button>
+</div>
+
+<sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}">
+<div class="cmts">
+<div class="cnote"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>{{p.commentNote}}</div>
+<sc-for list="{{p.comments}}" as="cm" hint-placeholder-count="2">
+<div class="cmt">
+<span class="av sm {{cm.tone}}">{{cm.initials}}</span>
+<div><div class="bubble"><b>{{cm.who}}</b><p>{{cm.text}}</p></div><div class="ctime">{{cm.time}}</div></div>
+</div>
+</sc-for>
+<div class="cinput">
+<span class="av sm t1">NG</span>
+<input aria-label="Viết bình luận" placeholder="Viết bình luận…" value="{{p.cText}}" onChange="{{p.onCText}}">
+<button type="button" class="sendbtn" onClick="{{p.sendC}}" aria-label="Gửi bình luận"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4z"></path></svg></button>
+</div>
+</div>
+</sc-if>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{tabDash}}" hint-placeholder-val="{{ true }}">
+<div class="wshead"><div style="flex: 1; min-width: 200px"><h1>Tổng quan</h1><p>Hôm nay 19/10/2024 · số liệu tính từ các mốc đã xác nhận</p></div>
+<div class="seg" role="group" aria-label="Kỳ"><sc-for list="{{periods}}" as="pr" hint-placeholder-count="3"><button type="button" class="{{pr.cls}}" onClick="{{pr.pick}}">{{pr.label}}</button></sc-for></div></div>
+<div class="kpis">
+<div class="kpi"><span class="l">Doanh thu thực nhận</span><b>60,5 tr</b><span class="kbar" role="img" aria-label="Đã nhận 85% dự kiến"><i style="width: 85%"></i></span><span class="s">85% của dự kiến 71,2 tr · chưa thu 10,7 tr · <span class="up">▲ 12%</span></span></div>
+<div class="kpi"><span class="l">Lãi gộp</span><b>13,4 tr</b><span class="s"><span class="up">▲ 44%</span> · biên 18% trên doanh thu dự kiến</span></div>
+<div class="kpi"><span class="l">Hoa hồng thực nhận</span><b>48.000đ</b><span class="kbar" role="img" aria-label="Đã nhận 13% dự kiến"><i style="width: 13%"></i></span><span class="s">13% của dự kiến 368.000đ · chưa nhận 320.000đ</span></div>
+<div class="kpi"><span class="l">Hàng đang giữ</span><b>182,2 tr</b><span class="s">theo giá vốn bình quân</span></div>
+</div>
+<div class="dashgrid">
+<div class="vstack">
+<div class="card">
+<div class="sect-h"><h3>Cần xử lý</h3><span class="sub">{{todoTotal}} việc · {{overdueCount}} quá hạn</span></div>
+<sc-for list="{{todos}}" as="td" hint-placeholder-count="6">
+<button type="button" class="todo" onClick="{{td.go}}">
+<span class="{{td.tagCls}}" style="min-width: 92px; justify-content: center">{{td.tag}}</span>
+<span class="t"><b>{{td.title}}</b><span>{{td.sub}}</span></span>
+<span class="{{td.rCls}}">{{td.right}}</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: #6b6c80"><path d="m9 18 6-6-6-6"></path></svg>
+</button>
+</sc-for>
+<sc-if value="{{hasMoreTodos}}" hint-placeholder-val="{{ true }}"><div class="dnote"><button type="button" class="linkbtn" style="padding-left: 0" onClick="{{showAllTodos}}">Xem thêm {{moreTodos}} việc</button></div></sc-if>
+</div>
+
+<div class="card">
+<div class="sect-h"><h3>Theo nhóm sản phẩm</h3><span class="sub">12 tháng · đậm là {{periodLabel}}</span></div>
+<div class="gm">
+<sc-for list="{{groupBars}}" as="gr" hint-placeholder-count="3">
+<div class="gmr">
+<div class="gml"><span class="gdot" style="background: {{gr.color}}"></span><span><b>{{gr.name}}</b><span class="sub">{{gr.cap}}</span></span></div>
+<div class="gmv"><b>{{gr.value}}</b><span class="up">{{gr.delta}}</span></div>
+<div class="gbars" role="img" aria-label="{{gr.name}} theo tháng">
+<sc-for list="{{gr.bars}}" as="br" hint-placeholder-count="12"><span class="{{br.cls}}" style="height: {{br.h}}; background: {{gr.color}}" title="{{br.title}}"></span></sc-for>
+</div>
+</div>
+</sc-for>
+<div class="gmr gax"><span></span><span></span><div class="gbars lbls"><sc-for list="{{months}}" as="mo" hint-placeholder-count="12"><span>{{mo.l}}</span></sc-for></div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="sect-h"><h3>Hợp đồng</h3><span class="sub">11 hợp đồng</span><div class="sp"></div><button type="button" class="linkbtn" onClick="{{goContracts}}">Xem tất cả</button></div>
+<div class="pipe">
+<div><b>1</b><span>Chưa bắt đầu</span></div>
+<div><b>5</b><span>Đang thực hiện</span></div>
+<div><b>5</b><span>Đã xong</span></div>
+</div>
+<sc-for list="{{pipeline}}" as="pl" hint-placeholder-count="5">
+<button type="button" class="todo" onClick="{{pl.go}}">
+<span class="t"><b>{{pl.title}}</b><span>{{pl.sub}}</span></span>
+<span class="{{pl.rCls}}">{{pl.right}}</span>
+</button>
+</sc-for>
+<div class="dnote">Sắp hết hiệu lực: <button type="button" class="linkbtn" style="padding: 0; height: auto" onClick="{{openC9}}">HĐ bán CKS cho Minh Phát</button></div>
+</div>
+</div>
+<div class="vstack">
+<div class="card">
+<div class="sect-h"><h3>Đối tác cần xem lại</h3><span class="sub">CHÚ Ý hoặc giảm từ 3 điểm trong 3 tháng</span></div>
+<sc-for list="{{reviewPartners}}" as="rp" hint-placeholder-count="4">
+<div class="lrow"><div class="t">{{rp.name}}<span>{{rp.sub}}</span></div><span class="score {{rp.cls}}"><span class="n">{{rp.n}}</span><span class="w">{{rp.w}}</span></span></div>
+</sc-for>
+</div>
+<div class="card">
+<div class="sect-h"><h3>Sản phẩm: nên làm gì</h3><span class="sub">theo điểm kinh doanh</span></div>
+<sc-for list="{{advice}}" as="ad" hint-placeholder-count="3">
+<div class="grpcap">{{ad.label}}</div>
+<sc-for list="{{ad.items}}" as="ai" hint-placeholder-count="2">
+<div class="lrow"><div class="t">{{ai.name}}<span>{{ai.reason}}</span></div><span class="mscore {{ai.cls}}">{{ai.score}}</span></div>
+</sc-for>
+</sc-for>
+</div>
+<div class="card">
+<div class="sect-h"><h3>Giao dịch nhiều nhất</h3><span class="sub">theo giá trị hợp đồng</span></div>
+<sc-for list="{{topPartners}}" as="tg" hint-placeholder-count="2">
+<div class="grpcap">{{tg.label}}</div>
+<sc-for list="{{tg.items}}" as="tp" hint-placeholder-count="3">
+<div class="lrow"><div class="t">{{tp.name}}</div><b class="num">{{tp.value}}</b><span class="mscore {{tp.cls}}">{{tp.score}}</span></div>
+</sc-for>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabContractList}}" hint-placeholder-val="{{ false }}">
+<div class="wshead"><div style="flex: 1; min-width: 200px"><h1>Hợp đồng &amp; giao dịch</h1><p>{{docCount}} chứng từ</p></div>
+<button type="button" class="outline">+ Thêm giao dịch</button>
+<button type="button" class="primary sm">Upload hợp đồng</button></div>
+<div class="chips tight" role="group" aria-label="Lọc theo loại chứng từ">
+<sc-for list="{{cFilters}}" as="cf" hint-placeholder-count="4">
+<button type="button" class="{{cf.cls}}" aria-pressed="{{cf.on}}" onClick="{{cf.pick}}">{{cf.label}} <span class="n">{{cf.count}}</span></button>
+</sc-for>
+</div>
+<div class="card scroll">
+<table class="tbl">
+<thead><tr><th>Tên</th><th>Chứng từ</th><th>Đối tác</th><th>Hướng</th><th class="num">Giá trị</th><th>Hiệu lực</th><th>Giai đoạn</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{contracts}}" as="ct" hint-placeholder-count="8">
+<tr class="{{ct.rowCls}}">
+<td style="min-width: 240px"><sc-if value="{{ct.child}}" hint-placeholder-val="{{ false }}"><span class="ind-arrow">↳</span></sc-if><button type="button" class="rowtitle" onClick="{{ct.open}}">{{ct.title}}</button><sc-if value="{{ct.hasVer}}" hint-placeholder-val="{{ false }}"> <span class="tag ind sm">v{{ct.ver}}</span></sc-if><sc-if value="{{ct.draft}}" hint-placeholder-val="{{ false }}"> <span class="tag soon sm">Nháp</span></sc-if><div class="sub">{{ct.subline}}</div></td>
+<td class="nowrap">{{ct.docLabel}}</td>
+<td class="nowrap">{{ct.partner}}<span class="mscore {{ct.pCls}}">{{ct.pScore}}</span></td>
+<td><span class="{{ct.dirCls}}">{{ct.dirLabel}}</span></td>
+<td class="num">{{ct.valueText}}</td>
+<td class="nowrap">{{ct.start}}<div class="sub">{{ct.endText}}</div></td>
+<td><span class="{{ct.stageCls}}">{{ct.stageLabel}}</span><div class="sub">{{ct.step}}</div></td>
+<td class="num"><button type="button" class="ghost" onClick="{{ct.open}}">Xem</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+
+<sc-if value="{{tabContractDetail}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="crumb" onClick="{{goContracts}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>Hợp đồng &amp; giao dịch</button>
+<div class="wshead"><div style="flex: 1; min-width: 240px"><h1>{{cd.title}}</h1><p>{{cd.headline}}</p></div><span class="{{cd.stageCls}}">{{cd.stageLabel}}</span></div>
+
+<sc-if value="{{cd.isLocked}}" hint-placeholder-val="{{ true }}">
+<div class="banner locked">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+<div class="t"><b>Đã xác nhận · hợp đồng đã khoá</b>Không sửa trường pháp lý. Thương thuyết lại hoặc phụ lục thì tải văn bản mới làm phiên bản kế tiếp. File ký: {{cd.file}}</div>
+<button type="button" class="ghost">Tải bản cập nhật</button>
+</div>
+</sc-if>
+<sc-if value="{{cd.isDraft}}" hint-placeholder-val="{{ false }}">
+<div class="banner draft">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+<div class="t"><b>Chưa xác nhận · có thể sửa</b>Kiểm tra thông tin AI đọc, sửa nếu cần. Xác nhận sẽ khoá hợp đồng lại. File ký: {{cd.file}}</div>
+<button type="button" class="primary sm" onClick="{{lockContract}}">Xác nhận và khoá</button>
+</div>
+</sc-if>
+<sc-if value="{{cd.isDeal}}" hint-placeholder-val="{{ false }}">
+<div class="banner deal">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>
+<div class="t"><b>Giao dịch · không có hợp đồng ký</b>Nguồn: {{cd.source}} · {{cd.note}}</div>
+<button type="button" class="outline">Nâng thành hợp đồng</button>
+</div>
+<sc-if value="{{cd.taxWarn}}" hint-placeholder-val="{{ false }}"><div class="warnline">Giao dịch từ 5 triệu chưa thanh toán mà không có hợp đồng ký có thể không được tính là chi phí hợp lý. Nên bổ sung hợp đồng.</div></sc-if>
+</sc-if>
+
+<div class="cdgrid">
+<div class="vstack">
+<div class="card" style="overflow: hidden">
+<div class="sect-h"><h3>Thông tin</h3><span class="sub">{{cd.infoNote}}</span></div>
+<div class="dgrid">
+<sc-for list="{{cd.info}}" as="ifo" hint-placeholder-count="9">
+<div class="dcell"><span>{{ifo.k}}</span><b>{{ifo.v}}</b></div>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{cd.isFrame}}" hint-placeholder-val="{{ false }}">
+<div class="card" style="overflow: hidden">
+<div class="sect-h"><h3>Chứng từ theo HĐ này</h3><span class="sub">Tổng đã đặt 1.140.000đ · 0% hạn mức 300.000.000đ · đã thanh toán 1.140.000đ</span></div>
+<div class="scroll"><table class="tbl"><thead><tr><th>Tên</th><th>Chứng từ</th><th>Ngày</th><th class="num">Giá trị</th><th>Giai đoạn</th></tr></thead>
+<tbody><tr><td><button type="button" class="rowtitle" onClick="{{openC7}}">HĐ mua băng keo 5cm</button></td><td>HĐ kinh tế</td><td>10/09/2024</td><td class="num">1.140.000đ</td><td><span class="tag ok">Đã xong</span></td></tr></tbody></table></div>
+</div>
+</sc-if>
+
+<div class="card" style="overflow: hidden">
+<div class="sect-h"><h3>{{cd.linesTitle}}</h3><span class="{{cd.ioCls}}">{{cd.io}}</span></div>
+<div class="scroll"><table class="tbl">
+<thead><tr><th>Dòng trên chứng từ</th><th>Sản phẩm trong danh mục</th><th class="num">Số lượng</th><th class="num">Đã giao</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead>
+<tbody>
+<sc-for list="{{cd.lines}}" as="ln" hint-placeholder-count="2">
+<tr><td>{{ln.n}}</td><td>{{ln.prod}}</td><td class="num">{{ln.q}}</td><td class="num">{{ln.dv}}</td><td class="num">{{ln.p}}</td><td class="num">{{ln.t}}</td></tr>
+</sc-for>
+</tbody>
+</table></div>
+</div>
+
+<sc-if value="{{cd.hasVersions}}" hint-placeholder-val="{{ false }}">
+<div class="card">
+<div class="sect-h"><h3>Phiên bản hợp đồng</h3><span class="sub">2 bản · cùng một quan hệ</span></div>
+<div class="lrow"><div class="t">Phiên bản 1 · đã thay thế<span>2024/08-NCCA · hiệu lực 01/09/2024 → 31/08/2025 · 236.000.000đ</span></div><button type="button" class="ghost">Xem</button></div>
+<div class="lrow"><div class="t"><b>Phiên bản 2 · hiện hành</b><span>2024/08-NCCA-SĐ1 · hiệu lực 01/10/2024 → 31/08/2025 · 248.000.000đ</span></div><span class="tag ind">Đang xem</span></div>
+<div class="dnote">Nghĩa vụ của bản này tính từ ngày hiệu lực 01/10/2024; mốc trước đó thuộc Phiên bản 1.</div>
+</div>
+</sc-if>
+</div>
+
+<div class="vstack">
+<div class="card">
+<div class="sect-h"><h3>Diễn biến</h3><span class="sub">{{cd.progress}}</span><div class="sp"></div><button type="button" class="ghost">+ Thêm mốc</button></div>
+<ul class="tl">
+<sc-for list="{{cd.ms}}" as="m" hint-placeholder-count="4">
+<li class="{{m.st}}">
+<span class="dot" aria-hidden="true"></span>
+<div class="b">
+<b>{{m.t}}</b> <sc-if value="{{m.hasWho}}" hint-placeholder-val="{{ true }}"><span class="{{m.whoCls}}">{{m.who}}</span></sc-if><sc-if value="{{m.hasFault}}" hint-placeholder-val="{{ false }}"> <span class="tag late sm">Lỗi: {{m.fault}}</span></sc-if><sc-if value="{{m.isCur}}" hint-placeholder-val="{{ false }}"> <span class="tag ind sm">Bước hiện tại</span></sc-if>
+<div class="{{m.whenCls}}">{{m.when}}</div>
+<sc-if value="{{m.confirmOpen}}" hint-placeholder-val="{{ false }}">
+<div class="cbox">
+<div class="flabel">Ngày hoàn thành thực tế: 19/10/2024</div>
+<sc-if value="{{m.askFault}}" hint-placeholder-val="{{ false }}">
+<div class="flabel" style="margin-top: 8px">{{m.lateText}} · lỗi thuộc về</div>
+<div class="seg" role="group" aria-label="Lỗi thuộc về"><sc-for list="{{faults}}" as="fl" hint-placeholder-count="3"><button type="button" class="{{fl.cls}}" onClick="{{fl.pick}}">{{fl.label}}</button></sc-for></div>
+</sc-if>
+<div class="impact">{{m.impact}}</div>
+<div class="xf"><button type="button" class="ghost" onClick="{{closeConfirm}}">Huỷ</button><button type="button" class="primary sm" onClick="{{m.save}}">Lưu xác nhận</button></div>
+</div>
+</sc-if>
+</div>
+<div class="rt">
+<sc-if value="{{m.hasDelta}}" hint-placeholder-val="{{ false }}"><span class="{{m.dCls}}" title="Ảnh hưởng điểm uy tín đối tác">{{m.dText}}</span></sc-if>
+<sc-if value="{{m.canConfirm}}" hint-placeholder-val="{{ false }}"><button type="button" class="{{m.btnCls}}" onClick="{{m.openConfirm}}">{{m.btnLabel}}</button></sc-if>
+<sc-if value="{{m.isRemind}}" hint-placeholder-val="{{ false }}"><span class="tag grey sm">Tự nhắc</span></sc-if>
+</div>
+</li>
+</sc-for>
+</ul>
+<div class="dnote">Bấm Xác nhận khi việc đã xảy ra: app so với hạn, cập nhật điểm uy tín đối tác, kho, doanh thu hoặc hoa hồng.</div>
+</div>
+
+<div class="card pad">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px"><h3 style="margin: 0; font-size: 15px; font-weight: 600">Tóm tắt</h3><span class="tag ind sm">AI</span></div>
+<sc-if value="{{cd.hasSummary}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0 0 4px">{{cd.summary}}</p>
+<sc-for list="{{cd.sumRows}}" as="sr" hint-placeholder-count="2">
+<div class="kv2"><span>{{sr.k}}</span><b>{{sr.v}}</b></div>
+</sc-for>
+<div class="terms"><sc-for list="{{cd.terms}}" as="tm" hint-placeholder-count="2"><span class="tag grey">{{tm.t}}</span></sc-for></div>
+</sc-if>
+<sc-if value="{{cd.noSummary}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0 0 10px; color: #6b6c80">Chưa có tóm tắt.</p>
+<button type="button" class="outline">Tạo tóm tắt bằng AI</button>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabPartners}}" hint-placeholder-val="{{ false }}">
+<div class="wshead"><div style="flex: 1; min-width: 200px"><h1>Đối tác</h1><p>{{partnerCount}} đối tác · điểm uy tín tính riêng theo từng vai trò</p></div>
+<button type="button" class="ghost" onClick="{{goSettingsRep}}">Cài đặt uy tín</button></div>
+<div class="chips tight" role="group" aria-label="Lọc">
+<sc-for list="{{pFilters}}" as="pf" hint-placeholder-count="5">
+<button type="button" class="{{pf.cls}}" aria-pressed="{{pf.on}}" onClick="{{pf.pick}}">{{pf.label}}</button>
+</sc-for>
+</div>
+<div class="card scroll">
+<table class="tbl">
+<thead><tr><th>Đối tác</th><th>Vai trò</th><th>Điểm uy tín</th><th class="num">Hợp đồng</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{partners}}" as="pt" hint-placeholder-count="6">
+<tr>
+<td style="min-width: 220px"><b>{{pt.name}}</b><div class="sub">MST {{pt.mst}}</div><sc-if value="{{pt.hasFlag}}" hint-placeholder-val="{{ false }}"><div class="flag">{{pt.flag}}</div></sc-if></td>
+<td>{{pt.roles}}</td>
+<td><div class="tiles"><sc-for list="{{pt.tiles}}" as="tl" hint-placeholder-count="1"><div class="tile"><span class="score {{tl.cls}}"><span class="n">{{tl.n}}</span><span class="w">{{tl.w}}</span></span><span class="rl">{{tl.role}}</span></div></sc-for></div></td>
+<td class="num">{{pt.hd}}</td>
+<td class="num"><button type="button" class="ghost" onClick="{{pt.toggle}}" aria-expanded="{{pt.open}}">{{pt.toggleLabel}}</button></td>
+</tr>
+<sc-if value="{{pt.open}}" hint-placeholder-val="{{ false }}">
+<tr><td colspan="5" class="breakdown">
+<sc-if value="{{pt.hasCrit}}" hint-placeholder-val="{{ true }}">
+<div class="sub" style="margin-bottom: 8px">{{pt.critTitle}}</div>
+<table class="tbl" style="background: #fff; border-radius: 10px; overflow: hidden"><thead><tr><th>Tiêu chí</th><th class="num">Điểm</th><th class="num">Trọng số</th><th>Dữ liệu</th></tr></thead>
+<tbody><sc-for list="{{pt.crit}}" as="cr" hint-placeholder-count="4"><tr><td>{{cr.k}}</td><td class="num">{{cr.v}}</td><td class="num">{{cr.w}}</td><td class="sub">{{cr.d}}</td></tr></sc-for></tbody></table>
+</sc-if>
+<div class="fx">{{pt.formula}}</div>
+</td></tr>
+</sc-if>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+
+<sc-if value="{{tabProducts}}" hint-placeholder-val="{{ false }}">
+<div class="wshead"><div style="flex: 1; min-width: 200px"><h1>Sản phẩm &amp; Giá</h1><p>{{productCount}} sản phẩm · 3 nhóm hàng</p></div>
+<button type="button" class="ghost" onClick="{{goSettingsSrc}}">Cách lấy hàng</button>
+<button type="button" class="primary sm">+ Thêm sản phẩm</button></div>
+<div class="chips tight" role="group" aria-label="Lọc theo nhóm">
+<sc-for list="{{gFilters}}" as="gf" hint-placeholder-count="4">
+<button type="button" class="{{gf.cls}}" aria-pressed="{{gf.on}}" onClick="{{gf.pick}}">{{gf.label}} <span class="n">{{gf.count}}</span></button>
+</sc-for>
+</div>
+<div class="card scroll">
+<table class="tbl">
+<thead><tr><th>Sản phẩm</th><th>Loại</th><th>Đang nắm giữ</th><th>Đã bán (12 th)</th><th>Điểm kinh doanh</th><th></th></tr></thead>
+<tbody>
+<sc-for list="{{products}}" as="pr" hint-placeholder-count="7">
+<tr>
+<td style="min-width: 200px"><b>{{pr.name}}</b><div class="sub">{{pr.supplier}}</div></td>
+<td class="nowrap">{{pr.group}}</td>
+<td class="nowrap">{{pr.held}}</td>
+<td class="nowrap">{{pr.sold}}</td>
+<td style="min-width: 240px"><span class="mscore {{pr.scoreCls}}" style="margin-left: 0">{{pr.score}}</span> <span class="{{pr.advCls}}">{{pr.adv}}</span><div class="sub">{{pr.reason}}</div></td>
+<td class="num"><button type="button" class="ghost" onClick="{{pr.togglePrice}}">{{pr.priceLabel}}</button></td>
+</tr>
+<sc-if value="{{pr.priceOpen}}" hint-placeholder-val="{{ false }}">
+<tr><td colspan="6" class="breakdown">
+<div class="sub" style="margin-bottom: 8px; font-size: 12.5px; color: #6b6c80">Các giá đã ghi nhận · {{pr.name}}</div>
+<sc-if value="{{pr.hasPrices}}" hint-placeholder-val="{{ true }}">
+<table class="tbl" style="background: #fff"><thead><tr><th>Nhà cung cấp</th><th class="num">Giá</th><th>Đơn vị</th><th>Loại</th><th>Nguồn</th><th>Ngày</th></tr></thead>
+<tbody><sc-for list="{{pr.prices}}" as="px" hint-placeholder-count="3"><tr><td class="nowrap">{{px.sup}}<sc-if value="{{px.isNew}}" hint-placeholder-val="{{ false }}"> <span class="tag ok sm">Mới lưu từ bảng tin</span></sc-if></td><td class="num"><b>{{px.price}}</b></td><td>{{px.unit}}</td><td>{{px.kind}}</td><td><span class="{{px.srcCls}}">{{px.src}}</span></td><td>{{px.date}}</td></tr></sc-for></tbody></table>
+</sc-if>
+<sc-if value="{{pr.noPrices}}" hint-placeholder-val="{{ false }}"><div class="sub" style="font-size: 13px; color: #6b6c80">Chưa có giá nào.</div></sc-if>
+</td></tr>
+</sc-if>
+</sc-for>
+</tbody>
+</table>
+</div>
+</sc-if>
+
+</main>
+</div>
+</sc-if>
+
+<sc-if value="{{isSettings}}" hint-placeholder-val="{{ false }}">
+<div class="ws">
+<nav class="wsside" aria-label="Mục cài đặt">
+<div class="mini"><span class="av lg t7">TT</span><div><b>Cài đặt</b><span>Lê Thị Thuý Tiên · Admin</span></div></div>
+<sc-for list="{{setGroups}}" as="sg" hint-placeholder-count="3">
+<div class="sidegroup">
+<div class="sidecap">{{sg.label}}</div>
+<sc-for list="{{sg.items}}" as="st" hint-placeholder-count="3">
+<button type="button" class="{{st.cls}}" onClick="{{st.pick}}">{{st.label}}</button>
+</sc-for>
+</div>
+</sc-for>
+</nav>
+<main class="wsmain">
+<section class="card setbody">
+
+<sc-if value="{{sAccount}}" hint-placeholder-val="{{ true }}">
+<h2>Tài khoản</h2>
+<p class="lead">Thông tin đăng nhập của bạn trong NITI GROUP.</p>
+<div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px">
+<span class="av lg t7">TT</span>
+<button type="button" class="ghost">Đổi ảnh đại diện</button>
+</div>
+<div class="form">
+<div><label for="s-name">Họ tên</label><input id="s-name" class="field" value="Lê Thị Thuý Tiên"></div>
+<div><label for="s-title">Chức danh</label><input id="s-title" class="field" value="Giám đốc"></div>
+<div><label for="s-mail">Email</label><input id="s-mail" class="field" placeholder="[EMAIL]"></div>
+<div><label for="s-phone">Số điện thoại</label><input id="s-phone" class="field" placeholder="[SỐ ĐIỆN THOẠI]"></div>
+</div>
+<div class="sfoot"><button type="button" class="primary">Lưu</button></div>
+</sc-if>
+
+<sc-if value="{{sCompany}}" hint-placeholder-val="{{ false }}">
+<h2>Công ty</h2>
+<p class="lead">Tên, logo, màu và giao diện. Áp dụng cho cả công ty, hiện trên hồ sơ Community.</p>
+<div class="form">
+<div><label for="c-name">Tên công ty</label><input id="c-name" class="field" value="NITI GROUP"></div>
+<div><label for="c-app">Tên ứng dụng</label><input id="c-app" class="field" value="Sổ Hợp Tác"></div>
+<div class="full"><span class="flabel">Logo</span><div style="display: flex; align-items: center; gap: 12px"><span class="biglogo" style="width: 56px; height: 56px; font-size: 20px; border-width: 0; border-radius: 12px">N</span><button type="button" class="ghost">Tải logo lên</button><span class="sub" style="font-size: 12.5px; color: #6b6c80">PNG, JPG hoặc SVG, ảnh vuông, tối đa 1 MB</span></div></div>
+<div class="full"><span class="flabel">Màu chủ đạo</span><div class="swatches"><button type="button" class="swatch on" style="background: #4f46e5" aria-label="Chàm"></button><button type="button" class="swatch" style="background: #2563eb" aria-label="Xanh dương"></button><button type="button" class="swatch" style="background: #0891b2" aria-label="Xanh ngọc"></button><button type="button" class="swatch" style="background: #16a34a" aria-label="Xanh lá"></button><button type="button" class="swatch" style="background: #ea580c" aria-label="Cam"></button><button type="button" class="swatch" style="background: #db2777" aria-label="Hồng"></button></div></div>
+<div class="full"><span class="flabel">Giao diện</span><div class="seg"><button type="button" class="on">Theo hệ thống</button><button type="button">Sáng</button><button type="button">Tối</button></div></div>
+</div>
+<div class="sfoot"><button type="button" class="primary">Lưu cài đặt</button></div>
+</sc-if>
+
+<sc-if value="{{sMembers}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap">
+<div style="flex: 1; min-width: 220px"><h2>Thành viên</h2><p class="lead">Dùng chung danh sách bạn bè Community và dữ liệu Sổ Hợp Tác của NITI GROUP.</p></div>
+<button type="button" class="primary sm">+ Mời thành viên</button>
+</div>
+<div class="scroll"><table class="tbl"><thead><tr><th>Thành viên</th><th>Vai trò</th><th>Phụ trách</th></tr></thead>
+<tbody><sc-for list="{{members}}" as="mb" hint-placeholder-count="4"><tr><td class="nowrap"><div style="display: flex; align-items: center; gap: 10px"><span class="av sm t7">{{mb.initials}}</span><b>{{mb.name}}</b></div></td><td class="nowrap">{{mb.role}}</td><td>{{mb.scope}}</td></tr></sc-for></tbody></table></div>
+</sc-if>
+
+<sc-if value="{{sRep}}" hint-placeholder-val="{{ false }}">
+<h2>Điểm uy tín</h2>
+<p class="lead">Mỗi nhóm sản phẩm và vai trò có cách tính riêng.</p>
+<div class="chips tight"><sc-for list="{{repCells}}" as="rc" hint-placeholder-count="5"><button type="button" class="{{rc.cls}}" onClick="{{rc.pick}}">{{rc.label}}</button></sc-for></div>
+<div class="scroll"><table class="tbl"><thead><tr><th>Tiêu chí</th><th>Cách tính</th><th class="num">Trọng số</th></tr></thead>
+<tbody><sc-for list="{{repCrit}}" as="rq" hint-placeholder-count="5"><tr><td class="nowrap"><b>{{rq.k}}</b></td><td class="sub">{{rq.how}}</td><td class="num">{{rq.w}}</td></tr></sc-for></tbody></table></div>
+<button type="button" class="linkbtn" style="padding-left: 0; margin-top: 6px">+ Thêm tiêu chí</button>
+<div class="fxbox">Điểm dữ liệu = Σ (điểm tiêu chí × trọng số) ÷ Σ trọng số, bỏ qua tiêu chí chưa có dữ liệu. Điểm cuối = 80% điểm dữ liệu + 20% đánh giá thủ công (số sao × 20). Tính trong 12–24 tháng, việc cũ hơn 6 tháng tính nhẹ hơn. Mức: TỐT từ 85, KHÁ từ 70, dưới 70 là CHÚ Ý; chưa đủ 3 việc thì hiện MỚI.</div>
+</sc-if>
+
+<sc-if value="{{sBiz}}" hint-placeholder-val="{{ false }}">
+<h2>Điểm kinh doanh</h2>
+<p class="lead">Đề xuất mua thêm, giữ hay xả hàng ở trang Sản phẩm &amp; Giá.</p>
+<div class="form">
+<div><span class="flabel">Trọng số</span><div class="kv2"><span>Tốc độ bán</span><b>40%</b></div><div class="kv2"><span>Biên lãi</span><b>35%</b></div><div class="kv2"><span>Xu hướng</span><b>25%</b></div></div>
+<div><span class="flabel">Ngưỡng đề xuất</span><div class="kv2"><span>Mua thêm</span><b>tồn đủ bán dưới 45 ngày</b></div><div class="kv2"><span>Xả hàng</span><b>tồn đủ bán trên 150 ngày</b></div><div class="kv2"><span>Đẩy mạnh / cân nhắc dừng</span><b>từ 70 / dưới 45 điểm</b></div><div class="kv2"><span>Mục tiêu bán 3 tháng</span><b>6 đơn</b></div></div>
+</div>
+<div class="fxbox">Điểm = Tốc độ bán × 40% + Biên lãi × 35% + Xu hướng × 25%. Tốc độ bán tuỳ cách giữ hàng: hàng trong kho theo số ngày tồn, gói có hạn dùng theo số suất dự kiến bán trước hạn, đặt theo khách theo số đơn 3 tháng so với mục tiêu. Biên lãi 25% = 100 điểm. Xu hướng so 3 tháng gần với 3 tháng trước.</div>
+</sc-if>
+
+<sc-if value="{{sSrc}}" hint-placeholder-val="{{ false }}">
+<h2>Cách lấy hàng theo loại sản phẩm</h2>
+<p class="lead">Trang sản phẩm chỉ hiện các cách đã bật cho nhóm đó.</p>
+<div class="srcgrid">
+<div class="card pad"><b>Dịch vụ có hạn</b><ul><li>Hạn mức đã mua trước</li><li>Đặt theo từng khách</li><li>Tồn kho của mình</li><li>Token hãng gửi theo gói</li><li>Hãng giao kèm khi cấp</li><li>Khách đã có</li><li>Hãng đổi theo bảo hành</li><li>Giới thiệu, nhận hoa hồng</li></ul></div>
+<div class="card pad"><b>Hàng hoá</b><ul><li>Tồn kho của mình</li><li>Đặt NCC giao thẳng</li></ul></div>
+<div class="card pad"><b>Giới thiệu</b><ul><li>Giới thiệu, nhận hoa hồng</li></ul></div>
+</div>
+</sc-if>
+
+<sc-if value="{{sNotif}}" hint-placeholder-val="{{ false }}">
+<h2>Thông báo</h2>
+<p class="lead">Chọn khi nào bạn muốn nhận thông báo.</p>
+<sc-for list="{{notifSettings}}" as="ns" hint-placeholder-count="6">
+<div class="row">
+<div class="t"><b>{{ns.label}}</b><span>{{ns.hint}}</span></div>
+<button type="button" class="sw" aria-pressed="{{ns.on}}" aria-label="{{ns.label}}" onClick="{{ns.toggle}}"></button>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{sPrivacy}}" hint-placeholder-val="{{ false }}">
+<h2>Quyền riêng tư Community</h2>
+<p class="lead">Kiểm soát ai thấy bài đăng và thông tin của công ty.</p>
+<div class="row"><div class="t"><b>Ai thấy bài đăng</b><span>Chỉ bạn bè đã kết nối với NITI GROUP.</span></div><span class="tag grey">Bạn bè</span></div>
+<div class="row"><div class="t"><b>Bình luận riêng theo đối tác</b><span>Mỗi đối tác chỉ thấy bình luận của chính họ với NITI GROUP.</span></div><button type="button" class="sw" aria-pressed="{{privComments}}" aria-label="Bình luận riêng theo đối tác" onClick="{{togglePrivComments}}"></button></div>
+<div class="row"><div class="t"><b>Hiện điểm uy tín cạnh bài đăng</b><span>Chỉ thành viên NITI GROUP thấy, đối tác không bao giờ thấy.</span></div><button type="button" class="sw" aria-pressed="{{showRep}}" aria-label="Hiện điểm uy tín cạnh bài đăng" onClick="{{toggleRep}}"></button></div>
+<div class="row"><div class="t"><b>Cho phép đối tác kết nối trực tiếp với nhau<span class="soonpill">Sắp ra mắt</span></b><span>Gói trả phí. Hiện chỉ công ty trung gian được kết bạn.</span></div><button type="button" class="sw" aria-pressed="false" aria-label="Kết nối trực tiếp" disabled></button></div>
+</sc-if>
+
+</section>
+</main>
+</div>
+</sc-if>
+
+<sc-if value="{{chatOpen}}" hint-placeholder-val="{{ false }}">
+<div class="chat" role="dialog" aria-label="Trợ lý giá">
+<div class="hd"><span class="logo" style="width: 32px; height: 32px; font-size: 14px">AI</span><div style="flex: 1"><b>Trợ lý giá</b><span>Trả lời từ Sổ giá, bài đăng và báo giá · luôn kèm nguồn</span></div><button type="button" class="iconbtn" style="width: 40px; height: 40px" onClick="{{toggleChat}}" aria-label="Đóng trợ lý"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+<div class="msgs">
+<sc-for list="{{msgs}}" as="mg" hint-placeholder-count="2">
+<div class="{{mg.cls}}">{{mg.text}}<sc-if value="{{mg.hasSrc}}" hint-placeholder-val="{{ false }}"><span class="src">{{mg.src}}</span></sc-if><sc-if value="{{mg.hasAct}}" hint-placeholder-val="{{ false }}"><div class="act"><button type="button" class="outline" onClick="{{mg.act}}">{{mg.actLabel}}</button></div></sc-if></div>
+</sc-for>
+</div>
+<div class="qp"><sc-for list="{{quickPrompts}}" as="qp" hint-placeholder-count="4"><button type="button" onClick="{{qp.ask}}">{{qp.label}}</button></sc-for></div>
+<div class="in"><input aria-label="Hỏi trợ lý giá" placeholder="Hỏi giá, ghi giá, soạn báo giá…" value="{{chatText}}" onChange="{{onChatText}}"><button type="button" class="sendbtn" onClick="{{sendChat}}" aria-label="Gửi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4z"></path></svg></button></div>
+</div>
+</sc-if>
+<button type="button" class="fab" onClick="{{toggleChat}}" aria-label="Mở trợ lý giá"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"></path></svg>Hỏi trợ lý giá</button>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      screen: 'feed', filter: 'all', notifOpen: false, menuFor: null, editing: null, editText: '', confirmDel: null,
+      draft: '', dProduct: '', dQty: '', dPrice: '', draftType: 'sell', attach: [], seq: 10, prefill: '',
+      openC: { p3: true }, cDraft: {}, tab: 'dash', showAllTodos: false, cid: null, cFilter: 'all', pFilter: 'all', gFilter: 'all', openP: null, period: 'q',
+      confirmKey: null, fault: 'sup', doneMs: {}, locked: {}, feedDeal: false,
+      setTab: 'account', repCell: 'svc-sup', privComments: true, showRep: true,
+      saveFor: null, saveProd: '', savePrice: '', savedQuotes: [], prodOpen: null,
+      chatOpen: false, chatText: '', msgs: [{ from: 'bot', text: 'Chào chị Tiên. Chị hỏi giá bất kỳ sản phẩm nào, hoặc dán tin nhắn báo giá để em lưu vào Sản phẩm & Giá.' }],
+      ns: { cmt: true, reply: true, newPost: false, match: true, ms: true, digest: false },
+      posts: [
+        { id: 'p3', mine: false, pid: 'abc', author: 'Công ty TNHH ABC', person: 'Trần B', initials: 'AB', tone: 't3', time: '25 phút', type: 'buy', archived: false,
+          title: 'Cần gia hạn chữ ký số cho 2 người ký',
+          body: 'Chữ ký số của công ty hết hạn 14/05/2025, cần gia hạn sớm và thêm 1 chữ ký cho kế toán. Báo giá giúp mình nhé.',
+          facts: [{ k: 'Hàng hoá', v: 'Chữ ký số DN – USB Token' }, { k: 'Số lượng', v: '2 chữ ký · gói 1 năm' }, { k: 'Ngân sách', v: 'Liên hệ' }, { k: 'Cần trước', v: '14/05/2025' }],
+          media: [], match: { cls: 'match', label: 'Có sẵn trong Sổ Hợp Tác:', text: 'đang nắm giữ 112 suất USB Token, giá vốn BQ 1.250.000đ. Giá bán gần nhất cho ABC 1.650.000đ.', cta: 'Xem Sản phẩm & Giá', go: 'products', pb: 'Chữ ký số DN – USB Token' },
+          comments: [{ who: 'NITI GROUP · Mai Anh', initials: 'NG', tone: 't1', text: 'Bên mình có sẵn, em gửi báo giá ngay nhé.', time: '20 phút' }, { who: 'Công ty TNHH ABC', initials: 'AB', tone: 't3', text: 'Ok, gửi mình trước 5h chiều nhé.', time: '12 phút' }] },
+        { id: 'p1', mine: true, author: 'NITI GROUP', person: 'Mai Anh', initials: 'NG', tone: 't1', time: '1 giờ', type: 'sell', archived: false,
+          title: 'Chữ ký số doanh nghiệp USB Token — gói 1 năm',
+          body: 'Cấp serial trong ngày, kèm token, hỗ trợ cài đặt và nhắc gia hạn trước 30 ngày.',
+          facts: [{ k: 'Hàng hoá', v: 'Chữ ký số DN – USB Token' }, { k: 'Số lượng', v: 'Từ 1 chữ ký' }, { k: 'Giá', v: '1.650.000đ / chữ ký / năm' }, { k: 'Khu vực', v: 'Toàn quốc' }],
+          media: [{ kind: 'img', label: 'USB Token' }, { kind: 'img', label: 'Chứng thư số mẫu' }],
+          comments: [{ who: 'Công ty CP Hưng Thịnh', initials: 'HT', tone: 't4', text: 'Bên mình cần thêm chữ ký HSM, báo giá giúp nhé.', time: '35 phút' }] },
+        { id: 'p2', mine: false, pid: 'tp', author: 'Cơ sở Tân Phát', person: 'Anh Phát', initials: 'TP', tone: 't2', time: '3 giờ', type: 'sell', archived: false,
+          title: 'Băng keo 5cm và thùng phi 200L — hàng sẵn kho',
+          body: 'Băng keo trong 5cm, thùng phi 200L đã súc rửa sạch. Giao nội thành trong 2 ngày.',
+          facts: [{ k: 'Hàng hoá', v: 'Băng keo 5cm · Thùng phi 200L' }, { k: 'Số lượng', v: '2.000 cuộn · 60 thùng' }, { k: 'Giá', v: '3.800đ / cuộn · 300.000đ / thùng' }, { k: 'Khu vực', v: 'TP.HCM' }],
+          media: [{ kind: 'img', label: 'Băng keo 5cm' }, { kind: 'img', label: 'Thùng phi 200L' }, { kind: 'video', label: 'Video kho · 0:38' }],
+          match: { cls: 'match warn', label: 'Lưu ý từ Sổ Hợp Tác:', text: 'uy tín nhà cung cấp 63 CHÚ Ý (3/6 lần giao trễ, 2 khiếu nại). Lô 2 thùng phi đặt qua Zalo đang quá hạn 4 ngày. Mình còn 40 thùng phi chưa bán được.', cta: 'Xem đối tác', go: 'partner' },
+          qOpts: [['Băng keo 5cm', '3.800', 'cuộn', 'Chưa VAT', 'Bằng giá Tân Phát báo 09/2024. Rẻ nhất đang ghi nhận: Chợ Kim Biên 3.500đ (giá thị trường).', 'Mua mới'], ['Thùng phi 200L', '300.000', 'thùng', 'Chưa VAT', 'Thùng phi 200L chưa có giá nào trong Sản phẩm & Giá; đây sẽ là giá đầu tiên.', 'Mua mới']],
+          comments: [] },
+        { id: 'p4', mine: false, pid: 'fast', author: 'Hãng FAST', person: 'Phòng đại lý', initials: 'FA', tone: 't5', time: '6 giờ', type: 'sell', archived: false,
+          title: 'Chính sách đại lý chữ ký số 2025',
+          body: 'Giá đại lý 1.150.000đ / chữ ký gói 1 năm, có chiết khấu thêm theo sản lượng quý.',
+          facts: [{ k: 'Hàng hoá', v: 'Chữ ký số · gói 1 năm' }, { k: 'Số lượng', v: 'Không giới hạn' }, { k: 'Giá', v: '1.150.000đ / chữ ký' }, { k: 'Khu vực', v: 'Toàn quốc' }],
+          media: [{ kind: 'img', label: 'Bảng giá đại lý 2025' }],
+          match: { cls: 'match', label: 'So với giá vốn BQ 1.250.000đ:', text: 'rẻ hơn 8%. Hãng FAST là đối tác MỚI (0/3 việc có tính điểm), nên mua thử lô nhỏ trước khi chuyển.', cta: 'Xem Sản phẩm & Giá', go: 'products', pb: 'Chữ ký số DN – USB Token' },
+          qOpts: [['Chữ ký số DN – USB Token', '1.150.000', 'chữ ký/năm', 'Có VAT', 'Hãng FAST đã có báo giá 1.150.000đ (08/2024): lưu lại sẽ thay bằng giá mới nhất. Rẻ hơn giá vốn BQ 1.250.000đ khoảng 8%.', 'Mua mới'], ['Chữ ký số HSM', '1.150.000', 'chữ ký/năm', 'Có VAT', 'Cao hơn giá vốn HSM hiện tại 970.000đ (Hãng NCCA).', 'Mua mới']],
+          comments: [] },
+        { id: 'p5', mine: true, author: 'NITI GROUP', person: 'Lê Quý', initials: 'NG', tone: 't1', time: '3 ngày', type: 'buy', archived: true,
+          title: 'Tìm nguồn hợp đồng điện tử — gói 100 HĐ',
+          body: 'Đang có khách hỏi, cần nhà cung cấp hợp đồng điện tử giá tốt.',
+          facts: [{ k: 'Hàng hoá', v: 'Hợp đồng điện tử' }, { k: 'Số lượng', v: 'Gói 100 HĐ' }],
+          media: [], comments: [] }
+      ],
+      notifs: [
+        { id: 'n1', who: 'Công ty TNHH ABC', initials: 'AB', tone: 't3', text: 'đã trả lời bình luận trong “Cần gia hạn chữ ký số cho 2 người ký”.', time: '12 phút trước', post: 'p3', unread: true },
+        { id: 'n2', who: 'Công ty CP Hưng Thịnh', initials: 'HT', tone: 't4', text: 'đã bình luận về bài “Chữ ký số doanh nghiệp USB Token”.', time: '35 phút trước', post: 'p1', unread: true },
+        { id: 'n3', who: 'Sổ Hợp Tác', initials: 'S', tone: 't7', text: 'tìm thấy hàng đang nắm giữ khớp với bài cần mua của Công ty TNHH ABC.', time: '25 phút trước', post: 'p3', unread: false }
+      ]
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const set = (o) => this.setState(o);
+    const BW = { good: 'TỐT', fair: 'KHÁ', watch: 'CHÚ Ý', new: 'MỚI' };
+    const band = (n) => (n == null ? 'new' : n >= 85 ? 'good' : n >= 70 ? 'fair' : 'watch');
+
+    /* ---------- Đối tác (điểm thật từ Sổ Hợp Tác) ---------- */
+    const PT = [
+      { id: 'ncca', name: 'Hãng NCCA', short: 'Hãng NCCA', mst: '0101234567', roles: [['sup', 88]], hd: 3, friend: false,
+        critTitle: 'Nhà cung cấp · dịch vụ có hạn · 24 tháng gần nhất',
+        crit: [['Giao đúng hạn', 81, '25%', '6 lần giao · 1 trễ, TB 0,2 ngày'], ['Chất lượng', 100, '10%', '0 khiếu nại / 6 lần giao'], ['Xử lý sự cố', 85, '25%', 'số mẫu'], ['Giữ giá', 78, '15%', 'số mẫu'], ['Cấp serial / kích hoạt', 100, '25%', '4 lần kích hoạt · đều đúng hạn']],
+        formula: 'Điểm dữ liệu 88,20 · chưa có đánh giá thủ công, dùng 100% điểm dữ liệu → 88 TỐT' },
+      { id: 'vtl', name: 'Viettel S-Invoice', short: 'Viettel', mst: '0100109106', roles: [['sup', 80]], hd: 1, friend: false,
+        critTitle: 'Nhà cung cấp · dịch vụ có hạn · 24 tháng gần nhất',
+        crit: [['Giao đúng hạn', 100, '25%', '3 lần giao · đều đúng hạn'], ['Chất lượng', 60, '10%', '1 khiếu nại / 3 lần giao'], ['Xử lý sự cố', 62, '25%', 'số mẫu'], ['Giữ giá', 80, '15%', 'số mẫu'], ['Cấp serial / kích hoạt', 93, '25%', '2 lần kích hoạt · 1 trễ, TB 0,7 ngày']],
+        formula: '81,75 × 80% + đánh giá thủ công 72 × 20% = 79,80 → 80 KHÁ', drop: 'Nhà cung cấp · giảm 4 điểm' },
+      { id: 'abc', name: 'Công ty TNHH ABC', short: 'TNHH ABC', mst: '0312345678', roles: [['cus', 75]], hd: 1, friend: true,
+        critTitle: 'Khách hàng · dịch vụ có hạn (75% giá trị giao dịch)',
+        crit: [['Thanh toán đúng hạn', 77, '35%', '5 khoản thu · 1 trễ, TB 0,7 ngày'], ['Ít phải nhắc', 80, '15%', 'số mẫu'], ['Công nợ', 85, '10%', 'số mẫu'], ['Gia hạn qua mình', 70, '35%', 'số mẫu'], ['Ít khiếu nại vô lý', 100, '5%', '0 khiếu nại / 5 khoản thu']],
+        formula: 'Gộp theo giá trị giao dịch: dịch vụ có hạn 76,95 × 75% + hàng hoá 70,25 × 25% = 75,28 → 75 KHÁ' },
+      { id: 'tp', name: 'Cơ sở Tân Phát', short: 'Tân Phát', mst: '8012345678', roles: [['sup', 63], ['cus', 96]], hd: 3, friend: true,
+        critTitle: 'Nhà cung cấp · hàng hoá · 12 tháng gần nhất',
+        crit: [['Giao đúng hạn', 46, '35%', '6 lần giao · 3 trễ, TB 2,0 ngày'], ['Chất lượng', 67, '35%', '2 khiếu nại / 6 lần giao'], ['Xử lý sự cố', 60, '10%', 'số mẫu'], ['Giữ giá', 85, '20%', 'số mẫu']],
+        formula: 'Nhà cung cấp: 62,55 × 80% + đánh giá thủ công 65 × 20% = 63,04 → 63 CHÚ Ý. Vai trò khách hàng: 96 TỐT.', drop: 'Nhà cung cấp · giảm 13 điểm' },
+      { id: 'ht', name: 'Công ty CP Hưng Thịnh', short: 'Hưng Thịnh', mst: '0309876543', roles: [['cus', 100]], hd: 1, friend: true,
+        critTitle: 'Khách hàng · dịch vụ có hạn · 24 tháng gần nhất',
+        crit: [['Thanh toán đúng hạn', 100, '35%', '5 khoản thu · đều đúng hạn'], ['Ít phải nhắc', 95, '15%', 'số mẫu'], ['Công nợ', 88, '10%', 'số mẫu'], ['Gia hạn qua mình', 95, '35%', 'số mẫu'], ['Ít khiếu nại vô lý', 100, '5%', '0 khiếu nại / 5 khoản thu']],
+        formula: '96,30 × 80% + đánh giá thủ công 100 × 20% = 97,04 · chỉnh tay +3 (khách chiến lược) → 100 TỐT' },
+      { id: 'mp', name: 'DNTN Minh Phát', short: 'Minh Phát', mst: '8098765432', roles: [['cus', 55]], hd: 1, friend: true, flag: 'Có thể khách đã gia hạn thẳng với hãng',
+        critTitle: 'Khách hàng · dịch vụ có hạn · 24 tháng gần nhất',
+        crit: [['Thanh toán đúng hạn', 48, '35%', '3 khoản thu · 1 trễ, TB 2,0 ngày'], ['Ít phải nhắc', 70, '15%', 'số mẫu'], ['Công nợ', 85, '10%', 'số mẫu'], ['Gia hạn qua mình', 40, '35%', 'số mẫu'], ['Ít khiếu nại vô lý', 100, '5%', '0 khiếu nại / 3 khoản thu']],
+        formula: 'Điểm dữ liệu 54,80 · chưa có đánh giá thủ công → 55 CHÚ Ý', drop: 'Khách hàng · giảm 8 điểm' },
+      { id: 'pvi', name: 'PVI / Bảo Việt', short: 'PVI / Bảo Việt', mst: '0100111222', roles: [['ref', 71]], hd: 1, friend: true,
+        critTitle: 'Bên trả hoa hồng · giới thiệu · 12 tháng gần nhất',
+        crit: [['Trả hoa hồng đúng hạn', 66, '60%', '4 lần trả · 4 trễ, TB 33,6 ngày'], ['Gửi đối soát đầy đủ', 75, '25%', 'số mẫu'], ['Hỗ trợ khách giới thiệu', 85, '15%', 'số mẫu']],
+        formula: 'Điểm dữ liệu 71,10 · chưa có đánh giá thủ công → 71 KHÁ', drop: 'Đối tác giới thiệu · giảm 13 điểm' },
+      { id: 'fast', name: 'Hãng FAST', short: 'Hãng FAST', mst: '0105555666', roles: [['sup', null]], hd: 0, friend: true,
+        critTitle: '', crit: [], formula: 'Chưa đủ dữ liệu: 0/3 việc có tính điểm, chưa xếp mức. Mới nhận 1 báo giá chữ ký số 1.150.000đ (08/2024).' }
+    ];
+    const RL = { sup: 'Nhà cung cấp', cus: 'Khách hàng', ref: 'Đối tác giới thiệu' };
+    const RS = { sup: 'NCC', cus: 'Khách', ref: 'GT' };
+    const pt = (id) => PT.find((p) => p.id === id);
+    const worst = (p) => { const b = p.roles.map((r) => band(r[1])); return b.indexOf('watch') >= 0 ? 'watch' : b.indexOf('fair') >= 0 ? 'fair' : b.indexOf('good') >= 0 ? 'good' : 'new'; };
+    const mainScore = (p, role) => { const r = role ? p.roles.find((x) => x[0] === role) : null; const v = r ? r[1] : (p.roles.map((x) => x[1]).filter((x) => x != null).sort((a, b) => a - b)[0]); return v == null ? 'MỚI' : String(v); };
+    const roleCls = (p, role) => { const r = role ? p.roles.find((x) => x[0] === role) : null; return r ? band(r[1]) : worst(p); };
+
+    /* ---------- Chứng từ & diễn biến ---------- */
+    const M = (t, w, st, when, extra) => Object.assign({ t, w, st, when }, extra || {});
+    const C = [
+      { id: 'c2', type: 'contract', num: '2024/06-VTL', title: 'HĐ hoá đơn điện tử Viettel', pid: 'vtl', dir: 'purchase', value: '48.000.000đ', start: '01/06/2024', end: '31/05/2025', stage: 'done', owner: 'Trần Nam', signS: '—', signB: 'Lê Thị Thuý Tiên',
+        payment: 'Thanh toán 1 lần khi ký.', io: 'Nhập kho', lines: [['Gói 300 số hoá đơn điện tử', 'Hoá đơn điện tử', '150 gói', '150', '320.000đ', '48.000.000đ']],
+        summary: 'Mua gói hoá đơn điện tử 300 số, dùng 12 tháng.', sum: [['Hạn chót', '31/05/2025 · hết hạn gói']], terms: ['Hỗ trợ 24/7', 'Gia hạn theo số'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '01/06/2024'), M('Thanh toán 1 lần khi ký', 'me', 'done', 'Xong 01/06/2024, đúng hạn'), M('Kích hoạt gói 300 số', 'them', 'done', 'Xong 10/06/2024, đúng hạn', { d: 1 }), M('Khiếu nại: lỗi phát hành hoá đơn, 5 ngày mới xử lý', 'them', 'free', 'Ghi tay 20/09/2024', { d: -4, fault: 'Đối tác' }), M('Nhắc gia hạn (trước 30 ngày)', 'me', 'up', 'Hạn 01/05/2025', { remind: 1 }), M('Hết hiệu lực', 'sys', 'sys', '31/05/2025')] },
+      { id: 'c3', type: 'deal', source: 'Email / tin nhắn', note: 'Chị Lan (Tân Phát) xác nhận qua Zalo ngày 30/09', num: '', title: 'Đặt thùng phi 200L qua Zalo', pid: 'tp', dir: 'purchase', value: '12.000.000đ', valueN: 12000000, start: '01/10/2024', end: '31/12/2024', stage: 'over', step: 'Giao lô 2 · 20 thùng phi', owner: 'Lê Quý',
+        payment: 'Thanh toán toàn bộ sau khi nhận đủ.', io: 'Nhập kho', lines: [['Thùng phi 200L', 'Thùng phi 200L', '40 thùng', '20', '300.000đ', '12.000.000đ']],
+        ms: [M('Ngày giao dịch', 'sys', 'sys', '01/10/2024'), M('Giao lô 1 · 20 thùng phi', 'them', 'late', 'Xong 12/10/2024, trễ 5 ngày', { d: -8, fault: 'Đối tác' }),
+          M('Giao lô 2 · 20 thùng phi', 'them', 'over', 'Hạn 15/10/2024 · quá hạn 4 ngày', { key: 'c3-l2', late: 4, imp: {
+            sup: 'Trễ 4 ngày, lỗi đối tác. Giao đúng hạn 46 → 41 · điểm nhà cung cấp 63 → 61. Kho Thùng phi 200L: 40 → 60 thùng.',
+            me: 'Trễ do phía mình: không trừ điểm Tân Phát. Kho Thùng phi 200L: 40 → 60 thùng.',
+            unk: 'Chưa rõ lỗi: tạm chưa tính điểm, nhắc xác minh sau 3 ngày. Kho Thùng phi 200L: 40 → 60 thùng.' }, dSup: -6, doneWhen: 'Xong 19/10/2024, trễ 4 ngày' }),
+          M('Thanh toán toàn bộ sau khi nhận đủ', 'me', 'up', 'Hạn 31/10/2024 · còn 12 ngày'), M('Hết hiệu lực', 'sys', 'sys', '31/12/2024')] },
+      { id: 'c4', type: 'contract', draft: true, num: '2024/10-ABC', title: 'HĐ bán chữ ký số cho Cty ABC', pid: 'abc', dir: 'sale', value: '1.650.000đ', start: '05/10/2024', end: '04/10/2025', stage: 'done', owner: 'Mai Anh', signS: 'Lê Thị Thuý Tiên', signB: 'Trần B',
+        payment: 'Thanh toán khi ký.', io: 'Xuất kho', lines: [['CKS USB Token · 1 năm', 'Chữ ký số DN – USB Token', '1 chữ ký', '1', '1.650.000đ', '1.650.000đ']],
+        summary: 'Bán 1 chữ ký số USB Token 1 năm cho Công ty TNHH ABC.', sum: [['Hạn chót', '04/10/2025 · hết hạn chứng thư']], terms: ['Giao serial sau 1 ngày'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '05/10/2024'), M('Thu tiền khi ký', 'them', 'done', 'Xong 05/10/2024, đúng hạn', { d: 2 }), M('Giao serial cho khách', 'me', 'done', 'Xong 06/10/2024, đúng hạn'), M('Nhắc khách gia hạn (trước 30 ngày)', 'me', 'up', 'Hạn 04/09/2025', { remind: 1 }), M('Hết hiệu lực', 'sys', 'sys', '04/10/2025')] },
+      { id: 'c1b', type: 'contract', ver: 2, num: '2024/08-NCCA-SĐ1', title: 'HĐ mua chữ ký số NCCA · Lô Q3', pid: 'ncca', dir: 'purchase', value: '248.000.000đ', start: '01/10/2024', end: '31/08/2025', stage: 'doing', step: 'Giao đợt 2 · 100 chữ ký (đơn giá mới)', owner: 'Lê Quý', signS: 'Nguyễn Văn A', signB: 'Lê Thị Thuý Tiên', versions: true,
+        payment: 'Thanh toán 100% trong 15 ngày sau khi nhận đủ serial.', io: 'Nhập kho', lines: [['CKS USB Token · 1 năm', 'Chữ ký số DN – USB Token', '150 chữ ký', '50', '1.300.000đ', '195.000.000đ'], ['CKS HSM · 1 năm', 'Chữ ký số HSM', '50 chữ ký', '50', '1.030.000đ', '51.500.000đ']],
+        summary: 'Bản cập nhật sau thương thuyết 01/10/2024: điều chỉnh đơn giá và điều khoản thanh toán. Thay thế Phiên bản 1 (ký 01/09/2024).', sum: [['Hạn chót', '30/11/2024 · giao đợt 2'], ['Phạt khi trễ', '0,05%/ngày trên giá trị chậm giao, tối đa 8%'], ['Thưởng / ưu đãi', 'Chiết khấu 3% nếu mua ≥ 300 chữ ký']], terms: ['Bảo hành 12 tháng', 'Giao 2 đợt', 'Hoá đơn điện tử'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '01/10/2024'), M('Trả trước 50% khi ký bản cập nhật', 'me', 'done', 'Xong 01/10/2024, đúng hạn'),
+          M('Giao đợt 2 · 100 chữ ký (đơn giá mới)', 'them', 'cur', 'Hạn 30/11/2024 · còn 42 ngày', { key: 'c1b-d2', late: 0, imp: { sup: 'Đúng hạn, sớm 42 ngày. Giao đúng hạn 81 → 83 · điểm nhà cung cấp giữ 88. Hạn mức Chữ ký số DN – USB Token: 112 → 212 suất.' }, dSup: 2, doneWhen: 'Xong 19/10/2024, sớm 42 ngày' }),
+          M('Thanh toán 50% còn lại trong 15 ngày', 'me', 'up', 'Hạn 15/12/2024 · còn 57 ngày'), M('Hết hiệu lực', 'sys', 'sys', '31/08/2025')] },
+      { id: 'c5', type: 'contract', num: '2024/06-HT', title: 'HĐ bán CKS HSM cho Hưng Thịnh', pid: 'ht', dir: 'sale', value: '13.800.000đ', start: '20/06/2024', end: '19/06/2025', stage: 'done', owner: 'Mai Anh', signS: 'Lê Thị Thuý Tiên', signB: 'Phạm Hưng',
+        payment: 'Thanh toán 100% khi ký.', io: 'Xuất kho', lines: [['CKS HSM · 1 năm', 'Chữ ký số HSM', '12 chữ ký', '12', '1.150.000đ', '13.800.000đ']],
+        summary: 'Bán 12 chữ ký số HSM 1 năm cho Công ty CP Hưng Thịnh. Thanh toán một lần khi ký, giao serial trong 1 ngày.', sum: [['Hạn chót', '21/06/2024 · giao serial']], terms: ['Giao serial 1 ngày', 'Hỗ trợ cài đặt'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '20/06/2024'), M('Thu tiền khi ký', 'them', 'done', 'Xong 20/06/2024, đúng hạn', { d: 2 }), M('Giao serial cho khách', 'me', 'done', 'Xong 21/06/2024, đúng hạn'), M('Hết hiệu lực', 'sys', 'sys', '19/06/2025')] },
+      { id: 'c6', type: 'contract', num: '2024/07-PVI', title: 'HĐ hợp tác giới thiệu bảo hiểm xe', pid: 'pvi', dir: 'ref', value: '—', start: '01/07/2024', end: '30/06/2025', stage: 'over', step: 'Nhận hoa hồng tháng 8', owner: 'Lê Quý', signS: 'Trần Bảo', signB: 'Lê Thị Thuý Tiên',
+        payment: 'Hoa hồng 8% phí bảo hiểm, đối soát ngày 10 hằng tháng.', io: 'Không ảnh hưởng kho', lines: [['Hợp đồng bảo hiểm xe (giới thiệu)', 'Bảo hiểm xe', '3 hợp đồng', '—', '—', '—']],
+        summary: 'NITI giới thiệu khách mua bảo hiểm xe của PVI / Bảo Việt, hưởng 8% phí bảo hiểm. Đối soát và chi hoa hồng ngày 10 hằng tháng.', sum: [['Hạn chót', 'Ngày 10 hằng tháng · đối soát'], ['Thưởng / ưu đãi', 'Thưởng 2% nếu đạt 20 hợp đồng/quý']], terms: ['Hoa hồng 8%', 'Đối soát hằng tháng'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '01/07/2024'), M('Đối soát hoa hồng tháng 7', 'them', 'late', 'Xong 15/08/2024, trễ 5 ngày · 48.000đ', { d: -6, fault: 'Đối tác' }),
+          M('Nhận hoa hồng tháng 8', 'them', 'over', 'Hạn 10/09/2024 · quá hạn 39 ngày · 320.000đ', { key: 'c6-h8', late: 39, imp: {
+            sup: 'Trễ 39 ngày, lỗi đối tác. Trả hoa hồng đúng hạn 66 → 58 · điểm 71 → 66 (xuống CHÚ Ý). Hoa hồng thực nhận +320.000đ.',
+            me: 'Trễ do phía mình (chưa gửi hồ sơ đối soát): không trừ điểm PVI. Hoa hồng thực nhận +320.000đ.',
+            unk: 'Chưa rõ lỗi: tạm chưa tính điểm. Hoa hồng thực nhận +320.000đ.' }, dSup: -15, doneWhen: 'Xong 19/10/2024, trễ 39 ngày · 320.000đ' }),
+          M('Đối soát hoa hồng tháng 10', 'them', 'up', 'Hạn 10/11/2024 · còn 22 ngày'), M('Hết hiệu lực', 'sys', 'sys', '30/06/2025')] },
+      { id: 'c8', type: 'contract', num: '2025/09-NCCA', title: 'HĐ gói gia hạn CKS 2025', pid: 'ncca', dir: 'purchase', value: '117.600.000đ', start: '01/09/2025', end: '31/08/2026', stage: 'todo', owner: 'Lê Quý', signS: 'Nguyễn Văn A', signB: 'Lê Thị Thuý Tiên',
+        payment: 'Thanh toán 100% khi kích hoạt gói.', io: 'Nhập kho', lines: [['Gói gia hạn CKS · 1 năm', 'Chữ ký số DN – USB Token', '120 suất', '0', '980.000đ', '117.600.000đ']],
+        summary: 'Mua trước 120 suất gia hạn chữ ký số năm 2025 với giá 980.000đ/suất. Gói có hiệu lực từ 01/09/2025.', sum: [['Hạn chót', '01/09/2025 · kích hoạt gói']], terms: ['Không kèm token', 'Dùng trong 12 tháng'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '01/09/2025'), M('Kích hoạt gói', 'them', 'up', 'Hạn 01/09/2025 · còn 317 ngày'), M('Thanh toán', 'me', 'up', 'Hạn 01/09/2025 · còn 317 ngày'), M('Hết hiệu lực', 'sys', 'sys', '31/08/2026')] },
+      { id: 'c9', type: 'contract', num: '2023/12-MP', title: 'HĐ bán CKS cho Minh Phát', pid: 'mp', dir: 'sale', value: '1.550.000đ', start: '02/12/2023', end: '01/12/2024', stage: 'done', step: 'Sắp hết hiệu lực · còn 43 ngày', owner: 'Mai Anh', signS: 'Lê Thị Thuý Tiên', signB: 'Ông Minh',
+        payment: 'Thanh toán khi ký.', io: 'Xuất kho', lines: [['CKS USB Token · 1 năm', 'Chữ ký số DN – USB Token', '1 chữ ký', '1', '1.550.000đ', '1.550.000đ']],
+        summary: 'Bán 1 chữ ký số USB Token 1 năm cho DNTN Minh Phát.', sum: [['Hạn chót', '01/12/2024 · hết hạn chứng thư']], terms: ['Kèm token'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '02/12/2023'), M('Thu tiền khi ký', 'them', 'done', 'Xong 02/12/2023, đúng hạn', { d: 2 }), M('Giao serial', 'me', 'done', 'Xong 03/12/2023, đúng hạn'), M('Hết hiệu lực', 'sys', 'sys', '01/12/2024')] },
+      { id: 'c10', type: 'frame', num: '2024/NT-THP', title: 'HĐ nguyên tắc cung ứng vật tư đóng gói 2024', pid: 'tp', dir: 'purchase', value: 'hạn mức 300.000.000đ', start: '01/01/2024', end: '31/12/2024', stage: 'active', step: '1 giao dịch con', owner: 'Lê Quý', signS: 'Tân Phát', signB: 'Lê Thị Thuý Tiên',
+        payment: 'Thanh toán trong 30 ngày kể từ khi nhận đủ hàng của từng đơn.', io: 'Không ảnh hưởng kho', linesTitle: 'Bảng giá thoả thuận', lines: [['Băng keo 5cm', 'Băng keo 5cm', 'cuộn', '—', '3.800đ', '—'], ['Thùng phi 200L', 'Thùng phi 200L', 'thùng', '—', '300.000đ', '—']],
+        summary: 'Thoả thuận khung năm 2024: Tân Phát cung ứng băng keo và thùng phi theo bảng giá cố định, đặt hàng qua email/Zalo, thanh toán 30 ngày sau khi nhận hàng của từng đơn.', sum: [['Hạn chót', '31/12/2024 · hết hiệu lực']], terms: ['Giá cố định cả năm', 'Đặt qua email/Zalo', 'Thanh toán 30 ngày'],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '01/01/2024'), M('HĐ mua băng keo 5cm · HĐ kinh tế', 'sys', 'done', '10/09/2024 · 1.140.000đ · Đã xong'), M('Đàm phán gia hạn cho năm 2025', 'me', 'up', 'Hạn 15/11/2024 · còn 27 ngày'), M('Hết hiệu lực', 'sys', 'sys', '31/12/2024')] },
+      { id: 'c7', type: 'contract', parent: 'c10', num: '2024/09-TPBK', title: 'HĐ mua băng keo 5cm', pid: 'tp', dir: 'purchase', value: '1.140.000đ', start: '10/09/2024', end: '30/09/2024', stage: 'done', owner: 'Lê Quý', signS: 'Tân Phát', signB: 'Lê Quý',
+        payment: 'Thanh toán sau khi nhận đủ hàng.', io: 'Nhập kho', lines: [['Băng keo 5cm', 'Băng keo 5cm', '300 cuộn', '300', '3.800đ', '1.140.000đ']],
+        ms: [M('Ký hợp đồng', 'sys', 'sys', '10/09/2024'), M('Giao 300 cuộn', 'them', 'late', 'Xong 20/09/2024, trễ 5 ngày', { d: -8, fault: 'Đối tác' }), M('Thanh toán', 'me', 'done', 'Xong 25/09/2024, đúng hạn'), M('Hết hiệu lực', 'sys', 'sys', '30/09/2024')] }
+    ];
+    if (s.feedDeal) {
+      C.unshift({ id: 'd1', type: 'deal', fromFeed: true, source: 'Bảng tin', note: 'Từ bài “Cần gia hạn chữ ký số cho 2 người ký” của Công ty TNHH ABC', num: '', title: 'Bán gia hạn chữ ký số cho Cty ABC', pid: 'abc', dir: 'sale', value: '3.300.000đ', valueN: 3300000, start: '19/10/2024', end: '', stage: 'todo', step: 'Chờ báo giá', owner: 'Mai Anh',
+        payment: 'Thanh toán khi ký.', io: 'Xuất kho', lines: [['CKS USB Token · gia hạn 1 năm', 'Chữ ký số DN – USB Token', '2 chữ ký', '0', '1.650.000đ', '3.300.000đ']],
+        ms: [M('Ngày giao dịch', 'sys', 'sys', '19/10/2024'), M('Gửi báo giá cho khách', 'me', 'cur', 'Hạn 19/10/2024 · hôm nay', { key: 'd1-q', late: 0, imp: { sup: 'Việc của mình: không tính vào điểm đối tác, ghi vào uy tín của mình với ABC.' }, doneWhen: 'Xong 19/10/2024, đúng hạn' }),
+          M('Thu tiền khi ký', 'them', 'up', 'Chưa có hạn'), M('Giao serial cho khách', 'me', 'up', 'Sau khi thu tiền'), M('Kho Chữ ký số DN – USB Token khi giao', 'sys', 'up', '112 → 110 suất')] });
+    }
+    const DOC = { contract: 'HĐ kinh tế', frame: 'HĐ nguyên tắc', deal: 'Giao dịch' };
+    const DIR = { purchase: ['Mua', 'tag ind'], sale: ['Bán', 'tag ok'], ref: ['Giới thiệu', 'tag grey'] };
+    const STAGE = { done: ['Đã xong', 'tag ok'], doing: ['Đang thực hiện', 'tag ind'], over: ['Quá hạn', 'tag late'], todo: ['Chưa bắt đầu', 'tag grey'], active: ['Đang hiệu lực', 'tag ind'] };
+    const isLocked = (c) => c.type !== 'deal' && (!c.draft || !!s.locked[c.id]);
+    const msView = (c) => c.ms.map((m) => {
+      const done = m.key && s.doneMs[m.key];
+      const st = done ? (m.late > 0 ? 'late' : 'done') : m.st;
+      const delta = done ? (m.w === 'them' && done === 'sup' ? m.dSup : null) : (m.d != null ? m.d : null);
+      const p = pt(c.pid);
+      const open = s.confirmKey === m.key && !done;
+      const canC = !!m.key && !done;
+      return {
+        t: m.t, st: st, when: done ? m.doneWhen : m.when, whenCls: !done && m.st === 'over' ? 'when red' : 'when',
+        hasWho: m.w !== 'sys', who: m.w === 'me' ? 'Mình' : p.short, whoCls: m.w === 'me' ? 'tag grey sm' : 'tag ind sm',
+        hasFault: !!(m.fault || (done && m.late > 0)), fault: m.fault || (done === 'sup' ? 'Đối tác' : done === 'me' ? 'Mình' : 'Chưa rõ'),
+        isCur: !done && (m.st === 'cur' || m.st === 'over'), isRemind: !!m.remind,
+        hasDelta: delta != null, dText: delta > 0 ? '+' + delta : String(delta), dCls: delta > 0 ? 'dl plus' : 'dl minus',
+        canConfirm: canC && !open, btnLabel: m.w === 'me' ? 'Đã làm' : 'Xác nhận xong', btnCls: m.st === 'over' ? 'primary sm' : 'ghost',
+        openConfirm: () => set({ confirmKey: m.key, fault: 'sup' }),
+        confirmOpen: open, askFault: m.w === 'them' && m.late > 0, lateText: 'Trễ ' + m.late + ' ngày',
+        impact: m.imp ? (m.imp[m.late > 0 && m.w === 'them' ? s.fault : 'sup'] || m.imp.sup) : '',
+        save: () => set({ doneMs: Object.assign({}, this.state.doneMs, { [m.key]: m.late > 0 && m.w === 'them' ? this.state.fault : 'sup' }), confirmKey: null })
+      };
+    });
+    const stageOf = (c) => {
+      const all = c.ms.filter((m) => m.key);
+      const pending = all.filter((m) => !s.doneMs[m.key]);
+      if (c.id === 'c3' && s.doneMs['c3-l2']) return ['doing', 'Thanh toán toàn bộ sau khi nhận đủ'];
+      if (c.id === 'c1b' && s.doneMs['c1b-d2']) return ['doing', 'Thanh toán 50% còn lại trong 15 ngày'];
+      if (c.id === 'c6' && s.doneMs['c6-h8']) return ['doing', 'Đối soát hoa hồng tháng 10'];
+      if (c.id === 'd1' && s.doneMs['d1-q']) return ['doing', 'Thu tiền khi ký'];
+      return [c.stage, c.step || ''];
+    };
+    const rowOf = (c) => {
+      const p = pt(c.pid); const sg = stageOf(c); const role = c.dir === 'purchase' ? 'sup' : c.dir === 'sale' ? 'cus' : 'ref';
+      return {
+        title: c.title, ver: c.ver, hasVer: !!c.ver, draft: !!c.draft && !s.locked[c.id], fromFeed: !!c.fromFeed, child: !!c.parent, rowCls: c.parent ? 'child' : '',
+        subline: c.type === 'deal' ? c.source : c.num + ' · có file ký',
+        docLabel: DOC[c.type], partner: p.name, pScore: mainScore(p, role), pCls: roleCls(p, role),
+        dirLabel: DIR[c.dir][0], dirCls: DIR[c.dir][1], valueText: c.value, start: c.start, endText: c.end ? 'đến ' + c.end : 'chưa có hạn',
+        stageLabel: STAGE[sg[0]][0], stageCls: STAGE[sg[0]][1], step: sg[1],
+        open: () => set({ screen: 'profile', tab: 'contracts', cid: c.id, confirmKey: null, notifOpen: false })
+      };
+    };
+    const docCount = (t) => C.filter((c) => c.type === t).length;
+    const cFilters = [['all', 'Tất cả', C.length], ['frame', 'HĐ nguyên tắc', docCount('frame')], ['contract', 'HĐ kinh tế', docCount('contract')], ['deal', 'Giao dịch', docCount('deal')]].map(([k, label, count]) => ({
+      label, count, on: s.cFilter === k, cls: s.cFilter === k ? 'chip on' : 'chip', pick: () => set({ cFilter: k })
+    }));
+    const contracts = C.filter((c) => s.cFilter === 'all' || c.type === s.cFilter).map(rowOf);
+    const cRaw = C.find((c) => c.id === s.cid) || C[0];
+    const cdP = pt(cRaw.pid); const cdRole = cRaw.dir === 'purchase' ? 'sup' : cRaw.dir === 'sale' ? 'cus' : 'ref';
+    const cdSg = stageOf(cRaw);
+    const msv = msView(cRaw);
+    const doneCount = msv.filter((m) => m.st === 'done' || m.st === 'late').length;
+    const taskCount = cRaw.ms.filter((m) => m.w !== 'sys').length;
+    const partnerLabel = cRaw.dir === 'purchase' ? 'Nhà cung cấp' : cRaw.dir === 'sale' ? 'Khách hàng' : 'Đối tác giới thiệu';
+    const info = [[partnerLabel, cdP.name + ' · uy tín ' + mainScore(cdP, cdRole)], [cRaw.type === 'frame' ? 'Hạn mức' : 'Giá trị', cRaw.value.replace('hạn mức ', '')], ['Hướng', DIR[cRaw.dir][0]],
+      [cRaw.type === 'deal' ? 'Ngày giao dịch' : 'Hiệu lực từ', cRaw.start], ['Đến', cRaw.end || '—'], ['Phụ trách', cRaw.owner]];
+    if (cRaw.type !== 'deal') info.push(['Người ký bên bán', cRaw.signS], ['Người ký bên mua', cRaw.signB]);
+    info.push(['Thanh toán', cRaw.payment]);
+    const cd = {
+      title: cRaw.title + (cRaw.ver ? ' · v' + cRaw.ver : ''),
+      headline: [DOC[cRaw.type], cRaw.num, DIR[cRaw.dir][0], cdP.name].filter(Boolean).join(' · ') + (cRaw.parent ? ' · thuộc HĐ nguyên tắc cung ứng vật tư đóng gói 2024' : ''),
+      stageLabel: STAGE[cdSg[0]][0], stageCls: STAGE[cdSg[0]][1],
+      isLocked: isLocked(cRaw), isDraft: cRaw.type !== 'deal' && !isLocked(cRaw), isDeal: cRaw.type === 'deal', isFrame: cRaw.type === 'frame', fromFeed: !!cRaw.fromFeed,
+      file: 'hop-dong-' + (cRaw.num || '').replace(/\//g, '-') + '.pdf', source: cRaw.source || '', note: cRaw.note || '', taxWarn: cRaw.type === 'deal' && (cRaw.valueN || 0) >= 5000000,
+      infoNote: cRaw.type === 'deal' ? 'Sửa được, không phải chứng từ pháp lý' : isLocked(cRaw) ? 'Trường pháp lý đã khoá · phụ trách, lịch nhắc vẫn chỉnh được' : 'AI đọc · kiểm tra trước khi khoá',
+      info: info.map((x) => ({ k: x[0], v: x[1] })),
+      linesTitle: cRaw.linesTitle || 'Sản phẩm', io: cRaw.io, ioCls: cRaw.io === 'Nhập kho' ? 'tag ind' : cRaw.io === 'Xuất kho' ? 'tag ok' : 'tag grey',
+      lines: cRaw.lines.map((l) => ({ n: l[0], prod: l[1], q: l[2], dv: l[3], p: l[4], t: l[5] })),
+      hasVersions: !!cRaw.versions, progress: cdSg[0] === 'done' ? 'Đã xong các mốc' : (cdSg[1] ? 'Đang ở: ' + cdSg[1] : '') + ' · ' + doneCount + '/' + taskCount + ' mốc',
+      ms: msv,
+      hasSummary: !!cRaw.summary, noSummary: !cRaw.summary, summary: cRaw.summary || '',
+      sumRows: (cRaw.sum || []).map((x) => ({ k: x[0], v: x[1] })), terms: (cRaw.terms || []).map((t) => ({ t }))
+    };
+    const faults = [['sup', 'Đối tác'], ['me', 'Mình'], ['unk', 'Chưa rõ']].map(([k, label]) => ({ label, cls: s.fault === k ? 'on' : '', pick: () => set({ fault: k }) }));
+
+    /* ---------- Sản phẩm ---------- */
+    const prefillGo = (name, type, product, qty, price) => () => set({ screen: 'feed', filter: 'all', prefill: name, draftType: type, dProduct: product, dQty: qty, dPrice: price, draft: '', notifOpen: false });
+    const P = [
+      { name: 'Chữ ký số DN – USB Token', g: 'svc', sup: 'NCC chính: Hãng NCCA', held: '112 suất', sold: '90 chữ ký', cost: '1.250.000đ', cheaper: 'FAST báo 1.150.000đ (▼ 8%)', score: 88, adv: 'Mua thêm', reason: 'Dự kiến bán hết 112 suất trước khi gói hết hạn. Nên đặt gói tiếp để giữ chiết khấu.',
+        cta: ['Đăng bán', 'outline', ['Chữ ký số DN – USB Token', 'sell', 'Chữ ký số DN – USB Token · 1 năm', 'Từ 1 chữ ký', '1.650.000đ / chữ ký']] },
+      { name: 'Chữ ký số HSM', g: 'svc', sup: 'NCC chính: Hãng NCCA', held: '38 suất', sold: '12 chữ ký', cost: '970.000đ', score: 18, adv: 'Xả hàng', reason: 'Đang giữ 38 suất nhưng 3 tháng chưa bán được, gói hết hạn dùng 31/08/2025.',
+        cta: ['Đăng bán xả hàng', 'primary sm', ['Chữ ký số HSM', 'sell', 'Chữ ký số HSM · 1 năm', '38 suất', '[GIÁ BÁN] / chữ ký']] },
+      { name: 'Hoá đơn điện tử', g: 'svc', sup: 'NCC chính: Viettel S-Invoice', held: 'Đặt theo khách', sold: '5 gói 300 số', cost: '320.000đ', cheaper: 'EasyInvoice 275.000đ', score: 71, adv: 'Đẩy mạnh', reason: 'Bán tốt, lãi tốt.',
+        cta: ['Đăng bán', 'outline', ['Hoá đơn điện tử', 'sell', 'Hoá đơn điện tử · gói 300 số', 'Từ 1 gói', '[GIÁ BÁN] / gói']] },
+      { name: 'Hợp đồng điện tử', g: 'svc', sup: 'Chưa có NCC', held: 'Đặt theo khách', sold: '0 gói 100 HĐ', cost: '—', cheaper: 'Báo giá FPT 1.800.000đ', score: null, adv: 'Chưa có dữ liệu', reason: 'Chưa bán lần nào, chưa có nhà cung cấp.',
+        cta: ['Đăng tìm nguồn', 'primary sm', ['Hợp đồng điện tử', 'buy', 'Hợp đồng điện tử · gói 100 HĐ', '1 gói', 'Liên hệ']] },
+      { name: 'Băng keo 5cm', g: 'goods', sup: 'NCC chính: Cơ sở Tân Phát', held: '320 cuộn', sold: '460 cuộn', cost: '3.800đ', score: 78, adv: 'Giữ', reason: 'Tồn đủ bán 88 ngày, hợp lý.',
+        cta: ['Đăng bán', 'outline', ['Băng keo 5cm', 'sell', 'Băng keo 5cm', '320 cuộn', '[GIÁ BÁN] / cuộn']] },
+      { name: 'Thùng phi 200L', g: 'goods', sup: 'Chưa có NCC chính', held: '40 thùng', sold: '0 thùng', cost: 'chưa có giá vốn', score: 19, adv: 'Xả hàng', reason: 'Đang giữ 40 thùng nhưng 3 tháng chưa bán được.',
+        cta: ['Đăng bán xả hàng', 'primary sm', ['Thùng phi 200L', 'sell', 'Thùng phi 200L', '40 thùng', '[GIÁ BÁN] / thùng']] },
+      { name: 'Bảo hiểm xe', g: 'ref', sup: 'NCC chính: PVI / Bảo Việt', held: '—', sold: '3 HĐ', cost: 'hoa hồng 8%', score: 43, adv: 'Cân nhắc dừng', reason: 'Hoa hồng thu về còn thấp: 48.000đ / 368.000đ.',
+        cta: ['Đăng giới thiệu', 'outline', ['Bảo hiểm xe', 'sell', 'Bảo hiểm xe (giới thiệu PVI / Bảo Việt)', 'Theo nhu cầu', 'Theo biểu phí']] }
+    ];
+    const GL = { svc: 'Dịch vụ có hạn', goods: 'Hàng hoá', ref: 'Giới thiệu' };
+    const advCls = (a) => (a === 'Mua thêm' || a === 'Đẩy mạnh' ? 'tag ok' : a === 'Giữ' || a === 'Chưa có dữ liệu' ? 'tag grey' : 'tag soon');
+    const gCount = (g) => P.filter((p) => p.g === g).length;
+    const gFilters = [['all', 'Tất cả', P.length], ['svc', 'Dịch vụ có hạn', gCount('svc')], ['goods', 'Hàng hoá', gCount('goods')], ['ref', 'Giới thiệu', gCount('ref')]].map(([k, label, count]) => ({
+      label, count, on: s.gFilter === k, cls: s.gFilter === k ? 'chip on' : 'chip', pick: () => set({ gFilter: k })
+    }));
+    /* giá đã ghi nhận của từng sản phẩm (như tab Nhà cung cấp & giá của Sổ Hợp Tác) */
+    const PRICES = {
+      'Chữ ký số DN – USB Token': [['Hãng NCCA', '1.250.000đ', 'chữ ký/năm', 'Mua mới', 'Đã mua (HĐ)', '09/2024'], ['Hãng FAST', '1.150.000đ', 'chữ ký/năm', 'Mua mới', 'Báo giá', '08/2024'], ['Hãng BKAV', '1.350.000đ', 'chữ ký/năm', 'Mua mới', 'Giá thị trường', '07/2024']],
+      'Chữ ký số HSM': [['Hãng NCCA', '970.000đ', 'chữ ký/năm', 'Mua mới', 'Đã mua (HĐ)', '09/2024'], ['Hãng FAST', '1.020.000đ', 'chữ ký/năm', 'Mua mới', 'Báo giá', '09/2024']],
+      'Hoá đơn điện tử': [['Viettel S-Invoice', '320.000đ', '300 số', 'Mua mới', 'Đã mua (HĐ)', '06/2024'], ['MISA meInvoice', '300.000đ', '300 số', 'Mua mới', 'Báo giá', '05/2024'], ['EasyInvoice', '275.000đ', '300 số', 'Mua mới', 'Giá thị trường', '06/2024']],
+      'Hợp đồng điện tử': [['FPT eContract', '1.800.000đ', '100 HĐ', 'Mua mới', 'Báo giá', '08/2024'], ['VNPT eContract', '2.000.000đ', '100 HĐ', 'Mua mới', 'Giá thị trường', '07/2024']],
+      'Băng keo 5cm': [['Cơ sở Tân Phát', '3.800đ', 'cuộn', 'Mua mới', 'Báo giá', '09/2024'], ['Chợ Kim Biên', '3.500đ', 'cuộn', 'Mua mới', 'Giá thị trường', '09/2024'], ['NPP Minh Long', '4.200đ', 'cuộn', 'Mua mới', 'Giá thị trường', '08/2024']],
+      'Thùng phi 200L': [],
+      'Bảo hiểm xe': []
+    };
+    s.savedQuotes.forEach((q) => {
+      const L = PRICES[q.prod] || (PRICES[q.prod] = []);
+      const i = L.findIndex((x) => x[0] === q.sup && x[4] === 'Báo giá');
+      if (i >= 0) L.splice(i, 1);
+      L.unshift([q.sup, q.price + 'đ', q.unit, q.kind, 'Báo giá', '19/10/2024', true]);
+    });
+    const products = P.filter((p) => s.gFilter === 'all' || p.g === s.gFilter).map((p) => ({
+      priceOpen: s.prodOpen === p.name, priceLabel: s.prodOpen === p.name ? 'Thu gọn' : 'Giá · ' + (PRICES[p.name] || []).length,
+      togglePrice: () => set({ prodOpen: this.state.prodOpen === p.name ? null : p.name }),
+      hasPrices: (PRICES[p.name] || []).length > 0, noPrices: !(PRICES[p.name] || []).length,
+      prices: (PRICES[p.name] || []).map((x) => ({ sup: x[0], price: x[1], unit: x[2], kind: x[3], src: x[4], date: x[5], isNew: !!x[6], srcCls: x[4] === 'Đã mua (HĐ)' ? 'tag ok sm' : x[4] === 'Báo giá' ? 'tag ind sm' : 'tag grey sm' })),
+      name: p.name, supplier: p.sup, group: GL[p.g], held: p.held, sold: p.sold, cost: p.cost, hasCheaper: !!p.cheaper, cheaper: p.cheaper || '',
+      score: p.score == null ? '—' : p.score, scoreCls: band(p.score), adv: p.adv, advCls: advCls(p.adv), reason: p.reason,
+      ctaLabel: p.cta[0], ctaCls: p.cta[1], cta: prefillGo.apply(null, p.cta[2])
+    }));
+    const advice = [
+      ['Mua thêm / đẩy mạnh', ['Chữ ký số DN – USB Token', 'Hoá đơn điện tử']],
+      ['Giữ / duy trì', ['Băng keo 5cm']],
+      ['Xả hàng / cân nhắc dừng', ['Bảo hiểm xe', 'Thùng phi 200L', 'Chữ ký số HSM']]
+    ].map(([label, names]) => ({ label, items: names.map((n) => { const p = P.find((x) => x.name === n); return { name: p.name, reason: p.reason, score: p.score, cls: band(p.score) }; }) }));
+
+    /* ---------- Điều hướng ---------- */
+    const nav = (screen, extra) => () => set(Object.assign({ screen, notifOpen: false, menuFor: null }, extra || {}));
+    const goContracts = nav('profile', { tab: 'contracts', cid: null, confirmKey: null });
+    const openC = (id) => () => set({ screen: 'profile', tab: 'contracts', cid: id, confirmKey: null, notifOpen: false });
+    const goPartners = nav('profile', { tab: 'partners' });
+    const goProducts = nav('profile', { tab: 'products' });
+
+    const todosBase = [
+      ['Quá hạn', 'tag late', 'Nhận hoa hồng tháng 8', 'HĐ hợp tác giới thiệu bảo hiểm xe · PVI / Bảo Việt', 'trễ 39 ngày', 'r late', openC('c6'), 'c6-h8'],
+      ['Quá hạn', 'tag late', 'Giao lô 2 · 20 thùng phi', 'Đặt thùng phi 200L qua Zalo · Cơ sở Tân Phát', 'trễ 4 ngày', 'r late', openC('c3'), 'c3-l2'],
+      ['Gia hạn', 'tag soon', '1 khách sắp hết hạn Chữ ký số DN – USB Token', 'DNTN Minh Phát hết hạn 02/12/2024 · bấm Nhắc gia hạn để giao việc', 'trong 60 ngày', 'r', goProducts],
+      ['Hoa hồng', 'tag soon', 'Chưa nhận 320.000đ hoa hồng Bảo hiểm xe', '2 hợp đồng · PVI / Bảo Việt', '', 'r', openC('c6'), 'c6-h8'],
+      ['Sắp hết hạn', 'tag soon', 'HĐ bán CKS cho Minh Phát', 'DNTN Minh Phát · khách chưa phản hồi 2 lần nhắc', 'còn 43 ngày', 'r', openC('c9')],
+      ['Đánh giá', 'tag grey', 'Đánh giá Công ty TNHH ABC', 'HĐ bán chữ ký số cho Cty ABC đã xong 06/10/2024', '', 'r', () => set({ tab: 'partners', pFilter: 'all', openP: 'abc' })],
+      ['Sắp đến hạn', 'tag grey', 'Thanh toán toàn bộ thùng phi', 'Đặt thùng phi 200L qua Zalo · Cơ sở Tân Phát', 'còn 12 ngày', 'r', openC('c3')],
+      ['Sắp đến hạn', 'tag grey', 'Đối soát hoa hồng tháng 10', 'HĐ hợp tác giới thiệu bảo hiểm xe · PVI / Bảo Việt', 'còn 22 ngày', 'r', openC('c6')],
+      ['Sắp đến hạn', 'tag grey', 'Đàm phán gia hạn cho năm 2025', 'HĐ nguyên tắc cung ứng vật tư đóng gói 2024 · Cơ sở Tân Phát', 'còn 27 ngày', 'r', openC('c10')]
+    ];
+    const todoAll = todosBase.filter((t) => !(t[7] && s.doneMs[t[7]])).map((t) => ({ tag: t[0], tagCls: t[1] + ' sm', title: t[2], sub: t[3], right: t[4], rCls: t[5], go: t[6] }));
+    const todos = s.showAllTodos ? todoAll : todoAll.slice(0, 6);
+    const overdueCount = todoAll.filter((t) => t.tag === 'Quá hạn').length;
+    const PER_L = { m: 'tháng này', q: 'quý này', y: '12 tháng' };
+    const curIdx = s.period === 'm' ? [11] : s.period === 'q' ? [9, 10, 11] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const MON = ['T11', 'T12', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10'];
+    const GB = [
+      ['Dịch vụ có hạn', '#4f46e5', 'Dự kiến', [0, 2.0, 3.1, 6.3, 9.8, 12.5, 12.5, 28.3, 12.5, 9.8, 28.1, 31.7], 'tr', { m: ['31,7 tr', '▲ 13%'], q: ['69,6 tr', '▲ 31%'], y: ['156,6 tr', ''] }],
+      ['Hàng hoá', '#0891b2', 'Dự kiến', [0, 0, 0, 0, 0, 0, 140357, 233929, 233929, 795357, 280714, 467857], 'đ', { m: ['467.857đ', '▲ 67%'], q: ['1,5 tr', '▲ 154%'], y: ['2,2 tr', ''] }],
+      ['Giới thiệu', '#d95926', 'HH dự kiến', [0, 0, 0, 0, 0, 0, 0, 0, 122667, 122667, 0, 122667], 'đ', { m: ['122.667đ', ''], q: ['245.333đ', '▲ 100%'], y: ['368.000đ', ''] }]
+    ];
+    const fmtV = (v, u) => (v === 0 ? '0đ' : u === 'tr' ? String(v).replace('.', ',') + ' tr' : String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ');
+    const groupBars = GB.map(([name, color, cap, vals, u, sum]) => {
+      const mx = Math.max.apply(null, vals) || 1;
+      return { name, color, cap: cap + ' ' + PER_L[s.period], value: sum[s.period][0], delta: sum[s.period][1],
+        bars: vals.map((v, i) => ({ h: Math.max(2, Math.round(v / mx * 100)) + '%', cls: curIdx.indexOf(i) >= 0 ? 'gb cur' : 'gb', title: MON[i] + ': ' + fmtV(v, u) })) };
+    });
+    const months = MON.map((l) => ({ l }));
+    const pipeline = [
+      ['HĐ mua chữ ký số NCCA · Lô Q3 · v2', 'Hãng NCCA · Giao đợt 2 · 100 chữ ký (đơn giá mới)', 'đến 31/08/2025', 'r', openC('c1b')],
+      ['Đặt thùng phi 200L qua Zalo', 'Cơ sở Tân Phát · Giao lô 2 · 20 thùng phi', s.doneMs['c3-l2'] ? 'Đang thực hiện' : 'Quá hạn', s.doneMs['c3-l2'] ? 'r' : 'r late', openC('c3')],
+      ['HĐ hợp tác giới thiệu bảo hiểm xe', 'PVI / Bảo Việt · Nhận hoa hồng tháng 8', s.doneMs['c6-h8'] ? 'Đang thực hiện' : 'Quá hạn', s.doneMs['c6-h8'] ? 'r' : 'r late', openC('c6')],
+      ['HĐ nguyên tắc cung ứng vật tư đóng gói 2024', 'Cơ sở Tân Phát · 1 giao dịch con', 'đến 31/12/2024', 'r', openC('c10')],
+      ['HĐ gói gia hạn CKS 2025', 'Hãng NCCA · Chưa bắt đầu', 'từ 01/09/2025', 'r', openC('c8')]
+    ].map((x) => ({ title: x[0], sub: x[1], right: x[2], rCls: x[3], go: x[4] }));
+    const topPartners = [
+      ['Nhà cung cấp', [['Hãng NCCA', '601,6 tr', 88], ['Viettel S-Invoice', '48,0 tr', 80], ['Cơ sở Tân Phát', '13,1 tr', 63]]],
+      ['Khách hàng', [['Công ty CP Hưng Thịnh', '13,8 tr', 100], ['Công ty TNHH ABC', '1,6 tr', 75], ['DNTN Minh Phát', '1,6 tr', 55]]]
+    ].map(([label, items]) => ({ label, items: items.map((i) => ({ name: i[0], value: i[1], score: i[2], cls: band(i[2]) })) }));
+    const periods = [['m', 'Tháng này'], ['q', 'Quý này'], ['y', '12 tháng']].map(([k, label]) => ({ label, cls: s.period === k ? 'on' : '', pick: () => set({ period: k }) }));
+    const reviewPartners = ['mp', 'tp', 'pvi', 'vtl'].map((id) => { const p = pt(id); const r = id === 'tp' ? 'sup' : p.roles[0][0]; const n = p.roles.find((x) => x[0] === r)[1]; return { name: p.name, sub: p.drop || '', n, cls: band(n), w: BW[band(n)] }; });
+
+    const pFilters = [['all', 'Mọi vai trò'], ['sup', 'Nhà cung cấp'], ['cus', 'Khách hàng'], ['ref', 'Giới thiệu'], ['watch', 'Cần chú ý']].map(([k, label]) => ({
+      label, on: s.pFilter === k, cls: s.pFilter === k ? 'chip on' : 'chip', pick: () => set({ pFilter: k, openP: null })
+    }));
+    const partners = PT.filter((p) => s.pFilter === 'all' || (s.pFilter === 'watch' ? worst(p) === 'watch' || !!p.flag : s.pFilter === 'friend' ? p.friend : p.roles.some((r) => r[0] === s.pFilter))).map((p) => ({
+      name: p.name, mst: p.mst, hasFlag: !!p.flag, flag: p.flag || '', roles: p.roles.map((r) => RL[r[0]]).join(' · '), hd: p.hd,
+      tiles: p.roles.map((r) => ({ cls: band(r[1]), n: r[1] == null ? '—' : r[1], w: BW[band(r[1])], role: p.roles.length > 1 ? RS[r[0]] : '' })),
+      isFriend: p.friend, notFriend: !p.friend, open: s.openP === p.id, toggleLabel: s.openP === p.id ? 'Thu gọn' : 'Vì sao điểm này',
+      toggle: () => set({ openP: this.state.openP === p.id ? null : p.id }),
+      hasCrit: p.crit.length > 0, critTitle: p.critTitle, crit: p.crit.map((c) => ({ k: c[0], v: c[1], w: c[2], d: c[3] })), formula: p.formula
+    }));
+
+    /* ---------- Bảng tin ---------- */
+    const val = (k) => (e) => set({ [k]: e.target.value });
+    const updPost = (id, fn) => set({ posts: this.state.posts.map((p) => (p.id === id ? fn(p) : p)) });
+    const counts = {
+      all: s.posts.filter((p) => !p.archived).length,
+      sell: s.posts.filter((p) => !p.archived && p.type === 'sell').length,
+      buy: s.posts.filter((p) => !p.archived && p.type === 'buy').length,
+      archived: s.posts.filter((p) => p.archived).length
+    };
+    const filters = [['all', 'Tất cả'], ['sell', 'Cần bán'], ['buy', 'Cần mua'], ['archived', 'Đã lưu trữ']].map(([key, label]) => ({
+      label, count: counts[key], on: s.filter === key, cls: s.filter === key ? 'chip on' : 'chip', pick: () => set({ filter: key, menuFor: null })
+    }));
+    const typeInfo = (t) => (t === 'sell' ? { typeLabel: 'Cần bán', tagCls: 'tag sell' } : { typeLabel: 'Cần mua', tagCls: 'tag buy' });
+    const visible = s.posts.filter((p) => (s.filter === 'archived' ? p.archived : !p.archived && (s.filter === 'all' || p.type === s.filter)));
+    const matchGo = (m) => {
+      if (!m) return () => {};
+      if (m.go === 'deal') return () => set({ feedDeal: true, screen: 'profile', tab: 'contracts', cid: 'd1', confirmKey: null });
+      if (m.go === 'products') return () => set({ screen: 'profile', tab: 'products', gFilter: 'all', prodOpen: m.pb || null });
+      return openC(m.go);
+    };
+    const decorate = (p) => {
+      const open = !!s.openC[p.id];
+      const qo = p.qOpts || [];
+      const selName = s.saveFor === p.id && s.saveProd ? s.saveProd : (qo[0] ? qo[0][0] : '');
+      const sel = qo.find((o) => o[0] === selName) || qo[0];
+      const saved = s.savedQuotes.filter((x) => x.post === p.id);
+      const quoteFields = {
+        canSave: qo.length > 0 && !p.mine, saveOpen: s.saveFor === p.id,
+        saveBtnLabel: saved.length ? 'Lưu thêm báo giá' : 'Lưu báo giá', saveBtnCls: saved.length ? 'outline' : 'primary sm',
+        openSave: () => set({ saveFor: p.id, saveProd: qo[0][0], savePrice: qo[0][1] }),
+        cancelSave: () => set({ saveFor: null }),
+        qOptList: qo.map((o) => ({ v: o[0] })), qProd: selName,
+        onQProd: (e) => { const o = qo.find((x) => x[0] === e.target.value) || qo[0]; set({ saveProd: o[0], savePrice: o[1] }); },
+        qPrice: s.saveFor === p.id ? s.savePrice : '', onQPrice: (e) => set({ savePrice: e.target.value }),
+        qUnit: sel ? sel[2] : '', qVat: sel ? sel[3] : '', qKind: sel ? sel[5] : '', qCmp: sel ? sel[4] : '',
+        saveQuote: () => {
+          const o = qo.find((x) => x[0] === this.state.saveProd) || qo[0];
+          set({ saveFor: null, savedQuotes: this.state.savedQuotes.filter((x) => !(x.post === p.id && x.prod === o[0])).concat([{ post: p.id, prod: o[0], sup: p.author, price: this.state.savePrice, unit: o[2], kind: o[5] }]) });
+        },
+        hasSaved: saved.length > 0, savedText: saved.map((x) => x.prod + ' · ' + x.price + 'đ / ' + x.unit).join(' · '),
+        goSaved: () => set({ screen: 'profile', tab: 'products', gFilter: 'all', prodOpen: saved.length ? saved[saved.length - 1].prod : null })
+      };
+      const mc = p.media.length;
+      const rp = p.pid ? pt(p.pid) : null;
+      const m = p.match && p.match.go === 'deal' && s.feedDeal ? Object.assign({}, p.match, { cta: 'Mở giao dịch', text: 'đã tạo giao dịch bán 2 chữ ký số (3.300.000đ) trong Sổ Hợp Tác, nguồn Bảng tin.' }) : p.match;
+      return Object.assign({}, p, typeInfo(p.type), quoteFields, {
+        open, cBtnCls: open ? 'on' : '', commentCount: p.comments.length,
+        commentNote: s.privComments ? 'Bình luận riêng: mỗi đối tác chỉ thấy bình luận của họ với NITI GROUP.' : 'Bình luận hiển thị với tất cả bạn bè.',
+        hasRep: !!rp && s.showRep, repText: rp ? 'Uy tín ' + mainScore(rp, p.type === 'sell' ? 'sup' : 'cus') : '', repCls: rp ? roleCls(rp, p.type === 'sell' ? 'sup' : 'cus') : '',
+        hasFacts: p.facts.length > 0, hasMedia: mc > 0,
+        mediaCls: 'media ' + (mc >= 3 ? 'n3' : mc === 2 ? 'n2' : 'n1'),
+        media: p.media.map((x) => ({ label: x.label, isVideo: x.kind === 'video', isImg: x.kind !== 'video', cls: x.kind === 'video' ? 'mbox vid' : 'mbox' })),
+        hasMatch: !!m, matchCls: m ? m.cls : 'match', matchLabel: m ? m.label : '', matchText: m ? m.text : '', matchCta: m ? m.cta : '', matchGo: matchGo(m),
+        showMenu: s.menuFor === p.id, isEditing: s.editing === p.id, notEditing: s.editing !== p.id, confirming: s.confirmDel === p.id,
+        archiveLabel: p.archived ? 'Bỏ lưu trữ' : 'Lưu trữ',
+        toggleMenu: () => set({ menuFor: this.state.menuFor === p.id ? null : p.id, confirmDel: null }),
+        edit: () => set({ editing: p.id, editText: p.body, menuFor: null }),
+        saveEdit: () => { const t = this.state.editText.trim(); if (t) updPost(p.id, (x) => Object.assign({}, x, { body: t })); set({ editing: null }); },
+        archive: () => { updPost(p.id, (x) => Object.assign({}, x, { archived: !x.archived })); set({ menuFor: null }); },
+        askDelete: () => set({ confirmDel: p.id, menuFor: null }),
+        cancelDelete: () => set({ confirmDel: null }),
+        del: () => set({ posts: this.state.posts.filter((x) => x.id !== p.id), confirmDel: null }),
+        toggleComments: () => set({ openC: Object.assign({}, this.state.openC, { [p.id]: !this.state.openC[p.id] }) }),
+        cText: s.cDraft[p.id] || '',
+        onCText: (e) => set({ cDraft: Object.assign({}, this.state.cDraft, { [p.id]: e.target.value }) }),
+        sendC: () => {
+          const t = (this.state.cDraft[p.id] || '').trim();
+          if (!t) return;
+          updPost(p.id, (x) => Object.assign({}, x, { comments: x.comments.concat([{ who: 'NITI GROUP · Lê Thị Thuý Tiên', initials: 'NG', tone: 't1', text: t, time: 'Vừa xong' }]) }));
+          set({ cDraft: Object.assign({}, this.state.cDraft, { [p.id]: '' }) });
+        }
+      });
+    };
+    const posts = visible.map(decorate);
+    const mineAll = s.posts.filter((p) => p.mine);
+    const myArchivedCount = mineAll.filter((p) => p.archived).length;
+    const myFilter = s.myFilter || 'active';
+    const myFilters = [['active', 'Đang đăng', mineAll.length - myArchivedCount], ['archived', 'Đã lưu trữ', myArchivedCount]].map(([k, label, count]) => ({
+      label, count, on: myFilter === k, cls: myFilter === k ? 'chip on' : 'chip', pick: () => set({ myFilter: k, menuFor: null })
+    }));
+    const myFeed = mineAll.filter((p) => (myFilter === 'archived' ? p.archived : !p.archived)).map(decorate);
+    const myCommentCount = mineAll.reduce((a, p) => a + p.comments.filter((c) => c.initials !== 'NG').length, 0);
+    const attach = s.attach.map((a, i) => ({ label: a.label, remove: () => set({ attach: this.state.attach.filter((_, j) => j !== i) }) }));
+    const publish = () => {
+      const st = this.state;
+      const text = st.draft.trim();
+      const prod = st.dProduct.trim();
+      if (!text && !prod) return;
+      const lines = text.split('\n');
+      const title = prod ? (st.draftType === 'sell' ? 'Cần bán: ' : 'Cần mua: ') + prod : lines[0];
+      const body = prod ? text : lines.slice(1).join('\n');
+      const facts = [];
+      if (prod) facts.push({ k: 'Hàng hoá', v: prod });
+      if (st.dQty.trim()) facts.push({ k: 'Số lượng', v: st.dQty.trim() });
+      if (st.dPrice.trim()) facts.push({ k: st.draftType === 'sell' ? 'Giá' : 'Ngân sách', v: st.dPrice.trim() });
+      const post = { id: 'p' + st.seq, mine: true, author: 'NITI GROUP', person: 'Lê Thị Thuý Tiên', initials: 'NG', tone: 't1', time: 'Vừa xong', type: st.draftType, archived: false,
+        title, body, facts, media: st.attach.map((a) => ({ kind: a.kind, label: a.label })), comments: [] };
+      set({ posts: [post].concat(st.posts), draft: '', dProduct: '', dQty: '', dPrice: '', attach: [], seq: st.seq + 1, filter: 'all', prefill: '' });
+    };
+    const addFile = (kind) => () => {
+      const n = this.state.attach.filter((a) => a.kind === kind).length + 1;
+      set({ attach: this.state.attach.concat([{ kind, label: (kind === 'video' ? 'video_' : 'anh_') + n + (kind === 'video' ? '.mp4' : '.jpg') }]) });
+    };
+    const unreadCount = s.notifs.filter((n) => n.unread).length;
+    const notifs = s.notifs.map((n) => ({
+      who: n.who, initials: n.initials, tone: n.tone, text: n.text, time: n.time, unread: n.unread,
+      cls: n.unread ? 'nitem unread' : 'nitem',
+      open: () => set({ screen: 'feed', filter: 'all', notifOpen: false, openC: Object.assign({}, this.state.openC, { [n.post]: true }), notifs: this.state.notifs.map((x) => (x.id === n.id ? Object.assign({}, x, { unread: false }) : x)) })
+    }));
+    const myPosts = s.posts.filter((p) => p.mine).map((p) => Object.assign({}, p, typeInfo(p.type), {
+      commentCount: p.comments.length,
+      view: () => set({ screen: 'feed', filter: p.archived ? 'archived' : 'all', openC: Object.assign({}, this.state.openC, { [p.id]: true }) })
+    }));
+    const sb = (k) => (s.tab === k ? 'sidelink on' : 'sidelink');
+
+    /* ---------- Cài đặt ---------- */
+    const sItem = (k, label) => ({ label, cls: s.setTab === k ? 'sidelink on' : 'sidelink', pick: () => set({ setTab: k }) });
+    const setGroups = [
+      { label: 'Cá nhân', items: [sItem('account', 'Tài khoản'), sItem('notif', 'Thông báo')] },
+      { label: 'Công ty', items: [sItem('company', 'Công ty'), sItem('members', 'Thành viên'), sItem('privacy', 'Quyền riêng tư Community')] },
+      { label: 'Sổ Hợp Tác', items: [sItem('rep', 'Điểm uy tín'), sItem('biz', 'Điểm kinh doanh'), sItem('src', 'Cách lấy hàng')] }
+    ];
+    const REP = {
+      'svc-sup': ['Dịch vụ có hạn · Nhà cung cấp', [['Giao đúng hạn', '% lần giao đúng hạn, trừ thêm 2 điểm cho mỗi ngày trễ trung bình', '25%'], ['Chất lượng', '100 − 10 × số khiếu nại do lỗi NCC trên mỗi 10 đơn', '10%'], ['Xử lý sự cố', '100 nếu xử lý xong trong 1 ngày, −10 cho mỗi ngày thêm', '25%'], ['Giữ giá', '100 nếu giữ giá đã báo/đã ký, −5 cho mỗi % tăng ngoài hợp đồng', '15%'], ['Cấp serial / kích hoạt', '100 nếu có serial trong 1 ngày, −10 cho mỗi ngày thêm', '25%']]],
+      'svc-cus': ['Dịch vụ có hạn · Khách hàng', [['Thanh toán đúng hạn', '% khoản thu đúng hạn, trừ theo số ngày trễ trung bình', '35%'], ['Ít phải nhắc', 'Số lần phải nhắc trên mỗi khoản thu', '15%'], ['Công nợ', 'Công nợ quá hạn so với giá trị giao dịch', '10%'], ['Gia hạn qua mình', '% khách gia hạn qua mình khi hết hạn', '35%'], ['Ít khiếu nại vô lý', 'Số khiếu nại không do lỗi mình', '5%']]],
+      'goods-sup': ['Hàng hoá · Nhà cung cấp', [['Giao đúng hạn', '% lần giao đúng hạn, trừ theo số ngày trễ', '35%'], ['Chất lượng', 'Khiếu nại do lỗi NCC trên mỗi 10 đơn', '35%'], ['Xử lý sự cố', 'Số ngày xử lý sự cố', '10%'], ['Giữ giá', 'Giữ giá đã báo/đã ký', '20%']]],
+      'goods-cus': ['Hàng hoá · Khách hàng', [['Thanh toán đúng hạn', '% khoản thu đúng hạn', '45%'], ['Ít phải nhắc', 'Số lần phải nhắc', '15%'], ['Công nợ', 'Công nợ quá hạn', '25%'], ['Ít khiếu nại vô lý', 'Số khiếu nại không do lỗi mình', '15%']]],
+      'ref-pay': ['Giới thiệu · Bên trả hoa hồng', [['Trả hoa hồng đúng hạn', '% lần trả đúng hạn, trừ theo số ngày trễ', '60%'], ['Gửi đối soát đầy đủ', 'Đối soát đúng kỳ, đủ số liệu', '25%'], ['Hỗ trợ khách giới thiệu', 'Phản hồi khách mình giới thiệu', '15%']]]
+    };
+    const repCells = Object.keys(REP).map((k) => ({ label: REP[k][0], cls: s.repCell === k ? 'chip on' : 'chip', pick: () => set({ repCell: k }) }));
+    const repCrit = REP[s.repCell][1].map((r) => ({ k: r[0], how: r[1], w: r[2] }));
+    const nsDefs = [
+      ['cmt', 'Có người bình luận bài của tôi', 'Thông báo ngay khi đối tác bình luận.'],
+      ['reply', 'Có người trả lời bình luận của tôi', 'Theo dõi các cuộc trao đổi đang diễn ra.'],
+      ['newPost', 'Bạn bè đăng bài mới', 'Có thể nhiều, nên tắt mặc định.'],
+      ['match', 'Bài cần mua khớp hàng đang nắm giữ', 'Gợi ý ngay khi đối tác cần thứ mình đang có trong Sổ Hợp Tác.'],
+      ['ms', 'Mốc hợp đồng đến hạn hoặc quá hạn', 'Theo số ngày nhắc trước trong từng hợp đồng.'],
+      ['digest', 'Email tổng hợp Cần xử lý hằng ngày', 'Gửi 8:00 sáng mỗi ngày.']
+    ];
+    /* ---------- Trợ lý giá ---------- */
+    const reply = (text) => {
+      const t = text.toLowerCase();
+      const R = (tx, src, act, actLabel) => ({ from: 'bot', text: tx, src: src || '', act: act || '', actLabel: actLabel || '' });
+      if (t.indexOf('ghi giá') >= 0 || t.indexOf('lưu giá') >= 0 || t.indexOf('báo băng keo') >= 0) return R('Em đọc được:\n· Băng keo 5cm · Cơ sở Tân Phát\n· 3.900đ / cuộn, từ 200 cuộn · VAT chưa rõ\nGiá Tân Phát báo lần trước (09/2024) là 3.800đ.', 'Nguồn: tin nhắn chị vừa gửi', 'savePrice', 'Lưu báo giá');
+      if (t.indexOf('có gì mới') >= 0 || t.indexOf('hôm nay') >= 0) return R('Hôm nay trên bảng tin:\n· 1 nhu cầu mới: ABC cần gia hạn 2 chữ ký số (đang có sẵn 112 suất).\n· 2 bài cần bán của nhà cung cấp chưa lưu báo giá: Cơ sở Tân Phát (băng keo, thùng phi), Hãng FAST (chữ ký số).', 'Nguồn: bảng tin', 'feed', 'Mở bảng tin');
+      if (t.indexOf('thùng phi') >= 0) return R('Thùng phi 200L chưa có giá nào trong Sản phẩm & Giá. Cơ sở Tân Phát vừa đăng bài bán thùng phi; chị bấm Lưu báo giá trên bài để ghi giá.', 'Nguồn: Sản phẩm & Giá, bảng tin', 'feed', 'Mở bảng tin');
+      if (t.indexOf('băng keo') >= 0) return R('Băng keo 5cm, các giá đã ghi nhận:\n1. Chợ Kim Biên · 3.500đ · giá thị trường 09/2024\n2. Cơ sở Tân Phát · 3.800đ · báo giá 09/2024 · uy tín 63\n3. NPP Minh Long · 4.200đ · giá thị trường 08/2024', 'Nguồn: Sản phẩm & Giá', 'pBk', 'Mở Sản phẩm & Giá');
+      if (t.indexOf('chữ ký') >= 0 || t.indexOf('giá') >= 0) return R('Chữ ký số DN – USB Token, các giá đã ghi nhận:\n1. Hãng FAST · 1.150.000đ · báo giá 08/2024 · uy tín MỚI\n2. Hãng NCCA · 1.250.000đ · đã mua theo HĐ 09/2024 · uy tín 88\n3. Hãng BKAV · 1.350.000đ · giá thị trường 07/2024', 'Nguồn: Sản phẩm & Giá', 'pCks', 'Mở Sản phẩm & Giá');
+      return R('Em chưa có dữ liệu cho câu này trong Sản phẩm & Giá.', '', '', '');
+    };
+    const ask = (text) => { if (!text.trim()) return; set({ msgs: this.state.msgs.concat([{ from: 'me', text }, reply(text)]), chatText: '' }); };
+    const ACT = {
+      savePrice: () => set({ savedQuotes: this.state.savedQuotes.concat([{ post: 'chat', prod: 'Băng keo 5cm', sup: 'Cơ sở Tân Phát', price: '3.900', unit: 'cuộn', kind: 'Mua mới' }]), msgs: this.state.msgs.concat([{ from: 'bot', text: 'Đã lưu vào Sản phẩm & Giá: Băng keo 5cm · Cơ sở Tân Phát · 3.900đ / cuộn · nguồn Báo giá.', src: '19/10/2024', act: 'pBk', actLabel: 'Xem' }]) }),
+      feed: () => set({ screen: 'feed', filter: 'all' }),
+      pBk: () => set({ screen: 'profile', tab: 'products', prodOpen: 'Băng keo 5cm' }),
+      pCks: () => set({ screen: 'profile', tab: 'products', prodOpen: 'Chữ ký số DN – USB Token' })
+    };
+    const msgs = s.msgs.map((m) => ({ cls: m.from === 'me' ? 'msg me' : 'msg bot', text: m.text, hasSrc: !!m.src, src: m.src || '', hasAct: !!m.act, act: ACT[m.act] || (() => {}), actLabel: m.actLabel || '' }));
+    const quickPrompts = ['Giá chữ ký số USB Token?', 'Lưu giá: Tân Phát báo băng keo 3.900đ/cuộn từ 200 cuộn', 'Hôm nay có gì mới?'].map((label) => ({ label, ask: () => ask(label) }));
+
+    const notifSettings = nsDefs.map(([k, label, hint]) => ({ label, hint, on: !!s.ns[k], toggle: () => set({ ns: Object.assign({}, this.state.ns, { [k]: !this.state.ns[k] }) }) }));
+
+    return {
+      isFeed: s.screen === 'feed', isProfile: s.screen === 'profile', isSettings: s.screen === 'settings',
+      chatOpen: s.chatOpen, toggleChat: () => set({ chatOpen: !this.state.chatOpen }), msgs, quickPrompts,
+      chatText: s.chatText, onChatText: (e) => set({ chatText: e.target.value }), sendChat: () => ask(this.state.chatText),
+      feedTabClass: s.screen === 'feed' ? 'navtab on' : 'navtab',
+      bellClass: s.notifOpen ? 'iconbtn on' : 'iconbtn',
+      gearClass: s.screen === 'settings' ? 'iconbtn on' : 'iconbtn',
+      avClass: s.screen === 'profile' ? 'avbtn on' : 'avbtn',
+      goFeed: nav('feed'), goSettings: nav('settings', { setTab: 'account' }),
+      goSettingsSht: nav('settings', { setTab: 'rep' }), goSettingsRep: nav('settings', { setTab: 'rep' }), goSettingsSrc: nav('settings', { setTab: 'src' }),
+      goProfile: nav('profile', { tab: 'dash', cid: null }), goProfilePosts: nav('profile', { tab: 'posts' }), goDash: nav('profile', { tab: 'dash' }),
+      goContracts, goPartners, goProducts, openC7: openC('c7'),
+      goSetCompany: nav('settings', { setTab: 'company' }),
+      goAbcPost: () => set({ screen: 'feed', filter: 'all', openC: Object.assign({}, this.state.openC, { p3: true }) }),
+      lockContract: () => set({ locked: Object.assign({}, this.state.locked, { [cRaw.id]: true }) }),
+      closeConfirm: () => set({ confirmKey: null }),
+      toggleNotif: () => set({ notifOpen: !this.state.notifOpen }),
+      notifOpen: s.notifOpen, notifs, unreadCount, hasUnread: unreadCount > 0,
+      markAll: () => set({ notifs: this.state.notifs.map((x) => Object.assign({}, x, { unread: false })) }),
+      draft: s.draft, dProduct: s.dProduct, dQty: s.dQty, dPrice: s.dPrice,
+      onDraft: val('draft'), onDProduct: val('dProduct'), onDQty: val('dQty'), onDPrice: val('dPrice'),
+      hasPrefill: !!s.prefill, prefillName: s.prefill,
+      sellSegClass: s.draftType === 'sell' ? 'on' : '', buySegClass: s.draftType === 'buy' ? 'on' : '',
+      setSell: () => set({ draftType: 'sell' }), setBuy: () => set({ draftType: 'buy' }),
+      addImg: addFile('img'), addVid: addFile('video'), attach, hasAttach: attach.length > 0, publish,
+      filters, posts, noPosts: posts.length === 0,
+      myFeed, myFilters, noMyPosts: myFeed.length === 0, myArchivedCount, myCommentCount,
+      publishMine: () => { publish(); set({ myFilter: 'active' }); },
+      editText: s.editText, onEditText: val('editText'), cancelEdit: () => set({ editing: null }),
+      friendCount: PT.filter((p) => p.friend).length,
+      myActiveCount: s.posts.filter((p) => p.mine && !p.archived).length,
+      myPostCount: s.posts.filter((p) => p.mine).length, myPosts,
+      tabCompany: s.tab === 'company', tabPosts: s.tab === 'posts', showPostsList: s.tab === 'company' || s.tab === 'posts', tabDash: s.tab === 'dash',
+      tabContractList: s.tab === 'contracts' && !s.cid, tabContractDetail: s.tab === 'contracts' && !!s.cid,
+      tabPartners: s.tab === 'partners', tabProducts: s.tab === 'products',
+      sbCompany: sb('company'), sbPosts: sb('posts'), sbDash: sb('dash'), sbContracts: sb('contracts'), sbPartners: sb('partners'), sbProducts: sb('products'),
+      docCount: C.length, partnerCount: PT.length, productCount: P.length,
+      todos, todoCount: todoAll.length, todoTotal: todoAll.length, overdueCount, hasMoreTodos: !s.showAllTodos && todoAll.length > 6, moreTodos: todoAll.length - 6,
+      showAllTodos: () => set({ showAllTodos: true }), periods, periodLabel: PER_L[s.period], reviewPartners, advice,
+      groupBars, months, pipeline, topPartners, openC9: openC('c9'),
+      cFilters, contracts, cd, faults,
+      pFilters, partners, gFilters, products,
+      setGroups, sAccount: s.setTab === 'account', sCompany: s.setTab === 'company', sMembers: s.setTab === 'members', sRep: s.setTab === 'rep', sBiz: s.setTab === 'biz', sSrc: s.setTab === 'src', sNotif: s.setTab === 'notif', sPrivacy: s.setTab === 'privacy',
+      repCells, repCrit,
+      members: [
+        { name: 'Lê Thị Thuý Tiên', initials: 'TT', role: 'Admin · Giám đốc', scope: 'Người ký hợp đồng của công ty' },
+        { name: 'Lê Quý', initials: 'LQ', role: 'Mua hàng', scope: 'HĐ mua, nhà cung cấp, đối tác giới thiệu' },
+        { name: 'Mai Anh', initials: 'MA', role: 'Kinh doanh', scope: 'HĐ bán, khách hàng, bảng tin' },
+        { name: 'Trần Nam', initials: 'TN', role: 'Kinh doanh', scope: 'Hoá đơn điện tử' }
+      ],
+      notifSettings,
+      privComments: s.privComments, togglePrivComments: () => set({ privComments: !this.state.privComments }),
+      showRep: s.showRep, toggleRep: () => set({ showRep: !this.state.showRep })
+    };
+  }
+}
+</script>
+</body>
+</html>

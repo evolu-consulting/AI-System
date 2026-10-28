@@ -1,6 +1,6 @@
 # com-c5-feed-ui — App web Community: bảng tin và bài (CR-102)
 
-Đọc: `docs/current/community/nghiep-vu.md` §3–5; `hien-thi.md`; UI: mockup Community của người dùng (**chờ ảnh**; tới khi có, bám thiết kế `apps/contracts-web`: cùng đăng nhập/bảng màu/component).
+Đọc: `docs/current/community/nghiep-vu.md` §3–5; `hien-thi.md`; UI: **bám đúng mockup** `docs/design/community/mockup-main.dc.html` (người dùng 2026-10-28: "làm lại UI như mockup"; nguồn https://claude.ai/artifact/NoueMJ9vMPSos621T3jbHt, board "Community · Bảng tin, Hồ sơ, Cài đặt", 1440×1200). Ngôn ngữ thiết kế: Roboto; nền `#f4f4f9`, thẻ `#fff`, viền `#e5e5ec`, chữ `#0f1020`/`#6b6c80`, nhấn chàm `#4f46e5` (hover `#4338ca`, nền nhạt `#eef2ff`), đỏ `#c81e1e`/`#fde8e8`, cam `#8a4306`/`#fdf0df`, xanh `#05603f`; thanh trên 60px (logo "S Sổ Hợp Tác · Community", ô tìm bo tròn, Bảng tin / chuông / cài đặt / avatar), bảng tin một cột giữa, ô soạn "Điền sẵn từ Sổ Hợp Tác", thẻ bài có menu ⋯ (Sửa / Lưu trữ / Xoá + xác nhận đỏ), thông báo dạng thả xuống, nút nổi "Hỏi trợ lý giá" mở khung chat có nguồn, Cài đặt chọn màu chủ đạo (Chàm, Xanh dương, Xanh ngọc, Xanh lá, Cam). Template `{{…}}` trong file là ô dữ liệu của canvas (mở bằng trình duyệt sẽ thấy khung, không có dữ liệu).
 | Lát | Làn | Model | Migration | Phụ thuộc |
 |---|---|---|---|---|
 | C5 | Nhanh | Sonnet | — | C3 |
