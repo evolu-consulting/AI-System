@@ -3,7 +3,12 @@
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { ExternalOrgResolver, ExtIdentity, UserKind } from "../application/ext-org.ports";
+import type {
+  ExtDirectory,
+  ExternalOrgResolver,
+  ExtIdentity,
+  UserKind,
+} from "../application/ext-org.ports";
 
 const MAX_IDS = 1000;
 const uuidArr = (ids: readonly string[]) => `{${ids.join(",")}}`;
@@ -45,6 +50,19 @@ export function pgExternalOrgResolver(db: Db): ExternalOrgResolver {
           from admin.external_orgs where tenant_id = ${tenantId}::uuid and id = any(${uuidArr(ids)}::uuid[])`),
       );
       return new Map(rows.map((r) => [r.id, { name: r.name, active: r.active }]));
+    },
+    async directory(tenantId, userId) {
+      if (!UUID_RE.test(tenantId)) return { tenantName: "", userName: "", orgs: [] };
+      const uid = UUID_RE.test(userId) ? userId : null;
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{ d: ExtDirectory }>(sql`select json_build_object(
+            'tenantName', coalesce((select t.name from admin.tenants t where t.id = ${tenantId}::uuid), ''),
+            'userName', coalesce((select u.display_name from admin.users u
+              where u.tenant_id = ${tenantId}::uuid and u.id = ${uid}::uuid), ''),
+            'orgs', coalesce((select json_agg(json_build_object('id', o.id::text, 'name', o.name, 'active', o.active)
+              order by o.name) from admin.external_orgs o where o.tenant_id = ${tenantId}::uuid), '[]'::json)) as d`),
+      );
+      return rows[0]?.d ?? { tenantName: "", userName: "", orgs: [] };
     },
   };
 }

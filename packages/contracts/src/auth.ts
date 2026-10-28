@@ -23,7 +23,7 @@ export const X_CLIENT_EXTENSION = "extension";
 export const REFRESH_COOKIE = "ai_rt";
 /** CR-053 · mỗi app web gửi `X-App` khi gọi `/auth/*` ⇒ phiên riêng từng app (cookie `ai_rt_<app>`). */
 export const X_APP_HEADER = "X-App";
-export const WEB_APPS = ["admin", "chat", "studio", "contracts"] as const;
+export const WEB_APPS = ["admin", "chat", "studio", "contracts", "community"] as const;
 export type WebApp = (typeof WEB_APPS)[number];
 /** Tên cookie refresh của một app; vắng app ⇒ `ai_rt` (client cũ, test, công cụ). */
 export const refreshCookieName = (app?: WebApp): string =>

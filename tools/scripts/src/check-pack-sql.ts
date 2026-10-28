@@ -7,7 +7,7 @@ import { repoRoot } from "./lib/git";
 /** Schema của nền tảng/gói khác mà migration gói không được tham chiếu trực tiếp. */
 export const FOREIGN_SCHEMAS = ["admin", "hub", "ops", "public", "auth", "knowledge", "pkdemo"];
 /** Hàm nền tảng được phép gọi (`packs.<tên>`). */
-export const ALLOWED_PLATFORM_FNS = ["install", "secure_table"];
+export const ALLOWED_PLATFORM_FNS = ["install", "secure_table", "viewer_ext_org"];
 /** Nợ có chủ đích (TECH-DEBT #255): `<file>:<schema>` đã biết. */
 export const KNOWN_DEBT = new Set([
   "0009_m1_visibility.sql:admin",

@@ -25,6 +25,16 @@ export const DEFAULT_APPS: readonly repo.DefaultApp[] = [
     sortOrder: 20,
   },
   {
+    // CR-102 · com-c3: Cộng đồng (bảng tin chủ quản ↔ đối tác) — app duy nhất đối tác dùng (C2 `EXTERNAL_APPS`).
+    key: "community",
+    name: { vi: "Cộng đồng", en: "Community" },
+    icon: "users",
+    audience: "all",
+    requiredFeature: "community-read",
+    sso: true,
+    sortOrder: 25,
+  },
+  {
     key: "studio",
     name: { vi: "Studio", en: "Studio" },
     icon: "wand",
@@ -49,6 +59,7 @@ export type AppUrlEnv = {
   APP_URL_CONTRACTS?: string;
   APP_URL_STUDIO?: string;
   APP_URL_ADMIN?: string;
+  APP_URL_COMMUNITY?: string;
 };
 
 /** `key` catalog ↔ biến env; bỏ `/` cuối, bỏ giá trị rỗng. */
@@ -58,6 +69,7 @@ export function seedUrlsFromEnv(env: AppUrlEnv): Record<string, string> {
     ["contracts", env.APP_URL_CONTRACTS],
     ["studio", env.APP_URL_STUDIO],
     ["admin", env.APP_URL_ADMIN],
+    ["community", env.APP_URL_COMMUNITY],
   ];
   const out: Record<string, string> = {};
   for (const [k, v] of pairs) {

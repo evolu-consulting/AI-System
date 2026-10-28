@@ -25,4 +25,12 @@ export type ExternalOrgResolver = {
     tenantId: string,
     orgIds: readonly string[],
   ): Promise<ReadonlyMap<string, { name: string; active: boolean }>>;
+  /**
+   * CR-102 · com-c3: danh bạ cho gói theo MỘT câu — tên tenant chủ quản, tên hiển thị của `userId` (người gọi) và MỌI công
+   * ty đối tác của tenant (bạn bè của chủ quản, kể cả đã rời). Gói tự lọc theo người xem (đối tác không bao giờ nhận danh sách).
+   */
+  directory(tenantId: string, userId: string): Promise<ExtDirectory>;
 };
+
+export type ExtOrg = { id: string; name: string; active: boolean };
+export type ExtDirectory = { tenantName: string; userName: string; orgs: readonly ExtOrg[] };

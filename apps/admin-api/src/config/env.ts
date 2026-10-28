@@ -36,6 +36,7 @@ export const EnvSchema = z.object({
   APP_URL_CONTRACTS: z.url({ protocol: /^https?$/ }).optional(),
   APP_URL_STUDIO: z.url({ protocol: /^https?$/ }).optional(),
   APP_URL_ADMIN: z.url({ protocol: /^https?$/ }).optional(),
+  APP_URL_COMMUNITY: z.url({ protocol: /^https?$/ }).optional(),
   /** F1 (CR-095) · module đóng băng (workflows, workflow-tools, transfer, commands; docs/platform/modules.md): `off` (mặc định) ⇒ không mount route. Dev/test bật. */
   ADMIN_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
   /** dify-workflows · gốc Dify console (vd https://dify.example.com) cho nút "Mở trong Dify"; vắng ⇒ nút ẩn. */

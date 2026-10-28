@@ -1,10 +1,13 @@
-// Chọn adapter theo cờ môi trường `PUBLIC_COMMUNITY_API` = "mock" (mặc định cho tới khi C3 xong) | "http".
+// Chọn adapter theo cờ `PUBLIC_COMMUNITY_API` = "http" | "mock". Vắng: bản build (production) ⇒ http (C3, server thật);
+// dev ⇒ mock (chạy không cần backend). Dev với backend: `PUBLIC_COMMUNITY_API=http`.
 import type { CommunityApi } from "./client";
 import { createHttpApi } from "./http";
 import { createMockApi, PERSONAS } from "./mock";
 
 export type ApiMode = "mock" | "http";
-export const apiMode: ApiMode = import.meta.env.PUBLIC_COMMUNITY_API === "http" ? "http" : "mock";
+const flag = import.meta.env.PUBLIC_COMMUNITY_API;
+export const apiMode: ApiMode =
+  flag === "http" || flag === "mock" ? flag : import.meta.env.DEV ? "mock" : "http";
 
 export type Api = {
   api: CommunityApi;

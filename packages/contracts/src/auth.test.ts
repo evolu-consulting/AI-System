@@ -90,6 +90,7 @@ describe("ADM-FR-02 · refresh / logout", () => {
       "ai_rt_chat",
       "ai_rt_studio",
       "ai_rt_contracts",
+      "ai_rt_community",
     ]);
     expect(refreshCookieName()).toBe("ai_rt");
   });

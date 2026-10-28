@@ -19,6 +19,7 @@ import { mountGuide } from "../guide/guide.mount";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { mountMyHistory } from "../my-history/my-history.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
+import { mountCommunity } from "./community/community.mount";
 import { contractsActivitySource } from "./contracts/activity.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { packWriters } from "./contracts/adapters/esign-flow.repo";
@@ -70,8 +71,7 @@ export type PacksDeps = {
   pkdemo?: boolean;
   contracts?: boolean;
   filebox?: { url: string; token: string };
-  /** HD2 Â· agent trÃ­ch (transport) + tra MST + hook test; M3 Â· `model` = nhÃ  cung cáº¥p model giáº£ cho AI client chung (null â‡’
-   *  chÆ°a cáº¥u hÃ¬nh); váº¯ng â‡’ khoÃ¡ theo env. */
+  /** HD2 Â· agent trÃ­ch (transport) + tra MST + hook test; M3 Â· `model` = nhÃ  cung cáº¥p model giáº£ cho AI client chung (null â‡’ chÆ°a cáº¥u hÃ¬nh); váº¯ng â‡’ khoÃ¡ theo env. */
   contractsAi?: ContractsAiDeps & { model?: ModelProvider | null };
   /** HD4 Â· vÃ²ng nháº¯c háº¡n; `worker` váº¯ng â‡’ báº­t khi `APP_ENV` development/production vÃ  `CONTRACTS_REMIND` â‰  off. */
   contractsRemind?: ContractsRemindDeps;
@@ -126,6 +126,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     }); // N4 Â· R1 pool riÃªng
   if (d.db) {
     mountCoreTools({ ...d, db: d.db }, view);
+    mountCommunity(app, PACK_PREFIX, d.db, view); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
   rejectToolCollisions(d);
@@ -276,8 +277,7 @@ function mountContractsMore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   app.route(base, contractsReputation(d, view, db)); // V2-E Â· uy tÃ­n v2
   if (d.esign) app.route(base, esignUserRoutes(view, d.esign)); // cf-esign-docusign · ký số + esign-flow Gửi lại
 }
-/** price-scout Â· agent Hub `price-scout` qua cá»•ng `AgentCaller` (AI client chung + cáº¥u hÃ¬nh agent Hub/Studio); vÃ²ng dÃ² theo lá»‹ch
- *  báº­t cÃ¹ng Ä‘iá»u kiá»‡n vÃ²ng nháº¯c HD4 (`worker`, `CONTRACTS_PRICE_SCOUT` â‰  off). */
+/** price-scout Â· agent Hub `price-scout` qua cá»•ng `AgentCaller` (AI client chung + cáº¥u hÃ¬nh agent Hub/Studio); vÃ²ng dÃ² theo lá»‹ch báº­t cÃ¹ng Ä‘iá»u kiá»‡n vÃ²ng nháº¯c HD4 (`worker`, `CONTRACTS_PRICE_SCOUT` â‰  off). */
 function contractsPriceScout(cx: ContractsCtx) {
   const { d, db, view, timeZoneOf, aiClient, quota } = cx;
   const env = d.appEnv ?? process.env.APP_ENV;

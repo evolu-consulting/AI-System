@@ -161,3 +161,12 @@ export const PostViewSchema = z.strictObject({
   actions: z.array(z.enum(POST_ACTIONS)),
 });
 export type PostView = z.infer<typeof PostViewSchema>;
+
+/** C3 · HT-52: `GET /pack/community/posts/:id/source` — nội dung gốc (raw) CHỈ cho chính người đăng, để sửa bài. */
+export const PostSourceSchema = z.strictObject({
+  id: z.string(),
+  title: z.string(),
+  body: z.string(),
+  fields: z.record(z.string(), z.string().nullable()),
+});
+export type PostSource = z.infer<typeof PostSourceSchema>;

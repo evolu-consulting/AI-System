@@ -93,9 +93,12 @@ describe("com-c2 · cổng trung tâm admin-api cho đối tác", () => {
       const r = await env.post("/auth/sso/code", { token, body: { app } });
       expect({ app, s: r.status }).toEqual({ app, s: 403 });
     }
-    // `community` chưa thuộc `WEB_APPS` (contract — C5 thêm khi community-web dùng SSO) ⇒ 400 schema, không phải 403 cổng.
+    // C3: `community` thuộc `WEB_APPS` ⇒ đối tác xin được mã SSO sang community-web (đích = URL catalog).
     const cm = await env.post("/auth/sso/code", { token, body: { app: "community" } });
-    expect(errCode(cm)).not.toBe("FORBIDDEN");
+    expect({ s: cm.status, url: cm.json?.target_url }).toEqual({
+      s: 200,
+      url: "https://community.test",
+    });
     const setOther = await env.call("PUT", "/me/default-app", {
       token,
       body: { app: "contracts" },

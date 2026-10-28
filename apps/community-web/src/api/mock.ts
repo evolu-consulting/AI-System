@@ -288,6 +288,14 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       else p.hidden = action === "hide";
       return toView(p);
     },
+    getPostSource: async (id) => {
+      const p = get(id); // mock: bài thô = nguồn; quyền xem raw do server C3 kiểm (HT-52)
+      return { id, title: p.title, body: p.body, fields: p.fields };
+    },
+    updatePartner: async (orgId, input) => {
+      const o = PARTNERS.find((p) => p.id === orgId) as PartnerOrg;
+      return Object.assign(o, { labels: [...new Set(input.labels)], cats: input.cats ?? [] });
+    },
     listThreads: async (postId): Promise<ThreadSummary[]> => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");

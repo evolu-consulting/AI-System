@@ -9,7 +9,9 @@ import type {
   FeedQuery,
   FeedResponse,
   PartnerOrg,
+  PartnerUpdateInput,
   PostActionInput,
+  PostSource,
   PostView,
   Profile,
   Thread,
@@ -20,7 +22,7 @@ import type {
 export type ChatReply = { text: string; source?: string };
 
 export interface CommunityApi {
-  /** `GET /pack/community/me` */
+  /** `GET /pack/community/viewer` (C3: `/pack/:k/me` của kit đã chiếm `/me`). */
   getViewer(): Promise<CommunityViewer>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
@@ -30,6 +32,8 @@ export interface CommunityApi {
   updatePost(id: string, input: UpdatePostInput): Promise<PostView>;
   /** `POST /pack/community/posts/:id/actions` — delete trả void. */
   postAction(id: string, input: PostActionInput): Promise<PostView | null>;
+  /** `GET /pack/community/posts/:id/source` — bản gốc cho chính người đăng (HT-52), dùng khi sửa. */
+  getPostSource(id: string): Promise<PostSource>;
   /** `GET /pack/community/posts/:id/threads` (chủ quản: mọi luồng; đối tác: luồng của mình). */
   listThreads(postId: string): Promise<ThreadSummary[]>;
   /** `GET /pack/community/posts/:id/threads/:orgId` */
@@ -42,6 +46,8 @@ export interface CommunityApi {
   markRead(id?: string): Promise<void>;
   /** `GET /pack/community/partners` — chủ quản: bạn bè; đối tác: [công ty mình]. */
   listPartners(): Promise<PartnerOrg[]>;
+  /** `PUT /pack/community/partners/:orgId` — chỉ Admin chủ quản (nhãn, nhóm hàng, liên kết SHT). */
+  updatePartner(orgId: string, input: PartnerUpdateInput): Promise<PartnerOrg>;
   /** `GET /pack/community/cats` — nhóm hàng để gắn bài / chọn người xem. */
   listCats(): Promise<string[]>;
   /** `GET /pack/community/profile/:orgId?` */

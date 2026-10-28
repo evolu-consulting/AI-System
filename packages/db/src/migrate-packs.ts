@@ -18,6 +18,8 @@ export const PACK_DIRS = [
   { key: "contracts", dir: dir("migrations-pack-contracts"), devOnly: false },
   // N4 · ADR-0021: dịch vụ tri thức dùng khuôn gói (schema `knowledge`, role `knowledge_rw`) — không phải gói nghiệp vụ.
   { key: "knowledge", dir: dir("migrations-pack-knowledge"), devOnly: false },
+  // CR-102 · com-c3: bảng tin chủ quản ↔ đối tác (user ngoài, CR-102a).
+  { key: "community", dir: dir("migrations-pack-community"), devOnly: false },
 ] as const satisfies readonly { key: string; dir: string; devOnly: boolean }[];
 
 export type PackMigrateResult = { kit: number; packs: Record<string, number> };

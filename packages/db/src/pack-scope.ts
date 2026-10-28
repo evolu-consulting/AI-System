@@ -80,9 +80,11 @@ export async function withPackScope<T>(
         // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
         // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu, đặt TRƯỚC khi đổi role
         // (đọc `admin.users` bằng quyền `hub_api`); việc nền / user lạ ⇒ ''. RLS phòng thủ của gói (vd contracts 0067) chặn 'external'.
+        // CR-102 · com-c3: `app.ext_org_id` (kit 0006 `packs.scope_ext_org`: ''/'internal'/uuid công ty/'denied') cũng trong câu này.
         await tx.execute(
           sql`select set_config('app.user_kind', coalesce((select u.kind from admin.users u
               where u.id = nullif(${uid}, '')::uuid), ''), true),
+            set_config('app.ext_org_id', packs.scope_ext_org(${tid}, ${uid}), true),
             set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
             set_config('app.user_id', ${uid}, true), set_config('jit', 'off', true)`,
         );

@@ -37,8 +37,20 @@ export const PartnerOrgSchema = z.strictObject({
   area: z.string().optional(),
   /** Chủ quản: đã vô hiệu ("đối tác đã rời"). */
   left: z.boolean().optional(),
+  /** C3 · chỉ chủ quản: khoá đối tác SHT đã liên kết (Câu 2). */
+  partyKey: z.string().optional(),
 });
 export type PartnerOrg = z.infer<typeof PartnerOrgSchema>;
+
+/** C3 · `PUT /pack/community/partners/:orgId` — chỉ Admin chủ quản (HT-82): nhãn, nhóm hàng, khu vực, liên kết đối tác SHT. */
+export const PartnerUpdateInputSchema = z.strictObject({
+  labels: z.array(z.enum(PARTNER_LABELS)).max(2),
+  cats: z.array(z.string().trim().min(1).max(80)).max(50).default([]),
+  area: z.string().trim().max(100).default(""),
+  /** null = gỡ liên kết. */
+  partyKey: z.string().trim().min(1).max(200).nullable().default(null),
+});
+export type PartnerUpdateInput = z.input<typeof PartnerUpdateInputSchema>;
 
 export const ProfileSchema = z.strictObject({
   org: PartnerOrgSchema.extend({ isHost: z.boolean(), blurb: z.string().default("") }),

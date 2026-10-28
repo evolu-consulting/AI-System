@@ -1,6 +1,6 @@
 // Thẻ bài (mockup `.post`): ⋯ menu (Sửa / Lưu trữ / Đã xong / Xoá + xác nhận đỏ), nhãn đã sửa / lưu trữ / ẩn, bình luận theo luồng.
 import { POST_TYPE_LABEL, type PostAction, type PostView } from "@ai/contracts/community";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { draftFromFields } from "../lib/compose";
 import { expiryNote, factRows, initials, timeAgo, tone } from "../lib/format";
 import { useApp } from "./ctx";
@@ -86,6 +86,17 @@ function PostMenu({
 function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
   const { api, bump, toast } = useApp();
   const [d, setD] = useState(() => draftFromFields(p.type, p.body, p.fields, p.cats));
+  // HT-52: đối tác chỉ nhận bản đã che; người đăng sửa trên bản gốc (raw) — không có (không phải người đăng) ⇒ giữ bản đang xem.
+  useEffect(() => {
+    let live = true;
+    api.getPostSource(p.id).then(
+      (s) => live && setD(draftFromFields(p.type, s.body, s.fields, p.cats)),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [api, p.id, p.type, p.cats]);
   const save = async () => {
     const fields: Record<string, string | null> =
       p.type === "note" ? {} : { product: d.product, qty: d.qty, area: d.area };
