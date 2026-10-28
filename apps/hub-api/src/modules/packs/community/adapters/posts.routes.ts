@@ -80,7 +80,7 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const a = await access(c, "write");
     const input = parseWith(CreatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
-    const { row, contactDetected } = await posts.create(d.uow, a, input);
+    const { row, contactDetected } = await posts.create(d.uow, a, input, d.events);
     if (contactDetected) c.header("X-Contact-Detected", "1"); // HT-54: nhắc người đăng, không chặn
     return c.json(postView(a, namesOf(a), row), 201);
   });
@@ -90,7 +90,7 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const id = parseIdParam(c);
     const input = parseWith(UpdatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
-    return c.json(postView(a, namesOf(a), await posts.update(d.uow, a, id, input)));
+    return c.json(postView(a, namesOf(a), await posts.update(d.uow, a, id, input, d.events)));
   });
 
   r.post("/posts/:id/actions", async (c) => {

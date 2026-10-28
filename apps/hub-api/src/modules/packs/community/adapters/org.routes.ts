@@ -13,6 +13,7 @@ import { type Context, Hono } from "hono";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import { bellView } from "../domain/notify.rules";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as orgs from "./org.service";
@@ -108,13 +109,16 @@ function settingsAndNotifications(r: R, d: CommunityDeps, access: Acc): void {
     await orgs.putSettings(d.uow, a, s);
     return c.json(s);
   });
-  // C9 sẽ nối chuông kit; tới đó: rỗng, đánh dấu đã đọc = không làm gì.
+  // C9 · chuông kit của chính người dùng (nguồn `community`); `/read` không `id` = đọc hết.
   r.get("/notifications", async (c) => {
-    await access(c);
-    return c.json({ items: [], unread: 0 });
+    const a = await access(c);
+    const { items, unread } = await d.bell.list(a.who, 50);
+    return c.json({ items: items.flatMap((x) => bellView(x) ?? []), unread });
   });
   r.post("/notifications/read", async (c) => {
-    await access(c);
+    const a = await access(c);
+    const b = (await c.req.json().catch(() => ({}))) as { id?: unknown };
+    await d.bell.markRead(a.who, typeof b.id === "string" ? b.id : undefined);
     return c.body(null, 204);
   });
 }

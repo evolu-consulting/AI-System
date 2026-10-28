@@ -126,7 +126,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     }); // N4 Â· R1 pool riÃªng
   if (d.db) {
     mountCoreTools({ ...d, db: d.db }, view);
-    mountCommunity(app, PACK_PREFIX, d.db, view); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
+    mountCommunity(app, PACK_PREFIX, d.db, view, { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
   rejectToolCollisions(d);

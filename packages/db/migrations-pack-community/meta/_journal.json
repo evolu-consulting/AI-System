@@ -15,6 +15,13 @@
       "when": 1800200000000,
       "tag": "0002_review_fixes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1800300000000,
+      "tag": "0003_notify",
+      "breakpoints": true
     }
   ]
 }

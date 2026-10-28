@@ -130,6 +130,7 @@ export async function applyAction(tx: Tx, id: string, a: StateAction): Promise<n
       status = case ${a}::text when 'archive' then 'archived' when 'unarchive' then 'active' when 'done' then 'done'
         else status end,
       expires_at = case when ${a}::text = 'unarchive' then now() + interval '30 days' else expires_at end,
+      expiry_notified_at = case when ${a}::text = 'unarchive' then null else expiry_notified_at end,
       hidden = case ${a}::text when 'hide' then true when 'unhide' then false else hidden end,
       updated_at = now()
     where id = ${id}::uuid`);
