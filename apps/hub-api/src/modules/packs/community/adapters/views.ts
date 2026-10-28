@@ -59,7 +59,7 @@ export function postView(a: Access, n: Names, r: PostRow): PostView {
     actions: postActions(
       { type: r.type, authorOrg: r.author_org, status: r.status, hidden: r.hidden },
       { org: a.org },
-    ),
+    ).filter((x) => x !== "edit" || host || r.author_user_id === a.who.userId), // review Thấp2: đối tác chỉ người đăng sửa
   };
   if (!host) return base;
   const hits = (r.hits ?? []) as ContentHit[];

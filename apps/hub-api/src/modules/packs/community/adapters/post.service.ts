@@ -19,7 +19,7 @@ import {
   partnerMayPost,
   postActions,
 } from "../domain/audience.rules";
-import { type Fields, storeContent } from "../domain/content.rules";
+import { type Fields, storeComment, storeContent } from "../domain/content.rules";
 import { type Access, otherOrgNames } from "./community-access";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
@@ -27,6 +27,7 @@ import {
   applyAction,
   editable,
   insertPost,
+  type MediaIn,
   ownSource,
   postState,
   replaceChildren,
@@ -61,6 +62,15 @@ function allowedOn(st: StateRow | null, org: string | null): PostAction[] {
     { type: st.type, authorOrg: st.author_org, status, hidden: st.hidden },
     { org },
   );
+}
+
+/** Review TB2: url media chỉ http(s) (chặn javascript:/data:); nhãn của đối tác che liên hệ như nội dung bài (D4). */
+function safeMedia(a: Access, media: readonly MediaIn[]): MediaIn[] {
+  const others = otherOrgNames(a);
+  return media.map((m) => {
+    if (m.url !== undefined && !/^https?:\/\/\S+$/i.test(m.url)) throw appError("VALIDATION_ERROR");
+    return { ...m, label: storeComment(m.label, others).masked.slice(0, 200) };
+  });
 }
 
 const found = (r: PostRow | null): PostRow => {
@@ -103,9 +113,9 @@ export async function create(
       tx,
       { tenantId: a.who.tenantId, postId: id },
       content.fields.raw,
-      input.media,
+      safeMedia(a, input.media),
     );
-    return postById(tx, a.org === null, id);
+    return postById(tx, id);
   });
   return { row: found(row), contactDetected: content.contactDetected };
 }
@@ -117,7 +127,7 @@ export async function update(
   input: UpdatePostInput,
 ): Promise<PostRow> {
   const row = await uow.tenant(a.who, async ({ tx }) => {
-    const cur = await editable(tx, id, a.org);
+    const cur = await editable(tx, id, { org: a.org, userId: a.who.userId });
     if (!cur) throw appError("NOT_FOUND");
     const fields = mergedFields(cur.type, cur.fields_raw, input.fields);
     const content = storeContent(
@@ -132,9 +142,9 @@ export async function update(
       tx,
       { tenantId: a.who.tenantId, postId: id },
       content.fields.raw,
-      input.media ?? null,
+      input.media ? safeMedia(a, input.media) : null,
     );
-    return postById(tx, a.org === null, id);
+    return postById(tx, id);
   });
   return found(row);
 }
@@ -144,7 +154,7 @@ export function act(uow: Uow, a: Access, id: string, action: StateAction): Promi
   return uow.tenant(a.who, async ({ tx }) => {
     if (!allowedOn(await postState(tx, id), a.org).includes(action)) throw appError("NOT_FOUND");
     if ((await applyAction(tx, id, action)) !== 1) throw appError("NOT_FOUND");
-    return action === "delete" ? null : found(await postById(tx, a.org === null, id));
+    return action === "delete" ? null : found(await postById(tx, id));
   });
 }
 

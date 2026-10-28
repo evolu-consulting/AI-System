@@ -71,11 +71,12 @@ export type EditableRow = {
 export async function editable(
   tx: Tx,
   id: string,
-  org: string | null,
+  { org, userId }: { org: string | null; userId: string },
 ): Promise<EditableRow | null> {
   const rows = await tx.execute<EditableRow>(sql`
     select type, author_org, fields_raw, title_raw, body_raw, author_user_id::text as author_user_id
-    from community.posts where id = ${id}::uuid and author_org is not distinct from ${org}::uuid for update`);
+    from community.posts where id = ${id}::uuid and author_org is not distinct from ${org}::uuid
+      and (author_org is null or author_user_id = ${userId}::uuid) for update`);
   return rows[0] ?? null;
 }
 

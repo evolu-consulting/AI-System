@@ -274,12 +274,13 @@ describe("bài: tạo / bảng tin / sửa / thao tác / nguồn", () => {
     ).toContain("0912 345 678");
     expect((await call("s1b", "GET", `/posts/${s1Post}/source`)).status).toBe(404);
   });
-  it("PATCH /posts/:id: người đăng sửa ⇒ edited; công ty khác 404", async () => {
+  it("PATCH /posts/:id: người đăng sửa ⇒ edited; đồng nghiệp cùng công ty (Thấp2) / công ty khác 404", async () => {
     const p = await ok(
       PostViewSchema,
-      call("s1b", "PATCH", `/posts/${s1Post}`, { fields: { price: "12.000đ" } }),
+      call("s1a", "PATCH", `/posts/${s1Post}`, { fields: { price: "12.000đ" } }),
     );
     expect({ edited: p.edited, price: p.fields.price }).toEqual({ edited: true, price: "12.000đ" });
+    expect((await call("s1b", "PATCH", `/posts/${s1Post}`, { title: "x" })).status).toBe(404);
     expect((await call("s2", "PATCH", `/posts/${s1Post}`, { title: "x" })).status).toBe(404);
   });
   it("POST /posts/:id/actions: chủ quản ẩn bài S1 (HT-29; S1 vẫn thấy, không biết — HT-30); S1 lưu trữ; đối tác ẩn bài chủ quản ⇒ 404; xoá ⇒ 204", async () => {

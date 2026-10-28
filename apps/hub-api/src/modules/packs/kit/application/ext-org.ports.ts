@@ -33,4 +33,10 @@ export type ExternalOrgResolver = {
 };
 
 export type ExtOrg = { id: string; name: string; active: boolean };
-export type ExtDirectory = { tenantName: string; userName: string; orgs: readonly ExtOrg[] };
+export type ExtDirectory = {
+  tenantName: string;
+  userName: string;
+  orgs: readonly ExtOrg[];
+  /** Danh tính DB của `userId` (đối chiếu claim token — review C3 TB1); vắng user trong tenant ⇒ null. */
+  user?: { kind: UserKind; extOrgId: string | null; deactivated: boolean } | null;
+};

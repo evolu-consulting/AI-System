@@ -41,7 +41,6 @@ function feedFilter(c: Context<PackGuardVars>, a: Access): FeedFilter {
   const author =
     q.authorOrgId === undefined ? null : q.authorOrgId === a.who.tenantId ? "host" : q.authorOrgId;
   return {
-    host: a.org === null,
     org: a.org,
     tab: q.tab,
     cat: q.cat ?? null,

@@ -6,7 +6,13 @@ import type { PackUow } from "../../kit/application/ports";
 import type { StoredText } from "../domain/content.rules";
 import type { Access } from "./community-access";
 import { postState } from "./post-write.repo";
-import { type CommentRow, insertComment, threadComments, threadSummaries } from "./thread.repo";
+import {
+  type CommentRow,
+  insertComment,
+  orgMaySee,
+  threadComments,
+  threadSummaries,
+} from "./thread.repo";
 
 type Uow = PackUow<{ tx: Tx }>;
 
@@ -32,7 +38,7 @@ export async function comments(
   postId: string,
   org: string,
 ): Promise<CommentRow[]> {
-  const r = await uow.tenant(a.who, ({ tx }) => threadComments(tx, a.org === null, postId, org));
+  const r = await uow.tenant(a.who, ({ tx }) => threadComments(tx, postId, org));
   if (!r.post) throw appError("NOT_FOUND");
   return r.comments;
 }
@@ -51,6 +57,7 @@ export function add(
       const target = threadOrg(a, input.orgId ?? st.author_org ?? undefined);
       if (!target)
         throw new AppError("THREAD_REQUIRED", 422, "Choose the partner thread to reply in");
+      if (a.org === null && !(await orgMaySee(tx, postId, target))) throw appError("NOT_FOUND");
       await insertComment(tx, {
         tenantId: a.who.tenantId,
         postId,

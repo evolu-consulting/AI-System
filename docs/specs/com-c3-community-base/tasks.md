@@ -22,6 +22,13 @@ Unit: tính audience (D2) thuần. Int: **một int RLS tham số theo từng d�
 - Phiên community-web: sau C2 đối tác chỉ được cấp mã SSO cho app `community` ⇒ community-web dùng **app riêng `community`** (cookie `ai_rt_community`, `WEB_APPS` + hàng `admin.app_catalog` trong kit 0006 + `APP_URL_COMMUNITY`), đăng nhập chung qua AI System (sso-switch như contracts-web). Dev mặc định mock, build mặc định http (`PUBLIC_COMMUNITY_API`).
 - T-DEP-1: route → `*.service.ts` → repo; fixture test ở `tests/acceptance/com-c3/_support/cast.ts` (qc ghi lock).
 
+## Sửa sau security review (community 0002, kit 0007)
+- TB1: raw/hits/audience chọn trong SQL theo `packs.viewer_ext_org()` (không theo token); `accessOf` từ chối khi kind/công ty trên token ≠ DB (danh bạ kit trả thêm `user`).
+- TB2: url media chỉ `http(s)://` (service 400 + CHECK `media_url_scheme_ck`); nhãn media của đối tác che như nội dung.
+- TB3: `comments_insert/update` đòi luồng khớp (thread_id ↔ post_id ↔ thread_org); trigger `comments_fixed` cấm đổi bài/luồng/tác giả. Bình luận ghi thành 2 câu (luồng rồi bình luận) vì policy không thấy luồng tạo trong cùng câu.
+- Thấp1: chủ quản mở luồng chỉ cho công ty trong audience (bài chủ quản) hoặc chính bên đăng (bài đối tác). Thấp2: bài đối tác chỉ người đăng sửa (đồng nghiệp: không `edit`, PATCH 404). Thấp3: ghi `partner_companies` ở DB đòi `packs.viewer_is_admin('community')` (kit 0007).
+- Thấp4 (ghi nhận): `packs.scope_ext_org(tenant, user)` cấp EXECUTE cho `hub_api` = tra được kind/công ty của user bất kỳ — chấp nhận vì `hub_api` là role máy chủ tin cậy (đã đọc `admin.users`); role gói không có quyền này.
+
 ## Việc còn lại
 - Seed demo (bật gói community + công ty đối tác trên tenant `demo`); route ẩn/xoá bình luận (C6); thông báo (C9); Lưu báo giá (C7b), gợi ý SHT (C8); tải media (Filebox).
 - qc: ghi lock cho `tests/acceptance/com-c3/_support/cast.ts`. `check:fn` còn báo hàm dài ở test + `mock.ts` (C5, có sẵn).

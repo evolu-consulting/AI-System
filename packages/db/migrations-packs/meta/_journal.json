@@ -43,6 +43,13 @@
       "when": 1800100000000,
       "tag": "0006_viewer_ext_org",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1800200000000,
+      "tag": "0007_viewer_is_admin",
+      "breakpoints": true
     }
   ]
 }

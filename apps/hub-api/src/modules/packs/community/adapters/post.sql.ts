@@ -1,5 +1,5 @@
 // CR-102 · com-c3 · Luật 4c: câu đọc bài. Bảng tin = MỘT câu (trang + đếm theo tab + facets); RLS `community_rw` lọc người xem,
-// `host` chỉ chọn cột (đối tác nhận cột masked, không bao giờ raw/hits). Văn bản SQL cố định; mọi lọc là tham số.
+// Cột raw/hits/audience chỉ khi DB nói người xem là chủ quản (`packs.viewer_ext_org() is null`, không theo token — review TB1). Văn bản SQL cố định; mọi lọc là tham số.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 
@@ -25,7 +25,6 @@ export type PostRow = {
 };
 
 export type FeedFilter = {
-  host: boolean;
   /** Tổ chức người xem (null = chủ quản) — cho `mine`. */
   org: string | null;
   tab: "all" | "sell" | "buy" | "note" | "archived";
@@ -46,19 +45,19 @@ export type FeedRaw = {
 };
 
 /** Cột hiển thị theo người xem (alias bảng `p`). */
-const shown = (host: boolean): SQL => sql`
+const shown: SQL = sql`
   case when p.status = 'active' and p.expires_at <= now() then 'expired' else p.status end as eff,
-  case when ${host}::boolean then p.title_raw else p.title_masked end as t_title,
-  case when ${host}::boolean then p.body_raw else p.body_masked end as t_body,
-  case when ${host}::boolean then p.fields_raw else p.fields_masked end as t_fields`;
+  case when (select packs.viewer_ext_org()) is null then p.title_raw else p.title_masked end as t_title,
+  case when (select packs.viewer_ext_org()) is null then p.body_raw else p.body_masked end as t_body,
+  case when (select packs.viewer_ext_org()) is null then p.fields_raw else p.fields_masked end as t_fields`;
 
 /** JSON một bài (alias `v` trên hàng đã có cột `shown`). */
-const itemJson = (host: boolean): SQL => sql`json_build_object(
+const itemJson: SQL = sql`json_build_object(
   'id', v.id, 'type', v.type, 'author_org', v.author_org, 'author_user_id', v.author_user_id,
   'author_name', v.author_name, 'status', v.eff, 'hidden', v.hidden, 'edited', v.edited,
   'created_at', v.created_at, 'expires_at', v.expires_at, 'title', v.t_title, 'body', v.t_body, 'fields', v.t_fields,
-  'hits', case when ${host}::boolean then v.hits end, 'cats', v.cats,
-  'aud', case when ${host}::boolean and v.author_org is null
+  'hits', case when (select packs.viewer_ext_org()) is null then v.hits end, 'cats', v.cats,
+  'aud', case when (select packs.viewer_ext_org()) is null and v.author_org is null
     then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs) end,
   'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url)
     order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
@@ -69,7 +68,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
   const q = f.q === null ? null : `%${f.q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
   const rows = await tx.execute<{ r: FeedRaw }>(sql`
     with vis as (
-      select p.*, ${shown(f.host)} from community.posts p where p.tenant_id = ${tenantId}::uuid
+      select p.*, ${shown} from community.posts p where p.tenant_id = ${tenantId}::uuid
     ), base as (
       select * from vis v
       where (not ${f.mine}::boolean or v.author_org is not distinct from ${f.org}::uuid)
@@ -89,7 +88,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
       limit ${f.limit + 1}::int
     )
     select json_build_object(
-      'items', coalesce((select json_agg(${itemJson(f.host)} order by v.created_at desc, v.id desc) from page v), '[]'::json),
+      'items', coalesce((select json_agg(${itemJson} order by v.created_at desc, v.id desc) from page v), '[]'::json),
       'counts', (select json_build_object(
           'all', count(*) filter (where eff = 'active'),
           'sell', count(*) filter (where eff = 'active' and type = 'sell'),
@@ -104,8 +103,8 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
 }
 
 /** Một bài theo id dưới RLS người xem (vắng ⇒ null = 404). */
-export async function postById(tx: Tx, host: boolean, id: string): Promise<PostRow | null> {
+export async function postById(tx: Tx, id: string): Promise<PostRow | null> {
   const rows = await tx.execute<{ r: PostRow }>(sql`
-    select ${itemJson(host)} as r from (select p.*, ${shown(host)} from community.posts p where p.id = ${id}::uuid) v`);
+    select ${itemJson} as r from (select p.*, ${shown} from community.posts p where p.id = ${id}::uuid) v`);
   return rows[0]?.r ?? null;
 }

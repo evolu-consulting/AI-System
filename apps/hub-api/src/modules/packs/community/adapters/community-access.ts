@@ -52,6 +52,10 @@ export async function accessOf(
   const rights = external ? { canWrite: true, isAdmin: false } : await internalAccess(view, c);
   if (need === "write" && !rights.canWrite) throw forbidden();
   const dir = await resolver.directory(u.tenantId, u.userId);
+  // Review TB1: claim token phải khớp DB (kind bất biến; lệch ⇒ token cũ/giả ⇒ từ chối, không trả raw/hits).
+  const db = dir.user;
+  if (!db || db.deactivated || (db.kind === "external") !== external) throw forbidden();
+  if (external && db.extOrgId !== u.extOrgId) throw forbidden();
   const org = external ? (u.extOrgId as string) : null;
   if (org !== null && !dir.orgs.some((o) => o.id === org && o.active)) throw forbidden();
   return {

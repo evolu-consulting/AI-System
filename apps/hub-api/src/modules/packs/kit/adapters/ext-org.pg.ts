@@ -59,6 +59,9 @@ export function pgExternalOrgResolver(db: Db): ExternalOrgResolver {
             'tenantName', coalesce((select t.name from admin.tenants t where t.id = ${tenantId}::uuid), ''),
             'userName', coalesce((select u.display_name from admin.users u
               where u.tenant_id = ${tenantId}::uuid and u.id = ${uid}::uuid), ''),
+            'user', (select json_build_object('kind', u.kind, 'extOrgId', u.external_org_id::text,
+                'deactivated', u.deactivated_at is not null) from admin.users u
+              where u.tenant_id = ${tenantId}::uuid and u.id = ${uid}::uuid),
             'orgs', coalesce((select json_agg(json_build_object('id', o.id::text, 'name', o.name, 'active', o.active)
               order by o.name) from admin.external_orgs o where o.tenant_id = ${tenantId}::uuid), '[]'::json)) as d`),
       );
