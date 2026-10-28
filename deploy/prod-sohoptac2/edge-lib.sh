@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sohoptac2 - ham dung chung cho enable-domain.sh / cutover.sh (source, khong chay truc tiep).
 
-# s2_names <chat|contracts|admin|hub> <base> <test|both>  -> danh sach host cho server_name
+# s2_names <chat|contracts|admin|hub|community> <base> <test|both>  -> danh sach host cho server_name
 s2_names() {
   local p t
   case "$1" in
@@ -9,6 +9,7 @@ s2_names() {
     contracts) p=sohoptac; t=sohoptac-test ;;
     admin) p=ai-admin; t=ai-test-admin ;;
     hub) p=ai-hub; t=ai-test-hub ;;
+    community) p=community; t=community-test ;;   # ten CHUA chot (CR-102) - doi o day + gen-env.sh (P_CM/T_CM) + s2-app-urls.ts
     *) return 2 ;;
   esac
   case "$3" in
@@ -24,6 +25,7 @@ s2_render() {
       -e "s/__N_CONTRACTS__/$(s2_names contracts "$2" "$3")/" \
       -e "s/__N_ADMIN__/$(s2_names admin "$2" "$3")/" \
       -e "s/__N_HUB__/$(s2_names hub "$2" "$3")/" \
+      -e "s/__N_COMMUNITY__/$(s2_names community "$2" "$3")/" \
       -e "s/__BASE__/$2/g" -e "s/listen 80;/listen $4;/" "$1"
 }
 

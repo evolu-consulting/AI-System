@@ -4,7 +4,7 @@
 # git archive <Ref> + bộ kit này -> scp -> giải nén vào build/app -> gen-env.sh (bí mật một lần, trên máy chủ) -> docker compose build
 # -> setup.sh (migrate, seed, chạy, /health). Không đụng project khác; không đổi routing/TLS của host; dữ liệu (volume pgdata,
 # data/, claude-home/, .env, ADMIN_CREDENTIALS.txt) giữ nguyên giữa các lần deploy.
-# -Hosts prod|test: bo hostname cong khai (prod = sohoptac./ai-admin./ai./ai-hub.; test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
+# -Hosts prod|test: bo hostname cong khai (prod = sohoptac./ai-admin./ai./ai-hub. (+ community.); test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
 param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
@@ -34,7 +34,7 @@ try {
     "unlink /tmp/s2-app-$stamp.tgz; unlink /tmp/s2-kit-$stamp.tgz; echo '$commit ($Ref)' > VERSION; " +
     "${envDomain}bash gen-env.sh; S2_APP_VERSION='$commit' docker compose -p sohoptac2 build 2>&1 | grep -E 'ERROR|error:|Built' || true; bash setup.sh 2>&1"
   ssh @ssh $Server $remote
-  Write-Host "sohoptac2: đã deploy $commit ($Ref). Tunnel: ssh -i $Key -N -L 18431:127.0.0.1:18431 -L 18432:127.0.0.1:18432 -L 18433:127.0.0.1:18433 -L 18434:127.0.0.1:18434 $Server"
+  Write-Host "sohoptac2: đã deploy $commit ($Ref). Tunnel: ssh -i $Key -N -L 18431:127.0.0.1:18431 -L 18432:127.0.0.1:18432 -L 18433:127.0.0.1:18433 -L 18434:127.0.0.1:18434 -L 18435:127.0.0.1:18435 $Server"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

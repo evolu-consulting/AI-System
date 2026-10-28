@@ -12,8 +12,8 @@ if [ -f .env ]; then echo "gen-env: .env đã có — giữ nguyên"; else
   openssl genpkey -algorithm ed25519 -out "$tmp/jwt.pem" 2>/dev/null
   openssl pkey -in "$tmp/jwt.pem" -pubout -out "$tmp/jwt.pub"
   oneline() { awk '{printf "%s\\n", $0}' "$1"; }
-  P_CONTRACTS=18431; P_ADMIN=18432; P_CHAT=18433; P_HUB=18434
-  ORIGINS="http://localhost:$P_CONTRACTS,http://localhost:$P_ADMIN,http://localhost:$P_CHAT,http://localhost:$P_HUB"
+  P_CONTRACTS=18431; P_ADMIN=18432; P_CHAT=18433; P_HUB=18434; P_COMMUNITY=18435
+  ORIGINS="http://localhost:$P_CONTRACTS,http://localhost:$P_ADMIN,http://localhost:$P_CHAT,http://localhost:$P_HUB,http://localhost:$P_COMMUNITY"
   cat > .env <<EOF
 S2_UID=$(id -u)
 S2_GID=$(id -g)
@@ -21,9 +21,11 @@ S2_PORT_CONTRACTS=$P_CONTRACTS
 S2_PORT_ADMIN=$P_ADMIN
 S2_PORT_CHAT=$P_CHAT
 S2_PORT_HUB=$P_HUB
+S2_PORT_COMMUNITY=$P_COMMUNITY
 S2_PUBLIC_ADMIN_URL=http://localhost:$P_ADMIN
 S2_PUBLIC_CHAT_URL=http://localhost:$P_CHAT
 S2_PUBLIC_HUB_URL=http://localhost:$P_HUB
+S2_PUBLIC_COMMUNITY_URL=http://localhost:$P_COMMUNITY
 PG_OWNER_PASSWORD=$OWNER_PW
 APP_ENV=production
 LOG_LEVEL=info
@@ -77,28 +79,33 @@ H_IN="${S2_HOSTS-}"; H_OLD="$(envget S2_HOSTS)"; H="${H_IN:-${H_OLD:-test}}"
 [[ "$H" == prod || "$H" == test ]] || { echo "gen-env: S2_HOSTS phai la prod|test"; exit 2; }
 [ -z "$H_IN" ] || [ "$MODE" = domain ] || { echo "gen-env: S2_HOSTS can che do domain (dat S2_DOMAIN)"; exit 2; }
 LOCAL=""
-for k in CONTRACTS ADMIN CHAT HUB; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
+# .env cu (truoc community) chua co S2_PORT_COMMUNITY => them 18435 (idempotent; compose cung mac dinh 18435).
+grep -q "^S2_PORT_COMMUNITY=" .env || setkv S2_PORT_COMMUNITY 18435
+for k in CONTRACTS ADMIN CHAT HUB COMMUNITY; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
 if [ "$MODE" != keep ]; then
   [ -f .env.bak-domain ] || { cp -p .env .env.bak-domain; chmod 600 .env.bak-domain; }
   if [ "$MODE" = domain ]; then
     [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
     T_C="https://sohoptac-test.$D"; T_A="https://ai-test-admin.$D"; T_H="https://ai-test-hub.$D"; T_CH="https://ai-test.$D"
     P_C="https://sohoptac.$D"; P_A="https://ai-admin.$D"; P_H="https://ai-hub.$D"; P_CH="https://ai.$D"
-    if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; fi
+    # community: ten host CHUA chot (placeholder) - phai khop edge-lib.sh s2_names + s2-app-urls.ts.
+    T_CM="https://community-test.$D"; P_CM="https://community.$D"
+    if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; U_CM="$P_CM"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; U_CM="$T_CM"; fi
     setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv TRUST_PROXY_HOPS 3
-    ORIG="$P_C,$P_A,$P_CH,$P_H,$T_C,$T_A,$T_CH,$T_H,$LOCAL"
+    ORIG="$P_C,$P_A,$P_CH,$P_H,$P_CM,$T_C,$T_A,$T_CH,$T_H,$T_CM,$LOCAL"
   else
     U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
-    U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"
+    U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"; U_CM="http://localhost:$(envget S2_PORT_COMMUNITY)"
     setkv S2_DOMAIN ""; setkv S2_HOSTS ""; setkv TRUST_PROXY_HOPS 1
     ORIG="$LOCAL"
   fi
-  setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"
+  setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"; setkv S2_PUBLIC_COMMUNITY_URL "$U_CM"
   setkv CORS_ORIGINS "$ORIG"; setkv HUB_CORS_ORIGINS "$ORIG"; setkv ADMIN_WEB_URL "$U_A"; setkv HUB_NOTIFY_BASE_URL "$U_C"
   echo "gen-env: che do $MODE ${D:+($D, hosts=$H)} - da cap nhat URL/CORS/TRUST_PROXY_HOPS trong .env; can build lai web + up -d"
 elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then
   setkv S2_PUBLIC_CONTRACTS_URL "http://localhost:$(envget S2_PORT_CONTRACTS)"
 fi
+grep -q '^S2_PUBLIC_COMMUNITY_URL=' .env || setkv S2_PUBLIC_COMMUNITY_URL "http://localhost:$(envget S2_PORT_COMMUNITY)"
 chmod 600 .env
 # dify-demo-flow: gốc Dify console ⇒ Admin → Workflows hiện "Mở trong Dify" (chỉ đặt khi chưa có; sửa tay giữ nguyên).
 grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "http://149.202.83.5:4203" # web Dify gọi API qua http IP ⇒ mở bằng https bị chặn mixed content

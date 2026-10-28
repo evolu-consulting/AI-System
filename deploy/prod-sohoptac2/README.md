@@ -11,13 +11,13 @@
 | admin-api | sohoptac2-app (bun 1.3.14) | 1 / 1 GB | :3001 nội bộ |
 | hub-api | sohoptac2-app | 2 / 3 GB | :4000 nội bộ, Studio `/studio`, AI client = gói Claude |
 | agent-runtime | sohoptac2-runtime (python 3.12 + uv) | 2 / 3 GB | worker `claude-sub` |
-| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 4 web + reverse proxy |
+| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 5 web (+ community-web :8085) + reverse proxy |
 | filebox | sohoptac2-filebox (python 3.12, app = bản sao FileBox dùng chung) | 1 / 768 MB | :9100 **chỉ nội bộ** (không publish), volume `fbdata`; FileBox RIÊNG, token riêng |
 | filebox-minio | alpine + nhị phân MinIO tĩnh chép từ host | 1 / 1 GB | :9000 chỉ nội bộ, volume `fbminio`, khoá riêng |
 | tool (profile `tools`) | sohoptac2-app | 1 / 1 GB | migrate / seed / smoke |
 
-Cổng (chỉ `127.0.0.1`): **18431** contracts-web · **18432** admin-web · **18433** chat-web · **18434** Hub + Studio (`/studio/`).
-Migration: `packages/db/src/migrate.ts` = main + hub + packs-kit + gói `contracts` + `knowledge` (production bỏ `*-dev` và `pkdemo`).
+Cổng (chỉ `127.0.0.1`): **18431** contracts-web · **18432** admin-web · **18433** chat-web · **18434** Hub + Studio (`/studio/`) · **18435** community-web (Cộng đồng đối tác).
+Migration: `packages/db/src/migrate.ts` = main + hub + packs-kit + gói `contracts` + `knowledge` + `community` (production bỏ `*-dev` và `pkdemo`).
 
 ## Mở bằng SSH tunnel (chưa public)
 ```
@@ -286,7 +286,7 @@ e2e triển khai qua domain: `powershell -File deploy/prod-sohoptac2/e2e-deploye
 | `ai-hub.<domain>` | 8084 | Hub + Studio |
 
 Cac host `-test` van la alias vo hai (cung `server_name`, CORS van cho phep) nhung KHONG con duoc dung. App cu (`sohoptac`, `aisystem`) khong con ten mien cong khai:
-container giu nguyen chay, chi truy cap bang SSH tunnel; khong migrate du lieu cu. Cert `evoluconsulting` da co ca 4 ten prod => khong can certbot.
+container giu nguyen chay, chi truy cap bang SSH tunnel; khong migrate du lieu cu. Cert `evoluconsulting` da co ca 4 ten prod => khong can certbot (ten community moi thi CAN cert: xem muc Community).
 Thu tu (tren may chu, thu muc `~/workspace/sohoptac2`; do nguoi dung chay):
 1. `powershell -File deploy/prod-sohoptac2/deploy.ps1 -Domain evoluconsulting.com -Hosts prod` — `gen-env.sh` nhan `S2_HOSTS=prod|test` (ghi vao `.env`): `PUBLIC_*`/`APP_URL_*`/`ADMIN_WEB_URL`/`HUB_NOTIFY_BASE_URL`/SSO dung host prod; `CORS_ORIGINS`/`HUB_CORS_ORIGINS` gom CA host prod, host `-test` va origin localhost cua tunnel. Build lai web.
 2. `bash enable-domain.sh` (neu chua chay: noi mang edge-proxy; chi cai ten `-test`, khong dung ten prod con thuoc app cu).
@@ -294,3 +294,31 @@ Thu tu (tren may chu, thu muc `~/workspace/sohoptac2`; do nguoi dung chay):
 4. `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain evoluconsulting.com --hosts prod` (them `--apply` de ghi): doi `admin.app_catalog.url` con tro localhost hoac `-test` sang host prod; hang khac giu nguyen.
 Hoan tac: `bash rollback-cutover.sh` (khoi phuc `conf.d` tu ban sao luu goc: bat lai app cu, go ten prod khoi sohoptac2.conf, reload), roi `deploy.ps1 -Hosts test` neu muon URL ve -test.
 e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAIN` + `DEP_HOSTS=prod|test`).
+
+## Community (community-web, CR-102) — app Cộng đồng đối tác
+**Đã có trong kit:** web image build thêm `apps/community-web` (cùng `PUBLIC_*`, `PUBLIC_SSO_URL` = chat-web; **không** đặt `PUBLIC_COMMUNITY_API` ⇒ build chạy `http` → `/pack/community/*`), nginx `web` cổng **8085** (publish `127.0.0.1:18435`, `S2_PORT_COMMUNITY`): `/auth` → admin-api (cookie `ai_rt_community`, `Path=/auth`), `/pack` `/conversations` `/runs` `/notifications` → hub-api (SSE: `proxy_buffering off`, `proxy_read_timeout 600`), `/sso` và mọi route SPA → `index.html`. `edge/sohoptac2.conf` có server `__N_COMMUNITY__` → `:8085`. Env: admin-api `APP_URL_COMMUNITY`, hub-api `COMMUNITY_WEB_URL` + `CONTRACTS_WEB_URL` + `COMMUNITY_SWEEP` (mặc định on; `off` tắt) + `COMMUNITY_SWEEP_EVERY_MS` (mặc định 60000), `CORS_ORIGINS`/`HUB_CORS_ORIGINS` gồm host community (prod, -test) + `http://localhost:18435`. `s2-app-urls.ts` đổi thêm hàng catalog `community`.
+
+| Host (TẠM — tên chưa chốt) | Cổng `web` | App |
+|---|---|---|
+| `community.<domain>` (prod) / `community-test.<domain>` (test) | 8085 | community-web |
+
+Đổi tên host: sửa **cùng lúc** `edge-lib.sh` (`s2_names community`), `gen-env.sh` (`P_CM`/`T_CM`), `tools/scripts/src/s2-app-urls.ts` (+ test), `enable-domain.sh` (`HOSTS`) rồi build lại web (URL nhúng lúc build).
+
+**Bước thủ công của người dùng (kit không làm được):**
+1. **DNS:** tạo bản ghi `community.<domain>` (và `community-test.<domain>` nếu dùng test) trỏ về 149.202.83.5 (như 4 host hiện có, hoặc wildcard nếu có).
+2. **Cert TLS:** cert `evoluconsulting` hiện chỉ phủ 4 tên (sohoptac, ai, ai-admin, ai-hub + `-test`) — KHÔNG phủ tên mới. Phải cấp lại/mở rộng cert (certbot `--expand` hoặc wildcard) cho host community trên host nginx, rồi reload nginx host, TRƯỚC khi mở tên mới cho người dùng. Kit không đụng cert/host nginx.
+3. Chốt tên host (nếu khác mặc định) theo mục "Đổi tên host" ở trên.
+
+**Thứ tự deploy (migrate TRƯỚC khi hub-api mới chạy):**
+- Migration cần áp: admin **0028→0029**, kit **0006→0007**, community **0001→0004**, contracts **0066→0067**, hub **0063**. `setup.sh` đã làm đúng thứ tự: `tool packages/db/src/migrate.ts` (main + hub + packs gồm `community`) chạy trước `dc up -d … hub-api …`, nên hub-api mới chỉ start sau khi schema xong. Không `up -d hub-api` tay trước bước migrate.
+1. (Sao lưu: `bash backup.sh` trước khi migrate.)
+2. `deploy.ps1 -Domain evoluconsulting.com -Hosts prod` (hoặc `-Hosts test`): build lại web (có community-web) + `gen-env.sh` (thêm `S2_PORT_COMMUNITY`, `S2_PUBLIC_COMMUNITY_URL`, CORS) + `setup.sh`.
+3. Sau khi DNS + cert xong: `bash enable-domain.sh` (hoặc `cutover.sh` nếu đang prod) để cài server community vào edge-proxy; rồi `s2-app-urls.ts --base-domain <domain> [--hosts prod] --apply` để hàng catalog `community` trỏ host https.
+
+**Kiểm sau deploy:**
+- `curl -sSI https://community[-test].<domain>/` = 200; `/sso` và route sâu cũng 200 (SPA fallback).
+- Đối tác (partner) đăng nhập qua AI System → vào community-web, hiện hồ sơ (profile) và chuông thông báo (bell) hoạt động; Trợ lý giá (SSE `/conversations`, `/runs`) chạy không bị cắt.
+- Đối tác bị **403** ở các app khác (contracts-web, admin-web, chat-web, Studio) — kiểm bằng tài khoản partner.
+- Người nội bộ vẫn đăng nhập contracts/chat/admin bình thường; log hub-api không lỗi `community` sweep.
+
+**Hoàn tác:** (a) chỉ tắt app: `bash disable-domain.sh` hoặc gỡ server community khỏi `sohoptac2.conf` + reload edge; đặt `COMMUNITY_SWEEP=off` trong `.env` rồi `up -d hub-api`. (b) Về bản trước: `deploy.ps1 -Ref <commit cũ>` — nhưng migration KHÔNG tự lùi: schema mới (cột/bảng thêm) tương thích ngược với hub/admin cũ; chỉ khôi phục DB từ `backup.sh` (`restore-test.sh` để thử trước) khi thật cần. Partner chưa có phiên community nên không ảnh hưởng người dùng nội bộ.

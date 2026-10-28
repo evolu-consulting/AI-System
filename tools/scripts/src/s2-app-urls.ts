@@ -8,7 +8,8 @@ export type CatalogRow = { key: string; url: string };
 export type UrlChange = { key: string; from: string; to: string };
 
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i;
-const TESTHOST = /^https:\/\/(sohoptac-test|ai-test|ai-test-admin|ai-test-hub)\.[a-z0-9.-]+(\/|$)/i;
+const TESTHOST =
+  /^https:\/\/(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\.[a-z0-9.-]+(\/|$)/i;
 const BASE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 export type Hosts = "test" | "prod";
 
@@ -21,12 +22,14 @@ export function targetUrls(base: string, hosts: Hosts = "test"): Record<string, 
       contracts: `https://sohoptac.${base}`,
       studio: `https://ai-hub.${base}/studio/`,
       admin: `https://ai-admin.${base}`,
+      community: `https://community.${base}`, // ten host CHUA chot (placeholder) - khop edge-lib.sh
     };
   return {
     chat: `https://ai-test.${base}`,
     contracts: `https://sohoptac-test.${base}`,
     studio: `https://ai-test-hub.${base}/studio/`,
     admin: `https://ai-test-admin.${base}`,
+    community: `https://community-test.${base}`,
   };
 }
 
@@ -71,7 +74,7 @@ async function main(): Promise<void> {
       from (select * from json_to_recordset((${JSON.stringify(changes.map((c) => ({ key: c.key, url: c.to })))}::text)::json)
             as x(key text, url text)) v
       where a.key = v.key and (a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'
-        or (${hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub)\\.'))`;
+        or (${hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\\.'))`;
     console.log(`s2-app-urls: đã ghi ${n.count} hàng`);
   } finally {
     await sql.end();

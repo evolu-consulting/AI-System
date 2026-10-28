@@ -63,6 +63,7 @@ services:
         # sso-switch: app switcher (chat → contracts) + SSO dội về AI System (chat-web).
         PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
         PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
+        # community-web dùng PUBLIC_SSO_URL ở trên; KHÔNG đặt PUBLIC_COMMUNITY_API (mặc định build = http → /pack/community/*).
         # feedback: phiên bản app tự gắn vào góp ý (deploy.ps1 đặt = commit).
         PUBLIC_APP_VERSION: ${S2_APP_VERSION:-dev}
     environment:
@@ -72,6 +73,7 @@ services:
       APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
       APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
       APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
+      APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
@@ -85,6 +87,11 @@ services:
       HOME: /claude-home
       # chat-fast: tin không tag, người gửi chỉ thấy 1 agent ⇒ chạy thẳng agent (bỏ job Orchestrator, cùng kiểm quyền).
       HUB_FAST_ROUTE: "on"
+      # community: liên kết "Mở cộng đồng"/thông báo + nút "Mở SHT"; vòng tự lưu trữ/nhắc hết hạn (tắt: COMMUNITY_SWEEP=off).
+      COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
+      CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+      COMMUNITY_SWEEP: ${COMMUNITY_SWEEP:-on}
+      COMMUNITY_SWEEP_EVERY_MS: ${COMMUNITY_SWEEP_EVERY_MS:-60000}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
@@ -187,7 +194,7 @@ services:
     cpus: 2
     mem_limit: 3g
 
-  # nginx: 4 bản build web + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1). Mở public = bước sau (edge-proxy/host nginx).
+  # nginx: 5 bản build web + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1). Mở public = bước sau (edge-proxy/host nginx).
   web:
     image: sohoptac2-web:latest
     build:
@@ -200,6 +207,7 @@ services:
       - "127.0.0.1:${S2_PORT_ADMIN:-18432}:8082"
       - "127.0.0.1:${S2_PORT_CHAT:-18433}:8083"
       - "127.0.0.1:${S2_PORT_HUB:-18434}:8084"
+      - "127.0.0.1:${S2_PORT_COMMUNITY:-18435}:8085"
     depends_on: [admin-api, hub-api, filebox]
     cpus: 0.5
     mem_limit: 256m

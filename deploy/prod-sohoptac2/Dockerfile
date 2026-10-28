@@ -1,5 +1,5 @@
-# sohoptac2: một image Bun cho admin-api + hub-api + lệnh migrate/seed (target app), một image nginx phục vụ 4 bản build web
-# (target web) và một image Python cho agent-runtime (target runtime). Mã nguồn = ./app (git archive do deploy.ps1 giải nén).
+# sohoptac2: một image Bun cho admin-api + hub-api + lệnh migrate/seed (target app), một image nginx phục vụ các bản build web
+# (target web: 5 bản build, gồm community-web) và một image Python cho agent-runtime (target runtime). Mã nguồn = ./app (git archive do deploy.ps1 giải nén).
 FROM oven/bun:1.3.14 AS app
 WORKDIR /app
 COPY app/ ./
@@ -25,12 +25,14 @@ ENV PUBLIC_HUB_URL=$PUBLIC_HUB_URL PUBLIC_STUDIO_URL=$PUBLIC_STUDIO_URL PUBLIC_C
 # Build từng web riêng (turbo strict env có thể bỏ mất PUBLIC_*).
 RUN bun run --cwd apps/contracts-web build && bun run --cwd apps/chat-web build \
  && bun run --cwd apps/admin-web build && bun run --cwd apps/studio-web build \
+ && bun run --cwd apps/community-web build \
  && chmod -R a+rX /app
 
 FROM nginx:stable-alpine AS web
 COPY --from=app /app/apps/contracts-web/dist /srv/contracts
 COPY --from=app /app/apps/admin-web/dist /srv/admin
 COPY --from=app /app/apps/chat-web/dist /srv/chat
+COPY --from=app /app/apps/community-web/dist /srv/community
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 FROM python:3.12-slim AS filebox
