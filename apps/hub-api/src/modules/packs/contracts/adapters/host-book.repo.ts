@@ -45,7 +45,7 @@ export function hostBookRepo(tx: Tx, t: string): HostBookRepo {
     return out;
   };
 
-  const book: HostBookRepo["book"] = async (productIds) => {
+  const book: HostBookRepo["book"] = async (productIds, today) => {
     const out = new Map<
       string,
       { onHand: string | null; avgCost: number | null; prices: HostPriceOut[] }
@@ -71,7 +71,7 @@ export function hostBookRepo(tx: Tx, t: string): HostBookRepo {
             'seen_on', s.seen_on, 'vat_included', s.vat_included, 'expires_on', s.expires_on) order by s.seen_on desc, s.created_at desc)
           from (select * from contracts.product_supplier_prices s0
             where s0.tenant_id = p.tenant_id and s0.product_id = p.id
-              and s0.removed_at is null and s0.replaced_at is null and (s0.expires_on is null or s0.expires_on >= current_date)
+              and s0.removed_at is null and s0.replaced_at is null and (s0.expires_on is null or s0.expires_on >= ${today}::date)
             order by s0.seen_on desc, s0.created_at desc limit ${PRICES_PER_PRODUCT}) s), '[]'::jsonb) as prices
       from contracts.products p
         left join lateral (select c2.on_hand, c2.avg_cost from contracts.product_components c2

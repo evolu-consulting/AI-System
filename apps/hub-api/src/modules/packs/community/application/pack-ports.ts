@@ -96,4 +96,9 @@ export type HostBookReader = {
     who: HostCaller,
     q: { hints: readonly HostHintIn[]; partyKeys?: readonly string[] },
   ): Promise<HostBookOut>;
+  /**
+   * C8 → C9 (`matchBuy`): user nội bộ có quyền đọc gói contracts khi tenant đang có hàng (tồn > 0) khớp tên `product`. MỘT tx sổ,
+   * số câu cố định + MỘT câu quyền theo tập — không vòng theo người.
+   */
+  stockHolders(tenantId: string, product: string): Promise<readonly string[]>;
 };

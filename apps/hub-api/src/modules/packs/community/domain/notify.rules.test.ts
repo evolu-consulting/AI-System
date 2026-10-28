@@ -44,12 +44,20 @@ describe("commentRecipients", () => {
       [
         cand("blind", T, "commenter", false),
         cand("other", O2, "commenter"),
-        cand("host", null, "commenter", false),
+        cand("host", null, "commenter"),
       ],
       T,
       "actor",
     );
-    expect(r).toEqual([{ userId: "host", kind: "reply" }]); // chủ quản luôn thấy
+    expect(r).toEqual([{ userId: "host", kind: "reply" }]); // chủ quản (còn quyền) thấy mọi luồng
+  });
+  it("review Thấp-10: chủ quản đã mất quyền gói (sees=false) không nhận", () => {
+    const r = commentRecipients(
+      [cand("lost", null, "author", false), cand("lost2", null, "commenter", false)],
+      T,
+      "actor",
+    );
+    expect(r).toEqual([]);
   });
 });
 

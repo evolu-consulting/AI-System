@@ -62,7 +62,10 @@ export function mountPriceTools(
   d: Pick<AssistantMountDeps, "timeZoneOf">,
 ): void {
   if (!tools) return;
-  const reader = hostBookModule(db, view, { reputation: supplierScores(db, d) });
+  const reader = hostBookModule(db, view, {
+    reputation: supplierScores(db, d),
+    timeZoneOf: d.timeZoneOf,
+  });
   for (const t of priceTools(reader)) tools.register(t);
 }
 

@@ -103,8 +103,7 @@ export async function create(
     { title: input.title, body: input.body, fields: input.fields as Fields },
     otherOrgNames(a),
   );
-  const row = await uow.tenant(a.who, async (r) => {
-    const { tx } = r;
+  const row = await uow.tenant(a.who, async ({ tx }) => {
     if (a.org !== null) {
       const me = (await partnerRows(tx)).find((p) => p.ext_org_id === a.org);
       if (!partnerMayPost(input.type, me?.labels ?? []))
@@ -126,19 +125,21 @@ export async function create(
       content.fields.raw,
       safeMedia(a, input.media),
     );
-    await events?.emitNewPost(r, {
-      tenantId: a.who.tenantId,
-      postId: id,
-      type: input.type,
-      authorOrg: a.org,
-      authorUserId: a.who.userId,
-      actorName: actorName(a),
-      titleMasked: content.title.masked,
-      ...(content.fields.raw.product ? { product: content.fields.raw.product } : {}),
-    });
     return postById(tx, id);
   });
-  return { row: found(row), contactDetected: content.contactDetected };
+  const post = found(row);
+  // review Cao-1: chuông phát SAU commit (không giữ kết nối tx trong lúc hỏi chủ quản / sổ SHT)
+  await events?.emitNewPost({
+    tenantId: a.who.tenantId,
+    postId: post.id,
+    type: input.type,
+    authorOrg: a.org,
+    authorUserId: a.who.userId,
+    actorName: actorName(a),
+    titleMasked: content.title.masked,
+    ...(content.fields.raw.product ? { product: content.fields.raw.product } : {}),
+  });
+  return { row: post, contactDetected: content.contactDetected };
 }
 
 export async function update(
@@ -148,8 +149,7 @@ export async function update(
   input: UpdatePostInput,
   events?: CommunityEvents,
 ): Promise<PostRow> {
-  const row = await uow.tenant(a.who, async (r) => {
-    const { tx } = r;
+  const { row, priceEdit } = await uow.tenant(a.who, async ({ tx }) => {
     const cur = await editable(tx, id, { org: a.org, userId: a.who.userId });
     if (!cur) throw appError("NOT_FOUND");
     const fields = mergedFields(cur.type, cur.fields_raw, input.fields);
@@ -167,17 +167,21 @@ export async function update(
       content.fields.raw,
       input.media ? safeMedia(a, input.media) : null,
     );
-    if (cur.type === "sell" && priceChanged(cur.fields_raw.price, content.fields.raw.price))
-      await events?.emitPriceEdited(r, {
-        tenantId: a.who.tenantId,
-        postId: id,
-        authorOrg: cur.author_org,
-        actorName: actorName(a),
-        titleMasked: content.title.masked,
-        price: content.fields.raw.price ?? "",
-      });
-    return postById(tx, id);
+    const priceEdit =
+      cur.type === "sell" && priceChanged(cur.fields_raw.price, content.fields.raw.price)
+        ? {
+            tenantId: a.who.tenantId,
+            postId: id,
+            authorOrg: cur.author_org,
+            actorName: actorName(a),
+            titleMasked: content.title.masked,
+            price: content.fields.raw.price ?? "",
+          }
+        : null;
+    return { row: await postById(tx, id), priceEdit };
   });
+  // review TB-2: chuông sửa giá phát SAU commit (không mở tx lồng khi đang giữ tx của bài)
+  if (priceEdit) await events?.emitPriceEdited(priceEdit);
   return found(row);
 }
 

@@ -2,7 +2,7 @@
 // Cần mua của chủ quản; đối tác 403; JSON của đối tác giống hệt trước/sau lưu (HT-64/68); gợi ý SHT = MỘT lời gọi cổng mỗi trang (C8).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { enablePack } from "@ai/test-kit/builders";
+import { enablePack, members, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
@@ -58,6 +58,7 @@ function build() {
       reads += 1;
       return ports.hostBook.read(who, q);
     },
+    stockHolders: (t, p) => ports.hostBook.stockHolders(t, p),
   };
   const h = new Hono<PackGuardVars>();
   h.use("*", async (ctx, next) => {
@@ -234,6 +235,15 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
     expect(r.json.mark.commentId).toBe(commentId);
     const bad = await call("hA", "POST", `/posts/${buy.json.id}/quote`, form());
     expect(bad.status).toBe(422); // thiếu commentId: bài Cần mua chủ quản không phải nguồn
+    // review Thấp-9: NCC xoá bình luận ⇒ dấu của chủ quản còn, hiện "bình luận đã xoá"
+    expect(
+      (await call("s1a", "DELETE", `/posts/${buy.json.id}/comments/${commentId}`)).status,
+    ).toBe(200);
+    const mark = (await call("hA", "GET", "/feed")).json.items.find(
+      (i: { id: string }) => i.id === buy.json.id,
+    ).quotes;
+    expect(mark).toHaveLength(1);
+    expect(mark[0]).toMatchObject({ commentId, commentDeleted: true, price: 11_000 });
   });
 
   it("gợi ý SHT: MỘT lời gọi cổng đọc cho cả trang, có khớp SP + giá tốt nhất; đối tác không gọi", async () => {
@@ -268,4 +278,64 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
     expect(await kinds("hA")).toEqual(["matchBuy"]);
     expect(await kinds("hM")).toEqual(["matchBuy"]);
   });
+
+  it("review Cao-1: bài Cần mua của đối tác — số tx/câu cố định, KHÔNG bao giờ hai tx mở cùng lúc (chuông sau commit)", async () => {
+    const run = () =>
+      traced(() =>
+        call("b1", "POST", "/posts", {
+          type: "buy",
+          fields: { product: "Mực in C7b", qty: "1", area: "HN", neededBy: "2026-11-30" },
+          cats: ["dong-goi"],
+        }),
+      );
+    const a = await run();
+    expect(a.r.status).toBe(201);
+    // danh bạ (hub) + tx bài + tx chủ quản (hub) + tx sổ SHT + tx quyền đọc SHT (hub) + tx ghi chuông = 6, tuần tự
+    expect({ tx: a.tx, maxOpen: a.maxOpen }).toEqual({ tx: 6, maxOpen: 1 });
+    // thêm chủ quản (một user nội bộ trong nhóm đọc) không đổi số tx/câu
+    await members(sql, c.A, c.roles.viewer, await users(sql, c.A, 5, { from: 4700 }));
+    const b = await run();
+    expect({ tx: b.tx, q: b.queries }).toEqual({ tx: a.tx, q: a.queries });
+  });
+
+  it("review Cao-1: 10 bài Cần mua song song trên pool 2 kết nối đều xong (không cạn pool)", async () => {
+    const t0 = performance.now();
+    const rs = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        call("b1", "POST", "/posts", {
+          type: "buy",
+          fields: { product: "Mực in C7b", qty: String(i + 1), area: "HN", neededBy: "2026-11-30" },
+          cats: ["dong-goi"],
+        }),
+      ),
+    );
+    expect(rs.map((r) => r.status)).toEqual(Array(10).fill(201));
+    expect(performance.now() - t0).toBeLessThan(10_000);
+  });
 });
+
+const TX_CTL =
+  /^\s*((commit|rollback|savepoint|release)\b|select set_config\(|select b\.oid,\s+b\.typarray\s+from pg_catalog\.pg_type)/i;
+/** Đếm tx (`begin`), câu nghiệp vụ và số tx mở đồng thời tối đa qua hook debug của pool postgres.js. */
+async function traced<T>(fn: () => Promise<T>) {
+  // biome-ignore lint/suspicious/noExplicitAny: hook debug của pool postgres.js (đếm câu)
+  const opts = (db as any).db.$client.options as { debug?: unknown };
+  const prev = opts.debug;
+  const open = new Set<number>();
+  let tx = 0;
+  let queries = 0;
+  let maxOpen = 0;
+  opts.debug = (conn: number, q: string) => {
+    if (/^\s*begin\b/i.test(q)) {
+      tx += 1;
+      open.add(conn);
+      maxOpen = Math.max(maxOpen, open.size);
+    } else if (/^\s*(commit|rollback)\b/i.test(q)) open.delete(conn);
+    else if (!TX_CTL.test(q)) queries += 1;
+  };
+  try {
+    return { r: await fn(), tx, queries, maxOpen };
+  } finally {
+    opts.debug = prev;
+  }
+}

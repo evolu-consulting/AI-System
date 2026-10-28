@@ -16,7 +16,6 @@ import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
 import { orgRoutes } from "./adapters/org.routes";
 import { postsRoutes } from "./adapters/posts.routes";
-import { savedUsers } from "./adapters/quote.repo";
 import { quoteRoutes } from "./adapters/quote.routes";
 import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
@@ -32,7 +31,7 @@ export function communityModule(
     shtUrl?: string;
     /** C7: chủ quản đã lưu báo giá từ bài (mặc định: bảng `quote_saves`, cờ báo khi NCC sửa giá). */
     savedBy?: CommunityEventDeps["savedBy"];
-    /** C8: chủ quản có SP khớp bài Cần mua (mặc định: `HostBookReader` hỏi từng chủ quản có quyền đọc SHT). */
+    /** C8: chủ quản có SP khớp bài Cần mua (mặc định: `HostBookReader.stockHolders`, một lời gọi theo tập). */
     stockMatch?: CommunityEventDeps["stockMatch"];
     /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm (vắng ⇒ không Lưu báo giá / không gợi ý). */
     quotes?: SupplierQuoteWriter | undefined;
@@ -43,17 +42,15 @@ export function communityModule(
 ): Hono<PackGuardVars> {
   const uow = createPackUow(db, COMMUNITY_KEY, (tx) => ({ tx }));
   const hosts = packHosts(db, view, COMMUNITY_KEY);
+  const stockMatch = opts.stockMatch ?? (opts.hostBook ? stockMatchVia(opts.hostBook) : undefined);
+  // review Cao-1/TB-2: chuông phát SAU commit trên tx hệ thống riêng (không lồng tx khi đang giữ tx nghiệp vụ)
   const events = communityEvents({
+    uow,
     hosts,
-    savedBy:
-      opts.savedBy ??
-      ((tenantId, postId) => uow.system(tenantId, ({ tx }) => savedUsers(tx, tenantId, postId))),
-    ...(opts.stockMatch
-      ? { stockMatch: opts.stockMatch }
-      : opts.hostBook
-        ? { stockMatch: stockMatchVia(opts.hostBook, hosts) }
-        : {}),
+    ...(opts.savedBy ? { savedBy: opts.savedBy } : {}),
+    ...(stockMatch ? { stockMatch } : {}),
     ...(opts.now ? { now: opts.now } : {}),
+    warn: (m, meta) => console.warn(m, meta),
   });
   const d: CommunityDeps = {
     view,
@@ -121,11 +118,13 @@ function startSweeper(
     o.worker ??
     ((env === "development" || env === "production") && process.env.COMMUNITY_SWEEP !== "off");
   if (!on) return;
+  const resolver = pgExternalOrgResolver(db);
   const every = Number(process.env.COMMUNITY_SWEEP_EVERY_MS);
   startCommunitySweeper({
     uow: createPackUow(db, COMMUNITY_KEY, (tx) => ({ tx })),
     tenants: () => communityTenants(view),
     hosts: packHosts(db, view, COMMUNITY_KEY),
+    orgNames: (t, ids) => resolver.orgNames(t, ids),
     everyMs: Number.isInteger(every) && every >= 1000 ? every : 60_000,
     ...(o.signal ? { signal: o.signal } : {}),
     warn: (m, meta) => console.warn(m, meta),

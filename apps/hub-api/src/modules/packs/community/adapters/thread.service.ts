@@ -46,16 +46,15 @@ export async function comments(
 }
 
 /** Thêm bình luận (mở luồng nếu chưa có); trả luồng đích. */
-export function add(
+export async function add(
   uow: Uow,
   a: Access,
   postId: string,
   input: { text: StoredText; orgId: string | undefined },
   events?: CommunityEvents,
 ): Promise<string> {
-  return uow
-    .tenant(a.who, async (r) => {
-      const { tx } = r;
+  const { target, commentId } = await uow
+    .tenant(a.who, async ({ tx }) => {
       const st = await postState(tx, postId);
       if (!st) throw appError("NOT_FOUND");
       const target = threadOrg(a, input.orgId ?? st.author_org ?? undefined);
@@ -71,17 +70,19 @@ export function add(
         authorOrg: a.org,
         text: input.text,
       });
-      await events?.emitComment(r, {
-        tenantId: a.who.tenantId,
-        postId,
-        threadOrg: target,
-        commentId,
-        actor: { userId: a.who.userId, name: a.dir.userName },
-        inactiveOrgs: a.dir.orgs.filter((o) => !o.active).map((o) => o.id),
-      });
-      return target;
+      return { target, commentId };
     })
     .catch((e: unknown) => {
       throw rlsDenied(e) ? appError("NOT_FOUND") : e;
     });
+  // review TB-2: chuông phát SAU commit (hỏi chủ quản = tx hub riêng, không lồng)
+  await events?.emitComment({
+    tenantId: a.who.tenantId,
+    postId,
+    threadOrg: target,
+    commentId,
+    actor: { userId: a.who.userId, name: a.dir.userName },
+    activeOrgs: a.dir.orgs.filter((o) => o.active).map((o) => o.id),
+  });
+  return target;
 }

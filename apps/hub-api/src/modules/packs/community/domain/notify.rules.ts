@@ -50,7 +50,8 @@ export type CommentCand = {
  * Người nhận khi có bình luận mới trong luồng `threadOrg` của một bài:
  * - người đăng bài ⇒ `comment`; người từng bình luận trong luồng ⇒ `reply` (người đăng không nhận hai lần);
  * - không bao giờ gửi cho chính người viết;
- * - đối tác chỉ nhận khi luồng là của công ty mình VÀ còn thấy bài; chủ quản luôn thấy mọi luồng.
+ * - đối tác chỉ nhận khi luồng là của công ty mình VÀ còn thấy bài; chủ quản thấy mọi luồng nhưng chỉ khi CÒN quyền đọc gói
+ *   (`sees` = false khi mất quyền — review Thấp-10).
  */
 export function commentRecipients(
   cands: readonly CommentCand[],
@@ -60,7 +61,7 @@ export function commentRecipients(
   const out = new Map<string, Cand>();
   for (const c of cands) {
     if (c.userId === actorUserId) continue;
-    if (c.org !== null && (c.org !== threadOrg || !c.sees)) continue;
+    if (!c.sees || (c.org !== null && c.org !== threadOrg)) continue;
     const kind: BellKind = c.role === "author" ? "comment" : "reply";
     if (!out.has(c.userId) || kind === "comment") out.set(c.userId, { userId: c.userId, kind });
   }

@@ -40,6 +40,8 @@ export type HostBookReader = {
     who: HostCaller,
     q: { hints: readonly HostHint[]; partyKeys?: readonly string[] },
   ): Promise<HostBookOut>;
+  /** User nội bộ có quyền đọc gói khi tenant có hàng (tồn > 0) khớp tên `product`. MỘT tx sổ + MỘT câu quyền theo tập. */
+  stockHolders(tenantId: string, product: string): Promise<readonly string[]>;
 };
 
 export class HostBookError extends Error {
@@ -53,8 +55,10 @@ export type HostBookRepo = {
   candidates(
     hints: readonly HostHint[],
   ): Promise<Map<number, { id: string; name: string; nameKey: string; unit: string | null }[]>>;
+  /** `today` = ngày hiện tại theo múi giờ tenant (YYYY-MM-DD) — giá hết hạn tính theo đó, không theo `current_date` của DB. */
   book(
     productIds: readonly string[],
+    today: string,
   ): Promise<
     Map<string, { onHand: string | null; avgCost: number | null; prices: HostPriceOut[] }>
   >;

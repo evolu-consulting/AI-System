@@ -7,7 +7,7 @@ import type { Notifier } from "../../kit/application/notify";
 import type { PackSystemUow } from "../../kit/application/ports";
 import { digestDue } from "../domain/notify.rules";
 import { deliver } from "./notify.events";
-import { archiveExpired, claimDigest, markExpiring } from "./notify.repo";
+import { archiveExpired, claimDigest, markExpiring, type SweptPost } from "./notify.repo";
 
 type R = { tx: Tx; notify: Notifier };
 export const COMMUNITY_SWEEP_LIMIT = 500;
@@ -17,6 +17,11 @@ export type CommunitySweepDeps = {
   uow: PackSystemUow<R>;
   tenants: () => Promise<readonly string[]>;
   hosts: (tenantId: string) => Promise<readonly string[]>;
+  /** Danh bạ công ty đối tác (`ExternalOrgResolver.orgNames`); vắng ⇒ không lọc công ty đã rời. */
+  orgNames?: (
+    tenantId: string,
+    orgIds: readonly string[],
+  ) => Promise<ReadonlyMap<string, { active: boolean }>>;
   now?: () => Date;
   limit?: number;
   tz?: string;
@@ -31,20 +36,33 @@ export type CommunitySweepResult = {
 };
 const ZERO = { archived: 0, expiring: 0, digests: 0, bells: 0 };
 
+/**
+ * Người đăng còn nhận nhắc hết hạn: chủ quản còn quyền đọc gói; đối tác có công ty còn hiệu lực (danh bạ, một câu theo tập công ty
+ * của lô). Gọi SAU khi tx quét đã commit (không lồng tx).
+ */
+async function expiringTo(
+  d: CommunitySweepDeps,
+  t: string,
+  hosts: readonly string[],
+  soon: readonly SweptPost[],
+): Promise<SweptPost[]> {
+  const h = new Set(hosts);
+  const orgIds = [...new Set(soon.flatMap((p) => (p.author_org ? [p.author_org] : [])))];
+  const orgs = orgIds.length > 0 && d.orgNames ? await d.orgNames(t, orgIds) : null;
+  return soon.filter((p) =>
+    p.author_org === null
+      ? h.has(p.author)
+      : orgs === null || orgs.get(p.author_org)?.active === true,
+  );
+}
+
 async function sweepTenant(d: CommunitySweepDeps, t: string, now: Date) {
   const limit = d.limit ?? COMMUNITY_SWEEP_LIMIT;
   const hosts = await d.hosts(t);
-  return d.uow.system(t, async (r) => {
+  const out = await d.uow.system(t, async (r) => {
     const archived = await archiveExpired(r.tx, t, now, limit);
     const soon = await markExpiring(r.tx, t, now, limit);
-    let bells = await deliver(
-      r,
-      soon.map((p) => ({
-        c: { userId: p.author, kind: "expiring" as const },
-        post: { id: p.id, title: p.title },
-        o: { actor: "", ref: String(new Date(p.expires_at).getTime()) },
-      })),
-    );
+    let bells = 0;
     let digests = 0;
     const g = digestDue(now, d.tz ?? DIGEST_TZ);
     if (g.due && hosts.length > 0) {
@@ -63,8 +81,28 @@ async function sweepTenant(d: CommunitySweepDeps, t: string, now: Date) {
         digests = c.users.length;
       }
     }
-    return { archived, expiring: soon.length, digests, bells };
+    return { archived, soon, digests, bells };
   });
+  const to = await expiringTo(d, t, hosts, out.soon);
+  const expBells =
+    to.length === 0
+      ? 0
+      : await d.uow.system(t, (r) =>
+          deliver(
+            r,
+            to.map((p) => ({
+              c: { userId: p.author, kind: "expiring" as const },
+              post: { id: p.id, title: p.title },
+              o: { actor: "", ref: String(new Date(p.expires_at).getTime()) },
+            })),
+          ),
+        );
+  return {
+    archived: out.archived,
+    expiring: out.soon.length,
+    digests: out.digests,
+    bells: out.bells + expBells,
+  };
 }
 
 export async function sweepCommunityOnce(

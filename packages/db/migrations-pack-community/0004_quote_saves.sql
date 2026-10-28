@@ -9,8 +9,10 @@ CREATE TABLE IF NOT EXISTS community.quote_saves (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   post_id uuid NOT NULL,
-  -- NULL = lưu từ chính bài; uuid = lưu từ bình luận của NCC.
+  -- NULL = lưu từ chính bài; uuid = lưu từ bình luận của NCC. Bình luận bị xoá ⇒ `comment_id` về NULL, `comment_ref` giữ id cũ
+  -- (dấu của chủ quản còn, hiện "bình luận đã xoá" — review Thấp-9).
   comment_id uuid,
+  comment_ref uuid,
   item_idx smallint NOT NULL DEFAULT 0,
   saved_by uuid NOT NULL,
   saved_by_name text NOT NULL DEFAULT '',
@@ -24,13 +26,14 @@ CREATE TABLE IF NOT EXISTS community.quote_saves (
   notify_price_edit boolean NOT NULL DEFAULT true,
   CONSTRAINT quote_saves_pkey PRIMARY KEY (id),
   CONSTRAINT quote_saves_ck CHECK (item_idx BETWEEN 0 AND 49 AND price >= 1),
+  CONSTRAINT quote_saves_comment_ref_ck CHECK (comment_id IS NULL OR comment_id = comment_ref),
   CONSTRAINT quote_saves_post_fk FOREIGN KEY (post_id, tenant_id)
     REFERENCES community.posts (id, tenant_id) ON DELETE CASCADE,
-  CONSTRAINT quote_saves_comment_fk FOREIGN KEY (comment_id) REFERENCES community.comments (id) ON DELETE CASCADE
+  CONSTRAINT quote_saves_comment_fk FOREIGN KEY (comment_id) REFERENCES community.comments (id) ON DELETE SET NULL (comment_id)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS quote_saves_item_uq ON community.quote_saves
-  (post_id, item_idx, coalesce(comment_id, '00000000-0000-0000-0000-000000000000'::uuid));
+  (post_id, item_idx, coalesce(comment_ref, '00000000-0000-0000-0000-000000000000'::uuid));
 --> statement-breakpoint
 SELECT packs.secure_table('community', 'quote_saves');
 --> statement-breakpoint

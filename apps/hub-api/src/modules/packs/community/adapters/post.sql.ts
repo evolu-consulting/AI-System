@@ -30,6 +30,8 @@ export type PostRow = {
 export type QuoteMarkRow = {
   item_idx: number;
   comment_id: string | null;
+  /** Bình luận nguồn đã bị xoá (dấu vẫn giữ — review Thấp-9). */
+  comment_deleted?: boolean;
   by: string;
   at: string;
   product_id: string;
@@ -79,7 +81,7 @@ const itemJson: SQL = sql`json_build_object(
     order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
   'comments', (select count(*)::int from community.comments c where c.post_id = v.id),
   'quotes', case when (select packs.viewer_ext_org()) is null then (select json_agg(json_build_object('item_idx', q.item_idx,
-    'comment_id', q.comment_id, 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,
+    'comment_id', q.comment_ref, 'comment_deleted', (q.comment_ref is not null and q.comment_id is null), 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,
     'supplier', q.supplier_name, 'price', q.price, 'unit', q.unit, 'edited', coalesce(v.edited_at > q.saved_at, false),
     'price_edited', coalesce(v.price_edited_at > q.saved_at, false)) order by q.saved_at)
     from community.quote_saves q where q.post_id = v.id) end,

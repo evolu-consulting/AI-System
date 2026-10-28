@@ -6,7 +6,10 @@ import type { BellKind, Cand, CommentCand } from "../domain/notify.rules";
 
 const arr = (xs: readonly string[]) => JSON.stringify(xs);
 
-/** Ứng viên nhận bình luận (người đăng + người từng bình luận trong luồng, trừ `actor`) + tiêu đề đã che của bài. */
+/**
+ * Ứng viên nhận bình luận (người đăng + người từng bình luận trong luồng, trừ `actor`) + tiêu đề đã che của bài. Chủ quản chỉ khi
+ * còn quyền đọc gói (`hosts`); đối tác chỉ khi công ty còn hiệu lực (`activeOrgs`) — người ngoài hai tập ⇒ `sees = false`.
+ */
 export async function commentCandidates(
   tx: Tx,
   q: {
@@ -15,7 +18,8 @@ export async function commentCandidates(
     threadOrg: string;
     actorUserId: string;
     at: Date;
-    inactiveOrgs: readonly string[];
+    activeOrgs: readonly string[];
+    hosts: readonly string[];
   },
 ): Promise<{ title: string; cands: CommentCand[] }> {
   const rows = await tx.execute<{
@@ -34,11 +38,12 @@ export async function commentCandidates(
           where c.post_id = ${q.postId}::uuid and c.tenant_id = ${q.tenantId}::uuid
             and c.thread_org = ${q.threadOrg}::uuid and not c.hidden)
     select cand.u::text as u, cand.o::text as o, cand.role, p.title_masked as title,
-      (cand.o is null or (cand.o::text <> all (array(select jsonb_array_elements_text(${arr(q.inactiveOrgs)}::jsonb)))
+      (case when cand.o is null then cand.u::text = any (array(select jsonb_array_elements_text(${arr(q.hosts)}::jsonb)))
+       else (cand.o::text = any (array(select jsonb_array_elements_text(${arr(q.activeOrgs)}::jsonb)))
         and (p.author_org = cand.o or (p.author_org is null and p.status = 'active' and not p.hidden
           and p.expires_at > ${q.at.toISOString()}::timestamptz
           and community.audience_ok(p.aud_mode, p.aud_cats, p.aud_orgs, p.type, p.cats, cand.o,
-            coalesce(pc.labels, '{}'), coalesce(pc.cats, '{}')))))) as sees
+            coalesce(pc.labels, '{}'), coalesce(pc.cats, '{}'))))) end) as sees
     from cand cross join p
     left join community.partner_companies pc on pc.tenant_id = ${q.tenantId}::uuid and pc.ext_org_id = cand.o
     where cand.u <> ${q.actorUserId}::uuid`);
@@ -59,7 +64,13 @@ export async function wantedOnly(tx: Tx, items: readonly Cand[]): Promise<Cand[]
   return rows.map((r) => ({ userId: r.user_id, kind: r.kind }));
 }
 
-export type SweptPost = { id: string; author: string; title: string; expires_at: string };
+export type SweptPost = {
+  id: string;
+  author: string;
+  author_org: string | null;
+  title: string;
+  expires_at: string;
+};
 
 /**
  * Vòng nền, MỘT câu mỗi pha (CTE, `FOR UPDATE SKIP LOCKED`, lô ≤ `limit`, mốc giờ = tham số `at`):
@@ -88,7 +99,8 @@ export async function markExpiring(
         order by expires_at, id limit ${limit}::int for update skip locked)
     update community.posts x set expiry_notified_at = ${at.toISOString()}::timestamptz
     from o where x.id = o.id and x.tenant_id = ${t}::uuid
-    returning x.id::text as id, x.author_user_id::text as author, x.title_masked as title, x.expires_at`);
+    returning x.id::text as id, x.author_user_id::text as author, x.author_org::text as author_org, x.title_masked as title,
+      x.expires_at`);
 }
 
 /**

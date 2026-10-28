@@ -113,6 +113,7 @@ export function partnerViews(a: Access, rows: readonly PartnerRow[]): PartnerOrg
 const markView = (q: QuoteMarkRow): QuoteMark => ({
   itemIdx: q.item_idx,
   ...(q.comment_id ? { commentId: q.comment_id } : {}),
+  ...(q.comment_deleted ? { commentDeleted: true } : {}),
   by: q.by,
   at: iso(q.at),
   productId: q.product_id,

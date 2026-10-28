@@ -2,7 +2,7 @@
 // kho + BQ, giá đã ghi nhận, uy tín), chặn `kind=external` / người không có quyền đọc gói / > 50 gợi ý, số câu SQL cố định theo cỡ lô.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { enablePack, tenants, users } from "@ai/test-kit/builders";
+import { enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import type { PackAccessView } from "../../kit/adapters/pack-guard.middleware";
@@ -15,6 +15,7 @@ let A = "";
 let B = "";
 let u1 = "";
 let u2 = "";
+let roles = { owner: "", editor: "", viewer: "" };
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
 const view: PackAccessView = {
   catalog: async () => ({
@@ -55,7 +56,7 @@ beforeAll(async () => {
   sql = openOwner(2);
   [A, B] = (await tenants(sql, 2, 871)) as [string, string];
   [u1, u2] = (await users(sql, A, 2, { from: 871 })) as [string, string];
-  await enablePack(sql, [A, B], "contracts");
+  roles = (await enablePack(sql, [A, B], "contracts")).get(A) as typeof roles;
   const x1 = await product(A, "Xi măng PCB40", { onHand: 100, value: 9_000_000, avg: 90_000 });
   await product(A, "Xi măng PCB30 Nghi Sơn", {});
   await product(B, "Thép phi 10", { onHand: 5, value: 50, avg: 10 });
@@ -155,5 +156,45 @@ describe("com-c8 · HostBookReader", () => {
     expect(one.queries).toBe(2);
     expect(fifty.queries).toBe(one.queries);
     expect(fifty.r.products).toHaveLength(50);
+  });
+
+  it("review Thấp-7: giá hết hạn tính theo NGÀY tenant (tham số), không theo current_date của DB", async () => {
+    const p = await product(A, "Dây điện Thấp7", { onHand: 1, value: 1, avg: 1 });
+    await sql`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source,
+        seen_on, expires_on)
+      values (${A}::uuid, ${p}::uuid, 'Hết hôm qua (giờ VN)', 'new', 10, 'm', 'manual', '2030-01-01', '2030-01-01'),
+        (${A}::uuid, ${p}::uuid, 'Còn hôm nay (giờ VN)', 'new', 11, 'm', 'manual', '2030-01-01', '2030-01-02')`;
+    // 2030-01-01 18:00Z = 2030-01-02 01:00 giờ Hà Nội
+    const r = hostBookModule(db, view, {
+      reputation: async () => new Map(),
+      timeZoneOf: async () => "Asia/Ho_Chi_Minh",
+      now: () => new Date("2030-01-01T18:00:00Z"),
+    });
+    const out = await r.read(who(u1), { hints: [{ productId: p }] });
+    expect(out.products[0]?.prices.map((x) => x.supplierName)).toEqual(["Còn hôm nay (giờ VN)"]);
+  });
+
+  it("review Cao-1: stockHolders = người có quyền đọc khi có hàng; số câu cố định, không theo số người", async () => {
+    // view với Group THẬT (packHosts đọc admin.group_members): nhóm viewer được giao `contracts-read`
+    const v2: PackAccessView = {
+      catalog: async () => ({
+        ...(await view.catalog()),
+        grantGroups: new Map([[`${A}:${F.read}`, [roles.viewer]]]),
+      }),
+      user: view.user,
+    };
+    await members(sql, A, roles.viewer, [u1]);
+    const r2 = hostBookModule(db, v2, { reputation: async () => new Map() });
+    const run = (name: string) => counted(() => r2.stockHolders(A, name));
+    const hit = await run("xi mang pcb40"); // tồn 100
+    expect([...hit.r]).toEqual([u1]); // u1 thuộc nhóm đọc, u2 không
+    expect((await run("Xi măng PCB30 Nghi Sơn")).r).toEqual([]); // tồn 0
+    expect((await run("Gạch không có")).r).toEqual([]);
+    await members(sql, A, roles.viewer, await users(sql, A, 6, { from: 880 }));
+    const again = await run("xi mang pcb40");
+    expect(again.r).toHaveLength(7);
+    // 2 câu sổ (ứng viên + kho) trong MỘT tx hệ thống + 1 câu quyền (hub)
+    expect(hit.queries).toBe(3);
+    expect(again.queries).toBe(hit.queries);
   });
 });

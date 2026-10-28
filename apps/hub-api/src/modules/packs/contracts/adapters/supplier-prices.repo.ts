@@ -50,7 +50,10 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
               'url', s.url, 'seen_on', s.seen_on, 'vat_included', s.vat_included, 'expires_on', s.expires_on,
               'replaced_at', s.replaced_at, 'removed_at', s.removed_at) order by s.seen_on desc, s.created_at desc)
             from (select * from contracts.product_supplier_prices s0 where s0.tenant_id = p.tenant_id
-              and s0.product_id = p.id order by s0.seen_on desc, s0.created_at desc limit 200) s), '[]'::jsonb)) as j
+              and s0.product_id = p.id
+              -- review Thấp-8: trần 200 tính dòng CÒN hiệu lực trước (lịch sử thay/gỡ không đẩy giá đang dùng ra ngoài)
+              order by (s0.removed_at is null and s0.replaced_at is null) desc, s0.seen_on desc, s0.created_at desc
+              limit 200) s), '[]'::jsonb)) as j
         from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid`;
 
 export function suppliersRepo(tx: Tx, t: string): SuppliersRepo {

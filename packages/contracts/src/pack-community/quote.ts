@@ -75,6 +75,8 @@ export type QuotePreview = z.infer<typeof QuotePreviewSchema>;
 export const QuoteMarkSchema = z.strictObject({
   itemIdx: z.number().int(),
   commentId: z.string().optional(),
+  /** Bình luận nguồn đã bị đối tác xoá — dấu vẫn giữ, hiện "bình luận đã xoá". */
+  commentDeleted: z.boolean().optional(),
   by: z.string(),
   at: z.iso.datetime(),
   productId: z.string(),

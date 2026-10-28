@@ -43,7 +43,7 @@ export async function existingSave(
   const rows = await tx.execute<SavedRow>(sql`
     select saved_by_name as by, saved_at as at from community.quote_saves
     where post_id = ${postId}::uuid and item_idx = ${itemIdx}::smallint
-      and comment_id is not distinct from ${commentId}::uuid`);
+      and comment_ref is not distinct from ${commentId}::uuid`);
   return rows[0] ?? null;
 }
 
@@ -68,13 +68,13 @@ export async function upsertSave(tx: Tx, s: NewSave): Promise<SavedRow | null> {
     with prev as (
       select saved_by_name as by, saved_at as at from community.quote_saves
       where post_id = ${s.postId}::uuid and item_idx = ${s.itemIdx}::smallint
-        and comment_id is not distinct from ${s.commentId}::uuid),
+        and comment_ref is not distinct from ${s.commentId}::uuid),
     up as (
-      insert into community.quote_saves (tenant_id, post_id, comment_id, item_idx, saved_by, saved_by_name, price_id,
+      insert into community.quote_saves (tenant_id, post_id, comment_id, comment_ref, item_idx, saved_by, saved_by_name, price_id,
         product_id, supplier_name, price, unit, notify_price_edit)
-      values (${s.tenantId}::uuid, ${s.postId}::uuid, ${s.commentId}::uuid, ${s.itemIdx}::smallint, ${s.userId}::uuid,
+      values (${s.tenantId}::uuid, ${s.postId}::uuid, ${s.commentId}::uuid, ${s.commentId}::uuid, ${s.itemIdx}::smallint, ${s.userId}::uuid,
         ${s.userName}, ${s.priceId}::uuid, ${s.productId}::uuid, ${s.supplier}, ${s.price}::bigint, ${s.unit}, ${s.notify})
-      on conflict (post_id, item_idx, (coalesce(comment_id, '00000000-0000-0000-0000-000000000000'::uuid)))
+      on conflict (post_id, item_idx, (coalesce(comment_ref, '00000000-0000-0000-0000-000000000000'::uuid)))
       do update set saved_by = excluded.saved_by, saved_by_name = excluded.saved_by_name, saved_at = now(),
         price_id = excluded.price_id, product_id = excluded.product_id, supplier_name = excluded.supplier_name,
         price = excluded.price, unit = excluded.unit, notify_price_edit = excluded.notify_price_edit

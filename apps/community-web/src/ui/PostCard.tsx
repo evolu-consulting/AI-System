@@ -293,6 +293,7 @@ export function PostCard({ post: p }: { post: PostView }) {
               <b>Đã lưu báo giá vào Sản phẩm &amp; Giá:</b> {savedText(m)}
               {m.priceEdited && " · NCC đã sửa giá sau khi lưu — lưu lại để cập nhật"}
               {!m.priceEdited && m.postEdited && " · bài đã sửa sau khi lưu"}
+              {m.commentDeleted && " · bình luận đã xoá"}
             </span>
           </div>
         ))}

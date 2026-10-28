@@ -13,7 +13,6 @@ import { parseIdParam, parseWith, readJson } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { storeComment } from "../domain/content.rules";
 import * as comments from "./comment.service";
-import { type CommentEvent, notifyComment } from "./comment-notify.hook";
 import { type Access, accessOf, otherOrgNames } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as threads from "./thread.service";
@@ -39,20 +38,6 @@ async function readThread(
     comments: list.map((x) => commentView(a, n, x)),
   };
 }
-
-const evt = (
-  a: Access,
-  kind: CommentEvent["kind"],
-  postId: string,
-  threadOrg: string,
-): CommentEvent => ({
-  kind,
-  tenantId: a.who.tenantId,
-  postId,
-  threadOrg,
-  actorUserId: a.who.userId,
-  actorOrg: a.org,
-});
 
 export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
@@ -93,7 +78,7 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const postId = parseIdParam(c);
     const input = parseWith(CreateCommentInputSchema, await readJson(c));
     const text = storeComment(input.text, otherOrgNames(a));
-    const org = await threads.add(d.uow, a, postId, { text, orgId: input.orgId }, d.events); // C9: chuông phát trong cùng tx
+    const org = await threads.add(d.uow, a, postId, { text, orgId: input.orgId }, d.events); // C9: chuông phát SAU commit
     if (text.hits.length > 0) c.header("X-Contact-Detected", "1");
     return c.json(await readThread(d, a, postId, org), 201);
   });
@@ -108,7 +93,6 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const x = ref(c);
     const input = parseWith(UpdateCommentInputSchema, await readJson(c));
     const org = await comments.edit(d.uow, a, x, storeComment(input.text, otherOrgNames(a)));
-    await notifyComment(evt(a, "edited", x.postId, org));
     return c.json(await readThread(d, a, x.postId, org));
   });
 
@@ -116,7 +100,6 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const a = await access(c, "write");
     const x = ref(c);
     const org = await comments.remove(d.uow, a, x);
-    await notifyComment(evt(a, "deleted", x.postId, org));
     return c.json(await readThread(d, a, x.postId, org));
   });
 
@@ -125,7 +108,6 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const x = ref(c);
     const { hidden } = parseWith(HideCommentInputSchema, await readJson(c));
     const org = await comments.hide(d.uow, a, x, hidden);
-    await notifyComment(evt(a, "hidden", x.postId, org));
     return c.json(await readThread(d, a, x.postId, org));
   });
 

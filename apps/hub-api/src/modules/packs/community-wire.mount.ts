@@ -36,6 +36,8 @@ export function communityPorts(
   });
   const hostBook = hostBookModule(db, view, {
     reputation: supplierScores(db, { timeZoneOf: d.timeZoneOf }),
+    timeZoneOf: d.timeZoneOf,
+    ...(d.now ? { now: d.now } : {}),
   });
   return { quotes, hostBook };
 }

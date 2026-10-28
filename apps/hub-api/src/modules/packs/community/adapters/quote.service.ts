@@ -29,6 +29,8 @@ export type QuoteDeps = {
   quotes: SupplierQuoteWriter | undefined;
   hostBook: HostBookReader | undefined;
   webUrl: string | undefined;
+  /** Log vận hành (mặc định `console.warn`). */
+  warn?: (m: string, meta: Record<string, unknown>) => void;
 };
 
 const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");
@@ -100,22 +102,59 @@ export async function save(
   const w = needWriter(d);
   const input = await sourceOf(d, a, postId, q);
   const s = await w.save(callerOf(a), input).catch(mapFail);
-  const prev: SavedRow | null = await d.uow.tenant(a.who, ({ tx }) =>
-    upsertSave(tx, {
-      tenantId: a.who.tenantId,
-      postId,
-      commentId: q.commentId ?? null,
-      itemIdx: q.itemIdx ?? 0,
-      userId: a.who.userId,
-      userName: a.dir.userName,
-      priceId: s.price_id,
-      productId: s.product_id,
-      supplier: input.supplier.name,
-      price: q.price,
-      unit: input.unit,
-      notify: q.notify ?? true,
-    }),
-  );
+  const prev = await writeMark(d, a, postId, q, input, s);
+  return savedView(a, q, input, s, prev);
+}
+
+/**
+ * Dấu "đã lưu" ở community SAU khi giá đã ghi (tx contracts riêng, ADR-0031). Ghi dấu lỗi ⇒ log đủ để đối soát (giá vẫn đã lưu ở SP &
+ * Giá) rồi ném lại — người dùng bấm lưu lại = thay giá cùng NCC, không nhân đôi (review Thấp-6).
+ */
+async function writeMark(
+  d: QuoteDeps,
+  a: Access,
+  postId: string,
+  q: QuoteInput,
+  input: ReturnType<typeof toPortInput>,
+  s: Awaited<ReturnType<SupplierQuoteWriter["save"]>>,
+): Promise<SavedRow | null> {
+  return d.uow
+    .tenant(a.who, ({ tx }) =>
+      upsertSave(tx, {
+        tenantId: a.who.tenantId,
+        postId,
+        commentId: q.commentId ?? null,
+        itemIdx: q.itemIdx ?? 0,
+        userId: a.who.userId,
+        userName: a.dir.userName,
+        priceId: s.price_id,
+        productId: s.product_id,
+        supplier: input.supplier.name,
+        price: q.price,
+        unit: input.unit,
+        notify: q.notify ?? true,
+      }),
+    )
+    .catch((e: unknown) => {
+      (d.warn ?? console.warn)("community-quote-mark-failed", {
+        tenant_id: a.who.tenantId,
+        post_id: postId,
+        comment_id: q.commentId ?? null,
+        item_idx: q.itemIdx ?? 0,
+        price_id: s.price_id,
+        error: e instanceof Error ? e.name : "unknown",
+      });
+      throw e;
+    });
+}
+
+function savedView(
+  a: Access,
+  q: QuoteInput,
+  input: ReturnType<typeof toPortInput>,
+  s: Awaited<ReturnType<SupplierQuoteWriter["save"]>>,
+  prev: SavedRow | null,
+): QuoteSaved {
   return {
     ...previewView(s, prev),
     productId: s.product_id,
@@ -195,29 +234,11 @@ export async function matchHint(d: QuoteDeps, a: Access, text: string): Promise<
 }
 
 /**
- * C8 → C9: chủ quản có hàng khớp tên bài Cần mua (nguồn thông báo `matchBuy`). Mỗi chủ quản một lời gọi cổng đọc (quyền đọc SHT theo
- * người; số chủ quản nhỏ, ≤ 50, song song); không quyền / lỗi ⇒ không nhận.
+ * C8 → C9: người có quyền đọc SHT khi tenant có hàng khớp tên bài Cần mua (nguồn `matchBuy`; `emitNewPost` giao với tập chủ quản).
+ * MỘT lời gọi theo tập (review Cao-1: không vòng từng chủ quản); lỗi ⇒ không ai nhận matchBuy (vẫn nhận newBuy).
  */
 export function stockMatchVia(
   hostBook: HostBookReader,
-  hosts: (tenantId: string) => Promise<readonly string[]>,
 ): (tenantId: string, product: string) => Promise<readonly string[]> {
-  return async (tenantId, product) => {
-    const users = (await hosts(tenantId)).slice(0, 50);
-    const hits = await Promise.all(
-      users.map(async (userId) => {
-        try {
-          const r = await hostBook.read(
-            { tenantId, userId, kind: "internal" },
-            { hints: [{ name: product }] },
-          );
-          const p = r.products[0];
-          return p?.match && p.onHand !== null && Number(p.onHand) > 0 ? userId : null;
-        } catch {
-          return null;
-        }
-      }),
-    );
-    return hits.filter((u): u is string => u !== null);
-  };
+  return (tenantId, product) => hostBook.stockHolders(tenantId, product);
 }
