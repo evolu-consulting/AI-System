@@ -1369,3 +1369,11 @@ a:hover {
   color: #6b6c80;
   text-align: center;
 }
+.ssonote {
+  margin: 0;
+  padding: 8px 20px;
+  background: #fff8e6;
+  border-bottom: 1px solid #f0e2b8;
+  font-size: 13px;
+  color: #45465a;
+}

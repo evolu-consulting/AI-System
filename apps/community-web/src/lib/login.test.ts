@@ -30,6 +30,10 @@ describe("loginError", () => {
       "Mã công ty, tên đăng nhập hoặc mật khẩu không đúng.",
     );
     expect(loginError(e(403, "ACCOUNT_LOCKED"))).toMatch(/bị khoá/);
+    // khoá tạm (trước khi kiểm mật khẩu, chỉ user có thật) ⇒ câu chung, không lộ tài khoản tồn tại
+    expect(loginError(e(423, "TEMP_LOCKED"))).toBe(
+      "Mã công ty, tên đăng nhập hoặc mật khẩu không đúng.",
+    );
     expect(loginError(e(0, "NETWORK_ERROR"))).toMatch(/kết nối/);
     expect(loginError(e(500, "HTTP_ERROR"))).toMatch(/lỗi xảy ra/);
     expect(loginError(new Error("x"))).toMatch(/lỗi xảy ra/);

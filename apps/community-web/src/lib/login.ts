@@ -3,7 +3,7 @@
 // Bước kế sau `/auth/login` hoặc `/auth/totp/verify`: vào app / đổi mật khẩu bắt buộc / nhập mã 2FA. Câu báo tiếng Việt.
 import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
 import type { LoginResponse } from "@ai/contracts/chat";
-import { lockUntilClock, retryMinutes } from "@ai/web-kit/auth-limit";
+import { retryMinutes } from "@ai/web-kit/auth-limit";
 import { ApiError } from "@ai/web-kit/http";
 
 export type LoginStep =
@@ -11,6 +11,7 @@ export type LoginStep =
   | { kind: "change"; token: string }
   | { kind: "totp"; token: string };
 export type AuthStage = "login" | "change" | "totp";
+const WRONG = "Mã công ty, tên đăng nhập hoặc mật khẩu không đúng.";
 
 /** Mã công ty / tên đăng nhập gửi lên: trim + chữ thường (khớp `LoginIdSchema`). */
 export const normalizeLoginId = (v: string): string => v.trim().toLowerCase();
@@ -22,10 +23,6 @@ export function stepOf(res: LoginResponse): LoginStep {
 }
 
 function limitMessage(err: ApiError): string | null {
-  if (err.code === "TEMP_LOCKED") {
-    const time = lockUntilClock(err.details);
-    return time ? `Tài khoản tạm khoá đến ${time}. Vui lòng thử lại sau.` : null;
-  }
   if (err.code === "RATE_LIMITED")
     return `Thử quá nhiều lần. Vui lòng thử lại sau ${retryMinutes(err.details, err.retryAfter)} phút.`;
   if (err.code === "AUTH_UNAVAILABLE")
@@ -39,6 +36,9 @@ export function loginError(err: unknown, stage: AuthStage = "login"): string {
   const limited = limitMessage(err);
   if (limited) return limited;
   const code: string = err.code;
+  // Review (thấp): TEMP_LOCKED được trả TRƯỚC khi kiểm mật khẩu và chỉ cho tên đăng nhập có thật ⇒ ở bước đăng nhập hiện như sai
+  // thông tin (không lộ tài khoản tồn tại). ACCOUNT_LOCKED chỉ sau mật khẩu đúng ⇒ báo rõ được.
+  if (code === "TEMP_LOCKED" && stage === "login") return WRONG;
   if (code === "ACCOUNT_LOCKED" || code === "TEMP_LOCKED")
     return "Tài khoản đã bị khoá. Liên hệ quản trị viên của bên chủ quản.";
   if (code === "NETWORK_ERROR") return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
@@ -50,7 +50,7 @@ export function loginError(err: unknown, stage: AuthStage = "login"): string {
       ? "Mật khẩu mới phải khác mật khẩu tạm."
       : `Mật khẩu mới chưa đạt yêu cầu (${PASSWORD_MIN_LEN}–${PASSWORD_MAX_LEN} ký tự).`;
   if (stage === "totp") return "Mã xác thực không đúng.";
-  return "Mã công ty, tên đăng nhập hoặc mật khẩu không đúng.";
+  return WRONG;
 }
 
 /** Kiểm tra form đổi mật khẩu bắt buộc ở trình duyệt (server kiểm lại). null = hợp lệ. */
