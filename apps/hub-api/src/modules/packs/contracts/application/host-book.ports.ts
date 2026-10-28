@@ -1,4 +1,4 @@
-// com-c8-host-read · ADR-0031: cổng ĐỌC `HostBookReader` (gói community khai cùng hình dạng ở `application/*.ports.ts` của nó; contracts
+﻿// com-c8-host-read · ADR-0031: cổng ĐỌC `HostBookReader` (gói community khai cùng hình dạng ở `application/*.ports.ts` của nó; contracts
 // cung cấp; `packs.mount.ts` tiêm sau — CHƯA nối Community). Kiểu thuần tự khai, không kiểu của gói kia. Chỉ đọc.
 import type { PackWho } from "../../kit/application/ports";
 import type { HostHint, HostMatchHow } from "../domain/host-book.rules";
@@ -13,6 +13,10 @@ export type HostPriceOut = {
   unit: string | null;
   source: string;
   seenOn: string;
+  /** null = chưa rõ. */
+  vatIncluded: boolean | null;
+  /** null = không hạn. */
+  expiresOn: string | null;
 };
 export type HostProductOut = {
   /** Vị trí gợi ý trong lô vào. */

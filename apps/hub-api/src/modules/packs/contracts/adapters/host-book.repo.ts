@@ -1,4 +1,4 @@
-// com-c8-host-read · cổng đọc sổ chủ quản — SQL. Tx do `PackUow` mở (RLS tenant + luật thấy M1); lọc `tenant_id` tường minh. Luật 4c:
+﻿// com-c8-host-read · cổng đọc sổ chủ quản — SQL. Tx do `PackUow` mở (RLS tenant + luật thấy M1); lọc `tenant_id` tường minh. Luật 4c:
 // ĐÚNG 2 câu văn bản cố định mỗi lần gọi (dữ liệu lô qua một tham số JSON), không theo số gợi ý/SP.
 //   1. ứng viên tên: theo id, hoặc `name_key` = khoá | tiền tố khoá (mỗi gợi ý ≤ 5, lateral theo index (tenant_id, name_key));
 //   2. kho + giá vốn BQ của THÀNH PHẦN CHÍNH (như tab NCC & giá) + giá đã ghi nhận mới nhất (≤ 10/SP) — chỉ cột sẵn có.
@@ -62,13 +62,16 @@ export function hostBookRepo(tx: Tx, t: string): HostBookRepo {
         unit: string | null;
         source: string;
         seen_on: string;
+        vat_included: boolean | null;
+        expires_on: string | null;
       }[];
     }>(sql`select p.id::text, c.on_hand::text as on_hand, c.avg_cost::text as avg_cost,
         coalesce((select jsonb_agg(jsonb_build_object('supplier_name', s.supplier_name,
             'supplier_party_key', s.supplier_party_key, 'price', s.price, 'unit', s.unit, 'source', s.source,
-            'seen_on', s.seen_on) order by s.seen_on desc, s.created_at desc)
+            'seen_on', s.seen_on, 'vat_included', s.vat_included, 'expires_on', s.expires_on) order by s.seen_on desc, s.created_at desc)
           from (select * from contracts.product_supplier_prices s0
             where s0.tenant_id = p.tenant_id and s0.product_id = p.id
+              and s0.removed_at is null and s0.replaced_at is null and (s0.expires_on is null or s0.expires_on >= current_date)
             order by s0.seen_on desc, s0.created_at desc limit ${PRICES_PER_PRODUCT}) s), '[]'::jsonb) as prices
       from contracts.products p
         left join lateral (select c2.on_hand, c2.avg_cost from contracts.product_components c2
@@ -86,6 +89,8 @@ export function hostBookRepo(tx: Tx, t: string): HostBookRepo {
           unit: x.unit,
           source: x.source,
           seenOn: x.seen_on,
+          vatIncluded: x.vat_included,
+          expiresOn: x.expires_on,
         })),
       });
     }

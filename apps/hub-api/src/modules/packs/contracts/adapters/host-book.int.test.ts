@@ -1,4 +1,4 @@
-// com-c8-host-read · ADR-0031 · int cổng đọc `HostBookReader` trên DB thật (pool hub_api, RLS gói): đường chính (khớp tên đúng/tiền tố,
+﻿// com-c8-host-read · ADR-0031 · int cổng đọc `HostBookReader` trên DB thật (pool hub_api, RLS gói): đường chính (khớp tên đúng/tiền tố,
 // kho + BQ, giá đã ghi nhận, uy tín), chặn `kind=external` / người không có quyền đọc gói / > 50 gợi ý, số câu SQL cố định theo cỡ lô.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
@@ -62,6 +62,13 @@ beforeAll(async () => {
   await sql`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, supplier_party_key, kind, price, unit, source, seen_on)
     values (${A}::uuid, ${x1}::uuid, 'NCC Một', 'tax:0100', 'new', 95000, 'bao', 'quote', '2026-10-01'),
            (${A}::uuid, ${x1}::uuid, 'NCC Hai', 'name:ncc hai', 'new', 91000, 'bao', 'manual', '2026-10-20')`;
+  await sql`update contracts.product_supplier_prices set vat_included = true, expires_on = '2999-01-01' where supplier_name = 'NCC Hai' and tenant_id = ${A}::uuid`;
+  await sql`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on, removed_at)
+    select ${A}::uuid, ${x1}::uuid, 'NCC Gỡ', 'new', 1000, 'bao', 'manual', '2026-10-25', now()`;
+  await sql`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on, expires_on)
+    select ${A}::uuid, ${x1}::uuid, 'NCC Hết hạn', 'new', 2000, 'bao', 'manual', '2026-10-26', current_date - 1`;
+  await sql`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on, replaced_at)
+    select ${A}::uuid, ${x1}::uuid, 'NCC Thay', 'new', 3000, 'bao', 'quote', '2026-10-27', now()`;
   db = createDb(urls().hubApi, { max: 4 });
 }, 60_000);
 afterAll(async () => {
@@ -112,6 +119,9 @@ describe("com-c8 · HostBookReader", () => {
     expect(a?.onHand).toBe("100.0000");
     expect(a?.avgCost).toBe(90_000);
     expect(a?.prices.map((p) => p.supplierName)).toEqual(["NCC Hai", "NCC Một"]);
+    expect(a?.prices[0]?.vatIncluded).toBe(true);
+    expect(a?.prices[0]?.expiresOn).toBe("2999-01-01");
+    expect(a?.prices[1]?.vatIncluded).toBeNull();
     expect(b?.match?.how).toBe("prefix");
     expect(b?.match?.name).toBe("Xi măng PCB30 Nghi Sơn");
     expect(c?.match).toBeNull();
@@ -126,13 +136,13 @@ describe("com-c8 · HostBookReader", () => {
     const q = { hints: [{ name: "Xi măng" }] };
     expect(await kindOf(reader().read(who(u1, "external"), q))).toBe("forbidden");
     expect(await kindOf(reader().read(who(u2, "internal"), q))).toBe("forbidden");
-    const many = { hints: Array.from({ length: 51 }, (_, i) => ({ name: `sp ${i}` })) };
+    const many = { hints: Array.from({ length: 51 }, (_, i) => ({ name: `sp $i` })) };
     expect(await kindOf(reader().read(who(u1), many))).toBe("too_many");
     expect(await kindOf(reader().read(who(u1), { hints: [{ productId: "x" }] }))).toBe("invalid");
   });
 
   it("Luật 4c: số câu SQL cố định, không theo cỡ lô", async () => {
-    const hint = (i: number) => ({ name: i % 2 ? "Xi măng PCB" : `sp ${i}` });
+    const hint = (i: number) => ({ name: i % 2 ? "Xi măng PCB" : `sp $i` });
     const run = (n: number) =>
       counted(() =>
         reader().read(who(u1), {
