@@ -1,14 +1,14 @@
 // com-c12a · CR-102 · seed cộng đồng đối tác cho tenant `demo` — LẶP LẠI ĐƯỢC. Công ty ngoài + 1 user ngoài mỗi công ty, tạo qua
 // CHÍNH service của admin-api (createOrg/createOrgUser: luật tên trùng, role member, must_change_password, audit, NOTIFY) — không SQL tắt.
-//   bun tools/scripts/src/seed-community-demo.ts [--tenant demo] [--apply] [--out <file>] [--force-tenant]
-// Mặc định chạy thử (chỉ in kế hoạch). Mật khẩu tạm CHỈ ghi vào file `--out` (mặc định thư mục tạm của HĐH, không commit, không in).
+//   bun tools/scripts/src/seed-community-demo.ts --out <file> [--tenant demo] [--apply] [--force-tenant] [--i-know-prod]
+// Mặc định chạy thử (chỉ in kế hoạch). Mật khẩu tạm CHỈ ghi vào file `--out` (BẮT BUỘC, quyền 600, không commit, không in; xoá sau
+// khi dùng). Từ chối khi APP_ENV=production hoặc DB host ngoài localhost/test, trừ `--i-know-prod`.
 // Cạnh đó ghi `<out>.community.json`: ánh xạ công ty → party_key Sổ Hợp Tác + nhãn/nhóm hàng (C3/C12b áp bằng applyCommunityLabels).
 // DATABASE_URL: vai ứng dụng admin_api (RLS) hoặc chủ migration. KHÔNG chạy trên máy chủ production.
 // com-c12b: thêm bật gói community + nhãn/nhóm hàng (partner_companies) + bài/luồng mẫu qua service của gói. Cần HUB_DATABASE_URL
 // (vai hub_api, RLS gói); vắng thì dùng DATABASE_URL (chỉ chạy được khi vai đó SET ROLE được, vd chủ migration).
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { ExternalOrgListQuerySchema, UserListQuerySchema } from "@ai/contracts";
 import { createDb, type Db, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -26,6 +26,7 @@ import {
   seedPosts,
 } from "./seed-community-demo.apply";
 import { PARTNER_SEEDS, type PartnerSeed, POST_SAMPLES } from "./seed-community-demo.data";
+import { seedGuard } from "./seed-community-demo.guard";
 import { partyKeyOf } from "./seed-demo-v2.build";
 
 export const DEMO_KEY = "demo";
@@ -145,6 +146,12 @@ function planLines(tenantKey: string): string[] {
 function writeOut(file: string, data: unknown): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+  // `mode` chỉ áp khi TẠO file — file cũ (lần chạy trước) phải đặt lại quyền hẹp (review TB-3). Windows: chmod chỉ đổi cờ chỉ-đọc.
+  try {
+    chmodSync(file, 0o600);
+  } catch {
+    /* hệ tệp không hỗ trợ quyền POSIX */
+  }
 }
 
 /** Gộp với file cũ (lần chạy trước) để không mất mật khẩu của user đã tạo; không có user mới ⇒ null. */
@@ -218,18 +225,30 @@ async function main(argv: readonly string[]): Promise<void> {
   const arg = (k: string) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : undefined);
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("seed-community-demo: cần DATABASE_URL");
+  const hubUrl = process.env.HUB_DATABASE_URL;
+  const out = arg("--out");
+  const why = seedGuard({
+    appEnv: process.env.APP_ENV,
+    urls: hubUrl ? [url, hubUrl] : [url],
+    iKnowProd: argv.includes("--i-know-prod"),
+    out,
+  });
+  if (why) throw new Error(`seed-community-demo: từ chối — ${why}`);
   const opts: SeedOpts = {
     tenantKey: arg("--tenant") ?? DEMO_KEY,
     apply: argv.includes("--apply"),
     forceTenant: argv.includes("--force-tenant"),
-    out: arg("--out") ?? join(tmpdir(), "seed-community-demo.passwords.json"),
+    out: out as string,
   };
   assertTenant(opts.tenantKey, opts.forceTenant);
   const db = createDb(url, { max: 2 });
-  const hubUrl = process.env.HUB_DATABASE_URL;
   const hubDb = hubUrl ? createDb(hubUrl, { max: 2 }) : undefined;
   try {
-    await runSeed(db, { ...opts, hubDb });
+    const r = await runSeed(db, { ...opts, hubDb });
+    if (r.passwordsFile)
+      console.warn(
+        `seed-community-demo: CẢNH BÁO — ${r.passwordsFile} chứa mật khẩu tạm; phát cho đối tác rồi XOÁ file ngay.`,
+      );
   } finally {
     await hubDb?.close();
     await db.close();
