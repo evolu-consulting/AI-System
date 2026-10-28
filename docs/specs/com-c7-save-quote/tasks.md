@@ -28,6 +28,7 @@ Test phần giá **viết trước code** (làn đầy đủ): unit luật thay/
 - D9 Người gọi: `QuoteCaller.kind='external'` ⇒ `forbidden` trước mọi câu SQL; quyền ghi giá qua dep `canWrite` (mount tiêm). Kiểm thân trong usecase (cổng nội bộ, không qua zod route).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §8 và `current/sht` (mục SP & Giá) cuối đợt.
 - SHT SP & Giá: giá đã lưu có VAT (gồm/chưa), hạn, nhãn "Đã hết hạn"; giá đã thay / đã gỡ chuyển xuống "Lịch sử giá" (nhãn "Đã thay"/"Đã gỡ"); nút Xoá trên dòng giá = gỡ mềm. So sánh/gợi ý/dò giá bỏ giá hết hạn/thay/gỡ.
 - Community §8: R18 so với giá đã lưu rẻ nhất cùng loại + đơn vị (D4); R22 thay theo NCC + loại (D2); R24 vai NCC `manual` (D5).

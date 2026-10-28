@@ -22,4 +22,5 @@ Seed chạy được trên DB trống + DB đã có demo (chạy lại không l�
 - qc: đã `test:lock:write` (gồm `tests/acceptance/com-c3/_support/cast.ts` và e2e mới).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Không (chỉ ghi bộ seed vào `current/community/README.md` nếu đổi).

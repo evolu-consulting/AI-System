@@ -25,3 +25,6 @@ Làn: đầy đủ cho Cao-1/TB-2/TB-4 (tx, RLS), nhanh cho phần còn lại. M
 ## Còn lại
 - e2e `e2e/community-web/playwright.config.ts` (khoá, chỉ qc) build production không đặt `PUBLIC_COMMUNITY_API=mock` ⇒ sau Thấp-12 bản build là http; qc cần thêm `PUBLIC_COMMUNITY_API=mock` vào lệnh webServer (trước đây cũng đã là http — lệch sẵn).
 - chmod 600 không kiểm được trên Windows (chỉ cờ chỉ-đọc).
+
+## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community). Gộp vào current/community/nghiep-vu.md §6–§9, §13 (chuông sau commit, SSO đăng nhập, cổng stockHolders).

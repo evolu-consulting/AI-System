@@ -18,4 +18,5 @@ Unit (chuẩn hoá nội dung đăng lại: bỏ tên/SĐT/ảnh gốc); một i
 - `buildRepostDraft`: nội dung qua `stripContacts`; không mang người đăng gốc (kiểu nguồn không có trường này); giá `null`; ảnh `suspect` mặc định `included=false`, kèm `hasSuspectImages` cho UI cảnh báo.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §7 cuối đợt.

@@ -9,6 +9,8 @@ Cập nhật: 2026-10-27 · Gộp từ: V2-L (Cài đặt), DOC-legal, delivery-
 - Việc `write`: tải lên/tạo giao dịch, sửa trường (HĐ chưa khoá), mốc, settle, ghi sao/việc với đối tác, ghi cờ đỏ, attach/gỡ HĐ NT, nâng thành HĐ, quyết bước duyệt (theo `can_act` của engine).
 - Dock trợ lý Sổ Hợp Tác: chỉ vào hội thoại `surface=contracts`; hub-api trả 403 `CHAT_APP_DISABLED` khi Chat App tắt (chat-api-gate). Nguồn: `docs/specs/chat-api-gate/tasks.md`.
 
+- User ngoài (`kind=external`, Community): contracts 0067 policy `ext_deny` ⇒ 0 hàng ở mọi bảng gói; người được giao HĐ, `/directory`, members-pickers không liệt kê họ; guard gói chỉ cho `community` (gộp com-c2-ext-deny, `current/community/nghiep-vu.md` §13). Chủ quản dùng Community qua Group `community-owner`.
+
 ## 2. Màn Cài đặt (contracts-web, `/settings`, `SettingsDialog.tsx`; năm mục `SECTIONS` = co, rep, biz, scout, flow)
 | Mục | Nội dung | Ghi |
 |---|---|---|
@@ -40,6 +42,7 @@ Ngưỡng/Group duyệt máy cũ: `approval_settings.threshold`, `level1_group_k
 `approval_settings_audit` ghi trước/sau đổi ở `PUT /company` (cờ duyệt, tồn âm, ngưỡng pháp lý) và bật/tắt ký số.
 
 ## Chưa rõ
+0. Bảng contracts mới sau 0067 cần policy `ext_deny` (hoặc `packs.secure_table`).
 1. Ánh xạ chính xác vai ↔ guard cho mọi route (bảng §1 chỉ kê các route đã thấy trong lát CR-097/101): chưa quét toàn bộ.
 2. Nhãn hiển thị của năm mục Cài đặt chưa đối chiếu locale; ô bật ký số nằm ở mục Quy trình duyệt theo spec cf-esign-docusign, chưa mở `FlowPane` để xác nhận. Nhật ký `approval_settings_audit` chắc chắn cho `PUT /company` và `esign`; `PUT /approval-settings` chưa kiểm.
 3. Biến Trello/quota admin (tenant-quotas, trello-config-ui) thuộc Admin, không ở khu vực này; chưa có `docs/current` cho Admin.

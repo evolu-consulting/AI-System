@@ -1,6 +1,6 @@
 # Community — nghiệp vụ
 
-Nguồn: PDF 28/10/2026 (`docs/intake/community/source-pdf.txt`), Intake (`.../2026-10-28-intake.md`), CR-102/102a/102b. Mọi mục "chưa làm" cho tới khi lát tương ứng merge.
+Nguồn: PDF 28/10/2026 (`docs/intake/community/source-pdf.txt`), Intake (`.../2026-10-28-intake.md`), CR-102/102a/102b. Trạng thái: đã chạy trên `platform/gd0` (c2d8eebf, đợt Community C1–C12, gộp 2026-10-28); **chưa deploy production**. Dòng "Gộp" ở từng mục = hành vi thực tế từ Delta các lát.
 
 ## 1. Nguyên tắc (kim chỉ nam)
 1. Mọi thông tin chảy về chủ quản; NCC và người mua không thấy nhau, không liên hệ trực tiếp (R1).
@@ -18,6 +18,7 @@ Mỗi tài khoản thuộc một công ty; quyền gắn với công ty (nhân v
 | Người mua | user `kind=external`, nhãn người mua | Đăng bài Cần mua, bình luận, xem bài chủ quản được chia sẻ | như NCC |
 - Một công ty có thể mang nhãn `supplier | buyer | both`; **vai tính theo từng bài**, không cố định theo công ty (R5).
 - Nhiều nhân viên của một công ty đối tác cùng thấy **một** luồng trao đổi (R6, D3). GĐ1 chỉ Admin chủ quản thêm/khoá user đối tác; công ty đối tác tự quản lý thành viên = GĐ2 (Câu 3).
+- Gộp C1: bảng `admin.external_orgs`; cột `admin.users.kind` (`internal`|`external`), `external_org_id`, `deactivated_at`; `/auth/me` trả `kind`, `ext_org_id`; route `/admin/external-orgs*` + menu admin-web "Đối tác". `POST /admin/groups/:id/members` với user ngoài ⇒ 422; `PATCH /admin/users/:id` đặt role ≠ member cho user ngoài ⇒ 422; `unlock` user đã vô hiệu ⇒ 409; `PUT /admin/org/managers|departments/:id` với user ngoài ⇒ 422; tạo công ty đối tác ở tenant platform ⇒ 422. Vô hiệu công ty ghi audit từng user; `POST /admin/external-orgs/:id/reactivate` + nút "Mở lại" (C2).
 - D1: đối tác = user trong tenant chủ quản với `admin.users.kind='external'` + `external_org_id` (CR-102a); mọi tra "user thuộc công ty đối tác nào" qua MỘT port `ExternalOrgResolver`.
 
 ## 3. Mạng hình sao và kết bạn (R7, R9–R13; lát C1/C3)
@@ -35,6 +36,8 @@ Mỗi tài khoản thuộc một công ty; quyền gắn với công ty (nhân v
 | Cần mua | chủ quản, người mua | sản phẩm, số lượng, khu vực, ngày cần | bài chủ quản: bạn bè được chọn; bài người mua: chỉ chủ quản |
 | Thông báo | chỉ chủ quản | nội dung | bạn bè được chọn |
 Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự do + tối đa 10 ảnh, 2 video (Filebox). "Dán mô tả, AI điền form" = COULD cuối đợt (Câu 7).
+- Gộp C5: app `apps/community-web` (dev cổng 3400, prod `:18435` → host community) + contract `@ai/contracts/community`; đối tác vào bằng SSO app `community` (cookie `ai_rt_community`), không dùng phiên Sổ Hợp Tác (C3). Bản build production không chứa dữ liệu mẫu (`__COMMUNITY_MOCK__`, `check:bundle` báo lỗi).
+- **Đăng nhập (fix-community-login):** community-web có màn Đăng nhập riêng (Mã công ty / Tên đăng nhập / Mật khẩu; đổi mật khẩu lần đầu). `/sso` chưa có phiên ⇒ `/login?next=/sso?…` (chỉ đường dẫn cùng origin, không open redirect) ⇒ xin mã ⇒ đích = `target_url` catalog admin-api. Chủ quản phải thuộc Group `community-owner`, thiếu ⇒ 403 `PACK_FORBIDDEN`.
 - **Bảng tin** là trang đầu: chủ quản thấy cung cầu tổng hợp từ mọi bạn bè; đối tác thấy bài chủ quản được chia sẻ + bài của mình.
 - Sửa: người đăng sửa mọi trường; hiện nhãn "đã sửa"; nếu chủ quản đã lưu báo giá từ bài ⇒ báo chủ quản (R27, mục 7).
 - Lưu trữ / bỏ lưu trữ: ẩn khỏi bảng tin người khác, giữ bình luận. Đánh dấu đã xong: Cần mua có hàng / Cần bán hết; tự lưu trữ.
@@ -46,7 +49,7 @@ Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự d
 - Trang công ty (icon user, R41): chủ quản = SHT (5 trang, chỉ chủ quản, mở sang contracts-web, D5/Câu 6) + Bài của tôi; đối tác = hồ sơ công ty + bài + bình luận của họ, không có SHT.
 
 ## 5. Người xem bài chủ quản (D2, R32; lát C3/C5)
-Khi chủ quản đăng, chọn người xem: tất cả bạn bè / chỉ NCC / chỉ người mua / theo nhóm hàng / từng công ty. Mặc định: Cần bán ⇒ người mua quan tâm nhóm hàng đó; Cần mua ⇒ NCC nhóm hàng đó; Thông báo ⇒ tất cả bạn bè. **Trần = bạn bè của chủ quản** (không bao giờ vượt). Bài lưu trữ/ẩn: xem `hien-thi.md`.
+Khi chủ quản đăng, chọn người xem: tất cả bạn bè / chỉ NCC / chỉ người mua / theo nhóm hàng / từng công ty. Mặc định: Cần bán ⇒ người mua quan tâm nhóm hàng đó; Cần mua ⇒ NCC nhóm hàng đó; Thông báo ⇒ tất cả bạn bè. **Trần = bạn bè của chủ quản** (không bao giờ vượt). Bài lưu trữ/ẩn: xem `hien-thi.md`. Gộp C3: RLS thực thi ở DB (`visibility.rls.int.test.ts`, HT-01…50, HT-70…73).
 
 ## 6. Bình luận riêng theo đối tác (D3, R37, R38; lát C6)
 - Trên bài chủ quản, mỗi cặp (bài × công ty đối tác) là **một luồng riêng** như nhắn tin gắn bài; RLS theo `external_org_id`. Đối tác chỉ thấy bình luận của công ty mình và câu trả lời gửi cho mình; chủ quản thấy tất cả.
@@ -60,6 +63,7 @@ Khi chủ quản đăng, chọn người xem: tất cả bạn bè / chỉ NCC /
 - Ảnh NCC: AI kiểm logo/tên/SĐT in trên ảnh; chủ quản được cảnh báo trước khi dùng lại ảnh (C11, cảnh báo, không chặn).
 - Chủ quản không chia sẻ/chuyển tiếp nguyên bài đối tác; chỉ có "Đăng lại dưới tên mình": nội dung chuẩn hoá, không tên người đăng gốc, giá do chủ quản đặt (C11).
 - Nút Lưu báo giá, dòng "Đã lưu báo giá", gợi ý dưới bài (giá vốn, uy tín, hàng đang có) **chỉ chủ quản**; API user ngoài **không trả cờ** nào (R16, R29). Xuất dữ liệu: chưa có route; thêm sau thì ghi nhật ký mọi lần xuất.
+- Gộp C3/C4: cả trường form (giá, SL…) của đối tác cũng được che. Audience tính **động lúc đọc** (đổi nhãn ⇒ đổi người xem ngay).
 - Gỡ thành viên chủ quản ⇒ mất quyền ngay; bạn bè, bài, giá thuộc công ty (R47, đã có).
 
 ## 8. Lưu báo giá (R15–R28; lát C7, CR-102b)
@@ -82,9 +86,13 @@ Khi chủ quản đăng, chọn người xem: tất cả bạn bè / chỉ NCC /
 | R29 | NCC **không biết** bài đã được lưu: không thông báo, không dấu hiệu, API không trả |
 - Bài Cần bán thiếu giá ("liên hệ"): vẫn đăng; nút vẫn có; chủ quản hỏi trong bình luận rồi tự nhập giá.
 - Tên hàng khác danh mục: gợi ý SP khớp nhất; chủ quản chọn hoặc tạo SP mới.
+- Gộp C7b (migration community `0004_quote_saves`): route `POST /posts/:id/quote/preview`, `POST /posts/:id/quote`, `GET /quote/match`; gợi ý `hostHint` + `quotes` ở feed chỉ cho chủ quản (một `HostBookReader.read` mỗi trang; không quyền đọc contracts ⇒ bỏ gợi ý, không lỗi). Ghi qua `packs/community-wire.mount.ts` (`communityPorts`, ADR-0031).
+  - D10 dấu "đã lưu" = bảng `community.quote_saves` (RLS RESTRICTIVE chỉ chủ quản), JSON đối tác y hệt trước/sau lưu. D11 `posts.edited_at`, `posts.price_edited_at`; chuông R27 khi `price_edited_at` đổi và `quote_saves.notify_price_edit`. D12 NCC do server suy (công ty đăng bài / công ty luồng + `party_key`); nguồn hợp lệ: Cần bán của đối tác, hoặc bình luận đối tác trên Cần mua của chủ quản (khác ⇒ 422). D13 khoá lưu đè `(post, item_idx, comment)`; preview trả `existing {by, at}`; cổng ghi và dấu lưu là hai tx. D14 VAT mặc định form = "đã gồm VAT"; `item_idx` mặc định 0.
+  - R18 so với giá đã lưu rẻ nhất cùng loại + đơn vị (D4); R22 thay theo NCC + loại (D2); R24 vai NCC `manual` (D5). SHT SP & Giá: xem `sht/sp-va-gia.md`.
 - CR-102b: migration contracts 0066 cộng cột (`vat_included`, `expires_on`, `replaced_at`, `removed_at`, `origin_ref`); không thêm màn mới.
 
 ## 9. Đọc từ SHT (R45, D5; lát C8)
+Gộp C8: lô ≤ 50 gợi ý (id/tên) ⇒ SP khớp (đúng → tiền tố) + tồn + BQ + giá ghi nhận + band uy tín; chỉ `kind=internal` có quyền đọc gói. `stockHolders(tenant, product)` = 1 tx sổ (2 câu) + 1 câu quyền đọc theo tập, không vòng từng chủ quản; hạn giá theo ngày tenant (`timeZoneOf`), không `current_date`; tab NCC & giá trần 200 dòng ưu tiên dòng còn hiệu lực.
 Community **đọc** (qua cổng `HostBookReader`): hàng đang giữ, giá vốn bình quân, giá đã ghi nhận, điểm uy tín — để gợi ý dưới bài và cho chatbot; **chỉ chủ quản**. Community **ghi** vào SHT chỉ một chỗ: Lưu báo giá. SHT giữ nguyên nghiệp vụ.
 
 ## 10. Thông báo (R44; lát C9)
@@ -99,6 +107,7 @@ Chỉ trong app (chuông kit `notify.enqueue`), không Zalo/SMS/email. Bấm th�
 | NCC sửa giá trên bài đã lưu báo giá | chủ quản | Bật |
 | Bài sắp tự hết hạn (3 ngày) | người đăng | Bật |
 | Tổng hợp hằng ngày 8:00 (bài mới, Cần bán chưa lưu) | chủ quản | Tắt, bật được (COULD) |
+Gộp C9/fix-review: chuông phát **sau commit** (`communityEvents.emit*` mở tx hệ thống riêng; lỗi phát chỉ log `community-notify-failed`). Chuông bình luận: chủ quản còn quyền gói, đối tác thuộc công ty còn hiệu lực; vòng nhắc hết hạn lọc tương tự. Migration community `0003` (notify).
 Nhắc "đối tác chưa đăng nhập 7 ngày" cho Admin: COULD (Câu 8).
 
 ## 11. Chatbot (R42, R43; lát C10)
@@ -110,12 +119,17 @@ Nhắc "đối tác chưa đăng nhập 7 ngày" cho Admin: COULD (Câu 8).
 Mời qua SĐT/email/link; kết nối trực tiếp trả phí; nhiều chủ quản; thu phí thuê bao / gói AI theo lượng; hỏi giá nhiều NCC cùng lúc; gửi báo giá cho khách; tự quản lý thành viên của công ty đối tác; lưu giá từ ảnh/PDF; chatbot đối tác; tự ghép tên SP; giao hàng/hoá đơn (quy trình của chủ quản). Ngành GĐ1: chữ ký số + vật tư đóng gói (seed trên tenant `demo`).
 
 ## 13. Bề mặt phải chặn user ngoài (C2, mỗi dòng một int)
+Gộp C2: tường lửa hub-api trả 403 `FORBIDDEN` ngoài `/pack/community*` và `/notifications`; admin-api cho đối tác chỉ: hồ sơ, đổi mật khẩu, đăng xuất, mã SSO, app/portal của mình; `/directory`, `GET /pack/<k>/members`, người được giao HĐ không liệt kê user ngoài; `GET /me/apps` + `/me/portal` của đối tác chỉ Community, `chat=false`; GUC `app.user_kind` trong `withPackScope`; contracts 0067 policy `ext_deny`; admin 0029 trigger. Bảng contracts mới sau 0067 phải có policy `ext_deny`. Danh sách:
 pack guard (chỉ gói trong `EXTERNAL_PACKS={community}`, bỏ qua Group) · `chat-gate` (không Chat App) · agent grants `tenant` + agent mặc định/dự phòng · `/directory` · kit members/pickers · portal/app catalog + `default_app` · admin-web/admin-api (chỉ `/me`, đổi mật khẩu) · RLS `contracts` phòng thủ (`kind=external` ⇒ 0 hàng) · quota/usage tính vào tenant chủ quản (ghi nhận, không chặn).
 
 ## Chưa rõ
-1. Nhãn "đã hết hạn" cho giá **thay** vs **hết hạn** cùng lúc: hiện nhãn nào trước? Mặc định đề xuất: "Đã thay" thắng.
-2. Chủ quản đăng bài Thông báo nhưng người xem = "chỉ NCC": có hợp lệ không? Mặc định: hợp lệ (D2).
-3. Đối tác có được thấy bài của chính mình khi chủ quản ẩn không? Xem `hien-thi.md` Chưa rõ #1 (mặc định: thấy, không biết bị ẩn).
-4. Tên công ty "khác" để che: dựa danh sách đối tác SHT + `external_orgs` hay chỉ `external_orgs`? Chờ C4.
-5. Điều hướng "mở SHT" từ community-web sang contracts-web mang theo phiên đăng nhập thế nào (cùng cookie/JWT?). Chờ C5.
-6. Mockup Community của người dùng chưa có: nhãn, vị trí nút, trạng thái từng ca "Các case và ngoại lệ" sẽ chỉnh khi nhận.
+1. Nhãn "đã hết hạn" cho giá **thay** vs **hết hạn** cùng lúc: mặc định đề xuất "Đã thay" thắng.
+2. Thông báo cho "chỉ NCC": mặc định hợp lệ (D2).
+3. Đối tác thấy bài của mình khi chủ quản ẩn? Xem `hien-thi.md` Chưa rõ #1.
+4. Tên công ty "khác" để che: chỉ `external_orgs` hay cả danh sách đối tác SHT? (C4 chưa chốt).
+5. **SSO login-CSRF nonce:** luồng `/sso` chưa có nonce chống login-CSRF (review security cuối đợt; chưa làm).
+6. **C11b vision:** kiểm logo/tên/SĐT trên ảnh NCC chờ `ai-client` hỗ trợ ảnh (vision); chưa làm.
+7. **HD-NFR-01:** facets danh sách đo 52–54 ms so với ngưỡng 50 ms (ngoài ngân sách nhẹ).
+8. **Host community:** tên miền/DNS/TLS chưa có; `APP_URL_COMMUNITY` đặt khi deploy.
+9. **Hưng Thịnh:** ánh xạ `party_key` cho đối tác Hưng Thịnh chưa được xác nhận.
+10. Mở lại công ty đã vô hiệu có (C2); tự quản lý thành viên đối tác = GĐ2. Điều hướng "mở SHT" từ community-web sang contracts-web (phiên) chưa chốt. Mockup Community của người dùng chưa có.

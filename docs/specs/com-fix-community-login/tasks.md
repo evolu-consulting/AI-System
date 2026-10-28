@@ -25,3 +25,6 @@
 - e2e `roles.cs.ts` còn đỏ ở assertion ngoài đăng nhập (qc sửa): `partner-note` không có trên thẻ bài (chỉ ở Composer);
   "Lưu báo giá" trên bài đối tác giờ bật (C7 đã có), test còn chờ bị khoá.
 - Deploy: chat-web + community-web build lại.
+
+## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community). Gộp vào current/community/nghiep-vu.md §6–§9, §13 (chuông sau commit, SSO đăng nhập, cổng stockHolders).

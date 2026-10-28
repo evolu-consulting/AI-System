@@ -18,7 +18,11 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | | [sht/mot-moc-kho-cong-no.md](sht/mot-moc-kho-cong-no.md) | Mốc, giao theo %, vượt tồn, xác nhận + xem trước tác động |
 | | [sht/duyet-ky-so.md](sht/duyet-ky-so.md) | Quy trình duyệt (máy 2 bước / engine), khoá, ký số |
 | | [sht/doi-tac-uy-tin.md](sht/doi-tac-uy-tin.md) | Điểm uy tín (HD8 / V2-E theo cờ), cờ đỏ, xem trước chuyển engine |
+| | [sht/sp-va-gia.md](sht/sp-va-gia.md) | SP & Giá: giá có VAT/hạn, thay/gỡ mềm, Lịch sử giá, nguồn Báo giá |
 | | [sht/cai-dat-va-quyen.md](sht/cai-dat-va-quyen.md) | Vai/quyền, màn Cài đặt, cờ và công tắc |
 | | [sht/phap-ly-va-can-xu-ly.md](sht/phap-ly-va-can-xu-ly.md) | Cảnh báo pháp lý, nguồn Cần xử lý |
 
-Khu vực khác (Admin, Agent Hub, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.
+| Community (gói `community`) | [community/README.md](community/README.md) | Nghiệp vụ, ma trận hiển thị, Chưa rõ (CR-102) |
+| Admin (ngắn) | [admin/ghi-chu.md](admin/ghi-chu.md) | Người dùng ngoài / công ty đối tác, cổng admin-api cho đối tác |
+
+Khu vực khác (Agent Hub, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.

@@ -34,6 +34,7 @@ Unit: tính audience (D2) thuần. Int: **một int RLS tham số theo từng d�
 - qc: ghi lock cho `tests/acceptance/com-c3/_support/cast.ts`. `check:fn` còn báo hàm dài ở test + `mock.ts` (C5, có sẵn).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §3–6 và `hien-thi.md` cuối đợt:
 - hien-thi HT-01…50, HT-70…73 có int RLS (`visibility.rls.int.test.ts`); Chưa rõ #1/#2 chốt như trên.
 - nghiep-vu §5: audience tính động lúc đọc (đổi nhãn ⇒ đổi người xem ngay). §7: cả trường form (giá, SL…) của đối tác cũng được che.

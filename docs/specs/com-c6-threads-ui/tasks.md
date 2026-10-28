@@ -20,4 +20,5 @@ Unit logic thuần; một int mỗi endpoint mới (đường chính); e2e viế
 - e2e: chưa viết (không chạy trong lát).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §6 cuối đợt.

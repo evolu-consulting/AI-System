@@ -21,4 +21,5 @@ Unit: bảng mẫu dò/che (đa dạng định dạng, false-positive cơ bản 
 - Không làm: số đọc bằng chữ ("không chín một…"), ký tự lạ thay chữ số (O thay 0), đọc ảnh (C11). Che theo luật là chặn lỡ tay/đi tắt thông thường, không chống cố ý lách tuyệt đối.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §7 cuối đợt.

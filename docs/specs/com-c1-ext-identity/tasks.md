@@ -30,6 +30,7 @@ source: docs/intake/community/2026-10-28-intake.md (R2, R3, R9, R12, R13, M2, CR
 - `users.service.ts` chạm 400 dòng ⇒ tách `users.dto.ts` (toUser/userAudit/mapUserConflict, re-export giữ điểm gọi cũ).
 
 ## Delta so với docs/current
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 - Mới: bảng `admin.external_orgs`; cột `admin.users.kind`, `external_org_id`, `deactivated_at`; route `/admin/external-orgs*`; field `kind`, `ext_org_id` ở `/auth/me`; `kind`, `external_org_id`, `deactivated_at` ở DTO User; query `?kind=`, `?external_org_id=` ở `/admin/users`; menu admin-web "Đối tác".
 - Đổi: `POST /admin/groups/:id/members` từ chối user ngoài (422); `PATCH /admin/users/:id` role ≠ member cho user ngoài (422); `unlock` user đã vô hiệu (409).
 

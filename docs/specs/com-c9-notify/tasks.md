@@ -21,4 +21,5 @@ Unit (chọn người nhận theo loại/tuỳ chọn); một int đường chí
 - Nhắc "đối tác chưa đăng nhập 7 ngày" (COULD): chưa làm.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §10 cuối đợt.

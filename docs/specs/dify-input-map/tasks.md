@@ -16,4 +16,5 @@ Làn: nhanh (UI + luật thuần, không RLS/tiền). Một agent làm trọn.
 - Không migration (steps là jsonb; repo đọc/ghi nguyên object).
 
 ## Delta vs docs/current
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 - `docs/current` chưa mô tả bước Dify ánh xạ tham số; cập nhật ở STATE cuối đợt.

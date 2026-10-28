@@ -116,6 +116,7 @@ Bài P = bài chủ quản đăng, `audience` như ghi ở cột 3.
 | HT-85 | M bị gỡ | mọi thao tác | Mất quyền ngay |
 
 ## Chưa rõ
+0. Gộp C3: các ca HT-01…50, HT-70…73 đã có int RLS (`visibility.rls.int.test.ts`); #1/#2 dưới đây chốt theo mặc định đề xuất.
 1. HT-30: bài của S1 bị chủ quản ẩn — S1 thấy bài của mình (kèm nhãn) hay không? PDF: "ẩn bài" không nói rõ. Mặc định đề xuất: S1 **thấy** bài của mình, không biết bị ẩn (tránh lộ hành vi chủ quản); các người xem khác không thấy.
 2. HT-46: bình luận bị ẩn trong luồng riêng: đối tác còn thấy không? Mặc định đề xuất: không thấy (không để lại dấu).
 3. Phần thành viên chủ quản theo "quyền được giao" (PDF: "dùng SHT theo quyền được giao"): ca test SHT theo từng quyền thuộc `current/sht/cai-dat-va-quyen.md`, không lặp ở đây.

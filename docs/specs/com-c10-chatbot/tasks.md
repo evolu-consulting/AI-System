@@ -18,4 +18,5 @@ Unit bóc tách văn bản (bảng mẫu); một int đường chính; một int
 
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §11 cuối đợt.

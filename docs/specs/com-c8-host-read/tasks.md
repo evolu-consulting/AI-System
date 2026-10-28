@@ -1,4 +1,4 @@
-﻿# com-c8-host-read — Gợi ý từ SHT dưới bài, chỉ chủ quản (D5)
+# com-c8-host-read — Gợi ý từ SHT dưới bài, chỉ chủ quản (D5)
 
 Đọc: `docs/current/community/nghiep-vu.md` §9; `hien-thi.md` HT-67, HT-68; ADR-0031.
 | Lát | Làn | Model | Migration | Phụ thuộc |
@@ -21,6 +21,7 @@ Unit adapter; một int đường chính; **một int chặn `kind=external`** (
 - Test: unit `domain/host-book.rules.test.ts`; int `adapters/host-book.int.test.ts` (đường chính, chặn external/không quyền/>50/id sai, đếm câu SQL lô 1 vs 50).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §9 cuối đợt.
 
 - Cổng `HostBookReader` (contracts cung cấp): lô ≤ 50 gợi ý (id/tên) ⇒ SP khớp (đúng→tiền tố) + tồn + BQ + giá ghi nhận + band uy tín; chỉ `kind=internal` có quyền đọc gói. Nối ở `packs.mount.ts` ở lát C-wire.

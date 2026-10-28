@@ -35,6 +35,7 @@ Thêm (review bảo mật C1): TB-1 trigger `user_managers` (cả 2 cột) + `de
 - **Quota/usage:** đối tác nằm trong tenant chủ quản (`tid` = tenant chủ quản) ⇒ mọi bộ đếm theo `tenant_id` tự tính vào chủ quản; GĐ1 đối tác không chạy AI (agent/chat bị chặn). Không đổi code.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §13 cuối đợt.
 - Mới: tường lửa user ngoài hub-api (403 `FORBIDDEN` ngoài `/pack/community*`, `/notifications`); cổng admin-api cho đối tác (chỉ hồ sơ, đổi mật khẩu, đăng xuất, mã SSO, app/portal mình); `POST /admin/external-orgs/:id/reactivate` + nút "Mở lại"; admin 0029 trigger; contracts 0067 policy `ext_deny`; GUC `app.user_kind` trong `withPackScope`.
 - Đổi: `/directory`, `GET /pack/<k>/members`, người được giao HĐ không còn liệt kê user ngoài; `GET /me/apps` + `/me/portal` của đối tác chỉ Community, `chat=false`; `PUT /admin/org/managers/:id`, `PUT /admin/org/departments/:id` với user ngoài ⇒ 422; tạo công ty đối tác ở tenant platform ⇒ 422; vô hiệu công ty ghi audit từng user.

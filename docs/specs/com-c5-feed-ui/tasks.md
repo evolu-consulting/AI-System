@@ -25,4 +25,5 @@ Unit logic thuần (hạn, lọc). Một int mỗi endpoint mới (đường ch�
 - Việc còn lại: nối adapter http khi C3 xong; chạy `e2e/community-web/feed.cm.ts` một lần cuối đợt (đã viết, chưa chạy); int mỗi endpoint thuộc C3.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: đã gộp 2026-10-28 (đợt Community)
 Gộp vào `current/community/nghiep-vu.md` §4–5 cuối đợt. Đợt 1: thêm app `apps/community-web` (cổng dev 3400) + contract `@ai/contracts/community`; mock chạy được toàn bộ luồng; chưa nối backend.
