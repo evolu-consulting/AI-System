@@ -19,6 +19,8 @@ const EXPECTED = [
   "e2e/chat/playwright.x2b.config.ts",
   "e2e/chat/playwright.x2b2.config.ts",
   "e2e/combine/playwright.config.ts",
+  "e2e/community-web/playwright.config.ts",
+  "e2e/community-web/playwright.stack.config.ts",
   "e2e/contracts-web/playwright.config.ts",
   "e2e/studio/playwright.config.ts",
   "e2e/x1/playwright.config.ts",
@@ -30,5 +32,5 @@ it("findE2eConfigs: đúng 18 cấu hình (gốc + 17 dưới e2e/), không th�
     f.replaceAll("\\", "/"),
   );
   expect(found.sort()).toEqual([...EXPECTED].sort());
-  expect(found).toHaveLength(18);
+  expect(found).toHaveLength(20);
 });
