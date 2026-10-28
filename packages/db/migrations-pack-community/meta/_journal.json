@@ -29,6 +29,13 @@
       "when": 1800400000000,
       "tag": "0004_quote_saves",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1800500000000,
+      "tag": "0005_quote_saves_fk_tenant",
+      "breakpoints": true
     }
   ]
 }
