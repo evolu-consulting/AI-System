@@ -1329,3 +1329,43 @@ a:hover {
   padding: 0 14px;
   font: inherit;
 }
+
+/* com-fix-community-login · màn Đăng nhập riêng (thẻ giữa trang, cùng bảng màu mockup). */
+.auth {
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+.authcard {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 28px 22px;
+}
+.authcard h1 {
+  margin: 22px 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.authcard .lead {
+  margin: 0 0 18px;
+  color: #6b6c80;
+  font-size: 13.5px;
+}
+.authcard .form {
+  grid-template-columns: 1fr;
+}
+.authbtn {
+  width: 100%;
+  justify-content: center;
+}
+.autherr {
+  margin: 0;
+  color: #c81e1e;
+  font-size: 13px;
+}
+.authalt {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: #6b6c80;
+  text-align: center;
+}

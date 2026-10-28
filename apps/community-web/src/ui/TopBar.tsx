@@ -1,6 +1,8 @@
 // Thanh trên 60px (mockup): logo "Sổ Hợp Tác · Community", ô tìm bo tròn, Bảng tin / chuông (thả xuống) / cài đặt / avatar.
 import type { CommunityNotification } from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
+import { apiMode } from "../api";
+import { logout } from "../api/auth";
 import { initials, timeAgo, tone } from "../lib/format";
 import { useApp } from "./ctx";
 import { IconBell, IconGear, IconHome, IconSearch } from "./icons";
@@ -150,6 +152,11 @@ export function TopBar() {
         >
           <span className="av t1">{initials(viewer.orgName)}</span>
         </button>
+        {apiMode === "http" && (
+          <button type="button" className="ghost" onClick={() => void logout()}>
+            Đăng xuất
+          </button>
+        )}
       </header>
       {open && <NotifPop items={data.items} onClose={() => setOpen(false)} onChanged={load} />}
     </>

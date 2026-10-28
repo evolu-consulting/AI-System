@@ -7,6 +7,7 @@ import {
   shouldTrySso,
   ssoFallbackUrl,
   ssoLandingUrl,
+  ssoResumeLoginUrl,
   ssoStartUrl,
 } from "./sso";
 
@@ -63,5 +64,24 @@ describe("handOffUrl", () => {
     expect(
       await handOffUrl({ authed: true, grant: bad, fallbackBase: undefined, next: "/" }),
     ).toBeNull();
+  });
+});
+
+describe("ssoResumeLoginUrl", () => {
+  it("về /login của AI System, next = trang /sso cùng origin (đăng nhập xong quay lại app đích)", () => {
+    const u = ssoResumeLoginUrl("community", "/");
+    expect(u).toBe("/login?next=%2Fsso%3Fapp%3Dcommunity%26next%3D%252F");
+    const next = new URLSearchParams(u.split("?")[1]).get("next");
+    expect(next).toBe("/sso?app=community&next=%2F");
+  });
+  it("không mang URL ngoài: next tuyệt đối/`//` bị thay bằng `/`; khoá app lạ ⇒ /login", () => {
+    for (const bad of ["https://evil.example", "//evil.example", "/\\evil.example"]) {
+      const back = new URLSearchParams(ssoResumeLoginUrl("community", bad).split("?")[1]).get(
+        "next",
+      );
+      expect(back).toBe("/sso?app=community&next=%2F");
+    }
+    expect(ssoResumeLoginUrl("https://evil.example", "/")).toBe("/login");
+    expect(ssoResumeLoginUrl("../x", "/")).toBe("/login");
   });
 });

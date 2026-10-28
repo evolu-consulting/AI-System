@@ -2,18 +2,21 @@
 // `<target_url>/sso#code=…`; không phiên / lỗi ⇒ về form đăng nhập của app đích (`/login?sso=none`).
 // app-catalog: URL đích do admin-api trả (`target_url`, từ catalog + đã kiểm quyền), không từ query/env ⇒ không phải open redirect.
 // Env build chỉ là dự phòng cho nhánh quay về form đăng nhập khi API lỗi.
-import { handOffUrl, parseSsoFragment } from "@ai/web-kit/auth/sso";
+import { handOffUrl, parseSsoFragment, ssoResumeLoginUrl } from "@ai/web-kit/auth/sso";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FALLBACK_URLS } from "~/features/shell/lib/fallback-urls";
 import { session } from "~/lib/auth/session";
 
-type SsoSearch = { app?: string; next?: string };
+type SsoSearch = { app?: string; next?: string; login?: boolean };
 const APP_KEY = /^[a-z0-9-]{2,32}$/;
 
-async function handOff(app: string, next: string): Promise<string | null> {
+/** com-fix-community-login: AI System chưa có phiên và (app đích không có form dự phòng, hoặc người dùng bấm "Đăng nhập bằng AI
+ *  System" — `login=1`) ⇒ form đăng nhập AI System, xong quay lại `/sso` này rồi mới chuyển về app (trước đây rơi vào `/c/new`). */
+async function handOff(app: string, next: string, login: boolean): Promise<string | null> {
   const authed = (await session.ensure()) === "authed";
+  if (!authed && (login || !FALLBACK_URLS[app])) return ssoResumeLoginUrl(app, next);
   return handOffUrl({
     authed,
     grant: () => session.ssoGrant(app),
@@ -24,7 +27,7 @@ async function handOff(app: string, next: string): Promise<string | null> {
 
 function SsoPage() {
   const { t } = useTranslation();
-  const { app, next } = Route.useSearch();
+  const { app, next, login } = Route.useSearch();
   useEffect(() => {
     // V2-GAPS: chiều ngược — contracts-web (app switcher) đưa mã một lần về AI System: `/sso#code=…&next=…` ⇒ phiên chat riêng.
     const { code, next: back } = parseSsoFragment(window.location.hash);
@@ -41,8 +44,10 @@ function SsoPage() {
       window.location.replace("/c/new");
       return;
     }
-    void handOff(app, next ?? "/").then((url) => window.location.replace(url ?? "/c/new"));
-  }, [app, next]);
+    void handOff(app, next ?? "/", login === true).then((url) =>
+      window.location.replace(url ?? "/c/new"),
+    );
+  }, [app, next, login]);
   return (
     <p role="status" className="grid h-dvh place-items-center text-sm text-muted-foreground">
       {t("shell.appSwitching")}
@@ -54,6 +59,7 @@ export const Route = createFileRoute("/sso")({
   validateSearch: (search: Record<string, unknown>): SsoSearch => ({
     app: typeof search.app === "string" && APP_KEY.test(search.app) ? search.app : undefined,
     next: typeof search.next === "string" && search.next !== "" ? search.next : undefined,
+    login: search.login === "1" || search.login === 1 || search.login === true ? true : undefined,
   }),
   component: SsoPage,
 });

@@ -1,4 +1,5 @@
-// CR-102 · C12b · hỗ trợ e2e stack thật của community-web: đăng nhập 3 vai qua SSO AI System (tenant demo).
+// CR-102 · C12b · hỗ trợ e2e stack thật của community-web: đăng nhập 3 vai trên màn Đăng nhập riêng của community-web
+// (com-fix-community-login; đối tác không qua chat-web), tenant demo.
 // Mật khẩu KHÔNG nằm trong repo: đối tác lấy từ file `--out` của seed (`COMMUNITY_SEED_PW_FILE`, trường `users`) hoặc env
 // `CS_PW_<USERNAME>`; chủ quản từ `DEMO_OWNER_PW`. Lần đăng nhập đầu của đối tác bị buộc đổi mật khẩu ⇒ đặt `CS_NEW_PW`.
 import { readFileSync } from "node:fs";
@@ -33,7 +34,7 @@ function pwOf(who: Who): string {
   return pw;
 }
 
-/** Mở community-web ⇒ dội sang AI System đăng nhập ⇒ về `/#/feed` đã có phiên. */
+/** Mở community-web ⇒ màn Đăng nhập (Mã công ty / Tên đăng nhập / Mật khẩu) ⇒ bảng tin đã có phiên. */
 export async function loginAs(page: Page, who: Who): Promise<void> {
   await page.goto("/");
   const pw = page.locator("input[type=password]").first();
@@ -43,14 +44,16 @@ export async function loginAs(page: Page, who: Who): Promise<void> {
   await page.getByRole("textbox", { name: /^(Tên đăng nhập|Username|Email)$/ }).fill(USERNAME[who]);
   await pw.fill(pwOf(who));
   await page.getByRole("button", { name: /^(Đăng nhập|Sign in)$/ }).click();
-  await page.waitForLoadState("domcontentloaded");
-  // Đối tác mới: form đặt mật khẩu bắt buộc (mới + nhập lại).
-  const fields = page.locator("input[type=password]");
-  if ((await fields.count()) >= 2) {
+  // Đối tác mới: form đặt mật khẩu bắt buộc (mới + nhập lại) — chờ form đó HOẶC bảng tin (màn SPA, không tải lại trang).
+  const change = page.getByRole("heading", { name: "Đặt mật khẩu mới" });
+  const post = page.getByTestId("post").first();
+  await expect(change.or(post)).toBeVisible({ timeout: 45_000 });
+  if (await change.isVisible()) {
+    const fields = page.locator("input[type=password]");
     for (let i = 0; i < (await fields.count()); i++) await fields.nth(i).fill(NEW_PW);
     await page.locator("button[type=submit]").first().click();
   }
-  await expect(page.getByTestId("post").first()).toBeVisible({ timeout: 45_000 });
+  await expect(post).toBeVisible({ timeout: 45_000 });
 }
 
 /** Một context riêng (cookie riêng) mỗi vai, đã đăng nhập. */

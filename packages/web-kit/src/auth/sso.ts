@@ -61,3 +61,16 @@ export async function handOffUrl(o: {
     return fallback;
   }
 }
+
+const APP_KEY = /^[a-z0-9-]{2,32}$/;
+
+/**
+ * AI System chưa có phiên khi web khác xin SSO (`/sso?app=…`): về form đăng nhập CỦA AI SYSTEM với `next` = chính trang `/sso`
+ * (đường dẫn cùng origin) ⇒ đăng nhập xong tiếp tục xin mã và trả người dùng về app đích. Đích cuối vẫn là `target_url` từ
+ * catalog (admin-api) — URL này không mang địa chỉ ngoài nào ⇒ không thành open redirect. Khoá app lạ ⇒ form đăng nhập thường.
+ */
+export function ssoResumeLoginUrl(app: string, next: string): string {
+  if (!APP_KEY.test(app)) return "/login";
+  const back = `/sso?${new URLSearchParams({ app, next: safeNext(next) })}`;
+  return `/login?${new URLSearchParams({ next: back })}`;
+}

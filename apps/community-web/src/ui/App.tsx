@@ -1,9 +1,10 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { type Api, apiMode } from "../api";
-import { bounceToSso, redeemFromLocation, SSO_URL, session } from "../api/session";
+import { redeemFromLocation, session } from "../api/session";
 import { ChatDock } from "./ChatDock";
 import { AppProvider, useApp } from "./ctx";
 import { FeedPage } from "./Feed";
+import { LoginPage } from "./Login";
 import { ProfilePage } from "./Profile";
 import { SettingsPage } from "./Settings";
 import { TopBar } from "./TopBar";
@@ -21,20 +22,19 @@ function Shell() {
   );
 }
 
-/** Đổi mã SSO (nếu đang ở `/sso`) rồi kiểm phiên; chưa có phiên ⇒ dội sang AI System một lần. */
+/** Đổi mã SSO (nếu đang ở `/sso`) rồi kiểm phiên cookie `ai_rt_community`. Không tự dội sang AI System: chưa có phiên ⇒ màn
+ *  Đăng nhập riêng (đối tác không bao giờ cần chat-web; nội bộ có link SSO trên màn đó). */
 async function boot0(): Promise<string> {
   try {
     const next = await redeemFromLocation();
     if (next !== null) history.replaceState(null, "", next);
   } catch {
-    /* mã hỏng/hết hạn: thử phiên cookie như thường */
+    if (location.pathname === "/sso") history.replaceState(null, "", "/");
   }
-  const s = await session.ensure();
-  if (s !== "authed" && bounceToSso(location.pathname + location.hash)) return "unknown";
-  return s;
+  return session.ensure();
 }
 
-/** C3 · adapter http: cần phiên `community` (cookie `ai_rt_community`, đăng nhập chung qua AI System). */
+/** C3 · adapter http: cần phiên `community` (cookie `ai_rt_community`). */
 function AuthGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<string>("unknown");
   useEffect(() => {
@@ -43,20 +43,8 @@ function AuthGate({ children }: { children: ReactNode }) {
   }, []);
   if (status === "authed") return <>{children}</>;
   if (status === "unknown") return <div className="app" aria-busy="true" />;
-  return (
-    <div className="app">
-      <div className="card pad" role="alert">
-        <p>Bạn chưa đăng nhập hoặc phiên đã hết. Đăng nhập AI System để vào Cộng đồng.</p>
-        {SSO_URL && (
-          <a className="primary sm" href={`${SSO_URL}/sso?app=community&next=%2F`}>
-            Đăng nhập
-          </a>
-        )}
-      </div>
-    </div>
-  );
+  return <LoginPage />;
 }
-
 export function App({ boot }: { boot: Api }) {
   const app = (
     <AppProvider boot={boot}>
