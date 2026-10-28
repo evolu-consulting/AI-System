@@ -1199,3 +1199,15 @@ a:hover {
   padding: 12px 14px;
   margin-top: 14px;
 }
+
+.clink {
+  border: 0;
+  background: none;
+  color: #6b6c80;
+  font-size: 11.5px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+.hiddencmt {
+  opacity: 0.55;
+}

@@ -34,6 +34,15 @@ export function createHttpApi(): CommunityApi {
     getThread: (postId, orgId) => api(`${BASE}/posts/${enc(postId)}/threads/${enc(orgId)}`),
     addComment: (postId, input) =>
       api(`${BASE}/posts/${enc(postId)}/comments`, { method: "POST", body: input }),
+    editComment: (postId, id, text) =>
+      api(`${BASE}/posts/${enc(postId)}/comments/${enc(id)}`, { method: "PATCH", body: { text } }),
+    deleteComment: (postId, id) =>
+      api(`${BASE}/posts/${enc(postId)}/comments/${enc(id)}`, { method: "DELETE" }),
+    hideComment: (postId, id, hidden) =>
+      api(`${BASE}/posts/${enc(postId)}/comments/${enc(id)}/hide`, {
+        method: "POST",
+        body: { hidden },
+      }),
     listNotifications: () => api(`${BASE}/notifications`),
     markRead: async (id) => {
       await api(`${BASE}/notifications/read`, { method: "POST", body: id ? { id } : {} });

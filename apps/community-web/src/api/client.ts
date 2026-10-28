@@ -40,6 +40,12 @@ export interface CommunityApi {
   getThread(postId: string, orgId: string): Promise<Thread>;
   /** `POST /pack/community/posts/:id/comments` */
   addComment(postId: string, input: CreateCommentInput): Promise<Thread>;
+  /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa; trả luồng. */
+  editComment(postId: string, commentId: string, text: string): Promise<Thread>;
+  /** `DELETE /pack/community/posts/:id/comments/:cid` — người viết xoá; trả luồng. */
+  deleteComment(postId: string, commentId: string): Promise<Thread>;
+  /** `POST /pack/community/posts/:id/comments/:cid/hide` — chủ quản ẩn/hiện (bài của mình). */
+  hideComment(postId: string, commentId: string, hidden: boolean): Promise<Thread>;
   /** `GET /pack/community/notifications` */
   listNotifications(): Promise<{ items: CommunityNotification[]; unread: number }>;
   /** `POST /pack/community/notifications/read` (không id = tất cả). */

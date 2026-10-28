@@ -1,14 +1,21 @@
-// Bình luận riêng theo (bài × công ty) (D3): chủ quản có tab theo công ty; đối tác chỉ thấy luồng của mình.
-import type { PostView, ThreadSummary, Thread as ThreadT } from "@ai/contracts/community";
+// Bình luận riêng theo (bài × công ty) (D3): chủ quản có tab theo công ty + "Nhắn riêng"; đối tác chỉ thấy luồng của mình.
+import type {
+  PartnerOrg,
+  PostView,
+  ThreadSummary,
+  Thread as ThreadT,
+} from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
-import { initials, timeAgo, tone } from "../lib/format";
+import { initials } from "../lib/format";
+import { commentActions, startablePartners } from "../lib/thread";
+import { CommentItem } from "./CommentItem";
 import { useApp } from "./ctx";
-import { Highlighted } from "./Highlighted";
 import { IconLock, IconSend } from "./icons";
 
 export function Thread({ post, onChanged }: { post: PostView; onChanged: () => void }) {
   const { api, viewer, isHostViewer, rev } = useApp();
   const [tabs, setTabs] = useState<ThreadSummary[]>([]);
+  const [partners, setPartners] = useState<PartnerOrg[]>([]);
   const [active, setActive] = useState<string>("");
   const [thread, setThread] = useState<ThreadT | null>(null);
   const [text, setText] = useState("");
@@ -17,11 +24,14 @@ export function Thread({ post, onChanged }: { post: PostView; onChanged: () => v
     async (org?: string) => {
       const list = await api.listThreads(post.id);
       setTabs(list);
+      if (isHostViewer) setPartners(await api.listPartners());
       const cur = org ?? (list.some((t) => t.orgId === active) ? active : (list[0]?.orgId ?? ""));
       setActive(cur);
-      setThread(cur ? await api.getThread(post.id, cur) : null);
+      setThread(
+        cur && list.some((t) => t.orgId === cur) ? await api.getThread(post.id, cur) : null,
+      );
     },
-    [api, post.id, active],
+    [api, post.id, active, isHostViewer],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
   useEffect(() => {
@@ -35,10 +45,18 @@ export function Thread({ post, onChanged }: { post: PostView; onChanged: () => v
     await load(active);
     onChanged();
   };
+  const mutate = async (p: Promise<ThreadT>) => {
+    setThread(await p);
+    await load(active);
+    onChanged();
+  };
   const note = isHostViewer
     ? "Mỗi đối tác một luồng riêng: đối tác chỉ thấy trao đổi của chính họ với bạn."
     : "Chỉ chủ quản thấy trao đổi này.";
   const canWrite = !isHostViewer || Boolean(active);
+  const startable = isHostViewer ? startablePartners(post, partners, tabs) : [];
+  const pending = isHostViewer && active !== "" && !tabs.some((t) => t.orgId === active);
+  const ctx = { isHost: isHostViewer, postByHost: post.authorSide === "host" };
 
   return (
     <div className="cmts" data-testid="thread">
@@ -46,7 +64,7 @@ export function Thread({ post, onChanged }: { post: PostView; onChanged: () => v
         <IconLock size={13} />
         {note}
       </div>
-      {isHostViewer && tabs.length > 0 && (
+      {isHostViewer && (tabs.length > 0 || pending) && (
         <div className="threadtabs" role="tablist" aria-label="Luồng theo công ty">
           {tabs.map((t) => (
             <button
@@ -60,31 +78,44 @@ export function Thread({ post, onChanged }: { post: PostView; onChanged: () => v
               {t.orgName} <span className="n">{t.count}</span>
             </button>
           ))}
+          {pending && (
+            <button type="button" role="tab" aria-selected className="chip on">
+              {partners.find((p) => p.id === active)?.name} <span className="n">mới</span>
+            </button>
+          )}
         </div>
       )}
-      {isHostViewer && tabs.length === 0 && (
+      {isHostViewer && tabs.length === 0 && !pending && (
         <div className="cnote">Chưa có luồng nào. Khi đối tác bình luận, luồng hiện ở đây.</div>
       )}
+      {startable.length > 0 && (
+        <select
+          className="chip"
+          aria-label="Nhắn riêng"
+          value=""
+          onChange={(e) => {
+            if (!e.target.value) return;
+            setActive(e.target.value);
+            setThread(null);
+          }}
+        >
+          <option value="">Nhắn riêng…</option>
+          {startable.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      )}
       {thread?.comments.map((c) => (
-        <div className="cmt" key={c.id}>
-          <span className={`av sm ${tone(c.authorOrgId, c.authorSide === "host")}`}>
-            {initials(c.authorOrgName)}
-          </span>
-          <div>
-            <div className="bubble">
-              <b>
-                {c.authorOrgName} · {c.authorName}
-              </b>
-              <p>
-                <Highlighted text={c.text} hits={c.hits} field="body" />
-              </p>
-            </div>
-            <div className="ctime">
-              {timeAgo(c.createdAt)}
-              {c.hidden ? " · đã ẩn" : ""}
-            </div>
-          </div>
-        </div>
+        <CommentItem
+          key={c.id}
+          comment={c}
+          actions={commentActions(c, ctx)}
+          onEdit={(t) => mutate(api.editComment(post.id, c.id, t))}
+          onDelete={() => mutate(api.deleteComment(post.id, c.id))}
+          onHide={(h) => mutate(api.hideComment(post.id, c.id, h))}
+        />
       ))}
       {canWrite && (
         <div className="cinput">

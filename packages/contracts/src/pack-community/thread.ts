@@ -40,6 +40,16 @@ export const CreateCommentInputSchema = z.strictObject({
 });
 export type CreateCommentInput = z.infer<typeof CreateCommentInputSchema>;
 
+/** C6: người viết sửa chữ bình luận của mình. */
+export const UpdateCommentInputSchema = z.strictObject({
+  text: z.string().trim().min(1).max(2000),
+});
+export type UpdateCommentInput = z.infer<typeof UpdateCommentInputSchema>;
+
+/** C6: chủ quản ẩn/hiện bình luận trên bài của mình (đối tác không thấy bình luận bị ẩn — HT-46). */
+export const HideCommentInputSchema = z.strictObject({ hidden: z.boolean() });
+export type HideCommentInput = z.infer<typeof HideCommentInputSchema>;
+
 export const CommunityNotificationSchema = z.strictObject({
   id: z.string(),
   kind: z.enum(NOTIFY_KINDS),

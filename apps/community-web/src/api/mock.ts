@@ -18,6 +18,7 @@ import { applyFeedQuery, countTabs, uniqueSorted } from "../lib/filters";
 import { applyMask, detectHits, type MaskContext } from "../lib/mask";
 import { canViewPost, defaultAudience } from "../lib/visibility";
 import type { ChatReply, CommunityApi } from "./client";
+import { commentMutations } from "./mock-comments";
 import {
   CATS,
   HOST_ORG,
@@ -161,9 +162,11 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(p.authorOrgId === HOST_ORG.id ? { audience: p.audience } : {}),
       };
     }
-    return p.authorOrgId === me.orgId ? base : base; // đối tác không nhận hidden/hits/audience của bài chủ quản
+    return base; // đối tác không nhận hidden/hits/audience của bài chủ quản
   };
 
+  const mineComment = (c: RawComment) => c.authorOrgId === me.orgId && c.authorName === me.name;
+  const hostOwns = (id: string) => isHost(me) && get(id).authorOrgId === HOST_ORG.id;
   const commentView = (c: RawComment): CommentView => {
     const host = isHost(me);
     const partnerText = c.authorOrgId !== HOST_ORG.id;
@@ -178,7 +181,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       ...(host && hits.length ? { hits } : {}),
       createdAt: iso(c.minAgo),
       ...(host ? { hidden: c.hidden } : {}),
-      mine: c.authorOrgId === me.orgId && c.authorName === me.name,
+      mine: mineComment(c),
     };
   };
 
@@ -349,6 +352,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         });
       return thread(postId, org);
     },
+    ...commentMutations({ comments, thread, mine: mineComment, mayHide: hostOwns }),
     listNotifications: async () => {
       const items = notifs.filter((n) => n.to === notifyKey()).map(({ to: _to, ...n }) => n);
       return { items, unread: items.filter((n) => n.unread).length };

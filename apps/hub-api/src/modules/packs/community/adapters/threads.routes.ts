@@ -1,11 +1,19 @@
 // CR-102 · com-c3 · D3 · `/pack/community/posts/:id/threads*` + `/comments`. Chủ quản: mọi luồng, chọn luồng (công ty) khi
 // trả lời; đối tác: chỉ luồng công ty mình (orgId khác bị bỏ qua). Nội dung đối tác che lúc ghi; chủ quản không che (HT-55).
-import { CreateCommentInputSchema, type Thread, type ThreadSummary } from "@ai/contracts/community";
+import {
+  CreateCommentInputSchema,
+  HideCommentInputSchema,
+  type Thread,
+  type ThreadSummary,
+  UpdateCommentInputSchema,
+} from "@ai/contracts/community";
 import { type Context, Hono } from "hono";
 import { appError } from "../../../../lib/errors";
 import { parseIdParam, parseWith, readJson } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { storeComment } from "../domain/content.rules";
+import * as comments from "./comment.service";
+import { type CommentEvent, notifyComment } from "./comment-notify.hook";
 import { type Access, accessOf, otherOrgNames } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as threads from "./thread.service";
@@ -31,6 +39,20 @@ async function readThread(
     comments: list.map((x) => commentView(a, n, x)),
   };
 }
+
+const evt = (
+  a: Access,
+  kind: CommentEvent["kind"],
+  postId: string,
+  threadOrg: string,
+): CommentEvent => ({
+  kind,
+  tenantId: a.who.tenantId,
+  postId,
+  threadOrg,
+  actorUserId: a.who.userId,
+  actorOrg: a.org,
+});
 
 export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
@@ -72,8 +94,40 @@ export function threadsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const input = parseWith(CreateCommentInputSchema, await readJson(c));
     const text = storeComment(input.text, otherOrgNames(a));
     const org = await threads.add(d.uow, a, postId, { text, orgId: input.orgId });
+    await notifyComment(evt(a, "added", postId, org));
     if (text.hits.length > 0) c.header("X-Contact-Detected", "1");
     return c.json(await readThread(d, a, postId, org), 201);
+  });
+
+  const ref = (c: Context<PackGuardVars>) => ({
+    postId: parseIdParam(c),
+    id: parseIdParam(c, "cid"),
+  });
+
+  r.patch("/posts/:id/comments/:cid", async (c) => {
+    const a = await access(c, "write");
+    const x = ref(c);
+    const input = parseWith(UpdateCommentInputSchema, await readJson(c));
+    const org = await comments.edit(d.uow, a, x, storeComment(input.text, otherOrgNames(a)));
+    await notifyComment(evt(a, "edited", x.postId, org));
+    return c.json(await readThread(d, a, x.postId, org));
+  });
+
+  r.delete("/posts/:id/comments/:cid", async (c) => {
+    const a = await access(c, "write");
+    const x = ref(c);
+    const org = await comments.remove(d.uow, a, x);
+    await notifyComment(evt(a, "deleted", x.postId, org));
+    return c.json(await readThread(d, a, x.postId, org));
+  });
+
+  r.post("/posts/:id/comments/:cid/hide", async (c) => {
+    const a = await access(c, "write");
+    const x = ref(c);
+    const { hidden } = parseWith(HideCommentInputSchema, await readJson(c));
+    const org = await comments.hide(d.uow, a, x, hidden);
+    await notifyComment(evt(a, "hidden", x.postId, org));
+    return c.json(await readThread(d, a, x.postId, org));
   });
 
   return r;
