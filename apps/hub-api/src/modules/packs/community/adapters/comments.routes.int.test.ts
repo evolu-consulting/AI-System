@@ -186,7 +186,7 @@ describe("C6 sửa / xoá / ẩn bình luận", () => {
     ).toBe(404);
     const pc = await ok(
       ThreadSchema,
-      call("b1", "POST", `/posts/${s1Post}/comments`, { text: "Hỏi giá" }),
+      call("s1a", "POST", `/posts/${s1Post}/comments`, { text: "Ghi chú" }),
       201,
     );
     const pid = pc.comments[0]?.id ?? "";
