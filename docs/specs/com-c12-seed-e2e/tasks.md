@@ -13,6 +13,11 @@ Seed chạy được trên DB trống + DB đã có demo (chạy lại không l�
 
 ## Quyết định trong lúc làm
 <!-- agent điền -->
+- C12b: seed bật gói `community` bằng `enablePack` của admin-api (scope platform, actor = demo-owner); nhãn/nhóm hàng/party_key ghi vào `partner_companies` qua `upsertPartner` (một tx); bài + bình luận qua `post.service`/`thread.service` của hub-api (che liên hệ, RLS, audience D2 chạy thật). Cần `HUB_DATABASE_URL` (vai hub_api) cho phần gói.
+- Idempotent: bài định danh (người đăng, tiêu đề); bình luận (luồng, người, nội dung). Dry-run mặc định vẫn chỉ in kế hoạch.
+- Bài Thùng phi 200L gửi audience nhóm hàng "Thùng phi" ⇒ chỉ Tân Phát; hai bình luận NCC đều của Tân Phát (đúng ánh xạ C12a, không đổi nhóm hàng). Bài CKS của chủ quản ⇒ người mua nhóm CKS (Hưng Thịnh).
+- e2e 3 vai trên stack thật: `e2e/community-web/playwright.stack.config.ts` + `roles.cs.ts` (viết, chưa chạy); mật khẩu từ file `--out` của seed / env, đối tác lần đầu bị buộc đổi mật khẩu (`CS_NEW_PW`).
+- qc: đã `test:lock:write` (gồm `tests/acceptance/com-c3/_support/cast.ts` và e2e mới).
 
 ## Delta (so với docs/current)
 Không (chỉ ghi bộ seed vào `current/community/README.md` nếu đổi).

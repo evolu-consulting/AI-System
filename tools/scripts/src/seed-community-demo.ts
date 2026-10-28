@@ -4,6 +4,8 @@
 // Mặc định chạy thử (chỉ in kế hoạch). Mật khẩu tạm CHỈ ghi vào file `--out` (mặc định thư mục tạm của HĐH, không commit, không in).
 // Cạnh đó ghi `<out>.community.json`: ánh xạ công ty → party_key Sổ Hợp Tác + nhãn/nhóm hàng (C3/C12b áp bằng applyCommunityLabels).
 // DATABASE_URL: vai ứng dụng admin_api (RLS) hoặc chủ migration. KHÔNG chạy trên máy chủ production.
+// com-c12b: thêm bật gói community + nhãn/nhóm hàng (partner_companies) + bài/luồng mẫu qua service của gói. Cần HUB_DATABASE_URL
+// (vai hub_api, RLS gói); vắng thì dùng DATABASE_URL (chỉ chạy được khi vai đó SET ROLE được, vd chủ migration).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -17,7 +19,13 @@ import {
   listUsersOfOrg,
 } from "../../../apps/admin-api/src/modules/external-orgs/external-orgs.service";
 import type { Call } from "../../../apps/admin-api/src/modules/users/users.service";
-import { PARTNER_SEEDS, type PartnerSeed } from "./seed-community-demo.data";
+import {
+  applyLabels,
+  type CommunityCtx,
+  enableCommunityPack,
+  seedPosts,
+} from "./seed-community-demo.apply";
+import { PARTNER_SEEDS, type PartnerSeed, POST_SAMPLES } from "./seed-community-demo.data";
 import { partyKeyOf } from "./seed-demo-v2.build";
 
 export const DEMO_KEY = "demo";
@@ -28,6 +36,8 @@ export type SeedOpts = {
   apply: boolean;
   forceTenant: boolean;
   out: string;
+  /** Pool vai hub_api (RLS gói). Vắng ⇒ dùng `db`. */
+  hubDb?: Db;
   log?: (s: string) => void;
 };
 export type SeedResult = {
@@ -35,6 +45,7 @@ export type SeedResult = {
   users: { created: number; existing: number };
   mapFile: string | null;
   passwordsFile: string | null;
+  posts: { created: number; existing: number; comments: number };
 };
 export type MapRow = {
   org_id: string;
@@ -77,9 +88,9 @@ async function resolveCall(db: Db, tenantKey: string): Promise<Call> {
 
 const partyKey = (p: PartnerSeed): string | null => (p.sht ? partyKeyOf(p.sht) : null);
 
-/** TODO(C3/C12b): khi bảng cộng đồng `partner_companies` có, ghi nhãn (supplier/buyer) + nhóm hàng theo `rows` ở đây. */
-export async function applyCommunityLabels(_rows: readonly MapRow[]): Promise<void> {
-  // Chủ ý rỗng: bảng cộng đồng chưa có (C3 đang làm). Ánh xạ nằm ở file `.community.json`.
+/** Ghi nhãn (supplier/buyer) + nhóm hàng + liên kết SHT vào `community.partner_companies` (một tx, upsert). */
+export function applyCommunityLabels(c: CommunityCtx, rows: readonly MapRow[]): Promise<number> {
+  return applyLabels(c, rows);
 }
 
 async function findOrgId(c: Call, name: string): Promise<{ id: string; active: boolean } | null> {
@@ -99,24 +110,34 @@ async function ensureOrg(c: Call, p: PartnerSeed): Promise<{ id: string; created
 }
 
 /** Mật khẩu tạm chỉ trả về cho user MỚI; user đã có thì giữ nguyên (không reset). */
-async function ensureUser(c: Call, orgId: string, p: PartnerSeed): Promise<string | null> {
+async function ensureUser(
+  c: Call,
+  orgId: string,
+  p: PartnerSeed,
+): Promise<{ id: string; temp: string | null }> {
   const { items } = await listUsersOfOrg(c, orgId, UserListQuerySchema.parse({}));
-  if (items.some((u) => u.username === p.username)) return null;
+  const had = items.find((u) => u.username === p.username);
+  if (had) return { id: had.id, temp: null };
   const r = await createOrgUser(c, orgId, {
     username: p.username,
     display_name: p.displayName,
     locale: "vi",
   });
-  return r.temp_password;
+  return { id: r.user.id, temp: r.temp_password };
 }
 
 function planLines(tenantKey: string): string[] {
   const head = `seed-community-demo: chạy thử — tenant "${tenantKey}", ${PARTNER_SEEDS.length} công ty (thêm --apply để ghi)`;
   return [
     head,
+    "  - bật gói community cho tenant (service admin enablePack)",
     ...PARTNER_SEEDS.map(
       (p) =>
         `  - ${p.name} [${p.labels.join("+")}] user ${p.username} · SHT ${partyKey(p) ?? "(chưa có)"} · ${p.categories.join(", ")}`,
+    ),
+    ...POST_SAMPLES.map(
+      (p) =>
+        `  - bài ${p.type} "${p.title}" · ${p.by}${p.replies ? ` · ${p.replies.length} bình luận` : ""}`,
     ),
   ];
 }
@@ -124,6 +145,16 @@ function planLines(tenantKey: string): string[] {
 function writeOut(file: string, data: unknown): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+}
+
+/** Gộp với file cũ (lần chạy trước) để không mất mật khẩu của user đã tạo; không có user mới ⇒ null. */
+function writePasswords(o: SeedOpts, pw: Record<string, string>): string | null {
+  if (Object.keys(pw).length === 0) return null;
+  const prev = existsSync(o.out)
+    ? (JSON.parse(readFileSync(o.out, "utf8")) as { users?: Record<string, string> })
+    : {};
+  writeOut(o.out, { tenant: o.tenantKey, users: { ...prev.users, ...pw } });
+  return o.out;
 }
 
 export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
@@ -134,6 +165,7 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     users: { created: 0, existing: 0 },
     mapFile: null,
     passwordsFile: null,
+    posts: { created: 0, existing: 0, comments: 0 },
   };
   if (!o.apply) {
     for (const l of planLines(o.tenantKey)) log(l);
@@ -142,12 +174,14 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   const c = await resolveCall(db, o.tenantKey);
   const rows: MapRow[] = [];
   const pw: Record<string, string> = {};
+  const partners = new Map<string, { userId: string; orgId: string; orgName: string }>();
   for (const p of PARTNER_SEEDS) {
     const org = await ensureOrg(c, p);
     res.orgs[org.created ? "created" : "existing"] += 1;
-    const temp = await ensureUser(c, org.id, p);
+    const { id: userId, temp } = await ensureUser(c, org.id, p);
     if (temp) pw[p.username] = temp;
     res.users[temp ? "created" : "existing"] += 1;
+    partners.set(p.username, { userId, orgId: org.id, orgName: p.name });
     rows.push({
       org_id: org.id,
       org_name: p.name,
@@ -158,17 +192,24 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   }
   res.mapFile = `${o.out}.community.json`;
   writeOut(res.mapFile, { tenant: o.tenantKey, partners: rows });
-  if (Object.keys(pw).length > 0) {
-    // Gộp với file cũ (lần chạy trước) để không mất mật khẩu của user đã tạo.
-    const prev = existsSync(o.out)
-      ? (JSON.parse(readFileSync(o.out, "utf8")) as { users?: Record<string, string> })
-      : {};
-    writeOut(o.out, { tenant: o.tenantKey, users: { ...prev.users, ...pw } });
-    res.passwordsFile = o.out;
-  }
-  await applyCommunityLabels(rows);
+  res.passwordsFile = writePasswords(o, pw);
+  await enableCommunityPack(db, c.actor.tenantId, c.actor.userId);
+  const cc: CommunityCtx = {
+    hub: o.hubDb ?? db,
+    admin: db,
+    tenantId: c.actor.tenantId,
+    hostUserId: c.actor.userId,
+    partners,
+  };
+  await applyCommunityLabels(cc, rows);
+  const pr = await seedPosts(cc);
+  res.posts = {
+    created: pr.postsCreated,
+    existing: pr.postsExisting,
+    comments: pr.commentsCreated,
+  };
   log(
-    `seed-community-demo: công ty +${res.orgs.created}/=${res.orgs.existing}, user +${res.users.created}/=${res.users.existing}; mật khẩu: ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`,
+    `seed-community-demo: bài +${pr.postsCreated}/=${pr.postsExisting}, bình luận +${pr.commentsCreated}; công ty +${res.orgs.created}/=${res.orgs.existing}, user +${res.users.created}/=${res.users.existing}; mật khẩu: ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`,
   );
   return res;
 }
@@ -185,9 +226,12 @@ async function main(argv: readonly string[]): Promise<void> {
   };
   assertTenant(opts.tenantKey, opts.forceTenant);
   const db = createDb(url, { max: 2 });
+  const hubUrl = process.env.HUB_DATABASE_URL;
+  const hubDb = hubUrl ? createDb(hubUrl, { max: 2 }) : undefined;
   try {
-    await runSeed(db, opts);
+    await runSeed(db, { ...opts, hubDb });
   } finally {
+    await hubDb?.close();
     await db.close();
   }
 }

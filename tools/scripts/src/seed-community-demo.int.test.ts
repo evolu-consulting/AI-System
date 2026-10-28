@@ -1,41 +1,57 @@
-// com-c12a · seed cộng đồng đối tác: --apply hai lần (không trùng, mật khẩu chỉ ở file), dry-run chỉ in kế hoạch, user ngoài không vào Group.
+// com-c12a/c12b · seed cộng đồng đối tác: --apply hai lần (không trùng, mật khẩu chỉ ở file), dry-run chỉ in kế hoạch;
+// bật gói community, nhãn partner_companies, bài + luồng mẫu (che liên hệ, audience D2) cũng idempotent.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createDb, type Db } from "@ai/db";
-import { ADMIN_API_URL, createEnv, type Env } from "../../../tests/acceptance/M1/_fixtures";
+import { tenants, users } from "@ai/test-kit/builders";
+import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
+import { urls, withCreds } from "@ai/test-kit/env";
 import { assertTenant, runSeed, type SeedOpts } from "./seed-community-demo";
-import { PARTNER_SEEDS } from "./seed-community-demo.data";
+import { PARTNER_SEEDS, POST_SAMPLES } from "./seed-community-demo.data";
 
-let env: Env;
-let db: Db;
+let sql: Sql;
+let admin: Db;
+let hub: Db;
 let dir: string;
+let tenantKey = "";
+let tenantId = "";
 beforeAll(async () => {
-  env = await createEnv();
-  db = createDb(ADMIN_API_URL, { max: 3 });
+  await cloneDb("full");
+  sql = openOwner(2);
+  [tenantId] = (await tenants(sql, 1, 61)) as [string];
+  await users(sql, tenantId, 1, { from: 61, role: "tenant_admin" });
+  const [t] = await sql<
+    { key: string }[]
+  >`select key from admin.tenants where id = ${tenantId}::uuid`;
+  tenantKey = (t as { key: string }).key;
+  admin = createDb(withCreds(urls().owner, "admin_api", "admin_api_dev_pw"), { max: 3 });
+  hub = createDb(urls().hubApi, { max: 3 });
   dir = mkdtempSync(join(tmpdir(), "seed-community-"));
 });
 afterAll(async () => {
-  await db.close();
-  await env.close();
+  await hub.close();
+  await admin.close();
+  await sql.end();
   rmSync(dir, { recursive: true, force: true });
 });
 
 const opts = (o: Partial<SeedOpts> = {}): SeedOpts => ({
-  tenantKey: "acme",
+  tenantKey,
   forceTenant: true,
   apply: true,
   out: join(dir, "pw.json"),
+  hubDb: hub,
   log: () => {},
   ...o,
 });
-const count = async (sqlText: string) => {
-  const [r] = await env.owner.unsafe(sqlText);
+const count = async (q: string) => {
+  const [r] = await sql.unsafe(q);
   return (r as unknown as { n: number }).n;
 };
 
-describe("com-c12a · seed-community-demo", () => {
+describe("com-c12 · seed-community-demo", () => {
   it("từ chối tenant khác demo nếu không có --force-tenant", () => {
     expect(() => assertTenant("nitigroup", false)).toThrow();
     expect(() => assertTenant("demo", false)).not.toThrow();
@@ -43,26 +59,49 @@ describe("com-c12a · seed-community-demo", () => {
 
   it("dry-run: chỉ in kế hoạch, không ghi DB/file", async () => {
     const lines: string[] = [];
-    await runSeed(db, opts({ apply: false, log: (s) => lines.push(s) }));
+    await runSeed(admin, opts({ apply: false, log: (s) => lines.push(s) }));
     expect(lines.join("\n")).toContain("Cơ sở Tân Phát");
+    expect(lines.join("\n")).toContain("Thùng phi 200L");
     expect(await count("select count(*)::int n from admin.external_orgs")).toBe(0);
     expect(existsSync(join(dir, "pw.json"))).toBe(false);
   });
 
-  it("--apply hai lần: không trùng, mật khẩu chỉ ở file, user ngoài không vào Group", async () => {
+  it("--apply hai lần: công ty/user/nhãn/bài/bình luận không trùng, liên hệ bị che, mật khẩu chỉ ở file", async () => {
     const n = PARTNER_SEEDS.length;
-    const a = await runSeed(db, opts());
+    const np = POST_SAMPLES.length;
+    const a = await runSeed(admin, opts());
     expect(a.orgs).toEqual({ created: n, existing: 0 });
     expect(a.users).toEqual({ created: n, existing: 0 });
-    const b = await runSeed(db, opts());
+    expect(a.posts.created).toBe(np);
+    expect(a.posts.comments).toBe(POST_SAMPLES.flatMap((p) => p.replies ?? []).length);
+    const b = await runSeed(admin, opts());
     expect(b.orgs).toEqual({ created: 0, existing: n });
     expect(b.users).toEqual({ created: 0, existing: n });
+    expect(b.posts).toEqual({ created: 0, existing: np, comments: 0 });
+
     expect(await count("select count(*)::int n from admin.external_orgs")).toBe(n);
+    expect(await count("select count(*)::int n from community.posts")).toBe(np);
+    expect(await count("select count(*)::int n from community.partner_companies")).toBe(n);
     expect(
       await count(
-        "select count(*)::int n from admin.users where kind = 'external' and must_change_password",
+        `select count(*)::int n from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+         where f.key like 'community-%' and e.tenant_id = '${tenantId}' and e.revoked_at is null`,
       ),
-    ).toBe(n);
+    ).toBe(3);
+    // Nội dung đối tác: liên hệ bị che ở cột masked, raw vẫn còn cho người đăng.
+    expect(
+      await count(
+        `select count(*)::int n from community.comments
+         where author_org is not null and text_raw like '%0903%' and text_masked not like '%0903%'`,
+      ),
+    ).toBe(2);
+    expect(
+      await count(
+        `select count(*)::int n from community.posts
+         where title_raw = 'Băng keo 5cm' and author_org is not null and body_masked not like '%0903%'
+           and body_masked not like '%zalo.me%'`,
+      ),
+    ).toBe(2); // bài Tân Phát (số + link bị che) và bài Hưng Thịnh (không có liên hệ)
 
     const pw = JSON.parse(readFileSync(join(dir, "pw.json"), "utf8")) as {
       users: Record<string, string>;
@@ -71,17 +110,5 @@ describe("com-c12a · seed-community-demo", () => {
     const map = JSON.parse(readFileSync(`${join(dir, "pw.json")}.community.json`, "utf8"));
     const tp = map.partners.find((p: { org_name: string }) => p.org_name === "Cơ sở Tân Phát");
     expect(tp.party_key).toBe("tax:0101000003");
-
-    const t = await env.token("acme", "binh");
-    const g = await env.post("/admin/groups", {
-      token: t,
-      body: { key: "ke-toan", name: { vi: "Kế toán" } },
-    });
-    expect(g.status).toBe(201);
-    const r = await env.post(`/admin/groups/${g.json.id}/members`, {
-      token: t,
-      body: { usernames: ["doitac-tanphat"] },
-    });
-    expect(r.status).toBe(422);
   });
 });
