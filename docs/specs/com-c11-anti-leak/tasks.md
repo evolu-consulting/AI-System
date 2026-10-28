@@ -12,7 +12,10 @@
 Unit (chuẩn hoá nội dung đăng lại: bỏ tên/SĐT/ảnh gốc); một int đường chính mỗi endpoint; một test chặn đọc chéo tenant cho bảng nhật ký. AI client dùng mock trong test.
 
 ## Quyết định trong lúc làm
-<!-- agent điền -->
+- C11a (dịch vụ kiểm ảnh, thuần/độc lập backend): cổng `ImageLeakChecker.check(image, ctx)` ở `community/application`; adapter model `createModelImageLeakChecker` + `VisionTransport` mỏng; adapter giả `fakeImageLeakChecker`.
+- `lib/ai-client` hiện CHỈ nhận `prompt: string` (chưa có ảnh) nên transport thật chưa nối: việc còn lại của C11b = thêm đường ảnh vào `ModelRequest`/provider (Anthropic content block image) qua cửa chung (trần tenant + usage), chọn model có thị giác từ cấu hình tính năng (không khoá trong code). Đến lúc đó `transport=null` ⇒ mọi ảnh `unknown`.
+- Trạng thái: clean (model đáp ổn, không thấy gì) / suspect (có dấu hiệu) / unknown (hết giờ, không model, đầu ra hỏng — không bao giờ chặn). Model trả JSON {text, logos, companies}; chữ OCR đi qua `scanContacts` (xác định, confidence 1); logo/tên công ty = phán đoán model, chỉ tính khi confidence >= 0.5.
+- `buildRepostDraft`: nội dung qua `stripContacts`; không mang người đăng gốc (kiểu nguồn không có trường này); giá `null`; ảnh `suspect` mặc định `included=false`, kèm `hasSuspectImages` cho UI cảnh báo.
 
 ## Delta (so với docs/current)
 Gộp vào `current/community/nghiep-vu.md` §7 cuối đợt.
