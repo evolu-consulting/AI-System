@@ -1,0 +1,199 @@
+// com-c12a · CR-102 · seed cộng đồng đối tác cho tenant `demo` — LẶP LẠI ĐƯỢC. Công ty ngoài + 1 user ngoài mỗi công ty, tạo qua
+// CHÍNH service của admin-api (createOrg/createOrgUser: luật tên trùng, role member, must_change_password, audit, NOTIFY) — không SQL tắt.
+//   bun tools/scripts/src/seed-community-demo.ts [--tenant demo] [--apply] [--out <file>] [--force-tenant]
+// Mặc định chạy thử (chỉ in kế hoạch). Mật khẩu tạm CHỈ ghi vào file `--out` (mặc định thư mục tạm của HĐH, không commit, không in).
+// Cạnh đó ghi `<out>.community.json`: ánh xạ công ty → party_key Sổ Hợp Tác + nhãn/nhóm hàng (C3/C12b áp bằng applyCommunityLabels).
+// DATABASE_URL: vai ứng dụng admin_api (RLS) hoặc chủ migration. KHÔNG chạy trên máy chủ production.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { ExternalOrgListQuerySchema, UserListQuerySchema } from "@ai/contracts";
+import { createDb, type Db, withScope } from "@ai/db";
+import { sql } from "drizzle-orm";
+import {
+  createOrg,
+  createOrgUser,
+  listOrgs,
+  listUsersOfOrg,
+} from "../../../apps/admin-api/src/modules/external-orgs/external-orgs.service";
+import type { Call } from "../../../apps/admin-api/src/modules/users/users.service";
+import { PARTNER_SEEDS, type PartnerSeed } from "./seed-community-demo.data";
+import { partyKeyOf } from "./seed-demo-v2.build";
+
+export const DEMO_KEY = "demo";
+const DEMO_OWNER_EMAIL = "demo-owner@example.invalid";
+
+export type SeedOpts = {
+  tenantKey: string;
+  apply: boolean;
+  forceTenant: boolean;
+  out: string;
+  log?: (s: string) => void;
+};
+export type SeedResult = {
+  orgs: { created: number; existing: number };
+  users: { created: number; existing: number };
+  mapFile: string | null;
+  passwordsFile: string | null;
+};
+export type MapRow = {
+  org_id: string;
+  org_name: string;
+  party_key: string | null;
+  labels: readonly string[];
+  categories: readonly string[];
+};
+
+/** Chặn cứng: chỉ `demo`, trừ khi `--force-tenant` (dùng cho DB test). */
+export function assertTenant(key: string, force: boolean): void {
+  if (key !== DEMO_KEY && !force)
+    throw new Error(
+      `seed-community-demo: từ chối tenant "${key}" — chỉ "${DEMO_KEY}" (thêm --force-tenant nếu chắc chắn)`,
+    );
+}
+
+/** Tenant + admin thực hiện (demo-owner, hoặc tenant_admin active đầu tiên) — đọc theo scope platform. */
+async function resolveCall(db: Db, tenantKey: string): Promise<Call> {
+  const r = await withScope(db, { kind: "platform" }, async (tx) => {
+    const [t] = (await tx.execute(
+      sql`select id from admin.tenants where key = ${tenantKey}`,
+    )) as unknown as { id: string }[];
+    if (!t) return null;
+    const [u] = (await tx.execute(sql`select id from admin.users
+      where tenant_id = ${t.id} and kind = 'internal' and role = 'tenant_admin' and active
+      order by (email = ${DEMO_OWNER_EMAIL}) desc, created_at, id limit 1`)) as unknown as {
+      id: string;
+    }[];
+    return { tenantId: t.id, userId: u?.id };
+  });
+  if (!r) throw new Error(`seed-community-demo: không có tenant "${tenantKey}"`);
+  if (!r.userId) throw new Error(`seed-community-demo: tenant "${tenantKey}" chưa có tenant_admin`);
+  return {
+    ctx: { db },
+    actor: { userId: r.userId, tenantId: r.tenantId, role: "tenant_admin" },
+    scope: { kind: "tenant", tenantId: r.tenantId },
+  };
+}
+
+const partyKey = (p: PartnerSeed): string | null => (p.sht ? partyKeyOf(p.sht) : null);
+
+/** TODO(C3/C12b): khi bảng cộng đồng `partner_companies` có, ghi nhãn (supplier/buyer) + nhóm hàng theo `rows` ở đây. */
+export async function applyCommunityLabels(_rows: readonly MapRow[]): Promise<void> {
+  // Chủ ý rỗng: bảng cộng đồng chưa có (C3 đang làm). Ánh xạ nằm ở file `.community.json`.
+}
+
+async function findOrgId(c: Call, name: string): Promise<{ id: string; active: boolean } | null> {
+  const q = ExternalOrgListQuerySchema.parse({ q: name });
+  const { items } = await listOrgs(c, q);
+  const o = items.find((x) => x.name.toLowerCase() === name.toLowerCase());
+  return o ? { id: o.id, active: o.active } : null;
+}
+
+async function ensureOrg(c: Call, p: PartnerSeed): Promise<{ id: string; created: boolean }> {
+  const found = await findOrgId(c, p.name);
+  if (found) {
+    if (!found.active) throw new Error(`seed-community-demo: công ty "${p.name}" đã bị vô hiệu`);
+    return { id: found.id, created: false };
+  }
+  return { id: (await createOrg(c, undefined, { name: p.name })).id, created: true };
+}
+
+/** Mật khẩu tạm chỉ trả về cho user MỚI; user đã có thì giữ nguyên (không reset). */
+async function ensureUser(c: Call, orgId: string, p: PartnerSeed): Promise<string | null> {
+  const { items } = await listUsersOfOrg(c, orgId, UserListQuerySchema.parse({}));
+  if (items.some((u) => u.username === p.username)) return null;
+  const r = await createOrgUser(c, orgId, {
+    username: p.username,
+    display_name: p.displayName,
+    locale: "vi",
+  });
+  return r.temp_password;
+}
+
+function planLines(tenantKey: string): string[] {
+  const head = `seed-community-demo: chạy thử — tenant "${tenantKey}", ${PARTNER_SEEDS.length} công ty (thêm --apply để ghi)`;
+  return [
+    head,
+    ...PARTNER_SEEDS.map(
+      (p) =>
+        `  - ${p.name} [${p.labels.join("+")}] user ${p.username} · SHT ${partyKey(p) ?? "(chưa có)"} · ${p.categories.join(", ")}`,
+    ),
+  ];
+}
+
+function writeOut(file: string, data: unknown): void {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+}
+
+export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
+  const log = o.log ?? console.log;
+  assertTenant(o.tenantKey, o.forceTenant);
+  const res: SeedResult = {
+    orgs: { created: 0, existing: 0 },
+    users: { created: 0, existing: 0 },
+    mapFile: null,
+    passwordsFile: null,
+  };
+  if (!o.apply) {
+    for (const l of planLines(o.tenantKey)) log(l);
+    return res;
+  }
+  const c = await resolveCall(db, o.tenantKey);
+  const rows: MapRow[] = [];
+  const pw: Record<string, string> = {};
+  for (const p of PARTNER_SEEDS) {
+    const org = await ensureOrg(c, p);
+    res.orgs[org.created ? "created" : "existing"] += 1;
+    const temp = await ensureUser(c, org.id, p);
+    if (temp) pw[p.username] = temp;
+    res.users[temp ? "created" : "existing"] += 1;
+    rows.push({
+      org_id: org.id,
+      org_name: p.name,
+      party_key: partyKey(p),
+      labels: p.labels,
+      categories: p.categories,
+    });
+  }
+  res.mapFile = `${o.out}.community.json`;
+  writeOut(res.mapFile, { tenant: o.tenantKey, partners: rows });
+  if (Object.keys(pw).length > 0) {
+    // Gộp với file cũ (lần chạy trước) để không mất mật khẩu của user đã tạo.
+    const prev = existsSync(o.out)
+      ? (JSON.parse(readFileSync(o.out, "utf8")) as { users?: Record<string, string> })
+      : {};
+    writeOut(o.out, { tenant: o.tenantKey, users: { ...prev.users, ...pw } });
+    res.passwordsFile = o.out;
+  }
+  await applyCommunityLabels(rows);
+  log(
+    `seed-community-demo: công ty +${res.orgs.created}/=${res.orgs.existing}, user +${res.users.created}/=${res.users.existing}; mật khẩu: ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`,
+  );
+  return res;
+}
+
+async function main(argv: readonly string[]): Promise<void> {
+  const arg = (k: string) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : undefined);
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("seed-community-demo: cần DATABASE_URL");
+  const opts: SeedOpts = {
+    tenantKey: arg("--tenant") ?? DEMO_KEY,
+    apply: argv.includes("--apply"),
+    forceTenant: argv.includes("--force-tenant"),
+    out: arg("--out") ?? join(tmpdir(), "seed-community-demo.passwords.json"),
+  };
+  assertTenant(opts.tenantKey, opts.forceTenant);
+  const db = createDb(url, { max: 2 });
+  try {
+    await runSeed(db, opts);
+  } finally {
+    await db.close();
+  }
+}
+
+if (import.meta.main)
+  main(process.argv.slice(2)).catch((e) => {
+    console.error(String(e instanceof Error ? e.message : e));
+    process.exit(1);
+  });
