@@ -98,7 +98,9 @@ export async function updatePost(
       aud_orgs = case when ${audience !== null}::boolean
         then array(select jsonb_array_elements_text(${JSON.stringify(audience?.companies ?? [])}::jsonb)::uuid)
         else aud_orgs end,
-      edited = true, updated_at = now()
+      price_edited_at = case when (fields_raw ->> 'price') is distinct from (${JSON.stringify(c.fields.raw)}::jsonb ->> 'price')
+        then now() else price_edited_at end,
+      edited = true, edited_at = now(), updated_at = now()
     where id = ${id}::uuid`);
 }
 

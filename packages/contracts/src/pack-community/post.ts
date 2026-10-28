@@ -2,6 +2,7 @@
 // Quy tắc hiển thị: `docs/current/community/hien-thi.md`. "Không thấy" = 404/0 hàng từ API, không phải ẩn ở UI.
 // Nội dung đối tác đến user ngoài đã được che (D4); chủ quản nhận raw + `hits` (khoảng ký tự bị che nếu là user ngoài).
 import { z } from "zod";
+import { HostHintSchema, QuoteMarkSchema } from "./quote";
 
 export const POST_TYPES = ["sell", "buy", "note"] as const;
 export type PostType = (typeof POST_TYPES)[number];
@@ -159,6 +160,9 @@ export const PostViewSchema = z.strictObject({
   /** Người xem bài chủ quản: chỉ cho chủ quản và người đăng bài chủ quản. */
   audience: PostAudienceSchema.optional(),
   actions: z.array(z.enum(POST_ACTIONS)),
+  /** CR-102b · chỉ chủ quản (HT-63/64/67/68): dấu đã lưu báo giá + gợi ý SHT. User ngoài: KHÔNG có hai trường này. */
+  quotes: z.array(QuoteMarkSchema).optional(),
+  hostHint: HostHintSchema.optional(),
 });
 export type PostView = z.infer<typeof PostViewSchema>;
 

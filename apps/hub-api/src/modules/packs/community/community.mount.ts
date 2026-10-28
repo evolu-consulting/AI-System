@@ -16,7 +16,11 @@ import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
 import { orgRoutes } from "./adapters/org.routes";
 import { postsRoutes } from "./adapters/posts.routes";
+import { savedUsers } from "./adapters/quote.repo";
+import { quoteRoutes } from "./adapters/quote.routes";
+import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
+import type { HostBookReader, SupplierQuoteWriter } from "./application/pack-ports";
 
 export { COMMUNITY_KEY };
 
@@ -26,18 +30,29 @@ export function communityModule(
   resolver: ExternalOrgResolver,
   opts: {
     shtUrl?: string;
-    /** C7: chủ quản đã lưu báo giá từ bài (vắng ⇒ không phát `priceEdited`). */
+    /** C7: chủ quản đã lưu báo giá từ bài (mặc định: bảng `quote_saves`, cờ báo khi NCC sửa giá). */
     savedBy?: CommunityEventDeps["savedBy"];
-    /** C8: chủ quản có SP khớp bài Cần mua qua `HostBookReader` (vắng ⇒ không phát `matchBuy`). */
+    /** C8: chủ quản có SP khớp bài Cần mua (mặc định: `HostBookReader` hỏi từng chủ quản có quyền đọc SHT). */
     stockMatch?: CommunityEventDeps["stockMatch"];
+    /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm (vắng ⇒ không Lưu báo giá / không gợi ý). */
+    quotes?: SupplierQuoteWriter | undefined;
+    hostBook?: HostBookReader | undefined;
+    webUrl?: string | undefined;
     now?: () => Date;
   } = {},
 ): Hono<PackGuardVars> {
   const uow = createPackUow(db, COMMUNITY_KEY, (tx) => ({ tx }));
+  const hosts = packHosts(db, view, COMMUNITY_KEY);
   const events = communityEvents({
-    hosts: packHosts(db, view, COMMUNITY_KEY),
-    ...(opts.savedBy ? { savedBy: opts.savedBy } : {}),
-    ...(opts.stockMatch ? { stockMatch: opts.stockMatch } : {}),
+    hosts,
+    savedBy:
+      opts.savedBy ??
+      ((tenantId, postId) => uow.system(tenantId, ({ tx }) => savedUsers(tx, tenantId, postId))),
+    ...(opts.stockMatch
+      ? { stockMatch: opts.stockMatch }
+      : opts.hostBook
+        ? { stockMatch: stockMatchVia(opts.hostBook, hosts) }
+        : {}),
     ...(opts.now ? { now: opts.now } : {}),
   });
   const d: CommunityDeps = {
@@ -47,11 +62,15 @@ export function communityModule(
     events,
     bell: packBell(db, COMMUNITY_KEY),
     shtUrl: opts.shtUrl ?? "/",
+    quotes: opts.quotes,
+    hostBook: opts.hostBook,
+    webUrl: opts.webUrl,
   };
   const r = new Hono<PackGuardVars>();
   r.route("/", postsRoutes(d));
   r.route("/", threadsRoutes(d));
   r.route("/", orgRoutes(d));
+  r.route("/", quoteRoutes(d));
   return r;
 }
 
@@ -61,13 +80,24 @@ export function mountCommunity<E extends Env>(
   prefix: string,
   db: Db,
   view: PackAccessView,
-  o: { signal?: AbortSignal | undefined; worker?: boolean } = {},
+  o: {
+    signal?: AbortSignal | undefined;
+    worker?: boolean;
+    quotes?: SupplierQuoteWriter;
+    hostBook?: HostBookReader;
+  } = {},
 ): void {
-  startSweeper(db, view, o);
+  const { quotes, hostBook, ...sweep } = o;
+  startSweeper(db, view, sweep);
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
     `${prefix}/${COMMUNITY_KEY}`,
-    communityModule(db, view, pgExternalOrgResolver(db), { shtUrl }),
+    communityModule(db, view, pgExternalOrgResolver(db), {
+      shtUrl,
+      ...(quotes ? { quotes } : {}),
+      ...(hostBook ? { hostBook } : {}),
+      webUrl: process.env.COMMUNITY_WEB_URL || undefined,
+    }),
   );
 }
 

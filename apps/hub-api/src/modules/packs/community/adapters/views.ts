@@ -3,14 +3,16 @@
 import type {
   CommentView,
   ContentHit,
+  HostHint,
   PartnerOrg,
   PostAudience,
   PostView,
+  QuoteMark,
 } from "@ai/contracts/community";
 import { postActions } from "../domain/audience.rules";
 import type { Access } from "./community-access";
 import type { PartnerRow } from "./org.repo";
-import type { PostRow } from "./post.sql";
+import type { PostRow, QuoteMarkRow } from "./post.sql";
 import type { CommentRow } from "./thread.repo";
 
 const iso = (s: string): string => new Date(s).toISOString();
@@ -31,7 +33,8 @@ export function namesOf(a: Access): Names {
 /** Id công ty hiển thị: chủ quản = id tenant. */
 export const orgIdOf = (a: Access, org: string | null): string => org ?? a.who.tenantId;
 
-export function postView(a: Access, n: Names, r: PostRow): PostView {
+/** `hint` (gợi ý SHT, C8) chỉ được gắn khi người xem là chủ quản; `quotes` (C7b) cũng chỉ chủ quản — HT-64, HT-68. */
+export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): PostView {
   const host = a.org === null;
   const own = r.author_org === a.org;
   const base: PostView = {
@@ -69,6 +72,8 @@ export function postView(a: Access, n: Names, r: PostRow): PostView {
     ...(n.orgLeft(r.author_org) ? { authorLeft: true } : {}),
     ...(hits.length ? { hits } : {}),
     ...(r.aud ? { audience: r.aud as PostAudience } : {}),
+    ...(r.quotes?.length ? { quotes: r.quotes.map(markView) } : {}),
+    ...(hint ? { hostHint: hint } : {}),
   };
 }
 
@@ -104,3 +109,16 @@ export function partnerViews(a: Access, rows: readonly PartnerRow[]): PartnerOrg
     return v;
   });
 }
+
+const markView = (q: QuoteMarkRow): QuoteMark => ({
+  itemIdx: q.item_idx,
+  ...(q.comment_id ? { commentId: q.comment_id } : {}),
+  by: q.by,
+  at: iso(q.at),
+  productId: q.product_id,
+  supplier: q.supplier,
+  price: Number(q.price),
+  unit: q.unit,
+  postEdited: q.edited,
+  priceEdited: q.price_edited,
+});

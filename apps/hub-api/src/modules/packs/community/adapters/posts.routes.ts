@@ -16,6 +16,8 @@ import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as posts from "./post.service";
 import type { FeedFilter } from "./post.sql";
+import { quoteDeps } from "./quote.routes";
+import { hostHints } from "./quote.service";
 import { namesOf, postView } from "./views";
 
 const UUID = z.uuid();
@@ -61,8 +63,9 @@ async function feedJson(d: CommunityDeps, c: Context<PackGuardVars>, a: Access) 
   const page = raw.items.slice(0, f.limit);
   const last = page.at(-1);
   const more = raw.items.length > f.limit && last;
+  const hints = await hostHints(quoteDeps(d), a, page); // C8: một lời gọi cổng đọc mỗi trang (chỉ chủ quản)
   return {
-    items: page.map((p) => postView(a, n, p)),
+    items: page.map((p) => postView(a, n, p, hints.get(p.id))),
     counts: raw.counts,
     facets: raw.facets,
     ...(more ? { nextCursor: cursorFor(last.created_at, last.id) } : {}),

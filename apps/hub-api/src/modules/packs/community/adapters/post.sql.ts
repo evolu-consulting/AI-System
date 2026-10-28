@@ -22,6 +22,22 @@ export type PostRow = {
   aud: { mode: string; cats: string[]; companies: string[] } | null;
   media: { id: string; kind: "image" | "video"; label: string; url: string | null }[];
   comments: number;
+  /** Chỉ chủ quản (host=true): dấu đã lưu báo giá + khoá đối tác SHT của bên đăng; đối tác: null. */
+  quotes: QuoteMarkRow[] | null;
+  party_key: string | null;
+};
+
+export type QuoteMarkRow = {
+  item_idx: number;
+  comment_id: string | null;
+  by: string;
+  at: string;
+  product_id: string;
+  supplier: string;
+  price: number;
+  unit: string | null;
+  edited: boolean;
+  price_edited: boolean;
 };
 
 export type FeedFilter = {
@@ -61,7 +77,14 @@ const itemJson: SQL = sql`json_build_object(
     then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs) end,
   'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url)
     order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
-  'comments', (select count(*)::int from community.comments c where c.post_id = v.id))`;
+  'comments', (select count(*)::int from community.comments c where c.post_id = v.id),
+  'quotes', case when (select packs.viewer_ext_org()) is null then (select json_agg(json_build_object('item_idx', q.item_idx,
+    'comment_id', q.comment_id, 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,
+    'supplier', q.supplier_name, 'price', q.price, 'unit', q.unit, 'edited', coalesce(v.edited_at > q.saved_at, false),
+    'price_edited', coalesce(v.price_edited_at > q.saved_at, false)) order by q.saved_at)
+    from community.quote_saves q where q.post_id = v.id) end,
+  'party_key', case when (select packs.viewer_ext_org()) is null and v.author_org is not null then (select pc.party_key
+    from community.partner_companies pc where pc.tenant_id = v.tenant_id and pc.ext_org_id = v.author_org) end)`;
 
 /** `GET /feed`: một câu. Tab "all" = đang hiệu lực (mọi loại); "archived" = lưu trữ/đã xong/hết hạn. */
 export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promise<FeedRaw> {

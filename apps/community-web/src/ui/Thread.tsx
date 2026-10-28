@@ -1,18 +1,28 @@
 // Bình luận riêng theo (bài × công ty) (D3): chủ quản có tab theo công ty + "Nhắn riêng"; đối tác chỉ thấy luồng của mình.
 import type {
+  CommentView,
   PartnerOrg,
   PostView,
   ThreadSummary,
   Thread as ThreadT,
 } from "@ai/contracts/community";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { initials } from "../lib/format";
 import { commentActions, startablePartners } from "../lib/thread";
 import { CommentItem } from "./CommentItem";
 import { useApp } from "./ctx";
 import { IconLock, IconSend } from "./icons";
 
-export function Thread({ post, onChanged }: { post: PostView; onChanged: () => void }) {
+/** `extra`: nút việc gắn thêm trên từng bình luận (vd Lưu báo giá của NCC, C7b) — vào slot `action` của CommentItem. */
+export function Thread({
+  post,
+  onChanged,
+  extra,
+}: {
+  post: PostView;
+  onChanged: () => void;
+  extra?: (c: CommentView) => ReactNode;
+}) {
   const { api, viewer, isHostViewer, rev } = useApp();
   const [tabs, setTabs] = useState<ThreadSummary[]>([]);
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
@@ -111,6 +121,7 @@ export function Thread({ post, onChanged }: { post: PostView; onChanged: () => v
         <CommentItem
           key={c.id}
           comment={c}
+          action={extra?.(c)}
           actions={commentActions(c, ctx)}
           onEdit={(t) => mutate(api.editComment(post.id, c.id, t))}
           onDelete={() => mutate(api.deleteComment(post.id, c.id))}

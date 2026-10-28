@@ -5,6 +5,7 @@ import type { PackAccessView } from "../../kit/adapters/pack-guard.middleware";
 import type { ExternalOrgResolver } from "../../kit/application/ext-org.ports";
 import type { NotifyTxRepos } from "../../kit/application/notify";
 import type { PackUow } from "../../kit/application/ports";
+import type { HostBookReader, SupplierQuoteWriter } from "../application/pack-ports";
 import type { CommunityEvents } from "./notify.events";
 
 export type CommunityDeps = {
@@ -17,4 +18,9 @@ export type CommunityDeps = {
   bell: PackBell;
   /** Mở Sổ Hợp Tác (contracts-web) — chỉ chủ quản xem hồ sơ chủ quản. */
   shtUrl: string;
+  /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm; vắng ⇒ không Lưu báo giá / không gợi ý (route 503 / bỏ gợi ý). */
+  quotes?: SupplierQuoteWriter | undefined;
+  hostBook?: HostBookReader | undefined;
+  /** Gốc URL community-web (link về bài ở SP & Giá); vắng ⇒ không link. */
+  webUrl?: string | undefined;
 };

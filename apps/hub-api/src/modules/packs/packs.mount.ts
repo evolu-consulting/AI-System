@@ -19,7 +19,7 @@ import { mountGuide } from "../guide/guide.mount";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
 import { mountMyHistory } from "../my-history/my-history.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
-import { mountCommunity } from "./community/community.mount";
+import { mountCommunityWired } from "./community-wire.mount";
 import { contractsActivitySource } from "./contracts/activity.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { packWriters } from "./contracts/adapters/esign-flow.repo";
@@ -126,7 +126,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     }); // N4 Â· R1 pool riÃªng
   if (d.db) {
     mountCoreTools({ ...d, db: d.db }, view);
-    mountCommunity(app, PACK_PREFIX, d.db, view, { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
+    mountCommunityWired(app, PACK_PREFIX, d.db, view, tenantTz(d), { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
   rejectToolCollisions(d);

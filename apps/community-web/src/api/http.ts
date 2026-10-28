@@ -56,5 +56,10 @@ export function createHttpApi(): CommunityApi {
     getSettings: () => api(`${BASE}/settings`),
     saveSettings: (s) => api(`${BASE}/settings`, { method: "PUT", body: s }),
     chat: { createConversation, send: sendAndStream, cancel: cancelRun },
+    previewQuote: (postId, input) =>
+      api(`${BASE}/posts/${enc(postId)}/quote/preview`, { method: "POST", body: input }),
+    saveQuote: (postId, input) =>
+      api(`${BASE}/posts/${enc(postId)}/quote`, { method: "POST", body: input }),
+    matchProduct: (q) => api(`${BASE}/quote/match`, { query: { q } }),
   };
 }

@@ -31,3 +31,15 @@ Test phần giá **viết trước code** (làn đầy đủ): unit luật thay/
 Gộp vào `current/community/nghiep-vu.md` §8 và `current/sht` (mục SP & Giá) cuối đợt.
 - SHT SP & Giá: giá đã lưu có VAT (gồm/chưa), hạn, nhãn "Đã hết hạn"; giá đã thay / đã gỡ chuyển xuống "Lịch sử giá" (nhãn "Đã thay"/"Đã gỡ"); nút Xoá trên dòng giá = gỡ mềm. So sánh/gợi ý/dò giá bỏ giá hết hạn/thay/gỡ.
 - Community §8: R18 so với giá đã lưu rẻ nhất cùng loại + đơn vị (D4); R22 thay theo NCC + loại (D2); R24 vai NCC `manual` (D5).
+
+## C7b + C8-wire (slice `com-c7b-save-quote-ui`)
+- [x] Nối `packs.mount.ts` → `packs/community-wire.mount.ts` (`communityPorts`: `saveQuoteUsecase` + `hostBookModule`, ADR-0031; community khai kiểu ở `community/application/pack-ports.ts`, typecheck bắt lệch). Route `POST /posts/:id/quote/preview`, `POST /posts/:id/quote`, `GET /quote/match`; gợi ý `hostHint` + `quotes` ở feed (chỉ chủ quản). Migration community `0004_quote_saves` (`when` 1800400000000; 0002 review_fixes C3, 0003 notify C9). community-web: `QuoteForm`, hint box, banner "đã lưu", `Thread` prop `actions`.
+- [ ] Chưa chạy e2e (Luật 0b); chưa có nút "Xem" (đích SHT chưa rõ); C9 đã nối: `savedBy` (quote_saves, cờ notify) + `stockMatch` (HostBookReader hỏi từng chủ quản, ≤ 50) ở `community.mount.ts`.
+- Test: int `packs/community-wire.int.test.ts` (lưu từ bài, từ bình luận, 403 đối tác, JSON đối tác y hệt trước/sau lưu, một lời gọi đọc mỗi trang); unit `community/domain/quote.rules.test.ts`, `community-web/src/lib/quote.test.ts`.
+
+### Quyết định
+- D10 Dấu "đã lưu" = bảng `community.quote_saves` (RLS RESTRICTIVE chỉ `viewer_ext_org() IS NULL`) + JSON chỉ thêm khi SQL nói là chủ quản (`quotes`, `party_key` dùng cùng check như C3). Đối tác không bao giờ ghi/đọc.
+- D11 "Bài sửa sau khi lưu" / "NCC sửa giá": cột `posts.edited_at`, `posts.price_edited_at` (bên đăng ghi dưới RLS của mình); chủ quản so với `quote_saves.saved_at`. C9: gửi chuông khi `price_edited_at` đổi và có `quote_saves.notify_price_edit` (đọc bằng việc nền/chủ quản).
+- D12 NCC do server suy từ nguồn (công ty đăng bài / công ty luồng + `party_key` đã liên kết), không tin client. Nguồn hợp lệ: Cần bán của đối tác; bình luận đối tác trên Cần mua của chủ quản (khác ⇒ 422).
+- D13 Lưu đè (R28): khoá `(post, item_idx, comment)`; preview trả `existing {by, at}`. Cổng ghi và dấu lưu là hai tx (giá có trước dấu; lưu lại an toàn nhờ R22).
+- D14 Gợi ý: một `HostBookReader.read` mỗi trang feed (bài đối tác Cần bán/Cần mua); không quyền đọc contracts ⇒ bỏ gợi ý, không lỗi. VAT mặc định form = "đã gồm VAT"; `item_idx` mặc định 0, "Lưu và thêm báo giá khác" tăng 1.

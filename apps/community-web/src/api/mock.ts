@@ -1,12 +1,11 @@
 // CR-102 · C5 · adapter mock in-memory: cùng hợp đồng với server C3 (hien-thi.md): che liên hệ cho user ngoài, raw + hits cho chủ quản,
 // luồng bình luận theo (bài × công ty), không bao giờ trả `saveQuote` cho đối tác. Thay persona bằng `setPersona` (chỉ dev).
+
 import {
   type CommentView,
   type CommunityNotification,
-  type CommunitySettings,
   type CommunityViewer,
   type ContentHit,
-  DEFAULT_SETTINGS,
   isHost,
   type PartnerOrg,
   type PostAction,
@@ -20,6 +19,8 @@ import { canViewPost, defaultAudience } from "../lib/visibility";
 import type { CommunityApi } from "./client";
 import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
+import { quoteEnvOf, quoteMock } from "./mock-quote";
+import { settingsMock } from "./mock-settings";
 import {
   CATS,
   HOST_ORG,
@@ -40,10 +41,10 @@ type Notif = CommunityNotification & { to: string };
 
 export function createMockApi(): { api: CommunityApi; setPersona: (id: string) => void } {
   let me: CommunityViewer = PERSONAS[0] as CommunityViewer;
+  const quoteEnv = quoteEnvOf(() => isHost(me));
   let seq = 100;
   const posts: RawPost[] = structuredClone(SEED_POSTS);
   const comments: RawComment[] = structuredClone(SEED_COMMENTS);
-  const settings = new Map<string, CommunitySettings>();
   const notifs: Notif[] = [
     {
       id: "n1",
@@ -158,6 +159,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     if (host) {
       return {
         ...base,
+        ...quoteEnv.quotesOf(p.id),
         hidden: p.hidden,
         ...(hits.length ? { hits } : {}),
         ...(p.authorOrgId === HOST_ORG.id ? { audience: p.audience } : {}),
@@ -383,12 +385,9 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(isHost(me) && id === HOST_ORG.id ? { shtUrl: "/contracts" } : {}),
       };
     },
-    getSettings: async () => settings.get(me.userId) ?? structuredClone(DEFAULT_SETTINGS),
-    saveSettings: async (s) => {
-      settings.set(me.userId, s);
-      return s;
-    },
+    ...settingsMock(() => me.userId),
     chat: mockDockChat,
+    ...quoteMock(quoteEnv),
   };
 
   return {

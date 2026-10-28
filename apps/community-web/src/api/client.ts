@@ -15,6 +15,10 @@ import type {
   PostSource,
   PostView,
   Profile,
+  QuoteInput,
+  QuoteMatch,
+  QuotePreview,
+  QuoteSaved,
   Thread,
   ThreadSummary,
   UpdatePostInput,
@@ -70,4 +74,10 @@ export interface CommunityApi {
   saveSettings(s: CommunitySettings): Promise<CommunitySettings>;
   /** Trợ lý giá (C10b) — chỉ chủ quản; đối tác không có. */
   chat: DockChat;
+  /** `POST /pack/community/posts/:id/quote/preview` — chỉ chủ quản; so giá + cảnh báo, không ghi. */
+  previewQuote(postId: string, input: QuoteInput): Promise<QuotePreview>;
+  /** `POST /pack/community/posts/:id/quote` — Lưu báo giá vào SP & Giá (chỉ chủ quản). */
+  saveQuote(postId: string, input: QuoteInput): Promise<QuoteSaved>;
+  /** `GET /pack/community/quote/match?q=` — SP khớp tên gõ + giá/tồn (chỉ chủ quản). */
+  matchProduct(q: string): Promise<QuoteMatch>;
 }

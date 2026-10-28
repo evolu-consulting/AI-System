@@ -3,6 +3,7 @@ import { POST_TYPE_LABEL, type PostAction, type PostView } from "@ai/contracts/c
 import { useEffect, useState } from "react";
 import { draftFromFields } from "../lib/compose";
 import { expiryNote, factRows, initials, timeAgo, tone } from "../lib/format";
+import { hintLines, saveButtonLabel, savedText } from "../lib/quote";
 import { useApp } from "./ctx";
 import { DraftFields } from "./DraftFields";
 import { Highlighted } from "./Highlighted";
@@ -20,6 +21,7 @@ import {
   IconSave,
   IconTrash,
 } from "./icons";
+import { QuoteForm } from "./QuoteForm";
 import { Thread } from "./Thread";
 
 const has = (p: PostView, a: PostAction) => p.actions.includes(a);
@@ -139,6 +141,12 @@ export function PostCard({ post: p }: { post: PostView }) {
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState(false);
+  const [quote, setQuote] = useState<{ supplier: string; commentId?: string; idx: number } | null>(
+    null,
+  );
+  const savedCount = p.quotes?.length ?? 0;
+  const openQuote = (supplier: string, commentId?: string) =>
+    setQuote({ supplier, ...(commentId ? { commentId } : {}), idx: 0 });
   const act = async (a: "archive" | "unarchive" | "done" | "hide" | "unhide" | "delete") => {
     setMenu(false);
     setConfirm(false);
@@ -172,16 +180,15 @@ export function PostCard({ post: p }: { post: PostView }) {
         <span className={`tag ${p.type === "buy" ? "buy" : p.type === "sell" ? "sell" : "grey"}`}>
           {POST_TYPE_LABEL[p.type]}
         </span>
-        {has(p, "saveQuote") && (
+        {has(p, "saveQuote") && p.type === "sell" && (
           <button
             type="button"
             className="outline"
-            disabled
-            title="Sắp có (lát C7)"
+            onClick={() => openQuote(p.authorOrgName)}
             style={{ marginTop: -6 }}
           >
             <IconSave size={16} />
-            Lưu báo giá<span className="soonpill">sắp có</span>
+            {saveButtonLabel(savedCount)}
           </button>
         )}
         {hasMenu && (
@@ -265,16 +272,44 @@ export function PostCard({ post: p }: { post: PostView }) {
           ))}
         </div>
       )}
-      {isHostViewer && p.authorSide === "partner" && p.type !== "note" && (
-        <div className="match">
+      {isHostViewer && p.hostHint && (
+        <div className="match" data-testid="host-hint">
           <IconBox />
           <span style={{ flex: 1, minWidth: 200 }}>
-            <b>Gợi ý từ Sổ Hợp Tác:</b> hàng đang có, giá vốn, uy tín.
+            <b>{hintLines(p.hostHint, p.type).lead}</b> {hintLines(p.hostHint, p.type).text}
           </span>
-          <button type="button" className="primary sm" disabled>
-            Sắp có
-          </button>
         </div>
+      )}
+      {isHostViewer &&
+        p.quotes?.map((m) => (
+          <div
+            key={`${m.itemIdx}-${m.commentId ?? ""}`}
+            className="match"
+            data-testid="quote-saved"
+            style={{ background: "#e3f4ec", borderColor: "#bfe5d2", color: "#05603f" }}
+          >
+            <IconCheck size={18} />
+            <span style={{ flex: 1, minWidth: 200 }}>
+              <b>Đã lưu báo giá vào Sản phẩm &amp; Giá:</b> {savedText(m)}
+              {m.priceEdited && " · NCC đã sửa giá sau khi lưu — lưu lại để cập nhật"}
+              {!m.priceEdited && m.postEdited && " · bài đã sửa sau khi lưu"}
+            </span>
+          </div>
+        ))}
+      {quote && (
+        <QuoteForm
+          key={`${quote.idx}-${quote.commentId ?? ""}`}
+          post={p}
+          supplier={quote.supplier}
+          itemIdx={quote.idx}
+          {...(quote.commentId ? { commentId: quote.commentId } : {})}
+          onClose={() => setQuote(null)}
+          onSaved={(more) => {
+            bump();
+            if (more) setQuote({ ...quote, idx: quote.idx + 1 });
+            else setQuote(null);
+          }}
+        />
       )}
       <div className="pact">
         <button
@@ -287,7 +322,27 @@ export function PostCard({ post: p }: { post: PostView }) {
           Bình luận ({p.commentCount})
         </button>
       </div>
-      {open && <Thread post={p} onChanged={bump} />}
+      {open && (
+        <Thread
+          post={p}
+          onChanged={bump}
+          extra={(c) =>
+            isHostViewer &&
+            p.type === "buy" &&
+            p.authorSide === "host" &&
+            c.authorSide === "partner" ? (
+              <button
+                type="button"
+                className="outline sm"
+                onClick={() => openQuote(c.authorOrgName, c.id)}
+              >
+                <IconSave size={14} />
+                {saveButtonLabel(p.quotes?.filter((m) => m.commentId === c.id).length ?? 0)}
+              </button>
+            ) : null
+          }
+        />
+      )}
     </article>
   );
 }

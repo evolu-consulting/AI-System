@@ -80,6 +80,20 @@ defineRlsSuite({
         ),
     },
     {
+      name: "quote_saves",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into community.quote_saves (tenant_id, post_id, saved_by, price) values ($1, $2, gen_random_uuid(), 1000) returning id::text as id",
+          [t, post.get(t)],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into community.quote_saves (id, tenant_id, post_id, saved_by, price, item_idx) values ($1, $2, $3, gen_random_uuid(), 1000, 7)",
+          [rnd(pk), t, post.get(t) as string],
+        ),
+    },
+    {
       name: "media",
       seed: (o, t) =>
         one(
