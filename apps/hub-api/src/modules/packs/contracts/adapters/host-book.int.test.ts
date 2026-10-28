@@ -136,13 +136,13 @@ describe("com-c8 · HostBookReader", () => {
     const q = { hints: [{ name: "Xi măng" }] };
     expect(await kindOf(reader().read(who(u1, "external"), q))).toBe("forbidden");
     expect(await kindOf(reader().read(who(u2, "internal"), q))).toBe("forbidden");
-    const many = { hints: Array.from({ length: 51 }, (_, i) => ({ name: `sp $i` })) };
+    const many = { hints: Array.from({ length: 51 }, (_, i) => ({ name: `sp ${i}` })) };
     expect(await kindOf(reader().read(who(u1), many))).toBe("too_many");
     expect(await kindOf(reader().read(who(u1), { hints: [{ productId: "x" }] }))).toBe("invalid");
   });
 
   it("Luật 4c: số câu SQL cố định, không theo cỡ lô", async () => {
-    const hint = (i: number) => ({ name: i % 2 ? "Xi măng PCB" : `sp $i` });
+    const hint = (i: number) => ({ name: i % 2 ? "Xi măng PCB" : `sp ${i}` });
     const run = (n: number) =>
       counted(() =>
         reader().read(who(u1), {
