@@ -183,6 +183,7 @@ describe("bình luận (emitComment)", () => {
       });
       expect(r.status).toBe(201);
     }
+    if (!direct) return; // đường route đã tự phát chuông (emitComment trong tx của C6)
     const row =
       (await sql`select id::text as id from community.comments where post_id = ${hostPost}::uuid
       order by created_at desc, id desc limit 1`) as unknown as { id: string }[];
