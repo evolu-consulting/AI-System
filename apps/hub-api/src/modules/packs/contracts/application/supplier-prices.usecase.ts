@@ -89,9 +89,13 @@ export function suppliersUsecase(d: SuppliersDeps) {
   const { tx, today, product } = c;
   return {
     async overview(who: PackWho, id: string): Promise<SupplierOverviewOut> {
-      const [data, scores] = await Promise.all([tx(who, (r) => r.overview(id)), d.reputation(who)]);
+      const [data, scores, day] = await Promise.all([
+        tx(who, (r) => r.overview(id)),
+        d.reputation(who),
+        today(who),
+      ]);
       if (!data || data.product.group === "referral") throw new SupplierFail("not_found");
-      return buildOverview(data, scores);
+      return buildOverview(data, scores, day);
     },
 
     search: (who: PackWho, id: string): Promise<SupplierSearchOut> => searchPrices(d, who, id),

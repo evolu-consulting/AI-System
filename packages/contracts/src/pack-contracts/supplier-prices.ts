@@ -112,6 +112,11 @@ export type SupplierPriceRow = {
   contract_id?: string | null;
   contract_number?: string | null;
   current?: boolean;
+  /** com-c7 · CR-102b: vắng = còn hiệu lực; nhãn "Đã hết hạn" / "Đã thay" / "Đã gỡ". */
+  status?: "expired" | "replaced" | "removed";
+  /** Giá đã gồm VAT? null = chưa rõ (giá lưu trước CR-102b). */
+  vat_included?: boolean | null;
+  expires_on?: string | null;
 };
 /** Một dòng giá bán từ HĐ bán đã xác nhận của SP. */
 export type SellPriceRow = {
@@ -163,4 +168,6 @@ export type SupplierOverviewOut = {
   rows: SupplierPriceRow[];
   suppliers: SupplierSummaryRow[];
   pricing: ProductPricing;
+  /** com-c7 · lịch sử giá đã lưu: đã thay / đã gỡ (không vào so sánh, không vào gợi ý). */
+  history?: SupplierPriceRow[];
 };

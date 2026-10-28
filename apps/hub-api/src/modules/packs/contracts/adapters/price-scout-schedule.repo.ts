@@ -62,6 +62,7 @@ export const claimSql = (
           select distinct on (lower(s.supplier_name)) lower(s.supplier_name) as k, s.price
           from contracts.product_supplier_prices s
           where s.tenant_id = ${t}::uuid and s.product_id = p.id and s.source = 'market' and s.kind = 'new'
+            and s.removed_at is null and s.replaced_at is null and (s.expires_on is null or s.expires_on >= ${today}::date)
           order by lower(s.supplier_name), s.seen_on desc, s.created_at desc) x), '{}'::jsonb))), '[]'::jsonb) as j
   from upd join contracts.products p on p.tenant_id = ${t}::uuid and p.id = upd.product_id
     left join contracts.price_scout_defaults d on d.tenant_id = ${t}::uuid and d.grp = p.grp`;

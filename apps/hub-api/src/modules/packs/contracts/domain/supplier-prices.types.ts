@@ -37,6 +37,9 @@ export type SupplierPriceRow = {
   contract_id?: string | null;
   contract_number?: string | null;
   current?: boolean;
+  status?: "expired" | "replaced" | "removed";
+  vat_included?: boolean | null;
+  expires_on?: string | null;
 };
 
 export type SellPriceRow = {
@@ -79,6 +82,7 @@ export type SupplierOverviewOut = {
   rows: SupplierPriceRow[];
   suppliers: SupplierSummaryRow[];
   pricing: ProductPricing;
+  history?: SupplierPriceRow[];
 };
 
 export type SupplierPriceInput = {

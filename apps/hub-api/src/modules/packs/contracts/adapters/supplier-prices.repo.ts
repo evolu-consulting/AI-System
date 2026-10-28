@@ -47,7 +47,8 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
                 on k.id = i.contract_id), '[]'::jsonb),
           'saved', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'supplier_name', s.supplier_name,
               'party_key', s.supplier_party_key, 'kind', s.kind, 'price', s.price, 'unit', s.unit, 'source', s.source,
-              'url', s.url, 'seen_on', s.seen_on) order by s.seen_on desc, s.created_at desc)
+              'url', s.url, 'seen_on', s.seen_on, 'vat_included', s.vat_included, 'expires_on', s.expires_on,
+              'replaced_at', s.replaced_at, 'removed_at', s.removed_at) order by s.seen_on desc, s.created_at desc)
             from (select * from contracts.product_supplier_prices s0 where s0.tenant_id = p.tenant_id
               and s0.product_id = p.id order by s0.seen_on desc, s0.created_at desc limit 200) s), '[]'::jsonb)) as j
         from contracts.products p where p.tenant_id = ${t}::uuid and p.id = ${productId}::uuid`;
@@ -80,10 +81,13 @@ export function suppliersRepo(tx: Tx, t: string): SuppliersRepo {
       having count(p.id) > 0`,
     );
 
+  /** com-c7 · R21: gỡ MỀM (`removed_at`, còn trong lịch sử). Ai gỡ được giữ như DELETE 0031: người tạo hoặc người thấy hết. */
   const remove: SuppliersRepo["remove"] = async (productId, priceId) =>
     (
-      await tx.execute(sql`delete from contracts.product_supplier_prices
-        where tenant_id = ${t}::uuid and product_id = ${productId}::uuid and id = ${priceId}::uuid returning id`)
+      await tx.execute(sql`update contracts.product_supplier_prices set removed_at = now()
+        where tenant_id = ${t}::uuid and product_id = ${productId}::uuid and id = ${priceId}::uuid and removed_at is null
+          and ((select contracts.sees_all()) or created_by = nullif(current_setting('app.user_id', true), '')::uuid)
+        returning id`)
     ).length > 0;
 
   return { overview, head, save, remove };

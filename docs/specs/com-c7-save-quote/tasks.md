@@ -11,8 +11,23 @@ Contracts 0066: cộng cột `vat_included`, `expires_on`, `replaced_at`, `remov
 ## Xong khi
 Test phần giá **viết trước code** (làn đầy đủ): unit luật thay/hết hạn/30%/VAT; int đường chính cổng; một int chặn `kind=external` ở cổng; một test chặn đọc chéo tenant cho cột/bảng mới; HT-64 (JSON giống hệt trước/sau lưu). Chạy int của contracts supplier-prices bị chạm. Migration `when` journal giao trước.
 
+## Tiến độ
+- [x] **C7a (phía contracts)** — nhánh `slice/com-c7a-save-quote`: migration 0066 (`when` 1800000000000, idx 62); luật thuần `domain/supplier-quote.rules.ts` (test viết trước); cổng `application/supplier-quote.ports.ts` + `save-quote.usecase.ts` + `adapters/supplier-quote.repo.ts`; gỡ mềm ở `supplier-prices.repo.ts::remove`; `buildOverview` tách `rows`/`history`; price-scout bỏ giá gỡ/thay/hết hạn; nhãn ở `ComparePanel` + `PriceHistory.tsx`. Test: `supplier-quote.rules.test.ts` (unit), `tests/acceptance/com-c7/save-quote.int.test.ts` (int).
+- [ ] Chạy int `tests/acceptance/com-c7/save-quote.int.test.ts` + `V2-J2/suppliers.int.test.ts` (lúc làm C7a Postgres test kẹt "starting up" — chưa chạy được).
+- [ ] C7b: nối `packs.mount.ts` (dựng `saveQuoteUsecase` với `canWrite` từ `PackAccessView`, tiêm vào community khi gói community có port tự khai); form community-web; HT-64; sự kiện C9.
+
 ## Quyết định trong lúc làm
-<!-- agent điền; chốt nghiep-vu Chưa rõ #1 -->
+- D1 Kiểu cổng `SupplierQuoteWriter` khai tạm ở contracts (`supplier-quote.ports.ts`) vì gói community chưa có trên nhánh này; community tự khai kiểu cùng hình (ADR-0031 §1), mount typecheck bắt lệch. Cổng có `preview` (không ghi) + `save`.
+- D2 "Thay" (R22) = cùng SP + cùng khoá NCC + **cùng loại** (Mua mới ≠ Gia hạn) + nguồn `quote`, chưa thay/chưa gỡ; giá hết hạn của cùng NCC cũng bị thay. Giá nguồn market/manual không bị thay.
+- D3 Đồng thời (R28): khoá tư vấn `pg_advisory_xact_lock` theo (tenant, SP, NCC, loại) trước khi đọc + thay ⇒ không còn hai giá Báo giá đang dùng. Không thêm unique index (dữ liệu cũ có thể trùng; nguồn quote cũ qua `/supplier-prices` vẫn cộng thêm như trước).
+- D4 So giá (R18) = với giá **đã lưu** rẻ nhất còn hiệu lực cùng loại + cùng đơn vị (đơn vị null = đơn vị SP; so chữ fold). Chưa có ⇒ "giá đầu tiên". Lệch dùng % có dấu, cảnh báo khi |%| > 30 (đúng 30 không cảnh báo). Khác VAT chỉ cảnh báo khi giá so có `vat_included` rõ. Giá nhập kho/HĐ chưa đưa vào so (form chỉ cần giá đã ghi nhận ở bảng giá; thêm sau nếu cần).
+- D5 NCC mới (R24): thêm vai `partner_roles` (`supplier`, `created_from='manual'`) trong CÙNG câu lưu, `on conflict do nothing`; điểm MỚI tự có (chưa có sự kiện). Không gọi `companies` (tra Cục Thuế gọi mạng, ngoài tx) — danh bạ thêm sau bằng nút "Thêm vào Đối tác" sẵn có.
+- D6 SP mới: dùng lại `ProductsRepo.create` + `productPlan` trong cùng tx; trùng tên ⇒ `exists`.
+- D7 Gỡ (R21): route DELETE cũ nay đặt `removed_at`; ai gỡ được giữ như policy DELETE 0031 (người tạo hoặc người thấy hết) bằng điều kiện tường minh. RLS: `GRANT UPDATE (replaced_at, removed_at)` + policy RESTRICTIVE UPDATE (thấy hết / người tạo / nguồn `quote` — để người sau thay giá Báo giá của người trước, R28). Các cột khác vẫn không sửa được.
+- D8 Hiển thị SHT: `rows` = còn hiệu lực + hết hạn (nhãn "Đã hết hạn"); `history` (mới, tuỳ chọn) = đã thay/đã gỡ, hiện thu gọn dưới bảng ("Lịch sử giá"). Tóm tắt NCC, gợi ý, giá thấp nhất chỉ tính giá còn hiệu lực. Nhãn VAT theo `vat_included`.
+- D9 Người gọi: `QuoteCaller.kind='external'` ⇒ `forbidden` trước mọi câu SQL; quyền ghi giá qua dep `canWrite` (mount tiêm). Kiểm thân trong usecase (cổng nội bộ, không qua zod route).
 
 ## Delta (so với docs/current)
 Gộp vào `current/community/nghiep-vu.md` §8 và `current/sht` (mục SP & Giá) cuối đợt.
+- SHT SP & Giá: giá đã lưu có VAT (gồm/chưa), hạn, nhãn "Đã hết hạn"; giá đã thay / đã gỡ chuyển xuống "Lịch sử giá" (nhãn "Đã thay"/"Đã gỡ"); nút Xoá trên dòng giá = gỡ mềm. So sánh/gợi ý/dò giá bỏ giá hết hạn/thay/gỡ.
+- Community §8: R18 so với giá đã lưu rẻ nhất cùng loại + đơn vị (D4); R22 thay theo NCC + loại (D2); R24 vai NCC `manual` (D5).

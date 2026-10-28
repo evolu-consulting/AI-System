@@ -10,6 +10,7 @@ import type {
   SupplierPriceSource,
   SupplierSummaryRow,
 } from "./supplier-prices.types";
+import { type PriceLife, priceStatus } from "./supplier-quote.rules";
 
 /** Chênh giá còn chấp nhận được / quá cao so với NCC rẻ nhất (%). */
 export const GAP_OK_PCT = 5;
@@ -29,7 +30,8 @@ export type PurchaseAgg = {
   last_price: number;
   best_price: number;
 };
-export type SavedPrice = {
+/** Giá đã lưu; cột CR-102b (VAT, hạn, thay, gỡ) vắng ở dữ liệu/test cũ ⇒ coi như còn hiệu lực. */
+export type SavedPrice = PriceLife & {
   id: string;
   supplier_name: string;
   party_key: string | null;
@@ -39,6 +41,7 @@ export type SavedPrice = {
   source: Exclude<SupplierPriceSource, "purchase" | "contract">;
   url: string | null;
   seen_on: string;
+  vat_included?: boolean | null | undefined;
 };
 /** Dòng hàng của HĐ đã xác nhận (bản hiện hành) gắn SP: `deal` mua/bán, đối tác = bên kia. */
 export type ContractLine = {
@@ -180,12 +183,21 @@ function purchaseRows(
     reputation: repOf(scores, p.party_key),
   }));
 }
-const savedRows = (
-  d: OverviewData,
+/** com-c7 (R20–R22): giá đã lưu kèm trạng thái; `status` vắng = còn hiệu lực; VAT/hạn chỉ thêm khi có cột. */
+function savedRow(
+  s: SavedPrice,
   own: number | null,
   scores: ReadonlyMap<string, NonNullable<Rep>>,
-): SupplierPriceRow[] =>
-  d.saved.map((s) => ({
+  today: string | undefined,
+): SupplierPriceRow {
+  const st = today
+    ? priceStatus(s, today)
+    : s.removed_at
+      ? "removed"
+      : s.replaced_at
+        ? "replaced"
+        : "live";
+  return {
     id: s.id,
     supplier_name: s.supplier_name,
     party_key: s.party_key,
@@ -197,28 +209,44 @@ const savedRows = (
     on: s.seen_on,
     vs_own_pct: pctOver(s.price, own),
     reputation: repOf(scores, s.party_key),
-  }));
+    ...(st !== "live" ? { status: st } : {}),
+    ...(s.vat_included !== undefined ? { vat_included: s.vat_included } : {}),
+    ...(s.expires_on !== undefined ? { expires_on: s.expires_on } : {}),
+  };
+}
 
 /** Khoá gom NCC: khoá đối tác, thiếu thì tên viết thường. */
 const keyOf = (r: Pick<SupplierPriceRow, "party_key" | "supplier_name">) =>
   r.party_key ?? `name:${r.supplier_name.trim().toLowerCase()}`;
 
-/** Bảng so sánh + tóm tắt từng NCC (đã mua bao nhiêu, giá, uy tín, gợi ý). Hàng sắp: giá tăng dần, cùng giá thì mới trước. */
+const byPrice = (a: SupplierPriceRow, b: SupplierPriceRow) =>
+  a.price - b.price || (b.on ?? "").localeCompare(a.on ?? "");
+
+/**
+ * Bảng so sánh + tóm tắt từng NCC (đã mua bao nhiêu, giá, uy tín, gợi ý). Hàng sắp: giá tăng dần, cùng giá thì mới trước.
+ * com-c7: `rows` = còn hiệu lực + hết hạn (nhãn); `history` = đã thay / đã gỡ; tóm tắt + gợi ý chỉ từ giá còn hiệu lực.
+ */
 export function buildOverview(
   d: OverviewData,
   scores: ReadonlyMap<string, NonNullable<Rep>>,
+  today?: string,
 ): SupplierOverviewOut {
   const own = ownAvgCost(d.components);
+  const saved = d.saved.map((s) => savedRow(s, own, scores, today));
   const rows = [
     ...purchaseRows(d, own, scores),
     ...contractRows(d, own, scores),
-    ...savedRows(d, own, scores),
-  ].sort((a, b) => a.price - b.price || (b.on ?? "").localeCompare(a.on ?? ""));
+    ...saved.filter((r) => r.status === undefined || r.status === "expired"),
+  ].sort(byPrice);
+  const history = saved
+    .filter((r) => r.status === "replaced" || r.status === "removed")
+    .sort(byPrice);
+  const live = rows.filter((r) => r.status === undefined);
   const bought = new Map(d.purchases.map((p) => [p.party_key, p]));
   const totalSpend = d.purchases.reduce((s, p) => s + p.amount, 0);
-  const low = rows.length ? Math.min(...rows.map((r) => r.price)) : null;
+  const low = live.length ? Math.min(...live.map((r) => r.price)) : null;
   const groups = new Map<string, SupplierPriceRow[]>();
-  for (const r of rows) groups.set(keyOf(r), [...(groups.get(keyOf(r)) ?? []), r]);
+  for (const r of live) groups.set(keyOf(r), [...(groups.get(keyOf(r)) ?? []), r]);
   const suppliers: SupplierSummaryRow[] = [...groups].map(([key, rs]) => {
     const p = bought.get(key);
     const best = Math.min(...rs.map((r) => r.price));
@@ -243,5 +271,12 @@ export function buildOverview(
     };
   });
   suppliers.sort((a, b) => b.bought_amount - a.bought_amount || a.best_price - b.best_price);
-  return { product: d.product, own_avg_cost: own, rows, suppliers, pricing: buildPricing(d, own) };
+  return {
+    product: d.product,
+    own_avg_cost: own,
+    rows,
+    suppliers,
+    pricing: buildPricing(d, own),
+    ...(history.length ? { history } : {}),
+  };
 }

@@ -8,6 +8,7 @@ import { Panel } from "~/components/shared/layout";
 import { today } from "~/features/ledger/lib/ledger";
 import { hasRenew, isOld, rowsOfKind } from "../lib/suppliers";
 import { AddPartnerButton } from "./AddPartnerButton";
+import { PriceHistory, StatusTag, VatNote } from "./PriceHistory";
 
 const th = "px-4 py-3 text-left text-xs font-semibold text-dim bg-sunk";
 const td = "border-t border-rule-soft px-4 py-3 text-sm";
@@ -149,12 +150,12 @@ export function ComparePanel({
               {rows.map((r) => (
                 <tr
                   key={r.id ?? `${r.party_key}:${r.source}`}
-                  className={isOld(r.on, day) ? "opacity-70" : ""}
+                  className={isOld(r.on, day) || r.status ? "opacity-70" : ""}
                 >
                   <td className={`${td} font-semibold`}>{r.supplier_name}</td>
                   <td className={`${td} text-right font-mono tnum`}>
                     {vnd(r.price)}
-                    <div className="text-[11px] font-sans text-dim">{L("exVat")}</div>
+                    <VatNote r={r} />
                   </td>
                   <td className={`${td} text-right`}>
                     <Delta pct={r.vs_own_pct} />
@@ -162,6 +163,7 @@ export function ComparePanel({
                   <td className={td}>
                     <SourceLabel r={r} />
                     {isOld(r.on, day) && <span className="tag ml-2 text-[11px]">{L("old")}</span>}
+                    <StatusTag r={r} />
                   </td>
                   <td className={td}>
                     <RepCell rep={r.reputation} />
@@ -189,6 +191,7 @@ export function ComparePanel({
           </table>
         </div>
       )}
+      <PriceHistory rows={data.history} />
     </Panel>
   );
 }
