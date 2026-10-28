@@ -17,6 +17,8 @@ type Ctx = {
   tenantId: string;
   userId: string;
   runId: string;
+  /** com-c10b · loại người gọi nếu token mang (vắng ⇒ nội bộ; đối tác không có chat nên không tới đây). */
+  userKind?: "internal" | "external";
   tools: readonly string[];
   readOnly?: boolean;
 };
@@ -58,7 +60,12 @@ export function packMcpTools(packs: PackToolCatalog): PackMcpTools {
           if (!v.ok) return toolError("INVALID_ARGS");
           const res = await packs.call(
             name,
-            { tenantId: ctx.tenantId, userId: ctx.userId, runId: ctx.runId },
+            {
+              tenantId: ctx.tenantId,
+              userId: ctx.userId,
+              runId: ctx.runId,
+              ...(ctx.userKind ? { userKind: ctx.userKind } : {}),
+            },
             v.inputs as PackToolArgs,
           );
           return res.kind === "ok" ? toolText(res.text) : toolError("UPSTREAM_ERROR");

@@ -30,7 +30,7 @@ const view: PackAccessView = {
 let tools: PackToolDef[] = [];
 const run = (k: string, userId: string, a: Record<string, string>, kind?: "external") =>
   (tools.find((t) => t.name === k) as PackToolDef).run(
-    { tenantId: A, userId, runId: null, ...(kind ? { kind } : {}) } as PackToolCtx,
+    { tenantId: A, userId, runId: null, ...(kind ? { userKind: kind } : {}) } as PackToolCtx,
     a,
   );
 

@@ -1211,3 +1211,121 @@ a:hover {
 .hiddencmt {
   opacity: 0.55;
 }
+
+/* C10b · dock "Hỏi trợ lý giá" (mockup .fab/.chat/.msg) */
+.fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  height: 52px;
+  padding: 0 18px 0 14px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.35);
+}
+.fab:hover {
+  background: var(--accent-hover);
+}
+.chat {
+  position: fixed;
+  right: 24px;
+  bottom: 88px;
+  z-index: 41;
+  width: 390px;
+  max-width: calc(100vw - 32px);
+  height: 560px;
+  max-height: calc(100vh - 120px);
+  background: #fff;
+  border: 1px solid #e5e5ec;
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(15, 16, 32, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat .hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #efeff4;
+}
+.chat .hd b {
+  display: block;
+  font-size: 14.5px;
+}
+.chat .hd span {
+  font-size: 12px;
+  color: #6b6c80;
+}
+.chat .msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fbfbfd;
+}
+.msg {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  white-space: pre-line;
+}
+.msg.bot {
+  background: #fff;
+  border: 1px solid #e5e5ec;
+  align-self: flex-start;
+}
+.msg.me {
+  background: var(--accent);
+  color: #fff;
+  align-self: flex-end;
+}
+.msg.err {
+  border-color: #c81e1e;
+  color: #c81e1e;
+}
+.chat .qp {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-top: 1px solid #efeff4;
+}
+.chat .qp button {
+  border: 1px solid #d4d4dc;
+  background: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 6px 10px;
+  color: #2c2d40;
+  min-height: 32px;
+}
+.chat .qp button:hover {
+  background: #f6f6fa;
+}
+.chat .in {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #efeff4;
+}
+.chat .in input {
+  flex: 1;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid #d4d4dc;
+  padding: 0 14px;
+  font: inherit;
+}

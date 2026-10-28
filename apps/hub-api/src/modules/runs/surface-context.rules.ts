@@ -10,6 +10,8 @@ export const CONTEXT_LABEL_MAX = 200;
 
 const SURFACE_LABEL: Record<AiSurface, string> = {
   contracts: "khoang trợ lý của Sổ Hợp Tác (app quản lý hợp đồng)",
+  community:
+    "khoang Trợ lý giá của Cộng đồng (app nội bộ chủ quản; chỉ trả lời giá từ Sổ giá, bài đăng, báo giá — luôn kèm nguồn + ngày)",
   chat: "AI System chat",
 };
 

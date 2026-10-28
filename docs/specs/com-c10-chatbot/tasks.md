@@ -14,6 +14,7 @@ Unit bóc tách văn bản (bảng mẫu); một int đường chính; một int
 ## Quyết định trong lúc làm
 <!-- agent điền -->
 - C10a (tra giá/so sánh/tìm NCC): 3 tool `contracts-price-lookup|price-compare|find-suppliers` (action read) trên `HostBookReader` (reader kiểm nội bộ + quyền đọc gói; ngoài/không quyền ⇒ forbidden). Tìm NCC theo SP (tên/tiền tố), chưa theo nhóm hàng/khu vực (chưa có dữ liệu khu vực). So sánh: mỗi NCC giá mới nhất, khác đơn vị không quy đổi, VAT không đồng nhất ⇒ cảnh báo. Rỗng ⇒ "chưa có giá". Chưa có `kind` trên `PackToolCtx` (đọc nếu có).
+- C10b (dock): hub **0063** nới CHECK `conversations.surface` thêm `community`; `X-Ai-Surface: community` là dock thứ 2 (`DOCK_SURFACES`): chat-gate mở khi user nội bộ có quyền đọc gói `community` (kể cả công ty không có Chat AI), hội thoại mang `surface=community` và chỉ gửi vào đúng dock đó. Đối tác: C2 chặn 403 (int). `PackToolCtx.userKind` thêm (price tools từ chối `external` ngay ở tool; MCP provider chuyển tiếp nếu token mang, token chat chưa mang ⇒ reader vẫn kiểm). community-web: dock thật (SSE `/conversations`+`/runs` qua proxy, mock có câu mẫu), ngữ cảnh = surface+route+từ khoá tìm (chưa có loại entity bài/SP ⇒ chưa gắn nhãn RLS), CSS `.fab/.chat` bổ sung (trước đó thiếu). CHƯA làm (COULD): tool dán Zalo ⇒ prefill form Lưu báo giá; **Deploy:** nginx/edge phải route `/conversations` và `/runs` tới hub-api cho community-web (như contracts-web).
 
 
 ## Delta (so với docs/current)

@@ -5,7 +5,12 @@ import type {
   PackToolCtx,
   PackToolDef,
 } from "../../kit/application/pack-tools.ports";
-import type { HostBookOut, HostBookReader, HostCaller } from "../application/host-book.ports";
+import {
+  HostBookError,
+  type HostBookOut,
+  type HostBookReader,
+  type HostCaller,
+} from "../application/host-book.ports";
 import {
   compareResult,
   lookupResult,
@@ -23,9 +28,13 @@ const DATA_NOTE =
 
 const text = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
 const callerOf = (ctx: PackToolCtx): HostCaller => {
-  const kind = (ctx as PackToolCtx & { kind?: "internal" | "external" }).kind;
+  const kind = ctx.userKind ?? (ctx as PackToolCtx & { kind?: "internal" | "external" }).kind;
   return { tenantId: ctx.tenantId, userId: ctx.userId, ...(kind ? { kind } : {}) };
 };
+/** com-c10b · đối tác (`external`) bị từ chối NGAY ở tool, trước mọi truy vấn (reader vẫn kiểm lần nữa). */
+export function assertInternal(ctx: PackToolCtx): void {
+  if (callerOf(ctx).kind === "external") throw new HostBookError("forbidden");
+}
 function need(a: PackToolArgs, key: string): string {
   const v = text(a[key]);
   if (v === "") throw new Error("price tool: invalid args");
@@ -37,6 +46,7 @@ async function read(
   ctx: PackToolCtx,
   name: string,
 ): Promise<{ out: HostBookOut; prod: HostBookOut["products"][number] }> {
+  assertInternal(ctx);
   const who = callerOf(ctx);
   const hints = [{ name }];
   const first = await reader.read(who, { hints });

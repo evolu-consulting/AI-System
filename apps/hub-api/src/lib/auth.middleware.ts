@@ -22,7 +22,7 @@ export type AuthUser = {
  * chat-api-gate-fix · cổng chat gắn khi request đi route dock với `X-Ai-Surface: contracts`: hội thoại tạo ra mang dấu
  * `surface=contracts`; `restricted` = công ty không có Chat AI ⇒ chỉ gửi văn bản thường vào hội thoại có dấu đó.
  */
-export type ChatDock = { restricted: boolean };
+export type ChatDock = { restricted: boolean; surface: "contracts" | "community" };
 /** Biến context middleware cần/gắn (AppVars của app là tập cha). */
 export type AuthVars = {
   Variables: { log: Logger; config?: ConfigCache; user: AuthUser; chatDock?: ChatDock };

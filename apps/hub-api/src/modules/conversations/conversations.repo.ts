@@ -1,8 +1,9 @@
 // HUB-FR-40 · HUB-BR-14 · Drizzle query bảng `hub.conversations` (plan H1 §3.2). Gọi trong `withHubScope(user)`:
 // RLS lọc theo (tenant, user) của JWT; câu vẫn lọc `tenant_id` + `user_id` tường minh (H1-R03, CONVENTIONS "luôn lọc tenant").
+import { DOCK_SURFACES, type DockSurface } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { conversations } from "@ai/db/schema/hub";
-import { and, desc, eq, isNull, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { AttachmentRefRow, ConversationRow, PageKey } from "./conversations.rules";
 
@@ -67,19 +68,31 @@ export async function findConversation(
   return r ?? null;
 }
 
-/** chat-api-gate-fix · hội thoại còn sống của chủ có dấu dock `surface='contracts'` (một câu theo PK). */
-export async function isDockConversation(tx: Tx, o: Owner, id: string): Promise<boolean> {
+/** chat-api-gate-fix · hội thoại còn sống của chủ có dấu dock (`contracts`/`community`; một câu theo PK).
+ *  com-c10b: có `surface` ⇒ khớp đúng bề mặt dock của request (dock community không gửi vào hội thoại dock contracts). */
+export async function isDockConversation(
+  tx: Tx,
+  o: Owner,
+  id: string,
+  surface?: DockSurface,
+): Promise<boolean> {
   const [r] = await tx
     .select({ id: c.id })
     .from(c)
-    .where(and(live(o), eq(c.id, id), eq(c.surface, "contracts")));
+    .where(
+      and(
+        live(o),
+        eq(c.id, id),
+        surface ? eq(c.surface, surface) : inArray(c.surface, [...DOCK_SURFACES]),
+      ),
+    );
   return r !== undefined;
 }
 
 export async function insertConversation(
   tx: Tx,
   o: Owner,
-  v: { title: string; titleNorm: string; surface?: "contracts" },
+  v: { title: string; titleNorm: string; surface?: DockSurface },
 ): Promise<ConversationRow> {
   const [r] = await tx
     .insert(c)

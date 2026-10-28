@@ -11,7 +11,7 @@ import {
   chatAppAllowed,
   chatGateVerdict,
   chatRouteKind,
-  isDockSurface,
+  dockSurfaceOf,
 } from "./chat-gate.rules";
 
 export type ChatGateView = {
@@ -21,7 +21,7 @@ export type ChatGateView = {
 export type ChatGateDeps = {
   view: ChatGateView;
   /** User được dùng dock trợ lý Sổ Hợp Tác (quyền đọc gói `contracts`); vắng ⇒ không có ngoại lệ dock. */
-  dockAllowed?: (u: AuthUser) => Promise<boolean>;
+  dockAllowed?: (u: AuthUser, surface: "contracts" | "community") => Promise<boolean>;
 };
 
 export function chatGate(d: ChatGateDeps): MiddlewareHandler<AuthVars> {
@@ -31,16 +31,16 @@ export function chatGate(d: ChatGateDeps): MiddlewareHandler<AuthVars> {
     const u = c.var.user;
     await d.view.adminSettled?.();
     const chatOk = chatAppAllowed(await d.view.catalog(), u);
-    const dockReq = kind === "dock" && isDockSurface(c.req.header(AI_SURFACE_HEADER));
+    const dockSurface = kind === "dock" ? dockSurfaceOf(c.req.header(AI_SURFACE_HEADER)) : null;
     const dockOk =
       !chatOk &&
-      dockReq &&
+      dockSurface !== null &&
       u.userKind !== "external" && // CR-102a · com-c2: đối tác không dùng dock trợ lý
       d.dockAllowed !== undefined &&
-      (await d.dockAllowed(u));
+      (await d.dockAllowed(u, dockSurface));
     if (!chatGateVerdict(kind, chatOk, dockOk)) throw appError("CHAT_APP_DISABLED");
-    // fix: dấu dock cho route sau — tạo hội thoại ⇒ `surface=contracts`; qua cổng NHỜ dock ⇒ gửi tin bị giới hạn (routes kiểm).
-    if (dockReq) c.set("chatDock", { restricted: !chatOk });
+    // fix: dấu dock cho route sau — tạo hội thoại ⇒ `surface=<dock>`; qua cổng NHỜ dock ⇒ gửi tin bị giới hạn (routes kiểm).
+    if (dockSurface) c.set("chatDock", { restricted: !chatOk, surface: dockSurface });
     await next();
   };
 }

@@ -106,7 +106,7 @@ async function dockSendGuard(
   if (!dock?.restricted) return;
   const ok =
     dockMessageAllowed(body.content, body.attachment_ids?.length ?? 0) &&
-    (await conversations.isDock(u, id));
+    (await conversations.isDock(u, id, dock.surface));
   if (!ok) throw appError("CHAT_APP_DISABLED");
 }
 

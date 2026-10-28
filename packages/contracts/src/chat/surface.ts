@@ -2,8 +2,11 @@
 // Sổ Hợp Tác = `contracts`). Vắng / giá trị lạ ⇒ null (Hub coi là chat AI System). Chỉ là nhãn thống kê — không phải quyền.
 // one-agent · `chat` = AI System chat (mặc định thống kê vẫn là `chat`); cùng giá trị dùng cho `context.surface` (khối ngữ cảnh).
 export const AI_SURFACE_HEADER = "X-Ai-Surface";
-export const AI_SURFACES = ["contracts", "chat"] as const;
+export const AI_SURFACES = ["contracts", "community", "chat"] as const;
 export type AiSurface = (typeof AI_SURFACES)[number];
+/** com-c10b · bề mặt dock (khoang trợ lý nhúng trong web gói) — hội thoại tạo qua dock mang dấu này (hub 0063). */
+export const DOCK_SURFACES = ["contracts", "community"] as const;
+export type DockSurface = (typeof DOCK_SURFACES)[number];
 
 /** Giá trị header → bề mặt hợp lệ, hoặc null. */
 export function surfaceOf(v: string | null | undefined): AiSurface | null {

@@ -17,7 +17,8 @@ import {
 import { applyFeedQuery, countTabs, uniqueSorted } from "../lib/filters";
 import { applyMask, detectHits, type MaskContext } from "../lib/mask";
 import { canViewPost, defaultAudience } from "../lib/visibility";
-import type { ChatReply, CommunityApi } from "./client";
+import type { CommunityApi } from "./client";
+import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
 import {
   CATS,
@@ -387,7 +388,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       settings.set(me.userId, s);
       return s;
     },
-    chatAsk: async (): Promise<ChatReply> => ({ text: "Trợ lý giá sắp có." }),
+    chat: mockDockChat,
   };
 
   return {

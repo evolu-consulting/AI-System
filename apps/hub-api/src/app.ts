@@ -156,11 +156,12 @@ const contextLabelerOf = (t: AppDeps["packTools"]): ContextLabeler | undefined =
   return f && t ? { contextLabel: f.bind(t) } : undefined;
 };
 
-/** chat-api-gate · dock trợ lý Sổ Hợp Tác mở cho user có quyền `read` gói `contracts` (cùng luật cổng gói, đọc cache). */
+/** chat-api-gate · dock trợ lý mở cho user có quyền `read` gói của dock (`contracts` = Sổ Hợp Tác, `community` = com-c10b;
+ *  cùng luật cổng gói, đọc cache). */
 const contractsReader =
   (config: ConfigCache) =>
-  async (u: AuthUser): Promise<boolean> => {
-    const i = await packAccessInput(config, "contracts", u);
+  async (u: AuthUser, surface: "contracts" | "community"): Promise<boolean> => {
+    const i = await packAccessInput(config, surface, u);
     return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.read }) === "ok";
   };
 

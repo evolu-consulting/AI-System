@@ -1,12 +1,23 @@
-// Nút nổi "Hỏi trợ lý giá" + khung chat (mockup `.fab` / `.chat`). Placeholder: lát C10 nối trợ lý; đối tác không có chatbot (GĐ1).
+// Nút nổi "Hỏi trợ lý giá" + khung chat (mockup `.fab` / `.chat`), C10b: nối trợ lý chung `assistant` qua Agent Hub (SSE,
+// surface=community) + ngữ cảnh trang. Chỉ chủ quản nội bộ; đối tác không thấy nút (GĐ1: không chatbot đối tác).
 import { useState } from "react";
+import { DOCK_SUGGESTIONS, dockContext, dockVisible, QUESTION_MAX } from "../lib/dock";
 import { useApp } from "./ctx";
 import { IconChat, IconSend, IconX } from "./icons";
+import { ask, stop, useDock } from "./use-dock";
 
 export function ChatDock() {
-  const { isHostViewer } = useApp();
+  const { viewer, api, route, search } = useApp();
   const [open, setOpen] = useState(false);
-  if (!isHostViewer) return null;
+  const [text, setText] = useState("");
+  const { msgs } = useDock();
+  if (!dockVisible(viewer.role)) return null;
+  const busy = msgs.some((m) => m.pending);
+  const send = (q: string) => {
+    if (busy || !q.trim()) return;
+    setText("");
+    void ask(api, q, dockContext({ route: route.name, orgId: route.orgId, search }));
+  };
   return (
     <>
       {open && (
@@ -16,9 +27,7 @@ export function ChatDock() {
               AI
             </span>
             <div style={{ flex: 1 }}>
-              <b>
-                Trợ lý giá<span className="soonpill">sắp có</span>
-              </b>
+              <b>Trợ lý giá</b>
               <span>Trả lời từ Sổ giá, bài đăng và báo giá · luôn kèm nguồn</span>
             </div>
             <button
@@ -31,29 +40,59 @@ export function ChatDock() {
               <IconX />
             </button>
           </div>
-          <div className="msgs">
-            <div className="msg bot">
-              Trợ lý giá sẽ trả lời giá từ Sản phẩm &amp; Giá, kèm nguồn và ngày. Tính năng này chưa
-              bật.
-            </div>
+          <div className="msgs" aria-live="polite">
+            {msgs.length === 0 && (
+              <div className="msg bot">
+                Hỏi giá một sản phẩm, so sánh nhà cung cấp hoặc xem hôm nay có gì mới. Mỗi con số
+                đều kèm nguồn và ngày.
+              </div>
+            )}
+            {msgs.map((m, i) => (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: danh sách chỉ thêm cuối
+                key={i}
+                className={`msg ${m.role === "user" ? "me" : "bot"}${m.error ? " err" : ""}`}
+              >
+                {m.error ?? (m.text || (m.pending ? (m.step ?? "Đang tra…") : ""))}
+              </div>
+            ))}
           </div>
           <div className="qp">
-            {["Giá chữ ký số USB Token?", "Hôm nay có gì mới?"].map((q) => (
-              <button key={q} type="button" disabled>
+            {DOCK_SUGGESTIONS.map((q) => (
+              <button key={q} type="button" disabled={busy} onClick={() => send(q)}>
                 {q}
               </button>
             ))}
           </div>
-          <div className="in">
+          <form
+            className="in"
+            onSubmit={(e) => {
+              e.preventDefault();
+              send(text);
+            }}
+          >
             <input
               aria-label="Hỏi trợ lý giá"
               placeholder="Hỏi giá, ghi giá, soạn báo giá…"
-              disabled
+              value={text}
+              maxLength={QUESTION_MAX}
+              onChange={(e) => setText(e.target.value)}
             />
-            <button type="button" className="sendbtn" disabled aria-label="Gửi">
-              <IconSend size={16} />
-            </button>
-          </div>
+            {busy ? (
+              <button
+                type="button"
+                className="sendbtn"
+                onClick={() => void stop(api)}
+                aria-label="Dừng"
+              >
+                <IconX size={16} />
+              </button>
+            ) : (
+              <button type="submit" className="sendbtn" disabled={!text.trim()} aria-label="Gửi">
+                <IconSend size={16} />
+              </button>
+            )}
+          </form>
         </div>
       )}
       <button

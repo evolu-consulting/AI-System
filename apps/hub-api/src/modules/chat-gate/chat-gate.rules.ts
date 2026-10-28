@@ -73,8 +73,11 @@ export function dockMessageAllowed(content: string, attachmentCount: number): bo
   return routeMessage(b.kind === "escaped" ? b.content : content).kind === "text";
 }
 
-/** Header `X-Ai-Surface` của dock trợ lý Sổ Hợp Tác. */
-export const isDockSurface = (surface: string | undefined): boolean => surface === "contracts";
+/** Header `X-Ai-Surface` của dock trợ lý (Sổ Hợp Tác = `contracts`, Cộng đồng = `community`, com-c10b); khác ⇒ null. */
+export const dockSurfaceOf = (surface: string | undefined): "contracts" | "community" | null =>
+  surface === "contracts" || surface === "community" ? surface : null;
+export const isDockSurface = (surface: string | undefined): boolean =>
+  dockSurfaceOf(surface) !== null;
 
 /** Cho qua: route mở, hoặc công ty có Chat AI, hoặc route dock + người gọi đủ quyền dock. */
 export function chatGateVerdict(kind: ChatRouteKind, chatOk: boolean, dockOk: boolean): boolean {

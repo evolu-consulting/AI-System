@@ -2,7 +2,8 @@
 // token trong bộ nhớ, 401 ⇒ refresh cookie một lần). Hình dữ liệu = `@ai/contracts/community`; server quyết quyền xem.
 import type { FeedQuery } from "@ai/contracts/community";
 import { api } from "@ai/web-kit/http";
-import type { ChatReply, CommunityApi } from "./client";
+import type { CommunityApi } from "./client";
+import { cancelRun, createConversation, sendAndStream } from "./dock";
 
 const BASE = "/pack/community";
 const enc = encodeURIComponent;
@@ -54,7 +55,6 @@ export function createHttpApi(): CommunityApi {
     getProfile: (orgId) => api(orgId ? `${BASE}/profile/${enc(orgId)}` : `${BASE}/profile`),
     getSettings: () => api(`${BASE}/settings`),
     saveSettings: (s) => api(`${BASE}/settings`, { method: "PUT", body: s }),
-    // C10: trợ lý giá chưa nối.
-    chatAsk: async (): Promise<ChatReply> => ({ text: "Trợ lý giá sắp có." }),
+    chat: { createConversation, send: sendAndStream, cancel: cancelRun },
   };
 }

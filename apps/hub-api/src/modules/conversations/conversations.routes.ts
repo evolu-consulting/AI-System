@@ -28,7 +28,7 @@ export function conversationRoutes(db: Db, remove?: RemoveConversation): Hono<Au
   r.post("/", async (c) => {
     const body = await parseJson(c, ConversationCreateRequestSchema);
     // chat-api-gate-fix · tạo qua dock Sổ Hợp Tác ⇒ đánh dấu (cổng chat chỉ cho dock gửi vào hội thoại có dấu).
-    const surface = c.var.chatDock ? "contracts" : undefined;
+    const surface = c.var.chatDock?.surface; // com-c10b: `contracts` | `community`
     return c.json(await svc.create(c.var.user, body.title, surface), 201);
   });
 

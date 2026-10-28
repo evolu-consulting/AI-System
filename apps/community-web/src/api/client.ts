@@ -1,5 +1,6 @@
 // CR-102 · C5 · giao diện API mà UI dùng. Hai adapter: `mock` (in-memory, chạy ngay) và `http` (C3 nối `/pack/community/*`).
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
+import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
 import type {
   CommunityNotification,
   CommunitySettings,
@@ -19,7 +20,13 @@ import type {
   UpdatePostInput,
 } from "@ai/contracts/community";
 
-export type ChatReply = { text: string; source?: string };
+export type DockSent = { runId: string | null; flowId: string | null };
+/** com-c10b · cổng trợ lý giá (Agent Hub, SSE). http = `/conversations`+`/runs` (X-Ai-Surface: community); mock = trả lời mẫu. */
+export interface DockChat {
+  createConversation(title: string): Promise<{ id: string }>;
+  send(convId: string, req: SendMessageRequest, onEvent: (e: ChatEvent) => void): Promise<DockSent>;
+  cancel(runId: string): Promise<void>;
+}
 
 export interface CommunityApi {
   /** `GET /pack/community/viewer` (C3: `/pack/:k/me` của kit đã chiếm `/me`). */
@@ -61,6 +68,6 @@ export interface CommunityApi {
   /** `GET|PUT /pack/community/settings` */
   getSettings(): Promise<CommunitySettings>;
   saveSettings(s: CommunitySettings): Promise<CommunitySettings>;
-  /** Trợ lý giá (C10) — placeholder. */
-  chatAsk(text: string): Promise<ChatReply>;
+  /** Trợ lý giá (C10b) — chỉ chủ quản; đối tác không có. */
+  chat: DockChat;
 }

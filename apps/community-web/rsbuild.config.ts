@@ -9,6 +9,9 @@ const HUB_URL = process.env.HUB_URL || "http://localhost:4000";
 export const proxy = {
   "/auth": ADMIN_API_URL,
   "/pack": HUB_URL,
+  // C10b · Trợ lý giá (dock): hội thoại + SSE + dừng run của Agent Hub (route SPA dùng hash nên không trùng).
+  "/conversations": HUB_URL,
+  "/runs": HUB_URL,
 };
 
 export default defineConfig({

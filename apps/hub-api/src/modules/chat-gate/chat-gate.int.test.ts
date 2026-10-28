@@ -55,6 +55,17 @@ beforeAll(async () => {
     (${T.beta}, ${GRP_CV}, ${USERS.an.id})`;
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id) values
     (${T.beta}, ${F.cread}, ${GRP_CV}, null)`;
+  // com-c10b · gói Cộng đồng: `an` (nhóm GRP_CV) được đọc gói `community` → mở dock `community`; `binh` thì không.
+  await sql`insert into admin.features (key, name, status) values
+    ('community-read', ${sql.json({ vi: "Xem Cộng đồng" })}, 'on') on conflict (key) do nothing`;
+  const [cm] = await sql<
+    { id: string }[]
+  >`select id from admin.features where key = 'community-read'`;
+  if (!cm) throw new Error("thiếu feature community-read");
+  await sql`insert into admin.feature_entitlements (feature_id, tenant_id) values (${cm.id}, ${T.beta})
+    on conflict (feature_id, tenant_id) do update set revoked_at = null`;
+  await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id) values
+    (${T.beta}, ${cm.id}, ${GRP_CV}, null)`;
   k = await makeKeys();
   hub = await startHubX(k);
 }, 60_000);
@@ -134,6 +145,56 @@ describe("chat-api-gate · chặn API Chat AI theo entitlement công ty", () => 
   it("platform_admin không bị chặn", async () => {
     const res = await call(hub, "GET", "/conversations", { token: await sign(k, USERS.padmin) });
     expect(res.status).toBe(200);
+  });
+});
+
+describe("com-c10b · dock trợ lý giá của Cộng đồng (X-Ai-Surface: community)", () => {
+  const CDOCK = { "X-Ai-Surface": "community" };
+  const create = (token: string, headers = CDOCK) =>
+    call(hub, "POST", "/conversations", { token, body: { title: "Giá" }, headers });
+
+  it("chủ quản (nội bộ, đọc gói community) ⇒ 201, hội thoại surface=community; gửi tin chỉ vào đúng dock", async () => {
+    const an = await sign(k, USERS.an);
+    const c = await create(an);
+    expect(c.status).toBe(201);
+    const [row] = await sql`select surface from hub.conversations where id = ${c.json.id}`;
+    expect(row?.surface).toBe("community");
+    const ok = await call(hub, "POST", `/conversations/${c.json.id}/messages`, {
+      token: an,
+      body: { content: "Giá USB Token?" },
+      headers: CDOCK,
+    });
+    expect(ok.status).not.toBe(403);
+    // hội thoại dock contracts không dùng được từ dock community
+    const other = await create(an, DOCK);
+    const bad = await call(hub, "POST", `/conversations/${other.json.id}/messages`, {
+      token: an,
+      body: { content: "Giá USB Token?" },
+      headers: CDOCK,
+    });
+    expect(errorOf(bad)).toEqual(DISABLED);
+  });
+
+  it("đối tác (kind=external) ⇒ 403, không tạo hội thoại", async () => {
+    // Đối tác thật (users.kind=external) (gói community bật cho công ty) — bị chặn (C2: không Chat AI, kể cả dock).
+    const ORG = "a7300000-0000-4000-8000-000000000031";
+    const EXT = { ...USERS.an, id: "a7300000-0000-4000-8000-000000000032", username: "ncc-c10b" };
+    await sql`insert into admin.external_orgs (id, tenant_id, name) values (${ORG}, ${T.beta}, 'NCC C10b')`;
+    await sql`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, kind,
+      external_org_id, must_change_password) values (${EXT.id}, ${T.beta}, 'ncc-c10b', 'x', 'NCC', 'member', 'external', ${ORG}, false)`;
+    const partner = await sign(k, EXT, {
+      claims: { tid: T.beta, role: "member", sid: null, kind: "external", xorg: ORG },
+    });
+    const before = await sql`select count(*)::int as n from hub.conversations`;
+    // C2 chặn đối tác ở cổng ngoài (FORBIDDEN) hoặc chat-gate (CHAT_APP_DISABLED) — cả hai là 403, không tạo gì.
+    const res = await create(partner);
+    expect(res.status).toBe(403);
+    const after = await sql`select count(*)::int as n from hub.conversations`;
+    expect(after[0]?.n).toBe(before[0]?.n);
+  });
+
+  it("nội bộ không có quyền đọc gói community ⇒ 403", async () => {
+    expect(errorOf(await create(await sign(k, BINH)))).toEqual(DISABLED);
   });
 });
 

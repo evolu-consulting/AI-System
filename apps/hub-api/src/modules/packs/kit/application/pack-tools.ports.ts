@@ -22,6 +22,8 @@ export type PackToolCtx = {
   runId: string | null;
   /** HD3 · D3-03 · `process_runs.id` của stage gọi tool (engine đặt); `/mcp` ⇒ vắng/null. Gói dùng để chỉ chạm bản ghi của run. */
   processRunId?: string | null;
+  /** com-c10b · loại người gọi (vắng ⇒ nội bộ). Tool dữ liệu chủ quản (tra giá…) từ chối `external` rõ ràng. */
+  userKind?: "internal" | "external";
   signal?: AbortSignal;
 };
 /** Hạn lời gọi (review Trung #1): hết hạn ⇒ `failed{code:"TIMEOUT"}`. */

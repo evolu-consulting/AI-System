@@ -113,8 +113,10 @@ describe("chatGateVerdict", () => {
     expect(dockMessageAllowed("!!/lenh", 0)).toBe(true);
     expect(dockMessageAllowed("Xem file", 1)).toBe(false);
   });
-  it("chỉ header bề mặt `contracts` mới là dock", () => {
+  it("chỉ header bề mặt `contracts`/`community` mới là dock", () => {
     expect(isDockSurface("contracts")).toBe(true);
+    expect(isDockSurface("community")).toBe(true);
+    expect(isDockSurface("Community")).toBe(false);
     expect(isDockSurface("chat")).toBe(false);
     expect(isDockSurface(undefined)).toBe(false);
   });
