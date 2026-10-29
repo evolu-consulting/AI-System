@@ -24,6 +24,9 @@ export async function chatLogin(page: Page, user: string, tenant = "acme"): Prom
   await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(user);
   await page.getByLabel("Mật khẩu").fill(PW);
   await page.getByRole("button", { name: "Đăng nhập" }).click();
+  // portal-home: đăng nhập hạ cánh ở trang chủ `/` ⇒ mở chat bằng URL.
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  if (!/\/c\/new$/.test(new URL(page.url()).pathname)) await page.goto("/c/new");
   await page.waitForURL(/\/c\/new$/);
 }
 
