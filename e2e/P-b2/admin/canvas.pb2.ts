@@ -23,6 +23,9 @@ test("ADM-FR-71 · E-PB2-01 · mở pb2-canvas ⇒ application 'Canvas quy trìn
   await openCanvas(p);
   await expect(canvas(p)).toBeVisible();
   await expect(canvas(p).getByRole("button", { name: /^Giai đoạn [1-4]: / })).toHaveCount(4);
+  // fnr-editor-drawer (qc, người dùng chốt ngăn đóng mặc định 2026-10-29): ngăn đóng lúc tải; chọn node ⇒ ngăn mở.
+  await expect(panel(p)).toHaveCount(0);
+  await node(p, "Phân tích").click();
   await expect(panel(p).getByRole("region", { name: "Giai đoạn 1: Phân tích" })).toBeVisible();
 });
 
@@ -146,6 +149,7 @@ test("ADM-FR-71 · AC-PB2-05 · E-PB2-08 · 'Hành động thật' của Tổng 
   await node(p, "Test hồi quy").click();
   await panel(p).getByRole("combobox", { name: "Sau giai đoạn" }).click();
   await p.getByRole("option", { name: "Duyệt bởi Group" }).click();
+  await p.keyboard.press("Escape"); // fnr-editor-drawer (qc): ngăn đè lên node "Tổng hợp" ⇒ đóng ngăn (Esc) trước khi bấm node khác
   await node(p, "Tổng hợp").click();
   await expect(panel(p).getByRole("switch", { name: "Hành động thật" })).toBeEnabled();
 });

@@ -17,13 +17,12 @@ type Props = {
   variant?: "column" | "drawer";
 };
 
-/** Esc đóng ngăn — bỏ qua khi Esc đã được popup khác (Select/Dialog) xử lý. */
+/** Esc đóng ngăn — bỏ qua khi Esc đã được popup khác (Select/Dialog của Radix gọi preventDefault) xử lý. */
 function useEscClose(active: boolean, onClose: () => void) {
   useEffect(() => {
     if (!active) return;
     const h = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (document.querySelector('[role="dialog"],[role="alertdialog"],[role="listbox"]')) return;
       onClose();
     };
     window.addEventListener("keydown", h);

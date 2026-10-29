@@ -21,19 +21,19 @@ function useStableViews(next: StageView[]): StageView[] {
 export function useWorkbench(d: DraftState, refs: EditorRefs) {
   const ops = useStageOps(d);
   const [removing, setRemoving] = useState<string | null>(null);
-  // fnr-editor-drawer: ngăn chi tiết (view Canvas) mở khi có giai đoạn được chọn; đóng ⇒ bỏ chọn. Mặc định mở (chọn sẵn giai đoạn 1).
-  const [open, setOpen] = useState(true);
+  // fnr-editor-drawer: ngăn chi tiết (view Canvas) mở khi có giai đoạn được chọn; đóng ⇒ bỏ chọn. Mặc định ĐÓNG (người dùng chốt 2026-10-29, kiểu n8n).
+  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? "list" : "canvas"));
   const stages = d.draft.stages;
   const sel = stages.find((s) => s.uid === d.selected) ?? stages[0];
   const views = useStableViews(stageViews(stages, d.errors, refs));
-  // chọn (bấm node, thêm giai đoạn, lỗi validate) ⇒ mở ngăn
+  // chọn (bấm node, thêm giai đoạn, lỗi validate) ⇒ mở ngăn; nạp bản nháp không mở
   useEffect(() => {
-    if (d.selected) setOpen(true);
-  }, [d.selected]);
+    if (d.openReq > 0) setOpen(true);
+  }, [d.openReq]);
   const close = () => {
     setOpen(false);
-    d.select(null);
+    d.deselect();
   };
 
   /**
@@ -42,8 +42,13 @@ export function useWorkbench(d: DraftState, refs: EditorRefs) {
    */
   const select = (uid: string, byKeyboard: boolean) => {
     d.select(uid);
+    setOpen(true);
     const stacked = window.matchMedia("(max-width: 1023px)").matches;
-    if (byKeyboard) requestAnimationFrame(() => document.getElementById(`${uid}-name`)?.focus());
+    // ngăn (view Canvas) vừa mở ở lượt render kế ⇒ chờ hai khung hình rồi mới focus ô tên
+    if (byKeyboard)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => document.getElementById(`${uid}-name`)?.focus()),
+      );
     else if (stacked)
       requestAnimationFrame(() => {
         const panel = document.getElementById(PANEL_ID);

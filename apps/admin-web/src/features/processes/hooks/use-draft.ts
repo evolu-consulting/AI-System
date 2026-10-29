@@ -1,4 +1,4 @@
-﻿// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
+// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
 import { useRef, useState } from "react";
 import {
   type DefDraft,
@@ -109,16 +109,25 @@ export function useDraft() {
     setErrors(e);
     const first = stageIndexesOf(Object.keys(e))[0];
     const uid = first === undefined ? undefined : ref.current.stages[first]?.uid;
-    if (uid) setSelected(uid);
+    if (uid) pick(uid);
   };
-  const steps = useStepMutations(ref, update, setSelected);
+  // fnr-editor-drawer: yêu cầu mở ngăn chi tiết — chỉ khi người dùng chọn / thêm giai đoạn / có lỗi khi Lưu (không phải nạp bản nháp)
+  const [openReq, setOpenReq] = useState(0);
+  const pick = (uid: string) => {
+    setSelected(uid);
+    setOpenReq((n) => n + 1);
+  };
+  const steps = useStepMutations(ref, update, pick);
   return {
     draft,
     draftRef: ref,
     dirty: snapshot(draft) !== base,
     errors,
     selected,
-    select: setSelected,
+    select: pick,
+    /** Bỏ chọn (đóng ngăn) — không yêu cầu mở lại. */
+    deselect: () => setSelected(null),
+    openReq,
     load,
     markSaved: () => setBase(snapshot(ref.current)),
     showErrors,
