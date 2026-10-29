@@ -25,7 +25,7 @@ import { insertAudit, lockStageWithHead } from "./tool-stage-lock.repo";
 type Deps = Omit<ProcessDeps, "launcher" | "start">;
 
 /** D1 · trạng thái "run" dựng từ stage (như `stage-driver.buildState`): bước/tổng bước. */
-function stateOf(head: RunHead, stage: StageRowIdx, def: SnapStage): RunState {
+export function stateOf(head: RunHead, stage: StageRowIdx, def: SnapStage): RunState {
   const steps = stepsOfSnap(head.snapshot);
   return {
     status: stageGateStatus(head.status as ProcessRunStatus, stage.status),

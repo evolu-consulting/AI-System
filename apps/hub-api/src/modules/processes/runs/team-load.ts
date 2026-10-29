@@ -150,7 +150,7 @@ export function stageOutputSteps(
   tx: Tx,
   p: { kind: string; stageRunId: string; hubRunId: string; tenantId: string; attempt: number },
 ): Promise<OutputStep[]> {
-  if (p.kind === "tool") return Promise.resolve([]);
+  if (p.kind === "tool" || p.kind === "set") return Promise.resolve([]);
   if (p.kind === "team") return outputSteps(tx, p);
   return outputStepsSingle(tx, p);
 }

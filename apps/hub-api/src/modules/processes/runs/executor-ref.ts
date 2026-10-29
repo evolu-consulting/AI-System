@@ -11,7 +11,8 @@ export type Executor =
   | { kind: "team"; team_id: string }
   | { kind: "apply" }
   | { kind: "wait_until" }
-  | { kind: "tool"; tool_key: string };
+  | { kind: "tool"; tool_key: string }
+  | { kind: "set" };
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
@@ -45,6 +46,12 @@ const toolRef = (key: string): ExecutorRef => ({
   key,
   name: { vi: clip(key), en: clip(key) },
 });
+/** CR-103 · R4 · stage `set` (Hub tự ghi giá trị, không catalog). */
+export const SET_EXECUTOR_REF: ExecutorRef = {
+  kind: "set",
+  key: "set",
+  name: { vi: "Ghi giá trị", en: "Set values" },
+};
 /** ExecutorRef cố định của stage Hub tự chạy; agent/team ⇒ null (tra catalog). */
 const fixedRef = (e: Executor): ExecutorRef | null =>
   e.kind === "apply"
@@ -53,7 +60,9 @@ const fixedRef = (e: Executor): ExecutorRef | null =>
       ? WAIT_UNTIL_EXECUTOR_REF
       : e.kind === "tool"
         ? toolRef(e.tool_key)
-        : null;
+        : e.kind === "set"
+          ? SET_EXECUTOR_REF
+          : null;
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 
 /** ExecutorRef từ hàng catalog (vi/en → key → id); key giữ id như cũ để FE khớp. */
