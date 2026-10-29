@@ -21,12 +21,12 @@ import { Route as AuthedAuditRouteRouteImport } from './routes/_authed/audit/rou
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
+import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedSourcesRouteImport } from './routes/_authed/sources'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
 import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
-import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
 import { Route as AuthedAuditAuditIdRouteImport } from './routes/_authed/audit/$auditId'
@@ -112,6 +112,11 @@ const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
   id: '/secrets',
   path: '/secrets',
@@ -135,11 +140,6 @@ const AuthedUsageRoute = AuthedUsageRouteImport.update({
 const AuthedUsersRoute = AuthedUsersRouteImport.update({
   id: '/users',
   path: '/users',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPartnersRoute = AuthedPartnersRouteImport.update({
-  id: '/partners',
-  path: '/partners',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAccount2faRoute = AuthedAccount2faRouteImport.update({
@@ -283,12 +283,12 @@ export interface FileRoutesByFullPath {
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/partners': typeof AuthedPartnersRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
-  '/partners': typeof AuthedPartnersRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
   '/audit/$auditId': typeof AuthedAuditAuditIdRoute
@@ -326,12 +326,12 @@ export interface FileRoutesByTo {
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/partners': typeof AuthedPartnersRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
-  '/partners': typeof AuthedPartnersRoute
   '/': typeof AuthedIndexRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
@@ -372,12 +372,12 @@ export interface FileRoutesById {
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
+  '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/sources': typeof AuthedSourcesRoute
   '/_authed/transfer': typeof AuthedTransferRoute
   '/_authed/usage': typeof AuthedUsageRoute
   '/_authed/users': typeof AuthedUsersRoute
-  '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/2fa': typeof AuthedAccount2faRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
@@ -419,12 +419,12 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/member'
     | '/notifications'
+    | '/partners'
     | '/secrets'
     | '/sources'
     | '/transfer'
     | '/usage'
     | '/users'
-    | '/partners'
     | '/account/2fa'
     | '/account/password'
     | '/audit/$auditId'
@@ -462,12 +462,12 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/member'
     | '/notifications'
+    | '/partners'
     | '/secrets'
     | '/sources'
     | '/transfer'
     | '/usage'
     | '/users'
-    | '/partners'
     | '/'
     | '/account/2fa'
     | '/account/password'
@@ -507,12 +507,12 @@ export interface FileRouteTypes {
     | '/_authed/feedback'
     | '/_authed/member'
     | '/_authed/notifications'
+    | '/_authed/partners'
     | '/_authed/secrets'
     | '/_authed/sources'
     | '/_authed/transfer'
     | '/_authed/usage'
     | '/_authed/users'
-    | '/_authed/partners'
     | '/_authed/'
     | '/_authed/account/2fa'
     | '/_authed/account/password'
@@ -634,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedNotificationsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/partners': {
+      id: '/_authed/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthedPartnersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/secrets': {
       id: '/_authed/secrets'
       path: '/secrets'
@@ -667,13 +674,6 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthedUsersRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/partners': {
-      id: '/_authed/partners'
-      path: '/partners'
-      fullPath: '/partners'
-      preLoaderRoute: typeof AuthedPartnersRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/account/2fa': {
@@ -873,12 +873,12 @@ interface AuthedRouteChildren {
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
+  AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedSourcesRoute: typeof AuthedSourcesRoute
   AuthedTransferRoute: typeof AuthedTransferRoute
   AuthedUsageRoute: typeof AuthedUsageRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
-  AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccount2faRoute: typeof AuthedAccount2faRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
@@ -914,12 +914,12 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFeedbackRoute: AuthedFeedbackRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
+  AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedSourcesRoute: AuthedSourcesRoute,
   AuthedTransferRoute: AuthedTransferRoute,
   AuthedUsageRoute: AuthedUsageRoute,
   AuthedUsersRoute: AuthedUsersRoute,
-  AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccount2faRoute: AuthedAccount2faRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
