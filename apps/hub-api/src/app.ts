@@ -61,6 +61,7 @@ import {
   type ProcessMountDeps,
   type ProcessSeams,
 } from "./modules/processes/processes.mount";
+import { resolveProcessRoutes } from "./modules/processes/routes-mode";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -201,7 +202,7 @@ function processHooks(
     workflowInvoker: sharedWorkflowInvoker({ ...deps, ...m }), // P-d2 · D2-02 · chung với `/mcp`
     // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
     github: githubEndpointOf(deps),
-    publicRoutes: deps.frozenModules !== false, // F1 · route công khai quy trình chỉ khi module không đóng băng
+    publicRoutes: resolveProcessRoutes(deps), // F1 · CR-103 · off | admin (chỉ admin-web) | all
     secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),
   });
   m.messages.useProcesses(proc.roomSender);

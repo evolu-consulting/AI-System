@@ -139,3 +139,25 @@ describe("dify-workflows · Workflows không bị cờ đóng băng", () => {
     expect(isFrozenPath("/transfer")).toBe(true);
   });
 });
+
+describe("CR-103 fnr-unfreeze · Quy trình theo Hub, không theo cờ build", () => {
+  test("frozen=false + engine on: có Quy trình, không có Nguồn; /processes* không bị gate, /sources vẫn gate", () => {
+    for (const role of ["platform_admin", "tenant_admin"] as const) {
+      const ids = navGroups(role, { frozen: false, processes: true })
+        .flatMap((g) => g.items)
+        .map((i) => i.id);
+      expect(ids).toContain("processes");
+      expect(ids).not.toContain("sources");
+    }
+    expect(isFrozenPath("/processes")).toBe(false);
+    expect(isFrozenPath("/processes/showcase")).toBe(false);
+    expect(isFrozenPath("/sources")).toBe(true);
+  });
+  test("engine off ⇒ không có Quy trình (dù cờ build on/off); member không có mục nào", () => {
+    for (const frozen of [true, false]) {
+      const ids = navGroups("tenant_admin", { frozen, processes: false }).flatMap((g) => g.items);
+      expect(ids.some((i) => i.id === "processes")).toBe(false);
+    }
+    expect(navGroups("member", { frozen: false, processes: true })).toEqual([]);
+  });
+});

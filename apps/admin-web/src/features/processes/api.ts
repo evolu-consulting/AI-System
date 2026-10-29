@@ -20,15 +20,16 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { frozenModulesOn } from "@/lib/frozen";
 import { ApiError, api, apiResponse } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 
 export type EngineState = "on" | "off" | "unknown";
 
-/** `GET /process-defs?limit=1&include_templates=false`: 200 ⇒ on; 404/403 ⇒ off; Hub chưa cấu hình ⇒ off; lỗi khác ném (⇒ unknown). */
+/**
+ * `GET /process-defs?limit=1&include_templates=false`: 200 ⇒ on; 404/403 ⇒ off; Hub chưa cấu hình ⇒ off; lỗi khác ném (⇒ unknown).
+ * CR-103 · luôn dò (kể cả cờ build đóng băng off): Hub `HUB_PROCESS_ROUTES=admin` mở editor cho admin; Hub off ⇒ 404 ⇒ off.
+ */
 export async function probeEngine(): Promise<EngineState> {
-  if (!frozenModulesOn) return "off"; // module đóng băng tắt ⇒ không dò (Hub không mount route ⇒ 404 console)
   const url = hubConfigured() ? hubUrl("/process-defs") : null;
   if (url === null) return "off";
   try {

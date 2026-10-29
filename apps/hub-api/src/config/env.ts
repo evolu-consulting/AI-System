@@ -4,6 +4,7 @@ import { isAbsolute } from "node:path";
 import { dropEmptyEnv } from "@ai/contracts";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
+import { PROCESS_ROUTE_MODES } from "../modules/processes/routes-mode";
 
 const OriginList = z
   .string()
@@ -79,6 +80,9 @@ export const EnvSchema = z.object({
   // F1 (CR-095) · cờ module đóng băng (docs/platform/modules.md): `off` (mặc định) ⇒ không mount route công khai của quy trình,
   // phòng, nguồn, KH, DLC; engine quy trình vẫn chạy nội bộ khi `HUB_PROCESS_ENGINE=on` (gói hợp đồng dùng). Dev/test bật.
   HUB_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
+  // CR-103 · route công khai quy trình: off | admin (chỉ editor/lượt chạy cho tenant_admin/platform_admin — admin-web; chat-web vẫn
+  // đóng băng) | all. Vắng ⇒ theo HUB_FROZEN_MODULES (on ⇒ all, off ⇒ off). Prod muốn editor quy trình ⇒ `admin`.
+  HUB_PROCESS_ROUTES: z.enum(PROCESS_ROUTE_MODES).optional(),
   // chat-fast · `on` ⇒ tin không tag mà người gửi chỉ thấy đúng 1 agent → chạy thẳng agent đó (bỏ job Orchestrator, cùng kiểm
   // quyền). Mặc định `off` (test khoá giữ hành vi cũ); production bật trong compose.
   HUB_FAST_ROUTE: z.enum(["on", "off"]).default("off"),

@@ -8,6 +8,7 @@ import type { DlcEngine } from "./modules/dlc/dlc.engine";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
 import type { PacksDeps } from "./modules/packs/packs.mount";
 import type { ProcessSeams } from "./modules/processes/processes.mount";
+import type { ProcessRoutesMode } from "./modules/processes/routes-mode";
 import type { RunDriver } from "./modules/runs/runs.service";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
 
@@ -64,6 +65,11 @@ export type AppDeps = {
    * giữ nguyên); `server.ts` luôn điền từ `HUB_FROZEN_MODULES` (mặc định off).
    */
   frozenModules?: boolean;
+  /**
+   * CR-103 · = `HUB_PROCESS_ROUTES` (off | admin | all). Đặt rõ ⇒ thắng `frozenModules` cho route công khai quy trình; vắng ⇒ theo
+   * `frozenModules` (true/vắng ⇒ all, false ⇒ off). `admin` ⇒ chỉ editor/lượt chạy cho tenant_admin/platform_admin (`routes-mode.ts`).
+   */
+  processRoutes?: ProcessRoutesMode;
   /** P-b C13 · = `HUB_SOURCE_CHECK_TIMEOUT_MS`; "Kiểm tra kết nối" chờ Runtime resolve (mặc định 60000). */
   sourceCheckTimeoutMs?: number;
   /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */

@@ -4,12 +4,13 @@ CR-095 (người dùng duyệt 2026-10-19). App quản lý hợp đồng (contra
 **Đóng băng** = không xoá mã/bảng, không sửa trừ khi lát yêu cầu; route công khai và UI tắt mặc định bằng cờ; suite test ra khỏi cổng hằng ngày.
 Bảng đã đối chiếu với mã (`apps/hub-api/src/app*.ts`, `apps/admin-api/src/app.ts`, import chéo giữa module).
 
-Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODULES` (hub-api), `ADMIN_FROZEN_MODULES` (admin-api), `PUBLIC_FROZEN_MODULES` (build-time của admin-web, chat-web, studio-web).
+Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODULES` (hub-api), `ADMIN_FROZEN_MODULES` (admin-api), `PUBLIC_FROZEN_MODULES` (build-time của admin-web, chat-web, studio-web); `HUB_PROCESS_ROUTES=off|admin|all` (hub-api, CR-103, vắng ⇒ theo `HUB_FROZEN_MODULES`).
 `createApp` trong test in-process: vắng `frozenModules` ⇒ mount hết (test cũ giữ nguyên); `server.ts` luôn điền từ env.
 
 | Module | Trạng thái | Lý do | Owner |
 |---|---|---|---|
-| hub-api `processes` — route công khai (`/processes`, `/process-runs`, `/review-tasks`, `/process-defs`, `/agent-teams`, `/process-editor`, hộp thư quy trình) | đóng băng | Không có UI sản phẩm dùng; cờ `HUB_FROZEN_MODULES` | hub |
+| hub-api `processes` — route editor/lượt chạy cho admin (`/process-defs`, `/agent-teams`, `/process-editor`, `/processes`, `/process-runs*` gồm usage/cancel/decide, `/review-tasks/:id/decision`) | **đang dùng (chỉ admin)** khi `HUB_PROCESS_ROUTES=admin` | CR-103 (fnr-unfreeze): editor quy trình + `/processes/showcase` của admin-web; chặn `requireAdminRole` ở gốc mọi tiền tố (role JWT, member 403). Vắng biến ⇒ theo `HUB_FROZEN_MODULES` (on ⇒ `all`, off ⇒ `off`) | hub |
+| hub-api `processes` — route chat-web (`/review-tasks/:id/answer\|forward`, hộp thư `/me/review-tasks`, `/me/process-inbox*`) | đóng băng | Không mount ở `admin`; chỉ `HUB_PROCESS_ROUTES=all` hoặc `HUB_FROZEN_MODULES=on` | hub |
 | hub-api `processes` — engine, vòng nền, cầu `packRuns`/`packTools` (cờ `HUB_PROCESS_ENGINE`) | **đang dùng (nội bộ)** | Gói hợp đồng (HD2/HD3, N2) chạy qua engine tới khi lát M3 tách; không đổi cờ này | hub |
 | hub-api `rooms` — route `/rooms*` | đóng băng | Chat người–người không thuộc sản phẩm | hub |
 | hub-api `rooms` — dịch vụ + `RoomRunPoster` + `/directory` + `/me/stream` | đang dùng | `/me/stream` (stream realtime) và engine (`ThreadPoster`, `roomSender`) dùng chung dịch vụ | hub |
@@ -21,7 +22,8 @@ Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODUL
 | hub-api `mention` (`@`, `directDriver`), `commands` (`/`) | **đang dùng** (không đóng băng) | `sendMessageRoutes` gọi `prepareMention`/`prepareCommand`; `app.runner` dùng `directDriver` | hub |
 | hub-api autofix/runner P-c (`/internal/jobs/:id/source-credential`, `apply-result`) | đang dùng (không tách) | Route token-job nhỏ, không UI; gỡ cần sửa runner chung | hub |
 | admin-api `workflows`, `workflow-tools`, `transfer` (export/import), `commands` | đóng băng | Cờ `ADMIN_FROZEN_MODULES` (route `/admin/workflows`, `/admin/commands`, `/admin/export`, `/admin/import`, workflow-tools) | admin |
-| admin-web: Commands, Workflows, Transfer, Quy trình, Nguồn (nav + route) | đóng băng | Redirect về `/` khi `PUBLIC_FROZEN_MODULES` ≠ on | admin |
+| admin-web: Commands, Workflows, Transfer, Nguồn (nav + route) | đóng băng | Redirect về `/` khi `PUBLIC_FROZEN_MODULES` ≠ on | admin |
+| admin-web: Quy trình (`/processes*`) | theo Hub lúc chạy | CR-103: không gate theo cờ build; dò `GET /process-defs` (200 ⇒ hiện nav + trang, 404 ⇒ ẩn/NotFound) | admin |
 | chat-web: phòng, Users/Groups trong sidebar, hộp thư quy trình, Workspaces DLC | đóng băng | Ẩn sidebar + redirect `/rooms/:id`, `/process-inbox`; `useRoomList` không gọi API | chat |
 | studio-web: Cài đặt KnowledgeHub (`/settings`) | đóng băng | Ẩn nav + redirect | hub |
 | auth, tenants, users, groups, access, audit, quotas, secrets, identity-import, packs (gồm contracts), agents, agent-grants, conversations, runs/runner, mcp, dify, knowledge, notify, attachments, stream/me-stream, studio, seed, config | đang dùng | Lõi chung + sản phẩm hợp đồng + chat qua Agent Hub/Dify | core |

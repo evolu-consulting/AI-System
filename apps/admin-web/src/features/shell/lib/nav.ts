@@ -117,14 +117,17 @@ export type NavOptions = {
 
 /** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
 // dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng; chỉ /workflows/steps (engine AI SDLC) bị gate.
-const FROZEN_PREFIXES = ["/workflows/steps", "/transfer", "/processes", "/sources"];
+// CR-103 · `/processes*` KHÔNG còn gate theo cờ build: Hub quyết lúc chạy (`HUB_PROCESS_ROUTES=admin` ⇒ dò `/process-defs` 200);
+// `ProcessRouteGate` vẽ NotFound khi Hub báo off. `/sources` vẫn đóng băng (Hub không mount nguồn ở chế độ admin).
+const FROZEN_PREFIXES = ["/workflows/steps", "/transfer", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" (CHỨC NĂNG, cả hai role) chỉ khi `opts.processes`. */
 export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
   const on = opts.frozen !== false;
-  const proc = on && opts.processes ? [PROCESSES, SOURCES] : [];
+  // CR-103 · "Quy trình" theo Hub (dò lúc chạy) kể cả khi cờ build đóng băng off; "Nguồn" vẫn cần cờ build on.
+  const proc = opts.processes ? [PROCESSES, ...(on ? [SOURCES] : [])] : [];
   if (role === "platform_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },

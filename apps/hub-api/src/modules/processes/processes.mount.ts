@@ -1,7 +1,8 @@
 // HUB-FR-104…117 · D15 · mount module quy trình khi cờ `HUB_PROCESS_ENGINE=on` (plan §8 hàng 0b, plan-contract §7.1):
 // route mọi PF (file của từng PF, mount sẵn ⇒ PF không sửa file này), ThreadPoster + vòng nền, seam N3. Cờ tắt ⇒ `app.ts`
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
-import type { Env, Hono } from "hono";
+import type { Env, Hono, MiddlewareHandler } from "hono";
+import { requireAdminRole } from "../../lib/admin-role.middleware";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { PackRunsBridge } from "../packs/kit/application/pack-runs.ports";
@@ -25,6 +26,7 @@ import { gatesRoutes } from "./gates/gates.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
 import { remindOnce, startProcessReminder } from "./notify/reminder";
+import type { ProcessRoutesMode } from "./routes-mode";
 import { conversationStart } from "./runs/conversation-start";
 import { createStageLauncher } from "./runs/launcher";
 import { packRunsOf } from "./runs/pack-runs";
@@ -77,8 +79,11 @@ export type ProcessMountDeps = Omit<
   | "toolDriver"
 > &
   ProcessSeams & {
-    /** F1 (CR-095) · `false` ⇒ KHÔNG mount route công khai (`/process-runs`, `/processes`, …); engine + vòng nền + cầu gói vẫn chạy. Vắng ⇒ mount. */
-    publicRoutes?: boolean;
+    /**
+     * F1 (CR-095) · CR-103 · chế độ route công khai (`routes-mode.ts`): `off` ⇒ KHÔNG mount (`/process-runs`, `/processes`, …);
+     * `admin` ⇒ chỉ defs/runs/gates/usage sau `requireAdminRole`; engine + vòng nền + cầu gói vẫn chạy. Vắng ⇒ `all`.
+     */
+    publicRoutes?: ProcessRoutesMode;
   };
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
 export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart: ProcessStartPort };
@@ -123,22 +128,31 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
   if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
-  if (m.publicRoutes !== false) mountRoutes(app, d);
+  mountRoutes(app, d, m.publicRoutes ?? "all");
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   startBackground({ m, bg, poster, khWriter, drain });
   return { roomSender: roomStart(d), conversationStart: d.start };
 }
 
-function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps): void {
-  for (const r of [
-    processRunsRoutes,
-    gatesRoutes,
-    asksRoutes,
-    inboxRoutes,
-    usageRoutes,
-    defsRoutes,
-  ])
-    app.route("/", r(d));
+/** Route admin-web cần (editor, lượt chạy + Token, duyệt/huỷ/quyết định). KHÔNG có asks + hộp việc `/me/*` (chat-web). */
+const ADMIN_ROUTES = [processRunsRoutes, gatesRoutes, usageRoutes, defsRoutes];
+const ALL_ROUTES = [
+  processRunsRoutes,
+  gatesRoutes,
+  asksRoutes,
+  inboxRoutes,
+  usageRoutes,
+  defsRoutes,
+];
+
+/** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */
+function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps, mode: ProcessRoutesMode): void {
+  if (mode === "off") return;
+  if (mode === "admin") {
+    const gate = requireAdminRole() as unknown as MiddlewareHandler<E>;
+    for (const p of PROCESS_PROTECTED_PREFIXES) app.use(p, gate).use(`${p}/*`, gate);
+  }
+  for (const r of mode === "admin" ? ADMIN_ROUTES : ALL_ROUTES) app.route("/", r(d));
 }
 
 /** P-d2 · D2-12/S11 · driver stage `tool` giữ cổng scope system trong closure; launcher chỉ nhận factory. */
