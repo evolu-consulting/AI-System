@@ -94,6 +94,7 @@ export default defineConfig({
         // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e tuỳ chọn
         HUB_PROCESS_ENGINE: process.env.HUB_PROCESS_ENGINE ?? "on",
         HUB_PROCESS_ROUTES: "admin",
+        FNR_SHOWCASE_SEED: "1",
       },
     },
     {

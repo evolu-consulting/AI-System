@@ -52,7 +52,8 @@ async function launchSet(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<KickRes
     res.events.push(...processUpdated(recipients, u));
   }
   // `more`: `after: auto` xong bước ⇒ kick bước kế; `review` ⇒ dừng chờ người duyệt.
-  return { kind: "events", events: res.events, more: res.kick };
+  // Không có `kick` ⇒ KHÔNG đặt `more` (giữ `more` của hàng đợi bước: còn stage song song queued thì vẫn kick tiếp).
+  return { kind: "events", events: res.events, ...(res.kick ? { more: true } : {}) };
 }
 
 export const setLauncher: NodeLauncher = { launch: launchSet };

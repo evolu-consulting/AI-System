@@ -2,12 +2,12 @@
 // admin mở `/processes/showcase`, "Chạy thử" 150.000.000 + "mua sắm" ⇒ hai bước song song ⇒ tới "Giám đốc duyệt";
 // 50.000.000 ⇒ nhánh else "Hoàn tất". Không phụ thuộc AI (node set/if).
 import { expect, test } from "@playwright/test";
-import { adminLogin, settle } from "../P-a/_pa-support";
+import { ADMIN_URL, adminLogin, settle } from "../P-a/_pa-support";
 
 test.afterEach(() => settle());
 
 async function runWith(p: import("@playwright/test").Page, amount: string) {
-  await p.goto("/processes/showcase");
+  await p.goto(`${ADMIN_URL}/processes/showcase`);
   await expect(p.getByRole("heading", { name: /Duyệt đề nghị chi/ })).toBeVisible();
   await p.getByLabel("Số tiền").fill(amount);
   await p.getByLabel("Mục đích").fill("mua sắm");
@@ -42,7 +42,11 @@ test("CR-103 · R4 · 50 triệu ⇒ nhánh else Hoàn tất", async ({ browser 
     await runWith(p, "50000000");
     const run = p.getByTestId("showcase-run");
     for (const _ of [0, 1]) await run.getByRole("button", { name: "Đạt" }).first().click();
-    await expect(run.getByRole("row").filter({ hasText: "Hoàn tất" })).toBeVisible();
+    // Nhánh else: cả run xong (huy hiệu "Hoàn tất" đầu tiên) và "Giám đốc duyệt" không bao giờ chạy.
+    await expect(run.locator('[data-slot="badge"]').first()).toHaveText("Hoàn tất");
+    await expect(run.getByRole("row").filter({ hasText: "Giám đốc duyệt" })).not.toContainText(
+      "Đang",
+    );
   } finally {
     await ctx.close();
   }

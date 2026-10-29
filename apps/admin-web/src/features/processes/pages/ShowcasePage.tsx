@@ -20,6 +20,7 @@ import { RunProgress } from "../components/run/RunProgress";
 import { RunStatusBadge } from "../components/run/RunStatusBadge";
 import { NodeSwapBox } from "../components/showcase/NodeSwapBox";
 import { ShowcaseInputs } from "../components/showcase/ShowcaseInputs";
+import { ShowcaseReview } from "../components/showcase/ShowcaseReview";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
 import { useShowcaseDef, useShowcaseRun, useShowcaseStart } from "../hooks/use-showcase";
@@ -51,6 +52,7 @@ function RunPanel({ runId, tenantId }: { runId: string; tenantId: string | undef
         <RunStatusBadge status={runBadgeStatus(run.status, run.stages)} />
       </div>
       <RunActions run={run} tenantId={tenantId} />
+      <ShowcaseReview tasks={run.my_tasks} tenantId={tenantId} />
       <RunProgress stages={run.stages} onView={setTarget} />
       <RunLog history={run.history} stageNames={run.stages.map((s) => s.name)} />
       <OutputDialog

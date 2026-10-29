@@ -622,6 +622,12 @@
         "field_ref": "Loses a field later steps use."
       },
       "pick": "Stage"
+    },
+    "review": {
+      "stage": "Review: {{name}}",
+      "pass": "Pass",
+      "reject": "Reject",
+      "rejectNote": "Rejected from the sample flow page"
     }
   }
 }

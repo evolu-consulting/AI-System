@@ -232,6 +232,21 @@ export function useRunUsage(id: string, tenantId: string | undefined) {
 }
 
 /** `decide` (3 lựa chọn) hoặc `cancel`; xong làm tươi run + danh sách lượt chạy + token. */
+/** CR-103 · showcase: Đạt / Từ chối một task duyệt (`POST /review-tasks/:id/decision`); xong làm tươi run. */
+export function useReviewDecision(tenantId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { taskId: string; result: "pass" | "reject"; feedback?: string }) =>
+      api<unknown>(url(`/review-tasks/${enc(a.taskId)}/decision`), {
+        method: "POST",
+        query: { tenant_id: tenantId },
+        body: a.feedback ? { result: a.result, feedback: a.feedback } : { result: a.result },
+      }),
+    onSettled: () =>
+      Promise.all(["run", "runs"].map((k) => qc.invalidateQueries({ queryKey: ["process", k] }))),
+  });
+}
+
 export function useRunAction(id: string, tenantId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

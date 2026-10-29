@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ApiError } from "@/lib/http";
 import { runDef, useInvalidateDefs, useRunUsage } from "../api";
 
-export { useRunAction, useRunOutput, useTenantRuns } from "../api";
+export { useReviewDecision, useRunAction, useRunOutput, useTenantRuns } from "../api";
 
 export type UsageView =
   | { state: "loading" }

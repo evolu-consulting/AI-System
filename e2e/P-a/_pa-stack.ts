@@ -109,6 +109,11 @@ async function prepare(): Promise<void> {
     await sql`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
       select a.id, ${ACME}::uuid, 'user', ${PERSONA.Adm.id}::uuid from hub.agents a
       where a.id in (${PA_E2E.agentRead}, ${PA_E2E.agentPost}) on conflict do nothing`;
+    // CR-103 · e2e fnr-showcase: flow mẫu + Group duyệt (chỉ khi config fnr đặt cờ).
+    if (process.env.FNR_SHOWCASE_SEED === "1") {
+      const { seedShowcase } = await import("../fnr-showcase/_seed");
+      await seedShowcase(sql, ACME, PERSONA.Adm.id);
+    }
     if (await hasPaSchema(sql)) await insertDefs(sql);
     else console.warn("[pa] bảng 0019 chưa có — bỏ chèn quy trình fixture (test đỏ ở UI/expect)");
     await sql`update hub.config_meta set hub_config_version = hub_config_version + 1 where id = 1`;

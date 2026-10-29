@@ -622,6 +622,12 @@
         "field_ref": "Mất field bước sau đang dùng."
       },
       "pick": "Giai đoạn"
+    },
+    "review": {
+      "stage": "Duyệt: {{name}}",
+      "pass": "Đạt",
+      "reject": "Từ chối",
+      "rejectNote": "Từ chối từ trang flow mẫu"
     }
   }
 }
