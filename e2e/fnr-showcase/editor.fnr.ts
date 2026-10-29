@@ -94,8 +94,11 @@ async function createDef(
   expect(r.status, `POST /process-defs ${JSON.stringify(r.json).slice(0, 400)}`).toBeLessThan(300);
   return { id: r.json.id as string, key, name };
 }
-const getDef = async (id: string): Promise<Json> =>
-  (await hub(await tok("Adm"), "GET", `/process-defs/${id}`)).json;
+const getDef = async (id: string): Promise<Json> => {
+  const r = await hub(await tok("Adm"), "GET", `/process-defs/${id}`);
+  expect(r.status, `GET /process-defs/${id}: ${JSON.stringify(r.json).slice(0, 300)}`).toBe(200);
+  return r.json;
+};
 
 async function openEditor(p: Page, id: string, login = true): Promise<void> {
   if (login) await adminLogin(p);
