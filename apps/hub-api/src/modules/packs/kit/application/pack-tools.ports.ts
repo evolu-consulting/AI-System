@@ -52,6 +52,8 @@ export type PackToolInfo = {
   sideEffect: boolean;
   /** M2-chat · quyền gói lời gọi cần (vắng ⇒ `write`); token chat (Dify) chỉ nhận tool `read`. */
   action?: "read" | "write";
+  /** Tool lõi chỉ đọc cho chat (không cần gói bật): KHÔNG thuộc catalog "Gọi tool" của quy trình. */
+  open?: boolean;
   params: readonly PackToolParam[];
 };
 

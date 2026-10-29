@@ -96,7 +96,10 @@ export function toolSwitchReader(
 ): ToolSwitchReader {
   return {
     available: async (keys) => {
-      const pk = packs ? await packs.available(tenantId, keys) : [];
+      // Tool lõi (`open`) luôn khả dụng cho chat mọi tenant ⇒ không phải công tắc theo công ty: loại khỏi catalog quy trình.
+      const pk = (packs ? await packs.available(tenantId, keys) : []).filter(
+        (t) => t.open !== true,
+      );
       const own = new Set(pk.map((t) => t.key));
       const rows = (await availableToolRows(tx, tenantId, keys)).map(toolDefOf);
       return [...pk, ...rows.filter((r) => !own.has(r.key))];
