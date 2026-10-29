@@ -74,9 +74,9 @@ describe("R4 · node set [CR-103]", () => {
         { type: "text", key: "purpose", text: "mua sắm" },
       ],
     });
-    await waitStatus(c.sql, runId, "done");
     await waitStageStatus(c, runId, 0, "done");
     await waitStageStatus(c, runId, 1, "done");
+    await waitStatus(c.sql, runId, "done");
     const [o0] = await stageOutputs(c.sql, runId, 0);
     expect(String(o0?.content)).toContain(
       '```fields\n{"amount":150000000,"purpose":"mua sắm"}\n```',

@@ -121,7 +121,8 @@ async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promis
   if (!team.ok) return { ...(await lost("permission_lost")), more };
   // CR-103 · launch theo loại node: wait_until (hẹn giờ) / apply (nhánh Áp) / tool (`hub.runs` không agent) / agent·team.
   const ctx = { u, runId, idx, head, stage, def, teamRunId: team.teamRunId, lost };
-  return { ...(await node.launch(d, tx, ctx)), more };
+  // `more` do node quyết thắng (node chạy đồng bộ như `set` xong stage ⇒ cần kick bước kế); vắng ⇒ theo hàng đợi bước.
+  return { more, ...(await node.launch(d, tx, ctx)) };
 }
 
 /** P-R10 · người bắt đầu còn dùng được: `admin.users.active` ∧ ¬`locked_by_tenant` ∧ `admin.tenants.active` (đọc tươi). */

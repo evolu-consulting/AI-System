@@ -42,16 +42,18 @@ Không sửa (R1/R2 đang làm): `processes/runs/`, `defs/def.rules.ts`, `defs/d
 - Đã có sẵn: `defsRoutes` gắn `requireAdminRole()` cho `/process-defs*`, `/agent-teams`, `/process-editor/context` (member ⇒ 403). `/process-runs*` phục vụ cả chat-web (member xem run `access: task`) nên cần cổng role khi mở cho admin.
 - Đề xuất tối thiểu (phase B, kèm test): `publicRoutes` đổi thành `"off" | "admin" | "all"`; `frozenModules` bật ⇒ `all`, tắt ⇒ `admin`: chỉ mount `defsRoutes` + `processRunsRoutes` (+ `gatesRoutes` nếu nút Đạt/Chưa đạt đi qua đó) sau `r.use(prefix, requireAdminRole())` cho `/process-runs*`; `asks`, `inbox`, `usage` và mọi route chat-web giữ đóng băng. FE: `PUBLIC_FROZEN_MODULES` giữ nguyên cho chat-web; admin-web bỏ điều kiện `frozenModulesOn` trong `probeEngine` + cho `/processes/showcase` (và `/processes*`) khỏi `isFrozenPath`. Test: int member ⇒ 403 `/process-runs/:id`; admin ⇒ 200; chat-web route `/process-inbox` vẫn 404; tenant_admin không đọc tenant khác. Cập nhật `docs/platform/modules.md`. Rủi ro an ninh (đổi mô hình cách ly) ⇒ làn đầy đủ, Opus, không làm trong phase A.
 
-## Việc còn lại (phase B, sau khi R1 + R2 gộp)
-1. Thêm `SetExecutorSchema` vào union `executor` (`processes.ts`) + `SET_INVALID` vào `PROCESS_DEF_RULES`; nối `setDefIssues` vào `def.rules`/`defs.service` (parity FE).
-2. `nodes/set/` (module registry): `family: "work"`, `produces: "declared"`, `validate` = `setDefIssues`, `launch` đồng bộ trong tx dùng `setFields` + dựng `output.template`, chốt stage `done`; test "mọi kind trong contract có module".
-3. FE: đăng ký `set` trong registry node FE (`kind, family, label, Editor=StageSet, defaults()`), `stage-convert.ts` + `draft-types.ts`/`def-form.ts` (draft `set`), `stageViews` nhãn executor `set`/`if`, canvas hình thoi node If (R2).
-4. Mở băng cho admin-web theo đề xuất trên (kèm test + `modules.md`); `isFrozenPath`/`probeEngine` phía admin-web.
-5. Seed flow mẫu vào demo (không phải prod): dry-run → `--apply` khi user xác nhận; kiểm def qua `ProcessDefInputSchema`; chỉnh `output` của stage `if` theo R2.
-6. R3: nối `canSwap` vào `NodeSwapBox` (hiện chỉ liệt kê họ).
-7. e2e `fnr-showcase/showcase.fnr.ts`: thêm config, chạy một lần cuối đợt; kiểm kịch bản "AI tạm ngưng vẫn chạy".
-8. Giá trị số: nút Đạt phải đi qua cổng duyệt nhóm; xác nhận demo-owner thuộc nhóm duyệt khi UAT.
-
+## Việc còn lại
+Phase B (xong, sau R1 + R3 + unfreeze gộp):
+- [x] `set` vào union executor + `EXECUTOR_KINDS` + `NODE_FAMILY_OF`/`NODE_PRODUCES` + `SET_INVALID`; `nodes/set` (NodeSpec + launcher đồng bộ: ghi output + fields, done, không `hub.runs`); `SnapStage` có `set`.
+- [x] Sửa lõi tối thiểu: `runs/launcher.ts` cho `more` của node thắng (`{ more, ...launch }`) — node chạy đồng bộ xong stage thì kick bước kế (nếu không run kẹt ở bước sau).
+- [x] FE registry `set` (`lib/set-form.ts`, `StageSet` nối trong `StageForm`, `stage-convert`, `stageViews` nhãn `set`, khoá i18n kind/err); `NodeSwapBox` dùng `canSwap` (chỉ đọc, không lưu).
+- [x] Int `tests/acceptance/fnr-showcase/set.int.test.ts` (fields đúng, run done, 0 `hub.runs`).
+- [x] Seed căn theo hình `if` của fnr-if (`when{op,conds[{from{kind:input|field}}]}`, `then_step/else_step`); dry-run chỉ còn lỗi `stages.3.executor.kind` (đợi fnr-if gộp); UUID Group dry-run giả cố định.
+- Trang showcase đã bọc `ProcessRouteGate`; không dùng `/admin/sources*`.
+Còn lại:
+1. Sau khi fnr-if gộp: dry-run phải sạch; chỉnh `output` của stage `if` nếu R2 đòi; seed demo `--apply` (cần user xác nhận).
+2. e2e `showcase.fnr.ts`: thêm `playwright*.config.ts` (cần stack + seed) và chạy một lần cuối đợt.
+3. Ghi `docs/platform/modules.md` nếu chưa (do fnr-unfreeze).
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 

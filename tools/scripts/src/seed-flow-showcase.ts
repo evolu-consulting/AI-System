@@ -82,11 +82,11 @@ async function main(argv: readonly string[]): Promise<void> {
     director: arg("--director-group") ?? DEFAULT_GROUPS.director,
   };
   if (!argv.includes("--apply")) {
-    // Dry-run: id Group giả để in def; không đọc DB.
+    // Dry-run: UUID giả cố định (đúng hình dạng) để in def + kiểm contracts; không đọc DB.
     const fake: GroupIds = {
-      legal: keys.legal,
-      accounting: keys.accounting,
-      director: keys.director,
+      legal: "7a1c2b3d-4e5f-4a6b-8c7d-0e1f2a3b4c01",
+      accounting: "7a1c2b3d-4e5f-4a6b-8c7d-0e1f2a3b4c02",
+      director: "7a1c2b3d-4e5f-4a6b-8c7d-0e1f2a3b4c03",
     };
     const def = buildShowcaseDef(fake);
     console.log(
@@ -97,7 +97,7 @@ async function main(argv: readonly string[]): Promise<void> {
     console.log(
       r.success
         ? `${TAG}: def hợp lệ với contracts`
-        : `${TAG}: def CHƯA qua contracts hiện tại (dự kiến tới phase B — set/if/UUID Group): ${r.error.issues.length} lỗi`,
+        : `${TAG}: def CHƯA qua contracts hiện tại (dự kiến chỉ node "if" tới khi fnr-if gộp): ${r.error.issues.map((i) => i.path.join(".")).join(", ")}`,
     );
     return;
   }
