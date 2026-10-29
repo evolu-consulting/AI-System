@@ -63,4 +63,6 @@ hành vi, `test:frozen` + int processes + perf hiện có phải xanh, số đo 
 3. Showcase: **admin-web `/processes/showcase`, admin tenant + admin platform; mở `/process-defs`, `/process-runs` cho
    admin-web (chat-web vẫn đóng băng)**.
 4. Node `set` hiện trong editor cho mọi flow (người dùng ghi "4", hiểu là A).
-5. Đổi node chỉ trong cùng họ.
+5. Đổi node chỉ trong cùng họ. **Sửa 2026-10-29 (người dùng: "Cho đổi"):** editor cho đổi khác họ như trước CR-103
+   (e2e khoá P-d PD-E01, P-c2 E06), chỉ chặn khi bước sau dùng field của bước này; luật cùng họ còn ở `canSwap` mặc định
+   và khung "Đổi node" của trang showcase.
