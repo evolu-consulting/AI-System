@@ -58,6 +58,12 @@ export function findUserById(userId: string): MockUser | undefined {
   return MOCK_USERS.find((u) => u.id === userId);
 }
 
+/** prefs-sync · `PATCH /auth/me` lưu locale/theme theo user (như Admin); `/__mock/reset` xoá. */
+const PREFS = new Map<string, { locale?: Me["locale"]; theme?: Me["theme"] }>();
+export const setPrefs = (id: string, p: { locale?: Me["locale"]; theme?: Me["theme"] }): void =>
+  void PREFS.set(id, { ...PREFS.get(id), ...p });
+export const resetPrefs = (): void => PREFS.clear();
+
 /** `Me` đủ trường như Admin: member, `vi`, chưa bật 2FA, không email. */
 export function toMe(u: MockUser): Me {
   return {
@@ -67,8 +73,8 @@ export function toMe(u: MockUser): Me {
     display_name: u.display_name,
     email: null,
     role: u.role ?? "member",
-    locale: "vi",
-    theme: "light",
+    locale: PREFS.get(u.id)?.locale ?? "vi",
+    theme: PREFS.get(u.id)?.theme ?? "light",
     must_change_password: false,
     totp_enabled: false,
     totp_enabled_at: null,

@@ -28,6 +28,8 @@ export async function chatLogin(page: Page, user: string, tenant = "acme"): Prom
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   if (!/\/c\/new$/.test(new URL(page.url()).pathname)) await page.goto("/c/new");
   await page.waitForURL(/\/c\/new$/);
+  // Chờ phiên xong (refresh cookie xoay một lần khi tải trang): goto kế tiếp giữa chừng làm mất cookie mới ⇒ rơi về /login.
+  await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toBeVisible();
 }
 
 /** Đăng nhập admin-web (cổng 3020) bằng platform_admin seed. */

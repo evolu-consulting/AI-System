@@ -16,7 +16,9 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import { type Issue, type Parsed, parseBody } from "./http";
 import type { AccessClaims, SessionStore } from "./sessions";
-import { findUser, findUserById, MOCK_DEV_PASSWORD, toMe } from "./users";
+import { findUser, findUserById, MOCK_DEV_PASSWORD, setPrefs, toMe } from "./users";
+
+const BEARER_RE = /^bearer\s+(\S+)\s*$/i;
 
 export type ChatVars = { Variables: { claims: AccessClaims } };
 
@@ -98,6 +100,23 @@ export function createAuthRoutes(store: SessionStore): Hono {
     return authError(c, code);
   });
 
+  app.patch("/auth/me", async (c) => {
+    const token = BEARER_RE.exec(c.req.header("Authorization") ?? "")?.[1];
+    const claims = token ? await store.verifyAccess(token) : null;
+    const u = claims ? findUserById(claims.sub) : undefined;
+    if (!u)
+      return c.json(
+        { error: { code: "AUTH_EXPIRED", message: "Access token expired or invalid" } },
+        401,
+      );
+    const b = (await c.req.json().catch(() => ({}))) as {
+      locale?: "vi" | "en";
+      theme?: "light" | "dark" | "system";
+    };
+    setPrefs(u.id, { locale: b.locale, theme: b.theme });
+    return c.json(toMe(u));
+  });
+
   app.post("/auth/logout", async (c) => {
     const r = await parseBody(c, LogoutRequestSchema);
     const token = (r.ok ? r.data.refresh_token : undefined) ?? getCookie(c, REFRESH_COOKIE);
@@ -108,8 +127,6 @@ export function createAuthRoutes(store: SessionStore): Hono {
 
   return app;
 }
-
-const BEARER_RE = /^bearer\s+(\S+)\s*$/i;
 
 /** Endpoint Hub: token thiếu/sai/hết hạn/bị thu hồi → 401 `AUTH_EXPIRED` (Q-401). */
 export function requireAccess(store: SessionStore) {

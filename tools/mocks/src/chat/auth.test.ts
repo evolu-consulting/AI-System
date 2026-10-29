@@ -89,3 +89,20 @@ describe("CHAT-AC-31 · thứ tự route chat ↔ kịch bản M0", () => {
     });
   });
 });
+
+describe("prefs-sync · PATCH /auth/me mock", () => {
+  test("lưu theme/locale, lần đăng nhập sau thấy; /__mock/reset xoá", async () => {
+    const { grant } = await login();
+    const h = { ...bearer(grant.access_token).headers, "Content-Type": "application/json" };
+    const r = await app.request("/auth/me", {
+      method: "PATCH",
+      headers: h,
+      body: '{"theme":"dark"}',
+    });
+    expect(r.status).toBe(200);
+    expect(((await login()).grant.user as { theme: string }).theme).toBe("dark");
+    await app.request("/__mock/reset", { method: "POST" });
+    expect(((await login()).grant.user as { theme: string }).theme).toBe("light");
+    expect((await app.request("/auth/me", { method: "PATCH", body: "{}" })).status).toBe(401);
+  });
+});

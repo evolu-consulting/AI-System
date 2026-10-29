@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { chatError, parseBody } from "./http";
 import type { SessionStore } from "./sessions";
+import { resetPrefs } from "./users";
 
 const ScenarioBodySchema = z.strictObject({ name: z.string().nullable() });
 
@@ -28,6 +29,7 @@ export function createControlRoutes(h: ControlHooks): Hono {
 
   app.post("/__mock/reset", (c) => {
     h.sessions.reset();
+    resetPrefs();
     h.onReset?.();
     return c.body(null, 204);
   });

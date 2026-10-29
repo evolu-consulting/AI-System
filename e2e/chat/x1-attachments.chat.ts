@@ -204,7 +204,7 @@ test("X1-AC07 · English: nhãn đính kèm và lỗi bằng tiếng Anh", async
   await page.getByRole("button", { name: "Cài đặt" }).click();
   await page
     .getByRole("dialog", { name: "Cài đặt" })
-    .getByRole("radio", { name: "English" })
+    .getByRole("radio", { name: "EN", exact: true })
     .click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Attach files" })).toBeVisible();

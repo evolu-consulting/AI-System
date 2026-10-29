@@ -12,7 +12,7 @@ test("CHAT-AC-36 · chọn English: lời chào tiếng Anh, không lộ chuỗi
 }) => {
   await login(page);
   const dlg = await openSettings(page);
-  await dlg.getByRole("radio", { name: "English" }).click();
+  await dlg.getByRole("radio", { name: "EN", exact: true }).click();
   await page.keyboard.press("Escape");
   await expect(
     page.getByRole("heading", { name: "Hi Minh, what do you need today?" }),
@@ -40,7 +40,7 @@ test("CHAT-AC-35 · theme T1: Tối đặt class dark + nền body rgb(15, 16, 3
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
   const dlg2 = await openSettings(page);
-  await dlg2.getByRole("radio", { name: "Theo hệ thống" }).click();
+  await dlg2.getByRole("radio", { name: "Theo máy" }).click();
   await expect(page.locator("html")).not.toHaveClass(/(^|\s)dark(\s|$)/);
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
@@ -52,7 +52,7 @@ test("CHAT-AC-35 · theme T2: không nháy — html.dark có trước khi React 
   page,
 }) => {
   await page.addInitScript(() => {
-    localStorage.setItem("ai-chat-theme", "dark");
+    localStorage.setItem("ai.theme", "dark");
     const w = window as unknown as { __darkAtMount?: boolean };
     new MutationObserver(() => {
       const root = document.getElementById("root");
