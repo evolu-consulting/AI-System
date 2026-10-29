@@ -36,7 +36,7 @@ async function upload(p: Person, path: string, form: Record<string, string>) {
 
 /** Giả "AI đọc xong + xác nhận" (tắt duyệt): bên bán = mình, bên mua = đối tác NT, hướng bán, hiệu lực d(-30)…d(300). */
 async function readAndConfirm(id: string, start = d(-30)): Promise<void> {
-  const fv = (value: unknown) => ({ value, quote: "", verified: true, edited: true });
+  const fv = (value: string) => ({ value, quote: "", verified: true, edited: true });
   await c.sql`update contracts.contracts set direction = 'sale', status = 'active', fields = ${c.sql.json(
     {
       buyer_name: fv(PARTNER),

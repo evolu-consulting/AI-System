@@ -68,12 +68,12 @@ describe("products-confirm · gắn/tạo SP khi HĐ đã xác nhận", () => {
     ]);
     expect([r.status, r.json]).toEqual([200, { created: 1, linked: 3 }]);
     const ps = await products();
-    expect(ps).toEqual([
+    expect(ps as unknown[]).toEqual([
       { name: "Băng keo", from: null, supplier: null },
       { name: "Thùng carton 5 lớp", from: s.id, supplier: "Công ty Bán" },
     ]);
     const [{ id: carton }] = (await c.sql<{ id: string }[]>`select id::text from contracts.products
-      where name = 'Thùng carton 5 lớp'`) as [{ id: string }];
+      where name = 'Thùng carton 5 lớp'`) as unknown as [{ id: string }];
     expect((await itemRows(c.sql, s.id)).map((i) => i.product_id)).toEqual([
       tape.id,
       carton,

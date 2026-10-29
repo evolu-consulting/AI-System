@@ -1,6 +1,7 @@
 // esign-flow-fix · int (viết TRƯỚC phần sửa): #2 kẹt `sending` quá hạn ⇒ Gửi lại nhận, chưa quá hạn ⇒ không; #3 người ký công ty bị khoá
 // / mất quyền ghi gói ⇒ NO_SIGNER, không gửi; #4 mở lại HĐ mà huỷ ở nhà cung cấp hụt ⇒ phong bì GIỮ mở + đánh dấu chờ huỷ, làm mới thử
-// huỷ lại ⇒ voided; #5 trạng thái cuối chỉ đổi khi bước đang `sent` (không ghi đè "cần quyết", không chuông thừa).import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+// huỷ lại ⇒ voided; #5 trạng thái cuối chỉ đổi khi bước đang `sent` (không ghi đè "cần quyết", không chuông thừa).
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
 import { urls } from "@ai/test-kit/env";
 import { fakeESign } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/esign.fake";

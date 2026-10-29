@@ -11,7 +11,7 @@ afterAll(async () => {
   await c?.stop();
 });
 
-const fv = (value: unknown) => ({ value, quote: "", verified: true, edited: true });
+const fv = (value: string) => ({ value, quote: "", verified: true, edited: true });
 async function contract(o: {
   deal: "buy" | "sell";
   number: string;

@@ -115,7 +115,9 @@ describe("Nhật ký · tenant_admin", () => {
     // lọc entity nền tảng → rỗng; xem dòng nền tảng / globex / hệ thống → 404
     expect((await binh("GET", `/admin/audit?q=${P}&entity=command`)).json.items).toEqual([]);
     const [{ id: cmd }] =
-      await env.owner`select id from admin.audit_log where entity_name = ${`${P}cmd-acme`}`;
+      (await env.owner`select id from admin.audit_log where entity_name = ${`${P}cmd-acme`}`) as unknown as [
+        { id: string },
+      ];
     expectErr4(await binh("GET", `/admin/audit/${cmd}`), "NOT_FOUND");
     expectErr4(await binh("GET", `/admin/audit?tenant_id=${G}`), "NOT_FOUND");
     expectErr4(await binh("GET", "/admin/audit?tenant_id=system"), "NOT_FOUND");

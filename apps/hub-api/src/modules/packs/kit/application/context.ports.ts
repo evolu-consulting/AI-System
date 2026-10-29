@@ -1,6 +1,6 @@
 // one-agent · cổng "nhãn ngữ cảnh" của gói (lớp 2, chỉ kiểu): dock của app gửi id bản ghi đang xem; Hub hỏi gói tên ngắn của
 // bản ghi đó bằng `PackUow` của gói (role gói + RLS của NGƯỜI GỌI). Không thấy / không có ⇒ null (Hub bỏ, không chèn gì).
-import type { ContextEntityKind } from "@ai/contracts/chat";
+import type { ContextEntityKind } from "../domain/context-kind.rules";
 
 export type ContextWho = { tenantId: string; userId: string };
 

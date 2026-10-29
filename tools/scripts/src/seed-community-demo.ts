@@ -26,7 +26,12 @@ import {
   enableCommunityPack,
   seedPosts,
 } from "./seed-community-demo.apply";
-import { PARTNER_SEEDS, type PartnerSeed, POST_SAMPLES } from "./seed-community-demo.data";
+import {
+  type MapRow,
+  PARTNER_SEEDS,
+  type PartnerSeed,
+  POST_SAMPLES,
+} from "./seed-community-demo.data";
 import {
   devFixtureGuard,
   ensureDemoTenant,
@@ -67,13 +72,6 @@ export type SeedResult = {
   /** Username đối tác mới tạo (không kèm mật khẩu). */
   createdUsers: string[];
   posts: { created: number; existing: number; comments: number };
-};
-export type MapRow = {
-  org_id: string;
-  org_name: string;
-  party_key: string | null;
-  labels: readonly string[];
-  categories: readonly string[];
 };
 
 /** Chặn cứng: chỉ `demo`, trừ khi `--force-tenant` (dùng cho DB test). */

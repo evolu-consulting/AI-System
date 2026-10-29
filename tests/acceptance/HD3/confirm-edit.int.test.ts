@@ -76,7 +76,7 @@ describe("confirm-flow · sửa ở cấp 1 rồi Xác nhận giữ lượt duy�
     expect({ status: row.status, run: row.run_id }).toEqual({ status: "active", run: runId });
     expect((await approvalRow(c, runId)).status).toBe("done");
     const [{ linked }] = (await c.sql<{ linked: number }[]>`select count(*)::int as linked
-      from contracts.contract_items where contract_id = ${id} and product_id is not null`) as [
+      from contracts.contract_items where contract_id = ${id} and product_id is not null`) as unknown as [
       { linked: number },
     ];
     expect(linked).toBe(1);

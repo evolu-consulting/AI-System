@@ -158,7 +158,8 @@ async function route(
     };
     return Response.json({ url: await fake.recipientView(eid, b, b.returnUrl) });
   }
-  if (rest === "/documents/combined") return new Response(await fake.combinedPdf(eid));
+  if (rest === "/documents/combined")
+    return new Response((await fake.combinedPdf(eid)) as unknown as BodyInit | null);
   return Response.json({ errorCode: "NOT_FOUND" }, { status: 404 });
 }
 

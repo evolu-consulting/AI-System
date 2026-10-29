@@ -236,7 +236,7 @@ export async function uploadDemoFile(tenantId: string): Promise<DemoFile | undef
     {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/pdf" },
-      body: bytes,
+      body: bytes as unknown as Blob,
     },
   );
   if (!res.ok) throw new Error(`seed-demo-v2: FileBox từ chối tệp mẫu (${res.status})`);

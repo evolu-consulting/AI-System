@@ -165,3 +165,12 @@ export const POST_SAMPLES: readonly PostSample[] = [
     audience: { mode: "all" },
   },
 ];
+
+/** Dòng nhãn đối tác (leaf — cả seed-community-demo và .apply dùng, tránh vòng import). */
+export type MapRow = {
+  org_id: string;
+  org_name: string;
+  party_key: string | null;
+  labels: readonly string[];
+  categories: readonly string[];
+};

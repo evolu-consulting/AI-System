@@ -57,8 +57,10 @@ beforeAll(async () => {
         'supplier_name', jsonb_build_object('value', 'Công ty Phôi Thép Nam'),
         'supplier_tax_id', jsonb_build_object('value', '0101999'))
     where id = ${hA}`;
-  [{ party }] = await owner<{ party: string }[]>`
-    select contracts.party_key('Công ty Phôi Thép Nam', '0101999') as party`;
+  [{ party }] = (await owner<{ party: string }[]>`
+    select contracts.party_key('Công ty Phôi Thép Nam', '0101999') as party`) as unknown as [
+    { party: string },
+  ];
   db = createDb(urls().hubApi, { max: 2 });
   reg = new PackToolRegistry(view());
   reg.registerContext(contractsContextSource(db));
@@ -127,8 +129,8 @@ describe("one-agent · hub 0051 gộp mgmt-assistant ⇒ assistant", () => {
     expect(grants.map((g) => `${g.t}:${g.s}`).sort()).toEqual(
       [`${A}:${g1}`, `${A}:${g2}`, `${B}:${ub1}`].sort(),
     );
-    const [{ n }] = await owner<{ n: number }[]>`select count(*)::int as n from hub.agent_grants
-      where agent_id = ${old}`;
+    const [{ n }] = (await owner<{ n: number }[]>`select count(*)::int as n from hub.agent_grants
+      where agent_id = ${old}`) as unknown as [{ n: number }];
     expect(n).toBe(0);
     const ents = await owner<
       { t: string }[]
@@ -142,7 +144,7 @@ describe("one-agent · hub 0051 gộp mgmt-assistant ⇒ assistant", () => {
     expect(d?.a).toBe(neo);
     const ag = await owner<{ key: string; enabled: boolean; o: string[] }[]>`select key, enabled,
       studio_overrides as o from hub.agents where id in (${old}, ${neo}) order by key`;
-    expect(ag).toEqual([
+    expect(ag as unknown[]).toEqual([
       { key: "assistant", enabled: true, o: ["system_prompt"] },
       { key: "mgmt-assistant", enabled: false, o: [] },
     ]);

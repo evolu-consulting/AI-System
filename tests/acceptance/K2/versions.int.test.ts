@@ -66,10 +66,10 @@ async function stockMove(contract: string, milestone: string): Promise<void> {
   const [p] = await c.sql<{ id: string }[]>`insert into contracts.products (tenant_id, name, grp)
     values (${T.acme}, ${`SP K2 ${milestone}`}, 'goods') returning id::text`;
   const [pc] = await c.sql<{ id: string }[]>`insert into contracts.product_components
-      (tenant_id, product_id, name, mode) values (${T.acme}, ${p?.id}, 'TP', 'order') returning id::text`;
+      (tenant_id, product_id, name, mode) values (${T.acme}, ${p?.id as string}, 'TP', 'order') returning id::text`;
   await c.sql`insert into contracts.stock_moves (id, tenant_id, component_id, direction, qty, unit_cost, amount,
       moved_on, contract_id, milestone_id)
-    values (gen_random_uuid(), ${T.acme}, ${pc?.id}, 'out', 1, 0, 0, current_date, ${contract}, ${milestone})`;
+    values (gen_random_uuid(), ${T.acme}, ${pc?.id as string}, 'out', 1, 0, 0, current_date, ${contract}, ${milestone})`;
 }
 
 async function approvalOff(): Promise<void> {

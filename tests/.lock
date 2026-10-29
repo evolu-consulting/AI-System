@@ -549,7 +549,7 @@ cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptan
 bc8e69c50e73c89383503093af75d7395985e6e8fcf2a8f85aec8d321c5d0ab4  tests/acceptance/DOC-deals/migrate.int.test.ts
 9569a1501168d3b0354544a52c844c7a1eecede8d628a8cf6efc8338085ce027  tests/acceptance/DOC-deals/promote-approval.int.test.ts
 88c03d31ce17556562bee80b542c006cfed21cdd1e144265170652cd644245ef  tests/acceptance/DOC-legal/legal.int.test.ts
-f4bb8d99f7fbebd30c530ae2c20479f61b29e52ec1aa653e645293331bed5992  tests/acceptance/DOC-model/doc-model.int.test.ts
+48663b98e12060f5692619a192c125e4b8969f469c03ee94b1e5137f63b7557e  tests/acceptance/DOC-model/doc-model.int.test.ts
 ffe096bf1386418554a9279c602cff1cfcd69ef316733f169e797049e2d877c2  tests/acceptance/DOC-model/perf/list-frame.perf.int.test.ts
 50ac7867889f650dc720f36e1a383c721a2747945b62e05e91fc1b1bb84460fe  tests/acceptance/FB1/_fb1.ts
 9275fa0236540e3666b6f5e0738e35359042d7ad82bea355ae6b1e1b3652ceb4  tests/acceptance/FB1/_fb1room.ts
@@ -788,7 +788,7 @@ f04342017eac1078da1e185f45e27bec66bfae36ae2a14b88903c63aeb5e441e  tests/acceptan
 0fbaf887aa268f91a7c7c89e233329551636d8f152e584d19bf99d6517d90d1a  tests/acceptance/HD2/manual.int.test.ts
 8ec41cb576e42fc17b900a60ba508a8d096155b4092a3881f5cb7af9258009e3  tests/acceptance/HD3/_hd3.ts
 e7de4bbf580dfd88f6abbf6899e01f85f62278ca989e5367bd031d81c2fb2e3f  tests/acceptance/HD3/approval.perf.int.test.ts
-e6dfac1a30e03a135cdfc5177c45c1c21b0c624e02835f60c2bd1dd43f644832  tests/acceptance/HD3/confirm-edit.int.test.ts
+42fbb74ae94cda3d47022387407fda92a068e2e8fe4aa9704cec50fc214e2195  tests/acceptance/HD3/confirm-edit.int.test.ts
 13e42d61d5030a801b854ec1f4d68a62abf92c0290be1a1e92a08a51e331ed0a  tests/acceptance/HD3/flow.int.test.ts
 8d222250b92d79c5016e14858986e8c9ea935ff1894e3a101fa60d5af81cb519  tests/acceptance/HD3/guard.int.test.ts
 189c135eee4119346d7a7aae7763b0835686bf49442d6c514fe0a063a8575646  tests/acceptance/HD3/isolation.int.test.ts
@@ -850,7 +850,7 @@ d7cf316ae66576d50699255d5025e59864d72eaafd480eb689aa77dd4808db1c  tests/acceptan
 71103009398bb4d0caca5f7ac9f8ead6edb10936b92110595242064cd6824fe4  tests/acceptance/K1/studio.int.test.ts
 9fd9b4ccc1fba679d297e13055cdc1310cfbb954fb7105508bff6c12bd182a9c  tests/acceptance/K1/worklog.int.test.ts
 06ed218ea4591bbfba080ec619d169f9a910d6c17ee4d89572f56348fb725047  tests/acceptance/K2/readers.int.test.ts
-59c515fcee2041d258b6447d20a8cd164fc76c43b8cc913f93daaab8d8064278  tests/acceptance/K2/versions.int.test.ts
+1fa0469bb32dd9b9e3a98b991c0d5cac2909287c8529e23e5810f87ec626bda8  tests/acceptance/K2/versions.int.test.ts
 4345c3f9045f676fecdaba35e29d5c9fa3f50660347069eee162b110258f3969  tests/acceptance/K4/reopen.int.test.ts
 5a52876e49dc8cf4b8cbae3db581e95db6b8a110dc7a537ae0251fa1130fb736  tests/acceptance/M1-b2/b2.int.test.ts
 9a1cd5e022309a64a21e4d7abfa959df5e0e217829d4ef6a86dde10601f90663  tests/acceptance/M1-sec/visibility.int.test.ts
@@ -875,7 +875,7 @@ d4117e76978a30fa47a915208f4fa55559062c198dcae5731a8cb8e5fee70691  tests/acceptan
 777dda81e99e4f63915ee6836546a3f8b3ec9d28d8af8984b03121833c489ce3  tests/acceptance/M1/tenants.int.test.ts
 2f5d2afc92f0df368d3a1bef52cda02e1c2f706a8e2777ba024c1a5870d3186f  tests/acceptance/M1/users-isolation.int.test.ts
 0254ea09a09cce92120da4d1fd723b7d21bde4e0dc8c34b998461ca710c8d5bc  tests/acceptance/M1/users.int.test.ts
-851f30c57e4eb2714500f2871c9427863a4efba81b750f189b4f961422d29ded  tests/acceptance/M1D/perf/visibility.perf.int.test.ts
+2c20a20a2453022fb18bd05048ea06fc14ce647d35bd192a4077fdb9fdb736df  tests/acceptance/M1D/perf/visibility.perf.int.test.ts
 fb7750ef7e6460a84ed9a621f145f3fc6fce30e6713bab874b7c42b4d6911c42  tests/acceptance/M1D/visibility.int.test.ts
 e142de6c723ede84d6a68a21b6eea23499d4a0ed9ec418248d2497c3a0483061  tests/acceptance/M1b/org-setup.int.test.ts
 f6ea2238fdc1f0300c41922860cc0940d0862ea992147020b7c1a13fdd81435b  tests/acceptance/M1b/visibility.int.test.ts
@@ -1291,7 +1291,7 @@ edda6dbe137c1132a5ea00decabb448f75c128a4fec20540accf4e708eb2f924  tests/acceptan
 d761c4aa426d153db1dcebd56284bb2bc5d5ec35bd422553ae62d0bdc9feb692  tests/acceptance/V2-I/partner-ui.int.test.ts
 582f6c55756ac070a52b8ff1ee21b8a66b2cee283dfb7e5b86e61c5d8a2f73f4  tests/acceptance/V2-J1/business.int.test.ts
 86b5fb4031ad166c23a2d1d98d68faf3727d195bf153512e57864f05154496df  tests/acceptance/V2-J2/_support/v2j2.ts
-ace11b8e583e56e4a0e66aad9c55be849fa5acd2f5268ac27e7f6592315d37f3  tests/acceptance/V2-J2/contract-prices.int.test.ts
+50d86b5a2acac80e4473beb6ba4b07db9d24551cfa1b72eb0c5b7c8bb609e3ce  tests/acceptance/V2-J2/contract-prices.int.test.ts
 05119e8177d4309488a6ba7edcc51518e2256f9b164e927fcd97b6b9a9fcdb8d  tests/acceptance/V2-J2/suppliers.int.test.ts
 06fbd1f326928703bd66e55bc2738d2546b378498a1ebe13affb2a046e432dc6  tests/acceptance/V2-K/_support/v2k.ts
 d50e147e39a0d66ee1a4ecf079a0e90792e3d2b6d892cbfd54ec0c945091514d  tests/acceptance/V2-K/overview.int.test.ts
@@ -1377,7 +1377,7 @@ e2d396d54a54d5fe3c608ba0f2e6c1e8d267e7789e868427d4af3faad6ac9095  tests/acceptan
 b99aff6d8838f02fb2590b509955602f2f4232478e65adf57e4c546c62b355d6  tests/acceptance/X2b2/send.int.test.ts
 bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptance/X2b2/withheld.int.test.ts
 bae5731b9aabdb8de905fcce7440fa242e2bef140e0c897e919c5b97053605cf  tests/acceptance/agents-background/background.int.test.ts
-d8c064b7d2884140d3ceaf3c9102727d50ddb9bf16382d2f6e88fac1b00e0b53  tests/acceptance/cf-esign/_support/esign.ts
+bd711e3d6ecbb8ffa617f6ab8409e286d8ef21ec05589dedd08c05ba14d95f49  tests/acceptance/cf-esign/_support/esign.ts
 360df60b0f4fdb906309dc0cfeb6c888267b753243cf3241f0bcee54e289d96f  tests/acceptance/cf-esign/esign.int.test.ts
 71c3c3343878fd1f14e4388e8d88bab943788122b98e08614304ee530225deb2  tests/acceptance/chat-fast/default-route.int.test.ts
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
@@ -1389,7 +1389,7 @@ c81465e600f4cc6e6ee14ad509ff5cdac0639dc85b497d59f843ecb3d81dfefe  tests/acceptan
 a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptance/esign-anchor/esign-anchor.int.test.ts
 8e877ab60b14fff18ac51b41b03c29cccdd7b848c8a225ac00147848fe7f0296  tests/acceptance/esign-flow/approver-guard.int.test.ts
 7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
-966fbca12160ce21685c2d91d29a20c3da4ede72561a1f37a08ad2632c42b1c5  tests/acceptance/esign-flow/esign-flow-fix.int.test.ts
+e8b60129c372e94524d276af29eff4f8c7a1c3ed078a1e40a7c0f4e9c5c3fa8f  tests/acceptance/esign-flow/esign-flow-fix.int.test.ts
 15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 303e3661faed08c210267470990d89e1d27e12de6d8b2e38d84d8d509e3e7ca4  tests/acceptance/fnr-canvas/ui-roundtrip.int.test.ts
@@ -1399,14 +1399,14 @@ b115745687d389ceff77b54aa7c52db3b53961dccd6a6e37ca71dcbd019a689d  tests/acceptan
 16d415d9f736f2ee700077f4a8dc6e8f9e90fa995449d65920427c25ab0688af  tests/acceptance/gap-d1/gap-d1.int.test.ts
 3af81b2d0ac3e498d4b444e575105e5f5c97de49711888a2e5fa8fe19b739c9c  tests/acceptance/my-activity/chat-history.perf.int.test.ts
 c49712e02dea1cb8e2a98ef9460288a3810cdbcb335d075160ff2a1ab0791566  tests/acceptance/my-activity/isolation.int.test.ts
-15bf508a11b0bcf03bc7b7a5242694f08f3f9047fb393453e55f869824e09804  tests/acceptance/one-agent/context-migration.int.test.ts
+31929b05adda20493a94244bb36c46a4a5989667e523e6b49f9bd9cd52e32aec  tests/acceptance/one-agent/context-migration.int.test.ts
 c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts
 96dc9a244177186e9e90747ffce4c01f8564fa8803952aeb381bfc97dc04466f  tests/acceptance/price-scout/price-scout.int.test.ts
 385ed13a7cafe0fdc2889e6f220d90bbcfbb4f0eb3ea3e730a5c9a67d2b6dcef  tests/acceptance/products-confirm/delete-orphans.int.test.ts
-7a0c2b723170207d1f8839bb569dcb154d478a816046c4b22ca92926ff2884f6  tests/acceptance/products-confirm/links.int.test.ts
+2e05ac9881c64989cee26654403c9dfa53a10fca48b4097d8f0f622ccb93749a  tests/acceptance/products-confirm/links.int.test.ts
 07a9cbf7bacd96bebb47df1a3704a756f05a65563109c7d1bd1ea0a5ddbddf6a  tests/acceptance/studio-agents-list/list-flags.int.test.ts
-fe7cca220c9fb4b246085f5742be9919a6c1782565d1e5eb3212aa26416f7b5e  tests/acceptance/tenant-admin-scope/scope.int.test.ts
+4e5e9a55ac85b10672336779d75131be652b0eefa96564cc3bd4f436b9357dbc  tests/acceptance/tenant-admin-scope/scope.int.test.ts
 ccdb2330670fecf1ac9b4396621c4e06e26a2c5f981671223ea2f5cb08a5783b  tests/acceptance/tenant-ai-setup/setup.int.test.ts
 36c2a631d1923d6d57146327e45c8bbd9ba495c5b9b721737db2802429855fb4  tests/acceptance/tenant-owner/setup.int.test.ts
 f558c327ff0842aaf575a5530631b86a141ece7263f3c3aeb4335abea5612b75  tests/contract/chat/_client.ts

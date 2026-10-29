@@ -17,8 +17,7 @@ import * as threads from "../../../apps/hub-api/src/modules/packs/community/adap
 import { storeComment } from "../../../apps/hub-api/src/modules/packs/community/domain/content.rules";
 import { pgExternalOrgResolver } from "../../../apps/hub-api/src/modules/packs/kit/adapters/ext-org.pg";
 import { createPackUow } from "../../../apps/hub-api/src/modules/packs/kit/adapters/pack-uow";
-import type { MapRow } from "./seed-community-demo";
-import { POST_SAMPLES, type PostSample } from "./seed-community-demo.data";
+import { type MapRow, POST_SAMPLES, type PostSample } from "./seed-community-demo.data";
 
 /** Ngữ cảnh đã dựng ở `runSeed`: tenant, admin chủ quản, user/công ty đối tác theo username. */
 export type CommunityCtx = {
