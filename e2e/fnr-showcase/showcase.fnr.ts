@@ -28,7 +28,11 @@ test("CR-103 · R4 · 150 triệu mua sắm ⇒ duyệt song song ⇒ tới Giá
     await expect(run.getByRole("row").filter({ hasText: "Kế toán" })).toBeVisible();
     // Duyệt hai bước song song bằng nút Đạt (RunActions) rồi chờ tới Giám đốc duyệt.
     for (const _ of [0, 1]) await run.getByRole("button", { name: "Đạt" }).first().click();
-    await expect(run.getByRole("row").filter({ hasText: "Giám đốc duyệt" })).toBeVisible();
+    // Nhánh Đúng: Giám đốc duyệt ĐANG chờ kiểm (không phải Bỏ qua) và cả run chưa Hoàn tất.
+    const director = run.getByRole("row").filter({ hasText: "Giám đốc duyệt" });
+    await expect(director).toContainText("Chờ kiểm");
+    await expect(director).not.toContainText("Bỏ qua");
+    await expect(run.locator('[data-slot="badge"]').first()).not.toHaveText("Hoàn tất");
   } finally {
     await ctx.close();
   }
@@ -44,8 +48,8 @@ test("CR-103 · R4 · 50 triệu ⇒ nhánh else Hoàn tất", async ({ browser 
     for (const _ of [0, 1]) await run.getByRole("button", { name: "Đạt" }).first().click();
     // Nhánh else: cả run xong (huy hiệu "Hoàn tất" đầu tiên) và "Giám đốc duyệt" không bao giờ chạy.
     await expect(run.locator('[data-slot="badge"]').first()).toHaveText("Hoàn tất");
-    await expect(run.getByRole("row").filter({ hasText: "Giám đốc duyệt" })).not.toContainText(
-      "Đang",
+    await expect(run.getByRole("row").filter({ hasText: "Giám đốc duyệt" })).toContainText(
+      "Bỏ qua",
     );
   } finally {
     await ctx.close();

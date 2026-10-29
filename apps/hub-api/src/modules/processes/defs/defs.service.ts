@@ -11,6 +11,7 @@ import type {
   ProcessDefListQuery,
   ProcessDefListResponse,
   ProcessEditorContext,
+  ProcessInputValue,
   ProcessRunSummary,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -262,11 +263,17 @@ export class DefsService {
   }
 
   /** ADM-FR-67 · chỉ user của tenant (platform_admin ⇒ 403); quy trình tắt/mẫu/không thấy ⇒ 404 `PROCESS_NOT_FOUND`. */
-  async run(u: AuthUser, s: Scope, id: string, input: string): Promise<ProcessRunSummary> {
+  async run(
+    u: AuthUser,
+    s: Scope,
+    id: string,
+    input: string,
+    inputs?: ProcessInputValue[],
+  ): Promise<ProcessRunSummary> {
     if (u.role !== "tenant_admin" || s.tenantId !== u.tenantId) throw appError("FORBIDDEN");
     const def = await this.#read((tx) => repo.readDef(tx, s, id));
     if (!def || def.tenant_id === null || !def.enabled)
       throw processError("PROCESS_NOT_FOUND", { suggestions: [] });
-    return this.d.start.fromAdmin(u, def.id, input);
+    return this.d.start.fromAdmin(u, def.id, input, inputs);
   }
 }

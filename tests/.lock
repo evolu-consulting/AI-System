@@ -447,7 +447,7 @@ ab92b78a97dc168b79a7d73a6455ff0b9188e56be880c43a585664d54c5bb9a9  e2e/deployed/1
 adf59fb675accb7eafd64aa118372adac461e020e2356098e0e2bb228b6ef081  e2e/features.spec.ts
 cc6e8d4c9ba2e2cd1467b4aa60ebcb416cc1c68df58a5ef857910f2363babdc3  e2e/fnr-showcase/_seed.ts
 f1ad28f6a89916884619a58b896029fa076d5ac792b514606a632db85f9a6e1a  e2e/fnr-showcase/playwright.fnr.config.ts
-df537ac845cd8f14a8ae3ae4f667c7f340f0046f1f29c730dca5a7a1bfa70f36  e2e/fnr-showcase/showcase.fnr.ts
+63ad97b880b09bf9ae413c1206d98b77c539427c62f23029ea259b6221b2800a  e2e/fnr-showcase/showcase.fnr.ts
 7f39e94231ea6da60be5fb1a7940af8b2b0ea82ff3fa85a5737f5fbad7f5c6be  e2e/groups-editor.spec.ts
 8b6a73017627f4571d39e8dce3432dad766d41a08098080a78a47d796f1ab844  e2e/groups-grants.spec.ts
 d24a4e56f4e9d2a2d12f53aed722040a28714fab81da73fc920676fa9272ee53  e2e/groups-list.spec.ts
@@ -1391,6 +1391,7 @@ a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptan
 15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 760eaa6149af166557e63d4594615bab590b06162dd276eb5ef54ba0edfb8761  tests/acceptance/fnr-showcase/set.int.test.ts
+e258f73ec12973f006b691a7c7e29c098f2f9c37dd6f12dc8914914f7edc4481  tests/acceptance/fnr-showcase/showcase-http.int.test.ts
 b115745687d389ceff77b54aa7c52db3b53961dccd6a6e37ca71dcbd019a689d  tests/acceptance/gap-c/notify-prefs.int.test.ts
 16d415d9f736f2ee700077f4a8dc6e8f9e90fa995449d65920427c25ab0688af  tests/acceptance/gap-d1/gap-d1.int.test.ts
 3af81b2d0ac3e498d4b444e575105e5f5c97de49711888a2e5fa8fe19b739c9c  tests/acceptance/my-activity/chat-history.perf.int.test.ts

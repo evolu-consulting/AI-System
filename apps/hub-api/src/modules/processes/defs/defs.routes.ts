@@ -86,6 +86,9 @@ function writeRoutes(r: Hono<AuthVars>, svc: DefsService): void {
     const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
     const id = parseIdParam(c);
     const b = await parseJson(c, RunProcessDefRequestSchema);
-    return c.json(await svc.run(c.var.user, scopeOf(c.var.user, q.tenant_id), id, b.input), 201);
+    return c.json(
+      await svc.run(c.var.user, scopeOf(c.var.user, q.tenant_id), id, b.input, b.inputs),
+      201,
+    );
   });
 }

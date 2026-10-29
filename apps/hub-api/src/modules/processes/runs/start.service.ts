@@ -241,7 +241,7 @@ export class StartService {
   }
 
   /** ADM-FR-67 · nút "Chạy" admin (def đã qua kiểm ở `DefsService.run`): origin admin, started_by = admin. */
-  async fromAdmin(u: AuthUser, defId: string, input: string): Promise<ProcessRunSummary> {
+  async fromAdmin(u: AuthUser, defId: string, input: string, inputs?: ProcessInputValue[]) {
     const me = meOf(u);
     const { summary, runId } = await withHubScope(
       this.d.db,
@@ -252,6 +252,7 @@ export class StartService {
         const r = await this.#insert(tx, u, {
           def,
           input,
+          inputs,
           origin: { originKind: "admin", originRoomId: null, originConversationId: null },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);

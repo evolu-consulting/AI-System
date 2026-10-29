@@ -1,6 +1,7 @@
 // HUB-FR-105 · HUB-FR-110 · HUB-FR-112 · cổng giữa các PF (plan §9 "Ports", plan-step0 §1): PF gọi nhau qua đây, không
 // import file của PF khác. Bước 0 dựng bản no-op/stub; PF điền thân trong thư mục của mình.
 import type { ProcessRunSummary } from "@ai/contracts/chat";
+import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
@@ -36,7 +37,12 @@ export type ProcessStartPort = {
    * ADM-FR-67 · nút "Chạy" ở admin (B3 `POST /process-defs/:id/run`): route đã kiểm role + quy trình bật của tenant
    * admin; PF1 tạo run `origin.kind="admin"` (201) hoặc ném 404/429 như trên. Bước 0: stub 404.
    */
-  fromAdmin(u: AuthUser, defId: string, input: string): Promise<ProcessRunSummary>;
+  fromAdmin(
+    u: AuthUser,
+    defId: string,
+    input: string,
+    inputs?: ProcessInputValue[],
+  ): Promise<ProcessRunSummary>;
 };
 
 /** PF1 (D10) · sau COMMIT: tx người bắt đầu khoá run → kiểm lại quyền → `createRunTx` → `launch`. PF2 gọi sau trả lời. */

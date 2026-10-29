@@ -35,11 +35,16 @@ describe("evaluateWhen", () => {
       false,
       [],
     ],
+    ["chuỗi NFD + khoảng trắng thừa khớp NFC", "and", [inp("p", "eq", "mua sắm")], true, [1]],
     ["số lưu dạng chuỗi so với số", "and", [inp("n", "ge", 5)], true, [1]],
   ];
   for (const [name, op, conds, matched, hits] of cases)
     it(name, () => {
-      const r = evaluateWhen({ op, conds }, FIELDS, { muc: "x", n: "7" });
+      const r = evaluateWhen({ op, conds }, FIELDS, {
+        muc: "x",
+        n: "7",
+        p: " mua sắm ".normalize("NFD"),
+      });
       expect(r).toEqual({ matched, hits });
     });
 });

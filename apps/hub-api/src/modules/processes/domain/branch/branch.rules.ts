@@ -4,9 +4,13 @@ import type { StageRunStatus } from "../types";
 import type { BranchRule } from "./branch-def.rules";
 
 type FieldValue = string | number;
+const norm = (v: FieldValue): FieldValue => (typeof v === "string" ? v.normalize("NFC").trim() : v);
 
 /** So `a op b`; khác kiểu (sau ép số từ chuỗi số khi luật là số) ⇒ không khớp. Date so chuỗi `YYYY-MM-DD`. */
-export function compare(op: BranchRule["op"], raw: FieldValue, want: FieldValue): boolean {
+export function compare(op: BranchRule["op"], rawIn: FieldValue, wantIn: FieldValue): boolean {
+  // Chuỗi chuẩn hoá NFC + trim cả hai vế (trình duyệt có thể gửi NFD / thừa khoảng trắng); số không đổi.
+  const raw = norm(rawIn);
+  const want = norm(wantIn);
   const a =
     typeof want === "number" && typeof raw === "string" && raw.trim() !== "" ? Number(raw) : raw;
   if (typeof a !== typeof want || (typeof a === "number" && !Number.isFinite(a))) return false;
