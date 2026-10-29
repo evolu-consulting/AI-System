@@ -31,13 +31,24 @@ export type EngineState = "on" | "off" | "unknown";
  * CR-103 · luôn dò (kể cả cờ build đóng băng off): Hub `HUB_PROCESS_ROUTES=admin` mở editor cho admin; Hub off ⇒ 404 ⇒ off.
  */
 export async function probeEngine(): Promise<EngineState> {
+  return (await probeEngineInfo()).state;
+}
+
+/** fnr-fix-unfreeze · header Hub đặt kèm `GET /process-defs` khi `HUB_PROCESS_ROUTES=admin` (hub `routes-mode.ts`). */
+const PROCESS_ROUTES_HEADER = "X-Process-Routes";
+export type EngineProbe = { state: EngineState; adminOnly: boolean };
+
+/** Như `probeEngine` + `adminOnly` (chế độ route chỉ quản trị: hộp việc/trả lời chat đóng băng) từ CHÍNH lời dò, không route mới. */
+export async function probeEngineInfo(): Promise<EngineProbe> {
   const url = hubConfigured() ? hubUrl("/process-defs") : null;
-  if (url === null) return "off";
+  if (url === null) return { state: "off", adminOnly: false };
   try {
-    await api<unknown>(url, { query: { limit: 1, include_templates: "false" } });
-    return "on";
+    const res = await apiResponse(url, { query: { limit: 1, include_templates: "false" } });
+    void res.body?.cancel(); // chỉ cần status + header
+    return { state: "on", adminOnly: res.headers.get(PROCESS_ROUTES_HEADER) === "admin" };
   } catch (err) {
-    if (err instanceof ApiError && (err.status === 404 || err.status === 403)) return "off";
+    if (err instanceof ApiError && (err.status === 404 || err.status === 403))
+      return { state: "off", adminOnly: false };
     throw err;
   }
 }

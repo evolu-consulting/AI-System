@@ -94,6 +94,8 @@
       "reviewGroup": "Reviewing group",
       "real": "Real action",
       "realLocked": "Every stage in the previous step needs a reviewer",
+      "adminModeReview": "Hub is in admin-only mode: only admins who belong to the review group can approve (regular members have no inbox).",
+      "adminModeAsk": "Hub is in admin-only mode: AI questions at this stage cannot be answered (the chat inbox is frozen) — the run will wait.",
       "answerer": "Answerer",
       "starter": "The starter",
       "group": "Group",

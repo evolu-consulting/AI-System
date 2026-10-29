@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ensureProcessLocale } from "@/app/i18n";
 import { useSession } from "@/lib/auth/use-session";
-import { type EngineState, probeEngine } from "./api";
+import { type EngineProbe, type EngineState, probeEngineInfo } from "./api";
 
 export const PROCESS_ENGINE_KEY = ["process", "engine"] as const;
 const STALE_MS = 5 * 60_000;
@@ -18,13 +18,13 @@ export function useProcessEngine(): EngineState {
   const allowed = role === "platform_admin" || role === "tenant_admin";
   const probe = useQuery({
     queryKey: PROCESS_ENGINE_KEY,
-    queryFn: probeEngine,
+    queryFn: probeEngineInfo,
     enabled: allowed,
     staleTime: STALE_MS,
     retry: 1,
     retryDelay: RETRY_MS,
   });
-  const on = probe.data === "on";
+  const on = probe.data?.state === "on";
   const locale = useQuery({
     queryKey: ["process", "locale", lng],
     queryFn: async () => {
@@ -35,7 +35,7 @@ export function useProcessEngine(): EngineState {
     staleTime: Number.POSITIVE_INFINITY,
     placeholderData: (prev) => prev,
   });
-  if (probe.data === "off") return "off";
+  if (probe.data?.state === "off") return "off";
   return on && locale.data === true ? "on" : "unknown";
 }
 
@@ -44,8 +44,14 @@ export const useProcessEngineOn = (): boolean => useProcessEngine() === "on";
 /** Route quy trình: `on` vẽ trang; `off` (hoặc dò lỗi) ⇒ NotFound; còn đang dò ⇒ `pending`. */
 export function useEngineRoute(): "pending" | "on" | "off" {
   const state = useProcessEngine();
-  const probe = useQuery<EngineState>({ queryKey: PROCESS_ENGINE_KEY, enabled: false });
+  const probe = useQuery<EngineProbe>({ queryKey: PROCESS_ENGINE_KEY, enabled: false });
   if (state === "on") return "on";
   if (state === "off" || probe.isError) return "off";
   return "pending";
+}
+
+/** fnr-fix-unfreeze · Hub ở chế độ route chỉ quản trị (`HUB_PROCESS_ROUTES=admin`): đọc từ cùng lời dò (cache), không gọi thêm. */
+export function useProcessAdminOnly(): boolean {
+  const probe = useQuery<EngineProbe>({ queryKey: PROCESS_ENGINE_KEY, enabled: false });
+  return probe.data?.adminOnly === true;
 }

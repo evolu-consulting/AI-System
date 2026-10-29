@@ -5,6 +5,9 @@
 export const PROCESS_ROUTE_MODES = ["off", "admin", "all"] as const;
 export type ProcessRoutesMode = (typeof PROCESS_ROUTE_MODES)[number];
 
+/** fnr-fix-unfreeze · header trả kèm `GET /process-defs` ở chế độ `admin` (admin-web dò ⇒ cảnh báo người duyệt/trả lời). */
+export const PROCESS_ROUTES_HEADER = "X-Process-Routes";
+
 /** `processRoutes` đặt rõ (`HUB_PROCESS_ROUTES`) thắng; vắng ⇒ theo cờ đóng băng (`frozenModules` vắng/true ⇒ `all`, false ⇒ `off`). */
 export function resolveProcessRoutes(o: {
   frozenModules?: boolean;

@@ -10,7 +10,12 @@ import {
 import {
   api,
   type CtxPa,
-  type PA,
+  DEF_HD,
+  insertDef,
+  insertOutput,
+  insertRun,
+  insertTask,
+  PA,
   PA_FIX,
   startPa,
 } from "../../../../../tests/acceptance/P-a/_support/pa";
@@ -66,7 +71,7 @@ beforeAll(async () => {
   c = await startPa();
   admin = await startHub(c, { frozenModules: false, processRoutes: "admin" }, "qc-fnr-admin");
   off = await startHub(c, { frozenModules: false }, "qc-fnr-off");
-}, 60_000);
+}, 120_000); // dựng DB X2b+P-a chậm khi máy bận (test:all song song); lưới an toàn, không phải chờ
 afterAll(async () => {
   await off?.stop();
   await admin?.stop();
@@ -127,5 +132,40 @@ describe("CR-103 fnr-unfreeze · chế độ route quy trình", () => {
       s: 200,
     });
     expect(await st(c.hub, "A", "GET", "/process-defs")).toEqual({ path: "/process-defs", s: 403 });
+  });
+
+  it("fnr-fix-unfreeze · admin: GET /process-defs trả header X-Process-Routes=admin; all ⇒ không có", async () => {
+    const h = await api(admin as never, await c.tok("Adm"), "GET", "/process-defs?limit=1");
+    expect(h.headers.get("x-process-routes")).toBe("admin");
+    const a = await api(c.hub, await c.tok("Adm"), "GET", "/process-defs?limit=1");
+    expect(a.headers.get("x-process-routes")).toBeNull();
+  });
+
+  it("fnr-fix-unfreeze · admin: tenant_admin NGOÀI Group duyệt ⇒ 404 (luật task không nới); member trong Group ⇒ 403 (cổng route)", async () => {
+    const tid = PA.A.tid;
+    await insertDef(c.sql, { id: PA_FIX.defHoaDon, tenantId: tid });
+    const run = await insertRun(c.sql, {
+      def: DEF_HD(PA_FIX.defHoaDon),
+      startedBy: PA.A,
+      status: "waiting_review",
+    });
+    const sr = run.stageRunIds[0] as string;
+    const outputId = await insertOutput(c.sql, {
+      tid,
+      runId: run.runId,
+      stageRunId: sr,
+      stageIdx: 0,
+    });
+    const task = await insertTask(c.sql, {
+      tid,
+      runId: run.runId,
+      stageRunId: sr,
+      kind: "review",
+      outputId,
+      groupId: PA_FIX.gKeToan,
+    });
+    const p = `/review-tasks/${task}/decision`;
+    expect(await st(admin, "Adm", "POST", p, { result: "pass" })).toEqual({ path: p, s: 404 });
+    expect(await st(admin, "B", "POST", p, { result: "pass" })).toEqual({ path: p, s: 403 });
   });
 });

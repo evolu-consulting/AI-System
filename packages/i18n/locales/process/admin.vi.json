@@ -94,6 +94,8 @@
       "reviewGroup": "Nhóm kiểm",
       "real": "Hành động thật",
       "realLocked": "Cần mọi giai đoạn ở bước trước có người kiểm",
+      "adminModeReview": "Hub đang ở chế độ chỉ quản trị: chỉ admin thuộc Nhóm kiểm mới duyệt được (thành viên thường không có hộp việc).",
+      "adminModeAsk": "Hub đang ở chế độ chỉ quản trị: câu hỏi của AI ở giai đoạn này không trả lời được (hộp việc chat đang đóng băng) — lượt chạy sẽ chờ.",
       "answerer": "Người trả lời",
       "starter": "Người bắt đầu",
       "group": "Group",

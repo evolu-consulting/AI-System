@@ -8,6 +8,7 @@ import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait } from "../../lib/wait-form";
 import { StageActions } from "./StageActions";
+import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
 import { StageApply } from "./StageApply";
 import { StageAutofix } from "./StageAutofix";
@@ -95,6 +96,8 @@ function Body(p: StageFormProps) {
         </>
       )}
       {tool ? null : <StageAnswerer {...p} />}
+      <StageAdminModeNotice after={stage.after} gate={!apply} asks={!tool} />
+
       <StageLimits {...p} />
       {apply || tool ? null : <StageMustKnow {...p} />}
     </>

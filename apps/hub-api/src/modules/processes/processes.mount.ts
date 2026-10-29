@@ -26,7 +26,7 @@ import { gatesRoutes } from "./gates/gates.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
 import { remindOnce, startProcessReminder } from "./notify/reminder";
-import type { ProcessRoutesMode } from "./routes-mode";
+import { PROCESS_ROUTES_HEADER, type ProcessRoutesMode } from "./routes-mode";
 import { conversationStart } from "./runs/conversation-start";
 import { createStageLauncher } from "./runs/launcher";
 import { packRunsOf } from "./runs/pack-runs";
@@ -151,6 +151,11 @@ function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps, mode: ProcessR
   if (mode === "admin") {
     const gate = requireAdminRole() as unknown as MiddlewareHandler<E>;
     for (const p of PROCESS_PROTECTED_PREFIXES) app.use(p, gate).use(`${p}/*`, gate);
+    // fnr-fix-unfreeze · báo chế độ cho admin-web qua chính lời dò `GET /process-defs` (sau cổng role; không route mới).
+    app.use("/process-defs", async (c, next) => {
+      await next();
+      c.header(PROCESS_ROUTES_HEADER, "admin");
+    });
   }
   for (const r of mode === "admin" ? ADMIN_ROUTES : ALL_ROUTES) app.route("/", r(d));
 }

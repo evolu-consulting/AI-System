@@ -61,7 +61,7 @@ import {
   type ProcessMountDeps,
   type ProcessSeams,
 } from "./modules/processes/processes.mount";
-import { resolveProcessRoutes } from "./modules/processes/routes-mode";
+import { PROCESS_ROUTES_HEADER, resolveProcessRoutes } from "./modules/processes/routes-mode";
 import { cancelRoutes } from "./modules/runs/close/cancel.routes";
 import { CancelService } from "./modules/runs/close/cancel.service";
 import { runRoutes, sendMessageRoutes } from "./modules/runs/runs.routes";
@@ -340,6 +340,7 @@ const corsOf = (cfg: AppConfig): MiddlewareHandler =>
       MESSAGE_ID_HEADER,
       RETRY_AFTER_HEADER,
       PROCESS_RUN_ID_HEADER,
+      PROCESS_ROUTES_HEADER, // fnr-fix-unfreeze · admin-web đọc chế độ route quy trình
       "Content-Disposition",
     ],
   });
