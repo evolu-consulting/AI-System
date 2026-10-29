@@ -198,6 +198,30 @@
           "ref": "Tool này chưa được bật cho công ty hoặc không còn."
         }
       },
+      "if": {
+        "title": "Nếu (rẽ Đúng/Sai)",
+        "hint": "Đứng một mình trong bước, chạy ngay. Điều kiện đúng thì nhảy tới bước Đúng, sai thì tới bước Sai (bỏ trống = bước kế). Bước bị nhảy qua hiện là “Bỏ qua”.",
+        "noSources": "Chưa có trường kết quả ở bước trước hay đầu vào để so sánh.",
+        "join": "Kết hợp điều kiện",
+        "and": "Tất cả đều đúng (VÀ)",
+        "or": "Một điều kiện đúng là đủ (HOẶC)",
+        "from": "Nếu",
+        "fromPh": "Chọn trường hoặc đầu vào…",
+        "op": "Phép so sánh",
+        "value": "Giá trị",
+        "add": "Thêm điều kiện",
+        "remove": "Xoá điều kiện {{n}}",
+        "delete": "Xoá",
+        "max": "Tối đa 6 điều kiện.",
+        "yes": "Đúng thì tới bước",
+        "no": "Sai thì tới bước",
+        "stepPh": "Chọn bước…",
+        "nextStep": "Bước kế",
+        "stepOpt": "Bước {{n}}",
+        "err": {
+          "IF_INVALID": "Điều kiện Nếu chưa hợp lệ: kiểm tra nguồn, phép so sánh, giá trị và bước đích (phải đứng sau bước này)."
+        }
+      },
       "branch": {
         "title": "Rẽ nhánh",
         "hint": "Luật đầu tiên khớp được dùng. Không khớp luật nào thì sang bước kế. Giai đoạn bị nhảy qua hiện là “Bỏ qua”.",
@@ -432,6 +456,10 @@
   },
   "canvas": {
     "title": "Canvas quy trình",
+    "if": {
+      "yes": "Đúng",
+      "no": "Sai"
+    },
     "region": "Chi tiết giai đoạn",
     "view": {
       "label": "Chế độ xem",

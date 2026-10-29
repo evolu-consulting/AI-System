@@ -6,7 +6,7 @@ import type { BranchRule } from "./branch-def.rules";
 type FieldValue = string | number;
 
 /** So `a op b`; khác kiểu (sau ép số từ chuỗi số khi luật là số) ⇒ không khớp. Date so chuỗi `YYYY-MM-DD`. */
-function compare(op: BranchRule["op"], raw: FieldValue, want: FieldValue): boolean {
+export function compare(op: BranchRule["op"], raw: FieldValue, want: FieldValue): boolean {
   const a =
     typeof want === "number" && typeof raw === "string" && raw.trim() !== "" ? Number(raw) : raw;
   if (typeof a !== typeof want || (typeof a === "number" && !Number.isFinite(a))) return false;

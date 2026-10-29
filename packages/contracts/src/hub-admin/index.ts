@@ -12,6 +12,7 @@ export * from "./kh";
 export * from "./node-family";
 export * from "./node-swap";
 export * from "./process-set";
+export * from "./process-if";
 export * from "./processes";
 export * from "./secrets";
 export * from "./trace";

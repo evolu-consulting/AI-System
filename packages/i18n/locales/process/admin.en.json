@@ -198,6 +198,30 @@
           "ref": "This tool isn't enabled for your company or no longer exists."
         }
       },
+      "if": {
+        "title": "If (true/false branch)",
+        "hint": "Stands alone in its step and runs instantly. If the condition holds it jumps to the True step, otherwise to the False step (empty = next step). Skipped steps show as “Skipped”.",
+        "noSources": "No result field in an earlier step or input to compare yet.",
+        "join": "Combine conditions",
+        "and": "All must hold (AND)",
+        "or": "Any one is enough (OR)",
+        "from": "If",
+        "fromPh": "Choose a field or input…",
+        "op": "Comparison",
+        "value": "Value",
+        "add": "Add condition",
+        "remove": "Remove condition {{n}}",
+        "delete": "Remove",
+        "max": "At most 6 conditions.",
+        "yes": "If true, go to step",
+        "no": "If false, go to step",
+        "stepPh": "Choose a step…",
+        "nextStep": "Next step",
+        "stepOpt": "Step {{n}}",
+        "err": {
+          "IF_INVALID": "The If condition is invalid: check the source, comparison, value and target step (must come after this step)."
+        }
+      },
       "branch": {
         "title": "Branch",
         "hint": "The first matching rule wins. If none match, the run goes to the next step. Skipped stages show as “Skipped”.",
@@ -432,6 +456,10 @@
   },
   "canvas": {
     "title": "Process canvas",
+    "if": {
+      "yes": "True",
+      "no": "False"
+    },
     "region": "Stage details",
     "view": {
       "label": "View mode",
