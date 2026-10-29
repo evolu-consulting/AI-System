@@ -471,7 +471,8 @@
     },
     "toolbar": {
       "addStage": "Thêm giai đoạn",
-      "addStep": "Thêm bước"
+      "addStep": "Thêm bước",
+      "arrange": "Sắp xếp"
     },
     "step": {
       "title": "Bước {{n}}",
@@ -607,7 +608,7 @@
     },
     "swap": {
       "title": "Đổi node",
-      "hint": "Node chỉ đổi được trong cùng họ, và khi node mới vẫn cung cấp đủ field mà bước sau dùng. Kiểm tra \"canSwap\" sẽ có ở bước R3.",
+      "hint": "Kiểm tra \"canSwap\" đã được áp dụng: trình soạn thảo cho đổi node qua lại giữa các họ, trừ khi các bước sau đang dùng field của node này.",
       "family": {
         "work": "Làm việc",
         "wait": "Chờ",

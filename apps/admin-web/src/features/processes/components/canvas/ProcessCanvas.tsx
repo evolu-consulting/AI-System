@@ -1,5 +1,6 @@
-// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend FB1/FB2/FB4/FB9, ADR-0013): canvas xyflow — lazy chunk `canvas`.
-// nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng); kéo thả `onNodeDragStop` ⇒ `ops.setStep`; cột đầy ⇒ trượt về chỗ cũ.
+﻿// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend FB1/FB2/FB4/FB9, ADR-0013): canvas xyflow — lazy chunk `canvas`.
+// nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng); kéo thả `onNodeDragStop` ⇒ `ops.setStep` (x chốt cột) + `ops.setY`
+// (y tự do, lưu `ui.y`); cột đầy ⇒ trượt về chỗ cũ.
 import "@xyflow/react/dist/base.css";
 import {
   Background,
@@ -14,12 +15,14 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  HEADER_H,
   HEADER_NODE_H,
   JOIN_H,
   JOIN_W,
   layoutSteps,
   NODE_H,
   NODE_W,
+  ROW_H,
   stepFromDropX,
 } from "../../lib/canvas-layout";
 import { countAtStep } from "../../lib/step-ops";
@@ -47,6 +50,8 @@ export type ProcessCanvasProps = CanvasHandlers & {
   selected: string | undefined;
   /** Canvas thấp, vừa khít cả flow (trang showcase chỉ đọc). */
   compact?: boolean;
+  /** Đổi giá trị ⇒ canvas fit lại khung nhìn (sau "Sắp xếp"). */
+  fitKey?: number;
 };
 
 type Lay = ReturnType<typeof layoutSteps>;
@@ -82,6 +87,12 @@ function toNode(
   const data =
     n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
   return { ...base, data, draggable: false };
+}
+
+/** Kẹp y thả vào khung nội dung (dưới tiêu đề, không quá hàng thấp nhất + một hàng) để node không rơi khỏi vùng nhìn. */
+function clampY(y: number, nodes: readonly Node[]): number {
+  const ys = nodes.filter((n) => n.type === "stage" || n.type === "if").map((n) => n.position.y);
+  return Math.min(Math.max(y, HEADER_H), Math.max(...ys, HEADER_H) + ROW_H);
 }
 
 function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
@@ -122,7 +133,7 @@ function Flow(p: ProcessCanvasProps) {
         : g.nodes,
     [g.nodes, drag],
   );
-  const stepsKey = `${g.steps}:${p.views.length}`;
+  const stepsKey = `${g.steps}:${p.views.length}:${p.fitKey ?? 0}`;
   // chỉ khi số bước / số giai đoạn đổi (`rf` ổn định)
   // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
   useEffect(() => {
@@ -150,13 +161,21 @@ function Flow(p: ProcessCanvasProps) {
       t0 && t0.step !== t0.v.step && countAtStep(p.views, t0.step, t0.v.uid) >= 3 ? t0.step : null;
     setBlocked((prev) => (prev === full ? prev : full));
   };
+  // fnr-canvas: kéo tự do — x chốt vào cột gần nhất (đổi bước theo luật cũ), y được LƯU (`ui.y`) khi thả; cột đầy ⇒ trượt về.
   const onDragStop = (_: unknown, node: Node) => {
     setBlocked(null);
     const t0 = target(node);
+    const y = (lastPos.current[node.id] ?? node.position).y;
+    const y0 = g.nodes.find((n) => n.id === node.id)?.position.y ?? y;
     lastPos.current = {};
     setDrag({});
     if (!t0) return;
-    if (t0.step !== t0.v.step) p.ops.setStep(t0.v.index, t0.step);
+    const moved = t0.step !== t0.v.step;
+    if (moved) p.ops.setStep(t0.v.index, t0.step); // cột đầy ⇒ ops báo lỗi, bản nháp không đổi
+    // Đổi cột ⇒ node vào vị trí tự động của cột mới (bỏ `ui.y` cũ); cùng cột ⇒ lưu y (kẹp trong khung nội dung để không rơi ra ngoài).
+    if (moved) {
+      if (!(countAtStep(p.views, t0.step, t0.v.uid) >= 3)) p.ops.setY(t0.v.uid, undefined);
+    } else if (Math.abs(y - y0) >= 1) p.ops.setY(t0.v.uid, clampY(y, g.nodes));
     setTick((n) => n + 1);
   };
 

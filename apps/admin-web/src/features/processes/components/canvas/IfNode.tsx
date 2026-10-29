@@ -22,7 +22,8 @@ function IfImpl({ data }: NodeProps<IfType>) {
       <HiddenHandle type="target" position={Position.Left} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
       <HiddenHandle id="yes" type="source" position={Position.Right} />
-      <HiddenHandle id="no" type="source" position={Position.Bottom} />
+      {/* fnr-canvas: cả Đúng và Sai ra ở mũi phải (kiểu n8n) — cạnh smoothstep rẽ lên/xuống, không vòng dưới node. */}
+      <HiddenHandle id="no" type="source" position={Position.Right} />
       <svg
         aria-hidden
         viewBox="0 0 100 100"

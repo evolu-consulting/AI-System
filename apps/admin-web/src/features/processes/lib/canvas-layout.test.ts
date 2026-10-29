@@ -60,6 +60,65 @@ describe("stepFromDropX", () => {
   });
 });
 
+describe("fnr-canvas · làn nhánh If", () => {
+  const s = (uid: string, step: number, extra: Record<string, unknown> = {}) => ({
+    uid,
+    step,
+    backTo: [],
+    after: "auto" as const,
+    ...extra,
+  });
+  const yOf = (l: ReturnType<typeof layoutSteps>, id: string) =>
+    (l.nodes.find((n) => n.id === id) as { y: number }).y;
+  // a(0) → if(1) ─Đúng→ t(2) ─┐
+  //                 └Sai→ e(3) ←┘ (hai nhánh nhập lại ở bước 3)
+  const stages = [s("a", 0), s("i", 1, { ifs: { yes: 2, no: 3 } }), s("t", 2), s("e", 3)];
+  const l = layoutSteps(stages);
+
+  test("bước chỉ qua Đúng lên làn trên; Sai/bước chung ở làn chính; x vẫn theo bước", () => {
+    expect(yOf(l, "t")).toBeLessThan(yOf(l, "i"));
+    expect(yOf(l, "i")).toBe(yOf(l, "a"));
+    expect(yOf(l, "e")).toBe(yOf(l, "i")); // nhập lại ở làn chính
+    expect(l.nodes.find((n) => n.id === "t")).toMatchObject({ x: 2 * COL_W });
+    expect(yOf(l, "t")).toBe(HEADER_H); // làn trên là làn đầu, ngay dưới tiêu đề
+  });
+  test("Đúng đi thẳng tới đích xa hơn ⇒ bước chỉ qua Sai xuống làn dưới (làn chính không bị cạnh chéo)", () => {
+    const l2 = layoutSteps([s("a", 0, { ifs: { yes: 2, no: 1 } }), s("n", 1), s("y", 2)]);
+    expect(yOf(l2, "n")).toBeGreaterThan(yOf(l2, "a"));
+    expect(yOf(l2, "y")).toBe(yOf(l2, "a"));
+  });
+  test("không If / Đúng = Sai ⇒ một làn (như cũ)", () => {
+    const l3 = layoutSteps([s("a", 0, { ifs: { yes: 1, no: 1 } }), s("b", 1)]);
+    expect(yOf(l3, "a")).toBe(yOf(l3, "b"));
+  });
+  test("giai đoạn song song xếp dọc gọn trong làn, không đè làn khác", () => {
+    const l4 = layoutSteps([
+      s("a", 0),
+      s("i", 1, { ifs: { yes: 2, no: 3 } }),
+      s("t1", 2),
+      s("t2", 2),
+      s("t3", 2),
+      s("e", 3),
+    ]);
+    const ys = ["t1", "t2", "t3"].map((id) => yOf(l4, id));
+    expect(ys).toEqual([HEADER_H, HEADER_H + ROW_H, HEADER_H + 2 * ROW_H]);
+    expect(yOf(l4, "i")).toBeGreaterThanOrEqual(HEADER_H + 3 * ROW_H); // làn chính nằm dưới cả chồng 3
+  });
+  test("y đã lưu thắng toạ độ tự động (chỉ node có y); join theo y thực", () => {
+    const l5 = layoutSteps([s("a", 0, { y: 777 }), s("b", 1), s("c", 1)]);
+    expect(yOf(l5, "a")).toBe(777);
+    expect(yOf(l5, "b")).toBe(HEADER_H);
+    const l6 = layoutSteps([s("b", 0, { y: 500 }), s("c", 0, { y: 600 }), s("d", 1)]);
+    expect(yOf(l6, "j0")).toBe(550 + (104 - 28) / 2);
+  });
+  test("cạnh Đúng/Sai vẫn đúng hai cạnh; cạnh tiến từ cột trên nhập lại bước chung", () => {
+    const ids = l.edges.map((e) => `${e.kind}:${e.source}>${e.target}`);
+    expect(ids).toContain("branch:i>t");
+    expect(ids).toContain("branch:i>e");
+    expect(ids).toContain("forward:t>e");
+  });
+});
+
 test("node If: đúng hai cạnh Đúng/Sai tới giai đoạn đầu bước đích, không cạnh tiến, không tới tiêu đề", () => {
   const st = (uid: string, step: number, ifs?: { yes: number | null; no: number | null }) => ({
     uid,

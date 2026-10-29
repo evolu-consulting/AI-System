@@ -1,4 +1,4 @@
-// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
+﻿// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
 // (câu lỗi inline đã dịch, vùng `aria-live`). Canvas, StepList và panel cùng dùng một bộ.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,7 @@ function useReport(d: DraftState) {
 
 export function useStageOps(d: DraftState) {
   const { notice, live, setNotice, setLive, find, report, t } = useReport(d);
+  const [arranged, setArranged] = useState(0);
   const stageAt = (i: number) => d.draftRef.current.stages[i];
   const setStep = (i: number, step: number) => {
     const s = stageAt(i);
@@ -65,6 +66,14 @@ export function useStageOps(d: DraftState) {
     setStep,
     split,
     moveColumn,
+    /** fnr-canvas · lưu vị trí dọc node (kéo tự do) / bỏ hết vị trí đã lưu ("Sắp xếp"). */
+    setY: (uid: string, y: number | undefined) => d.setUiY(uid, y),
+    arranged,
+    arrange: () => {
+      d.clearUiY();
+      setNotice(null);
+      setArranged((n) => n + 1);
+    },
     /** Thêm giai đoạn vào bước `step` (0-based), bỏ trống ⇒ thành bước mới cuối. */
     add: (step?: number) => addVia(() => d.addStage(step)),
     /** Chèn bước mới ngay sau bước `step`. */

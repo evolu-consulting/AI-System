@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d2: đổi một giai đoạn qua lại giữa `ProcessStageDef` (contract) và `StageDraft` (editor) — tách từ
 // `def-form` (file ≤ 400 dòng). Hàm thuần: không React, không gọi API.
-import { type ProcessStageDef, STAGE_TIMEOUT_S } from "@ai/contracts/hub-admin";
+import { type ProcessStageDef, STAGE_TIMEOUT_S, STAGE_UI_Y } from "@ai/contracts/hub-admin";
 import { draftKindOf, type FeNode, feNodeOf } from "../nodes/registry";
 import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
@@ -110,6 +110,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     sources: stageSourcesToDraft(s.sources),
     mustKnow: mustKnowToDraft(s.must_know),
     autofix: autofixToDraft(s.autofix),
+    ...(s.ui ? { uiY: s.ui.y } : {}),
   };
 }
 
@@ -167,5 +168,10 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     sources: stageSourcesToDef(s.sources),
     must_know: mustKnowToDef(s.mustKnow),
     autofix: autofixToDef(s.autofix),
+    ...(s.uiY === undefined ? {} : { ui: { y: clampUiY(s.uiY) } }),
   };
 }
+
+/** `ui.y` gửi Hub: làm tròn + kẹp trong biên contract. */
+const clampUiY = (y: number): number =>
+  Math.min(Math.max(Math.round(y), STAGE_UI_Y.min), STAGE_UI_Y.max);

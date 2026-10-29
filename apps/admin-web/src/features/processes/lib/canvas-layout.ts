@@ -1,4 +1,5 @@
-// HUB-FR-104 · P-b2 (plan-frontend FB4, ADR-0013 #3): bố cục canvas theo cột bước — hàm thuần, KHÔNG lưu toạ độ.
+// HUB-FR-104 · P-b2 (plan-frontend FB4, ADR-0013 #3) · CR-103 fnr-canvas: bố cục canvas theo cột bước + làn nhánh If — hàm thuần.
+// `x` luôn suy từ bước; `y` tự động theo làn, hoặc `y` đã lưu của giai đoạn (`ui.y`, chỉ-UI).
 // Trả mô tả node/cạnh trung tính (không phụ thuộc xyflow) để test không cần DOM.
 import { PROCESS_STEP_STAGES_MAX } from "@ai/contracts/hub-admin";
 import type { Stepped } from "./step-ops";
@@ -37,6 +38,8 @@ type LayoutStage = Pick<Stepped, "uid" | "step" | "backTo" | "after"> & {
   branch?: readonly (number | null)[];
   /** CR-103 · node If: bước đích Đúng / Sai (0-based, null = chưa chọn). */
   ifs?: { yes: number | null; no: number | null } | null;
+  /** fnr-canvas · `y` đã lưu (`ui.y`); vắng/null ⇒ tự động. */
+  y?: number | null;
 };
 
 type Cols = { cols: number[][]; uids: string[] };
@@ -110,12 +113,59 @@ const e = (source: string, target: string): LayoutEdge => ({
   kind: "forward",
 });
 
-/** Bố cục: cột `x = step × COL_W`, hàng `y = HEADER_H + row × ROW_H`, mỗi cột căn giữa theo cột cao nhất. */
+/**
+ * Làn của từng bước (số nguyên, 0 = làn chính). Mỗi node If có hai đích Đúng (Y) / Sai (N, vắng ⇒ bước kế), cùng > bước If:
+ * các bước nằm giữa hai đích chỉ chạy qua nhánh có đích nhỏ hơn; sau đích lớn hơn hai nhánh nhập lại.
+ * Y < N ⇒ bước [Y, N) (chỉ qua Đúng) lên làn TRÊN (-1); Y > N ⇒ bước [N, Y) (chỉ qua Sai) xuống làn DƯỚI (+1)
+ * để nhánh đi thẳng (làn chính) không bị cạnh chéo qua node. If lồng nhau ⇒ cộng dồn.
+ */
+function stepLanes(stages: readonly LayoutStage[], steps: number): number[] {
+  const lane = Array.from({ length: steps }, () => 0);
+  for (const s of stages) {
+    const f = s.ifs;
+    if (!f || f.yes === null) continue;
+    const yes = f.yes;
+    const no = f.no ?? s.step + 1;
+    const ok = (g: number) => g > s.step && g < steps;
+    if (!ok(yes) || !ok(no) || yes === no) continue;
+    const [from, to, d] = yes < no ? [yes, no, -1] : [no, yes, 1];
+    for (let k = from; k < to; k++) lane[k] = (lane[k] as number) + (d as number);
+  }
+  return lane;
+}
+
+/** `y` đầu của từng làn (px, chưa cộng HEADER_H): làn cao theo cột đông nhất trong làn, tối thiểu một hàng. */
+function laneTops(
+  cols: number[][],
+  lane: number[],
+): { top: Map<number, number>; height: Map<number, number> } {
+  const min = Math.min(0, ...lane);
+  const max = Math.max(0, ...lane);
+  const height = new Map<number, number>();
+  for (let l = min; l <= max; l++) height.set(l, 1);
+  cols.forEach((c, k) => {
+    const l = lane[k] as number;
+    height.set(l, Math.max(height.get(l) as number, c.length));
+  });
+  const top = new Map<number, number>();
+  let acc = 0;
+  for (let l = min; l <= max; l++) {
+    top.set(l, acc);
+    acc += (height.get(l) as number) * ROW_H;
+  }
+  return { top, height };
+}
+
+/**
+ * Bố cục: cột `x = step × COL_W`; `y` theo làn (nhánh Đúng của If lên làn trên — xem `stepLanes`), các giai đoạn song song xếp
+ * dọc gọn trong làn, căn giữa theo cột cao nhất của làn. `y` đã lưu của giai đoạn (`stage.y`) thắng toạ độ tự động.
+ */
 export function layoutSteps(stages: readonly LayoutStage[]): Layout {
   const steps = stages.reduce((m, s) => Math.max(m, s.step + 1), 0);
   const cols: number[][] = Array.from({ length: steps }, () => []);
   for (const [i, s] of stages.entries()) cols[s.step]?.push(i);
-  const rows = cols.reduce((m, c) => Math.max(m, c.length), 1);
+  const lane = stepLanes(stages, steps);
+  const { top, height } = laneTops(cols, lane);
   const nodes: LayoutNode[] = [];
   cols.forEach((col, k) => {
     nodes.push({
@@ -126,22 +176,21 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
       step: k,
       full: col.length >= PROCESS_STEP_STAGES_MAX,
     });
-    const off = ((rows - col.length) * ROW_H) / 2;
-    for (const [r, i] of col.entries())
-      nodes.push({
-        id: (stages[i] as LayoutStage).uid,
-        kind: "stage",
-        x: k * COL_W,
-        y: HEADER_H + off + r * ROW_H,
-        step: k,
-        index: i,
-      });
+    const l = lane[k] as number;
+    const off = (((height.get(l) as number) - col.length) * ROW_H) / 2;
+    const ys: number[] = [];
+    for (const [r, i] of col.entries()) {
+      const s = stages[i] as LayoutStage;
+      const y = s.y ?? HEADER_H + (top.get(l) as number) + off + r * ROW_H;
+      ys.push(y);
+      nodes.push({ id: s.uid, kind: "stage", x: k * COL_W, y, step: k, index: i });
+    }
     if (col.length > 1 && cols[k + 1])
       nodes.push({
         id: joinId(k),
         kind: "join",
         x: k * COL_W + NODE_W + (COL_W - NODE_W - JOIN_W) / 2,
-        y: HEADER_H + (rows * ROW_H - ROW_H + NODE_H - JOIN_H) / 2,
+        y: ys.reduce((a, b) => a + b, 0) / ys.length + (NODE_H - JOIN_H) / 2,
         step: k,
         count: col.length,
       });

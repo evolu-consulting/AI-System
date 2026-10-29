@@ -39,6 +39,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
     selected: w.sel?.uid,
     readOnly,
     ops,
+    fitKey: ops.arranged,
     onSelect: w.select,
     onRemove: w.askRemove,
   };
@@ -55,6 +56,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               count={w.stages.length}
               onAddStage={addStage}
               onAddStep={() => ops.addStep(w.sel?.step ?? -1)}
+              onArrange={ops.arrange}
             />
           )}
           <div className="ml-auto flex items-center gap-1">

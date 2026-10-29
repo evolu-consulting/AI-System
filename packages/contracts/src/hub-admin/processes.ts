@@ -30,6 +30,7 @@ import {
   ProcessToolItemSchema,
   ToolExecutorSchema,
 } from "./process-tools";
+import { StageUiSchema } from "./process-ui";
 import { WaitUntilExecutorSchema } from "./process-wait";
 import {
   BranchSchema,
@@ -62,6 +63,7 @@ export {
 export * from "./autofix";
 export * from "./process-steps";
 export * from "./process-tools";
+export * from "./process-ui";
 export * from "./process-wait";
 export * from "./sources";
 
@@ -211,6 +213,8 @@ export const ProcessStageDefSchema = z.strictObject({
   must_know: z.array(z.string().trim().min(1).max(MUST_KNOW_LEN)).max(MUST_KNOW_MAX).default([]),
   /** P-c1 · vắng/null = stage thường (snapshot cũ đọc `?? null`). */
   autofix: StageAutofixSchema.nullable().default(null),
+  /** CR-103 · fnr-canvas · vị trí node trên canvas (chỉ UI; engine bỏ qua; vắng ở snapshot cũ). */
+  ui: StageUiSchema.optional(),
 });
 type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
 type StageAfterParsed = StageDefParsed["after"];

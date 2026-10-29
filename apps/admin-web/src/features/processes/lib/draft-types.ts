@@ -71,6 +71,8 @@ export type StageDraft = {
   branch: BranchDraft[];
   /** CR-103 · fnr-if · khối "Nếu" (chỉ dùng khi `executor = "if"`). */
   ifx: IfDraft;
+  /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */
+  uiY?: number;
 };
 export type DefDraft = {
   key: string;

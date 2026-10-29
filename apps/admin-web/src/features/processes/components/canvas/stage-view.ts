@@ -29,6 +29,8 @@ export type StageView = {
   /** CR-103 · node If: bước Đúng / Sai (0-based; null = chưa chọn / Sai ⇒ bước kế); stage khác ⇒ null. */
   ifs: { yes: number | null; no: number | null } | null;
   hasError: boolean;
+  /** fnr-canvas · `y` đã lưu của node (`ui.y`); null = bố cục tự động. */
+  y: number | null;
 };
 
 const hasStageError = (errors: DraftErrors, i: number): boolean =>
@@ -72,6 +74,7 @@ export function stageViews(
     branch: branchOff(s) ? [] : s.branch.map((b) => (b.goto === null ? null : b.goto - 1)),
     ifs: ifsOf(s),
     hasError: hasStageError(errors, i),
+    y: s.uiY ?? null,
   }));
 }
 
@@ -92,4 +95,5 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.branch.join() === b.branch.join() &&
   `${a.ifs?.yes}:${a.ifs?.no}` === `${b.ifs?.yes}:${b.ifs?.no}` &&
   a.hasError === b.hasError &&
+  a.y === b.y &&
   a.backTo.join() === b.backTo.join();

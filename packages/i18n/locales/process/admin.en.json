@@ -471,7 +471,8 @@
     },
     "toolbar": {
       "addStage": "Add stage",
-      "addStep": "Add step"
+      "addStep": "Add step",
+      "arrange": "Arrange"
     },
     "step": {
       "title": "Step {{n}}",
@@ -607,7 +608,7 @@
     },
     "swap": {
       "title": "Swap node",
-      "hint": "A node can only be swapped within its family, and only if the new node still provides every field later steps use. The \"canSwap\" check arrives with R3.",
+      "hint": "The \"canSwap\" check is now applied: the editor lets you swap a node across families, unless later steps use this node's fields.",
       "family": {
         "work": "Work",
         "wait": "Wait",

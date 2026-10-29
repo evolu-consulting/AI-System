@@ -1,4 +1,4 @@
-// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
+﻿// ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
 import { useRef, useState } from "react";
 import {
   type DefDraft,
@@ -32,6 +32,22 @@ function draftOps(update: Update) {
     moveInColumn: (i: number, dir: -1 | 1) =>
       update((d) => ({ ...d, stages: moveInColumn(d.stages, i, dir) })),
     removeStage: (i: number) => update((d) => ({ ...d, stages: removeStage(d.stages, i) })),
+    /** fnr-canvas · lưu `y` của node `uid` (chỉ-UI); `undefined` ⇒ bỏ (về bố cục tự động). */
+    setUiY: (uid: string, y: number | undefined) =>
+      update((d) => ({
+        ...d,
+        stages: d.stages.map((s) => {
+          if (s.uid !== uid) return s;
+          const { uiY: _y, ...rest } = s;
+          return y === undefined ? rest : { ...rest, uiY: Math.round(y) };
+        }),
+      })),
+    /** fnr-canvas · "Sắp xếp": xoá mọi `y` đã lưu ⇒ bố cục tự động. */
+    clearUiY: () =>
+      update((d) => ({
+        ...d,
+        stages: d.stages.map(({ uiY: _y, ...s }) => s),
+      })),
   };
 }
 
