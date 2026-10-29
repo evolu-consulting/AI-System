@@ -77,6 +77,10 @@
         "wait": "Wait until date",
         "tool": "Call tool"
       },
+      "swap": {
+        "family": "Different node family — can't switch to this type.",
+        "field_ref": "Stage {{by}} still uses the field \u201c{{field}}\u201d of this stage."
+      },
       "instruction": "Instructions",
       "filename": "Output file name",
       "template": "Output template",

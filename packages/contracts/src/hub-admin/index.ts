@@ -10,6 +10,7 @@ export * from "./effective";
 export * from "./errors";
 export * from "./kh";
 export * from "./node-family";
+export * from "./node-swap";
 export * from "./processes";
 export * from "./secrets";
 export * from "./trace";

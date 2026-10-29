@@ -15,6 +15,16 @@ export const NODE_FAMILY_OF: Readonly<Record<ExecutorKind, NodeFamily>> = {
   apply: "apply",
 };
 
+/** CR-103 · R3: loại node có khai báo field output cho bước sau dùng không ("none" ⇒ không được có tham chiếu tới nó). */
+export type NodeProduces = "declared" | "none";
+export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
+  agent: "declared",
+  team: "declared",
+  tool: "declared",
+  wait_until: "none",
+  apply: "none",
+};
+
 /** Họ của loại node; loại lạ (def cũ/hỏng) ⇒ null. */
 export function nodeFamily(kind: string): NodeFamily | null {
   return Object.hasOwn(NODE_FAMILY_OF, kind) ? NODE_FAMILY_OF[kind as ExecutorKind] : null;

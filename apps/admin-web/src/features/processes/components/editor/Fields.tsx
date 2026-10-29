@@ -95,7 +95,7 @@ export function TextField(
   );
 }
 
-export type Option = { value: string; label: string; disabled?: boolean };
+export type Option = { value: string; label: string; disabled?: boolean; title?: string };
 
 /** Select Radix: `value=""` ⇒ hiện placeholder. Mục hiện giá trị không còn trong danh sách do nơi gọi thêm vào `options`. */
 export function SelectField(
@@ -123,7 +123,7 @@ export function SelectField(
           </SelectTrigger>
           <SelectContent>
             {p.options.map((o) => (
-              <SelectItem key={o.value} value={o.value} disabled={o.disabled}>
+              <SelectItem key={o.value} value={o.value} disabled={o.disabled} title={o.title}>
                 {o.label}
               </SelectItem>
             ))}
