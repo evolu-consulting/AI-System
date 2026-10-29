@@ -53,7 +53,7 @@ export type IfStageDraft = {
   step?: number;
   real_action: boolean;
   after: { kind: string };
-  executor: { kind: string } & Partial<IfExecutor>;
+  executor: { kind: string } & Partial<Omit<IfExecutor, "kind">>;
   output?: { fields?: readonly { key: string; type: string }[] };
 };
 type IfInputDraft = { key: string; type: string };

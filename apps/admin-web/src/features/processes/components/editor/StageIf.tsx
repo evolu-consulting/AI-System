@@ -4,16 +4,18 @@ import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { opsForType } from "../../domain/branch-rules";
+import { gotoSteps, opsForType } from "../../domain/branch-rules";
 import {
   type CondDraft,
   type CondSource,
+  condSources,
   emptyCond,
   IF_CONDS_MAX,
   type IfDraft,
   ifErrorAt,
 } from "../../lib/if-form";
 import { SelectField, TextField } from "./Fields";
+import type { StageFormProps } from "./stage-form-props";
 
 const K = "process.admin.editor.stage.if.";
 
@@ -90,7 +92,7 @@ export function StageIf(p: StageIfProps) {
               onChange={(from) => {
                 const ft = sources.find((s) => s.value === from)?.type ?? "string";
                 const op = opsForType(ft).includes(c.op as never) ? c.op : "eq";
-                setCond(j, { from, op, ...(ft === type ? {} : { value: "" }) });
+                setCond(j, { from, type: ft, op, ...(ft === type ? {} : { value: "" }) });
               }}
             />
             <SelectField
@@ -172,5 +174,22 @@ export function StageIf(p: StageIfProps) {
         </Alert>
       ) : null}
     </fieldset>
+  );
+}
+
+/** Nối `StageIf` vào `StageForm`: nguồn = field stage bước nhỏ hơn + input khai báo; đích = bước sau (đếm từ 1). */
+export function StageIfForm(p: StageFormProps) {
+  const { stage, index, all, defInputs, errors, readOnly, onChange } = p;
+  return (
+    <StageIf
+      id={stage.uid}
+      index={index}
+      value={stage.ifx}
+      sources={condSources(all, defInputs ?? [], stage.step)}
+      steps={gotoSteps(all, stage.step).map((s) => s + 1)}
+      errors={errors}
+      readOnly={readOnly}
+      onChange={(patch) => onChange({ ifx: { ...stage.ifx, ...patch } })}
+    />
   );
 }

@@ -27,12 +27,13 @@ import { BackEdge } from "./BackEdge";
 import { BranchEdge } from "./BranchEdge";
 import { BlockedStepCtx, type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
 import { toEdge } from "./canvas-edges";
+import { IfNode } from "./IfNode";
 import { JoinNode } from "./JoinNode";
 import { StageNode } from "./StageNode";
 import { StepHeaderNode } from "./StepHeaderNode";
 import type { StageView } from "./stage-view";
 
-const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode };
+const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode, if: IfNode };
 const edgeTypes = { back: BackEdge, branch: BranchEdge };
 // UAT L3: không thu dưới 0.65 (chữ ≥ ~9 px); nhiều bước thì neo về mép trái và để người dùng kéo ngang (pan).
 const FIT_MIN_ZOOM = 0.65;
@@ -59,10 +60,11 @@ function toNode(
   readOnly: boolean | undefined,
 ): Node {
   // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
+  const isIfNode = n.kind === "stage" && byUid.get(n.id)?.ifs != null;
   const base = {
     id: n.id,
     position: { x: n.x, y: n.y },
-    type: n.kind,
+    type: isIfNode ? "if" : n.kind,
     measured: NODE_SIZE[n.kind],
     selectable: false,
     focusable: false,

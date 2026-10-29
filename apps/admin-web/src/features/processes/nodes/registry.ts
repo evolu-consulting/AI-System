@@ -8,6 +8,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import { APPLY_EXECUTOR, APPLY_PATCH, executorToDef } from "../lib/apply-form";
 import type { StageDraft } from "../lib/draft-types";
+import { draftToIf, IF_EXECUTOR, IF_PATCH, ifToDraft } from "../lib/if-form";
 import { SET_EXECUTOR, SET_PATCH, setFromDef, setToDef } from "../lib/set-form";
 import { TOOL_EXECUTOR, TOOL_PATCH, toolFromDef, toolToDef } from "../lib/tool-form";
 import { WAIT_EXECUTOR, WAIT_PATCH, waitFromDef, waitToDef } from "../lib/wait-form";
@@ -27,7 +28,7 @@ export type FeNode<K extends ExecutorKind = ExecutorKind> = {
   /** Giá trị ô `executor` của draft. */
   draftExecutor(ex: Ex<K>): string;
   /** Phần draft riêng của loại khi nạp def (vắng ⇒ giữ rỗng). */
-  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set">>;
+  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set" | "ifx">>;
   /** Draft → executor của contract. */
   toDef(s: StageDraft): Executor;
 };
@@ -91,6 +92,16 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     draftExecutor: () => SET_EXECUTOR,
     fromDef: (ex) => ({ set: setFromDef(ex) }),
     toDef: (s) => setToDef(s.set),
+  },
+  if: {
+    kind: "if",
+    family: NODE_FAMILY_OF.if,
+    labelKey: "process.admin.editor.stage.kind.if",
+    defaults: () => ({ ...IF_PATCH }),
+    draftValue: IF_EXECUTOR,
+    draftExecutor: () => IF_EXECUTOR,
+    fromDef: (ex) => ({ ifx: ifToDraft(ex) }),
+    toDef: (s) => draftToIf(s.ifx),
   },
 };
 

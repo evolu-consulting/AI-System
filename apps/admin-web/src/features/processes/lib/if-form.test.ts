@@ -32,18 +32,18 @@ describe("if-form", () => {
   it("draft ⇄ contract: số ép number, bước trừ 1, else null giữ nguyên", () => {
     const d = {
       op: "or" as const,
-      conds: [{ from: "field|a|tong", op: "gt", value: "100" }],
+      conds: [{ from: "field|a|tong", type: "number" as const, op: "gt", value: "100" }],
       yes: 4,
       no: null,
     };
-    const e = draftToIf(d, srcs);
+    const e = draftToIf(d);
     expect(IfExecutorSchema.safeParse(e).success).toBe(true);
     expect(e.when.conds[0]?.value).toBe(100);
     expect(e.then_step).toBe(3);
     expect(ifToDraft(e)).toEqual(d);
   });
   it("bản nháp rỗng không qua schema (đích, nguồn chưa chọn)", () => {
-    expect(IfExecutorSchema.safeParse(draftToIf(emptyIf(), srcs)).success).toBe(false);
+    expect(IfExecutorSchema.safeParse(draftToIf(emptyIf())).success).toBe(false);
     expect(emptyCond().op).toBe("eq");
   });
   it("ifErrorAt theo path server", () => {

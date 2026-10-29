@@ -3,6 +3,7 @@
 import {
   type BranchStageDraft,
   branchStageIssues,
+  ifStageIssues,
   type ProcessDefIssue,
   type ProcessToolItem,
   type ToolCatalogShape,
@@ -13,6 +14,7 @@ import { targetHasReal } from "../domain/branch-rules";
 import { realActionAllowed } from "../domain/tool-rules";
 import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
+import { draftToIf, isIf } from "./if-form";
 import type { InputDraft } from "./sources-form";
 import { hasArg, isTool, toolToDef } from "./tool-form";
 import { isWait } from "./wait-form";
@@ -30,12 +32,37 @@ export const TOOL_ERR = {
 } as const;
 /** Khoá lỗi P-d2 do `d2LiveErrors` tính lại mỗi lần render (`argRequired` cũng sinh live; còn giữ khi Lưu nếu tham số vẫn trống). */
 export const isD2Key = (v: string): boolean =>
-  v !== TOOL_ERR.argRequired && (v.startsWith(T) || v.startsWith(B));
+  v !== TOOL_ERR.argRequired && (v.startsWith(T) || v.startsWith(B) || v === IF_ERR);
+/** CR-103 · fnr-if · một câu chung cho mọi lỗi node If (đủ chi tiết ở ô có viền lỗi). */
+export const IF_ERR = "process.admin.editor.stage.if.err.IF_INVALID";
 export const BRANCH_ERR = { all: `${B}BRANCH_INVALID`, real: `${B}real` } as const;
 
 const isApplyKind = (s: Pick<StageDraft, "executor">) => s.executor === "apply";
 /** Giai đoạn không dùng rẽ nhánh (chờ ngày / áp bản sửa) ⇒ luật bị bỏ khi gửi. */
-export const branchOff = (s: Pick<StageDraft, "executor">): boolean => isWait(s) || isApplyKind(s);
+export const branchOff = (s: Pick<StageDraft, "executor">): boolean =>
+  isWait(s) || isApplyKind(s) || isIf(s);
+
+/** CR-103 · fnr-if · lỗi node If theo path `stages.i.executor[.when.conds.j.<ô> | .then_step | .else_step]` (live). */
+export function ifErrors(
+  stages: readonly StageDraft[],
+  inputs: readonly InputDraft[],
+): DraftErrors {
+  const e: DraftErrors = {};
+  const shaped = stages.map((s) => ({
+    key: s.key,
+    step: s.step,
+    real_action: s.real,
+    after: { kind: s.after },
+    executor: isIf(s) ? draftToIf(s.ifx) : { kind: "agent" },
+    output: { fields: s.fields },
+  }));
+  for (const i of ifStageIssues(
+    shaped,
+    inputs.map((x) => ({ key: x.key, type: x.type })),
+  ))
+    e[i.path] ??= IF_ERR;
+  return e;
+}
 
 export function toolMap(tools: readonly ProcessToolItem[]): Map<string, ToolCatalogShape> {
   return new Map(tools.map((t) => [t.key, t]));
@@ -149,7 +176,11 @@ export function d2LiveErrors(
   inputs: readonly InputDraft[],
   tools: readonly ProcessToolItem[] | undefined,
 ): DraftErrors {
-  return { ...branchErrors(stages), ...toolErrors(stages, inputs, tools) };
+  return {
+    ...branchErrors(stages),
+    ...ifErrors(stages, inputs),
+    ...toolErrors(stages, inputs, tools),
+  };
 }
 
 /**

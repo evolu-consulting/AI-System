@@ -15,7 +15,8 @@ function BranchEdgeImpl(p: EdgeProps) {
     targetPosition: p.targetPosition,
     curvature: 0.5,
   });
-  const rule = (p.data as { rule?: number } | undefined)?.rule ?? 1;
+  const d = p.data as { rule?: number; side?: "yes" | "no" } | undefined;
+  const rule = d?.rule ?? 1;
   return (
     <>
       <BaseEdge
@@ -29,7 +30,9 @@ function BranchEdgeImpl(p: EdgeProps) {
           style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
           className="pointer-events-none absolute rounded bg-accent px-1.5 py-0.5 text-caption text-accent-foreground"
         >
-          {t("process.admin.canvas.edge.branch", { n: rule })}
+          {d?.side
+            ? t(`process.admin.canvas.if.${d.side}`)
+            : t("process.admin.canvas.edge.branch", { n: rule })}
         </span>
       </EdgeLabelRenderer>
     </>

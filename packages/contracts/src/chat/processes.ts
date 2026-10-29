@@ -142,7 +142,7 @@ export const NOTICE_KINDS = [
 export const ORIGIN_KINDS = ["room", "conversation", "admin"] as const;
 export const STAGE_AFTER_KINDS = ["review", "auto"] as const;
 /** P-d1 thêm `wait_until` (cuối); P-d2 nối `tool`. */
-export const EXECUTOR_KINDS = ["agent", "team", "apply", "wait_until", "tool", "set"] as const;
+export const EXECUTOR_KINDS = ["agent", "team", "apply", "wait_until", "tool", "set", "if"] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 
 export type ProcessRunStatus = (typeof PROCESS_RUN_STATUSES)[number];

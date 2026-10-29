@@ -1,6 +1,7 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
 import type { AutofixDraft } from "./autofix-form";
+import type { IfDraft } from "./if-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
 /** P-d1 · khối "Chờ tới ngày": nguồn ngày (`input:<key>` | `field:<stage_key>:<field>`), chênh (ngày, chữ), giờ `HH:mm`. */
@@ -68,6 +69,8 @@ export type StageDraft = {
   set: SetDraft;
   /** P-d2 · luật rẽ nhánh (`after.branch`, cả review lẫn auto); mặc định `[]`. */
   branch: BranchDraft[];
+  /** CR-103 · fnr-if · khối "Nếu" (chỉ dùng khi `executor = "if"`). */
+  ifx: IfDraft;
 };
 export type DefDraft = {
   key: string;

@@ -3,6 +3,7 @@
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { isApply } from "../../lib/apply-form";
+import { isIf } from "../../lib/if-form";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait } from "../../lib/wait-form";
@@ -13,6 +14,7 @@ import { StageAutofix } from "./StageAutofix";
 import { StageBranch } from "./StageBranch";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
+import { StageIfForm } from "./StageIf";
 import { StageMustKnow } from "./StageMustKnow";
 import { StageOutput } from "./StageOutput";
 import { StageRemind } from "./StageRemind";
@@ -109,7 +111,13 @@ export function StageForm(p: StageFormProps) {
     >
       <StageGeneral {...p} />
       <StageStepFields {...p} />
-      {isWait(stage) ? <StageWait {...p} /> : <Body {...p} />}
+      {isWait(stage) ? (
+        <StageWait {...p} />
+      ) : isIf(stage) ? (
+        <StageIfForm {...p} />
+      ) : (
+        <Body {...p} />
+      )}
       <StageActions {...p} />
     </section>
   );

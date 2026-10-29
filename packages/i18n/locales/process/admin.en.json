@@ -76,7 +76,8 @@
         "team": "Agent team",
         "wait": "Wait until date",
         "tool": "Call tool",
-        "set": "Set values"
+        "set": "Set values",
+        "if": "If (true/false branch)"
       },
       "swap": {
         "family": "Different node family — can't switch to this type.",

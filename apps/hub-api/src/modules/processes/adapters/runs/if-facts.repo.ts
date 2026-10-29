@@ -15,7 +15,7 @@ export async function ifFacts(tx: Tx, tenantId: string, runId: string): Promise<
          from hub.stage_runs s
          join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
         where s.process_run_id = r.id and s.tenant_id = r.tenant_id and jsonb_typeof(o.fields) = 'object') as fields,
-      (select coalesce(jsonb_object_agg(v->>'key', v->'value'), '{}'::jsonb)
+      (select coalesce(jsonb_object_agg(v->>'key', coalesce(v->'value', v->'text')), '{}'::jsonb)
          from jsonb_array_elements(
            case when jsonb_typeof(r.inputs) = 'array' then r.inputs else '[]'::jsonb end) v
         where v->>'key' is not null) as inputs

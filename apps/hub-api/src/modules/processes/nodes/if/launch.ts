@@ -16,8 +16,9 @@ export const ifLauncher: NodeLauncher = {
       where id = ${c.stage.id} and tenant_id = ${tenantId}`);
     const step = await settleStepTx(tx, c.runId, tenantId);
     if (!step) return { kind: "events", events: [] };
+    const more = step.kind === "next_step"; // bước đích vừa `queued` ⇒ kickOnce lặp để chạy tiếp (không chờ hẹn như wait_until)
     const recipients = await core.runRecipients(tx, c.runId, tenantId);
     const run = { id: c.runId, status: step.status, stageIdx: step.stageIdx, step: step.step };
-    return { kind: "events", events: processUpdated(recipients, run) };
+    return { kind: "events", events: processUpdated(recipients, run), more };
   },
 };

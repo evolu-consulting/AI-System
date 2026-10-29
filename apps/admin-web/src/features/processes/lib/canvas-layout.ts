@@ -24,6 +24,8 @@ export type LayoutEdge = {
   kind: "forward" | "back" | "branch";
   /** P-d2 · chỉ cạnh `branch`: số thứ tự luật (đếm từ 1). */
   rule?: number;
+  /** CR-103 · chỉ cạnh `branch` của node If: cổng ra Đúng / Sai. */
+  side?: "yes" | "no";
 };
 export type Layout = { nodes: LayoutNode[]; edges: LayoutEdge[]; steps: number };
 
@@ -33,25 +35,49 @@ export const joinId = (step: number): string => `j${step}`;
 /** `branch`: bước đích (0-based) của từng luật rẽ nhánh; null = chưa chọn. */
 type LayoutStage = Pick<Stepped, "uid" | "step" | "backTo" | "after"> & {
   branch?: readonly (number | null)[];
+  /** CR-103 · node If: bước đích Đúng / Sai (0-based, null = chưa chọn). */
+  ifs?: { yes: number | null; no: number | null } | null;
 };
 
 /** P-d2 · cạnh nét đứt từ giai đoạn tới tiêu đề bước đích, một cạnh mỗi luật hợp lệ (đích > bước nguồn, có thật). */
 function branchEdges(stages: readonly LayoutStage[], steps: number): LayoutEdge[] {
   return stages.flatMap((s) =>
-    (s.branch ?? []).flatMap((g, k) =>
-      g !== null && g > s.step && g < steps
-        ? [
-            {
-              id: `${s.uid}>${headerId(g)}#${k}`,
-              source: s.uid,
-              target: headerId(g),
-              kind: "branch" as const,
-              rule: k + 1,
-            },
-          ]
-        : [],
+    ifEdges(s, steps).concat(
+      (s.branch ?? []).flatMap((g, k) =>
+        g !== null && g > s.step && g < steps
+          ? [
+              {
+                id: `${s.uid}>${headerId(g)}#${k}`,
+                source: s.uid,
+                target: headerId(g),
+                kind: "branch" as const,
+                rule: k + 1,
+              },
+            ]
+          : [],
+      ),
     ),
   );
+}
+
+/** CR-103 · node If: cạnh Đúng tới header `then`; cạnh Sai tới header `else` (else vắng / = bước kế ⇒ đi cạnh tiến thường). */
+function ifEdges(s: LayoutStage, steps: number): LayoutEdge[] {
+  const f = s.ifs;
+  if (!f) return [];
+  const mk = (side: "yes" | "no", g: number | null): LayoutEdge[] =>
+    g !== null && g > s.step && g < steps && (side === "yes" || g !== s.step + 1)
+      ? [
+          {
+            id: `${s.uid}>${headerId(g)}#${side}`,
+            source: s.uid,
+            target: headerId(g),
+            kind: "branch",
+            rule: side === "yes" ? 1 : 2,
+            side,
+          },
+        ]
+      : [];
+  return [...mk("yes", f.yes), ...mk("no", f.no)];
 }
 
 function forwardEdges(cols: number[][], uids: string[]): LayoutEdge[] {

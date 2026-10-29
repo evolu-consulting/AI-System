@@ -16,9 +16,9 @@ export function toEdge(e: Layout["edges"][number]): Edge {
     return {
       ...ends,
       type: "branch",
-      sourceHandle: "branch",
+      sourceHandle: e.side ?? "branch",
       targetHandle: "back-in",
-      data: { rule: e.rule },
+      data: { rule: e.rule, side: e.side },
       markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-primary)" },
     };
   return {

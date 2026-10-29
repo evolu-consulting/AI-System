@@ -1,11 +1,13 @@
 // CR-103 · fnr-if (flow-node-registry design §3): bản nháp khối "Nếu" (node If) của editor — đổi qua lại với contract `IfExecutor`
 // (bước UI đếm từ 1, `then_step = then - 1`), nguồn điều kiện mã hoá một chuỗi cho ô chọn. Hàm thuần (không React, không API).
 import type { Cond, IfExecutor } from "@ai/contracts/hub-admin";
-import type { FieldDraft } from "./draft-types";
+import { emptyAutofix } from "./autofix-form";
+import type { FieldDraft, StageDraft } from "./draft-types";
 
 export const IF_CONDS_MAX = 6;
 /** Nguồn một điều kiện: `field|<stage_key>|<field>` hoặc `input|<key>`; rỗng = chưa chọn. */
-export type CondDraft = { from: string; op: string; value: string };
+/** `type` = kiểu nguồn đã chọn (Số ⇒ giá trị gửi là number). */
+export type CondDraft = { from: string; type: FieldDraft["type"]; op: string; value: string };
 export type IfDraft = {
   op: "and" | "or";
   conds: CondDraft[];
@@ -16,7 +18,7 @@ export type IfDraft = {
 /** Nguồn chọn được: stage (bước nhỏ hơn) có field khai báo + input của quy trình. */
 export type CondSource = { value: string; type: FieldDraft["type"]; label: string };
 
-export const emptyCond = (): CondDraft => ({ from: "", op: "eq", value: "" });
+export const emptyCond = (): CondDraft => ({ from: "", type: "string", op: "eq", value: "" });
 export const emptyIf = (): IfDraft => ({ op: "and", conds: [emptyCond()], yes: null, no: null });
 
 export const fieldSrc = (stageKey: string, field: string) => `field|${stageKey}|${field}`;
@@ -55,15 +57,14 @@ export function condSources(
 }
 
 /** Bản nháp → executor contract. Nguồn/đích chưa chọn ⇒ nguồn rỗng / `then_step = -1` (bị `ifDefIssues` bắt). */
-export function draftToIf(d: IfDraft, sources: readonly CondSource[]): IfExecutor {
+export function draftToIf(d: IfDraft): IfExecutor {
   return {
     kind: "if",
     when: {
       op: d.op,
       conds: d.conds.map((c) => {
-        const type = sources.find((s) => s.value === c.from)?.type;
         const value: string | number =
-          type === "number" ? (c.value.trim() === "" ? Number.NaN : Number(c.value)) : c.value;
+          c.type === "number" ? (c.value.trim() === "" ? Number.NaN : Number(c.value)) : c.value;
         return {
           from: parseSrc(c.from) ?? { kind: "input", key: "" },
           op: c.op as Cond["op"],
@@ -79,7 +80,12 @@ export function draftToIf(d: IfDraft, sources: readonly CondSource[]): IfExecuto
 export function ifToDraft(e: IfExecutor): IfDraft {
   return {
     op: e.when.op,
-    conds: e.when.conds.map((c) => ({ from: srcOf(c.from), op: c.op, value: String(c.value) })),
+    conds: e.when.conds.map((c) => ({
+      from: srcOf(c.from),
+      type: typeof c.value === "number" ? "number" : "string",
+      op: c.op,
+      value: String(c.value),
+    })),
     yes: e.then_step + 1,
     no: e.else_step === null ? null : e.else_step + 1,
   };
@@ -96,4 +102,37 @@ export function ifErrorAt(
     | "when.conds",
 ): string | undefined {
   return errors[cell ? `stages.${i}.executor.${cell}` : `stages.${i}.executor`];
+}
+
+/** Giá trị `StageDraft.executor` của kiểu "Nếu". */
+export const IF_EXECUTOR = "if";
+export const IF_HANDOFF_SECTION = "Bàn giao";
+export const isIf = (s: Pick<StageDraft, "executor">): boolean => s.executor === IF_EXECUTOR;
+
+/** Chọn "Nếu": đứng một mình, tự chạy tiếp, không hành động thật, không quay lại (cố định). */
+export const IF_PATCH: Partial<StageDraft> = {
+  executor: IF_EXECUTOR,
+  real: false,
+  after: "auto",
+  backTo: [],
+  groupId: "",
+};
+
+/** Bản dùng để gửi/validate: Hub ép output/answerer/nguồn (không sinh output), xoá field + rẽ nhánh cũ. */
+export function normalizeIf(s: StageDraft): StageDraft {
+  if (!isIf(s)) return s;
+  return {
+    ...s,
+    instruction: "",
+    template: `# ${s.name.trim()}\n\n## ${IF_HANDOFF_SECTION}\n`,
+    sections: [IF_HANDOFF_SECTION],
+    fields: [],
+    branch: [],
+    answerer: "starter",
+    answererId: "",
+    budget: "",
+    sources: [],
+    mustKnow: "",
+    autofix: emptyAutofix(),
+  };
 }

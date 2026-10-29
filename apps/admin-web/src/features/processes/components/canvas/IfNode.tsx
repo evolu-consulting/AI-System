@@ -1,47 +1,78 @@
-// CR-103 · fnr-if (flow-node-registry design §3): node If trên canvas — hình thoi, hai cổng ra "Đúng" / "Sai" tới bước đích
-// (cạnh dùng lại `BranchEdge`; handle id `yes` / `no`). Nối vào ProcessCanvas ở đợt wiring.
+// CR-103 · fnr-if (flow-node-registry design §3): node If trên canvas — hình thoi, cổng ra "Đúng" / "Sai" tới bước đích (cạnh dùng
+// lại `BranchEdge`; handle id `yes` / `no`, cạnh tiến thường ra bên phải). Chọn / phím như `StageNode` (một `button` "Giai đoạn n: <tên>").
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { NODE_H, NODE_W } from "../../lib/canvas-layout";
+import { useHandlers } from "./canvas-ctx";
 import { HiddenHandle } from "./HiddenHandle";
+import { onStageKeyDown } from "./stage-keys";
+import { type StageView, sameView } from "./stage-view";
 
-export const IF_NODE_SIZE = 96;
-export type IfData = { label: string; selected?: boolean };
+export type IfData = { v: StageView; selected: boolean; readOnly: boolean };
 export type IfType = Node<IfData, "if">;
 
 function IfImpl({ data }: NodeProps<IfType>) {
   const { t } = useTranslation();
+  const h = useHandlers();
+  const { v, selected } = data;
+  const name = v.name || t("process.admin.editor.stage.unnamed");
   return (
-    <div
-      style={{ width: IF_NODE_SIZE, height: IF_NODE_SIZE }}
-      className="relative flex items-center justify-center"
-      data-testid="if-node"
-    >
+    <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto relative">
       <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle type="source" id="yes" position={Position.Right} />
-      <HiddenHandle type="source" id="no" position={Position.Bottom} />
+      <HiddenHandle type="source" position={Position.Right} />
+      <HiddenHandle id="back" type="source" position={Position.Top} />
+      <HiddenHandle id="yes" type="source" position={Position.Bottom} />
+      <HiddenHandle id="no" type="source" position={Position.Bottom} />
       <svg
         aria-hidden
         viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         className="absolute inset-0 size-full"
-        role="presentation"
       >
         <polygon
           points="50,2 98,50 50,98 2,50"
-          className={data.selected ? "fill-accent stroke-primary" : "fill-card stroke-border"}
           strokeWidth={2}
           vectorEffect="non-scaling-stroke"
+          className={selected ? "fill-accent stroke-primary" : "fill-card stroke-border"}
         />
       </svg>
-      <span className="relative max-w-[56px] truncate text-caption font-medium">{data.label}</span>
-      <span className="absolute -right-1 top-1/2 -translate-y-6 text-caption text-success">
+      <button
+        type="button"
+        data-stage-uid={v.uid}
+        data-testid="if-node"
+        aria-current={selected ? "true" : undefined}
+        className="absolute inset-0 flex items-center justify-center px-16 text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={(e) => h.onSelect(v.uid, e.detail === 0)}
+        onKeyDown={(e) =>
+          onStageKeyDown(e, {
+            uid: v.uid,
+            index: v.index,
+            step: v.step,
+            readOnly: h.readOnly,
+            ops: h.ops,
+            onRemove: h.onRemove,
+          })
+        }
+      >
+        <span className="inline-block w-full truncate text-label font-medium" title={name}>
+          {t("process.admin.editor.stage.aria", { n: v.index + 1, name })}
+        </span>
+      </button>
+      <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-caption text-success">
         {t("process.admin.canvas.if.yes")}
       </span>
-      <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-caption text-muted-foreground">
+      <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-caption text-muted-foreground">
         {t("process.admin.canvas.if.no")}
       </span>
     </div>
   );
 }
 
-export const IfNode = memo(IfImpl);
+export const IfNode = memo(
+  IfImpl,
+  (a, b) =>
+    sameView(a.data.v, b.data.v) &&
+    a.data.selected === b.data.selected &&
+    a.data.readOnly === b.data.readOnly,
+);

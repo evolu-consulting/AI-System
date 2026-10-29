@@ -26,6 +26,7 @@ export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
   set: "declared",
   wait_until: "none",
   apply: "none",
+  if: "none",
 };
 
 /** Họ của loại node; loại lạ (def cũ/hỏng) ⇒ null. */

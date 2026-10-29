@@ -3,6 +3,7 @@
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { branchOff } from "../../lib/d2-validate";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
+import { isIf } from "../../lib/if-form";
 
 export type StageView = {
   uid: string;
@@ -25,6 +26,8 @@ export type StageView = {
   sideEffect: boolean;
   /** P-d2 · bước đích (0-based) của từng luật rẽ nhánh; null = chưa chọn. */
   branch: (number | null)[];
+  /** CR-103 · node If: bước Đúng / Sai (0-based; null = chưa chọn / Sai ⇒ bước kế); stage khác ⇒ null. */
+  ifs: { yes: number | null; no: number | null } | null;
   hasError: boolean;
 };
 
@@ -58,6 +61,12 @@ export function stageViews(
     tool: s.executor === "tool",
     sideEffect: s.executor === "tool" && tools.get(s.tool.key)?.side_effect === true,
     branch: branchOff(s) ? [] : s.branch.map((b) => (b.goto === null ? null : b.goto - 1)),
+    ifs: isIf(s)
+      ? {
+          yes: s.ifx.yes === null ? null : s.ifx.yes - 1,
+          no: s.ifx.no === null ? null : s.ifx.no - 1,
+        }
+      : null,
     hasError: hasStageError(errors, i),
   }));
 }
@@ -77,5 +86,6 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.tool === b.tool &&
   a.sideEffect === b.sideEffect &&
   a.branch.join() === b.branch.join() &&
+  `${a.ifs?.yes}:${a.ifs?.no}` === `${b.ifs?.yes}:${b.ifs?.no}` &&
   a.hasError === b.hasError &&
   a.backTo.join() === b.backTo.join();
