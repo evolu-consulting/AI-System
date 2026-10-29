@@ -1,6 +1,6 @@
 // ADM-FR-71 · P-b2 (plan-frontend FB3/FB7): trạng thái của StageWorkbench — giai đoạn đang chọn, chế độ xem, xoá có xác nhận,
 // mô hình hiển thị ổn định tham chiếu (gõ ở panel không dựng lại canvas).
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStageOps } from "../../hooks/use-stage-ops";
@@ -21,10 +21,20 @@ function useStableViews(next: StageView[]): StageView[] {
 export function useWorkbench(d: DraftState, refs: EditorRefs) {
   const ops = useStageOps(d);
   const [removing, setRemoving] = useState<string | null>(null);
+  // fnr-editor-drawer: ngăn chi tiết (view Canvas) mở khi có giai đoạn được chọn; đóng ⇒ bỏ chọn. Mặc định mở (chọn sẵn giai đoạn 1).
+  const [open, setOpen] = useState(true);
   const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? "list" : "canvas"));
   const stages = d.draft.stages;
   const sel = stages.find((s) => s.uid === d.selected) ?? stages[0];
   const views = useStableViews(stageViews(stages, d.errors, refs));
+  // chọn (bấm node, thêm giai đoạn, lỗi validate) ⇒ mở ngăn
+  useEffect(() => {
+    if (d.selected) setOpen(true);
+  }, [d.selected]);
+  const close = () => {
+    setOpen(false);
+    d.select(null);
+  };
 
   /**
    * Chọn giai đoạn; bằng bàn phím (Enter/Space) ⇒ đưa focus vào ô "Tên giai đoạn".
@@ -50,6 +60,9 @@ export function useWorkbench(d: DraftState, refs: EditorRefs) {
     ops,
     mode,
     setMode,
+    /** Ngăn chi tiết đang mở (view Canvas). */
+    open,
+    close,
     stages,
     sel,
     index: sel ? stages.indexOf(sel) : -1,

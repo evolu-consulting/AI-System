@@ -7,6 +7,7 @@ import {
   joinId,
   layoutSteps,
   ROW_H,
+  revealDx,
   stepFromDropX,
 } from "./canvas-layout";
 
@@ -138,4 +139,11 @@ test("node If: đúng hai cạnh Đúng/Sai tới giai đoạn đầu bước đ
   expect(l3.edges.filter((x) => x.source === "i").map((x) => [x.target, x.side])).toEqual([
     ["n", "no"],
   ]);
+});
+
+test("revealDx: node dưới ngăn phải thì pan vào; đã thấy thì 0; lệch trái thì kéo về lề", () => {
+  expect(revealDx(100, 340, 1000, 460)).toBe(0); // vùng thấy: [16, 524]
+  expect(revealDx(400, 640, 1000, 460)).toBe(-116); // right 640 > 524
+  expect(revealDx(-50, 190, 1000, 460)).toBe(66);
+  expect(revealDx(900, 1140, 1000, 0)).toBe(-156);
 });

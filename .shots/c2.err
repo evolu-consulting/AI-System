@@ -1,0 +1,1 @@
+$ bun tools/scripts/src/test-e2e-par.ts "--jobs=1" "--only=P-c2"

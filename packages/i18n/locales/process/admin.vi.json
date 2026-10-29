@@ -469,6 +469,9 @@
       "canvas": "Canvas",
       "list": "Danh sách"
     },
+    "drawer": {
+      "close": "Đóng ngăn chi tiết"
+    },
     "toolbar": {
       "addStage": "Thêm giai đoạn",
       "addStep": "Thêm bước",

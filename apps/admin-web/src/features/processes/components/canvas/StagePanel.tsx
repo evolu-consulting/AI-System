@@ -1,22 +1,67 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1): panel bên `complementary` "Chi tiết giai đoạn" — form của MỘT giai đoạn đang chọn.
+import { X } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { StageForm } from "../editor/StageForm";
 import { PANEL_ID, type Workbench } from "./use-workbench";
 
-type Props = { d: DraftState; w: Workbench; readOnly: boolean; refs: EditorRefs };
+type Props = {
+  d: DraftState;
+  w: Workbench;
+  readOnly: boolean;
+  refs: EditorRefs;
+  /** `drawer` = ngăn phải đè lên canvas (view Canvas, không modal); `column` = cột bên (view Danh sách). */
+  variant?: "column" | "drawer";
+};
 
-export function StagePanel({ d, w, readOnly, refs }: Props) {
+/** Esc đóng ngăn — bỏ qua khi Esc đã được popup khác (Select/Dialog) xử lý. */
+function useEscClose(active: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.querySelector('[role="dialog"],[role="alertdialog"],[role="listbox"]')) return;
+      onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [active, onClose]);
+}
+
+export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) {
   const { t } = useTranslation();
   const { sel, index, ops } = w;
+  const drawer = variant === "drawer";
+  useEscClose(drawer && w.open, w.close);
+  if (drawer && !w.open) return null;
   return (
     <aside
       id={PANEL_ID}
       tabIndex={-1}
       aria-label={t("process.admin.canvas.region")}
-      className="w-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
+      className={
+        drawer
+          ? "absolute inset-y-0 right-0 z-10 w-full overflow-y-auto border-l border-border bg-card p-3 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:animate-in motion-safe:slide-in-from-right md:w-[460px]"
+          : "w-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
+      }
     >
+      {drawer ? (
+        <div className="mb-2 flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={t("process.admin.canvas.drawer.close")}
+            title={t("process.admin.canvas.drawer.close")}
+            onClick={w.close}
+          >
+            <X aria-hidden className="size-4" />
+          </Button>
+        </div>
+      ) : null}
       {sel ? (
         <StageForm
           key={sel.uid}

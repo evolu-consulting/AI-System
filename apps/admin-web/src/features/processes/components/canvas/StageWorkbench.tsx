@@ -13,6 +13,8 @@ import { StagePanel } from "./StagePanel";
 import { StepList } from "./StepList";
 import { type Mode, useWorkbench } from "./use-workbench";
 
+/** Bề rộng ngăn chi tiết (px, khớp `md:w-[460px]` ở StagePanel). */
+const DRAWER_W = 460;
 type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
 
 function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
@@ -75,22 +77,37 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
         <div role="status" aria-live="polite" className="sr-only">
           {ops.live}
         </div>
-        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="min-w-0 flex-1">
-            {w.stages.length === 0 ? (
-              <Empty onAdd={addStage} readOnly={readOnly} />
-            ) : (
-              <>
-                <TabsContent value="canvas">
-                  <CanvasView {...viewProps} />
-                </TabsContent>
-                <TabsContent value="list">
-                  <StepList {...viewProps} />
-                </TabsContent>
-              </>
-            )}
-          </div>
-          <StagePanel d={d} w={w} readOnly={readOnly} refs={refs} />
+        <div className="mt-3">
+          {w.stages.length === 0 ? (
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+              <div className="min-w-0 flex-1">
+                <Empty onAdd={addStage} readOnly={readOnly} />
+              </div>
+              <StagePanel d={d} w={w} readOnly={readOnly} refs={refs} />
+            </div>
+          ) : (
+            <>
+              {/* fnr-editor-drawer: Canvas toàn khung; chi tiết là ngăn phải ĐÈ lên canvas (không modal, canvas vẫn thao tác được). */}
+              <TabsContent value="canvas">
+                <div className="relative">
+                  <CanvasView
+                    {...viewProps}
+                    selected={w.open ? w.sel?.uid : undefined}
+                    inset={w.open && window.innerWidth >= 768 ? DRAWER_W : 0}
+                  />
+                  <StagePanel d={d} w={w} readOnly={readOnly} refs={refs} variant="drawer" />
+                </div>
+              </TabsContent>
+              <TabsContent value="list">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                  <div className="min-w-0 flex-1">
+                    <StepList {...viewProps} />
+                  </div>
+                  <StagePanel d={d} w={w} readOnly={readOnly} refs={refs} />
+                </div>
+              </TabsContent>
+            </>
+          )}
         </div>
       </Tabs>
       <ConfirmDialog
