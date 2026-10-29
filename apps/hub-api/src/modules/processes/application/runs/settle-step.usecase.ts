@@ -6,6 +6,7 @@
 // đọc `fields`; luật khớp (đánh giá trong bộ nhớ) ⇒ +3 câu theo tập (nhảy stage, huỷ hẹn, audit + thread) — không phụ
 // thuộc số bước bị nhảy (plan-d2 §9, PD2-P04).
 import { evaluateBranch, skippedStages } from "../../domain/branch/branch.rules";
+import { evaluateWhen, ifTarget } from "../../domain/if/if.rules";
 import {
   firstIdxOfStep,
   runStatusOf,
@@ -25,6 +26,26 @@ export type StepOutcome = {
 };
 export type StepRepos = { steps: StepRepo; clock: Clock };
 
+/** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
+async function ifTargetOf(
+  r: StepRepos,
+  runId: string,
+  load: StepJoinLoad,
+  o: { idx: number; ifx: NonNullable<NonNullable<StepJoinLoad["ifs"]>[number]> },
+): Promise<{ gotoStep: number; rule: number; stageIdx: number } | null> {
+  const facts = await r.steps.ifFacts(runId);
+  const byKey: Record<string, Readonly<Record<string, string | number>>> = {};
+  (load.stageKeys ?? []).forEach((k, i) => {
+    const f = facts.fieldsByIdx[String(i)];
+    if (f) byKey[k] = f;
+  });
+  const { matched } = evaluateWhen(o.ifx.when, byKey, facts.inputs);
+  if (!matched && o.ifx.elseStep === null) return null;
+  const gotoStep = ifTarget(o.ifx, matched, load.step, Number.MAX_SAFE_INTEGER);
+  if (gotoStep <= load.step || firstIdxOfStep(load.steps, gotoStep) < 0) return null;
+  return { gotoStep, rule: matched ? 1 : 2, stageIdx: o.idx };
+}
+
 /** PD2-R13 · bước đích nếu stage đứng một mình của `step` có luật rẽ nhánh khớp; ngược lại `null` (đi bước kế). */
 async function branchTarget(
   r: StepRepos,
@@ -34,6 +55,8 @@ async function branchTarget(
   const idxs = stageIdxsOfStep(load.steps, load.step);
   const idx = idxs[0];
   if (idx === undefined || idxs.length !== 1) return null;
+  const ifx = load.ifs?.[idx];
+  if (ifx) return ifTargetOf(r, runId, load, { idx, ifx });
   const rules = load.branches[idx] ?? [];
   if (rules.length === 0) return null;
   const hit = evaluateBranch(rules, await r.steps.currentFields(runId, idx));

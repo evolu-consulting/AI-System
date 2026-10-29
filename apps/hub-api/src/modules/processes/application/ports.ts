@@ -2,6 +2,7 @@
 // chỉ import `domain/`. Không type nào chứa `Tx` (K1): repo đã gắn tx + `tenantId` của UoW. Sự kiện gom qua `Outbox`,
 // adapter phát SAU COMMIT đúng một lần. Repo port theo nhóm (retry, side effect, team, review task…) thêm ở T7–T9.
 import type { BranchRule } from "../domain/branch/branch-def.rules";
+import type { IfExec } from "../domain/if/if.rules";
 import type { RetryState } from "../domain/runs/retry.rules";
 import type {
   NoticeKind,
@@ -114,6 +115,15 @@ export type StepJoinLoad = {
   executorKinds: readonly (string | undefined)[];
   /** P-d2 T19 · `after.branch` của từng stage theo snapshot (đã map `goto_step` ⇒ `gotoStep`; vắng ⇒ `[]`). */
   branches: readonly (readonly BranchRule[])[];
+  /** CR-103 · fnr-if · node If của từng stage theo snapshot (`executor.kind = "if"`; stage khác ⇒ `null`). */
+  ifs?: readonly (IfExec | null)[];
+  /** CR-103 · fnr-if · `key` từng stage theo snapshot (nguồn `field` của node If gọi theo key). */
+  stageKeys?: readonly string[];
+};
+/** CR-103 · fnr-if · dữ kiện đánh giá node If: `fields` output hiện hành theo `stage_idx` + input của run (`key` ⇒ giá trị). */
+export type IfFacts = {
+  fieldsByIdx: Readonly<Record<string, Readonly<Record<string, string | number>>>>;
+  inputs: Readonly<Record<string, string | number>>;
 };
 /** P-d2 T19 · PD2-R14 · sự kiện rẽ nhánh (thread `branch` + audit `branch` actor hệ thống). `rule` đếm từ 1. */
 export type BranchEvent = { stageIdx: number; fromStep: number; toStep: number; rule: number };
@@ -135,6 +145,8 @@ export type StepRepo = {
     runId: string,
     stageIdx: number,
   ): Promise<Readonly<Record<string, string | number>> | null>;
+  /** CR-103 · fnr-if · 1 câu: fields output hiện hành của mọi stage + input run (chỉ gọi khi bước có node If). */
+  ifFacts(runId: string): Promise<IfFacts>;
   /** T19 · 1 câu theo tập: stage `idxs` còn `pending`/`queued` ⇒ `skipped` + `finished_at`; trả id stage vừa nhảy. */
   skipStages(runId: string, idxs: readonly number[]): Promise<string[]>;
   /** T19 · 1 câu theo tập: huỷ hẹn mở của các stage vừa nhảy (Q-D2-3: phòng thủ, thường 0 hàng). */

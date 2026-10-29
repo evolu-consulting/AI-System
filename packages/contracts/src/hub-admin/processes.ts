@@ -17,13 +17,11 @@ import {
   STAGE_TIMEOUT_S,
   TeamModeSchema,
   TtlDaysSchema,
-  WAIT_OFFSET_DAYS,
-  WAIT_TIME_DEFAULT,
-  WaitTimeSchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
 import { SetExecutorSchema } from "./process-set";
+import { IfExecutorSchema } from "./process-if";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
   AfterBranchSchema,
@@ -32,6 +30,7 @@ import {
   ProcessToolItemSchema,
   ToolExecutorSchema,
 } from "./process-tools";
+import { WaitUntilExecutorSchema } from "./process-wait";
 import {
   BranchSchema,
   DEF_INPUTS_MAX,
@@ -63,6 +62,7 @@ export {
 export * from "./autofix";
 export * from "./process-steps";
 export * from "./process-tools";
+export * from "./process-wait";
 export * from "./sources";
 
 export const HUB_ADMIN_PROCESS_ERRORS = {
@@ -127,22 +127,6 @@ export const StageAutofixSchema = z.strictObject({
 });
 export type StageAutofix = z.infer<typeof StageAutofixSchema>;
 
-/** P-d1 · nguồn ngày của `wait_until`: input run kiểu `date` hoặc field `date` của output stage ở bước nhỏ hơn. */
-export const WaitFromSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("input"), key: SourceKeySchema }),
-  z.strictObject({
-    kind: z.literal("field"),
-    stage_key: z.string().regex(STAGE_KEY_RE),
-    field: z.string().regex(FIELD_KEY_RE),
-  }),
-]);
-export type WaitFrom = z.infer<typeof WaitFromSchema>;
-export const WaitUntilExecutorSchema = z.strictObject({
-  kind: z.literal("wait_until"),
-  from: WaitFromSchema,
-  offset_days: z.number().int().min(WAIT_OFFSET_DAYS.min).max(WAIT_OFFSET_DAYS.max),
-  time: WaitTimeSchema.default(WAIT_TIME_DEFAULT),
-});
 export const StageEscalateSchema = z.strictObject({
   after_h: z.number().int().min(ESCALATE_AFTER_H.min).max(ESCALATE_AFTER_H.max),
   group_id: UuidSchema,
@@ -163,6 +147,8 @@ export const ProcessStageDefSchema = z.strictObject({
     /** P-d2 · PD2-R01 · gọi tool (workflow catalog) — luật `toolStageIssues`. */
     ToolExecutorSchema,
     SetExecutorSchema, // CR-103 · R4 · node `set` (luật `setDefIssues`)
+    /** CR-103 · fnr-if · node If (họ control) — luật `ifStageIssues`. */
+    IfExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

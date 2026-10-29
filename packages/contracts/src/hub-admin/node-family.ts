@@ -14,6 +14,7 @@ export const NODE_FAMILY_OF: Readonly<Record<ExecutorKind, NodeFamily>> = {
   set: "work",
   wait_until: "wait",
   apply: "apply",
+  if: "control",
 };
 
 /** CR-103 · R3: loại node có khai báo field output cho bước sau dùng không ("none" ⇒ không được có tham chiếu tới nó). */

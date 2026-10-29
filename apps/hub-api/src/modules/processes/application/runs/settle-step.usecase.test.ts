@@ -20,6 +20,7 @@ function fake(load: StepJoinLoad | null, fields: Record<string, string | number>
       calls.push(["skipStages", runId, idxs]);
       return idxs.map((i) => `sr${i}`);
     },
+    ifFacts: async () => ({ fieldsByIdx: {}, inputs: {} }),
     cancelTimers: async (runId, ids) => void calls.push(["cancelTimers", runId, ids]),
     // (tham số `now` bỏ qua — nhật ký chỉ ghi runId + ids)
     branchEvent: async (runId, e) => void calls.push(["branchEvent", runId, e]),

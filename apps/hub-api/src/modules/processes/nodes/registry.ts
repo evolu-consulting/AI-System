@@ -5,6 +5,7 @@ import type { DefRefs, RefMiss } from "../defs/def.rules";
 import { agentNode } from "./agent/node";
 import { applyNode } from "./apply/node";
 import { setNode } from "./set/node";
+import { ifNode } from "./if/node";
 import { teamNode } from "./team/node";
 import { toolNode } from "./tool/node";
 import type { DefIssue, DefStage, NodeSpec } from "./types";
@@ -18,6 +19,7 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   wait_until: waitUntilNode,
   tool: toolNode,
   set: setNode,
+  if: ifNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -28,6 +30,7 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.wait_until,
   NODES.tool,
   NODES.set,
+  NODES.if,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */

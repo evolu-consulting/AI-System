@@ -5,6 +5,7 @@ import type { NodeLauncher } from "../runs/launch-common";
 import { agentLauncher } from "./agent/launch";
 import { applyLauncher } from "./apply/launch";
 import { setLauncher } from "./set/launch";
+import { ifLauncher } from "./if/launch";
 import { teamLauncher } from "./team/launch";
 import { toolLauncher } from "./tool/launch";
 import { waitUntilLauncher } from "./wait-until/launch";
@@ -17,6 +18,7 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   wait_until: waitUntilLauncher,
   tool: toolLauncher,
   set: setLauncher,
+  if: ifLauncher,
 };
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

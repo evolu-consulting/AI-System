@@ -35,7 +35,8 @@ export type SnapStage = {
     | { kind: "apply" }
     | WaitUntilSnap
     | { kind: "tool"; tool_key: string } // P-d2 · Hub gọi tool (`tool-launch`)
-    | { kind: "set"; values: SetValueDef[] }; // CR-103 · R4 · node `set` (nodes/set)
+    | { kind: "set"; values: SetValueDef[] } // CR-103 · R4 · node `set` (nodes/set)
+    | { kind: "if" }; // CR-103 · node If (đánh giá ở `settleStep`; điều kiện đọc từ snapshot ở `step.repo`)
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

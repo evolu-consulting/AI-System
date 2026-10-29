@@ -36,6 +36,8 @@ export const PROCESS_DEF_RULES = [
   "BRANCH_INVALID",
   // CR-103 · R4 · node `set` (`setDefIssues`, hub-api domain/set).
   "SET_INVALID",
+  // CR-103 · fnr-if · node If (`ifStageIssues` — `process-if.ts`).
+  "IF_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
