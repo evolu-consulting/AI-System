@@ -8,6 +8,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import { APPLY_EXECUTOR, APPLY_PATCH, executorToDef } from "../lib/apply-form";
 import type { StageDraft } from "../lib/draft-types";
+import { SET_EXECUTOR, SET_PATCH, setFromDef, setToDef } from "../lib/set-form";
 import { TOOL_EXECUTOR, TOOL_PATCH, toolFromDef, toolToDef } from "../lib/tool-form";
 import { WAIT_EXECUTOR, WAIT_PATCH, waitFromDef, waitToDef } from "../lib/wait-form";
 
@@ -26,7 +27,7 @@ export type FeNode<K extends ExecutorKind = ExecutorKind> = {
   /** Giá trị ô `executor` của draft. */
   draftExecutor(ex: Ex<K>): string;
   /** Phần draft riêng của loại khi nạp def (vắng ⇒ giữ rỗng). */
-  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool">>;
+  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set">>;
   /** Draft → executor của contract. */
   toDef(s: StageDraft): Executor;
 };
@@ -80,6 +81,16 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     draftExecutor: () => TOOL_EXECUTOR,
     fromDef: (ex) => ({ tool: toolFromDef(ex) }),
     toDef: (s) => toolToDef(s.tool),
+  },
+  set: {
+    kind: "set",
+    family: NODE_FAMILY_OF.set,
+    labelKey: "process.admin.editor.stage.kind.set",
+    defaults: () => ({ ...SET_PATCH }),
+    draftValue: SET_EXECUTOR,
+    draftExecutor: () => SET_EXECUTOR,
+    fromDef: (ex) => ({ set: setFromDef(ex) }),
+    toDef: (s) => setToDef(s.set),
   },
 };
 

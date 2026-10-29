@@ -4,6 +4,7 @@ import type { ExecutorKind } from "@ai/contracts/hub-admin";
 import type { NodeLauncher } from "../runs/launch-common";
 import { agentLauncher } from "./agent/launch";
 import { applyLauncher } from "./apply/launch";
+import { setLauncher } from "./set/launch";
 import { teamLauncher } from "./team/launch";
 import { toolLauncher } from "./tool/launch";
 import { waitUntilLauncher } from "./wait-until/launch";
@@ -15,6 +16,7 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   apply: applyLauncher,
   wait_until: waitUntilLauncher,
   tool: toolLauncher,
+  set: setLauncher,
 };
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

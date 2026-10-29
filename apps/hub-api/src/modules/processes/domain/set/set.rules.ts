@@ -81,3 +81,35 @@ export function setDefIssues(
   });
   return out;
 }
+
+/** Giá trị input run (`ProcessInputValue[]` lưu ở `process_runs.inputs`) → key → chuỗi; file/source_ref bỏ qua. */
+export function setInputsOf(
+  inputs: readonly { key: string; type: string; text?: string; value?: string }[] | null,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const v of inputs ?? []) {
+    const raw =
+      v.type === "text"
+        ? v.text
+        : v.type === "file" || v.type === "source_ref"
+          ? undefined
+          : v.value;
+    if (raw !== undefined) out[v.key] = raw;
+  }
+  return out;
+}
+
+const cell = (v: SetFieldValue): string => String(v).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+
+/** `.md` của stage `set`: bảng key/giá trị + khối ```fields (đọc lại như output tool/agent). */
+export function setOutputMd(
+  stageName: string,
+  fields: Readonly<Record<string, SetFieldValue>>,
+): string {
+  const keys = Object.keys(fields);
+  const rows = keys.map((k) => `| ${cell(k)} | ${cell(fields[k] as SetFieldValue)} |\n`).join("");
+  return (
+    `# ${stageName}\n\n## Kết quả\n| Trường | Giá trị |\n|---|---|\n${rows}\n` +
+    `\`\`\`fields\n${JSON.stringify(fields)}\n\`\`\`\n`
+  );
+}

@@ -44,9 +44,11 @@ export function stageViews(
     step: s.step,
     name: s.name,
     executor:
-      s.executor === "tool"
-        ? (tools.get(s.tool.key)?.name ?? s.tool.key)
-        : (labels.get(s.executor) ?? ""),
+      s.executor === "set"
+        ? "set"
+        : s.executor === "tool"
+          ? (tools.get(s.tool.key)?.name ?? s.tool.key)
+          : (labels.get(s.executor) ?? ""),
     after: s.after,
     real: s.real,
     backTo: s.backTo,

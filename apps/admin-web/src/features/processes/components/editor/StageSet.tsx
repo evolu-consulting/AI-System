@@ -1,16 +1,13 @@
 // CR-103 · R4 fnr-showcase: editor node `set` (họ work, không AI) — mỗi dòng: field output ← input run | hằng.
-// CHƯA nối dây vào StageForm/stage-convert (phase B sau khi R1 gộp registry FE); component thuần, điều khiển từ ngoài.
+// Component thuần, điều khiển từ ngoài; `StageForm` nối `stage.set.rows` vào đây.
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import type { SetRowDraft } from "../../lib/draft-types";
+import { emptySetRow, SET_ROWS_MAX } from "../../lib/set-form";
 import { SelectField, TextField } from "./Fields";
 
 const K = "process.admin.editor.stage.set.";
-export const SET_ROWS_MAX = 20;
-
-/** Dòng gán trong bản nháp: `source` chọn nguồn; `value` là giá trị hằng (chuỗi — ép số ở bước chuyển đổi). */
-export type SetRowDraft = { key: string; source: "input" | "const"; input: string; value: string };
-export const emptySetRow = (): SetRowDraft => ({ key: "", source: "input", input: "", value: "" });
 
 export type StageSetProps = {
   /** Id nền (thường là `stage.uid`). */

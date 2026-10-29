@@ -75,11 +75,12 @@
         "agent": "Agent",
         "team": "Nhóm agent",
         "wait": "Chờ tới ngày",
-        "tool": "Gọi tool"
+        "tool": "Gọi tool",
+        "set": "Ghi giá trị"
       },
       "swap": {
         "family": "Khác họ node — không đổi sang loại này được.",
-        "field_ref": "Giai đoạn {{by}} còn dùng trường \u201c{{field}}\u201d của giai đoạn này."
+        "field_ref": "Giai đoạn {{by}} còn dùng trường “{{field}}” của giai đoạn này."
       },
       "instruction": "Hướng dẫn",
       "filename": "Tên tệp kết quả",
@@ -252,7 +253,8 @@
         "input": "Đầu vào",
         "value": "Giá trị",
         "add": "Thêm dòng",
-        "remove": "Xoá dòng"
+        "remove": "Xoá dòng",
+        "err": "Dòng gán không hợp lệ: field phải khai ở Kết quả, input phải có và cùng kiểu."
       }
     },
     "limits": "Giới hạn của một lượt chạy",
@@ -582,7 +584,13 @@
         "control": "Điều khiển"
       },
       "yes": "đổi qua lại được",
-      "no": "chỉ một loại"
+      "no": "chỉ một loại",
+      "can": {
+        "ok": "Đổi được",
+        "family": "Khác họ node.",
+        "field_ref": "Mất field bước sau đang dùng."
+      },
+      "pick": "Giai đoạn"
     }
   }
 }

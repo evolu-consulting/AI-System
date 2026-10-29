@@ -13,6 +13,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { SetValueDef } from "../domain/set/set.rules";
 import { buildManifest, type ManifestItem } from "./sources.rules";
 import type { ResolveSource } from "./stage-sources";
 
@@ -33,7 +34,8 @@ export type SnapStage = {
     | { kind: "team"; team_id: string }
     | { kind: "apply" }
     | WaitUntilSnap
-    | { kind: "tool"; tool_key: string }; // P-d2 · Hub gọi tool (`tool-launch`)
+    | { kind: "tool"; tool_key: string } // P-d2 · Hub gọi tool (`tool-launch`)
+    | { kind: "set"; values: SetValueDef[] }; // CR-103 · R4 · node `set` (nodes/set)
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

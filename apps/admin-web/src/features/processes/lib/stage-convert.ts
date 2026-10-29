@@ -6,6 +6,7 @@ import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
 import { branchToRules, rulesToBranch } from "./branch-form";
 import type { StageDraft } from "./draft-types";
+import { emptySet, normalizeSet } from "./set-form";
 import {
   mustKnowToDef,
   mustKnowToDraft,
@@ -57,6 +58,7 @@ export function emptyStage(step = 0): StageDraft {
     remind: "",
     escalate: emptyEscalate(),
     tool: emptyTool(),
+    set: emptySet(),
     branch: [],
   };
 }
@@ -64,12 +66,13 @@ export function emptyStage(step = 0): StageDraft {
 /** CR-103 · ô `executor` + phần draft riêng của loại (wait/tool) theo registry node. */
 function executorPart(
   ex: ProcessStageDef["executor"],
-): Pick<StageDraft, "executor" | "wait" | "tool"> {
+): Pick<StageDraft, "executor" | "wait" | "tool" | "set"> {
   const node = feNodeOf(ex.kind) as FeNode;
   return {
     executor: node.draftExecutor(ex as never),
     wait: emptyWait(),
     tool: emptyTool(),
+    set: emptySet(),
     ...node.fromDef?.(ex as never),
   };
 }
@@ -120,7 +123,7 @@ function branchOf(s: StageDraft): ProcessStageDef["after"]["branch"] {
 }
 
 export function stageToInput(draft: StageDraft): ProcessStageDef {
-  const s = normalizeTool(normalizeWait(normalizeApply(draft)));
+  const s = normalizeSet(normalizeTool(normalizeWait(normalizeApply(draft))));
   const rules = branchOf(s) ?? [];
   const branch = rules.length > 0 ? { branch: rules } : {};
   return {

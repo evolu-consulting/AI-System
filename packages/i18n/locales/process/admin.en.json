@@ -75,11 +75,12 @@
         "agent": "Agent",
         "team": "Agent team",
         "wait": "Wait until date",
-        "tool": "Call tool"
+        "tool": "Call tool",
+        "set": "Set values"
       },
       "swap": {
         "family": "Different node family — can't switch to this type.",
-        "field_ref": "Stage {{by}} still uses the field \u201c{{field}}\u201d of this stage."
+        "field_ref": "Stage {{by}} still uses the field “{{field}}” of this stage."
       },
       "instruction": "Instructions",
       "filename": "Output file name",
@@ -252,7 +253,8 @@
         "input": "Input",
         "value": "Value",
         "add": "Add row",
-        "remove": "Remove row"
+        "remove": "Remove row",
+        "err": "Invalid assignment: the field must be declared in Result, the input must exist with the same type."
       }
     },
     "limits": "Run limits",
@@ -582,7 +584,13 @@
         "control": "Control"
       },
       "yes": "swappable",
-      "no": "single kind"
+      "no": "single kind",
+      "can": {
+        "ok": "Swappable",
+        "family": "Different node family.",
+        "field_ref": "Loses a field later steps use."
+      },
+      "pick": "Stage"
     }
   }
 }

@@ -11,6 +11,7 @@ export const NODE_FAMILY_OF: Readonly<Record<ExecutorKind, NodeFamily>> = {
   agent: "work",
   team: "work",
   tool: "work",
+  set: "work",
   wait_until: "wait",
   apply: "apply",
 };
@@ -21,6 +22,7 @@ export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
   agent: "declared",
   team: "declared",
   tool: "declared",
+  set: "declared",
   wait_until: "none",
   apply: "none",
 };

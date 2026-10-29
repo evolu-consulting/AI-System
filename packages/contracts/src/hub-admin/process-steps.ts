@@ -34,6 +34,8 @@ export const PROCESS_DEF_RULES = [
   "TOOL_INVALID",
   "TOOL_SIDE_EFFECT",
   "BRANCH_INVALID",
+  // CR-103 · R4 · node `set` (`setDefIssues`, hub-api domain/set).
+  "SET_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };

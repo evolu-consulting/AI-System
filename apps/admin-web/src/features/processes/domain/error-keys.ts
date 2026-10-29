@@ -10,6 +10,7 @@ export function ruleErrorKey(rule: string): string | null {
   if (rule === "WAIT_INVALID") return `${WAIT}.WAIT_INVALID`;
   if (rule === "ESCALATE_INVALID") return `${STAGE}.ESCALATE_INVALID`;
   if (rule === "TOOL_INVALID" || rule === "TOOL_SIDE_EFFECT") return `${STAGE}.tool.err.${rule}`;
+  if (rule === "SET_INVALID") return "process.admin.editor.stage.set.err";
   if (rule === "BRANCH_INVALID") return `${STAGE}.branch.err.BRANCH_INVALID`;
   return null;
 }

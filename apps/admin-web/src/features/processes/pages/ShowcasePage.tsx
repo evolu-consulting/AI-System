@@ -132,7 +132,7 @@ function Body() {
             </Panel>
           ) : null}
           <Panel title={t(`${K}swap.title`)}>
-            <NodeSwapBox />
+            <NodeSwapBox stages={def.stages} />
           </Panel>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import type { ExecutorKind, ProcessDefInput } from "@ai/contracts/hub-admin";
 import type { DefRefs, RefMiss } from "../defs/def.rules";
 import { agentNode } from "./agent/node";
 import { applyNode } from "./apply/node";
+import { setNode } from "./set/node";
 import { teamNode } from "./team/node";
 import { toolNode } from "./tool/node";
 import type { DefIssue, DefStage, NodeSpec } from "./types";
@@ -16,6 +17,7 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   apply: applyNode,
   wait_until: waitUntilNode,
   tool: toolNode,
+  set: setNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -25,6 +27,7 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.apply,
   NODES.wait_until,
   NODES.tool,
+  NODES.set,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */

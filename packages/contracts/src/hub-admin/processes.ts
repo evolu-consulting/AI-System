@@ -23,6 +23,7 @@ import {
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
+import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
   AfterBranchSchema,
@@ -94,9 +95,7 @@ export { STAGE_KEY_RE }; // khai báo ở chat/processes (một nguồn, TD #150
 
 const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
 
-// ── Nguồn tham chiếu + đầu vào (P-b · HUB-FR-121/124 · PB-R06/R13) ──────────────────────────────────────────────────
-// `ProcessInputDefSchema`/`ProcessInputValueSchema`/`DEF_INPUTS_MAX` + hằng `INPUT_*` nay ở `./sources` (tránh vòng import
-// với `chat/processes-api`); re-export qua `export * from "./sources"` ở cuối file.
+// ── Nguồn + đầu vào (P-b · HUB-FR-121/124 · PB-R06/R13): `ProcessInput*Schema`/`INPUT_*` ở `./sources` (tránh vòng import)
 export const MUST_KNOW_MAX = 10;
 export const MUST_KNOW_LEN = 200;
 
@@ -163,6 +162,7 @@ export const ProcessStageDefSchema = z.strictObject({
     WaitUntilExecutorSchema,
     /** P-d2 · PD2-R01 · gọi tool (workflow catalog) — luật `toolStageIssues`. */
     ToolExecutorSchema,
+    SetExecutorSchema, // CR-103 · R4 · node `set` (luật `setDefIssues`)
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({
