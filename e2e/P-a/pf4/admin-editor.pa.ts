@@ -20,6 +20,11 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
       .getByRole("row")
       .filter({ hasText: "hoa-don-t" });
     await row.getByRole("link", { name: "Hoá đơn T" }).click();
+    // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
+    await p
+      .getByRole("application", { name: "Canvas quy trình" })
+      .getByRole("button", { name: /^Giai đoạn 1: Đọc hoá đơn/ })
+      .click();
     const s1 = p.getByRole("region", { name: "Giai đoạn 1: Đọc hoá đơn" });
     await expect(s1).toBeVisible();
     await expect(s1.getByRole("switch", { name: "Hành động thật" })).toBeDisabled();

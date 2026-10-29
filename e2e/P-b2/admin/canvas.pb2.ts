@@ -149,6 +149,7 @@ test("ADM-FR-71 · AC-PB2-05 · E-PB2-08 · 'Hành động thật' của Tổng 
   await node(p, "Test hồi quy").click();
   await panel(p).getByRole("combobox", { name: "Sau giai đoạn" }).click();
   await p.getByRole("option", { name: "Duyệt bởi Group" }).click();
+  await expect(p.getByRole("listbox")).toHaveCount(0); // Select đã đóng hẳn, Esc không bị popup nuốt
   await p.keyboard.press("Escape"); // fnr-editor-drawer (qc): ngăn đè lên node "Tổng hợp" ⇒ đóng ngăn (Esc) trước khi bấm node khác
   await node(p, "Tổng hợp").click();
   await expect(panel(p).getByRole("switch", { name: "Hành động thật" })).toBeEnabled();

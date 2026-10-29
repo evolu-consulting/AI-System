@@ -81,7 +81,7 @@ be1a62ffeac76dcd9a5d62b3b5c8a217e7db62663c81ced6b9aa5a8841f1afc7  e2e/P-a/pf2/as
 27a1f483a85f078835ffaa7a3a0d15d125cd7ca9644d199b8e67d5720174b546  e2e/P-a/pf3/inbox.pa.ts
 c4b26bb5304322bcbd16ccd8b092d2e7fb761055ab42f6b688512f3a69ad96b0  e2e/P-a/pf3/outside-thread.pa.ts
 c9e5a2ddb6cc6e214013cca1331dfeff96026968e28fe68569343f480e8e6626  e2e/P-a/pf3/outside.pa.ts
-fbe6d41da332c6a5e211a5b4caffa6ee39435be61d27bdaf76cf17d2dbb01b45  e2e/P-a/pf4/admin-editor.pa.ts
+c568a82cdd39e5fa0aef3b9df45e857298b6d897dc11e1db8c3e9f508b6d1389  e2e/P-a/pf4/admin-editor.pa.ts
 ebcc84b92286296fc7cacec45df5c490e15389bfb4f966dd3610691506e976fb  e2e/P-a/pf4/admin-processes.pa.ts
 884cb7120f51bb4b5adec3398dda5ce55fba0e8b9e7a54ee6ebb2e3bbac0497b  e2e/P-a/pf4/admin-runs.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts
@@ -93,14 +93,14 @@ e786529d67cd6715b72320a9159b64a39529b5a86b49b04b16ee7807f8cad8cd  e2e/P-a/scenar
 3d3525d2affda6c01d989e250a305d65a395a8ef80d2617f91c3311e94c64daa  e2e/P-b/_pb-runtime.ts
 8bc8a3751961bbe7f4a55fee237be5774169792ff120402e3401dddf3663079b  e2e/P-b/_pb-stack.ts
 5296fe09d3287190e8a5d4697136cdeb5f589921263094f4d26a295e156b3712  e2e/P-b/_pb-support.ts
-11ca7ba3d7cb1a6fd76e827369614add40b1f7b1f4e85ed755297530d563fa87  e2e/P-b/admin/editor.pb.ts
+6426a17aa1d524e2c0e3960cdf0de6a6e3444b97cb2827e87d0492810299d996  e2e/P-b/admin/editor.pb.ts
 594ea5f1c7f115f445954359ec5c8b18bf7b129bdad46db36a5c9a10fe3b8c6e  e2e/P-b/admin/sources.pb.ts
 e6dd75f71517e0496f64210437a2a3cc5ba2ccc2b627090294cf8b2388c9466b  e2e/P-b/chat/inputs.pb.ts
 e9a64c8733b12868aff5ea371be91a067769888e4645475245054d9c93ead958  e2e/P-b/playwright.pb.config.ts
 87d1cb6cfdaa67cf3956dbbf7633d93758a9516cce9f3f70b56e971a28e96867  e2e/P-b2/_pb2-data.ts
 3496d25d6cfec7e7aeacf94306ea2be6a312aa052094dac9e2473474a6f1c301  e2e/P-b2/_pb2-stack.ts
 0945c9a3a93a7c1e8d48b5c71f10c1a6c38f2c2aecff3fba5d09b8a003b86daa  e2e/P-b2/_pb2-support.ts
-866a886a6a319c3c54a45fe8ef3c6dc0f204000467d8e372b9f657bd9e2bb81b  e2e/P-b2/admin/canvas.pb2.ts
+85def1b40d435d2d5e2b8456408841aa0ee8936846d00b19b0df778b7ef91b3a  e2e/P-b2/admin/canvas.pb2.ts
 04f367a6417f135451446f5ac51fe896724f3cf0b52b3a923bc22bc2d85bf93d  e2e/P-b2/chat/run.pb2.ts
 d6aecb675a57e354bf5703308168d0be1eb43975158cd472d52341c6a1c712ee  e2e/P-b2/playwright.pb2.config.ts
 8272af8b85a36f7cd69e8fe520c85ef4545edc3aa931db777b22092ae15b05cd  e2e/P-c/_pc-support.ts

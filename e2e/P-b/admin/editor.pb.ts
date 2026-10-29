@@ -19,6 +19,12 @@ test.beforeAll(() => seedPb());
 const sourcesCard = (p: Page) => p.getByRole("region", { name: "Nguồn của quy trình" });
 const inputsCard = (p: Page) => p.getByRole("region", { name: "Thông tin đầu vào" });
 const stage1 = (p: Page, name: string) => p.getByRole("region", { name: `Giai đoạn 1: ${name}` });
+// fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node giai đoạn 1 để mở ngăn.
+const openStage1 = (p: Page, name: string) =>
+  p
+    .getByRole("application", { name: "Canvas quy trình" })
+    .getByRole("button", { name: new RegExp(`^Giai đoạn 1: ${name}`) })
+    .click();
 
 async function openDef(p: Page, key: string, name: string): Promise<void> {
   await adminLogin(p);
@@ -58,6 +64,7 @@ test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: c
     await addSource(p, "ed-src-1");
     await addSource(p, "ed-src-2");
 
+    await openStage1(p, "Phân tích");
     const s1 = stage1(p, "Phân tích");
     const grp = s1.getByRole("group", { name: "Nguồn của giai đoạn" });
     await grp.getByRole("checkbox", { name: "ed-src-1" }).check();
@@ -99,6 +106,7 @@ test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: c
     await p.reload();
     await expect(sourcesCard(p).getByRole("button", { name: "Bỏ nguồn ed-src-1" })).toBeVisible();
     await expect(sourcesCard(p).getByRole("button", { name: "Bỏ nguồn ed-src-2" })).toBeVisible();
+    await openStage1(p, "Phân tích");
     await expect(stage1(p, "Phân tích").getByRole("checkbox", { name: "ed-src-1" })).toBeChecked();
     await expect(
       stage1(p, "Phân tích").getByRole("textbox", { name: "Đường dẫn cho phép — ed-src-1" }),
@@ -134,6 +142,7 @@ test('ADM-FR-69 · HUB-FR-121 · PB-R06 · PB-R14 · E-PB09 · chặn: giai đo�
   });
   try {
     await openDef(p, key, name);
+    await openStage1(p, "Phân tích");
     const s1 = stage1(p, "Phân tích");
     const grp = s1.getByRole("group", { name: "Nguồn của giai đoạn" });
     // (a) tối đa 5 nguồn / giai đoạn
