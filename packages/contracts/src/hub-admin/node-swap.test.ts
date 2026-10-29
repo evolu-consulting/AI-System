@@ -74,6 +74,12 @@ describe("canSwap", () => {
     ],
     ["chỉ số sai", free, 9, "tool", "family"],
   ];
+  test("stage mới chưa lưu (skipFamily): agent -> wait_until/apply chọn được; field_ref vẫn áp", () => {
+    expect(canSwap(free, 0, "wait_until", { skipFamily: true }).ok).toBe(true);
+    expect(canSwap(free, 0, "apply", { skipFamily: true }).ok).toBe(true);
+    const r = canSwap(refd, 0, "wait_until", { skipFamily: true });
+    expect(r.ok ? "ok" : r.reason).toBe("field_ref");
+  });
   test.each(cases)("%s", (_n, d, i, k, want) => {
     const r = canSwap(d, i, k);
     expect(r.ok ? "ok" : r.reason).toBe(want);

@@ -9,7 +9,7 @@ import { draftKindOf } from "../nodes/registry";
 import type { StageDraft } from "./draft-types";
 import { stageToInput } from "./stage-convert";
 
-/** Stage `index` đổi sang loại `to` được không. Stage chưa chọn loại / chưa chuyển được sang def ⇒ ok (server kiểm lại khi lưu). */
+/** Editor không chặn theo họ (e2e P-c2/P-d đổi stage đã lưu agent -> Áp/Chờ/Tool): chỉ kiểm tham chiếu field (`field_ref`). Stage `index` đổi sang loại `to` được không. Stage chưa chọn loại / chưa chuyển được sang def ⇒ ok (server kiểm lại khi lưu). */
 export function swapCheck(all: readonly StageDraft[], index: number, to: ExecutorKind): CanSwap {
   const cur = all[index];
   if (!cur || draftKindOf(cur.executor) === null) return { ok: true };
@@ -23,5 +23,5 @@ export function swapCheck(all: readonly StageDraft[], index: number, to: Executo
       /* stage dở dang: bỏ qua */
     }
   });
-  return at < 0 ? { ok: true } : canSwap({ stages }, at, to);
+  return at < 0 ? { ok: true } : canSwap({ stages }, at, to, { skipFamily: true });
 }

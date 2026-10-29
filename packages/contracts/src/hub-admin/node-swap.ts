@@ -51,11 +51,12 @@ export function canSwap(
   def: { stages: readonly ProcessStageDef[] },
   stageIdx: number,
   newKind: ExecutorKind,
+  opts: { skipFamily?: boolean } = {},
 ): CanSwap {
   const s = def.stages[stageIdx];
   if (!s) return { ok: false, reason: "family", detail: String(stageIdx) };
   const from = nodeFamily(s.executor.kind);
-  if (from === null || from !== nodeFamily(newKind))
+  if (!opts.skipFamily && (from === null || from !== nodeFamily(newKind)))
     return { ok: false, reason: "family", detail: `${s.executor.kind}>${newKind}` };
   const refs = fieldRefsTo(def, s.key);
   const declared = new Set(s.output.fields.map((f) => f.key));
