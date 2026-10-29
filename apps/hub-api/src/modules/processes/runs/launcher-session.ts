@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ConfigSnapshot } from "../../config/config.rules";
 import { priorStageIdxs } from "../domain/runs/step.rules";
+import { agentIdOf } from "../nodes/registry";
 import { retryFailures } from "./autofix.repo";
 import { autofixRetryBlock, autofixWorkspaceBlock } from "./autofix.rules";
 import { askHistoryBlock, type HandoffItem, handoffBlock, handoffOf } from "./handoff.rules";
@@ -130,11 +131,7 @@ function sameAgentInStep(c: StagePromptInput, agentId: string): boolean {
   const stages = c.head.snapshot.stages;
   const steps = stepsOfSnap({ stages });
   return stages.some(
-    (s, i) =>
-      i !== c.idx &&
-      steps[i] === steps[c.idx] &&
-      s.executor.kind === "agent" &&
-      s.executor.agent_id === agentId,
+    (s, i) => i !== c.idx && steps[i] === steps[c.idx] && agentIdOf(s.executor) === agentId,
   );
 }
 
@@ -147,9 +144,10 @@ async function sessionCtx(
   snap: ConfigSnapshot | null,
 ): Promise<SessionCtx> {
   const rerun = Number(c.stage.attempt) > 1 || Number(c.stage.round) > 1;
-  if (c.def.executor.kind !== "agent")
+  // CR-103 · phiên CLI chỉ cho node chạy bằng một agent (`agentIdOf`); nhóm ⇒ không phiên.
+  const agentId = agentIdOf(c.def.executor);
+  if (agentId === null)
     return { ...NO_AGENT, executor: "team", rerun, continuing: await isContinuing(tx, c) };
-  const agentId = c.def.executor.agent_id;
   const [continuing, lastSelf, session] = await Promise.all([
     isContinuing(tx, c),
     lastWriterIsSelf(tx, c, agentId),
@@ -181,10 +179,8 @@ export async function stagePrompt(
   const ctx = await sessionCtx(tx, c, snap);
   const plan = sessionPlan(ctx);
   // Xoá phiên ∥ khối tự-sửa gửi liền; xoá vẫn SAU các câu đọc phiên (cùng tx, đúng thứ tự gửi).
-  const clear =
-    plan.clearSession && c.def.executor.kind === "agent"
-      ? clearSession(tx, c, c.def.executor.agent_id)
-      : null;
+  const agentId = agentIdOf(c.def.executor);
+  const clear = plan.clearSession && agentId !== null ? clearSession(tx, c, agentId) : null;
   clear?.catch(() => {});
   const retry = await autofixRetry(tx, c);
   await clear;

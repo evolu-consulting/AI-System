@@ -11,6 +11,7 @@ import type { ProcessRunInput } from "../../runs/create-run";
 import type { ProcessDeps } from "../core/ports";
 import { effectivePrevStep } from "../domain/branch/branch.rules";
 import { priorStageIdxs, realActionStepCheck } from "../domain/runs/step.rules";
+import { agentIdOf, gatesRealAction } from "../nodes/registry";
 import type { SnapStage } from "./launcher-prompt";
 import { runScopedFileIds } from "./output-attachment";
 import { stepsOfSnap } from "./step-persist";
@@ -76,8 +77,8 @@ export async function realActionPre(
   // D4 · C50 · "Hành động thật" ở stage `agent` (chèn xác nhận), stage `apply` (Hub tự chạy, không agent — C32) HOẶC stage
   // `tool` (P-d2 R-1 · D2-49: Hub gọi tool, không agent).
   if (!p.def.real_action) return null;
-  const kind = p.def.executor.kind;
-  if (kind !== "agent" && kind !== "apply" && kind !== "tool") return null;
+  // CR-103 · cờ `realAction` của registry (agent / apply / tool).
+  if (!gatesRealAction(p.def.executor.kind)) return null;
   const steps = stepsOfSnap({ stages: p.stages });
   const step = steps[p.idx] ?? 0;
   if (step === 0) return null;
@@ -90,8 +91,8 @@ export async function realActionPre(
   const check = realActionStepCheck(facts.filter((f) => f.step === prev));
   if (!check.ok) return null;
   // Stage Áp (apply) / tool: không agent ⇒ không preconfirm workflow; actor = người Đạt cổng bước trước.
-  if (p.def.executor.kind !== "agent") return { preconfirm: undefined, passedBy: check.passedBy };
-  const agentId = p.def.executor.agent_id;
+  const agentId = agentIdOf(p.def.executor);
+  if (agentId === null) return { preconfirm: undefined, passedBy: check.passedBy };
   const catalog = await d.config.catalog();
   const workflowIds = [...agentWorkflowIds(await d.config.snapshot(), agentId)].filter(
     (id) => catalog.workflows.get(id)?.sideEffect === true,

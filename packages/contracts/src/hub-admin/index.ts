@@ -9,6 +9,7 @@ export * from "./dlc";
 export * from "./effective";
 export * from "./errors";
 export * from "./kh";
+export * from "./node-family";
 export * from "./processes";
 export * from "./secrets";
 export * from "./trace";

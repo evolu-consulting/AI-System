@@ -1,6 +1,7 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d2: đổi một giai đoạn qua lại giữa `ProcessStageDef` (contract) và `StageDraft` (editor) — tách từ
 // `def-form` (file ≤ 400 dòng). Hàm thuần: không React, không gọi API.
 import { type ProcessStageDef, STAGE_TIMEOUT_S } from "@ai/contracts/hub-admin";
+import { draftKindOf, type FeNode, feNodeOf } from "../nodes/registry";
 import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
 import { branchToRules, rulesToBranch } from "./branch-form";
@@ -11,18 +12,15 @@ import {
   stageSourcesToDef,
   stageSourcesToDraft,
 } from "./sources-form";
-import { emptyTool, isTool, normalizeTool, toolFromDef, toolToDef } from "./tool-form";
+import { emptyTool, normalizeTool } from "./tool-form";
 import {
   emptyEscalate,
   emptyWait,
   escalateFromDef,
   escalateToDef,
-  isWait,
   normalizeWait,
   remindFromDef,
   remindToDef,
-  waitFromDef,
-  waitToDef,
 } from "./wait-form";
 
 let seq = 0;
@@ -63,14 +61,18 @@ export function emptyStage(step = 0): StageDraft {
   };
 }
 
-const executorOf = (ex: ProcessStageDef["executor"]): string =>
-  ex.kind === "agent"
-    ? `agent:${ex.agent_id}`
-    : ex.kind === "team"
-      ? `team:${ex.team_id}`
-      : ex.kind === "wait_until" || ex.kind === "tool"
-        ? ex.kind
-        : "apply";
+/** CR-103 · ô `executor` + phần draft riêng của loại (wait/tool) theo registry node. */
+function executorPart(
+  ex: ProcessStageDef["executor"],
+): Pick<StageDraft, "executor" | "wait" | "tool"> {
+  const node = feNodeOf(ex.kind) as FeNode;
+  return {
+    executor: node.draftExecutor(ex as never),
+    wait: emptyWait(),
+    tool: emptyTool(),
+    ...node.fromDef?.(ex as never),
+  };
+}
 
 export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
   const a = s.answerer;
@@ -80,9 +82,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     keyAuto: false,
     key: s.key,
     name: s.name,
-    executor: executorOf(s.executor),
-    wait: s.executor.kind === "wait_until" ? waitFromDef(s.executor) : emptyWait(),
-    tool: s.executor.kind === "tool" ? toolFromDef(s.executor) : emptyTool(),
+    ...executorPart(s.executor),
     branch: rulesToBranch(s.after.branch),
     remind: remindFromDef(rv?.remind_every_h),
     escalate: escalateFromDef(rv?.escalate),
@@ -108,13 +108,16 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
 }
 
 function executorDef(s: StageDraft): ProcessStageDef["executor"] {
-  if (isWait(s)) return waitToDef(s.wait);
-  return isTool(s) ? toolToDef(s.tool) : executorToDef(s.executor);
+  const kind = draftKindOf(s.executor);
+  return kind ? feNodeOf(kind).toDef(s) : executorToDef(s.executor);
 }
 
-/** Wait / Áp không rẽ nhánh (luật bị bỏ khi gửi). */
-const branchOf = (s: StageDraft): ProcessStageDef["after"]["branch"] =>
-  isWait(s) || s.executor === "apply" ? [] : branchToRules(s.branch, s.fields);
+/** Họ wait / apply (Chờ / Áp) không rẽ nhánh (luật bị bỏ khi gửi). */
+function branchOf(s: StageDraft): ProcessStageDef["after"]["branch"] {
+  const kind = draftKindOf(s.executor);
+  const family = kind ? feNodeOf(kind).family : null;
+  return family === "wait" || family === "apply" ? [] : branchToRules(s.branch, s.fields);
+}
 
 export function stageToInput(draft: StageDraft): ProcessStageDef {
   const s = normalizeTool(normalizeWait(normalizeApply(draft)));

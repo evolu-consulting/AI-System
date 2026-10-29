@@ -1,6 +1,7 @@
 // HUB-FR-133 · K1-AC05 · K1-AC07 · CR-073 · plan K1 §2.5, §3.5 · spec §3.0 (`/vector/add`), §3.4, §4 `snapshot.kh`: luật
 // thuần ghi `## Tóm tắt` vào KnowledgeHub — trích + cắt nội dung, subject/id ổn định, body, đích chốt lúc start. Không I/O.
 import { KH_BUDGET_CHARS, KH_SUMMARY_SECTION, KH_SUMMARY_WORDS } from "@ai/contracts/hub-admin";
+import { runsAsAgent } from "../processes/nodes/registry";
 import { normSection, sectionMap } from "../processes/runs/template.rules";
 
 const SUBJECT_MAX = 128;
@@ -75,7 +76,7 @@ export function planKhSnapshot(
   stages: readonly { executor: { kind: string } }[],
   targets: readonly SnapshotKhStage[],
 ): { stages: SnapshotKhStage[] } | null {
-  const out = stages.map((s, i) => (s.executor.kind === "agent" ? (targets[i] ?? null) : null));
+  const out = stages.map((s, i) => (runsAsAgent(s.executor.kind) ? (targets[i] ?? null) : null));
   return out.some((t) => t !== null) ? { stages: out } : null;
 }
 

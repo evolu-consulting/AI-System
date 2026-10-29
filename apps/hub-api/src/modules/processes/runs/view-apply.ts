@@ -9,6 +9,7 @@ import type {
   AutofixFailure,
   GitProvider,
 } from "@ai/contracts/hub-admin";
+import { hasNodeFamily, nodeFamily } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { iso, type Snap } from "./view-steps";
@@ -76,7 +77,7 @@ export async function applyViews(
   run: { id: string; tenantId: string },
   snap: Snap,
 ): Promise<Map<number, ApplyStageView>> {
-  if (!snap.stages.some((s) => s.executor.kind === "apply")) return new Map();
+  if (!hasNodeFamily(snap.stages, "apply")) return new Map();
   const rows = await tx.execute<Row>(sql`
     select distinct on (aa.stage_run_id) s.stage_idx, aa.mode, aa.status, aa.branch, aa.target_sha, aa.head_sha,
       aa.rebased, aa.provider, aa.pr_number, aa.pr_url, aa.auto_merge, aa.error_code, aa.conflict_files, aa.failures,
@@ -92,7 +93,7 @@ export async function applyViews(
   const out = new Map<number, ApplyStageView>();
   for (const r of rows) {
     const i = Number(r.stage_idx);
-    if (snap.stages[i]?.executor.kind === "apply") out.set(i, toApplyView(r));
+    if (nodeFamily(snap.stages[i]?.executor.kind ?? "") === "apply") out.set(i, toApplyView(r));
   }
   return out;
 }

@@ -27,6 +27,7 @@ import { listTools } from "../application/tools/list-tools.usecase";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
+import { toolKeysOf } from "../nodes/registry";
 import {
   autofixSourceKindMiss,
   copyFromTemplate,
@@ -129,9 +130,7 @@ export class DefsService {
 
   /** Kiểm định nghĩa theo tham chiếu của tenant đích (mẫu: agent/nhóm đang bật, không Group/user) + nguồn còn sống. */
   async #check(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
-    const toolKeys = input.stages.flatMap((s) =>
-      s.executor.kind === "tool" ? [s.executor.tool_key] : [],
-    );
+    const toolKeys = toolKeysOf(input.stages);
     throwIfInvalid(
       validateProcessDef(input, await loadDefRefs(tx, tenantId, toolKeys, this.d.packTools)),
     );

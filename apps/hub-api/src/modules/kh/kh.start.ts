@@ -5,6 +5,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { HandoffShape } from "../processes/defs/def.rules";
+import { agentIdOf as nodeAgentIdOf } from "../processes/nodes/registry";
 import { type KhAgentConn, khJobConnections, khSummaryTarget } from "./kh.agent.rules";
 import type { KhRuntime } from "./kh.mount";
 import { khUsableNow } from "./kh.rules";
@@ -23,10 +24,8 @@ type Row = {
   check_status: string;
 };
 
-const agentIdOf = (s: StartStage): string | null =>
-  s.executor.kind === "agent" && typeof s.executor.agent_id === "string"
-    ? s.executor.agent_id
-    : null;
+/** CR-103 · agent_id khi stage chạy bằng đúng một agent (registry loại node); còn lại null. */
+const agentIdOf = (s: StartStage): string | null => nodeAgentIdOf(s.executor);
 
 async function connsByAgent(tx: Tx, ids: readonly string[]): Promise<Map<string, Row[]>> {
   const out = new Map<string, Row[]>();

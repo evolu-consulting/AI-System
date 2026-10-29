@@ -8,6 +8,7 @@ import type {
   ProcessRunView,
   StageView,
 } from "@ai/contracts/chat";
+import { hasNodeFamily } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -175,8 +176,7 @@ export class ViewService {
   /** P-c2 · plan §6.6 · view full ⇒ gắn `apply` cho stage Áp (scope system SAU kiểm quyền; `view-apply.ts`). */
   async #apply(g: { view: ProcessRunView; tenantId: string; snap: Snap }): Promise<ProcessRunView> {
     const { view } = g;
-    if (view.access !== "full" || !g.snap.stages.some((s) => s.executor.kind === "apply"))
-      return view;
+    if (view.access !== "full" || !hasNodeFamily(g.snap.stages, "apply")) return view;
     const all = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
       applyViews(tx, { id: view.id, tenantId: g.tenantId }, g.snap),
     );

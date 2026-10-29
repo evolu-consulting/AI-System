@@ -8,6 +8,7 @@ import {
   type AutofixFailure,
   type AutofixStatus,
   effectiveApplyMode,
+  hasNodeFamily,
   type SourceKind,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -124,7 +125,7 @@ export async function autofixViews(
     const i = Number(r.stage_idx);
     if (snap.stages[i]?.autofix) out.set(i, toAutofixView(r));
   }
-  if (snap.stages.some((s) => s.executor.kind === "apply")) await enrichApplyMode(tx, run, out);
+  if (hasNodeFamily(snap.stages, "apply")) await enrichApplyMode(tx, run, out);
   return out;
 }
 
