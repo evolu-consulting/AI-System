@@ -7,20 +7,21 @@ migration: không
 phụ thuộc:
 ---
 ## Plan (ngắn)
-Xem `proposal.md` + `design.md`. Hai đợt: (1) R1 ∥ R2, (2) sau R1: R3 ∥ R4. Review + security một lượt cuối đợt;
+Xem `proposal.md` + `design.md`. Thứ tự: R1 → R2 → (R3 ∥ R4). Review + security một lượt cuối đợt;
 `test:frozen` + `test:all` + e2e một lần cuối.
 
 ## Việc
 - [ ] R1 `fnr-registry` (Opus, làn đầy đủ): `nodes/registry.ts` + 5 module node; lõi gọi registry; FE registry +
       `stage-convert`; test "kind ↔ registry" + test import; `test:frozen` + int processes + perf xanh, số đo trước/sau.
-- [ ] R2 `fnr-cond` (Sonnet): contract `when/conds/else_goto_step` + chuẩn hoá snapshot cũ; `domain/branch` đánh giá
-      AND/OR/else + input; `branch-def.rules` + parity; FE `BranchRuleRow`/`StageBranch`; unit + 1 int.
-- [ ] R3 `fnr-swap` (Sonnet, sau R1): `canSwap` thuần (contracts) + chọn loại node trong editor theo họ; unit.
-- [ ] R4 `fnr-showcase` (Sonnet, sau R1): node `set`, seed flow mẫu, trang `/processes/showcase`, mở route cho admin-web;
+- [ ] R2 `fnr-if` (Sonnet, sau R1): node `if` (họ control) — contract `IfExecutor`, `nodes/if` (launch + validate),
+      FE editor + node hình thoi trên canvas; unit + 1 int (Đúng/Sai/bỏ qua bước).
+- [ ] R3 `fnr-swap` (Sonnet, sau R2): `canSwap` thuần (contracts) + chọn loại node trong editor theo họ; unit.
+- [ ] R4 `fnr-showcase` (Sonnet, sau R2): node `set`, seed flow mẫu, trang `/processes/showcase`, mở route cho admin-web;
       unit + 1 int + file e2e (chạy cuối đợt).
 
 ## Quyết định trong lúc làm
 - 2026-10-29 người dùng: mở băng engine, làm cả 4; viết proposal theo OpenSpec trước khi code.
+- 2026-10-29 người dùng: if/else "chọn cách dùng long term" ⇒ node If trong registry (không viết lại engine đồ thị đợt này).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -31,12 +32,13 @@ Lõi engine không rẽ theo loại node; mỗi loại node là một module đ�
 - Kịch bản: khi thêm loại node mới thì chỉ thêm một schema contract, một module `nodes/<kind>` và một editor FE, không sửa lõi
 - Kịch bản: khi contract có loại node chưa đăng ký thì test registry đỏ
 
-#### Yêu cầu: Rẽ nhánh if/else
-Luật rẽ nhánh gồm nhiều điều kiện AND/OR trên field output của stage và input của run, có nhánh else.
-- Kịch bản: khi luật có `and` và mọi điều kiện đúng thì run nhảy tới `goto_step`, các bước giữa bị bỏ qua
-- Kịch bản: khi không luật nào khớp và có `else_goto_step` thì run nhảy tới bước else
-- Kịch bản: khi không luật nào khớp và không có else thì run sang bước kế
-- Kịch bản: khi run chạy theo snapshot cũ dạng `field/op/value` thì kết quả rẽ nhánh như trước
+#### Yêu cầu: Node If
+Node `if` (họ control) đứng riêng một bước, chạy tức thì, xét AND/OR trên field output của stage bước trước và input của run.
+- Kịch bản: khi điều kiện `and` đều đúng thì run nhảy tới `then_step`, các bước giữa bị bỏ qua
+- Kịch bản: khi điều kiện sai và có `else_step` thì run nhảy tới bước else
+- Kịch bản: khi điều kiện sai và không có `else_step` thì run sang bước kế
+- Kịch bản: khi hai node If nối tiếp thì run đi đúng nhánh của cả hai (if lồng)
+- Kịch bản: khi run chạy theo snapshot cũ có `after.branch` thì kết quả rẽ nhánh như trước
 
 #### Yêu cầu: Đổi node cùng họ
 Editor chỉ cho đổi loại node trong cùng họ (work/wait/apply) và khi field mà bước sau dùng vẫn còn.
@@ -51,4 +53,4 @@ Node `set` ghi field từ input/hằng không cần AI; trang `/processes/showca
 - Kịch bản: khi dịch vụ AI tạm ngưng thì flow mẫu vẫn chạy hết
 
 ## Việc còn lại
-Chờ người dùng duyệt proposal (5 câu hỏi trong `proposal.md`). Sau đó tạo các lát `fnr-*`.
+Đã duyệt 2026-10-29 (xem `proposal.md` "Quyết định"). Các lát `fnr-*` theo thứ tự trên.

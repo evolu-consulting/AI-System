@@ -40,30 +40,36 @@ Test hiện có là lưới an toàn; thêm một test "mọi kind trong contrac
 | work | agent, team, tool, set | sinh output (md + fields) |
 | wait | wait_until | không output field |
 | apply | apply | gắn sau stage tự-sửa, không đổi được |
+| control | if | không output; đổi được trong họ khi có thêm loại control |
 
 `canSwap(stage, newKind, def)`: cùng họ **và** mọi field mà def dùng từ stage này (luật rẽ nhánh của nó, `wait_until.from`
 của stage sau, `ToolArg.from` của stage sau) vẫn nằm trong `output.fields` (giữ nguyên khi đổi) — với `produces: "none"`
 thì không được có tham chiếu. Hàm thuần dùng chung FE/BE (đặt ở contracts), BE vẫn kiểm lại khi lưu bằng `def.rules`.
 
-## 3. Điều kiện if/else (R2)
+## 3. Node If (R2)
 ```ts
-BranchRule = { when: { op: "and"|"or", conds: Cond[1..6] }, goto_step }
-Cond = { source: "field"|"input", key, op: eq|ne|lt|le|gt|ge, value }
-after.branch = BranchRule[]   +   after.else_goto_step?: number
+IfExecutor = { kind: "if", when: { op: "and"|"or", conds: Cond[1..6] }, then_step: number, else_step: number | null }
+Cond = { from: { kind: "field", stage_key, field } | { kind: "input", key }, op: eq|ne|lt|le|gt|ge, value }
 ```
-- Đọc snapshot cũ `{field, op, value, goto_step}` ⇒ `{when:{op:"and",conds:[{source:"field",key:field,op,value}]}}`
-  (chuẩn hoá khi đọc; ghi luôn dạng mới).
-- Đánh giá: luật đầu tiên khớp thắng; không luật nào khớp ⇒ `else_goto_step` nếu có, không thì bước kế (như cũ).
-  Vẫn chỉ nhảy tới (`goto > step`), stage bị nhảy qua = `skipped` (join coi là xong) — không đổi.
-- Kiểu `Cond` dùng chung với `FlowWhen` của gói contracts (cùng file contracts), gói chuyển sang dùng sau, không bắt buộc
-  trong đợt này.
+- Họ `control`, `produces: "none"`; một node If **đứng một mình trong bước** (không song song), `after: auto`,
+  `real_action: false`, không output.template/fields (contract cho phép rỗng khi kind = `if`).
+- Chạy: launcher gọi `nodes/if.launch` ⇒ đánh giá trong tx (đọc fields đã lưu của stage nguồn, input run) ⇒ chốt stage
+  `done` + ghi lý do (luật nào khớp) ⇒ nhảy như rẽ nhánh hiện có: Đúng ⇒ `then_step`, Sai ⇒ `else_step ?? bước kế`;
+  stage giữa bị `skipped` (join coi là xong). Dùng lại `evaluateBranch`/`skippedStages`/`effectivePrevStep`.
+- Kiểm def: `then_step`/`else_step` > bước của If và < số bước; stage nguồn ở bước nhỏ hơn và có field khai báo đúng kiểu;
+  op thứ tự không dùng cho string; đích có `real_action` ⇒ như PD2-R12 (bước trước đích phải có gate review).
+- `after.branch` cũ giữ nguyên (không bỏ); editor mới khuyến khích node If.
+- Kiểu `Cond`/`when` đặt trong contracts, gói contracts (`FlowWhen`) chuyển sang dùng sau (không bắt buộc đợt này).
+- Canvas: node If hình thoi, hai cạnh "Đúng"/"Sai" tới bước đích (dùng lại `BranchEdge`).
+- Lâu dài: engine đồ thị sau này giữ nguyên `IfExecutor`, chỉ đổi `then_step/else_step` thành cạnh.
 
 ## 4. Showcase (R4)
 - Node `set`: `{kind:"set", values:[{key, from:{input:key}|{const:value}}]}`; chạy đồng bộ trong tx (không job, không
   AI), ghi `fields` + render `output.template`. Họ `work`.
 - Flow mẫu "Duyệt đề nghị chi (mẫu)" seed bằng `tools/scripts/src/seed-flow-showcase.ts` (cờ `--apply`, chỉ tenant demo):
   Bước 1 `set` (amount, purpose từ input) → Bước 2 song song: "Pháp chế" ∥ "Kế toán" (`set` + cổng duyệt nhóm) →
-  join → if `amount > 100.000.000` AND `purpose = "mua sắm"` → Bước 3 "Giám đốc duyệt", else → Bước 4 "Hoàn tất".
+  join → Bước 3 node If `amount > 100.000.000` AND `purpose = "mua sắm"` → Bước 4 "Giám đốc duyệt", Sai → Bước 5
+  "Hoàn tất".
 - Trang `/processes/showcase`: canvas chỉ đọc (dùng `ProcessCanvas`), form input + "Chạy thử", dòng thời gian
   (`RunProgress`/`RunLog` sẵn có, cập nhật qua stream hiện có), nút Đạt/Chưa đạt khi người xem trong nhóm duyệt, khung
   "Đổi node" gọi `canSwap` để minh hoạ (không lưu).

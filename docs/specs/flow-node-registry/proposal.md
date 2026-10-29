@@ -23,9 +23,11 @@ ngày: 2026-10-29
 1. **R1 · Registry node (lõi không biết loại node).** Mỗi loại node là một module `nodes/<kind>/` cài một interface chung
    (kiểm def, chạy, chốt, dựng view). Lõi (bước, join, rẽ nhánh, hẹn giờ, thử lại, cổng duyệt) chỉ gọi registry.
    Không đổi hành vi, không đổi contract API, không migration.
-2. **R2 · Điều kiện if/else.** Luật rẽ nhánh dùng `when: {op: and|or, conds[]}` (cùng dạng với `FlowWhen` của gói
-   contracts) + `else_goto_step` tuỳ chọn; nguồn điều kiện = field output của stage + input của run. Snapshot cũ
-   (`field/op/value`) vẫn đọc được.
+2. **R2 · Node If (if/else).** Loại node mới `if`, họ `control`, đứng ở một bước riêng, chạy tức thì (không AI, không
+   output): điều kiện `when: {op: and|or, conds[]}` (cùng dạng `FlowWhen` của gói contracts) trên field output của các
+   stage bước trước + input của run ⇒ nhánh Đúng `then_step` / Sai `else_step` (bước kế nếu vắng). Nối tiếp nhiều node If
+   = if lồng. Luật `after.branch` cũ giữ nguyên (snapshot cũ chạy như trước). Canvas vẽ node If hình thoi.
+   Lâu dài: khi chuyển engine sang đồ thị (node + cạnh) thì node If giữ nguyên, chỉ thay lõi.
 3. **R3 · Đổi node cùng họ.** Mỗi loại node thuộc một **họ** (`work` | `wait` | `apply`). Trong editor, đổi loại node
    chỉ cho trong cùng họ và khi node mới vẫn cung cấp đủ field mà bước sau dùng (rẽ nhánh, `wait_until.from`). Giữ nguyên
    tên, bước, cổng duyệt, người trả lời, output; chỉ đặt lại cấu hình riêng của node. Run đang chạy không bị ảnh hưởng
@@ -38,7 +40,7 @@ ngày: 2026-10-29
 ## Không làm
 - Engine động (thêm loại node lúc chạy, plugin ngoài) — người dùng: "hiện tại không cần dynamic".
 - Đồ thị tự do, > 3 nhánh song song, gộp "nhánh nào xong trước", nhánh lùi qua điều kiện (lùi vẫn chỉ qua `back_to_steps`).
-- If/else thành **node riêng**: giữ là luật trên stage (đề xuất mặc định câu 1) để không vỡ mô hình bước/join.
+- Viết lại engine thành đồ thị (node + cạnh tự do, ~1–1,5 tuần) — để CR sau; node If đợt này dùng lại được.
 - Mở băng chat-web (hộp thư quy trình, phòng) — chỉ mở route editor/run cho admin-web.
 
 ## Ảnh hưởng
@@ -55,10 +57,10 @@ ngày: 2026-10-29
 Rủi ro: R1 chạm đường nóng của engine (launcher/stage-driver) đang chạy luồng duyệt HĐ thật ⇒ làn đầy đủ: Opus, không đổi
 hành vi, `test:frozen` + int processes + perf hiện có phải xanh, số đo trước/sau.
 
-## Câu hỏi (mặc định đề xuất in đậm)
-1. If/else là luật trên stage hay node riêng? — **Luật trên stage + `else`**.
-2. Điều kiện đọc được gì? — **Field output của stage + input của run**.
-3. Trang showcase ở đâu, ai xem? — **admin-web `/processes/showcase`, admin tenant + admin platform; mở 2 route
-   `/process-defs`, `/process-runs` cho admin-web (chat-web vẫn đóng băng)**.
-4. Node `set` hiện trong editor cho mọi flow? — **Có**.
-5. Đổi node khác họ? — **Không**.
+## Quyết định (người dùng chốt 2026-10-29)
+1. If/else: **node If trong registry (họ `control`)** — chọn vì dùng lâu dài được (giữ nguyên khi lên engine đồ thị).
+2. Điều kiện đọc: **field output của stage bước trước + input của run**.
+3. Showcase: **admin-web `/processes/showcase`, admin tenant + admin platform; mở `/process-defs`, `/process-runs` cho
+   admin-web (chat-web vẫn đóng băng)**.
+4. Node `set` hiện trong editor cho mọi flow (người dùng ghi "4", hiểu là A).
+5. Đổi node chỉ trong cùng họ.
