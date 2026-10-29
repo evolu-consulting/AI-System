@@ -10,6 +10,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
   type XYPosition,
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -38,9 +39,8 @@ import type { StageView } from "./stage-view";
 
 const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode, if: IfNode };
 const edgeTypes = { back: BackEdge, branch: BranchEdge };
-// UAT L3: không thu dưới 0.65 (chữ ≥ ~9 px); nhiều bước thì neo về mép trái và để người dùng kéo ngang (pan).
-const FIT_MIN_ZOOM = 0.65;
-const FIT = { padding: 0.1, maxZoom: 1, minZoom: FIT_MIN_ZOOM } as const;
+// fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
+const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
 // `compact` (trang showcase, chỉ đọc): canvas thấp + cho thu nhỏ hơn để cả flow vừa khung và nằm giữa.
 const FIT_COMPACT = { padding: 0.02, maxZoom: 1, minZoom: 0.4 } as const;
 const reduceMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -133,8 +133,10 @@ function Flow(p: ProcessCanvasProps) {
         : g.nodes,
     [g.nodes, drag],
   );
-  const stepsKey = `${g.steps}:${p.views.length}:${p.fitKey ?? 0}`;
-  // chỉ khi số bước / số giai đoạn đổi (`rf` ổn định)
+  // khung đổi cỡ (mở/đóng panel giai đoạn, resize cửa sổ) ⇒ fit lại; còn lại giữ pan/zoom của người dùng
+  const box = useStore((s) => `${Math.round(s.width / 8)}x${Math.round(s.height / 8)}`);
+  const stepsKey = `${g.steps}:${p.views.length}:${p.fitKey ?? 0}:${box}`;
+  // chỉ khi số bước / số giai đoạn / "Sắp xếp" / cỡ khung đổi (`rf` ổn định)
   // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
   useEffect(() => {
     const id = window.setTimeout(
@@ -142,8 +144,9 @@ function Flow(p: ProcessCanvasProps) {
         void rf
           .fitView({ ...(p.compact ? FIT_COMPACT : FIT), duration: reduceMotion() ? 0 : 200 })
           .then(() => {
+            // quá rộng cho cả mức zoom nhỏ nhất ⇒ neo mép trái (bước đầu luôn thấy), phần còn lại kéo ngang
             const v = rf.getViewport();
-            if (!p.compact && v.zoom <= FIT_MIN_ZOOM + 0.001) void rf.setViewport({ ...v, x: 16 });
+            if (!p.compact && v.zoom <= FIT.minZoom + 0.001) void rf.setViewport({ ...v, x: 16 });
           }),
       60,
     );
