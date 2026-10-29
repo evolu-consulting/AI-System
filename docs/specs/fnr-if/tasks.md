@@ -7,7 +7,7 @@ migration: không
 phụ thuộc: fnr-registry (R1) cho đợt B
 ---
 ## Plan (ngắn)
-Hai đợt. **A (xong, không đụng lõi engine)**: contract `process-if.ts`, luật thuần `domain/if/if.rules.ts`, FE `StageIf` +
+Hai đợt, cả hai xong. **A (không đụng lõi engine)**: contract `process-if.ts`, luật thuần `domain/if/if.rules.ts`, FE `StageIf` +
 `IfNode` + helper `lib/if-form.ts` + i18n. **B (sau khi R1 gộp)**: nối vào union `executor`, `nodes/if`, def validate, StageForm,
 canvas, 1 int. Spec: `docs/specs/flow-node-registry/design.md` §3.
 
@@ -33,14 +33,12 @@ chưa thêm `if` vào union executor (R1 đang refactor). StageForm/ProcessCanva
 - Path lỗi: `stages.i.executor` (đứng một mình / auto / real_action), `.when.conds`, `.when.conds.j.{from,op,value}`, `.then_step`, `.else_step`.
 - FE nháp dùng `yes`/`no` (không dùng `then`/`else` vì biome `noThenProperty`); bước đếm từ 1 như `BranchDraft`; nguồn mã hoá `field|<stage>|<field>` / `input|<key>`.
 
-## Việc đợt B (sau R1)
-1. `packages/contracts/src/hub-admin/processes.ts`: thêm `IfExecutorSchema` vào union `executor`; cho phép `output.template/fields` rỗng khi `kind = if`; thêm `IF_INVALID` vào mã lỗi def; mở rộng `process-steps`/path nếu cần.
-2. `apps/hub-api/.../processes/nodes/if/` (module node đăng ký `registry.ts`): `launch` (đọc fields stage nguồn + input run trong tx, `evaluateWhen`, chốt stage `done` + lý do, nhảy bằng `skippedStages`/`effectivePrevStep`/`ifTarget`) + `validate` gọi `ifDefIssues`.
-3. `defs/def.rules.ts` + `defs/defs.service.ts`: map stage If → `IfStageShape`, gọi `ifDefIssues(stages, inputs)`; mapper contract (snake_case) → domain; thêm `if-def-parity.test.ts` (contract schema ≡ domain).
-4. `runs/` (launcher): nhánh stage `executor.kind = "if"` qua registry; run theo snapshot cũ `after.branch` giữ nguyên.
-5. `apps/admin-web/.../lib/stage-convert.ts` (draft ⇄ contract, `ifToDraft`/`draftToIf`), `lib/draft-types.ts` (StageDraft có `if`), `lib/error-keys`/`domain/error-keys.ts` (map `IF_INVALID` → `process.admin.editor.stage.if.err.IF_INVALID`), `StageForm.tsx` (render `StageIf` khi kind = if, nguồn từ `condSources`, bước từ `gotoSteps`), `ProcessCanvas.tsx`/`canvas-layout.ts`/`canvas-edges.ts` (đăng ký `IfNode`, cạnh `BranchEdge` từ handle `yes`/`no`), chọn loại node "Nếu" trong editor.
-6. 1 int (Đúng / Sai có else / Sai không else / if lồng / snapshot cũ `after.branch`) + test registry "kind ↔ registry".
-
+## Đợt B (xong)
+- Contract: `IfExecutorSchema` vào union `executor` (`processes.ts`), `IF_INVALID` (`PROCESS_DEF_RULES`), `if` ở `EXECUTOR_KINDS`/`NODE_FAMILY_OF` (control)/`NODE_PRODUCES` (none), `ifStageIssues` (FE live, parity với domain). `WaitUntilExecutorSchema` tách sang `process-wait.ts` để `processes.ts` ≤ 400 dòng.
+- BE: `nodes/if/{node,launch}.ts` đăng ký registry; `defs/if-stage.map.ts` (mapper contract → domain, dùng chung node + parity test); `defs/if-def-parity.test.ts`; `StepRepo.ifFacts` (1 câu: fields output + input run, `adapters/runs/if-facts.repo.ts`); `settleStep` đánh giá node If trong nhánh rẽ nhánh hiện có (luật 1 = Đúng, luật 2 = Sai có else; Sai không else ⇒ bước kế).
+- FE: `if` trong FE registry, `StageDraft.ifx`, `stage-convert`/`d2-validate`/`error-keys`, `StageForm` render `StageIfForm`, canvas `IfNode` (loại node `if`) + cạnh `BranchEdge` nhãn Đúng/Sai (handle `yes`/`no`). Không thêm bộ chọn loại node (R3 dựng từ FE registry).
+- Test: `tests/acceptance/P-d/d2/if.int.test.ts` (Đúng / Sai+else / Sai không else / nguồn input + or / if lồng); `test:int:par` processes + P-d/d2 xanh (gồm `branch.int.test.ts` = snapshot `after.branch` cũ); seed showcase dry-run hợp lệ.
+- Quyết định đợt B: stage If chốt `done` ở `nodes/if/launch.ts` (không output, không KH summary) rồi `settleStepTx`; kick bước đích nhờ `more: true`. Chuỗi If liên tiếp > 3 trong một lần kick cần thêm kick (vòng `kickOnce` giới hạn `PROCESS_STEP_STAGES_MAX + 1`). Hub ép template/mục/answerer của stage If khi lưu (không nới `output.template min(1)` của schema). Input kiểu `text` đọc từ `inputs[].text`, kiểu khác từ `value`.
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 

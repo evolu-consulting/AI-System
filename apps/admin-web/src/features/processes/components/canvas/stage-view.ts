@@ -34,6 +34,15 @@ export type StageView = {
 const hasStageError = (errors: DraftErrors, i: number): boolean =>
   Object.keys(errors).some((k) => k.startsWith(`stages.${i}.`));
 
+/** CR-103 · node If: bước Đúng / Sai (0-based) cho canvas; stage khác ⇒ null. */
+const ifsOf = (s: StageDraft): StageView["ifs"] =>
+  isIf(s)
+    ? {
+        yes: s.ifx.yes === null ? null : s.ifx.yes - 1,
+        no: s.ifx.no === null ? null : s.ifx.no - 1,
+      }
+    : null;
+
 export function stageViews(
   stages: readonly StageDraft[],
   errors: DraftErrors,
@@ -61,12 +70,7 @@ export function stageViews(
     tool: s.executor === "tool",
     sideEffect: s.executor === "tool" && tools.get(s.tool.key)?.side_effect === true,
     branch: branchOff(s) ? [] : s.branch.map((b) => (b.goto === null ? null : b.goto - 1)),
-    ifs: isIf(s)
-      ? {
-          yes: s.ifx.yes === null ? null : s.ifx.yes - 1,
-          no: s.ifx.no === null ? null : s.ifx.no - 1,
-        }
-      : null,
+    ifs: ifsOf(s),
     hasError: hasStageError(errors, i),
   }));
 }

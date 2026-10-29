@@ -20,8 +20,8 @@ import {
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
-import { SetExecutorSchema } from "./process-set";
 import { IfExecutorSchema } from "./process-if";
+import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
   AfterBranchSchema,
