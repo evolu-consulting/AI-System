@@ -91,10 +91,9 @@ function badCondCell(c: IfCond, x: Ctx): string | null {
 /** Đích hợp lệ: nguyên, > bước If, < số bước; đích có `real_action` ⇒ bước ngay trước đích phải toàn gate review (PD2-R12). */
 function targetOk(g: number, s: IfStageShape, x: Ctx): boolean {
   if (!Number.isInteger(g) || g <= s.step || g >= x.stepCount) return false;
-  const real = x.stages.some((t) => t.step === g && t.realAction);
-  if (!real) return true;
-  const prev = x.stages.filter((t) => t.step === g - 1);
-  return prev.length > 0 && prev.every((t) => t.afterKind === "review" && t.ifExec === null);
+  // Runtime (`realActionPre` + `effectivePrevStep`): bước trước có hiệu lực của đích nhảy tới = bước If (auto, không phải gate
+  // review) ⇒ đích `real_action` luôn hỏng ⇒ chặn mọi đích `real_action` (cả `else_step` ngầm = bước kế).
+  return !x.stages.some((t) => t.step === g && t.realAction);
 }
 
 /** IF_INVALID cho mọi stage If: đứng một mình trong bước, `after = auto`, `real_action = false`, ≤ 6 điều kiện, đích/nguồn hợp lệ. */

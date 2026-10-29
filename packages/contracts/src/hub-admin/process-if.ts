@@ -91,11 +91,8 @@ function targetOk(g: unknown, x: IfCtx): boolean {
   const own = x.steps[x.i] as number;
   const count = x.steps.length === 0 ? 0 : Math.max(...x.steps) + 1;
   if (typeof g !== "number" || !Number.isInteger(g) || g <= own || g >= count) return false;
-  if (!x.stages.some((t, k) => x.steps[k] === g && t.real_action)) return true;
-  const prev = x.stages.filter((_, k) => x.steps[k] === g - 1);
-  return (
-    prev.length > 0 && prev.every((t) => t.after.kind === "review" && t.executor.kind !== "if")
-  );
+  // Khớp runtime (`effectivePrevStep`): bước trước có hiệu lực của đích nhảy tới là bước If (auto) ⇒ đích `real_action` bị chặn.
+  return !x.stages.some((t, k) => x.steps[k] === g && t.real_action);
 }
 
 /** IF_INVALID cho stage `executor.kind = "if"`: một mình trong bước, `after = auto`, `real_action = false`, ≤ 6 điều kiện, nguồn/đích hợp lệ. */

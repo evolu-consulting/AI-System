@@ -128,4 +128,14 @@ describe("CR-103 · node If", () => {
     expect(await status(runId, 3)).toBe("skipped"); // s2 (bước 3) bị nhảy qua
     expect((await runRow(c.sql, runId))?.current_step).toBe(4);
   }, 30_000);
+  it("6 bước If liên tiếp xong trong MỘT lượt kick (không chờ quét mồ côi)", async () => {
+    await needD2(c);
+    const ifs = Array.from({ length: 6 }, (_, k) =>
+      ifStage(`k${k}`, 1 + k, [fieldCond("gt", 1)], 2 + k, null),
+    );
+    const runId = await runTo(await def(ifs), 150);
+    const job = await nextStageJob(c, runId); // chuỗi 6 If chạy hết, s2 (bước 7) có job
+    expect((await stageOf(c.sql, runId, 7))?.current_run_id).toBe(job.runId);
+    expect((await runRow(c.sql, runId))?.current_step).toBe(7);
+  }, 30_000);
 });

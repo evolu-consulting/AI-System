@@ -1,7 +1,11 @@
 // HUB-FR-105 · HUB-FR-106 · D1 · D3 · D10 · BR-23/24 · PF1 · `StageLauncher.kick`: tx scope `user` người bắt đầu khoá run →
 // kiểm lại quyền (grant agent / nhóm bật) → tạo `hub.runs` stage (RunService) → sau COMMIT `launch` driver stage. Idempotent
 // theo `stage_runs.current_run_id` (P1-29/63). Mất quyền ⇒ needs_decision{permission_lost|user_inactive}. Thứ tự khoá §10.
-import { PROCESS_STEP_STAGES_MAX, type ProcessRunStatus } from "@ai/contracts/chat";
+import {
+  PROCESS_STAGES_MAX,
+  PROCESS_STEP_STAGES_MAX,
+  type ProcessRunStatus,
+} from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -42,11 +46,25 @@ async function alreadyRunning(tx: Tx, stage: StageRow): Promise<boolean> {
 
 /** D5 · kick = khởi động LẦN LƯỢT mọi stage `queued` của bước hiện tại (mỗi stage một tx), dừng khi `skip`. */
 async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promise<void> {
-  for (let i = 0; i <= PROCESS_STEP_STAGES_MAX; i++) if (!(await kickOnce(d, self, runId))) return;
+  // CR-103 · node đồng bộ (if/set) chốt stage ngay ⇒ chuỗi nhiều bước liên tiếp không được chờ quét mồ côi: lượt kick đồng bộ
+  // (`events` + `more`) đếm theo trần RIÊNG (≤ số stage tối đa của def), không ăn trần stage-song-song của loại bất đồng bộ.
+  let asyncRuns = 0;
+  let sync = 0;
+  while (asyncRuns <= PROCESS_STEP_STAGES_MAX && sync <= PROCESS_STAGES_MAX) {
+    const r = await kickOnce(d, self, runId);
+    if (!r.more) return;
+    if (r.sync) sync++;
+    else asyncRuns++;
+  }
 }
 
 /** D10 · một lượt kick của run (idempotent, khoá `process_runs` FOR UPDATE trước). `false` ⇒ không còn gì để làm. */
-async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Promise<boolean> {
+async function kickOnce(
+  d: LauncherDeps,
+  self: StageLauncher,
+  runId: string,
+): Promise<{ more: boolean; sync: boolean }> {
+  const none = { more: false, sync: false };
   // P-R10 · kiểm lại quyền mỗi stage trên cấu hình MỚI NHẤT đã COMMIT (không chờ timer poll nền): thu hồi grant bump
   // `hub_config_version` ⇒ `poll` nạp lại ⇒ `prepareProcess` thấy mất grant (P1-24). Lỗi poll không chặn kick.
   // T19-perf · đọc đầu run (scope system) ∥ poll cấu hình — độc lập, kết nối riêng; cả hai xong TRƯỚC tx khoá run.
@@ -54,22 +72,22 @@ async function kickOnce(d: LauncherDeps, self: StageLauncher, runId: string): Pr
     withHubScope(d.db, { kind: "system" }, (tx) => headOf(tx, runId)),
     d.config.poll().catch(() => {}),
   ]);
-  if (!sysHead || isTerminal(sysHead.status as ProcessRunStatus)) return false;
+  if (!sysHead || isTerminal(sysHead.status as ProcessRunStatus)) return none;
   const u: AuthUser = { userId: sysHead.started_by, tenantId: sysHead.tenant_id, role: "member" };
   const result = await withHubScope(d.db, { kind: "user", ...u }, (tx) => plan(d, tx, u, runId));
   if (result.kind === "events") {
     await publishUserEvents(d.redis, result.events, d.log);
     await d.postThread(runId).catch(() => {});
-    return result.more === true;
+    return { more: result.more === true, sync: true };
   }
-  if (result.kind !== "launch") return false;
+  if (result.kind !== "launch") return none;
   // m2 · stage tool không bao giờ rơi về `stageDriver`; thiếu `toolDriver` đã quyết `tool_failed` ở `plan`.
   const driver = result.toolLink
     ? d.toolDriver?.(result.toolLink)
     : stageDriver(d, self, { useSession: result.useSession });
-  if (!driver) return false;
+  if (!driver) return none;
   await d.runs.launch(result.prepared, result.files as never, { driver });
-  return result.more === true;
+  return { more: result.more === true, sync: false };
 }
 
 /** D3/D5 · stage `queued` nhỏ nhất của bước hiện tại chưa có `hub.runs` chạy (run đã khoá); `more` = còn stage queued sau nó. */

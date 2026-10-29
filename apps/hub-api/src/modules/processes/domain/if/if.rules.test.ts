@@ -129,12 +129,12 @@ describe("ifDefIssues", () => {
       ["stages.1.executor.when.conds"],
     ],
     [
-      "đích real_action mà bước trước đích không phải gate review",
+      "đích then real_action (bước trước đích không phải gate review)",
       base(ok, {}, []).map((s) => (s.key === "c" ? { ...s, realAction: true } : s)),
       ["stages.1.executor.then_step"],
     ],
     [
-      "đích real_action, bước trước đích là gate review",
+      "đích then real_action dù bước trước đích là gate review (runtime: bước trước có hiệu lực = If)",
       base(ok).map((s) =>
         s.key === "c"
           ? { ...s, realAction: true }
@@ -142,7 +142,12 @@ describe("ifDefIssues", () => {
             ? { ...s, afterKind: "review" as const }
             : s,
       ),
-      [],
+      ["stages.1.executor.then_step"],
+    ],
+    [
+      "đích else ngầm (bước kế) real_action",
+      base(ok).map((s) => (s.key === "b" ? { ...s, realAction: true } : s)),
+      ["stages.1.executor.else_step"],
     ],
   ];
   for (const [name, stages, want] of cases) it(name, () => expect(paths(stages)).toEqual(want));
