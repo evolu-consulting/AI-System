@@ -7,7 +7,7 @@ import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.por
 import { toolSwitchReader } from "../adapters/tools/tool-switch.repo";
 import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
 import type { ToolDefShape } from "../domain/defs/tool-def.rules";
-import type { DefRefs } from "./def.rules";
+import type { DefRefs } from "./def-refs";
 
 type Name = { vi: string; en: string };
 export type TeamRow = {

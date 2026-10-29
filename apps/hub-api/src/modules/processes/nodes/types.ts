@@ -6,7 +6,7 @@ import type {
   ProcessDefInput,
   ProcessDefRule,
 } from "@ai/contracts/hub-admin";
-import type { DefRefs, RefMiss } from "../defs/def.rules";
+import type { DefRefs, RefMiss } from "../defs/def-refs";
 
 export type DefStage = ProcessDefInput["stages"][number];
 export type DefExecutor<K extends ExecutorKind> = Extract<DefStage["executor"], { kind: K }>;

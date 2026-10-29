@@ -28,14 +28,24 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
       23,
       "tool_failed",
     ]);
-    expect(chat.EXECUTOR_KINDS).toEqual(["agent", "team", "apply", "wait_until", "tool"]);
+    // CR-103 nối cuối `set`, `if`: tiền tố 5 giá trị cũ giữ nguyên.
+    expect(chat.EXECUTOR_KINDS?.slice(0, 5)).toEqual([
+      "agent",
+      "team",
+      "apply",
+      "wait_until",
+      "tool",
+    ]);
+    expect(chat.EXECUTOR_KINDS?.slice(5)).toEqual(["set", "if"]);
   });
   it("AC-H44 · PD2-C01 · PROCESS_DEF_RULES.slice(17) = [TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]; PROCESS_REF_KINDS cuối tool", () => {
-    expect(ha.PROCESS_DEF_RULES?.slice(17)).toEqual([
+    // CR-103 nối cuối SET_INVALID, IF_INVALID: đoạn P-d2 (17..19) giữ nguyên.
+    expect(ha.PROCESS_DEF_RULES?.slice(17, 20)).toEqual([
       "TOOL_INVALID",
       "TOOL_SIDE_EFFECT",
       "BRANCH_INVALID",
     ]);
+    expect(ha.PROCESS_DEF_RULES?.slice(20)).toEqual(["SET_INVALID", "IF_INVALID"]);
     expect(ha.PROCESS_REF_KINDS).toEqual(["agent", "team", "group", "user", "source", "tool"]);
   });
   it("AC-H45 · PD2-C01 · ROOM_PROCESS_KINDS (8) cuối branch", () => {

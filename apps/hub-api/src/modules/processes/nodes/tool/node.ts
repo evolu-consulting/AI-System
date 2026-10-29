@@ -6,7 +6,7 @@ import {
   type ProcessDefInput,
   resolveSteps,
 } from "@ai/contracts/hub-admin";
-import type { DefRefs } from "../../defs/def.rules";
+import type { DefRefs } from "../../defs/def-refs";
 import { type ToolStageShape, toolStageIssues } from "../../domain/defs/tool-def.rules";
 import type { ArgSource } from "../../domain/tools/tool-run.rules";
 import type { DefIssue, DefStage, NodeSpec } from "../types";

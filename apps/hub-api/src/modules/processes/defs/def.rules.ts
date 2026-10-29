@@ -12,22 +12,11 @@ import {
 } from "@ai/contracts/hub-admin";
 import { branchStageIssues } from "../domain/branch/branch-def.rules";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
-import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
-import type { ToolDefShape } from "../domain/defs/tool-def.rules";
 import { executorRefMiss, nodeDefIssues, nodeSpecOf, normalizeStage } from "../nodes/registry";
 import { normSection, sectionMap } from "../runs/template.rules";
+import type { DefRefs, RefKind, RefMiss } from "./def-refs";
 
-export type DefRefs = {
-  agentIds: ReadonlySet<string>;
-  teamIds: ReadonlySet<string>;
-  groupIds: ReadonlySet<string>;
-  userIds: ReadonlySet<string>;
-  /** HUB-FR-143 · nhóm → chế độ + mục từng thành viên (vắng ⇒ bỏ kiểm mục bắt buộc stage team). */
-  teams?: ReadonlyMap<string, TeamSectionsInfo>;
-  /** P-d2 · D2-14 · TT-R05 · tool khả dụng của tenant (key → tham số); vắng/def mẫu ⇒ rỗng ⇒ stage tool = REF_INVALID. */
-  tools?: ReadonlyMap<string, ToolDefShape>;
-};
-export type RefKind = "agent" | "team" | "group" | "user" | "source" | "tool";
+export type { DefRefs, RefKind, RefMiss };
 export type DefCheck =
   | { ok: true }
   | { ok: false; code: "PROCESS_DEF_INVALID"; paths: string[]; rules: ProcessDefRule[] }
@@ -35,7 +24,6 @@ export type DefCheck =
   | { ok: false; code: "PROCESS_REF_INVALID"; path: string; ref: RefKind };
 
 type Stage = ProcessDefInput["stages"][number];
-export type RefMiss = { path: string; ref: RefKind };
 
 /** Tham chiếu đầu tiên của một stage không có trong `refs` (executor → Group kiểm → người trả lời). */
 function stageRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {

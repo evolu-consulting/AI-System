@@ -1,7 +1,7 @@
 // CR-103 · R1 fnr-registry · design §1: registry loại node (phần THUẦN). Lõi (`defs/`, `runs/`, `kh/`…) chỉ hỏi loại node qua
 // đây, không so `executor.kind` và không import `nodes/<kind>/*`. Phần chạy: `registry.launch.ts`.
 import type { ExecutorKind, ProcessDefInput } from "@ai/contracts/hub-admin";
-import type { DefRefs, RefMiss } from "../defs/def.rules";
+import type { DefRefs, RefMiss } from "../defs/def-refs";
 import { agentNode } from "./agent/node";
 import { applyNode } from "./apply/node";
 import { ifNode } from "./if/node";
