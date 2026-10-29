@@ -39,48 +39,55 @@ type LayoutStage = Pick<Stepped, "uid" | "step" | "backTo" | "after"> & {
   ifs?: { yes: number | null; no: number | null } | null;
 };
 
-/** P-d2 · cạnh nét đứt từ giai đoạn tới tiêu đề bước đích, một cạnh mỗi luật hợp lệ (đích > bước nguồn, có thật). */
-function branchEdges(stages: readonly LayoutStage[], steps: number): LayoutEdge[] {
+type Cols = { cols: number[][]; uids: string[] };
+
+/** P-d2 · cạnh nét đứt từ giai đoạn tới tiêu đề bước đích, một cạnh mỗi luật hợp lệ (đích > bước nguồn, có thật). Node If dùng `ifEdges`. */
+function branchEdges(stages: readonly LayoutStage[], steps: number, c: Cols): LayoutEdge[] {
   return stages.flatMap((s) =>
-    ifEdges(s, steps).concat(
-      (s.branch ?? []).flatMap((g, k) =>
-        g !== null && g > s.step && g < steps
-          ? [
-              {
-                id: `${s.uid}>${headerId(g)}#${k}`,
-                source: s.uid,
-                target: headerId(g),
-                kind: "branch" as const,
-                rule: k + 1,
-              },
-            ]
-          : [],
-      ),
-    ),
+    s.ifs
+      ? ifEdges(s, steps, c)
+      : (s.branch ?? []).flatMap((g, k) =>
+          g !== null && g > s.step && g < steps
+            ? [
+                {
+                  id: `${s.uid}>${headerId(g)}#${k}`,
+                  source: s.uid,
+                  target: headerId(g),
+                  kind: "branch" as const,
+                  rule: k + 1,
+                },
+              ]
+            : [],
+        ),
   );
 }
 
-/** CR-103 · node If: cạnh Đúng tới header `then`; cạnh Sai tới header `else` (else vắng / = bước kế ⇒ đi cạnh tiến thường). */
-function ifEdges(s: LayoutStage, steps: number): LayoutEdge[] {
+/**
+ * CR-103 · node If: ĐÚNG HAI cạnh có nhãn tới giai đoạn đầu của bước đích (không tới tiêu đề, không cạnh tiến thường):
+ * Đúng → `then`, Sai → `else` (vắng ⇒ bước kế). Đích không hợp lệ (≤ bước If, ngoài phạm vi, bước rỗng) ⇒ bỏ cạnh đó.
+ */
+function ifEdges(s: LayoutStage, steps: number, c: Cols): LayoutEdge[] {
   const f = s.ifs;
   if (!f) return [];
-  const mk = (side: "yes" | "no", g: number | null): LayoutEdge[] =>
-    g !== null && g > s.step && g < steps && (side === "yes" || g !== s.step + 1)
-      ? [
+  const mk = (side: "yes" | "no", g: number | null): LayoutEdge[] => {
+    const to = g !== null && g > s.step && g < steps ? c.cols[g]?.[0] : undefined;
+    return to === undefined
+      ? []
+      : [
           {
-            id: `${s.uid}>${headerId(g)}#${side}`,
+            id: `${s.uid}>${c.uids[to]}#${side}`,
             source: s.uid,
-            target: headerId(g),
+            target: c.uids[to] as string,
             kind: "branch",
             rule: side === "yes" ? 1 : 2,
             side,
           },
-        ]
-      : [];
-  return [...mk("yes", f.yes), ...mk("no", f.no)];
+        ];
+  };
+  return [...mk("yes", f.yes), ...mk("no", f.no ?? s.step + 1)];
 }
-
-function forwardEdges(cols: number[][], uids: string[]): LayoutEdge[] {
+/** Cạnh tiến thường giữa hai cột; stage If đứng một mình trong bước tự vẽ hai cạnh Đúng/Sai nên không có cạnh tiến. */
+function forwardEdges(cols: number[][], uids: string[], isIf: ReadonlySet<string>): LayoutEdge[] {
   const edges: LayoutEdge[] = [];
   cols.forEach((col, k) => {
     const next = cols[k + 1];
@@ -90,7 +97,9 @@ function forwardEdges(cols: number[][], uids: string[]): LayoutEdge[] {
       for (const j of next) edges.push(e(joinId(k), uids[j] as string));
       return;
     }
-    for (const j of next) edges.push(e(uids[col[0] as number] as string, uids[j] as string));
+    const from = uids[col[0] as number] as string;
+    if (isIf.has(from)) return;
+    for (const j of next) edges.push(e(from, uids[j] as string));
   });
   return edges;
 }
@@ -140,7 +149,11 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
   const uids = stages.map((s) => s.uid);
   return {
     nodes,
-    edges: [...forwardEdges(cols, uids), ...backEdges(stages), ...branchEdges(stages, steps)],
+    edges: [
+      ...forwardEdges(cols, uids, new Set(stages.filter((s) => s.ifs).map((s) => s.uid))),
+      ...backEdges(stages),
+      ...branchEdges(stages, steps, { cols, uids }),
+    ],
     steps,
   };
 }

@@ -38,11 +38,15 @@ const edgeTypes = { back: BackEdge, branch: BranchEdge };
 // UAT L3: không thu dưới 0.65 (chữ ≥ ~9 px); nhiều bước thì neo về mép trái và để người dùng kéo ngang (pan).
 const FIT_MIN_ZOOM = 0.65;
 const FIT = { padding: 0.1, maxZoom: 1, minZoom: FIT_MIN_ZOOM } as const;
+// `compact` (trang showcase, chỉ đọc): canvas thấp + cho thu nhỏ hơn để cả flow vừa khung và nằm giữa.
+const FIT_COMPACT = { padding: 0.02, maxZoom: 1, minZoom: 0.4 } as const;
 const reduceMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export type ProcessCanvasProps = CanvasHandlers & {
   views: readonly StageView[];
   selected: string | undefined;
+  /** Canvas thấp, vừa khít cả flow (trang showcase chỉ đọc). */
+  compact?: boolean;
 };
 
 type Lay = ReturnType<typeof layoutSteps>;
@@ -124,10 +128,12 @@ function Flow(p: ProcessCanvasProps) {
   useEffect(() => {
     const id = window.setTimeout(
       () =>
-        void rf.fitView({ ...FIT, duration: reduceMotion() ? 0 : 200 }).then(() => {
-          const v = rf.getViewport();
-          if (v.zoom <= FIT_MIN_ZOOM + 0.001) void rf.setViewport({ ...v, x: 16 });
-        }),
+        void rf
+          .fitView({ ...(p.compact ? FIT_COMPACT : FIT), duration: reduceMotion() ? 0 : 200 })
+          .then(() => {
+            const v = rf.getViewport();
+            if (!p.compact && v.zoom <= FIT_MIN_ZOOM + 0.001) void rf.setViewport({ ...v, x: 16 });
+          }),
       60,
     );
     return () => window.clearTimeout(id);
@@ -171,7 +177,7 @@ function Flow(p: ProcessCanvasProps) {
             "controls.fitView.ariaLabel": t("process.admin.canvas.controls.fit"),
           }}
           fitView
-          fitViewOptions={FIT}
+          fitViewOptions={p.compact ? FIT_COMPACT : FIT}
           minZoom={0.3}
           maxZoom={1.5}
           nodesDraggable={!p.readOnly}
@@ -187,7 +193,7 @@ function Flow(p: ProcessCanvasProps) {
           onNodeDragStop={onDragStop}
         >
           <Background gap={20} />
-          <Controls showInteractive={false} />
+          {p.compact ? null : <Controls showInteractive={false} />}
         </ReactFlow>
       </BlockedStepCtx.Provider>
     </HandlersCtx.Provider>
@@ -196,7 +202,9 @@ function Flow(p: ProcessCanvasProps) {
 
 export default function ProcessCanvas(p: ProcessCanvasProps) {
   return (
-    <div className="h-[520px] overflow-hidden rounded-md border border-border bg-background">
+    <div
+      className={`${p.compact ? "h-[280px]" : "h-[520px]"} overflow-hidden rounded-md border border-border bg-background`}
+    >
       <ReactFlowProvider>
         <Flow {...p} />
       </ReactFlowProvider>

@@ -20,9 +20,8 @@ function IfImpl({ data }: NodeProps<IfType>) {
   return (
     <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto relative">
       <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle type="source" position={Position.Right} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
-      <HiddenHandle id="yes" type="source" position={Position.Bottom} />
+      <HiddenHandle id="yes" type="source" position={Position.Right} />
       <HiddenHandle id="no" type="source" position={Position.Bottom} />
       <svg
         aria-hidden
@@ -42,7 +41,7 @@ function IfImpl({ data }: NodeProps<IfType>) {
         data-stage-uid={v.uid}
         data-testid="if-node"
         aria-current={selected ? "true" : undefined}
-        className="absolute inset-0 flex items-center justify-center px-16 text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute inset-0 flex items-center justify-center px-14 text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={(e) => h.onSelect(v.uid, e.detail === 0)}
         onKeyDown={(e) =>
           onStageKeyDown(e, {
@@ -55,16 +54,13 @@ function IfImpl({ data }: NodeProps<IfType>) {
           })
         }
       >
-        <span className="inline-block w-full truncate text-label font-medium" title={name}>
+        <span
+          className="inline-block w-full break-words text-caption font-medium leading-tight"
+          title={name}
+        >
           {t("process.admin.editor.stage.aria", { n: v.index + 1, name })}
         </span>
       </button>
-      <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-caption text-success">
-        {t("process.admin.canvas.if.yes")}
-      </span>
-      <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-caption text-muted-foreground">
-        {t("process.admin.canvas.if.no")}
-      </span>
     </div>
   );
 }

@@ -107,6 +107,7 @@ function Body() {
             <CanvasView
               views={views}
               selected={undefined}
+              compact
               readOnly
               ops={NOOP_OPS}
               onSelect={noop}

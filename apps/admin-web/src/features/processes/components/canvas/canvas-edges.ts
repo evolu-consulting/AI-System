@@ -17,7 +17,8 @@ export function toEdge(e: Layout["edges"][number]): Edge {
       ...ends,
       type: "branch",
       sourceHandle: e.side ?? "branch",
-      targetHandle: "back-in",
+      // Cạnh Đúng/Sai của node If tới GIAI ĐOẠN (handle trái mặc định); luật `after.branch` cũ tới tiêu đề bước.
+      ...(e.side ? {} : { targetHandle: "back-in" }),
       data: { rule: e.rule, side: e.side },
       markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-primary)" },
     };

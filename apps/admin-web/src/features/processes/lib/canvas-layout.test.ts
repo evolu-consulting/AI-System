@@ -59,3 +59,24 @@ describe("stepFromDropX", () => {
     expect(stepFromDropX(COL_W * 9, 3)).toBe(3);
   });
 });
+
+test("node If: đúng hai cạnh Đúng/Sai tới giai đoạn đầu bước đích, không cạnh tiến, không tới tiêu đề", () => {
+  const st = (uid: string, step: number, ifs?: { yes: number | null; no: number | null }) => ({
+    uid,
+    step,
+    backTo: [],
+    after: "auto" as const,
+    ...(ifs ? { ifs } : {}),
+  });
+  const l2 = layoutSteps([st("a", 0), st("i", 1, { yes: 2, no: 3 }), st("t", 2), st("e", 3)]);
+  const fromIf = l2.edges.filter((x) => x.source === "i");
+  expect(fromIf.map((x) => [x.target, x.side, x.kind])).toEqual([
+    ["t", "yes", "branch"],
+    ["e", "no", "branch"],
+  ]);
+  // Sai vắng (null) ⇒ bước kế; đích ngoài phạm vi ⇒ bỏ cạnh.
+  const l3 = layoutSteps([st("a", 0), st("i", 1, { yes: 9, no: null }), st("n", 2)]);
+  expect(l3.edges.filter((x) => x.source === "i").map((x) => [x.target, x.side])).toEqual([
+    ["n", "no"],
+  ]);
+});

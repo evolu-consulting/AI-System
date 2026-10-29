@@ -19,6 +19,8 @@ import { ApplyIssue } from "./apply/ApplyIssue";
 import { AutofixFailures } from "./autofix/AutofixFailures";
 
 type Props = { run: ProcessRunFullView; tenantId: string | undefined };
+/** Run đã kết thúc: không còn gì để huỷ (nút "Huỷ lượt chạy" ẩn). */
+const RUN_ENDED: readonly string[] = ["done", "cancelled", "failed", "expired"];
 const NOTE_MAX = 500;
 
 function reasonText(t: ReturnType<typeof useTranslation>["t"], run: ProcessRunFullView): string {
@@ -164,7 +166,7 @@ export function RunActions({ run, tenantId }: Props) {
           )}
         </section>
       ) : null}
-      {run.can_cancel && !deciding ? (
+      {run.can_cancel && !deciding && !RUN_ENDED.includes(run.status) ? (
         <>
           <Button variant="outline" onClick={() => setConfirm(true)}>
             {t("process.common.option.cancel")}
