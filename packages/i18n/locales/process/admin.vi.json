@@ -241,6 +241,18 @@
         "escalateAfter": "Từ 4 đến 2.160 giờ.",
         "escalateGroup": "Chọn nhóm khác với nhóm kiểm.",
         "ESCALATE_INVALID": "Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác nhóm kiểm và thời gian từ 4 đến 2.160 giờ."
+      },
+      "set": {
+        "title": "Ghi giá trị (set)",
+        "hint": "Ghi field kết quả từ đầu vào của lượt chạy hoặc giá trị cố định. Không gọi AI.",
+        "key": "Field kết quả",
+        "source": "Nguồn",
+        "fromInput": "Đầu vào",
+        "fromConst": "Giá trị cố định",
+        "input": "Đầu vào",
+        "value": "Giá trị",
+        "add": "Thêm dòng",
+        "remove": "Xoá dòng"
       }
     },
     "limits": "Giới hạn của một lượt chạy",
@@ -541,6 +553,36 @@
       "APPLY_REAL": "Stage Áp phải bật \"Hành động thật\".",
       "APPLY_AFTER": "Stage Áp phải chạy tiếp sau khi xong, không có bước duyệt.",
       "APPLY_FIELDS": "Stage Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết."
+    }
+  },
+  "showcase": {
+    "title": "Flow mẫu: Duyệt đề nghị chi",
+    "subtitle": "Song song → chờ đủ → rẽ nhánh if/else. Chạy thử ngay, không cần AI.",
+    "missing": "Chưa có flow mẫu trong công ty này. Nhờ quản trị chạy lệnh seed flow mẫu (chỉ tenant demo).",
+    "canvas": "Sơ đồ flow (chỉ đọc)",
+    "try": "Chạy thử",
+    "run": "Chạy thử",
+    "live": "Tiến độ trực tiếp",
+    "reset": "Chạy lại với số liệu khác",
+    "preset": {
+      "director": "Mẫu: 150.000.000 · mua sắm (đi Giám đốc)",
+      "done": "Mẫu: 50.000.000 · mua sắm (Hoàn tất)"
+    },
+    "issue": {
+      "required": "Bắt buộc nhập.",
+      "number": "Nhập một số."
+    },
+    "swap": {
+      "title": "Đổi node",
+      "hint": "Node chỉ đổi được trong cùng họ, và khi node mới vẫn cung cấp đủ field mà bước sau dùng. Kiểm tra \"canSwap\" sẽ có ở bước R3.",
+      "family": {
+        "work": "Làm việc",
+        "wait": "Chờ",
+        "apply": "Áp bản sửa",
+        "control": "Điều khiển"
+      },
+      "yes": "đổi qua lại được",
+      "no": "chỉ một loại"
     }
   }
 }

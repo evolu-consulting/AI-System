@@ -8,6 +8,7 @@ import type {
   ProcessDefInput,
   ProcessDefListResponse,
   ProcessEditorContext,
+  ProcessInputValue,
   ProcessRunListResponse,
   ProcessRunSummary,
   ProcessRunUsage,
@@ -128,11 +129,17 @@ export const deleteDef = (id: string, version: number, tenantId?: string): Promi
     query: { tenant_id: tenantId, version },
   });
 
-export const runDef = (id: string, input: string, tenantId?: string): Promise<ProcessRunSummary> =>
+/** `inputs` (tuỳ chọn) = giá trị đầu vào có cấu trúc của def (R4 showcase: số tiền, mục đích). */
+export const runDef = (
+  id: string,
+  input: string,
+  tenantId?: string,
+  inputs?: ProcessInputValue[],
+): Promise<ProcessRunSummary> =>
   api<ProcessRunSummary>(url(`/process-defs/${enc(id)}/run`), {
     method: "POST",
     query: { tenant_id: tenantId },
-    body: { input },
+    body: inputs ? { input, inputs } : { input },
   });
 
 /** Làm tươi danh sách + bản đang mở sau mọi thay đổi định nghĩa. */
@@ -175,10 +182,16 @@ export function useTenantRuns(key: string | undefined, tenantId: string | undefi
   });
 }
 
-export function useRun(id: string, tenantId: string | undefined) {
+const RUN_DONE: readonly string[] = ["finished", "failed", "cancelled"];
+
+/** `pollMs` (tuỳ chọn): làm tươi định kỳ tới khi run kết thúc (trang showcase; admin chưa có stream). */
+export function useRun(id: string, tenantId: string | undefined, pollMs?: number) {
   return useQuery({
     queryKey: PKEYS.run(id, tenantId),
     enabled: hubConfigured(),
+    refetchInterval: pollMs
+      ? (q) => (RUN_DONE.includes(q.state.data?.status ?? "") ? false : pollMs)
+      : false,
     queryFn: () =>
       api<ProcessRunView>(url(`/process-runs/${enc(id)}`), { query: { tenant_id: tenantId } }),
   });

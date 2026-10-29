@@ -42,6 +42,7 @@ import { Route as AuthedGroupsNewRouteImport } from './routes/_authed/groups/new
 import { Route as AuthedProcessesIndexRouteImport } from './routes/_authed/processes/index'
 import { Route as AuthedProcessesProcessIdRouteImport } from './routes/_authed/processes/$processId'
 import { Route as AuthedProcessesNewRouteImport } from './routes/_authed/processes/new'
+import { Route as AuthedProcessesShowcaseRouteImport } from './routes/_authed/processes/showcase'
 import { Route as AuthedTenantsIndexRouteImport } from './routes/_authed/tenants/index'
 import { Route as AuthedTenantsTenantIdRouteImport } from './routes/_authed/tenants/$tenantId'
 import { Route as AuthedTenantsNewRouteImport } from './routes/_authed/tenants/new'
@@ -217,6 +218,11 @@ const AuthedProcessesNewRoute = AuthedProcessesNewRouteImport.update({
   path: '/processes/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProcessesShowcaseRoute = AuthedProcessesShowcaseRouteImport.update({
+  id: '/processes/showcase',
+  path: '/processes/showcase',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedTenantsIndexRoute = AuthedTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/groups/new': typeof AuthedGroupsNewRoute
   '/processes/$processId': typeof AuthedProcessesProcessIdRoute
   '/processes/new': typeof AuthedProcessesNewRoute
+  '/processes/showcase': typeof AuthedProcessesShowcaseRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/usage/analytics': typeof AuthedUsageAnalyticsRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/groups/new': typeof AuthedGroupsNewRoute
   '/processes/$processId': typeof AuthedProcessesProcessIdRoute
   '/processes/new': typeof AuthedProcessesNewRoute
+  '/processes/showcase': typeof AuthedProcessesShowcaseRoute
   '/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/tenants/new': typeof AuthedTenantsNewRoute
   '/usage/analytics': typeof AuthedUsageAnalyticsRoute
@@ -382,6 +390,7 @@ export interface FileRoutesById {
   '/_authed/groups/new': typeof AuthedGroupsNewRoute
   '/_authed/processes/$processId': typeof AuthedProcessesProcessIdRoute
   '/_authed/processes/new': typeof AuthedProcessesNewRoute
+  '/_authed/processes/showcase': typeof AuthedProcessesShowcaseRoute
   '/_authed/tenants/$tenantId': typeof AuthedTenantsTenantIdRoute
   '/_authed/tenants/new': typeof AuthedTenantsNewRoute
   '/_authed/usage_/analytics': typeof AuthedUsageAnalyticsRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/groups/new'
     | '/processes/$processId'
     | '/processes/new'
+    | '/processes/showcase'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/usage/analytics'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/groups/new'
     | '/processes/$processId'
     | '/processes/new'
+    | '/processes/showcase'
     | '/tenants/$tenantId'
     | '/tenants/new'
     | '/usage/analytics'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/_authed/groups/new'
     | '/_authed/processes/$processId'
     | '/_authed/processes/new'
+    | '/_authed/processes/showcase'
     | '/_authed/tenants/$tenantId'
     | '/_authed/tenants/new'
     | '/_authed/usage_/analytics'
@@ -769,6 +781,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProcessesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/processes/showcase': {
+      id: '/_authed/processes/showcase'
+      path: '/processes/showcase'
+      fullPath: '/processes/showcase'
+      preLoaderRoute: typeof AuthedProcessesShowcaseRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/tenants/': {
       id: '/_authed/tenants/'
       path: '/tenants'
@@ -871,6 +890,7 @@ interface AuthedRouteChildren {
   AuthedGroupsNewRoute: typeof AuthedGroupsNewRoute
   AuthedProcessesProcessIdRoute: typeof AuthedProcessesProcessIdRoute
   AuthedProcessesNewRoute: typeof AuthedProcessesNewRoute
+  AuthedProcessesShowcaseRoute: typeof AuthedProcessesShowcaseRoute
   AuthedTenantsTenantIdRoute: typeof AuthedTenantsTenantIdRoute
   AuthedTenantsNewRoute: typeof AuthedTenantsNewRoute
   AuthedUsageAnalyticsRoute: typeof AuthedUsageAnalyticsRoute
@@ -911,6 +931,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedGroupsNewRoute: AuthedGroupsNewRoute,
   AuthedProcessesProcessIdRoute: AuthedProcessesProcessIdRoute,
   AuthedProcessesNewRoute: AuthedProcessesNewRoute,
+  AuthedProcessesShowcaseRoute: AuthedProcessesShowcaseRoute,
   AuthedTenantsTenantIdRoute: AuthedTenantsTenantIdRoute,
   AuthedTenantsNewRoute: AuthedTenantsNewRoute,
   AuthedUsageAnalyticsRoute: AuthedUsageAnalyticsRoute,

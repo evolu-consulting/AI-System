@@ -11,6 +11,7 @@ export * from "./errors";
 export * from "./kh";
 export * from "./node-family";
 export * from "./node-swap";
+export * from "./process-set";
 export * from "./processes";
 export * from "./secrets";
 export * from "./trace";

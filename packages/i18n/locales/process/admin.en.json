@@ -241,6 +241,18 @@
         "escalateAfter": "From 4 to 2,160 hours.",
         "escalateGroup": "Pick a group other than the reviewing group.",
         "ESCALATE_INVALID": "The escalation isn't valid: pick a group other than the reviewing group and a time from 4 to 2,160 hours."
+      },
+      "set": {
+        "title": "Set values (set)",
+        "hint": "Writes result fields from the run inputs or constants. No AI call.",
+        "key": "Result field",
+        "source": "Source",
+        "fromInput": "Input",
+        "fromConst": "Constant",
+        "input": "Input",
+        "value": "Value",
+        "add": "Add row",
+        "remove": "Remove row"
       }
     },
     "limits": "Run limits",
@@ -541,6 +553,36 @@
       "APPLY_REAL": "The apply stage must have \"Real action\" on.",
       "APPLY_AFTER": "The apply stage must continue when done, with no review step.",
       "APPLY_FIELDS": "The apply stage has no sources, autofix, token budget or must-know."
+    }
+  },
+  "showcase": {
+    "title": "Sample flow: Expense approval",
+    "subtitle": "Parallel → join → if/else branch. Try it now, no AI needed.",
+    "missing": "The sample flow is not in this company yet. Ask an admin to run the sample-flow seed (demo tenant only).",
+    "canvas": "Flow diagram (read-only)",
+    "try": "Try it",
+    "run": "Try run",
+    "live": "Live progress",
+    "reset": "Run again with other values",
+    "preset": {
+      "director": "Sample: 150,000,000 · purchase (goes to Director)",
+      "done": "Sample: 50,000,000 · purchase (Done)"
+    },
+    "issue": {
+      "required": "Required.",
+      "number": "Enter a number."
+    },
+    "swap": {
+      "title": "Swap node",
+      "hint": "A node can only be swapped within its family, and only if the new node still provides every field later steps use. The \"canSwap\" check arrives with R3.",
+      "family": {
+        "work": "Work",
+        "wait": "Wait",
+        "apply": "Apply fix",
+        "control": "Control"
+      },
+      "yes": "swappable",
+      "no": "single kind"
     }
   }
 }
