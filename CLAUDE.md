@@ -32,6 +32,14 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 - **Báo cáo:** mỗi lát một dòng khi xong; quá 45 phút gửi trạng thái 3 dòng.
 - **Kiến trúc:** AI System = lõi chung (đăng nhập, tenant, phòng ban, quyền, Agent Hub, MCP, RAG); mỗi app là một gói (schema + RLS riêng). Module đóng băng: `docs/platform/modules.md` — không sửa trừ khi lát yêu cầu.
 
+## Luật 0c — Tiết kiệm token (người dùng chốt 2026-10-30, rút từ đợt CR-103) — xếp theo mức tiết kiệm
+1. **Ít làm lại nhất:** test kiểm trạng thái thật (không chỉ "dòng có hiện"); mỗi worktree chạy e2e với tài nguyên riêng (`FNR_E2E_PORT_BASE`/cổng, `*_REDIS_DB`, DB `db:test:create <tên>` mới) — không chạy hai `test:e2e:par` từ hai worktree cùng lúc trên cùng Redis; agent tự tắt mọi server mình bật (`Stop-Process` theo PID của worktree mình) trước khi báo xong.
+2. **Model theo rủi ro** (Luật 0b): Sonnet mặc định, Opus chỉ RLS/quyền/auth/tiền/lõi engine, Haiku việc cơ học.
+3. **Tái dùng ngữ cảnh:** việc tiếp/sửa lỗi của **cùng lát hoặc cùng vùng code** ⇒ `SendMessage` cho agent đã làm (ngữ cảnh còn cache) — thắng câu "không SendMessage giao việc mới" của Luật 3; vùng khác ⇒ agent mới kèm bàn giao.
+4. **Brief hẹp, báo cáo ngắn:** brief đủ 6 mục (Luật 3), chỉ đường file cụ thể; báo cáo ≤ 10 dòng; phiên chính không đọc transcript agent, chỉ đọc đuôi log (`-Tail`, `Select-String`).
+5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
+6. **Đọc ít:** tra `docs/INDEX.md`/CODEMAP trước, mở đúng file; code theo Clean Architecture + file nhỏ (Luật 4) để agent không phải đọc rộng.
+
 ## Luật 1 — Cửa sẵn sàng (BẮT BUỘC; hỏi người dùng xác nhận trước khi chạy)
 Trước khi viết code cho một feature hoặc thay đổi không tầm thường — kể cả khi người dùng chỉ nói "implement", "code", "làm", "build", "tiếp tục", "chạy task":
 1. Xác định spec (`docs/specs/<ID>/`; chưa có spec thì mục BA/UI tương ứng trong `docs/design/`).
