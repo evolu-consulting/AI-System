@@ -1,4 +1,4 @@
-﻿// esign-multi · Luật 4b: (a) Cài đặt hiện các nhà cung cấp + đổi mặc định ⇒ PUT {default_provider}; (b) hộp Gửi ký có dropdown,
+// esign-multi · Luật 4b: (a) Cài đặt hiện các nhà cung cấp + đổi mặc định ⇒ PUT {default_provider}; (b) hộp Gửi ký có dropdown,
 // chọn "selfsign" ⇒ POST có provider, người ký công ty chỉ đọc (không name/email); (c) 1 nhà cung cấp khả dụng ⇒ không dropdown.
 // Backend giả `page.route`; không sleep.
 import { expect, type Page, type Route, test } from "@playwright/test";
@@ -64,7 +64,7 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
       name: "Quy trình HĐ mặc định",
       rel_version: 1,
       is_default: true,
-      steps: [],
+      steps: [{ name: "Soạn & kiểm tra", department_name: "Kinh doanh", kind: "review" }],
     }),
   );
   const puts: unknown[] = [];

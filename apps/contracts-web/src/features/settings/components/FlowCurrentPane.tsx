@@ -81,22 +81,22 @@ function Preview({ flow }: { flow: CurrentFlow }) {
   );
 }
 
-export function FlowCurrentPane({ owner }: { owner: boolean }) {
+/** Khối quy trình đang dùng; lỗi tải / chưa có bản ⇒ báo tại chỗ, KHÔNG che các cài đặt khác của mục (ký số). */
+function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
   const { t } = useTranslation();
-  const q = useFlow(true);
   if (q.isError)
     return (
-      <p role="alert" className="text-late">
+      <p role="alert" className="mb-4 text-late">
         {t("contracts.flow.loadFail")}{" "}
         <button type="button" className="underline" onClick={() => void q.refetch()}>
           {t("contracts.common.retry")}
         </button>
       </p>
     );
-  if (!q.data) return <p className="text-dim">{t("contracts.common.loading")}</p>;
+  if (!q.data) return <p className="mb-4 text-dim">{t("contracts.common.loading")}</p>;
   const flow = q.data;
   return (
-    <div>
+    <>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold" data-testid="flow-current-title">
           {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
@@ -114,6 +114,15 @@ export function FlowCurrentPane({ owner }: { owner: boolean }) {
         className="mb-4 block text-label text-act underline"
       />
       <Preview flow={flow} />
+    </>
+  );
+}
+
+export function FlowCurrentPane({ owner }: { owner: boolean }) {
+  const q = useFlow(true);
+  return (
+    <div>
+      <FlowBlock q={q} />
       <EsignSetting owner={owner} />
     </div>
   );

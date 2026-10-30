@@ -177,35 +177,4 @@ describe("esign-flow · mở lại HĐ huỷ phong bì đang mở (HTTP)", () =>
     expect(c.ds.fake.envelopes.get(e?.env as string)?.status).toBe("voided");
   });
 });
-
-describe("esign-flow · lưu mẫu: người cụ thể phải thuộc tenant + quyền gói", () => {
-  const PUT = "/pack/contracts/approval-flow";
-  const codeOf = (r: { text: string }) => /"code"\s*:\s*"([A-Z_]+)"/.exec(r.text)?.[1] ?? r.text;
-  it("người duyệt/ký cụ thể cùng tenant có quyền ghi ⇒ 200; tenant khác / chỉ xem ⇒ 422 USER_NOT_MEMBER", async () => {
-    await setup();
-    const cur = await c.hubCall(P.lan, "GET", PUT);
-    expect(cur.status).toBe(200);
-    const v = cur.json.version as number;
-    const ok = await c.hubCall(P.lan, "PUT", PUT, {
-      version: v,
-      steps: [review, esign({ mode: "user", user_id: P.hoa.id })],
-    });
-    expect(ok.status).toBe(200);
-    for (const bad of [
-      [{ ...review, approver_user_id: P.an.id }, esign()],
-      [review, esign({ mode: "user", user_id: P.an.id })],
-      [{ ...review, approver_user_id: P.tam.id }, esign()],
-    ]) {
-      const r = await c.hubCall(P.lan, "PUT", PUT, { version: v + 1, steps: bad });
-      expect({ s: r.status, code: codeOf(r) }).toEqual({ s: 422, code: "APPROVAL_FLOW_INVALID" });
-      expect(r.text).toContain("USER_NOT_MEMBER");
-    }
-    // Ký số không ở cuối ⇒ 422
-    const r2 = await c.hubCall(P.lan, "PUT", PUT, {
-      version: v + 1,
-      steps: [review, esign(), review],
-    });
-    expect(r2.status).toBe(422);
-    expect(r2.text).toContain("ESIGN_NOT_LAST");
-  });
-});
+// CR-105 L4: bỏ "lưu mẫu: người cụ thể thuộc tenant + quyền gói" — PUT /approval-flow đã xoá (mẫu nay là quy trình thư viện, sửa ở ai-admin).

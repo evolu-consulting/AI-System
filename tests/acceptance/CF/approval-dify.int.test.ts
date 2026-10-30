@@ -1,9 +1,12 @@
 // cf-dify · bước Dify trong luồng duyệt HĐ (hub THẬT + Dify GIẢ, KHÔNG gọi Dify thật): `GET /dify-workflows` (admin gói, scope
-// tenant, chỉ workflow có công tắc tenant), `PUT /approval-flow` kiểm khoá workflow (422 DIFY_WORKFLOW_UNKNOWN /
-// DIFY_PARAM_UNSUPPORTED theo `steps.i.workflow_key`), chạy: Đạt bước 0 ⇒ stage tool gọi Dify với dữ liệu HĐ ⇒ tự sang bước kế
+// tenant, chỉ workflow có công tắc tenant), chạy (quy trình thư viện gán cho tenant, CR-105 L4): Đạt bước 0 ⇒ stage tool gọi Dify với dữ liệu HĐ ⇒ tự sang bước kế
 // (review sau Dify mở). Chưa chạy trong lát (e2e/int chạy một lần cuối đợt).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { encryptSecret, parseMasterKey } from "../../../apps/admin-api/src/lib/secret-crypto";
+import {
+  APPROVAL_SLOT,
+  compileSlotStages,
+} from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
 import { TEST_MASTER_KEY_B64 } from "../H2a/_h2a";
 import { groupId, seedContract, toLevel1 } from "../HD3/_hd3";
 import { type Json, PA, T, waitStatus } from "../P-d/_support/pd";
@@ -73,6 +76,34 @@ const difyStep = (key: string, wf: string): Json => ({
   after: "auto",
 });
 
+/** CR-105 L4 · quy trình thư viện [duyệt s0 → Dify → duyệt s2] (phòng theo MÃ) gán cho tenant acme (thay cho PUT approval-flow cũ). */
+async function assignDifyFlow(): Promise<void> {
+  const keyOf = async (role: "editor" | "owner") => {
+    const id = await groupId(c, role);
+    const [g] = await c.sql<{ key: string }[]>`select key from admin.groups where id = ${id}`;
+    return g?.key as string;
+  };
+  const [kE, kO] = [await keyOf("editor"), await keyOf("owner")];
+  const rv = (key: string, dept: string): Json => ({
+    ...review(key, ""),
+    department_group_id: null,
+    department_group_key: dept,
+  });
+  const body = { steps: [rv("s0", kE), difyStep("d", KEY), rv("s2", kO)] };
+  // stages thư viện: chỉ để lưu (lúc mở lượt gói biên dịch lại từ slot_body + catalog Dify của tenant) ⇒ bản không có bước Dify.
+  const stages = compileSlotStages({ steps: [rv("s0", kE), rv("s2", kO)] });
+  const [d] = await c.sql<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, slot, slot_body,
+      published_version) values (null, 'cf-dify-flow', 'Quy trình có bước Dify', ${JSON.stringify(stages)}::text::jsonb,
+      ${APPROVAL_SLOT}, ${JSON.stringify(body)}::text::jsonb, 1) returning id::text as id`;
+  const id = d?.id as string;
+  await c.sql`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
+    values (${id}, 1, 'Quy trình có bước Dify', ${JSON.stringify(stages)}::text::jsonb, ${JSON.stringify(body)}::text::jsonb)`;
+  await c.sql`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.acme}, ${APPROVAL_SLOT}, ${id})
+    on conflict (tenant_id, slot) do update set def_id = excluded.def_id`;
+}
+
 describe("cf-dify · bước Dify", () => {
   it("GET /dify-workflows: owner thấy workflow đã bật cho tenant; editor 403; chưa bật ⇒ rỗng", async () => {
     const none = await c.call("A", "GET", `/pack/contracts/dify-workflows`);
@@ -87,25 +118,10 @@ describe("cf-dify · bước Dify", () => {
     expect((await c.call("B", "GET", `/pack/contracts/dify-workflows`)).status).toBe(403);
   }, 60_000);
 
-  it("PUT approval-flow: khoá lạ ⇒ 422 DIFY_WORKFLOW_UNKNOWN; tham số bắt buộc không thoả ⇒ DIFY_PARAM_UNSUPPORTED; hợp lệ ⇒ 200", async () => {
-    const gE = await groupId(c, "editor");
-    const gO = await groupId(c, "owner");
-    const put = async (steps: Json[], version = 1) =>
-      c.call("A", "PUT", `/pack/contracts/approval-flow`, { version, steps });
-    const unk = await put([review("s0", gE), difyStep("d", "khong-co"), review("s2", gO)]);
-    expect({ s: unk.status, i: (unk.json as Json).error?.details?.issues }).toEqual({
-      s: 422,
-      i: [{ path: "steps.1.workflow_key", rule: "DIFY_WORKFLOW_UNKNOWN" }],
-    });
-    const prm = await put([review("s0", gE), difyStep("d", BAD), review("s2", gO)]);
-    expect((prm.json as Json).error?.details?.issues).toEqual([
-      { path: "steps.1.workflow_key", rule: "DIFY_PARAM_UNSUPPORTED" },
-    ]);
-    const ok = await put([review("s0", gE), difyStep("d", KEY), review("s2", gO)]);
-    expect({ s: ok.status, v: (ok.json as Json).version }).toEqual({ s: 200, v: 2 });
-  }, 60_000);
+  // CR-105 L4: bỏ test "PUT approval-flow kiểm khoá workflow" — PUT đã xoá; kiểm khoá Dify khi xuất bản thuộc thư viện (L2a).
 
   it("chạy: Đạt bước 0 ⇒ Dify được gọi với dữ liệu HĐ ⇒ tự sang bước kế (review mở)", async () => {
+    await assignDifyFlow();
     dify.script([{ kind: "json", result: { ket_qua: "ok" } }]);
     const id = await seedContract(c, 731);
     const aid = (await toLevel1(c, id, 10_000_000)).runId;

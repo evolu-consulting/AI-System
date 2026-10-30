@@ -1,4 +1,4 @@
-﻿// esign-anchor · Luật 4b: (a) Cài đặt › Quy trình duyệt hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
+// esign-anchor · Luật 4b: (a) Cài đặt › Quy trình duyệt hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
 // (b) hộp Gửi ký hiện "Vị trí ký: trong văn bản" theo GET /esign/placement. Backend giả `page.route`; không sleep.
 import { expect, type Route, test } from "@playwright/test";
 import { asHub } from "./dataset";
@@ -47,7 +47,7 @@ test("Cài đặt: danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors
       name: "Quy trình HĐ mặc định",
       rel_version: 1,
       is_default: true,
-      steps: [],
+      steps: [{ name: "Soạn & kiểm tra", department_name: "Kinh doanh", kind: "review" }],
     }),
   );
   await page.route("**/pack/contracts/esign/settings", (r) => json(r, settings));

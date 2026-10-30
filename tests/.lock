@@ -84,6 +84,7 @@ c9e5a2ddb6cc6e214013cca1331dfeff96026968e28fe68569343f480e8e6626  e2e/P-a/pf3/ou
 c568a82cdd39e5fa0aef3b9df45e857298b6d897dc11e1db8c3e9f508b6d1389  e2e/P-a/pf4/admin-editor.pa.ts
 ebcc84b92286296fc7cacec45df5c490e15389bfb4f966dd3610691506e976fb  e2e/P-a/pf4/admin-processes.pa.ts
 884cb7120f51bb4b5adec3398dda5ce55fba0e8b9e7a54ee6ebb2e3bbac0497b  e2e/P-a/pf4/admin-runs.pa.ts
+eaf7fb2aaba2869c6d2bb71789616391ea6d1af9892c6b115af45d012c6fe2fe  e2e/P-a/pf4/process-library.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts
 aa4a57b7b7f35b91a29f8b318e4a28f2c54f036bc7b4351fe56a15b428caef21  e2e/P-a/playwright.pa.config.ts
 e786529d67cd6715b72320a9159b64a39529b5a86b49b04b16ee7807f8cad8cd  e2e/P-a/scenario/hoa-don.pa.ts
@@ -385,9 +386,9 @@ adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-
 70e7bf79c52bcc520116c3a04cd64cda17d20085f0e8ec576ed5e91593fe8563  e2e/contracts-web/delivery-stock-409.cw.ts
 52397ec7abec9d895b289240b949ec335368546399b35af6fc7ab5fefd2fd2fa  e2e/contracts-web/doc-frame.cw.ts
 2fee363ef6105fe78057923df75827e3a2f87aa2f0291c84d56350d12adad8b6  e2e/contracts-web/doc-list.cw.ts
-3be6a4fc517ad3a2245c298bc648797497b9cbd626cdc03c519e3d3eb80eb519  e2e/contracts-web/esign-anchor.cw.ts
+4aca6cdb4ab3c22f62571d360fc174bf3826876b14d6e725f4325af07129809e  e2e/contracts-web/esign-anchor.cw.ts
 f18e5341851fc7399bb3a0661b9d48746451510fb82bfecd535cf3d0b292ed4d  e2e/contracts-web/esign-flow.cw.ts
-0609093a9de59c209019c19de0476da1f373c67095496d158ca4dd85903b4793  e2e/contracts-web/esign-multi.cw.ts
+e7057f726a7f97cb8ed94e0340fb28fc745d58510030683cb4028b22e104f287  e2e/contracts-web/esign-multi.cw.ts
 0ab16a5cb40e5bd5d0cd61b821e4f4cd154f1a48ef36f621a4239135273be587  e2e/contracts-web/esign.cw.ts
 62e310a506f44c0991b85d1e4ca299324b0c5592e04de6565022ba26986ea442  e2e/contracts-web/gap-a2-source-ask.cw.ts
 26c4c25c8202fa5b461010dbb8609b3db444e8e2e3d3e8ffeeb2196ed9d1d6bf  e2e/contracts-web/gap-b-list.cw.ts
@@ -526,7 +527,7 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
 8b3804152a957ce18f63f00bc7edd0dfe40349a898ba74c892c1bda84433c71c  tests/acceptance/CF/_cf.ts
 1bdaca8c13f65c7e5ce110b60bdee90ea67c76327cd2f9dfdc4c87b6707a8d1f  tests/acceptance/CF/approval-card.int.test.ts
-eab20c562ecadbb4b90a57e074459477df92a156c4a1d728b4e55647de97da5a  tests/acceptance/CF/approval-dify.int.test.ts
+0178c5b16d787da0a8e474e9dfc9d98b9b4bf9b94b6ed344b9818a6fb8c53e06  tests/acceptance/CF/approval-dify.int.test.ts
 c828802b8684b5155dfea4dcff783d040a9eb8fe4ca0d0252109abb7cf9bf182  tests/acceptance/CF/approval-engine-off.int.test.ts
 bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptance/CF/approval-engine.int.test.ts
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts
@@ -1392,7 +1393,7 @@ a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptan
 8e877ab60b14fff18ac51b41b03c29cccdd7b848c8a225ac00147848fe7f0296  tests/acceptance/esign-flow/approver-guard.int.test.ts
 7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
 e8b60129c372e94524d276af29eff4f8c7a1c3ed078a1e40a7c0f4e9c5c3fa8f  tests/acceptance/esign-flow/esign-flow-fix.int.test.ts
-15575c90b4595ffe412963ebcc5839dc654df802f834fe53dbad072dc77b37ba  tests/acceptance/esign-flow/esign-flow.int.test.ts
+76dfdf61b7165991249a4618ca68668ab503a20c24344b3a964dcda9f0a3911e  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 303e3661faed08c210267470990d89e1d27e12de6d8b2e38d84d8d509e3e7ca4  tests/acceptance/fnr-canvas/ui-roundtrip.int.test.ts
 760eaa6149af166557e63d4594615bab590b06162dd276eb5ef54ba0edfb8761  tests/acceptance/fnr-showcase/set.int.test.ts
