@@ -23,4 +23,6 @@ Sửa 4 đỏ của test:all cuối đợt CR-105 trong vùng L4 (bỏ PUT /appr
 int `approval-dify` + `esign-flow` xanh (6/6). e2e 2 spec CHƯA chạy được: hết làn e2e (14/14) và `e2e:lanes --prune` cũng đòi làn.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
 Không thay đổi hành vi (lý do: Delta ở docs/specs/pl-sht-settings/tasks.md; đây chỉ vá hồi quy hiển thị + test lỗi thời của L4)
