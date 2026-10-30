@@ -15,3 +15,6 @@ Thumbs.db
 
 # H2c: file đính kèm Hub dev (HUB_ATTACH_DIR, plan H2c §7)
 .data/
+
+# e2e-isolation: l�n e2e c?a worktree
+.e2e-lane

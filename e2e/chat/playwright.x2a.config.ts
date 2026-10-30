@@ -16,7 +16,9 @@ function need(name: string): string {
   return v;
 }
 
-const P = { api: 3031, hub: 4050, ready: 4059, chat: 3130 } as const;
+// e2e-isolation: làn (worktree) dịch toàn bộ cổng (E2E_PORT_SHIFT = 3000·làn, làn 0 = 0).
+const SH = Number(process.env.E2E_PORT_SHIFT ?? 0);
+const P = { api: 3031 + SH, hub: 4050 + SH, ready: 4059 + SH, chat: 3130 + SH } as const;
 const CHAT = `http://localhost:${P.chat}`;
 const API = `http://localhost:${P.api}`;
 const HUB = `http://localhost:${P.hub}`;

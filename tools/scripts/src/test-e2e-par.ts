@@ -5,6 +5,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
+import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
+import { lanePortEnv, laneTag } from "./e2e-lane.rules";
 import { isFrozenConfig } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import { findE2eConfigs } from "./test-all.discover";
@@ -16,7 +18,6 @@ import {
   norm,
   parseE2eArgs,
   planJobs,
-  REDIS_DBS,
   type Report,
   type SpecInfo,
   summarize,
@@ -71,15 +72,25 @@ function failedTitles(rep: Report): string[] {
   return out;
 }
 
-async function runJob(job: Job, root: string, base: Record<string, string>, redisDb?: number) {
+type Ctx = { root: string; base: Record<string, string>; lane: number; pids: Set<number> };
+
+async function runJob(job: Job, ctx: Ctx, redisDb?: number) {
+  const { root, base, lane, pids } = ctx;
   const out = join(DIR, job.name);
   rmSync(join(root, out), { recursive: true, force: true });
   mkdirSync(join(root, out), { recursive: true });
   const json = join(root, out, "report.json");
-  const env = jobEnv(job, base, redisDb, {
-    dist: `dist-e2e/${job.name}`,
-    clockFile: join(root, out, "clock.txt"),
-  });
+  const env = {
+    ...lanePortEnv(lane, process.env),
+    ...jobEnv(
+      job,
+      base,
+      redisDb,
+      { dist: `dist-e2e/${job.name}`, clockFile: join(root, out, "clock.txt") },
+      lane,
+    ),
+    E2E_PAR: "1",
+  };
   const t0 = performance.now();
   const p = Bun.spawn(
     [
@@ -97,7 +108,9 @@ async function runJob(job: Job, root: string, base: Record<string, string>, redi
       stderr: Bun.file(join(root, out, "err.log")),
     },
   );
+  pids.add(p.pid);
   const code = await p.exited;
+  pids.delete(p.pid);
   const rep = readJson<Report>(json, {});
   const s = summarize(rep);
   return { job, code, ms: performance.now() - t0, ...s, failed: failedTitles(rep), rep } as Done & {
@@ -114,14 +127,18 @@ function logDone(r: Done): void {
 }
 
 /** Hồ N việc chạy cùng lúc, việc nặng trước; việc có Redis nhận một Redis DB rảnh. */
-async function pool(jobs: Job[], n: number, root: string, base: Record<string, string>) {
+async function pool(jobs: Job[], n: number, ctx: Ctx) {
   const queue = [...jobs];
-  const freeRedis = [...REDIS_DBS];
   const done: (Done & { rep: Report })[] = [];
   const next = async (job: Job) => {
-    const redis = job.meta.redis ? freeRedis.shift() : undefined;
-    const r = await runJob(job, root, base, redis);
-    if (redis !== undefined) freeRedis.push(redis);
+    // Redis DB: hợp đồng thuê toàn máy (mọi worktree) — hết DB thì chờ, không đụng nhau.
+    const lease = job.meta.redis ? await leaseRedisDb(`${ctx.root}#${job.name}`) : undefined;
+    let r: Awaited<ReturnType<typeof runJob>>;
+    try {
+      r = await runJob(job, ctx, lease?.db);
+    } finally {
+      lease?.release();
+    }
     done.push(r);
     logDone(r);
   };
@@ -144,8 +161,10 @@ function saveTimings(root: string, old: Record<string, number>, done: (Done & { 
   writeFileSync(join(root, TIMINGS), `${JSON.stringify(t, null, 2)}\n`);
 }
 
-async function ensureDbs(root: string, jobs: Job[]): Promise<void> {
-  const tags = [...new Set(jobs.flatMap((j) => (j.meta.db ? [`e2e_${j.meta.db}`] : [])))];
+async function ensureDbs(root: string, jobs: Job[], lane: number): Promise<void> {
+  const tags = [
+    ...new Set(jobs.flatMap((j) => (j.meta.db ? [`e2e_${laneTag(lane, j.meta.db)}`] : []))),
+  ];
   if (!tags.length) return;
   const p = Bun.spawn(
     ["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", "ensure", ...tags],
@@ -166,12 +185,15 @@ async function main(): Promise<number> {
   const n = jobConcurrency(args.jobs, availableParallelism());
   const base = parseEnv(readFileSync(join(root, ".env.local"), "utf8"));
   if (!existsSync(join(root, ".env.local"))) throw new Error("thiếu .env.local");
+  const lane = resolveLane(root);
+  const pids = new Set<number>();
+  installCleanup(pids, root, lane);
   const t0 = performance.now();
   console.log(
-    `test:e2e:par: ${jobs.length} việc / ${n} cùng lúc (${jobs.map((j) => j.name).join(", ")})`,
+    `test:e2e:par: làn ${lane}, ${jobs.length} việc / ${n} cùng lúc (${jobs.map((j) => j.name).join(", ")})`,
   );
-  await ensureDbs(root, jobs);
-  const done = await pool(jobs, n, root, base);
+  await ensureDbs(root, jobs, lane);
+  const done = await pool(jobs, n, { root, base, lane, pids });
   saveTimings(root, timings, done);
   const bad = done.filter((d) => d.code !== 0);
   for (const d of bad) for (const f of d.failed) console.log(`  [${d.job.name}] ✗ ${f}`);

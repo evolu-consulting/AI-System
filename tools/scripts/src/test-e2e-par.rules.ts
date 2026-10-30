@@ -157,6 +157,8 @@ export function planJobs(p: Plan, timings: Readonly<Record<string, number>>, onl
   return jobs.filter(keep).sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
 }
 
+import { laneTag, portShift, shiftNumericEnv } from "./e2e-lane.rules";
+
 const withDb = (url: string, name: string): string => {
   const u = new URL(url);
   u.pathname = `/${encodeURIComponent(name)}`;
@@ -167,10 +169,11 @@ const withDb = (url: string, name: string): string => {
 function dbEnv(
   job: Job,
   base: Readonly<Record<string, string | undefined>>,
+  lane = 0,
 ): Record<string, string> {
   const out: Record<string, string> = {};
   if (!job.meta.db) return out;
-  const name = `ai_system_e2e_${job.meta.db}_test`;
+  const name = `ai_system_e2e_${laneTag(lane, job.meta.db)}_test`;
   for (const k of ["TEST_DATABASE_URL", "TEST_ADMIN_API_DATABASE_URL"]) {
     const v = base[k];
     if (v) out[k] = withDb(v, name);
@@ -202,16 +205,19 @@ export function jobEnv(
   base: Readonly<Record<string, string | undefined>>,
   redisDb: number | undefined,
   dir: { dist: string; clockFile: string },
+  lane = 0,
 ): Record<string, string> {
   return {
     E2E_DIST_DIR: dir.dist,
     // T1: mọi việc gọi admin-api từ cùng IP 127.0.0.1 và chung Redis ⇒ trần IP 30/10' (L1) chặn đăng nhập của cả lượt.
     LOGIN_IP_MAX_ATTEMPTS: E2E_LOGIN_IP_MAX,
     ...(job.clock ? { E2E_CLOCK_FILE: dir.clockFile } : {}),
-    ...(job.meta.env ?? {}),
-    ...dbEnv(job, base),
+    ...shiftNumericEnv(job.meta.env ?? {}, lane),
+    ...dbEnv(job, base, lane),
     ...redisEnv(job, base, redisDb),
-    ...(job.rootPort !== undefined ? { E2E_ROOT_WEB_PORT: String(job.rootPort) } : {}),
+    ...(job.rootPort !== undefined
+      ? { E2E_ROOT_WEB_PORT: String(job.rootPort + portShift(lane)) }
+      : {}),
   };
 }
 

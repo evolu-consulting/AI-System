@@ -18,6 +18,8 @@
     "test:int": "bun --env-file=.env.local --config=bunfig.int.toml test --timeout 30000 .int.test",
     "test:int:par": "bun tools/scripts/src/test-int-par.ts",
     "test:e2e:par": "bun tools/scripts/src/test-e2e-par.ts",
+    "e2e:lanes": "bun tools/scripts/src/e2e-lane.cli.ts lanes",
+    "e2e:reap": "bun tools/scripts/src/e2e-lane.cli.ts reap",
     "test:affected": "bun tools/scripts/src/test-affected.ts",
     "slice:new": "bun tools/scripts/src/slice.ts new",
     "slice:merge": "bun tools/scripts/src/slice.ts merge",

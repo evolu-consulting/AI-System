@@ -210,3 +210,11 @@ Một file `docs/specs/<milestone>-gate.md` do điều phối tạo, gồm: danh
 - Stack nền đã chốt trong `docs/adr/0001-stack.md`. Agent chỉ đề xuất khi cần thêm thư viện hoặc đổi cách làm.
 - Mỗi đề xuất = 1 ADR (`docs/adr/NNNN-<slug>.md`, trạng thái Proposed) có: bối cảnh, lựa chọn so sánh, số đo hiệu năng/chi phí liên quan, quyết định đề xuất. Duyệt cùng Gate, không hỏi riêng.
 - "Tối ưu" phải là con số trong spec (ngân sách mặc định: `CONVENTIONS.md` §6).
+
+## e2e theo làn (e2e-isolation)
+Mỗi checkout có một **làn** ổn định: main = 0, worktree = 1..14 (file `.e2e-lane`, gitignored; sổ đăng ký toàn máy ở `%TEMP%\evolu-e2e\lanes.json`, khoá bằng mkdir). Tự cấp lần chạy e2e đầu hoặc ở `slice:new`; `slice:rm` nhả làn. Mọi thứ suy từ làn (`tools/scripts/src/e2e-lane.rules.ts`), không ai đặt env tay:
+- **Cổng:** mặc định của cấu hình + 3000·làn (làn 0 giữ mặc định; không chồng nhau, tránh 5040). `E2E_PORT_SHIFT` cho cấu hình có cổng hằng (x2a, combine).
+- **DB test:** `ai_system_e2e_<tag>_l<làn>_test` (par) / `.env.test-<tag>_l<làn>.local` (chạy trực tiếp, tự `db:test:create` nếu thiếu).
+- **Redis:** chỉ 16 DB (7–15 cho e2e) và máy này không có redis-server riêng ⇒ **hợp đồng thuê DB toàn máy** (`%TEMP%\evolu-e2e\redis-db<N>.lease`, chủ chết tự nhả); hết 9 DB thì in "đang chờ lane Redis …" và xếp hàng. Chọn cách này vì chia cố định theo làn lãng phí DB và vỡ khi > K worktree; thuê động dùng được cho cả `test:e2e:par` lẫn chạy trực tiếp. `LOGIN_IP_MAX_ATTEMPTS` luôn cao.
+- **Dọn:** mỗi lần chạy giết cây tiến trình mình bật khi thoát/lỗi/Ctrl-C/SIGTERM. `bun run e2e:reap` tắt bun/node có đường dẫn checkout này và đang nghe cổng của làn; `bun run e2e:lanes [--prune]` liệt kê / bỏ làn của đường dẫn đã mất.
+Biến đã đặt tay vẫn thắng. Chạy `test:e2e:par` song song từ nhiều worktree là an toàn.

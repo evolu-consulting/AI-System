@@ -8,6 +8,7 @@
 // Không bao giờ push. Hook: tools/hooks qua core.hooksPath (xem setup-hooks.ts).
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { pruneLanes, resolveLane } from "./e2e-lane";
 
 const BASE = "platform/gd0";
 
@@ -109,6 +110,9 @@ function cmdNew(name: string | undefined): void {
   if (!run(dir, ["bun", "install"], true).ok) fail("bun install lỗi");
   verifyHooks(dir);
   writeTasksTemplate(dir, name as string);
+  console.log(
+    `slice: làn e2e ${resolveLane(dir)} (cổng/DB/Redis riêng, xem docs/WORKFLOW.md "e2e theo làn")`,
+  );
   console.log(`slice: sẵn sàng ${dir} (nhánh ${branch})`);
 }
 
@@ -143,6 +147,7 @@ function cmdRm(name: string | undefined, force: boolean): void {
   }
   rmSync(dir, { recursive: true, force: true }); // git để lại node_modules (đường dẫn dài/liên kết)
   git(main, "worktree", "prune");
+  pruneLanes(); // nhả làn e2e của worktree vừa gỡ
   const b = git(main, "branch", force ? "-D" : "-d", branch);
   console.log(
     b.ok
