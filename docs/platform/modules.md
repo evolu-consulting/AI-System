@@ -17,7 +17,7 @@ Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODUL
 | hub-api `sources` — `/admin/sources*`, `/internal/jobs/:id/sources-resolved` | đóng băng | Chỉ phục vụ quy trình P-b | hub |
 | hub-api `kh` — `/studio/api/kh/connections*` | đóng băng | Connector KnowledgeHub cũ | hub |
 | hub-api `kh` — `KhRuntime`, `kh-query`, `khPrepareJob` | đang dùng (mã) | `mcp` và `runner` import trực tiếp; không có route công khai | hub |
-| hub-api `dlc` — `/dlc/*` | đóng băng | AI SDLC không thuộc sản phẩm | hub |
+| hub-api `dlc` — `/dlc/*` | **đã xoá** (bản dlc-dify, gộp 2026-10-30 qua `slice/integrate-prod`) | Module cũ + env `HUB_DLC_*` gỡ; thay bằng hub-api `dify-calls`, app `apps/dlc-workspace`, `tools/dlc-dify` (tài liệu của nhóm dlc-dify) | hub |
 | hub-api `orchestrator` | **đang dùng** (không đóng băng) | `runDrivers` dùng làm vòng chạy run của chat; tách = đổi đường chạy chat | hub |
 | hub-api `mention` (`@`, `directDriver`), `commands` (`/`) | **đang dùng** (không đóng băng) | `sendMessageRoutes` gọi `prepareMention`/`prepareCommand`; `app.runner` dùng `directDriver` | hub |
 | hub-api autofix/runner P-c (`/internal/jobs/:id/source-credential`, `apply-result`) | đang dùng (không tách) | Route token-job nhỏ, không UI; gỡ cần sửa runner chung | hub |
