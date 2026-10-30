@@ -34,6 +34,7 @@ import {
   slotGroupKeys,
   validateSlotBody,
 } from "./domain/approval-slot.rules";
+import { slotBodyFromStages } from "./domain/approval-slot-default.rules";
 
 /** esign-flow · bước Ký số sau "Đã duyệt" (tool finalize; vắng ⇒ không tự gửi ký); người cụ thể (duyệt/ký) thuộc tenant + quyền
  *  `write` gói (kiểm khi lưu mẫu). */
@@ -118,6 +119,7 @@ export const approvalSlotSpec: SlotSpec = {
     );
     return path.map((p) => ({ key: p.key, name: steps[p.index]?.name ?? p.key, run: p.run }));
   },
+  fromStages: slotBodyFromStages,
 };
 
 /** CR-105 L4 · `GET /approval-flow` (chỉ đọc, quy trình đang dùng) + S3b `GET /groups` + `GET /dify-workflows`. */

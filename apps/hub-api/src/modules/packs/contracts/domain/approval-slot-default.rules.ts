@@ -3,6 +3,7 @@
 import { APPROVAL_DEFAULTS, type ApprovalSettings } from "./approval-def.rules";
 import { defaultFlowFromSettings } from "./approval-flow.rules";
 import type { FlowStep } from "./approval-flow.types";
+import { fromStages, type StageLike } from "./approval-flow-stages.rules";
 import type { SlotFlowBody, SlotFlowStep } from "./approval-slot.rules";
 
 /** Def mặc định seed ở hub 0069 (id cố định ⇒ migration chạy lại vô hại). */
@@ -44,6 +45,35 @@ export function keyedSlotBody(
     return { ...s, ...esc, company_signer: signer };
   });
   return missing.size ? { missing: [...missing] } : { body: { steps: out } };
+}
+
+type AnyStep = Record<string, unknown> & { company_signer?: Record<string, unknown> };
+/** Def thư viện: `stage.slot` mang mã ở chỗ id (`compileSlotStages`) hoặc `*_key` (canvas gửi lại) ⇒ đưa mã về chỗ id để đổi. */
+const keyIntoId = (s: AnyStep): AnyStep => {
+  const pick = (id: unknown, key: unknown) => (id ?? key ?? null) as string | null;
+  const out: AnyStep = {
+    ...s,
+    escalate_group_id: pick(s.escalate_group_id, s.escalate_group_key),
+    department_group_id: pick(s.department_group_id, s.department_group_key),
+  };
+  if (s.kind === "dify") return s;
+  if (s.kind !== "esign" || !s.company_signer) return out;
+  const c = s.company_signer;
+  const signer = { ...c, department_group_id: pick(c.department_group_id, c.department_group_key) };
+  const { department_group_id: _d, ...rest } = out;
+  return { ...rest, company_signer: signer };
+};
+
+/** CR-105 · canvas ⇒ body: `fromStages` (nghịch `compileDef`) rồi mã đứng chỗ id ⇒ `*_key`. Dạng sai ⇒ `{stage}`. */
+export function slotBodyFromStages(
+  stages: readonly unknown[],
+): { body: SlotFlowBody } | { stage: string } {
+  const r = fromStages(stages as StageLike[]);
+  if (!r.ok) return { stage: r.stage };
+  const steps = r.steps.map((s) => keyIntoId(s as unknown as AnyStep)) as unknown as FlowStep[];
+  const k = keyedSlotBody(steps, (id) => id);
+  if (!("body" in k)) return { stage: "" };
+  return k;
 }
 
 /** Mặc định = máy 2 bước cũ (`defaultFlowFromSettings`) với mã Group của cài đặt (mã đứng chỗ id rồi chuyển sang `*_key`). */

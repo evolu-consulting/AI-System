@@ -1,6 +1,6 @@
 // CR-105 · L2a · design §5: lưu nháp def thư viện. Nguồn thật = `slot_body` (Form, Group theo mã); `stages` = `SlotSpec.compile(body)`
-// Hub biên dịch lại mỗi lần lưu (gửi cả hai ⇒ `slot_body` thắng). Chỉ `stages` (canvas) ⇒ chưa có `fromStages` trên registry khe ⇒
-// nhận khi stages không đổi so với nháp (giữ body), khác ⇒ 422 `SLOT_SHAPE_UNSUPPORTED`. Kèm luật "đang dùng" (409 PROCESS_IN_USE).
+// Hub biên dịch lại mỗi lần lưu (gửi cả hai ⇒ `slot_body` thắng). Chỉ `stages` (canvas) ⇒ `SlotSpec.fromStages` dựng lại body (dạng
+// khác ⇒ 422 `SLOT_SHAPE_UNSUPPORTED {stage}`); khe không có `fromStages` ⇒ chỉ nhận stages y như nháp. Kèm luật "đang dùng" (409 PROCESS_IN_USE).
 import {
   HUB_ADMIN_LIBRARY_ERRORS,
   type HubAdminLibraryErrorCode,
@@ -56,6 +56,12 @@ export function slotDraft(
   cur: Cur,
 ): { input: ProcessDefInput; body: unknown } {
   let body = input.slot_body;
+  if (body === undefined && spec.fromStages) {
+    // Canvas: dựng lại body từ stages (dạng tuần tự của khe); song song / If / nhánh ⇒ 422 kèm stage sai.
+    const r = spec.fromStages(input.stages);
+    if ("stage" in r) throw libError("SLOT_SHAPE_UNSUPPORTED", { stage: r.stage, slot: spec.key });
+    body = r.body;
+  }
   if (body === undefined) {
     const same =
       cur !== null && JSON.stringify(canon(cur.stages)) === JSON.stringify(canon(input.stages));

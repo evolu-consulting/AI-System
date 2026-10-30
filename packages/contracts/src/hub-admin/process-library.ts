@@ -66,8 +66,8 @@ export const PublishProcessDefRequestSchema = z.strictObject({
 });
 export const RollbackProcessDefRequestSchema = z.strictObject({
   rel_version: z.number().int().min(1),
-  /** Khoá lạc quan nháp (tuỳ chọn). */
-  version: z.number().int().min(1).optional(),
+  /** Khoá lạc quan nháp (bắt buộc như publish: hai lần quay lại đồng thời ⇒ một 409). */
+  version: z.number().int().min(1),
 });
 export const ReleaseRefSchema = z.strictObject({ rel_version: z.number().int().min(1) });
 export type ReleaseRef = z.infer<typeof ReleaseRefSchema>;

@@ -374,7 +374,8 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       const v = (await call("P", "GET", D(id))).json.version;
       await call("P", "POST", `${D(id)}/publish`, { version: v });
     }
-    const r = await call("P", "POST", `${D(id)}/rollback`, { rel_version: 2 });
+    const ver = (await call("P", "GET", D(id))).json.version;
+    const r = await call("P", "POST", `${D(id)}/rollback`, { rel_version: 2, version: ver });
     expect({ s: r.status, j: r.json }).toEqual({ s: 201, j: { rel_version: 5 } });
     const v5 = (await call("P", "GET", `${D(id)}/releases/5`)).json;
     const v2 = (await call("P", "GET", `${D(id)}/releases/2`)).json;
@@ -391,6 +392,74 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       pv: 5,
     });
     expect(await auditCount("rollback", id)).toBe(1);
+  });
+
+  it("quay lại đồng thời cùng version ⇒ một thành công, một 409", async () => {
+    const id = await published("pl-rb2", body("Q1"));
+    await saveDraft(id, { slot_body: body("Q2") });
+    const v = (await call("P", "GET", D(id))).json.version;
+    await call("P", "POST", `${D(id)}/publish`, { version: v });
+    const ver = (await call("P", "GET", D(id))).json.version;
+    const rs = await Promise.all(
+      [1, 2].map(() => call("P", "POST", `${D(id)}/rollback`, { rel_version: 1, version: ver })),
+    );
+    expect({
+      s: rs.map((r) => r.status).sort(),
+      codes: rs.map((r) => r.json.error?.code).filter(Boolean),
+      rels: [
+        ...(await o`select count(*)::int as n from hub.process_def_releases where def_id = ${id}`),
+      ],
+    }).toEqual({ s: [201, 409], codes: ["VERSION_CONFLICT"], rels: [{ n: 3 }] });
+  });
+
+  it("lưu từ canvas (chỉ stages) dựng lại body theo mã, xuất bản áp dụng; song song ⇒ SLOT_SHAPE_UNSUPPORTED", async () => {
+    const id = await published("pl-cv", body("CV1"));
+    await call("P", "PUT", ASSIGN(X), { def_id: id });
+    const cur = (await call("P", "GET", D(id))).json;
+    const input = Object.fromEntries(INPUT_KEYS.map((k) => [k, cur[k]]));
+    const stages = (cur.stages as Json[]).map((s) =>
+      s.key === "s0" ? { ...s, name: "Kiểm tra canvas" } : s,
+    );
+    const ok = await call("P", "PUT", D(id), {
+      ...input,
+      stages,
+      slot: SLOT,
+      version: cur.version,
+    });
+    expect(ok.status).toBe(200);
+    const step0 = ok.json.slot_body.steps[0];
+    expect([step0.name, step0.department_group_key, step0.department_group_id]).toEqual([
+      "Kiểm tra canvas",
+      "contracts-editor",
+      null,
+    ]);
+    const pub = await call("P", "POST", `${D(id)}/publish`, { version: ok.json.version });
+    expect(pub.json).toEqual({ rel_version: 2 });
+    const res = await resolveSlot(db, X, SLOT);
+    expect([res?.defId, (res?.slotBody as Json | undefined)?.steps[0].name]).toEqual([
+      id,
+      "Kiểm tra canvas",
+    ]);
+    // Hai stage cùng bước (song song) ⇒ 422 kèm stage sai, nháp không đổi.
+    const s1 = (cur.stages as Json[]).find((s) => s.key === "s1") as Json;
+    const par = [...(cur.stages as Json[])];
+    par.splice(3, 0, { ...s1, key: "s1b", output: { ...s1.output, filename: "s1b.md" } });
+    const now = (await call("P", "GET", D(id))).json;
+    const bad = await call("P", "PUT", D(id), {
+      ...input,
+      stages: par,
+      slot: SLOT,
+      version: now.version,
+    });
+    expect({
+      s: bad.status,
+      code: bad.json.error?.code,
+      hasStage: typeof bad.json.error?.details?.stage,
+    }).toEqual({
+      s: 422,
+      code: "SLOT_SHAPE_UNSUPPORTED",
+      hasStage: "string",
+    });
   });
 
   it("nhân bản tạo nháp mới không ảnh hưởng tenant đang gán", async () => {

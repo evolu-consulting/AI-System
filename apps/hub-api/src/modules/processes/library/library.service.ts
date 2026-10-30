@@ -129,11 +129,11 @@ export class LibraryService {
   async rollback(
     u: AuthUser,
     id: string,
-    b: { rel_version: number; version?: number | undefined },
+    b: { rel_version: number; version: number },
   ): Promise<ReleaseRef> {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const def = await this.#def(tx, id, true);
-      if (b.version !== undefined && def.version !== b.version)
+      if (def.version !== b.version)
         throw appError("VERSION_CONFLICT", { current_version: def.version });
       const old = await lib.readRelease(tx, id, b.rel_version);
       if (!old) throw notFound();

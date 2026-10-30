@@ -18,7 +18,11 @@ import { startEngineApproval } from "./approval-engine.usecase";
 
 const X = tenantId(1061);
 const Y = tenantId(1062);
-const STARTER = { [X]: userId(1061), [Y]: userId(1062) } as Record<string, string>;
+const Z = tenantId(1063); // không gán ⇒ chạy mặc định
+const STARTER = { [X]: userId(1061), [Y]: userId(1062), [Z]: userId(1063) } as Record<
+  string,
+  string
+>;
 const KEYS = ["ke-toan", "giam-doc", "phap-che"];
 
 let o: Sql;
@@ -165,11 +169,13 @@ beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
   db = connectDb(urls().hubApi, 2);
-  await o`insert into admin.tenants (id, key, name) values (${X}, 't1061', 'X'), (${Y}, 't1062', 'Y')`;
+  await o`insert into admin.tenants (id, key, name) values (${X}, 't1061', 'X'), (${Y}, 't1062', 'Y'), (${Z}, 't1063', 'Z')`;
   await users(o, X, 1, { from: 1061 });
   await users(o, Y, 1, { from: 1062 });
   gid[X] = await groups(o, X, KEYS);
   gid[Y] = await groups(o, Y, KEYS);
+  await users(o, Z, 1, { from: 1063 });
+  gid[Z] = await groups(o, Z, KEYS);
   lib.A = await libDef("pl-slot-a", "Quy trình A", BODY.A);
   lib.B = await libDef("pl-slot-b", "Quy trình B", BODY.B);
   lib.D = await libDef("pl-slot-d", "Quy trình HĐ mặc định", BODY.D);
@@ -255,6 +261,41 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
       thirdSameDef: true,
     });
     expect(r1.defVersion).toBe(v1 as number);
+  });
+
+  it("đổi mặc định áp cho tenant chưa gán ở lượt kế", async () => {
+    const gz = gid[Z] as Map<string, string>;
+    const gy = gid[Y] as Map<string, string>;
+    const before = await open(Z, 11); // mặc định D: ke-toan
+    await o`update hub.process_slots set default_def_id = ${lib.A} where slot = ${APPROVAL_SLOT}`;
+    const after = await open(Z, 12); // mặc định mới A: ke-toan, giam-doc
+    const y = await open(Y, 13); // Y gán B ⇒ vẫn B
+    expect({
+      outs: [before.out, after.out, y.out],
+      before: reviewGroups((runs.get(before.a.run as string) as Run).stages),
+      after: reviewGroups((runs.get(after.a.run as string) as Run).stages),
+      y: reviewGroups((runs.get(y.a.run as string) as Run).stages),
+    }).toEqual({
+      outs: ["started", "started", "started"],
+      before: [gz.get("ke-toan")],
+      after: [gz.get("ke-toan"), gz.get("giam-doc")],
+      y: [gy.get("phap-che")],
+    });
+    await o`update hub.process_slots set default_def_id = ${lib.D} where slot = ${APPROVAL_SLOT}`;
+  });
+
+  it("sửa nháp chưa xuất bản không đổi lượt mới", async () => {
+    // Nháp B đổi sang bước ke-toan (def row), bản xuất bản (release v1) giữ phap-che ⇒ lượt mới của Y vẫn phap-che.
+    const draft = JSON.stringify(BODY.D);
+    const stages = JSON.stringify(compileSlotStages(BODY.D));
+    await o`update hub.process_defs set slot_body = ${draft}::text::jsonb, stages = ${stages}::text::jsonb,
+      version = version + 1 where id = ${lib.B}`;
+    const y = await open(Y, 14);
+    const gy = gid[Y] as Map<string, string>;
+    expect({ out: y.out, g: reviewGroups((runs.get(y.a.run as string) as Run).stages) }).toEqual({
+      out: "started",
+      g: [gy.get("phap-che")],
+    });
   });
 
   it("thiếu Group lúc chạy ⇒ máy cũ", async () => {

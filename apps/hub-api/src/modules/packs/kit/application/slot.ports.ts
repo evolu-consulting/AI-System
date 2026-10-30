@@ -26,6 +26,8 @@ export type SlotSpec = {
     body: unknown,
     input: { contractType: string; value: number },
   ): { key: string; name: string; run: boolean }[] | null;
+  /** CR-105 · lưu từ canvas (chỉ `stages`): dựng lại `slot_body` theo mã; dạng khác (song song, If, nhánh) ⇒ `{stage}` sai đầu tiên. */
+  fromStages?(stages: readonly unknown[]): { body: unknown } | { stage: string };
 };
 
 export type SlotRegistry = {
