@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { type AppEnv, loadDbEnv } from "./env";
+import { assertMigrationsInSync } from "./migrate-guard";
 import { runHubMigrations, withMigrateLock } from "./migrate-hub";
 import { runPackMigrations } from "./migrate-packs";
 
@@ -44,10 +45,12 @@ async function migrateMain(opts: {
   try {
     const db = drizzle(sql);
     const main0 = await applied(sql, MAIN_TABLE);
+    await assertMigrationsInSync(sql, MAIN_DIR, MAIN_TABLE);
     await migrate(db, { migrationsFolder: MAIN_DIR, migrationsTable: MAIN_TABLE });
     const main = (await applied(sql, MAIN_TABLE)) - main0;
     if (opts.appEnv === "production") return { main, dev: 0 };
     const dev0 = await applied(sql, DEV_TABLE);
+    await assertMigrationsInSync(sql, DEV_DIR, DEV_TABLE);
     await migrate(db, { migrationsFolder: DEV_DIR, migrationsTable: DEV_TABLE });
     return { main, dev: (await applied(sql, DEV_TABLE)) - dev0 };
   } finally {

@@ -7,6 +7,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import type { AppEnv } from "./env";
+import { assertMigrationsInSync } from "./migrate-guard";
 import { withMigrateLock } from "./migrate-hub";
 
 const dir = (name: string): string => fileURLToPath(new URL(`../${name}`, import.meta.url));
@@ -42,6 +43,7 @@ async function applied(sql: Sql, table: string): Promise<number> {
 /** Áp một thư mục migration, trả số migration vừa áp. */
 async function apply(sql: Sql, folder: string, table: string): Promise<number> {
   const before = await applied(sql, table);
+  await assertMigrationsInSync(sql, folder, table);
   await migrate(drizzle(sql), { migrationsFolder: folder, migrationsTable: table });
   return (await applied(sql, table)) - before;
 }

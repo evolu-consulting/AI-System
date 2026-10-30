@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import type { AppEnv } from "./env";
+import { assertMigrationsInSync } from "./migrate-guard";
 
 const HUB_DIR = fileURLToPath(new URL("../migrations-hub", import.meta.url));
 const HUB_DEV_DIR = fileURLToPath(new URL("../migrations-hub-dev", import.meta.url));
@@ -63,10 +64,12 @@ async function migrateHub(opts: {
   try {
     const db = drizzle(sql);
     const hub0 = await applied(sql, HUB_TABLE);
+    await assertMigrationsInSync(sql, HUB_DIR, HUB_TABLE);
     await migrate(db, { migrationsFolder: HUB_DIR, migrationsTable: HUB_TABLE });
     const hub = (await applied(sql, HUB_TABLE)) - hub0;
     if (opts.appEnv === "production") return { hub, hubDev: 0 };
     const dev0 = await applied(sql, HUB_DEV_TABLE);
+    await assertMigrationsInSync(sql, HUB_DEV_DIR, HUB_DEV_TABLE);
     await migrate(db, { migrationsFolder: HUB_DEV_DIR, migrationsTable: HUB_DEV_TABLE });
     return { hub, hubDev: (await applied(sql, HUB_DEV_TABLE)) - dev0 };
   } finally {
