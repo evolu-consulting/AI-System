@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { processErrorSpec } from "../../lib/errors";
+import { cloneName } from "../../lib/library-view";
 import {
   cloneDef,
   type LibraryDef,
@@ -17,6 +18,7 @@ import {
 import { AssignTenantsDialog } from "./AssignTenantsDialog";
 import { FlowFormEditor } from "./FlowFormEditor";
 import { type EditorMode, type LibraryAction, LibraryToolbar } from "./LibraryToolbar";
+import { LibraryCanvasContext } from "./library-canvas-ctx";
 import { PreviewDialog } from "./PreviewDialog";
 import { PublishDialog } from "./PublishDialog";
 import { ReleasesDialog } from "./ReleasesDialog";
@@ -45,7 +47,7 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const doClone = async () => {
     setBusy(true);
     try {
-      const copy = await cloneDef(def.id);
+      const copy = await cloneDef(def.id, { name: cloneName(def.name) });
       notifySuccess(t("process.admin.library.clone.done"));
       void refresh();
       void navigate({ to: "/processes/$processId", params: { processId: copy.id } });
@@ -81,7 +83,9 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onAction={onAction}
       />
       {mode === "canvas" ? (
-        canvas
+        <LibraryCanvasContext.Provider value={{ groups: slot?.group_keys ?? [] }}>
+          {canvas}
+        </LibraryCanvasContext.Provider>
       ) : (
         <FlowFormEditor
           def={def}

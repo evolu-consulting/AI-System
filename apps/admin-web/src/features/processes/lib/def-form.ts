@@ -23,6 +23,7 @@ import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
 import { budgetOk, P, validateStage } from "./stage-validate";
+import { slotHasReviewer } from "./system-nodes";
 import { normalizeTool } from "./tool-form";
 import {
   addCrossIssue,
@@ -177,7 +178,7 @@ export function validateDraft(
   if (d.stages.length < 1 || d.stages.length > PROCESS_STAGES_MAX) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
     validateStage(normalizeTool(normalizeWait(s)), i, d.stages, e);
-    if (forEnable && s.after === "review" && s.groupId === "")
+    if (forEnable && s.after === "review" && s.groupId === "" && !slotHasReviewer(s))
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
   const eff = d.stages.map((s) => normalizeTool(normalizeWait(normalizeApply(s))));

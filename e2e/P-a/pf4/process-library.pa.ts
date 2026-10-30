@@ -51,19 +51,60 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(toolbar.getByText("Chưa xuất bản")).toBeVisible();
     const name = (await p.getByRole("heading", { level: 1 }).innerText()).trim();
 
-    // Form: sửa tên bước 2 ⇒ Lưu
-    await toolbar.getByRole("button", { name: "Form", exact: true }).click();
-    const step2 = p.getByTestId("flow-step-1");
-    await step2.getByRole("textbox", { name: "Tên bước" }).fill("Kế toán duyệt (e2e)");
-    await p.getByTestId("flow-form").getByRole("button", { name: "Lưu", exact: true }).click();
-    await expect(p.getByTestId("flow-form").getByText(/Đã lưu · v\d+|Đã lưu/)).toBeVisible();
+    // Canvas: bước duyệt (cũng là stage gọi contracts-route) KHÔNG khoá ⇒ sửa tên + hạn, Lưu ⇒ Hub dựng lại slot_body từ stages
+    const canvas = p.getByRole("application", { name: "Canvas quy trình" });
+    await canvas.getByRole("button", { name: /^Giai đoạn 3: Duyệt cấp 2/ }).click();
+    const slotForm = p.getByTestId("slot-stage-form");
+    await slotForm.getByRole("textbox", { name: "Tên bước" }).fill("Duyệt cấp 2 (canvas)");
+    await slotForm.getByRole("spinbutton", { name: "Hạn quyết (giờ)" }).fill("24");
+    await p.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(p.getByText(/Đã lưu · v\d+/)).toBeVisible();
+    const defId = new URL(p.url()).pathname.split("/").filter(Boolean).at(-1) ?? "";
+    const draftSteps = () =>
+      withSql(
+        async (sql) =>
+          (await sql`select slot_body->'steps' as s from hub.process_defs where id = ${defId}`)[0]
+            ?.s as { name: string; due_h: number; department_group_key: string }[],
+      );
+    expect((await draftSteps())[1]).toMatchObject({ name: "Duyệt cấp 2 (canvas)", due_h: 24 });
 
+    // Canvas: thêm một bước duyệt tuần tự (Thêm giai đoạn) với mã phòng ban ⇒ Lưu ⇒ slot_body có 3 bước
+    await p.getByRole("button", { name: "Thêm giai đoạn", exact: true }).click();
+    await slotForm.getByRole("textbox", { name: "Tên bước" }).fill("Pháp chế (canvas)");
+    await slotForm
+      .getByRole("combobox", { name: "Mã phòng ban", exact: true })
+      .fill("contracts-owner");
+    await p.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(p.getByText(/Đã lưu · v\d+/)).toBeVisible();
+    const three = await draftSteps();
+    expect(three.map((s) => s.name)).toEqual([
+      "Kiểm tra hợp đồng",
+      "Duyệt cấp 2 (canvas)",
+      "Pháp chế (canvas)",
+    ]);
+    expect(three[2]?.department_group_key).toBe("contracts-owner");
+
+    // Form hiện đúng 3 bước vừa lưu từ Canvas (vòng đi–về giữ chỉnh sửa)
+    await toolbar.getByRole("button", { name: "Form", exact: true }).click();
+    await expect(
+      p.getByTestId("flow-step-2").getByRole("textbox", { name: "Tên bước" }),
+    ).toHaveValue("Pháp chế (canvas)");
+    await toolbar.getByRole("button", { name: "Canvas", exact: true }).click();
     // Xuất bản (hiện tác động) ⇒ "Đã xuất bản v1"
     await toolbar.getByRole("button", { name: "Xuất bản", exact: true }).click();
     const pub = p.getByRole("dialog");
     await expect(pub.getByTestId("publish-impact")).toContainText("tenant đang dùng");
     await pub.getByRole("button", { name: "Xuất bản", exact: true }).click();
     await expect(toolbar.getByText(/Đã xuất bản v\d+/)).toBeVisible();
+    // bản xuất bản v1 mang đúng nội dung đã sửa trên Canvas (áp cho lượt duyệt mới)
+    const rel = await withSql(
+      async (sql) =>
+        (
+          await sql`select slot_body->'steps' as s from hub.process_def_releases
+            where def_id = ${defId} and rel_version = 1`
+        )[0]?.s as { name: string }[],
+    );
+    expect(rel.map((s) => s.name)).toContain("Duyệt cấp 2 (canvas)");
 
     // Gán cho tenant acme: quy trình dùng phòng ban theo MÃ ⇒ acme cần Group `contracts-editor`/`contracts-owner` (fixture P-a chưa có;
     // gói Sổ Hợp Tác tạo chúng khi bật gói — ở đây dựng trực tiếp). Thiếu ⇒ Hub 422 SLOT_GROUPS_MISSING (kiểm ở ca khác).
@@ -80,12 +121,14 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await asg.getByRole("button", { name: "Lưu gán" }).click();
     await expect(p.getByText(/Đã cập nhật gán cho 1 tenant/)).toBeVisible();
 
-    // Canvas: nút hệ thống khoá (huy hiệu "Hệ thống", Delete không mở hộp xoá, panel báo khoá)
+    // Canvas: CHỈ route/finalize khoá (huy hiệu "Hệ thống", Delete không mở hộp xoá, panel báo khoá); bước duyệt không khoá
     await toolbar.getByRole("button", { name: "Canvas", exact: true }).click();
-    const canvas = p.getByRole("application", { name: "Canvas quy trình" });
     const sys = canvas.getByRole("button").filter({ hasText: "Hệ thống" });
     await expect(sys.first()).toBeVisible();
-    expect(await sys.count()).toBeGreaterThanOrEqual(2); // contracts-route + contracts-finalize
+    expect(await sys.count()).toBe(2); // contracts-route + contracts-finalize, không phải mọi giai đoạn
+    await expect(
+      canvas.getByRole("button", { name: /^Giai đoạn 3: Duyệt cấp 2 \(canvas\)/ }),
+    ).not.toContainText("Hệ thống");
     await sys.first().focus();
     await p.keyboard.press("Delete");
     await expect(p.getByRole("alertdialog")).toHaveCount(0);

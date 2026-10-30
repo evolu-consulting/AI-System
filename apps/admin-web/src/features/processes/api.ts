@@ -189,7 +189,14 @@ export function useTenantRuns(key: string | undefined, tenantId: string | undefi
     placeholderData: keepPreviousData,
     queryFn: () =>
       api<ProcessRunListResponse>(url("/process-runs"), {
-        query: { scope: "tenant", process_key: key, tenant_id: tenantId, limit: LIST_LIMIT },
+        // CR-105 · tab "Lượt chạy" của chính quy trình hiện cả lượt chạy thử (`is_test`: Showcase / bản "Chép mẫu"); danh sách lượt mặc định vẫn ẩn.
+        query: {
+          scope: "tenant",
+          process_key: key,
+          tenant_id: tenantId,
+          limit: LIST_LIMIT,
+          include_test: "true",
+        },
       }),
   });
 }

@@ -4,7 +4,7 @@ import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { branchOff } from "../../lib/d2-validate";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
 import { isIf } from "../../lib/if-form";
-import { isSystemStage } from "../../lib/system-nodes";
+import { isSlotStep, isSystemStage } from "../../lib/system-nodes";
 
 export type StageView = {
   uid: string;
@@ -48,6 +48,18 @@ const ifsOf = (s: StageDraft): StageView["ifs"] =>
       }
     : null;
 
+/** Nhãn người thực hiện: bước của khe (CR-105) hiện mã phòng ban thay cho tên tool route; còn lại theo agent/nhóm/tool. */
+function executorLabel(
+  s: StageDraft,
+  labels: ReadonlyMap<string, string>,
+  tools: ReadonlyMap<string, { name: string }>,
+): string {
+  if (isSlotStep(s)) return String(s.slotRaw?.department_group_key ?? "");
+  if (s.executor === "set") return "set";
+  if (s.executor === "tool") return tools.get(s.tool.key)?.name ?? s.tool.key;
+  return labels.get(s.executor) ?? "";
+}
+
 export function stageViews(
   stages: readonly StageDraft[],
   errors: DraftErrors,
@@ -60,20 +72,16 @@ export function stageViews(
     index: i,
     step: s.step,
     name: s.name,
-    executor:
-      s.executor === "set"
-        ? "set"
-        : s.executor === "tool"
-          ? (tools.get(s.tool.key)?.name ?? s.tool.key)
-          : (labels.get(s.executor) ?? ""),
+    executor: executorLabel(s, labels, tools),
     after: s.after,
     real: s.real,
     backTo: s.backTo,
     autofix: s.autofix.on,
     apply: s.executor === "apply",
     wait: s.executor === "wait_until",
-    tool: s.executor === "tool",
-    sideEffect: s.executor === "tool" && tools.get(s.tool.key)?.side_effect === true,
+    tool: s.executor === "tool" && !isSlotStep(s),
+    sideEffect:
+      s.executor === "tool" && !isSlotStep(s) && tools.get(s.tool.key)?.side_effect === true,
     branch: branchOff(s) ? [] : s.branch.map((b) => (b.goto === null ? null : b.goto - 1)),
     ifs: ifsOf(s),
     hasError: hasStageError(errors, i),

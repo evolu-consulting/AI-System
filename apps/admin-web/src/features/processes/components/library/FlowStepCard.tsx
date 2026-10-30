@@ -31,7 +31,7 @@ type Props = {
   onRemove: () => void;
 };
 
-function ReviewFields({
+export function ReviewFields({
   id,
   step,
   groups,

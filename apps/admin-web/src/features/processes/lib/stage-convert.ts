@@ -8,6 +8,7 @@ import { branchToRules, rulesToBranch } from "./branch-form";
 import type { StageDraft } from "./draft-types";
 import { emptyIf, normalizeIf } from "./if-form";
 import { emptySet, normalizeSet } from "./set-form";
+import { repairSlot } from "./slot-canvas";
 import {
   mustKnowToDef,
   mustKnowToDraft,
@@ -111,6 +112,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     mustKnow: mustKnowToDraft(s.must_know),
     autofix: autofixToDraft(s.autofix),
     ...(s.ui ? { uiY: s.ui.y } : {}),
+    ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
   };
 }
 
@@ -169,6 +171,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     must_know: mustKnowToDef(s.mustKnow),
     autofix: autofixToDef(s.autofix),
     ...(s.uiY === undefined ? {} : { ui: { y: clampUiY(s.uiY) } }),
+    ...(s.slotRaw ? { slot: s.slotRaw } : {}),
   };
 }
 

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import { processErrorSpec } from "../lib/errors";
-import { rowsForTab } from "../lib/library-view";
+import { cloneName, rowsForTab } from "../lib/library-view";
 import { cloneDef, type LibraryListItem, useLibraryDefs } from "../library-api";
 import { useProcessTenant } from "./use-process-tenant";
 import { useToggleEnabled } from "./use-toggle-enabled";
@@ -72,7 +72,7 @@ function useRowActions(
       onDelete,
       onClone: (r: Row) => {
         const c = latest.current;
-        void cloneDef(r.id).then((res) => {
+        void cloneDef(r.id, { name: cloneName(r.name) }).then((res) => {
           notifySuccess(c.t("process.admin.library.clone.done"));
           void c.invalidate();
           c.onCloned(res.id);

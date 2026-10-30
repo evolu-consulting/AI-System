@@ -16,6 +16,7 @@ import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
 import { draftToIf, isIf } from "./if-form";
 import type { InputDraft } from "./sources-form";
+import { isSystemToolStage } from "./system-nodes";
 import { hasArg, isTool, toolToDef } from "./tool-form";
 import { isWait } from "./wait-form";
 
@@ -141,13 +142,24 @@ export function toolErrors(
     inputs.map((x) => ({ key: x.key, type: x.type })),
     toolMap(tools),
   );
+  // CR-105 · tool hệ thống của khe (contracts-route/finalize) do gói cấp, không có ở catalog nền tảng ⇒ không kiểm theo catalog.
+  const skip = (path: string): boolean => {
+    const s = stages[Number(path.split(".")[1])];
+    return s !== undefined && isSystemToolStage(s);
+  };
   for (const i of issues) {
+    if (skip(i.path)) continue;
     if (i.rule === "TOOL_SIDE_EFFECT") e[i.path] ??= sideEffectKey(stages, i.path);
     else if (i.rule === "TOOL_INVALID")
       e[i.path] ??= unfilled(stages, i.path) ? TOOL_ERR.argRequired : TOOL_ERR.invalid;
   }
   stages.forEach((s, i) => {
-    if (isTool(s) && s.tool.key !== "" && !tools.some((t) => t.key === s.tool.key))
+    if (
+      isTool(s) &&
+      !isSystemToolStage(s) &&
+      s.tool.key !== "" &&
+      !tools.some((t) => t.key === s.tool.key)
+    )
       e[`stages.${i}.executor.tool_key`] = TOOL_ERR.ref;
   });
   return e;

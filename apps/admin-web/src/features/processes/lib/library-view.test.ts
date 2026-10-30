@@ -144,3 +144,13 @@ describe("tab Mẫu · chạy thử", () => {
     expect(rowsForTab(rows, false, "off").map((r) => r.id)).toEqual(["b"]);
   });
 });
+
+describe("cloneName", () => {
+  test("không chồng hậu tố (bản sao)", async () => {
+    const { cloneName } = await import("./library-view");
+    expect(cloneName("Quy trình HĐ A")).toBe("Quy trình HĐ A (bản sao)");
+    expect(cloneName("Quy trình HĐ A (bản sao)")).toBe("Quy trình HĐ A (bản sao)");
+    expect(cloneName("Quy trình HĐ A (bản sao) (bản sao)")).toBe("Quy trình HĐ A (bản sao)");
+    expect(cloneName("x".repeat(200)).length).toBe(100);
+  });
+});

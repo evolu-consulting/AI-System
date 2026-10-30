@@ -29,8 +29,9 @@ import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
-import { toDraft, withLiveErrors } from "../lib/def-form";
+import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
+import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
 
 export type ProcessEditorPageProps = { processId?: string };
@@ -112,6 +113,12 @@ const libraryOf = (def: unknown, isPlatform: boolean): LibraryDef | null =>
   isPlatform && (def as LibraryDef | undefined)?.slot ? (def as LibraryDef) : null;
 const isReadOnlyDef = (def: { is_template?: boolean } | undefined, isPlatform: boolean) =>
   !!def?.is_template && !isPlatform;
+/** Canvas thư viện: chuẩn hoá dạng `s0 → route → s1..sn → finalize` trước khi kiểm + lưu (Hub `fromStages`). */
+const prepareLibraryDraft = (d: DefDraft): DefDraft => ({
+  ...d,
+  stages: normalizeSlotStages(d.stages),
+});
+const prepareFor = (lib: LibraryDef | null) => (lib ? prepareLibraryDraft : undefined);
 const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
 
 function Editor({ processId }: ProcessEditorPageProps) {
@@ -123,6 +130,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
   const lib = libraryOf(q.data, tenant.isPlatform);
   const save = useDefSave({
     extra: slotExtra(lib),
+    prepare: prepareFor(lib),
     id: processId,
     tenantId: tenant.tenantId,
     version,

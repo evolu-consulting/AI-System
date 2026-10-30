@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
-import { toDraft, toInput, validateDraft } from "../lib/def-form";
+import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
 import { errorCode, processErrorSpec, serverErrors, serverPaths, serverRules } from "../lib/errors";
 import type { TeamSections } from "../lib/wait-form";
 import type { DraftState } from "./use-draft";
@@ -25,6 +25,8 @@ type Args = {
   tools?: readonly ProcessToolItem[];
   /** CR-105 · trường thêm vào body (vd `slot` của quy trình thư viện — Canvas gửi `stages`, Hub `fromStages`). */
   extra?: Record<string, unknown> | undefined;
+  /** CR-105 · chuẩn hoá bản nháp trước khi kiểm + gửi (Canvas thư viện: `normalizeSlotStages`). */
+  prepare?: ((d: DefDraft) => DefDraft) | undefined;
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
@@ -56,7 +58,17 @@ function useRedirectAfterCreate(createdId: string | null, dirty: boolean) {
   }, [createdId, dirty, navigate]);
 }
 
-export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools, extra }: Args) {
+export function useDefSave({
+  id,
+  tenantId,
+  version,
+  setVersion,
+  d,
+  teams,
+  tools,
+  extra,
+  prepare,
+}: Args) {
   const { t } = useTranslation();
   const invalidate = useInvalidateDefs();
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -81,10 +93,11 @@ export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools,
     },
   });
   const submit = async () => {
-    const errors = validateDraft(d.draftRef.current, undefined, teams, tools);
+    const draft = prepare ? prepare(d.draftRef.current) : d.draftRef.current;
+    const errors = validateDraft(draft, undefined, teams, tools);
     d.showErrors(errors);
     if (Object.keys(errors).length > 0) return;
-    const body = { ...toInput(d.draftRef.current), ...extra } as ProcessDefInput;
+    const body = { ...toInput(draft), ...extra } as ProcessDefInput;
     setPending(true);
     try {
       if (id !== undefined) await cs.save(body, version);

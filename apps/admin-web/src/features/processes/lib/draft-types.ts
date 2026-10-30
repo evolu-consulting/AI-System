@@ -80,6 +80,8 @@ export type StageDraft = {
   branch: BranchDraft[];
   /** CR-103 · fnr-if · khối "Nếu" (chỉ dùng khi `executor = "if"`). */
   ifx: IfDraft;
+  /** CR-105 · `stage.slot` của khe (mô tả bước người dùng: review/Dify, hoặc `esign` ở finalize) — giữ nguyên qua Canvas, Hub `fromStages` dựng lại `slot_body`. */
+  slotRaw?: Record<string, unknown> | undefined;
   /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */
   uiY?: number;
 };

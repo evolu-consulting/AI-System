@@ -136,3 +136,10 @@ export function rowsForTab<R extends { enabled: boolean }>(
 
 /** `details` của lỗi Hub (`ApiError.details`) mà không import lớp http vào component. */
 export const detailsOf = (err: unknown): unknown => (rec(err) ? err.details : undefined);
+
+const COPY_SUFFIX = " (bản sao)";
+/** Tên bản nhân bản: bỏ hậu tố "(bản sao)" đã có (không chồng "(bản sao) (bản sao)") rồi thêm một lần; cắt theo giới hạn tên. */
+export function cloneName(name: string, max = 100): string {
+  const base = name.replace(/(\s*\(bản sao\))+\s*$/u, "").trim();
+  return `${base.slice(0, Math.max(1, max - COPY_SUFFIX.length))}${COPY_SUFFIX}`;
+}

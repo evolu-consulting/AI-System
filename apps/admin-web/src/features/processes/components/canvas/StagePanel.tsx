@@ -7,6 +7,8 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { isSystemStage } from "../../lib/system-nodes";
 import { StageForm } from "../editor/StageForm";
+import { useLibraryCanvas } from "../library/library-canvas-ctx";
+import { SlotStageForm } from "../library/SlotStageForm";
 import { PANEL_ID, type Workbench } from "./use-workbench";
 
 type Props = {
@@ -33,6 +35,7 @@ function useEscClose(active: boolean, onClose: () => void) {
 
 export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) {
   const { t } = useTranslation();
+  const lib = useLibraryCanvas();
   const { sel, index, ops } = w;
   const drawer = variant === "drawer";
   useEscClose(drawer && w.open, w.close);
@@ -67,7 +70,18 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
           {t("process.admin.library.system.locked")}
         </p>
       ) : null}
-      {sel ? (
+      {sel && lib && !readOnly && !isSystemStage(sel) ? (
+        <SlotStageForm
+          key={sel.uid}
+          stage={sel}
+          index={index}
+          count={w.stages.length}
+          groups={lib.groups}
+          onChange={(p) => d.patchStage(index, p)}
+          onMove={(dir) => ops.moveColumn(index, dir)}
+          onRemove={() => w.remove(index)}
+        />
+      ) : sel ? (
         <StageForm
           key={sel.uid}
           stage={sel}
