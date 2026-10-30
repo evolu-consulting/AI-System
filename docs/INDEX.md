@@ -19,6 +19,7 @@
 | `current/sht/cai-dat-va-quyen.md` | Sổ Hợp Tác: quyền, màn Cài đặt, cờ/công tắc |
 | `current/sht/phap-ly-va-can-xu-ly.md` | Sổ Hợp Tác: cảnh báo pháp lý, nguồn Cần xử lý |
 | `current/sht/sp-va-gia.md` | Sổ Hợp Tác: SP & Giá (VAT, hạn, thay/gỡ mềm, Lịch sử giá) |
+| `current/engine/flow-engine.md` | Engine quy trình (CR-103): registry node, If, set, đổi node, canvas/drawer, showcase, `HUB_PROCESS_ROUTES`, catalog tool |
 | `current/admin/ghi-chu.md` | Admin: công ty/user đối tác (ngắn) |
 | `current/community/README.md` | Community App (gói `community`, CR-102): nghiệp vụ, ma trận hiển thị thành ca test, Chưa rõ. **Đã code C1–C12 trên platform/gd0, chưa deploy** |
 | `adr/0031-pack-to-pack-ports.md` | Cổng gói↔gói: gói khai port, `packs.mount.ts` tiêm usecase gói kia |

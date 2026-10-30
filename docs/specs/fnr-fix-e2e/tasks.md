@@ -26,6 +26,6 @@ Playwright `e2e/fnr-showcase/playwright.fnr.config.ts`: 2/2 xanh (chạy bằng 
 - Nút duyệt "Từ chối" gửi feedback cố định (reject bắt buộc feedback).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: e2e showcase tự seed)

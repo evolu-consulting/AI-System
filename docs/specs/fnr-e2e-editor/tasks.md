@@ -31,7 +31,7 @@ Chạy riêng: `PA_E2E_ENV=.env.test-fnred.local PA_REDIS_DB=11 bun tools/script
 - Token Hub không dùng lại giữa ca (hết hạn nhanh).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: thêm e2e editor CR-103)
 

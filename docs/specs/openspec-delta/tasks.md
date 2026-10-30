@@ -23,7 +23,7 @@ Không tự sửa `docs/current`; không kiểm lại lát đã "đã gộp" d�
 - `openspec:check` không tham số: lát có thư mục `docs/specs/<lát>/` đổi so với merge-base `platform/gd0` + lát của nhánh `slice/<tên>` hiện tại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### MODIFIED README.md
 #### Yêu cầu: Định dạng Delta

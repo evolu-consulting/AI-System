@@ -53,7 +53,7 @@ registry loại node, **không đổi hành vi**. Lõi hỏi registry (cờ năn
 - Không có `*.perf.int.test.ts` trong processes/kh ⇒ không có số perf trước/sau; refactor không thêm câu SQL nào.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: tách loại node ra registry, hành vi engine giữ nguyên; yêu cầu nằm ở docs/specs/flow-node-registry)
 

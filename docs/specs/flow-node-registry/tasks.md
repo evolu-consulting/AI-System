@@ -24,7 +24,7 @@ Xem `proposal.md` + `design.md`. Thứ tự: R1 → R2 → (R3 ∥ R4). Review +
 - 2026-10-29 người dùng: if/else "chọn cách dùng long term" ⇒ node If trong registry (không viết lại engine đồ thị đợt này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Loại node cắm qua registry

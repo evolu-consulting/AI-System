@@ -24,7 +24,7 @@ Editor quy trình, view Canvas: canvas toàn khung (cao min(70vh, 640px)); chi t
 - Fit tự tính viewport (`getViewportForBounds`) thay vì padding có đơn vị của fitView (cho kết quả sai ở xyflow 12.11).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Editor canvas toàn khung, chi tiết dạng ngăn kéo

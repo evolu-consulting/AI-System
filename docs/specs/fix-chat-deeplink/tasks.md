@@ -21,7 +21,7 @@ Không đổi sản phẩm.
 Chờ ô "Tin nhắn" (có ở desktop và mobile) thay vì thanh điều hướng (ẩn ở mobile).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: sửa e2e theo prefs-sync/portal-home và mock Hub; sản phẩm không đổi)
 

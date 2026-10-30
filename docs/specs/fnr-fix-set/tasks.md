@@ -26,6 +26,6 @@ Int 2 ca (auto + review) xanh; unit set/showcase giữ nguyên; tsc hub-api + to
 - Seed nhóm duyệt: `grantGroup` (actor hệ thống, audit `membersAudit`) — user ngoài/không tồn tại ⇒ lỗi cả lô.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: sửa lỗi review CR-103 — set + review phải mở cổng duyệt như yêu cầu ở fnr-showcase)

@@ -25,6 +25,6 @@ Unit canvas-layout; xem ảnh chụp Playwright tạm (không commit).
 - Sửa ở `layoutSteps` (thuần) thay vì ở edge component: cạnh If tới stage, nên `BranchEdge` giữ nguyên cho luật `after.branch` cũ (vẫn tới tiêu đề).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: chỉnh giao diện showcase/canvas)

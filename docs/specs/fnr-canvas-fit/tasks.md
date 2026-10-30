@@ -17,6 +17,6 @@ Canvas editor tự vừa khung: fitView khi tải lần đầu, sau "Sắp xếp
 - Flow quá rộng ngay cả ở 0.3 ⇒ neo trái x=16 (E-PB2-12 cần node 1 bấm được).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: canvas editor tự vừa khung)

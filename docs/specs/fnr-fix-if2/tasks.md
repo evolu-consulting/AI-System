@@ -24,7 +24,7 @@ Như trên + `test:int:par` processes, P-d/d2, fnr-showcase; e2e showcase cô l�
 - Sửa ở nguồn (route bỏ input) thay vì để If đọc từ chỗ khác. NFC/trim áp cho eq/ne và cả so thứ tự chuỗi (cùng hàm).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: sửa lỗi node If đọc input — route chạy thử admin nay nhận `inputs[]` như đặc tả đã nêu)
 

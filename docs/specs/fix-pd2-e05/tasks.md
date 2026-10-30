@@ -22,7 +22,7 @@ Unit `processes/adapters/tools/tool-switch.repo.test.ts`.
 Sản phẩm sai (không phải test/seed): tool "Gọi tool" của quy trình là công tắc theo công ty; tool lõi chat không thuộc công tắc đó.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Danh sách tool theo công ty

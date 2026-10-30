@@ -23,7 +23,7 @@ e2e theo cấu hình; xem báo cáo trước/sau.
 Sửa tập trung ở helper đăng nhập thay vì seed `default_app` để màn chọn ứng dụng vẫn được phủ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: e2e theo màn chọn ứng dụng sau đăng nhập)
 

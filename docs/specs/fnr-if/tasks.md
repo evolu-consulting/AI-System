@@ -40,7 +40,7 @@ chưa thêm `if` vào union executor (R1 đang refactor). StageForm/ProcessCanva
 - Test: `tests/acceptance/P-d/d2/if.int.test.ts` (Đúng / Sai+else / Sai không else / nguồn input + or / if lồng); `test:int:par` processes + P-d/d2 xanh (gồm `branch.int.test.ts` = snapshot `after.branch` cũ); seed showcase dry-run hợp lệ.
 - Quyết định đợt B: stage If chốt `done` ở `nodes/if/launch.ts` (không output, không KH summary) rồi `settleStepTx`; kick bước đích nhờ `more: true`. Chuỗi If liên tiếp > 3 trong một lần kick cần thêm kick (vòng `kickOnce` giới hạn `PROCESS_STEP_STAGES_MAX + 1`). Hub ép template/mục/answerer của stage If khi lưu (không nới `output.template min(1)` của schema). Input kiểu `text` đọc từ `inputs[].text`, kiểu khác từ `value`.
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Node If

@@ -18,6 +18,6 @@ Lý do chung: người dùng chốt ngăn đóng mặc định 2026-10-29.
 - Đã rà toàn bộ e2e/** (panel, region giai đoạn, ô trong panel): P-b2, P-c, P-c2, P-d, fnr đã bấm node trước; không cần sửa.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: e2e theo ngăn chi tiết đóng mặc định)

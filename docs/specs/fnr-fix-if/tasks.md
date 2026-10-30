@@ -24,7 +24,7 @@ Không đổi luật `after.branch`, không đổi loại bất đồng bộ.
 - `kickOnce` trả `{ more, sync }`; trần đồng bộ = số stage tối đa của def.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: sửa lỗi review CR-103 — luật def If khớp runtime và kick chuỗi node đồng bộ; hành vi đặc tả "Node If" không đổi)
 

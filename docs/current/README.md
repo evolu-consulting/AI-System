@@ -38,6 +38,7 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | | [sht/phap-ly-va-can-xu-ly.md](sht/phap-ly-va-can-xu-ly.md) | Cảnh báo pháp lý, nguồn Cần xử lý |
 
 | Community (gói `community`) | [community/README.md](community/README.md) | Nghiệp vụ, ma trận hiển thị, Chưa rõ (CR-102) |
+| Engine quy trình (CR-103) | [engine/flow-engine.md](engine/flow-engine.md) | Registry node, If, set, đổi node, canvas/drawer, showcase, route HUB_PROCESS_ROUTES, catalog tool |
 | Admin (ngắn) | [admin/ghi-chu.md](admin/ghi-chu.md) | Người dùng ngoài / công ty đối tác, cổng admin-api cho đối tác |
 
-Khu vực khác (Agent Hub, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.
+Khu vực khác (Agent Hub lõi, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.

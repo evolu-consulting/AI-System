@@ -26,7 +26,7 @@ R3: luật đổi node cùng họ dùng chung FE/BE + ô chọn loại node ở 
 - Stage dở dang không chuyển được sang def bị bỏ qua khi kiểm (server kiểm lại lúc lưu).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Đổi node cùng họ

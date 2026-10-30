@@ -18,7 +18,7 @@ Lỗi e2e: luật "cùng họ" của `canSwap` chặn cả stage đang tạo (kh
 - PD2-E05 ("chưa có tool nào…") cùng nguyên nhân: không chọn được "Gọi tool" ở stage mới; không sửa riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Đổi node cùng họ chỉ áp cho node đã lưu

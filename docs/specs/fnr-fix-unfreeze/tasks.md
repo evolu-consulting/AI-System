@@ -36,7 +36,7 @@ Người dùng chốt: KHÔNG mở rộng route (editor/showcase chỉ admin, ch
 - `beforeAll` của int test nâng 60 s → 120 s: dựng DB chậm khi `test:all` chạy song song trên máy (lưới an toàn, không phải chờ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Cảnh báo người duyệt ở chế độ chỉ quản trị

@@ -43,7 +43,7 @@ platform_admin) ở gốc mọi tiền tố quy trình. Không dựa `X-App` (cl
   một lần) — chấp nhận, đổi lại không cần build lại admin-web khi bật/tắt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Editor quy trình cho admin

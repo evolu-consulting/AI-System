@@ -25,7 +25,7 @@ Chạy lại từng file test đã chạm (int + unit) vẫn xanh.
 `ContextEntityKind` ở domain khai báo lại union `"contract" | "partner"`; adapter dùng kiểu contracts nên lệch sẽ lỗi biên dịch.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 Không thay đổi hành vi (lý do: sửa kiểu trong test + gỡ vòng import)
 

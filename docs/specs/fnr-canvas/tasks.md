@@ -30,7 +30,7 @@ Unit layout/contract/convert; một int round-trip `ui`; e2e fnr-showcase (kéo 
 - Kéo không đổi vị trí (< 1 px) ⇒ không ghi `ui`; cột đầy ⇒ không ghi `ui`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Canvas kéo thả và Sắp xếp

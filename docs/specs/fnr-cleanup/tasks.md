@@ -23,7 +23,7 @@ Không đổi hành vi. Chạm: apps/hub-api processes (defs, nodes), tests/acce
 - Đã kiểm enum CR-103 chỉ nối cuối (không chèn giữa) ⇒ giữ nguyên ý định test.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 Không thay đổi hành vi (lý do: gỡ vòng import + qc khoá test CR-103)
 
 ## Việc còn lại

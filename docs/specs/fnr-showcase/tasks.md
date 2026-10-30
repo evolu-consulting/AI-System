@@ -55,7 +55,7 @@ Còn lại:
 2. e2e `showcase.fnr.ts`: thêm `playwright*.config.ts` (cần stack + seed) và chạy một lần cuối đợt.
 3. Ghi `docs/platform/modules.md` nếu chưa (do fnr-unfreeze).
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-103)
 
 ### ADDED engine/flow-engine.md
 #### Yêu cầu: Node set và trang showcase
