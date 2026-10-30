@@ -48,7 +48,7 @@ HostFactory = Callable[[Pool, RunEvents], JobHost]
 CLOSE_TIMEOUT_S = 2.0
 # H2a RT6: provider chạy bằng HTTP trong process cha (`workflow.async`, không job host CLI) — claim
 # khi có trong `AGENT_RT_PROVIDERS`, không đụng `provider_state`.
-HTTP_PROVIDERS = frozenset({"dify", "dlc"})  # DLC-R01: `dlc` = engine AI SDLC qua HTTP
+HTTP_PROVIDERS = frozenset({"dify"})
 
 
 class UnknownProviders(ValueError):

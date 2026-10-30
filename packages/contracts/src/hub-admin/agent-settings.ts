@@ -29,20 +29,6 @@ export const AgentModelSchema = z.strictObject({
 });
 export type AgentModel = z.infer<typeof AgentModelSchema>;
 
-/**
- * DLC-R13 · agent của AI SDLC: supervisor (`dlc`, chat được, `team` = key các vai trò) hoặc một vai trò engine DLC chạy
- * trong run (`runtime python`, loại `dlc-role`: bước, kiểu, model engine đang dùng). Vắng = agent thường.
- */
-export const DlcAgentInfoSchema = z.strictObject({
-  role: z.string().min(1).max(48),
-  step: z.string().max(40),
-  kind: z.enum(["supervisor", "complete", "agentic"]),
-  model: z.string().max(100),
-  supervisor: z.string().max(48).nullable(),
-  team: z.array(z.string().max(48)).max(100),
-});
-export type DlcAgentInfo = z.infer<typeof DlcAgentInfoSchema>;
-
 /** agents-background · 'chat' = cấp quyền được; 'background' = chạy nền cho app/tính năng (không cấp quyền, không @mention). */
 export const AGENT_SURFACE_VALUES = ["chat", "background"] as const;
 export const AgentSurfaceSchema = z.enum(AGENT_SURFACE_VALUES);
@@ -71,7 +57,6 @@ export const AgentSettingsItemSchema = z.strictObject({
   entitled: z.boolean(),
   /** Là Orchestrator (dùng được = cả công ty khi đã bật; không cấp quyền riêng). */
   is_orchestrator: z.boolean(),
-  dlc: DlcAgentInfoSchema.optional(),
 });
 export type AgentSettingsItem = z.infer<typeof AgentSettingsItemSchema>;
 

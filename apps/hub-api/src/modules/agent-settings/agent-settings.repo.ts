@@ -16,8 +16,6 @@ export type SettingsAgentRow = {
   is_orch: boolean;
   model: string | null;
   model_name: string | null;
-  agent_type_key: string | null;
-  runtime_options: Record<string, unknown> | null;
   surface: "chat" | "background";
   serves: { app: string; label: { vi: string; en: string } } | null;
   profile_key: string | null;
@@ -49,7 +47,7 @@ export function listAgents(
         p.steps -> 0 ->> 'provider_key' as provider_key, p.key as profile_key
       from hub.agents a left join hub.model_profiles p on p.id = a.profile_id),
     x as (
-      select a.id, a.key, a.name, a.description, a.runtime, a.enabled, a.agent_type_key, a.runtime_options,
+      select a.id, a.key, a.name, a.description, a.runtime, a.enabled,
         a.surface, a.serves, m.profile_key,
         exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
         e.agent_id is not null as has_row, e.revoked_at is null as row_live,
@@ -63,7 +61,7 @@ export function listAgents(
           and o.id is distinct from (select r.id from hub.orchestrator_settings r
             where r.tenant_id = ${tenantId} or r.tenant_id is null
             order by r.tenant_id nulls last limit 1)))
-    select x.id, x.key, x.name, x.description, x.runtime, x.enabled, x.agent_type_key, x.runtime_options,
+    select x.id, x.key, x.name, x.description, x.runtime, x.enabled,
       x.surface, x.serves, x.profile_key, x.is_orch, x.model, x.model_name,
       case when x.surface = 'background' and not x.is_orch then not (x.has_row and not x.row_live)
         else (x.has_row and x.row_live) end as entitled

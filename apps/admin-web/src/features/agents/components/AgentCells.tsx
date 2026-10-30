@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { pickLocalized } from "@/lib/localized";
-import { isActive, isDlcRole, modelText, type WhoChip, whoChips } from "../lib/agents";
+import { isActive, modelText, type WhoChip, whoChips } from "../lib/agents";
 
 export function ModelCell({ item }: { item: AgentSettingsItem }) {
   const { t } = useTranslation();
-  if (isDlcRole(item))
-    return <span className="font-mono text-label">{item.dlc?.model || "—"}</span>;
   return <span>{modelText(item.model) ?? t("agents.model.cliDefault")}</span>;
 }
 
@@ -78,12 +76,6 @@ export function WhoCell({
   rows: readonly AgentGrantRow[];
 }) {
   const { t, i18n } = useTranslation();
-  if (isDlcRole(item))
-    return (
-      <Badge variant="secondary">
-        {t("agents.dlc.inRun", { supervisor: item.dlc?.supervisor ?? "dlc" })}
-      </Badge>
-    );
   const chips = whoChips(item, rows);
   return (
     <div className="flex flex-wrap gap-1">
@@ -111,7 +103,6 @@ export function RowActions({ item, isDefault, busy, onMakeDefault, onGrant }: Ac
   const { t, i18n } = useTranslation();
   const name = pickLocalized(item.agent.name, i18n.language);
   const active = isActive(item);
-  if (isDlcRole(item)) return null;
   return (
     <div className="flex flex-wrap justify-end gap-2">
       {active && !isDefault ? (

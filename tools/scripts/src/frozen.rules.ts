@@ -4,10 +4,10 @@
 
 /** Mẫu đường dẫn file test (unit + int) thuộc module đóng băng. */
 export const FROZEN_TEST_GLOBS: readonly string[] = [
-  "apps/hub-api/src/modules/{processes,sources,rooms,kh,dlc}/**",
+  "apps/hub-api/src/modules/{processes,sources,rooms,kh}/**",
   "apps/admin-api/src/modules/{workflows,workflow-tools,transfer,commands}/**",
-  "apps/chat-web/src/features/{processes,rooms,dlc}/**",
-  "apps/admin-web/src/features/{processes,sources,commands,workflows,transfer,dlc-admin}/**",
+  "apps/chat-web/src/features/{processes,rooms}/**",
+  "apps/admin-web/src/features/{processes,sources,commands,workflows,transfer}/**",
   "apps/studio-web/src/features/settings/**",
   // Nghiệm thu theo mốc: quy trình (P-*), KnowledgeHub cũ (K1), phòng + agent trong phòng (X2b*), lệnh Admin (H3b-cmd).
   "tests/acceptance/{P-a,P-b,P-b2,P-c,P-c2,P-d,K1,X2b,X2b2,H3b-cmd}/**",

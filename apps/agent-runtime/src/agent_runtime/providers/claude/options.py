@@ -86,6 +86,9 @@ FORMAT_BLOCK = (
     "\n\n# Định dạng trả lời\nChỉ trả MỘT đối tượng JSON đúng schema: "
     '{"status":"done","text":"..."} | {"status":"partial","text":"...","missing":"..."} | '
     '{"status":"need_input","question":"...","choices":["..."]}. Không thêm chữ ngoài JSON.'
+    # dlc-dify · `text` tuỳ chọn của need_input: nội dung dài trình bày trước câu hỏi.
+    ' need_input có thể kèm "text":"..." (nội dung dài cần người đọc trước khi trả lời,'
+    ' vd plan xin duyệt); "question" giữ ngắn (≤ 2000 ký tự).'
 )
 
 

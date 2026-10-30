@@ -8,7 +8,6 @@
     "tools/*"
   ],
   "scripts": {
-    "postinstall": "bun tools/scripts/src/setup-hooks.ts",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.tests.json",

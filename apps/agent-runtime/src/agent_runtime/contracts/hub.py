@@ -296,6 +296,7 @@ class AgentResult3(BaseModel):
     status: Literal["need_input"]
     question: Annotated[str, Field(max_length=2000, min_length=1)]
     choices: Annotated[list[Choice], Field(max_length=6)]
+    text: Annotated[str | None, Field(max_length=64000, min_length=1)] = None
 
 
 class AgentResult(RootModel[AgentResult1 | AgentResult2 | AgentResult3]):

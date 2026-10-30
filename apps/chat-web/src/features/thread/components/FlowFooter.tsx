@@ -5,7 +5,6 @@ import { ChevronRight, Copy, LoaderCircle, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import { ProcessButton } from "~/features/dlc/components/ProcessDialog";
 import { extraMessages } from "../lib/thread-logic";
 
 export type FlowFooterProps = {
@@ -22,8 +21,6 @@ export type FlowFooterProps = {
   onReply?: () => void;
   /** Khối quy trình (P-a): không có nút Copy (không có văn bản để chép). */
   hideCopy?: boolean;
-  /** DLC-R12 · hội thoại có dự án AI SDLC → nút "Xem Process" cạnh Trả lời tiếp. */
-  processConvId?: string;
 };
 
 function FooterMeta({
@@ -51,13 +48,7 @@ function FooterMeta({
   );
 }
 
-export function FlowFooter({
-  copyValue,
-  onReply,
-  hideCopy = false,
-  processConvId,
-  ...meta
-}: FlowFooterProps) {
+export function FlowFooter({ copyValue, onReply, hideCopy = false, ...meta }: FlowFooterProps) {
   const { t } = useTranslation();
   const onCopy = async () => {
     if (await copyText(copyValue)) toast.success(t("answer.copied"));
@@ -79,7 +70,6 @@ export function FlowFooter({
       )}
       <span className="grow" />
       <FooterMeta {...meta} />
-      {processConvId && <ProcessButton convId={processConvId} />}
       <Button
         type="button"
         variant="outline"

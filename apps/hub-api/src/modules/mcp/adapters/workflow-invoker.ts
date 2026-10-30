@@ -83,6 +83,11 @@ export type WorkflowInvokerDeps = {
   storage?: Pick<AttachmentStorage, "blob"> | null;
   /** Test: `fetch` cho Dify `/files/upload`. */
   fetch?: typeof fetch;
+  /**
+   * dlc-dify · biến ẩn gộp vào input gửi Dify (vé gọi ngược `hub_ticket`, `user_token`) — KHÔNG ghi vào `detail.inputs`
+   * của bước `tool`. Chỉ điền biến workflow khai báo. Vắng ⇒ như cũ.
+   */
+  hiddenInputs?: (call: ToolCall) => Promise<Record<string, string>>;
 };
 
 type Invoke = {
@@ -98,6 +103,15 @@ type FinishDetail = StepTrace & {
   code: StepCode | null;
   upstream?: string;
 };
+
+/** dlc-dify · hạn chạy nền của workflow `hub_async` (giây). */
+export const ASYNC_MAX_S = 24 * 3600;
+export const isAsyncWorkflow = (wf: CatalogWorkflow) =>
+  wf.inputSchema.some((i) => i.name === "hub_async");
+/** dlc-dify · nơi báo kết quả workflow chạy nền (gắn lúc mount `/dify`); vắng ⇒ chỉ đóng bước `tool`. */
+export const asyncFlowSink: {
+  done?: (call: ToolCall, r: { ok: boolean; text: string }) => Promise<void>;
+} = {};
 
 export class DifyWorkflowInvoker implements WorkflowInvoker {
   constructor(private readonly d: WorkflowInvokerDeps) {}
@@ -160,12 +174,14 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
       appType: wf.appType,
       baseUrl: wf.baseUrl,
       apiKey: o.apiKey,
-      inputs: up.inputs,
+      inputs: { ...up.inputs, ...(await this.#hidden(call)) },
       query: o.args.query,
       user,
       conversationId: null,
       outputField: wf.outputField,
     };
+    if (isAsyncWorkflow(wf))
+      return this.#detach(call, o, { ...req, inputs: { ...req.inputs, hub_async: "1" } }, trace);
     const out = await this.d.dify.runStreaming(req, signal, () => {});
     const code = stepCodeOf(out, timeout.aborted);
     const upstream = out.kind === "failed" ? out.detail : null;
@@ -222,6 +238,63 @@ export class DifyWorkflowInvoker implements WorkflowInvoker {
     if (up.kind === "failed") return up.result;
     // `CANCELLED`: kết nối đã đóng, không ai đọc kết quả này.
     return toolError(code === "TIMEOUT" ? "TIMEOUT" : "UPSTREAM_ERROR");
+  }
+
+  /**
+   * dlc-dify · workflow khai báo input `hub_async` (quy trình chạy hàng giờ, có bước chờ user): KHÔNG gắn vào kết nối
+   * `/mcp` (job của agent hết hạn ≤ 3600 s sẽ huỷ nó) — chạy nền tới `ASYNC_MAX_S`, trả ngay "đã khởi động"; xong ⇒ đóng
+   * bước `tool` + usage và báo kết quả về hội thoại qua `asyncFlowSink` (đăng ký ở `app.dlc.ts`).
+   */
+  #detach(
+    call: ToolCall,
+    o: Invoke,
+    req: Parameters<DifyClient["runStreaming"]>[0],
+    trace: StepTrace,
+  ): ToolResult {
+    const bg = AbortSignal.timeout(ASYNC_MAX_S * 1000);
+    const { ctx, wf } = call;
+    void (async () => {
+      const out = await this.d.dify.runStreaming(req, bg, () => {});
+      const code = stepCodeOf(out, bg.aborted);
+      const upstream = out.kind === "failed" ? out.detail : null;
+      const detail = {
+        ...trace,
+        inputs: o.inputs,
+        code,
+        async: true,
+        ...(upstream ? { upstream } : {}),
+      };
+      await this.#finishWithUsage(ctx, o.stepId, detail, out, wf.id).catch((e) =>
+        this.d.log.warn("async-tool-close-failed", { run_id: ctx.runId, ...safeErrorFields(e) }),
+      );
+      const text =
+        out.kind === "finished"
+          ? out.text
+          : `Flow ${wf.key} ended: ${code}${upstream ? ` (${upstream.slice(0, 300)})` : ""}`;
+      await asyncFlowSink
+        .done?.(call, { ok: out.kind === "finished", text })
+        .catch((e) =>
+          this.d.log.warn("async-flow-report-failed", { run_id: ctx.runId, ...safeErrorFields(e) }),
+        );
+    })();
+    this.d.log.info("async-flow-started", { run_id: ctx.runId, workflow: wf.key });
+    return toolText(
+      `STARTED: the ${wf.key} flow is now running in the background (it can take hours and pauses when a step needs the person). ` +
+        "Its steps will ask questions / approvals in this chat, and the final report will be posted here when it finishes. Tell the person it started; do not wait for it.",
+    );
+  }
+
+  async #hidden(call: ToolCall): Promise<Record<string, string>> {
+    if (!this.d.hiddenInputs) return {};
+    try {
+      return await this.d.hiddenInputs(call);
+    } catch (err) {
+      this.d.log.warn("tool-hidden-inputs-failed", {
+        run_id: call.ctx.runId,
+        ...safeErrorFields(err),
+      });
+      return {};
+    }
   }
 
   /** R20: `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)` theo cấu hình Hub hiện hành. */

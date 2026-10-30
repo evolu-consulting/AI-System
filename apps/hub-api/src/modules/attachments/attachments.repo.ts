@@ -153,13 +153,23 @@ export async function processRunViewer(tx: Tx, runId: string): Promise<"full" | 
 
 /**
  * RV-8 · file còn dùng được trước khi gửi Dify: hàng của tenant, `purged_at IS NULL`, hội thoại (nếu có) chưa xoá. Scope
- * `system` (lệnh/MCP chạy nền theo run).
+ * `system` (lệnh/MCP chạy nền theo run). Trả locator FileBox của hàng (payload job không mang — MCP `tools/call`); vắng ⇒ null.
  */
-export async function fileAvailable(tx: Tx, tenantId: string, id: string): Promise<boolean> {
-  const rows = await tx.execute<{ ok: number }>(sql`select 1 as ok
+export async function availableFile(
+  tx: Tx,
+  tenantId: string,
+  id: string,
+): Promise<{ fileboxFileId: string | null; fileboxVersionId: string | null } | null> {
+  const rows = await tx.execute<{
+    filebox_file_id: string | null;
+    filebox_version_id: string | null;
+  }>(
+    sql`select a.filebox_file_id, a.filebox_version_id
     from hub.attachments a left join hub.conversations c on c.id = a.conversation_id
-    where a.id = ${id} and a.tenant_id = ${tenantId} and a.purged_at is null and c.deleted_at is null`);
-  return rows.length > 0;
+    where a.id = ${id} and a.tenant_id = ${tenantId} and a.purged_at is null and c.deleted_at is null`,
+  );
+  const r = rows[0];
+  return r ? { fileboxFileId: r.filebox_file_id, fileboxVersionId: r.filebox_version_id } : null;
 }
 
 /** Mảng uuid → literal `{…}` (tham số `::uuid[]`; drizzle `sql` nở mảng JS thành danh sách — B10-2). Id đã qua zod uuid. */

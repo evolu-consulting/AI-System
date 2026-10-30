@@ -127,14 +127,12 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
 });
 
 describe("dify-workflows · Workflows không bị cờ đóng băng", () => {
-  test("frozen=false: platform_admin vẫn có Workflows (không menu con), không có Commands; /workflows không bị gate", () => {
+  test("frozen=false: platform_admin vẫn có Workflows và Commands; /workflows không bị gate", () => {
     const items = navGroups("platform_admin", { frozen: false }).flatMap((g) => g.items);
-    const wf = items.find((i) => i.id === "workflows");
-    expect(wf?.children).toBeUndefined();
+    expect(items.some((i) => i.id === "workflows")).toBe(true);
     expect(items.some((i) => i.id === "commands")).toBe(true);
     expect(isFrozenPath("/workflows")).toBe(false);
     expect(isFrozenPath("/workflows/abc")).toBe(false);
-    expect(isFrozenPath("/workflows/steps")).toBe(true);
     expect(isFrozenPath("/commands")).toBe(false);
     expect(isFrozenPath("/transfer")).toBe(true);
   });

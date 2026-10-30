@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { WorkspaceList } from "~/features/dlc/components/WorkspaceList";
 import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow";
 import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
 import { useProcessEngineOn } from "~/features/processes/shared/engine";
@@ -40,7 +39,7 @@ type Props = {
 
 export function Sidebar(p: Props) {
   const { t } = useTranslation();
-  // F1 (CR-095): module đóng băng (quy trình, phòng, workspace DLC) ẩn khi cờ off.
+  // F1 (CR-095): module đóng băng (quy trình, phòng) ẩn khi cờ off.
   const processOn = useProcessEngineOn() && frozenModulesOn; // P-a FD8: "Chờ tôi kiểm" + DM "Quy trình" chỉ khi engine on
   if (p.collapsed && p.onToggleCollapse) {
     return (
@@ -101,20 +100,13 @@ export function Sidebar(p: Props) {
       <div className="relative -mx-1 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
         {processOn && <TodoGroup />}
         {frozenModulesOn && (
-          <>
-            <RoomSections
-              usersPinned={processOn ? <ProcessDmRow /> : undefined}
-              q={p.debouncedQuery}
-              activeRoomId={p.activeRoomId}
-              onNavigate={p.onNavigate}
-              onNewGroup={p.onNewGroup}
-            />
-            <div className="mt-1">
-              <SidebarGroup id="workspaces" title={t("dlc.workspaces")}>
-                <WorkspaceList activeId={p.activeId} onNavigate={p.onNavigate} />
-              </SidebarGroup>
-            </div>
-          </>
+          <RoomSections
+            usersPinned={processOn ? <ProcessDmRow /> : undefined}
+            q={p.debouncedQuery}
+            activeRoomId={p.activeRoomId}
+            onNavigate={p.onNavigate}
+            onNewGroup={p.onNewGroup}
+          />
         )}
         <div className="mt-1">
           <SidebarGroup id="ai" title={t("rooms.sectionAi")}>

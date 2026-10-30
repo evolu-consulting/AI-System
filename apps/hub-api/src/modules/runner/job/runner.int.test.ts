@@ -66,7 +66,7 @@ function delegateDriver(runner: JobAgentRunner): RunDriver {
     if (out.kind === "aborted") return;
     if (out.kind === "failed") return void (await w.finish({ kind: "failed", code: out.code }));
     const o = out.output;
-    const text = o.kind === "text" ? o.text : "text" in o.result ? o.result.text : "";
+    const text = o.kind === "text" ? o.text : "text" in o.result ? (o.result.text ?? "") : "";
     await w.finish({ kind: "finished", content: text, agentId: agent.id });
   };
   return {

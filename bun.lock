@@ -194,6 +194,19 @@
         "typescript": "6.0.3",
       },
     },
+    "apps/dlc-workspace": {
+      "name": "@ai/dlc-workspace",
+      "version": "0.0.0",
+      "dependencies": {
+        "hono": "4.13.12",
+        "zod": "4.6.5",
+      },
+      "devDependencies": {
+        "@ai/config": "workspace:*",
+        "@types/bun": "1.3.14",
+        "typescript": "6.0.3",
+      },
+    },
     "apps/hub-api": {
       "name": "@ai/hub-api",
       "version": "0.0.0",
@@ -381,6 +394,8 @@
     "@ai/contracts-web": ["@ai/contracts-web@workspace:apps/contracts-web"],
 
     "@ai/db": ["@ai/db@workspace:packages/db"],
+
+    "@ai/dlc-workspace": ["@ai/dlc-workspace@workspace:apps/dlc-workspace"],
 
     "@ai/hub-api": ["@ai/hub-api@workspace:apps/hub-api"],
 
