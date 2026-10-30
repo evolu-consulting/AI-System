@@ -1,7 +1,7 @@
 ---
 id: process-library
 cr: CR-105
-trạng thái: đề xuất — chờ người dùng duyệt
+trạng thái: đã duyệt 2026-10-31
 ngày: 2026-10-31
 ---
 # Đề xuất: Thư viện quy trình + gán theo tenant cho từng app — một chỗ sửa duy nhất
@@ -81,7 +81,15 @@ ngày: 2026-10-31
 | L5 `onboard-default` | Sonnet | Quy trình mặc định của khe + yaml `approval_process` (B4) |
 | dò code, chạy lại test, docs/current | Haiku | |
 
-## Câu hỏi cần chốt
+## Quyết định (người dùng chốt 2026-10-31: "Duyệt theo đề xuất")
+1. Lấy cả B1–B6.
+2. Chỉ platform admin sửa quy trình thư viện và gán cho tenant.
+3. Tên khe trên UI: **"Sổ Hợp Tác · Duyệt hợp đồng"**.
+4. Bỏ form Cài đặt › Quy trình duyệt ngay trong đợt này.
+5. (trước đó) Sửa A ⇒ mọi tenant dùng A đổi theo; khác ⇒ clone A′ rồi gán; một chỗ sửa ở editor ai-admin (Canvas/Form); mẫu chạy
+   thử lọc hẳn ra; 1 tenant × 1 khe = 1 quy trình, Sổ Hợp Tác tra theo tenant mỗi lần mở lượt duyệt.
+
+## Câu hỏi đã chốt (giữ để tra)
 1. Lấy cả **B1–B6**, hay bớt cái nào? (Đề xuất: lấy cả; B5–B6 nhỏ.)
 2. **Người sửa quy trình thư viện:** chỉ platform admin (đề xuất — vì sửa một lần ảnh hưởng nhiều tenant), hay cho chủ gói Sổ
    Hợp Tác của tenant sửa bản Nhân bản riêng của mình?
