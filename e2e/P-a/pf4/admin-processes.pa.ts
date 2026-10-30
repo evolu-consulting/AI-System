@@ -27,11 +27,12 @@ test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" 
     await tpl.getByRole("button", { name: "Chép mẫu" }).click();
     await expect(p.getByText("Đã chép mẫu")).toBeVisible();
 
-    await p.getByRole("tab", { name: "Của công ty" }).click();
+    // CR-105: bản chép (def tenant không khe/không của gói) ở lại tab "Mẫu · chạy thử"; chỉ hàng của tenant có công tắc "Bật".
     const row = p
       .getByRole("table", { name: "Quy trình" })
       .getByRole("row")
-      .filter({ hasText: "sdlc" });
+      .filter({ hasText: "sdlc" })
+      .filter({ has: p.getByRole("switch") });
     await expect(row).toHaveCount(1);
     const sw = row.getByRole("switch", { name: /^Bật / });
     await expect(sw).not.toBeChecked();

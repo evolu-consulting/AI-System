@@ -2,19 +2,11 @@
 // (bước UI đếm từ 1, `then_step = then - 1`), nguồn điều kiện mã hoá một chuỗi cho ô chọn. Hàm thuần (không React, không API).
 import type { Cond, IfExecutor } from "@ai/contracts/hub-admin";
 import { emptyAutofix } from "./autofix-form";
-import type { FieldDraft, StageDraft } from "./draft-types";
+import type { CondDraft, FieldDraft, IfDraft, StageDraft } from "./draft-types";
 
 export const IF_CONDS_MAX = 6;
-/** Nguồn một điều kiện: `field|<stage_key>|<field>` hoặc `input|<key>`; rỗng = chưa chọn. */
-/** `type` = kiểu nguồn đã chọn (Số ⇒ giá trị gửi là number). */
-export type CondDraft = { from: string; type: FieldDraft["type"]; op: string; value: string };
-export type IfDraft = {
-  op: "and" | "or";
-  conds: CondDraft[];
-  /** Bước Đúng (`yes`) / Sai (`no`) đếm từ 1; `no = null` ⇒ Sai thì sang bước kế; `yes = null` = chưa chọn. */
-  yes: number | null;
-  no: number | null;
-};
+// CR-105 · kiểu CondDraft/IfDraft đặt ở `draft-types` (phá vòng draft-types ↔ if-form); re-export cho nơi dùng cũ.
+export type { CondDraft, IfDraft } from "./draft-types";
 /** Nguồn chọn được: stage (bước nhỏ hơn) có field khai báo + input của quy trình. */
 export type CondSource = { value: string; type: FieldDraft["type"]; label: string };
 

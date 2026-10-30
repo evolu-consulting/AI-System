@@ -111,10 +111,17 @@ function issueLines(list: readonly unknown[], fmt?: RuleFormat): string[] {
  * CR-105 · tab "Mẫu · chạy thử" trộn mẫu toàn nền tảng (`is_template`) với def tenant không khe/không của gói (vd flow-showcase,
  * bản "Chép mẫu"): mẫu mà người xem không sửa được ⇒ chỉ "Chép mẫu" (`copy`); còn lại ⇒ Chạy/Sửa/Xoá (`full`).
  */
+/**
+ * Mẫu toàn nền tảng = `is_template` (tenant NULL) VÀ không khe: def thư viện cũng có tenant NULL (`is_template` true) nhưng có `slot`
+ * ⇒ là quy trình thật (bật/tắt, sửa, xoá), không phải mẫu.
+ */
+export const isTemplateRow = (r: Pick<LibraryListItem, "is_template" | "slot">): boolean =>
+  r.is_template && !r.slot;
+
 export const rowMode = (
-  r: Pick<LibraryListItem, "is_template">,
+  r: Pick<LibraryListItem, "is_template" | "slot">,
   canEditTemplates: boolean,
-): "copy" | "full" => (r.is_template && !canEditTemplates ? "copy" : "full");
+): "copy" | "full" => (isTemplateRow(r) && !canEditTemplates ? "copy" : "full");
 
 /** Hàng của một tab: Hub đã lọc theo `kind` (danh sách chính / `sample`) ⇒ client chỉ áp bộ lọc Bật/Tắt ở tab chính. */
 export function rowsForTab<R extends { enabled: boolean }>(
@@ -126,3 +133,6 @@ export function rowsForTab<R extends { enabled: boolean }>(
     ? [...items]
     : items.filter((r) => r.enabled === (filter === "on"));
 }
+
+/** `details` của lỗi Hub (`ApiError.details`) mà không import lớp http vào component. */
+export const detailsOf = (err: unknown): unknown => (rec(err) ? err.details : undefined);

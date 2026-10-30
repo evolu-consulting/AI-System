@@ -3,7 +3,7 @@
 // Chỉ chạy được khi backend L1/L2a/L2b đã gộp (seed 0069: def "Quy trình HĐ mặc định" + khe contracts.approval). KHÔNG chạy trong lát.
 import { expect, type Page, test } from "@playwright/test";
 import { seedAdmin } from "../../support/helpers";
-import { ADMIN_URL, settle } from "../_pa-support";
+import { ACME, ADMIN_URL, settle, withSql } from "../_pa-support";
 
 test.afterEach(() => settle());
 
@@ -65,7 +65,15 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await pub.getByRole("button", { name: "Xuất bản", exact: true }).click();
     await expect(toolbar.getByText(/Đã xuất bản v\d+/)).toBeVisible();
 
-    // Gán cho tenant acme
+    // Gán cho tenant acme: quy trình dùng phòng ban theo MÃ ⇒ acme cần Group `contracts-editor`/`contracts-owner` (fixture P-a chưa có;
+    // gói Sổ Hợp Tác tạo chúng khi bật gói — ở đây dựng trực tiếp). Thiếu ⇒ Hub 422 SLOT_GROUPS_MISSING (kiểm ở ca khác).
+    await withSql(
+      (sql) => sql`insert into admin.groups (tenant_id, key, name) values
+        (${ACME}, 'contracts-editor', '{"vi":"contracts-editor"}'::jsonb),
+        (${ACME}, 'contracts-owner', '{"vi":"contracts-owner"}'::jsonb)
+        on conflict (tenant_id, key) do nothing`,
+    );
+    // Gán cho tenant acme (hộp thoại)
     await toolbar.getByRole("button", { name: "Gán cho tenant" }).click();
     const asg = p.getByRole("dialog");
     await asg.getByRole("checkbox", { name: /acme/i }).check();
@@ -87,7 +95,11 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     ).toBeVisible();
 
     // danh sách: cột "Tenant đang dùng" của bản nhân bản = 1
-    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    // ở trang editor có thêm link "Quy trình" trên đường dẫn ⇒ chọn đúng link ở thanh bên
+    await p
+      .getByRole("navigation", { name: "Điều hướng chính" })
+      .getByRole("link", { name: "Quy trình", exact: true })
+      .click();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toBeVisible();
     expect(await tenantsUsing(p, name)).toBe(1);
   } finally {

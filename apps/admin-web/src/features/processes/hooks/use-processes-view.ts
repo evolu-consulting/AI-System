@@ -83,7 +83,7 @@ function useRowActions(
         void copyDef(r.id, c.tenantId).then(() => {
           notifySuccess(c.t("process.admin.list.toast.copied"));
           void c.invalidate();
-          // D8a (UAT 2026-10-11): sang tab "Của công ty" để thấy bản vừa chép (không kẹt ở tab Mẫu).
+          // D8a (UAT 2026-10-11) → CR-105: bản chép nằm ở "Mẫu · chạy thử" (xem `goOwn`).
           c.onCopied();
         }, c.fail);
       },
@@ -113,7 +113,9 @@ export function useProcessesView() {
     tenant.tenantId,
   );
   const q = useLib ? libQ : ownQ;
-  const goOwn = () => void navigate({ to: "/processes", search: { tab: "own" }, replace: true });
+  // CR-105: bản "Chép mẫu" thuộc "Mẫu · chạy thử" (def tenant không khe/không của gói) ⇒ ở lại tab này để thấy bản vừa chép.
+  const goOwn = () =>
+    void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
   const goEditor = (id: string) =>
     void navigate({ to: "/processes/$processId", params: { processId: id } });
   const { actions, conflictProps } = useRowActions(

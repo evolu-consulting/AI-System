@@ -178,6 +178,9 @@ if (import.meta.main) {
     HUB_PROCESS_ENGINE: env("HUB_PROCESS_ENGINE"),
     HUB_ATTACH_DRIVER: "local",
     HUB_ATTACH_DIR: attachDir,
+    // CR-105 · thư viện quy trình: tool hệ thống của khe (`contracts-route`/`contracts-finalize`) chỉ vào catalog khi cờ engine duyệt HĐ bật
+    // ⇒ lưu/xuất bản def thư viện (e2e pf4/process-library) cần. Cổng theo tenant (entitlement) vẫn giữ nguyên cho acme.
+    CONTRACTS_APPROVAL_ENGINE: "on",
   });
   const stop = (): void => {
     hub.kill();

@@ -16,6 +16,7 @@ test('ADM-FR-67 · E-P15c · Adm "Chạy" ⇒ run mới trong danh sách; trang 
     await rtScript("hoa-don-t", 0, [{ kind: "done" }, { kind: "hold" }]);
     await adminLogin(p);
     await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
     const row = p
       .getByRole("table", { name: "Quy trình" })
       .getByRole("row")

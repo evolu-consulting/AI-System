@@ -123,10 +123,14 @@ describe("splitRule + errorLines có dịch luật", () => {
 
 describe("tab Mẫu · chạy thử", () => {
   test("rowMode: mẫu toàn nền tảng chỉ chép được khi không có quyền sửa mẫu; def tenant luôn đầy đủ", async () => {
-    const { rowMode } = await import("./library-view");
+    const { rowMode, isTemplateRow } = await import("./library-view");
     expect(rowMode({ is_template: true }, false)).toBe("copy");
     expect(rowMode({ is_template: true }, true)).toBe("full");
     expect(rowMode({ is_template: false }, false)).toBe("full");
+    // def thư viện: tenant NULL (is_template true) nhưng có khe ⇒ quy trình thật, không phải mẫu
+    expect(rowMode({ is_template: true, slot: "contracts.approval" }, false)).toBe("full");
+    expect(isTemplateRow({ is_template: true, slot: "contracts.approval" })).toBe(false);
+    expect(isTemplateRow({ is_template: true, slot: null })).toBe(true);
   });
   test("rowsForTab: tab mẫu giữ nguyên (Hub đã lọc kind=sample), tab chính áp bộ lọc Bật/Tắt", async () => {
     const { rowsForTab } = await import("./library-view");

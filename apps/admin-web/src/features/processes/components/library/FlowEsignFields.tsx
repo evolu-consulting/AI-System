@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { LibEsignStep } from "../../lib/flow-form";
 import { SelectField, TextField } from "../editor/Fields";
-import type { StepFieldProps } from "./FlowStepCard";
+import type { StepFieldProps } from "./flow-step-props";
 import { GroupKeyField } from "./GroupKeyField";
 
 type P = StepFieldProps<LibEsignStep>;

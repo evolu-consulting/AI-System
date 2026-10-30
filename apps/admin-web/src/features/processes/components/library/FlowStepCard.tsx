@@ -15,16 +15,8 @@ import {
 import { TextField } from "../editor/Fields";
 import { FlowEsignFields } from "./FlowEsignFields";
 import { FlowWhenEditor } from "./FlowWhenEditor";
+import type { GroupOption, StepFieldProps } from "./flow-step-props";
 import { GroupKeyField } from "./GroupKeyField";
-
-export type GroupOption = { key: string; label?: string };
-export type StepFieldProps<S> = {
-  id: string;
-  step: S;
-  groups: readonly GroupOption[];
-  err: (field: string) => string | undefined;
-  onPatch: (p: Partial<S>) => void;
-};
 
 type Props = {
   step: LibStep;

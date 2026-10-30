@@ -14,9 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/lib/http";
 import { processErrorSpec } from "../../lib/errors";
-import { errorLines, type RuleFormat } from "../../lib/library-view";
+import { detailsOf, errorLines, type RuleFormat } from "../../lib/library-view";
 import { type LibraryDef, publishDef, useImpact, useLibraryRefresh } from "../../library-api";
 
 type Props = { def: LibraryDef; open: boolean; onClose: () => void };
@@ -47,7 +46,7 @@ export function PublishDialog({ def, open, onClose }: Props) {
       const s = processErrorSpec(err);
       setFail({
         message: t(s.key, s.params),
-        lines: err instanceof ApiError ? errorLines(err.details, ruleText) : [],
+        lines: errorLines(detailsOf(err), ruleText),
       });
     } finally {
       setPending(false);

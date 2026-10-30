@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
-import { inUseReason, rowMode, tenantUsage } from "../lib/library-view";
+import { inUseReason, isTemplateRow, rowMode, tenantUsage } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
 
 export type RowActions = {
@@ -53,7 +53,7 @@ function nameColumn(t: TFunction): Column<Row> {
         >
           {r.name}
         </Link>
-        {r.is_template ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
+        {isTemplateRow(r) ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
         {r.is_default ? (
           <StatusBadge tone="ok">
             {t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}
@@ -69,7 +69,7 @@ function enabledColumn(t: TFunction, o: Opts): Column<Row> {
     id: "enabled",
     header: L(t, "col.enabled"),
     cell: (r) =>
-      r.is_template ? (
+      isTemplateRow(r) ? (
         <StatusBadge tone={r.enabled ? "ok" : "off"}>
           {t(r.enabled ? "common.on" : "common.off")}
         </StatusBadge>
@@ -130,7 +130,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
             {L(t, "copy")}
           </Button>
         ) : null}
-        {r.is_template ? null : (
+        {isTemplateRow(r) ? null : (
           <Button
             size="sm"
             variant="outline"

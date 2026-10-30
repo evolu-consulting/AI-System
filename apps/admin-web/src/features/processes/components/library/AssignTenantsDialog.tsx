@@ -14,10 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useTenantList } from "@/features/tenants/api";
-import { ApiError } from "@/lib/http";
+import { useAssignableTenants } from "../../hooks/use-assignable-tenants";
 import { processErrorSpec } from "../../lib/errors";
-import { assignPlan, errorLines, settledCounts } from "../../lib/library-view";
+import { assignPlan, detailsOf, errorLines, settledCounts } from "../../lib/library-view";
 import {
   assignTenant,
   type LibraryDef,
@@ -31,7 +30,7 @@ type Failure = { tenant: string; message: string; lines: string[] };
 
 export function AssignTenantsDialog({ def, open, onClose }: Props) {
   const { t } = useTranslation();
-  const tenants = useTenantList({ q: "" }, open);
+  const tenants = useAssignableTenants(open);
   const current = useAssignments(def.id, open);
   const refresh = useLibraryRefresh();
   const [selected, setSelected] = useState<string[]>([]);
@@ -65,9 +64,9 @@ export function AssignTenantsDialog({ def, open, onClose }: Props) {
       const s = processErrorSpec(r.reason);
       return [
         {
-          tenant: tenants.data?.items.find((x) => x.id === id)?.name ?? id,
+          tenant: tenants.items.find((x) => x.id === id)?.name ?? id,
           message: t(s.key, s.params),
-          lines: r.reason instanceof ApiError ? errorLines(r.reason.details) : [],
+          lines: errorLines(detailsOf(r.reason)),
         },
       ];
     });
@@ -76,7 +75,7 @@ export function AssignTenantsDialog({ def, open, onClose }: Props) {
     if (c.ok > 0) notifySuccess(t("process.admin.library.assign.done", { n: c.ok }));
     if (bad.length === 0) onClose();
   };
-  const items = tenants.data?.items ?? [];
+  const items = tenants.items;
   const plan = assignPlan(assignedIds, selected);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !pending && onClose()}>
@@ -91,20 +90,17 @@ export function AssignTenantsDialog({ def, open, onClose }: Props) {
           <p className="text-body text-muted-foreground">{t("common.loading")}</p>
         ) : null}
         <ul className="max-h-72 space-y-1 overflow-y-auto" data-testid="assign-tenant-list">
-          {items
-            .filter((x) => x.key !== "platform")
-            .map((x) => (
-              <li key={x.id}>
-                <Label className="flex items-center gap-2 font-normal">
-                  <Checkbox
-                    checked={selected.includes(x.id)}
-                    onCheckedChange={(c) => toggle(x.id, c === true)}
-                  />
-                  {x.name}{" "}
-                  <span className="font-mono text-label text-muted-foreground">{x.key}</span>
-                </Label>
-              </li>
-            ))}
+          {items.map((x) => (
+            <li key={x.id}>
+              <Label className="flex items-center gap-2 font-normal">
+                <Checkbox
+                  checked={selected.includes(x.id)}
+                  onCheckedChange={(c) => toggle(x.id, c === true)}
+                />
+                {x.name} <span className="font-mono text-label text-muted-foreground">{x.key}</span>
+              </Label>
+            </li>
+          ))}
         </ul>
         {failures.length > 0 ? (
           <ul role="alert" className="space-y-1 text-label text-destructive">

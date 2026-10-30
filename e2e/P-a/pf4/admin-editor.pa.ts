@@ -15,6 +15,7 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
   try {
     await adminLogin(p);
     await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
     const row = p
       .getByRole("table", { name: "Quy trình" })
       .getByRole("row")

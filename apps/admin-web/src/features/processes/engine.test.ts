@@ -14,6 +14,11 @@ describe("engineProbeOptions", () => {
   });
 
   test("observer chỉ đọc gắn sau ⇒ refetch vẫn chạy queryFn, không rơi vào lỗi", async () => {
+    // `bun test` cả repo có thể đặt PUBLIC_HUB_URL (cùng tiến trình với e2e/stack) ⇒ lời dò sẽ gọi mạng: giả fetch 200 để kết quả
+    // không phụ thuộc môi trường (không URL ⇒ lời dò trả "off" mà không gọi fetch).
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response("{}", { status: 200 }))) as unknown as typeof fetch;
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const nav = new QueryObserver(client, engineProbeOptions(true));
     const stopNav = nav.subscribe(() => {});
@@ -25,6 +30,7 @@ describe("engineProbeOptions", () => {
     stopGate();
     stopNav();
     client.clear();
+    globalThis.fetch = realFetch;
     // Không có PUBLIC_HUB_URL trong test ⇒ lời dò trả "off" ngay (không gọi mạng); điều cần là KHÔNG lỗi.
     expect({ status: q?.status, error: q?.error ?? null }).toEqual({
       status: "success",

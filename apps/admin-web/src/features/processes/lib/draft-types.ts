@@ -1,7 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
 import type { AutofixDraft } from "./autofix-form";
-import type { IfDraft } from "./if-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
 /** P-d1 · khối "Chờ tới ngày": nguồn ngày (`input:<key>` | `field:<stage_key>:<field>`), chênh (ngày, chữ), giờ `HH:mm`. */
@@ -23,6 +22,16 @@ export type SetDraft = { rows: SetRowDraft[] };
 /** P-d2 · một luật rẽ nhánh; `goto` đếm bước từ 1 như UI (`goto_step = goto - 1`), null = chưa chọn. */
 export type BranchDraft = { field: string; op: string; value: string; goto: number | null };
 
+/** Nguồn một điều kiện: `field|<stage_key>|<field>` hoặc `input|<key>`; rỗng = chưa chọn. */
+/** `type` = kiểu nguồn đã chọn (Số ⇒ giá trị gửi là number). */
+export type CondDraft = { from: string; type: FieldDraft["type"]; op: string; value: string };
+export type IfDraft = {
+  op: "and" | "or";
+  conds: CondDraft[];
+  /** Bước Đúng (`yes`) / Sai (`no`) đếm từ 1; `no = null` ⇒ Sai thì sang bước kế; `yes = null` = chưa chọn. */
+  yes: number | null;
+  no: number | null;
+};
 export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
 export type StageDraft = {
   /** Khoá React cục bộ (không gửi đi). */
