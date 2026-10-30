@@ -1,13 +1,14 @@
 // CR-103 · R4 fnr-showcase: cầu nối cho trang showcase — tìm def mẫu theo key, bắt đầu run, theo dõi run (làm tươi định kỳ).
 import { FLOW_SHOWCASE_KEY, type ProcessInputValue } from "@ai/contracts/hub-admin";
 import { useEffect, useState } from "react";
-import { runDef, useInvalidateDefs, useProcessDef, useProcessDefs, useRun } from "../api";
+import { runDef, useInvalidateDefs, useProcessDef, useRun } from "../api";
+import { useLibraryDefs } from "../library-api";
 
 const POLL_MS = 1_500;
 
-/** Def mẫu: duyệt các trang danh sách tới khi gặp `FLOW_SHOWCASE_KEY`; hết trang mà không có ⇒ `missing`. */
+/** Def mẫu: duyệt các trang "Mẫu · chạy thử" (`kind=sample`, CR-105: showcase là def không khe/không của gói) tới khi gặp `FLOW_SHOWCASE_KEY`; hết trang mà không có ⇒ `missing`. */
 export function useShowcaseDef(tenantId: string | undefined, enabled: boolean) {
-  const list = useProcessDefs(tenantId, false, enabled);
+  const list = useLibraryDefs("sample", enabled, tenantId);
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const row = items.find((r) => r.key === FLOW_SHOWCASE_KEY);
