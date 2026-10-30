@@ -86,7 +86,7 @@ một dòng \`Không thay đổi hành vi (lý do: …)\`.
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: <tên>
 <mô tả hành vi mới>
-- Kịch bản: khi … thì …
+- Kịch bản: khi … thì … [test: <path test> » <tiêu đề test>]  (hoặc [test: thủ công — <lý do>])
 (### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
 \`\`\`
 

@@ -1,5 +1,49 @@
 import { describe, expect, test } from "bun:test";
-import { markMerged, parseDelta, validateDelta } from "./openspec.rules";
+import { markMerged, parseDelta, validateDelta, validateTestRefs } from "./openspec.rules";
+
+const FILES: Record<string, string> = { "tests/a.test.ts": 'test("mở lại về Nháp", () => {})' };
+const io = {
+  exists: (r: string) => r in FILES,
+  contains: (r: string, s: string) => FILES[r]?.includes(s) ?? false,
+};
+const checkRefs = (t: string) => validateTestRefs(parseDelta(t), io).map((i) => i.msg);
+const doc = (sc: string, state = "chưa gộp") =>
+  `## Delta (so với docs/current)\nTrạng thái gộp: ${state}\n### ADDED a.md\n#### Yêu cầu: R\n- Kịch bản: khi a thì b${sc}\n`;
+
+describe("validateTestRefs", () => {
+  test("đúng: path, path » tiêu đề, nhiều mục, thủ công", () => {
+    expect(checkRefs(doc(" [test: tests/a.test.ts]"))).toEqual([]);
+    expect(checkRefs(doc(" [test: tests/a.test.ts » mở lại]"))).toEqual([]);
+    expect(checkRefs(doc(" [test: tests/a.test.ts » Nháp; tests/a.test.ts]"))).toEqual([]);
+    expect(checkRefs(doc(" [test: tests/a.test.ts][test: tests/a.test.ts » mở]"))).toEqual([]);
+    expect(checkRefs(doc(" [test: thủ công — cần thiết bị thật]"))).toEqual([]);
+  });
+
+  test("thiếu ref, path sai, tiêu đề sai, thủ công không lý do", () => {
+    const m = checkRefs(doc(""));
+    expect(m[0]).toContain("thiếu");
+    expect(validateTestRefs(parseDelta(doc("")), io)[0]?.line).toBe(5);
+    expect(checkRefs(doc(" [test: tests/x.test.ts]"))[0]).toContain("không tồn tại");
+    expect(checkRefs(doc(" [test: tests/a.test.ts » MỞ LẠI]"))[0]).toContain("không thấy tiêu đề");
+    expect(checkRefs(doc(" [test: tests/a.test.ts; tests/b.ts]"))).toHaveLength(1);
+    expect(checkRefs(doc(" [test: thủ công]"))[0]).toContain("lý do");
+    expect(checkRefs(doc(" [test: ../a.ts]"))[0]).toContain("tương đối");
+  });
+
+  test("lát đã gộp / REMOVED / không đổi hành vi không bị kiểm", () => {
+    expect(checkRefs(doc("", "đã gộp 2026-10-01"))).toEqual([]);
+    expect(
+      checkRefs(
+        "## Delta (so với docs/current)\nTrạng thái gộp: chưa gộp\n### REMOVED a.md\nLý do: x\n",
+      ),
+    ).toEqual([]);
+    expect(
+      checkRefs(
+        "## Delta (so với docs/current)\nTrạng thái gộp: chưa gộp\nKhông thay đổi hành vi (lý do: x)\n",
+      ),
+    ).toEqual([]);
+  });
+});
 
 const has = (f: string) => f === "sht/chung-tu.md";
 const check = (t: string) => validateDelta(parseDelta(t), has).map((i) => i.msg);

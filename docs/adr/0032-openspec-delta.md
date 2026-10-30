@@ -18,3 +18,6 @@ Nó giả định một thư mục `openspec/` và quy trình proposal→archive
 ## Hệ quả
 - Lát cũ (đã "đã gộp", Delta dạng cũ) không bị kiểm lại; chỉ lát đang merge bị kiểm.
 - Xem lại khi có **nhiều nhóm cùng sửa spec** (cần hợp nhất tự động, xung đột Delta, kho spec riêng): lúc đó cân nhắc dùng chính OpenSpec.
+
+## Bổ sung 2026-10-30 — Kịch bản trỏ tới test (người dùng duyệt, rút từ CR-103: e2e yếu bỏ sót lỗi nhầm nhánh)
+Mỗi `- Kịch bản:` trong khối ADDED/MODIFIED kết thúc bằng `[test: <đường dẫn từ gốc repo>]` hoặc `[test: <đường dẫn> » <đoạn tiêu đề test>]` (nhiều mục cách nhau `;`); không có test tự động ghi `[test: thủ công — <lý do>]`. `openspec:check` báo lỗi khi thiếu tham chiếu, file không tồn tại hoặc đoạn tiêu đề không có trong file (tìm văn bản, phân biệt hoa/thường; **không chạy test**). Chỉ áp cho Delta "chưa gộp"; REMOVED, `Không thay đổi hành vi` và lát "đã gộp" không bị kiểm. Luật thuần ở `openspec.rules.ts` (`validateTestRefs`), đọc file ở `openspec.ts`.

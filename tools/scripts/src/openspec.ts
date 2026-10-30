@@ -4,7 +4,7 @@
 //   archive <lát> [--dot <tên>]  đổi dòng trạng thái thành "đã gộp <hôm nay>" (KHÔNG sửa docs/current)
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { markMerged, parseDelta, validateDelta } from "./openspec.rules";
+import { markMerged, parseDelta, validateDelta, validateTestRefs } from "./openspec.rules";
 
 const BASE = "platform/gd0";
 
@@ -20,7 +20,20 @@ export function checkSlice(root: string, slice: string): string[] {
     ];
   const p = parseDelta(readFileSync(f, "utf8"));
   const exists = (r: string) => existsSync(join(root, "docs", "current", r));
-  return validateDelta(p, exists).map((i) => `${rel}:${i.line} — ${i.msg}`);
+  const io = {
+    exists: (r: string) => existsSync(join(root, r)),
+    contains: (r: string, sub: string) => {
+      try {
+        return readFileSync(join(root, r), "utf8").includes(sub);
+      } catch {
+        return false;
+      }
+    },
+  };
+  const issues = [...validateDelta(p, exists), ...validateTestRefs(p, io)].sort(
+    (a, b) => a.line - b.line,
+  );
+  return issues.map((i) => `${rel}:${i.line} — ${i.msg}`);
 }
 
 export interface Pending {

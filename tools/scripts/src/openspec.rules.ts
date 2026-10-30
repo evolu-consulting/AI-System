@@ -6,6 +6,8 @@ export interface DeltaReq {
   name: string;
   line: number;
   scenarios: number;
+  /** dòng + nội dung từng `- Kịch bản:` (để kiểm `[test: …]`). */
+  items: { line: number; text: string }[];
 }
 export interface DeltaBlock {
   kind: DeltaKind;
@@ -93,7 +95,7 @@ function onReq(c: Ctx, n: number, name: string): void {
     c.p.issues.push({ line: n, msg: "#### Yêu cầu nằm ngoài khối ### ADDED/MODIFIED/REMOVED" });
   else if (!name) c.p.issues.push({ line: n, msg: "#### Yêu cầu: thiếu tên" });
   else {
-    c.req = { name, line: n, scenarios: 0 };
+    c.req = { name, line: n, scenarios: 0, items: [] };
     c.cur.reqs.push(c.req);
   }
 }
@@ -129,9 +131,12 @@ function onHeading(c: Ctx, n: number, l: string): boolean {
 
 function onLine(c: Ctx, n: number, l: string): void {
   if (onMeta(c, n, l) || onHeading(c, n, l)) return;
-  if (SCENARIO_RE.test(l)) {
-    if (c.req) c.req.scenarios++;
-    else c.p.issues.push({ line: n, msg: "Kịch bản nằm ngoài một #### Yêu cầu" });
+  const sc = SCENARIO_RE.exec(l);
+  if (sc) {
+    if (c.req) {
+      c.req.scenarios++;
+      c.req.items.push({ line: n, text: sc[1] ?? "" });
+    } else c.p.issues.push({ line: n, msg: "Kịch bản nằm ngoài một #### Yêu cầu" });
   } else if (c.cur && REASON_RE.test(l)) c.cur.hasReason = true;
 }
 export function parseDelta(text: string): ParsedDelta {
@@ -214,6 +219,66 @@ function validateBlock(b: DeltaBlock, fileExists: (rel: string) => boolean): Iss
         line: r.line,
         msg: `Yêu cầu "${r.name}": cần ≥ 1 dòng "- Kịch bản: khi … thì …"`,
       });
+  return out;
+}
+
+export interface TestRefIO {
+  /** rel tính từ gốc repo. */
+  exists: (rel: string) => boolean;
+  /** file `rel` có chứa chuỗi `sub` (tìm văn bản thường, phân biệt hoa/thường). */
+  contains: (rel: string, sub: string) => boolean;
+}
+
+const TEST_REF_RE = /\[test:\s*([^\]]*)\]/g;
+const MANUAL_RE = /^thủ công\s*[—–-]\s*\S/;
+
+/** Kiểm một mục tham chiếu (`path` hoặc `path » tiêu đề`); trả lỗi hoặc null. */
+function checkRef(ref: string, io: TestRefIO): string | null {
+  if (MANUAL_RE.test(ref)) return null;
+  if (/^thủ công/.test(ref)) return '[test: thủ công] thiếu lý do (dạng "thủ công — <lý do>")';
+  const [path = "", ...rest] = ref.split("»");
+  const p = path.trim();
+  const title = rest.join("»").trim();
+  if (!p) return "[test: …] thiếu đường dẫn";
+  if (p.includes("..") || p.startsWith("/") || /^[a-zA-Z]:/.test(p))
+    return `[test: ${p}] cần đường dẫn tương đối từ gốc repo`;
+  if (!io.exists(p)) return `[test: ${p}] file không tồn tại`;
+  if (title && !io.contains(p, title))
+    return `[test: ${p} » ${title}] không thấy tiêu đề trong file`;
+  return null;
+}
+
+/**
+ * Mỗi Kịch bản của khối ADDED/MODIFIED phải kèm `[test: <path>]` / `[test: <path> » <tiêu đề>]` /
+ * `[test: thủ công — <lý do>]` (nhiều mục cách nhau `;`). Chỉ áp cho Delta "chưa gộp" (lát đã gộp không kiểm lại).
+ */
+export function validateTestRefs(p: ParsedDelta, io: TestRefIO): Issue[] {
+  if (!p.found || p.state !== "chưa gộp") return [];
+  const items = p.blocks
+    .filter((b) => b.kind !== "REMOVED")
+    .flatMap((b) => b.reqs.flatMap((r) => r.items));
+  return items.flatMap((s) => checkScenario(s, io));
+}
+
+function checkScenario(s: { line: number; text: string }, io: TestRefIO): Issue[] {
+  const refs = [...s.text.matchAll(TEST_REF_RE)].flatMap((m) =>
+    (m[1] ?? "")
+      .split(";")
+      .map((x) => x.trim())
+      .filter(Boolean),
+  );
+  if (!refs.length)
+    return [
+      {
+        line: s.line,
+        msg: 'Kịch bản thiếu "[test: <đường dẫn> » <tiêu đề>]" (hoặc "[test: thủ công — <lý do>]")',
+      },
+    ];
+  const out: Issue[] = [];
+  for (const ref of refs) {
+    const e = checkRef(ref, io);
+    if (e) out.push({ line: s.line, msg: e });
+  }
   return out;
 }
 

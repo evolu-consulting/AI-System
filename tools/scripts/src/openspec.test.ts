@@ -11,7 +11,8 @@ const spec = (slice: string, body: string) => {
 };
 const delta = (status: string, rest: string) =>
   `## Delta (so với docs/current)\nTrạng thái gộp: ${status}\n${rest}\n`;
-const BLOCK = "### MODIFIED sht/a.md\n#### Yêu cầu: X\n- Kịch bản: khi A thì B\n";
+const BLOCK =
+  "### MODIFIED sht/a.md\n#### Yêu cầu: X\n- Kịch bản: khi A thì B [test: docs/current/sht/a.md » # a]\n";
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "openspec-"));
@@ -27,6 +28,18 @@ describe("openspec CLI core", () => {
     expect(checkSlice(root, "ok")).toEqual([]);
     spec("bad", delta("chưa gộp", BLOCK.replace("a.md", "z.md")));
     expect(checkSlice(root, "bad")[0]).toMatch(/^docs\/specs\/bad\/tasks\.md:\d+ — .*z\.md/);
+  });
+
+  test("checkSlice: kiểm [test: …] với file thật; lát đã gộp bỏ qua", () => {
+    const sc = (ref: string) => BLOCK.replace(/ \[test:.*\]/, ref);
+    spec("noref", delta("chưa gộp", sc("")));
+    expect(checkSlice(root, "noref")[0]).toContain("thiếu");
+    spec("badpath", delta("chưa gộp", sc(" [test: nope.test.ts]")));
+    expect(checkSlice(root, "badpath")[0]).toContain("không tồn tại");
+    spec("badtitle", delta("chưa gộp", sc(" [test: docs/current/sht/a.md » zzz]")));
+    expect(checkSlice(root, "badtitle")[0]).toContain("không thấy tiêu đề");
+    spec("old", delta("đã gộp 2026-10-01", sc("")));
+    expect(checkSlice(root, "old")).toEqual([]);
   });
 
   test("listPending chỉ lát chưa gộp, kèm file đích", () => {
