@@ -215,6 +215,7 @@ export const ProcessStageDefSchema = z.strictObject({
   autofix: StageAutofixSchema.nullable().default(null),
   /** CR-103 · fnr-canvas · vị trí node trên canvas (chỉ UI; engine bỏ qua; vắng ở snapshot cũ). */
   ui: StageUiSchema.optional(),
+  slot: z.record(z.string(), z.unknown()).optional(), // CR-105 · pl-slot-shape · mô tả bước của khe (engine bỏ qua)
 });
 type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
 type StageAfterParsed = StageDefParsed["after"];

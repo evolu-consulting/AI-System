@@ -372,8 +372,15 @@ export function compileDef(
     after: { kind: "auto", branch: [] },
     timeoutS: 60,
   });
-  const [first, ...rest] = steps.map((_, i) => stageOfStep(steps, i, groupIds, workflows, owners));
+  // CR-105 · pl-slot-shape: `stage.slot` = bước người dùng nguyên vẹn (engine bỏ qua) ⇒ `fromStages` dựng lại đúng; bước Ký số
+  // nằm ở `finalize.slot.esign` (không là stage engine).
+  const [first, ...rest] = steps.map((s, i) => ({
+    ...stageOfStep(steps, i, groupIds, workflows, owners),
+    slot: { ...s },
+  }));
   if (!first) throw new Error("approval-flow-empty");
+  const esign = flow.steps.find((s) => s.kind === "esign");
+  if (esign) (finalize as { slot?: Record<string, unknown> }).slot = { esign: { ...esign } };
   return {
     key: APPROVAL_PROCESS_KEY,
     name: "Duyệt hợp đồng",
