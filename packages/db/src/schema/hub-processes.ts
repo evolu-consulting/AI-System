@@ -138,7 +138,16 @@ export const processDefs = hub.table("process_defs", {
   ttlDays: smallint("ttl_days").default(7),
   /** contract-flow S1a (0058) · version def gói đã đồng bộ (`PackRunsPort.ensureDef`); NULL = def thường. */
   packVersion: integer("pack_version"),
+  /** CR-105 (0068) · khe app của def thư viện (`tenant_id NULL`); NULL = def thường / mẫu chạy thử. */
+  slot: text("slot"),
+  /** CR-105 · dạng Form của khe (vd `contracts.approval` = `Flow` của gói, Group theo MÃ). */
+  slotBody: jsonb("slot_body").$type<Record<string, unknown>>(),
+  /** CR-105 · bản xuất bản đang chạy (`process_def_releases.rel_version`); NULL = chưa xuất bản. */
+  publishedVersion: integer("published_version"),
+  /** CR-105 · def tenant vật chất hoá từ thư viện: sha256 (16 hex) của def đã biên dịch; NULL = không vật chất hoá. */
+  sourceRef: text("source_ref"),
 });
+// CR-105 · bảng thư viện quy trình (releases, khe, gán) ở `hub-process-library.ts`.
 
 // ── Run (RLS T; không DELETE) ──
 export const processRuns = hub.table("process_runs", {
@@ -175,6 +184,8 @@ export const processRuns = hub.table("process_runs", {
   /** contract-flow S1a (0058) · bản ghi gói của run (CHỈ `PackRunsPort.start` ghi; đã gắn thì không đổi). */
   packKey: text("pack_key"),
   packRecordId: uuid("pack_record_id"),
+  /** CR-105 (0068) · lượt chạy thử từ "Mẫu · chạy thử" (danh sách lượt mặc định lọc `false`). */
+  isTest: boolean("is_test").notNull().default(false),
 });
 
 export const stageRuns = hub.table("stage_runs", {

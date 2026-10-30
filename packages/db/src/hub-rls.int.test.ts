@@ -171,6 +171,11 @@ const LATER_POLICY_TABLES = [
   "notification_deliveries",
   "notify_prefs",
   "push_subscriptions",
+  // CR-105 (0068): gán tenant × khe (đọc T + ghi system = 2 policy), bản phát hành + khe (chỉ system, 1 policy mỗi bảng).
+  "process_slot_assignments",
+  "process_slot_assignments",
+  "process_def_releases",
+  "process_slots",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [
