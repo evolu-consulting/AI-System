@@ -104,7 +104,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     groupId: s.after.kind === "review" ? (s.after.group_id ?? "") : "",
     real: s.real_action,
     answerer: a.kind,
-    answererId: a.kind === "group" ? a.group_id : a.kind === "user" ? a.user_id : "",
+    answererId: a.kind === "group" ? (a.group_id ?? "") : a.kind === "user" ? a.user_id : "",
     timeout: String(s.timeout_s),
     budget: num(s.token_budget),
     sources: stageSourcesToDraft(s.sources),

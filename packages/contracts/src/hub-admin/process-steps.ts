@@ -271,7 +271,8 @@ export type WaitStageShape = StepStageShape & {
 export type EscalateStageShape = StepStageShape & {
   after: StepStageShape["after"] & {
     group_id?: string | null;
-    escalate?: { after_h: number; group_id: string } | null;
+    group_key?: string; // CR-105
+    escalate?: { after_h: number; group_id?: string; group_key?: string } | null;
   };
 };
 
@@ -338,7 +339,11 @@ export function escalateStageIssues(stages: readonly EscalateStageShape[]): Proc
     if (e === null) return;
     const h = e.after_h;
     const badH = !Number.isInteger(h) || h < ESCALATE_AFTER_H.min || h > ESCALATE_AFTER_H.max;
-    if (s.after.kind !== "review" || e.group_id === s.after.group_id || badH)
+    // CR-105 · chuyển cấp trùng Group duyệt theo id (def tenant) hoặc theo mã (def thư viện).
+    const same =
+      (e.group_id !== undefined && e.group_id === s.after.group_id) ||
+      (e.group_key !== undefined && e.group_key === s.after.group_key);
+    if (s.after.kind !== "review" || same || badH)
       out.push({ path: `stages.${i}.after.escalate`, rule: "ESCALATE_INVALID" });
   });
   return out;

@@ -84,7 +84,7 @@ export const escalateToDef = (s: Pick<StageDraft, "escalate">): StageEscalate | 
 export const remindFromDef = (v: number | null | undefined): string =>
   v === null || v === undefined ? "" : String(v);
 export function escalateFromDef(e: StageEscalate | null | undefined): EscalateDraft {
-  return e ? { on: true, afterH: String(e.after_h), groupId: e.group_id } : emptyEscalate();
+  return e ? { on: true, afterH: String(e.after_h), groupId: e.group_id ?? "" } : emptyEscalate();
 }
 
 /** Lỗi form "Chờ tới ngày": nguồn / chênh / giờ → path như server (`stages.i.executor.*`). */

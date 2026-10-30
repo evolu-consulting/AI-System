@@ -4,6 +4,8 @@
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
+import type { ResolvedSlot } from "./slot.ports";
+
 /** Người gọi = user của JWT (cấu trúc khớp `AuthUser`). */
 export type PackRunCaller = { userId: string; tenantId: string; role: string };
 
@@ -16,7 +18,13 @@ export type PackRunRequest = {
   input: string;
   inputs?: unknown[];
   ref?: PackRunRef;
+  /** CR-105 · run mở theo khe: def tenant phải đúng `source_ref` (đồng bộ bởi `ensureDef`) ở version run đã chụp — lệch
+   *  (đua đổi gán) ⇒ huỷ run + ném; khớp ⇒ ghi `process_name`/`process_version` vào snapshot run. */
+  slot?: PackRunSlot;
 };
+export type PackRunSlot = { source_ref: string; process_name: string; rel_version: number };
+/** CR-105 · `ensureDef` theo khe: so BẰNG `source_ref` (không so `pack_version` đơn điệu — đổi A→B có thể "lùi" số bản). */
+export type PackDefVersion = number | { sourceRef: string };
 
 export type PackRunOutcome = {
   run_id: string;
@@ -111,13 +119,19 @@ export type PackRunsPort = {
    *  (id run đọc từ bản ghi của gói), không truyền id tuỳ ý. */
   outcomes(u: PackRunCaller, runIds: readonly string[]): Promise<PackRunOutcome[]>;
   /** S1a · tạo/đồng bộ def tenant `key` do gói sở hữu (cùng luật lưu def). Idempotent theo `version`: def đã đồng bộ
-   *  version ≥ ⇒ "exists"; thấp hơn ⇒ ghi đè ("synced"). `u` = người thao tác (audit). Def sai ⇒ ném. */
+   *  version ≥ ⇒ "exists"; thấp hơn ⇒ ghi đè ("synced"). `u` = người thao tác (audit). Def sai ⇒ ném.
+   *  CR-105 · `{sourceRef}` ⇒ `source_ref` bằng ⇒ "exists" (0 ghi); khác ⇒ ghi đè rồi đóng `source_ref` có guard version;
+   *  thua đua ⇒ thử lại 1 lần rồi ném (gói rơi máy cũ). */
   ensureDef(
     u: PackRunCaller,
     key: string,
     def: Record<string, unknown>,
-    version: number,
+    version: PackDefVersion,
   ): Promise<"created" | "exists" | "synced">;
+  /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
+  resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** CR-105 · `source_ref` của def đã biên dịch (sha256 16 hex, thuần) — gói gửi lại ở `ensureDef`/`start.slot`. */
+  sourceRefOf(def: Record<string, unknown>): string;
   /** S1a · quyết task duyệt mở của run trong scope USER người quyết (canAct/RLS/exclude_starter của engine; lỗi ném như
    *  route engine). Không có task mở khớp ⇒ "not_open". */
   act(

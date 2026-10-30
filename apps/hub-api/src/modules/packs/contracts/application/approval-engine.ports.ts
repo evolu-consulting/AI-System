@@ -11,6 +11,7 @@ import type {
   PackWorkflow,
 } from "../../kit/application/pack-runs.ports";
 import type { PackUow } from "../../kit/application/ports";
+import type { ResolvedSlot } from "../../kit/application/slot.ports";
 import type { FlowStep } from "../domain/approval-flow.types";
 import type { ApprovalFlowRepo } from "./approval-flow.usecase";
 import type { ProductLinksRepo } from "./product-links.usecase";
@@ -26,16 +27,22 @@ export type EngineStartRequest = {
     | { type: "number"; key: string; value: string }
   )[];
   ref: EngineRunRef;
+  /** CR-105 · run theo khe: engine kiểm def run mang đúng `source_ref` + ghi tên/bản quy trình vào snapshot run. */
+  slot?: { source_ref: string; process_name: string; rel_version: number };
 };
 
 export type ApprovalEnginePort = {
-  /** Đẩy def (tenant người gọi) khi `version` khác bản engine đang giữ; trùng ⇒ không làm gì. */
+  /** Đẩy def (tenant người gọi) khi `version` khác bản engine đang giữ; trùng ⇒ không làm gì. CR-105 · `{sourceRef}` ⇒ so bằng. */
   ensureDef(
     u: EngineCaller,
     key: string,
     def: Record<string, unknown>,
-    version: number,
+    version: number | { sourceRef: string },
   ): Promise<unknown>;
+  /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản); vắng/không có ⇒ đường cũ `readFlow`. */
+  resolveSlot?(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** CR-105 · `source_ref` (sha256 16 hex) của def đã biên dịch — engine tính (lớp 1–2 gói không dùng `node:*`). */
+  sourceRefOf?(def: Record<string, unknown>): string;
   /** Mở run (COMMIT, CHƯA kick) gắn `ref` (pack_ref); người gọi `kick()` sau khi gắn run vào HĐ. */
   start(
     u: EngineCaller,

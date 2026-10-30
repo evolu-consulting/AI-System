@@ -5,7 +5,9 @@ import {
   packAccessInput,
   tenantFeatureOn,
 } from "../kit/adapters/pack-guard.middleware";
+import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { PackUow, PackWho } from "../kit/application/ports";
+import type { SlotSpec } from "../kit/application/slot.ports";
 import { checkPackAccess } from "../kit/domain/pack-access.rules";
 import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
@@ -28,6 +30,15 @@ import {
 } from "./application/approval-flow.usecase";
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { ENGINE_FEATURE_KEY, engineAllowedForTenant } from "./domain/approval-engine.rules";
+import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
+import {
+  APPROVAL_SLOT,
+  APPROVAL_SLOT_LABEL,
+  compileSlotStages,
+  slotBodyOf,
+  slotGroupKeys,
+  validateSlotBody,
+} from "./domain/approval-slot.rules";
 
 /** esign-flow · bước Ký số sau "Đã duyệt" (tool finalize; vắng ⇒ không tự gửi ký); người cụ thể (duyệt/ký) thuộc tenant + quyền
  *  `write` gói (kiểm khi lưu mẫu). */
@@ -92,12 +103,28 @@ export function approvalEngine(
   };
 }
 
+/** CR-105 · khe `contracts.approval` ("Sổ Hợp Tác · Duyệt hợp đồng") cho thư viện quy trình: `compile` = `compileDef` trên mã Group. */
+export const approvalSlotSpec: SlotSpec = {
+  key: APPROVAL_SLOT,
+  label: APPROVAL_SLOT_LABEL,
+  packKey: "contracts",
+  requiredInputs: ["contract-id"],
+  systemTools: [FLOW_TOOL_KEYS.route, FLOW_TOOL_KEYS.finalize],
+  validate: validateSlotBody,
+  compile: compileSlotStages,
+  groupKeys: (b) => {
+    const body = slotBodyOf(b);
+    return body ? slotGroupKeys(body) : [];
+  },
+};
+
 /** contract-flow S2 · `GET|PUT /approval-flow` + S3b `GET /groups` (đồng bộ def engine qua `flowDefSync` khi có — S3a). */
 export function flowTemplateRoutes(
   view: PackAccessView,
   uow: PackUow<ApprovalFlowTxRepos>,
   flow: FlowDeps,
 ) {
+  slotRegistry.register(approvalSlotSpec); // CR-105 · gói bật ⇒ khe đăng ký (đăng ký lại cùng khoá ⇒ thay)
   const fd = {
     uow,
     groups: flow.groups,

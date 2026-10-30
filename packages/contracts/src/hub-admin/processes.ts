@@ -2,7 +2,6 @@
 // run export lại từ `chat/processes*` (một nguồn; Evolu Control xem run/token qua endpoint chat §3).
 import { z } from "zod";
 import {
-  ESCALATE_AFTER_H,
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
   PROCESS_LIST_LIMIT,
@@ -20,6 +19,12 @@ import {
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
+import {
+  AnswererGroupSchema,
+  type StageEscalate,
+  StageEscalateSchema,
+  StageGroupKeySchema,
+} from "./process-group-refs";
 import { IfExecutorSchema } from "./process-if";
 import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
@@ -129,11 +134,7 @@ export const StageAutofixSchema = z.strictObject({
 });
 export type StageAutofix = z.infer<typeof StageAutofixSchema>;
 
-export const StageEscalateSchema = z.strictObject({
-  after_h: z.number().int().min(ESCALATE_AFTER_H.min).max(ESCALATE_AFTER_H.max),
-  group_id: UuidSchema,
-});
-export type StageEscalate = z.infer<typeof StageEscalateSchema>;
+export { type StageEscalate, StageEscalateSchema, StageGroupKeySchema }; // CR-105 · id hoặc mã Group
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
@@ -193,13 +194,16 @@ export const ProcessStageDefSchema = z.strictObject({
       head_only: z.boolean().optional(),
       also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)
       approver_user_id: UuidSchema.optional(), // esign-flow · người duyệt cụ thể (cửa như head_only)
+      group_key: StageGroupKeySchema.optional(), // CR-105 · def thư viện: Group duyệt theo mã
+      also_group_keys: z.array(StageGroupKeySchema).max(5).optional(), // CR-105
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),
   real_action: z.boolean(),
   answerer: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("starter") }),
-    z.strictObject({ kind: z.literal("group"), group_id: UuidSchema }),
+    AnswererGroupSchema, // CR-105 · id hoặc mã
+
     z.strictObject({ kind: z.literal("user"), user_id: UuidSchema }),
   ]),
   timeout_s: z
@@ -251,6 +255,8 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   description: z.string().max(PROCESS_DESC_MAX),
   input_hint: z.string().max(PROCESS_DESC_MAX),
   run_group_ids: z.array(UuidSchema).max(PROCESS_RUN_GROUPS_MAX),
+  /** CR-105 · def thư viện: Group được chạy theo mã (def tenant ⇒ vắng/rỗng). */
+  run_group_keys: z.array(StageGroupKeySchema).max(PROCESS_RUN_GROUPS_MAX).optional(),
   stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).nullable(),
   enabled: z.boolean(),

@@ -146,7 +146,8 @@ export async function updateDef(
       description = ${d.description}, input_hint = ${d.input_hint}, run_group_ids = ${pgUuids(d.run_group_ids)},
       stages = ${JSON.stringify(d.stages)}::jsonb, token_budget = ${d.token_budget}, enabled = ${d.enabled},
       sources = ${JSON.stringify(d.sources)}::jsonb, inputs = ${JSON.stringify(d.inputs)}::jsonb,
-      ttl_days = ${ttlDays}, version = version + 1, updated_by = ${actorId}, updated_at = now()
+      ttl_days = ${ttlDays}, version = version + 1, updated_by = ${actorId}, updated_at = now(),
+      source_ref = null
     where id = ${id} returning *) select ${COLS} from up d`);
   if (!r) throw new Error("update process_defs không trả hàng");
   return r;

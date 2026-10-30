@@ -14,6 +14,7 @@ import type {
   PackRunCaller,
   PackRunOutcome,
   PackRunOutcomeSys,
+  PackRunSlot,
   PackRunsPort,
   PackWorkflow,
 } from "../../packs/kit/application/pack-runs.ports";
@@ -27,6 +28,8 @@ import type { ProcessRunStatus } from "../domain/types";
 import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
+import { resolveSlot } from "../library/slot-resolve.repo";
+import { defSourceRef } from "../library/source-ref";
 import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
 import { StartService } from "./start.service";
 
@@ -71,6 +74,73 @@ async function ensureDef(
       ${def.packVersion}::int) where tenant_id = ${u.tenantId} and key = ${def.key} and deleted_at is null`),
   );
   return cur ? "synced" : "created";
+}
+
+const SOURCE_REF = /^[0-9a-f]{16}$/;
+type DefCur = { id: string; version: number; source_ref: string | null };
+
+/**
+ * CR-105 · readiness Cao · def tenant vật chất hoá từ khe: `source_ref` BẰNG ⇒ "exists" (0 ghi). Khác ⇒ ghi def (cùng luật lưu
+ * def — `DefsService`, xoá `source_ref` cũ) rồi đóng `source_ref` CHỈ lên đúng version vừa ghi (guard version: ai ghi chen ⇒ 0
+ * hàng ⇒ thua đua). Thua đua ⇒ thử lại 1 lần; vẫn thua ⇒ ném (gói rơi máy cũ).
+ */
+type SlotDefReq = { key: string; sourceRef: string; body: Record<string, unknown> };
+type SyncOut = "created" | "exists" | "synced";
+
+/** Một lượt đồng bộ; thua đua (ghi chen / key bị lấy / version lệch) ⇒ null. */
+async function syncSlotDefOnce(
+  d: ProcessDeps,
+  u: PackRunCaller,
+  def: SlotDefReq,
+  input: ReturnType<typeof ProcessDefInputBaseSchema.parse>,
+): Promise<SyncOut | null> {
+  const [cur] = await withHubScope(d.db, SYS, (tx) =>
+    tx.execute<DefCur>(sql`select id, version, source_ref from hub.process_defs
+      where tenant_id = ${u.tenantId} and key = ${def.key} and deleted_at is null`),
+  );
+  if (cur?.source_ref === def.sourceRef) return "exists";
+  const svc = new DefsService(d);
+  const scope = { tenantId: u.tenantId };
+  try {
+    const row = cur
+      ? await svc.update(asUser(u), scope, cur.id, { ...input, version: cur.version } as never)
+      : await svc.create(asUser(u), scope, input as never);
+    const stamped = await withHubScope(d.db, SYS, (tx) =>
+      tx.execute(sql`update hub.process_defs set source_ref = ${def.sourceRef}
+        where id = ${row.id} and tenant_id = ${u.tenantId} and version = ${row.version}`),
+    );
+    if (stamped.count !== 1) return null;
+    return cur ? "synced" : "created";
+  } catch (e) {
+    if (raced(e, "PROCESS_KEY_TAKEN") || raced(e, "VERSION_CONFLICT")) return null;
+    throw e;
+  }
+}
+
+async function ensureSlotDef(d: ProcessDeps, u: PackRunCaller, def: SlotDefReq): Promise<SyncOut> {
+  if (!SOURCE_REF.test(def.sourceRef)) throw new Error("ensureDef: sourceRef không hợp lệ");
+  const input = ProcessDefInputBaseSchema.parse({ ...def.body, key: def.key });
+  const out =
+    (await syncSlotDefOnce(d, u, def, input)) ?? (await syncSlotDefOnce(d, u, def, input));
+  if (out === null) throw new Error("ensureDef: thua đua đồng bộ def khe");
+  return out;
+}
+
+/**
+ * CR-105 · run theo khe: def run đã chụp phải mang đúng `source_ref` ở đúng version (MỘT câu, cùng lúc ghi `process_name`/
+ * `process_version` vào snapshot run). Lệch (def bị ghi chen giữa ensureDef và start) ⇒ huỷ run + ném.
+ */
+async function stampSlotRun(d: ProcessDeps, tenantId: string, runId: string, s: PackRunSlot) {
+  const meta = JSON.stringify({ process_name: s.process_name, process_version: s.rel_version });
+  const ok = await withHubScope(d.db, SYS, (tx) =>
+    tx.execute(sql`update hub.process_runs r set snapshot = r.snapshot || ${meta}::jsonb
+      from hub.process_defs d where r.id = ${runId} and r.tenant_id = ${tenantId}
+        and d.id = r.process_def_id and d.tenant_id = r.tenant_id and d.source_ref = ${s.source_ref}
+        and d.version = r.def_version`),
+  );
+  if (ok.count === 1) return;
+  await cancelSys(d, tenantId, runId).catch(() => false);
+  throw new Error("PackRunsPort.start: def khe đã đổi (source_ref lệch)");
 }
 
 /** Huỷ run ở scope system (khoá run trước — §10); không có trong tenant / đã kết thúc ⇒ false. */
@@ -209,8 +279,11 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
           ...(ref ? { packRef: { pack: ref.pack, recordId: ref.record_id } } : {}),
         },
       );
+      if (req.slot) await stampSlotRun(d, u.tenantId, s.id, req.slot);
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
+    resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
+    sourceRefOf: defSourceRef,
     cancel: (u, runId) => cancelOwn(d, gates, u, runId),
     async outcomes(u, runIds) {
       const ids = runIds.filter((x) => UUID.test(x));
@@ -226,7 +299,10 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
         return [...rows];
       });
     },
-    ensureDef: (u, key, def, version) => ensureDef(d, u, { key, packVersion: version, body: def }),
+    ensureDef: (u, key, def, version) =>
+      typeof version === "number"
+        ? ensureDef(d, u, { key, packVersion: version, body: def })
+        : ensureSlotDef(d, u, { key, sourceRef: version.sourceRef, body: def }),
     async act(u, runId, at, b) {
       const taskId = await openTaskFor(d, u, runId, at);
       if (!taskId) return "not_open";

@@ -14,6 +14,7 @@ import { branchStageIssues } from "../domain/branch/branch-def.rules";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
 import { executorRefMiss, nodeDefIssues, nodeSpecOf, normalizeStage } from "../nodes/registry";
 import { normSection, sectionMap } from "../runs/template.rules";
+import { groupRefModeMiss, reviewHasGroup } from "./def-group-keys.rules";
 import type { DefRefs, RefKind, RefMiss } from "./def-refs";
 
 export type { DefRefs, RefKind, RefMiss };
@@ -37,7 +38,8 @@ function stageRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
     !refs.groupIds.has(s.after.group_id)
   )
     return { path: `${p}.after.group_id`, ref: "group" };
-  if (s.answerer.kind === "group" && !refs.groupIds.has(s.answerer.group_id))
+  const ag = s.answerer.kind === "group" ? s.answerer.group_id : undefined;
+  if (ag !== undefined && !refs.groupIds.has(ag))
     return { path: `${p}.answerer.group_id`, ref: "group" };
   if (s.answerer.kind === "user" && !refs.userIds.has(s.answerer.user_id))
     return { path: `${p}.answerer.user_id`, ref: "user" };
@@ -55,7 +57,11 @@ function escalateRefMiss(s: Stage, i: number, refs: DefRefs): RefMiss | null {
   if (ap !== null && !refs.userIds.has(ap))
     return { path: `stages.${i}.after.approver_user_id`, ref: "user" };
   const esc = s.after.kind === "review" ? (s.after.escalate ?? null) : null;
-  const shape = { escalate: esc ? { afterH: esc.after_h, groupId: esc.group_id } : null };
+  // CR-105 · chuyển cấp theo mã (def thư viện) không kiểm theo tenant ở đây (luật id/mã ở `groupRefModeMiss`).
+  const gid = esc?.group_id;
+  const shape = {
+    escalate: esc && gid !== undefined ? { afterH: esc.after_h, groupId: gid } : null,
+  };
   const miss = escalateGroupRefs([shape]).find((r) => !refs.groupIds.has(r.groupId));
   return miss ? { path: `stages.${i}.after.escalate.group_id`, ref: "group" } : null;
 }
@@ -83,7 +89,14 @@ function branchIssuesOf(d: ProcessDefInput): ToolIssueRow[] {
   );
 }
 
-export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck {
+/** CR-105 · `library` = def thư viện (`tenant_id NULL` + `slot`): Group chỉ theo mã; vắng = def tenant/mẫu (chỉ id). */
+export type DefCheckOpts = { library?: boolean };
+
+export function validateProcessDef(
+  d: ProcessDefInput,
+  refs: DefRefs,
+  o: DefCheckOpts = {},
+): DefCheck {
   // P-b2 D10 · `paths` + `rules` cùng chỉ số (đã cắt ≤ 20 ở contract). P-d1 · PD-R17 · `inputs` bật luật nguồn input
   // của `waitStageIssues` (WAIT_INVALID). CR-103 · luật riêng loại node (team: mục thành viên; tool: D2-14) theo thứ tự
   // registry (team trước tool — giữ thứ tự lỗi cũ).
@@ -99,6 +112,9 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
       paths: invalid.map((i) => i.path),
       rules: invalid.map((i) => i.rule),
     };
+  const library = o.library === true;
+  const mode = groupRefModeMiss(d, library);
+  if (mode) return { ok: false, code: "PROCESS_REF_INVALID", ...mode };
   for (const [i, s] of d.stages.entries()) {
     const miss = stageRefMiss(s, i, refs);
     if (miss) return { ok: false, code: "PROCESS_REF_INVALID", ...miss };
@@ -110,7 +126,7 @@ export function validateProcessDef(d: ProcessDefInput, refs: DefRefs): DefCheck 
   if (rg) return { ok: false, code: "PROCESS_REF_INVALID", ...rg };
   if (!d.enabled) return { ok: true };
   const incomplete = d.stages.flatMap((s, i) =>
-    s.after.kind === "review" && s.after.group_id === null ? [`stages.${i}.after.group_id`] : [],
+    reviewHasGroup(s, library) ? [] : [`stages.${i}.after.group_id`],
   );
   return incomplete.length
     ? { ok: false, code: "PROCESS_DEF_INCOMPLETE", paths: incomplete.slice(0, 20) }

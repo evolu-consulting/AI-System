@@ -36,6 +36,13 @@ import type {
   EngineRunRow,
   EngineStartRow,
 } from "./approval-engine.ports";
+import {
+  defVersionOf,
+  type EngineFlow,
+  type OpenRunArgs,
+  slotFlowOf,
+  slotRunOf,
+} from "./approval-engine-slot";
 import type { FlowDefSync, FlowGroups } from "./approval-flow.usecase";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
@@ -65,8 +72,7 @@ export function engineErrMeta(e: unknown): Record<string, string> {
   if (typeof code !== "string" || !CODE.test(code)) return { error: e.name };
   return { error: e.name, code, message: e.message.slice(0, 120) };
 }
-/** `defVersion` = version def engine (`pack_version`; S3b: đổi cài đặt khi chưa lưu mẫu ⇒ tăng ⇒ ensureDef ghi đè). */
-type Flow = { version: number; steps: readonly FlowStep[]; defVersion: number };
+type Flow = EngineFlow;
 
 /** prod-fix2 · Group "Toàn quyền" của gói còn ở tenant: Group cấp 2 của cài đặt + Group vai owner (quyền gói `admin`). */
 async function ownerGroupIds(d: ApprovalEngineDeps, who: PackWho): Promise<string[]> {
@@ -76,7 +82,12 @@ async function ownerGroupIds(d: ApprovalEngineDeps, who: PackWho): Promise<strin
 }
 
 /** Def theo mẫu; Group mẫu trỏ không còn ở tenant / mẫu rỗng ⇒ null (giữ chế độ máy). */
-async function compiled(d: ApprovalEngineDeps, who: PackWho, f: { steps: readonly FlowStep[] }) {
+async function compiled(
+  d: ApprovalEngineDeps,
+  who: PackWho,
+  f: { steps: readonly FlowStep[] } | null,
+) {
+  if (!f) return null; // CR-105 · khe thiếu mã Group ở tenant ⇒ máy cũ
   const tenantId = who.tenantId;
   const [have, owners] = await Promise.all([
     d.groups.existingIds(tenantId, flowGroupIds(f.steps)),
@@ -104,13 +115,17 @@ async function loadStart(
   id: string,
   ok: (st: EngineStartRow) => boolean = engineStartable,
 ) {
+  // CR-105 · khe trước (tra theo tenant mỗi lần mở lượt); chưa có bản xuất bản ⇒ đường cũ `readFlow` (L4 xoá).
+  const slot = await slotFlowOf(d, who.tenantId);
   const got = await d.uow.tenant(who, async (r) => {
     const st = await r.approvalEngine.startState(id);
     if (!st?.startedBy || !ok(st)) return null;
-    return { st, read: await readFlow(r) };
+    return { st, read: slot === null ? await readFlow(r) : null };
   });
   if (!got) return null;
-  return { flow: await flowOf(d, who, got.read), starter: got.st.startedBy as string, st: got.st };
+  const flow: Flow | null =
+    slot === "invalid" ? null : (slot ?? (await flowOf(d, who, got.read as FlowRead)));
+  return { flow, starter: got.st.startedBy as string, st: got.st };
 }
 
 type FlowRead = Awaited<ReturnType<typeof readFlow>>;
@@ -137,7 +152,7 @@ async function openRun(
   d: ApprovalEngineDeps,
   port: ApprovalEnginePort,
   who: PackWho,
-  c: { id: string; flow: Flow; starter: string; replaces?: string | null },
+  c: OpenRunArgs,
 ): Promise<EngineStartOutcome> {
   // started_by của run = người bắt đầu lượt duyệt (exclude_starter phải còn nghĩa sau Đọc lại / heal do người khác kích).
   const u = callerOf({ tenantId: who.tenantId, userId: c.starter });
@@ -156,6 +171,7 @@ async function openRun(
       ...(facts ? difyRunInputs(facts, selects) : []),
     ],
     ref: { pack: "contracts", record_id: c.id },
+    ...slotRunOf(c.flow, c.def, port),
   };
   const { runId, kick } = await port.start(u, req);
   let attached = false;
@@ -193,12 +209,12 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
       if (!got) return "skipped";
       const { flow, starter } = got;
       const def = await compiled(d, who, flow);
-      if (!def) {
+      if (!def || !flow) {
         d.warn("contract-engine-flow-invalid", { contract_id: id });
         return "machine";
       }
-      await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, flow.defVersion);
-      return await openRun(d, port, who, { id, flow, starter });
+      await port.ensureDef(callerOf(who), APPROVAL_PROCESS_KEY, def, defVersionOf(flow, def, port));
+      return await openRun(d, port, who, { id, flow, starter, def });
     } catch (e) {
       d.warn("contract-engine-start-failed", { contract_id: id, ...engineErrMeta(e) });
       return "machine";
@@ -243,11 +259,12 @@ export function reopenEngineApproval(d: ApprovalEngineDeps) {
     try {
       const s = await findStalled(d, port, who, id);
       if (typeof s === "string") return s;
-      const def = await compiled(d, who, s.got.flow);
-      if (!def) return "failed";
+      const flow = s.got.flow;
+      const def = await compiled(d, who, flow);
+      if (!def || !flow) return "failed";
       const caller = callerOf({ tenantId: who.tenantId, userId: s.got.starter });
-      await port.ensureDef(caller, APPROVAL_PROCESS_KEY, def, s.got.flow.defVersion);
-      const out = await openRun(d, port, who, { id, ...s.got, replaces: s.run });
+      await port.ensureDef(caller, APPROVAL_PROCESS_KEY, def, defVersionOf(flow, def, port));
+      const out = await openRun(d, port, who, { id, ...s.got, flow, def, replaces: s.run });
       return out === "started" ? "ok" : "not_stalled";
     } catch (e) {
       d.warn("contract-engine-reopen-failed", { contract_id: id, ...engineErrMeta(e) });
