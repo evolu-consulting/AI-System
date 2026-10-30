@@ -23,7 +23,8 @@ import { DefsService } from "./defs.service";
 function scopeOf(user: AuthUser, queryTenantId: string | undefined): DefScope {
   const s = defScopeOf(user, queryTenantId);
   if (!s.ok) throw appError(s.code);
-  return { tenantId: s.tenantId };
+  // CR-105 · readiness Chặn 1: def thư viện (`slot`) chỉ hiện với platform_admin.
+  return { tenantId: s.tenantId, library: user.role === "platform_admin" };
 }
 
 export function defsRoutes(d: ProcessDeps): Hono<AuthVars> {

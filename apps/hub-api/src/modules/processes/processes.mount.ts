@@ -23,6 +23,7 @@ import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
+import { libraryRoutes } from "./library/library.routes";
 import { previewRoutes } from "./library/preview.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
@@ -46,6 +47,8 @@ export const PROCESS_PROTECTED_PREFIXES = [
   "/process-defs",
   "/agent-teams",
   "/process-editor", // P-d1 · `GET /process-editor/context` (plan-contract §4)
+  "/process-slots", // CR-105 · L2a · khe thư viện (platform_admin)
+  "/tenants", // CR-105 · L2a · `/tenants/:tid/process-slots…` (platform_admin)
 ] as const;
 
 /** Seam test (plan-contract §7.1): vắng ⇒ hành vi chạy thật. */
@@ -136,7 +139,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
 }
 
 /** Route admin-web cần (editor, lượt chạy + Token, duyệt/huỷ/quyết định). KHÔNG có asks + hộp việc `/me/*` (chat-web). */
-const ADMIN_ROUTES = [processRunsRoutes, gatesRoutes, usageRoutes, defsRoutes];
+const ADMIN_ROUTES = [processRunsRoutes, gatesRoutes, usageRoutes, defsRoutes, libraryRoutes];
 const ALL_ROUTES = [
   processRunsRoutes,
   gatesRoutes,
@@ -144,6 +147,7 @@ const ALL_ROUTES = [
   inboxRoutes,
   usageRoutes,
   defsRoutes,
+  libraryRoutes, // CR-105 · L2a
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */

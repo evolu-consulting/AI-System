@@ -258,4 +258,8 @@ export function defScopeOf(
 }
 
 /** Phạm vi nhìn: `tenantId` null ⇒ chỉ mẫu; có ⇒ quy trình tenant đó + mẫu. */
-export type DefScope = { tenantId: string | null };
+export type DefScope = {
+  tenantId: string | null;
+  /** CR-105 · thấy def thư viện (`slot`) — chỉ platform_admin (readiness Chặn 1); vắng ⇒ ẩn. */
+  library?: boolean;
+};

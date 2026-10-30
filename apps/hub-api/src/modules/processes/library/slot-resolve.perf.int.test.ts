@@ -36,9 +36,11 @@ beforeAll(async () => {
   await o.unsafe(`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
     select ${def("d")}, v, 'Quy trình ' || d, '[{"key":"s0"}]'::jsonb, jsonb_build_object('steps', '[]'::jsonb, 'v', v)
     from generate_series(1, ${N_DEF}) d, generate_series(1, ${N_REL}) v`);
-  await o.unsafe(`insert into hub.process_slots (slot, default_def_id) values ($1, ${def("1")})`, [
-    SLOT,
-  ]);
+  await o.unsafe(
+    `insert into hub.process_slots (slot, default_def_id) values ($1, ${def("1")})
+    on conflict (slot) do update set default_def_id = excluded.default_def_id`,
+    [SLOT],
+  );
   await o.unsafe(`insert into admin.tenants (id, key, name)
     select ${ten("i")}, 'plp' || i, 'T' || i from generate_series(1, ${N_TENANT}) i`);
   // Tenant chẵn có gán (def 1..50 vòng), lẻ chạy mặc định.

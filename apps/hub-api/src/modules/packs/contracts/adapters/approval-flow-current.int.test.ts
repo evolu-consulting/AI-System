@@ -123,7 +123,8 @@ beforeAll(async () => {
   }
   defs.dflt = await libDef("pl-cur-default", "Quy trình HĐ mặc định", BODY.dflt);
   defs.special = await libDef("pl-cur-special", "Quy trình riêng", BODY.special);
-  await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${defs.dflt})`;
+  await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${defs.dflt})
+    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
     values (${A}, ${APPROVAL_SLOT}, ${defs.special})`;
   packDb = createDb(urls().hubApi, { max: 3 });

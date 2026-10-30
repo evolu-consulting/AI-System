@@ -173,7 +173,8 @@ beforeAll(async () => {
   lib.A = await libDef("pl-slot-a", "Quy trình A", BODY.A);
   lib.B = await libDef("pl-slot-b", "Quy trình B", BODY.B);
   lib.D = await libDef("pl-slot-d", "Quy trình HĐ mặc định", BODY.D);
-  await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${lib.D})`;
+  await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${lib.D})
+    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
     values (${X}, ${APPROVAL_SLOT}, ${lib.A}), (${Y}, ${APPROVAL_SLOT}, ${lib.B})`;
   const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({

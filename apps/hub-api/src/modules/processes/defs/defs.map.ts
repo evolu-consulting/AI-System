@@ -8,6 +8,7 @@ import {
   type ProcessDefListItem,
 } from "@ai/contracts/hub-admin";
 import { AppError } from "../../../lib/errors";
+import { slotSpecOf } from "../library/slots";
 import type { DefCheck } from "./def.rules";
 import type { DefListRow, DefRow } from "./defs.repo";
 import type { MemberRow, TeamRow } from "./teams.repo";
@@ -59,10 +60,22 @@ export function toProcessDef(r: DefRow): ProcessDef {
     created_at: r.created_at,
     updated_at: r.updated_at,
     ttl_days: r.ttl_days,
+    ...(r.slot === null ? {} : { ...libFields(r), slot: r.slot, slot_body: r.slot_body }),
   };
 }
 
+/** CR-105 · trường def thư viện (vắng ở def tenant/mẫu — giữ hình response cũ). */
+const libFields = (
+  r: Pick<DefRow, "slot" | "published_version" | "tenant_count" | "is_default">,
+) => ({
+  slot_label: r.slot === null ? null : (slotSpecOf(r.slot)?.label ?? null),
+  published_version: r.published_version,
+  is_default: r.is_default,
+  tenant_count: Number(r.tenant_count),
+});
+
 export const toListItem = (r: DefListRow): ProcessDefListItem => ({
+  ...(r.slot === null ? {} : { slot: r.slot, ...libFields(r) }),
   id: r.id,
   key: r.key,
   name: r.name,

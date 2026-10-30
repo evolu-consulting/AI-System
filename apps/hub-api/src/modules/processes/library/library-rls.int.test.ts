@@ -54,7 +54,8 @@ beforeAll(async () => {
   ids.tpl = await libDef("pl-rls-tpl", null);
   await o`insert into hub.process_def_releases (def_id, rel_version, name, stages)
     values (${ids.libA}, 1, 'A', ${STAGES}::text::jsonb), (${ids.libB}, 1, 'B', ${STAGES}::text::jsonb)`;
-  await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${ids.libA})`;
+  await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${ids.libA})
+    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
     values (${T.a}, ${SLOT}, ${ids.libA}), (${T.b}, ${SLOT}, ${ids.libB})`;
 }, 300_000);
@@ -73,7 +74,11 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       asgNoScope: await count("none", ASG),
       asgSys: await count(sys, ASG),
       relUser: await count(user("a"), "select count(*)::int as n from hub.process_def_releases"),
-      relSys: await count(sys, "select count(*)::int as n from hub.process_def_releases"),
+      relSys: await count(
+        sys,
+        "select count(*)::int as n from hub.process_def_releases where def_id = any($1::uuid[])",
+        [`{${ids.libA},${ids.libB}}`],
+      ),
       slotUser: await count(user("a"), "select count(*)::int as n from hub.process_slots"),
       slotSys: await count(sys, "select count(*)::int as n from hub.process_slots"),
     };

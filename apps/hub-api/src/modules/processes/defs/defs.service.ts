@@ -28,6 +28,7 @@ import { listTools } from "../application/tools/list-tools.usecase";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
+import { guardInUse, libraryRefs, slotDraft, specOrThrow } from "../library/library-draft";
 import { toolKeysOf } from "../nodes/registry";
 import {
   autofixSourceKindMiss,
@@ -81,8 +82,10 @@ export class DefsService {
     if (after === null)
       throw validationError([{ path: ["cursor"], code: "custom", message: "Invalid cursor" }]);
     return this.#read(async (tx) => {
+      if (q.kind === "library" && !s.library) throw appError("FORBIDDEN"); // CR-105 · platform_admin
       const rows = await repo.listDefs(tx, {
         ...s,
+        ...(q.kind ? { kind: q.kind } : {}),
         includeTemplates: q.include_templates,
         limit: q.limit,
         after,
@@ -130,11 +133,17 @@ export class DefsService {
   }
 
   /** Kiểm định nghĩa theo tham chiếu của tenant đích (mẫu: agent/nhóm đang bật, không Group/user) + nguồn còn sống. */
-  async #check(tx: Tx, tenantId: string | null, input: ProcessDefInput): Promise<void> {
+  async #check(
+    tx: Tx,
+    tenantId: string | null,
+    input: ProcessDefInput,
+    lib = false,
+  ): Promise<void> {
     const toolKeys = toolKeysOf(input.stages);
-    throwIfInvalid(
-      validateProcessDef(input, await loadDefRefs(tx, tenantId, toolKeys, this.d.packTools)),
-    );
+    const refs = lib
+      ? await libraryRefs(tx, input.stages, this.d.packTools)
+      : await loadDefRefs(tx, tenantId, toolKeys, this.d.packTools);
+    throwIfInvalid(validateProcessDef(input, refs, { library: lib }));
     await this.#checkSources(tx, tenantId, input.sources);
     await this.#checkAutofixKinds(tx, tenantId, input);
   }
@@ -171,7 +180,8 @@ export class DefsService {
     k: { s: Scope; id: string; version: number },
   ): Promise<repo.DefRow> {
     const { s, id, version } = k;
-    const r = await repo.readDef(tx, s, id, true);
+    // CR-105 · ghi def thư viện chỉ platform_admin: nhìn cả def có `slot` để trả 403 (như mẫu), không 404.
+    const r = await repo.readDef(tx, { ...s, library: true }, id, true);
     if (!r) throw appError("NOT_FOUND");
     if (r.tenant_id === null && u.role !== "platform_admin") throw defError("TEMPLATE_READ_ONLY");
     if (r.version !== version)
@@ -179,9 +189,21 @@ export class DefsService {
     return r;
   }
 
-  async create(u: AuthUser, s: Scope, input: ProcessDefInput): Promise<ProcessDef> {
+  /** CR-105 · nháp có `slot` ⇒ chỉ platform_admin, phạm vi mẫu; `stages` = biên dịch từ `slot_body`. */
+  #draft(u: AuthUser, tenantId: string | null, input: ProcessDefInput, cur: repo.DefRow | null) {
+    const slot = input.slot === undefined ? (cur?.slot ?? null) : input.slot;
+    if (slot === null) return { input, slot: null, body: null };
+    if (u.role !== "platform_admin") throw appError("FORBIDDEN");
+    if (tenantId !== null)
+      throw validationError([{ path: ["slot"], code: "custom", message: "Template scope only" }]);
+    const d = slotDraft(specOrThrow(slot), input, cur?.slot === slot ? cur : null);
+    return { input: d.input, slot, body: d.body };
+  }
+
+  async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDef> {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
-      await this.#check(tx, s.tenantId, input);
+      const { input, slot, body } = this.#draft(u, s.tenantId, raw, null);
+      await this.#check(tx, s.tenantId, input, slot !== null);
       await this.#keyFree(tx, s.tenantId, input.key);
       const row = await repo.insertDef(tx, {
         tenantId: s.tenantId,
@@ -189,6 +211,8 @@ export class DefsService {
         sourceTemplateId: null,
         ttlDays: ttlOnCreate(input.ttl_days),
         actorId: u.userId,
+        slot,
+        slotBody: body,
       });
       return {
         result: row,
@@ -204,16 +228,20 @@ export class DefsService {
     id: string,
     b: ProcessDefInput & { version: number },
   ): Promise<ProcessDef> {
-    const { version, ...input } = b;
+    const { version, ...raw } = b;
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
-      await this.#check(tx, cur.tenant_id, input);
+      const { input, slot, body } = this.#draft(u, cur.tenant_id, raw, cur);
+      await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
+      await this.#check(tx, cur.tenant_id, input, slot !== null);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
       const row = await repo.updateDef(tx, {
         id,
         input: withHandoff(input),
         ttlDays: ttlOnUpdate(input.ttl_days, cur.ttl_days),
         actorId: u.userId,
+        slot,
+        slotBody: body,
       });
       const a = {
         action: "update" as const,
@@ -229,6 +257,7 @@ export class DefsService {
   async remove(u: AuthUser, s: Scope, id: string, version: number): Promise<void> {
     await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
+      await guardInUse(tx, cur, "delete");
       await repo.softDeleteDef(tx, id, u.userId);
       return {
         result: null,
@@ -243,7 +272,7 @@ export class DefsService {
     if (tenantId === null) throw appError("TENANT_REQUIRED");
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const tpl = await repo.readDef(tx, s, id);
-      if (!tpl || tpl.tenant_id !== null) throw appError("NOT_FOUND");
+      if (!tpl || tpl.tenant_id !== null || tpl.slot !== null) throw appError("NOT_FOUND"); // CR-105
       const input = withHandoff(copyFromTemplate(inputOf(tpl), b));
       await this.#checkSources(tx, tenantId, input.sources);
       await this.#keyFree(tx, tenantId, input.key);
