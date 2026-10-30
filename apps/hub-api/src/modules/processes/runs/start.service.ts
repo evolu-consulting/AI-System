@@ -7,7 +7,7 @@ import type {
   ProcessRunSummary,
   SendRoomMessageRequest,
 } from "@ai/contracts/chat";
-import { FLOW_SHOWCASE_KEY, type ProcessInputValue } from "@ai/contracts/hub-admin";
+import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -252,7 +252,7 @@ export class StartService {
           def,
           input,
           inputs,
-          isTest: def.key === FLOW_SHOWCASE_KEY, // CR-105 · chạy thử từ Showcase/RunDialog của mẫu
+          isTest: def.from_template, // CR-105 · chạy thử từ bản sao của mẫu (Showcase/RunDialog)
           origin: { originKind: "admin", originRoomId: null, originConversationId: null },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);

@@ -26,11 +26,15 @@ export type StartDefRow = {
   sources: string[];
   inputs: ProcessInputDef[];
   ttl_days: number | null;
+  /** CR-105 · bản sao của mẫu chạy thử (`source_template_id` → def `tenant_id IS NULL AND slot IS NULL`) ⇒ lượt `is_test`. */
+  from_template: boolean;
 };
 
 const DEF_COLS = sql`d.id, d.key, d.name, d.version, d.enabled, (d.deleted_at is not null) as deleted,
   d.run_group_ids, d.stages, d.token_budget, coalesce(d.sources, '[]'::jsonb) as sources,
-  coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days`;
+  coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days,
+  exists (select 1 from hub.process_defs t where t.id = d.source_template_id
+    and t.tenant_id is null and t.slot is null) as from_template`;
 
 export async function findDefByKey(
   tx: Tx,
