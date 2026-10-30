@@ -81,6 +81,9 @@ const HUB_TABLES = [
   "notification_deliveries",
   "notifications",
   "notify_prefs",
+  "ops_checks", // CR-104 hub 0064 · ops-watch
+  "ops_events",
+  "ops_settings",
   "orchestrator_settings",
   "process_back_events",
   "process_defs",

@@ -31,6 +31,7 @@ export type EnvAppDeps = Required<
     | "processRoutes"
     | "fastRoute"
     | "notify"
+    | "ops"
   >;
 
 /** N3 live (ADR-0027): SMTP/VAPID nền tảng một bộ từ env; bí mật chỉ từ env hoặc kho secret, không có giá trị cố định trong code. */
@@ -86,6 +87,9 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
       ...(env.HUB_NOTIFY_MODE === "live" ? { live: liveEnvOf(env) } : {}),
     },
     kh: khConfigOf(env),
+    ops: {
+      watch: env.HUB_OPS_WATCH ? env.HUB_OPS_WATCH === "on" : env.APP_ENV !== "test",
+    },
   };
 }
 

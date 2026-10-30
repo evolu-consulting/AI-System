@@ -86,6 +86,9 @@ export const EnvSchema = z.object({
   // chat-fast · `on` ⇒ tin không tag mà người gửi chỉ thấy đúng 1 agent → chạy thẳng agent đó (bỏ job Orchestrator, cùng kiểm
   // quyền). Mặc định `off` (test khoá giữ hành vi cũ); production bật trong compose.
   HUB_FAST_ROUTE: z.enum(["on", "off"]).default("off"),
+  // CR-104 · vòng ops-watch (tick 60 s, lượt theo `every_min` trong hub.ops_settings). Vắng ⇒ bật ở development/production,
+  // tắt ở test. Route `/ops/*` luôn mở (chỉ platform_admin) bất kể cờ.
+  HUB_OPS_WATCH: z.enum(["on", "off"]).optional(),
   // CR-081 · seed opt-in fixtures: "1"/"true" ⇒ `hub:seed` nạp THÊM `*.full.yaml` (16 agent vai, 7 mẫu quy trình, teams,
   // entitlements/grants, tenant_processes); vắng ⇒ seed TỐI GIẢN (orchestrator + assistant + dify-* + providers + workflows).
   HUB_SEED_FIXTURES: z.string().optional(),

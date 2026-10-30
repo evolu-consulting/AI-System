@@ -49,6 +49,7 @@ import { mountSourceCredential } from "./modules/internal/source-credential.rout
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
+import { mountOps, OPS_PREFIX } from "./modules/ops/ops.mount";
 import { externalFirewall } from "./modules/packs/kit/adapters/external-firewall.middleware";
 import { packAccessInput } from "./modules/packs/kit/adapters/pack-guard.middleware";
 import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
@@ -100,6 +101,7 @@ const PROTECTED_PREFIXES = [
   "/dlc",
   PACK_PREFIX,
   NOTIFICATIONS_PREFIX,
+  OPS_PREFIX,
   ...X2A_PROTECTED_PREFIXES,
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
@@ -366,7 +368,10 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   const esign = mountEsignWebhook(app, deps); // vắng db (⇔ vắng config) ⇒ undefined
   const kh = mountProtected(app, deps, config);
   if (config) mountPacks(app, { ...deps, config, esign }); // N1 · `/pack/:k/me` + route gói (pkdemo)
-  if (deps.db) mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
+  if (deps.db) {
+    mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
+    mountOps(app, { ...deps, db: deps.db, log: logger }); // CR-104 · ops-watch (không phụ thuộc module đóng băng)
+  }
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)

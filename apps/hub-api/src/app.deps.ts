@@ -6,6 +6,7 @@ import type { Redis } from "./lib/redis";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import type { DlcEngine } from "./modules/dlc/dlc.engine";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
+import type { OpsDeps } from "./modules/ops/ops.mount";
 import type { PacksDeps } from "./modules/packs/packs.mount";
 import type { ProcessSeams } from "./modules/processes/processes.mount";
 import type { ProcessRoutesMode } from "./modules/processes/routes-mode";
@@ -80,4 +81,6 @@ export type AppDeps = {
   packs?: PacksDeps;
   /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */
   notify?: NotifyDeps;
+  /** CR-104 · ops-watch (`modules/ops/ops.mount.ts`): route `/ops/*` luôn mở khi có db; vòng nền chỉ khi `watch`. */
+  ops?: OpsDeps;
 } & ProcessSeams;
