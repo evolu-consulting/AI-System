@@ -4,6 +4,8 @@ import { type OpsHostStatus, OpsHostStatusSchema } from "@ai/contracts/hub-admin
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
 import { readStatusFile, type StatusFile, thresholds } from "./check-kit";
 
+/** Cron host ghi 30 phút một lần ⇒ không coi là cũ trước 65 phút dù tần suất kiểm đặt thấp. */
+export const DISK_MIN_STALE_MIN = 65;
 const HINT =
   "Giải phóng đĩa trên host: `docker system prune`, xoá backup/log cũ (`du -sh /var/lib/docker /var/log`), hoặc mở rộng ổ.";
 const HINT_CRON =
@@ -30,16 +32,22 @@ export function evaluateDisk(
       hint: HINT_CRON,
     };
   const ageMin = (now.getTime() - Date.parse(f.data.at)) / 60_000;
-  if (ageMin > 2 * everyMin)
+  const staleMin = Math.max(2 * everyMin, 2 * (f.data.every_min ?? 0), DISK_MIN_STALE_MIN);
+  if (ageMin > staleMin)
     return {
       status: "unknown",
-      message: `host.json đã cũ ${Math.floor(ageMin)} phút (quá ${2 * everyMin} phút)`,
+      message: `host.json đã cũ ${Math.floor(ageMin)} phút (quá ${staleMin} phút)`,
       hint: HINT_CRON,
     };
   if (f.data.disks.length === 0)
     return { status: "unknown", message: "host.json không liệt kê đĩa nào", hint: HINT_CRON };
   const worst = f.data.disks.reduce((a, b) => (b.used_pct > a.used_pct ? b : a));
-  const value = { used_pct: worst.used_pct, mount: worst.mount, disks: f.data.disks };
+  const value = {
+    used_pct: worst.used_pct,
+    mount: worst.mount,
+    disks: f.data.disks,
+    deploy_ref: f.data.deploy_ref,
+  };
   const msg = `Đĩa ${worst.mount} đã dùng ${worst.used_pct}%`;
   if (worst.used_pct > crit) return { status: "crit", value, message: msg, hint: HINT };
   if (worst.used_pct > warn) return { status: "warn", value, message: msg, hint: HINT };

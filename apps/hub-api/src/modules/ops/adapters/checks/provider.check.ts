@@ -1,10 +1,9 @@
 // CR-104 · ops-checks · "Provider AI": đọc `hub.provider_state` (agent-runtime ghi). crit: có provider logged_out/error hoặc không
 // provider nào ok; warn: cooldown/busy kéo dài quá `warn` phút. Một câu SQL. `last_error` chỉ hiện sau khi làm sạch.
 
-import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
-import { minutesBetween, scrub, thresholds } from "./check-kit";
+import { minutesBetween, scrub, systemRead, thresholds } from "./check-kit";
 
 export type ProviderRow = {
   provider_key: string;
@@ -67,7 +66,7 @@ export function evaluateProvider(
 export const providerCheck: OpsCheck = {
   key: "provider",
   async run(d, cfg) {
-    const rows = await withHubScope(d.db, { kind: "system" }, (tx) =>
+    const rows = await systemRead(d.db, (tx) =>
       tx.execute<ProviderRow>(sql`
         select s.provider_key, s.status, s.updated_at, s.last_error
         from hub.provider_state s join hub.providers p on p.key = s.provider_key

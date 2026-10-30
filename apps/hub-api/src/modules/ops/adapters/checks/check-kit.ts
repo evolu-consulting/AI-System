@@ -3,6 +3,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { OPS_CHECK_META, type OpsCheckKey, type OpsCheckSettings } from "@ai/contracts/hub-admin";
+import type { Db, Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import type { z } from "zod";
 import type { OpsCheckDeps } from "../../application/ops.check";
 
@@ -78,19 +81,44 @@ export function publicUrlsFromEnv(env: Record<string, string | undefined> = proc
   return out;
 }
 
-/** Bỏ đường dẫn, token/khoá dài, `Bearer …` khỏi chuỗi lỗi thô rồi cắt ngắn — không rò `last_error` nguyên văn. */
+/**
+ * Làm sạch chuỗi lỗi thô trước khi hiện lên thẻ: che `khoá=giá trị` bí mật (token|key|secret|password|pass|pwd|auth), `Bearer …`,
+ * `user:pass@` trong URL, email, đường dẫn, chuỗi hex/base64 dài ≥ 16 ký tự có chữ số; rồi cắt ngắn.
+ */
 export function scrub(s: string | null | undefined, max = 80): string {
   if (!s) return "";
   const t = s
-    .replace(/Bearer\s+\S+/gi, "[ẩn]")
-    .replace(/\b(sk|pk|ghp|xox[a-z])-[\w-]{6,}/gi, "[ẩn]")
+    .replace(/(\w+:\/\/)[^\s/@:]+:[^\s/@]*@/g, "$1[ẩn]@")
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email]")
+    .replace(/Bearer\s+\S+/gi, "Bearer [ẩn]")
+    .replace(
+      /(\b\w*(?:token|key|secret|password|passwd|pass|pwd|auth)\w*)\s*[=:]\s*("[^"]*"|'[^']*'|\S+)/gi,
+      "$1=[ẩn]",
+    )
     .replace(/[A-Za-z]:\\[^\s'"]*/g, "[đường dẫn]")
     .replace(/(?:\/[\w.@-]+){2,}/g, "[đường dẫn]")
-    .replace(/[A-Za-z0-9_-]{24,}/g, "[ẩn]")
+    .replace(/\b[0-9a-f]{16,}\b/gi, "[ẩn]")
+    .replace(/(?=[A-Za-z0-9+/_=-]*\d)[A-Za-z0-9+/_=-]{16,}/g, "[ẩn]")
     .replace(/\s+/g, " ")
     .trim();
   return t.length > max ? `${t.slice(0, max)}…` : t;
 }
 
+export const SYSTEM_READ_TIMEOUT_MS = 5_000;
+
+/**
+ * Đọc DB scope system với `statement_timeout` cục bộ tx: câu chậm bị Postgres huỷ, nhả kết nối (check quá giờ ở tầng ngoài chỉ
+ * bỏ kết quả chứ không huỷ câu SQL).
+ */
+export function systemRead<T>(
+  db: Db,
+  fn: (tx: Tx) => Promise<T>,
+  timeoutMs = SYSTEM_READ_TIMEOUT_MS,
+): Promise<T> {
+  return withHubScope(db, { kind: "system" }, async (tx) => {
+    await tx.execute(sql`select set_config('statement_timeout', ${String(timeoutMs)}, true)`);
+    return fn(tx);
+  });
+}
 export const minutesBetween = (later: Date, earlier: Date): number =>
   (later.getTime() - earlier.getTime()) / 60_000;

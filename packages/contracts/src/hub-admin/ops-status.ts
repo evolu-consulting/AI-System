@@ -29,5 +29,7 @@ export const OpsHostStatusSchema = z.object({
     )
     .max(50),
   deploy_ref: z.string().max(200).nullable(),
+  /** Tuỳ chọn: chu kỳ cron host (phút) — nếu có, ngưỡng "cũ" của check đĩa ≥ 2× giá trị này. */
+  every_min: z.number().int().min(1).max(1440).optional(),
 });
 export type OpsHostStatus = z.infer<typeof OpsHostStatusSchema>;

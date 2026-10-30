@@ -1,6 +1,7 @@
 // CR-104 · ops-checks · int (DB test, role hub_api): Provider AI logged_out ⇒ crit qua MỘT lượt kiểm thật (runChecksOnce → ops_checks,
 // ops_events, chuông); runs_failed (% failed + ALL_PROVIDERS_EXHAUSTED); stuck chạy được dưới RLS scope system trên jobs/process_runs.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { PgDialect } from "drizzle-orm/pg-core";
 import {
   HUB_API_URL,
   insertFixture,
@@ -12,8 +13,8 @@ import {
 } from "../../../../../tests/acceptance/H1/_fixtures";
 import { connectDb, type Db } from "../../lib/db";
 import { providerCheck } from "./adapters/checks/provider.check";
-import { runsFailedCheck } from "./adapters/checks/runs-failed.check";
-import { stuckCheck } from "./adapters/checks/stuck.check";
+import { runsAggQuery, runsFailedCheck } from "./adapters/checks/runs-failed.check";
+import { stuckCheck, stuckQuery } from "./adapters/checks/stuck.check";
 import { runChecksOnce } from "./application/ops.round";
 import { opsRoundDeps } from "./ops.mount";
 
@@ -84,5 +85,29 @@ describe("ops-checks · int", () => {
     await sql`update hub.ops_settings set last_round_at = null where id = 1`;
     await runChecksOnce(deps(), new Date(NOW.getTime() + 60_000));
     expect((await row("runs_failed"))?.status).toBe("crit");
+  });
+
+  it("Luật 4c: câu runs_failed/stuck dùng chỉ mục (EXPLAIN) trên bảng 20.000 dòng; process_runs có chỉ mục từng phần", async () => {
+    await sql`insert into hub.runs (tenant_id, user_id, conversation_id, flow_id, status, config_version, user_message_id,
+        answer_message_id, started_at, finished_at)
+      select ${USERS.lan.tid}, ${USERS.lan.id}, ${R.conv}, ${R.flow}, 'finished', 1, ${R.msgU1}, ${R.msgA1},
+        now() - (g || ' minutes')::interval - interval '2 hours', now() - (g || ' minutes')::interval - interval '2 hours'
+      from generate_series(1, 20000) g`;
+    await sql`analyze hub.runs`;
+    const d = new PgDialect();
+    const plan = async (q: Parameters<PgDialect["sqlToQuery"]>[0]) => {
+      const { sql: text, params } = d.sqlToQuery(q);
+      const rows = await sql.unsafe(`explain ${text}`, params as never[]);
+      return rows.map((r) => String(r["QUERY PLAN"])).join("\n");
+    };
+    const h = new Date(NOW.getTime() - 3_600_000).toISOString();
+    const m = new Date(NOW.getTime() - 1_800_000).toISOString();
+    const runsPlan = await plan(runsAggQuery(h, m));
+    expect(runsPlan).toContain("runs_started_at_idx");
+    expect(runsPlan).toContain("runs_exhausted_finished_idx");
+    expect(runsPlan).not.toMatch(/Seq Scan on runs/);
+    const stuckPlan = await plan(stuckQuery(h, NOW.toISOString()));
+    expect(stuckPlan).toContain("jobs_orphaned_finished_idx");
+    expect(stuckPlan).toContain("process_runs_running_expires_idx");
   });
 });

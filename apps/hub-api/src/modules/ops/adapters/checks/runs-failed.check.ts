@@ -1,9 +1,9 @@
 // CR-104 · ops-checks · "Run AI thất bại": `hub.runs` 60 phút qua (≥ 10 run ⇒ % failed so ngưỡng warn); crit khi số run
 // `ALL_PROVIDERS_EXHAUSTED` kết thúc trong 30 phút qua > ngưỡng crit (mặc định 0). Một câu SQL tổng hợp (không theo hàng).
-import { withHubScope } from "@ai/db/hub-scope";
+
 import { sql } from "drizzle-orm";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
-import { thresholds } from "./check-kit";
+import { systemRead, thresholds } from "./check-kit";
 
 export const RUNS_MIN_SAMPLE = 10;
 
@@ -42,20 +42,21 @@ export function evaluateRunsFailed(a: RunsAgg, warnPct: number, critCount: numbe
   };
 }
 
+/** Một câu, hai nhánh dùng chỉ mục (`runs_started_at_idx`, `runs_exhausted_finished_idx` — migration 0065); không `OR` để tránh quét toàn bảng. */
+export const runsAggQuery = (h: string, m: string) => sql`
+  select t.total, t.failed,
+    (select count(*) from hub.runs where status = 'failed' and error_code = 'ALL_PROVIDERS_EXHAUSTED'
+       and finished_at >= ${m}::timestamptz)::int as exhausted
+  from (select count(*)::int as total, (count(*) filter (where status = 'failed'))::int as failed
+        from hub.runs where started_at >= ${h}::timestamptz) t`;
+
 export const runsFailedCheck: OpsCheck = {
   key: "runs_failed",
   async run(d, cfg) {
     const t = thresholds("runs_failed", cfg);
     const h = new Date(d.now.getTime() - 60 * 60_000).toISOString();
     const m = new Date(d.now.getTime() - 30 * 60_000).toISOString();
-    const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
-      tx.execute<RunsAgg>(sql`
-        select count(*) filter (where started_at >= ${h}::timestamptz)::int as total,
-               count(*) filter (where started_at >= ${h}::timestamptz and status = 'failed')::int as failed,
-               count(*) filter (where status = 'failed' and error_code = 'ALL_PROVIDERS_EXHAUSTED'
-                                  and finished_at >= ${m}::timestamptz)::int as exhausted
-        from hub.runs where started_at >= ${h}::timestamptz or finished_at >= ${m}::timestamptz`),
-    );
+    const [r] = await systemRead(d.db, (tx) => tx.execute<RunsAgg>(runsAggQuery(h, m)));
     return evaluateRunsFailed(
       r ?? { total: 0, failed: 0, exhausted: 0 },
       t.warn ?? 20,

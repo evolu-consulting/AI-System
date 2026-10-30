@@ -106,6 +106,10 @@ describe("backup", () => {
       evaluateBackup(okFile({ ...goodBackup, ok: false, error: "disk full" }), NOW, 26).status,
     ).toBe("crit");
   });
+  it("local ok + offsite_ok=false ⇒ warn (không crit)", () =>
+    expect(evaluateBackup(okFile({ ...goodBackup, offsite_ok: false }), NOW, 26).status).toBe(
+      "warn",
+    ));
   it("offsite=false ⇒ warn", () =>
     expect(
       evaluateBackup(okFile({ ...goodBackup, offsite: false, offsite_ok: null }), NOW, 26).status,
@@ -133,8 +137,43 @@ describe("disk", () => {
   });
   it("file cũ hơn 2× tần suất ⇒ unknown", () =>
     expect(
-      evaluateDisk(host([{ mount: "/", used_pct: 50 }], ago(61)), NOW, 30, 80, 90).status,
+      evaluateDisk(host([{ mount: "/", used_pct: 50 }], ago(66)), NOW, 30, 80, 90).status,
     ).toBe("unknown"));
+  it("cron 30 phút: file 61 phút chưa cũ (ngưỡng ≥ 65); every_min của host nâng ngưỡng; value có deploy_ref", () => {
+    const f61 = host([{ mount: "/", used_pct: 50 }], ago(61));
+    const r = evaluateDisk(f61, NOW, 5, 80, 90);
+    expect(r.status).toBe("ok");
+    expect((r.value as { deploy_ref: string | null }).deploy_ref).toBeNull();
+    const withRef = okFile({ ...f61.data, deploy_ref: "v1.2.3" });
+    expect((evaluateDisk(withRef, NOW, 5, 80, 90).value as { deploy_ref: string }).deploy_ref).toBe(
+      "v1.2.3",
+    );
+    const slow = okFile({ ...f61.data, at: ago(100), every_min: 60 });
+    expect(evaluateDisk(slow, NOW, 5, 80, 90).status).toBe("ok");
+  });
+});
+
+describe("scrub", () => {
+  it("che khoá=giá trị, Bearer, user:pass@ trong URL, email, hex/base64 dài", () => {
+    const s = scrub(
+      "token=abc123 password: hunter2 api_key='k-1' Bearer eyJhbGci.x https://bob:pw123@host.test/x mail a.b@corp.vn " +
+        "deadbeefdeadbeef0123 QUJDREVGR0hJSktMTU5PUA1234==",
+      400,
+    );
+    for (const leak of [
+      "abc123",
+      "hunter2",
+      "k-1",
+      "eyJhbGci",
+      "pw123",
+      "a.b@corp",
+      "deadbeefdead",
+      "QUJDREVG",
+    ])
+      expect(s).not.toContain(leak);
+    expect(s).toContain("host.test");
+  });
+  it("giữ nguyên câu lỗi thường", () => expect(scrub("not logged in")).toBe("not logged in"));
 });
 
 describe("file trạng thái", () => {
