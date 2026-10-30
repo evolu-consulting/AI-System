@@ -43,7 +43,7 @@ Route thư viện, publish/rollback/clone/assign, seed mặc định (L2a, 0069)
 - 2026-10-31 `run_group_keys` chỉ có ở schema + luật; lưu cột cho def thư viện để L2a.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 ### ADDED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Quy trình thư viện gắn khe của app

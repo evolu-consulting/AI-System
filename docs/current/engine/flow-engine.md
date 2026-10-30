@@ -76,6 +76,12 @@ Editor admin-web (`AW/pages/ProcessEditorPage.tsx`), view Canvas (mặc định 
 ## 9. Catalog tool của stage `tool` (`fix-pd2-e05`)
 Combobox "Gọi tool" chỉ gồm tool workflow **bật cho đúng công ty** và tool của gói công ty đã bật; tool lõi chỉ đọc dành cho chat (`open`: app-guide, my-activity, my-chat-history…) **không** nằm trong catalog (vẫn dùng cho chat/MCP). Công ty chưa bật tool nào ⇒ danh sách rỗng + thông báo "Chưa có tool nào được bật cho công ty". Mã: `HP/adapters/tools/tool-switch.repo.ts` (`PackToolInfo.open`).
 
+## 9b. Lượt chạy thử (CR-105)
+
+### Yêu cầu: Lượt chạy thử tách khỏi lượt thật
+Lượt mở từ trang "Mẫu · chạy thử" (showcase, chạy mẫu) có `is_test = true`; danh sách lượt mặc định chỉ lượt thật.
+- Kịch bản: khi chạy thử một mẫu thì lượt có `is_test` và không hiện trong danh sách lượt mặc định [test: apps/hub-api/src/modules/processes/runs/run-is-test.int.test.ts » lượt chạy thử đánh dấu is_test, ẩn khỏi danh sách mặc định]
+
 ## 10. Giới hạn đã biết
 - Engine chưa là đồ thị đầy đủ: chỉ bước tuần tự, ≤ 3 stage song song/bước, nhảy tiến (If/`after.branch` đích > bước nguồn), không vòng lặp (CR sau).
 - If chỉ so với field stage ở bước trước/input run; không có biểu thức/tính toán; ≤ 6 cond; không đích `real_action`.

@@ -17,6 +17,6 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: sửa theo review CR-105)

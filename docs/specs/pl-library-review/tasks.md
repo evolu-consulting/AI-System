@@ -26,7 +26,7 @@ Không chạy gì trên prod.
 - 2026-10-31 không thêm regex mã/uuid trong `validateSlotBody`: tham số đã qua bind JSON; mã Group đã kiểm `CATALOG_KEY_RE` ở schema stage.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: sửa theo review CR-105)
 

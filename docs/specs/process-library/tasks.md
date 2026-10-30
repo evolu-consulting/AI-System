@@ -56,7 +56,7 @@ Ghi chú tách theo Luật 0c: L1/L2a chỉ phần trạng thái/quyền/RLS/chu
 - 2026-10-31 Gate: tự duyệt theo Luật 2b (mọi Chặn/Cao có mặc định nằm trong quyết định đã duyệt; không câu hỏi mới).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 ### ADDED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Quy trình thư viện gắn khe của app

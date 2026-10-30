@@ -31,7 +31,7 @@ Unit: `lib/flow-form.test.ts`, `lib/library-view.test.ts`, `lib/system-nodes.tes
 - Khoá nút hệ thống theo khoá tool, áp mọi quy trình (def tenant `contracts-approval` do máy quản).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 ### ADDED engine/thu-vien-quy-trinh-editor.md
 #### Yêu cầu: Editor thư viện — Form, nút hệ thống khoá, gán, xuất bản

@@ -31,7 +31,7 @@ Route thư viện (L2a). Bảng `contracts.approval_flows` giữ nguyên (không
 - 2026-10-31 `e2e/contracts-web/{contract-flow,esign-flow}.cw.ts` test form cũ ⇒ cần qc làm lại khi chạy e2e cuối đợt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Cài đặt chỉ xem quy trình duyệt đang dùng

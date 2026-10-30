@@ -48,7 +48,7 @@ UI (L3/L4), `POST …/preview` + `is_test` (L2b), `GET /approval-flow` (L4). Ch�
   `platform-no-pack-internals` chỉ ở file test (đã có từ trước trên platform/gd0).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 ### ADDED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: API thư viện chỉ platform_admin

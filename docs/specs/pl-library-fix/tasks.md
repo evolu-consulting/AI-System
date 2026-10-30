@@ -28,7 +28,7 @@ UI (admin-web gửi `version` khi quay lại — L3 cần cập nhật `rollback
 - 2026-10-31 đo `resolveSlot` p95 = 0,83 ms (200 lượt, 10.000 tenant, 500 release; ngưỡng 5 ms).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: Delta ở docs/specs/process-library/tasks.md)
 

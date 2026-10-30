@@ -24,7 +24,7 @@ Không CRUD/xuất bản/gán thư viện (L2a), không UI.
 - Preview qua `SlotSpec.preview` (pack-boundary), khe chưa đăng ký/không có preview ⇒ 400.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: Delta ở docs/specs/process-library/tasks.md)
 

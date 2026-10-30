@@ -23,7 +23,7 @@ Sửa theo review: `is_test` không dựa vào key `flow-showcase`.
 - Chạy def mẫu trực tiếp (`tenant_id NULL`) vốn 404 nên cờ dựa vào bản sao mẫu (`source_template_id`), không mở quyền chạy mẫu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: sửa theo review CR-105)
 

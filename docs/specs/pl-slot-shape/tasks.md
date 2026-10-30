@@ -22,7 +22,7 @@ Phần thuần của L2b: `fromStages` (nghịch `compileDef`), kiểm dạng tu
 - 2026-10-31 `compileDef` mất `key/when/due_h/esign` nên không nghịch được ⇒ điều phối chốt mở rộng cộng thêm: mỗi stage người dùng có `slot` = bước, `finalize.slot.esign` = bước Ký số; engine không đổi (route/branch giữ nguyên).
 - Schema stage engine (`packages/contracts/src/hub-admin/processes.ts`) thêm đúng một trường tuỳ chọn `slot: record` (engine bỏ qua); L1 sẽ sửa cùng file cho `*_key` ⇒ giữ diff tối thiểu.
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-10-30 (đợt CR-105)
 
 Không thay đổi hành vi (lý do: hàm thuần mới chưa nối vào route nào; trường `slot` của stage engine bỏ qua)
 

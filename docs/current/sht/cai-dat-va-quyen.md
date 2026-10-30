@@ -5,7 +5,7 @@ Cập nhật: 2026-10-27 · Gộp từ: V2-L (Cài đặt), DOC-legal, delivery-
 ## 1. Quyền trong gói `contracts`
 - Ba mức guard: `read` (xem), `write` (ghi), `admin` (quản lý = Group vai `contracts-owner`). Vai editor tương ứng `write` (tên Group `contracts-editor` có trong mẫu duyệt mặc định; ánh xạ đầy đủ xem "Chưa rõ"). Viewer ghi ⇒ 403 `PACK_FORBIDDEN` (kiểm trước khi đọc thân, 0 SQL). Guard: `packGuard(view, "contracts", action)`, luật `checkPackAccess` (`kit/domain/pack-access.rules.ts`).
 - Hiển thị theo RLS tenant + visibility (M1/M1b): chứng từ không thấy ⇒ 404; HĐ NT cha không thấy ⇒ `frame.restricted`.
-- Việc cần quyền `admin` (owner gói): xoá chứng từ; mở lại HĐ (hoặc người phụ trách, `chung-tu.md` §4); `PUT /company`; `PUT /esign/settings`; `PUT /esign/anchors`; `PUT /approval-settings`/`/approval-flow`; `POST /contracts/:id/approval/reopen`; gỡ cờ đỏ (`partner-events/:id/void` dòng nghiêm trọng); `switch-preview`; bước Dify catalog (`/dify-workflows`).
+- Việc cần quyền `admin` (owner gói): xoá chứng từ; mở lại HĐ (hoặc người phụ trách, `chung-tu.md` §4); `PUT /company`; `PUT /esign/settings`; `PUT /esign/anchors`; `PUT /approval-settings` (`PUT /approval-flow` đã bỏ, CR-105); `POST /contracts/:id/approval/reopen`; gỡ cờ đỏ (`partner-events/:id/void` dòng nghiêm trọng); `switch-preview`; bước Dify catalog (`/dify-workflows`).
 - Việc `write`: tải lên/tạo giao dịch, sửa trường (HĐ chưa khoá), mốc, settle, ghi sao/việc với đối tác, ghi cờ đỏ, attach/gỡ HĐ NT, nâng thành HĐ, quyết bước duyệt (theo `can_act` của engine).
 - Dock trợ lý Sổ Hợp Tác: chỉ vào hội thoại `surface=contracts`; hub-api trả 403 `CHAT_APP_DISABLED` khi Chat App tắt (chat-api-gate). Nguồn: `docs/specs/chat-api-gate/tasks.md`.
 
@@ -15,12 +15,12 @@ Cập nhật: 2026-10-27 · Gộp từ: V2-L (Cài đặt), DOC-legal, delivery-
 | Mục | Nội dung | Ghi |
 |---|---|---|
 | Công ty (`CompanyPane.tsx`) | thông tin công ty (`GET|PUT /company`); cờ duyệt `approval_enabled`; **Kho & giao hàng**: `allow_negative_stock` (mặc định tắt); **Ngưỡng cảnh báo pháp lý** `legal_warn_threshold` (mặc định 5.000.000, 0 = tắt) | chỉ `admin` ghi; nhật ký `approval_settings_audit` |
-| Quy trình duyệt (`FlowPane.tsx`) | thiết kế luồng, xem trước đường đi, bước Dify (chỉ owner); ô bật ký số (`esign_enabled`) | `duyet-ky-so.md` |
+| Quy trình duyệt | CR-105: chỉ hiện quy trình đang dùng + link editor ai-admin (§3b); ô bật ký số (`esign_enabled`) | `duyet-ky-so.md` |
 | Điểm uy tín (`ScoringPane`/`ScoringV2EPane`) | theo cờ engine: HD8 hai tab theo vai; V2-E 5 ô × 3 tab + Mức & đánh giá + thử tính; ô khoá khi không phải chủ sở hữu | `doi-tac-uy-tin.md` |
 | Điểm kinh doanh (`BizPane`) | chấm điểm SP | nền |
 | Scout (`ScoutPane`) | tìm giá/nguồn | nền |
 | Thành viên (`/settings/members`) | thành viên + vai | `manage.members.ts` |
-Các mục tuỳ chọn theo vai: owner/editor thấy "Quy trình duyệt"; nút "Chỉnh quy trình duyệt" trên thẻ duyệt engine mở thẳng mục này.
+Các mục tuỳ chọn theo vai: owner/editor thấy "Quy trình duyệt"; nút "Chỉnh quy trình duyệt" trên thẻ duyệt engine trỏ link editor ai-admin (CR-105).
 
 ## 3. Cờ và công tắc
 | Cờ | Loại | Giá trị | Tác dụng |
@@ -37,6 +37,18 @@ Các mục tuỳ chọn theo vai: owner/editor thấy "Quy trình duyệt"; nút
 | `approval_settings.legal_warn_threshold` | theo công ty | mặc định 5.000.000 | ngưỡng pháp lý |
 | `approval_settings.approval_enabled` | theo công ty | bool | tắt ⇒ xác nhận một lần là khoá, không lượt duyệt |
 Ngưỡng/Group duyệt máy cũ: `approval_settings.threshold`, `level1_group_key`, `level2_group_key` (`PUT /approval-settings`).
+
+## 3b. Quy trình duyệt: chỉ đọc + gán khi onboarding (CR-105)
+
+### Yêu cầu: Cài đặt › Quy trình duyệt chỉ hiện quy trình đang dùng
+Bỏ form thiết kế luồng; mục hiện "Quy trình duyệt đang dùng: <tên> · v<N>" (sơ đồ chỉ xem + xem trước đường đi) và link sang editor ai-admin; `GET /approval-flow` chỉ đọc; `PUT /approval-flow` bỏ. Ô bật ký số và `PUT /approval-settings` (máy 2 bước) giữ.
+- Kịch bản: khi owner mở Cài đặt › Quy trình duyệt thì thấy tên + phiên bản quy trình đang dùng và không có nút lưu luồng [test: e2e/contracts-web/approval-current.cw.ts » Cài đặt hiện quy trình đang dùng, không có form sửa]
+- Kịch bản: khi gọi `GET /approval-flow` thì nhận tên, bản, cờ mặc định và các bước có tên phòng ban; `PUT /approval-flow` trả 404 [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » GET chỉ đọc quy trình đang dùng, PUT không còn]
+
+### Yêu cầu: Gán quy trình khi onboarding tenant
+Yaml tenant có `approval_process: <ký hiệu>` ⇒ gán khe `contracts.approval` sau khi bật gói; không có ⇒ chạy mặc định. Onboarding gán qua route nội bộ của hub `PUT /internal/tenants/:tid/process-slots/:slot`, xác thực bằng `HUB_INTERNAL_TOKEN` (không dùng token platform_admin tĩnh).
+- Kịch bản: khi yaml có `approval_process` hợp lệ thì tenant mới có một gán tới quy trình đó [test: apps/admin-api/src/modules/tenant-onboard/application/onboard-approval-process.int.test.ts » approval_process trong yaml ⇒ gán khe]
+- Kịch bản: khi yaml ghi ký hiệu không tồn tại hoặc chưa xuất bản thì báo lỗi bước gán, tenant vẫn tạo xong [test: apps/admin-api/src/modules/tenant-onboard/application/onboard-approval-process.int.test.ts » ký hiệu sai ⇒ lỗi bước, tenant vẫn tạo]
 
 ## 4. Ghi nhật ký
 `approval_settings_audit` ghi trước/sau đổi ở `PUT /company` (cờ duyệt, tồn âm, ngưỡng pháp lý) và bật/tắt ký số.
