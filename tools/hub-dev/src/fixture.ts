@@ -188,20 +188,33 @@ export const DEMO_USERS: FixtureUser[] = [
 /** Gói bật cho tenant demo khi `scripts/dev-up.ps1` dựng máy dev: Sổ Hợp Tác + Community. */
 export const DEMO_PACKS = ["contracts", "community"] as const;
 
-/** Bật gói cho `evolu` (PUT idempotent, platform_admin) rồi đưa user demo vào Group vai của gói: tenant_admin ⇒ `<gói>-owner`,
- *  còn lại ⇒ `<gói>-editor` (Group do enablePack tạo). Chạy sau `ensureDemoFixture`. */
-export async function ensureDemoPacks(adminUrl: string): Promise<void> {
+/** Bật gói cho `evolu` và đưa user demo vào Group vai của gói: tenant_admin ⇒ owner, còn lại ⇒ editor. Sau `ensureDemoFixture`. */
+export function ensureDemoPacks(adminUrl: string): Promise<void> {
+  return ensureTenantPacks(adminUrl, {
+    tenantKey: DEMO_TENANT.key,
+    owners: DEMO_USERS.filter((u) => u.role === "tenant_admin").map((u) => u.username),
+    editors: DEMO_USERS.filter((u) => u.role !== "tenant_admin").map((u) => u.username),
+  });
+}
+
+/** Bật `DEMO_PACKS` cho tenant đã có (PUT idempotent, platform_admin) rồi đưa user vào Group `<gói>-owner` / `<gói>-editor`
+ *  (Group do enablePack tạo; thêm thành viên idempotent). */
+export async function ensureTenantPacks(
+  adminUrl: string,
+  t: { tenantKey: string; owners: string[]; editors: string[] },
+): Promise<void> {
   const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
-  const tid = await ensureTenant(api, DEMO_TENANT.key, DEMO_TENANT.name);
-  const owners = DEMO_USERS.filter((u) => u.role === "tenant_admin").map((u) => u.username);
-  const editors = DEMO_USERS.filter((u) => u.role !== "tenant_admin").map((u) => u.username);
+  const list = await call(api, "GET", `/admin/tenants?q=${t.tenantKey}&limit=50`);
+  const hit = (list.items as Json[]).find((x) => x.key === t.tenantKey);
+  if (!hit) throw new Error(`không có tenant ${t.tenantKey}`);
   for (const pack of DEMO_PACKS) {
-    const state = await call(api, "PUT", `/admin/tenants/${tid}/packs/${pack}`);
+    const state = await call(api, "PUT", `/admin/tenants/${String(hit.id)}/packs/${pack}`);
     const groups = (state.groups as Json[] | undefined) ?? [];
     for (const [role, usernames] of [
-      ["owner", owners],
-      ["editor", editors],
+      ["owner", t.owners],
+      ["editor", t.editors],
     ] as const) {
+      if (usernames.length === 0) continue;
       const g = groups.find((x) => x.role === role);
       if (!g) throw new Error(`gói ${pack}: thiếu group vai ${role}`);
       const res = await call(api, "POST", `/admin/groups/${String(g.group_id)}/members`, {

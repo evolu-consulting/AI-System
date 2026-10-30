@@ -26,7 +26,10 @@ Script tự làm, chạy lại an toàn:
 4. `db:migrate` + `db:seed` (tenant `platform` + platform admin).
 5. `hub:dev`: admin-api :3001, tenant demo `evolu` + 5 user, `hub:seed`, hub-api :4000 (không bật agent-runtime).
 6. Bật gói **Sổ Hợp Tác** (`contracts`) và **Community** cho `evolu`, đưa user demo vào nhóm của gói.
-7. 5 web dev server.
+7. (`-SeedDemo`) tenant `demo` + dữ liệu mẫu — xem mục Dữ liệu mẫu.
+8. 5 web dev server.
+
+Lần đầu (máy mới, `bun install` + migrate) vài phút; chạy lại khoảng 10–20 giây.
 
 | App | URL |
 |---|---|
@@ -47,12 +50,37 @@ Tắt: `scripts\dev-down.ps1` (Postgres/Redis vẫn chạy; tắt bằng `docker
 | Demo, chủ gói (tenant_admin) | `evolu` | `julian.bui` | `1234567890` (mật khẩu dev cố định trong `tools/hub-dev/src/fixture.ts`) |
 | Demo, thành viên (editor) | `evolu` | `thomas.tran`, `vio.ngo`, `edgar.nguyen`, `rowan.nguyen` | như trên |
 
+| Demo giống prod (chỉ khi `-SeedDemo`) | `demo` | `demo-owner` | `DEMO_OWNER_PW` trong `.env.local` (tự sinh lần đầu) |
+| Đối tác Community (chỉ khi `-SeedDemo`) | `demo` | `doitac-tanphat`, `doitac-ncca`, … | mật khẩu tạm trong `.data\dev-up\demo-partners.txt` (đổi khi đăng nhập lần đầu) |
+
 Chỉ dùng trên máy dev; không dùng các mật khẩu này ở môi trường khác.
+
+## Dữ liệu mẫu
+
+Mặc định (`dev-up.ps1`) chỉ có dữ liệu nền: platform admin, tenant `evolu` + 5 user, agent/provider/mẫu quy trình, gói Sổ Hợp Tác + Community đã bật — **chưa có hợp đồng, bài viết**.
+
+Thêm `-SeedDemo` để có tenant `demo` giống bản demo trên prod (dữ liệu bịa, email `@example.invalid`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev-up.ps1 -SeedDemo
+```
+
+| Bước | Script | Nạp gì |
+|---|---|---|
+| 1 | `tools/scripts/src/seed-community-demo.ts --dev-fixture --apply` | tenant `demo` + `demo-owner`, 5 công ty đối tác + user đối tác, bật Community, 6 bài + bình luận mẫu |
+| 2 | `tenant-onboard.cli.ts --file deploy/tenants/demo.yaml` | phòng ban (Ban Giám đốc, Kinh doanh, Kế toán, Pháp chế, Kho vận), bật gói Sổ Hợp Tác |
+| 3 | `tools/hub-dev/src/demo-packs.ts --tenant demo` | `demo-owner` vào nhóm chủ gói Sổ Hợp Tác + Community |
+| 4 | `tools/scripts/src/seed-demo-v2.ts --tenant demo --apply` | Sổ Hợp Tác: 19 hợp đồng, 49 mốc, sản phẩm, giá NCC, tồn kho… |
+| 5 | `tools/scripts/src/seed-flow-showcase.ts --apply` | flow duyệt mẫu "Duyệt đề nghị chi" |
+
+Mọi bước chạy lại an toàn (không nhân đôi). Các script seed tự từ chối khi `APP_ENV=production` hoặc DB không phải localhost.
+Muốn làm sạch rồi nạp lại: `-Fresh -SeedDemo`.
 
 ## Tuỳ chọn
 
 | Lệnh | Tác dụng |
 |---|---|
+| `scripts\dev-up.ps1 -SeedDemo` | thêm tenant `demo` + dữ liệu mẫu (mục Dữ liệu mẫu) |
 | `scripts\dev-up.ps1 -Only core` | chỉ admin-api + hub-api |
 | `scripts\dev-up.ps1 -DbName ai_system_try` | chạy trên DB riêng (tự tạo), không đụng DB `ai_system` |
 | `scripts\dev-up.ps1 -Fresh` | xoá DB dev rồi dựng lại (mất dữ liệu dev) |

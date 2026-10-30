@@ -4,10 +4,11 @@
 #   scripts\dev-up.ps1 -Only core   chỉ admin-api + hub-api
 #   scripts\dev-up.ps1 -Fresh       xoá DB dev rồi dựng lại (mất dữ liệu dev)
 #   scripts\dev-up.ps1 -DbName ai_system_try   chạy trên DB riêng (tự tạo nếu chưa có), không đụng DB ai_system
+#   scripts\dev-up.ps1 -SeedDemo    thêm tenant `demo` (demo-owner) + dữ liệu mẫu Sổ Hợp Tác, Community, flow duyệt — giống demo prod
 # Các bước: bun install → .env.local (keys:dev) → Postgres/Redis → `hub:dev` (migrate, admin-api :3001, user demo, hub:seed,
 # hub-api :4000; không bật agent-runtime) → web dev server. Web chỉ nhận biến PUBLIC_* + URL proxy, không nhận secret.
 param([ValidateSet("all", "core")] [string]$Only = "all", [switch]$Fresh, [ValidatePattern('^[a-z][a-z0-9_]*$')] [string]$DbName = "ai_system",
-  [int]$TimeoutS = 240)
+  [switch]$SeedDemo, [int]$TimeoutS = 240)
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
 Set-Location $repo
@@ -36,9 +37,11 @@ function Start-Bg([string]$name, [string]$cwd, [string[]]$argv, [hashtable]$envV
   $log = Join-Path $out "$name.log"
   $saved = @{}
   foreach ($k in $envVars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $envVars[$k]) }
+  # Không dùng -RedirectStandard* (CreateProcess kế thừa handle ⇒ server giữ stdout của shell gọi, pipe/CI treo tới khi tắt
+  # server): ShellExecute qua cmd tự ghi log; env tiến trình hiện tại vẫn được kế thừa.
   try {
-    $p = Start-Process -FilePath $argv[0] -ArgumentList $argv[1..($argv.Count - 1)] -WorkingDirectory $cwd -WindowStyle Hidden `
-      -RedirectStandardOutput $log -RedirectStandardError "$log.err" -PassThru
+    $cmd = "$($argv -join ' ') > `"$log`" 2> `"$log.err`""
+    $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/d /c `"$cmd`"" -WorkingDirectory $cwd -WindowStyle Hidden -PassThru
   } finally { foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k]) } }
   Add-Content $pidFile "$name $($p.Id)"
   Write-Host "  bật $name (pid $($p.Id), log $log)"
@@ -91,6 +94,38 @@ Wait-Port 4000 "hub-api" (Join-Path $out "core.log") $core
 bun --env-file=.env.local tools/hub-dev/src/demo-packs.ts
 if ($LASTEXITCODE) { throw "bật gói demo lỗi" }
 
+# -SeedDemo: tenant `demo` giống demo prod (dữ liệu bịa, email example.invalid). Mọi bước idempotent; script seed tự từ chối
+# APP_ENV=production / DB ngoài localhost. Mật khẩu demo-owner: DEMO_OWNER_PW trong .env.local (tự sinh lần đầu, không in).
+if ($SeedDemo) {
+  $envLocal = Join-Path $repo ".env.local"
+  $hasPw = Select-String -Path $envLocal -Pattern '^\s*DEMO_OWNER_PW\s*=\s*\S{10,}' -Quiet
+  if (-not $hasPw) {
+    $alnum = [char[]]"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+    $rng = [Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 16; $rng.GetBytes($bytes)
+    $pw = -join ($bytes | ForEach-Object { $alnum[$_ % $alnum.Length] })
+    $kept = Get-Content $envLocal -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*DEMO_OWNER_PW\s*=' }
+    [IO.File]::WriteAllLines($envLocal, [string[]]($kept + "DEMO_OWNER_PW=$pw"), [Text.UTF8Encoding]::new($false))
+    "  đã sinh DEMO_OWNER_PW vào .env.local"
+  }
+  Remove-Item env:DEMO_OWNER_PW -ErrorAction SilentlyContinue
+  "seed demo: tenant demo + Community (đối tác, bài mẫu)…"
+  bun --env-file=.env.local tools/scripts/src/seed-community-demo.ts --dev-fixture --apply --out (Join-Path $out "demo-partners.txt")
+  if ($LASTEXITCODE) { throw "seed-community-demo lỗi" }
+  "seed demo: phòng ban + gói Sổ Hợp Tác (deploy/tenants/demo.yaml)…"
+  $actor = bun -e "import postgres from 'postgres'; const s = postgres(process.env.DATABASE_URL, { max: 1 }); const r = await s``select id from admin.users where role = 'platform_admin' and username = 'admin'``; console.log(r[0]?.id ?? ''); await s.end();"
+  if (-not $actor) { throw "không tìm thấy platform admin" }
+  bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts --file deploy/tenants/demo.yaml --actor $actor | Out-Null
+  if ($LASTEXITCODE) { throw "onboard demo.yaml lỗi" }
+  bun --env-file=.env.local tools/hub-dev/src/demo-packs.ts --tenant demo
+  if ($LASTEXITCODE) { throw "bật gói cho demo lỗi" }
+  "seed demo: hợp đồng mẫu Sổ Hợp Tác (seed-demo-v2)…"
+  bun --env-file=.env.local tools/scripts/src/seed-demo-v2.ts --tenant demo --apply | Out-Null
+  if ($LASTEXITCODE) { throw "seed-demo-v2 lỗi" }
+  "seed demo: flow duyệt mẫu (seed-flow-showcase)…"
+  bun --env-file=.env.local tools/scripts/src/seed-flow-showcase.ts --apply
+  if ($LASTEXITCODE) { throw "seed-flow-showcase lỗi" }
+}
+
 # 5. web dev server — chỉ biến công khai + đích proxy (giống combine:dev, plan R2)
 if ($Only -eq "all") {
   $pub = @{}
@@ -123,3 +158,4 @@ if ($Only -eq "all") {
 }
 "  admin-api     http://localhost:3001   hub-api http://localhost:4000"
 "Tài khoản dev: xem docs/guides/local-setup.md (mục Tài khoản)."
+if ($SeedDemo) { "Tenant demo: mã công ty demo, demo-owner, mật khẩu = DEMO_OWNER_PW trong .env.local; mật khẩu tạm đối tác: $out\demo-partners.txt" }
