@@ -64,7 +64,9 @@ if (Test-Path $pidFile) { throw "Có phiên dev-up đang chạy ($pidFile) — c
 
 # DB khác mặc định: đổi tên DB trong mọi URL của .env.local (env tiến trình thắng --env-file), tạo DB nếu chưa có
 # HUB_SEED_FIXTURES=1: hub:dev tạo tenant demo `evolu` + 5 user + agent/mẫu quy trình (mặc định seed tối giản không có demo)
-$coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1" }
+# CONTRACTS_WEB_URL / COMMUNITY_WEB_URL: link chuyển app do hub-api trả (Community "Mở Sổ Hợp Tác"); vắng ⇒ "/" = về bảng tin
+$coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1"
+  CONTRACTS_WEB_URL = "http://localhost:3300"; COMMUNITY_WEB_URL = "http://localhost:3400" }
 if ($DbName -ne "ai_system") {
   foreach ($line in Get-Content (Join-Path $repo ".env.local") -Encoding UTF8) {
     if ($line -match '^\s*((ADMIN_API_|HUB_|AGENT_RT_)?DATABASE_URL)\s*=\s*(\S+/)ai_system\s*$') { $coreEnv[$matches[1]] = "$($matches[3])$DbName" }
@@ -140,6 +142,9 @@ if ($Only -eq "all") {
   $common["PUBLIC_ADMIN_WEB_URL"] = "http://localhost:3000"
   $common["PUBLIC_CHAT_WEB_URL"] = "http://localhost:3100"
   $common["PUBLIC_STUDIO_URL"] = "http://localhost:3200"
+  # mỗi app một origin như prod (host riêng): link chuyển app + SSO qua chat-web (prod: PUBLIC_SSO_URL = host chat)
+  $common["PUBLIC_CONTRACTS_WEB_URL"] = "http://localhost:3300"
+  $common["PUBLIC_SSO_URL"] = "http://localhost:3100"
   if (-not $common.ContainsKey("PUBLIC_COMMUNITY_API")) { $common["PUBLIC_COMMUNITY_API"] = "http" }
   $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "contracts-web" = 3300; "community-web" = 3400 }
   $procs = @{}
