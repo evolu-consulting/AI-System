@@ -86,7 +86,9 @@ export async function openAs(
   who: Who,
 ): Promise<{ ctx: BrowserContext; page: Page }> {
   const ctx = await browser.newContext({
-    baseURL: process.env.COMMUNITY_URL ?? "http://localhost:3400",
+    baseURL:
+      process.env.COMMUNITY_URL ??
+      `http://localhost:${3400 + Number(process.env.E2E_PORT_SHIFT ?? 0)}`,
   });
   const page = await ctx.newPage();
   await loginAs(page, who);

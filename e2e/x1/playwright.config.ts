@@ -19,13 +19,14 @@ function need(name: string): string {
   return v;
 }
 
-export const API_PORT = 3011;
-export const WEB_PORT = 3010;
-export const HUB_STUB_PORT = 4030;
+const SH = Number(process.env.E2E_PORT_SHIFT ?? 0); // e2e-isolation: dịch cổng theo làn
+export const API_PORT = 3011 + SH;
+export const WEB_PORT = 3010 + SH;
+export const HUB_STUB_PORT = 4030 + SH;
 const API = `http://localhost:${API_PORT}`;
 const WEB = `http://localhost:${WEB_PORT}`;
 const HUB = `http://localhost:${HUB_STUB_PORT}`;
-const STUDIO = "http://localhost:3200/studio/";
+const STUDIO = `http://localhost:${3200 + SH}/studio/`;
 // 48 ký tự sinh lúc chạy (P1: không chuỗi cố định). Workers kế thừa `process.env` của tiến trình config.
 const TOKEN = process.env.HUB_INTERNAL_TOKEN || randomBytes(24).toString("hex");
 process.env.HUB_INTERNAL_TOKEN = TOKEN;

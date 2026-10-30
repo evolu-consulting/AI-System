@@ -18,7 +18,10 @@ test("X1-AC13 · platform_admin thấy mục Studio trong Ứng dụng, trỏ t�
     "aria-current",
     "true",
   );
-  await expect(studio(page)).toHaveAttribute("href", /^http:\/\/localhost:3200\/studio\/?$/);
+  await expect(studio(page)).toHaveAttribute(
+    "href",
+    new RegExp(`^http://localhost:${3200 + Number(process.env.E2E_PORT_SHIFT ?? 0)}/studio/?$`),
+  );
 });
 
 test("X1-AC13 · tenant_admin (binh) KHÔNG thấy Studio; Quản trị là app hiện tại (đánh dấu, không bấm được)", async ({

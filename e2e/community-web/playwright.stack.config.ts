@@ -17,7 +17,9 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   outputDir: "../../test-results/community-stack",
   use: {
-    baseURL: process.env.COMMUNITY_URL ?? "http://localhost:3400",
+    baseURL:
+      process.env.COMMUNITY_URL ??
+      `http://localhost:${3400 + Number(process.env.E2E_PORT_SHIFT ?? 0)}`,
     locale: "vi-VN",
     timezoneId: "Asia/Ho_Chi_Minh",
     viewport: { width: 1440, height: 900 },

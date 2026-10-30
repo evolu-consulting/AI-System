@@ -11,8 +11,9 @@ import { type TestRunResponse, TestRunResponseSchema } from "@ai/contracts/hub-i
 import { TENANT_ID } from "../../tests/acceptance/M1/_data";
 import { ID3 } from "../../tests/acceptance/M3/_data";
 
-const PORT = Number(process.env.X1_HUB_STUB_PORT ?? 4030);
-const ORIGIN = process.env.X1_WEB_ORIGIN ?? "http://localhost:3010";
+const PORT = Number(process.env.X1_HUB_STUB_PORT ?? 4030 + Number(process.env.E2E_PORT_SHIFT ?? 0));
+const ORIGIN =
+  process.env.X1_WEB_ORIGIN ?? `http://localhost:${3010 + Number(process.env.E2E_PORT_SHIFT ?? 0)}`;
 const TOKEN = process.env.HUB_INTERNAL_TOKEN ?? "";
 
 export type StubMode = {

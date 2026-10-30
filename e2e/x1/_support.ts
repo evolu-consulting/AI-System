@@ -5,7 +5,8 @@ import { loginAdmin, loginAs, resetFixture, withOwner } from "../support/helpers
 export { ID, ID3, TENANT_ID, toast, USER_ID } from "../support/helpers";
 export { loginAdmin, loginAs, resetFixture, withOwner };
 
-export const HUB = process.env.X1_HUB_URL ?? "http://localhost:4030";
+export const HUB =
+  process.env.X1_HUB_URL ?? `http://localhost:${4030 + Number(process.env.E2E_PORT_SHIFT ?? 0)}`;
 /** Token Hub của admin-api (sinh trong config, `process.env` kế thừa); KHÔNG bao giờ được xuất hiện ở trình duyệt. */
 export const hubToken = (): string => process.env.HUB_INTERNAL_TOKEN ?? "";
 
