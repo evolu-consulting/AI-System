@@ -204,7 +204,45 @@ nào, rẽ nhánh tới bước nào. **Huỷ lượt chạy** để dừng; **C
 ![250 triệu: chờ Giám đốc](img/quy-trinh-canvas/09-250tr-cho-giam-doc.jpg)
 ![250 triệu: hoàn tất](img/quy-trinh-canvas/10-250tr-hoan-tat.jpg)
 
-### E. Muốn dùng thật cho đề nghị chi
+### E. Đổi phòng ban duyệt / thêm phòng ban duyệt rồi Lưu là áp dụng
+
+Làm được, đã kiểm thật (31/10/2026). Mẹo: canvas thu nhỏ khó bấm ⇒ bấm **Danh sách** (cạnh "Canvas") để sửa, cùng dữ liệu.
+
+**Đổi phòng duyệt một bước:** bấm bước (vd "Pháp chế") › cuộn xuống **Sau giai đoạn = Duyệt bởi Group** › ô **Nhóm kiểm** ›
+chọn phòng (danh sách = Group của công ty, gồm các phòng ban). Ví dụ đổi Pháp chế: Phòng Kinh doanh → **Phòng Pháp chế**.
+
+![Ô Nhóm kiểm](img/quy-trinh-canvas/11-nhom-kiem.jpg)
+![Chọn phòng ban](img/quy-trinh-canvas/12-chon-phong-ban.jpg)
+
+**Thêm một phòng duyệt:** **Thêm giai đoạn** (hoặc "Thêm giai đoạn vào bước N") › đặt Tên ("Kho vận"), Mã (`kho-van`),
+Người thực hiện **Ghi giá trị**, **Chạy ở bước** = bước muốn đặt (cùng bước với bước khác = **song song**, tối đa 3; bước mới =
+tuần tự) › **Sau giai đoạn = Duyệt bởi Group**, **Nhóm kiểm = Kho vận** › điền Tên tệp kết quả, Mẫu kết quả, Mục bắt buộc
+(form báo đỏ nếu thiếu). Tuỳ chọn cùng chỗ: "Người bắt đầu lượt chạy không được duyệt bước này", **Nhắc mỗi (giờ)**,
+**Chuyển cấp nếu chưa ai kiểm**.
+
+![Duyệt bởi Group + các tuỳ chọn](img/quy-trinh-canvas/13-them-giai-doan-duyet-boi-group.jpg)
+![Kho vận do nhóm Kho vận duyệt](img/quy-trinh-canvas/14-kho-van-nhom-kho-van.png)
+
+**Lưu** ⇒ "Đã lưu · v3".
+
+![Đã lưu v3](img/quy-trinh-canvas/15-da-luu-v3.jpg)
+
+**Kết quả lượt chạy mới ngay sau khi lưu:** Bước 2 có **3 phòng song song** (Kho vận, Pháp chế, Kế toán) cùng "Chờ kiểm".
+`demo-owner` (không thuộc Phòng Pháp chế, Kho vận) chỉ còn nút **"Duyệt: Kế toán"** — hai bước kia chờ người của đúng phòng mới.
+
+![Lượt mới: 3 phòng song song, chỉ thấy nút Kế toán](img/quy-trinh-canvas/16-luot-moi-3-phong-song-song.jpg)
+
+**Lượt đang chạy dở thì sao?** Giữ nguyên phiên bản lúc bắt đầu. Đã kiểm: lượt mở ở v3 (Kế toán = Phòng Kế toán) → sửa Kế toán
+sang Phòng Pháp chế, lưu v4 → lượt cũ vẫn chờ Phòng Kế toán (DB: `process_runs.def_version = 3`, ảnh chụp các bước lưu trong
+`snapshot`); chỉ lượt mở **sau** v4 mới dùng Phòng Pháp chế. Trang cấu hình ghi rõ "Lượt đang chạy không đổi khi bạn sửa".
+Muốn lượt dở theo bản mới: **Huỷ lượt chạy** (ai-admin › Quy trình › tab **Lượt chạy** › mở lượt) rồi chạy lại.
+
+![Tab Lượt chạy](img/quy-trinh-canvas/17-danh-sach-luot-chay.jpg)
+
+Với quy trình **duyệt hợp đồng** thì làm cùng việc ở form Cài đặt › Quy trình duyệt (ô "Phòng ban" mỗi bước, "Thêm bước duyệt",
+mục 3–5 phía trên), không ở canvas.
+
+### F. Muốn dùng thật cho đề nghị chi
 
 Đừng sửa thẳng bản mẫu: **Tạo quy trình** (hoặc tab **Mẫu**) để có quy trình riêng, đặt tên, trường nhập, Group duyệt thật, rồi
 soạn trên canvas như trên. Bản mẫu nên giữ nguyên để trình diễn (seed chỉ tạo khi chưa có, không ghi lại).
