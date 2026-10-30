@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStageOps } from "../../hooks/use-stage-ops";
+import { isSystemStage } from "../../lib/system-nodes";
 import { type StageView, sameView, stageViews } from "./stage-view";
 
 export const PANEL_ID = "stage-panel";
@@ -75,7 +76,10 @@ export function useWorkbench(d: DraftState, refs: EditorRefs) {
     select,
     remove,
     removing: stages.find((s) => s.uid === removing),
-    askRemove: (uid: string) => stages.length > 1 && setRemoving(uid),
+    askRemove: (uid: string) =>
+      stages.length > 1 &&
+      !stages.some((s) => s.uid === uid && isSystemStage(s)) &&
+      setRemoving(uid),
     closeRemove: () => setRemoving(null),
   };
 }

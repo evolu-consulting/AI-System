@@ -537,6 +537,32 @@
     }
   },
   "tenants": {
+    "slots": {
+      "title": "Contract approval process",
+      "desc": "The Contracts app process this company is running. Only platform admins assign; unassigned runs the default process.",
+      "col": {
+        "slot": "Used for",
+        "process": "Process",
+        "version": "Version"
+      },
+      "isDefault": "Default",
+      "assigned": "Assigned",
+      "pick": "Library process",
+      "pickPlaceholder": "Pick a published process",
+      "assign": "Assign",
+      "unassign": "Back to default",
+      "empty": "This company has no process slot yet.",
+      "loadFail": "Could not load the process in use.",
+      "err": {
+        "groupsMissing": "The company lacks department codes the process uses: {keys}.",
+        "notPublished": "The process is not published.",
+        "forbidden": "Only platform admins can assign a process."
+      },
+      "toast": {
+        "assigned": "Assigned “{process}” to {tenant}",
+        "unassigned": "{tenant} is back on the default process"
+      }
+    },
     "list": {
       "title": "Tenants",
       "subtitle": "Customer companies on the platform. Each has its own users, groups and quota.",

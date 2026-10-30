@@ -1,17 +1,17 @@
 // ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
-import type { ProcessDefListItem } from "@ai/contracts/hub-admin";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import { processErrorSpec } from "../lib/errors";
+import { cloneDef, type LibraryListItem, useLibraryDefs } from "../library-api";
 import { useProcessTenant } from "./use-process-tenant";
 import { useToggleEnabled } from "./use-toggle-enabled";
 
 export type Tab = "own" | "templates";
 export type StateFilter = "all" | "on" | "off";
-type Row = ProcessDefListItem;
+type Row = LibraryListItem;
 
 export function filterRows(rows: Row[], f: StateFilter): Row[] {
   return f === "all" ? rows : rows.filter((r) => r.enabled === (f === "on"));
@@ -52,18 +52,35 @@ function useRowActions(
   onRun: (r: Row) => void,
   onDelete: (r: Row) => void,
   onCopied: () => void,
+  onCloned: (id: string) => void,
 ) {
   const { t } = useTranslation();
   const fail = useFail();
   const invalidate = useInvalidateDefs();
   const toggler = useToggleEnabled(tenantId);
-  const latest = useRef({ toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied });
-  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied };
+  const latest = useRef({
+    toggle: toggler.toggle,
+    tenantId,
+    t,
+    invalidate,
+    fail,
+    onCopied,
+    onCloned,
+  });
+  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied, onCloned };
   const actions = useMemo(
     () => ({
       onToggle: (r: Row, v: boolean) => void latest.current.toggle(r, v),
       onRun,
       onDelete,
+      onClone: (r: Row) => {
+        const c = latest.current;
+        void cloneDef(r.id).then((res) => {
+          notifySuccess(c.t("process.admin.library.clone.done"));
+          void c.invalidate();
+          c.onCloned(res.id);
+        }, c.fail);
+      },
       onCopy: (r: Row) => {
         const c = latest.current;
         void copyDef(r.id, c.tenantId).then(() => {
@@ -87,10 +104,23 @@ export function useProcessesView() {
   const [filter, setFilter] = useState<StateFilter>("all");
   const [runRow, setRunRow] = useState<Row | null>(null);
   const del = useDeleteFlow(tenant.tenantId);
-  const needsTenant = tenant.isPlatform && !tenant.tenantId && !templates;
-  const q = useProcessDefs(tenant.tenantId, templates, tenant.ready && !needsTenant);
+  // CR-105 · platform_admin: tab chính = thư viện (`kind=library`, không cần chọn tenant); tab Mẫu = `kind=template`.
+  // Chọn một tenant ⇒ xem quy trình của tenant đó như trước.
+  const library = tenant.isPlatform && !tenant.tenantId && !templates;
+  const useLib = tenant.isPlatform && (!tenant.tenantId || templates);
+  const ownQ = useProcessDefs(tenant.tenantId, templates, tenant.ready && !useLib);
+  const libQ = useLibraryDefs(templates ? "template" : "library", tenant.ready && useLib);
+  const q = useLib ? libQ : ownQ;
   const goOwn = () => void navigate({ to: "/processes", search: { tab: "own" }, replace: true });
-  const { actions, conflictProps } = useRowActions(tenant.tenantId, setRunRow, del.open, goOwn);
+  const goEditor = (id: string) =>
+    void navigate({ to: "/processes/$processId", params: { processId: id } });
+  const { actions, conflictProps } = useRowActions(
+    tenant.tenantId,
+    setRunRow,
+    del.open,
+    goOwn,
+    goEditor,
+  );
   const rows = useMemo(() => {
     if (!q.data) return undefined;
     const all = q.data.pages.flatMap((p) => p.items).filter((r) => r.is_template === templates);
@@ -103,7 +133,7 @@ export function useProcessesView() {
     filter,
     setFilter,
     templates,
-    needsTenant,
+    library,
     q,
     rows,
     actions,

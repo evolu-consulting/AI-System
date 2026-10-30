@@ -10,6 +10,7 @@ import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { Switch } from "@/components/ui/switch";
 import type { Translate } from "@/lib/format";
 import { packLabel, useTenantPackList } from "../../hooks/use-tenant-packs";
+import { TenantProcessSlots } from "../slots/TenantProcessSlots";
 
 function packColumns(
   t: Translate,
@@ -88,6 +89,7 @@ export default function TenantPacksTab({ tenant }: { tenant: { id: string; name:
         destructive
         onConfirm={packs.confirmOff}
       />
+      <TenantProcessSlots tenant={tenant} />
     </section>
   );
 }

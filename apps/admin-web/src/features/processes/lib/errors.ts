@@ -16,6 +16,12 @@ const KNOWN = new Set([
   "NOT_PROCESS_DECIDER",
   "PROCESS_RUN_STATE",
   "NO_OUTPUT",
+  // CR-105 · thư viện quy trình
+  "PROCESS_IN_USE",
+  "PROCESS_NOT_PUBLISHED",
+  "PROCESS_PUBLISH_INVALID",
+  "SLOT_SHAPE_UNSUPPORTED",
+  "SLOT_GROUPS_MISSING",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

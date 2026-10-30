@@ -27,7 +27,6 @@ function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
   const err = v.q.error;
   if (err instanceof ApiError && err.status === 403) return <ForbiddenState />;
-  if (v.needsTenant) return <EmptyState message={t("common.tenantPicker.required")} />;
   const chips = (["all", "on", "off"] as const).map((value) => ({
     value,
     label: t(`process.admin.list.filter.${value}`),
@@ -46,6 +45,7 @@ function Body({ v }: { v: ProcessesView }) {
       <ProcessesTable
         rows={v.rows}
         templates={v.templates}
+        library={v.library}
         canWrite={v.canWrite}
         canRun={v.canRun}
         loading={v.q.isPending}
@@ -76,6 +76,7 @@ function ListPage() {
   const { t } = useTranslation();
   const v = useProcessesView();
   if (!v.tenant.me) return null;
+  const libraryTab = v.tenant.isPlatform && !v.tenant.tenantId;
   return (
     <>
       <PageHeader
@@ -101,7 +102,9 @@ function ListPage() {
       {hubConfigured() ? (
         <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
           <TabsList>
-            <TabsTrigger value="own">{t("process.admin.list.tab.own")}</TabsTrigger>
+            <TabsTrigger value="own">
+              {t(libraryTab ? "process.admin.library.tab.own" : "process.admin.list.tab.own")}
+            </TabsTrigger>
             <TabsTrigger value="templates">{t("process.admin.list.tab.templates")}</TabsTrigger>
           </TabsList>
           <TabsContent value="own">{v.tab === "own" ? <Body v={v} /> : null}</TabsContent>

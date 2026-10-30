@@ -1,0 +1,92 @@
+// CR-105 · L3: ánh xạ thuần cho màn thư viện quy trình (cột danh sách, xoá được không, kế hoạch gán, kết quả xem trước, trạng thái xuất bản).
+import type { LibraryDef, LibraryListItem, PreviewStep } from "../library-api";
+
+export type RowLike = Pick<LibraryListItem, "slot" | "is_default" | "tenant_count" | "enabled">;
+
+/** Dòng thuộc thư viện (có khe) — khác quy trình tenant / mẫu. */
+export const isLibraryRow = (r: Pick<LibraryListItem, "slot">): boolean => !!r.slot;
+
+/** Lý do không xoá/tắt được: mặc định của khe hoặc đang có tenant gán (Hub trả 409 `PROCESS_IN_USE` — chặn sớm ở UI). */
+export function inUseReason(r: RowLike): "default" | "assigned" | null {
+  if (r.is_default) return "default";
+  return (r.tenant_count ?? 0) > 0 ? "assigned" : null;
+}
+
+/** Ô "Tenant đang dùng": số tenant gán; mặc định áp cho mọi tenant chưa gán nên ghi kèm "+ mặc định". */
+export const tenantUsage = (r: Pick<LibraryListItem, "tenant_count" | "is_default">) => ({
+  count: r.tenant_count ?? 0,
+  isDefault: r.is_default === true,
+});
+
+export type PublishState = "none" | "draft" | "published";
+/** `none` = không có khe (không xuất bản); `draft` = chưa có bản xuất bản; `published` = đã có (số bản kèm theo). */
+export function publishState(d: Pick<LibraryDef, "slot" | "published_version">): PublishState {
+  if (!d.slot) return "none";
+  return d.published_version == null ? "draft" : "published";
+}
+
+/** Chỉ quy trình đã xuất bản mới đặt mặc định / gán được; mặc định hiện tại thì không đặt lại. */
+export const canSetDefault = (d: Pick<LibraryDef, "slot" | "published_version" | "is_default">) =>
+  publishState(d) === "published" && d.is_default !== true;
+export const canAssign = (d: Pick<LibraryDef, "slot" | "published_version">) =>
+  publishState(d) === "published";
+
+/** Kế hoạch gán cho một quy trình: tenant mới chọn ⇒ gán (PUT), tenant bỏ chọn ⇒ về mặc định (DELETE). */
+export function assignPlan(
+  current: readonly string[],
+  selected: readonly string[],
+): { add: string[]; remove: string[] } {
+  const cur = new Set(current);
+  const sel = new Set(selected);
+  return {
+    add: [...sel].filter((id) => !cur.has(id)),
+    remove: [...cur].filter((id) => !sel.has(id)),
+  };
+}
+
+const rec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+/** Xem trước (B3): Hub trả `{steps:[{key,name,run}]}` (hoặc mảng trần; `skipped:true` thay `run:false`); thiếu tên ⇒ khoá. */
+export function normalizePreview(raw: unknown): PreviewStep[] {
+  const list = Array.isArray(raw) ? raw : rec(raw) && Array.isArray(raw.steps) ? raw.steps : [];
+  return list.flatMap((s): PreviewStep[] => {
+    if (!rec(s)) return [];
+    const key = typeof s.key === "string" ? s.key : "";
+    const run = typeof s.run === "boolean" ? s.run : s.skipped !== true;
+    const name = typeof s.name === "string" && s.name !== "" ? s.name : key;
+    return [{ key, name, run }];
+  });
+}
+
+/** Ô "Giá trị mẫu" (chữ) ⇒ số nguyên ≥ 0 hoặc null (trống = chưa nhập); không hợp lệ ⇒ "invalid". */
+export function parseSampleValue(raw: string): number | null | "invalid" {
+  const s = raw.replace(/[\s.,]/g, "");
+  if (s === "") return null;
+  return /^\d{1,15}$/.test(s) ? Number(s) : "invalid";
+}
+
+/** Đếm kết quả `Promise.allSettled` của loạt gán/bỏ gán. */
+export function settledCounts(rs: readonly PromiseSettledResult<unknown>[]) {
+  const failed = rs.filter((r) => r.status === "rejected").length;
+  return { ok: rs.length - failed, failed };
+}
+
+/** Chi tiết lỗi 422 của xuất bản/gán (`issues[{path,rule}]` | `paths[]` | `keys[]` mã phòng ban thiếu + `tenant`) ⇒ dòng hiển thị. */
+export function errorLines(details: unknown): string[] {
+  if (!rec(details)) return [];
+  const head = Array.isArray(details.issues) ? issueLines(details.issues) : strings(details.paths);
+  const keys = strings(details.keys).join(", ");
+  const who = typeof details.tenant === "string" ? `${details.tenant}: ` : "";
+  return keys ? [...head, `${who}${keys}`] : head;
+}
+
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+
+function issueLines(list: readonly unknown[]): string[] {
+  return list.flatMap((it) => {
+    if (!rec(it)) return [];
+    const line = [it.path, it.rule].filter((x) => typeof x === "string" && x !== "").join(": ");
+    return line ? [line] : [];
+  });
+}

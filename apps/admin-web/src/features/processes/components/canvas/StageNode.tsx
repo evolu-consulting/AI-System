@@ -33,6 +33,7 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
             index: v.index,
             step: v.step,
             readOnly: h.readOnly,
+            locked: v.locked,
             ops: h.ops,
             onRemove: h.onRemove,
           })

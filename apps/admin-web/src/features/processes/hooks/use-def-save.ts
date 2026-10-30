@@ -23,6 +23,8 @@ type Args = {
   teams?: TeamSections;
   /** P-d2 · catalog tool (kiểm TOOL_INVALID theo tham số); vắng ⇒ để Hub kiểm. */
   tools?: readonly ProcessToolItem[];
+  /** CR-105 · trường thêm vào body (vd `slot` của quy trình thư viện — Canvas gửi `stages`, Hub `fromStages`). */
+  extra?: Record<string, unknown> | undefined;
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
@@ -54,7 +56,7 @@ function useRedirectAfterCreate(createdId: string | null, dirty: boolean) {
   }, [createdId, dirty, navigate]);
 }
 
-export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools }: Args) {
+export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools, extra }: Args) {
   const { t } = useTranslation();
   const invalidate = useInvalidateDefs();
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export function useDefSave({ id, tenantId, version, setVersion, d, teams, tools 
     const errors = validateDraft(d.draftRef.current, undefined, teams, tools);
     d.showErrors(errors);
     if (Object.keys(errors).length > 0) return;
-    const body = toInput(d.draftRef.current);
+    const body = { ...toInput(d.draftRef.current), ...extra } as ProcessDefInput;
     setPending(true);
     try {
       if (id !== undefined) await cs.save(body, version);

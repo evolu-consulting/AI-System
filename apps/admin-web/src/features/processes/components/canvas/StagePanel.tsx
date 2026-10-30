@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { isSystemStage } from "../../lib/system-nodes";
 import { StageForm } from "../editor/StageForm";
 import { PANEL_ID, type Workbench } from "./use-workbench";
 
@@ -61,6 +62,11 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
           </Button>
         </div>
       ) : null}
+      {sel && isSystemStage(sel) ? (
+        <p role="status" className="mb-2 text-label text-muted-foreground">
+          {t("process.admin.library.system.locked")}
+        </p>
+      ) : null}
       {sel ? (
         <StageForm
           key={sel.uid}
@@ -70,7 +76,7 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
           defSources={d.draft.sources}
           defInputs={d.draft.inputs}
           errors={d.errors}
-          readOnly={readOnly}
+          readOnly={readOnly || isSystemStage(sel)}
           refs={refs}
           stepNotice={ops.notice?.uid === sel.uid ? ops.notice.error : undefined}
           onChange={(p) => d.patchStage(index, p)}

@@ -4,7 +4,7 @@
     "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",
     "tab": {
       "own": "Của công ty",
-      "templates": "Mẫu"
+      "templates": "Mẫu · chạy thử"
     },
     "create": "Tạo quy trình",
     "copy": "Chép mẫu",
@@ -436,7 +436,12 @@
     "PROCESS_DEF_INVALID": "Quy trình chưa hợp lệ. Kiểm tra các ô báo lỗi.",
     "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này.",
     "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
-    "NO_OUTPUT": "Chưa có bản kết quả nào để dùng."
+    "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",
+    "PROCESS_IN_USE": "Quy trình đang là mặc định hoặc đang gán cho tenant: không xoá/tắt/đổi ký hiệu được.",
+    "PROCESS_NOT_PUBLISHED": "Quy trình chưa xuất bản. Xuất bản trước.",
+    "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
+    "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Canvas.",
+    "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới."
   },
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
@@ -632,6 +637,173 @@
       "pass": "Đạt",
       "reject": "Từ chối",
       "rejectNote": "Từ chối từ trang flow mẫu"
+    }
+  },
+  "library": {
+    "tab": {
+      "own": "Thư viện"
+    },
+    "usedFor": "Dùng cho: {{slot}}",
+    "defaultBadge": "Mặc định · {{slot}}",
+    "usage": "{{n}} tenant đang dùng",
+    "pubState": {
+      "published": "Đã xuất bản v{{n}}",
+      "draft": "Chưa xuất bản"
+    },
+    "mode": {
+      "label": "Cách xem",
+      "canvas": "Canvas",
+      "form": "Form",
+      "saveFirst": "Lưu thay đổi trước khi chuyển."
+    },
+    "col": {
+      "usedFor": "Dùng cho",
+      "tenants": "Tenant đang dùng",
+      "tenantsDefault": "{{n}} + mọi tenant chưa gán"
+    },
+    "inUse": {
+      "default": "Quy trình mặc định của khe: không xoá/tắt được. Đổi mặc định trước.",
+      "assigned": "Đang có tenant dùng: bỏ gán trước."
+    },
+    "system": {
+      "badge": "Hệ thống",
+      "hint": "Nút hệ thống của khe: không xoá/đổi được",
+      "locked": "Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."
+    },
+    "publish": {
+      "button": "Xuất bản",
+      "saveFirst": "Lưu thay đổi trước khi xuất bản.",
+      "title": "Xuất bản “{{name}}”",
+      "body": "Chỉ bản xuất bản mới được chạy. Lượt mới của tenant đang dùng chạy bản này; lượt đang chạy giữ bản cũ.",
+      "impact": "Tác động",
+      "impactFail": "Không tải được tác động. Thử lại.",
+      "tenants": "{{n}} tenant đang dùng quy trình này.",
+      "runs": "{{n}} lượt đang chạy (giữ bản cũ).",
+      "defaultNote": "Đang là mặc định: áp cho mọi tenant chưa gán ở lượt duyệt kế tiếp.",
+      "note": "Ghi chú bản (tuỳ chọn)",
+      "submit": "Xuất bản",
+      "done": "Đã xuất bản bản v{{n}}"
+    },
+    "releases": {
+      "button": "Lịch sử",
+      "title": "Lịch sử xuất bản “{{name}}”",
+      "body": "Quay lại một bản cũ sẽ tạo bản mới có nội dung bản đó.",
+      "fail": "Không tải được lịch sử.",
+      "empty": "Chưa có bản xuất bản.",
+      "latest": "mới nhất",
+      "rollback": "Quay lại bản này",
+      "confirmTitle": "Quay lại bản v{{n}}?",
+      "confirmBody": "Tạo bản mới có nội dung v{{n}}, áp cho lượt duyệt kế tiếp. Lượt đang chạy giữ bản cũ.",
+      "done": "Đã quay lại v{{from}} (bản mới v{{to}})"
+    },
+    "clone": {
+      "button": "Nhân bản",
+      "done": "Đã nhân bản thành bản nháp mới"
+    },
+    "assign": {
+      "button": "Gán cho tenant",
+      "needPublish": "Xuất bản trước khi gán.",
+      "title": "Gán “{{name}}” cho tenant",
+      "body": "{{slot}}: mỗi tenant chỉ một quy trình, gán mới thay bản cũ. Bỏ chọn = về quy trình mặc định.",
+      "submit": "Lưu gán",
+      "done": "Đã cập nhật gán cho {{n}} tenant"
+    },
+    "preview": {
+      "button": "Xem trước đường đi",
+      "title": "Xem trước đường đi “{{name}}”",
+      "body": "Nhập loại hợp đồng và giá trị mẫu: bước nào chạy, bước nào bị bỏ qua. Không ghi gì.",
+      "value": "Giá trị mẫu (VND)",
+      "valueHint": "Để trống = chưa biết giá trị",
+      "valueInvalid": "Nhập số nguyên không âm.",
+      "run": "Xem đường đi",
+      "result": "Đường đi",
+      "runs": "chạy",
+      "skipped": "bỏ qua"
+    },
+    "default": {
+      "button": "Đặt làm mặc định",
+      "title": "Đặt “{{name}}” làm mặc định?",
+      "body": "{{slot}}: tenant chưa gán sẽ chạy quy trình này từ lượt duyệt kế tiếp. Tenant đã gán không đổi.",
+      "confirm": "Đặt mặc định",
+      "done": "“{{name}}” là quy trình mặc định"
+    },
+    "form": {
+      "lead": "Các bước duyệt tuần tự. Bước 1 cố định; Ký số luôn ở cuối. Phòng ban ghi theo mã (vd pb-ke-toan), mỗi tenant tự phân giải.",
+      "firstName": "Bước đầu (luôn chạy)",
+      "reviewStep": "Bước duyệt",
+      "esignStep": "Ký số",
+      "difyStep": "Bước Dify",
+      "name": "Tên bước",
+      "dept": "Mã phòng ban",
+      "dueH": "Hạn quyết (giờ)",
+      "remindH": "Nhắc mỗi (giờ)",
+      "remindHRange": "Nhắc mỗi (giờ, {{min}}–{{max}})",
+      "escalate": "Chuyển cấp tới (mã phòng ban)",
+      "headOnly": "Chỉ trưởng phòng duyệt",
+      "excludeStarter": "Người gửi duyệt không được duyệt bước này",
+      "cond": "Điều kiện áp dụng",
+      "firstNoCond": "Bước đầu luôn chạy, không có điều kiện.",
+      "always": "Luôn chạy",
+      "addCond": "Thêm điều kiện",
+      "clearCond": "Bỏ điều kiện",
+      "dealKind": "Loại hợp đồng",
+      "deal": {
+        "buy": "Mua",
+        "sell": "Bán",
+        "referral": "Giới thiệu"
+      },
+      "valueCond": "Giá trị hợp đồng",
+      "cmp": "So sánh",
+      "amount": "Số tiền (VND)",
+      "op": "Kết hợp",
+      "opAnd": "Và (cả hai)",
+      "opOr": "Hoặc (một trong hai)",
+      "up": "Lên",
+      "down": "Xuống",
+      "remove": "Xoá bước",
+      "addStep": "Thêm bước duyệt",
+      "addEsign": "Thêm bước Ký số",
+      "maxReached": "Đã đủ số bước tối đa.",
+      "discard": "Bỏ thay đổi",
+      "unsupported": "Quy trình này có dạng Form không biểu diễn được (vd bước song song). Chỉ xem; hãy sửa ở Canvas.",
+      "toCanvas": "Sửa ở Canvas",
+      "difyInfo": "Bước Dify: {{name}}",
+      "difyCanvas": "Bước Dify giữ nguyên ở Form; sửa ở Canvas.",
+      "none": "Không",
+      "esign": {
+        "defaultName": "Ký số",
+        "signer": "Người ký phía công ty",
+        "signerDept": "Mã phòng ban của trưởng phòng ký",
+        "mode": {
+          "owner": "Người phụ trách hợp đồng",
+          "dept_head": "Trưởng phòng",
+          "user": "Người cụ thể"
+        },
+        "order": "Thứ tự ký",
+        "companyFirst": "Công ty ký trước",
+        "partnerFirst": "Đối tác ký trước",
+        "provider": "Nhà cung cấp ký số (khoá)",
+        "providerDefault": "Mặc định của công ty",
+        "partnerSigns": "Đối tác ký",
+        "info": "Duyệt xong thì tự gửi ký; ký xong luồng kết thúc."
+      },
+      "err": {
+        "nameEmpty": "Nhập tên bước.",
+        "GROUP_REQUIRED": "Nhập mã phòng ban của bước.",
+        "DUE_RANGE": "Hạn quyết ngoài khoảng cho phép.",
+        "REMIND_RANGE": "Nhắc ngoài khoảng cho phép ({{min}}–{{max}} giờ).",
+        "ESCALATE_SAME_GROUP": "Chuyển cấp không được trùng phòng ban của bước.",
+        "FIRST_CONDITIONAL": "Bước đầu không có điều kiện.",
+        "whenEmpty": "Điều kiện chưa có vế nào: chọn loại hợp đồng hoặc giá trị.",
+        "amountInvalid": "Số tiền phải là số nguyên không âm.",
+        "FIRST_NOT_REVIEW": "Bước đầu phải là bước duyệt.",
+        "STEPS_MAX": "Quá số bước tối đa.",
+        "KEY_DUP": "Mã bước bị trùng.",
+        "ESIGN_NOT_LAST": "Ký số phải là bước cuối.",
+        "SIGNER_GROUP_REQUIRED": "Nhập mã phòng ban của trưởng phòng ký.",
+        "difyEmpty": "Bước Dify chưa chọn workflow.",
+        "AFTER_DIFY_CONDITIONAL": "Bước sau Dify không có điều kiện."
+      }
     }
   }
 }

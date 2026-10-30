@@ -123,7 +123,7 @@ function toNode(
     return {
       ...base,
       data: { v: byUid.get(n.id), selected: n.id === selected, readOnly },
-      draggable: !readOnly,
+      draggable: !readOnly && !byUid.get(n.id)?.locked,
     };
   const data =
     n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };

@@ -49,6 +49,7 @@ const Row = memo(
               index: v.index,
               step: v.step,
               readOnly: p.readOnly,
+              locked: v.locked,
               ops: p.ops,
               onRemove: p.onRemove,
             })

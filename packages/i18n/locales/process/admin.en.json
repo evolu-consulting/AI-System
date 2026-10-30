@@ -4,7 +4,7 @@
     "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",
     "tab": {
       "own": "Company",
-      "templates": "Templates"
+      "templates": "Samples · trial runs"
     },
     "create": "Create process",
     "copy": "Copy template",
@@ -436,7 +436,12 @@
     "PROCESS_DEF_INVALID": "The process isn't valid. Check the fields marked with errors.",
     "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run.",
     "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
-    "NO_OUTPUT": "There is no output version to use yet."
+    "NO_OUTPUT": "There is no output version to use yet.",
+    "PROCESS_IN_USE": "The process is the default or assigned to tenants: it cannot be deleted, turned off or re-keyed.",
+    "PROCESS_NOT_PUBLISHED": "The process is not published. Publish it first.",
+    "PROCESS_PUBLISH_INVALID": "The process is not valid to publish. See what is wrong below.",
+    "SLOT_SHAPE_UNSUPPORTED": "This slot only accepts sequential steps (no parallel, no branches). Fix it in Canvas.",
+    "SLOT_GROUPS_MISSING": "Some tenant lacks a department code the process uses. See the missing codes below."
   },
   "validate": {
     "nameRequired": "Enter a process name.",
@@ -632,6 +637,173 @@
       "pass": "Pass",
       "reject": "Reject",
       "rejectNote": "Rejected from the sample flow page"
+    }
+  },
+  "library": {
+    "tab": {
+      "own": "Library"
+    },
+    "usedFor": "Used for: {{slot}}",
+    "defaultBadge": "Default · {{slot}}",
+    "usage": "{{n}} tenants using",
+    "pubState": {
+      "published": "Published v{{n}}",
+      "draft": "Not published"
+    },
+    "mode": {
+      "label": "View",
+      "canvas": "Canvas",
+      "form": "Form",
+      "saveFirst": "Save changes before switching."
+    },
+    "col": {
+      "usedFor": "Used for",
+      "tenants": "Tenants using",
+      "tenantsDefault": "{{n}} + all unassigned tenants"
+    },
+    "inUse": {
+      "default": "Default process of the slot: cannot be deleted or turned off. Change the default first.",
+      "assigned": "Tenants are using it: unassign first."
+    },
+    "system": {
+      "badge": "System",
+      "hint": "System node of the slot: cannot be deleted or changed",
+      "locked": "System node of the contracts app: locked, cannot be deleted or changed."
+    },
+    "publish": {
+      "button": "Publish",
+      "saveFirst": "Save changes before publishing.",
+      "title": "Publish “{{name}}”",
+      "body": "Only the published version runs. New runs of tenants using it follow this version; running ones keep the old one.",
+      "impact": "Impact",
+      "impactFail": "Could not load the impact. Try again.",
+      "tenants": "{{n}} tenants use this process.",
+      "runs": "{{n}} runs in progress (keep the old version).",
+      "defaultNote": "It is the default: applies to every unassigned tenant from the next approval run.",
+      "note": "Release note (optional)",
+      "submit": "Publish",
+      "done": "Published version v{{n}}"
+    },
+    "releases": {
+      "button": "History",
+      "title": "Release history of “{{name}}”",
+      "body": "Rolling back to an old version creates a new version with that content.",
+      "fail": "Could not load the history.",
+      "empty": "No published version yet.",
+      "latest": "latest",
+      "rollback": "Roll back to this",
+      "confirmTitle": "Roll back to v{{n}}?",
+      "confirmBody": "Creates a new version with the content of v{{n}}, applied to the next approval run. Running ones keep the old version.",
+      "done": "Rolled back to v{{from}} (new version v{{to}})"
+    },
+    "clone": {
+      "button": "Duplicate",
+      "done": "Duplicated into a new draft"
+    },
+    "assign": {
+      "button": "Assign to tenants",
+      "needPublish": "Publish before assigning.",
+      "title": "Assign “{{name}}” to tenants",
+      "body": "{{slot}}: one process per tenant, a new assignment replaces the old one. Unchecking = back to the default process.",
+      "submit": "Save assignments",
+      "done": "Updated assignments for {{n}} tenants"
+    },
+    "preview": {
+      "button": "Preview path",
+      "title": "Preview the path of “{{name}}”",
+      "body": "Enter a contract type and a sample value: which steps run and which are skipped. Nothing is written.",
+      "value": "Sample value (VND)",
+      "valueHint": "Leave empty = value unknown",
+      "valueInvalid": "Enter a non-negative whole number.",
+      "run": "Preview path",
+      "result": "Path",
+      "runs": "runs",
+      "skipped": "skipped"
+    },
+    "default": {
+      "button": "Set as default",
+      "title": "Set “{{name}}” as the default?",
+      "body": "{{slot}}: unassigned tenants will run this process from the next approval run. Assigned tenants do not change.",
+      "confirm": "Set default",
+      "done": "“{{name}}” is now the default process"
+    },
+    "form": {
+      "lead": "Sequential approval steps. Step 1 is fixed; e-sign is always last. Departments are written by code (e.g. pb-ke-toan), resolved per tenant.",
+      "firstName": "First step (always runs)",
+      "reviewStep": "Approval step",
+      "esignStep": "E-sign",
+      "difyStep": "Dify step",
+      "name": "Step name",
+      "dept": "Department code",
+      "dueH": "Decision deadline (hours)",
+      "remindH": "Remind every (hours)",
+      "remindHRange": "Remind every (hours, {{min}}–{{max}})",
+      "escalate": "Escalate to (department code)",
+      "headOnly": "Department head only",
+      "excludeStarter": "The person who submitted may not approve this step",
+      "cond": "Applies when",
+      "firstNoCond": "The first step always runs, no condition.",
+      "always": "Always runs",
+      "addCond": "Add condition",
+      "clearCond": "Remove condition",
+      "dealKind": "Contract type",
+      "deal": {
+        "buy": "Purchase",
+        "sell": "Sale",
+        "referral": "Referral"
+      },
+      "valueCond": "Contract value",
+      "cmp": "Compare",
+      "amount": "Amount (VND)",
+      "op": "Combine",
+      "opAnd": "And (both)",
+      "opOr": "Or (either)",
+      "up": "Up",
+      "down": "Down",
+      "remove": "Remove step",
+      "addStep": "Add approval step",
+      "addEsign": "Add e-sign step",
+      "maxReached": "Maximum number of steps reached.",
+      "discard": "Discard changes",
+      "unsupported": "This process has a shape the Form cannot show (e.g. parallel steps). View only; edit it in Canvas.",
+      "toCanvas": "Edit in Canvas",
+      "difyInfo": "Dify step: {{name}}",
+      "difyCanvas": "Dify steps are kept as they are in Form; edit them in Canvas.",
+      "none": "None",
+      "esign": {
+        "defaultName": "E-sign",
+        "signer": "Company signer",
+        "signerDept": "Department code of the signing head",
+        "mode": {
+          "owner": "Contract owner",
+          "dept_head": "Department head",
+          "user": "A specific person"
+        },
+        "order": "Signing order",
+        "companyFirst": "Company signs first",
+        "partnerFirst": "Partner signs first",
+        "provider": "E-sign provider (key)",
+        "providerDefault": "Company default",
+        "partnerSigns": "Partner signs",
+        "info": "After approval it is sent for signing automatically; once signed the flow ends."
+      },
+      "err": {
+        "nameEmpty": "Enter the step name.",
+        "GROUP_REQUIRED": "Enter the department code of the step.",
+        "DUE_RANGE": "Deadline is outside the allowed range.",
+        "REMIND_RANGE": "Reminder is outside the allowed range ({{min}}–{{max}} hours).",
+        "ESCALATE_SAME_GROUP": "Escalation cannot be the same department as the step.",
+        "FIRST_CONDITIONAL": "The first step has no condition.",
+        "whenEmpty": "The condition is empty: pick a contract type or a value.",
+        "amountInvalid": "The amount must be a non-negative whole number.",
+        "FIRST_NOT_REVIEW": "The first step must be an approval step.",
+        "STEPS_MAX": "Too many steps.",
+        "KEY_DUP": "Step code is duplicated.",
+        "ESIGN_NOT_LAST": "E-sign must be the last step.",
+        "SIGNER_GROUP_REQUIRED": "Enter the department code of the signing head.",
+        "difyEmpty": "The Dify step has no workflow.",
+        "AFTER_DIFY_CONDITIONAL": "The step after Dify has no condition."
+      }
     }
   }
 }

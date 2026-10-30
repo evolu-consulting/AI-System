@@ -537,6 +537,32 @@
     }
   },
   "tenants": {
+    "slots": {
+      "title": "Quy trình duyệt hợp đồng",
+      "desc": "Quy trình Sổ Hợp Tác công ty này đang chạy. Chỉ quản trị nền tảng gán; chưa gán thì chạy quy trình mặc định.",
+      "col": {
+        "slot": "Dùng cho",
+        "process": "Quy trình",
+        "version": "Bản"
+      },
+      "isDefault": "Mặc định",
+      "assigned": "Đã gán",
+      "pick": "Quy trình thư viện",
+      "pickPlaceholder": "Chọn quy trình đã xuất bản",
+      "assign": "Gán",
+      "unassign": "Về mặc định",
+      "empty": "Chưa có khe quy trình nào cho công ty này.",
+      "loadFail": "Không tải được quy trình đang dùng.",
+      "err": {
+        "groupsMissing": "Công ty thiếu phòng ban theo mã mà quy trình dùng: {keys}.",
+        "notPublished": "Quy trình chưa xuất bản.",
+        "forbidden": "Chỉ quản trị nền tảng gán được quy trình."
+      },
+      "toast": {
+        "assigned": "Đã gán “{process}” cho {tenant}",
+        "unassigned": "{tenant} về quy trình mặc định"
+      }
+    },
     "list": {
       "title": "Tenants",
       "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng.",

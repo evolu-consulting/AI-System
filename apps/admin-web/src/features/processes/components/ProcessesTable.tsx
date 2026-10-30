@@ -1,5 +1,4 @@
 // ADM-FR-65 · CR-056 · P-a F5: bảng quy trình (6 cột + hành động dòng) cho tab "Của công ty" / "Mẫu" (plan-frontend-admin §1 ①).
-import type { ProcessDefListItem as Row } from "@ai/contracts/hub-admin";
 import { Link } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
@@ -9,15 +8,26 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
+import { inUseReason, tenantUsage } from "../lib/library-view";
+import type { LibraryListItem as Row } from "../library-api";
 
 export type RowActions = {
   onToggle: (row: Row, enabled: boolean) => void;
   onRun: (row: Row) => void;
   onDelete: (row: Row) => void;
   onCopy: (row: Row) => void;
+  /** CR-105 · Nhân bản quy trình thư viện ⇒ nháp mới cùng khe, chưa gán. */
+  onClone: (row: Row) => void;
 };
 
-type Opts = { templates: boolean; canWrite: boolean; canRun: boolean; actions: RowActions };
+type Opts = {
+  templates: boolean;
+  canWrite: boolean;
+  canRun: boolean;
+  /** CR-105 · danh sách thư viện (platform_admin): thêm cột Dùng cho / Tenant đang dùng. */
+  library?: boolean;
+  actions: RowActions;
+};
 type Props = Opts & {
   rows: Row[] | undefined;
   loading: boolean;
@@ -43,6 +53,11 @@ function nameColumn(t: TFunction): Column<Row> {
           {r.name}
         </Link>
         {r.is_template ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
+        {r.is_default ? (
+          <StatusBadge tone="ok">
+            {t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}
+          </StatusBadge>
+        ) : null}
       </span>
     ),
   };
@@ -68,8 +83,42 @@ function enabledColumn(t: TFunction, o: Opts): Column<Row> {
   };
 }
 
+/** Sửa · (Nhân bản — thư viện) · Xoá; xoá bị khoá khi là mặc định của khe hoặc đang có tenant gán. */
+function WriteActions(p: {
+  t: TFunction;
+  r: Row;
+  library?: boolean | undefined;
+  actions: RowActions;
+}) {
+  const { t, r, actions } = p;
+  const reason = inUseReason(r);
+  return (
+    <>
+      <Button size="sm" variant="ghost" asChild>
+        <Link to="/processes/$processId" params={{ processId: r.id }}>
+          {L(t, "edit")}
+        </Link>
+      </Button>
+      {p.library ? (
+        <Button size="sm" variant="ghost" onClick={() => actions.onClone(r)}>
+          {t("process.admin.library.clone.button")}
+        </Button>
+      ) : null}
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={reason !== null}
+        title={reason ? t(`process.admin.library.inUse.${reason}`) : undefined}
+        onClick={() => actions.onDelete(r)}
+      >
+        {L(t, "deleteButton")}
+      </Button>
+    </>
+  );
+}
+
 function actionsColumn(t: TFunction, o: Opts): Column<Row> {
-  const { templates, canWrite, canRun, actions } = o;
+  const { templates, canWrite, canRun, actions, library } = o;
   return {
     id: "actions",
     header: <span className="sr-only">{t("common.actions")}</span>,
@@ -92,21 +141,32 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
             {L(t, "run.button")}
           </Button>
         )}
-        {canWrite ? (
-          <>
-            <Button size="sm" variant="ghost" asChild>
-              <Link to="/processes/$processId" params={{ processId: r.id }}>
-                {L(t, "edit")}
-              </Link>
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => actions.onDelete(r)}>
-              {L(t, "deleteButton")}
-            </Button>
-          </>
-        ) : null}
+        {canWrite ? <WriteActions t={t} r={r} library={library} actions={actions} /> : null}
       </span>
     ),
   };
+}
+
+/** CR-105 · cột thư viện: "Dùng cho" (khe) + "Tenant đang dùng" (số tenant gán; mặc định áp cho tenant chưa gán). */
+function libraryColumns(t: TFunction): Column<Row>[] {
+  return [
+    {
+      id: "slot",
+      header: t("process.admin.library.col.usedFor"),
+      cell: (r) => r.slot_label ?? r.slot ?? "—",
+    },
+    {
+      id: "tenants",
+      header: t("process.admin.library.col.tenants"),
+      className: "text-right",
+      cell: (r) => {
+        const u = tenantUsage(r);
+        return u.isDefault
+          ? t("process.admin.library.col.tenantsDefault", { n: u.count })
+          : u.count;
+      },
+    },
+  ];
 }
 
 export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
@@ -124,6 +184,7 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
       className: "text-right",
     },
   ];
+  if (o.library) cols.push(...libraryColumns(t));
   if (!o.templates) {
     cols.push({
       id: "running",
@@ -143,10 +204,10 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
 
 export function ProcessesTable(p: Props) {
   const { t } = useTranslation();
-  const { templates, canWrite, canRun, actions } = p;
+  const { templates, canWrite, canRun, actions, library } = p;
   const columns = useMemo(
-    () => buildColumns(t, { templates, canWrite, canRun, actions }),
-    [t, templates, canWrite, canRun, actions],
+    () => buildColumns(t, { templates, canWrite, canRun, actions, library }),
+    [t, templates, canWrite, canRun, actions, library],
   );
   return (
     <DataTable

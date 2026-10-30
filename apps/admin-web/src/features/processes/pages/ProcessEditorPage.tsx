@@ -1,6 +1,5 @@
 // ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
 // (plan-frontend-admin §1, board ②). `processId` vắng ⇒ tạo mới. Mẫu + tenant_admin ⇒ chỉ xem + "Chép mẫu".
-import type { ProcessDef } from "@ai/contracts/hub-admin";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,6 +23,7 @@ import { InputsCard } from "../components/editor/InputsCard";
 import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
 import { SourcesCard } from "../components/editor/SourcesCard";
 import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
+import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
@@ -31,6 +31,7 @@ import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
 import { toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
+import type { LibraryDef } from "../library-api";
 
 export type ProcessEditorPageProps = { processId?: string };
 const FORM_ID = "process-form";
@@ -40,11 +41,13 @@ function useLoadedDef(processId: string | undefined, d: ReturnType<typeof useDra
   const q = useProcessDef(processId, tenant.tenantId);
   const [version, setVersion] = useState(1);
   const loaded = useRef<string | null>(null);
-  const data: ProcessDef | undefined = q.data;
+  // CR-105: quy trình thư viện (có khe) nạp lại bản nháp mỗi khi `version` đổi (Form/Hub biên dịch lại `stages`); loại khác nạp một lần.
+  const data: LibraryDef | undefined = q.data;
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp một lần cho mỗi quy trình; làm tươi nền không đè bản đang sửa
   useEffect(() => {
-    if (data && loaded.current !== data.id) {
-      loaded.current = data.id;
+    const key = data?.slot ? `${data.id}:${data.version}` : data?.id;
+    if (data && loaded.current !== key) {
+      loaded.current = key ?? null;
       d.load(toDraft(data));
       setVersion(data.version);
     }
@@ -76,6 +79,26 @@ function TemplateBanner({ id, tenantId }: { id: string; tenantId: string | undef
   );
 }
 
+/** CR-105 · tab Cấu hình: quy trình thư viện ⇒ thanh công cụ + Canvas|Form; còn lại ⇒ form cấu hình như cũ. */
+function ConfigTab(p: {
+  lib: LibraryDef | null;
+  canvasDirty: boolean;
+  formDirty: boolean;
+  onFormDirty: (dirty: boolean) => void;
+  config: React.ReactNode;
+}) {
+  if (!p.lib) return <>{p.config}</>;
+  return (
+    <LibraryEditorBody
+      def={p.lib}
+      canvasDirty={p.canvasDirty}
+      formDirty={p.formDirty}
+      onFormDirty={p.onFormDirty}
+      canvas={p.config}
+    />
+  );
+}
+
 function LoadFailure({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const status = error instanceof ApiError ? error.status : 0;
@@ -84,12 +107,22 @@ function LoadFailure({ error, onRetry }: { error: unknown; onRetry: () => void }
   return <HubLoadError message={t("process.common.error.load")} onRetry={onRetry} />;
 }
 
+/** CR-105 · def có khe + người xem là platform_admin ⇒ editor thư viện (Canvas|Form, xuất bản, gán…). */
+const libraryOf = (def: unknown, isPlatform: boolean): LibraryDef | null =>
+  isPlatform && (def as LibraryDef | undefined)?.slot ? (def as LibraryDef) : null;
+const isReadOnlyDef = (def: { is_template?: boolean } | undefined, isPlatform: boolean) =>
+  !!def?.is_template && !isPlatform;
+const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
+
 function Editor({ processId }: ProcessEditorPageProps) {
   const { t } = useTranslation();
   const d = useDraft();
   const { tenant, q, version, setVersion } = useLoadedDef(processId, d);
+  const [formDirty, setFormDirty] = useState(false);
   const refs = useEditorRefs(tenant.tenantId, tenant.ready);
+  const lib = libraryOf(q.data, tenant.isPlatform);
   const save = useDefSave({
+    extra: slotExtra(lib),
     id: processId,
     tenantId: tenant.tenantId,
     version,
@@ -101,7 +134,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
   const errors = withLiveErrors(d.draft, d.errors, refs.teamSections, refs.tools);
   const dv = { ...d, errors };
   const def = q.data;
-  const readOnly = !!def?.is_template && !tenant.isPlatform;
+  const readOnly = isReadOnlyDef(def, tenant.isPlatform);
   if (!hubConfigured()) return <HubNotConfigured />;
   if (processId !== undefined && q.isError)
     return <LoadFailure error={q.error} onRetry={() => void q.refetch()} />;
@@ -156,13 +189,21 @@ function Editor({ processId }: ProcessEditorPageProps) {
             <TabsTrigger value="config">{t("process.admin.editor.tab.config")}</TabsTrigger>
             <TabsTrigger value="runs">{t("process.admin.editor.tab.runs")}</TabsTrigger>
           </TabsList>
-          <TabsContent value="config">{config}</TabsContent>
+          <TabsContent value="config">
+            <ConfigTab
+              lib={lib}
+              canvasDirty={d.dirty}
+              formDirty={formDirty}
+              onFormDirty={setFormDirty}
+              config={config}
+            />
+          </TabsContent>
           <TabsContent value="runs">
             <EditorRunsTab processKey={def.key} tenantId={tenant.tenantId} />
           </TabsContent>
         </Tabs>
       )}
-      <UnsavedGuard dirty={d.dirty && !readOnly} />
+      <UnsavedGuard dirty={(d.dirty || formDirty) && !readOnly} />
       <LazyConflictDialog props={save.conflictProps} />
     </>
   );

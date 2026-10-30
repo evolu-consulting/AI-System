@@ -8,6 +8,8 @@ export type StageKeyCtx = {
   index: number;
   step: number;
   readOnly: boolean;
+  /** CR-105 · nút hệ thống: bỏ qua xoá/đổi thứ tự/đổi bước. */
+  locked?: boolean;
   ops: StageOps;
   /** Xin xoá (mở hộp xác nhận). */
   onRemove: (uid: string) => void;
@@ -26,7 +28,7 @@ export function onStageKeyDown(e: KeyboardEvent, c: StageKeyCtx): void {
   const action = stageKeyAction(e);
   if (!action || action === "open") return;
   e.preventDefault();
-  if (c.readOnly) return;
+  if (c.readOnly || c.locked) return;
   if (action === "remove") {
     c.onRemove(c.uid);
     return;
