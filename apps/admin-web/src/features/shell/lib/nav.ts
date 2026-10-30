@@ -15,8 +15,6 @@ export type NavId =
   | "workflows"
   | "processes"
   | "sources"
-  | "workflowSteps"
-  | "workflowProcess"
   | "groups"
   | "access"
   | "secrets"
@@ -39,7 +37,6 @@ type NavTo =
   | "/workflows"
   | "/processes"
   | "/sources"
-  | "/workflows/steps"
   | "/secrets"
   | "/apps"
   | "/usage"
@@ -50,8 +47,6 @@ type NavTo =
 export type NavItem = {
   id: NavId;
   to: NavTo;
-  /** DLC-R15 · mục có menu con sổ xuống (Workflows → Workflow Steps · Workflow Process). */
-  children?: NavItem[];
   labelKey:
     | "nav.overview"
     | "nav.agents"
@@ -63,8 +58,6 @@ export type NavItem = {
     | "nav.workflows"
     | "nav.processes"
     | "nav.sources"
-    | "nav.workflowSteps"
-    | "nav.workflowProcess"
     | "nav.groups"
     | "nav.access"
     | "nav.secrets"
@@ -93,13 +86,7 @@ const PARTNERS = item("partners", "/partners");
 const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
-// DLC-R15 · Workflows sổ xuống: Steps (các bước AI SDLC) · Process (danh sách flow Dify + flow AI SDLC).
-const WORKFLOWS: NavItem = {
-  ...item("workflows", "/workflows"),
-  children: [item("workflowSteps", "/workflows/steps"), item("workflowProcess", "/workflows")],
-};
-// Cờ đóng băng off: chỉ danh mục Workflow Dify, không có menu con của engine quy trình.
-const WORKFLOWS_CATALOG = item("workflows", "/workflows");
+const WORKFLOWS = item("workflows", "/workflows");
 const PROCESSES = item("processes", "/processes");
 const SOURCES = item("sources", "/sources");
 const GROUPS = item("groups", "/groups");
@@ -116,15 +103,15 @@ const SYSTEM = item("system", "/system");
 /** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
 export type NavOptions = {
   processes?: boolean;
-  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Transfer, Quy trình, Nguồn, Workflow Steps; Commands + danh mục Workflows luôn hiện). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
+  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Transfer, Quy trình, Nguồn; Commands + danh mục Workflows luôn hiện). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
   frozen?: boolean;
 };
 
 /** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
-// dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng; chỉ /workflows/steps (engine AI SDLC) bị gate.
+// dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng.
 // CR-103 · `/processes*` KHÔNG còn gate theo cờ build: Hub quyết lúc chạy (`HUB_PROCESS_ROUTES=admin` ⇒ dò `/process-defs` 200);
 // `ProcessRouteGate` vẽ NotFound khi Hub báo off. `/sources` vẫn đóng băng (Hub không mount nguồn ở chế độ admin).
-const FROZEN_PREFIXES = ["/workflows/steps", "/transfer", "/sources"];
+const FROZEN_PREFIXES = ["/transfer", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -138,13 +125,7 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       { labelKey: null, items: [OVERVIEW] },
       {
         labelKey: "nav.group.features",
-        items: [
-          AGENTS,
-          FEATURES,
-          APPS,
-          ...(on ? [COMMANDS, WORKFLOWS] : [COMMANDS, WORKFLOWS_CATALOG]),
-          ...proc,
-        ],
+        items: [AGENTS, FEATURES, APPS, COMMANDS, WORKFLOWS, ...proc],
       },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, PARTNERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
@@ -217,10 +198,6 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/system": [{ labelKey: "nav.system" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/feedback": [{ labelKey: "nav.feedback" }],
-  "/workflows/steps": [
-    { labelKey: "nav.workflows", to: "/workflows" },
-    { labelKey: "nav.workflowSteps" },
-  ],
   "/tenants": [{ labelKey: "nav.tenants" }],
   "/tenants/new": [{ labelKey: "nav.tenants", to: "/tenants" }, { labelKey: "tenants.new.title" }],
 };

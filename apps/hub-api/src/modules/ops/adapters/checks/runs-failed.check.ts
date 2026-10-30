@@ -42,7 +42,7 @@ export function evaluateRunsFailed(a: RunsAgg, warnPct: number, critCount: numbe
   };
 }
 
-/** Một câu, hai nhánh dùng chỉ mục (`runs_started_at_idx`, `runs_exhausted_finished_idx` — migration 0065); không `OR` để tránh quét toàn bảng. */
+/** Một câu, hai nhánh dùng chỉ mục (`runs_started_at_idx`, `runs_exhausted_finished_idx` — migration hub 0066_ops_indexes); không `OR` để tránh quét toàn bảng. */
 export const runsAggQuery = (h: string, m: string) => sql`
   select t.total, t.failed,
     (select count(*) from hub.runs where status = 'failed' and error_code = 'ALL_PROVIDERS_EXHAUSTED'

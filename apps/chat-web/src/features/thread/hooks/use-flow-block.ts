@@ -4,7 +4,6 @@ import { deriveTitle, type Flow } from "@ai/contracts/chat";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useIsDlcConversation } from "~/features/dlc/hooks/use-dlc";
 import { useRunByKey, useRunStream } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
 import { isRunActive, type RunState } from "~/features/run/lib/reducer";
@@ -21,7 +20,6 @@ export function useFlowBlock(convId: string, flow: Flow, openFlowId?: string): F
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const { dismiss } = useSend();
-  const dlc = useIsDlcConversation(convId);
   const first = flow.preview.answer === null;
   const run = useRunStream({
     convId,
@@ -61,7 +59,6 @@ export function useFlowBlock(convId: string, flow: Flow, openFlowId?: string): F
       busy: live && !inBlock,
       onReply: () =>
         void navigate({ to: "/c/$id", params: { id: convId }, search: { flow: flow.id } }),
-      ...(dlc ? { processConvId: convId } : {}),
     },
   };
 }

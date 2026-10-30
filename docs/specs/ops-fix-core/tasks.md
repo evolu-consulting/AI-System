@@ -3,11 +3,11 @@ id: ops-fix-core
 lát: ops-fix-core
 cr: CR-104
 làn: đầy đủ (trạng thái/idempotency)
-migration: hub 0066
+migration: hub 0067 (trước là 0066)
 phụ thuộc: ops-core, ops-checks
 ---
 ## Plan (ngắn)
-Sửa 4 lỗi review phần lõi ops-watch (TB-1, Thấp 2–4) trong `apps/hub-api/src/modules/ops` (repo/round/rules) + migration hub 0066.
+Sửa 4 lỗi review phần lõi ops-watch (TB-1, Thấp 2–4) trong `apps/hub-api/src/modules/ops` (repo/round/rules) + migration hub 0067 (`0067_ops_known_status`, trước 0066).
 
 ## Làm
 - [x] TB-1: cột `ops_checks.last_known_status/last_known_at` (trạng thái khác `unknown` gần nhất); chuông warn/crit/hồi phục so với nó,

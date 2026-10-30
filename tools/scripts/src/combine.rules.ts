@@ -65,6 +65,8 @@ export function buildCombineEnv(
       HUB_DEV_RUNTIME: "none",
       HUB_CORS_ORIGINS: [url("chat-web"), url("admin-web"), url("studio-web")].join(","),
       HUB_INTERNAL_TOKEN: token,
+      // dlc-dify · Hub xin access token thay user (hook agent / workflow có `user_token`).
+      HUB_ADMIN_API_URL: URLS.admin,
     },
     "dify-mock": { PORT: String(PORTS["dify-mock"]) },
     "chat-web": { HUB_URL: URLS.hub, AUTH_URL: URLS.admin },

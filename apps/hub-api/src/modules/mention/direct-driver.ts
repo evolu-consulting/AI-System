@@ -73,7 +73,9 @@ export function directOutcome(o: JobOutcome, agentId: string, locale: "vi" | "en
   if (!r) return { kind: "failed", code: "UPSTREAM_ERROR" };
   if (r.status === "need_input") {
     const ask = { question: r.question, choices: r.choices };
-    return { kind: "finished", content: r.question, ask, agentId };
+    // dlc-dify · `text` (vd plan xin duyệt) hiện trước câu hỏi trong cùng tin trả lời.
+    const content = r.text ? `${r.text}\n\n${r.question}` : r.question;
+    return { kind: "finished", content, ask, agentId };
   }
   return { kind: "finished", content: finalOf(r, locale), agentId };
 }

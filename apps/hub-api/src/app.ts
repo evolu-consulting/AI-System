@@ -15,6 +15,7 @@ import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { mountDifyCredential, workflowJobs } from "./app.async";
 import type { AppDeps, HealthProbe } from "./app.deps";
+import { mountDlcDify } from "./app.dlc";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
@@ -42,8 +43,6 @@ import { CHAT_GATED_PREFIXES } from "./modules/chat-gate/chat-gate.rules";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
-import { dlcRoutes } from "./modules/dlc/dlc.routes";
-import { dlcAdminRoutes } from "./modules/dlc/dlc-admin.routes";
 import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
@@ -98,7 +97,6 @@ const PROTECTED_PREFIXES = [
   "/agent-grants",
   "/agent-settings",
   "/studio/api",
-  "/dlc",
   PACK_PREFIX,
   NOTIFICATIONS_PREFIX,
   OPS_PREFIX,
@@ -213,12 +211,7 @@ function processHooks(
 
 /** Route chỉ cần `db` (+ `config` nếu có): phòng X2a, lệnh/`@`, quyền agent, trace, nguồn. Trả phần cần cho vòng run. */
 function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: ConfigCache) {
-  // DLC-R11 · Workspaces/Process (AI SDLC) — chỉ cần db; engine vắng ⇒ route trả engine: not_configured.
   const frozenOn = deps.frozenModules !== false; // F1 (CR-095): false ⇒ không mount route công khai module đóng băng
-  if (frozenOn) {
-    app.route("/dlc", dlcRoutes(deps.db, deps.dlc));
-    app.route("/dlc", dlcAdminRoutes(deps.db, deps.dlc));
-  }
   const { redis, pingMs, signal } = deps;
   const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal, rooms: frozenOn });
   const drivers = commandDrivers(deps, deps.db);
@@ -304,6 +297,13 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     context: contextLabelerOf(deps.packTools), // one-agent · nhãn bản ghi đang xem (RLS gói)
   };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
+  // dlc-dify · node Dify gọi agent (vé flow, không JWT) và chờ kết quả; sinh agent domain/QC.
+  mountDlcDify(app, {
+    ...base,
+    runs,
+    prepareMention: h2b.prepareMention,
+    packTools: deps.packTools,
+  });
   app.route("/runs", runRoutes(runs));
   app.route("/runs", cancelRoutes(cancel));
   startRunLoops({ ...base, registry: runs.registry });

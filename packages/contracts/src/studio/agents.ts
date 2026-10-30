@@ -37,6 +37,11 @@ const CliOptionsSchema = z.strictObject({
   max_turns: z.number().int().min(2).max(100).optional(),
   /** M2-chat · tool gói (registry N2, vd `contracts-search`) agent được gọi qua `/mcp`; `/mcp` vẫn kiểm quyền người gọi. */
   pack_tools: PackToolsSchema,
+  /** dlc-dify · project persona của agent trong KH (hook SessionStart đọc); vắng ⇒ `agent-<key>`. */
+  persona_project: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9_-]{1,79}$/)
+    .optional(),
 });
 const PythonOptionsSchema = z
   .record(z.string(), z.unknown())
@@ -157,6 +162,41 @@ export const OrchestratorOfSchema = z.strictObject({
   tenant_ids: z.array(UuidSchema),
 });
 
+/** dlc-dify · loại hook của agent — cùng tên sự kiện hook của Claude CLI. */
+export const AGENT_HOOK_EVENTS = [
+  "SessionStart",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PostToolUse",
+  "Stop",
+  "SubagentStop",
+  "PreCompact",
+  "PostCompact",
+  "Notification",
+  "SessionEnd",
+] as const;
+export const AgentHookEventSchema = z.enum(AGENT_HOOK_EVENTS);
+export type AgentHookEvent = z.infer<typeof AgentHookEventSchema>;
+
+/** dlc-dify · một hook: sự kiện → workflow Dify (catalog Admin, app `workflow`). */
+export const AgentHookSchema = z.strictObject({
+  event: AgentHookEventSchema,
+  workflow_id: UuidSchema,
+});
+export type AgentHook = z.infer<typeof AgentHookSchema>;
+
+/** dlc-dify · `PUT /studio/api/agents/:id/hooks`: thay toàn bộ hook (mỗi sự kiện ≤ 1 workflow), khoá theo `version`. */
+export const AgentHooksRequestSchema = z
+  .strictObject({
+    hooks: z.array(AgentHookSchema).max(AGENT_HOOK_EVENTS.length),
+    version: Version,
+  })
+  .refine((b) => new Set(b.hooks.map((h) => h.event)).size === b.hooks.length, {
+    message: "hooks: mỗi sự kiện tối đa một workflow",
+    path: ["hooks"],
+  });
+export type AgentHooksRequest = z.infer<typeof AgentHooksRequestSchema>;
+
 export const AgentSchema = z.strictObject({
   id: UuidSchema,
   key: z.string(),
@@ -191,6 +231,8 @@ export const AgentSchema = z.strictObject({
   warnings: z.array(AgentWarningSchema),
   /** K1 · kết nối KH đã tick, theo thứ tự (≤ 5). Vắng ở bản trước K1 (T5d luôn trả). */
   knowledge_connection_ids: z.array(UuidSchema).max(5).optional(),
+  /** dlc-dify · hook đã cấu hình (sự kiện → workflow). Vắng ở bản trước dlc-dify. */
+  hooks: z.array(AgentHookSchema).max(AGENT_HOOK_EVENTS.length).optional(),
 });
 export type Agent = z.infer<typeof AgentSchema>;
 

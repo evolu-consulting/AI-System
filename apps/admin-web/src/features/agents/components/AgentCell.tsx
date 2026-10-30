@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";
 import { cn } from "@/lib/utils";
-import { initials, isActive, isDlcRole } from "../lib/agents";
+import { initials, isActive } from "../lib/agents";
 import { NoMatchSelect } from "./NoMatchSelect";
 
 type Props = {
@@ -21,7 +21,7 @@ export function AgentCell({ item, items, defaults, busy, onNoMatch }: Props) {
   const name = pickLocalized(item.agent.name, i18n.language);
   const isDefault = defaults?.default_agent_id === item.agent.id;
   return (
-    <div className={cn("flex min-w-0 items-start gap-3", isDlcRole(item) && "pl-8")}>
+    <div className="flex min-w-0 items-start gap-3">
       <span
         aria-hidden
         className={cn(
@@ -35,12 +35,6 @@ export function AgentCell({ item, items, defaults, busy, onNoMatch }: Props) {
         <span className="flex flex-wrap items-center gap-1.5 font-medium">
           {name}
           {isDefault ? <StatusBadge tone="info">{t("agents.badge.default")}</StatusBadge> : null}
-          {item.dlc?.kind === "supervisor" ? (
-            <StatusBadge tone="info">{t("agents.dlc.supervisor")}</StatusBadge>
-          ) : null}
-          {item.dlc && item.dlc.kind !== "supervisor" ? (
-            <StatusBadge tone="off">{t(`agents.dlc.kind.${item.dlc.kind}`)}</StatusBadge>
-          ) : null}
           {item.is_orchestrator ? (
             <StatusBadge tone="warn">{t("agents.badge.orchestrator")}</StatusBadge>
           ) : null}

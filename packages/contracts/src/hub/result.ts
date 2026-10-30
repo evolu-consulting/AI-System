@@ -22,6 +22,8 @@ export const AgentResultSchema = z.discriminatedUnion("status", [
     status: z.literal("need_input"),
     question: AskQuestionSchema,
     choices: AskChoicesSchema,
+    /** dlc-dify · nội dung trình bày TRƯỚC câu hỏi (vd plan / test case xin duyệt); vắng = chỉ câu hỏi như cũ. */
+    text: TextSchema.optional(),
   }),
 ]);
 export type AgentResult = z.infer<typeof AgentResultSchema>;

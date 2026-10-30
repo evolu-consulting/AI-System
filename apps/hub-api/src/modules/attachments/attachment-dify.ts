@@ -6,7 +6,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { type DifyUploadResult, uploadDifyFile } from "../dify/dify-upload";
 import { difyFileType } from "./attachment.rules";
-import { fileAvailable } from "./attachments.repo";
+import { availableFile } from "./attachments.repo";
 import type { RunFile } from "./run-files.rules";
 import { type AttachmentStorage, storageKey, storageLocatorOf } from "./storage";
 
@@ -69,17 +69,22 @@ export async function uploadToDify(
   signal: AbortSignal,
 ): Promise<AttachmentUpload> {
   const { db } = d;
+  let fb = {
+    fileboxFileId: f.file.fileboxFileId ?? null,
+    fileboxVersionId: f.file.fileboxVersionId ?? null,
+  };
   if (db) {
-    const ok = await withHubScope(db, { kind: "system" }, (tx) =>
-      fileAvailable(tx, f.tenantId, f.file.id),
+    const row = await withHubScope(db, { kind: "system" }, (tx) =>
+      availableFile(tx, f.tenantId, f.file.id),
     );
-    if (!ok) throw new AttachmentUnavailable(f.file.id);
+    if (!row) throw new AttachmentUnavailable(f.file.id);
+    if (fb.fileboxFileId === null) fb = row;
   }
   // FB1 (HUB-FR-139): đọc bytes INLINE qua locator (local = `tenant/id`, FileBox = `fb/<file_id>` → `GET /content`).
   const locator = storageLocatorOf({
     storage_key: storageKey(f.tenantId, f.file.id),
-    filebox_file_id: f.file.fileboxFileId ?? null,
-    filebox_version_id: f.file.fileboxVersionId ?? null,
+    filebox_file_id: fb.fileboxFileId,
+    filebox_version_id: fb.fileboxVersionId,
   });
   const blob = d.storage ? await d.storage.blob(locator, f.file.mime) : null;
   if (!blob) throw new AttachmentContentMissing(f.file.id);

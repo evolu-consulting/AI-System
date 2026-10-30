@@ -3,7 +3,7 @@ id: ops-core
 lát: ops-core
 cr: CR-104
 làn: đầy đủ (trạng thái/idempotency/quyền)
-migration: hub 0064
+migration: hub 0065 (trước là 0064, đổi số sau sự cố 2026-10-30)
 phụ thuộc:
 ---
 ## Plan (ngắn)
@@ -11,7 +11,7 @@ Phần lõi O1 của `docs/specs/ops-watch` (CR-104): bảng + cấu hình + reg
 platform_admin + route `/ops/*`. Check thật (O2), UI (O3), script host (O4) làm sau.
 
 ## Làm
-- [x] Migration hub `0064_ops_watch.sql` (journal `when` 1798900000000): `hub.ops_settings` (1 dòng jsonb + `last_round_at`/`last_manual_at`),
+- [x] Migration hub `0065_ops_watch.sql` (trước `0064_ops_watch`; journal `when` 1798950000000, idx 63): `hub.ops_settings` (1 dòng jsonb + `last_round_at`/`last_manual_at`),
   `hub.ops_checks`, `hub.ops_events`; không tenant_id, không RLS (như `kh_connections`), chỉ `hub_rw`; hàm DEFINER `notify.enqueue_ops`.
 - [x] Contract `@ai/contracts/hub-admin` `ops.ts`: `OpsStatus`, `OpsCheckKey` (8), `OPS_CHECK_META` (đơn vị/khoảng/thứ tự ngưỡng),
   `OpsSettingsSchema`, `OPS_DEFAULT_SETTINGS`, `opsSettingsFrom`, phản hồi status/settings, `OPS_ERRORS` (422/429).

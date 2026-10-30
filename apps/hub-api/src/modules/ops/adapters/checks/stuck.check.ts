@@ -20,7 +20,7 @@ export function evaluateStuck(a: StuckAgg, warn: number, crit: number): OpsCheck
   return { status: "ok", value, message: total === 0 ? "Không có job/run kẹt" : message };
 }
 
-/** Hai đếm con, mỗi đếm một chỉ mục từng phần (`jobs_orphaned_finished_idx`, `process_runs_running_expires_idx` — migration 0065). */
+/** Hai đếm con, mỗi đếm một chỉ mục từng phần (`jobs_orphaned_finished_idx`, `process_runs_running_expires_idx` — migration hub 0066_ops_indexes). */
 export const stuckQuery = (since: string, now: string) => sql`
   select
     (select count(*) from hub.jobs where error_reason = 'orphaned' and finished_at >= ${since}::timestamptz)::int as orphaned,

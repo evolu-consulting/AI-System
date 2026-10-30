@@ -24,6 +24,7 @@ export type EnvAppDeps = Required<
     AppDeps,
     | "secretMasterKey"
     | "internalToken"
+    | "adminApiUrl"
     | "publicInternalUrl"
     | "studioDist"
     | "processEngine"
@@ -71,6 +72,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     configPollS: env.HUB_CONFIG_POLL_S,
     secretMasterKey: env.SECRET_MASTER_KEY,
     internalToken: env.HUB_INTERNAL_TOKEN,
+    adminApiUrl: env.HUB_ADMIN_API_URL,
     publicInternalUrl: env.HUB_PUBLIC_INTERNAL_URL,
     difyTimeoutMaxS: env.HUB_DIFY_TIMEOUT_MAX_S,
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),

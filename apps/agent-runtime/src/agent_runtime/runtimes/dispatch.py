@@ -2,8 +2,6 @@
 §3.1): `agent.cli` → `CliJobHost` (process con), `workflow.async` → `DifyJobHost` (process cha).
 
 P-c1 (plan-runtime §5.1): `agent.cli` có `payload.autofix` → `AutofixHost` (ghép ở `main`).
-DLC-R01: `agent.cli` có `provider_key` thuộc `by_provider` (vd `dlc` → `DlcJobHost`, HTTP trong
-process cha) chọn host đó trước khi xét `type`.
 
 Type lạ/thiếu, hoặc type có host chưa bật (vd `workflow.async` khi `dify` ∉ `AGENT_RT_PROVIDERS`)
 → host mặc định (`CliJobHost`): validate `JobPayload1` thất bại → `failed`
@@ -41,17 +39,10 @@ class JobRouter:
         hosts: Mapping[str, TypedHost],
         default: TypedHost,
         autofix: TypedHost | None = None,
-        by_provider: Mapping[str, TypedHost] | None = None,
     ) -> None:
         self._hosts, self._default, self._autofix = dict(hosts), default, autofix
-        self._by_provider = dict(by_provider or {})
 
     def host_for(self, job: ClaimedJob) -> TypedHost:
-        provider = job.payload.get("provider_key")
-        if job.payload.get("type") == "agent.cli" and isinstance(provider, str):
-            host = self._by_provider.get(provider)
-            if host is not None:
-                return host
         kind = job.payload.get("type")
         if self._autofix is not None and kind == AUTOFIX_TYPE and job.payload.get("autofix"):
             return self._autofix  # P-c1: `AutofixHost` (sandbox None ⇒ `failed/container`)

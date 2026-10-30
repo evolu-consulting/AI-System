@@ -37,7 +37,7 @@ ngày: 2026-10-30
 ## Chia lát (Luật 0c)
 | Lát | Model | Nội dung |
 |---|---|---|
-| O1 `ops-core` | **Opus medium** | migration hub 0064 (`ops_checks`, `ops_events`, grant/RLS), registry check, vòng + chuyển trạng thái idempotent (nhiều instance), `notify.enqueue` tới platform admin, `GET /ops/status`, `POST /ops/check`, int test |
+| O1 `ops-core` | **Opus medium** | migration hub 0065 (trước 0064; `ops_checks`, `ops_events`, grant/RLS), registry check, vòng + chuyển trạng thái idempotent (nhiều instance), `notify.enqueue` tới platform admin, `GET /ops/status`, `POST /ops/check`, int test |
 | O2 `ops-checks` | Sonnet (sau O1) | 8 check theo bảng, đọc file trạng thái, TLS/HTTP với timeout, gợi ý sửa |
 | O3 `ops-ui` | Sonnet (song song O2) | trang `/system`, nav, chuông, Gói chẩn đoán, e2e |
 | O4 `ops-host` | Sonnet | `backup.sh` ghi trạng thái, script cron host, compose mount, README deploy |

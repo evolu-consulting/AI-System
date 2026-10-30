@@ -24,7 +24,12 @@ TOOL_PREFIX = f"mcp__{MCP_SERVER}__"
 MCP_DIR = ".mcp"
 # S3: CLI báo "timed out" + `notifications/cancelled` thay vì treo. Timeout tool Hub `/mcp` =
 # `min(agents.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)`; Runtime không đọc env Hub ⇒ trần = mặc định 300.
-HUB_TOOL_TIMEOUT_MAX_S = 300
+# dlc-dify: `AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S` nâng trần khi Hub đặt `HUB_DIFY_TIMEOUT_MAX_S` lớn
+# hơn (tool là quy trình Dify chạy lâu); vắng/sai ⇒ 300 như cũ.
+_TOOL_MAX_ENV = os.environ.get("AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S", "")
+HUB_TOOL_TIMEOUT_MAX_S = (
+    int(_TOOL_MAX_ENV) if _TOOL_MAX_ENV.isdigit() and int(_TOOL_MAX_ENV) >= 300 else 300
+)
 TOOL_TIMEOUT_MARGIN_S = 5
 MCP_BLOCK = (
     "\n\n# Công cụ Hub\nTool trả lỗi có `code: CONFIRMATION_REQUIRED` → dừng, không gọi lại tool, "

@@ -5,7 +5,6 @@ export { type GrantSubject, GrantSubjectSchema } from "../grants";
 export { type GroupRef, GroupRefSchema } from "../groups";
 export * from "./agent-grants";
 export * from "./agent-settings";
-export * from "./dlc";
 export * from "./effective";
 export * from "./errors";
 export * from "./kh";

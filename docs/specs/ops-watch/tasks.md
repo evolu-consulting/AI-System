@@ -3,7 +3,7 @@ id: ops-watch
 lát: ops-watch
 cr: CR-104
 làn: đầy đủ (O1) / nhanh (O2–O4)
-migration: hub 0064
+migration: hub 0065–0067 (trước 0064–0066)
 phụ thuộc:
 ---
 ## Plan (ngắn)

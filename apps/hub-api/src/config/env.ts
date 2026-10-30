@@ -43,6 +43,9 @@ export const EnvSchema = z.object({
   HUB_SECRETS_KEY: z.string().optional(),
   // H2a plan §8: token dịch vụ của `/internal/test-run` (≥ 32 ký tự); vắng → route đó 503 `UNAVAILABLE`.
   HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
+  // dlc-dify · gốc admin-api cho Hub xin access token thay user (POST /internal/tokens, dùng HUB_INTERNAL_TOKEN): hook agent
+  // gọi KH bằng token của user. Vắng ⇒ hook chạy với `user_token` rỗng.
+  HUB_ADMIN_API_URL: z.url({ protocol: /^https?$/ }).optional(),
   // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent. Mặc định chỉ ở development/test
   // (`loadEnv`); môi trường khác vắng → MCP tắt (payload `mcp=null`) — REVIEW 1 Hub #10.
   HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).optional(),
@@ -63,13 +66,6 @@ export const EnvSchema = z.object({
   FILEBOX_TIMEOUT_MS: z.string().optional(),
   FILEBOX_HTTP_HOSTS: z.string().optional(), // FileBox riêng nội bộ: host (tên service Docker) được dùng http
   FILEBOX_PUBLIC_PATH: z.string().optional(), // tiền tố công khai cho link tải (nginx proxy tới FileBox nội bộ)
-  // DLC-R11 · engine AI SDLC (agent `dlc`) cho `/dlc/*` (sidebar Workspaces, modal Process). Vắng URL ⇒ `engine:
-  // not_configured`. Client Keycloak (client_credentials) tuỳ chọn, đặt đủ ba biến; CA = PEM của Keycloak tự ký.
-  HUB_DLC_URL: z.url({ protocol: /^https?$/ }).optional(),
-  HUB_DLC_TOKEN_URL: z.url({ protocol: /^https?$/ }).optional(),
-  HUB_DLC_CLIENT_ID: z.string().min(1).optional(),
-  HUB_DLC_CLIENT_SECRET: z.string().min(1).optional(),
-  HUB_DLC_CA_FILE: z.string().optional(),
   // H4a plan §9 · bản build Studio (đường dẫn tuyệt đối); thiếu `index.html` ⇒ warn `studio-dist-missing`, không mount.
   HUB_STUDIO_DIST: z
     .string()
@@ -78,7 +74,7 @@ export const EnvSchema = z.object({
   // P-a D15 · cờ Process Engine: `off` (mặc định) ⇒ không mount route quy trình, `!` là chữ thường. Dev bật ở F6.
   HUB_PROCESS_ENGINE: z.enum(["on", "off"]).default("off"),
   // F1 (CR-095) · cờ module đóng băng (docs/platform/modules.md): `off` (mặc định) ⇒ không mount route công khai của quy trình,
-  // phòng, nguồn, KH, DLC; engine quy trình vẫn chạy nội bộ khi `HUB_PROCESS_ENGINE=on` (gói hợp đồng dùng). Dev/test bật.
+  // phòng, nguồn, KH; engine quy trình vẫn chạy nội bộ khi `HUB_PROCESS_ENGINE=on` (gói hợp đồng dùng). Dev/test bật.
   HUB_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),
   // CR-103 · route công khai quy trình: off | admin (chỉ editor/lượt chạy cho tenant_admin/platform_admin — admin-web; chat-web vẫn
   // đóng băng) | all. Vắng ⇒ theo HUB_FROZEN_MODULES (on ⇒ all, off ⇒ off). Prod muốn editor quy trình ⇒ `admin`.

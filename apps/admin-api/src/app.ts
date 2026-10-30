@@ -37,6 +37,7 @@ import { trelloConfigRoutes } from "./modules/feedback/trello-config.routes";
 import { grantsRoutes } from "./modules/grants/grants.routes";
 import { groupsRoutes } from "./modules/groups/groups.routes";
 import { healthRoutes } from "./modules/health/health.routes";
+import { internalTokensRoutes } from "./modules/internal-tokens/internal-tokens.routes";
 import { orgRoutes } from "./modules/org/org.routes";
 import { overviewRoutes } from "./modules/overview/overview.routes";
 import { packsRoutes } from "./modules/packs/packs.routes";
@@ -73,6 +74,8 @@ export type AppDeps = {
   hub?: HubConfig;
   /** F1 (CR-095) · `false` ⇒ không mount `/admin/{workflows,commands,export,import}` + workflow-tools (đóng băng). Vắng ⇒ mount (test in-process); `server.ts` điền từ `ADMIN_FROZEN_MODULES` (mặc định off). */
   frozenModules?: boolean;
+  /** dlc-dify · = `HUB_INTERNAL_TOKEN`; có ⇒ mount `POST /internal/tokens` (Hub xin access token thay user). */
+  internalToken?: string;
   /** dify-workflows · gốc Dify console (`DIFY_CONSOLE_URL`) để dựng link "Mở trong Dify"; vắng ⇒ nút ẩn. */
   difyConsoleUrl?: string;
   /** feedback · đẩy góp ý sang Trello (`TRELLO_*`); vắng ⇒ chỉ lưu trong app. */
@@ -191,6 +194,11 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
     app.route("/admin/import", importRoutes({ ...qctx, secretKey: deps.secretKey, hooks }));
   }
   app.route("/admin/audit", auditRoutes({ ...qctx, hooks }));
+  if (deps.internalToken)
+    app.route(
+      "/internal",
+      internalTokensRoutes({ db: deps.db, keys: deps.keys, token: deps.internalToken }),
+    );
   app.route("/admin", usageRoutes(ctx));
   app.route("/admin", usageAnalyticsRoutes(ctx)); // ADM-FR-42 · usage-analytics
   app.route("/admin", overviewRoutes(qctx));

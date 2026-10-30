@@ -15,6 +15,7 @@ import { useAgentPeers } from "../../hooks/use-agent-peers";
 import { useEditorCatalogs } from "../../hooks/use-editor-catalogs";
 import type { AgentDraft } from "../../lib/draft/draft";
 import { AccessSection } from "../sections/AccessSection";
+import { AgentHooksSection } from "../sections/AgentHooksSection";
 import { AgentKnowledgeSection } from "../sections/AgentKnowledgeSection";
 import { DetailsSection } from "../sections/DetailsSection";
 import { PromptSection } from "../sections/PromptSection";
@@ -90,6 +91,14 @@ export function EditorForm({ initial, agent }: Props) {
       </StepCard>
       {agent ? (
         <AgentKnowledgeSection agent={agent} version={ed.base.version} onSynced={ed.syncVersion} />
+      ) : null}
+      {agent ? (
+        <AgentHooksSection
+          agent={agent}
+          version={ed.base.version}
+          onSynced={ed.syncVersion}
+          workflows={cat.workflows}
+        />
       ) : null}
       <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-3">
         {ed.dirty ? <Badge variant="secondary">{t("editor.dirty")}</Badge> : null}

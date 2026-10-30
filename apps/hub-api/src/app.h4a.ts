@@ -1,12 +1,15 @@
 // HUB-FR-72 · H4a-R01 · plan P3, P4, P12 · route H4a của hub-api (mẫu `app.h3b.ts`): tách khỏi `app.ts` để giữ ≤ 250 dòng.
 // `/studio/api` nằm trong `PROTECTED_PREFIXES` của `app.ts` (JWT ở gốc) ⇒ thứ tự 401 → 403 (`requirePlatformAdmin`) →
 // 400/404, kể cả route chưa mount. Phần tĩnh `/studio` (P12) đăng ký sau route API.
+
 import type { Env, Hono } from "hono";
 import type { KhConfig } from "./config/env";
 import { requirePlatformAdmin } from "./lib/admin-role.middleware";
 import type { Db } from "./lib/db";
 import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
+import { agentHooksRoutes } from "./modules/agent-hooks/hooks.routes";
+import { AgentHooksService } from "./modules/agent-hooks/hooks.service";
 import { AgentSettingsService } from "./modules/agent-settings/agent-settings.service";
 import { type KhRuntime, khRuntime, mountKh } from "./modules/kh/kh.mount";
 import type { SecretKey } from "./modules/secrets/secrets.crypto";
@@ -64,6 +67,8 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
       STUDIO_API,
       agentRoutes(new AgentsService({ db: deps.db, audit, packTools: deps.packTools })),
     );
+    // dlc-dify · `PUT /agents/:id/hooks` (tab Hook của Sửa agent).
+    app.route(STUDIO_API, agentHooksRoutes(new AgentHooksService({ db: deps.db, audit })));
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
     // H4b-2 · Models: provider (B3, B4), model profile (B5). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
     const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };

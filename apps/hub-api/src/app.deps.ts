@@ -4,7 +4,6 @@ import type { Db } from "./lib/db";
 import type { HubAuditWriter } from "./lib/hub-audit";
 import type { Redis } from "./lib/redis";
 import type { AttachmentDeps } from "./modules/attachments/storage";
-import type { DlcEngine } from "./modules/dlc/dlc.engine";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
 import type { OpsDeps } from "./modules/ops/ops.mount";
 import type { PacksDeps } from "./modules/packs/packs.mount";
@@ -43,6 +42,8 @@ export type AppDeps = {
   sleep?: (ms: number) => Promise<void>;
   /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
   internalToken?: string;
+  /** dlc-dify · = `HUB_ADMIN_API_URL` (Hub xin access token thay user cho hook agent). */
+  adminApiUrl?: string;
   /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */
   publicInternalUrl?: string;
   /** H2a · = `HUB_DIFY_TIMEOUT_MAX_S` (mặc định 300). */
@@ -62,7 +63,7 @@ export type AppDeps = {
   processEngine?: boolean;
   /**
    * F1 (CR-095) · module đóng băng (docs/platform/modules.md): `false` ⇒ KHÔNG mount route công khai của quy trình, phòng (`/rooms`), nguồn,
-   * KH (`/studio/api/kh*`) và `/dlc`; engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process
+   * KH (`/studio/api/kh*`); engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process
    * giữ nguyên); `server.ts` luôn điền từ `HUB_FROZEN_MODULES` (mặc định off).
    */
   frozenModules?: boolean;
@@ -75,8 +76,6 @@ export type AppDeps = {
   sourceCheckTimeoutMs?: number;
   /** K1 G1 · = `khConfigOf(env)` (server điền); vắng ⇒ không origin KH nào được phép. */
   kh?: KhConfig;
-  /** DLC-R11 · engine AI SDLC (`HUB_DLC_*`, server dựng). Vắng ⇒ `/dlc/*` trả `engine: not_configured`. */
-  dlc?: DlcEngine;
   /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
   packs?: PacksDeps;
   /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */

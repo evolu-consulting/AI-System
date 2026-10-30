@@ -128,6 +128,7 @@ async function main(): Promise<void> {
         env.ADMIN_HUB_URL && env.HUB_INTERNAL_TOKEN
           ? { url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }
           : undefined,
+      internalToken: env.HUB_INTERNAL_TOKEN,
     },
   );
   const server = Bun.serve({ port: env.PORT, fetch: app.fetch });

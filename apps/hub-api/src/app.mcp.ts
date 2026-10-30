@@ -4,10 +4,13 @@ import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
+import { userTokens } from "./modules/agent-hooks/user-token";
 import type { AttachmentStorage } from "./modules/attachments/storage";
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
+import { hiddenInputsFor } from "./modules/dify-calls/hidden-inputs";
+import { flowTickets } from "./modules/dify-calls/tickets";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { KhQueryService } from "./modules/kh/kh.query.service";
 import { DifyWorkflowInvoker, type WorkflowInvoker } from "./modules/mcp/adapters/workflow-invoker";
@@ -58,6 +61,9 @@ export type McpMountDeps = {
   packTools?: PackToolCatalog;
   /** M2-chat · kho token chat ngắn hạn (Dify gọi `/mcp`); vắng ⇒ chỉ token job. */
   redis?: Redis;
+  /** dlc-dify · admin-api + token dịch vụ (biến ẩn `user_token` của workflow). */
+  adminApiUrl?: string;
+  internalToken?: string;
 };
 
 /** M2-chat · token tool chat ngắn hạn (Redis + registry tool gói) — dùng chung cho `/mcp` (tra) và runner Dify (cấp). */
@@ -80,6 +86,14 @@ export function createWorkflowInvoker(d: Omit<McpMountDeps, "kh" | "packTools">)
     difyTimeoutMaxS: d.difyTimeoutMaxS ?? DEFAULT_DIFY_TIMEOUT_MAX_S,
     log: d.log,
     storage: d.attachments?.storage ?? null,
+    // dlc-dify · `hub_ticket` (vé gọi ngược `/dify/agent-calls`) + `user_token` cho workflow khai báo (cần Redis).
+    ...(d.redis && {
+      hiddenInputs: hiddenInputsFor({
+        db: d.db,
+        tickets: flowTickets(d.redis),
+        tokens: userTokens({ adminUrl: d.adminApiUrl, internalToken: d.internalToken, log: d.log }),
+      }),
+    }),
   });
 }
 

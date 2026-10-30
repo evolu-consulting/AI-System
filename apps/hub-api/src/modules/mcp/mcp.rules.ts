@@ -89,6 +89,17 @@ const fileProperty = (i: WorkflowInput): JsonSchemaProperty => ({
 });
 
 /** H2c P12 · `withFiles` → input `file` = chuỗi tên file trong `attachments/` (plan-rules §5); vắng → H2a. */
+/**
+ * dlc-dify · biến Hub tự điền khi gọi workflow (vé gọi ngược + token user — `WorkflowInvokerDeps.hiddenInputs`): không lộ
+ * trong schema tool của model, model có gửi cũng bỏ.
+ */
+export const HUB_RESERVED_INPUTS: ReadonlySet<string> = new Set([
+  "hub_ticket",
+  "user_token",
+  "hub_conversation_id",
+  "hub_async",
+]);
+
 export function toolInputSchema(
   inputs: readonly WorkflowInput[],
   withFiles = false,
@@ -96,6 +107,7 @@ export function toolInputSchema(
   const properties: Record<string, JsonSchemaProperty> = {};
   const required: string[] = [];
   for (const i of inputs) {
+    if (HUB_RESERVED_INPUTS.has(i.name)) continue;
     const p = withFiles && i.type === "file" ? fileProperty(i) : propertyOf(i);
     if (!p) continue;
     properties[i.name] = p;
@@ -160,6 +172,7 @@ export function validateToolArgs(inputs: readonly WorkflowInput[], args: unknown
   if (!isObj(args)) return { ok: false };
   const out: Record<string, WorkflowInputValue> = {};
   for (const i of inputs) {
+    if (HUB_RESERVED_INPUTS.has(i.name)) continue;
     const raw = args[i.name];
     if (raw === undefined || raw === null) {
       if (i.required) return { ok: false };

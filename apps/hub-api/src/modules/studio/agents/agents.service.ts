@@ -20,6 +20,7 @@ import {
   type AgentListFilter,
   agentAccessCounts,
   agentHasHistory,
+  agentHooks,
   agentKhIds,
   agentWorkflowIds,
   deleteAgent,
@@ -148,6 +149,7 @@ export async function agentDetail(tx: Tx, row: AgentDbRow): Promise<Agent> {
     scopes: await orchScopes(tx, row.id),
     similar: similarAgents(row, others),
     knowledgeIds: await agentKhIds(tx, row.id),
+    hooks: await agentHooks(tx, row.id),
   });
 }
 
