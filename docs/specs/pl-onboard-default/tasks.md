@@ -1,32 +1,23 @@
 ---
 id: pl-onboard-default
 lát: pl-onboard-default
-cr:
+cr: CR-105
 làn: nhanh
 migration: không
-phụ thuộc:
+phụ thuộc: L2a pl-library-api (API gán); int test chờ L2a
 ---
 ## Plan (ngắn)
-
-## Làm
-
-## Không làm / Chạm
-
-## Test tối thiểu
+Yaml tenant thêm `approval_process: <key>` (tuỳ chọn). Sau `enablePack('contracts')` gán khe `contracts.approval` qua `ProcessAssignPort`
+(adapter HTTP `adapters/hub-assign.adapter.ts`). Lỗi (không có, chưa xuất bản, thiếu Group, không có gói) ⇒ `approval.error`, tenant vẫn tạo.
+Không có trường ⇒ không làm gì (tenant chạy mặc định).
 
 ## Quyết định trong lúc làm
+- 2026-10-31: env `ADMIN_HUB_URL` + `ONBOARD_HUB_ACCESS_TOKEN` cho adapter — tạm; security review cuối đợt xét lại.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Xoá khối mẫu dưới đây rồi điền thật (kiểm bằng `bun run openspec:check`). Lát không đổi hành vi: thay bằng
-một dòng `Không thay đổi hành vi (lý do: …)`.
-```
-### MODIFIED sht/chung-tu.md
-#### Yêu cầu: <tên>
-<mô tả hành vi mới>
-- Kịch bản: khi … thì … [test: <path test> » <tiêu đề test>]  (hoặc [test: thủ công — <lý do>])
-(### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
-```
+Không thay đổi hành vi (lý do: Delta của lát nằm trong `docs/specs/process-library/tasks.md` mục "Gán quy trình khi onboarding tenant").
 
 ## Việc còn lại
+- Bật int test `onboard-approval-process.int.test.ts` khi L2a merge; khớp shape list/assign với L2a.
