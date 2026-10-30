@@ -61,7 +61,7 @@ services:
         PUBLIC_CHAT_WEB_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
         PUBLIC_AUTH_URL: ""
         # sso-switch: app switcher (chat → contracts) + SSO dội về AI System (chat-web).
-        PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+        PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}
         PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
         # community-web dùng PUBLIC_SSO_URL ở trên; KHÔNG đặt PUBLIC_COMMUNITY_API (mặc định build = http → /pack/community/*).
         # feedback: phiên bản app tự gắn vào góp ý (deploy.ps1 đặt = commit).
@@ -70,7 +70,7 @@ services:
       HOME: /tmp
       # app-catalog: giá trị khởi tạo cho `admin.app_catalog` (chỉ điền hàng còn rỗng; sau đó sửa ở Admin → Ứng dụng).
       APP_URL_CHAT: ${S2_PUBLIC_CHAT_URL:-http://localhost:18433}
-      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-}
       APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
       APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
       APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
@@ -89,13 +89,13 @@ services:
       HUB_FAST_ROUTE: "on"
       # community: liên kết "Mở cộng đồng"/thông báo + nút "Mở SHT"; vòng tự lưu trữ/nhắc hết hạn (tắt: COMMUNITY_SWEEP=off).
       COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
-      CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
+      CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}
       COMMUNITY_SWEEP: ${COMMUNITY_SWEEP:-on}
       COMMUNITY_SWEEP_EVERY_MS: ${COMMUNITY_SWEEP_EVERY_MS:-60000}
       # CR-104 ops-watch: trạng thái backup/host do backup.sh + ops-host-status.sh ghi vào ./ops-status (gắn chỉ-đọc, KHÔNG gắn thư mục backup).
       HUB_OPS_WATCH: ${HUB_OPS_WATCH:-on}
       HUB_OPS_STATUS_DIR: /run/s2/ops
-      OPS_PUBLIC_URLS: "${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431},${S2_PUBLIC_CHAT_URL:-http://localhost:18433},${S2_PUBLIC_ADMIN_URL:-http://localhost:18432},${S2_PUBLIC_HUB_URL:-http://localhost:18434},${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}"
+      OPS_PUBLIC_URLS: "${OPS_PUBLIC_URLS:-}"
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro

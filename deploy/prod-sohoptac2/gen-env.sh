@@ -100,6 +100,8 @@ if [ "$MODE" != keep ]; then
     ORIG="$LOCAL"
   fi
   setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"; setkv S2_PUBLIC_COMMUNITY_URL "$U_CM"
+  # CR-104: hub tu kiem URL cong khai CHI o che do domain (tunnel/localhost la chinh container hub => khong kiem; de trong = "chua cau hinh").
+  if [ "$MODE" = domain ]; then setkv OPS_PUBLIC_URLS "$U_C,$U_CH,$U_A,$U_H,$U_CM"; else setkv OPS_PUBLIC_URLS ""; fi
   setkv CORS_ORIGINS "$ORIG"; setkv HUB_CORS_ORIGINS "$ORIG"; setkv ADMIN_WEB_URL "$U_A"; setkv HUB_NOTIFY_BASE_URL "$U_C"
   echo "gen-env: che do $MODE ${D:+($D, hosts=$H)} - da cap nhat URL/CORS/TRUST_PROXY_HOPS trong .env; can build lai web + up -d"
 elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then

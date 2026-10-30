@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # sohoptac2 · CR-104 · trạng thái máy chủ cho hub-api đọc (chạy TRÊN máy chủ, cron 30 phút; không cần root, không in bí mật).
 # Ghi nguyên tử $S2_DIR/ops-status/host.json:
-#   {"at":ISO-UTC,"disks":[{"mount":"/","used_pct":N,"avail_bytes":N}],"deploy_ref":string|null}
+#   {"at":ISO-UTC,"every_min":30,"disks":[{"mount":"/","used_pct":N,"avail_bytes":N}],"deploy_ref":string|null}
 # disks: "/" + thư mục dữ liệu Docker nếu nằm trên mount khác. deploy_ref: dòng đầu file VERSION (deploy.ps1 ghi "<commit> (<ref>)").
 # Biến: S2_DIR (mặc định thư mục chứa script), DOCKER_ROOT (bỏ qua hỏi docker).
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "${BASH_SOURCE[0]}")"
 S2_DIR=${S2_DIR:-$(pwd)}
 OUT_DIR="$S2_DIR/ops-status"
 umask 022
@@ -48,6 +48,6 @@ fi
 
 tmp=$(mktemp "$OUT_DIR/.host.json.XXXXXX")
 trap 'rm -f -- "$tmp"' EXIT
-printf '{"at":"%s","disks":[%s],"deploy_ref":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$disks" "$deploy_ref" > "$tmp"
+printf '{"at":"%s","every_min":30,"disks":[%s],"deploy_ref":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$disks" "$deploy_ref" > "$tmp"
 chmod 644 "$tmp"
 mv -f "$tmp" "$OUT_DIR/host.json"

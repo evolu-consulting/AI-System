@@ -4,10 +4,11 @@
 #   (filebox + minio dừng ngắn để sqlite + object nhất quán) · .env + claude-home + ADMIN_CREDENTIALS.txt (600, không in)
 # Ra: $BACKUP_ROOT/<UTC yyyymmddThhmmssZ>/ + MANIFEST.sha256. Giữ KEEP_DAILY ngày gần nhất + KEEP_WEEKLY tuần (bản mới nhất mỗi tuần).
 # Lỗi => ghi log, dọn bản dở, khởi động lại dịch vụ đã dừng, thoát khác 0.
+# CR-104: ban local xong ma offsite loi => backup.json ok=true, offsite_ok=false, error=<ly do>; exit van 1 (cron/log bao loi, hub xep warn).
 # Biến: BACKUP_ROOT, KEEP_DAILY=14, KEEP_WEEKLY=8, QUIESCE=1 (0 = tar nóng, sqlite có thể lệch), OFFSITE_DIR (rsync đích, vd user@host:/path;
 #   bỏ trống => bỏ qua + cảnh báo), OFFSITE_RSYNC_OPTS, HELPER_IMAGE=alpine:3.20.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "${BASH_SOURCE[0]}")"
 HERE=$(pwd)
 umask 077
 PROJECT=sohoptac2
@@ -42,13 +43,14 @@ STATUS_ARMED=0      # chi ghi sau khi co khoa (lan chay trung khong de len ket q
 ERR_MSG=""
 RESULT_DIR=""
 RESULT_SIZE=0
+LOCAL_DONE=0        # 1 sau khi ban local da doi ten xong: loi offsite/don dep sau do KHONG lam ban local that bai (ok=true)
 OFFSITE_OK=null     # null = khong dung/chua toi luot; true|false = ket qua rsync
 json_str() { printf '%s' "$1" | LC_ALL=C tr -d '\000-\037' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 write_status() {
   local ok=false off=false err=null tmp
-  [ "$1" -eq 0 ] && ok=true
+  { [ "$1" -eq 0 ] || [ "$LOCAL_DONE" = 1 ]; } && ok=true
   [ -n "$OFFSITE_DIR" ] && off=true
-  if [ "$1" -ne 0 ]; then err="\"$(json_str "${ERR_MSG:-exit $1}")\""; fi
+  if [ "$1" -ne 0 ] || [ -n "$ERR_MSG" ]; then err="\"$(json_str "${ERR_MSG:-exit $1}")\""; fi
   mkdir -p "$STATUS_DIR" && chmod 755 "$STATUS_DIR" || return 0
   tmp=$(mktemp "$STATUS_DIR/.backup.json.XXXXXX") || return 0
   printf '{"finished_at":"%s","ok":%s,"dir":"%s","size_bytes":%s,"offsite":%s,"offsite_ok":%s,"error":%s}\n' \
@@ -161,6 +163,7 @@ find "$PARTIAL" -type f -exec chmod 600 {} +
 chmod 600 "$PARTIAL/MANIFEST.sha256"; chmod 700 "$PARTIAL"
 mv "$PARTIAL" "$FINAL"
 PARTIAL=""
+LOCAL_DONE=1
 RESULT_DIR="$TS"
 RESULT_SIZE=$(du -sb "$FINAL" | cut -f1)
 log "xong $FINAL ($(du -sh "$FINAL" | cut -f1))"
@@ -186,7 +189,7 @@ find "$BACKUP_ROOT" -maxdepth 1 -name '.partial-*' -mmin +1440 -exec rm -rf -- {
 if [ -z "$OFFSITE_DIR" ]; then
   log "CANH BAO: OFFSITE_DIR chua dat — ban sao chi nam tren cung may chu (mat may = mat het)"
 else
-  command -v rsync >/dev/null || die "OFFSITE_DIR dat nhung thieu rsync (ban local $TS van con)"
+  command -v rsync >/dev/null || { OFFSITE_OK=false; die "OFFSITE_DIR dat nhung thieu rsync (ban local $TS van con)"; }
   # shellcheck disable=SC2086
   if rsync -a --chmod=D700,F600 $OFFSITE_RSYNC_OPTS "$FINAL" "${OFFSITE_DIR%/}/"; then OFFSITE_OK=true; else OFFSITE_OK=false; die "rsync offsite that bai (ban local $TS van con)"; fi
   log "offsite: da chep $TS toi $OFFSITE_DIR"
