@@ -1,30 +1,19 @@
-// contract-flow S2 · `GET|PUT /pack/contracts/approval-flow`: đọc (quyền gói `read`) mẫu luồng duyệt đã lưu hoặc mẫu mặc định
-// (`is_default`); lưu (quyền gói `admin`, guard TRƯỚC đọc thân ⇒ không phải admin 403, 0 SQL): 400 thân sai, 422
-// `APPROVAL_FLOW_INVALID` (`details.issues`), 422 `APPROVAL_GROUP_MISSING`, 409 `VERSION_CONFLICT` (`details.current`).
-import {
-  APPROVAL_FLOW_ERRORS,
-  ApprovalFlowPutSchema,
-  CONTRACT_APPROVAL_ERRORS,
-} from "@ai/contracts";
+// CR-105 L4 · `GET /pack/contracts/approval-flow` CHỈ ĐỌC (quyền gói `read`): quy trình đang dùng của tenant (gán ⇒ mặc định của khe).
+// Không còn `PUT /approval-flow` (route không tồn tại ⇒ 404; quy trình sửa ở ai-admin). Chưa có bản áp được ⇒ 404 `NOT_FOUND`.
+// Cùng file: `GET /groups` (tên phòng ban) + `GET /dify-workflows`.
 import { Hono } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
-import { AppError, appError } from "../../../../lib/errors";
-import { parseWith, readJson } from "../../../../lib/http";
+import { appError } from "../../../../lib/errors";
 import {
   type PackAccessView,
   type PackGuardVars,
   packGuard,
 } from "../../kit/adapters/pack-guard.middleware";
-import type {
-  listDifyWorkflows,
-  readApprovalFlow,
-  saveApprovalFlow,
-} from "../application/approval-flow.usecase";
+import type { listDifyWorkflows, readCurrentFlow } from "../application/approval-flow.usecase";
 
 const KEY = "contracts";
 export type ApprovalFlowRoutesDeps = {
-  read: ReturnType<typeof readApprovalFlow>;
-  save: ReturnType<typeof saveApprovalFlow>;
+  read: ReturnType<typeof readCurrentFlow>;
   difyWorkflows: ReturnType<typeof listDifyWorkflows>;
   /** S3b · Group của tenant (`GET /groups`). */
   groups?: (tenantId: string) => Promise<{ id: string; name: string }[]>;
@@ -36,9 +25,11 @@ export function approvalFlowRoutes(
   d: ApprovalFlowRoutesDeps,
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  r.get("/approval-flow", packGuard(view, KEY, "read"), async (c) =>
-    c.json(await d.read(who(c.get("user")))),
-  );
+  r.get("/approval-flow", packGuard(view, KEY, "read"), async (c) => {
+    const cur = await d.read(who(c.get("user")));
+    if (!cur) throw appError("NOT_FOUND");
+    return c.json(cur);
+  });
   // S3b · tên phòng ban cho UI luồng: scope tenant của token, ai đọc được gói đều gọi được.
   r.get("/groups", packGuard(view, KEY, "read"), async (c) =>
     c.json(d.groups ? await d.groups(c.get("user").tenantId) : []),
@@ -47,23 +38,5 @@ export function approvalFlowRoutes(
   r.get("/dify-workflows", packGuard(view, KEY, "admin"), async (c) =>
     c.json(await d.difyWorkflows(who(c.get("user")))),
   );
-  r.put("/approval-flow", packGuard(view, KEY, "admin"), async (c) => {
-    const b = parseWith(ApprovalFlowPutSchema, await readJson(c));
-    const out = await d.save(who(c.get("user")), b);
-    if (out.kind === "ok") return c.json(out.flow);
-    if (out.kind === "conflict") throw appError("VERSION_CONFLICT", { current: out.current });
-    if (out.kind === "group_missing")
-      throw new AppError(
-        "APPROVAL_GROUP_MISSING",
-        CONTRACT_APPROVAL_ERRORS.APPROVAL_GROUP_MISSING,
-        "Approval group not found",
-      );
-    throw new AppError(
-      "APPROVAL_FLOW_INVALID",
-      APPROVAL_FLOW_ERRORS.APPROVAL_FLOW_INVALID,
-      "Approval flow is invalid",
-      { issues: out.issues },
-    );
-  });
   return r;
 }

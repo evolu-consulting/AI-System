@@ -55,4 +55,6 @@ export type ResolvedSlot = {
   name: string;
   relVersion: number;
   slotBody: unknown;
+  /** CR-105 L4 · true ⇒ không có gán riêng, đang dùng mặc định của khe. */
+  isDefault?: boolean;
 };

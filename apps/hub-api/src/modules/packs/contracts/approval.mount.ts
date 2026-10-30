@@ -12,21 +12,14 @@ import { checkPackAccess } from "../kit/domain/pack-access.rules";
 import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
-import {
-  engineFlowDefSync,
-  engineSettingsSync,
-  reopenEngineApproval,
-  startEngineApproval,
-} from "./application/approval-engine.usecase";
+import { reopenEngineApproval, startEngineApproval } from "./application/approval-engine.usecase";
 import { type EngineCardDeps, engineCard } from "./application/approval-engine-card.usecase";
 import {
   type ApprovalFlowTxRepos,
-  type FlowDefSync,
   type FlowGroups,
   type FlowMembers,
   listDifyWorkflows,
-  readApprovalFlow,
-  saveApprovalFlow,
+  readCurrentFlow,
 } from "./application/approval-flow.usecase";
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { ENGINE_FEATURE_KEY, engineAllowedForTenant } from "./domain/approval-engine.rules";
@@ -51,7 +44,6 @@ export type EsignHooks = {
 type FlowDeps = EsignHooks & {
   engine?: ApprovalEngineBridge | undefined;
   groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list">;
-  flowDefSync?: FlowDefSync | undefined;
 };
 
 /** contract-flow S3a · duyệt trên engine: cờ `CONTRACTS_APPROVAL_ENGINE=on` (hoặc seam test `on`) + cầu engine có + chế độ flow
@@ -95,8 +87,6 @@ export function approvalEngine(
     : startRaw;
   return {
     start,
-    defSync: engineFlowDefSync(ed),
-    settingsSync: engineSettingsSync(ed),
     reopen: reopenEngineApproval(ed),
     tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
@@ -130,7 +120,7 @@ export const approvalSlotSpec: SlotSpec = {
   },
 };
 
-/** contract-flow S2 · `GET|PUT /approval-flow` + S3b `GET /groups` (đồng bộ def engine qua `flowDefSync` khi có — S3a). */
+/** CR-105 L4 · `GET /approval-flow` (chỉ đọc, quy trình đang dùng) + S3b `GET /groups` + `GET /dify-workflows`. */
 export function flowTemplateRoutes(
   view: PackAccessView,
   uow: PackUow<ApprovalFlowTxRepos>,
@@ -140,7 +130,7 @@ export function flowTemplateRoutes(
   const fd = {
     uow,
     groups: flow.groups,
-    ...(flow.flowDefSync ? { defSync: flow.flowDefSync } : {}),
+    engine: flow.engine,
     ...(flow.members ? { members: flow.members } : {}),
     // cf-dify · catalog workflow của tenant qua cổng engine (lười, như `approvalEngine`); engine không nối ⇒ không kiểm.
     ...(flow.engine
@@ -149,8 +139,7 @@ export function flowTemplateRoutes(
   };
   const list = flow.groups.list?.bind(flow.groups);
   return approvalFlowRoutes(view, {
-    read: readApprovalFlow(fd),
-    save: saveApprovalFlow(fd),
+    read: readCurrentFlow(fd),
     difyWorkflows: listDifyWorkflows(fd),
     ...(list ? { groups: list } : {}),
   });

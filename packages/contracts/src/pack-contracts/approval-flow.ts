@@ -184,6 +184,26 @@ export const ApprovalFlowResponseSchema = z.strictObject({
 });
 export type ApprovalFlowResponse = z.infer<typeof ApprovalFlowResponseSchema>;
 
+/** CR-105 L4 · `GET /pack/contracts/approval-flow` CHỈ ĐỌC: quy trình đang dùng của tenant (gán ⇒ mặc định của khe), phòng ban theo TÊN. */
+export const ApprovalFlowCurrentStepSchema = z.strictObject({
+  name: z.string().min(1).max(80),
+  /** Tên phòng ban (Group của tenant); bước không gắn phòng (Dify, ký số theo người phụ trách) ⇒ null. */
+  department_name: z.string().max(200).nullable(),
+  kind: z.enum(["review", "dify", "esign"]),
+  /** Điều kiện áp dụng (vắng/null = luôn chạy). */
+  when: FlowWhenSchema.nullable().optional(),
+});
+export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
+export const ApprovalFlowCurrentSchema = z.strictObject({
+  def_id: UuidSchema,
+  name: z.string().min(1).max(200),
+  rel_version: z.number().int().min(1),
+  /** true ⇒ tenant chưa được gán riêng, đang chạy mặc định của khe. */
+  is_default: z.boolean(),
+  steps: z.array(ApprovalFlowCurrentStepSchema).min(1).max(APPROVAL_FLOW_STEPS_MAX),
+});
+export type ApprovalFlowCurrent = z.infer<typeof ApprovalFlowCurrentSchema>;
+
 /** cf-dify · `GET /pack/contracts/dify-workflows`: workflow Dify tenant được dùng làm bước Dify (đã bật ở catalog). */
 export const DifyWorkflowInputSchema = z.strictObject({
   name: z.string().regex(INPUT_NAME_RE),

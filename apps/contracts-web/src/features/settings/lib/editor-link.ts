@@ -8,11 +8,11 @@ export const FLOW_EDITOR_PATH = "/processes";
 export const canEditFlow = (role: string | undefined): boolean => role === "platform_admin";
 
 /** URL đích; `null` khi không xin được mã và cũng không có URL dự phòng. */
-export function flowEditorUrl(): Promise<string | null> {
+export function flowEditorUrl(defId?: string): Promise<string | null> {
   return handOffUrl({
     authed: true,
     grant: () => session.ssoGrant("admin"),
     fallbackBase: FALLBACK_URLS.admin,
-    next: FLOW_EDITOR_PATH,
+    next: defId ? `${FLOW_EDITOR_PATH}/${defId}` : FLOW_EDITOR_PATH,
   });
 }

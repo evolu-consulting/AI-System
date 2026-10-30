@@ -10,19 +10,18 @@ const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
 const FLOW = {
+  def_id: "11111111-1111-4111-8111-111111111111",
   name: "Quy trình HĐ mặc định",
   rel_version: 4,
   is_default: true,
   steps: [
     {
-      key: "s0",
       name: "Soạn & kiểm tra",
       department_name: "Kinh doanh",
       kind: "review",
       when: null,
     },
     {
-      key: "s1",
       name: "Giám đốc duyệt",
       department_name: "Ban giám đốc",
       kind: "review",

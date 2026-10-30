@@ -19,7 +19,6 @@ import {
   routeStep,
   startEngineApproval,
 } from "./approval-engine.usecase";
-import type { StoredFlow } from "./approval-flow.usecase";
 import type { ProductLinksOutcome } from "./product-links.usecase";
 
 const T = "00000000-0000-4000-8000-0000000000a1";
@@ -31,10 +30,31 @@ const G1 = "00000000-0000-4000-8000-0000000000f1";
 const G2 = "00000000-0000-4000-8000-0000000000f2";
 const SETTINGS: ApprovalSettings = { threshold: 1000, level1GroupKey: "k1", level2GroupKey: "k2" };
 const who = { tenantId: T, userId: U };
+const DEF = "00000000-0000-4000-8000-0000000000aa";
+const keyed = (key: string, dept: string, when: unknown = null) => ({
+  kind: "review",
+  key,
+  name: key,
+  department_group_id: null,
+  department_group_key: dept,
+  head_only: false,
+  due_h: 72,
+  remind_every_h: null,
+  escalate_group_id: null,
+  exclude_starter: false,
+  when,
+});
+const BODY = {
+  steps: [
+    keyed("l1", "k1"),
+    keyed("l2", "k2", { op: "and", conds: [{ field: "total_value", op: "ge", value: 1000 }] }),
+  ],
+};
 
 type World = {
   st: EngineStartRow | null;
-  flow: StoredFlow | null;
+  /** Bản xuất bản của quy trình khe; null = khe chưa có bản áp được. */
+  rel: number | null;
   run: EngineRunRow | null;
   attachOk: boolean;
   finalized: boolean;
@@ -52,7 +72,7 @@ const world = (o: Partial<World> = {}): World => ({
     engineRunId: null,
     startedBy: U,
   },
-  flow: null,
+  rel: 1,
   run: null,
   attachOk: true,
   finalized: true,
@@ -88,9 +108,6 @@ function txRepos(w: World): ApprovalEngineTxRepos {
     approvalEngine: repo,
     approvalFlow: {
       settings: async () => SETTINGS,
-      settingsRev: async () => 0,
-      flow: async () => w.flow,
-      save: async () => null,
     },
     links: {
       link: async (_id: string, l: readonly unknown[], actor: string) => {
@@ -106,7 +123,7 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
   const r = txRepos(w);
   const full: ApprovalEnginePort = {
     ensureDef: async (_u, key, _def, v) => {
-      w.calls.push(`ensureDef:${key}:v${v}`);
+      w.calls.push(`ensureDef:${key}:${typeof v === "number" ? `v${v}` : v.sourceRef}`);
       return "created";
     },
     start: async (u, req) => {
@@ -123,6 +140,12 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
     outcomesOf: async () => [],
     openTasksOf: async () => [],
     workflowsOf: async () => [],
+    // CR-105 · khe `contracts.approval`: quy trình 2 bước theo MÃ Group (k1, k2 ⇒ G1, G2).
+    resolveSlot: async () =>
+      w.rel === null
+        ? null
+        : { defId: DEF, name: "Quy trình A", relVersion: w.rel, slotBody: BODY },
+    sourceRefOf: () => "ref-1",
     ...port,
   };
   return {
@@ -184,26 +207,30 @@ const runRow = (o: Partial<EngineRunRow> = {}): EngineRunRow => ({
 const ctx = { tenantId: T, userId: U, processRunId: RUN };
 
 describe("startEngineApproval", () => {
-  it("mẫu mặc định ⇒ ensureDef v1 → start ref contracts → gắn (2 bước) → kick", async () => {
+  it("khe có bản xuất bản ⇒ ensureDef theo source_ref → start ref contracts → gắn (2 bước) → kick", async () => {
     const w = world();
     expect(await startEngineApproval(deps(w))(who, C)).toBe("started");
     expect(w.calls).toEqual([
-      "ensureDef:contracts-approval:v200000001",
+      "ensureDef:contracts-approval:ref-1",
       `start:contracts:${C}`,
       `attach:${RUN}:v1:2`,
       "kick",
     ]);
   });
-  it("mẫu đã lưu ⇒ version của mẫu; gắn hụt ⇒ huỷ bù, không kick", async () => {
-    const steps = runRow().flowSteps;
-    const w = world({ flow: { version: 5, steps, updatedAt: "x" }, attachOk: false });
+  it("version = bản xuất bản; gắn hụt ⇒ huỷ bù, không kick", async () => {
+    const w = world({ rel: 5, attachOk: false });
     expect(await startEngineApproval(deps(w))(who, C)).toBe("skipped");
     expect(w.calls).toEqual([
-      "ensureDef:contracts-approval:v300000005",
+      "ensureDef:contracts-approval:ref-1",
       `start:contracts:${C}`,
       `attach:${RUN}:v5:2`,
       `cancel:${RUN}`,
     ]);
+  });
+  it("khe chưa có bản xuất bản ⇒ máy (hết đường readFlow cũ)", async () => {
+    const w = world({ rel: null });
+    expect(await startEngineApproval(deps(w))(who, C)).toBe("machine");
+    expect(w.calls).toEqual(["warn:contract-engine-flow-invalid"]);
   });
   it("engine vắng ⇒ máy; Group thiếu ⇒ máy, không gọi engine; lượt không mở được ⇒ skipped", async () => {
     expect(await startEngineApproval(deps(world(), null))(who, C)).toBe("machine");

@@ -1,51 +1,34 @@
-// contract-flow S2 · đọc/lưu mẫu luồng duyệt HĐ của tenant. Đọc: mẫu đã lưu, hoặc mẫu mặc định dựng từ `approval_settings`
-// (`is_default`, version 1). Lưu: luật chéo bước → nhóm (duyệt + chuyển cấp) phải có ở tenant → ghi có khoá lạc quan (version +1)
-// → đồng bộ def engine qua cổng `FlowDefSync` (S3a; vắng ⇒ bỏ qua). Lớp 2: chỉ cổng.
+// CR-105 L4 · `GET /approval-flow` CHỈ ĐỌC: quy trình đang dùng của tenant (khe `contracts.approval`: gán ⇒ mặc định; `resolveSlot`),
+// phòng ban theo TÊN (mã Group ⇒ id theo tenant ⇒ tên). Không còn lưu mẫu (PUT bỏ; sửa ở ai-admin). Cũng giữ `GET /dify-workflows`
+// và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import { type ApprovalSettings, PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
-import {
-  type ApprovalFlowIssue,
-  type ApprovalFlowResponse,
-  type DifyWorkflow,
-  defaultFlowFromSettings,
-  type FlowStep,
-  flowGroupIds,
-  flowUserIds,
-  hasDifyStep,
-  validateDifyCatalog,
-  validateFlow,
-} from "../domain/approval-flow.rules";
+import type { ApprovalSettings } from "../domain/approval-def.rules";
+import type { DifyWorkflow } from "../domain/approval-flow.rules";
+import type { FlowWhen } from "../domain/approval-flow.types";
+import { APPROVAL_SLOT, slotBodyOf, slotGroupKeys } from "../domain/approval-slot.rules";
+import type { ApprovalEngineBridge } from "./approval-engine.ports";
 
-export type StoredFlow = { version: number; steps: FlowStep[]; updatedAt: string };
 export type ApprovalFlowRepo = {
   settings(): Promise<ApprovalSettings>;
-  /** S3b · phút từ 2020-01-01 tới lần lưu cài đặt duyệt gần nhất (0 khi chưa lưu) — version def của mẫu mặc định. */
-  settingsRev(): Promise<number>;
-  flow(): Promise<StoredFlow | null>;
-  /** Khoá lạc quan: `expected` lệch ⇒ null. */
-  save(steps: readonly FlowStep[], expected: number, actor: string): Promise<StoredFlow | null>;
 };
 export type ApprovalFlowTxRepos = { approvalFlow: ApprovalFlowRepo };
 
-/** Group của tenant: id theo khoá (mẫu mặc định) + id nào còn tồn tại (kiểm khi lưu). */
+/** Group của tenant: id theo khoá (phân giải mã) + id nào còn tồn tại. */
 export type FlowGroups = {
   idsOf(tenantId: string, keys: readonly string[]): Promise<ReadonlyMap<string, string>>;
   existingIds(tenantId: string, ids: readonly string[]): Promise<ReadonlySet<string>>;
   /** S3b · Group của tenant (id + tên) cho `GET /pack/contracts/groups`. */
   list?(tenantId: string): Promise<{ id: string; name: string }[]>;
 };
-/** Seam S3a: đẩy def engine `contracts-approval` khi version đổi (`port.ensureDef`). */
-export type FlowDefSync = {
-  sync(who: PackWho, flow: { version: number; steps: readonly FlowStep[] }): Promise<void>;
-};
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (admin.workflows ∧ công tắc tenant). */
 export type FlowWorkflows = (tenantId: string) => Promise<DifyWorkflow[]>;
 export type ApprovalFlowDeps = {
   uow: PackUow<ApprovalFlowTxRepos>;
   groups: FlowGroups;
-  defSync?: FlowDefSync;
   /** Vắng ⇒ không kiểm catalog (engine không nối). */
   workflows?: FlowWorkflows;
+  /** Cầu engine (`resolveSlot` qua cổng, lười). */
+  engine?: ApprovalEngineBridge | undefined;
   /** esign-flow · người cụ thể thuộc tenant + quyền `write` gói (trả tập id hợp lệ). */
   members?: FlowMembers;
 };
@@ -82,82 +65,61 @@ export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
   };
 }
 
-/** esign-flow · người cụ thể (duyệt/ký) phải thuộc tenant + có quyền `write` gói; không có cổng ⇒ mọi người cụ thể bị từ chối
- *  (fail-closed). */
-async function userIssues(
-  d: ApprovalFlowDeps,
-  who: PackWho,
-  steps: readonly FlowStep[],
-): Promise<ApprovalFlowIssue[]> {
-  const refs = flowUserIds(steps);
-  if (refs.length === 0) return [];
-  const ok = d.members ? await d.members(who, [...new Set(refs.map((r) => r.id))]) : new Set();
-  return refs.filter((r) => !ok.has(r.id)).map((r) => ({ path: r.path, rule: "USER_NOT_MEMBER" }));
-}
+export type CurrentFlowStep = {
+  name: string;
+  department_name: string | null;
+  kind: "review" | "dify" | "esign";
+  when?: FlowWhen | null;
+};
+export type CurrentFlow = {
+  def_id: string;
+  name: string;
+  rel_version: number;
+  is_default: boolean;
+  steps: CurrentFlowStep[];
+};
 
-/** esign-flow-fix · bước người duyệt cụ thể KHÔNG phòng gắn task vào Group Toàn quyền (cấp 2 cài đặt / `contracts-owner`); tenant không
- *  còn Group nào ⇒ def không biên dịch được ⇒ báo lúc lưu (`GROUP_REQUIRED` ở phòng của bước). */
-async function ownerGroupIssues(
-  d: ApprovalFlowDeps,
-  who: PackWho,
-  steps: readonly FlowStep[],
-): Promise<ApprovalFlowIssue[]> {
-  const idx = steps.flatMap((s, i) =>
-    s.kind === "review" && s.approver_user_id && !s.department_group_id ? [i] : [],
-  );
-  if (idx.length === 0) return [];
-  const s = await d.uow.tenant(who, (r) => r.approvalFlow.settings());
-  const ids = await d.groups.idsOf(who.tenantId, [s.level2GroupKey, PACK_OWNER_GROUP_KEY]);
-  if (ids.size > 0) return [];
-  return idx.map((i) => ({ path: `steps.${i}.department_group_id`, rule: "GROUP_REQUIRED" }));
-}
-
-export type SaveFlowOutcome =
-  | { kind: "ok"; flow: ApprovalFlowResponse }
-  | { kind: "invalid"; issues: ApprovalFlowIssue[] }
-  | { kind: "group_missing" }
-  | { kind: "conflict"; current: ApprovalFlowResponse };
-
-const stored = (f: StoredFlow): ApprovalFlowResponse => ({
-  version: f.version,
-  is_default: false,
-  steps: f.steps,
-  updated_at: f.updatedAt,
-});
-
-/** Đã lưu ⇒ trả luôn; chưa ⇒ mẫu mặc định (Group theo khoá đọc SAU tx, cache — không giữ kết nối tx khi gọi lõi). */
-export function readApprovalFlow(d: ApprovalFlowDeps) {
-  return async (who: PackWho): Promise<ApprovalFlowResponse> => {
-    const got = await d.uow.tenant(who, async (r) => {
-      const f = await r.approvalFlow.flow();
-      return f ? { f, s: null } : { f: null, s: await r.approvalFlow.settings() };
+/** Quy trình đang dùng cho tenant của `who`; khe chưa có bản xuất bản áp được / engine không nối ⇒ null (route trả 404). */
+export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) {
+  return async (who: PackWho): Promise<CurrentFlow | null> => {
+    const port = d.engine?.port;
+    if (!port?.resolveSlot) return null;
+    const r = await port.resolveSlot(who.tenantId, APPROVAL_SLOT);
+    const body = r ? slotBodyOf(r.slotBody) : null;
+    if (!r || !body) return null;
+    const keys = slotGroupKeys(body);
+    const [ids, list] = await Promise.all([
+      keys.length > 0 ? d.groups.idsOf(who.tenantId, keys) : new Map<string, string>(),
+      keys.length > 0 && d.groups.list ? d.groups.list(who.tenantId) : [],
+    ]);
+    const names = new Map(list.map((g) => [g.id, g.name]));
+    // Group bị xoá sau khi gán ⇒ giữ mã để người xem vẫn thấy bước dùng phòng nào.
+    const deptName = (k: string | null | undefined): string | null => {
+      if (!k) return null;
+      const id = ids.get(k);
+      return (id ? names.get(id) : undefined) ?? k;
+    };
+    const steps = body.steps.map((s): CurrentFlowStep => {
+      if (s.kind === "dify") return { name: s.name, department_name: null, kind: "dify" };
+      if (s.kind === "esign")
+        return {
+          name: s.name,
+          department_name: deptName(s.company_signer.department_group_key),
+          kind: "esign",
+        };
+      return {
+        name: s.name,
+        department_name: deptName(s.department_group_key),
+        kind: "review",
+        when: s.when ?? null,
+      };
     });
-    if (got.f) return stored(got.f);
-    const ids = await d.groups.idsOf(who.tenantId, [got.s.level1GroupKey, got.s.level2GroupKey]);
-    const steps = defaultFlowFromSettings(got.s, ids);
-    return { version: 1, is_default: true, steps, updated_at: null };
-  };
-}
-
-export function saveApprovalFlow(d: ApprovalFlowDeps) {
-  return async (
-    who: PackWho,
-    body: { version: number; steps: FlowStep[] },
-  ): Promise<SaveFlowOutcome> => {
-    const issues = validateFlow(body.steps);
-    if (d.workflows && hasDifyStep(body.steps))
-      issues.push(...validateDifyCatalog(body.steps, await d.workflows(who.tenantId)));
-    issues.push(...(await userIssues(d, who, body.steps)));
-    if (issues.length === 0) issues.push(...(await ownerGroupIssues(d, who, body.steps)));
-    if (issues.length > 0) return { kind: "invalid", issues };
-    const want = flowGroupIds(body.steps);
-    const have = await d.groups.existingIds(who.tenantId, want);
-    if (want.some((id) => !have.has(id))) return { kind: "group_missing" };
-    const f = await d.uow.tenant(who, (r) =>
-      r.approvalFlow.save(body.steps, body.version, who.userId),
-    );
-    if (!f) return { kind: "conflict", current: await readApprovalFlow(d)(who) };
-    if (d.defSync) await d.defSync.sync(who, { version: f.version, steps: f.steps });
-    return { kind: "ok", flow: stored(f) };
+    return {
+      def_id: r.defId,
+      name: r.name,
+      rel_version: r.relVersion,
+      is_default: r.isDefault === true,
+      steps,
+    };
   };
 }

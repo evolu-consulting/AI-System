@@ -51,11 +51,7 @@ import {
 } from "./application/approval.usecase";
 import type { ApprovalEngineBridge } from "./application/approval-engine.ports";
 import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
-import type {
-  ApprovalFlowTxRepos,
-  FlowDefSync,
-  FlowGroups,
-} from "./application/approval-flow.usecase";
+import type { ApprovalFlowTxRepos, FlowGroups } from "./application/approval-flow.usecase";
 import {
   QUEUED_STALE_MINUTES,
   type SweepDeps,
@@ -121,8 +117,6 @@ export type ContractsFlowDeps = EsignHooks & {
   /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
   fileText?: SourceFileText;
   groups: ApprovalGroups & Pick<FlowGroups, "existingIds" | "list">;
-  /** contract-flow S3a · đồng bộ def engine khi lưu mẫu luồng; vắng ⇒ bỏ qua. */
-  flowDefSync?: FlowDefSync;
   /** contract-flow S3a · cầu engine quy trình (`packRuns`, cổng gắn lúc engine mount); vắng ⇒ không chạy duyệt trên engine. */
   engine?: ApprovalEngineBridge;
   redis?: Redis;
@@ -291,7 +285,6 @@ export function contractsAiModule(
     ...(eng
       ? {
           engine: eng.start,
-          onSettingsSaved: eng.settingsSync,
           reopen: eng.reopen,
           card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),
         }
@@ -320,7 +313,7 @@ export function contractsAiModule(
     quota: flow.quota,
   });
   routes.route("/", reviewModule(view, uow, tz));
-  const approval = approvalModule(view, { ad, uow, flow, engineSync: eng?.defSync });
+  const approval = approvalModule(view, { ad, uow, flow });
   return {
     starter,
     routes,
@@ -340,7 +333,6 @@ function approvalModule(
     ad: Parameters<typeof getApproval>[0];
     uow: PackUow<ApprovalFlowTxRepos>;
     flow: ContractsFlowDeps;
-    engineSync: FlowDefSync | undefined;
   },
 ) {
   const { ad, flow } = o;
@@ -351,9 +343,7 @@ function approvalModule(
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
   });
-  const defSync = flow.flowDefSync ?? o.engineSync;
-  const f = { ...flow, ...(defSync ? { flowDefSync: defSync } : {}) };
-  approval.route("/", flowTemplateRoutes(view, o.uow, f));
+  approval.route("/", flowTemplateRoutes(view, o.uow, flow));
   return approval;
 }
 

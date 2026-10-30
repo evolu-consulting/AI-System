@@ -1,7 +1,7 @@
-// CR-105 L4 · quy trình duyệt ĐANG DÙNG (chỉ đọc): `GET /pack/contracts/approval-flow` = `{name, rel_version, is_default, steps}`
-// (design.md §4). Mapper khoan dung với hình `steps` (tên phòng ban dạng chuỗi hoặc đối tượng) vì contract L2a/L4-BE chưa chốt;
-// `when` (nếu có) dùng cho "Xem trước đường đi" (luật như server: giá trị trống ⇒ điều kiện đúng).
-import type { FlowCond, FlowWhen } from "@ai/contracts";
+// CR-105 L4 · quy trình duyệt ĐANG DÙNG (chỉ đọc): `GET /pack/contracts/approval-flow` = `ApprovalFlowCurrent`
+// `{def_id, name, rel_version, is_default, steps:[{name, department_name, kind, when?}]}` (@ai/contracts). `when` dùng cho
+// "Xem trước đường đi" (luật như server: giá trị trống ⇒ điều kiện đúng).
+import { ApprovalFlowCurrentSchema, type FlowCond, type FlowWhen } from "@ai/contracts";
 
 export type DealKind = "buy" | "sell" | "referral";
 export type CurrentStep = {
@@ -9,10 +9,11 @@ export type CurrentStep = {
   name: string;
   /** Tên phòng ban (không phải id). */
   department: string | null;
-  kind: string;
+  kind: "review" | "dify" | "esign";
   when: FlowWhen | null;
 };
 export type CurrentFlow = {
+  defId: string;
   name: string;
   version: number;
   isDefault: boolean;
@@ -20,35 +21,24 @@ export type CurrentFlow = {
 };
 export type Facts = { deal: DealKind; value: number | null };
 
-const isRec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v : null);
-
-function toStep(raw: unknown, i: number): CurrentStep | null {
-  if (typeof raw === "string")
-    return { key: `s${i}`, name: raw, department: raw, kind: "review", when: null };
-  if (!isRec(raw)) return null;
-  const dept = str(raw.department_name) ?? str(raw.department) ?? str(raw.group_name);
-  const name = str(raw.name) ?? dept;
-  if (!name) return null;
-  const when = isRec(raw.when) && Array.isArray(raw.when.conds) ? (raw.when as FlowWhen) : null;
-  return {
-    key: str(raw.key) ?? `s${i}`,
-    name,
-    department: dept,
-    kind: str(raw.kind) ?? "review",
-    when,
-  };
-}
-
-/** Thân `GET /approval-flow` (hình mới) ⇒ `CurrentFlow`; sai hình ⇒ null (UI báo lỗi tải). */
+/** Thân `GET /approval-flow` ⇒ `CurrentFlow`; sai hình ⇒ null (UI báo lỗi tải). */
 export function toCurrentFlow(raw: unknown): CurrentFlow | null {
-  if (!isRec(raw) || !Array.isArray(raw.steps)) return null;
-  const name = str(raw.name);
-  const version = raw.rel_version;
-  if (!name || typeof version !== "number") return null;
-  const steps = raw.steps.map(toStep);
-  if (steps.some((s) => s === null)) return null;
-  return { name, version, isDefault: raw.is_default === true, steps: steps as CurrentStep[] };
+  const p = ApprovalFlowCurrentSchema.safeParse(raw);
+  if (!p.success) return null;
+  const d = p.data;
+  return {
+    defId: d.def_id,
+    name: d.name,
+    version: d.rel_version,
+    isDefault: d.is_default,
+    steps: d.steps.map((s, i) => ({
+      key: `s${i}`,
+      name: s.name,
+      department: s.department_name,
+      kind: s.kind,
+      when: s.when ?? null,
+    })),
+  };
 }
 
 function cmp(op: "ge" | "gt" | "le" | "lt", v: number, t: number): boolean {
