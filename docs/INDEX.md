@@ -58,7 +58,7 @@ Bản `.html` trong `design/` hiện viết tay; sẽ sinh từ md (xem `TECH-DE
 | `../apps/chat-web/README.md`, `../apps/chat-web/src/features/{auth,shell,conversations,thread,composer,run,answer,flow-panel}/README.md`, `../tools/mocks/README.md` | Chat app, feature, mock Hub chat: FR, file vào, bẫy |
 | `../apps/admin-web/README.md`, `../apps/admin-web/src/features/{auth,shell,tenants,users,secrets,workflows,commands,features}/README.md` | App web và feature: FR, file vào, bẫy |
 | `specs/X2b-room-agents/manual-test-I2.md` | Hướng dẫn người dùng kiểm tay `@agent` trong phòng (X2b I2, tenant evolu A/B/C) |
-| `guides/quy-trinh-duyet-hop-dong.md` | Sửa quy trình duyệt HĐ (Cài đặt › Quy trình duyệt) ⇒ biên dịch thành def `contracts-approval` trên engine; canvas chỉ để xem (sửa canvas bị form ghi đè); ảnh từng bước |
+| `guides/quy-trinh-duyet-hop-dong.md` | Sửa quy trình duyệt HĐ (Cài đặt › Quy trình duyệt) ⇒ biên dịch thành def `contracts-approval` trên engine; canvas chỉ để xem (sửa canvas bị form ghi đè); quy trình tự soạn (vd Duyệt đề nghị chi) sửa trên canvas + cách chạy (`/processes/showcase`, nút Chạy); ảnh từng bước |
 | `guides/local-setup.md` | Máy mới: một lệnh `scripts/dev-up.ps1` dựng lõi + 5 web (ai-admin, chat, studio, Sổ Hợp Tác, Community), tenant demo `evolu` đã bật gói; `-SeedDemo` = tenant `demo` + dữ liệu mẫu giống prod; tài khoản dev |
 | `guides/combine-test.md` | Hướng dẫn người dùng test tích hợp 3 app (S1–S10, seed Dify thật) |
 | `guides/filebox-test.md` | Hướng dẫn người dùng config + test FileBox (đính kèm chat + output tiến trình) |

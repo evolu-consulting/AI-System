@@ -131,6 +131,84 @@ Các quy trình khác trong danh sách **không** dùng để duyệt hợp đ�
 
 Muốn đổi cách duyệt hợp đồng ⇒ chỉ sửa form Cài đặt (mục 3–5). Tắt hoặc xoá các quy trình mẫu ở trên không ảnh hưởng duyệt HĐ.
 
+## Quy trình tự soạn trên canvas — ví dụ "Duyệt đề nghị chi (mẫu)"
+
+Khác duyệt HĐ: với các quy trình này **canvas là nguồn gốc** (không có form nào ghi đè). Sửa trên canvas › **Lưu** ⇒ phiên bản
+mới, áp dụng ngay cho lượt chạy mở sau đó (lượt đang chạy giữ phiên bản cũ). Chạy **tay** — Sổ Hợp Tác không tự kích hoạt.
+Ảnh chụp với `demo-owner` (tenant `demo`, `-SeedDemo`), 31/10/2026.
+
+### A. Mở quy trình
+
+ai-admin › **Quy trình** › bấm tên "Duyệt đề nghị chi (mẫu)" (hoặc **Sửa**).
+
+![Danh sách](img/quy-trinh-canvas/01-danh-sach.jpg)
+
+Phần **Giai đoạn** › **Canvas** › **Sắp xếp**: Nhập đề nghị (`set`, tự động) → Pháp chế ∥ Kế toán (**song song**, người kiểm) →
+"Chờ đủ 2/2" → **Kiểm tra hạn mức** (`if`, hình thoi) → Đúng: Giám đốc duyệt → Hoàn tất; Sai: thẳng Hoàn tất.
+
+![Canvas](img/quy-trinh-canvas/02-canvas.jpg)
+
+Phần **Trường nhập** (phía trên canvas) khai báo dữ liệu lượt chạy: `amount` (Số), `purpose` (Chữ) — điều kiện `if` dùng các
+trường này.
+
+### B. Sửa và áp dụng — ví dụ nâng ngưỡng Giám đốc từ 100 lên 200 triệu
+
+Bấm nút **Kiểm tra hạn mức** ⇒ ngăn bên phải: kết hợp điều kiện (VÀ / HOẶC), từng điều kiện (trường, phép so sánh, giá trị),
+"Đúng thì tới bước" / "Sai thì tới bước". Mặc định: `amount > 100000000` **VÀ** `purpose = mua sắm` ⇒ Bước 4.
+
+![Nút If trước khi sửa](img/quy-trinh-canvas/03-nut-if-truoc.jpg)
+
+Đổi giá trị thành `200000000` › **Lưu** (góc dưới phải) ⇒ "Đã lưu · v2".
+
+![Đã lưu v2](img/quy-trinh-canvas/04-nut-if-200tr-da-luu-v2.jpg)
+
+Các thao tác khác trên canvas: bấm giai đoạn để đổi tên / người thực hiện / bước / quay lại khi bị trượt; **Thêm giai đoạn**,
+**Thêm bước**; cùng một "bước" = chạy song song (tối đa 3); đổi loại node trong cùng họ ở mục "Đổi node" của trang chạy thử.
+
+### C. Cách chạy
+
+**Cách 1 — trang Chạy thử (có ô cho từng trường), dùng cho quy trình mẫu này:** mở `http://localhost:3000/processes/showcase`
+(prod: `https://ai-admin.<domain>/processes/showcase`). Nhập **Số tiền**, **Mục đích** (hoặc bấm nút mẫu) › **Chạy thử**.
+Nhãn nút mẫu ("đi Giám đốc") viết theo bản gốc 100 triệu — sau khi sửa ngưỡng, kết quả thật có thể khác nhãn.
+
+![Trang chạy thử](img/quy-trinh-canvas/06-trang-chay-thu.jpg)
+
+**Cách 2 — nút "Chạy" ở danh sách Quy trình:** chỉ có một ô "Nội dung đầu vào" (văn bản tự do), **không** có ô `amount` /
+`purpose` ⇒ không dùng được cho quy trình cần trường nhập như mẫu này (điều kiện `if` sẽ không có số để so). Dùng cho quy trình
+chỉ cần một đoạn mô tả.
+
+![Nút Chạy ở danh sách](img/quy-trinh-canvas/05-chay-nut-chay-o-danh-sach.jpg)
+
+**Theo dõi và duyệt:** khối **Tiến độ trực tiếp** hiện trạng thái từng giai đoạn; bước có người kiểm hiện nút **Đạt / Từ chối**
+— chỉ người thuộc Group được giao bước đó mới bấm được.
+
+> **Đây là chạy thử, không phải duyệt thật.** Để một người tự bấm hết đường đi, `seed-flow-showcase.ts` (cờ `--admin`, mặc định
+> `demo-owner`) **cố ý** thêm `demo-owner` vào cả 3 Group duyệt (Kinh doanh/Pháp chế, Kế toán, Ban Giám đốc). Vì vậy ảnh dưới đây
+> một tài khoản duyệt được mọi phòng. Dùng thật: mỗi Group chỉ có người của phòng đó (ai-admin › Groups), người khác **không**
+> thấy nút Đạt. Lưu ý thêm: khi hub ở chế độ `HUB_PROCESS_ROUTES=admin` (prod hiện tại) chỉ tenant_admin/platform_admin gọi được
+> hộp việc duyệt, nên người duyệt của các quy trình này cũng phải là admin — đó là giới hạn của chế độ admin, không phải thiết kế
+> cuối. Bảng dưới là nhật ký: ai duyệt, lúc
+nào, rẽ nhánh tới bước nào. **Huỷ lượt chạy** để dừng; **Chạy lại với số liệu khác** để thử tiếp.
+
+### D. Kết quả kiểm thật sau khi sửa (v2, ngưỡng 200 triệu)
+
+| Lượt | Số tiền · Mục đích | Đường đi | Ảnh |
+|---|---|---|---|
+| 1 | 150.000.000 · mua sắm | Pháp chế ∥ Kế toán (Đạt) → `if` **Sai** (150tr ≤ 200tr) → Giám đốc **Bỏ qua** → Hoàn tất; nhật ký "Rẽ nhánh: tới bước 5 (luật 2)" | 07, 08 |
+| 2 | 250.000.000 · mua sắm | Pháp chế ∥ Kế toán (Đạt) → `if` **Đúng** → **chờ Giám đốc duyệt** → Đạt → Hoàn tất; nhật ký "Rẽ nhánh: tới bước 4 (luật 1)" | 09, 10 |
+
+Ở bản v1 (100 triệu), lượt 1 đã phải qua Giám đốc ⇒ bản sửa đã áp dụng ngay, không cần deploy.
+
+![150 triệu: chờ kiểm song song](img/quy-trinh-canvas/07-150tr-cho-kiem-song-song.jpg)
+![150 triệu: bỏ qua Giám đốc](img/quy-trinh-canvas/08-150tr-bo-qua-giam-doc.jpg)
+![250 triệu: chờ Giám đốc](img/quy-trinh-canvas/09-250tr-cho-giam-doc.jpg)
+![250 triệu: hoàn tất](img/quy-trinh-canvas/10-250tr-hoan-tat.jpg)
+
+### E. Muốn dùng thật cho đề nghị chi
+
+Đừng sửa thẳng bản mẫu: **Tạo quy trình** (hoặc tab **Mẫu**) để có quy trình riêng, đặt tên, trường nhập, Group duyệt thật, rồi
+soạn trên canvas như trên. Bản mẫu nên giữ nguyên để trình diễn (seed chỉ tạo khi chưa có, không ghi lại).
+
 ## Hỏi đáp
 
 - **Lưu rồi mà HĐ vẫn duyệt kiểu cũ?** Kiểm 2 điều kiện ở mục "Điều kiện để chạy trên engine".
