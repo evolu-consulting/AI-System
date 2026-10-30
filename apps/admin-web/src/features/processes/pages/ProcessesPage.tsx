@@ -20,7 +20,6 @@ import {
   type Tab,
   useProcessesView,
 } from "../hooks/use-processes-view";
-import { isLibraryRow } from "../lib/library-view";
 
 function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
@@ -76,7 +75,6 @@ function ListPage() {
   const v = useProcessesView();
   if (!v.tenant.me) return null;
   const libraryTab = v.tenant.isPlatform && !v.tenant.tenantId;
-  const libraryRow = v.delRow ? isLibraryRow(v.delRow) : false;
   return (
     <>
       <ProcessesHeader v={v} />
@@ -104,8 +102,8 @@ function ListPage() {
         description={t("process.admin.list.delete.body", { name: v.delRow?.name ?? "" })}
         confirmLabel={t("process.admin.list.deleteButton")}
         destructive
-        level={libraryRow ? "medium" : "heavy"}
-        confirmText={libraryRow ? undefined : v.delRow?.name}
+        level="heavy"
+        confirmText={v.delRow?.name}
         typePrompt={t("process.admin.list.delete.prompt")}
         onConfirm={v.confirmDelete}
       />

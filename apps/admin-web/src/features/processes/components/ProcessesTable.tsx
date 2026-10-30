@@ -8,7 +8,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
-import { canDeleteDraft } from "../lib/library-list";
 import { inUseReason, isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
 import { StatusCell, TenantsCell } from "./library/LibraryListCells";
@@ -94,11 +93,7 @@ function WriteActions(p: {
   actions: RowActions;
 }) {
   const { t, r, actions } = p;
-  const reason = p.library
-    ? canDeleteDraft(r)
-      ? null
-      : (inUseReason(r) ?? "published")
-    : inUseReason(r);
+  const reason = inUseReason(r); // mặc định của khe / đang có tenant gán ⇒ khoá + tooltip; còn lại (nháp lẫn đã xuất bản) xoá được
   return (
     <>
       <Button size="sm" variant="ghost" asChild>

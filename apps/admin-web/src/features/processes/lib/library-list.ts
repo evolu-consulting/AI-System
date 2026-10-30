@@ -44,9 +44,9 @@ export function sortLibraryRows<R extends ListRow>(rows: readonly R[]): R[] {
   });
 }
 
-/** Chỉ xoá được bản nháp chưa từng xuất bản, không phải mặc định, không có tenant gán. */
-export const canDeleteDraft = (r: ListRow): boolean =>
-  r.published_version == null && r.is_default !== true && (r.tenant_count ?? 0) === 0;
+/** Xoá được khi KHÔNG phải mặc định của khe và không có tenant gán (nháp lẫn đã xuất bản — Hub chỉ chặn PROCESS_IN_USE). */
+export const canDeleteLibrary = (r: ListRow): boolean =>
+  r.is_default !== true && (r.tenant_count ?? 0) === 0;
 
 const KEY_MAX = 32;
 /** Khoá đọc được từ tên: bỏ dấu, chữ thường, `-`; ≤ 32 ký tự (chừa chỗ hậu tố `-n` khi trùng); rỗng ⇒ `quy-trinh`. */

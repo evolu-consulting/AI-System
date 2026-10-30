@@ -659,8 +659,8 @@
     },
     "mode": {
       "label": "Cách xem",
-      "canvas": "Dạng sơ đồ",
-      "form": "Dạng biểu mẫu",
+      "canvas": "Sơ đồ",
+      "form": "Danh sách",
       "saveFirst": "Lưu thay đổi trước khi chuyển."
     },
     "col": {
@@ -830,6 +830,7 @@
     "samplesSubtitle": "Mẫu để chạy thử, không áp dụng cho hợp đồng thật.",
     "createFromDefault": "Tạo từ quy trình mặc định",
     "saveDraft": "Lưu nháp",
+    "assignedCount": "{{n}} tenant đã gán",
     "saveHint": "Lưu nháp chưa áp dụng cho tenant — bấm Xuất bản để áp dụng.",
     "status": {
       "draft": "Nháp",

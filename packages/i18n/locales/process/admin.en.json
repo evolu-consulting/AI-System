@@ -659,8 +659,8 @@
     },
     "mode": {
       "label": "View",
-      "canvas": "Diagram view",
-      "form": "Form view",
+      "canvas": "Diagram",
+      "form": "List",
       "saveFirst": "Save changes before switching."
     },
     "col": {
@@ -830,6 +830,7 @@
     "samplesSubtitle": "Samples for trial runs, not applied to real contracts.",
     "createFromDefault": "Create from the default process",
     "saveDraft": "Save draft",
+    "assignedCount": "{{n}} tenants assigned",
     "saveHint": "Saving a draft does not apply it to tenants — press Publish to apply.",
     "status": {
       "draft": "Draft",

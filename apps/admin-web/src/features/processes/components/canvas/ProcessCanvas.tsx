@@ -51,13 +51,14 @@ function fitBesideDrawer(
   size: { w: number; h: number },
   inset: number,
   ms: number,
+  minZoom: number,
 ) {
   const b = getNodesBounds(rf.getNodes());
   const v = getViewportForBounds(
     b,
     Math.max(size.w - inset, 200),
     size.h,
-    FIT.minZoom,
+    minZoom,
     FIT.maxZoom,
     FIT.padding,
   );
@@ -69,15 +70,18 @@ function runFit(
   size: { w: number; h: number },
   inset: number,
   compact: boolean,
+  minZoom: number,
 ) {
   const ms = reduceMotion() ? 0 : 200;
   if (compact) return rf.fitView({ ...FIT_COMPACT, duration: ms });
   const done =
-    inset > 0 ? fitBesideDrawer(rf, size, inset, ms) : rf.fitView({ ...FIT, duration: ms });
+    inset > 0
+      ? fitBesideDrawer(rf, size, inset, ms, minZoom)
+      : rf.fitView({ ...FIT, minZoom, duration: ms });
   return done.then(() => {
     // quá rộng cho cả mức zoom nhỏ nhất ⇒ neo mép trái (bước đầu luôn thấy), phần còn lại kéo ngang
     const v = rf.getViewport();
-    if (v.zoom <= FIT.minZoom + 0.001) void rf.setViewport({ ...v, x: 16 });
+    if (v.zoom <= minZoom + 0.001) void rf.setViewport({ ...v, x: 16 });
   });
 }
 // `compact` (trang showcase, chỉ đọc): canvas thấp + cho thu nhỏ hơn để cả flow vừa khung và nằm giữa.
@@ -93,6 +97,8 @@ export type ProcessCanvasProps = CanvasHandlers & {
   fitKey?: number;
   /** Bề rộng (px) ngăn chi tiết đang đè lên mép phải canvas (0 = không): fit chừa chỗ, chọn node dưới ngăn ⇒ pan vào. */
   inset?: number;
+  /** CR-105 UX · mức zoom tối thiểu khi fit (quy trình khe: node đủ to đọc được; phần dư kéo ngang). Mặc định 0.3. */
+  fitMin?: number;
 };
 
 type Lay = ReturnType<typeof layoutSteps>;
@@ -187,7 +193,10 @@ function Flow(p: ProcessCanvasProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
   useEffect(() => {
     const size = { w: width, h: height };
-    const id = window.setTimeout(() => void runFit(rf, size, inset.current, !!p.compact), 60);
+    const id = window.setTimeout(
+      () => void runFit(rf, size, inset.current, !!p.compact, p.fitMin ?? FIT.minZoom),
+      60,
+    );
     return () => window.clearTimeout(id);
   }, [stepsKey]);
 

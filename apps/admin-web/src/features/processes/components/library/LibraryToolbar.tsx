@@ -51,7 +51,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
         ) : null}
         <span className="text-caption text-muted-foreground">
           {L("usedFor", { slot: def.slot_label ?? def.slot ?? "" })} ·{" "}
-          {L("usage", { n: def.tenant_count ?? 0 })}
+          {L("assignedCount", { n: def.tenant_count ?? 0 })}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
@@ -102,7 +102,9 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
             </Button>
           ))}
         </fieldset>
-        <span className="text-caption text-muted-foreground">{L("saveHint")}</span>
+        {status.kind === "published" ? null : (
+          <span className="text-caption text-muted-foreground">{L("saveHint")}</span>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-1">
           {secondary(
             "releases",

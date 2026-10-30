@@ -47,12 +47,13 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
     readOnly,
     ops,
     fitKey: ops.arranged,
+    fitMin: lib ? 0.7 : undefined,
     onSelect: w.select,
     onRemove: w.askRemove,
   };
   return (
     <div className="space-y-3">
-      <Tabs value={w.mode} onValueChange={(v) => w.setMode(v as Mode)}>
+      <Tabs value={lib ? "canvas" : w.mode} onValueChange={(v) => w.setMode(v as Mode)}>
         <div className="flex flex-wrap items-center gap-2">
           {readOnly ? (
             <p className="text-caption text-muted-foreground">
@@ -69,16 +70,12 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
             />
           )}
           <div className="ml-auto flex items-center gap-1">
-            <TabsList aria-label={t("process.admin.canvas.view.label")}>
-              <TabsTrigger value="canvas">
-                {t(
-                  lib
-                    ? "process.admin.library.canvas.viewDiagram"
-                    : "process.admin.canvas.view.canvas",
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="list">{t("process.admin.canvas.view.list")}</TabsTrigger>
-            </TabsList>
+            {lib ? null : (
+              <TabsList aria-label={t("process.admin.canvas.view.label")}>
+                <TabsTrigger value="canvas">{t("process.admin.canvas.view.canvas")}</TabsTrigger>
+                <TabsTrigger value="list">{t("process.admin.canvas.view.list")}</TabsTrigger>
+              </TabsList>
+            )}
             <ShortcutsHint />
           </div>
         </div>

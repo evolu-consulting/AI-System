@@ -1,6 +1,6 @@
-﻿import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import {
-  canDeleteDraft,
+  canDeleteLibrary,
   cloneSuggestion,
   describeWhen,
   type ListRow,
@@ -58,7 +58,7 @@ describe("tenantsSummary", () => {
   });
 });
 
-describe("sortLibraryRows / canDeleteDraft", () => {
+describe("sortLibraryRows / canDeleteLibrary", () => {
   test("mặc định ghim đầu, còn lại mới cập nhật trước", () => {
     const rows = [
       row({ id: "old", updated_at: "2026-10-01T00:00:00Z" }),
@@ -67,11 +67,11 @@ describe("sortLibraryRows / canDeleteDraft", () => {
     ];
     expect(sortLibraryRows(rows).map((r) => r.id)).toEqual(["def", "new", "old"]);
   });
-  test("chỉ xoá bản nháp chưa xuất bản, không mặc định, không gán", () => {
-    expect(canDeleteDraft(row())).toBe(true);
-    expect(canDeleteDraft(row({ published_version: 1 }))).toBe(false);
-    expect(canDeleteDraft(row({ is_default: true }))).toBe(false);
-    expect(canDeleteDraft(row({ tenant_count: 1 }))).toBe(false);
+  test("xoá được khi không mặc định và không gán (kể cả đã xuất bản)", () => {
+    expect(canDeleteLibrary(row())).toBe(true);
+    expect(canDeleteLibrary(row({ published_version: 1 }))).toBe(true);
+    expect(canDeleteLibrary(row({ is_default: true }))).toBe(false);
+    expect(canDeleteLibrary(row({ tenant_count: 1 }))).toBe(false);
   });
 });
 

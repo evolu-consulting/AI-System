@@ -55,6 +55,11 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     const toolbar = p.getByTestId("library-toolbar");
     await expect(toolbar.getByText("Nháp", { exact: true })).toBeVisible();
     const name = (await p.getByRole("heading", { level: 1 }).innerText()).trim();
+    // thanh trên: không lỗi i18n; chỉ MỘT công tắc (Sơ đồ / Danh sách); gợi ý "Lưu nháp…" hiện khi chưa xuất bản
+    await expect(toolbar).toContainText("0 tenant đã gán");
+    await expect(toolbar).not.toContainText("returned an object");
+    await expect(p.getByRole("tab", { name: "Danh sách" })).toHaveCount(0);
+    await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toBeVisible();
     expect(name).toBe("Quy trình HĐ e2e");
 
     // Canvas: bước duyệt (cũng là stage gọi contracts-route) KHÔNG khoá ⇒ sửa tên + hạn, Lưu ⇒ Hub dựng lại slot_body từ stages
@@ -91,17 +96,18 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     expect(three[2]?.department_group_key).toBe("contracts-owner");
 
     // Form hiện đúng 3 bước vừa lưu từ Canvas (vòng đi–về giữ chỉnh sửa)
-    await toolbar.getByRole("button", { name: "Dạng biểu mẫu", exact: true }).click();
+    await toolbar.getByRole("button", { name: "Danh sách", exact: true }).click();
     await expect(
       p.getByTestId("flow-step-2").getByRole("textbox", { name: "Tên bước" }),
     ).toHaveValue("Pháp chế (canvas)");
-    await toolbar.getByRole("button", { name: "Dạng sơ đồ", exact: true }).click();
+    await toolbar.getByRole("button", { name: "Sơ đồ", exact: true }).click();
     // Xuất bản (hiện tác động) ⇒ "Đã xuất bản v1"
     await toolbar.getByRole("button", { name: "Xuất bản", exact: true }).click();
     const pub = p.getByRole("dialog");
     await expect(pub.getByTestId("publish-impact")).toContainText("tenant đang dùng");
     await pub.getByRole("button", { name: "Xuất bản", exact: true }).click();
     await expect(toolbar.getByText(/Đã xuất bản v\d+/)).toBeVisible();
+    await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toHaveCount(0); // đã xuất bản, không thay đổi
     // bản xuất bản v1 mang đúng nội dung đã sửa trên Canvas (áp cho lượt duyệt mới)
     const rel = await withSql(
       async (sql) =>
@@ -128,7 +134,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(p.getByText(/Đã cập nhật gán cho 1 tenant/)).toBeVisible();
 
     // Canvas: CHỈ route/finalize khoá (huy hiệu "Hệ thống", Delete không mở hộp xoá, panel báo khoá); bước duyệt không khoá
-    await toolbar.getByRole("button", { name: "Dạng sơ đồ", exact: true }).click();
+    await toolbar.getByRole("button", { name: "Sơ đồ", exact: true }).click();
     const sys = canvas.getByRole("button").filter({ hasText: "Hệ thống" });
     await expect(sys.first()).toBeVisible();
     expect(await sys.count()).toBe(2); // contracts-route + contracts-finalize, không phải mọi giai đoạn
@@ -154,10 +160,11 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       "1 tenant",
     );
 
-    // Xoá bản NHÁP chưa từng xuất bản (dọn rác): hộp xác nhận ⇒ dòng biến mất; bản đã xuất bản/mặc định thì nút Xoá bị khoá
+    // Dọn rác: xoá quy trình KHÔNG dùng (nháp hoặc đã xuất bản) bằng gõ lại tên; mặc định / đang gán thì nút Xoá bị khoá
     await expect(
       table.getByRole("row").filter({ hasText: name }).first().getByRole("button", { name: "Xoá" }),
     ).toBeDisabled();
+    await expect(base.getByRole("button", { name: "Xoá" })).toBeDisabled(); // mặc định của khe: khoá (tooltip nêu lý do)
     await base.getByRole("button", { name: "Nhân bản" }).click();
     await p.getByRole("textbox", { name: "Tên quy trình mới" }).fill("Nháp tạm e2e");
     await p.getByRole("dialog").getByRole("button", { name: "Nhân bản", exact: true }).click();
@@ -168,7 +175,11 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       .click();
     const tmp = table.getByRole("row").filter({ hasText: "Nháp tạm e2e" });
     await tmp.getByRole("button", { name: "Xoá" }).click();
-    await p.getByRole("alertdialog").getByRole("button", { name: "Xoá" }).click();
+    // xác nhận bằng cách GÕ LẠI TÊN (nút Xoá chỉ bật khi gõ đúng)
+    const confirm = p.getByRole("alertdialog");
+    await expect(confirm.getByRole("button", { name: "Xoá" })).toBeDisabled();
+    await confirm.getByRole("textbox").fill("Nháp tạm e2e");
+    await confirm.getByRole("button", { name: "Xoá" }).click();
     await expect(tmp).toHaveCount(0);
   } finally {
     await ctx.close();

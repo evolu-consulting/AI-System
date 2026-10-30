@@ -325,6 +325,15 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
     ]).toEqual([{ live: true }]);
   });
 
+  it("quy trình ĐÃ xuất bản nhưng không dùng (không mặc định, không gán) ⇒ xoá được", async () => {
+    const d = await published("pl-del-pub", body("DP"));
+    const v = (await call("P", "GET", D(d))).json.version as number;
+    expect((await call("P", "DELETE", `${D(d)}?version=${v}`)).status).toBe(204);
+    expect([
+      ...(await o`select deleted_at is not null as gone from hub.process_defs where id = ${d}`),
+    ]).toEqual([{ gone: true }]);
+  });
+
   it("xuất bản tạo bản mới, ghi audit, impact đúng số", async () => {
     const p = await published("pl-pub", body("P1"));
     await call("P", "PUT", ASSIGN(X), { def_id: p });
