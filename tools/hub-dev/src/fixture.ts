@@ -185,6 +185,35 @@ export const DEMO_USERS: FixtureUser[] = [
   password: DEMO_PASSWORD,
 }));
 
+/** Gói bật cho tenant demo khi `scripts/dev-up.ps1` dựng máy dev: Sổ Hợp Tác + Community. */
+export const DEMO_PACKS = ["contracts", "community"] as const;
+
+/** Bật gói cho `evolu` (PUT idempotent, platform_admin) rồi đưa user demo vào Group vai của gói: tenant_admin ⇒ `<gói>-owner`,
+ *  còn lại ⇒ `<gói>-editor` (Group do enablePack tạo). Chạy sau `ensureDemoFixture`. */
+export async function ensureDemoPacks(adminUrl: string): Promise<void> {
+  const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
+  const tid = await ensureTenant(api, DEMO_TENANT.key, DEMO_TENANT.name);
+  const owners = DEMO_USERS.filter((u) => u.role === "tenant_admin").map((u) => u.username);
+  const editors = DEMO_USERS.filter((u) => u.role !== "tenant_admin").map((u) => u.username);
+  for (const pack of DEMO_PACKS) {
+    const state = await call(api, "PUT", `/admin/tenants/${tid}/packs/${pack}`);
+    const groups = (state.groups as Json[] | undefined) ?? [];
+    for (const [role, usernames] of [
+      ["owner", owners],
+      ["editor", editors],
+    ] as const) {
+      const g = groups.find((x) => x.role === role);
+      if (!g) throw new Error(`gói ${pack}: thiếu group vai ${role}`);
+      const res = await call(api, "POST", `/admin/groups/${String(g.group_id)}/members`, {
+        usernames,
+      });
+      const missing = (res.not_found as string[] | undefined) ?? [];
+      if (missing.length > 0)
+        throw new Error(`${pack}-${role}: không thấy user ${missing.join(", ")}`);
+    }
+  }
+}
+
 /** Tạo tenant `evolu` + 4 user demo (idempotent), tất cả vào `beta-testers` để dùng được agent seed. */
 export async function ensureDemoFixture(adminUrl: string): Promise<void> {
   const api: Api = { base: adminUrl, token: await adminToken(adminUrl) };
