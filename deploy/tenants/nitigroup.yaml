@@ -21,6 +21,9 @@ profile:
 
 # Bật gói qua đường admin-web (PK-FR-05): entitlement + 3 Group vai + grant + trợ lý chung (assistant).
 packs: [contracts]
+# approval_process: <key>   # CR-105 (optional): key of a PUBLISHED library process, assigned to slot contracts.approval after enablePack('contracts').
+#   Absent => tenant runs the default process. Invalid/unpublished/missing groups => step error in report, tenant still created.
+#   Needs ADMIN_HUB_URL + ONBOARD_HUB_ACCESS_TOKEN (platform_admin) in the env of tenant-onboard.cli.ts.
 
 # Cây phòng ban (M1 + admin 0015): mọi phòng nằm ngay dưới gốc (Phòng Giám đốc), thứ tự như khai.
 # "Bộ phận / Phòng ban trong công ty" là nhãn chung, KHÔNG phải phòng ⇒ bỏ.

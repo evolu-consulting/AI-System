@@ -16,7 +16,35 @@ export type OnboardReport = {
   departments: { total: number; groups_created: number; groups_renamed: number; changed: number };
   members: { added: number; heads_set: number; pending_emails: string[] };
   packs: { key: string; groups: number }[];
+  /** CR-105 L5: null => yaml has no `approval_process`. An error is only reported here; the tenant is still created. */
+  approval: {
+    process: string;
+    slot: string;
+    state: "assigned" | "error";
+    error?: string;
+  } | null;
 };
+
+export const APPROVAL_SLOT = "contracts.approval";
+
+async function approvalStep(
+  p: OnboardPorts,
+  tid: string,
+  s: OnboardSpec,
+  contractsOn: boolean,
+): Promise<OnboardReport["approval"]> {
+  if (!s.approval_process) return null;
+  const base = { process: s.approval_process, slot: APPROVAL_SLOT };
+  const err = (error: string) => ({ ...base, state: "error" as const, error });
+  if (!contractsOn) return err("PACK_CONTRACTS_NOT_ENABLED");
+  if (!p.processAssign) return err("ASSIGN_NOT_CONFIGURED");
+  try {
+    const r = await p.processAssign.assign(tid, APPROVAL_SLOT, s.approval_process);
+    return r.ok ? { ...base, state: "assigned" } : err(r.code);
+  } catch {
+    return err("ASSIGN_FAILED");
+  }
+}
 
 type Step = { tid: string; created: boolean; updated: boolean; binding: OnboardReport["binding"] };
 
@@ -126,11 +154,18 @@ export async function onboardTenant(
     const r = await p.enablePack(first.st.tid, k);
     packs.push({ key: k, groups: r.groups });
   }
+  const approval = await approvalStep(
+    p,
+    first.st.tid,
+    s,
+    packs.some((x) => x.key === "contracts"),
+  );
   const { st, o } = first;
   return {
     tenant: { id: st.tid, key: s.key, created: st.created, updated: st.updated },
     binding: st.binding,
     ...o,
     packs,
+    approval,
   };
 }

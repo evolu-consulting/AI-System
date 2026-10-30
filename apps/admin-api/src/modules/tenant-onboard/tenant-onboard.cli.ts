@@ -37,7 +37,11 @@ async function main(): Promise<void> {
   const url = process.env.ADMIN_API_DATABASE_URL ?? fail("MISSING_ADMIN_API_DATABASE_URL");
   const db = createDb(url, { max: 2 });
   try {
-    const report = await onboardTenant(db, p.spec, v.actor as string);
+    // CR-105 L5: assigning `approval_process` needs hub (ADMIN_HUB_URL + ONBOARD_HUB_ACCESS_TOKEN = platform_admin access token).
+    const hubUrl = process.env.ADMIN_HUB_URL;
+    const hubTok = process.env.ONBOARD_HUB_ACCESS_TOKEN;
+    const hub = hubUrl && hubTok ? { url: hubUrl, accessToken: hubTok } : undefined;
+    const report = await onboardTenant(db, p.spec, v.actor as string, hub);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (err) {
     if (err instanceof AppError) fail(err.code, { details: err.details });

@@ -63,7 +63,15 @@ export type OnboardSink = {
 
 export type OnboardErrorCode = "FORBIDDEN" | "KEY_TAKEN" | "VALIDATION_ERROR";
 
+/** CR-105 L5: port assigning a library process to a tenant slot (HTTP adapter calls hub as platform_admin). */
+export type AssignResult = { ok: true } | { ok: false; code: string };
+export type ProcessAssignPort = {
+  assign(tenantId: string, slot: string, processKey: string): Promise<AssignResult>;
+};
+
 export type OnboardPorts = {
+  /** Absent => the assign step reports ASSIGN_NOT_CONFIGURED (only when yaml has `approval_process`). */
+  processAssign?: ProcessAssignPort;
   /** Một tx `configWrite`; ném trong `fn` ⇒ rollback. */
   write<T>(fn: (repo: OnboardRepo, sink: OnboardSink) => Promise<T>): Promise<T>;
   /** Bật gói (PK-FR-05, cùng đường admin-web); trả số Group vai. */

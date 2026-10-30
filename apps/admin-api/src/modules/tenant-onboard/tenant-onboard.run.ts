@@ -6,6 +6,7 @@ import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { enablePack } from "../packs/packs.service";
 import { NEW_TENANT_SETTINGS } from "../tenants/tenants.service";
+import { type HubAssignConfig, hubProcessAssign } from "./adapters/hub-assign.adapter";
 import { onboardRepo } from "./adapters/onboard.repo";
 import { type OnboardReport, onboardTenant as run } from "./application/onboard.usecase";
 import type { OnboardPorts } from "./application/ports";
@@ -13,9 +14,10 @@ import type { OnboardSpec } from "./domain/onboard.rules";
 
 export type { OnboardReport };
 
-export function onboardPorts(db: Db, actorId: string): OnboardPorts {
+export function onboardPorts(db: Db, actorId: string, hub?: HubAssignConfig): OnboardPorts {
   const call = { ctx: { db }, scope: { kind: "platform" } as const, actor: { userId: actorId } };
   return {
+    ...(hub ? { processAssign: hubProcessAssign(hub) } : {}),
     write: (fn) =>
       configWrite(call, "tenant.save", (tx, ch) =>
         fn(onboardRepo(tx), {
@@ -41,5 +43,9 @@ export function onboardPorts(db: Db, actorId: string): OnboardPorts {
   };
 }
 
-export const onboardTenant = (db: Db, s: OnboardSpec, actorId: string): Promise<OnboardReport> =>
-  run(onboardPorts(db, actorId), s, actorId);
+export const onboardTenant = (
+  db: Db,
+  s: OnboardSpec,
+  actorId: string,
+  hub?: HubAssignConfig,
+): Promise<OnboardReport> => run(onboardPorts(db, actorId, hub), s, actorId);

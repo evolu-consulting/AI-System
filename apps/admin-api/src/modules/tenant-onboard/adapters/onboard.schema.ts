@@ -33,6 +33,11 @@ export const OnboardSpecSchema = z.strictObject({
   packs: z.array(PackKeySchema).max(10).default([]),
   root: DeptSchema.omit({ parent: true }),
   departments: z.array(DeptSchema).max(200).default([]),
+  /** CR-105 L5: key of a published library process for slot `contracts.approval`; absent => default process. */
+  approval_process: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9._-]{0,63}$/)
+    .optional(),
   /** Gắn tenant với org mgmt-app cho importer I1 (marker `settings.mgmt_source/mgmt_org_id`); org null ⇒ chưa gắn. */
   import: z
     .strictObject({
