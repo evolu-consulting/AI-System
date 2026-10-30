@@ -46,7 +46,7 @@ function Body({ v }: { v: ProcessesView }) {
         rows={v.rows}
         templates={v.templates}
         library={v.library}
-        canWrite={v.canWrite}
+        canEditTemplates={v.canEditTemplates}
         canRun={v.canRun}
         loading={v.q.isPending}
         fetching={v.q.isFetching}

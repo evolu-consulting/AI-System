@@ -76,7 +76,8 @@ const asInput = (d: Json): Json => {
 describe("S0-20…S0-24 · danh sách + chép mẫu + quyền [ADM-FR-65]", () => {
   it("ADM-FR-65 · S0-20 · tadmin thấy mẫu sdlc/hoa-don + quy trình acme, không thấy beta; member ⇒ 403", async () => {
     needSchema(c.ready);
-    const r = await c.call("Adm", "GET", "/process-defs");
+    // CR-105 lọc mẫu: mẫu + def tenant không khe/không của gói nằm ở `kind=sample` ("Mẫu · chạy thử"), không ở danh sách mặc định.
+    const r = await c.call("Adm", "GET", "/process-defs?kind=sample");
     expect(r.status).toBe(200);
     const items: Json[] = r.json?.items ?? [];
     expect(

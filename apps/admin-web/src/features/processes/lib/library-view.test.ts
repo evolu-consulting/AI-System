@@ -120,3 +120,23 @@ describe("splitRule + errorLines có dịch luật", () => {
     ).toEqual(["thiếu contracts-finalize", "không tới được stages.2", "x: OTHER"]);
   });
 });
+
+describe("tab Mẫu · chạy thử", () => {
+  test("rowMode: mẫu toàn nền tảng chỉ chép được khi không có quyền sửa mẫu; def tenant luôn đầy đủ", async () => {
+    const { rowMode } = await import("./library-view");
+    expect(rowMode({ is_template: true }, false)).toBe("copy");
+    expect(rowMode({ is_template: true }, true)).toBe("full");
+    expect(rowMode({ is_template: false }, false)).toBe("full");
+  });
+  test("rowsForTab: tab mẫu giữ nguyên (Hub đã lọc kind=sample), tab chính áp bộ lọc Bật/Tắt", async () => {
+    const { rowsForTab } = await import("./library-view");
+    const rows = [
+      { id: "a", enabled: true },
+      { id: "b", enabled: false },
+    ];
+    expect(rowsForTab(rows, true, "on")).toEqual(rows);
+    expect(rowsForTab(rows, false, "all")).toEqual(rows);
+    expect(rowsForTab(rows, false, "on").map((r) => r.id)).toEqual(["a"]);
+    expect(rowsForTab(rows, false, "off").map((r) => r.id)).toEqual(["b"]);
+  });
+});

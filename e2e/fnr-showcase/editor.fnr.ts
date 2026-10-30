@@ -1,4 +1,4 @@
-﻿// CR-103 · e2e editor quy trình (admin-web `/processes/:id`) cho node registry: đổi loại node (Ghi giá trị / Nếu / agent…), chặn đổi
+// CR-103 · e2e editor quy trình (admin-web `/processes/:id`) cho node registry: đổi loại node (Ghi giá trị / Nếu / agent…), chặn đổi
 // theo `field_ref`, kéo node sang bước khác, If phải đứng riêng, If không trỏ tới bước có Hành động thật. Dùng stack của
 // `playwright.fnr.config.ts` (Hub thật + Runtime giả + admin-web). Mỗi ca tự dựng def riêng qua API (key ngẫu nhiên) ⇒ không phụ thuộc thứ tự.
 import { expect, type Page, test } from "@playwright/test";
@@ -126,7 +126,7 @@ test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang 
   await adminLogin(p);
   // bản sao flow mẫu (seed `_seed.ts`)
   const t = await tok("Adm");
-  const list = await hub(t, "GET", "/process-defs?include_templates=false&limit=100");
+  const list = await hub(t, "GET", "/process-defs?kind=sample&limit=100");
   const row = ((list.json?.items ?? []) as Json[]).find(
     (d) => d.key === "flow-showcase" || /mẫu/.test(d.name),
   );

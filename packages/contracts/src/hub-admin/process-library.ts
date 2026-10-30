@@ -12,8 +12,8 @@ import { CountSchema, IsoDateTime, UuidSchema } from "../common";
 /** `<gói>.<việc>` — khớp CHECK `process_slots_slot_ck` (hub 0068). */
 export const SLOT_KEY_RE = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
 export const SlotKeySchema = z.string().regex(SLOT_KEY_RE);
-/** `GET /process-defs?kind=`: `library` = def thư viện (có khe, chỉ platform_admin); `template` = mẫu chạy thử. */
-export const PROCESS_DEF_KINDS = ["library", "template"] as const;
+/** `GET /process-defs?kind=`: `library` = def thư viện (có khe, chỉ platform_admin); `template` = mẫu toàn nền tảng; `sample` = "Mẫu · chạy thử" (mẫu + def tenant không khe, không của gói). */
+export const PROCESS_DEF_KINDS = ["library", "template", "sample"] as const;
 export const ProcessDefKindSchema = z.enum(PROCESS_DEF_KINDS);
 
 /** Trường thêm vào body ghi def (nháp thư viện): `slot_body` thắng `stages` (Hub biên dịch lại). */

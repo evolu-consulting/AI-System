@@ -316,7 +316,7 @@ export const saveDef = async (p: Page): Promise<number> => {
 /** Def theo key (GET Hub, Adm). */
 export async function defByKey(key: string): Promise<Json> {
   const t = await tok("Adm");
-  const list = await hub(t, "GET", "/process-defs?include_templates=false&limit=100");
+  const list = await hub(t, "GET", "/process-defs?kind=sample&limit=100");
   const item = ((list.json?.items ?? []) as Json[]).find((d) => d.key === key);
   expect(item, `GET /process-defs có ${key}`).toBeTruthy();
   return (await hub(t, "GET", `/process-defs/${item.id}`)).json;

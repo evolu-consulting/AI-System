@@ -18,7 +18,7 @@ import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 import { LIST_LIMIT, PKEYS } from "./api";
 
-export type LibraryKind = "library" | "template";
+export type LibraryKind = "library" | "template" | "sample";
 export type DealKind = "buy" | "sell" | "referral";
 
 /** Mục danh sách / def đã có `slot`, `slot_label`, `published_version`, `is_default`, `tenant_count` (= số tenant đang GÁN) từ contracts. */
@@ -55,9 +55,9 @@ export const LKEYS = {
 
 // ---------- đọc ----------
 /** `GET /process-defs?kind=library|template` — danh sách thư viện (chỉ platform_admin) hoặc mẫu chạy thử. */
-export function useLibraryDefs(kind: LibraryKind, enabled: boolean) {
+export function useLibraryDefs(kind: LibraryKind, enabled: boolean, tenantId?: string) {
   return useInfiniteQuery({
-    queryKey: LKEYS.list(kind),
+    queryKey: [...LKEYS.list(kind), tenantId ?? ""] as const,
     enabled: enabled && hubConfigured(),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last: ProcessDefListResponse) => last.next_cursor ?? undefined,
@@ -65,6 +65,7 @@ export function useLibraryDefs(kind: LibraryKind, enabled: boolean) {
       api<ProcessDefListResponse>(url("/process-defs"), {
         query: {
           kind,
+          tenant_id: kind === "sample" ? tenantId : undefined,
           include_templates: String(kind === "template"),
           limit: LIST_LIMIT,
           cursor: pageParam,

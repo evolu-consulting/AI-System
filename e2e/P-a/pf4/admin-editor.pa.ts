@@ -35,7 +35,7 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
 
     // sửa song song: đổi mô tả qua API admin (Hub) trước khi Lưu ⇒ 409 ⇒ ConflictDialog
     await p.getByRole("textbox", { name: "Mô tả" }).fill("Sửa ở tab 1");
-    const list = await hub(await tok("Adm"), "GET", "/process-defs?include_templates=false");
+    const list = await hub(await tok("Adm"), "GET", "/process-defs?kind=sample");
     const item = (list.json?.items ?? []).find((d: { key: string }) => d.key === "hoa-don-t");
     expect(item, "GET /process-defs có hoa-don-t").toBeTruthy();
     const def = (await hub(await tok("Adm"), "GET", `/process-defs/${item.id}`)).json;

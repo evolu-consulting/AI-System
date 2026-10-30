@@ -73,16 +73,33 @@ export type ListOpts = DefScope & {
   includeTemplates: boolean;
   limit: number;
   after?: PageKey;
-  /** CR-105 · `library` = def thư viện; `template` = mẫu chạy thử; vắng = như cũ, ẩn def thư viện + def vật chất hoá. */
-  kind?: "library" | "template";
+  /**
+   * CR-105 · `library` = def thư viện; `template` = mẫu toàn nền tảng; `sample` = "Mẫu · chạy thử" = mẫu + def tenant KHÔNG khe, KHÔNG của gói
+   * (vd `flow-showcase`, bản "Chép mẫu"); vắng = danh sách chính = def thư viện (có khe) + def của gói (`pack_version`), ẩn def vật chất hoá.
+   */
+  kind?: "library" | "template" | "sample";
+};
+
+/** Mẫu chạy thử: mẫu toàn nền tảng + def của chính tenant không khe/không của gói; platform_admin chưa chọn tenant ⇒ chỉ mẫu. */
+const sampleScope = (o: ListOpts): SQL => {
+  const own =
+    o.tenantId === null
+      ? sql`d.tenant_id is null`
+      : sql`(d.tenant_id = ${o.tenantId} or d.tenant_id is null)`;
+  return sql`${own} and d.slot is null and d.source_ref is null and d.pack_version is null`;
+};
+/** Danh sách chính: def thư viện (có khe, chỉ platform_admin thấy qua `visible`) + def của gói còn hiện (`pack_version`); mẫu/vật chất hoá ẩn. */
+const mainScope = (o: ListOpts): SQL => {
+  // Có tenant (tenant_admin / platform_admin chọn tenant): chỉ def của gói trong tenant đó; chưa chọn tenant (platform): def thư viện.
+  if (o.tenantId !== null)
+    return sql`d.tenant_id = ${o.tenantId} and d.source_ref is null and d.pack_version is not null`;
+  return sql`${visible(o)} and d.source_ref is null and (d.slot is not null or d.pack_version is not null)`;
 };
 
 function listScope(o: ListOpts): SQL {
   if (o.kind === "library") return sql`d.tenant_id is null and d.slot is not null`;
   if (o.kind === "template") return sql`d.tenant_id is null and d.slot is null`;
-  const scope =
-    o.includeTemplates || o.tenantId === null ? visible(o) : sql`d.tenant_id = ${o.tenantId}`;
-  return sql`${scope} and d.slot is null and d.source_ref is null`;
+  return o.kind === "sample" ? sampleScope(o) : mainScope(o);
 }
 
 /** Idx `process_defs_tenant_updated_idx`; `limit + 1` để biết còn trang. */

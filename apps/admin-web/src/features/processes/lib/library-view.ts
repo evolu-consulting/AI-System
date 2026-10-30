@@ -106,3 +106,23 @@ function issueLines(list: readonly unknown[], fmt?: RuleFormat): string[] {
     return line ? [line] : [];
   });
 }
+
+/**
+ * CR-105 · tab "Mẫu · chạy thử" trộn mẫu toàn nền tảng (`is_template`) với def tenant không khe/không của gói (vd flow-showcase,
+ * bản "Chép mẫu"): mẫu mà người xem không sửa được ⇒ chỉ "Chép mẫu" (`copy`); còn lại ⇒ Chạy/Sửa/Xoá (`full`).
+ */
+export const rowMode = (
+  r: Pick<LibraryListItem, "is_template">,
+  canEditTemplates: boolean,
+): "copy" | "full" => (r.is_template && !canEditTemplates ? "copy" : "full");
+
+/** Hàng của một tab: Hub đã lọc theo `kind` (danh sách chính / `sample`) ⇒ client chỉ áp bộ lọc Bật/Tắt ở tab chính. */
+export function rowsForTab<R extends { enabled: boolean }>(
+  items: readonly R[],
+  samples: boolean,
+  filter: "all" | "on" | "off",
+): R[] {
+  return samples || filter === "all"
+    ? [...items]
+    : items.filter((r) => r.enabled === (filter === "on"));
+}

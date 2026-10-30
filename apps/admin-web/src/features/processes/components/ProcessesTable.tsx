@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
-import { inUseReason, tenantUsage } from "../lib/library-view";
+import { inUseReason, rowMode, tenantUsage } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
 
 export type RowActions = {
@@ -22,7 +22,8 @@ export type RowActions = {
 
 type Opts = {
   templates: boolean;
-  canWrite: boolean;
+  /** Mẫu toàn nền tảng sửa được không (chỉ platform_admin); def tenant (kể cả bản "Chép mẫu") luôn sửa/chạy được. */
+  canEditTemplates: boolean;
   canRun: boolean;
   /** CR-105 · danh sách thư viện (platform_admin): thêm cột Dùng cho / Tenant đang dùng. */
   library?: boolean;
@@ -68,14 +69,13 @@ function enabledColumn(t: TFunction, o: Opts): Column<Row> {
     id: "enabled",
     header: L(t, "col.enabled"),
     cell: (r) =>
-      o.templates ? (
+      r.is_template ? (
         <StatusBadge tone={r.enabled ? "ok" : "off"}>
           {t(r.enabled ? "common.on" : "common.off")}
         </StatusBadge>
       ) : (
         <Switch
           checked={r.enabled}
-          disabled={!o.canWrite}
           aria-label={`${t("common.on")} ${r.name}`}
           onCheckedChange={(v) => o.actions.onToggle(r, v)}
         />
@@ -118,19 +118,19 @@ function WriteActions(p: {
 }
 
 function actionsColumn(t: TFunction, o: Opts): Column<Row> {
-  const { templates, canWrite, canRun, actions, library } = o;
+  const { canEditTemplates, canRun, actions, library } = o;
   return {
     id: "actions",
     header: <span className="sr-only">{t("common.actions")}</span>,
     className: "text-right",
     cell: (r) => (
       <span className="flex items-center justify-end gap-1">
-        {templates && !canWrite ? (
+        {rowMode(r, canEditTemplates) === "copy" ? (
           <Button size="sm" variant="outline" onClick={() => actions.onCopy(r)}>
             {L(t, "copy")}
           </Button>
         ) : null}
-        {templates ? null : (
+        {r.is_template ? null : (
           <Button
             size="sm"
             variant="outline"
@@ -141,7 +141,9 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
             {L(t, "run.button")}
           </Button>
         )}
-        {canWrite ? <WriteActions t={t} r={r} library={library} actions={actions} /> : null}
+        {rowMode(r, canEditTemplates) === "full" ? (
+          <WriteActions t={t} r={r} library={library} actions={actions} />
+        ) : null}
       </span>
     ),
   };
@@ -185,14 +187,12 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
     },
   ];
   if (o.library) cols.push(...libraryColumns(t));
-  if (!o.templates) {
-    cols.push({
-      id: "running",
-      header: L(t, "col.running"),
-      cell: (r) => r.active_runs,
-      className: "text-right",
-    });
-  }
+  cols.push({
+    id: "running",
+    header: L(t, "col.running"),
+    cell: (r) => r.active_runs,
+    className: "text-right",
+  });
   cols.push({
     id: "updated",
     header: L(t, "col.updated"),
@@ -204,10 +204,10 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
 
 export function ProcessesTable(p: Props) {
   const { t } = useTranslation();
-  const { templates, canWrite, canRun, actions, library } = p;
+  const { templates, canEditTemplates, canRun, actions, library } = p;
   const columns = useMemo(
-    () => buildColumns(t, { templates, canWrite, canRun, actions, library }),
-    [t, templates, canWrite, canRun, actions, library],
+    () => buildColumns(t, { templates, canEditTemplates, canRun, actions, library }),
+    [t, templates, canEditTemplates, canRun, actions, library],
   );
   return (
     <DataTable

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import { processErrorSpec } from "../lib/errors";
+import { rowsForTab } from "../lib/library-view";
 import { cloneDef, type LibraryListItem, useLibraryDefs } from "../library-api";
 import { useProcessTenant } from "./use-process-tenant";
 import { useToggleEnabled } from "./use-toggle-enabled";
@@ -12,10 +13,6 @@ import { useToggleEnabled } from "./use-toggle-enabled";
 export type Tab = "own" | "templates";
 export type StateFilter = "all" | "on" | "off";
 type Row = LibraryListItem;
-
-export function filterRows(rows: Row[], f: StateFilter): Row[] {
-  return f === "all" ? rows : rows.filter((r) => r.enabled === (f === "on"));
-}
 
 /** Lỗi API → toast. */
 function useFail() {
@@ -107,9 +104,14 @@ export function useProcessesView() {
   // CR-105 · platform_admin: tab chính = thư viện (`kind=library`, không cần chọn tenant); tab Mẫu = `kind=template`.
   // Chọn một tenant ⇒ xem quy trình của tenant đó như trước.
   const library = tenant.isPlatform && !tenant.tenantId && !templates;
-  const useLib = tenant.isPlatform && (!tenant.tenantId || templates);
-  const ownQ = useProcessDefs(tenant.tenantId, templates, tenant.ready && !useLib);
-  const libQ = useLibraryDefs(templates ? "template" : "library", tenant.ready && useLib);
+  // Tab "Mẫu · chạy thử" (mọi vai) = `kind=sample`: mẫu + def tenant không khe/không của gói; tab chính của tenant = def của gói.
+  const useLib = library || templates;
+  const ownQ = useProcessDefs(tenant.tenantId, false, tenant.ready && !useLib);
+  const libQ = useLibraryDefs(
+    templates ? "sample" : "library",
+    tenant.ready && useLib,
+    tenant.tenantId,
+  );
   const q = useLib ? libQ : ownQ;
   const goOwn = () => void navigate({ to: "/processes", search: { tab: "own" }, replace: true });
   const goEditor = (id: string) =>
@@ -123,8 +125,11 @@ export function useProcessesView() {
   );
   const rows = useMemo(() => {
     if (!q.data) return undefined;
-    const all = q.data.pages.flatMap((p) => p.items).filter((r) => r.is_template === templates);
-    return templates ? all : filterRows(all, filter);
+    return rowsForTab(
+      q.data.pages.flatMap((p) => p.items),
+      templates,
+      filter,
+    );
   }, [q.data, templates, filter]);
   return {
     tenant,
@@ -143,7 +148,9 @@ export function useProcessesView() {
     delRow: del.row,
     closeDelete: del.close,
     confirmDelete: del.confirm,
-    canWrite: templates ? tenant.isPlatform : true,
+    canEditTemplates: tenant.isPlatform,
+    /** Nút "Tạo quy trình": ở tab Mẫu chỉ platform_admin (tạo mẫu). */
+    canWrite: !templates || tenant.isPlatform,
     canRun: !tenant.isPlatform,
   };
 }

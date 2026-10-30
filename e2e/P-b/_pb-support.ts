@@ -118,7 +118,7 @@ export async function createDef(
   const r = await hub(t, "POST", "/process-defs", body);
   if (r.status === 201) return { id: r.json.id as string };
   expect(r.status, `POST /process-defs ${key} → ${JSON.stringify(r.json)}`).toBe(409);
-  const list = await hub(t, "GET", "/process-defs?include_templates=false&limit=100");
+  const list = await hub(t, "GET", "/process-defs?kind=sample&limit=100");
   const found = ((list.json?.items ?? []) as Json[]).find((d) => d.key === key);
   expect(found, `${key} có trong GET /process-defs`).toBeTruthy();
   return { id: found.id as string };
