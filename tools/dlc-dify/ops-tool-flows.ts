@@ -93,14 +93,14 @@ function khSearch(e: ToolEnv): ToolFlow {
         outputs: ["body"],
         code: `import json
 def main(project: str, q: str) -> dict:
-    return {"body": json.dumps({"text": " ".join((q or "").split())[:3900] or "overview", "project": project, "budget_chars": 9000})}
+    return {"body": json.dumps({"text": " ".join((q or "").split())[:2000] or "overview", "project": project, "scope": "knowledge", "k": 6})}
 `,
       }),
       http({
         id: "post",
-        title: "KH: context/step",
+        title: "KH: vector/query",
         method: "post",
-        url: `${env("kh_url")}/context/step`,
+        url: `${env("kh_url")}/vector/query`,
         headers: [
           `Authorization:Bearer ${ref("start", "user_token")}`,
           "Content-Type:application/json",
@@ -114,10 +114,10 @@ def main(project: str, q: str) -> dict:
     r = resp(raw)
     if str(status) != "200":
         return {"text": "KH error " + str(status) + ": " + str(r.get("detail") or r.get("error") or raw)[:300]}
-    items = [i for i in (r.get("items") or []) if i.get("tier") != "log-recent"]
-    if not items:
-        return {"text": "no knowledge found for this question in project " + str(r.get("project"))}
-    return {"text": "\\n\\n".join("[" + str(i.get("id")) + "] " + str(i.get("text") or "") for i in items)[:9000]}
+    hits = [h for h in (r.get("hits") or []) if float(h.get("score") or 0) >= 0.45]
+    if not hits:
+        return {"text": "no knowledge found for this question in this project"}
+    return {"text": "\\n\\n".join("[" + str(h.get("vector_id")) + ", score " + str(round(float(h.get("score") or 0), 2)) + "] " + str(h.get("source_text") or "") for h in hits)[:10000]}
 `,
       ),
     ],
