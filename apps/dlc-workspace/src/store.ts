@@ -2,6 +2,7 @@
 // + trạng thái chờ) và `<dir>/tickets.json` (hộp ticket Trello). Ghi qua khoá theo file (đọc-sửa-ghi không xen nhau).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import type { DeployCfg, DeployRecord } from "./deploy";
 import { withLock } from "./git";
 import type { QueueItem } from "./queue.rules";
 import type { TestRun } from "./test-gate.rules";
@@ -17,6 +18,11 @@ export type Project = {
   test_baseline?: { sha: string } & TestRun;
   created_at: string;
   queue: QueueItem[];
+  /** Tên app (dòng `App:` của thẻ góp ý) thuộc project này: ticket mới mang app đó tự gắn `project_key`. */
+  apps?: string[];
+  /** Cách deploy (build + chạy container `dlc-app-<key>`), xem deploy.ts. */
+  deploy?: DeployCfg;
+  deploys?: DeployRecord[];
 };
 
 export type Ticket = {
@@ -28,8 +34,10 @@ export type Ticket = {
   labels: string[];
   list: string;
   kind: "bug" | "enhancement";
+  /** App nguồn của góp ý (dòng `App:` trong mô tả thẻ), "" khi thẻ không ghi. */
+  app?: string;
   project_key: string | null;
-  status: "new" | "taken" | "done";
+  status: "new" | "taken" | "done" | "dismissed";
   received_at: string;
   updated_at: string;
 };

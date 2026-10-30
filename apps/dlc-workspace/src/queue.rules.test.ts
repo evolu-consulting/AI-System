@@ -45,7 +45,14 @@ describe("dlc-dify · queue một project", () => {
       queued: 1,
       in_progress: 0,
       ready_to_deploy: 0,
+      deployed: 0,
       failed: 0,
     });
+  });
+  test("đạt cổng ⇒ ready_to_deploy giữ commit merge (deploy chọn theo việc)", () => {
+    const q = next(twoItems(), T).queue;
+    const r = result(q, "a", { ok: true, note: "merged", sha: "abc1234" }, T);
+    expect(r.item?.status).toBe("ready_to_deploy");
+    expect(r.item?.sha).toBe("abc1234");
   });
 });

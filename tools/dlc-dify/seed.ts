@@ -22,7 +22,7 @@ import { difyConsole } from "./dify-console";
 import { catalogInputs } from "./dsl";
 import { hookFlows } from "./hook-flows";
 import { PROCESS_VARS, PROCESSES, processDsl } from "./process-flows";
-import { DLC_AGENT_TOOL_KEYS, toolFlows, WS_TOOL_KEYS } from "./tool-flows";
+import { DLC_AGENT_TOOL_KEYS, TEAM_EXTRA_TOOL_KEYS, toolFlows, WS_TOOL_KEYS } from "./tool-flows";
 
 type Env = Record<string, string | undefined>;
 type Flow = {
@@ -281,7 +281,9 @@ async function hubStep(
   const hooks = Object.entries(HOOK_FLOW)
     .map(([event, key]) => ({ event, workflow_id: wf.get(key) as string }))
     .filter((h) => h.workflow_id);
-  const wsTools = WS_TOOL_KEYS.map((k) => wf.get(k)).filter((x): x is string => !!x);
+  const wsTools = [...WS_TOOL_KEYS, ...TEAM_EXTRA_TOOL_KEYS]
+    .map((k) => wf.get(k))
+    .filter((x): x is string => !!x);
   for (const s of DLC_TEAM) {
     const id = await ensureAgent(hub, s.key, {
       name: s.name,

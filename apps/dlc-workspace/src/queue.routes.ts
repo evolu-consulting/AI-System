@@ -148,7 +148,7 @@ function integrateRoutes(app: Hono, d: QueueDeps): void {
     if (b.skip || !item?.branch) return c.json({ skipped: true });
     const { ok, merged, output, note } = await integrateBranch(p, item.branch, b.timeout_s ?? 900);
     const r = await store.update(p.key, (pp) => {
-      const x = result(pp.queue, item.id, { ok, note }, now());
+      const x = result(pp.queue, item.id, { ok, note, sha: merged.sha }, now());
       return {
         project: { ...pp, queue: x.queue },
         value: { item: x.item, summary: summary(x.queue) },

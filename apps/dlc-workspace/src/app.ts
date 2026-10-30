@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { dirname, join, relative, resolve } from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
+import { deployRoutes } from "./deploy.routes";
 import { runInContainer } from "./exec";
 import { commitAll, ensureWorktree, initRepo, log, repoDir, withLock } from "./git";
 import { BRANCH_RE, body, HttpError, KEY_RE, now } from "./http";
@@ -55,6 +56,23 @@ const NewProjectSchema = z.object({
   stack: z.string().max(200).optional(),
 });
 
+const SettingsSchema = z.object({
+  test_command: z.string().max(2000).optional(),
+  stack: z.string().max(200).optional(),
+  /** Tên app trong dòng `App:` của thẻ góp ý ⇒ ticket tự gắn project này. */
+  apps: z.array(z.string().min(1).max(120)).max(20).optional(),
+  deploy: z
+    .object({
+      build_command: z.string().min(1).max(2000),
+      image: z.string().min(1).max(200),
+      run_command: z.string().min(1).max(2000),
+      port: z.number().int().min(1024).max(65535),
+      container_port: z.number().int().min(1).max(65535),
+      url: z.string().max(300),
+    })
+    .optional(),
+});
+
 /** Tạo project (repo git nếu chưa có) hoặc cập nhật hội thoại / project KH gắn với nó. */
 async function upsertProject(store: Store, b: z.infer<typeof NewProjectSchema>) {
   const created = await initRepo(store.root, b.key, b.title);
@@ -95,18 +113,14 @@ function projectRoutes(app: Hono, x: Ctx): void {
   });
   app.put("/projects/:key/settings", async (c) => {
     const key = proj(c.req.param("key")).key;
-    const b = await body(
-      c,
-      z.object({
-        test_command: z.string().max(2000).optional(),
-        stack: z.string().max(200).optional(),
-      }),
-    );
+    const b = await body(c, SettingsSchema);
     const p = await store.update(key, (p) => {
       const project = {
         ...p,
         ...(b.test_command !== undefined && { test_command: b.test_command }),
         ...(b.stack !== undefined && { stack: b.stack }),
+        ...(b.apps !== undefined && { apps: b.apps }),
+        ...(b.deploy !== undefined && { deploy: b.deploy }),
       };
       return { project, value: project };
     });
@@ -268,6 +282,7 @@ export function createApp(cfg: AppCfg) {
   execRoutes(app, x);
   specRoutes(app, x);
   queueRoutes(app, { store, image: cfg.image, execMaxS: cfg.execMaxS, proj });
+  deployRoutes(app, { store, image: cfg.image, execMaxS: cfg.execMaxS, proj });
   ticketRoutes(app, store);
   return app;
 }

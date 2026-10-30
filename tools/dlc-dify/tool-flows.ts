@@ -5,6 +5,7 @@
 //     dlc-waiting, dlc-tickets / dlc-ticket-read (hộp ticket Trello), dlc-project-status.
 // Biến `hub_ticket`, `user_token`, `hub_conversation_id` do Hub tự điền (ẩn với model). Kết quả = biến `text`.
 import { code, env, extractor, http, ref } from "./dsl";
+import { opsToolFlows } from "./ops-tool-flows";
 import { fmt, HUB, P, PROJECT, T, type ToolEnv, type ToolFlow, tool, WS } from "./tool-kit";
 import { wsToolFlows } from "./ws-tool-flows";
 
@@ -13,6 +14,7 @@ export type { ToolEnv, ToolFlow } from "./tool-kit";
 export function toolFlows(e: ToolEnv): ToolFlow[] {
   return [
     ...wsToolFlows(e),
+    ...opsToolFlows(e),
     tool(
       e,
       "dlc-spec-upload",
@@ -200,7 +202,7 @@ def main(answer: str, agent_key: str) -> dict:
       e,
       "dlc-tickets",
       "DLC · ticket mới",
-      "Liệt kê ticket Trello trong hộp DLC (cron đẩy về). `status`: new (mặc định), taken, done, hoặc rỗng = tất cả.",
+      "Liệt kê ticket Trello trong hộp DLC (cron đẩy về), kèm app nguồn và project DLC đã gắn theo nguồn góp ý. `status`: new, taken, done, hoặc rỗng = tất cả (trừ ticket đã gạt bỏ).",
       [T("status", "Trạng thái (new/taken/done)")],
       [
         http({
@@ -218,7 +220,7 @@ def main(answer: str, agent_key: str) -> dict:
     items = resp(raw).get("items") or []
     if not items:
         return {"text": "no tickets"}
-    return {"text": "\\n".join("- " + t.get("id", "") + " [" + t.get("kind", "") + ", " + t.get("status", "") + "] " + t.get("name", "") + (" - " + t.get("summary", "") if t.get("summary") else "") + (" (" + t.get("url", "") + ")" if t.get("url") else "") for t in items)}
+    return {"text": "\\n".join("- " + t.get("id", "") + " [" + t.get("kind", "") + ", " + t.get("status", "") + "] app: " + (t.get("app") or "?") + " | project: " + str(t.get("project_key")) + " | " + t.get("name", "") + (" - " + t.get("summary", "") if t.get("summary") else "") + (" (" + t.get("url", "") + ")" if t.get("url") else "") for t in items)}
 `,
         ),
       ],
@@ -244,7 +246,7 @@ def main(answer: str, agent_key: str) -> dict:
     t = resp(raw)
     if str(status) != "200":
         return {"text": "ticket not found"}
-    return {"text": "Ticket " + t.get("id", "") + " (" + t.get("kind", "") + ", " + t.get("status", "") + ")\\nTitle: " + t.get("name", "") + "\\nLabels: " + ", ".join(t.get("labels") or []) + "\\nList: " + t.get("list", "") + "\\nURL: " + t.get("url", "") + "\\nProject: " + str(t.get("project_key")) + "\\n\\n" + (t.get("desc") or "")}
+    return {"text": "Ticket " + t.get("id", "") + " (" + t.get("kind", "") + ", " + t.get("status", "") + ")\\nTitle: " + t.get("name", "") + "\\nLabels: " + ", ".join(t.get("labels") or []) + "\\nList: " + t.get("list", "") + "\\nURL: " + t.get("url", "") + "\\nApp: " + (t.get("app") or "?") + "\\nProject: " + str(t.get("project_key")) + "\\n\\n" + (t.get("desc") or "")}
 `,
         ),
       ],
@@ -287,6 +289,8 @@ export const WS_TOOL_KEYS = [
   "dlc-ws-commit",
   "dlc-ws-artifact",
 ];
+/** Tool thêm cho đội làm code (ngoài dlc-ws-*): tra tri thức project trong KH. */
+export const TEAM_EXTRA_TOOL_KEYS = ["dlc-kh-search"];
 export const DLC_AGENT_TOOL_KEYS = [
   "dlc-spec-upload",
   "dlc-project-init",
@@ -295,4 +299,6 @@ export const DLC_AGENT_TOOL_KEYS = [
   "dlc-tickets",
   "dlc-ticket-read",
   "dlc-project-status",
+  "dlc-deploys",
+  "dlc-deploy",
 ];
