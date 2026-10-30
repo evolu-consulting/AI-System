@@ -1,4 +1,4 @@
-// esign-multi · Luật 4b: (a) Cài đặt hiện các nhà cung cấp + đổi mặc định ⇒ PUT {default_provider}; (b) hộp Gửi ký có dropdown,
+﻿// esign-multi · Luật 4b: (a) Cài đặt hiện các nhà cung cấp + đổi mặc định ⇒ PUT {default_provider}; (b) hộp Gửi ký có dropdown,
 // chọn "selfsign" ⇒ POST có provider, người ký công ty chỉ đọc (không name/email); (c) 1 nhà cung cấp khả dụng ⇒ không dropdown.
 // Backend giả `page.route`; không sleep.
 import { expect, type Page, type Route, test } from "@playwright/test";
@@ -59,7 +59,13 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
   await page.route("**/pack/contracts/groups", (r) => json(r, []));
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
   await page.route("**/pack/contracts/approval-flow", (r) =>
-    json(r, { version: 1, is_default: true, updated_at: null, steps: [] }),
+    json(r, {
+      def_id: "11111111-1111-4111-8111-111111111111",
+      name: "Quy trình HĐ mặc định",
+      rel_version: 1,
+      is_default: true,
+      steps: [],
+    }),
   );
   const puts: unknown[] = [];
   await page.route("**/pack/contracts/esign/settings", (r) => {

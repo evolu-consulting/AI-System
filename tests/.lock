@@ -183,6 +183,7 @@ d300a56ef2a99bfa99325afe5bb1c3bed9b23ec3b4f30966982466465a621377  e2e/conflict-c
 d57e1ce21f6e22874dc9cb8f4cf9275512e10b6328e0130661ca0692c2d9af9f  e2e/conflict-users.spec.ts
 8d8bb2876a228176b5117d8978a98c310cf3e188680446c968e2307e78496831  e2e/conflict-workflows.spec.ts
 2a3b0ca3dcf4265f7e2fda28e395114ce56387586bb1934983acb469713a2f71  e2e/contracts-web/DEVIATIONS.md
+a33a24d0c679a2bde4874a006d113cc5daa9ea1f17b92f5080666fd8ed61ca8b  e2e/contracts-web/approval-current.cw.ts
 0a23ad1c0a3296a10d400a149a40dbe4c18dba291736dbf9c99f0b0738ce9dbb  e2e/contracts-web/assistant.cw.ts
 33c1bf75d727d87ddaa3f6cd175f412ea02b1a9de970a095be878db152d61130  e2e/contracts-web/baseline/linux/overview-dark.json
 f93037506ba22a1941c3e110e313a44a80450b2d9052502c0b7bb44a0da97a99  e2e/contracts-web/baseline/linux/overview-dark.png
@@ -371,7 +372,7 @@ c6042a98431105024071eea17033cd5ae6e59022f93e04b91e9e370661a01103  e2e/contracts-
 a64b035937926c58f31343fe053f9bfa802e8075945ff79c3aa3e0e61a610a37  e2e/contracts-web/baseline/win32/v2f-detail-mobile.json
 0ac48d9222756af7a528a8dd5585e50f70e134444726c80ba46c83d4fca92ba8  e2e/contracts-web/baseline/win32/v2f-detail-mobile.png
 0c7ef935eb81988555d47312a3562fcb76d78626f21a3444397ee8f315c57a87  e2e/contracts-web/bell.cw.ts
-f2b2afcb87099626b1857b1d8bd6eea992d551dc37c1d3c7f5a3afb924f5df47  e2e/contracts-web/contract-flow.cw.ts
+d5b9e9556f8d522b7b77ff516e213d3745d18bae343b84af621aba57294854c8  e2e/contracts-web/contract-flow.cw.ts
 f52191026f2d31acac0b18d8b53ed7cf35b6296f95f288ce7bbbe97066ae3b5d  e2e/contracts-web/dataset-approval.ts
 79bb89a541d5b98d6fce798e0496a526a1ae38aee89145d11a2eb6346601f7d9  e2e/contracts-web/dataset-contract.ts
 31ef35706c3a9140005f17744224ade06b3c354dd16b3b34c4f6abb75cadfb0d  e2e/contracts-web/dataset-list.ts
@@ -384,11 +385,10 @@ adadf572a58d6ac284779ebde6c7804a88c57846dc0f1ca6e5523d6d13fc1af2  e2e/contracts-
 70e7bf79c52bcc520116c3a04cd64cda17d20085f0e8ec576ed5e91593fe8563  e2e/contracts-web/delivery-stock-409.cw.ts
 52397ec7abec9d895b289240b949ec335368546399b35af6fc7ab5fefd2fd2fa  e2e/contracts-web/doc-frame.cw.ts
 2fee363ef6105fe78057923df75827e3a2f87aa2f0291c84d56350d12adad8b6  e2e/contracts-web/doc-list.cw.ts
-128d95ffc6816fb79bc314999a27e6bc690d553ae30cfbd17522c24145733308  e2e/contracts-web/esign-anchor.cw.ts
-0e60319493eeea0840fb2073f375619c8b1e612632e78528fdbbf9da9d1c2d42  e2e/contracts-web/esign-flow.cw.ts
-662033a65fdfde2d67ec6b961589e8aa13f1803d9aa03dc38455378836693e40  e2e/contracts-web/esign-multi.cw.ts
+3be6a4fc517ad3a2245c298bc648797497b9cbd626cdc03c519e3d3eb80eb519  e2e/contracts-web/esign-anchor.cw.ts
+f18e5341851fc7399bb3a0661b9d48746451510fb82bfecd535cf3d0b292ed4d  e2e/contracts-web/esign-flow.cw.ts
+0609093a9de59c209019c19de0476da1f373c67095496d158ca4dd85903b4793  e2e/contracts-web/esign-multi.cw.ts
 0ab16a5cb40e5bd5d0cd61b821e4f4cd154f1a48ef36f621a4239135273be587  e2e/contracts-web/esign.cw.ts
-898475201c3dfcbe5e21da1134a72d447184a26dd256dff68a1e06bd24b47d9d  e2e/contracts-web/flow-editor.cw.ts
 62e310a506f44c0991b85d1e4ca299324b0c5592e04de6565022ba26986ea442  e2e/contracts-web/gap-a2-source-ask.cw.ts
 26c4c25c8202fa5b461010dbb8609b3db444e8e2e3d3e8ffeeb2196ed9d1d6bf  e2e/contracts-web/gap-b-list.cw.ts
 d82c07adbeb2354736befe7c1bfe715f77669f71dcbc2390a835dd31eec8e407  e2e/contracts-web/gap-d2.cw.ts

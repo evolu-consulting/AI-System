@@ -1,5 +1,5 @@
 // contract-flow S4 · Luật 4b: thẻ duyệt trên engine (dòng thời gian + Đạt / Trả lại / Từ chối), chỉ-trưởng-phòng không có nút,
-// chỉnh luồng lưu được (phòng lấy từ `/groups`, không cần `/admin/org`). Backend giả `page.route`; chờ phần tử, không sleep.
+// lối vào chỉnh quy trình chỉ cho platform_admin (CR-105, form đã bỏ). Backend giả `page.route`; chờ phần tử, không sleep.
 // VIẾT, CHƯA CHẠY (e2e chạy một lần cuối đợt).
 import type { ContractApproval } from "@ai/contracts";
 import { expect, type Page, test } from "@playwright/test";
@@ -171,44 +171,22 @@ test("run engine ENGINE_RUN_FAILED: người không phải owner chỉ thấy l�
   await expect(page.locator("[data-approval=reopen]")).toHaveCount(0);
 });
 
-test("chỉnh luồng: phòng lấy từ /groups (không /admin/org), sửa hạn rồi Lưu ⇒ PUT", async ({
-  page,
-}) => {
-  await install(page, AT_STEP1(), "owner");
-  const puts: { version: number; steps: unknown[] }[] = [];
-  const rv = (key: string, name: string, dept: string) => ({
-    kind: "review",
-    key,
-    name,
-    department_group_id: dept,
-    head_only: false,
-    due_h: 72,
-    remind_every_h: null,
-    escalate_group_id: null,
-    exclude_starter: false,
-    when: null,
+// CR-105: form chỉnh luồng đã bỏ khỏi contracts-web; thẻ duyệt chỉ có lối vào ai-admin cho platform_admin.
+for (const [role, shown] of [
+  ["platform_admin", true],
+  ["tenant_admin", false],
+] as const) {
+  test(`thẻ duyệt: lối vào "Chỉnh quy trình duyệt" ${shown ? "hiện" : "ẩn"} với ${role}, không còn form sửa`, async ({
+    page,
+  }) => {
+    await install(page, AT_STEP1(), "owner");
+    const d = asHub("owner");
+    await page.route("**/auth/refresh", (r) =>
+      json(r, 200, { ...d.grant, user: { ...d.grant.user, role } }),
+    );
+    await page.goto(`/contracts/${contract.id}`);
+    await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+    await expect(page.getByTestId("approval-edit-flow")).toHaveCount(shown ? 1 : 0);
+    await expect(page.getByRole("dialog", { name: "Cài đặt" })).toHaveCount(0);
   });
-  const FLOW = {
-    version: 1,
-    is_default: true,
-    updated_at: null,
-    steps: [rv("s0", "Soạn & kiểm tra", G1), rv("s1", "Kế toán", G2)],
-  };
-  await page.route("**/pack/contracts/approval-flow", (r) => {
-    if (r.request().method() !== "PUT") return json(r, 200, FLOW);
-    const body = r.request().postDataJSON();
-    puts.push(body);
-    return json(r, 200, { version: 2, is_default: false, steps: body.steps, updated_at: null });
-  });
-  await page.goto(`/contracts/${contract.id}`);
-  // Lối vào ngay trên thẻ duyệt cho chủ sở hữu.
-  await page.locator("[data-approval=edit-flow]").click();
-  const dlg = page.getByRole("dialog", { name: "Cài đặt" });
-  const s1 = dlg.getByTestId("flow-step-1");
-  await expect(s1.getByLabel("Phòng ban")).toHaveValue(G2);
-  await expect(s1.getByRole("option", { name: "Kế toán" })).toHaveCount(1);
-  await s1.getByLabel("Hạn xử lý (giờ)").fill("48");
-  await dlg.getByRole("button", { name: "Lưu quy trình" }).click();
-  await expect.poll(() => puts.length).toBe(1);
-  expect(puts[0]?.version).toBe(1);
-});
+}
