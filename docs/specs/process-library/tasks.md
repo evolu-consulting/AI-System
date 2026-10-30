@@ -124,4 +124,6 @@ Lượt mở từ trang "Mẫu · chạy thử" (showcase, chạy mẫu) có `is
 - Kịch bản: khi chạy thử một mẫu thì lượt có `is_test` và không hiện trong danh sách lượt mặc định [test: apps/hub-api/src/modules/processes/runs/run-is-test.int.test.ts » lượt chạy thử đánh dấu is_test, ẩn khỏi danh sách mặc định]
 
 ## Việc còn lại
+- L5 (slice/pl-onboard-default 6076a15b): adapter gọi hub bằng env tự đặt `ADMIN_HUB_URL` + `ONBOARD_HUB_ACCESS_TOKEN` (Bearer platform_admin) — security review cuối đợt xét lại (ưu tiên ghi qua cơ chế service sẵn có thay token tĩnh); khớp shape list/assign với L2a; bỏ comment ví dụ khỏi `nitigroup.yaml` (chỉ giữ ở `demo.yaml`).
+- L4 (slice/pl-sht-settings fdf1a9b1): chốt shape `steps` + `def_id` của `GET /approval-flow` ở L2a/L4-backend; e2e cũ `esign-flow.cw.ts`, `contract-flow.cw.ts` test form đã bỏ ⇒ qc sửa ở bước e2e cuối đợt.
 Đã duyệt 2026-10-31 (`proposal.md` "Quyết định"). Không câu hỏi mở. Chạy script chuyển dữ liệu trên prod + deploy: chờ người dùng xác nhận.
