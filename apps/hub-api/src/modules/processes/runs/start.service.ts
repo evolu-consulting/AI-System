@@ -31,7 +31,7 @@ import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
 import * as repo from "./runs.repo";
-import { type CreateRunInput, createRun } from "./start-inputs";
+import { type CreateRunInput, createRun, originOf } from "./start-inputs";
 
 type StartBang = Extract<Bang, { kind: "process" | "invalid" }>;
 type Me = { tenantId: string; userId: string };
@@ -180,7 +180,7 @@ export class StartService {
       this.d.db,
       { kind: "user", ...me },
       async (tx) => {
-        const origin = await this.#origin(tx, u, req.origin);
+        const origin = await originOf(tx, u, req.origin);
         const def = await this.#resolve(tx, u, userState, {
           kind: "process",
           key: req.process_key,
@@ -240,7 +240,13 @@ export class StartService {
   }
 
   /** ADM-FR-67 · nút "Chạy" admin (def đã qua kiểm ở `DefsService.run`): origin admin, started_by = admin. */
-  async fromAdmin(u: AuthUser, defId: string, input: string, inputs?: ProcessInputValue[]) {
+  async fromAdmin(
+    u: AuthUser,
+    defId: string,
+    input: string,
+    inputs?: ProcessInputValue[],
+    test = false,
+  ) {
     const me = meOf(u);
     const { summary, runId } = await withHubScope(
       this.d.db,
@@ -252,7 +258,7 @@ export class StartService {
           def,
           input,
           inputs,
-          isTest: def.from_template, // CR-105 · chạy thử từ bản sao của mẫu (Showcase/RunDialog)
+          isTest: test || def.from_template, // CR-105 · cờ rõ từ Showcase, hoặc bản sao của mẫu
           origin: { originKind: "admin", originRoomId: null, originConversationId: null },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
@@ -303,35 +309,6 @@ export class StartService {
     if (q.scope !== "tenant") return u.tenantId;
     if (u.role !== "tenant_admin" && u.role !== "platform_admin") throw appError("FORBIDDEN");
     return u.role === "platform_admin" && tenantIdQ ? tenantIdQ : u.tenantId;
-  }
-
-  async #origin(
-    tx: Tx,
-    u: AuthUser,
-    o: { kind: "room" | "conversation" | "none"; room_id?: string; conversation_id?: string },
-  ): Promise<{
-    originKind: "room" | "conversation" | "admin";
-    originRoomId: string | null;
-    originConversationId: string | null;
-  }> {
-    if (o.kind === "room") {
-      if (!o.room_id || !(await repo.isRoomMember(tx, u.tenantId, o.room_id, u.userId)))
-        throw appError("NOT_FOUND");
-      return { originKind: "room", originRoomId: o.room_id, originConversationId: null };
-    }
-    if (o.kind === "conversation") {
-      if (
-        !o.conversation_id ||
-        !(await repo.ownsConversation(tx, u.tenantId, o.conversation_id, u.userId))
-      )
-        throw appError("NOT_FOUND");
-      return {
-        originKind: "conversation",
-        originRoomId: null,
-        originConversationId: o.conversation_id,
-      };
-    }
-    return { originKind: "admin", originRoomId: null, originConversationId: null };
   }
 
   async #resolve(

@@ -307,11 +307,12 @@ export class DefsService {
     id: string,
     input: string,
     inputs?: ProcessInputValue[],
+    test?: boolean,
   ): Promise<ProcessRunSummary> {
     if (u.role !== "tenant_admin" || s.tenantId !== u.tenantId) throw appError("FORBIDDEN");
     const def = await this.#read((tx) => repo.readDef(tx, s, id));
     if (!def || def.tenant_id === null || !def.enabled)
       throw processError("PROCESS_NOT_FOUND", { suggestions: [] });
-    return this.d.start.fromAdmin(u, def.id, input, inputs);
+    return this.d.start.fromAdmin(u, def.id, input, inputs, test);
   }
 }

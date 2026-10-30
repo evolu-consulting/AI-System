@@ -324,6 +324,8 @@ export type CopyProcessDefRequest = z.infer<typeof CopyProcessDefRequestSchema>;
 export const RunProcessDefRequestSchema = z.strictObject({
   input: z.string().trim().max(PROCESS_INPUT_MAX),
   inputs: z.array(ProcessInputValueSchema).max(DEF_INPUTS_MAX).optional(),
+  /** CR-105 · true ⇒ lượt chạy thử (Showcase / "Mẫu · chạy thử"): `is_test`, ẩn khỏi danh sách lượt mặc định. */
+  test: z.boolean().optional(),
 });
 export type RunProcessDefRequest = z.infer<typeof RunProcessDefRequestSchema>;
 

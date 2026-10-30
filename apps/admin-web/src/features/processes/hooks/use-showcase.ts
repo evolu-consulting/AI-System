@@ -32,7 +32,7 @@ export function useShowcaseStart(defId: string | undefined, tenantId: string | u
     if (!defId) return;
     setPending(true);
     try {
-      const r = await runDef(defId, "", tenantId, inputs);
+      const r = await runDef(defId, "", tenantId, inputs, true);
       setRunId(r.id);
       void invalidate();
     } finally {

@@ -42,6 +42,8 @@ export type ProcessStartPort = {
     defId: string,
     input: string,
     inputs?: ProcessInputValue[],
+    /** CR-105 · lượt chạy thử (Showcase / "Mẫu · chạy thử") ⇒ `is_test`. */
+    test?: boolean,
   ): Promise<ProcessRunSummary>;
 };
 

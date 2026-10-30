@@ -146,11 +146,12 @@ export const runDef = (
   input: string,
   tenantId?: string,
   inputs?: ProcessInputValue[],
+  test?: boolean,
 ): Promise<ProcessRunSummary> =>
   api<ProcessRunSummary>(url(`/process-defs/${enc(id)}/run`), {
     method: "POST",
     query: { tenant_id: tenantId },
-    body: inputs ? { input, inputs } : { input },
+    body: { input, ...(inputs ? { inputs } : {}), ...(test ? { test } : {}) },
   });
 
 /** Làm tươi danh sách + bản đang mở sau mọi thay đổi định nghĩa. */

@@ -13,6 +13,7 @@ import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
+import { appError } from "../../../lib/errors";
 import { validationError } from "../../../lib/http";
 import type { KhRuntime } from "../../kh/kh.mount";
 import { type KhSnapshot, khStartPlan } from "../../kh/kh.start";
@@ -41,6 +42,31 @@ async function checkCap(tx: Tx, tenantId: string, seam: number | undefined): Pro
         "Retry-After": String(TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S),
       },
     );
+}
+
+/** Nguồn mở lượt từ `POST /process-runs`: phòng/hội thoại phải thuộc người gọi, còn lại ⇒ `admin`. */
+export async function originOf(
+  tx: Tx,
+  u: AuthUser,
+  o: { kind: "room" | "conversation" | "none"; room_id?: string; conversation_id?: string },
+): Promise<RunOrigin> {
+  if (o.kind === "room") {
+    if (!o.room_id || !(await repo.isRoomMember(tx, u.tenantId, o.room_id, u.userId)))
+      throw appError("NOT_FOUND");
+    return { originKind: "room", originRoomId: o.room_id, originConversationId: null };
+  }
+  if (o.kind === "conversation") {
+    const own = o.conversation_id
+      ? await repo.ownsConversation(tx, u.tenantId, o.conversation_id, u.userId)
+      : false;
+    if (!o.conversation_id || !own) throw appError("NOT_FOUND");
+    return {
+      originKind: "conversation",
+      originRoomId: null,
+      originConversationId: o.conversation_id,
+    };
+  }
+  return { originKind: "admin", originRoomId: null, originConversationId: null };
 }
 
 export type CreateRunInput = {

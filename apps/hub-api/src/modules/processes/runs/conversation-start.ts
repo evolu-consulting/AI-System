@@ -7,6 +7,6 @@ export function conversationStart(d: Omit<ProcessDeps, "start">): ProcessStartPo
   const svc = new StartService(d);
   return {
     fromConversation: (u, conversationId, bang) => svc.fromConversation(u, conversationId, bang),
-    fromAdmin: (u, defId, input, inputs) => svc.fromAdmin(u, defId, input, inputs),
+    fromAdmin: (u, defId, input, inputs, test) => svc.fromAdmin(u, defId, input, inputs, test),
   };
 }
