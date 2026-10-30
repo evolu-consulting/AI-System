@@ -3,6 +3,7 @@
 // `ops_settings` (so `last_round_at` đã đọc) ⇒ chỉ một instance chạy mỗi lượt; (2) ghi kết quả dưới `pg_advisory_xact_lock` ⇒ trạng
 // thái trước/sau so trong cùng khoá, sự kiện + chuông chỉ sinh MỘT lần mỗi lần đổi (kể cả khi "Kiểm tra ngay" chồng lượt nền).
 import {
+  OPS_CHECK_KEYS,
   OPS_EVENTS_KEEP,
   OPS_EVENTS_PAGE,
   type OpsCheckKey,
@@ -62,11 +63,14 @@ type TransitionRow = {
   changed_at: Date | string;
   message: string;
   hint: string | null;
+  known_from: OpsStatus | null;
+  known_at: Date | string | null;
 };
 
 /**
  * Upsert trạng thái mới nhất + ghi `ops_events` CHỈ cho check đổi trạng thái (một câu). `prev` đọc ảnh chụp trước upsert của
- * cùng câu; `changed_at` giữ nguyên khi trạng thái không đổi.
+ * cùng câu (dưới khoá advisory); `changed_at` giữ nguyên khi trạng thái không đổi. `last_known_*` = trạng thái khác `unknown`
+ * gần nhất (chuông tính theo nó). Hàng đã có kết quả MỚI hơn lượt này (lượt chồng nhau) ⇒ không ghi đè, không sinh chuyển.
  */
 async function upsertTx(tx: Tx, rs: readonly OpsCheckOutcome[], now: Date) {
   const rows = await tx.execute<TransitionRow>(sql`
@@ -74,16 +78,25 @@ async function upsertTx(tx: Tx, rs: readonly OpsCheckOutcome[], now: Date) {
       select * from jsonb_to_recordset(${JSON.stringify(rs)}::jsonb)
         as x(check_key text, status text, value jsonb, message text, hint text)
     ), prev as (
-      select c.check_key, c.status from hub.ops_checks c where c.check_key in (select check_key from inp)
+      select c.check_key, c.status, c.last_known_status from hub.ops_checks c
+      where c.check_key in (select check_key from inp)
     ), up as (
-      insert into hub.ops_checks as c (check_key, status, value, message, hint, checked_at, changed_at)
-      select i.check_key, i.status, i.value, coalesce(i.message, ''), i.hint, ${tsz(now)}, ${tsz(now)} from inp i
+      insert into hub.ops_checks as c (check_key, status, value, message, hint, checked_at, changed_at,
+        last_known_status, last_known_at)
+      select i.check_key, i.status, i.value, coalesce(i.message, ''), i.hint, ${tsz(now)}, ${tsz(now)},
+        nullif(i.status, 'unknown'), case when i.status = 'unknown' then null else ${tsz(now)} end
+      from inp i
       on conflict (check_key) do update set status = excluded.status, value = excluded.value,
         message = excluded.message, hint = excluded.hint, checked_at = excluded.checked_at,
-        changed_at = case when c.status = excluded.status then c.changed_at else excluded.changed_at end
-      returning c.check_key, c.status, c.changed_at, c.message, c.hint
+        changed_at = case when c.status = excluded.status then c.changed_at else excluded.changed_at end,
+        last_known_status = case when excluded.status = 'unknown' then c.last_known_status else excluded.status end,
+        last_known_at = case when excluded.status = 'unknown' or c.last_known_status = excluded.status
+          then c.last_known_at else excluded.checked_at end
+      where c.checked_at <= excluded.checked_at
+      returning c.check_key, c.status, c.changed_at, c.message, c.hint, c.last_known_at
     ), tr as (
-      select u.check_key, p.status as from_status, u.status as to_status, u.changed_at, u.message, u.hint
+      select u.check_key, p.status as from_status, u.status as to_status, u.changed_at, u.message, u.hint,
+        p.last_known_status as known_from, u.last_known_at as known_at
       from up u left join prev p on p.check_key = u.check_key
       where p.status is distinct from u.status
     ), ev as (
@@ -100,6 +113,8 @@ async function upsertTx(tx: Tx, rs: readonly OpsCheckOutcome[], now: Date) {
       changed_at: new Date(r.changed_at),
       message: r.message,
       hint: r.hint,
+      known_from: r.known_from,
+      known_at: r.known_at === null ? null : new Date(r.known_at),
     }),
   );
 }
@@ -114,11 +129,16 @@ export function opsRepo(db: Db) {
   return {
     state: (): Promise<OpsState> => withHubScope(db, SYSTEM, (tx) => stateTx(tx)),
 
-    /** Trạng thái + giá trị lượt trước của mọi check (một câu) — cho check cần so với lượt trước (host công khai). */
-    async previous(): Promise<Partial<Record<OpsCheckKey, { status: OpsStatus; value: unknown }>>> {
+    /**
+     * Trạng thái + giá trị lượt trước của mọi check (một câu) — cho check cần so với lượt trước (host công khai). Kết quả kiểm
+     * trước `staleBefore` (quá 2× tần suất: vòng dừng/check vừa bật lại) không đưa ⇒ không đếm "liền lỗi" từ dữ liệu cũ.
+     */
+    async previous(
+      staleBefore: Date,
+    ): Promise<Partial<Record<OpsCheckKey, { status: OpsStatus; value: unknown }>>> {
       const rows = await withHubScope(db, SYSTEM, (tx) =>
         tx.execute<{ check_key: OpsCheckKey; status: OpsStatus; value: unknown }>(
-          sql`select check_key, status, value from hub.ops_checks`,
+          sql`select check_key, status, value from hub.ops_checks where checked_at >= ${tsz(staleBefore)}`,
         ),
       );
       return Object.fromEntries(
@@ -223,6 +243,15 @@ export function opsRepo(db: Db) {
           select 'settings_changed', ${actor}, jsonb_build_object('old', ${JSON.stringify(old.settings)}::jsonb,
             'new', ${json}::jsonb), ${tsz(now)}
           from up`);
+        const off = OPS_CHECK_KEYS.filter(
+          (k) => old.settings.checks[k].enabled && !next.checks[k].enabled,
+        );
+        // Check vừa tắt: về trạng thái trung tính, quên trạng thái đã biết + giá trị ⇒ bật lại không báo "hồi phục" giả.
+        if (off.length > 0)
+          await tx.execute(sql`
+            update hub.ops_checks set status = 'unknown', value = null, message = 'Đã tắt trong cấu hình', hint = null,
+              checked_at = ${tsz(now)}, changed_at = ${tsz(now)}, last_known_status = null, last_known_at = null
+            where check_key in (select jsonb_array_elements_text(${JSON.stringify(off)}::jsonb))`);
         return { ...old, settings: next, updated_by: actor, updated_at: now };
       });
     },

@@ -32,6 +32,31 @@ describe("ops-watch · chuyển trạng thái ⇒ chuông", () => {
     expect(notifyKind(null, "ok")).toBeNull();
   });
 
+  it("so với trạng thái đã biết: X → unknown → X không báo; warn → unknown → ok báo hồi phục; sang unknown không báo", () => {
+    const t = (
+      from: "ok" | "warn" | "crit" | "unknown",
+      to: "ok" | "warn" | "crit" | "unknown",
+      known: "ok" | "warn" | "crit" | null,
+    ) => ({
+      check_key: "disk",
+      from_status: from,
+      to_status: to,
+      changed_at: T0,
+      message: "",
+      hint: null,
+      known_from: known,
+      known_at: T0,
+    });
+    expect(notificationsFor([t("unknown", "crit", "crit")])).toEqual([]);
+    expect(notificationsFor([t("unknown", "ok", "warn")]).map((x) => x.kind)).toEqual([
+      "ops.recovered",
+    ]);
+    expect(notificationsFor([t("crit", "unknown", "crit")])).toEqual([]);
+    expect(notificationsFor([t("unknown", "crit", "warn")]).map((x) => x.kind)).toEqual([
+      "ops.crit",
+    ]);
+  });
+
   it("mục chuông: tiêu đề theo nhãn check, dedup theo check+trạng thái+changed_at", () => {
     const items = notificationsFor([
       {

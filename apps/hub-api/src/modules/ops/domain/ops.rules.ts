@@ -19,6 +19,10 @@ export type Transition = {
   changed_at: Date;
   message: string;
   hint: string | null;
+  /** Trạng thái khác `unknown` gần nhất TRƯỚC lượt này (vắng ⇒ dùng `from_status`). */
+  known_from?: OpsStatus | null;
+  /** Lúc trạng thái đã biết đổi (sau lượt này) — khoá dedup (vắng ⇒ `changed_at`). */
+  known_at?: Date | null;
 };
 
 export type OpsNotifyKind = "ops.warn" | "ops.crit" | "ops.recovered";
@@ -50,11 +54,16 @@ const labelOf = (key: string): string => OPS_CHECK_META[key as OpsCheckKey]?.lab
 
 export type OpsNotifyItem = { kind: OpsNotifyKind; title: string; body: string; dedup_key: string };
 
-/** Chuyển trạng thái ⇒ mục chuông (mỗi mục được DB nhân ra mọi platform_admin đang hoạt động). */
+/**
+ * Chuyển trạng thái ⇒ mục chuông (mỗi mục được DB nhân ra mọi platform_admin đang hoạt động). So với trạng thái ĐÃ BIẾT gần nhất
+ * (bỏ qua `unknown`): `crit → unknown → crit` không báo lại; `warn → unknown → ok` vẫn báo hồi phục; sang `unknown` không báo.
+ */
 export function notificationsFor(ts: readonly Transition[]): OpsNotifyItem[] {
   const out: OpsNotifyItem[] = [];
   for (const t of ts) {
-    const kind = notifyKind(t.from_status, t.to_status);
+    if (t.to_status === "unknown") continue;
+    const from = t.known_from === undefined ? t.from_status : t.known_from;
+    const kind = notifyKind(from, t.to_status);
     if (!kind) continue;
     const head = kind === "ops.recovered" ? "Đã hồi phục" : STATUS_VI[t.to_status];
     const body = [t.message, t.hint ? `Gợi ý: ${t.hint}` : ""].filter(Boolean).join("\n");
@@ -62,7 +71,7 @@ export function notificationsFor(ts: readonly Transition[]): OpsNotifyItem[] {
       kind,
       title: `${head}: ${labelOf(t.check_key)}`,
       body: body.slice(0, 2000),
-      dedup_key: opsDedupKey(t.check_key, t.to_status, t.changed_at),
+      dedup_key: opsDedupKey(t.check_key, t.to_status, t.known_at ?? t.changed_at),
     });
   }
   return out;

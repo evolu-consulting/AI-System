@@ -22,7 +22,7 @@ export type OpsRoundResult =
   | { ran: true; results: OpsCheckOutcome[]; transitions: Transition[]; notified: number };
 
 async function round(d: OpsRoundDeps, settings: OpsSettings, now: Date): Promise<OpsRoundResult> {
-  const prev = await d.repo.previous();
+  const prev = await d.repo.previous(new Date(now.getTime() - 2 * settings.every_min * 60_000));
   const results = await runEnabled(d.checks, { ...d.checkDeps, now, prev }, settings, d.timeoutMs);
   const w = await d.repo.writeRound(results, now, notificationsFor);
   return { ran: true, results, ...w };
