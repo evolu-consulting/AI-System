@@ -34,7 +34,11 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 
 ## Luật 0c — Tiết kiệm token (người dùng chốt 2026-10-30, rút từ đợt CR-103) — xếp theo mức tiết kiệm
 1. **Ít làm lại nhất:** test kiểm trạng thái thật (không chỉ "dòng có hiện"); mỗi worktree chạy e2e với tài nguyên riêng (`FNR_E2E_PORT_BASE`/cổng, `*_REDIS_DB`, DB `db:test:create <tên>` mới) — không chạy hai `test:e2e:par` từ hai worktree cùng lúc trên cùng Redis; agent tự tắt mọi server mình bật (`Stop-Process` theo PID của worktree mình) trước khi báo xong.
-2. **Model theo rủi ro** (Luật 0b): Sonnet mặc định, Opus chỉ RLS/quyền/auth/tiền/lõi engine, Haiku việc cơ học.
+2. **Model theo rủi ro** (Luật 0b) — chia cụ thể:
+   - **Phiên chính (điều phối):** chỉ phân tích, chia lát, ra quyết định, hỏi người dùng, merge, deploy. KHÔNG tự chạy lại test/e2e, đọc log dài, dọn server/worktree, chụp ảnh — giao Haiku rồi đọc tóm tắt.
+   - **Opus (agent):** RLS/tenant, quyền, auth/secrets, tiền, migration dữ liệu khách, lõi engine (launcher/settle/stage-driver), review + security cuối đợt.
+   - **Sonnet (agent, mặc định):** code + test + sửa lỗi của một lát (BE/FE/UI/e2e mới), gộp `docs/current` cuối đợt.
+   - **Haiku (agent):** chạy lại bộ test/e2e đã có và tóm tắt pass/fail + nguyên nhân sơ bộ; relock test (`test:lock:write/verify`); dọn worktree, server mồ côi, DB test; cập nhật STATE/CODEMAP/INDEX; chụp ảnh màn hình bằng script có sẵn; `openspec:pending/archive`; smoke prod bằng script có sẵn.
 3. **Tái dùng ngữ cảnh:** việc tiếp/sửa lỗi của **cùng lát hoặc cùng vùng code** ⇒ `SendMessage` cho agent đã làm (ngữ cảnh còn cache) — thắng câu "không SendMessage giao việc mới" của Luật 3; vùng khác ⇒ agent mới kèm bàn giao.
 4. **Brief hẹp, báo cáo ngắn:** brief đủ 6 mục (Luật 3), chỉ đường file cụ thể; báo cáo ≤ 10 dòng; phiên chính không đọc transcript agent, chỉ đọc đuôi log (`-Tail`, `Select-String`).
 5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
