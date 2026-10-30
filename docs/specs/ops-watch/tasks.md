@@ -1,4 +1,4 @@
----
+﻿---
 id: ops-watch
 lát: ops-watch
 cr: CR-104
@@ -23,7 +23,7 @@ Trạng thái gộp: chưa gộp
 
 ### ADDED admin/tinh-trang-he-thong.md
 #### Yêu cầu: Kiểm tra vận hành định kỳ không dùng AI
-Hub kiểm các chỉ số vận hành mỗi 5 phút bằng code thường và lưu trạng thái mới nhất cùng lịch sử đổi trạng thái.
+Hub kiểm các chỉ số vận hành mỗi 30 phút bằng code thường và lưu trạng thái mới nhất cùng lịch sử đổi trạng thái.
 - Kịch bản: khi mọi provider AI ở `logged_out` thì check "Provider AI" thành `crit` trong lượt kiểm kế tiếp [test: thủ công — làm ở O1, thay bằng int test]
 - Kịch bản: khi trạng thái một check không đổi giữa hai lượt thì không ghi thêm sự kiện [test: thủ công — làm ở O1, thay bằng int test]
 
@@ -37,4 +37,4 @@ Trang `/system` của ai-admin hiện từng check, gợi ý sửa, lịch sử,
 - Kịch bản: khi platform_admin bấm "Kiểm tra ngay" thì thẻ cập nhật thời điểm kiểm [test: thủ công — làm ở O3, thay bằng e2e]
 
 ## Việc còn lại
-Chờ người dùng duyệt 5 câu trong `proposal.md`.
+Đã duyệt 2026-10-30 (câu 4: 30 phút).
