@@ -25,7 +25,10 @@ Script tự làm, chạy lại an toàn:
 3. Postgres + Redis: dùng cái đang chạy, chưa có thì `docker compose up -d --wait`.
 4. `db:migrate` + `db:seed` (tenant `platform` + platform admin).
 5. `hub:dev`: admin-api :3001, tenant demo `evolu` + 5 user, `hub:seed`, hub-api :4000 (không bật agent-runtime).
-6. Bật gói **Sổ Hợp Tác** (`contracts`) và **Community** cho `evolu`, đưa user demo vào nhóm của gói.
+6. Bật gói **Sổ Hợp Tác** (`contracts`) và **Community** cho `evolu`, đưa user demo vào nhóm của gói; cấp feature
+   `contracts-approval-engine` và bật `CONTRACTS_APPROVAL_ENGINE=on` ⇒ duyệt hợp đồng chạy trên engine quy trình như demo prod
+   (Cài đặt › Quy trình duyệt được biên dịch thành process def `contracts-approval`). Link chuyển app: `CONTRACTS_WEB_URL` /
+   `COMMUNITY_WEB_URL` (:3300 / :3400).
 7. (`-SeedDemo`) tenant `demo` + dữ liệu mẫu — xem mục Dữ liệu mẫu.
 8. 5 web dev server.
 

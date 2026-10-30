@@ -66,7 +66,9 @@ if (Test-Path $pidFile) { throw "Có phiên dev-up đang chạy ($pidFile) — c
 # HUB_SEED_FIXTURES=1: hub:dev tạo tenant demo `evolu` + 5 user + agent/mẫu quy trình (mặc định seed tối giản không có demo)
 # CONTRACTS_WEB_URL / COMMUNITY_WEB_URL: link chuyển app do hub-api trả (Community "Mở Sổ Hợp Tác"); vắng ⇒ "/" = về bảng tin
 $coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1"
-  CONTRACTS_WEB_URL = "http://localhost:3300"; COMMUNITY_WEB_URL = "http://localhost:3400" }
+  CONTRACTS_WEB_URL = "http://localhost:3300"; COMMUNITY_WEB_URL = "http://localhost:3400"
+  # duyệt HĐ trên engine (như prod demo): công tắc env + feature `contracts-approval-engine` (demo-packs cấp cho evolu/demo)
+  CONTRACTS_APPROVAL_ENGINE = "on" }
 if ($DbName -ne "ai_system") {
   foreach ($line in Get-Content (Join-Path $repo ".env.local") -Encoding UTF8) {
     if ($line -match '^\s*((ADMIN_API_|HUB_|AGENT_RT_)?DATABASE_URL)\s*=\s*(\S+/)ai_system\s*$') { $coreEnv[$matches[1]] = "$($matches[3])$DbName" }
