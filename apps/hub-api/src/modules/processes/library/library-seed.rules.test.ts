@@ -30,4 +30,26 @@ describe("CR-105 · seed 0069", () => {
     expect(SQL).toContain(`'${APPROVAL_DEFAULT_DEF.id}'`);
     expect(SQL).toContain(`'${APPROVAL_DEFAULT_DEF.key}'`);
   });
+
+  it("seed 0069 trỏ phòng ban bằng *_group_key, *_group_id null (body và stage.slot)", () => {
+    type Step = Record<string, unknown>;
+    const body = jsonLits.find((j) => !Array.isArray(j)) as { steps: Step[] };
+    const stages = jsonLits.find((j) => Array.isArray(j) && j[0]?.key === "s0") as {
+      slot?: Step;
+    }[];
+    const refs = (s: Step) => [
+      s.key,
+      s.department_group_key,
+      s.department_group_id,
+      s.escalate_group_id,
+    ];
+    const want = [
+      ["level1", "contracts-editor", null, null],
+      ["level2", "contracts-owner", null, null],
+    ];
+    expect(body.steps.map(refs)).toEqual(want);
+    expect(stages.flatMap((s) => (s.slot ? [refs(s.slot)] : []))).toEqual(want);
+    // Không mã phòng ban nào nằm trong trường *_group_id.
+    expect(SQL).not.toMatch(/"(department|escalate)_group_id":"[a-z]/);
+  });
 });

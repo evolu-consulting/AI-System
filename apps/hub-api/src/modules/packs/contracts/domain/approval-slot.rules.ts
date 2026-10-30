@@ -115,5 +115,22 @@ export function compileSlotStages(x: unknown): unknown[] {
   if (!body) throw new Error("approval-slot-shape");
   const steps = resolveSlotSteps(body, identity(body)) as FlowStep[];
   const def = compileDef({ steps }, new Set(slotGroupKeys(body)));
-  return (def.stages as Stage[]).map((s) => (s.after ? { ...s, after: keyedAfter(s.after) } : s));
+  return (def.stages as Stage[]).map((s) => {
+    const out = s.after ? { ...s, after: keyedAfter(s.after) } : s;
+    return s.slot ? { ...out, slot: keyedSlot(s.slot as Record<string, unknown>, body) } : out;
+  });
+}
+
+/**
+ * `stage.slot` của def thư viện = bước NGUYÊN của body (mã ở `*_group_key`, `*_group_id` = null) — không phải bước đã "phân giải"
+ * mã-đứng-chỗ-id của `compileDef` (review CR-105: canvas/editor đọc `slot` thấy mã nằm sai chỗ). Ký số: `finalize.slot.esign`.
+ */
+function keyedSlot(slot: Record<string, unknown>, body: SlotFlowBody): Record<string, unknown> {
+  const byKey = (k: unknown) => body.steps.find((x) => x.key === k);
+  if (slot.esign && typeof slot.esign === "object") {
+    const e = byKey((slot.esign as { key?: unknown }).key);
+    return e ? { ...slot, esign: { ...e } } : slot;
+  }
+  const st = byKey(slot.key);
+  return st ? { ...st } : slot;
 }

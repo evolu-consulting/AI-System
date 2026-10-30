@@ -104,6 +104,10 @@ describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
     // Lượt mới của tenant chạy đúng quy trình riêng.
     expect((await resolveSlot(db, T.own, SLOT))?.defId).toBe(d.id);
     expect(JSON.stringify(d.body)).not.toContain(g.get("ke-toan") as string);
+    // stage.slot cũng theo mã (không mã / id Group trong `*_group_id`).
+    const [st] = await o`select stages::text as s from hub.process_defs where id = ${d.id}`;
+    expect(st?.s).not.toMatch(/"(department|escalate)_group_id": "/);
+    expect(st?.s).toContain('"department_group_key": "ke-toan"');
   });
 
   it("tenant chưa lưu mẫu không gán, chạy mặc định", async () => {

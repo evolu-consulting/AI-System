@@ -494,4 +494,28 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       { slot: SLOT },
     ]);
   });
+  it("mã phòng ban đặt nhầm vào *_group_id ⇒ SLOT_BODY_INVALID; bản sao mặc định có mã ở *_group_key", async () => {
+    const id = await cloneOf(DFLT, "pl-keyid");
+    const cl = (await call("P", "GET", D(id))).json;
+    const s0 = (cl.slot_body.steps as Json[])[0] as Json;
+    const st0 = ((cl.stages as Json[])[0] as Json).slot as Json;
+    expect([
+      s0.department_group_key,
+      s0.department_group_id,
+      st0.department_group_key,
+      st0.department_group_id,
+    ]).toEqual(["contracts-editor", null, "contracts-editor", null]);
+    const bad = body("KID") as Json;
+    bad.steps[0].department_group_id = "contracts-editor";
+    const r = await saveDraft(id, { slot_body: bad });
+    expect({
+      s: r.status,
+      code: r.json.error?.code,
+      rule: r.json.error?.details?.issues?.[0]?.rule,
+    }).toEqual({
+      s: 422,
+      code: "SLOT_BODY_INVALID",
+      rule: "GROUP_ID_IN_LIBRARY",
+    });
+  });
 });
