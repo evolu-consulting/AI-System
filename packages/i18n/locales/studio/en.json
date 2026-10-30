@@ -125,6 +125,15 @@
     "banner": "Connection lost, changes not saved"
   },
   "agents": {
+    "hooks": {
+      "title": "Hooks",
+      "hint": "Optional. Like Claude CLI hooks: each event picks one Dify workflow (workflow app) that runs with the agent — SessionStart/UserPromptSubmit add context before the turn, PreToolUse/PostToolUse wrap each tool call, Stop runs after the agent answers.",
+      "none": "Not used",
+      "save": "Save hooks",
+      "saving": "Saving…",
+      "saved": "Agent hooks saved",
+      "loadFailed": "Could not load workflows"
+    },
     "knowledge": {
       "title": "KnowledgeHub",
       "hint": "Pick the KnowledgeHub connections the agent may query while running a process. Tick order = priority (at most 5).",

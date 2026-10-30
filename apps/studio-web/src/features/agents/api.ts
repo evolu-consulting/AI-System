@@ -1,6 +1,7 @@
 // HUB-FR-60 · gọi API Studio cho màn Agents (component không fetch — đi qua hooks/).
 import type {
   Agent,
+  AgentHookEvent,
   AgentList,
   AgentRuntime,
   AgentTypeListSchema,
@@ -75,6 +76,16 @@ export const updateAgent = (id: string, body: Record<string, unknown>) =>
   api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}`, { method: "PUT", body });
 
 /** HUB-FR-132 · gắn kết nối KnowledgeHub (thứ tự = ưu tiên) — `version` agent hiện tại. */
+/** dlc-dify · thay toàn bộ hook của agent (mỗi sự kiện ≤ 1 workflow). */
+export const putAgentHooks = (
+  id: string,
+  body: { hooks: { event: AgentHookEvent; workflow_id: string }[]; version: number },
+) =>
+  api<AgentWriteResponse>(`/studio/api/agents/${encodeURIComponent(id)}/hooks`, {
+    method: "PUT",
+    body,
+  });
+
 export const putAgentKnowledge = (
   id: string,
   body: { connection_ids: string[]; version: number },

@@ -125,6 +125,15 @@
     "banner": "Mất kết nối, thay đổi chưa được lưu"
   },
   "agents": {
+    "hooks": {
+      "title": "Hook",
+      "hint": "Tuỳ chọn. Giống hook của Claude CLI: mỗi sự kiện chọn một workflow Dify (loại workflow) chạy cùng agent — SessionStart/UserPromptSubmit chèn ngữ cảnh trước lượt, PreToolUse/PostToolUse quanh mỗi lần dùng tool, Stop sau khi agent trả lời.",
+      "none": "Không dùng",
+      "save": "Lưu hook",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu hook của agent",
+      "loadFailed": "Không tải được danh sách workflow"
+    },
     "knowledge": {
       "title": "KnowledgeHub",
       "hint": "Chọn kết nối KnowledgeHub mà agent được hỏi khi chạy quy trình. Thứ tự tick = thứ tự ưu tiên (tối đa 5).",

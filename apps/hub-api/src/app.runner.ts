@@ -8,6 +8,9 @@ import { pgUsageStore } from "./lib/ai-client/usage.pg";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
+import { HookRunner } from "./modules/agent-hooks/hook-runner";
+import { HookedRunner } from "./modules/agent-hooks/hooked-runner";
+import { userTokens } from "./modules/agent-hooks/user-token";
 import { DEFAULT_TENANT_TZ } from "./modules/config/config.rules";
 import type { ConfigCache } from "./modules/config/config.service";
 import { DifyAgentRunner } from "./modules/dify/agent/dify-agent-runner";
@@ -46,6 +49,9 @@ export type AgentRunnerDeps = {
   kh?: KhRuntime;
   /** M2-chat · cấp token tool chat ngắn hạn cho agent Dify (vắng ⇒ Dify không tool). */
   toolTokens?: Pick<ChatToolTokens, "grant" | "refreshHandle" | "newHandle">;
+  /** dlc-dify · admin-api + token dịch vụ để hook agent xin access token thay user; vắng ⇒ `user_token` rỗng. */
+  adminApiUrl?: string;
+  internalToken?: string;
 };
 
 /** P-a N4 · `AgentRunner` cho job stage quy trình (dùng `RunStreamReader` riêng, cùng cấu hình runner chính). */
@@ -90,7 +96,21 @@ export function agentRunner(d: AgentRunnerDeps): AgentRunner {
     log: d.log,
     ...(d.toolTokens ? { toolTokens: d.toolTokens } : {}),
   });
-  return new RoutingRunner({ job, dify });
+  const routed = new RoutingRunner({ job, dify });
+  // dlc-dify · hook agent (SessionStart/UserPromptSubmit trước job, Stop sau) — agent không có hook ⇒ chuyển thẳng.
+  const hooks = new HookRunner({
+    db: d.db,
+    catalog: () => d.config.catalog(),
+    credentials,
+    dify: new DifyClient(),
+    log: d.log,
+  });
+  const tokens = userTokens({
+    adminUrl: d.adminApiUrl,
+    internalToken: d.internalToken,
+    log: d.log,
+  });
+  return new HookedRunner(routed, { hooks, tokens, log: d.log });
 }
 
 export type RunDriversDeps = {
@@ -107,6 +127,8 @@ export type RunDriversDeps = {
   signal?: AbortSignal;
   /** M2-chat · registry tool gói (token chat Dify). */
   packTools?: PackToolCatalog;
+  adminApiUrl?: string;
+  internalToken?: string;
 };
 
 /**
@@ -124,6 +146,8 @@ export function runDrivers(d: RunDriversDeps): { driver: RunDriver; directDriver
     log: d.log,
     publicInternalUrl: d.publicInternalUrl,
     secretMasterKey: d.secretMasterKey,
+    adminApiUrl: d.adminApiUrl,
+    internalToken: d.internalToken,
     ...(d.packTools ? { toolTokens: chatToolTokens(d.redis, d.packTools) } : {}),
   });
   return {

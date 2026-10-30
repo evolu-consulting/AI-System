@@ -43,6 +43,9 @@ export const EnvSchema = z.object({
   HUB_SECRETS_KEY: z.string().optional(),
   // H2a plan §8: token dịch vụ của `/internal/test-run` (≥ 32 ký tự); vắng → route đó 503 `UNAVAILABLE`.
   HUB_INTERNAL_TOKEN: z.string().min(32).optional(),
+  // dlc-dify · gốc admin-api cho Hub xin access token thay user (POST /internal/tokens, dùng HUB_INTERNAL_TOKEN): hook agent
+  // gọi KH bằng token của user. Vắng ⇒ hook chạy với `user_token` rỗng.
+  HUB_ADMIN_API_URL: z.url({ protocol: /^https?$/ }).optional(),
   // H2a plan §8: `mcp.url` = `<HUB_PUBLIC_INTERNAL_URL>/mcp` trong payload job agent. Mặc định chỉ ở development/test
   // (`loadEnv`); môi trường khác vắng → MCP tắt (payload `mcp=null`) — REVIEW 1 Hub #10.
   HUB_PUBLIC_INTERNAL_URL: z.url({ protocol: /^https?$/ }).optional(),

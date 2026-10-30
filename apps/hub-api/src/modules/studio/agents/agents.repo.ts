@@ -144,6 +144,27 @@ export async function agentKhIds(tx: Tx, agentId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
+/** dlc-dify · hook của agent (sự kiện → workflow), sắp theo tên sự kiện. */
+export function agentHooks(
+  tx: Tx,
+  agentId: string,
+): Promise<{ event: string; workflow_id: string }[]> {
+  return tx.execute<{ event: string; workflow_id: string }>(sql`select event, workflow_id
+    from hub.agent_hooks where agent_id = ${agentId}::uuid order by event`);
+}
+
+/** dlc-dify · thay toàn bộ hook của agent (xoá rồi chèn trong tx người gọi). */
+export async function replaceAgentHooks(
+  tx: Tx,
+  agentId: string,
+  hooks: readonly { event: string; workflow_id: string }[],
+): Promise<void> {
+  await tx.execute(sql`delete from hub.agent_hooks where agent_id = ${agentId}::uuid`);
+  for (const h of hooks)
+    await tx.execute(sql`insert into hub.agent_hooks (agent_id, event, workflow_id)
+      values (${agentId}::uuid, ${h.event}, ${h.workflow_id}::uuid)`);
+}
+
 export type OrchScope = { tenantId: string | null; tenantKey: string | null };
 
 /** Phạm vi agent đang là Orchestrator (mặc định trước, rồi theo key tenant). Tenant mất ⇒ key `""` (contract `string`). */

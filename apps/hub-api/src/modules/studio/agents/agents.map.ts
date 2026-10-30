@@ -1,6 +1,7 @@
 // HUB-FR-60 · HUB-FR-64 · H4a-R08, R11 · plan §2.3, §5.1 · hàng DB → `Agent`/`AgentListItem`/bản audit (hàm thuần).
 import type {
   Agent,
+  AgentHookEvent,
   AgentListItem,
   AgentRuntime,
   AgentWarning,
@@ -32,6 +33,8 @@ export type AgentParts = {
   similar: readonly SimilarAgent[];
   /** K1 · kết nối KH theo thứ tự tick. */
   knowledgeIds: readonly string[];
+  /** dlc-dify · hook (sự kiện → workflow); vắng ⇒ không có trường `hooks`. */
+  hooks?: readonly { event: string; workflow_id: string }[];
 };
 
 /** `workflows` theo thứ tự `workflow_ids`; id đã mất khỏi catalog chỉ còn trong `workflow_ids` (E2). */
@@ -80,6 +83,9 @@ export function toAgent(p: AgentParts): Agent {
     }),
     warnings,
     knowledge_connection_ids: [...p.knowledgeIds],
+    ...(p.hooks && {
+      hooks: p.hooks.map((h) => ({ event: h.event as AgentHookEvent, workflow_id: h.workflow_id })),
+    }),
   };
 }
 

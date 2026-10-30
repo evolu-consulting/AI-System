@@ -53,6 +53,7 @@ beforeEach(() => resetTestDb(URL));
 const HUB_TABLES = [
   "agent_entitlements",
   "agent_grants",
+  "agent_hooks", // dlc-dify hub 0064
   "agent_kh",
   "agent_team_entitlements",
   "agent_team_members",

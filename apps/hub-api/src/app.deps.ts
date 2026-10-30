@@ -42,6 +42,8 @@ export type AppDeps = {
   sleep?: (ms: number) => Promise<void>;
   /** H2a · = `HUB_INTERNAL_TOKEN` (vắng → `/internal/test-run` 503). */
   internalToken?: string;
+  /** dlc-dify · = `HUB_ADMIN_API_URL` (Hub xin access token thay user cho hook agent). */
+  adminApiUrl?: string;
   /** H2a · = `HUB_PUBLIC_INTERNAL_URL` (dựng `mcp.url` = `<url>/mcp`). */
   publicInternalUrl?: string;
   /** H2a · = `HUB_DIFY_TIMEOUT_MAX_S` (mặc định 300). */
