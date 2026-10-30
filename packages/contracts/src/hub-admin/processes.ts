@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
-  PROCESS_LIST_LIMIT,
   PROCESS_NAME_MAX,
   PROCESS_RUN_GROUPS_MAX,
   PROCESS_STAGES_MAX,
@@ -17,7 +16,7 @@ import {
   TeamModeSchema,
   TtlDaysSchema,
 } from "../chat/processes";
-import { CountSchema, IsoDateTime, UuidSchema } from "../common";
+import { IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
 import {
   AnswererGroupSchema,
@@ -26,6 +25,7 @@ import {
   StageGroupKeySchema,
 } from "./process-group-refs";
 import { IfExecutorSchema } from "./process-if";
+import { LIBRARY_DEF_FIELDS, LIBRARY_DEF_INPUT_FIELDS } from "./process-library";
 import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
@@ -66,6 +66,7 @@ export {
   ProcessRunViewSchema,
 } from "../chat/processes-entities";
 export * from "./autofix";
+export * from "./process-library";
 export * from "./process-steps";
 export * from "./process-tools";
 export * from "./process-ui";
@@ -264,6 +265,7 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).default([]),
   /** P-d1 · PD-R24 · vắng = "không gửi" (tạo ⇒ 7, sửa ⇒ giữ); `null` = không hết hạn. */
   ttl_days: TtlDaysSchema.optional(),
+  ...LIBRARY_DEF_INPUT_FIELDS, // CR-105 · L2a
 });
 
 /** PB-R06 · stage.sources[].source_key phải ∈ def.sources — path `stages.<i>.sources.<j>.source_key` (R-C15/P-02). */
@@ -304,6 +306,7 @@ export const ProcessDefSchema = ProcessDefInputBaseSchema.extend({
   updated_at: IsoDateTime,
   /** P-d1 · response luôn có (`null` = không hết hạn). */
   ttl_days: TtlDaysSchema,
+  ...LIBRARY_DEF_FIELDS,
 });
 export type ProcessDef = WithStageDefs<z.infer<typeof ProcessDefSchema>>;
 
@@ -324,41 +327,11 @@ export const RunProcessDefRequestSchema = z.strictObject({
 });
 export type RunProcessDefRequest = z.infer<typeof RunProcessDefRequestSchema>;
 
-export const ProcessDefListQuerySchema = z.strictObject({
-  tenant_id: UuidSchema.optional(),
-  include_templates: z.stringbool().default(true),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(PROCESS_LIST_LIMIT.max)
-    .default(PROCESS_LIST_LIMIT.default),
-  cursor: z.string().min(1).max(512).optional(),
-});
-export type ProcessDefListQuery = z.infer<typeof ProcessDefListQuerySchema>;
 export const ProcessDefTenantQuerySchema = z.strictObject({ tenant_id: UuidSchema.optional() });
 export const DeleteProcessDefQuerySchema = z.strictObject({
   tenant_id: UuidSchema.optional(),
   version: z.coerce.number().int().min(1),
 });
-
-export const ProcessDefListItemSchema = z.strictObject({
-  id: UuidSchema,
-  key: ProcessKeySchema,
-  name: z.string().min(1).max(PROCESS_NAME_MAX),
-  enabled: z.boolean(),
-  is_template: z.boolean(),
-  stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
-  version: z.number().int().min(1),
-  updated_at: IsoDateTime,
-  active_runs: CountSchema,
-});
-export type ProcessDefListItem = z.infer<typeof ProcessDefListItemSchema>;
-export const ProcessDefListResponseSchema = z.strictObject({
-  items: z.array(ProcessDefListItemSchema).max(PROCESS_LIST_LIMIT.max),
-  next_cursor: z.string().nullable(),
-});
-export type ProcessDefListResponse = z.infer<typeof ProcessDefListResponseSchema>;
 
 const TeamNameSchema = z.string().min(1).max(100);
 export const AgentTeamSchema = z.strictObject({

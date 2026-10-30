@@ -28,6 +28,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { LIB_AUDIT_ACTIONS } from "./hub-process-library";
 import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -60,7 +61,13 @@ export const PA_AUDIT_ACTIONS = [
   "authorize_real_action",
 ] as const;
 /** audit P-d1 (0036 `hub_audit_log_action_check`) — trải vào `HUB_AUDIT_ACTION_VALUES` (hub.ts). P-d2 (0037) + `tool_call`, `branch`. */
-export const PD_AUDIT_ACTIONS = ["escalate", "escalate_skipped", "tool_call", "branch"] as const;
+export const PD_AUDIT_ACTIONS = [
+  "escalate",
+  "escalate_skipped",
+  "tool_call",
+  "branch",
+  ...LIB_AUDIT_ACTIONS, // CR-105 · L2a (0069) — gộp ở đây vì `hub.ts` chạm trần 400 dòng
+] as const;
 export const PA_AUDIT_ENTITIES = [
   "process_def",
   "process_run",

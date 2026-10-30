@@ -6,6 +6,15 @@ import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
 
+/** CR-105 · L2a · audit thư viện (0069 `hub_audit_log_action_check`) — trải vào `HUB_AUDIT_ACTION_VALUES` (hub.ts). */
+export const LIB_AUDIT_ACTIONS = [
+  "publish",
+  "rollback",
+  "assign",
+  "unassign",
+  "set_default",
+] as const;
+
 /** Bản xuất bản BẤT BIẾN của def thư viện; quay lại = chụp bản cũ thành bản mới (số bản luôn tăng). */
 export const processDefReleases = hub.table(
   "process_def_releases",
