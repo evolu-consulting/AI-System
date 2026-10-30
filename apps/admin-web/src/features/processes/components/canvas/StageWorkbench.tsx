@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { useLibraryCanvas } from "../library/library-canvas-ctx";
+import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { CanvasView } from "./CanvasView";
 import { ShortcutsHint } from "./ShortcutsHint";
 import { StagePanel } from "./StagePanel";
 import { StepList } from "./StepList";
+import { withoutSlotLinks } from "./stage-view";
 import { type Mode, useWorkbench } from "./use-workbench";
 
 /** Bề rộng ngăn chi tiết (px, khớp `md:w-[460px]` ở StagePanel). */
@@ -34,7 +37,9 @@ function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
 export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const w = useWorkbench(d, refs);
-  const { ops, views } = w;
+  const lib = useLibraryCanvas();
+  const { ops } = w;
+  const views = lib ? withoutSlotLinks(w.views) : w.views; // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh"
   const addStage = () => ops.add();
   const viewProps = {
     views,
@@ -53,6 +58,8 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
             <p className="text-caption text-muted-foreground">
               {t("process.admin.canvas.readOnly")}
             </p>
+          ) : lib ? (
+            <SlotCanvasToolbar count={w.stages.length} onAdd={addStage} onArrange={ops.arrange} />
           ) : (
             <CanvasToolbar
               count={w.stages.length}
@@ -63,7 +70,13 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
           )}
           <div className="ml-auto flex items-center gap-1">
             <TabsList aria-label={t("process.admin.canvas.view.label")}>
-              <TabsTrigger value="canvas">{t("process.admin.canvas.view.canvas")}</TabsTrigger>
+              <TabsTrigger value="canvas">
+                {t(
+                  lib
+                    ? "process.admin.library.canvas.viewDiagram"
+                    : "process.admin.canvas.view.canvas",
+                )}
+              </TabsTrigger>
               <TabsTrigger value="list">{t("process.admin.canvas.view.list")}</TabsTrigger>
             </TabsList>
             <ShortcutsHint />

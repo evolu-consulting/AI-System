@@ -1,9 +1,11 @@
 // ADM-FR-71 · P-b2 (plan-frontend FB5/§6): mô hình hiển thị một giai đoạn cho canvas/StepList — dẫn xuất THUẦN từ bản nháp,
 // chỉ chứa thứ cần vẽ (gõ `instruction` không đổi mô hình ⇒ canvas không dựng lại).
+import type { FlowWhen } from "@ai/contracts";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { branchOff } from "../../lib/d2-validate";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
 import { isIf } from "../../lib/if-form";
+import { describeWhen } from "../../lib/library-list";
 import { isSlotStep, isSystemStage } from "../../lib/system-nodes";
 
 export type StageView = {
@@ -32,6 +34,10 @@ export type StageView = {
   hasError: boolean;
   /** CR-105 · nút hệ thống của khe (contracts-route/finalize): khoá, không xoá/đổi/kéo. */
   locked: boolean;
+  /** CR-105 UX · nút hệ thống hiện thành viên thuốc xám: chọn bước kế / hoàn tất; stage khác ⇒ null. */
+  sys: "route" | "finalize" | null;
+  /** CR-105 UX · bước duyệt của khe: số thứ tự (chỉ đếm bước duyệt), phòng ban, hạn, điều kiện bằng lời; stage khác ⇒ null. */
+  slotInfo: { no: number; dept: string; dueH: number | null; cond: string | null } | null;
   /** fnr-canvas · `y` đã lưu của node (`ui.y`); null = bố cục tự động. */
   y: number | null;
 };
@@ -47,6 +53,22 @@ const ifsOf = (s: StageDraft): StageView["ifs"] =>
         no: s.ifx.no === null ? null : s.ifx.no - 1,
       }
     : null;
+
+const sysKind = (s: StageDraft): StageView["sys"] =>
+  !isSystemStage(s) ? null : s.tool.key === "contracts-finalize" ? "finalize" : "route";
+
+function slotInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["slotInfo"] {
+  if (!isSlotStep(s)) return null;
+  const slot = s.slotRaw ?? {};
+  const no = all.filter(isSlotStep).indexOf(s) + 1;
+  const due = slot.due_h;
+  return {
+    no,
+    dept: String(slot.department_group_key ?? ""),
+    dueH: typeof due === "number" ? due : null,
+    cond: describeWhen(slot.when as FlowWhen | null | undefined),
+  };
+}
 
 /** Nhãn người thực hiện: bước của khe (CR-105) hiện mã phòng ban thay cho tên tool route; còn lại theo agent/nhóm/tool. */
 function executorLabel(
@@ -86,6 +108,8 @@ export function stageViews(
     ifs: ifsOf(s),
     hasError: hasStageError(errors, i),
     locked: isSystemStage(s),
+    sys: sysKind(s),
+    slotInfo: slotInfoOf(s, stages),
     y: s.uiY ?? null,
   }));
 }
@@ -108,5 +132,11 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   `${a.ifs?.yes}:${a.ifs?.no}` === `${b.ifs?.yes}:${b.ifs?.no}` &&
   a.hasError === b.hasError &&
   a.locked === b.locked &&
+  a.sys === b.sys &&
+  JSON.stringify(a.slotInfo) === JSON.stringify(b.slotInfo) &&
   a.y === b.y &&
   a.backTo.join() === b.backTo.join();
+
+/** CR-105 UX · quy trình khe: ẩn cạnh "Quay lại" và nhãn "Rẽ nhánh" (Hub biên dịch lại; người dùng chỉ thấy chuỗi bước duyệt). */
+export const withoutSlotLinks = (views: StageView[]): StageView[] =>
+  views.map((v) => ({ ...v, backTo: [], branch: [] }));

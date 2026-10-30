@@ -6,14 +6,16 @@ import { ttlToValue } from "../../domain/ttl-rules";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { StageWorkbench } from "../canvas/StageWorkbench";
+import { useLibraryCanvas } from "../library/library-canvas-ctx";
 
 type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
 
 export function StagesCard({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const err = d.errors.stages;
+  const lib = useLibraryCanvas() !== null;
   return (
-    <Panel title={t("process.admin.editor.stages")}>
+    <Panel title={t(lib ? "process.admin.library.canvas.title" : "process.admin.editor.stages")}>
       {err ? (
         <p role="alert" className="text-label text-destructive">
           {t(err)}

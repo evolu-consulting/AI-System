@@ -93,7 +93,7 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
           disabled={!form.dirty || issues.length > 0}
           onClick={() => void form.save(steps)}
         >
-          {t("common.save")}
+          {t("process.admin.library.saveDraft")}
         </Button>
       </div>
       <LazyConflictDialog props={form.conflictProps} />

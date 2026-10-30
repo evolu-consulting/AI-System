@@ -647,30 +647,40 @@
     },
     "usedFor": "Dùng cho: {{slot}}",
     "defaultBadge": "Mặc định · {{slot}}",
-    "usage": "{{n}} tenant đã gán",
+    "usage": {
+      "none": "Chưa gán",
+      "default": "Mặc định cho mọi tenant chưa gán",
+      "count": "{{n}} tenant",
+      "named": "{{n}} tenant: {{names}}"
+    },
     "pubState": {
       "published": "Đã xuất bản v{{n}}",
-      "draft": "Chưa xuất bản"
+      "draft": "Nháp"
     },
     "mode": {
       "label": "Cách xem",
-      "canvas": "Canvas",
-      "form": "Form",
+      "canvas": "Dạng sơ đồ",
+      "form": "Dạng biểu mẫu",
       "saveFirst": "Lưu thay đổi trước khi chuyển."
     },
     "col": {
       "usedFor": "Dùng cho",
       "tenants": "Tenant đang dùng",
-      "tenantsDefault": "{{n}} + mọi tenant chưa gán"
+      "tenantsDefault": "{{n}} + mọi tenant chưa gán",
+      "steps": "Số bước",
+      "status": "Trạng thái"
     },
     "inUse": {
       "default": "Quy trình mặc định của khe: không xoá/tắt được. Đổi mặc định trước.",
-      "assigned": "Đang có tenant dùng: bỏ gán trước."
+      "assigned": "Đang có tenant dùng: bỏ gán trước.",
+      "published": "Đã xuất bản: chỉ xoá được bản nháp chưa xuất bản."
     },
     "system": {
       "badge": "Hệ thống",
       "hint": "Nút hệ thống của khe: không xoá/đổi được",
-      "locked": "Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."
+      "locked": "Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi.",
+      "route": "Hệ thống: chọn bước kế",
+      "finalize": "Hệ thống: hoàn tất"
     },
     "rule": {
       "SYSTEM_TOOL_MISSING": "Thiếu nút hệ thống {{tool}}.",
@@ -704,7 +714,12 @@
     },
     "clone": {
       "button": "Nhân bản",
-      "done": "Đã nhân bản thành bản nháp mới"
+      "done": "Đã nhân bản thành bản nháp mới",
+      "title": "Nhân bản “{{name}}”",
+      "body": "Tạo bản nháp mới, chưa gán cho tenant nào. Chỉnh xong thì xuất bản rồi gán.",
+      "name": "Tên quy trình mới",
+      "key": "Ký hiệu tự sinh: {{key}}",
+      "submit": "Nhân bản"
     },
     "assign": {
       "button": "Gán cho tenant",
@@ -810,6 +825,25 @@
         "difyEmpty": "Bước Dify chưa chọn workflow.",
         "AFTER_DIFY_CONDITIONAL": "Bước sau Dify không có điều kiện."
       }
+    },
+    "subtitle": "Quy trình duyệt dùng cho các ứng dụng. Nhân bản → chỉnh → xuất bản → gán cho tenant. Tenant chưa gán chạy quy trình mặc định.",
+    "samplesSubtitle": "Mẫu để chạy thử, không áp dụng cho hợp đồng thật.",
+    "createFromDefault": "Tạo từ quy trình mặc định",
+    "saveDraft": "Lưu nháp",
+    "saveHint": "Lưu nháp chưa áp dụng cho tenant — bấm Xuất bản để áp dụng.",
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã xuất bản v{{n}}",
+      "changed": "Có thay đổi chưa xuất bản (v{{n}})"
+    },
+    "canvas": {
+      "title": "Các bước duyệt",
+      "addStep": "Thêm bước duyệt",
+      "viewDiagram": "Sơ đồ",
+      "stageAria": "Bước {{n}}: {{name}}",
+      "noDept": "Chưa chọn phòng ban",
+      "due": "hạn {{n}} giờ",
+      "always": "Luôn chạy"
     }
   }
 }

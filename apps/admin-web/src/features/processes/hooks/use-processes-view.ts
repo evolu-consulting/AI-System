@@ -4,9 +4,12 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
+import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";
-import { cloneName, rowsForTab } from "../lib/library-view";
-import { cloneDef, type LibraryListItem, useLibraryDefs } from "../library-api";
+import { sortLibraryRows } from "../lib/library-list";
+import { rowsForTab } from "../lib/library-view";
+import { type LibraryListItem, useLibraryDefs, useSlots } from "../library-api";
+import { useCloneFlow } from "./use-clone-flow";
 import { useProcessTenant } from "./use-process-tenant";
 import { useToggleEnabled } from "./use-toggle-enabled";
 
@@ -49,7 +52,7 @@ function useRowActions(
   onRun: (r: Row) => void,
   onDelete: (r: Row) => void,
   onCopied: () => void,
-  onCloned: (id: string) => void,
+  onCloneOpen: (s: CloneSource) => void,
 ) {
   const { t } = useTranslation();
   const fail = useFail();
@@ -62,22 +65,15 @@ function useRowActions(
     invalidate,
     fail,
     onCopied,
-    onCloned,
+    onCloneOpen,
   });
-  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied, onCloned };
+  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied, onCloneOpen };
   const actions = useMemo(
     () => ({
       onToggle: (r: Row, v: boolean) => void latest.current.toggle(r, v),
       onRun,
       onDelete,
-      onClone: (r: Row) => {
-        const c = latest.current;
-        void cloneDef(r.id, { name: cloneName(r.name) }).then((res) => {
-          notifySuccess(c.t("process.admin.library.clone.done"));
-          void c.invalidate();
-          c.onCloned(res.id);
-        }, c.fail);
-      },
+      onClone: (r: Row) => latest.current.onCloneOpen({ id: r.id, name: r.name }),
       onCopy: (r: Row) => {
         const c = latest.current;
         void copyDef(r.id, c.tenantId).then(() => {
@@ -118,21 +114,32 @@ export function useProcessesView() {
     void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
   const goEditor = (id: string) =>
     void navigate({ to: "/processes/$processId", params: { processId: id } });
+  const cloneFlow = useCloneFlow(goEditor);
+  const slots = useSlots(library);
   const { actions, conflictProps } = useRowActions(
     tenant.tenantId,
     setRunRow,
     del.open,
     goOwn,
-    goEditor,
+    cloneFlow.open,
   );
   const rows = useMemo(() => {
     if (!q.data) return undefined;
-    return rowsForTab(
+    const list = rowsForTab(
       q.data.pages.flatMap((p) => p.items),
       templates,
       filter,
     );
-  }, [q.data, templates, filter]);
+    return library ? sortLibraryRows(list) : list; // thư viện: mặc định ghim đầu, còn lại mới cập nhật trước
+  }, [q.data, templates, filter, library]);
+  // "Tạo từ quy trình mặc định": nhân bản def mặc định của khe (từ danh sách đã tải hoặc từ khe).
+  const dflt = rows?.find((r) => r.is_default);
+  const slot = slots.data?.[0];
+  const defaultSrc: CloneSource | null = dflt
+    ? { id: dflt.id, name: dflt.name }
+    : slot?.default_def_id
+      ? { id: slot.default_def_id, name: slot.default_def_name ?? "" }
+      : null;
   return {
     tenant,
     tab: (templates ? "templates" : "own") as Tab,
@@ -141,6 +148,8 @@ export function useProcessesView() {
     setFilter,
     templates,
     library,
+    cloneFlow,
+    defaultSrc,
     q,
     rows,
     actions,

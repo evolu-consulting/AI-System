@@ -647,30 +647,40 @@
     },
     "usedFor": "Used for: {{slot}}",
     "defaultBadge": "Default · {{slot}}",
-    "usage": "{{n}} tenants assigned",
+    "usage": {
+      "none": "Not assigned",
+      "default": "Default for every unassigned tenant",
+      "count": "{{n}} tenants",
+      "named": "{{n}} tenants: {{names}}"
+    },
     "pubState": {
       "published": "Published v{{n}}",
-      "draft": "Not published"
+      "draft": "Draft"
     },
     "mode": {
       "label": "View",
-      "canvas": "Canvas",
-      "form": "Form",
+      "canvas": "Diagram view",
+      "form": "Form view",
       "saveFirst": "Save changes before switching."
     },
     "col": {
       "usedFor": "Used for",
       "tenants": "Tenants using",
-      "tenantsDefault": "{{n}} + all unassigned tenants"
+      "tenantsDefault": "{{n}} + all unassigned tenants",
+      "steps": "Steps",
+      "status": "Status"
     },
     "inUse": {
       "default": "Default process of the slot: cannot be deleted or turned off. Change the default first.",
-      "assigned": "Tenants are using it: unassign first."
+      "assigned": "Tenants are using it: unassign first.",
+      "published": "Published: only never-published drafts can be deleted."
     },
     "system": {
       "badge": "System",
       "hint": "System node of the slot: cannot be deleted or changed",
-      "locked": "System node of the contracts app: locked, cannot be deleted or changed."
+      "locked": "System node of the contracts app: locked, cannot be deleted or changed.",
+      "route": "System: pick next step",
+      "finalize": "System: finish"
     },
     "rule": {
       "SYSTEM_TOOL_MISSING": "Missing system node {{tool}}.",
@@ -704,7 +714,12 @@
     },
     "clone": {
       "button": "Duplicate",
-      "done": "Duplicated into a new draft"
+      "done": "Duplicated into a new draft",
+      "title": "Duplicate “{{name}}”",
+      "body": "Creates a new draft, not assigned to any tenant. Edit it, publish, then assign.",
+      "name": "New process name",
+      "key": "Generated key: {{key}}",
+      "submit": "Duplicate"
     },
     "assign": {
       "button": "Assign to tenants",
@@ -810,6 +825,25 @@
         "difyEmpty": "The Dify step has no workflow.",
         "AFTER_DIFY_CONDITIONAL": "The step after Dify has no condition."
       }
+    },
+    "subtitle": "Approval processes used by apps. Duplicate → edit → publish → assign to tenants. Tenants without an assignment run the default process.",
+    "samplesSubtitle": "Samples for trial runs, not applied to real contracts.",
+    "createFromDefault": "Create from the default process",
+    "saveDraft": "Save draft",
+    "saveHint": "Saving a draft does not apply it to tenants — press Publish to apply.",
+    "status": {
+      "draft": "Draft",
+      "published": "Published v{{n}}",
+      "changed": "Unpublished changes (v{{n}})"
+    },
+    "canvas": {
+      "title": "Approval steps",
+      "addStep": "Add approval step",
+      "viewDiagram": "Diagram",
+      "stageAria": "Step {{n}}: {{name}}",
+      "noDept": "No department chosen",
+      "due": "due {{n}} h",
+      "always": "Always runs"
     }
   }
 }

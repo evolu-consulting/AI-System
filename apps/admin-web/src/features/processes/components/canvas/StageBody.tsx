@@ -5,8 +5,60 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { StageView } from "./stage-view";
 
+/** CR-105 UX · nút hệ thống của khe: viên thuốc xám nhỏ ("Hệ thống: chọn bước kế" / "Hệ thống: hoàn tất"). */
+function SystemPill({ v }: { v: StageView }) {
+  const { t } = useTranslation();
+  return (
+    <span className="flex h-full items-center justify-center">
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-caption text-muted-foreground"
+        title={t("process.admin.library.system.hint")}
+      >
+        <Lock aria-hidden className="size-3" />
+        {t(`process.admin.library.system.${v.sys}`)}
+      </span>
+    </span>
+  );
+}
+
+/** CR-105 UX · bước duyệt của khe: "Bước n: tên", phòng ban + hạn, điều kiện bằng lời. */
+function SlotBody({ v }: { v: StageView }) {
+  const { t } = useTranslation();
+  const s = v.slotInfo;
+  if (!s) return null;
+  const name = v.name || t("process.admin.editor.stage.unnamed");
+  return (
+    <span className="block min-w-0 text-left">
+      <span className="inline-block w-full truncate text-label font-medium" title={name}>
+        {t("process.admin.library.canvas.stageAria", { n: s.no, name })}
+      </span>{" "}
+      <span className="inline-block w-full truncate text-caption text-muted-foreground">
+        {s.dept || t("process.admin.library.canvas.noDept")}
+        {s.dueH === null ? "" : ` · ${t("process.admin.library.canvas.due", { n: s.dueH })}`}
+      </span>{" "}
+      <span
+        className="inline-block w-full truncate text-caption text-muted-foreground"
+        title={s.cond ?? undefined}
+      >
+        {s.cond ?? t("process.admin.library.canvas.always")}
+      </span>
+      {v.hasError ? (
+        <>
+          {" "}
+          <Badge variant="err">
+            <CircleAlert aria-hidden />
+            {t("process.admin.canvas.node.error")}
+          </Badge>
+        </>
+      ) : null}
+    </span>
+  );
+}
+
 export function StageBody({ v }: { v: StageView }) {
   const { t } = useTranslation();
+  if (v.sys) return <SystemPill v={v} />;
+  if (v.slotInfo) return <SlotBody v={v} />;
   const name = v.name || t("process.admin.editor.stage.unnamed");
   // Chỉ dùng phần tử inline / inline-block cách nhau đúng một dấu cách ⇒ `innerText` là MỘT dòng (e2e so sánh chuỗi).
   return (

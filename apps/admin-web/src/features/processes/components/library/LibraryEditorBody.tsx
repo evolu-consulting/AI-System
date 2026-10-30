@@ -6,16 +6,11 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { useCloneFlow } from "../../hooks/use-clone-flow";
 import { processErrorSpec } from "../../lib/errors";
-import { cloneName } from "../../lib/library-view";
-import {
-  cloneDef,
-  type LibraryDef,
-  setSlotDefault,
-  useLibraryRefresh,
-  useSlots,
-} from "../../library-api";
+import { type LibraryDef, setSlotDefault, useLibraryRefresh, useSlots } from "../../library-api";
 import { AssignTenantsDialog } from "./AssignTenantsDialog";
+import { CloneDialog } from "./CloneDialog";
 import { FlowFormEditor } from "./FlowFormEditor";
 import { type EditorMode, type LibraryAction, LibraryToolbar } from "./LibraryToolbar";
 import { LibraryCanvasContext } from "./library-canvas-ctx";
@@ -41,24 +36,13 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const slots = useSlots(true);
   const [mode, setMode] = useState<EditorMode>("canvas");
   const [action, setAction] = useState<LibraryAction | null>(null);
-  const [busy, setBusy] = useState(false);
+  const cloneFlow = useCloneFlow(
+    (id) => void navigate({ to: "/processes/$processId", params: { processId: id } }),
+  );
   const close = () => setAction(null);
   const dirty = canvasDirty || formDirty;
-  const doClone = async () => {
-    setBusy(true);
-    try {
-      const copy = await cloneDef(def.id, { name: cloneName(def.name) });
-      notifySuccess(t("process.admin.library.clone.done"));
-      void refresh();
-      void navigate({ to: "/processes/$processId", params: { processId: copy.id } });
-    } catch (err) {
-      const s = processErrorSpec(err);
-      notifyError(t(s.key, s.params));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const onAction = (a: LibraryAction) => (a === "clone" ? void doClone() : setAction(a));
+  const onAction = (a: LibraryAction) =>
+    a === "clone" ? cloneFlow.open({ id: def.id, name: def.name }) : setAction(a);
   const setDefault = async () => {
     if (!def.slot) return;
     try {
@@ -78,7 +62,7 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         def={def}
         mode={mode}
         dirty={dirty}
-        busy={busy}
+        busy={cloneFlow.pending}
         onMode={setMode}
         onAction={onAction}
       />
@@ -94,6 +78,13 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
           onToCanvas={() => setMode("canvas")}
         />
       )}
+      <CloneDialog
+        src={cloneFlow.src}
+        pending={cloneFlow.pending}
+        error={cloneFlow.error}
+        onSubmit={(n) => void cloneFlow.submit(n)}
+        onClose={cloneFlow.close}
+      />
       <PublishDialog def={def} open={action === "publish"} onClose={close} />
       <ReleasesDialog def={def} open={action === "releases"} onClose={close} />
       <AssignTenantsDialog def={def} open={action === "assign"} onClose={close} />

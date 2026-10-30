@@ -8,8 +8,10 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
-import { inUseReason, isTemplateRow, rowMode, tenantUsage } from "../lib/library-view";
+import { canDeleteDraft } from "../lib/library-list";
+import { inUseReason, isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
+import { StatusCell, TenantsCell } from "./library/LibraryListCells";
 
 export type RowActions = {
   onToggle: (row: Row, enabled: boolean) => void;
@@ -49,6 +51,7 @@ function nameColumn(t: TFunction): Column<Row> {
         <Link
           to="/processes/$processId"
           params={{ processId: r.id }}
+          title={`!${r.key}`}
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
           {r.name}
@@ -91,7 +94,11 @@ function WriteActions(p: {
   actions: RowActions;
 }) {
   const { t, r, actions } = p;
-  const reason = inUseReason(r);
+  const reason = p.library
+    ? canDeleteDraft(r)
+      ? null
+      : (inUseReason(r) ?? "published")
+    : inUseReason(r);
   return (
     <>
       <Button size="sm" variant="ghost" asChild>
@@ -130,7 +137,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
             {L(t, "copy")}
           </Button>
         ) : null}
-        {isTemplateRow(r) ? null : (
+        {isTemplateRow(r) || library ? null : (
           <Button
             size="sm"
             variant="outline"
@@ -149,7 +156,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
   };
 }
 
-/** CR-105 · cột thư viện: "Dùng cho" (khe) + "Tenant đang dùng" (số tenant gán; mặc định áp cho tenant chưa gán). */
+/** CR-105 · cột thư viện: "Dùng cho" (khe) · Trạng thái (Nháp / Đã xuất bản vN) · "Tenant đang dùng" (chữ dễ đọc). */
 function libraryColumns(t: TFunction): Column<Row>[] {
   return [
     {
@@ -158,41 +165,41 @@ function libraryColumns(t: TFunction): Column<Row>[] {
       cell: (r) => r.slot_label ?? r.slot ?? "—",
     },
     {
+      id: "status",
+      header: t("process.admin.library.col.status"),
+      cell: (r) => <StatusCell row={r} />,
+    },
+    {
       id: "tenants",
       header: t("process.admin.library.col.tenants"),
-      className: "text-right",
-      cell: (r) => {
-        const u = tenantUsage(r);
-        return u.isDefault
-          ? t("process.admin.library.col.tenantsDefault", { n: u.count })
-          : u.count;
-      },
+      cell: (r) => <TenantsCell row={r} />,
     },
   ];
 }
 
 export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
-  const cols: Column<Row>[] = [
-    nameColumn(t),
-    {
+  const cols: Column<Row>[] = [nameColumn(t)];
+  // Ký hiệu không là cột chính ở thư viện (xem ở trang chi tiết / tooltip tên).
+  if (!o.library)
+    cols.push({
       id: "key",
       header: L(t, "col.key"),
       cell: (r) => <span className="font-mono text-label">!{r.key}</span>,
-    },
-    {
-      id: "stages",
-      header: L(t, "col.stages"),
-      cell: (r) => r.stage_count,
-      className: "text-right",
-    },
-  ];
-  if (o.library) cols.push(...libraryColumns(t));
+    });
   cols.push({
-    id: "running",
-    header: L(t, "col.running"),
-    cell: (r) => r.active_runs,
+    id: "stages",
+    header: o.library ? t("process.admin.library.col.steps") : L(t, "col.stages"),
+    cell: (r) => r.stage_count,
     className: "text-right",
   });
+  if (o.library) cols.push(...libraryColumns(t));
+  else
+    cols.push({
+      id: "running",
+      header: L(t, "col.running"),
+      cell: (r) => r.active_runs,
+      className: "text-right",
+    });
   cols.push({
     id: "updated",
     header: L(t, "col.updated"),
@@ -201,7 +208,6 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
   cols.push(enabledColumn(t, o), actionsColumn(t, o));
   return cols;
 }
-
 export function ProcessesTable(p: Props) {
   const { t } = useTranslation();
   const { templates, canEditTemplates, canRun, actions, library } = p;

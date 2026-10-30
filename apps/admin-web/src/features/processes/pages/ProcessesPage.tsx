@@ -1,18 +1,16 @@
-// ADM-FR-65 · CR-056 · P-a F5: `/processes` — danh sách quy trình, tab "Của công ty" / "Mẫu" (plan-frontend-admin §1, board ①).
-import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { FilterChips } from "@/components/shared/form/FilterChips";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { HubNotConfigured } from "@/components/shared/states/HubLoadError";
-import { TenantPicker } from "@/components/shared/TenantPicker";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
+import { CloneDialog } from "../components/library/CloneDialog";
+import { ProcessesHeader } from "../components/ProcessesHeader";
 import { ProcessesTable } from "../components/ProcessesTable";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { RunDialog } from "../components/RunDialog";
@@ -22,6 +20,7 @@ import {
   type Tab,
   useProcessesView,
 } from "../hooks/use-processes-view";
+import { isLibraryRow } from "../lib/library-view";
 
 function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
@@ -77,28 +76,10 @@ function ListPage() {
   const v = useProcessesView();
   if (!v.tenant.me) return null;
   const libraryTab = v.tenant.isPlatform && !v.tenant.tenantId;
+  const libraryRow = v.delRow ? isLibraryRow(v.delRow) : false;
   return (
     <>
-      <PageHeader
-        title={t("process.admin.list.title")}
-        description={t("process.admin.list.subtitle")}
-        actions={
-          <>
-            {v.tenant.isPlatform ? (
-              <TenantPicker
-                tenants={v.tenant.tenants ?? []}
-                value={v.tenant.tenantKey}
-                onChange={v.tenant.setTenant}
-              />
-            ) : null}
-            {v.canWrite ? (
-              <Button asChild>
-                <Link to="/processes/new">{t("process.admin.list.create")}</Link>
-              </Button>
-            ) : null}
-          </>
-        }
-      />
+      <ProcessesHeader v={v} />
       {hubConfigured() ? (
         <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
           <TabsList>
@@ -123,10 +104,17 @@ function ListPage() {
         description={t("process.admin.list.delete.body", { name: v.delRow?.name ?? "" })}
         confirmLabel={t("process.admin.list.deleteButton")}
         destructive
-        level="heavy"
-        confirmText={v.delRow?.name}
+        level={libraryRow ? "medium" : "heavy"}
+        confirmText={libraryRow ? undefined : v.delRow?.name}
         typePrompt={t("process.admin.list.delete.prompt")}
         onConfirm={v.confirmDelete}
+      />
+      <CloneDialog
+        src={v.cloneFlow.src}
+        pending={v.cloneFlow.pending}
+        error={v.cloneFlow.error}
+        onSubmit={(n) => void v.cloneFlow.submit(n)}
+        onClose={v.cloneFlow.close}
       />
       <LazyConflictDialog props={v.conflictProps} />
     </>
