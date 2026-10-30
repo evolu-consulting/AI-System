@@ -13,7 +13,7 @@ Làn e2e theo checkout (`.e2e-lane` + sổ toàn máy), mọi tài nguyên suy t
 - [x] e2e-lane.rules.ts (+ test), e2e-lane.ts (I/O), e2e-lane.cli.ts (`e2e:lanes`, `e2e:reap`)
 - [x] test-e2e-par + run-playwright dùng làn; slice:new cấp, slice:rm nhả; x2a/combine đọc E2E_PORT_SHIFT
 - [x] docs WORKFLOW + CLAUDE.md 0c
-- [~] Chứng minh 2 worktree song song: chạy được với cấu hình không DB (N1,contracts-web): làn 1 (cổng 6300/6310) + làn 2 (9300/9310) cùng lúc, ~290/310 s, 261 pass + 5 đỏ cũ y hệt ở cả hai, không còn cổng nghe. Phần DB/Redis CHƯA chạy: máy không có Postgres/Redis.
+- [x] Chứng minh thật (PG16+Redis7.4 bật bằng scripts/dev-db.ps1): `test:e2e:par --jobs=2 --only=fnr-showcase,P-d` từ 2 worktree cùng lúc (làn 1 + 2): mỗi bên 30 pass / 0 fail, ~130 s / ~140 s, không còn cổng nghe. N1+contracts-web: 5 đỏ y hệt trên platform/gd0 (có từ trước). x1 + community-web stack nay theo làn; còn cổng cố định: studio PUBLIC_ADMIN_WEB_URL=3000 (chỉ build env), DEAD 3399 (cổng chết cố ý).
 
 ## Không làm / Chạm
 Không đổi hành vi sản phẩm; chạm hạ tầng test e2e.
