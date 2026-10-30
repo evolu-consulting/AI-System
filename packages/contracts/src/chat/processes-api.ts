@@ -100,6 +100,8 @@ export const ProcessRunListQuerySchema = z.strictObject({
   limit: LimitSchema,
   cursor: CursorSchema.optional(),
   tenant_id: UuidSchema.optional(),
+  /** CR-105 · opt-in: gồm lượt chạy thử (`is_test`); mặc định ẩn. */
+  include_test: z.stringbool().default(false),
 });
 export type ProcessRunListQuery = z.infer<typeof ProcessRunListQuerySchema>;
 export const ProcessRunListResponseSchema = z.strictObject({

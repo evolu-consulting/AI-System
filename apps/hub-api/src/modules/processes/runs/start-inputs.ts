@@ -43,6 +43,15 @@ async function checkCap(tx: Tx, tenantId: string, seam: number | undefined): Pro
     );
 }
 
+export type CreateRunInput = {
+  def: StartDefRow;
+  input: string;
+  origin: RunOrigin;
+  inputs?: ProcessInputValue[];
+  /** CR-105 · lượt chạy thử từ mẫu/showcase (ẩn khỏi danh sách lượt mặc định). */
+  isTest?: boolean;
+};
+
 /**
  * HUB-FR-105/HUB-FR-124 · tạo run: validate inputs (C19) + dựng `snapshot.sources` + chiếm slot (≤ 5/tenant) + `insertRun`.
  * `pinned_sources` = NULL khi có nguồn (chờ resolve), `[]` khi không (ghim ngay). Trong tx scope người bắt đầu.
@@ -50,7 +59,7 @@ async function checkCap(tx: Tx, tenantId: string, seam: number | undefined): Pro
 export async function createRun(
   tx: Tx,
   u: AuthUser,
-  p: { def: StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
+  p: CreateRunInput,
   cfg: {
     runsPerTenant?: number;
     now: () => Date;
@@ -83,6 +92,7 @@ export async function createRun(
     pinnedSources: sources.length > 0 ? null : [],
     stages: khPlan.stages,
     kh: khPlan.kh,
+    isTest: p.isTest ?? false,
     ...p.origin,
   });
   return { runId, flowId };
@@ -122,6 +132,8 @@ export type NewRun = {
   stages?: unknown[];
   /** K1 · `snapshot.kh` (đích `## Tóm tắt`); null/vắng ⇒ không có khoá `kh`. */
   kh?: KhSnapshot | null;
+  /** CR-105 · lượt chạy thử từ mẫu/showcase (ẩn khỏi danh sách lượt mặc định). */
+  isTest?: boolean;
 };
 
 /** Tạo hội thoại nền + flow (= thread) + `process_runs` + `stage_runs` (P-b2 §3.1: stage BƯỚC 0 queued ≤ 3, còn lại
@@ -147,11 +159,11 @@ export async function insertRun(tx: Tx, n: NewRun): Promise<void> {
     n.pinnedSources === null ? sql`null` : sql`${JSON.stringify(n.pinnedSources)}::jsonb`;
   await tx.execute(sql`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by,
       origin_kind, origin_room_id, origin_conversation_id, input, conversation_id, flow_id, started_at, expires_at,
-      pinned_sources, sources_pinned_at, inputs)
+      pinned_sources, sources_pinned_at, inputs, is_test)
     values (${n.id}, ${n.tenantId}, ${n.def.id}, ${n.def.version}, ${JSON.stringify(snapshot)}::jsonb, ${n.startedBy},
       ${n.originKind}, ${n.originRoomId}, ${n.originConversationId}, ${n.input}, ${n.convId}, ${n.flowId},
       ${n.startedAt.toISOString()}::timestamptz, ${n.expiresAt?.toISOString() ?? null}::timestamptz, ${pinned},
-      ${n.pinnedSources === null ? sql`null` : sql`now()`}, ${JSON.stringify(n.inputs)}::jsonb)`);
+      ${n.pinnedSources === null ? sql`null` : sql`now()`}, ${JSON.stringify(n.inputs)}::jsonb, ${n.isTest ?? false})`);
   const steps = resolveSteps(stages as readonly { step?: number }[]);
   const rows = sql.join(
     steps.map((st, i) => sql`(${n.tenantId}, ${n.id}, ${i}, ${st === 0 ? "queued" : "pending"})`),

@@ -201,6 +201,8 @@ export type ListFilter = {
   conversationId?: string;
   processKey?: string;
   status?: ProcessRunStatus;
+  /** true ⇒ gồm lượt chạy thử (`is_test`); vắng ⇒ ẩn. */
+  includeTest?: boolean;
   limit: number;
   after?: [string, string];
 };
@@ -218,6 +220,7 @@ export async function listRuns(tx: Tx, f: ListFilter): Promise<RunSummaryRow[]> 
   if (f.conversationId) where.push(sql`r.origin_conversation_id = ${f.conversationId}`);
   if (f.processKey) where.push(sql`r.snapshot->>'key' = ${f.processKey}`);
   if (f.status) where.push(sql`r.status = ${f.status}`);
+  if (!f.includeTest) where.push(sql`r.is_test = false`);
   if (f.after)
     where.push(sql`(r.started_at, r.id) < (${f.after[0]}::timestamptz, ${f.after[1]}::uuid)`);
   return tx.execute<RunSummaryRow>(sql`select ${RUN_COLS} from hub.process_runs r

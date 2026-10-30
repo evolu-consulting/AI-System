@@ -23,6 +23,7 @@ import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
+import { previewRoutes } from "./library/preview.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
 import { remindOnce, startProcessReminder } from "./notify/reminder";
@@ -158,6 +159,7 @@ function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps, mode: ProcessR
     });
   }
   for (const r of mode === "admin" ? ADMIN_ROUTES : ALL_ROUTES) app.route("/", r(d));
+  app.route("/", previewRoutes(d)); // CR-105 · L2b · xem trước đường đi quy trình thư viện (platform_admin)
 }
 
 /** P-d2 · D2-12/S11 · driver stage `tool` giữ cổng scope system trong closure; launcher chỉ nhận factory. */

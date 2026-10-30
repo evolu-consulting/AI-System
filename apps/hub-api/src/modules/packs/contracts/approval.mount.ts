@@ -31,6 +31,8 @@ import {
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { ENGINE_FEATURE_KEY, engineAllowedForTenant } from "./domain/approval-engine.rules";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
+import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
+import { previewPath } from "./domain/approval-flow-stages.rules";
 import {
   APPROVAL_SLOT,
   APPROVAL_SLOT_LABEL,
@@ -115,6 +117,16 @@ export const approvalSlotSpec: SlotSpec = {
   groupKeys: (b) => {
     const body = slotBodyOf(b);
     return body ? slotGroupKeys(body) : [];
+  },
+  preview: (b, i) => {
+    const body = slotBodyOf(b);
+    if (!body) return null;
+    const steps = body.steps as unknown as FlowStep[];
+    const path = previewPath(
+      { steps },
+      { contractType: i.contractType as FlowDeal, value: i.value },
+    );
+    return path.map((p) => ({ key: p.key, name: steps[p.index]?.name ?? p.key, run: p.run }));
   },
 };
 

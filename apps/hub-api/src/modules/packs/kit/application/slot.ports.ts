@@ -21,6 +21,11 @@ export type SlotSpec = {
   compile(body: unknown): unknown[];
   /** Mã Group mà body tham chiếu (B2: kiểm Group theo tenant khi gán/xuất bản). */
   groupKeys(body: unknown): string[];
+  /** Xem trước đường đi (không ghi): bước nào chạy / bị bỏ qua với (loại HĐ, giá trị); body sai hình ⇒ null. */
+  preview?(
+    body: unknown,
+    input: { contractType: string; value: number },
+  ): { key: string; name: string; run: boolean }[] | null;
 };
 
 export type SlotRegistry = {

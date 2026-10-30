@@ -7,7 +7,7 @@ import type {
   ProcessRunSummary,
   SendRoomMessageRequest,
 } from "@ai/contracts/chat";
-import type { ProcessInputValue } from "@ai/contracts/hub-admin";
+import { FLOW_SHOWCASE_KEY, type ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -31,12 +31,11 @@ import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
 import * as repo from "./runs.repo";
-import { createRun, type RunOrigin } from "./start-inputs";
+import { type CreateRunInput, createRun } from "./start-inputs";
 
 type StartBang = Extract<Bang, { kind: "process" | "invalid" }>;
 type Me = { tenantId: string; userId: string };
 const meOf = (u: AuthUser): Me => ({ tenantId: u.tenantId, userId: u.userId });
-
 export type ProcessDepsCore = Omit<ProcessDeps, "start">;
 
 export class StartService {
@@ -253,6 +252,7 @@ export class StartService {
           def,
           input,
           inputs,
+          isTest: def.key === FLOW_SHOWCASE_KEY, // CR-105 · chạy thử từ Showcase/RunDialog của mẫu
           origin: { originKind: "admin", originRoomId: null, originConversationId: null },
         });
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
@@ -278,6 +278,7 @@ export class StartService {
         ...(q.conversation_id && { conversationId: q.conversation_id }),
         ...(q.process_key && { processKey: q.process_key }),
         ...(q.status && { status: q.status }),
+        ...(q.include_test && { includeTest: true }),
         limit: q.limit,
         ...(q.cursor && { after: repo.decodeCursor(q.cursor) }),
       });
@@ -364,7 +365,7 @@ export class StartService {
   #insert(
     tx: Tx,
     u: AuthUser,
-    p: { def: repo.StartDefRow; input: string; origin: RunOrigin; inputs?: ProcessInputValue[] },
+    p: CreateRunInput,
     packBound = false,
   ): Promise<{ runId: string; flowId: string }> {
     const cfg = { runsPerTenant: this.d.runsPerTenant, now: this.d.now, kh: this.d.kh, packBound };
