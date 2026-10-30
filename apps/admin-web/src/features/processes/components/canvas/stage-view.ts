@@ -140,3 +140,19 @@ export const sameView = (a: StageView, b: StageView): boolean =>
 /** CR-105 UX · quy trình khe: ẩn cạnh "Quay lại" và nhãn "Rẽ nhánh" (Hub biên dịch lại; người dùng chỉ thấy chuỗi bước duyệt). */
 export const withoutSlotLinks = (views: StageView[]): StageView[] =>
   views.map((v) => ({ ...v, backTo: [], branch: [] }));
+
+/**
+ * CR-105 UX · tiêu đề cột "Bước n" của quy trình khe chỉ đếm BƯỚC DUYỆT (khớp nhãn "Bước n: tên"); cột chỉ có nút hệ thống
+ * (route/finalize) không đánh số (`null`). Quy trình thường (không có bước khe / nút hệ thống) ⇒ `null` = giữ cách đếm cũ (step + 1).
+ */
+export function stepHeaderLabels(
+  views: readonly Pick<StageView, "step" | "slotInfo" | "sys">[],
+): Map<number, number | null> | null {
+  if (!views.some((v) => v.slotInfo || v.sys)) return null;
+  const out = new Map<number, number | null>();
+  for (const v of views) {
+    if (v.slotInfo) out.set(v.step, v.slotInfo.no);
+    else if (!out.has(v.step)) out.set(v.step, null);
+  }
+  return out;
+}

@@ -40,6 +40,7 @@ import { JoinNode } from "./JoinNode";
 import { StageNode } from "./StageNode";
 import { StepHeaderNode } from "./StepHeaderNode";
 import type { StageView } from "./stage-view";
+import { stepHeaderLabels } from "./stage-view";
 
 const nodeTypes = { stage: StageNode, stepHeader: StepHeaderNode, join: JoinNode, if: IfNode };
 const edgeTypes = { back: BackEdge, branch: BranchEdge };
@@ -114,6 +115,7 @@ function toNode(
   byUid: Map<string, StageView>,
   selected: string | undefined,
   readOnly: boolean | undefined,
+  labels: Map<number, number | null> | null,
 ): Node {
   // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
   const isIfNode = n.kind === "stage" && byUid.get(n.id)?.ifs != null;
@@ -132,7 +134,14 @@ function toNode(
       draggable: !readOnly && !byUid.get(n.id)?.locked,
     };
   const data =
-    n.kind === "stepHeader" ? { step: n.step, full: n.full, readOnly } : { count: n.count };
+    n.kind === "stepHeader"
+      ? {
+          step: n.step,
+          full: n.full,
+          readOnly,
+          ...(labels ? { label: labels.get(n.step) ?? null } : {}),
+        }
+      : { count: n.count };
   return { ...base, data, draggable: false };
 }
 
@@ -149,7 +158,8 @@ function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
   return useMemo(() => {
     const lay = layoutSteps(views);
     const byUid = new Map(views.map((v) => [v.uid, v]));
-    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly));
+    const labels = stepHeaderLabels(views);
+    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels));
     return { nodes, edges: lay.edges.map(toEdge), steps: lay.steps };
   }, [views, selected, readOnly, resetTick]);
 }

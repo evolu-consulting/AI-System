@@ -8,14 +8,21 @@ import { HEADER_NODE_H, NODE_W } from "../../lib/canvas-layout";
 import { useBlockedStep, useHandlers } from "./canvas-ctx";
 import { HiddenHandle } from "./HiddenHandle";
 
-export type StepHeaderData = { step: number; full: boolean; readOnly: boolean };
+/** `label` (quy trình khe): số bước duyệt hiển thị, `null` = cột nút hệ thống (không số, không nút thêm); vắng = đếm cũ. */
+export type StepHeaderData = {
+  step: number;
+  full: boolean;
+  readOnly: boolean;
+  label?: number | null;
+};
 export type StepHeaderType = Node<StepHeaderData, "stepHeader">;
 
 function StepHeaderImpl({ data }: NodeProps<StepHeaderType>) {
   const { t } = useTranslation();
   const h = useHandlers();
   const blocked = useBlockedStep() === data.step;
-  const n = data.step + 1;
+  const slotMode = data.label !== undefined;
+  const n = data.label ?? data.step + 1;
   return (
     <div
       style={{ width: NODE_W, height: HEADER_NODE_H }}
@@ -27,9 +34,9 @@ function StepHeaderImpl({ data }: NodeProps<StepHeaderType>) {
       <HiddenHandle type="target" position={Position.Left} />
       <h3 className="flex items-center gap-1 text-label font-medium">
         {blocked ? <Lock aria-hidden className="size-3.5 text-destructive" /> : null}
-        {t("process.admin.canvas.step.title", { n })}
+        {data.label === null ? null : t("process.admin.canvas.step.title", { n })}
       </h3>
-      {data.readOnly ? null : (
+      {data.readOnly || slotMode ? null : (
         <button
           type="button"
           aria-label={t("process.admin.canvas.step.addTo", { n })}
