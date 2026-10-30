@@ -1,40 +1,12 @@
-// contract-flow S5 · API mẫu luồng duyệt (`/pack/contracts/approval-flow`). Kiểu DTO lấy từ `@ai/contracts` (S2).
-import type {
-  ApprovalFlowPut,
-  ApprovalFlowResponse,
-  FlowCond,
-  FlowDifyStep,
-  FlowEsignStep,
-  FlowReviewStep,
-  FlowStep,
-  FlowWhen,
-} from "@ai/contracts";
+// CR-105 L4 · quy trình duyệt đang dùng (chỉ đọc): `GET /pack/contracts/approval-flow`. Không còn PUT (quy trình sửa ở ai-admin).
 import { api } from "@ai/web-kit/http";
+import { type CurrentFlow, toCurrentFlow } from "./lib/current-flow";
 
-export type { FlowCond, FlowDifyStep, FlowEsignStep, FlowReviewStep, FlowStep, FlowWhen };
-export type FlowOut = ApprovalFlowResponse;
-export type DealKind = "buy" | "sell" | "referral";
-export type ValueOp = "ge" | "gt" | "le" | "lt";
+export const flowKeys = { flow: ["settings", "flow"] as const };
 
-const P = "/pack/contracts/approval-flow";
-export const flowKeys = {
-  flow: ["settings", "flow"] as const,
-  dify: ["settings", "flow", "dify"] as const,
-};
-
-export type DifyWorkflowItem = {
-  key: string;
-  name: string;
-  inputs: {
-    name: string;
-    type: string;
-    required: boolean;
-    description?: string;
-    options?: string[];
-  }[];
-};
-export const fetchDifyWorkflows = (signal?: AbortSignal) =>
-  api<{ items: DifyWorkflowItem[] }>("/pack/contracts/dify-workflows", { signal });
-
-export const fetchFlow = (signal?: AbortSignal) => api<FlowOut>(P, { signal });
-export const saveFlow = (body: ApprovalFlowPut) => api<FlowOut>(P, { method: "PUT", body });
+export async function fetchFlow(signal?: AbortSignal): Promise<CurrentFlow> {
+  const raw = await api<unknown>("/pack/contracts/approval-flow", { signal });
+  const flow = toCurrentFlow(raw);
+  if (!flow) throw new Error("approval-flow: unexpected shape");
+  return flow;
+}

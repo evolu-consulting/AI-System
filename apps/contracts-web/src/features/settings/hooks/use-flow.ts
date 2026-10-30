@@ -1,8 +1,6 @@
-// contract-flow S5/S4 · truy vấn/ghi mẫu luồng duyệt + danh sách phòng (Group) qua `/groups`.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useGroups } from "~/features/contract-approval/hooks/use-groups";
-import type { FlowStep } from "../api-flow";
-import { fetchDifyWorkflows, fetchFlow, flowKeys, saveFlow } from "../api-flow";
+// CR-105 L4 · truy vấn quy trình duyệt đang dùng (chỉ đọc).
+import { useQuery } from "@tanstack/react-query";
+import { fetchFlow, flowKeys } from "../api-flow";
 
 export const useFlow = (enabled: boolean) =>
   useQuery({
@@ -11,23 +9,3 @@ export const useFlow = (enabled: boolean) =>
     enabled,
     retry: false,
   });
-
-/** Workflow Dify chọn cho bước Dify: `GET /pack/contracts/dify-workflows` (quyền admin gói ⇒ chỉ bật cho owner). */
-export const useDifyWorkflows = (enabled: boolean) =>
-  useQuery({
-    queryKey: flowKeys.dify,
-    queryFn: ({ signal }) => fetchDifyWorkflows(signal),
-    enabled,
-    retry: false,
-  });
-
-/** Phòng/Group chọn cho bước duyệt: `GET /pack/contracts/groups` (mọi người có quyền đọc gói; không cần quyền admin). */
-export const useDepartments = (enabled: boolean) => useGroups(enabled);
-
-export function useSaveFlow() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (v: { version: number; steps: FlowStep[] }) => saveFlow(v),
-    onSuccess: (d) => qc.setQueryData(flowKeys.flow, d),
-  });
-}

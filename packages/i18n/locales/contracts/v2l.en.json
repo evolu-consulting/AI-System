@@ -165,6 +165,14 @@
       }
     },
     "flow": {
+      "current": {
+        "title": "Approval process in use: {{name}} · v{{version}}",
+        "lead": "Your company runs this process for every contract. It is read-only here.",
+        "editLink": "Edit approval process",
+        "openFail": "Could not open the process editor.",
+        "esign": "E-sign",
+        "conditional": "Conditional"
+      },
       "title": "Contract approval flow",
       "lead": "Approval steps run in order. Step 1 is drafting and checking and always runs. Later steps may be conditional on contract type and value.",
       "isDefault": "Using default",

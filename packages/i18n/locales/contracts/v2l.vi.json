@@ -165,6 +165,14 @@
       }
     },
     "flow": {
+      "current": {
+        "title": "Quy trình duyệt đang dùng: {{name}} · v{{version}}",
+        "lead": "Công ty đang chạy quy trình này cho mọi hợp đồng. Quy trình chỉ xem được ở đây.",
+        "editLink": "Chỉnh quy trình duyệt",
+        "openFail": "Không mở được trang chỉnh quy trình.",
+        "esign": "Ký số",
+        "conditional": "Có điều kiện"
+      },
       "title": "Quy trình duyệt hợp đồng",
       "lead": "Các bước duyệt theo thứ tự. Bước 1 là soạn và kiểm tra, luôn chạy. Các bước sau có thể có điều kiện theo loại hợp đồng và giá trị.",
       "isDefault": "Dùng mặc định",

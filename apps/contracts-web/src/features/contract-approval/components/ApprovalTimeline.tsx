@@ -1,9 +1,8 @@
-// contract-flow S4: dòng thời gian các bước duyệt của HĐ chạy trên engine — tên bước, phòng, trạng thái, hạn / quá hạn / chuyển cấp,
-// người quyết + lúc, góp ý. Chủ sở hữu có lối vào "Chỉnh quy trình duyệt" (mở thẳng mục luồng của Cài đặt).
+﻿// contract-flow S4: dòng thời gian các bước duyệt của HĐ chạy trên engine — tên bước, phòng, trạng thái, hạn / quá hạn / chuyển cấp,
+// người quyết + lúc, góp ý. Người có quyền sửa (platform_admin) có lối vào "Chỉnh quy trình duyệt" (sang ai-admin, CR-105 L4).
 import type { ContractApproval } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
-import { useMe } from "~/features/pack-state/hooks/use-me";
-import { openSettings } from "~/features/settings/lib/bus";
+import { FlowEditorLink } from "~/features/settings/components/FlowEditorLink";
 import { useGroups } from "../hooks/use-groups";
 import { hoursLeft, type TimelineRow, timelineRows } from "../lib/engine-card";
 import { EsignStepRow } from "./EsignStepRow";
@@ -80,7 +79,6 @@ function Row({ r, now }: { r: TimelineRow; now: number }) {
 
 export function ApprovalTimeline({ id, a }: { id: string; a: ContractApproval }) {
   const { t } = useTranslation();
-  const { owner } = useMe();
   const groups = useGroups(a.mode === "engine");
   if (a.mode !== "engine" || !a.steps?.length) return null;
   const esign = a.esign ?? null;
@@ -90,16 +88,10 @@ export function ApprovalTimeline({ id, a }: { id: string; a: ContractApproval })
     <section data-approval="timeline" className="mb-4 rounded-xl border border-line p-4">
       <div className="mb-1 flex items-center gap-3">
         <h3 className="text-sm font-semibold">{t("contracts.approval.engine.title")}</h3>
-        {owner && (
-          <button
-            type="button"
-            data-approval="edit-flow"
-            className="ml-auto text-caption text-act underline"
-            onClick={() => openSettings("flow")}
-          >
-            {t("contracts.approval.engine.editFlow")}
-          </button>
-        )}
+        <FlowEditorLink
+          testId="approval-edit-flow"
+          className="ml-auto text-caption text-act underline"
+        />
       </div>
       <ol>
         {rows.map((r) => (

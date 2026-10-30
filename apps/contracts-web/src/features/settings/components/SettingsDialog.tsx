@@ -1,4 +1,4 @@
-// V2-L · hộp thoại Cài đặt (mở từ menu avatar): đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt; trái là 3 mục (Công ty · Điểm uy tín ·
+﻿// V2-L · hộp thoại Cài đặt (mở từ menu avatar): đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt; trái là 3 mục (Công ty · Điểm uy tín ·
 // Điểm kinh doanh) cuộn riêng; mục khác mặc định có chấm cam. Chỉ chủ sở hữu (contracts-owner) sửa được; người khác xem (mọi ô khoá).
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
@@ -14,7 +14,7 @@ import type { SectionId, SettingsData } from "../lib/types";
 import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
-import { FlowPane } from "./FlowPane";
+import { FlowCurrentPane } from "./FlowCurrentPane";
 import { ScoringPane } from "./ScoringPane";
 import { ScoutPane } from "./ScoutPane";
 import { SettingsHeader } from "./SettingsHeader";
@@ -142,7 +142,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
             <LoadState loading={loading} error={error} retry={retry} />
 
             {sec === "scout" && <ScoutPane />}
-            {sec === "flow" && <FlowPane owner={owner} />}
+            {sec === "flow" && <FlowCurrentPane owner={owner} />}
             {sec === "rep" && <ScoringPane owner={owner} />}
             {isDraftSection(sec) && draft && saved && defaults && (
               <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
