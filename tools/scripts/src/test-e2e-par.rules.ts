@@ -157,7 +157,7 @@ export function planJobs(p: Plan, timings: Readonly<Record<string, number>>, onl
   return jobs.filter(keep).sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
 }
 
-import { laneTag, portShift, shiftNumericEnv } from "./e2e-lane.rules";
+import { e2eDbTag, portShift, shiftNumericEnv } from "./e2e-lane.rules";
 
 const withDb = (url: string, name: string): string => {
   const u = new URL(url);
@@ -173,7 +173,7 @@ function dbEnv(
 ): Record<string, string> {
   const out: Record<string, string> = {};
   if (!job.meta.db) return out;
-  const name = `ai_system_e2e_${laneTag(lane, job.meta.db)}_test`;
+  const name = `ai_system_${e2eDbTag(lane, job.meta.db)}_test`;
   for (const k of ["TEST_DATABASE_URL", "TEST_ADMIN_API_DATABASE_URL"]) {
     const v = base[k];
     if (v) out[k] = withDb(v, name);

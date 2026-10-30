@@ -105,6 +105,15 @@ export function shiftNumericEnv(
 export const laneTag = (lane: number, tag: string): string =>
   lane === 0 ? tag : `${tag}_l${lane}`;
 
+/** Tag DB của `test-db-cli` (^[a-z0-9_]{1,24}$) cho việc e2e: `e2e_<db>` (+ hậu tố làn); quá dài ⇒ cắt + băm 4 ký tự để không trùng. */
+export function e2eDbTag(lane: number, db: string): string {
+  const full = `e2e_${laneTag(lane, db)}`;
+  if (full.length <= 24) return full;
+  let h = 0;
+  for (const c of full) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `${full.slice(0, 19)}_${h.toString(36).padStart(4, "0").slice(-4)}`;
+}
+
 /** Env-file theo làn cho cấu hình chạy trực tiếp; null = cấu hình không dùng env-file riêng. */
 export function laneEnvFile(
   lane: number,

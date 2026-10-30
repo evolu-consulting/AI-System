@@ -6,7 +6,7 @@ import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
 import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
-import { lanePortEnv, laneTag } from "./e2e-lane.rules";
+import { e2eDbTag, lanePortEnv } from "./e2e-lane.rules";
 import { isFrozenConfig } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import { findE2eConfigs } from "./test-all.discover";
@@ -162,9 +162,7 @@ function saveTimings(root: string, old: Record<string, number>, done: (Done & { 
 }
 
 async function ensureDbs(root: string, jobs: Job[], lane: number): Promise<void> {
-  const tags = [
-    ...new Set(jobs.flatMap((j) => (j.meta.db ? [`e2e_${laneTag(lane, j.meta.db)}`] : []))),
-  ];
+  const tags = [...new Set(jobs.flatMap((j) => (j.meta.db ? [e2eDbTag(lane, j.meta.db)] : [])))];
   if (!tags.length) return;
   const p = Bun.spawn(
     ["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", "ensure", ...tags],

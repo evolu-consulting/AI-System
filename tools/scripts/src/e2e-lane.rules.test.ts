@@ -3,6 +3,7 @@ import {
   allocateLane,
   descendants,
   ENV_FILE_VARS,
+  e2eDbTag,
   laneEnvFile,
   lanePortEnv,
   lanePortRange,
@@ -101,6 +102,19 @@ describe("DB / env-file / Redis", () => {
     ).toBe("redis://localhost:6379/9");
     expect(redisEnvFor("e2e/N1/playwright.config.ts", 9, "redis://x")).toEqual({});
   });
+});
+
+test("e2eDbTag hợp lệ (<=24, [a-z0-9_]) và duy nhất giữa các việc/làn", () => {
+  const dbs = ["pa", "k1", "root", "root_clock", "x_e2e_fnr_showcase_p", "x_e2e_fnr_showcase_q"];
+  const tags = new Set<string>();
+  for (let lane = 0; lane <= MAX_LANE; lane++)
+    for (const d of dbs) {
+      const t = e2eDbTag(lane, d);
+      expect(t).toMatch(/^[a-z0-9_]{1,24}$/);
+      tags.add(t);
+    }
+  expect(tags.size).toBe((MAX_LANE + 1) * dbs.length);
+  expect(e2eDbTag(0, "pa")).toBe("e2e_pa");
 });
 
 describe("reap", () => {
