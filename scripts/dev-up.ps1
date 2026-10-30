@@ -54,6 +54,18 @@ if (-not (Test-Path (Join-Path $repo "node_modules"))) { "bun install…"; bun i
 
 # 2. env: .env.local sinh từ .env.example với khoá dev mới (không in giá trị)
 if (-not (Test-Path (Join-Path $repo ".env.local"))) { "tạo .env.local (bun run keys:dev)…"; bun run keys:dev; if ($LASTEXITCODE) { throw "keys:dev lỗi" } }
+# .env.local cũ (tạo trước khi .env.example thêm biến) ⇒ chép biến còn thiếu với giá trị mẫu; không đổi biến đã có
+function Sync-EnvLocal([string]$example, [string]$local) {
+  $have = @{}
+  foreach ($l in Get-Content $local -Encoding UTF8) { if ($l -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=') { $have[$matches[1]] = 1 } }
+  $add = @(Get-Content $example -Encoding UTF8 | Where-Object { $_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=' -and -not $have.ContainsKey($matches[1]) })
+  if ($add.Count -gt 0) {
+    $kept = @(Get-Content $local -Encoding UTF8)
+    [IO.File]::WriteAllLines($local, [string[]]($kept + "# thêm bởi dev-up từ .env.example" + $add), [Text.UTF8Encoding]::new($false))
+    "  .env.local thiếu $($add.Count) biến so với .env.example ⇒ đã thêm: " + (($add | ForEach-Object { ($_ -split '=', 2)[0].Trim() }) -join ', ')
+  }
+}
+Sync-EnvLocal (Join-Path $repo ".env.example") (Join-Path $repo ".env.local")
 
 # 3. Postgres + Redis
 if ((Test-Port 5432) -and (Test-Port 6379)) { "Postgres/Redis đã chạy" }
@@ -65,7 +77,9 @@ if (Test-Path $pidFile) { throw "Có phiên dev-up đang chạy ($pidFile) — c
 # DB khác mặc định: đổi tên DB trong mọi URL của .env.local (env tiến trình thắng --env-file), tạo DB nếu chưa có
 # HUB_SEED_FIXTURES=1: hub:dev tạo tenant demo `evolu` + 5 user + agent/mẫu quy trình (mặc định seed tối giản không có demo)
 # CONTRACTS_WEB_URL / COMMUNITY_WEB_URL: link chuyển app do hub-api trả (Community "Mở Sổ Hợp Tác"); vắng ⇒ "/" = về bảng tin
+# Cờ dev bắt buộc (thắng .env.local): engine quy trình + module đóng băng bật ⇒ ai-admin có "Quy trình", "Nguồn"
 $coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1"
+  HUB_PROCESS_ENGINE = "on"; HUB_FROZEN_MODULES = "on"; ADMIN_FROZEN_MODULES = "on"
   CONTRACTS_WEB_URL = "http://localhost:3300"; COMMUNITY_WEB_URL = "http://localhost:3400"
   # duyệt HĐ trên engine (như prod demo): công tắc env + feature `contracts-approval-engine` (demo-packs cấp cho evolu/demo)
   CONTRACTS_APPROVAL_ENGINE = "on" }
@@ -148,6 +162,7 @@ if ($Only -eq "all") {
   $common["PUBLIC_CONTRACTS_WEB_URL"] = "http://localhost:3300"
   $common["PUBLIC_SSO_URL"] = "http://localhost:3100"
   if (-not $common.ContainsKey("PUBLIC_COMMUNITY_API")) { $common["PUBLIC_COMMUNITY_API"] = "http" }
+  $common["PUBLIC_FROZEN_MODULES"] = "on"
   $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "contracts-web" = 3300; "community-web" = 3400 }
   $procs = @{}
   foreach ($w in $webs.Keys) { $procs[$w] = Start-Bg $w (Join-Path $repo "apps\$w") @("bun", "run", "dev") $common }

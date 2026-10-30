@@ -96,4 +96,12 @@ Mặc định không gọi AI. Muốn trợ lý chat/Sổ Hợp Tác dùng Claud
 
 - `db:setup lỗi (migrate-guard lệch …)`: DB dev từng chạy migration của nhánh khác. Dùng `-DbName <tên mới>` hoặc `-Fresh`.
 - `Có phiên dev-up đang chạy`: chạy `scripts\dev-down.ps1` trước.
+- **ai-admin không có menu "Quy trình" (và "Nguồn")** dù đăng nhập tenant_admin/platform_admin: menu chỉ hiện khi admin-web hỏi
+  hub `GET /process-defs` được 200 (hỏi một lần lúc tải trang). Nguyên nhân hay gặp:
+  - Không chạy bằng `dev-up` (vd `bun run dev`) ⇒ web không có `PUBLIC_HUB_URL`; trang Agents báo "Chưa cấu hình địa chỉ Hub".
+    Dùng `scripts\dev-up.ps1`.
+  - `.env.local` cũ thiếu `HUB_PROCESS_ENGINE=on` ⇒ hub trả 404. Từ bản này `dev-up` tự thêm biến còn thiếu từ `.env.example`
+    (in danh sách) và luôn bật cờ dev; chạy lại `dev-down` rồi `dev-up`.
+  - Hub đang khởi động lại lúc trang tải ⇒ tải lại trang (F5).
+  Kiểm nhanh: DevTools › Network › `process-defs` phải là 200 (404 = engine tắt, 403 = không phải admin, lỗi mạng = hub chưa chạy).
 - Cổng 3000–3400/3001/4000 bị chiếm: tắt tiến trình đang giữ cổng rồi chạy lại.
