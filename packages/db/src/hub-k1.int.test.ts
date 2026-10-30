@@ -280,13 +280,15 @@ describe("HUB-FR-131 · audit CHECK 0029", () => {
 
 describe("HUB-FR-131 · 0029 idempotent", () => {
   test("chạy lại toàn bộ câu hai lần ⇒ không lỗi, ràng buộc/index/policy/quyền không đổi", async () => {
-    // Chạy lại chuỗi 0029 → 0030 → 0036 → 0037: 0030 (H4b-2) mở rộng CHECK entity, 0036 (P-d1) và 0037 (P-d2: tool_call,
-    // branch) mở rộng CHECK action của 0029 nên "chạy lại 0029" phải kèm các file đó để trạng thái cuối khớp.
+    // Chạy lại chuỗi 0029 → 0030 → 0036 → 0037 → 0069: 0030 (H4b-2) mở rộng CHECK entity, 0036 (P-d1), 0037 (P-d2: tool_call,
+    // branch) và 0069 (CR-105: publish, rollback, assign, unassign, set_default) mở rộng CHECK action của 0029 nên "chạy lại
+    // 0029" phải kèm các file đó để trạng thái cuối khớp (0069 seed dùng ON CONFLICT DO NOTHING ⇒ chạy lại vô hại).
     const stmts = [
       "0029_k1_kh.sql",
       "0030_h4b2_models.sql",
       "0036_pd1_durable.sql",
       "0037_pd2_tool_branch.sql",
+      "0069_process_library_seed.sql",
     ].flatMap((f) =>
       readFileSync(new URL(`../migrations-hub/${f}`, import.meta.url), "utf8")
         .split("--> statement-breakpoint")
