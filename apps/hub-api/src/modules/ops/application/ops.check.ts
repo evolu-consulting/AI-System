@@ -20,6 +20,8 @@ export type OpsCheckDeps = {
   signal: AbortSignal;
   /** Thư mục file trạng thái do host ghi (`ops-status/*.json`, O4); vắng ⇒ check đọc file trả `unknown`. */
   statusDir?: string;
+  /** Kết quả lượt trước của từng check (đọc từ `hub.ops_checks` trước lượt) — cho check đếm lỗi liên tiếp (host công khai). */
+  prev?: Readonly<Partial<Record<OpsCheckKey, { status: OpsStatus; value: unknown }>>>;
 };
 
 export type OpsCheckResult = {

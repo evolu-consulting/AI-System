@@ -5,6 +5,7 @@
 import {
   OPS_EVENTS_KEEP,
   OPS_EVENTS_PAGE,
+  type OpsCheckKey,
   type OpsCheckRow,
   type OpsEvent,
   type OpsSettings,
@@ -112,6 +113,18 @@ type EventRowDb = Omit<OpsEvent, "id" | "at"> & { id: string | number; at: Date 
 export function opsRepo(db: Db) {
   return {
     state: (): Promise<OpsState> => withHubScope(db, SYSTEM, (tx) => stateTx(tx)),
+
+    /** Trạng thái + giá trị lượt trước của mọi check (một câu) — cho check cần so với lượt trước (host công khai). */
+    async previous(): Promise<Partial<Record<OpsCheckKey, { status: OpsStatus; value: unknown }>>> {
+      const rows = await withHubScope(db, SYSTEM, (tx) =>
+        tx.execute<{ check_key: OpsCheckKey; status: OpsStatus; value: unknown }>(
+          sql`select check_key, status, value from hub.ops_checks`,
+        ),
+      );
+      return Object.fromEntries(
+        rows.map((r) => [r.check_key, { status: r.status, value: r.value }]),
+      );
+    },
 
     /** Giành lượt nền: thành công ⇔ `last_round_at` trong DB vẫn là giá trị đã đọc (instance khác chưa giành). */
     async claimRound(seen: Date | null, now: Date): Promise<boolean> {

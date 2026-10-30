@@ -12,7 +12,7 @@ export type OpsRoundDeps = {
   repo: OpsRepo;
   checks: readonly OpsCheck[];
   /** Phụ thuộc truyền cho check (trừ `now`/`signal` do lượt đặt). */
-  checkDeps: Omit<OpsCheckDeps, "now" | "signal">;
+  checkDeps: Omit<OpsCheckDeps, "now" | "signal" | "prev">;
   /** Hạn giờ mặc định mỗi check (ms). */
   timeoutMs?: number;
 };
@@ -22,7 +22,8 @@ export type OpsRoundResult =
   | { ran: true; results: OpsCheckOutcome[]; transitions: Transition[]; notified: number };
 
 async function round(d: OpsRoundDeps, settings: OpsSettings, now: Date): Promise<OpsRoundResult> {
-  const results = await runEnabled(d.checks, { ...d.checkDeps, now }, settings, d.timeoutMs);
+  const prev = await d.repo.previous();
+  const results = await runEnabled(d.checks, { ...d.checkDeps, now, prev }, settings, d.timeoutMs);
   const w = await d.repo.writeRound(results, now, notificationsFor);
   return { ran: true, results, ...w };
 }

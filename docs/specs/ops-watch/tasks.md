@@ -24,7 +24,7 @@ Trạng thái gộp: chưa gộp
 ### ADDED admin/tinh-trang-he-thong.md
 #### Yêu cầu: Kiểm tra vận hành định kỳ không dùng AI
 Hub kiểm các chỉ số vận hành mỗi 30 phút bằng code thường và lưu trạng thái mới nhất cùng lịch sử đổi trạng thái.
-- Kịch bản: khi mọi provider AI ở `logged_out` thì check "Provider AI" thành `crit` trong lượt kiểm kế tiếp [test: thủ công — check Provider AI làm ở O2, thay bằng int test]
+- Kịch bản: khi mọi provider AI ở `logged_out` thì check "Provider AI" thành `crit` trong lượt kiểm kế tiếp [test: apps/hub-api/src/modules/ops/ops.checks.int.test.ts » Provider AI: logged_out ⇒ crit trong lượt kiểm kế tiếp]
 - Kịch bản: khi trạng thái một check không đổi giữa hai lượt thì không ghi thêm sự kiện [test: apps/hub-api/src/modules/ops/ops.round.int.test.ts » khi trạng thái một check không đổi giữa hai lượt]
 
 #### Yêu cầu: Cảnh báo tới quản trị nền tảng
