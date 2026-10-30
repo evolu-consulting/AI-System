@@ -29,7 +29,9 @@ export function PreviewDialog({ def, open, onClose }: Props) {
   const run = async () => {
     if (value === "invalid") return;
     try {
-      setPath(normalizePreview(await preview.mutateAsync({ deal, total_value: value })));
+      setPath(
+        normalizePreview(await preview.mutateAsync({ contract_type: deal, value: value ?? 0 })),
+      );
     } catch (err) {
       const s = processErrorSpec(err);
       notifyError(t(s.key, s.params));

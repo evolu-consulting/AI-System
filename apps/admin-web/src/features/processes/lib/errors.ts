@@ -22,6 +22,8 @@ const KNOWN = new Set([
   "PROCESS_PUBLISH_INVALID",
   "SLOT_SHAPE_UNSUPPORTED",
   "SLOT_GROUPS_MISSING",
+  "SLOT_BODY_INVALID",
+  "SLOT_UNKNOWN",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

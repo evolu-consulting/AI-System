@@ -71,10 +71,23 @@ export function settledCounts(rs: readonly PromiseSettledResult<unknown>[]) {
   return { ok: rs.length - failed, failed };
 }
 
-/** Chi tiết lỗi 422 của xuất bản/gán (`issues[{path,rule}]` | `paths[]` | `keys[]` mã phòng ban thiếu + `tenant`) ⇒ dòng hiển thị. */
-export function errorLines(details: unknown): string[] {
+/** Luật của issue xuất bản: `SYSTEM_TOOL_MISSING:<tool>` | `UNREACHABLE_STEP` | luật khác (giữ nguyên). */
+export function splitRule(rule: string): { code: string; arg: string | null } {
+  const at = rule.indexOf(":");
+  return at < 0 ? { code: rule, arg: null } : { code: rule.slice(0, at), arg: rule.slice(at + 1) };
+}
+
+export type RuleFormat = (path: string, code: string, arg: string | null) => string | null;
+
+/**
+ * Chi tiết lỗi 422 của xuất bản/gán (`issues[{path,rule}]` | `paths[]` | `keys[]` mã phòng ban thiếu + `tenant`) ⇒ dòng hiển thị.
+ * `fmt` (tuỳ chọn) dịch luật đã biết; trả null ⇒ giữ dạng thô `path: rule`.
+ */
+export function errorLines(details: unknown, fmt?: RuleFormat): string[] {
   if (!rec(details)) return [];
-  const head = Array.isArray(details.issues) ? issueLines(details.issues) : strings(details.paths);
+  const head = Array.isArray(details.issues)
+    ? issueLines(details.issues, fmt)
+    : strings(details.paths);
   const keys = strings(details.keys).join(", ");
   const who = typeof details.tenant === "string" ? `${details.tenant}: ` : "";
   return keys ? [...head, `${who}${keys}`] : head;
@@ -83,10 +96,13 @@ export function errorLines(details: unknown): string[] {
 const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
-function issueLines(list: readonly unknown[]): string[] {
+function issueLines(list: readonly unknown[], fmt?: RuleFormat): string[] {
   return list.flatMap((it) => {
     if (!rec(it)) return [];
-    const line = [it.path, it.rule].filter((x) => typeof x === "string" && x !== "").join(": ");
+    const path = typeof it.path === "string" ? it.path : "";
+    const rule = typeof it.rule === "string" ? it.rule : "";
+    const { code, arg } = splitRule(rule);
+    const line = (rule && fmt?.(path, code, arg)) || [path, rule].filter(Boolean).join(": ");
     return line ? [line] : [];
   });
 }

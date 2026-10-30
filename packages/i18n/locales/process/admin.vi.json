@@ -441,7 +441,9 @@
     "PROCESS_NOT_PUBLISHED": "Quy trình chưa xuất bản. Xuất bản trước.",
     "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
     "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Canvas.",
-    "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới."
+    "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới.",
+    "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
+    "SLOT_UNKNOWN": "Khe quy trình không tồn tại (gói chưa bật?)."
   },
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
@@ -645,7 +647,7 @@
     },
     "usedFor": "Dùng cho: {{slot}}",
     "defaultBadge": "Mặc định · {{slot}}",
-    "usage": "{{n}} tenant đang dùng",
+    "usage": "{{n}} tenant đã gán",
     "pubState": {
       "published": "Đã xuất bản v{{n}}",
       "draft": "Chưa xuất bản"
@@ -669,6 +671,10 @@
       "badge": "Hệ thống",
       "hint": "Nút hệ thống của khe: không xoá/đổi được",
       "locked": "Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."
+    },
+    "rule": {
+      "SYSTEM_TOOL_MISSING": "Thiếu nút hệ thống {{tool}}.",
+      "UNREACHABLE_STEP": "Bước không tới được ({{path}})."
     },
     "publish": {
       "button": "Xuất bản",
@@ -713,7 +719,7 @@
       "title": "Xem trước đường đi “{{name}}”",
       "body": "Nhập loại hợp đồng và giá trị mẫu: bước nào chạy, bước nào bị bỏ qua. Không ghi gì.",
       "value": "Giá trị mẫu (VND)",
-      "valueHint": "Để trống = chưa biết giá trị",
+      "valueHint": "Để trống = 0",
       "valueInvalid": "Nhập số nguyên không âm.",
       "run": "Xem đường đi",
       "result": "Đường đi",

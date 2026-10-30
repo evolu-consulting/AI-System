@@ -19,6 +19,9 @@ export type LibReviewStep = {
   key: string;
   name: string;
   department_group_key: string | null;
+  /** Luôn null ở def thư viện (id Group bị Hub chặn: GROUP_ID_IN_LIBRARY) — gửi kèm cho khớp `FlowStep`. */
+  department_group_id?: null;
+  escalate_group_id?: null;
   head_only: boolean;
   due_h: number;
   remind_every_h: number | null;
@@ -42,6 +45,7 @@ export type LibEsignStep = {
   due_h: number;
   remind_every_h: number | null;
   escalate_group_key: string | null;
+  escalate_group_id?: null;
 };
 /** Bước Dify: Form chỉ giữ nguyên (khe hở: danh mục workflow Dify chưa có ở admin-web) — sửa ở Canvas. */
 export type LibDifyStep = {
@@ -99,6 +103,8 @@ export function newReview(steps: readonly LibStep[], group: string | null = null
     key: freshKey(steps, "s"),
     name: "",
     department_group_key: group,
+    department_group_id: null,
+    escalate_group_id: null,
     head_only: false,
     due_h: 72,
     remind_every_h: null,
@@ -119,6 +125,7 @@ export function newEsign(steps: readonly LibStep[], name: string): LibEsignStep 
     due_h: 72,
     remind_every_h: null,
     escalate_group_key: null,
+    escalate_group_id: null,
   };
 }
 /** Thêm trước bước Ký số (Ký số luôn cuối). */

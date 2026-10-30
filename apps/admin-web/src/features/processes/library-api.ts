@@ -1,12 +1,17 @@
-// CR-105 · L3: client Hub của "thư viện quy trình" — MỘT file để chỉnh khi backend (L1/L2a/L2b) lên.
-// Hợp đồng: docs/specs/process-library/design.md §4 + quyết định readiness (KHÔNG có tiền tố `/process-library`: mở rộng `/process-defs…`
-// + `/process-slots` + `/tenants/:tid/process-slots/:slot`; chỉ platform_admin). Kiểu gõ lỏng — sẽ đổi sang schema `packages/contracts`
-// khi L2a đặt response (impact, releases, assignments, process-slots, chi tiết 422) ở đó.
+// CR-105 · L3: client Hub của "thư viện quy trình" — MỘT file. Kiểu lấy từ `packages/contracts/src/hub-admin/process-library.ts`.
+// Hợp đồng (readiness + L2a): KHÔNG tiền tố `/process-library` — mở rộng `/process-defs…` + `/process-slots` +
+// `/tenants/:tid/process-slots/:slot`; chỉ platform_admin; mọi danh sách là `{items:[…]}`.
 import type {
+  ProcessAssignment,
   ProcessDef,
   ProcessDefInput,
   ProcessDefListItem,
   ProcessDefListResponse,
+  ProcessImpact,
+  ProcessRelease,
+  ProcessSlot,
+  ReleaseRef,
+  TenantProcessSlot,
 } from "@ai/contracts/hub-admin";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
@@ -16,67 +21,20 @@ import { LIST_LIMIT, PKEYS } from "./api";
 export type LibraryKind = "library" | "template";
 export type DealKind = "buy" | "sell" | "referral";
 
-/** Thêm vào `ProcessDefListItem` của `GET /process-defs?kind=…` (design §4: `slot_label`, `tenant_count`, `is_default`; `slot`/`published_version` = khe hở hợp đồng). */
-export type LibraryListItem = ProcessDefListItem & {
-  slot?: string | null;
-  slot_label?: string | null;
-  tenant_count?: number;
-  is_default?: boolean;
-  published_version?: number | null;
-};
-/** Thêm vào `ProcessDef` (design §1): khe, thân dạng Form theo mã, bản đã xuất bản. */
-export type LibraryDef = ProcessDef & {
-  slot?: string | null;
-  slot_label?: string | null;
-  slot_body?: unknown;
-  published_version?: number | null;
-  is_default?: boolean;
-  tenant_count?: number;
-};
-/** Body ghi nháp: `ProcessDefInput` + `slot` (+ `slot_body` khi lưu từ Form; canvas gửi `stages` ⇒ Hub `fromStages`). */
-export type LibraryDefBody = ProcessDefInput & { slot?: string | null; slot_body?: unknown };
-
-export type SlotInfo = {
-  slot: string;
-  label: string;
-  default_def_id: string | null;
-  default_def_name?: string | null;
-  /** Khe hở: danh mục mã phòng ban gợi ý cho Form (nếu Hub trả). */
-  group_keys?: { key: string; label?: string }[];
-};
-export type ImpactInfo = {
-  tenant_count: number;
-  active_runs: number;
-  /** Khe hở: danh sách tenant đang dùng (nếu Hub trả). */
-  tenants?: { id: string; name: string }[];
-  /** Có áp cho mọi tenant chưa gán (def đang là mặc định). */
-  is_default?: boolean;
-};
-export type ReleaseItem = {
-  rel_version: number;
-  published_at: string;
-  published_by?: string | null;
-  note?: string | null;
-  name?: string;
-};
-export type AssignmentItem = {
-  tenant_id: string;
-  tenant_name: string;
-  tenant_key?: string;
-  assigned_at?: string;
-};
-/** Khe hở: `GET /tenants/:tid/process-slots` (design chỉ có PUT/DELETE). */
-export type TenantSlotInfo = {
-  slot: string;
-  label: string;
-  def_id: string | null;
-  def_name: string | null;
-  rel_version: number | null;
-  is_default: boolean;
-};
+/** Mục danh sách / def đã có `slot`, `slot_label`, `published_version`, `is_default`, `tenant_count` (= số tenant đang GÁN) từ contracts. */
+export type LibraryListItem = ProcessDefListItem;
+export type LibraryDef = ProcessDef;
+/** Body ghi nháp: Form gửi `slot_body` (thắng `stages`); Canvas gửi `stages` + `slot`. */
+export type LibraryDefBody = ProcessDefInput;
+export type SlotInfo = ProcessSlot;
+/** `tenant_count` của impact gồm cả tenant đang chạy mặc định (khác `tenant_count` của danh sách). */
+export type ImpactInfo = ProcessImpact;
+export type ReleaseItem = ProcessRelease;
+export type AssignmentItem = ProcessAssignment;
+export type TenantSlotInfo = TenantProcessSlot;
 export type PreviewStep = { key: string; name: string; run: boolean };
-export type PreviewFacts = { deal: DealKind; total_value: number | null };
-
+/** `POST …/preview`: `value` bắt buộc (số ≥ 0). */
+export type PreviewFacts = { contract_type: DealKind; value: number };
 const url = (path: string): string => {
   const u = hubUrl(path);
   if (u === null) throw new Error("PUBLIC_HUB_URL chưa cấu hình: không gọi Hub");
@@ -85,10 +43,6 @@ const url = (path: string): string => {
 const enc = encodeURIComponent;
 const D = (id: string) => `/process-defs/${enc(id)}`;
 const T = (tid: string, slot: string) => `/tenants/${enc(tid)}/process-slots/${enc(slot)}`;
-
-/** Hub có thể trả mảng trần hoặc `{items}`. */
-export const itemsOf = <T>(r: T[] | { items: T[] } | null | undefined): T[] =>
-  Array.isArray(r) ? r : (r?.items ?? []);
 
 export const LKEYS = {
   slots: ["process", "slots"] as const,
@@ -124,8 +78,7 @@ export function useSlots(enabled: boolean) {
     queryKey: LKEYS.slots,
     enabled: enabled && hubConfigured(),
     staleTime: 30_000,
-    queryFn: async () =>
-      itemsOf(await api<SlotInfo[] | { items: SlotInfo[] }>(url("/process-slots"))),
+    queryFn: async () => (await api<{ items: SlotInfo[] }>(url("/process-slots"))).items,
   });
 }
 
@@ -142,8 +95,7 @@ export const useReleases = (id: string, enabled: boolean) =>
     queryKey: LKEYS.releases(id),
     enabled: enabled && hubConfigured(),
     staleTime: 0,
-    queryFn: async () =>
-      itemsOf(await api<ReleaseItem[] | { items: ReleaseItem[] }>(url(`${D(id)}/releases`))),
+    queryFn: async () => (await api<{ items: ReleaseItem[] }>(url(`${D(id)}/releases`))).items,
   });
 
 export const useAssignments = (id: string, enabled: boolean) =>
@@ -152,9 +104,7 @@ export const useAssignments = (id: string, enabled: boolean) =>
     enabled: enabled && hubConfigured(),
     staleTime: 0,
     queryFn: async () =>
-      itemsOf(
-        await api<AssignmentItem[] | { items: AssignmentItem[] }>(url(`${D(id)}/assignments`)),
-      ),
+      (await api<{ items: AssignmentItem[] }>(url(`${D(id)}/assignments`))).items,
   });
 
 export const useTenantSlots = (tenantId: string, enabled: boolean) =>
@@ -163,11 +113,8 @@ export const useTenantSlots = (tenantId: string, enabled: boolean) =>
     enabled: enabled && hubConfigured(),
     retry: false,
     queryFn: async () =>
-      itemsOf(
-        await api<TenantSlotInfo[] | { items: TenantSlotInfo[] }>(
-          url(`/tenants/${enc(tenantId)}/process-slots`),
-        ),
-      ),
+      (await api<{ items: TenantSlotInfo[] }>(url(`/tenants/${enc(tenantId)}/process-slots`)))
+        .items,
   });
 
 // ---------- ghi (hàm thuần gọi Hub; cache làm tươi ở `useLibraryRefresh`) ----------
@@ -177,19 +124,23 @@ export const saveLibraryDef = (
 ): Promise<LibraryDef> => api<LibraryDef>(url(D(id)), { method: "PUT", body });
 
 export const publishDef = (id: string, version: number, note: string) =>
-  api<{ rel_version: number }>(url(`${D(id)}/publish`), {
+  api<ReleaseRef>(url(`${D(id)}/publish`), {
     method: "POST",
     body: note.trim() === "" ? { version } : { version, note: note.trim() },
   });
 
-export const rollbackDef = (id: string, relVersion: number) =>
-  api<{ rel_version: number }>(url(`${D(id)}/rollback`), {
+/** Quay lại = bản MỚI bằng nội dung bản cũ; `version` = nháp đang thấy (khoá lạc quan, như publish). */
+export const rollbackDef = (id: string, relVersion: number, version: number) =>
+  api<ReleaseRef>(url(`${D(id)}/rollback`), {
     method: "POST",
-    body: { rel_version: relVersion },
+    body: { rel_version: relVersion, version },
   });
 
-export const cloneDef = (id: string): Promise<LibraryDef> =>
-  api<LibraryDef>(url(`${D(id)}/clone`), { method: "POST", body: {} });
+/** Body `{key?, name?}` (bỏ trống ⇒ Hub tự đặt). */
+export const cloneDef = (
+  id: string,
+  body: { key?: string; name?: string } = {},
+): Promise<LibraryDef> => api<LibraryDef>(url(`${D(id)}/clone`), { method: "POST", body });
 
 export const setSlotDefault = (slot: string, defId: string) =>
   api<unknown>(url(`/process-slots/${enc(slot)}/default`), {

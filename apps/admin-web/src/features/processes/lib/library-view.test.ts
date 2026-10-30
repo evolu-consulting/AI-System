@@ -91,3 +91,32 @@ describe("errorLines", () => {
     expect(errorLines(null)).toEqual([]);
   });
 });
+
+describe("splitRule + errorLines có dịch luật", () => {
+  test("SYSTEM_TOOL_MISSING:<tool> và UNREACHABLE_STEP", async () => {
+    const { splitRule, errorLines } = await import("./library-view");
+    expect(splitRule("SYSTEM_TOOL_MISSING:contracts-route")).toEqual({
+      code: "SYSTEM_TOOL_MISSING",
+      arg: "contracts-route",
+    });
+    expect(splitRule("UNREACHABLE_STEP")).toEqual({ code: "UNREACHABLE_STEP", arg: null });
+    const fmt = (path: string, code: string, arg: string | null) =>
+      code === "SYSTEM_TOOL_MISSING"
+        ? `thiếu ${arg}`
+        : code === "UNREACHABLE_STEP"
+          ? `không tới được ${path}`
+          : null;
+    expect(
+      errorLines(
+        {
+          issues: [
+            { path: "stages", rule: "SYSTEM_TOOL_MISSING:contracts-finalize" },
+            { path: "stages.2", rule: "UNREACHABLE_STEP" },
+            { path: "x", rule: "OTHER" },
+          ],
+        },
+        fmt,
+      ),
+    ).toEqual(["thiếu contracts-finalize", "không tới được stages.2", "x: OTHER"]);
+  });
+});

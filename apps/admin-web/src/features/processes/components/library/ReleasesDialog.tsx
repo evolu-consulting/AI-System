@@ -32,7 +32,7 @@ export function ReleasesDialog({ def, open, onClose }: Props) {
   const confirm = async () => {
     if (!target) return;
     try {
-      const res = await rollbackDef(def.id, target.rel_version);
+      const res = await rollbackDef(def.id, target.rel_version, def.version);
       notifySuccess(
         t("process.admin.library.releases.done", { from: target.rel_version, to: res.rel_version }),
       );

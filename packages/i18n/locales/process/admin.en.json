@@ -441,7 +441,9 @@
     "PROCESS_NOT_PUBLISHED": "The process is not published. Publish it first.",
     "PROCESS_PUBLISH_INVALID": "The process is not valid to publish. See what is wrong below.",
     "SLOT_SHAPE_UNSUPPORTED": "This slot only accepts sequential steps (no parallel, no branches). Fix it in Canvas.",
-    "SLOT_GROUPS_MISSING": "Some tenant lacks a department code the process uses. See the missing codes below."
+    "SLOT_GROUPS_MISSING": "Some tenant lacks a department code the process uses. See the missing codes below.",
+    "SLOT_BODY_INVALID": "The Form content is not valid. See what is wrong below.",
+    "SLOT_UNKNOWN": "The process slot does not exist (is the app turned off?)."
   },
   "validate": {
     "nameRequired": "Enter a process name.",
@@ -645,7 +647,7 @@
     },
     "usedFor": "Used for: {{slot}}",
     "defaultBadge": "Default · {{slot}}",
-    "usage": "{{n}} tenants using",
+    "usage": "{{n}} tenants assigned",
     "pubState": {
       "published": "Published v{{n}}",
       "draft": "Not published"
@@ -669,6 +671,10 @@
       "badge": "System",
       "hint": "System node of the slot: cannot be deleted or changed",
       "locked": "System node of the contracts app: locked, cannot be deleted or changed."
+    },
+    "rule": {
+      "SYSTEM_TOOL_MISSING": "Missing system node {{tool}}.",
+      "UNREACHABLE_STEP": "Unreachable step ({{path}})."
     },
     "publish": {
       "button": "Publish",
@@ -713,7 +719,7 @@
       "title": "Preview the path of “{{name}}”",
       "body": "Enter a contract type and a sample value: which steps run and which are skipped. Nothing is written.",
       "value": "Sample value (VND)",
-      "valueHint": "Leave empty = value unknown",
+      "valueHint": "Leave empty = 0",
       "valueInvalid": "Enter a non-negative whole number.",
       "run": "Preview path",
       "result": "Path",
