@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KH token comparison</title><style>
+:root{--bg:#fff;--fg:#1d1d1f;--mute:#666;--line:#ddd}
+@media (prefers-color-scheme:dark){:root{--bg:#16161a;--fg:#ececf1;--mute:#a0a0aa;--line:#33333b}}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;margin:0}
+main{max-width:1274px;margin:0 auto;padding:24px 16px}.wrap{overflow-x:auto}
+table{border-collapse:collapse;margin:12px 0}td,th{border:1px solid var(--line);padding:6px 10px;text-align:right}
+td:first-child,th:first-child{text-align:left}.mute{color:var(--mute)}</style></head><body><main>
+<h1>Token cost of one question: no KH, KH prod, KH local</h1>
+<p class="mute">2026-10-04T10:16:01Z · model claude-sonnet-5-5 · 45 runs · medians over runs, summed over tasks</p>
+<div class="wrap"><table><tr><th>Case</th><th>Accuracy (of 5)</th><th>Input tokens</th><th>Output tokens</th>
+<th>Turns</th><th>Cost</th><th>Time s</th><th>KH / disk / web calls</th><th>Subagents</th></tr><tr><td>none</td><td>1.63</td><td>943,363</td><td>14,591</td><td>35</td><td>$0.61</td><td>481</td><td>0 / 58 / 0</td><td>1</td></tr><tr><td>prod</td><td>3.60</td><td>1,374,285 (+46% vs none)</td><td>13,834</td><td>59</td><td>$0.86</td><td>553</td><td>34 / 13 / 0</td><td>0</td></tr><tr><td>local</td><td>2.00</td><td>1,886,125 (+100% vs none)</td><td>17,962</td><td>85</td><td>$0.86</td><td>294</td><td>45 / 28 / 0</td><td>0</td></tr></table></div>
+<div class="wrap"><table><tr><th>Task</th><th>none score</th><th>none tokens</th><th>none turns</th><th>prod score</th><th>prod tokens</th><th>prod turns</th><th>local score</th><th>local tokens</th><th>local turns</th></tr><tr><td>R1</td><td>0.60</td><td>543,999</td><td>7</td><td>0.20</td><td>736,759</td><td>19</td><td>1.00</td><td>757,753</td><td>28</td></tr><tr><td>M3</td><td>0.50</td><td>178,463</td><td>10</td><td>1.00</td><td>213,953</td><td>14</td><td>1.00</td><td>662,746</td><td>32</td></tr><tr><td>W1</td><td>0.33</td><td>118,672</td><td>9</td><td>1.00</td><td>115,333</td><td>8</td><td>0.00</td><td>165,634</td><td>7</td></tr><tr><td>P2</td><td>0.20</td><td>67,061</td><td>6</td><td>0.40</td><td>166,976</td><td>9</td><td>0.00</td><td>113,730</td><td>5</td></tr><tr><td>X2</td><td>0.00</td><td>35,168</td><td>3</td><td>1.00</td><td>141,264</td><td>9</td><td>0.00</td><td>186,262</td><td>13</td></tr></table></div>
+<p class="mute">none: no KH, disk (C:/Workspaces, C:/RWTemp) and internet only. prod: plus kh-helper to KH prod.
+local: plus Rowan's hooks to KH 9000. Same read tools and deny rules in every case; Stop hooks left out of both KH
+cases. Accuracy is the share of each task's must-have points in the answer. Tokens count the whole run, subagents
+included (modelUsage).</p></main></body></html>

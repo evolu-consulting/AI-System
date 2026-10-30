@@ -1,0 +1,12 @@
+{
+  "choice": "fix",
+  "rationale": "F1 says add stores the TEXT it was given; leading and trailing spaces of the joined arguments are not part of it.",
+  "quotes": [
+    {
+      "span_id": "spec.md#L18-22",
+      "quote": "`add TEXT` stores a new open task and prints `added ID`"
+    }
+  ],
+  "instructions": "Store the joined arguments without surrounding spaces; keep everything else as it is.",
+  "spec_gap": false
+}

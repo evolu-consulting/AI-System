@@ -1,0 +1,36 @@
+# kh-embed on SAP BTP Cloud Foundry: the KH embedding model in its own app (app/embed_server.py).
+# NOT deployed by default. Use it when the embedder takes more than 50% of a KH instance's CPU
+# (docs/multi-agent-instance-design.md 2.5); see docs/cloud-deployment.md "Embeddings in their own app".
+#
+# Same staged code as KH: run deploy/btp/push.ps1 first (it builds deploy/btp/.build with the app, the
+# model and the CPU-only requirements), then from the KH folder:
+#   cf push -f deploy/btp/kh-embed/manifest.yml -p deploy/btp/.build
+#   cf set-env kh-embed KH_EMBED_TOKEN <long random secret>      # never in this file
+#   cf restage kh-embed
+#   cf add-network-policy knowledge-hub kh-embed --port 8080 --protocol tcp
+#
+# Reachable only on the internal route (container-to-container, no public route), so KH uses
+#   KH_EMBED_URL=http://kh-embed.apps.internal:8080
+# No HANA binding: the service stores nothing.
+applications:
+  - name: kh-embed
+    memory: 2G
+    disk_quota: 3G
+    instances: 1
+    stack: cflinuxfs5
+    buildpacks:
+      - python_buildpack
+    routes:
+      - route: kh-embed.apps.internal
+    command: python -m app.embed_server --host 0.0.0.0 --port $PORT
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 180
+    env:
+      KH_EMBEDDING_MODEL: bge-small-en-v1.5
+      KH_EMBED_BATCH_WINDOW_MS: "5"
+      KH_EMBED_MAX_BATCH: "64"
+      KH_EMBED_THREADS: "0"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PYTHONUNBUFFERED: "1"

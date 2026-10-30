@@ -73,6 +73,9 @@ describe("WRK-NFR-06 · check:size quét .py", () => {
     ["apps/agent-runtime/src/agent_runtime/db/pool_int_test.py", 600],
     ["apps/agent-runtime/tests/acceptance/helpers.py", 600],
     ["apps/agent-runtime/pyproject.toml", null],
+    ["services/dlc/line/pipeline.py", null],
+    ["services/knowledge-hub/main.py", null],
+    ["apps/hub-api/src/services/x.ts", 400],
   ])("%s → %p", (path, want) => {
     expect(limitFor(path)).toBe(want);
   });

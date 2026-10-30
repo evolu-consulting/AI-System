@@ -1,0 +1,39 @@
+# kh-events on SAP BTP Cloud Foundry: the sidecar that queues KH's events and writes them to the EventStore
+# (app/eventing/sidecar.py). It runs KH's own app/ code with only the packages it needs (no torch, no model),
+# staged by deploy/btp/kh-events/stage.ps1 into deploy/btp/kh-events/.build.
+#
+# 1. The shared secret, never in git:
+#      cf create-user-provided-service kh-events-secrets -p '{"KH_EVENTS_TOKEN":"<random 32+ chars>"}'
+# 2. Stage and push from the KH folder:
+#      pwsh -NoProfile -File deploy/btp/kh-events/stage.ps1
+#      cf push -f deploy/btp/kh-events/manifest.yml -p deploy/btp/kh-events/.build
+# 3. Point KH at it and switch the events on (same token):
+#      cf set-env knowledge-hub KH_EVENTS_URL https://kh-events.cfapps.br10.hana.ondemand.com
+#      cf set-env knowledge-hub KH_EVENTS_TOKEN <the same token>
+#      cf set-env knowledge-hub KH_EVENTS on
+#      cf restart knowledge-hub
+# Rollback: cf set-env knowledge-hub KH_EVENTS off (or unset KH_EVENTS_URL: KH then writes straight to the store).
+# KH talks to it over its public HTTPS route because this space cannot add container-to-container policies.
+applications:
+  - name: kh-events
+    memory: 512M
+    disk_quota: 2G
+    instances: 1
+    stack: cflinuxfs5
+    buildpacks:
+      - python_buildpack
+    command: python -m app.eventing.sidecar
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 120
+    services:
+      - kh-hana-v2
+      - kh-events-secrets
+    env:
+      KH_STORE_BACKEND: hana
+      KH_HANA_SERVICE: kh-hana-v2
+      KH_EVENT_STORE: sql
+      KH_EVENTS_QUEUE_MAX: "50000"
+      KH_EVENTS_BATCH_MAX: "500"
+      KH_EVENTS_FLUSH_S: "1"
+      PYTHONUNBUFFERED: "1"

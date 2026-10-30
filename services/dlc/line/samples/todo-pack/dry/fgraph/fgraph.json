@@ -1,0 +1,32 @@
+{
+  "nodes": [
+    {"id": "todo", "kind": "feature", "name": "Todo CLI", "tier": 1, "f_item": "", "external": false,
+     "span_id": "spec.md#L1-4", "quote": "A tiny command line todo list for one person."},
+    {"id": "f1", "kind": "feature", "name": "Add and list tasks", "tier": 2, "f_item": "F1", "external": false,
+     "span_id": "spec.md#L18-22", "quote": "## F1 Add and list tasks"},
+    {"id": "f2", "kind": "feature", "name": "Complete and remove tasks", "tier": 2, "f_item": "F2", "external": false,
+     "span_id": "spec.md#L24-28", "quote": "## F2 Complete and remove tasks"},
+    {"id": "f3", "kind": "feature", "name": "Priority", "tier": 2, "f_item": "F3", "external": false,
+     "span_id": "spec.md#L30-34", "quote": "## F3 Priority"},
+    {"id": "cli", "kind": "contract", "name": "command line", "external": false,
+     "span_id": "spec.md#L6-10", "quote": "The program is run as `python -m todo --file PATH COMMAND [ARGS]` from the repository root."},
+    {"id": "taskfile", "kind": "contract", "name": "task file", "external": false,
+     "span_id": "spec.md#L12-16", "quote": "The file holds one JSON object: `{\"tasks\": [...]}`."},
+    {"id": "addcmd", "kind": "contract", "name": "add command", "external": false,
+     "span_id": "spec.md#L18-22", "quote": "- `add TEXT` stores a new open task and prints `added ID`"},
+    {"id": "ids", "kind": "rule", "name": "ids never reused", "external": false,
+     "span_id": "spec.md#L12-16", "quote": "Ids start at 1 and are never reused"}
+  ],
+  "edges": [
+    {"src": "todo", "dst": "f1", "kind": "parent_of", "span_id": "spec.md#L18-22", "quote": "## F1 Add and list tasks"},
+    {"src": "todo", "dst": "f2", "kind": "parent_of", "span_id": "spec.md#L24-28", "quote": "## F2 Complete and remove tasks"},
+    {"src": "todo", "dst": "f3", "kind": "parent_of", "span_id": "spec.md#L30-34", "quote": "## F3 Priority"},
+    {"src": "todo", "dst": "cli", "kind": "produces", "span_id": "spec.md#L6-10", "quote": "The program is run as `python -m todo --file PATH COMMAND [ARGS]` from the repository root."},
+    {"src": "todo", "dst": "taskfile", "kind": "produces", "span_id": "spec.md#L12-16", "quote": "The file holds one JSON object: `{\"tasks\": [...]}`."},
+    {"src": "f1", "dst": "addcmd", "kind": "produces", "span_id": "spec.md#L18-22", "quote": "- `add TEXT` stores a new open task and prints `added ID`"},
+    {"src": "f1", "dst": "taskfile", "kind": "consumes", "span_id": "spec.md#L18-22", "quote": "stores a new open task"},
+    {"src": "f2", "dst": "taskfile", "kind": "consumes", "span_id": "spec.md#L24-28", "quote": "marks the task as done in the file"},
+    {"src": "f3", "dst": "addcmd", "kind": "consumes", "span_id": "spec.md#L30-34", "quote": "`add TEXT --priority N` stores the task with priority N"},
+    {"src": "f1", "dst": "ids", "kind": "constrained_by", "span_id": "spec.md#L12-16", "quote": "Ids start at 1 and are never reused"}
+  ]
+}

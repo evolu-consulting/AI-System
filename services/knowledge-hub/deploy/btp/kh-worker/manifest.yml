@@ -1,0 +1,36 @@
+# kh-worker on SAP BTP Cloud Foundry: no route, one instance, 256 MB, process health check (design 3.2).
+# Push from the repo root:   cf push -f deploy/btp/kh-worker/manifest.yml --var kh_url=https://<kh-app-route>
+#
+# Secrets are NOT in this file. Put them in a user-provided service; the worker copies its credentials
+# (keys starting KH_ or ANTHROPIC_) into its environment at start:
+#   cf create-user-provided-service kh-worker-secrets -p '{"ANTHROPIC_API_KEY":"...",
+#       "KH_WORKER_CLIENT_ID":"...","KH_WORKER_CLIENT_SECRET":"..."}'
+# Ships switched off: KH_WORKER_ENABLED "0" and KH_WORKER_MODE dry. Flip them with `cf set-env` after the gates
+# of section 3.7, then `cf restage kh-worker`. Also set a spend limit on the API key in the Anthropic console.
+applications:
+  - name: kh-worker
+    path: ../../../worker
+    memory: 256M
+    disk_quota: 512M
+    instances: 1
+    stack: cflinuxfs5
+    buildpacks:
+      - python_buildpack
+    no-route: true
+    health-check-type: process
+    command: python -m kh_worker run
+    services:
+      - kh-worker-secrets
+    env:
+      KH_URL: ((kh_url))
+      KH_WORKER_ENABLED: "0"
+      KH_WORKER_MODE: dry
+      KH_WORKER_LLM: anthropic
+      KH_WORKER_MODEL: claude-opus-5-5
+      KH_WORKER_EFFORT: medium
+      KH_WORKER_CAP_RUN_USD: "3"
+      KH_WORKER_CAP_MONTH_USD: "60"
+      KH_WORKER_CAP_BACKFILL_USD: "80"
+      KH_WORKER_TZ: Asia/Ho_Chi_Minh
+      KH_WORKER_PROJECTS: ""
+      PYTHONUNBUFFERED: "1"

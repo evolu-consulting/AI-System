@@ -1,0 +1,404 @@
+{
+  "source_store": "C:/Programs/ClaudeKH_bak (old prod snapshot)",
+  "snapshot_date": "2026-08-19",
+  "collections": {
+    "knowledge_hub_vectors": 2899,
+    "knowledge_hub_keys": 0,
+    "kh_orch_hub": 17,
+    "kh_src_Millenaire": 0,
+    "kh_src_gitnexus__solace-buzz": 0,
+    "kh_src_solace-buzz": 50057,
+    "kh_src_graphify__solace-buzz": 0,
+    "kh_src_gitnexus__ticketing-web": 847,
+    "kh_src_gitnexus__dbreflect": 482,
+    "kh_src_graphify__ticketing-system": 0,
+    "kh_src_graphify__decorator-injection": 0,
+    "kh_src_graphify__rworkspace": 0,
+    "kh_src_decorator-injection": 30,
+    "kh_src_rworkspace": 3973,
+    "kh_src_ticketing-system": 8685,
+    "kh_src_gitnexus__simplemdg_helper_core_api": 961,
+    "kh_src_simplemdg-stellajones": 0,
+    "kh_src_graphify__simplemdg-da": 0,
+    "kh_src_gitnexus__simplemdg-be": 0,
+    "kh_src_gitnexus__simplemdg-ui": 0,
+    "kh_src_graphify__simplemdg-be": 0
+  },
+  "scope_distribution": {
+    "codegraph": 65037,
+    "knowledge": 2597,
+    "log": 207,
+    "personalization": 36
+  },
+  "tool_tag_distribution": {
+    "gitnexus": 7,
+    "graphify": 65042
+  },
+  "source_id_distribution": {
+    "Millenaire": 43,
+    "decorator-injection": 31,
+    "gitnexus__dbreflect": 483,
+    "gitnexus__simplemdg-be": 1,
+    "gitnexus__simplemdg-ui": 1,
+    "gitnexus__simplemdg_helper_core_api": 962,
+    "gitnexus__solace-buzz": 1,
+    "gitnexus__ticketing-web": 848,
+    "graphify__decorator-injection": 2,
+    "graphify__rworkspace": 1,
+    "graphify__simplemdg-be": 1,
+    "graphify__simplemdg-da": 1,
+    "graphify__solace-buzz": 1,
+    "graphify__ticketing-system": 1,
+    "kh-meta": 14,
+    "knowledge": 1,
+    "rworkspace": 3974,
+    "simplemdg-stellajones": 6,
+    "simplemdg-ticketing": 2,
+    "solace-buzz": 50060,
+    "ticketing-system": 8686
+  },
+  "hooks": [
+    {
+      "hook_type": "PreToolUse",
+      "name": "scan-gate",
+      "enabled": 1,
+      "chars": 435
+    },
+    {
+      "hook_type": "SessionStart",
+      "name": "kernel",
+      "enabled": 1,
+      "chars": 866
+    },
+    {
+      "hook_type": "SessionStart",
+      "name": "read-log",
+      "enabled": 1,
+      "chars": 1360
+    },
+    {
+      "hook_type": "Stop",
+      "name": "store-log",
+      "enabled": 1,
+      "chars": 1225
+    },
+    {
+      "hook_type": "UserPromptSubmit",
+      "name": "consult",
+      "enabled": 1,
+      "chars": 510
+    },
+    {
+      "hook_type": "UserPromptSubmit",
+      "name": "scan-shortcut",
+      "enabled": 1,
+      "chars": 673
+    },
+    {
+      "hook_type": "policy_code_scan_v3",
+      "name": "default",
+      "enabled": 1,
+      "chars": 7827
+    }
+  ],
+  "manifest_sources": {
+    "Millenaire": {
+      "owner": "",
+      "aliases": [],
+      "keywords": []
+    },
+    "gitnexus__ticketing-web": {
+      "owner": "codegraph",
+      "aliases": [
+        "ticketing-web",
+        "gitnexus ticketing-web"
+      ],
+      "keywords": [
+        "ticketing",
+        "laidon",
+        "support",
+        "web",
+        "react",
+        "mui",
+        "frontend",
+        "typescript"
+      ]
+    },
+    "graphify__ticketing-system": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "ticketing-system",
+        "graphify ticketing-system"
+      ],
+      "keywords": [
+        "ticketing",
+        "laidon",
+        "support",
+        "zendesk",
+        "python",
+        "backend",
+        "fastapi"
+      ]
+    },
+    "graphify__rworkspace": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "rworkspace",
+        "graphify rworkspace"
+      ],
+      "keywords": [
+        "rworkspace",
+        "rita",
+        "agent-swarm",
+        "flet",
+        "agenthub",
+        "sharedstate",
+        "knowledgehub",
+        "llmhub",
+        "comusetool",
+        "rvision",
+        "schedulerhub",
+        "watcherhub",
+        "cliagent",
+        "python",
+        "go",
+        "cpp",
+        "grpc"
+      ]
+    },
+    "gitnexus__dbreflect": {
+      "owner": "codegraph",
+      "aliases": [
+        "dbreflect",
+        "gitnexus dbreflect"
+      ],
+      "keywords": [
+        "dbreflect",
+        "hanareflect",
+        "hana",
+        "schema",
+        "reflect",
+        "mirror",
+        "replicate",
+        "clean-architecture",
+        "python",
+        "tkinter",
+        "hdbcli",
+        "sqlite-export",
+        "aes-256"
+      ]
+    },
+    "graphify__decorator-injection": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "decorator-injection",
+        "graphify decorator-injection"
+      ],
+      "keywords": [
+        "decorator",
+        "injection",
+        "python",
+        "dependency-injection",
+        "decorator-pattern"
+      ]
+    },
+    "solace-buzz": {
+      "owner": "codegraph",
+      "aliases": [
+        "Solace Buzz",
+        "SolaceBuzz",
+        "solace-buzz source"
+      ],
+      "keywords": [
+        "solace buzz",
+        "solacebuzz",
+        "community as code",
+        "software 5.0",
+        "evolution forge",
+        "governance",
+        "policy engine",
+        "canon compiler",
+        "agent control plane",
+        "buzz fork",
+        "relay"
+      ]
+    },
+    "graphify__solace-buzz": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "solace-buzz",
+        "graphify solace-buzz"
+      ],
+      "keywords": [
+        "solace buzz",
+        "graphify",
+        "code graph",
+        "skeleton",
+        "multilang",
+        "rust",
+        "typescript"
+      ]
+    },
+    "gitnexus__solace-buzz": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "solace-buzz",
+        "gitnexus solace-buzz"
+      ],
+      "keywords": [
+        "solace buzz",
+        "gitnexus",
+        "pdg",
+        "impact",
+        "blast radius",
+        "cypher",
+        "trace",
+        "rust",
+        "typescript",
+        "python"
+      ]
+    },
+    "decorator-injection": {
+      "owner": "codegraph",
+      "aliases": [],
+      "keywords": []
+    },
+    "rworkspace": {
+      "owner": "codegraph",
+      "aliases": [],
+      "keywords": []
+    },
+    "ticketing-system": {
+      "owner": "codegraph",
+      "aliases": [],
+      "keywords": []
+    },
+    "gitnexus__simplemdg_helper_core_api": {
+      "owner": "codegraph",
+      "aliases": [],
+      "keywords": []
+    },
+    "simplemdg-stellajones": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "simplemdg-stellajones",
+        "SimpleMDG StellaJones",
+        "stellajones mdg",
+        "simplemdg sj"
+      ],
+      "keywords": [
+        "simplemdg",
+        "stella jones",
+        "stellajones",
+        "master data governance",
+        "MDG",
+        "SAP CAP",
+        "cds",
+        "csn",
+        "UI5",
+        "Fiori",
+        "HANA",
+        "hdbcalculationview",
+        "be-group",
+        "ui-group",
+        "da-group",
+        "business partner",
+        "product",
+        "bom",
+        "production version",
+        "task list",
+        "data quality",
+        "consolidate",
+        "partner portal"
+      ]
+    },
+    "graphify__simplemdg-da": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "simplemdg-da",
+        "graphify simplemdg-da"
+      ],
+      "keywords": [
+        "simplemdg",
+        "stellajones",
+        "da-group",
+        "data analytics",
+        "HANA",
+        "hdbcalculationview",
+        "calculation view",
+        "hdbtable"
+      ]
+    },
+    "gitnexus__simplemdg-be": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "simplemdg-be",
+        "gitnexus simplemdg-be"
+      ],
+      "keywords": [
+        "simplemdg",
+        "stellajones",
+        "be-group",
+        "CAP",
+        "cds",
+        "srv handlers",
+        "TypeScript",
+        "master data",
+        "business partner",
+        "product",
+        "bom",
+        "production version",
+        "task list",
+        "core",
+        "helper",
+        "data quality",
+        "consolidate",
+        "process",
+        "partner portal",
+        "integration",
+        "config",
+        "background",
+        "ai",
+        "advanalytics"
+      ]
+    },
+    "gitnexus__simplemdg-ui": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "simplemdg-ui",
+        "gitnexus simplemdg-ui"
+      ],
+      "keywords": [
+        "simplemdg",
+        "stellajones",
+        "ui-group",
+        "UI5",
+        "Fiori",
+        "TypeScript",
+        "frontend",
+        "admin app",
+        "main app",
+        "xml views"
+      ]
+    },
+    "graphify__simplemdg-be": {
+      "owner": "codegraph-plugin",
+      "aliases": [
+        "simplemdg-be",
+        "graphify simplemdg-be"
+      ],
+      "keywords": [
+        "simplemdg",
+        "stellajones",
+        "be-group",
+        "Leiden communities",
+        "976 communities",
+        "graph.json",
+        "structure skeleton",
+        "god-nodes",
+        "CAP",
+        "TypeScript"
+      ]
+    }
+  }
+}

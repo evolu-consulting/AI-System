@@ -1,0 +1,36 @@
+# kh-sidecar on SAP BTP Cloud Foundry, as a Docker app (the python buildpack has no Claude Code CLI).
+# Build and push the image of deploy/docker/kh-sidecar.Dockerfile to a registry CF can pull, then:
+#   cf create-user-provided-service kh-sidecar-secrets -p '{"KH_WORKER_KC_CLIENT_SECRET":"...",
+#       "KH_WORKER_USERNAME":"...","KH_WORKER_PASSWORD":"...","CLAUDE_CODE_OAUTH_TOKEN":"..."}'
+#   CF_DOCKER_PASSWORD=<registry token> cf push -f deploy/btp/kh-worker/manifest-sidecar.yml \
+#       --var image=<registry>/kh-sidecar:<tag> --var registry_user=<user> --var kh_url=https://<kh-app-route>
+# The worker copies the service's KH_*/CLAUDE_* credentials into its environment at start.
+# CF disks are ephemeral: the spend ledger and run log restart with the app. KH's cursor still decides which
+# logs are distilled, and KH_WORKER_CAP_RUN_USD still caps each run; prefer Docker with a volume for the month cap.
+applications:
+  - name: kh-sidecar
+    docker:
+      image: ((image))
+      username: ((registry_user))
+    memory: 1G
+    disk_quota: 2G
+    instances: 1
+    no-route: true
+    health-check-type: process
+    services:
+      - kh-sidecar-secrets
+    env:
+      KH_URL: ((kh_url))
+      KH_WORKER_ENABLED: "0"
+      KH_WORKER_MODE: dry
+      KH_WORKER_AUTH: person
+      KH_WORKER_KC_TOKEN_URL: https://kh-keycloak.cfapps.br10.hana.ondemand.com/realms/knowledge-hub/protocol/openid-connect/token
+      KH_WORKER_KC_CLIENT_ID: kh-agent-distill
+      KH_WORKER_LLM: claude_cli
+      KH_WORKER_MODEL: claude-opus-5-5
+      KH_WORKER_PROJECTS: "*"
+      KH_WORKER_JOBS: distil
+      KH_WORKER_DISTIL_AT: "02:00"
+      KH_WORKER_TZ: Asia/Ho_Chi_Minh
+      KH_WORKER_AUTO_APPROVE: "0"
+      KH_WORKER_STATE_DIR: /tmp/kh-sidecar

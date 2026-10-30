@@ -1,0 +1,15 @@
+**/__pycache__
+**/*.pyc
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/node_modules
+web/dist
+dist
+e2e
+docs
+tests
+line/tests
+packaging/.work
+packaging_fe/.work
+deploy

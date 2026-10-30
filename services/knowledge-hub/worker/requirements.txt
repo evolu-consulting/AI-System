@@ -1,0 +1,5 @@
+# kh-worker (worker/kh_worker). Kept apart from KH's requirements.txt: KH itself stays LLM-free.
+# The CF python_buildpack and deploy/docker/worker.Dockerfile both install from this file.
+anthropic>=0.75,<2          # Messages + Batches API; only imported when KH_WORKER_LLM=anthropic
+requests==2.34.2            # same pin as KH
+tzdata>=2024.1              # zoneinfo data on slim images and Windows

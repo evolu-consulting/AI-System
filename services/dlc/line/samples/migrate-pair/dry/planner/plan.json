@@ -1,0 +1,22 @@
+{
+  "units": [
+    {
+      "id": "U1",
+      "title": "export command (F1)",
+      "f_items": [
+        "F1"
+      ],
+      "claims": [
+        "store/cli.py",
+        "store/export.py"
+      ],
+      "deps": [],
+      "tests": [
+        "T_F1_C1",
+        "T_F1_C2"
+      ],
+      "size": "S",
+      "contract": false
+    }
+  ]
+}

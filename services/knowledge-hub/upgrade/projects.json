@@ -1,0 +1,86 @@
+{
+  "_note": "B0 canonical project registry. Unit of isolation = PROJECT (not repo, not tool). Tool (graphify/gitnexus) becomes metadata, NOT part of the id. This is the RE-SCAN plan for the clean-slate v6.4 build: each project is re-scanned fresh under the new model; old code-scan data in ClaudeKH_bak is NOT migrated.",
+  "id_rules": {
+    "canonical_id": "project only, kebab-case, no tool prefix",
+    "forbidden_prefixes": ["graphify__", "gitnexus__"],
+    "tool": "recorded in vector metadata + graph edge attr, never in source_id"
+  },
+  "projects": [
+    {
+      "id": "solace-buzz",
+      "aliases": ["Solace Buzz", "SolaceBuzz"],
+      "keywords": ["solace buzz", "community as code", "software 5.0", "evolution forge", "governance"],
+      "merges_fragments": ["solace-buzz", "graphify__solace-buzz", "gitnexus__solace-buzz"],
+      "tools": ["graphify", "gitnexus"],
+      "old_vectors": 50057,
+      "rescan": true,
+      "notes": "Largest project. graphify done before; gitnexus 417k PDG never imported. Re-scan both tools under one id."
+    },
+    {
+      "id": "ticketing",
+      "aliases": ["ticketing-system", "ticketing-web", "laidon"],
+      "keywords": ["ticketing", "laidon", "support", "zendesk", "react", "fastapi"],
+      "merges_fragments": ["ticketing-system", "graphify__ticketing-system", "gitnexus__ticketing-web"],
+      "tools": ["graphify", "gitnexus"],
+      "old_vectors": 9532,
+      "rescan": true,
+      "notes": "OPEN DECISION: backend (ticketing-system, python/fastapi) and frontend (ticketing-web, react) are separate repos. Recommended = ONE project 'ticketing' with two containers (C4). Alternative = two projects."
+    },
+    {
+      "id": "rworkspace",
+      "aliases": ["rworkspace", "RWorkspace"],
+      "keywords": ["rworkspace", "rita", "agent-swarm", "flet", "agenthub", "sharedstate"],
+      "merges_fragments": ["rworkspace", "graphify__rworkspace"],
+      "tools": ["graphify"],
+      "old_vectors": 3973,
+      "rescan": true,
+      "notes": "Agent-swarm workspace."
+    },
+    {
+      "id": "dbreflect",
+      "aliases": ["dbreflect", "hanareflect"],
+      "keywords": ["dbreflect", "hana", "schema", "reflect", "mirror"],
+      "merges_fragments": ["gitnexus__dbreflect"],
+      "tools": ["gitnexus"],
+      "old_vectors": 482,
+      "rescan": true,
+      "notes": "gitnexus data mistagged tool=graphify in old store."
+    },
+    {
+      "id": "helper-core-api",
+      "aliases": ["simplemdg-helper-core-api", "helper_core_api"],
+      "keywords": ["simplemdg", "helper", "core", "api"],
+      "merges_fragments": ["gitnexus__simplemdg_helper_core_api"],
+      "tools": ["gitnexus"],
+      "old_vectors": 961,
+      "rescan": true,
+      "notes": "gitnexus data mistagged tool=graphify."
+    },
+    {
+      "id": "decorator-injection",
+      "aliases": ["decorator-injection"],
+      "keywords": ["decorator", "injection", "dependency-injection", "python"],
+      "merges_fragments": ["decorator-injection", "graphify__decorator-injection"],
+      "tools": ["graphify"],
+      "old_vectors": 30,
+      "rescan": "optional",
+      "notes": "Tiny pattern demo. Re-scan only if still relevant."
+    },
+    {
+      "id": "simplemdg-stellajones",
+      "aliases": ["SimpleMDG StellaJones", "stellajones mdg"],
+      "keywords": ["simplemdg", "stella jones", "master data governance", "MDG", "SAP CAP"],
+      "merges_fragments": ["simplemdg-stellajones", "graphify__simplemdg-da", "gitnexus__simplemdg-be", "graphify__simplemdg-be", "gitnexus__simplemdg-ui"],
+      "tools": ["graphify", "gitnexus"],
+      "old_vectors": 0,
+      "rescan": "deferred",
+      "notes": "Pointer-only registrations, ZERO materialized data. Multi-container (be/ui/da). Re-scan on demand, not part of first re-scan wave."
+    }
+  ],
+  "dropped_orphans": ["Millenaire", "simplemdg-ticketing"],
+  "keep_list_deferred": {
+    "migrate_from": "C:/Programs/ClaudeKH_bak",
+    "groups": ["hooks.db (7 rules)", "policies (policy_code_scan_v3)", "knowledge scope=personalization (36)", "kh-meta self-info (14)"],
+    "status": "migration deferred by fen; do NOT seed now"
+  }
+}

@@ -1,0 +1,1 @@
+{"lessons": [{"fingerprint": "{{prompt:^### fingerprint (\S+)}}", "symptom": "The two readings disagreed on an exit code", "cause": "one reading took the number from memory instead of the sentence", "fix": "Copy every exit code from the sentence that states it and quote that sentence", "evidence": [{{prompt*:^- event (\S+) \[}}], "cause_inferred": true}]}

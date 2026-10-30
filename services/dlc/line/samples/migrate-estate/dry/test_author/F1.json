@@ -1,0 +1,16 @@
+{
+  "path": "tests/acceptance/test_f1.py",
+  "content": "\"\"\"Acceptance tests of F1 Export items as CSV (feature migration). Written from the spec only.\"\"\"\n\nimport json\nimport os\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nimport unittest\n\nROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\n\ndef store(path, *args):\n    p = subprocess.run([sys.executable, \"-m\", \"store\", \"--file\", path] + list(args), cwd=ROOT,\n                       capture_output=True, text=True, timeout=60)\n    return p.returncode, p.stdout, p.stderr\n\n\nclass TestF1(unittest.TestCase):\n    def setUp(self):\n        self.dir = tempfile.mkdtemp(prefix=\"store-acc-\")\n        self.path = os.path.join(self.dir, \"book.json\")\n        with open(self.path, \"w\", encoding=\"utf-8\") as fh:\n            json.dump({\"items\": [{\"name\": \"pen\", \"price\": 2.5}, {\"name\": \"cup\", \"price\": 3.0}]}, fh)\n\n    def tearDown(self):\n        shutil.rmtree(self.dir, ignore_errors=True)\n\n    def test_c1_header_then_items(self):\n        # trace: F1.C1 spec.md#L7-10\n        rc, out, err = store(self.path, \"export\")\n        self.assertEqual(rc, 0, err)\n        self.assertEqual(out.splitlines(), [\"name,price\", \"pen,2.50\", \"cup,3.00\"])\n\n    def test_c2_example(self):\n        # trace: F1.C2 spec.md#L7-10\n        with open(self.path, \"w\", encoding=\"utf-8\") as fh:\n            json.dump({\"items\": [{\"name\": \"pen\", \"price\": 2.5}]}, fh)\n        rc, out, err = store(self.path, \"export\")\n        self.assertEqual(rc, 0, err)\n        self.assertEqual(out, \"name,price\\npen,2.50\\n\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+  "tests": [
+    {
+      "criterion": "F1.C1",
+      "span_id": "spec.md#L7-10",
+      "name": "TestF1.test_c1_header_then_items"
+    },
+    {
+      "criterion": "F1.C2",
+      "span_id": "spec.md#L7-10",
+      "name": "TestF1.test_c2_example"
+    }
+  ]
+}

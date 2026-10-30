@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KH Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Style: "frosted blue glass" login tokens (KH project designer, design 30 / style 09): light blue, glass cards */
+:root{
+  --bg1:#eaf3fd; --bg2:#d4e6fa;
+  --page:#eaf3fd; --card:rgba(255,255,255,.72); --border:rgba(255,255,255,.75); --ink:#1d2b4a; --muted:#6b7a99;
+  --vio:#1f6fe5; --vio2:#4a90f5; --vio-l:#e1edfd;
+  --mint:#e3f6ec; --mint-d:#16a35a; --butter:#fff3d6; --butter-d:#e0a019; --rose:#fde4ea; --rose-d:#ec5f7e; --lav:#e8f1fd;
+  --sky:#e4efff; --sky-d:#1f6fe5; --cyan:#2fc7d6; --navy:#0b1f4b;
+  --sh:0 8px 24px rgba(31,111,229,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2)) fixed;color:var(--ink);font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;font-size:13px}
+.app{display:grid;grid-template-columns:220px 1fr;gap:18px;max-width:1360px;margin:0 auto;padding:18px}
+.card{background:var(--card);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--border);border-radius:18px;box-shadow:var(--sh)}
+aside.side{padding:20px 14px;display:flex;flex-direction:column;gap:4px;height:calc(100vh - 36px);position:sticky;top:18px}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;color:var(--vio);margin:0 6px 20px}
+.logo i,.g3d{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-style:normal;background:linear-gradient(145deg,var(--vio2),var(--vio));box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 6px 12px rgba(31,111,229,.30)}
+.side a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;color:var(--ink);text-decoration:none;font-weight:500;cursor:pointer}
+.side a .g3d{width:28px;height:28px;border-radius:8px;font-size:13px}
+.side a.on{background:var(--vio-l);color:var(--vio)}
+.side .cnt{margin-left:auto;font-size:10px;background:var(--vio);color:#fff;border-radius:99px;padding:1px 7px}
+.up{margin-top:auto;background:linear-gradient(160deg,#f3f0ff,#e7e2ff);border-radius:16px;padding:16px;font-size:11px;color:var(--muted)}
+.up b{color:var(--ink);display:block;font-size:12px;margin-bottom:4px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:10px 18px;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--vio2),var(--vio));box-shadow:0 8px 16px rgba(31,111,229,.28)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.g{background:#fff;color:var(--ink);border:1px solid var(--border);box-shadow:none}
+.btn.s{padding:6px 12px;font-size:12px;border-radius:10px}
+.btn.r{background:#fff;color:var(--rose-d);border:1px solid var(--rose);box-shadow:none}
+.top{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.greet{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.greet h1{margin:0;font-size:22px}.greet p{margin:2px 0 0;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat{display:flex;gap:12px;align-items:center;padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.6)}
+.tile{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:22px;color:#fff;flex:none;box-shadow:inset 0 3px 0 rgba(255,255,255,.45),inset 0 -3px 0 rgba(0,0,0,.1),0 8px 14px rgba(0,0,0,.1)}
+.stat small{color:var(--muted)}.stat b{display:block;font-size:22px;line-height:1.15;word-break:break-all}.stat em{font-style:normal;font-size:10px;color:var(--muted)}
+.box{padding:18px;margin-bottom:16px}
+.box h2{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px}
+.box .sub{color:var(--muted);margin:0 0 12px}
+.step{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;color:#fff;background:linear-gradient(135deg,var(--vio2),var(--vio))}
+textarea,input[type=text],input[type=number],input[type=date],input[type=url]{font:inherit;border:1px solid var(--border);border-radius:10px;padding:9px 12px;outline:none;background:#fff;color:var(--ink);width:100%}
+textarea:focus,input:focus{border-color:var(--vio2);box-shadow:0 0 0 3px var(--vio-l)}
+textarea{min-height:70px;font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical}
+label.f{display:block;font-weight:500;margin-bottom:12px}label.f span{display:block;margin-bottom:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{font-size:10px;padding:3px 10px;border-radius:6px;background:var(--lav);color:var(--vio);width:max-content;font-weight:500}
+.pill{font-size:10px;padding:3px 12px;border-radius:6px;font-weight:600;width:max-content;display:inline-block}
+.ok,.done,.active{background:var(--mint);color:var(--mint-d)}
+.running,.pending{background:var(--sky);color:var(--sky-d)}
+.warn,.cancelled,.interrupted,.expired{background:var(--butter);color:var(--butter-d)}
+.bad,.failed,.revoked{background:var(--rose);color:var(--rose-d)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;padding:8px 6px;border-bottom:1px solid var(--border)}
+td{padding:9px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.ck{width:20px;height:20px;border-radius:50%;border:1.6px solid #cfcbe6;cursor:pointer;display:grid;place-items:center;color:#fff;font-size:11px;transition:.2s;flex:none}
+.ck.on{background:var(--vio);border-color:var(--vio)}.ck.on::after{content:"✓"}
+.part{font:inherit;font-size:11px;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:8px;padding:4px 9px;cursor:pointer;margin:2px}
+.part.on{background:var(--vio-l);border-color:var(--vio2);color:var(--vio);font-weight:600}
+.part:disabled{opacity:.4;cursor:default}
+.part b{font-weight:600;margin-left:3px}
+.prog{height:10px;background:var(--lav);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--vio2),var(--vio));border-radius:99px;transition:width .5s}
+.prog.fin i{background:linear-gradient(90deg,#57c98a,#2fae6b)}
+.prog.err i{background:linear-gradient(90deg,#ff9fb5,#ec5f7e)}
+.prog.mini{height:6px;margin:4px 0}
+.job{padding:14px;border:1px solid var(--border);border-radius:14px;margin-bottom:10px;cursor:pointer;background:#fff;transition:.15s}
+.job:hover{border-color:var(--vio2)}.job.sel{border-color:var(--vio);box-shadow:0 0 0 3px var(--vio-l)}
+.keybox{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--lav);border:1px dashed var(--vio2);border-radius:12px;padding:12px;word-break:break-all}
+.note{padding:12px 14px;border-radius:12px;background:var(--butter);color:#8a6410;margin-bottom:14px}
+.note.i{background:var(--sky);color:#2d5bb0}.note.e{background:var(--rose);color:#a3304b}
+.muted{color:var(--muted)}.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.hide{display:none!important}
+.login{max-width:460px;margin:12vh auto;padding:30px;text-align:center}
+.login .code{font-size:30px;font-weight:700;letter-spacing:4px;color:var(--vio);margin:14px 0;font-family:ui-monospace,Consolas,monospace}
+.user{display:flex;gap:10px;align-items:center;margin-left:auto}
+.toast{position:fixed;bottom:18px;right:18px;z-index:9;padding:12px 16px;border-radius:12px;background:var(--ink);color:#fff;box-shadow:var(--sh);max-width:420px}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--border);border-radius:12px;padding:3px;gap:2px;margin-bottom:14px;flex-wrap:wrap}
+.seg a{padding:7px 14px;border-radius:9px;cursor:pointer;color:var(--muted);font-weight:600;display:flex;gap:6px;align-items:center}
+.seg a.on{background:var(--vio-l);color:var(--vio)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.pcard{padding:16px;display:flex;flex-direction:column;gap:8px}
+.pcard h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}
+.pcard .desc{color:var(--muted);font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:28px}
+.schip{font:inherit;font-size:11px;border:1px solid var(--border);background:#fff;border-radius:99px;padding:4px 10px;cursor:pointer;color:var(--ink);margin:2px}
+.schip b{color:var(--vio);margin-left:4px}.schip:hover{border-color:var(--vio2)}
+.schip.k{background:#eef4ff}.schip.l{background:#eefaf3}.schip.f{background:#fff6e6}.schip.g{background:#f4efff}
+.ibtn{margin-left:auto;width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--vio);font-weight:700}
+.vis{font-size:10px;padding:2px 8px;border-radius:6px;background:var(--lav);color:var(--muted)}
+.vis.semi-public{background:var(--sky);color:var(--sky-d)}.vis.public{background:var(--mint);color:var(--mint-d)}
+.modal{position:fixed;inset:0;background:rgba(15,30,60,.35);display:grid;place-items:center;z-index:8;padding:16px}
+.modal .card{background:#fff;width:min(980px,100%);max-height:88vh;display:flex;flex-direction:column;padding:0}
+.modal header{display:flex;gap:10px;align-items:center;padding:16px 18px;border-bottom:1px solid #edf1f8}
+.modal header h2{margin:0;font-size:15px}.modal .body{padding:14px 18px;overflow:auto}
+.modal footer{padding:12px 18px;border-top:1px solid #edf1f8;display:flex;gap:8px;align-items:center}
+.xbtn{margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.irow{display:grid;grid-template-columns:120px 1fr 30px;gap:10px;padding:10px 0;border-bottom:1px solid #edf1f8;align-items:start}
+.irow .t{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--muted)}
+.irow .tx{white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:4.5em;overflow:hidden;cursor:pointer}
+.irow .tx.open{max-height:none}
+.irow .del{border:0;background:none;color:var(--rose-d);cursor:pointer;font-size:15px}
+.lcol{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+.plist a{display:flex;padding:8px 10px;border-radius:10px;cursor:pointer;color:var(--ink);gap:8px}
+.plist a.on{background:var(--vio-l);color:var(--vio);font-weight:600}
+.lesson{padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff;margin-bottom:10px}
+.lesson h4{margin:0 0 6px;font-size:13px;display:flex;gap:8px;align-items:center}
+.lesson p{margin:0;white-space:pre-wrap;font-size:12px;color:#33415c}
+select{font:inherit;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff}
+input[type=datetime-local],input[type=time],input[type=email]{font:inherit;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff}
+@media (max-width:1000px){.app{grid-template-columns:1fr}.side{height:auto!important;position:static!important;flex-direction:row;flex-wrap:wrap}.up{display:none}.stats{grid-template-columns:1fr 1fr}.grid2,.grid3,.lcol{grid-template-columns:1fr}.irow{grid-template-columns:1fr 30px}.irow .t{grid-column:1/-1}}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="card login hide">
+  <div class="logo" style="justify-content:center"><i>K</i>KH Home</div>
+  <h2 style="margin:0 0 6px">Sign in</h2>
+  <p class="muted">Sign in with your KH account. Maintainers manage everything here; any KH user who holds a sync key may pull with it.</p>
+  <div id="loginStart"><button class="btn" onclick="login()">Sign in</button></div>
+  <div id="loginWait" class="hide">
+    <p class="muted">Open the sign-in page and confirm this code:</p>
+    <div class="code" id="userCode"></div>
+    <a class="btn" id="verifyLink" target="_blank" rel="noopener">Open the sign-in page</a>
+    <p class="muted" style="margin-top:14px">Waiting for you to confirm…</p>
+  </div>
+  <div id="loginErr" class="note e hide" style="margin-top:14px"></div>
+</div>
+
+<div id="appView" class="app hide">
+  <aside class="card side">
+    <div class="logo"><i>K</i>KH Home</div>
+    <nav id="nav">
+      <a data-v="knowledge"><span class="g3d" style="background:linear-gradient(145deg,#8fb7ff,#5b8cf0)">▦</span>Knowledge</a>
+      <a data-v="lessons"><span class="g3d" style="background:linear-gradient(145deg,#7fd8b0,#38b57c)">✎</span>Lesson learn</a>
+      <a data-v="sync"><span class="g3d" style="background:linear-gradient(145deg,#c9a2ff,#9d6ef0)">⟳</span>Sync Knowledge<span class="cnt hide" id="syncCnt"></span></a>
+    </nav>
+    <div class="up" id="sideHelp"></div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <div class="muted" id="hereInfo"></div>
+      <div class="user"><span class="g3d" style="border-radius:50%" id="avatar">?</span>
+        <div><b id="who"></b><div class="muted" style="font-size:11px" id="whoRole"></div></div>
+        <button class="btn g s" id="logoutBtn" onclick="logout()">Sign out</button></div>
+    </div>
+    <div id="devNote" class="note i hide">Sign-in is off on this KH (development): you act as the local maintainer.</div>
+
+    <!-- KNOWLEDGE -->
+    <div id="v-knowledge" class="hide">
+      <div class="greet"><div><h1>Knowledge</h1><p>Every project and the parts it holds. Open a part to see its rows, newest first.</p></div>
+        <div class="row"><input type="text" id="kFilter" placeholder="Filter projects" style="width:220px" oninput="renderCards()">
+          <label class="row" style="font-size:12px"><input type="checkbox" id="kPersonal" onchange="renderCards()"> personal</label>
+          <button class="btn g s" onclick="loadProjects()">Refresh</button></div></div>
+      <div id="pgrid" class="pgrid"><p class="muted">Loading…</p></div>
+    </div>
+
+    <!-- LESSONS -->
+    <div id="v-lessons" class="hide">
+      <div class="greet"><div><h1>Lesson learn</h1><p>Lessons per project. Learn back distils them from worklogs and findings; proposed ones wait for you.</p></div></div>
+      <section class="card box" id="lbBox">
+        <h2>Learn back</h2>
+        <p class="sub" id="lbState">…</p>
+        <div style="margin-bottom:10px"><span style="font-weight:500">Projects</span> <span class="muted">- tick the ones to learn from</span>
+          <div id="lbProjects" style="margin-top:6px"></div></div>
+        <div class="row" style="margin-bottom:12px">
+          <button class="btn" id="lbNow" onclick="lbRunNow()">Start learn back now</button>
+          <span class="muted">or schedule:</span>
+          <select id="lbKind" onchange="lbKindChanged()"><option value="once">once at</option><option value="daily">every day at</option><option value="weekly">every week on</option></select>
+          <input type="datetime-local" id="lbAt">
+          <select id="lbDay" class="hide"><option value="mon">Monday</option><option value="tue">Tuesday</option><option value="wed">Wednesday</option><option value="thu">Thursday</option><option value="fri">Friday</option><option value="sat">Saturday</option><option value="sun">Sunday</option></select>
+          <input type="time" id="lbTime" class="hide" value="00:00">
+          <button class="btn g" id="lbAdd" onclick="lbSchedule()">Add schedule</button>
+        </div>
+        <div class="grid2" style="align-items:start">
+          <div><b>Schedules</b><table><tbody id="lbSched"></tbody></table></div>
+          <div><b>Recent runs</b><table><tbody id="lbRuns"></tbody></table></div>
+        </div>
+      </section>
+      <div class="lcol">
+        <section class="card box plist" id="lpList"></section>
+        <section class="card box"><div class="row" style="margin-bottom:10px"><h2 style="margin:0" id="lpTitle">Pick a project</h2>
+          <button class="btn s" style="margin-left:auto" id="lpAdd" onclick="addLessonDialog()" disabled>Add lesson</button></div>
+          <div id="lpRows"></div></section>
+      </div>
+    </div>
+
+    <!-- SYNC -->
+    <div id="v-sync" class="hide">
+    <div class="seg" id="seg">
+      <a data-s="receive">⇣ Receive</a><a data-s="give">⚿ Give (keys)</a>
+      <a data-s="jobs">▤ Sync jobs<span class="cnt hide" id="runCnt"></span></a><a data-s="accounts">☺ New accounts<span class="cnt hide" id="accCnt"></span></a>
+    </div>
+    <section class="stats">
+      <div class="stat" style="background:var(--lav)"><span class="tile" style="background:linear-gradient(145deg,#4a90f5,#1f6fe5)">⚿</span><div><small>Active keys</small><b id="sKeys">–</b><em>keys this KH gave out</em></div></div>
+      <div class="stat" style="background:var(--sky)"><span class="tile" style="background:linear-gradient(145deg,#8fb7ff,#5b8cf0)">⟳</span><div><small>Running</small><b id="sRun">–</b><em>sync jobs in progress</em></div></div>
+      <div class="stat" style="background:var(--mint)"><span class="tile" style="background:linear-gradient(145deg,#7fe0ad,#2fae6b)">✓</span><div><small>Rows copied</small><b id="sRows">–</b><em>created + updated, selected job</em></div></div>
+      <div class="stat" style="background:var(--butter)"><span class="tile" style="background:linear-gradient(145deg,#ffd474,#f0a51a)">◈</span><div><small>Embedding</small><b id="sEmb" style="font-size:14px">–</b><em>must match on both KHs</em></div></div>
+    </section>
+
+    <!-- RECEIVE -->
+    <div id="v-receive">
+      <section class="card box">
+        <h2><span class="step">1</span>Connect with a key</h2>
+        <p class="sub">Paste the key the giving KH's maintainer made for you. The key names the giving KH; nothing else is needed.
+          Signed in as a member, the giving KH first checks the key against the keys it stores, and you get read access here to the projects you pull.</p>
+        <textarea id="keyIn" placeholder="khsync1.…"></textarea>
+        <div class="row" style="margin-top:10px"><button class="btn" id="connectBtn" onclick="connectKey()">Connect</button>
+          <span id="hs" class="row"></span></div>
+      </section>
+
+      <section class="card box hide" id="pickBox">
+        <h2><span class="step">2</span>Choose what to sync</h2>
+        <p class="sub">Tick projects, then the parts of each. "log" includes the giving KH's recent (hot window) log rows.
+          People: someone who already has an account here keeps it and is given access; someone new gets an account
+          (an initial password only for user/password accounts, never for SSO), listed under New accounts.</p>
+        <div id="limits" class="note i hide"></div>
+        <div class="row" style="margin-bottom:8px"><button class="btn g s" onclick="tickAll(true)">Select all</button>
+          <button class="btn g s" onclick="tickAll(false)">Clear</button><span class="muted" id="pickSum"></span></div>
+        <table><thead><tr><th style="width:30px"></th><th>Project</th><th>Here</th><th>Parts (rows on the giving KH)</th><th>People</th></tr></thead>
+          <tbody id="projRows"></tbody></table>
+      </section>
+
+      <section class="card box hide" id="optBox">
+        <h2><span class="step">3</span>Time range and start</h2>
+        <p class="sub">Only rows whose time falls in the range are sent. Leave both empty for everything.</p>
+        <div class="grid3">
+          <label class="f"><span>From (since)</span><input type="date" id="since"></label>
+          <label class="f"><span>To (until, inclusive)</span><input type="date" id="until"></label>
+          <div><span style="display:block;margin-bottom:5px;font-weight:500">Options</span>
+            <label class="row" style="margin-bottom:6px"><input type="checkbox" id="undated" checked> include rows without a date</label>
+            <label class="row"><input type="checkbox" id="dry"> dry run (count only, write nothing)</label></div>
+        </div>
+        <div class="row"><button class="btn" id="startBtn" onclick="startPull()">Start sync</button>
+          <span class="muted">Updates existing projects and rows, never replaces or deletes. A row newer here is kept.</span></div>
+      </section>
+    </div>
+
+    <!-- GIVE -->
+    <div id="v-give" class="hide">
+      <section class="card box">
+        <h2>Make a connection key</h2>
+        <p class="sub">Give the key to the maintainer of the receiving KH. It is shown once; this KH keeps only its hash.</p>
+        <div class="grid3">
+          <label class="f"><span>Label</span><input type="text" id="kLabel" placeholder="e.g. lab KH, October"></label>
+          <label class="f"><span>Valid for (days, max 90)</span><input type="number" id="kDays" value="7" min="1" max="90"></label>
+          <label class="f"><span>This KH's address, as the receiver reaches it</span><input type="url" id="kUrl"></label>
+        </div>
+        <div style="margin-bottom:12px"><span style="font-weight:500">Projects the receiver may see</span>
+          <span class="muted"> - none ticked means every project except personal ones; a personal project goes only when ticked</span>
+          <button class="btn s" style="margin-left:8px" onclick="tickAllLocal(true)" title="Every project, personal ones included: a backup of this whole KH">Tick all (backup)</button>
+          <button class="btn s" onclick="tickAllLocal(false)">Clear</button>
+          <div id="kProjects" style="margin-top:8px"></div></div>
+        <div style="margin-bottom:12px"><span style="font-weight:500">Parts the receiver may see</span>
+          <span class="muted"> - none ticked means every part</span>
+          <div id="kParts" style="margin-top:8px"></div></div>
+        <div class="grid3">
+          <label class="f"><span>Rows from (optional)</span><input type="date" id="kSince"></label>
+          <label class="f"><span>Rows until (optional)</span><input type="date" id="kUntil"></label>
+          <div><span style="display:block;margin-bottom:5px;font-weight:500">People</span>
+            <label class="row"><input type="checkbox" id="kMembers" checked> share each project's member list</label></div>
+        </div>
+        <button class="btn" onclick="makeKey()">Make key</button>
+        <div id="newKey" class="hide" style="margin-top:14px">
+          <div class="note">Copy this key now. It will not be shown again.</div>
+          <div class="keybox" id="newKeyText"></div>
+          <div class="row" style="margin-top:8px"><button class="btn s" onclick="copyKey()">Copy</button></div>
+        </div>
+      </section>
+      <section class="card box">
+        <h2>Pulls from this KH<span class="cnt hide" id="givenCnt" style="font-size:10px;background:var(--vio);color:#fff;border-radius:99px;padding:1px 7px"></span></h2>
+        <p class="sub">Receivers report their progress while they pull with one of this KH's keys.</p>
+        <div id="givenList"><p class="muted">Loading…</p></div>
+      </section>
+      <section class="card box">
+        <h2>Keys this KH gave</h2>
+        <table><thead><tr><th>Label</th><th>Key id</th><th>Projects</th><th>Shows</th><th>Made by</th><th>Expires</th><th>Last used</th><th>State</th><th></th></tr></thead>
+          <tbody id="keyRows"></tbody></table>
+      </section>
+    </div>
+
+    <!-- ACCOUNTS -->
+    <div id="v-accounts" class="hide">
+      <section class="card box">
+        <h2>Accounts created by sync</h2>
+        <p class="sub">People a sync brought in who sign in with a user name and password. Send each person their
+          initial password, then press "Sent" so this KH forgets it. SSO accounts need no password and are not listed.</p>
+        <table><thead><tr><th>E-mail</th><th>Projects</th><th>Initial password</th><th>Set at sign-in service</th><th>From</th><th>Created</th><th></th></tr></thead>
+          <tbody id="accRows"></tbody></table>
+      </section>
+      <section class="card box">
+        <h2>Read access from sync keys</h2>
+        <p class="sub">Members who pulled a project with a key the giving KH verified can read it here. Remove takes that back
+          (rows already copied stay).</p>
+        <table><thead><tr><th>E-mail</th><th>Project</th><th>From</th><th>Key id</th><th>Job</th><th>Since</th><th></th></tr></thead>
+          <tbody id="grantRows"></tbody></table>
+      </section>
+    </div>
+
+    <!-- JOBS -->
+    <div id="v-jobs" class="hide">
+      <div class="grid2" style="grid-template-columns:1fr 1.4fr;align-items:start">
+        <section class="card box"><h2>Sync jobs</h2><p class="sub">Jobs run on this KH, so you can close this page and come back.</p>
+          <div id="jobList"></div></section>
+        <section class="card box" id="jobDetail"><p class="muted">Pick a job to see its progress.</p></section>
+      </div>
+    </div>
+    </div><!-- /v-sync -->
+  </main>
+</div>
+<div id="modal" class="modal hide" onclick="if(event.target===this)closeModal()"><div class="card"><header><h2 id="mTitle"></h2><span id="mSub" class="muted"></span>
+  <button class="xbtn" onclick="closeModal()">×</button></header><div class="body" id="mBody"></div><footer id="mFoot"></footer></div></div>
+<div id="toast" class="toast hide"></div>
+
+<script>
+const PARTS = ["knowledge","log","findings","entity","chunk","personalization","policy","src"];
+const DEFAULT_ON = ["knowledge","log","findings","entity","chunk","personalization"];
+let cfg = {}, conn = null, pick = {}, people = {}, jobs = [], selJob = null, timer = null, isMaint = true, givenTimer = null;
+
+const store = {
+  get(k){ try { return localStorage.getItem("kh_home_"+k) } catch(e){ return null } },
+  set(k,v){ try { v==null ? localStorage.removeItem("kh_home_"+k) : localStorage.setItem("kh_home_"+k,v) } catch(e){} }
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => Number(n||0).toLocaleString("en-US");
+const when = t => t ? t.replace("T"," ").replace("Z","") : "–";
+function toast(msg, ms=3500){ const t=$("toast"); t.textContent=msg; t.classList.remove("hide"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.add("hide"),ms); }
+
+async function api(method, path, body, retry=true){
+  const h = {"Accept":"application/json"};
+  if (body !== undefined) h["Content-Type"] = "application/json";
+  const tok = store.get("access");
+  if (cfg.auth && tok) h["Authorization"] = "Bearer " + tok;
+  const r = await fetch(path, {method, headers:h, body: body===undefined ? undefined : JSON.stringify(body)});
+  if (r.status === 401 && cfg.auth && retry && await refresh()) return api(method, path, body, false);
+  const txt = await r.text(); let data = null; try { data = txt ? JSON.parse(txt) : null } catch(e){ data = {detail: txt} }
+  if (r.status === 401 && cfg.auth) { showLogin(); throw new Error("Please sign in again."); }
+  if (!r.ok) { const d = data && data.detail; throw Object.assign(new Error(typeof d === "string" ? d : (d && d.detail) || JSON.stringify(d) || r.statusText), {status:r.status, data}); }
+  return data;
+}
+async function refresh(){
+  const rt = store.get("refresh"); if (!rt) return false;
+  try { const r = await fetch("/home/login/refresh",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})});
+    if (!r.ok) return false; const d = await r.json(); store.set("access",d.access_token); if (d.refresh_token) store.set("refresh",d.refresh_token); return true;
+  } catch(e){ return false }
+}
+
+// ── sign-in ──
+function showLogin(){ $("appView").classList.add("hide"); $("loginView").classList.remove("hide"); $("loginStart").classList.remove("hide"); $("loginWait").classList.add("hide"); }
+async function login(){
+  $("loginErr").classList.add("hide");
+  try {
+    const d = await (await fetch("/home/login/start",{method:"POST"})).json();
+    if (!d.device_code) throw new Error(d.detail || "sign-in could not start");
+    $("userCode").textContent = d.user_code; $("verifyLink").href = d.verification_uri_complete || d.verification_uri;
+    $("loginStart").classList.add("hide"); $("loginWait").classList.remove("hide");
+    window.open(d.verification_uri_complete || d.verification_uri, "_blank", "noopener");
+    const until = Date.now() + (d.expires_in||600)*1000, every = Math.max(d.interval||5, 3)*1000;
+    while (Date.now() < until) {
+      await new Promise(r => setTimeout(r, every));
+      const p = await (await fetch("/home/login/poll",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({device_code:d.device_code, code_verifier:d.code_verifier})})).json();
+      if (p.state === "ok") { store.set("access",p.access_token); store.set("refresh",p.refresh_token); return enter(); }
+      if (p.state === "failed") throw new Error("Sign-in was not completed (" + p.error + ").");
+    }
+    throw new Error("The sign-in code expired.");
+  } catch(e){ $("loginErr").textContent = e.message; $("loginErr").classList.remove("hide"); $("loginStart").classList.remove("hide"); $("loginWait").classList.add("hide"); }
+}
+function logout(){ store.set("access",null); store.set("refresh",null); if (cfg.auth) showLogin(); else toast("Sign-in is off on this KH."); }
+
+async function enter(){
+  let me;
+  try { me = await api("GET","/sync/me"); }
+  catch(e){
+    if (e.status === 403) { showLogin(); $("loginErr").textContent = "This account is not a registered KH user here."; $("loginErr").classList.remove("hide"); store.set("access",null); store.set("refresh",null); }
+    return;
+  }
+  $("loginView").classList.add("hide"); $("appView").classList.remove("hide");
+  isMaint = me.maintainer !== false;
+  // A member syncs on a key's reader role: Receive and their own jobs only.
+  document.querySelectorAll('#nav a[data-v="knowledge"], #nav a[data-v="lessons"], #seg a[data-s="give"], #seg a[data-s="accounts"]')
+    .forEach(a => a.classList.toggle("hide", !isMaint));
+  $("sKeys").closest(".stat").classList.toggle("hide", !isMaint);
+  $("who").textContent = me.email; $("whoRole").textContent = me.role; $("avatar").textContent = (me.email||"?").slice(0,2).toUpperCase();
+  $("devNote").classList.toggle("hide", cfg.auth); $("logoutBtn").classList.toggle("hide", !cfg.auth);
+  $("hereInfo").innerHTML = "This KH: <b>" + esc(cfg.base) + "</b> · " + esc(cfg.kh_version);
+  $("sEmb").textContent = cfg.emb_model; $("kUrl").value = cfg.base;
+  const want = location.hash.slice(1).split("/");
+  if (SUBS.includes(want[0])) { want[1] = want[0]; want[0] = "sync"; }
+  if (!isMaint) show("sync", ["receive","jobs"].includes(want[1]) ? want[1] : "receive");
+  else show(VIEWS.includes(want[0]) ? want[0] : store.get("view") || "knowledge", want[1] || store.get("sub") || "receive");
+  loadJobs();
+  if (isMaint) { loadKeys(); loadLocal(); loadAccounts(); }
+}
+
+// ── navigation: three tabs; Sync Knowledge holds receive / give / jobs / accounts ──
+const VIEWS = ["knowledge","lessons","sync"], SUBS = ["receive","give","jobs","accounts"];
+const HELP = {
+  knowledge: "<b>Knowledge</b>Click a part to see its rows newest first, delete a row or the whole part. ⓘ shows the project's people and their levels.",
+  lessons: "<b>Lesson learn</b>Lessons are distilled items of kind lesson. Learn back proposes new ones from worklogs and findings; approve them here.",
+  sync: "<b>How sync works</b>The GIVING KH makes a key. The RECEIVING KH pastes it, checks both use the same embedding model, then pulls the projects, parts and time range you tick. Rows are updated, never replaced or deleted."};
+document.querySelectorAll("#nav a").forEach(a => a.onclick = () => show(a.dataset.v));
+document.querySelectorAll("#seg a").forEach(a => a.onclick = () => show("sync", a.dataset.s));
+function show(v, sub){
+  if (!isMaint) { v = "sync"; if (!["receive","jobs"].includes(sub)) sub = "receive"; }
+  VIEWS.forEach(x => $("v-"+x).classList.toggle("hide", x !== v));
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("on", a.dataset.v === v));
+  $("sideHelp").innerHTML = HELP[v];
+  store.set("view", v);
+  if (v === "sync") {
+    sub = SUBS.includes(sub) ? sub : (store.get("sub") || "receive");
+    SUBS.forEach(x => $("v-"+x).classList.toggle("hide", x !== sub));
+    document.querySelectorAll("#seg a").forEach(a => a.classList.toggle("on", a.dataset.s === sub));
+    store.set("sub", sub); history.replaceState(null, "", "#sync/" + sub);
+    if (sub === "jobs") loadJobs();
+    if (sub === "give") { loadKeys(); loadGiven(); }
+    if (sub === "accounts") { loadAccounts(); loadGrants(); }
+  } else history.replaceState(null, "", "#" + v);
+  if (v === "knowledge" && !projectsCache) loadProjects();
+  if (v === "lessons") { if (!projectsCache) loadProjects().then(renderLessonProjects); else renderLessonProjects(); loadLearnback(); }
+}
+
+// ── receive ──
+async function connectKey(){
+  const key = $("keyIn").value.trim(); if (!key) return toast("Paste a key first.");
+  $("connectBtn").disabled = true; $("hs").innerHTML = '<span class="pill running">checking…</span>';
+  try {
+    conn = await api("POST","/sync/connect",{key});
+    const c = conn.handshake.checks;
+    $("hs").innerHTML = '<span class="pill ok">connected</span><span class="muted">' + esc(conn.source) + '</span>' +
+      ["protocol","emb_model","emb_dim","probe"].map(k => '<span class="pill ' + (c[k]?"ok":"bad") + '">' + k.replace("emb_","") + (k==="probe" ? " " + conn.handshake.cosine : k==="emb_model" ? " " + esc(conn.handshake.source.emb_model) : "") + '</span>').join("");
+    pick = {}; people = {}; conn.projects.forEach(p => { people[p.id] = (p.members||[]).length > 0 });
+    const L = conn.limits || {}, bits = [];
+    if ((L.parts||[]).length) bits.push("parts: " + L.parts.filter(x => x !== "hotlog").join(", "));
+    if (L.since || L.until) bits.push("rows " + (L.since||"…") + " → " + (L.until||"…"));
+    if (L.members === false) bits.push("no member lists");
+    $("limits").textContent = "The giver limited this key: " + (bits.join(" · ") || "nothing (everything is visible)") +
+      (conn.as === "reader" ? ". The giving KH verified this key (" + (conn.verified.label || conn.verified.kid) + "): you get read access here to the projects you pull; member lists are not applied." :
+       conn.members_here ? "" : ". This KH has sign-in off, so member lists are shown but not applied.");
+    $("limits").classList.remove("hide");
+    renderProjects(); $("pickBox").classList.remove("hide"); $("optBox").classList.remove("hide");
+  } catch(e){
+    conn = null; $("pickBox").classList.add("hide"); $("optBox").classList.add("hide");
+    const hs = e.data && e.data.detail && e.data.detail.handshake;
+    $("hs").innerHTML = '<span class="pill bad">' + (hs ? "embedding mismatch" : "refused") + '</span><span class="muted">' + esc(hs ? ("giver uses " + hs.source.emb_model + " (" + hs.source.emb_dim + "), this KH " + hs.local.emb_model + " (" + hs.local.emb_dim + "); probe cosine " + hs.cosine) : e.message) + '</span>';
+  } finally { $("connectBtn").disabled = false; }
+}
+function cnt(p, part){ const c = p.counts || {}; return part === "log" ? (c.log||0) + (c.hotlog||0) : (c[part]||0); }
+function renderProjects(){
+  $("projRows").innerHTML = conn.projects.map(p => {
+    const on = !!pick[p.id], parts = pick[p.id] || [];
+    if (p.blocked) return '<tr><td><span class="ck" style="opacity:.3;cursor:not-allowed" title="' + esc(p.blocked) + '"></span></td><td><b>' + esc(p.id) +
+      '</b><div class="muted" style="font-size:11px">' + esc(p.blocked) + '</div></td><td colspan="3"></td></tr>';
+    return '<tr><td><span class="ck' + (on?" on":"") + '" onclick="toggleProject(\'' + esc(p.id) + '\')"></span></td>' +
+      '<td><b>' + esc(p.id) + '</b><div class="muted" style="font-size:11px">' + esc((p.descriptor||"").slice(0,90)) + '</div></td>' +
+      '<td><span class="chip">' + (p.exists_here ? "exists · merge" : "new here") + '</span></td><td>' +
+      PARTS.map(part => { const n = cnt(p, part); return '<button class="part' + (on && parts.includes(part) ? " on" : "") + '"' + (n ? "" : " disabled") +
+        ' onclick="togglePart(\'' + esc(p.id) + '\',\'' + part + '\')">' + part + '<b>' + fmt(n) + '</b></button>'; }).join("") + '</td><td>' +
+      (conn.as === "reader" ? '<span class="muted" style="font-size:11px">not applied</span>' : (p.members||[]).length ? '<button class="part' + (people[p.id] ? " on" : "") + '" title="' + esc(p.members.map(m => m.email + " (" + m.level + ", " + (m.login||"sso") + ")").join("\n")) +
+        '" onclick="people[\'' + esc(p.id) + '\']=!people[\'' + esc(p.id) + '\'];renderProjects()">people<b>' + p.members.length + '</b></button>'
+        : '<span class="muted" style="font-size:11px">' + esc(p.members_note || "none") + '</span>') + '</td></tr>';
+  }).join("") || '<tr><td colspan="5" class="muted">The giving KH offers no projects with this key.</td></tr>';
+  const n = Object.keys(pick).length, rows = Object.entries(pick).reduce((s,[id,parts]) => { const p = conn.projects.find(x=>x.id===id); return s + parts.reduce((a,part)=>a+cnt(p,part),0) }, 0);
+  $("pickSum").textContent = n ? n + " project(s), up to " + fmt(rows) + " rows before the time filter" : "nothing ticked yet";
+}
+function toggleProject(id){ if (pick[id]) delete pick[id]; else { const p = conn.projects.find(x=>x.id===id); if (p.blocked) return; pick[id] = DEFAULT_ON.filter(part => cnt(p,part) > 0); } renderProjects(); }
+function togglePart(id, part){ const cur = pick[id] || []; pick[id] = cur.includes(part) ? cur.filter(x=>x!==part) : cur.concat(part); if (!pick[id].length) delete pick[id]; renderProjects(); }
+function tickAll(on){ pick = {}; if (on) conn.projects.filter(p => !p.blocked).forEach(p => { pick[p.id] = DEFAULT_ON.filter(part => cnt(p,part) > 0) }); renderProjects(); }
+async function startPull(){
+  const selection = Object.entries(pick).map(([project, parts]) => ({project, parts, members: !!people[project]}));
+  if (!selection.length) return toast("Tick at least one project.");
+  $("startBtn").disabled = true;
+  try {
+    const job = await api("POST","/sync/pull",{key: $("keyIn").value.trim(), selection, since: $("since").value, until: $("until").value,
+      include_undated: $("undated").checked, dry_run: $("dry").checked});
+    selJob = job.id; store.set("job", job.id); toast("Sync started: " + job.id); show("sync", "jobs");
+  } catch(e){ toast(e.message, 6000); } finally { $("startBtn").disabled = false; }
+}
+
+// ── give ──
+async function loadLocal(){
+  try { const m = await api("GET","/sync/local");
+    $("kProjects").innerHTML = m.projects.map(p => '<button class="part" data-p="' + esc(p.id) + '" onclick="this.classList.toggle(\'on\')"' +
+      (p.personal ? ' title="personal project: given only when ticked"' : '') + '>' + esc(p.id) + (p.personal ? ' <span class="vis">personal</span>' : '') + '</button>').join("") || '<span class="muted">no projects</span>';
+  } catch(e){}
+}
+function tickAllLocal(on){ document.querySelectorAll("#kProjects .part").forEach(b => b.classList.toggle("on", on)); }
+$("kParts").innerHTML = PARTS.map(p => '<button class="part" data-p="' + p + '" onclick="this.classList.toggle(\'on\')">' + p + '</button>').join("");
+async function makeKey(){
+  const projects = [...document.querySelectorAll("#kProjects .part.on")].map(b => b.dataset.p);
+  const parts = [...document.querySelectorAll("#kParts .part.on")].map(b => b.dataset.p);
+  try { const k = await api("POST","/sync/keys",{label:$("kLabel").value, days:+$("kDays").value, public_url:$("kUrl").value, projects,
+      parts, since: $("kSince").value, until: $("kUntil").value, members: $("kMembers").checked});
+    $("newKeyText").textContent = k.key; $("newKey").classList.remove("hide"); loadKeys();
+  } catch(e){ toast(e.message, 6000); }
+}
+function copyKey(){ navigator.clipboard.writeText($("newKeyText").textContent).then(() => toast("Key copied.")); }
+async function loadKeys(){
+  try { const d = await api("GET","/sync/keys");
+    $("sKeys").textContent = d.keys.filter(k => k.state === "active").length;
+    $("keyRows").innerHTML = d.keys.map(k => '<tr><td><b>' + esc(k.label) + '</b></td><td class="mono">' + esc(k.kid) + '</td><td>' +
+      (k.projects.length ? k.projects.map(p => '<span class="chip">' + esc(p) + '</span> ').join("") : '<span class="muted">all</span>') + '</td><td style="font-size:11px">' +
+      ((k.parts||[]).filter(x => x !== "hotlog").join(", ") || "all parts") + (k.since || k.until ? "<br>" + esc((k.since||"…") + " → " + (k.until||"…")) : "") +
+      "<br>" + (k.members === false ? "no people" : "people" + (Object.keys(k.member_counts||{}).length ? " (" + Object.values(k.member_counts).reduce((a,b)=>a+b,0) + ")" : "")) + '</td><td>' + esc(k.created_by) +
+      '</td><td>' + when(k.expires_at) + '</td><td>' + when(k.last_used_at) + '</td><td><span class="pill ' + k.state + '">' + k.state + '</span></td><td>' +
+      (k.state === "active" ? '<button class="btn r s" onclick="revoke(\'' + esc(k.kid) + '\')">Revoke</button>' : "") + '</td></tr>').join("") ||
+      '<tr><td colspan="9" class="muted">No keys yet.</td></tr>';
+  } catch(e){}
+}
+async function revoke(kid){ if (!confirm("Revoke key " + kid + "? The receiving KH can no longer use it.")) return;
+  try { await api("DELETE","/sync/keys/" + kid); toast("Key revoked."); loadKeys(); } catch(e){ toast(e.message); } }
+
+// ── pulls receivers run with this KH's keys (giver side) ──
+async function loadGiven(){
+  let d; try { d = await api("GET","/sync/given"); } catch(e){ return; }
+  const running = d.given.filter(g => g.state === "running" && !g.silent).length;
+  $("givenCnt").textContent = running; $("givenCnt").classList.toggle("hide", !running);
+  $("givenList").innerHTML = d.given.map(g => { const p = g.progress || {}, st = g.silent ? "interrupted" : g.state;
+    return '<div class="job" style="cursor:default"><div class="row"><b>' + esc(g.projects.join(", ") || "(nothing)") + '</b>' +
+      '<span class="pill ' + st + '" style="margin-left:auto">' + (g.silent ? "no news" : g.state) + (g.dry_run ? " · dry run" : "") + '</span></div>' +
+      bar({progress: p, state: st}) +
+      '<div class="row muted" style="font-size:11px"><span>' + (p.percent||0) + '% · ' + fmt(p.scanned) + ' / ' + fmt(p.total) + ' rows</span>' +
+      '<span style="margin-left:auto">key ' + esc(g.label) + ' (' + esc(g.kid) + ') · ' + esc(g.by || "?") + (g.receiver ? ' @ ' + esc(g.receiver) : '') +
+      ' · ' + when(g.started) + (g.finished ? ' → ' + when(g.finished) : ' · last news ' + when(g.updated)) + '</span></div>' +
+      (g.error ? '<div class="muted" style="font-size:11px;color:var(--rose-d)">' + esc(g.error) + '</div>' : '') + '</div>';
+  }).join("") || '<p class="muted">No receiver has pulled with a key from this KH yet (or it runs an older KH that does not report).</p>';
+  clearTimeout(givenTimer);
+  if (store.get("view") === "sync" && store.get("sub") === "give") givenTimer = setTimeout(loadGiven, running ? 1500 : 10000);
+}
+
+// ── read access members got from sync keys (receiver side) ──
+async function loadGrants(){
+  try { const d = await api("GET","/sync/grants");
+    $("grantRows").innerHTML = d.grants.map(g => '<tr><td><b>' + esc(g.email) + '</b></td><td><span class="chip">' + esc(g.project) + '</span></td><td style="font-size:11px">' +
+      esc(g.source) + '</td><td class="mono">' + esc(g.kid) + '</td><td class="mono">' + esc(g.job_id) + '</td><td>' + when(g.granted_at) +
+      '</td><td><button class="btn r s" data-e="' + esc(g.email) + '" data-p="' + esc(g.project) + '" onclick="removeGrant(this.dataset.e, this.dataset.p)">Remove</button></td></tr>').join("") ||
+      '<tr><td colspan="7" class="muted">No member has read access from a sync key.</td></tr>';
+  } catch(e){}
+}
+async function removeGrant(email, project){ if (!confirm("Take back read access of " + email + " on " + project + "?")) return;
+  try { await api("POST","/sync/grants/remove",{email, project}); toast("Read access removed."); loadGrants(); } catch(e){ toast(e.message); } }
+
+// ── accounts ──
+async function loadAccounts(){
+  try { const d = await api("GET","/sync/accounts");
+    const open = d.accounts.filter(a => !a.sent_at).length;
+    $("accCnt").textContent = open; $("accCnt").classList.toggle("hide", !open);
+    $("accRows").innerHTML = d.accounts.map(a => '<tr><td><b>' + esc(a.email) + '</b></td><td>' + a.projects.map(p => '<span class="chip">' + esc(p) + '</span> ').join("") +
+      '</td><td class="mono">' + (a.sent_at ? '<span class="muted">sent ' + when(a.sent_at) + '</span>' :
+        '<span class="pw" data-pw="' + esc(a.password) + '">••••••••</span> <button class="btn g s" onclick="const s=this.previousElementSibling;s.textContent=s.textContent.startsWith(\'•\')?s.dataset.pw:\'••••••••\'">show</button>' +
+        ' <button class="btn g s" onclick="navigator.clipboard.writeText(this.parentElement.querySelector(\'.pw\').dataset.pw).then(()=>toast(\'Copied.\'))">copy</button>') +
+      '</td><td>' + (a.applied ? '<span class="pill ok">set</span>' : '<span class="pill warn" title="' + esc(a.note) + '">not yet</span>') +
+      '</td><td style="font-size:11px">' + esc(a.source) + '</td><td>' + when(a.created_at) + '</td><td>' +
+      (a.sent_at ? '' : '<button class="btn s" onclick="markSent(\'' + esc(a.email) + '\')">Sent</button>') + '</td></tr>').join("") ||
+      '<tr><td colspan="7" class="muted">No account was created by a sync on this KH.</td></tr>';
+  } catch(e){}
+}
+async function markSent(email){ if (!confirm("Mark the password of " + email + " as sent? This KH will forget it.")) return;
+  try { await api("POST","/sync/accounts/" + encodeURIComponent(email) + "/sent", {forget:true}); toast("Marked as sent."); loadAccounts(); } catch(e){ toast(e.message); } }
+
+// ── jobs ──
+function bar(j, mini){ const p = (j.progress||{}).percent || 0, cls = j.state === "done" ? " fin" : ["failed","cancelled","interrupted"].includes(j.state) ? " err" : "";
+  return '<div class="prog' + (mini?" mini":"") + cls + '"><i style="width:' + p + '%"></i></div>'; }
+async function loadJobs(){
+  try { jobs = (await api("GET","/sync/jobs")).jobs; } catch(e){ return; }
+  const running = jobs.filter(j => j.state === "running").length;
+  $("sRun").textContent = running; $("runCnt").textContent = running; $("runCnt").classList.toggle("hide", !running);
+  $("syncCnt").textContent = running; $("syncCnt").classList.toggle("hide", !running);
+  if (!selJob) selJob = store.get("job") || (jobs[0] && jobs[0].id);
+  $("jobList").innerHTML = jobs.map(j => { const p = j.progress || {};
+    return '<div class="job' + (j.id===selJob?" sel":"") + '" onclick="pickJob(\'' + j.id + '\')"><div class="row"><b>' + esc(j.projects.join(", ") || "(nothing)") +
+      '</b><span class="pill ' + j.state + '" style="margin-left:auto">' + j.state + (j.dry_run ? " · dry run" : "") + '</span></div>' + bar(j) +
+      '<div class="row muted" style="font-size:11px"><span>' + (p.percent||0) + '% · ' + fmt(p.scanned) + ' / ' + fmt(p.total) + ' rows</span><span style="margin-left:auto">' + esc(j.source) + ' · ' + when(j.started) + '</span></div></div>';
+  }).join("") || '<p class="muted">No sync jobs yet. Start one under Receive.</p>';
+  if (selJob) loadJob(selJob);
+  clearTimeout(timer); timer = setTimeout(loadJobs, running ? 1500 : 10000);
+}
+function pickJob(id){ selJob = id; store.set("job", id); loadJobs(); }
+async function loadJob(id){
+  let j; try { j = await api("GET","/sync/jobs/" + id); } catch(e){ return; }
+  let created = 0;
+  const rows = j.plan.map(s => { const r = (j.report[s.project]||{})[s.part] || {}; created += (r.created||0) + (r.updated||0);
+    const pc = s.source_total ? Math.min(100, Math.round(100*s.scanned/s.source_total)) : 100;
+    return '<tr><td><b>' + esc(s.project) + '</b></td><td><span class="chip">' + (s.part === "hotlog" ? "log (recent)" : s.part) + '</span></td><td style="width:120px"><div class="prog mini' + (pc>=100?" fin":"") + '"><i style="width:' + pc + '%"></i></div><span class="muted" style="font-size:10px">' + fmt(s.scanned) + '/' + fmt(s.source_total) + '</span></td>' +
+      '<td>' + fmt(s.matched) + '</td><td>' + fmt(r.created) + '</td><td>' + fmt(r.updated) + '</td><td>' + fmt(r.unchanged) + '</td><td>' + fmt(r.skipped_newer) + '</td></tr>'; }).join("");
+  $("sRows").textContent = fmt(created);
+  const p = j.progress || {};
+  $("jobDetail").innerHTML = '<div class="row"><h2 style="margin:0">' + esc(j.id) + '</h2><span class="pill ' + j.state + '">' + j.state + '</span>' + (j.dry_run ? '<span class="pill warn">dry run</span>' : '') +
+    (j.state === "running" ? '<button class="btn r s" style="margin-left:auto" onclick="cancelJob(\'' + j.id + '\')">Stop</button>' : '') + '</div>' +
+    '<div class="row" style="margin-top:12px"><b style="font-size:26px">' + (p.percent||0) + '%</b><span class="muted">' + fmt(p.scanned) + ' of ' + fmt(p.total) + ' rows read on the giving KH</span></div>' + bar(j) +
+    '<p class="muted" style="margin:8px 0 12px">From <b>' + esc(j.source) + '</b> · by ' + esc(j.created_by) + ' · started ' + when(j.started) + (j.finished ? ' · finished ' + when(j.finished) : '') +
+    ' · range ' + (j.since || j.until ? esc((j.since||"…") + " → " + (j.until||"…")) + (j.include_undated ? " (+ undated)" : "") : "all time") + '</p>' +
+    (j.error ? '<div class="note e">' + esc(j.error) + '</div>' : '') +
+    ((j.reader_grants||[]).length ? '<div class="note i">Read access here (sync key, verified by the giver) for ' + esc(j.created_by) + ': ' + j.reader_grants.map(esc).join(", ") + '</div>' : '') +
+    '<div class="row" style="margin-bottom:10px">' + Object.entries(j.registry||{}).map(([id,st]) => '<span class="chip">' + esc(id) + ': ' + st + '</span>').join(" ") + '</div>' +
+    Object.entries(j.members||{}).map(([id,m]) => '<div class="muted" style="font-size:11px;margin-bottom:6px"><b>' + esc(id) + ' people:</b> ' +
+      [["added", (m.added||[]).length], ["kept (already here)", (m.kept||[]).length], ["new accounts", (m.new_accounts||[]).length],
+       ["no account", (m.no_account||[]).length], ["failed", (m.failed||[]).length], ["not applied", (m.skipped||[]).length]]
+        .filter(x => x[1]).map(x => x[0] + " " + x[1]).join(" · ") + (m.note ? " - " + esc(m.note) : "") + '</div>').join("") +
+    '<table><thead><tr><th>Project</th><th>Part</th><th>Read</th><th>In range</th><th>Created</th><th>Updated</th><th>Unchanged</th><th>Kept (newer here)</th></tr></thead><tbody>' +
+    (rows || '<tr><td colspan="8" class="muted">Nothing to copy: the ticked parts are empty on the giving KH.</td></tr>') + '</tbody></table>';
+}
+async function cancelJob(id){ try { await api("POST","/sync/jobs/" + id + "/cancel"); toast("Stopping after the current page…"); } catch(e){ toast(e.message); } }
+
+// ── knowledge ──
+let projectsCache = null, modalCtx = null;
+const PART_CLS = {knowledge:"k", log:"l", findings:"f", graph:"g"};
+const bytes = n => n == null ? "on HANA" : n < 1024 ? n + " B" : n < 1048576 ? (n/1024).toFixed(0) + " KB" : n < 1073741824 ? (n/1048576).toFixed(1) + " MB" : (n/1073741824).toFixed(2) + " GB";
+async function loadProjects(){
+  try { projectsCache = (await api("GET","/home/projects")).projects; } catch(e){ $("pgrid").innerHTML = '<div class="note e">' + esc(e.message) + '</div>'; return; }
+  renderCards();
+}
+function renderCards(){
+  if (!projectsCache) return;
+  const f = $("kFilter").value.trim().toLowerCase(), withPersonal = $("kPersonal").checked;
+  const list = projectsCache.filter(p => (withPersonal || !p.personal) && (!f || p.id.includes(f) || (p.descriptor||"").toLowerCase().includes(f)));
+  $("pgrid").innerHTML = list.map(p => {
+    const chips = Object.entries(p.counts).filter(([,n]) => n > 0).map(([part,n]) =>
+      '<button class="schip ' + (PART_CLS[part]||"") + '" onclick="openPart(\'' + esc(p.id) + '\',\'' + part + '\')">' + part + '<b>' + fmt(n) + '</b></button>').join("") +
+      (p.graph.exists && p.graph.bytes !== 0 ? '<button class="schip g" onclick="openGraph(\'' + esc(p.id) + '\')">graph<b>' + bytes(p.graph.bytes) + '</b></button>' : "");
+    return '<div class="card pcard"><h3>' + esc(p.id) + ' <span class="vis ' + esc(p.visibility) + '">' + esc(p.visibility) + '</span>' +
+      (p.personal ? '<span class="vis">personal</span>' : '') + '<button class="ibtn" title="People and levels" onclick="openMembers(\'' + esc(p.id) + '\')">i</button></h3>' +
+      '<div class="desc">' + esc(p.descriptor || "No description.") + '</div><div>' + (chips || '<span class="muted">empty</span>') + '</div></div>';
+  }).join("") || '<p class="muted">No project matches.</p>';
+}
+function openModal(title, sub){ $("mTitle").textContent = title; $("mSub").textContent = sub || ""; $("mBody").innerHTML = '<p class="muted">Loading…</p>'; $("mFoot").innerHTML = ""; $("modal").classList.remove("hide"); }
+function closeModal(){ $("modal").classList.add("hide"); modalCtx = null; }
+async function openPart(project, part){
+  modalCtx = {project, part, rows: [], total: 0};
+  openModal(project + " · " + part);
+  await morePart(10);
+}
+async function morePart(n){
+  const c = modalCtx; if (!c) return;
+  try {
+    const d = await api("GET", "/home/items?project=" + encodeURIComponent(c.project) + "&part=" + c.part + "&offset=" + c.rows.length + "&limit=" + (n || 0));
+    c.rows = c.rows.concat(d.rows); c.total = d.total; c.sorted = d.sorted;
+  } catch(e){ $("mBody").innerHTML = '<div class="note e">' + esc(e.message) + '</div>'; return; }
+  renderPart();
+}
+function renderPart(){
+  const c = modalCtx;
+  $("mSub").textContent = fmt(c.total) + " rows" + (c.sorted ? ", newest first" : ", store order (too many to sort)");
+  $("mBody").innerHTML = c.rows.map((r, n) => '<div class="irow"><div class="t">' + esc(when(r.time)) + '<br>' +
+    Object.entries(r.meta).filter(([k]) => ["kind","topic","status","author","category"].includes(k)).map(([k,v]) => '<span class="chip" title="' + k + '">' + esc(String(v).slice(0,40)) + '</span>').join(" ") +
+    '</div><div class="tx" onclick="this.classList.toggle(\'open\')" title="click to expand">' + esc(r.text) + (r.length > r.text.length ? " …" : "") +
+    '<div class="muted mono" style="font-size:10px;margin-top:4px">' + esc(r.id) + '</div></div><button class="del" title="Delete this row" onclick="deleteRow(' + n + ')">✕</button></div>').join("") ||
+    '<p class="muted">No rows.</p>';
+  const left = c.total - c.rows.length;
+  $("mFoot").innerHTML = (left > 0 ? '<button class="btn g s" onclick="morePart(20)">More (20)</button><button class="btn g s" onclick="morePart(0)">Show all (' + fmt(left) + ' more)</button>' : '<span class="muted">All ' + fmt(c.total) + ' rows shown.</span>') +
+    '<button class="btn r s" style="margin-left:auto" onclick="deletePart()">Delete the whole ' + esc(c.part) + ' part</button>';
+}
+async function deleteRow(n){
+  const c = modalCtx, r = c.rows[n];
+  if (!confirm("Delete this row of " + c.project + " / " + c.part + "?\n\n" + r.text.slice(0, 200))) return;
+  try { await api("POST","/home/items/delete",{project:c.project, part:c.part, ids:[r.id]}); c.rows.splice(n,1); c.total--; renderPart(); toast("Row deleted."); bumpCount(c.project, c.part, -1); }
+  catch(e){ toast(e.message, 6000); }
+}
+async function deletePart(){
+  const c = modalCtx;
+  const typed = prompt("This deletes ALL " + fmt(c.total) + " rows of " + c.project + " / " + c.part + ". It cannot be undone.\nType the project id to confirm:");
+  if (typed === null) return;
+  try { const d = await api("POST","/home/parts/delete",{project:c.project, part:c.part, confirm:typed}); toast("Deleted " + fmt(d.removed) + " rows."); closeModal(); loadProjects(); }
+  catch(e){ toast(e.message, 6000); }
+}
+function bumpCount(project, part, by){ const p = (projectsCache||[]).find(x => x.id === project); if (p) { p.counts[part] = Math.max(0, (p.counts[part]||0) + by); renderCards(); } }
+function openGraph(project){
+  const p = projectsCache.find(x => x.id === project);
+  openModal(project + " · graph", p.graph.where === "hana" ? "kept in HANA" : bytes(p.graph.bytes) + " on disk");
+  $("mBody").innerHTML = '<p>The project graph holds the entities and relations extracted from its knowledge (and code graphs imported into it). Rows are not listed here.</p>' +
+    '<p class="muted">Deleting it frees its disk space; the knowledge rows stay, and the graph is rebuilt only by new writes or a new import.</p>';
+  modalCtx = {project, part:"graph", total:0, rows:[]};
+  $("mFoot").innerHTML = '<button class="btn r s" style="margin-left:auto" onclick="deleteGraph()">Delete this graph</button>';
+}
+async function deleteGraph(){
+  const c = modalCtx;
+  const typed = prompt("Delete the whole graph of " + c.project + "? Type the project id to confirm:");
+  if (typed === null) return;
+  try { const d = await api("POST","/home/parts/delete",{project:c.project, part:"graph", confirm:typed}); toast(d.dropped ? "Graph deleted." : "Nothing to delete."); closeModal(); loadProjects(); }
+  catch(e){ toast(e.message, 6000); }
+}
+
+// ── people ──
+const LEVELS = ["owner","editable","readonly"];
+async function openMembers(project){
+  modalCtx = {project, part:"people"};
+  openModal(project + " · people");
+  let d; try { d = await api("GET","/home/members?project=" + encodeURIComponent(project)); } catch(e){ $("mBody").innerHTML = '<div class="note e">' + esc(e.message) + '</div>'; return; }
+  const ms = d.members || [];
+  $("mSub").textContent = ms.length + " people";
+  $("mBody").innerHTML = (d.note ? '<div class="note i">' + esc(d.note) + '</div>' : '') +
+    '<table><thead><tr><th>E-mail</th><th>Name</th><th>Level</th><th>Granted by</th><th></th></tr></thead><tbody>' +
+    ms.map(m => '<tr><td><b>' + esc(m.email) + '</b>' + (m.status && m.status !== "active" ? ' <span class="pill warn">' + esc(m.status) + '</span>' : '') + '</td><td>' +
+      esc([m.firstName, m.lastName].filter(Boolean).join(" ") || m.name || "") + '</td><td><select onchange="setLevel(\'' + esc(m.email) + '\', this.value)">' +
+      LEVELS.map(l => '<option' + (l === m.level ? ' selected' : '') + '>' + l + '</option>').join("") + '</select></td><td class="muted" style="font-size:11px">' +
+      esc(m.grantedBy || "") + '</td><td><button class="btn r s" onclick="removeMember(\'' + esc(m.email) + '\')">Remove</button></td></tr>').join("") +
+    '</tbody></table>' + (ms.length ? '' : '<p class="muted">Nobody is granted on this project' + (d.note ? '' : ' (a semi-public or public project is still read by everyone holding the shared roles)') + '.</p>');
+  $("mFoot").innerHTML = '<input type="email" id="mEmail" placeholder="name@company.com" style="width:260px"><select id="mLevel">' + LEVELS.map(l => '<option' + (l === "readonly" ? ' selected' : '') + '>' + l + '</option>').join("") +
+    '</select><button class="btn s" onclick="addMember()">Add</button><span class="muted" style="margin-left:auto;font-size:11px">Changes reach a person at their next sign-in token (a few minutes).</span>';
+}
+async function setLevel(email, level){ try { await api("PUT","/home/members",{project:modalCtx.project, email, level}); toast(email + " is now " + level + "."); } catch(e){ toast(e.message, 6000); openMembers(modalCtx.project); } }
+async function removeMember(email){ if (!confirm("Take " + email + " off " + modalCtx.project + "?")) return;
+  try { await api("POST","/home/members/remove",{project:modalCtx.project, email}); toast("Removed."); openMembers(modalCtx.project); } catch(e){ toast(e.message, 6000); } }
+async function addMember(){ const email = $("mEmail").value.trim(); if (!email) return toast("Type an e-mail.");
+  try { const r = await api("PUT","/home/members",{project:modalCtx.project, email, level:$("mLevel").value}); toast(r && r.created_user ? "Account created and added." : "Added."); openMembers(modalCtx.project); } catch(e){ toast(e.message, 8000); } }
+
+// ── lessons ──
+let lessonProject = null, lbState = null;
+function renderLessonProjects(){
+  const list = (projectsCache || []).filter(p => !p.personal);
+  $("lpList").innerHTML = '<div class="muted" style="margin:0 0 6px 6px;font-size:11px">PROJECTS</div>' + list.map(p => '<a class="' + (p.id === lessonProject ? 'on' : '') + '" onclick="openLessons(\'' + esc(p.id) + '\')">' + esc(p.id) + '</a>').join("");
+  $("lbProjects").innerHTML = list.map(p => '<button class="part" data-p="' + esc(p.id) + '" onclick="this.classList.toggle(\'on\')">' + esc(p.id) + '</button>').join("");
+  if (!lessonProject && list.length) openLessons(list.find(p => p.id === "lesson-learned") ? "lesson-learned" : list[0].id);
+}
+async function openLessons(project){
+  lessonProject = project; $("lpTitle").textContent = project; $("lpAdd").disabled = false;
+  document.querySelectorAll("#lpList a").forEach(a => a.classList.toggle("on", a.textContent === project));
+  $("lpRows").innerHTML = '<p class="muted">Loading…</p>';
+  let d; try { d = await api("GET","/home/lessons?project=" + encodeURIComponent(project)); } catch(e){ $("lpRows").innerHTML = '<div class="note e">' + esc(e.message) + '</div>'; return; }
+  $("lpRows").innerHTML = d.lessons.map(l => '<div class="lesson"><h4>' + esc(l.title) + ' <span class="pill ' + (l.status === "active" ? "ok" : l.status === "proposed" ? "pending" : "warn") + '">' + esc(l.status) + '</span>' +
+    (l.category && l.category !== "-" ? '<span class="chip">' + esc(l.category) + '</span>' : '') + '<span class="muted" style="margin-left:auto;font-size:11px;font-weight:400">' + esc(when(l.time)) + (l.by ? ' · ' + esc(l.by) : '') + '</span></h4>' +
+    '<p>' + esc(l.text) + '</p>' + (l.status === "proposed" || l.status === "contested" ? '<div class="row" style="margin-top:8px"><button class="btn s" onclick="decideLesson(\'' + esc(l.id) + '\',\'approve\')">Approve</button><button class="btn r s" onclick="decideLesson(\'' + esc(l.id) + '\',\'reject\')">Reject</button></div>' : '') + '</div>').join("") ||
+    '<p class="muted">No lesson in this project yet. Add one, or run learn back on it.</p>';
+}
+async function decideLesson(id, decision){
+  try { await api("POST","/home/lessons/decide",{project:lessonProject, ids:[id], decision}); toast(decision === "approve" ? "Approved." : "Rejected."); openLessons(lessonProject); } catch(e){ toast(e.message, 6000); }
+}
+function addLessonDialog(){
+  openModal("Add a lesson to " + lessonProject, "active at once");
+  $("mBody").innerHTML = '<label class="f"><span>Title</span><input type="text" id="lTitle" placeholder="e.g. Deploy the identity service before the app that reads its new column"></label>' +
+    '<label class="f"><span>Lesson (symptom, cause, fix)</span><textarea id="lText" style="min-height:160px;font-family:inherit;font-size:13px"></textarea></label>';
+  $("mFoot").innerHTML = '<button class="btn" onclick="saveLesson()">Save lesson</button><span class="muted">Written in English like every KH row.</span>';
+}
+async function saveLesson(){
+  try { await api("POST","/home/lessons",{project:lessonProject, title:$("lTitle").value, text:$("lText").value}); closeModal(); toast("Lesson saved."); openLessons(lessonProject); } catch(e){ toast(e.message, 6000); }
+}
+
+// ── learn back ──
+function lbKindChanged(){
+  const k = $("lbKind").value;
+  $("lbAt").classList.toggle("hide", k !== "once"); $("lbTime").classList.toggle("hide", k === "once"); $("lbDay").classList.toggle("hide", k !== "weekly");
+}
+async function loadLearnback(){
+  try { lbState = await api("GET","/home/learnback"); } catch(e){ $("lbState").textContent = e.message; return; }
+  const on = lbState.enabled;
+  $("lbState").innerHTML = on ? 'On: model <b>' + esc(lbState.llm) + '</b> (' + esc(lbState.model) + '), times in ' + esc(lbState.tz) + '. New lessons land as <i>proposed</i>.' + (lbState.running.length ? ' <span class="pill running">running</span>' : '')
+    : '<span class="pill warn">off on this KH</span> ' + esc(lbState.reason);
+  ["lbNow","lbAdd","lbKind","lbAt","lbDay","lbTime"].forEach(id => $(id).disabled = !on || (id === "lbNow" && lbState.running.length > 0));
+  $("lbSched").innerHTML = lbState.schedules.map(s => '<tr><td>' + esc(s.kind) + ' ' + esc(s.at) + '</td><td style="font-size:11px">' + esc(s.projects.join(", ")) + '</td><td class="muted" style="font-size:11px">next ' + when(s.next_utc) + ' UTC</td><td>' +
+    (s.enabled ? '' : '<span class="pill warn">done</span>') + '</td><td><button class="btn r s" onclick="lbDelete(\'' + esc(s.id) + '\')">Remove</button></td></tr>').join("") || '<tr><td class="muted">No schedule.</td></tr>';
+  $("lbRuns").innerHTML = lbState.runs.map(r => { const sm = r.summary || {};
+    return '<tr><td><span class="pill ' + esc(r.state) + '">' + esc(r.state) + '</span></td><td style="font-size:11px">' + esc(r.projects.join(", ")) + '</td><td class="muted" style="font-size:11px">' + when(r.started) + '</td><td style="font-size:11px">' +
+      (sm.error ? '<span class="pill bad" title="' + esc(sm.error) + '">error</span>' : (sm.items != null ? fmt(sm.items) + ' items from ' + fmt(sm.batches) + ' batches' : '')) + '</td></tr>'; }).join("") || '<tr><td class="muted">No run yet.</td></tr>';
+  if (lbState.running.length) setTimeout(() => { if (!$("v-lessons").classList.contains("hide")) loadLearnback(); }, 5000);
+}
+function lbPicked(){ return [...document.querySelectorAll("#lbProjects .part.on")].map(b => b.dataset.p); }
+async function lbRunNow(){
+  const projects = lbPicked(); if (!projects.length) return toast("Tick at least one project.");
+  try { await api("POST","/home/learnback/run",{projects}); toast("Learn back started."); loadLearnback(); } catch(e){ toast(e.message, 6000); }
+}
+async function lbSchedule(){
+  const projects = lbPicked(); if (!projects.length) return toast("Tick at least one project.");
+  const kind = $("lbKind").value;
+  const at = kind === "once" ? $("lbAt").value : kind === "daily" ? $("lbTime").value : $("lbDay").value + " " + $("lbTime").value;
+  if (!at || at === " ") return toast("Pick a time.");
+  try { await api("POST","/home/learnback/schedules",{projects, kind, at}); toast("Scheduled."); loadLearnback(); } catch(e){ toast(e.message, 6000); }
+}
+async function lbDelete(id){ try { await api("POST","/home/learnback/schedules/" + id + "/delete"); loadLearnback(); } catch(e){ toast(e.message); } }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// ── start ──
+(async () => {
+  try { cfg = await (await fetch("/home/config")).json(); } catch(e){ document.body.textContent = "KH is not reachable."; return; }
+  if (cfg.auth && !store.get("access") && !store.get("refresh")) return showLogin();
+  enter();
+})();
+</script>
+</body>
+</html>

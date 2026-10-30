@@ -1,0 +1,24 @@
+{
+  "name": "cap-mini",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smallest SAP CAP target for the line's node-cap stack (live test opt-in: LINE_NODE_LIVE=1)",
+  "dependencies": {
+    "@sap/cds": "^9"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@cap-js/cds-test": "^0",
+    "jest": "^30"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "cds": {
+    "requires": { "db": { "kind": "sqlite", "credentials": { "url": ":memory:" } } }
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

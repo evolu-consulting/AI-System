@@ -13,7 +13,8 @@
       "!**/migrations-dev/meta",
       "!docs",
       "!**/components/ui",
-      "!**/routeTree.gen.ts"
+      "!**/routeTree.gen.ts",
+      "!services"
     ]
   },
   "formatter": {

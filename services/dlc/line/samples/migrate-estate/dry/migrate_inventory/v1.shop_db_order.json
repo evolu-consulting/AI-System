@@ -1,0 +1,26 @@
+{
+  "features": [
+    {
+      "id": "add-item",
+      "name": "Add an item",
+      "kind": "data",
+      "behaviour": "Stores an item with its name and price in the order book file and returns the item count.",
+      "evidence": [
+        {
+          "path": "book.py",
+          "quote": "def add_item(book, name, price):"
+        }
+      ],
+      "identifiers": [
+        "add_item"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [],
+      "tests": [],
+      "examples": [],
+      "area": "Order book"
+    }
+  ]
+}

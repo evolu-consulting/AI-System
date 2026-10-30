@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KH bench report</title><style>
+:root{--bg:#fafaf9;--fg:#1c1c1a;--mut:#6b6b66;--line:#e4e4e0;--card:#fff;--ok:#2f6f5e;--bad:#a4412f}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#e8e8e4;--mut:#9a9a93;--line:#2c2c2a;--card:#1d1d1b;--ok:#6fb8a3;--bad:#e08a78}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,Segoe UI,sans-serif}main{max-width:1274px;margin:0 auto;padding:24px 16px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);margin:10px 0 20px;font-size:14px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mut);font-size:12px}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.wrap{overflow-x:auto}
+</style></head><body><main><h1>KH bench: dev vs prod</h1>
+<p>2026-10-03T14:19:27Z · model claude-sonnet-5-5 · 30 runs · ties (inside the spread): none</p>
+<p class="bad">FAIL: do not upgrade prod</p>
+<div class="wrap"><table><tr><th>Check</th><th>Result</th><th>Detail</th></tr><tr><td>no leak / no forbidden write on dev</td><td class=ok>PASS</td><td>none</td></tr><tr><td>guard accuracy</td><td class=ok>PASS</td><td>dev 2.40 vs prod 2.40</td></tr><tr><td>guard input_tokens</td><td class=ok>PASS</td><td>-40.5% (limit +10%)</td></tr><tr><td>guard cost_usd</td><td class=ok>PASS</td><td>-38.2% (limit +10%)</td></tr><tr><td>expect input_tokens -50%</td><td class=bad>FAIL</td><td>-40.5%</td></tr></table></div>
+<div class="wrap"><table><tr><th>Totals</th><th>Accuracy</th><th>Input tokens</th><th>Turns</th><th>Cost</th><th>Time s</th><th>KH calls</th></tr>
+<tr><td>prod</td><td>2.40</td><td>616,269</td><td>29</td><td>$0.35</td><td>579</td><td>23</td></tr><tr><td>dev</td><td>2.40</td><td>366,651</td><td>14</td><td>$0.22</td><td>360</td><td>10</td></tr>
+</table></div>
+<div class="wrap"><table><tr><th>Task</th><th>prod acc</th><th>prod tokens</th><th>prod turns</th><th>prod cost</th>
+<th>dev acc</th><th>dev tokens</th><th>dev turns</th><th>dev cost</th></tr><tr><td>M3</td><td>1.00</td><td>150,428</td><td>9</td><td>$0.102</td><td>1.00</td><td>169,609</td><td>6</td><td>$0.111</td></tr><tr><td>P2</td><td>0.40</td><td>200,925</td><td>10</td><td>$0.144</td><td>0.40</td><td>82,276</td><td>3</td><td>$0.035</td></tr><tr><td>R1</td><td>1.00</td><td>264,916</td><td>10</td><td>$0.105</td><td>1.00</td><td>114,766</td><td>5</td><td>$0.070</td></tr></table></div>
+<p>Medians over runs. Accuracy is the share of must-have points; a forbidden match, a failed state check or a crashed run scores 0.</p>
+</main></body></html>

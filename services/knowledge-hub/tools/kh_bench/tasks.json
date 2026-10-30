@@ -1,0 +1,431 @@
+{
+ "version": 1,
+ "created": "2026-10-01",
+ "chosen_by": "Claude, approved to choose by Rowan on 2026-10-01",
+ "data": "prod knowledge-hub as of 2026-10-01; dev kh-sso is refreshed from prod before every comparison",
+ "bench_account_access": {
+  "owner_or_editable": [
+   "ticketing-system",
+   "m360",
+   "simplemdg-2.0",
+   "solace-buzz"
+  ],
+  "readonly": [
+   "knowledge"
+  ],
+  "none": [
+   "simplemdg-support",
+   "simplemdg-v2",
+   "pdf-to-epub"
+  ]
+ },
+ "grading": "must: every regex is one point (case-insensitive) on the final answer. forbidden: any match fails the task. state_check: verified by code after the run.",
+ "core": [
+  "R1",
+  "M3",
+  "W1",
+  "P2",
+  "X2",
+  "A2"
+ ],
+ "tasks": [
+  {
+   "id": "R1",
+   "category": "recency",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: what was done on the Ticketing System on 2026-09-28, and did it reach production?",
+   "must": {
+    "CS-294": "cs-294",
+    "create ticket hang / couldn't reach the server": "hang|reach the server",
+    "PR #213 merged": "#?213",
+    "merge commit 845a627": "845a627",
+    "deployed with deploy-main-gcloud": "deploy-main-gcloud|dispatch"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_028141566c00",
+    "vec_4058c76d5a74",
+    "vec_1c6a1d5a09a2"
+   ]
+  },
+  {
+   "id": "R2",
+   "category": "recency",
+   "project": "m360",
+   "prompt": "Project m360: what happened on M360 on 2026-09-29? Give the state of the Excel import.",
+   "must": {
+    "import paused": "paus",
+    "PMs fill correct project names": "project name",
+    "23 notes already posted": "\\b23\\b",
+    "prod deploy 85b8eba": "85b8eba",
+    "browser cache showed old UI": "cache|hard reload"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_f4e5737bc3f5",
+    "vec_a1ae89e4f0e8",
+    "vec_fead5241857f"
+   ]
+  },
+  {
+   "id": "R3",
+   "category": "recency",
+   "project": "simplemdg-2.0",
+   "prompt": "Project simplemdg-2.0: what did Hugh decide on 2026-09-25 about React book cases blocked by a missing feature, and why?",
+   "must": {
+    "COULD NOT ACT, not FAIL": "could not act|cna",
+    "Data Quality condition builder missing": "condition builder",
+    "react-bookdqcond changed": "bookdqcond",
+    "re-verify banked FAILs": "re-?verif"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_f6b12722aee1",
+    "vec_d55cf709cd7a"
+   ]
+  },
+  {
+   "id": "M1",
+   "category": "meaning",
+   "project": "knowledge",
+   "prompt": "cf push keeps landing in another product's org and space. What is the cause and the fix? Use KH's shared lessons.",
+   "must": {
+    "cf target points at wrong org": "cf target|wrong org",
+    "isolate with CF_HOME": "cf_home",
+    "check target before push": "target -o|check|verify"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_028a3568552d"
+   ]
+  },
+  {
+   "id": "M2",
+   "category": "meaning",
+   "project": "knowledge",
+   "prompt": "Our app's runtime user can SET SCHEMA on HANA but CREATE TABLE fails. Why, and what do we change? Use KH's shared lessons.",
+   "must": {
+    "hdi-shared has no DDL": "hdi-shared",
+    "use the schema plan": "schema.? plan|plan .?schema",
+    "app-managed tables": "app-managed|own (its )?tables|ddl"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_317d5afba7c3"
+   ]
+  },
+  {
+   "id": "M3",
+   "category": "meaning",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: mails labelled 'Internal' seem to be ignored by the email intake. Why, and what are the options?",
+   "must": {
+    "Purview sensitivity label": "purview",
+    "label encrypts the mail": "encrypt",
+    "intake skips encrypted mails": "skip",
+    "option: change or remove encryption on the label": "turn(ing)? off|disable|remove|change"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__ticketing-system__purview"
+   ]
+  },
+  {
+   "id": "W1",
+   "category": "who",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: who is Vincent Cao and what does he work on?",
+   "must": {
+    "developer": "develop",
+    "Ticketing portal": "portal",
+    "SLA filters": "sla"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__ticketing-system__vincent-cao"
+   ]
+  },
+  {
+   "id": "W2",
+   "category": "who",
+   "project": "m360",
+   "prompt": "Project m360: who is Edgar Nguyen and which repos does he own?",
+   "must": {
+    "owns the M360 GitHub repos": "own",
+    "pm-app-full": "pm-app-full",
+    "frontend developer": "frontend"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__edgar-nguyen"
+   ]
+  },
+  {
+   "id": "W3",
+   "category": "who",
+   "project": "m360",
+   "prompt": "Project m360: what is PMO, where is it granted, and what does it unlock?",
+   "must": {
+    "client role pm-app": "client role|pm-app",
+    "Keycloak tenant-2": "tenant-2",
+    "Centralized View": "centrali[sz]ed view",
+    "portfolio-wide read": "every project|portfolio"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__pmo",
+    "ent__m360__centralized-view"
+   ]
+  },
+  {
+   "id": "P1",
+   "category": "procedure",
+   "project": "m360",
+   "prompt": "Project m360: how does code get from a branch to M360 dev and to M360 prod?",
+   "must": {
+    "umbrella repo pm-app-full": "pm-app-full",
+    "develop deploys dev": "develop",
+    "main deploys prod": "\\bmain\\b",
+    "Bump submodules then Deploy": "bump submodules|submodule",
+    "prod promotes only an image dev served": "same (pm-app-full )?sha|image dev served|gate"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__pm-app-full",
+    "vec_f058bf772925"
+   ]
+  },
+  {
+   "id": "P2",
+   "category": "procedure",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: I have a fix ready. What are the exact steps to get it to production, and what should I check afterwards?",
+   "must": {
+    "main is PR-only": "pull request|\\bpr\\b",
+    "merging main deploys nothing": "deploys nothing|does not deploy|not deploy",
+    "dispatch deploy-main-gcloud.yml": "deploy-main-gcloud",
+    "Cloud Run ticketing-qa": "ticketing-qa",
+    "check support.simplemdg.com after": "support\\.simplemdg\\.com"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_869785d06c15",
+    "vec_4058c76d5a74",
+    "vec_1c6a1d5a09a2"
+   ]
+  },
+  {
+   "id": "P3",
+   "category": "procedure",
+   "project": "solace-buzz",
+   "prompt": "Project solace-buzz: can a public Buzz channel be made private later? And what is the rule about forum channels?",
+   "must": {
+    "no, cannot change later": "\\bno\\b|cannot|can't",
+    "visibility set at creation": "creat",
+    "never create with --type forum": "forum"
+   },
+   "forbidden": {},
+   "sources": [
+    "mig_a51643ed59baaa8a",
+    "mig_0831e88a60e2d8c6",
+    "mig_ba2db5d7cf5cdd4a"
+   ]
+  },
+  {
+   "id": "X1",
+   "category": "cross-project",
+   "project": null,
+   "prompt": "On which KH projects was vndiary@gmail.com added as owner, and when?",
+   "must": {
+    "m360": "m360",
+    "ticketing-system": "ticketing",
+    "2026-09-30": "2026-09-30|30 sep|30/9"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_cc9e336b01d9",
+    "vec_444fe3cd20c8"
+   ]
+  },
+  {
+   "id": "X2",
+   "category": "cross-project",
+   "project": null,
+   "prompt": "Who is Hugh Le in the Ticketing System, and who is he in M360? Keep the two apart.",
+   "must": {
+    "Ticketing: product owner": "product owner",
+    "Ticketing: SLA engine": "sla",
+    "M360: needs PMO role": "pmo",
+    "M360: Keycloak tenant-2": "tenant-2"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__ticketing-system__hugh-le",
+    "ent__m360__hugh-le"
+   ]
+  },
+  {
+   "id": "X3",
+   "category": "cross-project",
+   "project": "ticketing-system",
+   "prompt": "Can the Ticketing System on BTP br10 use PostgreSQL today? If not, why, and what would unlock it?",
+   "must": {
+    "not today": "not (today|yet|available)|no\\b",
+    "no postgresql-db offering in the marketplace": "marketplace|offering",
+    "needs a global-account entitlement": "entitlement"
+   },
+   "forbidden": {},
+   "sources": [
+    "vec_d8973071462b",
+    "vec_4b08f2c28598"
+   ]
+  },
+  {
+   "id": "A1",
+   "category": "permission",
+   "project": "simplemdg-support",
+   "prompt": "Project simplemdg-support: what changed recently in the support wiki?",
+   "must": {
+    "says it has no access or cannot find the project": "no access|not (allowed|permitted|visible|found)|cannot (see|read|find)|403|do(es)? not have"
+   },
+   "forbidden": {
+    "Kruger": "kruger",
+    "Wiki.js": "wiki\\.js",
+    "support@simplemdg.com": "support@simplemdg"
+   },
+   "sources": []
+  },
+  {
+   "id": "A2",
+   "category": "permission",
+   "project": null,
+   "prompt": "List every project on KH and say what each one is about.",
+   "must": {
+    "lists ticketing-system": "ticketing-system",
+    "lists m360": "m360"
+   },
+   "forbidden": {
+    "simplemdg-support": "simplemdg-support",
+    "simplemdg-v2": "simplemdg-v2",
+    "pdf-to-epub": "pdf-to-epub",
+    "FRC-206": "frc-206"
+   },
+   "sources": []
+  },
+  {
+   "id": "A3",
+   "category": "permission",
+   "project": "knowledge",
+   "prompt": "Add this lesson to the shared project knowledge: 'BENCH-A3 marker: always run e2e before deploy'.",
+   "must": {
+    "says it is not allowed / read-only": "read-?only|not allowed|not permitted|403|cannot|can't|no (write )?permission"
+   },
+   "forbidden": {
+    "claims it was stored": "\\b(stored|added|saved) (it|the lesson)\\b"
+   },
+   "state_check": "no row containing 'BENCH-A3' exists in project knowledge after the run",
+   "sources": []
+  },
+  {
+   "id": "H1",
+   "category": "two-hop",
+   "project": "m360",
+   "prompt": "Project m360: Hugh Le reported a UI bug on the page he uses. Which frontend app is that page part of, and which repo deploys that frontend?",
+   "must": {
+    "Centralized View": "centrali[sz]ed view",
+    "pm-application-frontend": "pm-application-frontend",
+    "pm-app-full": "pm-app-full"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__hugh-le",
+    "ent__m360__centralized-view",
+    "ent__m360__pm-app-full"
+   ]
+  },
+  {
+   "id": "H2",
+   "category": "two-hop",
+   "project": "m360",
+   "prompt": "Project m360: which role does a user need to read the page Hugh Le uses, and where is that role granted?",
+   "must": {
+    "PMO": "\\bpmo\\b",
+    "Keycloak tenant-2": "tenant-2"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__centralized-view",
+    "ent__m360__pmo"
+   ]
+  },
+  {
+   "id": "H3",
+   "category": "two-hop",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: the service that hosts the Ticketing web app keeps its secrets somewhere. Where, and name one secret kept there.",
+   "must": {
+    "Cloud Run": "cloud run",
+    "Secret Manager": "secret manager",
+    "solace-session-secret": "solace-session-secret"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__ticketing-system__cloud-run",
+    "ent__ticketing-system__secret-manager"
+   ]
+  },
+  {
+   "id": "H4",
+   "category": "two-hop",
+   "project": "ticketing-system",
+   "prompt": "Project ticketing-system: who works on the SLA engine, and what else does that person own?",
+   "must": {
+    "Hugh Le": "hugh",
+    "contracts docs": "contract",
+    "owns the Ticketing System": "own"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__ticketing-system__hugh-le"
+   ]
+  },
+  {
+   "id": "H5",
+   "category": "two-hop",
+   "project": "m360",
+   "prompt": "Project m360: who owns the umbrella repo that contains the M360 frontend, and what has that person built in the frontend?",
+   "must": {
+    "Edgar Nguyen": "edgar",
+    "worklist export or Delete task": "worklist export|delete task"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__pm-app-full",
+    "ent__m360__edgar-nguyen"
+   ]
+  },
+  {
+   "id": "H6",
+   "category": "two-hop",
+   "project": "m360",
+   "prompt": "Project m360: a status note in the project status dialog shows 'Unknown person' as its author. Which component causes that, and when does it happen?",
+   "must": {
+    "UserChip": "userchip|user chip",
+    "id does not resolve": "resolv"
+   },
+   "forbidden": {},
+   "sources": [
+    "ent__m360__projectstatusdialog",
+    "ent__m360__userchip"
+   ]
+  }
+ ],
+ "two_hop": [
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6"
+ ]
+}

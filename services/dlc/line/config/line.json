@@ -1,0 +1,16 @@
+{
+  "_comment": "Tracked line settings (dev). Keys are line.config.Config field names; LINE_* env vars override. RAG System wire details and secrets never go here: use the local RAG wire config outside the repo (LINE_RAG_LOCAL, default ~/.line/rag.local.json) and env.",
+  "port": 8796,
+  "llm": "fake",
+  "model": "claude-opus-5-5",
+  "max_usd_call": 1.5,
+  "max_usd_run": 5.0,
+  "rag": "off",
+  "lease_ttl_s": 300,
+  "heartbeat_s": 60,
+  "retry_n": 3,
+  "unit_max_files": 8,
+  "reread_max": 2,
+  "fixer_generations": 2,
+  "deploy_windows": []
+}

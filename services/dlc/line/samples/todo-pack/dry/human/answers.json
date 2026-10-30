@@ -1,0 +1,7 @@
+{
+  "_comment": "LINE_DRY_HUMAN=auto: answer by question id or fingerprint; else the recommended option",
+  "Q1": {
+    "option": "accept",
+    "text": "Deleting for good is what the owner wants."
+  }
+}

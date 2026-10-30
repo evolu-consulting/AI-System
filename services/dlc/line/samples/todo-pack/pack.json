@@ -1,0 +1,6 @@
+{
+  "id": "todo-pack",
+  "title": "Todo CLI (sample spec pack of the SDLC line)",
+  "template": {"required": ["spec.md"]},
+  "files": ["spec.md"]
+}

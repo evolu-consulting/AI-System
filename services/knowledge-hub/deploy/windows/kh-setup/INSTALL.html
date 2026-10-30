@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KH Windows Install</title>
+<style>
+:root { --bg:#fbfbfa; --fg:#1d1d1b; --muted:#5f5f5a; --line:#e3e2de; --code:#f1f0ec; --accent:#2f5d8a; }
+@media (prefers-color-scheme: dark) { :root { --bg:#17181a; --fg:#e8e7e3; --muted:#a3a29c; --line:#2e2f33; --code:#222327; --accent:#8ab4e0; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 "Segoe UI", system-ui, sans-serif; }
+main { max-width:860px; margin:0 auto; padding:32px 16px 64px; }
+h1 { font-size:26px; margin:0 0 4px; }
+h2 { font-size:19px; margin:36px 0 8px; padding-top:12px; border-top:1px solid var(--line); }
+h3 { font-size:15px; margin:20px 0 6px; }
+p.lead { color:var(--muted); margin:0 0 20px; }
+code, pre { font-family:Consolas, "Cascadia Mono", monospace; font-size:13px; background:var(--code); border-radius:4px; }
+code { padding:1px 5px; }
+pre { padding:12px 14px; overflow-x:auto; white-space:pre; }
+table { border-collapse:collapse; width:100%; margin:8px 0; font-size:14px; }
+th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { color:var(--muted); font-weight:600; }
+ol, ul { padding-left:22px; }
+li { margin:3px 0; }
+.note { border-left:3px solid var(--accent); padding:4px 12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1>Knowledge Hub on a new Windows machine</h1>
+<p class="lead">Keycloak (sign-in) + KH server + the Prod kernel, from this folder, with no internet needed during the install. Built {{BUILT}}.</p>
+
+<h2>What gets installed?</h2>
+<table>
+<tr><th>Part</th><th>Address</th><th>Runs as</th></tr>
+<tr><td>KH server {{KH_VERSION}} (main <code>{{KH_COMMIT}}</code>)</td><td><code>http://&lt;host&gt;:9000</code></td><td>scheduled task <b>KH Server</b></td></tr>
+<tr><td>Keycloak 26.7.4 (KH fork, branch <code>kh-postgres</code>) + KH extension</td><td><code>http://&lt;host&gt;:8180</code></td><td>scheduled task <b>KH Keycloak</b></td></tr>
+<tr><td>PostgreSQL 17.11 (Keycloak's database only)</td><td><code>localhost:5433</code></td><td>Windows service <b>kh-postgres</b></td></tr>
+</table>
+<p><b>Is KH running?</b> A KH icon in the taskbar tray (next to the clock) shows it for everyone who signs in on this machine: green dot = ready, amber = starting (loading the model, a few minutes after boot), red = stopped. Double-click opens KH Home; right-click has Swagger, Health, the log folder and, when stopped, Start KH. It is <code>KnowledgeHub.exe --tray</code>, registered at sign-in as <b>KnowledgeHub Tray</b>; it only watches, closing it never stops KH.</p>
+<p>KH keeps its own data in local files beside the exe (<code>C:\KH\kh</code>: SQLite, Chroma, Kuzu). Java 21 and a small Python are bundled. Everything starts at boot.</p>
+
+<h2>What do I need first?</h2>
+<ul>
+<li>Windows 10/11 or Windows Server 2019+, 64-bit; an account with administrator rights.</li>
+<li>8 GB RAM, about 6 GB free disk.</li>
+<li>Free ports 5433, 8180, 9000, 9180 (all can be changed, see options).</li>
+<li>Python 3.10+ only on the machines where people use KH from Claude Code (for kh-helper), not for the install.</li>
+</ul>
+
+<h2>How do I install it?</h2>
+<ol>
+<li>Copy the whole <code>KH_Setup</code> folder to the new machine.</li>
+<li>Open a <b>Command Prompt as administrator</b> in that folder and run (your own e-mail becomes the first maintainer):
+<pre>.\install-kh.cmd --admin-email you@company.com --admin-first Your --admin-last Name</pre>
+It runs on the bundled Python, so a locked-down PowerShell (ConstrainedLanguage) does not matter.</li>
+<li>Wait 5-10 minutes. It ends with <i>Knowledge Hub is installed.</i> If a step fails, fix the cause and run the same command again: finished steps are skipped.</li>
+</ol>
+<h3>Options</h3>
+<table>
+<tr><th>Option</th><th>Default</th><th>When to change it</th></tr>
+<tr><td><code>--public-host</code></td><td><code>localhost</code></td><td>Other machines will use KH: give this machine's DNS name (e.g. <code>kh-server.corp.local</code>). Opens the firewall for 8180 and 9000. It is baked into the sign-in tokens, so pick it before the first install.</td></tr>
+<tr><td><code>--install-dir</code></td><td><code>C:\KH</code></td><td>Another drive.</td></tr>
+<tr><td><code>--tenant</code> / <code>--tenant-domain</code></td><td>from your e-mail (<code>company</code> / <code>company.com</code>)</td><td>The company people of that domain are placed in when invited.</td></tr>
+<tr><td><code>--pg-port</code>, <code>--keycloak-port</code>, <code>--keycloak-management-port</code>, <code>--kh-port</code></td><td>5433, 8180, 9180, 9000</td><td>A port is taken.</td></tr>
+<tr><td><code>--no-services</code></td><td>off</td><td>No administrator rights, or just a trial: runs as you, nothing starts at boot.</td></tr>
+</table>
+
+<h2>How do I sign in the first time?</h2>
+<ol>
+<li>Your one-time password is in <code>C:\KH\secrets\kh-accounts.json</code> (<code>accounts.admin.one_time_password</code>); only administrators can open that folder.</li>
+<li>Open <code>http://&lt;host&gt;:8180/admin/</code>, sign in with your e-mail and that password, and set your own password. The same person exists in the <code>master</code> realm (Keycloak admin) and in <code>knowledge-hub</code> (KH maintainer); set the password in each on first sign-in.</li>
+<li>Connect Claude Code (on the server and on every machine that uses KH). Easiest: open Claude Code there and say
+<pre>Read C:\KH\kh-helper\CLAUDE_CONNECT.md and connect this machine to KH at http://&lt;host&gt;:9000</pre>
+Claude runs <code>kh-helper\setup-kh-helper.cmd</code>: Python 3.12 if missing, kh-helper {{HELPER_VERSION}} offline into the Claude profile, <code>kh login</code> (you sign in in the browser), <code>kh setup</code>, then checks. On another machine, copy the <code>kh-helper</code> folder there first (from <code>C:\KH</code> or <code>payload\</code>). By hand, no administrator rights needed:
+<pre>C:\KH\kh-helper\setup-kh-helper.cmd --kh-url http://&lt;host&gt;:9000</pre>
+Then restart Claude Code. The first prompt should show the KH kernel and a KH turn context.</li>
+<li>Add people from the Keycloak admin console (realm <code>knowledge-hub</code>, group <code>kh-users</code>) or with <code>kh members add &lt;project&gt; &lt;email&gt; --level editable</code>.</li>
+</ol>
+<p class="note">Google / Microsoft sign-in is off until you give their client ids: <code>C:\KH\python\python.exe C:\KH\setup\deploy\btp\configure_realm.py --url http://localhost:8180 --client-id kh-local-admin --client-secret-file C:\KH\secrets\keycloak-admin-client.txt --idp-file &lt;idp.json&gt;</code></p>
+
+<h2>What came over from Prod?</h2>
+<table>
+<tr><th>Seeded</th><th>Count</th><th>File</th></tr>
+<tr><td>Kernel hook rules (SessionStart kernel, UserPromptSubmit prompt-guard + step-wise, PreToolUse pre-action-check, Stop store-log)</td><td>5</td><td><code>payload\seed\kernel_hooks.json</code></td></tr>
+<tr><td>Action policy table, every-project tier</td><td>18 actions, 89 rules</td><td><code>payload\seed\policy_actions_every_project.json</code></td></tr>
+<tr><td>Projects the kernel names: <code>lesson-learned</code> (readonly for everyone), <code>market</code> (public), <code>kh-tools</code> (semi-public)</td><td>3, empty</td><td>-</td></tr>
+<tr><td>Access catalogue (roles, levels, permissions), same as Prod</td><td>-</td><td><code>setup\deploy\kh-auth\catalog.json</code></td></tr>
+</table>
+<p>Not copied: Prod knowledge, work logs, findings, people, and the per-project policies of <code>designer</code> and <code>simplemdg-ticketing</code>. Exported 2026-10-16 from KH Prod.</p>
+
+<h2>How do I check it works?</h2>
+<pre>Invoke-RestMethod http://localhost:9000/health
+Invoke-RestMethod http://localhost:9180/health/ready
+"$PROFILE/kh-helper/Scripts/python" -m kh_helper.cli call GET /hooks/list      # count 5
+"$PROFILE/kh-helper/Scripts/python" -m kh_helper.cli call GET /policy/actions  # count 18</pre>
+
+<h2>How do I run it day to day?</h2>
+<table>
+<tr><th>Task</th><th>Command (administrator PowerShell)</th></tr>
+<tr><td>Restart KH / Keycloak</td><td><code>schtasks /End /TN "KH Server"</code> then <code>schtasks /Run /TN "KH Server"</code> (same with <code>"KH Keycloak"</code>)</td></tr>
+<tr><td>Logs</td><td><code>C:\KH\logs\keycloak-server.log</code>, <code>C:\KH\kh\logs\app.out.log</code></td></tr>
+<tr><td>Back up</td><td><code>C:\KH\pgsql\bin\pg_dump.exe -h 127.0.0.1 -p 5433 -U postgres -Fc keycloak -f keycloak.dump</code> (password in <code>secrets\postgres-superuser.txt</code>), then copy <code>C:\KH\kh</code> with KH stopped, and <code>C:\KH\secrets</code>.</td></tr>
+<tr><td>Uninstall</td><td><code>C:\KH\uninstall-kh.cmd</code> as administrator (add <code>--delete-data</code> to remove <code>C:\KH</code> too)</td></tr>
+</table>
+
+<h2>What if it fails?</h2>
+<table>
+<tr><th>Symptom</th><th>Fix</th></tr>
+<tr><td>Step 2 stops at <code>initdb</code> or the service does not start</td><td>Port 5433 taken, or the folder is on a network drive. Use <code>-PgPort</code> / a local <code>-InstallDir</code>.</td></tr>
+<tr><td>Step 3 waits 10 minutes on <code>/health/ready</code></td><td>Read <code>C:\KH\logs\keycloak.log</code>; usually a port in use (<code>-KeycloakPort</code>, <code>-KeycloakManagementPort</code>).</td></tr>
+<tr><td>KH answers 401 to everything</td><td>The token issuer must equal <code>KH_AUTH_ISSUER</code> in <code>C:\KH\kh\.env</code>: sign in through the same host name you installed with (<code>-PublicHost</code>).</td></tr>
+<tr><td><code>kh login</code> opens no browser</td><td><code>kh login --no-browser --kh-url ...</code> prints a link and a code.</td></tr>
+</table>
+</main>
+</body>
+</html>

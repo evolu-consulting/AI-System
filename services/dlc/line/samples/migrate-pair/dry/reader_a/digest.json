@@ -1,0 +1,48 @@
+{
+  "f_items": [
+    {
+      "id": "F1",
+      "title": "Export items as CSV",
+      "span_ids": [
+        "spec.md#L7-10"
+      ],
+      "quote": "F1 Export items as CSV",
+      "size": "S",
+      "criteria": [
+        {
+          "id": "F1.C1",
+          "text": "export prints a header line then one line per item",
+          "span_id": "spec.md#L7-10",
+          "quote": "export prints the line name,price and then one line per item with its name and its price with two decimals.",
+          "given": "an order book with the item pen priced 2.5",
+          "when": "export is run",
+          "then": "it prints name,price and then pen,2.50"
+        },
+        {
+          "id": "F1.C2",
+          "text": "export of the example order book",
+          "span_id": "spec.md#L7-10",
+          "quote": "Given an order book with the item pen priced 2.5, when export is run, then it prints name,price and then pen,2.50.",
+          "given": "an order book with the item pen priced 2.5",
+          "when": "export is run",
+          "then": "the output is exactly name,price then pen,2.50"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "text": "existing behaviour stays",
+      "span_id": "spec.md#L1-5",
+      "quote": "Every existing behaviour of this repository stays"
+    }
+  ],
+  "numbers": [
+    {
+      "text": "prices have two decimals",
+      "span_id": "spec.md#L7-10",
+      "quote": "its price with two decimals",
+      "value": "2"
+    }
+  ]
+}

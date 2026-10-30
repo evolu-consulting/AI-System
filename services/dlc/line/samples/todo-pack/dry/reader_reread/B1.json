@@ -1,0 +1,44 @@
+{
+  "f_items": [
+    {
+      "id": "F2",
+      "title": "Complete and remove tasks",
+      "span_ids": [
+        "spec.md#L24-28"
+      ],
+      "quote": "F2 Complete and remove tasks",
+      "size": "S",
+      "criteria": [
+        {
+          "id": "F2.C1",
+          "text": "done marks a task done and confirms",
+          "span_id": "spec.md#L24-28",
+          "quote": "`done ID` marks the task as done in the file and prints `done ID`",
+          "given": "a file with open task 1",
+          "when": "`done 1` is run",
+          "then": "it prints `done 1` and task 1 is stored with done true"
+        },
+        {
+          "id": "F2.C2",
+          "text": "remove deletes a task and confirms",
+          "span_id": "spec.md#L24-28",
+          "quote": "`remove ID` deletes the task from the file and prints `removed ID`",
+          "given": "a file with tasks 1 and 2",
+          "when": "`remove 1` is run",
+          "then": "it prints `removed 1` and only task 2 is left in the file"
+        },
+        {
+          "id": "F2.C3",
+          "text": "an unknown id is an error for done and remove",
+          "span_id": "spec.md#L24-28",
+          "quote": "For an unknown ID, `done` and `remove` print `error: no task ID` to standard error and exit with code 1",
+          "given": "a file with task 1",
+          "when": "`done 99` or `remove 99` is run",
+          "then": "it prints `error: no task 99` to standard error and exits with code 1"
+        }
+      ]
+    }
+  ],
+  "rules": [],
+  "numbers": []
+}

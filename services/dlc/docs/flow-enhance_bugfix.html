@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sohoptac DLC Flow</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --grid: #e6e8ec;
+    --panel: #ffffff;
+    --ink: #1d2330;
+    --muted: #5d6677;
+    --line: #1d2330;
+    --soft: #d5d9e0;
+    --app: #2f6fde;
+    --flow: #8a4fd8;
+    --cron: #6b7280;
+    --agent: #0f9d76;
+    --human: #e0811b;
+    --pipe: #4b5563;
+    --biz: #2f6fde;
+    --tech: #0f9d76;
+    --fail: #d23b3b;
+    --lane: #eef6f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 20px 20px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  header { max-width: 1280px; margin: 0 auto; padding: 24px 16px 8px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+
+  .board {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: minmax(300px, 42%) 1fr;
+    column-gap: 48px;
+    row-gap: 20px;
+    position: relative;
+  }
+  .left-frame {
+    grid-column: 1;
+    grid-row: 1 / span 12;
+    background: var(--panel);
+    border: 1.5px solid var(--line);
+    position: relative;
+  }
+  .lane-band {
+    position: absolute;
+    left: 10px; right: 10px;
+    background: var(--lane);
+    border: 1.5px dashed var(--agent);
+    border-radius: 10px;
+  }
+  .lane-band.loop { background: #fdf3f3; border-color: var(--fail); }
+  .lane-band.loop b { background: #fdf3f3; color: var(--fail); border-color: var(--fail); }
+  .lane-band b {
+    position: absolute; top: -11px; left: 12px;
+    background: var(--lane); padding: 0 8px; font-size: 12px; color: var(--agent);
+    border: 1.5px dashed var(--agent); border-radius: 10px;
+  }
+  svg.loops { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+
+  .node-cell {
+    grid-column: 1;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 70px 0 24px;
+    z-index: 1;
+  }
+  .node-cell::before {
+    content: ""; position: absolute; left: calc(50% - 23px); width: 2px; background: var(--line);
+    top: -10px; bottom: -10px;
+  }
+  .node-cell.first::before { top: 50%; }
+  .node-cell.last::before { bottom: 50%; }
+  .node-cell:not(.first)::after {
+    content: ""; position: absolute; left: calc(50% - 28px); top: calc(50% - 32px);
+    border: 6px solid transparent; border-top: 8px solid var(--line); display: none;
+  }
+  .node {
+    position: relative;
+    width: 100%; max-width: 330px;
+    background: var(--panel);
+    border: 1.5px solid var(--c);
+    border-left: 6px solid var(--c);
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .node .num {
+    position: absolute; left: -42px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--c); color: #fff; font-weight: 700; font-size: 13px;
+    display: grid; place-items: center;
+  }
+  .node .actor { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--c); }
+  .node .title { font-weight: 600; }
+
+  .card {
+    grid-column: 2;
+    background: var(--panel);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 14px 18px;
+    min-height: 110px;
+    transition: box-shadow .15s, border-color .15s;
+    position: relative;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 15px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card h3 .tag { font-size: 11px; font-weight: 600; color: #fff; background: var(--c); padding: 1px 8px; border-radius: 999px; }
+  .card .desc { color: var(--muted); margin: 0 0 8px; }
+  .card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+  .card li { display: flex; gap: 8px; align-items: flex-start; }
+  .card li .k {
+    flex: none; width: 104px; text-align: center; font-size: 11px; font-weight: 600; padding: 2px 6px;
+    border-radius: 6px; margin-top: 1px; border: 1px solid currentColor;
+  }
+  .k.biz { color: color-mix(in srgb, var(--biz) 80%, var(--ink)); background: color-mix(in srgb, var(--biz) 14%, #fff); }
+  .k.tech { color: color-mix(in srgb, var(--tech) 80%, var(--ink)); background: color-mix(in srgb, var(--tech) 14%, #fff); }
+  .card .sec { border-top: 1.5px dashed var(--line); margin: 10px -18px 0; padding: 10px 18px 0; }
+  .card .sec ul { gap: 8px; }
+  .card ul.does { margin: 0 0 8px; padding-left: 18px; list-style: disc; display: block; }
+  .card ul.does li { display: list-item; margin: 2px 0; }
+  .card .none { color: var(--muted); font-style: italic; }
+  .card .gate { font-size: 12.5px; display: grid; gap: 6px; }
+  .gate .chip { border: 1px solid var(--cc); border-radius: 6px; padding: 4px 12px; text-align: center; background: color-mix(in srgb, var(--cc) 16%, #fff); }
+  .gate .chip b { color: var(--cc); }
+  .gate .chip.f { --cc: var(--fail); }
+  .gate .chip.p { --cc: var(--agent); }
+  .gate .chip.a { --cc: var(--agent); border-style: dashed; }
+  .node .auto {
+    position: absolute; top: -9px; right: 10px;
+    font-size: 10px; font-weight: 700; color: var(--agent); background: var(--panel);
+    border: 1px dashed var(--agent); border-radius: 999px; padding: 0 7px;
+  }
+  .precheck {
+    margin: 0 0 8px; padding: 6px 10px; font-size: 12.5px;
+    border: 1.5px dashed var(--agent); border-radius: 10px;
+    background: color-mix(in srgb, var(--agent) 5%, #fff);
+  }
+  .precheck b { color: var(--agent); }
+  .precheck ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; display: block; }
+  .precheck li { display: list-item; margin: 1px 0; }
+  .ag { display: inline-block; font-size: 12px; font-weight: 500; line-height: 1.4; color: color-mix(in srgb, var(--agent) 85%, var(--ink)); background: color-mix(in srgb, var(--agent) 6%, #fff); border: 1px solid color-mix(in srgb, var(--agent) 30%, #fff); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
+
+  .hl .node, .node.hl { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 25%, transparent); transform: scale(1.02); }
+  .card.hl { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent); }
+
+  .summary { max-width: 1280px; margin: 0 auto; padding: 8px 16px 32px; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 760px) {
+    .board { grid-template-columns: 1fr; column-gap: 0; }
+    .left-frame, svg.loops, .lane-band { display: none; }
+    .node-cell { display: none; }
+    .card { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sohoptac · Development Life Cycle</h1>
+  <p>Bên trái: luồng từng step từ trên xuống. Bên phải: mỗi step cần những gì. Rê chuột vào một step để làm nổi bật cặp tương ứng.</p>
+  <div class="legend">
+    <span style="--c:var(--app)">App</span>
+    <span style="--c:var(--flow)">Dify Flow</span>
+    <span style="--c:var(--cron)">Cron job</span>
+    <span style="--c:var(--agent)">Agent</span>
+    <span style="--c:var(--human)">Con người</span>
+    <span style="--c:var(--pipe)">Sandbox / Automation</span>
+    <span style="--c:var(--fail)">Quay lại step trước</span>
+    <span style="--c:var(--agent)">- - Auto-approve (RAG check, bỏ qua con người)</span>
+  </div>
+</header>
+
+<main class="board" id="board">
+  <div class="left-frame" id="frame">
+    <svg class="loops" id="loops"></svg>
+  </div>
+</main>
+
+<p class="summary">
+  Luồng tổng: User feedback (kèm url đang mở) → Dify tạo ticket Trello → Backend cron job theo dõi Trello → Spec Agent map spec với feature hệ thống, hỏi lại tới khi spec đủ, lập implement plan theo feature/domain → con người chốt spec → <b>chia lane</b>: Domain Agents lập implement plan (blast radius) + QC Agents viết testcases / test plan (lane chỉ để thiết kế plan) → con người approve, backend đưa plan của mọi lane vào <b>1 queue duy nhất của project</b> → <b>một lane, theo thứ tự queue, lặp tối đa 3 lần</b>: implement → deploy dev trên sandbox → automation test (failed quay lại implement; quá 3 vòng thì dừng flow và escalate ngay cho con người) → Retro Agent gom findings &amp; solutions → con người review, quyết định deploy prod và correct solution → Retro Agent nhận quyết định + solution, update ngược vào các agents.
+  <br><b>Auto-approve:</b> trước mỗi step của con người (5, 8, 13), agent ở step trước tra RAG xem case đang làm đã từng được con người approve chưa và có đơn giản không. Đơn giản <b>và</b> từng được approve → agent tự chạy tiếp step sau, không đợi con người (có ghi log để con người xem lại). Ngược lại → pause flow, đợi con người approve như cũ. Mọi quyết định của con người được ghi vào RAG làm căn cứ cho lần sau.
+</p>
+
+<script>
+const C = {
+  app: "var(--app)", flow: "var(--flow)", cron: "var(--cron)",
+  agent: "var(--agent)", human: "var(--human)", pipe: "var(--pipe)"
+};
+
+const steps = [
+  { actor: "User · App", c: C.app, title: "Feedback trên Home của App",
+    desc: "User gửi feedback trên home page của app.",
+    does: ["Flow config nhận param là url mà user đang ở."],
+    needs: [["tech", "UI feedback gửi kèm url đang mở (cần làm thêm)."]] },
+  { actor: "Dify Flow", c: C.flow, title: "Tạo ticket Trello",
+    desc: "Step cố định, không cần gì thêm.",
+    needs: [] },
+  { actor: "Backend cron job cố định", c: C.cron, title: "Theo dõi Trello",
+    desc: "Step cố định, không cần gì thêm.",
+    needs: [] },
+  { actor: "Spec Agent", c: C.agent, title: "Phân tích spec, map với business đang có",
+    desc: "Nhận requirement từ ticket và đối chiếu với hệ thống hiện tại.",
+    does: [
+      "Map spec với feature của hệ thống.",
+      "Sinh câu hỏi để hoàn thiện lại spec.",
+      "Spec đủ thì lập implement plan theo features / domains."
+    ],
+    needs: [
+      ["biz", "Document chi tiết về các loại hợp đồng sẽ hỗ trợ."],
+      ["biz", "Document pháp lý liên quan tới nội dung các bộ hợp đồng (vd. luật nước X quy định trường Y trong hợp đồng mua bán tài sản phải là 5 số) — phục vụ enhance auto fill + nhận diện và tạo mới hợp đồng."],
+      ["biz", "Document chi tiết về các loại phụ lục sẽ hỗ trợ, và mối quan hệ giữa phụ lục với hợp đồng."],
+      ["biz", "Document về các quy trình thanh toán hợp đồng."],
+      ["biz", "Document về quy trình quản lý và tương tác với thông tin đối tác."],
+      ["biz", "Document về các quy trình quản lý sản phẩm."],
+      ["biz", "Document chi tiết về các loại chữ ký số sẽ hỗ trợ: nguồn gốc, cách sử dụng, vấn đề pháp lý / quy định liên quan."]
+    ] },
+  { actor: "Con người", c: C.human, title: "Hoàn thiện spec với Spec Agent và chốt",
+    desc: "Tương tác với Spec Agent qua chat và attachment.",
+    precheck: { by: "Spec Agent", what: "spec + implement plan theo feature / domain", next: "chia lane (step 6, 7)" },
+    does: ["Spec sai, chưa hiểu đúng, chưa đủ → con người hỏi lại user và đưa thêm cho Spec Agent."],
+    gate: [["a", "Đơn giản + từng approve", "Spec Agent tự chốt, chia lane"], ["f", "Chưa đủ", "quay về step 4"], ["p", "Chốt", "chia lane"]],
+    needs: [
+      ["tech", "Pause / restore được flow: pause để đợi con người, restore để chạy tiếp sau khi con người phản hồi."],
+      ["tech", "RAG lưu lịch sử spec đã được con người chốt (requirement, spec, plan, quyết định)."],
+      ["biz", "Tiêu chí thế nào là spec \"đơn giản\" (vd. không đụng pháp lý / loại hợp đồng mới, chỉ chỉnh UI hoặc field đã có)."]
+    ] },
+  { actor: "Domain Agents", c: C.agent, title: "Query source code, map với requirement mới",
+    desc: "Mỗi domain một lane riêng, dựa trên spec đã chốt. Lane chỉ dùng để thiết kế plan, không implement ở lane này.", lane: true,
+    does: ["Handle blast radius.", "Lập implement plan cho domain của mình dựa trên spec đã chốt."],
+    needs: [
+      ["tech", "Source code của app (biết nên sửa chỗ nào, affect là gì)."],
+      ["tech", "Bộ kỹ năng lập plan đặc thù cho app này (mỗi business implement và test khác nhau)."],
+      ["tech", "Bộ data mẫu: hợp đồng, user, chữ ký số."]
+    ] },
+  { actor: "QC Agents", c: C.agent, title: "Viết testcases",
+    desc: "Chạy song song với Domain Agents, mỗi lane thiết kế test plan riêng.", lane: true,
+    does: ["Viết testcases và lập test plan."],
+    needs: [
+      ["tech", "Bộ kỹ năng test đặc thù."],
+      ["biz", "Bộ testcases và expectation mẫu cho từng tính năng."]
+    ] },
+  { actor: "Con người", c: C.human, title: "Approve implement + test plan",
+    desc: "Check và feedback cho implement plan và test plan.", lane: true,
+    precheck: { by: "Domain Agents + QC Agents", what: "implement plan + test plan", next: "backend đưa plan vào queue của project (step 9)" },
+    gate: [["a", "Đơn giản + từng approve", "backend đưa plan vào queue của project luôn"], ["f", "Reject", "phần nào thì quay về step 6 / 7 tương ứng"], ["p", "Approve", "plan của mọi lane vào 1 queue duy nhất của project"]],
+    needs: [
+      ["tech", "Pause / restore được flow: pause để đợi con người, restore để chạy tiếp sau khi con người phản hồi."],
+      ["tech", "RAG lưu lịch sử implement plan + test plan đã được approve / reject kèm lý do."],
+      ["tech", "Tiêu chí plan \"đơn giản\" (vd. blast radius nhỏ, 1 domain, không đổi schema / API, testcases đã có mẫu)."]
+    ] },
+  { actor: "Domain Agent", c: C.agent, title: "Implement theo queue của project",
+    desc: "Mỗi project có đúng 1 queue. Plan đã approve của mọi lane (và mọi ticket) xếp vào queue này. Từ step 9 tới 11 chỉ còn một lane, chạy lần lượt theo thứ tự queue.", loop: true,
+    badge: "1 queue / project",
+    does: [
+      "Lấy từng plan theo thứ tự queue, implement trên code mới nhất (đã gồm các plan trước nó).",
+      "Không có hai lane cùng sửa code song song nên conflict hiếm, nếu có thì dễ resolve."
+    ],
+    needs: [
+      ["tech", "Bộ rule implement (architecture, rule code)."],
+      ["tech", "Bộ kỹ năng resolve conflict, merge code ở mức feature."]
+    ] },
+  { actor: "Sandbox", c: C.pipe, title: "Deploy dev",
+    desc: "Deploy bản vừa implement lên môi trường dev.", loop: true,
+    needs: [] },
+  { actor: "Automation Test", c: C.pipe, title: "Execute testcases theo plan",
+    desc: "Chạy trên môi trường dev.", loop: true,
+    does: ["Tuần tự test theo queue bằng harness."],
+    gate: [["f", "Failed", "quay về step 9"], ["p", "Success", "step 12"], ["f", "Quá 3 vòng", "dừng flow + escalate con người ngay"]],
+    needs: [
+      ["tech", "Thông tin sandbox."],
+      ["tech", "Bộ technical credential."]
+    ] },
+  { actor: "Retro Agent", c: C.agent, title: "Collect findings & solutions",
+    desc: "Đưa data vào board.",
+    does: [
+      "Issue technical đơn giản: tự resolve và update trực tiếp vào các agent.",
+      "Issue lớn (business, vấn đề hệ thống): chờ con người quyết định.",
+      "Nhận quyết định + solution từ con người (step 13) và update ngược vào các agents.",
+      "Ghi mọi quyết định approve / reject của con người (step 5, 8, 13) vào RAG làm căn cứ auto-approve lần sau."
+    ],
+    needs: [["tech", "Thông tin môi trường và bộ credential."]] },
+  { actor: "Con người", c: C.human, title: "Review kết quả cuối",
+    desc: "Review phần deploy prod và findings. Quy trình implement đã kết thúc; deploy prod và update knowledge chạy thành quy trình riêng.",
+    precheck: { by: "Retro Agent", what: "findings + solution và quyết định deploy prod", next: "Retro Agent tự áp dụng solution, update ngược vào các agents" },
+    does: ["Quyết định deploy prod hay không.", "Correct solution cho các findings."],
+    gate: [["a", "Đơn giản + từng approve", "Retro Agent tự áp dụng solution + quyết định"], ["p", "Đã quyết định", "solution + quyết định gửi về step 12 (Retro Agent) để update ngược vào các agents"]],
+    needs: [
+      ["tech", "RAG lưu lịch sử findings, solution và quyết định deploy prod đã được con người duyệt."],
+      ["biz", "Tiêu chí thế nào là finding / release \"đơn giản\" được phép tự deploy prod."]
+    ] }
+];
+
+const bands = [
+  { key: "lane", cls: "", label: "Chia lane · chỉ để thiết kế plan · Domain + QC Agents song song" },
+  { key: "loop", cls: " loop", label: "1 lane theo queue của project · lặp tối đa 3 vòng · quá limit = dừng + escalate" }
+];
+// [from, to, label]: arrows going back up (0-based step index)
+const loops = [[4, 3, "chưa đủ"], [7, 5, "reject"], [7, 6, "reject"], [10, 8, "failed"], [12, 11, "solution"]];
+// [from, to]: auto-approve arrows skipping a human step (drawn on the left)
+const skips = [[3, 5], [6, 8]];
+
+// Wrap agent names in a chip so they stand out in running text
+const ag = t => t.replace(/\b(Spec Agent|Domain Agents?|QC Agents?|Retro Agent)\b/g, '<span class="ag">$1</span>');
+const summary = document.querySelector(".summary");
+summary.innerHTML = ag(summary.innerHTML);
+
+const board = document.getElementById("board");
+const label = { biz: "Cần Business", tech: "Cần Technical" };
+
+steps.forEach((s, i) => {
+  const row = i + 1;
+  const cell = document.createElement("div");
+  cell.className = "node-cell" + (i === 0 ? " first" : "") + (i === steps.length - 1 ? " last" : "");
+  cell.style.gridRow = row;
+  cell.dataset.i = i;
+  cell.innerHTML = `<div class="node" style="--c:${s.c}"><span class="num">${row}</span>
+    ${s.badge || s.precheck ? `<span class="auto">${s.badge || "RAG check"}</span>` : ""}<div class="actor">${s.actor}</div><div class="title">${ag(s.title)}</div></div>`;
+  board.appendChild(cell);
+
+  const card = document.createElement("section");
+  card.className = "card";
+  card.style.gridRow = row;
+  card.style.setProperty("--c", s.c);
+  card.dataset.i = i;
+  const pre = s.precheck ? `<div class="precheck"><b>Auto-approve check</b> · ${ag(s.precheck.by)} tra RAG với ${s.precheck.what}:
+    <ul><li>Case đã từng được con người approve <b>và</b> đơn giản → không đưa con người, tự chạy tiếp: ${ag(s.precheck.next)}. Ghi log để con người xem lại.</li>
+    <li>Chưa từng approve hoặc không đơn giản → pause flow, đợi con người approve.</li></ul></div>` : "";
+  const does = s.does ? `<ul class="does">${s.does.map(t => `<li>${ag(t)}</li>`).join("")}</ul>` : "";
+  // One section per kind of need (business first), then the outcomes, each under its own divider
+  const sec = kind => {
+    const list = s.needs.filter(([k]) => k === kind);
+    return list.length
+      ? `<div class="sec"><ul>${list.map(([k, t]) => `<li><span class="k ${k}">${label[k]}</span><span>${ag(t)}</span></li>`).join("")}</ul></div>`
+      : "";
+  };
+  const items = s.needs.length
+    ? sec("biz") + sec("tech")
+    : `<div class="sec"><div class="none">${s.none || "Không cần thêm input — step tự động / cố định."}</div></div>`;
+  const gate = s.gate
+    ? `<div class="sec gate">${s.gate.map(([k, when, then]) => `<div class="chip ${k}"><b>${when}</b> → ${ag(then)}</div>`).join("")}</div>` : "";
+  card.innerHTML = `<h3><span>${row}. ${ag(s.title)}</span><span class="tag">${s.actor}</span></h3>
+    <p class="desc">${ag(s.desc)}</p>${pre}${does}${items}${gate}`;
+  board.appendChild(card);
+});
+
+// Highlight pairs
+function setHl(i, on) {
+  board.querySelectorAll(`[data-i="${i}"]`).forEach(el => {
+    el.classList.toggle("hl", on);
+    if (el.classList.contains("node-cell")) el.querySelector(".node").classList.toggle("hl", on);
+  });
+}
+board.querySelectorAll("[data-i]").forEach(el => {
+  el.addEventListener("mouseenter", () => setHl(el.dataset.i, true));
+  el.addEventListener("mouseleave", () => setHl(el.dataset.i, false));
+});
+
+// Lane / loop bands + loop-back arrows, drawn after layout
+const frame = document.getElementById("frame");
+const svg = document.getElementById("loops");
+const bandEls = {};
+
+function draw() {
+  const fr = frame.getBoundingClientRect();
+  const nodeRect = i => board.querySelector(`.node-cell[data-i="${i}"] .node`).getBoundingClientRect();
+
+  bands.forEach(b => {
+    const idx = steps.map((s, i) => s[b.key] ? i : -1).filter(i => i >= 0);
+    const top = nodeRect(idx[0]).top - fr.top - 20;
+    const bottom = nodeRect(idx[idx.length - 1]).bottom - fr.top + 10;
+    let el = bandEls[b.key];
+    if (!el) {
+      el = bandEls[b.key] = document.createElement("div");
+      el.className = "lane-band" + b.cls;
+      el.innerHTML = `<b>${b.label}</b>`;
+      frame.insertBefore(el, svg);
+    }
+    el.style.top = top + "px";
+    el.style.height = (bottom - top) + "px";
+  });
+
+  let paths = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#d23b3b"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#0f9d76"/></marker></defs>`;
+  // Skip arrows leave from the node's top/bottom-left corner area, clear of the step number circle
+  skips.forEach(([from, to]) => {
+    const r = nodeRect(from), t = nodeRect(to);
+    const sx = r.left - fr.left + 14, sy = r.bottom - fr.top;
+    const tx = t.left - fr.left + 14, ty = t.top - fr.top;
+    const x = Math.max(6, r.left - fr.left - 56);
+    paths += `<path d="M${sx},${sy} V${sy + 8} H${x} V${ty - 8} H${tx} V${ty - 1}" fill="none" stroke="#0f9d76" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+      <text x="${x - 2}" y="${(sy + ty) / 2}" font-size="11" fill="#0f9d76" writing-mode="vertical-rl" text-anchor="middle">auto</text>`;
+  });
+  loops.forEach(([from, to, text]) => {
+    const shared = loops.filter(l => l[0] === from);
+    const n = shared.findIndex(l => l[1] === to);
+    const r = nodeRect(from), t = nodeRect(to);
+    const sy = r.top - fr.top + r.height / 2 + (shared.length > 1 ? (n ? 6 : -6) : 0);
+    const sx = r.right - fr.left;
+    const ty = t.top - fr.top + t.height / 2;
+    const tx = t.right - fr.left;
+    const x = Math.min(fr.width - 14, Math.max(sx, tx) + 22 + n * 18);
+    paths += `<path d="M${sx},${sy} H${x} V${ty} H${tx + 2}" fill="none" stroke="#d23b3b" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+      <text x="${x + 4}" y="${(sy + ty) / 2}" font-size="11" fill="#d23b3b" writing-mode="vertical-rl">${text}</text>`;
+  });
+  svg.innerHTML = paths;
+}
+window.addEventListener("load", draw);
+window.addEventListener("resize", draw);
+</script>
+</body>
+</html>

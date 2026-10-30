@@ -1,0 +1,87 @@
+{
+  "features": [
+    {
+      "id": "add-item",
+      "name": "Add an item",
+      "kind": "command",
+      "behaviour": "add NAME PRICE stores an item in the order book and prints added N, N being the item count.",
+      "evidence": [
+        {
+          "path": "cli.py",
+          "quote": "print(\"added %d\" % n)"
+        }
+      ],
+      "identifiers": [
+        "add_item"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "add"
+      ],
+      "tests": [],
+      "examples": [
+        {
+          "given": "an empty order book",
+          "when": "add pen 2.5 is run",
+          "then": "it prints added 1"
+        }
+      ],
+      "area": "Order book"
+    },
+    {
+      "id": "order-discount",
+      "name": "Order total with discount",
+      "kind": "rule",
+      "behaviour": "total prints the sum of item prices; above 100 the total gets 10 percent off.",
+      "evidence": [
+        {
+          "path": "cli.py",
+          "quote": "DISCOUNT_RATE = 0.10        # orders above 100 get 10 percent off"
+        }
+      ],
+      "identifiers": [
+        "order_total",
+        "DISCOUNT_RATE"
+      ],
+      "entities": [
+        "order"
+      ],
+      "interfaces": [
+        "total"
+      ],
+      "tests": [],
+      "examples": [
+        {
+          "given": "items priced 80 and 40",
+          "when": "total is run",
+          "then": "it prints 108.00"
+        }
+      ],
+      "area": "Pricing"
+    },
+    {
+      "id": "loyalty-points",
+      "name": "Loyalty points",
+      "kind": "rule",
+      "behaviour": "Every order earns loyalty points.",
+      "evidence": [
+        {
+          "path": "cli.py",
+          "quote": "points = int(total)"
+        }
+      ],
+      "identifiers": [
+        "loyalty"
+      ],
+      "entities": [
+        "order"
+      ],
+      "interfaces": [],
+      "tests": [],
+      "examples": [],
+      "area": "Pricing"
+    }
+  ]
+}

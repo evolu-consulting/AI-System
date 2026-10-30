@@ -1,0 +1,163 @@
+{
+  "f_items": [
+    {
+      "id": "F1",
+      "slots": [
+        {
+          "slot": "input",
+          "status": "covered",
+          "span_id": "spec.md#L18-22",
+          "quote": "`add TEXT` stores a new open task"
+        },
+        {
+          "slot": "output",
+          "status": "covered",
+          "span_id": "spec.md#L18-22",
+          "quote": "prints `added ID`"
+        },
+        {
+          "slot": "errors",
+          "status": "gap",
+          "assumption": "An add without TEXT stores a task with empty text.",
+          "category": "none",
+          "span_refs": [
+            "spec.md#L18-22"
+          ],
+          "alternatives": []
+        },
+        {
+          "slot": "limits",
+          "status": "covered",
+          "span_id": "spec.md#L18-22",
+          "quote": "`list` on an empty file prints nothing and exits with code 0"
+        },
+        {
+          "slot": "units",
+          "status": "covered",
+          "span_id": "spec.md#L18-22",
+          "quote": "`list` prints one line per task in id order"
+        },
+        {
+          "slot": "permissions",
+          "status": "covered",
+          "span_id": "spec.md#L1-4",
+          "quote": "A tiny command line todo list for one person."
+        },
+        {
+          "slot": "persistence",
+          "status": "covered",
+          "span_id": "spec.md#L12-16",
+          "quote": "The file holds one JSON object"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "slots": [
+        {
+          "slot": "input",
+          "status": "covered",
+          "span_id": "spec.md#L24-28",
+          "quote": "`done ID` marks the task as done"
+        },
+        {
+          "slot": "output",
+          "status": "covered",
+          "span_id": "spec.md#L24-28",
+          "quote": "prints `removed ID`"
+        },
+        {
+          "slot": "errors",
+          "status": "covered",
+          "span_id": "spec.md#L24-28",
+          "quote": "print `error: no task ID` to standard error and exit with code 1"
+        },
+        {
+          "slot": "limits",
+          "status": "gap",
+          "assumption": "A done on a task that is already done prints `done ID` again.",
+          "category": "none",
+          "span_refs": [
+            "spec.md#L24-28"
+          ],
+          "alternatives": []
+        },
+        {
+          "slot": "units",
+          "status": "covered",
+          "span_id": "spec.md#L12-16",
+          "quote": "Ids start at 1"
+        },
+        {
+          "slot": "permissions",
+          "status": "covered",
+          "span_id": "spec.md#L1-4",
+          "quote": "A tiny command line todo list for one person."
+        },
+        {
+          "slot": "persistence",
+          "status": "gap",
+          "assumption": "A removed task is deleted from the file for good; nothing keeps a copy.",
+          "category": "deletion",
+          "span_refs": [
+            "spec.md#L24-28"
+          ],
+          "alternatives": [
+            "A removed task stays in the file, marked as removed, and is no longer listed."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "slots": [
+        {
+          "slot": "input",
+          "status": "covered",
+          "span_id": "spec.md#L30-34",
+          "quote": "`add TEXT --priority N` stores the task with priority N"
+        },
+        {
+          "slot": "output",
+          "status": "covered",
+          "span_id": "spec.md#L30-34",
+          "quote": "`list --priority` prints the tasks sorted by priority"
+        },
+        {
+          "slot": "errors",
+          "status": "gap",
+          "assumption": "A priority outside 1 to 3 is refused with exit code 2.",
+          "category": "none",
+          "span_refs": [
+            "spec.md#L30-34"
+          ],
+          "alternatives": []
+        },
+        {
+          "slot": "limits",
+          "status": "covered",
+          "span_id": "spec.md#L30-34",
+          "quote": "where N is 1, 2 or 3"
+        },
+        {
+          "slot": "units",
+          "status": "covered",
+          "span_id": "spec.md#L30-34",
+          "quote": "tasks with the same priority stay in id order"
+        },
+        {
+          "slot": "permissions",
+          "status": "covered",
+          "span_id": "spec.md#L1-4",
+          "quote": "A tiny command line todo list for one person."
+        },
+        {
+          "slot": "persistence",
+          "status": "covered",
+          "span_id": "spec.md#L12-16",
+          "quote": "`priority` (integer)"
+        }
+      ]
+    }
+  ]
+}

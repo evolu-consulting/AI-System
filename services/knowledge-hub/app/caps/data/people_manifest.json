@@ -1,0 +1,87 @@
+{
+  "manifest_version": 2,
+  "consumer": "kh",
+  "description": "kh_people: KH's internal namespace for people-side learning (docs/roadmap-e-to-5-design.md section 2). Applied by app/caps/people.py at startup when KH_CAP_PEOPLE=on; re-applied only when manifest_version grows. kh.served and kh.intervention are KH-written kh.* events and need no type.",
+  "schemas": [
+    {"name": "people_dims", "version": 1, "schema": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"project": {"type": "string", "maxLength": 128},
+                     "action": {"type": "string", "maxLength": 128},
+                     "context": {"type": "string", "maxLength": 128},
+                     "job": {"type": "string", "maxLength": 32},
+                     "model": {"type": "string", "maxLength": 64}}}},
+    {"name": "people_dims", "version": 2, "schema": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"project": {"type": "string", "maxLength": 128},
+                     "action": {"type": "string", "maxLength": 128},
+                     "context": {"type": "string", "maxLength": 128},
+                     "job": {"type": "string", "maxLength": 32},
+                     "kind": {"type": "string", "maxLength": 16},
+                     "model": {"type": "string", "maxLength": 64}}}},
+    {"name": "step_outcome", "version": 1, "schema": {
+      "type": "object", "required": ["serve_id", "outcome", "source"],
+      "properties": {"serve_id": {"type": "string", "maxLength": 64},
+                     "outcome": {"enum": ["done", "failed", "corrected"]},
+                     "source": {"enum": ["tool", "correction", "stop", "model"]},
+                     "error": {"type": "string", "maxLength": 300},
+                     "error_kind": {"type": "string", "maxLength": 12},
+                     "action": {"type": "string"}, "context": {"type": "string"}}}},
+    {"name": "worker_run", "version": 1, "schema": {
+      "type": "object", "required": ["job"],
+      "properties": {"job": {"enum": ["distil", "daily", "backfill"]},
+                     "mode": {"enum": ["dry", "on"]},
+                     "model": {"type": "string"}, "cost_usd": {"type": "number", "minimum": 0}}}},
+    {"name": "decision", "version": 1, "schema": {
+      "type": "object", "required": ["id", "decision"],
+      "properties": {"id": {"type": "string"}, "decision": {"type": "string"},
+                     "mode": {"type": "string"}, "reason": {"type": "string"}}}},
+    {"name": "lesson_trial_attrs", "version": 1, "schema": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"trial_state": {"enum": ["proposed", "gate", "trial", "accepted", "withdrawn", "contested"]},
+                     "arm_salt": {"type": "string", "maxLength": 64},
+                     "opened_ms": {"type": "integer", "minimum": 0},
+                     "offline_gate": {"type": "object"},
+                     "source": {"enum": ["distill", "agent", "improve"]}}}}
+  ],
+  "types": [
+    {"type": "step.outcome", "kind_of": "event", "schema": "step_outcome", "retention_days": 400,
+     "index_fields": {"error_kind": "s", "outcome": "s", "action": "s", "context": "s"}},
+    {"type": "worker.run", "kind_of": "event", "schema": "worker_run", "retention_days": 400,
+     "index_fields": {"job": "s", "mode": "s"}},
+    {"type": "learn.decision", "kind_of": "event", "schema": "decision", "retention_days": 400,
+     "index_fields": {"id": "s", "decision": "s"}},
+    {"type": "improve.decision", "kind_of": "event", "schema": "decision", "retention_days": 400,
+     "index_fields": {"id": "s", "decision": "s"}},
+    {"type": "step.success", "kind_of": "metric", "schema": "people_dims"},
+    {"type": "step.tokens", "kind_of": "metric", "schema": "people_dims"},
+    {"type": "worker.cost_usd", "kind_of": "metric", "schema": "people_dims"},
+    {"type": "daily.lag_min", "kind_of": "metric", "schema": "people_dims"},
+    {"type": "lesson_trial", "kind_of": "item", "schema": "lesson_trial_attrs",
+     "confirm_policy": {"roles": ["confirmer"]}}
+  ],
+  "keyspaces": [
+    {"keyspace": "people", "dims": ["project", "action", "context"]}
+  ],
+  "retention": {"idempotency_hours": 168, "events_days": 400},
+  "settings": {
+    "retrieval": {"include_people_lanes": false},
+    "principals": [{"principal_id": "worker", "role": "distiller"}],
+    "metrics": {
+      "series": {"step.success": {"scale": "binary", "dir": "up"},
+                 "step.tokens": {"dir": "down"},
+                 "worker.cost_usd": {"dir": "down"},
+                 "daily.lag_min": {"dir": "down"}},
+      "rollback": {"control": "pre_activation"}
+    },
+    "daily": {"tz_default": "Asia/Ho_Chi_Minh", "tz": {}},
+    "learn": {"min_n_per_arm": 30, "harm_rel": -0.10, "harm_p": 0.05, "ni_margin": 0.05, "ni_conf": 0.90,
+              "max_n_per_arm": 100, "max_days": 45, "token_guard_rel": 0.10, "decide_every_h": 6,
+              "label_override_h": 24, "correction_window_min": 30, "evidence_sessions_min": 2,
+              "bench_pack_chars_rel": 0.05},
+    "improve": {"min_decided": 30, "agreement_min": 0.90, "rollback_rate_max": 0.10,
+                "fallback_rollbacks": 2, "fallback_days": 7, "proposals_per_principal_day": 20,
+                "param_step_max": 0.20, "tier2_per_month": 4, "redteam_required": 20,
+                "param_allowlist": ["KH_STEP_FLOOR", "KH_STEP_KNOW_ENOUGH", "KH_TURN_LESSON_FLOOR",
+                                    "KH_DISTILL_CONFIRM", "KH_DISTILL_SAMPLE_PCT", "signal_words"]}
+  }
+}

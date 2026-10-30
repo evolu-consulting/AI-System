@@ -1,0 +1,76 @@
+{
+  "manifest_version": 1,
+  "consumer": "kh_agents",
+  "description": "Phase 4 pilot (docs/roadmap-e-to-5-design.md 6.2): agents doing KH's own maintenance work in namespace kh_ops. Data only; tools/kh_agents/runner.py applies it.",
+  "schemas": [
+    {"name": "ops_event", "version": 1, "schema": {
+      "type": "object",
+      "required": ["task_id", "task_kind", "step", "role", "backend"],
+      "properties": {
+        "task_id": {"type": "string"}, "task_kind": {"type": "string"}, "chain": {"type": "boolean"},
+        "step": {"type": "string"}, "step_no": {"type": "integer"}, "role": {"type": "string"},
+        "backend": {"type": "string"}, "agent_version": {"type": "string"},
+        "outcome": {"type": "string"}, "summary": {"type": "string"}, "reason": {"type": "string"},
+        "needs_human": {"type": "boolean"}, "sev": {"type": "integer"},
+        "cost_usd": {"type": "number"}, "tokens": {"type": "integer"}, "wall_s": {"type": "number"},
+        "effects": {"type": "array", "items": {"type": "string"}},
+        "artifacts": {"type": "array", "items": {"type": "string"}}}}},
+    {"name": "handoff", "version": 1, "schema": {
+      "type": "object",
+      "required": ["from_unit", "to_role", "inputs", "done_when"],
+      "properties": {
+        "from_unit": {"type": "string"}, "from_step": {"type": "string"}, "to_role": {"type": "string"},
+        "to_step": {"type": "string"}, "task_id": {"type": "string"},
+        "inputs": {"type": "object"}, "done_when": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}}}}},
+    {"name": "task_memory", "version": 1, "schema": {
+      "type": "object",
+      "required": ["task_id", "task_kind", "status", "writes"],
+      "properties": {
+        "task_id": {"type": "string"}, "task_kind": {"type": "string"}, "chain": {"type": "boolean"},
+        "status": {"type": "string"}, "writes": {"type": "integer"},
+        "steps_done": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "array", "items": {"type": "string"}},
+        "effects": {"type": "object"}, "facts": {"type": "object"}}}},
+    {"name": "ops_dims", "version": 1, "schema": {
+      "type": "object",
+      "properties": {"task_kind": {"type": "string"}, "backend": {"type": "string"}, "role": {"type": "string"}}}}
+  ],
+  "types": [
+    {"type": "task.step", "kind_of": "event", "schema": "ops_event", "required_envelope": ["run_id", "unit_id", "attempt"],
+     "index_fields": {"task_kind": "s", "role": "s", "step": "s", "cost_usd": "n"}},
+    {"type": "task.done", "kind_of": "event", "schema": "ops_event", "required_envelope": ["run_id", "unit_id", "attempt"],
+     "index_fields": {"task_kind": "s", "role": "s", "step": "s", "cost_usd": "n"}},
+    {"type": "task.blocked", "kind_of": "event", "schema": "ops_event", "required_envelope": ["run_id", "unit_id", "attempt"],
+     "index_fields": {"task_kind": "s", "role": "s", "step": "s", "sev": "n"}},
+    {"type": "handoff", "kind_of": "record", "schema": "handoff", "fenced": true,
+     "read_roles": ["agent", "orchestrator"], "write_roles": ["agent", "orchestrator"],
+     "index_fields": {"task_id": "s", "to_role": "s", "from_unit": "s"}},
+    {"type": "task_memory", "kind_of": "record", "schema": "task_memory", "require_if_match": true, "retention_days": 30,
+     "read_roles": ["agent", "orchestrator"], "write_roles": ["agent", "orchestrator"],
+     "index_fields": {"task_id": "s", "task_kind": "s", "status": "s", "writes": "n"}},
+    {"type": "task_cost_usd", "kind_of": "metric", "schema": "ops_dims"}
+  ],
+  "keyspaces": [{"keyspace": "ops", "dims": ["role", "step"]}],
+  "retention": {"idempotency_hours": 72},
+  "redaction": {"packs": ["kh-default@1"]},
+  "settings": {
+    "effects": {
+      "approval_required": ["delete/", "deploy/prod", "send/external", "merge/"],
+      "confirm_policy": {"emails": []}
+    },
+    "metrics": {"series": {"task_cost_usd": {"dir": "down"}}},
+    "include_people_lanes": false,
+    "pilot": {
+      "mode": "shadow",
+      "always_human": ["delete/", "deploy/prod", "send/external", "merge/"],
+      "gates": {
+        "min_tasks": 60, "min_days": 14, "min_projects": 2,
+        "chain_window": 10, "chain_unattended_min": 8,
+        "max_interventions_per_100": 25, "max_sev1": 0,
+        "audit_completeness": 1.0, "max_double_or_lost": 0,
+        "context_step_p95_ms": 2000
+      }
+    }
+  }
+}

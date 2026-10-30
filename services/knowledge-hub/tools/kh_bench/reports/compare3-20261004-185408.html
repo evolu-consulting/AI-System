@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KH token comparison</title><style>
+:root{--bg:#fff;--fg:#1d1d1f;--mute:#666;--line:#ddd}
+@media (prefers-color-scheme:dark){:root{--bg:#16161a;--fg:#ececf1;--mute:#a0a0aa;--line:#33333b}}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;margin:0}
+main{max-width:1274px;margin:0 auto;padding:24px 16px}.wrap{overflow-x:auto}
+table{border-collapse:collapse;margin:12px 0}td,th{border:1px solid var(--line);padding:6px 10px;text-align:right}
+td:first-child,th:first-child{text-align:left}.mute{color:var(--mute)}</style></head><body><main>
+<h1>Token cost of one question: no KH, KH prod, KH local</h1>
+<p class="mute">2026-10-04T11:54:08Z · model claude-sonnet-5-5 · 12 runs · medians over runs, summed over tasks</p>
+<div class="wrap"><table><tr><th>Case</th><th>Accuracy (of 2)</th><th>Input tokens</th><th>Output tokens</th>
+<th>Turns</th><th>Cost</th><th>Time s</th><th>KH / disk / web calls</th><th>Subagents</th></tr><tr><td>none</td><td>0.62</td><td>324,302</td><td>6,462</td><td>12</td><td>$0.24</td><td>159</td><td>0 / 22 / 0</td><td>0</td></tr><tr><td>prod</td><td>1.50</td><td>293,880 (-9% vs none)</td><td>3,508</td><td>18</td><td>$0.20</td><td>337</td><td>12 / 1 / 0</td><td>0</td></tr><tr><td>local</td><td>1.20</td><td>449,727 (+39% vs none)</td><td>6,212</td><td>22</td><td>$0.28</td><td>83</td><td>17 / 2 / 0</td><td>0</td></tr></table></div>
+<div class="wrap"><table><tr><th>Task</th><th>none score</th><th>none tokens</th><th>none turns</th><th>prod score</th><th>prod tokens</th><th>prod turns</th><th>local score</th><th>local tokens</th><th>local turns</th></tr><tr><td>P2</td><td>0.50</td><td>272,887</td><td>7</td><td>0.50</td><td>155,876</td><td>8</td><td>0.70</td><td>269,788</td><td>12</td></tr><tr><td>X2</td><td>0.12</td><td>51,415</td><td>4</td><td>1.00</td><td>138,004</td><td>9</td><td>0.50</td><td>179,938</td><td>10</td></tr></table></div>
+<p class="mute">none: no KH, disk (C:/Workspaces, C:/RWTemp) and internet only. prod: plus kh-helper to KH prod.
+local: plus Rowan's hooks to KH 9000. Same read tools and deny rules in every case; Stop hooks left out of both KH
+cases. Accuracy is the share of each task's must-have points in the answer. Tokens count the whole run, subagents
+included (modelUsage).</p></main></body></html>

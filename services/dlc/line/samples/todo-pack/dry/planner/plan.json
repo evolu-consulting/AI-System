@@ -1,0 +1,81 @@
+{
+  "units": [
+    {
+      "id": "U1",
+      "title": "Storage contract and command dispatcher",
+      "f_items": [],
+      "claims": [
+        "todo/__init__.py",
+        "todo/__main__.py",
+        "todo/store.py"
+      ],
+      "deps": [],
+      "tests": [],
+      "size": "S",
+      "contract": true
+    },
+    {
+      "id": "U2",
+      "title": "add and list (F1)",
+      "f_items": [
+        "F1"
+      ],
+      "claims": [
+        "todo/cmd_add.py",
+        "todo/cmd_list.py"
+      ],
+      "deps": [
+        "U1"
+      ],
+      "tests": [
+        "T_F1_C1",
+        "T_F1_C2",
+        "T_F1_C3"
+      ],
+      "size": "S",
+      "contract": false
+    },
+    {
+      "id": "U3",
+      "title": "done and remove (F2)",
+      "f_items": [
+        "F2"
+      ],
+      "claims": [
+        "todo/cmd_done.py",
+        "todo/cmd_remove.py"
+      ],
+      "deps": [
+        "U1"
+      ],
+      "tests": [
+        "T_F2_C1",
+        "T_F2_C2",
+        "T_F2_C3"
+      ],
+      "size": "S",
+      "contract": false
+    },
+    {
+      "id": "U4",
+      "title": "priority for add and list (F3)",
+      "f_items": [
+        "F3"
+      ],
+      "claims": [
+        "todo/cmd_add.py",
+        "todo/cmd_list.py"
+      ],
+      "deps": [
+        "U2"
+      ],
+      "tests": [
+        "T_F3_C1",
+        "T_F3_C2",
+        "T_F3_C3"
+      ],
+      "size": "M",
+      "contract": false
+    }
+  ]
+}

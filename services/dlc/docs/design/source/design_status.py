@@ -1,0 +1,57 @@
+"""Status of each of the 46 issues in the CURRENT design (second, strict re-review, 2026-10-10).
+
+IN = in design, PA = partial, PR = proposed only (only a 'Tăng cứng' tag), NA = not needed.
+Text: where in the design / what is still missing (Vietnamese).
+"""
+
+STATUS = {
+    "I01": ("PR", "g1 / r8 tự ghi 'chỗ spec im lặng thì không bắt được'; chưa có checklist khe trống, chưa có Sổ giả định."),
+    "I02": ("PA", "h0 / en0: pack bất biến, đổi là vN+1, CR được diff. Chưa có cơ chế đánh dấu stale F-item giữa run."),
+    "N2": ("PR", "Chỉ có nhãn; g2 kiểm mỗi tiêu chí có test chứ không kiểm tiêu chí đo được."),
+    "N3": ("PA", "r5h: câu trả lời thành phụ lục vN.k, không hỏi trùng. Câu trả lời ở g1 / r8 chưa thành phụ lục."),
+    "N4": ("PR", "Bảng agent §4 vẫn cho Test Author đọc bản tóm tắt; chưa có holdout khác provider."),
+    "N6": ("IN", "§3 bảng 'Yêu cầu trái ngược', r5c, r5h, en3, ns3."),
+    "I37": ("PA", "h1 báo khi F-item xanh; chưa có link demo, danh sách giả định, cửa sổ góp ý 48 giờ."),
+    "I04": ("PA", "g5: 1-2/3 → cách ly, > 2 → báo. Chưa có 'test bị cách ly không tính xanh', burn-in, trần cách ly."),
+    "I23": ("PA", "g2 / r11 khóa file test; d3 bắt 'sửa test'. Chưa có holdout, chưa khóa fixture / mock, chưa mutation test."),
+    "I24": ("PA", "g3 không tin lời 'đã xong'; d3 'báo xong sớm'. Chưa đếm số test thực chạy, skip mới, coverage dòng đổi."),
+    "I09": ("PR", "Chỉ có nhãn (a4, g3, U3); chưa có clone detector, chưa có unit refactor định kỳ."),
+    "I10": ("PR", "Chỉ có nhãn ở g3; SAST / SCA chưa chạy thật."),
+    "I30": ("PR", "Chỉ có nhãn; chưa ghi input / output LLM để replay, chưa có luật k = 2 mẫu."),
+    "I03": ("PA", "c4 chạy test unit + test đã xanh liên quan; ns15 chạy cả bộ cuối wave. Chưa có gộp theo lô + chia đôi."),
+    "I05": ("PA", "§7 preview riêng mỗi pool; p2 khóa QAS khi test. Chưa có namespace mỗi run trên QAS, snapshot, checksum."),
+    "I06": ("PA", "U1 chạy openapi-diff trong repo; chưa có registry contract liên project."),
+    "I08": ("PA", "ns8 chạy khung trên DEV; deploy theo khung giờ cho điểm tích hợp ≤ ~12 giờ. Chưa có smoke theo số lần gộp."),
+    "I19": ("IN", "U2: claim 'migrations' một chủ, linter, up → test → down → up (trên DB tạm, chưa phải snapshot cỡ QAS)."),
+    "I35": ("PA", "p2: blue/green, smoke 5 phút. Chưa có config-as-code trong artifact, rollback config + DB."),
+    "I29": ("PA", "ns8: khung build sạch trên image đã pin; chỉ có ở flow New system."),
+    "N7": ("IN", "§7 bảng 'Deploy theo chuyến', p2, ns16, en14, bf11."),
+    "I21": ("PR", "Chưa nhắc tới."),
+    "I39": ("PR", "Chỉ có nhãn ở en10."),
+    "I11": ("PA", "a5 / p2: agent không giữ credential. Chưa có gitleaks, chưa che secret trước khi ghi RAG System, chưa có canary token."),
+    "I12": ("PR", "Chỉ có nhãn ở p1 / r2; r7 tự ghi chữ bị tiêm mà trích đúng nguyên văn thì lọt."),
+    "I13": ("PA", "t6 / k2: định nghĩa agent đã ký, chỉ đọc. Chưa bỏ qua file cấu hình agent trong repo, chưa pin action theo SHA."),
+    "I14": ("PR", "Chỉ có nhãn ở g3, ns13."),
+    "I20": ("PA", "bf2 chạy trên bản sao QAS; agent không có credential. Chưa chặn DROP / TRUNCATE, chưa snapshot, chưa diễn tập khôi phục."),
+    "I15": ("PA", "d7 tăng epoch khi reset; t5 từ chối theo rev / epoch. c3 chưa ghi push / verify / hàng gộp đều mang epoch."),
+    "I16": ("PR", "Chỉ có If-Match trên artifact (t5); deploy chưa có khóa idempotency, chưa có outbox."),
+    "I17": ("IN", "c1, t8, d4: token bucket, lỗi INFRA, giữ lease khi 429, cảnh báo 80%, model dự phòng đã qua eval."),
+    "I18": ("PA", "e1 có phần lớn trường; thiếu epoch, số lần thử, id snapshot model; chưa từ chối event thiếu trường."),
+    "I25": ("PR", "Checkpoint chưa kèm nhật ký lần thử do control plane ghi."),
+    "I26": ("PA", "ns7: contract có ràng buộc ngữ nghĩa (đơn vị, múi giờ, tiền tệ). Decision record chỉ có nhãn."),
+    "I27": ("IN", "d6 thang một chiều, t10 ngắt vòng lặp, t4 tối đa 3 thế hệ Fixer, ping-pong → đóng băng run."),
+    "I28": ("PR", "Chỉ có nhãn ở a5 / d1; chưa có tool BLOCKED, chưa có timebox theo giờ thật."),
+    "N1": ("PA", "t1 có reconciler đóng băng run khi lệch; t10 watchdog chạy máy riêng. Chưa có chuyển trạng thái idempotent, replay chưa test."),
+    "I38": ("PR", "Chỉ có nhãn ở t1; control plane chưa có chủ, SLO, chaos test."),
+    "I22": ("PA", "d9 chỉ chắt từ unit đã qua QAS + review; t7 cần ≥ 3 project; e3 lint bài học. Chưa có TTL, nguồn gốc trên bài học."),
+    "I32": ("PA", "r12 / e4: bài học không được chấm trên chính spec nguồn. Chưa có holdout riêng ngoài RAG System."),
+    "I31": ("PA", "k7 tự rollback khi phiên bản trôi. Chưa pin snapshot model, chưa eval canary hằng đêm."),
+    "N5": ("PA", "e3: bài học không được nhắc tên guard; e8 cần phán xét + canary. Nhưng e5 / e7 vẫn chấm bằng số mã lỗi."),
+    "I07": ("PA", "d8 gói theo schema, gộp theo fingerprint; r5h gom một lượt hỏi. Chưa có ngân sách escalate, chưa đo duyệt cho có."),
+    "I33": ("PR", "Chưa nhắc tới; quyết định bỏ người ở §6 / §8 làm vấn đề này nặng hơn."),
+    "I34": ("PR", "§8 chỉ đo chỉ số nội bộ; chưa đếm lỗi lọt UAT, việc làm lại."),
+    "I36": ("NA", "Không cần xử lý thêm (RAG System đã có)."),
+}
+
+LABEL = {"IN": ("Có trong design", "#5eead4"), "PA": ("Một phần", "#fde68a"), "PR": ("Mới là đề xuất", "#f9a8c4"),
+         "NA": ("Không cần", "#a7b0bf")}

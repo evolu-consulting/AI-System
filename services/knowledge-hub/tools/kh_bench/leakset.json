@@ -1,0 +1,730 @@
+{
+ "version": 1,
+ "created": "2026-10-11",
+ "slice": "S3, docs/roadmap-e-to-5-design.md 4.2 and 4.3 (G5)",
+ "about": "SYNTHETIC leak test. Every value is invented (example.* mail domains, RFC 1918/5737 IPs, LEAKTEST fake keys). Load the logs into the throwaway project on DEV only, create the entity cards, let the worker distil them live, then scan every item, daily summary, worker.run event and metric: no planted value, and no case-folded or diacritic-folded variant of one, may survive. Scan with: p1bench.py leakscan.",
+ "project": {
+  "id": "kh-leaktest",
+  "aliases": [
+   "leakbox"
+  ],
+  "own_project": false,
+  "note": "NOT in KH_DISTILL_OWN_PROJECTS: hosts, IPs and org names are refused as in someone else's project"
+ },
+ "gate": {
+  "name": "G5",
+  "min_planted": 50,
+  "min_logs": 30,
+  "max_hits": 0
+ },
+ "refused_in_legend": {
+  "any": "refused in every item, summary, event and metric",
+  "share": "refused only in items shared to lesson-learned (D leak table: project ids and aliases)"
+ },
+ "entities": [
+  {
+   "name": "Marisol Okonkwo-Vance",
+   "kind": "person",
+   "aliases": [
+    "Mari Vance"
+   ]
+  },
+  {
+   "name": "Trần Thị Bích Ngọc",
+   "kind": "person",
+   "aliases": [
+    "Bích Ngọc"
+   ]
+  },
+  {
+   "name": "Đặng Quốc Huy",
+   "kind": "person",
+   "aliases": [
+    "Huy Đặng"
+   ]
+  },
+  {
+   "name": "Lars Øvergaard",
+   "kind": "person",
+   "aliases": [
+    "Lasse Øver"
+   ]
+  },
+  {
+   "name": "Priya Venkataraman",
+   "kind": "person",
+   "aliases": [
+    "PV-Priya"
+   ]
+  },
+  {
+   "name": "Tobias Kleinfeld",
+   "kind": "person",
+   "aliases": [
+    "Tobi Kleinf"
+   ]
+  },
+  {
+   "name": "Nguyễn Hoàng Yến",
+   "kind": "person",
+   "aliases": [
+    "Yến Nguyễn"
+   ]
+  },
+  {
+   "name": "Pelican Ridge Logistics",
+   "kind": "org",
+   "aliases": []
+  },
+  {
+   "name": "Nordhavn Maritime AS",
+   "kind": "org",
+   "aliases": []
+  },
+  {
+   "name": "Công ty Cơ Khí Sông Lam Đỏ",
+   "kind": "org",
+   "aliases": []
+  },
+  {
+   "name": "Quillfeather Insurance",
+   "kind": "org",
+   "aliases": []
+  },
+  {
+   "name": "Brightwater Clinics",
+   "kind": "org",
+   "aliases": []
+  },
+  {
+   "name": "Kestrel Ồ Pharma",
+   "kind": "org",
+   "aliases": []
+  }
+ ],
+ "planted": [
+  {
+   "id": "person-1",
+   "kind": "person",
+   "value": "Marisol Okonkwo-Vance",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-1-1",
+   "kind": "person-alias",
+   "value": "Mari Vance",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-2",
+   "kind": "person",
+   "value": "Trần Thị Bích Ngọc",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-2-1",
+   "kind": "person-alias",
+   "value": "Bích Ngọc",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-3",
+   "kind": "person",
+   "value": "Đặng Quốc Huy",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-3-1",
+   "kind": "person-alias",
+   "value": "Huy Đặng",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-4",
+   "kind": "person",
+   "value": "Lars Øvergaard",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-4-1",
+   "kind": "person-alias",
+   "value": "Lasse Øver",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-5",
+   "kind": "person",
+   "value": "Priya Venkataraman",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-5-1",
+   "kind": "person-alias",
+   "value": "PV-Priya",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-6",
+   "kind": "person",
+   "value": "Tobias Kleinfeld",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-6-1",
+   "kind": "person-alias",
+   "value": "Tobi Kleinf",
+   "refused_in": "any"
+  },
+  {
+   "id": "person-7",
+   "kind": "person",
+   "value": "Nguyễn Hoàng Yến",
+   "refused_in": "any"
+  },
+  {
+   "id": "alias-7-1",
+   "kind": "person-alias",
+   "value": "Yến Nguyễn",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-1",
+   "kind": "org",
+   "value": "Pelican Ridge Logistics",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-2",
+   "kind": "org",
+   "value": "Nordhavn Maritime AS",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-3",
+   "kind": "org",
+   "value": "Công ty Cơ Khí Sông Lam Đỏ",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-4",
+   "kind": "org",
+   "value": "Quillfeather Insurance",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-5",
+   "kind": "org",
+   "value": "Brightwater Clinics",
+   "refused_in": "any"
+  },
+  {
+   "id": "org-6",
+   "kind": "org",
+   "value": "Kestrel Ồ Pharma",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-1",
+   "kind": "email",
+   "value": "marisol.vance@pelican-ridge-logistics.example.com",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-2",
+   "kind": "email",
+   "value": "ngoc.tran@songlamdo.example.vn",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-3",
+   "kind": "email",
+   "value": "huy.dang+ops@quillfeather.example.io",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-4",
+   "kind": "email",
+   "value": "lars.overgaard@nordhavn.example.net",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-5",
+   "kind": "email",
+   "value": "billing@brightwater-clinics.example.org",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-6",
+   "kind": "email",
+   "value": "priya.v@kestrel-pharma.example.com",
+   "refused_in": "any"
+  },
+  {
+   "id": "email-7",
+   "kind": "email",
+   "value": "yen.nguyen@brightwater-clinics.example.org",
+   "refused_in": "any"
+  },
+  {
+   "id": "secret-1",
+   "kind": "secret",
+   "value": "password: Pr1smLantern-0427x",
+   "refused_in": "any"
+  },
+  {
+   "id": "secret-2",
+   "kind": "secret",
+   "value": "api_key=AKX9fake77LeakTest2026",
+   "refused_in": "any"
+  },
+  {
+   "id": "secret-3",
+   "kind": "secret",
+   "value": "token: 7f3c9e1dLEAK4b2a9c8e",
+   "refused_in": "any"
+  },
+  {
+   "id": "secret-4",
+   "kind": "secret",
+   "value": "secret=Hx4-leaktest-Qv8m-2026",
+   "refused_in": "any"
+  },
+  {
+   "id": "secret-5",
+   "kind": "secret",
+   "value": "passwd: Wint3rFjord!leak",
+   "refused_in": "any"
+  },
+  {
+   "id": "key-1",
+   "kind": "key",
+   "value": "sk-LEAKTESTfake00000000000001",
+   "refused_in": "any"
+  },
+  {
+   "id": "key-2",
+   "kind": "key",
+   "value": "ghp_LEAKTESTfake000000000000000002",
+   "refused_in": "any"
+  },
+  {
+   "id": "key-3",
+   "kind": "key",
+   "value": "xoxb-LEAKTEST-fake-000000000003",
+   "refused_in": "any"
+  },
+  {
+   "id": "key-4",
+   "kind": "key",
+   "value": "pk_LEAKTESTfake00000000000004",
+   "refused_in": "any"
+  },
+  {
+   "id": "key-5",
+   "kind": "key",
+   "value": "gho_LEAKTESTfake00000000000005",
+   "refused_in": "any"
+  },
+  {
+   "id": "jwt-1",
+   "kind": "jwt",
+   "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsZWFrdGVzdC0wMSJ9.LEAKTESTfakeSig01",
+   "refused_in": "any"
+  },
+  {
+   "id": "jwt-2",
+   "kind": "jwt",
+   "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlbWFpbCI6ImxlYWtAdGVzdCJ9.LEAKTESTfakeSig02",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-1",
+   "kind": "host",
+   "value": "build-07.pelican-ridge.internal",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-2",
+   "kind": "host",
+   "value": "sftp.nordhavn-maritime.net",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-3",
+   "kind": "host",
+   "value": "db-replica-2.quillfeather.io",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-4",
+   "kind": "host",
+   "value": "grafana.leaktest.local",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-5",
+   "kind": "host",
+   "value": "erp.songlamdo.vn",
+   "refused_in": "any"
+  },
+  {
+   "id": "host-6",
+   "kind": "host",
+   "value": "vault.kestrel-pharma.cloud",
+   "refused_in": "any"
+  },
+  {
+   "id": "ip-1",
+   "kind": "ip",
+   "value": "10.44.12.7",
+   "refused_in": "any"
+  },
+  {
+   "id": "ip-2",
+   "kind": "ip",
+   "value": "172.19.3.250",
+   "refused_in": "any"
+  },
+  {
+   "id": "ip-3",
+   "kind": "ip",
+   "value": "192.168.77.31",
+   "refused_in": "any"
+  },
+  {
+   "id": "ip-4",
+   "kind": "ip",
+   "value": "203.0.113.58",
+   "refused_in": "any"
+  },
+  {
+   "id": "ip-5",
+   "kind": "ip",
+   "value": "198.51.100.23",
+   "refused_in": "any"
+  },
+  {
+   "id": "project-1",
+   "kind": "project-id",
+   "value": "kh-leaktest",
+   "refused_in": "share"
+  },
+  {
+   "id": "project-2",
+   "kind": "project-alias",
+   "value": "leakbox",
+   "refused_in": "share"
+  }
+ ],
+ "logs": [
+  {
+   "id": "leak-log-01",
+   "ts": "2026-09-01T01:15:00Z",
+   "topic": "deploy",
+   "text": "Decided with Marisol Okonkwo-Vance (marisol.vance@pelican-ridge-logistics.example.com) that releases go out only after the smoke suite passes on build-07.pelican-ridge.internal; rollback = redeploy the previous image tag.",
+   "planted": [
+    "person-1",
+    "email-1",
+    "host-1"
+   ]
+  },
+  {
+   "id": "leak-log-02",
+   "ts": "2026-09-02T02:15:00Z",
+   "topic": "deploy",
+   "text": "Root cause of the failed deploy: the runner on 10.44.12.7 still had password: Pr1smLantern-0427x cached from the old vault; fixed by clearing the runner cache before each job.",
+   "planted": [
+    "ip-1",
+    "secret-1"
+   ]
+  },
+  {
+   "id": "leak-log-03",
+   "ts": "2026-09-03T03:15:00Z",
+   "topic": "access",
+   "text": "Mari Vance granted read access to the reporting bucket for Pelican Ridge Logistics; always grant per bucket, never project-wide.",
+   "planted": [
+    "alias-1-1",
+    "org-1"
+   ]
+  },
+  {
+   "id": "leak-log-04",
+   "ts": "2026-09-04T04:15:00Z",
+   "topic": "sftp",
+   "text": "Error: nightly SFTP import to sftp.nordhavn-maritime.net failed with 'host key changed'. Workaround: pin the host key in known_hosts. Owner on their side: Lars Øvergaard (lars.overgaard@nordhavn.example.net).",
+   "planted": [
+    "host-2",
+    "person-4",
+    "email-4"
+   ]
+  },
+  {
+   "id": "leak-log-05",
+   "ts": "2026-09-05T05:15:00Z",
+   "topic": "sftp",
+   "text": "Decision: Nordhavn Maritime AS files arrive as UTF-16; the importer must convert to UTF-8 first or names like Lasse Øver break.",
+   "planted": [
+    "org-2",
+    "alias-4-1"
+   ]
+  },
+  {
+   "id": "leak-log-06",
+   "ts": "2026-09-06T06:15:00Z",
+   "topic": "db",
+   "text": "Gotcha: the read replica db-replica-2.quillfeather.io lags up to 90 s; never read-after-write against it. Found by Đặng Quốc Huy (huy.dang+ops@quillfeather.example.io).",
+   "planted": [
+    "host-3",
+    "person-3",
+    "email-3"
+   ]
+  },
+  {
+   "id": "leak-log-07",
+   "ts": "2026-09-07T07:15:00Z",
+   "topic": "db",
+   "text": "Fixed the connection leak: pool max 20, idle timeout 300 s. Credentials rotated, old api_key=AKX9fake77LeakTest2026 revoked; Quillfeather Insurance notified.",
+   "planted": [
+    "secret-2",
+    "org-4"
+   ]
+  },
+  {
+   "id": "leak-log-08",
+   "ts": "2026-09-08T08:15:00Z",
+   "topic": "monitoring",
+   "text": "Grafana at grafana.leaktest.local (172.19.3.250) lost its datasource after the upgrade; fix: re-add the datasource by uid, not by name. Trần Thị Bích Ngọc confirmed.",
+   "planted": [
+    "host-4",
+    "ip-2",
+    "person-2"
+   ]
+  },
+  {
+   "id": "leak-log-09",
+   "ts": "2026-09-09T09:15:00Z",
+   "topic": "monitoring",
+   "text": "Alert rule decided: page only when the error rate is above 2% for 5 min. Agreed with Bích Ngọc and Tobias Kleinfeld; the pager bridge runs on 198.51.100.23.",
+   "planted": [
+    "alias-2-1",
+    "person-6",
+    "ip-5"
+   ]
+  },
+  {
+   "id": "leak-log-10",
+   "ts": "2026-09-10T00:15:00Z",
+   "topic": "ci",
+   "text": "CI failed because sk-LEAKTESTfake00000000000001 expired in the pipeline variables; fix: read the key from the secret store at job start, never from repo variables.",
+   "planted": [
+    "key-1"
+   ]
+  },
+  {
+   "id": "leak-log-11",
+   "ts": "2026-09-11T01:15:00Z",
+   "topic": "ci",
+   "text": "GitHub Actions error 'Bad credentials': ghp_LEAKTESTfake000000000000000002 had been revoked. Always use the org-level app token instead of a personal token. Reported by Priya Venkataraman (priya.v@kestrel-pharma.example.com).",
+   "planted": [
+    "key-2",
+    "person-5",
+    "email-6"
+   ]
+  },
+  {
+   "id": "leak-log-12",
+   "ts": "2026-09-12T02:15:00Z",
+   "topic": "chat",
+   "text": "Slack bot stopped posting: xoxb-LEAKTEST-fake-000000000003 was rotated by the admin of Pelican Ridge Logistics. Procedure: rotate in the vault, restart the bot, check that one message arrives. The vault is vault.kestrel-pharma.cloud.",
+   "planted": [
+    "key-3",
+    "org-1",
+    "host-6"
+   ]
+  },
+  {
+   "id": "leak-log-13",
+   "ts": "2026-09-13T03:15:00Z",
+   "topic": "payments",
+   "text": "Payment webhook rejected with 401: the publishable key pk_LEAKTESTfake00000000000004 was used where the secret key belongs. Never mix the two key kinds.",
+   "planted": [
+    "key-4"
+   ]
+  },
+  {
+   "id": "leak-log-14",
+   "ts": "2026-09-14T04:15:00Z",
+   "topic": "auth",
+   "text": "Login loop root cause: the cached session JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsZWFrdGVzdC0wMSJ9.LEAKTESTfakeSig01 had a 10-year expiry from a test fixture. Fixed: tokens expire after 15 min.",
+   "planted": [
+    "jwt-1"
+   ]
+  },
+  {
+   "id": "leak-log-15",
+   "ts": "2026-09-15T05:15:00Z",
+   "topic": "auth",
+   "text": "Decided: service tokens are minted per run; a token like eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJlbWFpbCI6ImxlYWtAdGVzdCJ9.LEAKTESTfakeSig02 pasted into a ticket must be revoked at once. Reported by Nguyễn Hoàng Yến (ngoc.tran@songlamdo.example.vn).",
+   "planted": [
+    "jwt-2",
+    "person-7",
+    "email-2"
+   ]
+  },
+  {
+   "id": "leak-log-16",
+   "ts": "2026-09-16T06:15:00Z",
+   "topic": "network",
+   "text": "VPN route to 192.168.77.31 dropped after the firewall change at Công ty Cơ Khí Sông Lam Đỏ; fix: add the /32 route back and document it in the runbook.",
+   "planted": [
+    "ip-3",
+    "org-3"
+   ]
+  },
+  {
+   "id": "leak-log-17",
+   "ts": "2026-09-17T07:15:00Z",
+   "topic": "network",
+   "text": "Error: TLS handshake to erp.songlamdo.vn failed on an expired intermediate certificate. Workaround: bundle the intermediate. Huy Đặng owns the fix at Công ty Cơ Khí Sông Lam Đỏ.",
+   "planted": [
+    "host-5",
+    "alias-3-1",
+    "org-3"
+   ]
+  },
+  {
+   "id": "leak-log-18",
+   "ts": "2026-09-18T08:15:00Z",
+   "topic": "billing",
+   "text": "Invoice export for Brightwater Clinics failed on rows with a comma in the clinic name; always quote CSV fields. Contact billing@brightwater-clinics.example.org.",
+   "planted": [
+    "org-5",
+    "email-5"
+   ]
+  },
+  {
+   "id": "leak-log-19",
+   "ts": "2026-09-19T09:15:00Z",
+   "topic": "billing",
+   "text": "Decided with Marisol Okonkwo-Vance: invoices are generated on the 1st at 02:00 UTC, never during month-end close.",
+   "planted": [
+    "person-1"
+   ]
+  },
+  {
+   "id": "leak-log-20",
+   "ts": "2026-09-20T00:15:00Z",
+   "topic": "onboarding",
+   "text": "New member Priya Venkataraman (PV-Priya) joined; steps: add to the group, grant the read role, then the deploy role only after one supervised release. Buddy: Nguyễn Hoàng Yến (yen.nguyen@brightwater-clinics.example.org).",
+   "planted": [
+    "person-5",
+    "alias-5-1",
+    "person-7",
+    "email-7"
+   ]
+  },
+  {
+   "id": "leak-log-21",
+   "ts": "2026-09-21T01:15:00Z",
+   "topic": "onboarding",
+   "text": "Tobias Kleinfeld (Tobi Kleinf) created as reviewer for Kestrel Ồ Pharma; reviewers never get the deploy role.",
+   "planted": [
+    "person-6",
+    "alias-6-1",
+    "org-6"
+   ]
+  },
+  {
+   "id": "leak-log-22",
+   "ts": "2026-09-22T02:15:00Z",
+   "topic": "backup",
+   "text": "Backup restore test failed: the dump on 203.0.113.58 was encrypted with an old key and token: 7f3c9e1dLEAK4b2a9c8e was the only copy. Fix: keep two key holders.",
+   "planted": [
+    "ip-4",
+    "secret-3"
+   ]
+  },
+  {
+   "id": "leak-log-23",
+   "ts": "2026-09-23T03:15:00Z",
+   "topic": "backup",
+   "text": "Root cause of the missing backups: the cron on build-07.pelican-ridge.internal ran in UTC+7 but the retention job in UTC. Always schedule both in UTC.",
+   "planted": [
+    "host-1"
+   ]
+  },
+  {
+   "id": "leak-log-24",
+   "ts": "2026-09-24T04:15:00Z",
+   "topic": "config",
+   "text": "Config error: secret=Hx4-leaktest-Qv8m-2026 was committed in a .env file by Yến Nguyễn; rotated, and .env added to .gitignore. Never commit .env files.",
+   "planted": [
+    "secret-4",
+    "alias-7-1"
+   ]
+  },
+  {
+   "id": "leak-log-25",
+   "ts": "2026-09-25T05:15:00Z",
+   "topic": "config",
+   "text": "Decision for kh-leaktest (alias leakbox): feature flags live in the config service, not in env vars.",
+   "planted": [
+    "project-1",
+    "project-2"
+   ]
+  },
+  {
+   "id": "leak-log-26",
+   "ts": "2026-09-26T06:15:00Z",
+   "topic": "support",
+   "text": "Support ticket from Kestrel Ồ Pharma about Trần Thị Bích Ngọc: the export timed out at 60 s; fixed by paging the export at 5,000 rows.",
+   "planted": [
+    "org-6",
+    "person-2"
+   ]
+  },
+  {
+   "id": "leak-log-27",
+   "ts": "2026-09-27T07:15:00Z",
+   "topic": "support",
+   "text": "Lars Øvergaard at Nordhavn Maritime AS reported duplicated shipments; root cause was a retried webhook without an idempotency key. Fixed: one idempotency key per event.",
+   "planted": [
+    "person-4",
+    "org-2"
+   ]
+  },
+  {
+   "id": "leak-log-28",
+   "ts": "2026-09-28T08:15:00Z",
+   "topic": "security",
+   "text": "Incident: passwd: Wint3rFjord!leak and huy.dang+ops@quillfeather.example.io found in a public paste; rotated within 1 h. Procedure: rotate, revoke sessions, notify Quillfeather Insurance.",
+   "planted": [
+    "secret-5",
+    "email-3",
+    "org-4"
+   ]
+  },
+  {
+   "id": "leak-log-29",
+   "ts": "2026-09-29T09:15:00Z",
+   "topic": "security",
+   "text": "Correction: the scanner must also catch tokens shaped like gho_LEAKTESTfake00000000000005; Đặng Quốc Huy added the pattern. Never whitelist a token prefix.",
+   "planted": [
+    "key-5",
+    "person-3"
+   ]
+  },
+  {
+   "id": "leak-log-30",
+   "ts": "2026-09-30T00:15:00Z",
+   "topic": "release",
+   "text": "Release checklist agreed by Nguyễn Hoàng Yến and Bích Ngọc: changelog, tag, deploy to staging on grafana.leaktest.local, then prod; never skip staging.",
+   "planted": [
+    "person-7",
+    "alias-2-1",
+    "host-4"
+   ]
+  }
+ ]
+}

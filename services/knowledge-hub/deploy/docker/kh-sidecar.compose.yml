@@ -1,0 +1,39 @@
+# kh-sidecar on its own: one container, one volume, no port (it only calls out to KH and to Claude).
+#   docker compose -f deploy/docker/kh-sidecar.compose.yml --env-file <path>/kh-sidecar.env up -d --build
+#   docker compose -f deploy/docker/kh-sidecar.compose.yml --env-file <path>/kh-sidecar.env logs -f
+# Copy deploy/docker/kh-sidecar.env.example to a path OUTSIDE the repo and fill it in.
+name: kh-sidecar
+services:
+  kh-sidecar:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/kh-sidecar.Dockerfile
+    image: kh-sidecar:local
+    restart: unless-stopped
+    environment:
+      KH_URL: ${KH_URL:?set KH_URL}
+      KH_WORKER_ENABLED: ${KH_WORKER_ENABLED:-0}
+      KH_WORKER_MODE: ${KH_WORKER_MODE:-dry}
+      KH_WORKER_AUTH: person
+      KH_WORKER_KC_TOKEN_URL: ${KH_WORKER_KC_TOKEN_URL:?set KH_WORKER_KC_TOKEN_URL}
+      KH_WORKER_KC_CLIENT_ID: ${KH_WORKER_KC_CLIENT_ID:?set KH_WORKER_KC_CLIENT_ID}
+      KH_WORKER_KC_CLIENT_SECRET: ${KH_WORKER_KC_CLIENT_SECRET:-}
+      KH_WORKER_USERNAME: ${KH_WORKER_USERNAME:?set KH_WORKER_USERNAME}
+      KH_WORKER_PASSWORD: ${KH_WORKER_PASSWORD:?set KH_WORKER_PASSWORD}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN (claude setup-token)}
+      KH_WORKER_LLM: claude_cli
+      KH_WORKER_MODEL: ${KH_WORKER_MODEL:-claude-opus-5-5}
+      KH_WORKER_EFFORT: ${KH_WORKER_EFFORT:-medium}
+      KH_WORKER_PROJECTS: ${KH_WORKER_PROJECTS:-*}
+      KH_WORKER_JOBS: ${KH_WORKER_JOBS:-distil}
+      KH_WORKER_DISTIL_AT: ${KH_WORKER_DISTIL_AT:-02:00}
+      KH_WORKER_PROMOTE_AT: ${KH_WORKER_PROMOTE_AT:-02:00}
+      KH_WORKER_TZ: ${KH_WORKER_TZ:-Asia/Ho_Chi_Minh}
+      KH_WORKER_AUTO_APPROVE: ${KH_WORKER_AUTO_APPROVE:-0}
+      KH_WORKER_CAP_RUN_USD: ${KH_WORKER_CAP_RUN_USD:-3}
+      KH_WORKER_CAP_MONTH_USD: ${KH_WORKER_CAP_MONTH_USD:-60}
+      KH_WORKER_STATE_DIR: /data
+    volumes:
+      - kh-sidecar-data:/data
+volumes:
+  kh-sidecar-data:

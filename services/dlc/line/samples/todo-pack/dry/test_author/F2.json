@@ -1,0 +1,21 @@
+{
+  "path": "tests/acceptance/test_f2.py",
+  "content": "\"\"\"Acceptance tests of F2 Complete and remove tasks. Written from the spec only; locked once approved.\"\"\"\n\nimport json\nimport os\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nimport unittest\n\nROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\n\ndef todo(path, *args):\n    \"\"\"Run the CLI from the repository root: (exit code, stdout, stderr).\"\"\"\n    p = subprocess.run([sys.executable, \"-m\", \"todo\", \"--file\", path] + list(args), cwd=ROOT,\n                       capture_output=True, text=True, timeout=60)\n    return p.returncode, p.stdout, p.stderr\n\n\ndef write(path, tasks):\n    with open(path, \"w\", encoding=\"utf-8\") as fh:\n        json.dump({\"tasks\": tasks}, fh)\n\n\ndef read(path):\n    with open(path, encoding=\"utf-8\") as fh:\n        return json.load(fh)\n\n\ndef task(i, text, done=False, priority=2):\n    return {\"id\": i, \"text\": text, \"done\": done, \"priority\": priority}\n\n\nclass TestF2(unittest.TestCase):\n    def setUp(self):\n        self.dir = tempfile.mkdtemp(prefix=\"todo-acc-\")\n        self.path = os.path.join(self.dir, \"todo.json\")\n\n    def tearDown(self):\n        shutil.rmtree(self.dir, ignore_errors=True)\n\n    def test_c1_done(self):\n        # trace: F2.C1 spec.md#L24-28\n        write(self.path, [task(1, \"a\")])\n        rc, out, err = todo(self.path, \"done\", \"1\")\n        self.assertEqual(rc, 0, err)\n        self.assertEqual(out.strip(), \"done 1\")\n        self.assertTrue(read(self.path)[\"tasks\"][0][\"done\"])\n\n    def test_c2_remove(self):\n        # trace: F2.C2 spec.md#L24-28\n        write(self.path, [task(1, \"a\"), task(2, \"b\")])\n        rc, out, err = todo(self.path, \"remove\", \"1\")\n        self.assertEqual(rc, 0, err)\n        self.assertEqual(out.strip(), \"removed 1\")\n        self.assertEqual([t[\"id\"] for t in read(self.path)[\"tasks\"]], [2])\n\n    def test_c3_unknown_id(self):\n        # trace: F2.C3 spec.md#L24-28\n        write(self.path, [task(1, \"a\")])\n        for cmd in (\"done\", \"remove\"):\n            rc, out, err = todo(self.path, cmd, \"99\")\n            self.assertEqual(rc, 1, cmd)\n            self.assertIn(\"error: no task 99\", err)\n        self.assertEqual(len(read(self.path)[\"tasks\"]), 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+  "tests": [
+    {
+      "criterion": "F2.C1",
+      "span_id": "spec.md#L24-28",
+      "name": "TestF2.test_c1_done"
+    },
+    {
+      "criterion": "F2.C2",
+      "span_id": "spec.md#L24-28",
+      "name": "TestF2.test_c2_remove"
+    },
+    {
+      "criterion": "F2.C3",
+      "span_id": "spec.md#L24-28",
+      "name": "TestF2.test_c3_unknown_id"
+    }
+  ]
+}

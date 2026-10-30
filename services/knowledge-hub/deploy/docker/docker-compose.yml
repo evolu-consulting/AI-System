@@ -1,0 +1,49 @@
+# Local test stack: KH with sign-in on + the HANA-enabled Keycloak fork. Test here before BTP prod.
+# Stage first (deploy/docker/stage.py), then:
+#   docker compose -f deploy/docker/docker-compose.yml up -d --build
+# KH:       http://localhost:9200       Keycloak: http://host.docker.internal:8180
+# The issuer is host.docker.internal so the same URL works from Windows and from the KH container.
+name: kh-test
+
+services:
+  keycloak:
+    build:
+      context: .stage/keycloak
+      dockerfile: ../../Dockerfile.keycloak
+    env_file: .stage/.env
+    environment:
+      KC_HOSTNAME: http://host.docker.internal:8180
+      # HANA is in br10, so every statement is a WAN round trip: creating a realm takes many minutes,
+      # longer than Quarkus' default 300 s transaction timeout.
+      QUARKUS_TRANSACTION_MANAGER_DEFAULT_TRANSACTION_TIMEOUT: 1h
+    ports:
+      - "8180:8080"
+    restart: unless-stopped
+
+  kh:
+    build:
+      context: .stage/kh
+      dockerfile: ../../Dockerfile.kh
+    environment:
+      KH_AUTH_ISSUER: http://host.docker.internal:8180/realms/knowledge-hub
+      GRAPH_BACKEND: kuzu
+      CHROMA_PATH: /data/chroma_data
+      KUZU_PATH: /data/kuzu_data
+      KH_KUZU_PROJECTS_PATH: /data/kuzu_projects
+      KH_PROJECTS_PATH: /data/projects
+      KH_HOOKS_DB: /data/hooks.db
+      # Learn back on the test stack: canned model answers (no Claude CLI in the container).
+      KH_LEARNBACK_LLM: dry
+      KH_LEARNBACK_TICK_S: "10"
+    volumes:
+      - kh-data:/data
+    ports:
+      - "9200:9000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - keycloak
+    restart: unless-stopped
+
+volumes:
+  kh-data:

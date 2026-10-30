@@ -1,0 +1,33 @@
+{
+  "claims": [
+    {
+      "entity": "task",
+      "attribute": "id assignment",
+      "condition": "",
+      "outcome": "a new task gets the highest id ever stored plus one",
+      "f_item": "F1",
+      "span_id": "spec.md#L12-16",
+      "quote": "a new task gets the highest id ever stored plus one"
+    },
+    {
+      "entity": "task",
+      "attribute": "default priority",
+      "condition": "added without --priority",
+      "outcome": "priority 2",
+      "f_item": "F3",
+      "span_id": "spec.md#L30-34",
+      "quote": "A task added without `--priority` gets priority 2."
+    },
+    {
+      "entity": "task",
+      "attribute": "unknown id",
+      "trigger": "done or remove",
+      "condition": "unknown id",
+      "outcome": "exit code 1",
+      "f_item": "F2",
+      "span_id": "spec.md#L24-28",
+      "quote": "print `error: no task ID` to standard error and exit with code 1"
+    }
+  ],
+  "links": []
+}

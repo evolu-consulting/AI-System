@@ -1,0 +1,18 @@
+{
+  "pairs": [
+    {
+      "v1": "v1.shop_db_order.add-item",
+      "v2": "v2.create-item",
+      "relation": "same",
+      "difference": ""
+    },
+    {
+      "v1": "v1.shop_srv_order.order-discount",
+      "v2": "v2.total",
+      "relation": "conflict",
+      "difference": "Orders above 100 get 10 percent off in v1 and 5 percent off in v2 (80 + 40 gives 108.00 in v1, 114.00 in v2).",
+      "v1_quote": "DISCOUNT_RATE = 0.10",
+      "v2_quote": "DISCOUNT_RATE = 0.05"
+    }
+  ]
+}

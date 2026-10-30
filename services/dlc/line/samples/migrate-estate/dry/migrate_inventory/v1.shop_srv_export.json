@@ -1,0 +1,38 @@
+{
+  "features": [
+    {
+      "id": "export-csv",
+      "name": "Export items as CSV",
+      "kind": "command",
+      "behaviour": "export prints the line name,price and then one line per item with its name and its price with two decimals.",
+      "evidence": [
+        {
+          "path": "export.py",
+          "quote": "lines = [\"name,price\"]"
+        },
+        {
+          "path": "export.py",
+          "quote": "def export_csv(book):"
+        }
+      ],
+      "identifiers": [
+        "export_csv"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "export"
+      ],
+      "tests": [],
+      "examples": [
+        {
+          "given": "an order book with the item pen priced 2.5",
+          "when": "export is run",
+          "then": "it prints name,price and then pen,2.50"
+        }
+      ],
+      "area": "Reporting"
+    }
+  ]
+}

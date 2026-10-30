@@ -1,0 +1,16 @@
+[
+ {
+  "kind": "sale",
+  "buyer": "Acme",
+  "seller": "Bolt",
+  "price_cents": 125000,
+  "buyer_tax_code": "0101234567"
+ },
+ {
+  "kind": "lease",
+  "tenant": "Cora",
+  "landlord": "Dune",
+  "rent_cents": 50000,
+  "deposit_cents": 100000
+ }
+]

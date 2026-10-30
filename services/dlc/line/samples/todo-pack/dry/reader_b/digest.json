@@ -1,0 +1,144 @@
+{
+  "f_items": [
+    {
+      "id": "F3",
+      "title": "Priority",
+      "span_ids": [
+        "spec.md#L30-34"
+      ],
+      "quote": "F3 Priority",
+      "size": "M",
+      "criteria": [
+        {
+          "id": "F3.C1",
+          "text": "list --priority shows the most urgent task first",
+          "span_id": "spec.md#L30-34",
+          "quote": "`add TEXT --priority N` stores the task with priority N, where N is 1, 2 or 3 (1 is the most urgent).",
+          "given": "an empty todo file",
+          "when": "`add a --priority 3`, `add b --priority 1`, then `list --priority`",
+          "then": "it prints `2 [ ] b` before `1 [ ] a`"
+        },
+        {
+          "id": "F3.C2",
+          "text": "a task added without --priority gets priority 2",
+          "span_id": "spec.md#L30-34",
+          "quote": "A task added without `--priority` gets priority 2.",
+          "given": "an empty todo file",
+          "when": "`add low --priority 3`, `add plain`, `add high --priority 1`, then `list --priority`",
+          "then": "it prints `3 [ ] high`, `2 [ ] plain`, `1 [ ] low` in that order"
+        },
+        {
+          "id": "F3.C3",
+          "text": "tasks with the same priority keep id order",
+          "span_id": "spec.md#L30-34",
+          "quote": "tasks with the same priority stay in id order",
+          "given": "an empty todo file",
+          "when": "`add x --priority 2`, `add y --priority 1`, `add z --priority 2`, then `list --priority`",
+          "then": "it prints `2 [ ] y`, `1 [ ] x`, `3 [ ] z` in that order"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "title": "Complete and remove tasks",
+      "span_ids": [
+        "spec.md#L24-28"
+      ],
+      "quote": "F2 Complete and remove tasks",
+      "size": "S",
+      "criteria": [
+        {
+          "id": "F2.C1",
+          "text": "done marks a task done and confirms",
+          "span_id": "spec.md#L24-28",
+          "quote": "`done ID` marks the task as done in the file and prints `done ID`",
+          "given": "a file with open task 1",
+          "when": "`done 1` is run",
+          "then": "it prints `done 1` and task 1 is stored with done true"
+        },
+        {
+          "id": "F2.C2",
+          "text": "remove deletes a task and confirms",
+          "span_id": "spec.md#L24-28",
+          "quote": "`remove ID` deletes the task from the file and prints `removed ID`",
+          "given": "a file with tasks 1 and 2",
+          "when": "`remove 1` is run",
+          "then": "it prints `removed 1` and only task 2 is left in the file"
+        },
+        {
+          "id": "F2.C3",
+          "text": "an unknown id is rejected",
+          "span_id": "spec.md#L24-28",
+          "quote": "For an unknown ID, `done` and `remove` print `error: no task ID` to standard error and exit with code 1",
+          "given": "a file with task 1",
+          "when": "`done 99` or `remove 99` is run",
+          "then": "it prints `error: no task 99` to standard error and exits with code 2"
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "title": "Add and list tasks",
+      "span_ids": [
+        "spec.md#L18-22"
+      ],
+      "quote": "F1 Add and list tasks",
+      "size": "S",
+      "criteria": [
+        {
+          "id": "F1.C1",
+          "text": "add stores an open task and prints its id",
+          "span_id": "spec.md#L18-22",
+          "quote": "`add TEXT` stores a new open task and prints `added ID`",
+          "given": "an empty todo file",
+          "when": "`add buy milk` is run",
+          "then": "it prints `added 1` and exits with code 0"
+        },
+        {
+          "id": "F1.C2",
+          "text": "list prints one line per task in id order with its done mark",
+          "span_id": "spec.md#L18-22",
+          "quote": "`list` prints one line per task in id order: `ID [ ] TEXT` for an open task and `ID [x] TEXT` for a done task.",
+          "given": "a file with open task 1 `a` and done task 2 `b`",
+          "when": "`list` is run",
+          "then": "it prints `1 [ ] a` then `2 [x] b`"
+        },
+        {
+          "id": "F1.C3",
+          "text": "list on an empty file prints nothing",
+          "span_id": "spec.md#L18-22",
+          "quote": "`list` on an empty file prints nothing and exits with code 0",
+          "given": "a missing todo file",
+          "when": "`list` is run",
+          "then": "it prints nothing and exits with code 0"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "text": "Ids are never reused",
+      "span_id": "spec.md#L12-16",
+      "quote": "Ids start at 1 and are never reused"
+    },
+    {
+      "text": "Error messages go to standard error, normal output to standard output",
+      "span_id": "spec.md#L6-10",
+      "quote": "Normal output goes to standard output; error messages go to standard error."
+    }
+  ],
+  "numbers": [
+    {
+      "text": "default priority is 2",
+      "span_id": "spec.md#L30-34",
+      "quote": "gets priority 2",
+      "value": "2"
+    },
+    {
+      "text": "the first id is 1",
+      "span_id": "spec.md#L12-16",
+      "quote": "Ids start at 1",
+      "value": "1"
+    }
+  ]
+}

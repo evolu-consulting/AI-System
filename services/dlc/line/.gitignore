@@ -1,0 +1,10 @@
+# runtime state of the SDLC line (never tracked)
+# the local RAG wire config lives outside the repo (LINE_RAG_LOCAL, ~/.line/rag.local.json); never here
+config/rag.local.json
+line.db
+line.db-*
+work/
+qas/
+__pycache__/
+# the repo root ignores "build"; the line's build/ package is source
+!build/

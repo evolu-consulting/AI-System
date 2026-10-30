@@ -1,0 +1,593 @@
+app:
+  mode: workflow
+  name: DLC · Bug Fix (local)
+  description: 'Bug fix: reproduce (group), fix at level 1; a failed run asks a person
+    to retry one level up.'
+  icon: 🛠
+  icon_background: '#E4FBCC'
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features: {}
+  graph:
+    nodes:
+    - id: start
+      type: custom
+      position:
+        x: 0
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: start
+        title: Start
+        variables:
+        - variable: request
+          label: request
+          type: paragraph
+          required: true
+          max_length: 100000
+          options: []
+        - variable: kind
+          label: kind
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: given_level
+          label: given_level
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: project
+          label: project
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: run
+          label: run
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        selected: false
+    - id: repro
+      type: custom
+      position:
+        x: 300
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: reproduce'
+        desc: ''
+        delivery_methods:
+        - id: be1c7adc-26ad-4d35-995e-80c6895c212a
+          type: webapp
+          enabled: true
+        form_content: 'Engine task.
+
+
+          ```dlc {"agents": ["solo"], "goal": "Reproduce the bug from the report and
+          say the file and line of the cause. Do not fix it.", "max_usd": 0.5}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: build
+      type: custom
+      position:
+        x: 600
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: run'
+        desc: ''
+        delivery_methods:
+        - id: 0fba335c-12ab-44bc-8f38-b041c8b73c9b
+          type: webapp
+          enabled: true
+        form_content: 'Fix it with a regression test.
+
+
+          ```dlc {"level": 1, "agents": ["solo"]}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: deliver
+      type: custom
+      position:
+        x: 900
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: deliver'
+        desc: ''
+        delivery_methods:
+        - id: ee8eed67-fd13-446c-8ab0-a89849507fa3
+          type: webapp
+          enabled: true
+        form_content: 'Push the fix.
+
+
+          ```dlc {}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: ok_d
+      type: custom
+      position:
+        x: 1200
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: fixed'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'fixed'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_ok
+      type: custom
+      position:
+        x: 1500
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - ok_d
+          - decision
+        selected: false
+    - id: triage
+      type: custom
+      position:
+        x: 1800
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'Run failed: triage'
+        desc: ''
+        delivery_methods:
+        - id: 649a898f-c50c-4d77-b4fe-32974bef8c6b
+          type: webapp
+          enabled: true
+        form_content: 'The fix run failed:
+
+
+          {{#build.result#}}
+
+
+          Retry one level up, or close it.'
+        inputs:
+        - type: paragraph
+          output_variable_name: note
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: retry
+          title: Retry
+          button_style: primary
+        - id: close
+          title: Close
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: build2
+      type: custom
+      position:
+        x: 2100
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: run'
+        desc: ''
+        delivery_methods:
+        - id: 0bb58324-0e76-48e4-8ccd-85925ec358b1
+          type: webapp
+          enabled: true
+        form_content: 'Retry the fix one level up.
+
+
+          ```dlc {"level": 2}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: end_rf_d
+      type: custom
+      position:
+        x: 2400
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: not reproduced'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'not reproduced'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_rf
+      type: custom
+      position:
+        x: 2700
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_rf_d
+          - decision
+        selected: false
+    - id: end_close_d
+      type: custom
+      position:
+        x: 3000
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: closed by a person'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'closed by a person'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_close
+      type: custom
+      position:
+        x: 3300
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_close_d
+          - decision
+        selected: false
+    - id: end_r2_d
+      type: custom
+      position:
+        x: 3600
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: retry failed'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'retry failed'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_r2
+      type: custom
+      position:
+        x: 3900
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_r2_d
+          - decision
+        selected: false
+    edges:
+    - id: start-source-repro
+      source: start
+      sourceHandle: source
+      target: repro
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: start
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: repro-done-build
+      source: repro
+      sourceHandle: done
+      target: build
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: build-done-deliver
+      source: build
+      sourceHandle: done
+      target: deliver
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: deliver-done-ok_d
+      source: deliver
+      sourceHandle: done
+      target: ok_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: ok_d-source-end_ok
+      source: ok_d
+      sourceHandle: source
+      target: end_ok
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: build-failed-triage
+      source: build
+      sourceHandle: failed
+      target: triage
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: triage-retry-build2
+      source: triage
+      sourceHandle: retry
+      target: build2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: build2-done-deliver
+      source: build2
+      sourceHandle: done
+      target: deliver
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: repro-failed-end_rf_d
+      source: repro
+      sourceHandle: failed
+      target: end_rf_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_rf_d-source-end_rf
+      source: end_rf_d
+      sourceHandle: source
+      target: end_rf
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: triage-close-end_close_d
+      source: triage
+      sourceHandle: close
+      target: end_close_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_close_d-source-end_close
+      source: end_close_d
+      sourceHandle: source
+      target: end_close
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: build2-failed-end_r2_d
+      source: build2
+      sourceHandle: failed
+      target: end_r2_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_r2_d-source-end_r2
+      source: end_r2_d
+      sourceHandle: source
+      target: end_r2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

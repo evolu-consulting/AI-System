@@ -1,0 +1,80 @@
+{
+  "realm": "dlc",
+  "enabled": true,
+  "displayName": "DLC",
+  "loginTheme": "dlc",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 86400,
+  "roles": {
+    "realm": [
+      {"name": "dlc-user", "description": "May start, watch, pause and resume DLC runs and open deployed apps"},
+      {"name": "dlc-admin", "description": "dlc-user plus engine administration (workflow seed, cancel, budgets)"},
+      {"name": "dlc-viewer", "description": "Read-only frontend access (sees progress; cannot start or stop runs)"}
+    ]
+  },
+  "defaultRoles": [],
+  "clients": [
+    {
+      "clientId": "dlc-api",
+      "name": "DLC engine API (audience)",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "dlc-fe",
+      "name": "DLC default frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://__VPS_IP__:__FE_PORT__/*", "http://localhost:__FE_PORT__/*", "http://__VPS_IP__:__ENGINE_PORT__/*"],
+      "webOrigins": ["http://__VPS_IP__:__FE_PORT__", "http://localhost:__FE_PORT__", "http://__VPS_IP__:__ENGINE_PORT__"],
+      "attributes": {"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "http://__VPS_IP__:__FE_PORT__/*##http://localhost:__FE_PORT__/*"},
+      "protocolMappers": [
+        {"name": "aud-dlc-api", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+         "config": {"included.client.audience": "dlc-api", "access.token.claim": "true", "id.token.claim": "false"}},
+        {"name": "realm-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper",
+         "config": {"claim.name": "roles", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true", "userinfo.token.claim": "true", "jsonType.label": "String"}}
+      ]
+    },
+    {
+      "clientId": "customer-fe",
+      "name": "Customer frontend (template)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["__CUSTOMER_FE_REDIRECT__"],
+      "webOrigins": ["__CUSTOMER_FE_ORIGIN__"],
+      "attributes": {"pkce.code.challenge.method": "S256"},
+      "protocolMappers": [
+        {"name": "aud-dlc-api", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+         "config": {"included.client.audience": "dlc-api", "access.token.claim": "true", "id.token.claim": "false"}},
+        {"name": "realm-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper",
+         "config": {"claim.name": "roles", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true", "userinfo.token.claim": "true", "jsonType.label": "String"}}
+      ]
+    },
+    {
+      "clientId": "kh-api",
+      "name": "Knowledge store admin sign-in (optional)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://127.0.0.1:*", "http://localhost:*"],
+      "webOrigins": [],
+      "attributes": {"pkce.code.challenge.method": "S256"}
+    }
+  ]
+}

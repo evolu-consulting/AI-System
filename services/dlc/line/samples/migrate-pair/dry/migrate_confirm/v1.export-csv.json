@@ -1,0 +1,6 @@
+{
+  "verdict": "absent",
+  "partner": "",
+  "relation": "",
+  "reason": "store/cli.py only mentions export in a comment that says it is not available yet."
+}

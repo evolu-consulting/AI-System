@@ -1,0 +1,599 @@
+app:
+  mode: workflow
+  name: DLC · New System (local)
+  description: 'New system: analyse, a person approves the scope, the line builds
+    (lead), deliver.'
+  icon: 🛠
+  icon_background: '#E4FBCC'
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features: {}
+  graph:
+    nodes:
+    - id: start
+      type: custom
+      position:
+        x: 0
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: start
+        title: Start
+        variables:
+        - variable: request
+          label: request
+          type: paragraph
+          required: true
+          max_length: 100000
+          options: []
+        - variable: kind
+          label: kind
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: given_level
+          label: given_level
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: project
+          label: project
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        - variable: run
+          label: run
+          type: text-input
+          required: false
+          max_length: 256
+          options: []
+        selected: false
+    - id: analyse
+      type: custom
+      position:
+        x: 300
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: analyse'
+        desc: ''
+        delivery_methods:
+        - id: cc2ecc04-e1a7-4d5a-8765-cea9c6fbfa80
+          type: webapp
+          enabled: true
+        form_content: 'Engine task.
+
+
+          ```dlc {"agents": ["spec_analyst"], "goal": "List the features (F1..Fn)
+          of the requested system, their data and the open questions.", "max_usd":
+          0.5}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: approve
+      type: custom
+      position:
+        x: 600
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: Approve the scope
+        desc: ''
+        delivery_methods:
+        - id: 12f32d1a-696c-4051-bb23-de998aebfb3d
+          type: webapp
+          enabled: true
+        form_content: 'The analysis of the request:
+
+
+          {{#analyse.result#}}
+
+
+          Approve the scope to build it, or reject it.'
+        inputs:
+        - type: paragraph
+          output_variable_name: comment
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: approve
+          title: Approve
+          button_style: primary
+        - id: reject
+          title: Reject
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: build
+      type: custom
+      position:
+        x: 900
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: run'
+        desc: ''
+        delivery_methods:
+        - id: 09d49927-f512-4874-998f-b2d5568619eb
+          type: webapp
+          enabled: true
+        form_content: 'Build the whole system.
+
+
+          ```dlc {"level": 3, "agents": ["solo_lead"]}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: deliver
+      type: custom
+      position:
+        x: 1200
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: human-input
+        title: 'DLC: deliver'
+        desc: ''
+        delivery_methods:
+        - id: 1afbdfe1-789c-423a-ae89-9d16fe96faba
+          type: webapp
+          enabled: true
+        form_content: 'Push the project to its repository.
+
+
+          ```dlc {}```'
+        inputs:
+        - type: paragraph
+          output_variable_name: result
+          default:
+            selector: []
+            type: constant
+            value: ''
+        user_actions:
+        - id: done
+          title: Done
+          button_style: primary
+        - id: failed
+          title: Failed
+          button_style: default
+        timeout: 3
+        timeout_unit: day
+        selected: false
+    - id: ok_d
+      type: custom
+      position:
+        x: 1500
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: delivered'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'delivered'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_ok
+      type: custom
+      position:
+        x: 1800
+        y: 0
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - ok_d
+          - decision
+        - variable: result
+          value_selector:
+          - build
+          - result
+        selected: false
+    - id: end_af_d
+      type: custom
+      position:
+        x: 2100
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: analysis failed'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'analysis failed'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_af
+      type: custom
+      position:
+        x: 2400
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_af_d
+          - decision
+        selected: false
+    - id: end_rej_d
+      type: custom
+      position:
+        x: 2700
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: rejected'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'rejected'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_rej
+      type: custom
+      position:
+        x: 3000
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_rej_d
+          - decision
+        selected: false
+    - id: end_bf_d
+      type: custom
+      position:
+        x: 3300
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: build failed'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'build failed'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_bf
+      type: custom
+      position:
+        x: 3600
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_bf_d
+          - decision
+        selected: false
+    - id: end_df_d
+      type: custom
+      position:
+        x: 3900
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: code
+        title: 'Decision: deliver failed'
+        code_language: python3
+        code: "def main() -> dict:\n    return {'decision': 'deliver failed'}\n"
+        variables: []
+        outputs:
+          decision:
+            type: string
+            children: null
+        selected: false
+    - id: end_df
+      type: custom
+      position:
+        x: 4200
+        y: 300
+      positionAbsolute:
+        x: 0
+        y: 0
+      width: 244
+      height: 90
+      data:
+        type: end
+        title: End
+        outputs:
+        - variable: decision
+          value_selector:
+          - end_df_d
+          - decision
+        selected: false
+    edges:
+    - id: start-source-analyse
+      source: start
+      sourceHandle: source
+      target: analyse
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: start
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: analyse-done-approve
+      source: analyse
+      sourceHandle: done
+      target: approve
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: approve-approve-build
+      source: approve
+      sourceHandle: approve
+      target: build
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: build-done-deliver
+      source: build
+      sourceHandle: done
+      target: deliver
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: human-input
+        isInIteration: false
+        isInLoop: false
+    - id: deliver-done-ok_d
+      source: deliver
+      sourceHandle: done
+      target: ok_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: ok_d-source-end_ok
+      source: ok_d
+      sourceHandle: source
+      target: end_ok
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: analyse-failed-end_af_d
+      source: analyse
+      sourceHandle: failed
+      target: end_af_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_af_d-source-end_af
+      source: end_af_d
+      sourceHandle: source
+      target: end_af
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: approve-reject-end_rej_d
+      source: approve
+      sourceHandle: reject
+      target: end_rej_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_rej_d-source-end_rej
+      source: end_rej_d
+      sourceHandle: source
+      target: end_rej
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: build-failed-end_bf_d
+      source: build
+      sourceHandle: failed
+      target: end_bf_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_bf_d-source-end_bf
+      source: end_bf_d
+      sourceHandle: source
+      target: end_bf
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    - id: deliver-failed-end_df_d
+      source: deliver
+      sourceHandle: failed
+      target: end_df_d
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: human-input
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: end_df_d-source-end_df
+      source: end_df_d
+      sourceHandle: source
+      target: end_df
+      targetHandle: target
+      type: custom
+      zIndex: 0
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

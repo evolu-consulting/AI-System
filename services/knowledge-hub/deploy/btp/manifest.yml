@@ -1,0 +1,26 @@
+# KnowledgeHub on SAP BTP Cloud Foundry - pushed by deploy/btp/push.ps1 from a staged copy.
+# Everything KH stores lives in the bound HANA schema, so the container's disk is disposable.
+# KH_API_KEY is NOT set here: push.ps1 sets it with `cf set-env` so it never lands in git.
+applications:
+  - name: ((app_name))
+    memory: ((memory))
+    disk_quota: 4G
+    instances: 1
+    stack: cflinuxfs5
+    buildpacks:
+      - python_buildpack
+    command: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 180
+    services:
+      - ((hana_service))
+    env:
+      KH_STORE_BACKEND: hana
+      KH_VECTOR_BACKEND: hana
+      GRAPH_BACKEND: hana
+      KH_HANA_SERVICE: ((hana_service))
+      KH_PRELOAD_VISION: "false"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PYTHONUNBUFFERED: "1"

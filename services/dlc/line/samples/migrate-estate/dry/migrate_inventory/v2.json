@@ -1,0 +1,104 @@
+{
+  "features": [
+    {
+      "id": "create-item",
+      "name": "Create an item",
+      "kind": "command",
+      "behaviour": "add NAME PRICE stores an item and prints added N.",
+      "evidence": [
+        {
+          "path": "store/cli.py",
+          "quote": "print(\"added %d\" % n)"
+        },
+        {
+          "path": "store/items.py",
+          "quote": "def create_item(book, name, price):"
+        }
+      ],
+      "identifiers": [
+        "create_item"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "add"
+      ],
+      "tests": [
+        "tests/test_store.py"
+      ],
+      "examples": [
+        {
+          "given": "an empty order book",
+          "when": "add pen 2.5 is run",
+          "then": "it prints added 1"
+        }
+      ],
+      "area": "Order book"
+    },
+    {
+      "id": "total",
+      "name": "Order total with discount",
+      "kind": "rule",
+      "behaviour": "total prints the sum of item prices; above 100 the total gets 5 percent off.",
+      "evidence": [
+        {
+          "path": "store/pricing.py",
+          "quote": "DISCOUNT_RATE = 0.05        # orders above 100 get 5 percent off"
+        }
+      ],
+      "identifiers": [
+        "compute_total"
+      ],
+      "entities": [
+        "order"
+      ],
+      "interfaces": [
+        "total"
+      ],
+      "tests": [
+        "tests/test_store.py"
+      ],
+      "examples": [
+        {
+          "given": "items priced 80 and 40",
+          "when": "total is run",
+          "then": "it prints 114.00"
+        }
+      ],
+      "area": "Pricing"
+    },
+    {
+      "id": "search",
+      "name": "Search items by name",
+      "kind": "command",
+      "behaviour": "search TEXT prints the items whose name contains TEXT, ignoring case.",
+      "evidence": [
+        {
+          "path": "store/items.py",
+          "quote": "def search_items(book, text):"
+        }
+      ],
+      "identifiers": [
+        "search_items"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "search"
+      ],
+      "tests": [
+        "tests/test_store.py"
+      ],
+      "examples": [
+        {
+          "given": "items Red pen and cup",
+          "when": "search PEN is run",
+          "then": "it prints Red pen 2.00"
+        }
+      ],
+      "area": "Order book"
+    }
+  ]
+}

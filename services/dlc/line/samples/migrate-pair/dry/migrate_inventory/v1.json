@@ -1,0 +1,131 @@
+{
+  "features": [
+    {
+      "id": "add-item",
+      "name": "Add an item",
+      "kind": "command",
+      "behaviour": "add NAME PRICE stores an item in the order book and prints added N, N being the item count.",
+      "evidence": [
+        {
+          "path": "shop.py",
+          "quote": "print(\"added %d\" % n)"
+        },
+        {
+          "path": "shop.py",
+          "quote": "def add_item(book, name, price):"
+        }
+      ],
+      "identifiers": [
+        "add_item"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "add"
+      ],
+      "tests": [
+        "tests/test_shop.py"
+      ],
+      "examples": [
+        {
+          "given": "an empty order book",
+          "when": "add pen 2.5 is run",
+          "then": "it prints added 1"
+        }
+      ],
+      "area": "Order book"
+    },
+    {
+      "id": "order-discount",
+      "name": "Order total with discount",
+      "kind": "rule",
+      "behaviour": "total prints the sum of item prices; above 100 the total gets 10 percent off.",
+      "evidence": [
+        {
+          "path": "shop.py",
+          "quote": "DISCOUNT_RATE = 0.10        # orders above 100 get 10 percent off"
+        }
+      ],
+      "identifiers": [
+        "order_total",
+        "DISCOUNT_RATE"
+      ],
+      "entities": [
+        "order"
+      ],
+      "interfaces": [
+        "total"
+      ],
+      "tests": [
+        "tests/test_shop.py"
+      ],
+      "examples": [
+        {
+          "given": "items priced 80 and 40",
+          "when": "total is run",
+          "then": "it prints 108.00"
+        }
+      ],
+      "area": "Pricing"
+    },
+    {
+      "id": "export-csv",
+      "name": "Export items as CSV",
+      "kind": "command",
+      "behaviour": "export prints the line name,price and then one line per item with its name and its price with two decimals.",
+      "evidence": [
+        {
+          "path": "shop.py",
+          "quote": "lines = [\"name,price\"]"
+        },
+        {
+          "path": "shop.py",
+          "quote": "def export_csv(book):"
+        }
+      ],
+      "identifiers": [
+        "export_csv"
+      ],
+      "entities": [
+        "item"
+      ],
+      "interfaces": [
+        "export"
+      ],
+      "tests": [
+        "tests/test_shop.py"
+      ],
+      "examples": [
+        {
+          "given": "an order book with the item pen priced 2.5",
+          "when": "export is run",
+          "then": "it prints name,price and then pen,2.50"
+        }
+      ],
+      "area": "Reporting"
+    },
+    {
+      "id": "loyalty-points",
+      "name": "Loyalty points",
+      "kind": "rule",
+      "behaviour": "Every order earns loyalty points.",
+      "evidence": [
+        {
+          "path": "shop.py",
+          "quote": "points = int(total)"
+        }
+      ],
+      "identifiers": [
+        "loyalty"
+      ],
+      "entities": [
+        "order"
+      ],
+      "interfaces": [],
+      "tests": [],
+      "examples": [],
+      "area": "Pricing"
+    }
+  ]
+}

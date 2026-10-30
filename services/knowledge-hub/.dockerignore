@@ -1,0 +1,15 @@
+# deploy/docker/Dockerfile copies only main.py, preflight.py, VERSION, app/, seeds/ and one model;
+# deploy/docker/worker.Dockerfile copies worker/requirements.txt and worker/kh_worker/.
+# Everything else stays out of the build context (the venv, builds and local data are gigabytes).
+*
+!main.py
+!preflight.py
+!VERSION
+!requirements.txt
+!app/
+!seeds/
+!models/bge-small-en-v1.5/
+# deploy/docker/worker.Dockerfile (kh-worker): its requirements and package only
+!worker/requirements.txt
+!worker/kh_worker/
+**/__pycache__

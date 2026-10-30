@@ -1,0 +1,205 @@
+/*
+ * DLC sign-in in the web's style 24 'midnight data grid' (web/src/index.css, web/src/pages/Login.tsx):
+ * a full-screen dark navy page, the 'AI DLC' logo top left, one raised panel with a sign-in chip, Lato,
+ * field-glass inputs and the blue primary button. Laid over Keycloak's own login.css, which is why the
+ * PatternFly rules are beaten with !important where they set colours through their own variables.
+ */
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/lato-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 700; font-display: swap; src: url(../fonts/lato-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 900; font-display: swap; src: url(../fonts/lato-latin-900-normal.woff2) format('woff2'); }
+
+:root {
+  color-scheme: dark;
+  --panel: #1f2a44;
+  --panel2: #243150;
+  --row: #26345a;
+  --head: #2c3b60;
+  --line: rgba(255, 255, 255, 0.06);
+  --line2: rgba(255, 255, 255, 0.1);
+  --dim: #5f6b8d;
+  --blue: #4d8dff;
+  --blue2: #2f6ff0;
+  --ink: #e7ecf7;
+  --muted-ink: #8e9bbd;
+  --green: #36c98a;
+  --amber: #ffb547;
+  --red: #ff5f6d;
+  --font: 'Lato', system-ui, sans-serif;
+}
+
+/* ---- page ---- */
+html.login-pf,
+.login-pf body {
+  background: var(--panel) !important;
+  color: var(--ink);
+  min-height: 100%;
+}
+.login-pf body, .login-pf input, .login-pf button, .login-pf select, .login-pf textarea,
+.login-pf h1, .login-pf label, .login-pf a, .login-pf p, .login-pf div {
+  font-family: var(--font);
+}
+.login-pf body { font-size: 13px; line-height: 1.45; }
+.login-pf-page { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 88px 20px 72px; box-sizing: border-box; }
+
+/* 'Secure sign-in' with a green dot, at the bottom like the web */
+.login-pf-page::after {
+  content: 'Secure sign-in';
+  position: absolute; left: 0; right: 0; bottom: 24px; width: max-content; margin: 0 auto; padding-left: 18px;
+  font-size: 12px; font-weight: 700; color: var(--green);
+  background: radial-gradient(circle at 7px 50%, var(--green) 0 4px, rgba(54, 201, 138, 0.2) 4px 7px, transparent 7.5px) no-repeat;
+}
+
+/* ---- logo, top left: blue 'AI' square + 'AI DLC' wordmark ---- */
+.login-pf-page .login-pf-page-header,
+#kc-header { position: absolute; top: 20px; left: 24px; margin: 0; padding: 0; }
+@media (min-width: 768px) { .login-pf-page .login-pf-page-header, #kc-header { left: 40px; } }
+#kc-header-wrapper {
+  display: flex; align-items: center; padding: 0 !important;
+  font-size: 17px !important; font-weight: 900; letter-spacing: 0.02em !important; line-height: 32px !important;
+  text-transform: none !important; white-space: nowrap; color: #fff !important;
+}
+#kc-header-wrapper::before {
+  content: 'AI'; display: grid; place-items: center; width: 32px; height: 32px; flex: none; margin-right: 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 900; letter-spacing: 0; color: #fff; background: var(--blue2);
+}
+#kc-header-wrapper b { margin-left: 0.28em; color: var(--blue); font-weight: 900; }
+
+/* ---- the panel (glass-hi) ---- */
+.login-pf-page .card-pf {
+  width: 100%; max-width: min(440px, 100%) !important; min-width: 0; margin: 0 !important; box-sizing: border-box;
+  padding: 36px 36px 32px !important;
+  background: var(--panel2) !important; color: var(--ink);
+  border: 1px solid var(--line) !important; border-radius: 16px;
+  box-shadow: 0 40px 80px -30px rgba(10, 20, 50, 0.6) !important;
+}
+@media (max-width: 480px) { .login-pf-page .card-pf { padding: 28px 22px 24px !important; } }
+.login-pf-page .login-pf-header { margin-bottom: 0; padding: 0; text-align: center; }
+
+/* sign-in chip above the title (lucide 'log-in', as on the web page) */
+.login-pf-page .login-pf-header::before {
+  content: ''; display: block; width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 18px; box-sizing: border-box;
+  border: 1px solid rgba(77, 141, 255, 0.25);
+  background: rgba(77, 141, 255, 0.12) center / 24px 24px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f6fe5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'/%3E%3Cpolyline points='10 17 15 12 10 7'/%3E%3Cline x1='15' x2='3' y1='12' y2='12'/%3E%3C/svg%3E");
+}
+#kc-page-title {
+  margin: 0 0 24px; padding: 0; text-align: center;
+  font-size: 30px !important; font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; color: #fff !important;
+}
+/* the web's subtitle, on the sign-in form only */
+.login-pf-page:has(#kc-form-login) #kc-page-title { margin-bottom: 24px; }
+.login-pf-page:has(#kc-form-login) #kc-page-title::after {
+  content: 'Sign in to follow your delivery runs.'; display: block; margin-top: 6px;
+  font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--muted-ink);
+}
+.login-pf-page .login-pf-header .subtitle, .login-pf-page .required { color: var(--muted-ink); }
+
+/* ---- form ---- */
+#kc-content, #kc-content-wrapper, #kc-form, #kc-form-wrapper { color: var(--ink); }
+.login-pf-page .form-group, .login-pf-page .pf-c-form__group { margin-bottom: 16px; }
+.login-pf-page label, .login-pf-page .pf-c-form__label, .login-pf-page .control-label, .login-pf-page .pf-c-form__label-text {
+  display: inline-block; margin-bottom: 6px; font-size: 12px !important; font-weight: 700 !important; color: var(--muted-ink) !important;
+}
+.login-pf-page .pf-c-form-control,
+.login-pf-page .form-control,
+.login-pf-page input[type='text'], .login-pf-page input[type='password'], .login-pf-page input[type='email'], .login-pf-page select {
+  height: 44px; padding: 0 12px !important; box-sizing: border-box;
+  font-size: 13.5px !important; color: var(--ink) !important;
+  background: var(--row) !important; border: 1px solid var(--line2) !important; border-radius: 6px !important;
+  box-shadow: none !important; outline: none;
+}
+.login-pf-page .pf-c-form-control::after { display: none; }
+.login-pf-page .pf-c-form-control::placeholder { color: var(--dim); }
+.login-pf-page .pf-c-form-control:hover { border-color: rgba(255, 255, 255, 0.18) !important; }
+.login-pf-page .pf-c-form-control:focus,
+.login-pf-page .form-control:focus,
+.login-pf-page input:focus { border-color: var(--blue) !important; box-shadow: 0 0 0 3px rgba(77, 141, 255, 0.18) !important; }
+.login-pf-page .pf-c-form-control[aria-invalid='true'] { border-color: var(--red) !important; background-image: none !important; }
+.login-pf-page input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink); caret-color: var(--ink);
+  box-shadow: 0 0 0 40px var(--row) inset !important; transition: background-color 9999s;
+}
+
+/* password field with the show/hide button joined on the right */
+.login-pf-page .pf-c-input-group { display: flex; width: 100%; background: transparent !important; border: 0; border-radius: 6px; }
+.login-pf-page .pf-c-input-group::before, .login-pf-page .pf-c-input-group::after { display: none; }
+.login-pf-page .pf-c-input-group .pf-c-form-control { flex: 1 1 auto; min-width: 0; }
+.login-pf-page .pf-c-input-group .pf-c-form-control { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.login-pf-page .pf-c-input-group .pf-c-button.pf-m-control {
+  width: 44px; height: 44px; padding: 0; color: var(--muted-ink); cursor: pointer;
+  background: var(--row) !important; border: 1px solid var(--line2) !important; border-left: 0 !important;
+  border-radius: 0 6px 6px 0 !important;
+}
+.login-pf-page .pf-c-button.pf-m-control::after { display: none; }
+.login-pf-page .pf-c-input-group .pf-c-button.pf-m-control:hover { color: #fff; background: var(--head) !important; }
+
+/* field errors */
+.login-pf-page .pf-c-form__helper-text, .login-pf-page #input-error, .login-pf-page .kc-feedback-text, .login-pf-page [id^='input-error'] {
+  display: block; margin-top: 6px; font-size: 12.5px; color: var(--red) !important;
+}
+
+/* remember me + forgot password */
+#kc-form-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.login-pf-page .form-group.login-pf-settings, .login-pf-page .login-pf-settings { display: flex; align-items: center; justify-content: space-between; margin: 0 0 20px; }
+.login-pf-page .checkbox label { margin: 0; font-weight: 400 !important; font-size: 12.5px !important; color: var(--muted-ink) !important; cursor: pointer; }
+.login-pf-page input[type='checkbox'] { accent-color: var(--blue); margin-right: 6px; }
+.login-pf-page a, .login-pf-page a:visited { color: var(--blue); font-weight: 700; text-decoration: none; }
+.login-pf-page a:hover, .login-pf-page a:focus { color: #7aaaff; text-decoration: underline; }
+#kc-form-options a, .login-pf-page .login-pf-settings a { font-size: 12.5px; }
+
+/* ---- buttons ---- */
+#kc-form-buttons { margin-top: 8px; margin-bottom: 0; }
+.login-pf-page .pf-c-button.pf-m-primary,
+.login-pf-page .btn-primary,
+.login-pf-page input[type='submit'] {
+  height: 50px; width: 100%; padding: 0 16px; cursor: pointer;
+  font-size: 14.5px !important; font-weight: 700 !important; color: #fff !important; text-shadow: none;
+  background: var(--blue) !important; background-image: none !important;
+  border: 0 !important; border-radius: 6px !important;
+  box-shadow: 0 10px 22px -8px rgba(77, 141, 255, 0.8) !important;
+}
+.login-pf-page .pf-c-button.pf-m-primary::after { display: none; }
+.login-pf-page .pf-c-button.pf-m-primary:hover, .login-pf-page input[type='submit']:hover { filter: brightness(1.08); }
+.login-pf-page .pf-c-button.pf-m-primary:disabled, .login-pf-page input[type='submit']:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none !important; }
+/* secondary actions (cancel, back, 'try another way') look like the web's ghost button */
+.login-pf-page .pf-c-button.pf-m-secondary, .login-pf-page .btn-default, .login-pf-page input[type='submit'].pf-m-secondary {
+  height: 44px; padding: 0 16px; cursor: pointer; font-weight: 700 !important; color: var(--ink) !important;
+  background: var(--row) !important; border: 1px solid var(--line2) !important; border-radius: 6px !important; box-shadow: none !important;
+}
+.login-pf-page .pf-c-button.pf-m-secondary::after { display: none; }
+.login-pf-page .pf-c-button.pf-m-secondary:hover, .login-pf-page .btn-default:hover { color: #fff !important; background: var(--head) !important; }
+
+/* ---- messages (error / warning / success / info) ---- */
+.login-pf-page .pf-c-alert {
+  display: flex; align-items: flex-start; gap: 8px; margin: 0 0 18px; padding: 10px 12px;
+  border-radius: 8px; box-shadow: none; border: 1px solid var(--line2); background: var(--row); color: var(--ink);
+}
+.login-pf-page .pf-c-alert::before { display: none; }
+.login-pf-page .pf-c-alert .pf-c-alert__title, .login-pf-page .pf-c-alert .kc-feedback-text {
+  margin: 0; font-size: 12.5px; font-weight: 700; color: inherit !important;
+}
+.login-pf-page .pf-c-alert.pf-m-danger, .login-pf-page .alert-error { background: rgba(255, 95, 109, 0.1); border-color: rgba(255, 95, 109, 0.3); color: var(--red); }
+.login-pf-page .pf-c-alert.pf-m-warning, .login-pf-page .alert-warning { background: rgba(255, 181, 71, 0.1); border-color: rgba(255, 181, 71, 0.3); color: var(--amber); }
+.login-pf-page .pf-c-alert.pf-m-success, .login-pf-page .alert-success { background: rgba(54, 201, 138, 0.1); border-color: rgba(54, 201, 138, 0.3); color: var(--green); }
+.login-pf-page .pf-c-alert.pf-m-info, .login-pf-page .alert-info { background: rgba(77, 141, 255, 0.1); border-color: rgba(77, 141, 255, 0.3); color: var(--blue); }
+.login-pf-page .pf-c-alert__icon { color: inherit; font-size: 14px; line-height: 18px; }
+
+/* ---- the rest: attempted user, info area, locale, social, instructions ---- */
+#kc-username { display: flex; align-items: center; justify-content: center; gap: 8px; margin: -12px 0 20px; }
+#kc-attempted-username { margin: 0; font-size: 13.5px !important; color: var(--ink) !important; }
+#reset-login { color: var(--blue); }
+.login-pf-page .kc-tooltip-text { background: var(--head); color: var(--ink); }
+#kc-info, #kc-info-wrapper { margin-top: 20px; padding: 16px 0 0 !important; font-size: 12.5px; text-align: center;
+  color: var(--muted-ink); background: transparent !important; border-top: 1px solid var(--line) !important; }
+.login-pf-page .instruction, .login-pf-page p, #kc-content-wrapper > p { color: var(--muted-ink); font-size: 13px; }
+#kc-locale { position: absolute; top: 22px; right: 24px; }
+#kc-current-locale-link { color: var(--muted-ink); background: transparent; border: 0; font-weight: 700; cursor: pointer; }
+#kc-current-locale-link:hover { color: #fff; }
+.login-pf-page .pf-c-dropdown__menu { background: var(--panel2); border: 1px solid var(--line2); border-radius: 8px; box-shadow: 0 20px 40px -16px rgba(10, 20, 50, 0.6); }
+.login-pf-page .pf-c-dropdown__menu-item { color: var(--ink) !important; font-weight: 400; }
+.login-pf-page .pf-c-dropdown__menu-item:hover { background: rgba(77, 141, 255, 0.12); text-decoration: none; }
+.login-pf-page .kc-social-section { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 20px; color: var(--muted-ink); }
+.login-pf-page .kc-social-item { background: var(--row) !important; border: 1px solid var(--line2) !important; color: var(--ink) !important; border-radius: 6px; }
+.login-pf-page .kc-social-item:hover { background: var(--head) !important; }
+.login-pf-page hr { border-color: var(--line); }

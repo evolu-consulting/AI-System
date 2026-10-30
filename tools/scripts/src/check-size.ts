@@ -27,6 +27,8 @@ export function limitFor(path: string): number | null {
   if (!CODE_EXT.test(path)) return null;
   const slashed = `/${path}`;
   if (EXEMPT_DIRS.some((d) => slashed.includes(d)) || EXEMPT_FILE.test(path)) return null;
+  // services/: DLC engine + Knowledge Hub (Python), có test và quy ước riêng.
+  if (path.startsWith("services/")) return null;
   const isTest =
     TEST_FILE.test(path) ||
     path.startsWith("tests/") ||

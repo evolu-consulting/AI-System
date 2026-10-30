@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DLC Line</title>
+<style>
+  /* design 30: light blue frosted glass (tokens of the login style) */
+  :root {
+    --bg1: #eaf3fd; --bg2: #d4e6fa; --glass: rgba(255,255,255,.55); --glass-hi: rgba(255,255,255,.72);
+    --edge: rgba(255,255,255,.75); --blue: #1f6fe5; --blue2: #4a90f5; --cyan: #2fc7d6; --navy: #0b1f4b;
+    --ink: #1d2b4a; --muted: #6b7a99; --green: #16a35a; --red: #d64545; --amber: #c98a06; --r: 18px;
+    --sh: 0 8px 24px rgba(31,111,229,.08); --line: rgba(31,111,229,.12);
+    --panel: var(--glass); --panel2: rgba(255,255,255,.75); --text: var(--ink); --accent: var(--blue);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { min-height: 100vh; color: var(--ink); font: 13.5px/1.45 "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+         background: linear-gradient(160deg, var(--bg1), var(--bg2)) fixed; }
+  .blob { position: fixed; border-radius: 50%; filter: blur(50px); pointer-events: none; z-index: 0; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 20px; position: sticky; top: 0; z-index: 3;
+           background: var(--glass-hi); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+           border-bottom: 1px solid var(--edge); box-shadow: var(--sh); }
+  header h1 { font-size: 17px; margin: 0; color: var(--navy); font-weight: 800; letter-spacing: -.01em; }
+  header .sp { flex: 1; }
+  select { background: rgba(255,255,255,.75); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+           padding: 6px 10px; font: inherit; max-width: 100%; }
+  #status { font-size: 12px; color: var(--muted); }
+  #status.off { color: var(--red); }
+  main { position: relative; z-index: 1; padding: 18px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); max-width: 1500px; margin: 0 auto; }
+  @media (min-width: 1100px) { main { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+                               .wide { grid-column: 1 / -1; } }
+  main[hidden] { display: none; }
+  section { background: var(--glass); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+            border: 1px solid var(--edge); border-radius: var(--r); box-shadow: var(--sh); padding: 14px 16px; min-width: 0; }
+  section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 10px; }
+  .kpi { background: rgba(255,255,255,.75); border: 1px solid var(--edge); border-radius: 14px; padding: 10px 14px; min-width: 120px;
+         box-shadow: 0 4px 10px rgba(31,111,229,.06); }
+  .kpi .v { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .kpi .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  .bar { height: 8px; background: rgba(31,111,229,.1); border-radius: 9px; overflow: hidden; margin-top: 6px; }
+  .bar > i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, var(--blue), #5aa2f8); }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.wrap { white-space: normal; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+          background: rgba(255,255,255,.8); border: 1px solid var(--line); }
+  .s-green, .s-merged, .s-done, .s-running.app, .ok { color: var(--green); border-color: rgba(22,163,90,.35); }
+  .s-red, .s-failed, .s-escalated, .bad { color: var(--red); border-color: rgba(214,69,69,.35); }
+  .s-flaky, .s-waiting, .s-qas, .s-integrating, .s-paused { color: var(--amber); border-color: rgba(201,138,6,.35); }
+  .s-building, .s-leased, .s-submitted, .s-verifying, .s-verified, .s-understanding, .s-planning, .s-running { color: var(--blue); border-color: rgba(31,111,229,.35); }
+  .s-pending, .s-ready, .s-admitted, .s-skipped { color: var(--muted); }
+  .lanes td.cell { min-width: 70px; text-align: center; }
+  .lanes td.on { background: rgba(31,111,229,.07); }
+  .muted { color: var(--muted); }
+  .ev { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+  .empty { color: var(--muted); font-style: italic; padding: 6px 0; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,.5); border: 1px solid var(--edge); border-radius: 12px; padding: 3px; }
+  .tabs button { background: none; color: var(--muted); border: 0; border-radius: 9px; padding: 6px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  .tabs button.on { background: #fff; color: var(--blue); box-shadow: 0 2px 8px rgba(31,111,229,.15); }
+  .btn { background: rgba(255,255,255,.8); color: var(--blue); border: 1px solid var(--line); border-radius: 10px;
+         padding: 6px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .btn.primary { color: #fff; border: 0; background: linear-gradient(120deg, #1f6fe5, #4a9af7); box-shadow: 0 8px 18px rgba(31,111,229,.3); }
+  .btn.warn { color: var(--amber); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  input[type=text], input[type=number] { background: rgba(255,255,255,.8); color: var(--ink); border: 1px solid var(--line);
+                       border-radius: 10px; padding: 5px 9px; font: inherit; max-width: 100%; }
+  .c-v1_only { color: var(--blue); border-color: rgba(31,111,229,.35); }
+  .c-v2_only { color: var(--green); border-color: rgba(22,163,90,.35); }
+  .c-both_same { color: var(--muted); }
+  .c-both_conflict { color: var(--amber); border-color: rgba(201,138,6,.35); }
+  .s-parked, .s-inventoried, .s-matched, .s-decided { color: var(--amber); border-color: rgba(201,138,6,.35); }
+  .s-analysed { color: var(--green); border-color: rgba(22,163,90,.35); }
+  .lvl-high { color: var(--red); } .lvl-medium { color: var(--amber); } .lvl-low { color: var(--muted); }
+  .stages { display: flex; flex-wrap: wrap; gap: 6px; }
+  .stage { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: rgba(255,255,255,.6); }
+  .stage.done { color: var(--green); border-color: rgba(22,163,90,.35); }
+  .stage.now { color: #fff; background: var(--blue); border-color: var(--blue); font-weight: 700; }
+  details.area { border-top: 1px solid var(--line); padding: 6px 0; }
+  details.area > summary { cursor: pointer; }
+  details.ev > summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  pre.report { white-space: pre-wrap; word-break: break-word; font-family: Consolas, "Cascadia Mono", monospace;
+               font-size: 12px; background: rgba(255,255,255,.75); border: 1px solid var(--edge); padding: 10px; border-radius: 12px; max-height: 70vh; overflow: auto; }
+  .note { color: var(--muted); font-size: 12px; margin: 6px 0; }
+  .err { color: var(--red); font-size: 12px; }
+  .q { background: rgba(255,255,255,.75); border: 1px solid var(--edge); border-radius: 12px; padding: 8px 12px; margin: 6px 0; }
+  .q label { display: block; margin: 2px 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  #who { font-size: 12px; color: var(--muted); }
+  #loginView { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
+               background: linear-gradient(160deg, var(--bg1), var(--bg2)); }
+  #loginView[hidden] { display: none; }
+  .card { width: min(420px, 100%); padding: 34px 32px 28px; background: var(--glass-hi); border-radius: 26px; text-align: center;
+          box-shadow: 0 30px 80px rgba(31,111,229,.18), inset 0 1px 0 #fff; border: 2px solid rgba(255,255,255,.9); }
+  .card h2 { margin: 0; font-size: 26px; font-weight: 800; color: var(--navy); text-transform: none; letter-spacing: -.02em; }
+  .card .sub { color: var(--muted); margin: 6px 0 22px; }
+  .card .btn { width: 100%; height: 48px; font-size: 14.5px; }
+  @media (max-width: 480px) { header { padding: 12px 14px; } main { padding: 12px; } }
+</style>
+</head>
+<body>
+<div class="blob" style="width:560px;height:560px;background:#9cc6fb;left:-180px;top:-160px;opacity:.55"></div>
+<div class="blob" style="width:420px;height:420px;background:#7fd8e4;right:-120px;top:120px;opacity:.4"></div>
+<div id="loginView" hidden>
+  <div class="card">
+    <h2>DLC Line</h2>
+    <p class="sub">Sign in to follow and control the delivery runs</p>
+    <button class="btn primary" type="button" id="loginBtn">Sign in</button>
+    <p class="err" id="loginErr"></p>
+  </div>
+</div>
+<header>
+  <h1>DLC Line</h1>
+  <span class="tabs"><button id="tabRuns" class="on" type="button">Runs</button><button id="tabMig" type="button">Migrations</button></span>
+  <span id="runPick"><label class="muted" for="runSel">Run</label>
+  <select id="runSel"><option value="">(newest)</option></select></span>
+  <span id="migPick" hidden><label class="muted" for="migSel">Migration</label>
+  <select id="migSel"><option value="">(newest)</option></select></span>
+  <span class="sp"></span>
+  <span id="status">connecting...</span>
+  <span id="who"></span>
+  <button class="btn" type="button" id="logoutBtn" hidden>Sign out</button>
+</header>
+<main id="runsView">
+  <section class="wide">
+    <h2>Run</h2>
+    <div class="kpis" id="kpis"><div class="empty">No runs yet.</div></div>
+    <div class="actions" id="runActions"></div>
+  </section>
+  <section class="wide" id="humanBox" hidden>
+    <h2>Questions for people <span class="muted" id="parkNote"></span></h2>
+    <div class="scroll"><table id="questions"></table></div>
+  </section>
+  <section class="wide">
+    <h2>F-items by state</h2>
+    <div class="scroll"><table class="lanes" id="lanes"></table></div>
+  </section>
+  <section>
+    <h2>Units</h2>
+    <div class="scroll"><table id="units"></table></div>
+  </section>
+  <section id="sealBox" hidden>
+    <h2>Seals <span class="muted">score = purpose x evidence x love, sealed at 90</span></h2>
+    <div class="scroll"><table id="seals"></table></div>
+  </section>
+  <section>
+    <h2>Deploy (QAS)</h2>
+    <div class="scroll"><table id="deploy"></table></div>
+    <h2 style="margin-top:14px">QAS results</h2>
+    <div class="scroll"><table id="qas"></table></div>
+  </section>
+  <section>
+    <h2>Gates</h2>
+    <div class="scroll"><table id="gates"></table></div>
+  </section>
+  <section>
+    <h2>Recent events</h2>
+    <div class="scroll"><table id="events"></table></div>
+  </section>
+</main>
+<main id="migView" hidden>
+  <section class="wide">
+    <h2>Migration</h2>
+    <div class="kpis" id="mKpis"><div class="empty">No migrations yet.</div></div>
+    <div class="stages" id="mStages" style="margin-top:10px"></div>
+    <div class="note" id="mMsg"></div>
+  </section>
+  <section class="wide" id="mAskBox" hidden>
+    <h2>Decisions for people <span class="muted">- the migration waits until every one is answered; nothing is changed before</span></h2>
+    <div id="mAsk"></div>
+  </section>
+  <section class="wide" id="mBudgetBox" hidden>
+    <h2>Budget used up</h2>
+    <div class="note" id="mBudgetNote"></div>
+    <label class="muted">Migration cap USD <input type="number" step="1" min="0" id="mMaxUsd" style="width:110px"></label>
+    <label class="muted">Per repository USD <input type="number" step="0.5" min="0" id="mMaxRepo" style="width:110px"></label>
+    <button class="btn primary" type="button" id="mResume">Raise and resume</button>
+    <span class="err" id="mResumeErr"></span>
+  </section>
+  <section class="wide">
+    <h2>Parity matrix <span class="muted" id="mMatrixNote"></span></h2>
+    <div id="mMatrix"></div>
+  </section>
+  <section class="wide">
+    <h2>Repositories</h2>
+    <div class="scroll"><table id="mRepos"></table></div>
+  </section>
+  <section>
+    <h2>Blast radius</h2>
+    <div class="scroll"><table id="mChanges"></table></div>
+    <h2 style="margin-top:14px">Protected features at risk</h2>
+    <div class="scroll"><table id="mRisk"></table></div>
+    <h2 style="margin-top:14px">Gates and merges</h2>
+    <div class="scroll"><table id="mGates"></table></div>
+  </section>
+  <section>
+    <h2>Effort hints by area</h2>
+    <div class="scroll"><table id="mEffort"></table></div>
+    <h2 style="margin-top:14px">Decisions log</h2>
+    <div class="scroll"><table id="mDecisions"></table></div>
+  </section>
+  <section class="wide">
+    <h2>Timeline</h2>
+    <div class="scroll"><table id="mTimeline"></table></div>
+  </section>
+  <section class="wide">
+    <h2>Report <button class="btn" type="button" id="mReportBtn">Show report.md</button></h2>
+    <pre class="report" id="mReport" hidden></pre>
+  </section>
+</main>
+<script>
+"use strict";
+const POLL_MS = 3000;
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const pill = (s) => `<span class="pill s-${esc(s)}">${esc(s)}</span>`;
+const time = (ms) => ms ? new Date(ms).toLocaleTimeString() : "";
+
+// ------------------------------------------------------------------ sign-in (OIDC Authorization Code + PKCE)
+// GET /api/auth/config says whether the API needs a token; the realm's public client signs the board in.
+const _fetch = window.fetch.bind(window);
+const AUTH = {enabled: false, cfg: null, access: "", refresh: "", exp: 0, who: ""};
+const SS = window.sessionStorage;
+
+function sha256(bytes) {   // small SHA-256 (crypto.subtle is missing on plain http hosts)
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,
+    0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,
+    0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,
+    0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,
+    0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const l = bytes.length, n = ((l + 9 + 63) >> 6) << 6, m = new Uint8Array(n);
+  m.set(bytes); m[l] = 0x80;
+  const bits = l * 8; for (let i = 0; i < 4; i++) m[n - 1 - i] = (bits >>> (8 * i)) & 0xff;
+  const w = new Uint32Array(64), r = (x, c) => (x >>> c) | (x << (32 - c));
+  for (let o = 0; o < n; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (m[o+4*i] << 24) | (m[o+4*i+1] << 16) | (m[o+4*i+2] << 8) | m[o+4*i+3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3), s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  const out = new Uint8Array(32);
+  H.forEach((v, i) => { out[4*i] = v >>> 24; out[4*i+1] = (v >>> 16) & 255; out[4*i+2] = (v >>> 8) & 255; out[4*i+3] = v & 255; });
+  return out;
+}
+const b64url = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const rnd = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); };
+const redirectUri = () => location.origin + location.pathname;
+const oidc = (p) => AUTH.cfg.issuer.replace(/\/$/, "") + "/protocol/openid-connect/" + p;
+
+function keep(tok) {
+  AUTH.access = tok.access_token || ""; AUTH.refresh = tok.refresh_token || AUTH.refresh;
+  AUTH.exp = Date.now() + 1000 * (Number(tok.expires_in) || 60);
+  try {
+    const c = JSON.parse(atob(AUTH.access.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    AUTH.who = c.preferred_username || c.email || c.sub || "";
+  } catch (e) { AUTH.who = ""; }
+  SS.setItem("dlc.tok", JSON.stringify({a: AUTH.access, r: AUTH.refresh, e: AUTH.exp}));
+  $("who").textContent = AUTH.who ? "signed in as " + AUTH.who : "";
+  $("logoutBtn").hidden = false;
+}
+
+async function login() {
+  const verifier = rnd(48), state = rnd(16);
+  SS.setItem("dlc.pkce", JSON.stringify({verifier, state, back: location.search}));
+  const challenge = b64url(sha256(new TextEncoder().encode(verifier)));
+  location.href = oidc("auth") + "?" + new URLSearchParams({client_id: AUTH.cfg.client_id, response_type: "code",
+    scope: "openid", redirect_uri: redirectUri(), state, code_challenge: challenge, code_challenge_method: "S256"});
+}
+
+async function tokenCall(params) {
+  const r = await _fetch(oidc("token"), {method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    body: new URLSearchParams(Object.assign({client_id: AUTH.cfg.client_id}, params))});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_description || j.error || ("HTTP " + r.status));
+  return j;
+}
+
+async function refreshTok() {
+  if (!AUTH.refresh) return false;
+  try { keep(await tokenCall({grant_type: "refresh_token", refresh_token: AUTH.refresh})); return true; }
+  catch (e) { return false; }
+}
+
+function showLogin(msg) {
+  SS.removeItem("dlc.tok"); AUTH.access = ""; AUTH.refresh = "";
+  $("loginErr").textContent = msg || "";
+  $("loginView").hidden = false;
+}
+
+async function authInit() {
+  try { AUTH.cfg = await (await _fetch("/api/auth/config", {cache: "no-store"})).json(); }
+  catch (e) { AUTH.cfg = {enabled: false}; }
+  AUTH.enabled = !!AUTH.cfg.enabled;
+  if (!AUTH.enabled) return true;
+  const qp = new URLSearchParams(location.search);
+  if (qp.get("code") && qp.get("state")) {
+    const p = JSON.parse(SS.getItem("dlc.pkce") || "{}");
+    SS.removeItem("dlc.pkce");
+    try {
+      if (p.state !== qp.get("state")) throw new Error("sign-in state mismatch");
+      keep(await tokenCall({grant_type: "authorization_code", code: qp.get("code"), redirect_uri: redirectUri(),
+                            code_verifier: p.verifier}));
+      history.replaceState(null, "", location.pathname + (p.back || ""));
+    } catch (e) { showLogin("Sign-in failed: " + e.message); return false; }
+    return true;
+  }
+  try {
+    const t = JSON.parse(SS.getItem("dlc.tok") || "null");
+    if (t && t.a) { AUTH.access = t.a; AUTH.refresh = t.r; AUTH.exp = t.e; keep({access_token: t.a, refresh_token: t.r,
+      expires_in: Math.max(1, (t.e - Date.now()) / 1000)}); }
+  } catch (e) {}
+  if (!AUTH.access && !(await refreshTok())) { showLogin(""); return false; }
+  return true;
+}
+
+window.fetch = async (url, opts) => {
+  const api = String(url).startsWith("/api") && AUTH.enabled;
+  const go = () => {
+    const o = Object.assign({}, opts || {});
+    if (api && AUTH.access) o.headers = Object.assign({}, o.headers || {}, {Authorization: "Bearer " + AUTH.access});
+    return _fetch(url, o);
+  };
+  if (api && AUTH.exp && Date.now() > AUTH.exp - 30000) await refreshTok();
+  let r = await go();
+  if (api && r.status === 401) {
+    if (await refreshTok()) r = await go();
+    if (r.status === 401) showLogin("Your session ended. Sign in again.");
+  }
+  return r;
+};
+
+// ------------------------------------------------------------------ run actions: pause / resume / start / open the app
+let appState = {run: "", state: "none"};
+
+async function post(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.message || ("HTTP " + r.status));
+  return j;
+}
+
+async function refreshApp(run) {
+  if (!run) return;
+  try { const r = await fetch(`/api/runs/${encodeURIComponent(run)}/app`, {cache: "no-store"}); if (r.ok) appState = await r.json(); }
+  catch (e) {}
+}
+
+function renderActions(b) {
+  const r = b.run, el = $("runActions");
+  if (!r) { el.innerHTML = ""; return; }
+  const final = r.state === "green" || r.state === "escalated";
+  const paused = !!(r.paused || (r.detail && r.detail.paused));
+  const parts = [];
+  if (!final && !paused) parts.push(`<button class="btn warn" type="button" data-act="pause">Pause</button>`);
+  if (!final && paused) parts.push(`<button class="btn primary" type="button" data-act="resume">Resume</button> <span class="pill s-paused">paused</span>`);
+  if (r.state === "green") {
+    const a = appState.run === r.id ? appState : {state: "none"};
+    if (a.state === "running" && a.url) parts.push(`<a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener">Open app</a> <code>${esc(a.url)}</code>`);
+    else if (a.state === "starting") parts.push(`<span class="pill s-running">starting...</span>`);
+    else parts.push(`<button class="btn primary" type="button" data-act="start">Start app</button>` +
+                    (a.state === "failed" ? ` <span class="err">last start failed</span>` : ""));
+  }
+  parts.push(`<span class="err" id="actErr"></span>`);
+  el.innerHTML = parts.join(" ");
+}
+
+$("runActions").addEventListener("click", async (ev) => {
+  const btn = ev.target.closest && ev.target.closest("button[data-act]");
+  if (!btn || !lastBoard || !lastBoard.run) return;
+  const run = lastBoard.run.id, act = btn.dataset.act;
+  btn.disabled = true;
+  try {
+    if (act === "pause") await post(`/api/runs/${encodeURIComponent(run)}:pause`, {});
+    if (act === "resume") await post(`/api/runs/${encodeURIComponent(run)}:resume`, {});
+    if (act === "start") {
+      btn.textContent = "Starting...";
+      appState = await post(`/api/runs/${encodeURIComponent(run)}/app:start`, {});
+      if (appState.state === "running" && appState.url) window.open(appState.url, "_blank", "noopener");
+      else if (appState.error) throw new Error(appState.error);
+    }
+    poll();
+  } catch (e) { const er = $("actErr"); if (er) er.textContent = e.message; btn.disabled = false; }
+});
+let lastBoard = null;
+let selected = "";
+try { selected = new URLSearchParams(location.search).get("run") || ""; } catch (e) {}
+
+function table(el, head, rows, emptyText) {
+  if (!rows.length) { el.innerHTML = `<tr><td class="empty">${esc(emptyText)}</td></tr>`; return; }
+  el.innerHTML = "<thead><tr>" + head.map((h) => `<th>${esc(h)}</th>`).join("") + "</tr></thead><tbody>" +
+    rows.map((r) => "<tr>" + r.map((c) => `<td${c && c.cls ? ` class="${c.cls}"` : ""}>${c && c.html !== undefined ? c.html : esc(c)}</td>`).join("") + "</tr>").join("") + "</tbody>";
+}
+
+function renderRuns(runs, current) {
+  const sel = $("runSel");
+  const want = selected;
+  sel.innerHTML = `<option value="">(newest)</option>` + runs.map((r) =>
+    `<option value="${esc(r.id)}">${esc(r.id)} - ${esc(r.state)}</option>`).join("");
+  sel.value = want;
+}
+
+function renderKpis(b) {
+  const r = b.run;
+  if (!r) { $("kpis").innerHTML = `<div class="empty">No runs yet.</div>`; return; }
+  const bud = b.budget || {limit: 0, spent: 0, ratio: 0};
+  const pct = Math.min(100, Math.round((bud.ratio || 0) * 100));
+  const barColor = pct >= 100 ? "var(--red)" : pct >= 80 ? "var(--amber)" : "var(--green)";
+  const live = (b.deploy || []).find((d) => d.state === "live");
+  const us = r.unit_states || {};
+  $("kpis").innerHTML = [
+    `<div class="kpi"><div class="l">Run</div><div class="v">${esc(r.id)}</div></div>`,
+    `<div class="kpi"><div class="l">State</div><div class="v">${pill(r.state)}</div></div>`,
+    `<div class="kpi"><div class="l">Units merged</div><div class="v">${(us.merged || 0) - (r.nothing_to_merge || 0)} / ${r.units}</div>` +
+      (r.nothing_to_merge ? `<div class="l">${r.nothing_to_merge} already satisfied (no changes)</div>` : "") + `</div>`,
+    `<div class="kpi"><div class="l">Budget USD</div><div class="v">${(bud.spent || 0).toFixed(2)} / ${(bud.limit || 0).toFixed(2)}</div>` +
+      `<div class="bar"><i style="width:${pct}%;background:${barColor}"></i></div></div>`,
+    `<div class="kpi"><div class="l">QAS live</div><div class="v">${live ? esc(live.color) + ` <code>${esc(String(live.sha).slice(0, 8))}</code>` : "-"}</div></div>`,
+    `<div class="kpi"><div class="l">Escalations</div><div class="v ${b.escalations && b.escalations.length ? "bad" : ""}">${(b.escalations || []).length}</div></div>`,
+  ].join("");
+}
+
+function renderLanes(l) {
+  const cols = l.columns || [];
+  const el = $("lanes");
+  if (!(l.rows || []).length) { el.innerHTML = `<tr><td class="empty">No F-items yet.</td></tr>`; return; }
+  el.innerHTML = "<thead><tr><th>F-item</th>" + cols.map((c) => `<th>${esc(c)}</th>`).join("") + "<th>Units</th></tr></thead><tbody>" +
+    l.rows.map((r) => `<tr><td><b>${esc(r.f_item)}</b> <span class="muted">${esc(r.title)}</span></td>` +
+      cols.map((c) => c === r.state ? `<td class="cell on">${pill(c)}</td>` : `<td class="cell"></td>`).join("") +
+      `<td class="wrap">${r.units.map((u) => `${esc(u.id)} ${pill(u.state)}`).join(" ")}</td></tr>`).join("") + "</tbody>";
+}
+
+function renderHuman(h) {
+  const qs = (h && h.questions) || [];
+  $("humanBox").hidden = !qs.length && !(h && h.parked);
+  $("parkNote").textContent = h && h.parked ? "- run parked until every open question is answered (POST /api/runs/{id}/answers)" : "";
+  const order = {open: 0, held: 1, answered: 2};
+  table($("questions"), ["Q", "State", "Decision", "Options (recommended *)", "F-items", "Due", "Answer"],
+    qs.slice().sort((a, b) => (order[a.state] ?? 3) - (order[b.state] ?? 3)).map((q) => [q.qid || q.id, {html: pill(q.state)},
+      {html: esc(q.decision), cls: "wrap"},
+      {html: (q.options || []).map((o) => `<code>${esc(o.id)}</code>${o.id === q.recommended ? "*" : ""} ${esc(o.text)}`).join("<br>"), cls: "wrap"},
+      (q.f_items || []).join(", "), time(q.due_ms),
+      q.answer ? `${q.answer.option || ""} (${q.answer.who || ""})` : ""]), "No questions.");
+}
+
+function render(b) {
+  lastBoard = b;
+  renderRuns(b.runs || [], b.run && b.run.id);
+  renderKpis(b);
+  renderActions(b);
+  renderHuman(b.human);
+  renderLanes(b.lanes || {});
+  table($("units"), ["Unit", "State", "Wave", "F-items", "Try", "Model", "Fixer"],
+    (b.units || []).map((u) => [u.id, {html: pill(u.state)}, u.wave, (u.f_items || []).join(", "),
+      u.attempt, u.model || "", u.fixer_gen ? "gen " + u.fixer_gen : ""]), "No units.");
+  $("sealBox").hidden = !(b.seals && b.seals.length);
+  if (b.seals && b.seals.length) {
+    const st = (r) => r.rt_state === "tainted" ? "tainted" : r.ledger_state === "awaiting_signoff" ? "sign-off"
+      : r.rt_state === "sealed" ? "sealed" : r.ledger_state === "sealed" ? "sealed (waits for producers)" : r.ledger_state;
+    table($("seals"), ["Unit", "Try", "Seal", "Score", "Level", "Built on", "Docked"],
+      b.seals.map((r) => [r.final ? "run (final)" : r.unit, r.final ? "" : r.attempt,
+        {html: pill(st(r) === "sealed" ? "green" : ["rejected", "void", "tainted"].includes(st(r)) ? "red" : "pending") + " " + esc(st(r))},
+        r.total == null ? "" : r.total, r.level || "", (r.spec_on || []).join(", ") + (r.tainted_by ? " (tainted)" : ""),
+        {html: esc((r.docked || []).join("; ") + (r.reasons && r.reasons.length ? " | " + r.reasons.join("; ") : "")), cls: "wrap"}]),
+      "No seals.");
+  }
+  table($("gates"), ["Gate", "Unit", "Try", "Result"],
+    (b.gates || []).slice(-30).reverse().map((g) => [g.name, g.unit || "-", g.attempt,
+      {html: g.ok ? `<span class="ok">ok</span>` : `<span class="bad">${esc(g.code)}</span>`}]), "No gates yet.");
+  table($("deploy"), ["Color", "State", "Sha", "When"],
+    (b.deploy || []).map((d) => [d.color, {html: pill(d.state === "live" ? "green" : d.state === "failed" ? "red" : "pending")},
+      {html: `<code>${esc(String(d.sha || "").slice(0, 10))}</code>`}, time(d.ts_ms)]), "Not deployed.");
+  table($("qas"), ["F-item", "Verdict", "Runs", "Quarantined"],
+    (b.qas || []).map((q) => [q.f_item, {html: pill(q.verdict)}, (q.runs || []).map((x) => x ? "+" : "-").join(""),
+      {html: esc((q.quarantined || []).join(", ")), cls: "wrap"}]), "No QAS runs yet.");
+  table($("events"), ["Seq", "Time", "Kind", "Unit", "Detail"],
+    (b.events || []).slice().reverse().map((e) => [e.seq, time(e.ts_ms), e.kind, e.env && e.env.unit || "",
+      {html: `<span class="ev">${esc(JSON.stringify(e.body).slice(0, 220))}</span>`, cls: "wrap"}]), "No events.");
+}
+
+async function poll() {
+  if (view !== "runs") return;
+  try {
+    const r = await fetch("/api/board" + (selected ? "?run=" + encodeURIComponent(selected) : ""), {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const b = await r.json();
+    if (b.run && b.run.state === "green" && (appState.run !== b.run.id || Date.now() - (appState.at || 0) > 10000)) {
+      await refreshApp(b.run.id); appState.at = Date.now();
+    }
+    render(b);
+    $("status").className = "";
+    $("status").textContent = "updated " + new Date().toLocaleTimeString() + " - seq " + b.last_seq;
+  } catch (e) {
+    $("status").className = "off";
+    $("status").textContent = "line server offline (" + e.message + ")";
+  }
+}
+
+// ------------------------------------------------------------------ migrations (feature migration, flow 4)
+// GET /api/migrations, /api/migrations/{id}, /api/migrations/{id}/details, /api/migrations/{id}/report;
+// POST /api/migrations/{id}/answers, /api/migrations/{id}:resume
+const MIG_POLL_MS = 5000;
+const STAGES = ["admitted", "inventoried", "matched", "parked", "decided", "building", "verifying"];
+const FINAL = ["green", "analysed", "escalated"];
+const CLASS_TEXT = {v1_only: "v1 only: migrate", v2_only: "v2 only: protect", both_same: "both, same: verify",
+                    both_conflict: "both, conflicting: decide"};
+let view = "runs", migSel = "", askSig = "", lastMig = null;
+try {
+  const qp = new URLSearchParams(location.search);
+  migSel = qp.get("migration") || "";
+  if (migSel || qp.get("view") === "migrations") view = "migrations";
+} catch (e) {}
+const usd = (v) => (Number(v) || 0).toFixed(2);
+
+function setView(v) {
+  view = v;
+  $("tabRuns").classList.toggle("on", v === "runs");
+  $("tabMig").classList.toggle("on", v === "migrations");
+  $("runsView").hidden = v !== "runs";
+  $("migView").hidden = v !== "migrations";
+  $("runPick").hidden = v !== "runs";
+  $("migPick").hidden = v !== "migrations";
+  const qs = v === "runs" ? (selected ? "?run=" + encodeURIComponent(selected) : "")
+                          : (migSel ? "?migration=" + encodeURIComponent(migSel) : "?view=migrations");
+  try { history.replaceState(null, "", qs || location.pathname); } catch (e) {}
+  if (v === "migrations") pollMig(); else poll();
+}
+
+function migKpis(m) {
+  const b = m.budget || {};
+  const lim = b.limit || 0, pct = lim ? Math.min(100, Math.round(100 * (b.spent || 0) / lim)) : 0;
+  const col = pct >= 100 ? "var(--red)" : pct >= 80 ? "var(--amber)" : "var(--green)";
+  const c = (m.counts && m.counts.matrix) || {};
+  const rc = m.repo_counts || {};
+  const kinds = (m.v1_kind === "estate" ? `${rc.v1 || 0} repos` : "repo") + " to " + (m.v2_kind === "estate" ? `${rc.v2 || 0} repos` : "repo");
+  return [
+    `<div class="kpi"><div class="l">Migration</div><div class="v">${esc(m.id)}</div><div class="muted">${esc(m.mode)}, ${esc(kinds)}</div></div>`,
+    `<div class="kpi"><div class="l">State</div><div class="v">${pill(m.state)}${m.code ? ` <code>${esc(m.code)}</code>` : ""}</div></div>`,
+    `<div class="kpi"><div class="l">Matrix</div><div class="v" style="font-size:14px">` +
+      `<span class="c-v1_only">${c.v1_only || 0} migrate</span>, <span class="c-v2_only">${c.v2_only || 0} protect</span>, ` +
+      `<span class="c-both_same">${c.both_same || 0} verify</span>, <span class="c-both_conflict">${c.both_conflict || 0} decide</span></div></div>`,
+    `<div class="kpi"><div class="l">Migration USD</div><div class="v">${usd(b.spent)} / ${lim ? usd(lim) : "-"}</div>` +
+      `<div class="bar"><i style="width:${pct}%;background:${col}"></i></div></div>`,
+    `<div class="kpi"><div class="l">Build run USD</div><div class="v">${usd(b.build_spent)}${b.build_limit ? " / " + usd(b.build_limit) : ""}</div></div>`,
+    `<div class="kpi"><div class="l">Open decisions</div><div class="v ${(m.open_conflicts || []).length ? "bad" : ""}">${(m.open_conflicts || []).length}</div></div>`,
+    `<div class="kpi"><div class="l">Build run</div><div class="v">${m.run ? `<button class="btn" type="button" data-run="${esc(m.run)}">${esc(m.run)}</button>` : "-"}</div></div>`,
+  ].join("");
+}
+
+function migStages(m) {
+  const final = FINAL.includes(m.state);
+  const at = STAGES.indexOf(m.state);
+  return STAGES.filter((s) => s !== "parked" || m.state === "parked").map((s) => {
+    const idx = STAGES.indexOf(s);
+    const cls = final || (at >= 0 && idx < at) ? "done" : s === m.state ? "now" : "";
+    return `<span class="stage ${cls}">${esc(s)}</span>`;
+  }).join("") + (final ? `<span class="stage now">${esc(m.state)}</span>` : "");
+}
+
+function renderAsk(v) {
+  const qs = v.questions || [];
+  const m = v.migration || {};
+  $("mAskBox").hidden = !qs.length;
+  const sig = m.id + "|" + qs.map((q) => q.conflict).join(",");
+  if (sig === askSig) return;          // never wipe what a person is choosing or typing
+  askSig = sig;
+  if (!qs.length) { $("mAsk").innerHTML = ""; return; }
+  $("mAsk").innerHTML = qs.map((q) => `<div class="q">` +
+    `<div><b>${esc(q.conflict)}</b> ${esc(q.feature)} <span class="muted">${esc(q.kind || "conflict")}</span></div>` +
+    `<div class="note">${esc(q.text)}${q.why ? " (" + esc(q.why) + ")" : ""}</div>` +
+    (q.options || []).map((o) => `<label><input type="radio" name="q-${esc(q.conflict)}" value="${esc(o.id)}"${o.recommended ? " checked" : ""}> ` +
+      `<code>${esc(o.id)}</code> ${esc(o.label || o.text || "")}${o.recommended ? ` <span class="muted">(recommended)</span>` : ""}</label>`).join("") +
+    `</div>`).join("") +
+    `<div style="margin-top:8px"><label class="muted">Who <input type="text" id="mWho" placeholder="your name" style="width:180px"></label> ` +
+    `<button class="btn primary" type="button" id="mAnswer">Send answers</button> <span class="err" id="mAnswerErr"></span></div>`;
+  $("mAnswer").addEventListener("click", () => sendAnswers(m.id, qs));
+}
+
+async function sendAnswers(mid, qs) {
+  const answers = qs.map((q) => {
+    const sel = [...document.querySelectorAll("#mAsk input[type=radio]")].find((i) => i.name === "q-" + q.conflict && i.checked);
+    return {conflict: q.conflict, choice: sel ? sel.value : ""};
+  }).filter((a) => a.choice);
+  const who = ($("mWho").value || "").trim() || "board";
+  $("mAnswer").disabled = true;
+  try {
+    const r = await fetch(`/api/migrations/${encodeURIComponent(mid)}/answers`, {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({answers, who})});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.message || ("HTTP " + r.status));
+    askSig = "";
+    pollMig();
+  } catch (e) {
+    $("mAnswerErr").textContent = e.message;
+    $("mAnswer").disabled = false;
+  }
+}
+
+function renderBudget(m) {
+  const stopped = m.state === "escalated" && m.code === "MIGRATION_BUDGET";
+  $("mBudgetBox").hidden = !stopped;
+  if (!stopped) return;
+  const b = m.budget || {}, d = m.detail || {};
+  $("mBudgetNote").textContent = `${m.message || "The budget is used up."} Spent $${usd(b.spent)} of $${usd(b.limit)}` +
+    (d.scope === "repo" ? `; repositories over their cap of $${usd(b.limit_repo)}: ${(d.repos || []).join(", ")}.` : ".") +
+    ` It resumes at "${d.resume_state || "admitted"}"; finished repository scans are kept.`;
+  if (document.activeElement !== $("mMaxUsd") && !$("mMaxUsd").value) $("mMaxUsd").value = Math.ceil((b.limit || 0) * 1.5);
+  if (document.activeElement !== $("mMaxRepo") && !$("mMaxRepo").value && d.scope === "repo") $("mMaxRepo").value = Math.ceil((b.limit_repo || 0) * 2);
+}
+
+async function resumeMig() {
+  if (!lastMig) return;
+  const body = {};
+  if ($("mMaxUsd").value) body.max_usd = Number($("mMaxUsd").value);
+  if ($("mMaxRepo").value) body.max_usd_repo = Number($("mMaxRepo").value);
+  $("mResumeErr").textContent = "";
+  try {
+    const r = await fetch(`/api/migrations/${encodeURIComponent(lastMig)}:resume`, {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.message || ("HTTP " + r.status));
+    $("mMaxUsd").value = ""; $("mMaxRepo").value = "";
+    pollMig();
+  } catch (e) { $("mResumeErr").textContent = e.message; }
+}
+
+function evidenceHtml(ev, fid) {
+  const f = fid && ev[fid];
+  if (!f) return "";
+  return `<details class="ev"><summary>${esc(fid)}${f.repo ? ", " + esc(f.repo) : ""}</summary>` +
+    `<div class="note">${esc(f.behaviour)}</div>` +
+    (f.quotes || []).map((q) => `<div><code>${esc(q.path)}</code>${q.verified ? "" : ` <span class="bad">(not found)</span>`}` +
+      `<pre class="report" style="max-height:160px;margin:4px 0">${esc(q.quote)}</pre></div>`).join("") + `</details>`;
+}
+
+function renderMatrix(features, ev) {
+  const byArea = {};
+  features.forEach((r) => (byArea[r.area || "Other"] = byArea[r.area || "Other"] || []).push(r));
+  const areas = Object.keys(byArea).sort();
+  $("mMatrixNote").textContent = features.length ? `- ${features.length} row(s) in ${areas.length} area(s)` : "";
+  if (!features.length) { $("mMatrix").innerHTML = `<div class="empty">No matrix yet (it follows the inventory of both sides).</div>`; return; }
+  const open = new Set([...document.querySelectorAll("#mMatrix details.area[open]")].map((d) => d.dataset.area));
+  const openEv = new Set([...document.querySelectorAll("#mMatrix details.ev[open]")].map((d) => d.dataset.fid));
+  $("mMatrix").innerHTML = areas.map((a) => {
+    const rows = byArea[a];
+    const n = (c) => rows.filter((r) => r.class === c).length;
+    return `<details class="area" data-area="${esc(a)}"${open.has(a) ? " open" : ""}><summary><b>${esc(a)}</b> ` +
+      `<span class="muted">${rows.length}</span> ` +
+      ["v1_only", "v2_only", "both_same", "both_conflict"].filter(n).map((c) => `<span class="pill c-${c}">${n(c)} ${esc(CLASS_TEXT[c])}</span>`).join(" ") +
+      `</summary><div class="scroll"><table><thead><tr><th>Row</th><th>Class</th><th>Feature</th><th>Custom</th><th>Confidence</th><th>Action</th><th>Difference / note</th><th>Evidence</th></tr></thead><tbody>` +
+      rows.map((r) => `<tr><td>${esc(r.id)}</td><td><span class="pill c-${esc(r.class)}">${esc(CLASS_TEXT[r.class] || r.class)}</span></td>` +
+        `<td class="wrap">${esc(r.name)}${r.in_scope === false ? ` <span class="muted">(out of scope)</span>` : ""}${r.planned_not_built ? ` <span class="muted">(planned in v2, not built)</span>` : ""}</td>` +
+        `<td>${r.custom ? "<b>custom</b>" : ""}</td><td>${esc(r.confidence)}</td><td>${esc(r.action)}</td>` +
+        `<td class="wrap">${esc(r.difference || r.note || "")}</td>` +
+        `<td class="wrap">${evidenceHtml(ev, r.v1)}${evidenceHtml(ev, r.v2)}</td></tr>`).join("") +
+      `</tbody></table></div></details>`;
+  }).join("");
+  document.querySelectorAll("#mMatrix details.ev").forEach((d) => {
+    d.dataset.fid = d.querySelector("summary").textContent;
+    if (openEv.has(d.dataset.fid)) d.open = true;
+  });
+}
+
+function renderMigDetails(d) {
+  const repos = [];
+  ["v1", "v2"].forEach((side) => ((d.repos || {})[side] || []).forEach((r) => repos.push([side, r.repo || r.name || "",
+    r.ref || "-", {html: `<code>${esc(String(r.sha || "").slice(0, 10))}</code>`}, (r.stacks || []).join(", ") || "-",
+    r.features == null ? "-" : r.features, {html: pill(r.status || "pending") + (r.cached ? ` <span class="muted">cached</span>` : "")},
+    {html: esc(r.error || ""), cls: "wrap"}])));
+  table($("mRepos"), ["Side", "Repository", "Ref", "Commit", "Stack", "Features", "Status", "Error"], repos,
+    "Not scanned yet.");
+  const b = d.blast || {};
+  table($("mChanges"), ["Row", "Feature", "Change", "Level", "Protected at risk"],
+    (b.changes || []).map((c) => [c.row, c.feature, c.kind + (c.replaces ? " (replaces " + c.replaces + ")" : ""),
+      {html: `<span class="lvl-${esc(c.level)}">${esc(c.level || "-")}</span>`}, c.at_risk || 0]), "No changes (yet).");
+  table($("mRisk"), ["Row", "Feature", "Why", "Guarding tests"],
+    (b.at_risk || []).map((r) => [r.row, r.name, {html: esc(r.reason), cls: "wrap"}, {html: esc((r.tests || []).join(", ")), cls: "wrap"}]),
+    "No protected feature shares data, interfaces or modules with the changes.");
+  table($("mGates"), ["Kind", "Name", "Detail"],
+    (b.gates || []).map((g) => ["gate", g.name, {html: esc((g.behaviour ? g.behaviour + "; " : "") + "applies to: " + (g.applies_to || []).join(", ")), cls: "wrap"}])
+      .concat((b.merges || []).map((m) => [{html: `<span class="lvl-high">merge</span>`}, m.feature, {html: esc("into live v2 data: " + (m.entities || []).join(", ")), cls: "wrap"}])),
+    "No gates or merges.");
+  table($("mEffort"), ["Area", "Port", "Protect", "Conflicts", "Entities", "Services", "Screens", "Handlers", "Tests", "High blast"],
+    ((d.effort || {}).areas || []).map((a) => [a.area, a.port, a.protect, a.conflicts, a.entities, a.services, a.screens, a.handlers, a.tests, a.high_blast]),
+    "No effort hints yet.");
+  table($("mDecisions"), ["Conflict", "Choice", "Who", "When", "Backup"],
+    (d.decisions || []).map((x) => [x.conflict || x.id, x.choice, x.who, time(x.decided_ms || x.ts_ms), {html: esc(x.backup || ""), cls: "wrap"}]),
+    "No decisions yet.");
+  table($("mTimeline"), ["Seq", "Time", "Kind", "Detail"],
+    (d.timeline || []).slice().reverse().slice(0, 80).map((e) => [e.seq, time(e.ts_ms), e.kind,
+      {html: `<span class="ev">${esc(JSON.stringify(e.body).slice(0, 220))}</span>`, cls: "wrap"}]), "No events.");
+}
+
+async function pollMig() {
+  if (view !== "migrations") return;
+  try {
+    const r = await fetch("/api/migrations", {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const list = (await r.json()).migrations || [];
+    const sel = $("migSel");
+    sel.innerHTML = `<option value="">(newest)</option>` + list.map((m) => `<option value="${esc(m.id)}">${esc(m.id)} - ${esc(m.state)}</option>`).join("");
+    sel.value = migSel;
+    const id = migSel || (list[0] && list[0].id);
+    if (!id) {
+      $("mKpis").innerHTML = `<div class="empty">No migrations yet.</div>`;
+      $("mStages").innerHTML = ""; $("mMsg").textContent = ""; $("mAskBox").hidden = true; $("mBudgetBox").hidden = true;
+      renderMatrix([], {}); renderMigDetails({});
+    } else {
+      const [vr, dr] = await Promise.all([fetch(`/api/migrations/${encodeURIComponent(id)}`, {cache: "no-store"}),
+                                          fetch(`/api/migrations/${encodeURIComponent(id)}/details`, {cache: "no-store"})]);
+      if (!vr.ok) throw new Error("HTTP " + vr.status);
+      const v = await vr.json(), d = dr.ok ? await dr.json() : {};
+      const m = v.migration || {};
+      if (lastMig !== m.id) { $("mReport").hidden = true; $("mReport").textContent = ""; askSig = ""; }
+      lastMig = m.id;
+      $("mKpis").innerHTML = migKpis(m);
+      $("mStages").innerHTML = migStages(m);
+      $("mMsg").textContent = m.message ? m.message : (m.state === "parked" ? "Parked: answer the decisions below to continue." : "");
+      renderAsk(v);
+      renderBudget(m);
+      renderMatrix(v.features || [], d.evidence || {});
+      renderMigDetails(d);
+    }
+    $("status").className = "";
+    $("status").textContent = "updated " + new Date().toLocaleTimeString();
+  } catch (e) {
+    $("status").className = "off";
+    $("status").textContent = "line server offline (" + e.message + ")";
+  }
+}
+
+async function showReport() {
+  if (!lastMig) return;
+  const el = $("mReport");
+  if (!el.hidden) { el.hidden = true; return; }
+  try {
+    const r = await fetch(`/api/migrations/${encodeURIComponent(lastMig)}/report`, {cache: "no-store"});
+    const j = await r.json();
+    el.textContent = j.ready ? j.report : "No report yet: it is written when the migration ends (green, analysed or escalated).";
+  } catch (e) { el.textContent = "Could not load the report: " + e.message; }
+  el.hidden = false;
+}
+
+$("runSel").addEventListener("change", (ev) => {
+  selected = ev.target.value;
+  try { history.replaceState(null, "", selected ? "?run=" + encodeURIComponent(selected) : location.pathname); } catch (e) {}
+  poll();
+});
+$("migSel").addEventListener("change", (ev) => { migSel = ev.target.value; askSig = ""; setView("migrations"); });
+$("tabRuns").addEventListener("click", () => setView("runs"));
+$("tabMig").addEventListener("click", () => setView("migrations"));
+$("mReportBtn").addEventListener("click", showReport);
+$("mResume").addEventListener("click", resumeMig);
+$("loginBtn").addEventListener("click", () => login().catch((e) => { $("loginErr").textContent = e.message; }));
+$("logoutBtn").addEventListener("click", () => {
+  const idt = AUTH.access;
+  SS.removeItem("dlc.tok");
+  if (AUTH.enabled) location.href = oidc("logout") + "?" + new URLSearchParams({client_id: AUTH.cfg.client_id,
+    post_logout_redirect_uri: redirectUri()});
+});
+$("mKpis").addEventListener("click", (ev) => {
+  const b = ev.target.closest && ev.target.closest("button[data-run]");
+  if (b) { selected = b.dataset.run; setView("runs"); }
+});
+authInit().then((ok) => {
+  if (!ok) return;
+  setView(view);
+  setInterval(poll, POLL_MS);
+  setInterval(pollMig, MIG_POLL_MS);
+});
+</script>
+</body>
+</html>

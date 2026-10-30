@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KH Hook Split Trial</title>
+<style>
+:root{color-scheme:dark;--bg:#0f1218;--fg:#e3e7ef;--muted:#98a2b3;--line:#2b3240;--head:#1a1f29;--win:#173a26;--accent:#7cc4ff}
+html,body{background:var(--bg)}
+body{font-family:Segoe UI,Arial,sans-serif;max-width:920px;margin:24px auto;padding:0 16px;color:var(--fg);line-height:1.5}
+h1{font-size:22px}h2{font-size:17px;margin-top:28px;color:var(--accent)}
+table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:right}th:first-child,td:first-child{text-align:left}
+th{background:var(--head)}.win{background:var(--win);font-weight:600}.note{color:var(--muted);font-size:13px}
+b{color:#fff}
+</style></head><body>
+<h1>Nạp dần policy: thử nghiệm và đo thật sau khi áp</h1>
+
+<h2>Kết luận: giữ cách mới</h2>
+<p><b>Ở session dài 10 câu, cách mới đúng hơn ở cả local lẫn prod; local rẻ hơn 20%, prod gần bằng tiền.</b> Đo 2026-10-04, cùng dữ liệu KH thật, mỗi bản 2 lần, điểm tối đa 6 (6 câu có đáp án).</p>
+<table><tr><th>Session 10 câu (trung bình 2 lần)</th><th>Tiền (USD)</th><th>Token</th><th>Điểm / 6</th></tr>
+<tr><td>Local cũ</td><td>0.896</td><td>2.23M</td><td>4.42</td></tr>
+<tr class="win"><td>Local mới</td><td>0.715 (−20%)</td><td>1.83M (−18%)</td><td>4.70</td></tr>
+<tr><td>Prod cũ</td><td>0.857</td><td>1.74M</td><td>4.70</td></tr>
+<tr class="win"><td>Prod mới</td><td>0.835 (−3%)</td><td>1.88M (+8%)</td><td>5.50</td></tr></table>
+<ul>
+<li>Câu chào, cảm ơn, tóm tắt (lượt 7, 8, 10) rẻ hơn ở bản mới vì hook mỗi lượt ngắn lại.</li>
+<li>Mỗi session chỉ lấy policy 4-5 lần rồi dùng lại.</li>
+<li>Hai lần chạy của cùng một bản chênh nhau tới 0.35 USD và 1 điểm, nên cần thêm lần đo nếu muốn con số chắc hơn.</li>
+</ul>
+<h2>Chốt chặn để không phình lại</h2>
+<ul>
+<li>Action "create or update policy" (8 bước) đã có trên local, dev, prod: phân loại, sửa dòng cũ thay vì thêm mới, viết theo khuôn, giữ trong giới hạn, thử 3 câu đúng 2 câu sai trước khi bật.</li>
+<li>Code KH: ghi quá giới hạn bị trả 422, cảnh báo action trùng nhau, đếm số lần lấy policy, route /policy/lint, menu tự sinh bằng {menu}. Test pass, chờ passcode cf để lên dev rồi prod.</li>
+</ul>
+
+<h2>Đo thật sau khi áp (bench 5 câu, mỗi câu 1 lượt hỏi)</h2>
+<p><b>Trên bench thật, cách mới chưa thấy lời:</b> điểm gần như giữ nguyên, tiền không giảm. Lý do là bench chỉ hỏi 1 câu mỗi session, nên phần tiết kiệm mỗi lượt chưa kịp có tác dụng, còn bước lấy policy lại thêm lượt gọi. Cái lời thật nằm ở session dài nhiều lượt (phần thử nghiệm bên dưới).</p>
+<table><tr><th>Tổng 5 câu (trung vị)</th><th>Trước khi áp</th><th>Sau khi áp + 2 lần sửa</th></tr>
+<tr><td>Prod: điểm / token / tiền</td><td>3.80 / 1.30M / 0.86</td><td>3.70 / 1.37M / 0.93</td></tr>
+<tr><td>Local: điểm / token / tiền</td><td>3.68 / 1.43M / 0.83</td><td>3.20 / 1.60M / 0.84</td></tr>
+<tr><td>Không KH (không đổi gì, để thấy độ nhiễu)</td><td>3.15 / 0.78M / 0.54</td><td>2.56 / 1.54M / 1.00</td></tr></table>
+<ul>
+<li>Bản không KH chẳng đổi gì mà điểm vẫn tụt 0.6 và token tăng gấp đôi: chênh lệch dưới mức đó chưa nói lên được gì.</li>
+<li>Local tụt chủ yếu ở X2 (Hugh Le: 0.75 xuống 0.5) và W1 (0.33 xuống 0). P2 (cách deploy ticketing) đã lên lại 0.7, M3 về 1.0.</li>
+<li>Prod: token ở các câu tra cứu ngắn tăng gần gấp đôi (X2 65k lên 138k, M3 108k lên 224k) vì mỗi câu thêm bước lấy policy; điểm giữ nguyên.</li>
+<li>R1 và W1 ở cột "sau" đo trước khi sửa lỗi tra cứu, nên có thể còn bị ảnh hưởng.</li>
+</ul>
+<h2>2 lỗi tìm ra khi đo, đã sửa ở local</h2>
+<ul>
+<li>Policy "search knowledge" bắt tra qua hybrid/resolve, trả rỗng thì LLM kết luận KH không có gì. Sửa: tra thẳng từng project, cả knowledge lẫn log.</li>
+<li>LLM lấy các bước chung của policy "deploy" làm câu trả lời, bỏ qua cách deploy thật của project. Sửa: policy chỉ là cách làm, thông tin của project vẫn phải tra trong KH.</li>
+</ul>
+
+<h2>Thử nghiệm trước khi áp (20 case từ worklog của fen, giả lập)</h2>
+<p><b>Nạp dần (D) thắng, không mất độ đúng:</b> 80/80 lượt chọn đúng action ở cả hai cách. Lượt đơn rẻ hơn 74%. Session 10 lượt rẻ hơn 35%, với điều kiện mỗi lượt nhắc rõ "policy đã có thì dùng lại".</p>
+
+<h2>Cái gì áp dụng được ngay</h2>
+<ul>
+<li>Mở session: config (xưng hô, chat style, ngôn ngữ, work mode, máy) + menu action, khoảng 4,200 ký tự.</li>
+<li>Mỗi lượt chat: 1 dòng "chọn label từ menu, policy nào chưa có trong hội thoại thì mới lấy".</li>
+<li>Artifact là một action riêng ("create or publish artifact"): cả 2 cách đều làm đúng, không ai bảo thì ghi HTML local, bảo rõ thì publish private.</li>
+</ul>
+
+<h2>20 case, mỗi case 2 lần</h2>
+<table><tr><th></th><th>A nạp hết lúc mở</th><th>C nạp dần</th></tr>
+<tr><td>Chọn đúng action</td><td>40/40</td><td>40/40</td></tr>
+<tr><td>Chi phí trung bình 1 lượt</td><td>0.150 USD</td><td class="win">0.039 USD</td></tr>
+<tr><td>Thời gian</td><td>10.9 s</td><td>10.7 s</td></tr>
+<tr><td>Số bước model</td><td>1</td><td>2.35 (thêm bước lấy policy)</td></tr></table>
+<ul>
+<li>6 câu mơ hồ ("bên Pacific có gì mới không", "đồng bộ prod với dev đi"...): cả 2 cách đều đoán 1 đến 3 action, đều nằm trong nhóm hợp lý.</li>
+<li>C đôi khi lấy dư một policy để xem rồi bỏ (ví dụ lấy thêm "implement new project" cho câu dashboard).</li>
+<li>12 câu rõ và 2 câu chỉ định action: đúng hết.</li>
+</ul>
+
+<h2>Session 10 lượt (mỗi lượt một việc, có lặp lại việc cũ)</h2>
+<table><tr><th>Cách</th><th>Lượt 1</th><th>Lượt có action mới</th><th>Lượt dùng lại action cũ</th><th>Tổng 10 lượt</th></tr>
+<tr><td>A nạp hết</td><td>0.151</td><td>~0.02</td><td>~0.017</td><td>0.320</td></tr>
+<tr><td>C nạp dần, nhắc "fetch"</td><td>0.021</td><td>~0.03</td><td>~0.03 (lấy lại)</td><td>0.291</td></tr>
+<tr class="win"><td>D nạp dần, nhắc "dùng lại"</td><td>0.040</td><td>~0.026</td><td>~0.012</td><td>0.209 (2 lần: 0.199, 0.220)</td></tr></table>
+<ul>
+<li>C bị lỗi lấy lại policy ở mọi lượt, nên cache phình từ 42k lên 93k token và từ lượt 12 trở đi sẽ đắt hơn A.</li>
+<li>D chỉ lấy khi gặp action mới; lượt dùng lại chỉ đọc khoảng 30k token cache, rẻ hơn A (50-59k).</li>
+<li>Rủi ro còn lại: model phải tự nhận ra action. Trong 100 lượt thử chưa thấy bỏ sót, nhưng đây là giả lập, model chỉ lập kế hoạch chứ không làm thật.</li>
+</ul>
+
+<h2>Cách đo</h2>
+<p class="note">Profile Claude Code mới, model claude-sonnet-5-5, KH giả bằng JSON (C:/RWTemp/kh-split-trial/mock_kh.json): 21 action, 73.9k ký tự, gồm 6 policy thật của KH local và 15 action viết từ worklog và kinh nghiệm của fen (commit/push, deploy, fix QC, cấp quyền, browser, dump data, chạy nền, artifact...). Mỗi policy có dấu [policy:tên] để kiểm model thật sự đã nạp và làm theo. Kiểu A phải chia 9 hook vì mỗi hook tối đa 10,000 ký tự. Dữ liệu: results/trial2-20261004-160636.json và trial2-session-20261004-162433.json. Lần thử đầu (3 case, 5 lượt) cũng cho kết quả cùng chiều.</p>
+</body></html>

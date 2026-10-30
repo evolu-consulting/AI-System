@@ -1,0 +1,21 @@
+{
+  "findings": [
+    {
+      "severity": "major",
+      "file": "todo/cmd_add.py",
+      "line": 8,
+      "issue": "TEXT is stored with its surrounding spaces, so `list` shows a different text than was added",
+      "spec_quote": "`add TEXT` stores a new open task and prints `added ID`",
+      "span_id": "spec.md#L18-22",
+      "fix": "store the joined TEXT without surrounding spaces"
+    },
+    {
+      "severity": "minor",
+      "file": "todo/cmd_list.py",
+      "line": 1,
+      "issue": "style",
+      "spec_quote": "short"
+    }
+  ],
+  "summary": "one blocking finding"
+}

@@ -1,3 +1,8 @@
 * text=auto eol=lf
 *.png binary
 *.jpg binary
+# services/: script Windows giữ CRLF
+services/**/*.bat text eol=crlf
+services/**/*.cmd text eol=crlf
+services/**/*.ps1 text eol=crlf
+services/**/*.vbs text eol=crlf

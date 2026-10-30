@@ -1,0 +1,4 @@
+# Generated per run on each machine
+run/
+results/
+__pycache__/

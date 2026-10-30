@@ -1,0 +1,115 @@
+{
+  "source": "DLC run databases, 84 runs, 2026-10-14..17 (C:/DLC/data/dlc/line.db and the NotesApp bench): $145 spent, $86.5 of it in escalated runs",
+  "lessons": [
+    {
+      "text": "LESSON LEARNED [Testing & QA]: Acceptance tests written ahead of the code must be hermetic\nSymptom: A builder agent cannot get a locked acceptance test green although its code is right; the same test passes on one machine and fails on another, or crashes the runtime itself (Node 24 on Windows dies in libuv when the test driver calls process.exit after fetch).\nCause: The test author guessed the environment: it inherited an environment variable from the parent process, used a tool the repository does not declare (esbuild while the bundler uses rolldown), regex-parsed human-readable runner output, read another test file, or ended the process by force.\nFix: Before a test is locked, run it once on the target machine next to the existing locked tests. Use only tools the repository declares directly; give every test its own temp folder and environment; read exit codes or machine-readable output, never console text; let the process end on its own; never read other test files.\nTip: A test that fails for an environment reason is a wrong test, not a code failure: send it back to the test author (or an arbiter) at once instead of retrying the builder.",
+      "metadata": {
+        "category": "Testing & QA",
+        "title": "Acceptance tests written ahead of the code must be hermetic",
+        "severity": "high",
+        "recurring": true,
+        "context": "testing-qa"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [Testing & QA]: In a bug-fix run, an older test that pins the bug's code turns the fix red\nSymptom: The fix is correct and its new regression test passes, but QAS goes red on an older acceptance test that asserts 'notes[position]' or 'position = index + 1' is still in the source.\nCause: An earlier run planted or tolerated the bug and its test checked the source text of the buggy line, so the test now protects the bug.\nFix: Never assert that a known bug is still present, and never assert source text at all. In a bug-fix run, first grep the existing tests for the bug's code fragments and retire or rewrite every match as part of the plan, with the reason recorded.\nTip: Related: 'Prove a test can tell pre-fix code apart' (the regression test must fail on the old code); this is the reverse trap.",
+      "metadata": {
+        "category": "Testing & QA",
+        "title": "In a bug-fix run, an older test that pins the bug's code turns the fix red",
+        "severity": "medium",
+        "recurring": true,
+        "context": "testing-qa"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [Testing & QA]: Acceptance tests must not compare files to git HEAD or the merge-base\nSymptom: A locked test such as 'styles.css differs from main' passes at first, then fails once the line commits the unit, or fails on QAS with 'fatal: not a git repository'; the merger reports a merge conflict with no conflicting file.\nCause: The line commits before it verifies and merges, so HEAD (and the merge-base after a merge) already holds the new code and the diff is empty; QAS deploys a plain export without git history.\nFix: Assert the end state of files and behaviour, never 'changed versus HEAD/main'. When a baseline is unavoidable, pin the commit SHA at the moment the test is locked (e.g. an env var with the base commit). Leave 'only these files changed' rules to the reviewer or the merger.\nTip: Related: 'Before/after comparisons need an immutable baseline'.",
+      "metadata": {
+        "category": "Testing & QA",
+        "title": "Acceptance tests must not compare files to git HEAD or the merge-base",
+        "severity": "high",
+        "recurring": true,
+        "context": "testing-qa"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: Parallel builder agents need claims that cover everything their tests touch\nSymptom: A unit agent stops BLOCKED: 'the F3 tests cannot pass until U5 wires parseSearch into server/app.js, outside my claims', 'package.json is outside my claims', or the test imports a helper module the planner named differently.\nCause: The planner split the files by feature, but the locked tests import, read or need files of another unit: a shared entry file, the manifest, a module name the test author invented.\nFix: Claim every path the unit's locked tests import, read or write; let the spec name new module paths so planner and test author agree; put wiring into a shared entry file in the same unit as the feature, or in a contract unit that runs first; treat manifests, lockfiles and tool configs as shared files any unit may change. When a unit still needs another unit's file, let it wait for that unit's merge instead of escalating.\nTip: The same requests went green with one agent and no claim boundaries; split only when the claims are truly disjoint.",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "Parallel builder agents need claims that cover everything their tests touch",
+        "severity": "high",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: Do not retry an agent block that another attempt cannot change\nSymptom: A unit is retried five or six times on the same BLOCKED reason or resubmits the same diff ('The submission is identical to the previous failed attempt', 'The submission changed no files'), then hits the budget cap; nineteen such attempts cost about $10 in one week.\nCause: The retry ladder treats every failure alike, while the cause lies outside what the agent may change (a wrong locked test, the machine, another unit's files), and the retry prompt does not carry the verifier's evidence, so the agent resubmits blind.\nFix: Classify a BLOCKED reason first: claims (grant or wait), locked test (arbiter rules, repair the test), host (escalate on the first attempt); never climb to a pricier model for a block. Put the gate's failure output into the next prompt. Treat an empty diff as done when the unit's tests are already green.\nTip: Count wasted attempts per cause in the run ledger; it shows which gate or test needs fixing, not which agent.",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "Do not retry an agent block that another attempt cannot change",
+        "severity": "high",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: On an unclear or contradictory spec the agent decides, records and goes on\nSymptom: An autonomous agent finishes the work but ends BLOCKED ('the request asks for both an any-tags and a narrowing filter; these contradict'), the run escalates and the finished work is thrown away; or two readers keep disagreeing on the criteria.\nCause: The prompt allowed stopping on any doubt, and the line treated a raised question as a failure.\nFix: Tell the agent to choose the reading that serves the user best, build it, and record the decision where the next person finds it (a Decisions section in the README, the test name) plus a DECISIONS block in its final message; BLOCKED only when no reasonable reading exists. When the work is green, keep the question for a person and let the run go on. Number the spec's criteria in a table so readers cannot diverge on them.\nTip: The rerun of the same request went green with five recorded decisions (any by default plus a match-all switch).",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "On an unclear or contradictory spec the agent decides, records and goes on",
+        "severity": "medium",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [CI/CD & Deploy]: Gate on a clean export, not on the agent's working copy\nSymptom: The test suite is green in the agent's worktree but red on QAS: 'Cannot find module esbuild', ERR_MODULE_NOT_FOUND, or root acceptance tests that start a nested app fail.\nCause: The worktree carries what the agent installed or left uncommitted; the gate installed the nested app's dependencies after running the root suite; a tool the build uses was never declared.\nFix: Declare every build and test tool as a direct dependency; the engine installs (npm ci) into each worktree, builders never run installs themselves; prepare nested apps before any suite that may start them; before merging, run the suite on a fresh export (git archive + clean install). Deploy QAS from the candidate commit and move main only after QAS is green.\nTip: Related: 'A new worktree needs setup before gate results can be trusted'.",
+      "metadata": {
+        "category": "CI/CD & Deploy",
+        "title": "Gate on a clean export, not on the agent's working copy",
+        "severity": "high",
+        "recurring": true,
+        "context": "ci-cd-deploy"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [Windows & Dev Env]: Windows traps in an automated test gate\nSymptom: The gate fails where the agent's own shell passed: 'WinError 193' running npm, 'WinError 206 filename or extension is too long', a browser or tool found in the shell but not in the gate, 'node --test test/' failing with MODULE_NOT_FOUND on Node 24, backslashes vanishing from paths.\nCause: shutil.which returns the extensionless npm shell shim; thousands of untracked node_modules paths were passed on one git command line; the gate's test environment kept only a whitelist and dropped ProgramFiles, ProgramFiles(x86) and LOCALAPPDATA; Node 24 no longer expands a bare directory for --test; shell quoting ate the backslashes.\nFix: Resolve executables with PATHEXT (npm.cmd) or use Python 3.12.1+; pass file lists through a file or stdin (git --pathspec-from-file), never argv; run tests with the same environment the agent had (or the full OS environment); glob test files explicitly (node --test \"test/**/*.test.js\"); use forward slashes in generated scripts; check the toolchain once per host before any agent runs.\nTip: Related: 'shutil.which returns a shell script, not the .cmd'.",
+      "metadata": {
+        "category": "Windows & Dev Env",
+        "title": "Windows traps in an automated test gate",
+        "severity": "high",
+        "recurring": true,
+        "context": "windows-dev-env"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: Simple first: one strong agent end to end before a team of agents\nSymptom: A multi-agent line (analyst, two readers, test author, planner, parallel builders) costs 3 to 12 times what one agent session spends on the same request and fails more often; on three small-app requests the team lane escalated ($3.3 to $3.9 each) where one agent went green ($0.6 to $1.9).\nCause: Every agent starts cold and pays the reading again; locked tests and file claims add coordination failures that a single agent never has.\nFix: Size each request (a fast mid-size model, four levels): small work goes to one agent with code tools, an independent test gate and a clean-export QAS, plus an independent reviewer for the second level; use the team only for large or risky work, and retry a failed run one level up. Cap the automatic level while the team lane is unproven.\nTip: Measure on a fixed bench (same requests, same baseline) before trusting any orchestration change.",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "Simple first: one strong agent end to end before a team of agents",
+        "severity": "high",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: A failed multi-agent run must not leave main half-merged\nSymptom: After a team run escalates, main already holds its locked tests and some units (three units in one run, two in another); the retry builds on that half-delivered main and fails differently, and a person has to reset main by hand.\nCause: Units merge into main one by one while the run is still going; a later unit or QAS fails after earlier merges.\nFix: Merge units into an integration branch (or test the candidate commit) and fast-forward main only when the whole run is green; a red run leaves main as it was. Until then, revert the failed run's merges before any retry.\nTip: The single-agent lane already works this way: QAS runs the branch commit, main moves after green.",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "A failed multi-agent run must not leave main half-merged",
+        "severity": "high",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    },
+    {
+      "text": "LESSON LEARNED [AI Agents & Claude Code]: Bound every agent call: wall-clock timeout and the whole process tree\nSymptom: A run sits in 'building' for 40 minutes with no output; after a call ends, the engine warns that it left seven processes running.\nCause: The agent started a dev server, watcher or browser to check its work, and the call (or its children) never returned.\nFix: Give each agent call a wall-clock limit and each agent shell command its own timeout; run the call inside a job object (Windows) or process group and kill the whole tree when it ends; tell the agent to stop anything it starts.\nTip: Related: 'TaskStop is not a kill'.",
+      "metadata": {
+        "category": "AI Agents & Claude Code",
+        "title": "Bound every agent call: wall-clock timeout and the whole process tree",
+        "severity": "medium",
+        "recurring": true,
+        "context": "ai-agents-claude-code"
+      }
+    }
+  ]
+}

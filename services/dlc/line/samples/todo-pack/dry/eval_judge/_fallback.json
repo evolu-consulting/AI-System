@@ -1,0 +1,6 @@
+{
+  "verdict": "approve",
+  "safety_ok": true,
+  "cases": [],
+  "reason": "cold start: no recorded case of this key yet; the canary decides"
+}

@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KH roadmap</title>
+<style>
+:root{--bg:#fafaf9;--fg:#1c1c1a;--mut:#6b6b66;--line:#e4e4e0;--card:#fff;--acc:#2f6f5e;--bad:#a4412f;--warn:#9a6b12;--ok:#2f6f5e}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#e8e8e4;--mut:#9a9a93;--line:#2c2c2a;--card:#1d1d1b;--acc:#6fb8a3;--bad:#e08a78;--warn:#d9b060;--ok:#6fb8a3}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1274px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 22px}
+h2{font-size:16px;margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);padding:14px 16px;border-radius:6px}
+.verdict p{margin:5px 0}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.warn{color:var(--warn);font-weight:600}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;margin:8px 0;padding:0 14px}
+summary{cursor:pointer;padding:10px 0;font-weight:600}
+details[open] summary{border-bottom:1px solid var(--line);margin-bottom:8px}
+details p,details ul{margin:6px 0 12px}
+code{font:13px ui-monospace,Consolas,monospace;background:var(--line);padding:0 4px;border-radius:3px}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body><main>
+<h1>KH 6.4 → hệ tri thức cho agent tự vận hành: lộ trình</h1>
+<p class="sub">Đề xuất ngày 2026-09-30, dựa trên những gì đã đo trong đợt maintain hôm nay (<code>docs/maintenance-2026-09-30.md</code>). Mỗi mốc có một con số để kiểm, không chỉ là tính năng. <b>Cập nhật 2026-10-01:</b> thêm phần đánh giá của solution architect ngay bên dưới; lộ trình gốc giữ nguyên để so sánh. <b>Cập nhật 2026-10-03:</b> ước lượng lại theo tốc độ đo được (phần đầu tiên bên dưới).</p>
+
+<div class="verdict">
+<p><b>Ý tưởng của fen đúng hướng và làm được mà không cần fine-tune.</b> KH là bộ nhớ ngoài: thêm một dòng knowledge thì mọi LLM dùng KH biết ngay ở lần gọi sau. Nhưng từ nay, <b>chất lượng knowledge chính là sản phẩm</b>. Không có cơ chế đo và gác cổng thì bộ nhớ sẽ tự làm hỏng chính nó.</p>
+<p>Còn thiếu ba thứ: <b>(1)</b> một bộ chắt log thành knowledge. <b>Quyết định 2026-10-01:</b> chỉ có <b>một LLM chắt, không thuộc user nào</b>; LLM của từng user không chắt nữa. Trước mắt fen tự chạy Claude CLI để chắt mỗi cuối tuần; sau này đổi sang worker tự động theo lịch mà không phải sửa lõi; <b>(2)</b> một bộ lập kế hoạch truy vấn, trả về cho mỗi step đúng một "gói ngữ cảnh" có trần token; <b>(3)</b> một vòng học có đo lường: agent đề xuất bài học, KH chỉ nhận khi bài học vượt qua bộ đo.</p>
+<p>Sáu giai đoạn. Team là fen và Claude Code. <b>Ước lại 2026-10-03 theo tốc độ đo được:</b> phần build còn lại khoảng 14 ngày phiên làm việc (chuẩn: tốc độ đo + 30%); tới lúc bật cơ chế tự cải tiến khoảng 6 tháng nếu phải chờ dữ liệu, khoảng 3,5 tháng nếu chạy lại được trên log cũ (ước cũ: build 4,5–8 tuần, 9–10 tháng và 4,5 tháng). Sau đó tự cải tiến chạy suốt vòng đời KH. Hai giai đoạn đầu mang lại lợi ích lớn nhất cho độ chính xác và số token, và xong được trong khoảng 4 tháng.</p>
+</div>
+
+<h2>Ước lượng lại theo tốc độ đo được (2026-10-03)</h2>
+<div class="verdict">
+<p><b>Chuẩn ước mới (fen chốt 2026-10-03): tốc độ đo được cộng 30% buffer, tức khoảng một nửa ước cũ.</b> A, B, C ước 6–10 ngày (điểm giữa 8), thực tế xong trong 3 ngày (1–3/10), gồm cả đo và deploy: tỉ lệ 3/8 = 0,375. Cộng 30% buffer: 0,375 × 1,3 ≈ 0,49. Từ nay mọi ước lượng code implement dùng chuẩn này (đã lưu vào project knowledge trên KH prod). Theo chuẩn đó, phần build còn lại khoảng <b>14 ngày phiên làm việc (10–19)</b> thay vì 18–33 ngày. Tới lúc bật tự cải tiến: khoảng <b>3,5 tháng</b> (giữa tháng 1/2027) nếu chạy lại được trên log cũ, khoảng <b>6 tháng</b> (cuối tháng 3/2027) nếu phải chờ dữ liệu tích luỹ. Ước cũ là 4,5 và 9–10 tháng.</p>
+<p><b>Code không còn là phần quyết định lịch.</b> Lịch giờ do bốn thứ quyết định: thời gian fen duyệt, nhịp chắt cuối tuần (mỗi tuần một lần), đồng hồ dữ liệu 3 tháng của vòng học, và thời gian chạy thử agent trên việc thật (2–6 tuần).</p>
+</div>
+
+<p><b>Tốc độ đo được</b></p>
+<div class="wrap"><table>
+<tr><th>Việc</th><th>Ước cũ (build)</th><th>Thực tế</th><th>Gồm những gì</th></tr>
+<tr><td>A. Bộ đo</td><td>2–3 ngày</td><td>khoảng 1,5 ngày</td><td>bộ đo 2 tầng, profile riêng, chép prod sang dev, đo nền; còn thiếu lượt đủ 18 câu × 5 lần</td></tr>
+<tr><td>B. <code>/turn/context</code></td><td>1–2 ngày</td><td>khoảng nửa ngày</td><td>code, test, dev, tầng 2, prod, e2e 73/73, nhắn mọi project (2/10)</td></tr>
+<tr><td>C. <code>/context/step</code></td><td>3–5 ngày</td><td>khoảng 1 ngày</td><td>route, 3 sửa mảnh, ngưỡng đo trên prod, 3 lần deploy dev, sửa tốc độ, luật hook trên dev, tầng 2 (3/10); prod còn chờ đo lại</td></tr>
+</table></div>
+<p>Thời gian cố định mỗi vòng, không rút được bằng code nhanh hơn: deploy dev khoảng 10 phút, tầng 2 chạy 1–3 giờ (tốn quota Claude của fen), lên prod và e2e khoảng 1 giờ, cộng thời gian chờ fen (passcode cf, duyệt).</p>
+
+<p><b>Ước lại phần còn lại</b> (cột "Ước mới" = ước cũ × 0,49, đã gồm 30% buffer)</p>
+<div class="wrap"><table>
+<tr><th>Việc</th><th>Ước cũ (build)</th><th>Ước mới (build)</th><th>Phải chờ gì</th><th>Sớm nhất xong</th></tr>
+<tr><td>A, C chốt lại</td><td>–</td><td>nửa ngày</td><td>tầng 2 đo lại (đang chạy), fen cho lên prod, phát hành kh-helper 1.9.1</td><td>tuần 5–11/10</td></tr>
+<tr><td>D. Chắt hằng tuần</td><td>2–4 ngày</td><td>1–2 ngày</td><td>fen duyệt schema mẩu tri thức và mẫu chắt; lần chắt cuối tuần đầu tiên; chạy lại log cũ (khoảng 1 ngày quota)</td><td>cuối tuần 10–11/10</td></tr>
+<tr><td>F. Nhiều instance</td><td>2–4 ngày</td><td>1–2 ngày</td><td>không</td><td>tuần 12–18/10</td></tr>
+<tr><td>E. Worker tự chắt + summary ngày</td><td>3–5 ngày</td><td>1,5–2,5 ngày</td><td>fen chọn LLM và trần chi phí; 2–3 lần chắt tay cuối tuần để so worker với người</td><td>cuối tháng 10</td></tr>
+<tr><td>3. Vòng học</td><td>(trong giai đoạn 3, khoảng 2–4 ngày)</td><td>1–2 ngày</td><td>dữ liệu kết quả từng step: chạy lại trên log cũ rồi xác nhận live 1–2 tuần, hoặc tích luỹ 3 tháng</td><td>giữa tháng 11, hoặc giữa tháng 1/2027</td></tr>
+<tr><td>4. Nhiều agent</td><td>1–2 tuần</td><td>2,5–5 ngày</td><td>chạy thử trên việc thật 2–6 tuần; fen quyết quyền</td><td>giữa tháng 12, hoặc tháng 2/2027</td></tr>
+<tr><td>5. Bật tự cải tiến</td><td>1–2 tuần</td><td>2,5–5 ngày</td><td>vòng đề xuất → đo → nhận đầu tiên chạy thật</td><td>đầu tháng 1/2027, hoặc tháng 3/2027</td></tr>
+<tr><td><b>Tổng build còn lại</b></td><td>18–33 ngày</td><td><b>khoảng 14 ngày (10–19)</b></td><td></td><td></td></tr>
+</table></div>
+
+<div class="wrap"><table>
+<tr><th>Tới lúc bật tự cải tiến (tính từ 30/9)</th><th>Ước cũ</th><th>Ước mới</th><th>Ước mới + 30% dự phòng cho thời gian duyệt của fen</th></tr>
+<tr><td>Chạy lại được trên log cũ</td><td>khoảng 4,5 tháng</td><td>khoảng 3 tháng (đầu tháng 1/2027)</td><td><b>khoảng 3,5 tháng (giữa tháng 1/2027)</b></td></tr>
+<tr><td>Phải tích luỹ dữ liệu</td><td>khoảng 9–10 tháng</td><td>khoảng 5 tháng (đầu tháng 3/2027)</td><td><b>khoảng 6 tháng (cuối tháng 3/2027)</b></td></tr>
+</table></div>
+<p>Vì sao trường hợp tích luỹ ngắn lại nhiều: việc build nhiều agent (giai đoạn 4) làm song song trong lúc chờ 3 tháng dữ liệu, thay vì làm nối tiếp như lịch cũ. Đồng hồ dữ liệu bắt đầu từ lúc ghi kết quả từng step, nên <b>bật ghi kết quả từng step càng sớm càng tốt</b>: có thể gắn vào <code>/context/step</code> ngay trong D, không cần chờ.</p>
+<p><b>Giới hạn của ước lượng:</b> chuẩn 0,49 đo trên 3 việc nhỏ, không có việc nào chạm schema mới hay LLM mới. D và E chạm cả hai, nên có thể chậm hơn tỉ lệ 4 lần. Thời gian duyệt của fen chưa đo; 30% dự phòng là để cho phần đó.</p>
+
+<h2>Đánh giá solution architect (2026-10-01): đề xuất tối ưu hơn</h2>
+<div class="verdict">
+<p><b>Hướng đi giữ nguyên, chỉ đổi thứ tự và thêm vài chốt chặn.</b> Bài thử step-wise ngày 2026-09-30 cho thấy chi phí nằm ở <b>số lượt LLM phải đọc lại ngữ cảnh</b> (mỗi lượt thêm khoảng 20–30k token), không nằm ở KH. Vậy việc lời nhất là bớt lượt, trước khi xây thêm tính năng. Chữ hook chèn vào trên BTP đã nhỏ (khoảng 9 KB cho cả phiên, đo 2026-10-01), nên bớt chữ là phần lời phụ.</p>
+</div>
+
+<p><b>Chốt chặn cho bộ chắt</b> (<b>Quyết định 2026-10-01:</b> một LLM chắt duy nhất, trước mắt là Claude CLI do fen chạy mỗi cuối tuần, sau này là worker tự động)</p>
+<div class="wrap"><table>
+<tr><th>Vấn đề</th><th>Vì sao</th><th>Đề xuất</th></tr>
+<tr><td class="warn">Chỉ chắt log đã được phép</td><td>Lần chắt chạy bằng quyền maintainer của fen, đọc được log của mọi người</td><td><code>/distill/next</code> chỉ phát log của project hoặc tenant có cờ đồng ý (project của fen mặc định bật). Mỗi project giữ một mốc "đã chắt tới ts nào", nên lần chạy sau chỉ lấy log mới và chạy lại không chắt trùng</td></tr>
+<tr><td class="warn">Kết quả chắt đi lên knowledge chung</td><td>Mẩu chắt sai hoặc còn sót tên, e-mail thì lan ngay cho mọi người</td><td>Khi <code>/distill/submit</code>, KH tự chạy bộ test rò rỉ bằng code (tên, e-mail, tên khách hàng, host, secret) và ghi lại model nào đã chắt. Mẩu qua test vào hàng chờ; fen duyệt ngay trong lần chạy cuối tuần rồi mới lên project <code>knowledge</code></td></tr>
+<tr><td class="warn">Cờ đồng ý đặt ở đâu</td><td>KH đang giữ đúng nguyên tắc "không giữ dữ liệu quyền"; mọi quyền nằm ở Keycloak</td><td>Đặt cờ ở Keycloak (cột mới trên <code>KH_AUTH_PROJECT</code> hoặc thuộc tính tenant), đi vào claim <code>kh</code> như các quyền khác</td></tr>
+</table></div>
+
+<p><b>Thứ tự mới đề xuất</b> (chờ fen chốt; thời gian build là ước tính theo tốc độ Claude Code, chưa đo)</p>
+<div class="wrap"><table>
+<tr><th>#</th><th>Việc</th><th>Thay cho</th><th>Build</th><th>Đo bằng gì</th><th>Status</th></tr>
+<tr><td><b>A</b></td><td>Bộ đo tính cả chi phí: độ đúng, token, số lượt, tiền, thời gian; mỗi bên chạy 3 lần, chấm bằng code. <b>Fen chốt 2026-10-01:</b> bên vận hành bộ đo chạy trên KH local 9000 (bộ câu hỏi, danh sách ý bắt buộc, ngưỡng, kế hoạch và lịch sử kết quả đều nằm ở đây). Hai bên được đo là hai bản trên BTP: dev <code>kh-sso</code> (bản có tính năng mới) và prod <code>knowledge-hub</code> (bản đối chứng). Quy trình cho mỗi tính năng: build lên dev → đo dev so với prod → đạt kỳ vọng đặt trước thì mới nâng cấp prod. Dữ liệu: trước mỗi lần đo, chép dữ liệu prod sang dev để hai bên giống nhau (fen chốt 2026-10-01). Mỗi lần chạy <code>claude -p</code> dùng profile riêng chỉ trỏ tới dev hoặc prod, không kế thừa hook của 9000. Sửa MCP của kh-helper khi chạy headless (bắt buộc, vì cả hai bên đều cần đăng nhập)</td><td>Giai đoạn 0</td><td>2–3 ngày</td><td>Chạy được trước mỗi lần nâng cấp prod, có bảng số dev so với prod</td><td><b>Đang chốt</b> (2026-10-02): đã chạy thật, đang đo đủ 18 câu × 5 lần</td></tr>
+<tr><td><b>B</b></td><td>Gọn hook: một route <code>/turn/context</code> do hook tự gọi (project, policy plan, findings, message), chỉ chèn kết quả, và bỏ các lần gọi lặp (bài thử 2026-09-30 trên dev: <code>/policy/actions</code> gọi 2 lần, <code>/orchestrator/project_match</code> gọi 2 lần, 5–12 lần gọi KH mỗi câu). <b>Số liệu sửa ngày 2026-10-01:</b> con số 38 KB SessionStart và 12 KB mỗi prompt ghi trước đây là đo trên KH local 9000 (profile của fen), không phải BTP. Trên BTP, đo bằng tài khoản bench, dev và prod như nhau: SessionStart 6,9 KB, UserPromptSubmit 1,5 KB mỗi prompt, PreToolUse 0,7 KB mỗi lần gọi tool, Stop 0,2 KB, personalization 0,3 KB. Chữ chèn vào trên BTP nhỏ hơn khoảng 5 lần, nên phần lời của việc B chủ yếu nằm ở việc bớt lượt gọi KH, không nằm ở việc bớt chữ</td><td>Mới</td><td>1–2 ngày</td><td>Lần gọi KH trước khi làm việc giảm còn 1; không còn lần gọi lặp; độ đúng không giảm. Mức giảm token chưa đặt: sẽ đặt sau lần đo nền tầng 2 (dev giống prod), vì kỳ vọng cũ "giảm ≥ 50%" dựa trên số đo của local 9000. <b>Đo nền 2026-10-02:</b> hook chỉ khoảng 2–3k trên sàn 79k token mỗi câu, nên mục tiêu của B là số lượt và số lần gọi KH, không phải chữ</td><td><b>Xong</b>: lên prod 2026-10-02, kh-helper 1.9.0</td></tr>
+<tr><td><b>C</b></td><td>Gói ngữ cảnh <code>/context/step</code>: mỗi bước một lần gọi, có trần token, chuỗi knowledge trước worklog. Bước độc lập gọi song song trong cùng một lượt. <b>Thêm 2026-10-01 (fen duyệt), 3 sửa về cách trả mảnh:</b> (1) sửa <code>_clip</code> để dòng tìm ra nhờ mảnh thì trả đúng mảnh đó; (2) ngưỡng điểm để không trả 17–24 dòng mỗi câu; (3) mặc định trả mảnh khớp kèm phần đầu dòng, cả dòng lấy theo id khi cần. Xem phần "Mảnh nhỏ" bên dưới</td><td>Giai đoạn 2, đưa lên trước</td><td>3–5 ngày</td><td>Như giai đoạn 2 cũ: token giảm ≥ 50%, p95 &lt; 2 s</td><td>Xong (2026-10-05): lên prod cùng OPEN THREADS và rule step-wise; bench 12 câu: độ đúng 11,4 so với 10,3 của prod cũ, token -57%, tiền -50%; e2e 73/73. Xem docs/changelogs/2026-10-05-context-step-prod.md. Trước đó (2026-10-03): <code>/context/step</code> + luật hook từng bước trên dev. Đo lại sạch (48 lần chạy, không lỗi MCP): độ đúng bằng nhau 5,40; token -26%, số lượt -39%, lần gọi KH -47%, tiền -21%. Mọi chốt chặn PASS, nhưng mục tiêu token -50% chưa đạt. Lời ở câu có ngày, quy trình, "ai là ai"; tốn hơn ở câu không thuộc một project (X2, M3). Chờ fen quyết lên prod. Xem docs/changelogs/2026-10-03-context-step.md</td></tr>
+<tr><td><b>D</b></td><td>Chắt hằng tuần bằng Claude CLI (<b>Quyết định 2026-10-01:</b> ): KH có hàng đợi <code>/distill/next</code>, <code>/distill/submit</code>, mốc đã chắt theo project, và một lệnh hoặc skill "chắt tuần này" để fen chạy cuối tuần. Cùng lần chạy đó có thể viết luôn summary cho từng ngày trong tuần. Không còn đẩy việc chắt vào turn của user. Ghi kết quả từng step bắt đầu từ đây</td><td>Giai đoạn 1</td><td>2–4 ngày</td><td>≥ 80% câu "X là ai / cái gì hay lỗi" trả lời được từ tri thức đã chắt, ≤ 1k token; turn của user không chậm thêm chút nào; bộ test rò rỉ không sót cái nào</td><td>Đang làm. Thiết kế fen duyệt 2026-10-09 (<code>docs/distill-design.md</code>). Slice 1 (các route <code>/distill/*</code>, gác cổng rò rỉ) lên prod 2026-10-09, lần chắt đầu duyệt 87 mẩu. Slice 2 (đọc mẩu theo key <code>action</code>/<code>context</code>/<code>entities</code> trong <code>/context/step</code> và <code>/turn/context</code>) lên prod 2026-10-10. Slice 3 lên prod 2026-10-10 một phần: <code>/distill/rekey</code> (gắn key cho lesson cũ, không đổi chữ) và <code>/distill/patterns</code> (đếm lỗi theo project và chủ đề bằng code). Còn <code>GET /people</code> (cần sửa extension <code>/kh</code> bên Keycloak), skill "chắt tuần này" (sau deploy) và slice 4 (dev, bench, prod)</td></tr>
+<tr><td><b>E</b></td><td>Tự động hoá: cùng giao diện đó, đổi người chạy từ fen sang một worker theo lịch ở server (LLM riêng của KH, không thuộc user nào). Summary ngày chuyển sang chạy hằng đêm. Sau đó là vòng học (điểm tin cậy, thay chứ không chồng, policy chỉ được đề xuất)</td><td>Giai đoạn 3</td><td>3–5 ngày</td><td>Kết quả chắt của worker không tệ hơn lần chạy tay trên bộ đo; lỗi lặp lại cùng loại giảm ≥ 50% sau 3 tháng</td><td><b>Xong trên dev</b> (2026-10-11, nhánh <code>kh-roadmap-e5</code>, chưa merge): worker tách riêng, chắt tri thức và summary ngày, vòng học với thử 50/50 theo session. Kiểm trên kh-dev-f: xem <code>docs/changelogs/2026-10-11-roadmap-e5-dev.md</code>. Chờ fen duyệt để lên prod; bật từng cờ theo cổng</td></tr>
+<tr><td><b>F</b></td><td>Chuẩn bị chạy nhiều instance: tách embedder và reranker ra worker riêng; cron chỉ chạy ở một nơi; khoá của message stack đổi thành lệnh ghi có điều kiện trong HANA</td><td>Mới, bắt buộc trước nhiều agent</td><td>2–4 ngày (bản mở rộng: khoảng 5–5,5 ngày)</td><td>2 instance chạy cùng lúc, e2e qua, không tin nhắn nào bị giao hai lần. Bản mở rộng thêm: load test 30 agent, mọi xung đột có event, tỉ lệ xung đột lặp lại giảm sau khi lesson được duyệt</td><td><b>Đang thiết kế</b> (2026-10-10): fen chốt F phục vụ AI SDLC, nhiều agent và người dùng cùng lúc; xung đột là kinh nghiệm để agent tự học. Bản thiết kế <code>docs/multi-agent-instance-design.md</code>: lease cho job, giao tin theo receipt, rev + If-Match, Idempotency-Key, bảng kh_event, danh tính agent (đưa một phần giai đoạn 4 lên), orchestrator SDLC gửi key theo bước. <b>Xong trên dev</b> (2026-10-10, nhánh <code>kh-stage-f</code>, giả lập consumer 11/11 kịch bản). Chờ fen duyệt để lên prod</td></tr>
+<tr><td><b>G</b></td><td>Nhiều agent, rồi tự cải tiến có gác cổng</td><td>Giai đoạn 4 và 5</td><td>như cũ</td><td>như cũ</td><td><b>Xong trên dev</b> (2026-10-11, nhánh <code>kh-roadmap-e5</code>): giai đoạn 4 (cổng duyệt effect 428, dừng toàn cục 423, runner + scorecard) và 5 (đề xuất tham số ±20%, chặn đầu độc 37/37, shadow, tự lùi về shadow). Mặc định tắt. Chờ fen duyệt</td></tr>
+</table></div>
+
+<p><b>Mảnh nhỏ: trả cả dòng hay chỉ mảnh khớp?</b> (đo trên dữ liệu prod ngày 2026-10-01, fen duyệt đưa vào việc C)</p>
+<p>Câu hỏi của fen: khi đã tìm theo mảnh nhỏ, nên trả lại nguyên dòng hay chỉ trả mảnh vừa khớp với câu hỏi? Đo trên 15 câu tìm kiếm của bộ đo. Mỗi câu tìm trong knowledge, log và entity, lấy 8 dòng mỗi chỗ, rồi so 4 cách đưa các dòng đó cho LLM. "Giữ được ý" là tỷ lệ ý bắt buộc của câu hỏi còn nằm trong phần chữ được trả về.</p>
+<div class="wrap"><table>
+<tr><th>Cách trả về</th><th>Tổng byte</th><th>Giữ được ý</th></tr>
+<tr><td>Cả dòng</td><td>580 KB</td><td>0,93</td></tr>
+<tr><td>600 ký tự đầu dòng (KH làm khi có <code>max_chars</code>, hôm nay)</td><td>130 KB</td><td>0,91</td></tr>
+<tr><td>Mảnh 800 ký tự khớp nhất (cắt như <code>app/chunks.py</code>)</td><td>155 KB</td><td>0,92</td></tr>
+<tr><td>Mảnh khớp + mảnh trước + mảnh sau</td><td>281 KB</td><td>0,92</td></tr>
+</table></div>
+<ul>
+<li><b>Cả dòng không đáng tiền.</b> Tốn gấp khoảng 3,7 lần byte mà chỉ giữ thêm 1–2% ý.</li>
+<li><b>Hình dạng mảnh chỉ quan trọng khi câu trả lời nằm ở cuối một log dài.</b> Câu P2 (cách đưa một bản sửa Ticketing lên prod): cả dòng 1,0, đầu dòng 0,6, mảnh khớp 0,8.</li>
+<li><b>Mảnh kề không thêm được gì</b>, mà gần gấp đôi số byte.</li>
+<li><b>Tốn nhất là số dòng, không phải hình dạng mảnh.</b> Nhiều câu nhận về 17–24 dòng.</li>
+</ul>
+<p><b>Ba sửa đưa vào việc C, và vì sao:</b></p>
+<div class="wrap"><table>
+<tr><th>Sửa</th><th>Vì sao</th><th>Đo bằng gì</th></tr>
+<tr><td>1. <code>_clip</code> trả đúng mảnh khớp</td><td>Lỗi tìm thấy khi đo: một dòng tìm ra nhờ mảnh ở cuối, nhưng <code>max_chars</code> vẫn cắt lấy <b>đầu</b> dòng (<code>main.py</code>, hàm <code>_clip</code>). Phần khớp với câu hỏi bị cắt mất đúng lúc cần nó nhất</td><td>Tầng 1: "giữ được ý" của P2 lên ít nhất 0,8 mà byte không tăng quá 20%</td></tr>
+<tr><td>2. Ngưỡng điểm</td><td>Mỗi câu nhận 17–24 dòng (3 kho × 8). Bỏ các dòng điểm thấp tiết kiệm nhiều hơn bất kỳ cách cắt mảnh nào. Ngưỡng chọn trên bộ đo, giống câu hỏi đã có ở giai đoạn 2</td><td>Tầng 1: byte giảm, recall không giảm; tầng 2: token giảm, độ đúng không giảm</td></tr>
+<tr><td>3. Mặc định trả mảnh khớp + phần đầu dòng</td><td>Phần đầu dòng (id, ngày, chủ đề, người viết) giữ được nguồn và thời gian. Mảnh khớp giữ được ý. Cả dòng vẫn lấy được theo id (<code>/vector/scroll</code> với <code>ids</code>, đã có) khi LLM cần đọc hết</td><td>Tầng 2: số lần phải lấy cả dòng theo id, độ đúng</td></tr>
+</table></div>
+<p><b>"Mảnh nhỏ" thật sự là tri thức đã chắt (việc D).</b> Mảnh 800 ký tự là cắt máy móc, có thể đứt giữa ý. Một mẩu tri thức đã chắt tự đứng một mình được, ngắn hơn và có nguồn. Ba sửa trên là lời ngay với dữ liệu hôm nay; việc D mới là lời lâu dài.</p>
+<p><b>Giới hạn của số đo:</b> "giữ được ý" chỉ là đại diện. Nó cho biết ý có nằm trong chữ được trả về, chưa phải LLM có trả lời đúng hay không. Chỉ có 15 câu, và ý hay lặp lại ở nhiều dòng nên số hơi cao hơn thực tế. Tầng 2 sẽ xác nhận. Script: <code>C:/Programs/ClaudeKH/tools/kh_bench/scripts/piece_experiment.py</code>, kết quả: <code>C:/Programs/ClaudeKH/tools/kh_bench/results/piece_experiment.json</code>.</p>
+
+<h3>Đo nền tầng 2, lần đầu chạy thật (2026-10-02)</h3>
+<p>Bộ đo giờ nằm ở <code>C:/Programs/ClaudeKH/tools/kh_bench</code>. Lần này dev và prod chạy cùng code, cùng dữ liệu (bản chép prod sang dev ngày 2026-10-01). Có 6 câu core, mỗi bên chạy 3 lần bằng Claude Code thật (<code>claude -p</code>, model claude-sonnet-5-5), tổng 36 lần chạy. Kết quả: PASS, không lộ dữ liệu, không ghi bậy.</p>
+<div class="wrap"><table>
+<tr><th>Câu</th><th>Độ đúng prod (3 lần)</th><th>Độ đúng dev (3 lần)</th><th>Token vào (trung vị)</th><th>Số lượt</th><th>Lần gọi KH</th></tr>
+<tr><td>R1 gần đây</td><td>0.2 / 1.0 / 1.0</td><td>1.0 / 1.0 / 1.0</td><td>~86–92k</td><td>4</td><td>3</td></tr>
+<tr><td>M3 theo nghĩa</td><td>0.5 / 0.5 / 0.5</td><td>0.5 / 0.5 / 0.5</td><td>~190k</td><td>10–12</td><td>8–10</td></tr>
+<tr><td>W1 ai là ai</td><td>1.0 ×3</td><td>1.0 ×3</td><td>79k</td><td>4</td><td>3</td></tr>
+<tr><td>P2 quy trình</td><td>0.4 / 0.6 / 0.4</td><td>0.8 / 0.4 / 0.8</td><td>~200–220k</td><td>9–12</td><td>7–10</td></tr>
+<tr><td>X2 liên project</td><td>1.0 ×3</td><td>1.0 ×3</td><td>80k</td><td>4</td><td>3</td></tr>
+<tr><td>A2 quyền</td><td>1.0 ×3</td><td>1.0 ×3</td><td>83k</td><td>3</td><td>2</td></tr>
+<tr><td><b>Tổng</b></td><td>4.90</td><td>5.30</td><td>720k / 738k</td><td>34 / 38</td><td>26 / 30</td></tr>
+</table></div>
+<ul>
+<li><b>Nhiễu lớn:</b> cùng code, cùng dữ liệu mà P2 dao động 0.4–0.8, R1 có một lần 0.2. Vậy chênh 0.4 ở một câu chưa chắc là thật. Bộ đo đã sửa: nếu câu nào tụt mà vẫn nằm trong khoảng dao động thì tính là hòa, không đánh trượt cả lượt nâng cấp.</li>
+<li><b>Sàn token khoảng 79k mỗi câu</b>, kể cả câu dễ. Phần lớn là của chính Claude Code (system prompt, tool). Hook KH chỉ chiếm khoảng 9 KB, tức khoảng 2–3k token. Vậy việc B tiết kiệm được ít chữ. Lời thật của B là bớt lượt.</li>
+<li><b>Câu tốn kém là câu nhiều lượt:</b> M3 và P2 cần 9–12 lượt và 190–220k token, gấp 2,5 lần câu dễ. Mỗi lượt thêm khoảng 10–15k token. Chuyện này khớp với nhận định "chi phí nằm ở số lượt" ở trên, và là mục tiêu của việc C (một bước, một lần gọi).</li>
+<li><b>Lỗ dữ liệu ổn định:</b> M3 luôn thiếu hai ý ("Purview sensitivity label", "label encrypts the mail"). P2 thường thiếu bước deploy. Cả hai đúng với lỗ mà tầng 1 đã thấy, và là việc của C và D.</li>
+<li><b>Mốc để so lần sau:</b> độ đúng tổng khoảng 4.9–5.3 trên 6, khoảng 0.72–0.74M token vào, khoảng 34–38 lượt, khoảng 0.45 USD cho 18 lần chạy mỗi bên.</li>
+</ul>
+<p>Báo cáo: <code>C:/Programs/ClaudeKH/tools/kh_bench/reports/tier2-20261002-120722.html</code>, số thô: <code>results/tier2-20261002-120722.json</code>.</p>
+
+<h3>Việc B đã làm và đo (2026-10-02)</h3>
+<p>Hook gọi <code>/turn/context</code> một lần cho mỗi câu hỏi và chèn sẵn: project, danh sách action, findings, người và hệ thống được nhắc tới, bài học gần với câu hỏi. Code: <code>app/turn.py</code>, kh-helper 1.9.0. Số dưới đây đo trên dev so với prod cũ; <b>đã lên prod ngày 2026-10-02</b> (e2e prod 73/73) và đã nhắn mọi project cập nhật kh-helper.</p>
+<div class="wrap"><table>
+<tr><th></th><th>prod (mốc)</th><th>dev (có B)</th><th>Thay đổi</th></tr>
+<tr><td>Độ đúng (trên 6)</td><td>4.90</td><td>5.40</td><td>+0.5, nằm trong khoảng nhiễu</td></tr>
+<tr><td>Token vào</td><td>751k</td><td>652k</td><td><b>-13%</b></td></tr>
+<tr><td>Số lượt</td><td>35</td><td>26</td><td><b>-26%</b></td></tr>
+<tr><td>Lần gọi KH</td><td>27</td><td>18</td><td>-33%</td></tr>
+<tr><td>Lần gọi trước khi làm việc</td><td>30</td><td>5</td><td><b>-83%</b></td></tr>
+<tr><td>Tiền</td><td>$0.45</td><td>$0.39</td><td>-14%</td></tr>
+<tr><td>Thời gian</td><td>379 s</td><td>286 s</td><td>-25%</td></tr>
+</table></div>
+<ul>
+<li>Câu "ai là Vincent Cao" trả lời thẳng từ khối chèn sẵn: 0 lần gọi KH, 26k token thay vì 79k.</li>
+<li>Mục tiêu của B ("lần gọi trước khi làm việc còn 1, độ đúng không giảm") gần đạt: còn 5 lần trên 18 lần chạy, vì model đôi khi tự kiểm lại.</li>
+<li>Chưa chứng minh được phần action: bảng policy của dev chỉ có action rác của e2e, nên dev không gọi <code>/policy/plan</code> lần nào. Cần cho hai bên cùng một policy rồi đo lại phần này.</li>
+<li>Ngưỡng bài học 0.6 còn để lọt bài không liên quan; nên nâng lên khoảng 0.72.</li>
+</ul>
+<p>Báo cáo: <code>C:/Programs/ClaudeKH/tools/kh_bench/reports/tier2-20261002-133304.html</code>. Kết quả nâng cấp: <code>docs/changelogs/2026-10-02-turn-context.md</code> (kèm hai báo cáo HTML).</p>
+
+<p><b>Dùng lại thứ đã có, khỏi build mới</b></p>
+<ul>
+<li>BM25: dùng full-text index có sẵn của HANA thay vì thêm một thành phần mới.</li>
+<li>Mẩu tri thức: dùng kiểu id cố định của thẻ entity (<code>ent__&lt;project&gt;__&lt;name&gt;</code>) và module <code>revisions</code> để thay bản cũ.</li>
+<li>Danh tính agent: service account của Keycloak (client credentials), không cần trình duyệt, quyền vẫn đi qua claim <code>kh</code>.</li>
+<li>Summary ngày trước khi có LLM: bảng liệt kê bằng code như đã ghi ở dưới, giữ nguyên.</li>
+</ul>
+
+<p><b>Ảnh hưởng tới lịch:</b> tổng phần build thêm khoảng 3–6 ngày (B và F). Đổi lại, lợi ích token tới trong khoảng 2 tuần đầu thay vì tuần 5–7. Đồng hồ dữ liệu của vòng học vẫn bắt đầu từ D như kế hoạch cũ. Tổng thời gian tới lúc bật tự cải tiến ước tính không dài hơn bảng ở phần "Team và lịch".</p>
+
+<p><b>Cần fen chốt:</b> thứ tự A tới G ở trên. Đánh đổi của cách chắt cuối tuần: knowledge chậm tối đa khoảng 7 ngày so với log, và token của lần chắt tính vào gói Claude của fen; nên chạy theo từng project để không chạm giới hạn.</p>
+
+<h2>Ý tưởng của fen so với KH hôm nay</h2>
+<div class="wrap"><table>
+<tr><th>Phần</th><th>fen mong muốn</th><th>Hôm nay</th></tr>
+<tr><td>Truy vấn theo từng step</td><td>similar hoặc graph tuỳ policy và độ khó</td><td class="warn">Có similar (có trần), recency, entity. Graph mới có cho code và thẻ entity; chưa có bộ chọn cách truy vấn</td></tr>
+<tr><td>Lưu thành mảnh nhỏ</td><td>vấn đề lớn tách thành vấn đề nhỏ</td><td class="warn">Có đoạn 800 ký tự để tìm, nhưng khi trả vẫn trả nguyên dòng log, còn có <code>max_chars</code> thì trả đầu dòng chứ không trả mảnh khớp (đo 2026-10-01, sửa ở việc C); chưa có "mẩu tri thức" nhỏ</td></tr>
+<tr><td>Orchestrator</td><td>phân loại intent, dẫn tới đúng kho</td><td class="warn">Match project theo chữ và menu policy; chưa phân loại intent để chọn kho</td></tr>
+<tr><td>Knowledge chung</td><td>solution không riêng project</td><td class="ok">Project <code>knowledge</code>, 365 lesson</td></tr>
+<tr><td>Personalize</td><td>thói quen, cách xưng hô, dự đoán</td><td class="ok">Project riêng cho từng người (từ hôm nay); chưa có phần "dự đoán"</td></tr>
+<tr><td>Policy chung và policy project</td><td>luật bắt buộc; luật project thắng khi trái nhau</td><td class="ok">Bảng exact, luật project thắng từng sub-action</td></tr>
+<tr><td>Worklog</td><td>nguyên văn theo thời gian</td><td class="ok">Có, recency sort trên server</td></tr>
+<tr><td>Message stack</td><td>session nói chuyện với nhau</td><td class="ok">Có (từ 29/9)</td></tr>
+<tr><td>Chắt log thành knowledge</td><td>ai là dev, project nào hay lỗi, ai khó tính…</td><td class="bad">Chỉ có thẻ entity viết tay hoặc do LLM phía user ghi; không có gì chạy tự động</td></tr>
+<tr><td>LLM trong KH</td><td>không đè hết lên LLM phía user</td><td class="bad">Không có</td></tr>
+</table></div>
+
+<h2>Lộ trình</h2>
+<div class="wrap"><table>
+<tr><th>Giai đoạn</th><th>Khi nào (nếu data phải tích luỹ)</th><th>Làm gì</th><th>Đo bằng gì (qua mới đi tiếp)</th></tr>
+<tr><td><b>0. Thước đo</b></td><td>tuần 1–2</td><td>Bộ câu hỏi chuẩn cho từng project (recency, nghĩa, "X là ai", cuối dòng), chạy trong CI trước mỗi deploy. Đo token mỗi step. Thêm <code>fields</code>, HNSW, sửa SSL embedding của HANA, thử embedder đa ngôn ngữ</td><td>Có số trước/sau cho mọi thay đổi; token mỗi step đo được</td></tr>
+<tr><td><b>1. Bộ chắt tri thức</b></td><td>tuần 2–5</td><td>KH giữ một hàng đợi việc chắt qua <code>/distill/next</code> và <code>/distill/submit</code>. <b>Thay bởi quyết định 2026-10-01:</b> một LLM chắt duy nhất, trước mắt fen chạy Claude CLI mỗi cuối tuần (xem việc D ở trên); LLM của user không chắt. Việc chắt rút ra entity, quan hệ, sự thật, bài học, quy trình, kèm id log nguồn và độ tin cậy; KH gộp, khử trùng và đưa chỗ mâu thuẫn vào hàng chờ duyệt. Chạy lại cho toàn bộ log cũ. Thống kê kiểu "project A lỗi nhiều hơn B" tính bằng code, không cần LLM</td><td>≥ 80% câu "X là ai / cái gì hay lỗi" trả lời được chỉ từ tri thức đã chắt, ≤ 1k token; turn của user không chậm thêm</td></tr>
+<tr><td><b>2. Gói ngữ cảnh cho từng step</b></td><td>tuần 5–7</td><td>Route mới <code>/context/step</code>: nhận mô tả step và trần token, orchestrator phân loại intent rồi chọn cách tìm (similar, graph, recency, entity, policy). Trộn BM25 với vector, xếp hạng lại bằng một cross-encoder nhỏ. Trả về một gói ngắn, mỗi mảnh có nguồn. Graph entity chạy trên property graph của HANA (openCypher)</td><td>Tỷ lệ đúng ≥ bộ đo hiện tại, token giảm ≥ 50%, p95 &lt; 2 s</td></tr>
+<tr><td><b>3. Vòng học</b></td><td>tháng 2–5</td><td><b>Mở đầu bằng mốc "KH có LLM riêng":</b> một worker phía server chạy theo lịch, không phụ thuộc user nhắc; việc đầu tiên nó làm là summary ngày trong scope <code>daily</code>, sau đó nhận luôn hàng đợi chắt. Mỗi step báo kết quả (thành công, thất bại, bị người sửa). Worker biến kết quả thành bài học và finding. Tri thức có điểm tin cậy, tăng khi được dùng đúng, giảm khi sai; cái cũ bị thay chứ không bị chồng. Policy mới chỉ được <i>đề xuất</i>, người duyệt mới có hiệu lực</td><td>Lỗi lặp lại cùng loại giảm ≥ 50% sau 3 tháng</td></tr>
+<tr><td><b>4. Nhiều agent</b></td><td>tháng 5–7</td><td>Mỗi agent có danh tính riêng (service account, quyền theo project), khai báo agent làm được gì. Message stack v2 có loại tin, hợp đồng bàn giao, bộ nhớ làm việc chung cho từng task, khoá. Mọi hành động có audit. Việc rủi ro cao bắt buộc qua người duyệt</td><td>Một chuỗi task 5 bước chạy từ đầu đến cuối không cần người, audit đầy đủ</td></tr>
+<tr><td><b>5. Tự cải tiến có gác cổng</b></td><td>tháng 7–8, rồi thường trực</td><td>Agent đề xuất sửa tri thức, quy trình, policy. KH chạy bộ đo trên bản sửa (như CI cho tri thức), chỉ nhận khi không tệ đi. Tách mã hoá theo tenant, kho secret, xoá theo yêu cầu, lọc PII, liên kết nhiều instance KH</td><td>Số lần con người phải can thiệp trên 100 task giảm theo từng quý, theo dõi suốt vòng đời KH</td></tr>
+</table></div>
+
+<h2>Hai quyết định thêm của fen (2026-09-30)</h2>
+<div class="wrap"><table>
+<tr><th>Quyết định</th><th>Cách làm đề xuất</th><th>Giai đoạn</th></tr>
+<tr><td><b>Thứ tự ưu tiên khi query:</b> knowledge đứng trước worklog. Ví dụ "cần làm gì khi deploy BTP" phải trả lời từ knowledge, không phải từ việc lục lại log xem trước đó đã làm gì</td><td>Một chuỗi dừng sớm: <b>(1)</b> graph trên knowledge (thẻ entity, quy trình, quan hệ) → <b>(2)</b> similar trên knowledge → <b>(3)</b> chỉ khi hai bước trước không có kết quả liên quan (dưới ngưỡng điểm) mới xuống worklog. Mỗi bước có ngưỡng riêng và trả về nguồn đã dùng, để biết câu trả lời đến từ tầng nào. Câu hỏi về thời gian ("hôm qua", "mới nhất") thì đi đường khác: summary ngày trước, rồi mới tới log.</td><td>2 (gói ngữ cảnh); luật hook có thể đổi ngay</td></tr>
+<tr><td><b>Summary theo ngày:</b> mỗi project mỗi ngày có đúng một bản tóm tắt, nên "hôm qua sao rồi" không phải đọc hơn 100 dòng log. fen chốt: nằm trong scope <code>daily</code>, và <b>không giao cho LLM của user</b>, vì user sẽ không tự nhớ mà nhắc, và không thể lúc nào cũng đi ghi daily. Đây là tính năng của phiên bản KH có LLM riêng</td><td>Scope <code>daily</code> trong mỗi project, id cố định theo project và ngày (<code>day__&lt;project&gt;__2026-09-30</code>), nên viết lại thì cập nhật. Một job định kỳ của KH (không cần ai nhắc) chạy sau nửa đêm theo giờ của project, dùng LLM riêng của KH để tóm tắt log của hôm trước: làm gì, quyết định gì, cái gì hỏng hay còn mở, ai làm, kèm id log nguồn. Log thêm muộn thì job lần sau viết lại ngày đó. <code>GET /log/day?project=&amp;date=</code> trả về bản tóm tắt. Tóm tắt tuần hoặc tháng gộp lên từ tóm tắt ngày. Trước khi có LLM riêng, route này có thể trả về một bảng liệt kê ngày làm bằng code (số log theo chủ đề, người viết, dòng đầu của từng log). Việc đó không cần LLM nên không trái với quyết định trên.</td><td>Mốc "KH có LLM riêng" (đầu giai đoạn 3, khoảng tháng 2)</td></tr>
+</table></div>
+
+<h2>Truy vấn theo từng bước (fen xác nhận 2026-09-30)</h2>
+<p>LLM <b>tự chia</b> việc thành các bước và hỏi KH <b>trước mỗi bước</b>, không chỉ một lần ở đầu turn. Việc chia bước không do KH làm; nó được <b>bắt buộc bằng một luật trong hook</b>, nên LLM của mọi user đều làm như nhau mà user không phải biết.</p>
+<div class="wrap"><table>
+<tr><th>Bước LLM sắp làm (ví dụ "deploy KH lên prod")</th><th>Câu hỏi gửi KH</th><th>Cách tìm</th></tr>
+<tr><td>Đăng nhập cf đúng org</td><td>"cf login BTP br10"</td><td>similar trên lesson</td></tr>
+<tr><td>Deploy dev</td><td>"các bước deploy KH lên dev"</td><td>graph quy trình trên knowledge</td></tr>
+<tr><td>e2e lỗi</td><td>nội dung lỗi</td><td>similar trên lesson và finding</td></tr>
+<tr><td>Deploy prod</td><td>"điều kiện lên prod"</td><td>policy của đúng bước đó</td></tr>
+<tr><td>"Hôm qua tới đâu rồi"</td><td>câu hỏi thời gian</td><td>summary ngày, rồi log</td></tr>
+</table></div>
+<p><b>Luật hook đề xuất</b> (chưa áp dụng; sẽ thử trên dev và đo trước):</p>
+<pre style="white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px">STEP-WISE KH. Before acting on a request, split it into the steps you will take and list them in one short line each.
+Before EACH step: ask KH for that step only - the step's intent plus the minimum context, never the whole message.
+  1. knowledge by graph (procedures, entities, relations) -> 2. knowledge by similarity -> 3. the project's worklog, only if 1-2 return nothing relevant.
+  Time questions: daily summary first, then /log/recent. Also read the policy rule of this step (GET /policy/rule) when an action applies.
+Use max_chars; fetch full text by id only for what you use. Keep each step's KH context under the token budget.
+After each step: record its outcome (done / failed / corrected by the person) - one short line, with the step and what KH returned.</pre>
+<p><b>Cần đo khi thử:</b> số lần gọi KH mỗi turn, token và thời gian thêm vào, và độ chính xác có tăng không. Nếu số lần gọi quá nhiều, gộp các bước nhỏ liền nhau thành một lần hỏi.</p>
+
+<h2>Câu hỏi cần trả lời cho từng giai đoạn</h2>
+<p class="sub">Trả lời được hết các câu hỏi của một giai đoạn thì phần việc của giai đoạn đó có đủ lời giải. Câu nào đã có hướng trả lời, tôi ghi hướng đó bên cạnh để fen duyệt hoặc sửa.</p>
+<details open><summary>0. Thước đo</summary>
+<ol>
+<li>Câu trả lời "đúng" cho một step được kiểm tự động bằng gì? <i>Hướng: mỗi câu hỏi chuẩn đi kèm id các dòng bắt buộc phải có trong kết quả.</i></li>
+<li>Bộ câu hỏi chuẩn lấy từ đâu để không phải viết tay mãi? <i>Hướng: sinh từ log thật, như benchmark hôm nay (đoạn trích tìm dòng gốc, recency theo ts, "X là ai" theo thẻ entity).</i></li>
+<li>Đo "token mỗi step" ở đâu, gắn với turn nào?</li>
+<li>Con số nào tụt thì chặn deploy, tụt bao nhiêu thì chặn?</li>
+<li>Embedder nào hợp nhất với dữ liệu KH: bge-small, e5 đa ngôn ngữ, hay SAP_NEB (khi SSL của HANA sửa xong)?</li>
+</ol></details>
+<details open><summary>1. Bộ chắt tri thức</summary>
+<ol>
+<li>Lần chắt cuối tuần chạy vào lúc nào, mỗi lần chắt bao nhiêu project, và khi chạm giới hạn của gói Claude thì tiếp tục ra sao? <i>Hướng: chạy theo từng project, có mốc đã chắt nên dừng giữa chừng rồi chạy tiếp không mất gì.</i></li>
+<li>Một mẩu tri thức có schema gì: loại, nội dung, nguồn, độ tin cậy, phạm vi (project hay dùng chung), hạn dùng?</li>
+<li>Làm sao biết hai mẩu là một, và khi nào mẩu mới thay mẩu cũ?</li>
+<li>Kết quả chắt đúng hay sai được kiểm bằng gì khi không ai đọc hết? <i>Hướng: fen duyệt một mẫu nhỏ, cộng bộ đo của giai đoạn 0.</i></li>
+<li>Làm sạch log của người khác theo quy tắc nào, và bộ test rò rỉ gồm những gì?</li>
+<li>Mỗi ngày được tiêu tối đa bao nhiêu token của user cho việc chắt?</li>
+<li>Mẩu tri thức nào thuộc project, mẩu nào được đưa lên <code>knowledge</code> dùng chung?</li>
+
+</ol></details>
+<details open><summary>2. Gói ngữ cảnh cho từng step</summary>
+<ol>
+<li>Luật chia bước trong hook: bước nhỏ tới mức nào thì gộp lại để không gọi KH quá nhiều? Có trần số lần gọi KH mỗi turn không?</li>
+<li>Phân loại intent của một step bằng cách nào đủ nhanh: luật, embedding, hay nhờ LLM của user?</li>
+<li>Mỗi loại intent dùng cách tìm nào (similar, graph, recency, entity, policy)? <i>Hướng: một bảng ánh xạ dạng dữ liệu, giống bảng policy.</i></li>
+<li>Trần token mặc định là bao nhiêu, và khi vượt trần thì cắt hay xếp các mảnh thế nào?</li>
+<li>Cross-encoder xếp hạng lại có chạy nổi trên CPU của Cloud Foundry trong giới hạn thời gian không?</li>
+<li>Khi nào dùng graph (openCypher trên HANA) thay vì similar?</li>
+<li>Ngưỡng "không có kết quả liên quan" ở mỗi tầng (graph knowledge, similar knowledge) là bao nhiêu thì mới được xuống worklog? <i>Hướng: đo trên bộ câu hỏi chuẩn, chọn ngưỡng để câu "cần làm gì khi…" không bao giờ phải đọc log khi knowledge đã có câu trả lời.</i></li>
+</ol></details>
+<details open><summary>3. Vòng học</summary>
+<ol>
+<li>LLM riêng của KH là model nào (API hay tự chạy), chạy ở đâu (CF, SAP AI Core), trần chi phí mỗi tháng bao nhiêu?</li>
+<li>Summary ngày: job chạy lúc mấy giờ theo múi giờ nào, dài tối đa bao nhiêu, log thêm muộn thì viết lại trong bao lâu?</li>
+<li>Summary ngày của project nhiều người dùng: một bản chung hay mỗi người một bản? Người chỉ có quyền đọc có được thấy không?</li>
+<li>Kết quả một step (thành công, thất bại, bị người sửa) được báo về bằng tín hiệu nào mà user không phải làm thêm?</li>
+<li>Từ kết quả đó, bài học được sinh ra thế nào và gắn vào mẩu tri thức nào?</li>
+<li>Điểm tin cậy tăng giảm theo công thức nào, và tụt tới đâu thì mẩu bị gỡ?</li>
+<li>Hai mẩu mâu thuẫn nhau thì mẩu nào thắng, dựa trên gì?</li>
+<li>Khi nào một policy được đề xuất, và fen duyệt nó ở đâu?</li>
+</ol></details>
+<details open><summary>4. Nhiều agent</summary>
+<ol>
+<li>Agent có danh tính và quyền gì, và lấy token ra sao khi không có trình duyệt?</li>
+<li>Hai agent bàn giao việc cho nhau qua cấu trúc nào (hợp đồng task)?</li>
+<li>Bộ nhớ làm việc chung của một task sống bao lâu, và ai được đọc?</li>
+<li>Việc nào bắt buộc có người duyệt, và mức rủi ro được phân theo gì?</li>
+<li>Làm sao dừng khẩn cấp mọi agent cùng lúc?</li>
+</ol></details>
+<details open><summary>5. Tự cải tiến có gác cổng</summary>
+<ol>
+<li>Bản sửa tri thức hay quy trình do agent đề xuất được kiểm "không tệ đi" bằng bộ đo nào trước khi nhận?</li>
+<li>Làm sao phát hiện tri thức bị đầu độc, dù cố ý hay do lỗi?</li>
+<li>Một user rút lui thì phần tri thức đã chắt từ log của họ bị gỡ theo cách nào?</li>
+<li>Mã hoá tách theo tenant làm thế nào trên HANA?</li>
+<li>Khi nào đủ tin tưởng để giảm dần việc người duyệt?</li>
+</ol></details>
+
+<h2>Nguyên tắc xuyên suốt</h2>
+<div class="wrap"><table>
+<tr><th>Nguyên tắc</th><th>Vì sao</th></tr>
+<tr><td>Log là bản gốc, tri thức là bản chắt, luôn trỏ về nguồn</td><td>Chắt sai thì truy lại được và chắt lại được</td></tr>
+<tr><td>Mọi lần đọc đều có trần token</td><td>Đúng yêu cầu của fen: dữ liệu phình nhưng câu trả lời không phình</td></tr>
+<tr><td>Không có con số thì không deploy</td><td>Bộ nhớ tự sửa mà không đo thì sẽ tự làm hỏng mình</td></tr>
+<tr><td>Chữ do người hay agent khác viết là dữ liệu, không phải lệnh</td><td>Chống prompt injection qua tri thức dùng chung, giống thông báo message stack đang làm</td></tr>
+<tr><td>Mọi phụ thuộc nằm sau một adapter</td><td>Đổi được LLM, embedder, DB mà không đụng lõi</td></tr>
+</table></div>
+
+<h2>Chi tiết</h2>
+<details><summary>"Không cần fine-tune": được gì, không được gì</summary>
+<p><b>Được:</b> tri thức mới có hiệu lực ngay lần gọi sau, cho mọi LLM và mọi agent cùng lúc. Sửa hoặc xoá được từng dòng, có nguồn, có quyền theo project. Đổi LLM không mất gì.</p>
+<p><b>Không được:</b> khả năng suy luận của model không tăng lên. KH chỉ cho nó biết nhiều hơn chứ không làm nó giỏi hơn. Mỗi lần gọi đều tốn token cho ngữ cảnh, nên gói ngữ cảnh gọn (giai đoạn 2) là điều kiện sống còn. Tri thức sai thì lan ngay tức thì, nên cần gác cổng (giai đoạn 0 và 5).</p>
+</details>
+<details><summary>LLM trong KH: một LLM chắt duy nhất (quyết định 2026-10-01)</summary>
+<p><b>Bây giờ (quyết định của fen, 2026-10-01, thay quyết định 2026-09-30):</b> không để LLM của từng user chắt nữa. Chỉ có một LLM chắt, không thuộc user nào. Trước mắt đó là Claude CLI do fen chạy tay mỗi cuối tuần, với quyền maintainer. Không thêm chi phí hạ tầng và không tốn token hay thời gian của user; token tính vào gói Claude của fen.</p>
+<p><b>Cách giao việc:</b> KH giữ hàng đợi và mốc đã chắt theo project. Lần chạy cuối tuần lấy việc qua <code>/distill/next</code>, trả kết quả theo schema cố định qua <code>/distill/submit</code>. KH tự kiểm schema, khử trùng, gác cổng rò rỉ, và ghi lại model nào đã chắt để sau này đo so sánh. fen duyệt ngay trong lần chạy đó.</p>
+<p><b>Sau này:</b> cùng giao diện <code>/distill/next</code>, <code>/distill/submit</code>, chỉ đổi người chạy từ fen sang một worker theo lịch có LLM riêng (model API nhỏ, tự chạy, hoặc <code>claude -p</code> headless với service account). Khi nào đổi, bộ đo sẽ quyết: chất lượng chắt ra sao so với lần chạy tay, và fen có muốn bớt thời gian cuối tuần không.</p>
+</details>
+<details open><summary>Chắt kinh nghiệm từ log của mọi user (quyết định của fen, 2026-09-30)</summary>
+<p>Nguồn: log và kinh nghiệm của fen, cộng log của các user khác trên KH BTP. Chỉ lấy <b>kinh nghiệm</b> (bài học, mẫu hình, cách giải), không lấy nghiệp vụ và thông tin cá nhân. Thuộc giai đoạn 1.</p>
+<div class="wrap"><table>
+<tr><th>Bước</th><th>Làm gì</th></tr>
+<tr><td>Đồng ý</td><td>User chỉ thấy một câu hỏi duy nhất: fen xin dùng kinh nghiệm từ dữ liệu của họ, họ chọn <b>đồng ý</b> hoặc <b>từ chối</b>. Không hỏi thêm gì, không giải thích schema hay quy trình. Câu trả lời thành một cờ trên project hoặc tenant của họ (project của fen mặc định bật, của người khác mặc định tắt cho đến khi đồng ý). Họ đổi ý lúc nào cũng được</td></tr>
+<tr><td>Chắt</td><td>LLM chắt duy nhất (trước mắt Claude CLI do fen chạy cuối tuần) rút ra các ứng viên bài học từ log</td></tr>
+<tr><td>Phân loại</td><td>Tách kinh nghiệm ("SSL giữa HANA và dịch vụ embedding lỗi thì…") khỏi nghiệp vụ ("khách X muốn SLA Y"); nghiệp vụ bị loại</td></tr>
+<tr><td>Làm sạch</td><td>Xoá tên người, e-mail, tên khách hàng hoặc công ty, host, id, secret. Làm bằng code trước, LLM viết lại sau</td></tr>
+<tr><td>Tổng quát hoá</td><td>Viết lại thành dạng dùng chung: triệu chứng, nguyên nhân, cách sửa</td></tr>
+<tr><td>Khử trùng</td><td>Gộp vào bài học đã có thay vì thêm dòng mới</td></tr>
+<tr><td>Duyệt</td><td>fen duyệt trước khi bài học vào project <code>knowledge</code></td></tr>
+<tr><td>Rút lại được</td><td>Id log nguồn nằm ở trường chỉ maintainer đọc được; nguồn bị rút thì bài học bị gỡ theo</td></tr>
+<tr><td>Gác cổng</td><td>Một bộ test rò rỉ: không được sót tên, e-mail hay tên khách hàng nào đã biết. Sót một cái là dừng</td></tr>
+</table></div>
+<p><b>Phía user không phải làm gì khác (fen, 2026-09-30):</b> mọi thứ sau câu đồng ý đều tự động. Khi KH được nâng cấp, hook và luật được server phát lại cho mọi user ở session kế tiếp, nên họ không phải cài hay cấu hình gì. Mọi câu hỏi trong report này là câu hỏi cho fen, không phải cho user.</p>
+<p>Lý do cần bước đồng ý: log của người khác thuộc project và tenant của họ. Quyền maintainer cho phép đọc về mặt kỹ thuật, nhưng dùng lại chúng là chuyện thoả thuận với người dùng, không phải chuyện kỹ thuật. Thêm cờ này ngay từ đầu thì sau này không phải làm lại.</p>
+</details>
+<details><summary>Các loại tri thức mà bộ chắt sẽ tạo</summary>
+<ul>
+<li><b>Entity + quan hệ:</b> người, hệ thống, module; ai làm gì, ai review ai (thẻ entity đã có từ hôm nay).</li>
+<li><b>Sự thật:</b> "prod của ticketing chạy ở us-central1".</li>
+<li><b>Bài học:</b> triệu chứng, nguyên nhân, cách sửa (đang có 365 lesson viết tay).</li>
+<li><b>Quy trình:</b> các bước deploy của project X.</li>
+<li><b>Mẫu hình:</b> "project A lỗi nhiều hơn B", tính từ số đếm trong log, không hỏi LLM.</li>
+<li><b>Hành vi người:</b> "ông A khó tính" thuộc về personalize hoặc thẻ người, và chỉ người có quyền mới đọc được.</li>
+</ul>
+</details>
+<details><summary>Bảo mật khi có nhiều agent</summary>
+<ul>
+<li>Mỗi agent một danh tính, quyền nhỏ nhất theo từng project, token ngắn hạn.</li>
+<li>Tri thức và tin nhắn do agent khác viết luôn được đánh dấu là dữ liệu không tin cậy.</li>
+<li>Hành động rủi ro cao (xoá, deploy prod, gửi ra ngoài) bắt buộc qua người duyệt, cho đến khi bộ đo chứng minh agent đủ an toàn.</li>
+<li>Audit mọi lần đọc và ghi; mã hoá theo tenant; kho secret (enhancement đang pending).</li>
+</ul>
+</details>
+<details><summary>Rủi ro lớn nhất</summary>
+<ul>
+<li><b>Tri thức rác tích tụ:</b> chắt sai, trùng lặp, mâu thuẫn. Chặn bằng nguồn, điểm tin cậy, cơ chế thay thế và bộ đo.</li>
+<li><b>Vòng học tự khuếch đại lỗi:</b> agent học từ output sai của agent khác. Chặn bằng gác cổng ở giai đoạn 5 và người duyệt policy.</li>
+<li><b>Chi phí token của lần chắt:</b> giờ tính vào gói Claude của fen, không còn tính vào user. Chỉ chắt log có tín hiệu (có quyết định, lỗi, người mới), còn thống kê thì tính bằng code.</li>
+<li><b>Khoá chặt vào một nhà cung cấp:</b> SAP HANA, model. Adapter ở mọi chỗ.</li>
+</ul>
+</details>
+<details open><summary>Team và lịch: fen + Claude Code (tính theo tốc độ Claude Code)</summary>
+<p><b>Tốc độ đo được:</b> ngày 2026-09-30, trong một phiên làm việc, Claude Code build, test, deploy dev rồi prod 8 thay đổi (recency, snippet, project personal, entity card, chunk vector, lọc SQL trên HANA, sửa resolve, chỉnh cỡ đoạn), viết khoảng 60 check test mới và 2 benchmark. Một tính năng cỡ vừa mất khoảng 1–3 giờ; một vòng deploy dev → e2e → prod mất khoảng 1 giờ. Vì vậy thời gian code chỉ là phần nhỏ. Lịch bị quyết định bởi <b>thời gian fen trả lời và duyệt</b>, và <b>thời gian chờ dữ liệu hay kiểm chứng live</b>.</p>
+<div class="wrap"><table>
+<tr><th>Giai đoạn</th><th>Claude Code build + test</th><th>Phải chờ</th><th>Nếu data chưa có</th><th>Nếu data đã đủ</th></tr>
+<tr><td>0. Thước đo</td><td>1–2 ngày</td><td>fen chọn câu hỏi chuẩn</td><td>tuần 1–2</td><td>tuần 1</td></tr>
+<tr><td>1. Bộ chắt (Claude CLI của fen, cuối tuần)</td><td>2–4 ngày, cộng khoảng 1 ngày chạy lại cho log cũ</td><td>fen duyệt schema và mẫu chắt; user khác đồng ý</td><td>tuần 2–5</td><td>tuần 2–3</td></tr>
+<tr><td>2. Gói ngữ cảnh</td><td>3–5 ngày</td><td>fen duyệt hook, chọn ngưỡng</td><td>tuần 5–7</td><td>tuần 4–5</td></tr>
+<tr><td>3. LLM riêng + summary ngày + vòng học</td><td>4–6 ngày</td><td>chọn LLM và trần chi phí; dữ liệu kết quả từng step (khoảng 3 tháng nếu phải tích luỹ, bắt đầu đếm từ giai đoạn 1; nếu đủ data thì chạy lại trên log cũ rồi xác nhận live 1–2 tuần)</td><td>tháng 2–5</td><td>tuần 6–8</td></tr>
+<tr><td>4. Nhiều agent</td><td>1–2 tuần</td><td>chạy thử trên task thật (2–6 tuần), fen quyết quyền</td><td>tháng 5–7</td><td>tuần 9–13</td></tr>
+<tr><td>5. Bật cơ chế tự cải tiến</td><td>1–2 tuần</td><td>vòng đề xuất → đo → nhận đầu tiên chạy thật</td><td>tháng 7–8</td><td>tuần 14–15</td></tr>
+<tr><td>Sau đó</td><td colspan="4">Tự cải tiến chạy thường trực suốt vòng đời KH, theo dõi bằng chỉ số mỗi quý; không tính vào lịch</td></tr>
+</table></div>
+<p><b>Tự cải tiến không phải một việc làm xong</b> (fen, 2026-09-30): 1–2 tuần chỉ là dựng cơ chế. Sau khi bật, nó là chế độ vận hành thường trực của KH cho đến hết vòng đời, được theo dõi bằng chỉ số mỗi quý (số lần người phải can thiệp, lỗi lặp, độ chính xác trên bộ đo, token mỗi step), không phải một mốc kết thúc. Các con số bên dưới là thời gian tới lúc <b>cơ chế đó được bật</b>.</p>
+<p><b>Tổng tới lúc bật tự cải tiến</b> (đã cộng 30% dự phòng cho thời gian duyệt của fen, các vòng deploy và sự cố):</p>
+<div class="wrap"><table>
+<tr><th>Tình huống</th><th>Không dự phòng</th><th>Có 30% dự phòng</th></tr>
+<tr><td>Phần build của Claude Code</td><td colspan="2">khoảng 22–39 ngày phiên làm việc (4,5–8 tuần)</td></tr>
+<tr><td>Data đã đủ, câu hỏi đã trả lời</td><td>khoảng 15 tuần</td><td><b>khoảng 4,5 tháng</b></td></tr>
+<tr><td>Data phải tích luỹ dần</td><td>khoảng 7–8 tháng</td><td><b>khoảng 9–10 tháng</b></td></tr>
+<tr><td>Mức sàn</td><td colspan="2">khoảng 3,5 tháng: agent phải chạy thử trên task thật, và mỗi giai đoạn phải lên prod trước khi xây giai đoạn sau</td></tr>
+</table></div>
+<p><b>Hệ quả cho cách làm:</b></p>
+<ul>
+<li>Việc tốn thời gian nhất của fen là trả lời khoảng 35 câu hỏi và duyệt. Gom câu hỏi theo giai đoạn thành một lần duyệt, và kèm sẵn phương án tôi đề xuất để fen chỉ cần chọn.</li>
+<li>Bật ghi kết quả từng step ngay từ giai đoạn 1, để đồng hồ dữ liệu của giai đoạn 3 bắt đầu chạy sớm.</li>
+<li>Không có người review thứ hai, nên bộ đo và e2e thay vai người review. Không có con số thì không lên prod.</li>
+<li>Trước mắt không có chi phí LLM riêng; từ giai đoạn 3 cần trần chi phí mỗi tháng do fen đặt.</li>
+</ul>
+</details>
+<details><summary>Việc nên làm ngay trong tháng tới</summary>
+<ol>
+<li>Đưa <code>2a6b2b8</code> lên prod, tạo lại đoạn 800 ký tự cho log cũ.</li>
+<li>Biến <code>bench.py</code> và <code>stepbench.py</code> thành bộ đo chính thức của KH, tính cả token, số lượt và tiền, chạy trước mỗi deploy (việc A). Sửa MCP headless của kh-helper trước.</li>
+<li>Làm <code>/turn/context</code> và rút gọn hook, đo lại bằng bộ đo (việc B, cập nhật 2026-10-01).</li>
+<li>Viết thiết kế cho lần chắt cuối tuần (việc D): hàng đợi chỉ phát log đã được phép, mốc đã chắt theo project, bộ test rò rỉ khi submit, lệnh "chắt tuần này" cho Claude CLI.</li>
+</ol>
+</details>
+</main></body></html>

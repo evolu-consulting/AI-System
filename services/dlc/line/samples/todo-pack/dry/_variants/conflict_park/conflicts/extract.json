@@ -1,0 +1,24 @@
+{
+  "claims": [
+    {
+      "entity": "todo file",
+      "attribute": "missing file",
+      "trigger": "list",
+      "condition": "the file is missing",
+      "outcome": "exit code 2",
+      "span_id": "spec.md#L6-10",
+      "quote": "a missing file is an error: every command prints `error: no file` and exits with code 2"
+    },
+    {
+      "entity": "todo file",
+      "attribute": "missing file",
+      "trigger": "list",
+      "condition": "the file is missing",
+      "outcome": "exit code 0",
+      "f_item": "F1",
+      "span_id": "spec.md#L18-22",
+      "quote": "`list` on an empty file prints nothing and exits with code 0"
+    }
+  ],
+  "links": []
+}

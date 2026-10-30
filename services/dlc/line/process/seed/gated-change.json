@@ -1,0 +1,303 @@
+{
+  "id": "gated-change",
+  "version": 1,
+  "title": "Gated change: spec, plans, build, review (docs/flow-enhance_bugfix.html steps 4-13)",
+  "applies": {
+    "flows": [
+      "enhancement",
+      "bug-fix",
+      "enhance",
+      "bug"
+    ]
+  },
+  "queue": {
+    "enabled": true,
+    "serial_from": "build",
+    "hold_until": "end",
+    "refresh_drafts": true
+  },
+  "artifacts": {
+    "spec": {
+      "title": "Spec (Spec Agent)",
+      "head": "# Spec",
+      "items": "^#{2,4}\\s*(F\\d+)\\b",
+      "fields": {
+        "domains": {
+          "section": "Domains",
+          "list": true,
+          "default": "(the application's)"
+        }
+      },
+      "glance": "At a glance",
+      "asks": {
+        "section": "Questions",
+        "status": [
+          "proposed",
+          "open"
+        ]
+      }
+    },
+    "impl": {
+      "title": "Implement plan (Domain Agent)",
+      "head": "# Implement plan",
+      "refs": "\\b(F\\d+)\\b",
+      "glance": "At a glance",
+      "asks": {
+        "section": "Assumptions"
+      }
+    },
+    "tests": {
+      "title": "Test plan (QC Agent)",
+      "head": "# Test plan",
+      "refs": "\\b(F\\d+)\\b",
+      "cases": "^\\|\\s*([A-Z]{1,4}-?\\d+)\\s*\\|",
+      "glance": "At a glance"
+    }
+  },
+  "steps": [
+    {
+      "id": "spec",
+      "kind": "draft",
+      "state": "understanding",
+      "board": {
+        "stage": "understand",
+        "who": "Spec Agent",
+        "text": "step 4: mapping the request to the system and writing the spec"
+      },
+      "agents": [
+        {
+          "artifact": "spec",
+          "role": "spec_analyst",
+          "prompt": "spec",
+          "record_drafts": true
+        }
+      ],
+      "checks": [
+        {
+          "check": "sections",
+          "artifact": "spec",
+          "severity": "warn",
+          "sections": [
+            "At a glance",
+            "Summary",
+            "Mapping to the existing system",
+            "Spec",
+            "Domains",
+            "Questions"
+          ]
+        },
+        {
+          "check": "count",
+          "artifact": "spec",
+          "section": "Questions",
+          "pattern": "\\|\\s*open\\s*\\|",
+          "max": 0,
+          "severity": "warn",
+          "message": "{n} question(s) still open: settle them before the sign-off"
+        },
+        {
+          "check": "judge",
+          "artifact": "spec"
+        }
+      ],
+      "gate": {
+        "name": "spec",
+        "step": 5,
+        "title": "Sign off the spec",
+        "board": "understand",
+        "decisions": [
+          "approve",
+          "revise"
+        ],
+        "pass": [
+          "approve"
+        ],
+        "revise": [
+          "revise"
+        ],
+        "show": [
+          "spec",
+          "@needs",
+          "@drift",
+          "@checks"
+        ],
+        "note_label": "What should change (for a send back), or a note",
+        "note_placeholder": "e.g. Appendix types are missing; see the attached rules.",
+        "chat": true
+      }
+    },
+    {
+      "id": "plan",
+      "kind": "draft",
+      "state": "planning",
+      "board": {
+        "stage": "plan",
+        "who": "Domain + QC agents",
+        "text": "steps 6-7: implement plan and test plan, in parallel"
+      },
+      "agents": [
+        {
+          "artifact": "impl",
+          "role": "domain_agent",
+          "prompt": "impl"
+        },
+        {
+          "artifact": "tests",
+          "role": "test_author",
+          "prompt": "tests"
+        }
+      ],
+      "checks": [
+        {
+          "check": "sections",
+          "artifact": "impl",
+          "severity": "warn",
+          "sections": [
+            "At a glance",
+            "Blast radius",
+            "Steps",
+            "Risks and checks",
+            "Assumptions",
+            "Decision rules"
+          ]
+        },
+        {
+          "check": "sections",
+          "artifact": "tests",
+          "severity": "warn",
+          "sections": [
+            "At a glance",
+            "Scope",
+            "Test cases",
+            "Test data"
+          ]
+        },
+        {
+          "check": "coverage",
+          "from": "spec",
+          "to": [
+            "impl",
+            "tests"
+          ],
+          "severity": "warn"
+        },
+        {
+          "check": "judge",
+          "artifact": "impl"
+        }
+      ],
+      "gate": {
+        "name": "plan",
+        "step": 8,
+        "title": "Approve the implement plan and the test plan",
+        "board": "plan",
+        "decisions": [
+          "approve",
+          "revise"
+        ],
+        "pass": [
+          "approve"
+        ],
+        "revise": [
+          "revise"
+        ],
+        "targets": {
+          "impl": [
+            "impl"
+          ],
+          "tests": [
+            "tests"
+          ],
+          "both": [
+            "impl",
+            "tests"
+          ]
+        },
+        "default_target": "both",
+        "target_labels": {
+          "impl": "Implement plan",
+          "tests": "Test plan",
+          "both": "Both plans"
+        },
+        "show": [
+          "impl",
+          "tests",
+          "@checks"
+        ],
+        "note_label": "What should change (for a send back), or a note",
+        "note_placeholder": "e.g. Add a boundary case for empty input.",
+        "chat": true
+      },
+      "hooks_after": [
+        "after_plan"
+      ]
+    },
+    {
+      "id": "build",
+      "kind": "build",
+      "brief": "build",
+      "round": "round",
+      "persist": {
+        "dir": ".dlc",
+        "artifacts": [
+          "spec",
+          "impl",
+          "tests"
+        ],
+        "items_from": "spec",
+        "links_from": [
+          "impl"
+        ]
+      }
+    },
+    {
+      "id": "final",
+      "kind": "review",
+      "checks": [
+        {
+          "check": "in_diff",
+          "artifact": "tests",
+          "pattern_from": "cases",
+          "paths": "test",
+          "severity": "warn"
+        }
+      ],
+      "gate": {
+        "name": "final",
+        "step": 13,
+        "title": "Review the result: deploy or hold",
+        "board": "result",
+        "decisions": [
+          "deploy",
+          "hold"
+        ],
+        "pass": [
+          "deploy",
+          "hold"
+        ],
+        "deliver": [
+          "deploy"
+        ],
+        "show": [
+          "@rounds",
+          "@findings",
+          "@checks",
+          "@metrics"
+        ],
+        "review": true,
+        "note_label": "Corrected solutions for the findings (they go back to the agents through the retro)",
+        "note_placeholder": "e.g. D1: correct. R1: tests must not depend on the clock."
+      }
+    }
+  ],
+  "judge": {
+    "role": "reviewer",
+    "prompt": "judge",
+    "rules": {
+      "files": [
+        ".dlc/constitution.md"
+      ]
+    }
+  },
+  "retries": 1
+}

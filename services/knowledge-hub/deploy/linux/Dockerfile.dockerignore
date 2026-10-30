@@ -1,0 +1,13 @@
+# deploy/linux/Dockerfile: the app, its seeds, assets, the bundled models and the spec only
+*
+!main.py
+!preflight.py
+!VERSION
+!requirements.txt
+!KnowledgeHub.spec
+!app/
+!seeds/
+!assets/
+!models/
+**/__pycache__
+**/*.pyc

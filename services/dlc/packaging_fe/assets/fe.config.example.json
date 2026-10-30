@@ -1,0 +1,12 @@
+{
+  "SDLC_ENGINE_URL": "http://127.0.0.1:8796",
+  "SDLC_AUTH_ISSUER": "https://<server-ip>:8443/realms/dlc",
+  "SDLC_AUTH_CLIENT": "dlc-fe",
+  "SDLC_AUTH_AUDIENCE": "dlc-api",
+  "SDLC_PUBLIC_URL": "http://<server-ip>:8795",
+  "SDLC_HOST": "0.0.0.0",
+  "SDLC_PORT": "8795",
+  "SDLC_DATA_DIR": "C:\\dlc\\fe-data",
+  "SDLC_ENABLE_MIGRATION": "0",
+  "SDLC_ENGINE_TIMEOUT_S": "60"
+}

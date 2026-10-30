@@ -1,0 +1,150 @@
+{
+  "_comment": "KH access-control catalogue. seed.py loads it into the KH_AUTH_* tables. Change behaviour here, not in code. Source: KH pending enhancement 'SSO sign-in with roles and per-scope access control', decisions D1-D13 (2026-09-24).",
+  "roles": [
+    {
+      "code": "maintainer",
+      "description": "Maintains KH. No restriction anywhere, including the orchestrator. Only a maintainer adds or removes another maintainer (D7, D8)."
+    },
+    {
+      "code": "member",
+      "description": "Everyone who is not a maintainer. Sees only the projects they created or were added to (D6); the orchestrator is read-only."
+    },
+    {
+      "code": "tenant-admin",
+      "project_scope": "tenant",
+      "description": "Administers one company (tenant): its project permissions below apply to every project created by someone of that tenant, orphans included. Held through the realm role 'tenant-admin', which the group /tenants/<tenant>/tenant-admins carries."
+    },
+    {
+      "code": "semi.read",
+      "description": "Reads every semi-public project (readonly level, see visibility_access). Carried by each tenant group, and given directly to a person with no tenant; a tenant whose group lacks it cannot read semi-public projects."
+    },
+    {
+      "code": "public.read",
+      "description": "Reads every public project (readonly level). Carried like semi.read."
+    },
+    {
+      "code": "public.write",
+      "description": "Edits the content of every public project (editable level: read, write, worklog; never people or deletion). Carried like semi.read."
+    }
+  ],
+  "_visibility_access": "fen 2026-10-13: semi-public and public projects are ordinary projects. Their people keep their grants; on top, whoever holds the role below holds the level on every active project of that visibility (view rule 6). A project's visibility is KH_AUTH_PROJECT.VISIBILITY, set by its owner or a maintainer (PUT /kh/projects/{id}/visibility). Exclude a tenant by removing these roles from its group; seed.py replaces these rows wholesale.",
+  "visibility_access": [
+    {"visibility": "semi-public", "role": "semi.read", "level": "readonly"},
+    {"visibility": "public", "role": "public.read", "level": "readonly"},
+    {"visibility": "public", "role": "public.write", "level": "editable"}
+  ],
+  "visibility_roles": ["semi.read", "public.read", "public.write"],
+  "_project_scope": "Where a role's PROJECT permissions apply: 'all' (default) = every project, 'tenant' = the projects of the tenants the person administers. Change what a role may do by editing role_permissions below and re-running seed.py - no code change.",
+  "levels": [
+    {
+      "code": "owner",
+      "rank": 3,
+      "description": "Full access to the project: content, people (add or remove anyone, owners included) and deleting the project (D3, D12)."
+    },
+    {
+      "code": "editable",
+      "rank": 2,
+      "description": "Full access to the project's content, but may not touch people or delete the project (D4)."
+    },
+    {
+      "code": "readonly",
+      "rank": 1,
+      "description": "Reads the project only and writes no worklog into it (D4b, D5)."
+    }
+  ],
+  "permissions": [
+    {
+      "code": "project.read",
+      "description": "Read and retrieve the project's data: knowledge, logs, findings, graph, policy.",
+      "applies_to": "project"
+    },
+    {
+      "code": "project.write",
+      "description": "Add, change and delete the project's content.",
+      "applies_to": "project"
+    },
+    {
+      "code": "project.log",
+      "description": "Write worklogs into the project. Readonly members do not (D5).",
+      "applies_to": "project"
+    },
+    {
+      "code": "project.members.manage",
+      "description": "Add people to the project, remove them, or change their level.",
+      "applies_to": "project"
+    },
+    {
+      "code": "project.delete",
+      "description": "Delete the whole project, behind a typed 'delete' confirmation (D12).",
+      "applies_to": "project"
+    },
+    {
+      "code": "project.create",
+      "description": "Create a new project; the creator becomes its owner (D2).",
+      "applies_to": "kh"
+    },
+    {
+      "code": "kh.users.manage",
+      "description": "Add, disable or remove KH users (the allow-list).",
+      "applies_to": "kh"
+    },
+    {
+      "code": "kh.users.invite",
+      "description": "Bring a NEW person in: adding an e-mail that has no account to a project creates the account. Without it, only people who already have an account can be added, and the caller is told whom to ask. A holder whose role scope is 'tenant' creates people inside their own tenant only.",
+      "applies_to": "kh"
+    },
+    {
+      "code": "kh.maintainers.manage",
+      "description": "Promote a user to maintainer or remove a maintainer (D7, D8).",
+      "applies_to": "kh"
+    }
+  ],
+  "role_permissions": {
+    "maintainer": [
+      "project.read",
+      "project.write",
+      "project.log",
+      "project.members.manage",
+      "project.delete",
+      "project.create",
+      "kh.users.manage",
+      "kh.users.invite",
+      "kh.maintainers.manage"
+    ],
+    "member": [
+      "project.create"
+    ],
+    "tenant-admin": [
+      "project.read",
+      "project.write",
+      "project.log",
+      "project.members.manage",
+      "project.delete",
+      "kh.users.invite"
+    ]
+  },
+  "level_permissions": {
+    "owner": [
+      "project.read",
+      "project.write",
+      "project.log",
+      "project.members.manage",
+      "project.delete"
+    ],
+    "editable": [
+      "project.read",
+      "project.write",
+      "project.log"
+    ],
+    "readonly": [
+      "project.read"
+    ]
+  },
+  "system_projects": [
+    "orchestrator"
+  ],
+  "_default_levels": "A level every active KH user holds on the project without a grant (fen 2026-09-28). 'lesson-learned' holds the shared lessons and guides (renamed from 'knowledge' 2026-10-05); everyone reads it, its owners and editors edit it. The orchestrator needs no entry: as a system project every user already reads it.",
+  "default_levels": {
+    "lesson-learned": "readonly"
+  }
+}

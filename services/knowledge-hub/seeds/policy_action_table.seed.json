@@ -1,0 +1,197 @@
+{
+  "replace": true,
+  "actions": [
+    {
+      "project": "every project",
+      "action": "review code",
+      "description": "Review, critique or sign off on code or on a design against fen's standing design and coding contract. Pick this for: review this pull request, check this code against the rules, audit this design, critique my architecture before I build it, is this scalable and maintainable, check the licences of these dependencies. The deliverable is a violation list with rule numbers, never a stored graph.",
+      "source_policy": "policy_design_coding_review_v1",
+      "priority": 100
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "description": "Ingest / index / scan / import a codebase into KnowledgeHub so it can be queried later. Pick this for: scan this repo into KH, index the source, ingest the project, build the code graph, save the source to KH. NOT an audit, NOT a bug hunt, NOT a security pass - the deliverable is a stored graph plus tiers, never a findings report.",
+      "source_policy": "policy_code_scan_v3",
+      "priority": 100
+    }
+  ],
+  "rules": [
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "read files",
+      "seq": 1,
+      "clauses": "1",
+      "content": "[1 DELIVERABLE - read scope] Read the CHANGE, not the whole tree (fen's own example row for this pair: 'using github cli to check change'). For a pull request or a branch, fetch the diff with the github cli and review only what changed; for uncommitted work use git diff; for a design review read the design document itself. Reviewing files the change never touched wastes the pass. Source of truth for every rule below: Rowan-Design-and-Coding-Rules.md in the design_coding_rules folder (on fen's workstation: C:/RWTemp/design_coding_rules/Rowan-Design-and-Coding-Rules.md) - but the rows in this table are self-contained, do NOT depend on that path being reachable."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check design",
+      "seq": 2,
+      "clauses": "2",
+      "content": "[2 THE 5-LENS DESIGN CHECKLIST - MANDATORY, NEVER SKIP ONE] Whenever a new feature or system is designed (architecture, service, workflow, pipeline), address all five lenses and surface the trade-offs for each: 2.1 security, 2.2 licensing, 2.3 performance, 2.4 scalability, 2.5 maintainability. Each lens has its own row in this table - fetch all five, never skip one, and surface the trade-off for each."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check security",
+      "seq": 3,
+      "clauses": "2.1",
+      "content": "[2.1 SECURITY] authn/authz, input validation, secrets handling, no data leakage, tenant isolation, safe egress."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check licences",
+      "seq": 4,
+      "clauses": "2.2",
+      "content": "[2.2 LICENSING] check the license of every library, dependency, model and dataset; avoid license-incompatible or costly components; flag copyleft/commercial constraints. Evaluate RELICENSE RISK, not just today's license (the IdentityServer4 to Duende commercial flip burned companies): prefer permissive OSS (MIT/Apache-2.0/BSD) under neutral governance (Apache/CNCF/Linux Foundation) over single-vendor projects that can rug-pull; be wary of heavy CLAs and source-available licenses (BSL/SSPL/Elastic/RPL); check relicensing history and who controls the trademark/repo; ISOLATE EVERY THIRD-PARTY DEPENDENCY BEHIND AN ABSTRACTION/ADAPTER so it can be swapped without touching business logic; prefer fork-able permissive OSS; pin versions and record the license snapshot. Apply at design time, not after lock-in."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check performance",
+      "seq": 5,
+      "clauses": "2.3",
+      "content": "[2.3 PERFORMANCE] latency, hot-path cost; avoid O(n^2) and per-row LLM calls; batch/stream. PERFORMANCE ALSO MEANS CONDITION-AWARE TRADE-OFF ACCEPTANCE: pick the most optimal option given current conditions and resources (infra, budget, time, existing services); do NOT cram in every best-in-class technique. When a constraint forces a compromise, do NOT silently ship the ideal design - state (a) THE CEILING, the max this design realistically meets under current conditions (up to X rows / Y latency / Z tenants), and (b) THE UPGRADE PATH, how it will be scaled later and what to swap or add. Prefer a pragmatic deployable design with a documented ceiling and upgrade path over an ideal design that stalls at deployment."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check scalability",
+      "seq": 6,
+      "clauses": "2.4",
+      "content": "[2.4 SCALABILITY] behaviour as data, tenants and load grow; materialize-once plus incremental refresh; stateless services; no unbounded memory. CRITICAL: SCALABILITY IS NOT JUST BIG-O OR LOAD. Its primary meaning is THE ABILITY TO ADAPT TO NEW USE CASES WITHOUT ADVERSELY AFFECTING EXISTING ONES. Judge a design on (a) ADDITIVE CHANGE - can a new use case be added by adding a catalog entry, a rule type, a connector, a tier or a new system, rather than MODIFYING existing code paths; (b) BACKWARD COMPATIBILITY - old use cases keep working unchanged (Never-Worse, versioned specs, no regression); (c) STABLE INTERFACES / EXTENSION POINTS so multi-system and cross-system integration bolts on without rewrites; (d) CONTAINED BLAST RADIUS - a new use case must not force edits that risk existing ones. ALWAYS report scalability along BOTH axes: load-scaling AND use-case/extensibility-scaling."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check maintainability",
+      "seq": 7,
+      "clauses": "2.5",
+      "content": "[2.5 MAINTAINABILITY] clean architecture, single responsibility, small reusable primitives (flow-first / clean-core), clear naming, versioned and auditable, testable, no monolith burying logic."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check coding rules",
+      "seq": 8,
+      "clauses": "3,3.1,3.2,3.3,3.4,3.5,3.6,3.7",
+      "content": "[3 CODING RULES TO ENFORCE IN A CODE REVIEW]\n 3.1 ENGLISH IN CODE - implementation, comments and on-screen UI strings/labels are always English, never Vietnamese (Ticketing, SimpleMDG: app/*.py, views, templates, JS). Exception: docs written for fen to read may be Vietnamese. Chatting with fen stays in his language.\n 3.2 ABSTRACT AND DATA-DRIVEN, NO HARDCODE - implement as abstract as possible, easy to plug in and out; behaviour and routing must be data-driven via mapping/config, never hardcoded; prefer a registry/handler pattern driven by a catalog; adding a new behaviour means adding a mapping or catalog entry, NOT editing the engine. Example: the destination of an inbound Jira comment (public reply vs internal note) must be a mapping in a field-map config.\n 3.3 NEVER-WORSE (NO REGRESSION) - no change may regress existing behaviour, measured baselines or scores; backward compatibility preserved; old use cases keep working unchanged.\n 3.4 NO MACHINE-SPECIFIC PATHS IN SHARED FILES - shared config and hook files are used by many people, so never hardcode a per-user path; resolve per-user via $env:USERPROFILE or $HOME. If a shared hook needs a helper script, make it self-bootstrap (write it on first run if missing) so sharing one file is enough.\n 3.5 REUSE TOOLS BEFORE WRITING NEW ONES - every tool or script created while working must be saved to C:/Programs/ClaudeKH/Tools, whose INDEX.md is the registry. BEFORE writing a new script, read INDEX.md; if a tool already fits, reuse it. After writing a new one, add a line to INDEX.md and save the file there.\n 3.6 GENERATE DATA WITH SCRIPTS, NEVER HAND-TYPE IT - when a test or task needs data files, write or reuse a generator script and run against the generated files; never hand-emit CSV/JSON/rows token by token. General principle: prefer generating artifacts via code and tools over emitting them as tokens.\n 3.7 DOCS VS CHANGELOG, TWO LAYERS KEPT IN SYNC - change_log/ is the FULL HISTORY as dated files (yyyy_mm_dd_summary.md), append-only, never rewritten; docs/ is the CURRENT-STATE reflection of what the system has right now, kept up to date by rewriting and extending. Any implementation writes a change_log entry AND updates the relevant docs page."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check ui",
+      "seq": 9,
+      "clauses": "3.8",
+      "content": "[3.8 MINIMALIST UI] fen is a minimalist: simple, clean, uncluttered, still easy to read and use; smooth and easy on the eyes (diu mat), not crude (khong tho); smart component placement so the UI is self-explanatory at a glance (nhin la hieu). Restrained palette of neutrals plus one accent and muted semantic status colours; generous whitespace; hairline dividers over heavy shadows and borders; consistent spacing rhythm and radius; calm typography; remove decorative noise."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check testing",
+      "seq": 10,
+      "clauses": "4,4.1,4.2",
+      "content": "[4 TESTING AND VERIFICATION TO DEMAND]\n 4.1 LIVE E2E EVERY ~2 SLICES - after every 2 groups or slices of work, automatically start the app and run a live end-to-end test once without being asked; catch integration issues early instead of relying on static or unit verification; record evidence, then continue.\n 4.2 E2E VIA GENERATED DATA AND THE PRODUCT BROWSER - drive E2E against script-generated datasets per 3.6, and demonstrate in the product's own browser (Solace Browser), not a default browser."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "check working style",
+      "seq": 11,
+      "clauses": "5,5.1,5.2,5.3",
+      "content": "[5 WORKING STYLE THE REVIEW MUST RESPECT]\n 5.1 WORK AUTONOMOUSLY - on multi-item build tasks keep going through the plan without pausing for permission; make sensible default calls, finish each item end to end, and surface only genuine blockers such as missing external credentials.\n 5.2 TONE - blunt and casual, no formality, straight to the work.\n 5.3 ESTIMATES CARRY A BUFFER AND A REALISTIC CALENDAR - add a +30% contingency buffer by default to absorb deploy waits, QA and acceptance rounds and context switching; look up the current team from Jira assignees and git commit authors, allocate by role, and derive a realistic parallel calendar on the critical path, not a raw sum of effort."
+    },
+    {
+      "project": "every project",
+      "action": "review code",
+      "sub_action": "report findings",
+      "seq": 12,
+      "clauses": "1,6",
+      "content": "[1 DELIVERABLE - reporting] For a DESIGN review, walk all five lenses of [2] and surface the trade-offs for each. For a CODE review, walk [3] and report each violation as: rule number, file:line, what breaks, minimal fix. Never report \"looks good\" without naming which rules you checked. Never silently skip a lens or a rule. [6 SCOPE] This policy is COMMON: it applies to every project unless a per-project policy overrides a specific rule. It governs review of code and of designs. It does NOT govern ingesting a codebase into the knowledge store - that is the separate code-scan policy ('scan code' in this table)."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "choose tool",
+      "seq": 1,
+      "clauses": "1",
+      "content": "[1 ROUTING] per-scope pick the stronger of {gitnexus, graphify}; run BOTH on scopes each wins; both-miss -> Claude/LLM; never one-tool-only. gitnexus = deep TS/JS impact + PDG (CFG/REACHING_DEF/CDG/TAINT) + risk/epistemic-completeness + cross-repo/cross-service contracts + semantic graph search + git-diff blast. graphify = multilingual/exotic (~36-40 langs) + SQL/Terraform/IaC + fast god-nodes / Leiden-community skeleton + bulk graph.json export. claude = .cds/.csn + UI5.xml + outbound cross-service beyond patterns + business/T1 semantics + unsupported langs + all natural-language documents."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "create project",
+      "seq": 2,
+      "clauses": "2",
+      "content": "[2 ISOLATION - v6.4 PER-PROJECT] each codebase = its OWN KH PROJECT bundle, PHYSICALLY isolated (own vector collection + knowledge + a separate single-file Kuzu graph). HOW to provision the bundle is NOT defined here - it is the KH project-creation MECHANISM (orchestrator knowledge 'kh-mechanism-project-creation': POST /projects, IDEMPOTENT by id, a re-scan reuses the SAME id and refreshes in place, never duplicates). Before creating, RESOLVE to an existing project first (/orchestrator/resolve) so a re-scan never forks a duplicate under a new id. STRICT RULES: source_id = the PROJECT id ONLY; the tool (gitnexus/graphify) is metadata + edge attribute, NOT part of the id - REJECT tool-prefixed source_ids (graphify__/gitnexus__). Every code vector is tagged metadata.project=<id> + metadata.scope=codegraph so records never crowd. Cross-codebase bleed is prevented BY STRUCTURE (a physically separate Kuzu DB + vector collection per project), not by a src__ prefix filter. TAXONOMY / facet-descent is REMOVED: a query reaches the right project via /orchestrator/resolve and operates inside it via /orchestrator/switch/{id}, never by facet-descent."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "read files",
+      "seq": 3,
+      "clauses": "9",
+      "content": "[9 LARGE-REPO SCAN - PER-GROUP, NEVER WHOLE-TREE] NEVER run graphify/gitnexus over the WHOLE tree at once on a large repo or monorepo. EVIDENCE: on SMDG_V1 two separate whole-repo runs each STALLED ~50-180 min - single-thread, low RSS (~50MB), empty output, no progress for tens of minutes; a few pathological files (minified JS bundles, giant or generated JSON) choke the AST parser and block the entire batch. SOLUTION (proven): scan PER-GROUP / per-subrepo with graphify --code-only. Isolating each top-level group means a bad file only blocks its OWN group, not the whole run; each group finishes independently and bounded. If one group still stalls, locate the offending large file and EXCLUDE it via .graphifyignore, then re-run just that group. ALWAYS pass --code-only: it skips the LLM/embedding semantic phase that needs an API key (the plain graphify extract wrapper omits the flag and HANGS on semantic extraction). This REFINES [5 SCAN FLOW] step (2): fan the tools out per T2 group, never once over the repo root. DO NOT fan out Claude explorer agents to read source before the tools have built the graph."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "read documents",
+      "seq": 4,
+      "clauses": "3",
+      "content": "[3 TWO BRANCHES per project] under the SAME T1 project node: BRANCH source-code holds the code tiers T1/T2/T3; BRANCH documents holds the project's OWN natural-language docs + images surfaced during the scan (README/design-docs/specs/wiki/ADRs/diagrams/screenshots). NL text -> Claude reads + summarizes; images -> store reference + Claude caption/OCR gist. T1 identity is authored from the documents branch + tool size numbers. Only populate documents if the source actually has docs."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "run scan",
+      "seq": 5,
+      "clauses": "5",
+      "content": "[5 SCAN FLOW] (1) create/register the PROJECT via the project-creation mechanism (see [2]; resolve-then-upsert by id, never duplicate). (2) run graphify + gitnexus -> T3 graph + T2 community structure (tools, ZERO Claude read of source); the tool output lands under external/<tool>/<repo> (graphify graph.json / gitnexus .gitnexus lbug). (3) Claude reads the documents branch (NL docs/images) -> T1 identity. (4) Claude labels the tools' communities -> T2 naming/intent. (5) DEFER THE KUZU IMPORT: LEAVE the tools' T3 output in place under external/<tool>/<repo> - do NOT import into the project's Kuzu during the scan and do NOT clear the output. At scan time KH holds only: the registered project + T1 identity + T2 labeled communities (in kh_know_<id>) + a pointer to the external index. NET: a scan enumerates source + builds the external index + authors T1/T2; the per-function T3 graph stays in external/ as system-of-record until someone asks to import it. TOOLING: scan wrapper C:/Programs/ClaudeKH/tools/scripts/kh_codegraph.ps1 (ops: scan|register|resolve|query; register = create the PROJECT). scan -Tool graphify|gitnexus -Repo <name> -RepoPath <dir> builds the index into external/<tool>/<repo>. graphify.cmd extract <repo> [--code-only] for a key-less code-only pass. DO NOT run a generic bug/security audit."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "author tiers",
+      "seq": 6,
+      "clauses": "4",
+      "content": "[4 TIERS] (under source-code branch), tier-scoped activation (a query loads ONLY the tier it needs). T1 = identity/business (what the app does + size = #modules/features); author: Claude (needs NL reading of docs branch). T2 = skeleton/technical (subsystem grouping + metadata + inter-module relation edges); OWNERSHIP: the TOOLS carry the T2 STRUCTURE for ZERO Claude token - graphify Leiden-communities + god-nodes, gitnexus Community/Process/Route clusters. Claude does NOT read all source for T2; Claude reads ONLY the tools' community/cluster DIGESTS and LABELS each cluster with a business name + one-line scaffold intent. So T2 = tool-structure + cheap Claude labeling. T3 = detail (vectors+graph per function: concept/logic + CALLS/IMPORTS/ACCESSES with file:line); 100% tools; lives in the tool output under external/ and is IMPORTED into the project's OWN Kuzu (kuzu_projects/<id>/graph.kuzu) ONLY ON DEMAND; query-not-rescan once imported. STORAGE (v6.4): T1/T2 SUMMARIES are embedded into the project knowledge kh_know_<id> under the C4 model (T1 ~ L1/L2 context+container identity; T2 ~ L3 component clusters). Per SA-3 do NOT vector-hoa each T3 stub - only T1/T2 summaries + NL are embedded; T3 detail stays in the graph, reached by traverse. Stamp model+dim+version on every vector (SA-5)."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "persist result",
+      "seq": 7,
+      "clauses": "7",
+      "content": "[7 PERSIST] DEFER-IMPORT (rev 2026-08-18b, SUPERSEDES the 2026-08-18 import-at-scan model): during a scan, materialize T1/T2 (identity + labeled communities) into the PROJECT knowledge kh_know_<id> (C4 model) and REGISTER the PROJECT via the project-creation mechanism (see [2]), but KEEP the tools' T3 node/edge output in external/<tool>/<repo> (graphify graph.json; gitnexus .gitnexus/lbug). Do NOT import into the project's Kuzu and do NOT clear/junction the output during the scan. WHILE UN-IMPORTED external/ is the T3 system-of-record; AFTER an import the project's Kuzu copy is authoritative for query. FRESHNESS: re-run the tool to refresh the external index (git-SHA marks staleness); re-import on request."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "import graph",
+      "seq": 8,
+      "clauses": "7",
+      "content": "[7 PERSIST - the separate ON-DEMAND import step] The Kuzu import is a DISTINCT step performed ONLY WHEN EXPLICITLY REQUESTED, using the scripts in C:/Programs/ClaudeKH/tools/scripts/: graphify -> POST /codegraph/import {path, type=graphify, source_id=<project id>, topic, conflicts_with, register_source, clear_output, dry_run} (imports into kuzu_projects/<id>/graph.kuzu); gitnexus -> gitnexus_reader.ps1 -Repo <name> [-IndexPath <dir>] (dumps the lbug via @ladybugdb -> graphify node_link graph.json -> /codegraph/import type=graphify; NO KH exe rebuild). CAVEAT: some very large gitnexus lbug indexes read back collapsed/duplicated at scale (damaged dictionary in that index) - the import fails LOUDLY on KH's duplicate-id gate rather than importing garbage; rebuild via gitnexus analyze if that happens, or skip if graphify already covers the repo."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "blast radius",
+      "seq": 9,
+      "clauses": "6",
+      "content": "[6 BLAST-RADIUS] cross-tier: gitnexus impact/detect-changes = code layer (func/file) recomputed on re-scan; once the T3 graph is imported into the project's Kuzu, the KH graph maps code->module->FEATURE (roll-up) and is walked natively via /orchestrator/graph_traverse|graph_read (scoped to that project's graph); Claude = feature->feature behavioral. Report EVERY affected place across ALL tiers; cache scope=log; on later edit QUERY-not-rescan (against whichever store currently holds T3: the external index, or the project Kuzu if imported)."
+    },
+    {
+      "project": "every project",
+      "action": "scan code",
+      "sub_action": "verify",
+      "seq": 10,
+      "clauses": "8",
+      "content": "[8 VERIFY-LINK] (mandatory gate). AT SCAN COMPLETE (no import): confirm the tool output exists under external/<tool>/<repo>, the project is registered (resolvable via /orchestrator/resolve), and each T1 feature maps to >=1 labeled T2 cluster; only then is the SCAN complete. WHEN A KUZU IMPORT IS REQUESTED (separate step): after /codegraph/import (or gitnexus_reader.ps1) returns ok, PROBE the project's OWN store - fire one live query (POST /orchestrator/graph_traverse or /orchestrator/graph_read with source_id=<project id>, or /codegraph dry_run counts) and confirm real project-prefixed nodes/edges come back AND the T3->T2->T1 roll-up resolves (sample a T2 module -> real T3 file:line nodes). On ANY mismatch (empty result / diverged source_id) FIX IN PLACE (re-import or correct the project id/alias) and re-probe until every link passes; only then is the IMPORT complete. Seed note: graph_traverse prepends source_id__ (the project id) to core_ids, so pass seeds WITHOUT the project prefix."
+    }
+  ]
+}

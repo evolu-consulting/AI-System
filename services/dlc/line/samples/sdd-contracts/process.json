@@ -1,0 +1,162 @@
+{
+  "id": "contract-change",
+  "extends": "gated-change",
+  "title": "Contract app change (sample)",
+  "purpose": "Ship small, legally correct changes to the contract app with as few human touches as possible",
+  "owner": "dlc-admin",
+  "kpi": {
+    "max_human_decisions": 4,
+    "max_usd": 15,
+    "max_mid_run_stops": 0
+  },
+  "applies": {
+    "flows": [
+      "enhancement",
+      "bug-fix"
+    ]
+  },
+  "input": "a ticket (spec.md) describing one change to an existing contract kind",
+  "output": "merged code with tests, the approved spec / plans in .dlc/changes, the review decision",
+  "needs": [
+    {
+      "id": "contract-types",
+      "what": "Contract types the app supports",
+      "kind": "business",
+      "owner": "business-analyst",
+      "scope": "project",
+      "where": {
+        "repo": "docs/business/contract-types.md"
+      },
+      "required": "block"
+    },
+    {
+      "id": "legal-rules",
+      "what": "Legal rules for contract fields",
+      "kind": "business",
+      "owner": "legal-expert",
+      "scope": "project",
+      "where": {
+        "repo": "docs/business/legal-rules.md"
+      },
+      "required": "block"
+    },
+    {
+      "id": "planning-skills",
+      "what": "How changes to this app are planned and tested",
+      "kind": "technical",
+      "owner": "tech-lead",
+      "scope": "project",
+      "where": {
+        "repo": "docs/technical/planning-skills.md"
+      },
+      "required": "warn"
+    },
+    {
+      "id": "sample-contracts",
+      "what": "Sample contracts for tests",
+      "kind": "technical",
+      "owner": "tech-lead",
+      "scope": "project",
+      "where": {
+        "repo": "data/sample-contracts.json"
+      },
+      "required": "warn"
+    }
+  ],
+  "steps": [
+    {
+      "id": "spec",
+      "supervisor": "business-analyst",
+      "incident": "business-analyst",
+      "target": {
+        "kpi": {
+          "max_drafts": 3,
+          "max_revisions": 2
+        }
+      },
+      "needs": [
+        {
+          "id": "ticket",
+          "what": "The ticket text",
+          "kind": "business",
+          "owner": "product-owner",
+          "scope": "run",
+          "where": {
+            "pack": "spec.md"
+          },
+          "required": "block"
+        }
+      ],
+      "gate": {
+        "approvers": [
+          "dlc-user",
+          "dlc-admin"
+        ],
+        "auto": {
+          "kind": "spec-signoff",
+          "min_precedents": 1,
+          "criteria": "Simple: it only adds or validates a field of an existing contract kind, follows a rule already in the legal rules, adds no contract kind and does not touch payments or signatures."
+        }
+      }
+    },
+    {
+      "id": "plan",
+      "supervisor": "tech-lead",
+      "incident": "tech-lead",
+      "target": {
+        "kpi": {
+          "max_revisions": 2
+        }
+      },
+      "gate": {
+        "approvers": [
+          "dlc-user",
+          "dlc-admin"
+        ],
+        "decisions": [
+          "approve",
+          "revise",
+          "back-to-spec"
+        ],
+        "revise": [
+          "revise",
+          "back-to-spec"
+        ],
+        "routes": {
+          "back-to-spec": {
+            "back_to": "spec"
+          }
+        },
+        "decision_labels": {
+          "back-to-spec": "Send back to the spec"
+        },
+        "auto": {
+          "kind": "plan-approval",
+          "min_precedents": 1,
+          "criteria": "Simple: the blast radius is contracts.py and its tests, no schema or API change, every F-item has a test case."
+        }
+      }
+    },
+    {
+      "id": "build",
+      "target": {
+        "kpi": {
+          "max_rounds": 2,
+          "max_decisions_outside_plan": 2,
+          "max_mid_run_stops": 0
+        }
+      }
+    },
+    {
+      "id": "final",
+      "supervisor": "dlc-admin",
+      "incident": "dlc-admin",
+      "gate": {
+        "approvers": [
+          "dlc-admin",
+          "dlc-user"
+        ]
+      }
+    }
+  ]
+}
