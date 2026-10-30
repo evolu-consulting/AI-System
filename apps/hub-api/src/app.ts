@@ -202,6 +202,7 @@ function processHooks(
     workflowInvoker: sharedWorkflowInvoker({ ...deps, ...m }), // P-d2 · D2-02 · chung với `/mcp`
     // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
     github: githubEndpointOf(deps),
+    internalToken: deps.internalToken, // CR-105 · L5
     publicRoutes: resolveProcessRoutes(deps), // F1 · CR-103 · off | admin (chỉ admin-web) | all
     secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),
   });

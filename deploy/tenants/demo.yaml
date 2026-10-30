@@ -12,7 +12,7 @@ profile:
 packs: [contracts]
 # approval_process: <key>   # CR-105 (optional): key of a PUBLISHED library process, assigned to slot contracts.approval after enablePack('contracts').
 #   Absent => tenant runs the default process. Invalid/unpublished/missing groups => step error in report, tenant still created.
-#   Needs ADMIN_HUB_URL + ONBOARD_HUB_ACCESS_TOKEN (platform_admin) in the env of tenant-onboard.cli.ts.
+#   Needs ADMIN_HUB_URL + HUB_INTERNAL_TOKEN (service token) in the env of tenant-onboard.cli.ts.
 
 root: { key: pb-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: demo-owner@example.invalid }
 departments:

@@ -23,6 +23,7 @@ import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
+import { libraryInternalRoutes } from "./library/library.internal.routes";
 import { libraryRoutes } from "./library/library.routes";
 import { previewRoutes } from "./library/preview.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
@@ -83,6 +84,8 @@ export type ProcessMountDeps = Omit<
   | "toolDriver"
 > &
   ProcessSeams & {
+    /** CR-105 · L5 · `HUB_INTERNAL_TOKEN` cho `PUT /internal/tenants/:tid/process-slots/:slot` (vắng ⇒ 503). */
+    internalToken?: string;
     /**
      * F1 (CR-095) · CR-103 · chế độ route công khai (`routes-mode.ts`): `off` ⇒ KHÔNG mount (`/process-runs`, `/processes`, …);
      * `admin` ⇒ chỉ defs/runs/gates/usage sau `requireAdminRole`; engine + vòng nền + cầu gói vẫn chạy. Vắng ⇒ `all`.
@@ -133,6 +136,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
   if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
   mountRoutes(app, d, m.publicRoutes ?? "all");
+  app.route("/internal", libraryInternalRoutes(d, m.internalToken)); // CR-105 · L5 · token dịch vụ, không JWT
   const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
   startBackground({ m, bg, poster, khWriter, drain });
   return { roomSender: roomStart(d), conversationStart: d.start };

@@ -276,6 +276,18 @@ export class LibraryService {
     return this.#tenantSlot(tenantId, slot);
   }
 
+  /** Nội bộ (admin-api onboarding): gán theo `key` thư viện của khe; cùng đường `assign` (B2 Group + audit có actor). */
+  async assignByKey(
+    u: AuthUser,
+    tenantId: string,
+    slot: string,
+    key: string,
+  ): Promise<TenantProcessSlot> {
+    specOrThrow(slot);
+    const def = await this.#read((tx) => lib.readLibDefByKey(tx, key, slot));
+    if (!def) throw notFound();
+    return this.assign(u, tenantId, slot, def.id);
+  }
   async unassign(u: AuthUser, tenantId: string, slot: string): Promise<void> {
     await withConfigWrite(this.#w, u, async (tx) => {
       const prev = await asg.deleteAssignment(tx, tenantId, slot);

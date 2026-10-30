@@ -15,11 +15,13 @@ import { slotRegistry } from "../../../../../hub-api/src/modules/packs/kit/adapt
 import type { PackToolCatalog } from "../../../../../hub-api/src/modules/packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../../../../../hub-api/src/modules/processes/core/ports";
 import { defsRoutes } from "../../../../../hub-api/src/modules/processes/defs/defs.routes";
+import { libraryInternalRoutes } from "../../../../../hub-api/src/modules/processes/library/library.internal.routes";
 import { libraryRoutes } from "../../../../../hub-api/src/modules/processes/library/library.routes";
 import { parseSpec } from "../adapters/onboard.schema";
 import { onboardTenant } from "../tenant-onboard.run";
 
 const SLOT = "contracts.approval";
+const TOKEN = "int-test-internal-token";
 let ctx: CtxI1;
 let hubDb: Db;
 let app: Hono<AuthVars>;
@@ -85,7 +87,7 @@ const specOf = (key: string, approval: string) => {
 
 const hubCfg = () => ({
   url: "http://hub.test",
-  accessToken: "unused-in-process",
+  internalToken: TOKEN,
   fetch: (url: string, init: RequestInit) => {
     const u = new URL(url);
     return Promise.resolve(app.request(u.pathname + u.search, init));
@@ -122,6 +124,7 @@ beforeAll(async () => {
   const deps = { db: hubDb, packTools: approvalCatalog(), start: {} } as unknown as ProcessDeps;
   app.route("/", defsRoutes(deps));
   app.route("/", libraryRoutes(deps));
+  app.route("/internal", libraryInternalRoutes(deps, TOKEN));
 }, 180_000);
 
 afterAll(async () => {
@@ -137,6 +140,9 @@ describe("onboard approval_process", () => {
     const rows = await ctx.sql`select def_id from hub.process_slot_assignments
       where tenant_id = ${r.tenant.id} and slot = ${SLOT}`;
     expect(rows.map((x) => x.def_id)).toEqual([defId]);
+    const [au] = await ctx.sql`select actor_id from hub.audit_log
+      where action = 'assign' and entity_id = ${defId} order by at desc limit 1`;
+    expect(au?.actor_id).toBe(ctx.padmin); // audit carries the onboarding actor
   });
 
   test("ký hiệu sai ⇒ lỗi bước, tenant vẫn tạo", async () => {
@@ -146,7 +152,7 @@ describe("onboard approval_process", () => {
       process: "khong-co",
       slot: SLOT,
       state: "error",
-      error: "PROCESS_NOT_FOUND",
+      error: "NOT_FOUND",
     });
     const [t] = await ctx.sql`select 1 from admin.tenants where key = 'plonb2'`;
     expect(t).toBeDefined();

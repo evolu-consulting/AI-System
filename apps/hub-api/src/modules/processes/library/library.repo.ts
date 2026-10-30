@@ -25,6 +25,12 @@ export async function readLibDef(tx: Tx, id: string, lock = false): Promise<LibR
   return r ?? null;
 }
 
+/** Def thư viện (còn sống) theo `key` + khe; một câu SQL cố định theo index key. */
+export async function readLibDefByKey(tx: Tx, key: string, slot: string): Promise<LibRow | null> {
+  const [r] = await tx.execute<LibRow>(sql`select ${LIB_COLS} from hub.process_defs d
+    where d.key = ${key} and d.slot = ${slot} and ${IS_LIB}`);
+  return r ?? null;
+}
 export type ReleaseRow = {
   rel_version: number;
   name: string;

@@ -17,7 +17,7 @@ export type { OnboardReport };
 export function onboardPorts(db: Db, actorId: string, hub?: HubAssignConfig): OnboardPorts {
   const call = { ctx: { db }, scope: { kind: "platform" } as const, actor: { userId: actorId } };
   return {
-    ...(hub ? { processAssign: hubProcessAssign(hub) } : {}),
+    ...(hub ? { processAssign: hubProcessAssign(hub, actorId) } : {}),
     write: (fn) =>
       configWrite(call, "tenant.save", (tx, ch) =>
         fn(onboardRepo(tx), {
