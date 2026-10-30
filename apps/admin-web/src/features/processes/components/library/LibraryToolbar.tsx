@@ -1,9 +1,10 @@
-﻿// CR-105 · thanh trên của editor quy trình thư viện (UX): trạng thái (Nháp / vN), "Xuất bản" là nút chính, "Gán cho tenant",
+// CR-105 · thanh trên của editor quy trình thư viện (UX): trạng thái (Nháp / vN), "Xuất bản" là nút chính, "Gán cho tenant",
 // "Xem trước đường đi"; Lịch sử · Nhân bản · Đặt mặc định là nút phụ. "Lưu nháp" nằm ở thanh lưu bên dưới — tách khỏi "Xuất bản".
 import { Copy, History, Route, Upload, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { statusOf } from "../../lib/library-list";
 import { canAssign, canSetDefault, publishState } from "../../lib/library-view";
 import type { LibraryDef } from "../../library-api";
 
@@ -22,6 +23,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, string | number>) => t(`process.admin.library.${k}`, o);
   const state = publishState(def);
+  const status = statusOf(def);
   const ic = "size-4";
   const secondary = (a: LibraryAction, label: string, icon: React.ReactNode, off = false) => (
     <Button type="button" size="sm" variant="ghost" disabled={off} onClick={() => onAction(a)}>
@@ -35,10 +37,14 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
       data-testid="library-toolbar"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge tone={state === "published" ? "ok" : "off"}>
-          {state === "published"
-            ? L("pubState.published", { n: def.published_version ?? 0 })
-            : L("pubState.draft")}
+        <StatusBadge
+          tone={status.kind === "draft" ? "off" : status.kind === "changed" ? "warn" : "ok"}
+        >
+          {status.kind === "draft"
+            ? L("pubState.draft")
+            : status.kind === "changed"
+              ? L("status.changed", { n: status.version })
+              : L("pubState.published", { n: status.version })}
         </StatusBadge>
         {def.is_default ? (
           <StatusBadge tone="ok">{L("defaultBadge", { slot: def.slot_label ?? "" })}</StatusBadge>

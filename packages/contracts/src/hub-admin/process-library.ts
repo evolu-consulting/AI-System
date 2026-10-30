@@ -26,6 +26,8 @@ export const LIBRARY_DEF_FIELDS = {
   slot_label: z.string().nullable().optional(),
   published_version: z.number().int().min(1).nullable().optional(),
   is_default: z.boolean().optional(),
+  /** Đã xuất bản và nháp khác bản đang chạy (UI: "Có thay đổi chưa xuất bản"). */
+  has_unpublished_changes: z.boolean().optional(),
   tenant_count: CountSchema.optional(),
 };
 export const LIBRARY_LIST_ITEM_FIELDS = {

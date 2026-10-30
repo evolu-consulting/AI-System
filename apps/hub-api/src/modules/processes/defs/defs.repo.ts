@@ -28,6 +28,8 @@ export type DefRow = {
   published_version: number | null;
   tenant_count: number;
   is_default: boolean;
+  /** Đã có bản xuất bản mà nháp (stages / slot_body / tên) khác bản đó. */
+  has_unpublished_changes: boolean;
   version: number;
   created_at: string;
   updated_at: string;
@@ -45,6 +47,7 @@ export type DefListRow = Pick<
   | "published_version"
   | "tenant_count"
   | "is_default"
+  | "has_unpublished_changes"
 > & {
   stage_count: number;
   active_runs: number;
@@ -53,7 +56,9 @@ export type DefListRow = Pick<
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 /** CR-105 · đếm gán + cờ mặc định (index `assignments(def_id)`, `process_slots(default_def_id)`). */
 const LIB_USE = sql`(select count(*)::int from hub.process_slot_assignments a where a.def_id = d.id) as tenant_count,
-  exists (select 1 from hub.process_slots s where s.default_def_id = d.id) as is_default`;
+  exists (select 1 from hub.process_slots s where s.default_def_id = d.id) as is_default,
+  coalesce((select r.stages is distinct from d.stages or r.slot_body is distinct from d.slot_body or r.name <> d.name
+    from hub.process_def_releases r where r.def_id = d.id and r.rel_version = d.published_version), false) as has_unpublished_changes`;
 const COLS = sql`d.id, d.tenant_id, d.key, d.name, d.description, d.input_hint, d.run_group_ids, d.stages,
   d.token_budget, d.enabled, coalesce(d.sources, '[]'::jsonb) as sources,
   coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days, d.source_template_id, d.version,

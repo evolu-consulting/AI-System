@@ -66,11 +66,15 @@ export function toProcessDef(r: DefRow): ProcessDef {
 
 /** CR-105 · trường def thư viện (vắng ở def tenant/mẫu — giữ hình response cũ). */
 const libFields = (
-  r: Pick<DefRow, "slot" | "published_version" | "tenant_count" | "is_default">,
+  r: Pick<
+    DefRow,
+    "slot" | "published_version" | "tenant_count" | "is_default" | "has_unpublished_changes"
+  >,
 ) => ({
   slot_label: r.slot === null ? null : (slotSpecOf(r.slot)?.label ?? null),
   published_version: r.published_version,
   is_default: r.is_default,
+  has_unpublished_changes: r.has_unpublished_changes === true,
   tenant_count: Number(r.tenant_count),
 });
 

@@ -1,10 +1,10 @@
-﻿// CR-105 · UX: ánh xạ thuần cho danh sách thư viện — trạng thái, "đang dùng" bằng chữ, sắp xếp (mặc định ghim đầu), khoá sinh từ tên,
+// CR-105 · UX: ánh xạ thuần cho danh sách thư viện — trạng thái, "đang dùng" bằng chữ, sắp xếp (mặc định ghim đầu), khoá sinh từ tên,
 // xoá được bản nháp, mô tả điều kiện bước bằng lời. Không React / không API.
 import type { FlowWhen } from "@ai/contracts";
 import type { LibraryListItem } from "../library-api";
 
-/** Mục danh sách + cờ tuỳ chọn Hub có thể trả (khe hở hợp đồng: bản nháp mới hơn bản xuất bản). */
-export type ListRow = LibraryListItem & { has_unpublished_changes?: boolean };
+/** Mục danh sách (có `has_unpublished_changes` từ Hub: nháp khác bản xuất bản). */
+export type ListRow = LibraryListItem;
 
 export type RowStatus =
   | { kind: "draft" }
@@ -12,7 +12,9 @@ export type RowStatus =
   | { kind: "changed"; version: number };
 
 /** Nháp (chưa từng xuất bản) · Đã xuất bản vN · Có thay đổi chưa xuất bản (nháp mới hơn bản xuất bản). */
-export function statusOf(r: ListRow): RowStatus {
+export function statusOf(
+  r: Pick<ListRow, "published_version" | "has_unpublished_changes">,
+): RowStatus {
   if (r.published_version == null) return { kind: "draft" };
   return r.has_unpublished_changes === true
     ? { kind: "changed", version: r.published_version }

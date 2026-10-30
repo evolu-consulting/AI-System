@@ -234,6 +234,22 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
     expect(lib.map((i) => i.key)).not.toContain("contracts-approval");
   });
 
+  it("cờ has_unpublished_changes: xuất bản ⇒ false, sửa nháp ⇒ true, xuất bản lại ⇒ false", async () => {
+    const id = await published("pl-flag", body("F1"));
+    const flag = async () => ({
+      detail: (await call("P", "GET", D(id))).json.has_unpublished_changes,
+      list: (
+        (await call("P", "GET", "/process-defs?kind=library&limit=100")).json.items as Json[]
+      ).find((i) => i.id === id)?.has_unpublished_changes,
+    });
+    expect(await flag()).toEqual({ detail: false, list: false });
+    expect((await saveDraft(id, { slot_body: body("F2") })).status).toBe(200);
+    expect(await flag()).toEqual({ detail: true, list: true });
+    const v = (await call("P", "GET", D(id))).json.version;
+    expect((await call("P", "POST", `${D(id)}/publish`, { version: v })).status).toBe(201);
+    expect(await flag()).toEqual({ detail: false, list: false });
+  });
+
   it("gán lại thay thế, một tenant một khe một quy trình", async () => {
     const a = await published("pl-ga", body("A"));
     const b = await published("pl-gb", body("B"));
