@@ -92,9 +92,14 @@ services:
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431}
       COMMUNITY_SWEEP: ${COMMUNITY_SWEEP:-on}
       COMMUNITY_SWEEP_EVERY_MS: ${COMMUNITY_SWEEP_EVERY_MS:-60000}
+      # CR-104 ops-watch: trạng thái backup/host do backup.sh + ops-host-status.sh ghi vào ./ops-status (gắn chỉ-đọc, KHÔNG gắn thư mục backup).
+      HUB_OPS_WATCH: ${HUB_OPS_WATCH:-on}
+      HUB_OPS_STATUS_DIR: /run/s2/ops
+      OPS_PUBLIC_URLS: "${S2_PUBLIC_CONTRACTS_URL:-http://localhost:18431},${S2_PUBLIC_CHAT_URL:-http://localhost:18433},${S2_PUBLIC_ADMIN_URL:-http://localhost:18432},${S2_PUBLIC_HUB_URL:-http://localhost:18434},${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}"
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
+      - ./ops-status:/run/s2/ops:ro
       - ./data/attachments:/data/attachments
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro

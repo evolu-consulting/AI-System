@@ -82,6 +82,15 @@ Register-ScheduledTask sohoptac2-uptime -Action (New-ScheduledTaskAction powersh
 ```
 - Khôi phục thật (thảm hoạ): làm theo đúng các bước của `restore-test.sh` nhưng vào project `sohoptac2` với volume trống (thủ công, có người giám sát).
 
+## Tình trạng hệ thống (CR-104)
+- Trang `/system` của Hub đọc 2 file JSON trong `~/workspace/sohoptac2/ops-status/` (không bí mật; compose gắn thư mục này CHỈ-ĐỌC vào hub-api tại `/run/s2/ops`, `HUB_OPS_STATUS_DIR`; thư mục backup KHÔNG được gắn). `HUB_OPS_WATCH` (mặc định on) bật vòng kiểm; `OPS_PUBLIC_URLS` = 5 URL `S2_PUBLIC_*` (sohoptac, ai, ai-admin, ai-hub, community; phân cách dấu phẩy) do compose dựng.
+- `backup.json`: `backup.sh` ghi nguyên tử ở CUỐI mỗi lần chạy (cả thành công lẫn lỗi; lần chạy trùng bị khoá thì không ghi): `finished_at, ok, dir, size_bytes, offsite, offsite_ok, error`.
+- `host.json`: `ops-host-status.sh` (cron 30 phút, cũng chạy cuối `setup.sh`) ghi `at, disks[{mount,used_pct,avail_bytes}]` (`/` + thư mục dữ liệu Docker nếu khác mount), `deploy_ref` (dòng đầu file `VERSION` do deploy.ps1 ghi; thiếu ⇒ null).
+- Cài cron MỘT lần trên máy chủ (idempotent, chạy lại không nhân đôi):
+```n( crontab -l 2>/dev/null | grep -v 'ops-host-status.sh'; echo '*/30 * * * * bash $HOME/workspace/sohoptac2/ops-host-status.sh >> $HOME/workspace/sohoptac2/ops-status/cron.log 2>&1' ) | crontab -
+```n- Kiểm: `cd ~/workspace/sohoptac2 && bash ops-host-status.sh && cat ops-status/host.json`; `bash backup.sh && cat ops-status/backup.json` (hoặc đợi backup 02:30 UTC); `crontab -l | grep ops-host`; `docker compose -p sohoptac2 exec hub-api ls /run/s2/ops` (thấy file, ghi thử phải báo read-only); rồi mở `/system`.
+- Triển khai lần đầu: `powershell -File deploy/prod-sohoptac2/deploy.ps1` (chép kit, `setup.sh` tạo `ops-status/` + chạy `ops-host-status.sh` + `up -d` hub-api có mount) rồi lệnh cron ở trên.
+
 ## Nhập dữ liệu chị Tiên (sohoptac cũ → tenant `nitigroup`) — niti-import
 Chỉ dữ liệu của MỘT tài khoản cũ (Lê Thị Thuý Tiên): HĐ chị phụ trách / chưa giao mà chị tạo + phụ lục, hạng mục, đợt thanh toán/giao
 hàng, sổ đối tác (cả đánh giá chị ghi), file gốc → FileBox; mọi HĐ thuộc user `tien` (tạo trước bằng script tenant-owner; vắng ⇒ lỗi

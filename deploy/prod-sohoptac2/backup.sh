@@ -35,6 +35,26 @@ restart_fb() {
     STOPPED=0
   fi
 }
+# --- CR-104: trang thai cho hub-api doc (ops-status/backup.json, ghi nguyen tu, khong chua bi mat) ---
+S2_DIR=${S2_DIR:-$HERE}
+STATUS_DIR="$S2_DIR/ops-status"
+STATUS_ARMED=0      # chi ghi sau khi co khoa (lan chay trung khong de len ket qua cua lan dang chay)
+ERR_MSG=""
+RESULT_DIR=""
+RESULT_SIZE=0
+OFFSITE_OK=null     # null = khong dung/chua toi luot; true|false = ket qua rsync
+json_str() { printf '%s' "$1" | LC_ALL=C tr -d '\000-\037' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+write_status() {
+  local ok=false off=false err=null tmp
+  [ "$1" -eq 0 ] && ok=true
+  [ -n "$OFFSITE_DIR" ] && off=true
+  if [ "$1" -ne 0 ]; then err="\"$(json_str "${ERR_MSG:-exit $1}")\""; fi
+  mkdir -p "$STATUS_DIR" && chmod 755 "$STATUS_DIR" || return 0
+  tmp=$(mktemp "$STATUS_DIR/.backup.json.XXXXXX") || return 0
+  printf '{"finished_at":"%s","ok":%s,"dir":"%s","size_bytes":%s,"offsite":%s,"offsite_ok":%s,"error":%s}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$ok" "$(json_str "$RESULT_DIR")" "${RESULT_SIZE:-0}" "$off" "$OFFSITE_OK" "$err" > "$tmp" \
+    && chmod 644 "$tmp" && mv -f "$tmp" "$STATUS_DIR/backup.json" || rm -f -- "$tmp"
+}
 on_exit() {
   local rc=$?
   restart_fb || true
@@ -42,15 +62,17 @@ on_exit() {
     [ -n "$PARTIAL" ] && rm -rf -- "$PARTIAL"
     log "THAT BAI (exit $rc)"
   fi
+  [ "$STATUS_ARMED" = 1 ] && { write_status "$rc" || true; }
   exit "$rc"
 }
 trap on_exit EXIT
-die() { log "LOI: $*"; exit 1; }
+die() { ERR_MSG="$*"; log "LOI: $*"; exit 1; }
 
 command -v flock >/dev/null || die "thieu flock"
 command -v sha256sum >/dev/null || die "thieu sha256sum"
 exec 9>"$BACKUP_ROOT/.lock"
 flock -n 9 || die "backup/restore-test khac dang chay"
+STATUS_ARMED=1
 
 [ -f .env ] || die "khong thay .env"
 [ -d claude-home ] || die "khong thay claude-home"
@@ -139,6 +161,8 @@ find "$PARTIAL" -type f -exec chmod 600 {} +
 chmod 600 "$PARTIAL/MANIFEST.sha256"; chmod 700 "$PARTIAL"
 mv "$PARTIAL" "$FINAL"
 PARTIAL=""
+RESULT_DIR="$TS"
+RESULT_SIZE=$(du -sb "$FINAL" | cut -f1)
 log "xong $FINAL ($(du -sh "$FINAL" | cut -f1))"
 
 # --- Giữ 14 ngày + 8 tuần ---
@@ -164,6 +188,6 @@ if [ -z "$OFFSITE_DIR" ]; then
 else
   command -v rsync >/dev/null || die "OFFSITE_DIR dat nhung thieu rsync (ban local $TS van con)"
   # shellcheck disable=SC2086
-  rsync -a --chmod=D700,F600 $OFFSITE_RSYNC_OPTS "$FINAL" "${OFFSITE_DIR%/}/" || die "rsync offsite that bai (ban local $TS van con)"
+  if rsync -a --chmod=D700,F600 $OFFSITE_RSYNC_OPTS "$FINAL" "${OFFSITE_DIR%/}/"; then OFFSITE_OK=true; else OFFSITE_OK=false; die "rsync offsite that bai (ban local $TS van con)"; fi
   log "offsite: da chep $TS toi $OFFSITE_DIR"
 fi

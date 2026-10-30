@@ -8,6 +8,8 @@ dc() { docker compose -p sohoptac2 "$@"; }
 envv() { grep -m1 "^$1=" .env | cut -d= -f2-; }
 pw_of() { envv "$1" | sed -E 's#^postgres://[^:]+:([^@]+)@.*#\1#'; }
 
+# CR-104: thư mục trạng thái cho hub-api (chỉ-đọc trong container; chủ = user chạy script = S2_UID). Không bí mật.
+mkdir -p ops-status; chmod 755 ops-status
 dc up -d --wait pg redis filebox
 dc run --rm -T tool packages/db/src/migrate.ts
 # Production không áp migration dev ⇒ 3 role ứng dụng chưa có mật khẩu đăng nhập.
@@ -31,4 +33,5 @@ for i in $(seq 1 60); do
   sleep 2
 done
 [ $ok -eq 1 ] && echo "setup: admin-api + hub-api /health OK" || echo "setup: /health CHƯA lên — xem docker compose -p sohoptac2 logs"
+bash ./ops-host-status.sh || echo "setup: ops-host-status.sh loi (khong chan deploy)"
 dc ps --format '{{.Service}}: {{.Status}}'
