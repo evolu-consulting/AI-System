@@ -116,6 +116,21 @@ engine dùng ngay cho lượt mới.
 Nhưng: form Cài đặt **không** thấy thay đổi này, và lần **Lưu quy trình** kế tiếp ở form sẽ biên dịch lại và **ghi đè**. Chỉ dùng
 canvas để sửa nhanh tạm thời; muốn giữ thì sửa lại ở form.
 
+## Danh sách ai-admin › Quy trình có nhiều quy trình — cái nào duyệt hợp đồng?
+
+Chỉ **một**: **"Duyệt hợp đồng" (`!contracts-approval`)**. Sổ Hợp Tác tự mở lượt chạy quy trình này khi một HĐ vào duyệt; không ai
+bấm "Chạy" tay. Nó được sinh từ form Cài đặt › Quy trình duyệt (xuất hiện sau lần **Lưu quy trình** đầu tiên của công ty).
+
+Các quy trình khác trong danh sách **không** dùng để duyệt hợp đồng:
+
+| Quy trình | Ký hiệu | Từ đâu | Dùng làm gì |
+|---|---|---|---|
+| Sửa lỗi (AISDLC) | `!bug-fix` | mẫu seed máy dev (`HUB_SEED_FIXTURES=1`, `apps/hub-api/seed/processes.full.yaml`) | quy trình AI sửa lỗi phần mềm; chạy tay |
+| Giao tính năng (AISDLC) | `!sdlc-delivery` | như trên | quy trình AI giao tính năng; chạy tay |
+| Duyệt đề nghị chi (mẫu) | `!flow-showcase` | `seed-flow-showcase.ts` (tenant `demo`, `-SeedDemo`) | trình diễn engine (rẽ nhánh `if`, `set`); chạy tay ở `/processes/showcase` |
+
+Muốn đổi cách duyệt hợp đồng ⇒ chỉ sửa form Cài đặt (mục 3–5). Tắt hoặc xoá các quy trình mẫu ở trên không ảnh hưởng duyệt HĐ.
+
 ## Hỏi đáp
 
 - **Lưu rồi mà HĐ vẫn duyệt kiểu cũ?** Kiểm 2 điều kiện ở mục "Điều kiện để chạy trên engine".
