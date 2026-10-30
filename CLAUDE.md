@@ -38,6 +38,7 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
    - **Phiên chính (điều phối):** chỉ phân tích, chia lát, ra quyết định, hỏi người dùng, merge, deploy. KHÔNG tự chạy lại test/e2e, đọc log dài, dọn server/worktree, chụp ảnh — giao Haiku rồi đọc tóm tắt.
    - **Opus (agent):** RLS/tenant, quyền, auth/secrets, tiền, migration dữ liệu khách, lõi engine (launcher/settle/stage-driver), review + security cuối đợt.
    - **Sonnet (agent, mặc định):** code + test + sửa lỗi của một lát (BE/FE/UI/e2e mới), gộp `docs/current` cuối đợt.
+   - **Quét tài liệu/code:** tìm "ở đâu, có gì" (file, chỗ dùng, danh sách) ⇒ agent `Explore` model **Haiku**, chỉ trả kết luận; đối chiếu spec↔code, tìm nguyên nhân lỗi ("có đúng không, vì sao") ⇒ **Sonnet**; quét để review bảo mật/quyền ⇒ **Opus**. Phiên chính chỉ tự đọc khi đã biết đúng 1–3 file, không grep rộng.
    - **Haiku (agent):** chạy lại bộ test/e2e đã có và tóm tắt pass/fail + nguyên nhân sơ bộ; relock test (`test:lock:write/verify`); dọn worktree, server mồ côi, DB test; cập nhật STATE/CODEMAP/INDEX; chụp ảnh màn hình bằng script có sẵn; `openspec:pending/archive`; smoke prod bằng script có sẵn.
 3. **Tái dùng ngữ cảnh:** việc tiếp/sửa lỗi của **cùng lát hoặc cùng vùng code** ⇒ `SendMessage` cho agent đã làm (ngữ cảnh còn cache) — thắng câu "không SendMessage giao việc mới" của Luật 3; vùng khác ⇒ agent mới kèm bàn giao.
 4. **Brief hẹp, báo cáo ngắn:** brief đủ 6 mục (Luật 3), chỉ đường file cụ thể; báo cáo ≤ 10 dòng; phiên chính không đọc transcript agent, chỉ đọc đuôi log (`-Tail`, `Select-String`).
