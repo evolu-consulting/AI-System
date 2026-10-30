@@ -92,6 +92,10 @@ services:
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}
       COMMUNITY_SWEEP: ${COMMUNITY_SWEEP:-on}
       COMMUNITY_SWEEP_EVERY_MS: ${COMMUNITY_SWEEP_EVERY_MS:-60000}
+      # dlc-dify: hook agent lấy access token của user qua admin-api `/internal/tokens` (Bearer HUB_INTERNAL_TOKEN, mạng nội bộ).
+      HUB_ADMIN_API_URL: http://admin-api:3001
+      # dlc-dify: bước flow DLC gọi agent và chờ (kể cả chờ người duyệt) — trần chờ một lời gọi workflow Dify.
+      HUB_DIFY_TIMEOUT_MAX_S: "3600"
       # CR-104 ops-watch: trạng thái backup/host do backup.sh + ops-host-status.sh ghi vào ./ops-status (gắn chỉ-đọc, KHÔNG gắn thư mục backup).
       HUB_OPS_WATCH: ${HUB_OPS_WATCH:-on}
       HUB_OPS_STATUS_DIR: /run/s2/ops
@@ -187,6 +191,8 @@ services:
       AGENT_RT_WORK_DIR: /rtdata/work
       AGENT_RT_LOG_DIR: /rtdata/logs
       AGENT_RT_CLI_PATH: /opt/claude/claude
+      # dlc-dify: trần chờ một tool MCP của Hub (= HUB_DIFY_TIMEOUT_MAX_S).
+      AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S: "3600"
     volumes:
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro
