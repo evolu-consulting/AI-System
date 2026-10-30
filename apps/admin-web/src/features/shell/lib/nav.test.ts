@@ -19,6 +19,7 @@ describe("ADM-FR-60 · menu theo role", () => {
       "groups",
       "access",
       "secrets",
+      "system",
       "usage",
       "audit",
       "feedback",

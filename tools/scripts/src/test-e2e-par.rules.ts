@@ -24,6 +24,7 @@ export const META: Record<string, Meta> = {
   "e2e/K1/playwright.k1.config.ts": { db: "k1", redis: REDIS_DB("K1_REDIS_DB"), cost: 30 },
   "e2e/N1/playwright.config.ts": { cost: 21 },
   "e2e/N2/playwright.n2.config.ts": { db: "n2", redis: REDIS_DB("N2_REDIS_DB"), cost: 22 },
+  "e2e/ops/playwright.ops.config.ts": { db: "ops", redis: REDIS_DB("OPS_REDIS_DB"), cost: 40 },
   "e2e/P-a/playwright.pa.config.ts": { db: "pa", redis: REDIS_DB("PA_REDIS_DB"), cost: 150 },
   "e2e/P-b/playwright.pb.config.ts": { db: "pb", redis: REDIS_DB("PB_REDIS_DB"), cost: 69 },
   "e2e/P-b2/playwright.pb2.config.ts": { db: "pb2", redis: REDIS_DB("PB2_REDIS_DB"), cost: 76 },

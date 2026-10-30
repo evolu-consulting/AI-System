@@ -216,6 +216,7 @@
     "usageAnalytics": "Token analytics",
     "audit": "Audit log",
     "feedback": "Feedback",
+    "system": "System status",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
     "workflowProcess": "Workflow Process"
@@ -1055,6 +1056,91 @@
       "clearToEnv": "Feedback will use the TRELLO_* environment variables again.",
       "clearToNone": "Feedback will only be stored in the app (not sent to Trello).",
       "cleared": "Trello settings removed"
+    }
+  },
+  "system": {
+    "title": "System status",
+    "subtitle": "Periodic platform checks (0 AI tokens). Alerts show in the bell.",
+    "notConfigured": "Hub address (PUBLIC_HUB_URL) is not configured.",
+    "noData": "No data yet — press \"Check now\".",
+    "disabled": "Disabled",
+    "checkedAt": "Checked",
+    "changedAt": "Changed",
+    "hint": "Hint",
+    "copyCmd": "Copy command",
+    "copied": "Copied",
+    "copyFailed": "Could not copy",
+    "checkNow": "Check now",
+    "rateLimited": "Wait {n} s",
+    "checkFailed": "Could not run the check",
+    "diag": "Diagnostic bundle",
+    "diagCopied": "Diagnostic bundle copied and .txt downloaded",
+    "diagText": {
+      "title": "DIAGNOSTIC BUNDLE — System status",
+      "time": "Time",
+      "env": "Environment",
+      "deploy": "Deploy",
+      "checks": "Checks",
+      "events": "Last 20 events"
+    },
+    "status": { "ok": "OK", "warn": "Warning", "crit": "Critical", "unknown": "Unknown" },
+    "overall": {
+      "ok": "All good",
+      "warn": "Warnings",
+      "crit": "Incident",
+      "unknown": "Unknown"
+    },
+    "summary": {
+      "overall": "Overall",
+      "last": "Last round",
+      "next": "Next round",
+      "never": "None yet"
+    },
+    "check": {
+      "provider": "AI providers",
+      "runs_failed": "Failed AI runs",
+      "db_redis": "DB / Redis",
+      "public_hosts": "Public hosts",
+      "tls": "TLS certificates",
+      "backup": "Backup",
+      "disk": "Server disk",
+      "stuck": "Queue / stuck runs"
+    },
+    "history": {
+      "title": "History (last 50 events)",
+      "time": "Time",
+      "check": "Check",
+      "change": "Change",
+      "empty": "No events yet",
+      "settings": "Settings changed by {user}"
+    },
+    "unit": {
+      "min": "min",
+      "pct": "%",
+      "count": "count",
+      "days": "days",
+      "hours": "hours",
+      "fails": "failures"
+    },
+    "config": {
+      "title": "Settings",
+      "desc": "Check frequency, per-check switch and thresholds. Takes effect without a restart.",
+      "every": "Check frequency",
+      "enabled": "Enable check {name}",
+      "warn": "Warning threshold",
+      "crit": "Critical threshold",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved",
+      "reset": "Restore defaults"
+    },
+    "err": {
+      "required": "Required",
+      "int": "Must be a whole number",
+      "range": "Must be between {min} and {max}",
+      "asc": "Warning threshold must be lower than critical",
+      "desc": "Warning threshold must be higher than critical",
+      "server": "Hub rejected: {message}"
     }
   },
   "apps": {

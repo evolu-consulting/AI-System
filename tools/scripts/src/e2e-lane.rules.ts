@@ -24,6 +24,7 @@ export const lanePortRange = (lane: number): [number, number] => [
 export const PORT_VARS: Readonly<Record<string, number>> = {
   FNR_E2E_PORT_BASE: 4700,
   K1_E2E_PORT_BASE: 4800,
+  OPS_E2E_PORT_BASE: 5400,
   N2_E2E_PORT_BASE: 5340,
   PA_E2E_PORT_BASE: 4500,
   PB_E2E_PORT_BASE: 4600,
@@ -45,6 +46,7 @@ export const ENV_FILE_VARS: Readonly<Record<string, { var: string; tag: string }
   "e2e/fnr-showcase/playwright.fnr.config.ts": { var: "PA_E2E_ENV", tag: "pa_e2e" },
   "e2e/P-a/playwright.pa.config.ts": { var: "PA_E2E_ENV", tag: "pa_e2e" },
   "e2e/K1/playwright.k1.config.ts": { var: "K1_E2E_ENV", tag: "k1_e2e" },
+  "e2e/ops/playwright.ops.config.ts": { var: "OPS_E2E_ENV", tag: "ops_e2e" },
   "e2e/N2/playwright.n2.config.ts": { var: "PD_E2E_ENV", tag: "pd_e2e" },
   "e2e/P-b/playwright.pb.config.ts": { var: "PB_E2E_ENV", tag: "pb_e2e" },
   "e2e/P-b2/playwright.pb2.config.ts": { var: "PB2_E2E_ENV", tag: "pb2_e2e" },
@@ -58,6 +60,7 @@ export const REDIS_VARS: Readonly<Record<string, { kind: "db" | "url"; vars: str
   "e2e/fnr-showcase/playwright.fnr.config.ts": { kind: "db", vars: ["PA_REDIS_DB"] },
   "e2e/K1/playwright.k1.config.ts": { kind: "db", vars: ["K1_REDIS_DB"] },
   "e2e/N2/playwright.n2.config.ts": { kind: "db", vars: ["N2_REDIS_DB"] },
+  "e2e/ops/playwright.ops.config.ts": { kind: "db", vars: ["OPS_REDIS_DB"] },
   "e2e/P-a/playwright.pa.config.ts": { kind: "db", vars: ["PA_REDIS_DB"] },
   "e2e/P-b/playwright.pb.config.ts": { kind: "db", vars: ["PB_REDIS_DB"] },
   "e2e/P-b2/playwright.pb2.config.ts": { kind: "db", vars: ["PB2_REDIS_DB"] },

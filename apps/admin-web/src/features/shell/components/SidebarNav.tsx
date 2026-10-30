@@ -1,6 +1,7 @@
 // ADM-FR-60, ADM-FR-04 · danh sách mục menu (dùng cho Sidebar và Sheet di động); mục hiện tại có aria-current="page".
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Activity,
   ArrowLeftRight,
   Bot,
   Building2,
@@ -53,6 +54,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   audit: History,
   feedback: MessageSquare,
   transfer: ArrowLeftRight,
+  system: Activity,
 };
 
 type Props = { collapsed?: boolean; onNavigate?: () => void };

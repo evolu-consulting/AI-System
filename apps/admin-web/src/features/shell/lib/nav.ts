@@ -24,7 +24,8 @@ export type NavId =
   | "usage"
   | "audit"
   | "feedback"
-  | "transfer";
+  | "transfer"
+  | "system";
 type NavTo =
   | "/"
   | "/agents"
@@ -44,7 +45,8 @@ type NavTo =
   | "/usage"
   | "/audit"
   | "/feedback"
-  | "/transfer";
+  | "/transfer"
+  | "/system";
 export type NavItem = {
   id: NavId;
   to: NavTo;
@@ -70,7 +72,8 @@ export type NavItem = {
     | "nav.usage"
     | "nav.audit"
     | "nav.feedback"
-    | "nav.transfer";
+    | "nav.transfer"
+    | "nav.system";
 };
 export type NavGroup = {
   labelKey:
@@ -107,6 +110,8 @@ const USAGE = item("usage", "/usage");
 const AUDIT = item("audit", "/audit");
 const FEEDBACK = item("feedback", "/feedback");
 const TRANSFER = item("transfer", "/transfer");
+// CR-104 · Tình trạng hệ thống (ops-watch): chỉ platform_admin.
+const SYSTEM = item("system", "/system");
 
 /** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
 export type NavOptions = {
@@ -143,7 +148,10 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       },
       { labelKey: "nav.group.access", items: [TENANTS, USERS, PARTNERS, GROUPS, ACCESS] },
       { labelKey: "nav.group.security", items: [SECRETS] },
-      { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])] },
+      {
+        labelKey: "nav.group.system",
+        items: [SYSTEM, USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])],
+      },
     ];
   }
   if (role === "tenant_admin") {
@@ -206,6 +214,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/usage": [{ labelKey: "nav.usage" }],
   "/usage/analytics": [{ labelKey: "nav.usage", to: "/usage" }, { labelKey: "nav.usageAnalytics" }],
   "/transfer": [{ labelKey: "nav.transfer" }],
+  "/system": [{ labelKey: "nav.system" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/feedback": [{ labelKey: "nav.feedback" }],
   "/workflows/steps": [

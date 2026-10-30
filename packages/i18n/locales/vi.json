@@ -216,6 +216,7 @@
     "usageAnalytics": "Phân tích token",
     "audit": "Nhật ký",
     "feedback": "Góp ý",
+    "system": "Tình trạng hệ thống",
     "transfer": "Import / Export",
     "workflowSteps": "Workflow Steps",
     "workflowProcess": "Workflow Process"
@@ -1055,6 +1056,91 @@
       "clearToEnv": "Góp ý sẽ dùng lại biến môi trường TRELLO_*.",
       "clearToNone": "Góp ý sẽ chỉ được lưu trong app (không đẩy sang Trello).",
       "cleared": "Đã xoá cấu hình Trello"
+    }
+  },
+  "system": {
+    "title": "Tình trạng hệ thống",
+    "subtitle": "Kiểm tra định kỳ nền tảng AI (0 token). Cảnh báo hiện ở chuông.",
+    "notConfigured": "Chưa cấu hình địa chỉ Hub (PUBLIC_HUB_URL).",
+    "noData": "Chưa có dữ liệu — bấm \"Kiểm tra ngay\".",
+    "disabled": "Đã tắt",
+    "checkedAt": "Kiểm lúc",
+    "changedAt": "Đổi lúc",
+    "hint": "Gợi ý",
+    "copyCmd": "Chép lệnh",
+    "copied": "Đã chép",
+    "copyFailed": "Không chép được",
+    "checkNow": "Kiểm tra ngay",
+    "rateLimited": "Chờ {n} giây",
+    "checkFailed": "Không chạy được lượt kiểm",
+    "diag": "Gói chẩn đoán",
+    "diagCopied": "Đã chép gói chẩn đoán và tải file .txt",
+    "diagText": {
+      "title": "GÓI CHẨN ĐOÁN — Tình trạng hệ thống",
+      "time": "Thời điểm",
+      "env": "Môi trường",
+      "deploy": "Bản deploy",
+      "checks": "Các check",
+      "events": "20 sự kiện gần nhất"
+    },
+    "status": { "ok": "Ổn", "warn": "Cảnh báo", "crit": "Nghiêm trọng", "unknown": "Chưa rõ" },
+    "overall": {
+      "ok": "Mọi thứ ổn",
+      "warn": "Có cảnh báo",
+      "crit": "Có sự cố",
+      "unknown": "Chưa rõ"
+    },
+    "summary": {
+      "overall": "Tổng thể",
+      "last": "Lượt kiểm cuối",
+      "next": "Lượt kế tiếp",
+      "never": "Chưa có"
+    },
+    "check": {
+      "provider": "Provider AI",
+      "runs_failed": "Run AI thất bại",
+      "db_redis": "DB / Redis",
+      "public_hosts": "Host công khai",
+      "tls": "Chứng chỉ TLS",
+      "backup": "Backup",
+      "disk": "Đĩa server",
+      "stuck": "Hàng đợi / run kẹt"
+    },
+    "history": {
+      "title": "Lịch sử (50 sự kiện gần nhất)",
+      "time": "Lúc",
+      "check": "Check",
+      "change": "Thay đổi",
+      "empty": "Chưa có sự kiện",
+      "settings": "Đổi cấu hình bởi {user}"
+    },
+    "unit": {
+      "min": "phút",
+      "pct": "%",
+      "count": "lần",
+      "days": "ngày",
+      "hours": "giờ",
+      "fails": "lần lỗi"
+    },
+    "config": {
+      "title": "Cấu hình",
+      "desc": "Tần suất kiểm, bật/tắt từng check và ngưỡng cảnh báo. Có hiệu lực không cần khởi động lại.",
+      "every": "Tần suất kiểm",
+      "enabled": "Bật check {name}",
+      "warn": "Ngưỡng cảnh báo",
+      "crit": "Ngưỡng nghiêm trọng",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu cấu hình",
+      "reset": "Khôi phục mặc định"
+    },
+    "err": {
+      "required": "Bắt buộc nhập",
+      "int": "Phải là số nguyên",
+      "range": "Phải trong khoảng {min}–{max}",
+      "asc": "Ngưỡng cảnh báo phải nhỏ hơn ngưỡng nghiêm trọng",
+      "desc": "Ngưỡng cảnh báo phải lớn hơn ngưỡng nghiêm trọng",
+      "server": "Hub từ chối: {message}"
     }
   },
   "apps": {

@@ -24,6 +24,7 @@ import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifi
 import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedSecretsRouteImport } from './routes/_authed/secrets'
 import { Route as AuthedSourcesRouteImport } from './routes/_authed/sources'
+import { Route as AuthedSystemRouteImport } from './routes/_authed/system'
 import { Route as AuthedTransferRouteImport } from './routes/_authed/transfer'
 import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
@@ -125,6 +126,11 @@ const AuthedSecretsRoute = AuthedSecretsRouteImport.update({
 const AuthedSourcesRoute = AuthedSourcesRouteImport.update({
   id: '/sources',
   path: '/sources',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSystemRoute = AuthedSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedTransferRoute = AuthedTransferRouteImport.update({
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/partners': typeof AuthedPartnersRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
+  '/system': typeof AuthedSystemRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/partners': typeof AuthedPartnersRoute
   '/secrets': typeof AuthedSecretsRoute
   '/sources': typeof AuthedSourcesRoute
+  '/system': typeof AuthedSystemRoute
   '/transfer': typeof AuthedTransferRoute
   '/usage': typeof AuthedUsageRoute
   '/users': typeof AuthedUsersRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/_authed/partners': typeof AuthedPartnersRoute
   '/_authed/secrets': typeof AuthedSecretsRoute
   '/_authed/sources': typeof AuthedSourcesRoute
+  '/_authed/system': typeof AuthedSystemRoute
   '/_authed/transfer': typeof AuthedTransferRoute
   '/_authed/usage': typeof AuthedUsageRoute
   '/_authed/users': typeof AuthedUsersRoute
@@ -422,6 +431,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/secrets'
     | '/sources'
+    | '/system'
     | '/transfer'
     | '/usage'
     | '/users'
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/secrets'
     | '/sources'
+    | '/system'
     | '/transfer'
     | '/usage'
     | '/users'
@@ -510,6 +521,7 @@ export interface FileRouteTypes {
     | '/_authed/partners'
     | '/_authed/secrets'
     | '/_authed/sources'
+    | '/_authed/system'
     | '/_authed/transfer'
     | '/_authed/usage'
     | '/_authed/users'
@@ -653,6 +665,13 @@ declare module '@tanstack/react-router' {
       path: '/sources'
       fullPath: '/sources'
       preLoaderRoute: typeof AuthedSourcesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/system': {
+      id: '/_authed/system'
+      path: '/system'
+      fullPath: '/system'
+      preLoaderRoute: typeof AuthedSystemRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/transfer': {
@@ -876,6 +895,7 @@ interface AuthedRouteChildren {
   AuthedPartnersRoute: typeof AuthedPartnersRoute
   AuthedSecretsRoute: typeof AuthedSecretsRoute
   AuthedSourcesRoute: typeof AuthedSourcesRoute
+  AuthedSystemRoute: typeof AuthedSystemRoute
   AuthedTransferRoute: typeof AuthedTransferRoute
   AuthedUsageRoute: typeof AuthedUsageRoute
   AuthedUsersRoute: typeof AuthedUsersRoute
@@ -917,6 +937,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPartnersRoute: AuthedPartnersRoute,
   AuthedSecretsRoute: AuthedSecretsRoute,
   AuthedSourcesRoute: AuthedSourcesRoute,
+  AuthedSystemRoute: AuthedSystemRoute,
   AuthedTransferRoute: AuthedTransferRoute,
   AuthedUsageRoute: AuthedUsageRoute,
   AuthedUsersRoute: AuthedUsersRoute,
