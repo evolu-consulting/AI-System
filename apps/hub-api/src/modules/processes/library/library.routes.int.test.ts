@@ -483,4 +483,15 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       ...(await o`select count(*)::int as n from hub.process_slot_assignments where def_id = ${c}`),
     ]).toEqual([{ n: 0 }]);
   });
+  it("def thư viện không bỏ khe được (slot: null ⇒ 422)", async () => {
+    const id = await cloneOf(DFLT, "pl-noslot");
+    const r = await saveDraft(id, { slot: null });
+    expect({ s: r.status, code: r.json.error?.code }).toEqual({
+      s: 422,
+      code: "SLOT_BODY_INVALID",
+    });
+    expect([...(await o`select slot from hub.process_defs where id = ${id}`)]).toEqual([
+      { slot: SLOT },
+    ]);
+  });
 });

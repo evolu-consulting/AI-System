@@ -10,7 +10,8 @@ import { resolveSlot } from "../src/modules/processes/library/slot-resolve.repo"
 import { backfill } from "./process-library-backfill";
 
 const SLOT = "contracts.approval";
-const T = { own: tenantId(1081), dflt: tenantId(1082), none: tenantId(1083) };
+const T = { own: tenantId(1081), dflt: tenantId(1082), none: tenantId(1083), asg: tenantId(1084) };
+const OLD = /^t108[123]$/; // tenant của 2 ca đầu (t1084 = ca đã gán)
 let o: Sql;
 let db: Db;
 let g: Map<string, string>;
@@ -33,7 +34,7 @@ beforeAll(async () => {
   o = openOwner(2);
   db = connectDb(urls().hubApi, 2);
   await o`insert into admin.tenants (id, key, name) values (${T.own}, 't1081', 'Công ty Riêng'),
-    (${T.dflt}, 't1082', 'Công ty Mặc định'), (${T.none}, 't1083', 'Công ty Trống')`;
+    (${T.dflt}, 't1082', 'Công ty Mặc định'), (${T.none}, 't1083', 'Công ty Trống'), (${T.asg}, 't1084', 'Công ty Đã gán')`;
   g = await groups(o, T.own, ["ke-toan", "giam-doc"]);
   await groups(o, T.dflt, ["contracts-editor", "contracts-owner"]);
   const steps = [
@@ -46,6 +47,9 @@ beforeAll(async () => {
   await o`insert into contracts.approval_flows (tenant_id, steps) values (${T.own}, ${JSON.stringify(steps)}::text::jsonb)`;
   // Cài đặt = mặc định (ngưỡng 500 tr, editor/owner) ⇒ không khác def mặc định 0069.
   await o`insert into contracts.approval_settings (tenant_id) values (${T.dflt})`;
+  // Đã gán khe trước (admin/onboarding) + có mẫu riêng ⇒ backfill giữ gán, không tạo def.
+  await o`insert into contracts.approval_settings (tenant_id, threshold) values (${T.asg}, 1)`;
+  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.asg}, ${SLOT}, ${APPROVAL_DEFAULT_DEF.id})`;
 }, 180_000);
 afterAll(async () => {
   await db?.close();
@@ -56,10 +60,8 @@ const mine = (r: {
   created: { tenant: string }[];
   skipped: { tenant: string; reason: string }[];
 }) => ({
-  created: r.created.filter((x) => x.tenant.startsWith("t108")).map((x) => x.tenant),
-  skipped: r.skipped
-    .filter((x) => x.tenant.startsWith("t108"))
-    .map((x) => `${x.tenant}:${x.reason}`),
+  created: r.created.filter((x) => OLD.test(x.tenant)).map((x) => x.tenant),
+  skipped: r.skipped.filter((x) => OLD.test(x.tenant)).map((x) => `${x.tenant}:${x.reason}`),
 });
 
 describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
@@ -115,6 +117,22 @@ describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
       none: APPROVAL_DEFAULT_DEF.id,
       dflt: APPROVAL_DEFAULT_DEF.id,
       isDefault: true,
+    });
+  });
+  it("tenant đã gán khe không tạo def mồ côi", async () => {
+    const r = await backfill(o, { dryRun: false });
+    expect({
+      skipped: r.skipped.filter((x) => x.tenant === "t1084").map((x) => x.reason),
+      created: r.created.some((x) => x.tenant === "t1084"),
+      defs: [...(await o`select count(*)::int as n from hub.process_defs where key = 'hd-t1084'`)],
+      asg: [
+        ...(await o`select def_id::text as d from hub.process_slot_assignments where tenant_id = ${T.asg}`),
+      ],
+    }).toEqual({
+      skipped: ["assigned"],
+      created: false,
+      defs: [{ n: 0 }],
+      asg: [{ d: APPROVAL_DEFAULT_DEF.id }],
     });
   });
 });

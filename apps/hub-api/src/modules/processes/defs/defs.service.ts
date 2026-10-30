@@ -28,7 +28,13 @@ import { listTools } from "../application/tools/list-tools.usecase";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
-import { guardInUse, libraryRefs, slotDraft, specOrThrow } from "../library/library-draft";
+import {
+  guardInUse,
+  libError,
+  libraryRefs,
+  slotDraft,
+  specOrThrow,
+} from "../library/library-draft";
 import { toolKeysOf } from "../nodes/registry";
 import {
   autofixSourceKindMiss,
@@ -192,6 +198,9 @@ export class DefsService {
   /** CR-105 · nháp có `slot` ⇒ chỉ platform_admin, phạm vi mẫu; `stages` = biên dịch từ `slot_body`. */
   #draft(u: AuthUser, tenantId: string | null, input: ProcessDefInput, cur: repo.DefRow | null) {
     const slot = input.slot === undefined ? (cur?.slot ?? null) : input.slot;
+    // Review CR-105: def thư viện không bỏ khe được — thành mẫu chạy thử ⇒ mọi tenant đọc được (lộ user id của tenant nguồn).
+    if (slot === null && cur !== null && cur.slot !== null)
+      throw libError("SLOT_BODY_INVALID", { issues: [{ path: "slot", rule: "SLOT_LOCKED" }] });
     if (slot === null) return { input, slot: null, body: null };
     if (u.role !== "platform_admin") throw appError("FORBIDDEN");
     if (tenantId !== null)

@@ -12,6 +12,12 @@ pw_of() { envv "$1" | sed -E 's#^postgres://[^:]+:([^@]+)@.*#\1#'; }
 mkdir -p ops-status; chmod 755 ops-status
 dc up -d --wait pg redis filebox
 dc run --rm -T tool packages/db/src/migrate.ts
+# CR-105 · cùng bước với migrate (hub 0069 seed quy trình mặc định): chuyển mẫu duyệt HĐ cũ sang thư viện quy trình. Idempotent
+# (tenant đã có def `hd-<key>` hoặc đã gán khe ⇒ bỏ qua). In báo cáo --dry-run trước rồi chạy thật; lỗi ⇒ deploy dừng (set -e).
+echo "== process-library-backfill --dry-run"
+dc run --rm -T tool apps/hub-api/scripts/process-library-backfill.ts --dry-run
+echo "== process-library-backfill"
+dc run --rm -T tool apps/hub-api/scripts/process-library-backfill.ts
 # Production không áp migration dev ⇒ 3 role ứng dụng chưa có mật khẩu đăng nhập.
 dc exec -T pg psql -v ON_ERROR_STOP=1 -q -U s2_owner -d ai_system \
   -v p1="$(pw_of ADMIN_API_DATABASE_URL)" -v p2="$(pw_of HUB_DATABASE_URL)" -v p3="$(pw_of AGENT_RT_DATABASE_URL)" <<'SQL'

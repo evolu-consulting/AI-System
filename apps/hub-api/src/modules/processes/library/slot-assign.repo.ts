@@ -5,8 +5,9 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
+/** Mảng tham số qua MỘT tham số JSON (không ghép chuỗi literal `{a,b}` — review CR-105); kiểu ép phía SQL. */
 const arr = (xs: readonly string[], t: "uuid" | "text") =>
-  sql`${`{${xs.join(",")}}`}::${sql.raw(t)}[]`;
+  sql`array(select jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb))::${sql.raw(t)}[]`;
 const ACTIVE = sql`('running', 'waiting_review', 'waiting_answer', 'needs_decision')`;
 
 export type Affected = {

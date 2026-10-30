@@ -26,7 +26,7 @@ export type BackfillReport = {
   dryRun: boolean;
   created: BackfillItem[];
   skipped: (BackfillItem & {
-    reason: "exists" | "default" | "group-missing" | "invalid";
+    reason: "exists" | "assigned" | "default" | "group-missing" | "invalid";
     detail?: unknown;
   })[];
 };
@@ -38,6 +38,8 @@ type Cand = {
   threshold: string | null;
   l1: string | null;
   l2: string | null;
+  /** Đã gán khe (admin gán tay / onboarding) ⇒ giữ, không tạo def mồ côi. */
+  assigned: boolean;
 };
 type Plan = { tenantId: string; key: string; name: string; body: unknown; stages: unknown[] };
 
@@ -81,7 +83,8 @@ async function plan(sql: Sql, rep: BackfillReport): Promise<Plan[]> {
   const cands = await sql<
     Cand[]
   >`select t.id::text as id, t.key, t.name, f.steps, s.threshold::text as threshold,
-      s.level1_group_key as l1, s.level2_group_key as l2
+      s.level1_group_key as l1, s.level2_group_key as l2,
+      exists (select 1 from hub.process_slot_assignments a where a.tenant_id = t.id and a.slot = ${APPROVAL_SLOT}) as assigned
     from admin.tenants t left join contracts.approval_flows f on f.tenant_id = t.id
       left join contracts.approval_settings s on s.tenant_id = t.id
     where f.tenant_id is not null or s.tenant_id is not null order by t.key`;
@@ -103,6 +106,10 @@ async function plan(sql: Sql, rep: BackfillReport): Promise<Plan[]> {
     const item = { tenant: c.key, key: libKeyOf(c.key) };
     if (taken.has(item.key)) {
       rep.skipped.push({ ...item, reason: "exists" });
+      continue;
+    }
+    if (c.assigned) {
+      rep.skipped.push({ ...item, reason: "assigned" });
       continue;
     }
     const r = bodyOf(c, (id) => keyOfId.get(id));
