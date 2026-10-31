@@ -496,6 +496,7 @@
         "escalated": "escalated to {{group}}",
         "escalatedShort": "escalated",
         "waiting": "Waiting for the reviewer of this step.",
+        "advancing": "Moving on to the next review step…",
         "status": {
           "pending": "Not yet",
           "open": "Awaiting review",

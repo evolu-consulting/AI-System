@@ -647,6 +647,7 @@
     },
     "usedFor": "Dùng cho: {{slot}}",
     "defaultBadge": "Mặc định · {{slot}}",
+    "defaultTag": "Mặc định",
     "usage": {
       "none": "Chưa gán",
       "default": "Mặc định cho mọi tenant chưa gán",
@@ -673,6 +674,7 @@
     "inUse": {
       "default": "Quy trình mặc định của khe: không xoá/tắt được. Đổi mặc định trước.",
       "assigned": "Đang có tenant dùng: bỏ gán trước.",
+      "assignedN": "Đang được {{n}} tenant dùng — bỏ gán trước khi xoá",
       "published": "Đã xuất bản: chỉ xoá được bản nháp chưa xuất bản."
     },
     "system": {

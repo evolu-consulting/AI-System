@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ApprovalCardStep, ContractApproval } from "@ai/contracts";
 import { approvalView } from "./approval";
-import { hoursLeft, releaseNoteKey, timelineRows } from "./engine-card";
+import { engineAdvancing, hoursLeft, releaseNoteKey, timelineRows } from "./engine-card";
 
 const G1 = "11111111-1111-4111-8111-111111111111";
 const G2 = "22222222-2222-4222-8222-222222222222";
@@ -48,6 +48,30 @@ describe("approvalView (engine)", () => {
       W,
     );
     expect(v).toMatchObject({ pass: true, back: true, reject: true, confirm: false });
+  });
+  test("bước duyệt cuối (thêm từ quy trình thư viện) mở + can_act ⇒ Đạt, không Xác nhận", () => {
+    const v = approvalView(
+      card([
+        step({ status: "passed" }),
+        step({ idx: 1, key: "s1", status: "skipped" }),
+        step({ idx: 2, key: "s2", name: "Kế toán duyệt", status: "open" }),
+      ]),
+      W,
+    );
+    expect(v).toMatchObject({ pass: true, back: true, reject: true, confirm: false });
+  });
+  test("đang chuyển bước (đã Đạt, bước kế chưa mở) ⇒ chưa nút, có ghi chú + tải lại, mở xong ⇒ hết", () => {
+    const moving = card([
+      step({ status: "passed" }),
+      step({ idx: 1, key: "s1", status: "pending" }),
+    ]);
+    expect(engineAdvancing(moving)).toBe(true);
+    expect(approvalView(moving, W).note).toBe("contracts.approval.engine.advancing");
+    const opened = card([step({ status: "passed" }), step({ idx: 1, key: "s1", status: "open" })]);
+    expect(engineAdvancing(opened)).toBe(false);
+    expect(engineAdvancing(card(moving.steps ?? [], { needs_reopen: true }))).toBe(false);
+    expect(engineAdvancing(card([], {}))).toBe(false);
+    expect(engineAdvancing(undefined)).toBe(false);
   });
   test("can_act=false ⇒ không nút, ghi chú theo lý do; head_only ⇒ câu trưởng phòng", () => {
     const open = step({ idx: 1, key: "s1", status: "open", head_only: true });

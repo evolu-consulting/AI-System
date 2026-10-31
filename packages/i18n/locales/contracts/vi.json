@@ -496,6 +496,7 @@
         "escalated": "đã chuyển cấp {{group}}",
         "escalatedShort": "đã chuyển cấp",
         "waiting": "Đang chờ người duyệt bước này.",
+        "advancing": "Đang chuyển sang bước duyệt kế tiếp…",
         "status": {
           "pending": "Chưa đến",
           "open": "Đang chờ duyệt",

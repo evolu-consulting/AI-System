@@ -647,6 +647,7 @@
     },
     "usedFor": "Used for: {{slot}}",
     "defaultBadge": "Default · {{slot}}",
+    "defaultTag": "Default",
     "usage": {
       "none": "Not assigned",
       "default": "Default for every unassigned tenant",
@@ -673,6 +674,7 @@
     "inUse": {
       "default": "Default process of the slot: cannot be deleted or turned off. Change the default first.",
       "assigned": "Tenants are using it: unassign first.",
+      "assignedN": "Used by {{n}} tenant(s) — unassign before deleting",
       "published": "Published: only never-published drafts can be deleted."
     },
     "system": {

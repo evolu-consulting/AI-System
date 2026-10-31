@@ -39,7 +39,7 @@ export function TenantsCell({ row }: { row: ListRow }) {
   const text = s.kind === "default" ? t("process.admin.library.usage.default") : assigned;
   return (
     <span
-      className="block max-w-72 truncate"
+      className="block max-w-56 truncate"
       title={
         s.kind === "default"
           ? `${text}${count > 0 ? ` · ${assigned}` : ""}`

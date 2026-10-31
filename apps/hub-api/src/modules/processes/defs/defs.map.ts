@@ -78,6 +78,14 @@ const libFields = (
   tenant_count: Number(r.tenant_count),
 });
 
+/**
+ * Cột "Số bước" của danh sách: def thư viện (có khe) chỉ đếm BƯỚC DUYỆT (khớp nhãn "Bước n" trên Sơ đồ), không đếm nút hệ thống
+ * route/finalize; def thường giữ số stage. Khe không có bước nào (bất thường) ⇒ rơi về tổng stage (contract `stage_count ≥ 1`).
+ */
+export const listStepCount = (
+  r: Pick<DefListRow, "slot" | "stage_count" | "slot_step_count">,
+): number => (r.slot !== null && r.slot_step_count > 0 ? r.slot_step_count : r.stage_count);
+
 export const toListItem = (r: DefListRow): ProcessDefListItem => ({
   ...(r.slot === null ? {} : { slot: r.slot, ...libFields(r) }),
   id: r.id,
@@ -85,7 +93,7 @@ export const toListItem = (r: DefListRow): ProcessDefListItem => ({
   name: r.name,
   enabled: r.enabled,
   is_template: r.tenant_id === null,
-  stage_count: r.stage_count,
+  stage_count: listStepCount(r),
   version: r.version,
   updated_at: r.updated_at,
   active_runs: r.active_runs,

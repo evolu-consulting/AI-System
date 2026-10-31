@@ -12,6 +12,12 @@ export function inUseReason(r: RowLike): "default" | "assigned" | null {
   return (r.tenant_count ?? 0) > 0 ? "assigned" : null;
 }
 
+/** Lý do khoá nút Xoá kèm số tenant (để câu nêu rõ "Đang được N tenant dùng"); không khoá ⇒ null. */
+export function deleteLock(r: RowLike): { reason: "default" | "assigned"; n: number } | null {
+  const reason = inUseReason(r);
+  return reason === null ? null : { reason, n: r.tenant_count ?? 0 };
+}
+
 /** Ô "Tenant đang dùng": số tenant gán; mặc định áp cho mọi tenant chưa gán nên ghi kèm "+ mặc định". */
 export const tenantUsage = (r: Pick<LibraryListItem, "tenant_count" | "is_default">) => ({
   count: r.tenant_count ?? 0,

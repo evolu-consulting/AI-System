@@ -3,6 +3,7 @@ import {
   assignPlan,
   canAssign,
   canSetDefault,
+  deleteLock,
   inUseReason,
   isLibraryRow,
   normalizePreview,
@@ -20,6 +21,16 @@ describe("library-view", () => {
     expect(inUseReason({ is_default: false, tenant_count: 3, enabled: true })).toBe("assigned");
     expect(inUseReason({ is_default: false, tenant_count: 0, enabled: true })).toBeNull();
     expect(inUseReason({ enabled: true })).toBeNull();
+  });
+  test("deleteLock: kèm số tenant để nêu lý do 'Đang được N tenant dùng'", () => {
+    expect(deleteLock({ is_default: false, tenant_count: 3, enabled: true })).toEqual({
+      reason: "assigned",
+      n: 3,
+    });
+    expect(deleteLock({ is_default: true, tenant_count: 0, enabled: true })?.reason).toBe(
+      "default",
+    );
+    expect(deleteLock({ is_default: false, tenant_count: 0, enabled: true })).toBeNull();
   });
   test("isLibraryRow + tenantUsage", () => {
     expect(isLibraryRow({ slot: "contracts.approval" })).toBe(true);

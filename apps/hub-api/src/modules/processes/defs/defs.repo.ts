@@ -50,6 +50,8 @@ export type DefListRow = Pick<
   | "has_unpublished_changes"
 > & {
   stage_count: number;
+  /** CR-105 · số stage mang `slot.kind` review/dify (bước người dùng của khe; không tính nút hệ thống route/finalize). */
+  slot_step_count: number;
   active_runs: number;
 };
 
@@ -114,6 +116,8 @@ export async function listDefs(tx: Tx, o: ListOpts): Promise<DefListRow[]> {
     : sql``;
   return tx.execute<DefListRow>(sql`select d.id, d.tenant_id, d.key, d.name, d.enabled, d.version,
       ${iso(sql`d.updated_at`)} as updated_at, jsonb_array_length(d.stages)::int as stage_count,
+      (select count(*)::int from jsonb_array_elements(d.stages) e
+        where e->'slot'->>'kind' in ('review', 'dify')) as slot_step_count,
       (select count(*)::int from hub.process_runs r where r.process_def_id = d.id
         and r.status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision')) as active_runs,
       d.slot, d.published_version, ${LIB_USE}

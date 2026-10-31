@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { actApproval, approvalKey, fetchApproval, reopenApproval } from "../api";
 import type { ActResult } from "../lib/approval";
 import { approvalErrorText } from "../lib/approval-error";
+import { engineAdvancing } from "../lib/engine-card";
 
 const RUNNING = new Set(["extract", "value", "finalize"]);
 const REFRESH_MS = 2000;
@@ -29,7 +30,8 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
   const q = useQuery({
     queryKey: approvalKey(id),
     queryFn: ({ signal }) => fetchApproval(id, signal),
-    refetchInterval: (s) => (RUNNING.has(s.state.data?.step ?? "") ? REFRESH_MS : false),
+    refetchInterval: (s) =>
+      RUNNING.has(s.state.data?.step ?? "") || engineAdvancing(s.state.data) ? REFRESH_MS : false,
   });
   const [busy, setBusy] = useState<Busy>(null);
   const [msg, setMsg] = useState<string | null>(null);

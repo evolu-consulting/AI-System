@@ -15,6 +15,18 @@ const NONE: ApprovalView = {
 export const openStepOf = (a: ContractApproval | undefined): ApprovalCardStep | null =>
   a?.steps?.find((s) => s.status === "open") ?? null;
 
+/**
+ * Lượt engine đang CHUYỂN bước: bước trước đã Đạt/bỏ qua nhưng bước kế (kể cả bước duyệt thêm từ quy trình thư viện, sau nút
+ * `route`) chưa mở — engine mở nó bất đồng bộ. Lúc này không có bước `open` nên không có nút; phải tải lại tới khi bước mở,
+ * nếu không thẻ kẹt không nút "Đạt" cho tới khi người dùng tự F5.
+ */
+export const engineAdvancing = (a: ContractApproval | undefined): boolean =>
+  a?.mode === "engine" &&
+  a.step === "level1" &&
+  a.needs_reopen !== true &&
+  (a.steps?.length ?? 0) > 0 &&
+  openStepOf(a) === null;
+
 /** Ghi chú khi người xem không quyết được bước đang mở: vì sao (chỉ xem / người gửi / chỉ trưởng phòng / không thuộc nhóm). */
 function blockedNote(a: ContractApproval, open: ApprovalCardStep, write: boolean): string {
   if (!write) return "contracts.approval.blocked.viewOnly";
@@ -34,7 +46,8 @@ export function engineApprovalView(
   if (a.step === "extract") return { ...NONE, note: "contracts.approval.working" };
   if (a.step !== "level1") return NONE;
   const open = openStepOf(a);
-  if (!open) return NONE;
+  if (!open)
+    return engineAdvancing(a) ? { ...NONE, note: "contracts.approval.engine.advancing" } : NONE;
   if (!(o.write && a.can_act)) return { ...NONE, note: blockedNote(a, open, o.write) };
   if (open.idx === 0) return { ...NONE, confirm: true, reject: true, redo: o.hasSource };
   return { ...NONE, reject: true, pass: true, back: true };

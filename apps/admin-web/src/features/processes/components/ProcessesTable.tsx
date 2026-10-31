@@ -8,9 +8,10 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
-import { inUseReason, isTemplateRow, rowMode } from "../lib/library-view";
+import { isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
 import { StatusCell, TenantsCell } from "./library/LibraryListCells";
+import { RowDeleteButton } from "./library/RowDeleteButton";
 
 export type RowActions = {
   onToggle: (row: Row, enabled: boolean) => void;
@@ -41,25 +42,38 @@ type Props = Opts & {
 
 const L = (t: TFunction, k: string): string => t(`process.admin.list.${k}`);
 
-function nameColumn(t: TFunction): Column<Row> {
+/** Thư viện: huy hiệu "Mặc định" ngắn (tên khe xuống dòng phụ bên dưới, thay cho cột "Dùng cho") ⇒ bảng vừa 1440px. */
+function nameColumn(t: TFunction, library: boolean): Column<Row> {
   return {
     id: "name",
     header: L(t, "col.name"),
+    className: library ? "max-w-80" : undefined,
     cell: (r) => (
-      <span className="flex items-center gap-2">
-        <Link
-          to="/processes/$processId"
-          params={{ processId: r.id }}
-          title={`!${r.key}`}
-          className="font-medium text-primary underline-offset-4 hover:underline"
-        >
-          {r.name}
-        </Link>
-        {isTemplateRow(r) ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
-        {r.is_default ? (
-          <StatusBadge tone="ok">
-            {t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}
-          </StatusBadge>
+      <span className="flex flex-col gap-0.5">
+        <span className="flex items-center gap-2">
+          <Link
+            to="/processes/$processId"
+            params={{ processId: r.id }}
+            title={`!${r.key}`}
+            className="truncate font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {r.name}
+          </Link>
+          {isTemplateRow(r) ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
+          {r.is_default ? (
+            <span title={t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}>
+              <StatusBadge tone="ok">
+                {library
+                  ? t("process.admin.library.defaultTag")
+                  : t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}
+              </StatusBadge>
+            </span>
+          ) : null}
+        </span>
+        {library ? (
+          <span className="truncate text-label text-muted-foreground">
+            {r.slot_label ?? r.slot ?? "—"}
+          </span>
         ) : null}
       </span>
     ),
@@ -93,7 +107,6 @@ function WriteActions(p: {
   actions: RowActions;
 }) {
   const { t, r, actions } = p;
-  const reason = inUseReason(r); // mặc định của khe / đang có tenant gán ⇒ khoá + tooltip; còn lại (nháp lẫn đã xuất bản) xoá được
   return (
     <>
       <Button size="sm" variant="ghost" asChild>
@@ -106,15 +119,8 @@ function WriteActions(p: {
           {t("process.admin.library.clone.button")}
         </Button>
       ) : null}
-      <Button
-        size="sm"
-        variant="ghost"
-        disabled={reason !== null}
-        title={reason ? t(`process.admin.library.inUse.${reason}`) : undefined}
-        onClick={() => actions.onDelete(r)}
-      >
-        {L(t, "deleteButton")}
-      </Button>
+      {/* mặc định của khe / đang có tenant gán ⇒ khoá + tooltip lý do; còn lại (nháp lẫn đã xuất bản) xoá được */}
+      <RowDeleteButton row={r} label={L(t, "deleteButton")} onDelete={() => actions.onDelete(r)} />
     </>
   );
 }
@@ -124,7 +130,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
   return {
     id: "actions",
     header: <span className="sr-only">{t("common.actions")}</span>,
-    className: "text-right",
+    className: "whitespace-nowrap text-right",
     cell: (r) => (
       <span className="flex items-center justify-end gap-1">
         {rowMode(r, canEditTemplates) === "copy" ? (
@@ -155,11 +161,6 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
 function libraryColumns(t: TFunction): Column<Row>[] {
   return [
     {
-      id: "slot",
-      header: t("process.admin.library.col.usedFor"),
-      cell: (r) => r.slot_label ?? r.slot ?? "—",
-    },
-    {
       id: "status",
       header: t("process.admin.library.col.status"),
       cell: (r) => <StatusCell row={r} />,
@@ -173,7 +174,7 @@ function libraryColumns(t: TFunction): Column<Row>[] {
 }
 
 export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
-  const cols: Column<Row>[] = [nameColumn(t)];
+  const cols: Column<Row>[] = [nameColumn(t, o.library === true)];
   // Ký hiệu không là cột chính ở thư viện (xem ở trang chi tiết / tooltip tên).
   if (!o.library)
     cols.push({
