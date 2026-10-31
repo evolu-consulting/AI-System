@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import postgres from "postgres";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
+import { libSampleEnabled, writeLibrarySample } from "./seed.library-sample";
 import { buildProcessPlan, writeProcesses } from "./seed.processes";
 import {
   bumpHubConfigVersion,
@@ -109,6 +110,7 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
       await upsertSideEffectFlags(tx, wf.sideEffectIds);
       const w = await writeAccess(tx, plan);
       const pw = await writeProcesses(tx, processes);
+      if (libSampleEnabled(o.appEnv, o.fixtures ?? false)) await writeLibrarySample(tx);
       await notifyHubConfigChanged(tx, v);
       return { version: v, warnings: [...wf.warnings, ...tenants.warnings, ...w, ...pw] };
     });
