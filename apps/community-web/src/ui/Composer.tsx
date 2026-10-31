@@ -17,7 +17,17 @@ import { initials } from "../lib/format";
 import { defaultAudience } from "../lib/visibility";
 import { useApp } from "./ctx";
 import { DraftFields } from "./DraftFields";
-import { IconImage, IconLock, IconVideo, IconX } from "./icons";
+import {
+  IconImage,
+  IconLock,
+  IconTypeBuy,
+  IconTypeNote,
+  IconTypeSell,
+  IconVideo,
+  IconX,
+} from "./icons";
+
+const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
 const MODES: AudienceMode[] = ["all", "suppliers", "buyers", "cats", "companies"];
 
@@ -99,6 +109,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   const [prefill, setPrefill] = useState("");
   const [busy, setBusy] = useState(false);
   const [audOpen, setAudOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     api.listPartners().then(setPartners, () => undefined);
@@ -127,6 +138,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       await api.createPost(toCreateInput(draft, isHostViewer));
       setDraft(emptyDraft(draft.type));
       setPrefill("");
+      setOpen(false);
       toast("Đã đăng bài");
       bump();
       onPosted?.();
@@ -153,8 +165,40 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
     });
   };
 
+  if (!open) {
+    return (
+      <div className="card pad composer feedcomposer collapsed" data-testid="composer">
+        <span className="av t1">{initials(viewer.orgName)}</span>
+        <button type="button" className="prompt" onClick={() => setOpen(true)}>
+          {`${viewer.orgName} đang có hàng cần bán hay nhu cầu cần mua?`}
+        </button>
+        <div className="ctypes">
+          {types.map((t) => {
+            const Ic = TYPE_ICON[t];
+            return (
+              <button
+                key={t}
+                type="button"
+                className={`ctype ${t}`}
+                data-type={t}
+                aria-label={POST_TYPE_LABEL[t]}
+                onClick={() => {
+                  setDraft(emptyDraft(t));
+                  setOpen(true);
+                }}
+              >
+                <Ic size={16} />
+                <span>{POST_TYPE_LABEL[t]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="card pad composer" data-testid="composer">
+    <div className="card pad composer feedcomposer" data-testid="composer">
       {isHostViewer && prefill && (
         <div className="prefill">
           <IconLock size={14} />
@@ -220,6 +264,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                   key={t}
                   type="button"
                   className={draft.type === t ? "on" : ""}
+                  data-type={t}
                   onClick={() => setDraft({ ...draft, type: t, audience: undefined })}
                 >
                   {POST_TYPE_LABEL[t]}

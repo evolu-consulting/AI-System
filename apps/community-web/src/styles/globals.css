@@ -9,6 +9,8 @@
 @import "@fontsource/roboto/vietnamese-500.css";
 @import "@fontsource/roboto/vietnamese-700.css";
 @import "./mockup.css";
+@import "./feed.css";
+@import "./login.css";
 
 :root,
 [data-accent="indigo"] {

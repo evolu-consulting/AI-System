@@ -8,11 +8,15 @@ const as = async (page: import("@playwright/test").Page, id: string) => {
 test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có xác nhận", async ({ page }) => {
   await page.goto("/#/feed");
   await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
+  await page.getByTestId("composer").getByRole("button", { name: "Cần bán" }).click();
+  await expect(page.locator("#draft-body")).toBeVisible();
   await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo dán thử");
   await page.getByLabel("Số lượng").fill("10 thùng");
   await page.getByRole("button", { name: "Đăng bài" }).click();
-  const card = page.getByTestId("post").filter({ hasText: "Keo dán thử" }).first();
-  await expect(card).toBeVisible();
+  const posted = page.getByTestId("post").filter({ hasText: "Keo dán thử" }).first();
+  await expect(posted).toBeVisible();
+  // Khoá theo id: khi sửa, tiêu đề chuyển thành ô nhập nên lọc theo chữ không còn khớp (dải deal không lặp tên hàng).
+  const card = page.locator(`[data-post-id="${await posted.getAttribute("data-post-id")}"]`);
   await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
   await page.getByRole("menuitem", { name: "Sửa bài" }).click();
   await card.getByLabel("Sửa nội dung").fill("Nội dung đã chỉnh");
@@ -30,6 +34,10 @@ test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá
 }) => {
   await page.goto("/#/feed");
   await as(page, "tp");
+  await page
+    .getByTestId("composer")
+    .getByRole("button", { name: /đang có hàng/ })
+    .click();
   const mine = page.locator('[data-post-id="p5"]');
   await expect(mine).toContainText("[SỐ ĐIỆN THOẠI]");
   await expect(mine).not.toContainText("0903");
@@ -43,6 +51,11 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
   page,
 }) => {
   await page.goto("/#/feed");
+  await page
+    .getByTestId("composer")
+    .getByRole("button", { name: /đang có hàng/ })
+    .click();
+  await expect(page.locator("#draft-body")).toBeVisible();
   await page.getByRole("button", { name: "Chọn người xem" }).click();
   await page.getByRole("button", { name: "Chỉ nhà cung cấp" }).click();
   await expect(page.getByTestId("audience-preview")).toContainText("Sẽ hiện với 3 công ty");
@@ -68,4 +81,22 @@ test("thông báo, hồ sơ, cài đặt màu chủ đạo", async ({ page }) =>
   await expect(page.locator("html")).toHaveAttribute("data-accent", "orange");
   await page.getByRole("button", { name: /Hồ sơ/ }).click();
   await expect(page.getByTestId("sht-link")).toBeVisible();
+});
+
+test("bảng tin 2 cột: tab sticky, dải deal hiển thị giá chào, rail có bộ lọc và đối tác", async ({
+  page,
+}) => {
+  await page.goto("/#/feed");
+  await expect(page.getByRole("tab", { name: /Tất cả/ })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: /Cần bán/ }).click();
+  await expect(page.getByRole("tab", { name: /Cần bán/ })).toHaveAttribute("aria-selected", "true");
+  const deal = page.getByTestId("deal").first();
+  await expect(deal).toBeVisible();
+  await expect(deal.locator(".hero .k")).toHaveText("Giá chào");
+  const rail = page.getByRole("complementary", { name: "Cột phụ bảng tin" });
+  await expect(rail.getByLabel("Nhóm hàng")).toBeVisible();
+  await expect(rail.getByTestId("rail-partners")).toBeVisible();
+  const org = rail.getByTestId("rail-org").first();
+  await expect(org).toHaveAttribute("href", /#\/profile\//);
+  await expect(org).toHaveAttribute("target", "_blank");
 });

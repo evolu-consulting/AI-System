@@ -1,7 +1,7 @@
-// com-fix-community-login · màn Đăng nhập riêng của community-web (mockup: thẻ trắng bo 14px, logo "S", nút tím). Ba bước:
+// com-fix-community-login · màn Đăng nhập riêng của community-web (bố cục 2 cột: form trái + showcase phải; VI/EN tự chứa trong login-i18n). Ba bước:
 // Mã công ty + Tên đăng nhập + Mật khẩu ⇒ (đối tác lần đầu) Đặt mật khẩu mới ⇒ (nếu bật 2FA) Mã xác thực. Nội bộ đã có phiên
 // AI System có thể dùng link SSO. Xong bước nào trả phiên ⇒ `session` đổi sang `authed`, AuthGate tự vẽ app.
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { changePasswordForced, login, verifyTotp } from "../api/auth";
 import { SSO_URL } from "../api/session";
 import {
@@ -13,6 +13,8 @@ import {
   ssoLoginHref,
   stepOf,
 } from "../lib/login";
+import { LoginShowcase } from "./LoginShowcase";
+import { type Lang, LOGIN_TEXT, type LoginText, readLang, saveLang } from "./login-i18n";
 
 const TENANT_KEY = "community:tenant_key";
 const remembered = (): string => {
@@ -30,39 +32,79 @@ const remember = (v: string): void => {
   }
 };
 
-function Field(p: { id: string; label: string; type?: string; auto?: string; value?: string }) {
+function Field(p: {
+  id: string;
+  label: string;
+  type?: string;
+  auto?: string;
+  value?: string;
+  hint?: string;
+  ph?: string;
+  mono?: boolean;
+  eye?: [string, string];
+}) {
+  const [shown, setShown] = useState(false);
+  const type = p.eye && shown ? "text" : (p.type ?? "text");
+  const cls = [p.mono ? "lg-mono" : "", p.eye ? "lg-pw" : ""].join(" ").trim();
   return (
-    <div className="full">
+    <div className="lg-field">
       <label htmlFor={p.id}>{p.label}</label>
-      <input
-        id={p.id}
-        name={p.id}
-        className="field"
-        type={p.type ?? "text"}
-        autoComplete={p.auto}
-        defaultValue={p.value}
-        required
-      />
+      <div className="lg-inp">
+        <input
+          id={p.id}
+          name={p.id}
+          className={cls || undefined}
+          type={type}
+          autoComplete={p.auto}
+          defaultValue={p.value}
+          placeholder={p.ph}
+          aria-describedby={p.hint ? `${p.id}-hint` : undefined}
+          spellCheck={false}
+          required
+        />
+        {p.eye && (
+          <button
+            type="button"
+            className="lg-eye"
+            aria-label={shown ? p.eye[1] : p.eye[0]}
+            onClick={() => setShown(!shown)}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+              <circle cx="12" cy="12" r="3" />
+              {shown && <path d="M4 4l16 16" />}
+            </svg>
+          </button>
+        )}
+      </div>
+      {p.hint && (
+        <span id={`${p.id}-hint`} className="lg-hint">
+          {p.hint}
+        </span>
+      )}
     </div>
   );
 }
 
-function Shell({ title, lead, children }: { title: string; lead: string; children: ReactNode }) {
+function LangSwitch({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) {
   return (
-    <div className="app auth">
-      <section className="card authcard">
-        <div className="brand">
-          <span className="logo">S</span>
-          <span>
-            <b>Sổ Hợp Tác</b>
-            <small>Community</small>
-          </span>
-        </div>
-        <h1>{title}</h1>
-        <p className="lead">{lead}</p>
-        {children}
-      </section>
-    </div>
+    <fieldset className="lg-lang" aria-label="Language">
+      {(["vi", "en"] as const).map((l) => (
+        <button key={l} type="button" aria-pressed={lang === l} onClick={() => onPick(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </fieldset>
   );
 }
 
@@ -91,30 +133,63 @@ async function run(stage: AuthStage, step: LoginStep, f: FormData): Promise<Logi
 }
 const tokenOf = (s: LoginStep): string => (s.kind === "done" ? "" : s.token);
 
-const TEXT: Record<AuthStage, { title: string; lead: string; submit: string }> = {
-  login: {
-    title: "Đăng nhập",
-    lead: "Cộng đồng đối tác — dùng tài khoản do bên chủ quản cấp.",
-    submit: "Đăng nhập",
-  },
-  change: {
-    title: "Đặt mật khẩu mới",
-    lead: "Lần đăng nhập đầu tiên: hãy đổi mật khẩu tạm thành mật khẩu của riêng bạn.",
-    submit: "Lưu mật khẩu",
-  },
-  totp: {
-    title: "Xác thực hai bước",
-    lead: "Nhập mã 6 số trong ứng dụng xác thực (hoặc mã dự phòng).",
-    submit: "Xác nhận",
-  },
-};
+const STAGE_KEYS = {
+  login: ["loginTitle", "loginLead", "loginSubmit"],
+  change: ["changeTitle", "changeLead", "changeSubmit"],
+  totp: ["totpTitle", "totpLead", "totpSubmit"],
+} as const satisfies Record<AuthStage, readonly (keyof LoginText)[]>;
+
+function StageFields({ stage, t }: { stage: AuthStage; t: LoginText }) {
+  const eye: [string, string] = [t.showPw, t.hidePw];
+  if (stage === "change")
+    return (
+      <>
+        <Field
+          id="new_password"
+          label={t.newPassword}
+          type="password"
+          auto="new-password"
+          eye={eye}
+        />
+        <Field
+          id="confirm_password"
+          label={t.confirmPassword}
+          type="password"
+          auto="new-password"
+          eye={eye}
+        />
+      </>
+    );
+  if (stage === "totp") return <Field id="code" label={t.code} auto="one-time-code" mono />;
+  return (
+    <>
+      <Field
+        id="tenant_key"
+        label={t.tenant}
+        hint={t.tenantHint}
+        auto="organization"
+        value={remembered()}
+        mono
+      />
+      <Field id="username" label={t.username} ph={t.usernamePh} auto="username" />
+      <Field id="password" label={t.password} type="password" auto="current-password" eye={eye} />
+    </>
+  );
+}
 
 export function LoginPage() {
+  const [lang, setLang] = useState<Lang>(readLang);
   const [step, setStep] = useState<LoginStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const stage: AuthStage = step && step.kind !== "done" ? step.kind : "login";
   const sso = stage === "login" ? ssoLoginHref(SSO_URL, "community") : null;
+  const t = LOGIN_TEXT[lang];
+  const [kTitle, kLead, kSubmit] = STAGE_KEYS[stage];
+  const pick = (l: Lang) => {
+    saveLang(l);
+    setLang(l);
+  };
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -128,45 +203,48 @@ export function LoginPage() {
     else setStep(r);
   };
 
-  const t = TEXT[stage];
   return (
-    <Shell title={t.title} lead={t.lead}>
-      <form key={stage} className="form" onSubmit={submit} aria-label={t.title}>
-        {stage === "login" && (
-          <>
-            <Field id="tenant_key" label="Mã công ty" auto="organization" value={remembered()} />
-            <Field id="username" label="Tên đăng nhập" auto="username" />
-            <Field id="password" label="Mật khẩu" type="password" auto="current-password" />
-          </>
-        )}
-        {stage === "change" && (
-          <>
-            <Field id="new_password" label="Mật khẩu mới" type="password" auto="new-password" />
-            <Field
-              id="confirm_password"
-              label="Nhập lại mật khẩu mới"
-              type="password"
-              auto="new-password"
-            />
-          </>
-        )}
-        {stage === "totp" && <Field id="code" label="Mã xác thực" auto="one-time-code" />}
-        {error && (
-          <p className="full autherr" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="full">
-          <button type="submit" className="primary authbtn" disabled={busy}>
-            {t.submit}
-          </button>
+    <div className="login">
+      <main className="lg-form-pane">
+        <div className="lg-head">
+          <div className="lg-brand">
+            <span className="lg-logo">S</span>
+            <span>
+              <b>Sổ Hợp Tác</b>
+              <small>Community</small>
+            </span>
+          </div>
+          <LangSwitch lang={lang} onPick={pick} />
         </div>
-      </form>
-      {sso && (
-        <p className="authalt">
-          Nhân viên bên chủ quản? <a href={sso}>Đăng nhập bằng tài khoản AI System</a>
-        </p>
-      )}
-    </Shell>
+        <div className="lg-wrap">
+          <div className="lg-box">
+            <div className="lg-title">
+              <h1>{t[kTitle]}</h1>
+              <p>{t[kLead]}</p>
+            </div>
+            <form key={stage} className="lg-form" onSubmit={submit} aria-label={t[kTitle]}>
+              <StageFields stage={stage} t={t} />
+              {error && (
+                <p className="lg-err" role="alert">
+                  {error}
+                </p>
+              )}
+              <button type="submit" className="lg-primary" disabled={busy}>
+                {t[kSubmit]}
+              </button>
+              {stage === "login" && <p className="lg-forgot">{t.forgot}</p>}
+            </form>
+            {sso && (
+              <p className="lg-alt">
+                {t.ssoPrefix}
+                <a href={sso}>{t.ssoLink}</a>
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="lg-foot">{t.footer}</p>
+      </main>
+      <LoginShowcase t={t} />
+    </div>
   );
 }

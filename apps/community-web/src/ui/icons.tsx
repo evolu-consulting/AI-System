@@ -133,3 +133,48 @@ export const IconBook = (p: P) =>
     </>,
     p,
   );
+export const IconFilter = (p: P) => svg(<path d="M3 5h18M6 12h12M10 19h4" />, p);
+export const IconUsers = (p: P) =>
+  svg(
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.9" />
+    </>,
+    p,
+  );
+
+export const IconExternal = (p: P) =>
+  svg(
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4 10 14" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </>,
+    p,
+  );
+export const IconTypeSell = (p: P) =>
+  svg(
+    <>
+      <path d="M3 12V4h8l10 10-8 8z" />
+      <circle cx="7.5" cy="8.5" r="1" />
+    </>,
+    p,
+  );
+export const IconTypeBuy = (p: P) =>
+  svg(
+    <>
+      <path d="M3 4h2l2.4 11h10.2L20 7H6" />
+      <circle cx="9" cy="19" r="1.2" />
+      <circle cx="17" cy="19" r="1.2" />
+    </>,
+    p,
+  );
+export const IconTypeNote = (p: P) =>
+  svg(
+    <>
+      <path d="M4 10v4h3l7 4V6L7 10z" />
+      <path d="M18 9a4 4 0 0 1 0 6" />
+    </>,
+    p,
+  );

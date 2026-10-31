@@ -91,7 +91,7 @@ export function ProfilePage() {
         </div>
       </nav>
       <main className="wsmain">
-        <div style={{ maxWidth: 720 }}>
+        <div className="wscenter">
           <div className="card">
             <div className="cover" style={{ height: 90 }} />
             <div className="phero">

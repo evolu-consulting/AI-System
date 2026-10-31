@@ -69,6 +69,34 @@ export function factRows(p: Pick<PostView, "type" | "fields">): { k: string; v: 
   return rows;
 }
 
+export type Deal = {
+  hero: { k: string; v: string };
+  cells: { k: string; v: string }[];
+};
+
+/**
+ * Dải "deal" (cần bán / cần mua): ô hero = giá chào (bán) / ngân sách (mua), thiếu ⇒ "Liên hệ";
+ * ô phụ = số lượng, khu vực, hạn cần (mua). Hàng hoá chỉ thêm khi bài không có tiêu đề. Ghi chú ⇒ null.
+ */
+export function dealStrip(p: Pick<PostView, "type" | "fields"> & { title?: string }): Deal | null {
+  if (p.type === "note") return null;
+  const f = p.fields;
+  const heroRaw = p.type === "sell" ? f.price : f.budget;
+  const hero = {
+    k: p.type === "sell" ? "Giá chào" : "Ngân sách",
+    v: heroRaw?.trim() ? heroRaw : "Liên hệ",
+  };
+  const cells: { k: string; v: string }[] = [];
+  const add = (k: string, v: string | null | undefined) => {
+    if (v?.trim()) cells.push({ k, v });
+  };
+  if (!p.title) add("Hàng hoá", f.product);
+  add(p.type === "sell" ? "Số lượng" : "Cần", f.qty);
+  add(p.type === "sell" ? "Khu vực" : "Giao tại", f.area);
+  if (p.type === "buy") add("Cần trước", f.neededBy?.split("-").reverse().join("/"));
+  return { hero, cells };
+}
+
 /** Nhãn "sắp hết hạn" (≤ 3 ngày: hỏi gia hạn). */
 export function expiryNote(expiresAt: string | undefined, now: number = Date.now()): string | null {
   if (!expiresAt) return null;

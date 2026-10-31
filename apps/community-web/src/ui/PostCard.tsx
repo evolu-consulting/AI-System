@@ -2,7 +2,7 @@
 import { POST_TYPE_LABEL, type PostAction, type PostView } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
 import { draftFromFields } from "../lib/compose";
-import { expiryNote, factRows, initials, timeAgo, tone } from "../lib/format";
+import { dealStrip, expiryNote, initials, timeAgo, tone } from "../lib/format";
 import { hintLines, saveButtonLabel, savedText } from "../lib/quote";
 import { useApp } from "./ctx";
 import { DraftFields } from "./DraftFields";
@@ -154,11 +154,16 @@ export function PostCard({ post: p }: { post: PostView }) {
     toast(a === "delete" ? "Đã xoá bài" : "Đã cập nhật bài");
     bump();
   };
-  const facts = factRows(p);
+  const deal = dealStrip(p);
+  const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
   const hasMenu = p.actions.some((a) => a !== "saveQuote");
   const expiry = expiryNote(p.expiresAt);
   return (
-    <article className="card post" data-testid="post" data-post-id={p.id}>
+    <article
+      className={`card post ${p.type}${muted ? " muted" : ""}`}
+      data-testid="post"
+      data-post-id={p.id}
+    >
       <div className="ph">
         <span className={`av ${tone(p.authorOrgId, p.authorSide === "host")}`}>
           {initials(p.authorOrgName)}
@@ -177,16 +182,9 @@ export function PostCard({ post: p }: { post: PostView }) {
             {expiry && <span className="tag soon sm">{expiry}</span>}
           </div>
         </div>
-        <span className={`tag ${p.type === "buy" ? "buy" : p.type === "sell" ? "sell" : "grey"}`}>
-          {POST_TYPE_LABEL[p.type]}
-        </span>
+        <span className={`pill ${p.type}`}>{POST_TYPE_LABEL[p.type]}</span>
         {has(p, "saveQuote") && p.type === "sell" && (
-          <button
-            type="button"
-            className="outline"
-            onClick={() => openQuote(p.authorOrgName)}
-            style={{ marginTop: -6 }}
-          >
+          <button type="button" className="outline" onClick={() => openQuote(p.authorOrgName)}>
             <IconSave size={16} />
             {saveButtonLabel(savedCount)}
           </button>
@@ -198,7 +196,6 @@ export function PostCard({ post: p }: { post: PostView }) {
             aria-label="Tuỳ chọn bài đăng"
             aria-expanded={menu}
             onClick={() => setMenu(!menu)}
-            style={{ width: 40, height: 40, marginTop: -6 }}
           >
             <IconDots />
           </button>
@@ -246,14 +243,22 @@ export function PostCard({ post: p }: { post: PostView }) {
           )}
         </div>
       )}
-      {facts.length > 0 && (
-        <div className="facts">
-          {facts.map((f) => (
-            <div className="fact" key={f.k}>
-              <span>{f.k}</span>
-              <b>{f.v}</b>
+      {deal && (
+        <div className={`deal ${p.type}`} data-testid="deal">
+          <div className="hero">
+            <span className="k">{deal.hero.k}</span>
+            <span className="v tnum">{deal.hero.v}</span>
+          </div>
+          {deal.cells.length > 0 && (
+            <div className="rest">
+              {deal.cells.map((c) => (
+                <div className="cell" key={c.k}>
+                  <span className="k">{c.k}</span>
+                  <span className="v">{c.v}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
       {p.media.length > 0 && (
@@ -273,9 +278,11 @@ export function PostCard({ post: p }: { post: PostView }) {
         </div>
       )}
       {isHostViewer && p.hostHint && (
-        <div className="match" data-testid="host-hint">
-          <IconBox />
-          <span style={{ flex: 1, minWidth: 200 }}>
+        <div className="callout hint" data-testid="host-hint">
+          <span className="ci">
+            <IconBox />
+          </span>
+          <span className="ct">
             <b>{hintLines(p.hostHint, p.type).lead}</b> {hintLines(p.hostHint, p.type).text}
           </span>
         </div>
@@ -284,12 +291,13 @@ export function PostCard({ post: p }: { post: PostView }) {
         p.quotes?.map((m) => (
           <div
             key={`${m.itemIdx}-${m.commentId ?? ""}`}
-            className="match"
+            className="callout saved"
             data-testid="quote-saved"
-            style={{ background: "#e3f4ec", borderColor: "#bfe5d2", color: "#05603f" }}
           >
-            <IconCheck size={18} />
-            <span style={{ flex: 1, minWidth: 200 }}>
+            <span className="ci">
+              <IconCheck size={18} />
+            </span>
+            <span className="ct">
               <b>Đã lưu báo giá vào Sản phẩm &amp; Giá:</b> {savedText(m)}
               {m.priceEdited && " · NCC đã sửa giá sau khi lưu — lưu lại để cập nhật"}
               {!m.priceEdited && m.postEdited && " · bài đã sửa sau khi lưu"}

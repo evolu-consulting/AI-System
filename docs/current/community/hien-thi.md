@@ -2,6 +2,29 @@
 
 Nguồn: PDF 28/10/2026 bảng "Quy tắc hiển thị" + "Các case và ngoại lệ", D1–D5, `nghiep-vu.md`. Mỗi dòng = **một ca test** (HT-nn); C3/C4 viết **một int RLS mỗi ô** theo bảng này (nhẹ nhất: một int có tham số theo dòng). "Chưa làm" tới khi C3 merge.
 
+## 0. Bố cục bảng tin (Phase A redesign — chỉ hiển thị, không đổi quy tắc)
+Nguồn: `apps/community-web/src/ui/Feed.tsx` (FeedPage, FeedFilters, FeedList), `FeedRail.tsx`, `PostCard.tsx`, `Composer.tsx`, `useFeed.ts`, `src/lib/format.ts` (dealStrip), `src/styles/feed.css`. Quyền, che, lưu báo giá vẫn do server quyết; mục 1–7 là chuẩn.
+
+| Vùng | Chủ quản (Admin / Thành viên) | Đối tác (NCC / người mua) |
+|---|---|---|
+| Cột trái (`.feedcol`) | Composer (chọn người xem) → thanh tab **sticky** (Tất cả · Cần bán · Cần mua · Thông báo · Đã lưu trữ, kèm số đếm) → danh sách bài | Composer (ghi chú thay cho người xem) → thanh tab sticky → danh sách bài |
+| Cột phải (`.rail`, sticky) | Thẻ **Bộ lọc** (Nhóm hàng · Khu vực · Người đăng: tất cả / Chủ quản / từng đối tác · Xoá lọc) + thẻ **Đối tác trong chợ** (mọi đối tác; tag "đã rời") | Thẻ **Bộ lọc** (Nhóm hàng · Khu vực; không có Người đăng) + **Công ty của bạn** (chỉ khi có) + **Mẹo đăng bài** (3 mẹo tĩnh) |
+
+- Bộ lọc dùng chung state với thanh tab (`useFeedFilters`: tab, nhóm hàng, khu vực, người đăng, ô tìm). Thẻ Bộ lọc chỉ hiện sau khi bảng tin đã tải.
+- Danh sách công ty (`usePartners`): chủ quản gọi để lấy tất cả đối tác; đối tác nhận phạm vi do server trả (chỉ công ty của mình).
+- Bố cục 2 cột chỉ ở `FeedPage` (route bảng tin). **Hồ sơ** dùng `FeedList`: chip lọc + ô lọc gọn (`selrow`), không có cột phải.
+- Responsive: ≤ 900 px rail xuống dưới một cột; ≤ 460 px dải deal xếp dọc.
+
+Thẻ bài (`PostCard`):
+- **Vạch màu trái** theo loại: Cần bán = accent (`--accent`, indigo ở theme mặc định) · Cần mua = cam (`--buy`) · Thông báo = xám (`--note`).
+- **Pill loại** cạnh nút ⋯ cùng màu. Nút **Lưu báo giá** (chủ quản, bài Cần bán của NCC) nằm trong header, sau pill; trên bình luận thì nằm trong luồng (xem mục 5–6).
+- **Dải deal** (`.deal.<loại>`, dưới tiêu đề/nội dung): hero = "Giá chào" (Cần bán) hoặc "Ngân sách" (Cần mua), trống ⇒ "Liên hệ"; ô phụ: Hàng hoá (chỉ khi bài không có tiêu đề) · Số lượng / Cần · Khu vực / Giao tại · Cần trước (Cần mua, dd/mm/yyyy). Thông báo không có dải. Thay cho lưới facts cũ.
+- Trạng thái lưu trữ / đã xong / hết hạn: thẻ mờ (`.muted`). Nhãn trong dòng meta dưới tên người đăng: đã sửa · Đã lưu trữ · Đã xong · Hết hạn · đã ẩn · đối tác đã rời · "Hết hạn sau N ngày" (≤ 3 ngày).
+- Nhãn audience giữ nguyên: bài chủ quản "Bạn bè"; bài đối tác "Chỉ chủ quản".
+- Khối "Đã lưu báo giá vào SP & Giá" và gợi ý của chủ quản: chỉ chủ quản thấy (`isHostViewer`).
+
+Kiểm bố cục: chưa có ca HT riêng; e2e liên quan `e2e/community-web/feed.cm.ts`.
+
 ## Bộ nhân vật test (tenant `demo`)
 | Ký hiệu | Là ai |
 |---|---|
@@ -85,7 +108,7 @@ Bài P = bài chủ quản đăng, `audience` như ghi ở cột 3.
 | HT-60 | A, M | bài Cần bán của S1 | Có nút "Lưu báo giá" |
 | HT-61 | A, M | bài Cần mua của B1; bài của chủ quản; bài Thông báo | Không có nút |
 | HT-62 | A, M | bình luận của NCC trên bài chủ quản | Có nút Lưu báo giá (Q3) |
-| HT-63 | A, M | bài đã lưu | Thấy dòng "Đã lưu báo giá vào SP & Giá" + "đã lưu bởi … lúc …" + nút Xem |
+| HT-63 | A, M | bài đã lưu | Thấy dòng "Đã lưu báo giá vào SP & Giá" + "đã lưu bởi … lúc …" + nút Xem. ⚠ Lệch code: `PostCard.tsx` hiện dòng và "đã lưu bởi", **chưa có nút Xem** (có từ trước redesign; xem Chưa rõ #7) |
 | HT-64 | S1 | bài Cần bán của chính S1, **đã được lưu** | Không có nút, không dòng "Đã lưu", API **không có** trường `savedQuote`/`savedBy`/cờ tương đương; JSON giống hệt bài chưa lưu |
 | HT-65 | B1, S2 | bài/bình luận bất kỳ | Không có nút, không dấu hiệu |
 | HT-66 | S1 | bài sau khi chủ quản thay giá hoặc gỡ giá | Không thay đổi quan sát được (không thông báo) |
@@ -121,4 +144,6 @@ Bài P = bài chủ quản đăng, `audience` như ghi ở cột 3.
 2. HT-46: bình luận bị ẩn trong luồng riêng: đối tác còn thấy không? Mặc định đề xuất: không thấy (không để lại dấu).
 3. Phần thành viên chủ quản theo "quyền được giao" (PDF: "dùng SHT theo quyền được giao"): ca test SHT theo từng quyền thuộc `current/sht/cai-dat-va-quyen.md`, không lặp ở đây.
 4. Bài Thông báo audience theo nhóm hàng: nhóm hàng của Thông báo lấy từ đâu (người đăng chọn)? Mặc định: người đăng chọn tay.
-5. Mockup Community chưa nhận: vị trí/nhãn các dấu "đã sửa", "đã ẩn", "đối tác đã rời" chưa chốt.
+5. Mockup Community chưa nhận: Phase A đặt các nhãn "đã sửa", "đã ẩn", "đối tác đã rời" trong dòng meta dưới tên người đăng (mục 0); chờ mockup xác nhận.
+6. HT-62: "bình luận của NCC trên bài chủ quản" có nút Lưu báo giá. Code (`PostCard.tsx`) chỉ bật trên bình luận của đối tác khi bài là Cần mua của chủ quản, khớp D12 (`nghiep-vu.md` §8). Chốt: giữ D12 hay mở rộng sang bài khác?
+7. HT-63 / `nghiep-vu.md` §8: nút "Xem" trên bài đã lưu chưa được code. Chốt: làm (nút mở form/link SP & Giá) hay bỏ khỏi nghiệp vụ?

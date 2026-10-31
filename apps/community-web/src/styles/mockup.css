@@ -213,10 +213,6 @@ a:hover {
   margin: 0 auto;
   padding: 24px 20px 48px;
 }
-.feedgrid {
-  max-width: 680px;
-  margin: 0 auto;
-}
 .ws {
   display: flex;
   align-items: stretch;
@@ -244,6 +240,35 @@ a:hover {
   min-width: 0;
   padding: 24px 32px 48px;
   max-width: 1240px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+/* Khối nội dung canh giữa trong vùng chính (màn vừa). */
+.wscenter {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+/* Màn rộng: thanh bên nổi (fixed) như nút trợ lý ⇒ vùng chính chiếm trọn bề ngang,
+   khối hồ sơ canh giữa đúng theo màn hình, không bị thanh bên đẩy lệch. */
+@media (min-width: 1224px) {
+  .ws {
+    display: block;
+  }
+  .wsside {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    width: 252px;
+    height: calc(100vh - 60px);
+    z-index: 25;
+  }
+  .wsmain {
+    display: block;
+    max-width: none;
+    padding: 24px 32px 48px;
+  }
 }
 .wshead {
   display: flex;
@@ -282,6 +307,10 @@ a:hover {
   }
   .wsmain {
     padding: 20px 16px 40px;
+    display: block;
+  }
+  .wscenter {
+    margin: 0 auto;
   }
 }
 .card {
@@ -674,29 +703,6 @@ a:hover {
   margin: 0;
   color: #2c2d40;
   white-space: pre-line;
-}
-.facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: #efeff4;
-  border: 1px solid #efeff4;
-  border-radius: 10px;
-  overflow: hidden;
-  margin: 12px 16px 0;
-}
-.fact {
-  background: #f9f9fc;
-  padding: 8px 12px;
-}
-.fact span {
-  display: block;
-  font-size: 11.5px;
-  color: #6b6c80;
-}
-.fact b {
-  font-size: 13.5px;
-  font-weight: 600;
 }
 .media {
   display: grid;
