@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { StageDraft } from "../lib/def-form";
-import { freshDlcStage } from "../lib/dlc-slot";
+import { freshDlcStage, freshReviewStage } from "../lib/fresh-stages";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
 import type { DraftState } from "./use-draft";
@@ -81,6 +81,8 @@ export function useStageOps(d: DraftState) {
     addStep: (step: number) => addVia(() => d.addStepAfter(step)),
     /** dlc-engine · thêm bước DLC (khe `dlc.*`) thành bước cuối. */
     addDlc: (name: string) => addVia(() => d.addFresh((st) => freshDlcStage(st, name))),
+    /** dlc-engine · thêm bước duyệt của khe (mang `slot.kind = review` ngay ⇒ không nối với bước DLC, KIND_MIX khi trộn). */
+    addReview: () => addVia(() => d.addFresh(() => freshReviewStage())),
     clearNotice: () => setNotice(null),
   };
 }

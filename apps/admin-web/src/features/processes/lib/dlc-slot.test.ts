@@ -5,12 +5,12 @@ import {
   diagramKind,
   dlcDraftErrors,
   dlcOf,
-  freshDlcStage,
   newDlcSlot,
   normalizeDlcStages,
   stageFamily,
 } from "./dlc-slot";
 import type { StageDraft } from "./draft-types";
+import { freshDlcStage } from "./fresh-stages";
 import { defaultReviewSlot, normalizeSlotStages } from "./slot-canvas";
 import { emptyStage } from "./stage-convert";
 

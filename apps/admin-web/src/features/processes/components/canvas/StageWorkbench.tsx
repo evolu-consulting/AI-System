@@ -41,6 +41,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { ops } = w;
   const views = lib ? withoutSlotLinks(w.views) : w.views; // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh"
   const addStage = () => ops.add();
+  const addReview = () => ops.addReview();
   const addDlc = () =>
     ops.addDlc(t("process.admin.library.dlc.newName", { n: w.stages.length + 1 }));
   const viewProps = {
@@ -64,7 +65,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
           ) : lib ? (
             <SlotCanvasToolbar
               count={w.stages.length}
-              onAdd={addStage}
+              onAdd={addReview}
               onAddDlc={addDlc}
               onArrange={ops.arrange}
             />
