@@ -16,6 +16,7 @@ import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
 import { orgRoutes } from "./adapters/org.routes";
 import { postsRoutes } from "./adapters/posts.routes";
+import { profileRoutes } from "./adapters/profile.routes";
 import { quoteRoutes } from "./adapters/quote.routes";
 import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
@@ -77,6 +78,7 @@ export function communityModule(
   r.route("/", postsRoutes(d));
   r.route("/", threadsRoutes(d));
   r.route("/", orgRoutes(d));
+  r.route("/", profileRoutes(d));
   r.route("/", quoteRoutes(d));
   return r;
 }

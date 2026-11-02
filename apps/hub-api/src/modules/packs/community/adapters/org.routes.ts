@@ -18,18 +18,11 @@ import { bellView } from "../domain/notify.rules";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as orgs from "./org.service";
+import { profileTarget, withReputation } from "./profile.routes";
 import { partnerViews } from "./views";
 
 type R = Hono<PackGuardVars>;
 type Acc = (c: Context<PackGuardVars>, need?: "read" | "write") => Promise<Access>;
-
-/** Hồ sơ được xem: chủ quản = mọi bên; đối tác = công ty mình + chủ quản. `null` = chủ quản | id công ty | undefined (404). */
-function profileTarget(a: Access, orgId: string | undefined): string | null | undefined {
-  const id = orgId ?? a.org ?? a.who.tenantId;
-  if (id === a.who.tenantId) return null;
-  if (!a.dir.orgs.some((o) => o.id === id)) return undefined;
-  return a.org === null || id === a.org ? id : undefined;
-}
 
 async function profileOf(d: CommunityDeps, a: Access, orgId: string | undefined): Promise<Profile> {
   const target = profileTarget(a, orgId);
@@ -86,7 +79,9 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
   });
   r.get("/partners", async (c) => {
     const a = await access(c);
-    return c.json(partnerViews(a, await orgs.partners(d.uow, a)));
+    const list = partnerViews(a, await orgs.partners(d.uow, a));
+    // CR-110 · COM-FR-37: tab Đối tác của hồ sơ — cột uy tín chỉ chủ quản (cổng HostBookReader), `?rep=1` để feed không trả phí
+    return c.json(c.req.query("rep") === "1" ? await withReputation(d, a, list) : list);
   });
   r.put("/partners/:orgId", async (c) => {
     const a = await access(c, "write");

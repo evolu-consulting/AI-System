@@ -2,6 +2,7 @@
 export * from "./brand";
 export * from "./feed";
 export * from "./post";
+export * from "./profile";
 export * from "./quote";
 export * from "./thread";
 export * from "./viewer";

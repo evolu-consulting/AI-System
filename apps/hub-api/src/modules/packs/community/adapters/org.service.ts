@@ -3,6 +3,7 @@ import type { PartnerUpdateInput } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import type { PackUow } from "../../kit/application/ports";
 import type { Access } from "./community-access";
+import { type MediaCursor, type MediaRow, profileMedia } from "./media.sql";
 import {
   catList,
   type PartnerRow,
@@ -45,6 +46,16 @@ export const profile = (uow: Uow, a: Access, target: string | null) =>
     stats: await profileStats(tx, target),
     rows: target === null ? [] : await partnerRows(tx),
   }));
+
+/** CR-110 · COM-FR-37: đính kèm bài của `target` (`null` = chủ quản) dưới RLS người xem — MỘT câu mỗi trang. */
+export const media = (
+  uow: Uow,
+  a: Access,
+  target: string | null,
+  cursor: MediaCursor | null,
+  limit: number,
+): Promise<MediaRow[]> =>
+  uow.tenant(a.who, ({ tx }) => profileMedia(tx, a.who.tenantId, target, cursor, limit));
 
 export const settings = (uow: Uow, a: Access): Promise<SettingsRow | null> =>
   uow.tenant(a.who, ({ tx }) => settingsOf(tx, a.who.userId));

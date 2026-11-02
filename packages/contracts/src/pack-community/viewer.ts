@@ -1,6 +1,7 @@
 // CR-102 · C5 · ngữ cảnh người xem + công ty đối tác + hồ sơ + cài đặt (`GET /pack/community/me` ...).
 import { z } from "zod";
 import { CommunityCapsSchema } from "./brand";
+import { PartnerReputationSchema } from "./profile";
 
 export const COMMUNITY_ROLES = ["host_admin", "host_member", "partner"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
@@ -44,6 +45,8 @@ export const PartnerOrgSchema = z.strictObject({
   left: z.boolean().optional(),
   /** C3 · chỉ chủ quản: khoá đối tác SHT đã liên kết (Câu 2). */
   partyKey: z.string().optional(),
+  /** CR-110 · COM-FR-37: chỉ chủ quản có quyền contracts, `?rep=1`, đã liên kết SHT (cổng `HostBookReader`). */
+  reputation: PartnerReputationSchema.optional(),
 });
 export type PartnerOrg = z.infer<typeof PartnerOrgSchema>;
 
