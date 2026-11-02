@@ -1,7 +1,8 @@
-// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
+﻿// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
 import { IsoDateTime } from "../common";
+import { FlowCondSchema } from "./approval-flow";
 import { ProductLinksSchema } from "./product-links";
 
 export const APPROVAL_STEPS = [
@@ -84,6 +85,8 @@ export const ApprovalCardStepSchema = z.strictObject({
   decided_by: z.strictObject({ id: z.uuid(), name: z.string() }).nullable(),
   decided_at: IsoDateTime.nullable(),
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
+  /** CR-109 · bước chưa tới mà theo giá trị/loại HĐ hiện tại sẽ bị bỏ qua: các điều kiện `when` không thỏa; null/vắng = không bỏ qua. */
+  skip_when: z.array(FlowCondSchema).nullable().optional(),
 });
 export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
 

@@ -1,10 +1,10 @@
-﻿// contract-flow S4: dòng thời gian các bước duyệt của HĐ chạy trên engine — tên bước, phòng, trạng thái, hạn / quá hạn / chuyển cấp,
+// contract-flow S4: dòng thời gian các bước duyệt của HĐ chạy trên engine — tên bước, phòng, trạng thái, hạn / quá hạn / chuyển cấp,
 // người quyết + lúc, góp ý. Người có quyền sửa (platform_admin) có lối vào "Chỉnh quy trình duyệt" (sang ai-admin, CR-105 L4).
 import type { ContractApproval } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { FlowEditorLink } from "~/features/settings/components/FlowEditorLink";
 import { useGroups } from "../hooks/use-groups";
-import { hoursLeft, type TimelineRow, timelineRows } from "../lib/engine-card";
+import { hoursLeft, skipReason, type TimelineRow, timelineRows } from "../lib/engine-card";
 import { EsignStepRow } from "./EsignStepRow";
 
 const DOT: Record<TimelineRow["status"], string> = {
@@ -43,7 +43,7 @@ function Row({ r, now }: { r: TimelineRow; now: number }) {
     <li
       data-testid={`approval-step-${r.idx}`}
       data-status={r.status}
-      className="flex gap-3 border-b border-rule-soft py-2 last:border-b-0"
+      className={`flex gap-3 border-b border-rule-soft py-2 last:border-b-0 ${r.skipWhen ? "opacity-60" : ""}`}
     >
       <span
         aria-hidden="true"
@@ -52,9 +52,24 @@ function Row({ r, now }: { r: TimelineRow; now: number }) {
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-x-2">
           <b>{r.name}</b>
-          <span className="text-caption text-dim">
-            {t(`contracts.approval.engine.status.${r.status}`)}
-          </span>
+          {r.skipWhen ? (
+            <span className="text-caption text-dim" data-approval-skip="will">
+              {t("contracts.approval.engine.willSkip", {
+                reason: r.skipWhen
+                  .map((c) => {
+                    const x = skipReason(c);
+                    return t(`contracts.approval.engine.skipReason.${x.key}`, {
+                      n: x.vars.n.toLocaleString("vi-VN"),
+                    });
+                  })
+                  .join(", "),
+              })}
+            </span>
+          ) : (
+            <span className="text-caption text-dim">
+              {t(`contracts.approval.engine.status.${r.status}`)}
+            </span>
+          )}
           {r.group ? <span className="text-caption text-dim">· {r.group}</span> : null}
           {r.headOnly ? (
             <span className="text-caption text-dim">

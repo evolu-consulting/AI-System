@@ -1,9 +1,16 @@
-// contract-flow S3b · luật thuần (lớp 1) của thẻ duyệt HĐ chạy trên engine: dòng thời gian stage của engine (`stepsView`) ⇒ các bước
+﻿// contract-flow S3b · luật thuần (lớp 1) của thẻ duyệt HĐ chạy trên engine: dòng thời gian stage của engine (`stepsView`) ⇒ các bước
 // người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
 import { finalizesOnApprove, isTerminalRun } from "./approval-engine.rules";
-import type { FlowEngineStep, FlowFacts, FlowStep } from "./approval-flow.rules";
+import {
+  condHolds,
+  type FlowEngineStep,
+  type FlowFacts,
+  type FlowStep,
+  stepApplies,
+} from "./approval-flow.rules";
+import type { FlowCond } from "./approval-flow.types";
 
 export type CardStepStatus =
   | "pending"
@@ -54,10 +61,22 @@ export type CardStep = {
   decided_by: { id: string; name: string } | null;
   decided_at: string | null;
   feedback: string | null;
+  /** CR-109 · điều kiện `when` không thỏa (bước chưa tới sẽ bị bỏ qua); null = không bỏ qua. */
+  skip_when: FlowCond[] | null;
 };
 
+/** CR-109 · bước review chưa tới (không phải bước soạn) mà `contracts-route` sẽ bỏ qua với facts hiện tại: các điều kiện không thỏa. */
+export function willSkip(s: FlowEngineStep, i: number, facts: FlowFacts): FlowCond[] | null {
+  if (i === 0 || s.kind !== "review" || !s.when || stepApplies(s, facts)) return null;
+  return s.when.conds.filter((c) => !condHolds(c, facts));
+}
+
 /** Các bước người dùng của mẫu chụp ghép với stage engine cùng khoá (thiếu stage ⇒ `pending`). */
-export function cardSteps(flow: readonly FlowStep[], sv: EngineStepsView | null): CardStep[] {
+export function cardSteps(
+  flow: readonly FlowStep[],
+  sv: EngineStepsView | null,
+  facts: FlowFacts,
+): CardStep[] {
   const byKey = new Map((sv?.steps ?? []).map((s) => [s.key, s]));
   const own = flow.filter((s): s is FlowEngineStep => s.kind !== "esign"); // esign-flow · Ký số không là stage
   return own.map((s, i) => {
@@ -77,6 +96,7 @@ export function cardSteps(flow: readonly FlowStep[], sv: EngineStepsView | null)
       decided_by: st?.decided_by ?? null,
       decided_at: st?.decided_at ?? null,
       feedback: st?.feedback ?? null,
+      skip_when: (st?.status ?? "pending") === "pending" ? willSkip(s, i, facts) : null,
     };
   });
 }
@@ -136,7 +156,7 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
 
 /** Thẻ duyệt `mode = 'engine'` (hình dạng `ContractApproval` + `mode` + `steps`). */
 export function engineCardView(i: EngineCardInput) {
-  const steps = cardSteps(i.flow, i.sv);
+  const steps = cardSteps(i.flow, i.sv, i.facts);
   const open = openStep(steps);
   const task = open ? (i.sv?.steps.find((s) => s.key === `s${open.idx}`)?.task ?? null) : null;
   const can = task?.can_act === true;

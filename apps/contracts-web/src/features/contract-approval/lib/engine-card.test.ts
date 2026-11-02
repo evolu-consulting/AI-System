@@ -2,7 +2,13 @@
 import { describe, expect, test } from "bun:test";
 import type { ApprovalCardStep, ContractApproval } from "@ai/contracts";
 import { approvalView } from "./approval";
-import { engineAdvancing, hoursLeft, releaseNoteKey, timelineRows } from "./engine-card";
+import {
+  engineAdvancing,
+  hoursLeft,
+  releaseNoteKey,
+  skipReason,
+  timelineRows,
+} from "./engine-card";
 
 const G1 = "11111111-1111-4111-8111-111111111111";
 const G2 = "22222222-2222-4222-8222-222222222222";
@@ -146,5 +152,27 @@ describe("releaseNoteKey", () => {
     expect(releaseNoteKey("ENGINE_RUN_WEIRD")).toBe("contracts.approval.engine.release.OTHER");
     expect(releaseNoteKey("Thiếu điều khoản")).toBeNull();
     expect(releaseNoteKey(null)).toBeNull();
+  });
+});
+
+describe("CR-109 · nhãn sẽ bỏ qua", () => {
+  const GE = { field: "total_value", op: "ge", value: 500_000_000 } as const;
+  test("bước pending có skip_when ⇒ skipWhen; bước đã qua/mở thì không", () => {
+    const rows = timelineRows(
+      [
+        step({ status: "open" }),
+        step({ idx: 1, key: "s1", status: "pending", skip_when: [GE] }),
+        step({ idx: 2, key: "s2", status: "skipped", skip_when: [GE] }),
+        step({ idx: 3, key: "s3", status: "pending", skip_when: null }),
+      ],
+      [],
+      0,
+    );
+    expect(rows.map((r) => r.skipWhen)).toEqual([null, [GE], null, null]);
+  });
+  test("skipReason: ≥ 500tr không thỏa ⇒ giá trị < 500tr; loại HĐ", () => {
+    expect(skipReason(GE)).toEqual({ key: "value.lt", vars: { n: 500_000_000 } });
+    expect(skipReason({ ...GE, op: "gt" }).key).toBe("value.le");
+    expect(skipReason({ field: "deal", in: ["buy"] }).key).toBe("deal");
   });
 });

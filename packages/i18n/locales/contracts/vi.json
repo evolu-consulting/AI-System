@@ -497,6 +497,16 @@
         "escalatedShort": "đã chuyển cấp",
         "waiting": "Đang chờ người duyệt bước này.",
         "advancing": "Đang chuyển sang bước duyệt kế tiếp…",
+        "willSkip": "Sẽ bỏ qua ({{reason}})",
+        "skipReason": {
+          "deal": "loại hợp đồng không thuộc điều kiện",
+          "value": {
+            "lt": "giá trị < {{n}}",
+            "le": "giá trị ≤ {{n}}",
+            "gt": "giá trị > {{n}}",
+            "ge": "giá trị ≥ {{n}}"
+          }
+        },
         "status": {
           "pending": "Chưa đến",
           "open": "Đang chờ duyệt",

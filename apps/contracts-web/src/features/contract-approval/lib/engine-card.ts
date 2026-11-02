@@ -1,7 +1,7 @@
 // contract-flow S4: luật hiển thị thẻ duyệt khi lượt chạy trên engine (`mode = 'engine'`) — thuần, không React.
 // Nút: bước soạn (idx 0) = "Xác nhận và lưu" như máy cũ; bước ≥ 1 = Đạt / Trả lại / Từ chối. Dòng thời gian = `steps[]` + tên phòng
 // (`GET /pack/contracts/groups`). Lượt bị trả về máy cũ do engine hỏng/hết hạn mang lý do `ENGINE_RUN_<STATUS>` trong `feedback`.
-import type { ApprovalCardStep, ContractApproval, ContractGroup } from "@ai/contracts";
+import type { ApprovalCardStep, ContractApproval, ContractGroup, FlowCond } from "@ai/contracts";
 import type { ApprovalView } from "./approval";
 
 const NONE: ApprovalView = {
@@ -68,6 +68,8 @@ export type TimelineRow = {
   decidedBy: string | null;
   decidedAt: string | null;
   feedback: string | null;
+  /** CR-109 · bước chưa tới sẽ bị bỏ qua (điều kiện không thỏa); null = không. */
+  skipWhen: FlowCond[] | null;
 };
 
 const nameOf = (groups: readonly ContractGroup[], id: string | null): string | null =>
@@ -93,6 +95,7 @@ export function timelineRows(
       decidedBy: s.decided_by?.name ?? null,
       decidedAt: s.decided_at,
       feedback: s.feedback,
+      skipWhen: s.status === "pending" && s.skip_when?.length ? s.skip_when : null,
     };
   });
 }
@@ -111,4 +114,12 @@ export function releaseNoteKey(feedback: string | null | undefined): string | nu
 export function hoursLeft(dueAt: string, now: number): number {
   const d = Date.parse(dueAt) - now;
   return d >= 0 ? Math.floor(d / 3_600_000) : -Math.floor(-d / 3_600_000);
+}
+
+const NEGATE = { ge: "lt", gt: "le", le: "gt", lt: "ge" } as const;
+
+/** CR-109 · điều kiện không thỏa ⇒ khoá i18n + tham số cho nhãn "Sẽ bỏ qua (…)": giá trị ⇒ phép so ngược lại (≥ 500tr không thỏa ⇒ "< 500tr"). */
+export function skipReason(c: FlowCond): { key: string; vars: { n: number } } {
+  if (c.field === "deal") return { key: "deal", vars: { n: c.in.length } };
+  return { key: `value.${NEGATE[c.op]}`, vars: { n: c.value } };
 }

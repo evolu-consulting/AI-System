@@ -497,6 +497,16 @@
         "escalatedShort": "escalated",
         "waiting": "Waiting for the reviewer of this step.",
         "advancing": "Moving on to the next review step…",
+        "willSkip": "Will be skipped ({{reason}})",
+        "skipReason": {
+          "deal": "contract type does not match the condition",
+          "value": {
+            "lt": "value < {{n}}",
+            "le": "value ≤ {{n}}",
+            "gt": "value > {{n}}",
+            "ge": "value ≥ {{n}}"
+          }
+        },
         "status": {
           "pending": "Not yet",
           "open": "Awaiting review",

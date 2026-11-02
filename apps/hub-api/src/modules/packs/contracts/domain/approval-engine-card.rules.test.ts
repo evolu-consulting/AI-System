@@ -75,6 +75,18 @@ describe("engineCardView", () => {
     expect([v.task_id, v.can_act, v.block_reason]).toEqual(["t-s0", true, null]);
     expect(v.step).toBe("level1");
   });
+  it("CR-109 · skip_when: bước pending dưới ngưỡng ⇒ điều kiện không thỏa; trên ngưỡng / thiếu giá trị / đã bỏ qua ⇒ null", () => {
+    const under = engineCardView(input({ open: "s0" }));
+    expect(under.steps.map((s) => s.skip_when)).toEqual([null, BIG.conds]);
+    const over = engineCardView({ ...input({ open: "s0" }), facts: factsOf("buy", 5000) });
+    expect(over.steps.map((s) => s.skip_when)).toEqual([null, null]);
+    const noValue = engineCardView({ ...input({ open: "s0" }), facts: factsOf("buy", null) });
+    expect(noValue.steps[1]?.skip_when).toBeNull();
+    const base = input({ open: "s1" });
+    const sv = base.sv as NonNullable<typeof base.sv>;
+    const steps = sv.steps.map((s) => (s.key === "s1" ? { ...s, status: "skipped" as const } : s));
+    expect(engineCardView({ ...base, sv: { ...sv, steps } }).steps[1]?.skip_when).toBeNull();
+  });
   it("finalizes_on_approve: dưới ngưỡng ở s0 ⇒ true; trên ngưỡng ⇒ false; không quyền ⇒ false", () => {
     expect(engineCardView(input({ open: "s0" })).finalizes_on_approve).toBe(true);
     const big = { ...input({ open: "s0" }), facts: factsOf("buy", 5000) };
