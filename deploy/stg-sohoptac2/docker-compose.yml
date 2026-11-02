@@ -1,0 +1,213 @@
+# sohoptac2-stg · STAGING SMOKE của chính các image đã build cho production (sohoptac2-*:latest) — project Docker RIÊNG `sohoptac2-stg`
+# trên 149.202.83.5, thư mục ~/workspace/sohoptac2-stg. KHÔNG đụng project `sohoptac2`: mạng riêng, DB/Redis riêng (tmpfs, mất khi down -v),
+# bí mật tự sinh (gen-env.sh), không volume của prod, không mount ./claude-home. Mọi cổng bind 127.0.0.1 (28431..28435, khác 18431..18435 của prod).
+# Chạy: bash up.sh  ·  smoke: bash smoke.sh  ·  dọn: bash down.sh (down -v). Xem README ở đầu up.sh.
+name: sohoptac2-stg
+
+x-app: &app
+  image: sohoptac2-app:latest
+  restart: "no"
+  user: "${S2_UID:-1002}:${S2_GID:-1002}"
+  init: true
+  depends_on:
+    pg: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  pg:
+    image: postgres:16.15-alpine
+    environment:
+      POSTGRES_USER: s2_owner
+      POSTGRES_PASSWORD: ${PG_OWNER_PASSWORD:?run gen-env.sh}
+      POSTGRES_DB: ai_system
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB", "-c", "fsync=off", "-c", "synchronous_commit=off"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U s2_owner -d ai_system"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data:size=2g
+    cpus: 1
+    mem_limit: 1g
+
+  redis:
+    image: redis:7.4.11-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    cpus: 0.25
+    mem_limit: 192m
+
+  admin-api:
+    <<: *app
+    environment:
+      HOME: /tmp
+      APP_URL_CHAT: ${S2_PUBLIC_CHAT_URL}
+      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL}
+      APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL}/studio/
+      APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL}
+      APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL}
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+    cpus: 0.5
+    mem_limit: 768m
+
+  hub-api:
+    <<: *app
+    environment:
+      HOME: /tmp
+      HUB_FAST_ROUTE: "on"
+      COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL}
+      CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL}
+      COMMUNITY_SWEEP: "off"
+      HUB_OPS_WATCH: "off"
+      # Cờ engine duyệt HĐ BẬT (khác prod mặc định) ⇒ lộ canvas/flow trong Cài đặt Sổ Hợp Tác.
+      CONTRACTS_APPROVAL_ENGINE: "on"
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./data/attachments:/data/attachments
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      admin-api: { condition: service_started }
+      filebox: { condition: service_healthy }
+    cpus: 0.75
+    mem_limit: 1536m
+
+  filebox:
+    image: sohoptac2-filebox:latest
+    restart: "no"
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      FILEBOX_TOKEN: ${FILEBOX_TOKEN:?run gen-env.sh}
+      FILEBOX_S3_URL: http://filebox-minio:9000
+      FILEBOX_DB: /data/filebox.db
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9100"]
+    tmpfs:
+      - /data:uid=${S2_UID:-1002},gid=${S2_GID:-1002},size=128m
+    depends_on:
+      filebox-minio: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:9100/health\", timeout=3).status == 200 else 1)"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    cpus: 0.25
+    mem_limit: 512m
+
+  filebox-minio:
+    image: alpine:3.20
+    restart: "no"
+    entrypoint: ["/usr/local/bin/minio"]
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9000"]
+    tmpfs:
+      - /data:size=256m
+    volumes:
+      # bản sao CHỈ ĐỌC của nhị phân MinIO tĩnh (up.sh chép từ ~/workspace/sohoptac2/minio-bin, không đụng gì khác của prod)
+      - ./minio-bin/minio:/usr/local/bin/minio:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    cpus: 0.5
+    mem_limit: 512m
+
+  # Agent Runtime: chỉ để kiểm image chạy lên được; không có Claude CLI/đăng nhập ⇒ không chạy job AI thật.
+  agent-runtime:
+    image: sohoptac2-runtime:latest
+    restart: "no"
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      HOME: /tmp
+      APP_ENV: development
+      LOG_LEVEL: info
+      REDIS_URL: redis://redis:6379
+      AGENT_RT_DATABASE_URL: ${AGENT_RT_DATABASE_URL:?run gen-env.sh}
+      AGENT_RT_PROVIDERS: claude-sub
+      AGENT_RT_WORKER_ID: sohoptac2-stg
+      AGENT_RT_HUB_URL: http://hub-api:4000
+      AGENT_RT_WORK_DIR: /tmp/work
+      AGENT_RT_LOG_DIR: /tmp/logs
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      hub-api: { condition: service_started }
+    cpus: 0.5
+    mem_limit: 512m
+
+  web:
+    image: sohoptac2-web:latest
+    restart: "no"
+    ports:
+      - "127.0.0.1:${S2_PORT_CONTRACTS}:8081"
+      - "127.0.0.1:${S2_PORT_ADMIN}:8082"
+      - "127.0.0.1:${S2_PORT_CHAT}:8083"
+      - "127.0.0.1:${S2_PORT_HUB}:8084"
+      - "127.0.0.1:${S2_PORT_COMMUNITY}:8085"
+    depends_on: [admin-api, hub-api, filebox]
+    cpus: 0.25
+    mem_limit: 192m
+
+  # Lệnh một lần: docker compose -p sohoptac2-stg run --rm -T tool <file.ts>
+  tool:
+    image: sohoptac2-app:latest
+    profiles: ["tools"]
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    entrypoint: ["bun", "--env-file=/run/s2/app.env"]
+    environment:
+      HOME: /tmp
+      DEMO_OWNER_PW_FILE: /run/s2/demo-owner.pw
+      STG_PW_OUT: /run/s2/out/partners.json
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./DEMO_OWNER.pw:/run/s2/demo-owner.pw:ro
+      - ./out:/run/s2/out
+      - ./stg-seed.ts:/app/tools/scripts/src/stg-seed.ts:ro
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      filebox: { condition: service_healthy }
+    cpus: 1
+    mem_limit: 1g
+
+  # Playwright (image evotest-runner-e2e đã có: Playwright v1.63.0-noble + bun). network_mode host ⇒ trình duyệt chỉ thấy 127.0.0.1:28431..
+  # (cùng origin với APP_URL_*/CORS); smoke tự chặn mọi request ra ngoài dải cổng stg (không bao giờ tới 18431..18435 của prod).
+  pw:
+    image: evotest-runner-e2e:pw-1.63.0
+    profiles: ["pw"]
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    network_mode: host
+    working_dir: /w
+    environment:
+      HOME: /tmp/pwhome
+      STG_WEB_BASE: "127.0.0.1"
+      STG_PORT_CONTRACTS: ${S2_PORT_CONTRACTS}
+      STG_PORT_ADMIN: ${S2_PORT_ADMIN}
+      STG_PORT_CHAT: ${S2_PORT_CHAT}
+      STG_PORT_COMMUNITY: ${S2_PORT_COMMUNITY}
+      STG_ADMIN_PW_FILE: /run/s2/ADMIN.pw
+      STG_OWNER_PW_FILE: /run/s2/DEMO_OWNER.pw
+      STG_PARTNERS_FILE: /w/out/partners.json
+    volumes:
+      - ./pw:/w
+      - ./out:/w/out
+      - ./ADMIN.pw:/run/s2/ADMIN.pw:ro
+      - ./DEMO_OWNER.pw:/run/s2/DEMO_OWNER.pw:ro
+    cpus: 2
+    mem_limit: 4g
+    shm_size: 1g
