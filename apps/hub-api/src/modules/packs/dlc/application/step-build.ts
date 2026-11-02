@@ -14,6 +14,7 @@ import {
 import { callAgent, fail, need, out, type StepCtx, type StepOut, save } from "./step-context";
 
 const BUILD_MAX_ITEMS = 200;
+const BUSY_WAIT_MS = 30_000;
 const DEV_TEMPLATE = "dlc-build";
 const QC_TEMPLATE = "dlc-qc";
 
@@ -75,11 +76,17 @@ async function buildItem(c: StepCtx, item: QueueItem): Promise<string> {
 /** Vòng build: một việc mỗi lượt, tuần tự, tới khi queue rỗng. Trả log (một dòng / việc). */
 async function drainQueue(c: StepCtx): Promise<string> {
   const lines: string[] = [];
-  for (let i = 0; i < BUILD_MAX_ITEMS; i++) {
+  const tag = need(c.flow.state.tag, "mã lượt");
+  for (let i = 0; i < BUILD_MAX_ITEMS; ) {
     if (c.signal?.aborted) fail("hết hạn bước build");
-    const item = await c.d.ws.next(c.flow.project);
-    if (!item) break;
-    lines.push(await buildItem(c, item));
+    const n = await c.d.ws.next(c.flow.project, tag);
+    if (n.busy) {
+      await new Promise((r) => setTimeout(r, BUSY_WAIT_MS)); // lượt khác đang merge trên cùng project
+      continue;
+    }
+    if (!n.item) break;
+    lines.push(await buildItem(c, n.item));
+    i++;
   }
   return lines.join("\n");
 }

@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
+import type { QueueItem } from "./queue.rules";
 import { enqueue, MAX_ATTEMPTS, next, result, summary } from "./queue.rules";
 
 const T = "2026-10-30T00:00:00.000Z";
@@ -54,5 +55,18 @@ describe("dlc-dify · queue một project", () => {
     const r = result(q, "a", { ok: true, note: "merged", sha: "abc1234" }, T);
     expect(r.item?.status).toBe("ready_to_deploy");
     expect(r.item?.sha).toBe("abc1234");
+  });
+});
+
+describe("dlc-engine · next theo mã lượt", () => {
+  const item = (id: string, status: QueueItem["status"]) =>
+    ({ id, title: id, domain: "dev", status, attempts: 0, notes: [] }) as unknown as QueueItem;
+  it("chỉ lấy việc của lượt; lượt khác đang merge ⇒ busy", () => {
+    const q = [item("aaa-t1", "in_progress"), item("bbb-t1", "queued")];
+    expect(next(q, "t", "bbb").busy).toBe(true);
+    expect(next(q, "t", "aaa").item?.id).toBe("aaa-t1");
+    const q2 = [item("aaa-t1", "queued"), item("bbb-t1", "queued")];
+    expect(next(q2, "t", "bbb").item?.id).toBe("bbb-t1");
+    expect(next(q2, "t").item?.id).toBe("aaa-t1");
   });
 });

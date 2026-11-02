@@ -63,11 +63,23 @@ export function enqueue(q: QueueItem[], items: readonly NewItem[], now: string):
 }
 
 /** Việc kế: đang có việc `in_progress` ⇒ trả lại chính nó (tuần tự); không ⇒ việc `queued` đầu tiên → `in_progress`. */
-export function next(q: QueueItem[], now: string): { queue: QueueItem[]; item: QueueItem | null } {
-  const busy = q.find((x) => x.status === "in_progress");
-  if (busy) return { queue: q, item: busy };
-  const i = q.findIndex((x) => x.status === "queued");
-  if (i < 0) return { queue: q, item: null };
+/**
+ * Việc kế (merge tuần tự ⇒ một việc `in_progress` mỗi project). `prefix` (mã lượt DLC) ⇒ chỉ việc của lượt đó; việc đang làm
+ * thuộc lượt KHÁC ⇒ `busy` (người gọi chờ rồi hỏi lại), không trả việc của lượt khác.
+ */
+export function next(
+  q: QueueItem[],
+  now: string,
+  prefix = "",
+): { queue: QueueItem[]; item: QueueItem | null; busy: boolean } {
+  const mine = (x: QueueItem) => x.id.startsWith(prefix);
+  const doing = q.find((x) => x.status === "in_progress");
+  if (doing)
+    return mine(doing)
+      ? { queue: q, item: doing, busy: false }
+      : { queue: q, item: null, busy: true };
+  const i = q.findIndex((x) => x.status === "queued" && mine(x));
+  if (i < 0) return { queue: q, item: null, busy: false };
   const cur = q[i] as QueueItem;
   const item: QueueItem = {
     ...cur,
@@ -77,7 +89,7 @@ export function next(q: QueueItem[], now: string): { queue: QueueItem[]; item: Q
   };
   const queue = [...q];
   queue[i] = item;
-  return { queue, item };
+  return { queue, item, busy: false };
 }
 
 /** Kết quả việc đang làm: đạt ⇒ ready_to_deploy; lỗi ⇒ về đầu queue (attempts+1) hoặc failed khi quá hạn. */

@@ -63,7 +63,8 @@ export type WorkspacePort = {
   putArtifact(project: string, name: string, content: string): Promise<void>;
   settings(project: string, b: { testCommand: string; stack: string }): Promise<void>;
   enqueue(project: string, items: QueueItem[]): Promise<void>;
-  next(project: string): Promise<QueueItem | null>;
+  /** Việc kế của lượt (`prefix` = mã lượt); `busy` ⇒ lượt khác đang merge trên project, hỏi lại sau. */
+  next(project: string, prefix: string): Promise<{ item: QueueItem | null; busy: boolean }>;
   integrate(project: string, taskId: string): Promise<IntegrateResult>;
   project(project: string): Promise<ProjectView>;
   /** Deploy bản đã merge (mọi việc `ready_to_deploy`); project chưa cấu hình deploy ⇒ `null`. */

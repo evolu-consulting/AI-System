@@ -83,14 +83,14 @@ export function workspaceClient(
     async enqueue(project, items) {
       if (items.length) await call("POST", `${p(project)}/queue`, { items });
     },
-    async next(project) {
-      const r = await call<{ item?: QueueItem | null }>(
+    async next(project, prefix) {
+      const r = await call<{ item?: QueueItem | null; busy?: boolean }>(
         "POST",
         `${p(project)}/queue/next`,
-        undefined,
+        { prefix },
         5 * 60_000,
       );
-      return r.item ?? null;
+      return { item: r.item ?? null, busy: r.busy === true };
     },
     async integrate(project, taskId) {
       const r = await call<IntegrateResult & { skipped?: boolean }>(
