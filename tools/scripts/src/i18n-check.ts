@@ -1,4 +1,4 @@
-// ADM-NFR-06 · `bun run i18n:check`: hai locale vi/en (Admin, chat/ và studio/) phải cùng tập key phẳng (spec M0 T-I18N-1).
+// ADM-NFR-06 · `bun run i18n:check`: hai locale vi/en (Admin, chat/, studio/, contracts/ và community/) phải cùng tập key phẳng (spec M0 T-I18N-1).
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repoRoot } from "./lib/git";
@@ -7,6 +7,7 @@ const LOCALES_DIR = "packages/i18n/locales";
 const CHAT_DIR = "packages/i18n/locales/chat";
 const STUDIO_DIR = "packages/i18n/locales/studio";
 const CONTRACTS_DIR = "packages/i18n/locales/contracts";
+const COMMUNITY_DIR = "packages/i18n/locales/community";
 const PROCESS_DIR = "packages/i18n/locales/process";
 const LANGS = ["vi", "en"] as const;
 type Lang = (typeof LANGS)[number];
@@ -38,7 +39,9 @@ const tag = (dir: string): string =>
       ? "studio:"
       : dir === CONTRACTS_DIR
         ? "contracts:"
-        : "chat:";
+        : dir === COMMUNITY_DIR
+          ? "community:"
+          : "chat:";
 
 function readLocale(root: string, dir: string, lang: Lang): unknown {
   const path = `${dir}/${lang}.json`;
@@ -129,7 +132,9 @@ function checkProcess(root: string): number {
 function main(): number {
   const root = repoRoot();
   // Gộp để mọi cặp đều được báo, không dừng ở cặp đầu.
-  const codes = [LOCALES_DIR, CHAT_DIR, STUDIO_DIR, CONTRACTS_DIR].map((d) => checkPair(root, d));
+  const codes = [LOCALES_DIR, CHAT_DIR, STUDIO_DIR, CONTRACTS_DIR, COMMUNITY_DIR].map((d) =>
+    checkPair(root, d),
+  );
   codes.push(checkProcess(root));
   return codes.some((c) => c !== 0) ? 1 : 0;
 }

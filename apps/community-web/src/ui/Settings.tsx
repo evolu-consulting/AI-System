@@ -8,25 +8,22 @@ import {
   type NotifyKind,
 } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 import { initials } from "../lib/format";
 import { useApp } from "./ctx";
 
-export const ACCENT_META: Record<CommunityAccent, { label: string; color: string }> = {
-  indigo: { label: "Chàm", color: "#4f46e5" },
-  blue: { label: "Xanh dương", color: "#2563eb" },
-  teal: { label: "Xanh ngọc", color: "#0891b2" },
-  green: { label: "Xanh lá", color: "#16a34a" },
-  orange: { label: "Cam", color: "#ea580c" },
+export const ACCENT_META: Record<CommunityAccent, { label: () => string; color: string }> = {
+  indigo: { label: () => t("community.settings.look.indigo"), color: "#4f46e5" },
+  blue: { label: () => t("community.settings.look.blue"), color: "#2563eb" },
+  teal: { label: () => t("community.settings.look.teal"), color: "#0891b2" },
+  green: { label: () => t("community.settings.look.green"), color: "#16a34a" },
+  orange: { label: () => t("community.settings.look.orange"), color: "#ea580c" },
 };
-const NOTIFY_TEXT: Record<NotifyKind, [string, string]> = {
-  comment: ["Có người bình luận bài của tôi", "Thông báo ngay khi có bình luận mới."],
-  reply: ["Có người trả lời bình luận của tôi", "Theo dõi các cuộc trao đổi đang diễn ra."],
-  newSell: ["Nhà cung cấp đăng bài Cần bán mới", "Chỉ chủ quản."],
-  newBuy: ["Người mua đăng bài Cần mua mới", "Chỉ chủ quản."],
-  matchBuy: ["Bài Cần mua khớp hàng đang có", "Chỉ chủ quản."],
-  priceEdited: ["Nhà cung cấp sửa giá bài đã lưu", "Chỉ chủ quản."],
-  expiring: ["Bài sắp tự hết hạn (3 ngày)", "Hỏi gia hạn hay lưu trữ."],
-  digest: ["Tổng hợp hằng ngày 8:00", "Bài mới, Cần bán chưa lưu."],
+const notifyKey = (k: NotifyKind, part: "title" | "desc"): string => {
+  const base = `community.settings.notify.${k}`;
+  const hostOnly = ["newSell", "newBuy", "matchBuy", "priceEdited"].includes(k);
+  if (part === "title") return t(base);
+  return hostOnly ? t("community.settings.notify.hostOnly") : t(`${base}Desc`);
 };
 const HOST_ONLY: NotifyKind[] = ["newSell", "newBuy", "matchBuy", "priceEdited", "digest"];
 type Tab = "account" | "look" | "notify";
@@ -44,21 +41,21 @@ export function SettingsPage() {
   const save = async (next: CommunitySettings) => {
     setS(next);
     await api.saveSettings(next);
-    toast("Đã lưu cài đặt");
+    toast(t("community.settings.saved"));
   };
   const kinds = NOTIFY_KINDS.filter((k) => isHostViewer || !HOST_ONLY.includes(k));
   const items: [Tab, string][] = [
-    ["account", "Tài khoản"],
-    ["look", "Giao diện"],
-    ["notify", "Thông báo"],
+    ["account", t("community.settings.tabs.account")],
+    ["look", t("community.settings.tabs.look")],
+    ["notify", t("community.settings.tabs.notify")],
   ];
   return (
     <div className="ws">
-      <nav className="wsside" aria-label="Mục cài đặt">
+      <nav className="wsside" aria-label={t("community.settings.navLabel")}>
         <div className="mini">
           <span className="av lg t7">{initials(viewer.name)}</span>
           <div>
-            <b>Cài đặt</b>
+            <b>{t("community.settings.title")}</b>
             <span>{viewer.name}</span>
           </div>
         </div>
@@ -80,15 +77,17 @@ export function SettingsPage() {
           <section className="card setbody">
             {tab === "account" && (
               <>
-                <h2>Tài khoản</h2>
-                <p className="lead">Thông tin đăng nhập của bạn trong {viewer.orgName}.</p>
+                <h2>{t("community.settings.tabs.account")}</h2>
+                <p className="lead">
+                  {t("community.settings.account.lead", { org: viewer.orgName })}
+                </p>
                 <div className="form">
                   <div>
-                    <label htmlFor="s-name">Họ tên</label>
+                    <label htmlFor="s-name">{t("community.settings.account.name")}</label>
                     <input id="s-name" className="field" value={viewer.name} readOnly />
                   </div>
                   <div>
-                    <label htmlFor="s-org">Công ty</label>
+                    <label htmlFor="s-org">{t("community.settings.account.company")}</label>
                     <input id="s-org" className="field" value={viewer.orgName} readOnly />
                   </div>
                 </div>
@@ -96,17 +95,17 @@ export function SettingsPage() {
             )}
             {tab === "look" && (
               <>
-                <h2>Giao diện</h2>
-                <p className="lead">Chọn màu chủ đạo của ứng dụng.</p>
-                <span className="flabel">Màu chủ đạo</span>
-                <fieldset className="swatches" aria-label="Màu chủ đạo">
+                <h2>{t("community.settings.tabs.look")}</h2>
+                <p className="lead">{t("community.settings.look.lead")}</p>
+                <span className="flabel">{t("community.settings.look.accent")}</span>
+                <fieldset className="swatches" aria-label={t("community.settings.look.accent")}>
                   {COMMUNITY_ACCENTS.map((a) => (
                     <button
                       key={a}
                       type="button"
                       className={accent === a ? "swatch on" : "swatch"}
                       style={{ background: ACCENT_META[a].color }}
-                      aria-label={ACCENT_META[a].label}
+                      aria-label={ACCENT_META[a].label()}
                       aria-pressed={accent === a}
                       onClick={() => {
                         setAccent(a);
@@ -119,19 +118,19 @@ export function SettingsPage() {
             )}
             {tab === "notify" && (
               <>
-                <h2>Thông báo</h2>
-                <p className="lead">Chọn khi nào bạn muốn nhận thông báo (chỉ trong ứng dụng).</p>
+                <h2>{t("community.settings.tabs.notify")}</h2>
+                <p className="lead">{t("community.settings.notify.lead")}</p>
                 {kinds.map((k) => (
                   <div className="row" key={k}>
                     <div className="t">
-                      <b>{NOTIFY_TEXT[k][0]}</b>
-                      <span>{NOTIFY_TEXT[k][1]}</span>
+                      <b>{notifyKey(k, "title")}</b>
+                      <span>{notifyKey(k, "desc")}</span>
                     </div>
                     <button
                       type="button"
                       className="sw"
                       aria-pressed={s.notify[k]}
-                      aria-label={NOTIFY_TEXT[k][0]}
+                      aria-label={notifyKey(k, "title")}
                       onClick={() => save({ ...s, notify: { ...s.notify, [k]: !s.notify[k] } })}
                     />
                   </div>

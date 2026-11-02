@@ -3,12 +3,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { createApi } from "./api";
+import { initLang } from "./i18n";
 import { App } from "./ui/App";
 
 const el = document.getElementById("root");
-if (!el) throw new Error("Thiếu phần tử #root");
+if (!el) throw new Error("Thiếu phần tử #root"); // i18n-ignore: lỗi lập trình
 const root = createRoot(el);
-createApi().then((boot) =>
+Promise.all([createApi(), initLang()]).then(([boot]) =>
   root.render(
     <StrictMode>
       <App boot={boot} />

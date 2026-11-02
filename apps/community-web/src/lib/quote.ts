@@ -7,6 +7,7 @@ import type {
   QuoteMark,
   QuoteWarning,
 } from "@ai/contracts/community";
+import { numLocale, t } from "../i18n";
 
 export type QuoteDraft = {
   /** Sản phẩm: id có sẵn, hoặc "new" = tạo mới theo `newName`. */
@@ -24,13 +25,14 @@ export type QuoteDraft = {
   commentId?: string;
 };
 
+const THOUSANDS = ["k", "nghìn", "ngàn"]; // i18n-ignore: hậu tố tiền Việt
 /** "95.000đ" → 95000; "95k" → 95000; "1,2tr" → 1200000; không đọc được ⇒ null. */
 export function parseVnd(text: string | null | undefined): number | null {
   const s = (text ?? "").toLowerCase().replace(/\s/g, "");
-  const m = /^(\d+(?:[.,]\d+)*)(k|nghìn|ngàn|tr|triệu)?/u.exec(s);
+  const m = /^(\d+(?:[.,]\d+)*)(k|nghìn|ngàn|tr|triệu)?/u.exec(s); // i18n-ignore: đơn vị tiền VN
   if (!m) return null;
   const num = m[1] as string;
-  const mult = m[2] === "k" || m[2] === "nghìn" || m[2] === "ngàn" ? 1_000 : m[2] ? 1_000_000 : 1;
+  const mult = THOUSANDS.includes(m[2] ?? "") ? 1_000 : m[2] ? 1_000_000 : 1;
   if (mult === 1) {
     const n = Number(num.replace(/[.,]/g, ""));
     return n > 0 ? n : null;
@@ -79,11 +81,11 @@ export type QuoteErrors = Partial<Record<"product" | "price" | "date" | "expires
 
 export function quoteErrors(d: QuoteDraft): QuoteErrors {
   const e: QuoteErrors = {};
-  if (d.productId === "new" && d.newName.trim() === "") e.product = "Nhập tên sản phẩm mới";
+  if (d.productId === "new" && d.newName.trim() === "") e.product = t("community.quote.errProduct");
   const p = parseVnd(d.price);
-  if (p === null) e.price = "Nhập giá (đồng) lớn hơn 0";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.quotedAt)) e.date = "Chọn ngày báo giá";
-  if (d.expiresOn && d.expiresOn < d.quotedAt) e.expires = "Hạn phải sau ngày báo giá";
+  if (p === null) e.price = t("community.quote.errPrice");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.quotedAt)) e.date = t("community.quote.errDate");
+  if (d.expiresOn && d.expiresOn < d.quotedAt) e.expires = t("community.quote.errExpires");
   return e;
 }
 
@@ -113,45 +115,68 @@ export function toQuoteInput(d: QuoteDraft): QuoteInput {
   };
 }
 
-export const vnd = (n: number): string => `${n.toLocaleString("vi-VN")}đ`;
+/** Tiền VND: dấu chấm phân nghìn + hậu tố đ (cùng kiểu ở cả hai ngôn ngữ). */
+export const vnd = (n: number): string => `${n.toLocaleString("vi-VN")}đ`; // i18n-ignore
 
 /** So với giá đã ghi nhận: bằng / rẻ hơn / đắt hơn bao nhiêu, hoặc "giá đầu tiên". */
 export function compareText(c: QuoteCompare): string {
-  if (c.kind === "first") return "Giá đầu tiên của sản phẩm này trong Sản phẩm & Giá.";
+  if (c.kind === "first") return t("community.quote.first");
   const ref = `${vnd(c.refPrice)} (${c.refSupplier})`;
-  if (c.kind === "equal") return `Bằng giá thấp nhất đã ghi nhận: ${ref}.`;
+  if (c.kind === "equal") return t("community.quote.equal", { ref });
   const n = vnd(Math.abs(c.diff));
-  const pct = Math.abs(c.pct).toLocaleString("vi-VN");
-  return c.kind === "cheaper"
-    ? `Rẻ hơn ${n} (${pct}%) so với giá thấp nhất đã ghi nhận ${ref}.`
-    : `Đắt hơn ${n} (${pct}%) so với giá thấp nhất đã ghi nhận ${ref}.`;
+  const pct = Math.abs(c.pct).toLocaleString(numLocale());
+  return t(c.kind === "cheaper" ? "community.quote.cheaper" : "community.quote.pricier", {
+    n,
+    pct,
+    ref,
+  });
 }
 
 export function warningText(w: QuoteWarning): string {
   return w.code === "deviation"
-    ? `Lệch ${Math.abs(w.pct).toLocaleString("vi-VN")}% so với giá đang có (${vnd(w.refPrice)}) — kiểm tra lại đơn vị và số lượng.`
-    : `Khác cách tính VAT với giá đang có (${vnd(w.refPrice)}) — so sánh có thể không công bằng.`;
+    ? t("community.quote.warnDeviation", {
+        pct: Math.abs(w.pct).toLocaleString(numLocale()),
+        price: vnd(w.refPrice),
+      })
+    : t("community.quote.warnVat", { price: vnd(w.refPrice) });
 }
 
 /** "đã lưu bởi … lúc …" (R28/HT-63). */
 export function savedText(m: Pick<QuoteMark, "by" | "at" | "price" | "unit">): string {
-  const when = new Date(m.at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
-  return `${vnd(m.price)}${m.unit ? ` / ${m.unit}` : ""} · đã lưu bởi ${m.by} lúc ${when}`;
+  const when = new Date(m.at).toLocaleString(numLocale(), {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+  return t("community.quote.savedBy", {
+    price: vnd(m.price),
+    unit: m.unit ? ` / ${m.unit}` : "",
+    by: m.by,
+    when,
+  });
 }
 
 /** Nhãn nút theo số báo giá đã lưu của bài (R26). */
 export const saveButtonLabel = (savedCount: number): string =>
-  savedCount > 0 ? "Lưu thêm báo giá" : "Lưu báo giá";
+  savedCount > 0 ? t("community.quote.saveMore") : t("community.quote.save");
 
 /** Gợi ý dưới bài (HT-67) thành các dòng chữ ngắn; Cần mua + có hàng ⇒ "khớp hàng đang có". */
 export function hintLines(h: HostHint, type: PostView["type"]): { lead: string; text: string } {
   if (!h.match)
-    return { lead: "Gợi ý từ Sổ Hợp Tác:", text: "chưa có sản phẩm khớp trong danh mục." };
+    return { lead: t("community.quote.hintLead"), text: t("community.quote.hintNoMatch") };
   const parts: string[] = [];
-  if (h.onHand !== null) parts.push(`đang có ${h.onHand} ${h.match.unit ?? ""}`.trim());
-  if (h.avgCost !== null) parts.push(`giá vốn BQ ${vnd(h.avgCost)}`);
-  if (h.best) parts.push(`giá tốt nhất ${vnd(h.best.price)} (${h.best.supplier})`);
-  if (h.reputation) parts.push(`uy tín ${h.reputation.score ?? "mới"}`);
-  const lead = type === "buy" && h.inStock ? "Khớp hàng đang có:" : `${h.match.name}:`;
-  return { lead, text: parts.length ? parts.join(" · ") : "chưa có số liệu." };
+  if (h.onHand !== null)
+    parts.push(t("community.quote.hintOnHand", { n: h.onHand, unit: h.match.unit ?? "" }).trim());
+  if (h.avgCost !== null) parts.push(t("community.quote.hintAvgCost", { price: vnd(h.avgCost) }));
+  if (h.best)
+    parts.push(
+      t("community.quote.hintBest", { price: vnd(h.best.price), supplier: h.best.supplier }),
+    );
+  if (h.reputation)
+    parts.push(
+      t("community.quote.hintReputation", {
+        score: h.reputation.score ?? t("community.quote.hintNew"),
+      }),
+    );
+  const lead = type === "buy" && h.inStock ? t("community.quote.hintInStock") : `${h.match.name}:`;
+  return { lead, text: parts.length ? parts.join(" · ") : t("community.quote.hintNoData") };
 }

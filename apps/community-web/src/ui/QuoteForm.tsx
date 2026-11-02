@@ -1,8 +1,8 @@
 // CR-102b · C7b · form "Lưu báo giá vào Sản phẩm & Giá" (mockup `.cbox`): điền sẵn từ bài, SP khớp + "Tạo sản phẩm mới", so giá với
 // giá đã ghi nhận, cảnh báo lệch > 30% / khác VAT, thông báo thay giá. Chỉ chủ quản thấy (nút chỉ có khi server trả `saveQuote`).
 import type { HostHint, PostView, QuotePreview } from "@ai/contracts/community";
-import { QUOTE_KIND_LABEL } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { numLocale, t } from "../i18n";
 import {
   compareText,
   hasErrors,
@@ -66,8 +66,8 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
       const r = await api.saveQuote(post.id, toQuoteInput(d));
       toast(
         r.replaces > 0
-          ? `Đã lưu báo giá — thay ${r.replaces} giá cũ (vào lịch sử)`
-          : "Đã lưu báo giá",
+          ? t("community.quote.savedReplacedToast", { n: r.replaces })
+          : t("community.quote.savedToast"),
       );
       onSaved(more);
     } finally {
@@ -80,18 +80,20 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
   return (
     <div className="cbox" style={{ margin: "12px 16px 0" }} data-testid="quote-form">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <b style={{ flex: 1 }}>Lưu báo giá vào Sản phẩm &amp; Giá</b>
-        <span className="tag ind sm">Nguồn: Báo giá</span>
+        <b style={{ flex: 1 }}>{t("community.quote.title")}</b>
+        <span className="tag ind sm">{t("community.quote.source")}</span>
       </div>
       {pv?.existing && (
         <div className="impact" role="status">
-          Đã lưu bởi {pv.existing.by} lúc {new Date(pv.existing.at).toLocaleString("vi-VN")} — lưu
-          lần này sẽ ghi đè.
+          {t("community.quote.existing", {
+            by: pv.existing.by,
+            at: new Date(pv.existing.at).toLocaleString(numLocale()),
+          })}
         </div>
       )}
       <div className="form">
         <div>
-          <label htmlFor="q-prod">Sản phẩm trong danh mục</label>
+          <label htmlFor="q-prod">{t("community.quote.product")}</label>
           <select
             id="q-prod"
             className="field"
@@ -99,25 +101,25 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
             onChange={(e) => set({ productId: e.target.value })}
           >
             {m && <option value={m.productId}>{m.name}</option>}
-            <option value="new">＋ Tạo sản phẩm mới</option>
+            <option value="new">{t("community.quote.createNew")}</option>
           </select>
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
             <input
               className="field"
-              aria-label="Tìm sản phẩm"
-              placeholder="Tìm sản phẩm khác…"
+              aria-label={t("community.quote.findLabel")}
+              placeholder={t("community.quote.findPlaceholder")}
               value={find}
               onChange={(e) => setFind(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
             />
             <button type="button" className="ghost" onClick={search}>
-              Tìm
+              {t("community.quote.find")}
             </button>
           </div>
         </div>
         {d.productId === "new" && (
           <div>
-            <label htmlFor="q-new">Tên sản phẩm mới</label>
+            <label htmlFor="q-new">{t("community.quote.newName")}</label>
             <input
               id="q-new"
               className="field"
@@ -128,11 +130,13 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           </div>
         )}
         <div>
-          <label htmlFor="q-sup">Nhà cung cấp</label>
+          <label htmlFor="q-sup">{t("community.quote.supplier")}</label>
           <input id="q-sup" className="field" value={d.supplier} readOnly />
         </div>
         <div>
-          <label htmlFor="q-price">Giá (đ / {d.unit || "đơn vị"})</label>
+          <label htmlFor="q-price">
+            {t("community.quote.price", { unit: d.unit || t("community.quote.unitFallback") })}
+          </label>
           <input
             id="q-price"
             className="field"
@@ -143,7 +147,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           {errors.price && <div className="err">{errors.price}</div>}
         </div>
         <div>
-          <label htmlFor="q-unit">Đơn vị</label>
+          <label htmlFor="q-unit">{t("community.quote.unit")}</label>
           <input
             id="q-unit"
             className="field"
@@ -159,12 +163,12 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
             value={d.vatIncluded ? "in" : "out"}
             onChange={(e) => set({ vatIncluded: e.target.value === "in" })}
           >
-            <option value="in">Giá đã gồm VAT</option>
-            <option value="out">Giá chưa gồm VAT</option>
+            <option value="in">{t("community.quote.vatIn")}</option>
+            <option value="out">{t("community.quote.vatOut")}</option>
           </select>
         </div>
         <div>
-          <label htmlFor="q-kind">Loại</label>
+          <label htmlFor="q-kind">{t("community.quote.kind")}</label>
           <select
             id="q-kind"
             className="field"
@@ -173,13 +177,13 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           >
             {(["new", "renew"] as const).map((k) => (
               <option key={k} value={k}>
-                {QUOTE_KIND_LABEL[k]}
+                {t(k === "new" ? "community.quote.kindNew" : "community.quote.kindRenew")}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="q-date">Ngày báo giá</label>
+          <label htmlFor="q-date">{t("community.quote.date")}</label>
           <input
             id="q-date"
             type="date"
@@ -189,7 +193,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           />
         </div>
         <div>
-          <label htmlFor="q-exp">Hạn báo giá (không bắt buộc)</label>
+          <label htmlFor="q-exp">{t("community.quote.expires")}</label>
           <input
             id="q-exp"
             type="date"
@@ -206,7 +210,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           checked={d.notify}
           onChange={(e) => set({ notify: e.target.checked })}
         />
-        Báo tôi khi nhà cung cấp sửa giá bài này
+        {t("community.quote.notify")}
       </label>
       {pv && <div className="impact">{compareText(pv.compare)}</div>}
       {pv?.warnings.map((w) => (
@@ -215,14 +219,11 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         </div>
       ))}
       {pv && pv.replaces > 0 && (
-        <div className="impact">
-          Giá Báo giá cũ của nhà cung cấp này ({pv.replaces}) sẽ chuyển sang &quot;Đã thay&quot; và
-          vào lịch sử.
-        </div>
+        <div className="impact">{t("community.quote.replaces", { n: pv.replaces })}</div>
       )}
       <div className="xf">
         <button type="button" className="ghost" onClick={onClose}>
-          Huỷ
+          {t("community.common.cancel")}
         </button>
         <button
           type="button"
@@ -230,7 +231,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           disabled={!ready || busy}
           onClick={() => save(true)}
         >
-          Lưu và thêm báo giá khác
+          {t("community.quote.saveAndMore")}
         </button>
         <button
           type="button"
@@ -238,7 +239,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
           disabled={!ready || busy}
           onClick={() => save(false)}
         >
-          Lưu báo giá
+          {t("community.quote.save")}
         </button>
       </div>
     </div>

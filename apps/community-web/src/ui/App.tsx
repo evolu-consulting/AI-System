@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { type Api, apiMode } from "../api";
 import { logout } from "../api/auth";
 import { redeemFromLocation, session } from "../api/session";
+import { pickLocale, readStoredLang, setLang, t } from "../i18n";
 import { ChatDock } from "./ChatDock";
 import { AppProvider, useApp } from "./ctx";
 import { FeedPage } from "./Feed";
@@ -46,11 +48,16 @@ function SsoNote() {
   if (!me || !open) return null;
   return (
     <p className="ssonote" role="status">
-      Đang đăng nhập: <b>{me.display_name}</b> ({me.username}) ·{" "}
+      {t("community.sso.signedInAs")} <b>{me.display_name}</b> ({me.username}) ·{" "}
       <button type="button" className="linkbtn" onClick={() => void logout()}>
-        Không phải bạn? Đăng xuất
+        {t("community.sso.notYou")}
       </button>{" "}
-      <button type="button" className="linkbtn" onClick={() => setOpen(false)} aria-label="Đóng">
+      <button
+        type="button"
+        className="linkbtn"
+        onClick={() => setOpen(false)}
+        aria-label={t("community.sso.close")}
+      >
         ×
       </button>
     </p>
@@ -64,6 +71,11 @@ function AuthGate({ children }: { children: ReactNode }) {
     boot0().then(setStatus, () => setStatus("anon"));
     return session.subscribe(() => setStatus(session.getState().status));
   }, []);
+  // Chưa chọn ngôn ngữ nào: theo tuỳ chọn người dùng từ `/me` (nếu có), không thì vi.
+  const meLocale = status === "authed" ? session.getState().me?.locale : undefined;
+  useEffect(() => {
+    if (readStoredLang() === null && meLocale) void setLang(pickLocale({ me: meLocale }), false);
+  }, [meLocale]);
   if (status === "authed")
     return (
       <>
@@ -75,10 +87,12 @@ function AuthGate({ children }: { children: ReactNode }) {
   return <LoginPage />;
 }
 export function App({ boot }: { boot: Api }) {
+  // Đổi ngôn ngữ ⇒ dựng lại cây để mọi chuỗi (đọc qua `t`) cập nhật.
+  const { i18n } = useTranslation();
   const app = (
     <AppProvider boot={boot}>
       <Shell />
     </AppProvider>
   );
-  return apiMode === "http" ? <AuthGate>{app}</AuthGate> : app;
+  return <div key={i18n.language}>{apiMode === "http" ? <AuthGate>{app}</AuthGate> : app}</div>;
 }

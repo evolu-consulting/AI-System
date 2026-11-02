@@ -1,18 +1,19 @@
 // Định dạng hiển thị (logic thuần).
 import type { PostView } from "@ai/contracts/community";
+import { t } from "../i18n";
 
 export function timeAgo(iso: string, now: number = Date.now()): string {
   const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000));
-  if (min < 1) return "Vừa xong";
-  if (min < 60) return `${min} phút`;
+  if (min < 1) return t("community.time.now");
+  if (min < 60) return t("community.time.minutes", { n: min });
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} giờ`;
-  return `${Math.round(h / 24)} ngày`;
+  if (h < 24) return t("community.time.hours", { n: h });
+  return t("community.time.days", { n: Math.round(h / 24) });
 }
 
 export function initials(name: string): string {
   const words = name
-    .replace(/^(Công ty|Cơ sở|Hãng|TNHH|CP)\s+/giu, "")
+    .replace(/^(Công ty|Cơ sở|Hãng|TNHH|CP)\s+/giu, "") // i18n-ignore
     .trim()
     .split(/\s+/);
   const letters =
@@ -33,14 +34,10 @@ export function tone(id: string, host: boolean): string {
   return `t${h + 2}`;
 }
 
-const FACT_LABEL: Record<string, string> = {
-  product: "Hàng hoá",
-  qty: "Số lượng",
-  price: "Giá",
-  area: "Khu vực",
-  neededBy: "Cần trước",
-  budget: "Ngân sách",
-};
+const factLabel = (key: string): string =>
+  ["product", "qty", "price", "area", "neededBy", "budget"].includes(key)
+    ? t(`community.fact.${key}`)
+    : key;
 
 /** Dòng "fact" dưới tiêu đề bài, theo thứ tự cố định; bỏ trường rỗng. Cần bán không giá ⇒ "Liên hệ". */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: bảng thứ tự trường theo loại bài
@@ -54,16 +51,16 @@ export function factRows(p: Pick<PostView, "type" | "fields">): { k: string; v: 
     if (p.type === "note") break;
     const raw = p.fields[key];
     if (key === "price" && (raw === null || raw === undefined || raw === "")) {
-      rows.push({ k: FACT_LABEL.price ?? key, v: "Liên hệ" });
+      rows.push({ k: factLabel("price"), v: t("community.fact.contact") });
       continue;
     }
     if (key === "budget" && !raw) {
-      rows.push({ k: FACT_LABEL.budget ?? key, v: "Liên hệ" });
+      rows.push({ k: factLabel("budget"), v: t("community.fact.contact") });
       continue;
     }
     if (raw) {
       const v = key === "neededBy" ? raw.split("-").reverse().join("/") : raw;
-      rows.push({ k: FACT_LABEL[key] ?? key, v });
+      rows.push({ k: factLabel(key), v });
     }
   }
   return rows;
@@ -83,17 +80,18 @@ export function dealStrip(p: Pick<PostView, "type" | "fields"> & { title?: strin
   const f = p.fields;
   const heroRaw = p.type === "sell" ? f.price : f.budget;
   const hero = {
-    k: p.type === "sell" ? "Giá chào" : "Ngân sách",
-    v: heroRaw?.trim() ? heroRaw : "Liên hệ",
+    k: p.type === "sell" ? t("community.fact.askPrice") : t("community.fact.budget"),
+    v: heroRaw?.trim() ? heroRaw : t("community.fact.contact"),
   };
   const cells: { k: string; v: string }[] = [];
   const add = (k: string, v: string | null | undefined) => {
     if (v?.trim()) cells.push({ k, v });
   };
-  if (!p.title) add("Hàng hoá", f.product);
-  add(p.type === "sell" ? "Số lượng" : "Cần", f.qty);
-  add(p.type === "sell" ? "Khu vực" : "Giao tại", f.area);
-  if (p.type === "buy") add("Cần trước", f.neededBy?.split("-").reverse().join("/"));
+  if (!p.title) add(t("community.fact.product"), f.product);
+  add(p.type === "sell" ? t("community.fact.qty") : t("community.fact.need"), f.qty);
+  add(p.type === "sell" ? t("community.fact.area") : t("community.fact.deliverTo"), f.area);
+  if (p.type === "buy")
+    add(t("community.fact.neededBy"), f.neededBy?.split("-").reverse().join("/"));
   return { hero, cells };
 }
 
@@ -101,5 +99,5 @@ export function dealStrip(p: Pick<PostView, "type" | "fields"> & { title?: strin
 export function expiryNote(expiresAt: string | undefined, now: number = Date.now()): string | null {
   if (!expiresAt) return null;
   const days = Math.ceil((new Date(expiresAt).getTime() - now) / 86_400_000);
-  return days >= 0 && days <= 3 ? `Hết hạn sau ${days} ngày` : null;
+  return days >= 0 && days <= 3 ? t("community.time.expiresIn", { n: days }) : null;
 }

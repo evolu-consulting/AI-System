@@ -7,6 +7,7 @@ import type {
   Thread as ThreadT,
 } from "@ai/contracts/community";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { t } from "../i18n";
 import { initials } from "../lib/format";
 import { commentActions, startablePartners } from "../lib/thread";
 import { CommentItem } from "./CommentItem";
@@ -60,9 +61,7 @@ export function Thread({
     await load(active);
     onChanged();
   };
-  const note = isHostViewer
-    ? "Mỗi đối tác một luồng riêng: đối tác chỉ thấy trao đổi của chính họ với bạn."
-    : "Chỉ chủ quản thấy trao đổi này.";
+  const note = isHostViewer ? t("community.thread.noteHost") : t("community.thread.notePartner");
   const canWrite = !isHostViewer || Boolean(active);
   const startable = isHostViewer ? startablePartners(post, partners, tabs) : [];
   const pending = isHostViewer && active !== "" && !tabs.some((t) => t.orgId === active);
@@ -75,33 +74,34 @@ export function Thread({
         {note}
       </div>
       {isHostViewer && (tabs.length > 0 || pending) && (
-        <div className="threadtabs" role="tablist" aria-label="Luồng theo công ty">
-          {tabs.map((t) => (
+        <div className="threadtabs" role="tablist" aria-label={t("community.thread.tabsLabel")}>
+          {tabs.map((tab) => (
             <button
-              key={t.orgId}
+              key={tab.orgId}
               type="button"
               role="tab"
-              aria-selected={t.orgId === active}
-              className={t.orgId === active ? "chip on" : "chip"}
-              onClick={() => load(t.orgId)}
+              aria-selected={tab.orgId === active}
+              className={tab.orgId === active ? "chip on" : "chip"}
+              onClick={() => load(tab.orgId)}
             >
-              {t.orgName} <span className="n">{t.count}</span>
+              {tab.orgName} <span className="n">{tab.count}</span>
             </button>
           ))}
           {pending && (
             <button type="button" role="tab" aria-selected className="chip on">
-              {partners.find((p) => p.id === active)?.name} <span className="n">mới</span>
+              {partners.find((p) => p.id === active)?.name}{" "}
+              <span className="n">{t("community.thread.new")}</span>
             </button>
           )}
         </div>
       )}
       {isHostViewer && tabs.length === 0 && !pending && (
-        <div className="cnote">Chưa có luồng nào. Khi đối tác bình luận, luồng hiện ở đây.</div>
+        <div className="cnote">{t("community.thread.empty")}</div>
       )}
       {startable.length > 0 && (
         <select
           className="chip"
-          aria-label="Nhắn riêng"
+          aria-label={t("community.thread.startPrivate")}
           value=""
           onChange={(e) => {
             if (!e.target.value) return;
@@ -109,7 +109,7 @@ export function Thread({
             setThread(null);
           }}
         >
-          <option value="">Nhắn riêng…</option>
+          <option value="">{t("community.thread.startPrivateOption")}</option>
           {startable.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -132,13 +132,18 @@ export function Thread({
         <div className="cinput">
           <span className="av sm t1">{initials(viewer.orgName)}</span>
           <input
-            aria-label="Viết bình luận"
-            placeholder="Viết bình luận…"
+            aria-label={t("community.thread.writeComment")}
+            placeholder={t("community.thread.writeCommentPlaceholder")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
           />
-          <button type="button" className="sendbtn" onClick={send} aria-label="Gửi bình luận">
+          <button
+            type="button"
+            className="sendbtn"
+            onClick={send}
+            aria-label={t("community.thread.send")}
+          >
             <IconSend size={16} />
           </button>
         </div>

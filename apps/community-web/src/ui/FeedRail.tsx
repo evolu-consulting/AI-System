@@ -1,6 +1,7 @@
 // Cột phải bảng tin (role-aware, Phase A — chỉ dữ liệu sẵn có): bộ lọc, Đối tác trong chợ (chủ quản) / Công ty của bạn + Mẹo đăng bài (đối tác).
 import type { PartnerOrg } from "@ai/contracts/community";
 import type { ReactNode } from "react";
+import { t } from "../i18n";
 import { initials, tone } from "../lib/format";
 import { hashOf, useApp } from "./ctx";
 import { IconExternal, IconFilter, IconUsers } from "./icons";
@@ -21,7 +22,7 @@ function OrgRow({ p }: { p: PartnerOrg }) {
         <b>{p.name}</b>
         {meta(p) && <span>{meta(p)}</span>}
       </span>
-      {p.left && <span className="tag grey sm">đã rời</span>}
+      {p.left && <span className="tag grey sm">{t("community.feed.rail.left")}</span>}
       <span className="rext" aria-hidden="true">
         <IconExternal size={14} />
       </span>
@@ -29,21 +30,17 @@ function OrgRow({ p }: { p: PartnerOrg }) {
   );
 }
 
-const TIPS = [
-  "Ghi rõ giá hoặc ngân sách để đối tác phản hồi nhanh hơn.",
-  "Thêm số lượng và khu vực giao nhận ngay trong bài.",
-  "Đính kèm ảnh thật của hàng để tăng độ tin cậy.",
-];
+const TIPS = ["tip1", "tip2", "tip3"] as const;
 
 export function FeedRail({ filters, partners }: { filters: ReactNode; partners: PartnerOrg[] }) {
   const { isHostViewer } = useApp();
   return (
-    <aside className="rail" aria-label="Cột phụ bảng tin">
+    <aside className="rail" aria-label={t("community.feed.rail.aria")}>
       {filters && (
         <section className="rcard">
           <h2>
             <IconFilter size={15} />
-            Bộ lọc
+            {t("community.feed.rail.filters")}
           </h2>
           {filters}
         </section>
@@ -52,7 +49,7 @@ export function FeedRail({ filters, partners }: { filters: ReactNode; partners: 
         <section className="rcard" data-testid="rail-partners">
           <h2>
             <IconUsers size={15} />
-            Đối tác
+            {t("community.feed.rail.partners")}
           </h2>
           <div className="rlist">
             {partners.map((p) => (
@@ -67,7 +64,7 @@ export function FeedRail({ filters, partners }: { filters: ReactNode; partners: 
             <section className="rcard" data-testid="rail-mine">
               <h2>
                 <IconUsers size={15} />
-                Công ty của bạn
+                {t("community.feed.rail.yourCompany")}
               </h2>
               <div className="rlist">
                 {partners.map((p) => (
@@ -77,10 +74,10 @@ export function FeedRail({ filters, partners }: { filters: ReactNode; partners: 
             </section>
           )}
           <section className="rcard">
-            <h2>Mẹo đăng bài</h2>
+            <h2>{t("community.feed.rail.tipsTitle")}</h2>
             <ul className="rtips">
-              {TIPS.map((t) => (
-                <li key={t}>{t}</li>
+              {TIPS.map((k) => (
+                <li key={k}>{t(`community.feed.rail.${k}`)}</li>
               ))}
             </ul>
           </section>

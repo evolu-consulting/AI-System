@@ -1,6 +1,7 @@
 // Hồ sơ (mockup profile): thanh bên "Sổ Hợp Tác" (chủ quản, mở sang contracts-web) + "Community", trang công ty + bài của họ.
 import type { PartnerOrg, Profile as ProfileT } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 import { initials } from "../lib/format";
 import { Composer } from "./Composer";
 import { useApp } from "./ctx";
@@ -24,7 +25,13 @@ export function ProfilePage() {
   const sub = p.org.isHost
     ? p.org.blurb
     : [
-        p.org.labels.map((l) => (l === "supplier" ? "Nhà cung cấp" : "Người mua")).join(" · "),
+        p.org.labels
+          .map((l) =>
+            l === "supplier"
+              ? t("community.profile.labelSupplier")
+              : t("community.profile.labelBuyer"),
+          )
+          .join(" · "),
         p.org.area,
       ]
         .filter(Boolean)
@@ -32,20 +39,24 @@ export function ProfilePage() {
 
   return (
     <div className="ws">
-      <nav className="wsside" aria-label="Hồ sơ và Sổ Hợp Tác">
+      <nav className="wsside" aria-label={t("community.profile.navLabel")}>
         <div className="mini">
           <span className="av lg t1">{initials(viewer.orgName)}</span>
           <div>
             <b>{viewer.orgName}</b>
             <span>
               {viewer.name} ·{" "}
-              {isHostViewer ? (viewer.role === "host_admin" ? "Admin" : "Thành viên") : "Đối tác"}
+              {isHostViewer
+                ? viewer.role === "host_admin"
+                  ? t("community.profile.roleAdmin")
+                  : t("community.profile.roleMember")
+                : t("community.profile.rolePartner")}
             </span>
           </div>
         </div>
         {isHostViewer && (
           <div className="sidegroup">
-            <div className="sidecap">Sổ Hợp Tác</div>
+            <div className="sidecap">{t("community.profile.shtGroup")}</div>
             <a
               className="sidelink"
               href={p.shtUrl ?? "/contracts"}
@@ -53,24 +64,24 @@ export function ProfilePage() {
               style={{ textDecoration: "none" }}
             >
               <IconBook />
-              Mở Sổ Hợp Tác
+              {t("community.profile.openSht")}
             </a>
           </div>
         )}
         <div className="sidegroup">
-          <div className="sidecap">Community</div>
+          <div className="sidecap">{t("community.profile.communityGroup")}</div>
           <button
             type="button"
             className={own ? "sidelink on" : "sidelink"}
             onClick={() => go({ name: "profile" })}
           >
             <IconEdit />
-            Bài đăng của tôi
+            {t("community.profile.myPosts")}
           </button>
         </div>
         {isHostViewer && partners.length > 0 && (
           <div className="sidegroup">
-            <div className="sidecap">Đối tác</div>
+            <div className="sidecap">{t("community.profile.partnersGroup")}</div>
             {partners.map((o) => (
               <button
                 key={o.id}
@@ -86,7 +97,7 @@ export function ProfilePage() {
         <div className="sidegroup bottom">
           <button type="button" className="sidelink" onClick={() => go({ name: "settings" })}>
             <IconGear />
-            Cài đặt
+            {t("community.profile.settings")}
           </button>
         </div>
       </nav>
@@ -100,25 +111,25 @@ export function ProfilePage() {
                 <h1>{p.org.name}</h1>
                 <div className="sub">{sub}</div>
               </div>
-              {p.org.left && <span className="tag grey">đối tác đã rời</span>}
+              {p.org.left && <span className="tag grey">{t("community.profile.partnerLeft")}</span>}
             </div>
             <div className="hstats">
               <div className="hstat">
                 <b>{p.stats.active}</b>
-                <span>Bài đang đăng</span>
+                <span>{t("community.profile.statActive")}</span>
               </div>
               <div className="hstat">
                 <b>{p.stats.archived}</b>
-                <span>Đã lưu trữ</span>
+                <span>{t("community.profile.statArchived")}</span>
               </div>
               <div className="hstat">
                 <b>{p.stats.comments}</b>
-                <span>Bình luận nhận được</span>
+                <span>{t("community.profile.statComments")}</span>
               </div>
               {p.stats.friends !== undefined && (
                 <div className="hstat">
                   <b>{p.stats.friends}</b>
-                  <span>Bạn bè</span>
+                  <span>{t("community.profile.statFriends")}</span>
                 </div>
               )}
             </div>

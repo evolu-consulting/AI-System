@@ -6,6 +6,7 @@ import {
   type PostAudience,
   type PostType,
 } from "@ai/contracts/community";
+import { t } from "../i18n";
 
 export type Draft = {
   type: PostType;
@@ -40,14 +41,14 @@ export function draftErrors(d: Draft): Record<string, string> {
   const need = (k: string, v: string, msg: string) => {
     if (!v.trim()) e[k] = msg;
   };
-  if (d.type === "note") need("body", d.body, "Nhập nội dung thông báo");
+  if (d.type === "note") need("body", d.body, t("community.draft.errNote"));
   else {
-    need("product", d.product, "Nhập hàng hoá");
-    need("qty", d.qty, "Nhập số lượng");
+    need("product", d.product, t("community.draft.errProduct"));
+    need("qty", d.qty, t("community.draft.errQty"));
   }
   if (d.type === "buy") {
-    need("area", d.area, "Nhập khu vực");
-    need("neededBy", d.neededBy, "Chọn ngày cần");
+    need("area", d.area, t("community.draft.errArea"));
+    need("neededBy", d.neededBy, t("community.draft.errNeededBy"));
   }
   return e;
 }

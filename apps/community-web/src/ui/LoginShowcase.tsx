@@ -1,5 +1,7 @@
 // Cột phải màn Đăng nhập: showcase thương hiệu (hằng định, không đổi theo bước auth). Chữ lấy từ bảng dịch.
-import type { LoginText } from "./login-i18n";
+import { t } from "../i18n";
+
+const tx = (k: string): string => t(`community.login.showcase.${k}`);
 
 const ic = {
   width: 18,
@@ -116,61 +118,61 @@ function Post(p: {
   );
 }
 
-function FeedWindow({ t }: { t: LoginText }) {
+function FeedWindow() {
   return (
     <div className="lg-win">
       <div className="lg-wbar">
         <span className="lg-dot" />
         <span className="lg-dot" />
         <span className="lg-dot" />
-        <span className="lg-wt">{t.winTitle}</span>
+        <span className="lg-wt">{tx("winTitle")}</span>
       </div>
       <div className="lg-wbody">
         <article className="lg-post sell">
-          <Post kind="sell" ini="TP" who="HTX Tiền Phong" when={t.p1When} pill={t.p1Pill} />
-          <div className="lg-ptitle">{t.p1Title}</div>
+          <Post kind="sell" ini="TP" who={tx("p1Who")} when={tx("p1When")} pill={tx("p1Pill")} />
+          <div className="lg-ptitle">{tx("p1Title")}</div>
           <Deal
             kind="sell"
-            head={[t.p1Ask, "42.000₫"]}
+            head={[tx("p1Ask"), "42.000₫"]}
             cells={[
-              [t.p1Qty, t.p1QtyV],
-              [t.p1Area, "Tiền Giang"],
+              [tx("p1Qty"), tx("p1QtyV")],
+              [tx("p1Area"), tx("p1AreaV")],
             ]}
           />
         </article>
         <article className="lg-post buy">
-          <Post kind="buy" ini="MN" who="Công ty Minh Nhật" when={t.p2When} pill={t.p2Pill} />
-          <div className="lg-ptitle">{t.p2Title}</div>
+          <Post kind="buy" ini="MN" who={tx("p2Who")} when={tx("p2When")} pill={tx("p2Pill")} />
+          <div className="lg-ptitle">{tx("p2Title")}</div>
           <Deal
             kind="buy"
-            head={[t.p2Budget, "~28.000₫"]}
+            head={[tx("p2Budget"), "~28.000₫"]}
             cells={[
-              [t.p2Need, t.p2NeedV],
-              [t.p2To, "Bình Dương"],
+              [tx("p2Need"), tx("p2NeedV")],
+              [tx("p2To"), tx("p2ToV")],
             ]}
           />
         </article>
         <article className="lg-post note">
-          <Post kind="note" ini="CQ" who={t.p3Name} when={t.p3When} pill={t.p3Pill} />
-          <div className="lg-ptitle last">{t.p3Title}</div>
+          <Post kind="note" ini="CQ" who={tx("p3Name")} when={tx("p3When")} pill={tx("p3Pill")} />
+          <div className="lg-ptitle last">{tx("p3Title")}</div>
         </article>
       </div>
     </div>
   );
 }
 
-export function LoginShowcase({ t }: { t: LoginText }) {
+export function LoginShowcase() {
   return (
     <section className="lg-show" aria-hidden="true">
       <div className="lg-shead">
         <div>
-          <h2>{t.showTitle}</h2>
-          <p>{t.showDesc}</p>
+          <h2>{tx("title")}</h2>
+          <p>{tx("desc")}</p>
         </div>
         <Robot />
       </div>
       <div className="lg-chips">
-        {[t.chip1, t.chip2, t.chip3].map((c) => (
+        {[tx("chip1"), tx("chip2"), tx("chip3")].map((c) => (
           <span className="lg-chip" key={c}>
             {c}
           </span>
@@ -179,38 +181,38 @@ export function LoginShowcase({ t }: { t: LoginText }) {
       <div className="lg-stats">
         <div>
           <b>120+</b>
-          <span>{t.stat1}</span>
+          <span>{tx("stat1")}</span>
         </div>
         <div>
-          <b>{t.stat2Num}</b>
-          <span>{t.stat2}</span>
+          <b>{tx("stat2Num")}</b>
+          <span>{tx("stat2")}</span>
         </div>
         <div>
           <b>8</b>
-          <span>{t.stat3}</span>
+          <span>{tx("stat3")}</span>
         </div>
       </div>
       <div className="lg-sbody">
         <div className="lg-feats">
-          <Feature icon="M12 5v14M5 12h14" title={t.f1} desc={t.f1d} />
+          <Feature icon="M12 5v14M5 12h14" title={tx("f1")} desc={tx("f1d")} />
           <Feature
             icon="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"
-            title={t.f2}
-            desc={t.f2d}
+            title={tx("f2")}
+            desc={tx("f2d")}
           />
           <Feature
             icon="M9 12h6M10 8l-3 0a4 4 0 100 8h3M14 8h3a4 4 0 110 8h-3"
-            title={t.f3}
-            desc={t.f3d}
+            title={tx("f3")}
+            desc={tx("f3d")}
           />
           <div className="lg-quote">
-            <p>{t.quote}</p>
+            <p>{tx("quote")}</p>
             <div className="lg-by">
-              <i>TP</i> HTX Tiền Phong · Tiền Giang
+              <i>TP</i> {tx("p1Who")} · {tx("p1AreaV")}
             </div>
           </div>
         </div>
-        <FeedWindow t={t} />
+        <FeedWindow />
       </div>
     </section>
   );

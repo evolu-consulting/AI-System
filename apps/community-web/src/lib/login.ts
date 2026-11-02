@@ -5,13 +5,14 @@ import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
 import type { LoginResponse } from "@ai/contracts/chat";
 import { retryMinutes } from "@ai/web-kit/auth-limit";
 import { ApiError } from "@ai/web-kit/http";
+import { t } from "../i18n";
 
 export type LoginStep =
   | { kind: "done" }
   | { kind: "change"; token: string }
   | { kind: "totp"; token: string };
 export type AuthStage = "login" | "change" | "totp";
-const WRONG = "Mã công ty, tên đăng nhập hoặc mật khẩu không đúng.";
+const wrong = (): string => t("community.login.wrong");
 
 /** Mã công ty / tên đăng nhập gửi lên: trim + chữ thường (khớp `LoginIdSchema`). */
 export const normalizeLoginId = (v: string): string => v.trim().toLowerCase();
@@ -24,40 +25,38 @@ export function stepOf(res: LoginResponse): LoginStep {
 
 function limitMessage(err: ApiError): string | null {
   if (err.code === "RATE_LIMITED")
-    return `Thử quá nhiều lần. Vui lòng thử lại sau ${retryMinutes(err.details, err.retryAfter)} phút.`;
-  if (err.code === "AUTH_UNAVAILABLE")
-    return "Đăng nhập tạm thời không khả dụng. Vui lòng thử lại sau.";
+    return t("community.login.rateLimited", { n: retryMinutes(err.details, err.retryAfter) });
+  if (err.code === "AUTH_UNAVAILABLE") return t("community.login.unavailable");
   return null;
 }
 
 /** Lỗi ở từng bước → câu báo. Sai thông tin luôn là một câu chung (không lộ tài khoản có tồn tại hay không). */
 export function loginError(err: unknown, stage: AuthStage = "login"): string {
-  if (!(err instanceof ApiError)) return "Có lỗi xảy ra. Vui lòng thử lại.";
+  if (!(err instanceof ApiError)) return t("community.login.generic");
   const limited = limitMessage(err);
   if (limited) return limited;
   const code: string = err.code;
   // Review (thấp): TEMP_LOCKED được trả TRƯỚC khi kiểm mật khẩu và chỉ cho tên đăng nhập có thật ⇒ ở bước đăng nhập hiện như sai
   // thông tin (không lộ tài khoản tồn tại). ACCOUNT_LOCKED chỉ sau mật khẩu đúng ⇒ báo rõ được.
-  if (code === "TEMP_LOCKED" && stage === "login") return WRONG;
-  if (code === "ACCOUNT_LOCKED" || code === "TEMP_LOCKED")
-    return "Tài khoản đã bị khoá. Liên hệ quản trị viên của bên chủ quản.";
-  if (code === "NETWORK_ERROR") return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
+  if (code === "TEMP_LOCKED" && stage === "login") return wrong();
+  if (code === "ACCOUNT_LOCKED" || code === "TEMP_LOCKED") return t("community.login.locked");
+  if (code === "NETWORK_ERROR") return t("community.login.network");
   if (code === "INVALID_CHANGE_TOKEN" || code === "INVALID_TOTP_TOKEN")
-    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  if (err.status >= 500 || err.status === 0) return "Có lỗi xảy ra. Vui lòng thử lại.";
+    return t("community.login.expired");
+  if (err.status >= 500 || err.status === 0) return t("community.login.generic");
   if (stage === "change")
     return code === "PASSWORD_UNCHANGED"
-      ? "Mật khẩu mới phải khác mật khẩu tạm."
-      : `Mật khẩu mới chưa đạt yêu cầu (${PASSWORD_MIN_LEN}–${PASSWORD_MAX_LEN} ký tự).`;
-  if (stage === "totp") return "Mã xác thực không đúng.";
-  return WRONG;
+      ? t("community.login.passwordUnchanged")
+      : t("community.login.passwordWeak", { min: PASSWORD_MIN_LEN, max: PASSWORD_MAX_LEN });
+  if (stage === "totp") return t("community.login.totpWrong");
+  return wrong();
 }
 
 /** Kiểm tra form đổi mật khẩu bắt buộc ở trình duyệt (server kiểm lại). null = hợp lệ. */
 export function newPasswordError(next: string, confirm: string): string | null {
   if (next.length < PASSWORD_MIN_LEN || next.length > PASSWORD_MAX_LEN)
-    return `Mật khẩu mới cần ${PASSWORD_MIN_LEN}–${PASSWORD_MAX_LEN} ký tự.`;
-  if (next !== confirm) return "Hai mật khẩu không khớp.";
+    return t("community.login.passwordLen", { min: PASSWORD_MIN_LEN, max: PASSWORD_MAX_LEN });
+  if (next !== confirm) return t("community.login.passwordMismatch");
   return null;
 }
 

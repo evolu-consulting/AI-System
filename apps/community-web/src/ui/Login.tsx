@@ -1,9 +1,11 @@
 // com-fix-community-login · màn Đăng nhập riêng của community-web (bố cục 2 cột: form trái + showcase phải; VI/EN tự chứa trong login-i18n). Ba bước:
 // Mã công ty + Tên đăng nhập + Mật khẩu ⇒ (đối tác lần đầu) Đặt mật khẩu mới ⇒ (nếu bật 2FA) Mã xác thực. Nội bộ đã có phiên
 // AI System có thể dùng link SSO. Xong bước nào trả phiên ⇒ `session` đổi sang `authed`, AuthGate tự vẽ app.
+import type { Locale } from "@ai/i18n/locales";
 import { type FormEvent, useState } from "react";
 import { changePasswordForced, login, verifyTotp } from "../api/auth";
 import { SSO_URL } from "../api/session";
+import { currentLang, setLang, t } from "../i18n";
 import {
   type AuthStage,
   type LoginStep,
@@ -14,7 +16,6 @@ import {
   stepOf,
 } from "../lib/login";
 import { LoginShowcase } from "./LoginShowcase";
-import { type Lang, LOGIN_TEXT, type LoginText, readLang, saveLang } from "./login-i18n";
 
 const TENANT_KEY = "community:tenant_key";
 const remembered = (): string => {
@@ -96,9 +97,9 @@ function Field(p: {
   );
 }
 
-function LangSwitch({ lang, onPick }: { lang: Lang; onPick: (l: Lang) => void }) {
+function LangSwitch({ lang, onPick }: { lang: Locale; onPick: (l: Locale) => void }) {
   return (
-    <fieldset className="lg-lang" aria-label="Language">
+    <fieldset className="lg-lang" aria-label={t("community.login.langAria")}>
       {(["vi", "en"] as const).map((l) => (
         <button key={l} type="button" aria-pressed={lang === l} onClick={() => onPick(l)}>
           {l.toUpperCase()}
@@ -137,58 +138,64 @@ const STAGE_KEYS = {
   login: ["loginTitle", "loginLead", "loginSubmit"],
   change: ["changeTitle", "changeLead", "changeSubmit"],
   totp: ["totpTitle", "totpLead", "totpSubmit"],
-} as const satisfies Record<AuthStage, readonly (keyof LoginText)[]>;
+} as const satisfies Record<AuthStage, readonly string[]>;
 
-function StageFields({ stage, t }: { stage: AuthStage; t: LoginText }) {
-  const eye: [string, string] = [t.showPw, t.hidePw];
+const tx = (k: string): string => t(`community.login.${k}`);
+
+function StageFields({ stage }: { stage: AuthStage }) {
+  const eye: [string, string] = [tx("showPw"), tx("hidePw")];
   if (stage === "change")
     return (
       <>
         <Field
           id="new_password"
-          label={t.newPassword}
+          label={tx("newPassword")}
           type="password"
           auto="new-password"
           eye={eye}
         />
         <Field
           id="confirm_password"
-          label={t.confirmPassword}
+          label={tx("confirmPassword")}
           type="password"
           auto="new-password"
           eye={eye}
         />
       </>
     );
-  if (stage === "totp") return <Field id="code" label={t.code} auto="one-time-code" mono />;
+  if (stage === "totp") return <Field id="code" label={tx("code")} auto="one-time-code" mono />;
   return (
     <>
       <Field
         id="tenant_key"
-        label={t.tenant}
-        hint={t.tenantHint}
+        label={tx("tenant")}
+        hint={tx("tenantHint")}
         auto="organization"
         value={remembered()}
         mono
       />
-      <Field id="username" label={t.username} ph={t.usernamePh} auto="username" />
-      <Field id="password" label={t.password} type="password" auto="current-password" eye={eye} />
+      <Field id="username" label={tx("username")} ph={tx("usernamePh")} auto="username" />
+      <Field
+        id="password"
+        label={tx("password")}
+        type="password"
+        auto="current-password"
+        eye={eye}
+      />
     </>
   );
 }
 
 export function LoginPage() {
-  const [lang, setLang] = useState<Lang>(readLang);
+  const [lang, setLangState] = useState<Locale>(currentLang);
   const [step, setStep] = useState<LoginStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const stage: AuthStage = step && step.kind !== "done" ? step.kind : "login";
   const sso = stage === "login" ? ssoLoginHref(SSO_URL, "community") : null;
-  const t = LOGIN_TEXT[lang];
   const [kTitle, kLead, kSubmit] = STAGE_KEYS[stage];
-  const pick = (l: Lang) => {
-    saveLang(l);
-    setLang(l);
+  const pick = (l: Locale) => {
+    void setLang(l).then(() => setLangState(l));
   };
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -210,8 +217,8 @@ export function LoginPage() {
           <div className="lg-brand">
             <span className="lg-logo">S</span>
             <span>
-              <b>Sổ Hợp Tác</b>
-              <small>Community</small>
+              <b>{t("community.brand.name")}</b>
+              <small>{t("community.brand.sub")}</small>
             </span>
           </div>
           <LangSwitch lang={lang} onPick={pick} />
@@ -219,32 +226,32 @@ export function LoginPage() {
         <div className="lg-wrap">
           <div className="lg-box">
             <div className="lg-title">
-              <h1>{t[kTitle]}</h1>
-              <p>{t[kLead]}</p>
+              <h1>{tx(kTitle)}</h1>
+              <p>{tx(kLead)}</p>
             </div>
-            <form key={stage} className="lg-form" onSubmit={submit} aria-label={t[kTitle]}>
-              <StageFields stage={stage} t={t} />
+            <form key={stage} className="lg-form" onSubmit={submit} aria-label={tx(kTitle)}>
+              <StageFields stage={stage} />
               {error && (
                 <p className="lg-err" role="alert">
                   {error}
                 </p>
               )}
               <button type="submit" className="lg-primary" disabled={busy}>
-                {t[kSubmit]}
+                {tx(kSubmit)}
               </button>
-              {stage === "login" && <p className="lg-forgot">{t.forgot}</p>}
+              {stage === "login" && <p className="lg-forgot">{tx("forgot")}</p>}
             </form>
             {sso && (
               <p className="lg-alt">
-                {t.ssoPrefix}
-                <a href={sso}>{t.ssoLink}</a>
+                {tx("ssoPrefix")}
+                <a href={sso}>{tx("ssoLink")}</a>
               </p>
             )}
           </div>
         </div>
-        <p className="lg-foot">{t.footer}</p>
+        <p className="lg-foot">{tx("footer")}</p>
       </main>
-      <LoginShowcase t={t} />
+      <LoginShowcase />
     </div>
   );
 }

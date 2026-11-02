@@ -2,6 +2,7 @@
 // FeedList (Profile) và FeedPage (2 cột) dùng chung để chia state giữa thanh tab và bộ lọc.
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 import { useApp } from "./ctx";
 
 export function useFeedFilters(fixed: Pick<FeedQuery, "mine" | "authorOrgId"> = {}) {
@@ -36,7 +37,7 @@ export function useFeed(query: FeedQuery) {
     let live = true;
     api.listFeed(query).then(
       (r) => live && (setData(r), setError(null)),
-      (e) => live && setError(e instanceof Error ? e.message : "Lỗi tải bảng tin"),
+      (e) => live && setError(e instanceof Error ? e.message : t("community.feed.loadError")),
     );
     return () => {
       live = false;

@@ -1,4 +1,5 @@
 // Trường theo loại bài (mockup `.cfields`): Cần bán = hàng hoá, số lượng, giá/liên hệ; Cần mua = + khu vực, ngày cần.
+import { t } from "../i18n";
 import type { Draft } from "../lib/compose";
 
 function F({
@@ -40,38 +41,38 @@ export function DraftFields({
   return (
     <>
       <div className="cfields">
-        <F label="Hàng hoá" err={errors.product}>
+        <F label={t("community.draft.product")} err={errors.product}>
           <input
             className="field"
-            aria-label="Hàng hoá"
-            placeholder="Hàng hoá"
+            aria-label={t("community.draft.product")}
+            placeholder={t("community.draft.product")}
             value={draft.product}
             onChange={on("product")}
           />
         </F>
-        <F label="Số lượng" err={errors.qty}>
+        <F label={t("community.draft.qty")} err={errors.qty}>
           <input
             className="field"
-            aria-label="Số lượng"
-            placeholder="Số lượng"
+            aria-label={t("community.draft.qty")}
+            placeholder={t("community.draft.qty")}
             value={draft.qty}
             onChange={on("qty")}
           />
         </F>
-        <F label="Giá" err={errors.price}>
+        <F label={t("community.draft.price")} err={errors.price}>
           {buy ? (
             <input
               className="field"
-              aria-label="Ngân sách"
-              placeholder="Ngân sách (có thể bỏ trống)"
+              aria-label={t("community.draft.budget")}
+              placeholder={t("community.draft.budgetHint")}
               value={draft.budget}
               onChange={on("budget")}
             />
           ) : (
             <input
               className="field"
-              aria-label="Giá"
-              placeholder="Giá (bỏ trống = Liên hệ)"
+              aria-label={t("community.draft.price")}
+              placeholder={t("community.draft.priceHint")}
               value={draft.price}
               onChange={on("price")}
             />
@@ -79,35 +80,35 @@ export function DraftFields({
         </F>
       </div>
       <div className="cfields">
-        <F label="Khu vực" err={errors.area}>
+        <F label={t("community.draft.area")} err={errors.area}>
           <input
             className="field"
-            aria-label="Khu vực"
-            placeholder={buy ? "Khu vực (bắt buộc)" : "Khu vực"}
+            aria-label={t("community.draft.area")}
+            placeholder={buy ? t("community.draft.areaRequired") : t("community.draft.area")}
             value={draft.area}
             onChange={on("area")}
           />
         </F>
         {buy && (
-          <F label="Ngày cần" err={errors.neededBy}>
+          <F label={t("community.draft.neededBy")} err={errors.neededBy}>
             <input
               className="field"
               type="date"
-              aria-label="Ngày cần"
+              aria-label={t("community.draft.neededBy")}
               value={draft.neededBy}
               onChange={on("neededBy")}
             />
           </F>
         )}
         {cats && cats.length > 0 && (
-          <F label="Nhóm hàng">
+          <F label={t("community.draft.cat")}>
             <select
               className="field"
-              aria-label="Nhóm hàng"
+              aria-label={t("community.draft.cat")}
               value={draft.cats[0] ?? ""}
               onChange={(e) => set({ ...draft, cats: e.target.value ? [e.target.value] : [] })}
             >
-              <option value="">Nhóm hàng…</option>
+              <option value="">{t("community.draft.catPlaceholder")}</option>
               {cats.map((c) => (
                 <option key={c}>{c}</option>
               ))}

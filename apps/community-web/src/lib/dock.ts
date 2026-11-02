@@ -1,6 +1,7 @@
 // com-c10b · luật thuần của dock "Hỏi trợ lý giá": ngữ cảnh trang gửi Hub, tin E12 (tag `@assistant` ⇒ agent dùng chung),
 // áp sự kiện SSE vào tin trả lời, tiêu đề hội thoại, câu lỗi, câu gợi ý. Không I/O. Chỉ chủ quản (nội bộ) thấy dock.
 import type { ChatEvent, MessageContext, SendMessageRequest } from "@ai/contracts/chat";
+import { t } from "../i18n";
 
 export const ASSISTANT_AGENT = "assistant";
 export const QUESTION_MAX = 4000;
@@ -8,7 +9,10 @@ const TITLE_MAX = 80;
 const SELECTION_MAX = 200;
 
 /** Câu gợi ý (mockup: chip). */
-export const DOCK_SUGGESTIONS = ["Giá chữ ký số USB Token?", "Hôm nay có gì mới?"] as const;
+export const dockSuggestions = (): string[] => [
+  t("community.dock.suggestion1"),
+  t("community.dock.suggestion2"),
+];
 
 /** Chỉ chủ quản nội bộ có dock: đối tác (`partner`) không bao giờ (Chat AI bị chặn phía Hub, C2 — ở đây ẩn nút). */
 export const dockVisible = (role: string): boolean => role !== "partner";
@@ -22,7 +26,7 @@ export function dockContext(p: PageState): MessageContext {
   return {
     surface: "community",
     route,
-    ...(q ? { selection: `Đang tìm trên bảng tin: ${q}` } : {}),
+    ...(q ? { selection: t("community.dock.searchContext", { q }) } : {}),
   };
 }
 
@@ -48,7 +52,7 @@ export function buildRequest(
   return body;
 }
 
-export function titleOf(question: string, fallback = "Trợ lý giá"): string {
+export function titleOf(question: string, fallback = t("community.dock.title")): string {
   const one = question.replace(/\s+/g, " ").trim();
   return one.length > TITLE_MAX ? `${one.slice(0, TITLE_MAX - 1)}…` : one || fallback;
 }
@@ -78,11 +82,11 @@ export function errorText(code: string | undefined): string {
     case "AGENT_NOT_FOUND":
     case "DEFAULT_AGENT_FORBIDDEN":
     case "FORBIDDEN":
-      return "Bạn chưa được dùng Trợ lý giá. Nhờ quản trị cấp quyền đọc gói Cộng đồng.";
+      return t("community.dock.errForbidden");
     case "FLOW_BUSY":
     case "TOO_MANY_RUNS":
-      return "Trợ lý đang bận, thử lại sau giây lát.";
+      return t("community.dock.errBusy");
     default:
-      return "Trợ lý chưa trả lời được. Thử lại sau.";
+      return t("community.dock.errGeneric");
   }
 }

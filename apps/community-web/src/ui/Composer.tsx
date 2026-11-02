@@ -1,13 +1,13 @@
 // Ô soạn bài (mockup `.composer`): loại bài, trường theo loại, nhóm hàng, ảnh/video, người xem (chủ quản) / ghi chú (đối tác).
 
-import type { PartnerOrg } from "@ai/contracts/community";
-import { type AudienceMode, POST_TYPE_LABEL, type PostType } from "@ai/contracts/community";
+import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 import {
-  AUDIENCE_LABEL,
   audienceError,
+  audienceLabel,
   audienceSummary,
-  PARTNER_NOTE,
+  partnerNote,
   previewRecipients,
   previewText,
 } from "../lib/audience";
@@ -29,6 +29,8 @@ import {
 
 const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
+const typeLabel = (x: PostType): string => t(`community.postType.${x}`);
+
 const MODES: AudienceMode[] = ["all", "suppliers", "buyers", "cats", "companies"];
 
 function AudiencePicker({
@@ -49,8 +51,8 @@ function AudiencePicker({
   const recipients = previewRecipients(aud, draft.type, draft.cats, partners);
   return (
     <div className="audbox">
-      <div className="flabel">Người xem</div>
-      <fieldset className="chips tight" aria-label="Người xem">
+      <div className="flabel">{t("community.audience.label")}</div>
+      <fieldset className="chips tight" aria-label={t("community.audience.label")}>
         {MODES.map((m) => (
           <button
             key={m}
@@ -59,7 +61,7 @@ function AudiencePicker({
             aria-pressed={aud.mode === m}
             onClick={() => upd({ mode: m })}
           >
-            {AUDIENCE_LABEL[m]}
+            {audienceLabel(m)}
           </button>
         ))}
       </fieldset>
@@ -139,18 +141,20 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       setDraft(emptyDraft(draft.type));
       setPrefill("");
       setOpen(false);
-      toast("Đã đăng bài");
+      toast(t("community.composer.posted"));
       bump();
       onPosted?.();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Không đăng được");
+      toast(err instanceof Error ? err.message : t("community.composer.postFailed"));
     } finally {
       setBusy(false);
     }
   };
   const addMedia = (kind: "image" | "video") => {
     if (!canAddMedia(draft.media, kind))
-      return toast(kind === "image" ? "Tối đa 10 ảnh" : "Tối đa 2 video");
+      return toast(
+        kind === "image" ? t("community.composer.maxImages") : t("community.composer.maxVideos"),
+      );
     const n = draft.media.filter((m) => m.kind === kind).length + 1;
     setDraft({
       ...draft,
@@ -159,7 +163,9 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
         {
           id: `${kind}-${Date.now()}-${n}`,
           kind,
-          label: `${kind === "image" ? "Ảnh" : "Video"} ${n}`,
+          label: t(kind === "image" ? "community.composer.imageN" : "community.composer.videoN", {
+            n,
+          }),
         },
       ],
     });
@@ -170,25 +176,25 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       <div className="card pad composer feedcomposer collapsed" data-testid="composer">
         <span className="av t1">{initials(viewer.orgName)}</span>
         <button type="button" className="prompt" onClick={() => setOpen(true)}>
-          {`${viewer.orgName} đang có hàng cần bán hay nhu cầu cần mua?`}
+          {t("community.composer.prompt", { org: viewer.orgName })}
         </button>
         <div className="ctypes">
-          {types.map((t) => {
-            const Ic = TYPE_ICON[t];
+          {types.map((ty) => {
+            const Ic = TYPE_ICON[ty];
             return (
               <button
-                key={t}
+                key={ty}
                 type="button"
-                className={`ctype ${t}`}
-                data-type={t}
-                aria-label={POST_TYPE_LABEL[t]}
+                className={`ctype ${ty}`}
+                data-type={ty}
+                aria-label={typeLabel(ty)}
                 onClick={() => {
-                  setDraft(emptyDraft(t));
+                  setDraft(emptyDraft(ty));
                   setOpen(true);
                 }}
               >
                 <Ic size={16} />
-                <span>{POST_TYPE_LABEL[t]}</span>
+                <span>{typeLabel(ty)}</span>
               </button>
             );
           })}
@@ -202,18 +208,18 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       {isHostViewer && prefill && (
         <div className="prefill">
           <IconLock size={14} />
-          Điền sẵn từ Sổ Hợp Tác · {prefill}
+          {t("community.composer.prefillBanner", { product: prefill })}
         </div>
       )}
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <span className="av t1">{initials(viewer.orgName)}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
-            Nội dung bài đăng
+            {t("community.composer.bodyLabel")}
           </label>
           <textarea
             id="draft-body"
-            placeholder={`${viewer.orgName} đang có hàng cần bán hay nhu cầu cần mua?`}
+            placeholder={t("community.composer.prompt", { org: viewer.orgName })}
             value={draft.body}
             onChange={(e) => setDraft({ ...draft, body: e.target.value })}
           />
@@ -228,7 +234,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                   {m.label}
                   <button
                     type="button"
-                    aria-label="Bỏ tệp đính kèm"
+                    aria-label={t("community.composer.removeAttachment")}
                     onClick={() =>
                       setDraft({ ...draft, media: draft.media.filter((x) => x.id !== m.id) })
                     }
@@ -243,14 +249,14 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             <div className="selrow" style={{ marginTop: 10, marginBottom: 0 }}>
               <select
                 className="field"
-                aria-label="Điền sẵn từ Sổ Hợp Tác"
+                aria-label={t("community.composer.prefillFrom")}
                 value={prefill}
                 onChange={(e) => {
                   setPrefill(e.target.value);
                   if (e.target.value) setDraft({ ...draft, product: e.target.value });
                 }}
               >
-                <option value="">Điền sẵn từ Sổ Hợp Tác…</option>
+                <option value="">{t("community.composer.prefillOption")}</option>
                 {DEMO_PRODUCTS.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
@@ -258,26 +264,26 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             </div>
           )}
           <div className="cbar">
-            <fieldset className="seg" aria-label="Loại bài">
-              {types.map((t) => (
+            <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
+              {types.map((ty) => (
                 <button
-                  key={t}
+                  key={ty}
                   type="button"
-                  className={draft.type === t ? "on" : ""}
-                  data-type={t}
-                  onClick={() => setDraft({ ...draft, type: t, audience: undefined })}
+                  className={draft.type === ty ? "on" : ""}
+                  data-type={ty}
+                  onClick={() => setDraft({ ...draft, type: ty, audience: undefined })}
                 >
-                  {POST_TYPE_LABEL[t]}
+                  {typeLabel(ty)}
                 </button>
               ))}
             </fieldset>
             <button type="button" className="ghost" onClick={() => addMedia("image")}>
               <IconImage size={16} />
-              Ảnh
+              {t("community.composer.image")}
             </button>
             <button type="button" className="ghost" onClick={() => addMedia("video")}>
               <IconVideo size={16} />
-              Video
+              {t("community.composer.video")}
             </button>
             <div className="sp" />
             {isHostViewer && (
@@ -285,7 +291,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                 type="button"
                 className="ghost"
                 aria-expanded={audOpen}
-                aria-label="Chọn người xem"
+                aria-label={t("community.audience.choose")}
                 onClick={() => setAudOpen(!audOpen)}
               >
                 <IconLock size={13} />
@@ -295,11 +301,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             {!isHostViewer && (
               <span className="meta" data-testid="partner-note">
                 <IconLock size={13} />
-                {PARTNER_NOTE}
+                {partnerNote()}
               </span>
             )}
             <button type="button" className="primary" disabled={busy} onClick={publish}>
-              Đăng bài
+              {t("community.composer.publish")}
             </button>
           </div>
           {isHostViewer && audOpen && (

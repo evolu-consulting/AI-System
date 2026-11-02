@@ -1,6 +1,7 @@
 // Thẻ bài (mockup `.post`): ⋯ menu (Sửa / Lưu trữ / Đã xong / Xoá + xác nhận đỏ), nhãn đã sửa / lưu trữ / ẩn, bình luận theo luồng.
-import { POST_TYPE_LABEL, type PostAction, type PostView } from "@ai/contracts/community";
+import type { PostAction, PostView } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 import { draftFromFields } from "../lib/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../lib/format";
 import { hintLines, saveButtonLabel, savedText } from "../lib/quote";
@@ -42,43 +43,43 @@ function PostMenu({
       {has(p, "edit") && (
         <button type="button" role="menuitem" onClick={onEdit}>
           <IconEdit size={16} />
-          Sửa bài
+          {t("community.post.menu.edit")}
         </button>
       )}
       {has(p, "archive") && (
         <button type="button" role="menuitem" onClick={() => onDo("archive")}>
           <IconArchive size={16} />
-          Lưu trữ
+          {t("community.post.menu.archive")}
         </button>
       )}
       {has(p, "unarchive") && (
         <button type="button" role="menuitem" onClick={() => onDo("unarchive")}>
           <IconArchive size={16} />
-          Bỏ lưu trữ
+          {t("community.post.menu.unarchive")}
         </button>
       )}
       {has(p, "done") && (
         <button type="button" role="menuitem" onClick={() => onDo("done")}>
           <IconCheck size={16} />
-          {p.type === "buy" ? "Đã có hàng" : "Đã bán hết"}
+          {p.type === "buy" ? t("community.post.menu.doneBuy") : t("community.post.menu.doneSell")}
         </button>
       )}
       {has(p, "hide") && (
         <button type="button" role="menuitem" onClick={() => onDo("hide")}>
           <IconEyeOff size={16} />
-          Ẩn bài
+          {t("community.post.menu.hide")}
         </button>
       )}
       {has(p, "unhide") && (
         <button type="button" role="menuitem" onClick={() => onDo("unhide")}>
           <IconEyeOff size={16} />
-          Bỏ ẩn
+          {t("community.post.menu.unhide")}
         </button>
       )}
       {has(p, "delete") && (
         <button type="button" role="menuitem" className="red" onClick={onAsk}>
           <IconTrash size={16} />
-          Xoá bài
+          {t("community.post.menu.delete")}
         </button>
       )}
     </div>
@@ -109,14 +110,14 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
       fields,
       ...(p.type !== "note" ? { title: d.product } : {}),
     });
-    toast("Đã lưu thay đổi");
+    toast(t("community.post.saved"));
     bump();
     onClose();
   };
   return (
     <div className="pbody composer">
       <textarea
-        aria-label="Sửa nội dung"
+        aria-label={t("community.post.editBodyLabel")}
         value={d.body}
         onChange={(e) => setD({ ...d, body: e.target.value })}
       />
@@ -124,10 +125,10 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
       <div className="cbar">
         <div className="sp" />
         <button type="button" className="ghost" onClick={onClose}>
-          Huỷ
+          {t("community.common.cancel")}
         </button>
         <button type="button" className="primary sm" onClick={save}>
-          Lưu thay đổi
+          {t("community.post.saveChanges")}
         </button>
       </div>
     </div>
@@ -151,7 +152,7 @@ export function PostCard({ post: p }: { post: PostView }) {
     setMenu(false);
     setConfirm(false);
     await api.postAction(p.id, { action: a });
-    toast(a === "delete" ? "Đã xoá bài" : "Đã cập nhật bài");
+    toast(a === "delete" ? t("community.post.deleted") : t("community.post.updated"));
     bump();
   };
   const deal = dealStrip(p);
@@ -172,17 +173,21 @@ export function PostCard({ post: p }: { post: PostView }) {
           <b>{p.authorOrgName}</b>
           <div className="meta">
             {p.authorName} · {timeAgo(p.createdAt)} · <IconLock size={12} />
-            {p.authorSide === "host" ? "Bạn bè" : "Chỉ chủ quản"}
-            {p.edited && <span className="tag grey sm">đã sửa</span>}
-            {p.status === "archived" && <span className="tag grey sm">Đã lưu trữ</span>}
-            {p.status === "done" && <span className="tag ok sm">Đã xong</span>}
-            {p.status === "expired" && <span className="tag late sm">Hết hạn</span>}
-            {p.hidden && <span className="tag late sm">đã ẩn</span>}
-            {p.authorLeft && <span className="tag grey sm">đối tác đã rời</span>}
+            {p.authorSide === "host" ? t("community.post.friends") : t("community.post.hostOnly")}
+            {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}
+            {p.status === "archived" && (
+              <span className="tag grey sm">{t("community.post.archived")}</span>
+            )}
+            {p.status === "done" && <span className="tag ok sm">{t("community.post.done")}</span>}
+            {p.status === "expired" && (
+              <span className="tag late sm">{t("community.post.expired")}</span>
+            )}
+            {p.hidden && <span className="tag late sm">{t("community.post.hidden")}</span>}
+            {p.authorLeft && <span className="tag grey sm">{t("community.post.partnerLeft")}</span>}
             {expiry && <span className="tag soon sm">{expiry}</span>}
           </div>
         </div>
-        <span className={`pill ${p.type}`}>{POST_TYPE_LABEL[p.type]}</span>
+        <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>
         {has(p, "saveQuote") && p.type === "sell" && (
           <button type="button" className="outline" onClick={() => openQuote(p.authorOrgName)}>
             <IconSave size={16} />
@@ -193,7 +198,7 @@ export function PostCard({ post: p }: { post: PostView }) {
           <button
             type="button"
             className="iconbtn"
-            aria-label="Tuỳ chọn bài đăng"
+            aria-label={t("community.post.options")}
             aria-expanded={menu}
             onClick={() => setMenu(!menu)}
           >
@@ -217,13 +222,13 @@ export function PostCard({ post: p }: { post: PostView }) {
       )}
       {confirm && (
         <div className="confirm" role="alertdialog">
-          <span>Xoá vĩnh viễn bài đăng này? Bình luận cũng sẽ bị xoá.</span>
+          <span>{t("community.post.confirmDelete")}</span>
           <span className="sp" />
           <button type="button" className="ghost" onClick={() => setConfirm(false)}>
-            Huỷ
+            {t("community.common.cancel")}
           </button>
           <button type="button" className="danger" onClick={() => act("delete")}>
-            Xoá
+            {t("community.common.delete")}
           </button>
         </div>
       )}
@@ -298,10 +303,10 @@ export function PostCard({ post: p }: { post: PostView }) {
               <IconCheck size={18} />
             </span>
             <span className="ct">
-              <b>Đã lưu báo giá vào Sản phẩm &amp; Giá:</b> {savedText(m)}
-              {m.priceEdited && " · NCC đã sửa giá sau khi lưu — lưu lại để cập nhật"}
-              {!m.priceEdited && m.postEdited && " · bài đã sửa sau khi lưu"}
-              {m.commentDeleted && " · bình luận đã xoá"}
+              <b>{t("community.post.quoteSaved")}</b> {savedText(m)}
+              {m.priceEdited && t("community.post.quotePriceEdited")}
+              {!m.priceEdited && m.postEdited && t("community.post.quotePostEdited")}
+              {m.commentDeleted && t("community.post.quoteCommentDeleted")}
             </span>
           </div>
         ))}
@@ -328,7 +333,7 @@ export function PostCard({ post: p }: { post: PostView }) {
           onClick={() => setOpen(!open)}
         >
           <IconChat />
-          Bình luận ({p.commentCount})
+          {t("community.post.comments", { n: p.commentCount })}
         </button>
       </div>
       {open && (

@@ -39,7 +39,7 @@ export type Ctx = {
 const C = createContext<Ctx | null>(null);
 export const useApp = (): Ctx => {
   const v = useContext(C);
-  if (!v) throw new Error("Thiếu AppProvider");
+  if (!v) throw new Error("Thiếu AppProvider"); // i18n-ignore: lỗi lập trình
   return v;
 };
 

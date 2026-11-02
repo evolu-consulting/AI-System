@@ -3,6 +3,7 @@ import type { CommunityNotification } from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
 import { apiMode } from "../api";
 import { logout } from "../api/auth";
+import { t } from "../i18n";
 import { initials, timeAgo, tone } from "../lib/format";
 import { useApp } from "./ctx";
 import { IconBell, IconGear, IconHome, IconSearch } from "./icons";
@@ -24,9 +25,9 @@ function NotifPop({
     go({ name: "feed" });
   };
   return (
-    <div className="pop" role="dialog" aria-label="Thông báo">
+    <div className="pop" role="dialog" aria-label={t("community.topbar.notifications")}>
       <div className="pophead">
-        <h3>Thông báo</h3>
+        <h3>{t("community.topbar.notifications")}</h3>
         <div className="sp" />
         <button
           type="button"
@@ -36,10 +37,10 @@ function NotifPop({
             onChanged();
           }}
         >
-          Đánh dấu đã đọc
+          {t("community.topbar.markAllRead")}
         </button>
       </div>
-      {items.length === 0 && <div className="empty">Chưa có thông báo.</div>}
+      {items.length === 0 && <div className="empty">{t("community.topbar.noNotifications")}</div>}
       {items.map((n) => (
         <button
           key={n.id}
@@ -52,7 +53,9 @@ function NotifPop({
             <b>{n.actorName}</b> {n.text}
             <span>{timeAgo(n.createdAt)}</span>
           </span>
-          {n.unread && <span className="udot" role="img" aria-label="Chưa đọc" />}
+          {n.unread && (
+            <span className="udot" role="img" aria-label={t("community.topbar.unread")} />
+          )}
         </button>
       ))}
     </div>
@@ -84,30 +87,30 @@ export function TopBar() {
           type="button"
           className="brand"
           onClick={() => go({ name: "feed" })}
-          aria-label="Về bảng tin"
+          aria-label={t("community.topbar.backToFeed")}
         >
           <span className="logo">S</span>
           <span>
-            <b>Sổ Hợp Tác</b>
-            <small>Community</small>
+            <b>{t("community.brand.name")}</b>
+            <small>{t("community.brand.sub")}</small>
           </span>
         </button>
         <div className="search">
           <IconSearch size={16} />
           <input
             type="search"
-            placeholder="Tìm bài đăng, hàng hoá, đối tác…"
-            aria-label="Tìm kiếm"
+            placeholder={t("community.topbar.searchPlaceholder")}
+            aria-label={t("community.topbar.searchLabel")}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />
         </div>
         <div className="sp" />
         {personas && (
-          <label className="persona" title="Chỉ có khi chạy mock (dev)">
-            Dev · xem như
+          <label className="persona" title={t("community.topbar.devOnlyMock")}>
+            {t("community.topbar.devViewAs")}
             <select
-              aria-label="Chọn nhân vật"
+              aria-label={t("community.topbar.pickPersona")}
               value={viewer.userId}
               onChange={(e) => setPersona(e.target.value)}
             >
@@ -125,13 +128,13 @@ export function TopBar() {
           onClick={() => go({ name: "feed" })}
         >
           <IconHome />
-          <span className="navlabel">Bảng tin</span>
+          <span className="navlabel">{t("community.topbar.feed")}</span>
         </button>
         <button
           type="button"
           className={open ? "iconbtn on" : "iconbtn"}
           onClick={() => setOpen(!open)}
-          aria-label="Thông báo"
+          aria-label={t("community.topbar.notifications")}
         >
           <IconBell size={20} />
           {data.unread > 0 && <span className="badge">{data.unread}</span>}
@@ -140,7 +143,7 @@ export function TopBar() {
           type="button"
           className={route.name === "settings" ? "iconbtn on" : "iconbtn"}
           onClick={() => go({ name: "settings" })}
-          aria-label="Cài đặt"
+          aria-label={t("community.topbar.settings")}
         >
           <IconGear size={20} />
         </button>
@@ -148,13 +151,13 @@ export function TopBar() {
           type="button"
           className={route.name === "profile" ? "avbtn on" : "avbtn"}
           onClick={() => go({ name: "profile" })}
-          aria-label={`Hồ sơ ${viewer.orgName}`}
+          aria-label={t("community.topbar.profileOf", { org: viewer.orgName })}
         >
           <span className="av t1">{initials(viewer.orgName)}</span>
         </button>
         {apiMode === "http" && (
           <button type="button" className="ghost" onClick={() => void logout()}>
-            Đăng xuất
+            {t("community.topbar.logout")}
           </button>
         )}
       </header>

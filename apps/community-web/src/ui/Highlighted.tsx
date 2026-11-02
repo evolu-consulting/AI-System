@@ -1,5 +1,6 @@
 // Chủ quản thấy raw; khoảng bị che với user ngoài được tô (`hits`). User ngoài không có hits ⇒ in nguyên văn (đã che).
 import type { ContentHit } from "@ai/contracts/community";
+import { t } from "../i18n";
 
 export function segments(
   text: string,
@@ -33,7 +34,7 @@ export function Highlighted({
       {segments(text, hits, field).map((s, i) =>
         s.hit ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: đoạn tĩnh theo vị trí
-          <mark key={i} className="hl" title="Đối tác thấy phần này đã bị che">
+          <mark key={i} className="hl" title={t("community.post.mediaHighlight")}>
             {s.t}
           </mark>
         ) : (
