@@ -13,7 +13,7 @@ import {
 } from "../domain/approval-engine-card.rules";
 import { engineSteps, esignCard } from "../domain/approval-flow.rules";
 import type { ApprovalState } from "./approval.ports";
-import type { ApprovalEnginePort, EngineCaller } from "./approval-engine.ports";
+import type { ApprovalEnginePort, ApprovalEngineRepo, EngineCaller } from "./approval-engine.ports";
 
 type Repos = {
   approval: {
@@ -24,9 +24,7 @@ type Repos = {
     ): Promise<boolean>;
     markExtracting(id: string, runId: string): Promise<boolean>;
   };
-  approvalEngine: {
-    setPendingLinks(aid: string, runId: string, links: readonly unknown[] | null): Promise<boolean>;
-  };
+  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks">;
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
 };
 export type EngineCardDeps = {
@@ -158,23 +156,26 @@ export function engineAct(d: EngineCardDeps) {
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;
 
-/** Đạt duyệt cuối ⇒ LUÔN ghi đè `pending_links` (kể cả null) TRONG tx gói TRƯỚC khi act (tool finalize áp cùng tx khoá) — không để
- *  SP sót của lần Đạt trước; act thất bại / not_open ⇒ xoá lại (không để SP chờ của người không duyệt được). */
+/** Đạt duyệt cuối ⇒ GIỮ chỗ + ghi `pending_links` (kể cả null) TRONG tx gói TRƯỚC khi act (tool finalize áp cùng tx khoá) — không để
+ *  SP sót của lần Đạt trước. CR-107 · chỗ giữ gắn (lần bấm, người, task): người thứ hai Đạt cùng task bị chặn TRƯỚC act
+ *  (APPROVAL_NOT_OPEN) ⇒ không ghi đè SP của người đang quyết; act thất bại / not_open ⇒ trả chỗ theo đúng lần bấm (so-rồi-xoá). */
 async function pass(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx, p: Plan) {
   const a = c.st.approval as NonNullable<ApprovalState["approval"]>;
-  const save = (links: readonly unknown[] | null) =>
-    d.uow.tenant(c.who, (r) => r.approvalEngine.setPendingLinks(a.id, c.runId, links));
   if (p.kind !== "pass" || !p.finalizes)
     return decide(port, c, { task_id: p.taskId }, { result: "pass" });
+  const own = { claim: crypto.randomUUID(), by: c.who.userId, task: p.taskId };
+  const save = (op: { links: readonly unknown[] | null } | { release: true }) =>
+    d.uow.tenant(c.who, (r) => r.approvalEngine.setPendingLinks(a.id, c.runId, { ...own, ...op }));
+  const release = () => save({ release: true }).catch(() => false);
   const links = c.b.products?.length ? c.b.products : null;
-  if (!(await save(links))) return { error: "APPROVAL_NOT_OPEN" as const };
+  if (!(await save({ links }))) return { error: "APPROVAL_NOT_OPEN" as const };
   const out = await decide(port, c, { task_id: p.taskId }, { result: "pass" }).catch(
     async (e: unknown) => {
-      await save(null).catch(() => false);
+      await release();
       throw e;
     },
   );
-  if (out !== "ok") await save(null).catch(() => false);
+  if (out !== "ok") await release();
   return out;
 }
 async function exec(

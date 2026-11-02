@@ -7,6 +7,7 @@ import type {
   ApprovalEngineRepo,
   EngineRunRow,
   EngineStartRow,
+  PendingLinksOwner,
 } from "../application/approval-engine.ports";
 import type { FlowStep } from "../domain/approval-flow.types";
 
@@ -113,12 +114,43 @@ function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
   };
 }
 
+/** CR-107 · Giữ chỗ + ghi SP chờ. Chỉ được khi: chưa ai giữ, người giữ đang ở task KHÁC (task cũ đã đóng ⇒ `act` của họ không thể thắng),
+ *  hoặc chỗ giữ quá 15 phút (người giữ chết giữa chừng, không trả chỗ — một lần `act` chỉ tốn mili-giây). Hai lần giữ cùng task chạy song song: lần sau chờ khoá hàng rồi xét lại WHERE trên bản mới ⇒ 0 hàng. */
+async function claimQ(
+  tx: Tx,
+  tid: string,
+  aid: string,
+  runId: string,
+  p: PendingLinksOwner,
+  links: string | null,
+) {
+  return tx.execute<{ id: string }>(sql`update contracts.approvals set
+      pending_links = ${links}::jsonb, pending_claim = ${p.claim}::uuid, pending_by = ${p.by}::uuid,
+      pending_task = ${p.task}, pending_at = now(), updated_at = now()
+    where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
+      and mode = 'engine' and status = 'level1'
+      and (pending_claim is null or pending_task is distinct from ${p.task}
+        or pending_at < now() - interval '15 minutes')
+    returning id`);
+}
+
+/** Trả chỗ (act thất bại): so-rồi-xoá theo đúng `pending_claim` của lần bấm này ⇒ không bao giờ xoá SP của người khác. */
+async function releaseQ(tx: Tx, tid: string, aid: string, runId: string, p: PendingLinksOwner) {
+  return tx.execute<{ id: string }>(sql`update contracts.approvals set
+      pending_links = null, pending_claim = null, pending_by = null, pending_task = null, pending_at = null,
+      updated_at = now()
+    where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
+      and mode = 'engine' and pending_claim = ${p.claim}::uuid
+    returning id`);
+}
+
 function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
-  return async (aid, runId, links) => {
-    const rows = await tx.execute<{ id: string }>(sql`update contracts.approvals set
-        pending_links = ${links === null ? null : JSON.stringify(links)}::jsonb, updated_at = now()
-      where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
-        and mode = 'engine' and status = 'level1' returning id`);
+  return async (aid, runId, p) => {
+    const own = { claim: p.claim, by: p.by, task: p.task };
+    const rows =
+      "release" in p
+        ? await releaseQ(tx, tid, aid, runId, own)
+        : await claimQ(tx, tid, aid, runId, own, p.links === null ? null : JSON.stringify(p.links));
     return rows.length > 0;
   };
 }

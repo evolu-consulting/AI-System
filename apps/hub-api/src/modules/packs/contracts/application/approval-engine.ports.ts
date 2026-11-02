@@ -105,6 +105,11 @@ export type EngineDifyFacts = {
   totalValue: unknown;
   partner: string;
 };
+/** CR-107 · một lần bấm Đạt duyệt cuối: `claim` = mã ngẫu nhiên của lần bấm, `by` = người, `task` = task duyệt đang mở. */
+export type PendingLinksOwner = { claim: string; by: string; task: string };
+export type PendingLinksOp =
+  | (PendingLinksOwner & { links: readonly unknown[] | null })
+  | (PendingLinksOwner & { release: true });
 export type ApprovalEngineRepo = {
   /** cf-dify · tiêu đề, loại, giá trị, đối tác của HĐ (một câu); không thấy ⇒ null. */
   difyFacts(contractId: string): Promise<EngineDifyFacts | null>;
@@ -126,12 +131,10 @@ export type ApprovalEngineRepo = {
     runId: string,
     by: string | null,
   ): Promise<boolean>;
-  /** S3b · lưu gắn SP chờ (duyệt cuối) cho lượt engine còn `level1`; áp trong tx `finalize` của tool. */
-  setPendingLinks(
-    approvalId: string,
-    runId: string,
-    links: readonly unknown[] | null,
-  ): Promise<boolean>;
+  /** S3b · lưu gắn SP chờ (duyệt cuối) cho lượt engine còn `level1`; áp trong tx `finalize` của tool.
+   *  CR-107 · `links` ⇒ GIỮ chỗ (một người một lúc trên cùng task): false khi người khác đang giữ task đó (chưa quá hạn);
+   *  `release` ⇒ trả chỗ CHỈ khi vẫn đúng lần giữ `claim` của mình (so-rồi-xoá). */
+  setPendingLinks(approvalId: string, runId: string, p: PendingLinksOp): Promise<boolean>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

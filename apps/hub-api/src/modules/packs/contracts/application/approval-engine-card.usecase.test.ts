@@ -3,7 +3,7 @@
 import { describe, expect, it } from "bun:test";
 import type { FlowStep } from "../domain/approval-flow.rules";
 import type { ApprovalState } from "./approval.ports";
-import type { ApprovalEnginePort } from "./approval-engine.ports";
+import type { ApprovalEnginePort, PendingLinksOp } from "./approval-engine.ports";
 import { engineAct, engineView } from "./approval-engine-card.usecase";
 
 const T = "00000000-0000-4000-8000-0000000000a1";
@@ -73,8 +73,11 @@ const view = (open: "s0" | "s1") => ({
   ],
 });
 
-function setup(o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean } = {}) {
+function setup(
+  o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean; held?: boolean } = {},
+) {
   const calls: string[] = [];
+  const ops: PendingLinksOp[] = [];
   const port = {
     stepsView: async () => view(o.open ?? "s0"),
     act: async (_u: unknown, _r: string, at: unknown, b: unknown) => {
@@ -98,9 +101,14 @@ function setup(o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean
       },
     },
     approvalEngine: {
-      setPendingLinks: async (_a: string, _r: string, l: readonly unknown[] | null) => {
-        calls.push(`links:${l === null ? "null" : l.length}`);
-        return true;
+      setPendingLinks: async (_a: string, _r: string, p: PendingLinksOp) => {
+        ops.push(p);
+        if ("release" in p) {
+          calls.push("links:release");
+          return true;
+        }
+        calls.push(`links:${p.links === null ? "null" : p.links.length}`);
+        return !o.held; // CR-107 · người khác đang giữ task ⇒ giữ chỗ thất bại
       },
     },
     outbox: { enqueue: async () => void calls.push("outbox") },
@@ -111,7 +119,7 @@ function setup(o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean
     jobs: { enqueue: async () => void calls.push("job") },
     redo: { ready: o.ready ?? true, quota: async () => void calls.push("quota") },
   };
-  return { d, calls };
+  return { d, calls, ops };
 }
 const body = (action: "approve" | "reject" | "redo" | "return", extra = {}) => ({
   action,
@@ -142,7 +150,18 @@ describe("engineAct", () => {
     const b = setup({ act: "not_open" });
     const r = await engineAct(b.d)(who, C, body("approve", { products: [{}] }), state());
     expect(r).toEqual({ error: "APPROVAL_NOT_OPEN" });
-    expect(b.calls.filter((c) => c.startsWith("links:"))).toEqual(["links:1", "links:null"]);
+    expect(b.calls.filter((c) => c.startsWith("links:"))).toEqual(["links:1", "links:release"]);
+  });
+  it("CR-107 · trả chỗ đúng lần giữ và chặn khi người khác giữ (không act)", async () => {
+    const a = setup({ act: "not_open" });
+    await engineAct(a.d)(who, C, body("approve", { products: [{}] }), state());
+    const [claim, rel] = a.ops;
+    expect({ by: claim?.by, task: claim?.task }).toEqual({ by: U, task: "t-s0" });
+    expect(rel).toEqual({ claim: claim?.claim, by: U, task: "t-s0", release: true } as never);
+    const b = setup({ held: true });
+    const r = await engineAct(b.d)(who, C, body("approve", { products: [{}] }), state());
+    expect(r).toEqual({ error: "APPROVAL_NOT_OPEN" });
+    expect(b.calls).toEqual(["links:1"]);
   });
   it("Đạt không phải bước cuối ⇒ bỏ products (không lưu)", async () => {
     const { d, calls } = setup();

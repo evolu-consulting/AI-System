@@ -435,6 +435,13 @@
       "when": 1800050000000,
       "tag": "0067_ext_user_deny",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1800150000000,
+      "tag": "0069_eng_links_claim",
+      "breakpoints": true
     }
   ]
 }
