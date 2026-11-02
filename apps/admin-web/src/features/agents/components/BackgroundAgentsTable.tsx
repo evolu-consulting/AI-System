@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { openApp } from "@/features/shell/hooks/use-apps";
 import { pickLocalized } from "@/lib/localized";
 import type { AgentActions } from "../hooks/use-agent-actions";
 import { runtimeKey } from "../lib/agents";
@@ -84,6 +85,12 @@ function CapCell({ row, p, t, lang }: { row: AgentSettingsItem; p: Props; t: Tr;
       href={app.url}
       target="_blank"
       rel="noreferrer"
+      // admin-sso-bounce: click thường ⇒ chuyển phiên bằng mã một lần (link thẳng ⇒ Sổ Hợp Tác hỏi đăng nhập).
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        void openApp(app, "/", true);
+      }}
       className="text-label text-primary underline-offset-2 hover:underline"
     >
       {t("agents.bg.capIn", { app: label })}

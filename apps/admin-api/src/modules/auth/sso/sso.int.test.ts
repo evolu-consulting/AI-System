@@ -98,6 +98,20 @@ describe("sso-switch · chuyển phiên chat → contracts", () => {
   });
 });
 
+describe("admin-sso-bounce · Evolu Control (admin-web) → Sổ Hợp Tác", () => {
+  it("platform_admin đăng nhập admin-web ⇒ mã cho contracts ⇒ phiên contracts (không về form đăng nhập)", async () => {
+    const s = await env.session("platform", "admin2", PW, { headers: app("admin") });
+    const res = await env.post("/auth/sso/code", { token: s.token, body: { app: "contracts" } });
+    expect(res.status).toBe(200);
+    const g = SsoCodeResponseSchema.parse(res.json);
+    expect(g.target_url).toBe("https://so.example.com");
+    const ok = await redeem(g.code, "contracts", {}, { Origin: "https://so.example.com" });
+    expect(ok.status).toBe(200);
+    expect(TokenGrantSchema.parse(ok.json).user.id).toBe(USER_ID.admin2);
+    expect(ok.cookies.some((c) => c.startsWith("ai_rt_contracts="))).toBe(true);
+  });
+});
+
 describe("app-catalog · đích SSO từ catalog (không open redirect)", () => {
   it("đích lấy từ catalog: trả target_url; app tắt/không có URL/không SSO ⇒ 403; Origin lạ khi đổi mã ⇒ 401", async () => {
     const s = await env.session("acme", "an", PW, { headers: app("chat") });
