@@ -1,0 +1,1402 @@
+S ổ  H ợ p Tác Community — Tài liệ u d ự  án
+Nov 2, 2026 · @Someone
+Gi ớ i thiệ u
+Đây là tài liệ u chính c ủ a d ự  án: t ổ ng quan s ả n ph ẩ m, nghiệ p vụ Community & S ổ  H ợ p Tác, 
+use case, và thiế t kế  giao diệ n h ợ p nhấ t (CR-106). CR-106 h ợ p nhấ t l ớ p v ỏ  (giao diệ n, 
+điề u h ướ ng, th ươ ng hiệ u, cài đặ t) c ủ a hai app, gi ữ  nghiệ p vụ và d ữ  liệ u tách biệ t. Ch ủ  
+qu ả n thấy một giao diện thống nhất; đố i tác vẫn bị cách ly kh ỏ i SHT.
+Mock UI (tham chiế u số ng):Community h ợ p nhất
+Hai quyế t định l ớ n: mục SHT trong Cài đặt = deep-link sang contracts-web (không 
+nhúng); SSO fallback cho b ả n đầu.
+Trạng thái: hoàn tất P0–P6, READY — đã chố t 4 shape contract (ch ư a code). Truy vết 
+COM-FR-26..46.
+Nguồ n: d ự ng 1:1 theo source thật (apps/community-web, apps/contracts-web) + 3 tài 
+liệu nghiệp vụ.
+Cậ p nhậ t 2026-11-02 — spec READY. 4 shape backend đã chốt: brand (GET 
+/pack/community/brand, port CompanyBrandReader), viewer.caps.contracts
+(port ContractsCapReader), ProfilePartnersSchema/ProfileMediaSchema, đi ể m 
+uy tín dùng port có sẵn HostBookReader. Chi tiết zod/port ở  P3 §5.1 và P5 §5.1 trong 
+repo. Còn owned (không chặn): duyệt nhãn EN · việ c nền ?sec= ở  contracts-web.
+Liên kế t d ự  án
+Một n ơ i m ở  mọi th ứ  — tr ỏ  t ớ i tài liệu này là đ ủ .
+Tài liệ u d ự  án (b ả n này): https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k
+Mock UI — prototype bấ m đ ượ c:
+https://claude.ai/artifact/QWj14SrNPkErSZU2FC6GWQ
+Đặ c t ả  UI — board t ừ ng màn + trạng thái:
+https://claude.ai/artifact/USMHJqqAxAJMTSUHPqNufB
+Spec chu ẩ n cho dev (repo):docs/specs/CR-106-community-unify/
+Claude ch ư a có "th ư  mục" gộp artifact; tài liệu này đóng vai trang ch ủ — t ừ  đây m ở  đ ượ c 2 
+link UI + spec repo. Feature m ớ i: s ử a th ẳ ng tài liệu này (theo Quy ướ c cập nhật ở  cuố i).
+T ổ ng quan s ả n ph ẩ m
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 1/29
+
+=== PAGE ===
+Hệ  thống gồm hai phần dùng chung một nền t ả ng:
+Community App: n ơ i ch ủ  qu ả n (công ty trung gian, ví dụ NITI GROUP) thu giá t ừ  ng ườ i 
+bán và nhu cầu t ừ  ng ườ i mua, rồ i t ự  đ ư a giá cho ng ườ i cần và ăn chênh lệ ch hoặ c hoa 
+hồng.
+S ổ  H ợ p Tác (SHT): app qu ả n lý cho doanh nghiệp mua đi bán lại. Mọi việ c xoay quanh 
+h ợ p đồng (mua, bán, gi ớ i thiệu h ưở ng hoa hồng); t ừ  các mố c h ợ p đồng, app t ự  cập nhật 
+kho, giá vốn, đi ể m uy tín đố i tác và g ợ i ý Mua thêm / Gi ữ  / X ả  hàng.
+Đo thành công c ủ a Community bằng 3 số: số  báo giá l ư u đ ượ c mỗ i tuần, t ỷ  lệ  bài cần bán 
+c ủ a NCC đ ượ c l ư u giá, số  câu h ỏ i giá chatbot tr ả  l ờ i đ ượ c.
+Actors — Community
+Một công ty có th ể  v ừ a NCC v ừ a ng ườ i mua; vai xác định theo t ừ ng bài. Quyền gắn v ớ i 
+công ty, không gắn cá nhân. Mỗ i công ty đố i tác có th ể  nhiều tài kho ả n nhân viên, cùng 
+một luồng trao đ ổ i v ớ i ch ủ  qu ả n.
+Actors — S ổ  H ợ p Tác
+Actor Là ai Đ ượ c làm Không đ ượ c làm
+Admin ch ủ  
+qu ả n
+Ch ủ  công ty 
+trung gian
+Mọi th ứ : tạo tài kho ả n thành 
+viên & đố i tác, l ư u báo giá, 
+dùng SHT, cài đặt
+—
+Thành viên 
+ch ủ  qu ả n
+Nhân viên 
+KD/mua hàng
+Đăng bài, bình luận, l ư u báo 
+giá, chatbot, dùng SHT theo 
+quyền
+Xóa đố i tác; xuất danh sách đố i 
+tác / S ả n ph ẩ m & Giá (tr ừ  khi 
+Admin cho phép)
+Nhà cung 
+cấp (NCC)
+Công ty bán 
+hàng
+Đăng Cần bán, bình luận bài 
+ch ủ  qu ả n, xem bài ch ủ  qu ả n
+Thấy NCC khác/ng ườ i mua; kết 
+bạn; thấy giá đã l ư u/đi ể m uy tín
+Ng ườ i mua Công ty có nhu 
+cầu
+Đăng Cần mua, bình luận bài 
+ch ủ  qu ả n, xem bài ch ủ  qu ả n
+Thấy đố i tác khác; kết bạn; 
+thấy giá vốn
+Vai Việ c chính
+Ch ủ  DN / qu ả n lý (QL) Xem T ổ ng quan, quyết định mua thêm/x ả  hàng, 
+chọn đố i tác, ch ỉ nh Cài đặt
+NV phụ trách h ợ p đồng (NV) Tạo/cập nhật h ợ p đồng, xác nhận mố c, đánh giá đố i 
+tác
+NV kinh doanh (KD) Theo dõi khách sắp hết hạn, nhắ c gia hạn, xem giá 
+báo khách
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 2/29
+
+=== PAGE ===
+Quan hệ  hai phầ n: ng ườ i dùng SHT chính là phía ch ủ  qu ả n c ủ a Community. Đố i tác không 
+có SHT. Community ch ỉ  ghi vào SHT qua một chỗ  (L ư u báo giá, nguồn "Báo giá") và đọc t ừ  
+SHT (hàng đang gi ữ , giá vốn BQ, giá đã ghi nhận, đi ể m uy tín) đ ể  g ợ i ý/chatbot — ch ỉ  ch ủ  
+qu ả n thấy.
+Mô hình kinh doanh
+Ch ủ  qu ả n làm trung gian: thu giá NCC + nhu cầu ng ườ i mua, t ự  đ ư a giá, ăn chênh lệ ch 
+hoặ c hoa hồ ng. Giá trị nằm ở  chỗ  hai bên không biết nhau.
+Thu tiề n: ch ủ  qu ả n tr ả  (thuê bao theo công ty, chia gói theo số  thành viên & bạn bè; AI 
+theo l ượ ng dùng, tùy chọn). NCC/ng ườ i mua miễn phí.
+Kết nố i tr ự c tiếp gi ữ a đố i tác: ch ư a làm (ch ỉ  ghi ý t ưở ng). Giai đoạn 1 chạy v ớ i một ch ủ  
+qu ả n thật, một ngành hẹp (ngành cụ th ể : ch ư a chốt).
+Nguyên tắ c nề n (Community)
+1. Mọi thông tin ch ả y về  ch ủ  qu ả n — ng ườ i bán/mua không thấy nhau, không liên hệ  
+tr ự c tiếp.
+2. L ư u giá nhanh h ơ n chép t ừ  Zalo — thấy bài Cần bán, bấm L ư u báo giá là vào S ả n ph ẩ m 
+& Giá.
+3. H ỏ i là có câu tr ả  l ờ i — chatbot tr ả  l ờ i ngay giá/c ủ a ai/khi nào t ừ  S ả n ph ẩ m & Giá.
+Phạm vi / ngoài phạm vi
+Trong: Community (b ả ng tin, bài Cần bán/Cần mua/Thông báo, bình luận riêng theo đố i 
+tác, L ư u báo giá, chatbot, thông báo trong app, trang cá nhân, admin tạo đố i tác); SHT v2.0 
+(4 trang: T ổ ng quan, H ợ p đồng & giao dịch, Đố i tác, S ả n ph ẩ m & Giá + Cài đặt). Ngoài / 
+ch ư a làm: kết bạn qua SĐT/email; kết nố i tr ự c tiếp đố i tác; thông báo Zalo/SMS/email; t ự  
+quy đ ổ i đ ơ n vị; giao hàng/hóa đ ơ n/tài xế; (SHT) lịch s ử  nhiều năm & so cùng kỳ, phân quyền 
+chi tiết, thông báo đ ẩ y, công n ợ /hóa đ ơ n/kế  toán, màn cấu hình cách lấy hàng, duyệt nhiều 
+b ướ c & ký số.
+Nghiệ p vụ Community
+Th ự c th ể
+AI (hệ  thống) Đọc file h ợ p đồng, trích + tóm tắt; tìm thông tin đố i 
+tác & giá thị tr ườ ng
+Th ự c th ể Quy tắ c chính
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 3/29
+
+=== PAGE ===
+Luồ ng chính
+1. Admin tạo tài kho ả n đố i tác (nhãn NCC/ng ườ i mua + nhóm hàng).
+2. NCC đăng Cầ n bán, ng ườ i mua đăng Cầ n mua; ch ủ  qu ả n thấy c ả  hai trên b ả ng tin t ổ ng 
+h ợ p.
+3. Ch ủ  qu ả n h ỏ i thêm qua bình luận riêng, rồ i L ư u báo giá trên bài Cần bán c ủ a NCC đ ể  
+đ ư a giá vào SHT.
+4. Ch ủ  qu ả n đăng bài c ủ a mình (chọn ng ườ i xem); dùng chatbot tra giá/tìm đố i tác.
+5. Thông báo báo bình luận, bài m ớ i, bài kh ớ p, bài sắp hết hạn.
+L ư u báo giá (đi ể m nố i duy nhấ t v ớ i SHT)
+Nút ở  góc trên ph ả i bài, ch ỉ  trên bài Cầ n bán c ủ a NCC, ch ỉ  ch ủ  qu ả n thấ y. Form điền 
+sẵn (s ả n ph ẩ m, NCC, giá, đ ơ n vị, VAT, loại Mua m ớ i/Gia hạn, ngày), so v ớ i giá đã có.
+NCC không biế t bài đã đ ượ c l ư u giá. L ư u không đ ổ i kho/giá vốn/đi ể m uy tín.
+Giá l ư u không hạn mặ c định; quá hạn "Đã hết hạn", chatbot không dùng. Cùng 
+NCC+s ả n ph ẩ m: giá m ớ i thay cũ, cũ vào lịch s ử . Lệ ch >30% so giá đang có: c ả nh báo. 
+Bài bị s ử a giá sau khi l ư u: báo ch ủ  qu ả n l ư u lại; bài bị xóa: giá gi ữ , link "bài đã xóa".
+Quy tắ c hi ể n thị / che
+Công ty / tài kho ả n Mỗ i tài kho ả n thuộ c một công ty; quyền gắn công 
+ty. Đố i tác nhãn NCC / ng ườ i mua / c ả  hai + nhóm 
+hàng quan tâm
+Đố i tác / bạn bè Admin tạo (tên công ty, ng ườ i dùng, tên đăng nhập, 
+mật kh ẩ u tạm); tạo xong là bạn ngay, không b ướ c 
+m ờ i; lần đầu đ ổ i mật kh ẩ u. Khóa/xóa đ ượ c, giá đã 
+l ư u vẫn gi ữ
+Bài đăng Cần bán / Cần mua / Thông báo; nộ i dung t ự  do + 
+tố i đa 10 ả nh, 2 video; hạn 30 ngày, tr ướ c 3 ngày h ỏ i 
+gia hạn/l ư u tr ữ ; trạng thái: đang đăng, đã s ử a, l ư u 
+tr ữ , đã xong, hết hạn, đã xóa
+Bình luận Riêng theo đố i tác (nh ư  nhắn riêng gắn vào bài ch ủ  
+qu ả n)
+L ư u báo giá / giá đã l ư u Ghi giá vào S ả n ph ẩ m & Giá (nguồn "Báo giá") + link 
+về  bài
+Thông báo / Chatbot Thông báo ch ỉ  trong app; chatbot tra giá, so sánh, 
+soạn bài, bóc tách — ch ỉ  soạn, ng ườ i dùng xác nhận
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 4/29
+
+=== PAGE ===
+SĐT/email/Zalo/Facebook/website/MST/tên công ty khác trong bài/bình luận đố i tác 
+bị quét & che, ch ỉ  ch ủ  qu ả n thấy gố c. Ả nh NCC đ ượ c AI ki ể m logo/tên/SĐT in trên ả nh.
+Ch ủ  qu ả n không chuy ể n tiếp nguyên bài đố i tác; ch ỉ  "Đăng lại d ướ i tên mình". Ch ỉ  ch ủ  
+qu ả n thấy: nút L ư u báo giá, "Đã l ư u báo giá", g ợ i ý (giá vốn/uy tín/hàng đang có), S ả n 
+ph ẩ m & Giá, giá vốn, biên l ợ i nhuận, đi ể m uy tín, nhãn/ghi chú đố i tác.
+Ch ỉ  ch ủ  qu ả n đ ượ c kết bạn ⇒  mạng hình sao. NCC và ng ườ i mua không thấ y nhau
+(bài, bình luận, hồ  s ơ , bạn bè).
+Chatbot & Thông báo
+Chatbot ch ủ  qu ả n: tra giá (kèm nguồn + ngày), so sánh (ghi rõ VAT), l ư u báo giá (bóc 
+tách Zalo/ ả nh), tóm tắt, tìm đố i tác. Đố i tác (gi ớ i hạn): đăng bài qua chatbot; không tr ả  
+l ờ i về  đố i tác khác/giá vốn/giá đã l ư u.
+Thông báo (ch ỉ  trong app, bật/tắt t ừ ng loại): bình luận, tr ả  l ờ i, NCC đăng Cần bán m ớ i, 
+ng ườ i mua đăng Cần mua m ớ i, bài Cần mua kh ớ p hàng đang có, NCC s ử a giá bài đã l ư u, 
+bài sắp hết hạn (mặ c định bật); t ổ ng h ợ p hằng ngày 8:00 (mặ c định tắt).
+Nghiệ p vụ S ổ  H ợ p Tác
+Ch ứ ng t ừ  và quan hệ
+H ợ p đồng/giao dịch là nguồn gố c; kho, giá vốn, doanh thu, đi ể m uy tín, đi ể m kinh doanh 
+đều tính ra t ừ  ch ứ ng t ừ  và mố c.
+Nộ i dung Ch ủ  
+qu ả n
+NCC Ng ườ i mua
+Bài ch ủ  qu ả n Thấy Thấy nếu là bạn & đ ượ c chia 
+s ẻ
+Thấy nếu là bạn & đ ượ c chia 
+s ẻ
+Bài NCC Thấy Ch ỉ  bài mình Không
+Bài ng ườ i mua Thấy Không Ch ỉ  bài mình
+Bình luận trên bài ch ủ  
+qu ả n
+Tất c ả Ch ỉ  c ủ a mình Ch ỉ  c ủ a mình
+Danh sách bạn bè Tất c ả Không Không
+Hồ  s ơ  công ty Mọi hồ  
+s ơ
+Ch ỉ  hồ  s ơ  ch ủ  qu ả n Ch ỉ  hồ  s ơ  ch ủ  qu ả n
+Ch ứ ng t ừ File ký Dùng khi Tính kho/doanh 
+thu/đi ể m
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 5/29
+
+=== PAGE ===
+H ướ ng: Mua (nhập kho khi giao xong, cập nhật giá vốn BQ), Bán (xuất kho, lãi = giá bán 
+− giá vốn), Gi ớ i thiệ u (hoa hồng, không đ ổ i kho). Giao dịch có file ký thì nâng thành 
+HĐ kinh tế  (gi ữ  id/mố c/kho/đi ể m).
+HĐ kinh tế/giao dịch gắn HĐ nguyên tắ c ph ả i cùng đố i tác, cùng h ướ ng. Sau Xác nhận, 
+h ợ p đồng khóa tr ườ ng pháp lý; phụ lục = t ả i văn b ả n ký m ớ i tạo phiên b ả n kế  tiếp.
+C ả nh báo pháp lý: giao dịch đ ứ ng riêng, giá trị t ừ  5.000.000đ, còn mố c thu/tr ả  ch ư a 
+xong (ng ưỡ ng theo Luật Thuế  GTGT; ch ỉ nh đ ượ c, cần kế  toán xác nhận).
+Mố c
+Mỗ i h ợ p đồng có dãy mố c: giao hàng, cấp serial, thanh toán, đố i soát hoa hồng, nhắ c 
+gia hạn; mỗ i mố c có hạn, ng ườ i chịu trách nhiệm, ngày hoàn thành th ự c tế. Thêm tay 7 
+loại; ch ỉ  s ử a/xóa mố c ch ư a xác nhậ n.
+Xác nhậ n mố c là đi ể m nố i c ả  hệ  thống: cập nhật kho, giá vốn, đi ể m uy tín, đi ể m kinh 
+doanh, Cần x ử  lý cùng lúc. Mố c trễ: chọn lỗ i đố i tác/mình/ch ư a rõ — ch ỉ  lỗ i đố i tác m ớ i 
+tr ừ  đi ể m. Giao v ượ t tồn: c ả nh báo khi l ư u, chặ n khi xác nhận mố c giao thiếu kho.
+S ả n ph ẩ m
+Nhóm: Dịch vụ có hạn (bán theo năm, có khách đang dùng, nhắ c gia hạn), Hàng hóa
+(tồn kho, nhập/xuất theo lô), Gi ớ i thiệ u (không gi ữ  hàng, thu hoa hồng).
+Mỗ i nhập là một lô giá riêng; giá vố n BQ = (tồn cũ×giá cũ + lô m ớ i×giá m ớ i) ÷ t ổ ng tồn. 
+S ả n ph ẩ m nhiều thành phần tính kho/giá vốn riêng t ừ ng thành phần. Mọi dòng ph ả i 
+gắn s ả n ph ẩ m trong danh mục (AI g ợ i ý) tr ướ c khi l ư u.
+Đố i tác & Đi ể m uy tín
+Đố i tác gi ữ  nhiều vai: Nhà cung cấ p / Khách hàng / Bên tr ả  hoa hồ ng; đố i tác/vai m ớ i 
+mang nhãn M Ớ I.
+Đi ể m uy tín 0–100 theo đố i tác × vai × nhóm s ả n ph ẩ m; t ừ  mố c đã xác nhận + việ c đã 
+ghi. Mỗ i ô có tiêu chí + trọng số  (ví dụ Hàng hóa·NCC: Giao đúng hạn 35% · Chất l ượ ng 
+35% · Gi ữ  giá 20% · X ử  lý s ự  cố  10%); thêm tiêu chí riêng (≤8/ô, 3 ki ể u). Kho ả ng tính 24 
+tháng (dịch vụ) / 12 tháng (hàng hóa, gi ớ i thiệu), gi ả m theo độ  cũ.
+ u/đ ể
+H ợ p đồng kinh 
+tế
+Bắt buộ c Một lần mua/bán/gi ớ i thiệu có giá 
+trị, hạn giao, thanh toán cụ th ể
+Có
+H ợ p đồng 
+nguyên tắ c
+Bắt buộ c Khung dài hạn (điều kho ả n, b ả ng 
+giá, hạn m ứ c), ch ư a có số  l ượ ng/ngày
+Không (ch ỉ  ch ứ ng 
+t ừ  con)
+Giao dịch Không (đính kèm 
+tùy chọn)
+Ch ỉ  có hóa đ ơ n/báo giá/email/tin 
+nhắn/th ỏ a thuận miệng
+Có
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 6/29
+
+=== PAGE ===
+M ứ c: TỐT t ừ  85 · KHÁ t ừ  70 · d ướ i 70 CHÚ Ý. D ướ i 3 việ c = M Ớ I. Đánh giá tay 1–5 sao (t ỷ  
+trọng mặ c định 20%, tố i đa 50%; lệ ch >25 đi ể m bắt ghi lý do). Chốt đi ể m hằng tháng, 
+đã chốt không đ ổ i.
+Đi ể m kinh doanh (theo s ả n ph ẩ m, 0–100)
+3 yếu tố: Tố c độ  bán · Biên lãi · Xu h ướ ng (trọng số  ch ỉ nh đ ượ c). Đề  xuất: có gi ữ  hàng — 
+Mua thêm (tồn < 45 ngày hoặ c bán > 120% suất, đi ể m ≥ 65) / X ả  hàng (tồn > 150 ngày, < 
+70% suất, đi ể m < 40) / Gi ữ ; không gi ữ  hàng — Đ ẩ y mạnh (≥70) / Cân nhắ c d ừ ng (<45) / 
+Duy trì.
+Dò giá thị tr ườ ng
+Trong tab Nhà cung cấ p & giá (không áp dụng nhóm Gi ớ i thiệu): so giá NCC v ớ i giá vốn 
+đang gi ữ ; nút Tìm giá trên thị tr ườ ng (AI) cho giá tham kh ả o, l ư u vào b ả ng so sánh; g ợ i ý 
+H ợ p tác tiếp / Duy trì nguồn phụ / Tìm nguồn thay thế  / Mua th ử .
+Quy trình duyệ t & Cài đặ t
+Th ự c tế  hiện có: upload → AI trích + tóm tắt (tr ườ ng ch ư a chắ c tô vàng) → NV ki ể m tra, 
+gắn s ả n ph ẩ m/đố i tác → Xác nhậ n và khóa. Duyệt nhiều b ướ c, điều kiện duyệt, ký số: 
+— xem mục "Quy trình duyệ t + Ký số " d ướ i đây (đã có trong app contracts-web thậ t).
+Cài đặ t (m ở  t ừ  avatar): Công ty (tên, logo, 6 màu, giao diện) · Đi ể m uy tín (5 ô 
+nhóm×vai, tab Tiêu chí/Th ờ i gian/Loại việ c + M ứ c & đánh giá) · Đi ể m kinh doanh (trọng 
+số, ng ưỡ ng). Ng ưỡ ng pháp lý 5.000.000 ch ỉ nh đ ượ c.
+Quy trình duyệ t + Ký số
+(Kh ớ p app contracts-web thật, có t ừ  CR-105; tài liệu gố c v2.0 ghi "ch ư a chốt".)
+Bậ t duyệ t: Cài đặt › Công ty › "B ướ c duyệ t h ợ p đồ ng" (approval_enabled). Bậ t: h ợ p 
+đồng đi qua l ượ t duyệt rồ i m ớ i có hiệu l ự c. Tắ t: l ư u là hiệu l ự c ngay.
+Quy trình gán theo tenant: platform admin gán lúc onboarding; công ty chạy mộ t quy 
+trình cho mọi h ợ p đồng. Trong SHT ch ỉ  xem: "Quy trình duyệt đang dùng: {tên} · 
+v{phiên b ả n}", "ch ỉ  xem đ ượ c ở  đây". Ch ư a gán ⇒  "Ch ư a gán quy trình duyệt."
+S ơ  đồ  b ướ c: mỗ i b ướ c có tên, phòng ban, hạn x ử  lý; nhãn "Có điề u kiệ n" và "Ký số". 
+S ử a = nút "Ch ỉ nh quy trình duyệ t" → editor ai-admin (Canvas/Form), ch ỉ  
+platform_admin; lỗ i "Không m ở  đ ượ c trang ch ỉ nh quy trình."
+Ký số  h ợ p đồ ng: công tắ c "Ký số  h ợ p đồ ng" (esign_enabled) — cho phép g ử i h ợ p 
+đồng đã duyệ t đi ký. "Nhà cung cấ p mặ c định" (CA); mỗ i NCC ghi "Có giá trị pháp lý" / 
+"Không có giá trị pháp lý" / "Ch ư a cấu hình"; chế  độ  ký th ử = "không có giá trị pháp lý". 
+Neo ký (Bên A / Bên B đặt ô ký — EsignAnchorSetting). Quyền admin; API 
+/esign/settings, /esign/anchors; ghi approval_settings_audit.
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 7/29
+
+=== PAGE ===
+Vòng đ ờ i: (nếu bật duyệt) Soạn → các b ướ c duyệt theo phòng ban/điều kiện → (b ướ c 
+ký số ) g ử i ký → hiệ u l ự c & khóa. Tắt duyệt thì l ư u là hiệu l ự c.
+Ranh gi ớ i: chi tiết runtime duyệt t ừ ng b ướ c (màn approve/reject) ở  contracts-web/ai-
+admin; tài liệu ch ỉ  mô t ả  nghiệp vụ.
+Quyề n (QL / NV / KD)
+QL: T ổ ng quan, quyết định, Cài đặt, xóa h ợ p đồng · NV: tạo/cập nhật h ợ p đồng, xác nhận 
+mố c, đánh giá · KD: khách sắp hết hạn, nhắ c gia hạn, xem giá. Phân quyề n chi tiế t ch ư a 
+làm. Doanh thu/hoa hồng tính theo mố c (d ự  kiến theo ngày đến hạn, th ự c nhận theo ngày 
+xác nhận), đếm một lần.
+Use cases
+Community (UC-CM)
+Mã Tên Actor Luồ ng chính Kế t qu ả Quyề n & cách ly
+UC-
+CM-01
+Tạo tài kho ả n 
+đố i tác (kết bạn)
+Admin Nhập công ty/ng ườ i 
+dùng/tên đăng 
+nhập/mật kh ẩ u tạm → 
+gắn nhãn + nhóm hàng 
+→ L ư u
+Đố i tác là bạn ngay; 
+lần đầu đ ổ i mật kh ẩ u
+Ch ỉ  Admin
+UC-
+CM-02
+Khóa/xóa/đặt lại 
+mật kh ẩ u đố i tác
+Admin Chọn đố i tác → Tạm 
+khóa / Xóa / Đặt mật 
+kh ẩ u
+Mất quyền xem bài; 
+giá đã l ư u gi ữ
+Thành viên không 
+xóa đ ượ c
+UC-
+CM-03
+NCC đăng Cần 
+bán
+NCC Điền s ả n ph ẩ m/số  
+l ượ ng/giá, ≤10 ả nh/≤2 
+video → Đăng
+Hiện cho ch ủ  qu ả n, 
+hạn 30 ngày
+Ch ỉ  ch ủ  qu ả n thấy; 
+che liên hệ
+UC-
+CM-04
+Ng ườ i mua đăng 
+Cần mua
+Ng ườ i mua Điền s ả n ph ẩ m/số  
+l ượ ng/khu v ự c/ngày cần 
+→ Đăng
+Hiện cho ch ủ  qu ả n; 
+ki ể m kh ớ p hàng
+NCC không thấy
+UC-
+CM-05
+Ch ủ  qu ả n đăng 
+bài
+Admin/Thành 
+viên
+Chọn loại → điền → chọn 
+ng ườ i xem → Đăng
+T ớ i đúng nhóm bạn 
+bè
+Đố i tác ch ỉ  thấy khi 
+đ ượ c chia s ẻ
+UC-
+CM-06
+Xem b ả ng tin & 
+lọc
+Mọi actor Lọc loại/nhóm hàng/khu 
+v ự c/giá/ng ườ i đăng; tìm 
+theo tên SP
+Danh sách theo 
+quyền xem
+Ch ủ  qu ả n thấy t ổ ng 
+h ợ p
+UC-
+CM-07
+S ử a/l ư u tr ữ /
+đánh dấu 
+xong/xóa bài
+Ng ườ i đăng S ử a (nhãn đã s ử a) / L ư u 
+tr ữ  / Đã xong / Xóa (xác 
+nhận)
+Cập nhật hoặ c 
+ẩn/xóa
+Giá đã l ư u gi ữ  
+nguyên
+UC-
+CM-08
+Gia hạn/l ư u tr ữ  
+bài sắp hết hạn
+Ng ườ i đăng Nhận nhắ c (còn 3 ngày) 
+→ gia hạn/l ư u tr ữ
+Bài tiếp tục hoặ c l ư u 
+tr ữ
+Ch ỉ  ng ườ i đăng
+UC- L ư u báo giá t ừ  Admin/Thành Bấm L ư u báo giá → form Giá vào S ả n ph ẩ m & Ch ỉ  ch ủ  qu ả n; NCC 
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 8/29
+
+=== PAGE ===
+S ổ  H ợ p Tác (UC-SHT) — mã gố c trong ngoặ c
+CM-09 bài Cần bán viên điền sẵn → so giá cũ → 
+L ư u
+Giá; bài hiện "Đã l ư u 
+báo giá"
+không biết; không 
+đ ổ i kho/giá vốn
+UC-
+CM-10
+Bình luận riêng 
+theo đố i tác
+Ch ủ  qu ả n; đố i 
+tác
+Viết/tr ả  l ờ i; ch ủ  qu ả n 
+h ỏ i thêm giá
+Trao đ ổ i riêng gắn 
+vào bài
+Mỗ i đố i tác ch ỉ  thấy 
+c ủ a mình; che liên hệ
+UC-
+CM-11
+Ẩ n bài / Đăng lại 
+d ướ i tên mình
+Ch ủ  qu ả n Ẩ n bài sai; hoặ c chu ẩ n 
+hóa, b ỏ  tên gố c, đặt giá 
+mình → Đăng
+Bài m ớ i không lộ  
+nguồn
+Không chia s ẻ  
+nguyên bài đố i tác
+UC-
+CM-12
+Chatbot tra/so 
+sánh giá, tìm đố i 
+tác
+Ch ủ  qu ả n H ỏ i tiếng Việt Tr ả  l ờ i kèm nguồn + 
+ngày; ch ư a có thì nói 
+"ch ư a có giá"
+Ch ỉ  ch ủ  qu ả n truy 
+cập S ả n ph ẩ m & Giá
+UC-
+CM-13
+Dán Zalo/ ả nh 
+báo giá cho 
+chatbot
+Ch ủ  qu ả n Dán → bóc tách → form 
+L ư u báo giá điền sẵn → 
+L ư u
+Giá vào S ả n ph ẩ m & 
+Giá
+Chatbot ch ỉ  soạn, 
+ng ườ i dùng xác nhận
+UC-
+CM-14
+Chatbot đố i tác 
+(đăng bài)
+NCC/Ng ườ i 
+mua
+"Đăng bán…" / "Tôi 
+cần…" → bài nháp → xác 
+nhận
+Tạo bài Cần bán/Cần 
+mua
+Không tr ả  l ờ i về  đố i 
+tác khác/giá vốn
+UC-
+CM-15
+Nhận & cấu hình 
+thông báo
+Mọi actor Nhận trên chuông → m ở  
+đúng bài/form; bật tắt 
+t ừ ng loại
+Không b ỏ  sót s ự  kiện Ch ỉ  trong app; đúng 
+ng ườ i nhận
+UC-
+CM-16
+Trang cá nhân / 
+Bài đăng c ủ a tôi
+Mọi actor Bấm icon user → hồ  s ơ , 
+bài, bình luận
+Qu ả n lý bài c ủ a công 
+ty mình
+SHT ch ỉ  ch ủ  qu ả n; 
+đố i tác không có
+Mã Tên Actor Luồ ng chính Kế t qu ả Quyề n & cách ly
+UC-
+SHT-01
+Upload h ợ p đồng cho 
+AI đọc (HD-02/08/10)
+NV, AI Upload → AI trích + 
+tóm tắt → NV s ử a, gắn 
+s ả n ph ẩ m/đố i tác → L ư u
+H ợ p đồng nháp có 
+mố c; thiếu gắn SP 
+không cho l ư u
+NV phụ trách; phân 
+quyền chi tiết ch ư a 
+làm
+UC-
+SHT-
+02
+Thêm giao dịch không 
+có file ký (HD-12)
+NV Chọn h ướ ng/nguồn/
+đố i tác/s ả n ph ẩ m → L ư u
+Giao dịch tính 
+kho/doanh thu/đi ể m; 
+c ả nh báo pháp lý nếu 
+≥5tr
+Cùng đố i tác, cùng 
+h ướ ng v ớ i HĐ nguyên 
+tắ c
+UC-
+SHT-
+03
+Xem danh sách & chi 
+tiết h ợ p đồng (HD-
+03/04)
+NV, QL Lọc Tất c ả /HĐ nguyên 
+tắ c/HĐ kinh tế/Giao 
+dịch → xem mố c, s ả n 
+ph ẩ m, tóm tắt
+Biết h ợ p đồng nào 
+quá hạn/b ướ c nào
+B ả n "Đã thay thế " 
+không hiện
+UC-
+SHT-
+04
+Thêm/s ử a/xóa mố c & 
+ghi việ c (HD-11/06)
+NV +Thêm mố c (7 loại) / 
+s ử a/xóa mố c ch ư a 
+xong; ghi khiếu nại
+Giai đoạn & Cần x ử  lý 
+cập nhật
+Mố c đã xác nhận 
+không s ử a
+UC-
+SHT-
+05
+Xác nhận mố c & xác 
+nhận giao (HD-05)
+NV Xác nhậ n xong → ngày 
+th ự c tế  → nếu trễ  chọn 
+lỗ i → xem tác động → 
+xác nhận
+Kho/giá vốn/đi ể m 
+cập nhật; chặn nếu 
+tồn thiếu
+Ch ỉ  lỗ i do đố i tác m ớ i 
+tr ừ  đi ể m
+UC- Xemđi ể muytín&diễn QL M ở Đố itác→đi ể m Hi ể uvìsaocóđi ể m Đi ể muytínkhông
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 9/29
+
+=== PAGE ===
+B ổ  sung use case (quy trình duyệ t):
+UC-SHT-18 — Cấ u hình quy trình duyệ t & ký số  · QL/admin · Cài đặt › Công ty bật 
+"B ướ cduyệth ợ pđồng";Càiđặt›Quytrìnhduyệtbậtkýsố chọnCAneoký;s ử aquy
+UC
+SHT-
+06
+Xem đi ể m uy tín & diên 
+biến (DT-01..03/06)
+QL, 
+NV
+M ở  Đôi tác → đi ể m 
+theo vai → tiêu chí 
+t ừ ng việ c → bi ể u đồ  
+3/6/12 tháng
+Hi ể u vì sao có đi ể m 
+đó
+Đi ể m uy tín không 
+hiện cho đố i tác 
+(Community)
+UC-
+SHT-
+07
+Chấm đánh giá tay & 
+ghi chú (DT-04/05)
+NV, QL Chấm 1–5 sao t ừ ng tiêu 
+chí → ghi lý do nếu lệ ch 
+>25 → L ư u
+Đi ể m cuố i trộn d ữ  
+liệu + đánh giá
+Lịch s ử  theo ng ườ i & 
+ngày
+UC-
+SHT-
+08
+Xem đề  xuất kinh 
+doanh (SP-01/02/06, 
+TQ-03)
+QL, 
+KD
+M ở  S ả n ph ẩ m & Giá → 
+đi ể m kinh doanh → đề  
+xuất Mua thêm/Gi ữ /X ả
+Danh sách việ c v ớ i 
+hàng
+QL quyết định
+UC-
+SHT-
+09
+Dò giá thị tr ườ ng & so 
+NCC (SP-04/05)
+QL, AI Tab NCC & giá → so giá 
+vốn → Tìm giá trên thị 
+tr ườ ng → l ư u b ả ng
+Biết NCC r ẻ  h ơ n, uy 
+tín; giá tham kh ả o 
+ngoài
+Giá thị tr ườ ng là 
+nguồn khác
+UC-
+SHT-10
+Theo dõi khách & nhắ c 
+gia hạn (SP-03, TQ-01)
+KD Tab Khách đang dùng 
+→ lọc Hết hạn/Sắp hết 
+hạn → Nhắ c gia hạn
+Thêm việ c vào Cần 
+x ử  lý
+Mố c nhắ c theo h ợ p 
+đồng (mặ c định 60 
+ngày)
+UC-
+SHT-11
+Xem T ổ ng quan (TQ-
+01/02/04)
+QL, 
+NV, 
+KD
+Chọn kỳ → 4 con số, 
+Cần x ử  lý (8 loại), đố i 
+tác cần xem lại
+Biết hôm nay làm gì & 
+tình hình
+Doanh thu/hoa hồng 
+theo mố c, không trùng
+UC-
+SHT-12
+Qu ả n lý HĐ nguyên tắ c 
+& ch ứ ng t ừ  con (HD-13)
+NV, AI Upload HĐ nguyên tắ c 
+→ thêm HĐ kinh 
+tế/giao dịch/mố c vào 
+diễn biến
+Hiện % hạn m ứ c; 
+c ả nh báo ch ứ ng t ừ  
+ngoài hạn
+Ch ứ ng t ừ  con cùng đố i 
+tác/h ướ ng
+UC-
+SHT-13
+Nâng giao dịch thành 
+h ợ p đồng (HD-14)
+NV M ở  giao dịch → Nâng 
+thành h ợ p đồ ng → 
+chọn file ký, số  HĐ → 
+Xác nhận
+Thành HĐ kinh tế, 
+gi ữ  id/mố c/kho/đi ể m
+Cần file ký
+UC-
+SHT-14
+Duyệt (xác nhận & 
+khóa) + phiên b ả n m ớ i 
+(HD-09/15)
+NV, QL Nháp → Xác nhậ n và 
+khóa; đã khóa → T ả i 
+b ả n cậ p nhậ t → nháp 
+phiên b ả n kế  → xác 
+nhận
+B ả n m ớ i hiện hành, 
+b ả n cũ "Đã thay thế ". 
+Duyệt nhiều b ướ c/ký 
+số: ch ư a chốt
+Ch ỉ  ng ườ i phụ trách 
+m ở  lại (có log)
+UC-
+SHT-15
+Xóa h ợ p đồng (HD-07) QL Xóa → xác nhận liệt kê 
+tác động
+Xóa h ẳ n, không hoàn 
+tác; đi ể m kỳ đã chốt 
+gi ữ
+Ch ỉ  QL
+UC-
+SHT-16
+Cấu hình công ty/uy 
+tín/kinh doanh (CD-
+01..06)
+QL Đ ổ i tên/logo/màu; bật 
+tắt tiêu chí, trọng số, 
+ng ưỡ ng → th ử  tính → 
+L ư u
+Đi ể m hiện tại tính lại; 
+đi ể m đã chốt không 
+đ ổ i
+Ch ỉ  QL
+UC-
+SHT-17
+L ư u báo giá t ừ  
+Community
+Ch ủ  
+qu ả n
+Nh ư  UC-CM-09, nguồn 
+"Báo giá"
+Giá hiện trong "Các 
+giá đã ghi nhận"
+Community không 
+thêm màn/nghiệp vụ 
+m ớ i trong SHT
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 10/29
+
+=== PAGE ===
+B ướ c duyẹt h ợ p đông; Cài đạt › Quy trình duyẹt bạt ký sô, chọn CA, neo ký; s ử a quy 
+trình ở  ai-admin · Kết qu ả : quy trình & ký số  áp cho mọi h ợ p đồng · Quyền: admin (s ử a 
+quy trình: platform_admin); ghi approval_settings_audit.
+UC-SHT-19 — H ợ p đồ ng đi qua l ượ t duyệ t → ký số  → hiệ u l ự c · NV/QL · (nếu bật 
+duyệt) Soạn → các b ướ c duyệt theo phòng ban/điều kiện → (b ướ c ký số ) g ử i ký → hiệu 
+l ự c & khóa · Kết qu ả : h ợ p đồng ch ỉ  hiệu l ự c sau duyệt · Theo quy trình gán cho tenant.
+P0 — T ổ ng quan, bấ t biế n, t ừ  đi ể n, quyế t định
+Mã COM-FR-26. Ch ỉ  h ợ p nhất v ỏ ; không trộn nghiệp vụ/d ữ  liệu.
+Hiệ n trạng (code thậ t)
+Quyế t định đã chố t (2026-11-02)
+Đi ể m Hiệ n trạng Nguồ n
+Hai app riêng community-web + contracts-web modules.md
+Topbar Logo "S" + "S ổ  H ợ p Tác / Community" (c ứ ng) TopBar.tsx:89
+Sidebar Không có sidebar toàn cục; .wsside ch ỉ  trong Hồ  s ơ  
+& Cài đặt
+App.tsx:13
+Màu ch ủ  đạo Theo ng ườ i (5 màu, localStorage 
+community.accent)
+Settings.tsx:14
+SHT t ừ  community Một link "M ở  S ổ  H ợ p Tác" (ch ủ  qu ả n) Profile.tsx:46
+Menu SHT T ổ ng quan · H ợ p đồng & giao dịch · Đố i tác · S ả n 
+ph ẩ m & Giá
+nav.ts:12
+Cài đặt SHT 5 mục: co, rep, biz, scout, flow + Thành viên SettingsDialog.tsx
+# Quyế t định Nhãn
+Q1 H ợ p nhất ở  l ớ p v ỏ ; gi ữ  2 app riêng, không gộp 1 app Đ ổ i
+Q2 SHT m ở  bằng deep-link sang contracts-web, không 
+nhúng
+Gi ữ
+Q3 Màu ch ủ  đạo theo công ty (brand); b ỏ  màu theo 
+ng ườ i
+Đ ổ i
+Q4 "Đố i tác" trong hồ  s ơ  = danh sách công ty bạn bè Đ ổ i
+Q5 "Attachment" = t ổ ng h ợ p ả nh/tệp t ừ  bài đã đăng M ớ i
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 11/29
+
+=== PAGE ===
+Mặ c định đóng lỗ  h ổ ng readiness
+Q6 Hồ  s ơ  ki ể u Facebook cho c ả  ch ủ  qu ả n & đố i tác; đố i 
+tác không có mục SHT
+M ớ i
+Q7 Cài đặt gộp một màn, phân quyền theo t ừ ng nhóm Đ ổ i
+Q8 Song ng ữ  VI/EN (EN đề  xuất dịch, ch ờ  duyệt); thêm 
+hạ tầng i18n (COM-FR-46)
+M ớ i
+Q9 brand (logo + màu + tên) trong CR-106, dùng chung 
+nguồn /company c ủ a contracts (COM-FR-45)
+M ớ i
+Q10 Mục SHT trong Cài đặt = deep-link; tiền đề: 
+contracts-web hỗ  tr ợ  ?sec=
+M ớ i
+Q11 SSO community→SHT: fallback cho b ả n đầu (có th ể  
+đăng nhập lại)
+Hoãn
+# Ch ủ  đề Mặ c định
+D3 Endpoint brand GET /pack/community/brand qua port gói, {name, 
+appName, logo, accent}; shape ch ờ  backend-lead
+D4 Host deep-link VITE_CONTRACTS_URL, r ơ i về  /contracts
+D5 Brand đố i tác mỗ i account hiện brand công ty mình; ch ư a có ⇒  
+indigo + ch ữ  cái đầu
+D6 Endpoint hồ  s ơ GET /pack/community/profile/:orgId/partners và 
+/media; shape ch ờ  backend-lead
+D7 Cột uy tín đọc qua port gói contracts; user ngoài ⇒  0 hàng
+D8 T ươ ng thích accent server đ ể  accent optional, b ỏ  qua khoá lạ
+D9 i18n namespace locales/community/{vi,en}; thiếu EN ⇒  
+r ơ i về  VI
+D10 G ợ i ý SHT trên bài đúng nhãn source quote.ts; không thêm khố i m ớ i
+D11 Dialog cài đặt state nộ i bộ  + t ươ ng thích #/settings
+D12 Sidebar ≤900px nút m ở  drawer
+D13 Sáng/Tố i theo công ty, không theo ng ườ i
+D14 Attachment " Ả nh & tệp"; rỗng "Ch ư a có ả nh hay tệp."
+D15 R ờ i khi ch ư a l ư u h ỏ i xác nhận "Có thay đ ổ i ch ư a l ư u"
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 12/29
+
+=== PAGE ===
+Nguyên tắ c bấ t biế n (không đ ượ c phá)
+T ừ  đi ể n (2 nghĩa → quy ướ c)
+Tiêu chí chấ p nhậ n
+D16 Ch ư a gán quy trình "Ch ư a gán quy trình duyệt."
+D17 S ử a mô t ả  Gi ớ i thiệu ch ỉ  đọc trong CR-106
+# Bấ t biế n
+I1 Đố i tác không thấy SHT: không link/route/API. Gi ữ  
+HT-75/76, ext_deny, ADR-0031.
+I2 Community ↔  SHT nố i nhau một đi ể m: nút "L ư u 
+báo giá". Nghiệp vụ SHT gi ữ  nguyên.
+I3 Quyền khác nhau: community-owner vs contracts-
+owner; ki ể m theo t ừ ng nhóm.
+I4 Ẩ n UI không thay ki ể m quyền server; hi ể n thị ch ỉ  
+ph ả n chiếu RLS/guard.
+T ừ Community (A) SHT (B) Quy ướ c
+Đố i tác Bạn bè công ty Doanh nghiệp giao dịch Hồ  s ơ /rail: A; nhắ c B ghi "đố i tác 
+SHT"
+Gi ớ i thiệu Mục About H ướ ng h ợ p đồng hoa 
+hồng
+A: "Gi ớ i thiệu"; B: "h ợ p đồng hoa 
+hồng"
+Attachment Ả nh/tệp bài File ký h ợ p đồng A: " Ả nh & tệp"; B: "tệp h ợ p đồng"
+Uy tín Nhãn trên bài Đi ể m 0–100 A: "nhãn uy tín"; B: "Đi ể m uy tín" 
+(cài đặt)
+Cài đặt Tùy chọn ng ườ i 
+dùng
+Cấu hình công ty "Cài đặt chung": nhóm Cá nhân + 
+Công ty
+AC Nộ i dung
+P0-AC01 Không route/link/nút nào trong community-web 
+dẫn sang SHT khi ng ườ i xem là đố i tác (HT-75/76 
+xanh).
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 13/29
+
+=== PAGE ===
+P1 — Khung & điề u h ướ ng
+Mã COM-FR-27..31. Tuân Q1–Q3, I1–I3. Mock: Topbar + Sidebar.
+Topbar — COM-FR-27
+Sidebar trái cố  định — COM-FR-28
+xanh).
+P0-AC02 Diff không thêm import chéo gi ữ a 2 app; ch ỉ  liên 
+kết bằng URL.
+P0-AC03 Không endpoint/b ả ng m ớ i nố i Community ↔  SHT 
+ngoài luồng L ư u báo giá.
+P0-AC04 Mục SHT ch ỉ  hiện khi có quyền contracts-owner; 
+mục Community theo community-owner (ki ể m 
+riêng).
+P0-AC05 Màu ch ủ  đạo lấy t ừ  công ty; không còn n ơ i đ ổ i màu 
+cá nhân.
+# Nộ i dung Nhãn
+T1 Topbar 60px sticky, nền trắng, viền d ướ i Gi ữ
+T2 Logo/tên = công ty ch ủ  qu ả n; bấm = về  B ả ng tin Đ ổ i
+T3 B ỏ  logo app "S ổ  H ợ p Tác" kh ỏ i topbar Đ ổ i
+T4 B ỏ  navtab "B ả ng tin" (trùng logo + mục sidebar) Đ ổ i
+T5 Ô tìm bo tròn, debounce 250ms, placeholder cũ Gi ữ
+T6 Chuông + badge ch ư a đọc + popover "Thông báo" Gi ữ
+T7 B ỏ  bánh răng "Cài đặt" + nút "Đăng xuất" (vào user-
+menu)
+Đ ổ i
+T9 Màu nhấn c ủ a v ỏ  lấy t ừ  brand công ty Đ ổ i
+# Nộ i dung Nhãn
+S1 Sidebar ở  mọi view (B ả ng tin, Hồ  s ơ ); thuộ c Shell Đ ổ i
+S2 Cố  định, sticky top 60px, cao calc(100vh-60px), t ự  
+cuộn
+Đ ổ i phạm vi
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 14/29
+
+=== PAGE ===
+Nhóm x ổ /gậ p — COM-FR-29
+User-menu t ừ  avatar — COM-FR-30
+S3 Khố i mini: avatar + tên công ty + "tên ng ườ i · vai" Gi ữ
+S4 ≤900px thu thành nút m ở  drawer M ớ i
+S5 Chân sidebar b ỏ  link "Cài đặt" Đ ổ i
+# Nộ i dung Nhãn
+G1 Tiêu đề  bấm x ổ /gập (chevron), nh ớ  trạng thái 
+(localStorage)
+M ớ i
+G2 Nhóm Community: B ả ng tin · Bài đăng c ủ a tôi · (ch ủ  
+qu ả n) Đố i tác
+Đ ổ i vị trí
+G3 Nhóm S ổ  H ợ p Tác — ch ỉ  ch ủ  qu ả n + quyền gói 
+contracts; 4 mục deep-link
+M ớ i
+G4 4 mục: T ổ ng quan /overview · H ợ p đồng & giao dịch 
+/contracts · Đố i tác /partners · S ả n ph ẩ m & Giá 
+/products; host = VITE_CONTRACTS_URL 
+(fallback /contracts)
+M ớ i
+G5 M ở  deep-link cùng tab (r ờ i community); SSO 
+fallback (Q11)
+Đ ổ i
+G6 Đố i tác: không render nhóm SHT, không route/link 
+(I1; HT-75/76)
+Gi ữ
+# Nộ i dung Nhãn
+U1 Bấm avatar m ở  dropdown (không điều h ướ ng tr ự c 
+tiếp)
+Đ ổ i
+U2 3 mục theo th ứ  t ự : T ườ ng nhà · Cài đặ t chung · 
+Đăng xuấ t
+M ớ i
+U3 Esc/bấm ngoài đóng; tr ả  focus; role=menu M ớ i
+U4 "Đăng xuất" ch ỉ  khi apiMode=http Gi ữ
+U5 Đầu menu: tên ng ườ i + công ty (read-only) M ớ i
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 15/29
+
+=== PAGE ===
+Routing & Cài đặ t dialog — COM-FR-31
+Nhãn VI / EN (EN đề  xuấ t, ch ờ  duyệ t)
+Tiêu chí chấ p nhậ n
+# Nộ i dung Nhãn
+R1 Route feed (mặ c định) + profile(+orgId); hash 
+#/feed, #/profile[/orgId]
+Gi ữ
+R2 B ỏ  route settings; Cài đặt = dialog t ừ  user-menu, 
+không đ ổ i hash
+Đ ổ i
+R3 #/settings cũ ⇒  m ở  B ả ng tin + bật dialog M ớ i
+R4 Dialog m ở  gi ữ  route nền; Esc/bấm nền đóng M ớ i
+Vị trí VI EN
+Menu avatar T ườ ng nhà · Cài đặt chung · Đăng xuất My wall · General settings · Sign out
+Mục 
+Community
+B ả ng tin · Bài đăng c ủ a tôi · Đố i tác News feed · My posts · Partners
+Mục SHT T ổ ng quan · H ợ p đồng & giao dịch · Đố i 
+tác · S ả n ph ẩ m & Giá
+Overview · Contracts & transactions · 
+Partners · Products & Prices
+Thông báo Thông báo · Đánh dấu đã đọc · Ch ư a 
+có thông báo.
+Notifications · Mark all as read · No 
+notifications yet.
+AC Nộ i dung
+P1-AC01 Topbar hiện tên/logo công ty ch ủ  qu ả n; không còn 
+"S ổ  H ợ p Tác"/"Community" làm logo; bấm logo về  
+B ả ng tin.
+P1-AC02 Topbar không có navtab "B ả ng tin", không bánh 
+răng, không nút "Đăng xuất" riêng.
+P1-AC03 Chuông và ô tìm hoạt động nh ư  tr ướ c (badge, 
+"Đánh dấu đã đọc", debounce 250ms).
+P1-AC04 Sidebar hiện ở  B ả ng tin & Hồ  s ơ , sticky cao 
+calc(100vh-60px); cuộn không làm sidebar trôi.
+P1-AC05 Chuy ể nB ả ngtin ↔ Hồs ơ khôngmấttrạngtháix ổ -
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 16/29
+
+=== PAGE ===
+Việ c còn m ở
+Duyệt nhãn EN (ng ườ i dùng). e2e community hiện dùng sht-link/bánh răng → cập nhật khi 
+code.
+P2 — B ả ng tin
+Mã COM-FR-32..34. Gi ữ  nguyên b ả ng tin Phase A; ch ỉ  đ ổ i phần l ớ p v ỏ  (b ỏ  .wsside riêng → 
+sidebar P1, accent theo brand, nhãn song ng ữ ). Quy tắ c hi ể n thị/che/l ư u báo giá không đ ổ i.
+Feedbar + Composer — COM-FR-32
+P1AC05 Chuy ể n B ả ng tin ↔  Hô s ơ  không mât trạng thái x ổ
+gập.
+P1-AC06 Mỗ i nhóm x ổ /gập bằng chuột và bàn phím; trạng 
+thái gi ữ  khi reload.
+P1-AC07 Ch ủ  qu ả n đ ủ  quyền thấy nhóm SHT đúng 4 mục, 
+mỗ i mục link t ớ i đ ườ ng dẫn contracts-web.
+P1-AC08 Đố i tác: DOM không có nhóm SHT, không có sht-
+link (HT-75/76).
+P1-AC09 Ch ủ  qu ả n thiếu quyền gói contracts không thấy 
+nhóm SHT (I3).
+P1-AC10 Bấm avatar m ở  dropdown đúng 3 mục; Esc/bấm 
+ngoài đóng.
+P1-AC11 "T ườ ng nhà" m ở  hồ  s ơ  c ủ a mình; "Đăng xuất" gọi 
+logout (http).
+P1-AC12 "Cài đặt chung" m ở  dialog; không còn view 
+settings; đóng dialog gi ữ  route nền.
+P1-AC13 #/settings (link cũ) hiện B ả ng tin + dialog.
+P1-AC14 #/profile và #/profile/<orgId> hoạt động nh ư  tr ướ c.
+# Nộ i dung Nhãn
+F1 Tab sticky: Tất c ả  · Cần bán · Cần mua · Thông báo · 
+Đã l ư u tr ữ  (kèm đếm)
+Gi ữ
+F2 Chip lọc gọn ở  Hồ  s ơ  (FeedList không ô lọc) Gi ữ
+F3 Composer thu gọn: prompt + 3 nút loại; bấm m ở  
+formđầyđ ủ
+Đ ổ i
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 17/29
+
+=== PAGE ===
+PostCard — COM-FR-33
+Rail — COM-FR-34
+Nhãn VI / EN (EN đề  xuấ t)
+form đây đ ủ
+F4 Form đầy đ ủ : chọn ng ườ i xem, điền sẵn t ừ  SHT, ≤10 
+ảnh/≤2 video, toast "Đã đăng bài"
+Gi ữ
+F5 2 cột: feedcol + rail; không còn .ws/.wsside (sidebar 
+do Shell)
+Đ ổ i
+# Nộ i dung Nhãn
+C1 Vạch màu trái + pill loại (Cần bán=accent, Cần 
+mua=cam, Thông báo=xám); accent theo brand 
+công ty
+Gi ữ  + đ ổ i nguồn accent
+C2 D ả i deal: hero "Giá chào"(bán)/"Ngân sách"(mua), 
+trống ⇒  "Liên hệ"
+Gi ữ
+C3 Callout ch ủ  qu ả n (không bao gi ờ  lộ  cho đố i tác): g ợ i 
+ý (tên SP / "Kh ớ p hàng đang có:" / "G ợ i ý t ừ  S ổ  H ợ p 
+Tác: ch ư a có s ả n ph ẩ m kh ớ p…") và "Đã l ư u báo giá 
+vào S ả n ph ẩ m & Giá:". Không thêm khố i m ớ i
+Gi ữ
+C4 Nút "L ư u báo giá" (ch ủ  qu ả n, bài Cần bán NCC) — 
+đi ể m nố i duy nhất v ớ i SHT (I2)
+Gi ữ
+C5 "Bình luận (n)" + luồng riêng theo đố i tác Gi ữ
+C6 Nhãn audience/trạng thái (Bạn bè/Ch ỉ  ch ủ  qu ả n; 
+đã s ử a/Đã l ư u tr ữ /Đã xong/Hết hạn)
+Gi ữ
+C7 Nút ⋯  "Tuỳ chọn bài đăng"; xoá có xác nhận Gi ữ
+# Nộ i dung Nhãn
+R1 Th ẻ  Bộ  lọc: Nhóm hàng · Khu v ự c · Ng ườ i đăng (ch ủ  
+qu ả n) · Xoá lọc; đố i tác ch ỉ  2 ô
+Gi ữ
+R2 Ch ủ  qu ả n: th ẻ  Đố i tác (tag "đã r ờ i") Gi ữ
+R3 Đố i tác: Công ty c ủ a bạn + Mẹo đăng bài Gi ữ
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 18/29
+
+=== PAGE ===
+Tiêu chí chấ p nhậ n
+Việ c còn m ở
+Duyệt nhãn EN; ki ể m Composer đã thu gọn ch ư a (frontend-lead khi code). Dark theo công 
+VI EN
+Tất c ả  · Cần bán · Cần mua · Thông báo · Đã l ư u 
+tr ữ
+All · For sale · Wanted · Announcements · 
+Archived
+Bộ  lọc · Nhóm hàng · Khu v ự c · Ng ườ i đăng · Xoá 
+lọc
+Filters · Category · Area · Posted by · Clear filters
+Giá chào · Ngân sách · Liên hệ Asking price · Budget · Contact
+L ư u báo giá · Đã l ư u báo giá vào S ả n ph ẩ m & Giá: Save quote · Quote saved to Products & Prices:
+G ợ i ý t ừ  S ổ  H ợ p Tác: · ch ư a có s ả n ph ẩ m kh ớ p 
+trong danh mục.
+Suggestion from S ổ  H ợ p Tác: · no matching 
+product yet.
+Bình luận (n) · Bạn bè · Ch ỉ  ch ủ  qu ả n Comments (n) · Friends · Host only
+Không có bài đăng nào trong mục này. No posts in this section.
+AC Nộ i dung
+P2-AC01 Năm tab đúng th ứ  t ự  + nhãn; đếm kh ớ p; tab sticky.
+P2-AC02 Composer mặ c định thu gọn; bấm m ở  form; đăng 
+hiện toast + bài lên đầu.
+P2-AC03 Cần bán không giá ⇒  "Giá chào: Liên hệ"; Cần mua 
+⇒  "Ngân sách".
+P2-AC04 Đố i tác không bao gi ờ  thấy "L ư u báo giá"/"Đã l ư u 
+báo giá…"/g ợ i ý SHT.
+P2-AC05 Màu vạch/pill Cần bán đ ổ i theo màu công ty; Cần 
+mua/Thông báo gi ữ .
+P2-AC06 Rail ch ủ  qu ả n: Bộ  lọc + Đố i tác; rail đố i tác: Bộ  
+lọc(2) + Công ty c ủ a bạn + Mẹo.
+P2-AC07 Không còn .wsside; sidebar P1 là duy nhất; ≤900px 
+rail xuống d ướ i.
+P2-AC08 Đ ổ i VI ↔ EN đ ổ i mọi nhãn, không đ ổ i d ữ  liệu bài.
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 19/29
+
+=== PAGE ===
+ty; b ả ng tin b ả n đầu ch ỉ  light.
+P3 — Hồ  s ơ  ki ể u Facebook
+Mã COM-FR-35..37. Áp c ả  ch ủ  qu ả n & đố i tác; đố i tác không có mục SHT (Q6, I1).
+Hero + số  liệ u — COM-FR-35
+Mô hình section + hàng tab — COM-FR-36
+Khai báo ban đầ u:
+# Nộ i dung Nhãn
+H1 Cover + biglogo + tên + dòng phụ (ch ủ  qu ả n: blurb; 
+đố i tác: "Nhà cung cấp · Ng ườ i mua" + khu v ự c)
+Gi ữ ; biglogo đ ổ i sang logo brand nếu có
+H2 Tag "đố i tác đã r ờ i" Gi ữ
+H3 hstats: Bài đang đăng · Đã l ư u tr ữ  · Bình luận nhận 
+đ ượ c · Bạn bè (khi có)
+Gi ữ
+H4 Màu cover theo accent brand; ch ư a có ⇒  indigo Đ ổ i
+# Nộ i dung Nhãn
+S1 Hàng tab: Gi ớ i thiệ u · Bài đăng · Đố i tác · 
+Attachment; mặ c định Bài đăng
+M ớ i
+S2 Section = m ả ng khai báo {id, labelVi, labelEn, 
+canView(viewer,target), source}; trang render t ừ  
+m ả ng; thêm mục = thêm phần t ử  + component
+M ớ i
+S3 canView bắt buộ c; mục không qua canView không 
+render (k ể  c ả  tab)
+M ớ i
+S4 URL #/profile[/orgId][/section]; section lạ ⇒  Bài 
+đăng
+M ớ i
+id VI / EN Ai xem Nguồ n
+about Gi ớ i thiệu / About ai xem đ ượ c hồ  s ơ profile.org (blurb, labels, 
+cats, area)
+posts Bài đăng / Posts ch ủ  qu ả n thấy bài đố i tác; đố i tác 
+ch ỉ bàimình
+FeedList
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 20/29
+
+=== PAGE ===
+Không có mục nào dẫn vào d ữ  liệu SHT cho đố i tác.
+Nộ i dung mục — COM-FR-37
+Nhãn VI / EN (đề  xuấ t)
+Tiêu chí chấ p nhậ n
+ch ỉ  bài mình
+partners Đố i tác / Partners công ty bạn bè c ủ a hồ  s ơ ; cột uy 
+tín ch ỉ  ch ủ  qu ả n
+endpoint m ớ i + port SHT
+files Attachment / Ả nh & 
+tệp
+nh ư  posts gom ả nh/tệp t ừ  bài
+Mục Chi tiế t
+Gi ớ i thiệu blurb, loại (Ch ủ  qu ả n/NCC/Ng ườ i mua), khu v ự c, 
+nhóm hàng; ch ỉ  đọc; KHÔNG ch ứ a h ợ p đồng hoa 
+hồng
+Bài đăng Composer (hồ  s ơ  mình) + FeedList (Tất c ả /Đã l ư u 
+tr ữ )
+Đố i tác Danh sách công ty bạn bè (tên, nhãn, khu v ự c, "đã 
+r ờ i"); bấm ⇒  profile/orgId; cột "Đi ể m uy tín" ch ỉ  ch ủ  
+qu ả n đ ủ  quyền contracts
+Attachment L ướ i ả nh/tệp t ừ  bài ng ườ i xem đ ượ c thấy (gi ữ  che 
+liên hệ)
+VI EN
+Gi ớ i thiệu · Bài đăng · Đố i tác · Ả nh & tệp About · Posts · Partners · Photos & files
+Bài đang đăng · Đã l ư u tr ữ  · Bình luận nhận đ ượ c · 
+Bạn bè
+Active posts · Archived · Comments received · 
+Friends
+Đi ể m uy tín Reputation score
+Ch ư a có bài đăng. · Ch ư a có đố i tác. · Ch ư a có 
+ảnh hay tệp.
+No posts yet. · No partners yet. · No photos or 
+files yet.
+AC Nộ i dung
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 21/29
+
+=== PAGE ===
+Việ c còn m ở
+Backend-lead khi code: ĐÃ CHỐT: ProfilePartnersSchema/ProfileMediaSchema; uy tín 
+dùng port có sẵn HostBookReader; đố i tác xem hồ  s ơ  ch ủ  qu ả n có thấy danh sách bạn bè 
+không (đề  xuất: ẩ n). Duyệt nhãn EN.
+P4 — Cài đặ t chung (dialog)
+Mã COM-FR-38..42. Q7 gộp một màn, phân quyền theo t ừ ng nhóm (I3). Q10: nhóm Cá 
+nhân làm trong dialog; nhóm Công ty & S ổ  H ợ p Tác = deep-link sang contracts-web 
+(không nhúng, không gọi API contracts).
+P4a — Khung dialog + nav nhóm + quyề n (COM-FR-38)
+M ở  t ừ  user-menu "Cài đặt chung"; head "Cài đặ t" + "Áp dụng cho c ả  công ty"; 
+Esc/nền đóng, route nền gi ữ .
+Nav 3 nhóm x ổ /gập: Cá nhân [CM] (Tài kho ả n, Giao diện, Thông báo) · Công ty [SHT]
+(Công ty, Thành viên) · S ổ  H ợ p Tác [SHT] (Đi ể m uy tín, Đi ể m kinh doanh, Dò giá thị 
+tr ườ ng, Quy trình duyệt).
+Nhóm không đ ủ  quyền: không render (không b ả n khoá). Không quyền SHT ⇒  ch ỉ  còn 
+nhóm Cá nhân.
+Mục SHT: th ẻ  ngắn + nút "M ở  trong S ổ  H ợ p Tác" → 
+${VITE_CONTRACTS_URL}/settings?sec=<id> (Thành viên: /settings/members). 
+Footer "L ư u cài đặt"/"B ỏ  thay đ ổ i"/"Khôi phục tất c ả " thuộ c màn SHT; Cá nhân l ư u ngay 
+t ừ ngcôngtắ c
+P3-AC01 Hồ  s ơ  hiện cover, logo l ớ n, tên, dòng phụ, 3 ch ỉ  số  
+(+Bạn bè khi có); tag "đố i tác đã r ờ i".
+P3-AC02 Ch ủ  qu ả n & đố i tác đều thấy 4 tab; đố i tác không có 
+mục/ch ữ  nào về  SHT.
+P3-AC03 Thêm section = thêm khai báo + component; 
+canView=false ⇒  không render tab lẫn nộ i dung.
+P3-AC04 #/profile/<id>/files m ở  đúng mục; section lạ về  Bài 
+đăng.
+P3-AC05 Mục Đố i tác liệt kê bạn bè; cột Đi ể m uy tín ch ỉ  ch ủ  
+qu ả n; đố i tác DOM không có cột.
+P3-AC06 Attachment ch ỉ  gồm media bài ng ườ i xem đ ượ c 
+thấy; không lộ  media bài "Ch ỉ  ch ủ  qu ả n" cho đố i tác.
+P3-AC07 Composer ch ỉ  ở  hồ  s ơ  c ủ a mình.
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 22/29
+
+=== PAGE ===
+t ừ ng công tăc.
+Quyền: Cá nhân = ng ườ i dùng; Công ty/SHT = contracts-owner (contracts-web + 
+server quyết). Mỗ i nhóm canView riêng (I3). Tiền đề: contracts-web hỗ  tr ợ  ?sec=
+(hiện /settings redirect /settings/members).
+AC P4a-AC01..08 (m ở  dialog; 3 nhóm theo quyền; đố i tác ch ỉ  Cá nhân + không request 
+API contracts; x ổ /gập; href ?sec= đúng; công tắ c l ư u ngay; canView unit t ừ ng nhóm).
+P4b — Cá nhân [CM] (COM-FR-39)
+Tài kho ả n: "Thông tin đăng nhập c ủ a bạn trong {orgName}."; Họ tên, Công ty (ch ỉ  đọc); 
++ Ngôn ng ữ (Tiếng Việt/English, localStorage community.lang).
+Giao diệ n: b ỏ 5 ô chọn màu; hi ể n thị ch ỉ  đọc màu + logo công ty + "Màu do công ty 
+thiết lập"; Sáng/Tố i theo công ty (D13).
+Thông báo: 8 công tắ c (comment, reply, newSell*, newBuy*, matchBuy*, priceEdited*, 
+expiring, digest*; * = HOST_ONLY, ẩ n v ớ i đố i tác); l ư u ngay + toast "Đã l ư u cài đặt".
+Dọn: b ỏ  accent kh ỏ i CommunitySettings + localStorage; server đ ể  accent
+optional/b ỏ  qua (D8, không 422 client cũ).
+AC P4b-AC01..06.
+P4c — Công ty + Thành viên [SHT] (COM-FR-40) — màn đích ở  contracts-web; 
+nguồ n c ủ a brand
+Công ty: Tên công ty · Tên ứ ng dụng · Logo (PNG/JPG/SVG/WebP, vuông, ≤1MB) · Màu 
+ch ủ  đạo (6: indigo/blue/teal/green/orange/rose — community thêm rose) · Giao diện 
+· Pháp nhân c ủ a mình (tên + MST 10/13 số ) · Duyệ t h ợ p đồ ng · Kho & giao hàng · Pháp 
+lý (ng ưỡ ng 5.000.000).
+Thành viên: /settings/members (qu ả n trị công ty).
+Đ ổ i brand (PUT /company) ⇒  brand mọi account community cùng ch ủ  qu ả n đ ổ i lần t ả i 
+sau.
+AC P4c-AC01..08.
+P4d — Nhóm S ổ  H ợ p Tác [SHT] (COM-FR-41/42) — phầ n l ớ n deep-link editor
+Đi ể m uy tín (?sec=rep): 4 nhóm (Dịch vụ có hạn · Hàng hoá · Gi ớ i thiệu · Chung) × vai 
+(NCC · Khách) × 3 tab (Tiêu chí · Th ờ i gian · Loại việ c) + M ứ c & đánh giá. ("Gi ớ i thiệu" = 
+h ướ ng h ợ p đồng hoa hồng, không ph ả i About.)
+Đi ể m kinh doanh (?sec=biz): trọng số  (Tố c độ  bán · Biên lãi · Xu h ướ ng) + ng ưỡ ng 
+mua thêm/gi ữ /x ả .
+Dò giá thị tr ườ ng (?sec=scout): mặ c định theo nhóm + lịch (Tắt/Hằng tuần/Hằng 
+tháng) + trần mỗ i tháng.
+Quy trình duyệ t (?sec=flow): s ơ  đồ  READONLY ("Quy trình duyệt đang dùng: 
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 23/29
+
+=== PAGE ===
+Qy yẹ ( ) (Qy yẹ g g
+{name} · v{version}", "ch ỉ  xem đ ượ c ở  đây") + nút "Ch ỉ nh quy trình duyệ t" (ch ỉ  
+platform_admin, m ở  editor ai-admin) + khố i Ký số  (bật/tắt, neo ký). Ch ư a gán ⇒  
+"Ch ư a gán quy trình duyệt."
+AC P4d-AC01..09.
+Nhãn VI / EN (chọn lọc; đầ y đ ủ  trong repo P4a–d §7)
+P5 — Tích h ợ p SHT (deep-link, SSO, brand, i18n)
+Mã COM-FR-43..46. Tuân Q2 (deep-link, không nhúng), I1 (cách ly), I2 (một đi ể m nố i).
+Deep-link 4 trang + cách ly — COM-FR-43
+4 link: T ổ ng quan /overview · H ợ p đồng & giao dịch /contracts · Đố i tác /partners
+· S ả n ph ẩ m & Giá /products; m ở  cùng tab.
+Host = VITE_CONTRACTS_URL (build-time); không đặt ⇒  /contracts.
+Cách ly: đố i tác không có nhóm; gõ tay URL ⇒  ext_deny 403/0 hàng (HT-76). Không 
+API community đọc SHT ngoài port đã có.
+Đi ể m nố i nghiệp vụ duy nhất vẫn là "L ư u báo giá" (I2); deep-link ch ỉ  điều h ướ ng.
+Quyền hiện/ ẩ n nhóm SHT: CommunityViewer thêm caps.contracts
+(none/read/write/admin) qua port gói ↔ gói; đố i tác luôn none. Contract M Ớ I, 
+backend-lead chốt shape.
+Tiền đề  contracts-web: ?sec=co|rep|biz|scout|flow.
+SSO (b ả n đầ u: fallback) — COM-FR-44
+Q11: deep-link luôn chạy; ch ủ  qu ả n có th ể  ph ả i đăng nhậ p lại ở  contracts-web (hai 
+VI EN
+Cài đặt · Áp dụng cho c ả  công ty Settings · Applies to the whole company
+Cá nhân · Công ty · S ổ  H ợ p Tác Personal · Company · S ổ  H ợ p Tác
+L ư u cài đặt · B ỏ  thay đ ổ i · Khôi phục tất c ả Save settings · Discard changes · Reset all
+Ch ỉ  ch ủ  s ở  h ữ u h ợ p đồng đ ượ c s ử a cài đặt Only the contract owner can change settings
+Tài kho ả n · Giao diện · Thông báo · Màu do công 
+ty thiết lập
+Account · Appearance · Notifications · Colour is 
+set by your company
+Quy trình duyệt · Ch ỉ nh quy trình duyệt · Ch ư a 
+gán quy trình duyệt.
+Approval flow · Edit approval flow · No approval 
+flow assigned yet.
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 24/29
+
+=== PAGE ===
+phiên khác nhau). SSO liền mạch = CR sau. Đăng xuất community không đăng xuất 
+SHT (ghi nhận hạn chế ).
+Brand dùng chung nguồ n — COM-FR-45 (Contract M Ớ I)
+brand {name, appName?, logo, accent} t ừ  công ty ch ủ  qu ả n; dùng chung nguồ n
+/company c ủ a SHT; community ch ỉ  đọc.
+Áp cho c ả  ch ủ  qu ả n & đố i tác (mỗ i account hiện brand công ty mình; ch ư a có ⇒  indigo 
++ ch ữ  cái đầu).
+Đọc qua GET /pack/community/brand (port gói ↔ gói); ch ỉ  4 tr ườ ng (không pháp 
+nhân/MST/c ờ  duyệt). Thêm rose vào CSS community.
+backend-lead chố t shape — ĐÃ CHỐT: CommunityBrandSchema + port 
+CompanyBrandReader (ADR-0031).
+Hạ tầ ng i18n VI/EN — COM-FR-46 (việ c nề n)
+community-web hiện hardcode VI; thêm namespace locales/community/{vi,en}, 
+loader nh ư  contracts-web; thiếu EN ⇒  r ơ i về  VI.
+Ngôn ng ữ : community.lang, mặ c định navigator.language → VI. Mọi nhãn EN ở  P1–
+P4 là đề  xuấ t dịch, ch ờ  duyệ t.
+Tiêu chí chấ p nhậ n
+AC Nộ i dung
+P5-AC01 4 link SHT tr ỏ  đúng 4 đ ườ ng dẫn contracts-web; 
+m ở  cùng tab.
+P5-AC02 Đố i tác: DOM không có link SHT; gõ tay URL ⇒  
+403/0 hàng (HT-76).
+P5-AC03 Không endpoint/b ả ng m ớ i nố i community ↔ SHT 
+ngoài brand (đọc) và L ư u báo giá (I2).
+P5-AC04 Fallback: bấm link SHT luôn m ở  đ ượ c; ch ư a có 
+phiên ⇒  màn đăng nhập SHT, xong vào đúng trang.
+P5-AC05 brand account = name/app_name/logo/accent t ừ  
+/company; s ử a ở  P4c ph ả n ánh lần t ả i sau.
+P5-AC06 Endpoint brand tr ả  đúng 4 tr ườ ng cho đố i tác; 
+không pháp nhân/MST/c ờ .
+P5-AC07 Ch ư a có brand ⇒  ch ữ  cái đầu + indigo; app vẫn 
+chạy.
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 25/29
+
+=== PAGE ===
+P6 — Ma trậ n truy vế t
+FR ↔  phần ↔  ch ứ c năng ↔  AC. Cột Code/Test điền khi làm (bun run trace). Nguồn 
+file:dòng đầy đ ủ  trong P6-truy-vet.md c ủ a repo.
+P5-AC08 Không còn chuỗ i VI viết th ẳ ng (lint/grep); chuy ể n 
+VI ↔ EN đ ổ i nhãn.
+P5-AC09 Thiếu khoá EN ⇒  r ơ i về  VI, không hiện khoá thô.
+FR Phầ n Ch ứ c năng AC
+COM-FR-26 P0 Bất biến + quyết định l ớ p v ỏ P0-AC01..05
+COM-FR-27 P1 Topbar th ươ ng hiệu công ty P1-AC01..03
+COM-FR-28 P1 Sidebar cố  định ở  Shell P1-AC04..05
+COM-FR-29 P1 Nhóm x ổ /gập Community + SHT P1-AC06..09
+COM-FR-30 P1 User-menu avatar P1-AC10..11
+COM-FR-31 P1 Routing feed/profile + dialog P1-AC12..14
+COM-FR-32 P2 Feedbar + Composer P2-AC01,02,07,08
+COM-FR-33 P2 PostCard P2-AC03..05
+COM-FR-34 P2 Rail P2-AC06
+COM-FR-35 P3 Hero + số  liệu P3-AC01
+COM-FR-36 P3 Mô hình section + tab P3-AC02..04
+COM-FR-37 P3 Nộ i dung 4 mục P3-AC05..07
+COM-FR-38 P4a Khung dialog + nav + quyền P4a-AC01..08
+COM-FR-39 P4b Cá nhân P4b-AC01..06
+COM-FR-40 P4c Công ty + Thành viên P4c-AC01..08
+COM-FR-41 P4d Uy tín/Kinh doanh/Dò giá P4d-AC01..03,07
+COM-FR-42 P4d Quy trình duyệt + Ký số P4d-AC04..09
+COM-FR-43 P5 Deep-link + cách ly + caps P5-AC01..03
+COM-FR-44 P5 SSO fallback P5-AC04
+COM-FR-45 P5 Brand dùng chung /company P5-AC05..07
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 26/29
+
+=== PAGE ===
+Ph ủ  bấ t biế n: I1 → P0-AC01, P1-AC08, P2-AC04, P3-AC02, P4a-AC03, P5-AC02 · I2 → P0-
+AC03, P5-AC03 · I3 → P0-AC04, P1-AC09, P4a-AC08 · I4 → P4d-AC07, P5. HT-75/76 gi ữ  ở  P0-
+AC01, P1-AC08, P4c-AC06, P5-AC02.
+Trạng thái quyế t định
+Còn 4 mục thuộ c backend-lead (brand, caps, partners/media, port uy tín) + 1 mục thuộ c 
+ng ườ i dùng (duyệt EN); tất c ả  đã có mặ c định đ ể  không chặn.
+Th ứ  t ự  làm đề  xuấ t
+COM-FR-46 (i18n nền) → 45 (brand) → 27–31 (khung) → 32–34 → 35–37 → 38–39 → 40–42 → 
+43–44.
+Test-plan & việ c còn m ở
+M ứ c mô t ả  (ch ư a viết test). Ký hiệu: U unit · I int (cần DB) · E e2e Playwright · M ki ể m 
+tay/CSS. Luật 0b: unit logic thuần + một int đ ườ ng chính mỗ i endpoint m ớ i + một test chặn 
+đọc chéo tenant; e2e chạy một lần cuố i đ ợ t.
+COM-FR-46 P5 Hạ tầng i18n VI/EN P5-AC08..09
+Đi ể m Trạng thái Ch ủ
+Mục SHT = deep-link Đã chốt Q10 —
+Tiền đề  ?sec= contracts-web Việ c nền frontend-lead
+SSO community→SHT Đã chốt Q11 (fallback) —
+Host deep-link Đã chốt D4 —
+Shape GET /pack/community/brand Mặ c định D3 backend-lead
+Shape viewer.caps.contracts Mặ c định L7 backend-lead
+profile/:orgId/partners, media Mặ c định D6 backend-lead
+Port đọc đi ể m uy tín Mặ c định D7 backend-lead
+Nhãn EN Đề  xuất dịch ng ườ i dùng duyệ t
+Phầ n AC Loại Mô t ả  ngắ n
+P0 AC01 I+E HT-75/76 xanh; đố i tác không link SHT
+P0 AC02 U liti tb d it khô i t
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 27/29
+
+=== PAGE ===
+P0 AC02 U lint import-boundary: community không import 
+contracts
+P0 AC04 U canView t ừ ng nhóm độ c lập
+P0 AC05 U+E accent t ừ  brand, không còn đ ổ i màu cá nhân
+P1 AC01-03 E topbar brand, không navtab/gear/logout; 
+chuông+tìm
+P1 AC04-05 E+Msidebar sticky, gi ữ  trạng thái khi chuy ể n view
+P1 AC06-07 U+E x ổ /gập + nh ớ ; 4 href SHT đúng
+P1 AC08-09 E đố i tác không nhóm SHT; thiếu quyền contracts: ẩ n
+P1 AC10-14 U+E user-menu 3 mục; parseHash; dialog gi ữ  route
+P2 AC01-02,07,08 E tab, composer thu gọn, b ỏ  .wsside, VI ↔ EN
+P2 AC03 U dealStrip (thêm ca Liên hệ)
+P2 AC04 I+E đố i tác không thấy L ư u báo giá/callout
+P2 AC05-06 E màu pill theo brand; rail theo vai
+P3 AC01-02,04,07 E hero, 4 tab, /files, Composer ch ỉ  hồ  s ơ  mình
+P3 AC03 U registry section: canView=false ⇒  không render
+P3 AC05-06 I partners/media: đ ườ ng chính + chặn đọc chéo 
+tenant
+P4a AC01-05,07 E dialog, nhóm theo vai, href ?sec=, công tắ c l ư u 
+ngay
+P4a AC08 U canView mỗ i nhóm
+P4b AC01-04,06 U+E không còn ô màu; HOST_ONLY; ngôn ng ữ
+P4b AC05 I client cũ g ử i accent không 422
+P4c AC01-06 E+I màn SHT (đã có); ch ỉ  ki ể m th ẻ /href (AC08)
+P4c AC07 M màu rose trong CSS
+P4d AC01-09 E th ẻ /href đúng; s ơ  đồ  readonly (SHT); "Ch ư a gán…"
+P5 AC01-03 E+I link đúng, đố i tác chặn HT-76, không endpoint th ừ a
+P5 AC04 E fallback: ch ư a có phiên ⇒  đăng nhập rồ i vào đúng 
+trang
+P5 AC05-07 I+U GET /pack/community/brand: đ ườ ng chính + chặn 
+đọc chéo; fallback
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 28/29
+
+=== PAGE ===
+Việ c còn m ở  (tr ướ c khi code)
+backend-lead chố t shape:GET /pack/community/brand · viewer.caps.contracts · 
+profile/:orgId/partners + /media · tên port đọc đi ể m uy tín.
+ng ườ i dùng: duyệt các b ả ng nhãn EN (P1–P5 §7).
+việ c nề n contracts-web: thêm ?sec= cho /settings.
+Trạng thái: spec hoàn tấ t P0–P6, READY (spec-readiness lầ n 2; ch ư a code). Nguồn 
+chu ẩ n cho dev = th ư  mục docs/specs/CR-106-community-unify/ trong repo; tài liệu 
+này là b ả n chia s ẻ .
+Quy ướ c cậ p nhậ t tài liệ u
+Đây là tài liệ u chính c ủ a d ự  án. Mỗ i tính năng/thay đ ổ i m ớ i:
+1. Thêm một mục m ớ i trong tài liệu này (hoặ c một phần CR-xxx), đặt sau phần nghiệp vụ 
+liên quan.
+2. Cấp mã CR + mã FR (COM-FR-xx…) nố i tiếp; ghi nguồn file:dòng khi chạm code.
+3. Cập nhật Use cases nếu thêm luồng; gi ữ  nguyên tắ c bấ t biế n (cách ly tenant, một 
+đi ể m nố i nghiệp vụ "L ư u báo giá", quyền theo nhóm).
+4. Repo docs/specs/<CR>/ là nguồn chu ẩ n cho dev; tài liệu này là b ả n đọc/chia s ẻ , cập 
+nhật song song.
+Tham chiếu: mock UI https://claude.ai/artifact/QWj14SrNPkErSZU2FC6GWQ · repo 
+docs/specs/CR-106-community-unify/.
+P5 AC08-09 U không chuỗ i VI c ứ ng; thiếu EN ⇒  VI
+11/2/26, 9:00 PM Community hợp nhất — Spec CR-106
+https://claude.ai/artifact/8e3pEapwyyhSMUTWcWTf4k#5271ddd7-aadb.mm1vkyk7fsv.45609 29/29
