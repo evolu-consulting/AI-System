@@ -91,6 +91,14 @@ export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
 export const ContractGroupSchema = z.strictObject({ id: z.uuid(), name: z.string() });
 export type ContractGroup = z.infer<typeof ContractGroupSchema>;
 
+/** CR-107 · `ContractApproval.attention` (xem chú thích trường). */
+export const ApprovalAttentionSchema = z.strictObject({
+  kind: z.enum(["needs_decision", "stalled"]),
+  reason: z.string().max(200).nullable(),
+  since: z.string().max(40).nullable(),
+});
+export type ApprovalAttention = z.infer<typeof ApprovalAttentionSchema>;
+
 export const ContractApprovalSchema = z.strictObject({
   run_id: z.uuid().nullable(),
   run_status: z.string().max(32).nullable(),
@@ -107,6 +115,11 @@ export const ContractApprovalSchema = z.strictObject({
   steps: z.array(ApprovalCardStepSchema).optional(),
   /** fix-review · run đã kết thúc bất thường, lượt còn mở: owner/admin bấm "Mở lại quy trình" (POST .../approval/reopen). */
   needs_reopen: z.boolean().optional(),
+  /** CR-107 · lượt engine cần owner/admin để ý (không đổi trạng thái HĐ): `needs_decision` ⇒ run kẹt chờ quyết (vd
+   *  `retry_exhausted`, `tool_failed`) — owner bấm "Thử lại" (POST .../approval/retry) hoặc "Huỷ & mở lại"
+   *  (POST .../approval/cancel-reopen); `stalled` ⇒ run đã kết thúc bất thường / chưa mở được (vd `FLOW_GROUP_MISSING:<mã>`)
+   *  — "Mở lại quy trình". `reason` = mã engine/gói; `since` = lúc engine mở quyết định (ISO) hoặc null. Vắng ở hub cũ. */
+  attention: ApprovalAttentionSchema.nullable().optional(),
   /** esign-flow · bước Ký số cuối luồng (vắng/null ⇒ luồng không có bước ký). */
   esign: z
     .strictObject({

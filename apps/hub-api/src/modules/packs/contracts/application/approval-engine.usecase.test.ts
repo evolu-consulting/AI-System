@@ -2,6 +2,7 @@
 // Group thiếu / engine vắng ⇒ máy cũ), tool `contracts-route` (next theo giá trị hiện tại) và `contracts-finalize` (kiểm bước bắt
 // buộc, ghi + gắn SP cùng tx; lỗi gắn SP ⇒ ném; chạy lại sau khi đã ghi ⇒ ok; không run / HĐ khác ⇒ ném).
 import { describe, expect, it } from "bun:test";
+import { PackToolBusinessError } from "../../kit/domain/pack-tool-error";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { FlowStep } from "../domain/approval-flow.rules";
 import type {
@@ -15,10 +16,14 @@ import {
   type ApprovalEngineDeps,
   engineErrMeta,
   finalizeRun,
-  reopenEngineApproval,
   routeStep,
   startEngineApproval,
 } from "./approval-engine.usecase";
+import {
+  cancelReopenEngineApproval,
+  reopenEngineApproval,
+  retryEngineApproval,
+} from "./approval-engine-reopen.usecase";
 import type { ProductLinksOutcome } from "./product-links.usecase";
 
 const T = "00000000-0000-4000-8000-0000000000a1";
@@ -95,6 +100,10 @@ function txRepos(w: World): ApprovalEngineTxRepos {
       w.calls.push(`attach:${a.runId}:v${a.version}:${a.steps.length}`);
       w.replaces.push(a.replaces);
       return w.attachOk;
+    },
+    markStalled: async (_id, _aid, s) => {
+      w.calls.push(`stalled:${s.runId}:${s.reason}`);
+      return true;
     },
     finalize: async (_id, _aid, _run, by) => {
       w.calls.push(`finalize:${by}`);
@@ -227,16 +236,19 @@ describe("startEngineApproval", () => {
       `cancel:${RUN}`,
     ]);
   });
-  it("khe chưa có bản xuất bản ⇒ máy (hết đường readFlow cũ)", async () => {
+  it("CR-107 · khe chưa có bản xuất bản ⇒ lượt kẹt FLOW_MISSING (không về máy cũ)", async () => {
     const w = world({ rel: null });
-    expect(await startEngineApproval(deps(w))(who, C)).toBe("machine");
-    expect(w.calls).toEqual(["warn:contract-engine-flow-invalid"]);
+    expect(await startEngineApproval(deps(w))(who, C)).toBe("stalled");
+    expect(w.calls).toEqual(["stalled:null:FLOW_MISSING", "warn:contract-engine-flow-stalled"]);
   });
-  it("engine vắng ⇒ máy; Group thiếu ⇒ máy, không gọi engine; lượt không mở được ⇒ skipped", async () => {
+  it("engine vắng ⇒ máy · CR-107 · Group thiếu ⇒ lượt kẹt FLOW_GROUP_MISSING:<mã>, không gọi engine · lượt không mở được ⇒ skipped", async () => {
     expect(await startEngineApproval(deps(world(), null))(who, C)).toBe("machine");
     const w = world({ groups: [G1] });
-    expect(await startEngineApproval(deps(w))(who, C)).toBe("machine");
-    expect(w.calls).toEqual(["warn:contract-engine-flow-invalid"]);
+    expect(await startEngineApproval(deps(w))(who, C)).toBe("stalled");
+    expect(w.calls).toEqual([
+      "stalled:null:FLOW_GROUP_MISSING:k2",
+      "warn:contract-engine-flow-stalled",
+    ]);
     const w2 = world({
       st: {
         approvalId: AID,
@@ -295,6 +307,61 @@ describe("fix-review · Mở lại quy trình", () => {
       expect(w.starters).toEqual([]);
     }
     expect(await reopenEngineApproval(deps(world()))(who, C)).toBe("not_found");
+  });
+  it("CR-107 · lượt kẹt chưa có run: mở lại ⇒ run mới gắn như lượt mới · Group vẫn thiếu ⇒ flow_invalid + ghi lại lý do", async () => {
+    const st = { ...stalled().st, engineRunId: null } as EngineStartRow;
+    const w = world({ st });
+    expect(await reopenEngineApproval(deps(w))(who, C)).toBe("ok");
+    expect(w.replaces).toEqual([null]);
+    const w2 = world({ st, groups: [G2] });
+    expect(await reopenEngineApproval(deps(w2))(who, C)).toBe("flow_invalid");
+    expect(w2.calls[0]).toBe("stalled:null:FLOW_GROUP_MISSING:k1");
+  });
+  it("CR-107 · Thử lại ⇒ retryDecision của engine trên run đang gắn · lượt máy ⇒ not_open", async () => {
+    const w = stalled();
+    const seen: string[] = [];
+    const d = deps(w, {
+      retryDecision: async (u, run) => {
+        seen.push(`${u.userId}:${run}`);
+        return "ok";
+      },
+    });
+    expect(await retryEngineApproval(d)({ tenantId: T, userId: OTHER }, C)).toBe("ok");
+    expect(seen).toEqual([`${OTHER}:${RUN}`]);
+    expect(await retryEngineApproval(deps(world(), {}))(who, C)).toBe("failed"); // cổng không hỗ trợ
+    const d2 = deps(world(), { retryDecision: async () => "ok" });
+    expect(await retryEngineApproval(d2)(who, C)).toBe("not_open");
+  });
+  it("CR-107 · Huỷ & mở lại ⇒ cancelSys → ghi CANCELLED_BY_OWNER → mở lại thay run cũ", async () => {
+    const w = stalled();
+    const order: string[] = [];
+    const d = deps(w, {
+      cancelSys: async (_t, run) => {
+        order.push(`cancel:${run}`);
+        return true;
+      },
+      outcomesOf: out("cancelled"),
+    });
+    expect(await cancelReopenEngineApproval(d)(who, C)).toBe("ok");
+    expect(order).toEqual([`cancel:${RUN}`]);
+    expect(w.calls).toContain(`stalled:${RUN}:CANCELLED_BY_OWNER`);
+    expect(w.replaces).toEqual([RUN]);
+  });
+});
+
+describe("CR-107 · lỗi logic của tool là lỗi nghiệp vụ (không thử lại)", () => {
+  it("finalize thiếu bước / route sai ⇒ PackToolBusinessError · lỗi hạ tầng (repo ném) giữ nguyên", async () => {
+    const w = world({ run: runRow({ totalValue: 5000 }) });
+    const e1 = await finalizeRun(deps(w))(ctx, { contract_id: C }).catch((e: unknown) => e);
+    expect(e1).toBeInstanceOf(PackToolBusinessError);
+    const w2 = world({ run: runRow() });
+    const e2 = await routeStep(deps(w2))(ctx, { contract_id: C, from_step: 9 }).catch((e) => e);
+    expect(e2).toBeInstanceOf(PackToolBusinessError);
+    const d = deps(world());
+    const boom = new Error("connection terminated");
+    const d3 = { ...d, uow: { tenant: async () => Promise.reject(boom) } } as never;
+    const e3 = await routeStep(d3)(ctx, { contract_id: C, from_step: 0 }).catch((e) => e);
+    expect(e3).toBe(boom);
   });
 });
 

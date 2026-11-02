@@ -39,6 +39,7 @@ import { reviewRoutes } from "./adapters/review.routes";
 import {
   type ApprovalGroups,
   actApproval,
+  cancelReopenApproval,
   type EngineStart,
   type ExtractJob,
   type ExtractJobs,
@@ -46,6 +47,7 @@ import {
   patchGuard,
   readApprovalSettings,
   reopenApproval,
+  retryApproval,
   saveApprovalSettings,
   startApproval,
 } from "./application/approval.usecase";
@@ -286,6 +288,8 @@ export function contractsAiModule(
       ? {
           engine: eng.start,
           reopen: eng.reopen,
+          retry: eng.retry,
+          cancelReopen: eng.cancelReopen,
           card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),
         }
       : {}),
@@ -340,6 +344,8 @@ function approvalModule(
     get: getApproval(ad),
     act: actApproval(ad),
     reopen: reopenApproval(ad),
+    retry: retryApproval(ad),
+    cancelReopen: cancelReopenApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
   });

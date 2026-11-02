@@ -12,8 +12,13 @@ import { checkPackAccess } from "../kit/domain/pack-access.rules";
 import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
-import { reopenEngineApproval, startEngineApproval } from "./application/approval-engine.usecase";
+import { startEngineApproval } from "./application/approval-engine.usecase";
 import { type EngineCardDeps, engineCard } from "./application/approval-engine-card.usecase";
+import {
+  cancelReopenEngineApproval,
+  reopenEngineApproval,
+  retryEngineApproval,
+} from "./application/approval-engine-reopen.usecase";
 import {
   type ApprovalFlowTxRepos,
   type FlowGroups,
@@ -89,6 +94,8 @@ export function approvalEngine(
   return {
     start,
     reopen: reopenEngineApproval(ed),
+    retry: retryEngineApproval(ed), // CR-107
+    cancelReopen: cancelReopenEngineApproval(ed),
     tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
     // esign-flow-fix · thẻ duyệt engine; owner gói (quyền `admin`) cũng Gửi lại bước Ký số.

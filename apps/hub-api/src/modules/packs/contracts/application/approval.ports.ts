@@ -110,6 +110,8 @@ export type SweepRepo = {
   /** MỘT câu: đọc HĐ trong flow (đếm có lượt) + HĐ `extracting` quá hạn ⇒ `extract_failed STALE` + event + lượt `failed` +
    *  lượt `extracting` mà HĐ đã xong lượt đọc (afterExtraction lỗi) ⇒ `level1`/`failed` (review B #12). */
   sweep(o: SweepOptions): Promise<SweepCounts>;
+  /** CR-107 · MỘT câu `= any`: trong `runIds`, run nào đang gắn vào một lượt của tenant (mọi trạng thái lượt). */
+  attachedRuns(runIds: readonly string[]): Promise<string[]>;
 };
 
 /** `links` (products-confirm): gắn/tạo SP ở bước duyệt cuối; vắng (test cũ) ⇒ bỏ qua. */

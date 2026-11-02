@@ -2,6 +2,7 @@
 // `contracts.approval` cho tenant (`port.resolveSlot`: gán ⇒ mặc định ⇒ bản xuất bản — 1 SQL), phân giải mã Group ⇒ id theo tenant
 // (`groups.idsOf` — 1 SQL), rồi để `startEngineApproval` biên dịch + `ensureDef({sourceRef})` vào def tenant `contracts-approval`.
 // Lớp 2. Không có bản xuất bản nào ⇒ null (L1 rơi về đường cũ `readFlow`; L4 xoá).
+import { FLOW_INVALID, groupMissingReason } from "../domain/approval-engine.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import {
   APPROVAL_SLOT,
@@ -46,20 +47,25 @@ export type OpenRunArgs = {
 type Deps = { bridge: ApprovalEngineBridge; groups: Pick<FlowGroups, "idsOf"> };
 
 /**
- * Mẫu của khe cho tenant. `null` = khe chưa có bản áp được (đường cũ); `"invalid"` = body hỏng hoặc thiếu mã Group ở tenant
- * (Group bị xoá sau khi gán) ⇒ người gọi log `contract-engine-flow-invalid`, lượt chạy máy cũ.
+ * Mẫu của khe cho tenant. `null` = khe chưa có bản áp được; `{invalid}` = body hỏng (`FLOW_INVALID`) hoặc thiếu mã Group ở
+ * tenant (`FLOW_GROUP_MISSING:<mã>`) ⇒ CR-107: lượt kẹt `mode='engine'` chờ owner "Mở lại quy trình" (không về máy cũ).
  */
-export async function slotFlowOf(d: Deps, tenantId: string): Promise<SlotFlow | "invalid" | null> {
+export async function slotFlowOf(
+  d: Deps,
+  tenantId: string,
+): Promise<SlotFlow | { invalid: string } | null> {
   const port = d.bridge.port;
   if (!port?.resolveSlot || !port.sourceRefOf) return null;
   const r = await port.resolveSlot(tenantId, APPROVAL_SLOT);
   if (!r) return null;
   const body = slotBodyOf(r.slotBody);
-  if (!body) return "invalid";
+  if (!body) return { invalid: FLOW_INVALID };
   const keys = slotGroupKeys(body);
   const ids = keys.length > 0 ? await d.groups.idsOf(tenantId, keys) : new Map<string, string>();
   const steps = resolveSlotSteps(body, ids);
-  if (!steps) return "invalid";
+  // CR-107 · thiếu mã Group ở tenant ⇒ lý do kèm mã thiếu (lượt kẹt chờ owner, KHÔNG về máy cũ).
+  const missing = keys.filter((k) => !ids.has(k));
+  if (!steps) return { invalid: missing.length ? groupMissingReason(missing) : FLOW_INVALID };
   const source = { defId: r.defId, name: r.name, relVersion: r.relVersion };
   return { version: r.relVersion, steps, defVersion: r.relVersion, source };
 }

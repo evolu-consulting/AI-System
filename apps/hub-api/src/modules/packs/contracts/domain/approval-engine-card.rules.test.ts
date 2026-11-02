@@ -102,6 +102,29 @@ describe("engineCardView", () => {
     expect(engineCardView(dead).needs_reopen).toBe(true);
     expect(engineCardView(base).needs_reopen).toBe(false);
   });
+  it("CR-107 · attention: needs_decision (lý do + lúc mở, không needs_reopen) · lượt kẹt chưa có run ⇒ stalled + lý do · chạy ⇒ null", () => {
+    const base = input({ open: "s0" });
+    const sv = base.sv as NonNullable<typeof base.sv>;
+    const decision = { reason: "retry_exhausted", at: "2026-11-02T09:00:00.000Z" };
+    const nd = engineCardView({ ...base, sv: { ...sv, status: "needs_decision", decision } });
+    expect(nd.attention).toEqual({
+      kind: "needs_decision",
+      reason: "retry_exhausted",
+      since: "2026-11-02T09:00:00.000Z",
+    });
+    expect(nd.needs_reopen).toBe(false);
+    const ap = { ...base.approval, engineRunId: null, feedback: "FLOW_GROUP_MISSING:k2" };
+    const noRun = engineCardView({ ...base, approval: ap, sv: null });
+    expect(noRun.attention).toEqual({
+      kind: "stalled",
+      reason: "FLOW_GROUP_MISSING:k2",
+      since: null,
+    });
+    expect(noRun.needs_reopen).toBe(true);
+    expect(engineCardView(base).attention).toBeNull();
+    const done = { ...base, approval: { ...ap, status: "done" } };
+    expect(engineCardView(done).attention).toBeNull();
+  });
 });
 
 describe("planEngineAct", () => {

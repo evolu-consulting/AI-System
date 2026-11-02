@@ -11,6 +11,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
 import type {
+  PackOpenRun,
   PackRunCaller,
   PackRunOutcome,
   PackRunOutcomeSys,
@@ -205,6 +206,34 @@ async function cancelOwn(d: ProcessDeps, gates: GateService, u: PackRunCaller, r
   else await gates.cancel(asUser(u), runId);
 }
 
+/**
+ * CR-107 · "Thử lại" của gói cho run gắn gói đang `needs_decision`: CÙNG đường quyết `GateService.decide` (`add_attempt`) — người
+ * gọi mang vai admin vì run gắn gói chỉ admin quyết (`canDecide`); quyền thật (admin gói) gói đã kiểm trước. Không gắn gói / không
+ * còn decision mở (đua) ⇒ "not_open".
+ */
+async function retryDecision(
+  d: ProcessDeps,
+  gates: GateService,
+  u: PackRunCaller,
+  runId: string,
+): Promise<"ok" | "not_open"> {
+  if (!UUID.test(runId) || !UUID.test(u.tenantId)) return "not_open";
+  const [r] = await withHubScope(d.db, SYS, (tx) =>
+    tx.execute<{ ok: boolean }>(sql`select (status = 'needs_decision') as ok from hub.process_runs
+      where id = ${runId} and tenant_id = ${u.tenantId} and pack_key is not null`),
+  );
+  if (r?.ok !== true) return "not_open";
+  try {
+    await gates.decide({ ...asUser(u), role: "tenant_admin" }, runId, { option: "add_attempt" });
+  } catch (e) {
+    if (raced(e, "PROCESS_RUN_STATE")) return "not_open";
+    throw e;
+  }
+  return "ok";
+}
+
+const PACK_OPEN = `{running,waiting_review,waiting_answer,needs_decision,waiting_timer}`;
+
 function sysReads(d: ProcessDeps) {
   const read = <T extends Record<string, unknown>>(q: ReturnType<typeof sql>) =>
     withHubScope(d.db, SYS, async (tx) => [...(await tx.execute<T>(q))]);
@@ -248,6 +277,15 @@ function sysReads(d: ProcessDeps) {
             }),
           }));
       });
+    },
+    /** CR-107 · run gói chưa kết thúc bắt đầu trước `before` (vị từ status khớp index một phần 0060); NGẪU NHIÊN ≤ limit — run
+     *  chờ duyệt lâu (đã gắn) không che run mồ côi ở các lượt quét sau. */
+    async openPackRuns(tenantId: string, packKey: string, before: Date, limit: number) {
+      if (!UUID.test(tenantId) || !PACK_KEY.test(packKey)) return [];
+      return read<PackOpenRun>(sql`select id as run_id, pack_record_id::text as record_id
+        from hub.process_runs where tenant_id = ${tenantId} and pack_key = ${packKey}
+          and status = any(${PACK_OPEN}::text[]) and started_at < ${before.toISOString()}::timestamptz
+        order by random() limit ${Math.max(1, Math.trunc(limit))}::int`);
     },
     async groupIdsOf(tenantId: string, keys: readonly string[]) {
       if (keys.length === 0 || !UUID.test(tenantId)) return new Map<string, string>();
@@ -320,6 +358,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       return "ok";
     },
     cancelSys: (tenantId, runId) => cancelSys(d, tenantId, runId),
+    retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),
     openTasksOf: (u, packKey) => openTasksOf(d, u, packKey),

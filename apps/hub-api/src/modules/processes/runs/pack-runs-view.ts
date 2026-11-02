@@ -29,6 +29,7 @@ type StageSnap = Parameters<typeof stageMeta>[0] & {
 type Row = {
   run_status: string;
   started_by: string;
+  run_decision: unknown;
   stage_idx: number;
   stage_status: string;
   round: number;
@@ -60,7 +61,7 @@ const userScope = (u: PackRunCaller) => ({
 });
 
 const rowsSql = (runId: string, tenantId: string) => sql`
-  select r.status as run_status, r.started_by, s.stage_idx, s.status as stage_status, s.round,
+  select r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.round,
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
@@ -137,6 +138,16 @@ function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: reado
   };
 }
 
+/** CR-107 · `process_runs.decision` jsonb `{reason, at}` ⇒ lý do + lúc mở quyết định (hỏng/vắng ⇒ lý do `unknown`). */
+function decisionOf(v: unknown): { reason: string; at: string | null } {
+  const o = (typeof v === "string" ? JSON.parse(v) : v) as {
+    reason?: unknown;
+    at?: unknown;
+  } | null;
+  const reason = typeof o?.reason === "string" ? o.reason : "unknown";
+  return { reason, at: typeof o?.at === "string" ? o.at : null };
+}
+
 /** S1a · dòng thời gian stage của run cho người xem; run không thấy (RLS/tenant) ⇒ null. */
 export async function stepsView(
   d: ProcessDeps,
@@ -164,6 +175,7 @@ export async function stepsView(
       status: head.run_status,
       started_by: head.started_by,
       steps: rows.map((r) => stepOf(r, can)),
+      decision: head.run_status === "needs_decision" ? decisionOf(head.run_decision) : null,
     };
   });
 }

@@ -98,6 +98,26 @@ export const engineStartable = (r: {
   engineRunId: string | null;
 }): boolean => r.approvalStatus === "level1" && r.mode === "machine" && r.engineRunId === null;
 
+/** CR-107 · lượt engine KẸT chưa có run (mẫu không mở được lúc vào cấp 1 — thiếu Group…): `mode='engine'` + chưa gắn run. Trạng
+ *  thái này chỉ do `markStalled` ghi (gắn run luôn ghi `mode` + `engine_run_id` cùng lúc) ⇒ chờ owner/admin "Mở lại quy trình". */
+export const noRunStalled = (r: {
+  approvalStatus: string | null;
+  mode: string | null;
+  engineRunId: string | null;
+}): boolean => r.approvalStatus === "level1" && r.mode === "engine" && r.engineRunId === null;
+
+/** CR-107 · lý do lượt kẹt vì mẫu (ghi vào `approvals.feedback`, thẻ hiện ở `attention.reason`). */
+export const FLOW_GROUP_MISSING = "FLOW_GROUP_MISSING";
+export const FLOW_INVALID = "FLOW_INVALID";
+export const FLOW_MISSING = "FLOW_MISSING";
+/** Owner/admin "Huỷ & mở lại" một run đang chờ quyết. */
+export const CANCELLED_BY_OWNER = "CANCELLED_BY_OWNER";
+/** Thiếu Group ⇒ `FLOW_GROUP_MISSING:<mã,…>` (mã Group thiếu, tối đa 5, cắt 200 ký tự); không biết mã ⇒ `FLOW_GROUP_MISSING`. */
+export function groupMissingReason(keys: readonly string[]): string {
+  const ks = [...new Set(keys)].slice(0, 5);
+  return (ks.length ? `${FLOW_GROUP_MISSING}:${ks.join(",")}` : FLOW_GROUP_MISSING).slice(0, 200);
+}
+
 const DEALS: ReadonlySet<string> = new Set(["buy", "sell", "referral"]);
 /** Hàng HĐ ⇒ facts rẽ nhánh (loại lạ ⇒ null = cần bước). */
 export const factsOf = (deal: string | null, totalValue: unknown): FlowFacts => ({

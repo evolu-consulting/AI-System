@@ -81,7 +81,11 @@ export type PackStepsView = {
   status: string;
   started_by: string;
   steps: PackStepView[];
+  /** CR-107 · run `needs_decision`: lý do + lúc mở quyết định (`process_runs.decision`); không có ⇒ null/vắng. */
+  decision?: { reason: string; at: string | null } | null;
 };
+/** CR-107 · run gói CHƯA kết thúc (dọn run mồ côi). */
+export type PackOpenRun = { run_id: string; record_id: string };
 
 /** contract-flow S1b · một task duyệt đang mở mà người gọi quyết được ("Việc của tôi"). */
 export type PackOpenTask = {
@@ -161,6 +165,16 @@ export type PackRunsPort = {
   /** S1b · task duyệt MỞ của run gói `packKey` (tenant người gọi) mà `u` quyết được — cùng luật `canAct` (Group duyệt,
    *  head_only, Group chuyển cấp, exclude_starter). MỘT câu SQL, scope user; thứ tự tạo task. */
   openTasksOf(u: PackRunCaller, packKey: string): Promise<PackOpenTask[]>;
+  /** CR-107 · "Thử lại" run gói đang `needs_decision`: quyết decision mở bằng `add_attempt` (= `POST /process-runs/:id/decide`)
+   *  dưới `u` với vai admin — GÓI đã kiểm quyền admin gói trước khi gọi. Run không gắn gói / không có decision mở ⇒ "not_open". */
+  retryDecision(u: PackRunCaller, runId: string): Promise<"ok" | "not_open">;
+  /** CR-107 · run CHƯA kết thúc của gói `packKey` bắt đầu (`started_at`) trước `before` (scope system, MỘT câu, index `process_runs_pack_open_idx`), ngẫu nhiên ≤ `limit`. */
+  openPackRuns(
+    tenantId: string,
+    packKey: string,
+    before: Date,
+    limit: number,
+  ): Promise<PackOpenRun[]>;
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */

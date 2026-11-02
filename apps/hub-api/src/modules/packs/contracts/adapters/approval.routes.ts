@@ -21,9 +21,11 @@ import {
 import type {
   ApprovalAction,
   actApproval,
+  cancelReopenApproval,
   getApproval,
   readApprovalSettings,
   reopenApproval,
+  retryApproval,
   saveApprovalSettings,
 } from "../application/approval.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
@@ -34,6 +36,8 @@ export type ApprovalRoutesDeps = {
   get: ReturnType<typeof getApproval>;
   act: ReturnType<typeof actApproval>;
   reopen: ReturnType<typeof reopenApproval>;
+  retry: ReturnType<typeof retryApproval>;
+  cancelReopen: ReturnType<typeof cancelReopenApproval>;
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
 };
@@ -55,6 +59,22 @@ const approvalError = (code: ApprovalErrorCode) => {
   const [status, msg] = ERRORS[code];
   return new AppError(code, status, msg);
 };
+
+/** Kết quả thao tác owner trên lượt engine ⇒ thẻ mới hoặc lỗi: 404 / 409 APPROVAL_NOT_OPEN / 422 APPROVAL_GROUP_MISSING / 503. */
+function ownerOut<T>(out: T | OwnerFail): T {
+  if (out === "not_found") throw appError("NOT_FOUND");
+  if (out === "not_stalled" || out === "not_open") throw approvalError("APPROVAL_NOT_OPEN");
+  if (out === "flow_invalid")
+    throw new AppError(
+      "APPROVAL_GROUP_MISSING",
+      CONTRACT_APPROVAL_ERRORS.APPROVAL_GROUP_MISSING,
+      "Approval flow cannot start (group missing or invalid)",
+    );
+  if (out === "failed")
+    throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
+  return out as T;
+}
+type OwnerFail = "not_found" | "not_stalled" | "not_open" | "flow_invalid" | "failed";
 
 export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
@@ -82,16 +102,18 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
     if ("error" in out) throw approvalError(out.error);
     return c.json(out);
   });
-  // fix-review · Mở lại quy trình (run kết thúc bất thường): owner/admin của gói; KHÔNG về máy cũ.
-  r.post("/contracts/:id/approval/reopen", admin, async (c) => {
-    const id = parseWith(z.uuid(), c.req.param("id"));
-    const out = await d.reopen(who(c.get("user")), id);
-    if (out === "not_found") throw appError("NOT_FOUND");
-    if (out === "not_stalled") throw approvalError("APPROVAL_NOT_OPEN");
-    if (out === "failed")
-      throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
-    return c.json(out);
-  });
+  // fix-review · Mở lại quy trình (run kết thúc bất thường / CR-107 lượt kẹt chưa có run): owner/admin của gói; KHÔNG về máy cũ.
+  // CR-107 · Thử lại (run `needs_decision` ⇒ `add_attempt`) + Huỷ & mở lại: cùng quyền `admin` gói, cùng bảng mã lỗi.
+  const ops = [
+    ["reopen", d.reopen],
+    ["retry", d.retry],
+    ["cancel-reopen", d.cancelReopen],
+  ] as const;
+  for (const [path, op] of ops)
+    r.post(`/contracts/:id/approval/${path}`, admin, async (c) => {
+      const id = parseWith(z.uuid(), c.req.param("id"));
+      return c.json(ownerOut(await op(who(c.get("user")), id)));
+    });
   r.get("/approval-settings", read, async (c) =>
     c.json(settingsOut(await d.readSettings(who(c.get("user"))))),
   );

@@ -26,7 +26,19 @@ export type EngineStageView = {
   feedback: string | null;
   task: { id: string; can_act: boolean } | null;
 };
-export type EngineStepsView = { status: string; started_by: string; steps: EngineStageView[] };
+export type EngineStepsView = {
+  status: string;
+  started_by: string;
+  steps: EngineStageView[];
+  /** CR-107 · decision mở của run `needs_decision` (lý do + lúc mở). */
+  decision?: { reason: string; at: string | null } | null;
+};
+/** CR-107 · lượt cần owner/admin để ý (không đổi trạng thái HĐ). */
+export type EngineAttention = {
+  kind: "needs_decision" | "stalled";
+  reason: string | null;
+  since: string | null;
+};
 
 export type CardStep = {
   idx: number;
@@ -83,7 +95,14 @@ export function cardStepOf(status: string) {
 }
 
 export type EngineCardInput = {
-  approval: { id: string; status: string; startedBy: string; feedback: string | null };
+  approval: {
+    id: string;
+    status: string;
+    startedBy: string;
+    feedback: string | null;
+    /** CR-107 · run đang gắn; `null` ⇒ lượt kẹt chưa có run; vắng ⇒ không biết (coi như có run). */
+    engineRunId?: string | null;
+  };
   flow: readonly FlowStep[];
   facts: FlowFacts;
   sv: EngineStepsView | null;
@@ -98,6 +117,23 @@ export function blockReasonOf(flow: readonly FlowStep[], idx: number, starter: s
     : ("not_reviewer" as const);
 }
 
+/** CR-107 · lượt `level1`: run `needs_decision` ⇒ lý do + lúc mở quyết định của engine; run đã kết thúc bất thường / lượt kẹt chưa có
+ *  run ⇒ `stalled` + lý do đã ghi ở lượt (`feedback`, vd `ENGINE_RUN_FAILED`, `FLOW_GROUP_MISSING:<mã>`); còn lại ⇒ null. */
+export function attentionOf(i: EngineCardInput): EngineAttention | null {
+  if (i.approval.status !== "level1") return null;
+  const sv = i.sv;
+  if (sv?.status === "needs_decision")
+    return {
+      kind: "needs_decision",
+      reason: sv.decision?.reason ?? null,
+      since: sv.decision?.at ?? null,
+    };
+  const noRun = i.approval.engineRunId === null;
+  if (noRun || (sv !== null && isTerminalRun(sv.status)))
+    return { kind: "stalled", reason: i.approval.feedback, since: null };
+  return null;
+}
+
 /** Thẻ duyệt `mode = 'engine'` (hình dạng `ContractApproval` + `mode` + `steps`). */
 export function engineCardView(i: EngineCardInput) {
   const steps = cardSteps(i.flow, i.sv);
@@ -105,6 +141,7 @@ export function engineCardView(i: EngineCardInput) {
   const task = open ? (i.sv?.steps.find((s) => s.key === `s${open.idx}`)?.task ?? null) : null;
   const can = task?.can_act === true;
   const live = i.approval.status === "level1";
+  const attention = attentionOf(i);
   return {
     mode: "engine" as const,
     run_id: i.approval.id,
@@ -119,8 +156,9 @@ export function engineCardView(i: EngineCardInput) {
         : null,
     finalizes_on_approve:
       live && can && open ? finalizesOnApprove(i.flow, i.facts, open.idx) : false,
-    /** Run đã kết thúc mà lượt còn `level1` (huỷ ngoài luồng / lỗi): chờ owner/admin "Mở lại quy trình". */
-    needs_reopen: live && i.sv !== null && isTerminalRun(i.sv.status),
+    /** Run đã kết thúc mà lượt còn `level1` (huỷ ngoài luồng / lỗi) hoặc lượt kẹt chưa có run: chờ owner/admin "Mở lại quy trình". */
+    needs_reopen: attention?.kind === "stalled",
+    attention,
     steps,
   };
 }

@@ -56,7 +56,13 @@ async function input(d: EngineCardDeps, who: PackWho, st: ApprovalState) {
   const port = d.port();
   const sv = port && a.engineRunId ? await port.stepsView(callerOf(who), a.engineRunId) : null;
   return {
-    approval: { id: a.id, status: a.status, startedBy: a.startedBy, feedback: a.feedback },
+    approval: {
+      id: a.id,
+      status: a.status,
+      startedBy: a.startedBy,
+      feedback: a.feedback,
+      engineRunId: a.engineRunId ?? null, // CR-107 · null ⇒ lượt kẹt chưa có run
+    },
     flow: engineSteps(a.flowSteps ?? []), // esign-flow · bước Ký số không là stage engine
     facts: factsOf(st.deal ?? null, st.value),
     sv,

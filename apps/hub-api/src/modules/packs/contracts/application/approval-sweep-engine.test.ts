@@ -28,6 +28,7 @@ function run(o: { n: number; outs: Record<string, object>; healed?: SweepCounts[
         stalled: i.filter((x) => x.kind === "stalled").length,
       };
     },
+    attachedRuns: async () => [],
   };
   const d = {
     uow: {

@@ -100,6 +100,7 @@ type Appr = {
   run: string | null;
   version: number;
   steps: FlowStep[];
+  reason?: string;
 };
 const appr = new Map<string, Appr>();
 const uow = {
@@ -123,6 +124,17 @@ const uow = {
           return true;
         },
         difyFacts: async () => null,
+        // CR-107 · lượt kẹt + lý do (chưa có run ⇒ mode engine).
+        markStalled: async (
+          id: string,
+          _a: string,
+          s: { runId: string | null; reason: string },
+        ) => {
+          const a = appr.get(id) as Appr;
+          if (a.run !== s.runId) return false;
+          Object.assign(a, { mode: "engine", reason: s.reason });
+          return true;
+        },
       },
       approvalFlow: {
         settings: async () => ({ level1GroupKey: "l1", level2GroupKey: "l2", threshold: 1 }),
@@ -298,15 +310,24 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
     });
   });
 
-  it("thiếu Group lúc chạy ⇒ máy cũ", async () => {
+  it("CR-107 · thiếu Group lúc chạy ⇒ lượt kẹt FLOW_GROUP_MISSING:phap-che (mode engine, không run, KHÔNG về máy cũ)", async () => {
     await o`delete from admin.groups where tenant_id = ${Y} and key = 'phap-che'`;
     warns.length = 0;
     const before = runs.size;
     const y = await open(Y, 6);
-    expect({ out: y.out, mode: y.a.mode, warns, started: runs.size - before }).toEqual({
-      out: "machine",
-      mode: "machine",
-      warns: ["contract-engine-flow-invalid"],
+    expect({
+      out: y.out,
+      mode: y.a.mode,
+      run: y.a.run,
+      reason: y.a.reason,
+      warns,
+      started: runs.size - before,
+    }).toEqual({
+      out: "stalled",
+      mode: "engine",
+      run: null,
+      reason: "FLOW_GROUP_MISSING:phap-che",
+      warns: ["contract-engine-flow-stalled"],
       started: 0,
     });
   });

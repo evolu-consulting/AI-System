@@ -4,6 +4,7 @@
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type {
   PackActTarget,
+  PackOpenRun,
   PackOpenTask,
   PackReviewAct,
   PackRunOutcomeSys,
@@ -74,6 +75,15 @@ export type ApprovalEnginePort = {
   openTasksOf(u: EngineCaller, packKey: string): Promise<PackOpenTask[]>;
   /** cf-dify · workflow catalog mà tenant được dùng (cho bước Dify). */
   workflowsOf(tenantId: string): Promise<PackWorkflow[]>;
+  /** CR-107 · "Thử lại" run `needs_decision` (`add_attempt` của engine; gói đã kiểm quyền admin). Vắng ⇒ không hỗ trợ. */
+  retryDecision?(u: EngineCaller, runId: string): Promise<"ok" | "not_open">;
+  /** CR-107 · run gói chưa kết thúc bắt đầu trước `before` (dọn run mồ côi). Vắng ⇒ bỏ bước dọn. */
+  openPackRuns?(
+    tenantId: string,
+    packKey: string,
+    before: Date,
+    limit: number,
+  ): Promise<PackOpenRun[]>;
 };
 /** Cầu nối dựng lúc mount; engine tắt ⇒ `port` vắng. */
 export type ApprovalEngineBridge = { port?: ApprovalEnginePort };
@@ -123,6 +133,13 @@ export type ApprovalEngineRepo = {
     contractId: string,
     approvalId: string,
     a: { runId: string; version: number; steps: readonly FlowStep[]; replaces?: string | null },
+  ): Promise<boolean>;
+  /** CR-107 · lượt `level1` KẸT với lý do `reason` (→ `feedback`): `runId` null ⇒ lượt chưa có run ⇒ `mode='engine'`; có ⇒ lượt
+   *  engine đang giữ đúng run đó. Khoá HĐ trước (như `attach`). Không khớp ⇒ false. */
+  markStalled(
+    contractId: string,
+    approvalId: string,
+    s: { runId: string | null; reason: string },
   ): Promise<boolean>;
   /** `needs_review → active` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của run engine). */
   finalize(

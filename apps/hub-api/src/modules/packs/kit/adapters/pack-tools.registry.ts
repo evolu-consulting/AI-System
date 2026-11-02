@@ -15,6 +15,7 @@ import type {
   PackToolInfo,
 } from "../application/pack-tools.ports";
 import { checkPackAccess } from "../domain/pack-access.rules";
+import { packToolErrorCode } from "../domain/pack-tool-error";
 import { type PackAccessView, packAccessInput, packEnabled } from "./pack-guard.middleware";
 
 const infoOf = (t: PackToolDef): PackToolInfo => ({
@@ -184,7 +185,7 @@ export class PackToolRegistry implements PackToolCatalog {
         run_id: ctx.runId,
         error_name: err instanceof Error ? err.name : "unknown",
       });
-      return failed("UPSTREAM_ERROR", t.side_effect);
+      return failed(packToolErrorCode(err), t.side_effect); // CR-107 · nghiệp vụ ⇒ không thử lại
     }
   }
 }

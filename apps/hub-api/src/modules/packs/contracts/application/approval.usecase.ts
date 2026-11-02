@@ -46,11 +46,13 @@ export type ApprovalDeps = {
   /** S3b · cài đặt duyệt đổi (tenant chưa lưu mẫu) ⇒ đồng bộ lại def engine. Không ném. */
   onSettingsSaved?: (who: PackWho) => Promise<unknown>;
   /** fix-review · "Mở lại quy trình" (route owner/admin): lượt engine mà run kết thúc bất thường ⇒ run mới dưới người bắt đầu. */
-  reopen?: (
-    who: PackWho,
-    contractId: string,
-  ) => Promise<"ok" | "not_found" | "not_stalled" | "failed">;
+  reopen?: EngineOwnerOp<ReopenOut>;
+  /** CR-107 · "Thử lại" run `needs_decision` / "Huỷ & mở lại" (route owner/admin). */
+  retry?: EngineOwnerOp<"ok" | "not_found" | "not_open" | "failed">;
+  cancelReopen?: EngineOwnerOp<ReopenOut>;
 };
+type ReopenOut = "ok" | "not_found" | "not_stalled" | "flow_invalid" | "failed";
+type EngineOwnerOp<T> = (who: PackWho, contractId: string) => Promise<T>;
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
 export type ContractApproval =
   | ReturnType<typeof approvalView>
@@ -250,13 +252,17 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
 
 /** fix-review · Mở lại quy trình (lượt engine kẹt vì run kết thúc bất thường); trả thẻ mới. Không bao giờ về máy cũ. */
 export function reopenApproval(d: ApprovalDeps) {
-  return async (
-    who: PackWho,
-    id: string,
-  ): Promise<ContractApproval | "not_found" | "not_stalled" | "failed"> => {
-    const out = d.reopen ? await d.reopen(who, id) : "failed";
+  return ownerOp(d, d.reopen);
+}
+/** CR-107 · Thử lại / Huỷ & mở lại; trả thẻ mới. */
+export const retryApproval = (d: ApprovalDeps) => ownerOp(d, d.retry);
+export const cancelReopenApproval = (d: ApprovalDeps) => ownerOp(d, d.cancelReopen);
+
+function ownerOp<T extends string>(d: ApprovalDeps, op: EngineOwnerOp<T> | undefined) {
+  return async (who: PackWho, id: string): Promise<ContractApproval | T | "failed"> => {
+    const out = op ? await op(who, id) : "failed";
     if (out !== "ok") return out;
-    return (await getApproval(d)(who, id)) ?? "not_found";
+    return (await getApproval(d)(who, id)) ?? ("not_found" as T);
   };
 }
 

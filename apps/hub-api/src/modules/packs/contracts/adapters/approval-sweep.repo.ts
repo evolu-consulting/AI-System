@@ -114,5 +114,13 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
     },
     engineRuns: engineRunsQ(tx, tid),
     reconcile: reconcileQ(tx, tid),
+    // CR-107 · run engine đang gắn lượt (dọn run mồ côi): MỘT câu `= any` qua `approvals_engine_run_uq`.
+    async attachedRuns(runIds) {
+      if (runIds.length === 0) return [];
+      const rows = await tx.execute<{ run: string }>(sql`select engine_run_id::text as run
+        from contracts.approvals where tenant_id = ${tid}::uuid
+          and engine_run_id = any(${`{${runIds.join(",")}}`}::uuid[])`);
+      return rows.map((r) => r.run);
+    },
   };
 }

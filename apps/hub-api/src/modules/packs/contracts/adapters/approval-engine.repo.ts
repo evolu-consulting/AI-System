@@ -75,6 +75,7 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
 function attachQ(tx: Tx, tid: string): ApprovalEngineRepo["attach"] {
   return async (id, aid, a) => {
     // Khoá hàng HĐ TRƯỚC khi ghi (cùng thứ tự với `decideInTx` của máy cũ: HĐ rồi lượt) ⇒ không đua máy cũ vs gắn run.
+    // CR-107 · `replaces` null: lượt chưa có run — chế độ máy (mở lần đầu) HOẶC engine kẹt chưa có run (mở lại sau thiếu Group).
     const rep = a.replaces ?? null;
     const rows = await tx.execute<{ id: string }>(sql`with c as (
         select id from contracts.contracts
@@ -85,8 +86,26 @@ function attachQ(tx: Tx, tid: string): ApprovalEngineRepo["attach"] {
       from c
       where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${id}::uuid
         and x.status = 'level1' and c.id = x.contract_id
-        and ((${rep}::uuid is null and x.mode = 'machine' and x.engine_run_id is null)
+        and ((${rep}::uuid is null and x.engine_run_id is null)
           or (${rep}::uuid is not null and x.mode = 'engine' and x.engine_run_id = ${rep}::uuid))
+      returning x.id`);
+    return rows.length > 0;
+  };
+}
+
+/** CR-107 · lượt kẹt + lý do; chưa có run ⇒ chuyển `mode='engine'` (máy cũ không còn quyết được). Khoá HĐ trước (như `attach`). */
+function markStalledQ(tx: Tx, tid: string): ApprovalEngineRepo["markStalled"] {
+  return async (id, aid, s) => {
+    const run = s.runId;
+    const rows = await tx.execute<{ id: string }>(sql`with c as (
+        select id from contracts.contracts
+        where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${aid}::uuid for update)
+      update contracts.approvals x set mode = 'engine', feedback = ${s.reason}, updated_at = now()
+      from c
+      where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${id}::uuid
+        and x.status = 'level1' and c.id = x.contract_id
+        and ((${run}::uuid is null and x.engine_run_id is null)
+          or (${run}::uuid is not null and x.mode = 'engine' and x.engine_run_id = ${run}::uuid))
       returning x.id`);
     return rows.length > 0;
   };
@@ -191,6 +210,7 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     byRun: byRunQ(tx, tenantId),
     startState: startStateQ(tx, tenantId),
     attach: attachQ(tx, tenantId),
+    markStalled: markStalledQ(tx, tenantId),
     finalize: finalizeQ(tx, tenantId),
   };
 }

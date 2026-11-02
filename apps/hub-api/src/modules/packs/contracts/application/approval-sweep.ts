@@ -19,10 +19,15 @@ export type SweepDeps = {
   limit?: number;
   /** contract-flow S3b · duyệt trên engine (cờ bật): đồng bộ HĐ theo run đã kết thúc + heal mở run. Vắng ⇒ bỏ qua. */
   engine?: {
-    port: () => Pick<ApprovalEnginePort, "outcomesOf"> | undefined;
+    port: () =>
+      | (Pick<ApprovalEnginePort, "outcomesOf"> &
+          Partial<Pick<ApprovalEnginePort, "openPackRuns" | "cancelSys">>)
+      | undefined;
     /** `startEngineApproval` — mở run cho lượt vừa heal `extracting → level1` (không ném). */
     start: (who: PackWho, contractId: string) => Promise<unknown>;
   };
+  /** CR-107 · đồng hồ (test tiêm đồng hồ giả); vắng ⇒ giờ máy. */
+  now?: () => Date;
 };
 export type SweepResult = {
   tenants: number;
@@ -32,7 +37,14 @@ export type SweepResult = {
   /** S3b · lượt engine đã đồng bộ (Từ chối ⇒ HĐ rejected) / run kết thúc bất thường (giữ engine, chờ owner mở lại). */
   rejected: number;
   stalled: number;
+  /** CR-107 · run engine mồ côi (mở rồi chưa gắn lượt — sập giữa `start` và `attach`) đã huỷ. */
+  orphans: number;
 };
+
+/** CR-107 · run gói `contracts` chưa gắn lượt quá hạn này ⇒ mồ côi (gắn chạy ngay sau `start` — mili giây). */
+export const ORPHAN_MINUTES = 10;
+/** Mẫu run mở mỗi tenant mỗi lượt (ngẫu nhiên — không đói khi nhiều run đang chờ duyệt). */
+export const ORPHAN_SAMPLE = 100;
 
 /** Lô đồng bộ run engine mỗi tenant mỗi lượt (1 select + 1 outcomesOf + 1 UPDATE). */
 export const RECONCILE_BATCH = 100;
@@ -86,6 +98,24 @@ async function reconcileTenant(d: SweepDeps, t: string, limit: number) {
   return d.uow.system(t, (r) => r.sweep.reconcile(items));
 }
 
+/** CR-107 · dọn run mồ côi: 1 câu engine (run mở của gói, bắt đầu trước `now - 10'`, mẫu ngẫu nhiên) + 1 câu gói (run nào đang gắn,
+ *  `= any`) ⇒ huỷ phần chưa gắn qua `cancelSys` (đường huỷ có sẵn của engine — sự kiện/thread; mồ côi hiếm, trần = cỡ mẫu). */
+export async function cancelOrphans(d: SweepDeps, t: string): Promise<number> {
+  const port = d.engine?.port();
+  if (!port?.openPackRuns || !port.cancelSys) return 0;
+  const before = new Date((d.now?.() ?? new Date()).getTime() - ORPHAN_MINUTES * 60_000);
+  const open = await port.openPackRuns(t, "contracts", before, ORPHAN_SAMPLE);
+  if (open.length === 0) return 0;
+  const ids = open.map((o) => o.run_id);
+  const attached = new Set(await d.uow.system(t, (r) => r.sweep.attachedRuns(ids)));
+  let n = 0;
+  for (const id of ids) {
+    if (attached.has(id)) continue;
+    if (await port.cancelSys(t, id).catch(() => false)) n++;
+  }
+  return n;
+}
+
 /** S3b · heal `extracting → level1` chưa có run ⇒ mở run (`startEngineApproval` tự kiểm điều kiện, không ném). */
 async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLevel1"]) {
   // Giới hạn số HĐ mở run mỗi tenant mỗi lượt (phần dư: lượt quét sau không còn `extracting` ⇒ do owner mở lại / đường nhập tay).
@@ -101,7 +131,8 @@ async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["swe
     stalled: 0,
   }));
   await openHealed(d, t, base.healedLevel1).catch(() => undefined);
-  return { ...base, ...rc };
+  const orphans = await cancelOrphans(d, t).catch(() => 0);
+  return { ...base, ...rc, orphans };
 }
 
 export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
@@ -112,7 +143,7 @@ export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
     limit: d.limit ?? 500,
   };
   const rows = await pooled(tenants, PARALLEL, (t) => sweepTenant(d, t, o));
-  const sum = (k: "read" | "closed" | "healed" | "rejected" | "stalled") =>
+  const sum = (k: "read" | "closed" | "healed" | "rejected" | "stalled" | "orphans") =>
     rows.reduce((a, b) => a + b[k], 0);
   return {
     tenants: tenants.length,
@@ -121,6 +152,7 @@ export async function sweepApprovalsOnce(d: SweepDeps): Promise<SweepResult> {
     healed: sum("healed"),
     rejected: sum("rejected"),
     stalled: sum("stalled"),
+    orphans: sum("orphans"),
   };
 }
 
