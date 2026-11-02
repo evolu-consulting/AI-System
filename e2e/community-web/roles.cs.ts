@@ -1,7 +1,13 @@
 // CR-102 · C12b · 3 vai trên stack thật + seed demo (docs/current/community/hien-thi.md): ai thấy bài nào, che liên hệ,
 // luồng riêng từng công ty, dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { MASK_PHONE, ORG, openAs, postByTitle, READONLY } from "./_stack";
+
+const openComposer = (page: Page) =>
+  page
+    .getByTestId("composer")
+    .getByRole("button", { name: /đang có hàng/ })
+    .click();
 
 test.describe("community-web · 3 vai (stack thật)", () => {
   test("chủ quản: thấy mọi bài, số điện thoại NCC bị tô (raw), luồng theo từng công ty, đánh dấu bài đối tác", async ({
@@ -44,6 +50,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(mine).not.toContainText("zalo.me");
     // thẻ bài của đối tác ghi "Chỉ chủ quản"; nhắc ở ô soạn bài (Composer) cho đối tác
     await expect(mine).toContainText("Chỉ chủ quản");
+    await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     // luồng riêng của mình: số điện thoại trong bình luận chính mình cũng bị che; không có tab công ty khác
@@ -74,6 +81,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(0); // bài Tân Phát/Hưng Thịnh: chỉ chủ quản
     await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toHaveCount(1); // bài Cần mua của chính ABC
     await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toContainText("Chỉ chủ quản");
+    await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Mở trợ lý giá" })).toHaveCount(0);
