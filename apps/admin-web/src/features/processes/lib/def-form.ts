@@ -158,7 +158,8 @@ export function withLiveErrors(
     for (const i of processDefStageIssues(eff.map(stageShape), { teams }))
       if (i.rule === "TEAM_SECTION_UNOWNED") out[i.path] = TEAM_SECTION_KEY;
   }
-  return { ...out, ...d2LiveErrors(d.stages, d.inputs, tools) };
+  // dlc-engine · luật bước DLC + KIND_MIX hiện ngay trên canvas (không đợi Lưu).
+  return { ...out, ...d2LiveErrors(d.stages, d.inputs, tools), ...dlcDraftErrors(d.stages) };
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */
