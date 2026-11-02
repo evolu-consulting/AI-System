@@ -1,6 +1,7 @@
 // CR-110 · COM-FR-27..31, 43 · e2e lớp vỏ community-web (adapter mock + persona switcher). VIẾT, CHƯA CHẠY (Luật 0b: e2e chạy một lần cuối đợt).
 // Trọng tâm: cách ly đối tác (I1/I3, HT-75/76) — nhóm "Sổ Hợp Tác" và link contracts KHÔNG có trong DOM (không phải CSS ẩn).
 import { expect, type Page, test } from "@playwright/test";
+import { HOST_ORG } from "../../apps/community-web/src/api/seed";
 
 const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
@@ -64,7 +65,7 @@ test("topbar: brand công ty chủ quản (kể cả đối tác), không navtab
   await page.goto("/#/feed");
   for (const id of ["an", "tp"]) {
     await as(page, id);
-    await expect(page.locator("header.top .brand")).toContainText("NITI");
+    await expect(page.locator("header.top .brand")).toContainText(HOST_ORG.name);
     await expect(page.locator("header.top .navtab")).toHaveCount(0);
     await expect(page.locator('header.top [aria-label="Cài đặt"]')).toHaveCount(0);
     await expect(page.locator("header.top").getByRole("button", { name: "Đăng xuất" })).toHaveCount(

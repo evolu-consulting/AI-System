@@ -188,7 +188,7 @@ export function PostCard({ post: p }: { post: PostView }) {
           </div>
         </div>
         <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>
-        {has(p, "saveQuote") && p.type === "sell" && (
+        {isHostViewer && has(p, "saveQuote") && p.type === "sell" && (
           <button type="button" className="outline" onClick={() => openQuote(p.authorOrgName)}>
             <IconSave size={16} />
             {saveButtonLabel(savedCount)}
@@ -310,7 +310,7 @@ export function PostCard({ post: p }: { post: PostView }) {
             </span>
           </div>
         ))}
-      {quote && (
+      {isHostViewer && quote && (
         <QuoteForm
           key={`${quote.idx}-${quote.commentId ?? ""}`}
           post={p}
