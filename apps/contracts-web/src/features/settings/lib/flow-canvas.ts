@@ -10,9 +10,10 @@ export const NODE_W = 280;
 export const GAP_Y = 36;
 const H_START = 40;
 const H_FINAL = 52;
-const H_BASE = 20; // padding + dòng tên
-const H_DEPT = 18;
-const H_BADGES = 26;
+// Khớp FlowCanvasNode: py-2 (16) + dòng tên (24); mỗi dòng thêm = gap-1 (4) + cao dòng. Thiếu ⇒ chữ bị cắt.
+const H_BASE = 42;
+const H_DEPT = 22;
+const H_BADGES = 28;
 const H_COND = 22;
 
 export type CanvasKind = "start" | "step" | "finalize";
