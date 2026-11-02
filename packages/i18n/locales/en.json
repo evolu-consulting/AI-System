@@ -768,7 +768,7 @@
       "noChange": "No changes",
       "reset": "Undo changes",
       "confirmTitle": "Save changes for {tenant}?",
-      "confirmBody": "{count} feature(s) will be revoked: the company's users lose the matching access within seconds. You can grant them again later.",
+      "confirmBody": "{count} feature(s) will be revoked ({list}): the company's users lose the matching access within seconds. You can grant them again later.",
       "toast": {
         "saved": "Saved features for {tenant}"
       }

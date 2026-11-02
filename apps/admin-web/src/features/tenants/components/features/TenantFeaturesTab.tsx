@@ -8,12 +8,13 @@ import { LoadingState } from "@/components/shared/states/LoadingState";
 import { Button } from "@/components/ui/button";
 import { loadError } from "@/lib/load-error";
 import { useTenantFeatures } from "../../hooks/use-tenant-features";
+import { revokeMessage } from "../../lib/revoke-message";
 import { AppCard } from "./AppCard";
 
 type Props = { tenant: { id: string; name: string }; onDirtyChange: (dirty: boolean) => void };
 
 export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const f = useTenantFeatures(tenant, onDirtyChange);
   const [confirm, setConfirm] = useState(false);
   const err = loadError(f.query.error);
@@ -53,7 +54,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
         open={confirm}
         onOpenChange={setConfirm}
         title={t("tenants.features.confirmTitle", { tenant: tenant.name })}
-        description={t("tenants.features.confirmBody", { count: revokes })}
+        description={revokeMessage(t, i18n.language, f.diff.revoke)}
         confirmLabel={t("common.save")}
         destructive
         onConfirm={f.save}

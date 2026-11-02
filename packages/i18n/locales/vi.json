@@ -768,7 +768,7 @@
       "noChange": "Chưa có thay đổi",
       "reset": "Hoàn tác thay đổi",
       "confirmTitle": "Lưu thay đổi cho {tenant}?",
-      "confirmBody": "{count} tính năng sẽ bị thu hồi: người dùng của công ty mất quyền tương ứng trong vài giây. Có thể cấp lại sau.",
+      "confirmBody": "{count} tính năng sẽ bị thu hồi ({list}): người dùng của công ty mất quyền tương ứng trong vài giây. Có thể cấp lại sau.",
       "toast": {
         "saved": "Đã lưu tính năng cho {tenant}"
       }

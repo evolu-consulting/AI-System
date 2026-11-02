@@ -27,7 +27,7 @@ export default defineConfig(({ command }) => ({
     // hằng lúc build ⇒ nhánh `import("./mock")` bị bỏ hẳn khỏi bản production
     define: { __COMMUNITY_MOCK__: JSON.stringify(mockOn(command)) },
   },
-  html: { template: "./index.html", title: "Sổ Hợp Tác · Community" },
+  html: { template: "./index.html", title: "Community" },
   server: { port: 3400, strictPort: true, proxy },
   output: {
     distPath: { root: process.env.E2E_DIST_DIR || "dist" },

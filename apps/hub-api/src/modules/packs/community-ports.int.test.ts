@@ -154,6 +154,30 @@ describe("GET /brand (COM-FR-45)", () => {
     expect(JSON.stringify(r.json)).not.toMatch(/0101234567|Pháp nhân|dark|version/);
   });
 
+  it("[COM-FR-45] ETag mạnh + Cache-Control private, If-None-Match khớp ⇒ 304, đối tác vẫn đúng 4 trường", async () => {
+    const first = await app.request("/brand", { headers: { "x-who": "s1a" } });
+    expect(first.status).toBe(200);
+    const etag = first.headers.get("etag") ?? "";
+    expect(etag).toMatch(/^"[0-9a-f]{64}"$/);
+    expect(first.headers.get("cache-control")).toBe("private, max-age=300");
+    expect(Object.keys((await first.json()) as object).sort()).toEqual([
+      "accent",
+      "appName",
+      "logo",
+      "name",
+    ]);
+    const second = await app.request("/brand", {
+      headers: { "x-who": "s1a", "if-none-match": etag },
+    });
+    expect(second.status).toBe(304);
+    expect(await second.text()).toBe("");
+    expect(second.headers.get("etag")).toBe(etag);
+    const stale = await app.request("/brand", {
+      headers: { "x-who": "s1a", "if-none-match": '"stale"' },
+    });
+    expect(stale.status).toBe(200);
+  });
+
   it("[COM-FR-45] chặn chéo tenant: B chỉ thấy brand B; user A mang tenant B ⇒ 403", async () => {
     const b = await call("hB", "/brand");
     expect(b.status).toBe(200);

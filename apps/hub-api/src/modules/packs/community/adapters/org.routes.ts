@@ -76,7 +76,15 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
   r.get("/brand", async (c) => {
     const a = await access(c);
     const row = d.brand ? await d.brand.brand(a.who.tenantId) : null;
-    return c.json(toCommunityBrand(row, a.dir.tenantName));
+    // CR-110 low: logo data URL tới ~1.5 MB ⇒ ETag mạnh (sha-256 thân JSON) + private cache 5 phút; If-None-Match khớp ⇒ 304.
+    const body = JSON.stringify(toCommunityBrand(row, a.dir.tenantName));
+    const etag = `"${new Bun.CryptoHasher("sha256").update(body).digest("hex")}"`;
+    const cache = { ETag: etag, "Cache-Control": "private, max-age=300" };
+    const inm = c.req.header("if-none-match");
+    if (inm && inm.split(",").some((t) => t.trim() === etag || t.trim() === `W/${etag}`)) {
+      return c.body(null, 304, cache);
+    }
+    return c.body(body, 200, { ...cache, "Content-Type": "application/json" });
   });
   r.get("/partners", async (c) => {
     const a = await access(c);
