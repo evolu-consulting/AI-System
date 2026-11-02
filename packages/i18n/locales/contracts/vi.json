@@ -514,6 +514,27 @@
         },
         "reopen": "Mở lại quy trình",
         "reopened": "Đã mở lại quy trình duyệt.",
+        "retried": "Đã yêu cầu chạy lại bước lỗi.",
+        "attention": {
+          "title": "Quy trình đang dừng: {{reason}}",
+          "since": "Từ {{time}}",
+          "retry": "Thử lại",
+          "cancelReopen": "Huỷ & mở lại",
+          "tellOwner": "Báo chủ hợp đồng để xử lý.",
+          "confirmTitle": "Huỷ và mở lại quy trình?",
+          "confirmBody": "Lượt chạy hiện tại sẽ bị huỷ và một lượt mới bắt đầu lại từ đầu theo quy trình hiện hành.",
+          "reason": {
+            "tool_failed": "một bước tự động gặp lỗi và cần người quyết định",
+            "retry_exhausted": "một bước tự động đã thử lại nhiều lần nhưng vẫn lỗi",
+            "job_timeout": "một bước tự động chạy quá thời gian cho phép",
+            "other": "quy trình cần người quyết định tiếp",
+            "FLOW_GROUP_MISSING": "Phòng ban {{keys}} của quy trình không còn — thêm phòng ban rồi bấm Mở lại",
+            "FLOW_GROUP_MISSING_ANY": "Một phòng ban của quy trình không còn — thêm phòng ban rồi bấm Mở lại",
+            "FLOW_INVALID": "quy trình duyệt bị hỏng, cần quản trị viên sửa rồi bấm Mở lại",
+            "FLOW_MISSING": "chưa có quy trình duyệt được xuất bản, cần quản trị viên gán rồi bấm Mở lại",
+            "CANCELLED_BY_OWNER": "lượt duyệt đã bị huỷ, bấm Mở lại để chạy lượt mới"
+          }
+        },
         "release": {
           "MISSING": "Quy trình duyệt tự động bị mất, hợp đồng đang chờ quản trị viên mở lại quy trình.",
           "FAILED": "Quy trình duyệt tự động gặp lỗi, hợp đồng đang chờ quản trị viên mở lại quy trình.",
@@ -550,7 +571,10 @@
         "notOpen": "Bước duyệt đã thay đổi — tải lại trang để xem trạng thái mới.",
         "changedReloaded": "Bước duyệt đã thay đổi (đã có người xử lý hoặc AI đang đọc lại) — đã tải trạng thái mới.",
         "quota": "Đã hết lượt thao tác AI hôm nay ({{limit}} lượt/ngày). Thử lại vào ngày mai.",
-        "runLimit": "Công ty đang có {{max}} quy trình chạy cùng lúc (tối đa). Chờ một quy trình xong rồi thử lại."
+        "runLimit": "Công ty đang có {{max}} quy trình chạy cùng lúc (tối đa). Chờ một quy trình xong rồi thử lại.",
+        "notOwner": "Chỉ quản trị gói hợp đồng mới xử lý được. Hãy báo chủ hợp đồng.",
+        "groupMissing": "Quy trình vẫn còn thiếu phòng ban nên chưa mở lại được. Thêm phòng ban rồi thử lại.",
+        "engineUnavailable": "Hệ thống quy trình đang tạm không phản hồi. Vui lòng thử lại sau ít phút."
       }
     },
     "review": {

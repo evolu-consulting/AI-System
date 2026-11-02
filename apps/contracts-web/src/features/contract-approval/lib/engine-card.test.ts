@@ -70,6 +70,9 @@ describe("approvalView (engine)", () => {
     const opened = card([step({ status: "passed" }), step({ idx: 1, key: "s1", status: "open" })]);
     expect(engineAdvancing(opened)).toBe(false);
     expect(engineAdvancing(card(moving.steps ?? [], { needs_reopen: true }))).toBe(false);
+    // CR-107: có attention (needs_decision) ⇒ không coi là đang chuyển bước (hết poll vô hạn).
+    const att = { kind: "needs_decision", reason: "tool_failed", since: null } as const;
+    expect(engineAdvancing({ ...moving, attention: att })).toBe(false);
     expect(engineAdvancing(card([], {}))).toBe(false);
     expect(engineAdvancing(undefined)).toBe(false);
   });

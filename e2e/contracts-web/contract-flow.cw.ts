@@ -171,6 +171,28 @@ test("run engine ENGINE_RUN_FAILED: người không phải owner chỉ thấy l�
   await expect(page.locator("[data-approval=reopen]")).toHaveCount(0);
 });
 
+// CR-107 · eng-card-ui: run chờ quyết ⇒ banner lý do + Thử lại / Huỷ & mở lại cho owner; người khác chỉ thấy câu báo chủ HĐ.
+const NEEDS_DECISION = () =>
+  card([step(0, "Soạn & kiểm tra", "passed"), step(1, "Kế toán", "failed")], {
+    can_act: false,
+    task_id: null,
+    attention: { kind: "needs_decision", reason: "tool_failed", since: "2026-11-01T08:00:00.000Z" },
+  });
+
+test("CR-107 needs_decision: banner và nút theo quyền", async ({ page }) => {
+  await install(page, NEEDS_DECISION(), "owner");
+  await page.goto(`/contracts/${contract.id}`);
+  const banner = page.locator("[data-approval=attention]");
+  await expect(banner).toContainText("Quy trình đang dừng");
+  await expect(page.locator("[data-approval=retry]")).toHaveText("Thử lại");
+  await expect(page.locator("[data-approval=cancel-reopen]")).toHaveText("Huỷ & mở lại");
+  await page.unroute("**/pack/contracts/contracts/**");
+  await install(page, NEEDS_DECISION(), "editor");
+  await page.reload();
+  await expect(page.locator("[data-approval=tell-owner]")).toBeVisible();
+  await expect(page.locator("[data-approval=retry]")).toHaveCount(0);
+});
+
 // CR-105: form chỉnh luồng đã bỏ khỏi contracts-web; thẻ duyệt chỉ có lối vào ai-admin cho platform_admin.
 for (const [role, shown] of [
   ["platform_admin", true],

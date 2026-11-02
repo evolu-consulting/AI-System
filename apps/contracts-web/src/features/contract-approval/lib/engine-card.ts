@@ -24,6 +24,8 @@ export const engineAdvancing = (a: ContractApproval | undefined): boolean =>
   a?.mode === "engine" &&
   a.step === "level1" &&
   a.needs_reopen !== true &&
+  // CR-107: run chờ quyết/kẹt (`attention`) không phải "đang chuyển bước" — chờ người xử lý, không tải lại vô hạn.
+  !a.attention &&
   (a.steps?.length ?? 0) > 0 &&
   openStepOf(a) === null;
 

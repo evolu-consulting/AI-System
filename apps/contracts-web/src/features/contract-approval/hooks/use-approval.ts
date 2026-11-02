@@ -6,10 +6,19 @@ import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { actApproval, approvalKey, fetchApproval, reopenApproval } from "../api";
+import {
+  actApproval,
+  approvalKey,
+  cancelReopenApproval,
+  fetchApproval,
+  reopenApproval,
+  retryApproval,
+} from "../api";
+import { advanceDelay } from "../lib/advance-wait";
 import type { ActResult } from "../lib/approval";
 import { approvalErrorText } from "../lib/approval-error";
 import { engineAdvancing } from "../lib/engine-card";
+import { useApprovalPush } from "./use-approval-push";
 
 const RUNNING = new Set(["extract", "value", "finalize"]);
 const REFRESH_MS = 2000;
@@ -27,22 +36,33 @@ const codeOf = (e: unknown): string | null => (e instanceof ApiError ? (e.code a
 export function useApproval(id: string, contractKey: readonly unknown[]) {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const q = useQuery({
-    queryKey: approvalKey(id),
-    queryFn: ({ signal }) => fetchApproval(id, signal),
-    refetchInterval: (s) =>
-      RUNNING.has(s.state.data?.step ?? "") || engineAdvancing(s.state.data) ? REFRESH_MS : false,
-  });
-  const [busy, setBusy] = useState<Busy>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const inFlight = useRef(false);
+  const tries = useRef(0);
   const refresh = () =>
     Promise.all([
       qc.invalidateQueries({ queryKey: approvalKey(id) }),
       qc.invalidateQueries({ queryKey: contractKey }),
       qc.invalidateQueries({ queryKey: ["contracts", "list"] }),
     ]);
+  const q = useQuery({
+    queryKey: approvalKey(id),
+    queryFn: ({ signal }) => fetchApproval(id, signal),
+    // CR-107: có `attention` ⇒ KHÔNG poll. Chuyển bước engine ⇒ push `/me/stream` + lưới an toàn giãn dần (tối đa 10 lần).
+    refetchInterval: (s) => {
+      const d = s.state.data;
+      if (d?.attention || (!RUNNING.has(d?.step ?? "") && !engineAdvancing(d))) {
+        tries.current = 0;
+        return false;
+      }
+      if (RUNNING.has(d?.step ?? "")) return REFRESH_MS;
+      tries.current += 1;
+      return advanceDelay(tries.current - 1);
+    },
+  });
+  useApprovalPush(q.data, () => void refresh());
+  const [busy, setBusy] = useState<Busy>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const inFlight = useRef(false);
   /** Chạy `f` khi không có thao tác nào đang chạy (bấm đúp ⇒ bỏ qua, trả null). */
   const once = async <T>(action: NonNullable<Busy>, f: () => Promise<T>): Promise<T | null> => {
     if (inFlight.current) return null;
@@ -85,18 +105,36 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         return null;
       }
     });
-  /** Mở lại quy trình (owner/admin): lỗi ⇒ câu lỗi, không ném. */
-  const reopen = async (): Promise<boolean> =>
+  /** Xử lý run kẹt (owner/admin): mở lại / Thử lại / Huỷ & mở lại. Lỗi ⇒ câu lỗi theo mã, không ném. */
+  const recover = (call: (id: string) => Promise<unknown>, doneKey: string) => async () =>
     (await once("redo", async () => {
       try {
-        await reopenApproval(id);
-        setMsg(t("contracts.approval.engine.reopened"));
+        await call(id);
+        setMsg(t(doneKey));
         await refresh();
         return true;
       } catch (e) {
         setErr(approvalErrorText(e, t));
+        // 409 (không còn chờ quyết) / 422 (thẻ đã đổi lý do): tải lại để banner khớp trạng thái thật.
+        await refresh();
         return false;
       }
     })) ?? false;
-  return { approval: q.data, busy, msg, setMsg, err, setErr, act, prepare, refresh, reopen };
+  const reopen = recover(reopenApproval, "contracts.approval.engine.reopened");
+  const retry = recover(retryApproval, "contracts.approval.engine.retried");
+  const cancelReopen = recover(cancelReopenApproval, "contracts.approval.engine.reopened");
+  return {
+    approval: q.data,
+    busy,
+    msg,
+    setMsg,
+    err,
+    setErr,
+    act,
+    prepare,
+    refresh,
+    reopen,
+    retry,
+    cancelReopen,
+  };
 }

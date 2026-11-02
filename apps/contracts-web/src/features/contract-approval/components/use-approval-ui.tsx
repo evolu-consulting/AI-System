@@ -24,6 +24,7 @@ import {
 import { releaseNoteKey } from "../lib/engine-card";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
+import { AttentionBanner } from "./AttentionBanner";
 
 export type ApprovalUi = {
   buttons: ReactNode;
@@ -69,14 +70,28 @@ export function useApprovalUi(o: {
   // Run engine kết thúc bất thường (`needs_reopen`, lý do `ENGINE_RUN_*`): lượt GIỮ chế độ engine, chờ owner/admin mở lại.
   const stalled = ap.approval?.needs_reopen === true;
   // Lý do dừng bất thường ưu tiên hơn câu "đang chờ người duyệt" (run đã chết, không ai duyệt được).
-  const note = stalled
-    ? (releaseNoteKey(ap.approval?.feedback) ?? "contracts.approval.engine.release.OTHER")
-    : v.note;
+  // CR-107: có `attention` ⇒ banner riêng thay cho ghi chú + nút Mở lại cũ (hub cũ không có `attention` ⇒ đường cũ).
+  const attention = ap.approval?.attention ?? null;
+  const note = attention
+    ? null
+    : stalled
+      ? (releaseNoteKey(ap.approval?.feedback) ?? "contracts.approval.engine.release.OTHER")
+      : v.note;
   const section = (
     <>
       {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
+      {attention && (
+        <AttentionBanner
+          attention={attention}
+          owner={o.owner === true}
+          busy={ap.busy !== null}
+          onRetry={() => void ap.retry()}
+          onCancelReopen={() => void ap.cancelReopen()}
+          onReopen={() => void ap.reopen()}
+        />
+      )}
       <ApprovalNote note={note} rejected={rejected} />
-      {stalled && o.owner && (
+      {!attention && stalled && o.owner && (
         <button
           type="button"
           data-approval="reopen"

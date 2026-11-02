@@ -514,6 +514,27 @@
         },
         "reopen": "Reopen approval",
         "reopened": "The approval has been reopened.",
+        "retried": "Asked to run the failed step again.",
+        "attention": {
+          "title": "The approval is paused: {{reason}}",
+          "since": "Since {{time}}",
+          "retry": "Retry",
+          "cancelReopen": "Cancel & reopen",
+          "tellOwner": "Tell the contract owner so they can handle it.",
+          "confirmTitle": "Cancel and reopen the approval?",
+          "confirmBody": "The current run will be cancelled and a new run will start from the beginning with the current flow.",
+          "reason": {
+            "tool_failed": "an automatic step failed and needs a decision",
+            "retry_exhausted": "an automatic step failed after several retries",
+            "job_timeout": "an automatic step ran past its time limit",
+            "other": "the approval needs someone to decide what to do next",
+            "FLOW_GROUP_MISSING": "The department {{keys}} of the flow no longer exists — add it, then press Reopen",
+            "FLOW_GROUP_MISSING_ANY": "A department of the flow no longer exists — add it, then press Reopen",
+            "FLOW_INVALID": "the approval flow is broken; an admin must fix it, then press Reopen",
+            "FLOW_MISSING": "no approval flow is published; an admin must assign one, then press Reopen",
+            "CANCELLED_BY_OWNER": "the approval run was cancelled; press Reopen to start a new one"
+          }
+        },
         "release": {
           "MISSING": "The automatic approval run was lost; the contract is waiting for an admin to reopen the approval.",
           "FAILED": "The automatic approval run failed; the contract is waiting for an admin to reopen the approval.",
@@ -550,7 +571,10 @@
         "notOpen": "The approval step has changed — reload the page to see the latest status.",
         "changedReloaded": "The approval step has changed (someone acted on it or AI is re-reading) — the latest status is now shown.",
         "quota": "Today's AI actions are used up ({{limit}} per day). Try again tomorrow.",
-        "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again."
+        "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again.",
+        "notOwner": "Only the contracts pack admin can do this. Please tell the contract owner.",
+        "groupMissing": "The flow still lacks a department, so it cannot be reopened. Add the department and try again.",
+        "engineUnavailable": "The process engine is temporarily unavailable. Please try again in a few minutes."
       }
     },
     "review": {

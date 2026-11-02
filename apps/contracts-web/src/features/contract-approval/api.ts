@@ -26,6 +26,22 @@ export function reopenApproval(id: string): Promise<ContractApproval> {
   });
 }
 
+/** CR-107 · "Thử lại" bước lỗi của run đang chờ quyết (owner/admin gói). */
+export function retryApproval(id: string): Promise<ContractApproval> {
+  return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval/retry`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+/** CR-107 · "Huỷ & mở lại": huỷ run hiện tại, mở run mới theo quy trình hiện hành (owner/admin gói). */
+export function cancelReopenApproval(id: string): Promise<ContractApproval> {
+  return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval/cancel-reopen`, {
+    method: "POST",
+    body: {},
+  });
+}
+
 export const groupsKey = ["contract-groups"] as const;
 /** S3b · Group của tenant (id + tên) cho tên phòng ở thẻ duyệt + chọn phòng ở mẫu luồng (mọi người có quyền đọc gói). */
 export function fetchGroups(signal?: AbortSignal): Promise<ContractGroup[]> {

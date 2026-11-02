@@ -10,6 +10,11 @@ const KEYS: Record<string, string> = {
   APPROVAL_NOT_OPEN: "contracts.approval.errors.notOpen",
   REVIEW_TASK_CLOSED: "contracts.approval.errors.notOpen",
   EXTRACT_BUSY: "contracts.approval.errors.notOpen",
+  // CR-107: Thử lại / Huỷ & mở lại / Mở lại.
+  APPROVAL_GROUP_MISSING: "contracts.approval.errors.groupMissing",
+  FORBIDDEN: "contracts.approval.errors.notOwner",
+  PACK_FORBIDDEN: "contracts.approval.errors.notOwner",
+  ENGINE_UNAVAILABLE: "contracts.approval.errors.engineUnavailable",
 };
 
 export function approvalErrorText(e: unknown, t: T): string {
