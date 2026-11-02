@@ -104,6 +104,10 @@
   padding-bottom: 4px;
   margin-bottom: 10px;
 }
+/* Composer mở rộng (~680px) mà vẫn dính thì chiếm gần hết màn 900px, che bài bên dưới ⇒ chỉ dính khi thu gọn. */
+.stickytop:has(.feedcomposer:not(.collapsed)) {
+  position: static;
+}
 .stickytop .feedcomposer {
   margin-bottom: 10px;
 }

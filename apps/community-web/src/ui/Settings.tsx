@@ -76,68 +76,70 @@ export function SettingsPage() {
         </div>
       </nav>
       <main className="wsmain">
-        <section className="card setbody">
-          {tab === "account" && (
-            <>
-              <h2>Tài khoản</h2>
-              <p className="lead">Thông tin đăng nhập của bạn trong {viewer.orgName}.</p>
-              <div className="form">
-                <div>
-                  <label htmlFor="s-name">Họ tên</label>
-                  <input id="s-name" className="field" value={viewer.name} readOnly />
-                </div>
-                <div>
-                  <label htmlFor="s-org">Công ty</label>
-                  <input id="s-org" className="field" value={viewer.orgName} readOnly />
-                </div>
-              </div>
-            </>
-          )}
-          {tab === "look" && (
-            <>
-              <h2>Giao diện</h2>
-              <p className="lead">Chọn màu chủ đạo của ứng dụng.</p>
-              <span className="flabel">Màu chủ đạo</span>
-              <fieldset className="swatches" aria-label="Màu chủ đạo">
-                {COMMUNITY_ACCENTS.map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    className={accent === a ? "swatch on" : "swatch"}
-                    style={{ background: ACCENT_META[a].color }}
-                    aria-label={ACCENT_META[a].label}
-                    aria-pressed={accent === a}
-                    onClick={() => {
-                      setAccent(a);
-                      save({ ...s, accent: a });
-                    }}
-                  />
-                ))}
-              </fieldset>
-            </>
-          )}
-          {tab === "notify" && (
-            <>
-              <h2>Thông báo</h2>
-              <p className="lead">Chọn khi nào bạn muốn nhận thông báo (chỉ trong ứng dụng).</p>
-              {kinds.map((k) => (
-                <div className="row" key={k}>
-                  <div className="t">
-                    <b>{NOTIFY_TEXT[k][0]}</b>
-                    <span>{NOTIFY_TEXT[k][1]}</span>
+        <div className="wscenter">
+          <section className="card setbody">
+            {tab === "account" && (
+              <>
+                <h2>Tài khoản</h2>
+                <p className="lead">Thông tin đăng nhập của bạn trong {viewer.orgName}.</p>
+                <div className="form">
+                  <div>
+                    <label htmlFor="s-name">Họ tên</label>
+                    <input id="s-name" className="field" value={viewer.name} readOnly />
                   </div>
-                  <button
-                    type="button"
-                    className="sw"
-                    aria-pressed={s.notify[k]}
-                    aria-label={NOTIFY_TEXT[k][0]}
-                    onClick={() => save({ ...s, notify: { ...s.notify, [k]: !s.notify[k] } })}
-                  />
+                  <div>
+                    <label htmlFor="s-org">Công ty</label>
+                    <input id="s-org" className="field" value={viewer.orgName} readOnly />
+                  </div>
                 </div>
-              ))}
-            </>
-          )}
-        </section>
+              </>
+            )}
+            {tab === "look" && (
+              <>
+                <h2>Giao diện</h2>
+                <p className="lead">Chọn màu chủ đạo của ứng dụng.</p>
+                <span className="flabel">Màu chủ đạo</span>
+                <fieldset className="swatches" aria-label="Màu chủ đạo">
+                  {COMMUNITY_ACCENTS.map((a) => (
+                    <button
+                      key={a}
+                      type="button"
+                      className={accent === a ? "swatch on" : "swatch"}
+                      style={{ background: ACCENT_META[a].color }}
+                      aria-label={ACCENT_META[a].label}
+                      aria-pressed={accent === a}
+                      onClick={() => {
+                        setAccent(a);
+                        save({ ...s, accent: a });
+                      }}
+                    />
+                  ))}
+                </fieldset>
+              </>
+            )}
+            {tab === "notify" && (
+              <>
+                <h2>Thông báo</h2>
+                <p className="lead">Chọn khi nào bạn muốn nhận thông báo (chỉ trong ứng dụng).</p>
+                {kinds.map((k) => (
+                  <div className="row" key={k}>
+                    <div className="t">
+                      <b>{NOTIFY_TEXT[k][0]}</b>
+                      <span>{NOTIFY_TEXT[k][1]}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="sw"
+                      aria-pressed={s.notify[k]}
+                      aria-label={NOTIFY_TEXT[k][0]}
+                      onClick={() => save({ ...s, notify: { ...s.notify, [k]: !s.notify[k] } })}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );

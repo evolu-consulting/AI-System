@@ -24,13 +24,14 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await platformLogin(p);
     await p.getByRole("link", { name: "Quy trình", exact: true }).click();
 
-    // danh sách thư viện: có cột "Dùng cho" + nhãn mặc định; mẫu chạy thử nằm ở tab riêng
+    // danh sách thư viện: khe "Dùng cho" nằm dưới tên (CR-105 UAT, bảng vừa 1440px) + huy hiệu mặc định; mẫu chạy thử nằm ở tab riêng
     await expect(p.getByRole("tab", { name: "Thư viện" })).toBeVisible();
     await expect(p.getByRole("tab", { name: /Mẫu · chạy thử/ })).toBeVisible();
     const table = p.getByRole("table", { name: "Quy trình" });
-    await expect(table.getByRole("columnheader", { name: "Dùng cho" })).toBeVisible();
+    await expect(table.getByRole("columnheader", { name: "Dùng cho" })).toHaveCount(0);
     const base = table.getByRole("row").filter({ hasText: "Quy trình HĐ mặc định" }).first();
-    await expect(base.getByText("Mặc định · Sổ Hợp Tác · Duyệt hợp đồng")).toBeVisible();
+    await expect(base.getByText("Mặc định", { exact: true })).toBeVisible();
+    await expect(base.getByText("Sổ Hợp Tác · Duyệt hợp đồng")).toBeVisible();
     await expect(table.getByRole("row").filter({ hasText: "sdlc" })).toHaveCount(0); // mẫu không lẫn
 
     // giao diện đơn giản: không còn cột Ký hiệu; trạng thái + "đang dùng" bằng chữ; mặc định ghim đầu; nút tạo từ mặc định

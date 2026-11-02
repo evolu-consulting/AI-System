@@ -1,4 +1,4 @@
-﻿// esign-flow · CR-105: Cài đặt › Quy trình duyệt chỉ ĐỌC quy trình thư viện đang dùng (có bước Ký số là nút đuôi); việc soạn
+// esign-flow · CR-105: Cài đặt › Quy trình duyệt chỉ ĐỌC quy trình thư viện đang dùng (có bước Ký số là nút đuôi); việc soạn
 // bước Ký số/người ký chuyển sang admin-web (e2e/P-a/pf4/process-library.pa.ts). Backend giả `page.route`.
 // esign-sweep2 · thẻ duyệt: bước Ký số đã gửi hiện "Hạn ký", nhãn "Quá hạn" và "Đã nhắc lúc" (VIẾT, CHƯA CHẠY — e2e chạy cuối đợt).
 import type { ContractApproval } from "@ai/contracts";
@@ -76,6 +76,8 @@ test("quy trình đang dùng: duyệt qua các bước rồi Ký số ở cuối
 }) => {
   const writes = await install(page);
   const dlg = await open(page);
+  // CR-106: mặc định là canvas chỉ đọc; danh sách bước (`flow-diagram`) hiện sau công tắc "Danh sách"
+  await dlg.getByTestId("flow-view-list").click();
   const steps = dlg.getByTestId("flow-diagram").getByRole("listitem");
   await expect(steps).toHaveCount(3);
   await expect(steps.last()).toContainText("Ký số hợp đồng");

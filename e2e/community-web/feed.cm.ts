@@ -8,7 +8,8 @@ const as = async (page: import("@playwright/test").Page, id: string) => {
 test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có xác nhận", async ({ page }) => {
   await page.goto("/#/feed");
   await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
-  await page.getByTestId("composer").getByRole("button", { name: "Cần bán" }).click();
+  // composer thu gọn: nút loại bài "Cần bán" (aria-label) + ô gợi ý có chữ "cần bán" trong tên ⇒ chọn đúng tên (exact)
+  await page.getByTestId("composer").getByRole("button", { name: "Cần bán", exact: true }).click();
   await expect(page.locator("#draft-body")).toBeVisible();
   await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo dán thử");
   await page.getByLabel("Số lượng").fill("10 thùng");
