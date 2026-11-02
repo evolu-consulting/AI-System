@@ -86,13 +86,17 @@ export const NOTIFY_KINDS = [
 ] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 
+/** D8 · cài đặt cá nhân chỉ còn thông báo; màu chủ đạo là của công ty (brand), không còn theo người dùng. */
 export const CommunitySettingsSchema = z.strictObject({
-  accent: z.enum(COMMUNITY_ACCENTS),
   notify: z.record(z.enum(NOTIFY_KINDS), z.boolean()),
 });
 export type CommunitySettings = z.infer<typeof CommunitySettingsSchema>;
+/** Đầu vào PUT: vẫn nhận `accent` cũ do client cũ gửi (D8) nhưng server bỏ qua, không 422. */
+export const CommunitySettingsInputSchema = z.strictObject({
+  accent: z.enum(COMMUNITY_ACCENTS).optional(),
+  notify: z.record(z.enum(NOTIFY_KINDS), z.boolean()),
+});
 export const DEFAULT_SETTINGS: CommunitySettings = {
-  accent: "indigo",
   notify: {
     comment: true,
     reply: true,

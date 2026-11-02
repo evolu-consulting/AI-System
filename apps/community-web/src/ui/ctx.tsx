@@ -1,10 +1,5 @@
 // Ngữ cảnh app: API, người xem hiện tại, định tuyến hash (#/feed, #/profile, #/settings), toast, làm mới dữ liệu.
-import {
-  COMMUNITY_ACCENTS,
-  type CommunityAccent,
-  type CommunityBrand,
-  type CommunityViewer,
-} from "@ai/contracts/community";
+import type { CommunityBrand, CommunityViewer } from "@ai/contracts/community";
 import {
   createContext,
   type ReactNode,
@@ -41,8 +36,6 @@ export type Ctx = {
   setSearch: (s: string) => void;
   toast: (msg: string) => void;
   isHostViewer: boolean;
-  accent: CommunityAccent;
-  setAccent: (a: CommunityAccent) => void;
 };
 
 const C = createContext<Ctx | null>(null);
@@ -50,18 +43,6 @@ export const useApp = (): Ctx => {
   const v = useContext(C);
   if (!v) throw new Error("Thiếu AppProvider"); // i18n-ignore: lỗi lập trình
   return v;
-};
-
-const ACCENT_KEY = "community.accent";
-const readAccent = (): CommunityAccent => {
-  try {
-    const v = localStorage.getItem(ACCENT_KEY);
-    return (COMMUNITY_ACCENTS as readonly string[]).includes(v ?? "")
-      ? (v as CommunityAccent)
-      : "indigo";
-  } catch {
-    return "indigo";
-  }
 };
 
 export function AppProvider({ boot, children }: { boot: Api; children: ReactNode }) {
@@ -74,7 +55,6 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
   const [brandRaw, setBrandRaw] = useState<CommunityBrand | null>(null);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
-  const [accent, setAccentState] = useState<CommunityAccent>(readAccent);
 
   useEffect(() => {
     const on = () => {
@@ -85,11 +65,11 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
     addEventListener("hashchange", on);
     return () => removeEventListener("hashchange", on);
   }, []);
-  // Màu nhấn = màu công ty chủ quản (token `data-accent`); chưa có brand ⇒ giữ lựa chọn cũ/indigo.
+  // D8: màu nhấn = màu công ty chủ quản (token `data-accent`); chưa có brand ⇒ indigo. Không còn lựa chọn theo người dùng.
   const brandAccent = brandRaw?.accent;
   useEffect(() => {
-    document.documentElement.dataset.accent = brandAccent ?? accent;
-  }, [accent, brandAccent]);
+    document.documentElement.dataset.accent = brandAccent ?? "indigo";
+  }, [brandAccent]);
   // Tiêu đề tab = tên công ty chủ quản (đối tác không thấy tên sản phẩm SHT trong tab).
   const brandName = viewer ? toBrandView(brandRaw, viewer.orgName).name : null;
   useEffect(() => {
@@ -117,14 +97,6 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
   }, [msg]);
 
   const bump = useCallback(() => setRev((n) => n + 1), []);
-  const setAccent = useCallback((a: CommunityAccent) => {
-    setAccentState(a);
-    try {
-      localStorage.setItem(ACCENT_KEY, a);
-    } catch {
-      /* không lưu được: vẫn đổi trong phiên */
-    }
-  }, []);
   const value = useMemo<Ctx | null>(
     () =>
       viewer && {
@@ -150,23 +122,8 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
         setSearch,
         toast: setMsg,
         isHostViewer: viewer.role !== "partner",
-        accent,
-        setAccent,
       },
-    [
-      boot,
-      viewer,
-      rev,
-      bump,
-      route,
-      search,
-      accent,
-      setAccent,
-      brandRaw,
-      settingsOpen,
-      openSettings,
-      closeSettings,
-    ],
+    [boot, viewer, rev, bump, route, search, brandRaw, settingsOpen, openSettings, closeSettings],
   );
   if (!value) return <div className="app" aria-busy="true" />;
   return (

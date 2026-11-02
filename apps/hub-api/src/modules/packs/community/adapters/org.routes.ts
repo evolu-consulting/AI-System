@@ -3,6 +3,7 @@
 // chủ quản (HT-82). Thông báo = C9 (ở đây trả rỗng).
 import {
   type CommunitySettings,
+  CommunitySettingsInputSchema,
   CommunitySettingsSchema,
   type CommunityViewer,
   DEFAULT_SETTINGS,
@@ -104,7 +105,6 @@ function settingsAndNotifications(r: R, d: CommunityDeps, access: Acc): void {
     const row = await orgs.settings(d.uow, await access(c));
     const s = row
       ? CommunitySettingsSchema.safeParse({
-          accent: row.accent,
           notify: { ...DEFAULT_SETTINGS.notify, ...row.notify },
         })
       : null;
@@ -112,7 +112,9 @@ function settingsAndNotifications(r: R, d: CommunityDeps, access: Acc): void {
   });
   r.put("/settings", async (c) => {
     const a = await access(c);
-    const s: CommunitySettings = parseWith(CommunitySettingsSchema, await readJson(c));
+    // D8: `accent` cũ do client cũ gửi được nhận nhưng bỏ qua (màu chủ đạo là của công ty).
+    const { notify } = parseWith(CommunitySettingsInputSchema, await readJson(c));
+    const s: CommunitySettings = { notify };
     await orgs.putSettings(d.uow, a, s);
     return c.json(s);
   });

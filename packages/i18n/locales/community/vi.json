@@ -330,24 +330,47 @@
       "title": "Cài đặt",
       "close": "Đóng",
       "saved": "Đã lưu cài đặt",
-      "tabs": {
-        "account": "Tài khoản",
-        "look": "Giao diện",
-        "notify": "Thông báo"
+      "loadError": "Không tải được cài đặt.",
+      "retry": "Thử lại",
+      "noPermTitle": "Bạn chưa có quyền",
+      "noPerm": "Mục này chỉ dành cho quản trị công ty chủ quản.",
+      "companyWide": "Áp dụng cho cả công ty",
+      "groups": {
+        "personal": "Cá nhân",
+        "company": "Công ty",
+        "sht": "Sổ Hợp Tác"
       },
-      "account": {
-        "lead": "Thông tin đăng nhập của bạn trong {{org}}.",
-        "name": "Họ tên",
-        "company": "Công ty"
+      "sections": {
+        "notify": "Thông báo",
+        "lang": "Ngôn ngữ",
+        "brand": "Màu chủ đạo",
+        "co": "Công ty",
+        "rep": "Điểm uy tín",
+        "biz": "Điểm kinh doanh",
+        "scout": "Dò giá",
+        "flow": "Quy trình duyệt"
       },
-      "look": {
-        "lead": "Chọn màu chủ đạo của ứng dụng.",
-        "accent": "Màu chủ đạo",
+      "lang": {
+        "lead": "Ngôn ngữ hiển thị của ứng dụng.",
+        "aria": "Ngôn ngữ",
+        "vi": "Tiếng Việt",
+        "en": "English"
+      },
+      "brand": {
+        "lead": "Màu chủ đạo do công ty chủ quản đặt, áp dụng cho mọi thành viên.",
+        "aria": "Màu chủ đạo hiện tại",
         "indigo": "Chàm",
         "blue": "Xanh dương",
         "teal": "Xanh ngọc",
         "green": "Xanh lá",
-        "orange": "Cam"
+        "orange": "Cam",
+        "rose": "Hồng",
+        "edit": "Đổi màu trong Sổ Hợp Tác"
+      },
+      "sht": {
+        "lead": "Cấu hình nằm trong Sổ Hợp Tác. Bấm để mở đúng mục.",
+        "open": "Mở trong Sổ Hợp Tác",
+        "readonly": "Chỉ xem; chỉnh trong Sổ Hợp Tác."
       },
       "notify": {
         "lead": "Chọn khi nào bạn muốn nhận thông báo (chỉ trong ứng dụng).",

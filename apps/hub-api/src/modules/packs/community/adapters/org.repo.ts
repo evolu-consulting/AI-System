@@ -54,11 +54,11 @@ export async function profileStats(
   return rows[0] ?? { active: 0, archived: 0, comments: 0 };
 }
 
-export type SettingsRow = { accent: string; notify: Record<string, boolean> };
+export type SettingsRow = { notify: Record<string, boolean> };
 
 export async function settingsOf(tx: Tx, userId: string): Promise<SettingsRow | null> {
   const rows = await tx.execute<SettingsRow>(sql`
-    select accent, notify from community.settings where user_id = ${userId}::uuid`);
+    select notify from community.settings where user_id = ${userId}::uuid`);
   return rows[0] ?? null;
 }
 
@@ -69,7 +69,7 @@ export async function saveSettings(
   s: SettingsRow,
 ): Promise<void> {
   await tx.execute(sql`
-    insert into community.settings (tenant_id, user_id, accent, notify)
-    values (${tenantId}::uuid, ${userId}::uuid, ${s.accent}, ${JSON.stringify(s.notify)}::jsonb)
-    on conflict (tenant_id, user_id) do update set accent = excluded.accent, notify = excluded.notify, updated_at = now()`);
+    insert into community.settings (tenant_id, user_id, notify)
+    values (${tenantId}::uuid, ${userId}::uuid, ${JSON.stringify(s.notify)}::jsonb)
+    on conflict (tenant_id, user_id) do update set notify = excluded.notify, updated_at = now()`);
 }

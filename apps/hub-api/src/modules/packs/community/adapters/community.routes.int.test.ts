@@ -160,17 +160,14 @@ describe("viewer / partners / cats / profile / settings / notifications", () => 
   it("GET /cats, /notifications; settings mặc định → lưu → đọc lại", async () => {
     expect(await ok(z.array(z.string()), call("hA", "GET", "/cats"))).toContain("dong-goi");
     expect((await call("s1a", "GET", "/notifications")).json).toEqual({ items: [], unread: 0 });
-    expect((await ok(CommunitySettingsSchema, call("s1a", "GET", "/settings"))).accent).toBe(
-      "indigo",
-    );
-    const s = {
-      accent: "teal" as const,
-      notify: { ...(await call("s1a", "GET", "/settings")).json.notify, digest: true },
-    };
-    await ok(CommunitySettingsSchema, call("s1a", "PUT", "/settings", s));
+    const first = await ok(CommunitySettingsSchema, call("s1a", "GET", "/settings"));
+    expect(first).not.toHaveProperty("accent");
+    // D8: client cũ vẫn gửi `accent` ⇒ nhận (không 422) nhưng bỏ qua, không lưu, không trả lại.
+    const s = { notify: { ...first.notify, digest: true } };
+    await ok(CommunitySettingsSchema, call("s1a", "PUT", "/settings", { ...s, accent: "teal" }));
     expect(await ok(CommunitySettingsSchema, call("s1a", "GET", "/settings"))).toEqual(s);
-    expect((await ok(CommunitySettingsSchema, call("s1b", "GET", "/settings"))).accent).toBe(
-      "indigo",
+    expect((await ok(CommunitySettingsSchema, call("s1b", "GET", "/settings"))).notify.digest).toBe(
+      false,
     );
   });
   it("GET /profile: chủ quản có shtUrl + bạn bè; HT-74 đối tác xem hồ sơ chủ quản (không SHT); HT-73 công ty khác 404", async () => {

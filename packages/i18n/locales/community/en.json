@@ -330,24 +330,47 @@
       "title": "Settings",
       "close": "Close",
       "saved": "Settings saved",
-      "tabs": {
-        "account": "Account",
-        "look": "Appearance",
-        "notify": "Notifications"
+      "loadError": "Couldn't load settings.",
+      "retry": "Retry",
+      "noPermTitle": "No permission",
+      "noPerm": "This section is for host company admins only.",
+      "companyWide": "Applies to the whole company",
+      "groups": {
+        "personal": "Personal",
+        "company": "Company",
+        "sht": "Partner Ledger"
       },
-      "account": {
-        "lead": "Your sign-in details in {{org}}.",
-        "name": "Full name",
-        "company": "Company"
+      "sections": {
+        "notify": "Notifications",
+        "lang": "Language",
+        "brand": "Accent colour",
+        "co": "Company",
+        "rep": "Reputation score",
+        "biz": "Business score",
+        "scout": "Price scouting",
+        "flow": "Approval flow"
       },
-      "look": {
-        "lead": "Choose the app's accent colour.",
-        "accent": "Accent colour",
+      "lang": {
+        "lead": "Display language of the app.",
+        "aria": "Language",
+        "vi": "Tiếng Việt",
+        "en": "English"
+      },
+      "brand": {
+        "lead": "The accent colour is set by the host company and applies to every member.",
+        "aria": "Current accent colour",
         "indigo": "Indigo",
         "blue": "Blue",
         "teal": "Teal",
         "green": "Green",
-        "orange": "Orange"
+        "orange": "Orange",
+        "rose": "Rose",
+        "edit": "Change colour in Partner Ledger"
+      },
+      "sht": {
+        "lead": "This is configured in Partner Ledger. Click to open the exact section.",
+        "open": "Open in Partner Ledger",
+        "readonly": "View only; edit in Partner Ledger."
       },
       "notify": {
         "lead": "Choose when you want to be notified (in the app only).",
