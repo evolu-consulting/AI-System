@@ -257,6 +257,24 @@ const HOOK_FLOW: Record<string, string> = {
   PostCompact: "dlc-hook-post-compact",
 };
 
+/** Bật mọi workflow của seed (hook + tool) cho tenant — thiếu công tắc tenant ⇒ `/mcp` không đưa tool cho agent. */
+async function enableTools(
+  admin: Client,
+  tenant: string,
+  wf: Map<string, string>,
+  log: (s: string) => void,
+) {
+  const t = await findExact(admin, "tenant", "/admin/tenants", { field: "key", value: tenant });
+  const tid = idOf(t) as string;
+  for (const id of wf.values())
+    await admin.call(`workflow-tool ${id}`, {
+      method: "PUT",
+      path: `/admin/tenants/${tid}/workflow-tools/${id}`,
+      ok: [200, 201, 204],
+    });
+  log(`tenant ${tenant}: bật ${wf.size} workflow tool`);
+}
+
 async function hubStep(
   e: Env,
   hub: Client,
@@ -363,6 +381,7 @@ export async function main(argv: string[], e: Env): Promise<number> {
   const admin = makeClient(e.ADMIN_API_URL || "http://localhost:3001", token);
   const hub = makeClient(e.HUB_URL_SEED || "http://localhost:4000", token);
   const wf = await adminStep(e, admin, flows, dify, log);
+  await enableTools(admin, a.tenant, wf, log);
   await hubStep(e, hub, admin, wf, a, log);
   log("dlc-dify seed xong.");
   return 0;

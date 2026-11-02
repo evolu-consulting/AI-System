@@ -98,7 +98,7 @@ describe("dlc-flow · compile / fromStages / resolve", () => {
 
   it("phân giải Group theo tenant; thiếu mã ⇒ null", () => {
     const st = compileDlcStages(body(), "enhancement");
-    expect(dlcGroupKeys(body())).toEqual([DLC_GROUP_EDITOR]);
+    expect(dlcGroupKeys(body())).toEqual([DLC_GROUP_EDITOR, DLC_GROUP_OWNER]);
     const ids = new Map([
       [DLC_GROUP_EDITOR, "11111111-1111-4111-8111-111111111111"],
       [DLC_GROUP_OWNER, "22222222-2222-4222-8222-222222222222"],

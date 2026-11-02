@@ -187,6 +187,8 @@ export function validateDlcBody(x: unknown): DlcIssue[] {
 export function dlcGroupKeys(body: DlcBody): string[] {
   const keys = new Set<string>();
   for (const s of body.steps) if (s.gate) keys.add(s.gate.group_key);
+  // Cổng duyệt có Group "cũng quyết" `dlc-owner` (Toàn quyền của gói) ⇒ phải phân giải cả mã này theo tenant.
+  if (keys.size > 0) keys.add(DLC_GROUP_OWNER);
   return [...keys];
 }
 
