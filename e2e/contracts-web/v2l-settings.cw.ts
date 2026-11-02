@@ -250,3 +250,22 @@ test("người không phải chủ sở hữu: xem được nhưng không có n�
   await expect(dlg.getByRole("button", { name: "Lưu cài đặt" })).toHaveCount(0);
   await expect(dlg.getByLabel("Tên công ty")).toBeDisabled();
 });
+
+test("CR-110: /settings?sec=biz mở thẳng hộp thoại ở mục Điểm kinh doanh, khoá lạ ⇒ mục Công ty", async ({
+  page,
+}) => {
+  await install(page, "owner");
+  await page.goto("/settings?sec=biz");
+  const dlg = page.getByRole("dialog", { name: "Cài đặt" });
+  await expect(dlg.getByRole("button", { name: /Điểm kinh doanh/ }).first()).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await page.goto("/settings?sec=khong-co");
+  await expect(
+    page
+      .getByRole("dialog", { name: "Cài đặt" })
+      .getByRole("button", { name: /Công ty/ })
+      .first(),
+  ).toHaveAttribute("aria-current", "true");
+});

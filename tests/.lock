@@ -421,7 +421,7 @@ f30891fa26eec7d42cb54df91f16da128c92508fee8a2d4b8cda54456480f36b  e2e/contracts-
 175a4c25a772edf4ef5aec0ed66388ff9a68227579ddd6c33665ecfa63b89ef2  e2e/contracts-web/v2i-partners.cw.ts
 6eabeaceee60b0cf4a291d64c1936ed4c020ea9abf52e5f08c173f5473d31c42  e2e/contracts-web/v2j1-products.cw.ts
 4cfadbdd9e69786a9967cea47c8f6e7ed01814e5838bcf9c9ad21d5c4fa00288  e2e/contracts-web/v2j2-suppliers.cw.ts
-20141d33ff06802d746b25439aca04f758747d0d2e9a6c7196b1fadba03806ab  e2e/contracts-web/v2l-settings.cw.ts
+43cc6878da989fdf824999b45d5b2afb786fb2078af2fe78cf72901caa7c57ab  e2e/contracts-web/v2l-settings.cw.ts
 2f5c49e16e1ecbbd4dd043aedd4885772217ec51a0dccf6f8bdef211b5e4badb  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 d704ce4d4bd14c2dc3f67bf0d7c83bde3eec51b47c89dfe46fc38b871969b8f5  e2e/deployed/01-login-sso.deployed.ts
