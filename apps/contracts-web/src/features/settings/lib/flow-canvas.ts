@@ -7,17 +7,34 @@ import type { Edge, Node } from "@xyflow/react";
 import type { CurrentStep, DealKind } from "./current-flow";
 
 export const NODE_W = 280;
-export const GAP_Y = 36;
+export const GAP_Y = 52; // đủ chỗ cho nhãn điều kiện trên cạnh vào bước
 const H_START = 40;
 const H_FINAL = 52;
 // Khớp FlowCanvasNode: py-2 (16) + dòng tên (24); mỗi dòng thêm = gap-1 (4) + cao dòng. Thiếu ⇒ chữ bị cắt.
 const H_BASE = 42;
 const H_DEPT = 22;
 const H_BADGES = 28;
-const H_COND = 22;
+const H_INFO = 22; // mỗi dòng thông tin bước (hạn/nhắc · số người duyệt · chuyển cấp)
+/** Cạnh bỏ qua đi vòng bên phải; lệch nhau theo chỉ số để hai nhánh liền kề không chồng nét. */
+const SKIP_OFFSET = 84; // ≥ nửa bề ngang nhãn để nhãn không đè lên node
+
+/** Mã tay nắm bên phải của node để vẽ nhánh bỏ qua (khớp `FlowCanvasNode`). */
+export const SKIP_OUT = "skip-out";
+export const SKIP_IN = "skip-in";
 
 export type CanvasKind = "start" | "step" | "finalize";
 export type StepBadge = "conditional" | "esign" | "dify";
+
+export type StepInfo = {
+  dueH: number | null;
+  remindH: number | null;
+  approvers: number | null;
+  escalate: string | null;
+};
+const NO_INFO: StepInfo = { dueH: null, remindH: null, approvers: null, escalate: null };
+/** Số dòng thông tin sẽ hiện (khớp StepInfoLines). */
+export const infoLineCount = (i: StepInfo): number =>
+  (i.dueH !== null ? 1 : 0) + (i.approvers !== null ? 1 : 0) + (i.escalate ? 1 : 0);
 
 export type FlowNodeData = {
   kind: CanvasKind;
@@ -29,6 +46,8 @@ export type FlowNodeData = {
   badges: StepBadge[];
   /** Tóm tắt điều kiện ("Giá trị ≥ 100.000.000 và Loại HĐ: Mua"), null = chạy mọi HĐ. */
   condition: string | null;
+  /** CR-108 · thông tin mỗi bước (null/0 dòng ⇒ ẩn): hạn + nhắc, số người duyệt, nhóm nhận khi quá hạn. */
+  info: StepInfo;
   /** Node hệ thống, không đụng được (Ghi Đã duyệt). */
   locked: boolean;
   /** Bước bị bỏ qua theo dữ liệu "Xem trước đường đi" ⇒ mờ đi. */
@@ -44,6 +63,8 @@ export type CondLabels = {
   and: string;
   or: string;
   number: (n: number) => string;
+  /** Nhãn nhánh bỏ qua (\Không thoả ⇒ bỏ qua\). */
+  skip: string;
 };
 
 const OPS = { ge: "≥", gt: ">", le: "≤", lt: "<" } as const;
@@ -65,7 +86,7 @@ function stepHeight(d: FlowNodeData): number {
     H_BASE +
     (d.department ? H_DEPT : 0) +
     (d.badges.length > 0 ? H_BADGES : 0) +
-    (d.condition ? H_COND : 0)
+    infoLineCount(d.info) * H_INFO
   );
 }
 
@@ -83,6 +104,7 @@ const SYSTEM: Omit<FlowNodeData, "kind" | "locked"> = {
   department: null,
   badges: [],
   condition: null,
+  info: NO_INFO,
   dim: false,
 };
 
@@ -107,6 +129,12 @@ export function buildFlowCanvas(
       department: s.department && s.department !== s.name ? s.department : null,
       badges: badgesOf(s, condition !== null),
       condition,
+      info: {
+        dueH: s.dueH,
+        remindH: s.dueH !== null ? s.remindH : null,
+        approvers: s.approverCount,
+        escalate: s.escalateGroup,
+      },
       locked: false,
       dim: run ? run[i] === false : false,
     };
@@ -143,6 +171,44 @@ export function buildFlowCanvas(
     deletable: false,
     selectable: false,
     style: it.data.dim ? { opacity: 0.35 } : undefined,
+    // CR-108 · cạnh vào bước có điều kiện ghi rõ điều kiện ("Giá trị ≥ 500.000.000").
+    ...(it.data.kind === "step" && it.data.condition ? labelProps(it.data.condition) : {}),
   }));
-  return { nodes, edges };
+  return { nodes, edges: [...edges, ...skipEdges(items, labels.skip)] };
+}
+
+const labelProps = (label: string) => ({
+  label,
+  // Nền nhãn mặc định của xyflow là đen (chỉ có base.css) ⇒ tô theo token giao diện để đọc được ở cả sáng/tối.
+  labelStyle: { fontSize: 11, fill: "var(--ink-2)" },
+  labelBgStyle: { fill: "var(--card)", stroke: "var(--rule, #dcdce6)", strokeWidth: 1 },
+  labelBgPadding: [6, 3] as [number, number],
+  labelBgBorderRadius: 6,
+});
+
+/**
+ * CR-108 · nhánh bỏ qua: bước có điều kiện (không phải bước đầu) ⇒ cạnh nét đứt đi vòng bên phải từ node liền trước sang node liền sau.
+ * Bước bị bỏ qua theo xem trước (`dim`) ⇒ nhánh này sáng lên (đường thật), ngược lại mờ.
+ */
+function skipEdges(items: { id: string; data: FlowNodeData }[], label: string): Edge[] {
+  const out: Edge[] = [];
+  items.forEach((it, i) => {
+    const prev = items[i - 1];
+    const next = items[i + 1];
+    if (it.data.kind !== "step" || !it.data.condition || !prev || !next) return;
+    out.push({
+      id: `skip-${it.id}`,
+      source: prev.id,
+      sourceHandle: SKIP_OUT,
+      target: next.id,
+      targetHandle: SKIP_IN,
+      type: "smoothstep",
+      pathOptions: { offset: SKIP_OFFSET + (i % 2) * 16 },
+      deletable: false,
+      selectable: false,
+      style: { strokeDasharray: "6 4", opacity: it.data.dim ? 1 : 0.5 },
+      ...labelProps(label),
+    } as Edge);
+  });
+  return out;
 }

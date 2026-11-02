@@ -19,6 +19,8 @@ export type FlowGroups = {
   existingIds(tenantId: string, ids: readonly string[]): Promise<ReadonlySet<string>>;
   /** S3b · Group của tenant (id + tên) cho `GET /pack/contracts/groups`. */
   list?(tenantId: string): Promise<{ id: string; name: string }[]>;
+  /** CR-108 · số thành viên còn dùng được mỗi Group (id ⇒ số); vắng ⇒ không hiện số người duyệt. */
+  memberCounts?(tenantId: string, ids: readonly string[]): Promise<ReadonlyMap<string, number>>;
 };
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (admin.workflows ∧ công tắc tenant). */
 export type FlowWorkflows = (tenantId: string) => Promise<DifyWorkflow[]>;
@@ -70,6 +72,11 @@ export type CurrentFlowStep = {
   department_name: string | null;
   kind: "review" | "dify" | "esign";
   when?: FlowWhen | null;
+  /** CR-108 · hạn xử lý (giờ), nhắc mỗi (giờ), nhóm nhận khi quá hạn (tên), số người duyệt còn dùng được — vắng ⇒ không hiện. */
+  due_h?: number;
+  remind_every_h?: number;
+  escalate_group_name?: string | null;
+  approver_count?: number;
 };
 export type CurrentFlow = {
   def_id: string;
@@ -99,6 +106,29 @@ export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) 
       const id = ids.get(k);
       return (id ? names.get(id) : undefined) ?? k;
     };
+    // CR-108 · số người duyệt: MỘT câu cho mọi nhóm duyệt của bước (không truy vấn từng bước).
+    const approverKey = (s: (typeof body.steps)[number]): string | null | undefined =>
+      s.kind === "review"
+        ? s.department_group_key
+        : s.kind === "esign"
+          ? s.company_signer.department_group_key
+          : null;
+    const deptIds = [
+      ...new Set(body.steps.map(approverKey).flatMap((k) => ids.get(k ?? "") ?? [])),
+    ];
+    const counts =
+      deptIds.length > 0 && d.groups.memberCounts
+        ? await d.groups.memberCounts(who.tenantId, deptIds)
+        : new Map<string, number>();
+    const timing = (s: { due_h?: number; remind_every_h?: number | null }, ek?: string | null) => ({
+      ...(typeof s.due_h === "number" ? { due_h: s.due_h } : {}),
+      ...(typeof s.remind_every_h === "number" ? { remind_every_h: s.remind_every_h } : {}),
+      ...(ek && ids.has(ek) ? { escalate_group_name: deptName(ek) } : {}),
+    });
+    const approvers = (k: string | null | undefined, user?: string | null) => {
+      const n = user ? 1 : counts.get(ids.get(k ?? "") ?? "");
+      return n === undefined ? {} : { approver_count: n };
+    };
     const steps = body.steps.map((s): CurrentFlowStep => {
       if (s.kind === "dify") return { name: s.name, department_name: null, kind: "dify" };
       if (s.kind === "esign")
@@ -106,12 +136,15 @@ export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) 
           name: s.name,
           department_name: deptName(s.company_signer.department_group_key),
           kind: "esign",
+          ...timing(s, s.escalate_group_key),
         };
       return {
         name: s.name,
         department_name: deptName(s.department_group_key),
         kind: "review",
         when: s.when ?? null,
+        ...timing(s, s.escalate_group_key),
+        ...approvers(s.department_group_key, s.approver_user_id),
       };
     });
     return {

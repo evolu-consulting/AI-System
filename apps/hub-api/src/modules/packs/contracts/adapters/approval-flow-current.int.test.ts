@@ -3,7 +3,7 @@
 // phòng ban theo TÊN của tenant (mã Group ⇒ tên); `PUT /approval-flow` không còn ⇒ 404. Seed def thư viện + release + gán trực tiếp.
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { createDb, type Db as PackDb } from "@ai/db";
-import { enablePack, groups, tenants, users } from "@ai/test-kit/builders";
+import { enablePack, groups, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
@@ -26,7 +26,13 @@ let own = "";
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
 const defs = { dflt: "", special: "" };
 
-const review = (key: string, name: string, dept: string, when: unknown = null) => ({
+const review = (
+  key: string,
+  name: string,
+  dept: string,
+  when: unknown = null,
+  extra: Record<string, unknown> = {},
+) => ({
   kind: "review",
   key,
   name,
@@ -38,16 +44,20 @@ const review = (key: string, name: string, dept: string, when: unknown = null) =
   escalate_group_id: null,
   exclude_starter: false,
   when,
+  ...extra,
 });
 const BODY = {
   dflt: { steps: [review("kt", "Kế toán duyệt", "ke-toan")] },
   special: {
     steps: [
       review("kt", "Kế toán duyệt", "ke-toan"),
-      review("gd", "Giám đốc duyệt", "giam-doc", {
-        op: "and",
-        conds: [{ field: "total_value", op: "ge", value: 100_000_000 }],
-      }),
+      review(
+        "gd",
+        "Giám đốc duyệt",
+        "giam-doc",
+        { op: "and", conds: [{ field: "total_value", op: "ge", value: 100_000_000 }] },
+        { due_h: 24, remind_every_h: 8, escalate_group_key: "ke-toan" },
+      ),
     ],
   },
 };
@@ -111,13 +121,20 @@ beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
   [A, B] = (await tenants(o, 2, 881)) as [string, string];
-  [own] = (await users(o, A, 1, { from: 881 })) as [string];
+  const us = (await users(o, A, 3, { from: 881 })) as [string, string, string];
+  own = us[0];
   await enablePack(o, [A, B], "contracts");
   for (const [t, n] of [
     [A, "A"],
     [B, "B"],
   ] as const) {
-    await groups(o, t, ["ke-toan", "giam-doc"]);
+    const g = await groups(o, t, ["ke-toan", "giam-doc"]);
+    if (t === A) {
+      // CR-108 · 3 người ở Kế toán, 2 ở Giám đốc; 1 người (ở cả hai nhóm) đã ngừng ⇒ chỉ đếm người còn dùng được (2 và 1).
+      await members(o, A, g.get("ke-toan") as string, us);
+      await members(o, A, g.get("giam-doc") as string, [us[0], us[1]]);
+      await o`update admin.users set active = false where id = ${us[1]}`;
+    }
     await o`update admin.groups set name = jsonb_build_object('vi', 'Kế toán ' || ${n}) where tenant_id = ${t} and key = 'ke-toan'`;
     await o`update admin.groups set name = jsonb_build_object('vi', 'Giám đốc ' || ${n}) where tenant_id = ${t} and key = 'giam-doc'`;
   }
@@ -140,7 +157,16 @@ type Out = {
   name: string;
   rel_version: number;
   is_default: boolean;
-  steps: { name: string; department_name: string | null; kind: string; when?: unknown }[];
+  steps: {
+    name: string;
+    department_name: string | null;
+    kind: string;
+    when?: unknown;
+    due_h?: number;
+    remind_every_h?: number;
+    escalate_group_name?: string | null;
+    approver_count?: number;
+  }[];
 };
 
 it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
@@ -166,6 +192,17 @@ it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
     ],
     when: { op: "and", conds: [{ field: "total_value", op: "ge", value: 100_000_000 }] },
   });
+  // CR-108 · trường thêm mỗi bước: hạn, nhắc, nhóm nhận khi quá hạn, số người duyệt (B không có thành viên ⇒ 0 / vắng)
+  const pick = (s?: Out["steps"][number]) => ({
+    due_h: s?.due_h,
+    remind: s?.remind_every_h,
+    esc: s?.escalate_group_name,
+    n: s?.approver_count,
+  });
+  expect(a.steps.map(pick)).toEqual([
+    { due_h: 72, remind: undefined, esc: undefined, n: 2 },
+    { due_h: 24, remind: 8, esc: "Kế toán A", n: 1 },
+  ]);
   // tenant chưa gán ⇒ mặc định của khe, tên phòng ban theo tenant của mình
   const rb = await app(B, own).request("/approval-flow");
   const b = (await rb.json()) as Out;

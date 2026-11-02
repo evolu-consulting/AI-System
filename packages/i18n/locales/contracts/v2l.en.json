@@ -167,13 +167,31 @@
     "flow": {
       "current": {
         "title": "Approval process in use: {{name}} · v{{version}}",
-        "lead": "Your company runs this process for every contract. It is read-only here.",
+        "lead": "This section is view-only. To change the process, contact the platform administrator.",
+        "defaultBadge": "Using the default",
+        "defaultHelp": "Your company has not been assigned its own process, so it uses the system default process.",
+        "saveNote": "This section is view-only, so there is nothing to save.",
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",
         "esign": "E-sign",
         "conditional": "Conditional",
+        "info": {
+          "due": "Due in {{due}} h",
+          "dueRemind": "Due in {{due}} h · remind every {{remind}} h",
+          "approver": "{{count}} approver",
+          "approvers": "{{count}} approvers",
+          "escalate": "Overdue ⇒ escalate to {{group}}"
+        },
+        "legend": {
+          "label": "Diagram legend",
+          "step": "Approval step",
+          "system": "System step (locked)",
+          "skip": "Skip branch",
+          "dim": "Faded = skipped in the preview"
+        },
         "view": { "label": "Process view", "canvas": "Diagram", "list": "List" },
         "canvas": {
+          "skip": "Not met ⇒ skipped",
           "aria": "Approval process diagram (read-only)",
           "start": "Start",
           "finalize": "Record as Approved",
@@ -236,6 +254,14 @@
       "previewTitle": "Path preview",
       "sampleValue": "Sample value",
       "emptyValue": "Leave empty",
+      "previewResult": "This contract goes through {{n}}/{{m}} steps: {{steps}}",
+      "quick": {
+        "label": "Quick sample values",
+        "m100": "100 million",
+        "m500": "500 million",
+        "b1": "1 billion",
+        "empty": "Leave empty"
+      },
       "runs": "runs",
       "skipped": "skipped",
       "unnamed": "(unnamed)",

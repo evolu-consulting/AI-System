@@ -11,6 +11,8 @@ export type HeaderProps = {
   isDefault: boolean;
   saving: boolean;
   issue: string | null;
+  /** CR-108 · mục chỉ xem (Quy trình duyệt) và không có nháp nào chưa lưu ⇒ thay các nút bằng ghi chú, tránh tưởng phải bấm Lưu. */
+  noSave?: boolean;
   onReset: () => void;
   onDiscard: () => void;
   onSave: () => void;
@@ -31,7 +33,11 @@ export function SettingsHeader(p: HeaderProps) {
       <DialogTitle className="text-card-title">{s("title")}</DialogTitle>
       <DialogDescription className="text-caption text-dim">{s("scope")}</DialogDescription>
       <div className="ml-auto flex items-center gap-2">
-        {p.owner ? (
+        {p.noSave ? (
+          <span className="text-caption text-dim" data-testid="settings-nosave-note">
+            {t("contracts.flow.current.saveNote")}
+          </span>
+        ) : p.owner ? (
           <>
             <span className="text-caption text-dim">{state}</span>
             <button type="button" disabled={p.isDefault} onClick={p.onReset} className={BTN}>

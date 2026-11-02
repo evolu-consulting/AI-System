@@ -49,7 +49,7 @@ export type EsignHooks = {
 };
 type FlowDeps = EsignHooks & {
   engine?: ApprovalEngineBridge | undefined;
-  groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list">;
+  groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list" | "memberCounts">;
 };
 
 /** contract-flow S3a · duyệt trên engine: cờ `CONTRACTS_APPROVAL_ENGINE=on` (hoặc seam test `on`) + cầu engine có + chế độ flow

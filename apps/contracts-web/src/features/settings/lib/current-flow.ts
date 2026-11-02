@@ -11,6 +11,14 @@ export type CurrentStep = {
   department: string | null;
   kind: "review" | "dify" | "esign";
   when: FlowWhen | null;
+  /** CR-108 · hạn xử lý (giờ); vắng ⇒ không hiện. */
+  dueH: number | null;
+  /** CR-108 · nhắc mỗi (giờ). */
+  remindH: number | null;
+  /** CR-108 · tên nhóm nhận khi quá hạn. */
+  escalateGroup: string | null;
+  /** CR-108 · số người duyệt còn dùng được của nhóm. */
+  approverCount: number | null;
 };
 export type CurrentFlow = {
   defId: string;
@@ -37,6 +45,10 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
       department: s.department_name,
       kind: s.kind,
       when: s.when ?? null,
+      dueH: s.due_h ?? null,
+      remindH: s.remind_every_h ?? null,
+      escalateGroup: s.escalate_group_name ?? null,
+      approverCount: s.approver_count ?? null,
     })),
   };
 }

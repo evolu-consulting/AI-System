@@ -1,4 +1,4 @@
-﻿// V2-L · hộp thoại Cài đặt (mở từ menu avatar): đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt; trái là 3 mục (Công ty · Điểm uy tín ·
+// V2-L · hộp thoại Cài đặt (mở từ menu avatar): đầu có Khôi phục tất cả · Bỏ thay đổi · Lưu cài đặt; trái là 3 mục (Công ty · Điểm uy tín ·
 // Điểm kinh doanh) cuộn riêng; mục khác mặc định có chấm cam. Chỉ chủ sở hữu (contracts-owner) sửa được; người khác xem (mọi ô khoá).
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
@@ -22,6 +22,9 @@ import { SettingsHeader } from "./SettingsHeader";
 /** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
 const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
 const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
+
+/** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). */
+const noSaveFor = (s: SectionId, dirty: boolean) => s === "flow" && !dirty;
 
 /** Mục có chấm cam "đã khác mặc định"? Điểm uy tín / dò giá / quy trình lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
@@ -111,6 +114,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
           isDefault={!vsDef || !anyChanged(vsDef)}
           saving={saving}
           issue={issue}
+          noSave={noSaveFor(sec, dirty)}
           onReset={() => defaults && setDraft(structuredClone(defaults))}
           onDiscard={() => saved && setDraft(structuredClone(saved))}
           onSave={() => void save()}

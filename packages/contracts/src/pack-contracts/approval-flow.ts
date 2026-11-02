@@ -192,6 +192,11 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   kind: z.enum(["review", "dify", "esign"]),
   /** Điều kiện áp dụng (vắng/null = luôn chạy). */
   when: FlowWhenSchema.nullable().optional(),
+  /** CR-108 · tất cả tuỳ chọn (client cũ bỏ qua): hạn xử lý giờ, nhắc mỗi giờ, nhóm nhận khi quá hạn, số người duyệt còn dùng được. */
+  due_h: z.number().int().min(1).optional(),
+  remind_every_h: z.number().int().min(1).optional(),
+  escalate_group_name: z.string().max(200).nullable().optional(),
+  approver_count: z.number().int().min(0).optional(),
 });
 export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({

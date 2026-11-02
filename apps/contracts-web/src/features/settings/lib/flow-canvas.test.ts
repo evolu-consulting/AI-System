@@ -9,6 +9,7 @@ const L: CondLabels = {
   and: "và",
   or: "hoặc",
   number: (n) => String(n),
+  skip: "Không thoả ⇒ bỏ qua",
 };
 const step = (key: string, extra: Partial<CurrentStep> = {}): CurrentStep => ({
   key,
@@ -16,6 +17,10 @@ const step = (key: string, extra: Partial<CurrentStep> = {}): CurrentStep => ({
   department: null,
   kind: "review",
   when: null,
+  dueH: null,
+  remindH: null,
+  escalateGroup: null,
+  approverCount: null,
   ...extra,
 });
 const GD = step("s1", {
@@ -31,12 +36,15 @@ describe("flow-canvas · buildFlowCanvas", () => {
     expect(nodes.map((n) => n.id)).toEqual(["start", "s0", "s1", "s2", "finalize"]);
     expect(nodes.at(-1)?.data.locked).toBe(true);
     expect(nodes.slice(0, -1).every((n) => !n.data.locked)).toBe(true);
-    expect(edges.map((e) => [e.source, e.target])).toEqual([
-      ["start", "s0"],
-      ["s0", "s1"],
-      ["s1", "s2"],
-      ["s2", "finalize"],
-    ]);
+    // 4 cạnh chính + 1 nhánh bỏ qua của bước có điều kiện (s1)
+    expect(edges.filter((e) => !e.id.startsWith("skip-")).map((e) => [e.source, e.target])).toEqual(
+      [
+        ["start", "s0"],
+        ["s0", "s1"],
+        ["s1", "s2"],
+        ["s2", "finalize"],
+      ],
+    );
   });
   test("bố cục dọc, cách đều GAP_Y, node không kéo/nối/xoá được", () => {
     for (let i = 1; i < nodes.length; i++) {
@@ -59,8 +67,53 @@ describe("flow-canvas · buildFlowCanvas", () => {
   test("run từ xem trước: bước bị bỏ qua ⇒ dim, cạnh vào bước đó mờ", () => {
     const r = buildFlowCanvas(STEPS, L, [true, false, true]);
     expect(r.nodes.map((n) => n.data.dim)).toEqual([false, false, true, false, false]);
-    expect(r.edges.find((e) => e.target === "s1")?.style?.opacity).toBe(0.35);
-    expect(r.edges.find((e) => e.target === "s2")?.style).toBeUndefined();
+    expect(r.edges.find((e) => e.id === "e-s0-s1")?.style?.opacity).toBe(0.35);
+    expect(r.edges.find((e) => e.id === "e-s1-s2")?.style).toBeUndefined();
+  });
+  test('CR-108 nhánh bỏ qua: bước điều kiện ⇒ cạnh nét đứt từ node trước sang node sau, nhãn "Không thoả ⇒ bỏ qua"', () => {
+    const skips = edges.filter((e) => e.id.startsWith("skip-"));
+    expect(skips.map((e) => [e.id, e.source, e.target, e.label])).toEqual([
+      ["skip-s1", "s0", "s2", "Không thoả ⇒ bỏ qua"],
+    ]);
+    expect(skips[0]?.style?.strokeDasharray).toBeTruthy();
+    expect(skips[0]?.sourceHandle).toBe("skip-out");
+    expect(skips[0]?.targetHandle).toBe("skip-in");
+  });
+  test("CR-108 cạnh chính vào bước điều kiện mang nhãn điều kiện; cạnh khác không nhãn", () => {
+    expect(edges.find((e) => e.id === "e-s0-s1")?.label).toBe("Giá trị ≥ 100");
+    expect(edges.find((e) => e.id === "e-s1-s2")?.label).toBeUndefined();
+    expect(edges.find((e) => e.id === "e-start-s0")?.label).toBeUndefined();
+  });
+  test("CR-108 nhánh bỏ qua sáng lên khi bước bị bỏ qua theo xem trước, mờ khi bước chạy", () => {
+    const on = buildFlowCanvas(STEPS, L, [true, false, true]).edges.find((e) => e.id === "skip-s1");
+    const off = buildFlowCanvas(STEPS, L, [true, true, true]).edges.find((e) => e.id === "skip-s1");
+    expect([on?.style?.opacity, off?.style?.opacity]).toEqual([1, 0.5]);
+  });
+  test("CR-108 bước cuối có điều kiện vẫn có nhánh bỏ qua sang Ghi Đã duyệt; bước không điều kiện thì không", () => {
+    const r = buildFlowCanvas([step("a"), step("b", { when: GD.when })], L);
+    expect(
+      r.edges.filter((e) => e.id.startsWith("skip-")).map((e) => [e.source, e.target]),
+    ).toEqual([["a", "finalize"]]);
+    expect(
+      buildFlowCanvas([step("a"), step("b")], L).edges.some((e) => e.id.startsWith("skip-")),
+    ).toBe(false);
+  });
+  test("CR-108 thông tin bước: hạn/nhắc/người duyệt/chuyển cấp có ⇒ node cao thêm từng dòng; vắng ⇒ ẩn", () => {
+    const plain = buildFlowCanvas([step("a")], L).nodes[1];
+    const full = buildFlowCanvas(
+      [step("a", { dueH: 24, remindH: 8, approverCount: 3, escalateGroup: "Ban giám đốc" })],
+      L,
+    ).nodes[1];
+    expect(full?.data.info).toEqual({
+      dueH: 24,
+      remindH: 8,
+      approvers: 3,
+      escalate: "Ban giám đốc",
+    });
+    expect((full?.height ?? 0) - (plain?.height ?? 0)).toBe(3 * 22);
+    // nhắc không có hạn ⇒ không hiện nhắc; số người duyệt 0 vẫn hiện (khác "không biết")
+    const odd = buildFlowCanvas([step("a", { remindH: 8, approverCount: 0 })], L).nodes[1];
+    expect(odd?.data.info).toEqual({ dueH: null, remindH: null, approvers: 0, escalate: null });
   });
 });
 

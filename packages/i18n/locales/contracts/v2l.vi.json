@@ -167,13 +167,31 @@
     "flow": {
       "current": {
         "title": "Quy trình duyệt đang dùng: {{name}} · v{{version}}",
-        "lead": "Công ty đang chạy quy trình này cho mọi hợp đồng. Quy trình chỉ xem được ở đây.",
+        "lead": "Mục này chỉ để xem. Muốn đổi quy trình, liên hệ quản trị nền tảng.",
+        "defaultBadge": "Đang dùng mặc định",
+        "defaultHelp": "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống.",
+        "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",
         "esign": "Ký số",
         "conditional": "Có điều kiện",
+        "info": {
+          "due": "Hạn {{due}} giờ",
+          "dueRemind": "Hạn {{due}} giờ · nhắc mỗi {{remind}} giờ",
+          "approver": "{{count}} người duyệt",
+          "approvers": "{{count}} người duyệt",
+          "escalate": "Quá hạn ⇒ chuyển {{group}}"
+        },
+        "legend": {
+          "label": "Chú giải sơ đồ",
+          "step": "Bước duyệt",
+          "system": "Bước hệ thống (khoá)",
+          "skip": "Nhánh bỏ qua",
+          "dim": "Mờ = bị bỏ qua theo xem trước"
+        },
         "view": { "label": "Cách xem quy trình", "canvas": "Sơ đồ", "list": "Danh sách" },
         "canvas": {
+          "skip": "Không thoả ⇒ bỏ qua",
           "aria": "Sơ đồ quy trình duyệt (chỉ xem)",
           "start": "Bắt đầu",
           "finalize": "Ghi Đã duyệt",
@@ -236,6 +254,14 @@
       "previewTitle": "Xem trước đường đi",
       "sampleValue": "Giá trị mẫu",
       "emptyValue": "Để trống",
+      "previewResult": "Hợp đồng này đi qua {{n}}/{{m}} bước: {{steps}}",
+      "quick": {
+        "label": "Chọn nhanh giá trị mẫu",
+        "m100": "100 triệu",
+        "m500": "500 triệu",
+        "b1": "1 tỷ",
+        "empty": "Để trống"
+      },
       "runs": "chạy",
       "skipped": "bỏ qua",
       "unnamed": "(chưa đặt tên)",

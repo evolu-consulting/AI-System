@@ -27,13 +27,16 @@ export default function FlowCanvas({ steps, run }: FlowCanvasProps) {
       ) as Record<DealKind, string>,
       and: t("contracts.flow.opAnd").toLowerCase(),
       or: t("contracts.flow.opOr").toLowerCase(),
-      number: (n) => new Intl.NumberFormat(i18n.language).format(n),
+      // vi-VN: 500.000.000 (dấu chấm ngăn nghìn) cho nhãn điều kiện trên cạnh
+      number: (n) =>
+        new Intl.NumberFormat(i18n.language === "vi" ? "vi-VN" : i18n.language).format(n),
+      skip: t("contracts.flow.current.canvas.skip"),
     };
     return buildFlowCanvas(steps, labels, run);
   }, [steps, run, t, i18n.language]);
   return (
     <section
-      className="mb-4 h-[420px] w-full overflow-hidden rounded-xl border border-rule bg-sunk"
+      className="mb-4 h-[520px] w-full overflow-hidden rounded-xl border border-rule bg-sunk"
       data-testid="flow-canvas"
       aria-label={t("contracts.flow.current.canvas.aria")}
     >

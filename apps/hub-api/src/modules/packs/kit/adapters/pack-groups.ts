@@ -50,6 +50,24 @@ export function packGroups(
       );
       return rows.map((r) => ({ id: r.id, name: r.name }));
     },
+    /** CR-108 · số thành viên còn dùng được (active, không bị khoá, nội bộ) mỗi Group của tenant: MỘT câu cho cả lô id. */
+    async memberCounts(
+      tenantId: string,
+      ids: readonly string[],
+    ): Promise<ReadonlyMap<string, number>> {
+      if (ids.length === 0) return new Map();
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{
+          group_id: string;
+          n: number;
+        }>(sql`select gm.group_id::text as group_id, count(*)::int as n
+          from admin.group_members gm join admin.users u on u.id = gm.user_id and u.tenant_id = gm.tenant_id
+          where gm.tenant_id = ${tenantId}::uuid and gm.group_id = any(${`{${ids.join(",")}}`}::uuid[])
+            and u.active and not u.locked_by_tenant and u.kind = 'internal'
+          group by gm.group_id`),
+      );
+      return new Map(rows.map((r) => [r.group_id, r.n]));
+    },
     async userGroups(who: PackWho): Promise<ReadonlySet<string>> {
       await view.adminSettled?.();
       const u = await view.user(who.userId);

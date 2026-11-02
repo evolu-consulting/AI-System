@@ -3,12 +3,24 @@ import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { Flag, Lock, Play } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { FlowCanvasNode, StepBadge } from "../lib/flow-canvas";
+import { type FlowCanvasNode, SKIP_IN, SKIP_OUT, type StepBadge } from "../lib/flow-canvas";
+import { StepInfoLines } from "./StepInfoLines";
 
 // Tay nắm chỉ để xyflow nối cạnh: ẩn, không bắt chuột.
 const HANDLE = "!pointer-events-none !h-px !w-px !border-0 !bg-transparent !opacity-0";
 
-function Edges({ top, bottom }: { top: boolean; bottom: boolean }) {
+/** `skipIn`/`skipOut` = tay nắm bên phải cho nhánh bỏ qua (CR-108); tay nắm mặc định (trên/dưới) đứng TRƯỚC để cạnh chính dùng nó. */
+function Edges({
+  top,
+  bottom,
+  skipIn = false,
+  skipOut = false,
+}: {
+  top: boolean;
+  bottom: boolean;
+  skipIn?: boolean;
+  skipOut?: boolean;
+}) {
   return (
     <>
       {top && (
@@ -16,6 +28,24 @@ function Edges({ top, bottom }: { top: boolean; bottom: boolean }) {
       )}
       {bottom && (
         <Handle type="source" position={Position.Bottom} isConnectable={false} className={HANDLE} />
+      )}
+      {skipOut && (
+        <Handle
+          id={SKIP_OUT}
+          type="source"
+          position={Position.Right}
+          isConnectable={false}
+          className={HANDLE}
+        />
+      )}
+      {skipIn && (
+        <Handle
+          id={SKIP_IN}
+          type="target"
+          position={Position.Right}
+          isConnectable={false}
+          className={HANDLE}
+        />
       )}
     </>
   );
@@ -43,7 +73,7 @@ function StartImpl({ width, height }: NodeProps<FlowCanvasNode>) {
       style={{ width, height }}
       className="flex items-center justify-center gap-2 rounded-full border border-rule bg-sunk text-label font-medium"
     >
-      <Edges top={false} bottom />
+      <Edges top={false} bottom skipOut />
       <Play aria-hidden className="size-3.5 text-dim" />
       {t("contracts.flow.current.canvas.start")}
     </div>
@@ -57,7 +87,7 @@ function FinalizeImpl({ width, height }: NodeProps<FlowCanvasNode>) {
       style={{ width, height }}
       className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-field bg-sunk px-3 text-label font-medium"
     >
-      <Edges top bottom={false} />
+      <Edges top bottom={false} skipIn />
       <Flag aria-hidden className="size-4 text-dim" />
       <span>{t("contracts.flow.current.canvas.finalize")}</span>
       <Lock aria-hidden className="size-3.5 text-dim" />
@@ -75,7 +105,7 @@ function StepImpl({ data, width, height }: NodeProps<FlowCanvasNode>) {
         data.dim ? "border-dashed border-rule opacity-40" : "border-rule shadow-sm"
       }`}
     >
-      <Edges top bottom />
+      <Edges top bottom skipIn skipOut />
       <div className="flex items-center gap-2">
         <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sunk text-caption text-dim">
           {data.index}
@@ -92,11 +122,7 @@ function StepImpl({ data, width, height }: NodeProps<FlowCanvasNode>) {
           ))}
         </div>
       )}
-      {data.condition && (
-        <span className="truncate text-caption text-dim" title={data.condition}>
-          {data.condition}
-        </span>
-      )}
+      <StepInfoLines info={data.info} />
     </div>
   );
 }
