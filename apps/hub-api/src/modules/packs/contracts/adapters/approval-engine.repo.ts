@@ -10,6 +10,7 @@ import type {
   PendingLinksOwner,
 } from "../application/approval-engine.ports";
 import type { FlowStep } from "../domain/approval-flow.types";
+import { approvalWrite } from "./approval.repo";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 
@@ -37,6 +38,7 @@ const toRun = (r: RunRow): EngineRunRow => ({
 function byRunQ(tx: Tx, tid: string): ApprovalEngineRepo["byRun"] {
   return async (runId, o) => {
     const lock = o.lock ? sql`for update of c` : sql``;
+    if (o.lock) await approvalWrite(tx); // CR-109
     const [r] = await tx.execute<RunRow>(sql`
       select c.id as contract_id, a.id as approval_id, a.status as a_status, c.status as c_status, c.deal,
         c.fields -> 'total_value' -> 'value' as v, a.flow_steps, a.pending_links
@@ -115,6 +117,7 @@ function markStalledQ(tx: Tx, tid: string): ApprovalEngineRepo["markStalled"] {
 
 function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
   return async (id, aid, runId, by) => {
+    await approvalWrite(tx); // CR-109
     const rows = await tx.execute<{ id: string }>(sql`with a0 as (
         select y.id from contracts.approvals y
         where y.id = ${aid}::uuid and y.tenant_id = ${tid}::uuid and y.engine_run_id = ${runId}::uuid

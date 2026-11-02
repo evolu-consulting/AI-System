@@ -18,6 +18,12 @@ import { settingsRepo } from "./approval-settings.repo";
 const OPEN = sql`('extracting', 'extract_failed', 'needs_review')`;
 const LIVE = sql`('extracting', 'level1', 'level2')`;
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
+
+/** CR-109 · cờ tx-local cho policy `contracts_visible_upd` (0070): người duyệt ngoài cây chỉ khoá/ghi hàng HĐ trong lệnh DUYỆT
+ *  (khoá trạng thái, từ chối, đọc lại, ghi Đã duyệt) — không qua sửa trường. Gọi NGAY TRƯỚC câu khoá/ghi, cùng tx. */
+export async function approvalWrite(tx: Tx): Promise<void> {
+  await tx.execute(sql`select set_config('app.approval_write', '1', true)`);
+}
 /** Mốc giờ ⇒ ISO UTC (chuỗi, không phụ thuộc kiểu trả của driver). */
 const ISO = (col: string) =>
   sql.raw(`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`);
@@ -95,6 +101,7 @@ const toState = (r: StateRow): ApprovalState => ({
 function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
   return async (id, o) => {
     const lock = o.lock ? sql`for update of c` : sql``;
+    if (o.lock) await approvalWrite(tx);
     const [r] = await tx.execute<StateRow>(sql`
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
@@ -189,6 +196,7 @@ function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
 
 function rejectQ(tx: Tx, tid: string): ApprovalRepo["markRejected"] {
   return async (id, runId, e) => {
+    await approvalWrite(tx);
     const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts set status = 'rejected', version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid and status in ${OPEN}
@@ -206,6 +214,7 @@ function rejectQ(tx: Tx, tid: string): ApprovalRepo["markRejected"] {
 
 function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
   return async (id, runId) => {
+    await approvalWrite(tx);
     const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts set status = 'extracting', error = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid
