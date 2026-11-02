@@ -87,6 +87,8 @@ services:
       HOME: /claude-home
       # chat-fast: tin không tag, người gửi chỉ thấy 1 agent ⇒ chạy thẳng agent (bỏ job Orchestrator, cùng kiểm quyền).
       HUB_FAST_ROUTE: "on"
+      # dlc-sticky: tin không tag ngay sau câu trả lời của agent X (vd @dlc-agent) ⇒ tiếp tục với X, không rơi về Orchestrator.
+      HUB_STICKY_AGENT: "on"
       # community: liên kết "Mở cộng đồng"/thông báo + nút "Mở SHT"; vòng tự lưu trữ/nhắc hết hạn (tắt: COMMUNITY_SWEEP=off).
       COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}

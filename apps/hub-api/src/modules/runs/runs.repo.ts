@@ -3,7 +3,7 @@
 import type { Ask } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { conversations, flows, messages, runs } from "@ai/db/schema/hub";
-import { and, eq, inArray, isNotNull, isNull, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 export type Owner = { tenantId: string; userId: string };
@@ -120,6 +120,29 @@ export async function flowPendingAsk(tx: Tx, o: Owner, flowId: string): Promise<
     .from(flows)
     .where(and(ownedBy(flows, o), eq(flows.id, flowId)));
   return r?.p ?? false;
+}
+
+/** dlc-sticky · agent của run Hỏi AI gần nhất trong hội thoại (hoặc flow) nếu run đó là `direct` không lỗi; còn lại null. */
+export async function lastDirectAgent(
+  tx: Tx,
+  o: Owner,
+  conversationId: string,
+  flowId?: string,
+): Promise<string | null> {
+  const [r] = await tx
+    .select({ kind: runs.kind, agentId: runs.agentId, status: runs.status })
+    .from(runs)
+    .where(
+      and(
+        ownedBy(runs, o),
+        eq(runs.conversationId, conversationId),
+        flowId ? eq(runs.flowId, flowId) : undefined,
+        isNull(runs.roomId),
+      ),
+    )
+    .orderBy(desc(runs.startedAt))
+    .limit(1);
+  return r?.kind === "direct" && r.status !== "failed" ? (r.agentId ?? null) : null;
 }
 
 export async function flowRunning(tx: Tx, flowId: string): Promise<boolean> {

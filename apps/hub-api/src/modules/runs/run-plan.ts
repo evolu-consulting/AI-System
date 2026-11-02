@@ -1,5 +1,5 @@
 // HUB-FR-77 · CR-054 · kế hoạch run cho tin không tag ở Hỏi AI: agent mặc định của tenant (`default-agent.rules`).
-import type { AccessSubject } from "../agents/agent-access.rules";
+import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
 import { type DefaultRoute, defaultRoute } from "../agents/default-agent.rules";
 import type { ConfigSnapshot } from "../config/config.rules";
 import { responderOf } from "../mention/mention.rules";
@@ -16,11 +16,30 @@ export function untaggedRoute(
   s: ConfigSnapshot,
   who: AccessSubject,
   fastOn = false,
+  stickyAgentId: string | null = null,
 ): { route?: DefaultRoute; fast: FastRoute | null } {
   if (!untagged) return { fast: null };
+  const sticky = stickyRoute(s, who, stickyAgentId);
+  if (sticky) return { route: sticky, fast: null };
   const base = defaultRoute(s, who);
   const route: DefaultRoute = fastOn && base.kind === "forbidden" ? { kind: "legacy" } : base;
   return { route, fast: fastOn ? fastRoute(s, who, route) : null };
+}
+
+/**
+ * dlc-sticky · tin không tag ngay sau run `direct` của agent X (cùng hội thoại, hoặc cùng flow khi trả lời trong thread) ⇒ tiếp tục
+ * với X, như trả lời trong thread của bot. X phải còn trong AU của người gửi (`visibleAgents` — không nới quyền, Orchestrator không
+ * bao giờ "dính"); không còn ⇒ null (về route mặc định).
+ */
+export function stickyRoute(
+  s: ConfigSnapshot,
+  who: AccessSubject,
+  agentId: string | null,
+): Extract<DefaultRoute, { kind: "direct" }> | null {
+  if (!agentId) return null;
+  if (!visibleAgents(accessInput(s, who)).some((v) => v.id === agentId)) return null;
+  const agent = s.agents.find((a) => a.id === agentId);
+  return agent?.enabled ? { kind: "direct", agent } : null;
 }
 
 /** chat-fast2 · `@orchestrator …` ở Hỏi AI (cờ bật): ép qua Orchestrator đủ AU, bỏ agent mặc định / định tuyến nhanh. */

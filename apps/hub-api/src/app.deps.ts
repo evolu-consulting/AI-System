@@ -52,6 +52,8 @@ export type AppDeps = {
   maxConcurrentRuns?: number;
   /** chat-fast · = `HUB_FAST_ROUTE==="on"`: tin không tag mà AU đúng một agent ⇒ run `direct` (bỏ job Orchestrator). Vắng ⇒ tắt. */
   fastRoute?: boolean;
+  /** dlc-sticky · = `HUB_STICKY_AGENT==="on"`: tin không tag sau run `direct` của X (cùng hội thoại/flow) ⇒ tiếp tục với X. Vắng ⇒ tắt. */
+  stickyAgent?: boolean;
   /** H2c · storage + hạn mức + sweeper (`HUB_ATTACH_*`, server điền). Vắng ⇒ không mount route file (PL14). */
   attachments?: AttachmentDeps;
   /** H3b · ghi `hub.audit_log` (grant/revoke/view_trace). Vắng ⇒ `dbHubAudit`; test tiêm lỗi giữa transaction (P12). */
