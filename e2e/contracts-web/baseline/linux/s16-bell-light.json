@@ -1,5 +1,5 @@
 {
-  "text": "Thông báo Chưa có thông báo nào.",
+  "text": "Thông báo Chưa có thông báo nào. Xem tất cả Cài đặt thông báo",
   "boxes": {
     "sidebar": {
       "x": 0,
@@ -41,7 +41,7 @@
       "x": 1076,
       "y": 51.5,
       "w": 300,
-      "h": 131
+      "h": 172
     }
   }
 }
