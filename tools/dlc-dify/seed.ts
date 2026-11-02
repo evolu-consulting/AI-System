@@ -6,8 +6,7 @@
 // Env: DLC_DIFY_SECRETS (file JSON {email,password,console_base_url}), DLC_DIFY_API_URL (Hub gọi Dify, mặc định
 // http://localhost:8099/v1), DLC_KH_URL (Dify gọi KH, mặc định http://host.docker.internal:9310), DLC_HUB_URL_FOR_DIFY
 // (http://host.docker.internal:4000), DLC_WS_URL_FOR_DIFY (http://host.docker.internal:4600), DLC_WS_TOKEN_FILE (token
-// workspace DLC), DLC_PROMPTS_DIR (prompt vai của repo DLC, tuỳ chọn), SEED_ADMIN_USERNAME / SEED_ADMIN_PASSWORD
-// (platform_admin), ADMIN_API_URL, HUB_URL_SEED. Không in key/token/mật khẩu.
+// workspace DLC), DLC_PROMPTS_DIR (tuỳ chọn), SEED_ADMIN_USERNAME/PASSWORD (platform_admin), ADMIN_API_URL, HUB_URL_SEED.
 import { readFileSync } from "node:fs";
 import {
   type Client,
@@ -257,7 +256,7 @@ const HOOK_FLOW: Record<string, string> = {
   PostCompact: "dlc-hook-post-compact",
 };
 
-/** Bật mọi workflow của seed (hook + tool) cho tenant — thiếu công tắc tenant ⇒ `/mcp` không đưa tool cho agent. */
+/** Bật mọi workflow của seed cho tenant. Production đóng băng module này (route 404) ⇒ bỏ qua: `/mcp` chỉ gate theo command. */
 async function enableTools(
   admin: Client,
   tenant: string,
@@ -266,10 +265,13 @@ async function enableTools(
 ) {
   const t = await findExact(admin, "tenant", "/admin/tenants", { field: "key", value: tenant });
   const tid = idOf(t) as string;
+  const base = `/admin/tenants/${tid}/workflow-tools`;
+  if ((await admin.call("workflow-tools", { path: base, ok: [200, 404] })).status === 404)
+    return log(`tenant ${tenant}: module workflow-tools đóng băng — bỏ qua`);
   for (const id of wf.values())
     await admin.call(`workflow-tool ${id}`, {
       method: "PUT",
-      path: `/admin/tenants/${tid}/workflow-tools/${id}`,
+      path: `${base}/${id}`,
       ok: [200, 201, 204],
     });
   log(`tenant ${tenant}: bật ${wf.size} workflow tool`);
