@@ -2,16 +2,23 @@
 -- `openTasksOf`: được giao đích danh/chuyển tiếp ∪ Group của task (trừ khi có cửa trưởng phòng/người duyệt cụ thể) ∪ cửa đó ∪
 -- Group chuyển cấp ∪ Group "cũng quyết"; trừ người gửi ở bước `exclude_starter`) và người ĐÃ quyết một bước của HĐ ĐỌC được HĐ
 -- (+ hàng con qua EXISTS của chúng) dù ngoài cây quản lý của chủ HĐ. Chỉ ĐỌC: thêm policy RESTRICTIVE FOR UPDATE giữ luật cũ ⇒
--- người duyệt không sửa/khoá (FOR UPDATE) hàng HĐ. Chủ gói / chế độ tenant / việc nền như cũ (`sees_all()`). Chỉ cộng thêm.
+-- người duyệt không sửa/khoá (FOR UPDATE) hàng HĐ, trừ lệnh duyệt lượt engine (cờ `app.approval_write`, xem cuối file). Chủ gói / chế độ tenant / việc nền như cũ (`sees_all()`). Chỉ cộng thêm.
 --
 -- `reviewer_contract_ids()` (SECURITY DEFINER như `org_owner_ids()` 0009: bảng hub/admin chỉ ENABLE RLS, chủ migration đọc được) —
 -- không tham số, chỉ theo `app.tenant_id`/`app.user_id` của tx ⇒ role gói không hỏi được về người khác. MỘT mảng mỗi câu (InitPlan,
 -- chỉ chạy khi `sees_all()` sai và hàng không thuộc cây). Hiệu năng (đường nóng danh sách HĐ):
 --   (a) task mở: vào qua `process_runs_pack_open_idx (tenant_id, pack_key)` (run gói CHƯA kết thúc) → `review_tasks_run_idx`
 --       → PK `stage_runs`; như `openTasksOf` (không quét lịch sử run đã xong).
---   (b) đã quyết: index một phần mới `review_tasks_decided_by_idx (decided_by, tenant_id)` → PK `process_runs`.
---   Group của mình: `group_members_user_idx (user_id)`.
-CREATE INDEX IF NOT EXISTS review_tasks_decided_by_idx ON hub.review_tasks (decided_by, tenant_id)
+--   (b) đã quyết — CÓ GIỚI HẠN (review bảo mật CR-109 #3): (b1) quyết trong 90 ngày qua: index một phần mới
+--       `review_tasks_decided_by_idx (decided_by, tenant_id, decided_at)` (quét khoảng) → PK `process_runs`; (b2) run gói CHƯA kết
+--       thúc mà mình đã quyết một bước (đi cùng nhánh (a) qua `process_runs_pack_open_idx` → `review_tasks_run_idx`). Quyết > 90
+--       ngày trên run đã xong ⇒ không còn thấy (trừ khi thuộc cây).
+--   Group của mình: `group_members_user_idx (user_id)`. Số đo: `tests/acceptance/CF/reviewer-visible.perf.int.test.ts`.
+-- Migration gói chạy trong MỘT tx (drizzle migrator) ⇒ index không CONCURRENTLY (bảng nhỏ, một lần); `lock_timeout` để không treo
+-- truy vấn của gói/hub sau một tx dài khi lấy khoá policy/index.
+SET LOCAL lock_timeout = '5s';
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS review_tasks_decided_by_idx ON hub.review_tasks (decided_by, tenant_id, decided_at)
   WHERE decided_by IS NOT NULL AND kind = 'review';
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION contracts.reviewer_contract_ids() RETURNS uuid[]
@@ -49,7 +56,15 @@ CREATE OR REPLACE FUNCTION contracts.reviewer_contract_ids() RETURNS uuid[]
     FROM hub.review_tasks t
     JOIN hub.process_runs r ON r.id = t.process_run_id AND r.tenant_id = t.tenant_id
     WHERE t.decided_by = me.u AND t.tenant_id = me.t AND t.kind = 'review'
-      AND r.pack_key = 'contracts' AND r.pack_record_id IS NOT NULL) x
+      AND t.decided_at > now() - interval '90 days'
+      AND r.pack_key = 'contracts' AND r.pack_record_id IS NOT NULL
+    UNION ALL
+    SELECT r.pack_record_id
+    FROM hub.process_runs r
+    JOIN hub.review_tasks t ON t.process_run_id = r.id AND t.tenant_id = r.tenant_id
+      AND t.kind = 'review' AND t.decided_by = me.u
+    WHERE r.tenant_id = me.t AND r.pack_key = 'contracts' AND r.pack_record_id IS NOT NULL
+      AND r.status IN ('running', 'waiting_review', 'waiting_answer', 'needs_decision', 'waiting_timer')) x
   WHERE me.u IS NOT NULL AND me.t IS NOT NULL AND x.id IS NOT NULL
 $$;
 --> statement-breakpoint
@@ -66,7 +81,8 @@ CREATE POLICY contracts_visible ON contracts.contracts AS RESTRICTIVE FOR SELECT
     OR (owner_user_id IS NULL
         AND (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
              OR visibility_owner_id = ANY ((SELECT contracts.org_owner_ids())::uuid[])))
-    OR id = ANY ((SELECT contracts.reviewer_contract_ids())::uuid[]));
+    -- `IN (SELECT unnest(…))` ⇒ hashed SubPlan (O(1) mỗi hàng); `= ANY(mảng)` quét mảng tuyến tính mỗi hàng (đo: 2.000 HĐ × 700 id).
+    OR id IN (SELECT unnest(contracts.reviewer_contract_ids())));
 --> statement-breakpoint
 -- Ghi/khoá (UPDATE, SELECT … FOR UPDATE) giữ ĐÚNG luật thấy trước CR-109; nhánh người duyệt CHỈ khi tx đặt cờ `app.approval_write`
 -- (như `app.vis_cascade` 0016: chỉ code gói đặt, NGAY trước câu khoá/ghi của lệnh duyệt — `approvalWrite()` trong approval*.repo:
@@ -80,6 +96,6 @@ CREATE POLICY contracts_visible_upd ON contracts.contracts AS RESTRICTIVE FOR UP
         AND (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
              OR visibility_owner_id = ANY ((SELECT contracts.org_owner_ids())::uuid[])))
     OR (coalesce(current_setting('app.approval_write', true), '') = '1'
-        AND id = ANY ((SELECT contracts.reviewer_contract_ids())::uuid[])))
+        AND id IN (SELECT unnest(contracts.reviewer_contract_ids()))))
   -- hàng MỚI không bị luật thấy chặn (vd giao HĐ cho người ngoài cây — như trước CR-109); chỉ hàng CŨ phải thuộc cây.
   WITH CHECK (true);

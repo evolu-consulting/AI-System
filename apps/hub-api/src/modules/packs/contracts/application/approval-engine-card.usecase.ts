@@ -21,8 +21,11 @@ type Repos = {
       id: string,
       runId: string,
       e: { kind: "rejected"; feedback: string | null; actor: string },
+      o?: { reviewer?: boolean },
     ): Promise<boolean>;
     markExtracting(id: string, runId: string): Promise<boolean>;
+    /** CR-109 · khoá theo luật thấy cũ (không cờ duyệt): null ⇒ người gọi chỉ là người duyệt ngoài cây. */
+    state(id: string, o: { lock: boolean }): Promise<unknown>;
   };
   approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks">;
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
@@ -103,6 +106,10 @@ async function decide(
 
 async function redo(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx): Promise<EngineActResult> {
   if (d.redo && !d.redo.ready) return "unavailable";
+  // CR-109 · Đọc lại (huỷ run + AI đọc lại, tốn quota) chỉ cho người ghi được HĐ theo luật thấy cũ — người duyệt ngoài cây chỉ
+  // đọc + quyết ⇒ chặn TRƯỚC khi huỷ run (sau khi huỷ họ mất quyền, HĐ sẽ kẹt).
+  if (!(await d.uow.tenant(c.who, (r) => r.approval.state(c.id, { lock: true }))))
+    return { error: "APPROVAL_NOT_OPEN" };
   if (d.redo) await d.redo.quota(c.who.tenantId);
   await port.cancelSys(c.who.tenantId, c.runId); // false = đã kết thúc: vẫn đọc lại
   const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
@@ -132,7 +139,12 @@ async function reject(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx, taskI
   // Run đã huỷ ở engine; HĐ ⇒ rejected cùng lượt. Lỗi ở đây do vòng quét reconcile sửa (run huỷ + Từ chối).
   await d.uow
     .tenant(c.who, (r) =>
-      r.approval.markRejected(c.id, aid, { kind: "rejected", feedback: fb, actor: c.who.userId }),
+      r.approval.markRejected(
+        c.id,
+        aid,
+        { kind: "rejected", feedback: fb, actor: c.who.userId },
+        { reviewer: true }, // CR-109 · engine đã nhận "Từ chối" của người duyệt ⇒ ghi HĐ bị từ chối
+      ),
     )
     .catch(() => false);
   return "ok" as const;

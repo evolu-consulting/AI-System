@@ -79,6 +79,10 @@ describe("CR-109 · người duyệt của bước thấy HĐ cần duyệt (ch�
 
     // RLS: người duyệt đọc được nhưng KHÔNG sửa được hàng HĐ
     expect(await asUser(PA.T.id, id)).toEqual({ read: 1, updated: 0 });
+    // review CR-109 #1: Trích lại (khoá HĐ ngoài lệnh duyệt) ⇒ 404, HĐ không đổi
+    const ex = `${CBASE}/${id}/extract`;
+    expect({ extract: (await c.call("T", "POST", ex)).status }).toEqual({ extract: 404 });
+    expect((await contractRow(c, id)).status).toBe("needs_review");
 
     expect((await act(c, "T", id, "approve")).status).toBe(200);
     await waitStatus(c.sql, run, "done");
@@ -87,6 +91,18 @@ describe("CR-109 · người duyệt của bước thấy HĐ cần duyệt (ch�
     // đã quyết ⇒ lịch sử vẫn xem được; X vẫn không
     expect({ after: (await c.call("T", "GET", `${CBASE}/${id}`)).status }).toEqual({ after: 200 });
     expect(await asUser(PA.T.id, id)).toEqual({ read: 1, updated: 0 });
+    expect({ x: (await c.call("X", "GET", `${CBASE}/${id}`)).status }).toEqual({ x: 404 });
+    // người quyết cũ ngoài cây: Trích lại ⇒ 404 (không tạo lượt mới, không tốn quota)
+    expect({ extract2: (await c.call("T", "POST", ex)).status }).toEqual({ extract2: 404 });
+    expect((await contractRow(c, id)).status).toBe("active");
+  }, 90_000);
+
+  it("T (ngoài cây) Từ chối bước 1 ⇒ HĐ bị từ chối ngay, vẫn đọc được, X vẫn 404", async () => {
+    const { id, run } = await openBy("B", 792, 10_000_000);
+    expect((await act(c, "T", id, "reject", "sai giá")).status).toBe(200);
+    await waitStatus(c.sql, run, "cancelled");
+    expect((await contractRow(c, id)).status).toBe("rejected");
+    expect({ t: (await c.call("T", "GET", `${CBASE}/${id}`)).status }).toEqual({ t: 200 });
     expect({ x: (await c.call("X", "GET", `${CBASE}/${id}`)).status }).toEqual({ x: 404 });
   }, 90_000);
 });

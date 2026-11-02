@@ -216,10 +216,17 @@ function beforeMachine(st: ApprovalState, b: ApprovalAction): TxOutcome | null {
   return b.action === "return" ? { error: "APPROVAL_NOT_OPEN" } : null;
 }
 
+/** CR-109 · đọc trước (không khoá) để biết chế độ: CHỈ lượt engine mới mở nhánh người duyệt ngoài cây khi khoá. */
+async function lockedState(r: ApprovalTxRepos, id: string): Promise<ApprovalState | null> {
+  const peek = await r.approval.state(id, { lock: false });
+  if (!peek) return null;
+  return r.approval.state(id, { lock: true, approval: peek.approval?.mode === "engine" });
+}
+
 /** Trong tx khoá HĐ: đọc trạng thái → `decide` → cổng trích lại → ghi. */
 function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction) {
   return async (r: ApprovalTxRepos, actor: ApprovalActor): Promise<TxOutcome> => {
-    const st = await r.approval.state(id, { lock: true });
+    const st = await lockedState(r, id);
     if (!st) return "not_found";
     const pre = beforeMachine(st, b);
     if (pre) return pre;

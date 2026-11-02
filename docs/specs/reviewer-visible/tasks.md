@@ -27,6 +27,11 @@ int `tests/acceptance/CF/reviewer-visible.int.test.ts` (đỏ trước: T nhận
 - Người duyệt chỉ ĐỌC: UPDATE/`FOR UPDATE` của họ chỉ qua lệnh duyệt (cờ `app.approval_write`, như `app.vis_cascade` 0016) ⇒ không sửa trường/gán người qua route khác. `WITH CHECK (true)` để không đổi hành vi giao HĐ cho người ngoài cây (trước đây chỉ SELECT policy, không kiểm hàng mới).
 - Hàng con chỉ có policy SELECT theo EXISTS HĐ (nghĩa vụ, mốc, giao dịch…) nay người duyệt cũng đọc được; ghi các bảng đó vẫn chỉ theo tenant + route (chưa chặn riêng ở DB) — ghi vào TECH-DEBT nếu review cuối đợt thấy cần.
 - Index `review_tasks_decided_by_idx` đặt trong migration gói (cùng chủ migration với hub, `IF NOT EXISTS`) vì chỉ gói dùng; không thêm migration hub để khỏi tranh số với lát song song.
+- Review bảo mật d71f4b32 (sửa trong commit sau):
+  - #1 cờ `app.approval_write` KHÔNG còn đặt trong mọi `state({lock:true})`. Chỉ đặt ở `state({lock:true, approval:true})` của `decideInTx` (lượt engine), `markRejected(…, {reviewer:true})` của Từ chối engine, và `byRun({lock})`/`finalize` của tool engine. Trích lại (`/extract`) và `markExtracting` không có cờ ⇒ người duyệt ngoài cây 404. "Đọc lại" trên thẻ engine chặn người ngoài cây TRƯỚC khi huỷ run (khoá theo luật thấy cũ ⇒ null ⇒ APPROVAL_NOT_OPEN), vì sau khi huỷ run họ mất quyền và HĐ sẽ kẹt.
+  - #2 `decideInTx` đọc không khoá trước, chỉ mở nhánh người duyệt khi `mode = 'engine'`.
+  - #3 nhánh "đã quyết" giới hạn: quyết trong 90 ngày (index `(decided_by, tenant_id, decided_at)`) HOẶC run chưa kết thúc. Policy dùng `id IN (SELECT unnest(…))` (hashed SubPlan) thay `= ANY(mảng)`, vì `= ANY` quét tuyến tính mỗi hàng. Đo tại `tests/acceptance/CF/reviewer-visible.perf.int.test.ts` (2.000 HĐ, 200 run mở, 1.000 bước đã quyết, nền 20.000 run tenant khác): người duyệt đếm p95 9,37 ms, trang p95 9,68 ms (bản `= ANY`, chưa giới hạn, không nền: 20,30/19,19 ms); chủ HĐ 2,40/3,21 ms; thân hàm không Seq Scan bảng hub.
+  - #4 `SET LOCAL lock_timeout = '5s'` đầu 0070. Migration gói chạy trong một tx ⇒ index không CONCURRENTLY (bảng nhỏ).
 - Chủ gói (Toàn quyền) vẫn duyệt được mọi bước (giữ prod-fix2, cần người dùng xác nhận).
 
 ## Delta (so với docs/current)

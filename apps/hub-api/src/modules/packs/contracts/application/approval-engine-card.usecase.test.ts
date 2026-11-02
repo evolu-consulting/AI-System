@@ -74,7 +74,13 @@ const view = (open: "s0" | "s1") => ({
 });
 
 function setup(
-  o: { open?: "s0" | "s1"; act?: "ok" | "not_open"; ready?: boolean; held?: boolean } = {},
+  o: {
+    open?: "s0" | "s1";
+    act?: "ok" | "not_open";
+    ready?: boolean;
+    held?: boolean;
+    outside?: boolean;
+  } = {},
 ) {
   const calls: string[] = [];
   const ops: PendingLinksOp[] = [];
@@ -99,6 +105,8 @@ function setup(
         calls.push("markExtracting");
         return true;
       },
+      // CR-109 · khoá theo luật thấy cũ: người duyệt ngoài cây ⇒ null
+      state: async () => (o.outside ? null : state()),
     },
     approvalEngine: {
       setPendingLinks: async (_a: string, _r: string, p: PendingLinksOp) => {
@@ -194,6 +202,12 @@ describe("engineAct", () => {
     const b = setup({ ready: false });
     expect(await engineAct(b.d)(who, C, body("redo"), state())).toBe("unavailable");
     expect(b.calls).toEqual([]);
+    // CR-109 · người duyệt ngoài cây (khoá theo luật thấy cũ ⇒ null) ⇒ chặn TRƯỚC khi huỷ run / tốn quota
+    const x = setup({ outside: true });
+    expect(await engineAct(x.d)(who, C, body("redo"), state())).toEqual({
+      error: "APPROVAL_NOT_OPEN",
+    });
+    expect(x.calls).toEqual([]);
   });
   it("engine báo đã có người quyết trước ⇒ APPROVAL_NOT_OPEN; Từ chối không ghi HĐ", async () => {
     const { d, calls } = setup({ act: "not_open" });

@@ -50,7 +50,9 @@ export type RejectEvent = {
 export type ApprovalRepo = {
   /** HĐ của tenant: lượt đang gắn + trạng thái; không có ⇒ null. */
   runOf(id: string): Promise<ContractRunRef | null>;
-  state(id: string, o: { lock: boolean }): Promise<ApprovalState | null>;
+  /** CR-109 · `approval: true` (chỉ lệnh duyệt lượt ENGINE) ⇒ khoá được cả khi người gọi là người duyệt ngoài cây (cờ
+   *  `app.approval_write`); vắng/false ⇒ khoá theo luật thấy cũ (người duyệt ngoài cây ⇒ null). */
+  state(id: string, o: { lock: boolean; approval?: boolean }): Promise<ApprovalState | null>;
   /** Mở lượt duyệt mới (`extracting` khi có việc AI đọc, `level1` khi nhập tay/mở lại) + gắn `run_id` + event
    *  `approval_started`; HĐ đã có lượt sống ⇒ `busy`. */
   open(
@@ -65,7 +67,13 @@ export type ApprovalRepo = {
    *  `!level2Passed` ⇒ 0 hàng (luật kiểm TRONG câu UPDATE, D3-14). */
   finalize(id: string, runId: string, by: string | null, level2Passed: boolean): Promise<boolean>;
   /** Từ chối / huỷ ⇒ HĐ `rejected` + event + lượt `rejected`/`cancelled` (chỉ khi HĐ còn giữ lượt và chưa kết thúc). */
-  markRejected(id: string, runId: string, e: RejectEvent): Promise<boolean>;
+  /** CR-109 · `o.reviewer` (chỉ Từ chối trên lượt engine, sau khi engine đã nhận quyết) ⇒ ghi được khi người duyệt ngoài cây. */
+  markRejected(
+    id: string,
+    runId: string,
+    e: RejectEvent,
+    o?: { reviewer?: boolean },
+  ): Promise<boolean>;
   /** Trích lại ở bước mở: HĐ `needs_review → extracting`, lượt → `extracting`. */
   markExtracting(id: string, runId: string): Promise<boolean>;
   /** Sau lượt AI: lượt `extracting` ⇒ `level1` (HĐ needs_review) / `failed` (extract_failed). Trả trạng thái mới hoặc null. */
