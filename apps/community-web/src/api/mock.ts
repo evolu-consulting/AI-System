@@ -19,6 +19,7 @@ import { canViewPost, defaultAudience } from "../lib/visibility";
 import type { CommunityApi } from "./client";
 import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
+import { profileMock } from "./mock-profile";
 import { quoteEnvOf, quoteMock } from "./mock-quote";
 import { settingsMock } from "./mock-settings";
 import {
@@ -210,8 +211,11 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
   const api: CommunityApi = {
     getViewer: async () => me,
     getBrand: async () => ({ name: HOST_ORG.name, appName: null, logo: null, accent: "indigo" }),
-    listPartners: async (): Promise<PartnerOrg[]> =>
-      isHost(me) ? PARTNERS : PARTNERS.filter((p) => p.id === me.orgId),
+    ...profileMock(
+      () => me,
+      () => ({ posts, comments }),
+      visible,
+    ),
     listCats: async () => CATS,
     listFeed: async (q) => {
       const base = posts
@@ -363,28 +367,6 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     },
     markRead: async (id) => {
       for (const n of notifs) if (n.to === notifyKey() && (!id || n.id === id)) n.unread = false;
-    },
-    getProfile: async (orgId) => {
-      const id = isHost(me) ? (orgId ?? me.orgId) : me.orgId;
-      const o =
-        id === HOST_ORG.id
-          ? { id, name: HOST_ORG.name, labels: [], cats: [] }
-          : (PARTNERS.find((p) => p.id === id) as PartnerOrg);
-      const mine = posts.filter((p) => p.authorOrgId === id);
-      return {
-        org: {
-          ...o,
-          isHost: id === HOST_ORG.id,
-          blurb: id === HOST_ORG.id ? "Trung gian chữ ký số, hoá đơn điện tử, vật tư đóng gói" : "",
-        },
-        stats: {
-          active: mine.filter((p) => p.status === "active").length,
-          archived: mine.filter((p) => p.status !== "active").length,
-          comments: comments.filter((c) => mine.some((p) => p.id === c.postId)).length,
-          ...(id === HOST_ORG.id ? { friends: PARTNERS.length } : {}),
-        },
-        ...(isHost(me) && id === HOST_ORG.id ? { shtUrl: "/contracts" } : {}),
-      };
     },
     ...settingsMock(() => me.userId),
     chat: mockDockChat,

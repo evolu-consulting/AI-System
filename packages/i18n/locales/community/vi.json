@@ -285,7 +285,45 @@
       "statActive": "Bài đang đăng",
       "statArchived": "Đã lưu trữ",
       "statComments": "Bình luận nhận được",
-      "statFriends": "Bạn bè"
+      "statFriends": "Bạn bè",
+      "tabsAria": "Các mục hồ sơ",
+      "sections": {
+        "about": "Giới thiệu",
+        "posts": "Bài đăng",
+        "partners": "Đối tác",
+        "files": "Ảnh & tệp"
+      },
+      "about": {
+        "intro": "Thông tin",
+        "area": "Khu vực",
+        "cats": "Nhóm sản phẩm",
+        "labels": "Vai trò",
+        "empty": "Chưa có thông tin giới thiệu.",
+        "activity": "Hoạt động",
+        "activityLine": "{{active}} bài đang đăng, {{archived}} bài đã lưu trữ, {{comments}} bình luận nhận được."
+      },
+      "partners": {
+        "colName": "Đối tác",
+        "colLabels": "Nhãn",
+        "colCats": "Nhóm sản phẩm",
+        "colRep": "Uy tín",
+        "empty": "Chưa có đối tác.",
+        "left": "đã rời"
+      },
+      "rep": {
+        "good": "Tốt",
+        "fair": "Khá",
+        "watch": "Cần theo dõi",
+        "new": "Mới",
+        "none": "—"
+      },
+      "files": {
+        "more": "Xem thêm",
+        "empty": "Chưa có ảnh hoặc tệp.",
+        "error": "Không tải được ảnh & tệp.",
+        "image": "Ảnh",
+        "video": "Video"
+      }
     },
     "settings": {
       "navLabel": "Mục cài đặt",

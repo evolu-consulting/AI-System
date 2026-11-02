@@ -12,6 +12,7 @@
 @import "./feed.css";
 @import "./login.css";
 @import "./shell.css";
+@import "./profile.css";
 
 :root,
 [data-accent="indigo"] {

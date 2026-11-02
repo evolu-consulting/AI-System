@@ -285,7 +285,45 @@
       "statActive": "Active posts",
       "statArchived": "Archived",
       "statComments": "Comments received",
-      "statFriends": "Friends"
+      "statFriends": "Friends",
+      "tabsAria": "Profile sections",
+      "sections": {
+        "about": "About",
+        "posts": "Posts",
+        "partners": "Partners",
+        "files": "Photos & files"
+      },
+      "about": {
+        "intro": "Info",
+        "area": "Area",
+        "cats": "Product groups",
+        "labels": "Role",
+        "empty": "No introduction yet.",
+        "activity": "Activity",
+        "activityLine": "{{active}} active posts, {{archived}} archived, {{comments}} comments received."
+      },
+      "partners": {
+        "colName": "Partner",
+        "colLabels": "Labels",
+        "colCats": "Product groups",
+        "colRep": "Reputation",
+        "empty": "No partners yet.",
+        "left": "left"
+      },
+      "rep": {
+        "good": "Good",
+        "fair": "Fair",
+        "watch": "Watch",
+        "new": "New",
+        "none": "—"
+      },
+      "files": {
+        "more": "Load more",
+        "empty": "No photos or files yet.",
+        "error": "Could not load photos & files.",
+        "image": "Photo",
+        "video": "Video"
+      }
     },
     "settings": {
       "navLabel": "Settings sections",

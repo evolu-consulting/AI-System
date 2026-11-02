@@ -16,6 +16,7 @@ import type {
   PostSource,
   PostView,
   Profile,
+  ProfileMedia,
   QuoteInput,
   QuoteMatch,
   QuotePreview,
@@ -65,7 +66,9 @@ export interface CommunityApi {
   /** `POST /pack/community/notifications/read` (không id = tất cả). */
   markRead(id?: string): Promise<void>;
   /** `GET /pack/community/partners` — chủ quản: bạn bè; đối tác: [công ty mình]. */
-  listPartners(): Promise<PartnerOrg[]>;
+  listPartners(opts?: { rep?: boolean }): Promise<PartnerOrg[]>;
+  /** `GET /pack/community/profile/:orgId/media` — ảnh & tệp của bài người xem được thấy (CR-110 COM-FR-37). */
+  getProfileMedia(orgId: string, q?: { cursor?: string; limit?: number }): Promise<ProfileMedia>;
   /** `PUT /pack/community/partners/:orgId` — chỉ Admin chủ quản (nhãn, nhóm hàng, liên kết SHT). */
   updatePartner(orgId: string, input: PartnerUpdateInput): Promise<PartnerOrg>;
   /** `GET /pack/community/cats` — nhóm hàng để gắn bài / chọn người xem. */

@@ -49,7 +49,10 @@ export function createHttpApi(): CommunityApi {
     markRead: async (id) => {
       await api(`${BASE}/notifications/read`, { method: "POST", body: id ? { id } : {} });
     },
-    listPartners: () => api(`${BASE}/partners`),
+    listPartners: (opts) =>
+      api(`${BASE}/partners`, opts?.rep ? { query: { rep: "1" } } : undefined),
+    getProfileMedia: (orgId, q) =>
+      api(`${BASE}/profile/${enc(orgId)}/media`, { query: { cursor: q?.cursor, limit: q?.limit } }),
     updatePartner: (orgId, input) =>
       api(`${BASE}/partners/${enc(orgId)}`, { method: "PUT", body: input }),
     listCats: () => api(`${BASE}/cats`),
