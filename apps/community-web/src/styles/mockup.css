@@ -1,6 +1,8 @@
 body {
   margin: 0;
   background: #f4f4f9;
+  /* Trang Đăng nhập nằm ngoài .app: thiếu dòng này thì trình duyệt dùng Times New Roman. */
+  font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
 }
 a {
   color: var(--accent);
