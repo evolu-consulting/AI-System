@@ -2,9 +2,17 @@
 // (`PackRuns`, engine gắn `port` khi mount) + registry tool gói (gói đăng ký; engine/`/mcp` dùng). Tách khỏi `app.ts` (400 dòng).
 import { PackToolRegistry } from "./modules/packs/kit/adapters/pack-tools.registry";
 import type { PackRunsBridge } from "./modules/packs/kit/application/pack-runs.ports";
+import type { PacksMountDeps } from "./modules/packs/packs.mount";
 
-export function withPackBridges<D extends { packRuns?: PackRunsBridge }>(
+type DlcAgents = NonNullable<PacksMountDeps["dlcAgents"]>;
+
+export function withPackBridges<D extends { packRuns?: PackRunsBridge; dlcAgents?: DlcAgents }>(
   d: D,
-): D & { packRuns: PackRunsBridge; packTools: PackToolRegistry } {
-  return { ...d, packRuns: d.packRuns ?? {}, packTools: new PackToolRegistry() };
+): D & { packRuns: PackRunsBridge; packTools: PackToolRegistry; dlcAgents: DlcAgents } {
+  return {
+    ...d,
+    packRuns: d.packRuns ?? {},
+    packTools: new PackToolRegistry(),
+    dlcAgents: d.dlcAgents ?? {}, // dlc-engine · cầu Agent Hub cho gói `dlc`
+  };
 }

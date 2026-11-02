@@ -21,6 +21,8 @@ export const PACK_DIRS = [
   { key: "knowledge", dir: dir("migrations-pack-knowledge"), devOnly: false },
   // CR-102 · com-c3: bảng tin chủ quản ↔ đối tác (user ngoài, CR-102a).
   { key: "community", dir: dir("migrations-pack-community"), devOnly: false },
+  // dlc-engine · AI SDLC trong engine quy trình (khe thư viện + tool bước DLC; trạng thái lượt ở `dlc.flows`).
+  { key: "dlc", dir: dir("migrations-pack-dlc"), devOnly: false },
 ] as const satisfies readonly { key: string; dir: string; devOnly: boolean }[];
 
 export type PackMigrateResult = { kit: number; packs: Record<string, number> };

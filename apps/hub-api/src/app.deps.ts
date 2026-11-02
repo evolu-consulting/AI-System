@@ -6,7 +6,7 @@ import type { Redis } from "./lib/redis";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
 import type { OpsDeps } from "./modules/ops/ops.mount";
-import type { PacksDeps } from "./modules/packs/packs.mount";
+import type { PacksDeps, PacksMountDeps } from "./modules/packs/packs.mount";
 import type { ProcessSeams } from "./modules/processes/processes.mount";
 import type { ProcessRoutesMode } from "./modules/processes/routes-mode";
 import type { RunDriver } from "./modules/runs/runs.service";
@@ -78,6 +78,8 @@ export type AppDeps = {
   kh?: KhConfig;
   /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
   packs?: PacksDeps;
+  /** dlc-engine · cầu Agent Hub cho gói `dlc` (`withPackBridges` dựng, `bindDlcAgents` gắn port). */
+  dlcAgents?: PacksMountDeps["dlcAgents"];
   /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */
   notify?: NotifyDeps;
   /** CR-104 · ops-watch (`modules/ops/ops.mount.ts`): route `/ops/*` luôn mở khi có db; vòng nền chỉ khi `watch`. */

@@ -21,6 +21,9 @@ export type PackRunRequest = {
   /** CR-105 · run mở theo khe: def tenant phải đúng `source_ref` (đồng bộ bởi `ensureDef`) ở version run đã chụp — lệch
    *  (đua đổi gán) ⇒ huỷ run + ném; khớp ⇒ ghi `process_name`/`process_version` vào snapshot run. */
   slot?: PackRunSlot;
+  /** dlc-engine · run gắn hội thoại Chat của người bắt đầu (origin `conversation`: bước duyệt + câu hỏi hiện trong hội thoại);
+   *  vắng ⇒ origin none như cũ. Người bắt đầu phải là chủ hội thoại (engine kiểm như `POST /process-runs`). */
+  conversation_id?: string;
 };
 export type PackRunSlot = { source_ref: string; process_name: string; rel_version: number };
 /** CR-105 · `ensureDef` theo khe: so BẰNG `source_ref` (không so `pack_version` đơn điệu — đổi A→B có thể "lùi" số bản). */

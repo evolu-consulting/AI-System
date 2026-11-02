@@ -1,19 +1,17 @@
-// dlc-dify · `POST /dify/agents/spawn`: sau khi user DUYỆT plan, flow DLC sinh các agent theo domain (dev) và theo domain
-// QC từ một agent mẫu (vd `dlc-build`, `dlc-qc`): cùng profile/tool/hook/persona, lời nhắc hệ thống = mẫu + phần chuyên
-// môn của domain. Key `dlc-<project>-<domain>` (đã có ⇒ cập nhật phần chuyên môn). Bật cho tenant + cấp quyền user cầm vé.
+// dlc-engine · bước `setup` của quy trình DLC: sau khi người DUYỆT plan, sinh các agent theo domain (dev) và theo domain QC
+// từ một agent mẫu (vd `dlc-build`, `dlc-qc`): cùng profile/tool/hook/persona, lời nhắc hệ thống = mẫu + phần chuyên môn của
+// domain. Key `dlc-<project>-<domain>` (đã có ⇒ cập nhật phần chuyên môn). Bật cho tenant + cấp quyền người bắt đầu lượt.
 // Ghi qua đúng service của Studio (`AgentsService`, entitlement, grant) ⇒ audit + bump cấu hình như thao tác tay.
 import type { Agent, AgentCreate } from "@ai/contracts/studio";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
-import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { AgentGrantsService } from "../agent-grants/agent-grants.service";
 import type { AgentHooksService } from "../agent-hooks/hooks.service";
 import type { AgentsService } from "../studio/agents/agents.service";
 import type { EntitlementsService } from "../studio/entitlements/entitlements.service";
-import type { FlowTickets } from "./tickets";
 
 export type SpawnRequest = {
   project: string;
@@ -61,7 +59,6 @@ export class SpawnService {
   constructor(
     private readonly d: {
       db: Db;
-      tickets: FlowTickets;
       agents: AgentsService;
       hooks: AgentHooksService;
       entitlements: EntitlementsService;
@@ -77,7 +74,7 @@ export class SpawnService {
     return r ? this.d.agents.get(r.id) : null;
   }
 
-  /** Tạo / cập nhật MỘT agent domain từ mẫu, gắn hook của mẫu, bật cho tenant, cấp quyền user cầm vé. */
+  /** Tạo / cập nhật MỘT agent domain từ mẫu, gắn hook của mẫu, bật cho tenant, cấp quyền người bắt đầu lượt. */
   async #spawnOne(x: SpawnCtx, a: SpawnRequest["agents"][number]): Promise<Spawned> {
     const key = keyOf(x.project, a.domain);
     const cur = await this.#byKey(key);
@@ -99,13 +96,15 @@ export class SpawnService {
     return { key, id, created: !cur };
   }
 
-  async spawn(ticket: string, b: SpawnRequest): Promise<{ agents: Spawned[] }> {
-    const t = await this.d.tickets.resolve(ticket);
-    if (!t) throw appError("AUTH_EXPIRED");
-    // Hub làm thay user theo vé flow (quyền ghi cấu hình agent DLC) — audit ghi đúng user.
+  async spawn(
+    t: { tenantId: string; userId: string },
+    b: SpawnRequest,
+  ): Promise<{ agents: Spawned[] }> {
+    // Hub làm thay người bắt đầu lượt DLC (quyền ghi cấu hình agent DLC) — audit ghi đúng user.
     const actor: AuthUser = { userId: t.userId, tenantId: t.tenantId, role: "platform_admin" };
     const tpl = await this.#byKey(b.template);
-    if (tpl?.runtime !== "agentic-cli" || !tpl.profile_id) throw appError("AGENT_NOT_FOUND");
+    if (tpl?.runtime !== "agentic-cli" || !tpl.profile_id)
+      throw new Error(`dlc: agent mẫu ${b.template} không dùng được`);
     const x: SpawnCtx = { actor, tenantId: t.tenantId, tpl, project: b.project };
     const out: Spawned[] = [];
     for (const a of b.agents.slice(0, 12)) out.push(await this.#spawnOne(x, a));

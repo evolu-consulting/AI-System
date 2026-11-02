@@ -1,29 +1,27 @@
-// dlc-dify · nối route `/dify/*` (node Dify gọi Agent Hub bằng vé flow): agent-calls (chờ cả lượt hỏi user), answers,
-// waiting, agents/spawn. Tách khỏi `app.ts` (giữ file gọn). Ghi cấu hình agent đi qua service Studio sẵn có.
-import type { Env, Hono } from "hono";
+// dlc-engine · gắn cổng Agent Hub vào cầu `dlcAgents` của gói `dlc` (khuôn `packRuns`): bước DLC của engine quy trình chạy agent
+// trong hội thoại của lượt (`AgentCallService`) và sinh agent domain/QC (`SpawnService`, ghi qua service Studio ⇒ audit). Thay
+// `mountDlcDify` (route `/dify/*` + vé flow cho flow quy trình DLC trên Dify — quy trình đã chuyển vào engine).
 import type { Db } from "./lib/db";
 import { dbHubAudit, type HubAuditWriter } from "./lib/hub-audit";
 import type { Logger } from "./lib/logger";
-import type { Redis } from "./lib/redis";
 import { AgentGrantsService } from "./modules/agent-grants/agent-grants.service";
 import { AgentHooksService } from "./modules/agent-hooks/hooks.service";
 import { AgentSettingsService } from "./modules/agent-settings/agent-settings.service";
-import { agentCallRoutes } from "./modules/dify-calls/agent-call.routes";
-import { AgentCallService } from "./modules/dify-calls/agent-call.service";
-import { asyncReporter } from "./modules/dify-calls/async-report";
-import { SpawnService } from "./modules/dify-calls/spawn.service";
-import { flowTickets } from "./modules/dify-calls/tickets";
-import { asyncFlowSink } from "./modules/mcp/adapters/workflow-invoker";
-import type { PrepareMention } from "./modules/runs/runs.routes";
+import { AgentCallService } from "./modules/dlc-calls/agent-call.service";
+import { agentHubPort } from "./modules/dlc-calls/agent-hub.port";
+import type { PrepareMention } from "./modules/dlc-calls/ports";
+import { SpawnService } from "./modules/dlc-calls/spawn.service";
+import type { PacksMountDeps } from "./modules/packs/packs.mount";
 import type { RunService } from "./modules/runs/runs.service";
 import { AgentsService } from "./modules/studio/agents/agents.service";
 import { EntitlementsService } from "./modules/studio/entitlements/entitlements.service";
 
-export function mountDlcDify<E extends Env>(
-  app: Hono<E>,
+export type DlcAgentsBridge = NonNullable<PacksMountDeps["dlcAgents"]>;
+
+export function bindDlcAgents(
+  bridge: DlcAgentsBridge | undefined,
   d: {
     db: Db;
-    redis: Redis;
     runs: RunService;
     prepareMention: PrepareMention;
     log: Logger;
@@ -31,19 +29,16 @@ export function mountDlcDify<E extends Env>(
     packTools?: { has(key: string): boolean };
   },
 ): void {
+  if (!bridge) return;
   const audit = d.hubAudit ?? dbHubAudit;
-  const tickets = flowTickets(d.redis);
   const calls = new AgentCallService({
     db: d.db,
-    redis: d.redis,
     runs: d.runs,
     prepareMention: d.prepareMention,
-    tickets,
     log: d.log,
   });
   const spawn = new SpawnService({
     db: d.db,
-    tickets,
     agents: new AgentsService({ db: d.db, audit, packTools: d.packTools }),
     hooks: new AgentHooksService({ db: d.db, audit }),
     entitlements: new EntitlementsService({
@@ -53,12 +48,5 @@ export function mountDlcDify<E extends Env>(
     grants: new AgentGrantsService({ db: d.db, audit }),
     log: d.log,
   });
-  app.route("/dify", agentCallRoutes(calls, spawn));
-  // Workflow chạy nền (`hub_async`) xong ⇒ báo về hội thoại qua agent đã gọi tool.
-  asyncFlowSink.done = asyncReporter({
-    db: d.db,
-    runs: d.runs,
-    prepareMention: d.prepareMention,
-    log: d.log,
-  });
+  bridge.port = agentHubPort({ db: d.db, calls, spawn });
 }

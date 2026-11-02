@@ -13,6 +13,7 @@ import {
   REMIND_EVERY_H,
   STAGE_KEY_RE,
   STAGE_TIMEOUT_S,
+  STAGE_TIMEOUT_S_HARD_MAX,
   TeamModeSchema,
   TtlDaysSchema,
 } from "../chat/processes";
@@ -211,7 +212,7 @@ export const ProcessStageDefSchema = z.strictObject({
     .number()
     .int()
     .min(STAGE_TIMEOUT_S.min)
-    .max(STAGE_TIMEOUT_S.max)
+    .max(STAGE_TIMEOUT_S_HARD_MAX)
     .default(STAGE_TIMEOUT_S.default),
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).max(STAGE_TOKEN_BUDGET.max).nullable(),
   sources: z.array(StageSourceSchema).max(STAGE_SOURCES_MAX).default([]),

@@ -28,6 +28,8 @@ export type ToolCallLoad = {
   state: RetryState;
   /** N2-FR-03 · tool của gói (registry) — invoker gọi `PackToolCatalog.call`, không qua pipeline Dify. */
   packTool?: boolean;
+  /** dlc-engine · `stage_runs.feedback` (góp ý khi chạy lại stage); null/vắng ⇒ lần đầu. */
+  feedback?: string | null;
   /** Đích gọi đọc từ `admin.workflows` CÙNG câu (S2/S3: tươi, không cache); vắng ⇒ adapter tra catalog Hub. */
   endpoint?: ToolEndpoint;
 };
@@ -110,6 +112,8 @@ export type ToolInvoker = {
     endpoint?: ToolEndpoint;
     /** N2-FR-03 · khoá tool gói (vắng ⇒ workflow catalog). */
     packTool?: string;
+    /** dlc-engine · góp ý của người duyệt khi stage chạy lại (chỉ tool gói). */
+    feedback?: string | null;
     args: Record<string, ToolArgValue>;
     timeoutS: number;
     signal?: AbortSignal;
