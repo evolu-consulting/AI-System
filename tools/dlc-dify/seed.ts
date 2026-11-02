@@ -1,7 +1,7 @@
-// dlc-dify · seed DEV (chạy lại được): flow hook + tool + quy trình DLC lên Dify → catalog Admin (secret + workflow, hiện
+// dlc-dify · seed DEV (chạy lại được): flow hook + tool lên Dify (quy trình DLC nay chạy trong engine — khe thư viện `dlc.*`) → catalog Admin (secret + workflow, hiện
 // trong Admin › Workflows như mọi workflow Dify) → agent Agent Hub (đội dlc-spec/qc/build/verify + dlc-agent, hook, tool,
 // bật cho tenant, cấp quyền user; tắt agent bước kiểu cũ). Mặc định chỉ in kế hoạch; `--apply` mới ghi.
-//   bun --env-file=.env.local tools/dlc-dify/seed.ts [--apply] [--processes new-system,enhancement,bug-fix]
+//   bun --env-file=.env.local tools/dlc-dify/seed.ts [--apply]
 //     [--tenant acme] [--users lan,hoa]
 // Env: DLC_DIFY_SECRETS (file JSON {email,password,console_base_url}), DLC_DIFY_API_URL (Hub gọi Dify, mặc định
 // http://localhost:8099/v1), DLC_KH_URL (Dify gọi KH, mặc định http://host.docker.internal:9310), DLC_HUB_URL_FOR_DIFY
@@ -21,7 +21,6 @@ import { DLC_AGENT, DLC_TEAM, LEGACY_STEP_KEYS, teamSystemPrompt } from "./agent
 import { difyConsole } from "./dify-console";
 import { catalogInputs } from "./dsl";
 import { hookFlows } from "./hook-flows";
-import { PROCESS_VARS, PROCESSES, processDsl } from "./process-flows";
 import { DLC_AGENT_TOOL_KEYS, TEAM_EXTRA_TOOL_KEYS, toolFlows, WS_TOOL_KEYS } from "./tool-flows";
 
 type Env = Record<string, string | undefined>;
@@ -40,9 +39,6 @@ function args(argv: string[]) {
   };
   return {
     apply: argv.includes("--apply"),
-    processes: (get("--processes") ?? "new-system,enhancement,bug-fix")
-      .split(",")
-      .map((s) => `dlc-${s.trim()}`),
     tenant: get("--tenant") ?? "acme",
     users: (get("--users") ?? "lan,hoa").split(",").map((s) => s.trim()),
     /** Chỉ import lại các flow này (không đụng catalog / agent). */
@@ -52,7 +48,7 @@ function args(argv: string[]) {
   };
 }
 
-function flowsOf(e: Env, wanted: string[]): Flow[] {
+function flowsOf(e: Env): Flow[] {
   const khUrl = e.DLC_KH_URL || "http://host.docker.internal:9310";
   const hubUrl = e.DLC_HUB_URL_FOR_DIFY || "http://host.docker.internal:4000";
   const wsUrl = e.DLC_WS_URL_FOR_DIFY || "http://host.docker.internal:4600";
@@ -68,14 +64,7 @@ function flowsOf(e: Env, wanted: string[]): Flow[] {
     ...t,
     vars: catalogInputs(t.vars),
   }));
-  const procs = PROCESSES.filter((p) => wanted.includes(p.key)).map((p) => ({
-    key: p.key,
-    name: p.name,
-    description: p.toolDescription,
-    vars: catalogInputs(PROCESS_VARS),
-    dsl: processDsl(p, { hubUrl, wsUrl, wsToken }),
-  }));
-  return [...hooks, ...tools, ...procs];
+  return [...hooks, ...tools];
 }
 
 const idOf = (o: Record<string, unknown> | undefined) => (o?.id as string | undefined) ?? null;
@@ -308,9 +297,7 @@ async function hubStep(
     await access(hub, admin, id, a.tenant, a.users);
     log(`agent ${s.key}: persona ${s.persona}, ${hooks.length} hook, ${wsTools.length} tool`);
   }
-  const tools = [...DLC_AGENT_TOOL_KEYS, ...a.processes]
-    .map((k) => wf.get(k))
-    .filter((x): x is string => !!x);
+  const tools = DLC_AGENT_TOOL_KEYS.map((k) => wf.get(k)).filter((x): x is string => !!x);
   const id = await ensureAgent(hub, DLC_AGENT.key, {
     name: DLC_AGENT.name,
     description: DLC_AGENT.description,
@@ -324,6 +311,8 @@ async function hubStep(
       cwd_mode: "job",
       max_turns: 30,
       persona_project: "agent-supervisor",
+      // dlc-engine · mở quy trình DLC trong engine (tool của gói `dlc`, gọi qua `/mcp`).
+      pack_tools: ["dlc-start"],
     },
     workflow_ids: tools,
     timeout_s: 1800,
@@ -337,7 +326,7 @@ async function hubStep(
   );
   await access(hub, admin, id, a.tenant, a.users);
   log(
-    `agent ${DLC_AGENT.key}: ${tools.length} tool (${[...DLC_AGENT_TOOL_KEYS, ...a.processes].join(", ")})`,
+    `agent ${DLC_AGENT.key}: ${tools.length} tool (${DLC_AGENT_TOOL_KEYS.join(", ")}) + dlc-start`,
   );
   for (const key of LEGACY_STEP_KEYS) {
     const cur = await agentByKey(hub, key);
@@ -355,7 +344,7 @@ async function hubStep(
 export async function main(argv: string[], e: Env): Promise<number> {
   const a = args(argv);
   const log = (s: string) => console.log(s);
-  const all = flowsOf(e, a.processes);
+  const all = flowsOf(e);
   const flows = a.only ? all.filter((f) => a.only?.includes(f.key)) : all;
   log(
     `dlc-dify seed — ${a.apply ? "APPLY" : "dry-run"}: ${flows.length} flow, ${DLC_TEAM.length + 1} agent, tenant ${a.tenant}, users ${a.users.join(",")}`,

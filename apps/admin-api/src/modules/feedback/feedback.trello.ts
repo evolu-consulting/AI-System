@@ -7,7 +7,10 @@ import type { DecodedFile } from "./feedback.rules";
 export type TrelloConfig = { apiKey: string; token: string; listId: string };
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
-const API = "https://api.trello.com/1";
+/** Gốc REST Trello; dev trỏ Trello giả bằng env `TRELLO_API_URL` (vd http://localhost:4700, như cron DLC). */
+export const trelloApiBase = (url: string | undefined): string =>
+  `${(url?.trim() || "https://api.trello.com").replace(/\/+$/, "")}/1`;
+const API = trelloApiBase(process.env.TRELLO_API_URL);
 const NAME_MAX = 120;
 const TIMEOUT_MS = 5_000;
 const KIND_LABEL: Record<string, string> = { bug: "Lỗi", idea: "Ý tưởng", other: "Khác" };

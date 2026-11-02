@@ -186,7 +186,7 @@ export const DEMO_USERS: FixtureUser[] = [
 }));
 
 /** Gói bật cho tenant demo khi `scripts/dev-up.ps1` dựng máy dev: Sổ Hợp Tác + Community. */
-export const DEMO_PACKS = ["contracts", "community"] as const;
+export const DEMO_PACKS = ["contracts", "community", "dlc"] as const; // dlc-engine · gói DLC (khe thư viện + duyệt bước)
 
 /** Bật gói cho `evolu` và đưa user demo vào Group vai của gói: tenant_admin ⇒ owner, còn lại ⇒ editor. Sau `ensureDemoFixture`. */
 export function ensureDemoPacks(adminUrl: string): Promise<void> {
