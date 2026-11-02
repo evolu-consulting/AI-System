@@ -99,6 +99,13 @@ describe("ADM-NFR-06 · M2 · ngân sách chunk route", () => {
     expect(checkBundle(dir).errors).toEqual([expect.stringContaining("chunk big.js")]);
   });
 
+  test("CR-106: chunk canvas-* được 80 KB, vượt 80 KB vẫn lỗi; chunk khác vẫn 50 KB", () => {
+    const ok = withChunks({ "static/js/async/canvas-xyflow.a1.js": noise(60) });
+    expect(checkBundle(ok).errors).toEqual([]);
+    const big = withChunks({ "static/js/async/canvas-xyflow.a1.js": noise(90) });
+    expect(checkBundle(big).errors).toEqual([expect.stringContaining("> 80 KB")]);
+  });
+
   test("không có thư mục async → bỏ qua; chỉ đọc file .js", () => {
     expect(asyncChunkSizes(withChunks({}))).toEqual([]);
     const dir = withChunks({ "static/js/async/a.js.LICENSE.txt": noise(80) });

@@ -72,7 +72,16 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(dlg.getByTestId("flow-current-title")).toHaveText(
     "Quy trình duyệt đang dùng: Quy trình HĐ mặc định · v4",
   );
+  // CR-106: mặc định là canvas chỉ đọc (Bắt đầu + 2 bước + Ghi Đã duyệt); công tắc "Danh sách" hiện `flow-diagram`
+  await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
+  await expect(dlg.getByTestId("flow-canvas").getByText("Giám đốc duyệt")).toBeVisible();
+  await expect(dlg.getByTestId("flow-canvas").getByText("Ghi Đã duyệt")).toBeVisible();
+  await expect(dlg.getByTestId("flow-diagram")).toHaveCount(0);
+  await dlg.getByTestId("flow-view-list").click();
+  await expect(dlg.getByTestId("flow-canvas")).toHaveCount(0);
   await expect(dlg.getByTestId("flow-diagram").getByRole("listitem")).toHaveCount(2);
+  await dlg.getByTestId("flow-view-canvas").click();
+  await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
   // không form sửa: không nút thêm bước/lưu, không ô nhập tên bước
   await expect(dlg.getByRole("button", { name: /Thêm bước|Lưu quy trình/ })).toHaveCount(0);
   await expect(dlg.getByLabel("Tên bước")).toHaveCount(0);
@@ -84,6 +93,8 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
     "data-run",
     "false",
   );
+  // canvas làm mờ bước bị bỏ qua (CR-106)
+  await expect(dlg.getByTestId("flow-canvas").locator('[data-run="false"]')).toHaveCount(1);
   await dlg.getByLabel("Giá trị mẫu").fill("500");
   await expect(dlg.getByTestId("flow-preview").getByRole("listitem").nth(1)).toHaveAttribute(
     "data-run",

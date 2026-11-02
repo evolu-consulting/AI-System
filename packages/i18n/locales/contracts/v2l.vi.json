@@ -171,7 +171,15 @@
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",
         "esign": "Ký số",
-        "conditional": "Có điều kiện"
+        "conditional": "Có điều kiện",
+        "view": { "label": "Cách xem quy trình", "canvas": "Sơ đồ", "list": "Danh sách" },
+        "canvas": {
+          "aria": "Sơ đồ quy trình duyệt (chỉ xem)",
+          "start": "Bắt đầu",
+          "finalize": "Ghi Đã duyệt",
+          "locked": "(bước hệ thống, không sửa được)",
+          "loadFail": "Không tải được sơ đồ. Bạn vẫn xem được ở dạng danh sách."
+        }
       },
       "title": "Quy trình duyệt hợp đồng",
       "lead": "Các bước duyệt theo thứ tự. Bước 1 là soạn và kiểm tra, luôn chạy. Các bước sau có thể có điều kiện theo loại hợp đồng và giá trị.",

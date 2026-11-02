@@ -39,6 +39,19 @@ export default defineConfig({
   server: { port: 3300, strictPort: true, proxy },
   tools: {
     rspack: {
+      // CR-106: xyflow (canvas chỉ đọc, lazy) gom vào một chunk tên `canvas-*` để có ngân sách riêng ở check:bundle.
+      optimization: {
+        splitChunks: {
+          cacheGroups: {
+            xyflow: {
+              test: /[\\/]node_modules[\\/](@xyflow|d3-[a-z-]+|zustand|classcat)[\\/]/,
+              name: "canvas-xyflow",
+              chunks: "async",
+              enforce: true,
+            },
+          },
+        },
+      },
       plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true })],
       module: {
         rules: [

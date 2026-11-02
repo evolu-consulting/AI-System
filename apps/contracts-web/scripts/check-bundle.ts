@@ -5,6 +5,10 @@ import { join } from "node:path";
 export const JS_BUDGET_BYTES = 150 * 1024;
 export const CSS_BUDGET_BYTES = 25 * 1024;
 export const CHUNK_BUDGET_BYTES = 50 * 1024;
+/** CR-106: chunk `canvas*` (xyflow, lazy trong Cài đặt › Quy trình duyệt; như admin-web ADR-0013 #2): ngân sách riêng. */
+export const CANVAS_CHUNK_BUDGET_BYTES = 80 * 1024;
+export const chunkBudget = (name: string): number =>
+  /^canvas[.\-_]/.test(name) ? CANVAS_CHUNK_BUDGET_BYTES : CHUNK_BUDGET_BYTES;
 /** Chunk bất đồng bộ (route, lazy) do Rsbuild tách vào `static/js/async`. */
 const ASYNC_DIR = join("static", "js", "async");
 
@@ -82,8 +86,9 @@ export function checkBundle(distDir: string): BundleReport {
   if (cssBytes > CSS_BUDGET_BYTES) errors.push(`check:bundle css ${cssKb} KB > 25 KB`);
   const chunks = asyncChunkSizes(distDir);
   for (const [name, bytes] of chunks) {
-    if (bytes > CHUNK_BUDGET_BYTES) {
-      errors.push(`check:bundle chunk ${name} ${toKb(bytes)} KB > 50 KB`);
+    const budget = chunkBudget(name);
+    if (bytes > budget) {
+      errors.push(`check:bundle chunk ${name} ${toKb(bytes)} KB > ${budget / 1024} KB`);
     }
   }
   const maxChunkKb = toKb(Math.max(0, ...chunks.map(([, b]) => b)));

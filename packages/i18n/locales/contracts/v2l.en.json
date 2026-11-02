@@ -171,7 +171,15 @@
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",
         "esign": "E-sign",
-        "conditional": "Conditional"
+        "conditional": "Conditional",
+        "view": { "label": "Process view", "canvas": "Diagram", "list": "List" },
+        "canvas": {
+          "aria": "Approval process diagram (read-only)",
+          "start": "Start",
+          "finalize": "Record as Approved",
+          "locked": "(system step, cannot be edited)",
+          "loadFail": "Could not load the diagram. You can still use the list view."
+        }
       },
       "title": "Contract approval flow",
       "lead": "Approval steps run in order. Step 1 is drafting and checking and always runs. Later steps may be conditional on contract type and value.",
