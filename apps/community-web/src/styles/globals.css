@@ -2,12 +2,15 @@
    Tailwind: chỉ theme + utilities (không preflight, để giữ nguyên reset của mockup). */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
-@import "@fontsource/roboto/latin-400.css";
-@import "@fontsource/roboto/latin-500.css";
-@import "@fontsource/roboto/latin-700.css";
-@import "@fontsource/roboto/vietnamese-400.css";
-@import "@fontsource/roboto/vietnamese-500.css";
-@import "@fontsource/roboto/vietnamese-700.css";
+/* Be Vietnam Pro như admin/chat/studio (người dùng chọn 2026-11-02), đủ 400/500/600/700, subset latin + vietnamese. */
+@import "@fontsource/be-vietnam-pro/latin-400.css";
+@import "@fontsource/be-vietnam-pro/latin-500.css";
+@import "@fontsource/be-vietnam-pro/latin-600.css";
+@import "@fontsource/be-vietnam-pro/latin-700.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-400.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-500.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-600.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-700.css";
 @import "./mockup.css";
 @import "./feed.css";
 @import "./login.css";

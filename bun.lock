@@ -137,7 +137,7 @@
         "@ai/contracts": "workspace:*",
         "@ai/i18n": "workspace:*",
         "@ai/web-kit": "workspace:*",
-        "@fontsource/roboto": "5.3.0",
+        "@fontsource/be-vietnam-pro": "5.3.0",
         "i18next": "26.4.2",
         "react": "18.3.1",
         "react-dom": "18.3.1",
@@ -164,7 +164,7 @@
         "@ai/contracts": "workspace:*",
         "@ai/i18n": "workspace:*",
         "@ai/web-kit": "workspace:*",
-        "@fontsource/roboto": "5.3.0",
+        "@fontsource/be-vietnam-pro": "5.3.0",
         "@fontsource/roboto-mono": "5.3.0",
         "@hookform/resolvers": "5.9.1",
         "@tanstack/react-query": "5.104.0",
@@ -546,8 +546,6 @@
     "@fontsource-variable/jetbrains-mono": ["@fontsource-variable/jetbrains-mono@5.3.0", "", {}, "sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw=="],
 
     "@fontsource/be-vietnam-pro": ["@fontsource/be-vietnam-pro@5.3.0", "", {}, "sha512-xhAQBGHDxP5BF8IJxedy5MoWUmc1DlPCcZbMLhvnPkf8TaYCbbUVs3LjpuJ4BYdTrdiCLaewNaY8z+owq/FqFw=="],
-
-    "@fontsource/roboto": ["@fontsource/roboto@5.3.0", "", {}, "sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q=="],
 
     "@fontsource/roboto-mono": ["@fontsource/roboto-mono@5.3.0", "", {}, "sha512-yhwplHMHW9dCk+1pZuERfcJe+K3rosGVZEoK0XktkxRSqQ9qsipSwwiuW2/8Qmtp9lzu3Ixa/ie4BMH3i8CkZQ=="],
 

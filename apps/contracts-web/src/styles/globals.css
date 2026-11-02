@@ -2,13 +2,16 @@
    cho phần trùng giá trị; phần riêng mgmt (sunk, bubble, rule, field, ink, dim, soon, idle, new…) giữ giá trị gốc `reference/mgmt-app-contracts/web/src/index.css:13-70`. */
 @import "tailwindcss";
 @import "tw-animate-css";
-/* Font Roboto + Roboto Mono (ADR-0001, D-14): chỉ subset latin + vietnamese, 400/500/700 (Roboto không có 600). */
-@import "@fontsource/roboto/latin-400.css";
-@import "@fontsource/roboto/latin-500.css";
-@import "@fontsource/roboto/latin-700.css";
-@import "@fontsource/roboto/vietnamese-400.css";
-@import "@fontsource/roboto/vietnamese-500.css";
-@import "@fontsource/roboto/vietnamese-700.css";
+/* Font Be Vietnam Pro như admin/chat/studio (người dùng chọn 2026-11-02): subset latin + vietnamese, đủ 400/500/600/700
+   (Roboto cũ thiếu 600 ⇒ trình duyệt tự đậm, dấu tiếng Việt nhoè). */
+@import "@fontsource/be-vietnam-pro/latin-400.css";
+@import "@fontsource/be-vietnam-pro/latin-500.css";
+@import "@fontsource/be-vietnam-pro/latin-600.css";
+@import "@fontsource/be-vietnam-pro/latin-700.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-400.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-500.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-600.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-700.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -267,9 +270,9 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: "Roboto", "Segoe UI", system-ui, sans-serif;
-  /* như mgmt-app (D-02): số tiền/mã dùng Roboto, chữ số cùng độ rộng; không dùng chữ đánh máy */
-  --font-mono: "Roboto", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  /* như mgmt-app (D-02): số tiền/mã dùng cùng font chữ, chữ số cùng độ rộng; không dùng chữ đánh máy */
+  --font-mono: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
 
   /* Tên mgmt-app → token chung (trùng giá trị với admin-web ở bản sáng; bản tối theo mgmt-app) */
   --color-ground: var(--background);
