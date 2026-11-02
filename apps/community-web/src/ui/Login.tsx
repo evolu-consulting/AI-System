@@ -215,7 +215,7 @@ export function LoginPage() {
       <main className="lg-form-pane">
         <div className="lg-head">
           <div className="lg-brand">
-            <span className="lg-logo">S</span>
+            <span className="lg-logo">C</span>
             <span>
               <b>{t("community.brand.name")}</b>
               <small>{t("community.brand.sub")}</small>
