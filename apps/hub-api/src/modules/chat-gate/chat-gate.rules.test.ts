@@ -9,6 +9,7 @@ import {
   chatRouteKind,
   dockMessageAllowed,
   isDockSurface,
+  meStreamEventAllowed,
 } from "./chat-gate.rules";
 
 const T1 = "t1";
@@ -58,9 +59,19 @@ describe("chatRouteKind", () => {
       ["GET", "/rooms"],
       ["POST", "/rooms/r1/messages"],
       ["GET", "/directory"],
-      ["GET", "/me/stream"],
+      ["POST", "/me/stream"],
+      ["GET", "/me/stream/x"],
     ] as const)
       expect(chatRouteKind(m, p)).toBe("chat");
+  });
+  it("CR-107 · GET /me/stream ⇒ stream (luôn qua; không Chat AI ⇒ chỉ sự kiện quy trình)", () => {
+    expect(chatRouteKind("GET", "/me/stream")).toBe("stream");
+    expect(chatGateVerdict("stream", false, false)).toBe(true);
+    expect(meStreamEventAllowed(false, "process.updated")).toBe(true);
+    expect(meStreamEventAllowed(false, "review_task.created")).toBe(true);
+    expect(meStreamEventAllowed(false, "room.message")).toBe(false);
+    expect(meStreamEventAllowed(false, "room.run")).toBe(false);
+    expect(meStreamEventAllowed(true, "room.message")).toBe(true);
   });
   it("3 route dock trợ lý Sổ Hợp Tác ⇒ dock", () => {
     expect(chatRouteKind("POST", "/conversations")).toBe("dock");

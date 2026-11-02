@@ -31,6 +31,11 @@ export function chatGate(d: ChatGateDeps): MiddlewareHandler<AuthVars> {
     const u = c.var.user;
     await d.view.adminSettled?.();
     const chatOk = chatAppAllowed(await d.view.catalog(), u);
+    // CR-107: `/me/stream` không chặn — không có Chat AI ⇒ route chỉ phát sự kiện quy trình của chính user.
+    if (kind === "stream") {
+      if (!chatOk) c.set("chatOff", true);
+      return next();
+    }
     const dockSurface = kind === "dock" ? dockSurfaceOf(c.req.header(AI_SURFACE_HEADER)) : null;
     const dockOk =
       !chatOk &&

@@ -78,6 +78,8 @@ export type MeStreamOpen = {
   plan: ResumePlan;
   /** Tài khoản còn dùng được (cache cấu hình); false ⇒ đóng ở nhịp ping kế. */
   usable: () => Promise<boolean>;
+  /** CR-107 · lọc theo tên sự kiện (vắng ⇒ phát hết); sự kiện bị lọc vẫn dời mốc `#last`. */
+  allow?: (event: string) => boolean;
 };
 
 class MeStreamSession implements Closable {
@@ -197,6 +199,7 @@ class MeStreamSession implements Closable {
     for (const e of entries) {
       if (this.#closed || compareStreamId(e.id, this.#last) <= 0) continue;
       this.#last = e.id;
+      if (this.o.allow && !this.o.allow(e.ev.event)) continue;
       this.#send(userEntryFrame(e));
     }
   }

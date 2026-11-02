@@ -82,7 +82,9 @@ function attachQ(tx: Tx, tid: string): ApprovalEngineRepo["attach"] {
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${aid}::uuid for update)
       update contracts.approvals x
       set mode = 'engine', engine_run_id = ${a.runId}::uuid, flow_version = ${a.version}::int,
-        flow_steps = ${JSON.stringify(a.steps)}::jsonb, feedback = null, updated_at = now()
+        flow_steps = ${JSON.stringify(a.steps)}::jsonb, feedback = null, updated_at = now(),
+        -- review CR-107: run mới ⇒ bỏ chỗ giữ/SP chờ của run cũ (không để rơi sang run mới)
+        pending_links = null, pending_claim = null, pending_by = null, pending_task = null, pending_at = null
       from c
       where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${id}::uuid
         and x.status = 'level1' and c.id = x.contract_id
@@ -134,6 +136,7 @@ function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
 }
 
 /** CR-107 · Giữ chỗ + ghi SP chờ. Chỉ được khi: chưa ai giữ, người giữ đang ở task KHÁC (task cũ đã đóng ⇒ `act` của họ không thể thắng),
+ *  CHÍNH người giữ bấm lại cùng task (review CR-107: trả chỗ lỗi ⇒ không tự khoá mình 15 phút; người KHÁC vẫn thua),
  *  hoặc chỗ giữ quá 15 phút (người giữ chết giữa chừng, không trả chỗ — một lần `act` chỉ tốn mili-giây). Hai lần giữ cùng task chạy song song: lần sau chờ khoá hàng rồi xét lại WHERE trên bản mới ⇒ 0 hàng. */
 async function claimQ(
   tx: Tx,
@@ -149,6 +152,7 @@ async function claimQ(
     where id = ${aid}::uuid and tenant_id = ${tid}::uuid and engine_run_id = ${runId}::uuid
       and mode = 'engine' and status = 'level1'
       and (pending_claim is null or pending_task is distinct from ${p.task}
+        or pending_by = ${p.by}::uuid
         or pending_at < now() - interval '15 minutes')
     returning id`);
 }

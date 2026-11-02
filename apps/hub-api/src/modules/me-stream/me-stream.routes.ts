@@ -3,6 +3,7 @@
 import { SSE_CONTENT_TYPE } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";
+import { meStreamEventAllowed } from "../chat-gate/chat-gate.rules";
 import { type MeStreamDeps, meEventStream, resumePlan } from "./me-stream.session";
 
 const SSE_HEADERS = {
@@ -19,7 +20,9 @@ export function meStreamRoutes(d: MeStreamDeps): Hono<AuthVars> {
     const config = c.var.config;
     const plan = await resumePlan(d.reader, user.userId, c.req.header("last-event-id"));
     const usable = async () => (await config?.accountUsable(user.tenantId, user.userId)) === true;
-    return new Response(meEventStream(d, { user, plan, usable }), {
+    // CR-107: công ty không có Chat AI (cổng chat gắn `chatOff`) ⇒ chỉ sự kiện quy trình (thẻ duyệt contracts-web).
+    const allow = c.var.chatOff ? (ev: string) => meStreamEventAllowed(false, ev) : undefined;
+    return new Response(meEventStream(d, { user, plan, usable, allow }), {
       status: 200,
       headers: SSE_HEADERS,
     });

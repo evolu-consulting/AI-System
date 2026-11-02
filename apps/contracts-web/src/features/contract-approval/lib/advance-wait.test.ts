@@ -1,18 +1,30 @@
 // CR-107 · eng-card-ui: backoff lưới an toàn + lọc sự kiện push theo run.
 import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts";
-import { ADVANCE_MAX_TRIES, advanceDelay, eventConcernsRun, shouldListen } from "./advance-wait";
+import { ApiError } from "@ai/web-kit/http";
+import { isFatalStreamError } from "../stream/process-stream";
+import { advanceDelay, eventConcernsRun, shouldListen } from "./advance-wait";
 
 const RUN = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
 
 describe("advanceDelay", () => {
-  test("2 · 4 · 8 · 16 · 30 s (trần), dừng sau 10 lần", () => {
+  test("2 · 4 · 8 · 16 · 30 s (trần) rồi giữ 30 s mãi — không dừng sau 10 lần (review CR-107)", () => {
     expect([0, 1, 2, 3, 4, 5, 9].map(advanceDelay)).toEqual([
       2000, 4000, 8000, 16000, 30000, 30000, 30000,
     ]);
-    expect(advanceDelay(ADVANCE_MAX_TRIES)).toBe(false);
-    expect(advanceDelay(99)).toBe(false);
+    expect(advanceDelay(10)).toBe(30000);
+    expect(advanceDelay(5000)).toBe(30000);
+  });
+});
+
+describe("isFatalStreamError", () => {
+  test("4xx (401/403/404) ⇒ dừng nối lại; 408/429/5xx/lỗi mạng ⇒ nối lại", () => {
+    for (const s of [400, 401, 403, 404])
+      expect(isFatalStreamError(new ApiError(s, "HTTP_ERROR", ""))).toBe(true);
+    for (const s of [408, 429, 500, 503])
+      expect(isFatalStreamError(new ApiError(s, "HTTP_ERROR", ""))).toBe(false);
+    expect(isFatalStreamError(new TypeError("fetch failed"))).toBe(false);
   });
 });
 

@@ -25,7 +25,14 @@ export type AuthUser = {
 export type ChatDock = { restricted: boolean; surface: "contracts" | "community" };
 /** Biến context middleware cần/gắn (AppVars của app là tập cha). */
 export type AuthVars = {
-  Variables: { log: Logger; config?: ConfigCache; user: AuthUser; chatDock?: ChatDock };
+  /** `chatOff` (CR-107): cổng chat gắn trên `/me/stream` khi công ty không có Chat AI ⇒ stream chỉ phát sự kiện quy trình. */
+  Variables: {
+    log: Logger;
+    config?: ConfigCache;
+    user: AuthUser;
+    chatDock?: ChatDock;
+    chatOff?: boolean;
+  };
 };
 
 const BEARER_RE = /^Bearer ([A-Za-z0-9._-]+)$/;

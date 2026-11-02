@@ -153,4 +153,57 @@ describe("CR-107 · đua Đạt duyệt cuối kèm SP", () => {
       left join contracts.products p on p.id = i.product_id where i.id = ${item}`;
     expect(p?.name).toBe(winner === PA.H.id ? "SP của H" : "SP của B");
   }, 90_000);
+
+  it("review CR-107: chính người giữ giữ lại được cùng task (người khác vẫn thua); gắn run mới ⇒ xoá chỗ giữ + SP chờ", async () => {
+    const id = await seedContract(c, 792);
+    const aid = (await toLevel1(c, id, 10_000_000)).runId;
+    const [a] = await c.sql<
+      Json[]
+    >`select engine_run_id::text as run, flow_steps from contracts.approvals where id = ${aid}`;
+    const run = a?.run as string;
+    const uow = createPackUow(db, "contracts", (tx, tid) => ({
+      approvalEngine: approvalEngineRepo(tx, tid),
+    })) as unknown as EngineCardDeps["uow"];
+    const repo = <V>(f: (r: ReturnType<typeof approvalEngineRepo>) => Promise<V>) =>
+      uow.tenant({ tenantId: T.acme, userId: PA.H.id }, (r) =>
+        f(
+          (r as unknown as { approvalEngine: ReturnType<typeof approvalEngineRepo> })
+            .approvalEngine,
+        ),
+      );
+    const claim = (by: string) =>
+      repo((r) =>
+        r.setPendingLinks(aid, run, {
+          claim: crypto.randomUUID(),
+          by,
+          task: "t-792",
+          links: [{ x: by }],
+        }),
+      );
+    expect(await claim(PA.H.id)).toBe(true);
+    // trả chỗ lỗi (không gọi release) ⇒ H bấm lại vẫn giữ được; B (người khác) vẫn bị chặn
+    expect(await claim(PA.H.id)).toBe(true);
+    expect(await claim(PA.B.id)).toBe(false);
+    const pending = async () =>
+      (
+        await c.sql<
+          Json[]
+        >`select pending_links, pending_claim, pending_by, pending_task, pending_at
+          from contracts.approvals where id = ${aid}`
+      )[0];
+    expect((await pending())?.pending_by).toBe(PA.H.id);
+    const fresh = crypto.randomUUID();
+    expect(
+      await repo((r) =>
+        r.attach(id, aid, { runId: fresh, version: 1, steps: a?.flow_steps, replaces: run }),
+      ),
+    ).toBe(true);
+    expect(await pending()).toEqual({
+      pending_links: null,
+      pending_claim: null,
+      pending_by: null,
+      pending_task: null,
+      pending_at: null,
+    });
+  }, 90_000);
 });

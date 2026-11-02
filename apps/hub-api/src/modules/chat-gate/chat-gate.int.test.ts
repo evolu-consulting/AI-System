@@ -17,6 +17,7 @@ import {
   USERS,
 } from "../../../../../tests/acceptance/H1/_fixtures";
 import { type HubX, insertHubConfig, startHubX } from "../../../../../tests/acceptance/H1/_hub";
+import { type MeEv, openMeStream } from "../../../../../tests/acceptance/X2a/_x2a";
 
 let sql: Sql;
 let k: Keys;
@@ -88,7 +89,6 @@ describe("chat-api-gate · chặn API Chat AI theo entitlement công ty", () => 
       ["GET", "/commands", undefined],
       ["GET", "/agents", undefined],
       ["GET", "/directory", undefined],
-      ["GET", "/me/stream", undefined],
       ["GET", `/attachments/${UNKNOWN}/content`, undefined],
     ] as const) {
       const res = await call(hub, m, p, { token: an, body });
@@ -140,6 +140,32 @@ describe("chat-api-gate · chặn API Chat AI theo entitlement công ty", () => 
       headers: DOCK,
     });
     expect(errorOf(res)).toEqual(DISABLED);
+  });
+
+  it("CR-107 · công ty bị thu hồi mở /me/stream ⇒ 200, chỉ nhận sự kiện quy trình CỦA MÌNH (không sự kiện phòng, không của người khác)", async () => {
+    const [an, lan] = [await sign(k, USERS.an), await sign(k, USERS.lan)];
+    const [sa, sl] = [await openMeStream(hub, an), await openMeStream(hub, lan)];
+    expect([sa.status, sl.status]).toEqual([200, 200]);
+    const RUN_A = "a7300000-0000-4000-8000-0000000000a1";
+    const RUN_L = "a7300000-0000-4000-8000-0000000000a2";
+    const xadd = (uid: string, event: string, data: unknown) =>
+      hub.redis.xadd(`ustream:${uid}`, "*", "e", JSON.stringify({ event, data }));
+    const proc = (id: string) => ({ process_run_id: id, status: "running", stage_idx: 0 });
+    const room = (uid: string) => ({ room_id: UNKNOWN, user_id: uid });
+    await xadd(USERS.an.id, "room.member_removed", room(USERS.an.id));
+    await xadd(USERS.lan.id, "room.member_removed", room(USERS.lan.id));
+    await xadd(USERS.lan.id, "process.updated", proc(RUN_L));
+    await xadd(USERS.an.id, "process.updated", proc(RUN_A)); // sentinel cuối của an
+    const runOf = (id: string) => (e: MeEv) => e.data?.process_run_id === id;
+    expect(await sa.until(runOf(RUN_A), 3_000)).toBeDefined();
+    expect(await sl.until(runOf(RUN_L), 3_000)).toBeDefined();
+    expect(sa.events.map((e) => [e.event, e.data?.process_run_id])).toEqual([
+      ["process.updated", RUN_A],
+    ]);
+    // công ty còn Chat AI ⇒ nhận cả sự kiện phòng như cũ
+    expect(sl.events.map((e) => e.event)).toEqual(["room.member_removed", "process.updated"]);
+    sa.close();
+    sl.close();
   });
 
   it("platform_admin không bị chặn", async () => {

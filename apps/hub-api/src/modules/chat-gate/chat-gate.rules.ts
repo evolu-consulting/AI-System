@@ -2,6 +2,7 @@
 // `app-catalog.rules` (`TENANT_APP_FEATURES`: feature theo CÔNG TY, không theo nhóm/user; feature chưa tồn tại ⇒ mở;
 // platform_admin luôn được). Không I/O: đọc ảnh catalog trong cache cấu hình (0 SQL mỗi request).
 import type { Role } from "@ai/contracts";
+import { ME_STREAM_PROCESS_EVENTS } from "@ai/contracts/chat";
 import { routeMessage } from "../mention/mention-parse.rules";
 import { classifyBang } from "../processes/core/bang.rules";
 
@@ -18,7 +19,9 @@ export const CHAT_GATED_PREFIXES = [
   "/attachments",
   "/rooms",
   "/directory",
-  "/me/stream", // `/me/review-tasks`, `/me/process-inbox` thuộc engine quy trình ⇒ không chặn
+  // CR-107: `/me/stream` không chặn mà LỌC (kind `stream`): công ty không có Chat AI chỉ nhận sự kiện quy trình của chính
+  // user (thẻ duyệt contracts-web); sự kiện phòng/run phòng bị bỏ. `/me/review-tasks`, `/me/process-inbox` ⇒ không chặn.
+  "/me/stream",
 ] as const;
 
 /** Phần catalog cần (khớp cấu trúc `CatalogSnapshot`). */
@@ -40,8 +43,9 @@ export function chatAppAllowed(
   return f.status !== "off" && cat.entitled.has(`${who.tenantId}:${f.id}`);
 }
 
-/** `chat` = route chat bị chặn; `dock` = 3 route dock trợ lý Sổ Hợp Tác dùng (mở khi có quyền đọc gói); `open` = không chặn. */
-export type ChatRouteKind = "chat" | "dock" | "open";
+/** `chat` = route chat bị chặn; `dock` = 3 route dock trợ lý Sổ Hợp Tác dùng (mở khi có quyền đọc gói); `open` = không chặn;
+ *  `stream` = `GET /me/stream`: luôn qua, không có Chat AI ⇒ chỉ sự kiện quy trình (CR-107). */
+export type ChatRouteKind = "chat" | "dock" | "open" | "stream";
 
 const SEG = "[^/]+";
 const OPEN_RE = [new RegExp(`^/runs/${SEG}/trace$`)]; // H3b trace quản trị
@@ -57,6 +61,7 @@ const underPrefix = (path: string): boolean =>
 export function chatRouteKind(method: string, path: string): ChatRouteKind {
   if (!underPrefix(path)) return "open";
   if (method === "GET" && OPEN_RE.some((r) => r.test(path))) return "open";
+  if (method === "GET" && path === "/me/stream") return "stream";
   if (method === "POST" && DOCK_RE.some((r) => r.test(path))) return "dock";
   return "chat";
 }
@@ -81,6 +86,12 @@ export const isDockSurface = (surface: string | undefined): boolean =>
 
 /** Cho qua: route mở, hoặc công ty có Chat AI, hoặc route dock + người gọi đủ quyền dock. */
 export function chatGateVerdict(kind: ChatRouteKind, chatOk: boolean, dockOk: boolean): boolean {
-  if (kind === "open" || chatOk) return true;
+  if (kind === "open" || kind === "stream" || chatOk) return true;
   return kind === "dock" && dockOk;
 }
+
+const PROCESS_EVENTS: ReadonlySet<string> = new Set(ME_STREAM_PROCESS_EVENTS);
+
+/** CR-107 · `/me/stream` của người không có Chat AI: chỉ sự kiện quy trình (`process.*`, `review_task.*`); có ⇒ mọi sự kiện. */
+export const meStreamEventAllowed = (chatOk: boolean, event: string): boolean =>
+  chatOk || PROCESS_EVENTS.has(event);

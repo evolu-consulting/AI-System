@@ -46,7 +46,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
   const q = useQuery({
     queryKey: approvalKey(id),
     queryFn: ({ signal }) => fetchApproval(id, signal),
-    // CR-107: có `attention` ⇒ KHÔNG poll. Chuyển bước engine ⇒ push `/me/stream` + lưới an toàn giãn dần (tối đa 10 lần).
+    // CR-107: có `attention` ⇒ KHÔNG poll. Chuyển bước engine ⇒ push `/me/stream` + lưới an toàn giãn dần tới 30 s rồi giữ.
     refetchInterval: (s) => {
       const d = s.state.data;
       if (d?.attention || (!RUNNING.has(d?.step ?? "") && !engineAdvancing(d))) {

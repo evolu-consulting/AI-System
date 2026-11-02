@@ -81,6 +81,7 @@ export type AppVars = {
     config?: ConfigCache;
     user: AuthUser;
     chatDock?: ChatDock;
+    chatOff?: boolean;
   };
 };
 export type AppConfig = { version: string; corsOrigins: string[] };

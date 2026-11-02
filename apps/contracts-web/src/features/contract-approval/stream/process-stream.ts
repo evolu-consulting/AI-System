@@ -1,5 +1,5 @@
 // CR-107 · eng-card-ui: nghe `/me/stream` của hub (cùng token web-kit như mọi API của app) để thẻ duyệt tải lại khi run đổi,
-// thay cho poll. Nối lại giãn dần 1→30 s chỉ khi đứt (không phải chờ trạng thái); 401 sau refresh ⇒ dừng (phiên hết hạn).
+// thay cho poll. Nối lại giãn dần 1→30 s chỉ khi đứt (không phải chờ trạng thái); 4xx trừ 408/429 ⇒ dừng (`isFatalStreamError`).
 import {
   createSseParser,
   type MeStreamProcessEvent,
@@ -11,6 +11,14 @@ const RECONNECT_FIRST_MS = 1000;
 const RECONNECT_CAP_MS = 30_000;
 export const reconnectDelay = (n: number): number =>
   Math.min(RECONNECT_FIRST_MS * 2 ** n, RECONNECT_CAP_MS);
+
+/** 4xx (trừ 408/429) = nối lại cũng vô ích (401 sau refresh, 403 bị chặn, 404 hub cũ) ⇒ dừng; mạng/5xx/408/429 ⇒ nối lại. */
+export const isFatalStreamError = (err: unknown): boolean =>
+  err instanceof ApiError &&
+  err.status >= 400 &&
+  err.status < 500 &&
+  err.status !== 408 &&
+  err.status !== 429;
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -64,7 +72,7 @@ export async function listenProcessEvents(
         onEvent,
       );
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) return;
+      if (isFatalStreamError(err)) return; // lưới tải lại 30 s của thẻ (`advanceDelay`) lo phần còn lại
     }
     if (signal.aborted) return;
     await sleep(reconnectDelay(failures++), signal);
