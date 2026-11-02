@@ -128,3 +128,19 @@ Ngày 2026-11-02 · intake-analyst · Nguồn: `spec-community-hop-nhat.txt` (PD
 11. Nhãn EN: dùng bản đề xuất ngay rồi duyệt ở UAT? — mặc định: có.
 12. Tiêu đề "Áp dụng cho cả công ty" — mặc định: chỉ hiện ở nhóm Công ty/SHT.
 13. Thêm App switcher (như admin/contracts/chat) vào topbar community? — mặc định: không làm trong CR-110.
+
+## Chốt (2026-11-02)
+Người dùng trả lời cả 13 câu "Theo mặc định" (2026-11-02). Kết quả:
+1. Lấy PDF làm nguồn, tạo `docs/specs/cr110-*/tasks.md` theo Luật 0b; chỉ lát ports/profile-api chạy readiness 1 vòng.
+2. Giữ COM-FR-26..46 (không trùng; số cuối trước đó là COM-FR-25).
+3. SSO: dùng hand-off có sẵn (`/auth/sso/code` + `handOffUrl`, rơi về đăng nhập khi lỗi) ngay trong CR-110.
+4. Host deep-link do server cấp qua viewer (`contractsUrl` từ `CONTRACTS_WEB_URL`), không dùng `VITE_CONTRACTS_URL` build-time.
+5. Brand đối tác = brand công ty chủ quản (mọi account trong tenant hiện brand chủ quản).
+6. Sidebar Community = Bảng tin · Bài đăng của tôi; "Đối tác" ở tab hồ sơ + rail (chủ quản).
+7. Đối tác thấy 3 tab (Giới thiệu, Bài đăng, Ảnh & tệp); tab Đối tác + hstat Bạn bè chỉ chủ quản; bỏ câu nhắc SHT ở thẻ "Hoạt động".
+8. Bản đầu community chỉ light, bỏ qua `theme` công ty (ghi Chưa rõ).
+9. Sửa I2/P0-AC03 thành "không bảng mới; chỉ thêm port đọc: brand, caps, uy tín (ADR-0031)".
+10. Tab Đối tác dùng lại `GET /pack/community/partners` + `HostBookReader`; chỉ thêm `GET /pack/community/profile/:orgId/media`.
+11. Nhãn EN dùng bản đề xuất ngay, duyệt ở UAT.
+12. Tiêu đề "Áp dụng cho cả công ty" chỉ hiện ở nhóm Công ty/SHT.
+13. Không thêm App switcher vào topbar community trong CR-110.
