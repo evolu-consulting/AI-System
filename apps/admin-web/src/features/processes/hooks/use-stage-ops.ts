@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { StageDraft } from "../lib/def-form";
+import { freshDlcStage } from "../lib/dlc-slot";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
 import type { DraftState } from "./use-draft";
@@ -78,6 +79,8 @@ export function useStageOps(d: DraftState) {
     add: (step?: number) => addVia(() => d.addStage(step)),
     /** Chèn bước mới ngay sau bước `step`. */
     addStep: (step: number) => addVia(() => d.addStepAfter(step)),
+    /** dlc-engine · thêm bước DLC (khe `dlc.*`) thành bước cuối. */
+    addDlc: (name: string) => addVia(() => d.addFresh((st) => freshDlcStage(st, name))),
     clearNotice: () => setNotice(null),
   };
 }

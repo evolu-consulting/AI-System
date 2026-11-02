@@ -4,6 +4,7 @@ import { Copy, History, Route, Upload, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { statusOf } from "../../lib/library-list";
 import { canAssign, canSetDefault, publishState } from "../../lib/library-view";
 import type { LibraryDef } from "../../library-api";
@@ -18,6 +19,10 @@ type Props = {
   onMode: (m: EditorMode) => void;
   onAction: (a: LibraryAction) => void;
 };
+
+/** dlc-engine · khe DLC chỉ có Canvas (Form chỉ hiểu bước duyệt của khe hợp đồng). */
+const modesOf = (slot: string | null | undefined): readonly EditorMode[] =>
+  isDlcSlotKey(slot) ? ["canvas"] : ["canvas", "form"];
 
 export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Props) {
   const { t } = useTranslation();
@@ -87,7 +92,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
       <div className="flex flex-wrap items-center gap-2">
         <fieldset className="inline-flex min-w-0 rounded-md border border-border p-0.5">
           <legend className="sr-only">{L("mode.label")}</legend>
-          {(["canvas", "form"] as const).map((m) => (
+          {modesOf(def.slot).map((m) => (
             <Button
               key={m}
               type="button"

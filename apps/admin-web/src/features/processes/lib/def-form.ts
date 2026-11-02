@@ -43,6 +43,7 @@ export type {
   WaitDraft,
 } from "./draft-types";
 
+import { dlcDraftErrors } from "./dlc-slot";
 import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
 
 export { emptyStage, slugKey };
@@ -187,6 +188,7 @@ export function validateDraft(
   validateSourcesPart({ ...d, stages: eff }, e);
   validateAutofixPart(eff, e);
   Object.assign(e, applyCrossErrors(d.stages), d2LiveErrors(d.stages, d.inputs, tools));
+  Object.assign(e, dlcDraftErrors(d.stages)); // dlc-engine · luật bước DLC + KIND_MIX
   return { ...toolSubmitErrors(d.stages, tools), ...e };
 }
 

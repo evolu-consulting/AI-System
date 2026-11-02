@@ -846,7 +846,60 @@
       "stageAria": "Step {{n}}: {{name}}",
       "noDept": "No department chosen",
       "due": "due {{n}} h",
-      "always": "Always runs"
+      "always": "Always runs",
+      "addMenu": "Choose the kind of step to add",
+      "addDlcStep": "Add DLC step"
+    },
+    "dlc": {
+      "newName": "DLC step {{n}}",
+      "title": "DLC step",
+      "actionLabel": "Step job",
+      "action": {
+        "intake": "Intake",
+        "spec": "Spec + plan",
+        "qc": "Test cases + test scripts",
+        "setup": "Team + queue setup",
+        "build": "Build from queue",
+        "verify": "Verification",
+        "report": "Report",
+        "deploy": "Deploy",
+        "agent": "Custom agent"
+      },
+      "actionHint": {
+        "intake": "Create the workspace project, take the Trello ticket, collect the input spec.",
+        "spec": "An agent analyses the request (asks the person when unclear), writes the plan and the agent team.",
+        "qc": "An agent writes test cases, the test plan and runnable test scripts.",
+        "setup": "Spawn domain/QC agents from the plan, set the test command, queue the tasks.",
+        "build": "Domain agents work task by task on their own branch, merged one by one through the test gate.",
+        "verify": "An agent checks the product against 100% of the spec; gaps become fix tasks and are built again.",
+        "report": "Report queue, verification and git; the ticket moves to waiting for deploy.",
+        "deploy": "Deploy the merged build (the project needs deploy settings).",
+        "agent": "Any agent does the work you describe."
+      },
+      "agent": "Agent (Agent Hub key)",
+      "instruction": "Extra instruction for the agent",
+      "task": "Task for the agent",
+      "gate": "Wait for approval after this step",
+      "gateGroup": "Approver group (key)",
+      "backTo": "On Not passed, may go back to",
+      "backToNone": "No DLC step before this one.",
+      "gateOffHint": "When done the process moves on without waiting for a person.",
+      "gateOn": "Waits for approval",
+      "gateOff": "Continues automatically",
+      "roundsBuild": "Attempts per task",
+      "roundsVerify": "Fix rounds after verification",
+      "timeout": "Step time limit (minutes)",
+      "err": {
+        "NAME_REQUIRED": "Enter a step name (up to 80 characters).",
+        "AGENT_REQUIRED": "Choose an agent for this step.",
+        "ORDER_INVALID": "This job needs an earlier step: QC/Setup need Spec, Build needs Setup, Verification/Deploy need Build.",
+        "INSTRUCTION_TOO_LONG": "Instruction too long (up to 8000 characters).",
+        "ROUNDS_INVALID": "Rounds must be 1 to 10.",
+        "TIMEOUT_INVALID": "Time limit must be 5 to 1440 minutes.",
+        "GATE_GROUP_INVALID": "Enter the approver group key (e.g. dlc-editor).",
+        "BACK_TARGET_INVALID": "Can only go back to an earlier DLC step.",
+        "KIND_MIX": "Approval steps and DLC steps cannot be connected in one diagram — remove the other kind of step or use the process of the matching slot."
+      }
     }
   }
 }

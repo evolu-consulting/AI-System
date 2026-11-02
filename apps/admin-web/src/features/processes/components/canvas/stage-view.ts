@@ -4,6 +4,7 @@ import type { FlowWhen } from "@ai/contracts";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { branchOff } from "../../lib/d2-validate";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
+import { dlcOf, isDlcStep, stageFamily } from "../../lib/dlc-slot";
 import { isIf } from "../../lib/if-form";
 import { describeWhen } from "../../lib/library-list";
 import { isSlotStep, isSystemStage } from "../../lib/system-nodes";
@@ -40,6 +41,10 @@ export type StageView = {
   slotInfo: { no: number; dept: string; dueH: number | null; cond: string | null } | null;
   /** fnr-canvas · `y` đã lưu của node (`ui.y`); null = bố cục tự động. */
   y: number | null;
+  /** dlc-engine · bước DLC của khe: số thứ tự, việc, agent, có cổng duyệt; stage khác ⇒ null. */
+  dlc: { no: number; action: string; agent: string; gate: boolean } | null;
+  /** dlc-engine · họ bước (dlc / review) để không nối hai loại; stage thường / hệ thống ⇒ null. */
+  family: "dlc" | "review" | null;
 };
 
 const hasStageError = (errors: DraftErrors, i: number): boolean =>
@@ -58,7 +63,7 @@ const sysKind = (s: StageDraft): StageView["sys"] =>
   !isSystemStage(s) ? null : s.tool.key === "contracts-finalize" ? "finalize" : "route";
 
 function slotInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["slotInfo"] {
-  if (!isSlotStep(s)) return null;
+  if (!isSlotStep(s) || isDlcStep(s)) return null;
   const slot = s.slotRaw ?? {};
   const no = all.filter(isSlotStep).indexOf(s) + 1;
   const due = slot.due_h;
@@ -70,12 +75,24 @@ function slotInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["slotI
   };
 }
 
+function dlcInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["dlc"] {
+  if (!isDlcStep(s)) return null;
+  const d = dlcOf(s);
+  return {
+    no: all.filter(isDlcStep).indexOf(s) + 1,
+    action: String(d.action ?? ""),
+    agent: String(d.agent_key ?? ""),
+    gate: d.gate !== null && d.gate !== undefined,
+  };
+}
+
 /** Nhãn người thực hiện: bước của khe (CR-105) hiện mã phòng ban thay cho tên tool route; còn lại theo agent/nhóm/tool. */
 function executorLabel(
   s: StageDraft,
   labels: ReadonlyMap<string, string>,
   tools: ReadonlyMap<string, { name: string }>,
 ): string {
+  if (isDlcStep(s)) return String(dlcOf(s).agent_key ?? "");
   if (isSlotStep(s)) return String(s.slotRaw?.department_group_key ?? "");
   if (s.executor === "set") return "set";
   if (s.executor === "tool") return tools.get(s.tool.key)?.name ?? s.tool.key;
@@ -111,6 +128,8 @@ export function stageViews(
     sys: sysKind(s),
     slotInfo: slotInfoOf(s, stages),
     y: s.uiY ?? null,
+    dlc: dlcInfoOf(s, stages),
+    family: stageFamily(s),
   }));
 }
 
@@ -134,6 +153,8 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.locked === b.locked &&
   a.sys === b.sys &&
   JSON.stringify(a.slotInfo) === JSON.stringify(b.slotInfo) &&
+  JSON.stringify(a.dlc) === JSON.stringify(b.dlc) &&
+  a.family === b.family &&
   a.y === b.y &&
   a.backTo.join() === b.backTo.join();
 
@@ -146,12 +167,13 @@ export const withoutSlotLinks = (views: StageView[]): StageView[] =>
  * (route/finalize) không đánh số (`null`). Quy trình thường (không có bước khe / nút hệ thống) ⇒ `null` = giữ cách đếm cũ (step + 1).
  */
 export function stepHeaderLabels(
-  views: readonly Pick<StageView, "step" | "slotInfo" | "sys">[],
+  views: readonly Pick<StageView, "step" | "slotInfo" | "sys" | "dlc">[],
 ): Map<number, number | null> | null {
-  if (!views.some((v) => v.slotInfo || v.sys)) return null;
+  if (!views.some((v) => v.slotInfo || v.sys || v.dlc)) return null;
   const out = new Map<number, number | null>();
   for (const v of views) {
-    if (v.slotInfo) out.set(v.step, v.slotInfo.no);
+    const no = v.slotInfo?.no ?? v.dlc?.no;
+    if (no !== undefined) out.set(v.step, no);
     else if (!out.has(v.step)) out.set(v.step, null);
   }
   return out;

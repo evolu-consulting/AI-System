@@ -4,7 +4,12 @@
 //  - "nút hệ thống" (khoá: không xoá/đổi/kéo) = tool hệ thống KHÔNG mang `slot.kind` ⇒ chỉ stage `route` và `finalize`;
 //  - "bước của khe" = stage mang `slot.kind` review/dify ⇒ sửa được (form theo mã phòng ban), Hub dựng lại `slot_body` từ `stages`.
 
-export const SYSTEM_TOOL_KEYS: readonly string[] = ["contracts-route", "contracts-finalize"];
+// dlc-engine · `dlc-step`: tool của bước DLC (khe `dlc.*`) — do gói cấp, không có ở catalog tool của tenant.
+export const SYSTEM_TOOL_KEYS: readonly string[] = [
+  "contracts-route",
+  "contracts-finalize",
+  "dlc-step",
+];
 
 type StageLike = {
   executor: string;
@@ -18,7 +23,7 @@ export const isSystemToolStage = (s: StageLike): boolean =>
 
 /** Stage là một bước người dùng của khe (review / Dify) ⇒ sửa được. */
 export const isSlotStep = (s: Pick<StageLike, "slotRaw">): boolean =>
-  s.slotRaw?.kind === "review" || s.slotRaw?.kind === "dify";
+  s.slotRaw?.kind === "review" || s.slotRaw?.kind === "dify" || s.slotRaw?.kind === "dlc";
 
 /** Nút hệ thống khoá trên canvas: `route` / `finalize` (tool hệ thống không phải bước người dùng). */
 export const isSystemStage = (s: StageLike): boolean => isSystemToolStage(s) && !isSlotStep(s);
@@ -30,6 +35,9 @@ export const isSystemToolKey = (key: string | null | undefined): boolean =>
 /** Bước duyệt của khe đã có người duyệt theo MÃ phòng ban (`department_group_key`) hoặc người cụ thể — thay cho `after.group_id` (def thư viện không dùng id). */
 export const slotHasReviewer = (s: Pick<StageLike, "slotRaw">): boolean => {
   const slot = s.slotRaw;
+  // dlc-engine · bước DLC có cổng duyệt ⇒ Group duyệt theo mã ở `slot.gate.group_key`.
+  if (slot?.kind === "dlc")
+    return typeof (slot.gate as { group_key?: unknown } | null)?.group_key === "string";
   if (slot?.kind !== "review") return false;
   const key = slot.department_group_key;
   return (typeof key === "string" && key !== "") || typeof slot.approver_user_id === "string";

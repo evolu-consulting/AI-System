@@ -2,6 +2,7 @@
 // dựng lại `slot_body`: dạng bắt buộc `s0 → route → s1..sn → finalize` (mỗi bước người dùng một stage gọi `contracts-route` kèm cổng
 // review, `step` đúng `engineStepOf`, `slot` mang bước). Thêm/xoá/đổi chỗ bước trên canvas ⇒ đánh lại khoá/bước; stage mới (chưa có
 // `slot`) thành bước duyệt mặc định; nhánh/quay lại do Hub biên dịch lại nên xoá ở đây (tránh luật nhánh sai sau khi đổi số bước).
+import { isDlcStep, normalizeDlcStages } from "./dlc-slot";
 import type { StageDraft } from "./draft-types";
 import { isSlotStep, isSystemStage } from "./system-nodes";
 
@@ -35,6 +36,8 @@ function uniqueKey(want: unknown, taken: Set<string>, i: number): string {
 }
 
 export function normalizeSlotStages(stages: readonly StageDraft[]): StageDraft[] {
+  // dlc-engine · khe DLC (hoặc sơ đồ có bước DLC lẫn vào ⇒ `KIND_MIX` chặn lưu): không có nút hệ thống route/finalize.
+  if (stages.some(isDlcStep)) return normalizeDlcStages(stages);
   const route = stages.find((s) => isTool(s, "contracts-route"));
   const finalize = stages.find((s) => isTool(s, "contracts-finalize"));
   const user = stages.filter((s) => !isSystemStage(s));

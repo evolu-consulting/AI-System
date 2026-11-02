@@ -160,7 +160,13 @@ function useFlowGraph(p: ProcessCanvasProps, resetTick: number) {
     const byUid = new Map(views.map((v) => [v.uid, v]));
     const labels = stepHeaderLabels(views);
     const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels));
-    return { nodes, edges: lay.edges.map(toEdge), steps: lay.steps };
+    // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
+    const fam = (id: string) => byUid.get(id)?.family ?? null;
+    const linked = lay.edges.filter((e) => {
+      const [a, b] = [fam(e.source), fam(e.target)];
+      return a === null || b === null || a === b;
+    });
+    return { nodes, edges: linked.map(toEdge), steps: lay.steps };
   }, [views, selected, readOnly, resetTick]);
 }
 

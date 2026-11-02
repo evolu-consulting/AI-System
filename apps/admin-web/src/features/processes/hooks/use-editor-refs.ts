@@ -12,6 +12,8 @@ import { useProcessTools } from "./use-process-tools";
 
 export type EditorRefs = {
   agents: Option[];
+  /** dlc-engine · khoá + tên agent bật (gợi ý ô agent của bước DLC); vắng ở bản giả của test. */
+  agentKeys?: { key: string; label: string }[];
   teams: Option[];
   groups: Option[];
   users: Option[];
@@ -45,6 +47,10 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
     agents: (settings.data?.agents ?? [])
       .filter((a) => a.entitled && a.enabled)
       .map((a) => ({ value: `agent:${a.agent.id}`, label: a.agent.name[lang] })),
+    // dlc-engine · khoá agent (bước DLC chọn agent theo khoá — def thư viện dùng chung nhiều tenant).
+    agentKeys: (settings.data?.agents ?? [])
+      .filter((a) => a.enabled)
+      .map((a) => ({ key: a.agent.key, label: a.agent.name[lang] })),
     teams: (teams.data?.items ?? []).map((x) => ({ value: `team:${x.id}`, label: x.name[lang] })),
     groups: (groups.data ?? []).map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
     users: (users.data ?? []).map((u) => ({ value: u.id, label: u.name || u.username })),

@@ -846,7 +846,60 @@
       "stageAria": "Bước {{n}}: {{name}}",
       "noDept": "Chưa chọn phòng ban",
       "due": "hạn {{n}} giờ",
-      "always": "Luôn chạy"
+      "always": "Luôn chạy",
+      "addMenu": "Chọn loại bước để thêm",
+      "addDlcStep": "Thêm bước DLC"
+    },
+    "dlc": {
+      "newName": "Bước DLC {{n}}",
+      "title": "Bước DLC",
+      "actionLabel": "Việc của bước",
+      "action": {
+        "intake": "Khởi tạo",
+        "spec": "Spec + plan",
+        "qc": "Test case + script test",
+        "setup": "Chuẩn bị đội + queue",
+        "build": "Build theo queue",
+        "verify": "Nghiệm thu",
+        "report": "Báo cáo",
+        "deploy": "Deploy",
+        "agent": "Agent tuỳ chọn"
+      },
+      "actionHint": {
+        "intake": "Tạo project workspace, nhận ticket Trello, gom spec đầu vào.",
+        "spec": "Agent phân tích yêu cầu (hỏi người khi chưa rõ), viết plan và đội agent.",
+        "qc": "Agent viết test case, test plan và script test chạy được.",
+        "setup": "Sinh agent domain/QC theo plan, đặt lệnh test, đưa việc vào queue.",
+        "build": "Agent domain làm từng việc trên nhánh riêng, merge tuần tự qua cổng test.",
+        "verify": "Agent đối chiếu 100% spec; thiếu thì thêm việc sửa và build lại.",
+        "report": "Báo cáo queue, nghiệm thu, git; ticket chuyển sang chờ deploy.",
+        "deploy": "Deploy bản đã merge (project phải có cấu hình deploy).",
+        "agent": "Một agent bất kỳ làm phần việc bạn mô tả."
+      },
+      "agent": "Agent (khoá Agent Hub)",
+      "instruction": "Lời dặn thêm cho agent",
+      "task": "Việc giao cho agent",
+      "gate": "Chờ người duyệt sau bước này",
+      "gateGroup": "Group duyệt (mã)",
+      "backTo": "Khi Chưa đạt, được quay lại bước",
+      "backToNone": "Không có bước DLC nào đứng trước.",
+      "gateOffHint": "Bước chạy xong thì sang bước kế, không chờ người.",
+      "gateOn": "Chờ duyệt",
+      "gateOff": "Tự chạy tiếp",
+      "roundsBuild": "Số lần thử mỗi việc",
+      "roundsVerify": "Số vòng sửa sau nghiệm thu",
+      "timeout": "Hạn bước (phút)",
+      "err": {
+        "NAME_REQUIRED": "Nhập tên bước (≤ 80 ký tự).",
+        "AGENT_REQUIRED": "Chọn agent cho bước này.",
+        "ORDER_INVALID": "Việc này cần một bước đứng trước: QC/Chuẩn bị cần Spec, Build cần Chuẩn bị, Nghiệm thu/Deploy cần Build.",
+        "INSTRUCTION_TOO_LONG": "Lời dặn quá dài (≤ 8000 ký tự).",
+        "ROUNDS_INVALID": "Số vòng từ 1 đến 10.",
+        "TIMEOUT_INVALID": "Hạn từ 5 đến 1440 phút.",
+        "GATE_GROUP_INVALID": "Nhập mã Group duyệt (vd dlc-editor).",
+        "BACK_TARGET_INVALID": "Chỉ quay lại được bước DLC đứng trước.",
+        "KIND_MIX": "Bước duyệt và bước DLC không nối được với nhau trong một sơ đồ — xoá bước khác loại hoặc dùng quy trình của khe tương ứng."
+      }
     }
   }
 }
