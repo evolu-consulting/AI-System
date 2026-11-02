@@ -45,7 +45,7 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }
     const go = (e: MouseEvent<HTMLAnchorElement>) => {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
-      openContracts(target.path, base);
+      void openContracts(target.path, base, { allowed: viewer.caps.contracts });
     };
     return (
       <a
