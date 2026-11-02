@@ -1,0 +1,305 @@
+/* CR-110 · lớp vỏ: Topbar brand, Sidebar cố định / drawer, user-menu, khung hộp thoại Cài đặt. Màu nhấn theo token --accent*. */
+/* Màu rose của công ty (COMMUNITY_BRAND_ACCENTS); lát cr110-settings có thể chuyển sang globals.css. */
+[data-accent="rose"] {
+  --accent: #e11d48;
+  --accent-hover: #be123c;
+  --accent-soft: #fff1f2;
+  --accent-ink: #9f1239;
+}
+
+.top .logo.img {
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid #e5e5ec;
+}
+.burger {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #45465a;
+  place-items: center;
+  margin-left: -8px;
+}
+.burger:hover {
+  background: #f1f1f7;
+}
+
+/* ---------- user-menu ---------- */
+.umwrap {
+  position: relative;
+}
+.usermenu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 250px;
+  background: #fff;
+  border: 1px solid #e5e5ec;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(15, 16, 32, 0.16);
+  padding: 6px;
+  z-index: 60;
+}
+.umhead {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 8px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #efeff4;
+}
+.umn {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.2;
+}
+.umr {
+  font-size: 11.5px;
+  color: #6b6c80;
+  margin-top: 2px;
+}
+.umitem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: #45465a;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+}
+.umitem svg {
+  color: #6b6c80;
+}
+.umitem:hover,
+.umitem:focus-visible {
+  background: #f1f1f7;
+}
+.umitem.danger,
+.umitem.danger svg {
+  color: #9b1c1c;
+}
+.umdiv {
+  border: 0;
+  height: 1px;
+  background: #efeff4;
+  margin: 4px 6px;
+}
+
+/* ---------- Sidebar cố định ---------- */
+.side {
+  position: fixed;
+  left: 0;
+  top: 60px;
+  bottom: 0;
+  width: 256px;
+  z-index: 30;
+  background: #fff;
+  border-right: 1px solid #e5e5ec;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 10px 12px;
+}
+.shellmain {
+  margin-left: 256px;
+  min-width: 0;
+}
+.grp {
+  padding: 3px 0;
+}
+.gh {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: #6b6c80;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 10px 10px 5px;
+  border-radius: 8px;
+}
+.gh:hover {
+  color: #45465a;
+}
+.gh .chev {
+  margin-left: auto;
+  display: inline-flex;
+  transition: transform 0.18s;
+}
+.grp.collapsed .chev {
+  transform: rotate(-90deg);
+}
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.items[hidden] {
+  display: none;
+}
+.side .sidelink {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  border-radius: 9px;
+  padding: 0 10px;
+  color: #45465a;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  height: auto;
+}
+.side .sidelink svg {
+  flex: 0 0 auto;
+  color: #6b6c80;
+}
+.side .sidelink:hover {
+  background: #f1f1f7;
+}
+.side .sidelink.on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.side .sidelink.on svg {
+  color: var(--accent);
+}
+.side .sidelink .ext {
+  margin-left: auto;
+  display: inline-flex;
+}
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  border: 0;
+  background: rgba(15, 16, 32, 0.42);
+}
+
+/* ---------- hộp thoại Cài đặt (khung) ---------- */
+.dlg-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.dlg-bg {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 16, 32, 0.5);
+}
+.dlg {
+  position: relative;
+  width: min(920px, 100%);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 16, 32, 0.3);
+  overflow: hidden;
+}
+.dlg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 20px;
+  border-bottom: 1px solid #efeff4;
+}
+.dlg-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.dlg-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* màn Cài đặt hiện có nằm trong hộp thoại: thanh bên của nó không còn fixed */
+.setdlg .ws {
+  display: flex;
+  min-height: 0;
+}
+.setdlg .wsside {
+  position: static;
+  width: 220px;
+  height: auto;
+}
+.setdlg .wsmain {
+  display: block;
+  padding: 20px;
+  max-width: none;
+}
+
+/* ---------- đáp ứng ---------- */
+@media (max-width: 900px) {
+  .burger {
+    display: grid;
+  }
+  .shellmain {
+    margin-left: 0;
+  }
+  .side {
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.22s ease,
+      visibility 0s linear 0.22s;
+    box-shadow: 0 18px 40px rgba(15, 16, 32, 0.16);
+  }
+  .side.open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.22s ease;
+  }
+}
+@media (max-width: 780px) {
+  .setdlg .ws {
+    flex-direction: column;
+  }
+  .setdlg .wsside {
+    width: 100%;
+  }
+}
+@media (max-width: 640px) {
+  .top {
+    padding: 0 12px;
+  }
+  .brand small,
+  .top .persona {
+    display: none;
+  }
+  .brand b {
+    max-width: 38vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .usermenu {
+    right: -4px;
+    width: min(250px, calc(100vw - 24px));
+  }
+  .dlg-scrim {
+    padding: 0;
+  }
+  .dlg {
+    max-height: 100vh;
+    height: 100%;
+    border-radius: 0;
+  }
+}

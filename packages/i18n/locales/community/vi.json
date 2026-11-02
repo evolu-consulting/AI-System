@@ -33,7 +33,27 @@
       "unread": "Chưa đọc",
       "settings": "Cài đặt",
       "profileOf": "Hồ sơ {{org}}",
-      "logout": "Đăng xuất"
+      "logout": "Đăng xuất",
+      "account": "Tài khoản",
+      "menuProfile": "Tường nhà",
+      "menuSettings": "Cài đặt chung"
+    },
+    "nav": {
+      "label": "Điều hướng chính",
+      "open": "Mở menu",
+      "close": "Đóng menu",
+      "feed": "Bảng tin",
+      "myPosts": "Bài đăng của tôi",
+      "group": {
+        "community": "Community",
+        "sht": "Sổ Hợp Tác"
+      },
+      "sht": {
+        "overview": "Tổng quan",
+        "contracts": "Hợp đồng & giao dịch",
+        "partners": "Đối tác",
+        "products": "Sản phẩm & Giá"
+      }
     },
     "time": {
       "now": "Vừa xong",
@@ -270,6 +290,7 @@
     "settings": {
       "navLabel": "Mục cài đặt",
       "title": "Cài đặt",
+      "close": "Đóng",
       "saved": "Đã lưu cài đặt",
       "tabs": {
         "account": "Tài khoản",

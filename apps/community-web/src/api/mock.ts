@@ -209,6 +209,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
 
   const api: CommunityApi = {
     getViewer: async () => me,
+    getBrand: async () => ({ name: HOST_ORG.name, appName: null, logo: null, accent: "indigo" }),
     listPartners: async (): Promise<PartnerOrg[]> =>
       isHost(me) ? PARTNERS : PARTNERS.filter((p) => p.id === me.orgId),
     listCats: async () => CATS,

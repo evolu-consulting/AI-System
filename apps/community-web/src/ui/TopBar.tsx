@@ -1,69 +1,24 @@
-// Thanh trên 60px (mockup): logo "Sổ Hợp Tác · Community", ô tìm bo tròn, Bảng tin / chuông (thả xuống) / cài đặt / avatar.
+// COM-FR-27 · Topbar 60px: brand công ty chủ quản (logo + tên, không logo "Sổ Hợp Tác"), burger (≤ 900 px mở drawer Sidebar),
+// ô tìm (debounce 250 ms), chuông + badge, avatar → user-menu. Không navtab Bảng tin / bánh răng / nút Đăng xuất riêng.
 import type { CommunityNotification } from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
-import { apiMode } from "../api";
-import { logout } from "../api/auth";
 import { t } from "../i18n";
-import { initials, timeAgo, tone } from "../lib/format";
 import { useApp } from "./ctx";
-import { IconBell, IconGear, IconHome, IconSearch } from "./icons";
+import { IconBell, IconMenu, IconSearch } from "./icons";
+import { NotifPop } from "./NotifPop";
+import { UserMenu } from "./UserMenu";
 
-function NotifPop({
-  items,
-  onClose,
-  onChanged,
-}: {
-  items: CommunityNotification[];
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const { api, go } = useApp();
-  const open = async (n: CommunityNotification) => {
-    await api.markRead(n.id);
-    onChanged();
-    onClose();
-    go({ name: "feed" });
-  };
-  return (
-    <div className="pop" role="dialog" aria-label={t("community.topbar.notifications")}>
-      <div className="pophead">
-        <h3>{t("community.topbar.notifications")}</h3>
-        <div className="sp" />
-        <button
-          type="button"
-          className="linkbtn"
-          onClick={async () => {
-            await api.markRead();
-            onChanged();
-          }}
-        >
-          {t("community.topbar.markAllRead")}
-        </button>
-      </div>
-      {items.length === 0 && <div className="empty">{t("community.topbar.noNotifications")}</div>}
-      {items.map((n) => (
-        <button
-          key={n.id}
-          type="button"
-          className={n.unread ? "nitem unread" : "nitem"}
-          onClick={() => open(n)}
-        >
-          <span className={`av sm ${tone(n.actorName, false)}`}>{initials(n.actorName)}</span>
-          <span className="txt">
-            <b>{n.actorName}</b> {n.text}
-            <span>{timeAgo(n.createdAt)}</span>
-          </span>
-          {n.unread && (
-            <span className="udot" role="img" aria-label={t("community.topbar.unread")} />
-          )}
-        </button>
-      ))}
-    </div>
+export function BrandMark({ className = "logo" }: { className?: string }) {
+  const { brand } = useApp();
+  return brand.logo ? (
+    <img className={`${className} img`} src={brand.logo} alt="" />
+  ) : (
+    <span className={className}>{brand.initial}</span>
   );
 }
 
-export function TopBar() {
-  const { api, viewer, route, go, rev, search, setSearch, personas, setPersona } = useApp();
+export function TopBar({ navOpen, onToggleNav }: { navOpen: boolean; onToggleNav: () => void }) {
+  const { api, viewer, brand, go, rev, search, setSearch, personas, setPersona } = useApp();
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<{ items: CommunityNotification[]; unread: number }>({
     items: [],
@@ -85,14 +40,24 @@ export function TopBar() {
       <header className="top">
         <button
           type="button"
+          className="burger"
+          aria-label={navOpen ? t("community.nav.close") : t("community.nav.open")}
+          aria-expanded={navOpen}
+          aria-controls="shell-nav"
+          onClick={onToggleNav}
+        >
+          <IconMenu size={20} />
+        </button>
+        <button
+          type="button"
           className="brand"
           onClick={() => go({ name: "feed" })}
           aria-label={t("community.topbar.backToFeed")}
         >
-          <span className="logo">S</span>
+          <BrandMark />
           <span>
-            <b>{t("community.brand.name")}</b>
-            <small>{t("community.brand.sub")}</small>
+            <b>{brand.name}</b>
+            {brand.appName && <small>{brand.appName}</small>}
           </span>
         </button>
         <div className="search">
@@ -124,14 +89,6 @@ export function TopBar() {
         )}
         <button
           type="button"
-          className={route.name === "feed" ? "navtab on" : "navtab"}
-          onClick={() => go({ name: "feed" })}
-        >
-          <IconHome />
-          <span className="navlabel">{t("community.topbar.feed")}</span>
-        </button>
-        <button
-          type="button"
           className={open ? "iconbtn on" : "iconbtn"}
           onClick={() => setOpen(!open)}
           aria-label={t("community.topbar.notifications")}
@@ -139,27 +96,7 @@ export function TopBar() {
           <IconBell size={20} />
           {data.unread > 0 && <span className="badge">{data.unread}</span>}
         </button>
-        <button
-          type="button"
-          className={route.name === "settings" ? "iconbtn on" : "iconbtn"}
-          onClick={() => go({ name: "settings" })}
-          aria-label={t("community.topbar.settings")}
-        >
-          <IconGear size={20} />
-        </button>
-        <button
-          type="button"
-          className={route.name === "profile" ? "avbtn on" : "avbtn"}
-          onClick={() => go({ name: "profile" })}
-          aria-label={t("community.topbar.profileOf", { org: viewer.orgName })}
-        >
-          <span className="av t1">{initials(viewer.orgName)}</span>
-        </button>
-        {apiMode === "http" && (
-          <button type="button" className="ghost" onClick={() => void logout()}>
-            {t("community.topbar.logout")}
-          </button>
-        )}
+        <UserMenu />
       </header>
       {open && <NotifPop items={data.items} onClose={() => setOpen(false)} onChanged={load} />}
     </>

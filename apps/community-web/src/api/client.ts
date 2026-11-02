@@ -2,6 +2,7 @@
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
 import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
 import type {
+  CommunityBrand,
   CommunityNotification,
   CommunitySettings,
   CommunityViewer,
@@ -35,6 +36,8 @@ export interface DockChat {
 export interface CommunityApi {
   /** `GET /pack/community/viewer` (C3: `/pack/:k/me` của kit đã chiếm `/me`). */
   getViewer(): Promise<CommunityViewer>;
+  /** `GET /pack/community/brand` — brand công ty chủ quản, mọi vai kể cả đối tác (CR-110 COM-FR-45). */
+  getBrand(): Promise<CommunityBrand>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
   /** `POST /pack/community/posts` */

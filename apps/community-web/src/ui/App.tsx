@@ -4,26 +4,9 @@ import { type Api, apiMode } from "../api";
 import { logout } from "../api/auth";
 import { redeemFromLocation, session } from "../api/session";
 import { pickLocale, readStoredLang, setLang, t } from "../i18n";
-import { ChatDock } from "./ChatDock";
-import { AppProvider, useApp } from "./ctx";
-import { FeedPage } from "./Feed";
+import { AppProvider } from "./ctx";
 import { LoginPage } from "./Login";
-import { ProfilePage } from "./Profile";
-import { SettingsPage } from "./Settings";
-import { TopBar } from "./TopBar";
-
-function Shell() {
-  const { route } = useApp();
-  return (
-    <div className="app">
-      <TopBar />
-      {route.name === "feed" && <FeedPage />}
-      {route.name === "profile" && <ProfilePage />}
-      {route.name === "settings" && <SettingsPage />}
-      <ChatDock />
-    </div>
-  );
-}
+import { Shell } from "./Shell";
 
 /** Đổi mã SSO (nếu đang ở `/sso`) rồi kiểm phiên cookie `ai_rt_community`. Không tự dội sang AI System: chưa có phiên ⇒ màn
  *  Đăng nhập riêng (đối tác không bao giờ cần chat-web; nội bộ có link SSO trên màn đó). */

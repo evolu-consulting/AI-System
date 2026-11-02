@@ -2,6 +2,7 @@
 import {
   COMMUNITY_ACCENTS,
   type CommunityAccent,
+  type CommunityBrand,
   type CommunityViewer,
 } from "@ai/contracts/community";
 import {
@@ -15,10 +16,18 @@ import {
 } from "react";
 import type { Api } from "../api";
 import type { CommunityApi } from "../api/client";
+import { type BrandView, toBrandView } from "../lib/brand";
+import { hashOf, parseLocation, type Route } from "../lib/route";
 
-export type Route = { name: "feed" | "profile" | "settings"; orgId?: string };
+export { hashOf, parseHash, type Route } from "../lib/route";
 
 export type Ctx = {
+  /** Brand công ty chủ quản (topbar + màu nhấn); chưa tải/lỗi ⇒ chữ cái đầu + indigo. */
+  brand: BrandView;
+  /** Hộp thoại Cài đặt chung (mở từ user-menu hoặc `#/settings`); không phải route. */
+  settingsOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
   api: CommunityApi;
   viewer: CommunityViewer;
   personas: Api["personas"];
@@ -43,13 +52,6 @@ export const useApp = (): Ctx => {
   return v;
 };
 
-export function parseHash(h: string): Route {
-  const [, name, orgId] = h.replace(/^#/, "").split("/");
-  if (name === "profile" || name === "settings") return { name, ...(orgId ? { orgId } : {}) };
-  return { name: "feed" };
-}
-export const hashOf = (r: Route): string => `#/${r.name}${r.orgId ? `/${r.orgId}` : ""}`;
-
 const ACCENT_KEY = "community.accent";
 const readAccent = (): CommunityAccent => {
   try {
@@ -65,23 +67,49 @@ const readAccent = (): CommunityAccent => {
 export function AppProvider({ boot, children }: { boot: Api; children: ReactNode }) {
   const [viewer, setViewer] = useState<CommunityViewer | null>(null);
   const [rev, setRev] = useState(0);
-  const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
+  const [route, setRoute] = useState<Route>(() => parseLocation(location.hash).route);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(
+    () => parseLocation(location.hash).settings,
+  );
+  const [brandRaw, setBrandRaw] = useState<CommunityBrand | null>(null);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [accent, setAccentState] = useState<CommunityAccent>(readAccent);
 
   useEffect(() => {
-    const on = () => setRoute(parseHash(location.hash));
+    const on = () => {
+      const p = parseLocation(location.hash);
+      setRoute(p.route);
+      if (p.settings) setSettingsOpen(true);
+    };
     addEventListener("hashchange", on);
     return () => removeEventListener("hashchange", on);
   }, []);
+  // Màu nhấn = màu công ty chủ quản (token `data-accent`); chưa có brand ⇒ giữ lựa chọn cũ/indigo.
+  const brandAccent = brandRaw?.accent;
   useEffect(() => {
-    document.documentElement.dataset.accent = accent;
-  }, [accent]);
+    document.documentElement.dataset.accent = brandAccent ?? accent;
+  }, [accent, brandAccent]);
+  // Tiêu đề tab = tên công ty chủ quản (đối tác không thấy tên sản phẩm SHT trong tab).
+  const brandName = viewer ? toBrandView(brandRaw, viewer.orgName).name : null;
+  useEffect(() => {
+    if (brandName) document.title = brandName;
+  }, [brandName]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại người xem khi dữ liệu đổi (rev, vd đổi persona)
   useEffect(() => {
     boot.api.getViewer().then(setViewer, () => setViewer(null));
   }, [boot, rev]);
+  const viewerId = viewer?.userId;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: brand theo tenant; nạp lại khi đổi người xem (persona)
+  useEffect(() => {
+    boot.api.getBrand().then(setBrandRaw, () => setBrandRaw(null));
+  }, [boot, viewerId]);
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    // Link cũ `#/settings` ⇒ đóng hộp thoại về Bảng tin (không thêm mục lịch sử).
+    if (parseLocation(location.hash).settings) history.replaceState(null, "", "#/feed");
+  }, []);
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 2500);
@@ -100,6 +128,10 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
   const value = useMemo<Ctx | null>(
     () =>
       viewer && {
+        brand: toBrandView(brandRaw, viewer.orgName),
+        settingsOpen,
+        openSettings,
+        closeSettings,
         api: boot.api,
         viewer,
         personas: boot.personas,
@@ -121,7 +153,20 @@ export function AppProvider({ boot, children }: { boot: Api; children: ReactNode
         accent,
         setAccent,
       },
-    [boot, viewer, rev, bump, route, search, accent, setAccent],
+    [
+      boot,
+      viewer,
+      rev,
+      bump,
+      route,
+      search,
+      accent,
+      setAccent,
+      brandRaw,
+      settingsOpen,
+      openSettings,
+      closeSettings,
+    ],
   );
   if (!value) return <div className="app" aria-busy="true" />;
   return (

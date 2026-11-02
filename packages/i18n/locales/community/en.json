@@ -33,7 +33,27 @@
       "unread": "Unread",
       "settings": "Settings",
       "profileOf": "Profile of {{org}}",
-      "logout": "Sign out"
+      "logout": "Sign out",
+      "account": "Account",
+      "menuProfile": "My wall",
+      "menuSettings": "General settings"
+    },
+    "nav": {
+      "label": "Main navigation",
+      "open": "Open menu",
+      "close": "Close menu",
+      "feed": "Feed",
+      "myPosts": "My posts",
+      "group": {
+        "community": "Community",
+        "sht": "Partner Ledger"
+      },
+      "sht": {
+        "overview": "Overview",
+        "contracts": "Contracts & transactions",
+        "partners": "Partners",
+        "products": "Products & Prices"
+      }
     },
     "time": {
       "now": "Just now",
@@ -270,6 +290,7 @@
     "settings": {
       "navLabel": "Settings sections",
       "title": "Settings",
+      "close": "Close",
       "saved": "Settings saved",
       "tabs": {
         "account": "Account",

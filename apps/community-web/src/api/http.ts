@@ -25,6 +25,7 @@ export function feedQueryString(q: FeedQuery): Record<string, string | number | 
 export function createHttpApi(): CommunityApi {
   return {
     getViewer: () => api(`${BASE}/viewer`),
+    getBrand: () => api(`${BASE}/brand`),
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
     createPost: (input) => api(`${BASE}/posts`, { method: "POST", body: input }),
     updatePost: (id, input) => api(`${BASE}/posts/${enc(id)}`, { method: "PATCH", body: input }),
