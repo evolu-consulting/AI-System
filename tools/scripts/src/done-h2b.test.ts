@@ -95,6 +95,10 @@ describe("MK · script + bunfig", () => {
     expect(hubApiEnv({}).HUB_MAX_CONCURRENT_RUNS).toBe("20");
     expect(hubApiEnv({ HUB_MAX_CONCURRENT_RUNS: "5" }).HUB_MAX_CONCURRENT_RUNS).toBe("5");
     expect(hubApiEnv({}).HUB_PORT).toBe("4000");
+    // seed-refresh: dev bật engine quy trình + duyệt HĐ trên engine (vắng ⇒ Cài đặt › Quy trình duyệt 404); ghi đè được
+    expect(hubApiEnv({}).HUB_PROCESS_ENGINE).toBe("on");
+    expect(hubApiEnv({}).CONTRACTS_APPROVAL_ENGINE).toBe("on");
+    expect(hubApiEnv({ CONTRACTS_APPROVAL_ENGINE: "off" }).CONTRACTS_APPROVAL_ENGINE).toBe("off");
   });
 
   it("smoke live: vắng/0 → bỏ qua; 1 → chạy", () => {

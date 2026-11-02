@@ -76,6 +76,8 @@ export type PostSample = {
   /** Chỉ bài chủ quản. `cats` = nhóm hàng; mặc định theo loại (D2). */
   audience?: { mode: "all" | "suppliers" | "buyers" | "cats"; cats?: readonly string[] };
   replies?: readonly ReplySeed[];
+  /** Đính kèm mẫu (CR-110 tab "Ảnh & tệp"): chỉ nhãn, không url (gói chỉ nhận http(s); không phụ thuộc mạng ngoài). */
+  media?: readonly { kind: "image" | "video"; label: string }[];
 };
 
 /** Số điện thoại / email / link trong nội dung ĐỐI TÁC phải bị che khi người khác đọc (C4). */
@@ -94,6 +96,10 @@ export const POST_SAMPLES: readonly PostSample[] = [
     },
     cats: ["Thùng phi"],
     audience: { mode: "cats", cats: ["Thùng phi"] },
+    media: [
+      { kind: "image", label: "Thùng phi 200L nắp mở (mẫu)" },
+      { kind: "image", label: "Bản vẽ kích thước thùng phi" },
+    ],
     replies: [
       {
         by: "doitac-tanphat",
@@ -126,6 +132,11 @@ export const POST_SAMPLES: readonly PostSample[] = [
     body: "Băng keo OPP 5cm x 100y, giá sỉ. Zalo: https://zalo.me/0903123456",
     fields: { product: "Băng keo 5cm", qty: "1000 cuộn", price: "9.500đ/cuộn", area: "TP.HCM" },
     cats: ["Băng keo"],
+    media: [
+      { kind: "image", label: "Băng keo OPP 5cm" },
+      { kind: "image", label: "Quy cách đóng gói" },
+      { kind: "video", label: "Video thử độ dính" },
+    ],
   },
   {
     by: "doitac-abc",

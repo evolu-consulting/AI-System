@@ -117,7 +117,7 @@ function toInput(p: PostSample): CreatePostInput {
     body: p.body,
     fields: p.fields,
     cats: [...p.cats],
-    media: [],
+    media: (p.media ?? []).map((m, i) => ({ id: `seed-${i + 1}`, kind: m.kind, label: m.label })),
     ...(audience ? { audience } : {}),
   });
 }

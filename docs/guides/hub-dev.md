@@ -121,6 +121,7 @@ Agent Studio = `apps/studio-web` (base `/studio`) + API `/studio/api/*` trên Hu
 
 - Mặc định (`HUB_SEED_FIXTURES` tắt): tenant `platform` + `evolu` (5 user); agent `orchestrator`, `assistant`, `dify-tom`/`dify-tro-ly`; providers + workflows. Không có mẫu quy trình/agent vai (QC tự tạo agent ở Studio, process def ở Admin canvas); không phòng "Evolu team"/agent demo. `acme`/`beta` chỉ khi `HUB_DEV_CONTRACT_FIXTURE=1`; tenant `uatb` không tồn tại (CR-082).
 - Demo đầy đủ (AISDLC `sdlc`/`sdlc-delivery`/`hoa-don`/`bug-fix`/`fixbug-*`, 16 agent vai, grants): `HUB_SEED_FIXTURES=1 bun run hub:dev` — nạp thêm `*.full.yaml`. Khác `HUB_SEED_PROFILE` (chọn model `fake-1`/`claude-sub-1`).
+- seed-refresh: với `HUB_SEED_FIXTURES=1`, `hub:seed` (và `bun run hub:seed:fixtures`) còn nạp fixture công ty `evolu`/`demo` bằng SQL idempotent — owner ∈ Group gói, feature `contracts-approval-engine`, Group `pb-ke-toan`, locale `vi`, `company_settings`, URL catalog dev. `hubApiEnv` bật sẵn `HUB_PROCESS_ENGINE` + `CONTRACTS_APPROVAL_ENGINE`. Production: không bao giờ chạy (cổng `appEnv`).
 - `initial.sh`/`start.sh`: cần fixture đầy đủ thì đặt `HUB_SEED_FIXTURES=1` trước khi chạy (backend-lead sẽ thêm khi BUILD; tài liệu chỉ mô tả).
 - Đổi seed không xoá dữ liệu cũ trong DB; QAS sạch cần `db:reset`/migrate.
 - Các dòng bên trên nhắc seed `processes.yaml`/grants evolu (vd mục quyền agent `sdlc-delivery`+`bug-fix`) nay chỉ đúng khi bật cờ.

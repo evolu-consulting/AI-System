@@ -30,6 +30,7 @@ import {
   type SeedSource,
   SeedValidationError,
 } from "./seed.rules";
+import { writeTenantFixtures } from "./seed.tenant-fixtures";
 import { resolveWorkflows, workflowKeysOf } from "./seed.workflows";
 
 export type RunHubSeedOptions = {
@@ -110,7 +111,10 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
       await upsertSideEffectFlags(tx, wf.sideEffectIds);
       const w = await writeAccess(tx, plan);
       const pw = await writeProcesses(tx, processes);
-      if (libSampleEnabled(o.appEnv, o.fixtures ?? false)) await writeLibrarySample(tx);
+      if (libSampleEnabled(o.appEnv, o.fixtures ?? false)) {
+        await writeLibrarySample(tx);
+        await writeTenantFixtures(tx, o.appEnv); // seed-refresh: công ty evolu/demo chạy được mọi tính năng CR-105..111
+      }
       await notifyHubConfigChanged(tx, v);
       return { version: v, warnings: [...wf.warnings, ...tenants.warnings, ...w, ...pw] };
     });

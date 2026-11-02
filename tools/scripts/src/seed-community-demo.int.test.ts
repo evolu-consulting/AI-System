@@ -10,6 +10,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";
 import { assertTenant, runSeed, type SeedOpts } from "./seed-community-demo";
 import { PARTNER_SEEDS, POST_SAMPLES } from "./seed-community-demo.data";
+import { setPartnerDevPasswords } from "./seed-community-demo.dev-fixture";
 
 let sql: Sql;
 let admin: Db;
@@ -102,6 +103,19 @@ describe("com-c12 · seed-community-demo", () => {
            and body_masked not like '%zalo.me%'`,
       ),
     ).toBe(2); // bài Tân Phát (số + link bị che) và bài Hưng Thịnh (không có liên hệ)
+
+    // seed-refresh: bài mẫu có đính kèm ⇒ tab "Ảnh & tệp" của hồ sơ không rỗng (chỉ nhãn, không url)
+    const nMedia = POST_SAMPLES.flatMap((p) => p.media ?? []).length;
+    expect(nMedia).toBeGreaterThan(0);
+    expect(await count("select count(*)::int n from community.media")).toBe(nMedia);
+    // seed-refresh: dev-fixture đặt mật khẩu dev đã biết cho user đối tác (không bắt đổi); chạy lại ⇒ cùng số
+    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(n);
+    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(n);
+    expect(
+      await count(
+        "select count(*)::int n from admin.users where kind = 'external' and must_change_password",
+      ),
+    ).toBe(0);
 
     const pw = JSON.parse(readFileSync(join(dir, "pw.json"), "utf8")) as {
       users: Record<string, string>;

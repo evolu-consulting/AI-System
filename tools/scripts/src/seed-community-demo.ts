@@ -37,6 +37,7 @@ import {
   ensureDemoTenant,
   ensureOwnerInGroup,
   OWNER_GROUP,
+  setPartnerDevPasswords,
 } from "./seed-community-demo.dev-fixture";
 import {
   EDITOR_GROUP,
@@ -314,10 +315,15 @@ async function main(argv: readonly string[]): Promise<void> {
   try {
     if (argv.includes("--dev-fixture")) await devFixture(db, hubUrl ? [url, hubUrl] : [url], opts);
     const r = await runSeed(db, { ...opts, hubDb });
-    if (opts.apply && argv.includes("--dev-fixture"))
+    if (opts.apply && argv.includes("--dev-fixture")) {
       console.log(
         `seed-community-demo: dev-fixture demo-owner ∈ ${OWNER_GROUP}: ${await ensureOwnerInGroup(db)}`,
       );
+      const n = await setPartnerDevPasswords(db, process.env.DEMO_OWNER_PW as string);
+      console.log(
+        `seed-community-demo: dev-fixture ${n} user đối tác dùng mật khẩu dev (= DEMO_OWNER_PW)`,
+      );
+    }
     if (r.passwordsFile)
       console.warn(
         `seed-community-demo: CẢNH BÁO — ${r.passwordsFile} chứa mật khẩu tạm; phát cho đối tác rồi XOÁ file ngay.`,

@@ -71,6 +71,17 @@ async function prepare(): Promise<void> {
     await hubDb.close();
     await db.close();
   }
+  // seed-refresh: thương hiệu host, nhóm Kế toán, owner gói… dùng chung với dev (tenant demo vừa có xong ⇒ chạy lại seed fixture).
+  const fx = Bun.spawnSync(
+    [process.execPath, "apps/hub-api/src/modules/seed/seed.tenant-fixtures.ts"],
+    {
+      cwd: REPO,
+      stdout: "inherit",
+      stderr: "inherit",
+      env: { ...process.env, DATABASE_URL: url, HUB_SEED_FIXTURES: "1" },
+    },
+  );
+  if (fx.exitCode !== 0) throw new Error("hub:seed:fixtures lỗi");
 }
 
 async function healthy(base: string, proc: Bun.Subprocess): Promise<void> {

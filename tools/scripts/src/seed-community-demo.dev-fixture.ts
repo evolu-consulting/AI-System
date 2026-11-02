@@ -71,6 +71,29 @@ export async function ensureDemoTenant(
   });
 }
 
+/** Tiền tố username đối tác của seed cộng đồng (`PARTNER_SEEDS`: doitac-tanphat…). */
+const PARTNER_PREFIX = "doitac-";
+
+/**
+ * seed-refresh · CHỈ dev-fixture: user đối tác của tenant demo dùng mật khẩu dev đã biết (= `DEMO_OWNER_PW` của máy này, không
+ * bao giờ mật khẩu thật) và không bị bắt đổi ở lần đăng nhập đầu — đăng nhập cổng đối tác ngay, không cần file mật khẩu tạm.
+ * Chỉ đổi user `kind='external'` có tiền tố doitac- của tenant demo; trả số user đã đặt lại.
+ */
+export async function setPartnerDevPasswords(
+  db: Db,
+  pw: string,
+  tenantKey: string = DEMO_TENANT.key,
+): Promise<number> {
+  const hash = await hashPassword(pw);
+  return withScope(db, { kind: "platform" }, async (tx) => {
+    const r =
+      (await tx.execute(sql`update admin.users u set password_hash = ${hash}, must_change_password = false
+      from admin.tenants t where t.id = u.tenant_id and t.key = ${tenantKey} and u.kind = 'external'
+        and u.username like ${`${PARTNER_PREFIX}%`} returning u.id`)) as unknown as unknown[];
+    return r.length;
+  });
+}
+
 /** Group gói giữ quyền chủ quản đầy đủ (do `enablePack` tạo). */
 export const OWNER_GROUP = "community-owner";
 

@@ -210,24 +210,35 @@ export async function ensureTenantPacks(
   for (const pack of DEMO_PACKS) {
     const state = await call(api, "PUT", `/admin/tenants/${String(hit.id)}/packs/${pack}`);
     const groups = (state.groups as Json[] | undefined) ?? [];
-    await addPackMembers(api, pack, groups, "owner", t.owners);
-    await addPackMembers(api, pack, groups, "editor", t.editors);
+    await addPackMembers(api, String(hit.id), pack, groups, "owner", t.owners);
+    await addPackMembers(api, String(hit.id), pack, groups, "editor", t.editors);
   }
   for (const key of DEMO_FEATURES) await grantFeature(api, key, String(hit.id));
+}
+
+async function groupIdByKey(api: Api, tenantId: string, key: string): Promise<string> {
+  const list = await call(api, "GET", `/admin/groups?tenant_id=${tenantId}&q=${key}&limit=50`);
+  const g = (list.items as Json[]).find((x) => x.key === key);
+  if (!g) throw new Error(`thiếu group ${key}`);
+  return String(g.id);
 }
 
 /** Thêm user vào Group vai `role` của gói (idempotent); không có user ⇒ bỏ qua. */
 async function addPackMembers(
   api: Api,
+  tenantId: string,
   pack: string,
   groups: Json[],
   role: "owner" | "editor",
   usernames: string[],
 ): Promise<void> {
   if (usernames.length === 0) return;
-  const g = groups.find((x) => x.role === role);
-  if (!g) throw new Error(`gói ${pack}: thiếu group vai ${role}`);
-  const res = await call(api, "POST", `/admin/groups/${String(g.group_id)}/members`, { usernames });
+  // `enablePack` trả `{role, group_id}` (không có `key`); phản hồi thiếu/khác dạng ⇒ tra Group theo khoá `<gói>-<vai>`.
+  const gid = String(
+    groups.find((x) => x.role === role)?.group_id ??
+      (await groupIdByKey(api, tenantId, `${pack}-${role}`)),
+  );
+  const res = await call(api, "POST", `/admin/groups/${gid}/members`, { usernames });
   const missing = (res.not_found as string[] | undefined) ?? [];
   if (missing.length > 0) throw new Error(`${pack}-${role}: không thấy user ${missing.join(", ")}`);
 }

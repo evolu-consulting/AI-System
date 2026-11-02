@@ -54,7 +54,9 @@ Tắt: `scripts\dev-down.ps1` (Postgres/Redis vẫn chạy; tắt bằng `docker
 | Demo, thành viên (editor) | `evolu` | `thomas.tran`, `vio.ngo`, `edgar.nguyen`, `rowan.nguyen` | như trên |
 
 | Demo giống prod (chỉ khi `-SeedDemo`) | `demo` | `demo-owner` | `DEMO_OWNER_PW` trong `.env.local` (tự sinh lần đầu) |
-| Đối tác Community (chỉ khi `-SeedDemo`) | `demo` | `doitac-tanphat`, `doitac-ncca`, … | mật khẩu tạm trong `.data\dev-up\demo-partners.txt` (đổi khi đăng nhập lần đầu) |
+| Đối tác Community (chỉ khi `-SeedDemo`) | `demo` | `doitac-tanphat`, `doitac-ncca`, `doitac-phuongnam`, `doitac-abc`, `doitac-hungthinh` | = `DEMO_OWNER_PW` (dev-fixture đặt, không bắt đổi; mật khẩu tạm gốc vẫn ở `.data\dev-up\demo-partners.txt`) |
+
+Fixture công ty (`seed.tenant-fixtures`, chạy trong `hub:seed` và sau khi bật gói; chỉ khi `HUB_SEED_FIXTURES=1`, `APP_ENV` ≠ production; `bun run hub:seed:fixtures` để chạy lại): `julian.bui` / `demo-owner` ∈ Group owner `contracts` + `community`; feature `contracts-approval-engine` cho `evolu` + `demo`; Group `pb-ke-toan` (Phòng Kế toán, 2 thành viên); locale `vi`; `company_settings` (thương hiệu host); URL catalog ứng dụng = cổng dev (:3000/:3100/:3200/:3300/:3400). Danh sách đầy đủ: `docs/specs/seed-refresh/tasks.md`.
 
 Chỉ dùng trên máy dev; không dùng các mật khẩu này ở môi trường khác.
 

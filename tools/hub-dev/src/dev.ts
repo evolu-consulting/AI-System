@@ -315,6 +315,10 @@ export function hubApiEnv(
       (runtime === "none" && env.HUB_PUBLIC_INTERNAL_URL?.trim()) ||
       hubUrlForRuntime(runtime === "container"),
     HUB_MAX_CONCURRENT_RUNS: env.HUB_MAX_CONCURRENT_RUNS?.trim() || HUB_DEV_MAX_CONCURRENT_RUNS,
+    // seed-refresh: engine quy trình + duyệt HĐ trên engine bật mặc định ở dev (vắng ⇒ Cài đặt › Quy trình duyệt 404). Ghi đè
+    // bằng `off` khi cần; prod/test tự đặt (hàm này chỉ cho hub-dev).
+    HUB_PROCESS_ENGINE: env.HUB_PROCESS_ENGINE?.trim() || "on",
+    CONTRACTS_APPROVAL_ENGINE: env.CONTRACTS_APPROVAL_ENGINE?.trim() || "on",
   };
   if (env.HUB_ATTACH_DRIVER === "filebox") return { ...base, ...fileboxEnv(env) };
   return { ...base, HUB_ATTACH_DRIVER: "local", ...(dir ? { HUB_ATTACH_DIR: dir } : {}) };
