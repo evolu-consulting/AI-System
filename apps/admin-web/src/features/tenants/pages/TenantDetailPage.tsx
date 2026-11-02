@@ -41,6 +41,8 @@ export type TenantTab =
 
 /** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
 const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
+/** CR-111 · tab "Feature" (thẻ app: mức Tắt/Xem/Sửa/Quản trị + tính năng thêm) nạp lười. */
+const TenantFeaturesTab = lazy(() => import("../components/features/TenantFeaturesTab"));
 /** UAT B3 · tab "Gói" (bật/tắt gói nghiệp vụ, D-05 chỉ platform_admin) nạp lười. */
 const TenantPacksTab = lazy(() => import("../components/packs/TenantPacksTab"));
 
@@ -114,6 +116,7 @@ export function TenantDetailPage() {
   const { requestLock, requestUnlock, dialogs } = useLockFlow();
   const [infoDirty, setInfoDirty] = useState(false);
   const [quotaDirty, setQuotaDirty] = useState(false);
+  const [featuresDirty, setFeaturesDirty] = useState(false);
   const reloadTenant = useCallback(() => void query.refetch(), [query.refetch]);
 
   if (!allowed) return <ForbiddenState />;
@@ -176,7 +179,9 @@ export function TenantDetailPage() {
           <TenantDefaultAppCard tenant={tenant} />
         </TabsContent>
         <TabsContent value="features" className="pt-4">
-          <UnavailableTab body="tenants.tab.unavailableBody" />
+          <Suspense fallback={<LoadingState />}>
+            <TenantFeaturesTab tenant={tenant} onDirtyChange={setFeaturesDirty} />
+          </Suspense>
         </TabsContent>
         <TabsContent value="agents" className="pt-4">
           <UnavailableTab body="tenants.agents.unavailable" />
@@ -202,7 +207,7 @@ export function TenantDetailPage() {
           <TenantUsersTab tenant={tenant} />
         </TabsContent>
       </Tabs>
-      <UnsavedGuard dirty={infoDirty || quotaDirty} />
+      <UnsavedGuard dirty={infoDirty || quotaDirty || featuresDirty} />
       {dialogs}
       <LazyConflictDialog props={conflict.props} />
     </>

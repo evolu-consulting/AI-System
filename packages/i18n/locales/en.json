@@ -743,6 +743,36 @@
         "off": "Turned off pack {name} for {tenant}"
       }
     },
+    "features": {
+      "title": "Features by app",
+      "desc": "Pick the access level of each app for this company. A higher level includes the lower ones: Edit = View + Edit, Admin = View + Edit + Admin.",
+      "level": {
+        "off": "Off",
+        "read": "View",
+        "write": "Edit",
+        "admin": "Admin"
+      },
+      "summary": {
+        "now": "Now: {state}",
+        "addons": "{count} add-on(s)",
+        "list": "{on}/{total} enabled"
+      },
+      "nonstandard": "Non-standard",
+      "nonstandardHint": "The current permissions do not match a single level (e.g. Edit without View). Saving normalizes them.",
+      "coreAria": "Basics is always on",
+      "switchAria": "Enable {name}",
+      "levelAria": "Access level for {name}",
+      "addonsTitle": "Add-ons",
+      "addonsLocked": "turn the app on first",
+      "pending": "Unsaved: grant {grant}, revoke {revoke}",
+      "noChange": "No changes",
+      "reset": "Undo changes",
+      "confirmTitle": "Save changes for {tenant}?",
+      "confirmBody": "{count} feature(s) will be revoked: the company's users lose the matching access within seconds. You can grant them again later.",
+      "toast": {
+        "saved": "Saved features for {tenant}"
+      }
+    },
     "timezone": {
       "change": "Change time zone",
       "search": "Search time zones",
@@ -1795,7 +1825,9 @@
       "status": "Status",
       "commands": "Commands",
       "tenants": "Tenants",
-      "updated": "Updated"
+      "updated": "Updated",
+      "usage": "Usage",
+      "key": "Technical key"
     },
     "status": {
       "on": "Enabled",
@@ -1803,6 +1835,8 @@
       "off": "Disabled"
     },
     "default": "Default",
+    "addon": "Add-on",
+    "usage": "{commands} commands · {tenants} tenants",
     "allTenants": "All tenants",
     "menu": {
       "toBeta": "Move to Beta"
@@ -1839,6 +1873,61 @@
     "empty": "No features besides core. Features bundle commands to grant to tenants and groups.",
     "editor": {
       "titleNew": "New feature"
+    }
+  },
+  "featmeta": {
+    "app": {
+      "core": { "name": "Basics", "desc": "Core platform features, always on for every company" },
+      "chat": { "name": "Chat AI", "desc": "Chat with the AI assistant" },
+      "community": { "name": "Community", "desc": "The company's internal discussion space" },
+      "contracts": {
+        "name": "Contract Ledger",
+        "desc": "Contracts, approval workflows and e-signing"
+      },
+      "knowledge": {
+        "name": "Knowledge",
+        "desc": "Document library and Q&A over internal sources"
+      },
+      "other": { "name": "Other", "desc": "Features not grouped yet" }
+    },
+    "f": {
+      "core": { "name": "Basics", "desc": "Core features always on for every company" },
+      "chat-app": { "name": "Chat AI", "desc": "Lets the company use the Chat AI app" },
+      "community-read": { "name": "View Community", "desc": "Read posts and comments" },
+      "community-write": {
+        "name": "Edit Community",
+        "desc": "Post, comment and edit your own content"
+      },
+      "community-admin": {
+        "name": "Administer Community",
+        "desc": "Moderate posts, manage categories and settings"
+      },
+      "contracts-read": { "name": "View contracts", "desc": "See the contract list and contents" },
+      "contracts-write": {
+        "name": "Draft and edit contracts",
+        "desc": "Create, edit and submit contracts for approval"
+      },
+      "contracts-admin": {
+        "name": "Administer contracts",
+        "desc": "Configure workflows, templates, partners and permissions"
+      },
+      "contracts-approval-engine": {
+        "name": "Approve contracts with workflows",
+        "desc": "Approve contracts through the designed multi-step workflow"
+      },
+      "han-muc-duyet": {
+        "name": "Approval limit check",
+        "desc": "Automatically compare contract value against the approver's limit"
+      },
+      "knowledge-read": {
+        "name": "View knowledge",
+        "desc": "Search and read documents in the knowledge library"
+      },
+      "knowledge-write": { "name": "Edit knowledge", "desc": "Add and update knowledge documents" },
+      "knowledge-admin": {
+        "name": "Administer knowledge",
+        "desc": "Manage sources, permissions and library settings"
+      }
     }
   },
   "picker": {

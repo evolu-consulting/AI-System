@@ -743,6 +743,36 @@
         "off": "Đã tắt gói {name} cho {tenant}"
       }
     },
+    "features": {
+      "title": "Tính năng theo ứng dụng",
+      "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Mức cao gồm cả mức thấp: Sửa = Xem + Sửa, Quản trị = Xem + Sửa + Quản trị.",
+      "level": {
+        "off": "Tắt",
+        "read": "Xem",
+        "write": "Sửa",
+        "admin": "Quản trị"
+      },
+      "summary": {
+        "now": "Đang: {state}",
+        "addons": "{count} tính năng thêm",
+        "list": "{on}/{total} đang bật"
+      },
+      "nonstandard": "Không chuẩn",
+      "nonstandardHint": "Bộ quyền hiện tại chưa khớp một mức (vd có Sửa nhưng thiếu Xem). Lưu sẽ chuẩn hoá lại.",
+      "coreAria": "Cơ bản luôn bật",
+      "switchAria": "Bật {name}",
+      "levelAria": "Mức dùng {name}",
+      "addonsTitle": "Tính năng thêm",
+      "addonsLocked": "bật ứng dụng trước để chọn",
+      "pending": "Chưa lưu: cấp {grant}, thu hồi {revoke}",
+      "noChange": "Chưa có thay đổi",
+      "reset": "Hoàn tác thay đổi",
+      "confirmTitle": "Lưu thay đổi cho {tenant}?",
+      "confirmBody": "{count} tính năng sẽ bị thu hồi: người dùng của công ty mất quyền tương ứng trong vài giây. Có thể cấp lại sau.",
+      "toast": {
+        "saved": "Đã lưu tính năng cho {tenant}"
+      }
+    },
     "timezone": {
       "change": "Đổi múi giờ",
       "search": "Tìm múi giờ",
@@ -1795,7 +1825,9 @@
       "status": "Trạng thái",
       "commands": "Commands",
       "tenants": "Tenant",
-      "updated": "Cập nhật"
+      "updated": "Cập nhật",
+      "usage": "Sử dụng",
+      "key": "Mã kỹ thuật"
     },
     "status": {
       "on": "Bật",
@@ -1803,6 +1835,8 @@
       "off": "Tắt"
     },
     "default": "Mặc định",
+    "addon": "Tính năng thêm",
+    "usage": "{commands} command · {tenants} tenant",
     "allTenants": "Mọi tenant",
     "menu": {
       "toBeta": "Chuyển sang Beta"
@@ -1839,6 +1873,55 @@
     "empty": "Chưa có feature nào ngoài core. Feature gom các command để cấp cho tenant và group.",
     "editor": {
       "titleNew": "Feature mới"
+    }
+  },
+  "featmeta": {
+    "app": {
+      "core": { "name": "Cơ bản", "desc": "Chức năng nền tảng, luôn bật cho mọi công ty" },
+      "chat": { "name": "Chat AI", "desc": "Trò chuyện với trợ lý AI" },
+      "community": { "name": "Community", "desc": "Không gian trao đổi nội bộ của công ty" },
+      "contracts": { "name": "Sổ Hợp Tác", "desc": "Quản lý hợp đồng, quy trình duyệt và ký" },
+      "knowledge": { "name": "Tri thức", "desc": "Kho tài liệu và hỏi đáp theo nguồn nội bộ" },
+      "other": { "name": "Khác", "desc": "Tính năng chưa được phân nhóm" }
+    },
+    "f": {
+      "core": { "name": "Cơ bản", "desc": "Chức năng nền tảng luôn bật cho mọi công ty" },
+      "chat-app": { "name": "Chat AI", "desc": "Cho phép công ty dùng ứng dụng Chat AI" },
+      "community-read": { "name": "Xem Community", "desc": "Đọc bài viết và bình luận" },
+      "community-write": {
+        "name": "Sửa Community",
+        "desc": "Đăng bài, bình luận và chỉnh sửa nội dung của mình"
+      },
+      "community-admin": {
+        "name": "Quản trị Community",
+        "desc": "Duyệt bài, quản lý chuyên mục và cài đặt"
+      },
+      "contracts-read": { "name": "Xem hợp đồng", "desc": "Xem danh sách và nội dung hợp đồng" },
+      "contracts-write": {
+        "name": "Soạn và sửa hợp đồng",
+        "desc": "Tạo, chỉnh sửa và gửi duyệt hợp đồng"
+      },
+      "contracts-admin": {
+        "name": "Quản trị hợp đồng",
+        "desc": "Cấu hình quy trình, mẫu, đối tác và phân quyền"
+      },
+      "contracts-approval-engine": {
+        "name": "Duyệt hợp đồng bằng quy trình",
+        "desc": "Duyệt hợp đồng theo quy trình nhiều bước đã thiết kế"
+      },
+      "han-muc-duyet": {
+        "name": "Kiểm tra hạn mức duyệt",
+        "desc": "Tự đối chiếu giá trị hợp đồng với hạn mức của người duyệt"
+      },
+      "knowledge-read": {
+        "name": "Xem tri thức",
+        "desc": "Tìm kiếm và đọc tài liệu trong kho tri thức"
+      },
+      "knowledge-write": { "name": "Sửa tri thức", "desc": "Thêm và cập nhật tài liệu tri thức" },
+      "knowledge-admin": {
+        "name": "Quản trị tri thức",
+        "desc": "Quản lý nguồn, phân quyền và cấu hình kho tri thức"
+      }
     }
   },
   "picker": {

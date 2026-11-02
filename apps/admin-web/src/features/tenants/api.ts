@@ -17,6 +17,7 @@ import type {
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
+import type { TenantFeature } from "./lib/feature-assign";
 import type { QuotaFeatureOption } from "./lib/quota-draft";
 
 export type TenantListParams = { q: string; status?: "active" | "locked" };
@@ -137,6 +138,25 @@ export function useQuotaFeatureOptions(id: string, enabled: boolean) {
       return m.features
         .filter((f) => f.state === "core" || f.state === "entitled")
         .map((f) => ({ id: f.feature.id, key: f.feature.key, name: f.feature.name }));
+    },
+  });
+}
+
+/** CR-111 · mọi feature catalog + công ty này đã được cấp chưa (từ ma trận quyền, `core` luôn coi là có); `limit=1` vì chỉ cần `features`. */
+export function useTenantFeatureStates(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["tenants", "feature-states", id] as const,
+    enabled,
+    queryFn: async (): Promise<TenantFeature[]> => {
+      const m = await api<GrantMatrix>("/admin/grants/matrix", {
+        query: { tenant_id: id, limit: 1 },
+      });
+      return m.features.map((f) => ({
+        id: f.feature.id,
+        key: f.feature.key,
+        name: f.feature.name,
+        entitled: f.state === "core" || f.state === "entitled",
+      }));
     },
   });
 }

@@ -155,6 +155,30 @@ export function useGrantEntitlement(featureId: string) {
   });
 }
 
+/** CR-111 · lưu một lượt tab Feature của công ty: API chỉ có PUT/DELETE từng feature ⇒ gọi song song, không dừng ở lỗi đầu; lỗi ⇒ làm mới rồi ném lỗi đầu tiên. */
+export function useApplyTenantEntitlements(tenantId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ grant, revoke }: { grant: string[]; revoke: string[] }) => {
+      const url = (id: string) => `/admin/features/${id}/entitlements/${tenantId}`;
+      const calls = [
+        ...grant.map((id) => api<Entitlement>(url(id), { method: "PUT" })),
+        ...revoke.map((id) => api<undefined>(url(id), { method: "DELETE" })),
+      ];
+      const res = await Promise.allSettled(calls);
+      const bad = res.find((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (bad) throw bad.reason;
+    },
+    onSettled: () =>
+      Promise.all([
+        invalidateCatalog(qc),
+        qc.invalidateQueries({ queryKey: ["tenants", "feature-states", tenantId] }),
+        qc.invalidateQueries({ queryKey: ["tenants", "quota-features", tenantId] }),
+        qc.invalidateQueries({ queryKey: ["audit"] }),
+      ]),
+  });
+}
+
 export function useRevokeEntitlement(featureId: string) {
   const qc = useQueryClient();
   return useMutation({
