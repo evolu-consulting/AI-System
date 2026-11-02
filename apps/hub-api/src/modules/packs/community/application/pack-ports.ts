@@ -102,3 +102,23 @@ export type HostBookReader = {
    */
   stockHolders(tenantId: string, product: string): Promise<readonly string[]>;
 };
+
+/** CR-110 · COM-FR-45: hàng nhận diện công ty chủ quản (nguồn `/company` của contracts). null = tenant chưa lưu brand. */
+export type CompanyBrandRow = {
+  name: string | null;
+  appName: string | null;
+  logo: string | null;
+  accent: string;
+};
+/**
+ * CR-110 · ADR-0031: đọc brand công ty CHỦ QUẢN của `tenantId` (MỘT câu, đúng 4 cột). Dùng cho mọi account trong tenant, kể cả
+ * đối tác — người gọi (community) đã kiểm quyền vào gói; `tenantId` lấy từ token, không bao giờ từ tham số request.
+ */
+export type CompanyBrandReader = {
+  brand(tenantId: string): Promise<CompanyBrandRow | null>;
+};
+
+/** CR-110 · COM-FR-43 (I3): người gọi có quyền đọc gói contracts? Từ cache cấu hình (0 SQL khi nóng). User ngoài ⇒ false. */
+export type ContractsCapReader = {
+  contracts(who: Pick<HostCaller, "tenantId" | "userId" | "userKind">): Promise<boolean>;
+};

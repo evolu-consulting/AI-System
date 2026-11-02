@@ -1,5 +1,6 @@
 // CR-102 · C5 · ngữ cảnh người xem + công ty đối tác + hồ sơ + cài đặt (`GET /pack/community/me` ...).
 import { z } from "zod";
+import { CommunityCapsSchema } from "./brand";
 
 export const COMMUNITY_ROLES = ["host_admin", "host_member", "partner"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
@@ -24,6 +25,10 @@ export const CommunityViewerSchema = z.strictObject({
   labels: z.array(z.enum(PARTNER_LABELS)),
   /** Nhóm hàng quan tâm của công ty (đối tác). */
   cats: z.array(z.string()),
+  /** CR-110 · COM-FR-43: quyền theo gói (ẩn nhóm Công ty + SHT khi `contracts` = false). Đối tác luôn false. */
+  caps: CommunityCapsSchema,
+  /** CR-110 · gốc contracts-web (`CONTRACTS_WEB_URL`, vắng ⇒ "/") — chỉ khi `caps.contracts`; còn lại null (đối tác luôn null). */
+  contractsUrl: z.string().nullable(),
 });
 export type CommunityViewer = z.infer<typeof CommunityViewerSchema>;
 export const isHost = (v: Pick<CommunityViewer, "role">): boolean => v.role !== "partner";

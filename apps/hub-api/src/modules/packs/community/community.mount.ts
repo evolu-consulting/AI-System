@@ -19,7 +19,12 @@ import { postsRoutes } from "./adapters/posts.routes";
 import { quoteRoutes } from "./adapters/quote.routes";
 import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
-import type { HostBookReader, SupplierQuoteWriter } from "./application/pack-ports";
+import type {
+  CompanyBrandReader,
+  ContractsCapReader,
+  HostBookReader,
+  SupplierQuoteWriter,
+} from "./application/pack-ports";
 
 export { COMMUNITY_KEY };
 
@@ -36,6 +41,9 @@ export function communityModule(
     /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm (vắng ⇒ không Lưu báo giá / không gợi ý). */
     quotes?: SupplierQuoteWriter | undefined;
     hostBook?: HostBookReader | undefined;
+    /** CR-110: brand chủ quản + quyền gói contracts (vắng ⇒ brand mặc định theo tên tenant, caps false). */
+    brand?: CompanyBrandReader | undefined;
+    caps?: ContractsCapReader | undefined;
     webUrl?: string | undefined;
     now?: () => Date;
   } = {},
@@ -61,6 +69,8 @@ export function communityModule(
     shtUrl: opts.shtUrl ?? "/",
     quotes: opts.quotes,
     hostBook: opts.hostBook,
+    brand: opts.brand,
+    caps: opts.caps,
     webUrl: opts.webUrl,
   };
   const r = new Hono<PackGuardVars>();
@@ -82,9 +92,11 @@ export function mountCommunity<E extends Env>(
     worker?: boolean;
     quotes?: SupplierQuoteWriter;
     hostBook?: HostBookReader;
+    brand?: CompanyBrandReader;
+    caps?: ContractsCapReader;
   } = {},
 ): void {
-  const { quotes, hostBook, ...sweep } = o;
+  const { quotes, hostBook, brand, caps, ...sweep } = o;
   startSweeper(db, view, sweep);
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
@@ -93,6 +105,8 @@ export function mountCommunity<E extends Env>(
       shtUrl,
       ...(quotes ? { quotes } : {}),
       ...(hostBook ? { hostBook } : {}),
+      ...(brand ? { brand } : {}),
+      ...(caps ? { caps } : {}),
       webUrl: process.env.COMMUNITY_WEB_URL || undefined,
     }),
   );

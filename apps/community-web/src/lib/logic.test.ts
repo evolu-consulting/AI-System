@@ -119,6 +119,8 @@ describe("visibility (hien-thi.md)", () => {
     orgName: "S1",
     labels: ["supplier" as const],
     cats: ["Đóng gói"],
+    caps: { contracts: false },
+    contractsUrl: null,
   };
   const host = { ...s1, role: "host_admin" as const, orgId: "host", labels: [] };
   const base = {

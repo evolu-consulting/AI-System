@@ -3,11 +3,17 @@
 // Quyền ghi giá = việc `write` của gói contracts (nhóm được giao); user ngoài bị chặn ở usecase (`kind=external`).
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
-import type { HostBookReader, SupplierQuoteWriter } from "./community/application/pack-ports";
+import type {
+  CompanyBrandReader,
+  ContractsCapReader,
+  HostBookReader,
+  SupplierQuoteWriter,
+} from "./community/application/pack-ports";
 import { mountCommunity } from "./community/community.mount";
 import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
 import { saveQuoteUsecase } from "./contracts/application/save-quote.usecase";
+import { companyBrandModule } from "./contracts/brand.mount";
 import { hostBookModule } from "./contracts/host-book.mount";
 import { supplierScores } from "./contracts/partners.mount";
 import { type PackAccessView, packAccessInput } from "./kit/adapters/pack-guard.middleware";
@@ -16,7 +22,12 @@ import { packActionsFor } from "./kit/domain/pack-access.rules";
 
 const KEY = "contracts";
 
-export type CommunityPorts = { quotes: SupplierQuoteWriter; hostBook: HostBookReader };
+export type CommunityPorts = {
+  quotes: SupplierQuoteWriter;
+  hostBook: HostBookReader;
+  brand: CompanyBrandReader;
+  caps: ContractsCapReader;
+};
 
 export function communityPorts(
   db: Db,
@@ -39,7 +50,13 @@ export function communityPorts(
     timeZoneOf: d.timeZoneOf,
     ...(d.now ? { now: d.now } : {}),
   });
-  return { quotes, hostBook };
+  // CR-110 · COM-FR-43: quyền đọc gói contracts từ cache cấu hình (0 SQL khi nóng); user ngoài không bao giờ có.
+  const caps: ContractsCapReader = {
+    contracts: async (who) =>
+      who.userKind !== "external" &&
+      packActionsFor(await packAccessInput(view, KEY, who)).includes("read"),
+  };
+  return { quotes, hostBook, brand: companyBrandModule(db), caps };
 }
 
 /** `packs.mount.ts` gọi: gắn `/pack/community/*` kèm hai cổng đã nối contracts. */

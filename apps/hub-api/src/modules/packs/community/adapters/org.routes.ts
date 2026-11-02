@@ -13,6 +13,7 @@ import { type Context, Hono } from "hono";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import { toCommunityBrand, viewerCaps } from "../domain/brand.rules";
 import { bellView } from "../domain/notify.rules";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
@@ -59,8 +60,13 @@ async function profileOf(d: CommunityDeps, a: Access, orgId: string | undefined)
 function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
   r.get("/viewer", async (c) => {
     const a = await access(c);
-    const me = await orgs.own(d.uow, a);
+    const isPartner = a.org !== null;
+    const [me, hasContracts] = await Promise.all([
+      orgs.own(d.uow, a),
+      !isPartner && d.caps ? d.caps.contracts(a.who) : false,
+    ]);
     const v: CommunityViewer = {
+      ...viewerCaps(isPartner, hasContracts, d.shtUrl),
       userId: a.who.userId,
       name: a.dir.userName,
       role: a.org !== null ? "partner" : a.isAdmin ? "host_admin" : "host_member",
@@ -71,6 +77,12 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
       cats: me?.cats ?? [],
     };
     return c.json(v);
+  });
+  // CR-110 · COM-FR-45: brand công ty CHỦ QUẢN của tenant trong token (mọi account, kể cả đối tác), đúng 4 trường.
+  r.get("/brand", async (c) => {
+    const a = await access(c);
+    const row = d.brand ? await d.brand.brand(a.who.tenantId) : null;
+    return c.json(toCommunityBrand(row, a.dir.tenantName));
   });
   r.get("/partners", async (c) => {
     const a = await access(c);

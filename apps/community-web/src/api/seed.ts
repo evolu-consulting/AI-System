@@ -51,6 +51,8 @@ const host = (
   orgName: HOST_ORG.name,
   labels: [],
   cats: [],
+  caps: { contracts: role === "host_admin" },
+  contractsUrl: role === "host_admin" ? "/" : null,
   label,
 });
 const partner = (id: string, name: string, orgId: string, label: string): Persona => {
@@ -64,6 +66,8 @@ const partner = (id: string, name: string, orgId: string, label: string): Person
     orgName: o.name,
     labels: o.labels,
     cats: o.cats,
+    caps: { contracts: false },
+    contractsUrl: null,
     label,
   };
 };
