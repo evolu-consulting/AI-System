@@ -64,9 +64,8 @@ test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toà
   await login(page, "julian.bui");
   await openContract(page, 1, T.pending);
   await expect(step(page, 0)).toHaveAttribute("data-status", "open");
-  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Xác nhận và lưu" + "Từ chối"; "Đạt / Trả lại" chỉ có từ bước 2.
+  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Xác nhận và lưu" (không có "Từ chối" khi HĐ chưa có văn bản); "Đạt / Trả lại" chỉ có từ bước 2.
   await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Từ chối" })).toBeVisible();
 });
 
 test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 chờ Pháp chế", async ({
@@ -105,5 +104,14 @@ test("CR-113 · 4 · thomas.tran (Kế toán) Đạt bước 1 HĐ chờ: bướ
   await confirmStep1(page);
   await expect(step(page, 0)).toHaveAttribute("data-status", "passed");
   await expect(step(page, 0).getByTestId("approval-owner-override")).toHaveCount(0);
-  await expect(step(page, 1)).toHaveAttribute("data-status", "open");
+  // engine mở bước 2 bất đồng bộ: tải lại tới khi bước 2 mở
+  await expect
+    .poll(
+      async () => {
+        await page.reload();
+        return step(page, 1).getAttribute("data-status");
+      },
+      { timeout: 30_000 },
+    )
+    .toBe("open");
 });
