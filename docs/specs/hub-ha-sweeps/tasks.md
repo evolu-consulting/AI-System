@@ -66,8 +66,7 @@ Không thêm test (đã có): `tests/acceptance/P-d/d1/{remind-load,race,batch-q
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: chỉ đổi kế hoạch truy vấn — câu cập nhật cùng tập hàng, index mới thay index cũ cùng tên —
-và hạ tầng test; kiểm kê + số đo).
+Không thay đổi hành vi (lý do: chỉ đổi kế hoạch truy vấn — cùng tập hàng, index mới thay index cũ cùng tên — và hạ tầng test).
 
 ## Việc còn lại
 - PD-P13/PD-P14 vẫn trên p95 ≤ 50 ms trên evotest (số ở TECH-DEBT #254) — không còn tăng theo vòng, phần còn lại là chi phí
