@@ -44,6 +44,8 @@ from agent_runtime.runtimes.cli.outcome import (
     queued_failure,
 )
 from agent_runtime.runtimes.cli.result import build_output
+from agent_runtime.runtimes.cli.warm_host import WarmHost
+from agent_runtime.runtimes.cli.warm_pool import WarmPool
 from agent_runtime.sources.config import SourceConfig
 
 FINISH_BACKOFF_S = (0.5, 1.0, 2.0)  # ghi "Kết thúc" lỗi DB → thử lại (review H1 #1)
@@ -69,6 +71,8 @@ class HostConfig:
     source_cfg: SourceConfig | None = None  # P-b PF-S2: mount nguồn (None ⇒ tính năng tắt)
     # P-c1 plan-runtime §5.2: container tự-sửa đã qua tự kiểm (None ⇒ `off`/không dùng được).
     sandbox: Oci | None = field(default=None, compare=False)
+    # CR-114 `RUNTIME_WARM_POOL`: bể job host dựng sẵn (None ⇒ luôn spawn lạnh).
+    warm: WarmPool[WarmHost] | None = field(default=None, compare=False)
 
 
 _Seen = Seen  # tên cũ (test đơn vị PY-10)

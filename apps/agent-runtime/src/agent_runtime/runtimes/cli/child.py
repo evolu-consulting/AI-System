@@ -17,7 +17,13 @@ from pydantic import ValidationError
 from agent_runtime.log import configure_logging
 from agent_runtime.providers.base import Fatal, ProviderEvent
 from agent_runtime.providers.registry import get_provider
-from agent_runtime.runtimes.cli.protocol import ChildRequest, encode_event
+from agent_runtime.runtimes.cli.protocol import (
+    WARM_ENV_KEYS,
+    WARM_FLAG,
+    WARM_READY,
+    ChildRequest,
+    encode_event,
+)
 
 EXIT_OK = 0
 EXIT_BAD_REQUEST = 2
@@ -50,17 +56,46 @@ async def run(req: ChildRequest) -> None:
         await _emit(Fatal(code="INTERNAL_ERROR", msg=f"provider error: {type(err).__name__}"))
 
 
+def bind_warm(req: ChildRequest) -> bool:
+    """CR-114: host `--warm` nhận job — cwd `work_dir` (orphans.py đối chiếu cwd), stderr → log
+    job, env job (chỉ `WARM_ENV_KEYS`). Thiếu `warm` / env lạ → False (không chạy)."""
+    bind = req.warm
+    if bind is None or not set(bind.env) <= WARM_ENV_KEYS:
+        return False
+    os.chdir(req.work_dir)
+    os.environ.update(bind.env)
+    fd = os.open(bind.stderr_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    try:
+        os.dup2(fd, 2)
+    finally:
+        os.close(fd)
+    return True
+
+
+def _check(req: ChildRequest, argv: Sequence[str]) -> str | None:
+    if WARM_FLAG in argv:
+        return None if bind_warm(req) else "invalid warm bind"
+    if req.warm is not None or job_id_arg(argv) != req.job_id:
+        return "job id mismatch"
+    return None
+
+
 def main(argv: Sequence[str]) -> int:
     # stdout là kênh giao thức: log của con (vd hook sandbox) đi stderr.
     configure_logging("info", "child", sys.stderr)
-    job_id = job_id_arg(argv)
+    if WARM_FLAG in argv:  # module đã import xong (registry ⇒ SDK) — báo cha host sẵn sàng
+        sys.stdout.buffer.write(WARM_READY)
+        sys.stdout.buffer.flush()
+    line = sys.stdin.buffer.readline()  # host `--warm`: chờ ở đây (đã import xong provider/SDK)
+    if not line and WARM_FLAG in argv:  # stdin đóng, không có job (bể drain / cha chết)
+        return EXIT_OK
     try:
-        req = ChildRequest.model_validate_json(sys.stdin.buffer.readline())
+        req = ChildRequest.model_validate_json(line)
     except ValidationError:
         asyncio.run(_emit(Fatal(code="INTERNAL_ERROR", msg="invalid child request")))
         return EXIT_BAD_REQUEST
-    if job_id != req.job_id:
-        asyncio.run(_emit(Fatal(code="INTERNAL_ERROR", msg="job id mismatch")))
+    if (bad := _check(req, argv)) is not None:
+        asyncio.run(_emit(Fatal(code="INTERNAL_ERROR", msg=bad)))
         return EXIT_BAD_REQUEST
     asyncio.run(run(req))
     return EXIT_OK

@@ -98,6 +98,8 @@ class Settings(BaseSettings):
         default=900, ge=1, le=3600, validation_alias="RUNTIME_SANDBOX_TEST_S"
     )
     sandbox_max: int = Field(default=1, ge=1, le=8, validation_alias="RUNTIME_SANDBOX_MAX")
+    # CR-114 hub-warm-runtime: số job host Python dựng sẵn (dùng một lần); 0 = tắt.
+    warm_pool: int = Field(default=1, ge=0, le=4, validation_alias="RUNTIME_WARM_POOL")
     sandbox_disk_mb: int = Field(
         default=4096, ge=64, le=1_048_576, validation_alias="RUNTIME_SANDBOX_DISK_MB"
     )
@@ -220,6 +222,7 @@ class Settings(BaseSettings):
             "cooldown_default_s": self.cooldown_default_s,
             "sandbox": self.sandbox,
             "sandbox_image": self.sandbox_image,
+            "warm_pool": self.warm_pool,
         }
 
 

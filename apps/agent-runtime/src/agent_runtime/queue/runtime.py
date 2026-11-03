@@ -40,6 +40,7 @@ from agent_runtime.queue.supervisor import Supervisor
 from agent_runtime.queue.sweeper import SweepConfig, orphan_own_jobs, run_sweeper
 from agent_runtime.runtimes.cli.probe import ProbeHostCfg
 from agent_runtime.runtimes.cli.quota_rules import ProbeCfg
+from agent_runtime.runtimes.cli.warm_pool import WarmPool
 from agent_runtime.runtimes.resolve import ResolveHost
 from agent_runtime.sources import config as source_config
 
@@ -82,6 +83,7 @@ class QueueRuntime:
     resolve: ResolveHost | None = None
     apply: ApplyHost | None = None  # P-c2: job `source.apply` (claim riêng, slot sandbox chung)
     sandbox: Oci | None = None  # P-c1: dọn container `aif-*` mồ côi (`autofix/sweeper.py`)
+    warm: WarmPool[Any] | None = None  # CR-114: bể job host dựng sẵn (dừng ⇒ drain trước)
 
     @property
     def sweep(self) -> SweepConfig:
@@ -114,6 +116,8 @@ class QueueRuntime:
     async def shutdown(self) -> None:
         """SIGTERM: job đang chạy → dừng, rồi `failed`/`orphaned` + XADD (≤ 10 s tổng)."""
         log = get_logger()
+        if self.warm is not None:  # không dựng thêm; host chờ (chưa có job) thoát ngay
+            await self.warm.close()
         await self.supervisor.shutdown(self.settings.kill_grace_s + 1)
         try:
             n = await orphan_own_jobs(self.pool, self.events, self.sweep)

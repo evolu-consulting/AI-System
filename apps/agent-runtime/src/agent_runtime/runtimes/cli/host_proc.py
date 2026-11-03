@@ -48,6 +48,7 @@ from agent_runtime.runtimes.cli.protocol import (
     INVALID_EVENT,
     MAX_LINE_BYTES,
     ChildRequest,
+    WarmBind,
     child_argv,
     parse_event,
 )
@@ -102,10 +103,11 @@ class HostProcess:
         self.tree: dict[int, int] = {}  # N2: hậu duệ đã thấy khi job host còn sống (pid→start)
         self.wait_since: float | None = None  # N1: reader đang chờ `readline()` từ lúc này
         self.mcp_path: Path | None = None  # H2a §4.2: file cấu hình MCP của lần chạy hiện tại
+        self.warm: WarmBind | None = None  # CR-114: lần chạy này dùng host dựng sẵn
 
     def reset(self) -> None:
         self.killed, self.tree, self.wait_since = False, {}, None
-        self.mcp_path = None
+        self.mcp_path, self.warm = None, None
 
     def _write_mcp(self) -> Path | None:
         """§4.2: agent có `payload.mcp`, không phải lần thử lại định dạng → ghi file 0600 (token
@@ -132,13 +134,34 @@ class HostProcess:
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         return os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
 
+    def _job_env(self) -> tuple[dict[str, str], dict[str, str]]:
+        """(env đầy đủ của spawn lạnh, phần phụ thuộc job gửi host dựng sẵn qua `WarmBind`)."""
+        py_env = {k: os.environ[k] for k in _PY_ENV_KEYS if os.environ.get(k)}
+        env = job_host_env(self.cfg.home, self.run.work, self.cfg.app_env, py_env)
+        extra = {"TMPDIR": env["TMPDIR"]}
+        if self.mcp_path is not None:
+            extra |= mcp_env(mcp.tool_timeout_ms(self.run.payload.timeout_s))
+        return env | extra, extra
+
+    def _take_warm(self, extra: dict[str, str]) -> bool:
+        """CR-114: lấy một host dựng sẵn (dùng một lần) nếu bể còn; không ⇒ spawn lạnh."""
+        pool = self.cfg.warm
+        host = pool.take() if pool is not None else None
+        if host is None:
+            return False
+        self.proc, self.pipe, self.out = host.proc, host.pipe, host.out
+        err = stderr_log_path(self.cfg.log_dir, self.run.job.id)
+        err.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        self.warm = WarmBind(stderr_path=str(err), env=extra)
+        get_logger().info("job.warm_host", pgid=host.proc.pid)
+        return True
+
     async def spawn(self) -> None:
         self._prepare_work()
         self.mcp_path = self._write_mcp()
-        py_env = {k: os.environ[k] for k in _PY_ENV_KEYS if os.environ.get(k)}
-        env = job_host_env(self.cfg.home, self.run.work, self.cfg.app_env, py_env)
-        if self.mcp_path is not None:
-            env |= mcp_env(mcp.tool_timeout_ms(self.run.payload.timeout_s))
+        env, extra = self._job_env()
+        if self._take_warm(extra):
+            return
         self.pipe = pipe = StdoutPipe()
         err_fd = self._open_stderr()
         try:
@@ -183,6 +206,7 @@ class HostProcess:
             mcp_config_path=str(self.mcp_path) if self.mcp_path is not None else None,
             out_dir_id=self.run.out_id.pair() if self.run.out_id is not None else None,
             ws=self.run.ws_target,
+            warm=self.warm,
         )
         return req.model_dump_json().encode() + b"\n"
 

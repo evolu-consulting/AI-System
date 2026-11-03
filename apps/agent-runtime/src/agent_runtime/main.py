@@ -32,6 +32,7 @@ from agent_runtime.queue import runtime as queue_runtime
 from agent_runtime.queue.runtime import QueueRuntime, UnknownProviders, registry_providers
 from agent_runtime.runtimes.cli.probe import ProbeHostCfg
 from agent_runtime.runtimes.cli.runner import CliJobHost, HostConfig
+from agent_runtime.runtimes.cli.warm_host import make_pool as make_warm_pool
 from agent_runtime.runtimes.dify.host import DifyConfig, DifyJobHost
 from agent_runtime.runtimes.dispatch import JobRouter, TypedHost
 from agent_runtime.sandbox.process import disable_dumpable, enable_subreaper
@@ -185,13 +186,18 @@ async def start_queue(settings: Settings, stopping: asyncio.Event) -> QueueRunti
     disable_dumpable()
     cfg = host_config(settings, stopping)
     cfg = replace(cfg, sandbox=await open_sandbox(sandbox_cfg(settings)))
+    cfg = replace(cfg, warm=make_warm_pool(cfg, settings.warm_pool))  # CR-114 (0 ⇒ None)
     dify = dify_config(settings)
 
     def make_host(pool: Pool, events: RunEvents) -> JobRouter:
         return make_router(pool, events, cfg, dify, autofix_cfg(settings))
 
     probe = probe_host_config(settings)
-    return await queue_runtime.start(settings, make_host, probe, cfg.sandbox, apply_cfg(settings))
+    rt = await queue_runtime.start(settings, make_host, probe, cfg.sandbox, apply_cfg(settings))
+    if cfg.warm is not None:  # sau "sẵn sàng" (manifest + dọn job sót) mới dựng host chờ
+        rt.warm = cfg.warm
+        cfg.warm.fill()
+    return rt
 
 
 async def _start_unless_stopped(settings: Settings, stop: asyncio.Event) -> QueueRuntime | None:
