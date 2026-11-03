@@ -1,0 +1,56 @@
+{
+  "scenario": "claim.n",
+  "commit": "0cb230ca",
+  "date": "2026-11-03T11:53:46.948Z",
+  "env": {
+    "pg": "16.15",
+    "cpus": "pg: cpus=4 cpu_shares=1024 entrypoint=[ ] | redis: cpus=1 cpu_shares=1024 entrypoint=[ ] | runner: cpus=4 cpu_shares=1024 entrypoint=[ bash /in-contain",
+    "exclusive": true
+  },
+  "size": "small",
+  "runs": 3,
+  "scn": {
+    "ms": 744,
+    "cpu": 141,
+    "rss": 68252,
+    "conns": 9
+  },
+  "probes": {
+    "claim.batch": {
+      "n": 3,
+      "p50": 481.2,
+      "p95": 524.5,
+      "mean": 476.6,
+      "sql": 300,
+      "rt": 400,
+      "cpu": 76.8,
+      "rss": 0,
+      "spread": 20.8,
+      "sqlSpread": 0
+    },
+    "claim.one": {
+      "n": 150,
+      "p50": 7.6,
+      "p95": 17.5,
+      "mean": 9.1,
+      "sql": 4,
+      "rt": 6,
+      "cpu": 0.9,
+      "rss": 0,
+      "spread": 8.1,
+      "sqlSpread": 0
+    },
+    "claim.parallel": {
+      "n": 3,
+      "p50": 268.5,
+      "p95": 476.8,
+      "mean": 321.5,
+      "sql": 280,
+      "rt": 394,
+      "cpu": 79.3,
+      "rss": 0,
+      "spread": 95.9,
+      "sqlSpread": 0
+    }
+  }
+}
