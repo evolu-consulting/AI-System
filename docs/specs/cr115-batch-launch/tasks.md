@@ -37,8 +37,8 @@ so sánh snapshot hàng `flows/runs/messages/jobs/run_steps` đường cũ ↔ �
 lát Opus (≥ 1 ngày). Không ⇒ làm phần launcher (~-15%) và đặt ngưỡng PD-P01 theo số đo thật.
 
 ## Làm
-- [x] `SystemUow.systemEach` (`adapters/hub-uow.ts`): MỘT tx scope system cho cả lô; `claim` (`FOR UPDATE SKIP LOCKED`, khoá giữ
-  tới COMMIT ⇒ Hub kia bỏ qua hẹn này) → mỗi hàng một SAVEPOINT với repo gắn tenant của hàng; hàng lỗi chỉ ROLLBACK savepoint
+- [x] `SystemUow.systemEach` (`adapters/hub-uow.ts`): MỘT tx scope system cho cả lô; `claim` (khoá run `FOR UPDATE OF r SKIP
+  LOCKED`, giữ tới COMMIT ⇒ Hub kia bỏ qua run này) → mỗi hàng một SAVEPOINT với repo gắn tenant của hàng; hàng lỗi chỉ ROLLBACK savepoint
   (`ok:false`), outbox của hàng thành công phát một lần sau COMMIT.
 - [x] `fireDueTimers` (`adapters/timers/timer-sweep.ts`): mặc định `fireBatch` (hẹn sắp theo run ⇒ thứ tự khoá run nhất quán
   giữa các Hub); hàng lỗi ⇒ đường từng hàng cũ `fireOne` (lỗi nữa ⇒ log + lùi hạn như trước). Seam `processTimerBatch: false`
@@ -53,13 +53,14 @@ lát Opus (≥ 1 ngày). Không ⇒ làm phần launcher (~-15%) và đặt ngư
 
 ## Không làm / Chạm
 Notices/unread (lát cr115-unread-counter). Không migration (không cần 0086). `insertRun`/job/`run_steps`/`cli_sessions`: KHÔNG
-viết lại thành câu mảng (hết timebox; xem "Việc còn lại") — chỉ gom tx (savepoint trong tx lô), giữ nguyên câu cũ ⇒ tương
-đương theo cấu trúc.
+viết lại thành câu mảng (đã ≥ 2× không cần; xem "Việc còn lại") — chỉ gom tx (savepoint trong tx lô), giữ nguyên câu cũ ⇒
+tương đương theo cấu trúc. `runs/create-run.ts` chỉ thêm cờ `noUserLock` (bỏ khoá tư vấn user cho run stage của lô).
 
 ## Test tối thiểu
 - `tests/acceptance/P-d/d1/batch-launch.int.test.ts` (test trước): PD-B01 cùng fixture, Hub cũ (`processTimerBatch:false`) ↔
   Hub lô ⇒ ảnh hàng flows/runs/messages/jobs/run_steps/stage_runs/timers/cli_sessions bằng nhau (bỏ id/thời điểm/owner); PD-B03
-  hàng lỗi (hội thoại không thuộc người bắt đầu) cô lập; PD-B02 2 Hub lô ∥ 60 hẹn ⇒ đúng 1 lần.
+  hàng lỗi (hội thoại không thuộc người bắt đầu) cô lập; PD-B02 2 Hub lô ∥ 60 hẹn ⇒ đúng 1 lần; PD-B04 lô không chặn bởi /
+  không giữ khoá tư vấn user.
 - Unit: `outbox.test.ts` (kickMany), `hub-uow.test.ts`, `uow-boundary.test.ts` (chặn `.systemEach` ở đường HTTP).
 - PD-I24/PD-I39 (`race.int.test.ts`), `wait.int.test.ts`; PD-P01/P02 perf có ngưỡng.
 
@@ -68,9 +69,14 @@ viết lại thành câu mảng (hết timebox; xem "Việc còn lại") — ch�
 - 2026-11-03: người dùng mở khoá có giới hạn (CR-115) ⇒ ghi `docs/platform/modules.md`.
 - 2026-11-03: chọn ĐO TRƯỚC với cách gom tx + savepoint (giữ nguyên câu SQL của `plan`) thay vì viết lại insert mảng — rủi ro
   tương đương thấp hơn; chỉ viết mảng nếu chưa đạt 2×.
-- 2026-11-03: chọn hẹn + `FOR UPDATE SKIP LOCKED` cùng tx bắn (khoá hẹn trước run — khác thứ tự §10 run→stage→timer). Đường
-  khoá run rồi hẹn (huỷ/quay lại) có thể deadlock với lô ⇒ Postgres huỷ một bên (40P01): nếu là savepoint của lô ⇒ hàng đó
-  chạy lại đường cũ; nếu là bên kia ⇒ `withHubScope` chạy lại tx của nó. Đổi lại: 2 Hub không nhặt trùng hẹn.
+- 2026-11-03 (sửa theo điều phối): claim trong tx bắn khoá RUN, không khoá hẹn — `join process_runs … for update of r skip
+  locked` ⇒ đúng thứ tự §10 run → stage → timer (`fireTimer` khoá stage, timer sau); tx/Hub khác bỏ qua run đang bị giữ (tập
+  rời nhau, vẫn đúng một lần). Bản đầu khoá hẹn trước run (có thể deadlock) — đã bỏ.
+- 2026-11-03 (sửa theo điều phối): run stage tạo trong `kickMany` KHÔNG lấy `lockUserRuns` (`ProcessRunInput.noUserLock`, đánh
+  dấu bằng `BATCH_TXS` của savepoint) — khoá xact giữ tới COMMIT cả lô sẽ chặn chat của người bắt đầu. Đổi lại: đếm trần chat
+  (`countRunning`, 429) có thể chưa thấy run stage của lô đang mở (thấy ngay khi lô COMMIT); run stage không tự kiểm trần.
+  PD-B04: tx khác giữ khoá user của A, lô vẫn bắn + tạo đủ run/job. Lợi phụ: 4 tx kick song song không còn nối tiếp ⇒ đạt 2×.
+- 2026-11-03: `starterUsable` gửi liền sau khoá run + đọc đầu run (pipeline, áp cho cả `kick` đơn) — xét kết quả đúng chỗ cũ.
 - 2026-11-03: bắn theo `FIRE_TXS = 4` tx song song (mỗi tx ≤ 25 hẹn, SKIP LOCKED ⇒ tập rời nhau, tổng ≤ 100/lượt); mỗi tx
   phát `kickMany` riêng. Đo: p50 1.023 → 882 ms.
 - 2026-11-03: KHÔNG pipeline 3 câu khoá của `fireTimer` (đổi luật "run không thấy ⇒ không khoá stage/timer" mà unit test ghi rõ).
@@ -85,24 +91,23 @@ lúc; kết quả (bước, lượt chạy, tin, job) giống hệt bắn từng
 vẫn bắn mỗi hẹn đúng một lần.
 - Kịch bản: khi cùng một bộ hẹn được bắn theo lô và theo từng hẹn thì các hàng tạo ra giống nhau và hẹn lỗi chỉ ảnh hưởng chính nó [test: tests/acceptance/P-d/d1/batch-launch.int.test.ts » PD-B01]
 - Kịch bản: khi hai Hub cùng quét 60 hẹn thì mỗi hẹn bắn đúng một lần, mỗi bước một job [test: tests/acceptance/P-d/d1/batch-launch.int.test.ts » PD-B02]
-- Kịch bản: khi 1.000 hẹn thử lại tới hạn thì mỗi lượt bắn ≤ 100 và mỗi hẹn bắn đúng một lần, một job mỗi bước [test: tests/acceptance/P-d/perf/timers.perf.int.test.ts » PD-P01]
+- Kịch bản: khi 1.000 hẹn thử lại tới hạn thì mỗi lượt bắn ≤ 100, mỗi hẹn đúng một lần và lượt 100 hẹn p50 ≤ 991 ms, p95 ≤ 1.226 ms [test: tests/acceptance/P-d/perf/timers.perf.int.test.ts » PD-P01]
+- Kịch bản: khi lô đang tạo lượt chạy cho các bước của một người thì lô không giữ khoá theo người đó, chat của họ không phải chờ lô [test: tests/acceptance/P-d/d1/batch-launch.int.test.ts » PD-B04]
 
-## Số đo sau (evotest, `run-tests.ps1 -Step perf -Filter …timers.perf…`, không có `-Exclusive`; load máy chủ 1,6–2,5/12)
-| Lượt | Mã | PD-P01 p50 / p95 (ms) | PD-P02 2 Hub p50 / p95 |
-|---|---|---|---|
-| 1 | lô 1 tx (chạy chồng 1 lượt int) | 1.058 / 1.173 | 1.778 / 5.256 |
-| 2 | lô 1 tx | 1.023 / 1.262 | 1.702 / 5.857 |
-| 3 | + bắn 4 tx song song + scope pipeline | **882 / 1.245** | 1.992 / 5.449 |
-Mốc: 1.683 / 2.362 ⇒ hiện **1,91× / 1,90×**. Mục tiêu ≥ 2× (p50 ≤ 841, p95 ≤ 1.181) **CHƯA ĐẠT** ⇒ theo brief KHÔNG đặt
-ngưỡng PD-P01 (không nới); PD-P01/P02 vẫn chỉ khoá "đúng một lần" như cũ.
+## Số đo sau (evotest)
+Vòng 1 (không `-Exclusive`, mã cũ của lát: khoá hẹn trước, giữ khoá user): 1.058/1.173 → 1.023/1.262 → 882/1.245 ms (1,9×).
+Vòng 2 — mã 5c756fbd (claim theo run, không khoá user, `starterUsable` pipeline), `-Step perf -Exclusive`, 3 lượt CÙNG mã:
+| Lượt | PD-P01 p50 / p95 (ms) | PD-P02 2 Hub p50 / p95 |
+|---|---|---|
+| 1 | 680,7 / 948,1 | 1.661 / 4.767 |
+| 2 | 781,1 / 943,2 | 1.586 / 4.493 |
+| 3 | 792,6 / 981,0 | 1.528 / 4.047 |
+Mốc 1.683 / 2.362 ⇒ tệ nhất **2,12× / 2,41×** (≥ 2×). Ngưỡng PD-P01 = tệ nhất × 1,25: **p50 ≤ 991 ms, p95 ≤ 1.226 ms**
+(`timers.perf.int.test.ts`). PD-P02 không ngưỡng (chỉ "đúng một lần").
 
 ## Việc còn lại
-- Chưa đạt 2×: còn lại mỗi stage ~10 round-trip tuần tự trong tx kick + ~6 trong tx bắn + 3 tx của driver (đầu vào job,
-  provider state, `enqueueJob`) tranh pool 8. Bước kế (cần chốt): (a) viết `insertRun`/`markStageRunning`/`cli_sessions` thành
-  câu mảng cho cả lô (bỏ ~4 round-trip/stage), (b) tạo job + `run_steps` ngay trong tx lô (bỏ 2 tx driver/stage), (c) gửi
-  `starterUsable` cùng lô khoá run. Ước (a)+(c) đủ vượt 2× p50; p95 dao động ±100 ms giữa lượt.
-- Int evotest (P-d/d1 + processes/adapters + P-a/pf1): 302 pass, 1 đỏ P1-48e (`lock-order.int.test.ts`, vòng 0 run còn
-  `waiting_review` sau 2 sweep) — chạy lại riêng file: 5/5 xanh. Nghi đua thời điểm (bắn nay 4 tx song song trước
-  `expireRuns`); chưa chạy ở ref base để xếp loại (T2).
-- Khoá tư vấn `lockUserRuns` (theo người bắt đầu) giữ tới COMMIT tx lô ⇒ các tx kick song song cùng người bắt đầu chạy nối
-  tiếp, và chat của người đó chờ tối đa một tx lô (~0,3–0,5 s).
+- Không làm (đã ≥ 2× mà không cần): `insertRun`/`markStageRunning`/`cli_sessions` dạng mảng, job + `run_steps` trong tx lô.
+  Nếu cần nhanh hơn nữa: đó là bước kế (bỏ ~4 round-trip + 2 tx driver mỗi stage).
+- P1-48e (`lock-order.int.test.ts`) đỏ khi chạy CHUNG bộ (P-d/d1 + processes/adapters + P-a/pf1) ở CẢ ref base platform/gd0
+  (300 pass, 1 fail) lẫn lát ⇒ có sẵn, không do lát; chạy riêng file: base 5/5, lát 5/5 xanh. Cần thêm `tests/known-red.json`
+  (qc) hoặc sửa đua (expire `SKIP LOCKED` bỏ qua run đang bị tx sau apply giữ khoá).

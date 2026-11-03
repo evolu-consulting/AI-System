@@ -1,6 +1,6 @@
 // AC-H41 · AC-H46 · HUB-FR-143/144 · test-plan-int §9 PD-P01, PD-P02 (không thuộc Lệnh xong, `bun run test:perf`): 1.000 hẹn
 // `retry` tới hạn (500 acme + 500 beta, fixture SQL) ⇒ quét lặp tới hết — mỗi lượt ≤ TIMER_SWEEP_BATCH (100), mọi hẹn bắn
-// đúng 1 lần, 1 job/stage. Báo ms/lượt p50/p95 (console), không ngưỡng khoá ngoài "đúng một lần".
+// đúng 1 lần, 1 job/stage. Báo ms/lượt p50/p95 (console); CR-115: PD-P01 có ngưỡng p50/p95 (bắn + kick theo lô).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { HubPa } from "../../P-a/_support/pa";
 import {
@@ -33,6 +33,9 @@ afterAll(async () => {
 
 const N = 500; // mỗi tenant
 const BATCH = 100; // TIMER_SWEEP_BATCH (plan-contract §1)
+/** CR-115 · PD-P01 ms/lượt 100 hẹn (evotest `-Exclusive`, tệ nhất × 1,25). */
+const P01_P50_MAX_MS = 991;
+const P01_P95_MAX_MS = 1226;
 const BETA_SINGLE = { ...DEFS.single, id: "a5d20000-0000-4000-8000-0000ffff0001" };
 let betaReady = false;
 
@@ -87,6 +90,9 @@ describe("PD-P01, PD-P02 · tải hẹn giờ [AC-H41][test-plan-int §9]", () =
     const { ms, counts } = await drain([() => sweepN(c, 1)], ids, "PD-P01 1 hub");
     for (const n of counts) expect(n).toBeLessThanOrEqual(BATCH);
     expect(ms.length).toBe(10);
+    // CR-115 · ngưỡng = tệ nhất 3 lượt `-Step perf -Exclusive` (p50 792,6 / p95 981,0 ms) × 1,25; mốc trước lô 1.683 / 2.362.
+    expect(quantile(ms, 0.5)).toBeLessThanOrEqual(P01_P50_MAX_MS);
+    expect(quantile(ms, 0.95)).toBeLessThanOrEqual(P01_P95_MAX_MS);
     const st = await waitFor(
       () => fireStats(c.sql, ids),
       (s) => s.jobs >= 2 * N,

@@ -1204,7 +1204,7 @@ e3d56610603df20af01acada42b847fc3a8e129335f58d09b6c8605ca1cf8710  tests/acceptan
 b194322ecf9b5734193e5d3455180bd5ba54b7300c0f8b9bf0cc8987797a5bf9  tests/acceptance/P-d/d1/_remind.ts
 ab97ee1f63ff99835ce15358f25148434901cb838efe2b7d774355905a4549d0  tests/acceptance/P-d/d1/_retry.ts
 2a328285b420ffff1c09b901c9c30a44da2ac571bb646cbd2608d7ec5ad2859e  tests/acceptance/P-d/d1/_wait.ts
-caa75a13eea482861eeee9cc9e44d8113d981f35c5ccbb7fe52758ec54e2bec2  tests/acceptance/P-d/d1/batch-launch.int.test.ts
+f06a79cf52a4710db3915d465ab4bdad7113953c5f0e3c7aec09bececc203916  tests/acceptance/P-d/d1/batch-launch.int.test.ts
 6aa8af598568f807f79fa4e02577ac97a619d4e9121b64fed351898c3b83b525  tests/acceptance/P-d/d1/batch-queries.int.test.ts
 5b7e491028ff2f1274af70454271b40140e582be0f974d7532ff012e327e479f  tests/acceptance/P-d/d1/cancel-timers.int.test.ts
 493302709ddbf73eb976b9f1c45ec99d4e8d81de72545a0ae34dbe3a289d368c  tests/acceptance/P-d/d1/cap.int.test.ts
@@ -1238,7 +1238,7 @@ ffb5b86aebc2b63d8c21053f67c2afa4671eb82b002d069d2e0c4467d0e98441  tests/acceptan
 df5bf2adf5839297dfa3ed71606207edd71995e9355977d19d2974f6f9c532da  tests/acceptance/P-d/perf/background.perf.int.test.ts
 48f5e6367bd8fcc79a0b6f6135a349ce4a2ea233f50337d87f5edbbd4e431972  tests/acceptance/P-d/perf/d2.perf.int.test.ts
 55a43a06e1eedc783dd7581a7b3aef8b7b2db5ec816f75d89ba53d795d5a87f3  tests/acceptance/P-d/perf/remind.perf.int.test.ts
-8e58ca7cacc9f1d6166dfd0d687114ae9a83ee0a4fae2bebad196ffa73b2fc55  tests/acceptance/P-d/perf/timers.perf.int.test.ts
+9ff040936a17aa76855ca8edbf4350ede4556617da4437539623bd434281903d  tests/acceptance/P-d/perf/timers.perf.int.test.ts
 6a0730f1322dbd2e6d0e5d2fe7099eaa6ad5343aabbd137e39e2d723488d1fde  tests/acceptance/P-d/rules/_contracts.ts
 a3290c3b670c66d83e873a35c4e3fb68d0227c9b596d9a604eed51e6530ef21e  tests/acceptance/P-d/rules/_defs.ts
 e6f29d8fc3471fa69a54382b8d25c34b3a5889fce3218cdca5dfb172ef346ca4  tests/acceptance/P-d/rules/_support.test.ts
