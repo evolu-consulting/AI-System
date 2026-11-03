@@ -49,6 +49,13 @@ Mục tiêu: hub-api chạy ≥ 2 instance an toàn; vòng nhắc / hết hạn 
   Scan đọc 24.300 entry chết (4.840 trang) ⇒ migration 0082 index `(hạn, id)` cho Index Scan + Limit, bỏ index thừa
   `review_tasks_remind_idx`.
 
+- [x] Lượt 3: (a) lô nhắc: áp mốc ∥ chèn notice ∥ chuyển cấp gửi cùng lúc (pipeline trong tx, server chạy đúng thứ tự
+  gửi); lô hết hạn: `run_end` ∥ notice; `sweepOnce`: 3 câu quét chỉ đọc chung một tx (bớt 2 tx/lượt); 0082 thêm index
+  unread `(user_id, tenant_id)` (giữ tên). (b) `dlc:check` báo `WHEN CŨ` (entry DLC `when` ≤ max HEAD, drizzle bỏ qua) +
+  unit test; luật ghi ở `docs/platform/dlc-integration.md` §3. (c) Hẹn giờ: đo PD-P01 (chẩn đoán tạm) — mỗi hẹn ~60 câu /
+  ~8 tx, ~90% là `kick` launcher; thử bắn song song 4 hẹn không nhanh hơn (nút cổ chai luồng JS + số câu) ⇒ bỏ, giữ
+  tuần tự.
+
 ## Không làm / Chạm
 - Không thêm leader-election khoá phiên (`pg_try_advisory_lock` giữ theo kết nối): mọi singleton hiện có đã dùng khoá theo tx
   (tự nhả khi commit/rollback, không kẹt khi tiến trình chết) — tương đương "tự bầu lại" mà không cần kết nối riêng.
@@ -69,14 +76,18 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: chỉ đổi kế hoạch truy vấn — cùng tập hàng, index mới thay index cũ cùng tên — và hạ tầng test).
 
 ## Việc còn lại
-- PD-P13/PD-P14 vẫn trên p95 ≤ 50 ms trên evotest (số ở TECH-DEBT #254) — không còn tăng theo vòng, phần còn lại là chi phí
+- Số cuối (e1742c01, evotest, 3 lượt đo cùng code): PD-P13 p50 42–45, p95 50 / 48 / 70 ms (xanh 2/3); PD-P14 p50 34–37,
+  p95 55 / 56 / 69 ms (đỏ), 20.000 run 11,2–12,1 s. Trung vị ổn định, p95 (= lô tệ thứ 2/20) do 1–3 lô đột biến 55–75 ms
+  khi máy chủ có slot khác chạy — PD-P14 cần trung vị ≲ 30 ms mới xanh chắc.
+- PD-P13/PD-P14 (cũ) vẫn trên p95 ≤ 50 ms trên evotest (số ở TECH-DEBT #254) — không còn tăng theo vòng, phần còn lại là chi phí
   cố định mỗi lô + nhiễu máy chủ chung: notice 200 hàng ~18 ms (2 FK trigger ~10 ms), claim nhắc ~13 ms (cổng trưởng phòng
   tra `users` mỗi hàng ~6 ms, `more` anti-join ~4 ms), commit 4–11 ms (fsync). PD-P14 theo test-plan-addendum đo CẢ
   `sweepOnce` (giữ). Đếm unread (`count` notice chưa đọc của người nhận) vẫn tăng tuyến tính theo số chưa đọc — muốn hết
   phải có bộ đếm (đổi contract/bảng), ngoài lát.
-- **Đề xuất TD #196 (hẹn giờ theo lô) — chưa làm:** `fireTimer` mỗi hẹn một tx (khoá run → stage → timer, 5–6 câu) rồi
-  `kick` launcher SAU COMMIT; PD-P01 ~16 ms/hẹn. Gom: một tx `systemBatch` mỗi lô — (1) CTE khoá timer tới hạn
-  `SKIP LOCKED` + run `FOR UPDATE SKIP LOCKED` + stage theo `any(array)`, (2) `fireAction` lớp 1 trên mảng, (3) một câu
-  `update … from jsonb_to_recordset` cho từng nhóm hành động (markFired / requeue stage / finishWait / cancel), (4) outbox
-  `kick` gom mỗi run. Exactly-once giữ nhờ khoá run+timer trong cùng tx (như nhắc). Cần đo trước phần `kick` (launcher tạo
-  job) — nếu chiếm phần lớn 16 ms thì gom tx không đủ. Đổi máy trạng thái ⇒ Opus, lát riêng, test PD-I24/PD-I39/PD-P02.
+- **TD #196 (hẹn giờ) — đo xong, chưa gom:** một lượt 100 hẹn retry = ~6.000 câu / ~800 tx; top: commit/begin/set_config
+  ~570 ms (×800), `messages` insert, `cli_sessions` delete, `stage_runs → running`, `jobs`/`run_steps` insert, `pg_notify`,
+  advisory lock run_steps — đều của `launcher.kick` (stage agent mới). Phần `fireTimer` chỉ ~7 câu/hẹn (≤ 7%). Gom tx bắn
+  (thiết kế: một tx `systemBatch` — CTE claim timer/run/stage đều `SKIP LOCKED` nên không chờ khoá, `fireAction` trên mảng,
+  một câu mỗi nhóm hành động, `finishWait` giữ từng hàng, kick gom outbox) chỉ bớt ≤ 7% ⇒ không đáng rủi ro máy trạng thái.
+  Muốn PD-P01 giảm rõ phải gom `launch` theo lô (tạo hub run/job/message cho nhiều stage một tx) — engine đóng băng,
+  cần lát Opus riêng.
