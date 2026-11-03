@@ -8,10 +8,10 @@
 # fix-migrate-guard (su co 2026-10-30): moi lenh native (git/tar/ssh/scp) loi => throw (PS 5.1 khong tu throw theo exit code);
 # build loi => dung; VERSION tren may chu chi ghi SAU KHI setup.sh xong; tu choi deploy khi commit trong VERSION khong phai to tien
 # cua -Ref (vd prod dang chay nhanh khac) tru khi -Force (in canh bao).
-param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "", [switch]$Force)
+param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "", [switch]$Force, [string]$Key = "F:\workspace\id_evoc_key")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
-$Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2"
+$Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")
 
 # Goi ngay sau moi lenh native: exit code khac 0 => throw (PS 5.1 khong tu throw theo exit code).

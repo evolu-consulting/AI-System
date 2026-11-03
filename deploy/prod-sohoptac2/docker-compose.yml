@@ -115,6 +115,8 @@ services:
       HUB_FAST_ROUTE: "on"
       # dlc-sticky: tin không tag ngay sau câu trả lời của agent X (vd @dlc-agent) ⇒ tiếp tục với X, không rơi về Orchestrator.
       HUB_STICKY_AGENT: "on"
+      # gd0_dlc_fix · bước DLC đang chờ người cũng tính 1 run của user ⇒ 2 làm nghẽn chat (429 TOO_MANY_RUNS); host chung = 5.
+      HUB_MAX_CONCURRENT_RUNS: ${HUB_MAX_CONCURRENT_RUNS:-5}
       # community: liên kết "Mở cộng đồng"/thông báo + nút "Mở SHT"; vòng tự lưu trữ/nhắc hết hạn (tắt: COMMUNITY_SWEEP=off).
       COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}
