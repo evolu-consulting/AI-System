@@ -257,7 +257,7 @@ describe.skipIf(!PERF)("B4 · bắn lô 100 hẹn: 4 câu/hẹn vs CTE theo tậ
       if (n > 1000) {
         await resetB4(sql);
         const lit = FIRE_SET.replace(
-          "$1::jsonb",
+          "$1::text::jsonb",
           `'${JSON.stringify(batch(3))}'::jsonb`,
         ).replaceAll("$2::timestamptz", `'${NOW}'::timestamptz`);
         await explain(sql, "B4", "CTE theo tập", lit);
@@ -297,7 +297,7 @@ describe.skipIf(!PERF)("B4 · bắn lô 100 hẹn: 4 câu/hẹn vs CTE theo tậ
       expect({ dup, total: all.length, db: db?.n }).toEqual({ dup: 0, total: 200, db: 200 });
       // giết kết nối giữa tx (sau 50 hẹn / sau câu theo tập, trước COMMIT) ⇒ không hẹn nào bắn một nửa
       await resetB4(sql);
-      const victim = postgres(urls().owner, { max: 1, onnotice: () => {} });
+      const victim = new SQL(urls().owner, { max: 1 }); // Bun.sql: postgres.js trên Bun ném lỗi không bắt được khi socket bị PG cắt
       const [p] = await victim`select pg_backend_pid() as pid`;
       const err = await victim
         .begin(async (tx) => {
