@@ -19,12 +19,17 @@ export type CurrentStep = {
   escalateGroup: string | null;
   /** CR-108 · số người duyệt còn dùng được của nhóm. */
   approverCount: number | null;
+  /** CR-113 · nhóm chuyển cấp là mặc định (Toàn quyền). */
+  escalateDefault?: boolean;
 };
 export type CurrentFlow = {
   defId: string;
   name: string;
   version: number;
   isDefault: boolean;
+  /** CR-113 · Toàn quyền duyệt thay được mọi bước (vắng ⇒ true: luật chung). */
+  ownerCanOverride: boolean;
+  ownerGroupName: string | null;
   steps: CurrentStep[];
 };
 export type Facts = { deal: DealKind; value: number | null };
@@ -39,6 +44,8 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
     name: d.name,
     version: d.rel_version,
     isDefault: d.is_default,
+    ownerCanOverride: d.owner_can_override ?? true,
+    ownerGroupName: d.owner_group_name ?? null,
     steps: d.steps.map((s, i) => ({
       key: `s${i}`,
       name: s.name,
@@ -49,7 +56,25 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
       remindH: s.remind_every_h ?? null,
       escalateGroup: s.escalate_group_name ?? null,
       approverCount: s.approver_count ?? null,
+      escalateDefault: s.escalate_default ?? false,
     })),
+  };
+}
+
+/** CR-113 · số liệu cho hộp "Luật duyệt": tên nhóm Toàn quyền, nhóm nhận khi quá hạn (các tên khác nhau, theo thứ tự bước). */
+export function ruleFacts(flow: CurrentFlow): {
+  owner: boolean;
+  ownerGroup: string | null;
+  hasDue: boolean;
+  targets: string[];
+} {
+  const due = flow.steps.filter((s) => s.dueH !== null);
+  const targets = [...new Set(due.map((s) => s.escalateGroup).filter((g): g is string => !!g))];
+  return {
+    owner: flow.ownerCanOverride,
+    ownerGroup: flow.ownerGroupName,
+    hasDue: due.length > 0,
+    targets,
   };
 }
 

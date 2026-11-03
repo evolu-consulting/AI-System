@@ -30,6 +30,8 @@ export type StepInfo = {
   remindH: number | null;
   approvers: number | null;
   escalate: string | null;
+  /** CR-113 · nhóm chuyển cấp là mặc định ⇒ thêm "(mặc định)". */
+  escalateDefault?: boolean;
 };
 const NO_INFO: StepInfo = { dueH: null, remindH: null, approvers: null, escalate: null };
 /** Số dòng thông tin sẽ hiện (khớp StepInfoLines). */
@@ -134,6 +136,7 @@ export function buildFlowCanvas(
         remindH: s.dueH !== null ? s.remindH : null,
         approvers: s.approverCount,
         escalate: s.escalateGroup,
+        escalateDefault: s.escalateDefault,
       },
       locked: false,
       dim: run ? run[i] === false : false,

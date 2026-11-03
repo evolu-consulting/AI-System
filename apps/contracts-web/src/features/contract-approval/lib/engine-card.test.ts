@@ -134,6 +134,37 @@ describe("timelineRows", () => {
     expect(rows[1]).toMatchObject({ group: "", due: { flag: "overdue" } });
     expect(rows[2]).toMatchObject({ due: { flag: "escalated" }, escalatedTo: "Kế toán" });
   });
+  test("CR-113 · duyệt thay Toàn quyền và overdue/escalated_to từ server", () => {
+    const rows = timelineRows(
+      [
+        step({
+          status: "passed",
+          decided_as: "owner_override",
+          decided_by: { id: G2, name: "An" },
+        }),
+        step({ idx: 1, key: "s1", status: "passed", decided_as: "member" }),
+        step({
+          idx: 2,
+          key: "s2",
+          status: "open",
+          due_at: "2026-10-28T12:00:00Z",
+          overdue: true,
+          escalated: true,
+          escalated_to: "Ban lãnh đạo",
+        }),
+      ],
+      groups,
+      now,
+    );
+    expect(rows.map((r) => r.ownerOverride)).toEqual([true, false, false]);
+    expect(rows[2]).toMatchObject({ overdue: true, escalatedTo: "Ban lãnh đạo" });
+    const late = timelineRows(
+      [step({ status: "open", due_at: "2026-10-28T12:00:00Z", overdue: true })],
+      groups,
+      now,
+    )[0];
+    expect(late).toMatchObject({ overdue: true, due: { flag: "overdue" } });
+  });
   test("bước Dify không có phòng ⇒ null", () => {
     expect(
       timelineRows([step({ kind: "dify", group_id: null })], groups, now)[0]?.group,

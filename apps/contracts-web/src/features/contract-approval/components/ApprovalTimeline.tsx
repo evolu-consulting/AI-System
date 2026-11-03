@@ -76,6 +76,27 @@ function Row({ r, now }: { r: TimelineRow; now: number }) {
               · {t("contracts.approval.engine.headOnly")}
             </span>
           ) : null}
+          {r.ownerOverride ? (
+            <span
+              className="rounded-full bg-act-soft px-2 py-0.5 text-caption font-semibold text-act"
+              data-testid="approval-owner-override"
+            >
+              {t("contracts.approval.engine.ownerOverride")}
+            </span>
+          ) : null}
+          {r.overdue ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-caption font-semibold text-late"
+              data-testid="approval-overdue"
+            >
+              {t("contracts.approval.engine.overdueBadge")}
+            </span>
+          ) : null}
+          {r.escalatedTo ? (
+            <span className="text-caption text-dim" data-testid="approval-escalated-to">
+              {t("contracts.approval.engine.escalatedTo", { group: r.escalatedTo })}
+            </span>
+          ) : null}
         </div>
         <div className="text-caption">
           <When r={r} now={now} />

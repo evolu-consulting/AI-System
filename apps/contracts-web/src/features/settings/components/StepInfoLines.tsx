@@ -24,7 +24,12 @@ export function StepInfoLines({ info, className = "" }: { info: StepInfo; classN
       )}
       {info.escalate && (
         <span className={`${line} ${className}`} data-testid="step-escalate" title={info.escalate}>
-          {t("contracts.flow.current.info.escalate", { group: info.escalate })}
+          {t(
+            info.escalateDefault
+              ? "contracts.flow.current.info.escalateDefault"
+              : "contracts.flow.current.info.escalate",
+            { group: info.escalate },
+          )}
         </span>
       )}
     </>

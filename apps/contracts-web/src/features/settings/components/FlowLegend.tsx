@@ -28,6 +28,7 @@ export function FlowLegend() {
         label={l("system")}
       />
       <Item swatch="inline-block w-5 border-t-2 border-dashed border-dim" label={l("skip")} />
+      <Item swatch="inline-block w-5 border-t-2 border-late" label={l("escalate")} />
       <Item
         swatch="inline-block h-3 w-5 rounded border border-dashed border-rule bg-panel opacity-40"
         label={l("dim")}

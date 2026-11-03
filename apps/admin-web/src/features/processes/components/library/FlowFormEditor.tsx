@@ -36,6 +36,17 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
   return (
     <div className="space-y-4" data-testid="flow-form">
       <p className="text-body text-muted-foreground">{f("lead")}</p>
+      <section
+        className="rounded-md border border-border bg-muted/40 px-3 py-2 text-label"
+        data-testid="flow-form-rules"
+        aria-label={f("rules.title")}
+      >
+        <h3 className="mb-1 font-semibold">{f("rules.title")}</h3>
+        <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
+          <li>{f("rules.owner")}</li>
+          <li>{f("rules.escalate")}</li>
+        </ul>
+      </section>
       <ol className="space-y-3">
         {steps.map((s, i) => (
           <FlowStepCard

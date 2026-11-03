@@ -11,6 +11,7 @@ import { FlowEditorLink } from "./FlowEditorLink";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
 import { FlowPreview, usePreview } from "./FlowPreview";
+import { FlowRules } from "./FlowRules";
 
 type View = "canvas" | "list";
 
@@ -76,6 +77,7 @@ function FlowLoaded({ flow }: { flow: CurrentFlow }) {
       ) : (
         <FlowList flow={flow} />
       )}
+      <FlowRules flow={flow} />
       <FlowEditorLink
         testId="flow-editor-link"
         className="mb-4 block text-label text-act underline"

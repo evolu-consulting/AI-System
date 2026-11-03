@@ -180,13 +180,22 @@
           "dueRemind": "Due in {{due}} h · remind every {{remind}} h",
           "approver": "{{count}} approver",
           "approvers": "{{count}} approvers",
-          "escalate": "Overdue ⇒ escalate to {{group}}"
+          "escalate": "Overdue ⇒ escalate to {{group}}",
+          "escalateDefault": "Overdue ⇒ escalate to {{group}} (default)"
+        },
+        "rules": {
+          "title": "Approval rules",
+          "owner": "Full access ({{group}}) can approve on behalf at any step — approvals on behalf are recorded.",
+          "ownerNoName": "Full access can approve on behalf at any step — approvals on behalf are recorded.",
+          "escalate": "Steps with a due time: when overdue, auto-escalated to {{target}} (default Full access).",
+          "escalateTargetDefault": "the escalation group"
         },
         "legend": {
           "label": "Diagram legend",
           "step": "Approval step",
           "system": "System step (locked)",
           "skip": "Skip branch",
+          "escalate": "Overdue ⇒ escalation (default Full access)",
           "dim": "Faded = skipped in the preview"
         },
         "view": { "label": "Process view", "canvas": "Diagram", "list": "List" },

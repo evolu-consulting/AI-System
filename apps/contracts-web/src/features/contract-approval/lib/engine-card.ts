@@ -70,10 +70,18 @@ export type TimelineRow = {
   feedback: string | null;
   /** CR-109 · bước chưa tới sẽ bị bỏ qua (điều kiện không thỏa); null = không. */
   skipWhen: FlowCond[] | null;
+  /** CR-113 · quyết thay bởi Toàn quyền. */
+  ownerOverride: boolean;
+  /** CR-113 · server báo quá hạn (hoặc đã chuyển cấp) — vắng ⇒ tự tính theo `due_at`. */
+  overdue: boolean;
 };
 
 const nameOf = (groups: readonly ContractGroup[], id: string | null): string | null =>
   id === null ? null : (groups.find((g) => g.id === id)?.name ?? "");
+
+/** CR-113 · server báo `overdue` thì tin; vắng ⇒ bước đang mở qua `due_at`. */
+const isOverdue = (s: ApprovalCardStep, now: number): boolean =>
+  s.overdue ?? (s.status === "open" && s.due_at !== null && Date.parse(s.due_at) < now);
 
 /** `steps[]` ⇒ dòng thời gian. `now` (ms) để test không phụ thuộc đồng hồ. */
 export function timelineRows(
@@ -82,7 +90,7 @@ export function timelineRows(
   now: number,
 ): TimelineRow[] {
   return steps.map((s) => {
-    const overdue = s.status === "open" && s.due_at !== null && Date.parse(s.due_at) < now;
+    const overdue = isOverdue(s, now);
     const flag = s.escalated ? "escalated" : overdue ? "overdue" : null;
     return {
       idx: s.idx,
@@ -91,11 +99,13 @@ export function timelineRows(
       headOnly: s.head_only,
       status: s.status,
       due: s.due_at ? { at: s.due_at, flag } : null,
-      escalatedTo: s.escalated ? nameOf(groups, s.escalated_group_id) : null,
+      escalatedTo: s.escalated ? (s.escalated_to ?? nameOf(groups, s.escalated_group_id)) : null,
       decidedBy: s.decided_by?.name ?? null,
       decidedAt: s.decided_at,
       feedback: s.feedback,
       skipWhen: s.status === "pending" && s.skip_when?.length ? s.skip_when : null,
+      ownerOverride: s.decided_as === "owner_override",
+      overdue,
     };
   });
 }

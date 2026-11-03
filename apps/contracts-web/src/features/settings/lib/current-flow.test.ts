@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { previewPath, toCurrentFlow } from "./current-flow";
+import { previewPath, ruleFacts, toCurrentFlow } from "./current-flow";
 
 const DEF = "11111111-1111-4111-8111-111111111111";
 const raw = (steps: unknown[], extra: Record<string, unknown> = {}) => ({
@@ -39,6 +39,51 @@ describe("current-flow · toCurrentFlow", () => {
     expect(toCurrentFlow(raw(["Kinh doanh"]))).toBeNull();
     expect(toCurrentFlow({ ...raw([GD]), def_id: undefined })).toBeNull();
     expect(toCurrentFlow(null)).toBeNull();
+  });
+});
+
+describe("current-flow · CR-113 luật duyệt", () => {
+  test("owner_* và escalate_default ánh xạ, vắng ⇒ mặc định luật chung", () => {
+    const f = toCurrentFlow(
+      raw(
+        [
+          {
+            name: "A",
+            department_name: null,
+            kind: "review",
+            due_h: 24,
+            escalate_group_name: "KT",
+          },
+          {
+            name: "B",
+            department_name: null,
+            kind: "review",
+            due_h: 24,
+            escalate_group_name: "BLĐ",
+            escalate_default: true,
+          },
+          { name: "C", department_name: null, kind: "review" },
+        ],
+        { owner_can_override: true, owner_group_name: "BLĐ" },
+      ),
+    );
+    expect(f?.ownerGroupName).toBe("BLĐ");
+    expect(f?.steps.map((s) => s.escalateDefault)).toEqual([false, true, false]);
+    expect(f && ruleFacts(f)).toEqual({
+      owner: true,
+      ownerGroup: "BLĐ",
+      hasDue: true,
+      targets: ["KT", "BLĐ"],
+    });
+    const old = toCurrentFlow(raw([{ name: "A", department_name: null, kind: "review" }]));
+    expect(old && ruleFacts(old)).toEqual({
+      owner: true,
+      ownerGroup: null,
+      hasDue: false,
+      targets: [],
+    });
+    const nul = toCurrentFlow(raw([GD], { owner_can_override: true, owner_group_name: null }));
+    expect(nul?.ownerGroupName).toBeNull();
   });
 });
 

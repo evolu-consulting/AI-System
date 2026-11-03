@@ -180,13 +180,22 @@
           "dueRemind": "Hạn {{due}} giờ · nhắc mỗi {{remind}} giờ",
           "approver": "{{count}} người duyệt",
           "approvers": "{{count}} người duyệt",
-          "escalate": "Quá hạn ⇒ chuyển {{group}}"
+          "escalate": "Quá hạn ⇒ chuyển {{group}}",
+          "escalateDefault": "Quá hạn ⇒ chuyển {{group}} (mặc định)"
+        },
+        "rules": {
+          "title": "Luật duyệt",
+          "owner": "Toàn quyền ({{group}}) duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
+          "ownerNoName": "Toàn quyền duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
+          "escalate": "Bước có hạn: quá hạn tự chuyển cho {{target}} (mặc định Toàn quyền).",
+          "escalateTargetDefault": "nhóm chuyển cấp"
         },
         "legend": {
           "label": "Chú giải sơ đồ",
           "step": "Bước duyệt",
           "system": "Bước hệ thống (khoá)",
           "skip": "Nhánh bỏ qua",
+          "escalate": "Quá hạn ⇒ chuyển cấp (mặc định Toàn quyền)",
           "dim": "Mờ = bị bỏ qua theo xem trước"
         },
         "view": { "label": "Cách xem quy trình", "canvas": "Sơ đồ", "list": "Danh sách" },

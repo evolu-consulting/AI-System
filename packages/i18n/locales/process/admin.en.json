@@ -788,6 +788,11 @@
       "addEsign": "Add e-sign step",
       "maxReached": "Maximum number of steps reached.",
       "discard": "Discard changes",
+      "rules": {
+        "title": "Approval rules",
+        "owner": "Full access can approve on behalf at any step — approvals on behalf are recorded.",
+        "escalate": "Steps with a due time: when overdue, auto-escalated to the escalation group (default Full access)."
+      },
       "unsupported": "This process has a shape the Form cannot show (e.g. parallel steps). View only; edit it in Canvas.",
       "toCanvas": "Edit in Canvas",
       "difyInfo": "Dify step: {{name}}",

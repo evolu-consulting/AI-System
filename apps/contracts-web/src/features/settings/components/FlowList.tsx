@@ -19,6 +19,7 @@ export function FlowList({ flow }: { flow: CurrentFlow }) {
                 remindH: s.dueH !== null ? s.remindH : null,
                 approvers: s.approverCount,
                 escalate: s.escalateGroup,
+                escalateDefault: s.escalateDefault,
               }}
             />
           </span>

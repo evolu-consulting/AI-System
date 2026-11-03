@@ -17,6 +17,8 @@ const FLOW = {
   name: "Quy trình HĐ mặc định",
   rel_version: 4,
   is_default: true,
+  owner_can_override: true,
+  owner_group_name: "Ban lãnh đạo",
   steps: [
     {
       name: "Soạn & kiểm tra",
@@ -34,6 +36,7 @@ const FLOW = {
       due_h: 24,
       remind_every_h: 8,
       escalate_group_name: "Kế toán",
+      escalate_default: true,
       approver_count: 2,
     },
   ],
@@ -95,7 +98,16 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(cv.getByText("Hạn 24 giờ · nhắc mỗi 8 giờ")).toBeVisible();
   await expect(cv.getByText("3 người duyệt")).toBeVisible();
   await expect(cv.getByText("2 người duyệt")).toBeVisible();
-  await expect(cv.getByText("Quá hạn ⇒ chuyển Kế toán")).toBeVisible();
+  await expect(cv.getByText("Quá hạn ⇒ chuyển Kế toán (mặc định)")).toBeVisible();
+  // CR-113: hộp "Luật duyệt" dưới sơ đồ + chú giải chuyển cấp
+  const rules = dlg.getByTestId("flow-rules");
+  await expect(rules.getByTestId("flow-rule-owner")).toHaveText(
+    "Toàn quyền (Ban lãnh đạo) duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
+  );
+  await expect(rules.getByTestId("flow-rule-escalate")).toHaveText(
+    "Bước có hạn: quá hạn tự chuyển cho Kế toán (mặc định Toàn quyền).",
+  );
+  await expect(dlg.getByTestId("flow-legend")).toContainText("Quá hạn ⇒ chuyển cấp");
   await expect(cv.getByText("Giá trị ≥ 500.000.000")).toBeVisible();
   await expect(cv.getByText("Không thoả ⇒ bỏ qua")).toBeVisible();
   await expect(dlg.getByTestId("flow-legend")).toContainText("Bước hệ thống (khoá)");

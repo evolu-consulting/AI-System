@@ -788,6 +788,11 @@
       "addEsign": "Thêm bước Ký số",
       "maxReached": "Đã đủ số bước tối đa.",
       "discard": "Bỏ thay đổi",
+      "rules": {
+        "title": "Luật duyệt",
+        "owner": "Toàn quyền duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
+        "escalate": "Bước có hạn: quá hạn tự chuyển cho nhóm chuyển cấp (mặc định Toàn quyền)."
+      },
       "unsupported": "Quy trình này có dạng Form không biểu diễn được (vd bước song song). Chỉ xem; hãy sửa ở Canvas.",
       "toCanvas": "Sửa ở Canvas",
       "difyInfo": "Bước Dify: {{name}}",
