@@ -46,6 +46,14 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
 6. **Đọc ít:** tra `docs/INDEX.md`/CODEMAP trước, mở đúng file; code theo Clean Architecture + file nhỏ (Luật 4) để agent không phải đọc rộng.
 
+**Bổ sung (người dùng chốt 2026-11-03) — 6 tiêu chí, áp cho phiên điều phối và mọi agent:**
+- **T1. Script thay agent khi chạy test:** chạy `verify:*` / `test:affected` / `deploy/evotest/run-tests.ps1` rồi đọc tóm tắt JSON/đuôi log; không giao agent chỉ để chạy test và tóm tắt log. Thiếu script cho việc lặp lại ⇒ viết script (lát tool), không viết script tạm trong scratchpad lần thứ hai.
+- **T2. Chỉ báo lỗi mới:** đỏ có sẵn ghi ở `tests/known-red.json` (có hạn); báo cáo và cổng chỉ nêu ca đỏ ngoài danh sách. Ca mới nghi là có sẵn ⇒ chạy lại riêng trên evotest ở cả ref base và ref mới (một lần), rồi thêm vào danh sách hoặc sửa.
+- **T3. Brief trỏ file, báo cáo khuôn cố định:** brief chỉ ghi đường dẫn spec/`tasks.md` + mục cần đọc, không chép nội dung; báo cáo agent ≤ 6 dòng: commit hash · test (lệnh → kết quả) · việc dở · bẫy.
+- **T4. Ít vòng gửi lại:** merge driver JSON/i18n + tự ghi lại `tests/.lock` khi xung đột, hook chặn ghi ngoài worktree ⇒ không gửi agent đi rebase/dọn file rác; chỉ gửi lại khi xung đột code thật.
+- **T5. Model đúng việc:** Haiku cho việc cơ học (dọn, relock, chụp ảnh, smoke bằng script), Opus `medium` chỉ cho quyền/trạng thái/review; không chụp ảnh nếu người dùng không cần xem.
+- **T6. Gom việc cùng vùng:** việc nhỏ cùng vùng code ⇒ `SendMessage` cho agent đã có ngữ cảnh (mục 3), không mở agent mới đọc lại từ đầu.
+
 ## Luật 1 — Cửa sẵn sàng (BẮT BUỘC; hỏi người dùng xác nhận trước khi chạy)
 Trước khi viết code cho một feature hoặc thay đổi không tầm thường — kể cả khi người dùng chỉ nói "implement", "code", "làm", "build", "tiếp tục", "chạy task":
 1. Xác định spec (`docs/specs/<ID>/`; chưa có spec thì mục BA/UI tương ứng trong `docs/design/`).
