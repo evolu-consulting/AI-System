@@ -55,8 +55,8 @@ try {
   foreach ($f in "remote.sh", "in-container.sh", "boot.sh", "lock.sh") {
     $t = [IO.File]::ReadAllText("$PSScriptRoot\$f").Replace("`r`n", "`n"); [IO.File]::WriteAllText("$tmp\$f", $t, (New-Object Text.UTF8Encoding $false))
   }
-  Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\Dockerfile" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
-  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml Dockerfile remote.sh in-container.sh pg-init
+  Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\docker-compose.exclusive.yml", "$PSScriptRoot\Dockerfile" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
+  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml docker-compose.exclusive.yml Dockerfile remote.sh in-container.sh pg-init
   ssh @ssh $Server "mkdir -p ~/workspace/evotest"
   scp @ssh "$tmp\evotest-app-$stamp.tgz" "$tmp\evotest-kit-$stamp.tgz" "${Server}:/tmp/"
   $t0 = Get-Date
@@ -70,7 +70,7 @@ try {
   $rc = $LASTEXITCODE
   $finished = $true
   if ($Exclusive) {
-    $ex = @(Select-String -Path "$out\console.log" -Pattern "exclusive-(start|end)" | ForEach-Object { $_.Line })
+    $ex = @(Select-String -Path "$out\console.log" -Pattern "exclusive-(start|end|config)" | ForEach-Object { $_.Line })
     $ex | Set-Content -Encoding utf8 "$out\exclusive.txt"
     Write-Host "evotest: -Exclusive tải lúc đo (ghi ở $out\exclusive.txt):"; $ex | ForEach-Object { Write-Host "  $_" }
   }

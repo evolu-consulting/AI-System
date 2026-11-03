@@ -1,0 +1,19 @@
+﻿# CR-115 `run-tests.ps1 -Step perf -Exclusive`: máy đã yên (mọi slot rảnh, lượt khác xếp hàng) nên bỏ giới hạn CPU "nhường prod" của slot thường,
+# để số p50/p95 phản ánh mã chứ không phải trần CPU. Chỉ nạp khi EVO_EXCLUSIVE (remote.sh: `-f docker-compose.yml -f docker-compose.exclusive.yml`);
+# chế độ thường giữ nguyên cap. Máy chủ 12 CPU: pg 4 + runner 4 + redis 1 ≤ 9. Cấu hình dùng được in vào exclusive.txt (dòng exclusive-config).
+name: evotest
+
+x-uncapped: &uncapped
+  entrypoint: ["bash", "/in-container.sh"]   # không `nice -n 19`
+  cpus: 4
+  cpu_shares: 1024                            # mặc định của Docker (slot thường 128)
+
+services:
+  pg:
+    cpus: 4
+    cpu_shares: 1024
+  redis:
+    cpus: 1
+    cpu_shares: 1024
+  runner:
+    <<: *uncapped
