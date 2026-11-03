@@ -23,6 +23,7 @@ import {
   type Report,
   type SpecInfo,
   summarize,
+  unmatchedOnly,
 } from "./test-e2e-par.rules";
 import { parseEnv } from "./test-int-par.rules";
 
@@ -152,6 +153,7 @@ async function pool(jobs: Job[], n: number, ctx: Ctx) {
 }
 
 function saveTimings(root: string, old: Record<string, number>, done: (Done & { rep: Report })[]) {
+  if (done.length === 0) return; // 0 việc: không ghi đè số đo; thư mục .data có thể chưa có
   const t = { ...old };
   for (const d of done) {
     // Cấu hình gốc chia ca ⇒ lưu thời lượng từng file spec (dùng để chia ca); cấu hình khác lưu cả cấu hình.
@@ -160,6 +162,7 @@ function saveTimings(root: string, old: Record<string, number>, done: (Done & { 
       for (const [f, s] of Object.entries(fileSeconds(d.rep)))
         t[`e2e/${f}`] = Math.round(s * 10) / 10;
   }
+  mkdirSync(join(root, DIR), { recursive: true });
   writeFileSync(join(root, TIMINGS), `${JSON.stringify(t, null, 2)}\n`);
 }
 
@@ -181,7 +184,18 @@ async function main(): Promise<number> {
   const noFrozen = process.argv.includes("--no-frozen");
   const configs = (await findE2eConfigs(root)).filter((c) => !(noFrozen && isFrozenConfig(c)));
   const specs = await rootSpecs(root, timings);
-  const jobs = planJobs({ configs, specs, rootShards: args.shards }, timings, args.only);
+  const plan = { configs, specs, rootShards: args.shards };
+  const jobs = planJobs(plan, timings, args.only);
+  // `--only` gõ sai / việc bị bỏ (đóng băng): báo rõ thay vì chạy 0 việc rồi chết mù ở bước sau.
+  const all = planJobs(plan, timings);
+  const bad0 = unmatchedOnly(all, args.only);
+  if (bad0.length || jobs.length === 0) {
+    console.error(
+      `test:e2e:par: --only="${args.only ?? ""}" ${bad0.length ? `không khớp việc nào: ${bad0.join(", ")}` : "chọn 0 việc"}.\n` +
+        `  việc có sẵn: ${all.map((j) => j.name).join(", ")}${noFrozen ? " (đã bỏ module đóng băng do --no-frozen; -All để gồm cả chúng)" : ""}`,
+    );
+    return 2;
+  }
   const n = jobConcurrency(args.jobs, availableParallelism());
   const base = parseEnv(readFileSync(join(root, ".env.local"), "utf8"));
   if (!existsSync(join(root, ".env.local"))) throw new Error("thiếu .env.local");

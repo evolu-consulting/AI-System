@@ -7,6 +7,7 @@ import {
   jobEnv,
   jobSlug,
   META,
+  onlyWants,
   parseE2eArgs,
   planJobs,
   REDIS_DBS,
@@ -14,6 +15,7 @@ import {
   specPattern,
   splitRoot,
   summarize,
+  unmatchedOnly,
 } from "./test-e2e-par.rules";
 
 const spec = (file: string, cost: number, o: Partial<SpecInfo> = {}): SpecInfo => ({
@@ -121,6 +123,29 @@ describe("TS1 · test:e2e:par · lọc và số đo", () => {
         .sort(),
     ).toEqual(["chat", "chat-x2a"]);
     expect(planJobs({ configs, specs, rootShards: 2 }, {}, "root").length).toBe(3);
+  });
+
+  it("--only nhiều tên: ngăn bằng dấu phẩy, dấu cách hoặc cả hai — khớp đúng từng việc", () => {
+    const names = (only: string) =>
+      planJobs({ configs, specs, rootShards: 2 }, {}, only)
+        .map((j) => j.name)
+        .sort();
+    expect(names("P-a chat-x2a")).toEqual(["P-a", "chat-x2a"]);
+    expect(names("P-a,chat-x2a")).toEqual(["P-a", "chat-x2a"]);
+    expect(names("  P-a , chat-x2a  ,, ")).toEqual(["P-a", "chat-x2a"]);
+    expect(onlyWants("contracts-web P-a")).toEqual(["contracts-web", "P-a"]);
+    expect(onlyWants(undefined)).toEqual([]);
+  });
+
+  it("unmatchedOnly: tên gõ sai / không có trong danh sách được liệt kê; tên khớp thì không", () => {
+    const all = planJobs({ configs, specs, rootShards: 2 }, {});
+    expect(unmatchedOnly(all, "P-a root")).toEqual([]);
+    expect(unmatchedOnly(all, "contracts-web P-a")).toEqual(["contracts-web"]);
+    expect(unmatchedOnly(all, "nope,P-a nope2")).toEqual(["nope", "nope2"]);
+    expect(unmatchedOnly(all, undefined)).toEqual([]);
+    // chọn 0 việc ⇔ chuỗi không rỗng mà không việc nào khớp
+    expect(planJobs({ configs, specs, rootShards: 2 }, {}, "contracts-web P-a")).toHaveLength(1);
+    expect(planJobs({ configs, specs, rootShards: 2 }, {}, "zzz")).toHaveLength(0);
   });
 
   it("số đo mới đè ước lượng mặc định", () => {

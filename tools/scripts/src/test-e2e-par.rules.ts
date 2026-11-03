@@ -155,12 +155,24 @@ export function planJobs(p: Plan, timings: Readonly<Record<string, number>>, onl
     if (config === "playwright.config.ts") jobs.push(...rootJobs(p.specs, p.rootShards, meta));
     else jobs.push({ name: jobSlug(config), config, files: [], meta, cost: meta.cost });
   }
-  // `only`: một hoặc nhiều (ngăn bằng dấu phẩy) tên việc / tiền tố đường dẫn cấu hình.
-  const wants = (only ?? "").split(",").filter(Boolean);
-  const keep = (j: Job) =>
-    !wants.length ||
-    wants.some((w) => j.name === w || j.name.startsWith(w) || j.config.startsWith(norm(w)));
+  // `only`: một hoặc nhiều (ngăn bằng dấu phẩy hoặc dấu cách) tên việc / tiền tố đường dẫn cấu hình.
+  const wants = onlyWants(only);
+  const keep = (j: Job) => !wants.length || wants.some((w) => jobMatches(j, w));
   return jobs.filter(keep).sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+}
+
+/** `--only=` → danh sách tên (ngăn bằng dấu phẩy và/hoặc khoảng trắng: `"root,N1"`, `"contracts-web P-a"`). */
+export const onlyWants = (only?: string): string[] => (only ?? "").split(/[\s,]+/).filter(Boolean);
+
+export const jobMatches = (j: Pick<Job, "name" | "config">, w: string): boolean =>
+  j.name === w || j.name.startsWith(w) || j.config.startsWith(norm(w));
+
+/** Tên trong `--only` không khớp việc nào của cả danh sách (gõ sai / việc bị bỏ vì đóng băng) — để báo lỗi rõ thay vì chạy 0 việc. */
+export function unmatchedOnly(
+  all: readonly Pick<Job, "name" | "config">[],
+  only?: string,
+): string[] {
+  return onlyWants(only).filter((w) => !all.some((j) => jobMatches(j, w)));
 }
 
 import { laneDbEnv, portShift, shiftNumericEnv } from "./e2e-lane.rules";
