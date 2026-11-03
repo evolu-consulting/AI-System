@@ -21,6 +21,7 @@
     "e2e:lanes": "bun tools/scripts/src/e2e-lane.cli.ts lanes",
     "e2e:reap": "bun tools/scripts/src/e2e-lane.cli.ts reap",
     "test:affected": "bun tools/scripts/src/test-affected.ts",
+    "res:check": "bun tools/scripts/src/res-check.ts",
     "slice:new": "bun tools/scripts/src/slice.ts new",
     "slice:merge": "bun tools/scripts/src/slice.ts merge",
     "slice:rm": "bun tools/scripts/src/slice.ts rm",

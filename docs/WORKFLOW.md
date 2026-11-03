@@ -218,3 +218,18 @@ Mỗi checkout có một **làn** ổn định: main = 0, worktree = 1..14 (file
 - **Redis:** chỉ 16 DB (7–15 cho e2e) và máy này không có redis-server riêng ⇒ **hợp đồng thuê DB toàn máy** (`%TEMP%\evolu-e2e\redis-db<N>.lease`, chủ chết tự nhả); hết 9 DB thì in "đang chờ lane Redis …" và xếp hàng. Chọn cách này vì chia cố định theo làn lãng phí DB và vỡ khi > K worktree; thuê động dùng được cho cả `test:e2e:par` lẫn chạy trực tiếp. `LOGIN_IP_MAX_ATTEMPTS` luôn cao.
 - **Dọn:** mỗi lần chạy giết cây tiến trình mình bật khi thoát/lỗi/Ctrl-C/SIGTERM. `bun run e2e:reap` tắt bun/node có đường dẫn checkout này và đang nghe cổng của làn; `bun run e2e:lanes [--prune]` liệt kê / bỏ làn của đường dẫn đã mất.
 Biến đã đặt tay vẫn thắng. Chạy `test:e2e:par` song song từ nhiều worktree là an toàn.
+
+## Kiểm tra tài nguyên trước khi chạy song song
+Sự cố đã gặp: Postgres test local phải crash-recovery nhiều phút, RAM trống chỉ ~7 GB khi nhiều agent cùng chạy Playwright/Postgres, mỗi worktree ~0,6 GB làm đầy ổ F:. Vì vậy điều phối **đo trước, chia song song sau**.
+
+**Khi nào chạy `bun run res:check [--json] [--server] [--strict]`** (chỉ đọc, ~2–5 s; `--server` thêm một lần ssh đọc tải/RAM/đĩa/slot evotest):
+- Đầu mỗi đợt, trước khi giao ≥ 2 lát song song; và lại giữa đợt khi thấy máy chậm hoặc trước khi bật thêm Playwright/int local.
+- `slice:new` tự chạy bản local và **từ chối** khi đĩa < 15 GB hoặc RAM < 2 GB (bỏ qua có chủ đích: `--force`). `deploy/evotest/run-tests.ps1` in tải máy chủ + slot bận trước khi dựng và cảnh báo khi mọi slot bận (vẫn tự xếp hàng). `bun run e2e:lanes` nhắc lệnh này.
+- `--strict` thoát mã 2 khi chạm giới hạn cứng (dùng trong script); mặc định luôn thoát 0.
+
+**Cách điều phối quyết định song song** (số lấy từ mục KHUYẾN NGHỊ của lệnh; luật thuần ở `tools/scripts/src/res-check.rules.ts`):
+- **Local = code + unit/typecheck.** Số agent chỉ-code song song ≤ `min(RAM trống − 2 GB chia 1 GB, lõi rảnh, 8)`; đĩa < 30 GB ⇒ tối đa 3, < 15 GB ⇒ 1 và không tạo worktree mới.
+- **int/e2e nặng chạy trên slot evotest** (`deploy/evotest/run-tests.ps1`), không quá số slot trống; mọi slot bận thì xếp hàng thay vì bật thêm lượt local. Máy chủ quá tải (load > lõi) ⇒ tối đa 1 lượt mới.
+- **Playwright local ≤ 2 lượt cùng lúc** (cần RAM trống ≥ 4 GB và ≥ 2 lõi rảnh cho 1 lượt; ≥ 6 GB và ≥ 4 lõi cho 2 lượt); số còn lại đã trừ lượt đang chạy. Postgres local không chạy ⇒ cảnh báo, chuyển int/e2e sang evotest.
+- **Dọn worktree sau khi merge:** `bun run slice:rm <tên>` ngay sau `slice:merge`; cảnh báo khi worktree đã merge + thư mục mồ côi (`evolu-wt`, `.claude/worktrees`) vượt 3 (~0,6 GB/cái).
+- Cảnh báo không chặn; chỉ giới hạn cứng (đĩa < 15 GB, RAM < 2 GB) chặn `slice:new`. Điều phối đọc khuyến nghị rồi tự giảm số lát chạy cùng lúc — không hỏi người dùng.

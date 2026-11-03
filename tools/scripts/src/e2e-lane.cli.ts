@@ -17,6 +17,7 @@ if (cmd === "lanes") {
       `  làn ${l}: ${p}${p === root.replaceAll("\\", "/").toLowerCase() ? "  <= đây" : ""}`,
     );
   console.log(`e2e:lanes: checkout này = làn ${lane}`);
+  console.log("e2e:lanes: kiểm RAM/đĩa/tải trước khi chạy song song: bun run res:check [--server]");
 } else if (cmd === "reap") {
   const lane = resolveLane(root);
   const pids = sweepLane(root, lane);

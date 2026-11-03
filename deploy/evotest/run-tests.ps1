@@ -17,6 +17,21 @@ if ($DryRun) {
   Write-Host "ssh: bash ~/workspace/evotest/boot.sh -> remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
   return
 }
+# Tải máy chủ + slot trước khi dựng (chỉ in, không chặn; boot.sh vẫn tự xếp hàng). Chi tiết: bun run res:check --server
+$ErrorActionPreference = "Continue"
+try {
+  $probe ='cat /proc/loadavg; nproc; grep MemAvailable /proc/meminfo; df -Pk $HOME | tail -1; for i in $(seq 1 ' + $Slots + '); do if [ $i = 1 ]; then l=$HOME/workspace/evotest/.lock; else l=$HOME/workspace/evotest/slots/s$i/.lock; fi; if [ -d $l ]; then echo busy$i; else echo free$i; fi; done'
+  $p = @(ssh @ssh -o ConnectTimeout=8 $Server $probe 2>$null)
+  if ($LASTEXITCODE -eq 0 -and $p.Count -ge 4) {
+    $load = ($p[0] -split ' ')[0]; $cores = $p[1]
+    $ramGb = [math]::Round((($p[2] -split '\s+')[1]) / 1MB, 1); $diskGb = [math]::Round((($p[3] -split '\s+')[3]) / 1MB, 0)
+    $busy = @($p | Where-Object { $_ -like 'busy*' } | ForEach-Object { 's' + $_.Substring(4) })
+    Write-Host ("evotest: máy chủ load {0}/{1} lõi, RAM trống {2} GB, đĩa trống {3} GB, slot bận {4}/{5} {6} (chi tiết: bun run res:check --server)" -f $load, $cores, $ramGb, $diskGb, $busy.Count, $Slots, ($busy -join ','))
+    if ($busy.Count -ge $Slots) { Write-Warning "evotest: mọi slot đều bận - lượt này sẽ xếp hàng (tối đa 90 phút)" }
+    elseif ([double]$load -gt [double]$cores) { Write-Warning "evotest: máy chủ đang quá tải (load $load > $cores lõi)" }
+  } else { Write-Host "evotest: không đọc được tải máy chủ (bỏ qua; boot.sh vẫn xếp hàng)" }
+} catch { Write-Host "evotest: không đọc được tải máy chủ ($($_.Exception.Message))" }
+$ErrorActionPreference = "Stop"
 New-Item -ItemType Directory -Force $tmp, $out | Out-Null
 try {
   git -C $Repo archive --format=tar.gz -o "$tmp\evotest-app-$stamp.tgz" $Ref

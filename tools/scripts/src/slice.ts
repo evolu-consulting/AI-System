@@ -1,5 +1,6 @@
 // `bun run slice:new|slice:merge|slice:rm <tên>` — mỗi lát một worktree + nhánh riêng (CLAUDE.md Luật 0b).
-//   slice:new <tên>   tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ platform/gd0, bun install,
+//   slice:new <tên> [--force]  kiểm tài nguyên (res:check: từ chối khi đĩa < 15 GB / RAM < 2 GB, `--force` bỏ qua),
+//                     tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ platform/gd0, bun install,
 //                     chép .env*.local, kiểm hook.
 //   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên platform/gd0,
 //                     test:affected, rồi ff (hoặc merge) vào platform/gd0
@@ -9,6 +10,8 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pruneLanes, resolveLane } from "./e2e-lane";
+import { collectLocal } from "./res-check";
+import { hardLimits } from "./res-check.rules";
 
 const BASE = "platform/gd0";
 
@@ -101,9 +104,30 @@ function writeTasksTemplate(dir: string, name: string): void {
   console.log(`slice: tạo khuôn ${f} (điền Delta trước khi slice:merge)`);
 }
 
-function cmdNew(name: string | undefined): void {
+/** Cổng tài nguyên (docs/WORKFLOW.md "Kiểm tra tài nguyên…"): đĩa < 15 GB hoặc RAM < 2 GB ⇒ từ chối, trừ `--force`. */
+function resourceGate(force: boolean): void {
+  let l: ReturnType<typeof collectLocal>;
+  try {
+    l = collectLocal();
+  } catch (e) {
+    console.warn(`slice: bỏ qua kiểm tài nguyên (${(e as Error).message})`);
+    return;
+  }
+  if (!l) {
+    console.warn("slice: không đo được tài nguyên, bỏ qua kiểm");
+    return;
+  }
+  const hard = hardLimits(l);
+  if (hard.length === 0) return;
+  const msg = `tài nguyên máy không đủ để tạo worktree mới (${hard.join("; ")}). Dọn worktree đã merge (bun run slice:rm <tên>), xem bun run res:check.`;
+  if (!force) fail(`${msg} Bỏ qua bằng --force.`);
+  console.warn(`slice: CẢNH BÁO --force: ${msg}`);
+}
+
+function cmdNew(name: string | undefined, force: boolean): void {
   const { main, dir, branch } = paths(name);
   if (existsSync(dir)) fail(`đã có ${dir}`);
+  resourceGate(force);
   const r = git(main, "worktree", "add", "-b", branch, dir, BASE);
   if (!r.ok) fail(r.out);
   copyEnv(main, dir);
@@ -157,7 +181,7 @@ function cmdRm(name: string | undefined, force: boolean): void {
 }
 
 const [cmd, name, ...flags] = process.argv.slice(2);
-if (cmd === "new") cmdNew(name);
+if (cmd === "new") cmdNew(name, flags.includes("--force"));
 else if (cmd === "merge")
   cmdMerge(name, flags.includes("--no-test"), flags.includes("--no-openspec"));
 else if (cmd === "rm") cmdRm(name, flags.includes("--force"));
