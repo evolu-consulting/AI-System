@@ -1,4 +1,4 @@
-// pm-checklist-e2e · dựng backend THẬT giống `bun run pm:setup` (scripts/dev-up.ps1) trên DB test riêng: reset + migrate (main/hub/gói) →
+﻿// pm-checklist-e2e · dựng backend THẬT giống `bun run pm:setup` (scripts/dev-up.ps1) trên DB test riêng: reset + migrate (main/hub/gói) →
 // hub:seed → admin-api (tiến trình con) → fixture tenant `evolu` + 5 user + gói (hub-dev/fixture.ts) → fixture công ty (quy trình duyệt mẫu CR-113)
 // → hub-api CHẠY TRONG TIẾN TRÌNH NÀY (để giữ `remindOnce`, như test CF: đẩy escalate_at về quá khứ + MỘT lượt nhắc thay vì chờ vòng 300 s)
 // → 3 HĐ mẫu (`seedCr113Samples`, qua đường thật của hub) → cổng "sẵn sàng": GET / = ok, POST /ctl/remind = một lượt `remindOnce`.
@@ -130,7 +130,7 @@ async function main(): Promise<void> {
   const k = checkHubSecretsKey(hubEnv.HUB_SECRETS_KEY, hubEnv.SECRET_MASTER_KEY);
   if (!k.ok) throw new Error(`HUB_SECRETS_KEY: ${k.reason}`);
   let handles: { remindOnce: () => Promise<number> } | null = null;
-  const app = createApp({ version: "e2e-pm", corsOrigins: hubEnv.HUB_CORS_ORIGINS }, {
+  const app = createApp({ version: "0.0.0", corsOrigins: hubEnv.HUB_CORS_ORIGINS }, {
     probes: [() => pingDb(db), () => pingRedis(redis)],
     db,
     redis,
