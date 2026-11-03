@@ -64,12 +64,12 @@ test("CR-112 · 3 · Tạo vai 'Kiểm soát' (Xem) cho Sổ Hợp Tác, gán ro
     .getByRole("table", { name: "Gán người dùng vào vai" })
     .getByRole("row")
     .filter({ has: page.getByText("rowan.nguyen", { exact: true }) });
-  await rowan
-    .getByRole("combobox", { name: /Gán vai cho rowan\.nguyen/ })
-    .selectOption({ label: /Kiểm soát/ as never })
-    .catch(async () => {
-      await rowan.getByRole("combobox").first().selectOption({ index: 0 });
-    });
+  const pick = rowan.getByRole("combobox", { name: /Gán vai cho rowan\.nguyen/ });
+  const label = (await pick.locator("option").allTextContents()).find((t) =>
+    t.includes("Kiểm soát"),
+  );
+  expect(label).toBeTruthy();
+  await pick.selectOption({ label: label as string });
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, "Đã lưu")).toBeVisible();
   await expect(row).toContainText("1 người");
@@ -111,6 +111,10 @@ test("CR-112 · 5 · Thêm công ty: wizard 4 bước; mã trùng `evolu` báo l
   await page.getByRole("textbox", { name: "Tên hiển thị" }).fill("Dup Admin");
   await page.getByRole("textbox", { name: "Email" }).fill("dup@evolu.local");
   await page.getByRole("button", { name: "Tạo tenant", exact: true }).click();
-  await expect(page.getByRole("alert").first()).toBeVisible();
+  await expect(page.getByText("Mã công ty đã được dùng")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Mã công ty" })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
   await expect(steps.locator('[aria-current="step"]')).toContainText("Thông tin");
 });

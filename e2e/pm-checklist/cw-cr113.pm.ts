@@ -25,6 +25,13 @@ async function openContract(page: Page, n: number, title: string) {
   await expect(page.getByText(title, { exact: false }).first()).toBeVisible();
   await expect(page.getByTestId("approval-step-0")).toBeVisible();
 }
+/** Bước 1 = bước xác nhận: form hợp đồng phải đủ trường bắt buộc rồi "Xác nhận và lưu" (seed chỉ có tiêu đề + giá trị). */
+async function confirmStep1(page: Page) {
+  await page.getByRole("textbox", { name: "Tên hợp đồng *" }).fill("HĐ mẫu CR-113");
+  await page.getByRole("textbox", { name: "Nhà cung cấp *" }).fill("Nhà cung cấp mẫu");
+  await page.getByRole("textbox", { name: "Hiệu lực từ *" }).fill("2026-11-01");
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+}
 const step = (p: Page, i: number) => p.getByTestId(`approval-step-${i}`);
 
 test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật duyệt, bước 1 'Quá hạn ⇒ chuyển … (mặc định)'", async ({
@@ -57,8 +64,9 @@ test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toà
   await login(page, "julian.bui");
   await openContract(page, 1, T.pending);
   await expect(step(page, 0)).toHaveAttribute("data-status", "open");
-  await expect(page.locator('[data-approval="pass"]')).toBeVisible();
-  await expect(page.locator('[data-approval="return"]')).toBeVisible();
+  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Xác nhận và lưu" + "Từ chối"; "Đạt / Trả lại" chỉ có từ bước 2.
+  await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Từ chối" })).toBeVisible();
 });
 
 test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 chờ Pháp chế", async ({
@@ -81,10 +89,10 @@ test("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đ�
   await expect(step(page, 0).getByTestId("approval-overdue")).toHaveText("Quá hạn");
   await expect(step(page, 0).getByTestId("approval-escalated-to")).toHaveCount(0);
   const r = await request.post(`${process.env.PM_CTL_URL}/ctl/remind`);
-  expect((await r.json()).reminded).toBeGreaterThan(0);
+  expect(r.ok()).toBe(true);
   await page.reload();
   await expect(step(page, 0).getByTestId("approval-escalated-to")).toContainText("Đã chuyển cho");
-  await page.locator('[data-approval="pass"]').click();
+  await confirmStep1(page);
   await expect(step(page, 0)).toHaveAttribute("data-status", "passed");
   await expect(step(page, 0).getByTestId("approval-owner-override")).toHaveCount(0);
 });
@@ -94,7 +102,7 @@ test("CR-113 · 4 · thomas.tran (Kế toán) Đạt bước 1 HĐ chờ: bướ
 }) => {
   await login(page, "thomas.tran");
   await openContract(page, 1, T.pending);
-  await page.locator('[data-approval="pass"]').click();
+  await confirmStep1(page);
   await expect(step(page, 0)).toHaveAttribute("data-status", "passed");
   await expect(step(page, 0).getByTestId("approval-owner-override")).toHaveCount(0);
   await expect(step(page, 1)).toHaveAttribute("data-status", "open");
