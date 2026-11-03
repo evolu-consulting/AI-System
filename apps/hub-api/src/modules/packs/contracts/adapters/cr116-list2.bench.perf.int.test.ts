@@ -212,6 +212,28 @@ describe("CR-116 vòng 2", () => {
     expect(ok).toBe(true);
   }, 1_200_000);
 
+  it("(4) kế hoạch: plan_cache_mode auto (hiện tại) vs force_generic_plan cho câu list", async () => {
+    let ok = true;
+    for (const t of B.T)
+      for (const who of [t.V, t.O]) {
+        const [scope, list] = (await B.capture(t.id, who, filter)).queries as [Cap, Cap];
+        ok =
+          (await B.compare(
+            `C8 plan cache (${who === t.V ? "V" : "O"})`,
+            t.n,
+            scope,
+            [
+              v("A auto (hiện tại)", list),
+              v("B force_generic_plan", list, list.text, [
+                "set local plan_cache_mode = force_generic_plan",
+              ]),
+            ],
+            listKey,
+          )) && ok;
+      }
+    expect(ok).toBe(true);
+  }, 900_000);
+
   it("(6) Bun.sql vs postgres.js: list/detail cùng câu; cắt kết nối giữa tx", async () => {
     const t = B.T[1] as Ten;
     const [scope, list] = (await B.capture(t.id, t.V, filter)).queries as [Cap, Cap];
@@ -224,8 +246,9 @@ describe("CR-116 vòng 2", () => {
         fn: (q: (s: string, p: unknown[]) => Promise<unknown>) => Promise<unknown>,
       ) => Promise<unknown>,
     ][] = [
-      ["postgres.js 3.4.9", (fn) => pg.begin((tx) => fn((s, p) => tx.unsafe(s, p as never[])))],
+      // Bun.SQL trước: postgres.js 3.4.9 sập `socket.write` khi bị cắt kết nối giữa tx (đo vòng trước).
       ["Bun.SQL", (fn) => bun.begin((tx) => fn((s, p) => tx.unsafe(s, p as never[])))],
+      ["postgres.js 3.4.9", (fn) => pg.begin((tx) => fn((s, p) => tx.unsafe(s, p as never[])))],
     ];
     const keys: string[] = [];
     for (const [name, run] of drivers) {
