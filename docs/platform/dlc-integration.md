@@ -30,6 +30,11 @@ Mọi đường còn lại là của ta; muốn sửa thì mở PR và báo trư
 - Hub migrations: dải **0070–0080** dành cho DLC (0070 đã dùng; max hiện tại của ta cũng là 0070). Phía ta **không dùng** dải này, đánh số từ 0081 trở lên. Cần quá 0080 thì báo ta cấp thêm.
 - Pack-dlc: journal `migrations-pack-dlc` riêng, không liên quan số hub.
 - Mỗi migration hub mới có đúng một entry `meta/_journal.json` (`when` tăng dần).
+- **Luật `when` (CR-114, bắt buộc):** drizzle chỉ áp migration có `when` **lớn hơn** `created_at` của migration đã áp gần
+  nhất trên DB — **không** theo số file. Migration DLC (vd 0071) mà `when` ≤ `when` lớn nhất đang có ở `platform/gd0` (vd
+  0082 của ta, `when` 1802000000000) sẽ bị **bỏ qua âm thầm** trên prod/staging đã migrate. Vì vậy lúc merge, mỗi migration
+  hub DLC phải có `when` **lớn hơn max `when` hiện có** trong journal của HEAD (sửa `when` khi rebase nếu cần; số file giữ
+  trong dải). `bun run dlc:check` báo `WHEN CŨ` và thoát mã 1 khi vi phạm.
 
 ## 4. i18n
 Key DLC đặt dưới một prefix `dlc` trong `packages/i18n/locales/process/admin.{vi,en}.json`. Merge driver JSON tự gộp file locale; chạy `bun install` một lần để cài (`postinstall` đăng ký driver).

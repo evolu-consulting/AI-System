@@ -74,6 +74,20 @@ export function migrationIssues(
   return { collisions, outOfRange };
 }
 
+export type JournalEntry = { tag: string; when: number };
+
+/**
+ * CR-114 · drizzle chỉ áp migration có `when` LỚN HƠN `created_at` của bản đã áp gần nhất ⇒ migration của nhánh DLC (chưa có
+ * ở HEAD) mà `when` ≤ max `when` của HEAD sẽ bị BỎ QUA âm thầm trên DB đã migrate. Trả các entry đó (kèm max của HEAD).
+ */
+export function journalWhenIssues(ours: JournalEntry[], theirs: JournalEntry[]): string[] {
+  const mine = new Set(ours.map((e) => e.tag));
+  const max = Math.max(0, ...ours.map((e) => e.when));
+  return theirs
+    .filter((e) => !mine.has(e.tag) && e.when <= max)
+    .map((e) => `${e.tag} when=${e.when} ≤ max HEAD ${max}`);
+}
+
 function main(): void {
   const ref = process.argv[2] ?? "github/platform/gd0_dlc";
   const root = repoRoot();
@@ -95,6 +109,15 @@ function main(): void {
       .map((p) => p.split("/").pop() ?? p)
       .filter((f) => f.endsWith(".sql"));
   const iss = migrationIssues(mig("HEAD"), mig(ref));
+  const journal = (r: string): JournalEntry[] =>
+    (
+      JSON.parse(
+        run(["show", `${r}:packages/db/migrations-hub/meta/_journal.json`]).join("\n"),
+      ) as {
+        entries: JournalEntry[];
+      }
+    ).entries;
+  const whenIss = journalWhenIssues(journal("HEAD"), journal(ref));
 
   console.log(`ref=${ref} base=${base.slice(0, 8)} · ${commits.length} commit chưa vào HEAD`);
   for (const c of commits) console.log(`  ${c}`);
@@ -104,10 +127,12 @@ function main(): void {
   console.log(`Khác (${g.other.length} file): ngoài dự kiến`);
   for (const f of g.other) console.log(`  ${f}`);
   console.log("\nMigration hub:");
-  if (iss.collisions.length + iss.outOfRange.length === 0) console.log("  OK, không va số");
+  if (iss.collisions.length + iss.outOfRange.length + whenIss.length === 0)
+    console.log("  OK, không va số, `when` mới hơn HEAD");
   for (const c of iss.collisions) console.log(`  VA SỐ: ${c}`);
   for (const f of iss.outOfRange) console.log(`  NGOÀI DẢI ${DLC_HUB_RANGE.join("–")}: ${f}`);
-  if (iss.collisions.length) process.exitCode = 1;
+  for (const w of whenIss) console.log(`  WHEN CŨ (drizzle sẽ bỏ qua): ${w}`);
+  if (iss.collisions.length || whenIss.length) process.exitCode = 1;
 }
 
 if (import.meta.main) main();
