@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import tempfile
 from collections.abc import Sequence
 
 from pydantic import ValidationError
@@ -64,6 +65,9 @@ def bind_warm(req: ChildRequest) -> bool:
         return False
     os.chdir(req.work_dir)
     os.environ.update(bind.env)
+    # `tempfile` cache thư mục tạm ở lần gọi đầu (có thể trước bind, khi TMPDIR còn là `work/.warm`
+    # dùng chung) ⇒ xoá cache để lần sau đọc lại TMPDIR của job (không chung file tạm giữa job).
+    tempfile.tempdir = None
     fd = os.open(bind.stderr_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     try:
         os.dup2(fd, 2)
