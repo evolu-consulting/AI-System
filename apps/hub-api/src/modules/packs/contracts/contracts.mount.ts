@@ -4,6 +4,7 @@
 
 import { CONTRACT_EXPORT_MAX_ROWS } from "@ai/contracts";
 import type { Db } from "@ai/db";
+import { probe } from "@ai/db/probe";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import { memberNamesOf } from "../kit/adapters/member-names";
@@ -29,6 +30,12 @@ import { uploadDay } from "./domain/upload.rules";
 
 export { CONTRACTS_KEY };
 
+/** CR-116 · điểm đo `probe` (tắt ⇒ gọi thẳng `f`); đặt ở lớp nối vì use case không được import `@ai/db`. */
+const timed =
+  <A extends unknown[], R>(name: string, f: (...a: A) => Promise<R>) =>
+  (...a: A): Promise<R> =>
+    probe(name, () => f(...a));
+
 export type ContractsClock = {
   /** Múi giờ tenant (HD4-FR-02: ngày lịch của tenant); vắng ⇒ múi mặc định. `now` để test tiêm. */
   timeZoneOf?: (tenantId: string) => Promise<string>;
@@ -53,7 +60,7 @@ export function contractsModule(
       await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ),
     );
   const r = contractsRoutes(view, {
-    list: listContracts({ uow, today }),
+    list: timed("contracts.list", listContracts({ uow, today })),
     facets: getFacets({ uow }),
     export: exportContracts({
       uow,
@@ -62,7 +69,7 @@ export function contractsModule(
       owners: memberNamesOf(db),
       cap: CONTRACT_EXPORT_MAX_ROWS,
     }),
-    detail: getContract({ uow, today }),
+    detail: timed("contracts.detail", getContract({ uow, today })),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
     patchFields: patchFields({ uow, ...(guard ? { approval: guard } : {}) }),

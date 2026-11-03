@@ -4,6 +4,8 @@
 set -uo pipefail
 cd /app
 mkdir -p "$HOME" /out
+# CR-116 (run-tests.ps1 -Probe): bật probe đo hiệu năng; PERF_PROBE_OPTS = "runs=3,size=small" cho kịch bản (tests/perf-probe, apps/agent-runtime/tests/perf_probe).
+if [ -n "${EVO_PROBE:-}" ]; then export PERF_PROBE=1 PERF_PROBE_OPTS="$EVO_PROBE"; fi
 
 # EVO_STEP=py (run-tests.ps1 -Step py): pytest của apps/agent-runtime (unit + int) trên Linux trong ảnh uv/python3.12, dùng PG/Redis của slot.
 # Không cài bun deps / migrate: test Python tự dựng schema (tests/acceptance/_rt.py ensure_schema) vào DB ai_system_h1_test.

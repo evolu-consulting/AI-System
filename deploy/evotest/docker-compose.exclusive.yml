@@ -17,3 +17,5 @@ services:
     cpu_shares: 1024
   runner:
     <<: *uncapped
+  runner-py:                                  # CR-116: kịch bản probe Python (-Step py -Exclusive) cũng đo trên máy yên
+    <<: *uncapped

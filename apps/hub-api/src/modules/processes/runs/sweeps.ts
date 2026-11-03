@@ -3,6 +3,7 @@
 // (không một người xem); lọc `tenant_id` tường minh. Sự kiện + tin thread phát/đăng SAU COMMIT.
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import { probe } from "@ai/db/probe";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { startLoop } from "../../../lib/loop";
@@ -44,8 +45,8 @@ type DueRow = StageCand & { interrupted: boolean; apply_ready: boolean };
  * viên vẫn tx riêng (toDecision / advanceApply re-khoá), chạy 0 lần khi không có việc.
  */
 export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
-  const timers = await fireDueTimers(d);
-  const expired = await expireRuns(d);
+  const timers = await probe("timer.fire", () => fireDueTimers(d));
+  const expired = await probe("expire.runs", () => expireRuns(d));
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
   // CR-114 · ba câu quét chỉ đọc của lượt chung MỘT tx, gửi cùng lúc (pipeline) — bớt 2 tx (begin/scope/commit) mỗi lượt.

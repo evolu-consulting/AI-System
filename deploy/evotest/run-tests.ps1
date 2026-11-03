@@ -2,11 +2,13 @@
 #   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|py|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4; -Step py = pytest agent-runtime (Linux, python3.12 + uv sync --frozen; -Filter = đường dẫn/biểu thức pytest tương đối apps/agent-runtime; không nằm trong all) [-DryRun]
 # -Exclusive (chỉ -Step perf, CR-115): chờ mọi slot rảnh (tối đa -ExclusiveTimeoutMin phút, mặc định 60; hết giờ => exit 3), giữ khoá toàn máy ~/workspace/evotest/.exclusive trong lúc đo (lượt khác xếp hàng),
 #   nhả khoá cả khi lỗi/Ctrl-C; load/RAM lúc bắt đầu + kết thúc in ra và ghi vào <log>\exclusive.txt. Luật khoá: deploy/evotest/lock.sh.
+# -Probe "runs=3,size=small" (CR-116, chỉ -Step perf|py): bật PERF_PROBE=1 + PERF_PROBE_OPTS trong container; -Exclusive cũng dùng được với -Step py. Điều khiển bởi `bun run perf:probe` (docs/WORKFLOW.md "Đo perf").
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60)
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "")
 $ErrorActionPreference = "Stop"
-if ($Exclusive -and $Step -ne "perf") { throw "-Exclusive chỉ dùng với -Step perf (đo hiệu năng cần máy yên)" }
+if ($Exclusive -and $Step -ne "perf" -and $Step -ne "py") { throw "-Exclusive chỉ dùng với -Step perf|py (đo hiệu năng cần máy yên)" }
+if ($Probe -and $Step -ne "perf" -and $Step -ne "py") { throw "-Probe chỉ dùng với -Step perf|py" }
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")
@@ -64,7 +66,7 @@ try {
   # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
   scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
   scp @ssh "$tmp\lock.sh" "${Server}:/tmp/evotest-lock-$stamp.sh"
-  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
+  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   $finished = $false
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE

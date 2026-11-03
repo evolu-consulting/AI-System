@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./test-db": "./src/test-db.ts",
+    "./probe": "./src/probe.ts",
     "./seed": "./src/seed.ts",
     "./migrate-hub": "./src/migrate-hub.ts",
     "./migrate-packs": "./src/migrate-packs.ts",

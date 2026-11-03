@@ -12,6 +12,8 @@ from typing import Any, Protocol
 
 import asyncpg  # pyright: ignore[reportMissingTypeStubs]
 
+from agent_runtime.probe import probe_connection_class, probe_on
+
 Row = Mapping[str, Any]
 NotifyCallback = Callable[[Any, int, str, str], object]
 
@@ -51,11 +53,16 @@ async def create_pool(dsn: str, max_size: int = POOL_MAX) -> Pool:
     `AGENT_RT_DB_POOL_MAX` (CR-114). Đi qua pgbouncer transaction mode ⇒ DSN pool phải tắt
     prepared statement cache phía bouncer hoặc trỏ thẳng Postgres; LISTEN (`connect_listen`) luôn
     trỏ thẳng Postgres (`deploy/prod-sohoptac2/README-pgbouncer.md`)."""
+    # CR-116: PERF_PROBE=1 ⇒ Connection đếm câu SQL/round trip cho `probe()`; tắt ⇒ pool nguyên bản.
+    extra: dict[str, Any] = (
+        {"connection_class": probe_connection_class(_PG.Connection)} if probe_on() else {}
+    )
     pool: Pool = await _PG.create_pool(
         dsn,
         min_size=min(POOL_MIN, max_size),
         max_size=max_size,
         timeout=CONNECT_TIMEOUT_S,
+        **extra,
     )
     return pool
 

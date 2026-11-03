@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agent_runtime.db.pool import Conn, Row
+from agent_runtime.probe import probe
 
 # CR-114 hub-claim-scale: khoá claim **theo provider** (2 khoá, `$1` = provider_key) thay cho một
 # khoá toàn cục ⇒ worker của các provider khác nhau claim song song. Mọi chỗ đổi slot/trạng thái
@@ -189,6 +190,13 @@ async def claim_one(
     """CR-114: PEEK (không khoá) chọn provider của job đứng đầu → `_claim_in` (transaction READ
     COMMITTED dưới `K_CLAIM` của provider đó). Provider hết job claim được bị bỏ khỏi lượt PEEK sau;
     trượt khoá tenant ⇒ thử lại (có chặn). `sandbox_max` (P-c1) ⇒ slot tự-sửa."""
+    with probe("claim.one"):  # CR-116 điểm đo (tắt ⇒ không làm gì)
+        return await _claim_one(conn, providers, worker_id, sandbox_max)
+
+
+async def _claim_one(
+    conn: Conn, providers: list[str], worker_id: str, sandbox_max: int | None
+) -> ClaimedJob | None:
     extra: tuple[object, ...] = () if sandbox_max is None else (worker_id, sandbox_max)
     peek = CLAIM_PEEK if sandbox_max is None else CLAIM_PEEK_SANDBOX
     left = list(dict.fromkeys(providers))

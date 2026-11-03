@@ -3,6 +3,7 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { createSpread, type SpreadPool, type StatementSpread } from "./prepare-spread";
+import { probeOn, sqlTap } from "./probe";
 
 export type Db = {
   db: PostgresJsDatabase;
@@ -61,7 +62,12 @@ export type CreateDbOpts = {
 
 export function createDb(url: string, opts: CreateDbOpts = {}): Db {
   const max = opts.max ?? 10;
-  const sql = postgres(url, { max, onnotice: () => {} });
+  // CR-116 · PERF_PROBE=1 ⇒ tap đếm câu SQL/round trip cho `probe()`; tắt ⇒ cấu hình y như cũ.
+  const sql = postgres(url, {
+    max,
+    onnotice: () => {},
+    ...(probeOn() ? { debug: sqlTap() } : {}),
+  });
   const spread = opts.spread
     ? createSpread(
         sql as unknown as SpreadPool,
