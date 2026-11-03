@@ -164,7 +164,7 @@ export function redact(line: string, max = 160): string {
   return s.length > max ? `${s.slice(0, max)}…` : s;
 }
 
-/** Dòng log lỗi ("service-1  | ... error ...") ⇒ đếm theo dịch vụ + vài dòng mẫu đã che. */
+/** Dòng log lỗi ("service-1  | ... error ...") ⇒ đếm theo dịch vụ + vài dòng mẫu đã che. Đọc cả log JSON và kv (`LOG_FORMAT`). */
 export function errorLogSummary(log: string): {
   total: number;
   byService: Record<string, number>;
@@ -176,7 +176,7 @@ export function errorLogSummary(log: string): {
   for (const l of log.split(/\r?\n/)) {
     if (
       !/\b(error|fatal|exception|unhandled|panic)\b/i.test(l) ||
-      /level["=:]+\s*"?(info|debug)/i.test(l)
+      /\b(?:level|lvl)["=:]+\s*"?(info|debug)/i.test(l) // JSON (`"level":"info"`) và kv (`lvl=info`, CR-114)
     )
       continue;
     total++;

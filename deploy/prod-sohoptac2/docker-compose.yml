@@ -213,6 +213,7 @@ services:
       HOME: /claude-home
       APP_ENV: production
       LOG_LEVEL: info
+      LOG_FORMAT: ${LOG_FORMAT:-json}
       REDIS_URL: redis://redis:6379
       AGENT_RT_DATABASE_URL: ${AGENT_RT_DATABASE_URL:?run gen-env.sh}
       AGENT_RT_PROVIDERS: claude-sub

@@ -135,6 +135,7 @@ services:
     environment:
       HOME: /tmp
       APP_ENV: development
+      LOG_FORMAT: ${LOG_FORMAT:-json}
       LOG_LEVEL: info
       REDIS_URL: redis://redis:6379
       AGENT_RT_DATABASE_URL: ${AGENT_RT_DATABASE_URL:?run gen-env.sh}

@@ -29,6 +29,7 @@ S2_PUBLIC_COMMUNITY_URL=http://localhost:$P_COMMUNITY
 PG_OWNER_PASSWORD=$OWNER_PW
 APP_ENV=production
 LOG_LEVEL=info
+LOG_FORMAT=json
 DATABASE_URL=postgres://s2_owner:$OWNER_PW@pg:5432/ai_system
 ADMIN_API_DATABASE_URL=postgres://admin_api:$ADMIN_API_PW@pg:5432/ai_system
 HUB_DATABASE_URL=postgres://hub_api:$HUB_API_PW@pg:5432/ai_system

@@ -92,3 +92,17 @@ def test_configure_logging_kv_che_bi_mat_va_gan_ngu_canh() -> None:
     for leaked in ("sk-abcdef", "eyJ", "abc.def"):
         assert leaked not in out
     assert "token=[REDACTED]" in out
+
+
+def test_mac_dinh_json_ke_ca_production_kv_chi_khi_dat_tuong_minh() -> None:
+    """fix114-log: consumer đọc JSON (verify:prod…) ⇒ production KHÔNG tự đổi sang kv."""
+    from agent_runtime.config import Settings
+
+    def fmt(raw: str | None, env: str) -> str:
+        s = Settings.model_construct(log_format_raw=raw, app_env=env)  # type: ignore[arg-type]
+        return s.log_format
+
+    assert fmt(None, "production") == "json"
+    assert fmt(None, "development") == "json"
+    assert fmt("kv", "production") == "kv"
+    assert fmt("json", "production") == "json"

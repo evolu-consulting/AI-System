@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     home: Path = Field(validation_alias="HOME")
     redis_url: SecretStr = Field(validation_alias="REDIS_URL")
     log_level: LogLevel = Field(default="info", validation_alias="LOG_LEVEL")
-    # CR-114 · `kv` gọn cho agent đọc; vắng ⇒ `kv` khi APP_ENV=production, ngược lại `json`.
+    # CR-114 · `kv` gọn cho agent đọc; vắng ⇒ `json` (cả production; verify:prod đọc).
     log_format_raw: Literal["json", "kv"] | None = Field(
         default=None, validation_alias="LOG_FORMAT"
     )
@@ -56,8 +56,8 @@ class Settings(BaseSettings):
 
     @property
     def log_format(self) -> Literal["json", "kv"]:
-        """CR-114: `LOG_FORMAT` hoặc mặc định theo APP_ENV (production ⇒ kv)."""
-        return self.log_format_raw or ("kv" if self.app_env == "production" else "json")
+        """CR-114 / fix114-log: `LOG_FORMAT` tường minh; vắng ⇒ json (kể cả production)."""
+        return self.log_format_raw or "json"
 
     poll_s: float = Field(default=1.0, gt=0)
     # CR-114 hub-claim-scale: `AGENT_RT_DB_POOL_MAX` — cỡ pool asyncpg (claim/heartbeat/kết thúc).

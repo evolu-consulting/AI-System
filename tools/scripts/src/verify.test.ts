@@ -144,6 +144,27 @@ describe("verify · prod", () => {
     expect(s.samples.join("\n")).not.toContain("sk-secret");
     expect(redact("password=hunter2 ok")).toBe("password=*** ok");
   });
+
+  it("errorLogSummary: đọc cả log kv (LOG_FORMAT=kv) như JSON — lvl=info bỏ, lvl=error đếm, che token", () => {
+    const log = [
+      "hub-api-1  | t=1700000000 lvl=error e=run.failed run=0a1b2c token=abc123 error=boom",
+      "hub-api-1  | t=1700000001 lvl=info e=error.budget.ok run=0a1b2c",
+      "agent-runtime-1  | t=1700000002 lvl=warn e=job.output.retry ms=5",
+      "agent-runtime-1  | t=1700000003 lvl=error e=runtime.startup.failed error=OSError",
+      "web-1  | hello",
+    ].join("\n");
+    const s = errorLogSummary(log);
+    expect(s.total).toBe(2);
+    expect(s.byService).toEqual({ "hub-api": 1, "agent-runtime": 1 });
+    expect(s.samples.join("\n")).not.toContain("abc123");
+    // cùng số đếm với bản JSON của cùng sự kiện
+    const json = [
+      `hub-api-1  | {"level":"error","msg":"run.failed","run_id":"0a1b2c"}`,
+      `agent-runtime-1  | {"level": "error", "event": "runtime.startup_failed"}`,
+      `hub-api-1  | {"level":"info","msg":"error.budget.ok"}`,
+    ].join("\n");
+    expect(errorLogSummary(json).total).toBe(s.total);
+  });
 });
 
 describe("verify · slice / wave / tóm tắt", () => {

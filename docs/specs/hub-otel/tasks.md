@@ -23,7 +23,7 @@ Request E12 → span `run` → `agent.step` (tên agent, vai, tenant, run, token
 - Kịch bản: khi Runtime ghi cấu hình MCP thì có header `traceparent` [test: apps/agent-runtime/src/agent_runtime/test_otel.py » test_header_traceparent_vao_cau_hinh_mcp]
 
 #### Yêu cầu: Log kv gọn cho agent đọc
-`LOG_FORMAT=kv` (mặc định `kv` khi `APP_ENV=production`, ngược lại `json`) in một dòng `t=<epoch> lvl=<mức> e=<sự.kiện.chấm> run=<6 ký tự> ag=<tên agent đầy đủ> ms=<n> tk=<vào>/<ra> trace=<8 ký tự> …`: tên sự kiện là chữ, id rút 6 ký tự, chuỗi chỉ trong ngoặc kép khi có khoảng trắng, dòng ≤ 400 ký tự, bí mật bị che theo bộ che hiện có. `bun run log:view` in lại cho người đọc.
+`LOG_FORMAT=kv` (mặc định `json` ở mọi môi trường kể cả production; kv chỉ khi đặt tường minh — fix114-log) in một dòng `t=<epoch> lvl=<mức> e=<sự.kiện.chấm> run=<6 ký tự> ag=<tên agent đầy đủ> ms=<n> tk=<vào>/<ra> trace=<8 ký tự> …`: tên sự kiện là chữ, id rút 6 ký tự, chuỗi chỉ trong ngoặc kép khi có khoảng trắng, dòng ≤ 400 ký tự, bí mật bị che theo bộ che hiện có. `bun run log:view` in lại cho người đọc.
 - Kịch bản: khi log ở dạng kv thì dòng đúng khuôn, id rút gọn, tk gộp vào/ra [test: apps/hub-api/src/lib/log-kv.test.ts » khuôn; apps/agent-runtime/src/agent_runtime/test_log_kv.py » test_khuon_dong_id_6_ky_tu_agent_day_du]
 - Kịch bản: khi giá trị có khoảng trắng, dấu = hoặc xuống dòng thì được đặt ngoặc kép và escape, không có xuống dòng thật [test: apps/hub-api/src/lib/log-kv.test.ts » giá trị; apps/agent-runtime/src/agent_runtime/test_log_kv.py » test_gia_tri_escape_va_ngoac_kep]
 - Kịch bản: khi dòng quá 400 ký tự thì bị cắt và kết bằng `~` [test: apps/hub-api/src/lib/log-kv.test.ts » trần dòng; apps/agent-runtime/src/agent_runtime/test_log_kv.py » test_tran_dong_400]
@@ -51,7 +51,7 @@ Hub-api dùng logger tự viết (JSON một dòng, `lib/logger.ts`), Runtime d�
 - Không int/e2e: không đổi SQL/route; `job-agent-runner` chỉ thêm span + một trường payload tuỳ chọn.
 
 ## Quyết định trong lúc làm
-- Mặc định kv theo `APP_ENV=production` (cả hai ngôn ngữ đang JSON ở prod; dev/test giữ JSON cho người).
+- ~~Mặc định kv theo `APP_ENV=production`~~ — ĐÃ ĐỔI (fix114-log): mặc định `json` mọi nơi vì có consumer đọc log JSON (`verify:prod`).
 - Tên sự kiện kv: mọi ký tự ngoài `[a-z0-9.]` thành dấu chấm (`orchestrator_tenant_invalid` → `orchestrator.tenant.invalid`); cùng luật ở TS và Python.
 - Token vào/ra (`input_tokens`/`output_tokens`) rút ra TRƯỚC khi che (khoá `*token*` bị bộ che hiện có thay hẳn) → `tk=in/out`; cache token chỉ có ở Runtime (`tokens.cache_read/cache_write` trên `llm.call`), Hub không có số này.
 - `uv.lock` giữ `revision = 3` (uv mới ghi 5; ảnh uv của `scripts/run.ts` đọc được bản cũ).

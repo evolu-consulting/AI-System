@@ -54,7 +54,7 @@ function readEnv(): Env {
   try {
     const env = loadEnv(process.env);
     setMinLevel(env.LOG_LEVEL);
-    setLogFormat(env.LOG_FORMAT ?? (env.APP_ENV === "production" ? "kv" : "json"));
+    setLogFormat(env.LOG_FORMAT ?? "json"); // fix114-log · kv chỉ khi bật tường minh (còn consumer đọc JSON)
     initOtel(process.env); // CR-114 · tắt khi vắng OTEL_EXPORTER_OTLP_ENDPOINT
     return env;
   } catch (err) {
