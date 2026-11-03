@@ -237,9 +237,10 @@ Sự cố đã gặp: Postgres test local phải crash-recovery nhiều phút, R
 
 **Cách điều phối quyết định song song** (số lấy từ mục KHUYẾN NGHỊ của lệnh; luật thuần ở `tools/scripts/src/res-check.rules.ts`):
 - **Local = code + unit/typecheck.** Số agent chỉ-code song song ≤ `min(RAM trống − 2 GB chia 1 GB, lõi rảnh, 8)`; đĩa < 30 GB ⇒ tối đa 3, < 15 GB ⇒ 1 và không tạo worktree mới.
-- **int/e2e nặng chạy trên slot evotest** (`deploy/evotest/run-tests.ps1`), không quá số slot trống; mọi slot bận thì xếp hàng thay vì bật thêm lượt local. Máy chủ quá tải (load > lõi) ⇒ tối đa 1 lượt mới.
+- **int/e2e nặng chạy trên slot evotest** (`deploy/evotest/run-tests.ps1`), không quá số slot trống; mọi slot bận thì xếp hàng thay vì bật thêm lượt local. Máy chủ quá tải (load > lõi) ⇒ tối đa 1 lượt mới. **Mặc định 8 slot** (`-Slots 1..8`; trần mỗi slot 9,25 GB RAM, 8 slot ≈ 59% RAM máy chủ, CPU mềm cpu_shares 128 + nice); `res:check --server` đếm 8 slot.
 - **Playwright local ≤ 2 lượt cùng lúc** (cần RAM trống ≥ 4 GB và ≥ 2 lõi rảnh cho 1 lượt; ≥ 6 GB và ≥ 4 lõi cho 2 lượt); số còn lại đã trừ lượt đang chạy. Postgres local không chạy ⇒ cảnh báo, chuyển int/e2e sang evotest.
 - **Dọn worktree sau khi merge:** `bun run slice:rm <tên>` ngay sau `slice:merge`; cảnh báo khi worktree đã merge + thư mục mồ côi (`evolu-wt`, `.claude/worktrees`) vượt 3 (~0,6 GB/cái).
+- **Hồ bơi worktree ấm:** `bun run slice:pool [--size N]` (mặc định 3, nhớ cỡ đã đặt) giữ N worktree detached đã `bun install` ở `evolu-wt/_pool/<n>` (đĩa < 30 GB ⇒ không dựng). `slice:new` lấy một cái (`worktree move` + `checkout -b` tại đầu platform/gd0, ~6 s thay ~21 s) rồi bổ sung nền (log `_pool/refill.log`); hết pool ⇒ dựng như cũ. `slice:rm` không đổi; đầu đợt chạy `slice:pool` một lần.
 - Cảnh báo không chặn; chỉ giới hạn cứng (đĩa < 15 GB, RAM < 2 GB) chặn `slice:new`. Điều phối đọc khuyến nghị rồi tự giảm số lát chạy cùng lúc — không hỏi người dùng.
 
 **Nguyên tắc pipeline (người dùng chốt 2026-11-03): tốc độ tối đa, không chồng tải, giữ chất lượng.**

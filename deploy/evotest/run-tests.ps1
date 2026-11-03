@@ -2,7 +2,7 @@
 #   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 4, [ValidateSet("", "cw")][string]$Capture = "")
+param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
@@ -56,7 +56,7 @@ try {
   ssh @ssh $Server "mkdir -p ~/workspace/evotest"
   scp @ssh "$tmp\evotest-app-$stamp.tgz" "$tmp\evotest-kit-$stamp.tgz" "${Server}:/tmp/"
   $t0 = Get-Date
-  # Slot song song (mặc định 4, đổi bằng -Slots): boot.sh chọn slot trống đầu tiên (mkdir .lock nguyên tử, gỡ lock mồ côi), chỉ chờ khi mọi slot bận.
+  # Slot song song (mặc định 8, đổi bằng -Slots): boot.sh chọn slot trống đầu tiên (mkdir .lock nguyên tử, gỡ lock mồ côi), chỉ chờ khi mọi slot bận.
   # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
   scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
   $boot = "EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"

@@ -1,8 +1,8 @@
 # Test runner từ xa cho evolu-platform (deploy/evotest/run-tests.ps1) - project Docker RIÊNG "evotest" trên máy chủ production.
 # Không `ports:`, không gắn mạng nào có sẵn (mạng mặc định của project), Postgres ở tmpfs (không volume cần dọn).
 # Nhiều slot song song: mỗi slot = project riêng `-p evotest-sN` (remote.sh), thư mục riêng ~/workspace/evotest/slots/sN, không container_name cố định.
-# Ngân sách MỖI slot (máy chủ 12 CPU / 125 GB RAM, ~70 GB trống): CPU trần 2 + 1 + 0.25 = 3.25; RAM 6 + 5 + 0.5 = 11.5 GB.
-# 4 slot = 13 CPU trần (mềm nhờ cpu_shares 128 + `nice -n 19`), 46 GB RAM.
+# Ngân sách MỖI slot (máy chủ 12 CPU / 125 GB RAM, ~106 GB trống; prod sohoptac2 + dự án khác cùng máy): CPU trần 2 + 1 + 0.25 = 3.25; RAM trần 5 + 4 + 0.25 = 9.25 GB.
+# 8 slot = 26 CPU trần (mềm: cpu_shares 128 so với 1024 mặc định của prod + `nice -n 19`), 74 GB RAM trần (~59% RAM; dùng thật thấp hơn nhiều).
 name: evotest
 
 x-runner: &runner
@@ -26,7 +26,7 @@ x-runner: &runner
     redis: { condition: service_healthy }
   entrypoint: ["nice", "-n", "19", "bash", "/in-container.sh"]
   cpus: 2
-  mem_limit: 6g
+  mem_limit: 5g
   cpu_shares: 128
   shm_size: 1g
   init: true
@@ -49,7 +49,7 @@ services:
     tmpfs:
       - /var/lib/postgresql/data:size=3g
     cpus: 1
-    mem_limit: 5g
+    mem_limit: 4g
     cpu_shares: 128
 
   redis:
@@ -61,7 +61,7 @@ services:
       timeout: 3s
       retries: 30
     cpus: 0.25
-    mem_limit: 512m
+    mem_limit: 256m
     cpu_shares: 128
 
   runner:

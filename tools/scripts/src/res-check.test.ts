@@ -240,6 +240,21 @@ describe("res-check parse · mẫu đầu ra", () => {
     });
   });
 
+  test("8 slot evotest: script hỏi slot 1..8, bộ phân tích đếm đủ 8 theo thứ tự", () => {
+    expect(serverScript(8)).toContain("seq 1 8");
+    const base = [
+      "nproc=12",
+      "load1=1",
+      "mem_avail_kb=1048576",
+      "mem_total_kb=2097152",
+      "disk_free_kb=104857600",
+    ];
+    const busy = new Set([2, 5, 8]);
+    const slots = [8, 7, 6, 5, 4, 3, 2, 1].map((i) => `slot${i}=${busy.has(i) ? "busy" : "free"}`);
+    const s = parseServerOut([...base, ...slots].join("\n"));
+    expect(s?.slotsBusy).toEqual([false, true, false, false, true, false, false, true]);
+  });
+
   test("ssh thiếu khoá/lỗi kết nối ⇒ undefined", () => {
     expect(parseServerOut("")).toBeUndefined();
     expect(

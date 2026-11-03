@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Chạy TRÊN máy chủ (run-tests.ps1 scp lên /tmp rồi gọi qua ssh): chọn slot trống đầu tiên bằng `mkdir .lock` nguyên tử, giải kit, chạy remote.sh.
-# Dùng: [EVO_SLOTS=4] boot.sh <bước> <commit> <tag>. Slot 1 giữ khoá cũ ~/workspace/evotest/.lock (tương thích mgmt/run.ps1, nightly); slot N>1: ~/workspace/evotest/slots/sN/.lock.
+# Dùng: [EVO_SLOTS=8] boot.sh <bước> <commit> <tag>. Slot 1 giữ khoá cũ ~/workspace/evotest/.lock (tương thích mgmt/run.ps1, nightly); slot N>1: ~/workspace/evotest/slots/sN/.lock.
 # Lock mồ côi (PID owner đã chết) bị gỡ. Chỉ chờ khi mọi slot bận (tối đa 90 phút, exit 3).
 STEP="$1"; COMMIT="$2"; TAG="$3"
-R="$HOME/workspace/evotest"; N="${EVO_SLOTS:-4}"
+R="$HOME/workspace/evotest"; N="${EVO_SLOTS:-8}"
 mkdir -p "$R/slots" || exit 2
 lockof() { if [ "$1" = 1 ]; then echo "$R/.lock"; else echo "$R/slots/s$1/.lock"; fi; }
 try_lock() {

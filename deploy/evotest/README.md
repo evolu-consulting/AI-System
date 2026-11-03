@@ -7,11 +7,12 @@
 - Log: `.data/evotest/<giờ>-<bước>/` (console.log, <bước>/ = `.data` của lượt chạy, int-s*.log, JUnit). Chưa kiểm e2e từ đầu đến cuối (kéo image Playwright lần đầu).
 - Không đụng container/mạng/volume khác; không `prune`. Khoá SSH `F:\workspace\id_evoc_key` chỉ dùng qua `-i`.
 
-## Slot song song (mặc định 4, `-Slots N` 1..8)
+## Slot song song (mặc định 8, `-Slots N` 1..8)
 - Mỗi lượt chạy lấy **slot trống đầu tiên** (`boot.sh`: `mkdir .lock` nguyên tử mỗi slot, gỡ lock mồ côi theo PID owner); chỉ xếp hàng (tối đa 90 phút, exit 3) khi mọi slot bận. Slot 1 giữ khoá cũ `~/workspace/evotest/.lock` (tương thích `mgmt/run.ps1`, bản run-tests cũ); slot N>1: `~/workspace/evotest/slots/sN/.lock`.
 - Slot N = project Docker `evotest-sN`, thư mục `~/workspace/evotest/slots/sN` (app/out riêng), pg tmpfs + redis riêng, không cổng; cache bun `~/workspace/evotest/cache` dùng chung. `-Capture cw` và e2e chạy trong slot đã chọn như thường.
-- Ngân sách MỖI slot (máy chủ 12 CPU / 125 GB, ~70 GB trống): trần CPU 2 + 1 + 0.25, RAM 6 + 5 + 0.5 = 11.5 GB; 4 slot = 46 GB RAM, CPU trần 13 (mềm nhờ cpu_shares 128 + `nice -n 19`). `evotest-mgmt` vẫn dùng khoá slot 1 (không tính vào ngân sách trên).
-- Kiểm: 3 lượt `-Step int -Filter tests/acceptance/V2-A` song song chạy cùng giây ở 3 slot khác nhau, đều xanh.
+- Ngân sách MỖI slot (máy chủ 12 CPU / 125 GB, ~106 GB trống, prod sohoptac2 + dự án khác cùng máy): trần CPU 2 + 1 + 0.25, RAM trần 5 + 4 + 0.25 = 9.25 GB; 8 slot = 74 GB RAM trần (~59%, dùng thật thấp hơn), CPU trần 26 (mềm nhờ cpu_shares 128 so với 1024 mặc định + `nice -n 19`). `res:check --server` đếm đủ 8 slot (`SERVER_SLOTS`). `evotest-mgmt` vẫn dùng khoá slot 1 (không tính vào ngân sách trên).
+- Kiểm 8 slot (2026-11-03): 6 lượt `-Step int -Filter "tests/acceptance/M3 tests/acceptance/CF tests/acceptance/H2c"` (55 file) chạy song song, lấy slot s1..s5 (5 slot cùng lúc), cả 6 xanh (495 pass); trong container 212-226 s/lượt, cả lượt 247-262 s; RAM thật mỗi slot ~0,4 GB runner + ~0,3 GB pg.
+- Kiểm cũ: 3 lượt `-Step int -Filter tests/acceptance/V2-A` song song chạy cùng giây ở 3 slot khác nhau, đều xanh.
 
 ## Local và evotest (Luật 0b)
 - Chạy **local**: unit test + typecheck (nhanh, không cần stack). Chạy trên **evotest**: int, e2e, perf (`run-tests.ps1 -Step int|e2e|perf` hoặc `-Dirty` từ worktree của lát; archive lấy từ chính worktree đó).

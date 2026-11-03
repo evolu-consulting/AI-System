@@ -5,6 +5,8 @@
 //   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên platform/gd0,
 //                     test:affected, rồi ff (hoặc merge) vào platform/gd0
 //                     ở checkout chính (checkout chính phải đang ở platform/gd0).
+//   slice:pool [--size N]  giữ N (mặc định 3) worktree ấm ở `evolu-wt/_pool/<n>` (detached, đã bun install; đĩa < 30 GB ⇒ không dựng);
+//                     `slice:new` lấy một cái (worktree move + checkout -b) rồi bổ sung nền không chặn; hết ⇒ dựng bình thường.
 //   slice:rm <tên> [--force]       gỡ worktree + xoá nhánh (nhánh chưa merge cần --force).
 // Không bao giờ push. Hook: tools/hooks qua core.hooksPath (xem setup-hooks.ts).
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -13,9 +15,11 @@ import { pruneLanes, resolveLane } from "./e2e-lane";
 import { collectLocal } from "./res-check";
 import { hardLimits } from "./res-check.rules";
 import { ensureMergeDriver } from "./setup-merge-driver";
+import { cmdPool, spawnRefill, takeFromPool } from "./slice.pool";
 import { rebaseResolvingLock, relockAfterRebase } from "./slice-rebase";
 
 const BASE = "platform/gd0";
+const POOL_SCRIPT = "tools/scripts/src/slice.ts";
 
 function run(cwd: string, cmd: string[], inherit = false): { ok: boolean; out: string } {
   const p = Bun.spawnSync(cmd, {
@@ -130,8 +134,12 @@ function cmdNew(name: string | undefined, force: boolean): void {
   const { main, dir, branch } = paths(name);
   if (existsSync(dir)) fail(`đã có ${dir}`);
   resourceGate(force);
-  const r = git(main, "worktree", "add", "-b", branch, dir, BASE);
-  if (!r.ok) fail(r.out);
+  const t0 = Date.now();
+  const pooled = takeFromPool(main, dir, branch);
+  if (!pooled) {
+    const r = git(main, "worktree", "add", "-b", branch, dir, BASE);
+    if (!r.ok) fail(r.out);
+  }
   copyEnv(main, dir);
   if (!run(dir, ["bun", "install"], true).ok) fail("bun install lỗi");
   verifyHooks(dir);
@@ -140,7 +148,17 @@ function cmdNew(name: string | undefined, force: boolean): void {
   console.log(
     `slice: làn e2e ${resolveLane(dir)} (cổng/DB/Redis riêng, xem docs/WORKFLOW.md "e2e theo làn")`,
   );
-  console.log(`slice: sẵn sàng ${dir} (nhánh ${branch})`);
+  console.log(
+    `slice: sẵn sàng ${dir} (nhánh ${branch}, ${((Date.now() - t0) / 1000).toFixed(0)} s${pooled ? ", từ hồ bơi" : ""})`,
+  );
+  if (pooled)
+    spawnRefill(
+      main,
+      // script của checkout chính bền hơn worktree của lát (có thể bị gỡ), nhưng chỉ khi đã có tính năng hồ bơi
+      existsSync(join(main, "tools/scripts/src/slice.pool.ts"))
+        ? join(main, POOL_SCRIPT)
+        : import.meta.path,
+    );
 }
 
 function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean): void {
@@ -195,7 +213,8 @@ function cmdRm(name: string | undefined, force: boolean): void {
 }
 
 const [cmd, name, ...flags] = process.argv.slice(2);
-if (cmd === "new") cmdNew(name, flags.includes("--force"));
+if (cmd === "pool") cmdPool(mainRoot(), [name ?? "", ...flags]);
+else if (cmd === "new") cmdNew(name, flags.includes("--force"));
 else if (cmd === "merge")
   cmdMerge(name, flags.includes("--no-test"), flags.includes("--no-openspec"));
 else if (cmd === "rm") cmdRm(name, flags.includes("--force"));

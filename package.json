@@ -27,6 +27,7 @@
     "verify:predeploy": "bun tools/scripts/src/verify-predeploy.ts",
     "verify:prod": "bun tools/scripts/src/verify-prod.ts",
     "slice:new": "bun tools/scripts/src/slice.ts new",
+    "slice:pool": "bun tools/scripts/src/slice.ts pool",
     "slice:merge": "bun tools/scripts/src/slice.ts merge",
     "slice:rm": "bun tools/scripts/src/slice.ts rm",
     "openspec:check": "bun tools/scripts/src/openspec.ts check",

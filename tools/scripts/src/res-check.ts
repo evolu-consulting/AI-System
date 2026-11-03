@@ -25,7 +25,7 @@ import {
 const BASE = "platform/gd0";
 const SERVER = "evoc@149.202.83.5";
 const KEY = "F:\\workspace\\id_evoc_key";
-const SERVER_SLOTS = 4;
+const SERVER_SLOTS = 8;
 const MB = 1024 * 1024;
 
 const git = (cwd: string, ...a: string[]) => {
@@ -84,7 +84,7 @@ function countOrphans(main: string, known: Set<string>): number {
   for (const dir of [resolve(main, "..", "evolu-wt"), join(main, ".claude", "worktrees")]) {
     if (!existsSync(dir)) continue;
     for (const e of readdirSync(dir, { withFileTypes: true }))
-      if (e.isDirectory() && !known.has(norm(join(dir, e.name)))) n++;
+      if (e.isDirectory() && !e.name.startsWith("_") && !known.has(norm(join(dir, e.name)))) n++; // `_pool` = hồ bơi worktree ấm (slice:pool)
   }
   return n;
 }
