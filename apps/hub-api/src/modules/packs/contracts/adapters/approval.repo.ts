@@ -12,6 +12,7 @@ import type {
 import { ESIGN_SENDING_STALE_MIN } from "../application/esign-flow.usecase";
 import { APPROVAL_DEFAULTS, type ApprovalSettings } from "../domain/approval-def.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
+import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { settingsRepo } from "./approval-settings.repo";
 
 /** Trạng thái HĐ còn trong flow (chưa "Đã duyệt"/"Bị từ chối"/theo dõi). */
@@ -66,6 +67,7 @@ type StateRow = {
   a_est?: boolean | null;
   a_eat?: string | null;
   a_erm?: string | null;
+  a_ovr?: string[] | null;
   owner?: string | null;
   deal: string | null;
   v: unknown;
@@ -91,6 +93,7 @@ const toState = (r: StateRow): ApprovalState => ({
           esignStale: r.a_est === true,
           esignAt: r.a_eat ?? null,
           esignRemindedAt: r.a_erm ?? null,
+          overrideTasks: r.a_ovr ?? [],
         }
       : null,
   owner: r.owner ?? null,
@@ -109,6 +112,9 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
         a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
         (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
         ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm,
+        (select array_agg(e.data->>'task_id') from contracts.contract_events e
+          where e.contract_id = c.id and e.tenant_id = c.tenant_id and e.type = ${OVERRIDE_EVENT}
+            and e.data->>'run_id' = a.id::text) as a_ovr,
         c.fields -> 'total_value' -> 'value' as v,
         (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid) as threshold
       from contracts.contracts c

@@ -32,6 +32,8 @@ export type ApprovalState = ContractRunRef & {
     /** esign-sweep2 · mốc lần gửi hiện tại + lần nhắc cuối (ISO UTC) ⇒ hạn ký / quá hạn / đã nhắc trên thẻ. */
     esignAt?: string | null;
     esignRemindedAt?: string | null;
+    /** CR-113 · id task engine mà chủ gói đã "duyệt thay" trong lượt (`contract_events` `approval_override`). */
+    overrideTasks?: string[];
   } | null;
   /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
   owner?: string | null;

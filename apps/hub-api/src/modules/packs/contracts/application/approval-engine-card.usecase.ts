@@ -27,7 +27,7 @@ type Repos = {
     /** CR-109 · khoá theo luật thấy cũ (không cờ duyệt): null ⇒ người gọi chỉ là người duyệt ngoài cây. */
     state(id: string, o: { lock: boolean }): Promise<unknown>;
   };
-  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks">;
+  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks" | "recordOverride">;
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
 };
 export type EngineCardDeps = {
@@ -44,6 +44,11 @@ export type EngineCardDeps = {
     }): Promise<void>;
   };
   redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> } | undefined;
+  /** CR-113 · tên Group (cho `escalated_to`); vắng ⇒ không hiện tên. Chỉ gọi khi có bước đã chuyển cấp. */
+  groupNames?: ((tenantId: string) => Promise<{ id: string; name: string }[]>) | undefined;
+  /** CR-113 · giờ server (`overdue`); vắng ⇒ `new Date()`. */
+  now?: () => Date;
+  warn?: (msg: string, meta: Record<string, unknown>) => void;
 };
 export type EngineActBody = {
   action: EngineAction;
@@ -58,7 +63,15 @@ async function input(d: EngineCardDeps, who: PackWho, st: ApprovalState) {
   const a = st.approval as NonNullable<ApprovalState["approval"]>;
   const port = d.port();
   const sv = port && a.engineRunId ? await port.stepsView(callerOf(who), a.engineRunId) : null;
+  const escalated = sv?.steps.some((s) => s.escalated && s.escalated_group_id) === true;
+  const names = escalated && d.groupNames ? await d.groupNames(who.tenantId) : [];
+  const extras = {
+    overrides: new Set(a.overrideTasks ?? []),
+    now: d.now?.() ?? new Date(),
+    groupNames: new Map(names.map((g) => [g.id, g.name])),
+  };
   return {
+    extras,
     approval: {
       id: a.id,
       status: a.status,
@@ -93,7 +106,6 @@ export function engineView(d: EngineCardDeps) {
 }
 
 type Ctx = { who: PackWho; id: string; st: ApprovalState; runId: string; b: EngineActBody };
-
 async function decide(
   port: ApprovalEnginePort,
   c: Ctx,
@@ -161,15 +173,42 @@ export function engineAct(d: EngineCardDeps) {
     const a = st.approval;
     const port = d.port();
     if (!a || !port || !a.engineRunId) return { error: "APPROVAL_NOT_OPEN" };
+    const inp = await input(d, who, st);
     const plan = planEngineAct({
-      ...(await input(d, who, st)),
+      ...inp,
       action: b.action,
       feedback: b.feedback,
       hasSource: st.hasSource,
     });
     if (plan.kind === "error") return { error: plan.code };
-    return exec(d, port, { who, id, st, runId: a.engineRunId, b }, plan);
+    const c = { who, id, st, runId: a.engineRunId, b };
+    const out = await exec(d, port, c, plan);
+    if (out === "ok" && plan.kind !== "redo") await noteOverride(d, c, inp.sv, plan.taskId);
+    return out;
   };
+}
+
+/** CR-113 · quyết xong mà người quyết chỉ có quyền nhờ Toàn quyền ⇒ ghi "duyệt thay" (`contract_events` `approval_override`, kèm
+ *  task) — lịch sử/audit + `decided_as` của thẻ. Sau khi engine đã nhận quyết: lỗi ghi chỉ log (không làm hỏng lần quyết). */
+async function noteOverride(
+  d: EngineCardDeps,
+  c: Ctx,
+  sv: Awaited<ReturnType<typeof input>>["sv"],
+  taskId: string,
+) {
+  const step = sv?.steps.find((s) => s.task?.id === taskId);
+  if (step?.task?.override !== true) return;
+  const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
+  const ev = {
+    runId: c.runId,
+    taskId,
+    stageKey: step.key,
+    action: c.b.action,
+    actor: c.who.userId,
+  };
+  await d.uow
+    .tenant(c.who, async (r) => (await r.approvalEngine.recordOverride?.(c.id, aid, ev)) ?? false)
+    .catch(() => d.warn?.("contract-approval-override-log-failed", { contract_id: c.id }));
 }
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;

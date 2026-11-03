@@ -26,6 +26,7 @@ import {
   hasDifyStep,
 } from "./approval-flow-dify.rules";
 import { esignIssues } from "./approval-flow-esign.rules";
+import { escalateOf } from "./approval-owner.rules";
 
 export type {
   ApprovalFlowIssue,
@@ -277,8 +278,9 @@ function stageOfStep(
   i: number,
   groupIds: ReadonlySet<string>,
   wfs: ReadonlyMap<string, DifyWorkflow>,
-  owners: readonly string[] = [],
+  o: { owners: readonly string[]; escalateTo: readonly string[] },
 ) {
+  const owners = o.owners;
   const s = steps[i] as FlowEngineStep;
   const step = engineStepOf(i);
   if (s.kind === "dify") {
@@ -301,10 +303,9 @@ function stageOfStep(
     ...(s.head_only && !s.approver_user_id ? { head_only: true } : {}),
     back_to_steps: i === 0 ? [] : [0],
     remind_every_h: s.remind_every_h,
-    escalate:
-      s.escalate_group_id === null
-        ? null
-        : { after_h: s.due_h, group_id: groupOf(s.escalate_group_id, groupIds) },
+    escalate: escalateOf(s, { group, groupIds, escalateTo: o.escalateTo }, (g) =>
+      groupOf(g, groupIds),
+    ),
     branch: i === 0 ? [] : branchFrom(steps.length, i),
     exclude_starter: s.exclude_starter,
     ...gateAfter(s, group, owners, groupIds),
@@ -342,13 +343,15 @@ function defInputs(withDify: boolean, selects: readonly DifySelectBinding[] = []
  * `s1..sn` (tool + review/Dify + rẽ) → `finalize` (tool `contracts-finalize`). `groupIds` = Group hiện có của tenant; mẫu trỏ
  * Group không còn ⇒ ném `approval-flow-group-missing` (người gọi rơi về mẫu mặc định / báo lỗi). prod-fix2 · `owners` = Group
  * "Toàn quyền" của gói (Group cấp 2 của cài đặt + Group vai owner): thành viên quyết được MỌI bước duyệt (`also_group_ids` của
- * engine — như máy cũ "người duyệt cấp 2 xác nhận được cấp 1"), vẫn chịu `exclude_starter`.
+ * engine — như máy cũ "người duyệt cấp 2 xác nhận được cấp 1"), vẫn chịu `exclude_starter`. CR-113 · `escalateTo` = Group
+ * Toàn quyền theo thứ tự ưu tiên: bước có hạn, không đặt nhóm chuyển cấp ⇒ chuyển cấp về Group đầu tiên hợp lệ (`defaultEscalateOf`).
  */
 export function compileDef(
   flow: { steps: readonly FlowStep[] },
   groupIds: ReadonlySet<string>,
   workflows: ReadonlyMap<string, DifyWorkflow> = new Map(),
   owners: readonly string[] = [],
+  escalateTo: readonly string[] = [],
 ) {
   const steps = engineSteps(flow.steps); // esign-flow · bước Ký số do gói chạy sau finalize
   const n = steps.length;
@@ -375,7 +378,7 @@ export function compileDef(
   // CR-105 · pl-slot-shape: `stage.slot` = bước người dùng nguyên vẹn (engine bỏ qua) ⇒ `fromStages` dựng lại đúng; bước Ký số
   // nằm ở `finalize.slot.esign` (không là stage engine).
   const [first, ...rest] = steps.map((s, i) => ({
-    ...stageOfStep(steps, i, groupIds, workflows, owners),
+    ...stageOfStep(steps, i, groupIds, workflows, { owners, escalateTo }),
     slot: { ...s },
   }));
   if (!first) throw new Error("approval-flow-empty");

@@ -197,6 +197,8 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   remind_every_h: z.number().int().min(1).optional(),
   escalate_group_name: z.string().max(200).nullable().optional(),
   approver_count: z.number().int().min(0).optional(),
+  /** CR-113 · true ⇒ nhóm nhận khi quá hạn (`escalate_group_name`) là MẶC ĐỊNH Toàn quyền (bước có hạn, không đặt nhóm chuyển cấp). */
+  escalate_default: z.boolean().optional(),
 });
 export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({
@@ -206,6 +208,10 @@ export const ApprovalFlowCurrentSchema = z.strictObject({
   /** true ⇒ tenant chưa được gán riêng, đang chạy mặc định của khe. */
   is_default: z.boolean(),
   steps: z.array(ApprovalFlowCurrentStepSchema).min(1).max(APPROVAL_FLOW_STEPS_MAX),
+  /** CR-113 · chủ gói (Toàn quyền) duyệt thay được mọi bước — ghi rõ "duyệt thay" trên thẻ. */
+  owner_can_override: z.literal(true).optional(),
+  /** CR-113 · tên Group Toàn quyền (đích chuyển cấp mặc định); không có ở tenant ⇒ null. */
+  owner_group_name: z.string().max(200).nullable().optional(),
 });
 export type ApprovalFlowCurrent = z.infer<typeof ApprovalFlowCurrentSchema>;
 

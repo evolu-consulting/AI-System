@@ -117,6 +117,14 @@ export type EngineDifyFacts = {
 };
 /** CR-107 · một lần bấm Đạt duyệt cuối: `claim` = mã ngẫu nhiên của lần bấm, `by` = người, `task` = task duyệt đang mở. */
 export type PendingLinksOwner = { claim: string; by: string; task: string };
+/** CR-113 · một lần chủ gói "duyệt thay" bước không thuộc mình. */
+export type OverrideEvent = {
+  runId: string;
+  taskId: string;
+  stageKey: string;
+  action: string;
+  actor: string;
+};
 export type PendingLinksOp =
   | (PendingLinksOwner & { links: readonly unknown[] | null })
   | (PendingLinksOwner & { release: true });
@@ -152,6 +160,8 @@ export type ApprovalEngineRepo = {
    *  CR-107 · `links` ⇒ GIỮ chỗ (một người một lúc trên cùng task): false khi người khác đang giữ task đó (chưa quá hạn);
    *  `release` ⇒ trả chỗ CHỈ khi vẫn đúng lần giữ `claim` của mình (so-rồi-xoá). */
   setPendingLinks(approvalId: string, runId: string, p: PendingLinksOp): Promise<boolean>;
+  /** CR-113 · ghi "duyệt thay" (`contract_events` `approval_override`: lượt, run engine, task, stage, hành động) — MỘT câu. */
+  recordOverride?(contractId: string, approvalId: string, e: OverrideEvent): Promise<boolean>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

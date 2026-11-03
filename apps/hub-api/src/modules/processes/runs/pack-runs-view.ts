@@ -13,7 +13,7 @@ import type {
 import { approverSql, headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
-import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
+import { alsoGroupsOf, canAct, headGate, inReviewGroup } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 
 type Ts = Date | string;
@@ -76,7 +76,8 @@ const rowsSql = (runId: string, tenantId: string) => sql`
   where r.id = ${runId} and r.tenant_id = ${tenantId}
   order by s.stage_idx`;
 
-function stepOf(r: Row, canActOf: (r: Row, stage: StageSnap) => boolean): PackStepView {
+type ActOf = (r: Row, stage: StageSnap) => { can: boolean; override: boolean };
+function stepOf(r: Row, canActOf: ActOf): PackStepView {
   const stage: StageSnap = typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage;
   const idx = Number(r.stage_idx);
   const m = stageMeta(stage, idx);
@@ -100,21 +101,29 @@ function stepOf(r: Row, canActOf: (r: Row, stage: StageSnap) => boolean): PackSt
     decided_by: r.decided_by ? { id: r.decided_by, name: r.decided_name ?? r.decided_by } : null,
     decided_at: iso(r.decided_at),
     feedback: r.feedback,
-    task:
-      r.task_id && r.task_status === "open" ? { id: r.task_id, can_act: canActOf(r, stage) } : null,
+    task: r.task_id && r.task_status === "open" ? openTask(r.task_id, canActOf(r, stage)) : null,
+    task_ref: r.task_id,
   };
 }
+const openTask = (id: string, a: { can: boolean; override: boolean }) =>
+  a.can && a.override ? { id, can_act: true, override: true } : { id, can_act: a.can };
 
-/** `canAct` của engine cho task review mở (grant user/forward + Group duyệt + Group chuyển cấp + exclude_starter). */
-function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: readonly Grant[]) {
+/** `canAct` của engine cho task review mở (grant user/forward + Group duyệt + Group chuyển cấp + exclude_starter). CR-113 ·
+ *  `override` = quyết được chỉ nhờ Group "cũng quyết" (`also_group_ids`) — không qua grant, Group duyệt/cửa, Group chuyển cấp. */
+function canActFn(
+  u: PackRunCaller,
+  groupIds: ReadonlySet<string>,
+  grants: readonly Grant[],
+): ActOf {
   const v = { userId: u.userId, tenantId: u.tenantId, role: vrole(u.role), groupIds };
-  return (r: Row, stage: StageSnap): boolean => {
+  return (r: Row, stage: StageSnap) => {
     const mine = grants.filter((g) => g.task_id === r.task_id);
     const userIds = new Set(mine.flatMap((g) => (g.user_id ? [g.user_id] : [])));
-    const extra = [
-      ...mine.flatMap((g) => (g.via === "escalated" && g.group_id ? [g.group_id] : [])),
-      ...alsoGroupsOf(stage?.after), // prod-fix2 · Group "cũng quyết" của stage
-    ];
+    const escalated = mine.flatMap((g) =>
+      g.via === "escalated" && g.group_id ? [g.group_id] : [],
+    );
+    const also = alsoGroupsOf(stage?.after); // prod-fix2 · Group "cũng quyết" của stage
+    const extra = [...escalated, ...also];
     const task = {
       kind: "review" as const,
       status: "open" as const,
@@ -127,6 +136,10 @@ function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: reado
       headGate: headGate(stage?.after, r.group_head), // S1b
     };
     const inGroup = (g: string | null) => g !== null && groupIds.has(g);
+    const own =
+      userIds.has(u.userId) ||
+      inReviewGroup(u.userId, groupIds, r.assignee_group_id, task.headGate) ||
+      escalated.some(inGroup);
     const assignee =
       userIds.has(u.userId) ||
       inGroup(r.assignee_group_id) ||
@@ -134,7 +147,8 @@ function canActFn(u: PackRunCaller, groupIds: ReadonlySet<string>, grants: reado
       task.headGate === u.userId;
     const run = { tenantId: u.tenantId, startedBy: r.started_by, originRoom: "none" as const };
     const status = r.run_status as ProcessRunStatus;
-    return canAct(v, task, { ...run, taskAssignee: assignee, status });
+    const can = canAct(v, task, { ...run, taskAssignee: assignee, status });
+    return { can, override: can && !own && also.some(inGroup) };
   };
 }
 

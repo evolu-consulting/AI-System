@@ -87,6 +87,12 @@ export const ApprovalCardStepSchema = z.strictObject({
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
   /** CR-109 · bước chưa tới mà theo giá trị/loại HĐ hiện tại sẽ bị bỏ qua: các điều kiện `when` không thỏa; null/vắng = không bỏ qua. */
   skip_when: z.array(FlowCondSchema).nullable().optional(),
+  /** CR-113 · bước đã quyết: người của bước (`member`) hay chủ gói "duyệt thay" (`owner_override`); chưa quyết ⇒ vắng. */
+  decided_as: z.enum(["member", "owner_override"]).optional(),
+  /** CR-113 · bước đang mở đã quá hạn (giờ server); vắng ở bước không mở. */
+  overdue: z.boolean().optional(),
+  /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra. */
+  escalated_to: z.string().max(200).optional(),
 });
 export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
 

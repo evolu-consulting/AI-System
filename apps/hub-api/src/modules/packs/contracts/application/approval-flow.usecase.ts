@@ -2,9 +2,10 @@
 // phòng ban theo TÊN (mã Group ⇒ id theo tenant ⇒ tên). Không còn lưu mẫu (PUT bỏ; sửa ở ai-admin). Cũng giữ `GET /dify-workflows`
 // và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { ApprovalSettings } from "../domain/approval-def.rules";
+import { type ApprovalSettings, PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
 import type { FlowWhen } from "../domain/approval-flow.types";
+import { defaultEscalateOf, escalateOrder } from "../domain/approval-owner.rules";
 import { APPROVAL_SLOT, slotBodyOf, slotGroupKeys } from "../domain/approval-slot.rules";
 import type { ApprovalEngineBridge } from "./approval-engine.ports";
 
@@ -77,6 +78,8 @@ export type CurrentFlowStep = {
   remind_every_h?: number;
   escalate_group_name?: string | null;
   approver_count?: number;
+  /** CR-113 · nhóm nhận khi quá hạn là mặc định Toàn quyền (bước có hạn, không đặt nhóm chuyển cấp). */
+  escalate_default?: boolean;
 };
 export type CurrentFlow = {
   def_id: string;
@@ -84,22 +87,65 @@ export type CurrentFlow = {
   rel_version: number;
   is_default: boolean;
   steps: CurrentFlowStep[];
+  /** CR-113 · chủ gói duyệt thay được mọi bước (ghi rõ "duyệt thay"); tên Group Toàn quyền (đích chuyển cấp mặc định). */
+  owner_can_override: true;
+  owner_group_name: string | null;
 };
 
+/** CR-113 · mã Group cấp 2 của cài đặt (Toàn quyền thứ hai); không có uow ⇒ chỉ Group vai owner. */
+async function level2KeyOf(
+  d: Partial<Pick<ApprovalFlowDeps, "uow">>,
+  who: PackWho,
+): Promise<string> {
+  if (!d.uow) return "";
+  return (await d.uow.tenant(who, (r) => r.approvalFlow.settings())).level2GroupKey;
+}
+
+type ReviewSlotStep = {
+  due_h?: number;
+  department_group_key?: string | null;
+  escalate_group_key?: string | null;
+  approver_user_id?: string | null;
+};
+/** CR-113 · tên Group Toàn quyền + chuyển cấp mặc định của bước duyệt (như `compileDef`: Group gắn task = phòng của bước; người
+ *  cụ thể không phòng ⇒ Toàn quyền đầu tiên; đặt tường minh thắng). */
+function ownerView(
+  ids: ReadonlyMap<string, string>,
+  names: ReadonlyMap<string, string>,
+  level2Key: string,
+) {
+  const owners = escalateOrder(ids, level2Key);
+  const set = new Set(owners);
+  const escalate = (s: ReviewSlotStep) => {
+    if (s.escalate_group_key && ids.has(s.escalate_group_key)) return { escalate_default: false };
+    const dept = ids.get(s.department_group_key ?? "") ?? null;
+    const group = dept ?? (s.approver_user_id ? (owners[0] ?? null) : null);
+    const g = defaultEscalateOf({ due_h: s.due_h ?? null }, group, owners, set);
+    return g
+      ? { escalate_group_name: names.get(g) ?? null, escalate_default: true }
+      : { escalate_default: false };
+  };
+  return { name: owners[0] ? (names.get(owners[0]) ?? null) : null, escalate };
+}
+
 /** Quy trình đang dùng cho tenant của `who`; khe chưa có bản xuất bản áp được / engine không nối ⇒ null (route trả 404). */
-export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) {
+export function readCurrentFlow(
+  d: Pick<ApprovalFlowDeps, "engine" | "groups"> & Partial<Pick<ApprovalFlowDeps, "uow">>,
+) {
   return async (who: PackWho): Promise<CurrentFlow | null> => {
     const port = d.engine?.port;
     if (!port?.resolveSlot) return null;
     const r = await port.resolveSlot(who.tenantId, APPROVAL_SLOT);
     const body = r ? slotBodyOf(r.slotBody) : null;
     if (!r || !body) return null;
-    const keys = slotGroupKeys(body);
+    const l2 = await level2KeyOf(d, who);
+    const keys = [...new Set([...slotGroupKeys(body), PACK_OWNER_GROUP_KEY, ...(l2 ? [l2] : [])])];
     const [ids, list] = await Promise.all([
-      keys.length > 0 ? d.groups.idsOf(who.tenantId, keys) : new Map<string, string>(),
-      keys.length > 0 && d.groups.list ? d.groups.list(who.tenantId) : [],
+      d.groups.idsOf(who.tenantId, keys),
+      d.groups.list ? d.groups.list(who.tenantId) : [],
     ]);
     const names = new Map(list.map((g) => [g.id, g.name]));
+    const own = ownerView(ids, names, l2);
     // Group bị xoá sau khi gán ⇒ giữ mã để người xem vẫn thấy bước dùng phòng nào.
     const deptName = (k: string | null | undefined): string | null => {
       if (!k) return null;
@@ -144,6 +190,7 @@ export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) 
         kind: "review",
         when: s.when ?? null,
         ...timing(s, s.escalate_group_key),
+        ...own.escalate(s),
         ...approvers(s.department_group_key, s.approver_user_id),
       };
     });
@@ -153,6 +200,8 @@ export function readCurrentFlow(d: Pick<ApprovalFlowDeps, "engine" | "groups">) 
       rel_version: r.relVersion,
       is_default: r.isDefault === true,
       steps,
+      owner_can_override: true,
+      owner_group_name: own.name,
     };
   };
 }

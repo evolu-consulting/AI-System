@@ -76,8 +76,11 @@ export type PackStepView = {
   decided_by: { id: string; name: string } | null;
   decided_at: string | null;
   feedback: string | null;
-  /** Task review đang mở + người xem quyết được không (`canAct` của engine). */
-  task: { id: string; can_act: boolean } | null;
+  /** Task review đang mở + người xem quyết được không (`canAct` của engine). CR-113 · `override` = người xem quyết được CHỈ nhờ
+   *  Group "cũng quyết" của stage (`after.also_group_ids`, Toàn quyền) — không phải người của bước ⇒ "duyệt thay". */
+  task: { id: string; can_act: boolean; override?: boolean } | null;
+  /** CR-113 · id task review gần nhất của stage (mở hoặc đã đóng); vắng ⇒ không biết. */
+  task_ref?: string | null;
 };
 export type PackStepsView = {
   run_id: string;

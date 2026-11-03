@@ -99,7 +99,16 @@ export function approvalEngine(
     tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
     // esign-flow-fix · thẻ duyệt engine; owner gói (quyền `admin`) cũng Gửi lại bước Ký số.
-    card: (c: Omit<EngineCardDeps, "isAdmin">) => engineCard({ ...c, isAdmin }),
+    // CR-113 · tên Group cho "chuyển cấp tới" + log lỗi ghi "duyệt thay".
+    card: (c: Omit<EngineCardDeps, "isAdmin">) =>
+      engineCard({
+        ...c,
+        isAdmin,
+        warn: ed.warn,
+        ...(flow.groups.list
+          ? { groupNames: async (t: string) => (await flow.groups.list?.(t)) ?? [] }
+          : {}),
+      }),
   };
 }
 

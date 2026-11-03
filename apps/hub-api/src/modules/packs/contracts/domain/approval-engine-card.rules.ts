@@ -11,6 +11,7 @@ import {
   stepApplies,
 } from "./approval-flow.rules";
 import type { FlowCond } from "./approval-flow.types";
+import { type DecidedAs, decidedAsOf } from "./approval-owner.rules";
 
 export type CardStepStatus =
   | "pending"
@@ -31,7 +32,10 @@ export type EngineStageView = {
   decided_by: { id: string; name: string } | null;
   decided_at: string | null;
   feedback: string | null;
-  task: { id: string; can_act: boolean } | null;
+  /** CR-113 · `override` = người xem quyết được chỉ nhờ quyền Toàn quyền (duyệt thay). */
+  task: { id: string; can_act: boolean; override?: boolean } | null;
+  /** CR-113 · id task review gần nhất của stage (khớp lần "duyệt thay" đã ghi). */
+  task_ref?: string | null;
 };
 export type EngineStepsView = {
   status: string;
@@ -63,7 +67,36 @@ export type CardStep = {
   feedback: string | null;
   /** CR-109 · điều kiện `when` không thỏa (bước chưa tới sẽ bị bỏ qua); null = không bỏ qua. */
   skip_when: FlowCond[] | null;
+  /** CR-113 · bước đã quyết: người của bước (`member`) hay chủ gói duyệt thay (`owner_override`); chưa quyết ⇒ vắng. */
+  decided_as?: DecidedAs;
+  /** CR-113 · bước đang mở đã quá hạn (giờ server). */
+  overdue?: boolean;
+  /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra (vắng khi chưa chuyển cấp / không biết tên). */
+  escalated_to?: string;
 };
+
+/** CR-113 · dữ liệu phụ của thẻ: task đã "duyệt thay", giờ server, tên Group (id ⇒ tên). Vắng ⇒ không hiện trường tương ứng. */
+export type CardExtras = {
+  overrides?: ReadonlySet<string>;
+  now?: Date;
+  groupNames?: ReadonlyMap<string, string>;
+};
+
+/** CR-113 · trường "duyệt thay / quá hạn / chuyển cấp tới" của một bước. */
+function ownerFields(st: EngineStageView | undefined, x: CardExtras) {
+  if (!st) return {};
+  const decided = st.decided_by !== null && st.status !== "open";
+  const as = decidedAsOf(decided, st.task_ref, x.overrides ?? new Set());
+  const due = st.due_at ? Date.parse(st.due_at) : Number.NaN;
+  const overdue = st.status === "open" && x.now !== undefined && due < x.now.getTime();
+  const to =
+    st.escalated && st.escalated_group_id ? x.groupNames?.get(st.escalated_group_id) : undefined;
+  return {
+    ...(as ? { decided_as: as } : {}),
+    ...(st.status === "open" && x.now ? { overdue } : {}),
+    ...(to ? { escalated_to: to } : {}),
+  };
+}
 
 /** CR-109 · bước review chưa tới (không phải bước soạn) mà `contracts-route` sẽ bỏ qua với facts hiện tại: các điều kiện không thỏa. */
 export function willSkip(s: FlowEngineStep, i: number, facts: FlowFacts): FlowCond[] | null {
@@ -76,6 +109,7 @@ export function cardSteps(
   flow: readonly FlowStep[],
   sv: EngineStepsView | null,
   facts: FlowFacts,
+  x: CardExtras = {},
 ): CardStep[] {
   const byKey = new Map((sv?.steps ?? []).map((s) => [s.key, s]));
   const own = flow.filter((s): s is FlowEngineStep => s.kind !== "esign"); // esign-flow · Ký số không là stage
@@ -97,6 +131,7 @@ export function cardSteps(
       decided_at: st?.decided_at ?? null,
       feedback: st?.feedback ?? null,
       skip_when: (st?.status ?? "pending") === "pending" ? willSkip(s, i, facts) : null,
+      ...ownerFields(st, x),
     };
   });
 }
@@ -127,6 +162,8 @@ export type EngineCardInput = {
   facts: FlowFacts;
   sv: EngineStepsView | null;
   viewerId: string;
+  /** CR-113 · vắng ⇒ không có `decided_as`/`overdue`/`escalated_to`. */
+  extras?: CardExtras;
 };
 
 /** Lý do người xem không quyết được bước mở: người bắt đầu ở bước `exclude_starter` ⇒ `starter`, còn lại `not_reviewer`. */
@@ -156,7 +193,7 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
 
 /** Thẻ duyệt `mode = 'engine'` (hình dạng `ContractApproval` + `mode` + `steps`). */
 export function engineCardView(i: EngineCardInput) {
-  const steps = cardSteps(i.flow, i.sv, i.facts);
+  const steps = cardSteps(i.flow, i.sv, i.facts, i.extras);
   const open = openStep(steps);
   const task = open ? (i.sv?.steps.find((s) => s.key === `s${open.idx}`)?.task ?? null) : null;
   const can = task?.can_act === true;

@@ -200,7 +200,8 @@ it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
     n: s?.approver_count,
   });
   expect(a.steps.map(pick)).toEqual([
-    { due_h: 72, remind: undefined, esc: undefined, n: 2 },
+    // CR-113 · bước có hạn, không đặt nhóm ⇒ mặc định chuyển cấp về Toàn quyền (Group vai owner do `enablePack` tạo)
+    { due_h: 72, remind: undefined, esc: "contracts · owner", n: 2 },
     { due_h: 24, remind: 8, esc: "Kế toán A", n: 1 },
   ]);
   // tenant chưa gán ⇒ mặc định của khe, tên phòng ban theo tenant của mình
@@ -224,4 +225,28 @@ it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
     body: JSON.stringify({ version: 1, steps: [] }),
   });
   expect(put.status).toBe(404);
+});
+
+it("CR-113 · chủ gói duyệt thay + chuyển cấp mặc định về Toàn quyền hiện trên GET", async () => {
+  type Out113 = Omit<Out, "steps"> & {
+    owner_can_override?: boolean;
+    owner_group_name?: string | null;
+    steps: (Out["steps"][number] & { escalate_default?: boolean })[];
+  };
+  const before = (await (await app(A, own).request("/approval-flow")).json()) as Out113;
+  await o`update admin.groups set name = jsonb_build_object('vi', 'Toàn quyền A') where tenant_id = ${A} and key = 'contracts-owner'`;
+  const a = (await (await app(A, own).request("/approval-flow")).json()) as Out113;
+  expect({
+    before: [before.owner_can_override, before.owner_group_name],
+    top: [a.owner_can_override, a.owner_group_name],
+    steps: a.steps.map((s) => [s.escalate_group_name, s.escalate_default]),
+  }).toEqual({
+    before: [true, "contracts · owner"],
+    top: [true, "Toàn quyền A"],
+    // bước 1 có hạn, không đặt ⇒ mặc định Toàn quyền; bước 2 đặt Kế toán ⇒ giữ tường minh
+    steps: [
+      ["Toàn quyền A", true],
+      ["Kế toán A", false],
+    ],
+  });
 });

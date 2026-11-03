@@ -31,6 +31,7 @@ import {
   hasDifyStep,
   routeNext,
 } from "../domain/approval-flow.rules";
+import { escalateOrder } from "../domain/approval-owner.rules";
 import type {
   ApprovalEngineBridge,
   ApprovalEnginePort,
@@ -78,11 +79,15 @@ export function engineErrMeta(e: unknown): Record<string, string> {
 export type FlowOrInvalid = EngineFlow | { invalid: string };
 export type Compiled = { def: Record<string, unknown> } | { invalid: string };
 
-/** prod-fix2 · Group "Toàn quyền" của gói còn ở tenant: Group cấp 2 của cài đặt + Group vai owner (quyền gói `admin`). */
-async function ownerGroupIds(d: ApprovalEngineDeps, who: PackWho): Promise<string[]> {
+/** prod-fix2 · Group "Toàn quyền" của gói còn ở tenant: Group cấp 2 của cài đặt + Group vai owner (quyền gói `admin`).
+ *  CR-113 · `escalateTo` = cùng các Group đó theo thứ tự đích chuyển cấp mặc định (owner trước). */
+async function ownerGroupIds(
+  d: ApprovalEngineDeps,
+  who: PackWho,
+): Promise<{ owners: string[]; escalateTo: string[] }> {
   const s = await d.uow.tenant(who, (r) => r.approvalFlow.settings());
   const ids = await d.groups.idsOf(who.tenantId, [s.level2GroupKey, PACK_OWNER_GROUP_KEY]);
-  return [...new Set(ids.values())];
+  return { owners: [...new Set(ids.values())], escalateTo: escalateOrder(ids, s.level2GroupKey) };
 }
 
 /** Def theo mẫu; Group mẫu trỏ không còn ở tenant / workflow Dify đã gỡ ⇒ lý do (lượt kẹt, không về máy cũ). */
@@ -93,7 +98,7 @@ export async function compiled(
 ): Promise<Compiled> {
   if ("invalid" in f) return f;
   const tenantId = who.tenantId;
-  const [have, owners] = await Promise.all([
+  const [have, { owners, escalateTo }] = await Promise.all([
     d.groups.existingIds(tenantId, flowGroupIds(f.steps)),
     ownerGroupIds(d, who),
   ]);
@@ -105,6 +110,7 @@ export async function compiled(
       new Set([...have, ...owners]),
       new Map(catalog.map((w) => [w.key, w])),
       owners,
+      escalateTo,
     );
     return { def: def as unknown as Record<string, unknown> };
   } catch (e) {

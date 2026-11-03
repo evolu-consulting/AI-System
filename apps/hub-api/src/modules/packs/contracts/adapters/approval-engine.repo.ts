@@ -10,6 +10,7 @@ import type {
   PendingLinksOwner,
 } from "../application/approval-engine.ports";
 import type { FlowStep } from "../domain/approval-flow.types";
+import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { approvalWrite } from "./approval.repo";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
@@ -181,6 +182,18 @@ function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
   };
 }
 
+/** CR-113 · "duyệt thay": MỘT câu chèn (không `returning` — người duyệt ngoài cây không đọc được hàng; FK HĐ kiểm tồn tại). Chỉ gọi
+ *  SAU khi engine đã nhận quyết của đúng task (lớp 2). `run_id` = id lượt (như các event duyệt khác) ⇒ thẻ đọc theo lượt. */
+function overrideQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordOverride"]> {
+  return async (id, aid, e) => {
+    await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${tid}::uuid, ${id}::uuid, ${OVERRIDE_EVENT}, ${e.actor}::uuid,
+        jsonb_build_object('run_id', ${aid}::text, 'engine_run_id', ${e.runId}::text, 'task_id', ${e.taskId}::text,
+          'stage', ${e.stageKey}::text, 'action', ${e.action}::text))`);
+    return true;
+  };
+}
+
 function labelsQ(tx: Tx, tid: string): ApprovalEngineRepo["labels"] {
   return async (ids) => {
     if (ids.length === 0) return [];
@@ -219,5 +232,6 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     attach: attachQ(tx, tenantId),
     markStalled: markStalledQ(tx, tenantId),
     finalize: finalizeQ(tx, tenantId),
+    recordOverride: overrideQ(tx, tenantId),
   };
 }
