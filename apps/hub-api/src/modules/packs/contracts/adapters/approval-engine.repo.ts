@@ -194,13 +194,26 @@ export const eventDataOut = (e: "e") =>
  *  (0071), bấm lại ⇒ `on conflict do nothing`. `run_id` = id lượt (như event duyệt khác) ⇒ thẻ đọc theo lượt. */
 function overrideQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordOverride"]> {
   return async (id, aid, e) => {
-    await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+    // `returning id` (người duyệt thay thấy HĐ: chủ gói `sees_all` / Group "cũng quyết" ∈ `reviewer_contract_ids`) ⇒ id để bù trừ.
+    const [r] = await tx.execute<{ id: string }>(sql`insert into contracts.contract_events
+        (tenant_id, contract_id, type, actor_user_id, data)
       values (${tid}::uuid, ${id}::uuid, ${OVERRIDE_EVENT}, ${e.actor}::uuid,
         jsonb_build_object('run_id', ${aid}::text, 'engine_run_id', ${e.runId}::text, 'task_id', ${e.taskId}::text,
           'stage', ${e.stageKey}::text, 'action', ${e.action}::text))
       on conflict (tenant_id, (data ->> 'run_id'), (data ->> 'task_id'), actor_user_id)
-        where type = 'approval_override' do nothing`);
-    return true;
+        where type = 'approval_override' do nothing
+      returning id::text as id`);
+    return r?.id ?? null; // trùng (đã có bản ghi của lần bấm trước) ⇒ null: lần này không có gì để bù trừ
+  };
+}
+
+/** CR-113 (review) · bù trừ write-ahead: xoá ĐÚNG hàng vừa chèn (hàm SECURITY DEFINER 0071 — chỉ type duyệt thay, tenant + người của tx). */
+function voidOverrideQ(tx: Tx): NonNullable<ApprovalEngineRepo["voidOverride"]> {
+  return async (eventId) => {
+    const [r] = await tx.execute<{ ok: boolean }>(
+      sql`select contracts.void_override(${eventId}::bigint) as ok`,
+    );
+    return r?.ok === true;
   };
 }
 
@@ -243,5 +256,6 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     markStalled: markStalledQ(tx, tenantId),
     finalize: finalizeQ(tx, tenantId),
     recordOverride: overrideQ(tx, tenantId),
+    voidOverride: voidOverrideQ(tx),
   };
 }

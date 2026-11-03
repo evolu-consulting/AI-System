@@ -161,7 +161,9 @@ export type ApprovalEngineRepo = {
    *  `release` ⇒ trả chỗ CHỈ khi vẫn đúng lần giữ `claim` của mình (so-rồi-xoá). */
   setPendingLinks(approvalId: string, runId: string, p: PendingLinksOp): Promise<boolean>;
   /** CR-113 · ghi "duyệt thay" (`contract_events` `approval_override`: lượt, run engine, task, stage, hành động) — MỘT câu. */
-  recordOverride?(contractId: string, approvalId: string, e: OverrideEvent): Promise<boolean>;
+  recordOverride?(contractId: string, approvalId: string, e: OverrideEvent): Promise<string | null>;
+  /** CR-113 (review) · bù trừ: xoá bản ghi "duyệt thay" vừa chèn (id) khi engine không nhận quyết. */
+  voidOverride?(eventId: string): Promise<boolean>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

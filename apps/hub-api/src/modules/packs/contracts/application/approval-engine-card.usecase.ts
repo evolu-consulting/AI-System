@@ -27,7 +27,7 @@ type Repos = {
     /** CR-109 · khoá theo luật thấy cũ (không cờ duyệt): null ⇒ người gọi chỉ là người duyệt ngoài cây. */
     state(id: string, o: { lock: boolean }): Promise<unknown>;
   };
-  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks" | "recordOverride">;
+  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks" | "recordOverride" | "voidOverride">;
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
 };
 export type EngineCardDeps = {
@@ -182,8 +182,19 @@ export function engineAct(d: EngineCardDeps) {
     });
     if (plan.kind === "error") return { error: plan.code };
     const c = { who, id, st, runId: a.engineRunId, b };
-    if (plan.kind !== "redo") await noteOverride(d, c, inp.sv, plan.taskId);
-    return exec(d, port, c, plan);
+    const ev = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
+    if (!ev) return exec(d, port, c, plan);
+    // Review · engine không nhận (not_open / đua / lỗi) ⇒ bù trừ: xoá ĐÚNG bản ghi vừa chèn (lịch sử không hiện duyệt thay giả).
+    const undo = () =>
+      d.uow
+        .tenant(c.who, async (r) => r.approvalEngine.voidOverride?.(ev))
+        .catch(() => d.warn?.("contract-approval-override-void-failed", { contract_id: id }));
+    const out = await exec(d, port, c, plan).catch(async (e: unknown) => {
+      await undo();
+      throw e;
+    });
+    if (out !== "ok") await undo();
+    return out;
   };
 }
 
@@ -198,7 +209,7 @@ async function noteOverride(
   taskId: string,
 ) {
   const step = sv?.steps.find((s) => s.task?.id === taskId);
-  if (step?.task?.override !== true) return;
+  if (step?.task?.override !== true) return null;
   const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
   const ev = {
     runId: c.runId,
@@ -207,7 +218,11 @@ async function noteOverride(
     action: c.b.action,
     actor: c.who.userId,
   };
-  await d.uow.tenant(c.who, async (r) => r.approvalEngine.recordOverride?.(c.id, aid, ev));
+  // id vừa chèn (bù trừ được); trùng lần bấm trước ⇒ null (không bù trừ bản ghi cũ).
+  return (
+    (await d.uow.tenant(c.who, async (r) => r.approvalEngine.recordOverride?.(c.id, aid, ev))) ??
+    null
+  );
 }
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;

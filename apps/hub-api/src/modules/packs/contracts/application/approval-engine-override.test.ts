@@ -59,7 +59,14 @@ const st = (key: string, open: boolean, override: boolean) => ({
   task: open ? { id: `t-${key}`, can_act: true, ...(override ? { override: true } : {}) } : null,
 });
 
-function setup(o: { open?: "s0" | "s1"; override?: boolean; fail?: boolean } = {}) {
+function setup(
+  o: {
+    open?: "s0" | "s1";
+    override?: boolean;
+    fail?: boolean;
+    engine?: "ok" | "not_open" | "throw";
+  } = {},
+) {
   const calls: string[] = [];
   const open = o.open ?? "s0";
   const port = {
@@ -75,7 +82,8 @@ function setup(o: { open?: "s0" | "s1"; override?: boolean; fail?: boolean } = {
     }),
     act: async (_u: unknown, _r: string, _at: unknown, b: { result: string }) => {
       calls.push(`act:${b.result}`);
-      return "ok" as const;
+      if (o.engine === "throw") throw new Error("engine down");
+      return o.engine === "not_open" ? ("not_open" as const) : ("ok" as const);
     },
   } as unknown as ApprovalEnginePort;
   const repos = {
@@ -95,6 +103,10 @@ function setup(o: { open?: "s0" | "s1"; override?: boolean; fail?: boolean } = {
       recordOverride: async (_c: string, _a: string, e: OverrideEvent) => {
         if (o.fail) throw new Error("db down");
         calls.push(`override:${e.stageKey}:${e.action}:${e.taskId}`);
+        return "ev1";
+      },
+      voidOverride: async (id: string) => {
+        calls.push(`void:${id}`);
         return true;
       },
     },
@@ -128,6 +140,19 @@ describe("CR-113 · duyệt thay write-ahead", () => {
     const { d, calls } = setup({ fail: true });
     await expect(engineAct(d)(who, C, { action: "approve" }, state())).rejects.toThrow("db down");
     expect(calls).toEqual([]);
+  });
+
+  it("engine không nhận (not_open / ném) ⇒ bù trừ: xoá đúng bản ghi vừa chèn", async () => {
+    const a = setup({ engine: "not_open", open: "s1" });
+    expect(await engineAct(a.d)(who, C, { action: "return", feedback: "x" }, state())).toEqual({
+      error: "APPROVAL_NOT_OPEN",
+    });
+    expect(a.calls).toEqual(["override:s1:return:t-s1", "act:fail", "void:ev1"]);
+    const b = setup({ engine: "throw" });
+    await expect(engineAct(b.d)(who, C, { action: "approve" }, state())).rejects.toThrow(
+      "engine down",
+    );
+    expect(b.calls).toEqual(["override:s0:approve:t-s0", "act:pass", "void:ev1"]);
   });
 
   it("người của bước (không cờ override) ⇒ không ghi", async () => {

@@ -93,6 +93,16 @@ describe("CR-113 · chủ gói duyệt thay + chuyển cấp mặc định", () 
     expect((await card("A", id)).steps?.[0]?.decided_as).toBe("member");
   }, 90_000);
 
+  it("review · H bấm Đạt hai lần liên tiếp (song song + lần nữa) ⇒ đúng 1 dòng duyệt thay", async () => {
+    const { id, run } = await openBy("B", 797, 10_000_000);
+    const rs = await Promise.all([act(c, "H", id, "approve"), act(c, "H", id, "approve")]);
+    expect(rs.some((r) => r.status === 200)).toBe(true);
+    await waitStatus(c.sql, run, "done");
+    expect((await act(c, "H", id, "approve")).status).not.toBe(200);
+    expect(await overrides(id)).toEqual([{ actor: PA.H.id, stage: "s0", action: "approve" }]);
+    expect((await card("A", id)).steps?.[0]?.decided_as).toBe("owner_override");
+  }, 90_000);
+
   it("review · A (Toàn quyền CŨNG thuộc Group bước) Đạt ⇒ member, không ghi", async () => {
     const { id, run } = await openBy("B", 795, 10_000_000);
     expect((await act(c, "A", id, "approve")).status).toBe(200);
