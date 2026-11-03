@@ -6,6 +6,7 @@
 import postgres from "postgres";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
+import { type Cr113FlowResult, writeCr113Flow } from "./seed.cr113-flow";
 import { libSampleEnabled } from "./seed.library-sample";
 import type { Tx } from "./seed.repo";
 
@@ -53,6 +54,8 @@ export type TenantFixtureResult = {
   editorMembers: number;
   brands: number;
   catalogUrls: number;
+  /** pm-ready · CR-113: Group Pháp chế + quy trình duyệt HĐ mẫu (evolu). */
+  cr113: Cr113FlowResult;
 };
 
 const keys = [...FIXTURE_TENANTS];
@@ -69,6 +72,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     editorMembers: 0,
     brands: 0,
     catalogUrls: 0,
+    cr113: { legalGroups: 0, legalMembers: 0, flowDefs: 0, flowReleases: 0, flowAssignments: 0 },
   };
   if (t.length > 0) {
     // 5: UI tiếng Việt mặc định — user tạo qua first_admin của POST /admin/tenants nhận locale mặc định `en`.
@@ -88,6 +92,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     await writeAccounting(tx, r);
     await writePackRoles(tx, r);
     r.brands = await writeBrands(tx);
+    r.cr113 = await writeCr113Flow(tx);
   }
   if (appEnv === "development") r.catalogUrls = await writeCatalogUrls(tx);
   return r;

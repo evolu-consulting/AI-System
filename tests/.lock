@@ -553,6 +553,7 @@ ef77dec7dd9caf803431fe6be67f9b58af2897d54089a34c4ada6f26137dcb0a  tests/acceptan
 a90bb43fdc5fcf95d81f6d444deb0f03f817077667c6b6bda870aa44a1eb23e3  tests/acceptance/CF/owner-act.int.test.ts
 af1a40e9d1a9352732b4b4e3e9a8b2cb099e3578db2a64b88bc0151f98c63047  tests/acceptance/CF/owner-override.int.test.ts
 fe5b7da92635c949fe143b54f48e0b36484ece9a8fced83a12fa8f329006485d  tests/acceptance/CF/pack-runs-v2.int.test.ts
+378c338c57dc0a38c11f3d0a6bc9ec865caf05e99d620e66569dcbc9b73bd0e1  tests/acceptance/CF/pm-seed-cr113.int.test.ts
 a2cf21f501a2ec280c2d7db93dd61ecd056d05137d47675ed0ea6cc8f5269ff4  tests/acceptance/CF/prod-fix.int.test.ts
 7c0de5e3ee77b64f4b9eaddadd8be7bbcc279532c6afb0658fe002f58fc0178e  tests/acceptance/CF/reviewer-visible.int.test.ts
 7acc49aa171a5384d435c401517ee5ee5072533bf619c659439f4593c9249dde  tests/acceptance/CF/reviewer-visible.perf.int.test.ts
@@ -1406,6 +1407,12 @@ bd711e3d6ecbb8ffa617f6ab8409e286d8ef21ec05589dedd08c05ba14d95f49  tests/acceptan
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts
 c81465e600f4cc6e6ee14ad509ff5cdac0639dc85b497d59f843ecb3d81dfefe  tests/acceptance/com-c3/_support/cast.ts
 9ecb2591bfa851af978dab4e95c6cb1eec3eb1633106b6af42c69759dcc12ee0  tests/acceptance/com-c7/save-quote.int.test.ts
+d44e1fa59e1e6c2da2ddcb892a73ea86c7c4da210ff2d3e1351f3aa15d4331d6  tests/acceptance/cr116-bench-hub/_ab.ts
+c9fbbd3c4898088d595a0676aa499915996480e1ff50005e568041793fa4aa71  tests/acceptance/cr116-bench-hub/_seed.ts
+c184b211a00fd955cd1a128cc534b7414f84493be3f9231d599497f21d4a6142  tests/acceptance/cr116-bench-hub/ab-to-json.ts
+9aa4b0eff7d5342aad6152fca58abc7f43ce3c63af4174af5aed22f0b007dfea  tests/acceptance/cr116-bench-hub/hub-ab.perf.int.test.ts
+1d21da2c9ecdd307b904b2d167980c0bb79161e5fb84ca0f6d6f0edeb8780872  tests/acceptance/cr116-bench-hub/hub-ab2.perf.int.test.ts
+f2777f549d5282c0e5f42be8f356201280a38355823c76fc646d0f2e1a1c7f13  tests/acceptance/cr116-bench-hub/pgss-dump.ts
 9a5709f44007377c721ccca74f0576e4f08c8539972f7845f3033230af15fd1c  tests/acceptance/delivery-opts/delivery-opts.int.test.ts
 00a0572c72b3fe4834a19c1230290ab289a611261de216bcb53064675c8059a5  tests/acceptance/esign-anchor/esign-anchor-fix.int.test.ts
 a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptance/esign-anchor/esign-anchor.int.test.ts

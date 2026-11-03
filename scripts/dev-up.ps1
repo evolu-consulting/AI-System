@@ -115,6 +115,12 @@ Wait-Port 4000 "hub-api" (Join-Path $out "core.log") $core
 bun --env-file=.env.local tools/hub-dev/src/demo-packs.ts
 if ($LASTEXITCODE) { throw "bật gói demo lỗi" }
 
+# pm-ready · CR-113: quy trình duyệt mẫu + Group Pháp chế đã do fixture ở bước trên ghi; đây là 3 HĐ mẫu (chờ / duyệt thay / quá hạn)
+# tạo qua đường thật của hub (mở lại quy trình + duyệt thay). Lặp lại được; cần hub-api đang chạy (đã chờ cổng 4000 ở trên).
+"seed CR-113: 3 HĐ mẫu duyệt thay / quá hạn (evolu)…"
+bun --env-file=.env.local tools/scripts/src/seed-cr113-samples.ts
+if ($LASTEXITCODE) { throw "seed-cr113-samples lỗi (xem hub log .data\dev-up\core.log)" }
+
 # -SeedDemo: tenant `demo` giống demo prod (dữ liệu bịa, email example.invalid). Mọi bước idempotent; script seed tự từ chối
 # APP_ENV=production / DB ngoài localhost. Mật khẩu demo-owner: DEMO_OWNER_PW trong .env.local (tự sinh lần đầu, không in).
 if ($SeedDemo) {
