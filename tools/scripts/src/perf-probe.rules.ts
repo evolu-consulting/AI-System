@@ -14,6 +14,8 @@ export type ProbeStat = Pct & {
   rss: number;
   /** (max-min)/median của p50 qua các lượt, % — thước đo nhiễu */
   spread: number;
+  /** như spread nhưng cho số câu SQL mỗi lần gọi (nhiễu do việc nền toàn tiến trình) */
+  sqlSpread?: number;
 };
 export type ScnStat = { ms: number; cpu: number; rss: number; conns: number };
 export type Baseline = {
@@ -121,6 +123,8 @@ export function aggregateProbe(perRun: readonly Sample[][]): ProbeStat {
   const ms = all.map((s) => s.ms);
   const p50s = perRun.filter((r) => r.length > 0).map((r) => med(r.map((s) => s.ms)));
   const m = med(p50s);
+  const sqls = perRun.filter((r) => r.length > 0).map((r) => med(r.map((s) => s.sql)));
+  const sm = med(sqls);
   return {
     n: all.length,
     p50: r1(pctile(ms, 50)),
@@ -131,6 +135,8 @@ export function aggregateProbe(perRun: readonly Sample[][]): ProbeStat {
     cpu: r1(med(all.map((s) => s.cpu))),
     rss: Math.round(med(all.map((s) => s.rss))),
     spread: m > 0 && p50s.length > 1 ? r1(((Math.max(...p50s) - Math.min(...p50s)) / m) * 100) : 0,
+    sqlSpread:
+      sm > 0 && sqls.length > 1 ? r1(((Math.max(...sqls) - Math.min(...sqls)) / sm) * 100) : 0,
   };
 }
 
@@ -181,8 +187,9 @@ export function compare(base: Baseline, now: Baseline): Cmp {
 
 const pq = (s: ProbeStat | undefined) => (s ? { p50: s.p50, p95: s.p95 } : null);
 
-function flagOf(dPct: number, sqlPct: number, spread: number): Row["flag"] {
-  if (sqlPct > REGRESS_PCT) return "REGRESSION"; // số câu SQL tất định ⇒ không cần chặn nhiễu
+function flagOf(dPct: number, sqlPct: number, sqlSpread: number, spread: number): Row["flag"] {
+  // số câu SQL gần tất định: chỉ chặn nhiễu theo sqlSpread (việc nền toàn tiến trình làm đếm dao động)
+  if (sqlPct > REGRESS_PCT && sqlPct > sqlSpread) return "REGRESSION";
   if (Math.abs(dPct) <= spread && Math.abs(dPct) > REGRESS_PCT) return "noise";
   if (dPct > REGRESS_PCT) return "REGRESSION";
   return dPct < -WIN_PCT ? "win" : "ok";
@@ -210,7 +217,7 @@ function compareOne(name: string, b?: ProbeStat, n?: ProbeStat): Row {
     now: pq(n),
     dPct,
     dSql: r1(n.sql - b.sql),
-    flag: flagOf(dPct, sqlPct, spread),
+    flag: flagOf(dPct, sqlPct, Math.max(b.sqlSpread ?? 0, n.sqlSpread ?? 0), spread),
     spread,
   };
 }

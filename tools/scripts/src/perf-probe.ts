@@ -102,8 +102,16 @@ function runEvotest(g: { step: "perf" | "py"; filter: string }, a: Args): string
   return join(dir, "console.log");
 }
 
-function readLog(path: string): { text: string; exclusive: boolean; config: string } {
-  const text = readFileSync(path, "utf8");
+function readLog(path: string): {
+  text: string;
+  exclusive: boolean;
+  config: string;
+  commit: string | undefined;
+  date: string;
+} {
+  // `Tee-Object` của PowerShell 5.1 ghi UTF-16LE (BOM FF FE); log cũ/khác là UTF-8.
+  const buf = readFileSync(path);
+  const text = buf[0] === 0xff && buf[1] === 0xfe ? buf.toString("utf16le") : buf.toString("utf8");
   const ex = join(dirname(path), "exclusive.txt");
   const exTxt = existsSync(ex) ? readFileSync(ex, "utf8") : "";
   const cfg = exTxt
@@ -114,18 +122,19 @@ function readLog(path: string): { text: string; exclusive: boolean; config: stri
     text,
     exclusive: /exclusive-start/.test(exTxt) || /exclusive-start/.test(text),
     config: cfg.join(" | ") || "?",
+    // commit THẬT đã đo = `commit=` trên dòng exclusive-start / "commit X" của remote.sh (không phải HEAD lúc gom)
+    commit: /exclusive-start.*\bcommit=(\S+)/.exec(`${exTxt}\n${text}`)?.[1],
+    date: statSync(path).mtime.toISOString(),
   };
 }
 
 function toBaseline(scn: string, log: ReturnType<typeof readLog>, a: Args): Baseline {
   const agg = aggregateScenario(parseProbeLog(log.text), scn);
-  const dirty = a.dirty || sh(["git", "status", "--porcelain", "--untracked-files=no"]) !== "";
+  const head = sh(["git", "rev-parse", "--short", "HEAD"]) + (a.dirty ? "+dirty" : "");
   return {
     scenario: scn,
-    commit:
-      sh(["git", "rev-parse", "--short", "HEAD"]) +
-      (a.dirty ? "+dirty" : dirty ? "(wt-dirty)" : ""),
-    date: new Date().toISOString(),
+    commit: log.commit ?? head,
+    date: log.date,
     env: { pg: agg.pg, cpus: log.config, exclusive: log.exclusive },
     size: agg.size,
     runs: agg.runs,

@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import os
 import resource
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -18,7 +19,7 @@ import pytest
 
 from agent_runtime.db import jobs_sql
 from agent_runtime.db.pool import create_pool
-from agent_runtime.probe import probe, probe_emit, probe_on
+from agent_runtime.probe import probe, probe_emit, probe_on, set_probe
 from tests.acceptance._rt import (
     ACME,
     BETA,
@@ -94,6 +95,7 @@ async def test_probe_claim_n(own: Any) -> None:
         for r in range(1, runs + 1):
             await _seed(own, n, providers)
             probe_emit("scenario.start", scn="claim.n", r=r)
+            t0, c0 = time.perf_counter(), time.process_time()
             with probe("claim.batch"):
                 for _ in range(n // 2):
                     async with pool.acquire() as conn:
@@ -109,12 +111,18 @@ async def test_probe_claim_n(own: Any) -> None:
                 return got
 
             with probe("claim.parallel"):
+                set_probe(
+                    False
+                )  # claim.one lồng nhau trong pha song song sẽ lẫn bộ đếm toàn tiến trình
                 got = sum(await asyncio.gather(*(claimer(i) for i in range(8))))
+                set_probe(True)
             assert got == n - n // 2
             probe_emit(
                 "scenario.end",
                 scn="claim.n",
                 r=r,
+                ms=round((time.perf_counter() - t0) * 1000),
+                cpu=round((time.process_time() - c0) * 1000),
                 rss=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
                 conns=await _conns(own),
             )

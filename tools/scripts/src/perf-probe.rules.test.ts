@@ -112,6 +112,13 @@ describe("compare", () => {
     const c = compare(bl({ a: probeStat(100) }), bl({ a: probeStat(100, { sql: 6 }) }));
     expect(c.rows[0]).toMatchObject({ flag: "REGRESSION", dSql: 2 });
   });
+  test("số câu SQL dao động giữa các lượt (việc nền) ⇒ không đỏ nếu trong sqlSpread", () => {
+    const c = compare(
+      bl({ a: probeStat(100, { sql: 100, sqlSpread: 30 }) }),
+      bl({ a: probeStat(100, { sql: 120, sqlSpread: 5 }) }),
+    );
+    expect(c.rows[0]?.flag).toBe("ok");
+  });
   test("cần ≥ 3 lượt mỗi bên", () => {
     const c = compare(bl({ a: probeStat(1) }), bl({ a: probeStat(1) }, 2));
     expect(c.error).toContain("≥ 3");
