@@ -58,5 +58,6 @@ Hub-api dùng logger tự viết (JSON một dòng, `lib/logger.ts`), Runtime d�
 - Python test chạy trên Windows chỉ được phần không phụ thuộc `fcntl`; `job_run.py` chỉ kiểm qua pyright + ruff cục bộ, test Linux chạy trên evotest.
 
 ## Việc còn lại
-- `bun run contracts:check` (cần docker/uv) và pytest `runtimes/cli/test_job_run*.py` trên Linux/evotest chưa chạy cục bộ.
+- Đã kiểm trên server evotest (container tạm `uv:python3.12-bookworm-slim` + `uv sync --frozen`, đã xoá): codegen từ `hub.schema.json` khớp `hub.py`; `hub.schema.json` khớp `schemaText()` của zod (kiểm tại máy, tương đương `contracts:check`); pytest `test_job_run*.py` + `providers` + `test_main/config/log` + `test_log_kv/test_otel`: 267 passed.
+- Đỏ có sẵn (không do lát này, đỏ cả trên base): `apps/hub-api/src/modules/seed/seed.test.ts` (2 ca số agent seed) và `bunx tsc -p tsconfig.tests.json` lỗi `RowList` (`never[]`) ở test int cũ.
 - Gộp Delta vào `docs/current/hub/observability.md` cuối đợt.
