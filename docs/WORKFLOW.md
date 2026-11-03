@@ -189,6 +189,10 @@ Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luậ
 ### 5. Ghi chú bàn giao khi xin merge (cuối `tasks.md` của feature)
 Nhánh · task đã xong · file đã sửa ngoài cột `File` (nếu có, kèm lý do) · giả định về contract · "Quyết định trong lúc làm" · việc còn lại · lệnh test đã chạy + kết quả.
 
+### 6. Hook chặn subagent ghi ngoài worktree (tool-hook)
+- `.claude/settings.json` có hook `PreToolUse` (`tools/scripts/src/guard-worktree.ts`; luật thuần `guard-worktree.rules.ts`): **subagent** (input hook có `agent_id`) bị từ chối khi `Write|Edit|NotebookEdit` hoặc lệnh PowerShell/Bash (`>`, `>>`, `Out-File`, `Set-Content`, `[IO.File]::Write*`) trỏ vào checkout chính `F:\workspace\evolu-platform` ngoài `.claude/worktrees/**`; phiên chính không bị chặn. Đường dẫn tương đối tính theo `cwd` của agent → luôn dùng đường dẫn tuyệt đối `F:\workspace\evolu-wt\<lát>\…`.
+- Cần subagent sửa checkout chính có chủ đích: đặt `EVOLU_GUARD_ALLOW_AGENTS=<agent_type>` (hoặc `EVOLU_GUARD_OFF=1`) trước khi mở phiên. Hook lỗi thì cho qua (fail-open); chỉ có hiệu lực ở phiên mới sau khi merge.
+
 ## Luật khoá test
 
 - **Test trước theo rủi ro (người dùng 2026-10-18):** cột `Rủi ro` của `tasks.md` quyết. **Cao** = RLS/tenant, quyền, auth/secrets, khoá/transaction/NOTIFY, đường nóng có ngưỡng perf, contract ⇒ qc viết test trước code, khoá ở Gate. **Thường** (UI, mapper, nhãn/i18n, sửa nhỏ, tách file) ⇒ agent code viết test cùng task vào file test **mới** (không sửa file đã khoá; cần sửa ⇒ Tranh chấp test), qc (Haiku/Sonnet) đọc nhanh diff test — kiểm bám spec/AC, không test theo lỗi của code, đỏ được khi bỏ code — rồi `test:lock:write`. Lý do giữ test trước ở task cao: người viết code tự viết test dễ khớp luôn lỗi của mình.
